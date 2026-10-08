@@ -1,0 +1,10988 @@
+{
+ "source": "app/workout-builder.tsx @ fac9ac2",
+ "types": [
+  {
+   "groups": [],
+   "type": "custom"
+  },
+  {
+   "groups": [
+    "chest"
+   ],
+   "type": "push"
+  },
+  {
+   "groups": [
+    "back"
+   ],
+   "type": "pull"
+  },
+  {
+   "groups": [
+    "chest",
+    "back"
+   ],
+   "type": "upper"
+  },
+  {
+   "groups": [
+    "shoulders"
+   ],
+   "type": "push"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders"
+   ],
+   "type": "push"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders"
+   ],
+   "type": "upper"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders"
+   ],
+   "type": "upper"
+  },
+  {
+   "groups": [
+    "biceps"
+   ],
+   "type": "pull"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps"
+   ],
+   "type": "upper"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps"
+   ],
+   "type": "pull"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps"
+   ],
+   "type": "upper"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps"
+   ],
+   "type": "upper"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps"
+   ],
+   "type": "upper"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps"
+   ],
+   "type": "upper"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps"
+   ],
+   "type": "upper"
+  },
+  {
+   "groups": [
+    "triceps"
+   ],
+   "type": "push"
+  },
+  {
+   "groups": [
+    "chest",
+    "triceps"
+   ],
+   "type": "push"
+  },
+  {
+   "groups": [
+    "back",
+    "triceps"
+   ],
+   "type": "upper"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "triceps"
+   ],
+   "type": "upper"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "triceps"
+   ],
+   "type": "push"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "triceps"
+   ],
+   "type": "push"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "triceps"
+   ],
+   "type": "upper"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "triceps"
+   ],
+   "type": "upper"
+  },
+  {
+   "groups": [
+    "biceps",
+    "triceps"
+   ],
+   "type": "upper"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "triceps"
+   ],
+   "type": "upper"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "triceps"
+   ],
+   "type": "upper"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "triceps"
+   ],
+   "type": "upper"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "triceps"
+   ],
+   "type": "upper"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "triceps"
+   ],
+   "type": "upper"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps"
+   ],
+   "type": "upper"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps"
+   ],
+   "type": "upper"
+  },
+  {
+   "groups": [
+    "abs"
+   ],
+   "type": "custom"
+  },
+  {
+   "groups": [
+    "chest",
+    "abs"
+   ],
+   "type": "upper"
+  },
+  {
+   "groups": [
+    "back",
+    "abs"
+   ],
+   "type": "upper"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "abs"
+   ],
+   "type": "upper"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "abs"
+   ],
+   "type": "upper"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "abs"
+   ],
+   "type": "upper"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "abs"
+   ],
+   "type": "upper"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "abs"
+   ],
+   "type": "upper"
+  },
+  {
+   "groups": [
+    "biceps",
+    "abs"
+   ],
+   "type": "upper"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "abs"
+   ],
+   "type": "upper"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "abs"
+   ],
+   "type": "upper"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "abs"
+   ],
+   "type": "upper"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "abs"
+   ],
+   "type": "upper"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "abs"
+   ],
+   "type": "upper"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "abs"
+   ],
+   "type": "upper"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "abs"
+   ],
+   "type": "upper"
+  },
+  {
+   "groups": [
+    "triceps",
+    "abs"
+   ],
+   "type": "upper"
+  },
+  {
+   "groups": [
+    "chest",
+    "triceps",
+    "abs"
+   ],
+   "type": "upper"
+  },
+  {
+   "groups": [
+    "back",
+    "triceps",
+    "abs"
+   ],
+   "type": "upper"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "triceps",
+    "abs"
+   ],
+   "type": "upper"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "triceps",
+    "abs"
+   ],
+   "type": "upper"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "triceps",
+    "abs"
+   ],
+   "type": "upper"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "triceps",
+    "abs"
+   ],
+   "type": "upper"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "triceps",
+    "abs"
+   ],
+   "type": "upper"
+  },
+  {
+   "groups": [
+    "biceps",
+    "triceps",
+    "abs"
+   ],
+   "type": "upper"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "triceps",
+    "abs"
+   ],
+   "type": "upper"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "triceps",
+    "abs"
+   ],
+   "type": "upper"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "triceps",
+    "abs"
+   ],
+   "type": "upper"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs"
+   ],
+   "type": "upper"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs"
+   ],
+   "type": "upper"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs"
+   ],
+   "type": "upper"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs"
+   ],
+   "type": "upper"
+  },
+  {
+   "groups": [
+    "legs"
+   ],
+   "type": "legs"
+  },
+  {
+   "groups": [
+    "chest",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "triceps",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "triceps",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "triceps",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "triceps",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "triceps",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "triceps",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "triceps",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "triceps",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "triceps",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "triceps",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "triceps",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "triceps",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "triceps",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "abs",
+    "legs"
+   ],
+   "type": "lower"
+  },
+  {
+   "groups": [
+    "chest",
+    "abs",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "abs",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "abs",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "abs",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "abs",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "abs",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "abs",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "abs",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "abs",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "abs",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "abs",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "abs",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "abs",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "abs",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "abs",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "triceps",
+    "abs",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "triceps",
+    "abs",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "triceps",
+    "abs",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "triceps",
+    "abs",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "triceps",
+    "abs",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "triceps",
+    "abs",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "triceps",
+    "abs",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "triceps",
+    "abs",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "triceps",
+    "abs",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "triceps",
+    "abs",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "triceps",
+    "abs",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "triceps",
+    "abs",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "legs"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "glutes"
+   ],
+   "type": "legs"
+  },
+  {
+   "groups": [
+    "chest",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "triceps",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "triceps",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "triceps",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "triceps",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "triceps",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "triceps",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "triceps",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "triceps",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "triceps",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "triceps",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "triceps",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "triceps",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "triceps",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "abs",
+    "glutes"
+   ],
+   "type": "lower"
+  },
+  {
+   "groups": [
+    "chest",
+    "abs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "abs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "abs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "abs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "abs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "abs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "abs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "abs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "abs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "abs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "abs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "abs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "abs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "abs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "abs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "triceps",
+    "abs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "triceps",
+    "abs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "triceps",
+    "abs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "triceps",
+    "abs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "triceps",
+    "abs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "triceps",
+    "abs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "triceps",
+    "abs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "triceps",
+    "abs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "triceps",
+    "abs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "triceps",
+    "abs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "triceps",
+    "abs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "triceps",
+    "abs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "legs",
+    "glutes"
+   ],
+   "type": "legs"
+  },
+  {
+   "groups": [
+    "chest",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "triceps",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "triceps",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "triceps",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "triceps",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "triceps",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "triceps",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "triceps",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "triceps",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "triceps",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "triceps",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "triceps",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "triceps",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "triceps",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "abs",
+    "legs",
+    "glutes"
+   ],
+   "type": "lower"
+  },
+  {
+   "groups": [
+    "chest",
+    "abs",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "abs",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "abs",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "abs",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "abs",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "abs",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "abs",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "abs",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "abs",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "abs",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "abs",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "abs",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "abs",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "abs",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "abs",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "triceps",
+    "abs",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "calves"
+   ],
+   "type": "legs"
+  },
+  {
+   "groups": [
+    "chest",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "triceps",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "triceps",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "triceps",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "triceps",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "triceps",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "triceps",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "triceps",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "triceps",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "triceps",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "triceps",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "triceps",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "triceps",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "triceps",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "abs",
+    "calves"
+   ],
+   "type": "lower"
+  },
+  {
+   "groups": [
+    "chest",
+    "abs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "abs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "abs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "abs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "abs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "abs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "abs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "abs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "abs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "abs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "abs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "abs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "abs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "abs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "abs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "triceps",
+    "abs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "triceps",
+    "abs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "triceps",
+    "abs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "triceps",
+    "abs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "triceps",
+    "abs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "triceps",
+    "abs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "triceps",
+    "abs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "triceps",
+    "abs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "triceps",
+    "abs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "triceps",
+    "abs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "triceps",
+    "abs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "triceps",
+    "abs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "legs",
+    "calves"
+   ],
+   "type": "legs"
+  },
+  {
+   "groups": [
+    "chest",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "triceps",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "triceps",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "triceps",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "triceps",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "triceps",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "triceps",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "triceps",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "triceps",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "triceps",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "triceps",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "triceps",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "triceps",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "triceps",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "abs",
+    "legs",
+    "calves"
+   ],
+   "type": "lower"
+  },
+  {
+   "groups": [
+    "chest",
+    "abs",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "abs",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "abs",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "abs",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "abs",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "abs",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "abs",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "abs",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "abs",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "abs",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "abs",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "abs",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "abs",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "abs",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "abs",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "triceps",
+    "abs",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "triceps",
+    "abs",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "triceps",
+    "abs",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "triceps",
+    "abs",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "triceps",
+    "abs",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "triceps",
+    "abs",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "triceps",
+    "abs",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "triceps",
+    "abs",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "triceps",
+    "abs",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "triceps",
+    "abs",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "triceps",
+    "abs",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "triceps",
+    "abs",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "legs",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "glutes",
+    "calves"
+   ],
+   "type": "legs"
+  },
+  {
+   "groups": [
+    "chest",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "triceps",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "triceps",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "triceps",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "triceps",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "triceps",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "triceps",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "triceps",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "triceps",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "triceps",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "triceps",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "triceps",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "triceps",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "triceps",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "abs",
+    "glutes",
+    "calves"
+   ],
+   "type": "lower"
+  },
+  {
+   "groups": [
+    "chest",
+    "abs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "abs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "abs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "abs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "abs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "abs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "abs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "abs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "abs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "abs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "abs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "abs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "abs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "abs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "abs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "triceps",
+    "abs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "triceps",
+    "abs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "triceps",
+    "abs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "triceps",
+    "abs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "triceps",
+    "abs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "triceps",
+    "abs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "triceps",
+    "abs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "triceps",
+    "abs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "triceps",
+    "abs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "triceps",
+    "abs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "triceps",
+    "abs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "triceps",
+    "abs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "legs"
+  },
+  {
+   "groups": [
+    "chest",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "triceps",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "triceps",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "triceps",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "triceps",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "triceps",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "triceps",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "triceps",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "triceps",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "triceps",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "triceps",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "triceps",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "triceps",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "triceps",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "abs",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "lower"
+  },
+  {
+   "groups": [
+    "chest",
+    "abs",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "abs",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "abs",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "abs",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "abs",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "abs",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "abs",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "abs",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "abs",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "abs",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "abs",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "abs",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "abs",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "abs",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "abs",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "triceps",
+    "abs",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes",
+    "calves"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "cardio"
+   ],
+   "type": "cardio"
+  },
+  {
+   "groups": [
+    "chest",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "triceps",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "triceps",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "triceps",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "triceps",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "triceps",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "triceps",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "triceps",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "triceps",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "triceps",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "triceps",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "triceps",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "triceps",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "triceps",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "abs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "abs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "abs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "abs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "abs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "abs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "abs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "abs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "abs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "abs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "abs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "abs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "abs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "abs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "abs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "abs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "triceps",
+    "abs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "triceps",
+    "abs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "triceps",
+    "abs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "triceps",
+    "abs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "triceps",
+    "abs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "triceps",
+    "abs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "triceps",
+    "abs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "triceps",
+    "abs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "triceps",
+    "abs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "triceps",
+    "abs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "triceps",
+    "abs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "triceps",
+    "abs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "triceps",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "triceps",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "triceps",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "triceps",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "triceps",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "triceps",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "triceps",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "triceps",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "triceps",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "triceps",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "triceps",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "triceps",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "triceps",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "abs",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "abs",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "abs",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "abs",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "abs",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "abs",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "abs",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "abs",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "abs",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "abs",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "abs",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "abs",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "abs",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "abs",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "abs",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "abs",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "triceps",
+    "abs",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "triceps",
+    "abs",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "triceps",
+    "abs",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "triceps",
+    "abs",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "triceps",
+    "abs",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "triceps",
+    "abs",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "triceps",
+    "abs",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "triceps",
+    "abs",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "triceps",
+    "abs",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "triceps",
+    "abs",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "triceps",
+    "abs",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "triceps",
+    "abs",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "legs",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "triceps",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "triceps",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "triceps",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "triceps",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "triceps",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "triceps",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "triceps",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "triceps",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "triceps",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "triceps",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "triceps",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "triceps",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "triceps",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "abs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "abs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "abs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "abs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "abs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "abs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "abs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "abs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "abs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "abs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "abs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "abs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "abs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "abs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "abs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "abs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "triceps",
+    "abs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "triceps",
+    "abs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "triceps",
+    "abs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "triceps",
+    "abs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "triceps",
+    "abs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "triceps",
+    "abs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "triceps",
+    "abs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "triceps",
+    "abs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "triceps",
+    "abs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "triceps",
+    "abs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "triceps",
+    "abs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "triceps",
+    "abs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "triceps",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "triceps",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "triceps",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "triceps",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "triceps",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "triceps",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "triceps",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "triceps",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "triceps",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "triceps",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "triceps",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "triceps",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "triceps",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "abs",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "abs",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "abs",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "abs",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "abs",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "abs",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "abs",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "abs",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "abs",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "abs",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "abs",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "abs",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "abs",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "abs",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "abs",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "abs",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "triceps",
+    "abs",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "triceps",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "triceps",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "triceps",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "triceps",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "triceps",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "triceps",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "triceps",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "triceps",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "triceps",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "triceps",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "triceps",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "triceps",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "triceps",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "abs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "abs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "abs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "abs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "abs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "abs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "abs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "abs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "abs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "abs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "abs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "abs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "abs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "abs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "abs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "abs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "triceps",
+    "abs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "triceps",
+    "abs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "triceps",
+    "abs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "triceps",
+    "abs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "triceps",
+    "abs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "triceps",
+    "abs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "triceps",
+    "abs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "triceps",
+    "abs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "triceps",
+    "abs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "triceps",
+    "abs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "triceps",
+    "abs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "triceps",
+    "abs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "triceps",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "triceps",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "triceps",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "triceps",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "triceps",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "triceps",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "triceps",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "triceps",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "triceps",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "triceps",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "triceps",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "triceps",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "triceps",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "abs",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "abs",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "abs",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "abs",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "abs",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "abs",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "abs",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "abs",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "abs",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "abs",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "abs",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "abs",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "abs",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "abs",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "abs",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "abs",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "triceps",
+    "abs",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "triceps",
+    "abs",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "triceps",
+    "abs",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "triceps",
+    "abs",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "triceps",
+    "abs",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "triceps",
+    "abs",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "triceps",
+    "abs",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "triceps",
+    "abs",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "triceps",
+    "abs",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "triceps",
+    "abs",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "triceps",
+    "abs",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "triceps",
+    "abs",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "legs",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "triceps",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "triceps",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "triceps",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "triceps",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "triceps",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "triceps",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "triceps",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "triceps",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "triceps",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "triceps",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "triceps",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "triceps",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "triceps",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "abs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "abs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "abs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "abs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "abs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "abs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "abs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "abs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "abs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "abs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "abs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "abs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "abs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "abs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "abs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "abs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "triceps",
+    "abs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "triceps",
+    "abs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "triceps",
+    "abs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "triceps",
+    "abs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "triceps",
+    "abs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "triceps",
+    "abs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "triceps",
+    "abs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "triceps",
+    "abs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "triceps",
+    "abs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "triceps",
+    "abs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "triceps",
+    "abs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "triceps",
+    "abs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "triceps",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "triceps",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "triceps",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "triceps",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "triceps",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "triceps",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "triceps",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "triceps",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "triceps",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "triceps",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "triceps",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "triceps",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "triceps",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "abs",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "abs",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "abs",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "abs",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "abs",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "abs",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "abs",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "abs",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "abs",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "abs",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "abs",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "abs",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "abs",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "abs",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "abs",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "abs",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "triceps",
+    "abs",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "biceps",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "biceps",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "biceps",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "biceps",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "chest",
+    "back",
+    "shoulders",
+    "biceps",
+    "triceps",
+    "abs",
+    "legs",
+    "glutes",
+    "calves",
+    "cardio"
+   ],
+   "type": "full_body"
+  }
+ ],
+ "rankings": [
+  {
+   "groups": [],
+   "ranked": [],
+   "shape": "none",
+   "type": "custom"
+  },
+  {
+   "groups": [
+    "Chest"
+   ],
+   "ranked": [
+    "chest"
+   ],
+   "shape": "one",
+   "type": "push"
+  },
+  {
+   "groups": [
+    "Chest",
+    "Triceps"
+   ],
+   "ranked": [
+    "chest",
+    "triceps"
+   ],
+   "shape": "two",
+   "type": "push"
+  },
+  {
+   "groups": [
+    "Back",
+    "Biceps",
+    "Back"
+   ],
+   "ranked": [
+    "back",
+    "biceps"
+   ],
+   "shape": "two",
+   "type": "pull"
+  },
+  {
+   "groups": [
+    "Quads",
+    "Hamstrings",
+    "Glutes"
+   ],
+   "ranked": [
+    "legs",
+    "glutes"
+   ],
+   "shape": "two",
+   "type": "legs"
+  },
+  {
+   "groups": [
+    "Chest",
+    "Back",
+    "Legs",
+    "Shoulders"
+   ],
+   "ranked": [
+    "chest",
+    "back",
+    "legs",
+    "shoulders"
+   ],
+   "shape": "fullBody",
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "Chest/Triceps",
+    "Shoulders"
+   ],
+   "ranked": [
+    "chest",
+    "triceps",
+    "shoulders"
+   ],
+   "shape": "two",
+   "type": "push"
+  },
+  {
+   "groups": [
+    "Core"
+   ],
+   "ranked": [
+    "abs"
+   ],
+   "shape": "one",
+   "type": "custom"
+  },
+  {
+   "groups": [
+    "Full Body"
+   ],
+   "ranked": [
+    "cardio"
+   ],
+   "shape": "one",
+   "type": "cardio"
+  },
+  {
+   "groups": [
+    null,
+    ""
+   ],
+   "ranked": [],
+   "shape": "title",
+   "type": "custom"
+  },
+  {
+   "groups": [
+    "Ngực",
+    "Lưng",
+    "Lưng"
+   ],
+   "ranked": [
+    "back",
+    "chest"
+   ],
+   "shape": "two",
+   "type": "upper"
+  },
+  {
+   "groups": [
+    "Bắp tay trước",
+    "Tay sau"
+   ],
+   "ranked": [
+    "biceps",
+    "triceps"
+   ],
+   "shape": "two",
+   "type": "upper"
+  },
+  {
+   "groups": [
+    "Abs",
+    "Quads"
+   ],
+   "ranked": [
+    "abs",
+    "legs"
+   ],
+   "shape": "two",
+   "type": "lower"
+  },
+  {
+   "groups": [
+    "Biceps",
+    "Chest",
+    "Biceps",
+    "Chest",
+    "Back"
+   ],
+   "ranked": [
+    "biceps",
+    "chest",
+    "back"
+   ],
+   "shape": "two",
+   "type": "upper"
+  },
+  {
+   "groups": [
+    "chest + triceps",
+    "shoulders & triceps"
+   ],
+   "ranked": [
+    "triceps",
+    "chest",
+    "shoulders"
+   ],
+   "shape": "two",
+   "type": "push"
+  },
+  {
+   "groups": [
+    "Calves",
+    "Cardio"
+   ],
+   "ranked": [
+    "calves",
+    "cardio"
+   ],
+   "shape": "two",
+   "type": "full_body"
+  },
+  {
+   "groups": [
+    "Unknown"
+   ],
+   "ranked": [],
+   "shape": "title",
+   "type": "custom"
+  },
+  {
+   "groups": [
+    "Chest",
+    "Unknown"
+   ],
+   "ranked": [
+    "chest"
+   ],
+   "shape": "one",
+   "type": "push"
+  }
+ ],
+ "minutes": [
+  {
+   "items": [],
+   "minutes": 1
+  },
+  {
+   "items": [
+    {
+     "sets": 3,
+     "reps": 10,
+     "restSeconds": 90
+    }
+   ],
+   "minutes": 6
+  },
+  {
+   "items": [
+    {
+     "sets": 1,
+     "reps": 1,
+     "restSeconds": 0
+    }
+   ],
+   "minutes": 1
+  },
+  {
+   "items": [
+    {
+     "sets": 4,
+     "reps": 8
+    },
+    {
+     "sets": 3,
+     "reps": 12,
+     "restSeconds": 60
+    }
+   ],
+   "minutes": 12
+  },
+  {
+   "items": [
+    {
+     "sets": 5,
+     "reps": 5,
+     "restSeconds": 180
+    }
+   ],
+   "minutes": 16
+  },
+  {
+   "items": [
+    {
+     "sets": 3
+    },
+    {
+     "reps": 10
+    }
+   ],
+   "minutes": 5
+  },
+  {
+   "items": [
+    {
+     "sets": 3,
+     "reps": 10,
+     "restSeconds": 90
+    },
+    {
+     "sets": 3,
+     "reps": 10,
+     "restSeconds": 90
+    },
+    {
+     "sets": 3,
+     "reps": 15,
+     "restSeconds": 45
+    }
+   ],
+   "minutes": 17
+  },
+  {
+   "items": [
+    {
+     "sets": 1,
+     "reps": 10,
+     "restSeconds": 0
+    }
+   ],
+   "minutes": 1
+  },
+  {
+   "items": [
+    {
+     "sets": 2,
+     "reps": 5,
+     "restSeconds": 5
+    }
+   ],
+   "minutes": 1
+  }
+ ],
+ "library": [
+  {
+   "id": "a",
+   "name": "Bench Press",
+   "muscle_group": "Chest"
+  },
+  {
+   "id": "b",
+   "name": "Incline Dumbbell Press",
+   "muscle_group": "Chest/Shoulders"
+  },
+  {
+   "id": "c",
+   "name": "Pull-up",
+   "muscle_group": "Back"
+  },
+  {
+   "id": "d",
+   "name": "Squat",
+   "muscle_group": "Quads"
+  },
+  {
+   "id": "e",
+   "name": "Plank",
+   "muscle_group": "Core"
+  },
+  {
+   "id": "f",
+   "name": "Curl",
+   "muscle_group": "Biceps"
+  },
+  {
+   "id": "g",
+   "name": "Mystery",
+   "muscle_group": null
+  },
+  {
+   "id": "h",
+   "name": "Đẩy ngực",
+   "muscle_group": "Ngực"
+  }
+ ],
+ "filters": [
+  {
+   "group": null,
+   "search": "",
+   "ids": [
+    "a",
+    "b",
+    "c",
+    "d",
+    "e",
+    "f",
+    "g",
+    "h"
+   ]
+  },
+  {
+   "group": null,
+   "search": "press",
+   "ids": [
+    "a",
+    "b"
+   ]
+  },
+  {
+   "group": null,
+   "search": "  PRESS ",
+   "ids": [
+    "a",
+    "b"
+   ]
+  },
+  {
+   "group": null,
+   "search": "u",
+   "ids": [
+    "b",
+    "c",
+    "d",
+    "f"
+   ]
+  },
+  {
+   "group": null,
+   "search": "zzz",
+   "ids": []
+  },
+  {
+   "group": null,
+   "search": "ngực",
+   "ids": [
+    "h"
+   ]
+  },
+  {
+   "group": "chest",
+   "search": "",
+   "ids": [
+    "a",
+    "b",
+    "h"
+   ]
+  },
+  {
+   "group": "chest",
+   "search": "press",
+   "ids": [
+    "a",
+    "b"
+   ]
+  },
+  {
+   "group": "chest",
+   "search": "  PRESS ",
+   "ids": [
+    "a",
+    "b"
+   ]
+  },
+  {
+   "group": "chest",
+   "search": "u",
+   "ids": [
+    "b"
+   ]
+  },
+  {
+   "group": "chest",
+   "search": "zzz",
+   "ids": []
+  },
+  {
+   "group": "chest",
+   "search": "ngực",
+   "ids": [
+    "h"
+   ]
+  },
+  {
+   "group": "back",
+   "search": "",
+   "ids": [
+    "c"
+   ]
+  },
+  {
+   "group": "back",
+   "search": "press",
+   "ids": []
+  },
+  {
+   "group": "back",
+   "search": "  PRESS ",
+   "ids": []
+  },
+  {
+   "group": "back",
+   "search": "u",
+   "ids": [
+    "c"
+   ]
+  },
+  {
+   "group": "back",
+   "search": "zzz",
+   "ids": []
+  },
+  {
+   "group": "back",
+   "search": "ngực",
+   "ids": []
+  },
+  {
+   "group": "shoulders",
+   "search": "",
+   "ids": [
+    "b"
+   ]
+  },
+  {
+   "group": "shoulders",
+   "search": "press",
+   "ids": [
+    "b"
+   ]
+  },
+  {
+   "group": "shoulders",
+   "search": "  PRESS ",
+   "ids": [
+    "b"
+   ]
+  },
+  {
+   "group": "shoulders",
+   "search": "u",
+   "ids": [
+    "b"
+   ]
+  },
+  {
+   "group": "shoulders",
+   "search": "zzz",
+   "ids": []
+  },
+  {
+   "group": "shoulders",
+   "search": "ngực",
+   "ids": []
+  },
+  {
+   "group": "biceps",
+   "search": "",
+   "ids": [
+    "f"
+   ]
+  },
+  {
+   "group": "biceps",
+   "search": "press",
+   "ids": []
+  },
+  {
+   "group": "biceps",
+   "search": "  PRESS ",
+   "ids": []
+  },
+  {
+   "group": "biceps",
+   "search": "u",
+   "ids": [
+    "f"
+   ]
+  },
+  {
+   "group": "biceps",
+   "search": "zzz",
+   "ids": []
+  },
+  {
+   "group": "biceps",
+   "search": "ngực",
+   "ids": []
+  },
+  {
+   "group": "triceps",
+   "search": "",
+   "ids": []
+  },
+  {
+   "group": "triceps",
+   "search": "press",
+   "ids": []
+  },
+  {
+   "group": "triceps",
+   "search": "  PRESS ",
+   "ids": []
+  },
+  {
+   "group": "triceps",
+   "search": "u",
+   "ids": []
+  },
+  {
+   "group": "triceps",
+   "search": "zzz",
+   "ids": []
+  },
+  {
+   "group": "triceps",
+   "search": "ngực",
+   "ids": []
+  },
+  {
+   "group": "abs",
+   "search": "",
+   "ids": [
+    "e"
+   ]
+  },
+  {
+   "group": "abs",
+   "search": "press",
+   "ids": []
+  },
+  {
+   "group": "abs",
+   "search": "  PRESS ",
+   "ids": []
+  },
+  {
+   "group": "abs",
+   "search": "u",
+   "ids": []
+  },
+  {
+   "group": "abs",
+   "search": "zzz",
+   "ids": []
+  },
+  {
+   "group": "abs",
+   "search": "ngực",
+   "ids": []
+  },
+  {
+   "group": "legs",
+   "search": "",
+   "ids": [
+    "d"
+   ]
+  },
+  {
+   "group": "legs",
+   "search": "press",
+   "ids": []
+  },
+  {
+   "group": "legs",
+   "search": "  PRESS ",
+   "ids": []
+  },
+  {
+   "group": "legs",
+   "search": "u",
+   "ids": [
+    "d"
+   ]
+  },
+  {
+   "group": "legs",
+   "search": "zzz",
+   "ids": []
+  },
+  {
+   "group": "legs",
+   "search": "ngực",
+   "ids": []
+  },
+  {
+   "group": "glutes",
+   "search": "",
+   "ids": []
+  },
+  {
+   "group": "glutes",
+   "search": "press",
+   "ids": []
+  },
+  {
+   "group": "glutes",
+   "search": "  PRESS ",
+   "ids": []
+  },
+  {
+   "group": "glutes",
+   "search": "u",
+   "ids": []
+  },
+  {
+   "group": "glutes",
+   "search": "zzz",
+   "ids": []
+  },
+  {
+   "group": "glutes",
+   "search": "ngực",
+   "ids": []
+  },
+  {
+   "group": "calves",
+   "search": "",
+   "ids": []
+  },
+  {
+   "group": "calves",
+   "search": "press",
+   "ids": []
+  },
+  {
+   "group": "calves",
+   "search": "  PRESS ",
+   "ids": []
+  },
+  {
+   "group": "calves",
+   "search": "u",
+   "ids": []
+  },
+  {
+   "group": "calves",
+   "search": "zzz",
+   "ids": []
+  },
+  {
+   "group": "calves",
+   "search": "ngực",
+   "ids": []
+  },
+  {
+   "group": "cardio",
+   "search": "",
+   "ids": []
+  },
+  {
+   "group": "cardio",
+   "search": "press",
+   "ids": []
+  },
+  {
+   "group": "cardio",
+   "search": "  PRESS ",
+   "ids": []
+  },
+  {
+   "group": "cardio",
+   "search": "u",
+   "ids": []
+  },
+  {
+   "group": "cardio",
+   "search": "zzz",
+   "ids": []
+  },
+  {
+   "group": "cardio",
+   "search": "ngực",
+   "ids": []
+  }
+ ]
+}
