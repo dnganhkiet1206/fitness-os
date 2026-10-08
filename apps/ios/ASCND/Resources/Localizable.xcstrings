@@ -7318,6 +7318,259 @@
     }
    }
   },
+  "settings.changePassword": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Change password"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đổi mật khẩu"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cambiar contraseña"
+     }
+    }
+   }
+  },
+  "settings.newPassword": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "New password"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mật khẩu mới"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nueva contraseña"
+     }
+    }
+   }
+  },
+  "settings.confirmPassword": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Confirm new password"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Xác nhận mật khẩu mới"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Confirmar nueva contraseña"
+     }
+    }
+   }
+  },
+  "settings.passwordChanged": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Password changed successfully!"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đổi mật khẩu thành công!"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "¡Contraseña cambiada con éxito!"
+     }
+    }
+   }
+  },
+  "settings.passwordMismatch": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Passwords do not match"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mật khẩu xác nhận không khớp"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Las contraseñas no coinciden"
+     }
+    }
+   }
+  },
+  "settings.legal": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Policies & Legal"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chính sách & Pháp lý"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Políticas y legal"
+     }
+    }
+   }
+  },
+  "settings.password.error.same": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "That's already your password — choose a different one."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đây là mật khẩu đang dùng — hãy chọn mật khẩu khác."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Esa ya es tu contraseña — elige otra."
+     }
+    }
+   }
+  },
+  "settings.password.error.weak": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "That password is too weak — try a longer one with more variety."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mật khẩu này quá yếu — thử dài hơn và đa dạng ký tự hơn."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Esa contraseña es demasiado débil — prueba una más larga y variada."
+     }
+    }
+   }
+  },
+  "settings.password.error.reauth": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "For security, sign out and sign back in, then change your password."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Để bảo mật, hãy đăng xuất rồi đăng nhập lại, sau đó đổi mật khẩu."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Por seguridad, cierra sesión y vuelve a entrar; luego cambia tu contraseña."
+     }
+    }
+   }
+  },
+  "settings.password.error.signedOut": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Your session has ended — sign in again."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Phiên đăng nhập đã kết thúc — hãy đăng nhập lại."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tu sesión terminó — inicia sesión de nuevo."
+     }
+    }
+   }
+  },
+  "settings.password.error.rateLimited": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Too many attempts — wait a moment and try again."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Thử quá nhiều lần — đợi một lát rồi thử lại."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Demasiados intentos — espera un momento e inténtalo de nuevo."
+     }
+    }
+   }
+  },
   "ex.title": {
    "extractionState": "manual",
    "localizations": {
