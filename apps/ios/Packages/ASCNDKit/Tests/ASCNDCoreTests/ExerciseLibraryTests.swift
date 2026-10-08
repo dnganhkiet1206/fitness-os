@@ -78,6 +78,26 @@ struct ExerciseCatalogTests {
     #expect(ExerciseCatalog.declaredKinds([catalog[7], catalog[3]]) == ["curl": "isolation"])
   }
 
+  /// Form thêm bài: 11 nhóm của RN, lưu đúng khoá `canonicalMuscleGroup`.
+  @Test func pickGroupsStoreTheCanonicalKey() {
+    #expect(ExerciseCatalog.PickGroup.allCases.count == 11)
+    let stored = ExerciseCatalog.PickGroup.allCases.map { MuscleGroup.canonical($0.stored) }
+    #expect(stored == [
+      "chest", "back", "shoulders", "biceps", "triceps", "legs", "legs", "glutes", "abs", "cardio", "cardio",
+    ])
+    // Nhãn vi của RN gập về cùng khoá, nên vi / en không đổi so với RN.
+    #expect(MuscleGroup.canonical("Chân trước") == "legs")
+    #expect(MuscleGroup.canonical("Toàn thân") == "cardio")
+  }
+
+  /// Tiếng của mục theo locale; tiếng chưa dịch rơi về en.
+  @Test func languageFollowsLocale() {
+    #expect(MuscleGroup.Language(locale: Locale(identifier: "vi_VN")) == .vi)
+    #expect(MuscleGroup.Language(locale: Locale(identifier: "es_MX")) == .es)
+    #expect(MuscleGroup.Language(locale: Locale(identifier: "en_GB")) == .en)
+    #expect(MuscleGroup.Language(locale: Locale(identifier: "fr_FR")) == .en)
+  }
+
   @Test func builtInVersusOwn() {
     #expect(catalog[0].isBuiltIn && !catalog[7].isBuiltIn)
     #expect(catalog[1].muscles == [.chest, .shoulders])

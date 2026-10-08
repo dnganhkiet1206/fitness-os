@@ -16,8 +16,10 @@ import SwiftUI
 ///   nghỉ 0…600 giây (bước 15), gắng sức 5…10; đưa lên / xuống; bỏ khỏi buổi;
 /// - nút trái: bước 1 đóng, bước 2 quay lại bước 1 (không vứt buổi đang dựng).
 ///
-/// Chưa có (ghi ở #527): hình nhóm cơ (`MuscleArt`), "Tạo bài tập mới" từ chỗ
-/// tìm trượt (cần màn thư viện production), toast "Đã thêm vào Plan".
+/// - tìm trượt / cuối danh sách: "Tạo “…”" mở thư viện bài tập với form thêm
+///   bài mang sẵn chữ đã tìm (`openLibrary`).
+///
+/// Chưa có (ghi ở #527): hình nhóm cơ (`MuscleArt`), toast "Đã thêm vào Plan".
 struct TemplateFormView: View {
   let flow: WorkoutFlow
   /// Mở từ một ngày của Plan: lưu xong gán luôn vào ngày ấy (0 = Thứ Hai).
@@ -33,6 +35,8 @@ struct TemplateFormView: View {
   @State private var templateId: String?
   @State private var saving = false
   @State private var failure: String?
+  /// Mở thư viện để tạo bài, mang theo chữ đang tìm (`openLibrary`, `:427`).
+  @State private var creating: CreateExercise?
 
   var body: some View {
     NavigationStack {
@@ -65,6 +69,13 @@ struct TemplateFormView: View {
       }
       .sheet(item: Binding(get: { editing.map(EditTarget.init) }, set: { editing = $0?.index })) { target in
         setSheet(target.index)
+      }
+      .navigationDestination(item: $creating) { target in
+        if let library = flow.library {
+          // Builder vẫn nằm dưới: quay lại thì bài đã chọn còn nguyên, bài vừa
+          // tạo đã có trong danh sách (cùng `ExerciseLibrary`).
+          ExercisesView(library: library, create: target.name)
+        }
       }
     }
     .task {
@@ -127,6 +138,9 @@ struct TemplateFormView: View {
             }
             .accessibilityAddTraits(draft.contains(ex.id) ? [.isButton, .isSelected] : .isButton)
           }
+          if library != nil {
+            createButton(String(localized: "wb.createExercise"))
+          }
         }
       }
       .searchable(text: $search, prompt: Text("wb.search"))
@@ -164,6 +178,20 @@ struct TemplateFormView: View {
       .font(DS.TextStyle.footnote)
       .foregroundStyle(DS.Color.mutedForeground.swiftUI)
       .frame(maxWidth: .infinity, minHeight: 88)
+      // Ngõ cụt thành lối đi: chữ đã tìm là tên của bài mới.
+      if library != nil {
+        createButton(q.isEmpty ? String(localized: "wb.createExercise") : String(localized: "wb.createNamed \(q)"))
+      }
+    }
+  }
+
+  private func createButton(_ title: String) -> some View {
+    Button {
+      creating = CreateExercise(name: search.trimmingCharacters(in: .whitespacesAndNewlines))
+    } label: {
+      Label(title, systemImage: "plus")
+        .foregroundStyle(DS.Color.primary.swiftUI)
+        .frame(minHeight: 44)
     }
   }
 
@@ -414,6 +442,10 @@ struct TemplateFormView: View {
       failure = String(localized: "workout.finishError.generic")
     }
   }
+}
+
+private struct CreateExercise: Hashable {
+  let name: String
 }
 
 private struct EditTarget: Identifiable {
