@@ -161,9 +161,36 @@ public final class WorkoutSessionController {
   private let makeId: @Sendable () -> String
   private let onRest: @MainActor (RestEvent, PlannedSet?) -> Void
   private let onEnqueued: @MainActor (OutboxEntry) -> Void
-  /// Ngày này đã có buổi trên server. Tick vẫn được (xem lại, chuẩn bị), chốt
-  /// thì không — nối thêm vào buổi đã có (`appending`) chưa có ở native.
+  /// Ngày này đã có buổi trên server. Chốt thì không (baseline `logged`). Có
+  /// `remoteSessions` thì máy này NHẬN buổi mới nhất (`adoptRemote`) — rồi gỡ /
+  /// nối thêm vào buổi ấy như RN; không có thì chỉ tick được.
   public let loggedElsewhere: Bool
+  /// Buổi trên server của ngày này, mới trước (`TrainingHistory.sessions`).
+  /// Máy này chưa có buổi riêng thì NHẬN buổi mới nhất (`adoptRemote`).
+  private let remoteSessions: [JSONValue]
+  /// Đã nhận buổi ghi từ máy khác (lượt `load` này).
+  public private(set) var adoptedRemote = false
+  /// Đơn vị người dùng xem và gõ tạ (#527 1.9-A) — của tài khoản
+  /// (`profiles.units_weight`), không của từng set. Mặc định của mọi lần chốt /
+  /// nối thêm / gỡ / hoàn tác: chữ trong ô đọc theo đơn vị này rồi đổi về kg.
+  ///
+  /// RN behavior (giữ nguyên): đổi đơn vị giữa ngày thì chữ người dùng ĐÃ GÕ
+  /// đọc lại theo đơn vị mới (`performed`, `day-plan.tsx:1041`) — "100" gõ lúc
+  /// còn kg thành 100 lb. Hàng nhận từ máy khác là số trên server, không phải
+  /// chữ gõ: điền lại theo đơn vị mới, vẫn mang đúng số kg ấy.
+  public private(set) var weightUnit: WeightUnit = .kg
+
+  /// Đổi đơn vị (hồ sơ nạp xong, đổi ở máy khác). Chữ người dùng đã gõ giữ
+  /// nguyên; ô của set nhận từ server điền lại theo đơn vị mới.
+  public func setWeightUnit(_ unit: WeightUnit) {
+    guard unit != weightUnit else { return }
+    weightUnit = unit
+    for (key, remote) in progress.remoteWeight where progress.weightText[key] == remote.text {
+      let text = unit.text(remote.kg)
+      progress.weightText[key] = text
+      progress.remoteWeight[key] = RemoteWeight(text: text, kg: remote.kg)
+    }
+  }
   /// Bảng tốt-nhất để so kỷ lục lúc chốt (#295); `nil` = chưa biết lịch sử →
   /// không nhận kỷ lục (như baseline khi đọc lịch sử lỗi).
   private let bests: @MainActor () -> PersonalRecords.Bests?
@@ -178,7 +205,7 @@ public final class WorkoutSessionController {
   ///   - onEnqueued: hàng outbox vừa bền — vòng sync nên thử gửi.
   public init(
     plan: Plan, userId: String, store: any WorkoutStore, clock: any WallClock = SystemWallClock(),
-    timeZone: TimeZone = .current, loggedElsewhere: Bool = false,
+    timeZone: TimeZone = .current, loggedElsewhere: Bool = false, remoteSessions: [JSONValue] = [],
     bests: @escaping @MainActor () -> PersonalRecords.Bests? = { nil },
     makeId: @escaping @Sendable () -> String = { UUID().uuidString.lowercased() },
     onRest: @escaping @MainActor (RestEvent, PlannedSet?) -> Void = { _, _ in },
@@ -193,6 +220,7 @@ public final class WorkoutSessionController {
     self.onRest = onRest
     self.onEnqueued = onEnqueued
     self.loggedElsewhere = loggedElsewhere
+    self.remoteSessions = remoteSessions
     self.bests = bests
   }
 
@@ -220,7 +248,9 @@ public final class WorkoutSessionController {
   /// Hàng tick sau khi chốt, chưa có trong buổi (`pendingRows`, `day-plan.tsx:1260`).
   public var pendingRows: [PlannedSet] {
     guard loggedSessionId != nil else { return [] }
-    return rows.filter { progress.done[$0.key] == true && !loggedKeys.contains($0.key) }
+    return rows.filter {
+      progress.done[$0.key] == true && !loggedKeys.contains($0.key) && !olderProven.contains($0.key)
+    }
   }
 
   /// Nút "nối thêm" sáng khi nào (baseline `appending`, `day-plan.tsx:1329`):
@@ -228,16 +258,17 @@ public final class WorkoutSessionController {
   ///
   /// RN behavior: chỉ khi online (đọc hàng hiện tại rồi `update`).
   /// Native behavior: cả khi offline — bản ghi lại toàn bộ hàng đi qua outbox.
-  /// Buổi ghi từ máy khác (`loggedElsewhere`) thì không: native không có bản
-  /// đầy đủ của hàng ấy để ghi lại, và ghi đè sẽ làm mất set của máy kia.
+  /// Buổi ghi từ máy khác: được, sau khi đã nhận buổi ấy (`adoptRemote`) — bản
+  /// ghi lại mang đúng set server làm `base`, và gửi đi thì gộp lên hàng server
+  /// (`SessionRevisionMerge`), nên set của máy kia không mất, không nhân đôi.
   public var canAppend: Bool {
     let pending = pendingRows
-    return loaded && loggedSessionId != nil && !loggedElsewhere && !finishing && !isFuture
+    return loaded && loggedSessionId != nil && !finishing && !isFuture
       && !pending.isEmpty && pending.allSatisfy { WorkoutDay.isReady($0, progress) }
   }
 
-  public func performed(_ row: PlannedSet, toKg: (Double) -> Double = { $0 }) -> PerformedSet {
-    WorkoutDay.performed(row, progress, toKg: toKg)
+  public func performed(_ row: PlannedSet, toKg: ((Double) -> Double)? = nil) -> PerformedSet {
+    WorkoutDay.performed(row, progress, toKg: toKg ?? weightUnit.toKg)
   }
 
   // MARK: - đọc
@@ -255,6 +286,7 @@ public final class WorkoutSessionController {
         loggedPR = s.loggedPR ?? false
         loggedRevision = s.loggedRevision ?? 0
         loggedRpe = s.loggedRpe
+        olderProven = Set(s.provenElsewhere ?? [])
         // Buổi đã bị xoá từ lịch sử (#400): không còn gì để tổng kết.
         if loggedKeys.isEmpty { summary = nil }
       }
@@ -268,7 +300,77 @@ public final class WorkoutSessionController {
     }
     loadFailed = false
     loaded = true
+    if loggedSessionId == nil, loggedElsewhere, !remoteSessions.isEmpty {
+      await adoptRemote()
+    }
   }
+
+  /// Buổi của ngày này đã được ghi ở máy KHÁC (Android, iPhone khác) và máy
+  /// này chưa có buổi riêng: nhận buổi mới nhất làm buổi đã chốt của máy này.
+  ///
+  /// RN behavior (`day-plan.tsx`): `proven = sessionTicks(rows, sessions.sets)`
+  ///   — các hàng buổi ấy chứng minh hiện ĐÃ TÍCH và không tính là hàng mới;
+  ///   tích thêm thì "Ghi thêm" nối vào `sessions[0].id`; bỏ tích hàng đã
+  ///   chứng minh thì gỡ set khỏi buổi ấy.
+  /// Native behavior: như vậy. Hàng được chứng minh lấy tạ / reps / RPE THẬT
+  ///   của buổi trên server (không phải số kế hoạch), nên bản ghi lại sau này
+  ///   mang đúng nội dung server; gửi đi thì `SessionRevisionMerge` gộp lên
+  ///   hàng server — set máy kia ghi ngoài kế hoạch vẫn ở nguyên.
+  /// Hàng do buổi CŨ hơn (cùng ngày) chứng minh: tích nhưng khoá — RN cũng chỉ
+  ///   sửa `sessions[0]`.
+  private func adoptRemote() async {
+    func sets(_ row: JSONValue) -> [JSONValue] {
+      if case .array(let a)? = row["sets"] { return a }
+      return []
+    }
+    let sorted = remoteSessions.sorted {
+      (EpochMillis(iso8601: $0["date_time"]?.stringValue ?? "")?.millis ?? 0)
+        > (EpochMillis(iso8601: $1["date_time"]?.stringValue ?? "")?.millis ?? 0)
+    }
+    guard let newest = sorted.first, let id = newest["id"]?.stringValue,
+      let at = EpochMillis(iso8601: newest["date_time"]?.stringValue ?? "")
+    else { return }
+    let named = rows.map { (key: $0.key, exerciseName: $0.exerciseName) }
+    let newestSets = sets(newest)
+    let assigned = TodayRules.sessionAssignment(rows: named, setNames: newestSets.map { $0["exerciseName"]?.stringValue })
+    guard !assigned.isEmpty else { return }
+    for (key, index) in assigned {
+      let s = newestSets[index]
+      progress.done[key] = true
+      // Số server (kg) điền theo đơn vị đang xem, như ô hạt giống của RN
+      // (`day-plan.tsx:1011`): 61.23 kg → "135" lb / "61.2" kg — kèm số kg
+      // thật, để ghi lại đúng set ấy chứ không phải số đọc lại từ chữ.
+      let kg = s["weight"]?.doubleValue ?? 0
+      let text = weightUnit.text(kg)
+      progress.weightText[key] = text
+      progress.remoteWeight[key] = RemoteWeight(text: text, kg: kg)
+      if let d = s["durationSec"]?.intValue, d > 0 {
+        progress.repsText[key] = "\(d)s"
+      } else {
+        progress.repsText[key] = String(s["reps"]?.intValue ?? 0)
+      }
+      if let r = s["rpe"]?.intValue, (1...10).contains(r) { progress.rpe[key] = r }
+    }
+    // Hàng do các buổi cũ hơn chứng minh: tích (bằng chứng chỉ lấp chỗ trống,
+    // RN `mergeProgress`), không thuộc buổi được nhận nên không gỡ được.
+    let older = sorted.dropFirst().flatMap { sets($0).map { $0["exerciseName"]?.stringValue } }
+    let unassigned = named.filter { assigned[$0.key] == nil }
+    for (key, _) in TodayRules.sessionTicks(rows: unassigned, setNames: older) where progress.done[key] == nil {
+      progress.done[key] = true
+      olderProven.insert(key)
+    }
+    loggedSessionId = id
+    loggedKeys = Set(assigned.keys)
+    loggedAt = at
+    loggedPR = newest["pr_detected"]?.boolValue ?? false
+    loggedRpe = newest["session_rpe"]?.intValue
+    loggedRevision = 0
+    adoptedRemote = true
+    _ = await persist()
+  }
+
+  /// Hàng do một buổi CŨ hơn trên server chứng minh — tích, khoá.
+  public private(set) var olderProven: Set<String> = []
 
   // MARK: - ghi
 
@@ -284,10 +386,13 @@ public final class WorkoutSessionController {
     return await persist()
   }
 
+  /// Ô tạ lọc qua `decText` như `day-plan.tsx:1979`: máy tiếng Việt gõ `71,5`,
+  /// lưu nguyên thì `performed()` đọc ra 0 kg — mất tạ mà không báo gì.
   @discardableResult
   public func setWeightText(_ text: String, for key: String) async -> Bool {
     guard editable(key), row(key) != nil else { return false }
-    progress.weightText[key] = text
+    progress.weightText[key] = NumberInput.decimal(text)
+    progress.remoteWeight[key] = nil
     return await persist()
   }
 
@@ -316,7 +421,8 @@ public final class WorkoutSessionController {
 
   /// Chốt buổi. Trả tổng kết khi hàng outbox ĐÃ bền — không sớm hơn.
   /// Gọi lại sau khi đã chốt trả lại đúng tổng kết cũ, không ghi gì thêm.
-  public func finish(toKg: (Double) -> Double = { $0 }) async throws(FinishRefusal) -> WorkoutSummary {
+  public func finish(toKg: ((Double) -> Double)? = nil) async throws(FinishRefusal) -> WorkoutSummary {
+    let toKg = toKg ?? weightUnit.toKg
     if let id = loggedSessionId {
       if let s = summary, s.sessionId == id { return s }
       throw .alreadyLogged(sessionId: id)
@@ -350,9 +456,11 @@ public final class WorkoutSessionController {
     // offline vẫn thấy đã làm gì. Baseline xoá nó vì "đã chốt" của baseline
     // đọc từ server; ở đây nó là read model của chính ngày ấy.
     let keys = rows.filter { progress.done[$0.key] == true }.map(\.key)
+    let anchored = Self.anchoring(keys, in: progress, toKg: toKg)
     let state = DayState(
-      progress: progress, loggedSessionId: id, loggedKeys: keys, loggedAt: record.dateTime,
-      loggedPR: record.prDetected, loggedRevision: 0, loggedRpe: record.sessionRpe)
+      progress: anchored, loggedSessionId: id, loggedKeys: keys, loggedAt: record.dateTime,
+      loggedPR: record.prDetected, loggedRevision: 0, loggedRpe: record.sessionRpe,
+      provenElsewhere: olderProven.isEmpty ? nil : olderProven.sorted())
     let store = self.store, key = self.key
     if let failure = await write({ _ = try await store.commitFinish(key, state, entry) }) {
       if let logged = failure as? DayAlreadyLogged {
@@ -362,6 +470,7 @@ public final class WorkoutSessionController {
       throw .storage(LocalWriteError("\(failure)"))
     }
     pendingId = nil
+    adoptAnchors(anchored)
     loggedSessionId = id
     loggedKeys = Set(keys)
     loggedAt = record.dateTime
@@ -386,7 +495,8 @@ public final class WorkoutSessionController {
   ///   volume, RPE, số set tính lại từ đủ set (không cộng dồn lệch).
   /// Kỷ lục: chỉ xét set MỚI, so với bảng đã gồm phần đầu của buổi; `pr_detected`
   ///   chỉ bật lên, không tắt (baseline).
-  public func append(toKg: (Double) -> Double = { $0 }) async throws(FinishRefusal) -> WorkoutSummary {
+  public func append(toKg: ((Double) -> Double)? = nil) async throws(FinishRefusal) -> WorkoutSummary {
+    let toKg = toKg ?? weightUnit.toKg
     guard loaded else { throw .loading }
     guard !finishing else { throw .inProgress }
     guard let sessionId = loggedSessionId, canAppend else {
@@ -480,8 +590,13 @@ public final class WorkoutSessionController {
   // MARK: - gỡ set đã chốt (#398)
 
   /// Gỡ được hàng này không: nằm trong buổi đã chốt của chính máy này.
+  /// Ô tạ / reps của hàng này có sửa được lúc này không — cùng luật với
+  /// `setWeightText` / `setRepsText` (đã tải, không đang chốt, chưa nằm trong
+  /// buổi đã chốt). View khoá ô theo nó, để ô không hiện con số bị từ chối.
+  public func canEdit(_ key: String) -> Bool { editable(key) && row(key) != nil }
+
   public func canRemove(_ key: String) -> Bool {
-    loaded && !finishing && !loggedElsewhere && loggedSessionId != nil && loggedKeys.contains(key)
+    loaded && !finishing && loggedSessionId != nil && loggedKeys.contains(key)
   }
 
   /// Bỏ tick một set đã nằm trong buổi (`useRemoveSetFromSession`). Màn hình hỏi
@@ -495,10 +610,13 @@ public final class WorkoutSessionController {
   ///   (cùng đường với nối thêm, #296): chạy cả offline, idempotent, không có
   ///   cuộc đua đọc–sửa–ghi. Set cuối cùng → hàng outbox xoá buổi.
   /// Giữ như RN: `session_rpe` không đổi; volume tính lại, bỏ khởi động.
-  public func removeLoggedSet(_ key: String, toKg: (Double) -> Double = { $0 }) async throws(RemoveRefusal) -> Removal {
+  public func removeLoggedSet(_ key: String, toKg: ((Double) -> Double)? = nil) async throws(RemoveRefusal) -> Removal {
+    let toKg = toKg ?? weightUnit.toKg
     guard loaded else { throw .loading }
     guard !finishing else { throw .inProgress }
-    guard !loggedElsewhere else { throw .loggedElsewhere }
+    // Máy khác đã ghi mà máy này chưa có (chưa nhận) buổi nào: không có buổi
+    // để gỡ. Đã nhận buổi ấy (`adoptRemote`) thì gỡ được như RN.
+    guard !(loggedElsewhere && loggedSessionId == nil) else { throw .loggedElsewhere }
     guard let sessionId = loggedSessionId, loggedKeys.contains(key) else { throw .notLogged }
     let wasDone = progress.done[key]
     progress.done[key] = false
@@ -522,7 +640,8 @@ public final class WorkoutSessionController {
 
   /// Hoàn tác một lần gỡ trong cửa sổ 8 giây: set trở lại buổi, hàng được ghi
   /// lại (dựng lại nếu đã bị xoá).
-  public func undo(_ removal: Removal, toKg: (Double) -> Double = { $0 }) async throws(RemoveRefusal) {
+  public func undo(_ removal: Removal, toKg: ((Double) -> Double)? = nil) async throws(RemoveRefusal) {
+    let toKg = toKg ?? weightUnit.toKg
     guard loaded else { throw .loading }
     guard !finishing else { throw .inProgress }
     guard clock.nowMillis() < removal.expiresAt, removal.sessionId == loggedSessionId,
@@ -575,14 +694,28 @@ public final class WorkoutSessionController {
       templateName: plan.templateName, sets: WorkoutDay.sessionSets(kept, progress, toKg: toKg),
       prDetected: pr, sessionRpeFloor: loggedRpe)
     let revision = loggedRevision + 1
+    // Các set ĐÃ ghi trước lần sửa này: hàng đã ghi không sửa được, nên tính
+    // lại từ `loggedKeys` ra đúng mảng đã gửi (gỡ set đã bỏ tick hàng ấy trước
+    // khi gọi vào đây, nên đặt lại "đã làm" cho mọi hàng đã ghi). Writer gộp
+    // phần thay đổi lên hàng server lúc gửi, không đè set máy khác (#523 P1).
+    var before = progress
+    for k in loggedKeys { before.done[k] = true }
+    let base = WorkoutSessionRecord(
+      id: sessionId, userId: userId, dateTime: stamp, templateId: recordTemplateId,
+      templateName: plan.templateName,
+      sets: WorkoutDay.sessionSets(rows.filter { loggedKeys.contains($0.key) }, before, toKg: toKg)
+    )?.row["sets"] ?? .array([])
     let entry = OutboxEntry(
       id: "\(sessionId)@r\(revision)", userId: userId,
       kind: record == nil ? WorkoutSessionRecord.deleteKind : WorkoutSessionRecord.revisionKind,
-      payload: record?.row ?? WorkoutSessionRecord.deletePayload(id: sessionId, at: stamp), createdAt: clock.nowMillis())
+      payload: record?.row ?? WorkoutSessionRecord.deletePayload(id: sessionId, at: stamp), createdAt: clock.nowMillis(),
+      base: base)
     let rpe = record?.sessionRpe ?? loggedRpe
+    let anchored = Self.anchoring(keys, in: progress, toKg: toKg)
     let state = DayState(
-      progress: progress, loggedSessionId: sessionId, loggedKeys: keys.sorted(), loggedAt: stamp,
-      loggedPR: pr, loggedRevision: revision, loggedRpe: rpe)
+      progress: anchored, loggedSessionId: sessionId, loggedKeys: keys.sorted(), loggedAt: stamp,
+      loggedPR: pr, loggedRevision: revision, loggedRpe: rpe,
+      provenElsewhere: olderProven.isEmpty ? nil : olderProven.sorted())
     finishing = true
     defer { finishing = false }
     let store = self.store, key = self.key
@@ -590,6 +723,7 @@ public final class WorkoutSessionController {
       if let logged = failure as? DayAlreadyLogged { throw .alreadyLogged(logged.sessionId) }
       throw .storage(LocalWriteError("\(failure)"))
     }
+    adoptAnchors(anchored)
     loggedKeys = keys
     loggedPR = pr
     loggedRevision = revision
@@ -600,11 +734,38 @@ public final class WorkoutSessionController {
 
   // MARK: - nội bộ
 
+  /// Hàng vừa vào buổi đã chốt mang số kg ĐÃ GỬI (#527 1.9-D), như hàng nhận
+  /// từ server (`DayProgress.remoteWeight`).
+  ///
+  /// RN gỡ set theo TÊN bài (`useRemoveSetFromSession`: set cuối trùng tên),
+  /// nên không phụ thuộc đơn vị. Native gộp theo NỘI DUNG
+  /// (`SessionRevisionMerge`), nên bản ghi lại phải tính ra đúng số đã gửi:
+  /// không có mốc này, "135" gõ dưới lbs (gửi 61.23 kg) đọc lại thành 135 kg
+  /// sau khi hồ sơ đổi sang kg → gỡ set ấy không khớp gì trên server, set nằm
+  /// lại. Chỉ hàng có chữ gõ, tạ dương; hàng theo kế hoạch đã là kg chuẩn.
+  static func anchoring(_ keys: some Sequence<String>, in progress: DayProgress, toKg: (Double) -> Double) -> DayProgress {
+    var out = progress
+    for k in keys {
+      guard let text = out.weightText[k], out.remoteWeight[k]?.text != text,
+        let v = Double(text.trimmingCharacters(in: .whitespaces)), v.isFinite, v > 0
+      else { continue }
+      out.remoteWeight[k] = RemoteWeight(text: text, kg: toKg(v))
+    }
+    return out
+  }
+
+  /// Nhận các mốc vừa ghi bền — chỉ khi ô vẫn đúng chữ ấy.
+  private func adoptAnchors(_ anchored: DayProgress) {
+    for (k, a) in anchored.remoteWeight where progress.weightText[k] == a.text && progress.remoteWeight[k] != a {
+      progress.remoteWeight[k] = a
+    }
+  }
+
   /// Ngày chưa chốt: mọi hàng sửa được. Đã chốt: chỉ hàng CHƯA nằm trong buổi
   /// (hàng sẽ được nối thêm). Bỏ tick hàng đã ghi đi qua `removeLoggedSet`
   /// (có hộp hỏi lại và hoàn tác), không qua `toggle`.
   private func editable(_ key: String) -> Bool {
-    loaded && !finishing && (loggedSessionId == nil || !loggedKeys.contains(key))
+    loaded && !finishing && !olderProven.contains(key) && (loggedSessionId == nil || !loggedKeys.contains(key))
   }
 
   private func row(_ key: String) -> PlannedSet? { rows.first { $0.key == key } }
@@ -614,7 +775,8 @@ public final class WorkoutSessionController {
       progress: progress, loggedSessionId: loggedSessionId,
       loggedKeys: loggedSessionId == nil ? nil : loggedKeys.sorted(), loggedAt: loggedAt,
       loggedPR: loggedSessionId == nil ? nil : loggedPR,
-      loggedRevision: loggedSessionId == nil ? nil : loggedRevision, loggedRpe: loggedRpe)
+      loggedRevision: loggedSessionId == nil ? nil : loggedRevision, loggedRpe: loggedRpe,
+      provenElsewhere: olderProven.isEmpty ? nil : olderProven.sorted())
   }
 
   private func persist() async -> Bool {

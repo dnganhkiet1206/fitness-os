@@ -286,6 +286,27 @@ struct OnboardingGateTests {
     #expect(gate.state == .needsOnboarding)
   }
 
+  /// Cổng và luồng nối như `AppServices.makeOnboarding` (#527 1.3): ghi xong
+  /// thì cổng mở ra app; ghi hỏng thì cổng giữ người dùng ở lại luồng.
+  @Test func finishingTheFlowOpensTheGate() async {
+    let store = Store()
+    let writer = Writer()
+    let gate = OnboardingGate(userId: "u1", source: Status(false), store: store)
+    await gate.check()
+    #expect(gate.state == .needsOnboarding)
+    let c = OnboardingController(
+      userId: "u1", store: store, writer: writer, healthAvailable: false, clock: clock, timeZone: saigon,
+      onFinished: { [weak gate] in await gate?.completed() })
+    await c.load()
+    answerAll(c)
+    await writer.setFail(URLError(.notConnectedToInternet))
+    #expect(!(await c.finish()))
+    #expect(c.failure == .offline && gate.state == .needsOnboarding)
+    #expect(await c.finish())
+    #expect(gate.state == .completed)
+    #expect(await store.completed["u1"] == true)
+  }
+
   /// Luồng xong → cổng mở, và nhớ cho lần mở sau offline.
   @Test func completingOpensTheGateForGood() async {
     let store = Store()
@@ -298,5 +319,69 @@ struct OnboardingGateTests {
     let next = OnboardingGate(userId: "u1", source: source, store: store)
     await next.check()
     #expect(next.state == .completed)
+  }
+}
+
+/// Đơn vị và thước của màn 07 / 08 (#527 1.3).
+@MainActor
+struct OnboardingUnitsTests {
+  /// `hPick ?? units.height`: chưa chọn thì theo hồ sơ — kể cả hồ sơ về muộn
+  /// hơn lần dựng; chọn rồi thì hồ sơ thôi có tiếng nói.
+  @Test func profileUnitsApplyUntilTheUserPicks() async {
+    let c = await flow(Store())
+    #expect(c.heightUnit == "cm" && c.weightUnit == "kg")
+    c.setDefaultUnits(height: "in", weight: "lbs")
+    #expect(c.heightUnit == "in" && c.weightUnit == "lbs")
+    c.setUnits(height: "cm")
+    c.setDefaultUnits(height: "in", weight: "kg")
+    #expect(c.heightUnit == "cm", "đã chọn trong luồng")
+    #expect(c.weightUnit == "kg", "chưa chọn: theo hồ sơ mới nhất")
+    // Giá trị lạ trong hồ sơ: hệ mét (`useUnits`).
+    c.setDefaultUnits(height: "ft", weight: nil)
+    #expect(c.weightUnit == "kg")
+  }
+
+  /// Câu ghi cuối mang đơn vị đang HIỆN — kể cả khi nó đến từ hồ sơ.
+  @Test func rowCarriesTheUnitsOnScreen() async throws {
+    let c = await flow(Store())
+    c.setDefaultUnits(height: "in", weight: "lbs")
+    answerAll(c)
+    let row = try #require(c.profileRow())
+    #expect(row["units_height"]?.stringValue == "in" && row["units_weight"]?.stringValue == "lbs")
+  }
+
+  /// Thước ghi đúng câu của RN cho vạch; đổi đơn vị thì hạt giống đọc lại từ
+  /// số đang lưu, và đặt thước vào hạt giống ghi số ấy về vạch của thang mới.
+  @Test func rulerCommitsOnTheGrainOfTheUnitShown() async {
+    let c = await flow(Store())
+    #expect(c.draft.heightCm == "170" && c.rulerIndex(.height) == 700)
+    c.commitRuler(.height, index: 700)
+    #expect(c.draft.heightCm == "170", "vạch của chính số đang lưu: không đổi")
+    c.setUnits(height: "in")
+    #expect(c.rulerIndex(.height) == 275)
+    c.commitRuler(.height, index: c.rulerIndex(.height))
+    #expect(c.draft.heightCm == "169.9", "170 cm không nằm trên thước inch")
+    c.setUnits(height: "cm")
+    #expect(c.rulerIndex(.height) == 699)
+    // Kẹp ở hai đầu, không bao giờ ghi số ngoài cận.
+    c.commitRuler(.weight, index: 1_000_000)
+    #expect(c.draft.weightKg == "400")
+    c.commitRuler(.weight, index: -5)
+    #expect(c.draft.weightKg == "20")
+  }
+}
+
+struct OnboardingFailureCopyTests {
+  /// `classifyError` + `FAILURE_KEY` của RN, trên những gì native mang về.
+  @Test func failuresMapToTheSameSentenceAsRN() {
+    #expect(OnboardingFailure.offline.copy == .onlineOnly)
+    #expect(OnboardingFailure.statsRequired.copy == .statsRequired)
+    #expect(OnboardingFailure.server(code: "42501").copy == .signedOut)
+    #expect(OnboardingFailure.server(code: "PGRST301").copy == .signedOut)
+    #expect(OnboardingFailure.server(code: "23514").copy == .invalid)
+    #expect(OnboardingFailure.server(code: "23505").copy == .duplicate)
+    #expect(OnboardingFailure.server(code: "42P01").copy == .server)
+    #expect(OnboardingFailure.server(code: "XX000").copy == .unknown, "mã lạ: không đưa chữ thô ra màn")
+    #expect(OnboardingFailure.server(code: nil).copy == .unknown)
   }
 }

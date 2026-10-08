@@ -68,6 +68,18 @@ struct WorkoutSessionControllerTests {
 
   // MARK: ghi
 
+  /// RN BUG FOUND (bản native trước đây, cùng lỗi `log-workout`): ô tạ lưu
+  /// nguyên chữ, máy tiếng Việt gõ `71,5` → `Double` nil → 0 kg im lặng. RN lọc
+  /// bằng `decText` lúc gõ (`day-plan.tsx:1979`); setter giờ lọc như vậy.
+  @Test func decimalCommaWeightIsKept() async {
+    let store = InMemoryWorkoutStore()
+    let c = await controller(store)
+    #expect(await c.setWeightText("71,5", for: "b1"))
+    #expect(c.progress.weightText["b1"] == "71.5")
+    #expect(c.performed(bench1).weightKg == 71.5)
+    #expect(await store.days[c.key]?.progress.weightText["b1"] == "71.5")
+  }
+
   /// Hàm trả về thì thay đổi đã nằm trong store — không phải "sẽ ghi".
   @Test func editIsDurableWhenItReturns() async {
     let store = InMemoryWorkoutStore()
@@ -86,6 +98,30 @@ struct WorkoutSessionControllerTests {
     #expect(await c.toggle("x1") == false)
     #expect(c.progress.done["x1"] == nil)
     #expect(await store.writes == 0)
+  }
+
+  /// #523 P2 (ô nhập cũ): `canEdit` nói ĐÚNG điều `setWeightText` sẽ làm —
+  /// View khoá ô theo nó. Chưa tải / hàng lạ / hàng đã nằm trong buổi đã chốt
+  /// → khoá; hàng chưa chốt của buổi đã chốt (sẽ nối thêm) → mở.
+  @Test func canEditMatchesWhatTheSettersAccept() async throws {
+    let store = InMemoryWorkoutStore()
+    let fresh = WorkoutSessionController(
+      plan: .init(date: today, templateId: "tpl-push", templateName: "Push A", rows: [bench1, bench2]),
+      userId: "u1", store: store, clock: clock, timeZone: saigon)
+    #expect(!fresh.canEdit("b1"), "chưa tải xong: khoá")
+    #expect(await fresh.setWeightText("62.5", for: "b1") == false)
+
+    let c = await controller(store, rows: [bench1, bench2])
+    #expect(c.canEdit("b1"))
+    #expect(!c.canEdit("nope"))
+    #expect(await c.setWeightText("62.5", for: "b1"))
+    #expect(c.progress.weightText["b1"] == "62.5", "ô đọc lại đúng số lẻ từ progress")
+    #expect(await c.toggle("b1"))
+    _ = try await c.finish()
+    #expect(!c.canEdit("b1"), "đã nằm trong buổi đã chốt")
+    #expect(await c.setWeightText("70", for: "b1") == false)
+    #expect(c.canEdit("b2"), "hàng chưa chốt vẫn sửa được để nối thêm")
+    #expect(await c.setWeightText("65", for: "b2"))
   }
 
   @Test func unknownRowIsRefused() async {
@@ -543,6 +579,9 @@ struct RemoveLoggedSetTests {
     #expect(outbox[1].payload["session_rpe"] == .number(9), "gỡ set không đổi cảm nhận của buổi")
     #expect(outbox[1].payload["volume_load"] == .number(480))
     #expect(outbox[1].payload["date_time"] == outbox[0].payload["date_time"])
+    // #523 P1: bản ghi lại mang các set ĐÃ ghi trước lần sửa (cả set vừa gỡ),
+    // để writer chỉ áp phần thay đổi lên hàng server.
+    #expect(outbox[1].base == outbox[0].payload["sets"])
     #expect(c.summary?.completedSets == 1)
   }
 
@@ -576,6 +615,8 @@ struct RemoveLoggedSetTests {
     #expect(outbox.map(\.id) == [first.sessionId, "\(first.sessionId)@r1", "\(first.sessionId)@r2"])
     #expect(outbox[2].kind == WorkoutSessionRecord.revisionKind)
     #expect(sets(outbox[2]) == 1)
+    #expect(outbox[1].base == outbox[0].payload["sets"], "bản ghi xoá biết set nào là của máy này")
+    #expect(outbox[2].base == .array([]), "hoàn tác sau khi xoá: chưa có set nào → writer dựng lại hàng")
     await #expect(throws: WorkoutSessionController.RemoveRefusal.expired) { try await c.undo(removal) }
   }
 

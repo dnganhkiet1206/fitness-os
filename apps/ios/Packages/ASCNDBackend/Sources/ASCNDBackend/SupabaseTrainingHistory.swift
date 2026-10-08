@@ -22,6 +22,18 @@ public struct SupabaseTrainingHistory: TrainingHistory {
     return Self.times(rows)
   }
 
+  /// Buổi của một ngày, mới trước — đủ cột để nhận buổi ghi từ máy khác
+  /// (RN `day-plan.tsx` đọc `sessions` của ngày để tính `proven`).
+  public func sessions(userId: String, from: EpochMillis, to: EpochMillis) async throws -> [JSONValue] {
+    try await client.from("workout_sessions")
+      .select("id, date_time, session_rpe, pr_detected, sets")
+      .eq("user_id", value: userId)
+      .gte("date_time", value: WorkoutSessionRecord.iso8601(from))
+      .lt("date_time", value: WorkoutSessionRecord.iso8601(to))
+      .order("date_time", ascending: false)
+      .execute().value
+  }
+
   struct Row: Decodable, Sendable {
     let date_time: String
   }
