@@ -165,6 +165,8 @@ final class AppServices {
   /// giờ nào đổi; thông báo đang chờ giữ chữ cũ tới lần đặt kế, như RN).
   func setLanguage(_ choice: AppPreferences.LangChoice) {
     preferences.setLang(choice)
+    // Mọi lần tra chữ của app đổi ngay (`AppLanguage`, #527 · 1.7).
+    AppLanguage.shared.set(preferences.lang.rawValue)
     reminders.copy = ReminderCopyTable.copy(preferences.lang)
   }
 

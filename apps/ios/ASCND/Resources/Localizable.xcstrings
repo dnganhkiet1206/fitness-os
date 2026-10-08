@@ -4752,6 +4752,54 @@
     }
    }
   },
+  "settings.theme.dark": {
+   "comment": "Theme tối (RN settingsThemeDark).",
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Dark"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tối"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Oscuro"
+     }
+    }
+   }
+  },
+  "settings.theme.light": {
+   "comment": "Theme sáng (RN settingsThemeLight).",
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Light"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sáng"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Claro"
+     }
+    }
+   }
+  },
   "settings.about": {
    "extractionState": "manual",
    "localizations": {
