@@ -62,6 +62,10 @@ final class AppServices {
   @ObservationIgnored let profileCache: any ProfileCache
   /// Thứ tự đóng / mở chốt tài khoản và dọn dữ liệu trên máy (#431, #455).
   @ObservationIgnored private let lifecycle: AccountLifecycle
+  /// Supabase (nếu có cấu hình) và kho hàng chung — nguồn của các thẻ đọc
+  /// thẳng server: sẵn sàng, sinh trắc học, huy chương, phòng linh vật (#527).
+  @ObservationIgnored private let backend: Backend?
+  @ObservationIgnored private let rows: SupabaseRowStore?
   /// Lỗi không mở được database / thiếu cấu hình — app vẫn mở, màn nói thật.
   private(set) var startupError: String?
 
@@ -117,6 +121,8 @@ final class AppServices {
     profileCache = GRDBProfileCache(database)
     session = SessionStore(api: backend.map { SupabaseAuthAPI(backend: $0) as any AuthAPI } ?? UnconfiguredAuth())
     let rows = backend.map { SupabaseRowStore(backend: $0) }
+    self.backend = backend
+    self.rows = rows
     let widgets = WidgetRefresher(store: rows)
     self.widgets = widgets
     health = HealthSyncCoordinator(store: rows)
@@ -276,6 +282,38 @@ final class AppServices {
   /// Hồ sơ của người đang đăng nhập (#425) — màn Cài đặt / Sửa hồ sơ của C.
   func makeProfileBook(userId: String) -> ProfileBook {
     ProfileBook(userId: userId, source: profileSource, writer: profileWriter, cache: profileCache)
+  }
+
+  // MARK: - Thẻ / màn đọc server (#527 Phase 4/7/9)
+  //
+  // `nil` khi thiếu cấu hình Supabase: màn không hiện thẻ thay vì một thẻ lỗi mãi.
+
+  /// Điểm sẵn sàng của `date` (hàng `daily_logs` mà #552 đã dựng).
+  func makeReadinessBook(userId: String, date: LocalDate) -> ReadinessBook? {
+    rows.map { ReadinessBook(userId: userId, date: date, store: $0) }
+  }
+
+  /// 14 ngày sinh trắc học; xoá một lần đo rồi dựng lại `daily_logs`.
+  func makeBiometricsBook(userId: String) -> BiometricsBook? {
+    guard let rows, let backend else { return nil }
+    return BiometricsBook(userId: userId, store: rows, remover: SupabaseBiometricsRemover(backend: backend))
+  }
+
+  /// Huy chương: đọc + trao một lần mỗi lần mở màn.
+  func makeAwardsBook(userId: String) -> AwardsBook? {
+    guard let backend else { return nil }
+    return AwardsBook(
+      userId: userId, source: SupabaseAwardsSource(backend: backend),
+      today: { LocalDate(SystemWallClock().nowMillis(), in: .current) },
+      englishText: { AwardText.english($0) })
+  }
+
+  /// Phòng linh vật: server là chủ kinh tế (hai RPC).
+  func makeMascotRoom(userId: String, today: LocalDate) -> MascotRoomController? {
+    guard let backend else { return nil }
+    return MascotRoomController(
+      userId: userId, today: today, source: SupabaseMascotSource(backend: backend),
+      economy: SupabaseMascotEconomy(backend: backend))
   }
 
   func didBecomeActive() {
