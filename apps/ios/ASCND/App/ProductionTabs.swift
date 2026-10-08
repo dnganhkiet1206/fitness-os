@@ -3,7 +3,8 @@ import ASCNDDesignSystem
 import SwiftUI
 
 // Nối những màn ĐÃ có (#527) vào tab của bản Release: Today (nút của thẻ →
-// kế hoạch tuần / ghi tay), màn tập, lịch sử buổi tập (→ chi tiết buổi), Cài
+// kế hoạch tuần / ghi tay; thẻ sẵn sàng → sinh trắc học; Apple Health; phòng
+// linh vật → huy chương), màn tập, lịch sử buổi tập (→ chi tiết buổi), Cài
 // đặt. Chỉ là nối dây — không hành vi mới. Màn nào chưa đủ hành vi thì không
 // hiện nút dẫn tới nó, thay vì một nút không làm gì.
 
@@ -26,7 +27,9 @@ struct TodayTab: View {
       onChoosePlan: flow.plan == nil ? nil : { showsPlan = true },
       onLogWorkout: { showsManualLog = true },
       onOpenSettings: { showsSettings = true },
-      onRefresh: { await flow.refresh() }
+      onRefresh: { await flow.refresh() },
+      // Thẻ sẵn sàng / Apple Health / phòng linh vật (#527) — cửa của RN là Today.
+      extrasUserId: flow.today.userId
     )
     .sheet(isPresented: $showsSettings) { SettingsSheet() }
     .sheet(isPresented: $showsPlan) {

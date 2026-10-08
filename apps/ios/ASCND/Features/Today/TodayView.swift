@@ -19,6 +19,9 @@ public struct TodayView: View {
   var onChoosePlan: (() -> Void)?
   /// Mở Cài đặt (RN: avatar tài khoản trên Today). `nil` = không hiện nút.
   var onOpenSettings: (() -> Void)?
+  /// Người của phiên: có thì hiện các thẻ dưới nút chính (sẵn sàng, Apple
+  /// Health, phòng linh vật — `TodayExtras`, #527). `nil` (preview) thì không.
+  var extrasUserId: String?
 
   public init(
     state: TodayDisplay,
@@ -26,7 +29,8 @@ public struct TodayView: View {
     onStart: @escaping () -> Void = {},
     onLogWorkout: (() -> Void)? = nil,
     onChoosePlan: (() -> Void)? = nil,
-    onOpenSettings: (() -> Void)? = nil
+    onOpenSettings: (() -> Void)? = nil,
+    extrasUserId: String? = nil
   ) {
     self.state = state
     self.cta = cta ?? Self.previewCta(state.status)
@@ -34,6 +38,7 @@ public struct TodayView: View {
     self.onLogWorkout = onLogWorkout
     self.onChoosePlan = onChoosePlan
     self.onOpenSettings = onOpenSettings
+    self.extrasUserId = extrasUserId
   }
 
   public var body: some View {
@@ -48,6 +53,7 @@ public struct TodayView: View {
           case .unplanned: unplannedView
           }
           ctaButton
+          if let extrasUserId { TodayExtras(userId: extrasUserId) }
         }
         .padding(DS.Spacing.md)
       }

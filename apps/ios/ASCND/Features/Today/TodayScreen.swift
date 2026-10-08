@@ -26,6 +26,8 @@ public struct TodayScreen: View {
   var onOpenSettings: (() -> Void)?
   /// Làm mới — A8b truyền `{ await flow.refresh() }`.
   var onRefresh: () async -> Void
+  /// Người của phiên cho các thẻ dưới nút chính — xem `TodayView.extrasUserId`.
+  var extrasUserId: String?
 
   public init(
     controller: TodayController,
@@ -33,7 +35,8 @@ public struct TodayScreen: View {
     onChoosePlan: (() -> Void)? = nil,
     onLogWorkout: (() -> Void)? = nil,
     onOpenSettings: (() -> Void)? = nil,
-    onRefresh: @escaping () async -> Void = {}
+    onRefresh: @escaping () async -> Void = {},
+    extrasUserId: String? = nil
   ) {
     self.controller = controller
     self.onStartWorkout = onStartWorkout
@@ -41,6 +44,7 @@ public struct TodayScreen: View {
     self.onLogWorkout = onLogWorkout
     self.onOpenSettings = onOpenSettings
     self.onRefresh = onRefresh
+    self.extrasUserId = extrasUserId
   }
 
   public var body: some View {
@@ -72,7 +76,8 @@ public struct TodayScreen: View {
             onStart: onStartWorkout,
             onLogWorkout: onLogWorkout,
             onChoosePlan: onChoosePlan,
-            onOpenSettings: onOpenSettings
+            onOpenSettings: onOpenSettings,
+            extrasUserId: extrasUserId
           )
         }
         .refreshable {
