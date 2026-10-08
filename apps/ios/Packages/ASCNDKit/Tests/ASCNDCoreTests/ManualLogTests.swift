@@ -117,6 +117,34 @@ struct ManualLogTests {
     #expect(h.enqueued.map(\.id) == [e.id])
   }
 
+  /// Hồ sơ lbs (#527 1.9-C, `log-workout.tsx:103` / `:481` / `:618`): flow đưa
+  /// đơn vị vào form — gợi ý kế hoạch hiện lb (82.5 kg → "181.9"), cận và ghi
+  /// đổi chữ lb về kg (rồi 2 chữ số lẻ như mọi set — gợi ý 181.9 lb ghi 82.51 kg, đúng như RN). "1000" lb (453.6 kg) hợp
+  /// lệ; cùng chữ ấy dưới kg là ngoài cận.
+  @Test func lbsProfileLogsInPounds() async throws {
+    let h = Harness()
+    await h.flow.start()
+    h.flow.setWeightUnit(.lbs)
+    let log = await h.open()
+    #expect(log.weightUnit == .lbs)
+    #expect(await log.usePlan())
+    #expect(log.rows.first?.weight == "181.9")
+    await fill(log, 0, "Bench", "1000", "5")
+    #expect(log.canSave())
+    _ = try await log.save()
+    guard case .array(let sets)? = await h.store.outbox.last?.payload["sets"] else {
+      Issue.record("sets")
+      return
+    }
+    #expect(sets.prefix(2).map { $0["weight"]?.doubleValue } == [453.59, 82.51], "181.9 lb gợi ý → 82.508 → 82.51, như RN")
+
+    let kg = Harness()
+    let kgLog = await kg.open()
+    #expect(kgLog.weightUnit == .kg)
+    await fill(kgLog, 0, "Bench", "1000", "5")
+    #expect(!kgLog.canSave(), "1000 kg ngoài cận")
+  }
+
   @Test func emptyNameIsWorkout() async throws {
     let h = Harness()
     let log = await h.open()

@@ -167,8 +167,8 @@ public struct WorkoutSummaryView: View {
       return "\(secs)s"
     }
     if let w = s.weightKg, w > 0 {
-      // Cùng cách hiện mức tạ như màn tập (RN: một chữ số lẻ, theo đơn vị).
-      return "\(unit.load(w)) × \(s.reps)"
+      // Một chữ số lẻ theo đơn vị (RN `displayWeight`), dấu thập phân của máy.
+      return "\(unit.localizedLoad(w) ?? "") × \(s.reps)"
     }
     return "× \(s.reps)"
   }
