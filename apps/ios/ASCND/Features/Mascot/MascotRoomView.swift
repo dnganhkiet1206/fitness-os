@@ -25,7 +25,6 @@ struct MascotRoomView: View {
   let room: MascotRoomController
   /// Sổ huy chương cho hàng "Huy hiệu" (`nav.push('/awards')`) — B truyền khi nối.
   var awards: AwardsBook? = nil
-  var lang: AppPreferences.Lang = .vi
 
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Environment(\.locale) private var locale
