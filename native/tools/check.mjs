@@ -932,12 +932,31 @@ const STEPS = [
   */
   ['vector runners', 'node', ['../spec/vectors/check-runners.mjs']],
   /*
+    #529: bước trên chỉ kiểm mỗi vector có runner ĐĂNG KÝ — không bước CI nào
+    CHẠY các runner JS, nên một runner đỏ (RN đổi luật, vector sửa tay, lib
+    chép lệch) vẫn để cổng xanh. Bước này chạy mọi `run*.mjs` + divergence-check
+    và đỏ khi một cái thoát khác 0, treo, hoặc nằm đó mà không ai đăng ký. Phá
+    thử: sửa expected TC-1a → đỏ; đổi `permanentFailure` của offline-write.ts
+    RN → đỏ ở OB-1c. Bước thứ hai: bộ chạy phải đỏ trên một thế giới hỏng.
+  */
+  ['vector runners JS chạy thật', 'node', ['../spec/vectors/run-all.mjs']],
+  ['vector runners JS — bộ chạy bắt runner hỏng', 'node', ['../spec/vectors/run-all.mjs', '--self-test']],
+  /*
     Chuỗi người dùng thấy trong app iOS native phải đi qua Localizable.xcstrings
     (#523 P3). Tool của #340 đã về 0 hit nhưng chưa nằm trong cổng: một
     `Text("…")` cứng mới lọt vào thì không ai thấy cho tới khi người Việt mở
     app ra thấy tiếng Anh. Bản DEBUG (`#if DEBUG`) và #Preview được bỏ qua.
   */
   ['chuỗi iOS native qua xcstrings', 'node', ['../apps/ios/tools/native-i18n-forensic.mjs']],
+  /*
+    Plural trong String Catalog phải nhắc tới con số (#527). Xcode từ chối
+    `variations.plural` mà dạng `other` không có số ("ngày", "days") — nhưng
+    chỉ ở `xcodebuild` trên macOS (run 37648967552, widget). Bước thứ nhất quét
+    mọi `.xcstrings` của apps/ios; bước thứ hai là bằng chứng nó bắt đúng lỗi
+    ấy: fixture lấy nguyên từ commit lỗi phải đỏ, bản sửa phải xanh.
+  */
+  ['plural xcstrings nhắc tới con số', 'node', ['../apps/ios/tools/native-xcstrings-plural.mjs']],
+  ['plural xcstrings — fixture lỗi widget phải đỏ', 'node', ['../apps/ios/tools/native-xcstrings-plural.mjs', '--self-test']],
 ];
 
 /*
