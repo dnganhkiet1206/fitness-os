@@ -372,6 +372,41 @@ public final class ManualLogController {
     return out
   }
 
+  /// Lỗi đầu tiên theo thứ tự hàng (`firstSetError`, `:483`): màn nói đúng
+  /// một câu cạnh nút Lưu, ưu tiên ô tạ như RN (`weight ?? reps`).
+  public func firstError(toKg: ((Double) -> Double)? = nil) -> (row: String, field: Field)? {
+    let all = errors(toKg: toKg)
+    for r in validRows {
+      guard let bad = all[r.id] else { continue }
+      return (r.id, bad.contains(.weight) ? .weight : .reps)
+    }
+    return nil
+  }
+
+  /// Khối lượng xem trước, kg (`volumeLoad`, `:489`): tổng tạ × reps của các
+  /// hàng sẽ ghi, kể cả khởi động như RN (bản ghi thì bỏ khởi động).
+  ///
+  /// RN BUG FOUND: `Number("45s")` = NaN — có MỘT set giữ là cả dòng khối
+  /// lượng thành "—". NATIVE FIX: set giữ góp 0 (không có reps), các set khác
+  /// vẫn cộng. (test `volumePreviewIgnoresHolds`.)
+  public func volumeKg(toKg: ((Double) -> Double)? = nil) -> Double {
+    let toKg = toKg ?? weightUnit.toKg
+    return validRows.reduce(0) { sum, r in
+      let entry = RepEntry.parse(r.reps)
+      guard entry.durationSec == nil else { return sum }
+      return sum + Self.weightKg(r.weight, toKg: toKg) * Double(entry.reps)
+    }
+  }
+
+  /// Gợi ý từ thư viện cho ô tên đang gõ (`suggestionsFor`, `:387`): rỗng →
+  /// cả thư viện; không thì tên CHỨA chữ gõ (không phân biệt hoa thường); bỏ
+  /// bài trùng đúng chữ gõ; tối đa 5.
+  public static func suggestions(for query: String, in exercises: [LibraryExercise], limit: Int = 5) -> [LibraryExercise] {
+    let q = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    let pool = q.isEmpty ? exercises : exercises.filter { $0.name.lowercased().contains(q) }
+    return Array(pool.filter { $0.name.lowercased() != q }.prefix(limit))
+  }
+
   /// Ô tạ → kg. Trống / không phải số → 0 (`Number(x) || 0`: bodyweight).
   /// Ô đã qua `decText` nên không gõ được số âm; âm (nháp cũ) vẫn để cận báo.
   static func weightKg(_ text: String, toKg: (Double) -> Double) -> Double {
