@@ -90,7 +90,7 @@ struct HealthSyncCard: View {
     case .failed(.noData): String(localized: "hs.error.noData")
     case .failed(.write(_)): String(localized: "hs.error.generic")
     case .failed(.incomplete(let parts)):
-      String(localized: "hs.error.incomplete \(parts.map(partName).formatted(.list(type: .and)))")
+      String(localized: "hs.error.incomplete \(parts.map(partName).formatted(.list(type: .and).locale(.app)))")
     }
   }
 
