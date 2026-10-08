@@ -1,3 +1,5 @@
+public import Foundation
+
 /// Đơn vị cân nặng người dùng XEM và GÕ (#527 1.9-A) — `WeightUnit` của
 /// `lib/units.ts` + `useUnits` (`hooks/use-units.ts`) @ fac9ac2.
 ///
@@ -50,10 +52,27 @@ public enum WeightUnit: String, Sendable, Hashable, CaseIterable {
     Units.text(Units.jsRound1(display(kg)))
   }
 
+  /// Ô tạ hạt giống của hàng chưa gõ (`day-plan.tsx:1013`):
+  /// `row.weight > 0 ? String(Math.round(displayWeight(w) * 10) / 10) : ''` —
+  /// bài không tạ là ô trống (placeholder), không phải "0".
+  public func seed(_ kg: Double) -> String {
+    kg.isFinite && kg > 0 ? text(kg) : ""
+  }
+
   /// Mức tạ kèm nhãn (`day-plan.tsx:1401`, `:1820`):
   /// `${Math.round(displayWeight(kg) * 10) / 10} ${wl}` — "132.3 lb", "60 kg".
   public func load(_ kg: Double) -> String {
     "\(text(kg)) \(label)"
+  }
+
+  /// Mức tạ cho dòng kế hoạch (Today): số của `load` (`day-plan.tsx:1820`,
+  /// một chữ số lẻ, không nhóm nghìn) với dấu thập phân của máy — "62,5 kg"
+  /// trên máy tiếng Việt, "137.8 lb" trên máy tiếng Anh. `nil` = bài không tạ
+  /// (không hiện "0 kg").
+  public func localizedLoad(_ kg: Double, locale: Locale = .current) -> String? {
+    guard kg.isFinite, kg > 0 else { return nil }
+    let separator = locale.decimalSeparator ?? "."
+    return "\(text(kg).replacingOccurrences(of: ".", with: separator)) \(label)"
   }
 
   /// Khối lượng nguyên (`day-plan.tsx:1604`, `sessions.tsx:187`):

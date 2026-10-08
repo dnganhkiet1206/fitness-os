@@ -33,7 +33,7 @@ struct WeightUnitGoldenTests {
   /// khối lượng nguyên — từng số khớp RN.
   @Test func displayMatchesRN() throws {
     guard case .array(let cases)? = try Self.golden()["weights"] else { throw CocoaError(.fileReadCorruptFile) }
-    #expect(cases.count == 48)
+    #expect(cases.count == 50)
     for c in cases {
       let u = Self.unit(c["unit"])
       let kg = try #require(c["kg"]?.doubleValue)
@@ -42,6 +42,7 @@ struct WeightUnitGoldenTests {
       #expect(u.display(kg) == c["display"]?.doubleValue, "display \(tag)")
       #expect(u.label == c["label"]?.stringValue, "label \(tag)")
       #expect(u.text(kg) == c["text"]?.stringValue, "text \(tag)")
+      #expect(u.seed(kg) == c["seed"]?.stringValue, "seed \(tag)")
       #expect(u.load(kg) == "\(c["text"]?.stringValue ?? "?") \(c["label"]?.stringValue ?? "?")", "load \(tag)")
       #expect(u.volume(kg) == c["volume"]?.intValue, "volume \(tag)")
       #expect(u.toKg(u.display(kg)) == c["backToKg"]?.doubleValue, "backToKg \(tag)")

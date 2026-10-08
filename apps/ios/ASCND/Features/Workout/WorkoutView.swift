@@ -34,6 +34,9 @@ public struct WorkoutView: View {
   /// Debounce ghi controller — tránh ghi mỗi phím gõ (#300).
   @State private var pendingWrites: [String: Task<Void, Never>] = [:]
   @Environment(\.scenePhase) private var scenePhase
+  /// Đơn vị tạ của tài khoản (#527 1.9-B): ô tạ hiện và nhận số theo đơn vị
+  /// này; controller đổi về kg (cùng đơn vị, `WorkoutFlow.setWeightUnit`).
+  @Environment(\.weightUnit) private var unit
 
   /// Ô nào đang focus.
   enum FieldFocus: Hashable {
@@ -250,7 +253,7 @@ public struct WorkoutView: View {
           .padding(.horizontal, DS.Spacing.xs)
           .background(DS.Color.secondary.swiftUI)
           .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
-          .accessibilityLabel(Text(String(localized: "workout.weight")))
+          .accessibilityLabel(Text(String(localized: "workout.weight.unit \(unit.label)")))
           // Hàng controller không cho sửa (đang tải, đã nằm trong buổi đã
           // chốt, đang chốt): khoá ô — gõ vào sẽ hiện một con số controller
           // đã từ chối, tức ô nói dối.
@@ -261,6 +264,13 @@ public struct WorkoutView: View {
             // Focus weight → reps (#300).
             focusedField = .reps(row.key)
           }
+
+        // Nhãn đơn vị cạnh ô tạ (`day-plan.tsx:1986`): "kg" / "lb" — ký hiệu,
+        // không dịch; VoiceOver đã nghe đơn vị trong nhãn của ô.
+        Text(verbatim: unit.label)
+          .font(DS.TextStyle.footnote)
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          .accessibilityHidden(true)
 
         Text("×")
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
@@ -407,7 +417,7 @@ public struct WorkoutView: View {
     Binding(
       get: {
         weightTexts[row.key] ?? controller.progress.weightText[row.key]
-          ?? NumberInput.plannedLoad(row.weightKg)
+          ?? unit.seed(row.weightKg)
       },
       set: { new in
         let clean = filteredDecimal(new)

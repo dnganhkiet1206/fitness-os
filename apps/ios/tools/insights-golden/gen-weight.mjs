@@ -6,7 +6,7 @@
  * thức màn RN dựng trên chúng (chép nguyên văn, không hàm nào export):
  *
  * - `useUnits` (`hooks/use-units.ts`): `profile?.units_weight === 'lbs' ? 'lbs' : 'kg'`;
- * - ô tạ hạt giống (`day-plan.tsx:1011`): `String(Math.round(displayWeight(kg) * 10) / 10)`;
+ * - ô tạ hạt giống (`day-plan.tsx:1011–1014`): `row.weight > 0 ? String(Math.round(displayWeight(kg) * 10) / 10) : ''`;
  * - khối lượng (`day-plan.tsx:1604`, `sessions.tsx:187`): `Math.round(displayWeight(v))`.
  *
  *   ./build.sh && node gen-weight.mjs > ../../Packages/ASCNDKit/Tests/ASCNDCoreTests/Fixtures/weight-golden.json
@@ -21,7 +21,7 @@ const profiles = ['lbs', 'kg', 'LBS', 'lb', 'Lbs', ' lbs', '', null, undefined, 
   unit: unitOf(stored),
 }));
 
-const kgs = [0, 0.5, 1, 2.5, 20, 22.5, 45.359237, 60, 61.23497, 61.2349, 62.5, 70, 72.5, 100, 100.24, 102.058, 140, 142.88, 180, 0.04535, 0.0453, 1234.5, 48200, 4200.75];
+const kgs = [-1, 0, 0.5, 1, 2.5, 20, 22.5, 45.359237, 60, 61.23497, 61.2349, 62.5, 70, 72.5, 100, 100.24, 102.058, 140, 142.88, 180, 0.04535, 0.0453, 1234.5, 48200, 4200.75];
 const weights = [];
 for (const unit of ['kg', 'lbs']) {
   for (const kg of kgs) {
@@ -32,6 +32,7 @@ for (const unit of ['kg', 'lbs']) {
       display,
       label: u.weightLabel(unit),
       text: String(Math.round(display * 10) / 10),
+      seed: kg > 0 ? String(Math.round(u.displayWeight(kg, unit) * 10) / 10) : '',
       volume: Math.round(display),
       backToKg: u.weightToKg(display, unit),
     });

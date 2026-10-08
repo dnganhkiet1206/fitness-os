@@ -3,6 +3,7 @@
 // Presentation layer thuần: nhận `TodayDisplay` đã tính sẵn + 2 callback,
 // không chứa workout-domain logic, không đọc database, không tính ngày.
 // 5 trạng thái đúng baseline `dayStateOf` (week-strip.tsx:137).
+import ASCNDCore
 import ASCNDDesignSystem
 import SwiftUI
 
@@ -91,13 +92,16 @@ public struct TodayView: View {
     }
   }
 
+  /// Đơn vị tạ của tài khoản (#527 1.9-B) — kế hoạch vẫn lưu kg.
+  @Environment(\.weightUnit) private var unit
+
   private func exerciseRow(_ e: TodayExercise) -> some View {
     HStack {
       Text(e.name)
         .font(DS.TextStyle.body)
         .foregroundStyle(DS.Color.foreground.swiftUI)
       Spacer()
-      Text(weightText(e).map { "\(e.sets)×\(e.reps) · \($0) kg" } ?? "\(e.sets)×\(e.reps)")
+      Text(weightText(e).map { "\(e.sets)×\(e.reps) · \($0)" } ?? "\(e.sets)×\(e.reps)")
         .font(DS.TextStyle.footnote)
         .foregroundStyle(DS.Color.mutedForeground.swiftUI)
         .monospacedDigit()
@@ -106,11 +110,11 @@ public struct TodayView: View {
     .accessibilityLabel(Text(exerciseAccessibility(e)))
   }
 
-  /// Mức tạ theo locale, giữ phần lẻ (62,5 kg — không cắt `Int` thành 62).
-  /// `nil` = bài không tạ, không hiện "0 kg".
+  /// Mức tạ theo locale và theo đơn vị của tài khoản (#527 1.9-B), một chữ
+  /// số lẻ như RN `displayWeight` (`day-plan.tsx:1820`): "62,5 kg", "137,8 lb"
+  /// — không cắt `Int` thành 62. `nil` = bài không tạ, không hiện "0 kg".
   private func weightText(_ e: TodayExercise) -> String? {
-    guard e.weightKg > 0 else { return nil }
-    return e.weightKg.formatted(.number.precision(.fractionLength(0...2)))
+    unit.localizedLoad(e.weightKg)
   }
 
   private func exerciseAccessibility(_ e: TodayExercise) -> String {

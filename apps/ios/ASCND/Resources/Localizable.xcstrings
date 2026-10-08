@@ -785,6 +785,29 @@
     }
    }
   },
+  "workout.weight.unit %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Weight, %@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tạ, %@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Peso, %@"
+     }
+    }
+   }
+  },
   "workout.reps": {
    "extractionState": "manual",
    "localizations": {
@@ -2194,19 +2217,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "%1$@, %2$lld sets of %3$lld, %4$@ kg"
+      "value": "%1$@, %2$lld sets of %3$lld, %4$@"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "%1$@, %2$lld hiệp × %3$lld lần, %4$@ kg"
+      "value": "%1$@, %2$lld hiệp × %3$lld lần, %4$@"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "%1$@, %2$lld series de %3$lld, %4$@ kg"
+      "value": "%1$@, %2$lld series de %3$lld, %4$@"
      }
     }
    }
