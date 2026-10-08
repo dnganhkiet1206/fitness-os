@@ -79,6 +79,24 @@ struct HomeWidgetsTests {
     #expect(store.todayWorkout() == nil && store.streakReadiness() == nil)
   }
 
+  /// Ngôn ngữ trong app cho widget (#527 A-NEXT 4): ghi / đọc / "Theo máy"
+  /// xoá khoá; đăng xuất (`clear`) KHÔNG xoá — khoá theo máy.
+  @Test func languageIsSharedAndSurvivesSignOut() throws {
+    let suite = "test.ascnd.widgets.\(UUID().uuidString)"
+    let store = WidgetDataStore(suite: suite)
+    let defaults = try #require(UserDefaults(suiteName: suite))
+    defer { defaults.removePersistentDomain(forName: suite) }
+
+    #expect(store.language() == nil)
+    #expect(store.locale.identifier == Locale.autoupdatingCurrent.identifier)
+    store.writeLanguage("vi")
+    #expect(store.language() == "vi" && store.locale.identifier == "vi")
+    store.clear()
+    #expect(store.language() == "vi", "đăng xuất không đổi ngôn ngữ của máy")
+    store.writeLanguage(nil)
+    #expect(store.language() == nil)
+  }
+
   /// Truy vấn đúng RN: buổi hôm nay mới trước; `daily_logs` của hôm nay; chuỗi
   /// từ ngày "có ghi" (`LOGGED_DAY_FILTER`), 400 hàng; đóng băng.
   @Test func queriesMatchRN() {
