@@ -3,12 +3,14 @@
 set -e
 cd "$(dirname "$0")"
 rm -rf lib out && mkdir lib
-for f in exercise-trend exercise-performance personal-record local-date exercise-kind exercise-key muscle-group equipment guide-content exercise-media guide-related fitness-calc plausible reminder-plan reminder-timing units plan-exercises copy-fill macro-targets; do
+for f in exercise-trend exercise-performance personal-record local-date exercise-kind exercise-key muscle-group equipment guide-content exercise-media guide-related fitness-calc plausible reminder-plan reminder-timing units plan-exercises copy-fill macro-targets mascot-room streak; do
   git show "fac9ac2:native/src/lib/$f.ts" > "lib/$f.ts"
 done
 # Hai phụ thuộc chỉ để lấy một hằng / một kiểu.
 echo 'export const MIN_SESSIONS = 3;' > lib/load-progression.ts   # load-progression.ts:87
 echo "export type Confidence = 'none' | 'low' | 'medium' | 'high';" > lib/user-state.ts
+# Phòng linh vật (#527 Phase 7): `mascot-room.ts` chỉ lấy kiểu `AppLang`.
+echo "export type AppLang = 'vi' | 'en' | 'es';" > lib/i18n.ts
 # Builder (#527 Phase 2): `estimatedMinutes` / `effortRange` / `DEFAULT_*`.
 git show "fac9ac2:native/src/lib/prescription.ts" > lib/prescription.ts
 sed -i.bak "s#'@/lib/\([a-z-]*\)'#'./\1'#g" lib/*.ts && rm -f lib/*.bak
