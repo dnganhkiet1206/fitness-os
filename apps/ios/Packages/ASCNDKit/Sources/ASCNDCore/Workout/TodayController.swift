@@ -268,6 +268,35 @@ public final class TodayController {
       bests: bests, onRest: onRest, onEnqueued: onEnqueued)
   }
 
+  /// Bảng tập của MỘT NGÀY BẤT KỲ trong tuần (`DayPlan` dưới ngày đang chọn,
+  /// `week-plan.tsx:495`). Hôm nay đi đúng đường `makeSession` ở trên. Ngày
+  /// khác: kế hoạch của chính ngày ấy (`plan(for:)` — template gán cho thứ ấy,
+  /// sau các lệnh sửa chưa gửi), tiến độ trên máy theo khoá của ngày ấy
+  /// (`dayProgressKey`), và — nếu server biết ngày ấy đã tập — các buổi của
+  /// ngày ấy làm bằng chứng từng hàng (`sessions.filter(dayOf == dStr)` của RN).
+  /// Ngày nghỉ / chưa lên lịch: `nil`. Ghi của ngày tương lai bị chặn trong
+  /// `finish` (`.futureDay`); ngày đã qua ghi đúng ngày ấy.
+  public func makeSession(
+    on date: LocalDate,
+    bests: @escaping @MainActor () -> PersonalRecords.Bests? = { nil },
+    onRest: @escaping @MainActor (RestEvent, PlannedSet?) -> Void = { _, _ in },
+    onEnqueued: @escaping @MainActor (OutboxEntry) -> Void = { _ in }
+  ) async -> WorkoutSessionController? {
+    if date == today { return makeSession(bests: bests, onRest: onRest, onEnqueued: onEnqueued) }
+    guard let sessionPlan = library?.plan(for: date, today: today, trained: trained).sessionPlan else { return nil }
+    let logged = serverTrained.contains(date)
+    var rows: [JSONValue] = []
+    if logged {
+      // Không đọc được buổi thì vẫn biết "đã tập" — chỉ thiếu bằng chứng từng hàng.
+      let from = EpochMillis(Self.startOfDay(date, in: timeZone))
+      let to = EpochMillis(Self.startOfDay(date.adding(days: 1), in: timeZone))
+      rows = (try? await history.sessions(userId: userId, from: from, to: to)) ?? []
+    }
+    return WorkoutSessionController(
+      plan: sessionPlan, userId: userId, store: workouts, clock: clock, timeZone: timeZone,
+      loggedElsewhere: logged, remoteSessions: rows, bests: bests, onRest: onRest, onEnqueued: onEnqueued)
+  }
+
   /// Lệnh sửa kế hoạch vừa bền (#401): kế hoạch đổi ngay, không đợi server
   /// (D-26 TW-6b). Nhận lại cùng lệnh là không đổi gì.
   public func adopt(_ entries: [OutboxEntry]) async {

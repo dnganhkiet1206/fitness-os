@@ -1,0 +1,9285 @@
+{
+ "scope": [
+  {
+   "date": "2026-10-01",
+   "days": [
+    {
+     "day_of_week": 5,
+     "is_rest": false,
+     "template_id": "t4"
+    },
+    {
+     "day_of_week": 0,
+     "is_rest": false,
+     "template_id": "t4"
+    },
+    {
+     "day_of_week": 0,
+     "is_rest": false,
+     "template_id": "t1"
+    },
+    {
+     "day_of_week": 0,
+     "is_rest": true,
+     "template_id": "t0"
+    },
+    {
+     "day_of_week": 0,
+     "is_rest": false,
+     "template_id": "t1"
+    },
+    {
+     "day_of_week": 1,
+     "is_rest": false,
+     "template_id": "t2"
+    },
+    {
+     "day_of_week": 1,
+     "is_rest": false,
+     "template_id": "t3"
+    }
+   ],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": "Squat"
+      },
+      {
+       "exerciseName": "Plank"
+      }
+     ]
+    },
+    {
+     "id": "t1",
+     "exercises": [
+      {
+       "exerciseName": "bench  press"
+      },
+      {
+       "exerciseName": " Row "
+      },
+      {
+       "exerciseName": "bench  press"
+      }
+     ]
+    }
+   ],
+   "keys": {
+    "today": [],
+    "week": [
+     "bench press",
+     "row"
+    ],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-07",
+   "days": [],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": "Bench Press"
+      }
+     ]
+    },
+    {
+     "id": "t1",
+     "exercises": [
+      {
+       "exerciseName": "Deadlift"
+      }
+     ]
+    },
+    {
+     "id": "t2",
+     "exercises": [
+      {
+       "exerciseName": ""
+      }
+     ]
+    },
+    {
+     "id": "t3",
+     "exercises": []
+    }
+   ],
+   "keys": {
+    "today": [],
+    "week": [],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-28",
+   "days": [
+    {
+     "day_of_week": 5,
+     "is_rest": false,
+     "template_id": "t4"
+    },
+    {
+     "day_of_week": 4,
+     "is_rest": true,
+     "template_id": "t1"
+    },
+    {
+     "day_of_week": 0,
+     "is_rest": false,
+     "template_id": "t0"
+    },
+    {
+     "day_of_week": 1,
+     "is_rest": false,
+     "template_id": "t2"
+    },
+    {
+     "day_of_week": 0,
+     "is_rest": false,
+     "template_id": "t1"
+    }
+   ],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": []
+    },
+    {
+     "id": "t1",
+     "exercises": [
+      {
+       "exerciseName": " Row "
+      }
+     ]
+    },
+    {
+     "id": "t2",
+     "exercises": [
+      {
+       "exerciseName": "Bench Press"
+      },
+      {
+       "exerciseName": "Curl"
+      },
+      {
+       "exerciseName": "Curl"
+      }
+     ]
+    }
+   ],
+   "keys": {
+    "today": [],
+    "week": [
+     "bench press",
+     "curl",
+     "row"
+    ],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-25",
+   "days": [
+    {
+     "day_of_week": 4,
+     "is_rest": true,
+     "template_id": "t0"
+    },
+    {
+     "day_of_week": 4,
+     "is_rest": true,
+     "template_id": "t0"
+    },
+    {
+     "day_of_week": 4,
+     "is_rest": false,
+     "template_id": "t1"
+    },
+    {
+     "day_of_week": 3,
+     "is_rest": true,
+     "template_id": "t4"
+    },
+    {
+     "day_of_week": 5,
+     "is_rest": false,
+     "template_id": "t1"
+    }
+   ],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": []
+    }
+   ],
+   "keys": {
+    "today": [],
+    "week": [],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-17",
+   "days": [
+    {
+     "day_of_week": 1,
+     "is_rest": true,
+     "template_id": "t3"
+    },
+    {
+     "day_of_week": 0,
+     "is_rest": true,
+     "template_id": "t0"
+    }
+   ],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": "Curl"
+      },
+      {
+       "exerciseName": ""
+      }
+     ]
+    },
+    {
+     "id": "t1",
+     "exercises": [
+      {
+       "exerciseName": "Curl"
+      },
+      {
+       "exerciseName": "Plank"
+      }
+     ]
+    },
+    {
+     "id": "t2",
+     "exercises": [
+      {
+       "exerciseName": " Row "
+      },
+      {
+       "exerciseName": "Deadlift"
+      },
+      {
+       "exerciseName": "bench  press"
+      }
+     ]
+    },
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": "Override"
+      }
+     ]
+    }
+   ],
+   "keys": {
+    "today": [],
+    "week": [],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-15",
+   "days": [
+    {
+     "day_of_week": 6,
+     "is_rest": true,
+     "template_id": "t2"
+    },
+    {
+     "day_of_week": 6,
+     "is_rest": false,
+     "template_id": "t4"
+    }
+   ],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": "Pull-up"
+      },
+      {
+       "exerciseName": "Curl"
+      }
+     ]
+    },
+    {
+     "id": "t1",
+     "exercises": []
+    }
+   ],
+   "keys": {
+    "today": [],
+    "week": [],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-07",
+   "days": [],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": "Squat"
+      },
+      {
+       "exerciseName": "Deadlift"
+      }
+     ]
+    },
+    {
+     "id": "t1",
+     "exercises": [
+      {
+       "exerciseName": "Deadlift"
+      },
+      {
+       "exerciseName": ""
+      }
+     ]
+    }
+   ],
+   "keys": {
+    "today": [],
+    "week": [],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-12",
+   "days": [],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": "Pull-up"
+      },
+      {
+       "exerciseName": "Bench Press"
+      },
+      {
+       "exerciseName": " Row "
+      }
+     ]
+    },
+    {
+     "id": "t1",
+     "exercises": [
+      {
+       "exerciseName": "Plank"
+      }
+     ]
+    },
+    {
+     "id": "t2",
+     "exercises": [
+      {
+       "exerciseName": "Pull-up"
+      },
+      {
+       "exerciseName": ""
+      },
+      {
+       "exerciseName": "Squat"
+      }
+     ]
+    },
+    {
+     "id": "t3",
+     "exercises": [
+      {
+       "exerciseName": "Deadlift"
+      },
+      {
+       "exerciseName": ""
+      }
+     ]
+    }
+   ],
+   "keys": {
+    "today": [],
+    "week": [],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-01",
+   "days": [
+    {
+     "day_of_week": 3,
+     "is_rest": false,
+     "template_id": "t3"
+    },
+    {
+     "day_of_week": 3,
+     "is_rest": false,
+     "template_id": "t3"
+    },
+    {
+     "day_of_week": 4,
+     "is_rest": false,
+     "template_id": null
+    },
+    {
+     "day_of_week": 5,
+     "is_rest": true,
+     "template_id": "t0"
+    },
+    {
+     "day_of_week": 2,
+     "is_rest": false,
+     "template_id": "t3"
+    },
+    {
+     "day_of_week": 4,
+     "is_rest": false,
+     "template_id": "t4"
+    },
+    {
+     "day_of_week": 0,
+     "is_rest": false,
+     "template_id": "t4"
+    }
+   ],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": "Bench Press"
+      }
+     ]
+    },
+    {
+     "id": "t1",
+     "exercises": [
+      {
+       "exerciseName": "Pull-up"
+      },
+      {
+       "exerciseName": "Bench Press"
+      },
+      {
+       "exerciseName": "Plank"
+      }
+     ]
+    },
+    {
+     "id": "t2",
+     "exercises": [
+      {
+       "exerciseName": "Pull-up"
+      },
+      {
+       "exerciseName": " Row "
+      },
+      {
+       "exerciseName": "Plank"
+      }
+     ]
+    },
+    {
+     "id": "t3",
+     "exercises": [
+      {
+       "exerciseName": " Row "
+      },
+      {
+       "exerciseName": "Bench Press"
+      },
+      {
+       "exerciseName": "Curl"
+      }
+     ]
+    }
+   ],
+   "keys": {
+    "today": [
+     "bench press",
+     "curl",
+     "row"
+    ],
+    "week": [
+     "bench press",
+     "curl",
+     "row"
+    ],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-13",
+   "days": [
+    {
+     "day_of_week": 5,
+     "is_rest": false,
+     "template_id": null
+    },
+    {
+     "day_of_week": 1,
+     "is_rest": false,
+     "template_id": "t3"
+    },
+    {
+     "day_of_week": 3,
+     "is_rest": true,
+     "template_id": "t3"
+    },
+    {
+     "day_of_week": 4,
+     "is_rest": false,
+     "template_id": "t1"
+    }
+   ],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": " Row "
+      },
+      {
+       "exerciseName": "Curl"
+      },
+      {
+       "exerciseName": "Plank"
+      }
+     ]
+    }
+   ],
+   "keys": {
+    "today": [],
+    "week": [],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-19",
+   "days": [
+    {
+     "day_of_week": 0,
+     "is_rest": false,
+     "template_id": "t1"
+    }
+   ],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": "Deadlift"
+      }
+     ]
+    },
+    {
+     "id": "t1",
+     "exercises": []
+    },
+    {
+     "id": "t2",
+     "exercises": []
+    }
+   ],
+   "keys": {
+    "today": [],
+    "week": [],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-12",
+   "days": [],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": "Bench Press"
+      },
+      {
+       "exerciseName": "Plank"
+      },
+      {
+       "exerciseName": ""
+      }
+     ]
+    },
+    {
+     "id": "t1",
+     "exercises": [
+      {
+       "exerciseName": "Curl"
+      },
+      {
+       "exerciseName": "Deadlift"
+      }
+     ]
+    }
+   ],
+   "keys": {
+    "today": [],
+    "week": [],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-19",
+   "days": [
+    {
+     "day_of_week": 1,
+     "is_rest": false,
+     "template_id": "t0"
+    },
+    {
+     "day_of_week": 6,
+     "is_rest": false,
+     "template_id": "t3"
+    },
+    {
+     "day_of_week": 1,
+     "is_rest": false,
+     "template_id": "t4"
+    },
+    {
+     "day_of_week": 6,
+     "is_rest": true,
+     "template_id": "t3"
+    }
+   ],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": "Curl"
+      }
+     ]
+    },
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": "Override"
+      }
+     ]
+    }
+   ],
+   "keys": {
+    "today": [],
+    "week": [
+     "override"
+    ],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-14",
+   "days": [
+    {
+     "day_of_week": 6,
+     "is_rest": false,
+     "template_id": "t1"
+    },
+    {
+     "day_of_week": 0,
+     "is_rest": true,
+     "template_id": "t3"
+    },
+    {
+     "day_of_week": 4,
+     "is_rest": false,
+     "template_id": "t3"
+    },
+    {
+     "day_of_week": 3,
+     "is_rest": false,
+     "template_id": "t1"
+    },
+    {
+     "day_of_week": 2,
+     "is_rest": false,
+     "template_id": "t0"
+    },
+    {
+     "day_of_week": 5,
+     "is_rest": false,
+     "template_id": "t4"
+    },
+    {
+     "day_of_week": 4,
+     "is_rest": false,
+     "template_id": "t3"
+    }
+   ],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": "Deadlift"
+      }
+     ]
+    },
+    {
+     "id": "t1",
+     "exercises": []
+    },
+    {
+     "id": "t2",
+     "exercises": [
+      {
+       "exerciseName": "Plank"
+      },
+      {
+       "exerciseName": "Pull-up"
+      }
+     ]
+    }
+   ],
+   "keys": {
+    "today": [
+     "deadlift"
+    ],
+    "week": [
+     "deadlift"
+    ],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-14",
+   "days": [],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": "Bench Press"
+      },
+      {
+       "exerciseName": "Deadlift"
+      }
+     ]
+    },
+    {
+     "id": "t1",
+     "exercises": [
+      {
+       "exerciseName": "Deadlift"
+      }
+     ]
+    }
+   ],
+   "keys": {
+    "today": [],
+    "week": [],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-10",
+   "days": [
+    {
+     "day_of_week": 4,
+     "is_rest": true,
+     "template_id": "t4"
+    },
+    {
+     "day_of_week": 6,
+     "is_rest": true,
+     "template_id": "t4"
+    },
+    {
+     "day_of_week": 6,
+     "is_rest": false,
+     "template_id": "t3"
+    },
+    {
+     "day_of_week": 0,
+     "is_rest": false,
+     "template_id": "t2"
+    },
+    {
+     "day_of_week": 1,
+     "is_rest": false,
+     "template_id": "t0"
+    }
+   ],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": " Row "
+      },
+      {
+       "exerciseName": "Pull-up"
+      }
+     ]
+    },
+    {
+     "id": "t1",
+     "exercises": [
+      {
+       "exerciseName": "Curl"
+      },
+      {
+       "exerciseName": "Deadlift"
+      },
+      {
+       "exerciseName": "Pull-up"
+      }
+     ]
+    },
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": "Override"
+      }
+     ]
+    }
+   ],
+   "keys": {
+    "today": [],
+    "week": [
+     "override"
+    ],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-23",
+   "days": [
+    {
+     "day_of_week": 2,
+     "is_rest": false,
+     "template_id": null
+    },
+    {
+     "day_of_week": 4,
+     "is_rest": true,
+     "template_id": "t1"
+    },
+    {
+     "day_of_week": 5,
+     "is_rest": false,
+     "template_id": "t0"
+    },
+    {
+     "day_of_week": 0,
+     "is_rest": false,
+     "template_id": "t1"
+    },
+    {
+     "day_of_week": 5,
+     "is_rest": false,
+     "template_id": "t0"
+    },
+    {
+     "day_of_week": 2,
+     "is_rest": false,
+     "template_id": null
+    },
+    {
+     "day_of_week": 0,
+     "is_rest": false,
+     "template_id": "t1"
+    }
+   ],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": "Curl"
+      },
+      {
+       "exerciseName": ""
+      }
+     ]
+    }
+   ],
+   "keys": {
+    "today": [],
+    "week": [
+     "curl"
+    ],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-02",
+   "days": [
+    {
+     "day_of_week": 1,
+     "is_rest": false,
+     "template_id": "t0"
+    },
+    {
+     "day_of_week": 4,
+     "is_rest": false,
+     "template_id": "t0"
+    },
+    {
+     "day_of_week": 4,
+     "is_rest": true,
+     "template_id": "t0"
+    },
+    {
+     "day_of_week": 2,
+     "is_rest": false,
+     "template_id": null
+    },
+    {
+     "day_of_week": 5,
+     "is_rest": false,
+     "template_id": "t4"
+    },
+    {
+     "day_of_week": 5,
+     "is_rest": false,
+     "template_id": "t2"
+    },
+    {
+     "day_of_week": 5,
+     "is_rest": false,
+     "template_id": "t0"
+    }
+   ],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": "Pull-up"
+      }
+     ]
+    }
+   ],
+   "keys": {
+    "today": [
+     "pull-up"
+    ],
+    "week": [
+     "pull-up"
+    ],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-15",
+   "days": [
+    {
+     "day_of_week": 5,
+     "is_rest": false,
+     "template_id": "t1"
+    },
+    {
+     "day_of_week": 3,
+     "is_rest": false,
+     "template_id": "t1"
+    },
+    {
+     "day_of_week": 4,
+     "is_rest": false,
+     "template_id": "t4"
+    },
+    {
+     "day_of_week": 1,
+     "is_rest": false,
+     "template_id": "t2"
+    },
+    {
+     "day_of_week": 2,
+     "is_rest": true,
+     "template_id": "t0"
+    },
+    {
+     "day_of_week": 3,
+     "is_rest": false,
+     "template_id": "t1"
+    }
+   ],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": "Plank"
+      },
+      {
+       "exerciseName": "Plank"
+      }
+     ]
+    },
+    {
+     "id": "t1",
+     "exercises": [
+      {
+       "exerciseName": "Plank"
+      },
+      {
+       "exerciseName": "Bench Press"
+      },
+      {
+       "exerciseName": "bench  press"
+      }
+     ]
+    },
+    {
+     "id": "t2",
+     "exercises": []
+    },
+    {
+     "id": "t3",
+     "exercises": [
+      {
+       "exerciseName": "Squat"
+      }
+     ]
+    },
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": "Override"
+      }
+     ]
+    }
+   ],
+   "keys": {
+    "today": [
+     "bench press",
+     "plank"
+    ],
+    "week": [
+     "bench press",
+     "plank"
+    ],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-10",
+   "days": [
+    {
+     "day_of_week": 5,
+     "is_rest": false,
+     "template_id": null
+    },
+    {
+     "day_of_week": 0,
+     "is_rest": true,
+     "template_id": "t1"
+    },
+    {
+     "day_of_week": 6,
+     "is_rest": false,
+     "template_id": "t0"
+    },
+    {
+     "day_of_week": 0,
+     "is_rest": true,
+     "template_id": "t1"
+    },
+    {
+     "day_of_week": 5,
+     "is_rest": false,
+     "template_id": "t0"
+    },
+    {
+     "day_of_week": 1,
+     "is_rest": false,
+     "template_id": "t4"
+    },
+    {
+     "day_of_week": 3,
+     "is_rest": false,
+     "template_id": "t4"
+    }
+   ],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": []
+    },
+    {
+     "id": "t1",
+     "exercises": [
+      {
+       "exerciseName": "Curl"
+      },
+      {
+       "exerciseName": "bench  press"
+      },
+      {
+       "exerciseName": "Curl"
+      }
+     ]
+    }
+   ],
+   "keys": {
+    "today": [],
+    "week": [],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-19",
+   "days": [
+    {
+     "day_of_week": 1,
+     "is_rest": false,
+     "template_id": "t1"
+    },
+    {
+     "day_of_week": 2,
+     "is_rest": false,
+     "template_id": "t0"
+    }
+   ],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": ""
+      },
+      {
+       "exerciseName": "Plank"
+      },
+      {
+       "exerciseName": ""
+      }
+     ]
+    },
+    {
+     "id": "t1",
+     "exercises": []
+    },
+    {
+     "id": "t2",
+     "exercises": [
+      {
+       "exerciseName": ""
+      },
+      {
+       "exerciseName": "Deadlift"
+      }
+     ]
+    },
+    {
+     "id": "t3",
+     "exercises": [
+      {
+       "exerciseName": "Bench Press"
+      }
+     ]
+    }
+   ],
+   "keys": {
+    "today": [],
+    "week": [
+     "plank"
+    ],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-11",
+   "days": [
+    {
+     "day_of_week": 1,
+     "is_rest": false,
+     "template_id": "t3"
+    }
+   ],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": "Curl"
+      }
+     ]
+    },
+    {
+     "id": "t1",
+     "exercises": [
+      {
+       "exerciseName": "Deadlift"
+      },
+      {
+       "exerciseName": ""
+      }
+     ]
+    },
+    {
+     "id": "t2",
+     "exercises": [
+      {
+       "exerciseName": ""
+      },
+      {
+       "exerciseName": "Plank"
+      },
+      {
+       "exerciseName": "Plank"
+      }
+     ]
+    },
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": "Override"
+      }
+     ]
+    }
+   ],
+   "keys": {
+    "today": [],
+    "week": [],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-24",
+   "days": [],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": "Bench Press"
+      },
+      {
+       "exerciseName": "Curl"
+      }
+     ]
+    },
+    {
+     "id": "t1",
+     "exercises": [
+      {
+       "exerciseName": ""
+      },
+      {
+       "exerciseName": "Curl"
+      },
+      {
+       "exerciseName": "Plank"
+      }
+     ]
+    },
+    {
+     "id": "t2",
+     "exercises": []
+    },
+    {
+     "id": "t3",
+     "exercises": [
+      {
+       "exerciseName": "Curl"
+      },
+      {
+       "exerciseName": " Row "
+      },
+      {
+       "exerciseName": "Pull-up"
+      }
+     ]
+    }
+   ],
+   "keys": {
+    "today": [],
+    "week": [],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-15",
+   "days": [
+    {
+     "day_of_week": 3,
+     "is_rest": true,
+     "template_id": "t1"
+    },
+    {
+     "day_of_week": 5,
+     "is_rest": false,
+     "template_id": "t3"
+    },
+    {
+     "day_of_week": 5,
+     "is_rest": true,
+     "template_id": "t4"
+    },
+    {
+     "day_of_week": 3,
+     "is_rest": false,
+     "template_id": "t3"
+    },
+    {
+     "day_of_week": 4,
+     "is_rest": false,
+     "template_id": "t0"
+    },
+    {
+     "day_of_week": 0,
+     "is_rest": false,
+     "template_id": "t0"
+    }
+   ],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": []
+    },
+    {
+     "id": "t1",
+     "exercises": [
+      {
+       "exerciseName": "Curl"
+      }
+     ]
+    },
+    {
+     "id": "t2",
+     "exercises": [
+      {
+       "exerciseName": "Deadlift"
+      },
+      {
+       "exerciseName": "Curl"
+      }
+     ]
+    }
+   ],
+   "keys": {
+    "today": [],
+    "week": [],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-08",
+   "days": [
+    {
+     "day_of_week": 6,
+     "is_rest": true,
+     "template_id": "t4"
+    },
+    {
+     "day_of_week": 6,
+     "is_rest": false,
+     "template_id": null
+    },
+    {
+     "day_of_week": 0,
+     "is_rest": false,
+     "template_id": "t1"
+    },
+    {
+     "day_of_week": 1,
+     "is_rest": false,
+     "template_id": "t0"
+    },
+    {
+     "day_of_week": 4,
+     "is_rest": false,
+     "template_id": null
+    },
+    {
+     "day_of_week": 4,
+     "is_rest": false,
+     "template_id": "t0"
+    },
+    {
+     "day_of_week": 4,
+     "is_rest": false,
+     "template_id": "t2"
+    }
+   ],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": []
+    },
+    {
+     "id": "t1",
+     "exercises": [
+      {
+       "exerciseName": ""
+      },
+      {
+       "exerciseName": "Bench Press"
+      },
+      {
+       "exerciseName": "Pull-up"
+      }
+     ]
+    }
+   ],
+   "keys": {
+    "today": [],
+    "week": [
+     "bench press",
+     "pull-up"
+    ],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-24",
+   "days": [
+    {
+     "day_of_week": 6,
+     "is_rest": false,
+     "template_id": null
+    },
+    {
+     "day_of_week": 0,
+     "is_rest": false,
+     "template_id": "t1"
+    },
+    {
+     "day_of_week": 0,
+     "is_rest": true,
+     "template_id": "t2"
+    },
+    {
+     "day_of_week": 0,
+     "is_rest": false,
+     "template_id": "t3"
+    }
+   ],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": "Bench Press"
+      },
+      {
+       "exerciseName": "bench  press"
+      },
+      {
+       "exerciseName": "Curl"
+      }
+     ]
+    }
+   ],
+   "keys": {
+    "today": [],
+    "week": [],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-06",
+   "days": [
+    {
+     "day_of_week": 2,
+     "is_rest": true,
+     "template_id": "t1"
+    },
+    {
+     "day_of_week": 6,
+     "is_rest": false,
+     "template_id": "t4"
+    }
+   ],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": "Plank"
+      },
+      {
+       "exerciseName": "Squat"
+      }
+     ]
+    },
+    {
+     "id": "t1",
+     "exercises": [
+      {
+       "exerciseName": ""
+      }
+     ]
+    },
+    {
+     "id": "t2",
+     "exercises": [
+      {
+       "exerciseName": "Pull-up"
+      },
+      {
+       "exerciseName": "Squat"
+      },
+      {
+       "exerciseName": " Row "
+      }
+     ]
+    },
+    {
+     "id": "t3",
+     "exercises": [
+      {
+       "exerciseName": "Deadlift"
+      },
+      {
+       "exerciseName": ""
+      },
+      {
+       "exerciseName": " Row "
+      }
+     ]
+    }
+   ],
+   "keys": {
+    "today": [],
+    "week": [],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-23",
+   "days": [
+    {
+     "day_of_week": 2,
+     "is_rest": false,
+     "template_id": "t2"
+    },
+    {
+     "day_of_week": 4,
+     "is_rest": false,
+     "template_id": "t0"
+    },
+    {
+     "day_of_week": 2,
+     "is_rest": false,
+     "template_id": "t1"
+    },
+    {
+     "day_of_week": 5,
+     "is_rest": false,
+     "template_id": null
+    },
+    {
+     "day_of_week": 2,
+     "is_rest": true,
+     "template_id": "t1"
+    },
+    {
+     "day_of_week": 1,
+     "is_rest": false,
+     "template_id": "t3"
+    },
+    {
+     "day_of_week": 5,
+     "is_rest": false,
+     "template_id": "t3"
+    }
+   ],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": "Deadlift"
+      },
+      {
+       "exerciseName": " Row "
+      },
+      {
+       "exerciseName": "bench  press"
+      }
+     ]
+    }
+   ],
+   "keys": {
+    "today": [
+     "bench press",
+     "deadlift",
+     "row"
+    ],
+    "week": [
+     "bench press",
+     "deadlift",
+     "row"
+    ],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-01",
+   "days": [
+    {
+     "day_of_week": 3,
+     "is_rest": false,
+     "template_id": "t1"
+    },
+    {
+     "day_of_week": 6,
+     "is_rest": false,
+     "template_id": "t0"
+    },
+    {
+     "day_of_week": 0,
+     "is_rest": true,
+     "template_id": "t2"
+    },
+    {
+     "day_of_week": 1,
+     "is_rest": false,
+     "template_id": "t2"
+    },
+    {
+     "day_of_week": 2,
+     "is_rest": true,
+     "template_id": "t2"
+    }
+   ],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": []
+    },
+    {
+     "id": "t1",
+     "exercises": [
+      {
+       "exerciseName": "Squat"
+      },
+      {
+       "exerciseName": "Pull-up"
+      },
+      {
+       "exerciseName": "Squat"
+      }
+     ]
+    },
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": "Override"
+      }
+     ]
+    }
+   ],
+   "keys": {
+    "today": [
+     "pull-up",
+     "squat"
+    ],
+    "week": [
+     "override",
+     "pull-up",
+     "squat"
+    ],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-19",
+   "days": [
+    {
+     "day_of_week": 1,
+     "is_rest": false,
+     "template_id": null
+    },
+    {
+     "day_of_week": 1,
+     "is_rest": true,
+     "template_id": "t3"
+    },
+    {
+     "day_of_week": 2,
+     "is_rest": false,
+     "template_id": "t1"
+    },
+    {
+     "day_of_week": 5,
+     "is_rest": false,
+     "template_id": null
+    },
+    {
+     "day_of_week": 4,
+     "is_rest": false,
+     "template_id": "t0"
+    },
+    {
+     "day_of_week": 6,
+     "is_rest": false,
+     "template_id": "t2"
+    },
+    {
+     "day_of_week": 3,
+     "is_rest": false,
+     "template_id": "t0"
+    }
+   ],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": "Plank"
+      },
+      {
+       "exerciseName": "Deadlift"
+      }
+     ]
+    },
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": "Override"
+      }
+     ]
+    }
+   ],
+   "keys": {
+    "today": [],
+    "week": [
+     "override"
+    ],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-07",
+   "days": [
+    {
+     "day_of_week": 6,
+     "is_rest": false,
+     "template_id": "t1"
+    },
+    {
+     "day_of_week": 1,
+     "is_rest": true,
+     "template_id": "t0"
+    }
+   ],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": "Bench Press"
+      }
+     ]
+    }
+   ],
+   "keys": {
+    "today": [],
+    "week": [],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-25",
+   "days": [],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": "Squat"
+      }
+     ]
+    }
+   ],
+   "keys": {
+    "today": [],
+    "week": [],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-12",
+   "days": [
+    {
+     "day_of_week": 3,
+     "is_rest": false,
+     "template_id": "t0"
+    },
+    {
+     "day_of_week": 3,
+     "is_rest": false,
+     "template_id": "t2"
+    },
+    {
+     "day_of_week": 2,
+     "is_rest": false,
+     "template_id": "t1"
+    },
+    {
+     "day_of_week": 1,
+     "is_rest": false,
+     "template_id": "t0"
+    },
+    {
+     "day_of_week": 6,
+     "is_rest": false,
+     "template_id": "t1"
+    }
+   ],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": []
+    }
+   ],
+   "keys": {
+    "today": [],
+    "week": [],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-26",
+   "days": [
+    {
+     "day_of_week": 0,
+     "is_rest": true,
+     "template_id": "t1"
+    },
+    {
+     "day_of_week": 6,
+     "is_rest": false,
+     "template_id": "t1"
+    },
+    {
+     "day_of_week": 6,
+     "is_rest": false,
+     "template_id": "t1"
+    }
+   ],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": "bench  press"
+      }
+     ]
+    },
+    {
+     "id": "t1",
+     "exercises": [
+      {
+       "exerciseName": "bench  press"
+      },
+      {
+       "exerciseName": "Squat"
+      }
+     ]
+    }
+   ],
+   "keys": {
+    "today": [],
+    "week": [
+     "bench press",
+     "squat"
+    ],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-22",
+   "days": [],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": "bench  press"
+      },
+      {
+       "exerciseName": "bench  press"
+      }
+     ]
+    },
+    {
+     "id": "t1",
+     "exercises": [
+      {
+       "exerciseName": "bench  press"
+      }
+     ]
+    },
+    {
+     "id": "t2",
+     "exercises": [
+      {
+       "exerciseName": "Pull-up"
+      },
+      {
+       "exerciseName": "bench  press"
+      }
+     ]
+    },
+    {
+     "id": "t3",
+     "exercises": [
+      {
+       "exerciseName": "Squat"
+      },
+      {
+       "exerciseName": "Plank"
+      },
+      {
+       "exerciseName": "Pull-up"
+      }
+     ]
+    }
+   ],
+   "keys": {
+    "today": [],
+    "week": [],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-27",
+   "days": [
+    {
+     "day_of_week": 1,
+     "is_rest": false,
+     "template_id": "t0"
+    },
+    {
+     "day_of_week": 3,
+     "is_rest": false,
+     "template_id": null
+    },
+    {
+     "day_of_week": 4,
+     "is_rest": false,
+     "template_id": "t4"
+    },
+    {
+     "day_of_week": 0,
+     "is_rest": true,
+     "template_id": "t2"
+    }
+   ],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": []
+    },
+    {
+     "id": "t1",
+     "exercises": [
+      {
+       "exerciseName": "Pull-up"
+      }
+     ]
+    },
+    {
+     "id": "t2",
+     "exercises": [
+      {
+       "exerciseName": "Deadlift"
+      },
+      {
+       "exerciseName": "bench  press"
+      }
+     ]
+    }
+   ],
+   "keys": {
+    "today": [],
+    "week": [],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-02",
+   "days": [
+    {
+     "day_of_week": 4,
+     "is_rest": true,
+     "template_id": "t4"
+    },
+    {
+     "day_of_week": 4,
+     "is_rest": false,
+     "template_id": "t0"
+    },
+    {
+     "day_of_week": 3,
+     "is_rest": false,
+     "template_id": "t1"
+    },
+    {
+     "day_of_week": 0,
+     "is_rest": true,
+     "template_id": null
+    },
+    {
+     "day_of_week": 2,
+     "is_rest": true,
+     "template_id": "t4"
+    },
+    {
+     "day_of_week": 5,
+     "is_rest": true,
+     "template_id": "t1"
+    },
+    {
+     "day_of_week": 2,
+     "is_rest": false,
+     "template_id": "t3"
+    }
+   ],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": "bench  press"
+      },
+      {
+       "exerciseName": "Deadlift"
+      },
+      {
+       "exerciseName": "Squat"
+      }
+     ]
+    }
+   ],
+   "keys": {
+    "today": [
+     "bench press",
+     "deadlift",
+     "squat"
+    ],
+    "week": [
+     "bench press",
+     "deadlift",
+     "squat"
+    ],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-01",
+   "days": [
+    {
+     "day_of_week": 1,
+     "is_rest": false,
+     "template_id": "t2"
+    },
+    {
+     "day_of_week": 1,
+     "is_rest": false,
+     "template_id": "t3"
+    },
+    {
+     "day_of_week": 3,
+     "is_rest": false,
+     "template_id": "t2"
+    },
+    {
+     "day_of_week": 5,
+     "is_rest": false,
+     "template_id": "t0"
+    },
+    {
+     "day_of_week": 6,
+     "is_rest": false,
+     "template_id": null
+    },
+    {
+     "day_of_week": 2,
+     "is_rest": false,
+     "template_id": "t3"
+    },
+    {
+     "day_of_week": 1,
+     "is_rest": false,
+     "template_id": "t2"
+    }
+   ],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": "Squat"
+      },
+      {
+       "exerciseName": "Bench Press"
+      }
+     ]
+    },
+    {
+     "id": "t1",
+     "exercises": []
+    },
+    {
+     "id": "t2",
+     "exercises": [
+      {
+       "exerciseName": "Deadlift"
+      },
+      {
+       "exerciseName": "bench  press"
+      },
+      {
+       "exerciseName": "Curl"
+      }
+     ]
+    },
+    {
+     "id": "t3",
+     "exercises": [
+      {
+       "exerciseName": "Pull-up"
+      },
+      {
+       "exerciseName": "Curl"
+      }
+     ]
+    }
+   ],
+   "keys": {
+    "today": [
+     "bench press",
+     "curl",
+     "deadlift"
+    ],
+    "week": [
+     "bench press",
+     "curl",
+     "deadlift",
+     "pull-up",
+     "squat"
+    ],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-14",
+   "days": [
+    {
+     "day_of_week": 0,
+     "is_rest": false,
+     "template_id": "t0"
+    },
+    {
+     "day_of_week": 3,
+     "is_rest": true,
+     "template_id": null
+    },
+    {
+     "day_of_week": 4,
+     "is_rest": true,
+     "template_id": "t1"
+    },
+    {
+     "day_of_week": 0,
+     "is_rest": false,
+     "template_id": "t1"
+    },
+    {
+     "day_of_week": 4,
+     "is_rest": false,
+     "template_id": null
+    },
+    {
+     "day_of_week": 4,
+     "is_rest": false,
+     "template_id": null
+    }
+   ],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": "Bench Press"
+      }
+     ]
+    },
+    {
+     "id": "t1",
+     "exercises": [
+      {
+       "exerciseName": "Squat"
+      }
+     ]
+    }
+   ],
+   "keys": {
+    "today": [],
+    "week": [
+     "bench press",
+     "squat"
+    ],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-28",
+   "days": [
+    {
+     "day_of_week": 4,
+     "is_rest": false,
+     "template_id": "t1"
+    },
+    {
+     "day_of_week": 1,
+     "is_rest": false,
+     "template_id": null
+    },
+    {
+     "day_of_week": 5,
+     "is_rest": false,
+     "template_id": "t0"
+    },
+    {
+     "day_of_week": 3,
+     "is_rest": true,
+     "template_id": "t4"
+    }
+   ],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": []
+    },
+    {
+     "id": "t1",
+     "exercises": [
+      {
+       "exerciseName": "bench  press"
+      },
+      {
+       "exerciseName": "Bench Press"
+      },
+      {
+       "exerciseName": "Plank"
+      }
+     ]
+    },
+    {
+     "id": "t2",
+     "exercises": [
+      {
+       "exerciseName": " Row "
+      }
+     ]
+    },
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": "Override"
+      }
+     ]
+    }
+   ],
+   "keys": {
+    "today": [],
+    "week": [
+     "bench press",
+     "override",
+     "plank"
+    ],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-15",
+   "days": [
+    {
+     "day_of_week": 2,
+     "is_rest": false,
+     "template_id": "t0"
+    },
+    {
+     "day_of_week": 5,
+     "is_rest": false,
+     "template_id": "t4"
+    },
+    {
+     "day_of_week": 3,
+     "is_rest": false,
+     "template_id": null
+    },
+    {
+     "day_of_week": 2,
+     "is_rest": false,
+     "template_id": "t1"
+    },
+    {
+     "day_of_week": 3,
+     "is_rest": false,
+     "template_id": "t2"
+    },
+    {
+     "day_of_week": 5,
+     "is_rest": false,
+     "template_id": "t0"
+    }
+   ],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": " Row "
+      }
+     ]
+    },
+    {
+     "id": "t1",
+     "exercises": []
+    },
+    {
+     "id": "t2",
+     "exercises": [
+      {
+       "exerciseName": " Row "
+      },
+      {
+       "exerciseName": "Squat"
+      }
+     ]
+    },
+    {
+     "id": "t3",
+     "exercises": [
+      {
+       "exerciseName": " Row "
+      },
+      {
+       "exerciseName": "Bench Press"
+      },
+      {
+       "exerciseName": "Plank"
+      }
+     ]
+    },
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": "Override"
+      }
+     ]
+    }
+   ],
+   "keys": {
+    "today": [
+     "row",
+     "squat"
+    ],
+    "week": [
+     "override",
+     "row",
+     "squat"
+    ],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-13",
+   "days": [
+    {
+     "day_of_week": 3,
+     "is_rest": false,
+     "template_id": null
+    },
+    {
+     "day_of_week": 1,
+     "is_rest": false,
+     "template_id": "t0"
+    }
+   ],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": []
+    },
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": "Override"
+      }
+     ]
+    }
+   ],
+   "keys": {
+    "today": [
+     "override"
+    ],
+    "week": [
+     "override"
+    ],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-11",
+   "days": [
+    {
+     "day_of_week": 0,
+     "is_rest": false,
+     "template_id": "t2"
+    },
+    {
+     "day_of_week": 2,
+     "is_rest": false,
+     "template_id": null
+    },
+    {
+     "day_of_week": 6,
+     "is_rest": false,
+     "template_id": "t4"
+    }
+   ],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": "Squat"
+      },
+      {
+       "exerciseName": "Pull-up"
+      }
+     ]
+    }
+   ],
+   "keys": {
+    "today": [],
+    "week": [],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-04",
+   "days": [
+    {
+     "day_of_week": 6,
+     "is_rest": false,
+     "template_id": "t2"
+    },
+    {
+     "day_of_week": 0,
+     "is_rest": false,
+     "template_id": "t4"
+    },
+    {
+     "day_of_week": 6,
+     "is_rest": false,
+     "template_id": "t1"
+    }
+   ],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": "Plank"
+      },
+      {
+       "exerciseName": "Deadlift"
+      }
+     ]
+    },
+    {
+     "id": "t1",
+     "exercises": [
+      {
+       "exerciseName": ""
+      }
+     ]
+    },
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": "Override"
+      }
+     ]
+    }
+   ],
+   "keys": {
+    "today": [],
+    "week": [],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-27",
+   "days": [
+    {
+     "day_of_week": 6,
+     "is_rest": false,
+     "template_id": "t4"
+    }
+   ],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": "bench  press"
+      },
+      {
+       "exerciseName": "Curl"
+      },
+      {
+       "exerciseName": "Deadlift"
+      }
+     ]
+    }
+   ],
+   "keys": {
+    "today": [],
+    "week": [],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-04",
+   "days": [
+    {
+     "day_of_week": 3,
+     "is_rest": false,
+     "template_id": "t3"
+    },
+    {
+     "day_of_week": 5,
+     "is_rest": true,
+     "template_id": "t3"
+    },
+    {
+     "day_of_week": 6,
+     "is_rest": false,
+     "template_id": "t3"
+    }
+   ],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": []
+    },
+    {
+     "id": "t1",
+     "exercises": [
+      {
+       "exerciseName": "Deadlift"
+      },
+      {
+       "exerciseName": "Squat"
+      }
+     ]
+    },
+    {
+     "id": "t2",
+     "exercises": [
+      {
+       "exerciseName": "bench  press"
+      }
+     ]
+    },
+    {
+     "id": "t3",
+     "exercises": [
+      {
+       "exerciseName": ""
+      }
+     ]
+    }
+   ],
+   "keys": {
+    "today": [],
+    "week": [],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-25",
+   "days": [
+    {
+     "day_of_week": 2,
+     "is_rest": false,
+     "template_id": "t3"
+    },
+    {
+     "day_of_week": 2,
+     "is_rest": true,
+     "template_id": "t1"
+    },
+    {
+     "day_of_week": 5,
+     "is_rest": false,
+     "template_id": null
+    },
+    {
+     "day_of_week": 4,
+     "is_rest": false,
+     "template_id": null
+    }
+   ],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": "Curl"
+      },
+      {
+       "exerciseName": "Curl"
+      },
+      {
+       "exerciseName": ""
+      }
+     ]
+    },
+    {
+     "id": "t1",
+     "exercises": []
+    },
+    {
+     "id": "t2",
+     "exercises": [
+      {
+       "exerciseName": "Curl"
+      },
+      {
+       "exerciseName": "Deadlift"
+      },
+      {
+       "exerciseName": "Deadlift"
+      }
+     ]
+    }
+   ],
+   "keys": {
+    "today": [],
+    "week": [],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-07",
+   "days": [
+    {
+     "day_of_week": 3,
+     "is_rest": true,
+     "template_id": null
+    },
+    {
+     "day_of_week": 2,
+     "is_rest": false,
+     "template_id": null
+    },
+    {
+     "day_of_week": 0,
+     "is_rest": false,
+     "template_id": "t1"
+    },
+    {
+     "day_of_week": 2,
+     "is_rest": true,
+     "template_id": "t2"
+    },
+    {
+     "day_of_week": 3,
+     "is_rest": false,
+     "template_id": "t1"
+    },
+    {
+     "day_of_week": 1,
+     "is_rest": false,
+     "template_id": "t3"
+    },
+    {
+     "day_of_week": 0,
+     "is_rest": false,
+     "template_id": null
+    }
+   ],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": "Bench Press"
+      }
+     ]
+    }
+   ],
+   "keys": {
+    "today": [],
+    "week": [],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-26",
+   "days": [
+    {
+     "day_of_week": 4,
+     "is_rest": false,
+     "template_id": "t0"
+    },
+    {
+     "day_of_week": 4,
+     "is_rest": false,
+     "template_id": "t2"
+    },
+    {
+     "day_of_week": 5,
+     "is_rest": false,
+     "template_id": null
+    },
+    {
+     "day_of_week": 6,
+     "is_rest": true,
+     "template_id": "t4"
+    },
+    {
+     "day_of_week": 0,
+     "is_rest": false,
+     "template_id": null
+    }
+   ],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": "bench  press"
+      }
+     ]
+    },
+    {
+     "id": "t1",
+     "exercises": []
+    },
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": "Override"
+      }
+     ]
+    }
+   ],
+   "keys": {
+    "today": [],
+    "week": [
+     "override"
+    ],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-24",
+   "days": [
+    {
+     "day_of_week": 1,
+     "is_rest": false,
+     "template_id": "t3"
+    },
+    {
+     "day_of_week": 6,
+     "is_rest": false,
+     "template_id": "t1"
+    }
+   ],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": "Curl"
+      },
+      {
+       "exerciseName": "bench  press"
+      }
+     ]
+    },
+    {
+     "id": "t1",
+     "exercises": []
+    },
+    {
+     "id": "t2",
+     "exercises": [
+      {
+       "exerciseName": "Bench Press"
+      }
+     ]
+    }
+   ],
+   "keys": {
+    "today": [],
+    "week": [],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-08",
+   "days": [
+    {
+     "day_of_week": 1,
+     "is_rest": false,
+     "template_id": "t4"
+    },
+    {
+     "day_of_week": 5,
+     "is_rest": false,
+     "template_id": "t1"
+    },
+    {
+     "day_of_week": 5,
+     "is_rest": false,
+     "template_id": "t4"
+    },
+    {
+     "day_of_week": 6,
+     "is_rest": false,
+     "template_id": "t1"
+    }
+   ],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": "Plank"
+      },
+      {
+       "exerciseName": "Plank"
+      },
+      {
+       "exerciseName": "Bench Press"
+      }
+     ]
+    },
+    {
+     "id": "t1",
+     "exercises": []
+    },
+    {
+     "id": "t2",
+     "exercises": []
+    },
+    {
+     "id": "t3",
+     "exercises": [
+      {
+       "exerciseName": "bench  press"
+      }
+     ]
+    }
+   ],
+   "keys": {
+    "today": [],
+    "week": [],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-08",
+   "days": [
+    {
+     "day_of_week": 2,
+     "is_rest": false,
+     "template_id": "t3"
+    }
+   ],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": "Plank"
+      }
+     ]
+    },
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": "Override"
+      }
+     ]
+    }
+   ],
+   "keys": {
+    "today": [],
+    "week": [],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-05",
+   "days": [
+    {
+     "day_of_week": 1,
+     "is_rest": false,
+     "template_id": "t4"
+    },
+    {
+     "day_of_week": 1,
+     "is_rest": false,
+     "template_id": "t1"
+    },
+    {
+     "day_of_week": 3,
+     "is_rest": true,
+     "template_id": "t2"
+    },
+    {
+     "day_of_week": 4,
+     "is_rest": false,
+     "template_id": "t3"
+    },
+    {
+     "day_of_week": 2,
+     "is_rest": false,
+     "template_id": null
+    },
+    {
+     "day_of_week": 1,
+     "is_rest": false,
+     "template_id": "t0"
+    }
+   ],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": "bench  press"
+      }
+     ]
+    },
+    {
+     "id": "t1",
+     "exercises": [
+      {
+       "exerciseName": "Squat"
+      }
+     ]
+    }
+   ],
+   "keys": {
+    "today": [],
+    "week": [
+     "bench press",
+     "squat"
+    ],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-06",
+   "days": [
+    {
+     "day_of_week": 6,
+     "is_rest": false,
+     "template_id": "t3"
+    }
+   ],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": " Row "
+      }
+     ]
+    },
+    {
+     "id": "t1",
+     "exercises": [
+      {
+       "exerciseName": "bench  press"
+      },
+      {
+       "exerciseName": "Bench Press"
+      },
+      {
+       "exerciseName": "Deadlift"
+      }
+     ]
+    }
+   ],
+   "keys": {
+    "today": [],
+    "week": [],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-21",
+   "days": [
+    {
+     "day_of_week": 3,
+     "is_rest": true,
+     "template_id": "t3"
+    },
+    {
+     "day_of_week": 3,
+     "is_rest": true,
+     "template_id": null
+    },
+    {
+     "day_of_week": 5,
+     "is_rest": false,
+     "template_id": "t3"
+    },
+    {
+     "day_of_week": 4,
+     "is_rest": false,
+     "template_id": "t0"
+    },
+    {
+     "day_of_week": 1,
+     "is_rest": false,
+     "template_id": "t2"
+    },
+    {
+     "day_of_week": 5,
+     "is_rest": true,
+     "template_id": "t4"
+    }
+   ],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": "Deadlift"
+      },
+      {
+       "exerciseName": "Curl"
+      }
+     ]
+    },
+    {
+     "id": "t1",
+     "exercises": [
+      {
+       "exerciseName": ""
+      },
+      {
+       "exerciseName": "Curl"
+      },
+      {
+       "exerciseName": "bench  press"
+      }
+     ]
+    },
+    {
+     "id": "t2",
+     "exercises": [
+      {
+       "exerciseName": "bench  press"
+      },
+      {
+       "exerciseName": "Curl"
+      },
+      {
+       "exerciseName": "Curl"
+      }
+     ]
+    }
+   ],
+   "keys": {
+    "today": [],
+    "week": [
+     "bench press",
+     "curl",
+     "deadlift"
+    ],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-15",
+   "days": [
+    {
+     "day_of_week": 0,
+     "is_rest": false,
+     "template_id": "t2"
+    },
+    {
+     "day_of_week": 4,
+     "is_rest": false,
+     "template_id": "t2"
+    },
+    {
+     "day_of_week": 3,
+     "is_rest": false,
+     "template_id": null
+    },
+    {
+     "day_of_week": 1,
+     "is_rest": false,
+     "template_id": "t1"
+    },
+    {
+     "day_of_week": 1,
+     "is_rest": false,
+     "template_id": "t3"
+    },
+    {
+     "day_of_week": 0,
+     "is_rest": true,
+     "template_id": null
+    }
+   ],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": []
+    },
+    {
+     "id": "t1",
+     "exercises": [
+      {
+       "exerciseName": "Curl"
+      }
+     ]
+    }
+   ],
+   "keys": {
+    "today": [],
+    "week": [
+     "curl"
+    ],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-18",
+   "days": [
+    {
+     "day_of_week": 0,
+     "is_rest": false,
+     "template_id": "t3"
+    }
+   ],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": "Curl"
+      },
+      {
+       "exerciseName": " Row "
+      }
+     ]
+    },
+    {
+     "id": "t1",
+     "exercises": [
+      {
+       "exerciseName": "Bench Press"
+      }
+     ]
+    },
+    {
+     "id": "t2",
+     "exercises": []
+    },
+    {
+     "id": "t3",
+     "exercises": [
+      {
+       "exerciseName": " Row "
+      },
+      {
+       "exerciseName": ""
+      }
+     ]
+    },
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": "Override"
+      }
+     ]
+    }
+   ],
+   "keys": {
+    "today": [],
+    "week": [
+     "row"
+    ],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-11",
+   "days": [
+    {
+     "day_of_week": 0,
+     "is_rest": false,
+     "template_id": "t0"
+    },
+    {
+     "day_of_week": 5,
+     "is_rest": false,
+     "template_id": "t3"
+    },
+    {
+     "day_of_week": 6,
+     "is_rest": false,
+     "template_id": "t4"
+    },
+    {
+     "day_of_week": 0,
+     "is_rest": false,
+     "template_id": null
+    },
+    {
+     "day_of_week": 2,
+     "is_rest": false,
+     "template_id": "t3"
+    }
+   ],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": "Pull-up"
+      },
+      {
+       "exerciseName": ""
+      },
+      {
+       "exerciseName": "Pull-up"
+      }
+     ]
+    }
+   ],
+   "keys": {
+    "today": [],
+    "week": [
+     "pull-up"
+    ],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-01",
+   "days": [
+    {
+     "day_of_week": 2,
+     "is_rest": false,
+     "template_id": "t2"
+    },
+    {
+     "day_of_week": 4,
+     "is_rest": false,
+     "template_id": "t2"
+    },
+    {
+     "day_of_week": 6,
+     "is_rest": false,
+     "template_id": null
+    },
+    {
+     "day_of_week": 3,
+     "is_rest": false,
+     "template_id": "t0"
+    },
+    {
+     "day_of_week": 1,
+     "is_rest": false,
+     "template_id": "t3"
+    },
+    {
+     "day_of_week": 0,
+     "is_rest": false,
+     "template_id": null
+    },
+    {
+     "day_of_week": 4,
+     "is_rest": false,
+     "template_id": "t2"
+    }
+   ],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": "Plank"
+      },
+      {
+       "exerciseName": ""
+      }
+     ]
+    },
+    {
+     "id": "t1",
+     "exercises": []
+    }
+   ],
+   "keys": {
+    "today": [
+     "plank"
+    ],
+    "week": [
+     "plank"
+    ],
+    "all": null
+   }
+  },
+  {
+   "date": "2026-10-12",
+   "days": [
+    {
+     "day_of_week": 6,
+     "is_rest": true,
+     "template_id": "t3"
+    },
+    {
+     "day_of_week": 5,
+     "is_rest": false,
+     "template_id": "t1"
+    },
+    {
+     "day_of_week": 6,
+     "is_rest": false,
+     "template_id": null
+    },
+    {
+     "day_of_week": 6,
+     "is_rest": false,
+     "template_id": "t1"
+    }
+   ],
+   "templates": [
+    {
+     "id": "t0",
+     "exercises": [
+      {
+       "exerciseName": " Row "
+      },
+      {
+       "exerciseName": "bench  press"
+      },
+      {
+       "exerciseName": "Deadlift"
+      }
+     ]
+    },
+    {
+     "id": "t1",
+     "exercises": [
+      {
+       "exerciseName": " Row "
+      }
+     ]
+    }
+   ],
+   "keys": {
+    "today": [],
+    "week": [
+     "row"
+    ],
+    "all": null
+   }
+  }
+ ],
+ "cards": [
+  {
+   "insight": {
+    "trend": "STABLE",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 8,
+    "bestWeightKg": null,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": 0,
+        "reps": 1,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 100,
+        "reps": 8,
+        "durationSec": null,
+        "bodyweightKg": 82.4
+       }
+      ]
+     }
+    ]
+   },
+   "group": "fine",
+   "headline": {
+    "kg": "82.4 kg × 8",
+    "lbs": "181.7 lb × 8"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": [
+      "1",
+      "182.4 kg × 8"
+     ]
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": [
+      "1",
+      "402.1 lb × 8"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "DECLINING",
+    "stale": true,
+    "bestDurationSec": null,
+    "bestReps": 12,
+    "bestWeightKg": null,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": 22.5,
+        "reps": 6,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "12",
+    "lbs": "12"
+   },
+   "series": {
+    "kg": {
+     "prefix": "22.5 kg",
+     "parts": [
+      "6"
+     ]
+    },
+    "lbs": {
+     "prefix": "49.6 lb",
+     "parts": [
+      "6"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "INSUFFICIENT_DATA",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 8,
+    "bestWeightKg": 40,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": 61.23,
+        "reps": 5,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": null,
+        "reps": 12,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 22.5,
+        "reps": 5,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     }
+    ]
+   },
+   "group": "thin",
+   "headline": {
+    "kg": "40 kg × 8",
+    "lbs": "88.2 lb × 8"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": [
+      "61.2 kg × 5",
+      "12",
+      "22.5 kg × 5"
+     ]
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": [
+      "135 lb × 5",
+      "12",
+      "49.6 lb × 5"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "IMPROVING",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 12,
+    "bestWeightKg": null,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": []
+     }
+    ]
+   },
+   "group": "fine",
+   "headline": {
+    "kg": "12",
+    "lbs": "12"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": []
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": []
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "STABLE",
+    "stale": true,
+    "bestDurationSec": null,
+    "bestReps": 3,
+    "bestWeightKg": null,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": []
+     },
+     {
+      "kind": "volatile",
+      "spread": 0.2
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "3",
+    "lbs": "3"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": []
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": []
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "DECLINING",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 12,
+    "bestWeightKg": 40,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": null,
+        "reps": 8,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": null,
+        "reps": 10,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": null,
+        "reps": 10,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     },
+     {
+      "kind": "volatile",
+      "spread": 0.2
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "40 kg × 12",
+    "lbs": "88.2 lb × 12"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": [
+      "8",
+      "10",
+      "10"
+     ]
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": [
+      "8",
+      "10",
+      "10"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "PLATEAU",
+    "stale": true,
+    "bestDurationSec": 90,
+    "bestReps": null,
+    "bestWeightKg": 40,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": 20,
+        "reps": 8,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 0,
+        "reps": 12,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 22.5,
+        "reps": 5,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 60,
+        "reps": 8,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     },
+     {
+      "kind": "volatile",
+      "spread": 0.2
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "90s",
+    "lbs": "90s"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": [
+      "20 kg × 8",
+      "12",
+      "22.5 kg × 5",
+      "60 kg × 8"
+     ]
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": [
+      "44.1 lb × 8",
+      "12",
+      "49.6 lb × 5",
+      "132.3 lb × 8"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "PLATEAU",
+    "stale": true,
+    "bestDurationSec": 30,
+    "bestReps": null,
+    "bestWeightKg": null,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": 22.5,
+        "reps": 6,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 22.5,
+        "reps": 6,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 22.5,
+        "reps": 6,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 22.5,
+        "reps": 6,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     },
+     {
+      "kind": "volatile",
+      "spread": 0.2
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "30s",
+    "lbs": "30s"
+   },
+   "series": {
+    "kg": {
+     "prefix": "22.5 kg",
+     "parts": [
+      "6",
+      "6",
+      "6",
+      "6"
+     ]
+    },
+    "lbs": {
+     "prefix": "49.6 lb",
+     "parts": [
+      "6",
+      "6",
+      "6",
+      "6"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "DECLINING",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": null,
+    "bestWeightKg": 40,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": null,
+        "reps": 8,
+        "durationSec": null,
+        "bodyweightKg": 70
+       },
+       {
+        "weightKg": null,
+        "reps": 10,
+        "durationSec": null,
+        "bodyweightKg": 70
+       },
+       {
+        "weightKg": null,
+        "reps": 8,
+        "durationSec": null,
+        "bodyweightKg": 70
+       }
+      ]
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "—",
+    "lbs": "—"
+   },
+   "series": {
+    "kg": {
+     "prefix": "70 kg",
+     "parts": [
+      "8",
+      "10",
+      "8"
+     ]
+    },
+    "lbs": {
+     "prefix": "154.3 lb",
+     "parts": [
+      "8",
+      "10",
+      "8"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "IMPROVING",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 3,
+    "bestWeightKg": 40,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": null,
+        "reps": 5,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 61.23,
+        "reps": 8,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 0,
+        "reps": 1,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 61.23,
+        "reps": 5,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     },
+     {
+      "kind": "volatile",
+      "spread": 0.2
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "40 kg × 3",
+    "lbs": "88.2 lb × 3"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": [
+      "5",
+      "61.2 kg × 8",
+      "1",
+      "61.2 kg × 5"
+     ]
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": [
+      "5",
+      "135 lb × 8",
+      "1",
+      "135 lb × 5"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "STABLE",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 3,
+    "bestWeightKg": null,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": []
+     }
+    ]
+   },
+   "group": "fine",
+   "headline": {
+    "kg": "3",
+    "lbs": "3"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": []
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": []
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "PLATEAU",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 3,
+    "bestWeightKg": 62.5,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": null,
+        "reps": 5,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 100,
+        "reps": 1,
+        "durationSec": null,
+        "bodyweightKg": 70
+       },
+       {
+        "weightKg": 100,
+        "reps": 1,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "62.5 kg × 3",
+    "lbs": "137.8 lb × 3"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": [
+      "5",
+      "170 kg × 1",
+      "100 kg × 1"
+     ]
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": [
+      "5",
+      "374.8 lb × 1",
+      "220.5 lb × 1"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "IMPROVING",
+    "stale": true,
+    "bestDurationSec": null,
+    "bestReps": null,
+    "bestWeightKg": 0,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": 20,
+        "reps": 1,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "—",
+    "lbs": "—"
+   },
+   "series": {
+    "kg": {
+     "prefix": "20 kg",
+     "parts": [
+      "1"
+     ]
+    },
+    "lbs": {
+     "prefix": "44.1 lb",
+     "parts": [
+      "1"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "STABLE",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 3,
+    "bestWeightKg": 61.23,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": 0,
+        "reps": 6,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 0,
+        "reps": 6,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 0,
+        "reps": 6,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 0,
+        "reps": 6,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     }
+    ]
+   },
+   "group": "fine",
+   "headline": {
+    "kg": "61.2 kg × 3",
+    "lbs": "135 lb × 3"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": [
+      "6",
+      "6",
+      "6",
+      "6"
+     ]
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": [
+      "6",
+      "6",
+      "6",
+      "6"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "INSUFFICIENT_DATA",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 12,
+    "bestWeightKg": null,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": 20,
+        "reps": null,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 61.23,
+        "reps": 10,
+        "durationSec": null,
+        "bodyweightKg": 82.4
+       }
+      ]
+     }
+    ]
+   },
+   "group": "thin",
+   "headline": {
+    "kg": "82.4 kg × 12",
+    "lbs": "181.7 lb × 12"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": [
+      "—",
+      "143.6 kg × 10"
+     ]
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": [
+      "—",
+      "316.6 lb × 10"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "STABLE",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 12,
+    "bestWeightKg": null,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": []
+     }
+    ]
+   },
+   "group": "fine",
+   "headline": {
+    "kg": "12",
+    "lbs": "12"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": []
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": []
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "PLATEAU",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 12,
+    "bestWeightKg": null,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": null,
+        "reps": 10,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": null,
+        "reps": 10,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": null,
+        "reps": 10,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "12",
+    "lbs": "12"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": [
+      "10",
+      "10",
+      "10"
+     ]
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": [
+      "10",
+      "10",
+      "10"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "PLATEAU",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": null,
+    "bestWeightKg": null,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": []
+     },
+     {
+      "kind": "volatile",
+      "spread": 0.2
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "—",
+    "lbs": "—"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": []
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": []
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "DECLINING",
+    "stale": true,
+    "bestDurationSec": null,
+    "bestReps": null,
+    "bestWeightKg": 0,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": 0,
+        "reps": 10,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 0,
+        "reps": 8,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 0,
+        "reps": 10,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     },
+     {
+      "kind": "volatile",
+      "spread": 0.2
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "—",
+    "lbs": "—"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": [
+      "10",
+      "8",
+      "10"
+     ]
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": [
+      "10",
+      "8",
+      "10"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "STABLE",
+    "stale": true,
+    "bestDurationSec": null,
+    "bestReps": 12,
+    "bestWeightKg": null,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": 22.5,
+        "reps": 1,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 22.5,
+        "reps": 1,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 20,
+        "reps": 10,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 0,
+        "reps": 12,
+        "durationSec": null,
+        "bodyweightKg": 82.4
+       }
+      ]
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "82.4 kg × 12",
+    "lbs": "181.7 lb × 12"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": [
+      "22.5 kg × 1",
+      "22.5 kg × 1",
+      "20 kg × 10",
+      "82.4 kg × 12"
+     ]
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": [
+      "49.6 lb × 1",
+      "49.6 lb × 1",
+      "44.1 lb × 10",
+      "181.7 lb × 12"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "DECLINING",
+    "stale": true,
+    "bestDurationSec": null,
+    "bestReps": 8,
+    "bestWeightKg": null,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": null,
+        "reps": 10,
+        "durationSec": 30,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": null,
+        "reps": 10,
+        "durationSec": 30,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": null,
+        "reps": 8,
+        "durationSec": 30,
+        "bodyweightKg": null
+       }
+      ]
+     },
+     {
+      "kind": "volatile",
+      "spread": 0.2
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "8",
+    "lbs": "8"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": [
+      "10",
+      "10",
+      "8"
+     ]
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": [
+      "10",
+      "10",
+      "8"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "DECLINING",
+    "stale": true,
+    "bestDurationSec": null,
+    "bestReps": 8,
+    "bestWeightKg": 61.23,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": null,
+        "reps": 10,
+        "durationSec": null,
+        "bodyweightKg": 82.4
+       }
+      ]
+     },
+     {
+      "kind": "volatile",
+      "spread": 0.2
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "143.6 kg × 8",
+    "lbs": "316.6 lb × 8"
+   },
+   "series": {
+    "kg": {
+     "prefix": "82.4 kg",
+     "parts": [
+      "10"
+     ]
+    },
+    "lbs": {
+     "prefix": "181.7 lb",
+     "parts": [
+      "10"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "IMPROVING",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": null,
+    "bestWeightKg": 62.5,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": null,
+        "reps": 8,
+        "durationSec": null,
+        "bodyweightKg": 70
+       }
+      ]
+     },
+     {
+      "kind": "volatile",
+      "spread": 0.2
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "—",
+    "lbs": "—"
+   },
+   "series": {
+    "kg": {
+     "prefix": "70 kg",
+     "parts": [
+      "8"
+     ]
+    },
+    "lbs": {
+     "prefix": "154.3 lb",
+     "parts": [
+      "8"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "STABLE",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 12,
+    "bestWeightKg": 40,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": 22.5,
+        "reps": 6,
+        "durationSec": null,
+        "bodyweightKg": 82.4
+       },
+       {
+        "weightKg": 22.5,
+        "reps": 6,
+        "durationSec": null,
+        "bodyweightKg": 82.4
+       },
+       {
+        "weightKg": 22.5,
+        "reps": 6,
+        "durationSec": null,
+        "bodyweightKg": 82.4
+       }
+      ]
+     }
+    ]
+   },
+   "group": "fine",
+   "headline": {
+    "kg": "122.4 kg × 12",
+    "lbs": "269.8 lb × 12"
+   },
+   "series": {
+    "kg": {
+     "prefix": "104.9 kg",
+     "parts": [
+      "6",
+      "6",
+      "6"
+     ]
+    },
+    "lbs": {
+     "prefix": "231.3 lb",
+     "parts": [
+      "6",
+      "6",
+      "6"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "STABLE",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 8,
+    "bestWeightKg": 0,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": 0,
+        "reps": 1,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     }
+    ]
+   },
+   "group": "fine",
+   "headline": {
+    "kg": "8",
+    "lbs": "8"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": [
+      "1"
+     ]
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": [
+      "1"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "IMPROVING",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": null,
+    "bestWeightKg": 62.5,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": []
+     }
+    ]
+   },
+   "group": "fine",
+   "headline": {
+    "kg": "—",
+    "lbs": "—"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": []
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": []
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "DECLINING",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 8,
+    "bestWeightKg": 61.23,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": 20,
+        "reps": 1,
+        "durationSec": null,
+        "bodyweightKg": 82.4
+       }
+      ]
+     },
+     {
+      "kind": "volatile",
+      "spread": 0.2
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "143.6 kg × 8",
+    "lbs": "316.6 lb × 8"
+   },
+   "series": {
+    "kg": {
+     "prefix": "102.4 kg",
+     "parts": [
+      "1"
+     ]
+    },
+    "lbs": {
+     "prefix": "225.8 lb",
+     "parts": [
+      "1"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "STABLE",
+    "stale": true,
+    "bestDurationSec": null,
+    "bestReps": 3,
+    "bestWeightKg": 62.5,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": 60,
+        "reps": 10,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     },
+     {
+      "kind": "volatile",
+      "spread": 0.2
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "62.5 kg × 3",
+    "lbs": "137.8 lb × 3"
+   },
+   "series": {
+    "kg": {
+     "prefix": "60 kg",
+     "parts": [
+      "10"
+     ]
+    },
+    "lbs": {
+     "prefix": "132.3 lb",
+     "parts": [
+      "10"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "DECLINING",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 12,
+    "bestWeightKg": 61.23,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": 22.5,
+        "reps": 10,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     },
+     {
+      "kind": "volatile",
+      "spread": 0.2
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "61.2 kg × 12",
+    "lbs": "135 lb × 12"
+   },
+   "series": {
+    "kg": {
+     "prefix": "22.5 kg",
+     "parts": [
+      "10"
+     ]
+    },
+    "lbs": {
+     "prefix": "49.6 lb",
+     "parts": [
+      "10"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "STABLE",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 3,
+    "bestWeightKg": 61.23,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": null,
+        "reps": 10,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": null,
+        "reps": 10,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": null,
+        "reps": 8,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": null,
+        "reps": 8,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     }
+    ]
+   },
+   "group": "fine",
+   "headline": {
+    "kg": "61.2 kg × 3",
+    "lbs": "135 lb × 3"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": [
+      "10",
+      "10",
+      "8",
+      "8"
+     ]
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": [
+      "10",
+      "10",
+      "8",
+      "8"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "INSUFFICIENT_DATA",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 3,
+    "bestWeightKg": 40,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": 60,
+        "reps": 5,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 20,
+        "reps": 5,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 100,
+        "reps": 1,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 61.23,
+        "reps": 1,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     }
+    ]
+   },
+   "group": "thin",
+   "headline": {
+    "kg": "40 kg × 3",
+    "lbs": "88.2 lb × 3"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": [
+      "60 kg × 5",
+      "20 kg × 5",
+      "100 kg × 1",
+      "61.2 kg × 1"
+     ]
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": [
+      "132.3 lb × 5",
+      "44.1 lb × 5",
+      "220.5 lb × 1",
+      "135 lb × 1"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "INSUFFICIENT_DATA",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": null,
+    "bestWeightKg": 61.23,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": 0,
+        "reps": null,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": null,
+        "reps": 12,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     }
+    ]
+   },
+   "group": "thin",
+   "headline": {
+    "kg": "—",
+    "lbs": "—"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": [
+      "—",
+      "12"
+     ]
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": [
+      "—",
+      "12"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "PLATEAU",
+    "stale": true,
+    "bestDurationSec": 30,
+    "bestReps": null,
+    "bestWeightKg": 62.5,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": []
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "30s",
+    "lbs": "30s"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": []
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": []
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "IMPROVING",
+    "stale": true,
+    "bestDurationSec": null,
+    "bestReps": 8,
+    "bestWeightKg": null,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": null,
+        "reps": 10,
+        "durationSec": null,
+        "bodyweightKg": 70
+       },
+       {
+        "weightKg": null,
+        "reps": null,
+        "durationSec": 61,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 100,
+        "reps": 1,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "8",
+    "lbs": "8"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": [
+      "70 kg × 10",
+      "—",
+      "100 kg × 1"
+     ]
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": [
+      "154.3 lb × 10",
+      "—",
+      "220.5 lb × 1"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "IMPROVING",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 3,
+    "bestWeightKg": 0,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": 0,
+        "reps": 6,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 0,
+        "reps": 6,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     }
+    ]
+   },
+   "group": "fine",
+   "headline": {
+    "kg": "3",
+    "lbs": "3"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": [
+      "6",
+      "6"
+     ]
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": [
+      "6",
+      "6"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "DECLINING",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 8,
+    "bestWeightKg": null,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": []
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "8",
+    "lbs": "8"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": []
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": []
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "PLATEAU",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": null,
+    "bestWeightKg": 40,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": 100,
+        "reps": 6,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 100,
+        "reps": 8,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 100,
+        "reps": 6,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 100,
+        "reps": 8,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "—",
+    "lbs": "—"
+   },
+   "series": {
+    "kg": {
+     "prefix": "100 kg",
+     "parts": [
+      "6",
+      "8",
+      "6",
+      "8"
+     ]
+    },
+    "lbs": {
+     "prefix": "220.5 lb",
+     "parts": [
+      "6",
+      "8",
+      "6",
+      "8"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "INSUFFICIENT_DATA",
+    "stale": true,
+    "bestDurationSec": null,
+    "bestReps": 8,
+    "bestWeightKg": 61.23,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": 22.5,
+        "reps": 5,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 0,
+        "reps": 1,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": null,
+        "reps": 12,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     }
+    ]
+   },
+   "group": "thin",
+   "headline": {
+    "kg": "61.2 kg × 8",
+    "lbs": "135 lb × 8"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": [
+      "22.5 kg × 5",
+      "1",
+      "12"
+     ]
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": [
+      "49.6 lb × 5",
+      "1",
+      "12"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "DECLINING",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 8,
+    "bestWeightKg": 61.23,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": 20,
+        "reps": 1,
+        "durationSec": null,
+        "bodyweightKg": 82.4
+       },
+       {
+        "weightKg": null,
+        "reps": 5,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 60,
+        "reps": 5,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 60,
+        "reps": null,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "61.2 kg × 8",
+    "lbs": "135 lb × 8"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": [
+      "102.4 kg × 1",
+      "5",
+      "60 kg × 5",
+      "—"
+     ]
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": [
+      "225.8 lb × 1",
+      "5",
+      "132.3 lb × 5",
+      "—"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "INSUFFICIENT_DATA",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 12,
+    "bestWeightKg": null,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": []
+     },
+     {
+      "kind": "volatile",
+      "spread": 0.2
+     }
+    ]
+   },
+   "group": "thin",
+   "headline": {
+    "kg": "12",
+    "lbs": "12"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": []
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": []
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "DECLINING",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 8,
+    "bestWeightKg": 61.23,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": 22.5,
+        "reps": 5,
+        "durationSec": null,
+        "bodyweightKg": 70
+       }
+      ]
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "131.2 kg × 8",
+    "lbs": "289.3 lb × 8"
+   },
+   "series": {
+    "kg": {
+     "prefix": "92.5 kg",
+     "parts": [
+      "5"
+     ]
+    },
+    "lbs": {
+     "prefix": "203.9 lb",
+     "parts": [
+      "5"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "INSUFFICIENT_DATA",
+    "stale": true,
+    "bestDurationSec": null,
+    "bestReps": 12,
+    "bestWeightKg": 61.23,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": 0,
+        "reps": 10,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     },
+     {
+      "kind": "volatile",
+      "spread": 0.2
+     }
+    ]
+   },
+   "group": "thin",
+   "headline": {
+    "kg": "61.2 kg × 12",
+    "lbs": "135 lb × 12"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": [
+      "10"
+     ]
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": [
+      "10"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "DECLINING",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 3,
+    "bestWeightKg": 40,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": []
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "40 kg × 3",
+    "lbs": "88.2 lb × 3"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": []
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": []
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "IMPROVING",
+    "stale": true,
+    "bestDurationSec": null,
+    "bestReps": 3,
+    "bestWeightKg": null,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": 100,
+        "reps": 6,
+        "durationSec": null,
+        "bodyweightKg": 82.4
+       },
+       {
+        "weightKg": 100,
+        "reps": 6,
+        "durationSec": null,
+        "bodyweightKg": 82.4
+       },
+       {
+        "weightKg": 100,
+        "reps": 8,
+        "durationSec": null,
+        "bodyweightKg": 82.4
+       },
+       {
+        "weightKg": 100,
+        "reps": 8,
+        "durationSec": null,
+        "bodyweightKg": 82.4
+       }
+      ]
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "82.4 kg × 3",
+    "lbs": "181.7 lb × 3"
+   },
+   "series": {
+    "kg": {
+     "prefix": "182.4 kg",
+     "parts": [
+      "6",
+      "6",
+      "8",
+      "8"
+     ]
+    },
+    "lbs": {
+     "prefix": "402.1 lb",
+     "parts": [
+      "6",
+      "6",
+      "8",
+      "8"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "DECLINING",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 3,
+    "bestWeightKg": 0,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": []
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "3",
+    "lbs": "3"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": []
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": []
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "IMPROVING",
+    "stale": true,
+    "bestDurationSec": null,
+    "bestReps": 12,
+    "bestWeightKg": 62.5,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": null,
+        "reps": 8,
+        "durationSec": 61,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": null,
+        "reps": 6,
+        "durationSec": 61,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": null,
+        "reps": 10,
+        "durationSec": 61,
+        "bodyweightKg": null
+       }
+      ]
+     },
+     {
+      "kind": "volatile",
+      "spread": 0.2
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "62.5 kg × 12",
+    "lbs": "137.8 lb × 12"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": [
+      "8",
+      "6",
+      "10"
+     ]
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": [
+      "8",
+      "6",
+      "10"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "DECLINING",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 8,
+    "bestWeightKg": 0,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": []
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "8",
+    "lbs": "8"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": []
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": []
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "INSUFFICIENT_DATA",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 3,
+    "bestWeightKg": 61.23,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": 60,
+        "reps": 8,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 60,
+        "reps": 8,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     }
+    ]
+   },
+   "group": "thin",
+   "headline": {
+    "kg": "61.2 kg × 3",
+    "lbs": "135 lb × 3"
+   },
+   "series": {
+    "kg": {
+     "prefix": "60 kg",
+     "parts": [
+      "8",
+      "8"
+     ]
+    },
+    "lbs": {
+     "prefix": "132.3 lb",
+     "parts": [
+      "8",
+      "8"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "DECLINING",
+    "stale": true,
+    "bestDurationSec": null,
+    "bestReps": 8,
+    "bestWeightKg": 40,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": 61.23,
+        "reps": 8,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 60,
+        "reps": 12,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 100,
+        "reps": 1,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 0,
+        "reps": 5,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "40 kg × 8",
+    "lbs": "88.2 lb × 8"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": [
+      "61.2 kg × 8",
+      "60 kg × 12",
+      "100 kg × 1",
+      "5"
+     ]
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": [
+      "135 lb × 8",
+      "132.3 lb × 12",
+      "220.5 lb × 1",
+      "5"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "INSUFFICIENT_DATA",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 8,
+    "bestWeightKg": null,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": 20,
+        "reps": 5,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     },
+     {
+      "kind": "volatile",
+      "spread": 0.2
+     }
+    ]
+   },
+   "group": "thin",
+   "headline": {
+    "kg": "8",
+    "lbs": "8"
+   },
+   "series": {
+    "kg": {
+     "prefix": "20 kg",
+     "parts": [
+      "5"
+     ]
+    },
+    "lbs": {
+     "prefix": "44.1 lb",
+     "parts": [
+      "5"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "IMPROVING",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 12,
+    "bestWeightKg": 62.5,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": 60,
+        "reps": 10,
+        "durationSec": null,
+        "bodyweightKg": 70
+       }
+      ]
+     }
+    ]
+   },
+   "group": "fine",
+   "headline": {
+    "kg": "132.5 kg × 12",
+    "lbs": "292.1 lb × 12"
+   },
+   "series": {
+    "kg": {
+     "prefix": "130 kg",
+     "parts": [
+      "10"
+     ]
+    },
+    "lbs": {
+     "prefix": "286.6 lb",
+     "parts": [
+      "10"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "STABLE",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 8,
+    "bestWeightKg": 62.5,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": null,
+        "reps": 12,
+        "durationSec": null,
+        "bodyweightKg": 82.4
+       },
+       {
+        "weightKg": 60,
+        "reps": 8,
+        "durationSec": null,
+        "bodyweightKg": 82.4
+       }
+      ]
+     }
+    ]
+   },
+   "group": "fine",
+   "headline": {
+    "kg": "144.9 kg × 8",
+    "lbs": "319.4 lb × 8"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": [
+      "82.4 kg × 12",
+      "142.4 kg × 8"
+     ]
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": [
+      "181.7 lb × 12",
+      "313.9 lb × 8"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "STABLE",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 3,
+    "bestWeightKg": 40,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": null,
+        "reps": 8,
+        "durationSec": null,
+        "bodyweightKg": 82.4
+       },
+       {
+        "weightKg": 100,
+        "reps": 8,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     },
+     {
+      "kind": "volatile",
+      "spread": 0.2
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "40 kg × 3",
+    "lbs": "88.2 lb × 3"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": [
+      "82.4 kg × 8",
+      "100 kg × 8"
+     ]
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": [
+      "181.7 lb × 8",
+      "220.5 lb × 8"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "PLATEAU",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 8,
+    "bestWeightKg": 40,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": []
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "40 kg × 8",
+    "lbs": "88.2 lb × 8"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": []
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": []
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "DECLINING",
+    "stale": true,
+    "bestDurationSec": null,
+    "bestReps": 12,
+    "bestWeightKg": 40,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": 0,
+        "reps": 1,
+        "durationSec": null,
+        "bodyweightKg": 70
+       },
+       {
+        "weightKg": null,
+        "reps": null,
+        "durationSec": 45,
+        "bodyweightKg": null
+       }
+      ]
+     },
+     {
+      "kind": "volatile",
+      "spread": 0.2
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "40 kg × 12",
+    "lbs": "88.2 lb × 12"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": [
+      "70 kg × 1",
+      "—"
+     ]
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": [
+      "154.3 lb × 1",
+      "—"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "INSUFFICIENT_DATA",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 8,
+    "bestWeightKg": 40,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": 22.5,
+        "reps": 5,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 100,
+        "reps": 10,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": null,
+        "reps": 8,
+        "durationSec": null,
+        "bodyweightKg": 70
+       },
+       {
+        "weightKg": 100,
+        "reps": 1,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     }
+    ]
+   },
+   "group": "thin",
+   "headline": {
+    "kg": "40 kg × 8",
+    "lbs": "88.2 lb × 8"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": [
+      "22.5 kg × 5",
+      "100 kg × 10",
+      "70 kg × 8",
+      "100 kg × 1"
+     ]
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": [
+      "49.6 lb × 5",
+      "220.5 lb × 10",
+      "154.3 lb × 8",
+      "220.5 lb × 1"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "PLATEAU",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 8,
+    "bestWeightKg": 61.23,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": 100,
+        "reps": 10,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 100,
+        "reps": 6,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 100,
+        "reps": 10,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 100,
+        "reps": 8,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "61.2 kg × 8",
+    "lbs": "135 lb × 8"
+   },
+   "series": {
+    "kg": {
+     "prefix": "100 kg",
+     "parts": [
+      "10",
+      "6",
+      "10",
+      "8"
+     ]
+    },
+    "lbs": {
+     "prefix": "220.5 lb",
+     "parts": [
+      "10",
+      "6",
+      "10",
+      "8"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "IMPROVING",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 12,
+    "bestWeightKg": 62.5,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": null,
+        "reps": null,
+        "durationSec": 61,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 100,
+        "reps": 5,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": null,
+        "reps": null,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     }
+    ]
+   },
+   "group": "fine",
+   "headline": {
+    "kg": "62.5 kg × 12",
+    "lbs": "137.8 lb × 12"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": [
+      "—",
+      "100 kg × 5",
+      "—"
+     ]
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": [
+      "—",
+      "220.5 lb × 5",
+      "—"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "PLATEAU",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 8,
+    "bestWeightKg": null,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": 22.5,
+        "reps": 10,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 20,
+        "reps": 5,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 0,
+        "reps": 1,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 22.5,
+        "reps": 5,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     },
+     {
+      "kind": "volatile",
+      "spread": 0.2
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "8",
+    "lbs": "8"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": [
+      "22.5 kg × 10",
+      "20 kg × 5",
+      "1",
+      "22.5 kg × 5"
+     ]
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": [
+      "49.6 lb × 10",
+      "44.1 lb × 5",
+      "1",
+      "49.6 lb × 5"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "INSUFFICIENT_DATA",
+    "stale": true,
+    "bestDurationSec": null,
+    "bestReps": 3,
+    "bestWeightKg": 0,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": null,
+        "reps": null,
+        "durationSec": 30,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 0,
+        "reps": 12,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 61.23,
+        "reps": 8,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     }
+    ]
+   },
+   "group": "thin",
+   "headline": {
+    "kg": "3",
+    "lbs": "3"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": [
+      "—",
+      "12",
+      "61.2 kg × 8"
+     ]
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": [
+      "—",
+      "12",
+      "135 lb × 8"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "STABLE",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 12,
+    "bestWeightKg": 62.5,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": 0,
+        "reps": 10,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 61.23,
+        "reps": 12,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     }
+    ]
+   },
+   "group": "fine",
+   "headline": {
+    "kg": "62.5 kg × 12",
+    "lbs": "137.8 lb × 12"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": [
+      "10",
+      "61.2 kg × 12"
+     ]
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": [
+      "10",
+      "135 lb × 12"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "STABLE",
+    "stale": true,
+    "bestDurationSec": 30,
+    "bestReps": null,
+    "bestWeightKg": 40,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": []
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "30s",
+    "lbs": "30s"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": []
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": []
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "IMPROVING",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 3,
+    "bestWeightKg": 62.5,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": null,
+        "reps": null,
+        "durationSec": 45,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 100,
+        "reps": 8,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     }
+    ]
+   },
+   "group": "fine",
+   "headline": {
+    "kg": "62.5 kg × 3",
+    "lbs": "137.8 lb × 3"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": [
+      "—",
+      "100 kg × 8"
+     ]
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": [
+      "—",
+      "220.5 lb × 8"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "IMPROVING",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 8,
+    "bestWeightKg": null,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": 100,
+        "reps": 1,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     },
+     {
+      "kind": "volatile",
+      "spread": 0.2
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "8",
+    "lbs": "8"
+   },
+   "series": {
+    "kg": {
+     "prefix": "100 kg",
+     "parts": [
+      "1"
+     ]
+    },
+    "lbs": {
+     "prefix": "220.5 lb",
+     "parts": [
+      "1"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "IMPROVING",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 12,
+    "bestWeightKg": 62.5,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": 60,
+        "reps": 10,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 22.5,
+        "reps": 12,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     }
+    ]
+   },
+   "group": "fine",
+   "headline": {
+    "kg": "62.5 kg × 12",
+    "lbs": "137.8 lb × 12"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": [
+      "60 kg × 10",
+      "22.5 kg × 12"
+     ]
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": [
+      "132.3 lb × 10",
+      "49.6 lb × 12"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "STABLE",
+    "stale": true,
+    "bestDurationSec": null,
+    "bestReps": 12,
+    "bestWeightKg": null,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": 0,
+        "reps": 10,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 61.23,
+        "reps": 5,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 61.23,
+        "reps": 5,
+        "durationSec": null,
+        "bodyweightKg": 70
+       }
+      ]
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "70 kg × 12",
+    "lbs": "154.3 lb × 12"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": [
+      "10",
+      "61.2 kg × 5",
+      "131.2 kg × 5"
+     ]
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": [
+      "10",
+      "135 lb × 5",
+      "289.3 lb × 5"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "INSUFFICIENT_DATA",
+    "stale": true,
+    "bestDurationSec": null,
+    "bestReps": 8,
+    "bestWeightKg": 62.5,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": 22.5,
+        "reps": null,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": null,
+        "reps": null,
+        "durationSec": 61,
+        "bodyweightKg": 82.4
+       },
+       {
+        "weightKg": 0,
+        "reps": 5,
+        "durationSec": null,
+        "bodyweightKg": 70
+       }
+      ]
+     }
+    ]
+   },
+   "group": "thin",
+   "headline": {
+    "kg": "132.5 kg × 8",
+    "lbs": "292.1 lb × 8"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": [
+      "—",
+      "—",
+      "70 kg × 5"
+     ]
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": [
+      "—",
+      "—",
+      "154.3 lb × 5"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "IMPROVING",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 8,
+    "bestWeightKg": 61.23,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": null,
+        "reps": 10,
+        "durationSec": null,
+        "bodyweightKg": 70
+       },
+       {
+        "weightKg": null,
+        "reps": null,
+        "durationSec": 30,
+        "bodyweightKg": null
+       }
+      ]
+     }
+    ]
+   },
+   "group": "fine",
+   "headline": {
+    "kg": "61.2 kg × 8",
+    "lbs": "135 lb × 8"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": [
+      "70 kg × 10",
+      "—"
+     ]
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": [
+      "154.3 lb × 10",
+      "—"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "IMPROVING",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 3,
+    "bestWeightKg": null,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": 100,
+        "reps": 1,
+        "durationSec": null,
+        "bodyweightKg": 82.4
+       }
+      ]
+     }
+    ]
+   },
+   "group": "fine",
+   "headline": {
+    "kg": "82.4 kg × 3",
+    "lbs": "181.7 lb × 3"
+   },
+   "series": {
+    "kg": {
+     "prefix": "182.4 kg",
+     "parts": [
+      "1"
+     ]
+    },
+    "lbs": {
+     "prefix": "402.1 lb",
+     "parts": [
+      "1"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "INSUFFICIENT_DATA",
+    "stale": false,
+    "bestDurationSec": 30,
+    "bestReps": null,
+    "bestWeightKg": null,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": []
+     }
+    ]
+   },
+   "group": "thin",
+   "headline": {
+    "kg": "30s",
+    "lbs": "30s"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": []
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": []
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "STABLE",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 12,
+    "bestWeightKg": null,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": 22.5,
+        "reps": 10,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 22.5,
+        "reps": 1,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     }
+    ]
+   },
+   "group": "fine",
+   "headline": {
+    "kg": "12",
+    "lbs": "12"
+   },
+   "series": {
+    "kg": {
+     "prefix": "22.5 kg",
+     "parts": [
+      "10",
+      "1"
+     ]
+    },
+    "lbs": {
+     "prefix": "49.6 lb",
+     "parts": [
+      "10",
+      "1"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "DECLINING",
+    "stale": true,
+    "bestDurationSec": null,
+    "bestReps": 8,
+    "bestWeightKg": null,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": []
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "8",
+    "lbs": "8"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": []
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": []
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "STABLE",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 12,
+    "bestWeightKg": 0,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": []
+     }
+    ]
+   },
+   "group": "fine",
+   "headline": {
+    "kg": "12",
+    "lbs": "12"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": []
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": []
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "IMPROVING",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 3,
+    "bestWeightKg": 40,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": 61.23,
+        "reps": 5,
+        "durationSec": null,
+        "bodyweightKg": 70
+       },
+       {
+        "weightKg": null,
+        "reps": null,
+        "durationSec": null,
+        "bodyweightKg": 82.4
+       }
+      ]
+     }
+    ]
+   },
+   "group": "fine",
+   "headline": {
+    "kg": "122.4 kg × 3",
+    "lbs": "269.8 lb × 3"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": [
+      "131.2 kg × 5",
+      "—"
+     ]
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": [
+      "289.3 lb × 5",
+      "—"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "DECLINING",
+    "stale": false,
+    "bestDurationSec": 30,
+    "bestReps": null,
+    "bestWeightKg": 40,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": []
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "30s",
+    "lbs": "30s"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": []
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": []
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "PLATEAU",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 12,
+    "bestWeightKg": null,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": null,
+        "reps": 12,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": null,
+        "reps": null,
+        "durationSec": 45,
+        "bodyweightKg": 82.4
+       },
+       {
+        "weightKg": 0,
+        "reps": 5,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     },
+     {
+      "kind": "volatile",
+      "spread": 0.2
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "12",
+    "lbs": "12"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": [
+      "12",
+      "—",
+      "5"
+     ]
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": [
+      "12",
+      "—",
+      "5"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "INSUFFICIENT_DATA",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 12,
+    "bestWeightKg": 40,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": null,
+        "reps": null,
+        "durationSec": 30,
+        "bodyweightKg": 82.4
+       },
+       {
+        "weightKg": null,
+        "reps": null,
+        "durationSec": 45,
+        "bodyweightKg": null
+       }
+      ]
+     }
+    ]
+   },
+   "group": "thin",
+   "headline": {
+    "kg": "40 kg × 12",
+    "lbs": "88.2 lb × 12"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": [
+      "30s",
+      "45s"
+     ]
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": [
+      "30s",
+      "45s"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "IMPROVING",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 3,
+    "bestWeightKg": 40,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": 20,
+        "reps": 10,
+        "durationSec": null,
+        "bodyweightKg": 82.4
+       },
+       {
+        "weightKg": 0,
+        "reps": 12,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 61.23,
+        "reps": 12,
+        "durationSec": null,
+        "bodyweightKg": 82.4
+       },
+       {
+        "weightKg": 20,
+        "reps": 5,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     }
+    ]
+   },
+   "group": "fine",
+   "headline": {
+    "kg": "40 kg × 3",
+    "lbs": "88.2 lb × 3"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": [
+      "102.4 kg × 10",
+      "12",
+      "143.6 kg × 12",
+      "20 kg × 5"
+     ]
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": [
+      "225.8 lb × 10",
+      "12",
+      "316.6 lb × 12",
+      "44.1 lb × 5"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "IMPROVING",
+    "stale": true,
+    "bestDurationSec": null,
+    "bestReps": 8,
+    "bestWeightKg": 40,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": 60,
+        "reps": 8,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 60,
+        "reps": 10,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 60,
+        "reps": 8,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "40 kg × 8",
+    "lbs": "88.2 lb × 8"
+   },
+   "series": {
+    "kg": {
+     "prefix": "60 kg",
+     "parts": [
+      "8",
+      "10",
+      "8"
+     ]
+    },
+    "lbs": {
+     "prefix": "132.3 lb",
+     "parts": [
+      "8",
+      "10",
+      "8"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "DECLINING",
+    "stale": true,
+    "bestDurationSec": null,
+    "bestReps": 3,
+    "bestWeightKg": null,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": null,
+        "reps": null,
+        "durationSec": 45,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 20,
+        "reps": null,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "3",
+    "lbs": "3"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": [
+      "—",
+      "—"
+     ]
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": [
+      "—",
+      "—"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "IMPROVING",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 12,
+    "bestWeightKg": null,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": 60,
+        "reps": 10,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     },
+     {
+      "kind": "volatile",
+      "spread": 0.2
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "12",
+    "lbs": "12"
+   },
+   "series": {
+    "kg": {
+     "prefix": "60 kg",
+     "parts": [
+      "10"
+     ]
+    },
+    "lbs": {
+     "prefix": "132.3 lb",
+     "parts": [
+      "10"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "IMPROVING",
+    "stale": false,
+    "bestDurationSec": 90,
+    "bestReps": null,
+    "bestWeightKg": 40,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": []
+     }
+    ]
+   },
+   "group": "fine",
+   "headline": {
+    "kg": "90s",
+    "lbs": "90s"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": []
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": []
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "INSUFFICIENT_DATA",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 12,
+    "bestWeightKg": 40,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": 22.5,
+        "reps": 1,
+        "durationSec": null,
+        "bodyweightKg": 82.4
+       },
+       {
+        "weightKg": 22.5,
+        "reps": 8,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     },
+     {
+      "kind": "volatile",
+      "spread": 0.2
+     }
+    ]
+   },
+   "group": "thin",
+   "headline": {
+    "kg": "40 kg × 12",
+    "lbs": "88.2 lb × 12"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": [
+      "104.9 kg × 1",
+      "22.5 kg × 8"
+     ]
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": [
+      "231.3 lb × 1",
+      "49.6 lb × 8"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "PLATEAU",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 8,
+    "bestWeightKg": 62.5,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": []
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "62.5 kg × 8",
+    "lbs": "137.8 lb × 8"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": []
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": []
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "IMPROVING",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": null,
+    "bestWeightKg": 0,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": []
+     },
+     {
+      "kind": "volatile",
+      "spread": 0.2
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "—",
+    "lbs": "—"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": []
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": []
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "DECLINING",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 8,
+    "bestWeightKg": 62.5,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": 20,
+        "reps": 8,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 20,
+        "reps": 10,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     },
+     {
+      "kind": "volatile",
+      "spread": 0.2
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "62.5 kg × 8",
+    "lbs": "137.8 lb × 8"
+   },
+   "series": {
+    "kg": {
+     "prefix": "20 kg",
+     "parts": [
+      "8",
+      "10"
+     ]
+    },
+    "lbs": {
+     "prefix": "44.1 lb",
+     "parts": [
+      "8",
+      "10"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "PLATEAU",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 3,
+    "bestWeightKg": 61.23,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": null,
+        "reps": null,
+        "durationSec": 61,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 61.23,
+        "reps": 8,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": null,
+        "reps": null,
+        "durationSec": 45,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 22.5,
+        "reps": 10,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     },
+     {
+      "kind": "volatile",
+      "spread": 0.2
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "61.2 kg × 3",
+    "lbs": "135 lb × 3"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": [
+      "—",
+      "61.2 kg × 8",
+      "—",
+      "22.5 kg × 10"
+     ]
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": [
+      "—",
+      "135 lb × 8",
+      "—",
+      "49.6 lb × 10"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "STABLE",
+    "stale": true,
+    "bestDurationSec": null,
+    "bestReps": 12,
+    "bestWeightKg": 62.5,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": null,
+        "reps": null,
+        "durationSec": 61,
+        "bodyweightKg": 70
+       },
+       {
+        "weightKg": null,
+        "reps": null,
+        "durationSec": 45,
+        "bodyweightKg": 82.4
+       },
+       {
+        "weightKg": 0,
+        "reps": 1,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": null,
+        "reps": null,
+        "durationSec": 61,
+        "bodyweightKg": null
+       }
+      ]
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "62.5 kg × 12",
+    "lbs": "137.8 lb × 12"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": [
+      "—",
+      "—",
+      "1",
+      "—"
+     ]
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": [
+      "—",
+      "—",
+      "1",
+      "—"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "IMPROVING",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 8,
+    "bestWeightKg": 61.23,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": []
+     }
+    ]
+   },
+   "group": "fine",
+   "headline": {
+    "kg": "61.2 kg × 8",
+    "lbs": "135 lb × 8"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": []
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": []
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "IMPROVING",
+    "stale": false,
+    "bestDurationSec": 90,
+    "bestReps": null,
+    "bestWeightKg": 40,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": 100,
+        "reps": 5,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": null,
+        "reps": 12,
+        "durationSec": null,
+        "bodyweightKg": 70
+       },
+       {
+        "weightKg": null,
+        "reps": 8,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     }
+    ]
+   },
+   "group": "fine",
+   "headline": {
+    "kg": "90s",
+    "lbs": "90s"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": [
+      "100 kg × 5",
+      "70 kg × 12",
+      "8"
+     ]
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": [
+      "220.5 lb × 5",
+      "154.3 lb × 12",
+      "8"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "IMPROVING",
+    "stale": false,
+    "bestDurationSec": 90,
+    "bestReps": null,
+    "bestWeightKg": 62.5,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": 22.5,
+        "reps": 6,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 22.5,
+        "reps": 8,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 22.5,
+        "reps": 8,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 22.5,
+        "reps": 6,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     }
+    ]
+   },
+   "group": "fine",
+   "headline": {
+    "kg": "90s",
+    "lbs": "90s"
+   },
+   "series": {
+    "kg": {
+     "prefix": "22.5 kg",
+     "parts": [
+      "6",
+      "8",
+      "8",
+      "6"
+     ]
+    },
+    "lbs": {
+     "prefix": "49.6 lb",
+     "parts": [
+      "6",
+      "8",
+      "8",
+      "6"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "PLATEAU",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 3,
+    "bestWeightKg": 62.5,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": 22.5,
+        "reps": 12,
+        "durationSec": null,
+        "bodyweightKg": 70
+       },
+       {
+        "weightKg": 20,
+        "reps": 12,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 100,
+        "reps": 1,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 60,
+        "reps": 12,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "62.5 kg × 3",
+    "lbs": "137.8 lb × 3"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": [
+      "92.5 kg × 12",
+      "20 kg × 12",
+      "100 kg × 1",
+      "60 kg × 12"
+     ]
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": [
+      "203.9 lb × 12",
+      "44.1 lb × 12",
+      "220.5 lb × 1",
+      "132.3 lb × 12"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "INSUFFICIENT_DATA",
+    "stale": true,
+    "bestDurationSec": null,
+    "bestReps": 3,
+    "bestWeightKg": 40,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": 22.5,
+        "reps": 5,
+        "durationSec": null,
+        "bodyweightKg": 82.4
+       },
+       {
+        "weightKg": null,
+        "reps": 12,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 100,
+        "reps": null,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 22.5,
+        "reps": 1,
+        "durationSec": null,
+        "bodyweightKg": 82.4
+       }
+      ]
+     }
+    ]
+   },
+   "group": "thin",
+   "headline": {
+    "kg": "122.4 kg × 3",
+    "lbs": "269.8 lb × 3"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": [
+      "104.9 kg × 5",
+      "12",
+      "—",
+      "104.9 kg × 1"
+     ]
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": [
+      "231.3 lb × 5",
+      "12",
+      "—",
+      "231.3 lb × 1"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "DECLINING",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 8,
+    "bestWeightKg": null,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": null,
+        "reps": 6,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": null,
+        "reps": 8,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": null,
+        "reps": 8,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": null,
+        "reps": 6,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "8",
+    "lbs": "8"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": [
+      "6",
+      "8",
+      "8",
+      "6"
+     ]
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": [
+      "6",
+      "8",
+      "8",
+      "6"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "STABLE",
+    "stale": false,
+    "bestDurationSec": 30,
+    "bestReps": null,
+    "bestWeightKg": 0,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": 60,
+        "reps": 10,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": null,
+        "reps": 5,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": null,
+        "reps": null,
+        "durationSec": 61,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 60,
+        "reps": null,
+        "durationSec": null,
+        "bodyweightKg": 70
+       }
+      ]
+     }
+    ]
+   },
+   "group": "fine",
+   "headline": {
+    "kg": "30s",
+    "lbs": "30s"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": [
+      "60 kg × 10",
+      "5",
+      "—",
+      "—"
+     ]
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": [
+      "132.3 lb × 10",
+      "5",
+      "—",
+      "—"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "DECLINING",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 3,
+    "bestWeightKg": 61.23,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": 60,
+        "reps": 8,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 60,
+        "reps": 10,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "61.2 kg × 3",
+    "lbs": "135 lb × 3"
+   },
+   "series": {
+    "kg": {
+     "prefix": "60 kg",
+     "parts": [
+      "8",
+      "10"
+     ]
+    },
+    "lbs": {
+     "prefix": "132.3 lb",
+     "parts": [
+      "8",
+      "10"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "PLATEAU",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 8,
+    "bestWeightKg": null,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": []
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "8",
+    "lbs": "8"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": []
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": []
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "DECLINING",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 8,
+    "bestWeightKg": 61.23,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": null,
+        "reps": 12,
+        "durationSec": null,
+        "bodyweightKg": 82.4
+       },
+       {
+        "weightKg": null,
+        "reps": null,
+        "durationSec": 45,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 60,
+        "reps": 8,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "61.2 kg × 8",
+    "lbs": "135 lb × 8"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": [
+      "82.4 kg × 12",
+      "—",
+      "60 kg × 8"
+     ]
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": [
+      "181.7 lb × 12",
+      "—",
+      "132.3 lb × 8"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "STABLE",
+    "stale": true,
+    "bestDurationSec": null,
+    "bestReps": 12,
+    "bestWeightKg": 62.5,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": []
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "62.5 kg × 12",
+    "lbs": "137.8 lb × 12"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": []
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": []
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "INSUFFICIENT_DATA",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 8,
+    "bestWeightKg": null,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": []
+     },
+     {
+      "kind": "volatile",
+      "spread": 0.2
+     }
+    ]
+   },
+   "group": "thin",
+   "headline": {
+    "kg": "8",
+    "lbs": "8"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": []
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": []
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "INSUFFICIENT_DATA",
+    "stale": false,
+    "bestDurationSec": 90,
+    "bestReps": null,
+    "bestWeightKg": 61.23,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": []
+     }
+    ]
+   },
+   "group": "thin",
+   "headline": {
+    "kg": "90s",
+    "lbs": "90s"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": []
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": []
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "DECLINING",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 8,
+    "bestWeightKg": 0,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": null,
+        "reps": 6,
+        "durationSec": null,
+        "bodyweightKg": 70
+       },
+       {
+        "weightKg": null,
+        "reps": 6,
+        "durationSec": null,
+        "bodyweightKg": 70
+       },
+       {
+        "weightKg": null,
+        "reps": 10,
+        "durationSec": null,
+        "bodyweightKg": 70
+       },
+       {
+        "weightKg": null,
+        "reps": 8,
+        "durationSec": null,
+        "bodyweightKg": 70
+       }
+      ]
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "70 kg × 8",
+    "lbs": "154.3 lb × 8"
+   },
+   "series": {
+    "kg": {
+     "prefix": "70 kg",
+     "parts": [
+      "6",
+      "6",
+      "10",
+      "8"
+     ]
+    },
+    "lbs": {
+     "prefix": "154.3 lb",
+     "parts": [
+      "6",
+      "6",
+      "10",
+      "8"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "STABLE",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": null,
+    "bestWeightKg": 61.23,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": []
+     }
+    ]
+   },
+   "group": "fine",
+   "headline": {
+    "kg": "—",
+    "lbs": "—"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": []
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": []
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "DECLINING",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 12,
+    "bestWeightKg": 61.23,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": 20,
+        "reps": null,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "61.2 kg × 12",
+    "lbs": "135 lb × 12"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": [
+      "—"
+     ]
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": [
+      "—"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "INSUFFICIENT_DATA",
+    "stale": true,
+    "bestDurationSec": null,
+    "bestReps": 3,
+    "bestWeightKg": 40,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": null,
+        "reps": null,
+        "durationSec": 45,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 22.5,
+        "reps": 12,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": null,
+        "reps": 1,
+        "durationSec": null,
+        "bodyweightKg": 70
+       }
+      ]
+     }
+    ]
+   },
+   "group": "thin",
+   "headline": {
+    "kg": "110 kg × 3",
+    "lbs": "242.5 lb × 3"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": [
+      "—",
+      "22.5 kg × 12",
+      "70 kg × 1"
+     ]
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": [
+      "—",
+      "49.6 lb × 12",
+      "154.3 lb × 1"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "INSUFFICIENT_DATA",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 12,
+    "bestWeightKg": null,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": null,
+        "reps": 5,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 20,
+        "reps": 10,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": null,
+        "reps": null,
+        "durationSec": 45,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 22.5,
+        "reps": 10,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     }
+    ]
+   },
+   "group": "thin",
+   "headline": {
+    "kg": "12",
+    "lbs": "12"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": [
+      "5",
+      "20 kg × 10",
+      "—",
+      "22.5 kg × 10"
+     ]
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": [
+      "5",
+      "44.1 lb × 10",
+      "—",
+      "49.6 lb × 10"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "STABLE",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 3,
+    "bestWeightKg": 61.23,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": []
+     }
+    ]
+   },
+   "group": "fine",
+   "headline": {
+    "kg": "61.2 kg × 3",
+    "lbs": "135 lb × 3"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": []
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": []
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "DECLINING",
+    "stale": true,
+    "bestDurationSec": null,
+    "bestReps": 12,
+    "bestWeightKg": null,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": null,
+        "reps": 8,
+        "durationSec": null,
+        "bodyweightKg": 70
+       },
+       {
+        "weightKg": null,
+        "reps": 10,
+        "durationSec": null,
+        "bodyweightKg": 70
+       },
+       {
+        "weightKg": null,
+        "reps": 6,
+        "durationSec": null,
+        "bodyweightKg": 70
+       },
+       {
+        "weightKg": null,
+        "reps": 6,
+        "durationSec": null,
+        "bodyweightKg": 70
+       }
+      ]
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "70 kg × 12",
+    "lbs": "154.3 lb × 12"
+   },
+   "series": {
+    "kg": {
+     "prefix": "70 kg",
+     "parts": [
+      "8",
+      "10",
+      "6",
+      "6"
+     ]
+    },
+    "lbs": {
+     "prefix": "154.3 lb",
+     "parts": [
+      "8",
+      "10",
+      "6",
+      "6"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "IMPROVING",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 12,
+    "bestWeightKg": 0,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": 100,
+        "reps": 10,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 100,
+        "reps": 10,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 100,
+        "reps": 8,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     },
+     {
+      "kind": "volatile",
+      "spread": 0.2
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "12",
+    "lbs": "12"
+   },
+   "series": {
+    "kg": {
+     "prefix": "100 kg",
+     "parts": [
+      "10",
+      "10",
+      "8"
+     ]
+    },
+    "lbs": {
+     "prefix": "220.5 lb",
+     "parts": [
+      "10",
+      "10",
+      "8"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "STABLE",
+    "stale": true,
+    "bestDurationSec": null,
+    "bestReps": 12,
+    "bestWeightKg": 61.23,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": 61.23,
+        "reps": 5,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "61.2 kg × 12",
+    "lbs": "135 lb × 12"
+   },
+   "series": {
+    "kg": {
+     "prefix": "61.2 kg",
+     "parts": [
+      "5"
+     ]
+    },
+    "lbs": {
+     "prefix": "135 lb",
+     "parts": [
+      "5"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "DECLINING",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 8,
+    "bestWeightKg": 61.23,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": 100,
+        "reps": 8,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "61.2 kg × 8",
+    "lbs": "135 lb × 8"
+   },
+   "series": {
+    "kg": {
+     "prefix": "100 kg",
+     "parts": [
+      "8"
+     ]
+    },
+    "lbs": {
+     "prefix": "220.5 lb",
+     "parts": [
+      "8"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "IMPROVING",
+    "stale": true,
+    "bestDurationSec": null,
+    "bestReps": null,
+    "bestWeightKg": 61.23,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": null,
+        "reps": null,
+        "durationSec": 45,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 61.23,
+        "reps": null,
+        "durationSec": null,
+        "bodyweightKg": 82.4
+       },
+       {
+        "weightKg": 60,
+        "reps": 10,
+        "durationSec": null,
+        "bodyweightKg": 82.4
+       }
+      ]
+     },
+     {
+      "kind": "volatile",
+      "spread": 0.2
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "—",
+    "lbs": "—"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": [
+      "—",
+      "—",
+      "142.4 kg × 10"
+     ]
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": [
+      "—",
+      "—",
+      "313.9 lb × 10"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "IMPROVING",
+    "stale": true,
+    "bestDurationSec": null,
+    "bestReps": 8,
+    "bestWeightKg": 62.5,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": null,
+        "reps": null,
+        "durationSec": 45,
+        "bodyweightKg": null
+       }
+      ]
+     },
+     {
+      "kind": "volatile",
+      "spread": 0.2
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "62.5 kg × 8",
+    "lbs": "137.8 lb × 8"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": [
+      "45s"
+     ]
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": [
+      "45s"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "IMPROVING",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 8,
+    "bestWeightKg": 0,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": 0,
+        "reps": 8,
+        "durationSec": null,
+        "bodyweightKg": 70
+       }
+      ]
+     },
+     {
+      "kind": "volatile",
+      "spread": 0.2
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "70 kg × 8",
+    "lbs": "154.3 lb × 8"
+   },
+   "series": {
+    "kg": {
+     "prefix": "70 kg",
+     "parts": [
+      "8"
+     ]
+    },
+    "lbs": {
+     "prefix": "154.3 lb",
+     "parts": [
+      "8"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "IMPROVING",
+    "stale": true,
+    "bestDurationSec": null,
+    "bestReps": null,
+    "bestWeightKg": 0,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": 20,
+        "reps": 8,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "—",
+    "lbs": "—"
+   },
+   "series": {
+    "kg": {
+     "prefix": "20 kg",
+     "parts": [
+      "8"
+     ]
+    },
+    "lbs": {
+     "prefix": "44.1 lb",
+     "parts": [
+      "8"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "DECLINING",
+    "stale": true,
+    "bestDurationSec": null,
+    "bestReps": 3,
+    "bestWeightKg": 61.23,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": []
+     },
+     {
+      "kind": "volatile",
+      "spread": 0.2
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "61.2 kg × 3",
+    "lbs": "135 lb × 3"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": []
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": []
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "IMPROVING",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 3,
+    "bestWeightKg": null,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": 22.5,
+        "reps": 8,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": null,
+        "reps": 1,
+        "durationSec": null,
+        "bodyweightKg": 82.4
+       },
+       {
+        "weightKg": 22.5,
+        "reps": 12,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": null,
+        "reps": 5,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     }
+    ]
+   },
+   "group": "fine",
+   "headline": {
+    "kg": "3",
+    "lbs": "3"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": [
+      "22.5 kg × 8",
+      "82.4 kg × 1",
+      "22.5 kg × 12",
+      "5"
+     ]
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": [
+      "49.6 lb × 8",
+      "181.7 lb × 1",
+      "49.6 lb × 12",
+      "5"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "STABLE",
+    "stale": true,
+    "bestDurationSec": null,
+    "bestReps": null,
+    "bestWeightKg": 62.5,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": null,
+        "reps": 5,
+        "durationSec": null,
+        "bodyweightKg": null
+       },
+       {
+        "weightKg": 20,
+        "reps": 12,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "—",
+    "lbs": "—"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": [
+      "5",
+      "20 kg × 12"
+     ]
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": [
+      "5",
+      "44.1 lb × 12"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "DECLINING",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 3,
+    "bestWeightKg": 40,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": [
+       {
+        "weightKg": null,
+        "reps": 10,
+        "durationSec": null,
+        "bodyweightKg": null
+       }
+      ]
+     }
+    ]
+   },
+   "group": "attention",
+   "headline": {
+    "kg": "40 kg × 3",
+    "lbs": "88.2 lb × 3"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": [
+      "10"
+     ]
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": [
+      "10"
+     ]
+    }
+   }
+  },
+  {
+   "insight": {
+    "trend": "INSUFFICIENT_DATA",
+    "stale": false,
+    "bestDurationSec": null,
+    "bestReps": 12,
+    "bestWeightKg": 0,
+    "evidence": [
+     {
+      "kind": "best-sets",
+      "values": []
+     }
+    ]
+   },
+   "group": "thin",
+   "headline": {
+    "kg": "12",
+    "lbs": "12"
+   },
+   "series": {
+    "kg": {
+     "prefix": null,
+     "parts": []
+    },
+    "lbs": {
+     "prefix": null,
+     "parts": []
+    }
+   }
+  }
+ ]
+}
