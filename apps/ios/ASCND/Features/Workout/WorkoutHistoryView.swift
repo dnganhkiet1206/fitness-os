@@ -25,6 +25,10 @@ public struct WorkoutHistoryView: View {
   @State private var pendingDelete: HistoryEntry?
   /// Đơn vị tạ của tài khoản (#527 1.9-A) — số lưu vẫn là kg.
   @Environment(\.weightUnit) private var unit
+  /// Luồng tập của phiên — mở màn ghi tay từ trạng thái rỗng. `nil` (preview)
+  /// = không có nút.
+  @Environment(WorkoutFlow.self) private var flow: WorkoutFlow?
+  @State private var showsManualLog = false
   @State private var deleteFailed = false
 
   public init(book: HistoryBook) {
@@ -63,7 +67,14 @@ public struct WorkoutHistoryView: View {
         Task { await book.refresh() }
       }
     } else if book.entries.isEmpty {
-      DSEmptyState(systemImage: "dumbbell", title: String(localized: "history.empty.title"))
+      // Rỗng thì chỉ đường ghi buổi (`sessions.tsx:146`, `nLogWorkoutBtn`).
+      DSEmptyState(
+        systemImage: "dumbbell", title: String(localized: "history.empty.title"),
+        actionTitle: flow == nil ? nil : String(localized: "manualLog.open"),
+        action: flow == nil ? nil : { showsManualLog = true })
+        .sheet(isPresented: $showsManualLog) {
+          if let flow { ManualLogView(flow: flow) }
+        }
     } else {
       list
     }
