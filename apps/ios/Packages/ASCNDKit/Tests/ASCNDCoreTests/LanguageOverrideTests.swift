@@ -43,6 +43,19 @@
       #expect(String(localized: "sets \(3)", bundle: b) == "3 sets")
     }
 
+    /// Số tạ có phần lẻ đổi dấu thập phân theo ngôn ngữ trong app, không
+    /// theo máy (bàn giao của B ở #527): gọi KHÔNG truyền `locale:`, như mọi
+    /// màn production.
+    @Test func weightLoadFollowsTheInAppChoice() {
+      defer { AppLanguage.shared.set(nil) }
+      AppLanguage.shared.set("vi")
+      #expect(WeightUnit.kg.localizedLoad(62.5) == "62,5 kg")
+      AppLanguage.shared.set("en")
+      #expect(WeightUnit.kg.localizedLoad(62.5) == "62.5 kg")
+      AppLanguage.shared.set("es")
+      #expect(WeightUnit.kg.localizedLoad(62.5) == "62,5 kg")
+    }
+
     /// Không ghi đè (widget, trước khi app đặt): đường của hệ thống, không
     /// trả ra khoá trần.
     @Test func noOverrideUsesTheSystemPath() throws {

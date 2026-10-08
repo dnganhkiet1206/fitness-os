@@ -70,7 +70,11 @@ public enum WeightUnit: String, Sendable, Hashable, CaseIterable {
   /// phân của máy — "62,5 kg" (vi / es), "137.8 lb" (en). RN luôn in "."; native
   /// theo locale cho chữ hiển thị — số lưu (kg) và ô gõ (`text` / `seed`, luôn
   /// ".") không đổi. `nil` = bài không tạ (không hiện "0 kg").
-  public func localizedLoad(_ kg: Double, locale: Locale = .current) -> String? {
+  ///
+  /// Mặc định theo ngôn ngữ chọn TRONG APP (`AppLanguage`, #533), không theo
+  /// máy: máy tiếng Anh mà app đặt tiếng Việt thì vẫn "62,5 kg", cùng chữ
+  /// quanh nó. "Theo máy" (`code == nil`) thì `Locale.current`.
+  public func localizedLoad(_ kg: Double, locale: Locale = AppLanguage.shared.locale ?? .current) -> String? {
     guard kg.isFinite, kg > 0 else { return nil }
     let separator = locale.decimalSeparator ?? "."
     return "\(text(kg).replacingOccurrences(of: ".", with: separator)) \(label)"
