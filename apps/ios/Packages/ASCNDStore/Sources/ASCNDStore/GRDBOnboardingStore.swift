@@ -6,29 +6,20 @@ import GRDB
 /// cuối biết được, theo người dùng, trong `read_cache` — đăng xuất xoá cùng,
 /// đăng nhập dọn của người khác (#397).
 public final class GRDBOnboardingStore: OnboardingStore {
-  static let draftKind = "onboarding-draft"
-  static let completedKind = "onboarding-completed"
-  private let db: DatabaseQueue
+  static let draftKind = ReadCacheNamespace.onboardingDraft
+  static let completedKind = ReadCacheNamespace.onboardingCompleted
+  private let table: ReadCacheTable
 
   public init(_ database: ASCNDDatabase) {
-    db = database.queue
+    table = ReadCacheTable(database)
   }
 
   private func read(_ userId: String, _ kind: String) async throws -> String? {
-    try await db.read { db in
-      try String.fetchOne(db, sql: "SELECT json FROM read_cache WHERE userId = ? AND kind = ?", arguments: [userId, kind])
-    }
+    try await table.string(userId: userId, kind: kind)
   }
 
   private func write(_ userId: String, _ kind: String, _ json: String) async throws {
-    try await db.write { db in
-      try db.execute(
-        sql: """
-          INSERT INTO read_cache (userId, kind, json) VALUES (?, ?, ?)
-          ON CONFLICT(userId, kind) DO UPDATE SET json = excluded.json
-          """,
-        arguments: [userId, kind, json])
-    }
+    try await table.put(json, userId: userId, kind: kind)
   }
 
   /// Nháp hỏng (bản build khác ghi) = bắt đầu lại từ màn đầu, không kẹt.
@@ -42,9 +33,7 @@ public final class GRDBOnboardingStore: OnboardingStore {
   }
 
   public func clearDraft(userId: String) async throws {
-    try await db.write { db in
-      try db.execute(sql: "DELETE FROM read_cache WHERE userId = ? AND kind = ?", arguments: [userId, Self.draftKind])
-    }
+    try await table.delete(userId: userId, kind: Self.draftKind)
   }
 
   public func loadCompleted(userId: String) async throws -> Bool? {
