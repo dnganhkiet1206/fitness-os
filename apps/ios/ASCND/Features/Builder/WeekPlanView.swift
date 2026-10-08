@@ -109,7 +109,7 @@ struct WeekPlanView: View {
     guard offset != 0, let first = dates.first, let last = dates.last else {
       return String(localized: "wp.thisWeek")
     }
-    let style = Date.FormatStyle.dateTime.day().month(.abbreviated)
+    let style = Date.FormatStyle.dateTime.day().month(.abbreviated).locale(.app)
     return "\(Self.date(first).formatted(style)) – \(Self.date(last).formatted(style))"
   }
 
@@ -117,8 +117,8 @@ struct WeekPlanView: View {
     dates.map { d in
       let date = Self.date(d)
       return DayCellDisplay(
-        shortName: date.formatted(.dateTime.weekday(.abbreviated)),
-        longName: date.formatted(.dateTime.weekday(.wide).day().month(.wide)),
+        shortName: date.formatted(.dateTime.weekday(.abbreviated).locale(.app)),
+        longName: date.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(.app)),
         dayNumber: d.day,
         state: Self.state(plan(d).status),
         isToday: d == today)
@@ -132,7 +132,7 @@ struct WeekPlanView: View {
     let p = plan(d)
     Section {
       HStack {
-        Text(verbatim: Self.date(d).formatted(.dateTime.weekday(.wide).day().month(.wide)))
+        Text(verbatim: Self.date(d).formatted(.dateTime.weekday(.wide).day().month(.wide).locale(.app)))
           .font(DS.TextStyle.headline)
         Spacer()
         if p.isDeload {
@@ -244,7 +244,7 @@ struct WeekPlanView: View {
     let count = n == 1 ? String(localized: "wp.count.one") : String(localized: "wp.count.other \(n)")
     guard duplicates.contains(t.name), let made = t.createdAt else { return count }
     let date = Date(timeIntervalSince1970: Double(made.millis) / 1000)
-      .formatted(.dateTime.day().month(.abbreviated))
+      .formatted(.dateTime.day().month(.abbreviated).locale(.app))
     return String(localized: "wp.count.added \(count) \(date)")
   }
 

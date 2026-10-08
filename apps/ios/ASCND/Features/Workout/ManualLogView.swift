@@ -288,7 +288,7 @@ struct ManualLogView: View {
   private func volumeText(_ log: ManualLogController, _ unit: WeightUnit) -> String {
     let kg = log.volumeKg()
     // `Math.round(displayWeight(volumeLoad)).toLocaleString()` (`:896`).
-    return kg > 0 ? "\(unit.volume(kg).formatted()) \(unit.label)" : "—"
+    return kg > 0 ? "\(unit.volume(kg).formatted(.number.locale(.app))) \(unit.label)" : "—"
   }
 
   /// `outOfRangeMessage` với cận của `plausible.ts`: tạ luôn nói theo kg
