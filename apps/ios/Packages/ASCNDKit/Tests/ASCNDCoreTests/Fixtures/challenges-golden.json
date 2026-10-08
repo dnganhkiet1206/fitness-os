@@ -1,0 +1,1451 @@
+{
+ "pool": [
+  {
+   "key": "workouts_5",
+   "icon": "dumbbell",
+   "target": 5,
+   "tier": "silver"
+  },
+  {
+   "key": "workouts_3",
+   "icon": "dumbbell",
+   "target": 3,
+   "tier": "bronze"
+  },
+  {
+   "key": "protein_7",
+   "icon": "beef",
+   "target": 7,
+   "tier": "gold"
+  },
+  {
+   "key": "steps_50k",
+   "icon": "footprints",
+   "target": 50000,
+   "tier": "silver"
+  },
+  {
+   "key": "sleep_7",
+   "icon": "moon",
+   "target": 7,
+   "tier": "silver"
+  },
+  {
+   "key": "log_7",
+   "icon": "target",
+   "target": 7,
+   "tier": "gold"
+  },
+  {
+   "key": "calories_5",
+   "icon": "target",
+   "target": 5,
+   "tier": "silver"
+  },
+  {
+   "key": "water_7",
+   "icon": "droplets",
+   "target": 7,
+   "tier": "silver"
+  }
+ ],
+ "pick": [
+  {
+   "weekStart": "2026-01-05",
+   "keys": [
+    "workouts_3",
+    "protein_7",
+    "steps_50k"
+   ]
+  },
+  {
+   "weekStart": "2026-03-30",
+   "keys": [
+    "protein_7",
+    "steps_50k",
+    "sleep_7"
+   ]
+  },
+  {
+   "weekStart": "2026-10-05",
+   "keys": [
+    "log_7",
+    "calories_5",
+    "water_7"
+   ]
+  },
+  {
+   "weekStart": "2026-10-12",
+   "keys": [
+    "sleep_7",
+    "log_7",
+    "calories_5"
+   ]
+  },
+  {
+   "weekStart": "2026-12-28",
+   "keys": [
+    "sleep_7",
+    "log_7",
+    "calories_5"
+   ]
+  },
+  {
+   "weekStart": "2027-01-04",
+   "keys": [
+    "workouts_5",
+    "workouts_3",
+    "protein_7"
+   ]
+  },
+  {
+   "weekStart": "2025-12-29",
+   "keys": [
+    "log_7",
+    "calories_5",
+    "water_7"
+   ]
+  },
+  {
+   "weekStart": "2026-06-01",
+   "keys": [
+    "workouts_3",
+    "protein_7",
+    "steps_50k"
+   ]
+  }
+ ],
+ "targets": [
+  {
+   "profile": null,
+   "sleepTargetMin": 480,
+   "waterTargetMl": 2500,
+   "proteinTargetG": 149
+  },
+  {
+   "profile": {},
+   "sleepTargetMin": 480,
+   "waterTargetMl": 2500,
+   "proteinTargetG": 149
+  },
+  {
+   "profile": {
+    "sleep_target_hours": 7.5,
+    "water_target_ml": 3000,
+    "macro_protein_g": 150
+   },
+   "sleepTargetMin": 450,
+   "waterTargetMl": 3000,
+   "proteinTargetG": 150
+  },
+  {
+   "profile": {
+    "sleep_target_hours": "6.25",
+    "water_target_ml": "0",
+    "macro_protein_g": "0"
+   },
+   "sleepTargetMin": 375,
+   "waterTargetMl": 2500,
+   "proteinTargetG": 0
+  },
+  {
+   "profile": {
+    "sleep_target_hours": 0,
+    "water_target_ml": null,
+    "macro_protein_g": ""
+   },
+   "sleepTargetMin": 480,
+   "waterTargetMl": 2500,
+   "proteinTargetG": 149
+  },
+  {
+   "profile": {
+    "sleep_target_hours": 9,
+    "water_target_ml": 3500,
+    "macro_protein_g": -5
+   },
+   "sleepTargetMin": 540,
+   "waterTargetMl": 3500,
+   "proteinTargetG": 149
+  }
+ ],
+ "measured": [
+  {
+   "key": "workouts_5",
+   "profile": null,
+   "value": 3
+  },
+  {
+   "key": "workouts_3",
+   "profile": null,
+   "value": 3
+  },
+  {
+   "key": "protein_7",
+   "profile": null,
+   "value": 3
+  },
+  {
+   "key": "steps_50k",
+   "profile": null,
+   "value": 51000
+  },
+  {
+   "key": "sleep_7",
+   "profile": null,
+   "value": 2
+  },
+  {
+   "key": "log_7",
+   "profile": null,
+   "value": 2
+  },
+  {
+   "key": "calories_5",
+   "profile": null,
+   "value": 3
+  },
+  {
+   "key": "water_7",
+   "profile": null,
+   "value": 3
+  },
+  {
+   "key": "mystery_1",
+   "profile": null,
+   "value": 0
+  },
+  {
+   "key": "workouts_5",
+   "profile": {},
+   "value": 3
+  },
+  {
+   "key": "workouts_3",
+   "profile": {},
+   "value": 3
+  },
+  {
+   "key": "protein_7",
+   "profile": {},
+   "value": 3
+  },
+  {
+   "key": "steps_50k",
+   "profile": {},
+   "value": 51000
+  },
+  {
+   "key": "sleep_7",
+   "profile": {},
+   "value": 2
+  },
+  {
+   "key": "log_7",
+   "profile": {},
+   "value": 2
+  },
+  {
+   "key": "calories_5",
+   "profile": {},
+   "value": 3
+  },
+  {
+   "key": "water_7",
+   "profile": {},
+   "value": 3
+  },
+  {
+   "key": "mystery_1",
+   "profile": {},
+   "value": 0
+  },
+  {
+   "key": "workouts_5",
+   "profile": {
+    "sleep_target_hours": 7.5,
+    "water_target_ml": 3000,
+    "macro_protein_g": 150
+   },
+   "value": 3
+  },
+  {
+   "key": "workouts_3",
+   "profile": {
+    "sleep_target_hours": 7.5,
+    "water_target_ml": 3000,
+    "macro_protein_g": 150
+   },
+   "value": 3
+  },
+  {
+   "key": "protein_7",
+   "profile": {
+    "sleep_target_hours": 7.5,
+    "water_target_ml": 3000,
+    "macro_protein_g": 150
+   },
+   "value": 2
+  },
+  {
+   "key": "steps_50k",
+   "profile": {
+    "sleep_target_hours": 7.5,
+    "water_target_ml": 3000,
+    "macro_protein_g": 150
+   },
+   "value": 51000
+  },
+  {
+   "key": "sleep_7",
+   "profile": {
+    "sleep_target_hours": 7.5,
+    "water_target_ml": 3000,
+    "macro_protein_g": 150
+   },
+   "value": 3
+  },
+  {
+   "key": "log_7",
+   "profile": {
+    "sleep_target_hours": 7.5,
+    "water_target_ml": 3000,
+    "macro_protein_g": 150
+   },
+   "value": 2
+  },
+  {
+   "key": "calories_5",
+   "profile": {
+    "sleep_target_hours": 7.5,
+    "water_target_ml": 3000,
+    "macro_protein_g": 150
+   },
+   "value": 3
+  },
+  {
+   "key": "water_7",
+   "profile": {
+    "sleep_target_hours": 7.5,
+    "water_target_ml": 3000,
+    "macro_protein_g": 150
+   },
+   "value": 2
+  },
+  {
+   "key": "mystery_1",
+   "profile": {
+    "sleep_target_hours": 7.5,
+    "water_target_ml": 3000,
+    "macro_protein_g": 150
+   },
+   "value": 0
+  },
+  {
+   "key": "workouts_5",
+   "profile": {
+    "sleep_target_hours": "6.25",
+    "water_target_ml": "0",
+    "macro_protein_g": "0"
+   },
+   "value": 3
+  },
+  {
+   "key": "workouts_3",
+   "profile": {
+    "sleep_target_hours": "6.25",
+    "water_target_ml": "0",
+    "macro_protein_g": "0"
+   },
+   "value": 3
+  },
+  {
+   "key": "protein_7",
+   "profile": {
+    "sleep_target_hours": "6.25",
+    "water_target_ml": "0",
+    "macro_protein_g": "0"
+   },
+   "value": 5
+  },
+  {
+   "key": "steps_50k",
+   "profile": {
+    "sleep_target_hours": "6.25",
+    "water_target_ml": "0",
+    "macro_protein_g": "0"
+   },
+   "value": 51000
+  },
+  {
+   "key": "sleep_7",
+   "profile": {
+    "sleep_target_hours": "6.25",
+    "water_target_ml": "0",
+    "macro_protein_g": "0"
+   },
+   "value": 3
+  },
+  {
+   "key": "log_7",
+   "profile": {
+    "sleep_target_hours": "6.25",
+    "water_target_ml": "0",
+    "macro_protein_g": "0"
+   },
+   "value": 2
+  },
+  {
+   "key": "calories_5",
+   "profile": {
+    "sleep_target_hours": "6.25",
+    "water_target_ml": "0",
+    "macro_protein_g": "0"
+   },
+   "value": 3
+  },
+  {
+   "key": "water_7",
+   "profile": {
+    "sleep_target_hours": "6.25",
+    "water_target_ml": "0",
+    "macro_protein_g": "0"
+   },
+   "value": 3
+  },
+  {
+   "key": "mystery_1",
+   "profile": {
+    "sleep_target_hours": "6.25",
+    "water_target_ml": "0",
+    "macro_protein_g": "0"
+   },
+   "value": 0
+  },
+  {
+   "key": "workouts_5",
+   "profile": {
+    "sleep_target_hours": 0,
+    "water_target_ml": null,
+    "macro_protein_g": ""
+   },
+   "value": 3
+  },
+  {
+   "key": "workouts_3",
+   "profile": {
+    "sleep_target_hours": 0,
+    "water_target_ml": null,
+    "macro_protein_g": ""
+   },
+   "value": 3
+  },
+  {
+   "key": "protein_7",
+   "profile": {
+    "sleep_target_hours": 0,
+    "water_target_ml": null,
+    "macro_protein_g": ""
+   },
+   "value": 3
+  },
+  {
+   "key": "steps_50k",
+   "profile": {
+    "sleep_target_hours": 0,
+    "water_target_ml": null,
+    "macro_protein_g": ""
+   },
+   "value": 51000
+  },
+  {
+   "key": "sleep_7",
+   "profile": {
+    "sleep_target_hours": 0,
+    "water_target_ml": null,
+    "macro_protein_g": ""
+   },
+   "value": 2
+  },
+  {
+   "key": "log_7",
+   "profile": {
+    "sleep_target_hours": 0,
+    "water_target_ml": null,
+    "macro_protein_g": ""
+   },
+   "value": 2
+  },
+  {
+   "key": "calories_5",
+   "profile": {
+    "sleep_target_hours": 0,
+    "water_target_ml": null,
+    "macro_protein_g": ""
+   },
+   "value": 3
+  },
+  {
+   "key": "water_7",
+   "profile": {
+    "sleep_target_hours": 0,
+    "water_target_ml": null,
+    "macro_protein_g": ""
+   },
+   "value": 3
+  },
+  {
+   "key": "mystery_1",
+   "profile": {
+    "sleep_target_hours": 0,
+    "water_target_ml": null,
+    "macro_protein_g": ""
+   },
+   "value": 0
+  },
+  {
+   "key": "workouts_5",
+   "profile": {
+    "sleep_target_hours": 9,
+    "water_target_ml": 3500,
+    "macro_protein_g": -5
+   },
+   "value": 3
+  },
+  {
+   "key": "workouts_3",
+   "profile": {
+    "sleep_target_hours": 9,
+    "water_target_ml": 3500,
+    "macro_protein_g": -5
+   },
+   "value": 3
+  },
+  {
+   "key": "protein_7",
+   "profile": {
+    "sleep_target_hours": 9,
+    "water_target_ml": 3500,
+    "macro_protein_g": -5
+   },
+   "value": 3
+  },
+  {
+   "key": "steps_50k",
+   "profile": {
+    "sleep_target_hours": 9,
+    "water_target_ml": 3500,
+    "macro_protein_g": -5
+   },
+   "value": 51000
+  },
+  {
+   "key": "sleep_7",
+   "profile": {
+    "sleep_target_hours": 9,
+    "water_target_ml": 3500,
+    "macro_protein_g": -5
+   },
+   "value": 1
+  },
+  {
+   "key": "log_7",
+   "profile": {
+    "sleep_target_hours": 9,
+    "water_target_ml": 3500,
+    "macro_protein_g": -5
+   },
+   "value": 2
+  },
+  {
+   "key": "calories_5",
+   "profile": {
+    "sleep_target_hours": 9,
+    "water_target_ml": 3500,
+    "macro_protein_g": -5
+   },
+   "value": 3
+  },
+  {
+   "key": "water_7",
+   "profile": {
+    "sleep_target_hours": 9,
+    "water_target_ml": 3500,
+    "macro_protein_g": -5
+   },
+   "value": 0
+  },
+  {
+   "key": "mystery_1",
+   "profile": {
+    "sleep_target_hours": 9,
+    "water_target_ml": 3500,
+    "macro_protein_g": -5
+   },
+   "value": 0
+  }
+ ],
+ "step": [
+  {
+   "row": {
+    "current_value": 0,
+    "target_value": 5,
+    "completed": false,
+    "completed_at": null
+   },
+   "newValue": -2,
+   "step": {
+    "value": 0,
+    "completed": false,
+    "justCompleted": false,
+    "unchanged": true
+   }
+  },
+  {
+   "row": {
+    "current_value": 0,
+    "target_value": 5,
+    "completed": false,
+    "completed_at": null
+   },
+   "newValue": 0,
+   "step": {
+    "value": 0,
+    "completed": false,
+    "justCompleted": false,
+    "unchanged": true
+   }
+  },
+  {
+   "row": {
+    "current_value": 0,
+    "target_value": 5,
+    "completed": false,
+    "completed_at": null
+   },
+   "newValue": 3,
+   "step": {
+    "value": 3,
+    "completed": false,
+    "justCompleted": false,
+    "unchanged": false
+   }
+  },
+  {
+   "row": {
+    "current_value": 0,
+    "target_value": 5,
+    "completed": false,
+    "completed_at": null
+   },
+   "newValue": 4,
+   "step": {
+    "value": 4,
+    "completed": false,
+    "justCompleted": false,
+    "unchanged": false
+   }
+  },
+  {
+   "row": {
+    "current_value": 0,
+    "target_value": 5,
+    "completed": false,
+    "completed_at": null
+   },
+   "newValue": 5,
+   "step": {
+    "value": 5,
+    "completed": true,
+    "justCompleted": true,
+    "unchanged": false
+   }
+  },
+  {
+   "row": {
+    "current_value": 0,
+    "target_value": 5,
+    "completed": false,
+    "completed_at": null
+   },
+   "newValue": 6,
+   "step": {
+    "value": 5,
+    "completed": true,
+    "justCompleted": true,
+    "unchanged": false
+   }
+  },
+  {
+   "row": {
+    "current_value": 0,
+    "target_value": 5,
+    "completed": false,
+    "completed_at": null
+   },
+   "newValue": 7,
+   "step": {
+    "value": 5,
+    "completed": true,
+    "justCompleted": true,
+    "unchanged": false
+   }
+  },
+  {
+   "row": {
+    "current_value": 0,
+    "target_value": 5,
+    "completed": false,
+    "completed_at": null
+   },
+   "newValue": 50001,
+   "step": {
+    "value": 5,
+    "completed": true,
+    "justCompleted": true,
+    "unchanged": false
+   }
+  },
+  {
+   "row": {
+    "current_value": 0,
+    "target_value": 5,
+    "completed": false,
+    "completed_at": null
+   },
+   "newValue": null,
+   "step": {
+    "value": 0,
+    "completed": false,
+    "justCompleted": false,
+    "unchanged": true
+   }
+  },
+  {
+   "row": {
+    "current_value": 4,
+    "target_value": 5,
+    "completed": false,
+    "completed_at": null
+   },
+   "newValue": -2,
+   "step": {
+    "value": 0,
+    "completed": false,
+    "justCompleted": false,
+    "unchanged": false
+   }
+  },
+  {
+   "row": {
+    "current_value": 4,
+    "target_value": 5,
+    "completed": false,
+    "completed_at": null
+   },
+   "newValue": 0,
+   "step": {
+    "value": 0,
+    "completed": false,
+    "justCompleted": false,
+    "unchanged": false
+   }
+  },
+  {
+   "row": {
+    "current_value": 4,
+    "target_value": 5,
+    "completed": false,
+    "completed_at": null
+   },
+   "newValue": 3,
+   "step": {
+    "value": 3,
+    "completed": false,
+    "justCompleted": false,
+    "unchanged": false
+   }
+  },
+  {
+   "row": {
+    "current_value": 4,
+    "target_value": 5,
+    "completed": false,
+    "completed_at": null
+   },
+   "newValue": 4,
+   "step": {
+    "value": 4,
+    "completed": false,
+    "justCompleted": false,
+    "unchanged": true
+   }
+  },
+  {
+   "row": {
+    "current_value": 4,
+    "target_value": 5,
+    "completed": false,
+    "completed_at": null
+   },
+   "newValue": 5,
+   "step": {
+    "value": 5,
+    "completed": true,
+    "justCompleted": true,
+    "unchanged": false
+   }
+  },
+  {
+   "row": {
+    "current_value": 4,
+    "target_value": 5,
+    "completed": false,
+    "completed_at": null
+   },
+   "newValue": 6,
+   "step": {
+    "value": 5,
+    "completed": true,
+    "justCompleted": true,
+    "unchanged": false
+   }
+  },
+  {
+   "row": {
+    "current_value": 4,
+    "target_value": 5,
+    "completed": false,
+    "completed_at": null
+   },
+   "newValue": 7,
+   "step": {
+    "value": 5,
+    "completed": true,
+    "justCompleted": true,
+    "unchanged": false
+   }
+  },
+  {
+   "row": {
+    "current_value": 4,
+    "target_value": 5,
+    "completed": false,
+    "completed_at": null
+   },
+   "newValue": 50001,
+   "step": {
+    "value": 5,
+    "completed": true,
+    "justCompleted": true,
+    "unchanged": false
+   }
+  },
+  {
+   "row": {
+    "current_value": 4,
+    "target_value": 5,
+    "completed": false,
+    "completed_at": null
+   },
+   "newValue": null,
+   "step": {
+    "value": 0,
+    "completed": false,
+    "justCompleted": false,
+    "unchanged": false
+   }
+  },
+  {
+   "row": {
+    "current_value": 5,
+    "target_value": 5,
+    "completed": true,
+    "completed_at": "2026-10-07T10:00:00Z"
+   },
+   "newValue": -2,
+   "step": {
+    "value": 0,
+    "completed": false,
+    "justCompleted": false,
+    "unchanged": false
+   }
+  },
+  {
+   "row": {
+    "current_value": 5,
+    "target_value": 5,
+    "completed": true,
+    "completed_at": "2026-10-07T10:00:00Z"
+   },
+   "newValue": 0,
+   "step": {
+    "value": 0,
+    "completed": false,
+    "justCompleted": false,
+    "unchanged": false
+   }
+  },
+  {
+   "row": {
+    "current_value": 5,
+    "target_value": 5,
+    "completed": true,
+    "completed_at": "2026-10-07T10:00:00Z"
+   },
+   "newValue": 3,
+   "step": {
+    "value": 3,
+    "completed": false,
+    "justCompleted": false,
+    "unchanged": false
+   }
+  },
+  {
+   "row": {
+    "current_value": 5,
+    "target_value": 5,
+    "completed": true,
+    "completed_at": "2026-10-07T10:00:00Z"
+   },
+   "newValue": 4,
+   "step": {
+    "value": 4,
+    "completed": false,
+    "justCompleted": false,
+    "unchanged": false
+   }
+  },
+  {
+   "row": {
+    "current_value": 5,
+    "target_value": 5,
+    "completed": true,
+    "completed_at": "2026-10-07T10:00:00Z"
+   },
+   "newValue": 5,
+   "step": {
+    "value": 5,
+    "completed": true,
+    "justCompleted": false,
+    "unchanged": true
+   }
+  },
+  {
+   "row": {
+    "current_value": 5,
+    "target_value": 5,
+    "completed": true,
+    "completed_at": "2026-10-07T10:00:00Z"
+   },
+   "newValue": 6,
+   "step": {
+    "value": 5,
+    "completed": true,
+    "justCompleted": false,
+    "unchanged": true
+   }
+  },
+  {
+   "row": {
+    "current_value": 5,
+    "target_value": 5,
+    "completed": true,
+    "completed_at": "2026-10-07T10:00:00Z"
+   },
+   "newValue": 7,
+   "step": {
+    "value": 5,
+    "completed": true,
+    "justCompleted": false,
+    "unchanged": true
+   }
+  },
+  {
+   "row": {
+    "current_value": 5,
+    "target_value": 5,
+    "completed": true,
+    "completed_at": "2026-10-07T10:00:00Z"
+   },
+   "newValue": 50001,
+   "step": {
+    "value": 5,
+    "completed": true,
+    "justCompleted": false,
+    "unchanged": true
+   }
+  },
+  {
+   "row": {
+    "current_value": 5,
+    "target_value": 5,
+    "completed": true,
+    "completed_at": "2026-10-07T10:00:00Z"
+   },
+   "newValue": null,
+   "step": {
+    "value": 0,
+    "completed": false,
+    "justCompleted": false,
+    "unchanged": false
+   }
+  },
+  {
+   "row": {
+    "current_value": 4,
+    "target_value": 5,
+    "completed": false,
+    "completed_at": "2026-10-07T10:00:00Z"
+   },
+   "newValue": -2,
+   "step": {
+    "value": 0,
+    "completed": false,
+    "justCompleted": false,
+    "unchanged": false
+   }
+  },
+  {
+   "row": {
+    "current_value": 4,
+    "target_value": 5,
+    "completed": false,
+    "completed_at": "2026-10-07T10:00:00Z"
+   },
+   "newValue": 0,
+   "step": {
+    "value": 0,
+    "completed": false,
+    "justCompleted": false,
+    "unchanged": false
+   }
+  },
+  {
+   "row": {
+    "current_value": 4,
+    "target_value": 5,
+    "completed": false,
+    "completed_at": "2026-10-07T10:00:00Z"
+   },
+   "newValue": 3,
+   "step": {
+    "value": 3,
+    "completed": false,
+    "justCompleted": false,
+    "unchanged": false
+   }
+  },
+  {
+   "row": {
+    "current_value": 4,
+    "target_value": 5,
+    "completed": false,
+    "completed_at": "2026-10-07T10:00:00Z"
+   },
+   "newValue": 4,
+   "step": {
+    "value": 4,
+    "completed": false,
+    "justCompleted": false,
+    "unchanged": true
+   }
+  },
+  {
+   "row": {
+    "current_value": 4,
+    "target_value": 5,
+    "completed": false,
+    "completed_at": "2026-10-07T10:00:00Z"
+   },
+   "newValue": 5,
+   "step": {
+    "value": 5,
+    "completed": true,
+    "justCompleted": false,
+    "unchanged": false
+   }
+  },
+  {
+   "row": {
+    "current_value": 4,
+    "target_value": 5,
+    "completed": false,
+    "completed_at": "2026-10-07T10:00:00Z"
+   },
+   "newValue": 6,
+   "step": {
+    "value": 5,
+    "completed": true,
+    "justCompleted": false,
+    "unchanged": false
+   }
+  },
+  {
+   "row": {
+    "current_value": 4,
+    "target_value": 5,
+    "completed": false,
+    "completed_at": "2026-10-07T10:00:00Z"
+   },
+   "newValue": 7,
+   "step": {
+    "value": 5,
+    "completed": true,
+    "justCompleted": false,
+    "unchanged": false
+   }
+  },
+  {
+   "row": {
+    "current_value": 4,
+    "target_value": 5,
+    "completed": false,
+    "completed_at": "2026-10-07T10:00:00Z"
+   },
+   "newValue": 50001,
+   "step": {
+    "value": 5,
+    "completed": true,
+    "justCompleted": false,
+    "unchanged": false
+   }
+  },
+  {
+   "row": {
+    "current_value": 4,
+    "target_value": 5,
+    "completed": false,
+    "completed_at": "2026-10-07T10:00:00Z"
+   },
+   "newValue": null,
+   "step": {
+    "value": 0,
+    "completed": false,
+    "justCompleted": false,
+    "unchanged": false
+   }
+  },
+  {
+   "row": {
+    "current_value": 3,
+    "target_value": 0,
+    "completed": false,
+    "completed_at": null
+   },
+   "newValue": -2,
+   "step": {
+    "value": 0,
+    "completed": false,
+    "justCompleted": false,
+    "unchanged": false
+   }
+  },
+  {
+   "row": {
+    "current_value": 3,
+    "target_value": 0,
+    "completed": false,
+    "completed_at": null
+   },
+   "newValue": 0,
+   "step": {
+    "value": 0,
+    "completed": true,
+    "justCompleted": true,
+    "unchanged": false
+   }
+  },
+  {
+   "row": {
+    "current_value": 3,
+    "target_value": 0,
+    "completed": false,
+    "completed_at": null
+   },
+   "newValue": 3,
+   "step": {
+    "value": 0,
+    "completed": true,
+    "justCompleted": true,
+    "unchanged": false
+   }
+  },
+  {
+   "row": {
+    "current_value": 3,
+    "target_value": 0,
+    "completed": false,
+    "completed_at": null
+   },
+   "newValue": 4,
+   "step": {
+    "value": 0,
+    "completed": true,
+    "justCompleted": true,
+    "unchanged": false
+   }
+  },
+  {
+   "row": {
+    "current_value": 3,
+    "target_value": 0,
+    "completed": false,
+    "completed_at": null
+   },
+   "newValue": 5,
+   "step": {
+    "value": 0,
+    "completed": true,
+    "justCompleted": true,
+    "unchanged": false
+   }
+  },
+  {
+   "row": {
+    "current_value": 3,
+    "target_value": 0,
+    "completed": false,
+    "completed_at": null
+   },
+   "newValue": 6,
+   "step": {
+    "value": 0,
+    "completed": true,
+    "justCompleted": true,
+    "unchanged": false
+   }
+  },
+  {
+   "row": {
+    "current_value": 3,
+    "target_value": 0,
+    "completed": false,
+    "completed_at": null
+   },
+   "newValue": 7,
+   "step": {
+    "value": 0,
+    "completed": true,
+    "justCompleted": true,
+    "unchanged": false
+   }
+  },
+  {
+   "row": {
+    "current_value": 3,
+    "target_value": 0,
+    "completed": false,
+    "completed_at": null
+   },
+   "newValue": 50001,
+   "step": {
+    "value": 0,
+    "completed": true,
+    "justCompleted": true,
+    "unchanged": false
+   }
+  },
+  {
+   "row": {
+    "current_value": 3,
+    "target_value": 0,
+    "completed": false,
+    "completed_at": null
+   },
+   "newValue": null,
+   "step": {
+    "value": 0,
+    "completed": true,
+    "justCompleted": true,
+    "unchanged": false
+   }
+  },
+  {
+   "row": {
+    "current_value": 7,
+    "target_value": 7,
+    "completed": false,
+    "completed_at": ""
+   },
+   "newValue": -2,
+   "step": {
+    "value": 0,
+    "completed": false,
+    "justCompleted": false,
+    "unchanged": false
+   }
+  },
+  {
+   "row": {
+    "current_value": 7,
+    "target_value": 7,
+    "completed": false,
+    "completed_at": ""
+   },
+   "newValue": 0,
+   "step": {
+    "value": 0,
+    "completed": false,
+    "justCompleted": false,
+    "unchanged": false
+   }
+  },
+  {
+   "row": {
+    "current_value": 7,
+    "target_value": 7,
+    "completed": false,
+    "completed_at": ""
+   },
+   "newValue": 3,
+   "step": {
+    "value": 3,
+    "completed": false,
+    "justCompleted": false,
+    "unchanged": false
+   }
+  },
+  {
+   "row": {
+    "current_value": 7,
+    "target_value": 7,
+    "completed": false,
+    "completed_at": ""
+   },
+   "newValue": 4,
+   "step": {
+    "value": 4,
+    "completed": false,
+    "justCompleted": false,
+    "unchanged": false
+   }
+  },
+  {
+   "row": {
+    "current_value": 7,
+    "target_value": 7,
+    "completed": false,
+    "completed_at": ""
+   },
+   "newValue": 5,
+   "step": {
+    "value": 5,
+    "completed": false,
+    "justCompleted": false,
+    "unchanged": false
+   }
+  },
+  {
+   "row": {
+    "current_value": 7,
+    "target_value": 7,
+    "completed": false,
+    "completed_at": ""
+   },
+   "newValue": 6,
+   "step": {
+    "value": 6,
+    "completed": false,
+    "justCompleted": false,
+    "unchanged": false
+   }
+  },
+  {
+   "row": {
+    "current_value": 7,
+    "target_value": 7,
+    "completed": false,
+    "completed_at": ""
+   },
+   "newValue": 7,
+   "step": {
+    "value": 7,
+    "completed": true,
+    "justCompleted": true,
+    "unchanged": false
+   }
+  },
+  {
+   "row": {
+    "current_value": 7,
+    "target_value": 7,
+    "completed": false,
+    "completed_at": ""
+   },
+   "newValue": 50001,
+   "step": {
+    "value": 7,
+    "completed": true,
+    "justCompleted": true,
+    "unchanged": false
+   }
+  },
+  {
+   "row": {
+    "current_value": 7,
+    "target_value": 7,
+    "completed": false,
+    "completed_at": ""
+   },
+   "newValue": null,
+   "step": {
+    "value": 0,
+    "completed": false,
+    "justCompleted": false,
+    "unchanged": false
+   }
+  }
+ ],
+ "display": [
+  {
+   "current": 0,
+   "target": 5,
+   "shown": 0,
+   "of": 5,
+   "pct": 0
+  },
+  {
+   "current": 3,
+   "target": 5,
+   "shown": 3,
+   "of": 5,
+   "pct": 60
+  },
+  {
+   "current": 9,
+   "target": 5,
+   "shown": 5,
+   "of": 5,
+   "pct": 100
+  },
+  {
+   "current": 2,
+   "target": 3,
+   "shown": 2,
+   "of": 3,
+   "pct": 67
+  },
+  {
+   "current": 1,
+   "target": 0,
+   "shown": 1,
+   "of": 1,
+   "pct": 100
+  },
+  {
+   "current": 33333,
+   "target": 50000,
+   "shown": 33333,
+   "of": 50000,
+   "pct": 67
+  },
+  {
+   "current": 6,
+   "target": 7,
+   "shown": 6,
+   "of": 7,
+   "pct": 86
+  }
+ ]
+}

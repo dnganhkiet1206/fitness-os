@@ -41,5 +41,89 @@
    "en": "5 Workouts",
    "es": "5 Entrenamientos"
   }
+ },
+ "descs": {
+  "calories_5": {
+   "vi": "Đạt mục tiêu calories 5 ngày",
+   "en": "Hit your calorie target 5 days",
+   "es": "Alcanza tu objetivo de calorías 5 días"
+  },
+  "log_7": {
+   "vi": "Ghi log đầy đủ 7 ngày trong tuần",
+   "en": "Log fully all 7 days this week",
+   "es": "Registra todo los 7 días de esta semana"
+  },
+  "protein_7": {
+   "vi": "Đạt mục tiêu protein 7 ngày",
+   "en": "Hit your protein target 7 days",
+   "es": "Alcanza tu objetivo de proteína 7 días"
+  },
+  "sleep_7": {
+   "vi": "Ngủ đủ giấc 7 ngày liên tiếp",
+   "en": "Sleep enough 7 days in a row",
+   "es": "Duerme lo suficiente 7 días seguidos"
+  },
+  "steps_50k": {
+   "vi": "Đi 50,000 bước trong tuần",
+   "en": "Walk 50,000 steps this week",
+   "es": "Camina 50,000 pasos esta semana"
+  },
+  "water_7": {
+   "vi": "Đạt mục tiêu nước 7 ngày",
+   "en": "Hit your water target 7 days",
+   "es": "Alcanza tu objetivo de agua 7 días"
+  },
+  "workouts_3": {
+   "vi": "Hoàn thành 3 buổi tập trong tuần",
+   "en": "Complete 3 workouts this week",
+   "es": "Completa 3 entrenamientos esta semana"
+  },
+  "workouts_5": {
+   "vi": "Hoàn thành 5 buổi tập trong tuần",
+   "en": "Complete 5 workouts this week",
+   "es": "Completa 5 entrenamientos esta semana"
+  }
+ },
+ "rewards": {
+  "calories_5": {
+   "vi": "Ăn Chuẩn",
+   "en": "Clean Eater",
+   "es": "Comedor Saludable"
+  },
+  "log_7": {
+   "vi": "Kỷ Luật Sắt",
+   "en": "Iron Discipline",
+   "es": "Disciplina de Hierro"
+  },
+  "protein_7": {
+   "vi": "Protein Master",
+   "en": "Protein Master",
+   "es": "Maestro de la Proteína"
+  },
+  "sleep_7": {
+   "vi": "Giấc Ngủ Vàng",
+   "en": "Golden Sleep",
+   "es": "Sueño Dorado"
+  },
+  "steps_50k": {
+   "vi": "Chân Thép",
+   "en": "Iron Legs",
+   "es": "Piernas de Hierro"
+  },
+  "water_7": {
+   "vi": "Hydro Pro",
+   "en": "Hydro Pro",
+   "es": "Hydro Pro"
+  },
+  "workouts_3": {
+   "vi": "Bước Đầu Tuần",
+   "en": "Week Starter",
+   "es": "Inicio de Semana"
+  },
+  "workouts_5": {
+   "vi": "Chiến Binh Tuần",
+   "en": "Weekly Warrior",
+   "es": "Guerrero Semanal"
+  }
  }
 }
