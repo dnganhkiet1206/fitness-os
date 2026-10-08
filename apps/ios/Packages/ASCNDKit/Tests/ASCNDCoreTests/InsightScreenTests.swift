@@ -99,3 +99,55 @@ struct InsightScreenTests {
     #expect(InsightScreen.shown(list, keys: ["x"], single: "y").isEmpty)
   }
 }
+
+/// Dải "Lần trước" (#527 Phase 2) so với `exercise-progress.tsx` @ fac9ac2
+/// (`Fixtures/progress-golden.json`, `tools/insights-golden/gen-progress.mjs`):
+/// `lastSetText` chép nguyên văn, trên `fillCopy` / `displayWeight` biên dịch.
+struct ExerciseProgressGoldenTests {
+  static func golden() throws -> JSONValue {
+    let url = try #require(Bundle.module.url(forResource: "progress-golden", withExtension: "json", subdirectory: "Fixtures"))
+    return try JSONDecoder().decode(JSONValue.self, from: Data(contentsOf: url))
+  }
+
+  static func performance(_ v: JSONValue) -> ExercisePerformance {
+    ExercisePerformance(
+      exerciseKey: "x", exerciseName: "X", sessionId: "s", at: EpochMillis(0), date: LocalDate("2026-10-08")!,
+      kind: ExerciseKind(rawValue: v["kind"]?.stringValue ?? "") ?? .compound, setCount: 1, totalReps: 0,
+      totalVolumeKg: 0, bestWeightKg: v["bestWeightKg"]?.doubleValue, bestReps: v["bestReps"]?.intValue,
+      bestE1rmKg: nil, bestDurationSec: v["bestDurationSec"]?.intValue, records: [],
+      bodyweightKg: v["bodyweightKg"]?.doubleValue)
+  }
+
+  /// Chữ tiếng Anh của `nRepsN` (`{n} {n:rep|reps}`).
+  static func reps(_ n: Int) -> String { abs(n) == 1 ? "\(n) rep" : "\(n) reps" }
+
+  @Test func lastSetTextMatchesRN() throws {
+    let cases = InsightScreenGoldenTests.array(try Self.golden()["performances"])
+    #expect(cases.count == 150)
+    for (n, c) in cases.enumerated() {
+      let p = Self.performance(try #require(c["performance"]))
+      for unit in [WeightUnit.kg, .lbs] {
+        let key = unit == .kg ? "kg" : "lbs"
+        let got = InsightScreen.lastSetText(p, load: unit.load, reps: Self.reps, bodyweight: "bodyweight")
+        #expect(got == c["text"]?[key]?.stringValue, "#\(n) \(key)")
+      }
+    }
+  }
+
+  /// `Math.round(changePct * 100)`, ẩn khi bằng 0 (kể cả -0 của JS).
+  @Test func stripPercentMatchesRN() throws {
+    let cases = InsightScreenGoldenTests.array(try Self.golden()["percents"])
+    #expect(cases.count == 10)
+    for c in cases {
+      let i = InsightScreenGoldenTests.insight(.object([:]))
+      let withChange = ExerciseInsight(
+        exerciseKey: i.exerciseKey, exerciseName: i.exerciseName, kind: i.kind, lastTrainedDays: nil, stale: false,
+        trend: i.trend, readiness: i.readiness, confidence: i.confidence, sessions: 0, current: nil, previous: nil,
+        changePct: c["changePct"]?.doubleValue, unit: .kg, bestWeightKg: nil, bestReps: nil, bestE1rmKg: nil,
+        bestDurationSec: nil, evidence: [], generatedAt: EpochMillis(0))
+      let want = c["pct"]?.intValue.flatMap { $0 == 0 ? nil : $0 }
+      #expect(InsightScreen.stripPercent(withChange) == want, "\(String(describing: c["changePct"]?.doubleValue))")
+    }
+    #expect(InsightScreen.stripPercent(nil) == nil)
+  }
+}
