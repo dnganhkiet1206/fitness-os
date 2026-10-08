@@ -17,6 +17,15 @@ import GRDB
 /// `read_cache`). Đọc / ghi / chốt / xoá chỉ chạm hàng của chủ ấy; không ai
 /// đăng nhập thì đọc không thấy gì và ghi bị từ chối (`AccountScopeClosed`)
 /// trước khi có gì bền. Chủ được đọc TRONG transaction, cùng lúc với phép ghi.
+///
+/// Hàng rào ghi (#454): mỗi phép ghi nói nó ghi cho ai — `saveDay(userId:)`,
+/// `entry.userId` của `commitFinish` / `commitDelete`. Người ấy phải là người
+/// đang đăng nhập (so như `AccountScope.allows`: không phân biệt hoa thường,
+/// rỗng không bao giờ), không thì `AccountScopeClosed`, kiểm TRƯỚC câu lệnh
+/// ghi đầu tiên của giao dịch — giao dịch chốt vẫn là tất-cả-hoặc-không. Không
+/// thế thì lượt ghi muộn của controller của A, tới sau khi B đã đăng nhập,
+/// được ghi dưới tên B: ngày của A dựng lại trong ngày của B, hàng outbox của
+/// A nằm cạnh hàng của B.
 public final class GRDBWorkoutStore: WorkoutStore {
   private let db: DatabaseQueue
   private let accounts: AccountScope
@@ -26,9 +35,10 @@ public final class GRDBWorkoutStore: WorkoutStore {
     accounts = database.accounts
   }
 
-  /// Chủ của lượt ghi này, hoặc từ chối.
-  private func writer() throws -> String {
-    guard let owner = accounts.owner else { throw AccountScopeClosed() }
+  /// Chủ của lượt ghi cho `userId`, hoặc từ chối: không ai đăng nhập, hay
+  /// người đăng nhập không phải `userId`.
+  private func writer(for userId: String) throws -> String {
+    guard let owner = accounts.owner(writingFor: userId) else { throw AccountScopeClosed() }
     return owner
   }
 
@@ -39,10 +49,10 @@ public final class GRDBWorkoutStore: WorkoutStore {
     }
   }
 
-  public func saveDay(_ key: String, _ state: DayState) async throws {
+  public func saveDay(_ key: String, _ state: DayState, userId: String) async throws {
     let json = try OutboxStore.json(state)
     try await db.write { db in
-      let owner = try self.writer()
+      let owner = try self.writer(for: userId)
       try Self.ensureUnlocked(db, owner, key, for: state.loggedSessionId)
       try Self.upsert(db, owner, key, json)
     }
@@ -53,7 +63,7 @@ public final class GRDBWorkoutStore: WorkoutStore {
     let day = try OutboxStore.json(state)
     let row = try OutboxStore.json(entry)
     return try await db.write { db in
-      let owner = try self.writer()
+      let owner = try self.writer(for: entry.userId)
       try Self.ensureUnlocked(db, owner, key, for: state.loggedSessionId)
       try Self.upsert(db, owner, key, day)
       try db.execute(
@@ -66,7 +76,7 @@ public final class GRDBWorkoutStore: WorkoutStore {
   public func commitDelete(sessionId: String, _ entry: OutboxEntry) async throws {
     let row = try OutboxStore.json(entry)
     try await db.write { db in
-      let owner = try self.writer()
+      let owner = try self.writer(for: entry.userId)
       let exists = try Bool.fetchOne(db, sql: "SELECT EXISTS(SELECT 1 FROM outbox WHERE id = ?)", arguments: [entry.id]) ?? false
       guard !exists else { return }
       for key in try String.fetchAll(db, sql: "SELECT key FROM workout_day WHERE userId = ?", arguments: [owner]) {
@@ -84,17 +94,19 @@ public final class GRDBWorkoutStore: WorkoutStore {
   /// baseline). Ngày đã chốt cũng bị dọn: buổi của nó đã nằm ở outbox/server,
   /// và cửa sổ mở lại của baseline cũng chỉ 14 ngày. Trả về số ngày bỏ.
   ///
-  /// Theo TUỔI, không theo chủ: chạy lúc mở app (trước khi ai đăng nhập) và
-  /// dọn cả hàng của người khác / hàng `#legacy` — xoá một ngày đã quá hạn
-  /// không lộ gì của ai.
+  /// CHỈ ngày của người đang đăng nhập (#469), như mọi lối khác của bảng:
+  /// không ai đăng nhập → `AccountScopeClosed`, không chạm gì. Hàng của người
+  /// khác / hàng `#legacy` không phải việc của lượt dọn này — chúng đi theo
+  /// vòng đời phiên (`clearAll(except:)` lúc phiên mở, `clearAll` lúc đăng
+  /// xuất), lối XUYÊN tài khoản duy nhất. Chủ đọc trong giao dịch.
   @discardableResult
   public func pruneDays(today: LocalDate) async throws -> Int {
-    try await db.write { db in
-      let keys = Set(try String.fetchAll(db, sql: "SELECT key FROM workout_day"))
-      let stale = DayProgressStore.stale(Array(keys), today: today)
+    try await db.write { [accounts] db in
+      guard let owner = accounts.owner else { throw AccountScopeClosed() }
+      let keys = try String.fetchAll(db, sql: "SELECT key FROM workout_day WHERE userId = ?", arguments: [owner])
       var removed = 0
-      for k in stale {
-        try db.execute(sql: "DELETE FROM workout_day WHERE key = ?", arguments: [k])
+      for k in DayProgressStore.stale(keys, today: today) {
+        try db.execute(sql: "DELETE FROM workout_day WHERE userId = ? AND key = ?", arguments: [owner, k])
         removed += db.changesCount
       }
       return removed
@@ -109,6 +121,18 @@ public final class GRDBWorkoutStore: WorkoutStore {
   public func clearAll() async throws -> Int {
     try await db.write { db in
       try db.execute(sql: "DELETE FROM workout_day")
+      return db.changesCount
+    }
+  }
+
+  /// Như `clearAll`, nhưng giữ ngày của `userId` (#455): khi đổi thẳng tài
+  /// khoản, người mới có thể đã đăng nhập và ghi TRƯỚC khi lượt dọn của người
+  /// cũ chạy tới đây — dọn của người cũ không được xoá của người mới. Hàng
+  /// `#legacy` cũng bị bỏ, như `clearAll`.
+  @discardableResult
+  public func clearAll(except userId: String) async throws -> Int {
+    try await db.write { db in
+      try db.execute(sql: "DELETE FROM workout_day WHERE userId != ?", arguments: [userId.lowercased()])
       return db.changesCount
     }
   }
@@ -144,8 +168,10 @@ public final class GRDBWorkoutStore: WorkoutStore {
   }
 }
 
-/// Ghi `workout_day` khi không ai đăng nhập (#452): từ chối trước khi có gì
-/// bền — lượt ghi muộn của người vừa rời đi không dựng lại ngày của họ.
+/// Ghi `workout_day` khi không ai đăng nhập (#452), hoặc cho người không phải
+/// người đang đăng nhập (#454): từ chối trước khi có gì bền — lượt ghi muộn
+/// của người vừa rời đi không dựng lại ngày của họ, ở máy trống hay trong
+/// phiên của người kế tiếp.
 public struct AccountScopeClosed: Error, Sendable, Hashable {
   public init() {}
 }

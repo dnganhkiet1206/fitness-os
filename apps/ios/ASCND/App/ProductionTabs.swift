@@ -109,6 +109,7 @@ struct WorkoutsTab: View {
 /// Cài đặt của phiên: tài khoản, phiên bản, đăng xuất.
 private struct SettingsSheet: View {
   @Environment(AppServices.self) private var services
+  @Environment(ProfileBook.self) private var profile: ProfileBook?
 
   var body: some View {
     SettingsView(
@@ -124,7 +125,8 @@ private struct SettingsSheet: View {
         if let t = AppPreferences.Theme(rawValue: code) { services.preferences.setTheme(t) }
       },
       makePasswordChange: { PasswordChangeController(session: services.session) },
-      legalLang: services.preferences.lang
+      legalLang: services.preferences.lang,
+      profileBook: profile
     )
     .presentationDragIndicator(.visible)
   }

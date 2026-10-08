@@ -88,6 +88,7 @@ struct WorkoutSessionControllerTests {
     let saved = await store.days[c.key]
     #expect(saved?.progress.done["b1"] == true)
     #expect(saved?.loggedSessionId == nil)
+    #expect(await store.savedFor == ["u1"], "ghi cho đúng người của controller (#454)")
   }
 
   /// Hàng không tên không tick được (`rowReady`); bỏ tick thì luôn được.
