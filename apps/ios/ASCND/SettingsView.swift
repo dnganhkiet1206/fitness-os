@@ -3,6 +3,7 @@
 // Presentation shell: account summary, language, appearance,
 // sign-out confirmation, app/version/about.
 // Không Supabase/Keychain; không quyết logout policy (#241).
+import ASCNDCore
 import ASCNDDesignSystem
 import SwiftUI
 
@@ -31,7 +32,15 @@ public struct SettingsView: View {
   /// đổi được chữ thật (#527 Phase 1): chữ app hiện theo ngôn ngữ máy, một bộ
   /// chọn không đổi gì là một nút hỏng.
   var showsLanguage: Bool
+  /// Dựng form đổi mật khẩu cho phiên đang mở (`settings.tsx:658`); `nil` khi
+  /// không có phiên (preview, đã đăng xuất) — không hiện hàng.
+  var makePasswordChange: (@MainActor () -> PasswordChangeController)?
+  /// Ngôn ngữ của văn bản pháp lý (`settings.tsx:739`); `nil` thì không hiện hàng.
+  var legalLang: AppPreferences.Lang?
 
+  /// Vừa đổi mật khẩu xong — RN `toast.success(settingsPasswordChanged)`;
+  /// app chưa có toast nên báo ngay dưới hàng, tới khi rời Cài đặt.
+  @State private var passwordChanged = false
   @State private var showSignOutConfirm = false
   @State private var selectedLanguage: String
   @State private var selectedTheme: String
@@ -64,7 +73,9 @@ public struct SettingsView: View {
     showsLanguage: Bool = true,
     language: String = "vi",
     theme: String = "system",
-    onThemeChange: @escaping (String) -> Void = { _ in }
+    onThemeChange: @escaping (String) -> Void = { _ in },
+    makePasswordChange: (@MainActor () -> PasswordChangeController)? = nil,
+    legalLang: AppPreferences.Lang? = nil
   ) {
     self.account = account
     self.onSignOut = onSignOut
@@ -73,6 +84,8 @@ public struct SettingsView: View {
     self.language = language
     self.theme = theme
     self.onThemeChange = onThemeChange
+    self.makePasswordChange = makePasswordChange
+    self.legalLang = legalLang
     _selectedLanguage = State(initialValue: language)
     _selectedTheme = State(initialValue: theme)
   }
@@ -156,6 +169,22 @@ public struct SettingsView: View {
           }
         }
 
+        // Đổi mật khẩu (`settings.tsx:658`, `nav.push('/change-password')`).
+        if account != nil, let makePasswordChange {
+          Section {
+            NavigationLink {
+              ChangePasswordView(controller: makePasswordChange()) { passwordChanged = true }
+            } label: {
+              Label(String(localized: "settings.changePassword"), systemImage: "key")
+            }
+          } footer: {
+            if passwordChanged {
+              Label(String(localized: "settings.passwordChanged"), systemImage: "checkmark.circle.fill")
+                .foregroundStyle(DS.Color.readinessGreen.swiftUI)
+            }
+          }
+        }
+
         // About
         Section {
           HStack {
@@ -164,6 +193,14 @@ public struct SettingsView: View {
             Text(appVersion)
               .foregroundStyle(DS.Color.mutedForeground.swiftUI)
               .monospacedDigit()
+          }
+          // Pháp lý (`settings.tsx:739`, `nav.push('/legal')`): đủ bốn tab.
+          if let legalLang {
+            NavigationLink {
+              LegalView(lang: legalLang)
+            } label: {
+              Label(String(localized: "settings.legal"), systemImage: "checkmark.shield")
+            }
           }
         } header: {
           Text(String(localized: "settings.about"))

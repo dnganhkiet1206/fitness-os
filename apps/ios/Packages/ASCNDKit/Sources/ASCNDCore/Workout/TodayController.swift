@@ -322,6 +322,9 @@ public final class TodayController {
     edits = merged
   }
 
+  /// Nút của thẻ Hôm nay (`TodayRules.cta(on:)`) cho hôm nay của controller.
+  public var cta: TodayCta { TodayRules.cta(on: today, library: library, trained: trained) }
+
   /// Màn tập vừa chốt: ngày thành `done` ngay, không đợi server.
   public func markTrained(_ date: LocalDate) async {
     localTrained.insert(date)

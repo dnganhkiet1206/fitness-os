@@ -161,43 +161,50 @@ public struct WorkoutHistoryView: View {
     HStack(spacing: DS.Spacing.sm) {
       // Phần thông tin: MỘT phần tử VoiceOver. Nút xoá đứng riêng để vẫn bấm
       // được (không `.combine` cả hàng — P2 #523).
-      HStack(spacing: DS.Spacing.md) {
-        VStack(alignment: .leading, spacing: 4) {
-          HStack(spacing: DS.Spacing.xs) {
-            Text(verbatim: e.templateName)
-              .font(DS.TextStyle.headline)
+      // Chạm vào phần thông tin: chi tiết của buổi (SessionDetail, #527 Phase 2/8).
+      NavigationLink {
+        SessionDetailView(book: book, id: e.id)
+      } label: {
+        HStack(spacing: DS.Spacing.md) {
+          VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: DS.Spacing.xs) {
+              Text(verbatim: e.templateName)
+                .font(DS.TextStyle.headline)
+                .foregroundStyle(DS.Color.foreground.swiftUI)
+              if e.prDetected {
+                Image(systemName: "trophy.fill")
+                  .font(.caption)
+                  .foregroundStyle(DS.Color.readinessYellow.swiftUI)
+              }
+            }
+            Text(e.at.date, format: .dateTime.weekday(.abbreviated).day().month(.abbreviated))
+              .font(DS.TextStyle.caption)
+              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            // Thanh tỉ lệ với buổi nặng nhất tháng (RN `volumeRatio`).
+            if peak > 0 {
+              GeometryReader { g in
+                Capsule()
+                  .fill(DS.Color.metricBlue.swiftUI.opacity(0.6))
+                  .frame(width: max(4, g.size.width * Double(e.volumeKg) / Double(peak)))
+              }
+              .frame(height: 3)
+            }
+          }
+          Spacer(minLength: DS.Spacing.sm)
+          VStack(alignment: .trailing, spacing: 4) {
+            Text(verbatim: volume(e.volumeKg))
+              .font(DS.TextStyle.body.monospacedDigit())
               .foregroundStyle(DS.Color.foreground.swiftUI)
-            if e.prDetected {
-              Image(systemName: "trophy.fill")
-                .font(.caption)
-                .foregroundStyle(DS.Color.readinessYellow.swiftUI)
-            }
-          }
-          Text(e.at.date, format: .dateTime.weekday(.abbreviated).day().month(.abbreviated))
-            .font(DS.TextStyle.caption)
-            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-          // Thanh tỉ lệ với buổi nặng nhất tháng (RN `volumeRatio`).
-          if peak > 0 {
-            GeometryReader { g in
-              Capsule()
-                .fill(DS.Color.metricBlue.swiftUI.opacity(0.6))
-                .frame(width: max(4, g.size.width * Double(e.volumeKg) / Double(peak)))
-            }
-            .frame(height: 3)
+            Text(String(format: String(localized: "history.sets"), e.completedSets, e.exerciseCount))
+              .font(DS.TextStyle.caption)
+              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
           }
         }
-        Spacer(minLength: DS.Spacing.sm)
-        VStack(alignment: .trailing, spacing: 4) {
-          Text(verbatim: volume(e.volumeKg))
-            .font(DS.TextStyle.body.monospacedDigit())
-            .foregroundStyle(DS.Color.foreground.swiftUI)
-          Text(String(format: String(localized: "history.sets"), e.completedSets, e.exerciseCount))
-            .font(DS.TextStyle.caption)
-            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(verbatim: rowLabel(e)))
       }
-      .accessibilityElement(children: .ignore)
-      .accessibilityLabel(Text(verbatim: rowLabel(e)))
+      .buttonStyle(.plain)
+      .accessibilityHint(Text("sd.open.hint"))
       // Nút xoá luôn thấy — vuốt chỉ là lối tắt (RN "the button stays").
       Button { pendingDelete = e } label: {
         Image(systemName: "trash")

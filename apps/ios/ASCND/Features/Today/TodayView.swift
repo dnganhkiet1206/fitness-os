@@ -9,7 +9,11 @@ import SwiftUI
 
 public struct TodayView: View {
   let state: TodayDisplay
+  /// Nút chính của thẻ (`TodayRules.cta`, RN `todayCta`).
+  let cta: TodayCta
   var onStart: () -> Void
+  /// Ghi buổi tự do / buổi phát sinh (`/log-workout`). `nil` = không hiện nút.
+  var onLogWorkout: (() -> Void)?
   /// Mở màn chọn kế hoạch. `nil` = chưa có màn ấy ở bản này: nút "Chọn kế
   /// hoạch" ẩn đi thay vì là một nút không làm gì (#527).
   var onChoosePlan: (() -> Void)?
@@ -18,12 +22,16 @@ public struct TodayView: View {
 
   public init(
     state: TodayDisplay,
+    cta: TodayCta? = nil,
     onStart: @escaping () -> Void = {},
+    onLogWorkout: (() -> Void)? = nil,
     onChoosePlan: (() -> Void)? = nil,
     onOpenSettings: (() -> Void)? = nil
   ) {
     self.state = state
+    self.cta = cta ?? Self.previewCta(state.status)
     self.onStart = onStart
+    self.onLogWorkout = onLogWorkout
     self.onChoosePlan = onChoosePlan
     self.onOpenSettings = onOpenSettings
   }
@@ -39,6 +47,7 @@ public struct TodayView: View {
           case .rest: restView
           case .unplanned: unplannedView
           }
+          ctaButton
         }
         .padding(DS.Spacing.md)
       }
@@ -105,7 +114,42 @@ public struct TodayView: View {
           }
         }
       }
+    }
+  }
+
+  // MARK: - Nút chính (`today-training.tsx:338`)
+
+  /// Một nút theo `cta`: "Bắt đầu" đặc; ba nút còn lại nhẹ; chưa biết lịch thì
+  /// không có nút. Bắt đầu và Chọn buổi tập mở kế hoạch của hôm nay; Ghi buổi
+  /// (ngày nghỉ) và Ghi thêm buổi phát sinh (đã tập) mở màn ghi tay.
+  @ViewBuilder private var ctaButton: some View {
+    switch cta {
+    case .none:
+      EmptyView()
+    case .start:
       DSButton(String(localized: "today.start"), style: .primary, action: onStart)
+    case .extra:
+      if let onLogWorkout {
+        DSButton(String(localized: "today.cta.extra"), style: .secondary, action: onLogWorkout)
+      }
+    case .logFree:
+      if let onLogWorkout {
+        DSButton(String(localized: "today.cta.logFree"), style: .secondary, action: onLogWorkout)
+      }
+    case .pick:
+      if let onChoosePlan {
+        DSButton(String(localized: "today.choosePlan"), style: .secondary, action: onChoosePlan)
+      }
+    }
+  }
+
+  /// Bản xem trước không có controller: nút theo trạng thái như `todayCta`.
+  static func previewCta(_ status: TodayStatus) -> TodayCta {
+    switch status {
+    case .todo, .missed: .start
+    case .done: .extra
+    case .rest: .logFree
+    case .unplanned: .pick
     }
   }
 
@@ -165,9 +209,7 @@ public struct TodayView: View {
       title: statusText,
       message: state.templateName.map {
         String(format: String(localized: "today.missed.message"), $0)
-      },
-      actionTitle: String(localized: "today.choosePlan"),
-      action: onChoosePlan
+      }
     )
   }
 
@@ -177,9 +219,7 @@ public struct TodayView: View {
     DSEmptyState(
       systemImage: "moon.zzz.fill",
       title: statusText,
-      message: String(localized: "today.rest.message"),
-      actionTitle: String(localized: "today.choosePlan"),
-      action: onChoosePlan
+      message: String(localized: "today.rest.message")
     )
   }
 
@@ -189,9 +229,7 @@ public struct TodayView: View {
     DSEmptyState(
       systemImage: "calendar.badge.plus",
       title: statusText,
-      message: String(localized: "today.unplanned.message"),
-      actionTitle: String(localized: "today.choosePlan"),
-      action: onChoosePlan
+      message: String(localized: "today.unplanned.message")
     )
   }
 }
