@@ -72,6 +72,9 @@ private struct SignedInScope<Content: View>: View {
       if let flow {
         content.environment(flow)
           .environment(\.weightUnit, weightUnit)
+          // Cùng MỘT hồ sơ cho đơn vị tạ và cho màn sửa hồ sơ: lưu xong thì
+          // màn tập đổi đơn vị ngay, không đợi lượt đọc lại.
+          .environment(profile)
       } else {
         ProgressView()
           .frame(maxWidth: .infinity, maxHeight: .infinity)
