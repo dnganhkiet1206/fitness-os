@@ -66,8 +66,10 @@ public final class ASCNDDatabase: Sendable {
       //
       // Hàng cũ KHÔNG được gán cho ai — không biết của ai thì không phải của
       // người đăng nhập kế tiếp. Chúng mang chủ `#legacy` (không tài khoản nào
-      // trùng được), không ai đọc / ghi được, và được dọn theo tuổi như mọi
-      // ngày khác (`pruneDays`, 14 ngày).
+      // trùng được), không ai đọc / ghi được. `pruneDays` chỉ chạm ngày của
+      // người đang đăng nhập (#476), nên chúng bị bỏ ở lượt dọn xuyên tài
+      // khoản lúc phiên mở (`AccountLifecycle.sessionStarted` →
+      // `clearAll(except:)`), không phải theo tuổi.
       try db.create(table: "workout_day_owned") { t in
         t.column("userId", .text).notNull()
         t.column("key", .text).notNull()

@@ -93,9 +93,9 @@
      {"op": "signIn", "user": "b"},
      {"op": "load", "day": "2026-10-05", "expect": null},
      {"op": "load", "day": "2026-09-05", "expect": null},
-     {"op": "prune", "today": "2026-10-05", "expect": 1}
+     {"op": "prune", "today": "2026-10-05", "expect": 0}
    ]},
-   "expected": {"owners": ["#legacy", "a"], "outbox": ["legacy-s@del", "mine"]}},
+   "expected": {"owners": ["#legacy", "#legacy", "a"], "outbox": ["legacy-s@del", "mine"]}},
   {"rule": "WDA-7 Hai controller cùng chốt một ngày của cùng người: một thắng, một DayAlreadyLogged",
    "input": {"steps": [
      {"op": "signIn", "user": "a"},
@@ -114,8 +114,8 @@
      {"op": "load", "day": "2026-10-05", "expect": {"done": ["0-0"], "loggedSessionId": "s1"}}
    ]},
    "expected": {"owners": ["a"], "outbox": ["s1"]}},
-  {"rule": "WDA-9 Dọn theo tuổi (14 ngày) ở mọi chủ, không đụng ngày còn hạn của ai",
-   "note": "Chạy lúc mở app, trước khi ai đăng nhập. Ngày thứ 14 trở về trước là quá hạn.",
+  {"rule": "WDA-9 Dọn 14 ngày chỉ của người đang đăng nhập; không ai đăng nhập thì từ chối",
+   "note": "#469: dọn chạy khi phiên mở, cho đúng người. Ngày thứ 14 trở về trước là quá hạn.",
    "input": {"steps": [
      {"op": "signIn", "user": "a"},
      {"op": "save", "day": "2026-09-21", "done": ["0-0"], "expect": "ok"},
@@ -125,12 +125,15 @@
      {"op": "save", "day": "2026-09-15", "done": ["0-0"], "expect": "ok"},
      {"op": "save", "day": "2026-10-05", "done": ["0-1"], "expect": "ok"},
      {"op": "signOut"},
-     {"op": "prune", "today": "2026-10-05", "expect": 2},
+     {"op": "prune", "today": "2026-10-05", "expect": "closed"},
      {"op": "signIn", "user": "a"},
+     {"op": "prune", "today": "2026-10-05", "expect": 1},
      {"op": "load", "day": "2026-09-21", "expect": null},
      {"op": "load", "day": "2026-09-22", "expect": {"done": ["0-0"]}},
      {"op": "load", "day": "2026-10-05", "expect": {"done": ["0-0"]}},
      {"op": "signIn", "user": "b"},
+     {"op": "load", "day": "2026-09-15", "expect": {"done": ["0-0"]}},
+     {"op": "prune", "today": "2026-10-05", "expect": 1},
      {"op": "load", "day": "2026-09-15", "expect": null},
      {"op": "load", "day": "2026-10-05", "expect": {"done": ["0-1"]}}
    ]},

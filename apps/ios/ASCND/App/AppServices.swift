@@ -156,11 +156,11 @@ final class AppServices {
     startNetworkMonitor()
   }
 
-  /// App mở / quay lại tiền cảnh: đọc phiên, dọn ngày cũ, thử gửi hàng đợi.
+  /// App mở / quay lại tiền cảnh: đọc phiên, thử gửi hàng đợi. Dọn ngày cũ
+  /// KHÔNG ở đây (#469): lúc này chốt còn đóng — nó chạy khi phiên mở, cho
+  /// đúng người (`forgetOtherAccounts`).
   func start() async {
     await session.start()
-    let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
-    await lifecycle.pruneDays(today: today)
     sync.kick()
     await reminders.refreshPermission()
   }
@@ -179,10 +179,12 @@ final class AppServices {
     TodayController(userId: userId, repository: templates, history: history, workouts: workouts)
   }
 
-  /// Phiên của `userId` bắt đầu: bỏ read model của mọi người khác. Lượt làm
-  /// mới của người vừa rời đi có thể về SAU lượt dọn lúc đăng xuất (#335).
+  /// Phiên của `userId` bắt đầu: mở chốt, bỏ dữ liệu của mọi người khác (lượt
+  /// làm mới của người vừa rời đi có thể về SAU lượt dọn lúc đăng xuất, #335),
+  /// rồi dọn ngày cũ của chính họ (#469).
   func forgetOtherAccounts(keeping userId: String) async {
-    await lifecycle.sessionStarted(userId: userId)
+    let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
+    await lifecycle.sessionStarted(userId: userId, today: today)
   }
 
   /// Việc dọn thêm khi phiên kết thúc, của những thứ không do AppServices

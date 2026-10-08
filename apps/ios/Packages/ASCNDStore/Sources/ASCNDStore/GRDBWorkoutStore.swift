@@ -94,17 +94,19 @@ public final class GRDBWorkoutStore: WorkoutStore {
   /// baseline). Ngày đã chốt cũng bị dọn: buổi của nó đã nằm ở outbox/server,
   /// và cửa sổ mở lại của baseline cũng chỉ 14 ngày. Trả về số ngày bỏ.
   ///
-  /// Theo TUỔI, không theo chủ: chạy lúc mở app (trước khi ai đăng nhập) và
-  /// dọn cả hàng của người khác / hàng `#legacy` — xoá một ngày đã quá hạn
-  /// không lộ gì của ai.
+  /// CHỈ ngày của người đang đăng nhập (#469), như mọi lối khác của bảng:
+  /// không ai đăng nhập → `AccountScopeClosed`, không chạm gì. Hàng của người
+  /// khác / hàng `#legacy` không phải việc của lượt dọn này — chúng đi theo
+  /// vòng đời phiên (`clearAll(except:)` lúc phiên mở, `clearAll` lúc đăng
+  /// xuất), lối XUYÊN tài khoản duy nhất. Chủ đọc trong giao dịch.
   @discardableResult
   public func pruneDays(today: LocalDate) async throws -> Int {
-    try await db.write { db in
-      let keys = Set(try String.fetchAll(db, sql: "SELECT key FROM workout_day"))
-      let stale = DayProgressStore.stale(Array(keys), today: today)
+    try await db.write { [accounts] db in
+      guard let owner = accounts.owner else { throw AccountScopeClosed() }
+      let keys = try String.fetchAll(db, sql: "SELECT key FROM workout_day WHERE userId = ?", arguments: [owner])
       var removed = 0
-      for k in stale {
-        try db.execute(sql: "DELETE FROM workout_day WHERE key = ?", arguments: [k])
+      for k in DayProgressStore.stale(keys, today: today) {
+        try db.execute(sql: "DELETE FROM workout_day WHERE userId = ? AND key = ?", arguments: [owner, k])
         removed += db.changesCount
       }
       return removed
