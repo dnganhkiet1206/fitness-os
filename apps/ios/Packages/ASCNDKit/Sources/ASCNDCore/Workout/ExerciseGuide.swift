@@ -444,6 +444,11 @@ public final class ExerciseGuideBook {
     current = key
     failure = nil
     guide = nil
+    // Lượt của bài trước (đang bay) không còn hạ cờ được — `defer` của nó chỉ
+    // hạ khi vẫn là bài hiện tại. Không hạ ở đây thì mở bài B đã có bản nhớ
+    // mới trong lúc A đang tải sẽ kẹt `loading` mãi (dải "đang kết nối lại"
+    // chờ tới trần 12 giây).
+    loading = false
     if let cached = try? await cache.load(userId: userId, key: key), current == key {
       guide = cached
     }

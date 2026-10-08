@@ -362,7 +362,11 @@ public final class ProfileBook {
   public private(set) var loaded = false
   public private(set) var failure: TodayController.RefreshFailure?
   public private(set) var saving = false
+  /// Đang có lượt đọc server bay — một phần của "app còn đang tải" cho dải báo
+  /// mạng (`registerBusyProbe` của RN: `isFetching` gồm cả query hồ sơ).
+  public var isRefreshing: Bool { inFlight > 0 }
 
+  @ObservationIgnored private var inFlight = 0
   @ObservationIgnored private let source: any ProfileSource
   @ObservationIgnored private let writer: any ProfileWriter
   @ObservationIgnored private let cache: any ProfileCache
@@ -389,6 +393,10 @@ public final class ProfileBook {
   }
 
   public func refresh() async {
+    // Đếm, không phải cờ: hai lượt chồng nhau (ra tiền cảnh + mở màn) thì lượt
+    // xong trước không được hạ cờ của lượt còn bay. Huỷ / lỗi cũng hạ.
+    inFlight += 1
+    defer { inFlight -= 1 }
     do {
       let row = try await source.profile(userId: userId)
       let fresh = row.flatMap(Profile.init(row:))
