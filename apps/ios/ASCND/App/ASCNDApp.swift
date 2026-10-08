@@ -29,6 +29,7 @@ struct ASCNDApp: App {
     // Gán ngay trong init: khi hệ thống mở app ở nền chỉ để chạy nút ±15 của
     // Island, không có view nào xuất hiện — intent vẫn phải tìm được controller.
     RestIntentRouter.adjust = { delta in controller.adjust(by: delta) }
+    RestIntentRouter.setPaused = { paused in controller.setPaused(paused) }
   }
 
   static func colorScheme(_ theme: AppPreferences.Theme) -> ColorScheme? {

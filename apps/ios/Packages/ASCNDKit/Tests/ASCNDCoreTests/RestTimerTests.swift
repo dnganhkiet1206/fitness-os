@@ -178,6 +178,9 @@ struct WorkoutVectorTests {
     if rule.hasPrefix("RT-10"), let now = int("now") {
       return .object(["warn": .bool(RestTimer.warns(left: now, paused: i["paused"]?.boolValue ?? false))])
     }
+    if rule.hasPrefix("RT-17") {
+      return pauseCase(i)
+    }
     if rule.hasPrefix("RT-16"), let n = int("n") {
       return .object(["clamped": .number(Double(RestTimer.clampPlanned(n)))])
     }
@@ -205,6 +208,36 @@ struct WorkoutVectorTests {
                       "volume": .number(WorkoutMath.volume(of: sets()))])
     }
     return nil
+  }
+
+  /// RT-17 (#235): chuỗi thao tác từ một lần bắt đầu, chạy qua CHÍNH
+  /// `RestTimer.reduce` mà controller dùng; `settle` là phép thử `.over` của
+  /// `RestTimerController.settle()`.
+  private func pauseCase(_ i: JSONValue) -> JSONValue? {
+    guard let at = i["start"]?["at"]?.intValue, let secs = i["start"]?["seconds"]?.intValue,
+      case .array(let steps)? = i["steps"]
+    else { return nil }
+    var t = RestTimer.start(seconds: secs, at: EpochMillis(Int64(at)))
+    var now = EpochMillis(Int64(at))
+    for step in steps {
+      guard let ms = step["at"]?.intValue else { return nil }
+      now = EpochMillis(Int64(ms))
+      switch step["op"]?.stringValue ?? "" {
+      case "pause": t = RestTimer.reduce(t, .pause, at: now)
+      case "resume": t = RestTimer.reduce(t, .resume, at: now)
+      case "adjust": t = RestTimer.reduce(t, .adjust(delta: step["delta"]?.intValue ?? 0), at: now)
+      case "cancel": t = RestTimer.reduce(t, .cancel, at: now)
+      case "settle": if t?.phase(at: now) == .over { t = nil }
+      default: return nil
+      }
+    }
+    guard let t else { return .object(["ended": .bool(true)]) }
+    var o: [String: JSONValue] = [
+      "ended": .bool(false), "paused": .bool(t.isPaused),
+      "left": .number(Double(t.remaining(at: now))), "total": .number(Double(t.total)),
+    ]
+    if !t.isPaused { o["endsAt"] = .number(Double(t.endsAt.millis)) }
+    return .object(o)
   }
 
   @Test(arguments: ["rest-timer.json", "workout-state.json"])
