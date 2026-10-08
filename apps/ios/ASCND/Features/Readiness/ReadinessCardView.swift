@@ -15,15 +15,21 @@ import SwiftUI
 /// - chưa có điểm: thẻ trống với `dashReadinessMsg`;
 /// - đang tải / lỗi (có nút thử lại).
 ///
-/// Khác RN / chưa có: tấm giải thích (`ReadinessExplainer`) và lối "Xem sinh
-/// trắc học" (màn `biometrics` chưa port); vòng không chạy hoạt ảnh khi bật
-/// Giảm chuyển động. Màu ô ACWR đọc CÙNG bảng vùng với thẻ tập luyện.
+/// - mở: nút "?" mở tấm giải thích (`ReadinessExplainerSheet`); cuối phần chi
+///   tiết là lối "Xem sinh trắc học" khi Today truyền `onOpenBiometrics`.
+///
+/// Khác RN / chưa có: lời nhắc "?" đếm ba lần (`help-nudge.ts`); vòng không
+/// chạy hoạt ảnh khi bật Giảm chuyển động. Màu ô ACWR đọc CÙNG bảng vùng với
+/// thẻ tập luyện.
 struct ReadinessCardView: View {
   let book: ReadinessBook
   let lang: AppPreferences.Lang
+  /// Đường đi sâu sang màn sinh trắc học — Today (B) quyết định đẩy màn nào.
+  var onOpenBiometrics: (() -> Void)? = nil
 
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var expanded = false
+  @State private var helpOpen = false
 
   var body: some View {
     DSCard {
@@ -55,6 +61,7 @@ struct ReadinessCardView: View {
         ready(day)
       }
     }
+    .sheet(isPresented: $helpOpen) { ReadinessExplainerSheet() }
   }
 
   // MARK: - Có điểm
@@ -105,6 +112,21 @@ struct ReadinessCardView: View {
     let reco = copy.map { ReadinessCard.recoText(day.recommendation, lang: lang, copy: $0) } ?? ""
     let confidence = ReadinessCard.confidence(subscores: subs)
     return VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+      // Nút "?" chỉ ở phần mở: nó giải thích RHR / LOAD / ACWR, mà phần đóng
+      // không có chữ nào trong ba chữ ấy.
+      HStack {
+        Spacer()
+        Button {
+          helpOpen = true
+        } label: {
+          Image(systemName: "questionmark.circle")
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .frame(width: 44, height: 44)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text(String(localized: "rd.help.a11y")))
+      }
       HStack(spacing: DS.Spacing.xs) {
         ForEach(tiles, id: \.kind) { tile($0) }
       }
@@ -125,6 +147,21 @@ struct ReadinessCardView: View {
           .background(color.opacity(0.1), in: RoundedRectangle(cornerRadius: DS.Radius.sm))
       }
       legend
+      if let onOpenBiometrics {
+        Button(action: onOpenBiometrics) {
+          HStack {
+            Text(String(localized: "rd.biometrics.open")).font(DS.TextStyle.footnote.weight(.semibold))
+            Spacer()
+            Image(systemName: "chevron.right")
+              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+              .accessibilityHidden(true)
+          }
+          .frame(minHeight: 44)
+          .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(.isLink)
+      }
     }
   }
 

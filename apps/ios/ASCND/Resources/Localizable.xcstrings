@@ -10745,6 +10745,1202 @@
     }
    }
   },
+  "bio.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Biometrics"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sinh Trắc Học"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Biometría"
+     }
+    }
+   }
+  },
+  "bio.empty.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "No biometric data"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chưa có dữ liệu sinh trắc học"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sin datos biométricos"
+     }
+    }
+   }
+  },
+  "bio.empty.message": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Use Camera or manual entry to start tracking"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Dùng Camera hoặc nhập thủ công để bắt đầu theo dõi"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Usa la cámara o la entrada manual para empezar a registrar"
+     }
+    }
+   }
+  },
+  "bio.loadFailed": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Could not load your data"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Không tải được dữ liệu"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "No se pudieron cargar tus datos"
+     }
+    }
+   }
+  },
+  "bio.loadFailed.hint": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Your data is safe. The app just could not reach it."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Dữ liệu của bạn vẫn an toàn, chỉ là app chưa lấy được."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tus datos están a salvo. La app simplemente no pudo acceder a ellos."
+     }
+    }
+   }
+  },
+  "bio.loading": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Loading biometrics…"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đang tải sinh trắc học…"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cargando biometría…"
+     }
+    }
+   }
+  },
+  "bio.hr": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Resting heart rate"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nhịp tim nghỉ"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Frecuencia cardíaca en reposo"
+     }
+    }
+   }
+  },
+  "bio.resp": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Respiratory rate"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nhịp thở"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Frecuencia respiratoria"
+     }
+    }
+   }
+  },
+  "bio.resp.unit": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "breaths/min"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "nhịp/phút"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "resp/min"
+     }
+    }
+   }
+  },
+  "bio.soreness": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Soreness"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đau nhức"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Dolor muscular"
+     }
+    }
+   }
+  },
+  "bio.disclaimer": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Biometric data is estimated only and does NOT have clinical or medical-grade accuracy. Do not use for diagnosis or treatment."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Dữ liệu sinh trắc học chỉ mang tính ước tính, KHÔNG có độ chính xác y khoa. Không sử dụng để chẩn đoán hoặc điều trị bệnh."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Los datos biométricos son solo estimaciones y NO tienen precisión clínica ni médica. No los uses para diagnóstico ni tratamiento."
+     }
+    }
+   }
+  },
+  "bio.readings": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Readings"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Các lần đo"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mediciones"
+     }
+    }
+   }
+  },
+  "bio.part.rhr %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "RHR %@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nhịp nghỉ %@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "FCR %@"
+     }
+    }
+   }
+  },
+  "bio.part.resp %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Resp %@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Thở %@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Resp %@"
+     }
+    }
+   }
+  },
+  "bio.noValues": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "No values"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Không có giá trị"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sin valores"
+     }
+    }
+   }
+  },
+  "bio.status.good": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Within the usual range"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Trong khoảng bình thường"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Dentro del rango habitual"
+     }
+    }
+   }
+  },
+  "bio.status.warn": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Slightly outside the usual range"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hơi lệch khỏi khoảng bình thường"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ligeramente fuera del rango habitual"
+     }
+    }
+   }
+  },
+  "bio.status.bad": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Well outside the usual range"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Lệch xa khoảng bình thường"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Muy fuera del rango habitual"
+     }
+    }
+   }
+  },
+  "bio.delete.a11y": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Delete this reading"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Xoá lần đo này"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Eliminar esta medición"
+     }
+    }
+   }
+  },
+  "bio.delete.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Delete this reading?"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Xoá lần đo này?"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "¿Eliminar esta medición?"
+     }
+    }
+   }
+  },
+  "bio.delete.message": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "That day's readiness and today's will be recomputed."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Điểm sẵn sàng của ngày đó và của hôm nay sẽ được tính lại."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Se recalculará la preparación de ese día y la de hoy."
+     }
+    }
+   }
+  },
+  "bio.delete.confirm": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Delete"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Xoá"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Eliminar"
+     }
+    }
+   }
+  },
+  "bio.deleted": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Deleted"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đã xoá"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Eliminado"
+     }
+    }
+   }
+  },
+  "bio.error.nothingWritten": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Could not delete this reading — it may have been deleted on another device"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Không xoá được chỉ số này — có thể nó đã được xoá ở thiết bị khác"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "No se pudo eliminar esta medición — quizá se eliminó en otro dispositivo"
+     }
+    }
+   }
+  },
+  "bio.error.rebuild": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "The reading was deleted, but readiness couldn't be recalculated yet — try again later."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đã xoá lần đo, nhưng chưa tính lại được điểm sẵn sàng — thử lại sau."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Se eliminó la medición, pero aún no se pudo recalcular la preparación — inténtalo más tarde."
+     }
+    }
+   }
+  },
+  "rd.biometrics.open": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Open biometrics"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Xem sinh trắc học"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ver biometría"
+     }
+    }
+   }
+  },
+  "rd.help.a11y": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Explain the readiness score"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Giải thích điểm sẵn sàng"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Explicar la puntuación de preparación"
+     }
+    }
+   }
+  },
+  "rx.lede": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "A number from 0 to 100 answering one question: how much your body can take today. It combines four sources, each with its own weight."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Một số từ 0 đến 100 trả lời đúng một câu hỏi: hôm nay cơ thể bạn chịu được bao nhiêu. Nó ghép bốn nguồn lại, mỗi nguồn một trọng số."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Un número del 0 al 100 que responde una sola pregunta: cuánto puede soportar tu cuerpo hoy. Combina cuatro fuentes, cada una con su propio peso."
+     }
+    }
+   }
+  },
+  "rx.hrv.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Heart-rate variability"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Biến thiên nhịp tim"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Variabilidad de la frecuencia cardíaca"
+     }
+    }
+   }
+  },
+  "rx.hrv.body": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "The spacing between resting heartbeats. More variation usually means a recovered nervous system; less means you are still under strain. Needs Apple Health or a manual entry — without it the weight is redistributed across the other three."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Khoảng cách giữa các nhịp tim khi nghỉ. Dao động nhiều thường là dấu hiệu hệ thần kinh đã hồi phục; dao động ít là dấu hiệu còn căng. Cần Apple Health hoặc nhập tay — không có thì trọng số được chia lại cho ba phần còn lại."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "El espacio entre latidos en reposo. Más variación suele indicar un sistema nervioso recuperado; menos, que aún estás bajo tensión. Necesita Apple Health o una entrada manual — sin ella, el peso se reparte entre las otras tres."
+     }
+    }
+   }
+  },
+  "rx.rhr.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Resting heart rate"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nhịp tim nghỉ"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Frecuencia cardíaca en reposo"
+     }
+    }
+   }
+  },
+  "rx.rhr.weight": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "20% (25% without HRV)"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "20% (25% nếu không có HRV)"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "20% (25% sin HRV)"
+     }
+    }
+   }
+  },
+  "rx.rhr.body": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Compared against you, not against anyone else: the app takes your own 28-day baseline and measures how far today sits from it. Above the baseline usually travels with fatigue, short sleep, or an illness starting."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "So với chính bạn, không so với người khác: app lấy nền 28 ngày gần nhất và tính hôm nay lệch bao nhiêu. Cao hơn nền thường đi kèm mệt, thiếu ngủ hoặc sắp ốm."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Comparada contigo, no con nadie más: la app toma tu propia base de 28 días y mide cuánto se aleja hoy de ella. Por encima de la base suele ir de la mano de cansancio, poco sueño o una enfermedad que empieza."
+     }
+    }
+   }
+  },
+  "rx.sleep.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sleep"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Giấc ngủ"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sueño"
+     }
+    }
+   }
+  },
+  "rx.sleep.weight": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "30% (45% without HRV)"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "30% (45% nếu không có HRV)"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "30% (45% sin HRV)"
+     }
+    }
+   }
+  },
+  "rx.sleep.body": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Last night against your own target, plus the debt accumulated over seven days. Under four hours caps the whole score at 40 however good everything else looks — that is a hard ceiling, not a deduction.\n\nOnly DURATION is scored. The quality face you pick adds and subtracts nothing — it is used to compare how you felt against the hours measured, and that comparison appears as a remark under the tiles."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đêm qua so với mục tiêu của bạn, cộng thêm phần nợ tích lại trong 7 ngày. Ngủ dưới 4 tiếng thì điểm tổng bị chặn ở 40 dù mọi thứ khác đều tốt — đó là một mức trần cứng, không phải trừ điểm.\n\nChỉ THỜI LƯỢNG được chấm. Mức chất lượng bạn tự chọn (mặt cười) không cộng hay trừ một điểm nào — nó dùng để đối chiếu cảm giác của bạn với số giờ đo được, và kết quả đối chiếu đó hiện thành một dòng nhận xét ngay dưới hàng ô."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Anoche frente a tu propio objetivo, más la deuda acumulada en siete días. Dormir menos de cuatro horas limita toda la puntuación a 40 por bien que se vea lo demás — es un techo fijo, no una resta.\n\nSolo se puntúa la DURACIÓN. La carita de calidad que eliges no suma ni resta nada — sirve para comparar cómo te sentiste con las horas medidas, y esa comparación aparece como un comentario bajo las casillas."
+     }
+    }
+   }
+  },
+  "rx.load.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Training load"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tải tập luyện"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Carga de entrenamiento"
+     }
+    }
+   }
+  },
+  "rx.load.weight": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "20% (30% without HRV)"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "20% (30% nếu không có HRV)"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "20% (30% sin HRV)"
+     }
+    }
+   }
+  },
+  "rx.load.body": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Derived from the ACWR below. Inside the safe band it scores 80; training too *little* (under 0.65) costs points too, not only training too much."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tính từ ACWR bên dưới. Trong vùng an toàn được 80 điểm; tập quá ít (dưới 0.65) cũng bị trừ chứ không phải chỉ tập quá nhiều mới bị."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Se deriva del ACWR de abajo. Dentro de la franja segura puntúa 80; entrenar demasiado *poco* (menos de 0.65) también resta, no solo entrenar demasiado."
+     }
+    }
+   }
+  },
+  "rx.acwr.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Acute-to-chronic ratio"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tải cấp tính / mãn tính"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Relación aguda/crónica"
+     }
+    }
+   }
+  },
+  "rx.acwr.body": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Your average daily volume over the last 7 days, divided by your average daily volume over the last 28. Put plainly: is this week heavier or lighter than your own habit?"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Khối lượng trung bình mỗi ngày trong 7 ngày qua, chia cho trung bình mỗi ngày trong 28 ngày qua. Nói cách khác: tuần này bạn tập nặng hơn hay nhẹ hơn thói quen của chính mình."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tu volumen diario medio de los últimos 7 días, dividido entre el de los últimos 28. Dicho llanamente: ¿esta semana es más dura o más ligera que tu propia costumbre?"
+     }
+    }
+   }
+  },
+  "rx.zone.detraining": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "undertrained"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "tập quá thưa"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "poco entrenamiento"
+     }
+    }
+   }
+  },
+  "rx.zone.low": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "lighter than usual"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "nhẹ hơn thường lệ"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "más ligero de lo habitual"
+     }
+    }
+   }
+  },
+  "rx.zone.optimal": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "safe band"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "vùng an toàn"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "franja segura"
+     }
+    }
+   }
+  },
+  "rx.zone.elevated": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "ramping fast"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "tăng hơi nhanh"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "subiendo rápido"
+     }
+    }
+   }
+  },
+  "rx.zone.spike": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "overreaching risk"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "nguy cơ quá tải"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "riesgo de sobrecarga"
+     }
+    }
+   }
+  },
+  "rx.notUsed.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "What this score does NOT use"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Những gì KHÔNG tính vào điểm này"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Lo que esta puntuación NO usa"
+     }
+    }
+   }
+  },
+  "rx.notUsed.body": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Meals, calories and macros play no part in readiness — logging food does not move this number by a single point. Nor do weight, water or step count. This score reads the four sources above and nothing else.\n\nA workout imported from a watch with no sets in it (a run, say) counts toward your session count but not toward training load: with no sets there is no volume to compute."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bữa ăn, calo và macro không tham gia tính điểm sẵn sàng — ghi ăn uống không làm điểm tăng hay giảm một đơn vị nào. Cân nặng, nước uống và số bước cũng vậy. Điểm này chỉ đọc bốn nguồn ở trên.\n\nMột buổi tập nhập từ đồng hồ mà không có set nào (ví dụ một lần chạy bộ) được đếm vào số buổi tập, nhưng không vào tải tập — vì không có set thì không tính ra được khối lượng."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Las comidas, las calorías y los macros no intervienen en la preparación — registrar lo que comes no mueve este número ni un punto. Tampoco el peso, el agua ni los pasos. Esta puntuación lee las cuatro fuentes de arriba y nada más.\n\nUn entrenamiento importado de un reloj sin series (una carrera, por ejemplo) cuenta en tu número de sesiones pero no en la carga: sin series no hay volumen que calcular."
+     }
+    }
+   }
+  },
+  "rx.oneSource.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "When only one source exists"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Khi mới chỉ có một nguồn"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cuando solo hay una fuente"
+     }
+    }
+   }
+  },
+  "rx.oneSource.body": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "When a source is missing its weight is shared out among the ones that remain, so the score still comes out as a full 0–100 even when only one thing was measured. The chip under the ring says how many it rests on — read it together with the number.\n\nThe common case: your FIRST workout always scores exactly 80, heavy or light. ACWR compares your 7-day average against your 28-day average, and with one day of history those are the same number — ratio 1.0, safe band, 80 points. That says \"you cannot spike above a baseline that does not exist yet\", not \"your body is 80% ready\"."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Thiếu nguồn nào thì trọng số của nguồn đó được chia lại cho những nguồn còn lại, nên điểm vẫn ra một con số đầy đủ 0–100 dù mới đo được một thứ. Viên chữ dưới vòng tròn nói bạn đang đứng trên mấy chỉ số — hãy đọc nó cùng với con số.\n\nCa hay gặp nhất: buổi tập ĐẦU TIÊN luôn ra đúng 80 điểm, dù nặng hay nhẹ. ACWR so trung bình 7 ngày với trung bình 28 ngày; khi lịch sử mới có một ngày thì hai vế là cùng một con số, tỉ số bằng 1.0, rơi vào vùng an toàn và được 80. Đó là câu \"chưa thể vọt lên trên một cái nền chưa tồn tại\", không phải câu \"cơ thể bạn đã sẵn sàng 80%\"."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cuando falta una fuente, su peso se reparte entre las que quedan, así que la puntuación sigue saliendo como un 0–100 completo aunque solo se haya medido una cosa. La etiqueta bajo el anillo dice en cuántas se apoya — léela junto con el número.\n\nEl caso más común: tu PRIMER entrenamiento siempre puntúa exactamente 80, sea duro o ligero. El ACWR compara tu media de 7 días con la de 28, y con un solo día de historial son el mismo número — relación 1.0, franja segura, 80 puntos. Eso dice \"no puedes dispararte sobre una base que aún no existe\", no \"tu cuerpo está listo al 80%\"."
+     }
+    }
+   }
+  },
+  "rx.zones.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "The three zones"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ba vùng màu"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Las tres zonas"
+     }
+    }
+   }
+  },
+  "rx.caveat": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "This is an estimate from what you logged, not a medical assessment. How you actually feel outranks it."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đây là ước lượng từ dữ liệu bạn đã ghi, không phải chẩn đoán y tế. Cảm giác của bạn luôn được ưu tiên hơn con số này."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Es una estimación a partir de lo que registraste, no una valoración médica. Cómo te sientes de verdad pesa más que ella."
+     }
+    }
+   }
+  },
   "ex.title": {
    "extractionState": "manual",
    "localizations": {
