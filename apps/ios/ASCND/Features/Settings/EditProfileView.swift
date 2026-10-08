@@ -439,13 +439,13 @@ struct EditProfileView: View {
         case .dob: String(localized: "ep.dob")
         }
       }
-      return String(localized: "ep.recalc.missing \(names.formatted(.list(type: .and)))")
+      return String(localized: "ep.recalc.missing \(names.formatted(.list(type: .and).locale(.app)))")
     }
   }
 
   static func driftText(_ d: MacroTargets.Drift) -> String {
-    let sum = Int(d.sum).formatted()
-    let drift = "\(Int(abs(d.drift)).formatted()) kcal"
+    let sum = Int(d.sum).formatted(.number.locale(.app))
+    let drift = "\(Int(abs(d.drift)).formatted(.number.locale(.app))) kcal"
     return d.drift > 0
       ? String(localized: "ep.drift.over \(sum) \(drift)") : String(localized: "ep.drift.under \(sum) \(drift)")
   }
