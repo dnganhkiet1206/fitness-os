@@ -1,4 +1,4 @@
-import Foundation
+public import Foundation
 
 /// Đơn vị cân nặng người dùng XEM và GÕ (#527 1.9-A) — `WeightUnit` của
 /// `lib/units.ts` + `useUnits` (`hooks/use-units.ts`) @ fac9ac2.
