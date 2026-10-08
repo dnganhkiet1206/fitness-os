@@ -235,11 +235,15 @@ public final class PerformanceBook {
   @ObservationIgnored private var weighIns: [WeighIn] = []
   /// Loại bài khai báo trong thư viện (#420); áp từ lần làm mới sau.
   @ObservationIgnored public var declaredKinds: [String: String] = [:]
+  /// Buổi còn trong outbox (#429) — lần làm mới không hồi sinh buổi đã xoá.
+  @ObservationIgnored private let pending: (any PendingWrites)?
+  @ObservationIgnored private var log = SessionChangeLog()
 
   public init(
     userId: String, source: any PerformanceSource, cache: any PerformanceCache,
-    clock: any WallClock = SystemWallClock(), timeZone: TimeZone = .current
+    clock: any WallClock = SystemWallClock(), timeZone: TimeZone = .current, pending: (any PendingWrites)? = nil
   ) {
+    self.pending = pending
     self.userId = userId
     self.source = source
     self.cache = cache
@@ -261,7 +265,11 @@ public final class PerformanceBook {
 
   public func refresh() async {
     let since = clock.nowMillis() - Int64(PerformanceHistory.windowDays) * 86_400_000
-    guard let rows = try? await source.sessions(userId: userId, since: since) else { return }
+    let mark = log.mark
+    guard let queued = await pending.changes(userId: userId),
+      let fetched = try? await source.sessions(userId: userId, since: since)
+    else { return }
+    let rows = PendingSessions.apply(queued + log.settle(since: mark), to: fetched)
     // Cân nặng hỏng thì vẫn có "lần trước", chỉ thiếu phần cơ thể (RN:
     // `weights.data ?? []`).
     let from = LocalDate(since, in: timeZone)
@@ -276,6 +284,7 @@ public final class PerformanceBook {
   public func absorb(row: JSONValue) async {
     guard let id = row["id"]?.stringValue, let at = row["date_time"]?.stringValue.flatMap({ EpochMillis(iso8601: $0) })
     else { return }
+    log.record(.upsert(row))
     // Loại bài đã biết từ cả cửa sổ thắng phần suy từ một buổi lẻ.
     let known = table.mapValues(\.kind)
     table = table.filter { $0.value.sessionId != id }
@@ -291,6 +300,7 @@ public final class PerformanceBook {
   /// nó. Bài ấy mất dòng "lần trước" tới lần làm mới sau — server mới biết buổi
   /// trước đó của nó.
   public func forget(sessionId: String) async {
+    log.record(.delete(id: sessionId, at: nil))
     let kept = table.filter { $0.value.sessionId != sessionId }
     guard kept.count != table.count else { return }
     table = kept

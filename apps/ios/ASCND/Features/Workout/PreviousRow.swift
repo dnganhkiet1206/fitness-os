@@ -3,6 +3,7 @@
 // Presentation seam: hiển thị buổi gần nhất của bài (nếu có), nút "Dùng lại",
 // trạng thái đang tải / chưa có lịch sử.
 // KHÔNG query history trong View — A13 cung cấp read model sau.
+import ASCNDCore
 import ASCNDDesignSystem
 import SwiftUI
 
@@ -18,10 +19,11 @@ public struct PreviousPerformance: Hashable, Sendable {
     self.date = date
   }
 
-  /// Nhãn hiển thị: "60 kg × 8" hoặc "45s".
-  public var label: String {
-    if let w = weightKg, w > 0 {
-      return "\(String(format: "%g", w)) kg × \(reps)"
+  /// Nhãn hiển thị theo đơn vị của tài khoản (#527 1.9-A): "60 kg × 8",
+  /// "132.3 lb × 8", hoặc "× 8" khi không tạ.
+  public func label(_ unit: WeightUnit) -> String {
+    if let w = weightKg, let load = unit.localizedLoad(w) {
+      return "\(load) × \(reps)"
     }
     return "× \(reps)"
   }
@@ -36,6 +38,7 @@ public enum PreviousRowState: Hashable, Sendable {
 
 public struct PreviousRow: View {
   let state: PreviousRowState
+  @Environment(\.weightUnit) private var unit
   /// Dùng lại số của lần trước — controller áp vào ô nhập.
   var onUseAgain: ((PreviousPerformance) -> Void)?
 
@@ -72,7 +75,7 @@ public struct PreviousRow: View {
           Text(String(localized: "workout.previous.title"))
             .font(DS.TextStyle.caption)
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-          Text(prev.label)
+          Text(prev.label(unit))
             .font(DS.TextStyle.body.monospacedDigit())
             .foregroundStyle(DS.Color.foreground.swiftUI)
         }

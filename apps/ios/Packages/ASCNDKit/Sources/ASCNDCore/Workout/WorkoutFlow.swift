@@ -31,6 +31,14 @@ public final class WorkoutFlow {
   /// Buổi tập của hôm nay; `nil` khi hôm nay không có buổi (nghỉ / chưa lên
   /// lịch) và không có kế hoạch tự do.
   public private(set) var session: WorkoutSessionController?
+  /// Đơn vị tạ của tài khoản (#527 1.9-A): buổi đang mở và mọi buổi dựng sau
+  /// nhận theo — kể cả buổi dựng lại qua nửa đêm.
+  public private(set) var weightUnit: WeightUnit = .kg
+
+  public func setWeightUnit(_ unit: WeightUnit) {
+    weightUnit = unit
+    session?.setWeightUnit(unit)
+  }
   /// Ghi kế hoạch (#401): builder, danh sách template, màn Plan. `nil` khi app
   /// không đưa chỗ ghi.
   public private(set) var plan: PlanEditor?
@@ -110,11 +118,19 @@ public final class WorkoutFlow {
   /// Một buổi bị xoá từ lịch sử (#400): ngày ấy thôi "đã tập", "lần trước"
   /// quên nó, và buổi tập đang mở (nếu chính là nó) đọc lại trạng thái đã mở
   /// khoá — không thì lần nối thêm sau dựng lại đúng buổi vừa xoá từ bộ nhớ.
+  /// "Lần trước" và bảng kỷ lục dựng lại (#429): buổi bị xoá có thể đang giữ một mức tốt-nhất
+  /// — một buổi ghi nhầm 100 kg thay vì 10 làm mọi buổi sau không bao giờ là
+  /// kỷ lục. Offline thì giữ bảng cũ tới lần làm mới sau.
   func sessionDeleted(_ id: String, at: EpochMillis) async {
-    await today.markUntrained(LocalDate(at, in: timeZone))
+    await today.markUntrained(LocalDate(at, in: timeZone), at: at)
     await performance.forget(sessionId: id)
     await insights?.forget(sessionId: id)
+    records.forget(sessionId: id)
     if let session, session.loggedSessionId == id { await session.load() }
+    // Như `invalidateToday` của RN: đọc lại (lớp phủ loại buổi đã xoá) để bài
+    // có lại "lần trước" từ buổi trước đó, và bảng kỷ lục bỏ mức của buổi này.
+    await records.refresh()
+    await performance.refresh()
   }
 
   /// Mở màn: kế hoạch trước (cache rồi server) để màn tập có ngay; hai bảng
@@ -154,6 +170,10 @@ public final class WorkoutFlow {
     refreshing?.cancel()
     absorbing?.cancel()
   }
+
+  /// Đang có lượt tải bay — "app còn đang lấy lại phần đã lỡ" của dải báo
+  /// mạng (`registerBusyProbe` của RN đọc `isFetching` của React Query).
+  public var isRefreshing: Bool { refreshing != nil }
 
   /// Kéo để làm mới. Gọi chồng thì chờ lượt đang chạy.
   public func refresh() async {
@@ -226,7 +246,7 @@ public final class WorkoutFlow {
       todaysTemplate: { [weak today] in today?.plan.flatMap { $0.date == date ? $0.template : nil } },
       loggedToday: { [weak today] in today?.trained.contains(date) ?? false },
       bests: { [records] in records.bests }, clock: clock, makeId: makeId,
-      onEnqueued: enqueued(for: date))
+      onEnqueued: enqueued(for: date), weightUnit: weightUnit)
   }
 
   /// Kế hoạch tự do cho ngày không có buổi (chỉ Lab dùng). `nil` để tắt.
@@ -293,6 +313,7 @@ public final class WorkoutFlow {
       }
       guard Self.replaceable(current, today: today.today) else { return }
     }
+    next?.setWeightUnit(weightUnit)
     session = next
     await next?.load()
   }
@@ -306,6 +327,25 @@ public final class WorkoutFlow {
     case .finished: current.plan.date != today
     case .active: false
     }
+  }
+
+  /// Bảng tập của một ngày trong kế hoạch tuần (`week-plan.tsx:495`, `key=
+  /// {dStr}`: mỗi ngày một bảng). Hôm nay là CHÍNH buổi của màn tập — một
+  /// trạng thái, hai chỗ xem, không có hai bảng đếm khác nhau cho cùng một
+  /// buổi. Ngày khác: một bảng riêng, đã đọc tiến độ của ngày ấy, cùng đơn vị
+  /// tạ, cùng đường ghi (kỷ lục, lịch sử, "đã tập" của ĐÚNG ngày ấy).
+  /// `nil`: ngày nghỉ, ngày chưa lên lịch, hay chưa có kế hoạch.
+  public func daySession(on date: LocalDate) async -> WorkoutSessionController? {
+    if date == today.today { return session }
+    let onRest = self.onRest
+    let rest: @MainActor (RestEvent, PlannedSet?) -> Void = { event, next in onRest(event, Self.restTarget(next)) }
+    let bests: @MainActor () -> PersonalRecords.Bests? = { [records] in records.bests }
+    guard
+      let s = await today.makeSession(on: date, bests: bests, onRest: rest, onEnqueued: enqueued(for: date))
+    else { return nil }
+    s.setWeightUnit(weightUnit)
+    await s.load()
+    return s
   }
 
   private func makeSession() -> WorkoutSessionController? {
@@ -336,17 +376,19 @@ public final class WorkoutFlow {
         await previous?.value
         await self.history?.absorb(entry)
         if entry.kind == WorkoutSessionRecord.deleteKind {
-          // Gỡ set cuối cùng (#398): buổi không còn. Bảng kỷ lục giữ nguyên —
-          // tốt-nhất là phép max, không gỡ được; lần làm mới sau sửa lại.
-          await self.today.markUntrained(date)
+          // Gỡ set cuối cùng (#398): buổi không còn — như xoá từ lịch sử.
+          let at = entry.payload["date_time"]?.stringValue.flatMap { EpochMillis(iso8601: $0) }
+          await self.today.markUntrained(date, at: at)
           if let id = entry.payload["id"]?.stringValue {
             await self.performance.forget(sessionId: id)
             await self.insights?.forget(sessionId: id)
+            self.records.forget(sessionId: id)
+            await self.records.refresh()
           }
           return
         }
         await self.today.markTrained(date)
-        await self.records.absorb(setsJSON: entry.payload["sets"])
+        await self.records.absorb(row: entry.payload)
         await self.performance.absorb(row: entry.payload)
         await self.insights?.absorb(row: entry.payload)
       }

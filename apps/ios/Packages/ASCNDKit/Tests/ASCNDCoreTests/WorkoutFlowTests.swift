@@ -198,6 +198,43 @@ struct WorkoutFlowTests {
     #expect(next.phase == .idle)
   }
 
+  /// Đơn vị tạ của tài khoản (#527 1.9-A): buổi đang mở nhận ngay, buổi dựng
+  /// sau (qua nửa đêm) cũng nhận — chốt theo lb đổi về kg.
+  @Test func weightUnitReachesCurrentAndNextSession() async throws {
+    let h = Harness()
+    await h.flow.start()
+    h.flow.setWeightUnit(.lbs)
+    let s = try #require(h.flow.session)
+    #expect(s.weightUnit == .lbs)
+    await s.setWeightText("135", for: "0-0")
+    await s.toggle("0-0")
+    let summary = try await h.flow.finish()
+    #expect(summary.volumeKg > 0)
+    guard case .array(let sets)? = h.enqueued.last?.payload["sets"] else {
+      Issue.record("không có hàng outbox")
+      return
+    }
+    #expect(s.performed(s.rows[0]).weightKg == 135 / 2.2046226218, "đổi về kg không làm tròn")
+    #expect(sets.first?["weight"]?.doubleValue == 61.23, "ghi 2 chữ số lẻ như RN (`use-fitness-data.ts:410`)")
+
+    h.clock.advance(12 * 3_600_000)
+    await h.flow.becameActive()
+    let next = try #require(h.flow.session)
+    #expect(next !== s && next.weightUnit == .lbs)
+  }
+
+  /// Phiên mới (đổi tài khoản dựng flow mới, `.id(userId)`): không mang đơn
+  /// vị của người trước — kg cho tới khi hồ sơ của người này nạp xong.
+  @Test func aNewFlowStartsInKgRegardlessOfThePreviousAccount() async throws {
+    let h = Harness()
+    await h.flow.start()
+    h.flow.setWeightUnit(.lbs)
+    let other = h.make()
+    await other.start()
+    #expect(other.weightUnit == .kg)
+    #expect(try #require(other.session).weightUnit == .kg)
+  }
+
   /// Qua nửa đêm giữa buổi: buổi dở vẫn ở đó, chốt muộn ghi đúng ngày đã tập.
   @Test func activeSessionSurvivesMidnight() async throws {
     let h = Harness()
@@ -690,5 +727,102 @@ struct WorkoutPipelineTests {
     }
     #expect(after.count == 2, "còn một set của máy này + set của máy khác")
     #expect(after.contains { $0["exerciseName"] == .string("Row (máy khác)") })
+  }
+}
+
+/// Bảng tập của một ngày bất kỳ trong kế hoạch tuần (#527 Phase 2,
+/// `week-plan.tsx:495`: `DayPlan key={dStr}`).
+@MainActor
+struct DaySessionTests {
+  private let lastMonday = LocalDate("2026-09-28")!
+  private let nextMonday = LocalDate("2026-10-12")!
+  private let wednesday = LocalDate("2026-10-07")!
+
+  /// Hôm nay: chính buổi của màn tập, không phải bảng thứ hai.
+  @Test func todayIsTheWorkoutSession() async throws {
+    let h = Harness()
+    await h.flow.start()
+    let day = await h.flow.daySession(on: monday)
+    #expect(day === h.flow.session)
+  }
+
+  /// Ngày khác hôm nay: kế hoạch của chính ngày ấy, tiến độ của chính ngày ấy.
+  @Test func anotherDayHasItsOwnPlanAndProgress() async throws {
+    let h = Harness()
+    await h.flow.start()
+    let tue = try #require(await h.flow.daySession(on: tuesday))
+    #expect(tue !== h.flow.session)
+    #expect(tue.plan.date == tuesday)
+    #expect(tue.plan.templateId == "tpl")
+    #expect(tue.plan.rows.map(\.key) == ["0-0", "0-1"])
+    await tue.toggle("0-0")
+
+    // Hôm nay không bị chạm.
+    #expect(h.flow.session?.progress.done.isEmpty == true)
+    // Mở lại Thứ Ba: tiến độ còn (đọc từ máy theo khoá của ngày ấy).
+    let again = try #require(await h.flow.daySession(on: tuesday))
+    #expect(again.progress.done["0-0"] == true)
+  }
+
+  /// Đổi ngày liên tiếp: mỗi ngày một bảng, không mang dấu tick của ngày trước.
+  @Test func switchingDaysNeverCarriesTheOtherDaysProgress() async throws {
+    let h = Harness()
+    await h.flow.start()
+    let tue = try #require(await h.flow.daySession(on: tuesday))
+    await tue.toggle("0-0")
+    let next = try #require(await h.flow.daySession(on: nextMonday))
+    #expect(next.plan.date == nextMonday)
+    #expect(next.progress.done.isEmpty)
+    let back = try #require(await h.flow.daySession(on: tuesday))
+    #expect(back.progress.done["0-0"] == true)
+  }
+
+  /// Ngày không có lịch và ngày nghỉ: không có bảng tập.
+  @Test func unscheduledAndRestDaysHaveNoSession() async throws {
+    let tpl = template()
+    let h = Harness(TemplateSnapshot(
+      routine: [
+        RoutineDay(dayOfWeek: 0, isRest: false, templateId: tpl.id),
+        RoutineDay(dayOfWeek: 1, isRest: true, templateId: nil),
+      ],
+      templates: [tpl], fetchedAt: EpochMillis(1)))
+    await h.flow.start()
+    #expect(await h.flow.daySession(on: tuesday) == nil, "ngày nghỉ")
+    #expect(await h.flow.daySession(on: wednesday) == nil, "chưa lên lịch")
+  }
+
+  /// Ngày tương lai: tick được, ghi thì chờ (`future`, `day-plan.tsx:1317`).
+  @Test func aFutureDayTicksButDoesNotLog() async throws {
+    let h = Harness()
+    await h.flow.start()
+    let tue = try #require(await h.flow.daySession(on: tuesday))
+    await tue.toggle("0-0")
+    #expect(tue.progress.done["0-0"] == true)
+    do {
+      _ = try await tue.finish()
+      Issue.record("ngày tương lai không được ghi")
+    } catch {
+      guard case .futureDay = error else { Issue.record("\(error)"); return }
+    }
+    #expect(h.enqueued.isEmpty)
+  }
+
+  /// Ngày đã qua: ghi đúng ngày ấy — 12 giờ trưa giờ máy (`T12:00:00`), và
+  /// ngày ấy (không phải hôm nay) thành "đã tập".
+  @Test func aPastDayLogsOnThatDayAtNoon() async throws {
+    let h = Harness()
+    await h.flow.start()
+    let past = try #require(await h.flow.daySession(on: lastMonday))
+    await past.toggle("0-0")
+    await past.toggle("0-1")
+    _ = try await past.finish()
+    await h.flow.settled()
+
+    let entry = try #require(h.enqueued.first)
+    let at = try #require(EpochMillis(iso8601: entry.payload["date_time"]?.stringValue ?? ""))
+    #expect(at.millis == 1_790_571_600_000, "2026-09-28 12:00 Sài Gòn")
+    #expect(h.flow.today.trained.contains(lastMonday))
+    #expect(!h.flow.today.trained.contains(monday))
+    #expect(h.flow.today.plan?.status == .todo, "hôm nay vẫn chưa tập")
   }
 }

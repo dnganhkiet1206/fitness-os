@@ -100,6 +100,13 @@ public struct WorkoutSessionRecord: Sendable, Hashable {
     return .object(o)
   }
 
+  /// Hàng outbox xoá buổi: server chỉ dùng `id` (+ `user_id` của hàng). Thời
+  /// điểm đi kèm để màn Today mở lại app (lệnh xoá chưa gửi) biết ngày nào
+  /// thôi "đã tập" (#429) — server bỏ qua trường thừa.
+  public static func deletePayload(id: String, at: EpochMillis) -> JSONValue {
+    .object(["id": .string(id), "date_time": .string(iso8601(at))])
+  }
+
   /// `Date.prototype.toISOString`: UTC, mili giây, hậu tố `Z` — không qua
   /// formatter phụ thuộc locale.
   public static func iso8601(_ t: EpochMillis) -> String {
