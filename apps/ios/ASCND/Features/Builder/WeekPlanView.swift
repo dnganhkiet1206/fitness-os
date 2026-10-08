@@ -15,8 +15,16 @@ import SwiftUI
 /// - bộ chọn của một ngày: "Tạo buổi tập mới" (builder gán luôn vào ngày ấy),
 ///   "Nghỉ ngơi", các buổi đã lưu (trùng tên thì kèm ngày tạo), công tắc deload.
 ///
-/// Chưa có (ghi ở #527): bảng buổi tập của ngày nhúng ngay dưới (`DayPlan` —
-/// ở native là màn tập của hôm nay), mở nhạc (`MusicLaunch`).
+/// - bảng tập của ngày đang chọn (`DayPlan key={dStr}`, `:495`) cho BẤT KỲ
+///   ngày nào có buổi: hôm nay là chính buổi của màn tập; ngày khác là bảng
+///   riêng của ngày ấy (`WorkoutFlow.daySession(on:)`) — tick được ở ngày tương
+///   lai nhưng ghi thì chờ tới ngày, ngày đã qua ghi đúng ngày ấy.
+///
+/// Khác RN có chủ đích: bảng mở thành sheet (cả màn tập: hướng dẫn, "Lần
+/// trước", bỏ tích / nối set) thay vì nhúng dưới dải tuần — `WorkoutView` là
+/// một màn có thanh điều hướng riêng, nhúng vào danh sách là hai lớp cuộn.
+///
+/// Chưa có (ghi ở #527): mở nhạc (`MusicLaunch`).
 struct WeekPlanView: View {
   let flow: WorkoutFlow
   @State private var offset = 0
@@ -24,6 +32,10 @@ struct WeekPlanView: View {
   @State private var picking: DayTarget?
   @State private var building: DayTarget?
   @State private var failed = false
+  /// Bảng tập đang mở (theo ngày) và ngày đang mở dở — kết quả về muộn của
+  /// ngày đã bỏ chọn không bao giờ hiện thành bảng của ngày khác.
+  @State private var openDay: DayBoard?
+  @State private var opening: LocalDate?
 
   private var today: LocalDate { flow.today.today }
   private var dates: [LocalDate] { WeekPlanning.weekDates(today: today, offset: offset) }
@@ -54,6 +66,10 @@ struct WeekPlanView: View {
     }
     .sheet(item: $building) { target in
       TemplateFormView(flow: flow, scheduleOn: target.day)
+    }
+    .sheet(item: $openDay) { board in
+      WorkoutView(controller: board.controller)
+        .environment(flow)
     }
     .alert(String(localized: "workout.finishError.generic"), isPresented: $failed) {
       Button(String(localized: "workout.ok")) {}
@@ -137,10 +153,38 @@ struct WeekPlanView: View {
         }
         .accessibilityElement(children: .combine)
       }
+      if p.template != nil {
+        Button {
+          Task { await open(d) }
+        } label: {
+          HStack {
+            Text("wp.openBoard")
+            Spacer()
+            if opening == d {
+              ProgressView()
+            } else {
+              Image(systemName: "chevron.right")
+                .font(.footnote)
+                .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+                .accessibilityHidden(true)
+            }
+          }
+          .frame(minHeight: 44)
+        }
+        .disabled(opening != nil)
+      }
       Button(String(localized: "wp.chooseWorkout")) { picking = DayTarget(day: day) }
         .disabled(flow.plan == nil)
         .frame(minHeight: 44)
     }
+  }
+
+  /// Dựng bảng của ngày `d`; chỉ hiện nếu ngày ấy VẪN đang chọn khi xong.
+  private func open(_ d: LocalDate) async {
+    opening = d
+    defer { if opening == d { opening = nil } }
+    guard let controller = await flow.daySession(on: d), dates[day] == d else { return }
+    openDay = DayBoard(date: d, controller: controller)
   }
 
   /// Ngày chưa lên lịch: 3 buổi dùng gần nhất, một chạm là gán (#215).
@@ -338,4 +382,11 @@ private struct DayPicker: View {
       failed = true
     }
   }
+}
+
+/// Bảng tập của một ngày, mở thành sheet.
+private struct DayBoard: Identifiable {
+  let date: LocalDate
+  let controller: WorkoutSessionController
+  var id: String { date.description }
 }
