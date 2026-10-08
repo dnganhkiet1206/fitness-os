@@ -64,8 +64,9 @@
       let date = Date(timeIntervalSince1970: 1_791_331_200)  // 2026-10-07 UTC
       // Tính lại mỗi lần: `.locale(.app)` đọc ngôn ngữ lúc dựng style.
       func month() -> String {
-        date.formatted(Date.FormatStyle.dateTime.month(.wide).year().locale(.app)
-          .timeZone(TimeZone(identifier: "UTC")!))
+        var style = Date.FormatStyle.dateTime.month(.wide).year().locale(.app)
+        style.timeZone = TimeZone(identifier: "UTC")!
+        return date.formatted(style)
       }
       AppLanguage.shared.set("vi")
       #expect(Locale.app.identifier == "vi")
