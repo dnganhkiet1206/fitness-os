@@ -429,15 +429,9 @@ private struct OnboardingStepsView: View {
     return unit == .oz ? "\(OnboardingRuler.fixed1(v)) oz" : "\(Int(v).formatted(.number)) ml"
   }
 
-  static func date(_ d: LocalDate) -> Date {
-    Calendar.current.date(from: DateComponents(year: d.year, month: d.month, day: d.day)) ?? Date()
-  }
+  static func date(_ d: LocalDate) -> Date { d.calendarDate }
 
-  static func localDate(_ date: Date) -> LocalDate {
-    let c = Calendar.current.dateComponents([.year, .month, .day], from: date)
-    let text = String(format: "%04d-%02d-%02d", c.year ?? 2000, c.month ?? 1, c.day ?? 1)
-    return LocalDate(text) ?? OnboardingDraft.defaultDob
-  }
+  static func localDate(_ date: Date) -> LocalDate { LocalDate(calendarDate: date) ?? OnboardingDraft.defaultDob }
 
   static func branchLabel(_ b: OnboardingDraft.Branch) -> String {
     switch b {

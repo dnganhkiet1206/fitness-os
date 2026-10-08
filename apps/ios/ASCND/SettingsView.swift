@@ -37,6 +37,10 @@ public struct SettingsView: View {
   var makePasswordChange: (@MainActor () -> PasswordChangeController)?
   /// Ngôn ngữ của văn bản pháp lý (`settings.tsx:739`); `nil` thì không hiện hàng.
   var legalLang: AppPreferences.Lang?
+  /// Hồ sơ của phiên (`settings.tsx:350`): thẻ tài khoản mở màn sửa hồ sơ.
+  /// `nil` (preview, chưa nạp) thì thẻ chỉ hiện email như trước.
+  var profileBook: ProfileBook?
+  @State private var editingProfile = false
 
   /// Vừa đổi mật khẩu xong — RN `toast.success(settingsPasswordChanged)`;
   /// app chưa có toast nên báo ngay dưới hàng, tới khi rời Cài đặt.
@@ -75,7 +79,8 @@ public struct SettingsView: View {
     theme: String = "system",
     onThemeChange: @escaping (String) -> Void = { _ in },
     makePasswordChange: (@MainActor () -> PasswordChangeController)? = nil,
-    legalLang: AppPreferences.Lang? = nil
+    legalLang: AppPreferences.Lang? = nil,
+    profileBook: ProfileBook? = nil
   ) {
     self.account = account
     self.onSignOut = onSignOut
@@ -86,6 +91,7 @@ public struct SettingsView: View {
     self.onThemeChange = onThemeChange
     self.makePasswordChange = makePasswordChange
     self.legalLang = legalLang
+    self.profileBook = profileBook
     _selectedLanguage = State(initialValue: language)
     _selectedTheme = State(initialValue: theme)
   }
@@ -95,7 +101,9 @@ public struct SettingsView: View {
       List {
         // Account
         Section {
-          if let account, let email = account.email {
+          if let account, let email = account.email, let profileBook {
+            profileCard(email: email, book: profileBook)
+          } else if let account, let email = account.email {
             HStack {
               Text(account.displayName ?? email)
                 .font(DS.TextStyle.headline)
@@ -220,6 +228,9 @@ public struct SettingsView: View {
         }
       }
       .navigationTitle(Text("settings.title"))
+      .sheet(isPresented: $editingProfile) {
+        if let profileBook { EditProfileView(book: profileBook) }
+      }
       .confirmationDialog(
         String(localized: "settings.signOut.confirm.title"),
         isPresented: $showSignOutConfirm,
@@ -238,6 +249,54 @@ public struct SettingsView: View {
         Text(String(localized: "settings.signOut.confirm.message"))
       }
     }
+  }
+}
+
+extension SettingsView {
+  /// Thẻ danh tính (`settings.tsx:350`): tên, email, rồi mục tiêu ngày / mục
+  /// tiêu / trình độ — chạm để sửa hồ sơ.
+  fileprivate func profileCard(email: String, book: ProfileBook) -> some View {
+    Button {
+      editingProfile = true
+    } label: {
+      VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+        HStack {
+          Image(systemName: "person.crop.circle.fill")
+            .font(.title)
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .accessibilityHidden(true)
+          VStack(alignment: .leading, spacing: 2) {
+            Text(verbatim: book.profile?.name.flatMap { $0.isEmpty ? nil : $0 } ?? email)
+              .font(DS.TextStyle.headline)
+              .foregroundStyle(DS.Color.foreground.swiftUI)
+            Text(verbatim: email)
+              .font(DS.TextStyle.caption)
+              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          }
+          Spacer()
+          Image(systemName: "chevron.right")
+            .font(.footnote.weight(.semibold))
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .accessibilityHidden(true)
+        }
+        LabeledContent(String(localized: "ep.dailyTarget")) {
+          Text(verbatim: book.profile?.tdeeTargetKcal.map { "\(Int(($0 + 0.5).rounded(.down)).formatted()) kcal" } ?? "—")
+        }
+        LabeledContent(String(localized: "ep.goal")) {
+          Text(verbatim: EditProfileView.label(EditProfileView.goals, book.profile?.goal))
+        }
+        LabeledContent(String(localized: "ep.level")) {
+          Text(verbatim: EditProfileView.label(EditProfileView.levels, book.profile?.trainingLevel))
+        }
+      }
+      .font(DS.TextStyle.footnote)
+      .foregroundStyle(DS.Color.foreground.swiftUI)
+      .frame(minHeight: 44)
+      .contentShape(Rectangle())
+    }
+    .buttonStyle(.plain)
+    .accessibilityElement(children: .combine)
+    .accessibilityHint(Text(String(localized: "ep.open.hint")))
   }
 }
 
