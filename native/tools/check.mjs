@@ -967,6 +967,14 @@ const STEPS = [
   */
   ['tra chữ qua overload ngôn ngữ', 'node', ['../apps/ios/tools/native-l10n-override.mjs']],
   ['tra chữ — fixture dạng rơi về Foundation phải đỏ', 'node', ['../apps/ios/tools/native-l10n-override.mjs', '--self-test']],
+  /*
+    #527 Phase 1 · 1.11: trạng thái mạng ba nhánh của app iOS native phải đổi
+    ở đúng các mốc RN đổi. Golden của `NetStatusGoldenTests` là output của
+    CHÍNH `net-status.ts` chạy trên đồng hồ ảo (sàn 600 ms, nhịp dò 250 ms, trần
+    12 s). Bước này sinh lại nó từ `native/src/lib` và so từng byte: RN đổi luật
+    mà Swift chưa port lại thì đỏ ở đây.
+  */
+  ['trạng thái mạng golden = mã RN', 'sh', ['../apps/ios/tools/net-status-golden/verify.sh']],
 ];
 
 /*

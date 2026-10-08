@@ -42,6 +42,8 @@ struct ASCNDApp: App {
   var body: some Scene {
     WindowGroup {
       RootGate()
+        // Dải trạng thái kết nối ở trên mọi màn, kể cả Đăng nhập (`_layout.tsx`).
+        .overlay(alignment: .top) { ConnectionBanner() }
         // `Text("key")` của SwiftUI tra theo `\.locale`; ngày giờ / số cũng
         // định dạng theo ngôn ngữ đã chọn.
         .environment(\.locale, Locale(identifier: services.preferences.lang.rawValue))
@@ -65,6 +67,8 @@ struct ASCNDApp: App {
       if phase == .active {
         rest.settle()
         services.didBecomeActive()
+      } else if phase == .background {
+        services.didEnterBackground()
       }
     }
   }
