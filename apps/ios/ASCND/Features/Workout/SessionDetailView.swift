@@ -109,7 +109,7 @@ struct SessionDetailView: View {
         .foregroundStyle(DS.Color.mutedForeground.swiftUI)
       HStack(spacing: DS.Spacing.md) {
         if let v = d.volumeKg, v > 0 {
-          stat(String(localized: "summary.volume"), "\(unit.volume(Double(v)).formatted()) \(unit.label)")
+          stat(String(localized: "summary.volume"), "\(unit.volume(Double(v)).formatted(.number.locale(.app))) \(unit.label)")
         }
         stat(String(localized: "summary.sets"), "\(d.completedSets)")
         stat(String(localized: "summary.exercises"), "\(d.exercises.count)")
@@ -170,7 +170,7 @@ struct SessionDetailView: View {
     if let w = e.topWeightKg, let r = e.topReps {
       parts.append(String(localized: "sd.top \(load(w)) \(r)"))
     }
-    if e.volumeKg > 0 { parts.append("\(unit.volume(Double(e.volumeKg)).formatted()) \(unit.label)") }
+    if e.volumeKg > 0 { parts.append("\(unit.volume(Double(e.volumeKg)).formatted(.number.locale(.app))) \(unit.label)") }
     return parts.joined(separator: "  ·  ")
   }
 

@@ -280,7 +280,7 @@ extension SettingsView {
             .accessibilityHidden(true)
         }
         LabeledContent(String(localized: "ep.dailyTarget")) {
-          Text(verbatim: book.profile?.tdeeTargetKcal.map { "\(Int(($0 + 0.5).rounded(.down)).formatted()) kcal" } ?? "—")
+          Text(verbatim: book.profile?.tdeeTargetKcal.map { "\(Int(($0 + 0.5).rounded(.down)).formatted(.number.locale(.app))) kcal" } ?? "—")
         }
         LabeledContent(String(localized: "ep.goal")) {
           Text(verbatim: EditProfileView.label(EditProfileView.goals, book.profile?.goal))

@@ -139,7 +139,7 @@ public struct WorkoutHistoryView: View {
     var cal = Calendar(identifier: .gregorian)
     cal.timeZone = .current
     let date = cal.date(from: DateComponents(year: m.year, month: m.month, day: 15)) ?? Date()
-    return date.formatted(.dateTime.month(.wide).year())
+    return date.formatted(.dateTime.month(.wide).year().locale(.app))
   }
 
   /// "4 buổi · 48.200 kg" / "4 sessions · 106,263 lb" — không có khối lượng
@@ -152,7 +152,7 @@ public struct WorkoutHistoryView: View {
 
   /// Khối lượng theo đơn vị của tài khoản (#527 1.9-A, `session-row.tsx:98`).
   private func volume(_ kg: Int) -> String {
-    "\(unit.volume(Double(kg)).formatted()) \(unit.label)"
+    "\(unit.volume(Double(kg)).formatted(.number.locale(.app))) \(unit.label)"
   }
 
   // MARK: - Hàng
@@ -222,7 +222,7 @@ public struct WorkoutHistoryView: View {
       String(
         format: String(localized: "history.a11y.row"), e.templateName, unit.volume(Double(e.volumeKg)), unit.label,
         e.completedSets),
-      e.at.date.formatted(.dateTime.weekday(.wide).day().month(.wide)),
+      e.at.date.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(.app)),
     ]
     if e.prDetected { parts.append(String(localized: "history.pr")) }
     return parts.joined(separator: ", ")

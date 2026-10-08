@@ -98,7 +98,7 @@ struct MascotRoomView: View {
 
   private var coinPill: some View {
     Label {
-      Text(room.balance.formatted()).monospacedDigit()
+      Text(room.balance.formatted(.number.locale(.app))).monospacedDigit()
     } icon: {
       Image(systemName: "circle.circle.fill").foregroundStyle(DS.Color.readinessYellowGraphic.swiftUI)
     }
