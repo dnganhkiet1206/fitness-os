@@ -31,6 +31,14 @@ public final class WorkoutFlow {
   /// Buổi tập của hôm nay; `nil` khi hôm nay không có buổi (nghỉ / chưa lên
   /// lịch) và không có kế hoạch tự do.
   public private(set) var session: WorkoutSessionController?
+  /// Đơn vị tạ của tài khoản (#527 1.9-A): buổi đang mở và mọi buổi dựng sau
+  /// nhận theo — kể cả buổi dựng lại qua nửa đêm.
+  public private(set) var weightUnit: WeightUnit = .kg
+
+  public func setWeightUnit(_ unit: WeightUnit) {
+    weightUnit = unit
+    session?.setWeightUnit(unit)
+  }
   /// Ghi kế hoạch (#401): builder, danh sách template, màn Plan. `nil` khi app
   /// không đưa chỗ ghi.
   public private(set) var plan: PlanEditor?
@@ -305,6 +313,7 @@ public final class WorkoutFlow {
       }
       guard Self.replaceable(current, today: today.today) else { return }
     }
+    next?.setWeightUnit(weightUnit)
     session = next
     await next?.load()
   }

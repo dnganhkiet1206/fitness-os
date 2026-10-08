@@ -82,6 +82,13 @@ public struct DayProgress: Sendable, Hashable, Codable {
   public var repsText: [String: String] = [:]
   /// Bài thêm ngoài kế hoạch (#399), lưu cùng điểm quay lại như baseline.
   public var extra: [AdHocExercise] = []
+  /// Tạ THẬT (kg) của các hàng nhận từ buổi máy khác ghi (#523, #527 1.9-A),
+  /// kèm chữ đã điền vào ô. Ô còn đúng chữ ấy thì set mang đúng số kg trên
+  /// server — "132.3" lb điền từ 60 kg không thành 60.01 kg khi ghi lại,
+  /// nên gỡ / nối thêm khớp đúng set trên server (`SessionRevisionMerge` so
+  /// theo nội dung). Không phải đơn vị theo set: chữ trong ô vẫn là của đơn
+  /// vị người dùng đang xem.
+  public var remoteWeight: [String: RemoteWeight] = [:]
 
   public init() {}
 
@@ -97,6 +104,18 @@ public struct DayProgress: Sendable, Hashable, Codable {
     // Blob trước #399 không có `extra` = không có bài thêm (AH-4a).
     let raw = (try? c.decodeIfPresent([JSONValue].self, forKey: .extra)) ?? nil
     extra = (raw ?? []).compactMap(AdHocExercise.init(json:))
+    remoteWeight = (try? c.decodeIfPresent([String: RemoteWeight].self, forKey: .remoteWeight)) ?? [:]
+  }
+}
+
+/// Tạ của một set trên server và chữ đã điền cho nó (`DayProgress.remoteWeight`).
+public struct RemoteWeight: Sendable, Hashable, Codable {
+  public var text: String
+  public var kg: Double
+
+  public init(text: String, kg: Double) {
+    self.text = text
+    self.kg = kg
   }
 }
 
@@ -126,8 +145,12 @@ public enum WorkoutDay {
     if let text = progress.weightText[row.key] {
       // Ô đã có chữ thì chữ thắng kế hoạch — kể cả ô bị xoá trống: `Number("")`
       // của baseline là 0, tức bodyweight, không phải "quay về kế hoạch".
-      let v = Double(text.trimmingCharacters(in: .whitespaces))
-      weight = v.map { $0.isFinite && $0 > 0 ? toKg($0) : 0 } ?? 0
+      if let remote = progress.remoteWeight[row.key], remote.text == text {
+        weight = remote.kg
+      } else {
+        let v = Double(text.trimmingCharacters(in: .whitespaces))
+        weight = v.map { $0.isFinite && $0 > 0 ? toKg($0) : 0 } ?? 0
+      }
     } else {
       weight = row.weightKg
     }
