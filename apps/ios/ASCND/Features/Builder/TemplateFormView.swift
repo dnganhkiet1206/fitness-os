@@ -1,4 +1,5 @@
 // Form tạo/sửa template — C sở hữu (#407).
+import ASCNDCore
 #if canImport(SwiftUI)
 @_exported import SwiftUI
 #endif
@@ -203,6 +204,8 @@ public struct TemplateFormView: View {
 /// Một hàng cấu hình exercise (sets/reps).
 public struct ExerciseConfigRow: View {
   let exercise: MockTemplateExercise
+  /// Đơn vị tạ của tài khoản (#527 1.9-A) — template vẫn lưu kg.
+  @Environment(\.weightUnit) private var unit
 
   public init(exercise: MockTemplateExercise) {
     self.exercise = exercise
@@ -215,8 +218,10 @@ public struct ExerciseConfigRow: View {
       HStack {
         Text(String(localized: "builder.exercise.setsReps \(exercise.sets) \(exercise.reps)"))
           .font(.subheadline)
-        if let weight = exercise.weightKg {
-          Text(String(localized: "builder.exercise.weight \(weight.formatted(.number))"))
+        // `ex.weight ? \`  ·  ${displayWeight(ex.weight, wUnit)} ${wl}\` : ''`
+        // (`workout-builder.tsx:795`): tạ 0 không hiện "0 kg".
+        if let weight = exercise.weightKg, weight > 0 {
+          Text(String(localized: "builder.exercise.weight \(unit.load(weight))"))
             .font(.subheadline)
             .foregroundStyle(.secondary)
         }

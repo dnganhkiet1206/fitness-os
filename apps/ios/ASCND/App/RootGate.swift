@@ -63,11 +63,15 @@ private struct SignedInScope<Content: View>: View {
   @Environment(RestTimerController.self) private var rest
   @Environment(\.scenePhase) private var scenePhase
   @State private var flow: WorkoutFlow?
+  /// Hồ sơ của ĐÚNG tài khoản này — nguồn đơn vị tạ (#527 1.9-A). Dựng lại
+  /// cùng phiên (`.id(userId)`), nên không bao giờ mang đơn vị người trước.
+  @State private var profile: ProfileBook?
 
   var body: some View {
     Group {
       if let flow {
         content.environment(flow)
+          .environment(\.weightUnit, WeightUnit(profile: profile?.profile))
       } else {
         ProgressView()
           .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -77,7 +81,13 @@ private struct SignedInScope<Content: View>: View {
       let f = services.makeWorkoutFlow(userId: userId, rest: rest)
       flow = f
       await services.forgetOtherAccounts(keeping: userId)
+      // Sau `forgetOtherAccounts`: bản nhớ hồ sơ chỉ đọc được khi phiên đã là
+      // của người này. Song song với luồng tập — không chờ nhau.
+      let book = services.makeProfileBook(userId: userId)
+      profile = book
+      async let units: Void = book.load()
       await f.start()
+      await units
     }
     // Phiên kết thúc (đăng xuất, đổi tài khoản → `.id` đổi): huỷ lượt làm mới
     // đang bay, để nó không ghi cache của người vừa rời đi.
@@ -93,6 +103,8 @@ private struct SignedInScope<Content: View>: View {
       // Ra tiền cảnh: qua nửa đêm thì "hôm nay" đổi; dữ liệu cũ hơn một phút
       // thì làm mới (`focusManager` của baseline).
       if phase == .active, let flow { Task { await flow.becameActive() } }
+      // Đổi đơn vị ở máy khác: ra tiền cảnh thì đọc lại hồ sơ.
+      if phase == .active, let profile { Task { await profile.refresh() } }
     }
     .onChange(of: services.sync.online) { _, online in
       // Có mạng lại (`refetchOnReconnect` của baseline).
