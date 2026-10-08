@@ -5453,6 +5453,1892 @@
      }
     }
    }
+  },
+  "onboarding.back": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Back"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Quay lại"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Atrás"
+     }
+    }
+   }
+  },
+  "onboarding.next": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Continue"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tiếp"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Continuar"
+     }
+    }
+   }
+  },
+  "onboarding.start": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Get started"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bắt đầu"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Empezar"
+     }
+    }
+   }
+  },
+  "onboarding.dragHint": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Drag to adjust"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Kéo để chỉnh"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Arrastra para ajustar"
+     }
+    }
+   }
+  },
+  "onboarding.intention.q": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "What do you want to change?"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bạn muốn thay đổi điều gì?"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "¿Qué quieres cambiar?"
+     }
+    }
+   }
+  },
+  "onboarding.intention.why": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "This decides your calories and macros every day."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Câu trả lời này quyết định calo và macro mỗi ngày của bạn."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Esto decide tus calorías y macros cada día."
+     }
+    }
+   }
+  },
+  "onboarding.branch.body": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Body"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hình thể"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cuerpo"
+     }
+    }
+   }
+  },
+  "onboarding.branch.body.desc": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Build muscle, lose fat, or both"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tăng cơ, giảm mỡ, hoặc cả hai"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Gana músculo, pierde grasa o ambas"
+     }
+    }
+   }
+  },
+  "onboarding.branch.capacity": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Capacity"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Năng lực"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Capacidad"
+     }
+    }
+   }
+  },
+  "onboarding.branch.capacity.desc": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Get stronger or last longer"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Khoẻ hơn hoặc bền hơn"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sé más fuerte o rinde más"
+     }
+    }
+   }
+  },
+  "onboarding.branch.maintain": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hold steady"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Giữ đều"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mantener"
+     }
+    }
+   }
+  },
+  "onboarding.branch.maintain.desc": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Keep where you are"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Giữ phong độ hiện tại"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mantén tu nivel actual"
+     }
+    }
+   }
+  },
+  "onboarding.goal.q": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "A little more specific?"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cụ thể hơn một chút?"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "¿Un poco más específico?"
+     }
+    }
+   }
+  },
+  "onboarding.goal.bulk": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Build muscle"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tăng cơ"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ganar músculo"
+     }
+    }
+   }
+  },
+  "onboarding.goal.bulk.desc": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Eat in surplus, protein first"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ăn dư, ưu tiên đạm"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Come en superávit, la proteína primero"
+     }
+    }
+   }
+  },
+  "onboarding.goal.cut": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Lose fat"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Giảm mỡ"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Perder grasa"
+     }
+    }
+   }
+  },
+  "onboarding.goal.cut.desc": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Eat in deficit, keep the muscle"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ăn thiếu, giữ cơ"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Come en déficit, conserva el músculo"
+     }
+    }
+   }
+  },
+  "onboarding.goal.recomp": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Both at once"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tăng cơ & giảm mỡ"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ambas a la vez"
+     }
+    }
+   }
+  },
+  "onboarding.goal.recomp.desc": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Slower, but you get both"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chậm hơn, đổi lại được cả hai"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Más lento, pero consigues ambas"
+     }
+    }
+   }
+  },
+  "onboarding.goal.strength": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Stronger"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Khoẻ hơn"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Más fuerza"
+     }
+    }
+   }
+  },
+  "onboarding.goal.strength.desc": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Move heavier weight"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nâng được nhiều hơn"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mueve más peso"
+     }
+    }
+   }
+  },
+  "onboarding.goal.endurance": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "More endurance"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bền hơn"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Más resistencia"
+     }
+    }
+   }
+  },
+  "onboarding.goal.endurance.desc": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Go further before you tire"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đi xa hơn, lâu mệt hơn"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Rinde más antes de cansarte"
+     }
+    }
+   }
+  },
+  "onboarding.sex.q": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Which applies to you?"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bạn thuộc nhóm nào?"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "¿Cuál aplica en tu caso?"
+     }
+    }
+   }
+  },
+  "onboarding.sex.why": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "The resting-energy formula branches on this."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Công thức năng lượng nghỉ rẽ theo thông tin này."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "La fórmula de energía en reposo depende de esto."
+     }
+    }
+   }
+  },
+  "onboarding.sex.male": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Male"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nam"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Masculino"
+     }
+    }
+   }
+  },
+  "onboarding.sex.female": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Female"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nữ"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Femenino"
+     }
+    }
+   }
+  },
+  "onboarding.sex.other": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Other"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Khác"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Otro"
+     }
+    }
+   }
+  },
+  "onboarding.dob.q": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "When were you born?"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bạn sinh ngày nào?"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "¿Cuándo naciste?"
+     }
+    }
+   }
+  },
+  "onboarding.dob.why": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Age changes your resting energy."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tuổi đổi mức năng lượng nghỉ của bạn."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "La edad cambia tu energía en reposo."
+     }
+    }
+   }
+  },
+  "onboarding.dob.bad": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Your date of birth has to be in the past, and the age under 130."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ngày sinh phải ở quá khứ, và tuổi phải dưới 130."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tu fecha de nacimiento debe estar en el pasado y la edad por debajo de 130."
+     }
+    }
+   }
+  },
+  "onboarding.height.q": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "How tall are you?"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bạn cao bao nhiêu?"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "¿Cuánto mides?"
+     }
+    }
+   }
+  },
+  "onboarding.height.why": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "With your weight, this gives your resting energy."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cùng với cân nặng, nó cho ra mức năng lượng nghỉ."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Con tu peso, esto da tu energía en reposo."
+     }
+    }
+   }
+  },
+  "onboarding.weight.q": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "What do you weigh today?"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hôm nay bạn nặng bao nhiêu?"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "¿Cuánto pesas hoy?"
+     }
+    }
+   }
+  },
+  "onboarding.activity.q": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "What does an ordinary day look like?"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Một ngày bình thường của bạn ra sao?"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "¿Cómo es un día normal para ti?"
+     }
+    }
+   }
+  },
+  "onboarding.activity.why": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "This already includes your training."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mức này đã bao gồm cả buổi tập của bạn."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Esto ya incluye tu entrenamiento."
+     }
+    }
+   }
+  },
+  "onboarding.activity.sedentary": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sedentary"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ít vận động"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sedentario"
+     }
+    }
+   }
+  },
+  "onboarding.activity.sedentary.desc": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sitting most of the day"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ngồi gần như cả ngày"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sentado la mayor parte del día"
+     }
+    }
+   }
+  },
+  "onboarding.activity.light": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Light"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nhẹ"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ligero"
+     }
+    }
+   }
+  },
+  "onboarding.activity.light.desc": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "On your feet a little"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đi lại chút ít"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Un poco de pie"
+     }
+    }
+   }
+  },
+  "onboarding.activity.moderate": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Moderate"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Trung bình"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Moderado"
+     }
+    }
+   }
+  },
+  "onboarding.activity.moderate.desc": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Training 3–5 times a week"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tập 3–5 buổi mỗi tuần"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Entrenas 3–5 veces por semana"
+     }
+    }
+   }
+  },
+  "onboarding.activity.high": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "High"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cao"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Alto"
+     }
+    }
+   }
+  },
+  "onboarding.activity.high.desc": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hard training or physical work"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tập nặng hoặc việc chân tay"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Entrenamiento duro o trabajo físico"
+     }
+    }
+   }
+  },
+  "onboarding.activity.athlete": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Athlete"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Vận động viên"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Atleta"
+     }
+    }
+   }
+  },
+  "onboarding.activity.athlete.desc": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Twice a day"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hai buổi mỗi ngày"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Dos veces al día"
+     }
+    }
+   }
+  },
+  "onboarding.exp.q": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Where are you starting from?"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bạn đang bắt đầu từ đâu?"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "¿Desde dónde empiezas?"
+     }
+    }
+   }
+  },
+  "onboarding.exp.why": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Your AI coach uses this to pick how it talks to you."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Huấn luyện viên AI dùng câu này để chọn cách nói với bạn."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tu entrenador IA usa esto para elegir cómo hablarte."
+     }
+    }
+   }
+  },
+  "onboarding.exp.beginner": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "I'm just starting"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mình mới bắt đầu"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Estoy empezando"
+     }
+    }
+   }
+  },
+  "onboarding.exp.beginner.desc": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Never trained, or back after a long break"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chưa tập bao giờ, hoặc nghỉ đã lâu"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nunca has entrenado, o vuelves tras un largo descanso"
+     }
+    }
+   }
+  },
+  "onboarding.exp.intermediate": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "I've been at it a while"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mình tập đều được một thời gian"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Llevo un tiempo en esto"
+     }
+    }
+   }
+  },
+  "onboarding.exp.intermediate.desc": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Somewhere between one and three years"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Khoảng một tới ba năm"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Entre uno y tres años"
+     }
+    }
+   }
+  },
+  "onboarding.exp.advanced": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "I've got years behind me"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mình có nhiều kinh nghiệm"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tengo años de experiencia"
+     }
+    }
+   }
+  },
+  "onboarding.exp.advanced.desc": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Training steadily for more than three years"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tập đều trên ba năm"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Entrenando de forma constante más de tres años"
+     }
+    }
+   }
+  },
+  "onboarding.plan.eyebrow": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Your plan"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Kế hoạch của bạn"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tu plan"
+     }
+    }
+   }
+  },
+  "onboarding.ready.eyebrow": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Everything is ready"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tất cả đã sẵn sàng"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Todo está listo"
+     }
+    }
+   }
+  },
+  "onboarding.ready.line": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Your first ascend starts here."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Lần Ascend đầu tiên của bạn bắt đầu ở đây."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tu primer ascenso empieza aquí."
+     }
+    }
+   }
+  },
+  "onboarding.ready.cta": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Start the journey"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bắt đầu hành trình"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Empezar el viaje"
+     }
+    }
+   }
+  },
+  "onboarding.ready.legal": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "By starting you agree to the Terms, the Privacy Policy and the Health Data notice."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bắt đầu tức là bạn đồng ý với Điều khoản, Quyền riêng tư và Dữ liệu sức khoẻ."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Al empezar aceptas los Términos, la Política de privacidad y el aviso de datos de salud."
+     }
+    }
+   }
+  },
+  "onboarding.error.statsRequired": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "A valid height, weight and date of birth are needed first"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cần chiều cao, cân nặng và ngày sinh hợp lệ trước khi tính"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Primero se necesitan estatura, peso y fecha de nacimiento válidos"
+     }
+    }
+   }
+  },
+  "onboarding.error.onlineOnly": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "No connection — not sent, and not kept to send later."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Không có kết nối — chưa gửi, và không giữ lại để gửi sau."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sin conexión — no enviado ni guardado para enviar después."
+     }
+    }
+   }
+  },
+  "onboarding.error.duplicate": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "This is already saved — no need to add it twice."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mục này đã được lưu rồi — không cần thêm lần nữa."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Esto ya está guardado — no hace falta añadirlo dos veces."
+     }
+    }
+   }
+  },
+  "onboarding.error.invalid": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "That value could not be saved. Check it and try again."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Giá trị này chưa lưu được. Kiểm tra lại rồi thử lần nữa."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ese valor no se pudo guardar. Revísalo e inténtalo de nuevo."
+     }
+    }
+   }
+  },
+  "onboarding.error.signedOut": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Your session has expired. Sign in again and try once more."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại rồi thử lần nữa."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tu sesión ha expirado. Inicia sesión de nuevo e inténtalo otra vez."
+     }
+    }
+   }
+  },
+  "onboarding.error.notFound": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "This is no longer here. Refresh and have another look."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mục này không còn ở đây. Tải lại rồi xem lại giúp bạn nhé."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Esto ya no está aquí. Actualiza y vuelve a mirar."
+     }
+    }
+   }
+  },
+  "onboarding.error.server": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "The server had a problem. Nothing was lost — try again in a moment."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Máy chủ đang gặp sự cố. Không mất gì cả — thử lại sau một chút."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "El servidor tuvo un problema. No se perdió nada — inténtalo de nuevo en un momento."
+     }
+    }
+   }
+  },
+  "onboarding.error.unknown": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Could not save. Try again in a moment."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chưa lưu được. Thử lại sau một chút."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "No se pudo guardar. Inténtalo de nuevo en un momento."
+     }
+    }
+   }
+  },
+  "onboarding.gate.failed": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Could not load your data"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Không tải được dữ liệu"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "No se pudieron cargar tus datos"
+     }
+    }
+   }
+  },
+  "onboarding.gate.failed.hint": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Your data is safe. The app just could not reach it."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Dữ liệu của bạn vẫn an toàn, chỉ là app chưa lấy được."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tus datos están a salvo. La app simplemente no pudo acceder a ellos."
+     }
+    }
+   }
+  },
+  "onboarding.gate.retry": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Try again"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Thử lại"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Reintentar"
+     }
+    }
+   }
+  },
+  "onboarding.gate.signOut": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sign Out"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đăng xuất"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cerrar sesión"
+     }
+    }
+   }
+  },
+  "onboarding.legal.close": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Close"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đóng"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cerrar"
+     }
+    }
+   }
+  },
+  "onboarding.plan.for %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "a day, for %@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "mỗi ngày, cho mục tiêu %@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "al día, para %@"
+     }
+    }
+   }
+  },
+  "onboarding.plan.macros %lld %lld %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Protein %1$lldg · Carbs %2$lldg · Fat %3$lldg"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đạm %1$lldg · Tinh bột %2$lldg · Béo %3$lldg"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Proteína %1$lldg · Carbohidratos %2$lldg · Grasa %3$lldg"
+     }
+    }
+   }
+  },
+  "onboarding.plan.water %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ of water a day"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nước %@ mỗi ngày"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ de agua al día"
+     }
+    }
+   }
+  },
+  "onboarding.plan.sleep %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld hours of sleep a night"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ngủ %lld giờ mỗi đêm"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld horas de sueño por noche"
+     }
+    }
+   }
+  },
+  "onboarding.plan.rank %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Level %@ — first of six"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Level %@ — bậc đầu trong sáu"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nivel %@ — primero de seis"
+     }
+    }
+   }
+  },
+  "onboarding.plan.rankName": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Rookie"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tập sự"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Novato"
+     }
+    }
+   }
+  },
+  "onboarding.ready.level %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Level %@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Level %@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Level %@"
+     }
+    }
+   }
+  },
+  "onboarding.outOfRange %lld %lld %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Must be between %1$lld and %2$lld %3$@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cần nằm trong khoảng %1$lld–%2$lld %3$@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Debe estar entre %1$lld y %2$lld %3$@"
+     }
+    }
+   }
+  },
+  "onboarding.brand.tagline": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Better you\nHigher everyday"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Better you\nHigher everyday"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Better you\nHigher everyday"
+     }
+    }
+   }
+  },
+  "onboarding.alert.ok": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "OK"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "OK"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "OK"
+     }
+    }
+   }
   }
  }
 }

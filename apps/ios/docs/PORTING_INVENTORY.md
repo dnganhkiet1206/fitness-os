@@ -56,7 +56,7 @@ Follow-up chỉ được tạo cho mục có nguồn RN cụ thể (#336). Các 
 | Gate theo phiên, dọn khi đăng xuất / đổi tài khoản | `use-auth.tsx:53` `forgetPreviousAccount` | `RootGate`, `onSignedOut` (#293), #397 | ported (sửa lỗi RN) | |
 | Hàng chờ gửi khi đăng xuất | `clearPersistedCache` | bỏ, như RN | decision | #241 |
 | Đổi mật khẩu | `app/change-password.tsx` (157) | không | not ported | |
-| Onboarding | `components/ascnd/onboarding-flow.tsx` | không | not ported | |
+| Onboarding | `components/ascnd/onboarding-flow.tsx` | `OnboardingController` (#442), `OnboardingGateView` / `OnboardingFlowView` (#527 1.3) | ported (chờ merge) | màn Sức khoẻ (HealthKit 4.1), Koa (Phase 7) |
 
 ## 5. Hồ sơ và cài đặt
 

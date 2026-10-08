@@ -230,8 +230,8 @@ final class AppServices {
       onEnqueued: { _ in sync.kick() })
   }
 
-  /// Onboarding (#424): cổng sau đăng nhập của người này. `RootGate` nối nó
-  /// khi màn của C sẵn sàng; tới lúc đó cổng hiện tại giữ nguyên.
+  /// Onboarding (#424): cổng sau đăng nhập của người này — `OnboardingGateView`
+  /// trong `RootGate` (#527 1.3).
   func makeOnboardingGate(userId: String) -> OnboardingGate {
     OnboardingGate(userId: userId, source: onboardingStatus, store: onboardingStore)
   }
