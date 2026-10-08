@@ -97,6 +97,11 @@ public final class ManualLogController {
   /// Lần ghi nháp mới nhất chưa bền.
   public private(set) var unsaved: LocalWriteError?
 
+  /// Đơn vị tạ của tài khoản (#527 1.9-C, `log-workout.tsx:121` `useUnits`):
+  /// ô gõ theo đơn vị này — gợi ý kế hoạch hiện `displayWeight`, kiểm cận và
+  /// ghi đổi về kg (`weightToKg`, `:481` / `:618`). Mặc định của
+  /// `usePlan` / `errors` / `canSave` / `save`; truyền tay vẫn thắng.
+  public let weightUnit: WeightUnit
   @ObservationIgnored private let store: any WorkoutStore
   @ObservationIgnored private let todaysTemplate: @MainActor () -> WorkoutTemplate?
   @ObservationIgnored private let loggedToday: @MainActor () -> Bool
@@ -123,10 +128,12 @@ public final class ManualLogController {
     bests: @escaping @MainActor () -> PersonalRecords.Bests? = { nil },
     clock: any WallClock = SystemWallClock(),
     makeId: @escaping @Sendable () -> String = { UUID().uuidString.lowercased() },
-    onEnqueued: @escaping @MainActor (OutboxEntry) -> Void = { _ in }
+    onEnqueued: @escaping @MainActor (OutboxEntry) -> Void = { _ in },
+    weightUnit: WeightUnit = .kg
   ) {
     self.userId = userId
     self.date = date
+    self.weightUnit = weightUnit
     self.store = store
     self.todaysTemplate = todaysTemplate
     self.loggedToday = loggedToday
@@ -195,10 +202,10 @@ public final class ManualLogController {
   /// `usePlan`: tên, mỗi set một hàng, RPE = đầu trên của `effortRange`.
   /// - Parameter display: kg → đơn vị hiển thị (`displayWeight`).
   @discardableResult
-  public func usePlan(display: (Double) -> Double = { $0 }) async -> Bool {
+  public func usePlan(display: ((Double) -> Double)? = nil) async -> Bool {
     guard let tpl = planOffer else { return false }
     name = tpl.name
-    rows = Self.rows(from: tpl.exercises, display: display, makeId: makeId)
+    rows = Self.rows(from: tpl.exercises, display: display ?? weightUnit.convert, makeId: makeId)
     if let top = tpl.exercises.map(\.rpe).max() {
       rpe = min(Self.rpeValues.upperBound, max(Self.rpeValues.lowerBound, top))
     }
@@ -331,7 +338,8 @@ public final class ManualLogController {
   /// đọc được set giữ (`parseRepEntry`) mà không bao giờ ghi được nó.
   /// NATIVE FIX: cận reps chỉ áp cho set đếm reps; set giữ đã có cận của
   /// `RepEntry` (1…3600 s). (test `holdSetsCanBeSaved`.)
-  public func errors(toKg: (Double) -> Double = { $0 }) -> [String: Set<Field>] {
+  public func errors(toKg: ((Double) -> Double)? = nil) -> [String: Set<Field>] {
+    let toKg = toKg ?? weightUnit.toKg
     var out: [String: Set<Field>] = [:]
     for r in validRows {
       var bad = Set<Field>()
@@ -343,7 +351,7 @@ public final class ManualLogController {
     return out
   }
 
-  public func canSave(toKg: (Double) -> Double = { $0 }) -> Bool {
+  public func canSave(toKg: ((Double) -> Double)? = nil) -> Bool {
     editable && !validRows.isEmpty && errors(toKg: toKg).isEmpty
   }
 
@@ -388,7 +396,8 @@ public final class ManualLogController {
   /// động) → `commitFinish`, online hay offline như nhau; kỷ lục so bằng
   /// `recordSets` (giữ cờ). (tests `offlineKeepsHoldsAndWarmups`,
   /// `warmupNeverPostsARecord`.)
-  public func save(toKg: (Double) -> Double = { $0 }) async throws(SaveRefusal) -> WorkoutSummary {
+  public func save(toKg: ((Double) -> Double)? = nil) async throws(SaveRefusal) -> WorkoutSummary {
+    let toKg = toKg ?? weightUnit.toKg
     if let id = loggedSessionId {
       if let s = summary, s.sessionId == id { return s }
       throw .alreadyLogged(sessionId: id)

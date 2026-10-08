@@ -251,6 +251,8 @@ struct WorkoutUnitsTests {
     #expect(WeightUnit.lbs.localizedLoad(62.5, locale: en) == "137.8 lb")
     #expect(WeightUnit.lbs.localizedLoad(62.5, locale: vi) == "137,8 lb")
     #expect(WeightUnit.kg.localizedLoad(100, locale: vi) == "100 kg")
+    #expect(WeightUnit.lbs.localizedLoad(60, locale: Locale(identifier: "es_ES")) == "132,3 lb")
+    #expect(WeightUnit.lbs.localizedLoad(1000, locale: en) == "2204.6 lb", "không nhóm nghìn, như RN")
     #expect(WeightUnit.kg.localizedLoad(62.25, locale: en) == "62.3 kg", "một chữ số lẻ như displayWeight")
     #expect(WeightUnit.kg.localizedLoad(0, locale: en) == nil)
     #expect(WeightUnit.lbs.localizedLoad(-5, locale: en) == nil)
