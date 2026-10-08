@@ -28,10 +28,10 @@ struct GRDBWorkoutStoreTests {
     let draft = ManualDraft(name: "Arms", rpe: 8, rows: [
       ManualSetRow(id: "r1", exerciseName: "Curl", weight: "12.5", reps: "45s", warmup: true),
     ], planUsed: true)
-    try await store.saveDay(key, DayState(manual: draft))
+    try await store.saveDay(key, DayState(manual: draft), userId: "u1")
     #expect(try await store.loadDay(key)?.manual == draft)
     try await store.commitFinish(key, DayState(loggedSessionId: "s1", manual: draft), entry("s1"))
-    await #expect(throws: DayAlreadyLogged.self) { try await store.saveDay(key, DayState(manual: draft)) }
+    await #expect(throws: DayAlreadyLogged.self) { try await store.saveDay(key, DayState(manual: draft), userId: "u1") }
     await #expect(throws: DayAlreadyLogged.self) {
       try await store.commitFinish(key, DayState(loggedSessionId: "s2", manual: draft), entry("s2"))
     }
@@ -42,8 +42,8 @@ struct GRDBWorkoutStoreTests {
   @Test func saveThenLoad() async throws {
     let store = GRDBWorkoutStore(try ASCNDDatabase())
     #expect(try await store.loadDay("k") == nil)
-    try await store.saveDay("k", ticked("a"))
-    try await store.saveDay("k", ticked("a", "b"))
+    try await store.saveDay("k", ticked("a"), userId: "u1")
+    try await store.saveDay("k", ticked("a", "b"), userId: "u1")
     #expect(try await store.loadDay("k")?.progress.done == ["a": true, "b": true])
   }
 
@@ -57,7 +57,7 @@ struct GRDBWorkoutStoreTests {
     }
     let store = GRDBWorkoutStore(database)
     #expect(try await store.loadDay("k") == nil)
-    try await store.saveDay("k", ticked("a"))
+    try await store.saveDay("k", ticked("a"), userId: "u1")
     #expect(try await store.loadDay("k")?.progress.done == ["a": true])
     #expect(try await store.commitFinish("k", DayState(loggedSessionId: "s"), entry("s")))
   }
@@ -68,7 +68,7 @@ struct GRDBWorkoutStoreTests {
     defer { try? FileManager.default.removeItem(atPath: path) }
     do {
       let store = GRDBWorkoutStore(try ASCNDDatabase(path: path))
-      try await store.saveDay("k", ticked("a"))
+      try await store.saveDay("k", ticked("a"), userId: "u1")
     }
     let reopened = GRDBWorkoutStore(try ASCNDDatabase(path: path))
     #expect(try await reopened.loadDay("k")?.progress.done == ["a": true])
@@ -106,7 +106,7 @@ struct GRDBWorkoutStoreTests {
       try await store.commitFinish("k", DayState(loggedSessionId: "s2"), entry("s2"))
     }
     await #expect(throws: DayAlreadyLogged(sessionId: "s1")) {
-      try await store.saveDay("k", ticked("b"))
+      try await store.saveDay("k", ticked("b"), userId: "u1")
     }
     #expect(try OutboxStore(db).load().pending.map(\.id) == ["s1"])
     let day = try await store.loadDay("k")
@@ -119,7 +119,7 @@ struct GRDBWorkoutStoreTests {
     let db = try ASCNDDatabase()
     let store = GRDBWorkoutStore(db)
     try await store.commitFinish("k", DayState(loggedSessionId: "s1"), entry("s1"))
-    try await store.saveDay("k2", ticked("a"))
+    try await store.saveDay("k2", ticked("a"), userId: "u1")
     #expect(try await store.clearAll() == 2)
     #expect(try await store.loadDay("k") == nil)
     try await store.commitFinish("k", DayState(loggedSessionId: "s2"), entry("s2"))
@@ -146,7 +146,7 @@ struct GRDBWorkoutStoreTests {
     let store = GRDBWorkoutStore(try ASCNDDatabase())
     let today = try #require(LocalDate("2026-10-05"))
     for back in [0, 13, 14, 30] {
-      try await store.saveDay(DayProgressStore.key(date: today.adding(days: -back), templateId: "t"), ticked("a"))
+      try await store.saveDay(DayProgressStore.key(date: today.adding(days: -back), templateId: "t"), ticked("a"), userId: "u1")
     }
     #expect(try await store.pruneDays(today: today) == 2)
     #expect(try await store.loadDay(DayProgressStore.key(date: today.adding(days: -13), templateId: "t")) != nil)
@@ -319,8 +319,8 @@ struct CommitDeleteTests {
   @Test func unlocksTheDayAndEnqueuesOnce() async throws {
     let db = try ASCNDDatabase()
     let store = GRDBWorkoutStore(db)
-    try await store.saveDay("2026-10-05:tpl", DayState(progress: ticked("a").progress, loggedSessionId: "s1", loggedKeys: ["a"]))
-    try await store.saveDay("2026-10-04:tpl", DayState(loggedSessionId: "s0", loggedKeys: ["a"]))
+    try await store.saveDay("2026-10-05:tpl", DayState(progress: ticked("a").progress, loggedSessionId: "s1", loggedKeys: ["a"]), userId: "u1")
+    try await store.saveDay("2026-10-04:tpl", DayState(loggedSessionId: "s0", loggedKeys: ["a"]), userId: "u1")
     let del = OutboxEntry(
       id: "s1@del-1", userId: "u1", kind: "workout-delete", payload: .object(["id": .string("s1")]), createdAt: EpochMillis(0))
     try await store.commitDelete(sessionId: "s1", del)

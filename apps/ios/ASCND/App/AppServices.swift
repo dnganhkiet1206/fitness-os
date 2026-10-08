@@ -60,11 +60,8 @@ final class AppServices {
   @ObservationIgnored let profileSource: any ProfileSource
   @ObservationIgnored let profileWriter: any ProfileWriter
   @ObservationIgnored let profileCache: any ProfileCache
-  /// Bảng `read_cache` (kế hoạch, kỷ lục, "lần trước") — để dọn theo người.
-  @ObservationIgnored private let readCache: GRDBTemplateCache
-  /// Chốt tài khoản của mọi cache theo người dùng (#431): đóng lúc mở app và
-  /// lúc phiên kết thúc, chỉ mở cho đúng người đang đăng nhập.
-  @ObservationIgnored private let accounts: AccountScope
+  /// Thứ tự đóng / mở chốt tài khoản và dọn dữ liệu trên máy (#431, #455).
+  @ObservationIgnored private let lifecycle: AccountLifecycle
   /// Lỗi không mở được database / thiếu cấu hình — app vẫn mở, màn nói thật.
   private(set) var startupError: String?
 
@@ -91,13 +88,12 @@ final class AppServices {
     }
 
     // Chưa ai đăng nhập cho tới khi phiên mở (`forgetOtherAccounts`).
-    database.accounts.signOut()
-    accounts = database.accounts
+    lifecycle = AccountLifecycle(database)
+    lifecycle.launched()
     workouts = GRDBWorkoutStore(database)
     let outboxStore = OutboxStore(database)
     outbox = outboxStore
     let templateCache = GRDBTemplateCache(database)
-    readCache = templateCache
     templates = TodayRepository(
       source: backend.map { SupabaseTemplateSource(backend: $0) as any TemplateSource } ?? UnconfiguredTemplates(),
       cache: templateCache, edits: outboxStore)
@@ -149,20 +145,20 @@ final class AppServices {
     // thẳng sang tài khoản khác): mọi thứ của người vừa rời đi rời khỏi máy —
     // như `forgetPreviousAccount` của baseline (`use-auth.tsx:53`). MỘT closure,
     // chạy tuần tự, để thứ tự không phụ thuộc thứ tự đăng ký.
-    let workouts = self.workouts
-    let accounts = self.accounts
+    let lifecycle = self.lifecycle
     session.onSignedOut { [sync = self.sync, weak session = self.session] in
-      // Đóng chốt TRƯỚC khi dọn: lượt làm mới của người vừa rời đi về sau đó
-      // không ghi lại được gì lên đĩa (#431).
-      accounts.signOut()
-      // Hàng đợi chưa gửi: bỏ, như baseline (#241 chờ Kiệt).
-      await sync.signOut()
-      // Điểm quay lại `routine-day:*` (`clearUserScopedStorage`).
-      try? await workouts.clearAll()
-      // Kế hoạch đã cache.
-      try? await templateCache.clearAll()
+      // Người của phiên mới khi đổi thẳng tài khoản; `nil` khi đăng xuất.
+      let next = session?.session?.userId
+      // Đóng chốt TRƯỚC khi dọn: lượt làm mới / lượt ghi muộn của người vừa
+      // rời đi về sau đó không ghi lại được gì lên đĩa (#431, #454). Rồi bỏ
+      // hàng đợi chưa gửi, như baseline (#241 chờ Kiệt). Rồi dọn điểm quay lại
+      // `routine-day:*` (`clearUserScopedStorage`) và read model — trừ của
+      // người mới, có thể đã ghi trong lúc lượt dọn này nhường (#455).
+      await lifecycle.sessionEnded(next: next) { @MainActor in
+        _ = await sync.signOut()
+      }
       // Widget màn hình chính không giữ số của người vừa rời đi (`clearWidgetData`).
-      widgets.setUser(session?.session?.userId)
+      widgets.setUser(next)
       // Cài đặt theo tài khoản (linh vật); theo máy thì giữ (`DEVICE_KEYS`).
       prefs.clearUserScoped()
       // Nhắc nhở: huỷ thông báo đang chờ của người vừa rời đi, xoá cài đặt /
@@ -170,7 +166,7 @@ final class AppServices {
       await reminderCenter.clearUserScoped()
       // Đổi thẳng tài khoản: người mới đã đăng nhập — vòng sync gửi hàng của
       // họ (`signOut` ở trên vừa đặt nó về nil).
-      sync.setSignedInUser(session?.session?.userId)
+      sync.setSignedInUser(next)
     }
     UNUserNotificationCenter.current().delegate = reminderPresenter
     network = NetworkObserver(prober: URLSessionReachabilityProber(), timers: TaskNetTimers()) {
@@ -180,11 +176,11 @@ final class AppServices {
     startNetworkMonitor()
   }
 
-  /// App mở / quay lại tiền cảnh: đọc phiên, dọn ngày cũ, thử gửi hàng đợi.
+  /// App mở / quay lại tiền cảnh: đọc phiên, thử gửi hàng đợi. Dọn ngày cũ
+  /// KHÔNG ở đây (#469): lúc này chốt còn đóng — nó chạy khi phiên mở, cho
+  /// đúng người (`forgetOtherAccounts`).
   func start() async {
     await session.start()
-    let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
-    _ = try? await workouts.pruneDays(today: today)
     sync.kick()
     autoSyncHealth()
     await reminders.refreshPermission()
@@ -204,11 +200,12 @@ final class AppServices {
     TodayController(userId: userId, repository: templates, history: history, workouts: workouts)
   }
 
-  /// Phiên của `userId` bắt đầu: bỏ read model của mọi người khác. Lượt làm
-  /// mới của người vừa rời đi có thể về SAU lượt dọn lúc đăng xuất (#335).
+  /// Phiên của `userId` bắt đầu: mở chốt, bỏ dữ liệu của mọi người khác (lượt
+  /// làm mới của người vừa rời đi có thể về SAU lượt dọn lúc đăng xuất, #335),
+  /// rồi dọn ngày cũ của chính họ (#469).
   func forgetOtherAccounts(keeping userId: String) async {
-    accounts.signIn(userId)
-    _ = try? await readCache.clearAll(except: userId)
+    let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
+    await lifecycle.sessionStarted(userId: userId, today: today)
   }
 
   /// Việc dọn thêm khi phiên kết thúc, của những thứ không do AppServices
