@@ -92,6 +92,14 @@ private struct LabSession: View {
         LabHistory(history: history)
       }
       if let editor = flow.plan {
+        Section {
+          // Danh sách + builder thật (#527 Phase 2) — cùng `PlanEditor`.
+          NavigationLink {
+            WorkoutBuilderView(flow: flow)
+          } label: {
+            Text(verbatim: "Buổi tập đã lưu + builder (màn thật)")
+          }
+        }
         LabPlan(today: today, editor: editor)
       }
       LabManualLog(flow: flow)

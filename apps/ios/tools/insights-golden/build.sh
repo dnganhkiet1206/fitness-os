@@ -9,6 +9,8 @@ done
 # Hai phụ thuộc chỉ để lấy một hằng / một kiểu.
 echo 'export const MIN_SESSIONS = 3;' > lib/load-progression.ts   # load-progression.ts:87
 echo "export type Confidence = 'none' | 'low' | 'medium' | 'high';" > lib/user-state.ts
+# Builder (#527 Phase 2): `estimatedMinutes` / `effortRange` / `DEFAULT_*`.
+git show "fac9ac2:native/src/lib/prescription.ts" > lib/prescription.ts
 sed -i.bak "s#'@/lib/\([a-z-]*\)'#'./\1'#g" lib/*.ts && rm -f lib/*.bak
 ../../../../native/node_modules/.bin/tsc --ignoreConfig --module commonjs --target es2020 --skipLibCheck --outDir out lib/*.ts
 echo '{"type":"commonjs"}' > out/package.json
