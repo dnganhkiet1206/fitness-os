@@ -17,8 +17,10 @@
 /// rìa (`EpochMillis(date)`), không bao giờ đi vào phép tính.
 ///
 /// Luật lấy từ baseline `fac9ac2` (`native/src/components/ascnd/day-plan.tsx`),
-/// đã ghi ở #230. Hai điểm còn chờ Kiệt (#235) đang giữ đúng baseline:
-/// −15 khi còn ít giây thì còn 1 giây (không kết thúc), và vòng đo phần CÒN LẠI.
+/// đã ghi ở #230. #235 (Kiệt chốt ở #523): −15 khi còn ít giây thì còn 1 giây
+/// (không kết thúc), vòng đo phần CÒN LẠI, và CÓ tạm dừng — cùng ngữ nghĩa
+/// RN (`pausedLeft` của `day-plan.tsx`, `isPaused` / `pausedRemaining` của
+/// `RestTimerAttributes.swift`).
 public struct RestTimer: Sendable, Hashable, Codable {
   /// Trần một quãng nghỉ sau khi chỉnh (`REST_MAX`, day-plan.tsx:156).
   public static let maxSeconds = 600
@@ -35,6 +37,12 @@ public struct RestTimer: Sendable, Hashable, Codable {
   /// một phần của một cái gì đó); bớt giờ thì giữ nguyên (nghỉ thật sự bị cắt
   /// ngắn, và vòng nói đúng điều đó).
   public private(set) var total: Int
+  /// Số giây ĐÓNG BĂNG khi đang tạm dừng; `nil` = đang chạy (RN `pausedLeft`:
+  /// "Defined = paused"). Lúc dừng `endsAt` không còn nghĩa — mọi phép đọc
+  /// lấy số này; tiếp tục thì `endsAt` neo lại từ nó.
+  public private(set) var pausedLeft: Int?
+
+  public var isPaused: Bool { pausedLeft != nil }
 
   /// Bắt đầu nghỉ khi tick xong một set. `seconds ≤ 0` nghĩa là bài không có
   /// nghỉ — không có quãng nghỉ nào cả (day-plan.tsx: `secs > 0`).
@@ -43,19 +51,25 @@ public struct RestTimer: Sendable, Hashable, Codable {
     return RestTimer(endsAt: now + Int64(seconds) * 1000, total: seconds)
   }
 
-  private init(endsAt: EpochMillis, total: Int) {
+  private init(endsAt: EpochMillis, total: Int, pausedLeft: Int? = nil) {
     self.endsAt = endsAt
     self.total = total
+    self.pausedLeft = pausedLeft
   }
 
-  /// Số giây còn lại như người dùng đọc: làm tròn LÊN, không âm.
+  /// Số giây còn lại như người dùng đọc: làm tròn LÊN, không âm. Đang dừng:
+  /// số đã đóng băng, thời gian trôi không đổi nó.
   public func remaining(at now: EpochMillis) -> Int {
+    if let pausedLeft { return pausedLeft }
     let ms = endsAt.millis - now.millis
     guard ms > 0 else { return 0 }
     return Int((ms + 999) / 1000)
   }
 
+  /// Đang dừng thì không bao giờ hết giờ (RN `settleRestState`: "the tick
+  /// holds the frame").
   public func phase(at now: EpochMillis) -> RestPhase {
+    if let pausedLeft { return pausedLeft > 0 ? .running(left: pausedLeft) : .done }
     let left = remaining(at: now)
     if left > 0 { return .running(left: left) }
     return now.millis - endsAt.millis < Self.doneGraceMillis ? .done : .over
@@ -64,9 +78,29 @@ public struct RestTimer: Sendable, Hashable, Codable {
   /// ±15 (hoặc bất kỳ `delta` nào). Tính từ `endsAt` thật chứ không từ con số
   /// đang vẽ — nhịp vẽ có thể chậm tới một giây. Kết quả kẹp trong
   /// [1, `maxSeconds`]: −15 khi còn 10 giây để lại 1 giây (baseline, #235).
+  /// Đang dừng: chỉnh số ĐÓNG BĂNG và vẫn dừng (RN `onAdjust`: "adjust the
+  /// FROZEN remainder, keep the freeze").
   public func adjusted(by delta: Int, at now: EpochMillis) -> RestTimer {
     let next = Self.adjust(base: remaining(at: now), delta: delta, total: total)
+    if isPaused { return RestTimer(endsAt: endsAt, total: next.total, pausedLeft: next.left) }
     return RestTimer(endsAt: now + Int64(next.left) * 1000, total: next.total)
+  }
+
+  /// Tạm dừng: đóng băng số giây đang đọc (RN `pausedLeft = max(0,
+  /// ceil(remaining))`). Như RN, dừng được cả trong giây "xong": thẻ đứng ở
+  /// 0, tiếp tục thì còn 1 giây (RT-17g/h). Đang dừng rồi: giữ nguyên.
+  public func paused(at now: EpochMillis) -> RestTimer {
+    guard !isPaused else { return self }
+    return RestTimer(endsAt: endsAt, total: total, pausedLeft: remaining(at: now))
+  }
+
+  /// Tiếp tục: đếm lại từ số đã đóng băng (RN `resume`: `left = max(1, …)`,
+  /// `total = max(total, left)`, `endsAt = now + left`). Đang chạy: giữ nguyên
+  /// — RN chỉ gửi `resume` từ nút hiện khi ĐANG dừng.
+  public func resumed(at now: EpochMillis) -> RestTimer {
+    guard let pausedLeft else { return self }
+    let left = max(1, pausedLeft)
+    return RestTimer(endsAt: now + Int64(left) * 1000, total: max(total, left))
   }
 
   /// Phép tính của ±15 tách khỏi thời gian (vector RT-7): còn `base` giây,
@@ -83,7 +117,7 @@ public struct RestTimer: Sendable, Hashable, Codable {
   }
 
   /// Vòng đổi màu cảnh báo ở 5 giây cuối (RT-10, `rest-timer.tsx:129`).
-  /// `paused` giữ cho đúng chữ ký baseline; pause chưa có trong v1 (#235).
+  /// Đang dừng thì không cảnh báo: thời gian không chạy (`rest-timer.tsx`).
   public static let warnAtSeconds = 5
   public static func warns(left: Int, paused: Bool = false) -> Bool {
     !paused && left > 0 && left <= warnAtSeconds
@@ -110,6 +144,10 @@ public struct RestTimer: Sendable, Hashable, Codable {
   /// theo mili giây chứ không theo giây làm tròn — để app vẽ mượt bằng chính
   /// công thức mà Island dùng.
   public func ringFraction(at now: EpochMillis) -> Double {
+    if let pausedLeft {
+      // Vòng đứng yên ở đúng phần còn lại lúc dừng.
+      return total > 0 ? min(1, max(0, Double(pausedLeft) / Double(total))) : 0
+    }
     let span = endsAt.millis - ringStart.millis
     guard span > 0 else { return 0 }
     let left = endsAt.millis - now.millis
@@ -134,6 +172,9 @@ public enum RestEvent: Sendable, Hashable {
   case adjust(delta: Int)
   /// Skip, hoặc bỏ tick set vừa tick.
   case cancel
+  /// Nút tạm dừng / tiếp tục — trong app hoặc trên Island (#235).
+  case pause
+  case resume
 }
 
 extension RestTimer {
@@ -149,6 +190,10 @@ extension RestTimer {
       return live?.adjusted(by: delta, at: now)
     case .cancel:
       return nil
+    case .pause:
+      return live?.paused(at: now)
+    case .resume:
+      return live?.resumed(at: now)
     }
   }
 }

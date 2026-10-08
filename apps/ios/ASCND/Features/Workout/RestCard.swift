@@ -1,8 +1,8 @@
 // Thẻ nghỉ trong app — C sở hữu UI (#277).
 //
 // Dùng `RestTimer.ringFraction(at:)` — CÙNG công thức với Island (#227 H4),
-// không tự tính vòng riêng. Không tự quyết #235 (chiều vòng / −15 / pause):
-// chỉ vẽ đúng những gì `RestTimer` cho.
+// không tự tính vòng riêng. #235: chiều vòng / −15 / tạm dừng đều do
+// `RestTimer` quyết; thẻ chỉ vẽ và chuyển nút bấm về controller.
 //
 // Presentation thuần: nhận `RestTimer` + callback, không giữ state nghỉ.
 import ASCNDCore
@@ -13,15 +13,19 @@ public struct RestCard: View {
   let timer: RestTimer
   var onAdjust: (Int) -> Void
   var onSkip: () -> Void
+  /// Tạm dừng (`true`) / tiếp tục (`false`) — `RestTimerController.setPaused`.
+  var onSetPaused: (Bool) -> Void
 
   public init(
     timer: RestTimer,
     onAdjust: @escaping (Int) -> Void = { _ in },
-    onSkip: @escaping () -> Void = {}
+    onSkip: @escaping () -> Void = {},
+    onSetPaused: @escaping (Bool) -> Void = { _ in }
   ) {
     self.timer = timer
     self.onAdjust = onAdjust
     self.onSkip = onSkip
+    self.onSetPaused = onSetPaused
   }
 
   public var body: some View {
@@ -35,7 +39,9 @@ public struct RestCard: View {
   private func content(now: EpochMillis) -> some View {
     let left = timer.remaining(at: now)
     let fraction = timer.ringFraction(at: now)
-    let warning = RestTimer.warns(left: left)
+    let paused = timer.isPaused
+    // Vòng đứng yên không đỏ: cảnh báo là về thời gian đang cạn (RT-10c).
+    let warning = RestTimer.warns(left: left, paused: paused)
 
     return DSCard {
       VStack(spacing: DS.Spacing.md) {
@@ -67,7 +73,7 @@ public struct RestCard: View {
           )
 
           VStack(alignment: .leading, spacing: DS.Spacing.xs) {
-            Text(String(localized: "workout.rest.title"))
+            Text(paused ? String(localized: "workout.rest.title.paused") : String(localized: "workout.rest.title"))
               .font(DS.TextStyle.headline)
               .foregroundStyle(DS.Color.foreground.swiftUI)
             if warning {
@@ -84,10 +90,11 @@ public struct RestCard: View {
           Spacer(minLength: 0)
         }
 
-        // −15 / +15 / Bỏ qua.
+        // −15 / +15 / Tạm dừng / Bỏ qua.
         HStack(spacing: DS.Spacing.sm) {
           adjustButton(delta: -15)
           adjustButton(delta: 15)
+          pauseButton(paused: paused)
           Spacer(minLength: 0)
           Button(String(localized: "workout.rest.skip")) {
             onSkip()
@@ -99,6 +106,21 @@ public struct RestCard: View {
         }
       }
     }
+  }
+
+  private func pauseButton(paused: Bool) -> some View {
+    Button {
+      onSetPaused(!paused)
+    } label: {
+      Image(systemName: paused ? "play.fill" : "pause.fill")
+        .font(DS.TextStyle.footnote)
+        .padding(.horizontal, DS.Spacing.md)
+        .frame(minWidth: 44, minHeight: 44)
+        .background(DS.Color.secondary.swiftUI)
+        .foregroundStyle(DS.Color.foreground.swiftUI)
+        .clipShape(Capsule())
+    }
+    .accessibilityLabel(Text(paused ? String(localized: "workout.rest.resume") : String(localized: "workout.rest.pause")))
   }
 
   private func adjustButton(delta: Int) -> some View {

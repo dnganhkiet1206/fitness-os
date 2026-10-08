@@ -22,18 +22,25 @@ public struct RestActivityContent: Sendable, Hashable, Codable {
   public let ringStart: EpochMillis
   public let totalSeconds: Int
   public let target: RestTarget?
+  /// Đang tạm dừng: số giây đóng băng — Island vẽ chữ số / vòng TĨNH từ số
+  /// này thay vì để hệ thống tick (RN `isPaused` + `pausedRemaining`).
+  /// Tuỳ chọn: activity của bản trước không có trường này, đọc ra `nil`.
+  public let pausedLeft: Int?
 
-  public init(endsAt: EpochMillis, ringStart: EpochMillis, totalSeconds: Int, target: RestTarget?) {
+  public init(
+    endsAt: EpochMillis, ringStart: EpochMillis, totalSeconds: Int, target: RestTarget?, pausedLeft: Int? = nil
+  ) {
     self.endsAt = endsAt
     self.ringStart = ringStart
     self.totalSeconds = totalSeconds
     self.target = target
+    self.pausedLeft = pausedLeft
   }
 }
 
 extension RestTimer {
   public func activityContent(target: RestTarget?) -> RestActivityContent {
-    RestActivityContent(endsAt: endsAt, ringStart: ringStart, totalSeconds: total, target: target)
+    RestActivityContent(endsAt: endsAt, ringStart: ringStart, totalSeconds: total, target: target, pausedLeft: pausedLeft)
   }
 }
 
@@ -116,6 +123,12 @@ public final class RestTimerController {
   /// ±15 — từ nút trong app HAY từ Island; cùng một đường.
   public func adjust(by delta: Int) {
     handle(.adjust(delta: delta))
+  }
+
+  /// Tạm dừng / tiếp tục — từ nút trong app HAY từ Island; cùng một đường.
+  /// Đặt trạng thái đích (không đảo): hai lần chạm dồn nhau không lật ngược.
+  public func setPaused(_ paused: Bool) {
+    handle(paused ? .pause : .resume)
   }
 
   /// Gọi theo nhịp (mỗi giây khi màn đang mở) và khi app quay lại foreground.
