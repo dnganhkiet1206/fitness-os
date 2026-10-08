@@ -41,39 +41,6 @@ public enum TodayFixtures {
   }
 }
 
-/// Fixture cho màn Workout.
-public enum WorkoutFixtures {
-  public static func progress(
-    completed: Int = 7,
-    total: Int = 12,
-    finished: Bool = false
-  ) -> WorkoutProgressDisplay {
-    WorkoutProgressDisplay(
-      exerciseName: "Bench Press",
-      exerciseIndex: 2,
-      exerciseTotal: 5,
-      completedSets: completed,
-      totalSets: total,
-      isFinished: finished
-    )
-  }
-
-  public static var notStarted: WorkoutProgressDisplay {
-    progress(completed: 0, total: 12)
-  }
-
-  public static var finished: WorkoutProgressDisplay {
-    progress(completed: 12, total: 12, finished: true)
-  }
-
-  public static func previous(
-    weightKg: Double? = 60,
-    reps: Int = 8
-  ) -> PreviousPerformance {
-    PreviousPerformance(weightKg: weightKg, reps: reps)
-  }
-}
-
 /// Fixture cho màn Summary.
 public enum SummaryFixtures {
   public static var normal: WorkoutSummary {
