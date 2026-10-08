@@ -456,8 +456,9 @@ public final class WorkoutSessionController {
     // offline vẫn thấy đã làm gì. Baseline xoá nó vì "đã chốt" của baseline
     // đọc từ server; ở đây nó là read model của chính ngày ấy.
     let keys = rows.filter { progress.done[$0.key] == true }.map(\.key)
+    let anchored = Self.anchoring(keys, in: progress, toKg: toKg)
     let state = DayState(
-      progress: progress, loggedSessionId: id, loggedKeys: keys, loggedAt: record.dateTime,
+      progress: anchored, loggedSessionId: id, loggedKeys: keys, loggedAt: record.dateTime,
       loggedPR: record.prDetected, loggedRevision: 0, loggedRpe: record.sessionRpe,
       provenElsewhere: olderProven.isEmpty ? nil : olderProven.sorted())
     let store = self.store, key = self.key
@@ -469,6 +470,7 @@ public final class WorkoutSessionController {
       throw .storage(LocalWriteError("\(failure)"))
     }
     pendingId = nil
+    adoptAnchors(anchored)
     loggedSessionId = id
     loggedKeys = Set(keys)
     loggedAt = record.dateTime
@@ -709,8 +711,9 @@ public final class WorkoutSessionController {
       payload: record?.row ?? WorkoutSessionRecord.deletePayload(id: sessionId, at: stamp), createdAt: clock.nowMillis(),
       base: base)
     let rpe = record?.sessionRpe ?? loggedRpe
+    let anchored = Self.anchoring(keys, in: progress, toKg: toKg)
     let state = DayState(
-      progress: progress, loggedSessionId: sessionId, loggedKeys: keys.sorted(), loggedAt: stamp,
+      progress: anchored, loggedSessionId: sessionId, loggedKeys: keys.sorted(), loggedAt: stamp,
       loggedPR: pr, loggedRevision: revision, loggedRpe: rpe,
       provenElsewhere: olderProven.isEmpty ? nil : olderProven.sorted())
     finishing = true
@@ -720,6 +723,7 @@ public final class WorkoutSessionController {
       if let logged = failure as? DayAlreadyLogged { throw .alreadyLogged(logged.sessionId) }
       throw .storage(LocalWriteError("\(failure)"))
     }
+    adoptAnchors(anchored)
     loggedKeys = keys
     loggedPR = pr
     loggedRevision = revision
@@ -729,6 +733,33 @@ public final class WorkoutSessionController {
   }
 
   // MARK: - nội bộ
+
+  /// Hàng vừa vào buổi đã chốt mang số kg ĐÃ GỬI (#527 1.9-D), như hàng nhận
+  /// từ server (`DayProgress.remoteWeight`).
+  ///
+  /// RN gỡ set theo TÊN bài (`useRemoveSetFromSession`: set cuối trùng tên),
+  /// nên không phụ thuộc đơn vị. Native gộp theo NỘI DUNG
+  /// (`SessionRevisionMerge`), nên bản ghi lại phải tính ra đúng số đã gửi:
+  /// không có mốc này, "135" gõ dưới lbs (gửi 61.23 kg) đọc lại thành 135 kg
+  /// sau khi hồ sơ đổi sang kg → gỡ set ấy không khớp gì trên server, set nằm
+  /// lại. Chỉ hàng có chữ gõ, tạ dương; hàng theo kế hoạch đã là kg chuẩn.
+  static func anchoring(_ keys: some Sequence<String>, in progress: DayProgress, toKg: (Double) -> Double) -> DayProgress {
+    var out = progress
+    for k in keys {
+      guard let text = out.weightText[k], out.remoteWeight[k]?.text != text,
+        let v = Double(text.trimmingCharacters(in: .whitespaces)), v.isFinite, v > 0
+      else { continue }
+      out.remoteWeight[k] = RemoteWeight(text: text, kg: toKg(v))
+    }
+    return out
+  }
+
+  /// Nhận các mốc vừa ghi bền — chỉ khi ô vẫn đúng chữ ấy.
+  private func adoptAnchors(_ anchored: DayProgress) {
+    for (k, a) in anchored.remoteWeight where progress.weightText[k] == a.text && progress.remoteWeight[k] != a {
+      progress.remoteWeight[k] = a
+    }
+  }
 
   /// Ngày chưa chốt: mọi hàng sửa được. Đã chốt: chỉ hàng CHƯA nằm trong buổi
   /// (hàng sẽ được nối thêm). Bỏ tick hàng đã ghi đi qua `removeLoggedSet`

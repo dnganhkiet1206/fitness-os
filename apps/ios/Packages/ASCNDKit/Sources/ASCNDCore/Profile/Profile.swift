@@ -368,11 +368,17 @@ public final class ProfileBook {
   }
 
   public func load() async {
+    await loadCached()
+    await refresh()
+  }
+
+  /// Chỉ bản nhớ trên máy, không mạng — đủ nhanh để có hồ sơ (đơn vị tạ,
+  /// #527 1.9-D) TRƯỚC khi màn tập dựng; `refresh()` đọc server sau.
+  public func loadCached() async {
     if !loaded, let cached = try? await cache.load(userId: userId), cached.userId == userId {
       profile = cached
       loaded = true
     }
-    await refresh()
   }
 
   public func refresh() async {
