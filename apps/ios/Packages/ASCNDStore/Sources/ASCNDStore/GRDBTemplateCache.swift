@@ -5,37 +5,26 @@ import GRDB
 /// `TemplateCache` trên SQLite: bản chụp `routine_days` + `workout_templates`
 /// mới nhất của từng người dùng (#270).
 public final class GRDBTemplateCache: TemplateCache {
-  static let kind = "templates"
-  private let db: DatabaseQueue
+  static let kind = ReadCacheNamespace.templates
+  private let table: ReadCacheTable
+  private let cleanup: ReadCacheCleanup
 
   public init(_ database: ASCNDDatabase) {
-    db = database.queue
+    table = ReadCacheTable(database)
+    cleanup = ReadCacheCleanup(database)
   }
 
   public func load(userId: String) async throws -> TemplateSnapshot? {
-    let json = try await db.read { db in
-      try String.fetchOne(
-        db, sql: "SELECT json FROM read_cache WHERE userId = ? AND kind = ?", arguments: [userId, Self.kind])
-    }
-    guard let json else { return nil }
-    return try JSONDecoder().decode(TemplateSnapshot.self, from: Data(json.utf8))
+    try await table.load(TemplateSnapshot.self, userId: userId, kind: Self.kind)
   }
 
   public func save(userId: String, _ snapshot: TemplateSnapshot) async throws {
-    let json = try OutboxStore.json(snapshot)
-    try await db.write { db in
-      try db.execute(
-        sql: """
-          INSERT INTO read_cache (userId, kind, json) VALUES (?, ?, ?)
-          ON CONFLICT(userId, kind) DO UPDATE SET json = excluded.json
-          """,
-        arguments: [userId, Self.kind, json])
-    }
+    try await table.save(snapshot, userId: userId, kind: Self.kind)
   }
 
-  /// Đăng xuất: bỏ cache của mọi người dùng trên máy.
+  /// Đăng xuất: bỏ cache của mọi người dùng trên máy (`ReadCacheCleanup`).
   public func clearAll() async throws {
-    try await db.write { db in try db.execute(sql: "DELETE FROM read_cache") }
+    try await cleanup.forgetEveryone()
   }
 
   /// Đăng nhập: bỏ cache của MỌI người khác. Lượt làm mới của người vừa rời
@@ -43,9 +32,6 @@ public final class GRDBTemplateCache: TemplateCache {
   /// lần này dọn nốt. Trả về số hàng bỏ.
   @discardableResult
   public func clearAll(except userId: String) async throws -> Int {
-    try await db.write { db in
-      try db.execute(sql: "DELETE FROM read_cache WHERE userId != ?", arguments: [userId])
-      return db.changesCount
-    }
+    try await cleanup.forgetEveryone(except: userId)
   }
 }

@@ -53,7 +53,7 @@ struct GRDBWorkoutStoreTests {
   @Test func corruptBlobStartsTheDayFresh() async throws {
     let database = try ASCNDDatabase()
     try await database.queue.write { db in
-      try db.execute(sql: "INSERT INTO workout_day (key, state) VALUES ('k', '{\"progress\": 42')")
+      try db.execute(sql: "INSERT INTO workout_day (userId, key, state) VALUES ('', 'k', '{\"progress\": 42')")
     }
     let store = GRDBWorkoutStore(database)
     #expect(try await store.loadDay("k") == nil)
