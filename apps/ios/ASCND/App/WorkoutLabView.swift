@@ -92,6 +92,33 @@ private struct LabSession: View {
         LabHistory(history: history)
       }
       if let editor = flow.plan {
+        Section {
+          // Danh sách + builder thật (#527 Phase 2) — cùng `PlanEditor`.
+          NavigationLink {
+            WorkoutBuilderView(flow: flow)
+          } label: {
+            Text(verbatim: "Buổi tập đã lưu + builder (màn thật)")
+          }
+          NavigationLink {
+            WeekPlanView(flow: flow)
+          } label: {
+            Text(verbatim: "Kế hoạch tuần (màn thật)")
+          }
+          if let library = flow.library {
+            NavigationLink {
+              ExercisesView(library: library)
+            } label: {
+              Text(verbatim: "Thư viện bài tập (màn thật)")
+            }
+          }
+          if let insights = flow.insights {
+            NavigationLink {
+              ExerciseInsightView(insights: insights, today: today)
+            } label: {
+              Text(verbatim: "Tiến bộ từng bài (màn thật)")
+            }
+          }
+        }
         LabPlan(today: today, editor: editor)
       }
       LabManualLog(flow: flow)
