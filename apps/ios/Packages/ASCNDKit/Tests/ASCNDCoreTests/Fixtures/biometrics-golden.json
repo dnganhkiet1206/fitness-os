@@ -1,0 +1,1553 @@
+{
+ "status": [
+  {
+   "metric": "hr",
+   "v": -5,
+   "status": "bad"
+  },
+  {
+   "metric": "hr",
+   "v": 0,
+   "status": "bad"
+  },
+  {
+   "metric": "hr",
+   "v": 0.5,
+   "status": "bad"
+  },
+  {
+   "metric": "hr",
+   "v": 1,
+   "status": "bad"
+  },
+  {
+   "metric": "hr",
+   "v": 4,
+   "status": "bad"
+  },
+  {
+   "metric": "hr",
+   "v": 10,
+   "status": "bad"
+  },
+  {
+   "metric": "hr",
+   "v": 11,
+   "status": "bad"
+  },
+  {
+   "metric": "hr",
+   "v": 11.3,
+   "status": "bad"
+  },
+  {
+   "metric": "hr",
+   "v": 11.4,
+   "status": "bad"
+  },
+  {
+   "metric": "hr",
+   "v": 12,
+   "status": "bad"
+  },
+  {
+   "metric": "hr",
+   "v": 13.6,
+   "status": "bad"
+  },
+  {
+   "metric": "hr",
+   "v": 16,
+   "status": "bad"
+  },
+  {
+   "metric": "hr",
+   "v": 20,
+   "status": "bad"
+  },
+  {
+   "metric": "hr",
+   "v": 21.2,
+   "status": "bad"
+  },
+  {
+   "metric": "hr",
+   "v": 21.3,
+   "status": "bad"
+  },
+  {
+   "metric": "hr",
+   "v": 25,
+   "status": "bad"
+  },
+  {
+   "metric": "hr",
+   "v": 29,
+   "status": "bad"
+  },
+  {
+   "metric": "hr",
+   "v": 30,
+   "status": "bad"
+  },
+  {
+   "metric": "hr",
+   "v": 37,
+   "status": "bad"
+  },
+  {
+   "metric": "hr",
+   "v": 38,
+   "status": "bad"
+  },
+  {
+   "metric": "hr",
+   "v": 42.5,
+   "status": "warn"
+  },
+  {
+   "metric": "hr",
+   "v": 50,
+   "status": "good"
+  },
+  {
+   "metric": "hr",
+   "v": 60,
+   "status": "good"
+  },
+  {
+   "metric": "hr",
+   "v": 64.5,
+   "status": "good"
+  },
+  {
+   "metric": "hr",
+   "v": 65,
+   "status": "good"
+  },
+  {
+   "metric": "hr",
+   "v": 67,
+   "status": "good"
+  },
+  {
+   "metric": "hr",
+   "v": 92,
+   "status": "good"
+  },
+  {
+   "metric": "hr",
+   "v": 92.75,
+   "status": "good"
+  },
+  {
+   "metric": "hr",
+   "v": 93,
+   "status": "good"
+  },
+  {
+   "metric": "hr",
+   "v": 95,
+   "status": "good"
+  },
+  {
+   "metric": "hr",
+   "v": 99.9,
+   "status": "good"
+  },
+  {
+   "metric": "hr",
+   "v": 100,
+   "status": "good"
+  },
+  {
+   "metric": "hr",
+   "v": 100.75,
+   "status": "warn"
+  },
+  {
+   "metric": "hr",
+   "v": 101,
+   "status": "warn"
+  },
+  {
+   "metric": "hr",
+   "v": 107.5,
+   "status": "warn"
+  },
+  {
+   "metric": "hr",
+   "v": 108,
+   "status": "bad"
+  },
+  {
+   "metric": "hr",
+   "v": 112,
+   "status": "bad"
+  },
+  {
+   "metric": "hr",
+   "v": 120,
+   "status": "bad"
+  },
+  {
+   "metric": "hr",
+   "v": 130,
+   "status": "bad"
+  },
+  {
+   "metric": "hrvSdnn",
+   "v": -5,
+   "status": "bad"
+  },
+  {
+   "metric": "hrvSdnn",
+   "v": 0,
+   "status": "bad"
+  },
+  {
+   "metric": "hrvSdnn",
+   "v": 0.5,
+   "status": "bad"
+  },
+  {
+   "metric": "hrvSdnn",
+   "v": 1,
+   "status": "bad"
+  },
+  {
+   "metric": "hrvSdnn",
+   "v": 4,
+   "status": "bad"
+  },
+  {
+   "metric": "hrvSdnn",
+   "v": 10,
+   "status": "warn"
+  },
+  {
+   "metric": "hrvSdnn",
+   "v": 11,
+   "status": "warn"
+  },
+  {
+   "metric": "hrvSdnn",
+   "v": 11.3,
+   "status": "warn"
+  },
+  {
+   "metric": "hrvSdnn",
+   "v": 11.4,
+   "status": "warn"
+  },
+  {
+   "metric": "hrvSdnn",
+   "v": 12,
+   "status": "warn"
+  },
+  {
+   "metric": "hrvSdnn",
+   "v": 13.6,
+   "status": "warn"
+  },
+  {
+   "metric": "hrvSdnn",
+   "v": 16,
+   "status": "warn"
+  },
+  {
+   "metric": "hrvSdnn",
+   "v": 20,
+   "status": "good"
+  },
+  {
+   "metric": "hrvSdnn",
+   "v": 21.2,
+   "status": "good"
+  },
+  {
+   "metric": "hrvSdnn",
+   "v": 21.3,
+   "status": "good"
+  },
+  {
+   "metric": "hrvSdnn",
+   "v": 25,
+   "status": "good"
+  },
+  {
+   "metric": "hrvSdnn",
+   "v": 29,
+   "status": "good"
+  },
+  {
+   "metric": "hrvSdnn",
+   "v": 30,
+   "status": "good"
+  },
+  {
+   "metric": "hrvSdnn",
+   "v": 37,
+   "status": "good"
+  },
+  {
+   "metric": "hrvSdnn",
+   "v": 38,
+   "status": "good"
+  },
+  {
+   "metric": "hrvSdnn",
+   "v": 42.5,
+   "status": "good"
+  },
+  {
+   "metric": "hrvSdnn",
+   "v": 50,
+   "status": "good"
+  },
+  {
+   "metric": "hrvSdnn",
+   "v": 60,
+   "status": "good"
+  },
+  {
+   "metric": "hrvSdnn",
+   "v": 64.5,
+   "status": "good"
+  },
+  {
+   "metric": "hrvSdnn",
+   "v": 65,
+   "status": "good"
+  },
+  {
+   "metric": "hrvSdnn",
+   "v": 67,
+   "status": "good"
+  },
+  {
+   "metric": "hrvSdnn",
+   "v": 92,
+   "status": "good"
+  },
+  {
+   "metric": "hrvSdnn",
+   "v": 92.75,
+   "status": "good"
+  },
+  {
+   "metric": "hrvSdnn",
+   "v": 93,
+   "status": "good"
+  },
+  {
+   "metric": "hrvSdnn",
+   "v": 95,
+   "status": "good"
+  },
+  {
+   "metric": "hrvSdnn",
+   "v": 99.9,
+   "status": "good"
+  },
+  {
+   "metric": "hrvSdnn",
+   "v": 100,
+   "status": "good"
+  },
+  {
+   "metric": "hrvSdnn",
+   "v": 100.75,
+   "status": "warn"
+  },
+  {
+   "metric": "hrvSdnn",
+   "v": 101,
+   "status": "warn"
+  },
+  {
+   "metric": "hrvSdnn",
+   "v": 107.5,
+   "status": "warn"
+  },
+  {
+   "metric": "hrvSdnn",
+   "v": 108,
+   "status": "warn"
+  },
+  {
+   "metric": "hrvSdnn",
+   "v": 112,
+   "status": "warn"
+  },
+  {
+   "metric": "hrvSdnn",
+   "v": 120,
+   "status": "bad"
+  },
+  {
+   "metric": "hrvSdnn",
+   "v": 130,
+   "status": "bad"
+  },
+  {
+   "metric": "hrv",
+   "v": -5,
+   "status": "bad"
+  },
+  {
+   "metric": "hrv",
+   "v": 0,
+   "status": "bad"
+  },
+  {
+   "metric": "hrv",
+   "v": 0.5,
+   "status": "bad"
+  },
+  {
+   "metric": "hrv",
+   "v": 1,
+   "status": "bad"
+  },
+  {
+   "metric": "hrv",
+   "v": 4,
+   "status": "bad"
+  },
+  {
+   "metric": "hrv",
+   "v": 10,
+   "status": "warn"
+  },
+  {
+   "metric": "hrv",
+   "v": 11,
+   "status": "warn"
+  },
+  {
+   "metric": "hrv",
+   "v": 11.3,
+   "status": "warn"
+  },
+  {
+   "metric": "hrv",
+   "v": 11.4,
+   "status": "warn"
+  },
+  {
+   "metric": "hrv",
+   "v": 12,
+   "status": "warn"
+  },
+  {
+   "metric": "hrv",
+   "v": 13.6,
+   "status": "warn"
+  },
+  {
+   "metric": "hrv",
+   "v": 16,
+   "status": "warn"
+  },
+  {
+   "metric": "hrv",
+   "v": 20,
+   "status": "good"
+  },
+  {
+   "metric": "hrv",
+   "v": 21.2,
+   "status": "good"
+  },
+  {
+   "metric": "hrv",
+   "v": 21.3,
+   "status": "good"
+  },
+  {
+   "metric": "hrv",
+   "v": 25,
+   "status": "good"
+  },
+  {
+   "metric": "hrv",
+   "v": 29,
+   "status": "good"
+  },
+  {
+   "metric": "hrv",
+   "v": 30,
+   "status": "good"
+  },
+  {
+   "metric": "hrv",
+   "v": 37,
+   "status": "good"
+  },
+  {
+   "metric": "hrv",
+   "v": 38,
+   "status": "good"
+  },
+  {
+   "metric": "hrv",
+   "v": 42.5,
+   "status": "good"
+  },
+  {
+   "metric": "hrv",
+   "v": 50,
+   "status": "good"
+  },
+  {
+   "metric": "hrv",
+   "v": 60,
+   "status": "good"
+  },
+  {
+   "metric": "hrv",
+   "v": 64.5,
+   "status": "good"
+  },
+  {
+   "metric": "hrv",
+   "v": 65,
+   "status": "good"
+  },
+  {
+   "metric": "hrv",
+   "v": 67,
+   "status": "good"
+  },
+  {
+   "metric": "hrv",
+   "v": 92,
+   "status": "good"
+  },
+  {
+   "metric": "hrv",
+   "v": 92.75,
+   "status": "good"
+  },
+  {
+   "metric": "hrv",
+   "v": 93,
+   "status": "good"
+  },
+  {
+   "metric": "hrv",
+   "v": 95,
+   "status": "good"
+  },
+  {
+   "metric": "hrv",
+   "v": 99.9,
+   "status": "good"
+  },
+  {
+   "metric": "hrv",
+   "v": 100,
+   "status": "good"
+  },
+  {
+   "metric": "hrv",
+   "v": 100.75,
+   "status": "warn"
+  },
+  {
+   "metric": "hrv",
+   "v": 101,
+   "status": "warn"
+  },
+  {
+   "metric": "hrv",
+   "v": 107.5,
+   "status": "warn"
+  },
+  {
+   "metric": "hrv",
+   "v": 108,
+   "status": "warn"
+  },
+  {
+   "metric": "hrv",
+   "v": 112,
+   "status": "warn"
+  },
+  {
+   "metric": "hrv",
+   "v": 120,
+   "status": "bad"
+  },
+  {
+   "metric": "hrv",
+   "v": 130,
+   "status": "bad"
+  },
+  {
+   "metric": "spo2",
+   "v": -5,
+   "status": "bad"
+  },
+  {
+   "metric": "spo2",
+   "v": 0,
+   "status": "bad"
+  },
+  {
+   "metric": "spo2",
+   "v": 0.5,
+   "status": "bad"
+  },
+  {
+   "metric": "spo2",
+   "v": 1,
+   "status": "bad"
+  },
+  {
+   "metric": "spo2",
+   "v": 4,
+   "status": "bad"
+  },
+  {
+   "metric": "spo2",
+   "v": 10,
+   "status": "bad"
+  },
+  {
+   "metric": "spo2",
+   "v": 11,
+   "status": "bad"
+  },
+  {
+   "metric": "spo2",
+   "v": 11.3,
+   "status": "bad"
+  },
+  {
+   "metric": "spo2",
+   "v": 11.4,
+   "status": "bad"
+  },
+  {
+   "metric": "spo2",
+   "v": 12,
+   "status": "bad"
+  },
+  {
+   "metric": "spo2",
+   "v": 13.6,
+   "status": "bad"
+  },
+  {
+   "metric": "spo2",
+   "v": 16,
+   "status": "bad"
+  },
+  {
+   "metric": "spo2",
+   "v": 20,
+   "status": "bad"
+  },
+  {
+   "metric": "spo2",
+   "v": 21.2,
+   "status": "bad"
+  },
+  {
+   "metric": "spo2",
+   "v": 21.3,
+   "status": "bad"
+  },
+  {
+   "metric": "spo2",
+   "v": 25,
+   "status": "bad"
+  },
+  {
+   "metric": "spo2",
+   "v": 29,
+   "status": "bad"
+  },
+  {
+   "metric": "spo2",
+   "v": 30,
+   "status": "bad"
+  },
+  {
+   "metric": "spo2",
+   "v": 37,
+   "status": "bad"
+  },
+  {
+   "metric": "spo2",
+   "v": 38,
+   "status": "bad"
+  },
+  {
+   "metric": "spo2",
+   "v": 42.5,
+   "status": "bad"
+  },
+  {
+   "metric": "spo2",
+   "v": 50,
+   "status": "bad"
+  },
+  {
+   "metric": "spo2",
+   "v": 60,
+   "status": "bad"
+  },
+  {
+   "metric": "spo2",
+   "v": 64.5,
+   "status": "bad"
+  },
+  {
+   "metric": "spo2",
+   "v": 65,
+   "status": "bad"
+  },
+  {
+   "metric": "spo2",
+   "v": 67,
+   "status": "bad"
+  },
+  {
+   "metric": "spo2",
+   "v": 92,
+   "status": "bad"
+  },
+  {
+   "metric": "spo2",
+   "v": 92.75,
+   "status": "bad"
+  },
+  {
+   "metric": "spo2",
+   "v": 93,
+   "status": "bad"
+  },
+  {
+   "metric": "spo2",
+   "v": 95,
+   "status": "good"
+  },
+  {
+   "metric": "spo2",
+   "v": 99.9,
+   "status": "good"
+  },
+  {
+   "metric": "spo2",
+   "v": 100,
+   "status": "good"
+  },
+  {
+   "metric": "spo2",
+   "v": 100.75,
+   "status": "warn"
+  },
+  {
+   "metric": "spo2",
+   "v": 101,
+   "status": "bad"
+  },
+  {
+   "metric": "spo2",
+   "v": 107.5,
+   "status": "bad"
+  },
+  {
+   "metric": "spo2",
+   "v": 108,
+   "status": "bad"
+  },
+  {
+   "metric": "spo2",
+   "v": 112,
+   "status": "bad"
+  },
+  {
+   "metric": "spo2",
+   "v": 120,
+   "status": "bad"
+  },
+  {
+   "metric": "spo2",
+   "v": 130,
+   "status": "bad"
+  },
+  {
+   "metric": "vo2max",
+   "v": -5,
+   "status": "bad"
+  },
+  {
+   "metric": "vo2max",
+   "v": 0,
+   "status": "bad"
+  },
+  {
+   "metric": "vo2max",
+   "v": 0.5,
+   "status": "bad"
+  },
+  {
+   "metric": "vo2max",
+   "v": 1,
+   "status": "bad"
+  },
+  {
+   "metric": "vo2max",
+   "v": 4,
+   "status": "bad"
+  },
+  {
+   "metric": "vo2max",
+   "v": 10,
+   "status": "bad"
+  },
+  {
+   "metric": "vo2max",
+   "v": 11,
+   "status": "bad"
+  },
+  {
+   "metric": "vo2max",
+   "v": 11.3,
+   "status": "bad"
+  },
+  {
+   "metric": "vo2max",
+   "v": 11.4,
+   "status": "bad"
+  },
+  {
+   "metric": "vo2max",
+   "v": 12,
+   "status": "bad"
+  },
+  {
+   "metric": "vo2max",
+   "v": 13.6,
+   "status": "bad"
+  },
+  {
+   "metric": "vo2max",
+   "v": 16,
+   "status": "bad"
+  },
+  {
+   "metric": "vo2max",
+   "v": 20,
+   "status": "bad"
+  },
+  {
+   "metric": "vo2max",
+   "v": 21.2,
+   "status": "bad"
+  },
+  {
+   "metric": "vo2max",
+   "v": 21.3,
+   "status": "bad"
+  },
+  {
+   "metric": "vo2max",
+   "v": 25,
+   "status": "bad"
+  },
+  {
+   "metric": "vo2max",
+   "v": 29,
+   "status": "warn"
+  },
+  {
+   "metric": "vo2max",
+   "v": 30,
+   "status": "good"
+  },
+  {
+   "metric": "vo2max",
+   "v": 37,
+   "status": "good"
+  },
+  {
+   "metric": "vo2max",
+   "v": 38,
+   "status": "good"
+  },
+  {
+   "metric": "vo2max",
+   "v": 42.5,
+   "status": "good"
+  },
+  {
+   "metric": "vo2max",
+   "v": 50,
+   "status": "good"
+  },
+  {
+   "metric": "vo2max",
+   "v": 60,
+   "status": "good"
+  },
+  {
+   "metric": "vo2max",
+   "v": 64.5,
+   "status": "warn"
+  },
+  {
+   "metric": "vo2max",
+   "v": 65,
+   "status": "bad"
+  },
+  {
+   "metric": "vo2max",
+   "v": 67,
+   "status": "bad"
+  },
+  {
+   "metric": "vo2max",
+   "v": 92,
+   "status": "bad"
+  },
+  {
+   "metric": "vo2max",
+   "v": 92.75,
+   "status": "bad"
+  },
+  {
+   "metric": "vo2max",
+   "v": 93,
+   "status": "bad"
+  },
+  {
+   "metric": "vo2max",
+   "v": 95,
+   "status": "bad"
+  },
+  {
+   "metric": "vo2max",
+   "v": 99.9,
+   "status": "bad"
+  },
+  {
+   "metric": "vo2max",
+   "v": 100,
+   "status": "bad"
+  },
+  {
+   "metric": "vo2max",
+   "v": 100.75,
+   "status": "bad"
+  },
+  {
+   "metric": "vo2max",
+   "v": 101,
+   "status": "bad"
+  },
+  {
+   "metric": "vo2max",
+   "v": 107.5,
+   "status": "bad"
+  },
+  {
+   "metric": "vo2max",
+   "v": 108,
+   "status": "bad"
+  },
+  {
+   "metric": "vo2max",
+   "v": 112,
+   "status": "bad"
+  },
+  {
+   "metric": "vo2max",
+   "v": 120,
+   "status": "bad"
+  },
+  {
+   "metric": "vo2max",
+   "v": 130,
+   "status": "bad"
+  },
+  {
+   "metric": "resp",
+   "v": -5,
+   "status": "bad"
+  },
+  {
+   "metric": "resp",
+   "v": 0,
+   "status": "bad"
+  },
+  {
+   "metric": "resp",
+   "v": 0.5,
+   "status": "bad"
+  },
+  {
+   "metric": "resp",
+   "v": 1,
+   "status": "bad"
+  },
+  {
+   "metric": "resp",
+   "v": 4,
+   "status": "bad"
+  },
+  {
+   "metric": "resp",
+   "v": 10,
+   "status": "bad"
+  },
+  {
+   "metric": "resp",
+   "v": 11,
+   "status": "warn"
+  },
+  {
+   "metric": "resp",
+   "v": 11.3,
+   "status": "warn"
+  },
+  {
+   "metric": "resp",
+   "v": 11.4,
+   "status": "warn"
+  },
+  {
+   "metric": "resp",
+   "v": 12,
+   "status": "good"
+  },
+  {
+   "metric": "resp",
+   "v": 13.6,
+   "status": "good"
+  },
+  {
+   "metric": "resp",
+   "v": 16,
+   "status": "good"
+  },
+  {
+   "metric": "resp",
+   "v": 20,
+   "status": "good"
+  },
+  {
+   "metric": "resp",
+   "v": 21.2,
+   "status": "warn"
+  },
+  {
+   "metric": "resp",
+   "v": 21.3,
+   "status": "bad"
+  },
+  {
+   "metric": "resp",
+   "v": 25,
+   "status": "bad"
+  },
+  {
+   "metric": "resp",
+   "v": 29,
+   "status": "bad"
+  },
+  {
+   "metric": "resp",
+   "v": 30,
+   "status": "bad"
+  },
+  {
+   "metric": "resp",
+   "v": 37,
+   "status": "bad"
+  },
+  {
+   "metric": "resp",
+   "v": 38,
+   "status": "bad"
+  },
+  {
+   "metric": "resp",
+   "v": 42.5,
+   "status": "bad"
+  },
+  {
+   "metric": "resp",
+   "v": 50,
+   "status": "bad"
+  },
+  {
+   "metric": "resp",
+   "v": 60,
+   "status": "bad"
+  },
+  {
+   "metric": "resp",
+   "v": 64.5,
+   "status": "bad"
+  },
+  {
+   "metric": "resp",
+   "v": 65,
+   "status": "bad"
+  },
+  {
+   "metric": "resp",
+   "v": 67,
+   "status": "bad"
+  },
+  {
+   "metric": "resp",
+   "v": 92,
+   "status": "bad"
+  },
+  {
+   "metric": "resp",
+   "v": 92.75,
+   "status": "bad"
+  },
+  {
+   "metric": "resp",
+   "v": 93,
+   "status": "bad"
+  },
+  {
+   "metric": "resp",
+   "v": 95,
+   "status": "bad"
+  },
+  {
+   "metric": "resp",
+   "v": 99.9,
+   "status": "bad"
+  },
+  {
+   "metric": "resp",
+   "v": 100,
+   "status": "bad"
+  },
+  {
+   "metric": "resp",
+   "v": 100.75,
+   "status": "bad"
+  },
+  {
+   "metric": "resp",
+   "v": 101,
+   "status": "bad"
+  },
+  {
+   "metric": "resp",
+   "v": 107.5,
+   "status": "bad"
+  },
+  {
+   "metric": "resp",
+   "v": 108,
+   "status": "bad"
+  },
+  {
+   "metric": "resp",
+   "v": 112,
+   "status": "bad"
+  },
+  {
+   "metric": "resp",
+   "v": 120,
+   "status": "bad"
+  },
+  {
+   "metric": "resp",
+   "v": 130,
+   "status": "bad"
+  },
+  {
+   "metric": "soreness",
+   "v": -5,
+   "status": "bad"
+  },
+  {
+   "metric": "soreness",
+   "v": 0,
+   "status": "warn"
+  },
+  {
+   "metric": "soreness",
+   "v": 0.5,
+   "status": "warn"
+  },
+  {
+   "metric": "soreness",
+   "v": 1,
+   "status": "good"
+  },
+  {
+   "metric": "soreness",
+   "v": 4,
+   "status": "good"
+  },
+  {
+   "metric": "soreness",
+   "v": 10,
+   "status": "good"
+  },
+  {
+   "metric": "soreness",
+   "v": 11,
+   "status": "warn"
+  },
+  {
+   "metric": "soreness",
+   "v": 11.3,
+   "status": "warn"
+  },
+  {
+   "metric": "soreness",
+   "v": 11.4,
+   "status": "bad"
+  },
+  {
+   "metric": "soreness",
+   "v": 12,
+   "status": "bad"
+  },
+  {
+   "metric": "soreness",
+   "v": 13.6,
+   "status": "bad"
+  },
+  {
+   "metric": "soreness",
+   "v": 16,
+   "status": "bad"
+  },
+  {
+   "metric": "soreness",
+   "v": 20,
+   "status": "bad"
+  },
+  {
+   "metric": "soreness",
+   "v": 21.2,
+   "status": "bad"
+  },
+  {
+   "metric": "soreness",
+   "v": 21.3,
+   "status": "bad"
+  },
+  {
+   "metric": "soreness",
+   "v": 25,
+   "status": "bad"
+  },
+  {
+   "metric": "soreness",
+   "v": 29,
+   "status": "bad"
+  },
+  {
+   "metric": "soreness",
+   "v": 30,
+   "status": "bad"
+  },
+  {
+   "metric": "soreness",
+   "v": 37,
+   "status": "bad"
+  },
+  {
+   "metric": "soreness",
+   "v": 38,
+   "status": "bad"
+  },
+  {
+   "metric": "soreness",
+   "v": 42.5,
+   "status": "bad"
+  },
+  {
+   "metric": "soreness",
+   "v": 50,
+   "status": "bad"
+  },
+  {
+   "metric": "soreness",
+   "v": 60,
+   "status": "bad"
+  },
+  {
+   "metric": "soreness",
+   "v": 64.5,
+   "status": "bad"
+  },
+  {
+   "metric": "soreness",
+   "v": 65,
+   "status": "bad"
+  },
+  {
+   "metric": "soreness",
+   "v": 67,
+   "status": "bad"
+  },
+  {
+   "metric": "soreness",
+   "v": 92,
+   "status": "bad"
+  },
+  {
+   "metric": "soreness",
+   "v": 92.75,
+   "status": "bad"
+  },
+  {
+   "metric": "soreness",
+   "v": 93,
+   "status": "bad"
+  },
+  {
+   "metric": "soreness",
+   "v": 95,
+   "status": "bad"
+  },
+  {
+   "metric": "soreness",
+   "v": 99.9,
+   "status": "bad"
+  },
+  {
+   "metric": "soreness",
+   "v": 100,
+   "status": "bad"
+  },
+  {
+   "metric": "soreness",
+   "v": 100.75,
+   "status": "bad"
+  },
+  {
+   "metric": "soreness",
+   "v": 101,
+   "status": "bad"
+  },
+  {
+   "metric": "soreness",
+   "v": 107.5,
+   "status": "bad"
+  },
+  {
+   "metric": "soreness",
+   "v": 108,
+   "status": "bad"
+  },
+  {
+   "metric": "soreness",
+   "v": 112,
+   "status": "bad"
+  },
+  {
+   "metric": "soreness",
+   "v": 120,
+   "status": "bad"
+  },
+  {
+   "metric": "soreness",
+   "v": 130,
+   "status": "bad"
+  }
+ ],
+ "display": [
+  {
+   "v": 0,
+   "text": "0"
+  },
+  {
+   "v": 1,
+   "text": "1"
+  },
+  {
+   "v": 45,
+   "text": "45"
+  },
+  {
+   "v": 45.04,
+   "text": "45"
+  },
+  {
+   "v": 45.05,
+   "text": "45.1"
+  },
+  {
+   "v": 45.15,
+   "text": "45.2"
+  },
+  {
+   "v": 45.25,
+   "text": "45.3"
+  },
+  {
+   "v": 62.349,
+   "text": "62.3"
+  },
+  {
+   "v": 62.35,
+   "text": "62.4"
+  },
+  {
+   "v": 98.95,
+   "text": "99"
+  },
+  {
+   "v": 99.99,
+   "text": "100"
+  },
+  {
+   "v": 0.05,
+   "text": "0.1"
+  },
+  {
+   "v": 0.15,
+   "text": "0.2"
+  },
+  {
+   "v": 3.45,
+   "text": "3.5"
+  },
+  {
+   "v": 1e-7,
+   "text": "0"
+  },
+  {
+   "v": 12.25,
+   "text": "12.3"
+  },
+  {
+   "v": 37.5,
+   "text": "37.5"
+  }
+ ],
+ "kinds": [
+  {
+   "name": "none",
+   "rows": [],
+   "kinds": {
+    "sdnn": false,
+    "rmssd": true
+   }
+  },
+  {
+   "name": "no-hrv",
+   "rows": [
+    {
+     "hr_bpm": 60
+    }
+   ],
+   "kinds": {
+    "sdnn": false,
+    "rmssd": true
+   }
+  },
+  {
+   "name": "rmssd-only",
+   "rows": [
+    {
+     "hrv_rmssd_ms": 45
+    },
+    {
+     "hr_bpm": 58
+    }
+   ],
+   "kinds": {
+    "sdnn": false,
+    "rmssd": true
+   }
+  },
+  {
+   "name": "sdnn-only",
+   "rows": [
+    {
+     "hrv_sdnn_ms": 52
+    }
+   ],
+   "kinds": {
+    "sdnn": true,
+    "rmssd": false
+   }
+  },
+  {
+   "name": "both",
+   "rows": [
+    {
+     "hrv_sdnn_ms": 52
+    },
+    {
+     "hrv_rmssd_ms": 40
+    }
+   ],
+   "kinds": {
+    "sdnn": true,
+    "rmssd": true
+   }
+  }
+ ],
+ "summary": [
+  {
+   "sample": {},
+   "vi": "Không có giá trị",
+   "en": "No values"
+  },
+  {
+   "sample": {
+    "hr_bpm": 58
+   },
+   "vi": "Nhịp nghỉ 58",
+   "en": "RHR 58"
+  },
+  {
+   "sample": {
+    "hr_bpm": 58,
+    "hrv_sdnn_ms": 52.5,
+    "hrv_rmssd_ms": 40,
+    "spo2_pct": 97,
+    "resp_rate_rpm": 14.5,
+    "vo2max_mlkgmin": 44.2
+   },
+   "vi": "Nhịp nghỉ 58 · SDNN 52.5ms · RMSSD 40ms · SpO₂ 97% · Thở 14.5 · VO₂max 44.2",
+   "en": "RHR 58 · SDNN 52.5ms · RMSSD 40ms · SpO₂ 97% · Resp 14.5 · VO₂max 44.2"
+  },
+  {
+   "sample": {
+    "spo2_pct": 99,
+    "vo2max_mlkgmin": 50
+   },
+   "vi": "SpO₂ 99% · VO₂max 50",
+   "en": "SpO₂ 99% · VO₂max 50"
+  },
+  {
+   "sample": {
+    "hrv_rmssd_ms": 0,
+    "soreness_1_10": 4,
+    "illness_flag": true
+   },
+   "vi": "RMSSD 0ms",
+   "en": "RMSSD 0ms"
+  },
+  {
+   "sample": {
+    "resp_rate_rpm": 16
+   },
+   "vi": "Thở 16",
+   "en": "Resp 16"
+  }
+ ]
+}
