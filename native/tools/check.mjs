@@ -957,6 +957,13 @@ const STEPS = [
   */
   ['daily_logs golden = mã RN', 'sh', ['../apps/ios/tools/daily-log-golden/verify.sh']],
   /*
+    #66 (Apple Health): app iOS native gom giấc ngủ đêm qua, sinh trắc mới
+    nhất, buổi tập từ đồng hồ và bước theo ngày rồi ghi vào CÙNG các bảng app
+    RN ghi. Golden của `HealthGoldenTests` là output của CHÍNH `health.ts` RN
+    chạy trên HealthKit giả ở sáu múi giờ; bước này sinh lại và so từng byte.
+  */
+  ['Apple Health golden = mã RN', 'sh', ['../apps/ios/tools/health-golden/verify.sh']],
+  /*
     Plural trong String Catalog phải nhắc tới con số (#527). Xcode từ chối
     `variations.plural` mà dạng `other` không có số ("ngày", "days") — nhưng
     chỉ ở `xcodebuild` trên macOS (run 37648967552, widget). Bước thứ nhất quét

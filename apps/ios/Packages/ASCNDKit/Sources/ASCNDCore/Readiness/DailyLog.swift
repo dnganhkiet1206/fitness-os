@@ -325,6 +325,7 @@ public struct RowQuery: Sendable, Hashable {
     case eq(String, JSONValue)
     case gte(String, JSONValue)
     case lt(String, JSONValue)
+    case lte(String, JSONValue)
     /// `.or('a.gt.0,b.gt.0')` của PostgREST, nguyên chuỗi.
     case or(String)
   }
@@ -370,6 +371,15 @@ public protocol RowStore: Sendable {
   func insert(_ table: String, _ row: [String: JSONValue]) async throws(RowStoreError)
   /// `update(row).eq…​.select('id')` — trả số hàng đã chạm.
   func update(_ table: String, _ row: [String: JSONValue], where filters: [RowQuery.Filter]) async throws(RowStoreError) -> Int
+  /// `upsert(rows, { onConflict })`.
+  func upsert(_ table: String, _ rows: [[String: JSONValue]], onConflict: String) async throws(RowStoreError)
+}
+
+extension RowStore {
+  /// Mặc định cho kho chỉ đọc / chỉ dựng `daily_logs` (test): không hỗ trợ.
+  public func upsert(_ table: String, _ rows: [[String: JSONValue]], onConflict: String) async throws(RowStoreError) {
+    throw RowStoreError(code: nil, message: "upsert không hỗ trợ ở kho này")
+  }
 }
 
 /// Dựng lại không được — hàng cũ ở yên, lỗi nổi lên cho bên gọi.
