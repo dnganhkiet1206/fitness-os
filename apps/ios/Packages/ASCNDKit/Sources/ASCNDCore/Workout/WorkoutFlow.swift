@@ -171,6 +171,10 @@ public final class WorkoutFlow {
     absorbing?.cancel()
   }
 
+  /// Đang có lượt tải bay — "app còn đang lấy lại phần đã lỡ" của dải báo
+  /// mạng (`registerBusyProbe` của RN đọc `isFetching` của React Query).
+  public var isRefreshing: Bool { refreshing != nil }
+
   /// Kéo để làm mới. Gọi chồng thì chờ lượt đang chạy.
   public func refresh() async {
     guard !closed else { return }
