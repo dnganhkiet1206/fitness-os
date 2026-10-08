@@ -17,6 +17,15 @@ import GRDB
 /// `read_cache`). Đọc / ghi / chốt / xoá chỉ chạm hàng của chủ ấy; không ai
 /// đăng nhập thì đọc không thấy gì và ghi bị từ chối (`AccountScopeClosed`)
 /// trước khi có gì bền. Chủ được đọc TRONG transaction, cùng lúc với phép ghi.
+///
+/// Hàng rào ghi (#454): mỗi phép ghi nói nó ghi cho ai — `saveDay(userId:)`,
+/// `entry.userId` của `commitFinish` / `commitDelete`. Người ấy phải là người
+/// đang đăng nhập (so như `AccountScope.allows`: không phân biệt hoa thường,
+/// rỗng không bao giờ), không thì `AccountScopeClosed`, kiểm TRƯỚC câu lệnh
+/// ghi đầu tiên của giao dịch — giao dịch chốt vẫn là tất-cả-hoặc-không. Không
+/// thế thì lượt ghi muộn của controller của A, tới sau khi B đã đăng nhập,
+/// được ghi dưới tên B: ngày của A dựng lại trong ngày của B, hàng outbox của
+/// A nằm cạnh hàng của B.
 public final class GRDBWorkoutStore: WorkoutStore {
   private let db: DatabaseQueue
   private let accounts: AccountScope
@@ -26,9 +35,10 @@ public final class GRDBWorkoutStore: WorkoutStore {
     accounts = database.accounts
   }
 
-  /// Chủ của lượt ghi này, hoặc từ chối.
-  private func writer() throws -> String {
-    guard let owner = accounts.owner else { throw AccountScopeClosed() }
+  /// Chủ của lượt ghi cho `userId`, hoặc từ chối: không ai đăng nhập, hay
+  /// người đăng nhập không phải `userId`.
+  private func writer(for userId: String) throws -> String {
+    guard let owner = accounts.owner(writingFor: userId) else { throw AccountScopeClosed() }
     return owner
   }
 
@@ -39,10 +49,10 @@ public final class GRDBWorkoutStore: WorkoutStore {
     }
   }
 
-  public func saveDay(_ key: String, _ state: DayState) async throws {
+  public func saveDay(_ key: String, _ state: DayState, userId: String) async throws {
     let json = try OutboxStore.json(state)
     try await db.write { db in
-      let owner = try self.writer()
+      let owner = try self.writer(for: userId)
       try Self.ensureUnlocked(db, owner, key, for: state.loggedSessionId)
       try Self.upsert(db, owner, key, json)
     }
@@ -53,7 +63,7 @@ public final class GRDBWorkoutStore: WorkoutStore {
     let day = try OutboxStore.json(state)
     let row = try OutboxStore.json(entry)
     return try await db.write { db in
-      let owner = try self.writer()
+      let owner = try self.writer(for: entry.userId)
       try Self.ensureUnlocked(db, owner, key, for: state.loggedSessionId)
       try Self.upsert(db, owner, key, day)
       try db.execute(
@@ -66,7 +76,7 @@ public final class GRDBWorkoutStore: WorkoutStore {
   public func commitDelete(sessionId: String, _ entry: OutboxEntry) async throws {
     let row = try OutboxStore.json(entry)
     try await db.write { db in
-      let owner = try self.writer()
+      let owner = try self.writer(for: entry.userId)
       let exists = try Bool.fetchOne(db, sql: "SELECT EXISTS(SELECT 1 FROM outbox WHERE id = ?)", arguments: [entry.id]) ?? false
       guard !exists else { return }
       for key in try String.fetchAll(db, sql: "SELECT key FROM workout_day WHERE userId = ?", arguments: [owner]) {
@@ -144,8 +154,10 @@ public final class GRDBWorkoutStore: WorkoutStore {
   }
 }
 
-/// Ghi `workout_day` khi không ai đăng nhập (#452): từ chối trước khi có gì
-/// bền — lượt ghi muộn của người vừa rời đi không dựng lại ngày của họ.
+/// Ghi `workout_day` khi không ai đăng nhập (#452), hoặc cho người không phải
+/// người đang đăng nhập (#454): từ chối trước khi có gì bền — lượt ghi muộn
+/// của người vừa rời đi không dựng lại ngày của họ, ở máy trống hay trong
+/// phiên của người kế tiếp.
 public struct AccountScopeClosed: Error, Sendable, Hashable {
   public init() {}
 }

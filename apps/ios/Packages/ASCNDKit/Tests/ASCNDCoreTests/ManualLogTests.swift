@@ -101,6 +101,8 @@ struct ManualLogTests {
     #expect(summary.completedSets == 1)
     let e = try #require(await h.store.outbox.last)
     #expect(e.kind == WorkoutSessionRecord.outboxKind && e.id == summary.sessionId)
+    let savedFor = await h.store.savedFor
+    #expect(!savedFor.isEmpty && savedFor.allSatisfy { $0 == "u1" }, "nháp ghi cho đúng người (#454): \(savedFor)")
     #expect(e.payload["template_id"] == .null)
     #expect(e.payload["template_name"]?.stringValue == "Evening pump")
     #expect(e.payload["session_rpe"]?.doubleValue == 9)

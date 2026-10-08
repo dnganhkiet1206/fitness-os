@@ -49,7 +49,7 @@ struct WorkoutDayAccountTests {
     _ = try await store.commitFinish(key, logged("sa"), entry("sa", user: "a"))
     db.accounts.signIn("b")
     #expect(try await store.loadDay(key) == nil, "B không đọc được ngày của A")
-    try await store.saveDay(key, progress(["0-1"]))
+    try await store.saveDay(key, progress(["0-1"]), userId: "b")
     _ = try await store.commitFinish(key, logged("sb"), entry("sb", user: "b"))
     #expect(try await store.loadDay(key)?.loggedSessionId == "sb", "khoá ngày của A không chặn B")
     db.accounts.signIn("a")
@@ -63,10 +63,10 @@ struct WorkoutDayAccountTests {
     let db = try ASCNDDatabase()
     let store = GRDBWorkoutStore(db)
     db.accounts.signIn("a")
-    try await store.saveDay(key, progress())
+    try await store.saveDay(key, progress(), userId: "a")
     db.accounts.signOut()
     _ = try await store.clearAll()
-    await #expect(throws: AccountScopeClosed.self) { try await store.saveDay(key, progress(["0-0", "0-1"])) }
+    await #expect(throws: AccountScopeClosed.self) { try await store.saveDay(key, progress(["0-0", "0-1"]), userId: "a") }
     await #expect(throws: AccountScopeClosed.self) {
       _ = try await store.commitFinish(key, logged("late"), entry("late", user: "a"))
     }
@@ -74,6 +74,45 @@ struct WorkoutDayAccountTests {
     #expect(try await store.loadDay(key) == nil)
     #expect(try owners(db).isEmpty)
     #expect(try outboxCount(db) == 0)
+  }
+
+  /// Hàng rào ghi (#454): phép ghi cho người không phải người đang đăng nhập
+  /// bị từ chối, và giao dịch chốt rollback trọn — ngày của B không đổi, không
+  /// hàng outbox nào; thử lại cùng id dưới đúng người thì ghi đúng một lần.
+  @Test func wrongUserWriteIsRefusedAndRolledBack() async throws {
+    let db = try ASCNDDatabase()
+    let store = GRDBWorkoutStore(db)
+    db.accounts.signIn("b")
+    try await store.saveDay(key, progress(["1-0"]), userId: "b")
+    await #expect(throws: AccountScopeClosed.self) { try await store.saveDay(key, progress(["0-0"]), userId: "a") }
+    await #expect(throws: AccountScopeClosed.self) {
+      _ = try await store.commitFinish(key, logged("sa"), entry("sa", user: "a"))
+    }
+    await #expect(throws: AccountScopeClosed.self) { try await store.commitDelete(sessionId: "sa", entry("sa@del", user: "a")) }
+    await #expect(throws: AccountScopeClosed.self) { try await store.saveDay(key, progress(), userId: "") }
+    #expect(try await store.loadDay(key) == progress(["1-0"]), "ngày của B không đổi")
+    #expect(try outboxCount(db) == 0)
+    #expect(try owners(db) == ["b"])
+    // Đúng người (khác hoa thường vẫn là một người): ghi được, idempotent.
+    db.accounts.signIn("A")
+    #expect(try await store.commitFinish(key, logged("sa"), entry("sa", user: "a")))
+    #expect(try await !store.commitFinish(key, logged("sa"), entry("sa", user: "A")))
+    #expect(try outboxCount(db) == 1)
+    #expect(try await store.loadDay(key)?.loggedSessionId == "sa")
+  }
+
+  /// Tên rỗng không bao giờ là người ghi — kể cả ở chế độ không chốt (công cụ
+  /// / test), nơi mọi tên khác đều được.
+  @Test func emptyUserIsNeverAWriter() async throws {
+    let db = try ASCNDDatabase()
+    let store = GRDBWorkoutStore(db)
+    await #expect(throws: AccountScopeClosed.self) { try await store.saveDay(key, progress(), userId: "") }
+    await #expect(throws: AccountScopeClosed.self) {
+      _ = try await store.commitFinish(key, logged("s"), entry("s", user: ""))
+    }
+    #expect(try owners(db).isEmpty && outboxCount(db) == 0)
+    try await store.saveDay(key, progress(), userId: "tool")
+    #expect(try owners(db) == [""])
   }
 
   /// Hai controller cùng chốt một ngày của CÙNG người: khoá ngày giữ nguyên.
@@ -111,7 +150,7 @@ struct WorkoutDayAccountTests {
     do {
       let db = try ASCNDDatabase(path: path)
       db.accounts.signIn("a")
-      try await GRDBWorkoutStore(db).saveDay(key, progress(["0-0", "0-1"]))
+      try await GRDBWorkoutStore(db).saveDay(key, progress(["0-0", "0-1"]), userId: "a")
     }
     let db = try ASCNDDatabase(path: path)
     let store = GRDBWorkoutStore(db)
@@ -164,8 +203,8 @@ struct WorkoutDayAccountTests {
     let old = DayProgressStore.key(date: today.adding(days: -20), templateId: "tpl")
     for user in ["a", "b"] {
       db.accounts.signIn(user)
-      try await store.saveDay(old, progress())
-      try await store.saveDay(key, progress())
+      try await store.saveDay(old, progress(), userId: user)
+      try await store.saveDay(key, progress(), userId: user)
     }
     db.accounts.signOut()
     #expect(try await store.pruneDays(today: today) == 2)
