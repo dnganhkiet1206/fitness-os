@@ -67,7 +67,7 @@ Trang này là bảng theo **mảng** và theo **route**. Mỗi ô có evidence 
 | `change-password` | Tài khoản | — | 🔵 A29 #441 |
 | `edit-profile` | Hồ sơ | — | 🔵 A31 #443 |
 | `settings` | Cài đặt | vỏ #394 | ⚪ A32 #444 (ranh giới) |
-| `reminders` | Nhắc nhở | — | ⚪ A33 #445 (ranh giới) |
+| `reminders` | Nhắc nhở | `RemindersView` (từ Cài đặt) | 🔵 E #527 1.10 trên lõi A33 #445 — vào được ở Release khi #528 nối Cài đặt |
 | `legal`, `media-viewer` | Khác | — | 🔴 TODO |
 | `(tabs)/nutrition`, `diary`, `food-editor`, `food-list`, `grocery`, `log-meal`, `meal-plan`, `meal-plans`, `nutrition-insights`, `scan-barcode`, `scan-food`, `supplements`, `water` | Dinh dưỡng | — | 🔴 TODO (13) |
 | `(tabs)/community`, `community-challenge`, `community-challenges`, `community-inbox`, `community-post`, `community-privacy`, `community-profile`, `community-saved`, `community-search`, `community-share`, `community-share-progress`, `community-share-recipe`, `community-user`, `challenges` | Cộng đồng | — | 🔴 TODO (14) |
