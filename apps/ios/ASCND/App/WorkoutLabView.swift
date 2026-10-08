@@ -303,6 +303,8 @@ private struct LabWorkout: View {
         Text(verbatim: "Outbox")
       }
 
+      LabHealthSection(services: services)
+
       Section {
         Button(role: .destructive) {
           Task { await services.session.signOut() }
@@ -547,6 +549,40 @@ private struct LabGuide: View {
 
 /// Ghi buổi thủ công (#418): không phải màn của C — chỉ để thử bản nháp bền
 /// (kill rồi mở lại), gợi ý kế hoạch, và ghi qua outbox trên máy thật.
+/// Apple Health (#66): nút "Đồng bộ" của RN (`useHealthSync`) — xin quyền
+/// nếu cần, đọc HealthKit, ghi server, dựng lại các ngày bị chạm.
+private struct LabHealthSection: View {
+  let services: AppServices
+  @State private var status = "—"
+  @State private var busy = false
+
+  var body: some View {
+    Section {
+      LabRow(label: "Available", value: "\(services.health.isAvailable)")
+      LabRow(label: "Last result", value: status)
+      Button {
+        guard let user = services.session.session?.userId else { return }
+        busy = true
+        Task {
+          do throws(HealthSync.Failure) {
+            try await services.health.syncNow(userId: user, lang: AppServices.appLang)
+            status = "ok"
+          } catch {
+            status = "\(error)"
+          }
+          busy = false
+          await services.widgets.refresh()
+        }
+      } label: {
+        Text(verbatim: busy ? "Syncing…" : "Sync Apple Health")
+      }
+      .disabled(busy || !services.health.isAvailable)
+    } header: {
+      Text(verbatim: "Apple Health")
+    }
+  }
+}
+
 private struct LabManualLog: View {
   let flow: WorkoutFlow
   @State private var log: ManualLogController?

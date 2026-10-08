@@ -64,6 +64,7 @@ struct ASCNDApp: App {
         // gửi hàng của ai; bản ghi của tài khoản khác không bao giờ đi.
         .onChange(of: services.session.session?.userId, initial: true) { _, user in
           services.sync.setSignedInUser(user)
+          services.widgets.setUser(user)
         }
     }
     .onChange(of: scenePhase) { _, phase in
