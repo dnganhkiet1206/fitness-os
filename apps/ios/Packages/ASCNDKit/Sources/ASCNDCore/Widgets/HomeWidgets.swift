@@ -102,6 +102,10 @@ public struct WidgetDataStore: Sendable {
   public static let appGroup = "group.com.ascnd.fitnessos"
   public static let todayWorkoutKey = "ascnd.widget.todayWorkout"
   public static let streakReadinessKey = "ascnd.widget.streakReadiness"
+  /// Ngôn ngữ chọn TRONG APP (`vi` / `en` / `es`) cho chữ của widget và Live
+  /// Activity (#527 A-NEXT 4). Vắng = "Theo máy". Theo máy, không theo người:
+  /// đăng xuất KHÔNG xoá (như `ascnd_lang` của RN nằm trong `DEVICE_KEYS`).
+  public static let languageKey = "ascnd.widget.lang"
 
   private let suite: String
 
@@ -118,6 +122,17 @@ public struct WidgetDataStore: Sendable {
     if let a = try? e.encode(today) { d.set(a, forKey: Self.todayWorkoutKey) }
     if let b = try? e.encode(streak) { d.set(b, forKey: Self.streakReadinessKey) }
   }
+
+  /// `nil` = "Theo máy": xoá khoá, widget theo ngôn ngữ máy.
+  public func writeLanguage(_ code: String?) {
+    guard let d = defaults else { return }
+    if let code { d.set(code, forKey: Self.languageKey) } else { d.removeObject(forKey: Self.languageKey) }
+  }
+
+  public func language() -> String? { defaults?.string(forKey: Self.languageKey) }
+
+  /// Locale cho `\.locale` của widget: `Text("widget.…")` tra theo nó.
+  public var locale: Locale { language().map(Locale.init(identifier:)) ?? .autoupdatingCurrent }
 
   public func todayWorkout() -> TodayWorkoutWidgetData? { read(Self.todayWorkoutKey) }
   public func streakReadiness() -> StreakReadinessWidgetData? { read(Self.streakReadinessKey) }
