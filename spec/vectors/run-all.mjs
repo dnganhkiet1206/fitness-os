@@ -29,9 +29,13 @@ const TIMEOUT_MS = 300_000;
 /** Không phải runner của một tệp vector, nhưng là phép kiểm runner chạy mã RN thật. */
 const ALWAYS = ['divergence-check.mjs'];
 
+/** Runner đã chạy xanh ở lượt `runAll` gần nhất, kèm dòng kết luận của nó. */
+export const ran = [];
+
 /** Chạy mọi runner của thư mục `dir`; trả về danh sách lỗi (rỗng = xanh). */
 export function runAll(dir, { log = console.log } = {}) {
   const problems = [];
+  ran.length = 0;
   const runners = JSON.parse(readFileSync(path.join(dir, 'runners.json'), 'utf8'));
   const js = [...new Set(Object.values(runners).filter((r) => !r.startsWith('swift:')))].sort();
   const present = readdirSync(dir).filter((f) => /^run.*\.mjs$/.test(f) && f !== 'run-all.mjs');
@@ -49,7 +53,11 @@ export function runAll(dir, { log = console.log } = {}) {
       const tail = `${res.stdout ?? ''}${res.stderr ?? ''}`.trim().split('\n').slice(-8).join('\n    ');
       problems.push(`${r}: thoát ${res.status ?? res.signal}\n    ${tail}`);
     } else {
-      log(`  xanh ${r} (${ms} ms)`);
+      // Dòng kết luận của chính runner ("today-controller: 14/14 vectors xanh")
+      // — để log CI chứng minh TỪNG runner đã chạy, không chỉ bộ chạy.
+      const verdict = `${res.stdout ?? ''}`.trim().split('\n').filter(Boolean).pop() ?? '';
+      ran.push(`${r.replace(/\.mjs$/, '')}: ${verdict.trim()}`);
+      log(`  xanh ${r} (${ms} ms) — ${verdict.trim()}`);
     }
   }
   return problems;
@@ -68,7 +76,9 @@ if (process.argv.includes('--self-test')) {
   const red = found.some((p) => p.startsWith('run-red.mjs: thoát 1'));
   const orphan = found.some((p) => p.startsWith('run-orphan.mjs: có trong spec/vectors'));
   const okClean = !found.some((p) => p.startsWith('run-ok.mjs'));
-  if (!(red && orphan && okClean && found.length === 2)) {
+  // Danh sách in ra CI chỉ được có runner đã chạy xanh — không có runner đỏ.
+  const listed = ran.length === 1 && ran[0].startsWith('run-ok:');
+  if (!(red && orphan && okClean && listed && found.length === 2)) {
     console.error(`run-all --self-test: ĐỎ — bộ chạy không bắt đúng thế giới hỏng:\n  ${found.join('\n  ') || '(không báo gì)'}`);
     process.exit(1);
   }
@@ -80,5 +90,6 @@ if (process.argv.includes('--self-test')) {
     for (const p of problems) console.log(`  ĐỎ ${p}`);
     process.exit(1);
   }
-  console.log('spec/vectors: mọi runner JS chạy thật và xanh');
+  // Dòng cuối là dòng `check.mjs` in ra: liệt kê từng runner đã chạy.
+  console.log(`spec/vectors: ${ran.length} runner JS chạy thật và xanh — ${ran.join(' · ')}`);
 }
