@@ -132,6 +132,11 @@ private struct SignedInScope<Content: View>: View {
     .onChange(of: services.sync.online) { _, online in
       // Có mạng lại (`refetchOnReconnect` của baseline).
       if online, let flow { Task { await flow.reconnected() } }
+      // Hồ sơ cũng là một query của RN (`['profile', id]`, `refetchOnReconnect`
+      // chung): đổi đơn vị tạ ở máy khác lúc máy này offline thì có mạng lại
+      // là thấy, không đợi lần ra tiền cảnh sau. Lượt đọc này được busy-probe
+      // đếm (`ProfileBook.isRefreshing`), nên dải "đang kết nối lại" chờ nó.
+      if online, let profile { Task { await profile.refresh() } }
     }
   }
 
