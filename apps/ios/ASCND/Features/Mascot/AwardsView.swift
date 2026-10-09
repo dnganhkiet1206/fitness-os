@@ -13,12 +13,15 @@ import SwiftUI
 ///   thành 0%), ngày đạt + nút chia sẻ khi đã có;
 /// - mở màn là xét và trao một lần (`checkAndGrant`), từng cái một.
 ///
-/// Khác RN / chưa có: đĩa luôn tròn (RN đổi dáng theo miền — `medalPath`);
-/// không có pháo hoa / Koa khi vừa trao — báo bằng một dòng + VoiceOver; RN
+/// Vừa trao: thêm vào hàng ăn mừng (`fireCelebration`) — pháo hoa + thẻ hiện ở
+/// gốc Hôm nay — kèm một dòng + VoiceOver trên màn này. Khác RN: Koa chưa
+/// "ăn mừng" theo (`triggerMascotAction`); RN
 /// không báo lỗi đọc (vẽ như chưa có gì) — ở đây đọc hỏng là màn lỗi có thử lại.
 struct AwardsView: View {
   let book: AwardsBook
   let lang: AppPreferences.Lang
+
+  @Environment(AppServices.self) private var services
 
   var body: some View {
     content
@@ -26,9 +29,14 @@ struct AwardsView: View {
       .task { if case .loading = book.phase { await book.load() } }
       .refreshable { await book.load() }
       .onChange(of: book.newlyGranted) { _, keys in
+        // `enqueueAward` của `useCheckAwards`: chữ theo ngôn ngữ app, khoá để
+        // thẻ vẽ ĐÚNG tấm đĩa. Thẻ tự đọc cho VoiceOver.
         for key in keys {
-          let title = AwardText.text(key, lang: lang)?.title ?? key
-          AccessibilityNotification.Announcement(String(localized: "aw.granted \(title)")).post()
+          guard let def = Awards.def(key) else { continue }
+          let text = AwardText.text(key, lang: lang)
+          services.celebrations.enqueue(
+            title: text?.title ?? key, description: text?.desc ?? "", icon: def.icon, tier: def.tier.rawValue,
+            awardKey: key)
         }
       }
   }
@@ -222,11 +230,28 @@ private struct MedalCard: View {
   }
 }
 
-/// Đĩa huy chương: vành chuyển màu dọc, mặt chuyển màu xuyên tâm lệch trên
-/// trái, mốc lớn ở giữa (glyph nhỏ phía trên); chưa mở thì xám (`LOCKED`).
+/// Đĩa huy chương (`Medal` của `medal.tsx`): vành chuyển màu dọc, mặt chuyển
+/// màu xuyên tâm lệch trên trái, CÙNG một dáng theo miền ở hai bán kính
+/// (`MedalGeometry`, tròn khi `nil`), vệt sáng chỉ trên mặt tròn, mốc lớn ở
+/// giữa (glyph nhỏ phía trên, bỏ khi đĩa dưới 56 điểm); chưa mở thì xám.
 struct MedalDisc: View {
-  let award: Awards.Def
+  let type: String
+  let tier: Awards.Tier
+  let icon: String
+  let requirement: Int?
   let earned: Bool
+
+  init(type: String, tier: Awards.Tier, icon: String, requirement: Int?, earned: Bool) {
+    self.type = type
+    self.tier = tier
+    self.icon = icon
+    self.requirement = requirement
+    self.earned = earned
+  }
+
+  init(award: Awards.Def, earned: Bool) {
+    self.init(type: award.type, tier: award.tier, icon: award.icon, requirement: award.requirement, earned: earned)
+  }
 
   /// `TIER_CONFIG` / `LOCKED`: (color, light, dark).
   static func metal(_ tier: Awards.Tier?) -> (Color, Color, Color) {
@@ -252,28 +277,37 @@ struct MedalDisc: View {
   static var gold: Color { DS.Color.readinessYellow.swiftUI }
 
   var body: some View {
-    let (color, light, dark) = Self.metal(earned ? award.tier : nil)
+    let (color, light, dark) = Self.metal(earned ? tier : nil)
     let glyph = Color.white.opacity(earned ? 0.92 : 0.55)
+    let rim = MedalGeometry.path(type: type, r: MedalGeometry.rimRadius)
+    let face = MedalGeometry.path(type: type, r: MedalGeometry.faceRadius)
     GeometryReader { geo in
       let k = geo.size.width / 72
       ZStack {
-        Circle().fill(LinearGradient(colors: [light, dark], startPoint: .top, endPoint: .bottom))
-        Circle()
+        MedalShape(d: rim, r: MedalGeometry.rimRadius)
+          .fill(LinearGradient(colors: [light, dark], startPoint: .top, endPoint: .bottom))
+        MedalShape(d: face, r: MedalGeometry.faceRadius)
           .fill(
             RadialGradient(
               stops: [.init(color: light, location: 0), .init(color: color, location: 0.55), .init(color: dark, location: 1)],
-              center: UnitPoint(x: 0.36, y: 0.30), startRadius: 0, endRadius: 56 * k * 0.78)
+              // `cx=36% cy=30% r=78%` của khung mặt đĩa (8…64), quy về hộp 72.
+              center: UnitPoint(x: (8 + 0.36 * 56) / 72, y: (8 + 0.30 * 56) / 72), startRadius: 0,
+              endRadius: 56 * k * 0.78)
           )
-          .padding(5 * k)
-        if let mark = Awards.mark(award.requirement) {
+        if face == nil {
+          MedalSheen().fill(Color.white.opacity(0.20))
+        }
+        if let mark = Awards.mark(requirement) {
           VStack(spacing: 0) {
-            Image(systemName: Self.symbol(award.icon)).font(.system(size: 13 * k))
-            Text(verbatim: mark).font(.system(size: 22 * k, weight: .heavy)).tracking(-k)
+            if geo.size.width >= 56 {
+              Image(systemName: Self.symbol(icon)).font(.system(size: (13 * k).rounded()))
+            }
+            Text(verbatim: mark).font(.system(size: (22 * k).rounded(), weight: .heavy)).tracking(-k)
               .lineLimit(1).minimumScaleFactor(0.6)
           }
           .foregroundStyle(glyph)
         } else {
-          Image(systemName: Self.symbol(award.icon)).font(.system(size: 30 * k)).foregroundStyle(glyph)
+          Image(systemName: Self.symbol(icon)).font(.system(size: (30 * k).rounded())).foregroundStyle(glyph)
         }
       }
     }
@@ -313,6 +347,42 @@ struct MedalDisc: View {
     case "target": "target"
     default: "trophy.fill"
     }
+  }
+}
+
+/// Một dáng của `MedalGeometry` trong hộp 72×72, co theo khung vẽ; `nil` là
+/// hình tròn bán kính `r` quanh tâm (36, 36).
+struct MedalShape: Shape {
+  let d: String?
+  let r: Double
+
+  func path(in rect: CGRect) -> Path {
+    let k = min(rect.width, rect.height) / 72
+    func pt(_ x: Double, _ y: Double) -> CGPoint { CGPoint(x: rect.minX + x * k, y: rect.minY + y * k) }
+    guard let d else {
+      return Path(ellipseIn: CGRect(x: rect.minX + (36 - r) * k, y: rect.minY + (36 - r) * k, width: 2 * r * k, height: 2 * r * k))
+    }
+    var p = Path()
+    for c in MedalGeometry.commands(d) {
+      switch c {
+      case .move(let x, let y): p.move(to: pt(x, y))
+      case .line(let x, let y): p.addLine(to: pt(x, y))
+      case .quad(let cx, let cy, let x, let y): p.addQuadCurve(to: pt(x, y), control: pt(cx, cy))
+      case .close: p.closeSubpath()
+      }
+    }
+    return p
+  }
+}
+
+/// Vệt sáng góc trên trái của mặt tròn (`MedalGeometry.sheen`).
+struct MedalSheen: Shape {
+  func path(in rect: CGRect) -> Path {
+    let k = min(rect.width, rect.height) / 72
+    var p = Path()
+    p.addLines(MedalGeometry.sheen.map { CGPoint(x: rect.minX + $0.x * k, y: rect.minY + $0.y * k) })
+    p.closeSubpath()
+    return p
   }
 }
 
