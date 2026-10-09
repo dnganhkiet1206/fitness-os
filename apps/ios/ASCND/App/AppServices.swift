@@ -345,6 +345,16 @@ final class AppServices {
     return MealDiaryBook(userId: userId, source: SupabaseMealDiary(backend: backend), store: rows)
   }
 
+  /// Ghi bữa ăn (#527 Phase 3 · 3.2): tìm món / món gần đây đọc server; LƯU
+  /// luôn qua outbox kind `meal` (như RN `RECORD`), gửi ngay khi có mạng.
+  func makeMealLogger(userId: String, date: LocalDate?, mealType: String?) -> MealLogger? {
+    guard let backend else { return nil }
+    let sync = self.sync
+    return MealLogger(
+      userId: userId, source: SupabaseMealLog(backend: backend), store: outbox, date: date, mealType: mealType,
+      onEnqueued: { _ in sync.kick() })
+  }
+
   /// 14 ngày sinh trắc học; xoá một lần đo rồi dựng lại `daily_logs`.
   func makeBiometricsBook(userId: String) -> BiometricsBook? {
     guard let rows, let backend else { return nil }

@@ -23,7 +23,11 @@ struct NutritionTab: View {
           // beside water") — hàng mang sẵn "2/4 hôm nay".
           if let supplements = books?.supplements { SupplementsRow(book: supplements) }
           // Lối sang nhật ký của một ngày bất kỳ (`nutrition.tsx` → `/diary`).
-          if let userId = books?.water?.userId ?? books?.supplements?.userId { DiaryRow(userId: userId) }
+          if let userId = books?.water?.userId ?? books?.supplements?.userId {
+            // Lối ghi bữa (`LogMealFab` ⊕ của RN): hôm nay, "Bữa trưa".
+            LogMealButton(userId: userId)
+            DiaryRow(userId: userId)
+          }
           Text(String(localized: "placeholder.building"))
             .font(DS.TextStyle.footnote)
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
@@ -82,6 +86,17 @@ struct DiaryRow: View {
       .contentShape(Rectangle())
     }
     .buttonStyle(.plain)
+  }
+}
+
+/// Nút "Ghi bữa ăn" — mở `LogMealView` cho hôm nay.
+struct LogMealButton: View {
+  let userId: String
+  @State private var open = false
+
+  var body: some View {
+    DSButton(String(localized: "logMeal.title")) { open = true }
+      .sheet(isPresented: $open) { LogMealView(userId: userId) }
   }
 }
 

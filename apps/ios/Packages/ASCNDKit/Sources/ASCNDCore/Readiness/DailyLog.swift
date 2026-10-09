@@ -482,6 +482,10 @@ extension DailyLog {
   /// Lệnh không về buổi tập (kế hoạch, bài tập) không chạm `daily_logs`.
   /// Lệnh xoá xếp hàng trước khi payload mang `date_time`: chỉ còn hôm nay.
   public static func rebuildDays(after entry: OutboxEntry, today: LocalDate, in tz: TimeZone) -> [LocalDate] {
+    // Bữa ăn (#527 Phase 3 · 3.2): CHỈ ngày ăn — `rebuildAfterReplay(userId,
+    // localDateStr(dateTime))` của `case 'meal'`. Bữa không vào cửa sổ tải
+    // 7 / 28 ngày nên không cần hôm nay.
+    if entry.kind == MealLog.kind { return MealLog.day(entry, in: tz).map { [$0] } ?? [] }
     let kinds = [WorkoutSessionRecord.outboxKind, WorkoutSessionRecord.revisionKind, WorkoutSessionRecord.deleteKind]
     guard kinds.contains(entry.kind) else { return [] }
     guard let at = entry.payload["date_time"]?.stringValue.flatMap({ EpochMillis(iso8601: $0) }) else {
