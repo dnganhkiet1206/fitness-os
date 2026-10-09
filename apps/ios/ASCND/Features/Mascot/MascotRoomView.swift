@@ -289,7 +289,7 @@ struct MascotRoomView: View {
         ForEach(room.activeQuests, id: \.key) { q in
           let claimed = room.isClaimed(MascotRules.questRefKey(room.today, q.key))
           rewardRow(
-            title: q.name(lang, stepsGoal: DailySignals.defaultStepsGoal), coins: q.coins, xp: q.xp, claimed: claimed
+            title: q.name(lang, stepsGoal: room.stepsGoal), coins: q.coins, xp: q.xp, claimed: claimed
           ) {
             // Không có nút: nhiệm vụ tự nhận ở nơi khác (RN). Xong mà chưa nhận → "…".
             Text(verbatim: room.questDone(q.key) ? "…" : "—")

@@ -4,7 +4,7 @@ import SwiftUI
 
 /// Đích của tab Trợ lý.
 enum AssistantRoute: Hashable {
-  case chat, weekly, biometrics, memory
+  case chat, weekly, steps, biometrics, memory
 }
 
 /// Tab Trợ lý (#527 Phase 6) — `(tabs)/assistant.tsx` @ fac9ac2.
@@ -20,8 +20,8 @@ enum AssistantRoute: Hashable {
 /// "Insight hôm nay" (`ai-smart-nudges`, `InsightCard`).
 ///
 /// Chưa có (PARTIAL): thẻ nguồn Health, aura / glass; lưới
-/// công cụ chỉ có những màn đã port (tổng kết tuần, sinh trắc học, coach nhớ
-/// gì) — RN còn Vận động, Quét thực phẩm, Giấc ngủ.
+/// công cụ chỉ có những màn đã port (tổng kết tuần, vận động, sinh trắc học,
+/// coach nhớ gì) — RN còn Quét thực phẩm, Giấc ngủ.
 ///
 /// Cuộc trò chuyện thuộc PHIÊN như RN (`useCoachChat` ở trên router): dựng một
 /// lần trong cây của tài khoản này (cây dựng lại theo `.id(userId)`), sống qua
@@ -38,6 +38,7 @@ struct AssistantTab: View {
   @State private var biometrics: BiometricsBook?
   @State private var metrics: MetricHistoryBook?
   @State private var nudges: SmartNudgesBook?
+  @State private var steps: StepsBook?
   @State private var hour = Calendar.current.component(.hour, from: Date())
   @State private var built = false
 
@@ -84,6 +85,8 @@ struct AssistantTab: View {
           if let chat { CoachChatView(chat: chat, lang: lang, suggestions: signal?.suggestions ?? []) }
         case .weekly:
           if let weekly { WeeklyReviewView(book: weekly, lang: lang) }
+        case .steps:
+          if let steps { StepsView(book: steps) }
         case .biometrics:
           if let biometrics { BiometricsView(book: biometrics) }
         case .memory:
@@ -102,6 +105,7 @@ struct AssistantTab: View {
       biometrics = services.makeBiometricsBook(userId: userId)
       metrics = services.makeMetricHistory(userId: userId, today: today)
       nudges = services.makeSmartNudges(userId: userId)
+      steps = services.makeStepsBook(userId: userId, today: today)
       built = true
       await signal?.load()
       // Sau tín hiệu: phân tích calo cần mục tiêu calo của hồ sơ.
@@ -123,6 +127,7 @@ struct AssistantTab: View {
         await weekly?.move(to: today)
         await metrics?.move(to: today, kcalTarget: kcalTarget)
         await loadInsight()
+        await steps?.move(to: today)
       }
     }
     .onChange(of: isCurrentSession) { _, current in
@@ -134,6 +139,7 @@ struct AssistantTab: View {
       biometrics?.close()
       metrics?.close()
       nudges?.close()
+      steps?.close()
     }
   }
 
@@ -191,6 +197,12 @@ struct AssistantTab: View {
         Tool(
           route: .weekly, symbol: "calendar", tint: DS.Color.metricBlue.swiftUI,
           label: String(localized: "assistant.tool.week"), hint: String(localized: "assistant.tool.week.hint")))
+    }
+    if steps != nil {
+      out.append(
+        Tool(
+          route: .steps, symbol: "figure.walk", tint: DS.Color.metricBlue.swiftUI,
+          label: String(localized: "assistant.tool.steps"), hint: String(localized: "assistant.tool.steps.hint")))
     }
     if biometrics != nil {
       out.append(

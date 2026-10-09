@@ -99,8 +99,9 @@ public struct DailySignals: Sendable, Hashable {
 
   /// Mục tiêu nước khi hồ sơ không có (`Number(x) || 2500`).
   public static let defaultWaterTargetMl = 2500.0
-  /// Mục tiêu bước mặc định của RN (`useStepsGoal`) — native chưa có chỗ đặt.
-  public static let defaultStepsGoal = 10_000
+  /// Mục tiêu bước mặc định của RN (`useStepsGoal`); mục tiêu đã đặt ở màn
+  /// Vận động đi vào qua `MascotRoomController.stepsGoal`.
+  public static let defaultStepsGoal = Steps.defaultGoal
 
   /// "Xong" của từng nhiệm vụ — `mealDone` / `sleepDone` (`lib/todo.ts`) và
   /// ba so sánh của `use-daily-quests.ts:94–115`.
@@ -192,6 +193,7 @@ public final class MascotRoomController {
   @ObservationIgnored private let source: any MascotSource
   @ObservationIgnored private let economy: any MascotEconomy
   @ObservationIgnored private let makeRequestId: @Sendable () -> UUID
+  @ObservationIgnored private let stepsGoalSource: @Sendable () -> Int
   /// Mã của lần mua băng đang dở: GIỮ tới khi server nhận, để bấm lại sau một
   /// lần lỗi mạng không trừ tiền hai lần (`pendingFreezeBuy`).
   @ObservationIgnored private var pendingFreezeRequest: UUID?
@@ -201,8 +203,10 @@ public final class MascotRoomController {
 
   public init(
     userId: String, today: LocalDate, source: any MascotSource, economy: any MascotEconomy,
-    makeRequestId: @escaping @Sendable () -> UUID = { UUID() }
+    makeRequestId: @escaping @Sendable () -> UUID = { UUID() },
+    stepsGoal: @escaping @Sendable () -> Int = { DailySignals.defaultStepsGoal }
   ) {
+    self.stepsGoalSource = stepsGoal
     self.userId = userId
     self.today = today
     self.source = source
@@ -280,7 +284,11 @@ public final class MascotRoomController {
     MascotRules.dailyQuests.filter { $0.key != .steps || signals?.stepsEverRecorded != false }
   }
 
-  public func questDone(_ q: MascotRules.Quest) -> Bool { signals?.done(q) ?? false }
+  public func questDone(_ q: MascotRules.Quest) -> Bool { signals?.done(q, stepsGoal: stepsGoal) ?? false }
+
+  /// Mục tiêu bước hiện tại của tài khoản (`useStepsGoal`) — đọc mỗi lần, vì
+  /// màn Vận động có thể vừa đổi nó.
+  public var stepsGoal: Int { stepsGoalSource() }
 
   public var energyCount: Int { MascotRules.energySignals.filter(questDone).count }
   public var energyHeadline: MascotRules.EnergyHeadline { MascotRules.energyHeadline(energyCount) }

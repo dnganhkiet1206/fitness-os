@@ -76,5 +76,7 @@ miễn **giữ nguyên ý định** của app và chỉ làm app tốt hơn — 
 | Bảng chỉ số Trợ lý — chữ | "1 day" (không "1 days"); trung bình 7 giờ 59,6 phút → "8 giờ" (không "7 giờ 60 phút"); có bản es | `${n} days` cố định ở câu hỏi sẵn sàng; `Math.round(min % 60)` có thể ra 60; `Bilingual` vi / en | sửa lỗi RN | nên làm theo | #527 (`native/ios-rewrite`) | E |
 | Bảng chỉ số Trợ lý — đọc hỏng | Bảng lỗi có thử lại; đọc lại hỏng khi đã có số thì giữ số | `data` không có → `points = []` → "Chưa có ngày nào được ghi trong tuần này" | sửa lỗi RN | nên làm theo | #527 (`native/ios-rewrite`) | E |
 | Insight hôm nay — lỗi / bộ nhớ đệm | Lỗi nói rõ loại (`AI_FAILURE_KEY`) dưới "chạm để thử lại"; bộ nhớ đệm bền chỉ giữ MỘT kết quả (khoá có người dùng · ngày · ngôn ngữ · dấu) | Chỉ "Chưa đọc được hôm nay. Chạm để thử lại."; persister giữ mọi khoá tới 24 giờ | cải tiến | tuỳ | #527 (`native/ios-rewrite`) | E |
+| Vận động — mục tiêu bước | Nhớ theo tài khoản (khoá `ascnd-steps-goal.<userId>`); nhiệm vụ bước của phòng linh vật chấm theo đúng mục tiêu này | Một khoá chung `ascnd-steps-goal`, xoá khi đổi người (`onUserScopedReset`) | cải tiến | tuỳ | #527 (`native/ios-rewrite`) | E |
+| Vận động — đọc hỏng | Màn lỗi có thử lại; đọc lại hỏng khi đã có số thì giữ số | `data` không có → vẽ 0 bước, TB 0, xu thế 0 % | sửa lỗi RN | nên làm theo | #527 (`native/ios-rewrite`) | E |
 
 Thêm dòng mới ở cuối bảng; giữ dòng cũ — sổ là lịch sử, không phải danh sách việc.

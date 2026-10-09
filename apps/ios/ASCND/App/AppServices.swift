@@ -417,9 +417,18 @@ final class AppServices {
   /// Phòng linh vật: server là chủ kinh tế (hai RPC).
   func makeMascotRoom(userId: String, today: LocalDate) -> MascotRoomController? {
     guard let backend else { return nil }
+    // Mục tiêu bước của màn Vận động (theo tài khoản) — nhiệm vụ bước chấm theo nó.
+    let goals = StepsGoalStore(store: UserDefaultsStore(), userId: userId)
     return MascotRoomController(
       userId: userId, today: today, source: SupabaseMascotSource(backend: backend),
-      economy: SupabaseMascotEconomy(backend: backend))
+      economy: SupabaseMascotEconomy(backend: backend), stepsGoal: { goals.goal })
+  }
+
+  /// Vận động (#527): 14 ngày `daily_logs.steps` + mục tiêu bước theo tài khoản.
+  func makeStepsBook(userId: String, today: LocalDate) -> StepsBook? {
+    rows.map {
+      StepsBook(userId: userId, today: today, store: $0, goals: StepsGoalStore(store: UserDefaultsStore(), userId: userId))
+    }
   }
 
   func didBecomeActive() {
