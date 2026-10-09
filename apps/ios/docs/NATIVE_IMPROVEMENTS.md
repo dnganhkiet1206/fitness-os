@@ -48,5 +48,10 @@ Chỗ native **thiếu** so với RN (chưa port) không ghi ở đây — xem
 | Thẻ ăn mừng — Reduce Motion | Không pháo giấy, đĩa không xoay-nảy | `award-celebration.tsx`: pháo giấy + xoay-nảy luôn chạy | cải tiến (a11y) | nên làm theo (`useReducedMotion`) | #567 | E |
 | Thẻ ăn mừng — VoiceOver / ngôn ngữ | Đọc "Huy chương mới! <tên>" khi hiện; kicker + nhãn hạng vi / en / es | Không đọc gì; kicker chỉ vi ("Huy Chương Mới!") còn lại tiếng Anh; nhãn hạng luôn tiếng Anh | cải tiến (a11y, i18n) | nên làm theo | #567 | E |
 | Xu hướng sẵn sàng 7 ngày — chữ | Chuỗi dịch đủ vi / en / es (`rt.*`) | TB / Cao nhất / chú giải `lang === 'vi' ? … : …` — bản es hiện tiếng Anh | sửa lỗi RN | nên làm theo | #571 | E |
+| AI Coach — tiêu đề cuộc trò chuyện | 50 đơn vị UTF-16 đầu như RN, nhưng bỏ nửa emoji bị cắt (`Coach.title`) | `text.slice(0, 50)` có thể để lại nửa cặp surrogate → ký tự hỏng cuối tiêu đề trong lịch sử | sửa lỗi RN | nên làm theo | #527 (`native/ios-rewrite`) | E |
+| AI Coach — lỗi lượt gửi | Chữ lỗi ngay dưới cuộc trò chuyện, theo 6 loại của `AI_FAILURE_KEY` | `Alert` | lệch nền tảng | không cần | #527 (`native/ios-rewrite`) | E |
+| AI Coach — nút "Cuộc trò chuyện mới" | Chuỗi dịch đủ vi / en / es (`coach.newChat`) | `vi ? 'Trò chuyện mới' : 'New chat'` — bản es hiện tiếng Anh | sửa lỗi RN | nên làm theo | #527 (`native/ios-rewrite`) | E |
+| AI Coach — lịch sử đọc hỏng | Màn lỗi có thử lại | `conversations` không có → hiện "Chưa có cuộc trò chuyện nào" | sửa lỗi RN | nên làm theo | #527 (`native/ios-rewrite`) | E |
+| AI Coach — nút xoá trong lịch sử | VoiceOver đọc "Xoá <tiêu đề>" | Chỉ "Xoá" — một cột nút cùng tên | cải tiến (a11y) | nên làm theo | #527 (`native/ios-rewrite`) | E |
 
 Thêm dòng mới ở cuối bảng; giữ dòng cũ — sổ là lịch sử, không phải danh sách việc.

@@ -38,7 +38,8 @@ struct RootTabView: View {
       }
       .accessibilityHint(Text(String(localized: "tab.community.hint")))
       Tab("tab.assistant", systemImage: "heart.text.square", value: AppTab.assistant, role: .search) {
-        PlaceholderScreen(title: "tab.assistant", systemImage: "heart.text.square")
+        // Lát đầu của Trợ lý (#527 Phase 6): AI Coach.
+        AssistantTab()
       }
       .accessibilityHint(Text(String(localized: "tab.assistant.hint")))
     }
