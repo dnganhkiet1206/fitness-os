@@ -90,5 +90,7 @@ miễn **giữ nguyên ý định** của app và chỉ làm app tốt hơn — 
 | TDEE đo được — số vô hạn | Một ngày ăn / lần cân là ±∞ bị bỏ như số ≤ 0 | `Infinity` đi qua → `measured` = ±∞ / NaN (Swift `Int(∞)` sập app) | lệch nền tảng | không cần (cột `numeric`, không có đường thật) | #527 (`native/ios-rewrite`) | E |
 | Số đo cơ thể — trục ngày | Đường của mỗi số đo theo cột `date` của bảng, đọc thẳng là ngày lịch | Đọc `r.measured_at` — cột không tồn tại → mọi điểm ra ngày `NaN-NaN-NaN` (biểu đồ ẩn nhãn nên không ai thấy); nếu sửa sang `date` mà vẫn qua `new Date('YYYY-MM-DD')` thì lùi một ngày ở múi giờ âm | sửa lỗi RN | nên làm theo | #527 (`native/ios-rewrite`) | E |
 | Số đo cơ thể — 24 lần nào | 24 lần đo MỚI nhất (`order(date desc).limit(24)` rồi đảo lại) | `order(date asc).limit(24)` = 24 lần CŨ nhất: từ lần đo thứ 25, số mới nhất và chênh lệch trên màn không bao giờ đổi nữa | sửa lỗi RN | nên làm theo | #527 (`native/ios-rewrite`) | E |
+| Ghi bữa ăn — phần chưa port (cập nhật dòng ở trên) | Đã có món yêu thích, "Ăn lại bữa này", sửa macro một món; còn thiếu gợi ý AI, quét ảnh / mã vạch, đánh / bỏ sao ở màn này | Có | (thiếu — lát sau) | không cần | #527 (`native/ios-rewrite`) | A |
+| Ghi bữa ăn — ba lượt đọc gợi ý | Món gần đây / yêu thích / bữa gần đây đọc song song và độc lập: một lượt hỏng chỉ mất đúng hàng gợi ý ấy | Ba `useQuery` riêng — như nhau | lệch nền tảng | không cần | #527 (`native/ios-rewrite`) | A |
 
 Thêm dòng mới ở cuối bảng; giữ dòng cũ — sổ là lịch sử, không phải danh sách việc.
