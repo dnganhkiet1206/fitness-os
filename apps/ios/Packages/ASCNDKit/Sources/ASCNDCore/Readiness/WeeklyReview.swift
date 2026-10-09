@@ -341,6 +341,64 @@ public enum WeeklyReview {
   static func num(_ x: Double) -> String { ReadinessEngine.jsString(x) }
 }
 
+/// Phân tích AI của một tuần (`AIAnalysis` — kết quả của `ai-weekly-review`).
+///
+/// Đọc khoan dung: thiếu trường thì rỗng, mục lạ bỏ qua — chữ do mô hình viết,
+/// app chỉ vẽ. Biểu tượng của một nhận xét suy từ `category` (tập đóng), không
+/// từ emoji mô hình tự chọn (#159).
+public struct WeeklyAnalysis: Sendable, Hashable {
+  public struct Insight: Sendable, Hashable {
+    public enum Trend: String, Sendable, Hashable { case up, down, stable }
+    /// `nutrition` / `training` / `sleep` / `recovery`; lạ thì màn dùng glyph chung.
+    public let category: String
+    public let title: String
+    public let detail: String
+    public let trend: Trend?
+  }
+
+  public struct Advice: Sendable, Hashable {
+    public enum Priority: String, Sendable, Hashable { case high, medium, low }
+    public let priority: Priority?
+    public let action: String
+    public let reason: String
+  }
+
+  public let summary: String
+  /// `nil` khi mô hình không trả số.
+  public let score: Double?
+  public let insights: [Insight]
+  public let recommendations: [Advice]
+
+  /// `nil` khi kết quả không phải một đối tượng (RN: `res.data ?? null` → nút lại hiện).
+  public init?(_ json: JSONValue?) {
+    guard let json, case .object = json else { return nil }
+    summary = json["summary"]?.stringValue ?? ""
+    if case .number(let n)? = json["score"], n.isFinite { score = n } else { score = nil }
+    var ins: [Insight] = []
+    if case .array(let a)? = json["insights"] {
+      for i in a {
+        guard case .object = i else { continue }
+        ins.append(
+          Insight(
+            category: i["category"]?.stringValue ?? "", title: i["title"]?.stringValue ?? "",
+            detail: i["detail"]?.stringValue ?? "", trend: i["trend"]?.stringValue.flatMap(Insight.Trend.init)))
+      }
+    }
+    insights = ins
+    var recs: [Advice] = []
+    if case .array(let a)? = json["recommendations"] {
+      for r in a {
+        guard case .object = r else { continue }
+        recs.append(
+          Advice(
+            priority: r["priority"]?.stringValue.flatMap(Advice.Priority.init),
+            action: r["action"]?.stringValue ?? "", reason: r["reason"]?.stringValue ?? ""))
+      }
+    }
+    recommendations = recs
+  }
+}
+
 /// Tổng kết của MỘT tài khoản, từng tuần một. Đóng khi phiên đổi — kết quả về
 /// sau không được áp.
 @MainActor @Observable
@@ -356,17 +414,44 @@ public final class WeeklyReviewBook {
   public private(set) var weekOffset = 0
   public private(set) var phase: Phase = .loading
 
+  /// Trạng thái phân tích AI của tuần đang xem, theo ngôn ngữ đang hiện.
+  public enum Analysis: Sendable, Hashable {
+    /// Chưa hỏi — nút "Phân tích với AI".
+    case idle
+    case loading
+    case ready(WeeklyAnalysis)
+    case failed(EdgeFunction.Failure)
+  }
+
+  /// Khoá của một lần phân tích (`['weekly_review', user, week_start, lang,
+  /// daysLogged]`): tuần có thêm một ngày dữ liệu thì phân tích lại được; ngoài
+  /// ra một tuần đã phân tích thì hiện kết quả cũ, không tốn thêm lượt gọi.
+  struct AnalysisKey: Hashable {
+    let weekStart: LocalDate
+    let lang: String
+    let daysLogged: Int
+  }
+
+  private var analyses: [AnalysisKey: WeeklyAnalysis] = [:]
+  private var analysing: AnalysisKey?
+  private var analysisFailure: (key: AnalysisKey, failure: EdgeFunction.Failure)?
+
   @ObservationIgnored private let store: any RowStore
+  @ObservationIgnored private let edge: (any EdgeCaller)?
   @ObservationIgnored private let copy: ReadinessCard.Copy
   @ObservationIgnored private let tz: TimeZone
   @ObservationIgnored private var today: LocalDate
   @ObservationIgnored private var closed = false
   @ObservationIgnored private var generation = 0
 
-  public init(userId: String, today: LocalDate, store: any RowStore, copy: ReadinessCard.Copy, in tz: TimeZone) {
+  public init(
+    userId: String, today: LocalDate, store: any RowStore, edge: (any EdgeCaller)? = nil, copy: ReadinessCard.Copy,
+    in tz: TimeZone
+  ) {
     self.userId = userId
     self.today = today
     self.store = store
+    self.edge = edge
     self.copy = copy
     self.tz = tz
   }
@@ -377,6 +462,42 @@ public final class WeeklyReviewBook {
   public var weekStart: LocalDate { WeeklyChallenges.weekStart(today).adding(days: 7 * weekOffset) }
 
   public var canGoForward: Bool { weekOffset < 0 }
+
+  /// Có lớp gọi AI không (thiếu cấu hình Supabase thì không có thẻ AI).
+  public var canAnalyze: Bool { edge != nil }
+
+  private func analysisKey(lang: String) -> AnalysisKey? {
+    guard case .ready(let s) = phase else { return nil }
+    return AnalysisKey(weekStart: weekStart, lang: lang, daysLogged: s.daysLogged)
+  }
+
+  /// Phân tích của tuần đang xem bằng `lang`.
+  public func analysis(lang: String) -> Analysis {
+    guard let key = analysisKey(lang: lang) else { return .idle }
+    if let done = analyses[key] { return .ready(done) }
+    if analysing == key { return .loading }
+    if let f = analysisFailure, f.key == key { return .failed(f.failure) }
+    return .idle
+  }
+
+  /// Hỏi `ai-weekly-review` cho tuần đang xem (`{ week_start, lang }`). Chỉ
+  /// chạy khi người dùng bấm — mở màn không tốn lượt gọi.
+  public func analyze(lang: String) async {
+    guard let edge, let key = analysisKey(lang: lang), analyses[key] == nil, analysing != key else { return }
+    analysing = key
+    analysisFailure = nil
+    do throws(EdgeFunction.Failure) {
+      let json = try await edge.call(
+        .weeklyReview, body: ["week_start": .string(key.weekStart.description), "lang": .string(lang)])
+      guard !closed else { return }
+      if analysing == key { analysing = nil }
+      if let result = WeeklyAnalysis(json) { analyses[key] = result }
+    } catch {
+      guard !closed else { return }
+      if analysing == key { analysing = nil }
+      analysisFailure = (key, error)
+    }
+  }
 
   /// Đổi tuần (−1 lùi, +1 tiến, không quá tuần này) rồi đọc.
   public func step(_ by: Int) async {
