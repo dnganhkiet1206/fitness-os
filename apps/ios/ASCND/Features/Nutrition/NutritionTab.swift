@@ -8,26 +8,20 @@ import SwiftUI
 /// ăn, thực phẩm, kế hoạch) chưa port — dòng "đang dựng" nói thật điều đó
 /// thay vì một nút không làm gì.
 ///
-/// Sổ dựng MỘT lần mỗi phiên (cây của tab dựng lại theo `.id(userId)`), thẻ
-/// và màn dùng chung; đóng khi phiên không còn là của người này.
+/// Sổ thuộc PHIÊN (`NutritionBooks`, dựng và đóng ở `SignedInScope`): thẻ, màn
+/// và kế hoạch nhắc nhở cùng đọc một bản.
 struct NutritionTab: View {
-  @Environment(WorkoutFlow.self) private var flow
-  @Environment(AppServices.self) private var services
-  @Environment(\.scenePhase) private var scenePhase
-  @State private var water: WaterBook?
-  @State private var supplements: SupplementBook?
-  @State private var built = false
-
-  private var userId: String { flow.today.userId }
+  /// Sổ của phiên (`SignedInScope`) — cùng sổ mà kế hoạch nhắc nhở đọc.
+  @Environment(NutritionBooks.self) private var books: NutritionBooks?
 
   var body: some View {
     NavigationStack {
       ScrollView {
         VStack(spacing: DS.Spacing.md) {
-          if let water { WaterCard(book: water) }
+          if let water = books?.water { WaterCard(book: water) }
           // Cạnh Nước, trên nhật ký (`(tabs)/nutrition.tsx`: "supplements belong
           // beside water") — hàng mang sẵn "2/4 hôm nay".
-          if let supplements { SupplementsRow(book: supplements) }
+          if let supplements = books?.supplements { SupplementsRow(book: supplements) }
           Text(String(localized: "placeholder.building"))
             .font(DS.TextStyle.footnote)
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
@@ -37,47 +31,17 @@ struct NutritionTab: View {
         }
         .padding(DS.Spacing.md)
       }
-      .refreshable {
-        await water?.refresh()
-        await supplements?.refresh()
-      }
+      .refreshable { await books?.refresh() }
       .navigationTitle(Text("tab.nutrition"))
       .navigationDestination(for: WaterRoute.self) { _ in
-        if let water { WaterView(book: water) }
+        if let water = books?.water { WaterView(book: water) }
       }
       .navigationDestination(for: SupplementsRoute.self) { _ in
-        if let supplements { SupplementsView(book: supplements) }
+        if let supplements = books?.supplements { SupplementsView(book: supplements) }
       }
     }
-    .task {
-      guard !built else { return }
-      built = true
-      water = services.makeWaterBook(userId: userId)
-      supplements = services.makeSupplementBook(userId: userId)
-      // Hai sổ đọc song song — không sổ nào chờ sổ kia.
-      let waterBook = water, supplementBook = supplements
-      async let w: Void? = waterBook?.load()
-      async let s: Void? = supplementBook?.load()
-      _ = await (w, s)
-    }
-    .onChange(of: scenePhase) { _, phase in
-      // Ra tiền cảnh: qua nửa đêm thì "hôm nay" đổi.
-      guard phase == .active, let water else { return }
-      Task {
-        await water.clockTick()
-        await supplements?.refresh()
-      }
-    }
-    // KHÔNG ở `onDisappear` (chạy cả khi đổi tab): sổ đóng thì không mở lại.
-    .onChange(of: isCurrentSession) { _, current in
-      if !current {
-        water?.close()
-        supplements?.close()
-      }
-    }
+    .task { await books?.loadOnce() }
   }
-
-  private var isCurrentSession: Bool { services.session.session?.userId == userId }
 }
 
 /// Đích điều hướng của thẻ → màn Nước.
