@@ -72,9 +72,13 @@ struct AssistantTab: View {
             }
           }
           tools
+          // Nguồn của các con số, đặt DƯỚI những thứ dùng chúng (RN: cuối
+          // trang). Không có Apple Health trên máy thì không hiện gì.
+          HealthSyncCard(isAvailable: services.health.isAvailable, sync: syncHealth)
         }
         .padding(DS.Spacing.md)
       }
+      .background { AssistantAura(status: signal?.signal.status) }
       .refreshable {
         await signal?.load()
         await metrics?.load(kcalTarget: kcalTarget)
@@ -170,6 +174,15 @@ struct AssistantTab: View {
     await nudges.load(
       date: Self.today(), lang: lang.rawValue, stamp: stamp, tzOffset: Coach.tzOffset(.current, at: Date()),
       force: force)
+  }
+
+  /// Đồng bộ Apple Health (`HealthSyncCoordinator.syncNow`, không đụng dịch vụ);
+  /// xong thì tín hiệu, ô chỉ số và insight hôm nay đọc lại.
+  private func syncHealth() async throws(HealthSync.Failure) {
+    try await services.health.syncNow(userId: flow.today.userId, lang: AppServices.appLang)
+    await signal?.load()
+    await metrics?.load(kcalTarget: kcalTarget)
+    await loadInsight()
   }
 
   private static func today() -> LocalDate { LocalDate(SystemWallClock().nowMillis(), in: .current) }

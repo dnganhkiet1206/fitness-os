@@ -97,5 +97,6 @@ miễn **giữ nguyên ý định** của app và chỉ làm app tốt hơn — 
 | Thực phẩm — nút sao | Chưa có (chỉ hiện sao trên món đã yêu thích) | `useToggleFavoriteFood` qua lớp Trạng thái #161; sao món mẫu chung = nhân bản thành món riêng | (thiếu — chờ chốt owner #161) | không cần | #527 (`native/ios-rewrite`) | A |
 | Thực phẩm — lưu món gần đây / thêm / sửa / xoá xong | Đọc lại thư viện từ server (nút khoá trong lúc chạy) | `invalidateFoodQueries` | lệch nền tảng | không cần | #527 (`native/ios-rewrite`) | A |
 | Thực phẩm — mất mạng khi lưu món gần đây | Hộp thoại "cần có mạng" | `toast.fail` | lệch nền tảng | không cần | #527 (`native/ios-rewrite`) | A |
+| Trợ lý — aura | Bốn vùng sáng trôi trên một `Canvas` (màu vùng chính theo điểm sẵn sàng hôm nay, cùng cường độ / chu kỳ RN), đứng yên khi Giảm chuyển động; thẻ Apple Health báo kết quả ngay dưới thẻ (không toast) | Thêm lớp "bụi neon" bay lên và nhịp bừng sáng khi vào tab; toast | tạm thời (bụi / bừng sáng chưa port) | không cần | #527 (`native/ios-rewrite`) | E |
 
 Thêm dòng mới ở cuối bảng; giữ dòng cũ — sổ là lịch sử, không phải danh sách việc.
