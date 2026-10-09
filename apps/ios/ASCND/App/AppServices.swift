@@ -379,6 +379,12 @@ final class AppServices {
     }
   }
 
+  /// Bảng chỉ số 7 ngày của tab Trợ lý (#527): `daily_logs` / `biometric_samples`
+  /// qua kho hàng chung.
+  func makeMetricHistory(userId: String, today: LocalDate) -> MetricHistoryBook? {
+    rows.map { MetricHistoryBook(userId: userId, today: today, store: $0, in: .current) }
+  }
+
   /// Trí nhớ coach (#527): đọc + xoá `coach_memory`.
   func makeCoachMemory(userId: String) -> CoachMemoryBook? {
     guard let backend else { return nil }

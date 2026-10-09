@@ -15,8 +15,10 @@ enum AssistantRoute: Hashable {
 /// đang có cuộc trò chuyện thì thẻ mời "Tiếp tục: <câu hỏi cuối>" và ẩn chip;
 /// lưới công cụ có gợi ý dưới nhãn.
 ///
-/// Chưa có (PARTIAL): bảng chỉ số 14 ngày (`metric-analysis.ts` +
-/// `MetricPanel`), nhắc thông minh (`use-smart-nudges`), aura / glass; lưới
+/// Bốn ô chỉ số hôm nay + bảng 7 ngày (`MetricPanelView`).
+///
+/// Chưa có (PARTIAL): "Insight hôm nay" (AI), nhắc thông minh
+/// (`use-smart-nudges`), thẻ nguồn Health, aura / glass; lưới
 /// công cụ chỉ có những màn đã port (tổng kết tuần, sinh trắc học, coach nhớ
 /// gì) — RN còn Vận động, Quét thực phẩm, Giấc ngủ.
 ///
@@ -33,6 +35,7 @@ struct AssistantTab: View {
   @State private var memory: CoachMemoryBook?
   @State private var weekly: WeeklyReviewBook?
   @State private var biometrics: BiometricsBook?
+  @State private var metrics: MetricHistoryBook?
   @State private var hour = Calendar.current.component(.hour, from: Date())
   @State private var built = false
 
@@ -54,11 +57,21 @@ struct AssistantTab: View {
               Text("coach.unavailable")
             }
           }
+          if let metrics {
+            MetricPanelView(book: metrics, signal: signal, lang: lang) { question in
+              guard let chat else { return }
+              path.append(.chat)
+              CoachChatView.ask(chat, question, lang: lang)
+            }
+          }
           tools
         }
         .padding(DS.Spacing.md)
       }
-      .refreshable { await signal?.load() }
+      .refreshable {
+        await signal?.load()
+        await metrics?.load(kcalTarget: kcalTarget)
+      }
       .navigationTitle(Text("tab.assistant"))
       .navigationBarTitleDisplayMode(.inline)
       .navigationDestination(for: AssistantRoute.self) { route in
@@ -83,8 +96,11 @@ struct AssistantTab: View {
       memory = services.makeCoachMemory(userId: userId)
       weekly = services.makeWeeklyReview(userId: userId, today: today)
       biometrics = services.makeBiometricsBook(userId: userId)
+      metrics = services.makeMetricHistory(userId: userId, today: today)
       built = true
       await signal?.load()
+      // Sau tín hiệu: phân tích calo cần mục tiêu calo của hồ sơ.
+      await metrics?.load(kcalTarget: kcalTarget)
     }
     // RN học khi app vào nền (`AppState` → `background`): đó mới là lúc cuộc
     // trò chuyện thật sự "xong".
@@ -98,6 +114,7 @@ struct AssistantTab: View {
       Task {
         await signal?.move(to: today)
         await weekly?.move(to: today)
+        await metrics?.move(to: today, kcalTarget: kcalTarget)
       }
     }
     .onChange(of: isCurrentSession) { _, current in
@@ -107,10 +124,14 @@ struct AssistantTab: View {
       memory?.close()
       weekly?.close()
       biometrics?.close()
+      metrics?.close()
     }
   }
 
   private var lang: AppPreferences.Lang { services.preferences.lang }
+
+  /// `calorieTargetFor(profile)` của tín hiệu hôm nay (mặc định 2200).
+  private var kcalTarget: Double { signal?.signal.kcalTarget ?? 2200 }
 
   private static func today() -> LocalDate { LocalDate(SystemWallClock().nowMillis(), in: .current) }
 

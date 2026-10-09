@@ -75,6 +75,9 @@ public final class AssistantSignalBook {
   public let userId: String
   public private(set) var today: LocalDate
   public private(set) var signal = AssistantSuggestions.Signal()
+  /// Nhịp tim của mẫu sinh trắc MỚI NHẤT hôm nay (`useTodayBiometrics`); `nil`
+  /// khi chưa có mẫu hoặc mẫu ấy không có nhịp tim — ô hiện "—", không phải 0.
+  public private(set) var heartRate: Int?
 
   @ObservationIgnored private let store: any RowStore
   @ObservationIgnored private let tz: TimeZone
@@ -123,8 +126,22 @@ public final class AssistantSignalBook {
       RowQuery(
         table: "workout_sessions", columns: "date_time", filters: [.eq("user_id", user)],
         order: RowQuery.Order(column: "date_time", ascending: false), limit: 1))
-    let (l, p, w) = await (log, profile, last)
+    let window = DailyLog.dayRange(day, in: tz)
+    async let bio = Self.read(
+      store,
+      RowQuery(
+        table: "biometric_samples", columns: "date_time, hr_bpm",
+        filters: [.eq("user_id", user), .gte("date_time", .string(window.start)), .lt("date_time", .string(window.end))],
+        order: RowQuery.Order(column: "date_time", ascending: false), limit: 1, mode: .maybeSingle))
+    let (l, p, w, b) = await (log, profile, last, bio)
     guard !closed, day == today else { return }
+    // `bio?.hr_bpm != null ? Math.round(Number(bio.hr_bpm)) : null`.
+    if JS.present(b?["hr_bpm"]) {
+      let v = JS.round(JS.number(b?["hr_bpm"]))
+      heartRate = v.isFinite ? Int(v) : nil
+    } else {
+      heartRate = nil
+    }
     let copy = self.copy
     signal = .from(
       log: l, profile: p, lastWorkoutAt: w?["date_time"], today: day, in: tz,
