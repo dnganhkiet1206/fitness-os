@@ -53,5 +53,8 @@ Chỗ native **thiếu** so với RN (chưa port) không ghi ở đây — xem
 | AI Coach — nút "Cuộc trò chuyện mới" | Chuỗi dịch đủ vi / en / es (`coach.newChat`) | `vi ? 'Trò chuyện mới' : 'New chat'` — bản es hiện tiếng Anh | sửa lỗi RN | nên làm theo | #527 (`native/ios-rewrite`) | E |
 | AI Coach — lịch sử đọc hỏng | Màn lỗi có thử lại | `conversations` không có → hiện "Chưa có cuộc trò chuyện nào" | sửa lỗi RN | nên làm theo | #527 (`native/ios-rewrite`) | E |
 | AI Coach — nút xoá trong lịch sử | VoiceOver đọc "Xoá <tiêu đề>" | Chỉ "Xoá" — một cột nút cùng tên | cải tiến (a11y) | nên làm theo | #527 (`native/ios-rewrite`) | E |
+| Chip gợi ý Trợ lý / AI Coach — tiếng Tây Ban Nha | Chip và câu hỏi có bản es (`AssistantSuggestions.Text3`) | `Bilingual.es` để trống → `s.question[lang] ?? s.question.en`: người dùng es thấy và GỬI câu tiếng Anh | sửa lỗi RN | nên làm theo | #527 (`native/ios-rewrite`) | E |
+| Chip gợi ý — số bước trong câu | Nhóm theo ngôn ngữ của câu (vi "3.250", en "3,250") | `toLocaleString()` theo locale của máy, có thể khác ngôn ngữ của câu | cải tiến | tuỳ | #527 (`native/ios-rewrite`) | E |
+| Chip gợi ý — ngày buổi tập hỏng | `date_time` không đọc được → coi như chưa có buổi (không chip "nghỉ lâu" / "sau buổi tập") | `daysSince` ra `NaN` — cùng kết quả, không đổi hành vi | ghi chú | không cần | #527 (`native/ios-rewrite`) | E |
 
 Thêm dòng mới ở cuối bảng; giữ dòng cũ — sổ là lịch sử, không phải danh sách việc.

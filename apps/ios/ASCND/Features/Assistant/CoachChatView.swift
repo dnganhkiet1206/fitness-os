@@ -15,13 +15,14 @@ struct AssistantTab: View {
   @Environment(AppServices.self) private var services
   @Environment(\.scenePhase) private var scenePhase
   @State private var chat: CoachChat?
+  @State private var signal: AssistantSignalBook?
   @State private var built = false
 
   var body: some View {
     NavigationStack {
       Group {
         if let chat {
-          CoachChatView(chat: chat, lang: services.preferences.lang)
+          CoachChatView(chat: chat, lang: services.preferences.lang, suggestions: signal?.suggestions ?? [])
         } else if built {
           // Thiếu cấu hình Supabase: không có coach để hỏi.
           ContentUnavailableView {
@@ -36,18 +37,29 @@ struct AssistantTab: View {
     }
     .task {
       guard !built else { return }
-      chat = services.makeCoachChat(userId: flow.today.userId)
+      let userId = flow.today.userId
+      chat = services.makeCoachChat(userId: userId)
+      signal = services.makeAssistantSignal(userId: userId, today: Self.today())
       built = true
+      await signal?.load()
     }
     // RN học khi app vào nền (`AppState` → `background`): đó mới là lúc cuộc
     // trò chuyện thật sự "xong".
     .onChange(of: scenePhase) { _, phase in
       if phase == .background { chat?.appBackgrounded() }
+      // Ra tiền cảnh: số hôm nay có thể đã đổi (ghi bữa / đồng bộ Health), hoặc
+      // đã qua nửa đêm — chip đọc lại.
+      if phase == .active, let signal { Task { await signal.move(to: Self.today()) } }
     }
     .onChange(of: isCurrentSession) { _, current in
-      if !current { chat?.close() }
+      if !current {
+        chat?.close()
+        signal?.close()
+      }
     }
   }
+
+  private static func today() -> LocalDate { LocalDate(SystemWallClock().nowMillis(), in: .current) }
 
   private var isCurrentSession: Bool {
     guard let chat else { return true }
@@ -55,7 +67,7 @@ struct AssistantTab: View {
   }
 }
 
-/// Cuộc trò chuyện: lời chào khi trống, bong bóng hai phía (trả lời vẽ
+/// Cuộc trò chuyện: lời chào + bốn chip gợi ý khi trống, bong bóng hai phía (trả lời vẽ
 /// markdown như `MarkdownLite`), ô soạn có nút gửi, lịch sử ở thanh trên.
 ///
 /// Khác RN: lỗi của lượt gửi hiện ngay dưới cuộc trò chuyện bằng chữ của bảng
@@ -64,6 +76,9 @@ struct AssistantTab: View {
 struct CoachChatView: View {
   let chat: CoachChat
   let lang: AppPreferences.Lang
+  /// Cùng bốn chip với thẻ coach của Trợ lý (`useAssistantSignal`): chạm là
+  /// hỏi luôn câu của chip.
+  let suggestions: [AssistantSuggestions.Suggestion]
 
   @State private var draft = ""
   @State private var showsHistory = false
@@ -123,6 +138,10 @@ struct CoachChatView: View {
         .font(DS.TextStyle.body)
         .foregroundStyle(DS.Color.mutedForeground.swiftUI)
         .multilineTextAlignment(.center)
+      if !suggestions.isEmpty {
+        FlowChips(suggestions: suggestions, lang: lang, disabled: chat.isLoading) { send($0) }
+          .padding(.top, DS.Spacing.md)
+      }
     }
     .padding(DS.Spacing.lg)
     .frame(maxWidth: .infinity)
@@ -215,10 +234,56 @@ struct CoachChatView: View {
     let text = draft
     guard canSend else { return }
     draft = ""
+    send(text)
+  }
+
+  private func send(_ text: String) {
     let code = lang.rawValue
     let now = Date()
     let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
     Task { await chat.send(text, lang: code, today: today, tzOffset: Coach.tzOffset(.current, at: now)) }
+  }
+}
+
+/// Chip gợi ý: glyph theo `SuggestionGlyph`, chữ theo ngôn ngữ của app.
+private struct FlowChips: View {
+  let suggestions: [AssistantSuggestions.Suggestion]
+  let lang: AppPreferences.Lang
+  let disabled: Bool
+  let onPick: (String) -> Void
+
+  var body: some View {
+    VStack(spacing: DS.Spacing.sm) {
+      ForEach(suggestions) { s in
+        Button {
+          onPick(s.question(lang))
+        } label: {
+          Label(s.label(lang), systemImage: Self.symbol(s.glyph))
+            .font(DS.TextStyle.footnote)
+            .foregroundStyle(DS.Color.foreground.swiftUI)
+            .padding(.horizontal, DS.Spacing.md)
+            .frame(minHeight: 44)
+            .background(DS.Color.secondary.swiftUI, in: Capsule())
+        }
+        .buttonStyle(.plain)
+        .disabled(disabled)
+        .opacity(disabled ? 0.5 : 1)
+        // Đọc cả câu sẽ gửi, như `accessibilityLabel={s.question[lang]}` của RN.
+        .accessibilityLabel(Text(verbatim: s.question(lang)))
+      }
+    }
+  }
+
+  static func symbol(_ g: AssistantSuggestions.Glyph) -> String {
+    switch g {
+    case .gauge: "gauge.with.dots.needle.50percent"
+    case .pulse: "waveform.path.ecg"
+    case .moon: "moon.fill"
+    case .flame: "flame.fill"
+    case .leaf: "leaf.fill"
+    case .bolt: "bolt.fill"
+    case .heart: "heart.fill"
+    }
   }
 }
 

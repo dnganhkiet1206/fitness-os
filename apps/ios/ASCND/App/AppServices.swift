@@ -352,6 +352,12 @@ final class AppServices {
       in: .current)
   }
 
+  /// Tín hiệu hôm nay cho chip gợi ý của Trợ lý / AI Coach (#527): ba lượt
+  /// đọc qua kho hàng chung.
+  func makeAssistantSignal(userId: String, today: LocalDate) -> AssistantSignalBook? {
+    rows.map { AssistantSignalBook(userId: userId, today: today, store: $0, in: .current) }
+  }
+
   /// AI Coach (#527): luồng `ai-coach` + lịch sử `ai_conversations` / `ai_messages`,
   /// học qua `ai-coach-memory`. Thiếu cấu hình Supabase thì không có màn.
   func makeCoachChat(userId: String) -> CoachChat? {
