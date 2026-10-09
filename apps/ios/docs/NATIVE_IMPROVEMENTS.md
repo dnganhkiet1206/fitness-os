@@ -54,5 +54,17 @@ miễn **giữ nguyên ý định** của app và chỉ làm app tốt hơn — 
 | Xu hướng sẵn sàng 7 ngày — chữ | Chuỗi dịch đủ vi / en / es (`rt.*`) | TB / Cao nhất / chú giải `lang === 'vi' ? … : …` — bản es hiện tiếng Anh | sửa lỗi RN | nên làm theo | #571 | E |
 | Ghi cân nặng — giao diện | Thước + số to; không vẽ hình chiếc cân (`BodyScaleFigure`) và hai nhãn mép cửa sổ thước | Có hình cân sáng lên khi kéo + nhãn mép | lệch nền tảng (rút gọn trang trí, không đổi hành vi) | không cần | #576 | A |
 | Ghi cân nặng — Apple Health | Chưa ghi ngược | `writeBodyMassToHealth` sau khi lưu | (thiếu — guardrail HealthKit, chờ owner) | không cần | #576 | A |
+| AI Coach — tiêu đề cuộc trò chuyện | 50 đơn vị UTF-16 đầu như RN, nhưng bỏ nửa emoji bị cắt (`Coach.title`) | `text.slice(0, 50)` có thể để lại nửa cặp surrogate → ký tự hỏng cuối tiêu đề trong lịch sử | sửa lỗi RN | nên làm theo | #527 (`native/ios-rewrite`) | E |
+| AI Coach — lỗi lượt gửi | Chữ lỗi ngay dưới cuộc trò chuyện, theo 6 loại của `AI_FAILURE_KEY` | `Alert` | lệch nền tảng | không cần | #527 (`native/ios-rewrite`) | E |
+| AI Coach — nút "Cuộc trò chuyện mới" | Chuỗi dịch đủ vi / en / es (`coach.newChat`) | `vi ? 'Trò chuyện mới' : 'New chat'` — bản es hiện tiếng Anh | sửa lỗi RN | nên làm theo | #527 (`native/ios-rewrite`) | E |
+| AI Coach — lịch sử đọc hỏng | Màn lỗi có thử lại | `conversations` không có → hiện "Chưa có cuộc trò chuyện nào" | sửa lỗi RN | nên làm theo | #527 (`native/ios-rewrite`) | E |
+| AI Coach — nút xoá trong lịch sử | VoiceOver đọc "Xoá <tiêu đề>" | Chỉ "Xoá" — một cột nút cùng tên | cải tiến (a11y) | nên làm theo | #527 (`native/ios-rewrite`) | E |
+| Chip gợi ý Trợ lý / AI Coach — tiếng Tây Ban Nha | Chip và câu hỏi có bản es (`AssistantSuggestions.Text3`) | `Bilingual.es` để trống → `s.question[lang] ?? s.question.en`: người dùng es thấy và GỬI câu tiếng Anh | sửa lỗi RN | nên làm theo | #527 (`native/ios-rewrite`) | E |
+| Chip gợi ý — số bước trong câu | Nhóm theo ngôn ngữ của câu (vi "3.250", en "3,250") | `toLocaleString()` theo locale của máy, có thể khác ngôn ngữ của câu | cải tiến | tuỳ | #527 (`native/ios-rewrite`) | E |
+| Chip gợi ý — ngày buổi tập hỏng | `date_time` không đọc được → coi như chưa có buổi (không chip "nghỉ lâu" / "sau buổi tập") | `daysSince` ra `NaN` — cùng kết quả, không đổi hành vi | ghi chú | không cần | #527 (`native/ios-rewrite`) | E |
+| Coach nhớ gì — ngôn ngữ / ngày | Chữ đủ vi / en / es; "Nhắc lần cuối" theo định dạng ngày của ngôn ngữ app | `vi ? … : …` — bản es hiện tiếng Anh; ngày dạng `YYYY-MM-DD` | sửa lỗi RN | nên làm theo | #527 (`native/ios-rewrite`) | E |
+| Coach nhớ gì — đọc hỏng | Màn lỗi có nút thử lại (kéo để đọc lại vẫn có) | Chỉ chữ "Kéo xuống để thử lại" | cải tiến | tuỳ | #527 (`native/ios-rewrite`) | E |
+| Coach nhớ gì — xoá một | Lệnh xoá lọc thêm `user_id` (ngoài RLS) | `.delete().eq('id', id)` — dựa hoàn toàn vào RLS | cải tiến (phòng thủ) | tuỳ | #527 (`native/ios-rewrite`) | E |
+| Coach nhớ gì — lối vào | Nút ở thanh trên của màn chat (tạm, tới khi có bảng điều khiển tab Trợ lý) | Hàng "Coach nhớ gì" trên tab Trợ lý | tạm thời | không cần | #527 (`native/ios-rewrite`) | E |
 
 Thêm dòng mới ở cuối bảng; giữ dòng cũ — sổ là lịch sử, không phải danh sách việc.
