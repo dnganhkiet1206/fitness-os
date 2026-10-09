@@ -6,8 +6,9 @@ Khi port, agent **được phép nâng cấp / cải thiện** một tính năng
 React Native **chưa hoàn thiện** (lỗi, thiếu trạng thái, chữ sai, hành vi dễ gây
 hiểu nhầm). Điều kiện:
 
-1. **Ghi vào sổ này** trong CÙNG PR thay đổi hành vi — không ghi thì coi như
-   chưa được phép.
+1. **Ghi vào sổ này** trong CÙNG commit / PR thay đổi hành vi — không ghi thì
+   coi như chưa được phép. (Từ 09/10 mọi agent commit thẳng lên
+   `native/ios-rewrite`, chỉ thị #527 6074127548: ghi cột PR là commit SHA.)
 2. RN cũng là app **Android**: mỗi dòng phải nói RN/Android có nên làm theo
    không (cột *RN/Android*), để người làm RN biết việc cần backport.
 3. Không đổi hợp đồng dữ liệu (schema, RPC, RLS, hình dạng hàng ghi) chỉ vì một
@@ -51,7 +52,6 @@ miễn **giữ nguyên ý định** của app và chỉ làm app tốt hơn — 
 | Thẻ ăn mừng — Reduce Motion | Không pháo giấy, đĩa không xoay-nảy | `award-celebration.tsx`: pháo giấy + xoay-nảy luôn chạy | cải tiến (a11y) | nên làm theo (`useReducedMotion`) | #567 | E |
 | Thẻ ăn mừng — VoiceOver / ngôn ngữ | Đọc "Huy chương mới! <tên>" khi hiện; kicker + nhãn hạng vi / en / es | Không đọc gì; kicker chỉ vi ("Huy Chương Mới!") còn lại tiếng Anh; nhãn hạng luôn tiếng Anh | cải tiến (a11y, i18n) | nên làm theo | #567 | E |
 | Xu hướng sẵn sàng 7 ngày — chữ | Chuỗi dịch đủ vi / en / es (`rt.*`) | TB / Cao nhất / chú giải `lang === 'vi' ? … : …` — bản es hiện tiếng Anh | sửa lỗi RN | nên làm theo | #571 | E |
-
 | Ghi cân nặng — giao diện | Thước + số to; không vẽ hình chiếc cân (`BodyScaleFigure`) và hai nhãn mép cửa sổ thước | Có hình cân sáng lên khi kéo + nhãn mép | lệch nền tảng (rút gọn trang trí, không đổi hành vi) | không cần | #576 | A |
 | Ghi cân nặng — Apple Health | Chưa ghi ngược | `writeBodyMassToHealth` sau khi lưu | (thiếu — guardrail HealthKit, chờ owner) | không cần | #576 | A |
 
