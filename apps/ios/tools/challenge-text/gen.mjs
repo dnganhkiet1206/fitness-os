@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Tên thử thách tuần của app native = CHÍNH `CHALLENGE_TEXT` trong
+ * Chữ thử thách tuần của app native (tên, mô tả, phần thưởng) = CHÍNH `CHALLENGE_TEXT` trong
  * `native/src/lib/gamification-i18n.ts` (#527 Phase 7 — thẻ "Thưởng thử thách
  * tuần" của phòng linh vật). Chép máy vào `ASCND/Resources/challenge-text.json`,
  * không chép tay sang xcstrings.
@@ -14,13 +14,25 @@ const ROOT = new URL('../../../../', import.meta.url);
 const OUT = new URL('apps/ios/ASCND/Resources/challenge-text.json', ROOT);
 const { CHALLENGE_TEXT } = await import(new URL('native/src/lib/gamification-i18n.ts', ROOT).href);
 
+// Tên (phòng linh vật), mô tả + tên phần thưởng (màn thử thách tuần, hàng
+// gieo vào `weekly_challenges` ghi bản tiếng Anh như RN).
+const pick = (t) => ({ vi: t.vi, en: t.en, es: t.es });
 const titles = {};
+const descs = {};
+const rewards = {};
 for (const key of Object.keys(CHALLENGE_TEXT).sort()) {
-  const t = CHALLENGE_TEXT[key].title;
-  titles[key] = { vi: t.vi, en: t.en, es: t.es };
+  const c = CHALLENGE_TEXT[key];
+  titles[key] = pick(c.title);
+  descs[key] = pick(c.desc);
+  rewards[key] = pick(c.reward);
 }
 const text = JSON.stringify(
-  { source: 'native/src/lib/gamification-i18n.ts CHALLENGE_TEXT — sinh bằng apps/ios/tools/challenge-text/gen.mjs, đừng sửa tay', titles },
+  {
+    source: 'native/src/lib/gamification-i18n.ts CHALLENGE_TEXT — sinh bằng apps/ios/tools/challenge-text/gen.mjs, đừng sửa tay',
+    titles,
+    descs,
+    rewards,
+  },
   null,
   1,
 ) + '\n';

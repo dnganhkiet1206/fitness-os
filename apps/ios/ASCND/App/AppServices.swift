@@ -34,6 +34,9 @@ final class AppServices {
   @ObservationIgnored let health: HealthSyncCoordinator
   /// Trạng thái mạng ba nhánh (#527 · 1.11, `net-status.ts`): dải báo ở gốc app.
   let net = NetStatusMonitor()
+  /// Hàng đợi ăn mừng (#527, `celebration-queue.ts`): huy chương vừa trao,
+  /// thử thách vừa xong — gốc Hôm nay hiện từng cái một; đăng xuất thì bỏ hết.
+  let celebrations = CelebrationQueue()
   /// Đường mạng + phép dò internet của NetInfo (#530) — nuôi `net` và vòng sync.
   @ObservationIgnored private(set) var network: NetworkObserver!
   @ObservationIgnored let workouts: GRDBWorkoutStore
@@ -158,7 +161,10 @@ final class AppServices {
     // như `forgetPreviousAccount` của baseline (`use-auth.tsx:53`). MỘT closure,
     // chạy tuần tự, để thứ tự không phụ thuộc thứ tự đăng ký.
     let lifecycle = self.lifecycle
-    session.onSignedOut { [sync = self.sync, weak session = self.session] in
+    session.onSignedOut {
+      [sync = self.sync, weak session = self.session, celebrations = self.celebrations] in
+      // Pháo hoa của người vừa rời đi không hiện cho người sau (`onUserScopedReset`).
+      celebrations.clear()
       // Người của phiên mới khi đổi thẳng tài khoản; `nil` khi đăng xuất.
       let next = session?.session?.userId
       // Đóng chốt TRƯỚC khi dọn: lượt làm mới / lượt ghi muộn của người vừa
@@ -320,6 +326,14 @@ final class AppServices {
       userId: userId, source: SupabaseAwardsSource(backend: backend),
       today: { LocalDate(SystemWallClock().nowMillis(), in: .current) },
       englishText: { AwardText.english($0) })
+  }
+
+  /// Thử thách tuần: gieo + đo qua kho hàng chung, thưởng qua RPC của server.
+  func makeWeeklyChallenges(userId: String, today: LocalDate) -> WeeklyChallengesBook? {
+    guard let rows, let backend else { return nil }
+    return WeeklyChallengesBook(
+      userId: userId, today: today, store: rows, economy: SupabaseMascotEconomy(backend: backend),
+      english: { ChallengeText.english($0) })
   }
 
   /// Phòng linh vật: server là chủ kinh tế (hai RPC).

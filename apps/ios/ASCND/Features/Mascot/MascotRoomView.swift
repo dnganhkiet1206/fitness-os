@@ -18,13 +18,15 @@ import SwiftUI
 /// - câu nói / tâm trạng của Koa (`useMascot`), dòng "Koa để ý" (mô hình cá
 ///   nhân trên máy) — không có nguồn native;
 /// - tự nhận nhiệm vụ (`use-quest-autoclaim`, gắn toàn app ở RN);
-/// - cửa hàng / phòng thay đồ, đổi linh vật, màn thử thách — hàng thử thách
-///   chỉ hiện số; hàng huy hiệu dẫn tới `AwardsView` khi được truyền `awards`;
+/// - cửa hàng / phòng thay đồ, đổi linh vật. Hàng thử thách / huy hiệu dẫn tới
+///   `ChallengesView` / `AwardsView` khi được truyền sổ;
 /// - nút "+300 xu" của bản dev (server từ chối khoá `dev:`) — không port.
 struct MascotRoomView: View {
   let room: MascotRoomController
   /// Sổ huy chương cho hàng "Huy hiệu" (`nav.push('/awards')`) — B truyền khi nối.
   var awards: AwardsBook? = nil
+  /// Sổ thử thách tuần cho hàng "Thử thách" (`nav.push('/challenges')`).
+  var challenges: WeeklyChallengesBook? = nil
 
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Environment(\.locale) private var locale
@@ -356,16 +358,18 @@ struct MascotRoomView: View {
     }
   }
 
-  /// Số thử thách đã xong / tổng; số huy hiệu — dẫn tới màn huy chương khi có sổ.
+  /// Số thử thách đã xong / tổng; số huy hiệu — mỗi hàng dẫn tới màn của nó khi có sổ.
   private var counts: some View {
     DSCard {
       VStack(spacing: DS.Spacing.sm) {
-        LabeledContent(String(localized: "mr.challenges")) {
-          if let all = room.challenges, !all.isEmpty {
-            Text(verbatim: "\(all.filter(\.completed).count)/\(all.count)").monospacedDigit()
-          } else {
-            Text(verbatim: "—")
+        if let challenges {
+          NavigationLink {
+            ChallengesView(book: challenges, lang: lang)
+          } label: {
+            challengesRow
           }
+        } else {
+          challengesRow
         }
         if let awards {
           NavigationLink {
@@ -376,6 +380,16 @@ struct MascotRoomView: View {
         } else {
           awardsRow
         }
+      }
+    }
+  }
+
+  private var challengesRow: some View {
+    LabeledContent(String(localized: "mr.challenges")) {
+      if let all = room.challenges, !all.isEmpty {
+        Text(verbatim: "\(all.filter(\.completed).count)/\(all.count)").monospacedDigit()
+      } else {
+        Text(verbatim: "—")
       }
     }
   }
@@ -559,23 +573,31 @@ struct MascotStage: View {
   }
 }
 
-/// Tên thử thách tuần (`CHALLENGE_TEXT`), chép máy vào `challenge-text.json`
-/// (`apps/ios/tools/challenge-text/gen.mjs --check`).
+/// Chữ thử thách tuần (`CHALLENGE_TEXT`: tên, mô tả, phần thưởng), chép máy
+/// vào `challenge-text.json` (`apps/ios/tools/challenge-text/gen.mjs --check`).
 enum ChallengeText {
   private struct File: Decodable {
     let titles: [String: [String: String]]
+    let descs: [String: [String: String]]
+    let rewards: [String: [String: String]]
   }
 
-  private static let titles: [String: [String: String]] = {
+  private static let file: File? = {
     guard let url = Bundle.main.url(forResource: "challenge-text", withExtension: "json"),
-      let data = try? Data(contentsOf: url),
-      let file = try? JSONDecoder().decode(File.self, from: data)
-    else { return [:] }
-    return file.titles
+      let data = try? Data(contentsOf: url)
+    else { return nil }
+    return try? JSONDecoder().decode(File.self, from: data)
   }()
 
   /// `nil` khi khoá lạ — màn dùng tiêu đề đã lưu trong hàng (`t ? … : ch.title`).
-  static func title(_ key: String, lang: AppPreferences.Lang) -> String? { titles[key]?[lang.rawValue] }
+  static func title(_ key: String, lang: AppPreferences.Lang) -> String? { file?.titles[key]?[lang.rawValue] }
+  static func desc(_ key: String, lang: AppPreferences.Lang) -> String? { file?.descs[key]?[lang.rawValue] }
+  static func reward(_ key: String, lang: AppPreferences.Lang) -> String? { file?.rewards[key]?[lang.rawValue] }
+
+  /// Tiếng Anh — giá trị lịch sử ghi vào hàng gieo (RN: `t.title.en`, …).
+  static func english(_ key: String) -> (title: String, desc: String, reward: String) {
+    (file?.titles[key]?["en"] ?? key, file?.descs[key]?["en"] ?? "", file?.rewards[key]?["en"] ?? "")
+  }
 }
 
 extension Color {

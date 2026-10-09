@@ -11,6 +11,7 @@ enum AppTab: String, Hashable {
 struct RootTabView: View {
   /// Nhớ tab đang mở qua những lần hệ thống thu hồi scene.
   @SceneStorage("root.tab") private var selection: AppTab = .today
+  @Environment(AppServices.self) private var services
 
   var body: some View {
     TabView(selection: $selection) {
@@ -41,6 +42,9 @@ struct RootTabView: View {
       }
       .accessibilityHint(Text(String(localized: "tab.assistant.hint")))
     }
+    // Ăn mừng huy chương / thử thách (#527, `CelebrationHost` ở layout gốc của
+    // RN): trên mọi tab, phủ cả thanh tab.
+    .overlay { CelebrationHost(queue: services.celebrations) }
   }
 }
 
