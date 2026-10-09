@@ -16,8 +16,13 @@ import SwiftUI
 ///
 /// Khác RN / chưa có: lời khuyên ACWR theo băng của thẻ sẵn sàng (xem
 /// `WeeklyReview`); câu khuyến nghị có cả tiếng Tây Ban Nha (RN: chỉ vi / en);
-/// chưa có phần phân tích AI (`ai-weekly-review`) — bản iOS chưa gọi edge
-/// function; một nguồn đọc hỏng là màn lỗi có thử lại (RN vẽ số của phần đọc được).
+/// một nguồn đọc hỏng là màn lỗi có thử lại (RN vẽ số của phần đọc được); lỗi
+/// phân tích AI hiện ngay trong thẻ, có thử lại (RN: hộp thoại).
+///
+/// Phân tích AI (`ai-weekly-review`) như RN: chỉ gọi khi bấm; tuần đã phân tích
+/// thì hiện lại kết quả (nhớ theo tuần · ngôn ngữ · số ngày có dữ liệu); điểm
+/// tuần, tóm tắt, nhận xét theo miền (glyph theo `category`, không theo emoji
+/// của mô hình), việc nên làm với chấm ưu tiên; rung "thành công" khi có kết quả.
 struct WeeklyReviewView: View {
   let book: WeeklyReviewBook
   let lang: AppPreferences.Lang
@@ -34,6 +39,11 @@ struct WeeklyReviewView: View {
     .task { if case .loading = book.phase { await book.load() } }
     .refreshable { await book.load() }
     .sensoryFeedback(.selection, trigger: book.weekOffset)
+    // Kết quả AI vừa về (`Haptics.success()` khi `analyze.data` có).
+    .sensoryFeedback(.success, trigger: book.analysis(lang: lang.rawValue)) { _, new in
+      guard case .ready = new else { return false }
+      return true
+    }
   }
 
   // MARK: - Tuần
@@ -78,6 +88,7 @@ struct WeeklyReviewView: View {
       if s.daysWithData > 0 {
         charts(s)
         if !s.recommendations.isEmpty { recommendations(s.recommendations) }
+        if book.canAnalyze { aiSection }
       } else {
         DSCard {
           Text(String(localized: "wr.noData"))
@@ -231,6 +242,170 @@ struct WeeklyReviewView: View {
       body()
     }
     .frame(maxWidth: .infinity, alignment: .leading)
+  }
+
+  // MARK: - Phân tích AI
+
+  @ViewBuilder private var aiSection: some View {
+    switch book.analysis(lang: lang.rawValue) {
+    case .ready(let a):
+      aiResult(a)
+    case let state:
+      DSCard {
+        VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+          Label(String(localized: "wr.ai.title"), systemImage: "sparkles")
+            .font(DS.TextStyle.headline)
+            .accessibilityAddTraits(.isHeader)
+          Text(String(localized: "wr.ai.hint"))
+            .font(DS.TextStyle.footnote)
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          if case .failed(let f) = state {
+            Label(Self.failureText(f), systemImage: "exclamationmark.triangle")
+              .font(DS.TextStyle.footnote)
+              .foregroundStyle(DS.Color.destructive.swiftUI)
+          }
+          if state == .loading {
+            ProgressView()
+              .frame(maxWidth: .infinity)
+              .accessibilityLabel(Text(String(localized: "wr.ai.analyzing")))
+          }
+          DSButton(String(localized: "wr.ai.analyze")) {
+            Task { await book.analyze(lang: lang.rawValue) }
+          }
+          .disabled(state == .loading)
+        }
+      }
+    }
+  }
+
+  private func aiResult(_ a: WeeklyAnalysis) -> some View {
+    VStack(spacing: DS.Spacing.sm) {
+      DSCard {
+        VStack(alignment: .leading, spacing: DS.Spacing.xs) {
+          Text(String(localized: "wr.ai.score"))
+            .font(DS.TextStyle.headline)
+          if let score = a.score {
+            Text(verbatim: Self.plain(score))
+              .font(.system(size: 44, weight: .heavy).monospacedDigit())
+              .foregroundStyle(DS.Color.foreground.swiftUI)
+          }
+          if !a.summary.isEmpty {
+            Text(a.summary)
+              .font(DS.TextStyle.body)
+              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
+      }
+      ForEach(a.insights.indices, id: \.self) { i in
+        let ins = a.insights[i]
+        DSCard {
+          HStack(alignment: .top, spacing: DS.Spacing.sm) {
+            Image(systemName: Self.insightIcon(ins.category))
+              .font(.title3)
+              .foregroundStyle(DS.Color.primary.swiftUI)
+              .frame(width: 28)
+              .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 2) {
+              HStack {
+                Text(ins.title).font(DS.TextStyle.headline)
+                if let t = ins.trend {
+                  Image(systemName: Self.trendIcon(t))
+                    .font(.caption)
+                    .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+                    .accessibilityLabel(Text(Self.trendLabel(t)))
+                }
+              }
+              Text(ins.detail)
+                .font(DS.TextStyle.footnote)
+                .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            }
+            Spacer(minLength: 0)
+          }
+          .accessibilityElement(children: .combine)
+        }
+      }
+      ForEach(a.recommendations.indices, id: \.self) { i in
+        let rec = a.recommendations[i]
+        DSCard {
+          HStack(alignment: .top, spacing: DS.Spacing.sm) {
+            Circle()
+              .fill(Self.priorityColor(rec.priority))
+              .frame(width: 10, height: 10)
+              .padding(.top, 5)
+              .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 2) {
+              Text(rec.action).font(DS.TextStyle.headline)
+              Text(rec.reason)
+                .font(DS.TextStyle.footnote)
+                .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            }
+            Spacer(minLength: 0)
+          }
+          .accessibilityElement(children: .combine)
+          .accessibilityValue(Text(Self.priorityLabel(rec.priority)))
+        }
+      }
+    }
+  }
+
+  /// `INSIGHT_ICON`: glyph theo miền (tập đóng của hàm); miền lạ → "nhận xét".
+  static func insightIcon(_ category: String) -> String {
+    switch category {
+    case "nutrition": "fork.knife"
+    case "training": "dumbbell.fill"
+    case "sleep": "moon.fill"
+    case "recovery": "heart.text.square"
+    default: "chart.line.uptrend.xyaxis"
+    }
+  }
+
+  static func trendIcon(_ t: WeeklyAnalysis.Insight.Trend) -> String {
+    switch t {
+    case .up: "arrow.up.right"
+    case .down: "arrow.down.right"
+    case .stable: "arrow.right"
+    }
+  }
+
+  static func trendLabel(_ t: WeeklyAnalysis.Insight.Trend) -> String {
+    switch t {
+    case .up: String(localized: "wr.ai.trend.up")
+    case .down: String(localized: "wr.ai.trend.down")
+    case .stable: String(localized: "wr.ai.trend.stable")
+    }
+  }
+
+  /// `PRIORITY_COLOR`: cao đỏ, vừa cam, thấp xám; lạ → màu viền.
+  static func priorityColor(_ p: WeeklyAnalysis.Advice.Priority?) -> Color {
+    switch p {
+    case .high?: DS.Color.destructive.swiftUI
+    case .medium?: DS.Color.metricOrange.swiftUI
+    case .low?: Color(hex: "#a8b2c4")
+    case nil: DS.Color.border.swiftUI
+    }
+  }
+
+  static func priorityLabel(_ p: WeeklyAnalysis.Advice.Priority?) -> String {
+    switch p {
+    case .high?: String(localized: "wr.ai.priority.high")
+    case .medium?: String(localized: "wr.ai.priority.medium")
+    case .low?: String(localized: "wr.ai.priority.low")
+    case nil: ""
+    }
+  }
+
+  /// `AI_FAILURE_KEY`.
+  static func failureText(_ f: EdgeFunction.Failure) -> String {
+    switch f {
+    case .notDeployed: String(localized: "ai.failure.notDeployed")
+    case .providerError: String(localized: "ai.failure.providerError")
+    case .unauthorised: String(localized: "ai.failure.signedOut")
+    case .rateLimited: String(localized: "ai.failure.rateLimited")
+    case .offline: String(localized: "ai.failure.offline")
+    case .unknown: String(localized: "ai.failure.unknown")
+    }
   }
 
   // MARK: - Khuyến nghị
