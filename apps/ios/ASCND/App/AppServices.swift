@@ -342,7 +342,9 @@ final class AppServices {
   /// hỏng thì không có màn — không đoán "có tín hiệu hồi phục" khi không đọc được.
   func makeWeeklyReview(userId: String, today: LocalDate) -> WeeklyReviewBook? {
     guard let rows, let copy = ReadinessCopyStore.copy else { return nil }
-    return WeeklyReviewBook(userId: userId, today: today, store: rows, copy: copy, in: .current)
+    return WeeklyReviewBook(
+      userId: userId, today: today, store: rows, edge: backend.map(SupabaseEdgeCaller.init(backend:)), copy: copy,
+      in: .current)
   }
 
   /// Thử thách tuần: gieo + đo qua kho hàng chung, thưởng qua RPC của server.
