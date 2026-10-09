@@ -365,7 +365,11 @@ final class AppServices {
   /// Tín hiệu hôm nay cho chip gợi ý của Trợ lý / AI Coach (#527): ba lượt
   /// đọc qua kho hàng chung.
   func makeAssistantSignal(userId: String, today: LocalDate) -> AssistantSignalBook? {
-    rows.map { AssistantSignalBook(userId: userId, today: today, store: $0, in: .current) }
+    // Bảng chữ sẵn sàng đọc `readiness_explain` (`hasRecoverySignal`) cho lời
+    // tóm tắt; thiếu thì lời tóm tắt chỉ nói về khả năng tập.
+    rows.map {
+      AssistantSignalBook(userId: userId, today: today, store: $0, in: .current, copy: ReadinessCopyStore.copy)
+    }
   }
 
   /// Trí nhớ coach (#527): đọc + xoá `coach_memory`.

@@ -119,6 +119,24 @@ struct AssistantSignalTests {
     #expect(bad.daysSinceWorkout == nil)
   }
 
+  @Test func nameAndRecoveryForTheBrief() {
+    var seen: String?
+    let s = AssistantSuggestions.Signal.from(
+      log: .object(["readiness_explain": .string("sleep:80|load:45")]),
+      profile: .object(["name": .string("  Nguyễn Anh Kiệt ")]), lastWorkoutAt: nil, today: Self.today, in: Self.tz,
+      hasRecovery: { explain in
+        seen = explain
+        return true
+      })
+    #expect(s.name == "Nguyễn Anh Kiệt")
+    #expect(s.hasRecovery)
+    #expect(seen == "sleep:80|load:45")
+    let none = AssistantSuggestions.Signal.from(
+      log: nil, profile: .object(["name": .number(3)]), lastWorkoutAt: nil, today: Self.today, in: Self.tz)
+    #expect(none.name == "")
+    #expect(!none.hasRecovery)
+  }
+
   @Test func zeroCalorieTargetIsNoPlan() {
     let s = AssistantSuggestions.Signal.from(
       log: nil, profile: .object(["tdee_target_kcal": .number(0), "macro_protein_g": .null]), lastWorkoutAt: nil,

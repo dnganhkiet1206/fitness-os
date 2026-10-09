@@ -8,7 +8,8 @@ public import Observation
 extension AssistantSuggestions.Signal {
   /// Dựng từ ba lượt đọc (thiếu hàng nào thì như RN: `undefined`).
   public static func from(
-    log: JSONValue?, profile: JSONValue?, lastWorkoutAt: JSONValue?, today: LocalDate, in tz: TimeZone
+    log: JSONValue?, profile: JSONValue?, lastWorkoutAt: JSONValue?, today: LocalDate, in tz: TimeZone,
+    hasRecovery recovery: (String?) -> Bool = { _ in false }
   ) -> Self {
     let kcalTarget = MacroTargets.calorieTarget(text(profile?["tdee_target_kcal"]))
     // `macroTargetsFor(profile).protein`: đạm đã đặt, không thì 27 % calo / 4.
@@ -35,7 +36,10 @@ extension AssistantSuggestions.Signal {
       proteinG: or0(JS.number(log?["protein_g"])),
       proteinTarget: protein,
       steps: or0(JS.number(log?["steps"])),
-      daysSinceWorkout: days)
+      daysSinceWorkout: days,
+      // `typeof profile?.name === 'string' ? profile.name.trim() : ''`.
+      name: profile?["name"]?.stringValue?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "",
+      hasRecovery: recovery(log?["readiness_explain"]?.stringValue))
   }
 
   /// `Number(x) || 0`.
@@ -74,14 +78,22 @@ public final class AssistantSignalBook {
 
   @ObservationIgnored private let store: any RowStore
   @ObservationIgnored private let tz: TimeZone
+  @ObservationIgnored private let copy: ReadinessCard.Copy?
   @ObservationIgnored private var closed = false
 
-  public init(userId: String, today: LocalDate, store: any RowStore, in tz: TimeZone) {
+  /// `copy`: bảng chữ sẵn sàng để đọc `readiness_explain` (`hasRecoverySignal`);
+  /// không có thì coi như không có tín hiệu hồi phục — lời tóm tắt nói về khả
+  /// năng tập, không khẳng định gì về hồi phục.
+  public init(userId: String, today: LocalDate, store: any RowStore, in tz: TimeZone, copy: ReadinessCard.Copy? = nil) {
     self.userId = userId
     self.today = today
     self.store = store
     self.tz = tz
+    self.copy = copy
   }
+
+  /// Lời chào + tóm tắt của hôm nay (`briefFor`).
+  public func brief(hour: Int) -> AssistantBrief.Brief { AssistantBrief.brief(for: signal, hour: hour) }
 
   public func close() { closed = true }
 
@@ -104,7 +116,7 @@ public final class AssistantSignalBook {
     async let profile = Self.read(
       store,
       RowQuery(
-        table: "profiles", columns: "tdee_target_kcal, macro_protein_g", filters: [.eq("user_id", user)],
+        table: "profiles", columns: "name, tdee_target_kcal, macro_protein_g", filters: [.eq("user_id", user)],
         mode: .maybeSingle))
     async let last = Self.read(
       store,
@@ -113,7 +125,10 @@ public final class AssistantSignalBook {
         order: RowQuery.Order(column: "date_time", ascending: false), limit: 1))
     let (l, p, w) = await (log, profile, last)
     guard !closed, day == today else { return }
-    signal = .from(log: l, profile: p, lastWorkoutAt: w?["date_time"], today: day, in: tz)
+    let copy = self.copy
+    signal = .from(
+      log: l, profile: p, lastWorkoutAt: w?["date_time"], today: day, in: tz,
+      hasRecovery: { explain in copy.map { ReadinessCard.hasRecoverySignal(explain, copy: $0) } ?? false })
   }
 
   /// Một lượt đọc; hỏng → `nil` (RN: `data` của query là `undefined`).

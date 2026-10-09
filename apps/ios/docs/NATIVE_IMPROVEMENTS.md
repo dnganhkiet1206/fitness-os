@@ -66,5 +66,8 @@ miễn **giữ nguyên ý định** của app và chỉ làm app tốt hơn — 
 | Coach nhớ gì — đọc hỏng | Màn lỗi có nút thử lại (kéo để đọc lại vẫn có) | Chỉ chữ "Kéo xuống để thử lại" | cải tiến | tuỳ | #527 (`native/ios-rewrite`) | E |
 | Coach nhớ gì — xoá một | Lệnh xoá lọc thêm `user_id` (ngoài RLS) | `.delete().eq('id', id)` — dựa hoàn toàn vào RLS | cải tiến (phòng thủ) | tuỳ | #527 (`native/ios-rewrite`) | E |
 | Coach nhớ gì — lối vào | Nút ở thanh trên của màn chat (tạm, tới khi có bảng điều khiển tab Trợ lý) | Hàng "Coach nhớ gì" trên tab Trợ lý | tạm thời | không cần | #527 (`native/ios-rewrite`) | E |
+| Tóm tắt Trợ lý — ăn đúng mục tiêu calo | Dòng riêng "Hôm nay bạn đã ăn đúng mục tiêu calo." (`kcal-on`) | `left > 0 ? … : …` → "Bạn đã vượt mục tiêu calo hôm nay khoảng -0 kcal." | sửa lỗi RN | nên làm theo | #527 (`native/ios-rewrite`) | E |
+| Tóm tắt Trợ lý — tiếng Tây Ban Nha | Lời chào + các dòng có bản es (số nhóm theo CLDR es) | `Bilingual` vi / en — es hiện tiếng Anh | sửa lỗi RN | nên làm theo | #527 (`native/ios-rewrite`) | E |
+| Coach nhớ gì — lối vào (cập nhật dòng "tạm" ở trên) | Về đúng chỗ của RN: ô "Coach nhớ gì" trong lưới công cụ của tab Trợ lý; nút tạm trên chat đã gỡ | Ô trong lưới công cụ | như RN | — | #527 (`native/ios-rewrite`) | E |
 
 Thêm dòng mới ở cuối bảng; giữ dòng cũ — sổ là lịch sử, không phải danh sách việc.

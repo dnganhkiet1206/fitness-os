@@ -2,75 +2,6 @@ import ASCNDCore
 import ASCNDDesignSystem
 import SwiftUI
 
-/// Tab Trợ lý (#527 Phase 6). Lát đầu: AI Coach — `app/ai-coach.tsx` @ fac9ac2.
-/// Bảng điều khiển của tab (`(tabs)/assistant.tsx`: tóm tắt hôm nay, thẻ chỉ
-/// số, lối vào tổng kết tuần / trí nhớ coach) là lát sau; cho tới lúc ấy tab
-/// mở thẳng vào cuộc trò chuyện.
-///
-/// Cuộc trò chuyện thuộc PHIÊN như RN (`useCoachChat` ở trên router): dựng một
-/// lần trong cây của tài khoản này (cây dựng lại theo `.id(userId)`), sống qua
-/// lượt đổi tab, đóng khi phiên không còn là của người này.
-struct AssistantTab: View {
-  @Environment(WorkoutFlow.self) private var flow
-  @Environment(AppServices.self) private var services
-  @Environment(\.scenePhase) private var scenePhase
-  @State private var chat: CoachChat?
-  @State private var signal: AssistantSignalBook?
-  @State private var memory: CoachMemoryBook?
-  @State private var built = false
-
-  var body: some View {
-    NavigationStack {
-      Group {
-        if let chat {
-          CoachChatView(
-            chat: chat, lang: services.preferences.lang, suggestions: signal?.suggestions ?? [], memory: memory)
-        } else if built {
-          // Thiếu cấu hình Supabase: không có coach để hỏi.
-          ContentUnavailableView {
-            Label("coach.title", systemImage: "sparkles")
-          } description: {
-            Text("coach.unavailable")
-          }
-        }
-      }
-      .navigationTitle(Text("coach.title"))
-      .navigationBarTitleDisplayMode(.inline)
-    }
-    .task {
-      guard !built else { return }
-      let userId = flow.today.userId
-      chat = services.makeCoachChat(userId: userId)
-      signal = services.makeAssistantSignal(userId: userId, today: Self.today())
-      memory = services.makeCoachMemory(userId: userId)
-      built = true
-      await signal?.load()
-    }
-    // RN học khi app vào nền (`AppState` → `background`): đó mới là lúc cuộc
-    // trò chuyện thật sự "xong".
-    .onChange(of: scenePhase) { _, phase in
-      if phase == .background { chat?.appBackgrounded() }
-      // Ra tiền cảnh: số hôm nay có thể đã đổi (ghi bữa / đồng bộ Health), hoặc
-      // đã qua nửa đêm — chip đọc lại.
-      if phase == .active, let signal { Task { await signal.move(to: Self.today()) } }
-    }
-    .onChange(of: isCurrentSession) { _, current in
-      if !current {
-        chat?.close()
-        signal?.close()
-        memory?.close()
-      }
-    }
-  }
-
-  private static func today() -> LocalDate { LocalDate(SystemWallClock().nowMillis(), in: .current) }
-
-  private var isCurrentSession: Bool {
-    guard let chat else { return true }
-    return services.session.session?.userId == chat.userId
-  }
-}
-
 /// Cuộc trò chuyện: lời chào + bốn chip gợi ý khi trống, bong bóng hai phía (trả lời vẽ
 /// markdown như `MarkdownLite`), ô soạn có nút gửi, lịch sử ở thanh trên.
 ///
@@ -83,9 +14,6 @@ struct CoachChatView: View {
   /// Cùng bốn chip với thẻ coach của Trợ lý (`useAssistantSignal`): chạm là
   /// hỏi luôn câu của chip.
   let suggestions: [AssistantSuggestions.Suggestion]
-  /// "Coach nhớ gì" — RN mở từ bảng điều khiển của tab Trợ lý; tới khi bảng
-  /// ấy có, lối vào ở thanh trên của chat.
-  let memory: CoachMemoryBook?
 
   @State private var draft = ""
   @State private var showsHistory = false
@@ -111,18 +39,9 @@ struct CoachChatView: View {
       }
     }
     .safeAreaInset(edge: .bottom) { composer }
+    .navigationTitle(Text("coach.title"))
+    .navigationBarTitleDisplayMode(.inline)
     .toolbar {
-      if let memory {
-        ToolbarItem(placement: .topBarLeading) {
-          NavigationLink {
-            CoachMemoryView(book: memory)
-          } label: {
-            Image(systemName: "brain")
-              .frame(minWidth: 44, minHeight: 44)
-          }
-          .accessibilityLabel(Text("cm.title"))
-        }
-      }
       ToolbarItem(placement: .topBarTrailing) {
         Button {
           showsHistory = true
@@ -255,7 +174,11 @@ struct CoachChatView: View {
     send(text)
   }
 
-  private func send(_ text: String) {
+  private func send(_ text: String) { Self.ask(chat, text, lang: lang) }
+
+  /// Một câu hỏi tới coach với ngày + múi giờ của máy lúc bấm — dùng chung
+  /// cho ô soạn, chip trong chat và chip trên thẻ coach của tab Trợ lý.
+  static func ask(_ chat: CoachChat, _ text: String, lang: AppPreferences.Lang) {
     let code = lang.rawValue
     let now = Date()
     let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
@@ -264,7 +187,7 @@ struct CoachChatView: View {
 }
 
 /// Chip gợi ý: glyph theo `SuggestionGlyph`, chữ theo ngôn ngữ của app.
-private struct FlowChips: View {
+struct FlowChips: View {
   let suggestions: [AssistantSuggestions.Suggestion]
   let lang: AppPreferences.Lang
   let disabled: Bool

@@ -54,11 +54,16 @@ public enum AssistantSuggestions {
     public var steps: Double
     /// Số ngày lịch từ buổi gần nhất; `nil` khi chưa ghi buổi nào.
     public var daysSinceWorkout: Int?
+    /// Tên của người dùng, hoặc "" — không bao giờ một chữ giữ chỗ.
+    public var name: String
+    /// Điểm hôm nay có dựa trên đo hồi phục (ngủ / HRV / RHR) không
+    /// (`hasRecoverySignal`) — chỉ lời tóm tắt đọc.
+    public var hasRecovery: Bool
 
     public init(
       readiness: Int? = nil, status: String? = nil, acwr: Double? = nil, sleepMin: Double = 0, kcal: Double = 0,
       kcalTarget: Double = 2200, proteinG: Double = 0, proteinTarget: Double = 140, steps: Double = 0,
-      daysSinceWorkout: Int? = nil
+      daysSinceWorkout: Int? = nil, name: String = "", hasRecovery: Bool = false
     ) {
       self.readiness = readiness
       self.status = status
@@ -70,6 +75,8 @@ public enum AssistantSuggestions {
       self.proteinTarget = proteinTarget
       self.steps = steps
       self.daysSinceWorkout = daysSinceWorkout
+      self.name = name
+      self.hasRecovery = hasRecovery
     }
   }
 
