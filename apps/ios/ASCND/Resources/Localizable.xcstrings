@@ -22457,19 +22457,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "Nothing logged today"
+      "value": "Nothing logged today — tap to log a meal"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Chưa ghi bữa nào hôm nay"
+      "value": "Chưa ghi bữa nào hôm nay — nhấn để ghi"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Nada registrado hoy"
+      "value": "Nada registrado hoy — toca para registrar una comida"
      }
     }
    }
@@ -22480,19 +22480,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "Nothing logged this day"
+      "value": "Nothing logged this day — tap to log a meal"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Ngày này chưa ghi bữa nào"
+      "value": "Ngày này chưa ghi bữa nào — nhấn để ghi"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Nada registrado este día"
+      "value": "Nada registrado este día — toca para registrar una comida"
      }
     }
    }
@@ -23252,6 +23252,512 @@
      "stringUnit": {
       "state": "translated",
       "value": "Esto elimina el alimento registrado en %@ este día."
+     }
+    }
+   }
+  },
+  "diary.addMeal": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Log a meal for this day"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ghi một bữa cho ngày này"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Registra una comida para este día"
+     }
+    }
+   }
+  },
+  "diary.meal.addAction": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Add"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Thêm"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Añadir"
+     }
+    }
+   }
+  },
+  "logMeal.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Log Meal"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ghi bữa ăn"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Registrar comida"
+     }
+    }
+   }
+  },
+  "logMeal.search": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Search foods…"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tìm món ăn…"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Buscar alimentos…"
+     }
+    }
+   }
+  },
+  "logMeal.noResults": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "No foods found"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Không tìm thấy món nào"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "No se encontraron alimentos"
+     }
+    }
+   }
+  },
+  "logMeal.quickAdd": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Quick add"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Thêm nhanh"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Añadido rápido"
+     }
+    }
+   }
+  },
+  "logMeal.a11y.add": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Adds to this meal"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Thêm vào bữa này"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Añade a esta comida"
+     }
+    }
+   }
+  },
+  "logMeal.custom": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Custom food"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tự nhập món ăn"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Alimento personalizado"
+     }
+    }
+   }
+  },
+  "logMeal.custom.name": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Dish name"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tên món"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nombre del plato"
+     }
+    }
+   }
+  },
+  "logMeal.custom.namePlaceholder": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Dish name (e.g. Homemade chicken rice)"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tên món (VD: Cơm gà nhà làm)"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nombre del plato (p. ej. arroz con pollo casero)"
+     }
+    }
+   }
+  },
+  "logMeal.custom.add": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Add to meal"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Thêm vào bữa"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Añadir a la comida"
+     }
+    }
+   }
+  },
+  "logMeal.custom.outOfRange": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Calories must be 0–10000 and each macro 0–2000 g"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Calo phải trong 0–10000, mỗi chất trong 0–2000 g"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Las calorías deben estar entre 0 y 10000 y cada macro entre 0 y 2000 g"
+     }
+    }
+   }
+  },
+  "logMeal.protein": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Protein"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đạm"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Proteína"
+     }
+    }
+   }
+  },
+  "logMeal.carbs": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Carbs"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tinh bột"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Carbohidratos"
+     }
+    }
+   }
+  },
+  "logMeal.fat": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Fat"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Béo"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Grasa"
+     }
+    }
+   }
+  },
+  "logMeal.noItems": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Search or add a food to start"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tìm hoặc thêm món để bắt đầu"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Busca o añade un alimento para empezar"
+     }
+    }
+   }
+  },
+  "logMeal.items": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Items"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Các món"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Elementos"
+     }
+    }
+   }
+  },
+  "logMeal.total": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nutrition total"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tổng dinh dưỡng"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Total nutricional"
+     }
+    }
+   }
+  },
+  "logMeal.save": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Save Meal"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Lưu bữa ăn"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Guardar comida"
+     }
+    }
+   }
+  },
+  "logMeal.saved": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Meal saved!"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đã lưu bữa ăn!"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "¡Comida guardada!"
+     }
+    }
+   }
+  },
+  "logMeal.queued": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Saved — will sync when you're back online"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đã lưu — sẽ đồng bộ khi có mạng"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Guardado — se sincronizará cuando vuelvas a tener conexión"
+     }
+    }
+   }
+  },
+  "logMeal.a11y.remove %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Remove %@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bỏ %@ khỏi danh sách"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Quitar %@"
      }
     }
    }

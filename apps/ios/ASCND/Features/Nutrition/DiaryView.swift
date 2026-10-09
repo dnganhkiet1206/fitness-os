@@ -16,9 +16,14 @@ import SwiftUI
 /// - xoá hỏi lại, câu hỏi nói tên món (hay số món của cả bữa) và đúng ngày;
 ///   xong thì "Đã xoá" kèm Hoàn tác khi chụp lại được hàng.
 ///
+/// - ghi bữa CHO NGÀY ĐANG XEM: thẻ rỗng "nhấn để ghi", nút "Ghi một bữa cho
+///   ngày này" khi ngày đã có bữa, và "Thêm" trên thẻ bữa (đúng bữa ấy) — mở
+///   `LogMealView` mang ngày (và bữa) theo;
+///
 /// Khác RN / chưa có:
-/// - chưa có màn ghi bữa (`log-meal`): không có nút "Ghi một bữa cho ngày này"
-///   / vuốt "Thêm" — thẻ rỗng chỉ nói ngày chưa có bữa nào;
+/// - "Thêm" vào một bữa là nút trong thẻ đã mở + hành động VoiceOver, không vuốt;
+/// - bữa vừa lưu hiện ra khi hàng đợi gửi xong (sổ đọc lại mỗi lần hàng đợi
+///   vơi đi), không vá lạc quan;
 /// - chưa có "Chia sẻ lên Cộng đồng" (Cộng đồng chưa port);
 /// - xoá cả bữa là nút trong thẻ đã mở + hành động VoiceOver, không phải vuốt.
 struct DiaryView: View {
@@ -30,6 +35,7 @@ struct DiaryView: View {
   @State private var undo: [DeletedMealItem] = []
   @State private var notice: String?
   @State private var error: String?
+  @State private var logging: LogMealRequest?
 
   var body: some View {
     ScrollView {
@@ -58,6 +64,15 @@ struct DiaryView: View {
     .navigationBarTitleDisplayMode(.inline)
     .refreshable { await book.load() }
     .task(id: book.date) { await book.load() }
+    // Bữa vừa lưu đi qua hàng đợi: hàng đợi vơi đi thì đọc lại ngày.
+    .onChange(of: services.sync.pendingCount) { old, new in
+      if new < old { Task { await book.load() } }
+    }
+    .sheet(item: $logging) { req in
+      LogMealView(userId: book.userId, date: book.date, mealType: req.mealType) {
+        Task { await book.load() }
+      }
+    }
     .onChange(of: book.date) { _, _ in clearNotice() }
     .sheet(item: $editing) { item in
       ServingsSheet(item: item, busy: book.busy) { servings in
@@ -165,18 +180,37 @@ struct DiaryView: View {
       }
       let groups = MealDiary.groups(meals)
       if groups.isEmpty {
-        DSEmptyState(
-          systemImage: "fork.knife",
-          title: book.isToday ? String(localized: "diary.empty.today") : String(localized: "diary.empty.day"),
-          message: "")
+        // Thẻ rỗng là lối ghi — mang NGÀY theo (`/log-meal?date=`).
+        Button { logging = LogMealRequest(mealType: nil) } label: {
+          DSCard {
+            HStack(spacing: DS.Spacing.sm) {
+              Image(systemName: "fork.knife").accessibilityHidden(true)
+              Text(book.isToday ? String(localized: "diary.empty.today") : String(localized: "diary.empty.day"))
+                .font(DS.TextStyle.body)
+                .multilineTextAlignment(.leading)
+              Spacer(minLength: 0)
+            }
+            .frame(minHeight: 44)
+          }
+        }
+        .buttonStyle(.plain)
       } else {
         ForEach(groups) { g in
           MealGroupCard(
             group: g, busy: book.busy,
             onEdit: { editing = $0 },
             onDelete: { pendingItem = $0 },
-            onDeleteGroup: { pendingGroup = g })
+            onDeleteGroup: { pendingGroup = g },
+            onAddTo: { logging = LogMealRequest(mealType: g.type) })
         }
+        Button { logging = LogMealRequest(mealType: nil) } label: {
+          Label(String(localized: "diary.addMeal"), systemImage: "plus")
+            .font(DS.TextStyle.footnote.weight(.semibold))
+            .foregroundStyle(DS.Color.primary.swiftUI)
+            .frame(maxWidth: .infinity, minHeight: 44)
+            .overlay(RoundedRectangle(cornerRadius: DS.Radius.sm).stroke(DS.Color.border.swiftUI, lineWidth: 1))
+        }
+        .buttonStyle(.plain)
       }
     }
   }
@@ -307,6 +341,7 @@ private struct MealGroupCard: View {
   let onEdit: (MealDiary.Item) -> Void
   let onDelete: (MealDiary.Item) -> Void
   let onDeleteGroup: () -> Void
+  let onAddTo: () -> Void
   @State private var open = false
 
   private var name: String { DiaryView.mealName(group.type) }
@@ -345,10 +380,18 @@ private struct MealGroupCard: View {
         .buttonStyle(.plain)
         .sensoryFeedback(.selection, trigger: open)
         .accessibilityValue(Text(open ? String(localized: "diary.a11y.expanded") : String(localized: "diary.a11y.collapsed")))
+        .accessibilityAction(named: Text(String(localized: "diary.meal.addAction"))) { onAddTo() }
         .accessibilityAction(named: Text(String(localized: "diary.meal.deleteAction"))) { onDeleteGroup() }
 
         if open {
           ForEach(group.items) { it in row(it) }
+          Button(action: onAddTo) {
+            Label(String(localized: "diary.meal.addAction"), systemImage: "plus")
+              .font(DS.TextStyle.footnote.weight(.semibold))
+              .frame(maxWidth: .infinity, minHeight: 44)
+          }
+          .buttonStyle(.plain)
+          .foregroundStyle(DS.Color.primary.swiftUI)
           Button(role: .destructive, action: onDeleteGroup) {
             Label(String(localized: "diary.meal.deleteAction"), systemImage: "trash")
               .font(DS.TextStyle.footnote.weight(.semibold))
@@ -471,4 +514,10 @@ private struct ServingsSheet: View {
     .accessibilityLabel(Text(verbatim: label))
     .sensoryFeedback(.selection, trigger: servings)
   }
+}
+
+/// Mở màn ghi bữa từ nhật ký; `mealType` khi vào từ một thẻ bữa.
+struct LogMealRequest: Identifiable {
+  let id = UUID()
+  let mealType: String?
 }

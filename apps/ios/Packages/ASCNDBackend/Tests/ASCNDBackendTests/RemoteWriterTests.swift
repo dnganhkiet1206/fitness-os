@@ -256,3 +256,26 @@ struct RemoteWriterWeightTests {
     #expect(!SupabaseRemoteWriter.isRow(other))
   }
 }
+
+struct RemoteWriterMealTests {
+  static func meal(userId: String = "u1", payloadUser: String = "u1", meal: String = "lunch") -> OutboxEntry {
+    let e = MealLog.entry(
+      id: "m1", itemIds: ["i1"], userId: payloadUser, mealType: meal, dateTime: "2026-10-09T05:00:00.000Z",
+      items: [MealLog.Item(id: "x", foodItemId: nil, name: "Phở", kcal: 450, protein: 20, carbs: 60, fat: 12)],
+      createdAt: EpochMillis(0))
+    return OutboxEntry(id: e.id, userId: userId, kind: e.kind, payload: e.payload, createdAt: e.createdAt)
+  }
+
+  @Test func mealGoesToMealEntries() {
+    #expect(SupabaseRemoteWriter.tables[MealLog.kind] == "meal_entries")
+    #expect(!SupabaseRemoteWriter.deletes(MealLog.kind))
+    #expect(!SupabaseRemoteWriter.overwrites(MealLog.kind))
+  }
+
+  /// Bản ghi của chính chủ, đúng loại bữa, có món — còn lại không bao giờ gửi.
+  @Test func mealRowIsCheckedByOwnerTypeAndItems() {
+    #expect(SupabaseRemoteWriter.isRow(Self.meal()))
+    #expect(!SupabaseRemoteWriter.isRow(Self.meal(payloadUser: "u2")))
+    #expect(!SupabaseRemoteWriter.isRow(Self.meal(meal: "brunch")))
+  }
+}

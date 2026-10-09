@@ -78,5 +78,10 @@ miễn **giữ nguyên ý định** của app và chỉ làm app tốt hơn — 
 | Insight hôm nay — lỗi / bộ nhớ đệm | Lỗi nói rõ loại (`AI_FAILURE_KEY`) dưới "chạm để thử lại"; bộ nhớ đệm bền chỉ giữ MỘT kết quả (khoá có người dùng · ngày · ngôn ngữ · dấu) | Chỉ "Chưa đọc được hôm nay. Chạm để thử lại."; persister giữ mọi khoá tới 24 giờ | cải tiến | tuỳ | #527 (`native/ios-rewrite`) | E |
 | Vận động — mục tiêu bước | Nhớ theo tài khoản (khoá `ascnd-steps-goal.<userId>`); nhiệm vụ bước của phòng linh vật chấm theo đúng mục tiêu này | Một khoá chung `ascnd-steps-goal`, xoá khi đổi người (`onUserScopedReset`) | cải tiến | tuỳ | #527 (`native/ios-rewrite`) | E |
 | Vận động — đọc hỏng | Màn lỗi có thử lại; đọc lại hỏng khi đã có số thì giữ số | `data` không có → vẽ 0 bước, TB 0, xu thế 0 % | sửa lỗi RN | nên làm theo | #527 (`native/ios-rewrite`) | E |
+| Ghi bữa ăn — lúc lưu | Vào hàng đợi rồi đóng màn ngay cả khi có mạng ("Đã lưu bữa ăn!"); hàng đợi gửi liền sau đó, lỗi thì tự thử lại | Có mạng: chờ server rồi mới đóng (`onSuccess`); mất mạng: đóng ngay | lệch nền tảng (đơn giản hoá) | không cần | #527 (`native/ios-rewrite`) | A |
+| Ghi bữa ăn — tìm món lỗi mạng | Nói "không tải được" dưới ô tìm | `useQuery` lỗi → danh sách trống, không nói gì | sửa lỗi RN | nên làm theo | #527 (`native/ios-rewrite`) | A |
+| Ghi bữa ăn — phần chưa port | Chưa có gợi ý AI, quét ảnh / mã vạch, món yêu thích, "Ăn lại bữa trước", sửa macro một món đã thêm | Có | (thiếu — lát sau) | không cần | #527 (`native/ios-rewrite`) | A |
+| Nhật ký bữa ăn — câu khi ngày rỗng (cập nhật dòng "thiếu" ở trên) | Về đúng RN: thẻ rỗng "… — nhấn để ghi" mở màn ghi bữa cho ngày đang xem | Như native | (đã đóng) | không cần | #527 (`native/ios-rewrite`) | A |
+| Nhật ký bữa ăn — bữa vừa ghi hiện ra | Sổ đọc lại mỗi lần hàng đợi vơi đi | `invalidate` lúc lưu (online) / lúc phát lại | lệch nền tảng | không cần | #527 (`native/ios-rewrite`) | A |
 
 Thêm dòng mới ở cuối bảng; giữ dòng cũ — sổ là lịch sử, không phải danh sách việc.
