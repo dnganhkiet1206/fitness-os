@@ -4,7 +4,7 @@ import SwiftUI
 
 /// Đích của tab Trợ lý.
 enum AssistantRoute: Hashable {
-  case chat, weekly, steps, biometrics, sleep, memory
+  case chat, weekly, steps, biometrics, sleep, goals, memory
 }
 
 /// Tab Trợ lý (#527 Phase 6) — `(tabs)/assistant.tsx` @ fac9ac2.
@@ -40,6 +40,7 @@ struct AssistantTab: View {
   @State private var nudges: SmartNudgesBook?
   @State private var steps: StepsBook?
   @State private var sleep: SleepInsightsBook?
+  @State private var goals: SmartGoalsBook?
   @State private var hour = Calendar.current.component(.hour, from: Date())
   @State private var built = false
 
@@ -92,6 +93,8 @@ struct AssistantTab: View {
           if let biometrics { BiometricsView(book: biometrics) }
         case .sleep:
           if let sleep { SleepInsightsView(book: sleep, lang: lang) }
+        case .goals:
+          if let goals { SmartGoalsView(book: goals) }
         case .memory:
           if let memory { CoachMemoryView(book: memory) }
         }
@@ -110,6 +113,7 @@ struct AssistantTab: View {
       nudges = services.makeSmartNudges(userId: userId)
       steps = services.makeStepsBook(userId: userId, today: today)
       sleep = services.makeSleepInsights(userId: userId)
+      goals = services.makeSmartGoals(userId: userId, today: today)
       built = true
       await signal?.load()
       // Sau tín hiệu: phân tích calo cần mục tiêu calo của hồ sơ.
@@ -132,6 +136,7 @@ struct AssistantTab: View {
         await metrics?.move(to: today, kcalTarget: kcalTarget)
         await loadInsight()
         await steps?.move(to: today)
+        await goals?.move(to: today)
       }
     }
     .onChange(of: isCurrentSession) { _, current in
@@ -145,6 +150,7 @@ struct AssistantTab: View {
       nudges?.close()
       steps?.close()
       sleep?.close()
+      goals?.close()
     }
   }
 
@@ -220,6 +226,12 @@ struct AssistantTab: View {
         Tool(
           route: .sleep, symbol: "moon.fill", tint: DS.Color.metricPurple.swiftUI,
           label: String(localized: "assistant.tool.sleep"), hint: String(localized: "assistant.tool.sleep.hint")))
+    }
+    if goals != nil {
+      out.append(
+        Tool(
+          route: .goals, symbol: "scope", tint: DS.Color.readinessGreen.swiftUI,
+          label: String(localized: "assistant.tool.goals"), hint: String(localized: "assistant.tool.goals.hint")))
     }
     if memory != nil {
       out.append(

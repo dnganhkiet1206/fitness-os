@@ -448,6 +448,11 @@ final class AppServices {
     }
   }
 
+  /// Hiệu chỉnh mục tiêu (#527): 35 ngày cân + 14 ngày calo / đạm + hồ sơ.
+  func makeSmartGoals(userId: String, today: LocalDate) -> SmartGoalsBook? {
+    rows.map { SmartGoalsBook(userId: userId, today: today, store: $0) }
+  }
+
   func didBecomeActive() {
     // Quay lại tiền cảnh: đo lại đường mạng, dò lại internet ngay.
     network.resume(Self.netPath(monitor.currentPath))

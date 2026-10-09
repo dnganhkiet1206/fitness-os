@@ -73,7 +73,7 @@ Follow-up chỉ được tạo cho mục có nguồn RN cụ thể (#336). Các 
 | Nhật ký bữa ăn một ngày (xem, xoá + hoàn tác, sửa khẩu phần, dựng lại ngày) | `app/diary.tsx`, `today-meals.tsx` `DayMeals`, `use-nutrition.ts` (`useTodayLog`, `useDeleteMealItem`, `useRestoreMealItem`, `useUpdateMealItemServings`, `resyncMealEntry`) | `MealDiary` / `MealDiaryBook`, `SupabaseMealDiary`, `DiaryView` | ported (chỉ online như RN) | chia sẻ Cộng đồng |
 | Ghi bữa ăn (tìm món, món gần đây, tự nhập, khẩu phần, lưu qua hàng đợi `meal`) | `app/log-meal.tsx`, `offline-write.ts` `case 'meal'`, `useRecentFoods` | `MealLog` / `MealLogger`, `SupabaseMealLog`, `LogMealView`, kind `meal` trong `SupabaseRemoteWriter` + `DailyLog.rebuildDays` | partial | gợi ý AI, quét ảnh / mã vạch, món yêu thích, ăn lại bữa trước, sửa macro một món |
 | Ghi cân nặng (upsert theo ngày địa phương, hồ sơ theo lần cân mới nhất, hàng offline) | `app/log-weight.tsx`, `use-weight-write.ts`, `useLogWeight` / `useTodayWeight`, `lib/weight-sync.ts` | `WeightLog` / `WeightLogger`, `SupabaseWeightLog`, `LogWeightView`, hàng "Cân nặng" ở Hôm nay (#576) | ported | ghi ngược Apple Health (guardrail), lịch sử / xoá (màn Tiến độ), không dựng lại `daily_logs` (#266) |
-| Readiness / `daily_logs` | `hooks/use-today-data.ts`, `lib/adaptive-tdee.ts`, `use-biometrics.ts` | không | **decision**: #266 chờ Kiệt; chỉ forensic (D-15 #327) |
+| Readiness / `daily_logs` | `hooks/use-today-data.ts`, `lib/adaptive-tdee.ts`, `use-biometrics.ts` | không | **decision**: #266 chờ Kiệt; chỉ forensic (D-15 #327). `lib/adaptive-tdee.ts` (chỉ đọc, không ghi `daily_logs`) → `AdaptiveTDEE` (Core, E #527, golden từ mã RN) cho màn Hiệu chỉnh mục tiêu |
 | Đồng bộ HealthKit (bước, năng lượng, ngủ) | `hooks/use-health-sync.ts`, `lib/health-sync-write.ts`, `lib/health-days.ts` | không | **decision**: chưa có hợp đồng sản phẩm cho bản native |
 
 ## 7. Điều hướng, offline, nền
@@ -91,7 +91,7 @@ Các mảng sau **not ported** và nằm ngoài phạm vi A cho tới khi #222 g
 - Dinh dưỡng: `nutrition.tsx` (phần còn lại), `log-meal`, `food-*`, `scan-*`, `meal-plan*`, `grocery`. Đã port: `water` (#568), `supplements` trừ tick (#570), `diary`, `log-meal` lõi (A, commit thẳng `native/ios-rewrite`).
 - Cộng đồng: `community*`, `challenges`, `awards`, `shop`, `mascot-room`.
 - Trợ lý và coach: `assistant.tsx` một phần (chưa có thẻ nguồn Health, aura / glass). (`ai-coach` + `coach-memory` đã port, `assistant.tsx` phần lời chào / tóm tắt / thẻ coach / insight hôm nay / ô chỉ số + bảng 7 ngày / công cụ — E #527 Phase 6, `AssistantTab` / `CoachChatView` / `CoachMemoryView`; xem PARITY_MATRIX.)
-- Theo dõi cơ thể: `biometrics`, `log-*` (trừ `log-weight`, #576), `measurements-trend`, `progress-photos`, `weekly-review`, `smart-goals`. (`steps`, `sleep-insights` đã port — E #527, `StepsView` / `SleepInsightsView`.)
+- Theo dõi cơ thể: `biometrics`, `log-*` (trừ `log-weight`, #576), `measurements-trend`, `progress-photos`, `weekly-review`. (`steps`, `sleep-insights`, `smart-goals` đã port — E #527, `StepsView` / `SleepInsightsView` / `SmartGoalsView`.)
 
 `admin/*` (8 màn) là **decision**: cần Kiệt quyết bản native v1 có kèm console quản trị hay không.
 
