@@ -307,6 +307,16 @@ final class AppServices {
       onEnqueued: { _ in sync.kick() })
   }
 
+  /// Ghi cân nặng (#527 Phase 4): có mạng ghi thẳng `weight_logs` (+ hồ sơ),
+  /// mất mạng xếp hàng outbox kind `weight`. `nil` khi thiếu cấu hình Supabase.
+  func makeWeightLogger(userId: String) -> WeightLogger? {
+    guard let backend else { return nil }
+    let sync = self.sync
+    return WeightLogger(
+      userId: userId, source: SupabaseWeightLog(backend: backend), store: outbox,
+      onEnqueued: { _ in sync.kick() })
+  }
+
   /// Thực phẩm bổ sung (#527 Phase 3 · 3.9): đọc server; thêm / xoá thẳng
   /// server khi online, như RN. `nil` khi thiếu cấu hình Supabase.
   func makeSupplementBook(userId: String) -> SupplementBook? {

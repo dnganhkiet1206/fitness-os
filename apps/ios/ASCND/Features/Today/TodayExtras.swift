@@ -14,6 +14,7 @@ struct TodayExtras: View {
 
   @Environment(AppServices.self) private var services
   @Environment(\.scenePhase) private var scenePhase
+  @Environment(\.weightUnit) private var unit
   @State private var readiness: ReadinessBook?
   @State private var biometrics: BiometricsBook?
   @State private var awards: AwardsBook?
@@ -21,6 +22,9 @@ struct TodayExtras: View {
   @State private var challenges: WeeklyChallengesBook?
   @State private var weekly: WeeklyReviewBook?
   @State private var trend: ReadinessTrendBook?
+  /// Cân hôm nay cho hàng "Cân nặng" (`todo-card.tsx: weight → /log-weight`).
+  @State private var weight: WeightLogger?
+  @State private var showsWeight = false
   @State private var showsBiometrics = false
   @State private var built = false
 
@@ -35,6 +39,17 @@ struct TodayExtras: View {
         ReadinessTrendCardView(book: trend)
       }
       HealthSyncCard(isAvailable: services.health.isAvailable, sync: syncHealth)
+      if let weight {
+        // Lối vào màn ghi cân (#527 Phase 4) — RN mở từ thẻ việc hôm nay.
+        Button {
+          showsWeight = true
+        } label: {
+          weightRow(weight)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text(String(localized: "weight.row")))
+        .accessibilityValue(Text(verbatim: weightValue(weight) ?? ""))
+      }
       if let weekly {
         // RN mở từ tab Trợ lý ("Tổng kết tuần"), tab ấy chưa có ở bản iOS.
         NavigationLink {
@@ -53,6 +68,11 @@ struct TodayExtras: View {
         .buttonStyle(.plain)
       }
     }
+    .sheet(isPresented: $showsWeight) {
+      LogWeightView(makeLogger: { services.makeWeightLogger(userId: userId) }) {
+        Task { await weight?.load() }
+      }
+    }
     .navigationDestination(isPresented: $showsBiometrics) {
       if let biometrics { BiometricsView(book: biometrics) }
     }
@@ -67,6 +87,8 @@ struct TodayExtras: View {
       challenges = services.makeWeeklyChallenges(userId: userId, today: today)
       weekly = services.makeWeeklyReview(userId: userId, today: today)
       trend = services.makeReadinessTrend(userId: userId, today: today)
+      weight = services.makeWeightLogger(userId: userId)
+      await weight?.load()
       await readiness?.load()
       await trend?.load()
     }
@@ -94,6 +116,7 @@ struct TodayExtras: View {
       challenges?.close()
       weekly?.close()
       trend?.close()
+      weight?.close()
     }
   }
 
@@ -111,6 +134,31 @@ struct TodayExtras: View {
     .frame(minHeight: 44)
     .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.md))
     .contentShape(Rectangle())
+  }
+
+  /// "Cân nặng · 72.4 kg" khi hôm nay đã cân; chưa cân thì chỉ nhãn.
+  private func weightRow(_ w: WeightLogger) -> some View {
+    HStack {
+      Label(String(localized: "weight.row"), systemImage: "scalemass")
+        .font(DS.TextStyle.headline)
+      Spacer()
+      if let v = weightValue(w) {
+        Text(verbatim: v)
+          .font(DS.TextStyle.footnote.monospacedDigit())
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+      }
+      Image(systemName: "chevron.right")
+        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        .accessibilityHidden(true)
+    }
+    .padding(DS.Spacing.md)
+    .frame(minHeight: 44)
+    .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.md))
+    .contentShape(Rectangle())
+  }
+
+  private func weightValue(_ w: WeightLogger) -> String? {
+    w.todayKg.map { "\(OnboardingRuler.fixed1(unit.display($0))) \(unit.label)" }
   }
 
   private var isCurrentSession: Bool { services.session.session?.userId == userId }

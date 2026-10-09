@@ -239,3 +239,20 @@ extension OutboxEntry {
     return OutboxEntry(id: id, userId: userId, kind: kind, payload: .object(o), createdAt: createdAt)
   }
 }
+
+/// Một lần cân (#527 Phase 4): `applyOfflineWrite` `case 'weight'` — upsert vào
+/// `weight_logs` theo `(user_id, date)`, ghi đè.
+struct RemoteWriterWeightTests {
+  @Test func weightGoesToWeightLogs() {
+    #expect(SupabaseRemoteWriter.tables[WeightLog.kind] == "weight_logs")
+    #expect(!SupabaseRemoteWriter.deletes(WeightLog.kind))
+  }
+
+  @Test func weightRowIsCheckedByOwnerDateAndRange() {
+    let day = LocalDate("2026-10-09")!
+    #expect(SupabaseRemoteWriter.isRow(WeightLog.entry(id: "a", userId: "u1", kg: 72, date: day, createdAt: EpochMillis(0))))
+    let other = OutboxEntry(id: "b", userId: "u1", kind: WeightLog.kind,
+                            payload: WeightLog.row(userId: "u2", kg: 72, date: day), createdAt: EpochMillis(0))
+    #expect(!SupabaseRemoteWriter.isRow(other))
+  }
+}
