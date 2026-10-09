@@ -28,6 +28,9 @@ public struct SupabaseRemoteWriter: RemoteWriter {
     // Một lần uống (#527 Phase 3): upsert theo `id`, bỏ trùng — như
     // `applyOfflineWrite` `case 'water'`.
     Water.addKind: "water_logs",
+    // Một lần cân (#527 Phase 4): upsert theo `(user_id, date)`, GHI ĐÈ — như
+    // `applyOfflineWrite` `case 'weight'` — rồi `syncProfileWeight`.
+    WeightLog.kind: "weight_logs",
   ]
 
   /// Bản ghi lại (#296) GHI ĐÈ hàng có sẵn; bản ghi mới thì bỏ trùng
@@ -81,6 +84,8 @@ public struct SupabaseRemoteWriter: RemoteWriter {
           .eq("id", value: entry.payload["id"]?.stringValue ?? "")
           .eq("user_id", value: entry.userId)
           .execute()
+      } else if entry.kind == WeightLog.kind {
+        try await SupabaseWeightLog.write(client, row: entry.payload, userId: entry.userId)
       } else if entry.kind == PlanEdit.routineDayKind {
         // Gán ngày (#401): `upsert … onConflict: 'user_id,day_of_week'` như
         // baseline (`use-library.ts:461`) — một hàng mỗi ngày, gửi lại là ghi
@@ -139,6 +144,8 @@ public struct SupabaseRemoteWriter: RemoteWriter {
   /// `id` không còn idempotent, và phát lại thành hàng mới. Bản ghi lại mang
   /// id `"<buổi>@<số hàng>"`, hàng của nó là `<buổi>`.
   static func isRow(_ entry: OutboxEntry) -> Bool {
+    // Không có `id` hàng: hàng xác định bởi (người, ngày) — `WeightLog.isRow`.
+    if entry.kind == WeightLog.kind { return WeightLog.isRow(entry) }
     if entry.kind == PlanEdit.routineDayKind {
       // Không có `id`: hàng xác định bởi (người, ngày). Người phải là chủ bản
       // ghi — không thì upsert ghi vào kế hoạch của ai khác (RLS cũng chặn).
