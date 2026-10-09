@@ -24,6 +24,7 @@ struct LogMealView: View {
 
   @Environment(AppServices.self) private var services
   @Environment(\.dismiss) private var dismiss
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var logger: MealLogger?
   @State private var query = ""
   @State private var customOpen = false
@@ -206,7 +207,7 @@ struct LogMealView: View {
     return DSCard {
       VStack(alignment: .leading, spacing: DS.Spacing.sm) {
         Button {
-          withAnimation(.easeOut(duration: 0.2)) { customOpen.toggle() }
+          withAnimation(reduceMotion ? nil : .easeOut(duration: 0.2)) { customOpen.toggle() }
         } label: {
           HStack {
             Label(String(localized: "logMeal.custom"), systemImage: "square.and.pencil")

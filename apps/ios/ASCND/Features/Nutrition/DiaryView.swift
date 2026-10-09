@@ -342,6 +342,7 @@ private struct MealGroupCard: View {
   let onDelete: (MealDiary.Item) -> Void
   let onDeleteGroup: () -> Void
   let onAddTo: () -> Void
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var open = false
 
   private var name: String { DiaryView.mealName(group.type) }
@@ -357,7 +358,7 @@ private struct MealGroupCard: View {
     DSCard {
       VStack(alignment: .leading, spacing: DS.Spacing.sm) {
         Button {
-          withAnimation(.easeOut(duration: 0.26)) { open.toggle() }
+          withAnimation(reduceMotion ? nil : .easeOut(duration: 0.26)) { open.toggle() }
         } label: {
           HStack(alignment: .firstTextBaseline) {
             VStack(alignment: .leading, spacing: 2) {
