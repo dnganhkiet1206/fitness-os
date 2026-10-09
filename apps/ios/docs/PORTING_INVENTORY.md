@@ -44,8 +44,8 @@ Follow-up chỉ được tạo cho mục có nguồn RN cụ thể (#336). Các 
 |---|---|---|---|---|
 | Đọc template + `routine_days` | `use-library.ts:349` | `SupabaseTemplateSource`, cache | ported | |
 | Làm mới khi ra tiền cảnh / có mạng lại | `query-client.ts:74-87` | `WorkoutFlow.isStale` (#396) | ported | |
-| **Tạo / xoá template, gán ngày trong tuần** | `app/templates.tsx` (175), `app/workout-builder.tsx` (1011), `useAddWorkoutTemplate`, `useDeleteWorkoutTemplate`, `useUpsertRoutineDay` (`use-library.ts:472`) | `TemplateListView`, `TemplateFormView`, `WeekPlanView` (Release: builder chỉ ở chế độ gán ngày từ Hôm nay; danh sách template chỉ có trong Lab DEBUG) | partial (đối chiếu E #527 @ `a84c691f`) | lối vào Release cho `templates`; `MuscleArt`; toast "đã thêm vào Kế hoạch" |
-| Thư viện bài tập (thêm/xoá bài riêng) | `app/exercises.tsx` (434), `useAddExercise`, `useDeleteExercise` | `ExercisesView` (Release chỉ qua nút "Tạo" của builder); `ExerciseGuideView`, `ExerciseInsightView` (Release từ màn tập) | partial (đối chiếu E #527 @ `a84c691f`) | lối vào duyệt thư viện / insight từ tab Tập luyện; lọc nhóm cơ; liên quan chạm được |
+| **Tạo / xoá template, gán ngày trong tuần** | `app/templates.tsx` (175), `app/workout-builder.tsx` (1011), `useAddWorkoutTemplate`, `useDeleteWorkoutTemplate`, `useUpsertRoutineDay` (`use-library.ts:472`) | `TemplateListView`, `TemplateFormView`, `WeekPlanView` (Release: tab Tập luyện → danh sách mẫu / Tạo mới; builder gán ngày từ Kế hoạch tuần) | partial (đối chiếu E #527 @ `a84c691f`) | `MuscleArt`; toast "đã thêm vào Kế hoạch" |
+| Thư viện bài tập (thêm/xoá bài riêng) | `app/exercises.tsx` (434), `useAddExercise`, `useDeleteExercise` | `ExercisesView` (Release: tab Tập luyện → Thư viện bài tập; nút "Tạo" của builder); `ExerciseGuideView`, `ExerciseInsightView` (Release từ màn tập) | partial (đối chiếu E #527 @ `a84c691f`) | lọc nhóm cơ; liên quan chạm được |
 | Hướng dẫn bài tập | `app/exercise-guide.tsx` (1920) | không | not ported | nội dung tĩnh, không chặn luồng tập |
 
 ## 4. Xác thực và phiên

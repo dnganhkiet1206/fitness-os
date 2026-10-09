@@ -67,15 +67,9 @@ struct WorkoutsTab: View {
         )
       } else {
         NavigationStack {
-          ScrollView {
-            DSEmptyState(
-              systemImage: "dumbbell",
-              title: String(localized: "workouts.noSession.title"),
-              message: String(localized: "workouts.noSession.message")
-            )
-            .padding(.top, 80)
-          }
-          .refreshable { await flow.refresh() }
+          // Trang gốc của tab (`(tabs)/workouts/index.tsx`): mẫu buổi tập,
+          // builder, lịch sử, thư viện bài tập, tiến bộ từng bài.
+          WorkoutsHomeView(flow: flow)
           .navigationTitle(Text("tab.workouts"))
           .toolbar {
             if let openHistory {
