@@ -314,6 +314,13 @@ final class AppServices {
       englishText: { AwardText.english($0) })
   }
 
+  /// Tổng kết tuần (#527): sáu lệnh đọc qua kho hàng chung. Câu chữ sẵn sàng
+  /// hỏng thì không có màn — không đoán "có tín hiệu hồi phục" khi không đọc được.
+  func makeWeeklyReview(userId: String, today: LocalDate) -> WeeklyReviewBook? {
+    guard let rows, let copy = ReadinessCopyStore.copy else { return nil }
+    return WeeklyReviewBook(userId: userId, today: today, store: rows, copy: copy, in: .current)
+  }
+
   /// Thử thách tuần: gieo + đo qua kho hàng chung, thưởng qua RPC của server.
   func makeWeeklyChallenges(userId: String, today: LocalDate) -> WeeklyChallengesBook? {
     guard let rows, let backend else { return nil }

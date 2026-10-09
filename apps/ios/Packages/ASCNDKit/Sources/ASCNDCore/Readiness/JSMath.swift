@@ -47,4 +47,23 @@ enum JS {
 
   /// Cột ghi ra: `JSON.stringify` biến NaN / ±∞ thành `null`.
   static func json(_ x: Double) -> JSONValue { x.isFinite ? .number(x) : .null }
+
+  /// `x.toFixed(digits)`: điểm giữa CHÍNH XÁC (giá trị nhị phân đúng là …5)
+  /// lấy số xa 0 hơn — `printf` lấy số chẵn (0.25 → "0.3", printf "0.2").
+  /// `-0` in ra "0", NaN ra "NaN" như JS.
+  static func fixed(_ x: Double, _ digits: Int) -> String {
+    if x.isNaN { return "NaN" }
+    let v = x == 0 ? 0 : x
+    let exact = String(format: "%.100f", v)
+    if let dot = exact.firstIndex(of: ".") {
+      let frac = exact[exact.index(after: dot)...]
+      if frac.count > digits {
+        let cut = frac.index(frac.startIndex, offsetBy: digits)
+        if frac[cut] == "5" && frac[frac.index(after: cut)...].allSatisfy({ $0 == "0" }) {
+          return String(format: "%.\(digits)f", v > 0 ? v.nextUp : v.nextDown)
+        }
+      }
+    }
+    return String(format: "%.\(digits)f", v)
+  }
 }
