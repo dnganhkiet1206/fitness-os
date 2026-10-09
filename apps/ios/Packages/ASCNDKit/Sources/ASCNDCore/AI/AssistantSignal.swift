@@ -10,9 +10,9 @@ extension AssistantSuggestions.Signal {
   public static func from(
     log: JSONValue?, profile: JSONValue?, lastWorkoutAt: JSONValue?, today: LocalDate, in tz: TimeZone
   ) -> Self {
-    let kcalTarget = ProfileEntry.calorieTarget(text(profile?["tdee_target_kcal"]))
+    let kcalTarget = MacroTargets.calorieTarget(text(profile?["tdee_target_kcal"]))
     // `macroTargetsFor(profile).protein`: đạm đã đặt, không thì 27 % calo / 4.
-    let protein = ProfileEntry.stored(text(profile?["macro_protein_g"])) ?? JS.round(kcalTarget * 0.27 / 4)
+    let protein = MacroTargets.stored(text(profile?["macro_protein_g"])) ?? JS.round(kcalTarget * 0.27 / 4)
     // `daysSince`: ngày lịch, không phải mili giây; chưa ghi buổi nào → nil.
     var days: Int?
     if let last = lastWorkoutAt, JS.truthyValue(last) {
