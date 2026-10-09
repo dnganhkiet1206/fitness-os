@@ -67,7 +67,7 @@ Trang này là bảng theo **mảng** và theo **route**. Mỗi ô có evidence 
 | `change-password` | Tài khoản | `ChangePasswordView` (Cài đặt) | 🟡 PARTIAL — E #527 Phase 8 trên lõi A29 #441 |
 | `edit-profile` | Hồ sơ | `EditProfileView` (thẻ tài khoản của Cài đặt) | 🟡 PARTIAL — E #527 Phase 8 trên lõi A31 #443 + `ProfileEntry` / `MacroTargets` (golden `profile-entry-golden.json`) |
 | `settings` | Cài đặt | vỏ #394 | ⚪ A32 #444 (ranh giới) |
-| `reminders` | Nhắc nhở | `RemindersView` (từ Cài đặt) | 🔵 E #527 1.10 trên lõi A33 #445 — vào được ở Release khi #528 nối Cài đặt |
+| `reminders` | Nhắc nhở | `RemindersView` (Hôm nay → Cài đặt → Nhắc nhở) | 🟡 PARTIAL — E #527 1.10 trên lõi A33 #445; vào được ở Release. A (A-NEXT-4): nối `useReminderSync` — kế hoạch đặt lại theo hôm nay (đã tập, đủ nước, uống hết thực phẩm bổ sung, lịch tập) ở phạm vi phiên + khi ra tiền cảnh. Chưa có: gợi ý giờ tập "Koa để ý" (`habitFor`, personal model của Mascot); cân / bữa ăn / sinh trắc / ngủ / thử thách cộng đồng chưa có nguồn native → giữ giá trị "chưa đọc" của RN. Thiết bị NOT RUN |
 | `legal` | Khác | `LegalView` (Cài đặt, 4 tab; onboarding dùng 3 tab) | 🟡 PARTIAL — E #527 Phase 8; văn bản chép máy (`gen.mjs --check`) |
 | `media-viewer` | Khác | `GuideMediaViewer` (từ hướng dẫn bài) | 🟡 (#544) |
 | `water` | Dinh dưỡng | `WaterView` (thẻ Nước ở tab Dinh dưỡng) | 🟡 PARTIAL — A #527 Phase 3; thiết bị NOT RUN |
