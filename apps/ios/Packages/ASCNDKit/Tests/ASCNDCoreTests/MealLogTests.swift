@@ -126,7 +126,7 @@ struct MealLogRuleTests {
     }
     let q = MealLog.quickAdds(favorites: (0..<3).map(food), recents: (10..<30).map(food))
     #expect(q.count == 14)
-    #expect(q.prefix(3).allSatisfy(\.favorite))
+    #expect(q.prefix(3).allSatisfy { $0.favorite })
     #expect(q[0].id == "fav-f0")
     #expect(q[3].id == "rec-0")
   }
