@@ -12,6 +12,10 @@ public struct SupabaseMealLog: MealFoodSource {
     self.client = backend.client
   }
 
+  init(client: SupabaseClient) {
+    self.client = client
+  }
+
   public func search(_ text: String, limit: Int) async throws -> [JSONValue] {
     try await client.from("food_items")
       .select("id, user_id, name, brand, kcal, protein_g, carbs_g, fat_g, fiber_g, serving_g")

@@ -94,5 +94,8 @@ miễn **giữ nguyên ý định** của app và chỉ làm app tốt hơn — 
 | Ghi bữa ăn — ba lượt đọc gợi ý | Món gần đây / yêu thích / bữa gần đây đọc song song và độc lập: một lượt hỏng chỉ mất đúng hàng gợi ý ấy | Ba `useQuery` riêng — như nhau | lệch nền tảng | không cần | #527 (`native/ios-rewrite`) | A |
 | Cửa hàng — mặc / cởi khi mất mạng | Chỉ khi có mạng: áp ngay trên máy, gửi đặt tuyệt đối cả nhóm, hỏng (mất mạng) thì trả lại như trước và báo "cửa hàng cần mạng" | Lớp Trạng thái (#165): ý mặc chờ mạng về rồi gửi | tạm thời (native chưa có lớp Trạng thái — StateWriter #161 chờ owner) | không cần | #527 (`native/ios-rewrite`) | E |
 | Cửa hàng — không có cảnh Koa | Danh sách thẻ món (tên, độ hiếm theo màu DS, giá, khoá cấp, Mặc / Cởi / Dùng); màn mở ở tab Trang phục; thẻ bộ sưu tập là tấm riêng | `ShopScene` (camera qua phòng thử đồ, xem trước món trên người Koa), tab "Toàn cảnh" mở đầu, thẻ lật trang | tạm thời (native chưa có bản vẽ Koa) | không cần | #527 (`native/ios-rewrite`) | E |
+| Thực phẩm — nút sao | Chưa có (chỉ hiện sao trên món đã yêu thích) | `useToggleFavoriteFood` qua lớp Trạng thái #161; sao món mẫu chung = nhân bản thành món riêng | (thiếu — chờ chốt owner #161) | không cần | #527 (`native/ios-rewrite`) | A |
+| Thực phẩm — lưu món gần đây / thêm / sửa / xoá xong | Đọc lại thư viện từ server (nút khoá trong lúc chạy) | `invalidateFoodQueries` | lệch nền tảng | không cần | #527 (`native/ios-rewrite`) | A |
+| Thực phẩm — mất mạng khi lưu món gần đây | Hộp thoại "cần có mạng" | `toast.fail` | lệch nền tảng | không cần | #527 (`native/ios-rewrite`) | A |
 
 Thêm dòng mới ở cuối bảng; giữ dòng cũ — sổ là lịch sử, không phải danh sách việc.

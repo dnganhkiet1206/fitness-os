@@ -355,6 +355,13 @@ final class AppServices {
       onEnqueued: { _ in sync.kick() })
   }
 
+  /// Thư viện thực phẩm (#527 Phase 3 · 3.3): đọc "Của tôi" + "Gần đây";
+  /// thêm / sửa / xoá thẳng server, chỉ khi có mạng (như RN).
+  func makeFoodLibrary(userId: String) -> FoodLibraryBook? {
+    guard let backend else { return nil }
+    return FoodLibraryBook(userId: userId, source: SupabaseFoodLibrary(backend: backend))
+  }
+
   /// 14 ngày sinh trắc học; xoá một lần đo rồi dựng lại `daily_logs`.
   func makeBiometricsBook(userId: String) -> BiometricsBook? {
     guard let rows, let backend else { return nil }

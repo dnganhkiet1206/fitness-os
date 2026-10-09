@@ -27,6 +27,7 @@ struct NutritionTab: View {
             // Lối ghi bữa (`LogMealFab` ⊕ của RN): hôm nay, "Bữa trưa".
             LogMealButton(userId: userId)
             DiaryRow(userId: userId)
+            FoodsRow(userId: userId)
           }
           Text(String(localized: "placeholder.building"))
             .font(DS.TextStyle.footnote)
@@ -47,6 +48,9 @@ struct NutritionTab: View {
       }
       .navigationDestination(for: DiaryRoute.self) { route in
         DiaryScreen(userId: route.userId)
+      }
+      .navigationDestination(for: FoodsRoute.self) { route in
+        FoodsScreen(userId: route.userId)
       }
     }
     .task { await books?.loadOnce() }
@@ -86,6 +90,57 @@ struct DiaryRow: View {
       .contentShape(Rectangle())
     }
     .buttonStyle(.plain)
+  }
+}
+
+/// Đích điều hướng của hàng → màn Thực phẩm (của đúng người đang đăng nhập).
+struct FoodsRoute: Hashable {
+  let userId: String
+}
+
+/// Hàng "Thực phẩm" — thư viện món của tôi + món gần đây.
+struct FoodsRow: View {
+  let userId: String
+
+  var body: some View {
+    NavigationLink(value: FoodsRoute(userId: userId)) {
+      HStack {
+        Label(String(localized: "foods.title"), systemImage: "carrot")
+          .font(DS.TextStyle.headline)
+          .foregroundStyle(DS.Color.foreground.swiftUI)
+          .lineLimit(1)
+        Spacer()
+        Image(systemName: "chevron.right")
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          .accessibilityHidden(true)
+      }
+      .padding(DS.Spacing.md)
+      .frame(minHeight: 44)
+      .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.md))
+      .contentShape(Rectangle())
+    }
+    .buttonStyle(.plain)
+  }
+}
+
+/// Sổ thư viện thuộc MÀN: rời màn / đổi tài khoản thì đóng.
+struct FoodsScreen: View {
+  let userId: String
+  @Environment(AppServices.self) private var services
+  @State private var book: FoodLibraryBook?
+
+  var body: some View {
+    Group {
+      if let book {
+        FoodListView(book: book)
+      } else {
+        DSLoadingView()
+      }
+    }
+    .task {
+      if book == nil { book = services.makeFoodLibrary(userId: userId) }
+    }
+    .onDisappear { book?.close() }
   }
 }
 
