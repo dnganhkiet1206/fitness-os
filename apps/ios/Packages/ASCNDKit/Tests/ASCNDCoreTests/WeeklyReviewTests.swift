@@ -24,7 +24,8 @@ struct WeeklyReviewGoldenTests {
       dailyLogs: array(i["dailyLogs"]), workouts: array(i["workouts"]), sleepLogs: array(i["sleepLogs"]),
       prevLogs: array(i["prevLogs"]), volumeHistory: array(i["volumeHistory"]),
       profile: i["profile"] == .null ? nil : i["profile"])
-    let ws = try #require(LocalDate(try #require(i["weekStartStr"]?.stringValue)))
+    let wsText = try #require(i["weekStartStr"]?.stringValue)
+    let ws = try #require(LocalDate(wsText))
     return WeeklyReview.summarize(input, weekStart: ws, in: tz, copy: try ReadinessCardGoldenTests.copy())
   }
 
@@ -112,7 +113,8 @@ struct WeeklyReviewGoldenTests {
       #expect(rest.map(\.kind.rawValue) == rn.map { $0["kind"]?.stringValue ?? "" }, "\(name)")
       #expect(rest.map(\.args) == rn.map { Self.array($0["args"]).map { $0.stringValue ?? "" } }, "\(name)")
       if let first = s.recommendations.first, first.id.hasPrefix("acwr") {
-        #expect(first.args == [ReadinessEngine.jsString(try #require(s.acwr))], "\(name)")
+        let acwr = try #require(s.acwr)
+        #expect(first.args == [ReadinessEngine.jsString(acwr)], "\(name)")
       }
     }
   }
