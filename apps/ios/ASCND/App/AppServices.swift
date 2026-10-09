@@ -65,6 +65,8 @@ final class AppServices {
   @ObservationIgnored let profileCache: any ProfileCache
   /// Nước uống hôm nay + 7 ngày trên máy (#527 Phase 3).
   @ObservationIgnored let waterCache: any WaterCache
+  /// Thực phẩm bổ sung trên máy (#527 Phase 3 · 3.9).
+  @ObservationIgnored let supplementCache: any SupplementCache
   /// Thứ tự đóng / mở chốt tài khoản và dọn dữ liệu trên máy (#431, #455).
   @ObservationIgnored private let lifecycle: AccountLifecycle
   /// Supabase (nếu có cấu hình) và kho hàng chung — nguồn của các thẻ đọc
@@ -125,6 +127,7 @@ final class AppServices {
     profileWriter = backend.map { SupabaseProfileWriter(backend: $0) as any ProfileWriter } ?? UnconfiguredProfile()
     profileCache = GRDBProfileCache(database)
     waterCache = GRDBWaterCache(database)
+    supplementCache = GRDBSupplementCache(database)
     session = SessionStore(api: backend.map { SupabaseAuthAPI(backend: $0) as any AuthAPI } ?? UnconfiguredAuth())
     let rows = backend.map { SupabaseRowStore(backend: $0) }
     self.backend = backend
@@ -302,6 +305,13 @@ final class AppServices {
     return WaterBook(
       userId: userId, source: SupabaseWaterSource(backend: backend), cache: waterCache, store: outbox,
       onEnqueued: { _ in sync.kick() })
+  }
+
+  /// Thực phẩm bổ sung (#527 Phase 3 · 3.9): đọc server; thêm / xoá thẳng
+  /// server khi online, như RN. `nil` khi thiếu cấu hình Supabase.
+  func makeSupplementBook(userId: String) -> SupplementBook? {
+    guard let backend else { return nil }
+    return SupplementBook(userId: userId, source: SupabaseSupplementSource(backend: backend), cache: supplementCache)
   }
 
   // MARK: - Thẻ / màn đọc server (#527 Phase 4/7/9)

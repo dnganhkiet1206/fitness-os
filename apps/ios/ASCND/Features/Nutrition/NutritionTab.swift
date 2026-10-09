@@ -15,6 +15,7 @@ struct NutritionTab: View {
   @Environment(AppServices.self) private var services
   @Environment(\.scenePhase) private var scenePhase
   @State private var water: WaterBook?
+  @State private var supplements: SupplementBook?
   @State private var built = false
 
   private var userId: String { flow.today.userId }
@@ -24,6 +25,9 @@ struct NutritionTab: View {
       ScrollView {
         VStack(spacing: DS.Spacing.md) {
           if let water { WaterCard(book: water) }
+          // Cạnh Nước, trên nhật ký (`(tabs)/nutrition.tsx`: "supplements belong
+          // beside water") — hàng mang sẵn "2/4 hôm nay".
+          if let supplements { SupplementsRow(book: supplements) }
           Text(String(localized: "placeholder.building"))
             .font(DS.TextStyle.footnote)
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
@@ -33,26 +37,43 @@ struct NutritionTab: View {
         }
         .padding(DS.Spacing.md)
       }
-      .refreshable { await water?.refresh() }
+      .refreshable {
+        await water?.refresh()
+        await supplements?.refresh()
+      }
       .navigationTitle(Text("tab.nutrition"))
       .navigationDestination(for: WaterRoute.self) { _ in
         if let water { WaterView(book: water) }
+      }
+      .navigationDestination(for: SupplementsRoute.self) { _ in
+        if let supplements { SupplementsView(book: supplements) }
       }
     }
     .task {
       guard !built else { return }
       built = true
       water = services.makeWaterBook(userId: userId)
-      await water?.load()
+      supplements = services.makeSupplementBook(userId: userId)
+      // Hai sổ đọc song song — không sổ nào chờ sổ kia.
+      let waterBook = water, supplementBook = supplements
+      async let w: Void? = waterBook?.load()
+      async let s: Void? = supplementBook?.load()
+      _ = await (w, s)
     }
     .onChange(of: scenePhase) { _, phase in
       // Ra tiền cảnh: qua nửa đêm thì "hôm nay" đổi.
       guard phase == .active, let water else { return }
-      Task { await water.clockTick() }
+      Task {
+        await water.clockTick()
+        await supplements?.refresh()
+      }
     }
     // KHÔNG ở `onDisappear` (chạy cả khi đổi tab): sổ đóng thì không mở lại.
     .onChange(of: isCurrentSession) { _, current in
-      if !current { water?.close() }
+      if !current {
+        water?.close()
+        supplements?.close()
+      }
     }
   }
 
@@ -61,6 +82,40 @@ struct NutritionTab: View {
 
 /// Đích điều hướng của thẻ → màn Nước.
 struct WaterRoute: Hashable {}
+
+/// Đích điều hướng của hàng → màn Thực phẩm bổ sung.
+struct SupplementsRoute: Hashable {}
+
+/// Hàng Thực phẩm bổ sung (`ShortcutRow` của RN): nhãn + "2/4 hôm nay" khi có
+/// mục. Lần đọc đầu hỏng / đang tải thì không có số — không bao giờ "0/4" giả.
+struct SupplementsRow: View {
+  let book: SupplementBook
+
+  var body: some View {
+    NavigationLink(value: SupplementsRoute()) {
+      HStack {
+        Label(String(localized: "supplements.title"), systemImage: "pills")
+          .font(DS.TextStyle.headline)
+          .foregroundStyle(DS.Color.foreground.swiftUI)
+          .lineLimit(1)
+        Spacer()
+        if !book.items.isEmpty {
+          Text(String(localized: "supplements.row.value \(book.takenCount) \(book.items.count)"))
+            .font(DS.TextStyle.footnote.monospacedDigit())
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        }
+        Image(systemName: "chevron.right")
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          .accessibilityHidden(true)
+      }
+      .padding(DS.Spacing.md)
+      .frame(minHeight: 44)
+      .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.md))
+      .contentShape(Rectangle())
+    }
+    .buttonStyle(.plain)
+  }
+}
 
 /// Thẻ Nước uống trên tab Dinh dưỡng (`WaterWidget` + `WaterQuickAdd` của RN).
 /// Lần đọc đầu hỏng thì không hiện thẻ (`waterFailed ? null`) — không bao giờ
