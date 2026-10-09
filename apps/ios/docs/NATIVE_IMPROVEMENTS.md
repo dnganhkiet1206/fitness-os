@@ -37,5 +37,16 @@ Chỗ native **thiếu** so với RN (chưa port) không ghi ở đây — xem
 | Thực phẩm bổ sung — kết quả thêm / xoá | Hộp thoại + VoiceOver | `Alert` / `toast` | lệch nền tảng | không cần | #570 | A |
 | `daily_logs.water_ml` | Như RN: ghi nước KHÔNG dựng lại ngày | Như native | (lỗ chung, ghi để quyết) | chờ quyết: dựng lại sau khi ghi nước ở cả hai | #568 | A |
 | Quãng nghỉ — nút tạm dừng | Có ở CẢ thẻ trong app lẫn Dynamic Island | 02/10 chỉ có trên Island, gỡ 03/10 | cải tiến | chờ quyết | #523 | (xem PARITY_MATRIX) |
+| Tổng kết tuần — lời khuyên ACWR | Theo đúng băng `acwrZone` (0.65 / 0.8 / 1.3 / 1.6) mà thẻ sẵn sàng Today tô màu (`WeeklyReview.acwrAdvice`); test ghim 4 ca lệch: 0.6, 0.62 → "thấp"; 1.55, 1.6 → "hơi cao" | `weekly-review.tsx:480-497`: ngưỡng riêng > 1.5 / > 1.3 / < 0.6 — 1.55 bảo "giảm 15–20%" khi Today tô vàng; 0.6–0.65 im lặng khi Today tô đỏ | sửa lỗi RN (Kiệt giao E chốt, #527) | nên làm theo | #569 | E |
+| Tổng kết tuần — một nguồn đọc hỏng | Cả tuần báo lỗi, có thử lại; đọc lại hỏng khi đã có số của đúng tuần thì giữ số | Mỗi query riêng; phần hỏng rỗng → ô số / biểu đồ vẽ như 0 | sửa lỗi RN | nên làm theo | #569 | E |
+| Tổng kết tuần — ô thực phẩm bổ sung | Ẩn ô khi tỉ lệ không hữu hạn | Ô hỏng (chuỗi không phải số) → `NaN%` | sửa lỗi RN | nên làm theo | #569 | E |
+| Tổng kết tuần — câu khuyến nghị | Chuỗi dịch đủ vi / en / es (`wr.rec.*`) | `L(vi, en)` — bản es hiện tiếng Anh | sửa lỗi RN | nên làm theo | #569 | E |
+| Tổng kết tuần — lỗi phân tích AI | Lỗi hiện trong thẻ, có thử lại; chữ theo `AI_FAILURE_KEY` | `Alert.alert` (`weekly-review.tsx:350`) | lệch nền tảng | không cần | #572 | E |
+| Thử thách tuần — đo tiến độ khi đọc hỏng | Bỏ qua thử thách đó, không ghi; báo "chưa đo lại được" (`WeeklyChallengesBook.refreshProgress`) | `use-extras.ts:551-645`: lỗi đọc bị bỏ qua → `newValue` 0 → **ghi đè tiến độ thật thành 0** (mất dữ liệu) | sửa lỗi RN | nên làm theo (mất dữ liệu trên Android) | #566 | E |
+| Thử thách tuần — gieo tuần | Chỉ gieo các thử thách còn thiếu; trùng (23505) coi là đã có; đọc hỏng thì không gieo | `useInitWeeklyChallenges` (`use-extras.ts:424-462`): tuần đã có ≥ 1 hàng thì không gieo gì — tuần gieo dở thiếu mãi; đếm hỏng (`count` rỗng) bị đọc là 0 → chèn lại cả bộ | sửa lỗi RN | nên làm theo | #566 | E |
+| Huy chương — màn đọc hỏng | Màn lỗi có thử lại | Vẽ như chưa có huy chương nào | sửa lỗi RN | nên làm theo | #563 | E |
+| Thẻ ăn mừng — Reduce Motion | Không pháo giấy, đĩa không xoay-nảy | `award-celebration.tsx`: pháo giấy + xoay-nảy luôn chạy | cải tiến (a11y) | nên làm theo (`useReducedMotion`) | #567 | E |
+| Thẻ ăn mừng — VoiceOver / ngôn ngữ | Đọc "Huy chương mới! <tên>" khi hiện; kicker + nhãn hạng vi / en / es | Không đọc gì; kicker chỉ vi ("Huy Chương Mới!") còn lại tiếng Anh; nhãn hạng luôn tiếng Anh | cải tiến (a11y, i18n) | nên làm theo | #567 | E |
+| Xu hướng sẵn sàng 7 ngày — chữ | Chuỗi dịch đủ vi / en / es (`rt.*`) | TB / Cao nhất / chú giải `lang === 'vi' ? … : …` — bản es hiện tiếng Anh | sửa lỗi RN | nên làm theo | #571 | E |
 
 Thêm dòng mới ở cuối bảng; giữ dòng cũ — sổ là lịch sử, không phải danh sách việc.
