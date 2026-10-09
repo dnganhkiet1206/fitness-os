@@ -87,9 +87,7 @@ struct DiaryView: View {
       Button(String(localized: "diary.delete"), role: .destructive) { Task { await delete(group.items) } }
       Button(String(localized: "common.cancel"), role: .cancel) {}
     } message: { group in
-      Text(book.isToday
-        ? String(localized: "diary.meal.delete.today \(group.items.count) \(Self.mealName(group.type))")
-        : String(localized: "diary.meal.delete.day \(group.items.count) \(Self.mealName(group.type))"))
+      Text(Self.deleteGroupMessage(count: group.items.count, meal: Self.mealName(group.type), today: book.isToday))
     }
     .alert(
       error ?? "",
@@ -270,6 +268,16 @@ struct DiaryView: View {
     return d.calendarDate.formatted(Date.FormatStyle().day().month(.abbreviated).locale(.app))
   }
 
+  /// Câu hỏi lại khi xoá cả bữa — số 1 là khoá riêng (catalog không dùng plural).
+  static func deleteGroupMessage(count: Int, meal: String, today: Bool) -> String {
+    switch (count == 1, today) {
+    case (true, true): String(localized: "diary.meal.delete.today.one \(meal)")
+    case (true, false): String(localized: "diary.meal.delete.day.one \(meal)")
+    case (false, true): String(localized: "diary.meal.delete.today \(count) \(meal)")
+    case (false, false): String(localized: "diary.meal.delete.day \(count) \(meal)")
+    }
+  }
+
   static func mealName(_ type: String) -> String {
     switch type {
     case "breakfast": String(localized: "diary.meal.breakfast")
@@ -304,7 +312,8 @@ private struct MealGroupCard: View {
   private var name: String { DiaryView.mealName(group.type) }
 
   private var sub: String {
-    let count = String(localized: "diary.items \(group.items.count)")
+    let n = group.items.count
+    let count = n == 1 ? String(localized: "diary.items.one") : String(localized: "diary.items \(n)")
     let entries = group.entries > 1 ? String(localized: "diary.entries \(group.entries)") + " · " : ""
     return entries + count + " · " + DiaryView.macros(group.protein, group.carbs, group.fat)
   }

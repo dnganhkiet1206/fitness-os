@@ -21926,21 +21926,9 @@
    "extractionState": "manual",
    "localizations": {
     "en": {
-     "variations": {
-      "plural": {
-       "one": {
-        "stringUnit": {
-         "state": "translated",
-         "value": "This removes all %1$lld food logged under %2$@ today."
-        }
-       },
-       "other": {
-        "stringUnit": {
-         "state": "translated",
-         "value": "This removes all %1$lld foods logged under %2$@ today."
-        }
-       }
-      }
+     "stringUnit": {
+      "state": "translated",
+      "value": "This removes all %1$lld foods logged under %2$@ today."
      }
     },
     "vi": {
@@ -21950,21 +21938,9 @@
      }
     },
     "es": {
-     "variations": {
-      "plural": {
-       "one": {
-        "stringUnit": {
-         "state": "translated",
-         "value": "Esto elimina el %1$lld alimento registrado en %2$@ hoy."
-        }
-       },
-       "other": {
-        "stringUnit": {
-         "state": "translated",
-         "value": "Esto elimina los %1$lld alimentos registrados en %2$@ hoy."
-        }
-       }
-      }
+     "stringUnit": {
+      "state": "translated",
+      "value": "Esto elimina los %1$lld alimentos registrados en %2$@ hoy."
      }
     }
    }
@@ -21973,21 +21949,9 @@
    "extractionState": "manual",
    "localizations": {
     "en": {
-     "variations": {
-      "plural": {
-       "one": {
-        "stringUnit": {
-         "state": "translated",
-         "value": "This removes all %1$lld food logged under %2$@ on this day."
-        }
-       },
-       "other": {
-        "stringUnit": {
-         "state": "translated",
-         "value": "This removes all %1$lld foods logged under %2$@ on this day."
-        }
-       }
-      }
+     "stringUnit": {
+      "state": "translated",
+      "value": "This removes all %1$lld foods logged under %2$@ on this day."
      }
     },
     "vi": {
@@ -21997,21 +21961,9 @@
      }
     },
     "es": {
-     "variations": {
-      "plural": {
-       "one": {
-        "stringUnit": {
-         "state": "translated",
-         "value": "Esto elimina el %1$lld alimento registrado en %2$@ este día."
-        }
-       },
-       "other": {
-        "stringUnit": {
-         "state": "translated",
-         "value": "Esto elimina los %1$lld alimentos registrados en %2$@ este día."
-        }
-       }
-      }
+     "stringUnit": {
+      "state": "translated",
+      "value": "Esto elimina los %1$lld alimentos registrados en %2$@ este día."
      }
     }
    }
@@ -22342,21 +22294,9 @@
    "extractionState": "manual",
    "localizations": {
     "en": {
-     "variations": {
-      "plural": {
-       "one": {
-        "stringUnit": {
-         "state": "translated",
-         "value": "%lld item"
-        }
-       },
-       "other": {
-        "stringUnit": {
-         "state": "translated",
-         "value": "%lld items"
-        }
-       }
-      }
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld items"
      }
     },
     "vi": {
@@ -22366,21 +22306,9 @@
      }
     },
     "es": {
-     "variations": {
-      "plural": {
-       "one": {
-        "stringUnit": {
-         "state": "translated",
-         "value": "%lld elemento"
-        }
-       },
-       "other": {
-        "stringUnit": {
-         "state": "translated",
-         "value": "%lld elementos"
-        }
-       }
-      }
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld elementos"
      }
     }
    }
@@ -22389,21 +22317,9 @@
    "extractionState": "manual",
    "localizations": {
     "en": {
-     "variations": {
-      "plural": {
-       "one": {
-        "stringUnit": {
-         "state": "translated",
-         "value": "%lld meal"
-        }
-       },
-       "other": {
-        "stringUnit": {
-         "state": "translated",
-         "value": "%lld meals"
-        }
-       }
-      }
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld meals"
      }
     },
     "vi": {
@@ -22413,21 +22329,9 @@
      }
     },
     "es": {
-     "variations": {
-      "plural": {
-       "one": {
-        "stringUnit": {
-         "state": "translated",
-         "value": "%lld comida"
-        }
-       },
-       "other": {
-        "stringUnit": {
-         "state": "translated",
-         "value": "%lld comidas"
-        }
-       }
-      }
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld comidas"
      }
     }
    }
@@ -22589,6 +22493,75 @@
      "stringUnit": {
       "state": "translated",
       "value": "Más porciones"
+     }
+    }
+   }
+  },
+  "diary.items.one": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "1 item"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "1 món"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "1 elemento"
+     }
+    }
+   }
+  },
+  "diary.meal.delete.today.one %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "This removes the 1 food logged under %@ today."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Thao tác này xoá 1 món đã ghi trong %@ hôm nay."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Esto elimina el alimento registrado en %@ hoy."
+     }
+    }
+   }
+  },
+  "diary.meal.delete.day.one %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "This removes the 1 food logged under %@ on this day."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Thao tác này xoá 1 món đã ghi trong %@ ngày này."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Esto elimina el alimento registrado en %@ este día."
      }
     }
    }
