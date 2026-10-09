@@ -621,7 +621,10 @@ private struct RulerScreen: View {
 /// Cây thước: vạch 4 điểm, vạch dài ở mỗi đơn vị tròn, kim giữa màn — `Ruler`
 /// của `weight-goal-ruler.tsx`. Vạch đang đứng = `round(offset / 4)`, báo ra
 /// chỉ khi nó ĐỔI (`useRulerIndex`).
-private struct RulerStrip: View {
+///
+/// Dùng chung với màn ghi cân (`LogWeightView`, #527 Phase 4) — MỘT cây thước,
+/// như RN gom về `useRulerIndex` để bản chép không mang lỗi đã sửa ở bản kia.
+struct RulerStrip: View {
   let scale: OnboardingRuler.Scale
   let seed: Int
   let haptics: Bool

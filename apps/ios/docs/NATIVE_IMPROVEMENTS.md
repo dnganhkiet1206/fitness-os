@@ -18,6 +18,9 @@ hiểu nhầm). Điều kiện:
 Chỗ native **thiếu** so với RN (chưa port) không ghi ở đây — xem
 `PARITY_MATRIX.md`. Sổ này chỉ ghi chỗ native **làm khác / làm hơn**.
 
+Mở rộng (Kiệt, 09/10, sau đó): mọi agent **được sửa và tối ưu** code so với RN,
+miễn **giữ nguyên ý định** của app và chỉ làm app tốt hơn — vẫn ghi lại ở đây.
+
 ## Cột
 
 - **Loại**: `cải tiến` (native làm hơn RN) · `sửa lỗi RN` (RN sai, native làm
@@ -37,5 +40,8 @@ Chỗ native **thiếu** so với RN (chưa port) không ghi ở đây — xem
 | Thực phẩm bổ sung — kết quả thêm / xoá | Hộp thoại + VoiceOver | `Alert` / `toast` | lệch nền tảng | không cần | #570 | A |
 | `daily_logs.water_ml` | Như RN: ghi nước KHÔNG dựng lại ngày | Như native | (lỗ chung, ghi để quyết) | chờ quyết: dựng lại sau khi ghi nước ở cả hai | #568 | A |
 | Quãng nghỉ — nút tạm dừng | Có ở CẢ thẻ trong app lẫn Dynamic Island | 02/10 chỉ có trên Island, gỡ 03/10 | cải tiến | chờ quyết | #523 | (xem PARITY_MATRIX) |
+
+| Ghi cân nặng — giao diện | Thước + số to; không vẽ hình chiếc cân (`BodyScaleFigure`) và hai nhãn mép cửa sổ thước | Có hình cân sáng lên khi kéo + nhãn mép | lệch nền tảng (rút gọn trang trí, không đổi hành vi) | không cần | #576 | A |
+| Ghi cân nặng — Apple Health | Chưa ghi ngược | `writeBodyMassToHealth` sau khi lưu | (thiếu — guardrail HealthKit, chờ owner) | không cần | #576 | A |
 
 Thêm dòng mới ở cuối bảng; giữ dòng cũ — sổ là lịch sử, không phải danh sách việc.
