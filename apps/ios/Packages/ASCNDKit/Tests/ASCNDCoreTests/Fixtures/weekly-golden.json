@@ -1,0 +1,9244 @@
+{
+ "weekStart": "2026-10-05",
+ "cases": [
+  {
+   "name": "rich",
+   "input": {
+    "weekStartStr": "2026-10-05",
+    "dailyLogs": [
+     {
+      "date": "2026-10-05",
+      "kcal": 2100,
+      "protein_g": 150,
+      "volume_load": 8200,
+      "readiness_score": 82,
+      "readiness_explain": "hrv:62|rhr:70|sleep:55|load:80",
+      "acwr": 1.12,
+      "sleep_duration_min": 450,
+      "sleep_quality": 4,
+      "supplement_taken": 2,
+      "supplement_planned": 3,
+      "water_ml": 2600
+     },
+     {
+      "date": "2026-10-06",
+      "kcal": "1950",
+      "protein_g": "120.5",
+      "volume_load": 0,
+      "readiness_score": 78,
+      "readiness_explain": "hrv:62|rhr:70|sleep:55|load:80",
+      "acwr": "1.18",
+      "sleep_duration_min": 420,
+      "sleep_quality": null,
+      "supplement_taken": 3,
+      "supplement_planned": 3,
+      "water_ml": 2000
+     },
+     {
+      "date": "2026-10-07",
+      "kcal": 0,
+      "protein_g": 0,
+      "volume_load": 9100.5,
+      "readiness_score": 80,
+      "readiness_explain": "hrv:62|rhr:70|sleep:55|load:80",
+      "acwr": null,
+      "sleep_duration_min": null,
+      "sleep_quality": null,
+      "supplement_taken": 0,
+      "supplement_planned": 0,
+      "water_ml": null
+     },
+     {
+      "date": "2026-10-08",
+      "kcal": 2400,
+      "protein_g": 170,
+      "volume_load": 0,
+      "readiness_score": null,
+      "readiness_explain": null,
+      "acwr": 1.21,
+      "sleep_duration_min": 400,
+      "sleep_quality": 3,
+      "supplement_taken": null,
+      "supplement_planned": 2,
+      "water_ml": 3100
+     },
+     {
+      "date": "2026-10-10",
+      "kcal": 1800,
+      "protein_g": 130,
+      "volume_load": 10400,
+      "readiness_score": 76,
+      "readiness_explain": "hrv:62|rhr:70|sleep:55|load:80",
+      "acwr": 1.27,
+      "sleep_duration_min": 480,
+      "sleep_quality": 5,
+      "supplement_taken": 1,
+      "supplement_planned": 2,
+      "water_ml": 2500
+     }
+    ],
+    "workouts": [
+     {
+      "id": "a"
+     },
+     {
+      "id": "b"
+     },
+     {
+      "id": "c"
+     }
+    ],
+    "sleepLogs": [
+     {
+      "bedtime": "2026-10-04T16:00:00.000Z",
+      "waketime": "2026-10-04T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-05T16:30:00.000Z",
+      "waketime": "2026-10-05T23:30:00.000Z",
+      "asleep_min": 401.6,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-07T17:15:00.000Z",
+      "waketime": "2026-10-07T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-09T15:30:00.000Z",
+      "waketime": "2026-10-09T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-09T22:00:00.000Z",
+      "waketime": "2026-10-09T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     }
+    ],
+    "prevLogs": [
+     {
+      "kcal": 2000,
+      "protein_g": 140,
+      "volume_load": 20000
+     },
+     {
+      "kcal": 0,
+      "protein_g": null,
+      "volume_load": "3000"
+     },
+     {
+      "kcal": 2200,
+      "protein_g": 150,
+      "volume_load": null
+     }
+    ],
+    "volumeHistory": [
+     {
+      "date": "2026-09-28",
+      "volume_load": 4300
+     },
+     {
+      "date": "2026-09-30",
+      "volume_load": 4411.5
+     },
+     {
+      "date": "2026-10-02",
+      "volume_load": 4523
+     },
+     {
+      "date": "2026-09-21",
+      "volume_load": 4600
+     },
+     {
+      "date": "2026-09-23",
+      "volume_load": 4711.5
+     },
+     {
+      "date": "2026-09-25",
+      "volume_load": 4823
+     },
+     {
+      "date": "2026-09-14",
+      "volume_load": 4900
+     },
+     {
+      "date": "2026-09-16",
+      "volume_load": 5011.5
+     },
+     {
+      "date": "2026-09-18",
+      "volume_load": 5123
+     },
+     {
+      "date": "2026-09-07",
+      "volume_load": 5200
+     },
+     {
+      "date": "2026-09-09",
+      "volume_load": 5311.5
+     },
+     {
+      "date": "2026-09-11",
+      "volume_load": 5423
+     },
+     {
+      "date": "2026-08-31",
+      "volume_load": 5500
+     },
+     {
+      "date": "2026-09-02",
+      "volume_load": 5611.5
+     },
+     {
+      "date": "2026-09-04",
+      "volume_load": 5723
+     },
+     {
+      "date": "2026-08-24",
+      "volume_load": 5800
+     },
+     {
+      "date": "2026-08-26",
+      "volume_load": 5911.5
+     },
+     {
+      "date": "2026-08-28",
+      "volume_load": 6023
+     },
+     {
+      "date": "2026-08-17",
+      "volume_load": 6100
+     },
+     {
+      "date": "2026-08-19",
+      "volume_load": 6211.5
+     },
+     {
+      "date": "2026-08-21",
+      "volume_load": 6323
+     },
+     {
+      "date": "2026-08-10",
+      "volume_load": 6400
+     },
+     {
+      "date": "2026-08-12",
+      "volume_load": 6511.5
+     },
+     {
+      "date": "2026-08-14",
+      "volume_load": 6623
+     },
+     {
+      "date": "2026-08-03",
+      "volume_load": 6700
+     },
+     {
+      "date": "2026-08-05",
+      "volume_load": 6811.5
+     },
+     {
+      "date": "2026-08-07",
+      "volume_load": 6923
+     },
+     {
+      "date": "2026-07-27",
+      "volume_load": 7000
+     },
+     {
+      "date": "2026-07-29",
+      "volume_load": 7111.5
+     },
+     {
+      "date": "2026-07-31",
+      "volume_load": 7223
+     },
+     {
+      "date": "2026-07-20",
+      "volume_load": 7300
+     },
+     {
+      "date": "2026-07-22",
+      "volume_load": 7411.5
+     },
+     {
+      "date": "2026-07-24",
+      "volume_load": 7523
+     },
+     {
+      "date": "2026-07-13",
+      "volume_load": 7600
+     },
+     {
+      "date": "2026-07-15",
+      "volume_load": 7711.5
+     },
+     {
+      "date": "2026-07-17",
+      "volume_load": 7823
+     }
+    ],
+    "profile": {
+     "tdee_target_kcal": 2300,
+     "macro_protein_g": 160,
+     "sleep_target_hours": "7.5",
+     "water_target_ml": 3000
+    }
+   },
+   "out": {
+    "daysWithData": 5,
+    "daysLogged": 5,
+    "avgKcal": 2062.5,
+    "avgProtein": 142.625,
+    "proteinDays": 4,
+    "avgWaterMl": 2550,
+    "avgSleepH": 5.989999999999999,
+    "totalVolume": 27700.5,
+    "workoutCount": 3,
+    "suppAdherence": 60,
+    "readinessDays": 4,
+    "avgReadiness": 79,
+    "prevAvgKcal": 2100,
+    "prevAvgProtein": 145,
+    "prevTotalVolume": 23000,
+    "acwr": 1.27,
+    "acwrRec": {
+     "kind": "success",
+     "id": "acwrOptimal",
+     "args": [
+      "1.27"
+     ]
+    },
+    "recommendations": [
+     {
+      "kind": "success",
+      "id": "overloadRecovered",
+      "args": []
+     },
+     {
+      "kind": "warning",
+      "id": "sleepDebt",
+      "args": [
+       "6.0",
+       "7.5"
+      ]
+     },
+     {
+      "kind": "info",
+      "id": "volumeUp",
+      "args": [
+       "20"
+      ]
+     }
+    ],
+    "cards": {
+     "kcal": {
+      "value": "2063",
+      "sub": "/2300",
+      "d": -2
+     },
+     "protein": {
+      "value": "143g",
+      "sub": "/160g",
+      "d": -2
+     },
+     "sleep": {
+      "value": "6.0h",
+      "sub": "/7.5h",
+      "d": null
+     },
+     "volume": {
+      "value": "28k",
+      "sessions": 3,
+      "d": 20
+     },
+     "readiness": {
+      "value": "79",
+      "sub": "ACWR 1.27",
+      "d": null
+     },
+     "supplements": {
+      "value": "60%",
+      "sub": "/4d",
+      "d": null
+     },
+     "water": {
+      "value": "2.5L",
+      "sub": "/3L",
+      "d": null
+     }
+    },
+    "chartData": [
+     {
+      "date": "2026-10-05",
+      "kcal": 2100,
+      "protein": 150,
+      "sleep_h": 7.5,
+      "volume": 8200,
+      "readiness": 82
+     },
+     {
+      "date": "2026-10-06",
+      "kcal": 1950,
+      "protein": 120.5,
+      "sleep_h": 6.7,
+      "volume": 0,
+      "readiness": 78
+     },
+     {
+      "date": "2026-10-07",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 9100.5,
+      "readiness": 80
+     },
+     {
+      "date": "2026-10-08",
+      "kcal": 2400,
+      "protein": 170,
+      "sleep_h": 6.3,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-09",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-10",
+      "kcal": 1800,
+      "protein": 130,
+      "sleep_h": 8,
+      "volume": 10400,
+      "readiness": 76
+     },
+     {
+      "date": "2026-10-11",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 0
+     }
+    ],
+    "volumeWeekly": [
+     {
+      "date": "2026-07-20",
+      "value": 22
+     },
+     {
+      "date": "2026-07-27",
+      "value": 21
+     },
+     {
+      "date": "2026-08-03",
+      "value": 20
+     },
+     {
+      "date": "2026-08-10",
+      "value": 20
+     },
+     {
+      "date": "2026-08-17",
+      "value": 19
+     },
+     {
+      "date": "2026-08-24",
+      "value": 18
+     },
+     {
+      "date": "2026-08-31",
+      "value": 17
+     },
+     {
+      "date": "2026-09-07",
+      "value": 16
+     },
+     {
+      "date": "2026-09-14",
+      "value": 15
+     },
+     {
+      "date": "2026-09-21",
+      "value": 14
+     },
+     {
+      "date": "2026-09-28",
+      "value": 13
+     },
+     {
+      "date": "2026-10-05",
+      "value": 0
+     }
+    ],
+    "readinessPoints": [
+     {
+      "date": "2026-10-05",
+      "value": 82
+     },
+     {
+      "date": "2026-10-06",
+      "value": 78
+     },
+     {
+      "date": "2026-10-07",
+      "value": 80
+     },
+     {
+      "date": "2026-10-10",
+      "value": 76
+     }
+    ]
+   }
+  },
+  {
+   "name": "empty",
+   "input": {
+    "weekStartStr": "2026-10-05",
+    "dailyLogs": [],
+    "workouts": [],
+    "sleepLogs": [],
+    "prevLogs": [],
+    "volumeHistory": [],
+    "profile": null
+   },
+   "out": {
+    "daysWithData": 0,
+    "daysLogged": 0,
+    "avgKcal": 0,
+    "avgProtein": 0,
+    "proteinDays": 0,
+    "avgWaterMl": 0,
+    "avgSleepH": 0,
+    "totalVolume": 0,
+    "workoutCount": 0,
+    "suppAdherence": null,
+    "readinessDays": 0,
+    "avgReadiness": 0,
+    "prevAvgKcal": 0,
+    "prevAvgProtein": 0,
+    "prevTotalVolume": 0,
+    "acwr": null,
+    "acwrRec": null,
+    "recommendations": [
+     {
+      "kind": "warning",
+      "id": "sleepDebt",
+      "args": [
+       "0.0",
+       "8"
+      ]
+     }
+    ],
+    "cards": {
+     "kcal": {
+      "value": "0",
+      "sub": "/2200",
+      "d": null
+     },
+     "protein": {
+      "value": "0g",
+      "sub": "/140g",
+      "d": null
+     },
+     "sleep": {
+      "value": "0.0h",
+      "sub": "/8h",
+      "d": null
+     },
+     "volume": {
+      "value": "0k",
+      "sessions": 0,
+      "d": null
+     },
+     "readiness": {
+      "value": "0",
+      "sub": "—",
+      "d": null
+     },
+     "supplements": null,
+     "water": {
+      "value": "0.0L",
+      "sub": "/2.5L",
+      "d": null
+     }
+    },
+    "chartData": [
+     {
+      "date": "2026-10-05",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-06",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-07",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-08",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-09",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-10",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-11",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 0
+     }
+    ],
+    "volumeWeekly": [
+     {
+      "date": "2026-07-20",
+      "value": 0
+     },
+     {
+      "date": "2026-07-27",
+      "value": 0
+     },
+     {
+      "date": "2026-08-03",
+      "value": 0
+     },
+     {
+      "date": "2026-08-10",
+      "value": 0
+     },
+     {
+      "date": "2026-08-17",
+      "value": 0
+     },
+     {
+      "date": "2026-08-24",
+      "value": 0
+     },
+     {
+      "date": "2026-08-31",
+      "value": 0
+     },
+     {
+      "date": "2026-09-07",
+      "value": 0
+     },
+     {
+      "date": "2026-09-14",
+      "value": 0
+     },
+     {
+      "date": "2026-09-21",
+      "value": 0
+     },
+     {
+      "date": "2026-09-28",
+      "value": 0
+     },
+     {
+      "date": "2026-10-05",
+      "value": 0
+     }
+    ],
+    "readinessPoints": []
+   }
+  },
+  {
+   "name": "deload",
+   "input": {
+    "weekStartStr": "2026-10-05",
+    "dailyLogs": [
+     {
+      "date": "2026-10-05",
+      "kcal": 1500,
+      "protein_g": 60,
+      "volume_load": 5000,
+      "readiness_score": 40,
+      "readiness_explain": "hrv:62|rhr:70|sleep:55|load:80",
+      "acwr": 1.7,
+      "water_ml": 1000
+     },
+     {
+      "date": "2026-10-06",
+      "kcal": 1500,
+      "protein_g": 60,
+      "volume_load": 5000,
+      "readiness_score": 41,
+      "readiness_explain": "hrv:62|rhr:70|sleep:55|load:80",
+      "acwr": 1.7,
+      "water_ml": 1000
+     },
+     {
+      "date": "2026-10-07",
+      "kcal": 1500,
+      "protein_g": 60,
+      "volume_load": 5000,
+      "readiness_score": 42,
+      "readiness_explain": "hrv:62|rhr:70|sleep:55|load:80",
+      "acwr": 1.7,
+      "water_ml": 1000
+     },
+     {
+      "date": "2026-10-08",
+      "kcal": 1500,
+      "protein_g": 60,
+      "volume_load": 5000,
+      "readiness_score": 43,
+      "readiness_explain": "hrv:62|rhr:70|sleep:55|load:80",
+      "acwr": 1.7,
+      "water_ml": 1000
+     }
+    ],
+    "workouts": [
+     {
+      "id": "a"
+     },
+     {
+      "id": "b"
+     },
+     {
+      "id": "c"
+     }
+    ],
+    "sleepLogs": [
+     {
+      "bedtime": "2026-10-04T18:30:00.000Z",
+      "waketime": "2026-10-04T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-06T18:00:00.000Z",
+      "waketime": "2026-10-06T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     }
+    ],
+    "prevLogs": [
+     {
+      "kcal": 2000,
+      "protein_g": 140,
+      "volume_load": 20000
+     },
+     {
+      "kcal": 0,
+      "protein_g": null,
+      "volume_load": "3000"
+     },
+     {
+      "kcal": 2200,
+      "protein_g": 150,
+      "volume_load": null
+     }
+    ],
+    "volumeHistory": [
+     {
+      "date": "2026-09-28",
+      "volume_load": 4300
+     },
+     {
+      "date": "2026-09-30",
+      "volume_load": 4411.5
+     },
+     {
+      "date": "2026-10-02",
+      "volume_load": 4523
+     },
+     {
+      "date": "2026-09-21",
+      "volume_load": 4600
+     },
+     {
+      "date": "2026-09-23",
+      "volume_load": 4711.5
+     },
+     {
+      "date": "2026-09-25",
+      "volume_load": 4823
+     },
+     {
+      "date": "2026-09-14",
+      "volume_load": 4900
+     },
+     {
+      "date": "2026-09-16",
+      "volume_load": 5011.5
+     },
+     {
+      "date": "2026-09-18",
+      "volume_load": 5123
+     },
+     {
+      "date": "2026-09-07",
+      "volume_load": 5200
+     },
+     {
+      "date": "2026-09-09",
+      "volume_load": 5311.5
+     },
+     {
+      "date": "2026-09-11",
+      "volume_load": 5423
+     },
+     {
+      "date": "2026-08-31",
+      "volume_load": 5500
+     },
+     {
+      "date": "2026-09-02",
+      "volume_load": 5611.5
+     },
+     {
+      "date": "2026-09-04",
+      "volume_load": 5723
+     },
+     {
+      "date": "2026-08-24",
+      "volume_load": 5800
+     },
+     {
+      "date": "2026-08-26",
+      "volume_load": 5911.5
+     },
+     {
+      "date": "2026-08-28",
+      "volume_load": 6023
+     },
+     {
+      "date": "2026-08-17",
+      "volume_load": 6100
+     },
+     {
+      "date": "2026-08-19",
+      "volume_load": 6211.5
+     },
+     {
+      "date": "2026-08-21",
+      "volume_load": 6323
+     },
+     {
+      "date": "2026-08-10",
+      "volume_load": 6400
+     },
+     {
+      "date": "2026-08-12",
+      "volume_load": 6511.5
+     },
+     {
+      "date": "2026-08-14",
+      "volume_load": 6623
+     },
+     {
+      "date": "2026-08-03",
+      "volume_load": 6700
+     },
+     {
+      "date": "2026-08-05",
+      "volume_load": 6811.5
+     },
+     {
+      "date": "2026-08-07",
+      "volume_load": 6923
+     },
+     {
+      "date": "2026-07-27",
+      "volume_load": 7000
+     },
+     {
+      "date": "2026-07-29",
+      "volume_load": 7111.5
+     },
+     {
+      "date": "2026-07-31",
+      "volume_load": 7223
+     },
+     {
+      "date": "2026-07-20",
+      "volume_load": 7300
+     },
+     {
+      "date": "2026-07-22",
+      "volume_load": 7411.5
+     },
+     {
+      "date": "2026-07-24",
+      "volume_load": 7523
+     },
+     {
+      "date": "2026-07-13",
+      "volume_load": 7600
+     },
+     {
+      "date": "2026-07-15",
+      "volume_load": 7711.5
+     },
+     {
+      "date": "2026-07-17",
+      "volume_load": 7823
+     }
+    ],
+    "profile": {}
+   },
+   "out": {
+    "daysWithData": 4,
+    "daysLogged": 4,
+    "avgKcal": 1500,
+    "avgProtein": 60,
+    "proteinDays": 4,
+    "avgWaterMl": 1000,
+    "avgSleepH": 5.25,
+    "totalVolume": 20000,
+    "workoutCount": 3,
+    "suppAdherence": null,
+    "readinessDays": 4,
+    "avgReadiness": 41.5,
+    "prevAvgKcal": 2100,
+    "prevAvgProtein": 145,
+    "prevTotalVolume": 23000,
+    "acwr": 1.7,
+    "acwrRec": {
+     "kind": "warning",
+     "id": "acwrHigh",
+     "args": [
+      "1.7"
+     ]
+    },
+    "recommendations": [
+     {
+      "kind": "warning",
+      "id": "deload",
+      "args": []
+     },
+     {
+      "kind": "warning",
+      "id": "sleepDebt",
+      "args": [
+       "5.3",
+       "8"
+      ]
+     },
+     {
+      "kind": "info",
+      "id": "proteinLow",
+      "args": [
+       "60",
+       "140"
+      ]
+     }
+    ],
+    "cards": {
+     "kcal": {
+      "value": "1500",
+      "sub": "/2200",
+      "d": -29
+     },
+     "protein": {
+      "value": "60g",
+      "sub": "/140g",
+      "d": -59
+     },
+     "sleep": {
+      "value": "5.3h",
+      "sub": "/8h",
+      "d": null
+     },
+     "volume": {
+      "value": "20k",
+      "sessions": 3,
+      "d": -13
+     },
+     "readiness": {
+      "value": "42",
+      "sub": "ACWR 1.7",
+      "d": null
+     },
+     "supplements": null,
+     "water": {
+      "value": "1.0L",
+      "sub": "/2.5L",
+      "d": null
+     }
+    },
+    "chartData": [
+     {
+      "date": "2026-10-05",
+      "kcal": 1500,
+      "protein": 60,
+      "sleep_h": 5,
+      "volume": 5000,
+      "readiness": 40
+     },
+     {
+      "date": "2026-10-06",
+      "kcal": 1500,
+      "protein": 60,
+      "sleep_h": 0,
+      "volume": 5000,
+      "readiness": 41
+     },
+     {
+      "date": "2026-10-07",
+      "kcal": 1500,
+      "protein": 60,
+      "sleep_h": 5.5,
+      "volume": 5000,
+      "readiness": 42
+     },
+     {
+      "date": "2026-10-08",
+      "kcal": 1500,
+      "protein": 60,
+      "sleep_h": 0,
+      "volume": 5000,
+      "readiness": 43
+     },
+     {
+      "date": "2026-10-09",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-10",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-11",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 0
+     }
+    ],
+    "volumeWeekly": [
+     {
+      "date": "2026-07-20",
+      "value": 22
+     },
+     {
+      "date": "2026-07-27",
+      "value": 21
+     },
+     {
+      "date": "2026-08-03",
+      "value": 20
+     },
+     {
+      "date": "2026-08-10",
+      "value": 20
+     },
+     {
+      "date": "2026-08-17",
+      "value": 19
+     },
+     {
+      "date": "2026-08-24",
+      "value": 18
+     },
+     {
+      "date": "2026-08-31",
+      "value": 17
+     },
+     {
+      "date": "2026-09-07",
+      "value": 16
+     },
+     {
+      "date": "2026-09-14",
+      "value": 15
+     },
+     {
+      "date": "2026-09-21",
+      "value": 14
+     },
+     {
+      "date": "2026-09-28",
+      "value": 13
+     },
+     {
+      "date": "2026-10-05",
+      "value": 0
+     }
+    ],
+    "readinessPoints": [
+     {
+      "date": "2026-10-05",
+      "value": 40
+     },
+     {
+      "date": "2026-10-06",
+      "value": 41
+     },
+     {
+      "date": "2026-10-07",
+      "value": 42
+     },
+     {
+      "date": "2026-10-08",
+      "value": 43
+     }
+    ]
+   }
+  },
+  {
+   "name": "load-only-low",
+   "input": {
+    "weekStartStr": "2026-10-05",
+    "dailyLogs": [
+     {
+      "date": "2026-10-05",
+      "kcal": null,
+      "protein_g": 50,
+      "volume_load": 1000,
+      "readiness_score": 30,
+      "readiness_explain": "load:30",
+      "acwr": 0.3
+     },
+     {
+      "date": "2026-10-06",
+      "kcal": null,
+      "protein_g": 50,
+      "volume_load": 1000,
+      "readiness_score": 30,
+      "readiness_explain": "load:30",
+      "acwr": 0.3
+     },
+     {
+      "date": "2026-10-07",
+      "kcal": null,
+      "protein_g": 50,
+      "volume_load": 1000,
+      "readiness_score": 30,
+      "readiness_explain": "load:30",
+      "acwr": 0.3
+     },
+     {
+      "date": "2026-10-08",
+      "kcal": null,
+      "protein_g": 50,
+      "volume_load": 1000,
+      "readiness_score": 30,
+      "readiness_explain": "load:30",
+      "acwr": 0.3
+     }
+    ],
+    "workouts": [
+     {
+      "id": "a"
+     },
+     {
+      "id": "b"
+     },
+     {
+      "id": "c"
+     }
+    ],
+    "sleepLogs": [
+     {
+      "bedtime": "2026-10-04T16:00:00.000Z",
+      "waketime": "2026-10-04T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-05T16:30:00.000Z",
+      "waketime": "2026-10-05T23:30:00.000Z",
+      "asleep_min": 401.6,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-07T17:15:00.000Z",
+      "waketime": "2026-10-07T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-09T15:30:00.000Z",
+      "waketime": "2026-10-09T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-09T22:00:00.000Z",
+      "waketime": "2026-10-09T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     }
+    ],
+    "prevLogs": [
+     {
+      "volume_load": 3000
+     }
+    ],
+    "volumeHistory": [
+     {
+      "date": "2026-09-28",
+      "volume_load": 4300
+     },
+     {
+      "date": "2026-09-30",
+      "volume_load": 4411.5
+     },
+     {
+      "date": "2026-10-02",
+      "volume_load": 4523
+     },
+     {
+      "date": "2026-09-21",
+      "volume_load": 4600
+     },
+     {
+      "date": "2026-09-23",
+      "volume_load": 4711.5
+     },
+     {
+      "date": "2026-09-25",
+      "volume_load": 4823
+     },
+     {
+      "date": "2026-09-14",
+      "volume_load": 4900
+     },
+     {
+      "date": "2026-09-16",
+      "volume_load": 5011.5
+     },
+     {
+      "date": "2026-09-18",
+      "volume_load": 5123
+     },
+     {
+      "date": "2026-09-07",
+      "volume_load": 5200
+     },
+     {
+      "date": "2026-09-09",
+      "volume_load": 5311.5
+     },
+     {
+      "date": "2026-09-11",
+      "volume_load": 5423
+     },
+     {
+      "date": "2026-08-31",
+      "volume_load": 5500
+     },
+     {
+      "date": "2026-09-02",
+      "volume_load": 5611.5
+     },
+     {
+      "date": "2026-09-04",
+      "volume_load": 5723
+     },
+     {
+      "date": "2026-08-24",
+      "volume_load": 5800
+     },
+     {
+      "date": "2026-08-26",
+      "volume_load": 5911.5
+     },
+     {
+      "date": "2026-08-28",
+      "volume_load": 6023
+     },
+     {
+      "date": "2026-08-17",
+      "volume_load": 6100
+     },
+     {
+      "date": "2026-08-19",
+      "volume_load": 6211.5
+     },
+     {
+      "date": "2026-08-21",
+      "volume_load": 6323
+     },
+     {
+      "date": "2026-08-10",
+      "volume_load": 6400
+     },
+     {
+      "date": "2026-08-12",
+      "volume_load": 6511.5
+     },
+     {
+      "date": "2026-08-14",
+      "volume_load": 6623
+     },
+     {
+      "date": "2026-08-03",
+      "volume_load": 6700
+     },
+     {
+      "date": "2026-08-05",
+      "volume_load": 6811.5
+     },
+     {
+      "date": "2026-08-07",
+      "volume_load": 6923
+     },
+     {
+      "date": "2026-07-27",
+      "volume_load": 7000
+     },
+     {
+      "date": "2026-07-29",
+      "volume_load": 7111.5
+     },
+     {
+      "date": "2026-07-31",
+      "volume_load": 7223
+     },
+     {
+      "date": "2026-07-20",
+      "volume_load": 7300
+     },
+     {
+      "date": "2026-07-22",
+      "volume_load": 7411.5
+     },
+     {
+      "date": "2026-07-24",
+      "volume_load": 7523
+     },
+     {
+      "date": "2026-07-13",
+      "volume_load": 7600
+     },
+     {
+      "date": "2026-07-15",
+      "volume_load": 7711.5
+     },
+     {
+      "date": "2026-07-17",
+      "volume_load": 7823
+     }
+    ],
+    "profile": {
+     "macro_protein_g": "150.5",
+     "sleep_target_hours": 0
+    }
+   },
+   "out": {
+    "daysWithData": 4,
+    "daysLogged": 4,
+    "avgKcal": 0,
+    "avgProtein": 50,
+    "proteinDays": 4,
+    "avgWaterMl": 0,
+    "avgSleepH": 5.989999999999999,
+    "totalVolume": 4000,
+    "workoutCount": 3,
+    "suppAdherence": null,
+    "readinessDays": 4,
+    "avgReadiness": 30,
+    "prevAvgKcal": 0,
+    "prevAvgProtein": 0,
+    "prevTotalVolume": 3000,
+    "acwr": 0.3,
+    "acwrRec": {
+     "kind": "info",
+     "id": "acwrLow",
+     "args": [
+      "0.3"
+     ]
+    },
+    "recommendations": [
+     {
+      "kind": "warning",
+      "id": "sleepDebt",
+      "args": [
+       "6.0",
+       "8"
+      ]
+     },
+     {
+      "kind": "info",
+      "id": "proteinLow",
+      "args": [
+       "50",
+       "150.5"
+      ]
+     },
+     {
+      "kind": "info",
+      "id": "volumeUp",
+      "args": [
+       "33"
+      ]
+     }
+    ],
+    "cards": {
+     "kcal": {
+      "value": "0",
+      "sub": "/2200",
+      "d": null
+     },
+     "protein": {
+      "value": "50g",
+      "sub": "/150.5g",
+      "d": null
+     },
+     "sleep": {
+      "value": "6.0h",
+      "sub": "/8h",
+      "d": null
+     },
+     "volume": {
+      "value": "4k",
+      "sessions": 3,
+      "d": 33
+     },
+     "readiness": {
+      "value": "30",
+      "sub": "ACWR 0.3",
+      "d": null
+     },
+     "supplements": null,
+     "water": {
+      "value": "0.0L",
+      "sub": "/2.5L",
+      "d": null
+     }
+    },
+    "chartData": [
+     {
+      "date": "2026-10-05",
+      "kcal": 0,
+      "protein": 50,
+      "sleep_h": 7.5,
+      "volume": 1000,
+      "readiness": 30
+     },
+     {
+      "date": "2026-10-06",
+      "kcal": 0,
+      "protein": 50,
+      "sleep_h": 6.7,
+      "volume": 1000,
+      "readiness": 30
+     },
+     {
+      "date": "2026-10-07",
+      "kcal": 0,
+      "protein": 50,
+      "sleep_h": 0,
+      "volume": 1000,
+      "readiness": 30
+     },
+     {
+      "date": "2026-10-08",
+      "kcal": 0,
+      "protein": 50,
+      "sleep_h": 6.3,
+      "volume": 1000,
+      "readiness": 30
+     },
+     {
+      "date": "2026-10-09",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-10",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 8,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-11",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 0
+     }
+    ],
+    "volumeWeekly": [
+     {
+      "date": "2026-07-20",
+      "value": 22
+     },
+     {
+      "date": "2026-07-27",
+      "value": 21
+     },
+     {
+      "date": "2026-08-03",
+      "value": 20
+     },
+     {
+      "date": "2026-08-10",
+      "value": 20
+     },
+     {
+      "date": "2026-08-17",
+      "value": 19
+     },
+     {
+      "date": "2026-08-24",
+      "value": 18
+     },
+     {
+      "date": "2026-08-31",
+      "value": 17
+     },
+     {
+      "date": "2026-09-07",
+      "value": 16
+     },
+     {
+      "date": "2026-09-14",
+      "value": 15
+     },
+     {
+      "date": "2026-09-21",
+      "value": 14
+     },
+     {
+      "date": "2026-09-28",
+      "value": 13
+     },
+     {
+      "date": "2026-10-05",
+      "value": 0
+     }
+    ],
+    "readinessPoints": [
+     {
+      "date": "2026-10-05",
+      "value": 30
+     },
+     {
+      "date": "2026-10-06",
+      "value": 30
+     },
+     {
+      "date": "2026-10-07",
+      "value": 30
+     },
+     {
+      "date": "2026-10-08",
+      "value": 30
+     }
+    ]
+   }
+  },
+  {
+   "name": "high-capacity",
+   "input": {
+    "weekStartStr": "2026-10-05",
+    "dailyLogs": [
+     {
+      "date": "2026-10-05",
+      "kcal": 2000,
+      "protein_g": 160,
+      "volume_load": 30000,
+      "readiness_score": 90,
+      "readiness_explain": "load:30",
+      "acwr": 0
+     },
+     {
+      "date": "2026-10-06",
+      "kcal": 2000,
+      "protein_g": 160,
+      "volume_load": 30000,
+      "readiness_score": 90,
+      "readiness_explain": "load:30",
+      "acwr": 0
+     },
+     {
+      "date": "2026-10-07",
+      "kcal": 2000,
+      "protein_g": 160,
+      "volume_load": 30000,
+      "readiness_score": 90,
+      "readiness_explain": "load:30",
+      "acwr": 0
+     }
+    ],
+    "workouts": [
+     {
+      "id": "a"
+     },
+     {
+      "id": "b"
+     },
+     {
+      "id": "c"
+     }
+    ],
+    "sleepLogs": [
+     {
+      "bedtime": "2026-10-04T16:00:00.000Z",
+      "waketime": "2026-10-04T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-05T16:30:00.000Z",
+      "waketime": "2026-10-05T23:30:00.000Z",
+      "asleep_min": 401.6,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-07T17:15:00.000Z",
+      "waketime": "2026-10-07T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-09T15:30:00.000Z",
+      "waketime": "2026-10-09T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-09T22:00:00.000Z",
+      "waketime": "2026-10-09T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     }
+    ],
+    "prevLogs": [
+     {
+      "volume_load": 20000
+     }
+    ],
+    "volumeHistory": [
+     {
+      "date": "2026-09-28",
+      "volume_load": 4300
+     },
+     {
+      "date": "2026-09-30",
+      "volume_load": 4411.5
+     },
+     {
+      "date": "2026-10-02",
+      "volume_load": 4523
+     },
+     {
+      "date": "2026-09-21",
+      "volume_load": 4600
+     },
+     {
+      "date": "2026-09-23",
+      "volume_load": 4711.5
+     },
+     {
+      "date": "2026-09-25",
+      "volume_load": 4823
+     },
+     {
+      "date": "2026-09-14",
+      "volume_load": 4900
+     },
+     {
+      "date": "2026-09-16",
+      "volume_load": 5011.5
+     },
+     {
+      "date": "2026-09-18",
+      "volume_load": 5123
+     },
+     {
+      "date": "2026-09-07",
+      "volume_load": 5200
+     },
+     {
+      "date": "2026-09-09",
+      "volume_load": 5311.5
+     },
+     {
+      "date": "2026-09-11",
+      "volume_load": 5423
+     },
+     {
+      "date": "2026-08-31",
+      "volume_load": 5500
+     },
+     {
+      "date": "2026-09-02",
+      "volume_load": 5611.5
+     },
+     {
+      "date": "2026-09-04",
+      "volume_load": 5723
+     },
+     {
+      "date": "2026-08-24",
+      "volume_load": 5800
+     },
+     {
+      "date": "2026-08-26",
+      "volume_load": 5911.5
+     },
+     {
+      "date": "2026-08-28",
+      "volume_load": 6023
+     },
+     {
+      "date": "2026-08-17",
+      "volume_load": 6100
+     },
+     {
+      "date": "2026-08-19",
+      "volume_load": 6211.5
+     },
+     {
+      "date": "2026-08-21",
+      "volume_load": 6323
+     },
+     {
+      "date": "2026-08-10",
+      "volume_load": 6400
+     },
+     {
+      "date": "2026-08-12",
+      "volume_load": 6511.5
+     },
+     {
+      "date": "2026-08-14",
+      "volume_load": 6623
+     },
+     {
+      "date": "2026-08-03",
+      "volume_load": 6700
+     },
+     {
+      "date": "2026-08-05",
+      "volume_load": 6811.5
+     },
+     {
+      "date": "2026-08-07",
+      "volume_load": 6923
+     },
+     {
+      "date": "2026-07-27",
+      "volume_load": 7000
+     },
+     {
+      "date": "2026-07-29",
+      "volume_load": 7111.5
+     },
+     {
+      "date": "2026-07-31",
+      "volume_load": 7223
+     },
+     {
+      "date": "2026-07-20",
+      "volume_load": 7300
+     },
+     {
+      "date": "2026-07-22",
+      "volume_load": 7411.5
+     },
+     {
+      "date": "2026-07-24",
+      "volume_load": 7523
+     },
+     {
+      "date": "2026-07-13",
+      "volume_load": 7600
+     },
+     {
+      "date": "2026-07-15",
+      "volume_load": 7711.5
+     },
+     {
+      "date": "2026-07-17",
+      "volume_load": 7823
+     }
+    ],
+    "profile": {
+     "macro_protein_g": null,
+     "tdee_target_kcal": 0
+    }
+   },
+   "out": {
+    "daysWithData": 3,
+    "daysLogged": 3,
+    "avgKcal": 2000,
+    "avgProtein": 160,
+    "proteinDays": 3,
+    "avgWaterMl": 0,
+    "avgSleepH": 5.989999999999999,
+    "totalVolume": 90000,
+    "workoutCount": 3,
+    "suppAdherence": null,
+    "readinessDays": 3,
+    "avgReadiness": 90,
+    "prevAvgKcal": 0,
+    "prevAvgProtein": 0,
+    "prevTotalVolume": 20000,
+    "acwr": 0,
+    "acwrRec": {
+     "kind": "info",
+     "id": "acwrLow",
+     "args": [
+      "0"
+     ]
+    },
+    "recommendations": [
+     {
+      "kind": "success",
+      "id": "overloadCapacity",
+      "args": []
+     },
+     {
+      "kind": "warning",
+      "id": "sleepDebt",
+      "args": [
+       "6.0",
+       "8"
+      ]
+     },
+     {
+      "kind": "info",
+      "id": "volumeUp",
+      "args": [
+       "350"
+      ]
+     }
+    ],
+    "cards": {
+     "kcal": {
+      "value": "2000",
+      "sub": "/0",
+      "d": null
+     },
+     "protein": {
+      "value": "160g",
+      "sub": "/140g",
+      "d": null
+     },
+     "sleep": {
+      "value": "6.0h",
+      "sub": "/8h",
+      "d": null
+     },
+     "volume": {
+      "value": "90k",
+      "sessions": 3,
+      "d": 350
+     },
+     "readiness": {
+      "value": "90",
+      "sub": "ACWR 0",
+      "d": null
+     },
+     "supplements": null,
+     "water": {
+      "value": "0.0L",
+      "sub": "/2.5L",
+      "d": null
+     }
+    },
+    "chartData": [
+     {
+      "date": "2026-10-05",
+      "kcal": 2000,
+      "protein": 160,
+      "sleep_h": 7.5,
+      "volume": 30000,
+      "readiness": 90
+     },
+     {
+      "date": "2026-10-06",
+      "kcal": 2000,
+      "protein": 160,
+      "sleep_h": 6.7,
+      "volume": 30000,
+      "readiness": 90
+     },
+     {
+      "date": "2026-10-07",
+      "kcal": 2000,
+      "protein": 160,
+      "sleep_h": 0,
+      "volume": 30000,
+      "readiness": 90
+     },
+     {
+      "date": "2026-10-08",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 6.3,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-09",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-10",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 8,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-11",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 0
+     }
+    ],
+    "volumeWeekly": [
+     {
+      "date": "2026-07-20",
+      "value": 22
+     },
+     {
+      "date": "2026-07-27",
+      "value": 21
+     },
+     {
+      "date": "2026-08-03",
+      "value": 20
+     },
+     {
+      "date": "2026-08-10",
+      "value": 20
+     },
+     {
+      "date": "2026-08-17",
+      "value": 19
+     },
+     {
+      "date": "2026-08-24",
+      "value": 18
+     },
+     {
+      "date": "2026-08-31",
+      "value": 17
+     },
+     {
+      "date": "2026-09-07",
+      "value": 16
+     },
+     {
+      "date": "2026-09-14",
+      "value": 15
+     },
+     {
+      "date": "2026-09-21",
+      "value": 14
+     },
+     {
+      "date": "2026-09-28",
+      "value": 13
+     },
+     {
+      "date": "2026-10-05",
+      "value": 0
+     }
+    ],
+    "readinessPoints": [
+     {
+      "date": "2026-10-05",
+      "value": 90
+     },
+     {
+      "date": "2026-10-06",
+      "value": 90
+     },
+     {
+      "date": "2026-10-07",
+      "value": 90
+     }
+    ]
+   }
+  },
+  {
+   "name": "string-zero-score",
+   "input": {
+    "weekStartStr": "2026-10-05",
+    "dailyLogs": [
+     {
+      "date": "2026-10-11",
+      "readiness_score": "0",
+      "readiness_explain": "",
+      "acwr": "x"
+     },
+     {
+      "date": "2026-10-11",
+      "kcal": 900,
+      "readiness_score": 0,
+      "acwr": 0.85
+     },
+     {
+      "date": "2026-10-09",
+      "water_ml": "1750",
+      "supplement_planned": "2",
+      "supplement_taken": "1"
+     }
+    ],
+    "workouts": [
+     {
+      "id": "a"
+     },
+     {
+      "id": "b"
+     },
+     {
+      "id": "c"
+     }
+    ],
+    "sleepLogs": [],
+    "prevLogs": [
+     {
+      "kcal": 2000,
+      "protein_g": 140,
+      "volume_load": 20000
+     },
+     {
+      "kcal": 0,
+      "protein_g": null,
+      "volume_load": "3000"
+     },
+     {
+      "kcal": 2200,
+      "protein_g": 150,
+      "volume_load": null
+     }
+    ],
+    "volumeHistory": [
+     {
+      "date": "2026-09-28",
+      "volume_load": 4300
+     },
+     {
+      "date": "2026-09-30",
+      "volume_load": 4411.5
+     },
+     {
+      "date": "2026-10-02",
+      "volume_load": 4523
+     },
+     {
+      "date": "2026-09-21",
+      "volume_load": 4600
+     },
+     {
+      "date": "2026-09-23",
+      "volume_load": 4711.5
+     },
+     {
+      "date": "2026-09-25",
+      "volume_load": 4823
+     },
+     {
+      "date": "2026-09-14",
+      "volume_load": 4900
+     },
+     {
+      "date": "2026-09-16",
+      "volume_load": 5011.5
+     },
+     {
+      "date": "2026-09-18",
+      "volume_load": 5123
+     },
+     {
+      "date": "2026-09-07",
+      "volume_load": 5200
+     },
+     {
+      "date": "2026-09-09",
+      "volume_load": 5311.5
+     },
+     {
+      "date": "2026-09-11",
+      "volume_load": 5423
+     },
+     {
+      "date": "2026-08-31",
+      "volume_load": 5500
+     },
+     {
+      "date": "2026-09-02",
+      "volume_load": 5611.5
+     },
+     {
+      "date": "2026-09-04",
+      "volume_load": 5723
+     },
+     {
+      "date": "2026-08-24",
+      "volume_load": 5800
+     },
+     {
+      "date": "2026-08-26",
+      "volume_load": 5911.5
+     },
+     {
+      "date": "2026-08-28",
+      "volume_load": 6023
+     },
+     {
+      "date": "2026-08-17",
+      "volume_load": 6100
+     },
+     {
+      "date": "2026-08-19",
+      "volume_load": 6211.5
+     },
+     {
+      "date": "2026-08-21",
+      "volume_load": 6323
+     },
+     {
+      "date": "2026-08-10",
+      "volume_load": 6400
+     },
+     {
+      "date": "2026-08-12",
+      "volume_load": 6511.5
+     },
+     {
+      "date": "2026-08-14",
+      "volume_load": 6623
+     },
+     {
+      "date": "2026-08-03",
+      "volume_load": 6700
+     },
+     {
+      "date": "2026-08-05",
+      "volume_load": 6811.5
+     },
+     {
+      "date": "2026-08-07",
+      "volume_load": 6923
+     },
+     {
+      "date": "2026-07-27",
+      "volume_load": 7000
+     },
+     {
+      "date": "2026-07-29",
+      "volume_load": 7111.5
+     },
+     {
+      "date": "2026-07-31",
+      "volume_load": 7223
+     },
+     {
+      "date": "2026-07-20",
+      "volume_load": 7300
+     },
+     {
+      "date": "2026-07-22",
+      "volume_load": 7411.5
+     },
+     {
+      "date": "2026-07-24",
+      "volume_load": 7523
+     },
+     {
+      "date": "2026-07-13",
+      "volume_load": 7600
+     },
+     {
+      "date": "2026-07-15",
+      "volume_load": 7711.5
+     },
+     {
+      "date": "2026-07-17",
+      "volume_load": 7823
+     }
+    ],
+    "profile": {
+     "tdee_target_kcal": 2300,
+     "macro_protein_g": 160,
+     "sleep_target_hours": "7.5",
+     "water_target_ml": 3000
+    }
+   },
+   "out": {
+    "daysWithData": 3,
+    "daysLogged": 2,
+    "avgKcal": 900,
+    "avgProtein": 0,
+    "proteinDays": 0,
+    "avgWaterMl": 1750,
+    "avgSleepH": 0,
+    "totalVolume": 0,
+    "workoutCount": 3,
+    "suppAdherence": 50,
+    "readinessDays": 1,
+    "avgReadiness": 0,
+    "prevAvgKcal": 2100,
+    "prevAvgProtein": 145,
+    "prevTotalVolume": 23000,
+    "acwr": 0.85,
+    "acwrRec": {
+     "kind": "success",
+     "id": "acwrOptimal",
+     "args": [
+      "0.85"
+     ]
+    },
+    "recommendations": [
+     {
+      "kind": "warning",
+      "id": "sleepDebt",
+      "args": [
+       "0.0",
+       "7.5"
+      ]
+     }
+    ],
+    "cards": {
+     "kcal": {
+      "value": "900",
+      "sub": "/2300",
+      "d": -57
+     },
+     "protein": {
+      "value": "0g",
+      "sub": "/160g",
+      "d": -100
+     },
+     "sleep": {
+      "value": "0.0h",
+      "sub": "/7.5h",
+      "d": null
+     },
+     "volume": {
+      "value": "0k",
+      "sessions": 3,
+      "d": -100
+     },
+     "readiness": {
+      "value": "0",
+      "sub": "ACWR 0.85",
+      "d": null
+     },
+     "supplements": {
+      "value": "50%",
+      "sub": "/1d",
+      "d": null
+     },
+     "water": {
+      "value": "1.8L",
+      "sub": "/3L",
+      "d": null
+     }
+    },
+    "chartData": [
+     {
+      "date": "2026-10-05",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-06",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-07",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-08",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-09",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-10",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-11",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 0
+     }
+    ],
+    "volumeWeekly": [
+     {
+      "date": "2026-07-20",
+      "value": 22
+     },
+     {
+      "date": "2026-07-27",
+      "value": 21
+     },
+     {
+      "date": "2026-08-03",
+      "value": 20
+     },
+     {
+      "date": "2026-08-10",
+      "value": 20
+     },
+     {
+      "date": "2026-08-17",
+      "value": 19
+     },
+     {
+      "date": "2026-08-24",
+      "value": 18
+     },
+     {
+      "date": "2026-08-31",
+      "value": 17
+     },
+     {
+      "date": "2026-09-07",
+      "value": 16
+     },
+     {
+      "date": "2026-09-14",
+      "value": 15
+     },
+     {
+      "date": "2026-09-21",
+      "value": 14
+     },
+     {
+      "date": "2026-09-28",
+      "value": 13
+     },
+     {
+      "date": "2026-10-05",
+      "value": 0
+     }
+    ],
+    "readinessPoints": []
+   }
+  },
+  {
+   "name": "acwr-0.3",
+   "input": {
+    "weekStartStr": "2026-10-05",
+    "dailyLogs": [
+     {
+      "date": "2026-10-07",
+      "readiness_score": 60,
+      "readiness_explain": "load:30",
+      "acwr": 0.3
+     }
+    ],
+    "workouts": [
+     {
+      "id": "a"
+     },
+     {
+      "id": "b"
+     },
+     {
+      "id": "c"
+     }
+    ],
+    "sleepLogs": [
+     {
+      "bedtime": "2026-10-04T16:00:00.000Z",
+      "waketime": "2026-10-04T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-05T16:30:00.000Z",
+      "waketime": "2026-10-05T23:30:00.000Z",
+      "asleep_min": 401.6,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-07T17:15:00.000Z",
+      "waketime": "2026-10-07T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-09T15:30:00.000Z",
+      "waketime": "2026-10-09T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-09T22:00:00.000Z",
+      "waketime": "2026-10-09T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     }
+    ],
+    "prevLogs": [],
+    "volumeHistory": [
+     {
+      "date": "2026-09-28",
+      "volume_load": 4300
+     },
+     {
+      "date": "2026-09-30",
+      "volume_load": 4411.5
+     },
+     {
+      "date": "2026-10-02",
+      "volume_load": 4523
+     },
+     {
+      "date": "2026-09-21",
+      "volume_load": 4600
+     },
+     {
+      "date": "2026-09-23",
+      "volume_load": 4711.5
+     },
+     {
+      "date": "2026-09-25",
+      "volume_load": 4823
+     },
+     {
+      "date": "2026-09-14",
+      "volume_load": 4900
+     },
+     {
+      "date": "2026-09-16",
+      "volume_load": 5011.5
+     },
+     {
+      "date": "2026-09-18",
+      "volume_load": 5123
+     },
+     {
+      "date": "2026-09-07",
+      "volume_load": 5200
+     },
+     {
+      "date": "2026-09-09",
+      "volume_load": 5311.5
+     },
+     {
+      "date": "2026-09-11",
+      "volume_load": 5423
+     },
+     {
+      "date": "2026-08-31",
+      "volume_load": 5500
+     },
+     {
+      "date": "2026-09-02",
+      "volume_load": 5611.5
+     },
+     {
+      "date": "2026-09-04",
+      "volume_load": 5723
+     },
+     {
+      "date": "2026-08-24",
+      "volume_load": 5800
+     },
+     {
+      "date": "2026-08-26",
+      "volume_load": 5911.5
+     },
+     {
+      "date": "2026-08-28",
+      "volume_load": 6023
+     },
+     {
+      "date": "2026-08-17",
+      "volume_load": 6100
+     },
+     {
+      "date": "2026-08-19",
+      "volume_load": 6211.5
+     },
+     {
+      "date": "2026-08-21",
+      "volume_load": 6323
+     },
+     {
+      "date": "2026-08-10",
+      "volume_load": 6400
+     },
+     {
+      "date": "2026-08-12",
+      "volume_load": 6511.5
+     },
+     {
+      "date": "2026-08-14",
+      "volume_load": 6623
+     },
+     {
+      "date": "2026-08-03",
+      "volume_load": 6700
+     },
+     {
+      "date": "2026-08-05",
+      "volume_load": 6811.5
+     },
+     {
+      "date": "2026-08-07",
+      "volume_load": 6923
+     },
+     {
+      "date": "2026-07-27",
+      "volume_load": 7000
+     },
+     {
+      "date": "2026-07-29",
+      "volume_load": 7111.5
+     },
+     {
+      "date": "2026-07-31",
+      "volume_load": 7223
+     },
+     {
+      "date": "2026-07-20",
+      "volume_load": 7300
+     },
+     {
+      "date": "2026-07-22",
+      "volume_load": 7411.5
+     },
+     {
+      "date": "2026-07-24",
+      "volume_load": 7523
+     },
+     {
+      "date": "2026-07-13",
+      "volume_load": 7600
+     },
+     {
+      "date": "2026-07-15",
+      "volume_load": 7711.5
+     },
+     {
+      "date": "2026-07-17",
+      "volume_load": 7823
+     }
+    ],
+    "profile": {
+     "tdee_target_kcal": 2300,
+     "macro_protein_g": 160,
+     "sleep_target_hours": "7.5",
+     "water_target_ml": 3000
+    }
+   },
+   "out": {
+    "daysWithData": 1,
+    "daysLogged": 1,
+    "avgKcal": 0,
+    "avgProtein": 0,
+    "proteinDays": 0,
+    "avgWaterMl": 0,
+    "avgSleepH": 5.989999999999999,
+    "totalVolume": 0,
+    "workoutCount": 3,
+    "suppAdherence": null,
+    "readinessDays": 1,
+    "avgReadiness": 60,
+    "prevAvgKcal": 0,
+    "prevAvgProtein": 0,
+    "prevTotalVolume": 0,
+    "acwr": 0.3,
+    "acwrRec": {
+     "kind": "info",
+     "id": "acwrLow",
+     "args": [
+      "0.3"
+     ]
+    },
+    "recommendations": [
+     {
+      "kind": "warning",
+      "id": "sleepDebt",
+      "args": [
+       "6.0",
+       "7.5"
+      ]
+     }
+    ],
+    "cards": {
+     "kcal": {
+      "value": "0",
+      "sub": "/2300",
+      "d": null
+     },
+     "protein": {
+      "value": "0g",
+      "sub": "/160g",
+      "d": null
+     },
+     "sleep": {
+      "value": "6.0h",
+      "sub": "/7.5h",
+      "d": null
+     },
+     "volume": {
+      "value": "0k",
+      "sessions": 3,
+      "d": null
+     },
+     "readiness": {
+      "value": "60",
+      "sub": "ACWR 0.3",
+      "d": null
+     },
+     "supplements": null,
+     "water": {
+      "value": "0.0L",
+      "sub": "/3L",
+      "d": null
+     }
+    },
+    "chartData": [
+     {
+      "date": "2026-10-05",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 7.5,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-06",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 6.7,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-07",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 60
+     },
+     {
+      "date": "2026-10-08",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 6.3,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-09",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-10",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 8,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-11",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 0
+     }
+    ],
+    "volumeWeekly": [
+     {
+      "date": "2026-07-20",
+      "value": 22
+     },
+     {
+      "date": "2026-07-27",
+      "value": 21
+     },
+     {
+      "date": "2026-08-03",
+      "value": 20
+     },
+     {
+      "date": "2026-08-10",
+      "value": 20
+     },
+     {
+      "date": "2026-08-17",
+      "value": 19
+     },
+     {
+      "date": "2026-08-24",
+      "value": 18
+     },
+     {
+      "date": "2026-08-31",
+      "value": 17
+     },
+     {
+      "date": "2026-09-07",
+      "value": 16
+     },
+     {
+      "date": "2026-09-14",
+      "value": 15
+     },
+     {
+      "date": "2026-09-21",
+      "value": 14
+     },
+     {
+      "date": "2026-09-28",
+      "value": 13
+     },
+     {
+      "date": "2026-10-05",
+      "value": 0
+     }
+    ],
+    "readinessPoints": [
+     {
+      "date": "2026-10-07",
+      "value": 60
+     }
+    ]
+   }
+  },
+  {
+   "name": "acwr-0.59",
+   "input": {
+    "weekStartStr": "2026-10-05",
+    "dailyLogs": [
+     {
+      "date": "2026-10-07",
+      "readiness_score": 60,
+      "readiness_explain": "load:30",
+      "acwr": 0.59
+     }
+    ],
+    "workouts": [
+     {
+      "id": "a"
+     },
+     {
+      "id": "b"
+     },
+     {
+      "id": "c"
+     }
+    ],
+    "sleepLogs": [
+     {
+      "bedtime": "2026-10-04T16:00:00.000Z",
+      "waketime": "2026-10-04T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-05T16:30:00.000Z",
+      "waketime": "2026-10-05T23:30:00.000Z",
+      "asleep_min": 401.6,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-07T17:15:00.000Z",
+      "waketime": "2026-10-07T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-09T15:30:00.000Z",
+      "waketime": "2026-10-09T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-09T22:00:00.000Z",
+      "waketime": "2026-10-09T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     }
+    ],
+    "prevLogs": [],
+    "volumeHistory": [
+     {
+      "date": "2026-09-28",
+      "volume_load": 4300
+     },
+     {
+      "date": "2026-09-30",
+      "volume_load": 4411.5
+     },
+     {
+      "date": "2026-10-02",
+      "volume_load": 4523
+     },
+     {
+      "date": "2026-09-21",
+      "volume_load": 4600
+     },
+     {
+      "date": "2026-09-23",
+      "volume_load": 4711.5
+     },
+     {
+      "date": "2026-09-25",
+      "volume_load": 4823
+     },
+     {
+      "date": "2026-09-14",
+      "volume_load": 4900
+     },
+     {
+      "date": "2026-09-16",
+      "volume_load": 5011.5
+     },
+     {
+      "date": "2026-09-18",
+      "volume_load": 5123
+     },
+     {
+      "date": "2026-09-07",
+      "volume_load": 5200
+     },
+     {
+      "date": "2026-09-09",
+      "volume_load": 5311.5
+     },
+     {
+      "date": "2026-09-11",
+      "volume_load": 5423
+     },
+     {
+      "date": "2026-08-31",
+      "volume_load": 5500
+     },
+     {
+      "date": "2026-09-02",
+      "volume_load": 5611.5
+     },
+     {
+      "date": "2026-09-04",
+      "volume_load": 5723
+     },
+     {
+      "date": "2026-08-24",
+      "volume_load": 5800
+     },
+     {
+      "date": "2026-08-26",
+      "volume_load": 5911.5
+     },
+     {
+      "date": "2026-08-28",
+      "volume_load": 6023
+     },
+     {
+      "date": "2026-08-17",
+      "volume_load": 6100
+     },
+     {
+      "date": "2026-08-19",
+      "volume_load": 6211.5
+     },
+     {
+      "date": "2026-08-21",
+      "volume_load": 6323
+     },
+     {
+      "date": "2026-08-10",
+      "volume_load": 6400
+     },
+     {
+      "date": "2026-08-12",
+      "volume_load": 6511.5
+     },
+     {
+      "date": "2026-08-14",
+      "volume_load": 6623
+     },
+     {
+      "date": "2026-08-03",
+      "volume_load": 6700
+     },
+     {
+      "date": "2026-08-05",
+      "volume_load": 6811.5
+     },
+     {
+      "date": "2026-08-07",
+      "volume_load": 6923
+     },
+     {
+      "date": "2026-07-27",
+      "volume_load": 7000
+     },
+     {
+      "date": "2026-07-29",
+      "volume_load": 7111.5
+     },
+     {
+      "date": "2026-07-31",
+      "volume_load": 7223
+     },
+     {
+      "date": "2026-07-20",
+      "volume_load": 7300
+     },
+     {
+      "date": "2026-07-22",
+      "volume_load": 7411.5
+     },
+     {
+      "date": "2026-07-24",
+      "volume_load": 7523
+     },
+     {
+      "date": "2026-07-13",
+      "volume_load": 7600
+     },
+     {
+      "date": "2026-07-15",
+      "volume_load": 7711.5
+     },
+     {
+      "date": "2026-07-17",
+      "volume_load": 7823
+     }
+    ],
+    "profile": {
+     "tdee_target_kcal": 2300,
+     "macro_protein_g": 160,
+     "sleep_target_hours": "7.5",
+     "water_target_ml": 3000
+    }
+   },
+   "out": {
+    "daysWithData": 1,
+    "daysLogged": 1,
+    "avgKcal": 0,
+    "avgProtein": 0,
+    "proteinDays": 0,
+    "avgWaterMl": 0,
+    "avgSleepH": 5.989999999999999,
+    "totalVolume": 0,
+    "workoutCount": 3,
+    "suppAdherence": null,
+    "readinessDays": 1,
+    "avgReadiness": 60,
+    "prevAvgKcal": 0,
+    "prevAvgProtein": 0,
+    "prevTotalVolume": 0,
+    "acwr": 0.59,
+    "acwrRec": {
+     "kind": "info",
+     "id": "acwrLow",
+     "args": [
+      "0.59"
+     ]
+    },
+    "recommendations": [
+     {
+      "kind": "warning",
+      "id": "sleepDebt",
+      "args": [
+       "6.0",
+       "7.5"
+      ]
+     }
+    ],
+    "cards": {
+     "kcal": {
+      "value": "0",
+      "sub": "/2300",
+      "d": null
+     },
+     "protein": {
+      "value": "0g",
+      "sub": "/160g",
+      "d": null
+     },
+     "sleep": {
+      "value": "6.0h",
+      "sub": "/7.5h",
+      "d": null
+     },
+     "volume": {
+      "value": "0k",
+      "sessions": 3,
+      "d": null
+     },
+     "readiness": {
+      "value": "60",
+      "sub": "ACWR 0.59",
+      "d": null
+     },
+     "supplements": null,
+     "water": {
+      "value": "0.0L",
+      "sub": "/3L",
+      "d": null
+     }
+    },
+    "chartData": [
+     {
+      "date": "2026-10-05",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 7.5,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-06",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 6.7,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-07",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 60
+     },
+     {
+      "date": "2026-10-08",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 6.3,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-09",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-10",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 8,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-11",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 0
+     }
+    ],
+    "volumeWeekly": [
+     {
+      "date": "2026-07-20",
+      "value": 22
+     },
+     {
+      "date": "2026-07-27",
+      "value": 21
+     },
+     {
+      "date": "2026-08-03",
+      "value": 20
+     },
+     {
+      "date": "2026-08-10",
+      "value": 20
+     },
+     {
+      "date": "2026-08-17",
+      "value": 19
+     },
+     {
+      "date": "2026-08-24",
+      "value": 18
+     },
+     {
+      "date": "2026-08-31",
+      "value": 17
+     },
+     {
+      "date": "2026-09-07",
+      "value": 16
+     },
+     {
+      "date": "2026-09-14",
+      "value": 15
+     },
+     {
+      "date": "2026-09-21",
+      "value": 14
+     },
+     {
+      "date": "2026-09-28",
+      "value": 13
+     },
+     {
+      "date": "2026-10-05",
+      "value": 0
+     }
+    ],
+    "readinessPoints": [
+     {
+      "date": "2026-10-07",
+      "value": 60
+     }
+    ]
+   }
+  },
+  {
+   "name": "acwr-0.6",
+   "input": {
+    "weekStartStr": "2026-10-05",
+    "dailyLogs": [
+     {
+      "date": "2026-10-07",
+      "readiness_score": 60,
+      "readiness_explain": "load:30",
+      "acwr": 0.6
+     }
+    ],
+    "workouts": [
+     {
+      "id": "a"
+     },
+     {
+      "id": "b"
+     },
+     {
+      "id": "c"
+     }
+    ],
+    "sleepLogs": [
+     {
+      "bedtime": "2026-10-04T16:00:00.000Z",
+      "waketime": "2026-10-04T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-05T16:30:00.000Z",
+      "waketime": "2026-10-05T23:30:00.000Z",
+      "asleep_min": 401.6,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-07T17:15:00.000Z",
+      "waketime": "2026-10-07T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-09T15:30:00.000Z",
+      "waketime": "2026-10-09T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-09T22:00:00.000Z",
+      "waketime": "2026-10-09T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     }
+    ],
+    "prevLogs": [],
+    "volumeHistory": [
+     {
+      "date": "2026-09-28",
+      "volume_load": 4300
+     },
+     {
+      "date": "2026-09-30",
+      "volume_load": 4411.5
+     },
+     {
+      "date": "2026-10-02",
+      "volume_load": 4523
+     },
+     {
+      "date": "2026-09-21",
+      "volume_load": 4600
+     },
+     {
+      "date": "2026-09-23",
+      "volume_load": 4711.5
+     },
+     {
+      "date": "2026-09-25",
+      "volume_load": 4823
+     },
+     {
+      "date": "2026-09-14",
+      "volume_load": 4900
+     },
+     {
+      "date": "2026-09-16",
+      "volume_load": 5011.5
+     },
+     {
+      "date": "2026-09-18",
+      "volume_load": 5123
+     },
+     {
+      "date": "2026-09-07",
+      "volume_load": 5200
+     },
+     {
+      "date": "2026-09-09",
+      "volume_load": 5311.5
+     },
+     {
+      "date": "2026-09-11",
+      "volume_load": 5423
+     },
+     {
+      "date": "2026-08-31",
+      "volume_load": 5500
+     },
+     {
+      "date": "2026-09-02",
+      "volume_load": 5611.5
+     },
+     {
+      "date": "2026-09-04",
+      "volume_load": 5723
+     },
+     {
+      "date": "2026-08-24",
+      "volume_load": 5800
+     },
+     {
+      "date": "2026-08-26",
+      "volume_load": 5911.5
+     },
+     {
+      "date": "2026-08-28",
+      "volume_load": 6023
+     },
+     {
+      "date": "2026-08-17",
+      "volume_load": 6100
+     },
+     {
+      "date": "2026-08-19",
+      "volume_load": 6211.5
+     },
+     {
+      "date": "2026-08-21",
+      "volume_load": 6323
+     },
+     {
+      "date": "2026-08-10",
+      "volume_load": 6400
+     },
+     {
+      "date": "2026-08-12",
+      "volume_load": 6511.5
+     },
+     {
+      "date": "2026-08-14",
+      "volume_load": 6623
+     },
+     {
+      "date": "2026-08-03",
+      "volume_load": 6700
+     },
+     {
+      "date": "2026-08-05",
+      "volume_load": 6811.5
+     },
+     {
+      "date": "2026-08-07",
+      "volume_load": 6923
+     },
+     {
+      "date": "2026-07-27",
+      "volume_load": 7000
+     },
+     {
+      "date": "2026-07-29",
+      "volume_load": 7111.5
+     },
+     {
+      "date": "2026-07-31",
+      "volume_load": 7223
+     },
+     {
+      "date": "2026-07-20",
+      "volume_load": 7300
+     },
+     {
+      "date": "2026-07-22",
+      "volume_load": 7411.5
+     },
+     {
+      "date": "2026-07-24",
+      "volume_load": 7523
+     },
+     {
+      "date": "2026-07-13",
+      "volume_load": 7600
+     },
+     {
+      "date": "2026-07-15",
+      "volume_load": 7711.5
+     },
+     {
+      "date": "2026-07-17",
+      "volume_load": 7823
+     }
+    ],
+    "profile": {
+     "tdee_target_kcal": 2300,
+     "macro_protein_g": 160,
+     "sleep_target_hours": "7.5",
+     "water_target_ml": 3000
+    }
+   },
+   "out": {
+    "daysWithData": 1,
+    "daysLogged": 1,
+    "avgKcal": 0,
+    "avgProtein": 0,
+    "proteinDays": 0,
+    "avgWaterMl": 0,
+    "avgSleepH": 5.989999999999999,
+    "totalVolume": 0,
+    "workoutCount": 3,
+    "suppAdherence": null,
+    "readinessDays": 1,
+    "avgReadiness": 60,
+    "prevAvgKcal": 0,
+    "prevAvgProtein": 0,
+    "prevTotalVolume": 0,
+    "acwr": 0.6,
+    "acwrRec": null,
+    "recommendations": [
+     {
+      "kind": "warning",
+      "id": "sleepDebt",
+      "args": [
+       "6.0",
+       "7.5"
+      ]
+     }
+    ],
+    "cards": {
+     "kcal": {
+      "value": "0",
+      "sub": "/2300",
+      "d": null
+     },
+     "protein": {
+      "value": "0g",
+      "sub": "/160g",
+      "d": null
+     },
+     "sleep": {
+      "value": "6.0h",
+      "sub": "/7.5h",
+      "d": null
+     },
+     "volume": {
+      "value": "0k",
+      "sessions": 3,
+      "d": null
+     },
+     "readiness": {
+      "value": "60",
+      "sub": "ACWR 0.6",
+      "d": null
+     },
+     "supplements": null,
+     "water": {
+      "value": "0.0L",
+      "sub": "/3L",
+      "d": null
+     }
+    },
+    "chartData": [
+     {
+      "date": "2026-10-05",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 7.5,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-06",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 6.7,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-07",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 60
+     },
+     {
+      "date": "2026-10-08",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 6.3,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-09",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-10",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 8,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-11",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 0
+     }
+    ],
+    "volumeWeekly": [
+     {
+      "date": "2026-07-20",
+      "value": 22
+     },
+     {
+      "date": "2026-07-27",
+      "value": 21
+     },
+     {
+      "date": "2026-08-03",
+      "value": 20
+     },
+     {
+      "date": "2026-08-10",
+      "value": 20
+     },
+     {
+      "date": "2026-08-17",
+      "value": 19
+     },
+     {
+      "date": "2026-08-24",
+      "value": 18
+     },
+     {
+      "date": "2026-08-31",
+      "value": 17
+     },
+     {
+      "date": "2026-09-07",
+      "value": 16
+     },
+     {
+      "date": "2026-09-14",
+      "value": 15
+     },
+     {
+      "date": "2026-09-21",
+      "value": 14
+     },
+     {
+      "date": "2026-09-28",
+      "value": 13
+     },
+     {
+      "date": "2026-10-05",
+      "value": 0
+     }
+    ],
+    "readinessPoints": [
+     {
+      "date": "2026-10-07",
+      "value": 60
+     }
+    ]
+   }
+  },
+  {
+   "name": "acwr-0.62",
+   "input": {
+    "weekStartStr": "2026-10-05",
+    "dailyLogs": [
+     {
+      "date": "2026-10-07",
+      "readiness_score": 60,
+      "readiness_explain": "load:30",
+      "acwr": 0.62
+     }
+    ],
+    "workouts": [
+     {
+      "id": "a"
+     },
+     {
+      "id": "b"
+     },
+     {
+      "id": "c"
+     }
+    ],
+    "sleepLogs": [
+     {
+      "bedtime": "2026-10-04T16:00:00.000Z",
+      "waketime": "2026-10-04T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-05T16:30:00.000Z",
+      "waketime": "2026-10-05T23:30:00.000Z",
+      "asleep_min": 401.6,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-07T17:15:00.000Z",
+      "waketime": "2026-10-07T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-09T15:30:00.000Z",
+      "waketime": "2026-10-09T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-09T22:00:00.000Z",
+      "waketime": "2026-10-09T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     }
+    ],
+    "prevLogs": [],
+    "volumeHistory": [
+     {
+      "date": "2026-09-28",
+      "volume_load": 4300
+     },
+     {
+      "date": "2026-09-30",
+      "volume_load": 4411.5
+     },
+     {
+      "date": "2026-10-02",
+      "volume_load": 4523
+     },
+     {
+      "date": "2026-09-21",
+      "volume_load": 4600
+     },
+     {
+      "date": "2026-09-23",
+      "volume_load": 4711.5
+     },
+     {
+      "date": "2026-09-25",
+      "volume_load": 4823
+     },
+     {
+      "date": "2026-09-14",
+      "volume_load": 4900
+     },
+     {
+      "date": "2026-09-16",
+      "volume_load": 5011.5
+     },
+     {
+      "date": "2026-09-18",
+      "volume_load": 5123
+     },
+     {
+      "date": "2026-09-07",
+      "volume_load": 5200
+     },
+     {
+      "date": "2026-09-09",
+      "volume_load": 5311.5
+     },
+     {
+      "date": "2026-09-11",
+      "volume_load": 5423
+     },
+     {
+      "date": "2026-08-31",
+      "volume_load": 5500
+     },
+     {
+      "date": "2026-09-02",
+      "volume_load": 5611.5
+     },
+     {
+      "date": "2026-09-04",
+      "volume_load": 5723
+     },
+     {
+      "date": "2026-08-24",
+      "volume_load": 5800
+     },
+     {
+      "date": "2026-08-26",
+      "volume_load": 5911.5
+     },
+     {
+      "date": "2026-08-28",
+      "volume_load": 6023
+     },
+     {
+      "date": "2026-08-17",
+      "volume_load": 6100
+     },
+     {
+      "date": "2026-08-19",
+      "volume_load": 6211.5
+     },
+     {
+      "date": "2026-08-21",
+      "volume_load": 6323
+     },
+     {
+      "date": "2026-08-10",
+      "volume_load": 6400
+     },
+     {
+      "date": "2026-08-12",
+      "volume_load": 6511.5
+     },
+     {
+      "date": "2026-08-14",
+      "volume_load": 6623
+     },
+     {
+      "date": "2026-08-03",
+      "volume_load": 6700
+     },
+     {
+      "date": "2026-08-05",
+      "volume_load": 6811.5
+     },
+     {
+      "date": "2026-08-07",
+      "volume_load": 6923
+     },
+     {
+      "date": "2026-07-27",
+      "volume_load": 7000
+     },
+     {
+      "date": "2026-07-29",
+      "volume_load": 7111.5
+     },
+     {
+      "date": "2026-07-31",
+      "volume_load": 7223
+     },
+     {
+      "date": "2026-07-20",
+      "volume_load": 7300
+     },
+     {
+      "date": "2026-07-22",
+      "volume_load": 7411.5
+     },
+     {
+      "date": "2026-07-24",
+      "volume_load": 7523
+     },
+     {
+      "date": "2026-07-13",
+      "volume_load": 7600
+     },
+     {
+      "date": "2026-07-15",
+      "volume_load": 7711.5
+     },
+     {
+      "date": "2026-07-17",
+      "volume_load": 7823
+     }
+    ],
+    "profile": {
+     "tdee_target_kcal": 2300,
+     "macro_protein_g": 160,
+     "sleep_target_hours": "7.5",
+     "water_target_ml": 3000
+    }
+   },
+   "out": {
+    "daysWithData": 1,
+    "daysLogged": 1,
+    "avgKcal": 0,
+    "avgProtein": 0,
+    "proteinDays": 0,
+    "avgWaterMl": 0,
+    "avgSleepH": 5.989999999999999,
+    "totalVolume": 0,
+    "workoutCount": 3,
+    "suppAdherence": null,
+    "readinessDays": 1,
+    "avgReadiness": 60,
+    "prevAvgKcal": 0,
+    "prevAvgProtein": 0,
+    "prevTotalVolume": 0,
+    "acwr": 0.62,
+    "acwrRec": null,
+    "recommendations": [
+     {
+      "kind": "warning",
+      "id": "sleepDebt",
+      "args": [
+       "6.0",
+       "7.5"
+      ]
+     }
+    ],
+    "cards": {
+     "kcal": {
+      "value": "0",
+      "sub": "/2300",
+      "d": null
+     },
+     "protein": {
+      "value": "0g",
+      "sub": "/160g",
+      "d": null
+     },
+     "sleep": {
+      "value": "6.0h",
+      "sub": "/7.5h",
+      "d": null
+     },
+     "volume": {
+      "value": "0k",
+      "sessions": 3,
+      "d": null
+     },
+     "readiness": {
+      "value": "60",
+      "sub": "ACWR 0.62",
+      "d": null
+     },
+     "supplements": null,
+     "water": {
+      "value": "0.0L",
+      "sub": "/3L",
+      "d": null
+     }
+    },
+    "chartData": [
+     {
+      "date": "2026-10-05",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 7.5,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-06",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 6.7,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-07",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 60
+     },
+     {
+      "date": "2026-10-08",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 6.3,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-09",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-10",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 8,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-11",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 0
+     }
+    ],
+    "volumeWeekly": [
+     {
+      "date": "2026-07-20",
+      "value": 22
+     },
+     {
+      "date": "2026-07-27",
+      "value": 21
+     },
+     {
+      "date": "2026-08-03",
+      "value": 20
+     },
+     {
+      "date": "2026-08-10",
+      "value": 20
+     },
+     {
+      "date": "2026-08-17",
+      "value": 19
+     },
+     {
+      "date": "2026-08-24",
+      "value": 18
+     },
+     {
+      "date": "2026-08-31",
+      "value": 17
+     },
+     {
+      "date": "2026-09-07",
+      "value": 16
+     },
+     {
+      "date": "2026-09-14",
+      "value": 15
+     },
+     {
+      "date": "2026-09-21",
+      "value": 14
+     },
+     {
+      "date": "2026-09-28",
+      "value": 13
+     },
+     {
+      "date": "2026-10-05",
+      "value": 0
+     }
+    ],
+    "readinessPoints": [
+     {
+      "date": "2026-10-07",
+      "value": 60
+     }
+    ]
+   }
+  },
+  {
+   "name": "acwr-0.65",
+   "input": {
+    "weekStartStr": "2026-10-05",
+    "dailyLogs": [
+     {
+      "date": "2026-10-07",
+      "readiness_score": 60,
+      "readiness_explain": "load:30",
+      "acwr": 0.65
+     }
+    ],
+    "workouts": [
+     {
+      "id": "a"
+     },
+     {
+      "id": "b"
+     },
+     {
+      "id": "c"
+     }
+    ],
+    "sleepLogs": [
+     {
+      "bedtime": "2026-10-04T16:00:00.000Z",
+      "waketime": "2026-10-04T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-05T16:30:00.000Z",
+      "waketime": "2026-10-05T23:30:00.000Z",
+      "asleep_min": 401.6,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-07T17:15:00.000Z",
+      "waketime": "2026-10-07T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-09T15:30:00.000Z",
+      "waketime": "2026-10-09T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-09T22:00:00.000Z",
+      "waketime": "2026-10-09T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     }
+    ],
+    "prevLogs": [],
+    "volumeHistory": [
+     {
+      "date": "2026-09-28",
+      "volume_load": 4300
+     },
+     {
+      "date": "2026-09-30",
+      "volume_load": 4411.5
+     },
+     {
+      "date": "2026-10-02",
+      "volume_load": 4523
+     },
+     {
+      "date": "2026-09-21",
+      "volume_load": 4600
+     },
+     {
+      "date": "2026-09-23",
+      "volume_load": 4711.5
+     },
+     {
+      "date": "2026-09-25",
+      "volume_load": 4823
+     },
+     {
+      "date": "2026-09-14",
+      "volume_load": 4900
+     },
+     {
+      "date": "2026-09-16",
+      "volume_load": 5011.5
+     },
+     {
+      "date": "2026-09-18",
+      "volume_load": 5123
+     },
+     {
+      "date": "2026-09-07",
+      "volume_load": 5200
+     },
+     {
+      "date": "2026-09-09",
+      "volume_load": 5311.5
+     },
+     {
+      "date": "2026-09-11",
+      "volume_load": 5423
+     },
+     {
+      "date": "2026-08-31",
+      "volume_load": 5500
+     },
+     {
+      "date": "2026-09-02",
+      "volume_load": 5611.5
+     },
+     {
+      "date": "2026-09-04",
+      "volume_load": 5723
+     },
+     {
+      "date": "2026-08-24",
+      "volume_load": 5800
+     },
+     {
+      "date": "2026-08-26",
+      "volume_load": 5911.5
+     },
+     {
+      "date": "2026-08-28",
+      "volume_load": 6023
+     },
+     {
+      "date": "2026-08-17",
+      "volume_load": 6100
+     },
+     {
+      "date": "2026-08-19",
+      "volume_load": 6211.5
+     },
+     {
+      "date": "2026-08-21",
+      "volume_load": 6323
+     },
+     {
+      "date": "2026-08-10",
+      "volume_load": 6400
+     },
+     {
+      "date": "2026-08-12",
+      "volume_load": 6511.5
+     },
+     {
+      "date": "2026-08-14",
+      "volume_load": 6623
+     },
+     {
+      "date": "2026-08-03",
+      "volume_load": 6700
+     },
+     {
+      "date": "2026-08-05",
+      "volume_load": 6811.5
+     },
+     {
+      "date": "2026-08-07",
+      "volume_load": 6923
+     },
+     {
+      "date": "2026-07-27",
+      "volume_load": 7000
+     },
+     {
+      "date": "2026-07-29",
+      "volume_load": 7111.5
+     },
+     {
+      "date": "2026-07-31",
+      "volume_load": 7223
+     },
+     {
+      "date": "2026-07-20",
+      "volume_load": 7300
+     },
+     {
+      "date": "2026-07-22",
+      "volume_load": 7411.5
+     },
+     {
+      "date": "2026-07-24",
+      "volume_load": 7523
+     },
+     {
+      "date": "2026-07-13",
+      "volume_load": 7600
+     },
+     {
+      "date": "2026-07-15",
+      "volume_load": 7711.5
+     },
+     {
+      "date": "2026-07-17",
+      "volume_load": 7823
+     }
+    ],
+    "profile": {
+     "tdee_target_kcal": 2300,
+     "macro_protein_g": 160,
+     "sleep_target_hours": "7.5",
+     "water_target_ml": 3000
+    }
+   },
+   "out": {
+    "daysWithData": 1,
+    "daysLogged": 1,
+    "avgKcal": 0,
+    "avgProtein": 0,
+    "proteinDays": 0,
+    "avgWaterMl": 0,
+    "avgSleepH": 5.989999999999999,
+    "totalVolume": 0,
+    "workoutCount": 3,
+    "suppAdherence": null,
+    "readinessDays": 1,
+    "avgReadiness": 60,
+    "prevAvgKcal": 0,
+    "prevAvgProtein": 0,
+    "prevTotalVolume": 0,
+    "acwr": 0.65,
+    "acwrRec": null,
+    "recommendations": [
+     {
+      "kind": "warning",
+      "id": "sleepDebt",
+      "args": [
+       "6.0",
+       "7.5"
+      ]
+     }
+    ],
+    "cards": {
+     "kcal": {
+      "value": "0",
+      "sub": "/2300",
+      "d": null
+     },
+     "protein": {
+      "value": "0g",
+      "sub": "/160g",
+      "d": null
+     },
+     "sleep": {
+      "value": "6.0h",
+      "sub": "/7.5h",
+      "d": null
+     },
+     "volume": {
+      "value": "0k",
+      "sessions": 3,
+      "d": null
+     },
+     "readiness": {
+      "value": "60",
+      "sub": "ACWR 0.65",
+      "d": null
+     },
+     "supplements": null,
+     "water": {
+      "value": "0.0L",
+      "sub": "/3L",
+      "d": null
+     }
+    },
+    "chartData": [
+     {
+      "date": "2026-10-05",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 7.5,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-06",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 6.7,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-07",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 60
+     },
+     {
+      "date": "2026-10-08",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 6.3,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-09",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-10",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 8,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-11",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 0
+     }
+    ],
+    "volumeWeekly": [
+     {
+      "date": "2026-07-20",
+      "value": 22
+     },
+     {
+      "date": "2026-07-27",
+      "value": 21
+     },
+     {
+      "date": "2026-08-03",
+      "value": 20
+     },
+     {
+      "date": "2026-08-10",
+      "value": 20
+     },
+     {
+      "date": "2026-08-17",
+      "value": 19
+     },
+     {
+      "date": "2026-08-24",
+      "value": 18
+     },
+     {
+      "date": "2026-08-31",
+      "value": 17
+     },
+     {
+      "date": "2026-09-07",
+      "value": 16
+     },
+     {
+      "date": "2026-09-14",
+      "value": 15
+     },
+     {
+      "date": "2026-09-21",
+      "value": 14
+     },
+     {
+      "date": "2026-09-28",
+      "value": 13
+     },
+     {
+      "date": "2026-10-05",
+      "value": 0
+     }
+    ],
+    "readinessPoints": [
+     {
+      "date": "2026-10-07",
+      "value": 60
+     }
+    ]
+   }
+  },
+  {
+   "name": "acwr-0.7",
+   "input": {
+    "weekStartStr": "2026-10-05",
+    "dailyLogs": [
+     {
+      "date": "2026-10-07",
+      "readiness_score": 60,
+      "readiness_explain": "load:30",
+      "acwr": 0.7
+     }
+    ],
+    "workouts": [
+     {
+      "id": "a"
+     },
+     {
+      "id": "b"
+     },
+     {
+      "id": "c"
+     }
+    ],
+    "sleepLogs": [
+     {
+      "bedtime": "2026-10-04T16:00:00.000Z",
+      "waketime": "2026-10-04T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-05T16:30:00.000Z",
+      "waketime": "2026-10-05T23:30:00.000Z",
+      "asleep_min": 401.6,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-07T17:15:00.000Z",
+      "waketime": "2026-10-07T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-09T15:30:00.000Z",
+      "waketime": "2026-10-09T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-09T22:00:00.000Z",
+      "waketime": "2026-10-09T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     }
+    ],
+    "prevLogs": [],
+    "volumeHistory": [
+     {
+      "date": "2026-09-28",
+      "volume_load": 4300
+     },
+     {
+      "date": "2026-09-30",
+      "volume_load": 4411.5
+     },
+     {
+      "date": "2026-10-02",
+      "volume_load": 4523
+     },
+     {
+      "date": "2026-09-21",
+      "volume_load": 4600
+     },
+     {
+      "date": "2026-09-23",
+      "volume_load": 4711.5
+     },
+     {
+      "date": "2026-09-25",
+      "volume_load": 4823
+     },
+     {
+      "date": "2026-09-14",
+      "volume_load": 4900
+     },
+     {
+      "date": "2026-09-16",
+      "volume_load": 5011.5
+     },
+     {
+      "date": "2026-09-18",
+      "volume_load": 5123
+     },
+     {
+      "date": "2026-09-07",
+      "volume_load": 5200
+     },
+     {
+      "date": "2026-09-09",
+      "volume_load": 5311.5
+     },
+     {
+      "date": "2026-09-11",
+      "volume_load": 5423
+     },
+     {
+      "date": "2026-08-31",
+      "volume_load": 5500
+     },
+     {
+      "date": "2026-09-02",
+      "volume_load": 5611.5
+     },
+     {
+      "date": "2026-09-04",
+      "volume_load": 5723
+     },
+     {
+      "date": "2026-08-24",
+      "volume_load": 5800
+     },
+     {
+      "date": "2026-08-26",
+      "volume_load": 5911.5
+     },
+     {
+      "date": "2026-08-28",
+      "volume_load": 6023
+     },
+     {
+      "date": "2026-08-17",
+      "volume_load": 6100
+     },
+     {
+      "date": "2026-08-19",
+      "volume_load": 6211.5
+     },
+     {
+      "date": "2026-08-21",
+      "volume_load": 6323
+     },
+     {
+      "date": "2026-08-10",
+      "volume_load": 6400
+     },
+     {
+      "date": "2026-08-12",
+      "volume_load": 6511.5
+     },
+     {
+      "date": "2026-08-14",
+      "volume_load": 6623
+     },
+     {
+      "date": "2026-08-03",
+      "volume_load": 6700
+     },
+     {
+      "date": "2026-08-05",
+      "volume_load": 6811.5
+     },
+     {
+      "date": "2026-08-07",
+      "volume_load": 6923
+     },
+     {
+      "date": "2026-07-27",
+      "volume_load": 7000
+     },
+     {
+      "date": "2026-07-29",
+      "volume_load": 7111.5
+     },
+     {
+      "date": "2026-07-31",
+      "volume_load": 7223
+     },
+     {
+      "date": "2026-07-20",
+      "volume_load": 7300
+     },
+     {
+      "date": "2026-07-22",
+      "volume_load": 7411.5
+     },
+     {
+      "date": "2026-07-24",
+      "volume_load": 7523
+     },
+     {
+      "date": "2026-07-13",
+      "volume_load": 7600
+     },
+     {
+      "date": "2026-07-15",
+      "volume_load": 7711.5
+     },
+     {
+      "date": "2026-07-17",
+      "volume_load": 7823
+     }
+    ],
+    "profile": {
+     "tdee_target_kcal": 2300,
+     "macro_protein_g": 160,
+     "sleep_target_hours": "7.5",
+     "water_target_ml": 3000
+    }
+   },
+   "out": {
+    "daysWithData": 1,
+    "daysLogged": 1,
+    "avgKcal": 0,
+    "avgProtein": 0,
+    "proteinDays": 0,
+    "avgWaterMl": 0,
+    "avgSleepH": 5.989999999999999,
+    "totalVolume": 0,
+    "workoutCount": 3,
+    "suppAdherence": null,
+    "readinessDays": 1,
+    "avgReadiness": 60,
+    "prevAvgKcal": 0,
+    "prevAvgProtein": 0,
+    "prevTotalVolume": 0,
+    "acwr": 0.7,
+    "acwrRec": null,
+    "recommendations": [
+     {
+      "kind": "warning",
+      "id": "sleepDebt",
+      "args": [
+       "6.0",
+       "7.5"
+      ]
+     }
+    ],
+    "cards": {
+     "kcal": {
+      "value": "0",
+      "sub": "/2300",
+      "d": null
+     },
+     "protein": {
+      "value": "0g",
+      "sub": "/160g",
+      "d": null
+     },
+     "sleep": {
+      "value": "6.0h",
+      "sub": "/7.5h",
+      "d": null
+     },
+     "volume": {
+      "value": "0k",
+      "sessions": 3,
+      "d": null
+     },
+     "readiness": {
+      "value": "60",
+      "sub": "ACWR 0.7",
+      "d": null
+     },
+     "supplements": null,
+     "water": {
+      "value": "0.0L",
+      "sub": "/3L",
+      "d": null
+     }
+    },
+    "chartData": [
+     {
+      "date": "2026-10-05",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 7.5,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-06",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 6.7,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-07",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 60
+     },
+     {
+      "date": "2026-10-08",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 6.3,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-09",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-10",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 8,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-11",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 0
+     }
+    ],
+    "volumeWeekly": [
+     {
+      "date": "2026-07-20",
+      "value": 22
+     },
+     {
+      "date": "2026-07-27",
+      "value": 21
+     },
+     {
+      "date": "2026-08-03",
+      "value": 20
+     },
+     {
+      "date": "2026-08-10",
+      "value": 20
+     },
+     {
+      "date": "2026-08-17",
+      "value": 19
+     },
+     {
+      "date": "2026-08-24",
+      "value": 18
+     },
+     {
+      "date": "2026-08-31",
+      "value": 17
+     },
+     {
+      "date": "2026-09-07",
+      "value": 16
+     },
+     {
+      "date": "2026-09-14",
+      "value": 15
+     },
+     {
+      "date": "2026-09-21",
+      "value": 14
+     },
+     {
+      "date": "2026-09-28",
+      "value": 13
+     },
+     {
+      "date": "2026-10-05",
+      "value": 0
+     }
+    ],
+    "readinessPoints": [
+     {
+      "date": "2026-10-07",
+      "value": 60
+     }
+    ]
+   }
+  },
+  {
+   "name": "acwr-0.79",
+   "input": {
+    "weekStartStr": "2026-10-05",
+    "dailyLogs": [
+     {
+      "date": "2026-10-07",
+      "readiness_score": 60,
+      "readiness_explain": "load:30",
+      "acwr": 0.79
+     }
+    ],
+    "workouts": [
+     {
+      "id": "a"
+     },
+     {
+      "id": "b"
+     },
+     {
+      "id": "c"
+     }
+    ],
+    "sleepLogs": [
+     {
+      "bedtime": "2026-10-04T16:00:00.000Z",
+      "waketime": "2026-10-04T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-05T16:30:00.000Z",
+      "waketime": "2026-10-05T23:30:00.000Z",
+      "asleep_min": 401.6,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-07T17:15:00.000Z",
+      "waketime": "2026-10-07T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-09T15:30:00.000Z",
+      "waketime": "2026-10-09T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-09T22:00:00.000Z",
+      "waketime": "2026-10-09T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     }
+    ],
+    "prevLogs": [],
+    "volumeHistory": [
+     {
+      "date": "2026-09-28",
+      "volume_load": 4300
+     },
+     {
+      "date": "2026-09-30",
+      "volume_load": 4411.5
+     },
+     {
+      "date": "2026-10-02",
+      "volume_load": 4523
+     },
+     {
+      "date": "2026-09-21",
+      "volume_load": 4600
+     },
+     {
+      "date": "2026-09-23",
+      "volume_load": 4711.5
+     },
+     {
+      "date": "2026-09-25",
+      "volume_load": 4823
+     },
+     {
+      "date": "2026-09-14",
+      "volume_load": 4900
+     },
+     {
+      "date": "2026-09-16",
+      "volume_load": 5011.5
+     },
+     {
+      "date": "2026-09-18",
+      "volume_load": 5123
+     },
+     {
+      "date": "2026-09-07",
+      "volume_load": 5200
+     },
+     {
+      "date": "2026-09-09",
+      "volume_load": 5311.5
+     },
+     {
+      "date": "2026-09-11",
+      "volume_load": 5423
+     },
+     {
+      "date": "2026-08-31",
+      "volume_load": 5500
+     },
+     {
+      "date": "2026-09-02",
+      "volume_load": 5611.5
+     },
+     {
+      "date": "2026-09-04",
+      "volume_load": 5723
+     },
+     {
+      "date": "2026-08-24",
+      "volume_load": 5800
+     },
+     {
+      "date": "2026-08-26",
+      "volume_load": 5911.5
+     },
+     {
+      "date": "2026-08-28",
+      "volume_load": 6023
+     },
+     {
+      "date": "2026-08-17",
+      "volume_load": 6100
+     },
+     {
+      "date": "2026-08-19",
+      "volume_load": 6211.5
+     },
+     {
+      "date": "2026-08-21",
+      "volume_load": 6323
+     },
+     {
+      "date": "2026-08-10",
+      "volume_load": 6400
+     },
+     {
+      "date": "2026-08-12",
+      "volume_load": 6511.5
+     },
+     {
+      "date": "2026-08-14",
+      "volume_load": 6623
+     },
+     {
+      "date": "2026-08-03",
+      "volume_load": 6700
+     },
+     {
+      "date": "2026-08-05",
+      "volume_load": 6811.5
+     },
+     {
+      "date": "2026-08-07",
+      "volume_load": 6923
+     },
+     {
+      "date": "2026-07-27",
+      "volume_load": 7000
+     },
+     {
+      "date": "2026-07-29",
+      "volume_load": 7111.5
+     },
+     {
+      "date": "2026-07-31",
+      "volume_load": 7223
+     },
+     {
+      "date": "2026-07-20",
+      "volume_load": 7300
+     },
+     {
+      "date": "2026-07-22",
+      "volume_load": 7411.5
+     },
+     {
+      "date": "2026-07-24",
+      "volume_load": 7523
+     },
+     {
+      "date": "2026-07-13",
+      "volume_load": 7600
+     },
+     {
+      "date": "2026-07-15",
+      "volume_load": 7711.5
+     },
+     {
+      "date": "2026-07-17",
+      "volume_load": 7823
+     }
+    ],
+    "profile": {
+     "tdee_target_kcal": 2300,
+     "macro_protein_g": 160,
+     "sleep_target_hours": "7.5",
+     "water_target_ml": 3000
+    }
+   },
+   "out": {
+    "daysWithData": 1,
+    "daysLogged": 1,
+    "avgKcal": 0,
+    "avgProtein": 0,
+    "proteinDays": 0,
+    "avgWaterMl": 0,
+    "avgSleepH": 5.989999999999999,
+    "totalVolume": 0,
+    "workoutCount": 3,
+    "suppAdherence": null,
+    "readinessDays": 1,
+    "avgReadiness": 60,
+    "prevAvgKcal": 0,
+    "prevAvgProtein": 0,
+    "prevTotalVolume": 0,
+    "acwr": 0.79,
+    "acwrRec": null,
+    "recommendations": [
+     {
+      "kind": "warning",
+      "id": "sleepDebt",
+      "args": [
+       "6.0",
+       "7.5"
+      ]
+     }
+    ],
+    "cards": {
+     "kcal": {
+      "value": "0",
+      "sub": "/2300",
+      "d": null
+     },
+     "protein": {
+      "value": "0g",
+      "sub": "/160g",
+      "d": null
+     },
+     "sleep": {
+      "value": "6.0h",
+      "sub": "/7.5h",
+      "d": null
+     },
+     "volume": {
+      "value": "0k",
+      "sessions": 3,
+      "d": null
+     },
+     "readiness": {
+      "value": "60",
+      "sub": "ACWR 0.79",
+      "d": null
+     },
+     "supplements": null,
+     "water": {
+      "value": "0.0L",
+      "sub": "/3L",
+      "d": null
+     }
+    },
+    "chartData": [
+     {
+      "date": "2026-10-05",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 7.5,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-06",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 6.7,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-07",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 60
+     },
+     {
+      "date": "2026-10-08",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 6.3,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-09",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-10",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 8,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-11",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 0
+     }
+    ],
+    "volumeWeekly": [
+     {
+      "date": "2026-07-20",
+      "value": 22
+     },
+     {
+      "date": "2026-07-27",
+      "value": 21
+     },
+     {
+      "date": "2026-08-03",
+      "value": 20
+     },
+     {
+      "date": "2026-08-10",
+      "value": 20
+     },
+     {
+      "date": "2026-08-17",
+      "value": 19
+     },
+     {
+      "date": "2026-08-24",
+      "value": 18
+     },
+     {
+      "date": "2026-08-31",
+      "value": 17
+     },
+     {
+      "date": "2026-09-07",
+      "value": 16
+     },
+     {
+      "date": "2026-09-14",
+      "value": 15
+     },
+     {
+      "date": "2026-09-21",
+      "value": 14
+     },
+     {
+      "date": "2026-09-28",
+      "value": 13
+     },
+     {
+      "date": "2026-10-05",
+      "value": 0
+     }
+    ],
+    "readinessPoints": [
+     {
+      "date": "2026-10-07",
+      "value": 60
+     }
+    ]
+   }
+  },
+  {
+   "name": "acwr-0.8",
+   "input": {
+    "weekStartStr": "2026-10-05",
+    "dailyLogs": [
+     {
+      "date": "2026-10-07",
+      "readiness_score": 60,
+      "readiness_explain": "load:30",
+      "acwr": 0.8
+     }
+    ],
+    "workouts": [
+     {
+      "id": "a"
+     },
+     {
+      "id": "b"
+     },
+     {
+      "id": "c"
+     }
+    ],
+    "sleepLogs": [
+     {
+      "bedtime": "2026-10-04T16:00:00.000Z",
+      "waketime": "2026-10-04T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-05T16:30:00.000Z",
+      "waketime": "2026-10-05T23:30:00.000Z",
+      "asleep_min": 401.6,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-07T17:15:00.000Z",
+      "waketime": "2026-10-07T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-09T15:30:00.000Z",
+      "waketime": "2026-10-09T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-09T22:00:00.000Z",
+      "waketime": "2026-10-09T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     }
+    ],
+    "prevLogs": [],
+    "volumeHistory": [
+     {
+      "date": "2026-09-28",
+      "volume_load": 4300
+     },
+     {
+      "date": "2026-09-30",
+      "volume_load": 4411.5
+     },
+     {
+      "date": "2026-10-02",
+      "volume_load": 4523
+     },
+     {
+      "date": "2026-09-21",
+      "volume_load": 4600
+     },
+     {
+      "date": "2026-09-23",
+      "volume_load": 4711.5
+     },
+     {
+      "date": "2026-09-25",
+      "volume_load": 4823
+     },
+     {
+      "date": "2026-09-14",
+      "volume_load": 4900
+     },
+     {
+      "date": "2026-09-16",
+      "volume_load": 5011.5
+     },
+     {
+      "date": "2026-09-18",
+      "volume_load": 5123
+     },
+     {
+      "date": "2026-09-07",
+      "volume_load": 5200
+     },
+     {
+      "date": "2026-09-09",
+      "volume_load": 5311.5
+     },
+     {
+      "date": "2026-09-11",
+      "volume_load": 5423
+     },
+     {
+      "date": "2026-08-31",
+      "volume_load": 5500
+     },
+     {
+      "date": "2026-09-02",
+      "volume_load": 5611.5
+     },
+     {
+      "date": "2026-09-04",
+      "volume_load": 5723
+     },
+     {
+      "date": "2026-08-24",
+      "volume_load": 5800
+     },
+     {
+      "date": "2026-08-26",
+      "volume_load": 5911.5
+     },
+     {
+      "date": "2026-08-28",
+      "volume_load": 6023
+     },
+     {
+      "date": "2026-08-17",
+      "volume_load": 6100
+     },
+     {
+      "date": "2026-08-19",
+      "volume_load": 6211.5
+     },
+     {
+      "date": "2026-08-21",
+      "volume_load": 6323
+     },
+     {
+      "date": "2026-08-10",
+      "volume_load": 6400
+     },
+     {
+      "date": "2026-08-12",
+      "volume_load": 6511.5
+     },
+     {
+      "date": "2026-08-14",
+      "volume_load": 6623
+     },
+     {
+      "date": "2026-08-03",
+      "volume_load": 6700
+     },
+     {
+      "date": "2026-08-05",
+      "volume_load": 6811.5
+     },
+     {
+      "date": "2026-08-07",
+      "volume_load": 6923
+     },
+     {
+      "date": "2026-07-27",
+      "volume_load": 7000
+     },
+     {
+      "date": "2026-07-29",
+      "volume_load": 7111.5
+     },
+     {
+      "date": "2026-07-31",
+      "volume_load": 7223
+     },
+     {
+      "date": "2026-07-20",
+      "volume_load": 7300
+     },
+     {
+      "date": "2026-07-22",
+      "volume_load": 7411.5
+     },
+     {
+      "date": "2026-07-24",
+      "volume_load": 7523
+     },
+     {
+      "date": "2026-07-13",
+      "volume_load": 7600
+     },
+     {
+      "date": "2026-07-15",
+      "volume_load": 7711.5
+     },
+     {
+      "date": "2026-07-17",
+      "volume_load": 7823
+     }
+    ],
+    "profile": {
+     "tdee_target_kcal": 2300,
+     "macro_protein_g": 160,
+     "sleep_target_hours": "7.5",
+     "water_target_ml": 3000
+    }
+   },
+   "out": {
+    "daysWithData": 1,
+    "daysLogged": 1,
+    "avgKcal": 0,
+    "avgProtein": 0,
+    "proteinDays": 0,
+    "avgWaterMl": 0,
+    "avgSleepH": 5.989999999999999,
+    "totalVolume": 0,
+    "workoutCount": 3,
+    "suppAdherence": null,
+    "readinessDays": 1,
+    "avgReadiness": 60,
+    "prevAvgKcal": 0,
+    "prevAvgProtein": 0,
+    "prevTotalVolume": 0,
+    "acwr": 0.8,
+    "acwrRec": {
+     "kind": "success",
+     "id": "acwrOptimal",
+     "args": [
+      "0.8"
+     ]
+    },
+    "recommendations": [
+     {
+      "kind": "warning",
+      "id": "sleepDebt",
+      "args": [
+       "6.0",
+       "7.5"
+      ]
+     }
+    ],
+    "cards": {
+     "kcal": {
+      "value": "0",
+      "sub": "/2300",
+      "d": null
+     },
+     "protein": {
+      "value": "0g",
+      "sub": "/160g",
+      "d": null
+     },
+     "sleep": {
+      "value": "6.0h",
+      "sub": "/7.5h",
+      "d": null
+     },
+     "volume": {
+      "value": "0k",
+      "sessions": 3,
+      "d": null
+     },
+     "readiness": {
+      "value": "60",
+      "sub": "ACWR 0.8",
+      "d": null
+     },
+     "supplements": null,
+     "water": {
+      "value": "0.0L",
+      "sub": "/3L",
+      "d": null
+     }
+    },
+    "chartData": [
+     {
+      "date": "2026-10-05",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 7.5,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-06",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 6.7,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-07",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 60
+     },
+     {
+      "date": "2026-10-08",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 6.3,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-09",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-10",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 8,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-11",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 0
+     }
+    ],
+    "volumeWeekly": [
+     {
+      "date": "2026-07-20",
+      "value": 22
+     },
+     {
+      "date": "2026-07-27",
+      "value": 21
+     },
+     {
+      "date": "2026-08-03",
+      "value": 20
+     },
+     {
+      "date": "2026-08-10",
+      "value": 20
+     },
+     {
+      "date": "2026-08-17",
+      "value": 19
+     },
+     {
+      "date": "2026-08-24",
+      "value": 18
+     },
+     {
+      "date": "2026-08-31",
+      "value": 17
+     },
+     {
+      "date": "2026-09-07",
+      "value": 16
+     },
+     {
+      "date": "2026-09-14",
+      "value": 15
+     },
+     {
+      "date": "2026-09-21",
+      "value": 14
+     },
+     {
+      "date": "2026-09-28",
+      "value": 13
+     },
+     {
+      "date": "2026-10-05",
+      "value": 0
+     }
+    ],
+    "readinessPoints": [
+     {
+      "date": "2026-10-07",
+      "value": 60
+     }
+    ]
+   }
+  },
+  {
+   "name": "acwr-1",
+   "input": {
+    "weekStartStr": "2026-10-05",
+    "dailyLogs": [
+     {
+      "date": "2026-10-07",
+      "readiness_score": 60,
+      "readiness_explain": "load:30",
+      "acwr": 1
+     }
+    ],
+    "workouts": [
+     {
+      "id": "a"
+     },
+     {
+      "id": "b"
+     },
+     {
+      "id": "c"
+     }
+    ],
+    "sleepLogs": [
+     {
+      "bedtime": "2026-10-04T16:00:00.000Z",
+      "waketime": "2026-10-04T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-05T16:30:00.000Z",
+      "waketime": "2026-10-05T23:30:00.000Z",
+      "asleep_min": 401.6,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-07T17:15:00.000Z",
+      "waketime": "2026-10-07T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-09T15:30:00.000Z",
+      "waketime": "2026-10-09T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-09T22:00:00.000Z",
+      "waketime": "2026-10-09T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     }
+    ],
+    "prevLogs": [],
+    "volumeHistory": [
+     {
+      "date": "2026-09-28",
+      "volume_load": 4300
+     },
+     {
+      "date": "2026-09-30",
+      "volume_load": 4411.5
+     },
+     {
+      "date": "2026-10-02",
+      "volume_load": 4523
+     },
+     {
+      "date": "2026-09-21",
+      "volume_load": 4600
+     },
+     {
+      "date": "2026-09-23",
+      "volume_load": 4711.5
+     },
+     {
+      "date": "2026-09-25",
+      "volume_load": 4823
+     },
+     {
+      "date": "2026-09-14",
+      "volume_load": 4900
+     },
+     {
+      "date": "2026-09-16",
+      "volume_load": 5011.5
+     },
+     {
+      "date": "2026-09-18",
+      "volume_load": 5123
+     },
+     {
+      "date": "2026-09-07",
+      "volume_load": 5200
+     },
+     {
+      "date": "2026-09-09",
+      "volume_load": 5311.5
+     },
+     {
+      "date": "2026-09-11",
+      "volume_load": 5423
+     },
+     {
+      "date": "2026-08-31",
+      "volume_load": 5500
+     },
+     {
+      "date": "2026-09-02",
+      "volume_load": 5611.5
+     },
+     {
+      "date": "2026-09-04",
+      "volume_load": 5723
+     },
+     {
+      "date": "2026-08-24",
+      "volume_load": 5800
+     },
+     {
+      "date": "2026-08-26",
+      "volume_load": 5911.5
+     },
+     {
+      "date": "2026-08-28",
+      "volume_load": 6023
+     },
+     {
+      "date": "2026-08-17",
+      "volume_load": 6100
+     },
+     {
+      "date": "2026-08-19",
+      "volume_load": 6211.5
+     },
+     {
+      "date": "2026-08-21",
+      "volume_load": 6323
+     },
+     {
+      "date": "2026-08-10",
+      "volume_load": 6400
+     },
+     {
+      "date": "2026-08-12",
+      "volume_load": 6511.5
+     },
+     {
+      "date": "2026-08-14",
+      "volume_load": 6623
+     },
+     {
+      "date": "2026-08-03",
+      "volume_load": 6700
+     },
+     {
+      "date": "2026-08-05",
+      "volume_load": 6811.5
+     },
+     {
+      "date": "2026-08-07",
+      "volume_load": 6923
+     },
+     {
+      "date": "2026-07-27",
+      "volume_load": 7000
+     },
+     {
+      "date": "2026-07-29",
+      "volume_load": 7111.5
+     },
+     {
+      "date": "2026-07-31",
+      "volume_load": 7223
+     },
+     {
+      "date": "2026-07-20",
+      "volume_load": 7300
+     },
+     {
+      "date": "2026-07-22",
+      "volume_load": 7411.5
+     },
+     {
+      "date": "2026-07-24",
+      "volume_load": 7523
+     },
+     {
+      "date": "2026-07-13",
+      "volume_load": 7600
+     },
+     {
+      "date": "2026-07-15",
+      "volume_load": 7711.5
+     },
+     {
+      "date": "2026-07-17",
+      "volume_load": 7823
+     }
+    ],
+    "profile": {
+     "tdee_target_kcal": 2300,
+     "macro_protein_g": 160,
+     "sleep_target_hours": "7.5",
+     "water_target_ml": 3000
+    }
+   },
+   "out": {
+    "daysWithData": 1,
+    "daysLogged": 1,
+    "avgKcal": 0,
+    "avgProtein": 0,
+    "proteinDays": 0,
+    "avgWaterMl": 0,
+    "avgSleepH": 5.989999999999999,
+    "totalVolume": 0,
+    "workoutCount": 3,
+    "suppAdherence": null,
+    "readinessDays": 1,
+    "avgReadiness": 60,
+    "prevAvgKcal": 0,
+    "prevAvgProtein": 0,
+    "prevTotalVolume": 0,
+    "acwr": 1,
+    "acwrRec": {
+     "kind": "success",
+     "id": "acwrOptimal",
+     "args": [
+      "1"
+     ]
+    },
+    "recommendations": [
+     {
+      "kind": "warning",
+      "id": "sleepDebt",
+      "args": [
+       "6.0",
+       "7.5"
+      ]
+     }
+    ],
+    "cards": {
+     "kcal": {
+      "value": "0",
+      "sub": "/2300",
+      "d": null
+     },
+     "protein": {
+      "value": "0g",
+      "sub": "/160g",
+      "d": null
+     },
+     "sleep": {
+      "value": "6.0h",
+      "sub": "/7.5h",
+      "d": null
+     },
+     "volume": {
+      "value": "0k",
+      "sessions": 3,
+      "d": null
+     },
+     "readiness": {
+      "value": "60",
+      "sub": "ACWR 1",
+      "d": null
+     },
+     "supplements": null,
+     "water": {
+      "value": "0.0L",
+      "sub": "/3L",
+      "d": null
+     }
+    },
+    "chartData": [
+     {
+      "date": "2026-10-05",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 7.5,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-06",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 6.7,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-07",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 60
+     },
+     {
+      "date": "2026-10-08",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 6.3,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-09",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-10",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 8,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-11",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 0
+     }
+    ],
+    "volumeWeekly": [
+     {
+      "date": "2026-07-20",
+      "value": 22
+     },
+     {
+      "date": "2026-07-27",
+      "value": 21
+     },
+     {
+      "date": "2026-08-03",
+      "value": 20
+     },
+     {
+      "date": "2026-08-10",
+      "value": 20
+     },
+     {
+      "date": "2026-08-17",
+      "value": 19
+     },
+     {
+      "date": "2026-08-24",
+      "value": 18
+     },
+     {
+      "date": "2026-08-31",
+      "value": 17
+     },
+     {
+      "date": "2026-09-07",
+      "value": 16
+     },
+     {
+      "date": "2026-09-14",
+      "value": 15
+     },
+     {
+      "date": "2026-09-21",
+      "value": 14
+     },
+     {
+      "date": "2026-09-28",
+      "value": 13
+     },
+     {
+      "date": "2026-10-05",
+      "value": 0
+     }
+    ],
+    "readinessPoints": [
+     {
+      "date": "2026-10-07",
+      "value": 60
+     }
+    ]
+   }
+  },
+  {
+   "name": "acwr-1.3",
+   "input": {
+    "weekStartStr": "2026-10-05",
+    "dailyLogs": [
+     {
+      "date": "2026-10-07",
+      "readiness_score": 60,
+      "readiness_explain": "load:30",
+      "acwr": 1.3
+     }
+    ],
+    "workouts": [
+     {
+      "id": "a"
+     },
+     {
+      "id": "b"
+     },
+     {
+      "id": "c"
+     }
+    ],
+    "sleepLogs": [
+     {
+      "bedtime": "2026-10-04T16:00:00.000Z",
+      "waketime": "2026-10-04T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-05T16:30:00.000Z",
+      "waketime": "2026-10-05T23:30:00.000Z",
+      "asleep_min": 401.6,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-07T17:15:00.000Z",
+      "waketime": "2026-10-07T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-09T15:30:00.000Z",
+      "waketime": "2026-10-09T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-09T22:00:00.000Z",
+      "waketime": "2026-10-09T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     }
+    ],
+    "prevLogs": [],
+    "volumeHistory": [
+     {
+      "date": "2026-09-28",
+      "volume_load": 4300
+     },
+     {
+      "date": "2026-09-30",
+      "volume_load": 4411.5
+     },
+     {
+      "date": "2026-10-02",
+      "volume_load": 4523
+     },
+     {
+      "date": "2026-09-21",
+      "volume_load": 4600
+     },
+     {
+      "date": "2026-09-23",
+      "volume_load": 4711.5
+     },
+     {
+      "date": "2026-09-25",
+      "volume_load": 4823
+     },
+     {
+      "date": "2026-09-14",
+      "volume_load": 4900
+     },
+     {
+      "date": "2026-09-16",
+      "volume_load": 5011.5
+     },
+     {
+      "date": "2026-09-18",
+      "volume_load": 5123
+     },
+     {
+      "date": "2026-09-07",
+      "volume_load": 5200
+     },
+     {
+      "date": "2026-09-09",
+      "volume_load": 5311.5
+     },
+     {
+      "date": "2026-09-11",
+      "volume_load": 5423
+     },
+     {
+      "date": "2026-08-31",
+      "volume_load": 5500
+     },
+     {
+      "date": "2026-09-02",
+      "volume_load": 5611.5
+     },
+     {
+      "date": "2026-09-04",
+      "volume_load": 5723
+     },
+     {
+      "date": "2026-08-24",
+      "volume_load": 5800
+     },
+     {
+      "date": "2026-08-26",
+      "volume_load": 5911.5
+     },
+     {
+      "date": "2026-08-28",
+      "volume_load": 6023
+     },
+     {
+      "date": "2026-08-17",
+      "volume_load": 6100
+     },
+     {
+      "date": "2026-08-19",
+      "volume_load": 6211.5
+     },
+     {
+      "date": "2026-08-21",
+      "volume_load": 6323
+     },
+     {
+      "date": "2026-08-10",
+      "volume_load": 6400
+     },
+     {
+      "date": "2026-08-12",
+      "volume_load": 6511.5
+     },
+     {
+      "date": "2026-08-14",
+      "volume_load": 6623
+     },
+     {
+      "date": "2026-08-03",
+      "volume_load": 6700
+     },
+     {
+      "date": "2026-08-05",
+      "volume_load": 6811.5
+     },
+     {
+      "date": "2026-08-07",
+      "volume_load": 6923
+     },
+     {
+      "date": "2026-07-27",
+      "volume_load": 7000
+     },
+     {
+      "date": "2026-07-29",
+      "volume_load": 7111.5
+     },
+     {
+      "date": "2026-07-31",
+      "volume_load": 7223
+     },
+     {
+      "date": "2026-07-20",
+      "volume_load": 7300
+     },
+     {
+      "date": "2026-07-22",
+      "volume_load": 7411.5
+     },
+     {
+      "date": "2026-07-24",
+      "volume_load": 7523
+     },
+     {
+      "date": "2026-07-13",
+      "volume_load": 7600
+     },
+     {
+      "date": "2026-07-15",
+      "volume_load": 7711.5
+     },
+     {
+      "date": "2026-07-17",
+      "volume_load": 7823
+     }
+    ],
+    "profile": {
+     "tdee_target_kcal": 2300,
+     "macro_protein_g": 160,
+     "sleep_target_hours": "7.5",
+     "water_target_ml": 3000
+    }
+   },
+   "out": {
+    "daysWithData": 1,
+    "daysLogged": 1,
+    "avgKcal": 0,
+    "avgProtein": 0,
+    "proteinDays": 0,
+    "avgWaterMl": 0,
+    "avgSleepH": 5.989999999999999,
+    "totalVolume": 0,
+    "workoutCount": 3,
+    "suppAdherence": null,
+    "readinessDays": 1,
+    "avgReadiness": 60,
+    "prevAvgKcal": 0,
+    "prevAvgProtein": 0,
+    "prevTotalVolume": 0,
+    "acwr": 1.3,
+    "acwrRec": {
+     "kind": "success",
+     "id": "acwrOptimal",
+     "args": [
+      "1.3"
+     ]
+    },
+    "recommendations": [
+     {
+      "kind": "warning",
+      "id": "sleepDebt",
+      "args": [
+       "6.0",
+       "7.5"
+      ]
+     }
+    ],
+    "cards": {
+     "kcal": {
+      "value": "0",
+      "sub": "/2300",
+      "d": null
+     },
+     "protein": {
+      "value": "0g",
+      "sub": "/160g",
+      "d": null
+     },
+     "sleep": {
+      "value": "6.0h",
+      "sub": "/7.5h",
+      "d": null
+     },
+     "volume": {
+      "value": "0k",
+      "sessions": 3,
+      "d": null
+     },
+     "readiness": {
+      "value": "60",
+      "sub": "ACWR 1.3",
+      "d": null
+     },
+     "supplements": null,
+     "water": {
+      "value": "0.0L",
+      "sub": "/3L",
+      "d": null
+     }
+    },
+    "chartData": [
+     {
+      "date": "2026-10-05",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 7.5,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-06",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 6.7,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-07",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 60
+     },
+     {
+      "date": "2026-10-08",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 6.3,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-09",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-10",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 8,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-11",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 0
+     }
+    ],
+    "volumeWeekly": [
+     {
+      "date": "2026-07-20",
+      "value": 22
+     },
+     {
+      "date": "2026-07-27",
+      "value": 21
+     },
+     {
+      "date": "2026-08-03",
+      "value": 20
+     },
+     {
+      "date": "2026-08-10",
+      "value": 20
+     },
+     {
+      "date": "2026-08-17",
+      "value": 19
+     },
+     {
+      "date": "2026-08-24",
+      "value": 18
+     },
+     {
+      "date": "2026-08-31",
+      "value": 17
+     },
+     {
+      "date": "2026-09-07",
+      "value": 16
+     },
+     {
+      "date": "2026-09-14",
+      "value": 15
+     },
+     {
+      "date": "2026-09-21",
+      "value": 14
+     },
+     {
+      "date": "2026-09-28",
+      "value": 13
+     },
+     {
+      "date": "2026-10-05",
+      "value": 0
+     }
+    ],
+    "readinessPoints": [
+     {
+      "date": "2026-10-07",
+      "value": 60
+     }
+    ]
+   }
+  },
+  {
+   "name": "acwr-1.31",
+   "input": {
+    "weekStartStr": "2026-10-05",
+    "dailyLogs": [
+     {
+      "date": "2026-10-07",
+      "readiness_score": 60,
+      "readiness_explain": "load:30",
+      "acwr": 1.31
+     }
+    ],
+    "workouts": [
+     {
+      "id": "a"
+     },
+     {
+      "id": "b"
+     },
+     {
+      "id": "c"
+     }
+    ],
+    "sleepLogs": [
+     {
+      "bedtime": "2026-10-04T16:00:00.000Z",
+      "waketime": "2026-10-04T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-05T16:30:00.000Z",
+      "waketime": "2026-10-05T23:30:00.000Z",
+      "asleep_min": 401.6,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-07T17:15:00.000Z",
+      "waketime": "2026-10-07T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-09T15:30:00.000Z",
+      "waketime": "2026-10-09T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-09T22:00:00.000Z",
+      "waketime": "2026-10-09T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     }
+    ],
+    "prevLogs": [],
+    "volumeHistory": [
+     {
+      "date": "2026-09-28",
+      "volume_load": 4300
+     },
+     {
+      "date": "2026-09-30",
+      "volume_load": 4411.5
+     },
+     {
+      "date": "2026-10-02",
+      "volume_load": 4523
+     },
+     {
+      "date": "2026-09-21",
+      "volume_load": 4600
+     },
+     {
+      "date": "2026-09-23",
+      "volume_load": 4711.5
+     },
+     {
+      "date": "2026-09-25",
+      "volume_load": 4823
+     },
+     {
+      "date": "2026-09-14",
+      "volume_load": 4900
+     },
+     {
+      "date": "2026-09-16",
+      "volume_load": 5011.5
+     },
+     {
+      "date": "2026-09-18",
+      "volume_load": 5123
+     },
+     {
+      "date": "2026-09-07",
+      "volume_load": 5200
+     },
+     {
+      "date": "2026-09-09",
+      "volume_load": 5311.5
+     },
+     {
+      "date": "2026-09-11",
+      "volume_load": 5423
+     },
+     {
+      "date": "2026-08-31",
+      "volume_load": 5500
+     },
+     {
+      "date": "2026-09-02",
+      "volume_load": 5611.5
+     },
+     {
+      "date": "2026-09-04",
+      "volume_load": 5723
+     },
+     {
+      "date": "2026-08-24",
+      "volume_load": 5800
+     },
+     {
+      "date": "2026-08-26",
+      "volume_load": 5911.5
+     },
+     {
+      "date": "2026-08-28",
+      "volume_load": 6023
+     },
+     {
+      "date": "2026-08-17",
+      "volume_load": 6100
+     },
+     {
+      "date": "2026-08-19",
+      "volume_load": 6211.5
+     },
+     {
+      "date": "2026-08-21",
+      "volume_load": 6323
+     },
+     {
+      "date": "2026-08-10",
+      "volume_load": 6400
+     },
+     {
+      "date": "2026-08-12",
+      "volume_load": 6511.5
+     },
+     {
+      "date": "2026-08-14",
+      "volume_load": 6623
+     },
+     {
+      "date": "2026-08-03",
+      "volume_load": 6700
+     },
+     {
+      "date": "2026-08-05",
+      "volume_load": 6811.5
+     },
+     {
+      "date": "2026-08-07",
+      "volume_load": 6923
+     },
+     {
+      "date": "2026-07-27",
+      "volume_load": 7000
+     },
+     {
+      "date": "2026-07-29",
+      "volume_load": 7111.5
+     },
+     {
+      "date": "2026-07-31",
+      "volume_load": 7223
+     },
+     {
+      "date": "2026-07-20",
+      "volume_load": 7300
+     },
+     {
+      "date": "2026-07-22",
+      "volume_load": 7411.5
+     },
+     {
+      "date": "2026-07-24",
+      "volume_load": 7523
+     },
+     {
+      "date": "2026-07-13",
+      "volume_load": 7600
+     },
+     {
+      "date": "2026-07-15",
+      "volume_load": 7711.5
+     },
+     {
+      "date": "2026-07-17",
+      "volume_load": 7823
+     }
+    ],
+    "profile": {
+     "tdee_target_kcal": 2300,
+     "macro_protein_g": 160,
+     "sleep_target_hours": "7.5",
+     "water_target_ml": 3000
+    }
+   },
+   "out": {
+    "daysWithData": 1,
+    "daysLogged": 1,
+    "avgKcal": 0,
+    "avgProtein": 0,
+    "proteinDays": 0,
+    "avgWaterMl": 0,
+    "avgSleepH": 5.989999999999999,
+    "totalVolume": 0,
+    "workoutCount": 3,
+    "suppAdherence": null,
+    "readinessDays": 1,
+    "avgReadiness": 60,
+    "prevAvgKcal": 0,
+    "prevAvgProtein": 0,
+    "prevTotalVolume": 0,
+    "acwr": 1.31,
+    "acwrRec": {
+     "kind": "warning",
+     "id": "acwrSlightlyHigh",
+     "args": [
+      "1.31"
+     ]
+    },
+    "recommendations": [
+     {
+      "kind": "warning",
+      "id": "sleepDebt",
+      "args": [
+       "6.0",
+       "7.5"
+      ]
+     }
+    ],
+    "cards": {
+     "kcal": {
+      "value": "0",
+      "sub": "/2300",
+      "d": null
+     },
+     "protein": {
+      "value": "0g",
+      "sub": "/160g",
+      "d": null
+     },
+     "sleep": {
+      "value": "6.0h",
+      "sub": "/7.5h",
+      "d": null
+     },
+     "volume": {
+      "value": "0k",
+      "sessions": 3,
+      "d": null
+     },
+     "readiness": {
+      "value": "60",
+      "sub": "ACWR 1.31",
+      "d": null
+     },
+     "supplements": null,
+     "water": {
+      "value": "0.0L",
+      "sub": "/3L",
+      "d": null
+     }
+    },
+    "chartData": [
+     {
+      "date": "2026-10-05",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 7.5,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-06",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 6.7,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-07",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 60
+     },
+     {
+      "date": "2026-10-08",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 6.3,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-09",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-10",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 8,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-11",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 0
+     }
+    ],
+    "volumeWeekly": [
+     {
+      "date": "2026-07-20",
+      "value": 22
+     },
+     {
+      "date": "2026-07-27",
+      "value": 21
+     },
+     {
+      "date": "2026-08-03",
+      "value": 20
+     },
+     {
+      "date": "2026-08-10",
+      "value": 20
+     },
+     {
+      "date": "2026-08-17",
+      "value": 19
+     },
+     {
+      "date": "2026-08-24",
+      "value": 18
+     },
+     {
+      "date": "2026-08-31",
+      "value": 17
+     },
+     {
+      "date": "2026-09-07",
+      "value": 16
+     },
+     {
+      "date": "2026-09-14",
+      "value": 15
+     },
+     {
+      "date": "2026-09-21",
+      "value": 14
+     },
+     {
+      "date": "2026-09-28",
+      "value": 13
+     },
+     {
+      "date": "2026-10-05",
+      "value": 0
+     }
+    ],
+    "readinessPoints": [
+     {
+      "date": "2026-10-07",
+      "value": 60
+     }
+    ]
+   }
+  },
+  {
+   "name": "acwr-1.45",
+   "input": {
+    "weekStartStr": "2026-10-05",
+    "dailyLogs": [
+     {
+      "date": "2026-10-07",
+      "readiness_score": 60,
+      "readiness_explain": "load:30",
+      "acwr": 1.45
+     }
+    ],
+    "workouts": [
+     {
+      "id": "a"
+     },
+     {
+      "id": "b"
+     },
+     {
+      "id": "c"
+     }
+    ],
+    "sleepLogs": [
+     {
+      "bedtime": "2026-10-04T16:00:00.000Z",
+      "waketime": "2026-10-04T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-05T16:30:00.000Z",
+      "waketime": "2026-10-05T23:30:00.000Z",
+      "asleep_min": 401.6,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-07T17:15:00.000Z",
+      "waketime": "2026-10-07T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-09T15:30:00.000Z",
+      "waketime": "2026-10-09T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-09T22:00:00.000Z",
+      "waketime": "2026-10-09T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     }
+    ],
+    "prevLogs": [],
+    "volumeHistory": [
+     {
+      "date": "2026-09-28",
+      "volume_load": 4300
+     },
+     {
+      "date": "2026-09-30",
+      "volume_load": 4411.5
+     },
+     {
+      "date": "2026-10-02",
+      "volume_load": 4523
+     },
+     {
+      "date": "2026-09-21",
+      "volume_load": 4600
+     },
+     {
+      "date": "2026-09-23",
+      "volume_load": 4711.5
+     },
+     {
+      "date": "2026-09-25",
+      "volume_load": 4823
+     },
+     {
+      "date": "2026-09-14",
+      "volume_load": 4900
+     },
+     {
+      "date": "2026-09-16",
+      "volume_load": 5011.5
+     },
+     {
+      "date": "2026-09-18",
+      "volume_load": 5123
+     },
+     {
+      "date": "2026-09-07",
+      "volume_load": 5200
+     },
+     {
+      "date": "2026-09-09",
+      "volume_load": 5311.5
+     },
+     {
+      "date": "2026-09-11",
+      "volume_load": 5423
+     },
+     {
+      "date": "2026-08-31",
+      "volume_load": 5500
+     },
+     {
+      "date": "2026-09-02",
+      "volume_load": 5611.5
+     },
+     {
+      "date": "2026-09-04",
+      "volume_load": 5723
+     },
+     {
+      "date": "2026-08-24",
+      "volume_load": 5800
+     },
+     {
+      "date": "2026-08-26",
+      "volume_load": 5911.5
+     },
+     {
+      "date": "2026-08-28",
+      "volume_load": 6023
+     },
+     {
+      "date": "2026-08-17",
+      "volume_load": 6100
+     },
+     {
+      "date": "2026-08-19",
+      "volume_load": 6211.5
+     },
+     {
+      "date": "2026-08-21",
+      "volume_load": 6323
+     },
+     {
+      "date": "2026-08-10",
+      "volume_load": 6400
+     },
+     {
+      "date": "2026-08-12",
+      "volume_load": 6511.5
+     },
+     {
+      "date": "2026-08-14",
+      "volume_load": 6623
+     },
+     {
+      "date": "2026-08-03",
+      "volume_load": 6700
+     },
+     {
+      "date": "2026-08-05",
+      "volume_load": 6811.5
+     },
+     {
+      "date": "2026-08-07",
+      "volume_load": 6923
+     },
+     {
+      "date": "2026-07-27",
+      "volume_load": 7000
+     },
+     {
+      "date": "2026-07-29",
+      "volume_load": 7111.5
+     },
+     {
+      "date": "2026-07-31",
+      "volume_load": 7223
+     },
+     {
+      "date": "2026-07-20",
+      "volume_load": 7300
+     },
+     {
+      "date": "2026-07-22",
+      "volume_load": 7411.5
+     },
+     {
+      "date": "2026-07-24",
+      "volume_load": 7523
+     },
+     {
+      "date": "2026-07-13",
+      "volume_load": 7600
+     },
+     {
+      "date": "2026-07-15",
+      "volume_load": 7711.5
+     },
+     {
+      "date": "2026-07-17",
+      "volume_load": 7823
+     }
+    ],
+    "profile": {
+     "tdee_target_kcal": 2300,
+     "macro_protein_g": 160,
+     "sleep_target_hours": "7.5",
+     "water_target_ml": 3000
+    }
+   },
+   "out": {
+    "daysWithData": 1,
+    "daysLogged": 1,
+    "avgKcal": 0,
+    "avgProtein": 0,
+    "proteinDays": 0,
+    "avgWaterMl": 0,
+    "avgSleepH": 5.989999999999999,
+    "totalVolume": 0,
+    "workoutCount": 3,
+    "suppAdherence": null,
+    "readinessDays": 1,
+    "avgReadiness": 60,
+    "prevAvgKcal": 0,
+    "prevAvgProtein": 0,
+    "prevTotalVolume": 0,
+    "acwr": 1.45,
+    "acwrRec": {
+     "kind": "warning",
+     "id": "acwrSlightlyHigh",
+     "args": [
+      "1.45"
+     ]
+    },
+    "recommendations": [
+     {
+      "kind": "warning",
+      "id": "sleepDebt",
+      "args": [
+       "6.0",
+       "7.5"
+      ]
+     }
+    ],
+    "cards": {
+     "kcal": {
+      "value": "0",
+      "sub": "/2300",
+      "d": null
+     },
+     "protein": {
+      "value": "0g",
+      "sub": "/160g",
+      "d": null
+     },
+     "sleep": {
+      "value": "6.0h",
+      "sub": "/7.5h",
+      "d": null
+     },
+     "volume": {
+      "value": "0k",
+      "sessions": 3,
+      "d": null
+     },
+     "readiness": {
+      "value": "60",
+      "sub": "ACWR 1.45",
+      "d": null
+     },
+     "supplements": null,
+     "water": {
+      "value": "0.0L",
+      "sub": "/3L",
+      "d": null
+     }
+    },
+    "chartData": [
+     {
+      "date": "2026-10-05",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 7.5,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-06",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 6.7,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-07",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 60
+     },
+     {
+      "date": "2026-10-08",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 6.3,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-09",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-10",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 8,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-11",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 0
+     }
+    ],
+    "volumeWeekly": [
+     {
+      "date": "2026-07-20",
+      "value": 22
+     },
+     {
+      "date": "2026-07-27",
+      "value": 21
+     },
+     {
+      "date": "2026-08-03",
+      "value": 20
+     },
+     {
+      "date": "2026-08-10",
+      "value": 20
+     },
+     {
+      "date": "2026-08-17",
+      "value": 19
+     },
+     {
+      "date": "2026-08-24",
+      "value": 18
+     },
+     {
+      "date": "2026-08-31",
+      "value": 17
+     },
+     {
+      "date": "2026-09-07",
+      "value": 16
+     },
+     {
+      "date": "2026-09-14",
+      "value": 15
+     },
+     {
+      "date": "2026-09-21",
+      "value": 14
+     },
+     {
+      "date": "2026-09-28",
+      "value": 13
+     },
+     {
+      "date": "2026-10-05",
+      "value": 0
+     }
+    ],
+    "readinessPoints": [
+     {
+      "date": "2026-10-07",
+      "value": 60
+     }
+    ]
+   }
+  },
+  {
+   "name": "acwr-1.5",
+   "input": {
+    "weekStartStr": "2026-10-05",
+    "dailyLogs": [
+     {
+      "date": "2026-10-07",
+      "readiness_score": 60,
+      "readiness_explain": "load:30",
+      "acwr": 1.5
+     }
+    ],
+    "workouts": [
+     {
+      "id": "a"
+     },
+     {
+      "id": "b"
+     },
+     {
+      "id": "c"
+     }
+    ],
+    "sleepLogs": [
+     {
+      "bedtime": "2026-10-04T16:00:00.000Z",
+      "waketime": "2026-10-04T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-05T16:30:00.000Z",
+      "waketime": "2026-10-05T23:30:00.000Z",
+      "asleep_min": 401.6,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-07T17:15:00.000Z",
+      "waketime": "2026-10-07T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-09T15:30:00.000Z",
+      "waketime": "2026-10-09T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-09T22:00:00.000Z",
+      "waketime": "2026-10-09T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     }
+    ],
+    "prevLogs": [],
+    "volumeHistory": [
+     {
+      "date": "2026-09-28",
+      "volume_load": 4300
+     },
+     {
+      "date": "2026-09-30",
+      "volume_load": 4411.5
+     },
+     {
+      "date": "2026-10-02",
+      "volume_load": 4523
+     },
+     {
+      "date": "2026-09-21",
+      "volume_load": 4600
+     },
+     {
+      "date": "2026-09-23",
+      "volume_load": 4711.5
+     },
+     {
+      "date": "2026-09-25",
+      "volume_load": 4823
+     },
+     {
+      "date": "2026-09-14",
+      "volume_load": 4900
+     },
+     {
+      "date": "2026-09-16",
+      "volume_load": 5011.5
+     },
+     {
+      "date": "2026-09-18",
+      "volume_load": 5123
+     },
+     {
+      "date": "2026-09-07",
+      "volume_load": 5200
+     },
+     {
+      "date": "2026-09-09",
+      "volume_load": 5311.5
+     },
+     {
+      "date": "2026-09-11",
+      "volume_load": 5423
+     },
+     {
+      "date": "2026-08-31",
+      "volume_load": 5500
+     },
+     {
+      "date": "2026-09-02",
+      "volume_load": 5611.5
+     },
+     {
+      "date": "2026-09-04",
+      "volume_load": 5723
+     },
+     {
+      "date": "2026-08-24",
+      "volume_load": 5800
+     },
+     {
+      "date": "2026-08-26",
+      "volume_load": 5911.5
+     },
+     {
+      "date": "2026-08-28",
+      "volume_load": 6023
+     },
+     {
+      "date": "2026-08-17",
+      "volume_load": 6100
+     },
+     {
+      "date": "2026-08-19",
+      "volume_load": 6211.5
+     },
+     {
+      "date": "2026-08-21",
+      "volume_load": 6323
+     },
+     {
+      "date": "2026-08-10",
+      "volume_load": 6400
+     },
+     {
+      "date": "2026-08-12",
+      "volume_load": 6511.5
+     },
+     {
+      "date": "2026-08-14",
+      "volume_load": 6623
+     },
+     {
+      "date": "2026-08-03",
+      "volume_load": 6700
+     },
+     {
+      "date": "2026-08-05",
+      "volume_load": 6811.5
+     },
+     {
+      "date": "2026-08-07",
+      "volume_load": 6923
+     },
+     {
+      "date": "2026-07-27",
+      "volume_load": 7000
+     },
+     {
+      "date": "2026-07-29",
+      "volume_load": 7111.5
+     },
+     {
+      "date": "2026-07-31",
+      "volume_load": 7223
+     },
+     {
+      "date": "2026-07-20",
+      "volume_load": 7300
+     },
+     {
+      "date": "2026-07-22",
+      "volume_load": 7411.5
+     },
+     {
+      "date": "2026-07-24",
+      "volume_load": 7523
+     },
+     {
+      "date": "2026-07-13",
+      "volume_load": 7600
+     },
+     {
+      "date": "2026-07-15",
+      "volume_load": 7711.5
+     },
+     {
+      "date": "2026-07-17",
+      "volume_load": 7823
+     }
+    ],
+    "profile": {
+     "tdee_target_kcal": 2300,
+     "macro_protein_g": 160,
+     "sleep_target_hours": "7.5",
+     "water_target_ml": 3000
+    }
+   },
+   "out": {
+    "daysWithData": 1,
+    "daysLogged": 1,
+    "avgKcal": 0,
+    "avgProtein": 0,
+    "proteinDays": 0,
+    "avgWaterMl": 0,
+    "avgSleepH": 5.989999999999999,
+    "totalVolume": 0,
+    "workoutCount": 3,
+    "suppAdherence": null,
+    "readinessDays": 1,
+    "avgReadiness": 60,
+    "prevAvgKcal": 0,
+    "prevAvgProtein": 0,
+    "prevTotalVolume": 0,
+    "acwr": 1.5,
+    "acwrRec": {
+     "kind": "warning",
+     "id": "acwrSlightlyHigh",
+     "args": [
+      "1.5"
+     ]
+    },
+    "recommendations": [
+     {
+      "kind": "warning",
+      "id": "sleepDebt",
+      "args": [
+       "6.0",
+       "7.5"
+      ]
+     }
+    ],
+    "cards": {
+     "kcal": {
+      "value": "0",
+      "sub": "/2300",
+      "d": null
+     },
+     "protein": {
+      "value": "0g",
+      "sub": "/160g",
+      "d": null
+     },
+     "sleep": {
+      "value": "6.0h",
+      "sub": "/7.5h",
+      "d": null
+     },
+     "volume": {
+      "value": "0k",
+      "sessions": 3,
+      "d": null
+     },
+     "readiness": {
+      "value": "60",
+      "sub": "ACWR 1.5",
+      "d": null
+     },
+     "supplements": null,
+     "water": {
+      "value": "0.0L",
+      "sub": "/3L",
+      "d": null
+     }
+    },
+    "chartData": [
+     {
+      "date": "2026-10-05",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 7.5,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-06",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 6.7,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-07",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 60
+     },
+     {
+      "date": "2026-10-08",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 6.3,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-09",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-10",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 8,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-11",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 0
+     }
+    ],
+    "volumeWeekly": [
+     {
+      "date": "2026-07-20",
+      "value": 22
+     },
+     {
+      "date": "2026-07-27",
+      "value": 21
+     },
+     {
+      "date": "2026-08-03",
+      "value": 20
+     },
+     {
+      "date": "2026-08-10",
+      "value": 20
+     },
+     {
+      "date": "2026-08-17",
+      "value": 19
+     },
+     {
+      "date": "2026-08-24",
+      "value": 18
+     },
+     {
+      "date": "2026-08-31",
+      "value": 17
+     },
+     {
+      "date": "2026-09-07",
+      "value": 16
+     },
+     {
+      "date": "2026-09-14",
+      "value": 15
+     },
+     {
+      "date": "2026-09-21",
+      "value": 14
+     },
+     {
+      "date": "2026-09-28",
+      "value": 13
+     },
+     {
+      "date": "2026-10-05",
+      "value": 0
+     }
+    ],
+    "readinessPoints": [
+     {
+      "date": "2026-10-07",
+      "value": 60
+     }
+    ]
+   }
+  },
+  {
+   "name": "acwr-1.55",
+   "input": {
+    "weekStartStr": "2026-10-05",
+    "dailyLogs": [
+     {
+      "date": "2026-10-07",
+      "readiness_score": 60,
+      "readiness_explain": "load:30",
+      "acwr": 1.55
+     }
+    ],
+    "workouts": [
+     {
+      "id": "a"
+     },
+     {
+      "id": "b"
+     },
+     {
+      "id": "c"
+     }
+    ],
+    "sleepLogs": [
+     {
+      "bedtime": "2026-10-04T16:00:00.000Z",
+      "waketime": "2026-10-04T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-05T16:30:00.000Z",
+      "waketime": "2026-10-05T23:30:00.000Z",
+      "asleep_min": 401.6,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-07T17:15:00.000Z",
+      "waketime": "2026-10-07T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-09T15:30:00.000Z",
+      "waketime": "2026-10-09T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-09T22:00:00.000Z",
+      "waketime": "2026-10-09T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     }
+    ],
+    "prevLogs": [],
+    "volumeHistory": [
+     {
+      "date": "2026-09-28",
+      "volume_load": 4300
+     },
+     {
+      "date": "2026-09-30",
+      "volume_load": 4411.5
+     },
+     {
+      "date": "2026-10-02",
+      "volume_load": 4523
+     },
+     {
+      "date": "2026-09-21",
+      "volume_load": 4600
+     },
+     {
+      "date": "2026-09-23",
+      "volume_load": 4711.5
+     },
+     {
+      "date": "2026-09-25",
+      "volume_load": 4823
+     },
+     {
+      "date": "2026-09-14",
+      "volume_load": 4900
+     },
+     {
+      "date": "2026-09-16",
+      "volume_load": 5011.5
+     },
+     {
+      "date": "2026-09-18",
+      "volume_load": 5123
+     },
+     {
+      "date": "2026-09-07",
+      "volume_load": 5200
+     },
+     {
+      "date": "2026-09-09",
+      "volume_load": 5311.5
+     },
+     {
+      "date": "2026-09-11",
+      "volume_load": 5423
+     },
+     {
+      "date": "2026-08-31",
+      "volume_load": 5500
+     },
+     {
+      "date": "2026-09-02",
+      "volume_load": 5611.5
+     },
+     {
+      "date": "2026-09-04",
+      "volume_load": 5723
+     },
+     {
+      "date": "2026-08-24",
+      "volume_load": 5800
+     },
+     {
+      "date": "2026-08-26",
+      "volume_load": 5911.5
+     },
+     {
+      "date": "2026-08-28",
+      "volume_load": 6023
+     },
+     {
+      "date": "2026-08-17",
+      "volume_load": 6100
+     },
+     {
+      "date": "2026-08-19",
+      "volume_load": 6211.5
+     },
+     {
+      "date": "2026-08-21",
+      "volume_load": 6323
+     },
+     {
+      "date": "2026-08-10",
+      "volume_load": 6400
+     },
+     {
+      "date": "2026-08-12",
+      "volume_load": 6511.5
+     },
+     {
+      "date": "2026-08-14",
+      "volume_load": 6623
+     },
+     {
+      "date": "2026-08-03",
+      "volume_load": 6700
+     },
+     {
+      "date": "2026-08-05",
+      "volume_load": 6811.5
+     },
+     {
+      "date": "2026-08-07",
+      "volume_load": 6923
+     },
+     {
+      "date": "2026-07-27",
+      "volume_load": 7000
+     },
+     {
+      "date": "2026-07-29",
+      "volume_load": 7111.5
+     },
+     {
+      "date": "2026-07-31",
+      "volume_load": 7223
+     },
+     {
+      "date": "2026-07-20",
+      "volume_load": 7300
+     },
+     {
+      "date": "2026-07-22",
+      "volume_load": 7411.5
+     },
+     {
+      "date": "2026-07-24",
+      "volume_load": 7523
+     },
+     {
+      "date": "2026-07-13",
+      "volume_load": 7600
+     },
+     {
+      "date": "2026-07-15",
+      "volume_load": 7711.5
+     },
+     {
+      "date": "2026-07-17",
+      "volume_load": 7823
+     }
+    ],
+    "profile": {
+     "tdee_target_kcal": 2300,
+     "macro_protein_g": 160,
+     "sleep_target_hours": "7.5",
+     "water_target_ml": 3000
+    }
+   },
+   "out": {
+    "daysWithData": 1,
+    "daysLogged": 1,
+    "avgKcal": 0,
+    "avgProtein": 0,
+    "proteinDays": 0,
+    "avgWaterMl": 0,
+    "avgSleepH": 5.989999999999999,
+    "totalVolume": 0,
+    "workoutCount": 3,
+    "suppAdherence": null,
+    "readinessDays": 1,
+    "avgReadiness": 60,
+    "prevAvgKcal": 0,
+    "prevAvgProtein": 0,
+    "prevTotalVolume": 0,
+    "acwr": 1.55,
+    "acwrRec": {
+     "kind": "warning",
+     "id": "acwrHigh",
+     "args": [
+      "1.55"
+     ]
+    },
+    "recommendations": [
+     {
+      "kind": "warning",
+      "id": "sleepDebt",
+      "args": [
+       "6.0",
+       "7.5"
+      ]
+     }
+    ],
+    "cards": {
+     "kcal": {
+      "value": "0",
+      "sub": "/2300",
+      "d": null
+     },
+     "protein": {
+      "value": "0g",
+      "sub": "/160g",
+      "d": null
+     },
+     "sleep": {
+      "value": "6.0h",
+      "sub": "/7.5h",
+      "d": null
+     },
+     "volume": {
+      "value": "0k",
+      "sessions": 3,
+      "d": null
+     },
+     "readiness": {
+      "value": "60",
+      "sub": "ACWR 1.55",
+      "d": null
+     },
+     "supplements": null,
+     "water": {
+      "value": "0.0L",
+      "sub": "/3L",
+      "d": null
+     }
+    },
+    "chartData": [
+     {
+      "date": "2026-10-05",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 7.5,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-06",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 6.7,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-07",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 60
+     },
+     {
+      "date": "2026-10-08",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 6.3,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-09",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-10",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 8,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-11",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 0
+     }
+    ],
+    "volumeWeekly": [
+     {
+      "date": "2026-07-20",
+      "value": 22
+     },
+     {
+      "date": "2026-07-27",
+      "value": 21
+     },
+     {
+      "date": "2026-08-03",
+      "value": 20
+     },
+     {
+      "date": "2026-08-10",
+      "value": 20
+     },
+     {
+      "date": "2026-08-17",
+      "value": 19
+     },
+     {
+      "date": "2026-08-24",
+      "value": 18
+     },
+     {
+      "date": "2026-08-31",
+      "value": 17
+     },
+     {
+      "date": "2026-09-07",
+      "value": 16
+     },
+     {
+      "date": "2026-09-14",
+      "value": 15
+     },
+     {
+      "date": "2026-09-21",
+      "value": 14
+     },
+     {
+      "date": "2026-09-28",
+      "value": 13
+     },
+     {
+      "date": "2026-10-05",
+      "value": 0
+     }
+    ],
+    "readinessPoints": [
+     {
+      "date": "2026-10-07",
+      "value": 60
+     }
+    ]
+   }
+  },
+  {
+   "name": "acwr-1.6",
+   "input": {
+    "weekStartStr": "2026-10-05",
+    "dailyLogs": [
+     {
+      "date": "2026-10-07",
+      "readiness_score": 60,
+      "readiness_explain": "load:30",
+      "acwr": 1.6
+     }
+    ],
+    "workouts": [
+     {
+      "id": "a"
+     },
+     {
+      "id": "b"
+     },
+     {
+      "id": "c"
+     }
+    ],
+    "sleepLogs": [
+     {
+      "bedtime": "2026-10-04T16:00:00.000Z",
+      "waketime": "2026-10-04T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-05T16:30:00.000Z",
+      "waketime": "2026-10-05T23:30:00.000Z",
+      "asleep_min": 401.6,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-07T17:15:00.000Z",
+      "waketime": "2026-10-07T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-09T15:30:00.000Z",
+      "waketime": "2026-10-09T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-09T22:00:00.000Z",
+      "waketime": "2026-10-09T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     }
+    ],
+    "prevLogs": [],
+    "volumeHistory": [
+     {
+      "date": "2026-09-28",
+      "volume_load": 4300
+     },
+     {
+      "date": "2026-09-30",
+      "volume_load": 4411.5
+     },
+     {
+      "date": "2026-10-02",
+      "volume_load": 4523
+     },
+     {
+      "date": "2026-09-21",
+      "volume_load": 4600
+     },
+     {
+      "date": "2026-09-23",
+      "volume_load": 4711.5
+     },
+     {
+      "date": "2026-09-25",
+      "volume_load": 4823
+     },
+     {
+      "date": "2026-09-14",
+      "volume_load": 4900
+     },
+     {
+      "date": "2026-09-16",
+      "volume_load": 5011.5
+     },
+     {
+      "date": "2026-09-18",
+      "volume_load": 5123
+     },
+     {
+      "date": "2026-09-07",
+      "volume_load": 5200
+     },
+     {
+      "date": "2026-09-09",
+      "volume_load": 5311.5
+     },
+     {
+      "date": "2026-09-11",
+      "volume_load": 5423
+     },
+     {
+      "date": "2026-08-31",
+      "volume_load": 5500
+     },
+     {
+      "date": "2026-09-02",
+      "volume_load": 5611.5
+     },
+     {
+      "date": "2026-09-04",
+      "volume_load": 5723
+     },
+     {
+      "date": "2026-08-24",
+      "volume_load": 5800
+     },
+     {
+      "date": "2026-08-26",
+      "volume_load": 5911.5
+     },
+     {
+      "date": "2026-08-28",
+      "volume_load": 6023
+     },
+     {
+      "date": "2026-08-17",
+      "volume_load": 6100
+     },
+     {
+      "date": "2026-08-19",
+      "volume_load": 6211.5
+     },
+     {
+      "date": "2026-08-21",
+      "volume_load": 6323
+     },
+     {
+      "date": "2026-08-10",
+      "volume_load": 6400
+     },
+     {
+      "date": "2026-08-12",
+      "volume_load": 6511.5
+     },
+     {
+      "date": "2026-08-14",
+      "volume_load": 6623
+     },
+     {
+      "date": "2026-08-03",
+      "volume_load": 6700
+     },
+     {
+      "date": "2026-08-05",
+      "volume_load": 6811.5
+     },
+     {
+      "date": "2026-08-07",
+      "volume_load": 6923
+     },
+     {
+      "date": "2026-07-27",
+      "volume_load": 7000
+     },
+     {
+      "date": "2026-07-29",
+      "volume_load": 7111.5
+     },
+     {
+      "date": "2026-07-31",
+      "volume_load": 7223
+     },
+     {
+      "date": "2026-07-20",
+      "volume_load": 7300
+     },
+     {
+      "date": "2026-07-22",
+      "volume_load": 7411.5
+     },
+     {
+      "date": "2026-07-24",
+      "volume_load": 7523
+     },
+     {
+      "date": "2026-07-13",
+      "volume_load": 7600
+     },
+     {
+      "date": "2026-07-15",
+      "volume_load": 7711.5
+     },
+     {
+      "date": "2026-07-17",
+      "volume_load": 7823
+     }
+    ],
+    "profile": {
+     "tdee_target_kcal": 2300,
+     "macro_protein_g": 160,
+     "sleep_target_hours": "7.5",
+     "water_target_ml": 3000
+    }
+   },
+   "out": {
+    "daysWithData": 1,
+    "daysLogged": 1,
+    "avgKcal": 0,
+    "avgProtein": 0,
+    "proteinDays": 0,
+    "avgWaterMl": 0,
+    "avgSleepH": 5.989999999999999,
+    "totalVolume": 0,
+    "workoutCount": 3,
+    "suppAdherence": null,
+    "readinessDays": 1,
+    "avgReadiness": 60,
+    "prevAvgKcal": 0,
+    "prevAvgProtein": 0,
+    "prevTotalVolume": 0,
+    "acwr": 1.6,
+    "acwrRec": {
+     "kind": "warning",
+     "id": "acwrHigh",
+     "args": [
+      "1.6"
+     ]
+    },
+    "recommendations": [
+     {
+      "kind": "warning",
+      "id": "sleepDebt",
+      "args": [
+       "6.0",
+       "7.5"
+      ]
+     }
+    ],
+    "cards": {
+     "kcal": {
+      "value": "0",
+      "sub": "/2300",
+      "d": null
+     },
+     "protein": {
+      "value": "0g",
+      "sub": "/160g",
+      "d": null
+     },
+     "sleep": {
+      "value": "6.0h",
+      "sub": "/7.5h",
+      "d": null
+     },
+     "volume": {
+      "value": "0k",
+      "sessions": 3,
+      "d": null
+     },
+     "readiness": {
+      "value": "60",
+      "sub": "ACWR 1.6",
+      "d": null
+     },
+     "supplements": null,
+     "water": {
+      "value": "0.0L",
+      "sub": "/3L",
+      "d": null
+     }
+    },
+    "chartData": [
+     {
+      "date": "2026-10-05",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 7.5,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-06",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 6.7,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-07",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 60
+     },
+     {
+      "date": "2026-10-08",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 6.3,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-09",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-10",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 8,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-11",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 0
+     }
+    ],
+    "volumeWeekly": [
+     {
+      "date": "2026-07-20",
+      "value": 22
+     },
+     {
+      "date": "2026-07-27",
+      "value": 21
+     },
+     {
+      "date": "2026-08-03",
+      "value": 20
+     },
+     {
+      "date": "2026-08-10",
+      "value": 20
+     },
+     {
+      "date": "2026-08-17",
+      "value": 19
+     },
+     {
+      "date": "2026-08-24",
+      "value": 18
+     },
+     {
+      "date": "2026-08-31",
+      "value": 17
+     },
+     {
+      "date": "2026-09-07",
+      "value": 16
+     },
+     {
+      "date": "2026-09-14",
+      "value": 15
+     },
+     {
+      "date": "2026-09-21",
+      "value": 14
+     },
+     {
+      "date": "2026-09-28",
+      "value": 13
+     },
+     {
+      "date": "2026-10-05",
+      "value": 0
+     }
+    ],
+    "readinessPoints": [
+     {
+      "date": "2026-10-07",
+      "value": 60
+     }
+    ]
+   }
+  },
+  {
+   "name": "acwr-1.61",
+   "input": {
+    "weekStartStr": "2026-10-05",
+    "dailyLogs": [
+     {
+      "date": "2026-10-07",
+      "readiness_score": 60,
+      "readiness_explain": "load:30",
+      "acwr": 1.61
+     }
+    ],
+    "workouts": [
+     {
+      "id": "a"
+     },
+     {
+      "id": "b"
+     },
+     {
+      "id": "c"
+     }
+    ],
+    "sleepLogs": [
+     {
+      "bedtime": "2026-10-04T16:00:00.000Z",
+      "waketime": "2026-10-04T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-05T16:30:00.000Z",
+      "waketime": "2026-10-05T23:30:00.000Z",
+      "asleep_min": 401.6,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-07T17:15:00.000Z",
+      "waketime": "2026-10-07T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-09T15:30:00.000Z",
+      "waketime": "2026-10-09T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-09T22:00:00.000Z",
+      "waketime": "2026-10-09T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     }
+    ],
+    "prevLogs": [],
+    "volumeHistory": [
+     {
+      "date": "2026-09-28",
+      "volume_load": 4300
+     },
+     {
+      "date": "2026-09-30",
+      "volume_load": 4411.5
+     },
+     {
+      "date": "2026-10-02",
+      "volume_load": 4523
+     },
+     {
+      "date": "2026-09-21",
+      "volume_load": 4600
+     },
+     {
+      "date": "2026-09-23",
+      "volume_load": 4711.5
+     },
+     {
+      "date": "2026-09-25",
+      "volume_load": 4823
+     },
+     {
+      "date": "2026-09-14",
+      "volume_load": 4900
+     },
+     {
+      "date": "2026-09-16",
+      "volume_load": 5011.5
+     },
+     {
+      "date": "2026-09-18",
+      "volume_load": 5123
+     },
+     {
+      "date": "2026-09-07",
+      "volume_load": 5200
+     },
+     {
+      "date": "2026-09-09",
+      "volume_load": 5311.5
+     },
+     {
+      "date": "2026-09-11",
+      "volume_load": 5423
+     },
+     {
+      "date": "2026-08-31",
+      "volume_load": 5500
+     },
+     {
+      "date": "2026-09-02",
+      "volume_load": 5611.5
+     },
+     {
+      "date": "2026-09-04",
+      "volume_load": 5723
+     },
+     {
+      "date": "2026-08-24",
+      "volume_load": 5800
+     },
+     {
+      "date": "2026-08-26",
+      "volume_load": 5911.5
+     },
+     {
+      "date": "2026-08-28",
+      "volume_load": 6023
+     },
+     {
+      "date": "2026-08-17",
+      "volume_load": 6100
+     },
+     {
+      "date": "2026-08-19",
+      "volume_load": 6211.5
+     },
+     {
+      "date": "2026-08-21",
+      "volume_load": 6323
+     },
+     {
+      "date": "2026-08-10",
+      "volume_load": 6400
+     },
+     {
+      "date": "2026-08-12",
+      "volume_load": 6511.5
+     },
+     {
+      "date": "2026-08-14",
+      "volume_load": 6623
+     },
+     {
+      "date": "2026-08-03",
+      "volume_load": 6700
+     },
+     {
+      "date": "2026-08-05",
+      "volume_load": 6811.5
+     },
+     {
+      "date": "2026-08-07",
+      "volume_load": 6923
+     },
+     {
+      "date": "2026-07-27",
+      "volume_load": 7000
+     },
+     {
+      "date": "2026-07-29",
+      "volume_load": 7111.5
+     },
+     {
+      "date": "2026-07-31",
+      "volume_load": 7223
+     },
+     {
+      "date": "2026-07-20",
+      "volume_load": 7300
+     },
+     {
+      "date": "2026-07-22",
+      "volume_load": 7411.5
+     },
+     {
+      "date": "2026-07-24",
+      "volume_load": 7523
+     },
+     {
+      "date": "2026-07-13",
+      "volume_load": 7600
+     },
+     {
+      "date": "2026-07-15",
+      "volume_load": 7711.5
+     },
+     {
+      "date": "2026-07-17",
+      "volume_load": 7823
+     }
+    ],
+    "profile": {
+     "tdee_target_kcal": 2300,
+     "macro_protein_g": 160,
+     "sleep_target_hours": "7.5",
+     "water_target_ml": 3000
+    }
+   },
+   "out": {
+    "daysWithData": 1,
+    "daysLogged": 1,
+    "avgKcal": 0,
+    "avgProtein": 0,
+    "proteinDays": 0,
+    "avgWaterMl": 0,
+    "avgSleepH": 5.989999999999999,
+    "totalVolume": 0,
+    "workoutCount": 3,
+    "suppAdherence": null,
+    "readinessDays": 1,
+    "avgReadiness": 60,
+    "prevAvgKcal": 0,
+    "prevAvgProtein": 0,
+    "prevTotalVolume": 0,
+    "acwr": 1.61,
+    "acwrRec": {
+     "kind": "warning",
+     "id": "acwrHigh",
+     "args": [
+      "1.61"
+     ]
+    },
+    "recommendations": [
+     {
+      "kind": "warning",
+      "id": "sleepDebt",
+      "args": [
+       "6.0",
+       "7.5"
+      ]
+     }
+    ],
+    "cards": {
+     "kcal": {
+      "value": "0",
+      "sub": "/2300",
+      "d": null
+     },
+     "protein": {
+      "value": "0g",
+      "sub": "/160g",
+      "d": null
+     },
+     "sleep": {
+      "value": "6.0h",
+      "sub": "/7.5h",
+      "d": null
+     },
+     "volume": {
+      "value": "0k",
+      "sessions": 3,
+      "d": null
+     },
+     "readiness": {
+      "value": "60",
+      "sub": "ACWR 1.61",
+      "d": null
+     },
+     "supplements": null,
+     "water": {
+      "value": "0.0L",
+      "sub": "/3L",
+      "d": null
+     }
+    },
+    "chartData": [
+     {
+      "date": "2026-10-05",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 7.5,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-06",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 6.7,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-07",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 60
+     },
+     {
+      "date": "2026-10-08",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 6.3,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-09",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-10",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 8,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-11",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 0
+     }
+    ],
+    "volumeWeekly": [
+     {
+      "date": "2026-07-20",
+      "value": 22
+     },
+     {
+      "date": "2026-07-27",
+      "value": 21
+     },
+     {
+      "date": "2026-08-03",
+      "value": 20
+     },
+     {
+      "date": "2026-08-10",
+      "value": 20
+     },
+     {
+      "date": "2026-08-17",
+      "value": 19
+     },
+     {
+      "date": "2026-08-24",
+      "value": 18
+     },
+     {
+      "date": "2026-08-31",
+      "value": 17
+     },
+     {
+      "date": "2026-09-07",
+      "value": 16
+     },
+     {
+      "date": "2026-09-14",
+      "value": 15
+     },
+     {
+      "date": "2026-09-21",
+      "value": 14
+     },
+     {
+      "date": "2026-09-28",
+      "value": 13
+     },
+     {
+      "date": "2026-10-05",
+      "value": 0
+     }
+    ],
+    "readinessPoints": [
+     {
+      "date": "2026-10-07",
+      "value": 60
+     }
+    ]
+   }
+  },
+  {
+   "name": "acwr-2.4",
+   "input": {
+    "weekStartStr": "2026-10-05",
+    "dailyLogs": [
+     {
+      "date": "2026-10-07",
+      "readiness_score": 60,
+      "readiness_explain": "load:30",
+      "acwr": 2.4
+     }
+    ],
+    "workouts": [
+     {
+      "id": "a"
+     },
+     {
+      "id": "b"
+     },
+     {
+      "id": "c"
+     }
+    ],
+    "sleepLogs": [
+     {
+      "bedtime": "2026-10-04T16:00:00.000Z",
+      "waketime": "2026-10-04T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-05T16:30:00.000Z",
+      "waketime": "2026-10-05T23:30:00.000Z",
+      "asleep_min": 401.6,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-07T17:15:00.000Z",
+      "waketime": "2026-10-07T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-09T15:30:00.000Z",
+      "waketime": "2026-10-09T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     },
+     {
+      "bedtime": "2026-10-09T22:00:00.000Z",
+      "waketime": "2026-10-09T23:30:00.000Z",
+      "asleep_min": null,
+      "deep_min": null,
+      "rem_min": null,
+      "light_min": null
+     }
+    ],
+    "prevLogs": [],
+    "volumeHistory": [
+     {
+      "date": "2026-09-28",
+      "volume_load": 4300
+     },
+     {
+      "date": "2026-09-30",
+      "volume_load": 4411.5
+     },
+     {
+      "date": "2026-10-02",
+      "volume_load": 4523
+     },
+     {
+      "date": "2026-09-21",
+      "volume_load": 4600
+     },
+     {
+      "date": "2026-09-23",
+      "volume_load": 4711.5
+     },
+     {
+      "date": "2026-09-25",
+      "volume_load": 4823
+     },
+     {
+      "date": "2026-09-14",
+      "volume_load": 4900
+     },
+     {
+      "date": "2026-09-16",
+      "volume_load": 5011.5
+     },
+     {
+      "date": "2026-09-18",
+      "volume_load": 5123
+     },
+     {
+      "date": "2026-09-07",
+      "volume_load": 5200
+     },
+     {
+      "date": "2026-09-09",
+      "volume_load": 5311.5
+     },
+     {
+      "date": "2026-09-11",
+      "volume_load": 5423
+     },
+     {
+      "date": "2026-08-31",
+      "volume_load": 5500
+     },
+     {
+      "date": "2026-09-02",
+      "volume_load": 5611.5
+     },
+     {
+      "date": "2026-09-04",
+      "volume_load": 5723
+     },
+     {
+      "date": "2026-08-24",
+      "volume_load": 5800
+     },
+     {
+      "date": "2026-08-26",
+      "volume_load": 5911.5
+     },
+     {
+      "date": "2026-08-28",
+      "volume_load": 6023
+     },
+     {
+      "date": "2026-08-17",
+      "volume_load": 6100
+     },
+     {
+      "date": "2026-08-19",
+      "volume_load": 6211.5
+     },
+     {
+      "date": "2026-08-21",
+      "volume_load": 6323
+     },
+     {
+      "date": "2026-08-10",
+      "volume_load": 6400
+     },
+     {
+      "date": "2026-08-12",
+      "volume_load": 6511.5
+     },
+     {
+      "date": "2026-08-14",
+      "volume_load": 6623
+     },
+     {
+      "date": "2026-08-03",
+      "volume_load": 6700
+     },
+     {
+      "date": "2026-08-05",
+      "volume_load": 6811.5
+     },
+     {
+      "date": "2026-08-07",
+      "volume_load": 6923
+     },
+     {
+      "date": "2026-07-27",
+      "volume_load": 7000
+     },
+     {
+      "date": "2026-07-29",
+      "volume_load": 7111.5
+     },
+     {
+      "date": "2026-07-31",
+      "volume_load": 7223
+     },
+     {
+      "date": "2026-07-20",
+      "volume_load": 7300
+     },
+     {
+      "date": "2026-07-22",
+      "volume_load": 7411.5
+     },
+     {
+      "date": "2026-07-24",
+      "volume_load": 7523
+     },
+     {
+      "date": "2026-07-13",
+      "volume_load": 7600
+     },
+     {
+      "date": "2026-07-15",
+      "volume_load": 7711.5
+     },
+     {
+      "date": "2026-07-17",
+      "volume_load": 7823
+     }
+    ],
+    "profile": {
+     "tdee_target_kcal": 2300,
+     "macro_protein_g": 160,
+     "sleep_target_hours": "7.5",
+     "water_target_ml": 3000
+    }
+   },
+   "out": {
+    "daysWithData": 1,
+    "daysLogged": 1,
+    "avgKcal": 0,
+    "avgProtein": 0,
+    "proteinDays": 0,
+    "avgWaterMl": 0,
+    "avgSleepH": 5.989999999999999,
+    "totalVolume": 0,
+    "workoutCount": 3,
+    "suppAdherence": null,
+    "readinessDays": 1,
+    "avgReadiness": 60,
+    "prevAvgKcal": 0,
+    "prevAvgProtein": 0,
+    "prevTotalVolume": 0,
+    "acwr": 2.4,
+    "acwrRec": {
+     "kind": "warning",
+     "id": "acwrHigh",
+     "args": [
+      "2.4"
+     ]
+    },
+    "recommendations": [
+     {
+      "kind": "warning",
+      "id": "sleepDebt",
+      "args": [
+       "6.0",
+       "7.5"
+      ]
+     }
+    ],
+    "cards": {
+     "kcal": {
+      "value": "0",
+      "sub": "/2300",
+      "d": null
+     },
+     "protein": {
+      "value": "0g",
+      "sub": "/160g",
+      "d": null
+     },
+     "sleep": {
+      "value": "6.0h",
+      "sub": "/7.5h",
+      "d": null
+     },
+     "volume": {
+      "value": "0k",
+      "sessions": 3,
+      "d": null
+     },
+     "readiness": {
+      "value": "60",
+      "sub": "ACWR 2.4",
+      "d": null
+     },
+     "supplements": null,
+     "water": {
+      "value": "0.0L",
+      "sub": "/3L",
+      "d": null
+     }
+    },
+    "chartData": [
+     {
+      "date": "2026-10-05",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 7.5,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-06",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 6.7,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-07",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 60
+     },
+     {
+      "date": "2026-10-08",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 6.3,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-09",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-10",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 8,
+      "volume": 0,
+      "readiness": 0
+     },
+     {
+      "date": "2026-10-11",
+      "kcal": 0,
+      "protein": 0,
+      "sleep_h": 0,
+      "volume": 0,
+      "readiness": 0
+     }
+    ],
+    "volumeWeekly": [
+     {
+      "date": "2026-07-20",
+      "value": 22
+     },
+     {
+      "date": "2026-07-27",
+      "value": 21
+     },
+     {
+      "date": "2026-08-03",
+      "value": 20
+     },
+     {
+      "date": "2026-08-10",
+      "value": 20
+     },
+     {
+      "date": "2026-08-17",
+      "value": 19
+     },
+     {
+      "date": "2026-08-24",
+      "value": 18
+     },
+     {
+      "date": "2026-08-31",
+      "value": 17
+     },
+     {
+      "date": "2026-09-07",
+      "value": 16
+     },
+     {
+      "date": "2026-09-14",
+      "value": 15
+     },
+     {
+      "date": "2026-09-21",
+      "value": 14
+     },
+     {
+      "date": "2026-09-28",
+      "value": 13
+     },
+     {
+      "date": "2026-10-05",
+      "value": 0
+     }
+    ],
+    "readinessPoints": [
+     {
+      "date": "2026-10-07",
+      "value": 60
+     }
+    ]
+   }
+  }
+ ]
+}

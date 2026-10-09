@@ -4,7 +4,7 @@ import SwiftUI
 
 /// Các thẻ dưới phần buổi tập của Today (#527 Phase 4/7/9) — như RN, Today là
 /// cửa của chúng: thẻ sẵn sàng (→ sinh trắc học, tấm giải thích), thẻ Apple
-/// Health, lối vào phòng linh vật (→ huy chương, thử thách tuần).
+/// Health, lối vào tổng kết tuần và phòng linh vật (→ huy chương, thử thách tuần).
 ///
 /// Chỉ là nối dây: sổ dựng ở `AppServices`, một lần mỗi phiên (cây của tab
 /// dựng lại theo `.id(userId)`), đóng khi phiên kết thúc. Thiếu cấu hình
@@ -19,6 +19,7 @@ struct TodayExtras: View {
   @State private var awards: AwardsBook?
   @State private var mascot: MascotRoomController?
   @State private var challenges: WeeklyChallengesBook?
+  @State private var weekly: WeeklyReviewBook?
   @State private var showsBiometrics = false
   @State private var built = false
 
@@ -30,22 +31,20 @@ struct TodayExtras: View {
           onOpenBiometrics: biometrics == nil ? nil : { showsBiometrics = true })
       }
       HealthSyncCard(isAvailable: services.health.isAvailable, sync: syncHealth)
+      if let weekly {
+        // RN mở từ tab Trợ lý ("Tổng kết tuần"), tab ấy chưa có ở bản iOS.
+        NavigationLink {
+          WeeklyReviewView(book: weekly, lang: services.preferences.lang)
+        } label: {
+          row(String(localized: "wr.title"), systemImage: "calendar")
+        }
+        .buttonStyle(.plain)
+      }
       if let mascot {
         NavigationLink {
           MascotRoomView(room: mascot, awards: awards, challenges: challenges)
         } label: {
-          HStack {
-            Label(String(localized: "mr.title"), systemImage: "pawprint.fill")
-              .font(DS.TextStyle.headline)
-            Spacer()
-            Image(systemName: "chevron.right")
-              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-              .accessibilityHidden(true)
-          }
-          .padding(DS.Spacing.md)
-          .frame(minHeight: 44)
-          .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.md))
-          .contentShape(Rectangle())
+          row(String(localized: "mr.title"), systemImage: "pawprint.fill")
         }
         .buttonStyle(.plain)
       }
@@ -62,6 +61,7 @@ struct TodayExtras: View {
       awards = services.makeAwardsBook(userId: userId)
       mascot = services.makeMascotRoom(userId: userId, today: today)
       challenges = services.makeWeeklyChallenges(userId: userId, today: today)
+      weekly = services.makeWeeklyReview(userId: userId, today: today)
       await readiness?.load()
     }
     .onChange(of: scenePhase) { _, phase in
@@ -71,6 +71,8 @@ struct TodayExtras: View {
       Task {
         let today = Self.today()
         if today != readiness.date { await readiness.move(to: today) } else { await readiness.load() }
+        // Tuần "này" của màn tổng kết đổi khi qua Chủ nhật.
+        await weekly?.move(to: today)
       }
     }
     // Đóng khi phiên không còn là của người này (đăng xuất / đổi tài khoản) —
@@ -83,7 +85,24 @@ struct TodayExtras: View {
       awards?.close()
       mascot?.close()
       challenges?.close()
+      weekly?.close()
     }
+  }
+
+  /// Một hàng dẫn sang màn con.
+  private func row(_ title: String, systemImage: String) -> some View {
+    HStack {
+      Label(title, systemImage: systemImage)
+        .font(DS.TextStyle.headline)
+      Spacer()
+      Image(systemName: "chevron.right")
+        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        .accessibilityHidden(true)
+    }
+    .padding(DS.Spacing.md)
+    .frame(minHeight: 44)
+    .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.md))
+    .contentShape(Rectangle())
   }
 
   private var isCurrentSession: Bool { services.session.session?.userId == userId }
