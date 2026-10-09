@@ -12,6 +12,10 @@ public struct SupabaseMealDiary: MealDiarySource {
     self.client = backend.client
   }
 
+  init(client: SupabaseClient) {
+    self.client = client
+  }
+
   /// `useTodayLog`, lượt 1.
   public func entries(userId: String, start: String, end: String) async throws -> [JSONValue] {
     try await client.from("meal_entries")

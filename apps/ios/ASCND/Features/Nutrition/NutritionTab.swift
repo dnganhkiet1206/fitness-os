@@ -28,6 +28,7 @@ struct NutritionTab: View {
             LogMealButton(userId: userId)
             DiaryRow(userId: userId)
             FoodsRow(userId: userId)
+            MealPlansRow(userId: userId)
             InsightsRow(userId: userId)
           }
           Text(String(localized: "placeholder.building"))
@@ -55,6 +56,9 @@ struct NutritionTab: View {
       }
       .navigationDestination(for: InsightsRoute.self) { route in
         InsightsScreen(userId: route.userId)
+      }
+      .navigationDestination(for: MealPlansRoute.self) { route in
+        MealPlansScreen(userId: route.userId)
       }
     }
     .task { await books?.loadOnce() }

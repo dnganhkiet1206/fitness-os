@@ -368,6 +368,22 @@ final class AppServices {
     return NutritionInsightsBook(userId: userId, store: rows)
   }
 
+  /// Kế hoạch ăn (#527 Phase 3 · 3.4): danh sách + tạo, chỉ khi có mạng.
+  func makeMealPlans(userId: String) -> MealPlansBook? {
+    guard let backend else { return nil }
+    return MealPlansBook(userId: userId, source: SupabaseMealPlans(backend: backend))
+  }
+
+  /// Một kế hoạch ăn: thêm / xoá món thẳng server (có mạng); "Ghi vào hôm nay"
+  /// qua hàng đợi bền như `log-meal`.
+  func makeMealPlan(userId: String, planId: String) -> MealPlanBook? {
+    guard let backend else { return nil }
+    let sync = self.sync
+    return MealPlanBook(
+      userId: userId, planId: planId, source: SupabaseMealPlans(backend: backend), store: outbox,
+      onEnqueued: { _ in sync.kick() })
+  }
+
   /// 14 ngày sinh trắc học; xoá một lần đo rồi dựng lại `daily_logs`.
   func makeBiometricsBook(userId: String) -> BiometricsBook? {
     guard let rows, let backend else { return nil }

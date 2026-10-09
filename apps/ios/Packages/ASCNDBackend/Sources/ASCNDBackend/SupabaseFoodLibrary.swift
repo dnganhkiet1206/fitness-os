@@ -12,6 +12,10 @@ public struct SupabaseFoodLibrary: FoodLibrarySource {
     self.client = backend.client
   }
 
+  init(client: SupabaseClient) {
+    self.client = client
+  }
+
   /// Một trang, xếp theo tên rồi id để các trang không chồng / sót hàng.
   public func myFoods(userId: String, from: Int, to: Int) async throws -> [JSONValue] {
     try await client.from("food_items")

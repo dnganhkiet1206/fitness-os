@@ -101,5 +101,8 @@ miễn **giữ nguyên ý định** của app và chỉ làm app tốt hơn — 
 | Dinh dưỡng 7 ngày — số ngày | Đọc đúng 7 ngày lịch (`hôm nay − 6 … hôm nay`) | `date >= hôm nay − 7` → 8 ngày dưới nhãn "7 ngày"; "đạt 5/8 ngày" | sửa lỗi RN | nên làm theo | #527 (`native/ios-rewrite`) | A |
 | Dinh dưỡng 7 ngày — VoiceOver biểu đồ | Mỗi cột đọc ngày + gam + đạt / chưa đạt mục tiêu | Cột chỉ là hình | cải tiến (a11y) | nên làm theo | #527 (`native/ios-rewrite`) | A |
 | Tab Tập luyện — trang gốc | Thẻ hôm nay là trạng thái + "Kế hoạch tuần" (nút bắt đầu ở tab Hôm nay); "Thư viện & lịch sử" tách hai hàng Lịch sử / Thư viện bài tập; xoá mẫu ở danh sách đầy đủ | Thẻ `TodayTraining` có nút bắt đầu; một trang "Thư viện & lịch sử" (lưới nhóm cơ + 10 buổi); xoá ngay ở ba hàng xem trước; đoạn Cơ thể | tạm thời (lưới nhóm cơ / đoạn Cơ thể chưa port) | không cần | #527 (`native/ios-rewrite`) | E |
+| Kế hoạch ăn — câu "kế hoạch không lưu chất xơ" | Không hiện: món kế hoạch mang `fiber_g` từ migration `meal_plan_items_fiber`, ghi vào nhật ký có chất xơ | Vẫn hiện `nMpNoFibre` dưới mọi kế hoạch có món — đã sai sự thật | sửa lỗi RN | nên làm theo (bỏ câu) | #527 (`native/ios-rewrite`) | A |
+| Kế hoạch ăn — tạo | Form một trang (tên, mục tiêu, số bữa, xem trước) rồi mở thẳng kế hoạch vừa tạo; thêm món là sheet riêng ở màn chi tiết | Trình tạo nhiều bước gộp cả bước thêm món | lệch nền tảng | không cần | #527 (`native/ios-rewrite`) | A |
+| Kế hoạch ăn — VoiceOver | Hàng kế hoạch đọc "đã lên món n trên 7 ngày"; ngày đang chọn mang `isSelected`; món đã có trong bữa đọc "Đã có trong bữa này" | Bảy chấm chỉ là hình | cải tiến (a11y) | nên làm theo | #527 (`native/ios-rewrite`) | A |
 
 Thêm dòng mới ở cuối bảng; giữ dòng cũ — sổ là lịch sử, không phải danh sách việc.
