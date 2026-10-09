@@ -30,4 +30,23 @@ public struct SupabaseMealLog: MealFoodSource {
       .limit(limit)
       .execute().value
   }
+
+  public func favorites(userId: String, limit: Int) async throws -> [JSONValue] {
+    try await client.from("food_items")
+      .select("id, user_id, name, brand, kcal, protein_g, carbs_g, fat_g, fiber_g, serving_g, is_favorite")
+      .eq("user_id", value: userId)
+      .eq("is_favorite", value: true)
+      .order("name")
+      .limit(limit)
+      .execute().value
+  }
+
+  public func recentMeals(userId: String, limit: Int) async throws -> [JSONValue] {
+    try await client.from("meal_entries")
+      .select("id, meal_type, date_time, meal_entry_items(food_name, food_item_id, servings, kcal, protein_g, carbs_g, fat_g, fiber_g)")
+      .eq("user_id", value: userId)
+      .order("date_time", ascending: false)
+      .limit(limit)
+      .execute().value
+  }
 }

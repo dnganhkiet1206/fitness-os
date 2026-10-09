@@ -89,6 +89,71 @@ struct MealLogRuleTests {
     #expect(MealLog.isRow(e))
   }
 
+  /// `foldRecentMeals`: bỏ bữa rỗng, bỏ bữa trùng chữ ký (tập tên, không phân
+  /// biệt thứ tự / hoa thường / khoảng trắng / trùng lặp), về 1 khẩu phần, tối đa 6.
+  @Test func recentMealsFoldLikeRN() throws {
+    func item(_ n: String, _ s: Double, _ k: Double) -> JSONValue {
+      .object(["food_name": .string(n), "servings": .number(s), "kcal": .number(k), "protein_g": .number(10)])
+    }
+    let entries: [JSONValue] = [
+      .object(["id": .string("e1"), "meal_type": .string("breakfast"), "date_time": .string("2026-10-09T01:00:00.000Z"),
+               "meal_entry_items": .array([item("Trứng", 2, 156), item("Bánh mì", 1, 250)])]),
+      .object(["id": .string("e2"), "meal_type": .string("breakfast"), "date_time": .string("2026-10-08T01:00:00.000Z"),
+               "meal_entry_items": .array([item(" bánh MÌ ", 1, 240), item("trứng", 1, 78), item("Trứng", 1, 78)])]),
+      .object(["id": .string("e3"), "meal_type": .string("lunch"), "meal_entry_items": .array([])]),
+      .object(["id": .string("e4"), "meal_type": .string("lunch"), "date_time": .string("2026-10-07T05:00:00.000Z"),
+               "meal_entry_items": .array([item("Phở", 0, 450)])]),
+    ]
+    let m = MealLog.recentMeals(entries)
+    #expect(m.map(\.id) == ["e1", "e4"])
+    let first = try #require(m.first)
+    #expect(first.foods.map { $0.food.kcal } == [78, 250])
+    #expect(first.foods.map { $0.servings } == [2, 1])
+    #expect(first.kcal == 406)
+    #expect(m[1].foods.first?.servings == 1)
+    #expect(MealLog.mealSignature("lunch", ["B", " a ", "b", nil, ""]) == "lunch|a,b")
+    let many = (0..<10).map { i in
+      JSONValue.object(["id": .string("m\(i)"), "meal_type": .string("dinner"),
+                        "meal_entry_items": .array([item("Món \(i)", 1, 100)])])
+    }
+    #expect(MealLog.recentMeals(many).count == 6)
+  }
+
+  /// "Thêm nhanh": yêu thích trước rồi gần đây, tối đa 14.
+  @Test func quickAddsFavoritesFirstCappedAt14() {
+    func food(_ i: Int) -> MealLog.Food {
+      MealLog.Food(id: "f\(i)", foodItemId: "f\(i)", name: "Món \(i)", kcal: 1, protein: 0, carbs: 0, fat: 0, fiber: 0)
+    }
+    let q = MealLog.quickAdds(favorites: (0..<3).map(food), recents: (10..<30).map(food))
+    #expect(q.count == 14)
+    #expect(q.prefix(3).allSatisfy { $0.favorite })
+    #expect(q[0].id == "fav-f0")
+    #expect(q[3].id == "rec-0")
+  }
+
+  /// `applyEdit`: ô trống = 0; ngoài dải thì không sửa; giữ khẩu phần + chất xơ.
+  @Test func editKeepsServingsAndChecksBounds() throws {
+    let it = MealLog.Item(id: "a", foodItemId: "f", name: "Cơm", servings: 2, kcal: 200, protein: 4, carbs: 45, fat: 1, fiber: 3)
+    #expect(MealLog.edited(it, kcal: "50000", protein: "", carbs: "", fat: "") == nil)
+    let e = try #require(MealLog.edited(it, kcal: "180", protein: "", carbs: "40", fat: "0.5"))
+    #expect(e.kcal == 180)
+    #expect(e.protein == 0)
+    #expect(e.fat == 0.5)
+    #expect(e.servings == 2)
+    #expect(e.fiber == 3)
+    #expect(MealLog.draftText(0) == "")
+    #expect(MealLog.draftText(12.5) == "12.5")
+    #expect(MealLog.draftText(200) == "200")
+  }
+
+  @Test func daysAgoByLocalCalendar() throws {
+    let today = try #require(LocalDate("2026-10-09"))
+    // 2026-10-08T18:00Z = 01:00 ngày 09 ở Hà Nội → hôm nay.
+    #expect(MealLog.daysAgo(EpochMillis(iso8601: "2026-10-08T18:00:00.000Z"), today: today, in: Self.hanoi) == 0)
+    #expect(MealLog.daysAgo(EpochMillis(iso8601: "2026-10-08T05:00:00.000Z"), today: today, in: Self.hanoi) == 1)
+    #expect(MealLog.daysAgo(nil, today: today, in: Self.hanoi) == 0)
+  }
+
   /// Sau khi server nhận: dựng lại CHỈ ngày ăn (không phải hôm nay).
   @Test func rebuildsTheDayEatenOnly() throws {
     let e = MealLog.entry(
@@ -119,6 +184,16 @@ struct MealLoggerTests {
       return rows
     }
     func recentItems(userId: String, limit: Int) async throws -> [JSONValue] { [] }
+    var favoriteRows: [JSONValue] = []
+    var mealRows: [JSONValue] = []
+    func favorites(userId: String, limit: Int) async throws -> [JSONValue] {
+      lock.withLock { queries.append("fav|\(limit)") }
+      return favoriteRows
+    }
+    func recentMeals(userId: String, limit: Int) async throws -> [JSONValue] {
+      lock.withLock { queries.append("meals|\(limit)") }
+      return mealRows
+    }
   }
 
   actor MealOutbox: PlanWriteStore {
@@ -185,6 +260,35 @@ struct MealLoggerTests {
     #expect(e.payload["meal_type"] == .string("dinner"))
     #expect(e.payload["total_kcal"] == .number(900))
     #expect(MealLog.isRow(e))
+  }
+
+  /// "Ăn lại": chỉ khi chưa có món; điền loại bữa + món + khẩu phần.
+  @Test func repeatFillsAnEmptyMealOnly() async throws {
+    let f = FakeFoods()
+    f.mealRows = [.object([
+      "id": .string("e1"), "meal_type": .string("dinner"), "date_time": .string("2026-10-08T12:00:00.000Z"),
+      "meal_entry_items": .array([.object(["food_name": .string("Cá kho"), "servings": .number(1.5), "kcal": .number(300)])]),
+    ])]
+    f.favoriteRows = [.object(["id": .string("fv"), "user_id": .string("u1"), "name": .string("Sữa chua"), "kcal": .number(100)])]
+    let l = Self.logger(f, MealOutbox())
+    await l.loadRecents()
+    #expect(l.favorites.map(\.name) == ["Sữa chua"])
+    #expect(l.quickAdds.first?.favorite == true)
+    #expect(f.queries.contains("fav|50"))
+    #expect(f.queries.contains("meals|40"))
+    let meal = try #require(l.recentMeals.first)
+    #expect(l.showsRepeat)
+    l.repeatMeal(meal)
+    #expect(l.mealType == "dinner")
+    #expect(l.items.count == 1)
+    #expect(l.items[0].servings == 1.5)
+    #expect(l.items[0].kcal == 200)
+    #expect(!l.showsRepeat)
+    l.repeatMeal(meal)
+    #expect(l.items.count == 1)
+    #expect(l.edit(l.items[0].id, kcal: "250", protein: "", carbs: "", fat: ""))
+    #expect(l.totals.kcal == 375)
+    #expect(!l.edit(l.items[0].id, kcal: "-1", protein: "", carbs: "", fat: ""))
   }
 
   @Test func removeAndCustom() {

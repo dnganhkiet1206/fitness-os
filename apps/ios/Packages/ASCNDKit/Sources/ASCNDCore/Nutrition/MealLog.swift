@@ -141,6 +141,98 @@ public enum MealLog {
     return out
   }
 
+  // MARK: - Yêu thích / thêm nhanh / ăn lại
+
+  /// `useFavoriteFoods`: món riêng có sao, xếp theo tên, tối đa 50.
+  public static let favoritesLimit = 50
+  /// "Thêm nhanh": yêu thích trước, rồi món gần đây, tối đa 14 ô.
+  public static let quickAddLimit = 14
+  /// `useRecentMeals`: đọc 40 bữa mới nhất, giữ 6 bữa khác nhau.
+  public static let recentMealsRead = 40
+  public static let recentMealsKeep = 6
+
+  /// Một ô "Thêm nhanh"; `favorite` hiện ngôi sao.
+  public struct QuickAdd: Sendable, Hashable, Identifiable {
+    public let id: String
+    public let food: Food
+    public let favorite: Bool
+  }
+
+  /// `quickAdds` của màn: yêu thích (`fav-<id>`) rồi gần đây (`rec-<i>`), cắt 14.
+  public static func quickAdds(favorites: [Food], recents: [Food]) -> [QuickAdd] {
+    let favs = favorites.map { QuickAdd(id: "fav-\($0.id)", food: $0, favorite: true) }
+    let recs = recents.enumerated().map { QuickAdd(id: "rec-\($0.offset)", food: $0.element, favorite: false) }
+    return Array((favs + recs).prefix(quickAddLimit))
+  }
+
+  /// Một bữa đã ghi để "Ăn lại bữa này": số mỗi món về MỘT khẩu phần, giữ
+  /// khẩu phần đã ăn; tổng = Σ kcal × khẩu phần.
+  public struct RecentMeal: Sendable, Hashable, Identifiable {
+    public let id: String
+    public let mealType: String
+    public let at: EpochMillis?
+    public let kcal: Double
+    public let foods: [(food: Food, servings: Double)]
+
+    public static func == (a: RecentMeal, b: RecentMeal) -> Bool {
+      guard a.id == b.id, a.mealType == b.mealType, a.at == b.at, a.kcal == b.kcal else { return false }
+      let fa: [Food] = a.foods.map { $0.food }
+      let fb: [Food] = b.foods.map { $0.food }
+      let sa: [Double] = a.foods.map { $0.servings }
+      let sb: [Double] = b.foods.map { $0.servings }
+      return fa == fb && sa == sb
+    }
+    public func hash(into h: inout Hasher) { h.combine(id) }
+  }
+
+  /// `mealSignature`: loại bữa + TẬP tên món (bỏ khoảng trắng hai đầu, chữ
+  /// thường, bỏ trống, bỏ trùng; không tính thứ tự).
+  public static func mealSignature(_ mealType: String, _ names: [String?]) -> String {
+    let set = Set(names.compactMap { n -> String? in
+      let c = RepEntry.trimJS(n ?? "").lowercased()
+      return c.isEmpty ? nil : c
+    })
+    return "\(mealType)|" + set.sorted().joined(separator: ",")
+  }
+
+  /// `foldRecentMeals`: mới → cũ, bỏ bữa không còn món, bỏ bữa trùng chữ ký
+  /// (giữ lần gần nhất), tối đa `limit`.
+  public static func recentMeals(_ entries: [JSONValue], limit: Int = recentMealsKeep) -> [RecentMeal] {
+    var seen = Set<String>()
+    var out: [RecentMeal] = []
+    for e in entries {
+      guard let id = e["id"]?.stringValue, case .array(let rows)? = e["meal_entry_items"], !rows.isEmpty else {
+        continue
+      }
+      let type = e["meal_type"]?.stringValue ?? ""
+      let sig = mealSignature(type, rows.map { $0["food_name"]?.stringValue })
+      guard !seen.contains(sig) else { continue }
+      seen.insert(sig)
+      let foods: [(food: Food, servings: Double)] = rows.enumerated().map { i, r in
+        let raw = JS.number(r["servings"])
+        let s = JS.truthy(raw) ? raw : 1
+        func one(_ k: String) -> Double { JS.round(JS.number(r[k]) / s) }
+        let food = Food(
+          id: "\(id)-\(i)", foodItemId: r["food_item_id"]?.stringValue, name: r["food_name"]?.stringValue ?? "",
+          kcal: one("kcal"), protein: one("protein_g"), carbs: one("carbs_g"), fat: one("fat_g"),
+          fiber: JS.round(MealDiary.num(r["fiber_g"]) / s))
+        return (food, s)
+      }
+      out.append(
+        RecentMeal(
+          id: id, mealType: type, at: e["date_time"]?.stringValue.flatMap { EpochMillis(iso8601: $0) },
+          kcal: foods.reduce(0) { $0 + $1.food.kcal * $1.servings }, foods: foods))
+      if out.count >= limit { break }
+    }
+    return out
+  }
+
+  /// `whenLabel`: số ngày lịch giữa ngày bữa ăn và hôm nay (≤ 0 = hôm nay).
+  public static func daysAgo(_ at: EpochMillis?, today: LocalDate, in tz: TimeZone) -> Int {
+    guard let at else { return 0 }
+    return today.daysSinceEpoch - LocalDate(at, in: tz).daysSinceEpoch
+  }
+
   // MARK: - Món nhập tay
 
   /// Một ô số của form: trống / số trong dải / sai.
@@ -174,6 +266,18 @@ public enum MealLog {
     let energy = k > 0 ? k : JS.round(p * 4 + c * 4 + f * 9)
     return Item(id: id, foodItemId: nil, name: n, kcal: energy, protein: p, carbs: c, fat: f)
   }
+
+  /// `applyEdit`: số MỘT khẩu phần mới của một món đã thêm (ô trống = 0);
+  /// `nil` khi có ô ngoài dải (`draftBad`). Giữ tên, khẩu phần, chất xơ, id món.
+  public static func edited(_ it: Item, kcal: String, protein: String, carbs: String, fat: String) -> Item? {
+    guard !customBad(kcal: kcal, protein: protein, carbs: carbs, fat: fat) else { return nil }
+    return Item(
+      id: it.id, foodItemId: it.foodItemId, name: it.name, servings: it.servings, kcal: number(kcal),
+      protein: number(protein), carbs: number(carbs), fat: number(fat), fiber: it.fiber)
+  }
+
+  /// `String(it.kcal || '')` — ô sửa điền sẵn; 0 thì để trống.
+  public static func draftText(_ v: Double) -> String { v == 0 || v.isNaN ? "" : MealDiary.jsNumber(v) }
 
   // MARK: - Tổng và bản ghi
 
@@ -265,6 +369,10 @@ public protocol MealFoodSource: Sendable {
   func search(_ text: String, limit: Int) async throws -> [JSONValue]
   /// `meal_entry_items` mới nhất của người (`useRecentFoods`).
   func recentItems(userId: String, limit: Int) async throws -> [JSONValue]
+  /// `useFavoriteFoods`: `food_items` của người, `is_favorite`, theo tên.
+  func favorites(userId: String, limit: Int) async throws -> [JSONValue]
+  /// `useRecentMeals`: `meal_entries` (+ `meal_entry_items` lồng) mới → cũ.
+  func recentMeals(userId: String, limit: Int) async throws -> [JSONValue]
 }
 
 /// Màn ghi bữa của MỘT người cho MỘT ngày.
@@ -288,6 +396,13 @@ public final class MealLogger {
   public private(set) var results: [MealLog.Food]?
   public private(set) var searchFailed = false
   public private(set) var recents: [MealLog.Food] = []
+  public private(set) var favorites: [MealLog.Food] = []
+  public private(set) var recentMeals: [MealLog.RecentMeal] = []
+
+  /// "Thêm nhanh" (yêu thích + gần đây).
+  public var quickAdds: [MealLog.QuickAdd] { MealLog.quickAdds(favorites: favorites, recents: recents) }
+  /// "Ăn lại bữa này" chỉ khi chưa có món nào — không bao giờ thay một bữa đang soạn.
+  public var showsRepeat: Bool { items.isEmpty && !recentMeals.isEmpty && !saved }
   public private(set) var saving = false
   public private(set) var saved = false
 
@@ -325,12 +440,40 @@ public final class MealLogger {
     searchGeneration += 1
   }
 
-  /// Món gần đây. Đọc hỏng: không có hàng gợi ý (như RN — `data` rỗng).
+  /// Món gần đây, yêu thích, bữa gần đây. Đọc hỏng: không có hàng gợi ý ấy
+  /// (như RN — `data` rỗng); ba lượt độc lập.
   public func loadRecents() async {
     guard !closed else { return }
-    let rows = (try? await source.recentItems(userId: userId, limit: MealLog.recentReadLimit)) ?? []
+    let source = self.source, userId = self.userId
+    async let r = try? source.recentItems(userId: userId, limit: MealLog.recentReadLimit)
+    async let f = try? source.favorites(userId: userId, limit: MealLog.favoritesLimit)
+    async let m = try? source.recentMeals(userId: userId, limit: MealLog.recentMealsRead)
+    let (rows, favs, meals) = await (r, f, m)
     guard !closed else { return }
-    recents = MealLog.recentFoods(rows)
+    recents = MealLog.recentFoods(rows ?? [])
+    favorites = (favs ?? []).compactMap(MealLog.Food.init(foodRow:))
+    recentMeals = MealLog.recentMeals(meals ?? [])
+  }
+
+  /// "Ăn lại bữa này": loại bữa + đúng các món và khẩu phần đã ăn.
+  public func repeatMeal(_ meal: MealLog.RecentMeal) {
+    guard showsRepeat else { return }
+    if MealDiary.order.contains(meal.mealType) { mealType = meal.mealType }
+    items = meal.foods.map { f in
+      var it = f.food.item(id: makeId())
+      it.servings = f.servings
+      return it
+    }
+  }
+
+  /// Sửa số một khẩu phần của một món; `false` khi có ô ngoài dải.
+  @discardableResult
+  public func edit(_ id: String, kcal: String, protein: String, carbs: String, fat: String) -> Bool {
+    guard !saved, let i = items.firstIndex(where: { $0.id == id }),
+      let it = MealLog.edited(items[i], kcal: kcal, protein: protein, carbs: carbs, fat: fat)
+    else { return false }
+    items[i] = it
+    return true
   }
 
   /// Tìm theo chữ đang gõ (bên gọi lo trễ 250 ms). Dưới 2 ký tự thì không tìm.

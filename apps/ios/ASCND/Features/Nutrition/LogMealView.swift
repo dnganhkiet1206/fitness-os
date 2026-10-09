@@ -14,8 +14,14 @@ import SwiftUI
 /// - Lưu: luôn vào hàng đợi trên máy (gửi ngay khi có mạng), rồi đóng màn —
 ///   có mạng nói "Đã lưu bữa ăn!", mất mạng nói "Đã lưu — sẽ đồng bộ khi có mạng".
 ///
-/// Khác RN / chưa có: gợi ý bữa bằng AI, quét ảnh / mã vạch, món yêu thích,
-/// "Ăn lại bữa trước", sửa macro của một món đã thêm.
+/// - "Ăn lại bữa này" (chỉ khi chưa có món): sáu bữa gần nhất khác nhau, chạm
+///   là điền loại bữa + món + khẩu phần — xem lại rồi lưu;
+/// - "Thêm nhanh" = món yêu thích (có sao) rồi món gần đây, tối đa 14;
+/// - chạm vào một món đã thêm để sửa kcal / đạm / tinh bột / béo của MỘT khẩu
+///   phần (cùng dải với món tự nhập).
+///
+/// Khác RN / chưa có: gợi ý bữa bằng AI, quét ảnh / mã vạch; chưa đánh / bỏ
+/// sao một món ở màn này.
 struct LogMealView: View {
   let userId: String
   var date: LocalDate?
@@ -34,6 +40,16 @@ struct LogMealView: View {
   @State private var cCarbs = ""
   @State private var cFat = ""
   @State private var error: String?
+  @State private var editingId: String?
+  @State private var draft = Draft()
+
+  /// Bốn ô của khung sửa một món (`draft` của RN).
+  struct Draft: Equatable {
+    var kcal = ""
+    var protein = ""
+    var carbs = ""
+    var fat = ""
+  }
 
   var body: some View {
     NavigationStack {
@@ -74,10 +90,11 @@ struct LogMealView: View {
     VStack(spacing: 0) {
       ScrollView {
         VStack(alignment: .leading, spacing: DS.Spacing.md) {
+          if logger.showsRepeat { repeatBlock(logger) }
           mealPicker(logger)
           searchField
           searchResults(logger)
-          if !logger.recents.isEmpty && query.trimmingCharacters(in: .whitespaces).count < MealLog.searchMinLength {
+          if !logger.quickAdds.isEmpty && query.trimmingCharacters(in: .whitespaces).count < MealLog.searchMinLength {
             recents(logger)
           }
           customCard(logger)
@@ -167,17 +184,84 @@ struct LogMealView: View {
         .font(DS.TextStyle.caption.weight(.semibold))
         .foregroundStyle(DS.Color.mutedForeground.swiftUI)
         .accessibilityAddTraits(.isHeader)
-      ForEach(logger.recents) { food in
-        foodRow(food) { logger.add(food) }
+      ForEach(logger.quickAdds) { q in
+        foodRow(q.food, favorite: q.favorite) { logger.add(q.food) }
       }
     }
   }
 
-  private func foodRow(_ food: MealLog.Food, add: @escaping () -> Void) -> some View {
+  // MARK: - Ăn lại bữa này
+
+  private func repeatBlock(_ logger: MealLogger) -> some View {
+    let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
+    return VStack(alignment: .leading, spacing: DS.Spacing.xs) {
+      Text(String(localized: "logMeal.repeat.title"))
+        .font(DS.TextStyle.headline)
+        .accessibilityAddTraits(.isHeader)
+      Text(String(localized: "logMeal.repeat.hint"))
+        .font(DS.TextStyle.caption)
+        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+      ScrollView(.horizontal, showsIndicators: false) {
+        HStack(spacing: DS.Spacing.sm) {
+          ForEach(logger.recentMeals) { m in
+            let when = Self.whenLabel(MealLog.daysAgo(m.at, today: today, in: .current))
+            Button { logger.repeatMeal(m) } label: {
+              VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                  Text(verbatim: DiaryView.mealName(m.mealType)).font(DS.TextStyle.footnote.weight(.bold))
+                  Spacer(minLength: DS.Spacing.sm)
+                  Text(verbatim: when)
+                    .font(DS.TextStyle.caption)
+                    .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+                }
+                Text(verbatim: m.foods.map { $0.food.name }.joined(separator: ", "))
+                  .font(DS.TextStyle.caption)
+                  .lineLimit(2)
+                  .multilineTextAlignment(.leading)
+                Text(verbatim: "\(DiaryView.whole(m.kcal)) kcal · " + Self.foodsCount(m.foods.count))
+                  .font(DS.TextStyle.caption.monospacedDigit())
+                  .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+              }
+              .padding(DS.Spacing.sm)
+              .frame(width: 200, alignment: .leading)
+              .frame(minHeight: 44)
+              .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.md))
+            }
+            .buttonStyle(.plain)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text(verbatim: "\(DiaryView.mealName(m.mealType)), \(when), \(DiaryView.whole(m.kcal)) kcal"))
+            .accessibilityAddTraits(.isButton)
+          }
+        }
+      }
+    }
+  }
+
+  /// "hôm nay" / "hôm qua" / "3 ngày trước".
+  static func whenLabel(_ days: Int) -> String {
+    if days <= 0 { return String(localized: "logMeal.repeat.today") }
+    if days == 1 { return String(localized: "logMeal.repeat.yesterday") }
+    return String(localized: "logMeal.repeat.daysAgo \(days)")
+  }
+
+  /// "1 món" / "3 món" — catalog không dùng plural, số 1 là khoá riêng.
+  static func foodsCount(_ n: Int) -> String {
+    n == 1 ? String(localized: "logMeal.repeat.oneFood") : String(localized: "logMeal.repeat.foods \(n)")
+  }
+
+  private func foodRow(_ food: MealLog.Food, favorite: Bool = false, add: @escaping () -> Void) -> some View {
     Button(action: add) {
       HStack {
         VStack(alignment: .leading, spacing: 2) {
-          Text(verbatim: food.name).font(DS.TextStyle.body).lineLimit(1)
+          HStack(spacing: 4) {
+            if favorite {
+              Image(systemName: "star.fill")
+                .font(.caption)
+                .foregroundStyle(DS.Color.primary.swiftUI)
+                .accessibilityLabel(Text(String(localized: "logMeal.a11y.favorite")))
+            }
+            Text(verbatim: food.name).font(DS.TextStyle.body).lineLimit(1)
+          }
           Text(verbatim: "\(DiaryView.whole(food.kcal)) kcal · " + DiaryView.macros(food.protein, food.carbs, food.fat))
             .font(DS.TextStyle.caption.monospacedDigit())
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
@@ -304,19 +388,81 @@ struct LogMealView: View {
   }
 
   private func itemRow(_ logger: MealLogger, _ it: MealLog.Item) -> some View {
-    HStack(spacing: DS.Spacing.sm) {
-      VStack(alignment: .leading, spacing: 2) {
-        Text(verbatim: it.name).font(DS.TextStyle.body).lineLimit(1)
-        Text(verbatim: "\(DiaryView.whole(it.kcal * it.servings)) kcal · "
-          + DiaryView.macros(it.protein * it.servings, it.carbs * it.servings, it.fat * it.servings))
-          .font(DS.TextStyle.caption.monospacedDigit())
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+    VStack(alignment: .leading, spacing: 0) {
+      itemLine(logger, it)
+      if editingId == it.id { editPanel(logger, it) }
+    }
+    .padding(.horizontal, DS.Spacing.sm)
+    .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.md))
+  }
+
+  /// Chạm phần chữ để mở / đóng khung sửa macro của món (`openEdit`).
+  private func toggleEdit(_ it: MealLog.Item) {
+    if editingId == it.id {
+      editingId = nil
+      return
+    }
+    draft = Draft(
+      kcal: MealLog.draftText(it.kcal), protein: MealLog.draftText(it.protein),
+      carbs: MealLog.draftText(it.carbs), fat: MealLog.draftText(it.fat))
+    editingId = it.id
+  }
+
+  private func editPanel(_ logger: MealLogger, _ it: MealLog.Item) -> some View {
+    let bad = MealLog.customBad(kcal: draft.kcal, protein: draft.protein, carbs: draft.carbs, fat: draft.fat)
+    return VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+      HStack(spacing: DS.Spacing.sm) {
+        numberField("kcal", $draft.kcal, bounds: MealLog.kcalBounds)
+        numberField(String(localized: "logMeal.protein") + " (g)", $draft.protein, bounds: MealLog.macroBounds)
       }
+      HStack(spacing: DS.Spacing.sm) {
+        numberField(String(localized: "logMeal.carbs") + " (g)", $draft.carbs, bounds: MealLog.macroBounds)
+        numberField(String(localized: "logMeal.fat") + " (g)", $draft.fat, bounds: MealLog.macroBounds)
+      }
+      if bad {
+        Text(String(localized: "logMeal.custom.outOfRange"))
+          .font(DS.TextStyle.footnote)
+          .foregroundStyle(DS.Color.destructive.swiftUI)
+      }
+      Button {
+        if logger.edit(it.id, kcal: draft.kcal, protein: draft.protein, carbs: draft.carbs, fat: draft.fat) {
+          editingId = nil
+        }
+      } label: {
+        Text(String(localized: "logMeal.edit.done"))
+          .font(DS.TextStyle.footnote.weight(.semibold))
+          .frame(maxWidth: .infinity, minHeight: 44)
+          .background(DS.Color.muted.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.sm))
+      }
+      .buttonStyle(.plain)
+      .disabled(bad)
+      .opacity(bad ? 0.5 : 1)
+    }
+    .padding(.bottom, DS.Spacing.sm)
+  }
+
+  private func itemLine(_ logger: MealLogger, _ it: MealLog.Item) -> some View {
+    HStack(spacing: DS.Spacing.sm) {
+      Button { toggleEdit(it) } label: {
+        VStack(alignment: .leading, spacing: 2) {
+          Text(verbatim: it.name).font(DS.TextStyle.body).lineLimit(1)
+          Text(verbatim: "\(DiaryView.whole(it.kcal * it.servings)) kcal · "
+            + DiaryView.macros(it.protein * it.servings, it.carbs * it.servings, it.fat * it.servings))
+            .font(DS.TextStyle.caption.monospacedDigit())
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        }
+        .frame(minHeight: 44)
+        .contentShape(Rectangle())
+      }
+      .buttonStyle(.plain)
       .accessibilityElement(children: .combine)
+      .accessibilityHint(Text(String(localized: "logMeal.a11y.edit")))
+      .accessibilityValue(Text(editingId == it.id ? String(localized: "diary.a11y.expanded") : String(localized: "diary.a11y.collapsed")))
       Spacer(minLength: 0)
       stepper(logger, it)
       Button {
         logger.remove(it.id)
+        if editingId == it.id { editingId = nil }
       } label: {
         Image(systemName: "xmark")
           .foregroundStyle(DS.Color.foreground.swiftUI)
@@ -326,8 +472,6 @@ struct LogMealView: View {
       .buttonStyle(.plain)
       .accessibilityLabel(Text(String(localized: "logMeal.a11y.remove \(it.name)")))
     }
-    .padding(.horizontal, DS.Spacing.sm)
-    .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.md))
   }
 
   private func stepper(_ logger: MealLogger, _ it: MealLog.Item) -> some View {
