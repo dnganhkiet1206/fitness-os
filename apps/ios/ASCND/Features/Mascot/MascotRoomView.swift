@@ -18,8 +18,9 @@ import SwiftUI
 /// - câu nói / tâm trạng của Koa (`useMascot`), dòng "Koa để ý" (mô hình cá
 ///   nhân trên máy) — không có nguồn native;
 /// - tự nhận nhiệm vụ (`use-quest-autoclaim`, gắn toàn app ở RN);
-/// - cửa hàng / phòng thay đồ, đổi linh vật. Hàng thử thách / huy hiệu dẫn tới
-///   `ChallengesView` / `AwardsView` khi được truyền sổ;
+/// - đổi linh vật. Hàng thử thách / huy hiệu dẫn tới `ChallengesView` /
+///   `AwardsView` khi được truyền sổ; hàng "Cửa hàng" dẫn tới `ShopView` (sổ dựng
+///   tại đây từ `AppServices`, đọc lại ví khi mua / nhận thưởng);
 /// - nút "+300 xu" của bản dev (server từ chối khoá `dev:`) — không port.
 struct MascotRoomView: View {
   let room: MascotRoomController
@@ -30,6 +31,8 @@ struct MascotRoomView: View {
 
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Environment(\.locale) private var locale
+  @Environment(AppServices.self) private var services
+  @State private var shop: MascotShopBook?
   @State private var burst: Burst?
   @State private var notice: String?
   @State private var celebrate = 0
@@ -46,7 +49,10 @@ struct MascotRoomView: View {
       .toolbar {
         ToolbarItem(placement: .primaryAction) { coinPill }
       }
-      .task { await room.load() }
+      .task {
+        if shop == nil { shop = services.makeMascotShop(userId: room.userId) }
+        await room.load()
+      }
       .refreshable { await room.load() }
       .onChange(of: room.welcomeGranted) { _, amount in
         guard let amount else { return }
@@ -380,6 +386,15 @@ struct MascotRoomView: View {
         } else {
           awardsRow
         }
+        if let shop {
+          NavigationLink {
+            ShopView(book: shop, lang: lang) { Task { await room.load() } }
+          } label: {
+            LabeledContent(String(localized: "shop.title")) {
+              Image(systemName: "bag.fill").accessibilityHidden(true)
+            }
+          }
+        }
       }
     }
   }
@@ -502,7 +517,8 @@ struct MascotRoomView: View {
     case .insufficientCoins: String(localized: "mr.error.coins")
     case .freezeLimit: String(localized: "mr.error.freezeLimit")
     case .dailyCeiling: String(localized: "mr.error.ceiling")
-    case .unknownReward, .server: String(localized: "auth.error.generic")
+    case .alreadyOwned: String(localized: "shop.error.owned")
+    case .unknownReward, .unknownItem, .server: String(localized: "auth.error.generic")
     }
   }
 }

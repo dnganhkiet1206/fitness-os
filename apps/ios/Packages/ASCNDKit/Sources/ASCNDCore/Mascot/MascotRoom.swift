@@ -148,6 +148,10 @@ public enum MascotFailure: Error, Sendable, Hashable {
   case dailyCeiling
   /// Khoá thưởng server không nhận (`unknown reward`).
   case unknownReward
+  /// Món đã có trong tủ (`already owned`).
+  case alreadyOwned
+  /// Món không có trong bảng giá của server (`unknown item`).
+  case unknownItem
   /// Còn lại; mã thô chỉ cho log.
   case server(code: String?)
 }

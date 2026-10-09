@@ -12,6 +12,8 @@ struct MascotMappingTests {
     #expect(SupabaseMascotEconomy.failure(message: "freeze limit", code: "P0001") == .freezeLimit)
     #expect(SupabaseMascotEconomy.failure(message: "daily reward ceiling reached", code: "P0001") == .dailyCeiling)
     #expect(SupabaseMascotEconomy.failure(message: "unknown reward dev:1", code: "P0001") == .unknownReward)
+    #expect(SupabaseMascotEconomy.failure(message: "already owned", code: "P0001") == .alreadyOwned)
+    #expect(SupabaseMascotEconomy.failure(message: "unknown item head_x", code: "P0001") == .unknownItem)
     #expect(SupabaseMascotEconomy.failure(message: "boom", code: "XX000") == .server(code: "XX000"))
   }
 

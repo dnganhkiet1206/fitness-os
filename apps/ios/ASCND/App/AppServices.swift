@@ -458,6 +458,15 @@ final class AppServices {
     rows.map { MeasurementsBook(userId: userId, store: $0) }
   }
 
+  /// Cửa hàng Koa (#527): sổ xu + tủ đồ; mua qua `buy_mascot_item`, nhận bộ qua
+  /// `claim_quest_reward`.
+  func makeMascotShop(userId: String) -> MascotShopBook? {
+    guard let backend else { return nil }
+    return MascotShopBook(
+      userId: userId, source: SupabaseMascotSource(backend: backend),
+      wardrobe: SupabaseMascotWardrobe(backend: backend), economy: SupabaseMascotEconomy(backend: backend))
+  }
+
   func didBecomeActive() {
     // Quay lại tiền cảnh: đo lại đường mạng, dò lại internet ngay.
     network.resume(Self.netPath(monitor.currentPath))

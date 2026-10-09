@@ -208,6 +208,71 @@ public struct SupabaseMascotEconomy: MascotEconomy {
     if m.contains("freeze limit") { return .freezeLimit }
     if m.contains("daily reward ceiling") { return .dailyCeiling }
     if m.contains("unknown reward") { return .unknownReward }
+    if m.contains("already owned") { return .alreadyOwned }
+    if m.contains("unknown item") { return .unknownItem }
     return .server(code: code)
+  }
+}
+
+/// Tủ đồ của cửa hàng (#527) — `useMascotInventory`, `useBuyItem`,
+/// `useToggleEquip` (`use-mascot-room.ts`). Mua qua RPC (server định giá); mặc /
+/// cởi là UPDATE cột `equipped` của hàng của mình (RLS + trigger chặn đổi
+/// `item_key` / `user_id`).
+public struct SupabaseMascotWardrobe: MascotWardrobe {
+  private let client: SupabaseClient
+
+  public init(backend: Backend) {
+    self.client = backend.client
+  }
+
+  struct InventoryDTO: Decodable, Sendable {
+    let item_key: String
+    let equipped: Bool?
+  }
+
+  struct BuyParams: Encodable, Sendable {
+    let p_item_key: String
+  }
+
+  public func inventory(userId: String) async throws -> [InventoryRow] {
+    let rows: [InventoryDTO] = try await client.from("mascot_inventory")
+      .select("item_key, equipped")
+      .eq("user_id", value: userId)
+      .execute().value
+    return rows.map { InventoryRow(itemKey: $0.item_key, equipped: $0.equipped ?? false) }
+  }
+
+  public func buy(itemKey: String) async throws -> Int {
+    do {
+      return try await client.rpc("buy_mascot_item", params: BuyParams(p_item_key: itemKey)).execute().value
+    } catch {
+      throw SupabaseMascotEconomy.failure(error)
+    }
+  }
+
+  public func setWorn(userId: String, on: String?, off: [String]) async throws -> Bool {
+    do {
+      var found = true
+      if let on {
+        // Trả hàng để biết món còn trong kho (`'gone'` của RN khi 0 hàng).
+        let rows: [InventoryDTO] = try await client.from("mascot_inventory")
+          .update(["equipped": true])
+          .eq("user_id", value: userId)
+          .eq("item_key", value: on)
+          .select("item_key, equipped")
+          .execute().value
+        found = !rows.isEmpty
+      }
+      if !off.isEmpty {
+        _ = try await client.from("mascot_inventory")
+          .update(["equipped": false])
+          .eq("user_id", value: userId)
+          .in("item_key", values: off)
+          .execute()
+      }
+      return found
+    } catch {
+      throw SupabaseMascotEconomy.failure(error)
+    }
   }
 }
