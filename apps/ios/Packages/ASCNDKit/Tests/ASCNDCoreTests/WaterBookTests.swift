@@ -31,6 +31,8 @@ private actor Server: WaterSource {
     for c in h { c.resume() }
   }
   var parked: Int { held.count }
+  /// Thôi giữ các lượt SAU; lượt đang nằm chờ vẫn chờ tới `release`.
+  func stopHolding() { holding = false }
 
   private func gate() async throws {
     if holding { await withCheckedContinuation { held.append($0) } }

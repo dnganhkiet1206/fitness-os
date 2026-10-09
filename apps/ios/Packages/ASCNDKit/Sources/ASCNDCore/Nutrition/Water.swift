@@ -181,6 +181,12 @@ public enum Water {
     public let amount: Double?
     public let valid: Bool
     public let tooMuch: Bool
+
+    public init(amount: Double?, valid: Bool, tooMuch: Bool) {
+      self.amount = amount
+      self.valid = valid
+      self.tooMuch = tooMuch
+    }
   }
 
   /// `valid = finite && > 0 && <= max`, `tooMuch = finite && > max` — quá rào thì
