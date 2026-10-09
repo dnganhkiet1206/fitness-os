@@ -22,6 +22,8 @@ struct NutritionTab: View {
           // Cạnh Nước, trên nhật ký (`(tabs)/nutrition.tsx`: "supplements belong
           // beside water") — hàng mang sẵn "2/4 hôm nay".
           if let supplements = books?.supplements { SupplementsRow(book: supplements) }
+          // Lối sang nhật ký của một ngày bất kỳ (`nutrition.tsx` → `/diary`).
+          if let userId = books?.water?.userId ?? books?.supplements?.userId { DiaryRow(userId: userId) }
           Text(String(localized: "placeholder.building"))
             .font(DS.TextStyle.footnote)
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
@@ -39,6 +41,9 @@ struct NutritionTab: View {
       .navigationDestination(for: SupplementsRoute.self) { _ in
         if let supplements = books?.supplements { SupplementsView(book: supplements) }
       }
+      .navigationDestination(for: DiaryRoute.self) { route in
+        DiaryScreen(userId: route.userId)
+      }
     }
     .task { await books?.loadOnce() }
   }
@@ -49,6 +54,58 @@ struct WaterRoute: Hashable {}
 
 /// Đích điều hướng của hàng → màn Thực phẩm bổ sung.
 struct SupplementsRoute: Hashable {}
+
+/// Đích điều hướng của hàng → màn Nhật ký bữa ăn (của đúng người đang đăng nhập).
+struct DiaryRoute: Hashable {
+  let userId: String
+}
+
+/// Hàng "Nhật ký bữa ăn" — mở nhật ký ở hôm nay; lùi ngày ở trong màn.
+struct DiaryRow: View {
+  let userId: String
+
+  var body: some View {
+    NavigationLink(value: DiaryRoute(userId: userId)) {
+      HStack {
+        Label(String(localized: "diary.title"), systemImage: "book.closed")
+          .font(DS.TextStyle.headline)
+          .foregroundStyle(DS.Color.foreground.swiftUI)
+          .lineLimit(1)
+        Spacer()
+        Image(systemName: "chevron.right")
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          .accessibilityHidden(true)
+      }
+      .padding(DS.Spacing.md)
+      .frame(minHeight: 44)
+      .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.md))
+      .contentShape(Rectangle())
+    }
+    .buttonStyle(.plain)
+  }
+}
+
+/// Sổ nhật ký thuộc MÀN: mở là một sổ mới (ngày hôm nay), rời màn / đổi tài
+/// khoản thì đóng — lượt đọc về muộn không đổi gì nữa.
+struct DiaryScreen: View {
+  let userId: String
+  @Environment(AppServices.self) private var services
+  @State private var book: MealDiaryBook?
+
+  var body: some View {
+    Group {
+      if let book {
+        DiaryView(book: book)
+      } else {
+        DSLoadingView()
+      }
+    }
+    .task {
+      if book == nil { book = services.makeMealDiary(userId: userId) }
+    }
+    .onDisappear { book?.close() }
+  }
+}
 
 /// Hàng Thực phẩm bổ sung (`ShortcutRow` của RN): nhãn + "2/4 hôm nay" khi có
 /// mục. Lần đọc đầu hỏng / đang tải thì không có số — không bao giờ "0/4" giả.

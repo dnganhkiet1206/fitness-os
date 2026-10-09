@@ -69,5 +69,9 @@ miễn **giữ nguyên ý định** của app và chỉ làm app tốt hơn — 
 | Tóm tắt Trợ lý — ăn đúng mục tiêu calo | Dòng riêng "Hôm nay bạn đã ăn đúng mục tiêu calo." (`kcal-on`) | `left > 0 ? … : …` → "Bạn đã vượt mục tiêu calo hôm nay khoảng -0 kcal." | sửa lỗi RN | nên làm theo | #527 (`native/ios-rewrite`) | E |
 | Tóm tắt Trợ lý — tiếng Tây Ban Nha | Lời chào + các dòng có bản es (số nhóm theo CLDR es) | `Bilingual` vi / en — es hiện tiếng Anh | sửa lỗi RN | nên làm theo | #527 (`native/ios-rewrite`) | E |
 | Coach nhớ gì — lối vào (cập nhật dòng "tạm" ở trên) | Về đúng chỗ của RN: ô "Coach nhớ gì" trong lưới công cụ của tab Trợ lý; nút tạm trên chat đã gỡ | Ô trong lưới công cụ | như RN | — | #527 (`native/ios-rewrite`) | E |
+| Nhật ký bữa ăn — sau khi sửa | Đọc lại từ server (nút khoá trong lúc chạy); không vá danh sách lạc quan rồi hoàn lại | `patchDiary` lạc quan + `rollbackUnlessRebuilt` + `invalidate` | lệch nền tảng (đơn giản hoá) | không cần | #527 (`native/ios-rewrite`) | A |
+| Nhật ký bữa ăn — xoá cả bữa | Nút "Xoá bữa" trong thẻ đã mở + hành động VoiceOver | Vuốt trái thẻ bữa (+ hành động VoiceOver) | lệch nền tảng | không cần | #527 (`native/ios-rewrite`) | A |
+| Nhật ký bữa ăn — xoá nhiều món mà một món hỏng | Dừng ở món hỏng, báo lỗi, vẫn dựng lại ngày cho các món đã xoá | Bắn N lệnh song song; mỗi lệnh tự dựng lại ngày | cải tiến (ít lần dựng lại) | tuỳ | #527 (`native/ios-rewrite`) | A |
+| Nhật ký bữa ăn — câu khi ngày rỗng | "Chưa ghi bữa nào hôm nay" — không mời "nhấn để ghi" vì `log-meal` chưa port | Thẻ rỗng mở `log-meal` | (thiếu — chờ port `log-meal`) | không cần | #527 (`native/ios-rewrite`) | A |
 
 Thêm dòng mới ở cuối bảng; giữ dòng cũ — sổ là lịch sử, không phải danh sách việc.

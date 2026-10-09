@@ -70,6 +70,7 @@ Follow-up chỉ được tạo cho mục có nguồn RN cụ thể (#336). Các 
 
 | Hành vi | Nguồn RN | Native | Mức |
 |---|---|---|---|
+| Nhật ký bữa ăn một ngày (xem, xoá + hoàn tác, sửa khẩu phần, dựng lại ngày) | `app/diary.tsx`, `today-meals.tsx` `DayMeals`, `use-nutrition.ts` (`useTodayLog`, `useDeleteMealItem`, `useRestoreMealItem`, `useUpdateMealItemServings`, `resyncMealEntry`) | `MealDiary` / `MealDiaryBook`, `SupabaseMealDiary`, `DiaryView` | ported (chỉ online như RN) | lối sang `log-meal`, chia sẻ Cộng đồng |
 | Ghi cân nặng (upsert theo ngày địa phương, hồ sơ theo lần cân mới nhất, hàng offline) | `app/log-weight.tsx`, `use-weight-write.ts`, `useLogWeight` / `useTodayWeight`, `lib/weight-sync.ts` | `WeightLog` / `WeightLogger`, `SupabaseWeightLog`, `LogWeightView`, hàng "Cân nặng" ở Hôm nay (#576) | ported | ghi ngược Apple Health (guardrail), lịch sử / xoá (màn Tiến độ), không dựng lại `daily_logs` (#266) |
 | Readiness / `daily_logs` | `hooks/use-today-data.ts`, `lib/adaptive-tdee.ts`, `use-biometrics.ts` | không | **decision**: #266 chờ Kiệt; chỉ forensic (D-15 #327) |
 | Đồng bộ HealthKit (bước, năng lượng, ngủ) | `hooks/use-health-sync.ts`, `lib/health-sync-write.ts`, `lib/health-days.ts` | không | **decision**: chưa có hợp đồng sản phẩm cho bản native |
@@ -86,7 +87,7 @@ Follow-up chỉ được tạo cho mục có nguồn RN cụ thể (#336). Các 
 ## 8. Ranh giới (ngoài phạm vi luồng tập)
 
 Các mảng sau **not ported** và nằm ngoài phạm vi A cho tới khi #222 giao:
-- Dinh dưỡng: `nutrition.tsx` (phần còn lại), `log-meal`, `food-*`, `scan-*`, `meal-plan*`, `grocery`. Đã port: `water` (#568), `supplements` trừ tick (#570).
+- Dinh dưỡng: `nutrition.tsx` (phần còn lại), `log-meal`, `food-*`, `scan-*`, `meal-plan*`, `grocery`. Đã port: `water` (#568), `supplements` trừ tick (#570), `diary` (A, commit thẳng `native/ios-rewrite`).
 - Cộng đồng: `community*`, `challenges`, `awards`, `shop`, `mascot-room`.
 - Trợ lý và coach: `assistant.tsx` một phần (chưa có bảng chỉ số 14 ngày, nhắc thông minh). (`ai-coach` + `coach-memory` đã port, `assistant.tsx` phần lời chào / tóm tắt / thẻ coach / công cụ — E #527 Phase 6, `AssistantTab` / `CoachChatView` / `CoachMemoryView`; xem PARITY_MATRIX.)
 - Theo dõi cơ thể: `biometrics`, `log-*` (trừ `log-weight`, #576), `measurements-trend`, `progress-photos`, `sleep-insights`, `steps`, `weekly-review`, `smart-goals`.

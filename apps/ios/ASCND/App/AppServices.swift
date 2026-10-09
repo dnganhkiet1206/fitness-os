@@ -338,6 +338,13 @@ final class AppServices {
     rows.map { ReadinessTrendBook(userId: userId, today: today, store: $0) }
   }
 
+  /// Nhật ký bữa ăn (#527 Phase 3 · 3.10): đọc một ngày; xoá / hoàn tác / sửa
+  /// khẩu phần thẳng server (chỉ online, như RN) rồi dựng lại `daily_logs`.
+  func makeMealDiary(userId: String) -> MealDiaryBook? {
+    guard let rows, let backend else { return nil }
+    return MealDiaryBook(userId: userId, source: SupabaseMealDiary(backend: backend), store: rows)
+  }
+
   /// 14 ngày sinh trắc học; xoá một lần đo rồi dựng lại `daily_logs`.
   func makeBiometricsBook(userId: String) -> BiometricsBook? {
     guard let rows, let backend else { return nil }
