@@ -27,7 +27,9 @@ struct CoachRulesTests {
 
   @Test func tzOffsetIsMinutesBehindUTC() {
     let vn = TimeZone(identifier: "Asia/Ho_Chi_Minh")!
-    #expect(Coach.tzOffset(vn, at: Date(timeIntervalSince1970: 0)) == -420)
+    // 2026-10-09 (UTC+7). Mốc 1970 thì sai: khi ấy Sài Gòn dùng UTC+8 (−480).
+    #expect(Coach.tzOffset(vn, at: Date(timeIntervalSince1970: 1_791_500_000)) == -420)
+    #expect(Coach.tzOffset(vn, at: Date(timeIntervalSince1970: 0)) == -480)
     #expect(Coach.tzOffset(TimeZone(identifier: "UTC")!, at: Date()) == 0)
   }
 
