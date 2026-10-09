@@ -362,6 +362,12 @@ final class AppServices {
     return FoodLibraryBook(userId: userId, source: SupabaseFoodLibrary(backend: backend))
   }
 
+  /// Dinh dưỡng 7 ngày (#527 Phase 3 · 3.6): chỉ đọc `daily_logs`.
+  func makeNutritionInsights(userId: String) -> NutritionInsightsBook? {
+    guard let rows else { return nil }
+    return NutritionInsightsBook(userId: userId, store: rows)
+  }
+
   /// 14 ngày sinh trắc học; xoá một lần đo rồi dựng lại `daily_logs`.
   func makeBiometricsBook(userId: String) -> BiometricsBook? {
     guard let rows, let backend else { return nil }

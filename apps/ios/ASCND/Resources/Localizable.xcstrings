@@ -26820,6 +26820,282 @@
      }
     }
    }
+  },
+  "insights.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "7-day nutrition"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Dinh dưỡng 7 ngày"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nutrición de 7 días"
+     }
+    }
+   }
+  },
+  "insights.link": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "View 7-day trends"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Xem xu hướng 7 ngày"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ver tendencias de 7 días"
+     }
+    }
+   }
+  },
+  "insights.empty": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "No data yet"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chưa có dữ liệu"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sin datos aún"
+     }
+    }
+   }
+  },
+  "insights.empty.hint": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Log meals for a few days to see trends here."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ghi bữa ăn vài ngày để xem xu hướng ở đây."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Registra comidas durante unos días para ver tendencias aquí."
+     }
+    }
+   }
+  },
+  "insights.proteinCaption %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Avg protein/day · target %@g"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Protein trung bình/ngày · mục tiêu %@g"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Proteína promedio/día · objetivo %@g"
+     }
+    }
+   }
+  },
+  "insights.proteinTitle": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Protein, last 7 days"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Protein 7 ngày qua"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Proteína, últimos 7 días"
+     }
+    }
+   }
+  },
+  "insights.head": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Insights"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nhận xét"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Comentarios"
+     }
+    }
+   }
+  },
+  "insights.a11y.hit %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ g, target reached"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ g, đạt mục tiêu"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ g, objetivo alcanzado"
+     }
+    }
+   }
+  },
+  "insights.a11y.miss %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ g, below target"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ g, dưới mục tiêu"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ g, por debajo del objetivo"
+     }
+    }
+   }
+  },
+  "insights.proteinGap %lld %lld %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Averaging %1$lldg protein/day, %2$lldg short of your %3$lldg target."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Protein trung bình %1$lldg/ngày, thiếu %2$lldg so với mục tiêu %3$lldg."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Promedio de %1$lldg de proteína/día, %2$lldg por debajo de tu objetivo de %3$lldg."
+     }
+    }
+   }
+  },
+  "insights.proteinHit %lld %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hit your protein target %1$lld/%2$lld days — keep it up!"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đạt mục tiêu protein %1$lld/%2$lld ngày — giữ vững!"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Alcanzaste tu objetivo de proteína %1$lld/%2$lld días — ¡sigue así!"
+     }
+    }
+   }
+  },
+  "insights.fiberLow %lld %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Averaging %1$lldg fiber, well under your %2$lldg target. Add vegetables or oats to breakfast."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chất xơ trung bình %1$lldg, thấp hơn nhiều so với mục tiêu %2$lldg. Thêm rau hoặc yến mạch vào bữa sáng."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Promedio de %1$lldg de fibra, muy por debajo de tu objetivo de %2$lldg. Añade verduras o avena al desayuno."
+     }
+    }
+   }
   }
  }
 }

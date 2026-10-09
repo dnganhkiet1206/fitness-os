@@ -98,5 +98,7 @@ miễn **giữ nguyên ý định** của app và chỉ làm app tốt hơn — 
 | Thực phẩm — lưu món gần đây / thêm / sửa / xoá xong | Đọc lại thư viện từ server (nút khoá trong lúc chạy) | `invalidateFoodQueries` | lệch nền tảng | không cần | #527 (`native/ios-rewrite`) | A |
 | Thực phẩm — mất mạng khi lưu món gần đây | Hộp thoại "cần có mạng" | `toast.fail` | lệch nền tảng | không cần | #527 (`native/ios-rewrite`) | A |
 | Trợ lý — aura | Bốn vùng sáng trôi trên một `Canvas` (màu vùng chính theo điểm sẵn sàng hôm nay, cùng cường độ / chu kỳ RN), đứng yên khi Giảm chuyển động; thẻ Apple Health báo kết quả ngay dưới thẻ (không toast) | Thêm lớp "bụi neon" bay lên và nhịp bừng sáng khi vào tab; toast | tạm thời (bụi / bừng sáng chưa port) | không cần | #527 (`native/ios-rewrite`) | E |
+| Dinh dưỡng 7 ngày — số ngày | Đọc đúng 7 ngày lịch (`hôm nay − 6 … hôm nay`) | `date >= hôm nay − 7` → 8 ngày dưới nhãn "7 ngày"; "đạt 5/8 ngày" | sửa lỗi RN | nên làm theo | #527 (`native/ios-rewrite`) | A |
+| Dinh dưỡng 7 ngày — VoiceOver biểu đồ | Mỗi cột đọc ngày + gam + đạt / chưa đạt mục tiêu | Cột chỉ là hình | cải tiến (a11y) | nên làm theo | #527 (`native/ios-rewrite`) | A |
 
 Thêm dòng mới ở cuối bảng; giữ dòng cũ — sổ là lịch sử, không phải danh sách việc.
