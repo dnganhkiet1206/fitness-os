@@ -3,7 +3,7 @@ import ASCNDDesignSystem
 import SwiftUI
 
 /// Các thẻ dưới phần buổi tập của Today (#527 Phase 4/7/9) — như RN, Today là
-/// cửa của chúng: thẻ sẵn sàng (→ sinh trắc học, tấm giải thích), thẻ Apple
+/// cửa của chúng: thẻ sẵn sàng (→ sinh trắc học, tấm giải thích), xu hướng 7 ngày, thẻ Apple
 /// Health, lối vào tổng kết tuần và phòng linh vật (→ huy chương, thử thách tuần).
 ///
 /// Chỉ là nối dây: sổ dựng ở `AppServices`, một lần mỗi phiên (cây của tab
@@ -20,6 +20,7 @@ struct TodayExtras: View {
   @State private var mascot: MascotRoomController?
   @State private var challenges: WeeklyChallengesBook?
   @State private var weekly: WeeklyReviewBook?
+  @State private var trend: ReadinessTrendBook?
   @State private var showsBiometrics = false
   @State private var built = false
 
@@ -29,6 +30,9 @@ struct TodayExtras: View {
         ReadinessCardView(
           book: readiness, lang: services.preferences.lang,
           onOpenBiometrics: biometrics == nil ? nil : { showsBiometrics = true })
+      }
+      if let trend {
+        ReadinessTrendCardView(book: trend)
       }
       HealthSyncCard(isAvailable: services.health.isAvailable, sync: syncHealth)
       if let weekly {
@@ -62,7 +66,9 @@ struct TodayExtras: View {
       mascot = services.makeMascotRoom(userId: userId, today: today)
       challenges = services.makeWeeklyChallenges(userId: userId, today: today)
       weekly = services.makeWeeklyReview(userId: userId, today: today)
+      trend = services.makeReadinessTrend(userId: userId, today: today)
       await readiness?.load()
+      await trend?.load()
     }
     .onChange(of: scenePhase) { _, phase in
       // Ra tiền cảnh: qua nửa đêm thì đổi ngày; không thì đọc lại điểm (đồng
@@ -73,6 +79,7 @@ struct TodayExtras: View {
         if today != readiness.date { await readiness.move(to: today) } else { await readiness.load() }
         // Tuần "này" của màn tổng kết đổi khi qua Chủ nhật.
         await weekly?.move(to: today)
+        await trend?.move(to: today)
       }
     }
     // Đóng khi phiên không còn là của người này (đăng xuất / đổi tài khoản) —
@@ -86,6 +93,7 @@ struct TodayExtras: View {
       mascot?.close()
       challenges?.close()
       weekly?.close()
+      trend?.close()
     }
   }
 
@@ -111,6 +119,7 @@ struct TodayExtras: View {
   private func syncHealth() async throws(HealthSync.Failure) {
     try await services.health.syncNow(userId: userId, lang: AppServices.appLang)
     await readiness?.load()
+    await trend?.load()
   }
 
   private static func today() -> LocalDate { LocalDate(SystemWallClock().nowMillis(), in: .current) }
