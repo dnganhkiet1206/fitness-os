@@ -19,7 +19,8 @@ struct RootTabView: View {
       }
       .accessibilityHint(Text(String(localized: "tab.today.hint")))
       Tab("tab.nutrition", systemImage: "fork.knife", value: AppTab.nutrition) {
-        PlaceholderScreen(title: "tab.nutrition", systemImage: "fork.knife")
+        // Lát đầu của Dinh dưỡng (#527 Phase 3): thẻ + màn Nước uống.
+        NutritionTab()
       }
       .accessibilityHint(Text(String(localized: "tab.nutrition.hint")))
       Tab("tab.workouts", systemImage: "dumbbell", value: AppTab.workouts) {

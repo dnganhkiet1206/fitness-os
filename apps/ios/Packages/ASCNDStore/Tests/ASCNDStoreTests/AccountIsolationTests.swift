@@ -19,6 +19,7 @@ private func probes(_ db: ASCNDDatabase) -> [Probe] {
   let templates = GRDBTemplateCache(db), records = GRDBRecordBookCache(db), perf = GRDBPerformanceCache(db)
   let history = GRDBHistoryCache(db), insights = GRDBInsightCache(db), library = GRDBExerciseCache(db)
   let guides = GRDBExerciseGuideCache(db), onboarding = GRDBOnboardingStore(db), profiles = GRDBProfileCache(db)
+  let water = GRDBWaterCache(db)
   let entry = HistoryEntry(
     id: "s1", at: EpochMillis(1), templateName: "Push", sessionRpe: 8, volumeKg: 480, prDetected: false,
     completedSets: 1, exerciseCount: 1)
@@ -53,6 +54,9 @@ private func probes(_ db: ASCNDDatabase) -> [Probe] {
     Probe(name: ReadCacheNamespace.profile,
           write: { try await profiles.save(userId: $0, Profile(row: .object(["user_id": .string($0), "name": .string("A")]))!) },
           read: { try await profiles.load(userId: $0) != nil }),
+    Probe(name: ReadCacheNamespace.water,
+          write: { try await water.save(userId: $0, WaterSnapshot(date: LocalDate("2026-10-08")!, logs: [], rows: [])) },
+          read: { try await water.load(userId: $0) != nil }),
   ]
 }
 

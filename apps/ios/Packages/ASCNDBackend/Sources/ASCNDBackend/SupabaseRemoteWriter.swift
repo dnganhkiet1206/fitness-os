@@ -25,6 +25,9 @@ public struct SupabaseRemoteWriter: RemoteWriter {
     PlanEdit.routineDayKind: "routine_days",
     ExerciseEdit.createKind: "exercises",
     ExerciseEdit.deleteKind: "exercises",
+    // Một lần uống (#527 Phase 3): upsert theo `id`, bỏ trùng — như
+    // `applyOfflineWrite` `case 'water'`.
+    Water.addKind: "water_logs",
   ]
 
   /// Bản ghi lại (#296) GHI ĐÈ hàng có sẵn; bản ghi mới thì bỏ trùng
@@ -44,7 +47,7 @@ public struct SupabaseRemoteWriter: RemoteWriter {
 
   /// Hàng mang `user_id` phải là của chủ bản ghi — không thì một bản ghi hỏng
   /// chèn bài / template vào tài khoản khác (RLS cũng chặn, đây chặn sớm).
-  static let ownedRows: Set<String> = [PlanEdit.templateKind, ExerciseEdit.createKind]
+  static let ownedRows: Set<String> = [PlanEdit.templateKind, ExerciseEdit.createKind, Water.addKind]
 
   private let client: SupabaseClient
   private let afterWrite: @Sendable (OutboxEntry) async -> Void

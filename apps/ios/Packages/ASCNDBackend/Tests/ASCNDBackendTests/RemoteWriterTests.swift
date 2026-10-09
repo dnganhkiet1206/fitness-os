@@ -208,3 +208,34 @@ struct ExerciseGuideSourceMappingTests {
     #expect(content.instructions == ["Đứng thẳng"] && content.formCues.isEmpty && content.commonMistakes.isEmpty)
   }
 }
+
+/// Một lần uống (#527 Phase 3): `applyOfflineWrite` `case 'water'` — upsert vào
+/// `water_logs` theo `id`, bỏ trùng; hàng mang `user_id` của chủ bản ghi.
+struct RemoteWriterWaterTests {
+  private func water(user: String = "u1", rowUser: String = "u1") -> OutboxEntry {
+    Water.entry(
+      id: "W1", userId: user, amountMl: 250, date: LocalDate("2026-10-08")!, at: EpochMillis(0), createdAt: EpochMillis(0))
+      .withPayloadUser(rowUser)
+  }
+
+  @Test func waterGoesToWaterLogsAndIsNeverAnOverwrite() {
+    #expect(SupabaseRemoteWriter.tables[Water.addKind] == "water_logs")
+    #expect(!SupabaseRemoteWriter.overwrites(Water.addKind))
+    #expect(!SupabaseRemoteWriter.deletes(Water.addKind))
+  }
+
+  @Test func waterRowMustBeTheOwnersWithTheEntryId() {
+    #expect(SupabaseRemoteWriter.isRow(water()))
+    // Hàng của người khác: không bao giờ gửi (RLS cũng chặn).
+    #expect(!SupabaseRemoteWriter.isRow(water(rowUser: "u2")))
+  }
+}
+
+extension OutboxEntry {
+  /// Bản sao với `user_id` của hàng đổi — dựng bản ghi hỏng cho test.
+  fileprivate func withPayloadUser(_ user: String) -> OutboxEntry {
+    guard case .object(var o) = payload else { return self }
+    o["user_id"] = .string(user)
+    return OutboxEntry(id: id, userId: userId, kind: kind, payload: .object(o), createdAt: createdAt)
+  }
+}
