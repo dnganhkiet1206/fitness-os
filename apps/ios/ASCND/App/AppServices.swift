@@ -323,6 +323,11 @@ final class AppServices {
     rows.map { ReadinessBook(userId: userId, date: date, store: $0) }
   }
 
+  /// Xu hướng sẵn sàng 7 ngày (#527) — đọc `daily_logs` qua kho hàng chung.
+  func makeReadinessTrend(userId: String, today: LocalDate) -> ReadinessTrendBook? {
+    rows.map { ReadinessTrendBook(userId: userId, today: today, store: $0) }
+  }
+
   /// 14 ngày sinh trắc học; xoá một lần đo rồi dựng lại `daily_logs`.
   func makeBiometricsBook(userId: String) -> BiometricsBook? {
     guard let rows, let backend else { return nil }
