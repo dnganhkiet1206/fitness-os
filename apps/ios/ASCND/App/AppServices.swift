@@ -63,6 +63,8 @@ final class AppServices {
   @ObservationIgnored let profileSource: any ProfileSource
   @ObservationIgnored let profileWriter: any ProfileWriter
   @ObservationIgnored let profileCache: any ProfileCache
+  /// Nước uống hôm nay + 7 ngày trên máy (#527 Phase 3).
+  @ObservationIgnored let waterCache: any WaterCache
   /// Thứ tự đóng / mở chốt tài khoản và dọn dữ liệu trên máy (#431, #455).
   @ObservationIgnored private let lifecycle: AccountLifecycle
   /// Supabase (nếu có cấu hình) và kho hàng chung — nguồn của các thẻ đọc
@@ -122,6 +124,7 @@ final class AppServices {
     profileSource = backend.map { SupabaseProfileSource(backend: $0) as any ProfileSource } ?? UnconfiguredProfile()
     profileWriter = backend.map { SupabaseProfileWriter(backend: $0) as any ProfileWriter } ?? UnconfiguredProfile()
     profileCache = GRDBProfileCache(database)
+    waterCache = GRDBWaterCache(database)
     session = SessionStore(api: backend.map { SupabaseAuthAPI(backend: $0) as any AuthAPI } ?? UnconfiguredAuth())
     let rows = backend.map { SupabaseRowStore(backend: $0) }
     self.backend = backend
@@ -288,6 +291,17 @@ final class AppServices {
   /// Hồ sơ của người đang đăng nhập (#425) — màn Cài đặt / Sửa hồ sơ của C.
   func makeProfileBook(userId: String) -> ProfileBook {
     ProfileBook(userId: userId, source: profileSource, writer: profileWriter, cache: profileCache)
+  }
+
+  /// Nước uống của người đang đăng nhập (#527 Phase 3): đọc server, thêm qua
+  /// outbox (kind `water`), "−" thẳng server khi online. `nil` khi thiếu cấu
+  /// hình Supabase — tab không hiện thẻ thay vì một thẻ lỗi mãi.
+  func makeWaterBook(userId: String) -> WaterBook? {
+    guard let backend else { return nil }
+    let sync = self.sync
+    return WaterBook(
+      userId: userId, source: SupabaseWaterSource(backend: backend), cache: waterCache, store: outbox,
+      onEnqueued: { _ in sync.kick() })
   }
 
   // MARK: - Thẻ / màn đọc server (#527 Phase 4/7/9)

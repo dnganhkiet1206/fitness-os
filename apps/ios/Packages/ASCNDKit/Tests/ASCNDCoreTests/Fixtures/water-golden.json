@@ -1,0 +1,1672 @@
+{
+ "presets": {
+  "ml": [
+   250,
+   500,
+   750
+  ],
+  "oz": [
+   8,
+   12,
+   16
+  ]
+ },
+ "displayVolume": [
+  {
+   "ml": 0,
+   "unit": "ml",
+   "out": 0
+  },
+  {
+   "ml": 1,
+   "unit": "ml",
+   "out": 1
+  },
+  {
+   "ml": 5,
+   "unit": "ml",
+   "out": 5
+  },
+  {
+   "ml": 236,
+   "unit": "ml",
+   "out": 236
+  },
+  {
+   "ml": 250,
+   "unit": "ml",
+   "out": 250
+  },
+  {
+   "ml": 295,
+   "unit": "ml",
+   "out": 295
+  },
+  {
+   "ml": 300,
+   "unit": "ml",
+   "out": 300
+  },
+  {
+   "ml": 330,
+   "unit": "ml",
+   "out": 330
+  },
+  {
+   "ml": 354,
+   "unit": "ml",
+   "out": 354
+  },
+  {
+   "ml": 473,
+   "unit": "ml",
+   "out": 473
+  },
+  {
+   "ml": 500,
+   "unit": "ml",
+   "out": 500
+  },
+  {
+   "ml": 750,
+   "unit": "ml",
+   "out": 750
+  },
+  {
+   "ml": 1000,
+   "unit": "ml",
+   "out": 1000
+  },
+  {
+   "ml": 1005,
+   "unit": "ml",
+   "out": 1005
+  },
+  {
+   "ml": 1015,
+   "unit": "ml",
+   "out": 1015
+  },
+  {
+   "ml": 1125,
+   "unit": "ml",
+   "out": 1125
+  },
+  {
+   "ml": 1250,
+   "unit": "ml",
+   "out": 1250
+  },
+  {
+   "ml": 1375,
+   "unit": "ml",
+   "out": 1375
+  },
+  {
+   "ml": 1800,
+   "unit": "ml",
+   "out": 1800
+  },
+  {
+   "ml": 1999,
+   "unit": "ml",
+   "out": 1999
+  },
+  {
+   "ml": 2000,
+   "unit": "ml",
+   "out": 2000
+  },
+  {
+   "ml": 2001,
+   "unit": "ml",
+   "out": 2001
+  },
+  {
+   "ml": 2250,
+   "unit": "ml",
+   "out": 2250
+  },
+  {
+   "ml": 2365,
+   "unit": "ml",
+   "out": 2365
+  },
+  {
+   "ml": 2500,
+   "unit": "ml",
+   "out": 2500
+  },
+  {
+   "ml": 2700,
+   "unit": "ml",
+   "out": 2700
+  },
+  {
+   "ml": 2750,
+   "unit": "ml",
+   "out": 2750
+  },
+  {
+   "ml": 3000,
+   "unit": "ml",
+   "out": 3000
+  },
+  {
+   "ml": 3549,
+   "unit": "ml",
+   "out": 3549
+  },
+  {
+   "ml": 4000,
+   "unit": "ml",
+   "out": 4000
+  },
+  {
+   "ml": 4732,
+   "unit": "ml",
+   "out": 4732
+  },
+  {
+   "ml": 5125,
+   "unit": "ml",
+   "out": 5125
+  },
+  {
+   "ml": 0,
+   "unit": "oz",
+   "out": 0
+  },
+  {
+   "ml": 1,
+   "unit": "oz",
+   "out": 0
+  },
+  {
+   "ml": 5,
+   "unit": "oz",
+   "out": 0.2
+  },
+  {
+   "ml": 236,
+   "unit": "oz",
+   "out": 8
+  },
+  {
+   "ml": 250,
+   "unit": "oz",
+   "out": 8.5
+  },
+  {
+   "ml": 295,
+   "unit": "oz",
+   "out": 10
+  },
+  {
+   "ml": 300,
+   "unit": "oz",
+   "out": 10.1
+  },
+  {
+   "ml": 330,
+   "unit": "oz",
+   "out": 11.2
+  },
+  {
+   "ml": 354,
+   "unit": "oz",
+   "out": 12
+  },
+  {
+   "ml": 473,
+   "unit": "oz",
+   "out": 16
+  },
+  {
+   "ml": 500,
+   "unit": "oz",
+   "out": 16.9
+  },
+  {
+   "ml": 750,
+   "unit": "oz",
+   "out": 25.4
+  },
+  {
+   "ml": 1000,
+   "unit": "oz",
+   "out": 33.8
+  },
+  {
+   "ml": 1005,
+   "unit": "oz",
+   "out": 34
+  },
+  {
+   "ml": 1015,
+   "unit": "oz",
+   "out": 34.3
+  },
+  {
+   "ml": 1125,
+   "unit": "oz",
+   "out": 38
+  },
+  {
+   "ml": 1250,
+   "unit": "oz",
+   "out": 42.3
+  },
+  {
+   "ml": 1375,
+   "unit": "oz",
+   "out": 46.5
+  },
+  {
+   "ml": 1800,
+   "unit": "oz",
+   "out": 60.9
+  },
+  {
+   "ml": 1999,
+   "unit": "oz",
+   "out": 67.6
+  },
+  {
+   "ml": 2000,
+   "unit": "oz",
+   "out": 67.6
+  },
+  {
+   "ml": 2001,
+   "unit": "oz",
+   "out": 67.7
+  },
+  {
+   "ml": 2250,
+   "unit": "oz",
+   "out": 76.1
+  },
+  {
+   "ml": 2365,
+   "unit": "oz",
+   "out": 80
+  },
+  {
+   "ml": 2500,
+   "unit": "oz",
+   "out": 84.5
+  },
+  {
+   "ml": 2700,
+   "unit": "oz",
+   "out": 91.3
+  },
+  {
+   "ml": 2750,
+   "unit": "oz",
+   "out": 93
+  },
+  {
+   "ml": 3000,
+   "unit": "oz",
+   "out": 101.4
+  },
+  {
+   "ml": 3549,
+   "unit": "oz",
+   "out": 120
+  },
+  {
+   "ml": 4000,
+   "unit": "oz",
+   "out": 135.3
+  },
+  {
+   "ml": 4732,
+   "unit": "oz",
+   "out": 160
+  },
+  {
+   "ml": 5125,
+   "unit": "oz",
+   "out": 173.3
+  }
+ ],
+ "volumeToMl": [
+  {
+   "value": 0.5,
+   "unit": "ml",
+   "out": 1
+  },
+  {
+   "value": 1,
+   "unit": "ml",
+   "out": 1
+  },
+  {
+   "value": 8,
+   "unit": "ml",
+   "out": 8
+  },
+  {
+   "value": 8.5,
+   "unit": "ml",
+   "out": 9
+  },
+  {
+   "value": 12,
+   "unit": "ml",
+   "out": 12
+  },
+  {
+   "value": 16,
+   "unit": "ml",
+   "out": 16
+  },
+  {
+   "value": 33.8,
+   "unit": "ml",
+   "out": 34
+  },
+  {
+   "value": 67.9,
+   "unit": "ml",
+   "out": 68
+  },
+  {
+   "value": 68,
+   "unit": "ml",
+   "out": 68
+  },
+  {
+   "value": 250,
+   "unit": "ml",
+   "out": 250
+  },
+  {
+   "value": 330.4,
+   "unit": "ml",
+   "out": 330
+  },
+  {
+   "value": 330.5,
+   "unit": "ml",
+   "out": 331
+  },
+  {
+   "value": 750,
+   "unit": "ml",
+   "out": 750
+  },
+  {
+   "value": 1999.5,
+   "unit": "ml",
+   "out": 2000
+  },
+  {
+   "value": 2000,
+   "unit": "ml",
+   "out": 2000
+  },
+  {
+   "value": 0.5,
+   "unit": "oz",
+   "out": 15
+  },
+  {
+   "value": 1,
+   "unit": "oz",
+   "out": 30
+  },
+  {
+   "value": 8,
+   "unit": "oz",
+   "out": 237
+  },
+  {
+   "value": 8.5,
+   "unit": "oz",
+   "out": 251
+  },
+  {
+   "value": 12,
+   "unit": "oz",
+   "out": 355
+  },
+  {
+   "value": 16,
+   "unit": "oz",
+   "out": 473
+  },
+  {
+   "value": 33.8,
+   "unit": "oz",
+   "out": 1000
+  },
+  {
+   "value": 67.9,
+   "unit": "oz",
+   "out": 2008
+  },
+  {
+   "value": 68,
+   "unit": "oz",
+   "out": 2011
+  },
+  {
+   "value": 250,
+   "unit": "oz",
+   "out": 7393
+  },
+  {
+   "value": 330.4,
+   "unit": "oz",
+   "out": 9771
+  },
+  {
+   "value": 330.5,
+   "unit": "oz",
+   "out": 9774
+  },
+  {
+   "value": 750,
+   "unit": "oz",
+   "out": 22180
+  },
+  {
+   "value": 1999.5,
+   "unit": "oz",
+   "out": 59132
+  },
+  {
+   "value": 2000,
+   "unit": "oz",
+   "out": 59147
+  }
+ ],
+ "scaleTop": [
+  {
+   "needMl": 0,
+   "unit": "ml",
+   "ml": 500,
+   "display": 500
+  },
+  {
+   "needMl": 1,
+   "unit": "ml",
+   "ml": 500,
+   "display": 500
+  },
+  {
+   "needMl": 5,
+   "unit": "ml",
+   "ml": 500,
+   "display": 500
+  },
+  {
+   "needMl": 236,
+   "unit": "ml",
+   "ml": 500,
+   "display": 500
+  },
+  {
+   "needMl": 250,
+   "unit": "ml",
+   "ml": 500,
+   "display": 500
+  },
+  {
+   "needMl": 295,
+   "unit": "ml",
+   "ml": 500,
+   "display": 500
+  },
+  {
+   "needMl": 300,
+   "unit": "ml",
+   "ml": 500,
+   "display": 500
+  },
+  {
+   "needMl": 330,
+   "unit": "ml",
+   "ml": 500,
+   "display": 500
+  },
+  {
+   "needMl": 354,
+   "unit": "ml",
+   "ml": 500,
+   "display": 500
+  },
+  {
+   "needMl": 473,
+   "unit": "ml",
+   "ml": 500,
+   "display": 500
+  },
+  {
+   "needMl": 500,
+   "unit": "ml",
+   "ml": 500,
+   "display": 500
+  },
+  {
+   "needMl": 750,
+   "unit": "ml",
+   "ml": 1000,
+   "display": 1000
+  },
+  {
+   "needMl": 1000,
+   "unit": "ml",
+   "ml": 1000,
+   "display": 1000
+  },
+  {
+   "needMl": 1005,
+   "unit": "ml",
+   "ml": 1500,
+   "display": 1500
+  },
+  {
+   "needMl": 1015,
+   "unit": "ml",
+   "ml": 1500,
+   "display": 1500
+  },
+  {
+   "needMl": 1125,
+   "unit": "ml",
+   "ml": 1500,
+   "display": 1500
+  },
+  {
+   "needMl": 1250,
+   "unit": "ml",
+   "ml": 1500,
+   "display": 1500
+  },
+  {
+   "needMl": 1375,
+   "unit": "ml",
+   "ml": 1500,
+   "display": 1500
+  },
+  {
+   "needMl": 1800,
+   "unit": "ml",
+   "ml": 2000,
+   "display": 2000
+  },
+  {
+   "needMl": 1999,
+   "unit": "ml",
+   "ml": 2000,
+   "display": 2000
+  },
+  {
+   "needMl": 2000,
+   "unit": "ml",
+   "ml": 2000,
+   "display": 2000
+  },
+  {
+   "needMl": 2001,
+   "unit": "ml",
+   "ml": 2500,
+   "display": 2500
+  },
+  {
+   "needMl": 2250,
+   "unit": "ml",
+   "ml": 2500,
+   "display": 2500
+  },
+  {
+   "needMl": 2365,
+   "unit": "ml",
+   "ml": 2500,
+   "display": 2500
+  },
+  {
+   "needMl": 2500,
+   "unit": "ml",
+   "ml": 2500,
+   "display": 2500
+  },
+  {
+   "needMl": 2700,
+   "unit": "ml",
+   "ml": 3000,
+   "display": 3000
+  },
+  {
+   "needMl": 2750,
+   "unit": "ml",
+   "ml": 3000,
+   "display": 3000
+  },
+  {
+   "needMl": 3000,
+   "unit": "ml",
+   "ml": 3000,
+   "display": 3000
+  },
+  {
+   "needMl": 3549,
+   "unit": "ml",
+   "ml": 4000,
+   "display": 4000
+  },
+  {
+   "needMl": 4000,
+   "unit": "ml",
+   "ml": 4000,
+   "display": 4000
+  },
+  {
+   "needMl": 4732,
+   "unit": "ml",
+   "ml": 5000,
+   "display": 5000
+  },
+  {
+   "needMl": 5125,
+   "unit": "ml",
+   "ml": 5500,
+   "display": 5500
+  },
+  {
+   "needMl": 0,
+   "unit": "oz",
+   "ml": 473,
+   "display": 16
+  },
+  {
+   "needMl": 1,
+   "unit": "oz",
+   "ml": 473,
+   "display": 16
+  },
+  {
+   "needMl": 5,
+   "unit": "oz",
+   "ml": 473,
+   "display": 16
+  },
+  {
+   "needMl": 236,
+   "unit": "oz",
+   "ml": 473,
+   "display": 16
+  },
+  {
+   "needMl": 250,
+   "unit": "oz",
+   "ml": 473,
+   "display": 16
+  },
+  {
+   "needMl": 295,
+   "unit": "oz",
+   "ml": 473,
+   "display": 16
+  },
+  {
+   "needMl": 300,
+   "unit": "oz",
+   "ml": 473,
+   "display": 16
+  },
+  {
+   "needMl": 330,
+   "unit": "oz",
+   "ml": 473,
+   "display": 16
+  },
+  {
+   "needMl": 354,
+   "unit": "oz",
+   "ml": 473,
+   "display": 16
+  },
+  {
+   "needMl": 473,
+   "unit": "oz",
+   "ml": 473,
+   "display": 16
+  },
+  {
+   "needMl": 500,
+   "unit": "oz",
+   "ml": 946,
+   "display": 32
+  },
+  {
+   "needMl": 750,
+   "unit": "oz",
+   "ml": 946,
+   "display": 32
+  },
+  {
+   "needMl": 1000,
+   "unit": "oz",
+   "ml": 1420,
+   "display": 48
+  },
+  {
+   "needMl": 1005,
+   "unit": "oz",
+   "ml": 1420,
+   "display": 48
+  },
+  {
+   "needMl": 1015,
+   "unit": "oz",
+   "ml": 1420,
+   "display": 48
+  },
+  {
+   "needMl": 1125,
+   "unit": "oz",
+   "ml": 1420,
+   "display": 48
+  },
+  {
+   "needMl": 1250,
+   "unit": "oz",
+   "ml": 1420,
+   "display": 48
+  },
+  {
+   "needMl": 1375,
+   "unit": "oz",
+   "ml": 1420,
+   "display": 48
+  },
+  {
+   "needMl": 1800,
+   "unit": "oz",
+   "ml": 1893,
+   "display": 64
+  },
+  {
+   "needMl": 1999,
+   "unit": "oz",
+   "ml": 2366,
+   "display": 80
+  },
+  {
+   "needMl": 2000,
+   "unit": "oz",
+   "ml": 2366,
+   "display": 80
+  },
+  {
+   "needMl": 2001,
+   "unit": "oz",
+   "ml": 2366,
+   "display": 80
+  },
+  {
+   "needMl": 2250,
+   "unit": "oz",
+   "ml": 2366,
+   "display": 80
+  },
+  {
+   "needMl": 2365,
+   "unit": "oz",
+   "ml": 2366,
+   "display": 80
+  },
+  {
+   "needMl": 2500,
+   "unit": "oz",
+   "ml": 2839,
+   "display": 96
+  },
+  {
+   "needMl": 2700,
+   "unit": "oz",
+   "ml": 2839,
+   "display": 96
+  },
+  {
+   "needMl": 2750,
+   "unit": "oz",
+   "ml": 2839,
+   "display": 96
+  },
+  {
+   "needMl": 3000,
+   "unit": "oz",
+   "ml": 3312,
+   "display": 112
+  },
+  {
+   "needMl": 3549,
+   "unit": "oz",
+   "ml": 3785,
+   "display": 128
+  },
+  {
+   "needMl": 4000,
+   "unit": "oz",
+   "ml": 4259,
+   "display": 144
+  },
+  {
+   "needMl": 4732,
+   "unit": "oz",
+   "ml": 4732,
+   "display": 160
+  },
+  {
+   "needMl": 5125,
+   "unit": "oz",
+   "ml": 5205,
+   "display": 176
+  }
+ ],
+ "axisLabel": [
+  {
+   "value": 0,
+   "unit": "ml",
+   "out": "0"
+  },
+  {
+   "value": 8,
+   "unit": "ml",
+   "out": "0.0L"
+  },
+  {
+   "value": 16,
+   "unit": "ml",
+   "out": "0.0L"
+  },
+  {
+   "value": 24,
+   "unit": "ml",
+   "out": "0.0L"
+  },
+  {
+   "value": 32,
+   "unit": "ml",
+   "out": "0.0L"
+  },
+  {
+   "value": 250,
+   "unit": "ml",
+   "out": "0.3L"
+  },
+  {
+   "value": 500,
+   "unit": "ml",
+   "out": "0.5L"
+  },
+  {
+   "value": 750,
+   "unit": "ml",
+   "out": "0.8L"
+  },
+  {
+   "value": 1000,
+   "unit": "ml",
+   "out": "1L"
+  },
+  {
+   "value": 1250,
+   "unit": "ml",
+   "out": "1.3L"
+  },
+  {
+   "value": 1500,
+   "unit": "ml",
+   "out": "1.5L"
+  },
+  {
+   "value": 2000,
+   "unit": "ml",
+   "out": "2L"
+  },
+  {
+   "value": 2500,
+   "unit": "ml",
+   "out": "2.5L"
+  },
+  {
+   "value": 3000,
+   "unit": "ml",
+   "out": "3L"
+  },
+  {
+   "value": 3750,
+   "unit": "ml",
+   "out": "3.8L"
+  },
+  {
+   "value": 0,
+   "unit": "oz",
+   "out": "0"
+  },
+  {
+   "value": 8,
+   "unit": "oz",
+   "out": "8"
+  },
+  {
+   "value": 16,
+   "unit": "oz",
+   "out": "16"
+  },
+  {
+   "value": 24,
+   "unit": "oz",
+   "out": "24"
+  },
+  {
+   "value": 32,
+   "unit": "oz",
+   "out": "32"
+  },
+  {
+   "value": 250,
+   "unit": "oz",
+   "out": "250"
+  },
+  {
+   "value": 500,
+   "unit": "oz",
+   "out": "500"
+  },
+  {
+   "value": 750,
+   "unit": "oz",
+   "out": "750"
+  },
+  {
+   "value": 1000,
+   "unit": "oz",
+   "out": "1000"
+  },
+  {
+   "value": 1250,
+   "unit": "oz",
+   "out": "1250"
+  },
+  {
+   "value": 1500,
+   "unit": "oz",
+   "out": "1500"
+  },
+  {
+   "value": 2000,
+   "unit": "oz",
+   "out": "2000"
+  },
+  {
+   "value": 2500,
+   "unit": "oz",
+   "out": "2500"
+  },
+  {
+   "value": 3000,
+   "unit": "oz",
+   "out": "3000"
+  },
+  {
+   "value": 3750,
+   "unit": "oz",
+   "out": "3750"
+  }
+ ],
+ "screen": [
+  {
+   "ml": 0,
+   "unit": "ml",
+   "bigValue": "0.00L",
+   "targetLabel": "0.0L",
+   "chartVolume": "0.00L",
+   "entry": "0"
+  },
+  {
+   "ml": 1,
+   "unit": "ml",
+   "bigValue": "0.00L",
+   "targetLabel": "0.0L",
+   "chartVolume": "0.00L",
+   "entry": "1"
+  },
+  {
+   "ml": 5,
+   "unit": "ml",
+   "bigValue": "0.01L",
+   "targetLabel": "0.0L",
+   "chartVolume": "0.01L",
+   "entry": "5"
+  },
+  {
+   "ml": 236,
+   "unit": "ml",
+   "bigValue": "0.24L",
+   "targetLabel": "0.2L",
+   "chartVolume": "0.24L",
+   "entry": "236"
+  },
+  {
+   "ml": 250,
+   "unit": "ml",
+   "bigValue": "0.25L",
+   "targetLabel": "0.3L",
+   "chartVolume": "0.25L",
+   "entry": "250"
+  },
+  {
+   "ml": 295,
+   "unit": "ml",
+   "bigValue": "0.29L",
+   "targetLabel": "0.3L",
+   "chartVolume": "0.29L",
+   "entry": "295"
+  },
+  {
+   "ml": 300,
+   "unit": "ml",
+   "bigValue": "0.30L",
+   "targetLabel": "0.3L",
+   "chartVolume": "0.30L",
+   "entry": "300"
+  },
+  {
+   "ml": 330,
+   "unit": "ml",
+   "bigValue": "0.33L",
+   "targetLabel": "0.3L",
+   "chartVolume": "0.33L",
+   "entry": "330"
+  },
+  {
+   "ml": 354,
+   "unit": "ml",
+   "bigValue": "0.35L",
+   "targetLabel": "0.4L",
+   "chartVolume": "0.35L",
+   "entry": "354"
+  },
+  {
+   "ml": 473,
+   "unit": "ml",
+   "bigValue": "0.47L",
+   "targetLabel": "0.5L",
+   "chartVolume": "0.47L",
+   "entry": "473"
+  },
+  {
+   "ml": 500,
+   "unit": "ml",
+   "bigValue": "0.50L",
+   "targetLabel": "0.5L",
+   "chartVolume": "0.50L",
+   "entry": "500"
+  },
+  {
+   "ml": 750,
+   "unit": "ml",
+   "bigValue": "0.75L",
+   "targetLabel": "0.8L",
+   "chartVolume": "0.75L",
+   "entry": "750"
+  },
+  {
+   "ml": 1000,
+   "unit": "ml",
+   "bigValue": "1.00L",
+   "targetLabel": "1.0L",
+   "chartVolume": "1.00L",
+   "entry": "1000"
+  },
+  {
+   "ml": 1005,
+   "unit": "ml",
+   "bigValue": "1.00L",
+   "targetLabel": "1.0L",
+   "chartVolume": "1.00L",
+   "entry": "1005"
+  },
+  {
+   "ml": 1015,
+   "unit": "ml",
+   "bigValue": "1.01L",
+   "targetLabel": "1.0L",
+   "chartVolume": "1.01L",
+   "entry": "1015"
+  },
+  {
+   "ml": 1125,
+   "unit": "ml",
+   "bigValue": "1.13L",
+   "targetLabel": "1.1L",
+   "chartVolume": "1.13L",
+   "entry": "1125"
+  },
+  {
+   "ml": 1250,
+   "unit": "ml",
+   "bigValue": "1.25L",
+   "targetLabel": "1.3L",
+   "chartVolume": "1.25L",
+   "entry": "1250"
+  },
+  {
+   "ml": 1375,
+   "unit": "ml",
+   "bigValue": "1.38L",
+   "targetLabel": "1.4L",
+   "chartVolume": "1.38L",
+   "entry": "1375"
+  },
+  {
+   "ml": 1800,
+   "unit": "ml",
+   "bigValue": "1.80L",
+   "targetLabel": "1.8L",
+   "chartVolume": "1.80L",
+   "entry": "1800"
+  },
+  {
+   "ml": 1999,
+   "unit": "ml",
+   "bigValue": "2.00L",
+   "targetLabel": "2.0L",
+   "chartVolume": "2.00L",
+   "entry": "1999"
+  },
+  {
+   "ml": 2000,
+   "unit": "ml",
+   "bigValue": "2.00L",
+   "targetLabel": "2.0L",
+   "chartVolume": "2.00L",
+   "entry": "2000"
+  },
+  {
+   "ml": 2001,
+   "unit": "ml",
+   "bigValue": "2.00L",
+   "targetLabel": "2.0L",
+   "chartVolume": "2.00L",
+   "entry": "2001"
+  },
+  {
+   "ml": 2250,
+   "unit": "ml",
+   "bigValue": "2.25L",
+   "targetLabel": "2.3L",
+   "chartVolume": "2.25L",
+   "entry": "2250"
+  },
+  {
+   "ml": 2365,
+   "unit": "ml",
+   "bigValue": "2.37L",
+   "targetLabel": "2.4L",
+   "chartVolume": "2.37L",
+   "entry": "2365"
+  },
+  {
+   "ml": 2500,
+   "unit": "ml",
+   "bigValue": "2.50L",
+   "targetLabel": "2.5L",
+   "chartVolume": "2.50L",
+   "entry": "2500"
+  },
+  {
+   "ml": 2700,
+   "unit": "ml",
+   "bigValue": "2.70L",
+   "targetLabel": "2.7L",
+   "chartVolume": "2.70L",
+   "entry": "2700"
+  },
+  {
+   "ml": 2750,
+   "unit": "ml",
+   "bigValue": "2.75L",
+   "targetLabel": "2.8L",
+   "chartVolume": "2.75L",
+   "entry": "2750"
+  },
+  {
+   "ml": 3000,
+   "unit": "ml",
+   "bigValue": "3.00L",
+   "targetLabel": "3.0L",
+   "chartVolume": "3.00L",
+   "entry": "3000"
+  },
+  {
+   "ml": 3549,
+   "unit": "ml",
+   "bigValue": "3.55L",
+   "targetLabel": "3.5L",
+   "chartVolume": "3.55L",
+   "entry": "3549"
+  },
+  {
+   "ml": 4000,
+   "unit": "ml",
+   "bigValue": "4.00L",
+   "targetLabel": "4.0L",
+   "chartVolume": "4.00L",
+   "entry": "4000"
+  },
+  {
+   "ml": 4732,
+   "unit": "ml",
+   "bigValue": "4.73L",
+   "targetLabel": "4.7L",
+   "chartVolume": "4.73L",
+   "entry": "4732"
+  },
+  {
+   "ml": 5125,
+   "unit": "ml",
+   "bigValue": "5.13L",
+   "targetLabel": "5.1L",
+   "chartVolume": "5.13L",
+   "entry": "5125"
+  },
+  {
+   "ml": 0,
+   "unit": "oz",
+   "bigValue": "0 oz",
+   "targetLabel": "0 oz",
+   "chartVolume": "0 oz",
+   "entry": "0"
+  },
+  {
+   "ml": 1,
+   "unit": "oz",
+   "bigValue": "0 oz",
+   "targetLabel": "0 oz",
+   "chartVolume": "0 oz",
+   "entry": "0"
+  },
+  {
+   "ml": 5,
+   "unit": "oz",
+   "bigValue": "0.2 oz",
+   "targetLabel": "0.2 oz",
+   "chartVolume": "0 oz",
+   "entry": "0.2"
+  },
+  {
+   "ml": 236,
+   "unit": "oz",
+   "bigValue": "8 oz",
+   "targetLabel": "8 oz",
+   "chartVolume": "8 oz",
+   "entry": "8"
+  },
+  {
+   "ml": 250,
+   "unit": "oz",
+   "bigValue": "8.5 oz",
+   "targetLabel": "8.5 oz",
+   "chartVolume": "9 oz",
+   "entry": "8.5"
+  },
+  {
+   "ml": 295,
+   "unit": "oz",
+   "bigValue": "10 oz",
+   "targetLabel": "10 oz",
+   "chartVolume": "10 oz",
+   "entry": "10"
+  },
+  {
+   "ml": 300,
+   "unit": "oz",
+   "bigValue": "10.1 oz",
+   "targetLabel": "10.1 oz",
+   "chartVolume": "10 oz",
+   "entry": "10.1"
+  },
+  {
+   "ml": 330,
+   "unit": "oz",
+   "bigValue": "11.2 oz",
+   "targetLabel": "11.2 oz",
+   "chartVolume": "11 oz",
+   "entry": "11.2"
+  },
+  {
+   "ml": 354,
+   "unit": "oz",
+   "bigValue": "12 oz",
+   "targetLabel": "12 oz",
+   "chartVolume": "12 oz",
+   "entry": "12"
+  },
+  {
+   "ml": 473,
+   "unit": "oz",
+   "bigValue": "16 oz",
+   "targetLabel": "16 oz",
+   "chartVolume": "16 oz",
+   "entry": "16"
+  },
+  {
+   "ml": 500,
+   "unit": "oz",
+   "bigValue": "16.9 oz",
+   "targetLabel": "16.9 oz",
+   "chartVolume": "17 oz",
+   "entry": "16.9"
+  },
+  {
+   "ml": 750,
+   "unit": "oz",
+   "bigValue": "25.4 oz",
+   "targetLabel": "25.4 oz",
+   "chartVolume": "25 oz",
+   "entry": "25.4"
+  },
+  {
+   "ml": 1000,
+   "unit": "oz",
+   "bigValue": "33.8 oz",
+   "targetLabel": "33.8 oz",
+   "chartVolume": "34 oz",
+   "entry": "33.8"
+  },
+  {
+   "ml": 1005,
+   "unit": "oz",
+   "bigValue": "34 oz",
+   "targetLabel": "34 oz",
+   "chartVolume": "34 oz",
+   "entry": "34"
+  },
+  {
+   "ml": 1015,
+   "unit": "oz",
+   "bigValue": "34.3 oz",
+   "targetLabel": "34.3 oz",
+   "chartVolume": "34 oz",
+   "entry": "34.3"
+  },
+  {
+   "ml": 1125,
+   "unit": "oz",
+   "bigValue": "38 oz",
+   "targetLabel": "38 oz",
+   "chartVolume": "38 oz",
+   "entry": "38"
+  },
+  {
+   "ml": 1250,
+   "unit": "oz",
+   "bigValue": "42.3 oz",
+   "targetLabel": "42.3 oz",
+   "chartVolume": "42 oz",
+   "entry": "42.3"
+  },
+  {
+   "ml": 1375,
+   "unit": "oz",
+   "bigValue": "46.5 oz",
+   "targetLabel": "46.5 oz",
+   "chartVolume": "47 oz",
+   "entry": "46.5"
+  },
+  {
+   "ml": 1800,
+   "unit": "oz",
+   "bigValue": "60.9 oz",
+   "targetLabel": "60.9 oz",
+   "chartVolume": "61 oz",
+   "entry": "60.9"
+  },
+  {
+   "ml": 1999,
+   "unit": "oz",
+   "bigValue": "67.6 oz",
+   "targetLabel": "67.6 oz",
+   "chartVolume": "68 oz",
+   "entry": "67.6"
+  },
+  {
+   "ml": 2000,
+   "unit": "oz",
+   "bigValue": "67.6 oz",
+   "targetLabel": "67.6 oz",
+   "chartVolume": "68 oz",
+   "entry": "67.6"
+  },
+  {
+   "ml": 2001,
+   "unit": "oz",
+   "bigValue": "67.7 oz",
+   "targetLabel": "67.7 oz",
+   "chartVolume": "68 oz",
+   "entry": "67.7"
+  },
+  {
+   "ml": 2250,
+   "unit": "oz",
+   "bigValue": "76.1 oz",
+   "targetLabel": "76.1 oz",
+   "chartVolume": "76 oz",
+   "entry": "76.1"
+  },
+  {
+   "ml": 2365,
+   "unit": "oz",
+   "bigValue": "80 oz",
+   "targetLabel": "80 oz",
+   "chartVolume": "80 oz",
+   "entry": "80"
+  },
+  {
+   "ml": 2500,
+   "unit": "oz",
+   "bigValue": "84.5 oz",
+   "targetLabel": "84.5 oz",
+   "chartVolume": "85 oz",
+   "entry": "84.5"
+  },
+  {
+   "ml": 2700,
+   "unit": "oz",
+   "bigValue": "91.3 oz",
+   "targetLabel": "91.3 oz",
+   "chartVolume": "91 oz",
+   "entry": "91.3"
+  },
+  {
+   "ml": 2750,
+   "unit": "oz",
+   "bigValue": "93 oz",
+   "targetLabel": "93 oz",
+   "chartVolume": "93 oz",
+   "entry": "93"
+  },
+  {
+   "ml": 3000,
+   "unit": "oz",
+   "bigValue": "101.4 oz",
+   "targetLabel": "101.4 oz",
+   "chartVolume": "101 oz",
+   "entry": "101.4"
+  },
+  {
+   "ml": 3549,
+   "unit": "oz",
+   "bigValue": "120 oz",
+   "targetLabel": "120 oz",
+   "chartVolume": "120 oz",
+   "entry": "120"
+  },
+  {
+   "ml": 4000,
+   "unit": "oz",
+   "bigValue": "135.3 oz",
+   "targetLabel": "135.3 oz",
+   "chartVolume": "135 oz",
+   "entry": "135.3"
+  },
+  {
+   "ml": 4732,
+   "unit": "oz",
+   "bigValue": "160 oz",
+   "targetLabel": "160 oz",
+   "chartVolume": "160 oz",
+   "entry": "160"
+  },
+  {
+   "ml": 5125,
+   "unit": "oz",
+   "bigValue": "173.3 oz",
+   "targetLabel": "173.3 oz",
+   "chartVolume": "173 oz",
+   "entry": "173.3"
+  }
+ ],
+ "average": [
+  {
+   "totals": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "unit": "ml",
+   "out": "0.00L"
+  },
+  {
+   "totals": [
+    250,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "unit": "ml",
+   "out": "0.04L"
+  },
+  {
+   "totals": [
+    2500,
+    2000,
+    1750,
+    0,
+    3000,
+    1250,
+    500
+   ],
+   "unit": "ml",
+   "out": "1.57L"
+  },
+  {
+   "totals": [
+    1125,
+    1125,
+    1125,
+    1125,
+    1125,
+    1125,
+    1125
+   ],
+   "unit": "ml",
+   "out": "1.13L"
+  },
+  {
+   "totals": [
+    330,
+    500,
+    750,
+    1000,
+    1005,
+    1015,
+    2365
+   ],
+   "unit": "ml",
+   "out": "0.99L"
+  },
+  {
+   "totals": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "unit": "oz",
+   "out": "0 oz"
+  },
+  {
+   "totals": [
+    250,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "unit": "oz",
+   "out": "1.2 oz"
+  },
+  {
+   "totals": [
+    2500,
+    2000,
+    1750,
+    0,
+    3000,
+    1250,
+    500
+   ],
+   "unit": "oz",
+   "out": "53.1 oz"
+  },
+  {
+   "totals": [
+    1125,
+    1125,
+    1125,
+    1125,
+    1125,
+    1125,
+    1125
+   ],
+   "unit": "oz",
+   "out": "38 oz"
+  },
+  {
+   "totals": [
+    330,
+    500,
+    750,
+    1000,
+    1005,
+    1015,
+    2365
+   ],
+   "unit": "oz",
+   "out": "33.6 oz"
+  }
+ ]
+}

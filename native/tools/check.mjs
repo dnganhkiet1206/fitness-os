@@ -989,6 +989,13 @@ const STEPS = [
     mà Swift chưa port lại thì đỏ ở đây.
   */
   ['trạng thái mạng golden = mã RN', 'sh', ['../apps/ios/tools/net-status-golden/verify.sh']],
+  /*
+    #527 Phase 3: nước uống của app iOS native. Golden của `WaterGoldenTests` là
+    output của CHÍNH `units.ts`, `water-scale.ts`, `water-presets.ts` (+ các
+    biểu thức hiển thị của `water.tsx` / `water-chart.tsx`, gồm `toFixed` nửa
+    làm tròn lên). RN đổi luật mà Swift chưa port lại thì đỏ ở đây.
+  */
+  ['nước uống golden = mã RN', 'sh', ['../apps/ios/tools/water-golden/verify.sh']],
 ];
 
 /*

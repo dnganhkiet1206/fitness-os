@@ -86,11 +86,12 @@ public enum ReadCacheNamespace {
   public static let onboardingDraft = "onboarding-draft"
   public static let onboardingCompleted = "onboarding-completed"
   public static let profile = "profile"
+  public static let water = "water"
 
   /// `kind` đúng bằng.
   public static let fixed: Set<String> = [
     templates, recordBests, lastPerformance, workoutHistory, exerciseInsights, exerciseLibrary, onboardingDraft,
-    onboardingCompleted, profile,
+    onboardingCompleted, profile, water,
   ]
   /// `kind` = tiền tố + khoá (hướng dẫn theo bài × ngôn ngữ).
   public static let prefixes: [String] = [exerciseGuide]
