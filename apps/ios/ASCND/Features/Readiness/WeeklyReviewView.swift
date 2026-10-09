@@ -97,7 +97,7 @@ struct WeeklyReviewView: View {
       ("flame", String(localized: "wr.avgCalories"), c.kcal, c.kcal.sub),
       ("fork.knife", String(localized: "wr.avgProtein"), c.protein, c.protein.sub),
       ("moon.fill", String(localized: "wr.avgSleep"), c.sleep, c.sleep.sub),
-      ("dumbbell.fill", String(localized: "wr.volume"), c.volume, String(localized: "wr.sessions \(c.sessions)")),
+      ("dumbbell.fill", String(localized: "wr.volume"), c.volume, Self.sessions(c.sessions)),
       ("waveform.path.ecg", String(localized: "wr.readiness"), c.readiness, c.readiness.sub),
     ]
     if let supp = c.supplements {
@@ -282,6 +282,11 @@ struct WeeklyReviewView: View {
     case "volumeUp": return String(localized: "wr.rec.volumeUp \(a[0])")
     default: return r.id
     }
+  }
+
+  /// `{n} {n:session|sessions}` — số ít / số nhiều là hai khoá (catalog không dùng plural variation).
+  static func sessions(_ n: Int) -> String {
+    n == 1 ? String(localized: "wr.sessions.one \(n)") : String(localized: "wr.sessions.other \(n)")
   }
 
   /// `Math.round(v * 10) / 10` viết kiểu JS (không phân nhóm nghìn, như RN).

@@ -13367,55 +13367,48 @@
     }
    }
   },
-  "wr.sessions %lld": {
+  "wr.sessions.one %lld": {
    "extractionState": "manual",
    "localizations": {
     "en": {
-     "variations": {
-      "plural": {
-       "one": {
-        "stringUnit": {
-         "state": "translated",
-         "value": "%lld session"
-        }
-       },
-       "other": {
-        "stringUnit": {
-         "state": "translated",
-         "value": "%lld sessions"
-        }
-       }
-      }
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld session"
      }
     },
     "vi": {
-     "variations": {
-      "plural": {
-       "other": {
-        "stringUnit": {
-         "state": "translated",
-         "value": "%lld buổi"
-        }
-       }
-      }
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld buổi"
      }
     },
     "es": {
-     "variations": {
-      "plural": {
-       "one": {
-        "stringUnit": {
-         "state": "translated",
-         "value": "%lld sesión"
-        }
-       },
-       "other": {
-        "stringUnit": {
-         "state": "translated",
-         "value": "%lld sesiones"
-        }
-       }
-      }
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld sesión"
+     }
+    }
+   }
+  },
+  "wr.sessions.other %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld sessions"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld buổi"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld sesiones"
      }
     }
    }
