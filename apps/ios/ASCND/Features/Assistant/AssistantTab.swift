@@ -4,7 +4,7 @@ import SwiftUI
 
 /// Đích của tab Trợ lý.
 enum AssistantRoute: Hashable {
-  case chat, weekly, steps, biometrics, sleep, goals, memory
+  case chat, weekly, steps, biometrics, sleep, goals, measure, memory
 }
 
 /// Tab Trợ lý (#527 Phase 6) — `(tabs)/assistant.tsx` @ fac9ac2.
@@ -41,6 +41,7 @@ struct AssistantTab: View {
   @State private var steps: StepsBook?
   @State private var sleep: SleepInsightsBook?
   @State private var goals: SmartGoalsBook?
+  @State private var measure: MeasurementsBook?
   @State private var hour = Calendar.current.component(.hour, from: Date())
   @State private var built = false
 
@@ -95,6 +96,8 @@ struct AssistantTab: View {
           if let sleep { SleepInsightsView(book: sleep, lang: lang) }
         case .goals:
           if let goals { SmartGoalsView(book: goals) }
+        case .measure:
+          if let measure { MeasurementsView(book: measure) }
         case .memory:
           if let memory { CoachMemoryView(book: memory) }
         }
@@ -114,6 +117,7 @@ struct AssistantTab: View {
       steps = services.makeStepsBook(userId: userId, today: today)
       sleep = services.makeSleepInsights(userId: userId)
       goals = services.makeSmartGoals(userId: userId, today: today)
+      measure = services.makeMeasurements(userId: userId)
       built = true
       await signal?.load()
       // Sau tín hiệu: phân tích calo cần mục tiêu calo của hồ sơ.
@@ -151,6 +155,7 @@ struct AssistantTab: View {
       steps?.close()
       sleep?.close()
       goals?.close()
+      measure?.close()
     }
   }
 
@@ -232,6 +237,12 @@ struct AssistantTab: View {
         Tool(
           route: .goals, symbol: "scope", tint: DS.Color.readinessGreen.swiftUI,
           label: String(localized: "assistant.tool.goals"), hint: String(localized: "assistant.tool.goals.hint")))
+    }
+    if measure != nil {
+      out.append(
+        Tool(
+          route: .measure, symbol: "ruler", tint: DS.Color.metricCyan.swiftUI,
+          label: String(localized: "assistant.tool.measure"), hint: String(localized: "assistant.tool.measure.hint")))
     }
     if memory != nil {
       out.append(

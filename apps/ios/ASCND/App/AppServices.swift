@@ -453,6 +453,11 @@ final class AppServices {
     rows.map { SmartGoalsBook(userId: userId, today: today, store: $0) }
   }
 
+  /// Số đo cơ thể (#527): 24 lần đo `body_measurements` mới nhất.
+  func makeMeasurements(userId: String) -> MeasurementsBook? {
+    rows.map { MeasurementsBook(userId: userId, store: $0) }
+  }
+
   func didBecomeActive() {
     // Quay lại tiền cảnh: đo lại đường mạng, dò lại internet ngay.
     network.resume(Self.netPath(monitor.currentPath))
