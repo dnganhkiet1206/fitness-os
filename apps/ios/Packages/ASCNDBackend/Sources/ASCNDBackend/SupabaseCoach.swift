@@ -165,3 +165,35 @@ public struct SupabaseCoachStore: CoachStore {
     if gone.isEmpty { throw NothingWritten() }
   }
 }
+
+/// Kho trí nhớ coach (`coach_memory`): đọc + xoá — server mới ghi.
+public struct SupabaseCoachMemoryStore: CoachMemoryStore {
+  private let client: SupabaseClient
+
+  public init(backend: Backend) {
+    self.client = backend.client
+  }
+
+  public func facts(userId: String) async throws -> [JSONValue] {
+    let rows: [JSONValue] = try await client.from("coach_memory")
+      .select("id, kind, fact, last_confirmed, source_excerpt")
+      .eq("user_id", value: userId)
+      .order("last_confirmed", ascending: false)
+      .execute().value
+    return rows
+  }
+
+  public func forget(id: String, userId: String) async throws {
+    let gone: [SupabaseCoachStore.IdRow] = try await client.from("coach_memory")
+      .delete().eq("id", value: id).eq("user_id", value: userId)
+      .select("id").execute().value
+    if gone.isEmpty { throw SupabaseCoachStore.NothingWritten() }
+  }
+
+  public func forgetAll(userId: String) async throws {
+    let gone: [SupabaseCoachStore.IdRow] = try await client.from("coach_memory")
+      .delete().eq("user_id", value: userId)
+      .select("id").execute().value
+    if gone.isEmpty { throw SupabaseCoachStore.NothingWritten() }
+  }
+}

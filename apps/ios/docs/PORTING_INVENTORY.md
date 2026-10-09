@@ -87,7 +87,7 @@ Follow-up chỉ được tạo cho mục có nguồn RN cụ thể (#336). Các 
 Các mảng sau **not ported** và nằm ngoài phạm vi A cho tới khi #222 giao:
 - Dinh dưỡng: `nutrition.tsx`, `log-meal`, `food-*`, `scan-*`, `meal-plan*`, `grocery`, `water`, `supplements`.
 - Cộng đồng: `community*`, `challenges`, `awards`, `shop`, `mascot-room`.
-- Trợ lý và coach: `assistant.tsx`, `coach-memory`. (`ai-coach` đã port — E #527 Phase 6, `CoachChatView`; xem PARITY_MATRIX.)
+- Trợ lý và coach: `assistant.tsx`. (`ai-coach` + `coach-memory` đã port — E #527 Phase 6, `CoachChatView` / `CoachMemoryView`; xem PARITY_MATRIX.)
 - Theo dõi cơ thể: `biometrics`, `log-*`, `measurements-trend`, `progress-photos`, `sleep-insights`, `steps`, `weekly-review`, `smart-goals`.
 
 `admin/*` (8 màn) là **decision**: cần Kiệt quyết bản native v1 có kèm console quản trị hay không.

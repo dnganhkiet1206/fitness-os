@@ -358,6 +358,12 @@ final class AppServices {
     rows.map { AssistantSignalBook(userId: userId, today: today, store: $0, in: .current) }
   }
 
+  /// Trí nhớ coach (#527): đọc + xoá `coach_memory`.
+  func makeCoachMemory(userId: String) -> CoachMemoryBook? {
+    guard let backend else { return nil }
+    return CoachMemoryBook(userId: userId, store: SupabaseCoachMemoryStore(backend: backend), in: .current)
+  }
+
   /// AI Coach (#527): luồng `ai-coach` + lịch sử `ai_conversations` / `ai_messages`,
   /// học qua `ai-coach-memory`. Thiếu cấu hình Supabase thì không có màn.
   func makeCoachChat(userId: String) -> CoachChat? {

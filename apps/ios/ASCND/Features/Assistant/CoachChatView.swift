@@ -16,13 +16,15 @@ struct AssistantTab: View {
   @Environment(\.scenePhase) private var scenePhase
   @State private var chat: CoachChat?
   @State private var signal: AssistantSignalBook?
+  @State private var memory: CoachMemoryBook?
   @State private var built = false
 
   var body: some View {
     NavigationStack {
       Group {
         if let chat {
-          CoachChatView(chat: chat, lang: services.preferences.lang, suggestions: signal?.suggestions ?? [])
+          CoachChatView(
+            chat: chat, lang: services.preferences.lang, suggestions: signal?.suggestions ?? [], memory: memory)
         } else if built {
           // Thiếu cấu hình Supabase: không có coach để hỏi.
           ContentUnavailableView {
@@ -40,6 +42,7 @@ struct AssistantTab: View {
       let userId = flow.today.userId
       chat = services.makeCoachChat(userId: userId)
       signal = services.makeAssistantSignal(userId: userId, today: Self.today())
+      memory = services.makeCoachMemory(userId: userId)
       built = true
       await signal?.load()
     }
@@ -55,6 +58,7 @@ struct AssistantTab: View {
       if !current {
         chat?.close()
         signal?.close()
+        memory?.close()
       }
     }
   }
@@ -79,6 +83,9 @@ struct CoachChatView: View {
   /// Cùng bốn chip với thẻ coach của Trợ lý (`useAssistantSignal`): chạm là
   /// hỏi luôn câu của chip.
   let suggestions: [AssistantSuggestions.Suggestion]
+  /// "Coach nhớ gì" — RN mở từ bảng điều khiển của tab Trợ lý; tới khi bảng
+  /// ấy có, lối vào ở thanh trên của chat.
+  let memory: CoachMemoryBook?
 
   @State private var draft = ""
   @State private var showsHistory = false
@@ -105,6 +112,17 @@ struct CoachChatView: View {
     }
     .safeAreaInset(edge: .bottom) { composer }
     .toolbar {
+      if let memory {
+        ToolbarItem(placement: .topBarLeading) {
+          NavigationLink {
+            CoachMemoryView(book: memory)
+          } label: {
+            Image(systemName: "brain")
+              .frame(minWidth: 44, minHeight: 44)
+          }
+          .accessibilityLabel(Text("cm.title"))
+        }
+      }
       ToolbarItem(placement: .topBarTrailing) {
         Button {
           showsHistory = true
