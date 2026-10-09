@@ -66,6 +66,9 @@ private struct SignedInScope<Content: View>: View {
   /// Hồ sơ của ĐÚNG tài khoản này — nguồn đơn vị tạ (#527 1.9-A). Dựng lại
   /// cùng phiên (`.id(userId)`), nên không bao giờ mang đơn vị người trước.
   @State private var profile: ProfileBook?
+  /// Nước uống + thực phẩm bổ sung của phiên (#527 Phase 3): tab Dinh dưỡng
+  /// hiện chúng, kế hoạch nhắc nhở đọc chúng.
+  @State private var nutrition: NutritionBooks?
 
   var body: some View {
     Group {
@@ -75,6 +78,7 @@ private struct SignedInScope<Content: View>: View {
           // Cùng MỘT hồ sơ cho đơn vị tạ và cho màn sửa hồ sơ: lưu xong thì
           // màn tập đổi đơn vị ngay, không đợi lượt đọc lại.
           .environment(profile)
+          .environment(nutrition)
       } else {
         ProgressView()
           .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -84,6 +88,9 @@ private struct SignedInScope<Content: View>: View {
       let f = services.makeWorkoutFlow(userId: userId, rest: rest)
       f.setWeightUnit(weightUnit)
       flow = f
+      let books = NutritionBooks(
+        water: services.makeWaterBook(userId: userId), supplements: services.makeSupplementBook(userId: userId))
+      nutrition = books
       // "Đang kết nối lại" thoát khi lượt tải của phiên này xong. Giữ `weak`:
       // phiên đã đóng thì không còn gì để chờ. Không gỡ ở `onDisappear` — cây
       // của người mới có thể đã đăng ký trước khi cây cũ gỡ xong.
@@ -103,8 +110,19 @@ private struct SignedInScope<Content: View>: View {
       await book.loadCached()
       f.setWeightUnit(weightUnit)
       async let units: Void = book.refresh()
+      // Sau `forgetOtherAccounts` như hồ sơ: bản nhớ của hai sổ chỉ đọc được
+      // khi phiên đã là của người này.
+      async let food: Void = books.loadOnce()
       await f.start()
       await units
+      await food
+    }
+    // Kế hoạch nhắc nhở theo những gì hôm nay đã biết (`useReminderSync` của
+    // RN, gắn ở Today): đổi gì — đã tập, đủ nước, uống hết thực phẩm bổ sung,
+    // lịch tập vừa đọc — thì dựng lại và đặt lại nếu khác lần trước. Không xin
+    // quyền: bật nhắc nhở vẫn là quyết định ở màn Nhắc nhở.
+    .task(id: reminderContext) {
+      if let ctx = reminderContext { await services.reminders.sync(ctx) }
     }
     // Phiên kết thúc (đăng xuất, đổi tài khoản → `.id` đổi): huỷ lượt làm mới
     // đang bay, để nó không ghi cache của người vừa rời đi.
@@ -114,7 +132,10 @@ private struct SignedInScope<Content: View>: View {
     // của `userId` này, để lượt làm mới của người cũ không ghi cache sau
     // `forgetOtherAccounts` của người mới. `close()` gọi lại là vô hại.
     .onChange(of: isCurrentSession) { _, current in
-      if !current { flow?.close() }
+      if !current {
+        flow?.close()
+        nutrition?.close()
+      }
     }
     .onChange(of: scenePhase) { _, phase in
       // Ra tiền cảnh: qua nửa đêm thì "hôm nay" đổi; dữ liệu cũ hơn một phút
@@ -122,6 +143,14 @@ private struct SignedInScope<Content: View>: View {
       if phase == .active, let flow { Task { await flow.becameActive() } }
       // Đổi đơn vị ở máy khác: ra tiền cảnh thì đọc lại hồ sơ.
       if phase == .active, let profile { Task { await profile.refresh() } }
+      // Qua nửa đêm: sổ dinh dưỡng sang ngày mới, và kế hoạch nhắc nhở của
+      // ngày mới được đặt (cùng ngữ cảnh mà khác "bây giờ").
+      if phase == .active {
+        Task {
+          await nutrition?.becameActive()
+          if let ctx = reminderContext { await services.reminders.sync(ctx) }
+        }
+      }
     }
     // Màn tập đọc và gõ theo đơn vị của tài khoản (#527 1.9-B): controller đổi
     // chữ trong ô về kg theo đúng đơn vị màn đang hiện. Hồ sơ chưa nạp → kg,
@@ -141,6 +170,16 @@ private struct SignedInScope<Content: View>: View {
   }
 
   private var weightUnit: WeightUnit { WeightUnit(profile: profile?.profile) }
+
+  /// "Hôm nay đã biết gì" cho kế hoạch nhắc nhở; `nil` khi luồng tập chưa dựng.
+  private var reminderContext: ReminderContext? {
+    guard let flow else { return nil }
+    let today = flow.today
+    return .today(
+      today.today, trained: today.trained, routine: today.library?.routine,
+      waterTotalMl: nutrition?.water?.totalMl, waterTargetMl: profile?.profile?.waterTargetMl,
+      supplements: nutrition?.supplements?.items)
+  }
 
   private var isCurrentSession: Bool {
     if case .signedIn(let s) = services.session.phase { return s.userId == userId }
