@@ -424,6 +424,13 @@ final class AppServices {
       economy: SupabaseMascotEconomy(backend: backend), stepsGoal: { goals.goal })
   }
 
+  /// Giấc ngủ — 7 ngày (#527): `sleep_logs` + mục tiêu ngủ của hồ sơ; xoá một
+  /// đêm rồi dựng lại `daily_logs`.
+  func makeSleepInsights(userId: String) -> SleepInsightsBook? {
+    guard let rows, let backend else { return nil }
+    return SleepInsightsBook(userId: userId, store: rows, remover: SupabaseSleepLogRemover(backend: backend))
+  }
+
   /// Vận động (#527): 14 ngày `daily_logs.steps` + mục tiêu bước theo tài khoản.
   func makeStepsBook(userId: String, today: LocalDate) -> StepsBook? {
     rows.map {

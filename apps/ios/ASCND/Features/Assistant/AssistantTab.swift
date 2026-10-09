@@ -4,7 +4,7 @@ import SwiftUI
 
 /// Đích của tab Trợ lý.
 enum AssistantRoute: Hashable {
-  case chat, weekly, steps, biometrics, memory
+  case chat, weekly, steps, biometrics, sleep, memory
 }
 
 /// Tab Trợ lý (#527 Phase 6) — `(tabs)/assistant.tsx` @ fac9ac2.
@@ -21,7 +21,7 @@ enum AssistantRoute: Hashable {
 ///
 /// Chưa có (PARTIAL): thẻ nguồn Health, aura / glass; lưới
 /// công cụ chỉ có những màn đã port (tổng kết tuần, vận động, sinh trắc học,
-/// coach nhớ gì) — RN còn Quét thực phẩm, Giấc ngủ.
+/// giấc ngủ, coach nhớ gì) — RN còn Quét thực phẩm.
 ///
 /// Cuộc trò chuyện thuộc PHIÊN như RN (`useCoachChat` ở trên router): dựng một
 /// lần trong cây của tài khoản này (cây dựng lại theo `.id(userId)`), sống qua
@@ -39,6 +39,7 @@ struct AssistantTab: View {
   @State private var metrics: MetricHistoryBook?
   @State private var nudges: SmartNudgesBook?
   @State private var steps: StepsBook?
+  @State private var sleep: SleepInsightsBook?
   @State private var hour = Calendar.current.component(.hour, from: Date())
   @State private var built = false
 
@@ -89,6 +90,8 @@ struct AssistantTab: View {
           if let steps { StepsView(book: steps) }
         case .biometrics:
           if let biometrics { BiometricsView(book: biometrics) }
+        case .sleep:
+          if let sleep { SleepInsightsView(book: sleep, lang: lang) }
         case .memory:
           if let memory { CoachMemoryView(book: memory) }
         }
@@ -106,6 +109,7 @@ struct AssistantTab: View {
       metrics = services.makeMetricHistory(userId: userId, today: today)
       nudges = services.makeSmartNudges(userId: userId)
       steps = services.makeStepsBook(userId: userId, today: today)
+      sleep = services.makeSleepInsights(userId: userId)
       built = true
       await signal?.load()
       // Sau tín hiệu: phân tích calo cần mục tiêu calo của hồ sơ.
@@ -140,6 +144,7 @@ struct AssistantTab: View {
       metrics?.close()
       nudges?.close()
       steps?.close()
+      sleep?.close()
     }
   }
 
@@ -209,6 +214,12 @@ struct AssistantTab: View {
         Tool(
           route: .biometrics, symbol: "heart.fill", tint: DS.Color.readinessRed.swiftUI,
           label: String(localized: "assistant.tool.bio"), hint: String(localized: "assistant.tool.bio.hint")))
+    }
+    if sleep != nil {
+      out.append(
+        Tool(
+          route: .sleep, symbol: "moon.fill", tint: DS.Color.metricPurple.swiftUI,
+          label: String(localized: "assistant.tool.sleep"), hint: String(localized: "assistant.tool.sleep.hint")))
     }
     if memory != nil {
       out.append(

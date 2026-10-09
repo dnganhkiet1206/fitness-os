@@ -78,5 +78,7 @@ miễn **giữ nguyên ý định** của app và chỉ làm app tốt hơn — 
 | Insight hôm nay — lỗi / bộ nhớ đệm | Lỗi nói rõ loại (`AI_FAILURE_KEY`) dưới "chạm để thử lại"; bộ nhớ đệm bền chỉ giữ MỘT kết quả (khoá có người dùng · ngày · ngôn ngữ · dấu) | Chỉ "Chưa đọc được hôm nay. Chạm để thử lại."; persister giữ mọi khoá tới 24 giờ | cải tiến | tuỳ | #527 (`native/ios-rewrite`) | E |
 | Vận động — mục tiêu bước | Nhớ theo tài khoản (khoá `ascnd-steps-goal.<userId>`); nhiệm vụ bước của phòng linh vật chấm theo đúng mục tiêu này | Một khoá chung `ascnd-steps-goal`, xoá khi đổi người (`onUserScopedReset`) | cải tiến | tuỳ | #527 (`native/ios-rewrite`) | E |
 | Vận động — đọc hỏng | Màn lỗi có thử lại; đọc lại hỏng khi đã có số thì giữ số | `data` không có → vẽ 0 bước, TB 0, xu thế 0 % | sửa lỗi RN | nên làm theo | #527 (`native/ios-rewrite`) | E |
+| Giấc ngủ — nợ ngủ | Nợ ngủ = mục tiêu × số đêm ĐÃ GHI − tổng giờ ngủ (golden ghim cả hai bản; 7 đêm thì trùng RN) | `targetHours * 7 − tổng`: hai đêm được ghi thành "nợ 42 giờ" + lời khuyên ngủ bù | sửa lỗi RN | nên làm theo | #527 (`native/ios-rewrite`) | E |
+| Giấc ngủ — trống / màu tầng | Trống không có nút "Ghi giấc ngủ" (`log-sleep` chưa port), lời nhắc đồng bộ Apple Health; màu tầng theo bảng DS | Nút sang `/log-sleep`; dải màu `useSleepRamp` | tạm thời | không cần | #527 (`native/ios-rewrite`) | E |
 
 Thêm dòng mới ở cuối bảng; giữ dòng cũ — sổ là lịch sử, không phải danh sách việc.
