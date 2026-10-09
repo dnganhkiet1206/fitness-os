@@ -237,7 +237,7 @@ struct FoodEditorView: View {
               HStack(alignment: .bottom, spacing: DS.Spacing.sm) {
                 number(String(localized: "foods.calories"), $form.kcal, unit: "kcal", bounds: MealLog.kcalBounds)
                 Button {
-                  form.kcal = MealDiary.jsNumber(form.calcKcal)
+                  form.kcal = String(Int(form.calcKcal))
                 } label: {
                   Text(String(localized: "foods.autoCalc \(DiaryView.whole(form.calcKcal))"))
                     .font(DS.TextStyle.footnote.weight(.semibold))
