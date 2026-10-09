@@ -75,5 +75,6 @@ miễn **giữ nguyên ý định** của app và chỉ làm app tốt hơn — 
 | Nhật ký bữa ăn — câu khi ngày rỗng | "Chưa ghi bữa nào hôm nay" — không mời "nhấn để ghi" vì `log-meal` chưa port | Thẻ rỗng mở `log-meal` | (thiếu — chờ port `log-meal`) | không cần | #527 (`native/ios-rewrite`) | A |
 | Bảng chỉ số Trợ lý — chữ | "1 day" (không "1 days"); trung bình 7 giờ 59,6 phút → "8 giờ" (không "7 giờ 60 phút"); có bản es | `${n} days` cố định ở câu hỏi sẵn sàng; `Math.round(min % 60)` có thể ra 60; `Bilingual` vi / en | sửa lỗi RN | nên làm theo | #527 (`native/ios-rewrite`) | E |
 | Bảng chỉ số Trợ lý — đọc hỏng | Bảng lỗi có thử lại; đọc lại hỏng khi đã có số thì giữ số | `data` không có → `points = []` → "Chưa có ngày nào được ghi trong tuần này" | sửa lỗi RN | nên làm theo | #527 (`native/ios-rewrite`) | E |
+| Insight hôm nay — lỗi / bộ nhớ đệm | Lỗi nói rõ loại (`AI_FAILURE_KEY`) dưới "chạm để thử lại"; bộ nhớ đệm bền chỉ giữ MỘT kết quả (khoá có người dùng · ngày · ngôn ngữ · dấu) | Chỉ "Chưa đọc được hôm nay. Chạm để thử lại."; persister giữ mọi khoá tới 24 giờ | cải tiến | tuỳ | #527 (`native/ios-rewrite`) | E |
 
 Thêm dòng mới ở cuối bảng; giữ dòng cũ — sổ là lịch sử, không phải danh sách việc.

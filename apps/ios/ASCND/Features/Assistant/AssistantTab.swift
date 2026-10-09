@@ -17,8 +17,9 @@ enum AssistantRoute: Hashable {
 ///
 /// Bốn ô chỉ số hôm nay + bảng 7 ngày (`MetricPanelView`).
 ///
-/// Chưa có (PARTIAL): "Insight hôm nay" (AI), nhắc thông minh
-/// (`use-smart-nudges`), thẻ nguồn Health, aura / glass; lưới
+/// "Insight hôm nay" (`ai-smart-nudges`, `InsightCard`).
+///
+/// Chưa có (PARTIAL): thẻ nguồn Health, aura / glass; lưới
 /// công cụ chỉ có những màn đã port (tổng kết tuần, sinh trắc học, coach nhớ
 /// gì) — RN còn Vận động, Quét thực phẩm, Giấc ngủ.
 ///
@@ -36,6 +37,7 @@ struct AssistantTab: View {
   @State private var weekly: WeeklyReviewBook?
   @State private var biometrics: BiometricsBook?
   @State private var metrics: MetricHistoryBook?
+  @State private var nudges: SmartNudgesBook?
   @State private var hour = Calendar.current.component(.hour, from: Date())
   @State private var built = false
 
@@ -45,6 +47,14 @@ struct AssistantTab: View {
         VStack(alignment: .leading, spacing: DS.Spacing.lg) {
           header
           if let signal { BriefCard(brief: signal.brief(hour: hour), lang: lang) }
+          if let nudges { InsightCard(book: nudges) { Task { await loadInsight(force: true) } } }
+          if let metrics {
+            MetricPanelView(book: metrics, signal: signal, lang: lang) { question in
+              guard let chat else { return }
+              path.append(.chat)
+              CoachChatView.ask(chat, question, lang: lang)
+            }
+          }
           if let chat {
             CoachCard(chat: chat, suggestions: signal?.suggestions ?? [], lang: lang) { question in
               path.append(.chat)
@@ -57,13 +67,6 @@ struct AssistantTab: View {
               Text("coach.unavailable")
             }
           }
-          if let metrics {
-            MetricPanelView(book: metrics, signal: signal, lang: lang) { question in
-              guard let chat else { return }
-              path.append(.chat)
-              CoachChatView.ask(chat, question, lang: lang)
-            }
-          }
           tools
         }
         .padding(DS.Spacing.md)
@@ -71,6 +74,7 @@ struct AssistantTab: View {
       .refreshable {
         await signal?.load()
         await metrics?.load(kcalTarget: kcalTarget)
+        await loadInsight()
       }
       .navigationTitle(Text("tab.assistant"))
       .navigationBarTitleDisplayMode(.inline)
@@ -97,10 +101,13 @@ struct AssistantTab: View {
       weekly = services.makeWeeklyReview(userId: userId, today: today)
       biometrics = services.makeBiometricsBook(userId: userId)
       metrics = services.makeMetricHistory(userId: userId, today: today)
+      nudges = services.makeSmartNudges(userId: userId)
       built = true
       await signal?.load()
       // Sau tín hiệu: phân tích calo cần mục tiêu calo của hồ sơ.
       await metrics?.load(kcalTarget: kcalTarget)
+      // Sau tín hiệu: khoá của insight cần dấu "đã ngủ / ăn / tập" hôm nay.
+      await loadInsight()
     }
     // RN học khi app vào nền (`AppState` → `background`): đó mới là lúc cuộc
     // trò chuyện thật sự "xong".
@@ -115,6 +122,7 @@ struct AssistantTab: View {
         await signal?.move(to: today)
         await weekly?.move(to: today)
         await metrics?.move(to: today, kcalTarget: kcalTarget)
+        await loadInsight()
       }
     }
     .onChange(of: isCurrentSession) { _, current in
@@ -125,6 +133,7 @@ struct AssistantTab: View {
       weekly?.close()
       biometrics?.close()
       metrics?.close()
+      nudges?.close()
     }
   }
 
@@ -132,6 +141,14 @@ struct AssistantTab: View {
 
   /// `calorieTargetFor(profile)` của tín hiệu hôm nay (mặc định 2200).
   private var kcalTarget: Double { signal?.signal.kcalTarget ?? 2200 }
+
+  /// Insight của hôm nay theo dấu dữ liệu hiện tại (đổi dấu → lượt gọi mới).
+  private func loadInsight(force: Bool = false) async {
+    guard let nudges, let stamp = signal?.nudgeStamp else { return }
+    await nudges.load(
+      date: Self.today(), lang: lang.rawValue, stamp: stamp, tzOffset: Coach.tzOffset(.current, at: Date()),
+      force: force)
+  }
 
   private static func today() -> LocalDate { LocalDate(SystemWallClock().nowMillis(), in: .current) }
 
@@ -327,5 +344,95 @@ private struct CoachCard: View {
     }
     .padding(DS.Spacing.md)
     .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.lg))
+  }
+}
+
+/// "Insight hôm nay": đang đọc / lỗi (chạm thử lại) / không có gì nổi bật /
+/// tối đa vài câu với chấm theo mức ưu tiên; "Cập nhật HH:mm" là lúc kết quả
+/// về (ẩn khi chưa có lần nào).
+private struct InsightCard: View {
+  let book: SmartNudgesBook
+  let retry: () -> Void
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+      HStack {
+        Label("insight.title", systemImage: "sparkles")
+          .font(DS.TextStyle.headline)
+          .foregroundStyle(DS.Color.foreground.swiftUI)
+          .accessibilityAddTraits(.isHeader)
+        Spacer()
+        if case .ready(let entry) = book.phase {
+          Text("insight.updated \(Self.time(entry.at))")
+            .font(DS.TextStyle.caption)
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        }
+      }
+      content
+        .padding(DS.Spacing.md)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.lg))
+    }
+  }
+
+  @ViewBuilder private var content: some View {
+    switch book.phase {
+    case .idle, .loading:
+      HStack(spacing: DS.Spacing.sm) {
+        ProgressView()
+        Text("insight.loading")
+          .font(DS.TextStyle.footnote)
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+      }
+    case .failed(let failure):
+      Button(action: retry) {
+        Label {
+          VStack(alignment: .leading, spacing: 2) {
+            Text("insight.failed")
+            Text(verbatim: WeeklyReviewView.failureText(failure))
+              .font(DS.TextStyle.caption)
+          }
+        } icon: {
+          Image(systemName: "exclamationmark.triangle")
+        }
+        .font(DS.TextStyle.footnote)
+        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+        .contentShape(Rectangle())
+      }
+      .buttonStyle(.plain)
+    case .ready(let entry) where entry.nudges.isEmpty:
+      Text("insight.empty")
+        .font(DS.TextStyle.footnote)
+        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+    case .ready(let entry):
+      VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+        ForEach(Array(entry.nudges.enumerated()), id: \.offset) { _, n in
+          HStack(alignment: .firstTextBaseline, spacing: DS.Spacing.sm) {
+            Circle()
+              .fill(Self.tint(n.priority))
+              .frame(width: 8, height: 8)
+              .accessibilityHidden(true)
+            Text(verbatim: n.message)
+              .font(DS.TextStyle.body)
+              .foregroundStyle(DS.Color.foreground.swiftUI)
+              .fixedSize(horizontal: false, vertical: true)
+          }
+        }
+      }
+    }
+  }
+
+  private static func tint(_ p: SmartNudges.Priority) -> Color {
+    switch p {
+    case .high: DS.Color.readinessRed.swiftUI
+    case .medium: DS.Color.readinessYellow.swiftUI
+    case .low: DS.Color.readinessGreen.swiftUI
+    }
+  }
+
+  private static func time(_ at: EpochMillis) -> String {
+    Date(timeIntervalSince1970: TimeInterval(at.millis) / 1000)
+      .formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(.app))
   }
 }

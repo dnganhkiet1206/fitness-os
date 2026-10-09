@@ -385,6 +385,12 @@ final class AppServices {
     rows.map { MetricHistoryBook(userId: userId, today: today, store: $0, in: .current) }
   }
 
+  /// "Insight hôm nay" của tab Trợ lý (#527): `ai-smart-nudges`, nhớ bền một ô.
+  func makeSmartNudges(userId: String) -> SmartNudgesBook? {
+    guard let backend else { return nil }
+    return SmartNudgesBook(userId: userId, edge: SupabaseEdgeCaller(backend: backend), cache: SmartNudgesDefaultsCache())
+  }
+
   /// Trí nhớ coach (#527): đọc + xoá `coach_memory`.
   func makeCoachMemory(userId: String) -> CoachMemoryBook? {
     guard let backend else { return nil }

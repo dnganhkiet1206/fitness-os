@@ -78,6 +78,9 @@ public final class AssistantSignalBook {
   /// Nhịp tim của mẫu sinh trắc MỚI NHẤT hôm nay (`useTodayBiometrics`); `nil`
   /// khi chưa có mẫu hoặc mẫu ấy không có nhịp tim — ô hiện "—", không phải 0.
   public private(set) var heartRate: Int?
+  /// Dấu "đã ghi ngủ / đã ăn / đã tập" của hôm nay cho insight
+  /// (`SmartNudges.stamp`); `nil` khi chưa đọc xong lượt nào.
+  public private(set) var nudgeStamp: String?
 
   @ObservationIgnored private let store: any RowStore
   @ObservationIgnored private let tz: TimeZone
@@ -142,6 +145,7 @@ public final class AssistantSignalBook {
     } else {
       heartRate = nil
     }
+    nudgeStamp = SmartNudges.stamp(l)
     let copy = self.copy
     signal = .from(
       log: l, profile: p, lastWorkoutAt: w?["date_time"], today: day, in: tz,
