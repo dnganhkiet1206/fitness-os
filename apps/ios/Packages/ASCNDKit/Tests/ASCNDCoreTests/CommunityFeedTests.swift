@@ -341,7 +341,7 @@ struct CommunityFeedBookTests {
     await b.load()
     #expect(b.posts.map(\.liked) == [true, false])
     #expect(b.posts.map(\.saved) == [false, true])
-    #expect(b.posts.allSatisfy(\.mine))
+    #expect(b.posts.allSatisfy { $0.mine })
     #expect(b.posts[0].author?.handle == "h-me")
     #expect(b.posts[0].art?.path == "w/1.png")  // ảnh đã tắt vẫn vẽ bài cũ
     #expect(b.artURL(b.posts[0].art!)?.absoluteString == "https://art/w/1.png")
