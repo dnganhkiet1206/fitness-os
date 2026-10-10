@@ -178,6 +178,11 @@ private struct SignedInScope<Content: View>: View {
     .onChange(of: services.weightSaved) { _, _ in
       if let reminderToday { Task { await reminderToday.refresh([.weighed]) } }
     }
+    // Nhật ký sửa / xoá món đã được server nhận và dựng lại ngày: chỉ hỏi lại
+    // `daily_logs`, và chỉ khi ngày ấy là hôm nay (#527 A-NEXT-6).
+    .onChange(of: services.mealDiaryRebuilt) { _, pulse in
+      if let pulse, let reminderToday { Task { await reminderToday.changed(on: pulse.day, [.meal]) } }
+    }
     .onChange(of: services.sync.pendingCount) { old, new in
       if new < old, let reminderToday { Task { await reminderToday.refresh() } }
     }

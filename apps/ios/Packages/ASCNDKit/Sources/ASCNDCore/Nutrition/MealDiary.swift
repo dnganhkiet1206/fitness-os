@@ -315,6 +315,12 @@ public final class MealDiaryBook {
   @ObservationIgnored private let source: any MealDiarySource
   @ObservationIgnored private let store: any RowStore
   @ObservationIgnored private let pendingWrites: (any PendingWrites)?
+  /// Server ĐÃ nhận ít nhất một lệnh sửa / xoá / hoàn tác VÀ `daily_logs` của
+  /// ngày ấy đã dựng lại xong — mốc `onSettled → invalidateLogQueries` của RN
+  /// (`use-nutrition.ts` `useDeleteMealItem` / `useRestoreMealItem` /
+  /// `useUpdateMealItemServings`). Không gọi khi chưa ghi được gì, khi chỉ
+  /// chạm món còn trong outbox, hay khi dựng lại hỏng (`daily_logs` chưa đổi).
+  @ObservationIgnored private let onRebuilt: @MainActor (LocalDate) -> Void
   @ObservationIgnored private let clock: any WallClock
   @ObservationIgnored private let timeZone: TimeZone
   @ObservationIgnored private var generation = 0
@@ -322,12 +328,14 @@ public final class MealDiaryBook {
 
   public init(
     userId: String, source: any MealDiarySource, store: any RowStore, pending: (any PendingWrites)? = nil,
-    date: LocalDate? = nil, clock: any WallClock = SystemWallClock(), timeZone: TimeZone = .current
+    date: LocalDate? = nil, clock: any WallClock = SystemWallClock(), timeZone: TimeZone = .current,
+    onRebuilt: @escaping @MainActor (LocalDate) -> Void = { _ in }
   ) {
     self.userId = userId
     self.source = source
     self.store = store
     self.pendingWrites = pending
+    self.onRebuilt = onRebuilt
     self.clock = clock
     self.timeZone = timeZone
     self.date = MealDiary.startDate(date, today: LocalDate(clock.nowMillis(), in: timeZone))
@@ -482,9 +490,11 @@ public final class MealDiaryBook {
     guard !closed else { return failure ?? .done(undo: undo) }
     var rebuilt = true
     if wrote {
+      let day = date
       do {
         try await DailyLog.recompute(
-          userId: userId, date: date, store: store, now: clock.nowMillis(), in: timeZone)
+          userId: userId, date: day, store: store, now: clock.nowMillis(), in: timeZone)
+        onRebuilt(day)
       } catch {
         rebuilt = false
       }

@@ -302,3 +302,115 @@ struct ReminderWeightSavedTests {
     #expect(await os.writes == before + 1, "kế hoạch không đổi → không huỷ-đặt lại")
   }
 }
+
+/// A-NEXT-6: sửa / xoá / hoàn tác món ở Nhật ký → chỉ khi server ĐÃ nhận và
+/// `daily_logs` ĐÃ dựng lại thì kế hoạch nhắc nhở đọc lại `.meal` của hôm nay.
+@MainActor
+struct ReminderDiaryEditTests {
+  final class Rebuilt: @unchecked Sendable {
+    private let lock = NSLock()
+    private var _days: [LocalDate] = []
+    var days: [LocalDate] { lock.withLock { _days } }
+    func add(_ d: LocalDate) { lock.withLock { _days.append(d) } }
+  }
+
+  static func book(_ s: MealDiaryBookTests.FakeSource, _ store: MealDiaryBookTests.FakeStore, _ r: Rebuilt) -> MealDiaryBook {
+    MealDiaryBook(
+      userId: "u1", source: s, store: store, clock: MealDiaryBookTests.Clock(at: MealDiaryBookTests.noon),
+      timeZone: MealDiaryBookTests.utc, onRebuilt: { r.add($0) })
+  }
+
+  static let today = LocalDate("2026-10-09")!
+
+  @Test func deleteSuccessReportsOnceAfterRebuild() async {
+    let s = MealDiaryBookTests.FakeSource(), store = MealDiaryBookTests.FakeStore(), r = Rebuilt()
+    let b = Self.book(s, store, r)
+    let outcome = await b.delete([MealDiaryBookTests.item("i1")], online: true)
+    guard case .done = outcome else { Issue.record("\(outcome)"); return }
+    #expect(r.days == [Self.today])
+    #expect(store.dates == ["2026-10-09"], "daily_logs đã dựng lại TRƯỚC khi báo")
+  }
+
+  @Test func servingsEditSuccessReportsOnce() async {
+    let s = MealDiaryBookTests.FakeSource(), store = MealDiaryBookTests.FakeStore(), r = Rebuilt()
+    let b = Self.book(s, store, r)
+    let outcome = await b.setServings(MealDiaryBookTests.item("i1"), to: 2, online: true)
+    guard case .done = outcome else { Issue.record("\(outcome)"); return }
+    #expect(r.days == [Self.today])
+  }
+
+  /// Lỗi ghi / không chạm hàng nào / mất mạng / món còn trong outbox / dựng lại hỏng: không báo.
+  @Test func nothingConfirmedReportsNothing() async {
+    let r = Rebuilt()
+    do {
+      let s = MealDiaryBookTests.FakeSource(), store = MealDiaryBookTests.FakeStore()
+      s.writeError = URLError(.badServerResponse)
+      #expect(await Self.book(s, store, r).delete([MealDiaryBookTests.item("i1")], online: true) == .failed)
+    }
+    do {
+      let s = MealDiaryBookTests.FakeSource(), store = MealDiaryBookTests.FakeStore()
+      s.deleteTouched = 0
+      #expect(await Self.book(s, store, r).delete([MealDiaryBookTests.item("i1")], online: true) == .nothingWritten)
+    }
+    do {
+      let s = MealDiaryBookTests.FakeSource(), store = MealDiaryBookTests.FakeStore()
+      #expect(await Self.book(s, store, r).setServings(MealDiaryBookTests.item("i1"), to: 2, online: false) == .onlineOnly)
+    }
+    do {
+      let s = MealDiaryBookTests.FakeSource(), store = MealDiaryBookTests.FakeStore()
+      var queued = MealDiaryBookTests.item("q1")
+      queued.pending = true
+      #expect(await Self.book(s, store, r).delete([queued], online: true) == .pendingSync)
+      #expect(s.calls.isEmpty)
+    }
+    do {
+      let s = MealDiaryBookTests.FakeSource(), store = MealDiaryBookTests.FakeStore()
+      store.failRebuild = true
+      #expect(await Self.book(s, store, r).delete([MealDiaryBookTests.item("i1")], online: true) == .rebuildFailed)
+    }
+    #expect(r.days.isEmpty)
+  }
+
+  /// Ngày ấy là hôm nay → đọc lại CHỈ `daily_logs`; ngày đã qua → không truy vấn.
+  @Test func onlyTodayIsReread() async {
+    let store = ReminderTodayBookTests.FakeStore()
+    store.rows = ["daily_logs": [.object(["kcal": .number(0)])], "weight_logs": [.object(["weight_kg": .number(70)])]]
+    let book = ReminderTodayBook(
+      userId: "u1", store: store, clock: ReminderTodayBookTests.Clock(date: ReminderTodayBookTests.morning),
+      timeZone: ReminderTodayBookTests.hcm)
+    await book.refresh()
+    #expect(book.signals.mealLogged == false)
+    #expect(book.signals.weighed == true)
+    store.queries = []
+    store.rows["daily_logs"] = [.object(["kcal": .number(650)])]
+    await book.changed(on: LocalDate("2026-10-08")!, [.meal])
+    #expect(store.queries.isEmpty, "sửa ngày đã qua: không truy vấn")
+    await book.changed(on: LocalDate("2026-10-09")!, [.meal])
+    #expect(store.queries.map { $0.table } == ["daily_logs"])
+    #expect(book.signals.mealLogged == true)
+    #expect(book.signals.weighed == true, "tín hiệu khác giữ nguyên")
+  }
+
+  /// Bữa đổi trạng thái → lời nhắc bữa hôm nay đổi một lần; cùng trạng thái → không đặt lại.
+  @Test func mealSignalReschedulesOnlyOnChange() async {
+    let os = ReminderTodayScheduleTests.OS()
+    let copy: ReminderCopy = Dictionary(
+      uniqueKeysWithValues: ReminderKey.allCases.map { ($0, ReminderText(title: "t", body: "b")) })
+    let cal = ReminderTodayScheduleTests.calendar
+    let at = ReminderTodayScheduleTests.monday6am
+    let c = ReminderCenter(
+      store: ReminderTodayScheduleTests.Store(), scheduler: os, copy: copy,
+      clock: ReminderTodayScheduleTests.Clock(date: at), calendar: cal)
+    await c.refreshPermission()
+    await c.setEnabled(.meal, true)
+    let logged = ReminderContext().with(ReminderToday.Signals(mealLogged: true))
+    await c.sync(logged)
+    let writes = await os.writes
+    #expect(!(await os.pending.contains { $0.key == .meal && cal.isDate($0.at, inSameDayAs: at) }))
+    await c.sync(logged)
+    #expect(await os.writes == writes, "xoá một món mà bữa vẫn > 0 kcal: không đặt lại")
+    await c.sync(ReminderContext().with(ReminderToday.Signals(mealLogged: false)))
+    #expect(await os.writes == writes + 1)
+    #expect(await os.pending.contains { $0.key == .meal && cal.isDate($0.at, inSameDayAs: at) })
+  }
+}

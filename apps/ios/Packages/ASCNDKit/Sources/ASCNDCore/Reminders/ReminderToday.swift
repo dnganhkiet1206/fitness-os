@@ -131,6 +131,14 @@ public final class ReminderTodayBook {
     for s in Signal.allCases { generation[s, default: 0] += 1 }
   }
 
+  /// Dữ liệu của ngày `day` vừa đổi ở nơi khác (ví dụ Nhật ký sửa món ngày
+  /// ấy): chỉ đọc lại `which` khi `day` là HÔM NAY địa phương — sửa một ngày
+  /// đã qua không đổi lời nhắc nào, không cần truy vấn.
+  public func changed(on day: LocalDate, _ which: Set<Signal>) async {
+    guard day == LocalDate(clock.nowMillis(), in: timeZone) else { return }
+    await refresh(which)
+  }
+
   /// Đọc lại `which` (mặc định cả bốn). Mỗi truy vấn độc lập: một cái hỏng
   /// thì tín hiệu ấy giữ giá trị đã đọc của CÙNG ngày (hoặc `nil`), các cái
   /// khác vẫn cập nhật. Chỉ chạy các truy vấn mà `which` cần.

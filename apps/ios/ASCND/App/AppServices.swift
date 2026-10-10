@@ -31,6 +31,14 @@ final class AppServices {
   /// `useLogWeight`). Xếp hàng / lỗi không tăng; bữa ăn đi qua outbox nên đã
   /// có nhịp riêng (`sync.pendingCount` giảm SAU khi dựng lại `daily_logs`).
   private(set) var weightSaved = 0
+  /// Nhật ký vừa sửa / xoá / hoàn tác món và server đã nhận + `daily_logs` của
+  /// ngày ấy đã dựng lại (#527 A-NEXT-6). `seq` để hai lần cùng ngày vẫn là
+  /// hai nhịp.
+  private(set) var mealDiaryRebuilt: DayPulse?
+  struct DayPulse: Equatable {
+    let day: LocalDate
+    let seq: Int
+  }
   @ObservationIgnored private let reminderPresenter = ReminderPresenter()
   let sync: SyncWorker
   /// Hai widget màn hình chính (#66): dữ liệu thật, xoá khi phiên kết thúc.
@@ -349,7 +357,12 @@ final class AppServices {
   func makeMealDiary(userId: String) -> MealDiaryBook? {
     guard let rows, let backend else { return nil }
     // Bữa còn trong outbox hiện cùng bữa của server (chỉ đọc hàng đợi).
-    return MealDiaryBook(userId: userId, source: SupabaseMealDiary(backend: backend), store: rows, pending: outbox)
+    return MealDiaryBook(
+      userId: userId, source: SupabaseMealDiary(backend: backend), store: rows, pending: outbox,
+      onRebuilt: { [weak self] day in
+        guard let self else { return }
+        self.mealDiaryRebuilt = DayPulse(day: day, seq: (self.mealDiaryRebuilt?.seq ?? 0) + 1)
+      })
   }
 
   /// Ghi bữa ăn (#527 Phase 3 · 3.2): tìm món / món gần đây đọc server; LƯU
