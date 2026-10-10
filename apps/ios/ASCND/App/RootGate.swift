@@ -122,6 +122,8 @@ private struct SignedInScope<Content: View>: View {
       await food
       // Sau `forgetOtherAccounts`, như hai sổ trên.
       await reminderToday?.refresh()
+      // Nhiệm vụ ngày: lượt đọc đầu của phiên chỉ đặt mốc (#527 A-NEXT-7).
+      await services.questObserver(userId: userId)?.refresh()
     }
     // Kế hoạch nhắc nhở theo những gì hôm nay đã biết (`useReminderSync` của
     // RN, gắn ở Today): đổi gì — đã tập, đủ nước, uống hết thực phẩm bổ sung,
@@ -135,6 +137,7 @@ private struct SignedInScope<Content: View>: View {
     .onDisappear {
       flow?.close()
       reminderToday?.close()
+      services.closeQuestObserver(userId: userId)
     }
     // Transition opacity (#302) giữ cây cũ thêm một nhịp sau khi phase đổi;
     // `onDisappear` chỉ chạy khi gỡ xong. Đóng ngay lúc phiên không còn là
@@ -145,6 +148,7 @@ private struct SignedInScope<Content: View>: View {
         flow?.close()
         nutrition?.close()
         reminderToday?.close()
+        services.closeQuestObserver(userId: userId)
       }
     }
     .onChange(of: scenePhase) { _, phase in
@@ -163,6 +167,7 @@ private struct SignedInScope<Content: View>: View {
           // khác (máy khác, Apple Health) tới kế hoạch ở đây.
           await reminderToday?.refresh()
           if let ctx = reminderContext { await services.reminders.sync(ctx) }
+          await services.questObserver(userId: userId)?.refresh()
         }
       }
     }
@@ -182,9 +187,14 @@ private struct SignedInScope<Content: View>: View {
     // `daily_logs`, và chỉ khi ngày ấy là hôm nay (#527 A-NEXT-6).
     .onChange(of: services.mealDiaryRebuilt) { _, pulse in
       if let pulse, let reminderToday { Task { await reminderToday.changed(on: pulse.day, [.meal]) } }
+      if let pulse { observeQuests(after: pulse.day) }
     }
     .onChange(of: services.sync.pendingCount) { old, new in
       if new < old, let reminderToday { Task { await reminderToday.refresh() } }
+      // Nhiệm vụ ngày (#527 A-NEXT-7): buổi tập / bữa / nước đều qua hàng đợi —
+      // gửi xong là lúc server (và `daily_logs`) đã có, như `invalidateQueries`
+      // sau khi ghi của RN.
+      if new < old { observeQuests() }
     }
     .onChange(of: services.sync.online) { _, online in
       // Có mạng lại (`refetchOnReconnect` của baseline).
@@ -198,6 +208,14 @@ private struct SignedInScope<Content: View>: View {
   }
 
   private var weightUnit: WeightUnit { WeightUnit(profile: profile?.profile) }
+
+  /// Một lượt đọc nhiệm vụ ngày; `after` = ngày vừa đổi ở nơi khác — chỉ hôm nay
+  /// mới đổi được nhiệm vụ.
+  private func observeQuests(after day: LocalDate? = nil) {
+    guard let observer = services.questObserver(userId: userId) else { return }
+    if let day, day != observer.today { return }
+    Task { await observer.refresh() }
+  }
 
   /// "Hôm nay đã biết gì" cho kế hoạch nhắc nhở; `nil` khi luồng tập chưa dựng.
   private var reminderContext: ReminderContext? {

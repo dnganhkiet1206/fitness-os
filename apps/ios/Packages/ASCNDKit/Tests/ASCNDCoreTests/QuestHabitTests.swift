@@ -92,10 +92,19 @@ struct QuestHabitGoldenTests {
   }
 }
 
-/// Producer (S2): phòng linh vật thấy nhiệm vụ vừa xong → `HabitHours`.
+/// Producer (S2 + cấp app): MỘT bộ quan sát mỗi tài khoản — phiên (Hôm nay)
+/// và phòng linh vật cùng đưa lượt đọc vào → `HabitHours`.
 @MainActor
 struct QuestHabitProducerTests {
   typealias Fake = MascotRoomControllerTests.FakeSource
+
+  final class Clock: WallClock, @unchecked Sendable {
+    let lock = NSLock()
+    var date: Date
+    init(_ iso: String) { date = ISO8601DateFormatter().date(from: iso)! }
+    func now() -> Date { lock.withLock { date } }
+    func set(_ iso: String) { lock.withLock { date = ISO8601DateFormatter().date(from: iso)! } }
+  }
 
   final class Notes: @unchecked Sendable {
     let lock = NSLock()
@@ -105,13 +114,16 @@ struct QuestHabitProducerTests {
   }
 
   static let welcomed = MascotRoomControllerTests.welcomed
+  static let utc = TimeZone(identifier: "UTC")!
 
-  static func room(
-    _ s: Fake, day: String = "2026-10-08", user: String = "u1", hour: Int = 18, notes: Notes
-  ) -> MascotRoomController {
+  static func observer(_ s: Fake, clock: Clock, user: String = "u1", notes: Notes) -> QuestObserver {
+    QuestObserver(userId: user, source: s, clock: clock, timeZone: utc) { q, h in notes.add(q, h) }
+  }
+
+  static func room(_ s: Fake, day: String = "2026-10-08", observer: QuestObserver) -> MascotRoomController {
     MascotRoomController(
-      userId: user, today: LocalDate(day)!, source: s, economy: MascotRoomControllerTests.FakeEconomy(source: s),
-      onQuestDone: { q, h in notes.add(q, h) }, hourNow: { hour })
+      userId: observer.userId, today: LocalDate(day)!, source: s,
+      economy: MascotRoomControllerTests.FakeEconomy(source: s), questObserver: observer)
   }
 
   static func signals(workout: Bool = false, meal: Bool = false, steps: Double? = nil) -> DailySignals {
@@ -124,25 +136,51 @@ struct QuestHabitProducerTests {
     s.ledgerRows = Self.welcomed
     s.signals = Self.signals(workout: true, meal: true)
     let notes = Notes()
-    let c = Self.room(s, notes: notes)
-    await c.load()  // đã xong khi app mở: giờ lúc này là giờ mở app
-    await c.load()  // làm mới: không có gì đổi
+    let o = Self.observer(s, clock: Clock("2026-10-08T18:20:00Z"), notes: notes)
+    await o.refresh()  // đã xong khi app mở: giờ lúc này là giờ mở app
+    await o.refresh()  // làm mới: không có gì đổi
     #expect(notes.all.isEmpty)
   }
 
-  @Test func aSeenTransitionIsNotedWithTheLocalHour() async {
+  /// Hoàn thành khi đang ở Hôm nay, KHÔNG mở phòng linh vật: nhịp của phiên
+  /// (hàng đợi gửi xong) thấy và ghi đúng giờ địa phương lúc thấy.
+  @Test func aTransitionSeenFromTodayIsNotedOnceWithTheLocalHour() async {
     let s = Fake()
     s.ledgerRows = Self.welcomed
     s.signals = Self.signals()
     let notes = Notes()
-    let c = Self.room(s, hour: 7, notes: notes)
-    await c.load()
+    let clock = Clock("2026-10-08T07:05:00Z")
+    let o = Self.observer(s, clock: clock, notes: notes)
+    await o.refresh()
     s.signals = Self.signals(workout: true)
-    await c.load()
+    clock.set("2026-10-08T07:40:00Z")
+    await o.refresh()
     #expect(notes.quests == [.workout])
     #expect(notes.all.first?.hour == 7)
-    await c.load()  // đọc lại cùng trạng thái: không ghi lần hai
+    await o.refresh()  // refetch không đổi: không ghi lần hai
     #expect(notes.all.count == 1)
+    // Mở phòng linh vật SAU đó: cùng mốc → không ghi trùng.
+    let c = Self.room(s, observer: o)
+    await c.load()
+    await c.load()
+    #expect(notes.all.count == 1)
+  }
+
+  /// Phòng linh vật cũng là một lượt đọc: thấy ở phòng thì nhịp phiên sau đó
+  /// không ghi lại.
+  @Test func theRoomFeedsTheSameBaseline() async {
+    let s = Fake()
+    s.ledgerRows = Self.welcomed
+    s.signals = Self.signals()
+    let notes = Notes()
+    let o = Self.observer(s, clock: Clock("2026-10-08T18:00:00Z"), notes: notes)
+    await o.refresh()
+    s.signals = Self.signals(meal: true)
+    let c = Self.room(s, observer: o)
+    await c.load()
+    #expect(notes.quests == [.meal])
+    await o.refresh()
+    #expect(notes.quests == [.meal])
   }
 
   @Test func claimedOrUnreadableReadingsAreNotObservations() async {
@@ -150,36 +188,95 @@ struct QuestHabitProducerTests {
     s.ledgerRows = Self.welcomed + [LedgerRow(amount: 25, refKey: "d:2026-10-08:workout")]
     s.signals = Self.signals()
     let notes = Notes()
-    let c = Self.room(s, notes: notes)
-    await c.load()
+    let o = Self.observer(s, clock: Clock("2026-10-08T12:00:00Z"), notes: notes)
+    await o.refresh()
     s.signals = Self.signals(workout: true, meal: true)
-    await c.load()
+    await o.refresh()
     #expect(notes.quests == [.meal])  // tập đã nhận thưởng ở nơi khác: không nằm trong `unclaimed`
     // Tín hiệu ngày đọc hỏng = chưa `ready`: không ghi, không dời mốc.
     s.signals = Self.signals()
     s.signalsError = URLError(.notConnectedToInternet)
-    await c.load()
+    await o.refresh()
     s.signalsError = nil
     s.signals = Self.signals(workout: true, meal: true)
-    await c.load()
+    await o.refresh()
     #expect(notes.quests == [.meal])
+    // Sổ xu hỏng = chưa biết đã nhận gì: vẫn quan sát (như `claimedList(undefined)`).
+    s.ledgerError = URLError(.timedOut)
+    s.signals = Self.signals()
+    await o.refresh()
+    s.signals = Self.signals(workout: true)
+    await o.refresh()
+    #expect(notes.quests == [.meal, .workout])
+  }
+
+  @Test func aNewDayOnlySetsANewBaselineAndOldDaysAreIgnored() async {
+    let s = Fake()
+    s.ledgerRows = Self.welcomed
+    s.signals = Self.signals()
+    let notes = Notes()
+    let clock = Clock("2026-10-08T22:00:00Z")
+    let o = Self.observer(s, clock: clock, notes: notes)
+    await o.refresh()
+    // Qua nửa đêm; ngày mới mở ra với bữa đã ghi: chỉ là mốc.
+    clock.set("2026-10-09T08:00:00Z")
+    s.signals = Self.signals(meal: true)
+    await o.refresh()
+    #expect(notes.all.isEmpty)
+    // Phòng linh vật dựng từ hôm qua về muộn với lượt của ngày cũ: bỏ.
+    let stale = Self.room(s, day: "2026-10-08", observer: o)
+    s.signals = Self.signals()
+    await stale.load()
+    s.signals = Self.signals(meal: true)
+    await o.refresh()
+    #expect(notes.all.isEmpty)  // mốc không bị lượt cũ kéo lùi rồi ghi lặp
+  }
+
+  @Test func aLateOlderReadingNeverRewindsTheBaseline() {
+    let notes = Notes()
+    let o = Self.observer(Fake(), clock: Clock("2026-10-08T09:00:00Z"), notes: notes)
+    let day = LocalDate("2026-10-08")!
+    let first = o.begin(), older = o.begin(), newer = o.begin()
+    o.observe(token: first, day: day, signals: Self.signals(), claimed: [])
+    o.observe(token: newer, day: day, signals: Self.signals(workout: true), claimed: [])
+    #expect(notes.quests == [.workout])
+    // Lượt bắt đầu trước về sau (còn "chưa xong"): bỏ — nếu không, lượt kế
+    // tiếp sẽ ghi tập lần hai.
+    o.observe(token: older, day: day, signals: Self.signals(), claimed: [])
+    o.observe(token: o.begin(), day: day, signals: Self.signals(workout: true), claimed: [])
+    #expect(notes.quests == [.workout])
+  }
+
+  @Test func aClosedObserverWritesNothing() async {
+    let s = Fake()
+    s.ledgerRows = Self.welcomed
+    s.signals = Self.signals()
+    let notes = Notes()
+    let o = Self.observer(s, clock: Clock("2026-10-08T09:00:00Z"), notes: notes)
+    await o.refresh()
+    o.close()  // đăng xuất / đổi tài khoản
+    s.signals = Self.signals(workout: true)
+    await o.refresh()
+    o.observe(token: o.begin(), day: LocalDate("2026-10-08")!, signals: s.signals, claimed: [])
+    #expect(notes.all.isEmpty)
   }
 
   @Test func onlyClockTrustedQuestsBecomeHabitsAndOnlyForThisAccount() async {
-    let store = HabitHoursTests.Store()
-    let hours = HabitHours(store: store)
+    let hours = HabitHours(store: HabitHoursTests.Store())
+    let s = Fake()
+    s.ledgerRows = Self.welcomed
+    let clock = Clock("2026-10-01T06:00:00Z")
+    let o = QuestObserver(userId: "u1", source: s, clock: clock, timeZone: Self.utc) { q, h in
+      hours.noteDone(q, hour: Double(h), userId: "u1")
+    }
     // Sáu ngày, mỗi ngày thấy tập (và bước) xong lúc 18 giờ.
     for d in 1...6 {
-      let s = Fake()
-      s.ledgerRows = Self.welcomed
+      clock.set(String(format: "2026-10-%02dT06:00:00Z", d))
       s.signals = Self.signals(steps: 0)
-      let c = MascotRoomController(
-        userId: "u1", today: LocalDate(String(format: "2026-10-%02d", d))!, source: s,
-        economy: MascotRoomControllerTests.FakeEconomy(source: s),
-        onQuestDone: { q, h in hours.noteDone(q, hour: Double(h), userId: "u1") }, hourNow: { 18 })
-      await c.load()
+      await o.refresh()
+      clock.set(String(format: "2026-10-%02dT18:10:00Z", d))
       s.signals = Self.signals(workout: true, steps: 20_000)
-      await c.load()
+      await o.refresh()
     }
     let habit = hours.habit(.workout, userId: "u1")
     #expect(habit.map { abs($0.hour - 18) < 1e-9 } == true)
@@ -191,7 +288,7 @@ struct QuestHabitProducerTests {
     let known = ReminderTiming.Known(profile: nil, workoutHour: habit?.hour)
     #expect(ReminderTiming.offer(.workout, prefs: prefs, known: known) == ReminderClock(hour: 17, minute: 0))
     #expect(ReminderTiming.workoutHabitClock(habit?.hour).map(ReminderTiming.format) == "18:00")
-    // Tắt lời nhắc → không mời; đã ở 17:00 → lệch < 20 phút, không mời.
+    // Tắt lời nhắc → không mời; đã ở 17:10 → lệch < 20 phút, không mời.
     prefs.workout = .init(enabled: false, hour: 7, minute: 0)
     #expect(ReminderTiming.offer(.workout, prefs: prefs, known: known) == nil)
     prefs.workout = .init(enabled: true, hour: 17, minute: 10)

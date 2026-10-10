@@ -64,7 +64,7 @@ Follow-up chỉ được tạo cho mục có nguồn RN cụ thể (#336). Các 
 |---|---|---|---|
 | Sửa hồ sơ (đơn vị, cân nặng, mục tiêu) | `app/edit-profile.tsx` (889), `useProfile` | không | not ported. Vỏ trình bày: C-35 #387 |
 | Cài đặt (ngôn ngữ, khoá app, vai trò, linh vật) | `app/settings.tsx` (1109), `useAppLock`, `useAppRole` | không | not ported |
-| Nhắc nhở | `app/reminders.tsx` (306), `use-reminders.ts` | `ReminderCenter` (#445), `RemindersView` (#527 1.10) | ported (chờ merge) | lời mời theo giờ hay tập: có (A-NEXT-7 S1 A + S2/S3 E — `HabitHours`, `QuestWatch`, `RemindersView`), nguồn ghi mới chỉ ở phòng linh vật; đồng bộ ngữ cảnh từ Hôm nay (`useReminderSync`) |
+| Nhắc nhở | `app/reminders.tsx` (306), `use-reminders.ts` | `ReminderCenter` (#445), `RemindersView` (#527 1.10) | ported (chờ merge) | lời mời theo giờ hay tập: có (A-NEXT-7 S1 A + S2/S3 E — `HabitHours`, `QuestWatch`, `RemindersView`), nguồn ghi ở cấp app (`QuestObserver`, nhịp phiên của `RootGate`) + phòng linh vật, dùng chung một mốc; đồng bộ ngữ cảnh từ Hôm nay (`useReminderSync`) |
 
 ## 6. Readiness và HealthKit
 

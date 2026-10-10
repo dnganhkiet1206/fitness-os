@@ -30,6 +30,9 @@ final class AppServices {
   /// A-NEXT-7 · S1). Nguồn ghi (tự nhận nhiệm vụ) là S2 của Mascot; màn Nhắc
   /// nhở đọc `habit(.workout, userId:)` ở S3.
   let habitHours = HabitHours(store: UserDefaultsStore())
+  /// Bộ quan sát nhiệm vụ ngày của tài khoản đang đăng nhập (#527 A-NEXT-7,
+  /// cấp app): phiên (`RootGate`) và phòng linh vật dùng CHUNG một bản.
+  @ObservationIgnored private var questObserverCache: QuestObserver?
   /// Số lần cân ONLINE đã được server xác nhận trong lần chạy app này — nhịp
   /// để kế hoạch nhắc nhở đọc lại `weight_logs` ngay (`invalidateQueries` của
   /// `useLogWeight`). Xếp hàng / lỗi không tăng; bữa ăn đi qua outbox nên đã
@@ -491,12 +494,40 @@ final class AppServices {
     guard let backend else { return nil }
     // Mục tiêu bước của màn Vận động (theo tài khoản) — nhiệm vụ bước chấm theo nó.
     let goals = StepsGoalStore(store: UserDefaultsStore(), userId: userId)
-    // Nhiệm vụ THẤY vừa xong → giờ thói quen (#527 A-NEXT-7 · S2): chính
-    // `noteDone` của RN; `HabitHours` tự bỏ nhiệm vụ ngoài `CLOCK_TRUSTED`.
+    // Lượt đọc của phòng đi vào bộ quan sát chung của tài khoản (#527 A-NEXT-7).
     return MascotRoomController(
       userId: userId, today: today, source: SupabaseMascotSource(backend: backend),
       economy: SupabaseMascotEconomy(backend: backend), stepsGoal: { goals.goal },
-      onQuestDone: { [habitHours] quest, hour in habitHours.noteDone(quest, hour: Double(hour), userId: userId) })
+      questObserver: questObserver(userId: userId))
+  }
+
+  /// MỘT bộ quan sát nhiệm vụ cho mỗi tài khoản (`<QuestAutoClaim />` gắn ở gốc
+  /// app RN): nhiệm vụ THẤY vừa xong → giờ thói quen — chính `noteDone` của RN;
+  /// `HabitHours` tự bỏ nhiệm vụ ngoài `CLOCK_TRUSTED`. Đổi người → bản cũ
+  /// đóng, bản mới bắt đầu từ mốc trống.
+  func questObserver(userId: String) -> QuestObserver? {
+    if let o = questObserverCache, o.userId == userId { return o }
+    questObserverCache?.close()
+    questObserverCache = nil
+    guard let backend else { return nil }
+    let goals = StepsGoalStore(store: UserDefaultsStore(), userId: userId)
+    let o = QuestObserver(
+      userId: userId, source: SupabaseMascotSource(backend: backend), stepsGoal: { goals.goal },
+      onQuestDone: { [weak self, habitHours] quest, hour in
+        // Chỉ khi phiên vẫn là của người này: giờ của người vừa rời đi không
+        // được ghi lại sau `habitHours.clear()`.
+        guard self?.session.session?.userId == userId else { return }
+        habitHours.noteDone(quest, hour: Double(hour), userId: userId)
+      })
+    questObserverCache = o
+    return o
+  }
+
+  /// Phiên của `userId` kết thúc: lượt đọc về muộn của nó không ghi gì nữa.
+  func closeQuestObserver(userId: String) {
+    guard let o = questObserverCache, o.userId == userId else { return }
+    o.close()
+    questObserverCache = nil
   }
 
   /// Giấc ngủ — 7 ngày (#527): `sleep_logs` + mục tiêu ngủ của hồ sơ; xoá một

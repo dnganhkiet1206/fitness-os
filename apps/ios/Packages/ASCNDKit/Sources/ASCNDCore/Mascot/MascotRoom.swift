@@ -204,22 +204,18 @@ public final class MascotRoomController {
   /// Chốt của thưởng chào mừng: đặt TRƯỚC khi gọi, gỡ khi bị từ chối (RN).
   @ObservationIgnored private var welcomeTried = false
   @ObservationIgnored private var closed = false
-  /// Mốc "lần đọc trước" của các nhiệm vụ ngày (#527 A-NEXT-7 · S2).
-  @ObservationIgnored private var watch = QuestWatch()
-  /// Nhiệm vụ vừa được THẤY chuyển sang xong, kèm giờ nguyên địa phương lúc
-  /// thấy (`noteDone(key, new Date().getHours(), …)`).
-  @ObservationIgnored private let onQuestDone: @Sendable (MascotRules.Quest, Int) -> Void
-  @ObservationIgnored private let hourNow: @Sendable () -> Int
+  /// Bộ quan sát nhiệm vụ của tài khoản, dùng chung với cấp app (#527
+  /// A-NEXT-7): lượt đọc của phòng đi vào CÙNG một mốc, nên một bước chuyển
+  /// đã thấy ở Hôm nay không được ghi lại khi mở phòng.
+  @ObservationIgnored private let questObserver: QuestObserver?
 
   public init(
     userId: String, today: LocalDate, source: any MascotSource, economy: any MascotEconomy,
     makeRequestId: @escaping @Sendable () -> UUID = { UUID() },
     stepsGoal: @escaping @Sendable () -> Int = { DailySignals.defaultStepsGoal },
-    onQuestDone: @escaping @Sendable (MascotRules.Quest, Int) -> Void = { _, _ in },
-    hourNow: @escaping @Sendable () -> Int = { Calendar.current.component(.hour, from: Date()) }
+    questObserver: QuestObserver? = nil
   ) {
-    self.onQuestDone = onQuestDone
-    self.hourNow = hourNow
+    self.questObserver = questObserver
     self.stepsGoalSource = stepsGoal
     self.userId = userId
     self.today = today
@@ -236,6 +232,7 @@ public final class MascotRoomController {
   /// Đọc tất cả, song song. Sổ xu là bắt buộc; phần khác lỗi thì phần đó ẩn.
   public func load() async {
     let uid = userId, day = today, src = source
+    let token = questObserver?.begin()
     let weekStart = day.adding(days: -WorkoutPlanning.routineIndex(day))
     async let ledger = capture { try await src.ledger(userId: uid) }
     async let dates = capture { try await src.loggedDates(userId: uid, limit: Streak.window) }
@@ -263,26 +260,11 @@ public final class MascotRoomController {
     if let n = try? a.get() { awardCount = n }
     if let sig = try? s.get() {
       signals = sig
-      observeQuests(sig, day: day)
+      // Một lượt `useDailyQuests` đã `ready`.
+      if let token { questObserver?.observe(token: token, day: day, signals: sig, claimed: wallet?.claimed ?? []) }
     }
     if wallet != nil { phase = .ready }
     await grantWelcomeIfNeeded()
-  }
-
-  /// Một lần đọc `useDailyQuests` đã `ready` (tín hiệu ngày đọc được): bước
-  /// chuyển "chưa xong → xong" của nhiệm vụ chưa nhận thưởng → `onQuestDone`.
-  /// Sổ xu lỗi = chưa biết đã nhận gì, như RN (`claimedList(undefined)`).
-  private func observeQuests(_ sig: DailySignals, day: LocalDate) {
-    let goal = stepsGoal
-    var done: [MascotRules.Quest: Bool] = [:]
-    for q in MascotRules.Quest.allCases { done[q] = sig.done(q, stepsGoal: goal) }
-    let unclaimed = activeQuests.map(\.key).filter {
-      done[$0] == true && !isClaimed(MascotRules.questRefKey(day, $0))
-    }
-    let seen = watch.read(today: day.description, done: done, unclaimed: unclaimed)
-    guard !seen.isEmpty else { return }
-    let hour = hourNow()
-    for q in seen { onQuestDone(q, hour) }
   }
 
   /// Chỉ đọc lại sổ (sau một lần nhận / mua).
