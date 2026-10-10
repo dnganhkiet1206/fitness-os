@@ -35,7 +35,8 @@ struct FoodFormGoldenTests {
     let cases = Self.array(try Self.golden()["seeds"])
     #expect(cases.count == 160)
     for c in cases {
-      let food = try #require(FoodLibrary.Food(row: try #require(c["row"])))
+      let row = try #require(c["row"])
+      let food = try #require(FoodLibrary.Food(row: row))
       let f = FoodLibrary.Form(food)
       let w = c["expected"]
       #expect(f.name == w?["name"]?.stringValue, "\(c)")
