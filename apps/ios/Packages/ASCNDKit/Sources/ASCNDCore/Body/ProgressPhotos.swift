@@ -136,6 +136,19 @@ public enum ProgressPhotos {
     return (v > 0 ? "+" : "") + ReadinessEngine.jsString(v) + unit
   }
 
+  /// Cân trên tấm so sánh theo đơn vị của tài khoản: `72.5kg` / `159.8lb`.
+  public static func weightText(_ kg: Double, unit: WeightUnit) -> String {
+    ReadinessEngine.jsString(JS.round(unit.convert(kg) * 10) / 10) + unit.label
+  }
+
+  /// Hiệu cân theo đơn vị của tài khoản: `+1.5kg` / `-3.3lb` / `—`.
+  public static func weightDeltaText(_ kg: Double?, unit: WeightUnit) -> String {
+    deltaText(kg.map { JS.round(unit.convert($0) * 10) / 10 }, unit: unit.label)
+  }
+
+  /// Vòng eo như RN in: `80.25cm`.
+  public static func waistText(_ cm: Double) -> String { ReadinessEngine.jsString(cm) + "cm" }
+
   /// Hai ảnh đã chọn, cũ bên trái (theo ngày, rồi thứ tự chọn).
   public static func ordered(_ a: Photo, _ b: Photo) -> (Photo, Photo) {
     let da = a.date?.description ?? "", db = b.date?.description ?? ""

@@ -342,7 +342,8 @@ final class AppServices {
   /// khẩu phần thẳng server (chỉ online, như RN) rồi dựng lại `daily_logs`.
   func makeMealDiary(userId: String) -> MealDiaryBook? {
     guard let rows, let backend else { return nil }
-    return MealDiaryBook(userId: userId, source: SupabaseMealDiary(backend: backend), store: rows)
+    // Bữa còn trong outbox hiện cùng bữa của server (chỉ đọc hàng đợi).
+    return MealDiaryBook(userId: userId, source: SupabaseMealDiary(backend: backend), store: rows, pending: outbox)
   }
 
   /// Ghi bữa ăn (#527 Phase 3 · 3.2): tìm món / món gần đây đọc server; LƯU

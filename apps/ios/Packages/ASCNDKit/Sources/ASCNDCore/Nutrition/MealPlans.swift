@@ -334,7 +334,7 @@ public final class MealPlanBook {
     guard !closed else { return }
     let source = self.source, planId = self.planId, userId = self.userId
     let range = DailyLog.dayRange(LocalDate(clock.nowMillis(), in: timeZone), in: timeZone)
-    async let todayMeals = Self.readToday(source, userId: userId, range: range)
+    async let todayMeals = Self.readToday(source, store, userId: userId, range: range)
     do {
       let rows = try await source.items(planId: planId)
       let meals = await todayMeals
@@ -349,16 +349,22 @@ public final class MealPlanBook {
     }
   }
 
-  /// Nhật ký hôm nay; hỏng thì `nil` (coi như chưa ghi bữa nào).
+  /// Nhật ký hôm nay = server ⊕ bữa còn trong outbox (vừa "Ghi vào hôm nay"
+  /// lúc mất mạng vẫn tính là đã ghi). Server hỏng: chỉ phần outbox; cả hai
+  /// hỏng: `nil` (coi như chưa ghi bữa nào).
   nonisolated static func readToday(
-    _ source: any MealPlansSource, userId: String, range: DailyLog.Window
+    _ source: any MealPlansSource, _ store: (any PendingWrites)?, userId: String, range: DailyLog.Window
   ) async -> [MealDiary.Meal]? {
-    guard let entries = try? await source.todayEntries(userId: userId, start: range.start, end: range.end) else {
-      return nil
+    var server: [MealDiary.Meal]?
+    if let entries = try? await source.todayEntries(userId: userId, start: range.start, end: range.end) {
+      let ids = entries.compactMap { $0["id"]?.stringValue }
+      let items = ids.isEmpty ? [] : ((try? await source.todayItems(entryIds: ids)) ?? [])
+      server = MealDiary.meals(entries: entries, items: items)
     }
-    let ids = entries.compactMap { $0["id"]?.stringValue }
-    let items = ids.isEmpty ? [] : ((try? await source.todayItems(entryIds: ids)) ?? [])
-    return MealDiary.meals(entries: entries, items: items)
+    let queued = try? await store?.pending(userId: userId)
+    guard server != nil || queued != nil else { return nil }
+    return MealDiary.merge(
+      server: server ?? [], pending: MealLog.pendingMeals(queued ?? [], userId: userId, window: range))
   }
 
   public func isLoggedToday(_ meal: String, day: Int) -> Bool {
@@ -379,6 +385,11 @@ public final class MealPlanBook {
       return .failed
     }
     onEnqueued(entry)
+    // Bữa vừa vào hàng đợi đã là "có trong hôm nay" — không đợi gửi xong.
+    today = MealDiary.merge(
+      server: today,
+      pending: MealLog.pendingMeals(
+        [entry], userId: userId, window: DailyLog.dayRange(LocalDate(now, in: timeZone), in: timeZone)))
     return .queued(online: online)
   }
 

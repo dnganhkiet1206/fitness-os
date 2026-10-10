@@ -96,6 +96,16 @@ struct ProgressPhotosGoldenTests {
       ProgressPhotos.storagePath("https://x.supabase.co/storage/v1/object/public/progress-photos/u/x.jpg") == "u/x.jpg")
     #expect(ProgressPhotos.storagePath("https://cdn/other.jpg") == "")
   }
+
+  /// Tấm so sánh in theo đơn vị của tài khoản (RN luôn "kg").
+  @Test func compareTextFollowsTheAccountUnit() {
+    #expect(ProgressPhotos.weightText(72.5, unit: .kg) == "72.5kg")
+    #expect(ProgressPhotos.weightText(72.5, unit: .lbs) == "159.8lb")
+    #expect(ProgressPhotos.weightDeltaText(-1.5, unit: .kg) == "-1.5kg")
+    #expect(ProgressPhotos.weightDeltaText(1, unit: .lbs) == "+2.2lb")
+    #expect(ProgressPhotos.weightDeltaText(nil, unit: .kg) == "—")
+    #expect(ProgressPhotos.waistText(80.25) == "80.25cm")
+  }
 }
 
 @MainActor

@@ -367,11 +367,12 @@ private struct CompareSheet: View {
           DSCard {
             VStack(alignment: .leading, spacing: DS.Spacing.sm) {
               row(
-                "photos.compare.weight", before: result?.weightBefore.map(weight), after: result?.weightAfter.map(weight),
-                delta: ProgressPhotos.deltaText(result?.weightDelta.map(unit.convert).map(Self.round1), unit: unit.label))
+                "photos.compare.weight", before: result?.weightBefore.map { ProgressPhotos.weightText($0, unit: unit) },
+                after: result?.weightAfter.map { ProgressPhotos.weightText($0, unit: unit) },
+                delta: ProgressPhotos.weightDeltaText(result?.weightDelta, unit: unit))
               row(
-                "photos.compare.waist", before: result?.waistBefore.map { "\(ReadinessEngine.jsString($0))cm" },
-                after: result?.waistAfter.map { "\(ReadinessEngine.jsString($0))cm" },
+                "photos.compare.waist", before: result?.waistBefore.map(ProgressPhotos.waistText),
+                after: result?.waistAfter.map(ProgressPhotos.waistText),
                 delta: ProgressPhotos.deltaText(result?.waistDelta, unit: "cm"))
             }
           }
@@ -386,10 +387,6 @@ private struct CompareSheet: View {
       .task { result = await book.comparison(pair.before, pair.after) }
     }
   }
-
-  private static func round1(_ v: Double) -> Double { (v * 10).rounded() / 10 }
-
-  private func weight(_ kg: Double) -> String { "\(ReadinessEngine.jsString(Self.round1(unit.convert(kg))))\(unit.label)" }
 
   private func column(_ p: ProgressPhotos.Photo) -> some View {
     VStack(spacing: DS.Spacing.xs) {
