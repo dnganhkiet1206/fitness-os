@@ -50,6 +50,8 @@ public enum MealDiary {
     public let protein: Double
     public let carbs: Double
     public let fat: Double
+    /// Còn nằm trong outbox, server chưa có — không sửa / xoá được cho tới khi gửi xong.
+    public internal(set) var pending = false
 
     public init(
       id: String, entryId: String, foodName: String, servings: Double, kcal: Double, protein: Double,
@@ -84,7 +86,9 @@ public enum MealDiary {
     public let protein: Double
     public let carbs: Double
     public let fat: Double
-    public let items: [Item]
+    public internal(set) var items: [Item]
+    /// Bữa còn nằm trong outbox (`MealLog.pendingMeals`).
+    public internal(set) var pending = false
 
     public init(id: String, type: String, kcal: Double, protein: Double, carbs: Double, fat: Double, items: [Item]) {
       self.id = id
@@ -113,6 +117,13 @@ public enum MealDiary {
   static func num(_ v: JSONValue?) -> Double {
     let n = JS.number(v)
     return n.isNaN ? 0 : n
+  }
+
+  /// Bản server ⊕ bữa chưa gửi. Hàng đã gửi nhưng outbox chưa kịp bỏ thì server
+  /// đã có cùng id — giữ bản server, không hiện hai lần.
+  public static func merge(server: [Meal], pending: [Meal]) -> [Meal] {
+    let ids = Set(server.map(\.id))
+    return server + pending.filter { !ids.contains($0.id) }
   }
 
   /// Ghép hai lượt đọc của `useTodayLog`: bữa theo thứ tự đọc, món theo bữa.
@@ -281,6 +292,8 @@ public final class MealDiaryBook {
     case nothingWritten
     /// Ghi hỏng.
     case failed
+    /// Món còn chờ gửi (outbox) — server chưa có, chưa sửa / xoá được.
+    case pendingSync
     /// Đã ghi, nhưng dựng lại tổng ngày hỏng — KHÔNG được trông như đã xong.
     case rebuildFailed
   }
@@ -301,18 +314,20 @@ public final class MealDiaryBook {
 
   @ObservationIgnored private let source: any MealDiarySource
   @ObservationIgnored private let store: any RowStore
+  @ObservationIgnored private let pendingWrites: (any PendingWrites)?
   @ObservationIgnored private let clock: any WallClock
   @ObservationIgnored private let timeZone: TimeZone
   @ObservationIgnored private var generation = 0
   @ObservationIgnored private var closed = false
 
   public init(
-    userId: String, source: any MealDiarySource, store: any RowStore, date: LocalDate? = nil,
-    clock: any WallClock = SystemWallClock(), timeZone: TimeZone = .current
+    userId: String, source: any MealDiarySource, store: any RowStore, pending: (any PendingWrites)? = nil,
+    date: LocalDate? = nil, clock: any WallClock = SystemWallClock(), timeZone: TimeZone = .current
   ) {
     self.userId = userId
     self.source = source
     self.store = store
+    self.pendingWrites = pending
     self.clock = clock
     self.timeZone = timeZone
     self.date = MealDiary.startDate(date, today: LocalDate(clock.nowMillis(), in: timeZone))
@@ -344,19 +359,24 @@ public final class MealDiaryBook {
     generation += 1
   }
 
-  /// Đọc ngày đang xem. Lỗi khi đang hiện đúng ngày ấy thì giữ số cũ.
+  /// Đọc ngày đang xem (server ⊕ bữa còn trong outbox của ngày ấy). Lỗi khi
+  /// đang hiện đúng ngày ấy thì giữ số cũ.
   public func load() async {
     guard !closed else { return }
     generation += 1
     let gen = generation, day = date
     let range = DailyLog.dayRange(day, in: timeZone)
-    let source = self.source, userId = self.userId
+    let source = self.source, userId = self.userId, pendingWrites = self.pendingWrites
     do {
       let entries = try await source.entries(userId: userId, start: range.start, end: range.end)
       let ids = entries.compactMap { $0["id"]?.stringValue }
       let items = ids.isEmpty ? [] : try await source.items(entryIds: ids)
+      // Đọc outbox SAU server: hàng gửi xong giữa hai lượt thì đã có ở server.
+      let queued = (try? await pendingWrites?.pending(userId: userId)) ?? []
       guard !closed, gen == generation else { return }
-      phase = .ready(MealDiary.meals(entries: entries, items: items))
+      phase = .ready(MealDiary.merge(
+        server: MealDiary.meals(entries: entries, items: items),
+        pending: MealLog.pendingMeals(queued, userId: userId, window: range)))
     } catch {
       guard !closed, gen == generation else { return }
       if case .ready = phase { return }
@@ -367,6 +387,9 @@ public final class MealDiaryBook {
   /// Xoá các món (một món, hay cả một bữa — từng món, như RN), rồi dựng lại ngày.
   public func delete(_ items: [MealDiary.Item], online: Bool) async -> EditOutcome {
     guard !closed, !busy, !items.isEmpty else { return .failed }
+    // Món chưa tới server: xoá ở server không chạm hàng nào — bỏ ra, không báo lỗi giả.
+    let items = items.filter { !$0.pending }
+    guard !items.isEmpty else { return .pendingSync }
     guard online else { return .onlineOnly }
     busy = true
     defer { if !closed { busy = false } }
@@ -413,6 +436,7 @@ public final class MealDiaryBook {
   /// Đổi số khẩu phần của một món. Không đổi gì thì không ghi.
   public func setServings(_ it: MealDiary.Item, to servings: Double, online: Bool) async -> EditOutcome {
     guard !closed, !busy else { return .failed }
+    guard !it.pending else { return .pendingSync }
     guard servings != it.servings else { return .done(undo: []) }
     guard MealDiary.servingsRange.contains(servings) else { return .failed }
     guard online else { return .onlineOnly }

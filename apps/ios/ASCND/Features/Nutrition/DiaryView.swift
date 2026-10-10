@@ -281,6 +281,7 @@ struct DiaryView: View {
     case .onlineOnly: text = String(localized: "diary.error.onlineOnly")
     case .nothingWritten: text = String(localized: "diary.error.nothingWritten")
     case .rebuildFailed: text = String(localized: "diary.error.rebuild")
+    case .pendingSync: text = String(localized: "diary.error.pendingSync")
     case .failed: text = String(localized: "async.error.generic")
     }
     error = text
@@ -425,6 +426,19 @@ private struct MealGroupCard: View {
       Spacer(minLength: 0)
       Text(verbatim: DiaryView.whole(it.kcal))
         .font(DS.TextStyle.body.monospacedDigit())
+      if it.pending {
+        // Còn trong outbox: server chưa có hàng này, sửa / xoá sẽ không chạm gì.
+        Image(systemName: "arrow.triangle.2.circlepath")
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          .frame(width: 88, height: 44)
+          .accessibilityLabel(Text(String(localized: "diary.item.pending")))
+      } else {
+        itemActions(it)
+      }
+    }
+  }
+
+  @ViewBuilder private func itemActions(_ it: MealDiary.Item) -> some View {
       Button { onEdit(it) } label: {
         Image(systemName: "pencil")
           .foregroundStyle(DS.Color.foreground.swiftUI)
@@ -443,7 +457,6 @@ private struct MealGroupCard: View {
       .buttonStyle(.plain)
       .disabled(busy)
       .accessibilityLabel(Text(String(localized: "diary.item.deleteNamed \(it.foodName)")))
-    }
   }
 }
 

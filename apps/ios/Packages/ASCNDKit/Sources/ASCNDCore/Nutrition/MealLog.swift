@@ -327,6 +327,26 @@ public enum MealLog {
       createdAt: createdAt)
   }
 
+  /// Bữa còn trong outbox của `userId` có `date_time` trong `window` — dựng lại
+  /// đúng hai hàng server sẽ nhận (`entryRow` + `itemRows`) rồi đi qua CHÍNH
+  /// `MealDiary.meals`, nên số hiện ra trùng số sau khi gửi. Chỉ đọc hàng đợi.
+  public static func pendingMeals(_ entries: [OutboxEntry], userId: String, window: DailyLog.Window) -> [MealDiary.Meal] {
+    guard let start = EpochMillis(iso8601: window.start), let end = EpochMillis(iso8601: window.end) else { return [] }
+    let mine = entries.filter { e in
+      guard e.kind == kind, e.userId == userId, e.payload["user_id"]?.stringValue == userId,
+        let at = e.payload["date_time"]?.stringValue.flatMap({ EpochMillis(iso8601: $0) })
+      else { return false }
+      return at >= start && at < end
+    }
+    return MealDiary.meals(entries: mine.map { entryRow($0.payload) }, items: mine.flatMap { itemRows($0.payload) })
+      .map { m in
+        var m = m
+        m.pending = true
+        m.items = m.items.map { var it = $0; it.pending = true; return it }
+        return m
+      }
+  }
+
   /// Hàng `meal_entries` (bỏ `items`).
   public static func entryRow(_ payload: JSONValue) -> JSONValue {
     guard case .object(var o) = payload else { return payload }

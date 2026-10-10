@@ -28936,6 +28936,52 @@
      }
     }
    }
+  },
+  "diary.item.pending": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Waiting to sync — can be edited once it reaches the server"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đang chờ đồng bộ — sửa được khi đã lên máy chủ"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Pendiente de sincronizar — se podrá editar cuando llegue al servidor"
+     }
+    }
+   }
+  },
+  "diary.error.pendingSync": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "This food is still waiting to sync. Edit or delete it once it has been sent."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Món này còn đang chờ đồng bộ. Gửi xong mới sửa hoặc xoá được."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Este alimento aún está pendiente de sincronizar. Edítalo o elimínalo cuando se haya enviado."
+     }
+    }
+   }
   }
  }
 }
