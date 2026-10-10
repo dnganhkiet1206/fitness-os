@@ -26,6 +26,11 @@ final class AppServices {
   /// cho cả app — màn Nhắc nhở và Hôm nay dùng chung (RN từng có hai bản ghi
   /// đè lịch của nhau).
   let reminders: ReminderCenter
+  /// Số lần cân ONLINE đã được server xác nhận trong lần chạy app này — nhịp
+  /// để kế hoạch nhắc nhở đọc lại `weight_logs` ngay (`invalidateQueries` của
+  /// `useLogWeight`). Xếp hàng / lỗi không tăng; bữa ăn đi qua outbox nên đã
+  /// có nhịp riêng (`sync.pendingCount` giảm SAU khi dựng lại `daily_logs`).
+  private(set) var weightSaved = 0
   @ObservationIgnored private let reminderPresenter = ReminderPresenter()
   let sync: SyncWorker
   /// Hai widget màn hình chính (#66): dữ liệu thật, xoá khi phiên kết thúc.
@@ -314,7 +319,8 @@ final class AppServices {
     let sync = self.sync
     return WeightLogger(
       userId: userId, source: SupabaseWeightLog(backend: backend), store: outbox,
-      onEnqueued: { _ in sync.kick() })
+      onEnqueued: { _ in sync.kick() },
+      onSaved: { [weak self] _ in self?.weightSaved += 1 })
   }
 
   /// Thực phẩm bổ sung (#527 Phase 3 · 3.9): đọc server; thêm / xoá thẳng

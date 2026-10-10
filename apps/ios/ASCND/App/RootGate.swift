@@ -174,6 +174,10 @@ private struct SignedInScope<Content: View>: View {
     }
     // Hàng đợi vừa gửi xong (cân / bữa ghi lúc mất mạng đã lên server):
     // đọc lại, như `invalidateQueries` sau khi phát lại của RN.
+    // Cân online vừa được server nhận: chỉ hỏi lại `weight_logs` (#527 A-NEXT-5).
+    .onChange(of: services.weightSaved) { _, _ in
+      if let reminderToday { Task { await reminderToday.refresh([.weighed]) } }
+    }
     .onChange(of: services.sync.pendingCount) { old, new in
       if new < old, let reminderToday { Task { await reminderToday.refresh() } }
     }

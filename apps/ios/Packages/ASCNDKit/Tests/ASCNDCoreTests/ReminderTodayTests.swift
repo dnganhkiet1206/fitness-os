@@ -193,3 +193,112 @@ struct ReminderTodayScheduleTests {
     #expect(await os.writes == writes, "cùng tín hiệu → không huỷ-đặt lại")
   }
 }
+
+/// A-NEXT-5: cân online được server nhận → kế hoạch đọc lại `weight_logs` ngay;
+/// xếp hàng / lỗi / ngoài dải không báo "đã lưu".
+@MainActor
+struct ReminderWeightSavedTests {
+  actor Server: WeightLogSource {
+    var saved: [String: Double] = [:]
+    var error: (any Error)?
+    func set(error: (any Error)?) { self.error = error }
+    func weight(userId: String, date: LocalDate) async throws -> Double? { saved["\(userId)|\(date)"] }
+    func log(userId: String, kg: Double, date: LocalDate) async throws {
+      if let error { throw error }
+      saved["\(userId)|\(date)"] = kg
+    }
+  }
+
+  actor Queue: PlanWriteStore {
+    var entries: [OutboxEntry] = []
+    func enqueue(_ es: [OutboxEntry]) async throws { entries.append(contentsOf: es) }
+    func pending(userId: String) async throws -> [OutboxEntry] { entries }
+  }
+
+  final class Calls: @unchecked Sendable {
+    private let lock = NSLock()
+    private var _saved: [LocalDate] = []
+    private var _enqueued = 0
+    var saved: [LocalDate] { lock.withLock { _saved } }
+    var enqueued: Int { lock.withLock { _enqueued } }
+    func save(_ d: LocalDate) { lock.withLock { _saved.append(d) } }
+    func enqueue() { lock.withLock { _enqueued += 1 } }
+  }
+
+  static func logger(_ server: Server, _ queue: Queue, _ calls: Calls) -> WeightLogger {
+    WeightLogger(
+      userId: "u1", source: server, store: queue,
+      clock: ReminderTodayBookTests.Clock(date: ReminderTodayBookTests.morning), timeZone: ReminderTodayBookTests.hcm,
+      onEnqueued: { _ in calls.enqueue() }, onSaved: { calls.save($0) })
+  }
+
+  /// Chỉ nhánh online THÀNH CÔNG báo "đã lưu", đúng một lần, mang ngày địa phương.
+  @Test func onlySuccessfulOnlineWriteReportsSaved() async {
+    let server = Server(), queue = Queue(), calls = Calls()
+    let l = Self.logger(server, queue, calls)
+    #expect(await l.submit(kg: 5, online: true) == .outOfRange)
+    await server.set(error: URLError(.badServerResponse))
+    #expect(await l.submit(kg: 70, online: true) == .failed)
+    await server.set(error: URLError(.notConnectedToInternet))
+    #expect(await l.submit(kg: 70, online: true) == .offline)
+    #expect(calls.saved.isEmpty, "lỗi / ngoài dải không phải 'đã lưu'")
+    await server.set(error: nil)
+    #expect(await l.submit(kg: 70.5, online: true) == .saved)
+    #expect(calls.saved == [LocalDate("2026-10-09")!])
+    #expect(calls.enqueued == 0)
+  }
+
+  /// Mất mạng: xếp hàng, KHÔNG báo "đã lưu" — kế hoạch chờ outbox gửi xong.
+  @Test func queuedWriteIsNotSaved() async {
+    let server = Server(), queue = Queue(), calls = Calls()
+    let l = Self.logger(server, queue, calls)
+    #expect(await l.submit(kg: 70, online: false) == .queued)
+    #expect(calls.saved.isEmpty)
+    #expect(calls.enqueued == 1)
+    #expect(await queue.entries.count == 1)
+  }
+
+  /// "Đã lưu" → đọc lại CHỈ `weight_logs`; ba tín hiệu kia giữ nguyên; lời nhắc
+  /// cân hôm nay biến mất ngay; đồng bộ lại cùng tín hiệu không đặt lại.
+  @Test func savedRefreshesOnlyWeightThenPlanDrops() async {
+    let store = ReminderTodayBookTests.FakeStore()
+    store.rows = [
+      "daily_logs": [.object(["kcal": .number(1500), "sleep_duration_min": .number(0)])],
+      "biometric_samples": [.object(["id": .string("b")])],
+    ]
+    let book = ReminderTodayBook(
+      userId: "u1", store: store, clock: ReminderTodayBookTests.Clock(date: ReminderTodayBookTests.morning),
+      timeZone: ReminderTodayBookTests.hcm)
+    await book.refresh()
+    #expect(book.signals == ReminderToday.Signals(weighed: false, mealLogged: true, sleepLogged: false, bioLogged: true))
+
+    store.queries = []
+    store.rows["weight_logs"] = [.object(["weight_kg": .number(70.5)])]
+    store.rows["daily_logs"] = []  // nếu bị hỏi lại thì bữa sẽ thành false — không được hỏi
+    await book.refresh([.weighed])
+    #expect(store.queries.map { $0.table } == ["weight_logs"], "chỉ một truy vấn")
+    #expect(book.signals == ReminderToday.Signals(weighed: true, mealLogged: true, sleepLogged: false, bioLogged: true))
+  }
+
+  /// Lưu cân online → lời nhắc cân hôm nay rời lịch; đồng bộ lại cùng tín hiệu không đặt lại.
+  @Test func savedWeightDropsTodaysWeighInOnce() async {
+    let os = ReminderTodayScheduleTests.OS()
+    let copy: ReminderCopy = Dictionary(
+      uniqueKeysWithValues: ReminderKey.allCases.map { ($0, ReminderText(title: "t", body: "b")) })
+    let cal = ReminderTodayScheduleTests.calendar
+    let at = ReminderTodayScheduleTests.monday6am
+    let c = ReminderCenter(
+      store: ReminderTodayScheduleTests.Store(), scheduler: os, copy: copy,
+      clock: ReminderTodayScheduleTests.Clock(date: at), calendar: cal)
+    await c.refreshPermission()
+    await c.setEnabled(.weighIn, true)
+    await c.sync(ReminderContext().with(.unread))
+    #expect(await os.pending.contains { $0.key == .weighIn && cal.isDate($0.at, inSameDayAs: at) })
+    let before = await os.writes
+    await c.sync(ReminderContext().with(ReminderToday.Signals(weighed: true)))
+    #expect(await os.writes == before + 1)
+    #expect(!(await os.pending.contains { $0.key == .weighIn && cal.isDate($0.at, inSameDayAs: at) }))
+    await c.sync(ReminderContext().with(ReminderToday.Signals(weighed: true)))
+    #expect(await os.writes == before + 1, "kế hoạch không đổi → không huỷ-đặt lại")
+  }
+}

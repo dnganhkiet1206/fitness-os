@@ -111,13 +111,17 @@ public final class WeightLogger {
   @ObservationIgnored private let timeZone: TimeZone
   @ObservationIgnored private let makeId: @Sendable () -> String
   @ObservationIgnored private let onEnqueued: @MainActor (OutboxEntry) -> Void
+  /// Server ĐÃ nhận lần cân của ngày ấy (nhánh online) — như `invalidateQueries`
+  /// của `useLogWeight.onSuccess`. Không gọi khi xếp hàng / lỗi / ngoài dải.
+  @ObservationIgnored private let onSaved: @MainActor (LocalDate) -> Void
   @ObservationIgnored private var closed = false
 
   public init(
     userId: String, source: any WeightLogSource, store: (any PlanWriteStore)?,
     clock: any WallClock = SystemWallClock(), timeZone: TimeZone = .current,
     makeId: @escaping @Sendable () -> String = { UUID().uuidString.lowercased() },
-    onEnqueued: @escaping @MainActor (OutboxEntry) -> Void = { _ in }
+    onEnqueued: @escaping @MainActor (OutboxEntry) -> Void = { _ in },
+    onSaved: @escaping @MainActor (LocalDate) -> Void = { _ in }
   ) {
     self.userId = userId
     self.source = source
@@ -126,6 +130,7 @@ public final class WeightLogger {
     self.timeZone = timeZone
     self.makeId = makeId
     self.onEnqueued = onEnqueued
+    self.onSaved = onSaved
   }
 
   /// Đóng màn / đổi tài khoản: lượt đọc về muộn không đổi gì nữa.
@@ -167,6 +172,8 @@ public final class WeightLogger {
       return NetworkFailure.isOffline(error) ? .offline : .failed
     }
     if !closed { todayKg = kg }
+    // Server đã nhận dù màn vừa đóng: nơi khác (kế hoạch nhắc nhở) vẫn phải biết.
+    onSaved(day)
     return .saved
   }
 }

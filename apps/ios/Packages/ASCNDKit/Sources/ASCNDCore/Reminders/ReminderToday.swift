@@ -98,6 +98,11 @@ extension ReminderContext {
 @MainActor
 @Observable
 public final class ReminderTodayBook {
+  /// Một tín hiệu — đọc lại riêng được (lưu cân xong chỉ hỏi lại `weight_logs`).
+  public enum Signal: Sendable, Hashable, CaseIterable {
+    case weighed, meal, sleep, bio
+  }
+
   public let userId: String
   public private(set) var signals = ReminderToday.Signals.unread
   /// Ngày của `signals`; qua nửa đêm thì tín hiệu cũ bỏ đi trước khi đọc lại.
@@ -106,7 +111,10 @@ public final class ReminderTodayBook {
   @ObservationIgnored private let store: any RowStore
   @ObservationIgnored private let clock: any WallClock
   @ObservationIgnored private let timeZone: TimeZone
-  @ObservationIgnored private var generation = 0
+  /// Thế hệ theo TỪNG tín hiệu: một lượt đọc hẹp (chỉ cân) không làm rơi kết
+  /// quả các tín hiệu khác của một lượt đọc đầy đủ đang bay, và lượt cũ về
+  /// muộn không đè lượt mới của cùng tín hiệu.
+  @ObservationIgnored private var generation: [Signal: Int] = [:]
   @ObservationIgnored private var closed = false
 
   public init(userId: String, store: any RowStore, clock: any WallClock = SystemWallClock(), timeZone: TimeZone = .current) {
@@ -120,40 +128,55 @@ public final class ReminderTodayBook {
   /// Đổi tài khoản / kết thúc phiên: lượt đọc về muộn không ghi gì nữa.
   public func close() {
     closed = true
-    generation += 1
+    for s in Signal.allCases { generation[s, default: 0] += 1 }
   }
 
-  /// Đọc lại bốn tín hiệu. Mỗi truy vấn độc lập: một cái hỏng thì tín hiệu ấy
-  /// giữ giá trị đã đọc của CÙNG ngày (hoặc `nil`), các cái khác vẫn cập nhật.
-  public func refresh() async {
-    guard !closed else { return }
+  /// Đọc lại `which` (mặc định cả bốn). Mỗi truy vấn độc lập: một cái hỏng
+  /// thì tín hiệu ấy giữ giá trị đã đọc của CÙNG ngày (hoặc `nil`), các cái
+  /// khác vẫn cập nhật. Chỉ chạy các truy vấn mà `which` cần.
+  public func refresh(_ which: Set<Signal> = Set(Signal.allCases)) async {
+    guard !closed, !which.isEmpty else { return }
     let today = LocalDate(clock.nowMillis(), in: timeZone)
+    var which = which
     if today != date {
+      // Qua nửa đêm: mọi tín hiệu cũ là của hôm qua — bỏ hết và đọc cả bốn.
       date = today
       signals = .unread
+      which = Set(Signal.allCases)
     }
-    generation += 1
-    let gen = generation
+    var gens: [Signal: Int] = [:]
+    for s in which {
+      generation[s, default: 0] += 1
+      gens[s] = generation[s]
+    }
     let q = ReminderToday.queries(userId: userId, date: today, in: timeZone)
     let store = self.store
-    async let weight = Self.read(store, q.weight)
-    async let daily = Self.read(store, q.dailyLog)
-    async let sleep = Self.read(store, q.sleep)
-    async let bio = Self.read(store, q.bio)
-    let (w, d, s, b) = await (weight, daily, sleep, bio)
-    guard !closed, gen == generation, today == date else { return }
+    let needDaily = which.contains(.meal) || which.contains(.sleep)
+    let weightQ = which.contains(.weighed) ? q.weight : nil
+    let dailyQ = needDaily ? q.dailyLog : nil
+    let sleepQ = which.contains(.sleep) ? q.sleep : nil
+    let bioQ = which.contains(.bio) ? q.bio : nil
+    async let weight = Self.read(store, weightQ)
+    async let daily = Self.read(store, dailyQ)
+    async let sleep = Self.read(store, sleepQ)
+    async let bio = Self.read(store, bioQ)
+    let (w, d, sl, b) = await (weight, daily, sleep, bio)
+    guard !closed, today == date else { return }
+    func current(_ s: Signal) -> Bool { gens[s] != nil && gens[s] == generation[s] }
     var next = signals
-    if let w { next.weighed = ReminderToday.weighed(w) }
-    if let d { next.mealLogged = ReminderToday.mealLogged(d) }
-    if let sl = ReminderToday.sleepLogged(sleep: s, dailyLog: d) {
+    if current(.weighed), let w { next.weighed = ReminderToday.weighed(w) }
+    if current(.meal), let d { next.mealLogged = ReminderToday.mealLogged(d) }
+    if current(.sleep), let v = ReminderToday.sleepLogged(sleep: sl, dailyLog: d) {
       // Một vế chưa đọc thì chỉ nâng lên "đã ghi", không hạ một "đã ghi" cũ.
-      next.sleepLogged = (s != nil && d != nil) ? sl : (sl || (next.sleepLogged ?? false))
+      next.sleepLogged = (sl != nil && d != nil) ? v : (v || (next.sleepLogged ?? false))
     }
-    if let b { next.bioLogged = !b.isEmpty }
+    if current(.bio), let b { next.bioLogged = !b.isEmpty }
     signals = next
   }
 
-  nonisolated private static func read(_ store: any RowStore, _ q: RowQuery) async -> [JSONValue]? {
-    try? await store.select(q)
+  /// `nil` = không hỏi (tín hiệu không nằm trong lượt này) hoặc đọc hỏng.
+  nonisolated private static func read(_ store: any RowStore, _ q: RowQuery?) async -> [JSONValue]? {
+    guard let q else { return nil }
+    return try? await store.select(q)
   }
 }
