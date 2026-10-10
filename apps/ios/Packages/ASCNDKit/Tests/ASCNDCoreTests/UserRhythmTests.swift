@@ -7,6 +7,12 @@ import Testing
 ///
 /// Số thực so với dung sai 1e-9: `sin` / `cos` / `atan2` / `log` của V8 và của
 /// libm có thể lệch ở chữ số cuối. Ngưỡng (`nil` / không `nil`) so chính xác.
+///
+/// Riêng `spread = √(−2·ln r)`: khi các giờ trùng nhau `r ≈ 1`, và căn bậc hai
+/// khuếch đại một lệch 1 ulp của `r` (~1e-16) thành ~1e-8 (đo trên CI: Swift
+/// `r` đúng 1 → `−0.0`, V8 `1 − ε` → `5.7e-8`). Nên so LƯỢNG DƯỚI CĂN
+/// (`spread²`) với 1e-9, và `lateHour = hour + 2·spread` được phép lệch đúng
+/// phần đã lan từ `spread` — golden giữ nguyên.
 struct UserRhythmGoldenTests {
   static func golden() throws -> JSONValue {
     let url = try #require(Bundle.module.url(forResource: "user-rhythm-golden", withExtension: "json", subdirectory: "Fixtures"))
@@ -61,12 +67,17 @@ struct UserRhythmGoldenTests {
         if let h {
           #expect(Self.close(h.hour, Self.num(w?["hour"])), "\(c)")
           #expect(Self.close(h.strength, Self.num(w?["strength"])), "\(c)")
-          #expect(Self.close(h.spread, Self.num(w?["spread"])), "\(c)")
+          let wantSpread = try #require(Self.num(w?["spread"]))
+          #expect(abs(h.spread * h.spread - wantSpread * wantSpread) <= 1e-9, "\(c)")
         }
       }
+      // Phần lệch `spread` đã lan vào `lateHour` (×2 = SLACK); 0 khi không có thói quen.
+      let spreadDrift = h.map { mine in abs(mine.spread - (Self.num(c["habit"]?["spread"]) ?? mine.spread)) } ?? 0
       for l in Self.array(c["late"]) {
         let floor = try #require(Self.num(l["floor"]))
-        #expect(Self.close(UserRhythm.lateHour(h, floor: floor), Self.num(l["expected"])), "\(c) \(l)")
+        let want = try #require(Self.num(l["expected"]))
+        let got = UserRhythm.lateHour(h, floor: floor)
+        #expect(abs(got - want) <= 1e-9 + UserRhythm.slack * spreadDrift, "\(c) \(l)")
       }
     }
   }
