@@ -991,6 +991,21 @@ const STEPS = [
   ['app không gọi API internal của package', 'node', ['../apps/ios/tools/native-internal-api.mjs']],
   ['API internal — fixture từng dạng phải đỏ', 'node', ['../apps/ios/tools/native-internal-api.mjs', '--self-test']],
   /*
+    #527 (A): hợp đồng của `XcstringsTests` (đủ en/vi/es; mỗi localization có
+    `stringUnit` dịch xong; khoá `area.name`) chạy trước Swift. Plural
+    `variations` không có `stringUnit` đã đỏ hai lần chỉ ở core-linux
+    (52711d8f, 321550ac) trong khi `native-xcstrings-plural` xanh.
+  */
+  ['xcstrings đúng hợp đồng XcstringsTests', 'node', ['../apps/ios/tools/native-xcstrings-contract.mjs']],
+  ['xcstrings — fixture từng dạng phải đỏ', 'node', ['../apps/ios/tools/native-xcstrings-contract.mjs', '--self-test']],
+  /*
+    #527 (A): key path truyền cho hàm `rethrows` ở cấp ngoài cùng của
+    `#expect` / `#require` làm HỎNG CẢ target test (1af90ebb, b2c58c57) —
+    không test nào chạy. Luật hẹp, vùng mù ghi trong đầu tệp.
+  */
+  ['#expect không truyền key path cho hàm rethrows', 'node', ['../apps/ios/tools/native-expect-keypath.mjs']],
+  ['#expect key path — fixture từng dạng phải đỏ', 'node', ['../apps/ios/tools/native-expect-keypath.mjs', '--self-test']],
+  /*
     #527 Phase 1 · 1.11: trạng thái mạng ba nhánh của app iOS native phải đổi
     ở đúng các mốc RN đổi. Golden của `NetStatusGoldenTests` là output của
     CHÍNH `net-status.ts` chạy trên đồng hồ ảo (sàn 600 ms, nhịp dò 250 ms, trần
