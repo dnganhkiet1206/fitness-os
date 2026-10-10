@@ -19439,367 +19439,324 @@
     }
    }
   },
-  "community.moreexercises %lld": {
+  "community.moreexercises.one %lld": {
    "extractionState": "manual",
    "localizations": {
     "en": {
-     "variations": {
-      "plural": {
-       "one": {
-        "stringUnit": {
-         "state": "translated",
-         "value": "+ %lld more exercise"
-        }
-       },
-       "other": {
-        "stringUnit": {
-         "state": "translated",
-         "value": "+ %lld more exercises"
-        }
-       }
-      }
+     "stringUnit": {
+      "state": "translated",
+      "value": "+ %lld more exercise"
      }
     },
     "vi": {
-     "variations": {
-      "plural": {
-       "other": {
-        "stringUnit": {
-         "state": "translated",
-         "value": "+ %lld bài tập khác"
-        }
-       }
-      }
+     "stringUnit": {
+      "state": "translated",
+      "value": "+ %lld bài tập khác"
      }
     },
     "es": {
-     "variations": {
-      "plural": {
-       "one": {
-        "stringUnit": {
-         "state": "translated",
-         "value": "+ %lld ejercicio más"
-        }
-       },
-       "other": {
-        "stringUnit": {
-         "state": "translated",
-         "value": "+ %lld ejercicios más"
-        }
-       }
-      }
+     "stringUnit": {
+      "state": "translated",
+      "value": "+ %lld ejercicio más"
      }
     }
    }
   },
-  "community.moreingredients %lld": {
+  "community.moreexercises.other %lld": {
    "extractionState": "manual",
    "localizations": {
     "en": {
-     "variations": {
-      "plural": {
-       "one": {
-        "stringUnit": {
-         "state": "translated",
-         "value": "+ %lld more ingredient"
-        }
-       },
-       "other": {
-        "stringUnit": {
-         "state": "translated",
-         "value": "+ %lld more ingredients"
-        }
-       }
-      }
+     "stringUnit": {
+      "state": "translated",
+      "value": "+ %lld more exercises"
      }
     },
     "vi": {
-     "variations": {
-      "plural": {
-       "other": {
-        "stringUnit": {
-         "state": "translated",
-         "value": "+ %lld nguyên liệu khác"
-        }
-       }
-      }
+     "stringUnit": {
+      "state": "translated",
+      "value": "+ %lld bài tập khác"
      }
     },
     "es": {
-     "variations": {
-      "plural": {
-       "one": {
-        "stringUnit": {
-         "state": "translated",
-         "value": "+ %lld ingrediente más"
-        }
-       },
-       "other": {
-        "stringUnit": {
-         "state": "translated",
-         "value": "+ %lld ingredientes más"
-        }
-       }
-      }
+     "stringUnit": {
+      "state": "translated",
+      "value": "+ %lld ejercicios más"
      }
     }
    }
   },
-  "community.progress.title %lld": {
+  "community.moreingredients.one %lld": {
    "extractionState": "manual",
    "localizations": {
     "en": {
-     "variations": {
-      "plural": {
-       "one": {
-        "stringUnit": {
-         "state": "translated",
-         "value": "Progress · %lld week"
-        }
-       },
-       "other": {
-        "stringUnit": {
-         "state": "translated",
-         "value": "Progress · %lld weeks"
-        }
-       }
-      }
+     "stringUnit": {
+      "state": "translated",
+      "value": "+ %lld more ingredient"
      }
     },
     "vi": {
-     "variations": {
-      "plural": {
-       "other": {
-        "stringUnit": {
-         "state": "translated",
-         "value": "Tiến trình · %lld tuần"
-        }
-       }
-      }
+     "stringUnit": {
+      "state": "translated",
+      "value": "+ %lld nguyên liệu khác"
      }
     },
     "es": {
-     "variations": {
-      "plural": {
-       "one": {
-        "stringUnit": {
-         "state": "translated",
-         "value": "Progreso · %lld semana"
-        }
-       },
-       "other": {
-        "stringUnit": {
-         "state": "translated",
-         "value": "Progreso · %lld semanas"
-        }
-       }
-      }
+     "stringUnit": {
+      "state": "translated",
+      "value": "+ %lld ingrediente más"
      }
     }
    }
   },
-  "community.useful.tries %lld": {
+  "community.moreingredients.other %lld": {
    "extractionState": "manual",
    "localizations": {
     "en": {
-     "variations": {
-      "plural": {
-       "one": {
-        "stringUnit": {
-         "state": "translated",
-         "value": "%lld person tried it"
-        }
-       },
-       "other": {
-        "stringUnit": {
-         "state": "translated",
-         "value": "%lld people tried it"
-        }
-       }
-      }
+     "stringUnit": {
+      "state": "translated",
+      "value": "+ %lld more ingredients"
      }
     },
     "vi": {
-     "variations": {
-      "plural": {
-       "other": {
-        "stringUnit": {
-         "state": "translated",
-         "value": "%lld người đã thử"
-        }
-       }
-      }
+     "stringUnit": {
+      "state": "translated",
+      "value": "+ %lld nguyên liệu khác"
      }
     },
     "es": {
-     "variations": {
-      "plural": {
-       "one": {
-        "stringUnit": {
-         "state": "translated",
-         "value": "%lld persona lo probó"
-        }
-       },
-       "other": {
-        "stringUnit": {
-         "state": "translated",
-         "value": "%lld personas lo probaron"
-        }
-       }
-      }
+     "stringUnit": {
+      "state": "translated",
+      "value": "+ %lld ingredientes más"
      }
     }
    }
   },
-  "community.useful.saves %lld": {
+  "community.progress.title.one %lld": {
    "extractionState": "manual",
    "localizations": {
     "en": {
-     "variations": {
-      "plural": {
-       "one": {
-        "stringUnit": {
-         "state": "translated",
-         "value": "%lld save"
-        }
-       },
-       "other": {
-        "stringUnit": {
-         "state": "translated",
-         "value": "%lld saves"
-        }
-       }
-      }
+     "stringUnit": {
+      "state": "translated",
+      "value": "Progress · %lld week"
      }
     },
     "vi": {
-     "variations": {
-      "plural": {
-       "other": {
-        "stringUnit": {
-         "state": "translated",
-         "value": "%lld lượt lưu"
-        }
-       }
-      }
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tiến trình · %lld tuần"
      }
     },
     "es": {
-     "variations": {
-      "plural": {
-       "one": {
-        "stringUnit": {
-         "state": "translated",
-         "value": "%lld guardado"
-        }
-       },
-       "other": {
-        "stringUnit": {
-         "state": "translated",
-         "value": "%lld guardados"
-        }
-       }
-      }
+     "stringUnit": {
+      "state": "translated",
+      "value": "Progreso · %lld semana"
      }
     }
    }
   },
-  "community.useful.comments %lld": {
+  "community.progress.title.other %lld": {
    "extractionState": "manual",
    "localizations": {
     "en": {
-     "variations": {
-      "plural": {
-       "one": {
-        "stringUnit": {
-         "state": "translated",
-         "value": "%lld comment"
-        }
-       },
-       "other": {
-        "stringUnit": {
-         "state": "translated",
-         "value": "%lld comments"
-        }
-       }
-      }
+     "stringUnit": {
+      "state": "translated",
+      "value": "Progress · %lld weeks"
      }
     },
     "vi": {
-     "variations": {
-      "plural": {
-       "other": {
-        "stringUnit": {
-         "state": "translated",
-         "value": "%lld bình luận"
-        }
-       }
-      }
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tiến trình · %lld tuần"
      }
     },
     "es": {
-     "variations": {
-      "plural": {
-       "one": {
-        "stringUnit": {
-         "state": "translated",
-         "value": "%lld comentario"
-        }
-       },
-       "other": {
-        "stringUnit": {
-         "state": "translated",
-         "value": "%lld comentarios"
-        }
-       }
-      }
+     "stringUnit": {
+      "state": "translated",
+      "value": "Progreso · %lld semanas"
      }
     }
    }
   },
-  "community.useful.likes %lld": {
+  "community.useful.tries.one %lld": {
    "extractionState": "manual",
    "localizations": {
     "en": {
-     "variations": {
-      "plural": {
-       "one": {
-        "stringUnit": {
-         "state": "translated",
-         "value": "%lld like"
-        }
-       },
-       "other": {
-        "stringUnit": {
-         "state": "translated",
-         "value": "%lld likes"
-        }
-       }
-      }
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld person tried it"
      }
     },
     "vi": {
-     "variations": {
-      "plural": {
-       "other": {
-        "stringUnit": {
-         "state": "translated",
-         "value": "%lld lượt thích"
-        }
-       }
-      }
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld người đã thử"
      }
     },
     "es": {
-     "variations": {
-      "plural": {
-       "other": {
-        "stringUnit": {
-         "state": "translated",
-         "value": "%lld me gusta"
-        }
-       }
-      }
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld persona lo probó"
+     }
+    }
+   }
+  },
+  "community.useful.tries.other %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld people tried it"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld người đã thử"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld personas lo probaron"
+     }
+    }
+   }
+  },
+  "community.useful.saves.one %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld save"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld lượt lưu"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld guardado"
+     }
+    }
+   }
+  },
+  "community.useful.saves.other %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld saves"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld lượt lưu"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld guardados"
+     }
+    }
+   }
+  },
+  "community.useful.comments.one %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld comment"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld bình luận"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld comentario"
+     }
+    }
+   }
+  },
+  "community.useful.comments.other %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld comments"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld bình luận"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld comentarios"
+     }
+    }
+   }
+  },
+  "community.useful.likes.one %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld like"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld lượt thích"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld me gusta"
+     }
+    }
+   }
+  },
+  "community.useful.likes.other %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld likes"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld lượt thích"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld me gusta"
      }
     }
    }

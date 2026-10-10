@@ -349,6 +349,12 @@ struct WorkoutPostBody: View {
   let workout: CommunityPayloads.Workout
   let unit: WeightUnit
 
+  /// `{n:exercise|exercises}` của RN: số ít khi n == 1.
+  static func moreText(_ n: Int) -> String {
+    n == 1
+      ? String(localized: "community.moreexercises.one \(n)") : String(localized: "community.moreexercises.other \(n)")
+  }
+
   var body: some View {
     let lines = workout.exercises.prefix(CommunityCard.previewLines)
     let more = workout.exercises.count - lines.count
@@ -371,7 +377,7 @@ struct WorkoutPostBody: View {
             PanelLine(name: e.exerciseName, value: CommunityCard.setText(e, unit: unit), rule: i > 0)
           }
           if more > 0 {
-            PanelLine(name: String(localized: "community.moreexercises \(more)"), value: "", rule: true)
+            PanelLine(name: Self.moreText(more), value: "", rule: true)
           }
         }
       }
@@ -383,10 +389,15 @@ struct ProgressPostBody: View {
   let progress: CommunityPayloads.Progress
   let unit: WeightUnit
 
+  static func title(_ n: Int) -> String {
+    n == 1
+      ? String(localized: "community.progress.title.one \(n)") : String(localized: "community.progress.title.other \(n)")
+  }
+
   var body: some View {
     let tiles = CommunityCard.tiles(progress, unit: unit)
     VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-      Text("community.progress.title \(Int(progress.weeks))")
+      Text(verbatim: Self.title(Int(progress.weeks)))
         .font(DS.TextStyle.title)
         .foregroundStyle(DS.Color.foreground.swiftUI)
       if let lead = tiles.first {
@@ -448,6 +459,11 @@ struct ProgressPostBody: View {
 struct RecipePostBody: View {
   let recipe: CommunityPayloads.Recipe
 
+  static func moreText(_ n: Int) -> String {
+    n == 1
+      ? String(localized: "community.moreingredients.one \(n)") : String(localized: "community.moreingredients.other \(n)")
+  }
+
   var body: some View {
     let lines = recipe.ingredients.prefix(CommunityCard.previewLines)
     let more = recipe.ingredients.count - lines.count
@@ -467,7 +483,7 @@ struct RecipePostBody: View {
             PanelLine(name: Self.ingredientName(x), value: Self.kcal(x.kcal), rule: i > 0)
           }
           if more > 0 {
-            PanelLine(name: String(localized: "community.moreingredients \(more)"), value: "", rule: true)
+            PanelLine(name: Self.moreText(more), value: "", rule: true)
           }
         }
       }
@@ -582,10 +598,15 @@ struct UsefulThisWeekCard: View {
 
   static func reason(_ r: CommunityCard.Reason) -> String {
     switch r {
-    case .tries(let n): String(localized: "community.useful.tries \(n)")
-    case .saves(let n): String(localized: "community.useful.saves \(n)")
-    case .comments(let n): String(localized: "community.useful.comments \(n)")
-    case .likes(let n): String(localized: "community.useful.likes \(n)")
+    case .tries(let n):
+      n == 1 ? String(localized: "community.useful.tries.one \(n)") : String(localized: "community.useful.tries.other \(n)")
+    case .saves(let n):
+      n == 1 ? String(localized: "community.useful.saves.one \(n)") : String(localized: "community.useful.saves.other \(n)")
+    case .comments(let n):
+      n == 1
+        ? String(localized: "community.useful.comments.one \(n)") : String(localized: "community.useful.comments.other \(n)")
+    case .likes(let n):
+      n == 1 ? String(localized: "community.useful.likes.one \(n)") : String(localized: "community.useful.likes.other \(n)")
     }
   }
 }
