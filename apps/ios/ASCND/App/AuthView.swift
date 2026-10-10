@@ -139,8 +139,10 @@ struct AuthView: View {
             }
           }
 
-          // Sign in with Apple (chỉ signin/signup).
-          if mode != .forgot {
+          // Sign in with Apple (chỉ signin/signup). Cần Apple Developer
+          // Program trả phí + entitlement — ẩn tới khi bật `ASCNDSignInWithApple`
+          // (`AppleFeatureGates`, #527).
+          if mode != .forgot, AppleFeatureGates.signInWithApple(info: Bundle.main.infoDictionary) {
             SignInWithAppleButton(
               onRequest: configureAppleRequest,
               onCompletion: handleAppleCompletion

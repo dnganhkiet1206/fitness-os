@@ -94,11 +94,16 @@ public enum CommunityMascots {
 
   public static let defaultId = "koa"
 
-  /// RN @ fac9ac2 phát hành với `TEST_UNLOCK_ALL = true` (`lib/dev-flags.ts`:
-  /// "Flip … to false before release") — mọi linh vật, kể cả bản trả phí, đều
-  /// mở. Native dùng luật phát hành (cờ tắt); ghi `NATIVE_IMPROVEMENTS`, chờ
-  /// Kiệt chốt.
-  public static let testUnlockAll = false
+  /// CHẾ ĐỘ TEST — mọi linh vật (kể cả Drago / Nova trả phí) chọn được, như
+  /// `TEST_UNLOCK_ALL = true` của RN @ fac9ac2 (`lib/dev-flags.ts`). Kiệt chốt
+  /// giữ mở trong giai đoạn chưa phát hành (#527, 6093754296).
+  ///
+  /// ⚠️ PHẢI đổi thành `false` TRƯỚC KHI PHÁT HÀNH — mục 1 của
+  /// `apps/ios/docs/APPLE_DEVELOPER_PROGRAM.md` (checklist trước release).
+  /// Test `testModeIsOnUntilRelease` ghim giá trị này để việc lật là một thay
+  /// đổi có chủ đích, không lặng lẽ. Chỉ áp cho bộ chọn linh vật hồ sơ cộng
+  /// đồng — không đụng server, xu hay quyền mua.
+  public static let testUnlockAll = true
 
   public struct Stats: Sendable, Hashable {
     public let workouts: Int
@@ -184,11 +189,16 @@ public final class CommunityProfileBook {
   public private(set) var saving = false
 
   @ObservationIgnored private let remote: any CommunityProfileRemote
+  @ObservationIgnored private let unlockAll: Bool
   @ObservationIgnored private var closed = false
 
-  public init(userId: String, remote: any CommunityProfileRemote) {
+  /// - Parameter unlockAll: mặc định là cờ test (`CommunityMascots.testUnlockAll`).
+  public init(
+    userId: String, remote: any CommunityProfileRemote, unlockAll: Bool = CommunityMascots.testUnlockAll
+  ) {
     self.userId = userId
     self.remote = remote
+    self.unlockAll = unlockAll
   }
 
   public func close() { closed = true }
@@ -216,7 +226,7 @@ public final class CommunityProfileBook {
   /// đổi mặt của người ta).
   public var choices: [CommunityMascots.Mascot] {
     CommunityMascots.all.filter {
-      CommunityMascots.isUnlocked($0, stats: stats) || $0.id == existing?.mascotId
+      CommunityMascots.isUnlocked($0, stats: stats, unlockAll: unlockAll) || $0.id == existing?.mascotId
     }
   }
 
@@ -225,7 +235,7 @@ public final class CommunityProfileBook {
   public func initialMascot(selected: String) -> String {
     if let id = existing?.mascotId { return id }
     let m = CommunityMascots.mascot(selected)
-    return CommunityMascots.isUnlocked(m, stats: stats) ? m.id : CommunityMascots.defaultId
+    return CommunityMascots.isUnlocked(m, stats: stats, unlockAll: unlockAll) ? m.id : CommunityMascots.defaultId
   }
 
   public func save(handle: String, name: String, bio: String, mascotId: String?) async -> SaveResult {

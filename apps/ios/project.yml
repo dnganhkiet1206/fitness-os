@@ -84,6 +84,12 @@ targets:
         ASCNDSupabaseURL: https://$(ASCND_SUPABASE_HOST)
         ASCNDSupabaseKey: $(ASCND_SUPABASE_KEY)
         NSSupportsLiveActivities: true
+        # Nút Sign in with Apple (#527): Apple chỉ cấp capability này cho
+        # Apple Developer Program trả phí. Bật = đặt build setting
+        # `ASCND_SIGN_IN_WITH_APPLE: YES` dưới đây VÀ thêm entitlement
+        # `com.apple.developer.applesignin: [Default]` — xem
+        # `docs/APPLE_DEVELOPER_PROGRAM.md`.
+        ASCNDSignInWithApple: $(ASCND_SIGN_IN_WITH_APPLE)
         # Câu chữ của bản RN (`app.json`), nguyên văn.
         NSHealthShareUsageDescription: ASCND reads your steps, heart rate, HRV and sleep to compute your daily readiness score.
         NSHealthUpdateUsageDescription: ASCND writes your logged weight, workouts and sleep to Apple Health so they appear in Apple Fitness and other apps.
@@ -91,6 +97,7 @@ targets:
     settings:
       base:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASCND_SIGN_IN_WITH_APPLE: "NO"
       configs:
         # Release trùng bundle của app RN để bản native cập nhật đè app đang
         # có trên App Store. Debug có hậu tố riêng để Kiệt cài cả bản RN lẫn

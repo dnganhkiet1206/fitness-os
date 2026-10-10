@@ -121,5 +121,7 @@ miễn **giữ nguyên ý định** của app và chỉ làm app tốt hơn — 
 | Cộng đồng — chữ gợi ý ô tên người dùng | Theo ngôn ngữ app (`ten.cua.ban` / `your.name` / `tu.nombre`) | Cứng `ten.cua.ban` ở mọi ngôn ngữ | sửa lỗi RN | nên làm theo | #527 (`native/ios-rewrite`) | E |
 | Cộng đồng — lối sửa hồ sơ | Nút trên thanh công cụ feed khi đã có hồ sơ; nút "Tạo hồ sơ" ở thẻ mời | Avatar ở đầu trang → trang người dùng của mình (lát 5) → Sửa hồ sơ | tạm thời (trang người dùng chưa port) | không cần | #527 (`native/ios-rewrite`) | E |
 | Cộng đồng — lưu hồ sơ hỏng | Hộp thoại: cần mạng / thử lại sau | Toast lỗi (`toast.fail`) | lệch nền tảng | không cần | #527 (`native/ios-rewrite`) | E |
+| Cộng đồng — linh vật chọn được (ĐÃ QUYẾT, thay dòng "CẦN QUYẾT" ở trên) | Kiệt chốt (6093754296): giai đoạn test mở hết như RN — `CommunityMascots.testUnlockAll = true`, kể cả Drago / Nova; luật phát hành giữ trong code, có test; checklist tắt trước release ở `docs/APPLE_DEVELOPER_PROGRAM.md` | `TEST_UNLOCK_ALL = true` | tạm thời (giai đoạn test) | không cần | #527 (`native/ios-rewrite`) | E |
+| Đăng nhập — nút Sign in with Apple | Ẩn sau cờ `ASCNDSignInWithApple` (mặc định `NO`): Apple chỉ cấp capability cho Apple Developer Program trả phí và project chưa khai entitlement `com.apple.developer.applesignin` — nút hiện mà bấm lỗi là lời hứa sai. Đăng nhập email giữ nguyên | Nút Apple luôn hiện | tạm thời (chờ ADP + entitlement) | không cần | #527 (`native/ios-rewrite`) | E |
 
 Thêm dòng mới ở cuối bảng; giữ dòng cũ — sổ là lịch sử, không phải danh sách việc.

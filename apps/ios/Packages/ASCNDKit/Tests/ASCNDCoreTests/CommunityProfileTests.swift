@@ -63,12 +63,23 @@ struct CommunityProfileGoldenTests {
     #expect(CommunityProfileForm.clamp("Kiệt", max: 40) == "Kiệt")
   }
 
+  /// Giai đoạn test (Kiệt, #527 6093754296): mọi linh vật mở, kể cả trả phí.
+  /// Lật thành `false` trước release là một thay đổi có chủ đích — sửa cả test
+  /// này (checklist `docs/APPLE_DEVELOPER_PROGRAM.md`).
+  @Test func testModeIsOnUntilRelease() {
+    #expect(CommunityMascots.testUnlockAll)
+    let open = CommunityMascots.all.filter { CommunityMascots.isUnlocked($0, stats: .zero) }.map(\.id)
+    #expect(open == ["koa", "blaze", "swift", "titan", "drago", "nova"])
+  }
+
+  /// Luật phát hành (cờ tắt) vẫn đúng `isUnlocked` của RN.
   @Test func mascotUnlockRule() {
     let s = CommunityMascots.Stats(workouts: 10, meals: 24)
-    let ids = CommunityMascots.all.filter { CommunityMascots.isUnlocked($0, stats: s) }.map(\.id)
+    let ids = CommunityMascots.all.filter { CommunityMascots.isUnlocked($0, stats: s, unlockAll: false) }.map(\.id)
     #expect(ids == ["koa", "blaze"])
     #expect(CommunityMascots.all.filter { CommunityMascots.isUnlocked($0, stats: .zero, unlockAll: true) }.count == 6)
-    #expect(!CommunityMascots.isUnlocked(CommunityMascots.mascot("drago"), stats: .init(workouts: 999, meals: 999)))
+    #expect(
+      !CommunityMascots.isUnlocked(CommunityMascots.mascot("drago"), stats: .init(workouts: 999, meals: 999), unlockAll: false))
     #expect(CommunityMascots.mascot("lạ").id == "koa")
   }
 }
@@ -105,7 +116,7 @@ struct CommunityProfileBookTests {
   @Test func newProfileStartsFromTheAppMascotWhenUnlocked() async {
     let r = Remote()
     r.stats = .init(workouts: 12, meals: 0)
-    let b = CommunityProfileBook(userId: "me", remote: r)
+    let b = CommunityProfileBook(userId: "me", remote: r, unlockAll: false)
     await b.load()
     #expect(b.phase == .ready)
     #expect(b.existing == nil)
@@ -117,7 +128,7 @@ struct CommunityProfileBookTests {
   @Test func failedReadIsAnErrorNotANewProfile() async {
     let r = Remote()
     r.failRead = true
-    let b = CommunityProfileBook(userId: "me", remote: r)
+    let b = CommunityProfileBook(userId: "me", remote: r, unlockAll: false)
     await b.load()
     #expect(b.phase == .failed)
     r.failRead = false
@@ -128,6 +139,16 @@ struct CommunityProfileBookTests {
     #expect(b.existing?.handle == "kiet")
     #expect(b.initialMascot(selected: "koa") == "nova")
     #expect(b.choices.map(\.id) == ["koa", "nova"])  // giữ mặt đang dùng dù đã khoá
+  }
+
+  /// Chế độ test mặc định: bộ chọn có đủ sáu linh vật dù chưa tập / ăn gì,
+  /// và linh vật app đang chọn (kể cả trả phí) được điền sẵn.
+  @Test func testModeOffersEveryMascot() async {
+    let r = Remote()
+    let b = CommunityProfileBook(userId: "me", remote: r)
+    await b.load()
+    #expect(b.choices.map(\.id) == ["koa", "blaze", "swift", "titan", "drago", "nova"])
+    #expect(b.initialMascot(selected: "nova") == "nova")
   }
 
   @Test func saveNormalizesAndReportsATakenHandle() async {
