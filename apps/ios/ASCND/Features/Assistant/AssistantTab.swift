@@ -4,7 +4,7 @@ import SwiftUI
 
 /// Đích của tab Trợ lý.
 enum AssistantRoute: Hashable {
-  case chat, weekly, steps, biometrics, sleep, goals, measure, memory
+  case chat, weekly, steps, biometrics, sleep, goals, measure, photos, memory
 }
 
 /// Tab Trợ lý (#527 Phase 6) — `(tabs)/assistant.tsx` @ fac9ac2.
@@ -42,6 +42,7 @@ struct AssistantTab: View {
   @State private var sleep: SleepInsightsBook?
   @State private var goals: SmartGoalsBook?
   @State private var measure: MeasurementsBook?
+  @State private var photos: ProgressPhotosBook?
   @State private var hour = Calendar.current.component(.hour, from: Date())
   @State private var built = false
 
@@ -102,6 +103,8 @@ struct AssistantTab: View {
           if let goals { SmartGoalsView(book: goals) }
         case .measure:
           if let measure { MeasurementsView(book: measure) }
+        case .photos:
+          if let photos { ProgressPhotosView(book: photos) }
         case .memory:
           if let memory { CoachMemoryView(book: memory) }
         }
@@ -122,6 +125,7 @@ struct AssistantTab: View {
       sleep = services.makeSleepInsights(userId: userId)
       goals = services.makeSmartGoals(userId: userId, today: today)
       measure = services.makeMeasurements(userId: userId)
+      photos = services.makeProgressPhotos(userId: userId)
       built = true
       await signal?.load()
       // Sau tín hiệu: phân tích calo cần mục tiêu calo của hồ sơ.
@@ -160,6 +164,7 @@ struct AssistantTab: View {
       sleep?.close()
       goals?.close()
       measure?.close()
+      photos?.close()
     }
   }
 
@@ -256,6 +261,12 @@ struct AssistantTab: View {
         Tool(
           route: .measure, symbol: "ruler", tint: DS.Color.metricCyan.swiftUI,
           label: String(localized: "assistant.tool.measure"), hint: String(localized: "assistant.tool.measure.hint")))
+    }
+    if photos != nil {
+      out.append(
+        Tool(
+          route: .photos, symbol: "camera.fill", tint: DS.Color.metricOrange.swiftUI,
+          label: String(localized: "assistant.tool.photos"), hint: String(localized: "assistant.tool.photos.hint")))
     }
     if memory != nil {
       out.append(

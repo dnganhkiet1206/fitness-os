@@ -94,7 +94,7 @@ Các mảng sau **not ported** và nằm ngoài phạm vi A cho tới khi #222 g
 - Dinh dưỡng: `nutrition.tsx` (phần còn lại), `scan-*`, `grocery`. Đã port: `water` (#568), `supplements` trừ tick (#570), `diary`, `log-meal`, `food-list` / `food-editor`, `nutrition-insights`, `meal-plans` / `meal-plan` (A, commit thẳng `native/ios-rewrite`).
 - Cộng đồng: `community*`. (`challenges`, `awards`, `shop`, `mascot-room` thuộc Kinh tế / Koa, đã port — E #527, `ChallengesView` / `AwardsView` / `ShopView` / `MascotRoomView`; bản vẽ Koa và `koa-sheet` chưa có.)
 - Trợ lý và coach: `assistant.tsx` một phần (chưa có ô "Quét thực phẩm" vì `scan-food` chưa port, kính mờ, bụi của aura; thẻ nguồn Health + aura đã có — E #527). (`ai-coach` + `coach-memory` đã port, `assistant.tsx` phần lời chào / tóm tắt / thẻ coach / insight hôm nay / ô chỉ số + bảng 7 ngày / công cụ — E #527 Phase 6, `AssistantTab` / `CoachChatView` / `CoachMemoryView`; xem PARITY_MATRIX.)
-- Theo dõi cơ thể: `biometrics`, `log-*` (trừ `log-weight`, #576), `progress-photos`, `weekly-review`. (`steps`, `sleep-insights`, `smart-goals`, `measurements-trend` đã port — E #527, `StepsView` / `SleepInsightsView` / `SmartGoalsView` / `MeasurementsView`.)
+- Theo dõi cơ thể: `biometrics`, `log-*` (trừ `log-weight`, #576), `weekly-review`. (`steps`, `sleep-insights`, `smart-goals`, `measurements-trend`, `progress-photos` đã port — E #527, `StepsView` / `SleepInsightsView` / `SmartGoalsView` / `MeasurementsView` / `ProgressPhotosView`.)
 
 `admin/*` (8 màn) là **decision**: cần Kiệt quyết bản native v1 có kèm console quản trị hay không.
 

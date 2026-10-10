@@ -487,6 +487,13 @@ final class AppServices {
     rows.map { MeasurementsBook(userId: userId, store: $0) }
   }
 
+  /// Ảnh tiến trình (#527): bảng `progress_photos` + bucket riêng tư; cân / vòng
+  /// eo cho tấm so sánh đọc qua `RowStore`.
+  func makeProgressPhotos(userId: String) -> ProgressPhotosBook? {
+    guard let backend else { return nil }
+    return ProgressPhotosBook(userId: userId, remote: SupabaseProgressPhotos(backend: backend), store: rows)
+  }
+
   /// Cửa hàng Koa (#527): sổ xu + tủ đồ; mua qua `buy_mascot_item`, nhận bộ qua
   /// `claim_quest_reward`.
   func makeMascotShop(userId: String) -> MascotShopBook? {
