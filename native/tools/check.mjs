@@ -982,6 +982,15 @@ const STEPS = [
   ['tra chữ qua overload ngôn ngữ', 'node', ['../apps/ios/tools/native-l10n-override.mjs']],
   ['tra chữ — fixture dạng rơi về Foundation phải đỏ', 'node', ['../apps/ios/tools/native-l10n-override.mjs', '--self-test']],
   /*
+    #527 (A): target app không gọi API `internal` của package. Package test
+    (`@testable`) thấy mọi thứ, app thì không — `MealDiary.jsNumber` (7787d4b1)
+    và `ReadinessEngine.jsString` (303de22b) qua core-linux rồi chỉ đỏ ở
+    `xcodebuild` của app-macos, sau ~10 phút. Bước hai: fixture từng dạng
+    (thành viên, lồng kiểu, nội suy chuỗi, kiểu internal) phải đỏ.
+  */
+  ['app không gọi API internal của package', 'node', ['../apps/ios/tools/native-internal-api.mjs']],
+  ['API internal — fixture từng dạng phải đỏ', 'node', ['../apps/ios/tools/native-internal-api.mjs', '--self-test']],
+  /*
     #527 Phase 1 · 1.11: trạng thái mạng ba nhánh của app iOS native phải đổi
     ở đúng các mốc RN đổi. Golden của `NetStatusGoldenTests` là output của
     CHÍNH `net-status.ts` chạy trên đồng hồ ảo (sàn 600 ms, nhịp dò 250 ms, trần

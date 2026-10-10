@@ -37,11 +37,11 @@ performance, i18n, gate coverage, docs) — cổng **312** bước · nhánh
 | Cổng | Kết quả | Ghi chú |
 |---|---|---|
 | TypeScript | **XANH** | `npx tsc --noEmit -p tsconfig.json` từ `native/` — **đo lại vòng này**, exit 0, đầu ra rỗng |
-| `node tools/check.mjs` | **XANH** | exit 0, **327** bước, tất cả xanh — **đo lại vòng này** (02/10). Ở vòng 18/09 nó KHÔNG xanh lúc vòng ấy bắt đầu: ở `aae4484` (đã đẩy lên remote) `plan-week.mjs` đỏ, vì lượt sửa dải lịch được nghiệm thu bằng ảnh chụp mà không chạy lại cổng. Xem mục **15/09** bên dưới. Chạy từ `native/`; chạy từ gốc repo là exit 2 và nó cố ý từ chối. Con số này được `tools/gate-count.mjs` giữ khớp với `STEPS.length`, vì nó đã sai hai lần: `quality-gate.yml` ghi 211 khi cổng đã 215 (sửa 09/09), rồi chính bảng này ghi 215 khi cổng đã 241. Từ 18/09 tới 02/10 cổng lên **300 → 311**: 1 gate `i18n-inline` (queue #6) + 10 gate mới (queue #7)
+| `node tools/check.mjs` | **XANH** | exit 0, **329** bước, tất cả xanh — **đo lại 10/10** (A, khi thêm 2 bước `native-internal-api`: lượt chạy đủ cổng ra 328/329, bước hỏng duy nhất là chính các câu đếm 327 trong trang này; trước đó đo 02/10 là 327). Ở vòng 18/09 nó KHÔNG xanh lúc vòng ấy bắt đầu: ở `aae4484` (đã đẩy lên remote) `plan-week.mjs` đỏ, vì lượt sửa dải lịch được nghiệm thu bằng ảnh chụp mà không chạy lại cổng. Xem mục **15/09** bên dưới. Chạy từ `native/`; chạy từ gốc repo là exit 2 và nó cố ý từ chối. Con số này được `tools/gate-count.mjs` giữ khớp với `STEPS.length`, vì nó đã sai hai lần: `quality-gate.yml` ghi 211 khi cổng đã 215 (sửa 09/09), rồi chính bảng này ghi 215 khi cổng đã 241. Từ 18/09 tới 02/10 cổng lên **300 → 311**: 1 gate `i18n-inline` (queue #6) + 10 gate mới (queue #7)
 | Quét runtime 45 route | **KHÔNG CHẠY LẠI VÒNG NÀY** | vòng này ĐỘNG vào `native/src` (biên bắt lỗi ở `_layout.tsx`). Bộ chạy web đầy đủ mất nhiều phút và không nằm trong cổng; thay vào đó biên được chứng minh bằng `tools/error-boundary.mjs` — React 19 + ReactDOM thật trong một trình duyệt thật. Số gần nhất của bộ chạy đầy đủ (vòng A11Y-2): không route nào trắng, 1 cảnh báo web-only trên `settings` |
-| Đổi theme, 9 màn | **KHÔNG CHẠY LẠI VÒNG NÀY** | biên đọc bảng màu qua `usePalette` như mọi màn khác và không thêm nhánh `m.lit` nào — `tools/theme-shape.mjs` **5 tệp, 6 nhánh** (từ 09/09; trước đó 6 tệp, 8 nhánh), và nó nằm trong 327 bước. Số gần nhất (A11Y-2): lỗi JS 5 → 1 |
-| Nút lồng trong nút, 6 tab chính | **KHÔNG CHẠY LẠI VÒNG NÀY** | `tools/a11y-swallow.mjs` và `tools/tap-targets.mjs` nằm trong 327 bước và vẫn xanh — nút thử lại của biên là một `Pressable` có nhãn, cao 44. Số gần nhất: 0/6 |
-| ESLint | **KHÔNG CHẠY ĐƯỢC** | `eslint` không có trong `node_modules`; `npx expo lint` báo `Cannot find module 'eslint'` **và vẫn thoát 0** — nên đừng đọc mã thoát của nó là "sạch". Cổng thật là 327 bước ở trên |
+| Đổi theme, 9 màn | **KHÔNG CHẠY LẠI VÒNG NÀY** | biên đọc bảng màu qua `usePalette` như mọi màn khác và không thêm nhánh `m.lit` nào — `tools/theme-shape.mjs` **5 tệp, 6 nhánh** (từ 09/09; trước đó 6 tệp, 8 nhánh), và nó nằm trong 329 bước. Số gần nhất (A11Y-2): lỗi JS 5 → 1 |
+| Nút lồng trong nút, 6 tab chính | **KHÔNG CHẠY LẠI VÒNG NÀY** | `tools/a11y-swallow.mjs` và `tools/tap-targets.mjs` nằm trong 329 bước và vẫn xanh — nút thử lại của biên là một `Pressable` có nhãn, cao 44. Số gần nhất: 0/6 |
+| ESLint | **KHÔNG CHẠY ĐƯỢC** | `eslint` không có trong `node_modules`; `npx expo lint` báo `Cannot find module 'eslint'` **và vẫn thoát 0** — nên đừng đọc mã thoát của nó là "sạch". Cổng thật là 329 bước ở trên |
 | Bản dựng native | **CHƯA CHẠY Ở ĐÂY** | môi trường này là Linux; iOS phải dựng ở máy bạn |
 
 ---
@@ -1110,7 +1110,7 @@ vì một bản tóm tắt không đo lại được thì cũng chỉ là một 
 
 | | |
 |---|---|
-| `node tools/check.mjs` | **327/327 xanh**, exit 0 |
+| `node tools/check.mjs` | **329/329 xanh**, exit 0 (đo lại 10/10 khi thêm 2 bước `native-internal-api`; vòng này đo 327/327) |
 | `npx tsc --noEmit` | exit 0, đầu ra rỗng |
 | Máy thật | ❌ **không**. Ba thứ còn treo: vòng đếm ngược của thanh Hoàn tác ở đáy, thẻ bài tập lúc thu lại có giật không, dấu tích xanh ở tiêu đề bài tập có lệch baseline không |
 
