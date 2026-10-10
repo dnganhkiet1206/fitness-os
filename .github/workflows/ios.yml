@@ -20,9 +20,13 @@ on:
     paths: ['apps/ios/**', 'spec/vectors/**', '.github/workflows/ios.yml']
   workflow_dispatch:
 
+# Mỗi commit một lượt (#527, chỉ thị 6093313700): A và E cùng đẩy lên một
+# nhánh, và CI chỉ được báo xanh trên ĐÚNG SHA — nhóm theo nhánh làm commit của
+# người này huỷ lượt của commit người kia. Đẩy lên nhánh: nhóm theo SHA, không
+# huỷ. PR giữ như cũ: commit mới trong PR huỷ lượt của commit nó thay.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   core-linux:
