@@ -20566,6 +20566,512 @@
     }
    }
   },
+  "community.post.more": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "More"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Thêm"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Más"
+     }
+    }
+   }
+  },
+  "community.post.delete": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Delete comment"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Xoá bình luận"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Eliminar comentario"
+     }
+    }
+   }
+  },
+  "community.post.report": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Report"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Báo cáo"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Reportar"
+     }
+    }
+   }
+  },
+  "community.post.reported": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Report sent. Thank you."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đã gửi báo cáo. Cảm ơn bạn."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Reporte enviado. Gracias."
+     }
+    }
+   }
+  },
+  "community.post.deletegone": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Couldn't delete the comment — it may already have been deleted"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Không xoá được bình luận — có thể nó đã được xoá"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "No se pudo eliminar el comentario — puede que ya se haya eliminado"
+     }
+    }
+   }
+  },
+  "community.action.onlineonly": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "No connection — not sent, and not kept to send later."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Không có kết nối — chưa gửi, và không giữ lại để gửi sau."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sin conexión — no enviado ni guardado para enviar después."
+     }
+    }
+   }
+  },
+  "community.action.server": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "The server had a problem. Nothing was lost — try again in a moment."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Máy chủ đang gặp sự cố. Không mất gì cả — thử lại sau một chút."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "El servidor tuvo un problema. No se perdió nada — inténtalo de nuevo en un momento."
+     }
+    }
+   }
+  },
+  "community.report.limit": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "You've sent a lot of reports today. Try again tomorrow — you can still hide posts or mute people in the meantime."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hôm nay bạn đã gửi nhiều báo cáo. Thử lại vào ngày mai — trong lúc chờ, bạn vẫn ẩn bài hoặc tắt tiếng người khác được."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hoy ya enviaste muchos reportes. Vuelve a intentarlo mañana; mientras tanto puedes ocultar publicaciones o silenciar a alguien."
+     }
+    }
+   }
+  },
+  "community.hidden.notice": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hidden from others after reports"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đang ẩn với người khác vì bị báo cáo"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Oculto para otros tras los reportes"
+     }
+    }
+   }
+  },
+  "community.hidden.why.one %lld %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld person reported this · mostly: %@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld người báo cáo · phần lớn: %@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld persona lo reportaron · mayoría: %@"
+     }
+    }
+   }
+  },
+  "community.hidden.why.other %lld %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld people reported this · mostly: %@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld người báo cáo · phần lớn: %@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld personas lo reportaron · mayoría: %@"
+     }
+    }
+   }
+  },
+  "community.hidden.whyn.one %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld person reported this"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld người báo cáo"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld persona lo reportaron"
+     }
+    }
+   }
+  },
+  "community.hidden.whyn.other %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld people reported this"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld người báo cáo"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld personas lo reportaron"
+     }
+    }
+   }
+  },
+  "community.hidden.reviewask": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Request a review"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Yêu cầu xem lại"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Solicitar una revisión"
+     }
+    }
+   }
+  },
+  "community.hidden.reviewsent": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Review requested — it stays hidden until then"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đã gửi yêu cầu xem lại — trong lúc chờ vẫn ẩn"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Revisión solicitada — permanece oculto hasta entonces"
+     }
+    }
+   }
+  },
+  "community.hidden.removed": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Removed by the moderation team. This decision is final."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đội kiểm duyệt đã gỡ. Đây là quyết định cuối."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "El equipo de moderación lo eliminó. Esta decisión es definitiva."
+     }
+    }
+   }
+  },
+  "community.hidden.upheld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "We reviewed your request and it stays hidden."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Yêu cầu của bạn đã được xem lại và nội dung vẫn ẩn."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Revisamos tu solicitud y se mantiene oculto."
+     }
+    }
+   }
+  },
+  "community.reason.spam": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Spam"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nội dung rác"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Spam"
+     }
+    }
+   }
+  },
+  "community.reason.harassment": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Harassment"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Quấy rối"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Acoso"
+     }
+    }
+   }
+  },
+  "community.reason.inappropriate": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Inappropriate"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nội dung không phù hợp"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Inapropiado"
+     }
+    }
+   }
+  },
+  "community.reason.misleading": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Misleading or unsafe"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sai lệch hoặc nguy hiểm"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Engañoso o inseguro"
+     }
+    }
+   }
+  },
+  "community.reason.other": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Other"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Lý do khác"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Otro"
+     }
+    }
+   }
+  },
   "ex.title": {
    "extractionState": "manual",
    "localizations": {

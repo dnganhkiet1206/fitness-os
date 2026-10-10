@@ -12,8 +12,11 @@ import SwiftUI
 /// luận → nói ra, đang bị hạn chế → nói đến bao giờ, chưa có hồ sơ → mời tạo;
 /// gửi cần mạng, lỗi trần mỗi giờ (54000) / tạm khoá (CR001) có câu riêng.
 ///
-/// Chưa có (lát 4–5): xoá / báo cáo bình luận (nhấn giữ), ghi chú bình luận
-/// bị ẩn + kháng nghị, mở trang người dùng từ avatar / `@handle`.
+/// Lát 4: nhấn giữ (hay hành động trợ năng "Thêm") một bình luận ra menu —
+/// người viết / chủ bài "Xoá bình luận", người khác "Báo cáo"; bình luận của
+/// mình đang bị ẩn có ghi chú vì sao + "Yêu cầu xem lại".
+///
+/// Chưa có (lát 5): mở trang người dùng từ avatar / `@handle`.
 struct CommunityPostScreen: View {
   let postId: String
   var onCommented: () -> Void = {}
@@ -52,7 +55,8 @@ struct CommunityPostView: View {
   @Environment(\.weightUnit) private var unit
   @State private var draft = ""
   @State private var replyTo: CommunityComment?
-  @State private var failure: CommunityCommentFailure?
+  @State private var message: Message?
+  @State private var menuFor: CommunityComment?
   @FocusState private var composing: Bool
 
   var body: some View {
@@ -68,13 +72,35 @@ struct CommunityPostView: View {
     .task { if book.phase == .loading { await book.load() } }
     .refreshable { await book.load() }
     .alert(
-      Text("community.post.sendfailed"),
-      isPresented: Binding(get: { failure != nil }, set: { if !$0 { failure = nil } })
-    ) {
+      Text(verbatim: message?.title ?? ""),
+      isPresented: Binding(get: { message != nil }, set: { if !$0 { message = nil } }),
+      presenting: message
+    ) { _ in
       Button(String(localized: "common.ok"), role: .cancel) {}
-    } message: {
-      Text(verbatim: failure.map(Self.failureText) ?? "")
+    } message: { m in
+      if let body = m.body { Text(verbatim: body) }
     }
+    .confirmationDialog(
+      Text(verbatim: menuFor?.author?.displayName ?? ""),
+      isPresented: Binding(get: { menuFor != nil }, set: { if !$0 { menuFor = nil } }),
+      titleVisibility: menuFor?.author == nil ? .hidden : .visible,
+      presenting: menuFor
+    ) { c in
+      if book.canDelete(c) {
+        Button(String(localized: "community.post.delete"), role: .destructive) { Task { await delete(c) } }
+      } else {
+        Button(String(localized: "community.post.report")) { Task { await report(c) } }
+      }
+      Button(String(localized: "common.cancel"), role: .cancel) {}
+    }
+    .sensoryFeedback(.selection, trigger: menuFor?.id) { _, new in new != nil }
+  }
+
+  /// Một hộp thoại cho mọi kết quả cần nói ra (app chưa có toast).
+  struct Message: Identifiable {
+    let id = UUID()
+    let title: String
+    var body: String?
   }
 
   @ViewBuilder private var content: some View {
@@ -117,9 +143,9 @@ struct CommunityPostView: View {
         older
         ForEach(book.threadGroups) { thread in
           VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-            CommentRow(comment: thread.root, reply: false, onReply: replyAction)
+            row(thread.root, reply: false)
             ForEach(thread.replies) { r in
-              CommentRow(comment: r, reply: true, onReply: replyAction)
+              row(r, reply: true)
                 .padding(.leading, 32 + DS.Spacing.sm)
             }
           }
@@ -142,6 +168,18 @@ struct CommunityPostView: View {
           .frame(minHeight: 44)
       }
       .buttonStyle(.plain)
+    }
+  }
+
+  private func row(_ c: CommunityComment, reply: Bool) -> some View {
+    CommentRow(
+      comment: c, reply: reply, onReply: replyAction, onMenu: { menuFor = $0 }, busy: book.working.contains(c.id)
+    ) {
+      if c.hidden && c.mine {
+        HiddenNoticeView(step: book.hiddenStep(c), why: book.hiddenWhy(c), busy: book.working.contains(c.id)) {
+          Task { await appeal(c) }
+        }
+      }
     }
   }
 
@@ -242,9 +280,41 @@ struct CommunityPostView: View {
       replyTo = nil
       onCommented()
     case .failed(let f):
-      failure = f
+      message = Message(title: String(localized: "community.post.sendfailed"), body: Self.failureText(f))
     case .ignored:
       break
+    }
+  }
+
+  // MARK: - Menu bình luận (lát 4)
+
+  private func delete(_ c: CommunityComment) async {
+    switch await book.delete(c) {
+    case .done: onCommented()
+    case .failed(let f): message = Message(title: Self.failureText(f))
+    case .ignored: break
+    }
+  }
+
+  private func report(_ c: CommunityComment) async {
+    switch await book.report(c) {
+    case .done: message = Message(title: String(localized: "community.post.reported"))
+    case .failed(let f): message = Message(title: Self.failureText(f))
+    case .ignored: break
+    }
+  }
+
+  private func appeal(_ c: CommunityComment) async {
+    // Thành công: ghi chú tự đổi thành "Đã gửi yêu cầu xem lại".
+    if case .failed(let f) = await book.appeal(c) { message = Message(title: Self.failureText(f)) }
+  }
+
+  static func failureText(_ f: CommunityModerationFailure) -> String {
+    switch f {
+    case .offline: String(localized: "community.action.onlineonly")
+    case .reportLimit: String(localized: "community.report.limit")
+    case .nothingWritten: String(localized: "community.post.deletegone")
+    case .server: String(localized: "community.action.server")
     }
   }
 
@@ -260,10 +330,14 @@ struct CommunityPostView: View {
 
 /// Một bình luận: avatar, tên · thời gian, thân với `@handle` đã xác nhận được
 /// tô, nút "Trả lời".
-struct CommentRow: View {
+struct CommentRow<Notice: View>: View {
   let comment: CommunityComment
   let reply: Bool
   let onReply: ((CommunityComment) -> Void)?
+  var onMenu: (CommunityComment) -> Void = { _ in }
+  /// Đang xoá / báo cáo / kháng nghị: mờ đi, không nhận chạm.
+  var busy = false
+  @ViewBuilder var notice: () -> Notice
 
   var body: some View {
     HStack(alignment: .top, spacing: DS.Spacing.sm) {
@@ -284,7 +358,14 @@ struct CommentRow: View {
             .foregroundStyle(DS.Color.foreground.swiftUI)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .contentShape(Rectangle())
+        // Nhấn giữ ra menu — và cũng là một hành động TRỢ NĂNG (RN #135).
+        .onLongPressGesture { onMenu(comment) }
         .accessibilityElement(children: .combine)
+        .accessibilityHint(Text("community.post.more"))
+        .accessibilityAction(named: Text("community.post.more")) { onMenu(comment) }
+        // Anh em với vùng nhấn giữ, không nằm trong nó (RN #120).
+        notice()
         if let onReply {
           Button {
             onReply(comment)
@@ -299,6 +380,8 @@ struct CommentRow: View {
         }
       }
     }
+    .opacity(busy ? 0.5 : 1)
+    .allowsHitTesting(!busy)
   }
 
   /// `mentionParts`: đoạn nhắc server đã xác nhận được tô; còn lại là chữ.
@@ -313,5 +396,93 @@ struct CommentRow: View {
       out += s
     }
     return out
+  }
+}
+
+/// Ghi chú "đang ẩn" trên bình luận của CHÍNH MÌNH — bản gọn của
+/// `hidden-notice.tsx` (không ô lời nhắn): vì sao (số người + lý do phổ biến,
+/// không nói ai), rồi một trong: quyết định cuối, đã gửi yêu cầu, hay nút
+/// "Yêu cầu xem lại" (một lần).
+struct HiddenNoticeView: View {
+  let step: HiddenNotice.Step
+  let why: HiddenNotice.Why?
+  let busy: Bool
+  let onAsk: () -> Void
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: DS.Spacing.xs) {
+      Label {
+        Text("community.hidden.notice")
+      } icon: {
+        Image(systemName: "eye.slash")
+      }
+      .font(DS.TextStyle.footnote)
+      .foregroundStyle(DS.Color.readinessRed.swiftUI)
+      if let why {
+        Text(verbatim: Self.whyText(why))
+          .font(DS.TextStyle.footnote)
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+      }
+      switch step {
+      case .unknown:
+        EmptyView()
+      case .removed:
+        detail(Text("community.hidden.removed"))
+      case .upheld:
+        detail(Text("community.hidden.upheld"))
+      case .sent:
+        Label {
+          Text("community.hidden.reviewsent")
+        } icon: {
+          Image(systemName: "checkmark")
+        }
+        .font(DS.TextStyle.footnote)
+        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+      case .canAsk:
+        Button(action: onAsk) {
+          HStack(spacing: DS.Spacing.xs) {
+            if busy { ProgressView().controlSize(.small) }
+            Text("community.hidden.reviewask")
+              .font(DS.TextStyle.footnote.weight(.semibold))
+              .foregroundStyle(DS.Color.foreground.swiftUI)
+          }
+          .padding(.horizontal, DS.Spacing.md)
+          .frame(minHeight: 44)
+          .background(DS.Color.secondary.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.md))
+        }
+        .buttonStyle(.plain)
+        .disabled(busy)
+      }
+    }
+    .padding(DS.Spacing.sm)
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .background(DS.Color.readinessRed.swiftUI.opacity(0.08), in: RoundedRectangle(cornerRadius: DS.Radius.md))
+  }
+
+  private func detail(_ t: Text) -> some View {
+    t.font(DS.TextStyle.footnote).foregroundStyle(DS.Color.mutedForeground.swiftUI)
+  }
+
+  /// `nCmHiddenWhy` / `nCmHiddenWhyN`; lý do viết thường như `toLocaleLowerCase`.
+  static func whyText(_ w: HiddenNotice.Why) -> String {
+    let n = w.reporters
+    guard let r = w.reason else {
+      return n == 1
+        ? String(localized: "community.hidden.whyn.one \(n)") : String(localized: "community.hidden.whyn.other \(n)")
+    }
+    let reason = reasonText(r).localizedLowercase
+    return n == 1
+      ? String(localized: "community.hidden.why.one \(n) \(reason)")
+      : String(localized: "community.hidden.why.other \(n) \(reason)")
+  }
+
+  static func reasonText(_ r: CommunityReportReason) -> String {
+    switch r {
+    case .spam: String(localized: "community.reason.spam")
+    case .harassment: String(localized: "community.reason.harassment")
+    case .inappropriate: String(localized: "community.reason.inappropriate")
+    case .misleading: String(localized: "community.reason.misleading")
+    case .other: String(localized: "community.reason.other")
+    }
   }
 }

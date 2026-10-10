@@ -217,6 +217,77 @@ public struct SupabaseCommunity: CommunityFeedRemote, CommunityProfileRemote, Co
     }
   }
 
+  // MARK: - Menu bình luận + kháng nghị (#527, lát 4)
+
+  /// Ba đối số luôn có mặt: `Encodable` tổng hợp BỎ khoá `nil`, và PostgREST
+  /// tìm hàm theo tên đối số — thiếu `p_post_id` là không thấy hàm.
+  struct AppealParams: Encodable, Sendable {
+    let p_post_id: String?
+    let p_comment_id: String?
+    let p_message: String
+
+    enum CodingKeys: String, CodingKey { case p_post_id, p_comment_id, p_message }
+
+    func encode(to encoder: any Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(p_post_id, forKey: .p_post_id)
+      try c.encode(p_comment_id, forKey: .p_comment_id)
+      try c.encode(p_message, forKey: .p_message)
+    }
+  }
+
+  /// `useDeleteComment`: `confirmWrite` — RLS lọc người không được xoá thành
+  /// 0 hàng, nên 0 hàng là lỗi chứ không phải "đã xoá".
+  public func deleteComment(id: String) async throws {
+    let gone: [InsertedDTO]
+    do {
+      gone = try await client.from("community_comments")
+        .delete().eq("id", value: id)
+        .select("id").execute().value
+    } catch {
+      throw Self.moderationFailure(error)
+    }
+    if gone.isEmpty { throw CommunityModerationFailure.nothingWritten }
+  }
+
+  /// `useReport`: 23505 = đã báo cáo bình luận này rồi — kết quả người ta muốn.
+  public func reportComment(id: String, me: String, reason: CommunityReportReason) async throws {
+    let row: JSONValue = .object([
+      "reporter_id": .string(me), "post_id": .null, "comment_id": .string(id),
+      "reported_user_id": .null, "reason": .string(reason.rawValue),
+    ])
+    do {
+      try await client.from("community_reports").insert(row).execute()
+    } catch {
+      if (error as? PostgrestError)?.code == "23505" { return }
+      throw Self.moderationFailure(error)
+    }
+  }
+
+  public func hiddenReasons() async throws -> [JSONValue] {
+    try await client.rpc("community_my_hidden_reasons").execute().value
+  }
+
+  /// `useRequestReview`: 23505 = đã gửi cho đợt ẩn này (máy khác) — không phải lỗi.
+  public func appeal(commentId: String, message: String) async throws {
+    do {
+      try await client.rpc(
+        "community_appeal",
+        params: AppealParams(p_post_id: nil, p_comment_id: commentId, p_message: CommentThread.sendable(message) ?? "")
+      ).execute()
+    } catch {
+      if (error as? PostgrestError)?.code == "23505" { return }
+      throw Self.moderationFailure(error)
+    }
+  }
+
+  static func moderationFailure(_ error: any Error) -> CommunityModerationFailure {
+    if NetworkFailure.isOffline(error) { return .offline }
+    let code = (error as? PostgrestError)?.code
+    if code == "54000" { return .reportLimit }
+    return .server(code: code)
+  }
+
   public func artURL(path: String) -> URL? {
     try? client.storage.from("community-art").getPublicURL(path: path)
   }

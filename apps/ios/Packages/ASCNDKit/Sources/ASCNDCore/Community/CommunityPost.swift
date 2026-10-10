@@ -33,6 +33,17 @@ public protocol CommunityPostRemote: CommunityFeedRemote {
   func mutedIds(me: String, nowISO: String) async throws -> [String]
   /// Chèn một bình luận (thân đã trim). Ném `CommunityCommentFailure`.
   func addComment(postId: String, me: String, body: String, parentId: String?) async throws
+  /// `useDeleteComment`: xoá phải chạm ≥ 1 hàng (`confirmWrite`), không thì
+  /// `.nothingWritten`. Ném `CommunityModerationFailure`.
+  func deleteComment(id: String) async throws
+  /// `useReport` cho một bình luận; 23505 (đã báo cáo rồi) là thành công, 54000
+  /// = `.reportLimit`. Ném `CommunityModerationFailure`.
+  func reportComment(id: String, me: String, reason: CommunityReportReason) async throws
+  /// `community_my_hidden_reasons()`: lý do cho mọi thứ đang ẩn của mình.
+  func hiddenReasons() async throws -> [JSONValue]
+  /// `community_appeal` cho một bình luận; 23505 (đã gửi ở máy khác) là thành
+  /// công. Ném `CommunityModerationFailure`.
+  func appeal(commentId: String, message: String) async throws
 }
 
 /// Màn một bài + bình luận (`app/community-post.tsx`, `useCommunityPost`,
@@ -63,6 +74,14 @@ public final class CommunityPostBook {
     case ignored
   }
 
+  /// Kết quả của xoá / báo cáo / kháng nghị (#527, lát 4).
+  public enum ActionResult: Sendable, Hashable {
+    case done
+    case failed(CommunityModerationFailure)
+    /// Không được phép, hay bình luận ấy đang có một lệnh chưa xong — không chạm server.
+    case ignored
+  }
+
   public let userId: String
   public let postId: String
   public private(set) var phase: Phase = .loading
@@ -80,6 +99,12 @@ public final class CommunityPostBook {
   public private(set) var myProfile: CommunityProfile?
   public private(set) var hasProfile: Bool?
   public private(set) var sending = false
+  /// Bình luận đang có lệnh xoá / báo cáo / kháng nghị chưa xong (chặn bấm đúp).
+  public private(set) var working: Set<String> = []
+  /// Lý do ẩn theo id bình luận — chỉ đọc khi danh sách có bình luận ẩn của mình.
+  public private(set) var hiddenReasons: [String: CommunityHiddenReason] = [:]
+  /// Kháng nghị đã được server nhận ở màn này (`ask.isSuccess`).
+  public private(set) var appealedHere: Set<String> = []
 
   @ObservationIgnored private let remote: any CommunityPostRemote
   @ObservationIgnored private let clock: any WallClock
@@ -165,7 +190,9 @@ public final class CommunityPostBook {
     } catch {
       guard !closed else { return }
       if commentsPhase != .ready { commentsPhase = .failed }
+      return
     }
+    await loadHiddenReasonsIfNeeded()
   }
 
   /// "Xem bình luận cũ hơn". Hỏng → giữ danh sách, báo `olderFailed`.
@@ -185,7 +212,9 @@ public final class CommunityPostBook {
     } catch {
       guard !closed else { return }
       olderFailed = true
+      return
     }
+    await loadHiddenReasonsIfNeeded()
   }
 
   // MARK: - Ghi
@@ -208,6 +237,91 @@ public final class CommunityPostBook {
     commentCount += 1
     await reloadComments()
     return .sent
+  }
+
+  // MARK: - Menu bình luận + ghi chú "đang ẩn" (#527, lát 4)
+
+  /// Người viết và chủ bài xoá được (đúng policy DELETE); người khác chỉ báo cáo.
+  public func canDelete(_ c: CommunityComment) -> Bool { c.mine || post?.mine == true }
+
+  public func hiddenStep(_ c: CommunityComment) -> HiddenNotice.Step {
+    HiddenNotice.step(hiddenReasons[c.id], askedHere: appealedHere.contains(c.id))
+  }
+
+  public func hiddenWhy(_ c: CommunityComment) -> HiddenNotice.Why? { HiddenNotice.why(hiddenReasons[c.id]) }
+
+  /// Xoá (`useDeleteComment`). Thành công: số trên thẻ trừ 1 + số trả lời đang
+  /// thấy (server xoá luôn các trả lời), rồi đọc lại. Không chạm hàng nào → lỗi
+  /// có tên, và đọc lại để thấy sự thật.
+  public func delete(_ c: CommunityComment) async -> ActionResult {
+    guard canDelete(c), !working.contains(c.id), !closed else { return .ignored }
+    working.insert(c.id)
+    defer { working.remove(c.id) }
+    let failure = await Self.attempt { try await self.remote.deleteComment(id: c.id) }
+    guard !closed else { return failure.map(ActionResult.failed) ?? .done }
+    if let failure {
+      if failure == .nothingWritten { await reloadComments() }
+      return .failed(failure)
+    }
+    // Đọc TRƯỚC khi làm mới — như RN đọc cache trước `invalidateQueries`.
+    let seen = CommentThread.mergePages(pages, node: \.node)
+    commentCount = max(0, commentCount - CommentThread.deletedCount(seen, id: c.id, node: \.node))
+    await reloadComments()
+    return .done
+  }
+
+  /// Báo cáo (`useReport`, lý do `inappropriate` như menu RN). Không đổi danh
+  /// sách: bình luận chỉ ẩn khi server đủ người báo cáo.
+  public func report(_ c: CommunityComment) async -> ActionResult {
+    guard !canDelete(c), !working.contains(c.id), !closed else { return .ignored }
+    working.insert(c.id)
+    defer { working.remove(c.id) }
+    let me = userId
+    let failure = await Self.attempt { try await self.remote.reportComment(id: c.id, me: me, reason: .inappropriate) }
+    return failure.map(ActionResult.failed) ?? .done
+  }
+
+  /// "Yêu cầu xem lại" (`useRequestReview`, bản gọn: không lời nhắn). Chỉ khi
+  /// còn nút; xong thì đọc lại lý do.
+  public func appeal(_ c: CommunityComment) async -> ActionResult {
+    guard c.hidden, c.mine, hiddenStep(c) == .canAsk, !working.contains(c.id), !closed else { return .ignored }
+    working.insert(c.id)
+    defer { working.remove(c.id) }
+    let failure = await Self.attempt { try await self.remote.appeal(commentId: c.id, message: "") }
+    if let failure { return .failed(failure) }
+    guard !closed else { return .done }
+    appealedHere.insert(c.id)
+    await loadHiddenReasons()
+    return .done
+  }
+
+  static func attempt(_ body: () async throws -> Void) async -> CommunityModerationFailure? {
+    do {
+      try await body()
+      return nil
+    } catch let f as CommunityModerationFailure {
+      return f
+    } catch {
+      return .server(code: nil)
+    }
+  }
+
+  /// RN chỉ dựng `HiddenNotice` (và chỉ khi đó mới hỏi lý do) cho thứ
+  /// `hidden && mine`.
+  private func loadHiddenReasonsIfNeeded() async {
+    guard comments.contains(where: { $0.hidden && $0.mine }) else { return }
+    await loadHiddenReasons()
+  }
+
+  /// Đọc hỏng → giữ lý do đã có (chưa có thì chỉ hiện tiêu đề, không có nút).
+  private func loadHiddenReasons() async {
+    let remote = self.remote
+    guard let rows = try? await remote.hiddenReasons(), !closed else { return }
+    var byComment: [String: CommunityHiddenReason] = [:]
+    for r in rows.map(CommunityHiddenReason.init(row:)) {
+      if let id = r.commentId, byComment[id] == nil { byComment[id] = r }
+    }
+    hiddenReasons = byComment
   }
 
   // MARK: - Nội bộ

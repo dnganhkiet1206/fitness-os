@@ -108,6 +108,16 @@ struct CommunityPostBookTests {
     var addFailure: CommunityCommentFailure?
     var added: [(body: String, parent: String?)] = []
     var pageCalls = 0
+    // Lát 4.
+    var deleteFailure: CommunityModerationFailure?
+    var deleted: [String] = []
+    var reportFailure: CommunityModerationFailure?
+    var reported: [(id: String, reason: CommunityReportReason)] = []
+    var hiddenRows: [JSONValue] = []
+    var failHidden = false
+    var hiddenCalls = 0
+    var appealFailure: CommunityModerationFailure?
+    var appeals: [(id: String, message: String)] = []
 
     func followees(me: String) async throws -> [String] { [] }
     func settings(me: String) async throws -> JSONValue? { nil }
@@ -154,10 +164,40 @@ struct CommunityPostBookTests {
       table.insert(Self.comment(n + 1000, author: me, parent: parentId), at: 0)
     }
 
-    static func comment(_ i: Int, author: String, parent: String? = nil, body: String = "hi") -> JSONValue {
+    func deleteComment(id: String) async throws {
+      await Task.yield()
+      if let deleteFailure { throw deleteFailure }
+      deleted.append(id)
+      // ON DELETE CASCADE: trả lời của nó đi theo.
+      table.removeAll { $0["id"]?.stringValue == id || $0["parent_id"]?.stringValue == id }
+    }
+    func reportComment(id: String, me: String, reason: CommunityReportReason) async throws {
+      await Task.yield()
+      if let reportFailure { throw reportFailure }
+      reported.append((id, reason))
+    }
+    func hiddenReasons() async throws -> [JSONValue] {
+      hiddenCalls += 1
+      if failHidden { throw Boom() }
+      return hiddenRows
+    }
+    func appeal(commentId: String, message: String) async throws {
+      await Task.yield()
+      if let appealFailure { throw appealFailure }
+      appeals.append((commentId, message))
+      hiddenRows = hiddenRows.map { r in
+        guard r["comment_id"]?.stringValue == commentId, case .object(var o) = r else { return r }
+        o["review_requested"] = .bool(true)
+        return .object(o)
+      }
+    }
+
+    static func comment(_ i: Int, author: String, parent: String? = nil, body: String = "hi", hidden: Bool = false)
+      -> JSONValue
+    {
       .object([
         "id": .string(String(format: "c%04d", i)), "post_id": .string("p1"), "author_id": .string(author),
-        "body": .string(body), "parent_id": parent.map(JSONValue.string) ?? .null, "hidden": .bool(false),
+        "body": .string(body), "parent_id": parent.map(JSONValue.string) ?? .null, "hidden": .bool(hidden),
         "created_at": .string(String(format: "2026-10-%02dT10:%02d:00+00:00", 1 + i / 60, i % 60)),
       ])
     }
