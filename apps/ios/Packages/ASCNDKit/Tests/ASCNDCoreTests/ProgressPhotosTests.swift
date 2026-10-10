@@ -21,10 +21,13 @@ struct ProgressPhotosGoldenTests {
     return nil
   }
 
+  /// `out` = đúng code RN (không cửa sổ); `fixed` = cùng mã với cửa sổ 30 ngày
+  /// mà native dùng.
   @Test func comparisonIsRNs() throws {
     let cases = Self.array(try Self.root()["compares"])
-    #expect(cases.count == 150)
+    #expect(cases.count == 210)
     var waists = 0
+    var cut = 0
     for c in cases {
       let weights = Self.array(c["weights"]).map {
         ProgressPhotos.Reading(date: $0["date"]?.stringValue ?? "", value: Self.num($0["value"]) ?? .nan)
@@ -34,21 +37,24 @@ struct ProgressPhotosGoldenTests {
         guard let v = Self.num(m["waist_cm"]) else { return nil }
         return ProgressPhotos.Reading(date: m["date"]?.stringValue ?? "", value: v)
       }
-      let got = ProgressPhotos.compare(
-        beforeDate: c["before"]?.stringValue ?? "", afterDate: c["after"]?.stringValue ?? "", weights: weights,
-        waists: waist)
-      let w = c["out"]
-      #expect(got.weightBefore == Self.num(w?["wBefore"]), "\(c)")
-      #expect(got.weightAfter == Self.num(w?["wAfter"]))
-      #expect(got.waistBefore == Self.num(w?["mBefore"]))
-      #expect(got.waistAfter == Self.num(w?["mAfter"]))
-      #expect(got.weightDelta == Self.num(w?["weightDelta"]), "\(c)")
-      #expect(got.waistDelta == Self.num(w?["waistDelta"]), "\(c)")
-      #expect(ProgressPhotos.deltaText(got.weightDelta, unit: "kg") == w?["weightText"]?.stringValue)
-      #expect(ProgressPhotos.deltaText(got.waistDelta, unit: "cm") == w?["waistText"]?.stringValue)
-      if got.waistDelta != nil { waists += 1 }
+      let before = c["before"]?.stringValue ?? "", after = c["after"]?.stringValue ?? ""
+      let rn = ProgressPhotos.compare(beforeDate: before, afterDate: after, weights: weights, waists: waist, windowDays: nil)
+      let native = ProgressPhotos.compare(beforeDate: before, afterDate: after, weights: weights, waists: waist)
+      for (got, w) in [(rn, c["out"]), (native, c["fixed"])] {
+        #expect(got.weightBefore == Self.num(w?["wBefore"]), "\(c)")
+        #expect(got.weightAfter == Self.num(w?["wAfter"]))
+        #expect(got.waistBefore == Self.num(w?["mBefore"]))
+        #expect(got.waistAfter == Self.num(w?["mAfter"]))
+        #expect(got.weightDelta == Self.num(w?["weightDelta"]), "\(c)")
+        #expect(got.waistDelta == Self.num(w?["waistDelta"]), "\(c)")
+        #expect(ProgressPhotos.deltaText(got.weightDelta, unit: "kg") == w?["weightText"]?.stringValue)
+        #expect(ProgressPhotos.deltaText(got.waistDelta, unit: "cm") == w?["waistText"]?.stringValue)
+      }
+      if native.waistDelta != nil { waists += 1 }
+      if rn != native { cut += 1 }
     }
     #expect(waists > 50)
+    #expect(cut > 20)  // cửa sổ thật sự cắt trong golden
   }
 
   /// Chia loạt + bỏ trùng + bỏ URL tuyệt đối như `signPhotos`; ký hỏng (cả

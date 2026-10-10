@@ -13,7 +13,9 @@ public import Observation
 /// (0 hàng là lỗi) rồi mới xoá file; so sánh hai ảnh với cân / vòng eo gần nhất
 /// không sau ngày ảnh. Mọi thao tác ghi chỉ khi có mạng — không qua hàng đợi.
 ///
-/// Khác RN: số cân trên tấm so sánh theo đơn vị của tài khoản (RN luôn "kg");
+/// Khác RN: tấm so sánh chỉ lấy lần cân / đo trong 30 ngày tới ngày ảnh — đúng
+/// điều chú thích `CompareSheet` của RN mô tả mà code RN chưa làm (quá 30 ngày
+/// là "—", không phải một số của năm ngoái); số cân theo đơn vị của tài khoản (RN luôn "kg");
 /// ghi hàng hỏng sau khi đã tải ảnh lên thì xoá luôn file vừa tải (RN để lại
 /// file mồ côi).
 public enum ProgressPhotos {
@@ -103,12 +105,22 @@ public enum ProgressPhotos {
     return best
   }
 
+  /// Cửa sổ của tấm so sánh: lần đo phải trong [ngày ảnh − 30, ngày ảnh].
+  public static let compareWindowDays = 30
+
   /// Tấm so sánh: `before` là ảnh cũ hơn. `weights` (kg) và `waists` (cm) cũ → mới.
-  public static func compare(beforeDate: String, afterDate: String, weights: [Reading], waists: [Reading])
-    -> Comparison
-  {
-    let wb = nearestOnOrBefore(weights, beforeDate), wa = nearestOnOrBefore(weights, afterDate)
-    let mb = nearestOnOrBefore(waists, beforeDate), ma = nearestOnOrBefore(waists, afterDate)
+  /// `windowDays == nil` là đúng code RN (không giới hạn).
+  public static func compare(
+    beforeDate: String, afterDate: String, weights: [Reading], waists: [Reading],
+    windowDays: Int? = compareWindowDays
+  ) -> Comparison {
+    let near = { (rows: [Reading], date: String) -> Reading? in
+      guard let windowDays, let day = LocalDate(date) else { return nearestOnOrBefore(rows, date) }
+      let from = day.adding(days: -windowDays).description
+      return nearestOnOrBefore(rows.filter { $0.date >= from }, date)
+    }
+    let wb = near(weights, beforeDate), wa = near(weights, afterDate)
+    let mb = near(waists, beforeDate), ma = near(waists, afterDate)
     let delta = { (a: Reading?, b: Reading?) -> Double? in
       guard let a, let b else { return nil }
       return JS.round((b.value - a.value) * 10) / 10

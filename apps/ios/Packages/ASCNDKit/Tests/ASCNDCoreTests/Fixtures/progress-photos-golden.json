@@ -108,6 +108,16 @@
     "waistDelta": 0,
     "weightText": "+6.7kg",
     "waistText": "0cm"
+   },
+   "fixed": {
+    "wBefore": 92.1,
+    "wAfter": 98.8,
+    "mBefore": 70,
+    "mAfter": 70,
+    "weightDelta": 6.7,
+    "waistDelta": 0,
+    "weightText": "+6.7kg",
+    "waistText": "0cm"
    }
   },
   {
@@ -222,6 +232,16 @@
     "waistDelta": 15.5,
     "weightText": "+18.9kg",
     "waistText": "+15.5cm"
+   },
+   "fixed": {
+    "wBefore": 76.9,
+    "wAfter": 95.8,
+    "mBefore": 72.5,
+    "mAfter": 88,
+    "weightDelta": 18.9,
+    "waistDelta": 15.5,
+    "weightText": "+18.9kg",
+    "waistText": "+15.5cm"
    }
   },
   {
@@ -284,6 +304,16 @@
     }
    ],
    "out": {
+    "wBefore": null,
+    "wAfter": 80,
+    "mBefore": 80.25,
+    "mAfter": 88,
+    "weightDelta": null,
+    "waistDelta": 7.8,
+    "weightText": "—",
+    "waistText": "+7.8cm"
+   },
+   "fixed": {
     "wBefore": null,
     "wAfter": 80,
     "mBefore": 80.25,
@@ -386,6 +416,16 @@
     }
    ],
    "out": {
+    "wBefore": 95.8,
+    "wAfter": 95.8,
+    "mBefore": 70,
+    "mAfter": 70,
+    "weightDelta": 0,
+    "waistDelta": 0,
+    "weightText": "0kg",
+    "waistText": "0cm"
+   },
+   "fixed": {
     "wBefore": 95.8,
     "wAfter": 95.8,
     "mBefore": 70,
@@ -516,6 +556,16 @@
     "waistDelta": null,
     "weightText": "+26.9kg",
     "waistText": "—"
+   },
+   "fixed": {
+    "wBefore": 67,
+    "wAfter": 93.9,
+    "mBefore": null,
+    "mAfter": 70,
+    "weightDelta": 26.9,
+    "waistDelta": null,
+    "weightText": "+26.9kg",
+    "waistText": "—"
    }
   },
   {
@@ -618,6 +668,16 @@
     }
    ],
    "out": {
+    "wBefore": 74.9,
+    "wAfter": 84.9,
+    "mBefore": 91.1,
+    "mAfter": 70,
+    "weightDelta": 10,
+    "waistDelta": -21.1,
+    "weightText": "+10kg",
+    "waistText": "-21.1cm"
+   },
+   "fixed": {
     "wBefore": 74.9,
     "wAfter": 84.9,
     "mBefore": 91.1,
@@ -740,6 +800,16 @@
     "waistDelta": 0,
     "weightText": "+1.1kg",
     "waistText": "0cm"
+   },
+   "fixed": {
+    "wBefore": 96.9,
+    "wAfter": 98,
+    "mBefore": 70,
+    "mAfter": null,
+    "weightDelta": 1.1,
+    "waistDelta": null,
+    "weightText": "+1.1kg",
+    "waistText": "—"
    }
   },
   {
@@ -870,6 +940,16 @@
     }
    ],
    "out": {
+    "wBefore": 94.1,
+    "wAfter": 98.9,
+    "mBefore": 88,
+    "mAfter": 80.25,
+    "weightDelta": 4.8,
+    "waistDelta": -7.7,
+    "weightText": "+4.8kg",
+    "waistText": "-7.7cm"
+   },
+   "fixed": {
     "wBefore": 94.1,
     "wAfter": 98.9,
     "mBefore": 88,
@@ -1012,6 +1092,16 @@
     "waistDelta": -7.7,
     "weightText": "+3.4kg",
     "waistText": "-7.7cm"
+   },
+   "fixed": {
+    "wBefore": 77.2,
+    "wAfter": 80.6,
+    "mBefore": 80.25,
+    "mAfter": 72.5,
+    "weightDelta": 3.4,
+    "waistDelta": -7.7,
+    "weightText": "+3.4kg",
+    "waistText": "-7.7cm"
    }
   },
   {
@@ -1138,6 +1228,16 @@
     "waistDelta": -18,
     "weightText": "0kg",
     "waistText": "-18cm"
+   },
+   "fixed": {
+    "wBefore": 92.2,
+    "wAfter": 92.2,
+    "mBefore": 88,
+    "mAfter": 70,
+    "weightDelta": 0,
+    "waistDelta": -18,
+    "weightText": "0kg",
+    "waistText": "-18cm"
    }
   },
   {
@@ -1256,6 +1356,16 @@
     "waistDelta": null,
     "weightText": "+12.4kg",
     "waistText": "—"
+   },
+   "fixed": {
+    "wBefore": 77.9,
+    "wAfter": 90.3,
+    "mBefore": null,
+    "mAfter": 91.1,
+    "weightDelta": 12.4,
+    "waistDelta": null,
+    "weightText": "+12.4kg",
+    "waistText": "—"
    }
   },
   {
@@ -1362,6 +1472,16 @@
     }
    ],
    "out": {
+    "wBefore": null,
+    "wAfter": 95.4,
+    "mBefore": 80.25,
+    "mAfter": 91.1,
+    "weightDelta": null,
+    "waistDelta": 10.8,
+    "weightText": "—",
+    "waistText": "+10.8cm"
+   },
+   "fixed": {
     "wBefore": null,
     "wAfter": 95.4,
     "mBefore": 80.25,
@@ -1512,6 +1632,16 @@
     "waistDelta": -18.6,
     "weightText": "-4kg",
     "waistText": "-18.6cm"
+   },
+   "fixed": {
+    "wBefore": 73.6,
+    "wAfter": 69.6,
+    "mBefore": 91.1,
+    "mAfter": 72.5,
+    "weightDelta": -4,
+    "waistDelta": -18.6,
+    "weightText": "-4kg",
+    "waistText": "-18.6cm"
    }
   },
   {
@@ -1614,6 +1744,16 @@
     }
    ],
    "out": {
+    "wBefore": 80.2,
+    "wAfter": 72.7,
+    "mBefore": 88,
+    "mAfter": 70,
+    "weightDelta": -7.5,
+    "waistDelta": -18,
+    "weightText": "-7.5kg",
+    "waistText": "-18cm"
+   },
+   "fixed": {
     "wBefore": 80.2,
     "wAfter": 72.7,
     "mBefore": 88,
@@ -1744,6 +1884,16 @@
     "waistDelta": 0,
     "weightText": "+19.9kg",
     "waistText": "0cm"
+   },
+   "fixed": {
+    "wBefore": 67.6,
+    "wAfter": 87.5,
+    "mBefore": 70,
+    "mAfter": 70,
+    "weightDelta": 19.9,
+    "waistDelta": 0,
+    "weightText": "+19.9kg",
+    "waistText": "0cm"
    }
   },
   {
@@ -1866,6 +2016,16 @@
     }
    ],
    "out": {
+    "wBefore": 90.5,
+    "wAfter": 83.7,
+    "mBefore": null,
+    "mAfter": 91.1,
+    "weightDelta": -6.8,
+    "waistDelta": null,
+    "weightText": "-6.8kg",
+    "waistText": "—"
+   },
+   "fixed": {
     "wBefore": 90.5,
     "wAfter": 83.7,
     "mBefore": null,
@@ -2008,6 +2168,16 @@
     "waistDelta": 15.5,
     "weightText": "+0.6kg",
     "waistText": "+15.5cm"
+   },
+   "fixed": {
+    "wBefore": 98,
+    "wAfter": 98.6,
+    "mBefore": 72.5,
+    "mAfter": 88,
+    "weightDelta": 0.6,
+    "waistDelta": 15.5,
+    "weightText": "+0.6kg",
+    "waistText": "+15.5cm"
    }
   },
   {
@@ -2114,6 +2284,16 @@
     "waistDelta": 21.1,
     "weightText": "+10kg",
     "waistText": "+21.1cm"
+   },
+   "fixed": {
+    "wBefore": 74.8,
+    "wAfter": 84.8,
+    "mBefore": 70,
+    "mAfter": 91.1,
+    "weightDelta": 10,
+    "waistDelta": 21.1,
+    "weightText": "+10kg",
+    "waistText": "+21.1cm"
    }
   },
   {
@@ -2208,6 +2388,16 @@
     }
    ],
    "out": {
+    "wBefore": 70.4,
+    "wAfter": 70.4,
+    "mBefore": 80.25,
+    "mAfter": 80.25,
+    "weightDelta": 0,
+    "waistDelta": 0,
+    "weightText": "0kg",
+    "waistText": "0cm"
+   },
+   "fixed": {
     "wBefore": 70.4,
     "wAfter": 70.4,
     "mBefore": 80.25,
@@ -2338,6 +2528,16 @@
     "waistDelta": -10.8,
     "weightText": "+11.1kg",
     "waistText": "-10.8cm"
+   },
+   "fixed": {
+    "wBefore": 72.1,
+    "wAfter": 83.2,
+    "mBefore": 91.1,
+    "mAfter": 80.25,
+    "weightDelta": 11.1,
+    "waistDelta": -10.8,
+    "weightText": "+11.1kg",
+    "waistText": "-10.8cm"
    }
   },
   {
@@ -2456,6 +2656,16 @@
     "waistDelta": 7.8,
     "weightText": "+5.4kg",
     "waistText": "+7.8cm"
+   },
+   "fixed": {
+    "wBefore": 63.2,
+    "wAfter": 68.6,
+    "mBefore": 80.25,
+    "mAfter": 88,
+    "weightDelta": 5.4,
+    "waistDelta": 7.8,
+    "weightText": "+5.4kg",
+    "waistText": "+7.8cm"
    }
   },
   {
@@ -2538,6 +2748,16 @@
     }
    ],
    "out": {
+    "wBefore": 86.6,
+    "wAfter": 83.8,
+    "mBefore": 80.25,
+    "mAfter": 91.1,
+    "weightDelta": -2.8,
+    "waistDelta": 10.8,
+    "weightText": "-2.8kg",
+    "waistText": "+10.8cm"
+   },
+   "fixed": {
     "wBefore": 86.6,
     "wAfter": 83.8,
     "mBefore": 80.25,
@@ -2644,6 +2864,16 @@
     "waistDelta": 0,
     "weightText": "+1.3kg",
     "waistText": "0cm"
+   },
+   "fixed": {
+    "wBefore": 69.8,
+    "wAfter": 71.1,
+    "mBefore": 72.5,
+    "mAfter": null,
+    "weightDelta": 1.3,
+    "waistDelta": null,
+    "weightText": "+1.3kg",
+    "waistText": "—"
    }
   },
   {
@@ -2762,6 +2992,16 @@
     "waistDelta": 15.5,
     "weightText": "-3.6kg",
     "waistText": "+15.5cm"
+   },
+   "fixed": {
+    "wBefore": 74.9,
+    "wAfter": 71.3,
+    "mBefore": 72.5,
+    "mAfter": 88,
+    "weightDelta": -3.6,
+    "waistDelta": 15.5,
+    "weightText": "-3.6kg",
+    "waistText": "+15.5cm"
    }
   },
   {
@@ -2852,6 +3092,16 @@
     }
    ],
    "out": {
+    "wBefore": 79,
+    "wAfter": 78,
+    "mBefore": 88,
+    "mAfter": 91.1,
+    "weightDelta": -1,
+    "waistDelta": 3.1,
+    "weightText": "-1kg",
+    "waistText": "+3.1cm"
+   },
+   "fixed": {
     "wBefore": 79,
     "wAfter": 78,
     "mBefore": 88,
@@ -2954,6 +3204,16 @@
     }
    ],
    "out": {
+    "wBefore": 91.1,
+    "wAfter": 60.2,
+    "mBefore": null,
+    "mAfter": null,
+    "weightDelta": -30.9,
+    "waistDelta": null,
+    "weightText": "-30.9kg",
+    "waistText": "—"
+   },
+   "fixed": {
     "wBefore": 91.1,
     "wAfter": 60.2,
     "mBefore": null,
@@ -3084,6 +3344,16 @@
     "waistDelta": -10.2,
     "weightText": "-23kg",
     "waistText": "-10.2cm"
+   },
+   "fixed": {
+    "wBefore": 90.4,
+    "wAfter": 67.4,
+    "mBefore": 80.25,
+    "mAfter": 70,
+    "weightDelta": -23,
+    "waistDelta": -10.2,
+    "weightText": "-23kg",
+    "waistText": "-10.2cm"
    }
   },
   {
@@ -3206,6 +3476,16 @@
     "waistDelta": 0,
     "weightText": "+10kg",
     "waistText": "0cm"
+   },
+   "fixed": {
+    "wBefore": 60.2,
+    "wAfter": 70.2,
+    "mBefore": 70,
+    "mAfter": 70,
+    "weightDelta": 10,
+    "waistDelta": 0,
+    "weightText": "+10kg",
+    "waistText": "0cm"
    }
   },
   {
@@ -3276,6 +3556,16 @@
     }
    ],
    "out": {
+    "wBefore": 74.3,
+    "wAfter": 65.1,
+    "mBefore": null,
+    "mAfter": 88,
+    "weightDelta": -9.2,
+    "waistDelta": null,
+    "weightText": "-9.2kg",
+    "waistText": "—"
+   },
+   "fixed": {
     "wBefore": 74.3,
     "wAfter": 65.1,
     "mBefore": null,
@@ -3390,6 +3680,16 @@
     "waistDelta": 18.6,
     "weightText": "+1.5kg",
     "waistText": "+18.6cm"
+   },
+   "fixed": {
+    "wBefore": 85.3,
+    "wAfter": 86.8,
+    "mBefore": 72.5,
+    "mAfter": 91.1,
+    "weightDelta": 1.5,
+    "waistDelta": 18.6,
+    "weightText": "+1.5kg",
+    "waistText": "+18.6cm"
    }
   },
   {
@@ -3484,6 +3784,16 @@
     }
    ],
    "out": {
+    "wBefore": 76.7,
+    "wAfter": 85.2,
+    "mBefore": 88,
+    "mAfter": 88,
+    "weightDelta": 8.5,
+    "waistDelta": 0,
+    "weightText": "+8.5kg",
+    "waistText": "0cm"
+   },
+   "fixed": {
     "wBefore": 76.7,
     "wAfter": 85.2,
     "mBefore": 88,
@@ -3610,6 +3920,16 @@
     }
    ],
    "out": {
+    "wBefore": 94.3,
+    "wAfter": 82.4,
+    "mBefore": 80.25,
+    "mAfter": 88,
+    "weightDelta": -11.9,
+    "waistDelta": 7.8,
+    "weightText": "-11.9kg",
+    "waistText": "+7.8cm"
+   },
+   "fixed": {
     "wBefore": 94.3,
     "wAfter": 82.4,
     "mBefore": 80.25,
@@ -3748,6 +4068,16 @@
     "waistDelta": 2.5,
     "weightText": "0kg",
     "waistText": "+2.5cm"
+   },
+   "fixed": {
+    "wBefore": 85.5,
+    "wAfter": 85.5,
+    "mBefore": 70,
+    "mAfter": 72.5,
+    "weightDelta": 0,
+    "waistDelta": 2.5,
+    "weightText": "0kg",
+    "waistText": "+2.5cm"
    }
   },
   {
@@ -3854,6 +4184,16 @@
     }
    ],
    "out": {
+    "wBefore": 87.7,
+    "wAfter": 60.5,
+    "mBefore": null,
+    "mAfter": 88,
+    "weightDelta": -27.2,
+    "waistDelta": null,
+    "weightText": "-27.2kg",
+    "waistText": "—"
+   },
+   "fixed": {
     "wBefore": 87.7,
     "wAfter": 60.5,
     "mBefore": null,
@@ -4000,6 +4340,16 @@
     "waistDelta": null,
     "weightText": "—",
     "waistText": "—"
+   },
+   "fixed": {
+    "wBefore": null,
+    "wAfter": 67.4,
+    "mBefore": null,
+    "mAfter": 88,
+    "weightDelta": null,
+    "waistDelta": null,
+    "weightText": "—",
+    "waistText": "—"
    }
   },
   {
@@ -4122,6 +4472,16 @@
     }
    ],
    "out": {
+    "wBefore": 84.6,
+    "wAfter": 90.5,
+    "mBefore": 91.1,
+    "mAfter": 88,
+    "weightDelta": 5.9,
+    "waistDelta": -3.1,
+    "weightText": "+5.9kg",
+    "waistText": "-3.1cm"
+   },
+   "fixed": {
     "wBefore": 84.6,
     "wAfter": 90.5,
     "mBefore": 91.1,
@@ -4272,6 +4632,16 @@
     "waistDelta": 0,
     "weightText": "-5.5kg",
     "waistText": "0cm"
+   },
+   "fixed": {
+    "wBefore": 67.1,
+    "wAfter": 61.6,
+    "mBefore": 88,
+    "mAfter": 88,
+    "weightDelta": -5.5,
+    "waistDelta": 0,
+    "weightText": "-5.5kg",
+    "waistText": "0cm"
    }
   },
   {
@@ -4410,6 +4780,16 @@
     "waistDelta": 21.1,
     "weightText": "-37.9kg",
     "waistText": "+21.1cm"
+   },
+   "fixed": {
+    "wBefore": 98,
+    "wAfter": 60.1,
+    "mBefore": 70,
+    "mAfter": 91.1,
+    "weightDelta": -37.9,
+    "waistDelta": 21.1,
+    "weightText": "-37.9kg",
+    "waistText": "+21.1cm"
    }
   },
   {
@@ -4512,6 +4892,16 @@
     }
    ],
    "out": {
+    "wBefore": 91.8,
+    "wAfter": 75.4,
+    "mBefore": 72.5,
+    "mAfter": 80.25,
+    "weightDelta": -16.4,
+    "waistDelta": 7.8,
+    "weightText": "-16.4kg",
+    "waistText": "+7.8cm"
+   },
+   "fixed": {
     "wBefore": 91.8,
     "wAfter": 75.4,
     "mBefore": 72.5,
@@ -4674,6 +5064,16 @@
     "waistDelta": -10.2,
     "weightText": "+26.5kg",
     "waistText": "-10.2cm"
+   },
+   "fixed": {
+    "wBefore": 68.6,
+    "wAfter": 95.1,
+    "mBefore": 80.25,
+    "mAfter": 70,
+    "weightDelta": 26.5,
+    "waistDelta": -10.2,
+    "weightText": "+26.5kg",
+    "waistText": "-10.2cm"
    }
   },
   {
@@ -4744,6 +5144,16 @@
     }
    ],
    "out": {
+    "wBefore": 76.7,
+    "wAfter": 81.9,
+    "mBefore": 80.25,
+    "mAfter": 70,
+    "weightDelta": 5.2,
+    "waistDelta": -10.2,
+    "weightText": "+5.2kg",
+    "waistText": "-10.2cm"
+   },
+   "fixed": {
     "wBefore": 76.7,
     "wAfter": 81.9,
     "mBefore": 80.25,
@@ -4854,6 +5264,16 @@
     }
    ],
    "out": {
+    "wBefore": 74.8,
+    "wAfter": 91.6,
+    "mBefore": 88,
+    "mAfter": 80.25,
+    "weightDelta": 16.8,
+    "waistDelta": -7.7,
+    "weightText": "+16.8kg",
+    "waistText": "-7.7cm"
+   },
+   "fixed": {
     "wBefore": 74.8,
     "wAfter": 91.6,
     "mBefore": 88,
@@ -4992,6 +5412,16 @@
     "waistDelta": -2.5,
     "weightText": "+7.2kg",
     "waistText": "-2.5cm"
+   },
+   "fixed": {
+    "wBefore": 78.5,
+    "wAfter": 85.7,
+    "mBefore": 72.5,
+    "mAfter": 70,
+    "weightDelta": 7.2,
+    "waistDelta": -2.5,
+    "weightText": "+7.2kg",
+    "waistText": "-2.5cm"
    }
   },
   {
@@ -5118,6 +5548,16 @@
     }
    ],
    "out": {
+    "wBefore": 61.2,
+    "wAfter": 93.5,
+    "mBefore": 88,
+    "mAfter": 80.25,
+    "weightDelta": 32.3,
+    "waistDelta": -7.7,
+    "weightText": "+32.3kg",
+    "waistText": "-7.7cm"
+   },
+   "fixed": {
     "wBefore": 61.2,
     "wAfter": 93.5,
     "mBefore": 88,
@@ -5296,6 +5736,16 @@
     "waistDelta": 0,
     "weightText": "-7.8kg",
     "waistText": "0cm"
+   },
+   "fixed": {
+    "wBefore": 82.8,
+    "wAfter": 75,
+    "mBefore": 80.25,
+    "mAfter": 80.25,
+    "weightDelta": -7.8,
+    "waistDelta": 0,
+    "weightText": "-7.8kg",
+    "waistText": "0cm"
    }
   },
   {
@@ -5402,6 +5852,16 @@
     }
    ],
    "out": {
+    "wBefore": 97.4,
+    "wAfter": 70.7,
+    "mBefore": 72.5,
+    "mAfter": 72.5,
+    "weightDelta": -26.7,
+    "waistDelta": 0,
+    "weightText": "-26.7kg",
+    "waistText": "0cm"
+   },
+   "fixed": {
     "wBefore": 97.4,
     "wAfter": 70.7,
     "mBefore": 72.5,
@@ -5520,6 +5980,16 @@
     "waistDelta": 0,
     "weightText": "0kg",
     "waistText": "0cm"
+   },
+   "fixed": {
+    "wBefore": 78.7,
+    "wAfter": 78.7,
+    "mBefore": 88,
+    "mAfter": 88,
+    "weightDelta": 0,
+    "waistDelta": 0,
+    "weightText": "0kg",
+    "waistText": "0cm"
    }
   },
   {
@@ -5610,6 +6080,16 @@
     }
    ],
    "out": {
+    "wBefore": 87.2,
+    "wAfter": 87.2,
+    "mBefore": 70,
+    "mAfter": 70,
+    "weightDelta": 0,
+    "waistDelta": 0,
+    "weightText": "0kg",
+    "waistText": "0cm"
+   },
+   "fixed": {
     "wBefore": 87.2,
     "wAfter": 87.2,
     "mBefore": 70,
@@ -5732,6 +6212,16 @@
     }
    ],
    "out": {
+    "wBefore": 61.6,
+    "wAfter": 68.6,
+    "mBefore": 91.1,
+    "mAfter": 70,
+    "weightDelta": 7,
+    "waistDelta": -21.1,
+    "weightText": "+7kg",
+    "waistText": "-21.1cm"
+   },
+   "fixed": {
     "wBefore": 61.6,
     "wAfter": 68.6,
     "mBefore": 91.1,
@@ -5866,6 +6356,16 @@
     "waistDelta": 0,
     "weightText": "+0.6kg",
     "waistText": "0cm"
+   },
+   "fixed": {
+    "wBefore": 87.8,
+    "wAfter": 88.4,
+    "mBefore": 80.25,
+    "mAfter": 80.25,
+    "weightDelta": 0.6,
+    "waistDelta": 0,
+    "weightText": "+0.6kg",
+    "waistText": "0cm"
    }
   },
   {
@@ -5952,6 +6452,16 @@
     }
    ],
    "out": {
+    "wBefore": 75.9,
+    "wAfter": 71.4,
+    "mBefore": 70,
+    "mAfter": 70,
+    "weightDelta": -4.5,
+    "waistDelta": 0,
+    "weightText": "-4.5kg",
+    "waistText": "0cm"
+   },
+   "fixed": {
     "wBefore": 75.9,
     "wAfter": 71.4,
     "mBefore": 70,
@@ -6106,6 +6616,16 @@
     "waistDelta": null,
     "weightText": "—",
     "waistText": "—"
+   },
+   "fixed": {
+    "wBefore": null,
+    "wAfter": 76.6,
+    "mBefore": null,
+    "mAfter": 88,
+    "weightDelta": null,
+    "waistDelta": null,
+    "weightText": "—",
+    "waistText": "—"
    }
   },
   {
@@ -6244,6 +6764,16 @@
     "waistDelta": 0,
     "weightText": "+1kg",
     "waistText": "0cm"
+   },
+   "fixed": {
+    "wBefore": 62.1,
+    "wAfter": 63.1,
+    "mBefore": 70,
+    "mAfter": 70,
+    "weightDelta": 1,
+    "waistDelta": 0,
+    "weightText": "+1kg",
+    "waistText": "0cm"
    }
   },
   {
@@ -6374,6 +6904,16 @@
     "waistDelta": 0,
     "weightText": "+7.4kg",
     "waistText": "0cm"
+   },
+   "fixed": {
+    "wBefore": 75,
+    "wAfter": 82.4,
+    "mBefore": 70,
+    "mAfter": 70,
+    "weightDelta": 7.4,
+    "waistDelta": 0,
+    "weightText": "+7.4kg",
+    "waistText": "0cm"
    }
   },
   {
@@ -6496,6 +7036,16 @@
     "waistDelta": -2.5,
     "weightText": "-34.3kg",
     "waistText": "-2.5cm"
+   },
+   "fixed": {
+    "wBefore": 97.6,
+    "wAfter": 63.3,
+    "mBefore": 72.5,
+    "mAfter": 70,
+    "weightDelta": -34.3,
+    "waistDelta": -2.5,
+    "weightText": "-34.3kg",
+    "waistText": "-2.5cm"
    }
   },
   {
@@ -6574,6 +7124,16 @@
     }
    ],
    "out": {
+    "wBefore": 84.1,
+    "wAfter": 74.3,
+    "mBefore": 91.1,
+    "mAfter": 91.1,
+    "weightDelta": -9.8,
+    "waistDelta": 0,
+    "weightText": "-9.8kg",
+    "waistText": "0cm"
+   },
+   "fixed": {
     "wBefore": 84.1,
     "wAfter": 74.3,
     "mBefore": 91.1,
@@ -6700,6 +7260,16 @@
     }
    ],
    "out": {
+    "wBefore": 76.6,
+    "wAfter": 63.6,
+    "mBefore": 80.25,
+    "mAfter": 70,
+    "weightDelta": -13,
+    "waistDelta": -10.2,
+    "weightText": "-13kg",
+    "waistText": "-10.2cm"
+   },
+   "fixed": {
     "wBefore": 76.6,
     "wAfter": 63.6,
     "mBefore": 80.25,
@@ -6842,6 +7412,16 @@
     "waistDelta": 0,
     "weightText": "0kg",
     "waistText": "0cm"
+   },
+   "fixed": {
+    "wBefore": 92.6,
+    "wAfter": 92.6,
+    "mBefore": 80.25,
+    "mAfter": 80.25,
+    "weightDelta": 0,
+    "waistDelta": 0,
+    "weightText": "0kg",
+    "waistText": "0cm"
    }
   },
   {
@@ -6936,6 +7516,16 @@
     }
    ],
    "out": {
+    "wBefore": null,
+    "wAfter": 72.7,
+    "mBefore": null,
+    "mAfter": 72.5,
+    "weightDelta": null,
+    "waistDelta": null,
+    "weightText": "—",
+    "waistText": "—"
+   },
+   "fixed": {
     "wBefore": null,
     "wAfter": 72.7,
     "mBefore": null,
@@ -7066,6 +7656,16 @@
     }
    ],
    "out": {
+    "wBefore": 71.2,
+    "wAfter": 60.5,
+    "mBefore": null,
+    "mAfter": 80.25,
+    "weightDelta": -10.7,
+    "waistDelta": null,
+    "weightText": "-10.7kg",
+    "waistText": "—"
+   },
+   "fixed": {
     "wBefore": 71.2,
     "wAfter": 60.5,
     "mBefore": null,
@@ -7216,6 +7816,16 @@
     "waistDelta": -7.7,
     "weightText": "-1.5kg",
     "waistText": "-7.7cm"
+   },
+   "fixed": {
+    "wBefore": 91.8,
+    "wAfter": 90.3,
+    "mBefore": 88,
+    "mAfter": 80.25,
+    "weightDelta": -1.5,
+    "waistDelta": -7.7,
+    "weightText": "-1.5kg",
+    "waistText": "-7.7cm"
    }
   },
   {
@@ -7330,6 +7940,16 @@
     }
    ],
    "out": {
+    "wBefore": 88.1,
+    "wAfter": 70.8,
+    "mBefore": 88,
+    "mAfter": 80.25,
+    "weightDelta": -17.3,
+    "waistDelta": -7.7,
+    "weightText": "-17.3kg",
+    "waistText": "-7.7cm"
+   },
+   "fixed": {
     "wBefore": 88.1,
     "wAfter": 70.8,
     "mBefore": 88,
@@ -7472,6 +8092,16 @@
     "waistDelta": -15.5,
     "weightText": "+6.2kg",
     "waistText": "-15.5cm"
+   },
+   "fixed": {
+    "wBefore": 79.7,
+    "wAfter": 85.9,
+    "mBefore": 88,
+    "mAfter": 72.5,
+    "weightDelta": 6.2,
+    "waistDelta": -15.5,
+    "weightText": "+6.2kg",
+    "waistText": "-15.5cm"
    }
   },
   {
@@ -7594,6 +8224,16 @@
     "waistDelta": -10.2,
     "weightText": "+6.7kg",
     "waistText": "-10.2cm"
+   },
+   "fixed": {
+    "wBefore": 72.7,
+    "wAfter": 79.4,
+    "mBefore": 80.25,
+    "mAfter": 70,
+    "weightDelta": 6.7,
+    "waistDelta": -10.2,
+    "weightText": "+6.7kg",
+    "waistText": "-10.2cm"
    }
   },
   {
@@ -7696,6 +8336,16 @@
     }
    ],
    "out": {
+    "wBefore": 98,
+    "wAfter": 74.8,
+    "mBefore": null,
+    "mAfter": 88,
+    "weightDelta": -23.2,
+    "waistDelta": null,
+    "weightText": "-23.2kg",
+    "waistText": "—"
+   },
+   "fixed": {
     "wBefore": 98,
     "wAfter": 74.8,
     "mBefore": null,
@@ -7818,6 +8468,16 @@
     "waistDelta": -7.7,
     "weightText": "0kg",
     "waistText": "-7.7cm"
+   },
+   "fixed": {
+    "wBefore": 89.8,
+    "wAfter": 89.8,
+    "mBefore": 80.25,
+    "mAfter": 72.5,
+    "weightDelta": 0,
+    "waistDelta": -7.7,
+    "weightText": "0kg",
+    "waistText": "-7.7cm"
    }
   },
   {
@@ -7932,6 +8592,16 @@
     }
    ],
    "out": {
+    "wBefore": 70.6,
+    "wAfter": 70.6,
+    "mBefore": 91.1,
+    "mAfter": 80.25,
+    "weightDelta": 0,
+    "waistDelta": -10.8,
+    "weightText": "0kg",
+    "waistText": "-10.8cm"
+   },
+   "fixed": {
     "wBefore": 70.6,
     "wAfter": 70.6,
     "mBefore": 91.1,
@@ -8082,6 +8752,16 @@
     "waistDelta": 0,
     "weightText": "+10.8kg",
     "waistText": "0cm"
+   },
+   "fixed": {
+    "wBefore": 78.8,
+    "wAfter": 89.6,
+    "mBefore": 72.5,
+    "mAfter": 72.5,
+    "weightDelta": 10.8,
+    "waistDelta": 0,
+    "weightText": "+10.8kg",
+    "waistText": "0cm"
    }
   },
   {
@@ -8180,6 +8860,16 @@
     }
    ],
    "out": {
+    "wBefore": null,
+    "wAfter": 91.8,
+    "mBefore": null,
+    "mAfter": 91.1,
+    "weightDelta": null,
+    "waistDelta": null,
+    "weightText": "—",
+    "waistText": "—"
+   },
+   "fixed": {
     "wBefore": null,
     "wAfter": 91.8,
     "mBefore": null,
@@ -8330,6 +9020,16 @@
     "waistDelta": -2.5,
     "weightText": "+17.4kg",
     "waistText": "-2.5cm"
+   },
+   "fixed": {
+    "wBefore": 81,
+    "wAfter": 98.4,
+    "mBefore": 72.5,
+    "mAfter": 70,
+    "weightDelta": 17.4,
+    "waistDelta": -2.5,
+    "weightText": "+17.4kg",
+    "waistText": "-2.5cm"
    }
   },
   {
@@ -8448,6 +9148,16 @@
     }
    ],
    "out": {
+    "wBefore": 97.5,
+    "wAfter": 72.1,
+    "mBefore": 72.5,
+    "mAfter": 80.25,
+    "weightDelta": -25.4,
+    "waistDelta": 7.8,
+    "weightText": "-25.4kg",
+    "waistText": "+7.8cm"
+   },
+   "fixed": {
     "wBefore": 97.5,
     "wAfter": 72.1,
     "mBefore": 72.5,
@@ -8582,6 +9292,16 @@
     "waistDelta": null,
     "weightText": "+10kg",
     "waistText": "—"
+   },
+   "fixed": {
+    "wBefore": 66,
+    "wAfter": 76,
+    "mBefore": null,
+    "mAfter": 80.25,
+    "weightDelta": 10,
+    "waistDelta": null,
+    "weightText": "+10kg",
+    "waistText": "—"
    }
   },
   {
@@ -8700,6 +9420,16 @@
     "waistDelta": 7.8,
     "weightText": "-13.2kg",
     "waistText": "+7.8cm"
+   },
+   "fixed": {
+    "wBefore": 82.9,
+    "wAfter": 69.7,
+    "mBefore": 72.5,
+    "mAfter": 80.25,
+    "weightDelta": -13.2,
+    "waistDelta": 7.8,
+    "weightText": "-13.2kg",
+    "waistText": "+7.8cm"
    }
   },
   {
@@ -8794,6 +9524,16 @@
     }
    ],
    "out": {
+    "wBefore": 78.3,
+    "wAfter": 78.3,
+    "mBefore": 80.25,
+    "mAfter": 80.25,
+    "weightDelta": 0,
+    "waistDelta": 0,
+    "weightText": "0kg",
+    "waistText": "0cm"
+   },
+   "fixed": {
     "wBefore": 78.3,
     "wAfter": 78.3,
     "mBefore": 80.25,
@@ -8940,6 +9680,16 @@
     "waistDelta": null,
     "weightText": "—",
     "waistText": "—"
+   },
+   "fixed": {
+    "wBefore": null,
+    "wAfter": 80.8,
+    "mBefore": null,
+    "mAfter": 80.25,
+    "weightDelta": null,
+    "waistDelta": null,
+    "weightText": "—",
+    "waistText": "—"
    }
   },
   {
@@ -9042,6 +9792,16 @@
     }
    ],
    "out": {
+    "wBefore": 68.8,
+    "wAfter": 84,
+    "mBefore": 91.1,
+    "mAfter": 72.5,
+    "weightDelta": 15.2,
+    "waistDelta": -18.6,
+    "weightText": "+15.2kg",
+    "waistText": "-18.6cm"
+   },
+   "fixed": {
     "wBefore": 68.8,
     "wAfter": 84,
     "mBefore": 91.1,
@@ -9176,6 +9936,16 @@
     "waistDelta": null,
     "weightText": "+5.2kg",
     "waistText": "—"
+   },
+   "fixed": {
+    "wBefore": 92.3,
+    "wAfter": 97.5,
+    "mBefore": null,
+    "mAfter": 70,
+    "weightDelta": 5.2,
+    "waistDelta": null,
+    "weightText": "+5.2kg",
+    "waistText": "—"
    }
   },
   {
@@ -9302,6 +10072,16 @@
     "waistDelta": -3.1,
     "weightText": "+15.1kg",
     "waistText": "-3.1cm"
+   },
+   "fixed": {
+    "wBefore": 83.9,
+    "wAfter": 99,
+    "mBefore": 91.1,
+    "mAfter": 88,
+    "weightDelta": 15.1,
+    "waistDelta": -3.1,
+    "weightText": "+15.1kg",
+    "waistText": "-3.1cm"
    }
   },
   {
@@ -9420,6 +10200,16 @@
     }
    ],
    "out": {
+    "wBefore": 67.4,
+    "wAfter": 93.4,
+    "mBefore": 91.1,
+    "mAfter": 91.1,
+    "weightDelta": 26,
+    "waistDelta": 0,
+    "weightText": "+26kg",
+    "waistText": "0cm"
+   },
+   "fixed": {
     "wBefore": 67.4,
     "wAfter": 93.4,
     "mBefore": 91.1,
@@ -9562,6 +10352,16 @@
     "waistDelta": null,
     "weightText": "-16.5kg",
     "waistText": "—"
+   },
+   "fixed": {
+    "wBefore": 84.9,
+    "wAfter": 68.4,
+    "mBefore": null,
+    "mAfter": 88,
+    "weightDelta": -16.5,
+    "waistDelta": null,
+    "weightText": "-16.5kg",
+    "waistText": "—"
    }
   },
   {
@@ -9688,6 +10488,16 @@
     }
    ],
    "out": {
+    "wBefore": 70.9,
+    "wAfter": 70.9,
+    "mBefore": 70,
+    "mAfter": 70,
+    "weightDelta": 0,
+    "waistDelta": 0,
+    "weightText": "0kg",
+    "waistText": "0cm"
+   },
+   "fixed": {
     "wBefore": 70.9,
     "wAfter": 70.9,
     "mBefore": 70,
@@ -9838,6 +10648,16 @@
     "waistDelta": 10.8,
     "weightText": "+26.9kg",
     "waistText": "+10.8cm"
+   },
+   "fixed": {
+    "wBefore": 62.6,
+    "wAfter": 89.5,
+    "mBefore": 80.25,
+    "mAfter": 91.1,
+    "weightDelta": 26.9,
+    "waistDelta": 10.8,
+    "weightText": "+26.9kg",
+    "waistText": "+10.8cm"
    }
   },
   {
@@ -9940,6 +10760,16 @@
     }
    ],
    "out": {
+    "wBefore": 65.5,
+    "wAfter": 60.7,
+    "mBefore": 70,
+    "mAfter": 91.1,
+    "weightDelta": -4.8,
+    "waistDelta": 21.1,
+    "weightText": "-4.8kg",
+    "waistText": "+21.1cm"
+   },
+   "fixed": {
     "wBefore": 65.5,
     "wAfter": 60.7,
     "mBefore": 70,
@@ -10082,6 +10912,16 @@
     "waistDelta": 3.1,
     "weightText": "-17.8kg",
     "waistText": "+3.1cm"
+   },
+   "fixed": {
+    "wBefore": 98,
+    "wAfter": 80.2,
+    "mBefore": 88,
+    "mAfter": 91.1,
+    "weightDelta": -17.8,
+    "waistDelta": 3.1,
+    "weightText": "-17.8kg",
+    "waistText": "+3.1cm"
    }
   },
   {
@@ -10180,6 +11020,16 @@
     "waistDelta": -21.1,
     "weightText": "-18.8kg",
     "waistText": "-21.1cm"
+   },
+   "fixed": {
+    "wBefore": 85.6,
+    "wAfter": 66.8,
+    "mBefore": 91.1,
+    "mAfter": 70,
+    "weightDelta": -18.8,
+    "waistDelta": -21.1,
+    "weightText": "-18.8kg",
+    "waistText": "-21.1cm"
    }
   },
   {
@@ -10258,6 +11108,16 @@
     }
    ],
    "out": {
+    "wBefore": 82.6,
+    "wAfter": 86.1,
+    "mBefore": 70,
+    "mAfter": 72.5,
+    "weightDelta": 3.5,
+    "waistDelta": 2.5,
+    "weightText": "+3.5kg",
+    "waistText": "+2.5cm"
+   },
+   "fixed": {
     "wBefore": 82.6,
     "wAfter": 86.1,
     "mBefore": 70,
@@ -10368,6 +11228,16 @@
     }
    ],
    "out": {
+    "wBefore": 77.3,
+    "wAfter": 92.2,
+    "mBefore": 91.1,
+    "mAfter": 88,
+    "weightDelta": 14.9,
+    "waistDelta": -3.1,
+    "weightText": "+14.9kg",
+    "waistText": "-3.1cm"
+   },
+   "fixed": {
     "wBefore": 77.3,
     "wAfter": 92.2,
     "mBefore": 91.1,
@@ -10490,6 +11360,16 @@
     "waistDelta": null,
     "weightText": "+17.1kg",
     "waistText": "—"
+   },
+   "fixed": {
+    "wBefore": 72.6,
+    "wAfter": 89.7,
+    "mBefore": null,
+    "mAfter": 80.25,
+    "weightDelta": 17.1,
+    "waistDelta": null,
+    "weightText": "+17.1kg",
+    "waistText": "—"
    }
   },
   {
@@ -10588,6 +11468,16 @@
     }
    ],
    "out": {
+    "wBefore": 79.7,
+    "wAfter": 93.3,
+    "mBefore": null,
+    "mAfter": 72.5,
+    "weightDelta": 13.6,
+    "waistDelta": null,
+    "weightText": "+13.6kg",
+    "waistText": "—"
+   },
+   "fixed": {
     "wBefore": 79.7,
     "wAfter": 93.3,
     "mBefore": null,
@@ -10698,6 +11588,16 @@
     }
    ],
    "out": {
+    "wBefore": 88.9,
+    "wAfter": 88.9,
+    "mBefore": 70,
+    "mAfter": 70,
+    "weightDelta": 0,
+    "waistDelta": 0,
+    "weightText": "0kg",
+    "waistText": "0cm"
+   },
+   "fixed": {
     "wBefore": 88.9,
     "wAfter": 88.9,
     "mBefore": 70,
@@ -10836,6 +11736,16 @@
     "waistDelta": null,
     "weightText": "-11.5kg",
     "waistText": "—"
+   },
+   "fixed": {
+    "wBefore": 78.5,
+    "wAfter": 67,
+    "mBefore": null,
+    "mAfter": 72.5,
+    "weightDelta": -11.5,
+    "waistDelta": null,
+    "weightText": "-11.5kg",
+    "waistText": "—"
    }
   },
   {
@@ -10950,6 +11860,16 @@
     }
    ],
    "out": {
+    "wBefore": null,
+    "wAfter": 73,
+    "mBefore": 88,
+    "mAfter": 88,
+    "weightDelta": null,
+    "waistDelta": 0,
+    "weightText": "—",
+    "waistText": "0cm"
+   },
+   "fixed": {
     "wBefore": null,
     "wAfter": 73,
     "mBefore": 88,
@@ -11100,6 +12020,16 @@
     "waistDelta": 0,
     "weightText": "+8.2kg",
     "waistText": "0cm"
+   },
+   "fixed": {
+    "wBefore": 81,
+    "wAfter": 89.2,
+    "mBefore": 80.25,
+    "mAfter": 80.25,
+    "weightDelta": 8.2,
+    "waistDelta": 0,
+    "weightText": "+8.2kg",
+    "waistText": "0cm"
    }
   },
   {
@@ -11170,6 +12100,16 @@
     }
    ],
    "out": {
+    "wBefore": 95.3,
+    "wAfter": 95.3,
+    "mBefore": 88,
+    "mAfter": 88,
+    "weightDelta": 0,
+    "waistDelta": 0,
+    "weightText": "0kg",
+    "waistText": "0cm"
+   },
+   "fixed": {
     "wBefore": 95.3,
     "wAfter": 95.3,
     "mBefore": 88,
@@ -11348,6 +12288,16 @@
     "waistDelta": 10.8,
     "weightText": "-0.7kg",
     "waistText": "+10.8cm"
+   },
+   "fixed": {
+    "wBefore": 97.8,
+    "wAfter": 97.1,
+    "mBefore": 80.25,
+    "mAfter": 91.1,
+    "weightDelta": -0.7,
+    "waistDelta": 10.8,
+    "weightText": "-0.7kg",
+    "waistText": "+10.8cm"
    }
   },
   {
@@ -11446,6 +12396,16 @@
     }
    ],
    "out": {
+    "wBefore": 66.7,
+    "wAfter": 66.8,
+    "mBefore": 72.5,
+    "mAfter": 72.5,
+    "weightDelta": 0.1,
+    "waistDelta": 0,
+    "weightText": "+0.1kg",
+    "waistText": "0cm"
+   },
+   "fixed": {
     "wBefore": 66.7,
     "wAfter": 66.8,
     "mBefore": 72.5,
@@ -11556,6 +12516,16 @@
     "waistDelta": 0,
     "weightText": "0kg",
     "waistText": "0cm"
+   },
+   "fixed": {
+    "wBefore": 78.8,
+    "wAfter": 78.8,
+    "mBefore": 88,
+    "mAfter": 88,
+    "weightDelta": 0,
+    "waistDelta": 0,
+    "weightText": "0kg",
+    "waistText": "0cm"
    }
   },
   {
@@ -11638,6 +12608,16 @@
     }
    ],
    "out": {
+    "wBefore": null,
+    "wAfter": 87.7,
+    "mBefore": null,
+    "mAfter": 91.1,
+    "weightDelta": null,
+    "waistDelta": null,
+    "weightText": "—",
+    "waistText": "—"
+   },
+   "fixed": {
     "wBefore": null,
     "wAfter": 87.7,
     "mBefore": null,
@@ -11764,6 +12744,16 @@
     "waistDelta": 3.1,
     "weightText": "-28.2kg",
     "waistText": "+3.1cm"
+   },
+   "fixed": {
+    "wBefore": 92.4,
+    "wAfter": 64.2,
+    "mBefore": 88,
+    "mAfter": 91.1,
+    "weightDelta": -28.2,
+    "waistDelta": 3.1,
+    "weightText": "-28.2kg",
+    "waistText": "+3.1cm"
    }
   },
   {
@@ -11842,6 +12832,16 @@
     }
    ],
    "out": {
+    "wBefore": 83.5,
+    "wAfter": 68.3,
+    "mBefore": 72.5,
+    "mAfter": 72.5,
+    "weightDelta": -15.2,
+    "waistDelta": 0,
+    "weightText": "-15.2kg",
+    "waistText": "0cm"
+   },
+   "fixed": {
     "wBefore": 83.5,
     "wAfter": 68.3,
     "mBefore": 72.5,
@@ -11972,6 +12972,16 @@
     "waistDelta": 18.6,
     "weightText": "+11.5kg",
     "waistText": "+18.6cm"
+   },
+   "fixed": {
+    "wBefore": 75.3,
+    "wAfter": 86.8,
+    "mBefore": 72.5,
+    "mAfter": 91.1,
+    "weightDelta": 11.5,
+    "waistDelta": 18.6,
+    "weightText": "+11.5kg",
+    "waistText": "+18.6cm"
    }
   },
   {
@@ -12070,6 +13080,16 @@
     }
    ],
    "out": {
+    "wBefore": 85.2,
+    "wAfter": 85.2,
+    "mBefore": 91.1,
+    "mAfter": 91.1,
+    "weightDelta": 0,
+    "waistDelta": 0,
+    "weightText": "0kg",
+    "waistText": "0cm"
+   },
+   "fixed": {
     "wBefore": 85.2,
     "wAfter": 85.2,
     "mBefore": 91.1,
@@ -12196,6 +13216,16 @@
     }
    ],
    "out": {
+    "wBefore": 72.3,
+    "wAfter": 82.4,
+    "mBefore": 72.5,
+    "mAfter": 88,
+    "weightDelta": 10.1,
+    "waistDelta": 15.5,
+    "weightText": "+10.1kg",
+    "waistText": "+15.5cm"
+   },
+   "fixed": {
     "wBefore": 72.3,
     "wAfter": 82.4,
     "mBefore": 72.5,
@@ -12342,6 +13372,16 @@
     "waistDelta": null,
     "weightText": "—",
     "waistText": "—"
+   },
+   "fixed": {
+    "wBefore": null,
+    "wAfter": 71,
+    "mBefore": null,
+    "mAfter": 80.25,
+    "weightDelta": null,
+    "waistDelta": null,
+    "weightText": "—",
+    "waistText": "—"
    }
   },
   {
@@ -12440,6 +13480,16 @@
     }
    ],
    "out": {
+    "wBefore": 90.3,
+    "wAfter": 86.7,
+    "mBefore": 70,
+    "mAfter": 72.5,
+    "weightDelta": -3.6,
+    "waistDelta": 2.5,
+    "weightText": "-3.6kg",
+    "waistText": "+2.5cm"
+   },
+   "fixed": {
     "wBefore": 90.3,
     "wAfter": 86.7,
     "mBefore": 70,
@@ -12578,6 +13628,16 @@
     "waistDelta": 21.1,
     "weightText": "+6.4kg",
     "waistText": "+21.1cm"
+   },
+   "fixed": {
+    "wBefore": 72.4,
+    "wAfter": 78.8,
+    "mBefore": 70,
+    "mAfter": 91.1,
+    "weightDelta": 6.4,
+    "waistDelta": 21.1,
+    "weightText": "+6.4kg",
+    "waistText": "+21.1cm"
    }
   },
   {
@@ -12700,6 +13760,16 @@
     }
    ],
    "out": {
+    "wBefore": 90.4,
+    "wAfter": 60.2,
+    "mBefore": 70,
+    "mAfter": 70,
+    "weightDelta": -30.2,
+    "waistDelta": 0,
+    "weightText": "-30.2kg",
+    "waistText": "0cm"
+   },
+   "fixed": {
     "wBefore": 90.4,
     "wAfter": 60.2,
     "mBefore": 70,
@@ -12854,6 +13924,16 @@
     "waistDelta": 0,
     "weightText": "-17.2kg",
     "waistText": "0cm"
+   },
+   "fixed": {
+    "wBefore": 96.6,
+    "wAfter": 79.4,
+    "mBefore": 88,
+    "mAfter": 88,
+    "weightDelta": -17.2,
+    "waistDelta": 0,
+    "weightText": "-17.2kg",
+    "waistText": "0cm"
    }
   },
   {
@@ -12984,6 +14064,16 @@
     "waistDelta": 18.6,
     "weightText": "-24.8kg",
     "waistText": "+18.6cm"
+   },
+   "fixed": {
+    "wBefore": 99.4,
+    "wAfter": 74.6,
+    "mBefore": 72.5,
+    "mAfter": 91.1,
+    "weightDelta": -24.8,
+    "waistDelta": 18.6,
+    "weightText": "-24.8kg",
+    "waistText": "+18.6cm"
    }
   },
   {
@@ -13070,6 +14160,16 @@
     }
    ],
    "out": {
+    "wBefore": 79,
+    "wAfter": 75.4,
+    "mBefore": 70,
+    "mAfter": 80.25,
+    "weightDelta": -3.6,
+    "waistDelta": 10.3,
+    "weightText": "-3.6kg",
+    "waistText": "+10.3cm"
+   },
+   "fixed": {
     "wBefore": 79,
     "wAfter": 75.4,
     "mBefore": 70,
@@ -13228,6 +14328,16 @@
     "waistDelta": 21.1,
     "weightText": "-25.5kg",
     "waistText": "+21.1cm"
+   },
+   "fixed": {
+    "wBefore": 85.8,
+    "wAfter": 60.3,
+    "mBefore": 70,
+    "mAfter": 91.1,
+    "weightDelta": -25.5,
+    "waistDelta": 21.1,
+    "weightText": "-25.5kg",
+    "waistText": "+21.1cm"
    }
   },
   {
@@ -13294,6 +14404,16 @@
     }
    ],
    "out": {
+    "wBefore": 81.9,
+    "wAfter": 67.3,
+    "mBefore": 70,
+    "mAfter": 80.25,
+    "weightDelta": -14.6,
+    "waistDelta": 10.3,
+    "weightText": "-14.6kg",
+    "waistText": "+10.3cm"
+   },
+   "fixed": {
     "wBefore": 81.9,
     "wAfter": 67.3,
     "mBefore": 70,
@@ -13416,6 +14536,16 @@
     }
    ],
    "out": {
+    "wBefore": 86.4,
+    "wAfter": 97.5,
+    "mBefore": null,
+    "mAfter": 91.1,
+    "weightDelta": 11.1,
+    "waistDelta": null,
+    "weightText": "+11.1kg",
+    "waistText": "—"
+   },
+   "fixed": {
     "wBefore": 86.4,
     "wAfter": 97.5,
     "mBefore": null,
@@ -13554,6 +14684,16 @@
     "waistDelta": 0,
     "weightText": "+5.1kg",
     "waistText": "0cm"
+   },
+   "fixed": {
+    "wBefore": 89.7,
+    "wAfter": 94.8,
+    "mBefore": 72.5,
+    "mAfter": 72.5,
+    "weightDelta": 5.1,
+    "waistDelta": 0,
+    "weightText": "+5.1kg",
+    "waistText": "0cm"
    }
   },
   {
@@ -13684,6 +14824,16 @@
     }
    ],
    "out": {
+    "wBefore": 79.8,
+    "wAfter": 63.1,
+    "mBefore": 88,
+    "mAfter": 72.5,
+    "weightDelta": -16.7,
+    "waistDelta": -15.5,
+    "weightText": "-16.7kg",
+    "waistText": "-15.5cm"
+   },
+   "fixed": {
     "wBefore": 79.8,
     "wAfter": 63.1,
     "mBefore": 88,
@@ -13858,6 +15008,16 @@
     "waistDelta": 18,
     "weightText": "-15.6kg",
     "waistText": "+18cm"
+   },
+   "fixed": {
+    "wBefore": 93.2,
+    "wAfter": 77.6,
+    "mBefore": 70,
+    "mAfter": 88,
+    "weightDelta": -15.6,
+    "waistDelta": 18,
+    "weightText": "-15.6kg",
+    "waistText": "+18cm"
    }
   },
   {
@@ -13964,6 +15124,16 @@
     }
    ],
    "out": {
+    "wBefore": null,
+    "wAfter": null,
+    "mBefore": 91.1,
+    "mAfter": 91.1,
+    "weightDelta": null,
+    "waistDelta": 0,
+    "weightText": "—",
+    "waistText": "0cm"
+   },
+   "fixed": {
     "wBefore": null,
     "wAfter": null,
     "mBefore": 91.1,
@@ -14082,6 +15252,16 @@
     "waistDelta": -3.1,
     "weightText": "+23.6kg",
     "waistText": "-3.1cm"
+   },
+   "fixed": {
+    "wBefore": 75.6,
+    "wAfter": 99.2,
+    "mBefore": 91.1,
+    "mAfter": 88,
+    "weightDelta": 23.6,
+    "waistDelta": -3.1,
+    "weightText": "+23.6kg",
+    "waistText": "-3.1cm"
    }
   },
   {
@@ -14192,6 +15372,16 @@
     }
    ],
    "out": {
+    "wBefore": 64.6,
+    "wAfter": 85.7,
+    "mBefore": 80.25,
+    "mAfter": 70,
+    "weightDelta": 21.1,
+    "waistDelta": -10.2,
+    "weightText": "+21.1kg",
+    "waistText": "-10.2cm"
+   },
+   "fixed": {
     "wBefore": 64.6,
     "wAfter": 85.7,
     "mBefore": 80.25,
@@ -14322,6 +15512,16 @@
     "waistDelta": 10.3,
     "weightText": "-12.6kg",
     "waistText": "+10.3cm"
+   },
+   "fixed": {
+    "wBefore": 94.9,
+    "wAfter": 82.3,
+    "mBefore": 70,
+    "mAfter": 80.25,
+    "weightDelta": -12.6,
+    "waistDelta": 10.3,
+    "weightText": "-12.6kg",
+    "waistText": "+10.3cm"
    }
   },
   {
@@ -14444,6 +15644,16 @@
     "waistDelta": 10.8,
     "weightText": "-20.7kg",
     "waistText": "+10.8cm"
+   },
+   "fixed": {
+    "wBefore": 83,
+    "wAfter": 62.3,
+    "mBefore": 80.25,
+    "mAfter": 91.1,
+    "weightDelta": -20.7,
+    "waistDelta": 10.8,
+    "weightText": "-20.7kg",
+    "waistText": "+10.8cm"
    }
   },
   {
@@ -14526,6 +15736,16 @@
     }
    ],
    "out": {
+    "wBefore": 69.9,
+    "wAfter": 79.7,
+    "mBefore": 70,
+    "mAfter": 88,
+    "weightDelta": 9.8,
+    "waistDelta": 18,
+    "weightText": "+9.8kg",
+    "waistText": "+18cm"
+   },
+   "fixed": {
     "wBefore": 69.9,
     "wAfter": 79.7,
     "mBefore": 70,
@@ -14684,6 +15904,16 @@
     "waistDelta": 0,
     "weightText": "+38kg",
     "waistText": "0cm"
+   },
+   "fixed": {
+    "wBefore": 61.5,
+    "wAfter": 99.5,
+    "mBefore": 88,
+    "mAfter": 88,
+    "weightDelta": 38,
+    "waistDelta": 0,
+    "weightText": "+38kg",
+    "waistText": "0cm"
    }
   },
   {
@@ -14802,6 +16032,16 @@
     }
    ],
    "out": {
+    "wBefore": 74.8,
+    "wAfter": 68.2,
+    "mBefore": 80.25,
+    "mAfter": 70,
+    "weightDelta": -6.6,
+    "waistDelta": -10.2,
+    "weightText": "-6.6kg",
+    "waistText": "-10.2cm"
+   },
+   "fixed": {
     "wBefore": 74.8,
     "wAfter": 68.2,
     "mBefore": 80.25,
@@ -14944,6 +16184,16 @@
     "waistDelta": 7.8,
     "weightText": "-23.1kg",
     "waistText": "+7.8cm"
+   },
+   "fixed": {
+    "wBefore": 98.2,
+    "wAfter": 75.1,
+    "mBefore": 72.5,
+    "mAfter": 80.25,
+    "weightDelta": -23.1,
+    "waistDelta": 7.8,
+    "weightText": "-23.1kg",
+    "waistText": "+7.8cm"
    }
   },
   {
@@ -15062,6 +16312,16 @@
     "waistDelta": 0,
     "weightText": "—",
     "waistText": "0cm"
+   },
+   "fixed": {
+    "wBefore": null,
+    "wAfter": 98.7,
+    "mBefore": 88,
+    "mAfter": 88,
+    "weightDelta": null,
+    "waistDelta": 0,
+    "weightText": "—",
+    "waistText": "0cm"
    }
   },
   {
@@ -15160,6 +16420,16 @@
     }
    ],
    "out": {
+    "wBefore": 93.1,
+    "wAfter": 93.1,
+    "mBefore": 70,
+    "mAfter": 70,
+    "weightDelta": 0,
+    "waistDelta": 0,
+    "weightText": "0kg",
+    "waistText": "0cm"
+   },
+   "fixed": {
     "wBefore": 93.1,
     "wAfter": 93.1,
     "mBefore": 70,
@@ -15290,6 +16560,16 @@
     "waistDelta": 0,
     "weightText": "-19kg",
     "waistText": "0cm"
+   },
+   "fixed": {
+    "wBefore": 93.9,
+    "wAfter": 74.9,
+    "mBefore": 70,
+    "mAfter": null,
+    "weightDelta": -19,
+    "waistDelta": null,
+    "weightText": "-19kg",
+    "waistText": "—"
    }
   },
   {
@@ -15428,6 +16708,16 @@
     "waistDelta": 7.8,
     "weightText": "-33.1kg",
     "waistText": "+7.8cm"
+   },
+   "fixed": {
+    "wBefore": 99.6,
+    "wAfter": 66.5,
+    "mBefore": 80.25,
+    "mAfter": 88,
+    "weightDelta": -33.1,
+    "waistDelta": 7.8,
+    "weightText": "-33.1kg",
+    "waistText": "+7.8cm"
    }
   },
   {
@@ -15538,6 +16828,16 @@
     "waistDelta": 0,
     "weightText": "0kg",
     "waistText": "0cm"
+   },
+   "fixed": {
+    "wBefore": 94.5,
+    "wAfter": 94.5,
+    "mBefore": 80.25,
+    "mAfter": 80.25,
+    "weightDelta": 0,
+    "waistDelta": 0,
+    "weightText": "0kg",
+    "waistText": "0cm"
    }
   },
   {
@@ -15640,6 +16940,16 @@
     }
    ],
    "out": {
+    "wBefore": 92.1,
+    "wAfter": 92.1,
+    "mBefore": 80.25,
+    "mAfter": 80.25,
+    "weightDelta": 0,
+    "waistDelta": 0,
+    "weightText": "0kg",
+    "waistText": "0cm"
+   },
+   "fixed": {
     "wBefore": 92.1,
     "wAfter": 92.1,
     "mBefore": 80.25,
@@ -15786,6 +17096,16 @@
     "waistDelta": -10.2,
     "weightText": "-18.4kg",
     "waistText": "-10.2cm"
+   },
+   "fixed": {
+    "wBefore": 90.3,
+    "wAfter": 71.9,
+    "mBefore": 80.25,
+    "mAfter": 70,
+    "weightDelta": -18.4,
+    "waistDelta": -10.2,
+    "weightText": "-18.4kg",
+    "waistText": "-10.2cm"
    }
   },
   {
@@ -15892,6 +17212,16 @@
     }
    ],
    "out": {
+    "wBefore": 68.4,
+    "wAfter": 64.8,
+    "mBefore": 91.1,
+    "mAfter": 88,
+    "weightDelta": -3.6,
+    "waistDelta": -3.1,
+    "weightText": "-3.6kg",
+    "waistText": "-3.1cm"
+   },
+   "fixed": {
     "wBefore": 68.4,
     "wAfter": 64.8,
     "mBefore": 91.1,
@@ -16058,6 +17388,16 @@
     "waistDelta": -15.5,
     "weightText": "-8.6kg",
     "waistText": "-15.5cm"
+   },
+   "fixed": {
+    "wBefore": 94.5,
+    "wAfter": 85.9,
+    "mBefore": 88,
+    "mAfter": 72.5,
+    "weightDelta": -8.6,
+    "waistDelta": -15.5,
+    "weightText": "-8.6kg",
+    "waistText": "-15.5cm"
    }
   },
   {
@@ -16180,6 +17520,16 @@
     "waistDelta": -7.7,
     "weightText": "0kg",
     "waistText": "-7.7cm"
+   },
+   "fixed": {
+    "wBefore": 72.7,
+    "wAfter": 72.7,
+    "mBefore": 80.25,
+    "mAfter": 72.5,
+    "weightDelta": 0,
+    "waistDelta": -7.7,
+    "weightText": "0kg",
+    "waistText": "-7.7cm"
    }
   },
   {
@@ -16270,6 +17620,16 @@
     }
    ],
    "out": {
+    "wBefore": 69.4,
+    "wAfter": 79,
+    "mBefore": null,
+    "mAfter": 70,
+    "weightDelta": 9.6,
+    "waistDelta": null,
+    "weightText": "+9.6kg",
+    "waistText": "—"
+   },
+   "fixed": {
     "wBefore": 69.4,
     "wAfter": 79,
     "mBefore": null,
@@ -16384,6 +17744,16 @@
     "waistDelta": 15.5,
     "weightText": "-18.4kg",
     "waistText": "+15.5cm"
+   },
+   "fixed": {
+    "wBefore": 89.8,
+    "wAfter": 71.4,
+    "mBefore": 72.5,
+    "mAfter": 88,
+    "weightDelta": -18.4,
+    "waistDelta": 15.5,
+    "weightText": "-18.4kg",
+    "waistText": "+15.5cm"
    }
   },
   {
@@ -16490,6 +17860,16 @@
     }
    ],
    "out": {
+    "wBefore": 69.7,
+    "wAfter": 70.6,
+    "mBefore": 88,
+    "mAfter": 88,
+    "weightDelta": 0.9,
+    "waistDelta": 0,
+    "weightText": "+0.9kg",
+    "waistText": "0cm"
+   },
+   "fixed": {
     "wBefore": 69.7,
     "wAfter": 70.6,
     "mBefore": 88,
@@ -16624,6 +18004,16 @@
     "waistDelta": 18.6,
     "weightText": "-5.8kg",
     "waistText": "+18.6cm"
+   },
+   "fixed": {
+    "wBefore": 72,
+    "wAfter": 66.2,
+    "mBefore": 72.5,
+    "mAfter": 91.1,
+    "weightDelta": -5.8,
+    "waistDelta": 18.6,
+    "weightText": "-5.8kg",
+    "waistText": "+18.6cm"
    }
   },
   {
@@ -16710,6 +18100,16 @@
     }
    ],
    "out": {
+    "wBefore": 76,
+    "wAfter": 76,
+    "mBefore": 88,
+    "mAfter": 70,
+    "weightDelta": 0,
+    "waistDelta": -18,
+    "weightText": "0kg",
+    "waistText": "-18cm"
+   },
+   "fixed": {
     "wBefore": 76,
     "wAfter": 76,
     "mBefore": 88,
@@ -16864,6 +18264,16 @@
     "waistDelta": 0,
     "weightText": "+2.5kg",
     "waistText": "0cm"
+   },
+   "fixed": {
+    "wBefore": 71.2,
+    "wAfter": 73.7,
+    "mBefore": 72.5,
+    "mAfter": 72.5,
+    "weightDelta": 2.5,
+    "waistDelta": 0,
+    "weightText": "+2.5kg",
+    "waistText": "0cm"
    }
   },
   {
@@ -16990,6 +18400,16 @@
     }
    ],
    "out": {
+    "wBefore": 74.9,
+    "wAfter": 77.7,
+    "mBefore": 80.25,
+    "mAfter": 80.25,
+    "weightDelta": 2.8,
+    "waistDelta": 0,
+    "weightText": "+2.8kg",
+    "waistText": "0cm"
+   },
+   "fixed": {
     "wBefore": 74.9,
     "wAfter": 77.7,
     "mBefore": 80.25,
@@ -17132,6 +18552,16 @@
     "waistDelta": 18,
     "weightText": "-3kg",
     "waistText": "+18cm"
+   },
+   "fixed": {
+    "wBefore": 82.5,
+    "wAfter": 79.5,
+    "mBefore": 70,
+    "mAfter": 88,
+    "weightDelta": -3,
+    "waistDelta": 18,
+    "weightText": "-3kg",
+    "waistText": "+18cm"
    }
   },
   {
@@ -17254,6 +18684,16 @@
     "waistDelta": 10.3,
     "weightText": "-11.4kg",
     "waistText": "+10.3cm"
+   },
+   "fixed": {
+    "wBefore": 80.9,
+    "wAfter": 69.5,
+    "mBefore": 70,
+    "mAfter": 80.25,
+    "weightDelta": -11.4,
+    "waistDelta": 10.3,
+    "weightText": "-11.4kg",
+    "waistText": "+10.3cm"
    }
   },
   {
@@ -17340,6 +18780,16 @@
     }
    ],
    "out": {
+    "wBefore": null,
+    "wAfter": 78.3,
+    "mBefore": null,
+    "mAfter": 70,
+    "weightDelta": null,
+    "waistDelta": null,
+    "weightText": "—",
+    "waistText": "—"
+   },
+   "fixed": {
     "wBefore": null,
     "wAfter": 78.3,
     "mBefore": null,
@@ -17478,6 +18928,16 @@
     "waistDelta": 7.8,
     "weightText": "+12.6kg",
     "waistText": "+7.8cm"
+   },
+   "fixed": {
+    "wBefore": 80.8,
+    "wAfter": 93.4,
+    "mBefore": 80.25,
+    "mAfter": 88,
+    "weightDelta": 12.6,
+    "waistDelta": 7.8,
+    "weightText": "+12.6kg",
+    "waistText": "+7.8cm"
    }
   },
   {
@@ -17584,6 +19044,16 @@
     }
    ],
    "out": {
+    "wBefore": 66.1,
+    "wAfter": 78.7,
+    "mBefore": 91.1,
+    "mAfter": 88,
+    "weightDelta": 12.6,
+    "waistDelta": -3.1,
+    "weightText": "+12.6kg",
+    "waistText": "-3.1cm"
+   },
+   "fixed": {
     "wBefore": 66.1,
     "wAfter": 78.7,
     "mBefore": 91.1,
@@ -17722,6 +19192,16 @@
     "waistDelta": 0,
     "weightText": "-17.8kg",
     "waistText": "0cm"
+   },
+   "fixed": {
+    "wBefore": 88.9,
+    "wAfter": 71.1,
+    "mBefore": 70,
+    "mAfter": 70,
+    "weightDelta": -17.8,
+    "waistDelta": 0,
+    "weightText": "-17.8kg",
+    "waistText": "0cm"
    }
   },
   {
@@ -17840,6 +19320,16 @@
     }
    ],
    "out": {
+    "wBefore": 76.5,
+    "wAfter": 77.9,
+    "mBefore": 91.1,
+    "mAfter": 91.1,
+    "weightDelta": 1.4,
+    "waistDelta": 0,
+    "weightText": "+1.4kg",
+    "waistText": "0cm"
+   },
+   "fixed": {
     "wBefore": 76.5,
     "wAfter": 77.9,
     "mBefore": 91.1,
@@ -17998,6 +19488,5364 @@
     "waistDelta": 2.5,
     "weightText": "+15.4kg",
     "waistText": "+2.5cm"
+   },
+   "fixed": {
+    "wBefore": 81.7,
+    "wAfter": 97.1,
+    "mBefore": 70,
+    "mAfter": 72.5,
+    "weightDelta": 15.4,
+    "waistDelta": 2.5,
+    "weightText": "+15.4kg",
+    "waistText": "+2.5cm"
+   }
+  },
+  {
+   "before": "2026-06-11",
+   "after": "2026-07-19",
+   "weights": [
+    {
+     "date": "2026-01-14",
+     "value": 80.9
+    },
+    {
+     "date": "2026-03-07",
+     "value": 94.8
+    },
+    {
+     "date": "2026-04-04",
+     "value": 73.8
+    },
+    {
+     "date": "2026-05-01",
+     "value": 93.6
+    },
+    {
+     "date": "2026-05-05",
+     "value": 92.8
+    },
+    {
+     "date": "2026-05-06",
+     "value": 64.4
+    },
+    {
+     "date": "2026-06-05",
+     "value": 73.9
+    },
+    {
+     "date": "2026-06-08",
+     "value": 76.7
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-01-16",
+     "waist_cm": 80.25
+    },
+    {
+     "date": "2026-01-28",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-01-29",
+     "waist_cm": 70
+    },
+    {
+     "date": "2026-02-08",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-03-05",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-04-13",
+     "waist_cm": 88
+    },
+    {
+     "date": "2026-04-14",
+     "waist_cm": 70
+    },
+    {
+     "date": "2026-06-10",
+     "waist_cm": 80.25
+    },
+    {
+     "date": "2026-06-27",
+     "waist_cm": 80.25
+    }
+   ],
+   "out": {
+    "wBefore": 76.7,
+    "wAfter": 76.7,
+    "mBefore": 80.25,
+    "mAfter": 80.25,
+    "weightDelta": 0,
+    "waistDelta": 0,
+    "weightText": "0kg",
+    "waistText": "0cm"
+   },
+   "fixed": {
+    "wBefore": 76.7,
+    "wAfter": null,
+    "mBefore": 80.25,
+    "mAfter": 80.25,
+    "weightDelta": null,
+    "waistDelta": 0,
+    "weightText": "—",
+    "waistText": "0cm"
+   }
+  },
+  {
+   "before": "2026-02-28",
+   "after": "2026-06-24",
+   "weights": [
+    {
+     "date": "2026-01-03",
+     "value": 98.1
+    },
+    {
+     "date": "2026-01-12",
+     "value": 76.4
+    },
+    {
+     "date": "2026-02-28",
+     "value": 60.7
+    },
+    {
+     "date": "2026-03-20",
+     "value": 81.4
+    },
+    {
+     "date": "2026-04-06",
+     "value": 99.3
+    },
+    {
+     "date": "2026-04-10",
+     "value": 93
+    },
+    {
+     "date": "2026-04-14",
+     "value": 77.3
+    },
+    {
+     "date": "2026-04-27",
+     "value": 66.9
+    },
+    {
+     "date": "2026-05-29",
+     "value": 96.7
+    },
+    {
+     "date": "2026-06-29",
+     "value": 69.5
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-01-08",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-02-12",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-03-21",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-03-29",
+     "waist_cm": 70
+    },
+    {
+     "date": "2026-04-26",
+     "waist_cm": 80.25
+    },
+    {
+     "date": "2026-06-28",
+     "waist_cm": 72.5
+    }
+   ],
+   "out": {
+    "wBefore": 60.7,
+    "wAfter": 96.7,
+    "mBefore": 91.1,
+    "mAfter": 80.25,
+    "weightDelta": 36,
+    "waistDelta": -10.8,
+    "weightText": "+36kg",
+    "waistText": "-10.8cm"
+   },
+   "fixed": {
+    "wBefore": 60.7,
+    "wAfter": 96.7,
+    "mBefore": null,
+    "mAfter": null,
+    "weightDelta": 36,
+    "waistDelta": null,
+    "weightText": "+36kg",
+    "waistText": "—"
+   }
+  },
+  {
+   "before": "2026-02-16",
+   "after": "2026-07-07",
+   "weights": [
+    {
+     "date": "2026-02-12",
+     "value": 89.5
+    },
+    {
+     "date": "2026-03-13",
+     "value": 71.8
+    },
+    {
+     "date": "2026-03-23",
+     "value": 62.9
+    },
+    {
+     "date": "2026-04-03",
+     "value": 70.1
+    },
+    {
+     "date": "2026-04-14",
+     "value": 97.6
+    },
+    {
+     "date": "2026-05-20",
+     "value": 92.4
+    },
+    {
+     "date": "2026-05-29",
+     "value": 67.9
+    },
+    {
+     "date": "2026-06-12",
+     "value": 62.3
+    },
+    {
+     "date": "2026-06-27",
+     "value": 83.2
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-01-22",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-02-12",
+     "waist_cm": 80.25
+    },
+    {
+     "date": "2026-05-04",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-05-25",
+     "waist_cm": 70
+    },
+    {
+     "date": "2026-06-21",
+     "waist_cm": 80.25
+    },
+    {
+     "date": "2026-07-18",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-07-19",
+     "waist_cm": null
+    }
+   ],
+   "out": {
+    "wBefore": 89.5,
+    "wAfter": 83.2,
+    "mBefore": 80.25,
+    "mAfter": 80.25,
+    "weightDelta": -6.3,
+    "waistDelta": 0,
+    "weightText": "-6.3kg",
+    "waistText": "0cm"
+   },
+   "fixed": {
+    "wBefore": 89.5,
+    "wAfter": 83.2,
+    "mBefore": 80.25,
+    "mAfter": 80.25,
+    "weightDelta": -6.3,
+    "waistDelta": 0,
+    "weightText": "-6.3kg",
+    "waistText": "0cm"
+   }
+  },
+  {
+   "before": "2026-01-27",
+   "after": "2026-07-14",
+   "weights": [
+    {
+     "date": "2026-01-25",
+     "value": 99.1
+    },
+    {
+     "date": "2026-02-11",
+     "value": 99
+    },
+    {
+     "date": "2026-02-24",
+     "value": 74.4
+    },
+    {
+     "date": "2026-03-10",
+     "value": 85.1
+    },
+    {
+     "date": "2026-04-19",
+     "value": 85
+    },
+    {
+     "date": "2026-05-09",
+     "value": 79.8
+    },
+    {
+     "date": "2026-05-31",
+     "value": 93.8
+    },
+    {
+     "date": "2026-06-20",
+     "value": 72.1
+    },
+    {
+     "date": "2026-07-05",
+     "value": 68.4
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-01-09",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-01-19",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-01-30",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-02-09",
+     "waist_cm": 88
+    },
+    {
+     "date": "2026-07-07",
+     "waist_cm": 72.5
+    }
+   ],
+   "out": {
+    "wBefore": 99.1,
+    "wAfter": 68.4,
+    "mBefore": 72.5,
+    "mAfter": 72.5,
+    "weightDelta": -30.7,
+    "waistDelta": 0,
+    "weightText": "-30.7kg",
+    "waistText": "0cm"
+   },
+   "fixed": {
+    "wBefore": 99.1,
+    "wAfter": 68.4,
+    "mBefore": 72.5,
+    "mAfter": 72.5,
+    "weightDelta": -30.7,
+    "waistDelta": 0,
+    "weightText": "-30.7kg",
+    "waistText": "0cm"
+   }
+  },
+  {
+   "before": "2026-03-17",
+   "after": "2026-05-30",
+   "weights": [
+    {
+     "date": "2026-02-24",
+     "value": 68.6
+    },
+    {
+     "date": "2026-05-10",
+     "value": 91.2
+    },
+    {
+     "date": "2026-06-29",
+     "value": 88.8
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-01-04",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-02-12",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-03-04",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-03-11",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-04-14",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-07-05",
+     "waist_cm": 80.25
+    },
+    {
+     "date": "2026-07-14",
+     "waist_cm": 72.5
+    }
+   ],
+   "out": {
+    "wBefore": 68.6,
+    "wAfter": 91.2,
+    "mBefore": 72.5,
+    "mAfter": 91.1,
+    "weightDelta": 22.6,
+    "waistDelta": 18.6,
+    "weightText": "+22.6kg",
+    "waistText": "+18.6cm"
+   },
+   "fixed": {
+    "wBefore": 68.6,
+    "wAfter": 91.2,
+    "mBefore": 72.5,
+    "mAfter": null,
+    "weightDelta": 22.6,
+    "waistDelta": null,
+    "weightText": "+22.6kg",
+    "waistText": "—"
+   }
+  },
+  {
+   "before": "2026-03-12",
+   "after": "2026-06-06",
+   "weights": [
+    {
+     "date": "2026-01-20",
+     "value": 92.4
+    },
+    {
+     "date": "2026-01-29",
+     "value": 78.7
+    },
+    {
+     "date": "2026-02-02",
+     "value": 96.5
+    },
+    {
+     "date": "2026-03-29",
+     "value": 68
+    },
+    {
+     "date": "2026-05-25",
+     "value": 76.5
+    },
+    {
+     "date": "2026-06-15",
+     "value": 63.1
+    },
+    {
+     "date": "2026-06-19",
+     "value": 74.1
+    },
+    {
+     "date": "2026-07-10",
+     "value": 85.6
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-01-09",
+     "waist_cm": 70
+    },
+    {
+     "date": "2026-01-14",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-01-22",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-02-25",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-03-24",
+     "waist_cm": 88
+    },
+    {
+     "date": "2026-03-27",
+     "waist_cm": 80.25
+    },
+    {
+     "date": "2026-05-08",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-06-06",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-06-11",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-06-28",
+     "waist_cm": null
+    }
+   ],
+   "out": {
+    "wBefore": 96.5,
+    "wAfter": 76.5,
+    "mBefore": 70,
+    "mAfter": 91.1,
+    "weightDelta": -20,
+    "waistDelta": 21.1,
+    "weightText": "-20kg",
+    "waistText": "+21.1cm"
+   },
+   "fixed": {
+    "wBefore": null,
+    "wAfter": 76.5,
+    "mBefore": null,
+    "mAfter": 91.1,
+    "weightDelta": null,
+    "waistDelta": null,
+    "weightText": "—",
+    "waistText": "—"
+   }
+  },
+  {
+   "before": "2026-06-07",
+   "after": "2026-06-17",
+   "weights": [
+    {
+     "date": "2026-01-10",
+     "value": 70.1
+    },
+    {
+     "date": "2026-04-12",
+     "value": 79.9
+    },
+    {
+     "date": "2026-04-15",
+     "value": 67.6
+    },
+    {
+     "date": "2026-05-14",
+     "value": 71.9
+    },
+    {
+     "date": "2026-05-30",
+     "value": 77.3
+    },
+    {
+     "date": "2026-05-31",
+     "value": 91.1
+    },
+    {
+     "date": "2026-07-09",
+     "value": 78.5
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-01-03",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-02-14",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-03-10",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-03-24",
+     "waist_cm": 88
+    },
+    {
+     "date": "2026-05-31",
+     "waist_cm": 80.25
+    },
+    {
+     "date": "2026-06-27",
+     "waist_cm": 70
+    }
+   ],
+   "out": {
+    "wBefore": 91.1,
+    "wAfter": 91.1,
+    "mBefore": 80.25,
+    "mAfter": 80.25,
+    "weightDelta": 0,
+    "waistDelta": 0,
+    "weightText": "0kg",
+    "waistText": "0cm"
+   },
+   "fixed": {
+    "wBefore": 91.1,
+    "wAfter": 91.1,
+    "mBefore": 80.25,
+    "mAfter": 80.25,
+    "weightDelta": 0,
+    "waistDelta": 0,
+    "weightText": "0kg",
+    "waistText": "0cm"
+   }
+  },
+  {
+   "before": "2026-03-07",
+   "after": "2026-05-05",
+   "weights": [
+    {
+     "date": "2026-01-01",
+     "value": 68.9
+    },
+    {
+     "date": "2026-01-30",
+     "value": 83.9
+    },
+    {
+     "date": "2026-02-10",
+     "value": 88.8
+    },
+    {
+     "date": "2026-03-01",
+     "value": 92.9
+    },
+    {
+     "date": "2026-03-18",
+     "value": 87.2
+    },
+    {
+     "date": "2026-03-27",
+     "value": 72.3
+    },
+    {
+     "date": "2026-05-06",
+     "value": 90.5
+    },
+    {
+     "date": "2026-06-18",
+     "value": 86.8
+    },
+    {
+     "date": "2026-07-16",
+     "value": 81
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-01-23",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-01-28",
+     "waist_cm": 70
+    },
+    {
+     "date": "2026-02-20",
+     "waist_cm": 70
+    },
+    {
+     "date": "2026-02-27",
+     "waist_cm": 70
+    },
+    {
+     "date": "2026-03-04",
+     "waist_cm": 91.1
+    }
+   ],
+   "out": {
+    "wBefore": 92.9,
+    "wAfter": 72.3,
+    "mBefore": 91.1,
+    "mAfter": 91.1,
+    "weightDelta": -20.6,
+    "waistDelta": 0,
+    "weightText": "-20.6kg",
+    "waistText": "0cm"
+   },
+   "fixed": {
+    "wBefore": 92.9,
+    "wAfter": null,
+    "mBefore": 91.1,
+    "mAfter": null,
+    "weightDelta": null,
+    "waistDelta": null,
+    "weightText": "—",
+    "waistText": "—"
+   }
+  },
+  {
+   "before": "2026-01-28",
+   "after": "2026-05-26",
+   "weights": [
+    {
+     "date": "2026-01-02",
+     "value": 82.1
+    },
+    {
+     "date": "2026-01-11",
+     "value": 60.4
+    },
+    {
+     "date": "2026-01-14",
+     "value": 77.4
+    },
+    {
+     "date": "2026-04-07",
+     "value": 93.3
+    },
+    {
+     "date": "2026-05-01",
+     "value": 73.6
+    },
+    {
+     "date": "2026-05-26",
+     "value": 90.2
+    },
+    {
+     "date": "2026-07-05",
+     "value": 81.4
+    },
+    {
+     "date": "2026-07-14",
+     "value": 61.3
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-01-09",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-02-12",
+     "waist_cm": 70
+    },
+    {
+     "date": "2026-02-16",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-03-12",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-03-29",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-03-30",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-04-08",
+     "waist_cm": 80.25
+    },
+    {
+     "date": "2026-04-12",
+     "waist_cm": 88
+    },
+    {
+     "date": "2026-04-22",
+     "waist_cm": 70
+    },
+    {
+     "date": "2026-06-27",
+     "waist_cm": 80.25
+    },
+    {
+     "date": "2026-07-18",
+     "waist_cm": 91.1
+    }
+   ],
+   "out": {
+    "wBefore": 77.4,
+    "wAfter": 90.2,
+    "mBefore": 72.5,
+    "mAfter": 70,
+    "weightDelta": 12.8,
+    "waistDelta": -2.5,
+    "weightText": "+12.8kg",
+    "waistText": "-2.5cm"
+   },
+   "fixed": {
+    "wBefore": 77.4,
+    "wAfter": 90.2,
+    "mBefore": 72.5,
+    "mAfter": null,
+    "weightDelta": 12.8,
+    "waistDelta": null,
+    "weightText": "+12.8kg",
+    "waistText": "—"
+   }
+  },
+  {
+   "before": "2026-02-04",
+   "after": "2026-07-15",
+   "weights": [
+    {
+     "date": "2026-01-12",
+     "value": 63.4
+    },
+    {
+     "date": "2026-01-21",
+     "value": 89.6
+    },
+    {
+     "date": "2026-01-23",
+     "value": 73.2
+    },
+    {
+     "date": "2026-02-13",
+     "value": 74.6
+    },
+    {
+     "date": "2026-02-20",
+     "value": 94.5
+    },
+    {
+     "date": "2026-02-22",
+     "value": 64.1
+    },
+    {
+     "date": "2026-04-08",
+     "value": 65.9
+    },
+    {
+     "date": "2026-04-30",
+     "value": 71.4
+    },
+    {
+     "date": "2026-05-06",
+     "value": 97.2
+    },
+    {
+     "date": "2026-05-29",
+     "value": 82.3
+    },
+    {
+     "date": "2026-06-10",
+     "value": 89
+    },
+    {
+     "date": "2026-06-13",
+     "value": 75.6
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-01-13",
+     "waist_cm": 70
+    },
+    {
+     "date": "2026-03-14",
+     "waist_cm": 88
+    },
+    {
+     "date": "2026-03-28",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-03-30",
+     "waist_cm": 70
+    },
+    {
+     "date": "2026-04-17",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-04-19",
+     "waist_cm": 88
+    },
+    {
+     "date": "2026-05-19",
+     "waist_cm": 88
+    },
+    {
+     "date": "2026-06-21",
+     "waist_cm": 91.1
+    }
+   ],
+   "out": {
+    "wBefore": 73.2,
+    "wAfter": 75.6,
+    "mBefore": 70,
+    "mAfter": 91.1,
+    "weightDelta": 2.4,
+    "waistDelta": 21.1,
+    "weightText": "+2.4kg",
+    "waistText": "+21.1cm"
+   },
+   "fixed": {
+    "wBefore": 73.2,
+    "wAfter": null,
+    "mBefore": 70,
+    "mAfter": 91.1,
+    "weightDelta": null,
+    "waistDelta": 21.1,
+    "weightText": "—",
+    "waistText": "+21.1cm"
+   }
+  },
+  {
+   "before": "2026-05-09",
+   "after": "2026-05-13",
+   "weights": [
+    {
+     "date": "2026-01-07",
+     "value": 70.7
+    },
+    {
+     "date": "2026-03-04",
+     "value": 70.2
+    },
+    {
+     "date": "2026-03-11",
+     "value": 69.3
+    },
+    {
+     "date": "2026-04-17",
+     "value": 89.4
+    },
+    {
+     "date": "2026-04-18",
+     "value": 80.6
+    },
+    {
+     "date": "2026-04-22",
+     "value": 68
+    },
+    {
+     "date": "2026-04-28",
+     "value": 95.7
+    },
+    {
+     "date": "2026-05-02",
+     "value": 85.7
+    },
+    {
+     "date": "2026-05-12",
+     "value": 60
+    },
+    {
+     "date": "2026-06-17",
+     "value": 60
+    },
+    {
+     "date": "2026-06-30",
+     "value": 89.3
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-01-28",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-02-25",
+     "waist_cm": 80.25
+    },
+    {
+     "date": "2026-03-08",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-03-09",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-03-23",
+     "waist_cm": 80.25
+    },
+    {
+     "date": "2026-04-18",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-04-22",
+     "waist_cm": 80.25
+    },
+    {
+     "date": "2026-07-15",
+     "waist_cm": 88
+    }
+   ],
+   "out": {
+    "wBefore": 85.7,
+    "wAfter": 60,
+    "mBefore": 80.25,
+    "mAfter": 80.25,
+    "weightDelta": -25.7,
+    "waistDelta": 0,
+    "weightText": "-25.7kg",
+    "waistText": "0cm"
+   },
+   "fixed": {
+    "wBefore": 85.7,
+    "wAfter": 60,
+    "mBefore": 80.25,
+    "mAfter": 80.25,
+    "weightDelta": -25.7,
+    "waistDelta": 0,
+    "weightText": "-25.7kg",
+    "waistText": "0cm"
+   }
+  },
+  {
+   "before": "2026-02-05",
+   "after": "2026-07-01",
+   "weights": [
+    {
+     "date": "2026-02-02",
+     "value": 74.2
+    },
+    {
+     "date": "2026-03-10",
+     "value": 82.1
+    },
+    {
+     "date": "2026-03-30",
+     "value": 96.2
+    },
+    {
+     "date": "2026-04-09",
+     "value": 73.6
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-01-05",
+     "waist_cm": 80.25
+    },
+    {
+     "date": "2026-01-21",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-03-18",
+     "waist_cm": 88
+    },
+    {
+     "date": "2026-06-04",
+     "waist_cm": 80.25
+    },
+    {
+     "date": "2026-06-07",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-06-17",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-07-04",
+     "waist_cm": 72.5
+    }
+   ],
+   "out": {
+    "wBefore": 74.2,
+    "wAfter": 73.6,
+    "mBefore": 80.25,
+    "mAfter": 72.5,
+    "weightDelta": -0.6,
+    "waistDelta": -7.7,
+    "weightText": "-0.6kg",
+    "waistText": "-7.7cm"
+   },
+   "fixed": {
+    "wBefore": 74.2,
+    "wAfter": null,
+    "mBefore": null,
+    "mAfter": 72.5,
+    "weightDelta": null,
+    "waistDelta": null,
+    "weightText": "—",
+    "waistText": "—"
+   }
+  },
+  {
+   "before": "2026-01-04",
+   "after": "2026-03-10",
+   "weights": [
+    {
+     "date": "2026-02-15",
+     "value": 97.3
+    },
+    {
+     "date": "2026-02-17",
+     "value": 65.8
+    },
+    {
+     "date": "2026-03-09",
+     "value": 83.2
+    },
+    {
+     "date": "2026-03-24",
+     "value": 94.7
+    },
+    {
+     "date": "2026-04-01",
+     "value": 60.2
+    },
+    {
+     "date": "2026-04-06",
+     "value": 87.3
+    },
+    {
+     "date": "2026-05-13",
+     "value": 87.9
+    },
+    {
+     "date": "2026-07-19",
+     "value": 82.2
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-01-23",
+     "waist_cm": 80.25
+    },
+    {
+     "date": "2026-01-31",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-02-13",
+     "waist_cm": 70
+    },
+    {
+     "date": "2026-04-03",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-04-09",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-04-16",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-04-30",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-05-22",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-06-05",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-06-24",
+     "waist_cm": 72.5
+    }
+   ],
+   "out": {
+    "wBefore": null,
+    "wAfter": 83.2,
+    "mBefore": null,
+    "mAfter": 70,
+    "weightDelta": null,
+    "waistDelta": null,
+    "weightText": "—",
+    "waistText": "—"
+   },
+   "fixed": {
+    "wBefore": null,
+    "wAfter": 83.2,
+    "mBefore": null,
+    "mAfter": 70,
+    "weightDelta": null,
+    "waistDelta": null,
+    "weightText": "—",
+    "waistText": "—"
+   }
+  },
+  {
+   "before": "2026-01-18",
+   "after": "2026-05-07",
+   "weights": [
+    {
+     "date": "2026-01-05",
+     "value": 74.2
+    },
+    {
+     "date": "2026-01-19",
+     "value": 70.4
+    },
+    {
+     "date": "2026-03-05",
+     "value": 76.6
+    },
+    {
+     "date": "2026-04-07",
+     "value": 83.2
+    },
+    {
+     "date": "2026-05-14",
+     "value": 97.6
+    },
+    {
+     "date": "2026-06-22",
+     "value": 64.2
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-01-14",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-06-27",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-06-28",
+     "waist_cm": 80.25
+    }
+   ],
+   "out": {
+    "wBefore": 74.2,
+    "wAfter": 83.2,
+    "mBefore": 72.5,
+    "mAfter": 72.5,
+    "weightDelta": 9,
+    "waistDelta": 0,
+    "weightText": "+9kg",
+    "waistText": "0cm"
+   },
+   "fixed": {
+    "wBefore": 74.2,
+    "wAfter": 83.2,
+    "mBefore": 72.5,
+    "mAfter": null,
+    "weightDelta": 9,
+    "waistDelta": null,
+    "weightText": "+9kg",
+    "waistText": "—"
+   }
+  },
+  {
+   "before": "2026-02-12",
+   "after": "2026-06-06",
+   "weights": [
+    {
+     "date": "2026-01-22",
+     "value": 81
+    },
+    {
+     "date": "2026-01-25",
+     "value": 88
+    },
+    {
+     "date": "2026-02-09",
+     "value": 77.5
+    },
+    {
+     "date": "2026-02-19",
+     "value": 68.6
+    },
+    {
+     "date": "2026-02-23",
+     "value": 72.3
+    },
+    {
+     "date": "2026-03-27",
+     "value": 62.3
+    },
+    {
+     "date": "2026-05-15",
+     "value": 61.1
+    },
+    {
+     "date": "2026-05-24",
+     "value": 85.6
+    },
+    {
+     "date": "2026-06-04",
+     "value": 72.9
+    },
+    {
+     "date": "2026-06-21",
+     "value": 74.8
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-01-11",
+     "waist_cm": 88
+    },
+    {
+     "date": "2026-01-19",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-02-14",
+     "waist_cm": 80.25
+    },
+    {
+     "date": "2026-03-08",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-03-12",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-03-20",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-03-24",
+     "waist_cm": 80.25
+    },
+    {
+     "date": "2026-03-26",
+     "waist_cm": 88
+    },
+    {
+     "date": "2026-04-02",
+     "waist_cm": 72.5
+    }
+   ],
+   "out": {
+    "wBefore": 77.5,
+    "wAfter": 72.9,
+    "mBefore": 91.1,
+    "mAfter": 72.5,
+    "weightDelta": -4.6,
+    "waistDelta": -18.6,
+    "weightText": "-4.6kg",
+    "waistText": "-18.6cm"
+   },
+   "fixed": {
+    "wBefore": 77.5,
+    "wAfter": 72.9,
+    "mBefore": 91.1,
+    "mAfter": null,
+    "weightDelta": -4.6,
+    "waistDelta": null,
+    "weightText": "-4.6kg",
+    "waistText": "—"
+   }
+  },
+  {
+   "before": "2026-04-13",
+   "after": "2026-05-08",
+   "weights": [
+    {
+     "date": "2026-02-17",
+     "value": 94.4
+    },
+    {
+     "date": "2026-03-19",
+     "value": 61.5
+    },
+    {
+     "date": "2026-03-28",
+     "value": 86.8
+    },
+    {
+     "date": "2026-04-11",
+     "value": 87.7
+    },
+    {
+     "date": "2026-04-12",
+     "value": 96.9
+    },
+    {
+     "date": "2026-04-14",
+     "value": 87
+    },
+    {
+     "date": "2026-04-20",
+     "value": 71.4
+    },
+    {
+     "date": "2026-04-29",
+     "value": 66.2
+    },
+    {
+     "date": "2026-05-08",
+     "value": 80.8
+    },
+    {
+     "date": "2026-05-19",
+     "value": 71.2
+    },
+    {
+     "date": "2026-05-27",
+     "value": 85.7
+    },
+    {
+     "date": "2026-05-28",
+     "value": 96.1
+    },
+    {
+     "date": "2026-06-04",
+     "value": 88.9
+    },
+    {
+     "date": "2026-07-09",
+     "value": 96.5
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-03-15",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-04-22",
+     "waist_cm": 70
+    },
+    {
+     "date": "2026-06-22",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-07-01",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-07-16",
+     "waist_cm": null
+    }
+   ],
+   "out": {
+    "wBefore": 96.9,
+    "wAfter": 80.8,
+    "mBefore": 72.5,
+    "mAfter": 70,
+    "weightDelta": -16.1,
+    "waistDelta": -2.5,
+    "weightText": "-16.1kg",
+    "waistText": "-2.5cm"
+   },
+   "fixed": {
+    "wBefore": 96.9,
+    "wAfter": 80.8,
+    "mBefore": 72.5,
+    "mAfter": 70,
+    "weightDelta": -16.1,
+    "waistDelta": -2.5,
+    "weightText": "-16.1kg",
+    "waistText": "-2.5cm"
+   }
+  },
+  {
+   "before": "2026-05-19",
+   "after": "2026-06-03",
+   "weights": [
+    {
+     "date": "2026-01-06",
+     "value": 93.5
+    },
+    {
+     "date": "2026-03-12",
+     "value": 60.8
+    },
+    {
+     "date": "2026-03-29",
+     "value": 71.4
+    },
+    {
+     "date": "2026-04-21",
+     "value": 71.9
+    },
+    {
+     "date": "2026-05-27",
+     "value": 68.1
+    },
+    {
+     "date": "2026-06-07",
+     "value": 78.8
+    },
+    {
+     "date": "2026-06-08",
+     "value": 68.7
+    },
+    {
+     "date": "2026-06-30",
+     "value": 76.2
+    },
+    {
+     "date": "2026-07-04",
+     "value": 89.8
+    },
+    {
+     "date": "2026-07-10",
+     "value": 94.8
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-01-24",
+     "waist_cm": 88
+    },
+    {
+     "date": "2026-02-08",
+     "waist_cm": 88
+    },
+    {
+     "date": "2026-04-04",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-06-12",
+     "waist_cm": 80.25
+    },
+    {
+     "date": "2026-06-26",
+     "waist_cm": 88
+    }
+   ],
+   "out": {
+    "wBefore": 71.9,
+    "wAfter": 68.1,
+    "mBefore": 72.5,
+    "mAfter": 72.5,
+    "weightDelta": -3.8,
+    "waistDelta": 0,
+    "weightText": "-3.8kg",
+    "waistText": "0cm"
+   },
+   "fixed": {
+    "wBefore": 71.9,
+    "wAfter": 68.1,
+    "mBefore": null,
+    "mAfter": null,
+    "weightDelta": -3.8,
+    "waistDelta": null,
+    "weightText": "-3.8kg",
+    "waistText": "—"
+   }
+  },
+  {
+   "before": "2026-01-29",
+   "after": "2026-02-07",
+   "weights": [
+    {
+     "date": "2026-02-01",
+     "value": 98.3
+    },
+    {
+     "date": "2026-02-12",
+     "value": 93.8
+    },
+    {
+     "date": "2026-02-14",
+     "value": 91.4
+    },
+    {
+     "date": "2026-04-07",
+     "value": 71.3
+    },
+    {
+     "date": "2026-04-08",
+     "value": 72.6
+    },
+    {
+     "date": "2026-04-15",
+     "value": 92.6
+    },
+    {
+     "date": "2026-05-18",
+     "value": 98.2
+    },
+    {
+     "date": "2026-07-10",
+     "value": 87.2
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-02-02",
+     "waist_cm": 80.25
+    },
+    {
+     "date": "2026-02-04",
+     "waist_cm": 88
+    },
+    {
+     "date": "2026-02-22",
+     "waist_cm": 88
+    },
+    {
+     "date": "2026-03-18",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-03-29",
+     "waist_cm": 88
+    },
+    {
+     "date": "2026-05-05",
+     "waist_cm": 80.25
+    },
+    {
+     "date": "2026-05-25",
+     "waist_cm": 80.25
+    },
+    {
+     "date": "2026-06-18",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-07-02",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-07-04",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-07-10",
+     "waist_cm": 91.1
+    }
+   ],
+   "out": {
+    "wBefore": null,
+    "wAfter": 98.3,
+    "mBefore": null,
+    "mAfter": 88,
+    "weightDelta": null,
+    "waistDelta": null,
+    "weightText": "—",
+    "waistText": "—"
+   },
+   "fixed": {
+    "wBefore": null,
+    "wAfter": 98.3,
+    "mBefore": null,
+    "mAfter": 88,
+    "weightDelta": null,
+    "waistDelta": null,
+    "weightText": "—",
+    "waistText": "—"
+   }
+  },
+  {
+   "before": "2026-03-11",
+   "after": "2026-05-19",
+   "weights": [
+    {
+     "date": "2026-01-15",
+     "value": 83.3
+    },
+    {
+     "date": "2026-01-20",
+     "value": 97
+    },
+    {
+     "date": "2026-01-28",
+     "value": 72.2
+    },
+    {
+     "date": "2026-03-30",
+     "value": 71.7
+    },
+    {
+     "date": "2026-04-26",
+     "value": 98.7
+    },
+    {
+     "date": "2026-05-02",
+     "value": 62.8
+    },
+    {
+     "date": "2026-05-21",
+     "value": 74.3
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-01-01",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-02-24",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-03-09",
+     "waist_cm": 70
+    },
+    {
+     "date": "2026-03-23",
+     "waist_cm": 70
+    },
+    {
+     "date": "2026-03-30",
+     "waist_cm": 70
+    },
+    {
+     "date": "2026-05-27",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-05-28",
+     "waist_cm": 88
+    },
+    {
+     "date": "2026-06-03",
+     "waist_cm": 88
+    },
+    {
+     "date": "2026-07-05",
+     "waist_cm": null
+    }
+   ],
+   "out": {
+    "wBefore": 72.2,
+    "wAfter": 62.8,
+    "mBefore": 70,
+    "mAfter": 70,
+    "weightDelta": -9.4,
+    "waistDelta": 0,
+    "weightText": "-9.4kg",
+    "waistText": "0cm"
+   },
+   "fixed": {
+    "wBefore": null,
+    "wAfter": 62.8,
+    "mBefore": 70,
+    "mAfter": null,
+    "weightDelta": null,
+    "waistDelta": null,
+    "weightText": "—",
+    "waistText": "—"
+   }
+  },
+  {
+   "before": "2026-04-19",
+   "after": "2026-06-02",
+   "weights": [
+    {
+     "date": "2026-01-19",
+     "value": 70.8
+    },
+    {
+     "date": "2026-01-30",
+     "value": 87.6
+    },
+    {
+     "date": "2026-03-02",
+     "value": 63.9
+    },
+    {
+     "date": "2026-03-29",
+     "value": 64.7
+    },
+    {
+     "date": "2026-04-20",
+     "value": 78.4
+    },
+    {
+     "date": "2026-05-04",
+     "value": 64.2
+    },
+    {
+     "date": "2026-05-28",
+     "value": 66.8
+    },
+    {
+     "date": "2026-06-30",
+     "value": 73.4
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-02-11",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-03-05",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-03-12",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-03-30",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-04-29",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-05-05",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-06-14",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-07-06",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-07-11",
+     "waist_cm": 88
+    },
+    {
+     "date": "2026-07-15",
+     "waist_cm": 70
+    }
+   ],
+   "out": {
+    "wBefore": 64.7,
+    "wAfter": 66.8,
+    "mBefore": 91.1,
+    "mAfter": 72.5,
+    "weightDelta": 2.1,
+    "waistDelta": -18.6,
+    "weightText": "+2.1kg",
+    "waistText": "-18.6cm"
+   },
+   "fixed": {
+    "wBefore": 64.7,
+    "wAfter": 66.8,
+    "mBefore": null,
+    "mAfter": null,
+    "weightDelta": 2.1,
+    "waistDelta": null,
+    "weightText": "+2.1kg",
+    "waistText": "—"
+   }
+  },
+  {
+   "before": "2026-01-04",
+   "after": "2026-04-15",
+   "weights": [
+    {
+     "date": "2026-01-06",
+     "value": 96.8
+    },
+    {
+     "date": "2026-01-29",
+     "value": 98.2
+    },
+    {
+     "date": "2026-02-02",
+     "value": 90.4
+    },
+    {
+     "date": "2026-02-11",
+     "value": 71.5
+    },
+    {
+     "date": "2026-02-17",
+     "value": 90.1
+    },
+    {
+     "date": "2026-03-09",
+     "value": 77.6
+    },
+    {
+     "date": "2026-03-30",
+     "value": 79.1
+    },
+    {
+     "date": "2026-04-06",
+     "value": 71
+    },
+    {
+     "date": "2026-05-05",
+     "value": 95.4
+    },
+    {
+     "date": "2026-06-01",
+     "value": 69
+    },
+    {
+     "date": "2026-07-14",
+     "value": 76.1
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-01-27",
+     "waist_cm": 70
+    },
+    {
+     "date": "2026-02-01",
+     "waist_cm": 88
+    },
+    {
+     "date": "2026-05-07",
+     "waist_cm": 70
+    },
+    {
+     "date": "2026-05-19",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-06-07",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-06-24",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-06-26",
+     "waist_cm": 91.1
+    }
+   ],
+   "out": {
+    "wBefore": null,
+    "wAfter": 71,
+    "mBefore": null,
+    "mAfter": 88,
+    "weightDelta": null,
+    "waistDelta": null,
+    "weightText": "—",
+    "waistText": "—"
+   },
+   "fixed": {
+    "wBefore": null,
+    "wAfter": 71,
+    "mBefore": null,
+    "mAfter": null,
+    "weightDelta": null,
+    "waistDelta": null,
+    "weightText": "—",
+    "waistText": "—"
+   }
+  },
+  {
+   "before": "2026-05-01",
+   "after": "2026-06-18",
+   "weights": [
+    {
+     "date": "2026-01-24",
+     "value": 93.9
+    },
+    {
+     "date": "2026-01-28",
+     "value": 71.9
+    },
+    {
+     "date": "2026-02-28",
+     "value": 92.8
+    },
+    {
+     "date": "2026-05-10",
+     "value": 86.6
+    },
+    {
+     "date": "2026-05-31",
+     "value": 94.9
+    },
+    {
+     "date": "2026-07-07",
+     "value": 81.2
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-01-16",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-02-07",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-02-20",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-02-21",
+     "waist_cm": 91.1
+    }
+   ],
+   "out": {
+    "wBefore": 92.8,
+    "wAfter": 94.9,
+    "mBefore": 91.1,
+    "mAfter": 91.1,
+    "weightDelta": 2.1,
+    "waistDelta": 0,
+    "weightText": "+2.1kg",
+    "waistText": "0cm"
+   },
+   "fixed": {
+    "wBefore": null,
+    "wAfter": 94.9,
+    "mBefore": null,
+    "mAfter": null,
+    "weightDelta": null,
+    "waistDelta": null,
+    "weightText": "—",
+    "waistText": "—"
+   }
+  },
+  {
+   "before": "2026-03-15",
+   "after": "2026-05-01",
+   "weights": [
+    {
+     "date": "2026-01-04",
+     "value": 92.8
+    },
+    {
+     "date": "2026-01-10",
+     "value": 63.8
+    },
+    {
+     "date": "2026-04-20",
+     "value": 61.1
+    },
+    {
+     "date": "2026-05-29",
+     "value": 81.3
+    },
+    {
+     "date": "2026-06-14",
+     "value": 90.5
+    },
+    {
+     "date": "2026-07-01",
+     "value": 98.7
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-01-09",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-01-27",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-02-23",
+     "waist_cm": 70
+    },
+    {
+     "date": "2026-05-18",
+     "waist_cm": 80.25
+    }
+   ],
+   "out": {
+    "wBefore": 63.8,
+    "wAfter": 61.1,
+    "mBefore": 70,
+    "mAfter": 70,
+    "weightDelta": -2.7,
+    "waistDelta": 0,
+    "weightText": "-2.7kg",
+    "waistText": "0cm"
+   },
+   "fixed": {
+    "wBefore": null,
+    "wAfter": 61.1,
+    "mBefore": 70,
+    "mAfter": null,
+    "weightDelta": null,
+    "waistDelta": null,
+    "weightText": "—",
+    "waistText": "—"
+   }
+  },
+  {
+   "before": "2026-03-31",
+   "after": "2026-05-25",
+   "weights": [
+    {
+     "date": "2026-02-12",
+     "value": 66.8
+    },
+    {
+     "date": "2026-03-01",
+     "value": 74.5
+    },
+    {
+     "date": "2026-03-16",
+     "value": 71.3
+    },
+    {
+     "date": "2026-03-19",
+     "value": 94.3
+    },
+    {
+     "date": "2026-04-02",
+     "value": 60
+    },
+    {
+     "date": "2026-04-06",
+     "value": 88.7
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-01-10",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-02-01",
+     "waist_cm": 70
+    },
+    {
+     "date": "2026-03-16",
+     "waist_cm": 80.25
+    },
+    {
+     "date": "2026-04-05",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-06-24",
+     "waist_cm": 70
+    },
+    {
+     "date": "2026-07-07",
+     "waist_cm": 70
+    },
+    {
+     "date": "2026-07-10",
+     "waist_cm": 70
+    }
+   ],
+   "out": {
+    "wBefore": 94.3,
+    "wAfter": 88.7,
+    "mBefore": 80.25,
+    "mAfter": 72.5,
+    "weightDelta": -5.6,
+    "waistDelta": -7.7,
+    "weightText": "-5.6kg",
+    "waistText": "-7.7cm"
+   },
+   "fixed": {
+    "wBefore": 94.3,
+    "wAfter": null,
+    "mBefore": 80.25,
+    "mAfter": null,
+    "weightDelta": null,
+    "waistDelta": null,
+    "weightText": "—",
+    "waistText": "—"
+   }
+  },
+  {
+   "before": "2026-03-05",
+   "after": "2026-06-22",
+   "weights": [
+    {
+     "date": "2026-01-05",
+     "value": 96.5
+    },
+    {
+     "date": "2026-01-13",
+     "value": 81.4
+    },
+    {
+     "date": "2026-02-11",
+     "value": 72.5
+    },
+    {
+     "date": "2026-03-16",
+     "value": 96.7
+    },
+    {
+     "date": "2026-04-08",
+     "value": 70.1
+    },
+    {
+     "date": "2026-05-10",
+     "value": 83.9
+    },
+    {
+     "date": "2026-05-31",
+     "value": 96.5
+    },
+    {
+     "date": "2026-06-11",
+     "value": 77.9
+    },
+    {
+     "date": "2026-06-28",
+     "value": 72
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-01-03",
+     "waist_cm": 70
+    },
+    {
+     "date": "2026-01-26",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-01-31",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-02-28",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-03-04",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-03-08",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-03-29",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-06-25",
+     "waist_cm": 80.25
+    },
+    {
+     "date": "2026-07-12",
+     "waist_cm": 70
+    }
+   ],
+   "out": {
+    "wBefore": 72.5,
+    "wAfter": 77.9,
+    "mBefore": 72.5,
+    "mAfter": 72.5,
+    "weightDelta": 5.4,
+    "waistDelta": 0,
+    "weightText": "+5.4kg",
+    "waistText": "0cm"
+   },
+   "fixed": {
+    "wBefore": 72.5,
+    "wAfter": 77.9,
+    "mBefore": 72.5,
+    "mAfter": null,
+    "weightDelta": 5.4,
+    "waistDelta": null,
+    "weightText": "+5.4kg",
+    "waistText": "—"
+   }
+  },
+  {
+   "before": "2026-04-21",
+   "after": "2026-05-13",
+   "weights": [
+    {
+     "date": "2026-02-10",
+     "value": 80.9
+    },
+    {
+     "date": "2026-04-03",
+     "value": 94.8
+    },
+    {
+     "date": "2026-05-01",
+     "value": 73.8
+    },
+    {
+     "date": "2026-05-28",
+     "value": 93.6
+    },
+    {
+     "date": "2026-06-01",
+     "value": 92.8
+    },
+    {
+     "date": "2026-06-02",
+     "value": 64.4
+    },
+    {
+     "date": "2026-07-02",
+     "value": 73.9
+    },
+    {
+     "date": "2026-07-05",
+     "value": 76.7
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-02-12",
+     "waist_cm": 80.25
+    },
+    {
+     "date": "2026-02-24",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-02-25",
+     "waist_cm": 70
+    },
+    {
+     "date": "2026-03-07",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-04-01",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-05-10",
+     "waist_cm": 88
+    },
+    {
+     "date": "2026-05-11",
+     "waist_cm": 70
+    },
+    {
+     "date": "2026-07-07",
+     "waist_cm": 80.25
+    }
+   ],
+   "out": {
+    "wBefore": 94.8,
+    "wAfter": 73.8,
+    "mBefore": 72.5,
+    "mAfter": 70,
+    "weightDelta": -21,
+    "waistDelta": -2.5,
+    "weightText": "-21kg",
+    "waistText": "-2.5cm"
+   },
+   "fixed": {
+    "wBefore": 94.8,
+    "wAfter": 73.8,
+    "mBefore": null,
+    "mAfter": 70,
+    "weightDelta": -21,
+    "waistDelta": null,
+    "weightText": "-21kg",
+    "waistText": "—"
+   }
+  },
+  {
+   "before": "2026-01-22",
+   "after": "2026-03-15",
+   "weights": [
+    {
+     "date": "2026-01-18",
+     "value": 73.8
+    },
+    {
+     "date": "2026-01-30",
+     "value": 98.1
+    },
+    {
+     "date": "2026-02-08",
+     "value": 76.4
+    },
+    {
+     "date": "2026-03-27",
+     "value": 60.7
+    },
+    {
+     "date": "2026-04-16",
+     "value": 81.4
+    },
+    {
+     "date": "2026-05-03",
+     "value": 99.3
+    },
+    {
+     "date": "2026-05-07",
+     "value": 93
+    },
+    {
+     "date": "2026-05-11",
+     "value": 77.3
+    },
+    {
+     "date": "2026-05-24",
+     "value": 66.9
+    },
+    {
+     "date": "2026-06-25",
+     "value": 96.7
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-01-04",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-02-04",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-03-11",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-04-17",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-04-25",
+     "waist_cm": 70
+    },
+    {
+     "date": "2026-05-23",
+     "waist_cm": 80.25
+    }
+   ],
+   "out": {
+    "wBefore": 73.8,
+    "wAfter": 76.4,
+    "mBefore": 72.5,
+    "mAfter": 91.1,
+    "weightDelta": 2.6,
+    "waistDelta": 18.6,
+    "weightText": "+2.6kg",
+    "waistText": "+18.6cm"
+   },
+   "fixed": {
+    "wBefore": 73.8,
+    "wAfter": null,
+    "mBefore": 72.5,
+    "mAfter": null,
+    "weightDelta": null,
+    "waistDelta": null,
+    "weightText": "—",
+    "waistText": "—"
+   }
+  },
+  {
+   "before": "2026-01-26",
+   "after": "2026-06-06",
+   "weights": [
+    {
+     "date": "2026-01-22",
+     "value": 69.1
+    },
+    {
+     "date": "2026-03-11",
+     "value": 89.5
+    },
+    {
+     "date": "2026-04-09",
+     "value": 71.8
+    },
+    {
+     "date": "2026-04-19",
+     "value": 62.9
+    },
+    {
+     "date": "2026-04-30",
+     "value": 70.1
+    },
+    {
+     "date": "2026-05-11",
+     "value": 97.6
+    },
+    {
+     "date": "2026-06-16",
+     "value": 92.4
+    },
+    {
+     "date": "2026-06-25",
+     "value": 67.9
+    },
+    {
+     "date": "2026-07-09",
+     "value": 62.3
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-01-04",
+     "waist_cm": 70
+    },
+    {
+     "date": "2026-02-18",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-03-11",
+     "waist_cm": 80.25
+    },
+    {
+     "date": "2026-05-31",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-06-21",
+     "waist_cm": 70
+    },
+    {
+     "date": "2026-07-18",
+     "waist_cm": 80.25
+    }
+   ],
+   "out": {
+    "wBefore": 69.1,
+    "wAfter": 97.6,
+    "mBefore": 70,
+    "mAfter": 72.5,
+    "weightDelta": 28.5,
+    "waistDelta": 2.5,
+    "weightText": "+28.5kg",
+    "waistText": "+2.5cm"
+   },
+   "fixed": {
+    "wBefore": 69.1,
+    "wAfter": 97.6,
+    "mBefore": 70,
+    "mAfter": 72.5,
+    "weightDelta": 28.5,
+    "waistDelta": 2.5,
+    "weightText": "+28.5kg",
+    "waistText": "+2.5cm"
+   }
+  },
+  {
+   "before": "2026-01-03",
+   "after": "2026-02-18",
+   "weights": [
+    {
+     "date": "2026-02-23",
+     "value": 99.1
+    },
+    {
+     "date": "2026-03-12",
+     "value": 99
+    },
+    {
+     "date": "2026-03-25",
+     "value": 74.4
+    },
+    {
+     "date": "2026-04-08",
+     "value": 85.1
+    },
+    {
+     "date": "2026-05-18",
+     "value": 85
+    },
+    {
+     "date": "2026-06-07",
+     "value": 79.8
+    },
+    {
+     "date": "2026-06-29",
+     "value": 93.8
+    },
+    {
+     "date": "2026-07-19",
+     "value": 72.1
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-01-25",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-02-07",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-02-17",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-02-28",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-03-10",
+     "waist_cm": 88
+    }
+   ],
+   "out": {
+    "wBefore": null,
+    "wAfter": null,
+    "mBefore": null,
+    "mAfter": 72.5,
+    "weightDelta": null,
+    "waistDelta": null,
+    "weightText": "—",
+    "waistText": "—"
+   },
+   "fixed": {
+    "wBefore": null,
+    "wAfter": null,
+    "mBefore": null,
+    "mAfter": 72.5,
+    "weightDelta": null,
+    "waistDelta": null,
+    "weightText": "—",
+    "waistText": "—"
+   }
+  },
+  {
+   "before": "2026-01-27",
+   "after": "2026-04-13",
+   "weights": [
+    {
+     "date": "2026-03-26",
+     "value": 68.6
+    },
+    {
+     "date": "2026-06-09",
+     "value": 91.2
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-01-16",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-01-25",
+     "waist_cm": 80.25
+    },
+    {
+     "date": "2026-02-02",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-03-13",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-04-02",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-04-09",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-05-13",
+     "waist_cm": 91.1
+    }
+   ],
+   "out": {
+    "wBefore": null,
+    "wAfter": 68.6,
+    "mBefore": 80.25,
+    "mAfter": 72.5,
+    "weightDelta": null,
+    "waistDelta": -7.7,
+    "weightText": "—",
+    "waistText": "-7.7cm"
+   },
+   "fixed": {
+    "wBefore": null,
+    "wAfter": 68.6,
+    "mBefore": 80.25,
+    "mAfter": 72.5,
+    "weightDelta": null,
+    "waistDelta": -7.7,
+    "weightText": "—",
+    "waistText": "-7.7cm"
+   }
+  },
+  {
+   "before": "2026-03-04",
+   "after": "2026-04-29",
+   "weights": [
+    {
+     "date": "2026-01-01",
+     "value": 93.6
+    },
+    {
+     "date": "2026-01-12",
+     "value": 67.7
+    },
+    {
+     "date": "2026-01-28",
+     "value": 94.9
+    },
+    {
+     "date": "2026-02-17",
+     "value": 92.4
+    },
+    {
+     "date": "2026-02-26",
+     "value": 78.7
+    },
+    {
+     "date": "2026-03-02",
+     "value": 96.5
+    },
+    {
+     "date": "2026-04-26",
+     "value": 68
+    },
+    {
+     "date": "2026-06-22",
+     "value": 76.5
+    },
+    {
+     "date": "2026-07-13",
+     "value": 63.1
+    },
+    {
+     "date": "2026-07-17",
+     "value": 74.1
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-01-12",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-01-13",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-01-17",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-02-04",
+     "waist_cm": 70
+    },
+    {
+     "date": "2026-02-09",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-02-17",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-03-23",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-04-19",
+     "waist_cm": 88
+    },
+    {
+     "date": "2026-04-22",
+     "waist_cm": 80.25
+    },
+    {
+     "date": "2026-06-03",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-07-02",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-07-07",
+     "waist_cm": 91.1
+    }
+   ],
+   "out": {
+    "wBefore": 96.5,
+    "wAfter": 68,
+    "mBefore": 70,
+    "mAfter": 80.25,
+    "weightDelta": -28.5,
+    "waistDelta": 10.3,
+    "weightText": "-28.5kg",
+    "waistText": "+10.3cm"
+   },
+   "fixed": {
+    "wBefore": 96.5,
+    "wAfter": 68,
+    "mBefore": 70,
+    "mAfter": 80.25,
+    "weightDelta": -28.5,
+    "waistDelta": 10.3,
+    "weightText": "-28.5kg",
+    "waistText": "+10.3cm"
+   }
+  },
+  {
+   "before": "2026-04-14",
+   "after": "2026-05-23",
+   "weights": [
+    {
+     "date": "2026-01-10",
+     "value": 87.2
+    },
+    {
+     "date": "2026-02-05",
+     "value": 70.1
+    },
+    {
+     "date": "2026-05-08",
+     "value": 79.9
+    },
+    {
+     "date": "2026-05-11",
+     "value": 67.6
+    },
+    {
+     "date": "2026-06-09",
+     "value": 71.9
+    },
+    {
+     "date": "2026-06-25",
+     "value": 77.3
+    },
+    {
+     "date": "2026-06-26",
+     "value": 91.1
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-01-05",
+     "waist_cm": 70
+    },
+    {
+     "date": "2026-01-29",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-03-12",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-04-05",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-04-19",
+     "waist_cm": 88
+    },
+    {
+     "date": "2026-06-26",
+     "waist_cm": 80.25
+    }
+   ],
+   "out": {
+    "wBefore": 70.1,
+    "wAfter": 67.6,
+    "mBefore": 91.1,
+    "mAfter": 88,
+    "weightDelta": -2.5,
+    "waistDelta": -3.1,
+    "weightText": "-2.5kg",
+    "waistText": "-3.1cm"
+   },
+   "fixed": {
+    "wBefore": null,
+    "wAfter": 67.6,
+    "mBefore": null,
+    "mAfter": null,
+    "weightDelta": null,
+    "waistDelta": null,
+    "weightText": "—",
+    "waistText": "—"
+   }
+  },
+  {
+   "before": "2026-01-03",
+   "after": "2026-06-04",
+   "weights": [
+    {
+     "date": "2026-01-18",
+     "value": 63.2
+    },
+    {
+     "date": "2026-01-27",
+     "value": 68.9
+    },
+    {
+     "date": "2026-02-25",
+     "value": 83.9
+    },
+    {
+     "date": "2026-03-08",
+     "value": 88.8
+    },
+    {
+     "date": "2026-03-27",
+     "value": 92.9
+    },
+    {
+     "date": "2026-04-13",
+     "value": 87.2
+    },
+    {
+     "date": "2026-04-22",
+     "value": 72.3
+    },
+    {
+     "date": "2026-06-01",
+     "value": 90.5
+    },
+    {
+     "date": "2026-07-14",
+     "value": 86.8
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-01-24",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-02-18",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-02-23",
+     "waist_cm": 70
+    },
+    {
+     "date": "2026-03-18",
+     "waist_cm": 70
+    },
+    {
+     "date": "2026-03-25",
+     "waist_cm": 70
+    },
+    {
+     "date": "2026-03-30",
+     "waist_cm": 91.1
+    }
+   ],
+   "out": {
+    "wBefore": null,
+    "wAfter": 90.5,
+    "mBefore": null,
+    "mAfter": 91.1,
+    "weightDelta": null,
+    "waistDelta": null,
+    "weightText": "—",
+    "waistText": "—"
+   },
+   "fixed": {
+    "wBefore": null,
+    "wAfter": 90.5,
+    "mBefore": null,
+    "mAfter": null,
+    "weightDelta": null,
+    "waistDelta": null,
+    "weightText": "—",
+    "waistText": "—"
+   }
+  },
+  {
+   "before": "2026-01-18",
+   "after": "2026-04-16",
+   "weights": [
+    {
+     "date": "2026-01-28",
+     "value": 82.1
+    },
+    {
+     "date": "2026-02-06",
+     "value": 60.4
+    },
+    {
+     "date": "2026-02-09",
+     "value": 77.4
+    },
+    {
+     "date": "2026-05-03",
+     "value": 93.3
+    },
+    {
+     "date": "2026-05-27",
+     "value": 73.6
+    },
+    {
+     "date": "2026-06-21",
+     "value": 90.2
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-02-06",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-03-12",
+     "waist_cm": 70
+    },
+    {
+     "date": "2026-03-16",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-04-09",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-04-26",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-04-27",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-05-06",
+     "waist_cm": 80.25
+    },
+    {
+     "date": "2026-05-10",
+     "waist_cm": 88
+    },
+    {
+     "date": "2026-05-20",
+     "waist_cm": 70
+    }
+   ],
+   "out": {
+    "wBefore": null,
+    "wAfter": 77.4,
+    "mBefore": null,
+    "mAfter": 91.1,
+    "weightDelta": null,
+    "waistDelta": null,
+    "weightText": "—",
+    "waistText": "—"
+   },
+   "fixed": {
+    "wBefore": null,
+    "wAfter": null,
+    "mBefore": null,
+    "mAfter": null,
+    "weightDelta": null,
+    "waistDelta": null,
+    "weightText": "—",
+    "waistText": "—"
+   }
+  },
+  {
+   "before": "2026-01-08",
+   "after": "2026-04-08",
+   "weights": [
+    {
+     "date": "2026-01-10",
+     "value": 79.5
+    },
+    {
+     "date": "2026-02-10",
+     "value": 63.4
+    },
+    {
+     "date": "2026-02-19",
+     "value": 89.6
+    },
+    {
+     "date": "2026-02-21",
+     "value": 73.2
+    },
+    {
+     "date": "2026-03-14",
+     "value": 74.6
+    },
+    {
+     "date": "2026-03-21",
+     "value": 94.5
+    },
+    {
+     "date": "2026-03-23",
+     "value": 64.1
+    },
+    {
+     "date": "2026-05-07",
+     "value": 65.9
+    },
+    {
+     "date": "2026-05-29",
+     "value": 71.4
+    },
+    {
+     "date": "2026-06-04",
+     "value": 97.2
+    },
+    {
+     "date": "2026-06-27",
+     "value": 82.3
+    },
+    {
+     "date": "2026-07-09",
+     "value": 89
+    },
+    {
+     "date": "2026-07-12",
+     "value": 75.6
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-01-07",
+     "waist_cm": 88
+    },
+    {
+     "date": "2026-01-15",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-02-09",
+     "waist_cm": 70
+    },
+    {
+     "date": "2026-04-10",
+     "waist_cm": 88
+    },
+    {
+     "date": "2026-04-24",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-04-26",
+     "waist_cm": 70
+    },
+    {
+     "date": "2026-05-14",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-05-16",
+     "waist_cm": 88
+    },
+    {
+     "date": "2026-06-15",
+     "waist_cm": 88
+    },
+    {
+     "date": "2026-07-18",
+     "waist_cm": 91.1
+    }
+   ],
+   "out": {
+    "wBefore": null,
+    "wAfter": 64.1,
+    "mBefore": 88,
+    "mAfter": 70,
+    "weightDelta": null,
+    "waistDelta": -18,
+    "weightText": "—",
+    "waistText": "-18cm"
+   },
+   "fixed": {
+    "wBefore": null,
+    "wAfter": 64.1,
+    "mBefore": 88,
+    "mAfter": null,
+    "weightDelta": null,
+    "waistDelta": null,
+    "weightText": "—",
+    "waistText": "—"
+   }
+  },
+  {
+   "before": "2026-02-10",
+   "after": "2026-02-14",
+   "weights": [
+    {
+     "date": "2026-02-03",
+     "value": 70.7
+    },
+    {
+     "date": "2026-03-31",
+     "value": 70.2
+    },
+    {
+     "date": "2026-04-07",
+     "value": 69.3
+    },
+    {
+     "date": "2026-05-14",
+     "value": 89.4
+    },
+    {
+     "date": "2026-05-15",
+     "value": 80.6
+    },
+    {
+     "date": "2026-05-19",
+     "value": 68
+    },
+    {
+     "date": "2026-05-25",
+     "value": 95.7
+    },
+    {
+     "date": "2026-05-29",
+     "value": 85.7
+    },
+    {
+     "date": "2026-06-08",
+     "value": 60
+    },
+    {
+     "date": "2026-07-14",
+     "value": 60
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-01-02",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-02-24",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-03-24",
+     "waist_cm": 80.25
+    },
+    {
+     "date": "2026-04-04",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-04-05",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-04-19",
+     "waist_cm": 80.25
+    },
+    {
+     "date": "2026-05-15",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-05-19",
+     "waist_cm": 80.25
+    }
+   ],
+   "out": {
+    "wBefore": 70.7,
+    "wAfter": 70.7,
+    "mBefore": 91.1,
+    "mAfter": 91.1,
+    "weightDelta": 0,
+    "waistDelta": 0,
+    "weightText": "0kg",
+    "waistText": "0cm"
+   },
+   "fixed": {
+    "wBefore": 70.7,
+    "wAfter": 70.7,
+    "mBefore": null,
+    "mAfter": null,
+    "weightDelta": 0,
+    "waistDelta": null,
+    "weightText": "0kg",
+    "waistText": "—"
+   }
+  },
+  {
+   "before": "2026-05-17",
+   "after": "2026-07-14",
+   "weights": [
+    {
+     "date": "2026-01-21",
+     "value": 81.5
+    },
+    {
+     "date": "2026-03-01",
+     "value": 74.2
+    },
+    {
+     "date": "2026-04-06",
+     "value": 82.1
+    },
+    {
+     "date": "2026-04-26",
+     "value": 96.2
+    },
+    {
+     "date": "2026-05-06",
+     "value": 73.6
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-02-01",
+     "waist_cm": 80.25
+    },
+    {
+     "date": "2026-02-17",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-04-14",
+     "waist_cm": 88
+    },
+    {
+     "date": "2026-07-01",
+     "waist_cm": 80.25
+    },
+    {
+     "date": "2026-07-04",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-07-14",
+     "waist_cm": 72.5
+    }
+   ],
+   "out": {
+    "wBefore": 73.6,
+    "wAfter": 73.6,
+    "mBefore": 88,
+    "mAfter": 72.5,
+    "weightDelta": 0,
+    "waistDelta": -15.5,
+    "weightText": "0kg",
+    "waistText": "-15.5cm"
+   },
+   "fixed": {
+    "wBefore": 73.6,
+    "wAfter": null,
+    "mBefore": null,
+    "mAfter": 72.5,
+    "weightDelta": null,
+    "waistDelta": null,
+    "weightText": "—",
+    "waistText": "—"
+   }
+  },
+  {
+   "before": "2026-03-02",
+   "after": "2026-06-26",
+   "weights": [
+    {
+     "date": "2026-01-20",
+     "value": 67.1
+    },
+    {
+     "date": "2026-03-14",
+     "value": 97.3
+    },
+    {
+     "date": "2026-03-16",
+     "value": 65.8
+    },
+    {
+     "date": "2026-04-05",
+     "value": 83.2
+    },
+    {
+     "date": "2026-04-20",
+     "value": 94.7
+    },
+    {
+     "date": "2026-04-28",
+     "value": 60.2
+    },
+    {
+     "date": "2026-05-03",
+     "value": 87.3
+    },
+    {
+     "date": "2026-06-09",
+     "value": 87.9
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-01-14",
+     "waist_cm": 88
+    },
+    {
+     "date": "2026-02-19",
+     "waist_cm": 80.25
+    },
+    {
+     "date": "2026-02-27",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-03-12",
+     "waist_cm": 70
+    },
+    {
+     "date": "2026-04-30",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-05-06",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-05-13",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-05-27",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-06-18",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-07-02",
+     "waist_cm": null
+    }
+   ],
+   "out": {
+    "wBefore": 67.1,
+    "wAfter": 87.9,
+    "mBefore": 91.1,
+    "mAfter": 91.1,
+    "weightDelta": 20.8,
+    "waistDelta": 0,
+    "weightText": "+20.8kg",
+    "waistText": "0cm"
+   },
+   "fixed": {
+    "wBefore": null,
+    "wAfter": 87.9,
+    "mBefore": 91.1,
+    "mAfter": 91.1,
+    "weightDelta": null,
+    "waistDelta": 0,
+    "weightText": "—",
+    "waistText": "0cm"
+   }
+  },
+  {
+   "before": "2026-01-20",
+   "after": "2026-05-14",
+   "weights": [
+    {
+     "date": "2026-02-02",
+     "value": 74.2
+    },
+    {
+     "date": "2026-02-16",
+     "value": 70.4
+    },
+    {
+     "date": "2026-04-02",
+     "value": 76.6
+    },
+    {
+     "date": "2026-05-05",
+     "value": 83.2
+    },
+    {
+     "date": "2026-06-11",
+     "value": 97.6
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-01-01",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-02-11",
+     "waist_cm": 72.5
+    }
+   ],
+   "out": {
+    "wBefore": null,
+    "wAfter": 83.2,
+    "mBefore": null,
+    "mAfter": 72.5,
+    "weightDelta": null,
+    "waistDelta": null,
+    "weightText": "—",
+    "waistText": "—"
+   },
+   "fixed": {
+    "wBefore": null,
+    "wAfter": 83.2,
+    "mBefore": null,
+    "mAfter": null,
+    "weightDelta": null,
+    "waistDelta": null,
+    "weightText": "—",
+    "waistText": "—"
+   }
+  },
+  {
+   "before": "2026-01-25",
+   "after": "2026-07-17",
+   "weights": [
+    {
+     "date": "2026-01-11",
+     "value": 72.7
+    },
+    {
+     "date": "2026-01-17",
+     "value": 81.9
+    },
+    {
+     "date": "2026-01-24",
+     "value": 62.4
+    },
+    {
+     "date": "2026-02-18",
+     "value": 81
+    },
+    {
+     "date": "2026-02-21",
+     "value": 88
+    },
+    {
+     "date": "2026-03-08",
+     "value": 77.5
+    },
+    {
+     "date": "2026-03-18",
+     "value": 68.6
+    },
+    {
+     "date": "2026-03-22",
+     "value": 72.3
+    },
+    {
+     "date": "2026-04-23",
+     "value": 62.3
+    },
+    {
+     "date": "2026-06-11",
+     "value": 61.1
+    },
+    {
+     "date": "2026-06-20",
+     "value": 85.6
+    },
+    {
+     "date": "2026-07-01",
+     "value": 72.9
+    },
+    {
+     "date": "2026-07-18",
+     "value": 74.8
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-02-07",
+     "waist_cm": 88
+    },
+    {
+     "date": "2026-02-15",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-03-13",
+     "waist_cm": 80.25
+    },
+    {
+     "date": "2026-04-04",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-04-08",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-04-16",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-04-20",
+     "waist_cm": 80.25
+    },
+    {
+     "date": "2026-04-22",
+     "waist_cm": 88
+    },
+    {
+     "date": "2026-04-29",
+     "waist_cm": 72.5
+    }
+   ],
+   "out": {
+    "wBefore": 62.4,
+    "wAfter": 72.9,
+    "mBefore": null,
+    "mAfter": 72.5,
+    "weightDelta": 10.5,
+    "waistDelta": null,
+    "weightText": "+10.5kg",
+    "waistText": "—"
+   },
+   "fixed": {
+    "wBefore": 62.4,
+    "wAfter": 72.9,
+    "mBefore": null,
+    "mAfter": null,
+    "weightDelta": 10.5,
+    "waistDelta": null,
+    "weightText": "+10.5kg",
+    "waistText": "—"
+   }
+  },
+  {
+   "before": "2026-01-21",
+   "after": "2026-05-05",
+   "weights": [
+    {
+     "date": "2026-03-16",
+     "value": 94.4
+    },
+    {
+     "date": "2026-04-15",
+     "value": 61.5
+    },
+    {
+     "date": "2026-04-24",
+     "value": 86.8
+    },
+    {
+     "date": "2026-05-08",
+     "value": 87.7
+    },
+    {
+     "date": "2026-05-09",
+     "value": 96.9
+    },
+    {
+     "date": "2026-05-11",
+     "value": 87
+    },
+    {
+     "date": "2026-05-17",
+     "value": 71.4
+    },
+    {
+     "date": "2026-05-26",
+     "value": 66.2
+    },
+    {
+     "date": "2026-06-04",
+     "value": 80.8
+    },
+    {
+     "date": "2026-06-15",
+     "value": 71.2
+    },
+    {
+     "date": "2026-06-23",
+     "value": 85.7
+    },
+    {
+     "date": "2026-06-24",
+     "value": 96.1
+    },
+    {
+     "date": "2026-07-01",
+     "value": 88.9
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-04-12",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-05-20",
+     "waist_cm": 70
+    }
+   ],
+   "out": {
+    "wBefore": null,
+    "wAfter": 86.8,
+    "mBefore": null,
+    "mAfter": 72.5,
+    "weightDelta": null,
+    "waistDelta": null,
+    "weightText": "—",
+    "waistText": "—"
+   },
+   "fixed": {
+    "wBefore": null,
+    "wAfter": 86.8,
+    "mBefore": null,
+    "mAfter": 72.5,
+    "weightDelta": null,
+    "waistDelta": null,
+    "weightText": "—",
+    "waistText": "—"
+   }
+  },
+  {
+   "before": "2026-02-06",
+   "after": "2026-03-02",
+   "weights": [
+    {
+     "date": "2026-01-16",
+     "value": 81.8
+    },
+    {
+     "date": "2026-02-05",
+     "value": 93.5
+    },
+    {
+     "date": "2026-04-11",
+     "value": 60.8
+    },
+    {
+     "date": "2026-04-28",
+     "value": 71.4
+    },
+    {
+     "date": "2026-05-21",
+     "value": 71.9
+    },
+    {
+     "date": "2026-06-26",
+     "value": 68.1
+    },
+    {
+     "date": "2026-07-07",
+     "value": 78.8
+    },
+    {
+     "date": "2026-07-08",
+     "value": 68.7
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-02-26",
+     "waist_cm": 88
+    },
+    {
+     "date": "2026-03-13",
+     "waist_cm": 88
+    },
+    {
+     "date": "2026-05-07",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-07-15",
+     "waist_cm": 80.25
+    }
+   ],
+   "out": {
+    "wBefore": 93.5,
+    "wAfter": 93.5,
+    "mBefore": null,
+    "mAfter": 88,
+    "weightDelta": 0,
+    "waistDelta": null,
+    "weightText": "0kg",
+    "waistText": "—"
+   },
+   "fixed": {
+    "wBefore": 93.5,
+    "wAfter": 93.5,
+    "mBefore": null,
+    "mAfter": 88,
+    "weightDelta": 0,
+    "waistDelta": null,
+    "weightText": "0kg",
+    "waistText": "—"
+   }
+  },
+  {
+   "before": "2026-03-12",
+   "after": "2026-03-27",
+   "weights": [
+    {
+     "date": "2026-03-07",
+     "value": 98.3
+    },
+    {
+     "date": "2026-03-18",
+     "value": 93.8
+    },
+    {
+     "date": "2026-03-20",
+     "value": 91.4
+    },
+    {
+     "date": "2026-05-11",
+     "value": 71.3
+    },
+    {
+     "date": "2026-05-12",
+     "value": 72.6
+    },
+    {
+     "date": "2026-05-19",
+     "value": 92.6
+    },
+    {
+     "date": "2026-06-21",
+     "value": 98.2
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-01-14",
+     "waist_cm": 80.25
+    },
+    {
+     "date": "2026-03-08",
+     "waist_cm": 80.25
+    },
+    {
+     "date": "2026-03-10",
+     "waist_cm": 88
+    },
+    {
+     "date": "2026-03-28",
+     "waist_cm": 88
+    },
+    {
+     "date": "2026-04-21",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-05-02",
+     "waist_cm": 88
+    },
+    {
+     "date": "2026-06-08",
+     "waist_cm": 80.25
+    },
+    {
+     "date": "2026-06-28",
+     "waist_cm": 80.25
+    }
+   ],
+   "out": {
+    "wBefore": 98.3,
+    "wAfter": 91.4,
+    "mBefore": 88,
+    "mAfter": 88,
+    "weightDelta": -6.9,
+    "waistDelta": 0,
+    "weightText": "-6.9kg",
+    "waistText": "0cm"
+   },
+   "fixed": {
+    "wBefore": 98.3,
+    "wAfter": 91.4,
+    "mBefore": 88,
+    "mAfter": 88,
+    "weightDelta": -6.9,
+    "waistDelta": 0,
+    "weightText": "-6.9kg",
+    "waistText": "0cm"
+   }
+  },
+  {
+   "before": "2026-03-20",
+   "after": "2026-03-31",
+   "weights": [
+    {
+     "date": "2026-01-01",
+     "value": 90.2
+    },
+    {
+     "date": "2026-01-07",
+     "value": 94.1
+    },
+    {
+     "date": "2026-01-14",
+     "value": 82.8
+    },
+    {
+     "date": "2026-02-01",
+     "value": 69.3
+    },
+    {
+     "date": "2026-02-18",
+     "value": 83.3
+    },
+    {
+     "date": "2026-02-23",
+     "value": 97
+    },
+    {
+     "date": "2026-03-03",
+     "value": 72.2
+    },
+    {
+     "date": "2026-05-03",
+     "value": 71.7
+    },
+    {
+     "date": "2026-05-30",
+     "value": 98.7
+    },
+    {
+     "date": "2026-06-05",
+     "value": 62.8
+    },
+    {
+     "date": "2026-06-24",
+     "value": 74.3
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-02-01",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-02-03",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-03-29",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-04-11",
+     "waist_cm": 70
+    },
+    {
+     "date": "2026-04-25",
+     "waist_cm": 70
+    },
+    {
+     "date": "2026-05-02",
+     "waist_cm": 70
+    },
+    {
+     "date": "2026-06-29",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-06-30",
+     "waist_cm": 88
+    },
+    {
+     "date": "2026-07-06",
+     "waist_cm": 88
+    }
+   ],
+   "out": {
+    "wBefore": 72.2,
+    "wAfter": 72.2,
+    "mBefore": 72.5,
+    "mAfter": 91.1,
+    "weightDelta": 0,
+    "waistDelta": 18.6,
+    "weightText": "0kg",
+    "waistText": "+18.6cm"
+   },
+   "fixed": {
+    "wBefore": 72.2,
+    "wAfter": 72.2,
+    "mBefore": null,
+    "mAfter": 91.1,
+    "weightDelta": 0,
+    "waistDelta": null,
+    "weightText": "0kg",
+    "waistText": "—"
+   }
+  },
+  {
+   "before": "2026-01-02",
+   "after": "2026-06-07",
+   "weights": [
+    {
+     "date": "2026-01-17",
+     "value": 80.2
+    },
+    {
+     "date": "2026-02-21",
+     "value": 70.8
+    },
+    {
+     "date": "2026-03-04",
+     "value": 87.6
+    },
+    {
+     "date": "2026-04-04",
+     "value": 63.9
+    },
+    {
+     "date": "2026-05-01",
+     "value": 64.7
+    },
+    {
+     "date": "2026-05-23",
+     "value": 78.4
+    },
+    {
+     "date": "2026-06-06",
+     "value": 64.2
+    },
+    {
+     "date": "2026-06-30",
+     "value": 66.8
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-01-07",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-03-16",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-04-07",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-04-14",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-05-02",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-06-01",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-06-07",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-07-17",
+     "waist_cm": null
+    }
+   ],
+   "out": {
+    "wBefore": null,
+    "wAfter": 64.2,
+    "mBefore": null,
+    "mAfter": 72.5,
+    "weightDelta": null,
+    "waistDelta": null,
+    "weightText": "—",
+    "waistText": "—"
+   },
+   "fixed": {
+    "wBefore": null,
+    "wAfter": 64.2,
+    "mBefore": null,
+    "mAfter": 72.5,
+    "weightDelta": null,
+    "waistDelta": null,
+    "weightText": "—",
+    "waistText": "—"
+   }
+  },
+  {
+   "before": "2026-05-01",
+   "after": "2026-07-18",
+   "weights": [
+    {
+     "date": "2026-01-17",
+     "value": 70
+    },
+    {
+     "date": "2026-02-10",
+     "value": 96.8
+    },
+    {
+     "date": "2026-03-05",
+     "value": 98.2
+    },
+    {
+     "date": "2026-03-09",
+     "value": 90.4
+    },
+    {
+     "date": "2026-03-18",
+     "value": 71.5
+    },
+    {
+     "date": "2026-03-24",
+     "value": 90.1
+    },
+    {
+     "date": "2026-04-13",
+     "value": 77.6
+    },
+    {
+     "date": "2026-05-04",
+     "value": 79.1
+    },
+    {
+     "date": "2026-05-11",
+     "value": 71
+    },
+    {
+     "date": "2026-06-09",
+     "value": 95.4
+    },
+    {
+     "date": "2026-07-06",
+     "value": 69
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-03-04",
+     "waist_cm": 70
+    },
+    {
+     "date": "2026-03-09",
+     "waist_cm": 88
+    },
+    {
+     "date": "2026-06-12",
+     "waist_cm": 70
+    },
+    {
+     "date": "2026-06-24",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-07-13",
+     "waist_cm": null
+    }
+   ],
+   "out": {
+    "wBefore": 77.6,
+    "wAfter": 69,
+    "mBefore": 88,
+    "mAfter": 70,
+    "weightDelta": -8.6,
+    "waistDelta": -18,
+    "weightText": "-8.6kg",
+    "waistText": "-18cm"
+   },
+   "fixed": {
+    "wBefore": 77.6,
+    "wAfter": 69,
+    "mBefore": null,
+    "mAfter": null,
+    "weightDelta": -8.6,
+    "waistDelta": null,
+    "weightText": "-8.6kg",
+    "waistText": "—"
+   }
+  },
+  {
+   "before": "2026-01-27",
+   "after": "2026-05-08",
+   "weights": [
+    {
+     "date": "2026-01-22",
+     "value": 90.6
+    },
+    {
+     "date": "2026-03-02",
+     "value": 93.9
+    },
+    {
+     "date": "2026-03-06",
+     "value": 71.9
+    },
+    {
+     "date": "2026-04-06",
+     "value": 92.8
+    },
+    {
+     "date": "2026-06-16",
+     "value": 86.6
+    },
+    {
+     "date": "2026-07-07",
+     "value": 94.9
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-02-23",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-03-17",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-03-30",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-03-31",
+     "waist_cm": 91.1
+    }
+   ],
+   "out": {
+    "wBefore": 90.6,
+    "wAfter": 92.8,
+    "mBefore": null,
+    "mAfter": 91.1,
+    "weightDelta": 2.2,
+    "waistDelta": null,
+    "weightText": "+2.2kg",
+    "waistText": "—"
+   },
+   "fixed": {
+    "wBefore": 90.6,
+    "wAfter": null,
+    "mBefore": null,
+    "mAfter": null,
+    "weightDelta": null,
+    "waistDelta": null,
+    "weightText": "—",
+    "waistText": "—"
+   }
+  },
+  {
+   "before": "2026-05-14",
+   "after": "2026-05-16",
+   "weights": [
+    {
+     "date": "2026-02-11",
+     "value": 92.8
+    },
+    {
+     "date": "2026-02-17",
+     "value": 63.8
+    },
+    {
+     "date": "2026-05-28",
+     "value": 61.1
+    },
+    {
+     "date": "2026-07-06",
+     "value": 81.3
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-02-18",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-03-08",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-04-04",
+     "waist_cm": 70
+    },
+    {
+     "date": "2026-06-27",
+     "waist_cm": 80.25
+    }
+   ],
+   "out": {
+    "wBefore": 63.8,
+    "wAfter": 63.8,
+    "mBefore": 70,
+    "mAfter": 70,
+    "weightDelta": 0,
+    "waistDelta": 0,
+    "weightText": "0kg",
+    "waistText": "0cm"
+   },
+   "fixed": {
+    "wBefore": null,
+    "wAfter": null,
+    "mBefore": null,
+    "mAfter": null,
+    "weightDelta": null,
+    "waistDelta": null,
+    "weightText": "—",
+    "waistText": "—"
+   }
+  },
+  {
+   "before": "2026-01-06",
+   "after": "2026-05-24",
+   "weights": [
+    {
+     "date": "2026-01-02",
+     "value": 88.4
+    },
+    {
+     "date": "2026-01-13",
+     "value": 85.4
+    },
+    {
+     "date": "2026-03-22",
+     "value": 66.8
+    },
+    {
+     "date": "2026-04-08",
+     "value": 74.5
+    },
+    {
+     "date": "2026-04-23",
+     "value": 71.3
+    },
+    {
+     "date": "2026-04-26",
+     "value": 94.3
+    },
+    {
+     "date": "2026-05-10",
+     "value": 60
+    },
+    {
+     "date": "2026-05-14",
+     "value": 88.7
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-02-17",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-03-11",
+     "waist_cm": 70
+    },
+    {
+     "date": "2026-04-23",
+     "waist_cm": 80.25
+    },
+    {
+     "date": "2026-05-13",
+     "waist_cm": 72.5
+    }
+   ],
+   "out": {
+    "wBefore": 88.4,
+    "wAfter": 88.7,
+    "mBefore": null,
+    "mAfter": 72.5,
+    "weightDelta": 0.3,
+    "waistDelta": null,
+    "weightText": "+0.3kg",
+    "waistText": "—"
+   },
+   "fixed": {
+    "wBefore": 88.4,
+    "wAfter": 88.7,
+    "mBefore": null,
+    "mAfter": 72.5,
+    "weightDelta": 0.3,
+    "waistDelta": null,
+    "weightText": "+0.3kg",
+    "waistText": "—"
+   }
+  },
+  {
+   "before": "2026-07-05",
+   "after": "2026-07-15",
+   "weights": [
+    {
+     "date": "2026-01-13",
+     "value": 82.7
+    },
+    {
+     "date": "2026-02-14",
+     "value": 96.5
+    },
+    {
+     "date": "2026-02-22",
+     "value": 81.4
+    },
+    {
+     "date": "2026-03-23",
+     "value": 72.5
+    },
+    {
+     "date": "2026-04-25",
+     "value": 96.7
+    },
+    {
+     "date": "2026-05-18",
+     "value": 70.1
+    },
+    {
+     "date": "2026-06-19",
+     "value": 83.9
+    },
+    {
+     "date": "2026-07-10",
+     "value": 96.5
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-01-20",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-01-23",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-02-12",
+     "waist_cm": 70
+    },
+    {
+     "date": "2026-03-07",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-03-12",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-04-09",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-04-13",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-04-17",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-05-08",
+     "waist_cm": 72.5
+    }
+   ],
+   "out": {
+    "wBefore": 83.9,
+    "wAfter": 96.5,
+    "mBefore": 72.5,
+    "mAfter": 72.5,
+    "weightDelta": 12.6,
+    "waistDelta": 0,
+    "weightText": "+12.6kg",
+    "waistText": "0cm"
+   },
+   "fixed": {
+    "wBefore": 83.9,
+    "wAfter": 96.5,
+    "mBefore": null,
+    "mAfter": null,
+    "weightDelta": 12.6,
+    "waistDelta": null,
+    "weightText": "+12.6kg",
+    "waistText": "—"
+   }
+  },
+  {
+   "before": "2026-05-19",
+   "after": "2026-06-13",
+   "weights": [
+    {
+     "date": "2026-01-14",
+     "value": 76.5
+    },
+    {
+     "date": "2026-01-31",
+     "value": 71.1
+    },
+    {
+     "date": "2026-03-22",
+     "value": 80.9
+    },
+    {
+     "date": "2026-05-13",
+     "value": 94.8
+    },
+    {
+     "date": "2026-06-10",
+     "value": 73.8
+    },
+    {
+     "date": "2026-07-07",
+     "value": 93.6
+    },
+    {
+     "date": "2026-07-11",
+     "value": 92.8
+    },
+    {
+     "date": "2026-07-12",
+     "value": 64.4
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-03-26",
+     "waist_cm": 80.25
+    },
+    {
+     "date": "2026-04-07",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-04-08",
+     "waist_cm": 70
+    },
+    {
+     "date": "2026-04-18",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-05-13",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-06-21",
+     "waist_cm": 88
+    },
+    {
+     "date": "2026-06-22",
+     "waist_cm": 70
+    }
+   ],
+   "out": {
+    "wBefore": 94.8,
+    "wAfter": 73.8,
+    "mBefore": 72.5,
+    "mAfter": 72.5,
+    "weightDelta": -21,
+    "waistDelta": 0,
+    "weightText": "-21kg",
+    "waistText": "0cm"
+   },
+   "fixed": {
+    "wBefore": 94.8,
+    "wAfter": 73.8,
+    "mBefore": null,
+    "mAfter": null,
+    "weightDelta": -21,
+    "waistDelta": null,
+    "weightText": "-21kg",
+    "waistText": "—"
+   }
+  },
+  {
+   "before": "2026-02-11",
+   "after": "2026-03-20",
+   "weights": [
+    {
+     "date": "2026-01-09",
+     "value": 94.3
+    },
+    {
+     "date": "2026-01-25",
+     "value": 87.2
+    },
+    {
+     "date": "2026-01-30",
+     "value": 76
+    },
+    {
+     "date": "2026-02-27",
+     "value": 73.8
+    },
+    {
+     "date": "2026-03-11",
+     "value": 98.1
+    },
+    {
+     "date": "2026-03-20",
+     "value": 76.4
+    },
+    {
+     "date": "2026-05-06",
+     "value": 60.7
+    },
+    {
+     "date": "2026-05-26",
+     "value": 81.4
+    },
+    {
+     "date": "2026-06-12",
+     "value": 99.3
+    },
+    {
+     "date": "2026-06-16",
+     "value": 93
+    },
+    {
+     "date": "2026-06-20",
+     "value": 77.3
+    },
+    {
+     "date": "2026-07-03",
+     "value": 66.9
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-02-14",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-03-17",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-04-21",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-05-28",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-06-05",
+     "waist_cm": 70
+    },
+    {
+     "date": "2026-07-03",
+     "waist_cm": 80.25
+    }
+   ],
+   "out": {
+    "wBefore": 76,
+    "wAfter": 76.4,
+    "mBefore": null,
+    "mAfter": 91.1,
+    "weightDelta": 0.4,
+    "waistDelta": null,
+    "weightText": "+0.4kg",
+    "waistText": "—"
+   },
+   "fixed": {
+    "wBefore": 76,
+    "wAfter": 76.4,
+    "mBefore": null,
+    "mAfter": 91.1,
+    "weightDelta": 0.4,
+    "waistDelta": null,
+    "weightText": "+0.4kg",
+    "waistText": "—"
+   }
+  },
+  {
+   "before": "2026-01-16",
+   "after": "2026-04-19",
+   "weights": [
+    {
+     "date": "2026-01-07",
+     "value": 68.3
+    },
+    {
+     "date": "2026-01-19",
+     "value": 91.9
+    },
+    {
+     "date": "2026-02-05",
+     "value": 78.8
+    },
+    {
+     "date": "2026-03-01",
+     "value": 69.1
+    },
+    {
+     "date": "2026-04-18",
+     "value": 89.5
+    },
+    {
+     "date": "2026-05-17",
+     "value": 71.8
+    },
+    {
+     "date": "2026-05-27",
+     "value": 62.9
+    },
+    {
+     "date": "2026-06-07",
+     "value": 70.1
+    },
+    {
+     "date": "2026-06-18",
+     "value": 97.6
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-02-14",
+     "waist_cm": 70
+    },
+    {
+     "date": "2026-03-31",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-04-21",
+     "waist_cm": 80.25
+    },
+    {
+     "date": "2026-07-11",
+     "waist_cm": 72.5
+    }
+   ],
+   "out": {
+    "wBefore": 68.3,
+    "wAfter": 89.5,
+    "mBefore": null,
+    "mAfter": 70,
+    "weightDelta": 21.2,
+    "waistDelta": null,
+    "weightText": "+21.2kg",
+    "waistText": "—"
+   },
+   "fixed": {
+    "wBefore": 68.3,
+    "wAfter": 89.5,
+    "mBefore": null,
+    "mAfter": null,
+    "weightDelta": 21.2,
+    "waistDelta": null,
+    "weightText": "+21.2kg",
+    "waistText": "—"
+   }
+  },
+  {
+   "before": "2026-01-13",
+   "after": "2026-04-13",
+   "weights": [
+    {
+     "date": "2026-01-12",
+     "value": 66.3
+    },
+    {
+     "date": "2026-02-10",
+     "value": 95.6
+    },
+    {
+     "date": "2026-04-05",
+     "value": 99.1
+    },
+    {
+     "date": "2026-04-22",
+     "value": 99
+    },
+    {
+     "date": "2026-05-05",
+     "value": 74.4
+    },
+    {
+     "date": "2026-05-19",
+     "value": 85.1
+    },
+    {
+     "date": "2026-06-28",
+     "value": 85
+    },
+    {
+     "date": "2026-07-18",
+     "value": 79.8
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-01-08",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-01-20",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-03-07",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-03-20",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-03-30",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-04-10",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-04-20",
+     "waist_cm": 88
+    }
+   ],
+   "out": {
+    "wBefore": 66.3,
+    "wAfter": 99.1,
+    "mBefore": 72.5,
+    "mAfter": 72.5,
+    "weightDelta": 32.8,
+    "waistDelta": 0,
+    "weightText": "+32.8kg",
+    "waistText": "0cm"
+   },
+   "fixed": {
+    "wBefore": 66.3,
+    "wAfter": 99.1,
+    "mBefore": 72.5,
+    "mAfter": 72.5,
+    "weightDelta": 32.8,
+    "waistDelta": 0,
+    "weightText": "+32.8kg",
+    "waistText": "0cm"
+   }
+  },
+  {
+   "before": "2026-01-08",
+   "after": "2026-02-20",
+   "weights": [
+    {
+     "date": "2026-01-16",
+     "value": 95.6
+    },
+    {
+     "date": "2026-02-03",
+     "value": 97.3
+    },
+    {
+     "date": "2026-05-04",
+     "value": 68.6
+    },
+    {
+     "date": "2026-07-18",
+     "value": 91.2
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-01-07",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-02-23",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-03-04",
+     "waist_cm": 80.25
+    },
+    {
+     "date": "2026-03-12",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-04-20",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-05-10",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-05-17",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-06-20",
+     "waist_cm": 91.1
+    }
+   ],
+   "out": {
+    "wBefore": null,
+    "wAfter": 97.3,
+    "mBefore": 72.5,
+    "mAfter": 72.5,
+    "weightDelta": null,
+    "waistDelta": 0,
+    "weightText": "—",
+    "waistText": "0cm"
+   },
+   "fixed": {
+    "wBefore": null,
+    "wAfter": 97.3,
+    "mBefore": 72.5,
+    "mAfter": null,
+    "weightDelta": null,
+    "waistDelta": null,
+    "weightText": "—",
+    "waistText": "—"
+   }
+  },
+  {
+   "before": "2026-04-20",
+   "after": "2026-07-07",
+   "weights": [
+    {
+     "date": "2026-02-08",
+     "value": 93.6
+    },
+    {
+     "date": "2026-02-19",
+     "value": 67.7
+    },
+    {
+     "date": "2026-03-07",
+     "value": 94.9
+    },
+    {
+     "date": "2026-03-27",
+     "value": 92.4
+    },
+    {
+     "date": "2026-04-05",
+     "value": 78.7
+    },
+    {
+     "date": "2026-04-09",
+     "value": 96.5
+    },
+    {
+     "date": "2026-06-03",
+     "value": 68
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-02-02",
+     "waist_cm": 88
+    },
+    {
+     "date": "2026-02-21",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-02-22",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-02-26",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-03-16",
+     "waist_cm": 70
+    },
+    {
+     "date": "2026-03-21",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-03-29",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-05-02",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-05-29",
+     "waist_cm": 88
+    },
+    {
+     "date": "2026-06-01",
+     "waist_cm": 80.25
+    },
+    {
+     "date": "2026-07-13",
+     "waist_cm": 91.1
+    }
+   ],
+   "out": {
+    "wBefore": 96.5,
+    "wAfter": 68,
+    "mBefore": 70,
+    "mAfter": 80.25,
+    "weightDelta": -28.5,
+    "waistDelta": 10.3,
+    "weightText": "-28.5kg",
+    "waistText": "+10.3cm"
+   },
+   "fixed": {
+    "wBefore": 96.5,
+    "wAfter": null,
+    "mBefore": null,
+    "mAfter": null,
+    "weightDelta": null,
+    "waistDelta": null,
+    "weightText": "—",
+    "waistText": "—"
+   }
+  },
+  {
+   "before": "2026-03-20",
+   "after": "2026-07-05",
+   "weights": [
+    {
+     "date": "2026-02-21",
+     "value": 87.2
+    },
+    {
+     "date": "2026-03-19",
+     "value": 70.1
+    },
+    {
+     "date": "2026-06-19",
+     "value": 79.9
+    },
+    {
+     "date": "2026-06-22",
+     "value": 67.6
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-01-17",
+     "waist_cm": 80.25
+    },
+    {
+     "date": "2026-02-18",
+     "waist_cm": 70
+    },
+    {
+     "date": "2026-03-14",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-04-25",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-05-19",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-06-02",
+     "waist_cm": 88
+    }
+   ],
+   "out": {
+    "wBefore": 70.1,
+    "wAfter": 67.6,
+    "mBefore": 91.1,
+    "mAfter": 88,
+    "weightDelta": -2.5,
+    "waistDelta": -3.1,
+    "weightText": "-2.5kg",
+    "waistText": "-3.1cm"
+   },
+   "fixed": {
+    "wBefore": 70.1,
+    "wAfter": 67.6,
+    "mBefore": 91.1,
+    "mAfter": null,
+    "weightDelta": -2.5,
+    "waistDelta": null,
+    "weightText": "-2.5kg",
+    "waistText": "—"
+   }
+  },
+  {
+   "before": "2026-04-14",
+   "after": "2026-07-12",
+   "weights": [
+    {
+     "date": "2026-03-04",
+     "value": 63.2
+    },
+    {
+     "date": "2026-03-13",
+     "value": 68.9
+    },
+    {
+     "date": "2026-04-11",
+     "value": 83.9
+    },
+    {
+     "date": "2026-04-22",
+     "value": 88.8
+    },
+    {
+     "date": "2026-05-11",
+     "value": 92.9
+    },
+    {
+     "date": "2026-05-28",
+     "value": 87.2
+    },
+    {
+     "date": "2026-06-06",
+     "value": 72.3
+    },
+    {
+     "date": "2026-07-16",
+     "value": 90.5
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-01-19",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-03-10",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-04-04",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-04-09",
+     "waist_cm": 70
+    },
+    {
+     "date": "2026-05-02",
+     "waist_cm": 70
+    },
+    {
+     "date": "2026-05-09",
+     "waist_cm": 70
+    },
+    {
+     "date": "2026-05-14",
+     "waist_cm": 91.1
+    }
+   ],
+   "out": {
+    "wBefore": 83.9,
+    "wAfter": 72.3,
+    "mBefore": 70,
+    "mAfter": 91.1,
+    "weightDelta": -11.6,
+    "waistDelta": 21.1,
+    "weightText": "-11.6kg",
+    "waistText": "+21.1cm"
+   },
+   "fixed": {
+    "wBefore": 83.9,
+    "wAfter": null,
+    "mBefore": 70,
+    "mAfter": null,
+    "weightDelta": null,
+    "waistDelta": null,
+    "weightText": "—",
+    "waistText": "—"
+   }
+  },
+  {
+   "before": "2026-01-12",
+   "after": "2026-07-06",
+   "weights": [
+    {
+     "date": "2026-01-07",
+     "value": 61.9
+    },
+    {
+     "date": "2026-01-09",
+     "value": 79.9
+    },
+    {
+     "date": "2026-03-12",
+     "value": 82.1
+    },
+    {
+     "date": "2026-03-21",
+     "value": 60.4
+    },
+    {
+     "date": "2026-03-24",
+     "value": 77.4
+    },
+    {
+     "date": "2026-06-15",
+     "value": 93.3
+    },
+    {
+     "date": "2026-07-09",
+     "value": 73.6
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-01-12",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-02-03",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-03-20",
+     "waist_cm": 72.5
+    },
+    {
+     "date": "2026-04-23",
+     "waist_cm": 70
+    },
+    {
+     "date": "2026-04-27",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-05-21",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-06-07",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-06-08",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-06-17",
+     "waist_cm": 80.25
+    },
+    {
+     "date": "2026-06-21",
+     "waist_cm": 88
+    },
+    {
+     "date": "2026-07-01",
+     "waist_cm": 70
+    }
+   ],
+   "out": {
+    "wBefore": 79.9,
+    "wAfter": 93.3,
+    "mBefore": 91.1,
+    "mAfter": 70,
+    "weightDelta": 13.4,
+    "waistDelta": -21.1,
+    "weightText": "+13.4kg",
+    "waistText": "-21.1cm"
+   },
+   "fixed": {
+    "wBefore": 79.9,
+    "wAfter": 93.3,
+    "mBefore": 91.1,
+    "mAfter": 70,
+    "weightDelta": 13.4,
+    "waistDelta": -21.1,
+    "weightText": "+13.4kg",
+    "waistText": "-21.1cm"
+   }
+  },
+  {
+   "before": "2026-05-09",
+   "after": "2026-05-27",
+   "weights": [
+    {
+     "date": "2026-01-21",
+     "value": 86.7
+    },
+    {
+     "date": "2026-02-20",
+     "value": 79.5
+    },
+    {
+     "date": "2026-03-23",
+     "value": 63.4
+    },
+    {
+     "date": "2026-04-01",
+     "value": 89.6
+    },
+    {
+     "date": "2026-04-03",
+     "value": 73.2
+    },
+    {
+     "date": "2026-04-24",
+     "value": 74.6
+    },
+    {
+     "date": "2026-05-01",
+     "value": 94.5
+    },
+    {
+     "date": "2026-05-03",
+     "value": 64.1
+    },
+    {
+     "date": "2026-06-17",
+     "value": 65.9
+    },
+    {
+     "date": "2026-07-09",
+     "value": 71.4
+    },
+    {
+     "date": "2026-07-15",
+     "value": 97.2
+    }
+   ],
+   "measurements": [
+    {
+     "date": "2026-02-02",
+     "waist_cm": 80.25
+    },
+    {
+     "date": "2026-02-19",
+     "waist_cm": 88
+    },
+    {
+     "date": "2026-02-27",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-03-24",
+     "waist_cm": 70
+    },
+    {
+     "date": "2026-05-23",
+     "waist_cm": 88
+    },
+    {
+     "date": "2026-06-06",
+     "waist_cm": null
+    },
+    {
+     "date": "2026-06-08",
+     "waist_cm": 70
+    },
+    {
+     "date": "2026-06-26",
+     "waist_cm": 91.1
+    },
+    {
+     "date": "2026-06-28",
+     "waist_cm": 88
+    }
+   ],
+   "out": {
+    "wBefore": 64.1,
+    "wAfter": 64.1,
+    "mBefore": 70,
+    "mAfter": 88,
+    "weightDelta": 0,
+    "waistDelta": 18,
+    "weightText": "0kg",
+    "waistText": "+18cm"
+   },
+   "fixed": {
+    "wBefore": 64.1,
+    "wAfter": 64.1,
+    "mBefore": null,
+    "mAfter": 88,
+    "weightDelta": 0,
+    "waistDelta": null,
+    "weightText": "0kg",
+    "waistText": "—"
    }
   }
  ],
@@ -18014,19 +24862,52 @@
     },
     {
      "id": "p2",
-     "photo_url": "u/2026-01-01-front-1.jpg"
+     "photo_url": "u/2026-01-02-front-2.jpg"
+    }
+   ],
+   "mode": "error",
+   "chunk": 100,
+   "calls": [
+    [
+     "u/2026-01-00-front-0.jpg",
+     "u/2026-01-01-front-1.jpg",
+     "u/2026-01-02-front-2.jpg"
+    ]
+   ],
+   "urls": [
+    "u/2026-01-00-front-0.jpg",
+    "u/2026-01-01-front-1.jpg",
+    "u/2026-01-02-front-2.jpg"
+   ]
+  },
+  {
+   "rows": [],
+   "mode": "ok",
+   "chunk": 3,
+   "calls": [],
+   "urls": []
+  },
+  {
+   "rows": [
+    {
+     "id": "p0",
+     "photo_url": "u/2026-01-00-front-0.jpg"
+    },
+    {
+     "id": "p1",
+     "photo_url": "u/2026-01-00-front-0.jpg"
+    },
+    {
+     "id": "p2",
+     "photo_url": "u/2026-01-02-front-2.jpg"
     },
     {
      "id": "p3",
-     "photo_url": "u/2026-01-01-front-1.jpg"
+     "photo_url": "u/2026-01-03-front-3.jpg"
     },
     {
      "id": "p4",
-     "photo_url": "u/2026-01-04-front-4.jpg"
-    },
-    {
-     "id": "p5",
-     "photo_url": "u/bad-5.jpg"
+     "photo_url": "u/bad-4.jpg"
     }
    ],
    "mode": "ok",
@@ -18034,18 +24915,229 @@
    "calls": [
     [
      "u/2026-01-00-front-0.jpg",
-     "u/2026-01-01-front-1.jpg",
-     "u/2026-01-04-front-4.jpg",
-     "u/bad-5.jpg"
+     "u/2026-01-02-front-2.jpg",
+     "u/2026-01-03-front-3.jpg",
+     "u/bad-4.jpg"
     ]
    ],
    "urls": [
     "https://s/u/2026-01-00-front-0.jpg?t=1",
-    "https://s/u/2026-01-01-front-1.jpg?t=1",
-    "https://s/u/2026-01-01-front-1.jpg?t=1",
-    "https://s/u/2026-01-01-front-1.jpg?t=1",
+    "https://s/u/2026-01-00-front-0.jpg?t=1",
+    "https://s/u/2026-01-02-front-2.jpg?t=1",
+    "https://s/u/2026-01-03-front-3.jpg?t=1",
+    "u/bad-4.jpg"
+   ]
+  },
+  {
+   "rows": [
+    {
+     "id": "p0",
+     "photo_url": "u/2026-01-00-front-0.jpg"
+    }
+   ],
+   "mode": "ok",
+   "chunk": 3,
+   "calls": [
+    [
+     "u/2026-01-00-front-0.jpg"
+    ]
+   ],
+   "urls": [
+    "https://s/u/2026-01-00-front-0.jpg?t=1"
+   ]
+  },
+  {
+   "rows": [],
+   "mode": "ok",
+   "chunk": 100,
+   "calls": [],
+   "urls": []
+  },
+  {
+   "rows": [
+    {
+     "id": "p0",
+     "photo_url": "u/2026-01-00-front-0.jpg"
+    }
+   ],
+   "mode": "ok",
+   "chunk": 100,
+   "calls": [
+    [
+     "u/2026-01-00-front-0.jpg"
+    ]
+   ],
+   "urls": [
+    "https://s/u/2026-01-00-front-0.jpg?t=1"
+   ]
+  },
+  {
+   "rows": [
+    {
+     "id": "p0",
+     "photo_url": "u/2026-01-00-front-0.jpg"
+    },
+    {
+     "id": "p1",
+     "photo_url": "u/2026-01-01-front-1.jpg"
+    }
+   ],
+   "mode": "error",
+   "chunk": 2,
+   "calls": [
+    [
+     "u/2026-01-00-front-0.jpg",
+     "u/2026-01-01-front-1.jpg"
+    ]
+   ],
+   "urls": [
+    "u/2026-01-00-front-0.jpg",
+    "u/2026-01-01-front-1.jpg"
+   ]
+  },
+  {
+   "rows": [
+    {
+     "id": "p0",
+     "photo_url": "u/2026-01-00-front-0.jpg"
+    },
+    {
+     "id": "p1",
+     "photo_url": "u/2026-01-01-front-1.jpg"
+    }
+   ],
+   "mode": "ok",
+   "chunk": 100,
+   "calls": [
+    [
+     "u/2026-01-00-front-0.jpg",
+     "u/2026-01-01-front-1.jpg"
+    ]
+   ],
+   "urls": [
+    "https://s/u/2026-01-00-front-0.jpg?t=1",
+    "https://s/u/2026-01-01-front-1.jpg?t=1"
+   ]
+  },
+  {
+   "rows": [
+    {
+     "id": "p0",
+     "photo_url": "u/2026-01-00-front-0.jpg"
+    },
+    {
+     "id": "p1",
+     "photo_url": "https://cdn/x1.jpg"
+    },
+    {
+     "id": "p2",
+     "photo_url": "https://cdn/x2.jpg"
+    },
+    {
+     "id": "p3",
+     "photo_url": "https://cdn/x2.jpg"
+    },
+    {
+     "id": "p4",
+     "photo_url": "u/2026-01-04-front-4.jpg"
+    },
+    {
+     "id": "p5",
+     "photo_url": "u/2026-01-05-front-5.jpg"
+    },
+    {
+     "id": "p6",
+     "photo_url": "u/2026-01-05-front-5.jpg"
+    },
+    {
+     "id": "p7",
+     "photo_url": "u/2026-01-07-front-7.jpg"
+    }
+   ],
+   "mode": "throw",
+   "chunk": 3,
+   "calls": [
+    [
+     "u/2026-01-00-front-0.jpg",
+     "u/2026-01-04-front-4.jpg",
+     "u/2026-01-05-front-5.jpg"
+    ],
+    [
+     "u/2026-01-07-front-7.jpg"
+    ]
+   ],
+   "urls": [
+    "https://s/u/2026-01-00-front-0.jpg?t=1",
+    "https://cdn/x1.jpg",
+    "https://cdn/x2.jpg",
+    "https://cdn/x2.jpg",
     "https://s/u/2026-01-04-front-4.jpg?t=1",
-    "u/bad-5.jpg"
+    "https://s/u/2026-01-05-front-5.jpg?t=1",
+    "https://s/u/2026-01-05-front-5.jpg?t=1",
+    "u/2026-01-07-front-7.jpg"
+   ]
+  },
+  {
+   "rows": [
+    {
+     "id": "p0",
+     "photo_url": "https://cdn/x0.jpg"
+    },
+    {
+     "id": "p1",
+     "photo_url": "u/2026-01-01-front-1.jpg"
+    },
+    {
+     "id": "p2",
+     "photo_url": "https://cdn/x2.jpg"
+    },
+    {
+     "id": "p3",
+     "photo_url": "u/2026-01-03-front-3.jpg"
+    }
+   ],
+   "mode": "error",
+   "chunk": 3,
+   "calls": [
+    [
+     "u/2026-01-01-front-1.jpg",
+     "u/2026-01-03-front-3.jpg"
+    ]
+   ],
+   "urls": [
+    "https://cdn/x0.jpg",
+    "u/2026-01-01-front-1.jpg",
+    "https://cdn/x2.jpg",
+    "u/2026-01-03-front-3.jpg"
+   ]
+  },
+  {
+   "rows": [
+    {
+     "id": "p0",
+     "photo_url": "u/2026-01-00-front-0.jpg"
+    },
+    {
+     "id": "p1",
+     "photo_url": "u/2026-01-00-front-0.jpg"
+    },
+    {
+     "id": "p2",
+     "photo_url": "u/2026-01-02-front-2.jpg"
+    }
+   ],
+   "mode": "ok",
+   "chunk": 2,
+   "calls": [
+    [
+     "u/2026-01-00-front-0.jpg",
+     "u/2026-01-02-front-2.jpg"
+    ]
+   ],
+   "urls": [
+    "https://s/u/2026-01-00-front-0.jpg?t=1",
+    "https://s/u/2026-01-00-front-0.jpg?t=1",
+    "https://s/u/2026-01-02-front-2.jpg?t=1"
    ]
   },
   {
@@ -18079,21 +25171,27 @@
     {
      "id": "p2",
      "photo_url": "u/2026-01-02-front-2.jpg"
+    },
+    {
+     "id": "p3",
+     "photo_url": "u/2026-01-03-front-3.jpg"
     }
    ],
-   "mode": "ok",
+   "mode": "throw",
    "chunk": 100,
    "calls": [
     [
      "u/2026-01-00-front-0.jpg",
      "u/2026-01-01-front-1.jpg",
-     "u/2026-01-02-front-2.jpg"
+     "u/2026-01-02-front-2.jpg",
+     "u/2026-01-03-front-3.jpg"
     ]
    ],
    "urls": [
     "https://s/u/2026-01-00-front-0.jpg?t=1",
     "https://s/u/2026-01-01-front-1.jpg?t=1",
-    "https://s/u/2026-01-02-front-2.jpg?t=1"
+    "https://s/u/2026-01-02-front-2.jpg?t=1",
+    "https://s/u/2026-01-03-front-3.jpg?t=1"
    ]
   },
   {
@@ -18104,173 +25202,20 @@
     },
     {
      "id": "p1",
-     "photo_url": "u/2026-01-00-front-0.jpg"
-    },
-    {
-     "id": "p2",
-     "photo_url": "u/2026-01-02-front-2.jpg"
-    },
-    {
-     "id": "p3",
-     "photo_url": "u/2026-01-03-front-3.jpg"
-    },
-    {
-     "id": "p4",
-     "photo_url": "u/2026-01-04-front-4.jpg"
+     "photo_url": "u/2026-01-01-front-1.jpg"
     }
    ],
    "mode": "ok",
-   "chunk": 2,
-   "calls": [
-    [
-     "u/2026-01-00-front-0.jpg",
-     "u/2026-01-02-front-2.jpg"
-    ],
-    [
-     "u/2026-01-03-front-3.jpg",
-     "u/2026-01-04-front-4.jpg"
-    ]
-   ],
-   "urls": [
-    "https://s/u/2026-01-00-front-0.jpg?t=1",
-    "https://s/u/2026-01-00-front-0.jpg?t=1",
-    "https://s/u/2026-01-02-front-2.jpg?t=1",
-    "https://s/u/2026-01-03-front-3.jpg?t=1",
-    "https://s/u/2026-01-04-front-4.jpg?t=1"
-   ]
-  },
-  {
-   "rows": [
-    {
-     "id": "p0",
-     "photo_url": "u/2026-01-00-front-0.jpg"
-    },
-    {
-     "id": "p1",
-     "photo_url": "u/2026-01-00-front-0.jpg"
-    },
-    {
-     "id": "p2",
-     "photo_url": "u/2026-01-02-front-2.jpg"
-    },
-    {
-     "id": "p3",
-     "photo_url": "u/2026-01-03-front-3.jpg"
-    },
-    {
-     "id": "p4",
-     "photo_url": "u/2026-01-03-front-3.jpg"
-    },
-    {
-     "id": "p5",
-     "photo_url": "u/2026-01-05-front-5.jpg"
-    },
-    {
-     "id": "p6",
-     "photo_url": "u/2026-01-06-front-6.jpg"
-    },
-    {
-     "id": "p7",
-     "photo_url": "u/2026-01-07-front-7.jpg"
-    }
-   ],
-   "mode": "throw",
    "chunk": 3,
    "calls": [
     [
      "u/2026-01-00-front-0.jpg",
-     "u/2026-01-02-front-2.jpg",
-     "u/2026-01-03-front-3.jpg"
-    ],
-    [
-     "u/2026-01-05-front-5.jpg",
-     "u/2026-01-06-front-6.jpg",
-     "u/2026-01-07-front-7.jpg"
-    ]
-   ],
-   "urls": [
-    "https://s/u/2026-01-00-front-0.jpg?t=1",
-    "https://s/u/2026-01-00-front-0.jpg?t=1",
-    "https://s/u/2026-01-02-front-2.jpg?t=1",
-    "https://s/u/2026-01-03-front-3.jpg?t=1",
-    "https://s/u/2026-01-03-front-3.jpg?t=1",
-    "u/2026-01-05-front-5.jpg",
-    "u/2026-01-06-front-6.jpg",
-    "u/2026-01-07-front-7.jpg"
-   ]
-  },
-  {
-   "rows": [
-    {
-     "id": "p0",
-     "photo_url": "u/2026-01-00-front-0.jpg"
-    },
-    {
-     "id": "p1",
-     "photo_url": "u/2026-01-01-front-1.jpg"
-    },
-    {
-     "id": "p2",
-     "photo_url": "u/2026-01-02-front-2.jpg"
-    },
-    {
-     "id": "p3",
-     "photo_url": "u/2026-01-03-front-3.jpg"
-    },
-    {
-     "id": "p4",
-     "photo_url": "u/2026-01-04-front-4.jpg"
-    }
-   ],
-   "mode": "ok",
-   "chunk": 100,
-   "calls": [
-    [
-     "u/2026-01-00-front-0.jpg",
-     "u/2026-01-01-front-1.jpg",
-     "u/2026-01-02-front-2.jpg",
-     "u/2026-01-03-front-3.jpg",
-     "u/2026-01-04-front-4.jpg"
-    ]
-   ],
-   "urls": [
-    "https://s/u/2026-01-00-front-0.jpg?t=1",
-    "https://s/u/2026-01-01-front-1.jpg?t=1",
-    "https://s/u/2026-01-02-front-2.jpg?t=1",
-    "https://s/u/2026-01-03-front-3.jpg?t=1",
-    "https://s/u/2026-01-04-front-4.jpg?t=1"
-   ]
-  },
-  {
-   "rows": [
-    {
-     "id": "p0",
-     "photo_url": "u/2026-01-00-front-0.jpg"
-    },
-    {
-     "id": "p1",
-     "photo_url": "u/2026-01-01-front-1.jpg"
-    },
-    {
-     "id": "p2",
-     "photo_url": "u/2026-01-02-front-2.jpg"
-    }
-   ],
-   "mode": "ok",
-   "chunk": 2,
-   "calls": [
-    [
-     "u/2026-01-00-front-0.jpg",
      "u/2026-01-01-front-1.jpg"
-    ],
-    [
-     "u/2026-01-02-front-2.jpg"
     ]
    ],
    "urls": [
     "https://s/u/2026-01-00-front-0.jpg?t=1",
-    "https://s/u/2026-01-01-front-1.jpg?t=1",
-    "https://s/u/2026-01-02-front-2.jpg?t=1"
+    "https://s/u/2026-01-01-front-1.jpg?t=1"
    ]
   },
   {
@@ -18338,57 +25283,11 @@
    ]
   },
   {
-   "rows": [
-    {
-     "id": "p0",
-     "photo_url": "https://cdn/x0.jpg"
-    },
-    {
-     "id": "p1",
-     "photo_url": "u/bad-1.jpg"
-    },
-    {
-     "id": "p2",
-     "photo_url": "u/2026-01-02-front-2.jpg"
-    },
-    {
-     "id": "p3",
-     "photo_url": "u/2026-01-03-front-3.jpg"
-    },
-    {
-     "id": "p4",
-     "photo_url": "u/2026-01-04-front-4.jpg"
-    },
-    {
-     "id": "p5",
-     "photo_url": "u/2026-01-05-front-5.jpg"
-    },
-    {
-     "id": "p6",
-     "photo_url": "u/2026-01-06-front-6.jpg"
-    }
-   ],
-   "mode": "throw",
-   "chunk": 100,
-   "calls": [
-    [
-     "u/bad-1.jpg",
-     "u/2026-01-02-front-2.jpg",
-     "u/2026-01-03-front-3.jpg",
-     "u/2026-01-04-front-4.jpg",
-     "u/2026-01-05-front-5.jpg",
-     "u/2026-01-06-front-6.jpg"
-    ]
-   ],
-   "urls": [
-    "https://cdn/x0.jpg",
-    "u/bad-1.jpg",
-    "https://s/u/2026-01-02-front-2.jpg?t=1",
-    "https://s/u/2026-01-03-front-3.jpg?t=1",
-    "https://s/u/2026-01-04-front-4.jpg?t=1",
-    "https://s/u/2026-01-05-front-5.jpg?t=1",
-    "https://s/u/2026-01-06-front-6.jpg?t=1"
-   ]
+   "rows": [],
+   "mode": "error",
+   "chunk": 3,
+   "calls": [],
+   "urls": []
   },
   {
    "rows": [
@@ -18410,19 +25309,11 @@
     },
     {
      "id": "p4",
-     "photo_url": "u/bad-4.jpg"
+     "photo_url": "https://cdn/x4.jpg"
     },
     {
      "id": "p5",
      "photo_url": "u/2026-01-05-front-5.jpg"
-    },
-    {
-     "id": "p6",
-     "photo_url": "u/2026-01-06-front-6.jpg"
-    },
-    {
-     "id": "p7",
-     "photo_url": "u/2026-01-06-front-6.jpg"
     }
    ],
    "mode": "ok",
@@ -18437,11 +25328,7 @@
      "u/2026-01-03-front-3.jpg"
     ],
     [
-     "u/bad-4.jpg",
      "u/2026-01-05-front-5.jpg"
-    ],
-    [
-     "u/2026-01-06-front-6.jpg"
     ]
    ],
    "urls": [
@@ -18449,25 +25336,23 @@
     "https://s/u/2026-01-01-front-1.jpg?t=1",
     "https://s/u/2026-01-02-front-2.jpg?t=1",
     "https://s/u/2026-01-03-front-3.jpg?t=1",
-    "u/bad-4.jpg",
-    "https://s/u/2026-01-05-front-5.jpg?t=1",
-    "https://s/u/2026-01-06-front-6.jpg?t=1",
-    "https://s/u/2026-01-06-front-6.jpg?t=1"
+    "https://cdn/x4.jpg",
+    "https://s/u/2026-01-05-front-5.jpg?t=1"
    ]
   },
   {
    "rows": [
     {
      "id": "p0",
-     "photo_url": "https://cdn/x0.jpg"
+     "photo_url": "u/2026-01-00-front-0.jpg"
     },
     {
      "id": "p1",
-     "photo_url": "u/2026-01-01-front-1.jpg"
+     "photo_url": "u/bad-1.jpg"
     },
     {
      "id": "p2",
-     "photo_url": "u/2026-01-02-front-2.jpg"
+     "photo_url": "https://cdn/x2.jpg"
     },
     {
      "id": "p3",
@@ -18476,30 +25361,54 @@
     {
      "id": "p4",
      "photo_url": "u/2026-01-04-front-4.jpg"
-    },
-    {
-     "id": "p5",
-     "photo_url": "u/2026-01-05-front-5.jpg"
     }
    ],
    "mode": "ok",
    "chunk": 100,
    "calls": [
     [
-     "u/2026-01-01-front-1.jpg",
-     "u/2026-01-02-front-2.jpg",
+     "u/2026-01-00-front-0.jpg",
+     "u/bad-1.jpg",
      "u/2026-01-03-front-3.jpg",
-     "u/2026-01-04-front-4.jpg",
-     "u/2026-01-05-front-5.jpg"
+     "u/2026-01-04-front-4.jpg"
     ]
    ],
    "urls": [
-    "https://cdn/x0.jpg",
-    "https://s/u/2026-01-01-front-1.jpg?t=1",
-    "https://s/u/2026-01-02-front-2.jpg?t=1",
+    "https://s/u/2026-01-00-front-0.jpg?t=1",
+    "u/bad-1.jpg",
+    "https://cdn/x2.jpg",
     "https://s/u/2026-01-03-front-3.jpg?t=1",
-    "https://s/u/2026-01-04-front-4.jpg?t=1",
-    "https://s/u/2026-01-05-front-5.jpg?t=1"
+    "https://s/u/2026-01-04-front-4.jpg?t=1"
+   ]
+  },
+  {
+   "rows": [
+    {
+     "id": "p0",
+     "photo_url": "u/bad-0.jpg"
+    },
+    {
+     "id": "p1",
+     "photo_url": "u/2026-01-01-front-1.jpg"
+    },
+    {
+     "id": "p2",
+     "photo_url": "u/2026-01-02-front-2.jpg"
+    }
+   ],
+   "mode": "ok",
+   "chunk": 3,
+   "calls": [
+    [
+     "u/bad-0.jpg",
+     "u/2026-01-01-front-1.jpg",
+     "u/2026-01-02-front-2.jpg"
+    ]
+   ],
+   "urls": [
+    "u/bad-0.jpg",
+    "https://s/u/2026-01-01-front-1.jpg?t=1",
+    "https://s/u/2026-01-02-front-2.jpg?t=1"
    ]
   },
   {
@@ -18514,114 +25423,44 @@
     },
     {
      "id": "p2",
-     "photo_url": "u/2026-01-02-front-2.jpg"
+     "photo_url": "u/bad-2.jpg"
     },
     {
      "id": "p3",
-     "photo_url": "https://cdn/x3.jpg"
+     "photo_url": "u/2026-01-03-front-3.jpg"
     },
     {
      "id": "p4",
-     "photo_url": "u/bad-4.jpg"
-    },
-    {
-     "id": "p5",
-     "photo_url": "u/2026-01-05-front-5.jpg"
-    },
-    {
-     "id": "p6",
-     "photo_url": "u/2026-01-05-front-5.jpg"
+     "photo_url": "https://cdn/x4.jpg"
     }
    ],
-   "mode": "ok",
+   "mode": "throw",
    "chunk": 100,
    "calls": [
     [
      "u/2026-01-00-front-0.jpg",
      "u/2026-01-01-front-1.jpg",
-     "u/2026-01-02-front-2.jpg",
-     "u/bad-4.jpg",
-     "u/2026-01-05-front-5.jpg"
+     "u/bad-2.jpg",
+     "u/2026-01-03-front-3.jpg"
     ]
    ],
    "urls": [
     "https://s/u/2026-01-00-front-0.jpg?t=1",
     "https://s/u/2026-01-01-front-1.jpg?t=1",
-    "https://s/u/2026-01-02-front-2.jpg?t=1",
-    "https://cdn/x3.jpg",
-    "u/bad-4.jpg",
-    "https://s/u/2026-01-05-front-5.jpg?t=1",
-    "https://s/u/2026-01-05-front-5.jpg?t=1"
+    "u/bad-2.jpg",
+    "https://s/u/2026-01-03-front-3.jpg?t=1",
+    "https://cdn/x4.jpg"
    ]
   },
   {
-   "rows": [],
-   "mode": "throw",
+   "rows": [
+    {
+     "id": "p0",
+     "photo_url": "u/2026-01-00-front-0.jpg"
+    }
+   ],
+   "mode": "ok",
    "chunk": 100,
-   "calls": [],
-   "urls": []
-  },
-  {
-   "rows": [
-    {
-     "id": "p0",
-     "photo_url": "u/2026-01-00-front-0.jpg"
-    },
-    {
-     "id": "p1",
-     "photo_url": "u/2026-01-00-front-0.jpg"
-    }
-   ],
-   "mode": "error",
-   "chunk": 2,
-   "calls": [
-    [
-     "u/2026-01-00-front-0.jpg"
-    ]
-   ],
-   "urls": [
-    "u/2026-01-00-front-0.jpg",
-    "u/2026-01-00-front-0.jpg"
-   ]
-  },
-  {
-   "rows": [
-    {
-     "id": "p0",
-     "photo_url": "u/2026-01-00-front-0.jpg"
-    },
-    {
-     "id": "p1",
-     "photo_url": "https://cdn/x1.jpg"
-    },
-    {
-     "id": "p2",
-     "photo_url": "u/2026-01-02-front-2.jpg"
-    }
-   ],
-   "mode": "throw",
-   "chunk": 2,
-   "calls": [
-    [
-     "u/2026-01-00-front-0.jpg",
-     "u/2026-01-02-front-2.jpg"
-    ]
-   ],
-   "urls": [
-    "https://s/u/2026-01-00-front-0.jpg?t=1",
-    "https://cdn/x1.jpg",
-    "https://s/u/2026-01-02-front-2.jpg?t=1"
-   ]
-  },
-  {
-   "rows": [
-    {
-     "id": "p0",
-     "photo_url": "u/2026-01-00-front-0.jpg"
-    }
-   ],
-   "mode": "throw",
-   "chunk": 3,
    "calls": [
     [
      "u/2026-01-00-front-0.jpg"
@@ -18647,15 +25486,124 @@
     },
     {
      "id": "p3",
-     "photo_url": "u/2026-01-02-front-2.jpg"
+     "photo_url": "u/2026-01-03-front-3.jpg"
     },
     {
      "id": "p4",
-     "photo_url": "u/2026-01-02-front-2.jpg"
+     "photo_url": "u/2026-01-04-front-4.jpg"
     },
     {
      "id": "p5",
-     "photo_url": "u/bad-5.jpg"
+     "photo_url": "u/2026-01-05-front-5.jpg"
+    }
+   ],
+   "mode": "error",
+   "chunk": 100,
+   "calls": [
+    [
+     "u/2026-01-00-front-0.jpg",
+     "u/2026-01-02-front-2.jpg",
+     "u/2026-01-03-front-3.jpg",
+     "u/2026-01-04-front-4.jpg",
+     "u/2026-01-05-front-5.jpg"
+    ]
+   ],
+   "urls": [
+    "u/2026-01-00-front-0.jpg",
+    "https://cdn/x1.jpg",
+    "u/2026-01-02-front-2.jpg",
+    "u/2026-01-03-front-3.jpg",
+    "u/2026-01-04-front-4.jpg",
+    "u/2026-01-05-front-5.jpg"
+   ]
+  },
+  {
+   "rows": [
+    {
+     "id": "p0",
+     "photo_url": "u/bad-0.jpg"
+    },
+    {
+     "id": "p1",
+     "photo_url": "u/2026-01-01-front-1.jpg"
+    },
+    {
+     "id": "p2",
+     "photo_url": "u/2026-01-02-front-2.jpg"
+    },
+    {
+     "id": "p3",
+     "photo_url": "u/2026-01-03-front-3.jpg"
+    },
+    {
+     "id": "p4",
+     "photo_url": "u/2026-01-04-front-4.jpg"
+    },
+    {
+     "id": "p5",
+     "photo_url": "u/2026-01-05-front-5.jpg"
+    },
+    {
+     "id": "p6",
+     "photo_url": "https://cdn/x6.jpg"
+    }
+   ],
+   "mode": "ok",
+   "chunk": 3,
+   "calls": [
+    [
+     "u/bad-0.jpg",
+     "u/2026-01-01-front-1.jpg",
+     "u/2026-01-02-front-2.jpg"
+    ],
+    [
+     "u/2026-01-03-front-3.jpg",
+     "u/2026-01-04-front-4.jpg",
+     "u/2026-01-05-front-5.jpg"
+    ]
+   ],
+   "urls": [
+    "u/bad-0.jpg",
+    "https://s/u/2026-01-01-front-1.jpg?t=1",
+    "https://s/u/2026-01-02-front-2.jpg?t=1",
+    "https://s/u/2026-01-03-front-3.jpg?t=1",
+    "https://s/u/2026-01-04-front-4.jpg?t=1",
+    "https://s/u/2026-01-05-front-5.jpg?t=1",
+    "https://cdn/x6.jpg"
+   ]
+  },
+  {
+   "rows": [],
+   "mode": "error",
+   "chunk": 3,
+   "calls": [],
+   "urls": []
+  },
+  {
+   "rows": [
+    {
+     "id": "p0",
+     "photo_url": "u/2026-01-00-front-0.jpg"
+    },
+    {
+     "id": "p1",
+     "photo_url": "u/2026-01-01-front-1.jpg"
+    },
+    {
+     "id": "p2",
+     "photo_url": "u/2026-01-02-front-2.jpg"
+    },
+    {
+     "id": "p3",
+     "photo_url": "https://cdn/x3.jpg"
+    },
+    {
+     "id": "p4",
+     "photo_url": "u/2026-01-04-front-4.jpg"
+    },
+    {
+     "id": "p5",
+     "photo_url": "u/2026-01-05-front-5.jpg"
     }
    ],
    "mode": "ok",
@@ -18663,17 +25611,73 @@
    "calls": [
     [
      "u/2026-01-00-front-0.jpg",
-     "u/2026-01-02-front-2.jpg",
-     "u/bad-5.jpg"
+     "u/2026-01-01-front-1.jpg",
+     "u/2026-01-02-front-2.jpg"
+    ],
+    [
+     "u/2026-01-04-front-4.jpg",
+     "u/2026-01-05-front-5.jpg"
     ]
    ],
    "urls": [
     "https://s/u/2026-01-00-front-0.jpg?t=1",
-    "https://cdn/x1.jpg",
+    "https://s/u/2026-01-01-front-1.jpg?t=1",
     "https://s/u/2026-01-02-front-2.jpg?t=1",
+    "https://cdn/x3.jpg",
+    "https://s/u/2026-01-04-front-4.jpg?t=1",
+    "https://s/u/2026-01-05-front-5.jpg?t=1"
+   ]
+  },
+  {
+   "rows": [
+    {
+     "id": "p0",
+     "photo_url": "u/2026-01-00-front-0.jpg"
+    },
+    {
+     "id": "p1",
+     "photo_url": "u/2026-01-01-front-1.jpg"
+    },
+    {
+     "id": "p2",
+     "photo_url": "u/2026-01-02-front-2.jpg"
+    },
+    {
+     "id": "p3",
+     "photo_url": "u/2026-01-03-front-3.jpg"
+    },
+    {
+     "id": "p4",
+     "photo_url": "u/2026-01-04-front-4.jpg"
+    },
+    {
+     "id": "p5",
+     "photo_url": "u/2026-01-05-front-5.jpg"
+    }
+   ],
+   "mode": "ok",
+   "chunk": 2,
+   "calls": [
+    [
+     "u/2026-01-00-front-0.jpg",
+     "u/2026-01-01-front-1.jpg"
+    ],
+    [
+     "u/2026-01-02-front-2.jpg",
+     "u/2026-01-03-front-3.jpg"
+    ],
+    [
+     "u/2026-01-04-front-4.jpg",
+     "u/2026-01-05-front-5.jpg"
+    ]
+   ],
+   "urls": [
+    "https://s/u/2026-01-00-front-0.jpg?t=1",
+    "https://s/u/2026-01-01-front-1.jpg?t=1",
     "https://s/u/2026-01-02-front-2.jpg?t=1",
-    "https://s/u/2026-01-02-front-2.jpg?t=1",
-    "u/bad-5.jpg"
+    "https://s/u/2026-01-03-front-3.jpg?t=1",
+    "https://s/u/2026-01-04-front-4.jpg?t=1",
+    "https://s/u/2026-01-05-front-5.jpg?t=1"
    ]
   },
   {
@@ -18718,6 +25722,106 @@
    "rows": [
     {
      "id": "p0",
+     "photo_url": "u/bad-0.jpg"
+    },
+    {
+     "id": "p1",
+     "photo_url": "u/2026-01-01-front-1.jpg"
+    },
+    {
+     "id": "p2",
+     "photo_url": "u/2026-01-02-front-2.jpg"
+    },
+    {
+     "id": "p3",
+     "photo_url": "u/2026-01-03-front-3.jpg"
+    },
+    {
+     "id": "p4",
+     "photo_url": "u/2026-01-04-front-4.jpg"
+    },
+    {
+     "id": "p5",
+     "photo_url": "u/2026-01-04-front-4.jpg"
+    }
+   ],
+   "mode": "ok",
+   "chunk": 100,
+   "calls": [
+    [
+     "u/bad-0.jpg",
+     "u/2026-01-01-front-1.jpg",
+     "u/2026-01-02-front-2.jpg",
+     "u/2026-01-03-front-3.jpg",
+     "u/2026-01-04-front-4.jpg"
+    ]
+   ],
+   "urls": [
+    "u/bad-0.jpg",
+    "https://s/u/2026-01-01-front-1.jpg?t=1",
+    "https://s/u/2026-01-02-front-2.jpg?t=1",
+    "https://s/u/2026-01-03-front-3.jpg?t=1",
+    "https://s/u/2026-01-04-front-4.jpg?t=1",
+    "https://s/u/2026-01-04-front-4.jpg?t=1"
+   ]
+  },
+  {
+   "rows": [
+    {
+     "id": "p0",
+     "photo_url": "u/2026-01-00-front-0.jpg"
+    },
+    {
+     "id": "p1",
+     "photo_url": "u/2026-01-01-front-1.jpg"
+    },
+    {
+     "id": "p2",
+     "photo_url": "u/2026-01-01-front-1.jpg"
+    },
+    {
+     "id": "p3",
+     "photo_url": "u/2026-01-03-front-3.jpg"
+    },
+    {
+     "id": "p4",
+     "photo_url": "https://cdn/x4.jpg"
+    },
+    {
+     "id": "p5",
+     "photo_url": "https://cdn/x5.jpg"
+    },
+    {
+     "id": "p6",
+     "photo_url": "u/2026-01-06-front-6.jpg"
+    }
+   ],
+   "mode": "error",
+   "chunk": 3,
+   "calls": [
+    [
+     "u/2026-01-00-front-0.jpg",
+     "u/2026-01-01-front-1.jpg",
+     "u/2026-01-03-front-3.jpg"
+    ],
+    [
+     "u/2026-01-06-front-6.jpg"
+    ]
+   ],
+   "urls": [
+    "u/2026-01-00-front-0.jpg",
+    "u/2026-01-01-front-1.jpg",
+    "u/2026-01-01-front-1.jpg",
+    "u/2026-01-03-front-3.jpg",
+    "https://cdn/x4.jpg",
+    "https://cdn/x5.jpg",
+    "https://s/u/2026-01-06-front-6.jpg?t=1"
+   ]
+  },
+  {
+   "rows": [
+    {
+     "id": "p0",
      "photo_url": "u/2026-01-00-front-0.jpg"
     },
     {
@@ -18730,32 +25834,24 @@
     },
     {
      "id": "p3",
-     "photo_url": "u/bad-3.jpg"
-    },
-    {
-     "id": "p4",
-     "photo_url": "u/2026-01-04-front-4.jpg"
+     "photo_url": "u/2026-01-03-front-3.jpg"
     }
    ],
    "mode": "throw",
-   "chunk": 3,
+   "chunk": 100,
    "calls": [
     [
      "u/2026-01-00-front-0.jpg",
      "u/2026-01-01-front-1.jpg",
-     "u/2026-01-02-front-2.jpg"
-    ],
-    [
-     "u/bad-3.jpg",
-     "u/2026-01-04-front-4.jpg"
+     "u/2026-01-02-front-2.jpg",
+     "u/2026-01-03-front-3.jpg"
     ]
    ],
    "urls": [
     "https://s/u/2026-01-00-front-0.jpg?t=1",
     "https://s/u/2026-01-01-front-1.jpg?t=1",
     "https://s/u/2026-01-02-front-2.jpg?t=1",
-    "u/bad-3.jpg",
-    "u/2026-01-04-front-4.jpg"
+    "https://s/u/2026-01-03-front-3.jpg?t=1"
    ]
   },
   {
@@ -18770,30 +25866,103 @@
     },
     {
      "id": "p2",
-     "photo_url": "u/2026-01-02-front-2.jpg"
+     "photo_url": "u/2026-01-01-front-1.jpg"
+    },
+    {
+     "id": "p3",
+     "photo_url": "u/2026-01-01-front-1.jpg"
+    },
+    {
+     "id": "p4",
+     "photo_url": "u/2026-01-04-front-4.jpg"
     }
    ],
    "mode": "throw",
-   "chunk": 100,
+   "chunk": 3,
    "calls": [
     [
      "u/2026-01-00-front-0.jpg",
      "u/2026-01-01-front-1.jpg",
-     "u/2026-01-02-front-2.jpg"
+     "u/2026-01-04-front-4.jpg"
     ]
    ],
    "urls": [
     "https://s/u/2026-01-00-front-0.jpg?t=1",
     "https://s/u/2026-01-01-front-1.jpg?t=1",
-    "https://s/u/2026-01-02-front-2.jpg?t=1"
+    "https://s/u/2026-01-01-front-1.jpg?t=1",
+    "https://s/u/2026-01-01-front-1.jpg?t=1",
+    "https://s/u/2026-01-04-front-4.jpg?t=1"
    ]
   },
   {
-   "rows": [],
+   "rows": [
+    {
+     "id": "p0",
+     "photo_url": "u/2026-01-00-front-0.jpg"
+    },
+    {
+     "id": "p1",
+     "photo_url": "u/2026-01-00-front-0.jpg"
+    }
+   ],
    "mode": "ok",
    "chunk": 100,
-   "calls": [],
-   "urls": []
+   "calls": [
+    [
+     "u/2026-01-00-front-0.jpg"
+    ]
+   ],
+   "urls": [
+    "https://s/u/2026-01-00-front-0.jpg?t=1",
+    "https://s/u/2026-01-00-front-0.jpg?t=1"
+   ]
+  },
+  {
+   "rows": [
+    {
+     "id": "p0",
+     "photo_url": "u/2026-01-00-front-0.jpg"
+    }
+   ],
+   "mode": "ok",
+   "chunk": 100,
+   "calls": [
+    [
+     "u/2026-01-00-front-0.jpg"
+    ]
+   ],
+   "urls": [
+    "https://s/u/2026-01-00-front-0.jpg?t=1"
+   ]
+  },
+  {
+   "rows": [
+    {
+     "id": "p0",
+     "photo_url": "u/2026-01-00-front-0.jpg"
+    },
+    {
+     "id": "p1",
+     "photo_url": "u/2026-01-00-front-0.jpg"
+    },
+    {
+     "id": "p2",
+     "photo_url": "u/2026-01-02-front-2.jpg"
+    }
+   ],
+   "mode": "error",
+   "chunk": 3,
+   "calls": [
+    [
+     "u/2026-01-00-front-0.jpg",
+     "u/2026-01-02-front-2.jpg"
+    ]
+   ],
+   "urls": [
+    "u/2026-01-00-front-0.jpg",
+    "u/2026-01-00-front-0.jpg",
+    "u/2026-01-02-front-2.jpg"
+   ]
   },
   {
    "rows": [
@@ -18802,7 +25971,7 @@
      "photo_url": "u/bad-0.jpg"
     }
    ],
-   "mode": "error",
+   "mode": "ok",
    "chunk": 3,
    "calls": [
     [
@@ -18821,7 +25990,7 @@
     }
    ],
    "mode": "ok",
-   "chunk": 3,
+   "chunk": 2,
    "calls": [
     [
      "u/2026-01-00-front-0.jpg"
@@ -18844,65 +26013,6 @@
     {
      "id": "p2",
      "photo_url": "u/2026-01-02-front-2.jpg"
-    }
-   ],
-   "mode": "throw",
-   "chunk": 3,
-   "calls": [
-    [
-     "u/2026-01-00-front-0.jpg",
-     "u/2026-01-01-front-1.jpg",
-     "u/2026-01-02-front-2.jpg"
-    ]
-   ],
-   "urls": [
-    "https://s/u/2026-01-00-front-0.jpg?t=1",
-    "https://s/u/2026-01-01-front-1.jpg?t=1",
-    "https://s/u/2026-01-02-front-2.jpg?t=1"
-   ]
-  },
-  {
-   "rows": [
-    {
-     "id": "p0",
-     "photo_url": "u/bad-0.jpg"
-    },
-    {
-     "id": "p1",
-     "photo_url": "u/2026-01-01-front-1.jpg"
-    },
-    {
-     "id": "p2",
-     "photo_url": "u/2026-01-01-front-1.jpg"
-    }
-   ],
-   "mode": "error",
-   "chunk": 2,
-   "calls": [
-    [
-     "u/bad-0.jpg",
-     "u/2026-01-01-front-1.jpg"
-    ]
-   ],
-   "urls": [
-    "u/bad-0.jpg",
-    "u/2026-01-01-front-1.jpg",
-    "u/2026-01-01-front-1.jpg"
-   ]
-  },
-  {
-   "rows": [
-    {
-     "id": "p0",
-     "photo_url": "u/2026-01-00-front-0.jpg"
-    },
-    {
-     "id": "p1",
-     "photo_url": "u/2026-01-01-front-1.jpg"
-    },
-    {
-     "id": "p2",
-     "photo_url": "u/2026-01-02-front-2.jpg"
     },
     {
      "id": "p3",
@@ -18922,255 +26032,11 @@
     }
    ],
    "mode": "ok",
-   "chunk": 3,
+   "chunk": 100,
    "calls": [
     [
      "u/2026-01-00-front-0.jpg",
      "u/2026-01-01-front-1.jpg",
-     "u/2026-01-02-front-2.jpg"
-    ],
-    [
-     "u/2026-01-03-front-3.jpg",
-     "u/2026-01-04-front-4.jpg",
-     "u/2026-01-05-front-5.jpg"
-    ],
-    [
-     "u/2026-01-06-front-6.jpg"
-    ]
-   ],
-   "urls": [
-    "https://s/u/2026-01-00-front-0.jpg?t=1",
-    "https://s/u/2026-01-01-front-1.jpg?t=1",
-    "https://s/u/2026-01-02-front-2.jpg?t=1",
-    "https://s/u/2026-01-03-front-3.jpg?t=1",
-    "https://s/u/2026-01-04-front-4.jpg?t=1",
-    "https://s/u/2026-01-05-front-5.jpg?t=1",
-    "https://s/u/2026-01-06-front-6.jpg?t=1"
-   ]
-  },
-  {
-   "rows": [
-    {
-     "id": "p0",
-     "photo_url": "u/2026-01-00-front-0.jpg"
-    },
-    {
-     "id": "p1",
-     "photo_url": "u/2026-01-01-front-1.jpg"
-    }
-   ],
-   "mode": "ok",
-   "chunk": 100,
-   "calls": [
-    [
-     "u/2026-01-00-front-0.jpg",
-     "u/2026-01-01-front-1.jpg"
-    ]
-   ],
-   "urls": [
-    "https://s/u/2026-01-00-front-0.jpg?t=1",
-    "https://s/u/2026-01-01-front-1.jpg?t=1"
-   ]
-  },
-  {
-   "rows": [
-    {
-     "id": "p0",
-     "photo_url": "u/2026-01-00-front-0.jpg"
-    },
-    {
-     "id": "p1",
-     "photo_url": "u/2026-01-01-front-1.jpg"
-    },
-    {
-     "id": "p2",
-     "photo_url": "u/2026-01-02-front-2.jpg"
-    },
-    {
-     "id": "p3",
-     "photo_url": "u/2026-01-03-front-3.jpg"
-    },
-    {
-     "id": "p4",
-     "photo_url": "u/2026-01-04-front-4.jpg"
-    }
-   ],
-   "mode": "ok",
-   "chunk": 2,
-   "calls": [
-    [
-     "u/2026-01-00-front-0.jpg",
-     "u/2026-01-01-front-1.jpg"
-    ],
-    [
-     "u/2026-01-02-front-2.jpg",
-     "u/2026-01-03-front-3.jpg"
-    ],
-    [
-     "u/2026-01-04-front-4.jpg"
-    ]
-   ],
-   "urls": [
-    "https://s/u/2026-01-00-front-0.jpg?t=1",
-    "https://s/u/2026-01-01-front-1.jpg?t=1",
-    "https://s/u/2026-01-02-front-2.jpg?t=1",
-    "https://s/u/2026-01-03-front-3.jpg?t=1",
-    "https://s/u/2026-01-04-front-4.jpg?t=1"
-   ]
-  },
-  {
-   "rows": [
-    {
-     "id": "p0",
-     "photo_url": "u/2026-01-00-front-0.jpg"
-    },
-    {
-     "id": "p1",
-     "photo_url": "u/2026-01-01-front-1.jpg"
-    }
-   ],
-   "mode": "ok",
-   "chunk": 2,
-   "calls": [
-    [
-     "u/2026-01-00-front-0.jpg",
-     "u/2026-01-01-front-1.jpg"
-    ]
-   ],
-   "urls": [
-    "https://s/u/2026-01-00-front-0.jpg?t=1",
-    "https://s/u/2026-01-01-front-1.jpg?t=1"
-   ]
-  },
-  {
-   "rows": [
-    {
-     "id": "p0",
-     "photo_url": "u/2026-01-00-front-0.jpg"
-    },
-    {
-     "id": "p1",
-     "photo_url": "u/bad-1.jpg"
-    },
-    {
-     "id": "p2",
-     "photo_url": "u/2026-01-02-front-2.jpg"
-    }
-   ],
-   "mode": "ok",
-   "chunk": 100,
-   "calls": [
-    [
-     "u/2026-01-00-front-0.jpg",
-     "u/bad-1.jpg",
-     "u/2026-01-02-front-2.jpg"
-    ]
-   ],
-   "urls": [
-    "https://s/u/2026-01-00-front-0.jpg?t=1",
-    "u/bad-1.jpg",
-    "https://s/u/2026-01-02-front-2.jpg?t=1"
-   ]
-  },
-  {
-   "rows": [
-    {
-     "id": "p0",
-     "photo_url": "https://cdn/x0.jpg"
-    },
-    {
-     "id": "p1",
-     "photo_url": "https://cdn/x0.jpg"
-    },
-    {
-     "id": "p2",
-     "photo_url": "u/2026-01-02-front-2.jpg"
-    },
-    {
-     "id": "p3",
-     "photo_url": "u/2026-01-03-front-3.jpg"
-    }
-   ],
-   "mode": "error",
-   "chunk": 2,
-   "calls": [
-    [
-     "u/2026-01-02-front-2.jpg",
-     "u/2026-01-03-front-3.jpg"
-    ]
-   ],
-   "urls": [
-    "https://cdn/x0.jpg",
-    "https://cdn/x0.jpg",
-    "u/2026-01-02-front-2.jpg",
-    "u/2026-01-03-front-3.jpg"
-   ]
-  },
-  {
-   "rows": [
-    {
-     "id": "p0",
-     "photo_url": "u/bad-0.jpg"
-    },
-    {
-     "id": "p1",
-     "photo_url": "u/bad-0.jpg"
-    },
-    {
-     "id": "p2",
-     "photo_url": "u/2026-01-02-front-2.jpg"
-    }
-   ],
-   "mode": "throw",
-   "chunk": 100,
-   "calls": [
-    [
-     "u/bad-0.jpg",
-     "u/2026-01-02-front-2.jpg"
-    ]
-   ],
-   "urls": [
-    "u/bad-0.jpg",
-    "u/bad-0.jpg",
-    "https://s/u/2026-01-02-front-2.jpg?t=1"
-   ]
-  },
-  {
-   "rows": [
-    {
-     "id": "p0",
-     "photo_url": "u/bad-0.jpg"
-    },
-    {
-     "id": "p1",
-     "photo_url": "https://cdn/x1.jpg"
-    },
-    {
-     "id": "p2",
-     "photo_url": "u/2026-01-02-front-2.jpg"
-    },
-    {
-     "id": "p3",
-     "photo_url": "u/2026-01-03-front-3.jpg"
-    },
-    {
-     "id": "p4",
-     "photo_url": "u/2026-01-04-front-4.jpg"
-    },
-    {
-     "id": "p5",
-     "photo_url": "u/2026-01-05-front-5.jpg"
-    },
-    {
-     "id": "p6",
-     "photo_url": "u/2026-01-06-front-6.jpg"
-    }
-   ],
-   "mode": "throw",
-   "chunk": 100,
-   "calls": [
-    [
-     "u/bad-0.jpg",
      "u/2026-01-02-front-2.jpg",
      "u/2026-01-03-front-3.jpg",
      "u/2026-01-04-front-4.jpg",
@@ -19179,8 +26045,8 @@
     ]
    ],
    "urls": [
-    "u/bad-0.jpg",
-    "https://cdn/x1.jpg",
+    "https://s/u/2026-01-00-front-0.jpg?t=1",
+    "https://s/u/2026-01-01-front-1.jpg?t=1",
     "https://s/u/2026-01-02-front-2.jpg?t=1",
     "https://s/u/2026-01-03-front-3.jpg?t=1",
     "https://s/u/2026-01-04-front-4.jpg?t=1",
@@ -19196,19 +26062,26 @@
     },
     {
      "id": "p1",
-     "photo_url": "u/2026-01-00-front-0.jpg"
+     "photo_url": "u/2026-01-01-front-1.jpg"
+    },
+    {
+     "id": "p2",
+     "photo_url": "u/2026-01-02-front-2.jpg"
     }
    ],
    "mode": "ok",
-   "chunk": 2,
+   "chunk": 3,
    "calls": [
     [
-     "u/2026-01-00-front-0.jpg"
+     "u/2026-01-00-front-0.jpg",
+     "u/2026-01-01-front-1.jpg",
+     "u/2026-01-02-front-2.jpg"
     ]
    ],
    "urls": [
     "https://s/u/2026-01-00-front-0.jpg?t=1",
-    "https://s/u/2026-01-00-front-0.jpg?t=1"
+    "https://s/u/2026-01-01-front-1.jpg?t=1",
+    "https://s/u/2026-01-02-front-2.jpg?t=1"
    ]
   },
   {
@@ -19227,37 +26100,23 @@
     },
     {
      "id": "p3",
-     "photo_url": "u/bad-3.jpg"
-    },
-    {
-     "id": "p4",
-     "photo_url": "u/2026-01-04-front-4.jpg"
-    },
-    {
-     "id": "p5",
-     "photo_url": "u/2026-01-05-front-5.jpg"
+     "photo_url": "u/2026-01-03-front-3.jpg"
     }
    ],
-   "mode": "throw",
-   "chunk": 3,
+   "mode": "ok",
+   "chunk": 100,
    "calls": [
     [
      "u/2026-01-00-front-0.jpg",
      "u/2026-01-02-front-2.jpg",
-     "u/bad-3.jpg"
-    ],
-    [
-     "u/2026-01-04-front-4.jpg",
-     "u/2026-01-05-front-5.jpg"
+     "u/2026-01-03-front-3.jpg"
     ]
    ],
    "urls": [
     "https://s/u/2026-01-00-front-0.jpg?t=1",
     "https://cdn/x1.jpg",
     "https://s/u/2026-01-02-front-2.jpg?t=1",
-    "u/bad-3.jpg",
-    "u/2026-01-04-front-4.jpg",
-    "u/2026-01-05-front-5.jpg"
+    "https://s/u/2026-01-03-front-3.jpg?t=1"
    ]
   },
   {
@@ -19265,164 +26124,17 @@
     {
      "id": "p0",
      "photo_url": "u/2026-01-00-front-0.jpg"
-    },
-    {
-     "id": "p1",
-     "photo_url": "u/2026-01-01-front-1.jpg"
-    },
-    {
-     "id": "p2",
-     "photo_url": "u/2026-01-01-front-1.jpg"
-    },
-    {
-     "id": "p3",
-     "photo_url": "https://cdn/x3.jpg"
-    }
-   ],
-   "mode": "ok",
-   "chunk": 3,
-   "calls": [
-    [
-     "u/2026-01-00-front-0.jpg",
-     "u/2026-01-01-front-1.jpg"
-    ]
-   ],
-   "urls": [
-    "https://s/u/2026-01-00-front-0.jpg?t=1",
-    "https://s/u/2026-01-01-front-1.jpg?t=1",
-    "https://s/u/2026-01-01-front-1.jpg?t=1",
-    "https://cdn/x3.jpg"
-   ]
-  },
-  {
-   "rows": [
-    {
-     "id": "p0",
-     "photo_url": "u/2026-01-00-front-0.jpg"
-    },
-    {
-     "id": "p1",
-     "photo_url": "u/2026-01-01-front-1.jpg"
-    },
-    {
-     "id": "p2",
-     "photo_url": "u/2026-01-02-front-2.jpg"
-    }
-   ],
-   "mode": "throw",
-   "chunk": 2,
-   "calls": [
-    [
-     "u/2026-01-00-front-0.jpg",
-     "u/2026-01-01-front-1.jpg"
-    ],
-    [
-     "u/2026-01-02-front-2.jpg"
-    ]
-   ],
-   "urls": [
-    "https://s/u/2026-01-00-front-0.jpg?t=1",
-    "https://s/u/2026-01-01-front-1.jpg?t=1",
-    "u/2026-01-02-front-2.jpg"
-   ]
-  },
-  {
-   "rows": [
-    {
-     "id": "p0",
-     "photo_url": "u/2026-01-00-front-0.jpg"
-    },
-    {
-     "id": "p1",
-     "photo_url": "u/bad-1.jpg"
-    },
-    {
-     "id": "p2",
-     "photo_url": "u/bad-1.jpg"
-    },
-    {
-     "id": "p3",
-     "photo_url": "u/bad-1.jpg"
-    },
-    {
-     "id": "p4",
-     "photo_url": "https://cdn/x4.jpg"
-    },
-    {
-     "id": "p5",
-     "photo_url": "u/2026-01-05-front-5.jpg"
-    },
-    {
-     "id": "p6",
-     "photo_url": "u/bad-6.jpg"
     }
    ],
    "mode": "error",
-   "chunk": 3,
-   "calls": [
-    [
-     "u/2026-01-00-front-0.jpg",
-     "u/bad-1.jpg",
-     "u/2026-01-05-front-5.jpg"
-    ],
-    [
-     "u/bad-6.jpg"
-    ]
-   ],
-   "urls": [
-    "u/2026-01-00-front-0.jpg",
-    "u/bad-1.jpg",
-    "u/bad-1.jpg",
-    "u/bad-1.jpg",
-    "https://cdn/x4.jpg",
-    "u/2026-01-05-front-5.jpg",
-    "u/bad-6.jpg"
-   ]
-  },
-  {
-   "rows": [
-    {
-     "id": "p0",
-     "photo_url": "u/2026-01-00-front-0.jpg"
-    }
-   ],
-   "mode": "ok",
-   "chunk": 100,
+   "chunk": 2,
    "calls": [
     [
      "u/2026-01-00-front-0.jpg"
     ]
    ],
    "urls": [
-    "https://s/u/2026-01-00-front-0.jpg?t=1"
-   ]
-  },
-  {
-   "rows": [
-    {
-     "id": "p0",
-     "photo_url": "https://cdn/x0.jpg"
-    },
-    {
-     "id": "p1",
-     "photo_url": "u/bad-1.jpg"
-    },
-    {
-     "id": "p2",
-     "photo_url": "https://cdn/x2.jpg"
-    }
-   ],
-   "mode": "ok",
-   "chunk": 100,
-   "calls": [
-    [
-     "u/bad-1.jpg"
-    ]
-   ],
-   "urls": [
-    "https://cdn/x0.jpg",
-    "u/bad-1.jpg",
-    "https://cdn/x2.jpg"
+    "u/2026-01-00-front-0.jpg"
    ]
   }
  ]
