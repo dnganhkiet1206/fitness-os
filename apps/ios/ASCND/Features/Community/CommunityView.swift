@@ -13,7 +13,9 @@ import SwiftUI
 /// theo tab; trang kế tải khi tới gần đáy, hỏng thì đuôi feed nói ra và thử lại
 /// được; thẻ Workout / Tiến trình / Công thức như RN, ba dòng đầu.
 ///
-/// Chưa có (các lát sau, #527): mở bài / bình luận, thích / lưu / menu, Thử
+/// Lát 3: chạm thẻ (hoặc hàng Hữu ích) mở `CommunityPostScreen`.
+///
+/// Chưa có (các lát sau, #527): thích / lưu / menu, Thử
 /// workout, Thêm vào bữa, soạn bài, tìm kiếm, hộp thư, thử thách nổi bật.
 /// Hàng thích · bình luận · lưu là số đếm chỉ đọc. Ảnh đại diện là emoji của
 /// linh vật (chưa có hình linh vật native).
@@ -159,8 +161,14 @@ struct CommunityFeedView: View {
       }
     case .ready:
       ForEach(book.posts) { post in
-        PostCardView(post: post, artURL: post.art.flatMap(book.artURL), unit: unit)
-          .onAppear { if post.id == book.posts.last?.id { Task { await book.loadMore() } } }
+        // Lát 3: chạm thẻ mở bài + bình luận (`community-post`).
+        NavigationLink {
+          CommunityPostScreen(postId: post.id) { Task { await book.load() } }
+        } label: {
+          PostCardView(post: post, artURL: post.art.flatMap(book.artURL), unit: unit)
+        }
+        .buttonStyle(.plain)
+        .onAppear { if post.id == book.posts.last?.id { Task { await book.loadMore() } } }
       }
       footer
     }
@@ -205,6 +213,10 @@ struct PostCardView: View {
   let post: CommunityFeed.Post
   let artURL: URL?
   let unit: WeightUnit
+  /// Màn chi tiết (`full` của RN): mọi bài tập / nguyên liệu thay vì ba.
+  var full = false
+  /// Số bình luận đang biết ở màn chi tiết (gồm câu mình vừa gửi).
+  var commentCount: Int?
 
   var body: some View {
     DSCard {
@@ -212,9 +224,9 @@ struct PostCardView: View {
         PostHeaderView(post: post)
         PostArtView(kind: post.kind, url: artURL, alt: post.art.map(Self.alt))
         switch post.kind {
-        case .workout: WorkoutPostBody(workout: post.workout, unit: unit)
+        case .workout: WorkoutPostBody(workout: post.workout, unit: unit, full: full)
         case .progress: if let p = post.progress { ProgressPostBody(progress: p, unit: unit) }
-        case .recipe: if let r = post.recipe { RecipePostBody(recipe: r) }
+        case .recipe: if let r = post.recipe { RecipePostBody(recipe: r, full: full) }
         }
         if !post.caption.isEmpty {
           Text(verbatim: post.caption)
@@ -222,7 +234,7 @@ struct PostCardView: View {
             .foregroundStyle(DS.Color.foreground.swiftUI)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        PostCountsView(post: post)
+        PostCountsView(post: post, commentCount: commentCount)
       }
     }
   }
@@ -361,6 +373,7 @@ private struct StatLabel: View {
 struct WorkoutPostBody: View {
   let workout: CommunityPayloads.Workout
   let unit: WeightUnit
+  var full = false
 
   /// `{n:exercise|exercises}` của RN: số ít khi n == 1.
   static func moreText(_ n: Int) -> String {
@@ -369,7 +382,7 @@ struct WorkoutPostBody: View {
   }
 
   var body: some View {
-    let lines = workout.exercises.prefix(CommunityCard.previewLines)
+    let lines = workout.exercises.prefix(full ? workout.exercises.count : CommunityCard.previewLines)
     let more = workout.exercises.count - lines.count
     VStack(alignment: .leading, spacing: DS.Spacing.sm) {
       Text(verbatim: workout.title ?? String(localized: "community.workout"))
@@ -471,6 +484,7 @@ struct ProgressPostBody: View {
 
 struct RecipePostBody: View {
   let recipe: CommunityPayloads.Recipe
+  var full = false
 
   static func moreText(_ n: Int) -> String {
     n == 1
@@ -478,7 +492,7 @@ struct RecipePostBody: View {
   }
 
   var body: some View {
-    let lines = recipe.ingredients.prefix(CommunityCard.previewLines)
+    let lines = recipe.ingredients.prefix(full ? recipe.ingredients.count : CommunityCard.previewLines)
     let more = recipe.ingredients.count - lines.count
     VStack(alignment: .leading, spacing: DS.Spacing.sm) {
       Text(verbatim: recipe.title.isEmpty ? String(localized: "community.recipe") : recipe.title)
@@ -528,12 +542,13 @@ struct RecipePostBody: View {
 /// Thích · bình luận · lưu — lát này chỉ đọc (nút thật ở lát tương tác).
 struct PostCountsView: View {
   let post: CommunityFeed.Post
+  var commentCount: Int?
 
   var body: some View {
     HStack(spacing: DS.Spacing.lg) {
       count(post.liked ? "heart.fill" : "heart", post.likeCount, String(localized: "community.like"),
             tint: post.liked ? DS.Color.readinessRed.swiftUI : DS.Color.mutedForeground.swiftUI)
-      count("bubble.right", post.commentCount, String(localized: "community.comment"))
+      count("bubble.right", commentCount ?? post.commentCount, String(localized: "community.comment"))
       Spacer(minLength: 0)
       count(post.saved ? "bookmark.fill" : "bookmark", post.saveCount, String(localized: "community.save"),
             tint: post.saved ? DS.Color.foreground.swiftUI : DS.Color.mutedForeground.swiftUI)
@@ -570,7 +585,14 @@ struct UsefulThisWeekCard: View {
         Text("community.useful.sub")
           .font(DS.TextStyle.footnote)
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-        ForEach(Array(posts.enumerated()), id: \.element.id) { i, p in row(p, rule: i > 0) }
+        ForEach(Array(posts.enumerated()), id: \.element.id) { i, p in
+          NavigationLink {
+            CommunityPostScreen(postId: p.id)
+          } label: {
+            row(p, rule: i > 0)
+          }
+          .buttonStyle(.plain)
+        }
       }
       .frame(maxWidth: .infinity, alignment: .leading)
     }

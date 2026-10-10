@@ -119,6 +119,22 @@ public enum CommunityFeed {
   }
 }
 
+extension CommunityFeed {
+  /// `hydrate` của RN: đọc tác giả, đã thích / đã lưu của MÌNH và ảnh minh hoạ
+  /// cho các hàng bài, rồi ghép — feed, Hữu ích và màn chi tiết bài dùng chung.
+  public static func hydrate(_ rows: [JSONValue], me: String, remote: any CommunityFeedRemote) async throws -> [Post] {
+    guard !rows.isEmpty else { return [] }
+    let ids = rows.compactMap { $0["id"]?.stringValue }
+    let authorIds = Array(Set(rows.compactMap { $0["author_id"]?.stringValue })).sorted()
+    let artIds = Array(Set(rows.compactMap { $0["art_id"]?.stringValue })).sorted()
+    async let authors = remote.profiles(ids: authorIds)
+    async let liked = remote.likedPostIds(me: me, postIds: ids)
+    async let saved = remote.savedPostIds(me: me, postIds: ids)
+    async let arts: [JSONValue] = artIds.isEmpty ? [] : remote.art(ids: artIds)
+    return try await hydrate(rows, me: me, authors: authors, liked: Set(liked), saved: Set(saved), arts: arts)
+  }
+}
+
 /// Một lượt đọc bài (`community_posts`).
 public struct CommunityPostQuery: Sendable, Hashable {
   /// `author_id in (...)` (Đang theo dõi).
@@ -280,17 +296,7 @@ public final class CommunityFeedBook {
   }
 
   private func hydrate(_ rows: [JSONValue]) async throws -> [CommunityFeed.Post] {
-    guard !rows.isEmpty else { return [] }
-    let ids = rows.compactMap { $0["id"]?.stringValue }
-    let authorIds = Array(Set(rows.compactMap { $0["author_id"]?.stringValue })).sorted()
-    let artIds = Array(Set(rows.compactMap { $0["art_id"]?.stringValue })).sorted()
-    let remote = self.remote, me = userId
-    async let authors = remote.profiles(ids: authorIds)
-    async let liked = remote.likedPostIds(me: me, postIds: ids)
-    async let saved = remote.savedPostIds(me: me, postIds: ids)
-    async let arts: [JSONValue] = artIds.isEmpty ? [] : remote.art(ids: artIds)
-    return try await CommunityFeed.hydrate(
-      rows, me: me, authors: authors, liked: Set(liked), saved: Set(saved), arts: arts)
+    try await CommunityFeed.hydrate(rows, me: userId, remote: remote)
   }
 
   /// Hữu ích tuần này (chỉ Khám phá) + hạn chế + hồ sơ — mỗi khối hỏng thì để

@@ -544,6 +544,13 @@ final class AppServices {
     return CommunityProfileBook(userId: userId, remote: SupabaseCommunity(backend: backend))
   }
 
+  /// Một bài + bình luận (#527, lát 3): `community_posts` / `community_comments`
+  /// / `community_comment_mentions` / `community_mutes` qua RLS; gửi online.
+  func makeCommunityPost(userId: String, postId: String) -> CommunityPostBook? {
+    guard let backend else { return nil }
+    return CommunityPostBook(userId: userId, postId: postId, remote: SupabaseCommunity(backend: backend))
+  }
+
   func didBecomeActive() {
     // Quay lại tiền cảnh: đo lại đường mạng, dò lại internet ngay.
     network.resume(Self.netPath(monitor.currentPath))

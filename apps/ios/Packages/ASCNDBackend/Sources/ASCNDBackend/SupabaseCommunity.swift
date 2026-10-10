@@ -7,7 +7,7 @@ import Supabase
 /// server lọc (`20260927120000_community_foundation.sql`,
 /// `20261007220000_community_report_trust.sql`); thích / lưu chỉ đọc hàng của
 /// mình.
-public struct SupabaseCommunity: CommunityFeedRemote, CommunityProfileRemote {
+public struct SupabaseCommunity: CommunityFeedRemote, CommunityProfileRemote, CommunityPostRemote {
   private let client: SupabaseClient
 
   public init(backend: Backend) {
@@ -136,6 +136,84 @@ public struct SupabaseCommunity: CommunityFeedRemote, CommunityProfileRemote {
       let code = (error as? PostgrestError)?.code
       if code == "23505" { throw CommunityProfileFailure.handleTaken }
       throw CommunityProfileFailure.server(code: code)
+    }
+  }
+
+  // MARK: - Một bài + bình luận (#527, lát 3)
+
+  struct MutedDTO: Decodable, Sendable {
+    let muted_id: String
+  }
+
+  struct InsertedDTO: Decodable, Sendable {
+    let id: String
+  }
+
+  /// `useCommunityPost`: `.eq('id').maybeSingle()`.
+  public func post(id: String) async throws -> JSONValue? {
+    let rows: [JSONValue] = try await client.from("community_posts")
+      .select(CommunityFeed.postColumns)
+      .eq("id", value: id)
+      .limit(1)
+      .execute().value
+    return rows.first
+  }
+
+  /// `useComments`: 50 câu mới nhất cũ hơn con trỏ, `(created_at, id)` giảm dần.
+  public func comments(postId: String, olderThan: String?, limit: Int) async throws -> [JSONValue] {
+    var q = client.from("community_comments")
+      .select(CommentThread.commentColumns)
+      .eq("post_id", value: postId)
+    if let olderThan { q = q.or(olderThan) }
+    return try await q.order("created_at", ascending: false).order("id", ascending: false).limit(limit)
+      .execute().value
+  }
+
+  /// Gốc của trả lời mồ côi — RLS vẫn áp (gốc ẩn / bị chặn thì không về).
+  public func comments(ids: [String]) async throws -> [JSONValue] {
+    guard !ids.isEmpty else { return [] }
+    return try await client.from("community_comments")
+      .select(CommentThread.commentColumns)
+      .in("id", values: ids)
+      .execute().value
+  }
+
+  public func commentMentions(commentIds: [String]) async throws -> [JSONValue] {
+    guard !commentIds.isEmpty else { return [] }
+    return try await client.from("community_comment_mentions")
+      .select("comment_id, user_id")
+      .in("comment_id", values: commentIds)
+      .execute().value
+  }
+
+  /// `useMutedUsers`: dòng của chính mình còn hạn.
+  public func mutedIds(me: String, nowISO: String) async throws -> [String] {
+    let rows: [MutedDTO] = try await client.from("community_mutes")
+      .select("muted_id")
+      .eq("user_id", value: me)
+      .gt("until", value: nowISO)
+      .execute().value
+    return rows.map(\.muted_id)
+  }
+
+  /// `useAddComment`: chèn thẳng (RLS + trigger chuẩn hoá `parent_id` về gốc);
+  /// 54000 = trần mỗi giờ, CR001 = đang bị tạm khoá (`postingError`).
+  public func addComment(postId: String, me: String, body: String, parentId: String?) async throws {
+    let row: JSONValue = .object([
+      "post_id": .string(postId), "author_id": .string(me), "body": .string(body),
+      "parent_id": parentId.map(JSONValue.string) ?? .null,
+    ])
+    do {
+      let _: [InsertedDTO] = try await client.from("community_comments")
+        .insert(row)
+        .select("id")
+        .execute().value
+    } catch {
+      if NetworkFailure.isOffline(error) { throw CommunityCommentFailure.offline }
+      let code = (error as? PostgrestError)?.code
+      if code == "54000" { throw CommunityCommentFailure.limit }
+      if code == "CR001" { throw CommunityCommentFailure.restricted }
+      throw CommunityCommentFailure.server(code: code)
     }
   }
 
