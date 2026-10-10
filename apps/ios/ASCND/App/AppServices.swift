@@ -385,6 +385,13 @@ final class AppServices {
       onEnqueued: { _ in sync.kick() })
   }
 
+  /// Bốn tín hiệu còn lại của kế hoạch nhắc nhở (#527 A-NEXT-4): cân, bữa
+  /// ăn, ngủ, sinh trắc của hôm nay — chỉ đọc, như các query của `useReminders`.
+  func makeReminderToday(userId: String) -> ReminderTodayBook? {
+    guard let rows else { return nil }
+    return ReminderTodayBook(userId: userId, store: rows)
+  }
+
   /// 14 ngày sinh trắc học; xoá một lần đo rồi dựng lại `daily_logs`.
   func makeBiometricsBook(userId: String) -> BiometricsBook? {
     guard let rows, let backend else { return nil }

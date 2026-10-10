@@ -69,6 +69,9 @@ private struct SignedInScope<Content: View>: View {
   /// Nước uống + thực phẩm bổ sung của phiên (#527 Phase 3): tab Dinh dưỡng
   /// hiện chúng, kế hoạch nhắc nhở đọc chúng.
   @State private var nutrition: NutritionBooks?
+  /// Cân / bữa ăn / ngủ / sinh trắc hôm nay cho kế hoạch nhắc nhở (#527
+  /// A-NEXT-4). Chưa đọc được thì lời nhắc vẫn đặt, như RN.
+  @State private var reminderToday: ReminderTodayBook?
 
   var body: some View {
     Group {
@@ -91,6 +94,7 @@ private struct SignedInScope<Content: View>: View {
       let books = NutritionBooks(
         water: services.makeWaterBook(userId: userId), supplements: services.makeSupplementBook(userId: userId))
       nutrition = books
+      reminderToday = services.makeReminderToday(userId: userId)
       // "Đang kết nối lại" thoát khi lượt tải của phiên này xong. Giữ `weak`:
       // phiên đã đóng thì không còn gì để chờ. Không gỡ ở `onDisappear` — cây
       // của người mới có thể đã đăng ký trước khi cây cũ gỡ xong.
@@ -116,6 +120,8 @@ private struct SignedInScope<Content: View>: View {
       await f.start()
       await units
       await food
+      // Sau `forgetOtherAccounts`, như hai sổ trên.
+      await reminderToday?.refresh()
     }
     // Kế hoạch nhắc nhở theo những gì hôm nay đã biết (`useReminderSync` của
     // RN, gắn ở Today): đổi gì — đã tập, đủ nước, uống hết thực phẩm bổ sung,
@@ -126,7 +132,10 @@ private struct SignedInScope<Content: View>: View {
     }
     // Phiên kết thúc (đăng xuất, đổi tài khoản → `.id` đổi): huỷ lượt làm mới
     // đang bay, để nó không ghi cache của người vừa rời đi.
-    .onDisappear { flow?.close() }
+    .onDisappear {
+      flow?.close()
+      reminderToday?.close()
+    }
     // Transition opacity (#302) giữ cây cũ thêm một nhịp sau khi phase đổi;
     // `onDisappear` chỉ chạy khi gỡ xong. Đóng ngay lúc phiên không còn là
     // của `userId` này, để lượt làm mới của người cũ không ghi cache sau
@@ -135,6 +144,7 @@ private struct SignedInScope<Content: View>: View {
       if !current {
         flow?.close()
         nutrition?.close()
+        reminderToday?.close()
       }
     }
     .onChange(of: scenePhase) { _, phase in
@@ -148,6 +158,10 @@ private struct SignedInScope<Content: View>: View {
       if phase == .active {
         Task {
           await nutrition?.becameActive()
+          // Ra tiền cảnh là lúc RN đọc lại các query của Hôm nay
+          // (`refetchOnWindowFocus`): cân / bữa / ngủ / sinh trắc ghi ở nơi
+          // khác (máy khác, Apple Health) tới kế hoạch ở đây.
+          await reminderToday?.refresh()
           if let ctx = reminderContext { await services.reminders.sync(ctx) }
         }
       }
@@ -157,6 +171,11 @@ private struct SignedInScope<Content: View>: View {
     // như RN `useUnits`.
     .onChange(of: weightUnit, initial: true) { _, unit in
       flow?.setWeightUnit(unit)
+    }
+    // Hàng đợi vừa gửi xong (cân / bữa ghi lúc mất mạng đã lên server):
+    // đọc lại, như `invalidateQueries` sau khi phát lại của RN.
+    .onChange(of: services.sync.pendingCount) { old, new in
+      if new < old, let reminderToday { Task { await reminderToday.refresh() } }
     }
     .onChange(of: services.sync.online) { _, online in
       // Có mạng lại (`refetchOnReconnect` của baseline).
@@ -179,6 +198,7 @@ private struct SignedInScope<Content: View>: View {
       today.today, trained: today.trained, routine: today.library?.routine,
       waterTotalMl: nutrition?.water?.totalMl, waterTargetMl: profile?.profile?.waterTargetMl,
       supplements: nutrition?.supplements?.items)
+      .with(reminderToday?.signals ?? .unread)
   }
 
   private var isCurrentSession: Bool {

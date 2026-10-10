@@ -1,0 +1,5294 @@
+{
+ "source": "fac9ac2",
+ "cases": [
+  {
+   "weightRows": [
+    {
+     "weight_kg": ""
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": 70,
+     "sleep_duration_min": ""
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s0"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [],
+   "sleepRows": [],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [],
+   "sleepRows": [],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 70
+    }
+   ],
+   "dailyLogRows": [],
+   "sleepRows": [
+    {
+     "id": "s3"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": 0,
+     "sleep_duration_min": -5
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b4"
+    }
+   ],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": 70,
+     "sleep_duration_min": "70.5"
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b5"
+    }
+   ],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": "-1"
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": "0",
+     "sleep_duration_min": "-1"
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s6"
+    }
+   ],
+   "bioRows": [
+    {
+     "id": "b6"
+    }
+   ],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": 2000,
+     "sleep_duration_min": 1
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b7"
+    }
+   ],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": 2000,
+     "sleep_duration_min": 70
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b8"
+    }
+   ],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": null
+    }
+   ],
+   "dailyLogRows": [],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b9"
+    }
+   ],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": -5
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": 0,
+     "sleep_duration_min": 70
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s10"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": "0"
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": "",
+     "sleep_duration_min": 0.4
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s11"
+    }
+   ],
+   "bioRows": [
+    {
+     "id": "b11"
+    }
+   ],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": 1,
+     "sleep_duration_min": 0
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b12"
+    }
+   ],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": 1,
+     "sleep_duration_min": 1
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": -5
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": "-1",
+     "sleep_duration_min": ""
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": "-1"
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": -5,
+     "sleep_duration_min": -5
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b15"
+    }
+   ],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": "0"
+    }
+   ],
+   "dailyLogRows": [],
+   "sleepRows": [
+    {
+     "id": "s16"
+    }
+   ],
+   "bioRows": [
+    {
+     "id": "b16"
+    }
+   ],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 1
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": 0.4,
+     "sleep_duration_min": 1
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b17"
+    }
+   ],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [],
+   "sleepRows": [
+    {
+     "id": "s18"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": "abc"
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": 1,
+     "sleep_duration_min": "0"
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": ""
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": "-1",
+     "sleep_duration_min": null
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s20"
+    }
+   ],
+   "bioRows": [
+    {
+     "id": "b20"
+    }
+   ],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": "-1"
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": null,
+     "sleep_duration_min": null
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s21"
+    }
+   ],
+   "bioRows": [
+    {
+     "id": "b21"
+    }
+   ],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": "-1"
+    }
+   ],
+   "dailyLogRows": [],
+   "sleepRows": [
+    {
+     "id": "s22"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": "0"
+    }
+   ],
+   "dailyLogRows": [],
+   "sleepRows": [],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": "70.5",
+     "sleep_duration_min": null
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s24"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": 0,
+     "sleep_duration_min": "70.5"
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s25"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 1
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": 0.4,
+     "sleep_duration_min": "0"
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s26"
+    }
+   ],
+   "bioRows": [
+    {
+     "id": "b26"
+    }
+   ],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": -5,
+     "sleep_duration_min": "abc"
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s27"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 0.4
+    }
+   ],
+   "dailyLogRows": [],
+   "sleepRows": [
+    {
+     "id": "s28"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": "70.5"
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": null,
+     "sleep_duration_min": "-1"
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s29"
+    }
+   ],
+   "bioRows": [
+    {
+     "id": "b29"
+    }
+   ],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 0
+    }
+   ],
+   "dailyLogRows": [],
+   "sleepRows": [],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": null
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": 70,
+     "sleep_duration_min": "0"
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 2000
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": 70,
+     "sleep_duration_min": 1
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s32"
+    }
+   ],
+   "bioRows": [
+    {
+     "id": "b32"
+    }
+   ],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": "-1"
+    }
+   ],
+   "dailyLogRows": [],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b33"
+    }
+   ],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 0.4
+    }
+   ],
+   "dailyLogRows": [],
+   "sleepRows": [],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 0
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": 70,
+     "sleep_duration_min": ""
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": -5,
+     "sleep_duration_min": "abc"
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": "-1"
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": 70,
+     "sleep_duration_min": 0.4
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b37"
+    }
+   ],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 70
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": "abc",
+     "sleep_duration_min": null
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s38"
+    }
+   ],
+   "bioRows": [
+    {
+     "id": "b38"
+    }
+   ],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [],
+   "sleepRows": [
+    {
+     "id": "s39"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": 2000,
+     "sleep_duration_min": null
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s40"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 2000
+    }
+   ],
+   "dailyLogRows": [],
+   "sleepRows": [
+    {
+     "id": "s41"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": 2000,
+     "sleep_duration_min": "abc"
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 0
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": "-1",
+     "sleep_duration_min": ""
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s43"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 1
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": 2000,
+     "sleep_duration_min": "-1"
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s44"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 0.4
+    }
+   ],
+   "dailyLogRows": [],
+   "sleepRows": [
+    {
+     "id": "s45"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 70
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": "abc",
+     "sleep_duration_min": 0
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s46"
+    }
+   ],
+   "bioRows": [
+    {
+     "id": "b46"
+    }
+   ],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": "-1"
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": 2000,
+     "sleep_duration_min": 0.4
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s47"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": "abc",
+     "sleep_duration_min": 2000
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s48"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 0.4
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": "0",
+     "sleep_duration_min": "70.5"
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s49"
+    }
+   ],
+   "bioRows": [
+    {
+     "id": "b49"
+    }
+   ],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": 0,
+     "sleep_duration_min": "0"
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 70
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": "0",
+     "sleep_duration_min": -5
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b51"
+    }
+   ],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": 0.4,
+     "sleep_duration_min": -5
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [],
+   "sleepRows": [],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": ""
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": 0,
+     "sleep_duration_min": 0.4
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s54"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": "70.5"
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": "",
+     "sleep_duration_min": 2000
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s55"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 0
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": 0.4,
+     "sleep_duration_min": 0.4
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b56"
+    }
+   ],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 0.4
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": null,
+     "sleep_duration_min": 1
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 2000
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": 0,
+     "sleep_duration_min": "abc"
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s58"
+    }
+   ],
+   "bioRows": [
+    {
+     "id": "b58"
+    }
+   ],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": "70.5"
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": 1,
+     "sleep_duration_min": ""
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b59"
+    }
+   ],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 0
+    }
+   ],
+   "dailyLogRows": [],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b60"
+    }
+   ],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": "70.5"
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": "-1",
+     "sleep_duration_min": null
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s61"
+    }
+   ],
+   "bioRows": [
+    {
+     "id": "b61"
+    }
+   ],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [],
+   "sleepRows": [],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": "-1"
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": null,
+     "sleep_duration_min": 70
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s63"
+    }
+   ],
+   "bioRows": [
+    {
+     "id": "b63"
+    }
+   ],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": null
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": 0,
+     "sleep_duration_min": 2000
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s64"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": "70.5",
+     "sleep_duration_min": 0
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": -5
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": null,
+     "sleep_duration_min": "0"
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s66"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": 0,
+     "sleep_duration_min": "-1"
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": "0",
+     "sleep_duration_min": "70.5"
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s68"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": ""
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": -5,
+     "sleep_duration_min": 1
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s69"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 70
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": 0,
+     "sleep_duration_min": "70.5"
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s70"
+    }
+   ],
+   "bioRows": [
+    {
+     "id": "b70"
+    }
+   ],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": "abc",
+     "sleep_duration_min": 0
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s71"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": "-1",
+     "sleep_duration_min": "-1"
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s72"
+    }
+   ],
+   "bioRows": [
+    {
+     "id": "b72"
+    }
+   ],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": "abc"
+    }
+   ],
+   "dailyLogRows": [],
+   "sleepRows": [],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 70
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": 70,
+     "sleep_duration_min": "0"
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b74"
+    }
+   ],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": 0,
+     "sleep_duration_min": "-1"
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s75"
+    }
+   ],
+   "bioRows": [
+    {
+     "id": "b75"
+    }
+   ],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": "abc",
+     "sleep_duration_min": 2000
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b76"
+    }
+   ],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": null,
+     "sleep_duration_min": 70
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s77"
+    }
+   ],
+   "bioRows": [
+    {
+     "id": "b77"
+    }
+   ],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 0.4
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": "70.5",
+     "sleep_duration_min": 2000
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s78"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": ""
+    }
+   ],
+   "dailyLogRows": [],
+   "sleepRows": [
+    {
+     "id": "s79"
+    }
+   ],
+   "bioRows": [
+    {
+     "id": "b79"
+    }
+   ],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 0
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": 2000,
+     "sleep_duration_min": "abc"
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 70
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": null,
+     "sleep_duration_min": ""
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b81"
+    }
+   ],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": "abc"
+    }
+   ],
+   "dailyLogRows": [],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b82"
+    }
+   ],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [],
+   "sleepRows": [
+    {
+     "id": "s83"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 70
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": "0",
+     "sleep_duration_min": "-1"
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s84"
+    }
+   ],
+   "bioRows": [
+    {
+     "id": "b84"
+    }
+   ],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": 0.4,
+     "sleep_duration_min": "70.5"
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s85"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": ""
+    }
+   ],
+   "dailyLogRows": [],
+   "sleepRows": [
+    {
+     "id": "s86"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 0
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": "",
+     "sleep_duration_min": "70.5"
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s87"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 0
+    }
+   ],
+   "dailyLogRows": [],
+   "sleepRows": [],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 0.4
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": 2000,
+     "sleep_duration_min": "70.5"
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b89"
+    }
+   ],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": "-1"
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": 1,
+     "sleep_duration_min": -5
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b90"
+    }
+   ],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": "70.5",
+     "sleep_duration_min": 0
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s91"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 1
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": -5,
+     "sleep_duration_min": 0
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s92"
+    }
+   ],
+   "bioRows": [
+    {
+     "id": "b92"
+    }
+   ],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b93"
+    }
+   ],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 1
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": -5,
+     "sleep_duration_min": 0.4
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s94"
+    }
+   ],
+   "bioRows": [
+    {
+     "id": "b94"
+    }
+   ],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 1
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": "-1",
+     "sleep_duration_min": null
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s95"
+    }
+   ],
+   "bioRows": [
+    {
+     "id": "b95"
+    }
+   ],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": "70.5"
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": "70.5",
+     "sleep_duration_min": "abc"
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s96"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": "-1"
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": "-1",
+     "sleep_duration_min": 0
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s97"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": "abc",
+     "sleep_duration_min": -5
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 0.4
+    }
+   ],
+   "dailyLogRows": [],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b99"
+    }
+   ],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": null
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": 0.4,
+     "sleep_duration_min": "abc"
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": "abc",
+     "sleep_duration_min": "-1"
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s101"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": "-1",
+     "sleep_duration_min": ""
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s102"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": 70,
+     "sleep_duration_min": "0"
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 70
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": 70,
+     "sleep_duration_min": "abc"
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s104"
+    }
+   ],
+   "bioRows": [
+    {
+     "id": "b104"
+    }
+   ],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": "-1"
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": "70.5",
+     "sleep_duration_min": 2000
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s105"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 1
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": 0.4,
+     "sleep_duration_min": ""
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": 1,
+     "sleep_duration_min": ""
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b107"
+    }
+   ],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": "abc",
+     "sleep_duration_min": "70.5"
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 0.4
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": "0",
+     "sleep_duration_min": "abc"
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": "-1"
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": "70.5",
+     "sleep_duration_min": 0.4
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s110"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": null
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": "",
+     "sleep_duration_min": ""
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b111"
+    }
+   ],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": ""
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": "-1",
+     "sleep_duration_min": 0.4
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 2000
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": "abc",
+     "sleep_duration_min": "abc"
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": 70,
+     "sleep_duration_min": null
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s114"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": 0.4,
+     "sleep_duration_min": 0
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b115"
+    }
+   ],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": "70.5"
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": "",
+     "sleep_duration_min": "abc"
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s116"
+    }
+   ],
+   "bioRows": [
+    {
+     "id": "b116"
+    }
+   ],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": 2000,
+     "sleep_duration_min": "-1"
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b117"
+    }
+   ],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": "70.5"
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": "",
+     "sleep_duration_min": 2000
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s118"
+    }
+   ],
+   "bioRows": [
+    {
+     "id": "b118"
+    }
+   ],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": "0",
+     "sleep_duration_min": "70.5"
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 70
+    }
+   ],
+   "dailyLogRows": [],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b120"
+    }
+   ],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": 0,
+     "sleep_duration_min": "-1"
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s121"
+    }
+   ],
+   "bioRows": [
+    {
+     "id": "b121"
+    }
+   ],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": "",
+     "sleep_duration_min": 70
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": 2000,
+     "sleep_duration_min": 2000
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": 1,
+     "sleep_duration_min": "0"
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s124"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": null,
+     "sleep_duration_min": 0.4
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s125"
+    }
+   ],
+   "bioRows": [
+    {
+     "id": "b125"
+    }
+   ],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 2000
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": 0.4,
+     "sleep_duration_min": 0.4
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": ""
+    }
+   ],
+   "dailyLogRows": [],
+   "sleepRows": [
+    {
+     "id": "s127"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": "0",
+     "sleep_duration_min": null
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b128"
+    }
+   ],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [],
+   "sleepRows": [
+    {
+     "id": "s129"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": null
+    }
+   ],
+   "dailyLogRows": [],
+   "sleepRows": [
+    {
+     "id": "s130"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b131"
+    }
+   ],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": "70.5"
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": "70.5",
+     "sleep_duration_min": "-1"
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s132"
+    }
+   ],
+   "bioRows": [
+    {
+     "id": "b132"
+    }
+   ],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": -5
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": 2000,
+     "sleep_duration_min": 70
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b134"
+    }
+   ],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": ""
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": 1,
+     "sleep_duration_min": ""
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b135"
+    }
+   ],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": -5
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": "",
+     "sleep_duration_min": "abc"
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s136"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 1
+    }
+   ],
+   "dailyLogRows": [],
+   "sleepRows": [],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": "0"
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": 1,
+     "sleep_duration_min": 70
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s138"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 1
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": 1,
+     "sleep_duration_min": 2000
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b139"
+    }
+   ],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": "",
+     "sleep_duration_min": 70
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s140"
+    }
+   ],
+   "bioRows": [
+    {
+     "id": "b140"
+    }
+   ],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": "-1"
+    }
+   ],
+   "dailyLogRows": [],
+   "sleepRows": [],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": "0"
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": 1,
+     "sleep_duration_min": 1
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b142"
+    }
+   ],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": ""
+    }
+   ],
+   "dailyLogRows": [],
+   "sleepRows": [
+    {
+     "id": "s143"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": ""
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": "0",
+     "sleep_duration_min": "70.5"
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s144"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": null
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": 0.4,
+     "sleep_duration_min": "-1"
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s145"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": "0"
+    }
+   ],
+   "dailyLogRows": [],
+   "sleepRows": [
+    {
+     "id": "s146"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": "-1"
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": -5,
+     "sleep_duration_min": 70
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s147"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [],
+   "sleepRows": [
+    {
+     "id": "s148"
+    }
+   ],
+   "bioRows": [
+    {
+     "id": "b148"
+    }
+   ],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": 0.4,
+     "sleep_duration_min": "0"
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 0
+    }
+   ],
+   "dailyLogRows": [],
+   "sleepRows": [
+    {
+     "id": "s150"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": ""
+    }
+   ],
+   "dailyLogRows": [],
+   "sleepRows": [],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": "",
+     "sleep_duration_min": "-1"
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s152"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": ""
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": 0,
+     "sleep_duration_min": "-1"
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b153"
+    }
+   ],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": ""
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": 0.4,
+     "sleep_duration_min": 2000
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s154"
+    }
+   ],
+   "bioRows": [
+    {
+     "id": "b154"
+    }
+   ],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": 0.4,
+     "sleep_duration_min": 0
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s155"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": "70.5"
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": 70,
+     "sleep_duration_min": "0"
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s156"
+    }
+   ],
+   "bioRows": [
+    {
+     "id": "b156"
+    }
+   ],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": "0"
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": 1,
+     "sleep_duration_min": ""
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s157"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 1
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": "70.5",
+     "sleep_duration_min": ""
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 0.4
+    }
+   ],
+   "dailyLogRows": [],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b159"
+    }
+   ],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": -5,
+     "sleep_duration_min": "70.5"
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s160"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 1
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": "-1",
+     "sleep_duration_min": "70.5"
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s161"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": "0"
+    }
+   ],
+   "dailyLogRows": [],
+   "sleepRows": [],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [],
+   "sleepRows": [],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": null
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": null,
+     "sleep_duration_min": "0"
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": null,
+     "sleep_duration_min": "abc"
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s165"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 0.4
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": "-1",
+     "sleep_duration_min": 0
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s166"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": ""
+    }
+   ],
+   "dailyLogRows": [],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b167"
+    }
+   ],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": null
+    }
+   ],
+   "dailyLogRows": [],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b168"
+    }
+   ],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 0.4
+    }
+   ],
+   "dailyLogRows": [],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b169"
+    }
+   ],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": -5
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": "",
+     "sleep_duration_min": 0.4
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s170"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [],
+   "sleepRows": [],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [],
+   "sleepRows": [
+    {
+     "id": "s172"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": null
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": "0",
+     "sleep_duration_min": 0
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s173"
+    }
+   ],
+   "bioRows": [
+    {
+     "id": "b173"
+    }
+   ],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 0
+    }
+   ],
+   "dailyLogRows": [],
+   "sleepRows": [],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": "abc",
+     "sleep_duration_min": 0
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s175"
+    }
+   ],
+   "bioRows": [
+    {
+     "id": "b175"
+    }
+   ],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 0.4
+    }
+   ],
+   "dailyLogRows": [],
+   "sleepRows": [
+    {
+     "id": "s176"
+    }
+   ],
+   "bioRows": [
+    {
+     "id": "b176"
+    }
+   ],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": -5
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": 0,
+     "sleep_duration_min": 2000
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s177"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [],
+   "sleepRows": [
+    {
+     "id": "s178"
+    }
+   ],
+   "bioRows": [
+    {
+     "id": "b178"
+    }
+   ],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": "-1"
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": 70,
+     "sleep_duration_min": "0"
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 2000
+    }
+   ],
+   "dailyLogRows": [],
+   "sleepRows": [],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 70
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": 1,
+     "sleep_duration_min": 2000
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b181"
+    }
+   ],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": -5,
+     "sleep_duration_min": null
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s182"
+    }
+   ],
+   "bioRows": [
+    {
+     "id": "b182"
+    }
+   ],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": "0"
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": 2000,
+     "sleep_duration_min": 0
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b183"
+    }
+   ],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": "0",
+     "sleep_duration_min": "0"
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": "70.5"
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": "",
+     "sleep_duration_min": -5
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s185"
+    }
+   ],
+   "bioRows": [
+    {
+     "id": "b185"
+    }
+   ],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": 1,
+     "sleep_duration_min": "-1"
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s186"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": ""
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": 0.4,
+     "sleep_duration_min": null
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b187"
+    }
+   ],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": "0"
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": -5,
+     "sleep_duration_min": ""
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s188"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": "70.5"
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": null,
+     "sleep_duration_min": 1
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s189"
+    }
+   ],
+   "bioRows": [
+    {
+     "id": "b189"
+    }
+   ],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": "abc",
+     "sleep_duration_min": "70.5"
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s190"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": "-1"
+    }
+   ],
+   "dailyLogRows": [],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b191"
+    }
+   ],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": 0.4,
+     "sleep_duration_min": -5
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b192"
+    }
+   ],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 0
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": "abc",
+     "sleep_duration_min": 1
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 0.4
+    }
+   ],
+   "dailyLogRows": [],
+   "sleepRows": [
+    {
+     "id": "s194"
+    }
+   ],
+   "bioRows": [
+    {
+     "id": "b194"
+    }
+   ],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 0
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": "",
+     "sleep_duration_min": 70
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 70
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": "-1",
+     "sleep_duration_min": 0.4
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b196"
+    }
+   ],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [],
+   "sleepRows": [
+    {
+     "id": "s197"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": null
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": "-1",
+     "sleep_duration_min": 2000
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b199"
+    }
+   ],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": 0,
+     "sleep_duration_min": 1
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s200"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": "-1"
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": "0",
+     "sleep_duration_min": -5
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": ""
+    }
+   ],
+   "dailyLogRows": [],
+   "sleepRows": [
+    {
+     "id": "s202"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 2000
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": -5,
+     "sleep_duration_min": "abc"
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s203"
+    }
+   ],
+   "bioRows": [
+    {
+     "id": "b203"
+    }
+   ],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": ""
+    }
+   ],
+   "dailyLogRows": [],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b204"
+    }
+   ],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 0.4
+    }
+   ],
+   "dailyLogRows": [],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b205"
+    }
+   ],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": "0",
+     "sleep_duration_min": 0
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b206"
+    }
+   ],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 1
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": -5,
+     "sleep_duration_min": 0.4
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s207"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 70
+    }
+   ],
+   "dailyLogRows": [],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b208"
+    }
+   ],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": "",
+     "sleep_duration_min": 0
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b209"
+    }
+   ],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 2000
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": "-1",
+     "sleep_duration_min": 2000
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s210"
+    }
+   ],
+   "bioRows": [
+    {
+     "id": "b210"
+    }
+   ],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 0
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": 1,
+     "sleep_duration_min": -5
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s211"
+    }
+   ],
+   "bioRows": [
+    {
+     "id": "b211"
+    }
+   ],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": "70.5",
+     "sleep_duration_min": "-1"
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b212"
+    }
+   ],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [],
+   "sleepRows": [
+    {
+     "id": "s213"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": "",
+     "sleep_duration_min": -5
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s214"
+    }
+   ],
+   "bioRows": [
+    {
+     "id": "b214"
+    }
+   ],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 1
+    }
+   ],
+   "dailyLogRows": [],
+   "sleepRows": [
+    {
+     "id": "s215"
+    }
+   ],
+   "bioRows": [
+    {
+     "id": "b215"
+    }
+   ],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": "70.5"
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": 0,
+     "sleep_duration_min": 1
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b216"
+    }
+   ],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": "abc"
+    }
+   ],
+   "dailyLogRows": [],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b217"
+    }
+   ],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": ""
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": 0.4,
+     "sleep_duration_min": 0.4
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": null,
+     "sleep_duration_min": ""
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s219"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [
+    {
+     "kcal": 70,
+     "sleep_duration_min": "0"
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s220"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": -5
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": 70,
+     "sleep_duration_min": 70
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s221"
+    }
+   ],
+   "bioRows": [
+    {
+     "id": "b221"
+    }
+   ],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [],
+   "sleepRows": [
+    {
+     "id": "s222"
+    }
+   ],
+   "bioRows": [
+    {
+     "id": "b222"
+    }
+   ],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 2000
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": "70.5",
+     "sleep_duration_min": "70.5"
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b223"
+    }
+   ],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": ""
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": "-1",
+     "sleep_duration_min": "70.5"
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [],
+   "sleepRows": [
+    {
+     "id": "s225"
+    }
+   ],
+   "bioRows": [
+    {
+     "id": "b225"
+    }
+   ],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": null
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": 70,
+     "sleep_duration_min": "70.5"
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s226"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 0
+    }
+   ],
+   "dailyLogRows": [],
+   "sleepRows": [
+    {
+     "id": "s227"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [],
+   "sleepRows": [],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": ""
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": "abc",
+     "sleep_duration_min": null
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s229"
+    }
+   ],
+   "bioRows": [
+    {
+     "id": "b229"
+    }
+   ],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 70
+    }
+   ],
+   "dailyLogRows": [],
+   "sleepRows": [
+    {
+     "id": "s230"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 0.4
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": 0,
+     "sleep_duration_min": "0"
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s231"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": "abc"
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": 0,
+     "sleep_duration_min": "-1"
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": "0"
+    }
+   ],
+   "dailyLogRows": [],
+   "sleepRows": [
+    {
+     "id": "s233"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": "-1"
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": -5,
+     "sleep_duration_min": 2000
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b234"
+    }
+   ],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [],
+   "dailyLogRows": [],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b235"
+    }
+   ],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": "-1"
+    }
+   ],
+   "dailyLogRows": [],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b236"
+    }
+   ],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": 0.4
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": 0.4,
+     "sleep_duration_min": ""
+    }
+   ],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b237"
+    }
+   ],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": true,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": true
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": "0"
+    }
+   ],
+   "dailyLogRows": [
+    {
+     "kcal": -5,
+     "sleep_duration_min": null
+    }
+   ],
+   "sleepRows": [
+    {
+     "id": "s238"
+    }
+   ],
+   "bioRows": [],
+   "expected": {
+    "weighedToday": false,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": true,
+    "bioLoggedToday": false
+   }
+  },
+  {
+   "weightRows": [
+    {
+     "weight_kg": "-1"
+    }
+   ],
+   "dailyLogRows": [],
+   "sleepRows": [],
+   "bioRows": [
+    {
+     "id": "b239"
+    }
+   ],
+   "expected": {
+    "weighedToday": true,
+    "mealLoggedToday": false,
+    "sleepLoggedToday": false,
+    "bioLoggedToday": true
+   }
+  }
+ ]
+}
