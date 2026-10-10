@@ -14,13 +14,14 @@ extension ReminderCenter.SleepSchedule {
 
 extension ReminderTiming.Known {
   /// `known` của `app/reminders.tsx`. `workoutHour` là giờ người này thật sự
-  /// hay ghi buổi tập (`habitFor('workout')`, `lib/personal-model.ts`) — chưa
-  /// port, nên app im lặng về giờ tập thay vì đoán.
-  public init(profile: Profile?) {
+  /// hay hoàn thành nhiệm vụ tập (`habitFor('workout')?.hour`, `:60` / `:71`) —
+  /// `HabitHours.habit(.workout, userId:)?.hour`. Chưa có thói quen → `nil`:
+  /// app im lặng về giờ tập thay vì đoán.
+  public init(profile: Profile?, workoutHour: Double? = nil) {
     self.init(
       bedtime: profile?.sleepTargetBedtimeSet == true ? profile?.sleepTargetBedtime : nil,
       waketime: profile?.sleepTargetWaketimeSet == true ? profile?.sleepTargetWaketime : nil,
-      workoutHour: nil)
+      workoutHour: workoutHour)
   }
 
   /// `String(known.bedtime).slice(0, 5)`: '23:00:00' → '23:00'.

@@ -26,6 +26,10 @@ final class AppServices {
   /// cho cả app — màn Nhắc nhở và Hôm nay dùng chung (RN từng có hai bản ghi
   /// đè lịch của nhau).
   let reminders: ReminderCenter
+  /// Giờ hay làm từng nhiệm vụ, trên máy (`personal-model.ts` `hours`, #527
+  /// A-NEXT-7 · S1). Nguồn ghi (tự nhận nhiệm vụ) là S2 của Mascot; màn Nhắc
+  /// nhở đọc `habit(.workout, userId:)` ở S3.
+  let habitHours = HabitHours(store: UserDefaultsStore())
   /// Số lần cân ONLINE đã được server xác nhận trong lần chạy app này — nhịp
   /// để kế hoạch nhắc nhở đọc lại `weight_logs` ngay (`invalidateQueries` của
   /// `useLogWeight`). Xếp hàng / lỗi không tăng; bữa ăn đi qua outbox nên đã
@@ -178,7 +182,7 @@ final class AppServices {
     // chạy tuần tự, để thứ tự không phụ thuộc thứ tự đăng ký.
     let lifecycle = self.lifecycle
     session.onSignedOut {
-      [sync = self.sync, weak session = self.session, celebrations = self.celebrations] in
+      [sync = self.sync, weak session = self.session, celebrations = self.celebrations, habitHours = self.habitHours] in
       // Pháo hoa của người vừa rời đi không hiện cho người sau (`onUserScopedReset`).
       celebrations.clear()
       // Người của phiên mới khi đổi thẳng tài khoản; `nil` khi đăng xuất.
@@ -198,6 +202,8 @@ final class AppServices {
       // Nhắc nhở: huỷ thông báo đang chờ của người vừa rời đi, xoá cài đặt /
       // chữ ký lịch / chốt giờ thông minh (`forgetPreviousAccount`).
       await reminderCenter.clearUserScoped()
+      // Giờ thói quen của người vừa rời đi (`resetPersonalModel`).
+      habitHours.clear()
       // Đổi thẳng tài khoản: người mới đã đăng nhập — vòng sync gửi hàng của
       // họ (`signOut` ở trên vừa đặt nó về nil).
       sync.setSignedInUser(next)
