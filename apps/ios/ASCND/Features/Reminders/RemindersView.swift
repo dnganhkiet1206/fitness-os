@@ -16,11 +16,14 @@ import SwiftUI
 ///   đang bật và lệch ≥ 20 phút; một chạm mới dời, không tự dời;
 /// - giờ suy từ hồ sơ áp MỘT lần cho mỗi tài khoản khi hồ sơ đã nạp.
 ///
-/// Chưa có: lời mời theo giờ hay tập (`habitFor('workout')` chưa port) — dòng
-/// Tập hôm nay im lặng, như RN khi chưa đủ sáu lần quan sát.
+/// - "Koa để ý" cho Tập (#527 A-NEXT-7 · S3): giờ người này THẬT SỰ hay xong
+///   nhiệm vụ tập (`habitFor('workout')` = `HabitHours.habit(.workout, userId:)`,
+///   sáu lần quan sát + đủ tập trung), gợi ý sớm hơn một giờ; chưa có thói quen
+///   thì dòng im lặng.
 struct RemindersView: View {
   @Environment(AppServices.self) private var services
-  @State private var known = ReminderTiming.Known()
+  @State private var profile: Profile?
+  @State private var workoutHour: Double?
 
   private var center: ReminderCenter { services.reminders }
 
@@ -77,7 +80,7 @@ struct RemindersView: View {
       ForEach(Self.timed, id: \.self) { key in
         Section {
           timedRow(key)
-          if let offer = ReminderTiming.offer(key, prefs: center.prefs, known: known), let source = source(key) {
+          if let offer = ReminderTiming.offer(key, prefs: center.prefs, known: known), let source = Self.source(key, known) {
             offerRow(key, offer: offer, source: source)
           }
         }
@@ -143,6 +146,8 @@ struct RemindersView: View {
   private func load() async {
     await center.refreshPermission()
     guard let userId = services.session.session?.userId else { return }
+    // Không chờ hồ sơ: RN tính `known.workoutHour` mỗi lần vẽ, độc lập với hồ sơ.
+    workoutHour = services.habitHours.habit(.workout, userId: userId)?.hour
     let book = services.makeProfileBook(userId: userId)
     await book.load()
     apply(book.profile)
@@ -152,16 +157,23 @@ struct RemindersView: View {
   }
 
   private func apply(_ profile: Profile?) {
-    if profile != nil { known = ReminderTiming.Known(profile: profile) }
+    if let profile { self.profile = profile }
   }
 
+  /// `known` của màn RN: giờ ngủ / dậy người dùng tự lưu + giờ hay tập.
+  private var known: ReminderTiming.Known { ReminderTiming.Known(profile: profile, workoutHour: workoutHour) }
+
   /// `SOURCE` của màn RN: điều Koa đã để ý, hoặc `nil` khi không có gì để nói.
-  private func source(_ key: ReminderKey) -> String? {
+  static func source(_ key: ReminderKey, _ known: ReminderTiming.Known) -> String? {
     switch key {
     case .bedtime:
       ReminderTiming.Known.clockText(known.bedtime).map { String(localized: "reminders.smart.bedtime \($0)") }
     case .weighIn, .sleepLog:
       ReminderTiming.Known.clockText(known.waketime).map { String(localized: "reminders.smart.wake \($0)") }
+    case .workout:
+      ReminderTiming.workoutHabitClock(known.workoutHour).map {
+        String(localized: "reminders.smart.workout \(ReminderTiming.format($0))")
+      }
     default: nil
     }
   }

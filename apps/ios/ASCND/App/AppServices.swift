@@ -491,9 +491,12 @@ final class AppServices {
     guard let backend else { return nil }
     // Mục tiêu bước của màn Vận động (theo tài khoản) — nhiệm vụ bước chấm theo nó.
     let goals = StepsGoalStore(store: UserDefaultsStore(), userId: userId)
+    // Nhiệm vụ THẤY vừa xong → giờ thói quen (#527 A-NEXT-7 · S2): chính
+    // `noteDone` của RN; `HabitHours` tự bỏ nhiệm vụ ngoài `CLOCK_TRUSTED`.
     return MascotRoomController(
       userId: userId, today: today, source: SupabaseMascotSource(backend: backend),
-      economy: SupabaseMascotEconomy(backend: backend), stepsGoal: { goals.goal })
+      economy: SupabaseMascotEconomy(backend: backend), stepsGoal: { goals.goal },
+      onQuestDone: { [habitHours] quest, hour in habitHours.noteDone(quest, hour: Double(hour), userId: userId) })
   }
 
   /// Giấc ngủ — 7 ngày (#527): `sleep_logs` + mục tiêu ngủ của hồ sơ; xoá một

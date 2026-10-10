@@ -204,12 +204,22 @@ public final class MascotRoomController {
   /// Chốt của thưởng chào mừng: đặt TRƯỚC khi gọi, gỡ khi bị từ chối (RN).
   @ObservationIgnored private var welcomeTried = false
   @ObservationIgnored private var closed = false
+  /// Mốc "lần đọc trước" của các nhiệm vụ ngày (#527 A-NEXT-7 · S2).
+  @ObservationIgnored private var watch = QuestWatch()
+  /// Nhiệm vụ vừa được THẤY chuyển sang xong, kèm giờ nguyên địa phương lúc
+  /// thấy (`noteDone(key, new Date().getHours(), …)`).
+  @ObservationIgnored private let onQuestDone: @Sendable (MascotRules.Quest, Int) -> Void
+  @ObservationIgnored private let hourNow: @Sendable () -> Int
 
   public init(
     userId: String, today: LocalDate, source: any MascotSource, economy: any MascotEconomy,
     makeRequestId: @escaping @Sendable () -> UUID = { UUID() },
-    stepsGoal: @escaping @Sendable () -> Int = { DailySignals.defaultStepsGoal }
+    stepsGoal: @escaping @Sendable () -> Int = { DailySignals.defaultStepsGoal },
+    onQuestDone: @escaping @Sendable (MascotRules.Quest, Int) -> Void = { _, _ in },
+    hourNow: @escaping @Sendable () -> Int = { Calendar.current.component(.hour, from: Date()) }
   ) {
+    self.onQuestDone = onQuestDone
+    self.hourNow = hourNow
     self.stepsGoalSource = stepsGoal
     self.userId = userId
     self.today = today
@@ -251,9 +261,28 @@ public final class MascotRoomController {
     }
     if let rows = try? w.get() { challenges = rows }
     if let n = try? a.get() { awardCount = n }
-    if let sig = try? s.get() { signals = sig }
+    if let sig = try? s.get() {
+      signals = sig
+      observeQuests(sig, day: day)
+    }
     if wallet != nil { phase = .ready }
     await grantWelcomeIfNeeded()
+  }
+
+  /// Một lần đọc `useDailyQuests` đã `ready` (tín hiệu ngày đọc được): bước
+  /// chuyển "chưa xong → xong" của nhiệm vụ chưa nhận thưởng → `onQuestDone`.
+  /// Sổ xu lỗi = chưa biết đã nhận gì, như RN (`claimedList(undefined)`).
+  private func observeQuests(_ sig: DailySignals, day: LocalDate) {
+    let goal = stepsGoal
+    var done: [MascotRules.Quest: Bool] = [:]
+    for q in MascotRules.Quest.allCases { done[q] = sig.done(q, stepsGoal: goal) }
+    let unclaimed = activeQuests.map(\.key).filter {
+      done[$0] == true && !isClaimed(MascotRules.questRefKey(day, $0))
+    }
+    let seen = watch.read(today: day.description, done: done, unclaimed: unclaimed)
+    guard !seen.isEmpty else { return }
+    let hour = hourNow()
+    for q in seen { onQuestDone(q, hour) }
   }
 
   /// Chỉ đọc lại sổ (sau một lần nhận / mua).
