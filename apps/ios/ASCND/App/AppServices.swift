@@ -504,6 +504,13 @@ final class AppServices {
       wardrobe: SupabaseMascotWardrobe(backend: backend), economy: SupabaseMascotEconomy(backend: backend))
   }
 
+  /// Feed Cộng đồng (#527, lát 1): đọc `community_*` qua RLS, ảnh minh hoạ ở
+  /// bucket công khai `community-art`.
+  func makeCommunityFeed(userId: String) -> CommunityFeedBook? {
+    guard let backend else { return nil }
+    return CommunityFeedBook(userId: userId, remote: SupabaseCommunity(backend: backend))
+  }
+
   func didBecomeActive() {
     // Quay lại tiền cảnh: đo lại đường mạng, dò lại internet ngay.
     network.resume(Self.netPath(monitor.currentPath))

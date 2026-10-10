@@ -18611,6 +18611,1199 @@
     }
    }
   },
+  "community.tab.following": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Following"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đang theo dõi"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Siguiendo"
+     }
+    }
+   }
+  },
+  "community.tab.discover": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Discover"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Khám phá"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Descubrir"
+     }
+    }
+   }
+  },
+  "community.loadfailed": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Could not load community posts."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Không tải được bài cộng đồng."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "No se pudieron cargar las publicaciones."
+     }
+    }
+   }
+  },
+  "community.empty.following": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "You're not following anyone yet"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chưa theo dõi ai"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Aún no sigues a nadie"
+     }
+    }
+   }
+  },
+  "community.empty.following.hint": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Open Discover to find people to train with."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mở Khám phá để tìm người tập cùng."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Abre Descubrir para encontrar personas con quienes entrenar."
+     }
+    }
+   }
+  },
+  "community.empty.discover": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "No posts yet"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chưa có bài nào"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Aún no hay publicaciones"
+     }
+    }
+   }
+  },
+  "community.empty.discover.hint": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Share your first workout."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chia sẻ buổi tập đầu tiên của bạn."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Comparte tu primer entrenamiento."
+     }
+    }
+   }
+  },
+  "community.opendiscover": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Open Discover"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mở Khám phá"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Abrir Descubrir"
+     }
+    }
+   }
+  },
+  "community.setup.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Create your community profile"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tạo hồ sơ cộng đồng"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Crea tu perfil de comunidad"
+     }
+    }
+   }
+  },
+  "community.setup.hint": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Pick a name and a mascot to share workouts and follow people."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chọn tên và linh vật để chia sẻ buổi tập và theo dõi người khác."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Elige un nombre y una mascota para compartir entrenamientos y seguir a personas."
+     }
+    }
+   }
+  },
+  "community.restricted.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Posting paused"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tạm khoá đăng bài"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Publicación pausada"
+     }
+    }
+   }
+  },
+  "community.restricted.notice %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "You can't post or comment until %@. You can still read, like and follow."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bạn chưa đăng bài hay bình luận được cho tới %@. Bạn vẫn đọc, thích và theo dõi như thường."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "No puedes publicar ni comentar hasta el %@. Puedes seguir leyendo, dando me gusta y siguiendo."
+     }
+    }
+   }
+  },
+  "community.restricted.reason %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Reason: %@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Lý do: %@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Motivo: %@"
+     }
+    }
+   }
+  },
+  "community.workout": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Workout"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Buổi tập"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Entrenamiento"
+     }
+    }
+   }
+  },
+  "community.minutes %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "~%@ min"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "~%@ phút"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "~%@ min"
+     }
+    }
+   }
+  },
+  "community.followersonly": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Followers only"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chỉ người theo dõi"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Solo seguidores"
+     }
+    }
+   }
+  },
+  "community.verified": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Official account"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tài khoản chính thức"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cuenta oficial"
+     }
+    }
+   }
+  },
+  "community.like": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Like"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Thích"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Me gusta"
+     }
+    }
+   }
+  },
+  "community.comment": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Comment"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bình luận"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Comentar"
+     }
+    }
+   }
+  },
+  "community.save": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Save"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Lưu"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Guardar"
+     }
+    }
+   }
+  },
+  "community.ago.now": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "just now"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "vừa xong"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "ahora mismo"
+     }
+    }
+   }
+  },
+  "community.ago.min %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lldm ago"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld phút trước"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "hace %lld min"
+     }
+    }
+   }
+  },
+  "community.ago.hour %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lldh ago"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld giờ trước"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "hace %lld h"
+     }
+    }
+   }
+  },
+  "community.ago.day %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lldd ago"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld ngày trước"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "hace %lld d"
+     }
+    }
+   }
+  },
+  "community.progress.fromto %@ %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "From %1$@ → %2$@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Từ %1$@ → %2$@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "De %1$@ → %2$@"
+     }
+    }
+   }
+  },
+  "community.progress.weight": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Weight"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cân nặng"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Peso"
+     }
+    }
+   }
+  },
+  "community.progress.waist": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Waist"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Vòng eo"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cintura"
+     }
+    }
+   }
+  },
+  "community.recipe": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Recipe"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Công thức"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Receta"
+     }
+    }
+   }
+  },
+  "community.more.loading": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Loading older posts"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đang tải bài cũ hơn"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cargando publicaciones anteriores"
+     }
+    }
+   }
+  },
+  "community.more.failed": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Couldn't load older posts"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Không tải được bài cũ hơn"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "No se pudieron cargar las publicaciones anteriores"
+     }
+    }
+   }
+  },
+  "community.feedend": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "You've reached the end"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bạn đã xem hết"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Llegaste al final"
+     }
+    }
+   }
+  },
+  "community.useful.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Useful this week"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hữu ích tuần này"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Útil esta semana"
+     }
+    }
+   }
+  },
+  "community.useful.sub": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "What others tried, saved and talked about most in the last 7 days"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Những bài người khác thử, lưu và bàn luận nhiều nhất trong 7 ngày qua"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Lo que otros más probaron, guardaron y comentaron en los últimos 7 días"
+     }
+    }
+   }
+  },
+  "community.useful.training": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Training"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Buổi tập"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Entrenamiento"
+     }
+    }
+   }
+  },
+  "community.useful.recipe": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Recipes"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Công thức"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Recetas"
+     }
+    }
+   }
+  },
+  "community.useful.progress": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Progress"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tiến trình"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Progreso"
+     }
+    }
+   }
+  },
+  "community.moreexercises %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "variations": {
+      "plural": {
+       "one": {
+        "stringUnit": {
+         "state": "translated",
+         "value": "+ %lld more exercise"
+        }
+       },
+       "other": {
+        "stringUnit": {
+         "state": "translated",
+         "value": "+ %lld more exercises"
+        }
+       }
+      }
+     }
+    },
+    "vi": {
+     "variations": {
+      "plural": {
+       "other": {
+        "stringUnit": {
+         "state": "translated",
+         "value": "+ %lld bài tập khác"
+        }
+       }
+      }
+     }
+    },
+    "es": {
+     "variations": {
+      "plural": {
+       "one": {
+        "stringUnit": {
+         "state": "translated",
+         "value": "+ %lld ejercicio más"
+        }
+       },
+       "other": {
+        "stringUnit": {
+         "state": "translated",
+         "value": "+ %lld ejercicios más"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "community.moreingredients %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "variations": {
+      "plural": {
+       "one": {
+        "stringUnit": {
+         "state": "translated",
+         "value": "+ %lld more ingredient"
+        }
+       },
+       "other": {
+        "stringUnit": {
+         "state": "translated",
+         "value": "+ %lld more ingredients"
+        }
+       }
+      }
+     }
+    },
+    "vi": {
+     "variations": {
+      "plural": {
+       "other": {
+        "stringUnit": {
+         "state": "translated",
+         "value": "+ %lld nguyên liệu khác"
+        }
+       }
+      }
+     }
+    },
+    "es": {
+     "variations": {
+      "plural": {
+       "one": {
+        "stringUnit": {
+         "state": "translated",
+         "value": "+ %lld ingrediente más"
+        }
+       },
+       "other": {
+        "stringUnit": {
+         "state": "translated",
+         "value": "+ %lld ingredientes más"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "community.progress.title %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "variations": {
+      "plural": {
+       "one": {
+        "stringUnit": {
+         "state": "translated",
+         "value": "Progress · %lld week"
+        }
+       },
+       "other": {
+        "stringUnit": {
+         "state": "translated",
+         "value": "Progress · %lld weeks"
+        }
+       }
+      }
+     }
+    },
+    "vi": {
+     "variations": {
+      "plural": {
+       "other": {
+        "stringUnit": {
+         "state": "translated",
+         "value": "Tiến trình · %lld tuần"
+        }
+       }
+      }
+     }
+    },
+    "es": {
+     "variations": {
+      "plural": {
+       "one": {
+        "stringUnit": {
+         "state": "translated",
+         "value": "Progreso · %lld semana"
+        }
+       },
+       "other": {
+        "stringUnit": {
+         "state": "translated",
+         "value": "Progreso · %lld semanas"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "community.useful.tries %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "variations": {
+      "plural": {
+       "one": {
+        "stringUnit": {
+         "state": "translated",
+         "value": "%lld person tried it"
+        }
+       },
+       "other": {
+        "stringUnit": {
+         "state": "translated",
+         "value": "%lld people tried it"
+        }
+       }
+      }
+     }
+    },
+    "vi": {
+     "variations": {
+      "plural": {
+       "other": {
+        "stringUnit": {
+         "state": "translated",
+         "value": "%lld người đã thử"
+        }
+       }
+      }
+     }
+    },
+    "es": {
+     "variations": {
+      "plural": {
+       "one": {
+        "stringUnit": {
+         "state": "translated",
+         "value": "%lld persona lo probó"
+        }
+       },
+       "other": {
+        "stringUnit": {
+         "state": "translated",
+         "value": "%lld personas lo probaron"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "community.useful.saves %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "variations": {
+      "plural": {
+       "one": {
+        "stringUnit": {
+         "state": "translated",
+         "value": "%lld save"
+        }
+       },
+       "other": {
+        "stringUnit": {
+         "state": "translated",
+         "value": "%lld saves"
+        }
+       }
+      }
+     }
+    },
+    "vi": {
+     "variations": {
+      "plural": {
+       "other": {
+        "stringUnit": {
+         "state": "translated",
+         "value": "%lld lượt lưu"
+        }
+       }
+      }
+     }
+    },
+    "es": {
+     "variations": {
+      "plural": {
+       "one": {
+        "stringUnit": {
+         "state": "translated",
+         "value": "%lld guardado"
+        }
+       },
+       "other": {
+        "stringUnit": {
+         "state": "translated",
+         "value": "%lld guardados"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "community.useful.comments %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "variations": {
+      "plural": {
+       "one": {
+        "stringUnit": {
+         "state": "translated",
+         "value": "%lld comment"
+        }
+       },
+       "other": {
+        "stringUnit": {
+         "state": "translated",
+         "value": "%lld comments"
+        }
+       }
+      }
+     }
+    },
+    "vi": {
+     "variations": {
+      "plural": {
+       "other": {
+        "stringUnit": {
+         "state": "translated",
+         "value": "%lld bình luận"
+        }
+       }
+      }
+     }
+    },
+    "es": {
+     "variations": {
+      "plural": {
+       "one": {
+        "stringUnit": {
+         "state": "translated",
+         "value": "%lld comentario"
+        }
+       },
+       "other": {
+        "stringUnit": {
+         "state": "translated",
+         "value": "%lld comentarios"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "community.useful.likes %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "variations": {
+      "plural": {
+       "one": {
+        "stringUnit": {
+         "state": "translated",
+         "value": "%lld like"
+        }
+       },
+       "other": {
+        "stringUnit": {
+         "state": "translated",
+         "value": "%lld likes"
+        }
+       }
+      }
+     }
+    },
+    "vi": {
+     "variations": {
+      "plural": {
+       "other": {
+        "stringUnit": {
+         "state": "translated",
+         "value": "%lld lượt thích"
+        }
+       }
+      }
+     }
+    },
+    "es": {
+     "variations": {
+      "plural": {
+       "other": {
+        "stringUnit": {
+         "state": "translated",
+         "value": "%lld me gusta"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
   "ex.title": {
    "extractionState": "manual",
    "localizations": {

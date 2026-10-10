@@ -34,7 +34,8 @@ struct RootTabView: View {
       }
       .accessibilityHint(Text(String(localized: "tab.workouts.hint")))
       Tab("tab.community", systemImage: "person.2", value: AppTab.community) {
-        PlaceholderScreen(title: "tab.community", systemImage: "person.2")
+        // Lát đầu của Cộng đồng (#527): feed chỉ đọc.
+        CommunityTab()
       }
       .accessibilityHint(Text(String(localized: "tab.community.hint")))
       Tab("tab.assistant", systemImage: "heart.text.square", value: AppTab.assistant, role: .search) {
@@ -91,26 +92,3 @@ struct RootTabView: View {
     }
   }
 #endif
-
-/// Chỗ giữ màn cho tới khi slice của nó tới (docs/MIGRATION_STATUS.md).
-/// Có NavigationStack thật để tiêu đề lớn, cuộn và chuyển cảnh đã đúng kiểu
-/// iOS ngay từ đầu — slice sau chỉ thay phần thân.
-private struct PlaceholderScreen: View {
-  let title: LocalizedStringKey
-  let systemImage: String
-
-  var body: some View {
-    NavigationStack {
-      ScrollView {
-        ContentUnavailableView {
-          Label(title, systemImage: systemImage)
-        } description: {
-          Text("placeholder.building")
-        }
-        .padding(.top, 80)
-      }
-      .navigationTitle(title)
-    }
-  }
-}
-
