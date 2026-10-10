@@ -1,0 +1,496 @@
+{
+ "pattern": "/^[a-z0-9_.]{3,24}$/",
+ "handle": [
+  {
+   "raw": "",
+   "h": "",
+   "valid": false,
+   "bad": false
+  },
+  {
+   "raw": " ",
+   "h": "",
+   "valid": false,
+   "bad": false
+  },
+  {
+   "raw": "ab",
+   "h": "ab",
+   "valid": false,
+   "bad": true
+  },
+  {
+   "raw": "abc",
+   "h": "abc",
+   "valid": true,
+   "bad": false
+  },
+  {
+   "raw": "ABC",
+   "h": "abc",
+   "valid": true,
+   "bad": false
+  },
+  {
+   "raw": " abc ",
+   "h": "abc",
+   "valid": true,
+   "bad": false
+  },
+  {
+   "raw": "a.b_c",
+   "h": "a.b_c",
+   "valid": true,
+   "bad": false
+  },
+  {
+   "raw": "a-b",
+   "h": "a-b",
+   "valid": false,
+   "bad": true
+  },
+  {
+   "raw": "a b",
+   "h": "a b",
+   "valid": false,
+   "bad": true
+  },
+  {
+   "raw": "kiet.1206",
+   "h": "kiet.1206",
+   "valid": true,
+   "bad": false
+  },
+  {
+   "raw": "xxxxxxxxxxxxxxxxxxxxxxxx",
+   "h": "xxxxxxxxxxxxxxxxxxxxxxxx",
+   "valid": true,
+   "bad": false
+  },
+  {
+   "raw": "xxxxxxxxxxxxxxxxxxxxxxxxx",
+   "h": "xxxxxxxxxxxxxxxxxxxxxxxxx",
+   "valid": false,
+   "bad": true
+  },
+  {
+   "raw": "İstanbul",
+   "h": "i̇stanbul",
+   "valid": false,
+   "bad": true
+  },
+  {
+   "raw": "straße",
+   "h": "straße",
+   "valid": false,
+   "bad": true
+  },
+  {
+   "raw": "café",
+   "h": "café",
+   "valid": false,
+   "bad": true
+  },
+  {
+   "raw": "ab ",
+   "h": "ab",
+   "valid": false,
+   "bad": true
+  },
+  {
+   "raw": " abc",
+   "h": "abc",
+   "valid": true,
+   "bad": false
+  },
+  {
+   "raw": "﻿abc",
+   "h": "abc",
+   "valid": true,
+   "bad": false
+  },
+  {
+   "raw": "abc ",
+   "h": "abc",
+   "valid": true,
+   "bad": false
+  },
+  {
+   "raw": "abc\n",
+   "h": "abc",
+   "valid": true,
+   "bad": false
+  },
+  {
+   "raw": "\tabc",
+   "h": "abc",
+   "valid": true,
+   "bad": false
+  },
+  {
+   "raw": "a..b",
+   "h": "a..b",
+   "valid": true,
+   "bad": false
+  },
+  {
+   "raw": "___",
+   "h": "___",
+   "valid": true,
+   "bad": false
+  },
+  {
+   "raw": "...",
+   "h": "...",
+   "valid": true,
+   "bad": false
+  },
+  {
+   "raw": "123",
+   "h": "123",
+   "valid": true,
+   "bad": false
+  },
+  {
+   "raw": "ÀBC",
+   "h": "àbc",
+   "valid": false,
+   "bad": true
+  },
+  {
+   "raw": "abc😀",
+   "h": "abc😀",
+   "valid": false,
+   "bad": true
+  },
+  {
+   "raw": "Kiệt",
+   "h": "kiệt",
+   "valid": false,
+   "bad": true
+  },
+  {
+   "raw": "ABCdef_09.",
+   "h": "abcdef_09.",
+   "valid": true,
+   "bad": false
+  },
+  {
+   "raw": " A B ",
+   "h": "a b",
+   "valid": false,
+   "bad": true
+  },
+  {
+   "raw": "ab　",
+   "h": "ab",
+   "valid": false,
+   "bad": true
+  },
+  {
+   "raw": "​abc",
+   "h": "​abc",
+   "valid": false,
+   "bad": true
+  }
+ ],
+ "save": [
+  {
+   "handle": "abc",
+   "name": "",
+   "canSave": false
+  },
+  {
+   "handle": "abc",
+   "name": " ",
+   "canSave": false
+  },
+  {
+   "handle": "abc",
+   "name": "Kiệt",
+   "canSave": true
+  },
+  {
+   "handle": "abc",
+   "name": "  Kiệt  ",
+   "canSave": true
+  },
+  {
+   "handle": "abc",
+   "name": " ",
+   "canSave": false
+  },
+  {
+   "handle": "abc",
+   "name": "　",
+   "canSave": false
+  },
+  {
+   "handle": "abc",
+   "name": "﻿",
+   "canSave": false
+  },
+  {
+   "handle": "abc",
+   "name": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+   "canSave": true
+  },
+  {
+   "handle": "abc",
+   "name": "​",
+   "canSave": true
+  },
+  {
+   "handle": " AB.c ",
+   "name": "",
+   "canSave": false
+  },
+  {
+   "handle": " AB.c ",
+   "name": " ",
+   "canSave": false
+  },
+  {
+   "handle": " AB.c ",
+   "name": "Kiệt",
+   "canSave": true
+  },
+  {
+   "handle": " AB.c ",
+   "name": "  Kiệt  ",
+   "canSave": true
+  },
+  {
+   "handle": " AB.c ",
+   "name": " ",
+   "canSave": false
+  },
+  {
+   "handle": " AB.c ",
+   "name": "　",
+   "canSave": false
+  },
+  {
+   "handle": " AB.c ",
+   "name": "﻿",
+   "canSave": false
+  },
+  {
+   "handle": " AB.c ",
+   "name": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+   "canSave": true
+  },
+  {
+   "handle": " AB.c ",
+   "name": "​",
+   "canSave": true
+  },
+  {
+   "handle": "ab",
+   "name": "",
+   "canSave": false
+  },
+  {
+   "handle": "ab",
+   "name": " ",
+   "canSave": false
+  },
+  {
+   "handle": "ab",
+   "name": "Kiệt",
+   "canSave": false
+  },
+  {
+   "handle": "ab",
+   "name": "  Kiệt  ",
+   "canSave": false
+  },
+  {
+   "handle": "ab",
+   "name": " ",
+   "canSave": false
+  },
+  {
+   "handle": "ab",
+   "name": "　",
+   "canSave": false
+  },
+  {
+   "handle": "ab",
+   "name": "﻿",
+   "canSave": false
+  },
+  {
+   "handle": "ab",
+   "name": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+   "canSave": false
+  },
+  {
+   "handle": "ab",
+   "name": "​",
+   "canSave": false
+  }
+ ],
+ "rows": [
+  {
+   "handle": " Kiet.Dev ",
+   "name": "",
+   "bio": "",
+   "row": {
+    "handle": "kiet.dev",
+    "display_name": "",
+    "bio": ""
+   }
+  },
+  {
+   "handle": " Kiet.Dev ",
+   "name": "",
+   "bio": "  hi  ",
+   "row": {
+    "handle": "kiet.dev",
+    "display_name": "",
+    "bio": "hi"
+   }
+  },
+  {
+   "handle": " Kiet.Dev ",
+   "name": "",
+   "bio": "\n\nline\n",
+   "row": {
+    "handle": "kiet.dev",
+    "display_name": "",
+    "bio": "line"
+   }
+  },
+  {
+   "handle": " Kiet.Dev ",
+   "name": "",
+   "bio": " bio ",
+   "row": {
+    "handle": "kiet.dev",
+    "display_name": "",
+    "bio": "bio"
+   }
+  },
+  {
+   "handle": " Kiet.Dev ",
+   "name": " ",
+   "bio": "",
+   "row": {
+    "handle": "kiet.dev",
+    "display_name": "",
+    "bio": ""
+   }
+  },
+  {
+   "handle": " Kiet.Dev ",
+   "name": " ",
+   "bio": "  hi  ",
+   "row": {
+    "handle": "kiet.dev",
+    "display_name": "",
+    "bio": "hi"
+   }
+  },
+  {
+   "handle": " Kiet.Dev ",
+   "name": " ",
+   "bio": "\n\nline\n",
+   "row": {
+    "handle": "kiet.dev",
+    "display_name": "",
+    "bio": "line"
+   }
+  },
+  {
+   "handle": " Kiet.Dev ",
+   "name": " ",
+   "bio": " bio ",
+   "row": {
+    "handle": "kiet.dev",
+    "display_name": "",
+    "bio": "bio"
+   }
+  },
+  {
+   "handle": " Kiet.Dev ",
+   "name": "Kiệt",
+   "bio": "",
+   "row": {
+    "handle": "kiet.dev",
+    "display_name": "Kiệt",
+    "bio": ""
+   }
+  },
+  {
+   "handle": " Kiet.Dev ",
+   "name": "Kiệt",
+   "bio": "  hi  ",
+   "row": {
+    "handle": "kiet.dev",
+    "display_name": "Kiệt",
+    "bio": "hi"
+   }
+  },
+  {
+   "handle": " Kiet.Dev ",
+   "name": "Kiệt",
+   "bio": "\n\nline\n",
+   "row": {
+    "handle": "kiet.dev",
+    "display_name": "Kiệt",
+    "bio": "line"
+   }
+  },
+  {
+   "handle": " Kiet.Dev ",
+   "name": "Kiệt",
+   "bio": " bio ",
+   "row": {
+    "handle": "kiet.dev",
+    "display_name": "Kiệt",
+    "bio": "bio"
+   }
+  },
+  {
+   "handle": " Kiet.Dev ",
+   "name": "  Kiệt  ",
+   "bio": "",
+   "row": {
+    "handle": "kiet.dev",
+    "display_name": "Kiệt",
+    "bio": ""
+   }
+  },
+  {
+   "handle": " Kiet.Dev ",
+   "name": "  Kiệt  ",
+   "bio": "  hi  ",
+   "row": {
+    "handle": "kiet.dev",
+    "display_name": "Kiệt",
+    "bio": "hi"
+   }
+  },
+  {
+   "handle": " Kiet.Dev ",
+   "name": "  Kiệt  ",
+   "bio": "\n\nline\n",
+   "row": {
+    "handle": "kiet.dev",
+    "display_name": "Kiệt",
+    "bio": "line"
+   }
+  },
+  {
+   "handle": " Kiet.Dev ",
+   "name": "  Kiệt  ",
+   "bio": " bio ",
+   "row": {
+    "handle": "kiet.dev",
+    "display_name": "Kiệt",
+    "bio": "bio"
+   }
+  }
+ ]
+}

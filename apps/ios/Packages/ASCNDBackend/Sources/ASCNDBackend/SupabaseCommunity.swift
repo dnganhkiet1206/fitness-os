@@ -7,7 +7,7 @@ import Supabase
 /// server lọc (`20260927120000_community_foundation.sql`,
 /// `20261007220000_community_report_trust.sql`); thích / lưu chỉ đọc hàng của
 /// mình.
-public struct SupabaseCommunity: CommunityFeedRemote {
+public struct SupabaseCommunity: CommunityFeedRemote, CommunityProfileRemote {
   private let client: SupabaseClient
 
   public init(backend: Backend) {
@@ -111,6 +111,32 @@ public struct SupabaseCommunity: CommunityFeedRemote {
       .limit(1)
       .execute().value
     return rows.first
+  }
+
+  /// `useUnlockStats`: `count: 'exact', head: true` trên buổi tập và món ăn.
+  public func unlockStats(me: String) async throws -> CommunityMascots.Stats {
+    async let w = client.from("workout_sessions").select("id", head: true, count: .exact).eq("user_id", value: me)
+      .execute()
+    async let m = client.from("meal_entries").select("id", head: true, count: .exact).eq("user_id", value: me)
+      .execute()
+    let (ws, ms) = try await (w, m)
+    return CommunityMascots.Stats(workouts: ws.count ?? 0, meals: ms.count ?? 0)
+  }
+
+  /// `useSaveCommunityProfile`: upsert theo `user_id`; 23505 = tên đã có người.
+  public func saveProfile(_ row: JSONValue) async throws {
+    do {
+      _ = try await client.from("community_profiles")
+        .upsert(row, onConflict: "user_id")
+        .select("user_id")
+        .single()
+        .execute()
+    } catch {
+      if NetworkFailure.isOffline(error) { throw CommunityProfileFailure.offline }
+      let code = (error as? PostgrestError)?.code
+      if code == "23505" { throw CommunityProfileFailure.handleTaken }
+      throw CommunityProfileFailure.server(code: code)
+    }
   }
 
   public func artURL(path: String) -> URL? {

@@ -511,6 +511,13 @@ final class AppServices {
     return CommunityFeedBook(userId: userId, remote: SupabaseCommunity(backend: backend))
   }
 
+  /// Hồ sơ cộng đồng của mình (#527, lát 2): `community_profiles` (upsert theo
+  /// `user_id`) + số buổi tập / bữa ăn để mở khoá linh vật.
+  func makeCommunityProfile(userId: String) -> CommunityProfileBook? {
+    guard let backend else { return nil }
+    return CommunityProfileBook(userId: userId, remote: SupabaseCommunity(backend: backend))
+  }
+
   func didBecomeActive() {
     // Quay lại tiền cảnh: đo lại đường mạng, dò lại internet ngay.
     network.resume(Self.netPath(monitor.currentPath))

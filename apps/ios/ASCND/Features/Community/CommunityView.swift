@@ -14,9 +14,9 @@ import SwiftUI
 /// được; thẻ Workout / Tiến trình / Công thức như RN, ba dòng đầu.
 ///
 /// Chưa có (các lát sau, #527): mở bài / bình luận, thích / lưu / menu, Thử
-/// workout, Thêm vào bữa, soạn bài, hồ sơ, tìm kiếm, hộp thư, thử thách nổi bật.
-/// Hàng thích · bình luận · lưu là số đếm chỉ đọc. Ảnh đại diện là chữ cái đầu
-/// (chưa có hình linh vật native).
+/// workout, Thêm vào bữa, soạn bài, tìm kiếm, hộp thư, thử thách nổi bật.
+/// Hàng thích · bình luận · lưu là số đếm chỉ đọc. Ảnh đại diện là emoji của
+/// linh vật (chưa có hình linh vật native).
 struct CommunityTab: View {
   @Environment(WorkoutFlow.self) private var flow
   @Environment(AppServices.self) private var services
@@ -72,8 +72,27 @@ struct CommunityFeedView: View {
       .padding(DS.Spacing.md)
     }
     .background(DS.Color.background.swiftUI)
+    .toolbar {
+      // Lát 2: sửa hồ sơ của mình (RN: avatar ở đầu trang → trang người dùng
+      // của mình → Sửa hồ sơ; trang người dùng đến ở lát 5).
+      if book.hasProfile == true {
+        ToolbarItem(placement: .topBarTrailing) {
+          NavigationLink {
+            profileScreen
+          } label: {
+            Image(systemName: "person.crop.circle")
+          }
+          .accessibilityLabel(Text("community.profile.edit"))
+        }
+      }
+    }
     .task { if book.phase == .loading { await book.load() } }
     .refreshable { await book.load() }
+  }
+
+  /// Lưu hồ sơ xong: đọc lại feed (nhãn mời / tên tác giả trên bài của mình).
+  private var profileScreen: some View {
+    CommunityProfileScreen(userId: book.userId) { Task { await book.load() } }
   }
 
   /// Hạn chế đăng → nhãn; chưa có hồ sơ → lời mời; chưa biết → im.
@@ -104,6 +123,15 @@ struct CommunityFeedView: View {
           Text("community.setup.hint")
             .font(DS.TextStyle.body)
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          NavigationLink {
+            profileScreen
+          } label: {
+            Text("community.setup.cta")
+              .font(DS.TextStyle.headline)
+              .frame(maxWidth: .infinity, minHeight: 44)
+          }
+          .buttonStyle(.borderedProminent)
+          .buttonBorderShape(.capsule)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
       }
@@ -210,7 +238,7 @@ struct PostHeaderView: View {
 
   var body: some View {
     HStack(spacing: DS.Spacing.sm) {
-      InitialsAvatar(name: post.author?.displayName ?? "", size: 40)
+      MascotAvatar(mascotId: post.author?.mascotId, size: 40)
       VStack(alignment: .leading, spacing: 2) {
         HStack(spacing: 4) {
           Text(verbatim: post.author?.displayName ?? "—")
@@ -248,21 +276,6 @@ struct PostHeaderView: View {
     case .date(let d): d.formatted(Date.FormatStyle().day().month(.abbreviated).locale(.app))
     case .invalid: ""
     }
-  }
-}
-
-/// Chữ cái đầu của tên trong vòng tròn (RN: mặt linh vật đã chọn).
-struct InitialsAvatar: View {
-  let name: String
-  let size: CGFloat
-
-  var body: some View {
-    Text(verbatim: name.trimmingCharacters(in: .whitespaces).first.map { String($0).uppercased() } ?? "?")
-      .font(.system(size: size * 0.42, weight: .semibold))
-      .foregroundStyle(DS.Color.foreground.swiftUI)
-      .frame(width: size, height: size)
-      .background(DS.Color.secondary.swiftUI, in: Circle())
-      .accessibilityHidden(true)
   }
 }
 
