@@ -4,10 +4,11 @@ import SwiftUI
 
 /// Tab Dinh dưỡng (#527 Phase 3) — `(tabs)/nutrition.tsx`. Trên cùng là thẻ
 /// calo + macro hôm nay (`NutritionTodayCard`, như `NutritionCard` của RN),
-/// rồi thẻ Nước uống (`WaterWidget`), Thực phẩm bổ sung, các lối ghi bữa / nhật
-/// ký / thực phẩm / kế hoạch / xu hướng. Phần còn lại (hai phân đoạn Hôm nay /
-/// Kế hoạch ăn, danh sách bữa hôm nay, tìm món, gợi ý AI) chưa port — dòng
-/// "đang dựng" nói thật điều đó thay vì một nút không làm gì.
+/// rồi thẻ Nước uống (`WaterWidget`), Thực phẩm bổ sung, nút ghi bữa, "Bữa ăn
+/// hôm nay" (cùng thẻ bữa với màn Nhật ký — `DayMealsSection`) với lối "Ngày
+/// khác", rồi thực phẩm / kế hoạch / xu hướng. Phần còn lại (hai phân đoạn Hôm
+/// nay / Kế hoạch ăn, tìm món, gợi ý AI) chưa port — dòng "đang dựng" nói thật
+/// điều đó thay vì một nút không làm gì.
 ///
 /// Sổ thuộc PHIÊN (`NutritionBooks`, dựng và đóng ở `SignedInScope`): thẻ, màn
 /// và kế hoạch nhắc nhở cùng đọc một bản.
@@ -17,6 +18,8 @@ struct NutritionTab: View {
   @Environment(AppServices.self) private var services: AppServices?
   /// Số hôm nay của thẻ calo; dựng khi biết người dùng, đọc lại mỗi lần tab hiện.
   @State private var today: NutritionTodayBook?
+  /// Bữa của hôm nay (`DayMeals` của RN) — cùng sổ / cùng thẻ với màn Nhật ký.
+  @State private var meals: MealDiaryBook?
 
   var body: some View {
     NavigationStack {
@@ -27,11 +30,15 @@ struct NutritionTab: View {
           // Cạnh Nước, trên nhật ký (`(tabs)/nutrition.tsx`: "supplements belong
           // beside water") — hàng mang sẵn "2/4 hôm nay".
           if let supplements = books?.supplements { SupplementsRow(book: supplements) }
-          // Lối sang nhật ký của một ngày bất kỳ (`nutrition.tsx` → `/diary`).
           if let userId = books?.water?.userId ?? books?.supplements?.userId {
             // Lối ghi bữa (`LogMealFab` ⊕ của RN): hôm nay, "Bữa trưa".
-            LogMealButton(userId: userId) { Task { await today?.load() } }
-            DiaryRow(userId: userId)
+            LogMealButton(userId: userId) { Task { await reload() } }
+            // "Bữa ăn hôm nay" + "Ngày khác" trên cùng hàng tiêu đề (RN): tab
+            // này là HÔM NAY, ngày khác là màn riêng (`/diary`).
+            if let meals {
+              mealsHeader(userId: userId)
+              DayMealsSection(book: meals) { Task { await today?.load() } }
+            }
             FoodsRow(userId: userId)
             MealPlansRow(userId: userId)
             InsightsRow(userId: userId)
@@ -47,11 +54,11 @@ struct NutritionTab: View {
       }
       .refreshable {
         await books?.refresh()
-        await today?.load()
+        await reload()
       }
       // Gốc của stack: chạy cả khi quay lại từ Nhật ký / Ghi bữa, không chỉ khi
       // đổi tab — số của hôm nay đổi ở những màn ấy.
-      .onAppear { Task { await today?.load() } }
+      .onAppear { Task { await reload() } }
       .navigationTitle(Text("tab.nutrition"))
       .navigationDestination(for: WaterRoute.self) { _ in
         if let water = books?.water { WaterView(book: water) }
@@ -78,12 +85,44 @@ struct NutritionTab: View {
       if today?.userId != userId {
         today?.close()
         today = services?.makeNutritionToday(userId: userId)
+        meals?.close()
+        meals = services?.makeMealDiary(userId: userId)
       }
     }
-    .onChange(of: today?.userId) { Task { await today?.load() } }
+    .onChange(of: today?.userId) { Task { await reload() } }
   }
 
   private var userId: String? { books?.water?.userId ?? books?.supplements?.userId }
+
+  /// Thẻ calo và các bữa của hôm nay cùng đọc lại.
+  private func reload() async {
+    async let card: Void = loadToday()
+    await meals?.load()
+    await card
+  }
+
+  private func loadToday() async { await today?.load() }
+
+  private func mealsHeader(userId: String) -> some View {
+    HStack(alignment: .firstTextBaseline) {
+      Text(String(localized: "nc.meals"))
+        .font(DS.TextStyle.headline)
+        .accessibilityAddTraits(.isHeader)
+      Spacer()
+      NavigationLink(value: DiaryRoute(userId: userId)) {
+        HStack(spacing: 2) {
+          Text(String(localized: "nc.otherDays"))
+          Image(systemName: "chevron.right").font(.caption).accessibilityHidden(true)
+        }
+        .font(DS.TextStyle.footnote.weight(.semibold))
+        .foregroundStyle(DS.Color.primary.swiftUI)
+        .frame(minHeight: 44)
+        .contentShape(Rectangle())
+      }
+      .buttonStyle(.plain)
+    }
+    .padding(.top, DS.Spacing.sm)
+  }
 }
 
 /// Đích điều hướng của thẻ → màn Nước.
@@ -95,31 +134,6 @@ struct SupplementsRoute: Hashable {}
 /// Đích điều hướng của hàng → màn Nhật ký bữa ăn (của đúng người đang đăng nhập).
 struct DiaryRoute: Hashable {
   let userId: String
-}
-
-/// Hàng "Nhật ký bữa ăn" — mở nhật ký ở hôm nay; lùi ngày ở trong màn.
-struct DiaryRow: View {
-  let userId: String
-
-  var body: some View {
-    NavigationLink(value: DiaryRoute(userId: userId)) {
-      HStack {
-        Label(String(localized: "diary.title"), systemImage: "book.closed")
-          .font(DS.TextStyle.headline)
-          .foregroundStyle(DS.Color.foreground.swiftUI)
-          .lineLimit(1)
-        Spacer()
-        Image(systemName: "chevron.right")
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-          .accessibilityHidden(true)
-      }
-      .padding(DS.Spacing.md)
-      .frame(minHeight: 44)
-      .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.md))
-      .contentShape(Rectangle())
-    }
-    .buttonStyle(.plain)
-  }
 }
 
 /// Đích điều hướng của hàng → màn Thực phẩm (của đúng người đang đăng nhập).

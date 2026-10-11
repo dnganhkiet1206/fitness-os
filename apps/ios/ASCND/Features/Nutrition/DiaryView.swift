@@ -28,14 +28,6 @@ import SwiftUI
 /// - xoá cả bữa là nút trong thẻ đã mở + hành động VoiceOver, không phải vuốt.
 struct DiaryView: View {
   let book: MealDiaryBook
-  @Environment(AppServices.self) private var services
-  @State private var editing: MealDiary.Item?
-  @State private var pendingItem: MealDiary.Item?
-  @State private var pendingGroup: MealDiary.Group?
-  @State private var undo: [DeletedMealItem] = []
-  @State private var notice: String?
-  @State private var error: String?
-  @State private var logging: LogMealRequest?
 
   var body: some View {
     ScrollView {
@@ -55,8 +47,7 @@ struct DiaryView: View {
           .buttonStyle(.plain)
           .sensoryFeedback(.selection, trigger: book.date)
         }
-        content
-        if let notice { undoBar(notice) }
+        DayMealsSection(book: book)
       }
       .padding(DS.Spacing.md)
     }
@@ -64,52 +55,6 @@ struct DiaryView: View {
     .navigationBarTitleDisplayMode(.inline)
     .refreshable { await book.load() }
     .task(id: book.date) { await book.load() }
-    // Bữa vừa lưu đi qua hàng đợi: hàng đợi vơi đi thì đọc lại ngày.
-    .onChange(of: services.sync.pendingCount) { old, new in
-      if new < old { Task { await book.load() } }
-    }
-    .sheet(item: $logging) { req in
-      LogMealView(userId: book.userId, date: book.date, mealType: req.mealType) {
-        Task { await book.load() }
-      }
-    }
-    .onChange(of: book.date) { _, _ in clearNotice() }
-    .sheet(item: $editing) { item in
-      ServingsSheet(item: item, busy: book.busy) { servings in
-        Task { await save(item, servings) }
-      }
-      .presentationDetents([.medium])
-    }
-    .confirmationDialog(
-      String(localized: "diary.item.delete"),
-      isPresented: Binding(get: { pendingItem != nil }, set: { if !$0 { pendingItem = nil } }),
-      titleVisibility: .visible,
-      presenting: pendingItem
-    ) { item in
-      Button(String(localized: "diary.delete"), role: .destructive) { Task { await delete([item]) } }
-      Button(String(localized: "common.cancel"), role: .cancel) {}
-    } message: { item in
-      Text(book.isToday
-        ? String(localized: "diary.item.delete.today \(item.foodName)")
-        : String(localized: "diary.item.delete.day \(item.foodName)"))
-    }
-    .confirmationDialog(
-      pendingGroup.map { String(localized: "diary.meal.delete \(Self.mealName($0.type))") } ?? "",
-      isPresented: Binding(get: { pendingGroup != nil }, set: { if !$0 { pendingGroup = nil } }),
-      titleVisibility: .visible,
-      presenting: pendingGroup
-    ) { group in
-      Button(String(localized: "diary.delete"), role: .destructive) { Task { await delete(group.items) } }
-      Button(String(localized: "common.cancel"), role: .cancel) {}
-    } message: { group in
-      Text(Self.deleteGroupMessage(count: group.items.count, meal: Self.mealName(group.type), today: book.isToday))
-    }
-    .alert(
-      error ?? "",
-      isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })
-    ) {
-      Button(String(localized: "common.cancel"), role: .cancel) {}
-    }
   }
 
   // MARK: - Ngày
@@ -152,6 +97,130 @@ struct DiaryView: View {
     .sensoryFeedback(.selection, trigger: book.date)
   }
 
+  // MARK: - Chữ
+
+  /// "Hôm nay" / "Hôm qua" gọi bằng tên; xa hơn thì đọc ngày ra.
+  static func dayLabel(_ d: LocalDate, today: LocalDate) -> String {
+    if d == today { return String(localized: "diary.today") }
+    if d == today.adding(days: -1) { return String(localized: "diary.yesterday") }
+    return d.calendarDate.formatted(Date.FormatStyle().weekday(.abbreviated).day().month(.abbreviated).locale(.app))
+  }
+
+  /// Dòng ngày đầy đủ khi dòng trên là một cái TÊN.
+  static func daySub(_ d: LocalDate, today: LocalDate) -> String? {
+    guard d == today || d == today.adding(days: -1) else { return nil }
+    return d.calendarDate.formatted(Date.FormatStyle().day().month(.abbreviated).locale(.app))
+  }
+
+  /// Câu hỏi lại khi xoá cả bữa — số 1 là khoá riêng (catalog không dùng plural).
+  static func deleteGroupMessage(count: Int, meal: String, today: Bool) -> String {
+    switch (count == 1, today) {
+    case (true, true): String(localized: "diary.meal.delete.today.one \(meal)")
+    case (true, false): String(localized: "diary.meal.delete.day.one \(meal)")
+    case (false, true): String(localized: "diary.meal.delete.today \(count) \(meal)")
+    case (false, false): String(localized: "diary.meal.delete.day \(count) \(meal)")
+    }
+  }
+
+  static func mealName(_ type: String) -> String {
+    switch type {
+    case "breakfast": String(localized: "diary.meal.breakfast")
+    case "lunch": String(localized: "diary.meal.lunch")
+    case "dinner": String(localized: "diary.meal.dinner")
+    case "snack": String(localized: "diary.meal.snack")
+    case "preworkout": String(localized: "diary.meal.preworkout")
+    case "postworkout": String(localized: "diary.meal.postworkout")
+    default: type
+    }
+  }
+
+  static func whole(_ x: Double) -> String {
+    Int((x + 0.5).rounded(.down)).formatted(.number.locale(.app))
+  }
+
+  static func macros(_ p: Double, _ c: Double, _ f: Double) -> String {
+    "P\(whole(p)) · C\(whole(c)) · F\(whole(f))"
+  }
+}
+
+/// Các thẻ bữa của MỘT ngày (`DayMeals` của RN) — dùng ở màn Nhật ký và trên
+/// tab Dinh dưỡng (ngày hôm nay). Giữ trạng thái sửa / xoá / hoàn tác / ghi
+/// thêm của chính nó; ngày nào là việc của sổ.
+struct DayMealsSection: View {
+  let book: MealDiaryBook
+  /// Sau mỗi lần ghi / sửa / xoá thành công — để thẻ khác trên cùng màn
+  /// (thẻ calo của tab) đọc lại.
+  var onChanged: () -> Void = {}
+  @Environment(AppServices.self) private var services
+  @State private var editing: MealDiary.Item?
+  @State private var pendingItem: MealDiary.Item?
+  @State private var pendingGroup: MealDiary.Group?
+  @State private var undo: [DeletedMealItem] = []
+  @State private var notice: String?
+  @State private var error: String?
+  @State private var logging: LogMealRequest?
+
+  var body: some View {
+    VStack(spacing: DS.Spacing.md) {
+      content
+      if let notice { undoBar(notice) }
+    }
+    // Bữa vừa lưu đi qua hàng đợi: hàng đợi vơi đi thì đọc lại ngày.
+    .onChange(of: services.sync.pendingCount) { old, new in
+      if new < old {
+        Task {
+          await book.load()
+          onChanged()
+        }
+      }
+    }
+    .sheet(item: $logging) { req in
+      LogMealView(userId: book.userId, date: book.date, mealType: req.mealType) {
+        Task {
+          await book.load()
+          onChanged()
+        }
+      }
+    }
+    .onChange(of: book.date) { _, _ in clearNotice() }
+    .sheet(item: $editing) { item in
+      ServingsSheet(item: item, busy: book.busy) { servings in
+        Task { await save(item, servings) }
+      }
+      .presentationDetents([.medium])
+    }
+    .confirmationDialog(
+      String(localized: "diary.item.delete"),
+      isPresented: Binding(get: { pendingItem != nil }, set: { if !$0 { pendingItem = nil } }),
+      titleVisibility: .visible,
+      presenting: pendingItem
+    ) { item in
+      Button(String(localized: "diary.delete"), role: .destructive) { Task { await delete([item]) } }
+      Button(String(localized: "common.cancel"), role: .cancel) {}
+    } message: { item in
+      Text(book.isToday
+        ? String(localized: "diary.item.delete.today \(item.foodName)")
+        : String(localized: "diary.item.delete.day \(item.foodName)"))
+    }
+    .confirmationDialog(
+      pendingGroup.map { String(localized: "diary.meal.delete \(DiaryView.mealName($0.type))") } ?? "",
+      isPresented: Binding(get: { pendingGroup != nil }, set: { if !$0 { pendingGroup = nil } }),
+      titleVisibility: .visible,
+      presenting: pendingGroup
+    ) { group in
+      Button(String(localized: "diary.delete"), role: .destructive) { Task { await delete(group.items) } }
+      Button(String(localized: "common.cancel"), role: .cancel) {}
+    } message: { group in
+      Text(DiaryView.deleteGroupMessage(count: group.items.count, meal: DiaryView.mealName(group.type), today: book.isToday))
+    }
+    .alert(
+      error ?? "",
+      isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })
+    ) {
+      Button(String(localized: "common.cancel"), role: .cancel) {}
+    }
+  }
+
   // MARK: - Nội dung
 
   @ViewBuilder private var content: some View {
@@ -171,8 +240,8 @@ struct DiaryView: View {
               .font(DS.TextStyle.caption)
               .foregroundStyle(DS.Color.mutedForeground.swiftUI)
             Spacer()
-            Text(verbatim: "\(Self.whole(total.kcal)) kcal  "
-              + Self.macros(total.protein, total.carbs, total.fat))
+            Text(verbatim: "\(DiaryView.whole(total.kcal)) kcal  "
+              + DiaryView.macros(total.protein, total.carbs, total.fat))
               .font(DS.TextStyle.headline.monospacedDigit())
           }
           .accessibilityElement(children: .combine)
@@ -238,6 +307,7 @@ struct DiaryView: View {
     if case .done(let snaps) = outcome {
       undo = snaps
       say(String(localized: "diary.deleted"))
+      onChanged()
     } else {
       report(outcome)
     }
@@ -249,6 +319,7 @@ struct DiaryView: View {
     let outcome = await book.restore(snaps, online: services.sync.online)
     if case .done = outcome {
       say(String(localized: "diary.restored"))
+      onChanged()
     } else {
       report(outcome)
     }
@@ -258,7 +329,10 @@ struct DiaryView: View {
     let outcome = await book.setServings(item, to: servings, online: services.sync.online)
     editing = nil
     if case .done = outcome {
-      if servings != item.servings { say(String(localized: "diary.updated")) }
+      if servings != item.servings {
+        say(String(localized: "diary.updated"))
+        onChanged()
+      }
     } else {
       report(outcome)
     }
@@ -286,51 +360,6 @@ struct DiaryView: View {
     }
     error = text
     AccessibilityNotification.Announcement(text).post()
-  }
-
-  // MARK: - Chữ
-
-  /// "Hôm nay" / "Hôm qua" gọi bằng tên; xa hơn thì đọc ngày ra.
-  static func dayLabel(_ d: LocalDate, today: LocalDate) -> String {
-    if d == today { return String(localized: "diary.today") }
-    if d == today.adding(days: -1) { return String(localized: "diary.yesterday") }
-    return d.calendarDate.formatted(Date.FormatStyle().weekday(.abbreviated).day().month(.abbreviated).locale(.app))
-  }
-
-  /// Dòng ngày đầy đủ khi dòng trên là một cái TÊN.
-  static func daySub(_ d: LocalDate, today: LocalDate) -> String? {
-    guard d == today || d == today.adding(days: -1) else { return nil }
-    return d.calendarDate.formatted(Date.FormatStyle().day().month(.abbreviated).locale(.app))
-  }
-
-  /// Câu hỏi lại khi xoá cả bữa — số 1 là khoá riêng (catalog không dùng plural).
-  static func deleteGroupMessage(count: Int, meal: String, today: Bool) -> String {
-    switch (count == 1, today) {
-    case (true, true): String(localized: "diary.meal.delete.today.one \(meal)")
-    case (true, false): String(localized: "diary.meal.delete.day.one \(meal)")
-    case (false, true): String(localized: "diary.meal.delete.today \(count) \(meal)")
-    case (false, false): String(localized: "diary.meal.delete.day \(count) \(meal)")
-    }
-  }
-
-  static func mealName(_ type: String) -> String {
-    switch type {
-    case "breakfast": String(localized: "diary.meal.breakfast")
-    case "lunch": String(localized: "diary.meal.lunch")
-    case "dinner": String(localized: "diary.meal.dinner")
-    case "snack": String(localized: "diary.meal.snack")
-    case "preworkout": String(localized: "diary.meal.preworkout")
-    case "postworkout": String(localized: "diary.meal.postworkout")
-    default: type
-    }
-  }
-
-  static func whole(_ x: Double) -> String {
-    Int((x + 0.5).rounded(.down)).formatted(.number.locale(.app))
-  }
-
-  static func macros(_ p: Double, _ c: Double, _ f: Double) -> String {
-    "P\(whole(p)) · C\(whole(c)) · F\(whole(f))"
   }
 }
 
