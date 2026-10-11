@@ -430,6 +430,12 @@ final class AppServices {
   }
 
   /// Dinh dưỡng 7 ngày (#527 Phase 3 · 3.6): chỉ đọc `daily_logs`.
+  /// Số dinh dưỡng hôm nay cho thẻ trên tab Dinh dưỡng (#527, `NutritionCard`).
+  func makeNutritionToday(userId: String) -> NutritionTodayBook? {
+    guard let rows else { return nil }
+    return NutritionTodayBook(userId: userId, store: rows)
+  }
+
   func makeNutritionInsights(userId: String) -> NutritionInsightsBook? {
     guard let rows else { return nil }
     return NutritionInsightsBook(userId: userId, store: rows)

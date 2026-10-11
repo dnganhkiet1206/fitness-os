@@ -2,22 +2,27 @@ import ASCNDCore
 import ASCNDDesignSystem
 import SwiftUI
 
-/// Tab Dinh dưỡng (#527 Phase 3). Lát đầu: thẻ Nước uống — như `WaterWidget`
-/// trên tab Dinh dưỡng của RN (`(tabs)/nutrition.tsx`): số hôm nay / mục tiêu,
-/// thêm nhanh, chạm để mở màn Nước. Phần còn lại của Dinh dưỡng (nhật ký bữa
-/// ăn, thực phẩm, kế hoạch) chưa port — dòng "đang dựng" nói thật điều đó
-/// thay vì một nút không làm gì.
+/// Tab Dinh dưỡng (#527 Phase 3) — `(tabs)/nutrition.tsx`. Trên cùng là thẻ
+/// calo + macro hôm nay (`NutritionTodayCard`, như `NutritionCard` của RN),
+/// rồi thẻ Nước uống (`WaterWidget`), Thực phẩm bổ sung, các lối ghi bữa / nhật
+/// ký / thực phẩm / kế hoạch / xu hướng. Phần còn lại (hai phân đoạn Hôm nay /
+/// Kế hoạch ăn, danh sách bữa hôm nay, tìm món, gợi ý AI) chưa port — dòng
+/// "đang dựng" nói thật điều đó thay vì một nút không làm gì.
 ///
 /// Sổ thuộc PHIÊN (`NutritionBooks`, dựng và đóng ở `SignedInScope`): thẻ, màn
 /// và kế hoạch nhắc nhở cùng đọc một bản.
 struct NutritionTab: View {
   /// Sổ của phiên (`SignedInScope`) — cùng sổ mà kế hoạch nhắc nhở đọc.
   @Environment(NutritionBooks.self) private var books: NutritionBooks?
+  @Environment(AppServices.self) private var services: AppServices?
+  /// Số hôm nay của thẻ calo; dựng khi biết người dùng, đọc lại mỗi lần tab hiện.
+  @State private var today: NutritionTodayBook?
 
   var body: some View {
     NavigationStack {
       ScrollView {
         VStack(spacing: DS.Spacing.md) {
+          if let today { NutritionTodayCard(book: today) }
           if let water = books?.water { WaterCard(book: water) }
           // Cạnh Nước, trên nhật ký (`(tabs)/nutrition.tsx`: "supplements belong
           // beside water") — hàng mang sẵn "2/4 hôm nay".
@@ -25,7 +30,7 @@ struct NutritionTab: View {
           // Lối sang nhật ký của một ngày bất kỳ (`nutrition.tsx` → `/diary`).
           if let userId = books?.water?.userId ?? books?.supplements?.userId {
             // Lối ghi bữa (`LogMealFab` ⊕ của RN): hôm nay, "Bữa trưa".
-            LogMealButton(userId: userId)
+            LogMealButton(userId: userId) { Task { await today?.load() } }
             DiaryRow(userId: userId)
             FoodsRow(userId: userId)
             MealPlansRow(userId: userId)
@@ -40,7 +45,13 @@ struct NutritionTab: View {
         }
         .padding(DS.Spacing.md)
       }
-      .refreshable { await books?.refresh() }
+      .refreshable {
+        await books?.refresh()
+        await today?.load()
+      }
+      // Gốc của stack: chạy cả khi quay lại từ Nhật ký / Ghi bữa, không chỉ khi
+      // đổi tab — số của hôm nay đổi ở những màn ấy.
+      .onAppear { Task { await today?.load() } }
       .navigationTitle(Text("tab.nutrition"))
       .navigationDestination(for: WaterRoute.self) { _ in
         if let water = books?.water { WaterView(book: water) }
@@ -62,7 +73,17 @@ struct NutritionTab: View {
       }
     }
     .task { await books?.loadOnce() }
+    .task(id: userId) {
+      guard let userId else { return }
+      if today?.userId != userId {
+        today?.close()
+        today = services?.makeNutritionToday(userId: userId)
+      }
+    }
+    .onChange(of: today?.userId) { Task { await today?.load() } }
   }
+
+  private var userId: String? { books?.water?.userId ?? books?.supplements?.userId }
 }
 
 /// Đích điều hướng của thẻ → màn Nước.
@@ -155,11 +176,13 @@ struct FoodsScreen: View {
 /// Nút "Ghi bữa ăn" — mở `LogMealView` cho hôm nay.
 struct LogMealButton: View {
   let userId: String
+  /// Sheet ghi bữa đóng lại — thẻ calo đọc lại số của hôm nay.
+  var onClose: () -> Void = {}
   @State private var open = false
 
   var body: some View {
     DSButton(String(localized: "logMeal.title")) { open = true }
-      .sheet(isPresented: $open) { LogMealView(userId: userId) }
+      .sheet(isPresented: $open, onDismiss: onClose) { LogMealView(userId: userId) }
   }
 }
 
