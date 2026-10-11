@@ -38320,6 +38320,213 @@
      }
     }
    }
+  },
+  "pr.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "New personal record"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Kỷ lục mới"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nueva marca personal"
+     }
+    }
+   }
+  },
+  "pr.titleMany %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld new records"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld kỷ lục mới"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld nuevas marcas"
+     }
+    }
+   }
+  },
+  "pr.continue": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tap to continue"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chạm để tiếp tục"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Toca para continuar"
+     }
+    }
+   }
+  },
+  "pr.weight %@ %@ %@ %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@ — %2$@ %3$@, was %4$@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@ — %2$@ %3$@, trước là %4$@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@ — %2$@ %3$@, antes %4$@"
+     }
+    }
+   }
+  },
+  "pr.firstLoad %@ %@ %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@ — %2$@ %3$@, first time loaded"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@ — %2$@ %3$@, lần đầu có tạ"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@ — %2$@ %3$@, primera vez con carga"
+     }
+    }
+   }
+  },
+  "pr.reps.one %@ %@ %@ %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@ — 1 rep at %2$@ %3$@, was %4$@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@ — 1 lần ở %2$@ %3$@, trước là %4$@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@ — 1 repetición con %2$@ %3$@, antes %4$@"
+     }
+    }
+   }
+  },
+  "pr.reps.other %@ %lld %@ %@ %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@ — %2$lld reps at %3$@ %4$@, was %5$@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@ — %2$lld lần ở %3$@ %4$@, trước là %5$@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@ — %2$lld repeticiones con %3$@ %4$@, antes %5$@"
+     }
+    }
+   }
+  },
+  "pr.repsBody.one %@ %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@ — 1 rep, was %2$@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@ — 1 lần, trước là %2$@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@ — 1 repetición, antes %2$@"
+     }
+    }
+   }
+  },
+  "pr.repsBody.other %@ %lld %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@ — %2$lld reps, was %3$@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@ — %2$lld lần, trước là %3$@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@ — %2$lld repeticiones, antes %3$@"
+     }
+    }
+   }
   }
  }
 }

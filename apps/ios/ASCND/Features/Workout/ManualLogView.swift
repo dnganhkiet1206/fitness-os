@@ -15,11 +15,12 @@ import SwiftUI
 ///   là hàng trống;
 /// - RPE hỏi MỘT lần cho cả buổi (6…10);
 /// - nút Lưu tắt khi chưa có set nào có reps (nói lý do) hoặc có số ngoài cận
-///   (nói đúng khoảng).
+///   (nói đúng khoảng);
+/// - gợi ý tải (`loadHint`, `LoadHintBook`) ngay trên hàng RPE;
+/// - buổi có kỷ lục: sheet dừng lại với màn ăn mừng (`RecordCelebrationView`)
+///   rồi mới đóng.
 ///
-/// Chưa có (ghi ở #527): mở nhạc (`MusicLaunch`), gợi ý tải (`suggestLoad` —
-/// cần trạng thái người dùng + readiness), dòng xu hướng của insight, màn ăn
-/// mừng kỷ lục (`RecordCelebration`) — kỷ lục vẫn được ghi và nổ ở lịch sử.
+/// Chưa có (ghi ở #527): mở nhạc (`MusicLaunch`), mời chia sẻ sau khi lưu.
 struct ManualLogView: View {
   let flow: WorkoutFlow
   @Environment(\.dismiss) private var dismiss
@@ -36,6 +37,8 @@ struct ManualLogView: View {
   @State private var saving = false
   @State private var failure: String?
   @State private var savedTick = 0
+  /// Kỷ lục của buổi vừa lưu — khác rỗng thì màn ăn mừng phủ lên form.
+  @State private var celebrating: [PersonalRecord] = []
 
   var body: some View {
     NavigationStack {
@@ -52,6 +55,11 @@ struct ManualLogView: View {
         ToolbarItem(placement: .cancellationAction) {
           Button(String(localized: "common.cancel")) { dismiss() }
         }
+      }
+    }
+    .overlay {
+      if !celebrating.isEmpty, let log {
+        RecordCelebrationView(records: celebrating, unit: log.weightUnit) { leave() }
       }
     }
     .sensoryFeedback(.success, trigger: savedTick)
@@ -351,13 +359,24 @@ struct ManualLogView: View {
     defer { saving = false }
     failure = nil
     do throws(ManualLogController.SaveRefusal) {
-      _ = try await log.save()
+      let summary = try await log.save()
       savedTick += 1
-      AccessibilityNotification.Announcement(String(localized: "manualLog.saved")).post()
-      dismiss()
+      if summary.records.isEmpty {
+        leave()
+      } else {
+        celebrating = summary.records
+      }
     } catch {
       failure = String(localized: "workout.finishError.generic")
     }
+  }
+}
+
+extension ManualLogView {
+  /// Lưu xong (thẳng, hoặc sau màn kỷ lục): báo và đóng.
+  fileprivate func leave() {
+    AccessibilityNotification.Announcement(String(localized: "manualLog.saved")).post()
+    dismiss()
   }
 }
 
