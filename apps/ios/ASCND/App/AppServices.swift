@@ -598,6 +598,13 @@ final class AppServices {
     return CommunityUserBook(userId: userId, targetId: targetId, remote: SupabaseCommunity(backend: backend))
   }
 
+  /// Chia sẻ một công thức (#527, lát 13): bữa 30 ngày + món + khẩu phần gốc,
+  /// RPC `share_recipe*`.
+  func makeCommunityShareRecipe(userId: String, mealId: String?) -> CommunityShareRecipeBook? {
+    guard let backend else { return nil }
+    return CommunityShareRecipeBook(userId: userId, picked: mealId, remote: SupabaseCommunity(backend: backend))
+  }
+
   /// Chia sẻ tiến trình (#527, lát 12): bài có tạ 90 ngày qua `historySource`
   /// (chỉ đọc), xem trước + đăng qua RPC.
   func makeCommunityShareProgress(userId: String) -> CommunityShareProgressBook? {

@@ -18,10 +18,10 @@ import SwiftUI
 /// Lát 6: thích / lưu / menu "⋯" trên thẻ. Lát 8: kính lúp mở tìm kiếm.
 /// Lát 9: chuông mở hộp thông báo (chấm khi có dòng chưa đọc). Lát 11: thẻ
 /// soạn bài đầu feed (có hồ sơ, không bị khoá đăng) → chia sẻ buổi tập; lát
-/// 12: tiến trình.
+/// 12: tiến trình; lát 13: công thức.
 ///
-/// Chưa có (các lát sau, #527): Thử workout, Thêm vào bữa, chia sẻ Công
-/// thức, thử thách nổi bật. Ảnh đại diện là emoji của linh vật (chưa có hình linh
+/// Chưa có (các lát sau, #527): Thử workout, Thêm vào bữa, thử thách nổi
+/// bật. Ảnh đại diện là emoji của linh vật (chưa có hình linh
 /// vật native).
 struct CommunityTab: View {
   @Environment(WorkoutFlow.self) private var flow
@@ -69,7 +69,7 @@ struct CommunityFeedView: View {
   @State private var shareRoute: ShareRoute?
 
   enum ShareRoute: Hashable, Identifiable {
-    case workout, progress
+    case workout, progress, recipe
     var id: Self { self }
   }
 
@@ -131,6 +131,7 @@ struct CommunityFeedView: View {
       switch route {
       case .workout: CommunityShareWorkoutScreen { Task { await book.load() } }
       case .progress: CommunityShareProgressScreen { Task { await book.load() } }
+      case .recipe: CommunityShareRecipeScreen { Task { await book.load() } }
       }
     }
     .task { if book.phase == .loading { await book.load() } }
@@ -210,6 +211,7 @@ struct CommunityFeedView: View {
     .confirmationDialog(Text("community.share.ask"), isPresented: $askShare, titleVisibility: .visible) {
       Button(String(localized: "community.share.askworkout")) { shareRoute = .workout }
       Button(String(localized: "community.share.askprogress")) { shareRoute = .progress }
+      Button(String(localized: "community.share.askrecipe")) { shareRoute = .recipe }
       Button(String(localized: "common.cancel"), role: .cancel) {}
     }
   }

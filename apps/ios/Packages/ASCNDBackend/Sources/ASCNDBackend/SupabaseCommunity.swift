@@ -9,7 +9,7 @@ import Supabase
 /// mình.
 public struct SupabaseCommunity: CommunityFeedRemote, CommunityProfileRemote, CommunityPostRemote, CommunityUserRemote,
   CommunityPostActionsRemote, CommunitySavedRemote, CommunitySearchRemote, CommunityInboxRemote,
-  CommunityPrivacyRemote, CommunityShareRemote, CommunityShareProgressRemote
+  CommunityPrivacyRemote, CommunityShareRemote, CommunityShareProgressRemote, CommunityShareRecipeRemote
 {
   private let client: SupabaseClient
 
@@ -815,6 +815,53 @@ public struct SupabaseCommunity: CommunityFeedRemote, CommunityProfileRemote, Co
         ).execute()
       }
     } catch {
+      throw Self.shareFailure(error)
+    }
+  }
+
+  struct RecipeParams: Encodable, Sendable {
+    let p_entry_id: String
+    let p_title: String
+    let p_caption: String
+    let p_visibility: String
+    var p_art_id: String?
+  }
+
+  /// `useShareableMeals`: bữa của mình trong cửa sổ, mới trước.
+  public func mealEntries(me: String, sinceISO: String) async throws -> [JSONValue] {
+    try await client.from("meal_entries")
+      .select("id, user_id, date_time, meal_type")
+      .eq("user_id", value: me)
+      .gte("date_time", value: sinceISO)
+      .order("date_time", ascending: false)
+      .execute().value
+  }
+
+  public func mealItems(entryIds: [String]) async throws -> [JSONValue] {
+    guard !entryIds.isEmpty else { return [] }
+    return try await client.from("meal_entry_items")
+      .select("id, meal_entry_id, food_item_id, food_name, servings, kcal, protein_g, carbs_g, fat_g, created_at")
+      .in("meal_entry_id", values: entryIds)
+      .execute().value
+  }
+
+  public func foodServings(ids: [String]) async throws -> [JSONValue] {
+    guard !ids.isEmpty else { return [] }
+    return try await client.from("food_items").select("id, serving_g").in("id", values: ids).execute().value
+  }
+
+  /// `useShareRecipe`: chỉ ID bữa và phần chữ đi lên.
+  public func shareRecipe(
+    entryId: String, title: String, caption: String, visibility: CommunityShare.Visibility, artId: String?
+  ) async throws {
+    let params = RecipeParams(
+      p_entry_id: entryId, p_title: title, p_caption: caption, p_visibility: visibility.rawValue, p_art_id: artId)
+    do {
+      try await client.rpc(artId == nil ? "share_recipe" : "share_recipe_with_art", params: params).execute()
+    } catch {
+      if let e = error as? PostgrestError, e.code == "22023", e.message.contains("empty meal") {
+        throw CommunityShareFailure.emptyMeal
+      }
       throw Self.shareFailure(error)
     }
   }

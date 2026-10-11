@@ -196,6 +196,8 @@ struct CommunityShareWorkoutView: View {
     case .alreadyShared: String(localized: "community.share.alreadyshared")
     case .postLimit: String(localized: "community.share.postlimit")
     case .restricted: String(localized: "community.post.restricted")
+    case .emptyMeal: String(localized: "community.sharerecipe.emptymeal")
+    case .nameNeeded: String(localized: "community.sharerecipe.nameneeded")
     case .offline: String(localized: "community.action.onlineonly")
     case .profileRequired, .server: String(localized: "community.action.server")
     }

@@ -183,6 +183,10 @@ public enum CommunityShareFailure: Error, Sendable, Hashable {
   case postLimit
   /// CR001: đội kiểm duyệt đang tạm khoá đăng.
   case restricted
+  /// Công thức: 22023 "empty meal" — bữa bị xoá hết món giữa lúc chọn và đăng.
+  case emptyMeal
+  /// Công thức: chưa đặt tên món (kiểm ở máy, không gửi).
+  case nameNeeded
   case offline
   case server(code: String?)
 }
