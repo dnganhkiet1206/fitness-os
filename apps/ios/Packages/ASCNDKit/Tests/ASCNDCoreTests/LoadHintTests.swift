@@ -167,7 +167,7 @@ struct LoadHintBookTests {
     .object(["date_time": .string("2026-09-20T01:00:00+00:00"), "template_name": .string("Push"), "session_rpe": .number(10)]),
   ]
 
-  static func book(_ rows: HintRows, recovery: Bool = false) -> LoadHintBook {
+  fileprivate static func book(_ rows: HintRows, recovery: Bool = false) -> LoadHintBook {
     LoadHintBook(userId: "u1", store: rows, clock: HintClock(), in: hanoi, recovery: { _ in recovery })
   }
 
