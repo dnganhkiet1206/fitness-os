@@ -168,10 +168,12 @@ struct MascotRoomView: View {
   private var stage: some View {
     ZStack(alignment: .top) {
       MascotStage(
-        level: room.level, accent: Color(hex: room.rank.colorHex),
+        level: room.level,
         energy: Double(room.energyCount) / Double(MascotRules.energySignals.count),
         streak: room.streak.count, celebrateSignal: celebrate, emotion: devEmotion ?? .idle,
         equipped: shop?.inventory.filter(\.equipped).map(\.itemKey) ?? [])
+        // căn phòng phủ ngang cả màn như RN, không theo lề trang
+        .padding(.horizontal, -DS.Spacing.md)
       if let burst {
         Text(verbatim: "+\(burst.amount)")
           .font(DS.TextStyle.headline.monospacedDigit())
@@ -596,15 +598,16 @@ struct EnergyRing: View {
   }
 }
 
-/// Sân khấu của Koa. Koa là `MascotFigureView` thật (#527 K4: bộ dựng của
-/// `KoaFigure`), mặc đúng đồ trong tủ, gật đầu khi vừa nhận thưởng
-/// (`acknowledge` của `stage-renderer.tsx`: nghiêng 6° rồi lò xo về, phóng
-/// 1,03). CHƯA có phần còn lại của `MascotScene` / `StageRenderer` — studio,
-/// cây, côn trùng, cái liếc, cảm xúc tự chọn của engine (`useMascotEmotion`):
-/// vòng năng lượng sau lưng giữ chỗ cho đèn của studio.
+/// Sân khấu của linh vật (#527, S1) — `StageRenderer` của RN: căn phòng studio
+/// (`StudioBackdrop`, VẼ LẠI theo bản RN, Kiệt đồng ý) phủ ngang cả màn, Koa
+/// đứng ở chỗ đứng trên bục (`STAGE_MARK`) với đúng cỡ / độ dời của RN, mép
+/// tan vào nền trang (`stageFadeV` / `stageFadeH`). Skin theo sân khấu đang
+/// mặc, sàn + bục sáng theo năng lượng, thẻ chuỗi, trăng theo ngày. Gật đầu
+/// khi vừa nhận thưởng (`acknowledge`: nghiêng 6° rồi lò xo về, phóng 1,03).
+/// CHƯA có: cây / bụi sáng chuyển động (`PlantsCanvas`, `Motes` — ở đây đứng
+/// yên), côn trùng, cái liếc, cảm xúc tự chọn của engine (`useMascotEmotion`).
 struct MascotStage: View {
   let level: Int
-  let accent: Color
   /// 0…1 — số tín hiệu đã xong / năm.
   let energy: Double
   let streak: Int
@@ -620,39 +623,95 @@ struct MascotStage: View {
     var scale = 1.0
   }
 
+  private var studio: StudioScene.Options {
+    var o = StudioScene.Options()
+    o.skin = StudioScene.skinKey(equipped: Set(equipped))
+    o.energy = energy
+    o.streak = streak
+    o.moon = StudioScene.moonPhase(.now)
+    o.label = "Koa"
+    return o
+  }
+
+  /// `HERO_W = round(128 / 0.93)`.
+  private static let heroWidth = 138.0
+
   var body: some View {
     VStack(spacing: DS.Spacing.xs) {
-      ZStack(alignment: .bottom) {
-        Circle()
-          .fill(accent.opacity(0.12))
-          .frame(width: 180, height: 180)
-        Circle()
-          .trim(from: 0, to: energy)
-          .stroke(accent, style: StrokeStyle(lineWidth: 6, lineCap: .round))
-          .rotationEffect(.degrees(-90))
-          .padding(6)
-          .frame(width: 180, height: 180)
-        MascotFigureView(emotion: emotion, equipped: equipped, size: 150)
-          // reduceMotion: giá trị không đổi thì không gật
-          .keyframeAnimator(initialValue: Nod(), trigger: reduceMotion ? 0 : celebrateSignal) { view, v in
-            view.rotationEffect(.degrees(v.angle), anchor: .bottom).scaleEffect(v.scale, anchor: .bottom)
-          } keyframes: { _ in
-            KeyframeTrack(\.angle) {
-              CubicKeyframe(6, duration: 0.2)
-              SpringKeyframe(0, spring: .init(mass: 1, stiffness: 160, damping: 14))
-            }
-            KeyframeTrack(\.scale) {
-              LinearKeyframe(1.03, duration: 0.18)
-              SpringKeyframe(1, spring: .init(mass: 1, stiffness: 180, damping: 14))
-            }
-          }
-      }
+      StudioBackdrop(options: studio)
+        .overlay { GeometryReader { g in hero(g.size.width) } }
+        .overlay { StageFade() }
+        .aspectRatio(StudioScene.width / StudioScene.sceneBottom, contentMode: .fit)
       Text(String(localized: "mr.level \(level)")).font(DS.TextStyle.caption.weight(.semibold))
     }
     .frame(maxWidth: .infinity)
-    .padding(.vertical, DS.Spacing.md)
     .accessibilityElement(children: .ignore)
     .accessibilityLabel(Text(String(localized: "mr.stage.a11y \(level)")))
+  }
+
+  /// Koa đứng trên bục: `size = round(HERO_W·k)`, đỉnh ở `412k − 1,25·size + 6k`.
+  private func hero(_ width: CGFloat) -> some View {
+    let k: Double = Double(width) / StudioScene.width
+    let size: Double = (Self.heroWidth * k).rounded()
+    let left: Double = StudioScene.stageMark.x * k - size / 2
+    let top: Double = StudioScene.stageMark.y * k - size * KoaMath.aspect + 6 * k
+    let levelScale: Double = min(1 + Double(level - 1) * 0.012, 1.1)
+    return MascotFigureView(emotion: emotion, equipped: equipped, size: size)
+      .scaleEffect(levelScale, anchor: .bottom)
+      // reduceMotion: giá trị không đổi thì không gật
+      .keyframeAnimator(initialValue: Nod(), trigger: reduceMotion ? 0 : celebrateSignal) { view, v in
+        view.rotationEffect(.degrees(v.angle), anchor: .bottom).scaleEffect(v.scale, anchor: .bottom)
+      } keyframes: { _ in
+        KeyframeTrack(\.angle) {
+          CubicKeyframe(6, duration: 0.2)
+          SpringKeyframe(0, spring: .init(mass: 1, stiffness: 160, damping: 14))
+        }
+        KeyframeTrack(\.scale) {
+          LinearKeyframe(1.03, duration: 0.18)
+          SpringKeyframe(1, spring: .init(mass: 1, stiffness: 180, damping: 14))
+        }
+      }
+      .offset(x: left, y: top)
+      .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+  }
+}
+
+/// Căn phòng studio (#527, S1): `StudioScene.tree` → `KoaPaint` → `Canvas`,
+/// toạ độ 390 phủ theo bề ngang (`xMidYMin slice` của RN).
+struct StudioBackdrop: View {
+  let options: StudioScene.Options
+
+  var body: some View {
+    let plan = KoaPaint.plan(KoaRender.Element("Svg", kids: StudioScene.tree(options)))
+    Canvas { ctx, canvas in
+      var c = ctx
+      let k = canvas.width / StudioScene.width
+      c.concatenate(CGAffineTransform(scaleX: k, y: k))
+      KoaCanvas.draw(plan, in: &c)
+    }
+    .accessibilityHidden(true)
+  }
+}
+
+/// Mép cảnh tan vào nền trang (`stageFadeH` rồi `stageFadeV`). Cảnh luôn
+/// tối (minh hoạ), lớp tan theo màu trang của theme.
+private struct StageFade: View {
+  var body: some View {
+    let page = DS.Color.background.swiftUI
+    ZStack {
+      LinearGradient(
+        stops: [
+          .init(color: page.opacity(0.9), location: 0), .init(color: page.opacity(0), location: 0.1),
+          .init(color: page.opacity(0), location: 0.9), .init(color: page.opacity(0.9), location: 1),
+        ], startPoint: .leading, endPoint: .trailing)
+      LinearGradient(
+        stops: [
+          .init(color: page.opacity(0.66), location: 0), .init(color: page.opacity(0), location: 0.12),
+          .init(color: page.opacity(0), location: 0.82), .init(color: page, location: 1),
+        ], startPoint: .top, endPoint: .bottom)
+    }
+    .allowsHitTesting(false)
+    .accessibilityHidden(true)
   }
 }
 

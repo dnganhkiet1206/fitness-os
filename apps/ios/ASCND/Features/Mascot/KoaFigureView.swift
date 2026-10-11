@@ -225,11 +225,62 @@ enum KoaCanvas {
     }
   }
 
+  static func weight(_ w: Double) -> Font.Weight {
+    switch w {
+    case ..<350: .light
+    case ..<450: .regular
+    case ..<550: .medium
+    case ..<650: .semibold
+    case ..<750: .bold
+    case ..<850: .heavy
+    default: .black
+    }
+  }
+
+  /// Chữ SVG: đo bề rộng để canh `text-anchor`, `y` là đường chân chữ. Nét
+  /// chữ (`stroke`, RN dùng làm quầng sáng) không vẽ được bằng `Text` — lấy
+  /// màu nét tô chữ rồi làm nhoè theo bề rộng nét.
+  static func label(_ l: KoaPaint.Label, in ctx: inout GraphicsContext) {
+    guard l.opacity > 0 else { return }
+    var c = ctx
+    c.concatenate(affine(l.matrix))
+    c.opacity *= l.opacity
+    let font = Font.system(size: l.fontSize, weight: weight(l.fontWeight))
+    func colour(_ p: KoaPaint.Paint, _ alpha: Double) -> Color? {
+      guard case .colour(let k) = p else { return nil }
+      return Color(.sRGB, red: k.r, green: k.g, blue: k.b, opacity: k.a * alpha)
+    }
+    func put(_ fill: Color, blur: Double) {
+      let text = Text(verbatim: l.text).font(font).tracking(l.letterSpacing).foregroundStyle(fill)
+      let resolved = c.resolve(text)
+      let size = resolved.measure(in: CGSize(width: CGFloat.infinity, height: CGFloat.infinity))
+      let unit: CGFloat
+      switch l.anchor {
+      case "middle": unit = 0.5
+      case "end": unit = 1
+      default: unit = 0
+      }
+      // `tracking` thêm khoảng sau CẢ chữ cuối; SVG thì không
+      let width = size.width - l.letterSpacing
+      let baseline = resolved.firstBaseline(in: size)
+      let origin = CGPoint(x: l.x - width * unit, y: l.y - baseline)
+      var d = c
+      if blur > 0 { d.addFilter(.blur(radius: blur)) }
+      d.draw(resolved, in: CGRect(origin: origin, size: size))
+    }
+    if l.style.strokeWidth > 0, let s = colour(l.style.stroke, l.style.strokeOpacity) {
+      put(s, blur: l.style.strokeWidth / 2)
+    }
+    if let f = colour(l.style.fill, l.style.fillOpacity) { put(f, blur: 0) }
+  }
+
   static func draw(_ ops: [KoaPaint.Op], in ctx: inout GraphicsContext) {
     for op in ops {
       switch op {
       case .shape(let s):
         shape(s, in: &ctx)
+      case .text(let l):
+        label(l, in: &ctx)
       case .group(let opacity, let clip, let inner):
         guard opacity > 0 else { continue }
         var c = ctx

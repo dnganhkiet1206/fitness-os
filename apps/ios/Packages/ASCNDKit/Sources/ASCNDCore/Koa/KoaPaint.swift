@@ -81,8 +81,25 @@ public enum KoaPaint {
     public var evenOdd: Bool
   }
 
+  /// Một dòng chữ SVG (`<Text>`) — chưa đo được chữ ở Core nên bên vẽ tự đo:
+  /// `anchor` canh theo bề rộng đo được, `y` là đường chân chữ.
+  public struct Label: Sendable, Hashable {
+    public var text: String
+    public var x: Double
+    public var y: Double
+    public var fontSize: Double
+    public var fontWeight: Double
+    /// `start` / `middle` / `end`.
+    public var anchor: String
+    public var letterSpacing: Double
+    public var style: Style
+    public var opacity: Double
+    public var matrix: Mat
+  }
+
   public indirect enum Op: Sendable, Hashable {
     case shape(Shape)
+    case text(Label)
     /// Một lớp riêng: vẽ `ops` rồi phủ với độ mờ `opacity`, trong vùng `clip`.
     case group(opacity: Double, clip: [Clip]?, ops: [Op])
   }
@@ -540,6 +557,22 @@ public enum KoaPaint {
     let opacity = number(e.props["opacity"]) ?? 1
     // `clip-path` theo toạ độ của chính phần tử (sau transform của nó)
     let clip = ref(e.props["clipPath"]).flatMap { defs.clips[$0] }.map { clipShapes($0, mm) }
+    if e.tag == "Text" {
+      guard case .string(let text)? = e.props["text"], !text.isEmpty else { return [] }
+      let weight: Double
+      switch e.props["fontWeight"] {
+      case .string("bold")?: weight = 700
+      default: weight = number(e.props["fontWeight"]) ?? 400
+      }
+      var anchor = "start"
+      if case .string(let a)? = e.props["textAnchor"] { anchor = a }
+      let label = Label(
+        text: text, x: number(e.props["x"]) ?? 0, y: number(e.props["y"]) ?? 0,
+        fontSize: number(e.props["fontSize"]) ?? 16, fontWeight: weight, anchor: anchor,
+        letterSpacing: number(e.props["letterSpacing"]) ?? 0, style: st, opacity: opacity, matrix: mm)
+      let op = Op.text(label)
+      return clip.map { [.group(opacity: 1, clip: $0, ops: [op])] } ?? [op]
+    }
     if let segs = segments(e) {
       let shape = Op.shape(Shape(segments: segs, bounds: bounds(segs), style: st, opacity: opacity, matrix: mm))
       return clip.map { [.group(opacity: 1, clip: $0, ops: [shape])] } ?? [shape]

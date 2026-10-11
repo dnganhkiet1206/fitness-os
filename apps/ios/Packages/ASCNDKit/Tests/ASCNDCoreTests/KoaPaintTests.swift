@@ -111,6 +111,7 @@ struct KoaPaintTests {
       switch op {
       case .shape(let s): [s]
       case .group(_, _, let inner): shapes(inner)
+      case .text: []
       }
     }
   }
@@ -118,7 +119,7 @@ struct KoaPaintTests {
   static func groups(_ ops: [KoaPaint.Op]) -> [(Double, [KoaPaint.Clip]?)] {
     ops.flatMap { op -> [(Double, [KoaPaint.Clip]?)] in
       switch op {
-      case .shape: []
+      case .shape, .text: []
       case .group(let o, let c, let inner): [(o, c)] + groups(inner)
       }
     }
