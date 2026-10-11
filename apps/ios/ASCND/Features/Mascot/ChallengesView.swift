@@ -18,6 +18,9 @@ struct ChallengesView: View {
 
   var body: some View {
     content
+      // nền trang như mọi màn (RN: `Screen`) — không thì ScrollView để lộ nền trắng
+      .frame(maxWidth: .infinity, maxHeight: .infinity)
+      .background(DS.Color.background.swiftUI)
       .navigationTitle(String(localized: "ch.title"))
       .task { if case .loading = book.phase { await book.load() } }
       .refreshable { await book.refreshProgress() }

@@ -117,13 +117,16 @@ struct MascotRoomView: View {
   // MARK: - Đầu màn
 
   private var coinPill: some View {
+    // như ô số dư của `ShopView`: `Label` + `.titleAndIcon`, không gói thành
+    // `accessibilityElement(children: .ignore)` — gói như thế thì thanh công cụ
+    // iOS 26 chỉ còn vẽ biểu tượng; số xu phải hiện như ô `Coin` của RN.
     Label {
-      Text(room.balance.formatted(.number.locale(.app))).monospacedDigit()
+      Text(verbatim: room.balance.formatted(.number.locale(.app)))
     } icon: {
       Image(systemName: "circle.circle.fill").foregroundStyle(DS.Color.readinessYellowGraphic.swiftUI)
     }
-    .font(DS.TextStyle.footnote.weight(.semibold))
-    .accessibilityElement(children: .ignore)
+    .labelStyle(.titleAndIcon)
+    .font(DS.TextStyle.footnote.weight(.semibold).monospacedDigit())
     .accessibilityLabel(
       Text(room.balance == 1 ? String(localized: "mr.balance.one") : String(localized: "mr.balance.other \(room.balance)")))
   }
@@ -441,8 +444,12 @@ struct MascotRoomView: View {
             ShopView(book: shop, lang: lang) { Task { await room.load() } }
           } label: {
             LabeledContent(String(localized: "shop.title")) {
-              Image(systemName: "bag.fill").accessibilityHidden(true)
+              Image(systemName: "bag.fill")
             }
+            // giá trị chỉ là biểu tượng → gộp hàng thành một phần tử có tên,
+            // không thì VoiceOver đọc nút trống
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text(String(localized: "shop.title")))
           }
         }
       }
