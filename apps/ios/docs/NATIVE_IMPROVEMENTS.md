@@ -151,5 +151,7 @@ miễn **giữ nguyên ý định** của app và chỉ làm app tốt hơn — 
 | Cộng đồng — kết quả lệnh menu bài | Hộp thoại (app chưa có toast); thích / lưu hỏng cũng là hộp thoại | `toast` / `toast.fail` | lệch nền tảng | không cần | #527 (`native/ios-rewrite`) | E |
 | Cộng đồng — lưu bài | Không có toast "Đã lưu · Xem thư viện" | Toast có nút mở `community-saved` | tạm thời (màn Đã lưu là lát 7) | không cần | #527 (`native/ios-rewrite`) | E |
 | Cộng đồng — nút chia sẻ trên thẻ | Chưa có | `Share.share` với chữ theo loại bài | tạm thời (lát chia sẻ 11–13) | không cần | #527 (`native/ios-rewrite`) | E |
+| Cộng đồng — Đã lưu: lọc rỗng ở Công thức | Không có nút "Tìm công thức" | Nút mở `community-search` ở phân đoạn Công thức | tạm thời (màn Tìm là lát 8) | không cần | #527 (`native/ios-rewrite`) | E |
+| Cộng đồng — Đã lưu: đọc lại khi mở | Một lần mỗi lần mở màn (quay lại từ một bài không đọc lại) | `refetchOnMount: 'always'` (mount màn) | khớp RN | không cần | #527 (`native/ios-rewrite`) | E |
 
 Thêm dòng mới ở cuối bảng; giữ dòng cũ — sổ là lịch sử, không phải danh sách việc.

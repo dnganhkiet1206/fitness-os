@@ -598,6 +598,12 @@ final class AppServices {
     return CommunityUserBook(userId: userId, targetId: targetId, remote: SupabaseCommunity(backend: backend))
   }
 
+  /// Thư viện Đã lưu (#527, lát 7): dòng lưu của mình + bài qua RLS.
+  func makeCommunitySaved(userId: String) -> CommunitySavedBook? {
+    guard let backend else { return nil }
+    return CommunitySavedBook(userId: userId, remote: SupabaseCommunity(backend: backend))
+  }
+
   /// Thích / lưu / menu bài (#527, lát 6): ghi thẳng server qua RLS + RPC.
   func makeCommunityPostActions(userId: String) -> CommunityPostActions? {
     guard let backend else { return nil }

@@ -43,8 +43,8 @@ extension View {
 /// lọc theo loại khi có ≥ 2 loại (lọc ở server); thẻ Hành trình khi xem bài
 /// Tiến trình; ghi chú "đang tắt tiếng đến …" + nút bỏ; bài theo trang 30.
 ///
-/// Chưa có (lát sau): lối "Quyền riêng tư" và "Đã lưu" trên hồ sơ của mình
-/// (hai màn ấy chưa port).
+/// Chưa có (lát sau): lối "Quyền riêng tư" trên hồ sơ của mình (màn chưa
+/// port).
 struct CommunityUserScreen: View {
   let targetId: String
   @Environment(WorkoutFlow.self) private var flow
@@ -234,12 +234,25 @@ struct CommunityUserView: View {
 
   @ViewBuilder private func primaryAction(_ p: CommunityFeed.Author) -> some View {
     if book.isMe {
-      NavigationLink {
-        CommunityProfileScreen(userId: book.userId) { Task { await book.load() } }
-      } label: {
-        quiet(Text("community.user.edit"))
+      VStack(spacing: DS.Spacing.sm) {
+        NavigationLink {
+          CommunityProfileScreen(userId: book.userId) { Task { await book.load() } }
+        } label: {
+          quiet(Text("community.user.edit"))
+        }
+        .buttonStyle(.plain)
+        // Thư viện Đã lưu: viên trầm riêng, rộng hết hàng; chỉ trên hồ sơ của mình.
+        NavigationLink {
+          CommunitySavedScreen(userId: book.userId)
+        } label: {
+          Label("community.saved.title", systemImage: "bookmark")
+            .font(DS.TextStyle.headline)
+            .foregroundStyle(DS.Color.foreground.swiftUI)
+            .frame(maxWidth: .infinity, minHeight: 44)
+            .background(DS.Color.secondary.swiftUI, in: Capsule())
+        }
+        .buttonStyle(.plain)
       }
-      .buttonStyle(.plain)
     } else {
       Button {
         taps += 1

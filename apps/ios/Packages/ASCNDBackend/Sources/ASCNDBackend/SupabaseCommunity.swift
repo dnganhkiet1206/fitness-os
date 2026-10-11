@@ -8,7 +8,7 @@ import Supabase
 /// `20261007220000_community_report_trust.sql`); thích / lưu chỉ đọc hàng của
 /// mình.
 public struct SupabaseCommunity: CommunityFeedRemote, CommunityProfileRemote, CommunityPostRemote, CommunityUserRemote,
-  CommunityPostActionsRemote
+  CommunityPostActionsRemote, CommunitySavedRemote
 {
   private let client: SupabaseClient
 
@@ -473,10 +473,6 @@ public struct SupabaseCommunity: CommunityFeedRemote, CommunityProfileRemote, Co
 
   // MARK: - Thích / lưu / menu bài (#527, lát 6)
 
-  struct PostIdOnly: Decodable, Sendable {
-    let post_id: String
-  }
-
   struct IdOnly: Decodable, Sendable {
     let id: String
   }
@@ -500,7 +496,7 @@ public struct SupabaseCommunity: CommunityFeedRemote, CommunityProfileRemote, Co
           throw error
         }
       } else {
-        let _: [PostIdOnly] = try await client.from(table)
+        let _: [PostIdDTO] = try await client.from(table)
           .delete().eq("post_id", value: postId).eq("user_id", value: me)
           .select("post_id").execute().value
       }
@@ -554,6 +550,22 @@ public struct SupabaseCommunity: CommunityFeedRemote, CommunityProfileRemote, Co
     } catch {
       throw Self.moderationFailure(error)
     }
+  }
+
+  // MARK: - Đã lưu (#527, lát 7)
+
+  /// `useSavedPosts`: dòng lưu của mình, mới → cũ theo `(created_at, post_id)`.
+  public func saves(me: String, olderThan: String?, limit: Int) async throws -> [JSONValue] {
+    var f = client.from("community_saves").select("post_id, created_at").eq("user_id", value: me)
+    if let olderThan { f = f.or(olderThan) }
+    return try await f.order("created_at", ascending: false).order("post_id", ascending: false)
+      .limit(limit).execute().value
+  }
+
+  public func posts(ids: [String]) async throws -> [JSONValue] {
+    guard !ids.isEmpty else { return [] }
+    return try await client.from("community_posts").select(CommunityFeed.postColumns).in("id", values: ids)
+      .execute().value
   }
 
   public func artURL(path: String) -> URL? {
