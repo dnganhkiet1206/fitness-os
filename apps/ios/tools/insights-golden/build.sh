@@ -6,9 +6,10 @@ rm -rf lib out && mkdir lib
 for f in exercise-trend exercise-performance personal-record local-date exercise-kind exercise-key muscle-group equipment guide-content exercise-media guide-related fitness-calc plausible reminder-plan reminder-timing units plan-exercises copy-fill macro-targets mascot-room streak readiness-i18n training-card award-grant challenge-progress nutrition-mean readiness-week assistant-suggestions assistant-brief metric-analysis adaptive-tdee photo-urls feed-page recipe-post community-art time-ago meal-names planned-meal recent-meals todo comment-thread user-rhythm activity energy help-nudge user-scoped-reset progress-journey saved-library challenge-reminders sleep-window health-owned biometric-source; do
   git show "fac9ac2:native/src/lib/$f.ts" > "lib/$f.ts"
 done
-# Hai phụ thuộc chỉ để lấy một hằng / một kiểu.
-echo 'export const MIN_SESSIONS = 3;' > lib/load-progression.ts   # load-progression.ts:87
-echo "export type Confidence = 'none' | 'low' | 'medium' | 'high';" > lib/user-state.ts
+# Gợi ý tải của `log-workout` (#527): bản thật (trước là hằng / kiểu giả cho `exercise-trend`).
+for f in load-progression user-state goal-training; do
+  git show "fac9ac2:native/src/lib/$f.ts" > "lib/$f.ts"
+done
 # Phòng linh vật (#527 Phase 7): `mascot-room.ts` chỉ lấy kiểu `AppLang`.
 echo "export type AppLang = 'vi' | 'en' | 'es';" > lib/i18n.ts
 # Cộng đồng (#527): `time-ago.ts` chỉ cần `getLocale` cho nhánh "> 7 ngày" (ngày

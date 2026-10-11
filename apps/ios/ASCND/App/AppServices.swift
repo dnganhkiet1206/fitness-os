@@ -356,6 +356,17 @@ final class AppServices {
     return SleepLogger(userId: userId, store: rows, outbox: outbox, onEnqueued: { _ in sync.kick() })
   }
 
+  /// Câu gợi ý tải của màn ghi buổi tập (#527 `log-workout` `loadHint`): ba
+  /// lượt đọc qua kho hàng chung. Thiếu bảng chữ sẵn sàng thì coi mọi điểm
+  /// đỏ là đỏ về hồi phục — chốt chặn "tăng tải" nghiêng về an toàn.
+  func makeLoadHint(userId: String) -> LoadHintBook? {
+    guard let rows else { return nil }
+    let copy = ReadinessCopyStore.copy
+    return LoadHintBook(
+      userId: userId, store: rows,
+      recovery: { explain in copy.map { ReadinessCard.hasRecoverySignal(explain, copy: $0) } ?? true })
+  }
+
   /// Ghi số đo cơ thể (#527 `log-measurement`): có mạng upsert thẳng; mất
   /// mạng xếp outbox kind `measurement`, gửi ngay khi có mạng.
   func makeMeasurementLogger(userId: String) -> MeasurementLogger? {

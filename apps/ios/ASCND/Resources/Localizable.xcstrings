@@ -38274,6 +38274,52 @@
      }
     }
    }
+  },
+  "manualLog.loadHint.up %@ %@ %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Your recent “%1$@” sessions felt easier than %2$@ — you could try about %3$lld%% more"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mấy buổi “%1$@” gần đây bạn thấy nhẹ hơn mức %2$@ — có thể thử tăng ~%3$lld%%"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tus sesiones recientes de “%1$@” se sintieron más fáciles que %2$@: podrías probar con un %3$lld%% más"
+     }
+    }
+   }
+  },
+  "manualLog.loadHint.down %@ %@ %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Your recent “%1$@” sessions felt harder than %2$@ — easing off about %3$lld%% is fine"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mấy buổi “%1$@” gần đây bạn thấy nặng hơn mức %2$@ — có thể giảm ~%3$lld%%"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tus sesiones recientes de “%1$@” se sintieron más duras que %2$@: bajar un %3$lld%% está bien"
+     }
+    }
+   }
   }
  }
 }

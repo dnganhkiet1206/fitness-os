@@ -23,7 +23,11 @@ import SwiftUI
 struct ManualLogView: View {
   let flow: WorkoutFlow
   @Environment(\.dismiss) private var dismiss
+  @Environment(AppServices.self) private var services: AppServices?
+  @Environment(ProfileBook.self) private var profileBook: ProfileBook?
   @State private var log: ManualLogController?
+  /// Câu gợi ý tải (`loadHint`, `:288`); nạp sau form, không chặn form.
+  @State private var loadHint: LoadHintBook?
   /// Bộ đệm chữ đang gõ — controller ghi bất đồng bộ, ô không được nhảy về
   /// chữ cũ giữa hai phím (như `WorkoutView`).
   @State private var buffer: [String: String] = [:]
@@ -56,6 +60,9 @@ struct ManualLogView: View {
       let l = flow.makeManualLog()
       await l.load()
       log = l
+      guard loadHint == nil, let book = services?.makeLoadHint(userId: l.userId) else { return }
+      loadHint = book
+      await book.load()
     }
   }
 
@@ -139,6 +146,16 @@ struct ManualLogView: View {
           Text(verbatim: volumeText(log, unit))
             .font(DS.TextStyle.headline.monospacedDigit())
         }
+        // Mấy buổi cùng tên gần đây cảm thấy thế nào so với mức buổi tập đặt
+        // (`:914-931`): một câu trước khi chọn RPE, không đổi gì trong template.
+        if let hint = loadHint?.hint(
+          name: log.name, templates: flow.today.library?.templates ?? [], goal: profileBook?.profile?.goal)
+        {
+          Text(verbatim: loadHintText(hint))
+            .font(DS.TextStyle.caption)
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .fixedSize(horizontal: false, vertical: true)
+        }
         Picker(selection: Binding(get: { log.rpe }, set: { v in Task { await log.setRpe(v) } })) {
           ForEach(Array(ManualLogController.rpeValues), id: \.self) { v in
             Text(verbatim: "\(v)").tag(v)
@@ -180,6 +197,13 @@ struct ManualLogView: View {
       .listRowBackground(Color.clear)
     }
     .scrollDismissesKeyboard(.interactively)
+  }
+
+  private func loadHintText(_ h: LoadHint.Hint) -> String {
+    let aim = Units.text(h.aim)
+    return h.up
+      ? String(localized: "manualLog.loadHint.up \(h.name) \(aim) \(h.percent)")
+      : String(localized: "manualLog.loadHint.down \(h.name) \(aim) \(h.percent)")
   }
 
   /// Tên cột, nói một lần (`:741`): bài / đơn vị tạ / reps.
