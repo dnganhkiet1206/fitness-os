@@ -75,19 +75,19 @@ struct CommunityFeedView: View {
     }
     .background(DS.Color.background.swiftUI)
     .toolbar {
-      // Lát 2: sửa hồ sơ của mình (RN: avatar ở đầu trang → trang người dùng
-      // của mình → Sửa hồ sơ; trang người dùng đến ở lát 5).
+      // Avatar ở đầu trang → trang người dùng của mình (Sửa hồ sơ ở đó), như RN.
       if book.hasProfile == true {
         ToolbarItem(placement: .topBarTrailing) {
           NavigationLink {
-            profileScreen
+            CommunityUserScreen(targetId: book.userId)
           } label: {
             Image(systemName: "person.crop.circle")
           }
-          .accessibilityLabel(Text("community.profile.edit"))
+          .accessibilityLabel(Text("community.user.mine"))
         }
       }
     }
+    .communityUserLinks()
     .task { if book.phase == .loading { await book.load() } }
     .refreshable { await book.load() }
   }
@@ -247,8 +247,23 @@ struct PostCardView: View {
 
 struct PostHeaderView: View {
   let post: CommunityFeed.Post
+  @Environment(\.openCommunityUser) private var openUser
 
+  /// Có tác giả → chạm mở hồ sơ (`ZoomLink` của RN); không có → chỉ là chữ.
   var body: some View {
+    if let author = post.author, let openUser {
+      Button {
+        openUser(author.userId)
+      } label: {
+        who
+      }
+      .buttonStyle(.plain)
+    } else {
+      who
+    }
+  }
+
+  private var who: some View {
     HStack(spacing: DS.Spacing.sm) {
       MascotAvatar(mascotId: post.author?.mascotId, size: 40)
       VStack(alignment: .leading, spacing: 2) {

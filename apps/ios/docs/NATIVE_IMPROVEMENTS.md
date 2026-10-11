@@ -143,5 +143,9 @@ miễn **giữ nguyên ý định** của app và chỉ làm app tốt hơn — 
 | Readiness — chữ lời nhắc "?" | vi / en / es (es: "¿No sabes qué significan RHR, LOAD o ACWR? Toca aquí.") | `vi ? … : …` — người dùng es thấy câu tiếng Anh | sửa lỗi RN (i18n) | nên — thêm khoá i18n cho câu này | #527 (`native/ios-rewrite`) | E |
 | Readiness — dải nhắc "?" xuất hiện | Hiện / ẩn không hoạt ảnh | `FadeIn` 220 ms / `FadeOut` 140 ms | lệch nền tảng (không thêm `.animation` ngoài Giảm chuyển động) | không cần | #527 (`native/ios-rewrite`) | E |
 | Lịch sử buổi — định dạng số kcal | Theo ngôn ngữ trong app (`Locale.app`), như ngày / khối lượng trên cùng hàng; dấu `~` giữ nguyên | `toLocaleString()` theo locale máy | lệch nền tảng | không cần (A quyết theo uỷ quyền của Kiệt, #527 6103811310) | #527 (`native/ios-rewrite`) | A |
+| Cộng đồng — trang người dùng: kết quả theo dõi / tắt tiếng / báo cáo | Hộp thoại (app chưa có toast) | Toast thành công / lỗi | lệch nền tảng | không cần | #527 (`native/ios-rewrite`) | E |
+| Cộng đồng — Hành trình: vòng eo | Luôn cm (như ô eo của thẻ bài Tiến trình native) | `displayLength(v, lUnit)` theo đơn vị chiều dài của hồ sơ | lệch nền tảng (native chưa có đơn vị chiều dài cho Cộng đồng) | không cần | #527 (`native/ios-rewrite`) | E |
+| Cộng đồng — trang người dùng: ngày | Theo ngôn ngữ app (`Locale.app`) | `toLocaleDateString(getLocale(lang))` | khớp RN | không cần | #527 (`native/ios-rewrite`) | E |
+| Cộng đồng — `@handle` trong bình luận | Đã mở hồ sơ người ấy (thay dòng "chưa mở" ở trên) | Liên kết tới `community-user` | khớp RN | không cần | #527 (`native/ios-rewrite`) | E |
 
 Thêm dòng mới ở cuối bảng; giữ dòng cũ — sổ là lịch sử, không phải danh sách việc.

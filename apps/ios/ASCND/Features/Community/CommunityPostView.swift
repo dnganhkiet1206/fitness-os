@@ -16,7 +16,7 @@ import SwiftUI
 /// người viết / chủ bài "Xoá bình luận", người khác "Báo cáo"; bình luận của
 /// mình đang bị ẩn có ghi chú vì sao + "Yêu cầu xem lại".
 ///
-/// Chưa có (lát 5): mở trang người dùng từ avatar / `@handle`.
+/// Lát 5: avatar của bình luận và `@handle` đã xác nhận mở trang người dùng.
 struct CommunityPostScreen: View {
   let postId: String
   var onCommented: () -> Void = {}
@@ -94,6 +94,7 @@ struct CommunityPostView: View {
       Button(String(localized: "common.cancel"), role: .cancel) {}
     }
     .sensoryFeedback(.selection, trigger: menuFor?.id) { _, new in new != nil }
+    .communityUserLinks()
   }
 
   /// Một hộp thoại cho mọi kết quả cần nói ra (app chưa có toast).
@@ -331,6 +332,7 @@ struct CommunityPostView: View {
 /// Một bình luận: avatar, tên · thời gian, thân với `@handle` đã xác nhận được
 /// tô, nút "Trả lời".
 struct CommentRow<Notice: View>: View {
+  @Environment(\.openCommunityUser) private var openUser
   let comment: CommunityComment
   let reply: Bool
   let onReply: ((CommunityComment) -> Void)?
@@ -341,7 +343,17 @@ struct CommentRow<Notice: View>: View {
 
   var body: some View {
     HStack(alignment: .top, spacing: DS.Spacing.sm) {
-      MascotAvatar(mascotId: comment.author?.mascotId, size: reply ? 24 : 32)
+      // Avatar mở hồ sơ — vùng chạm CẠNH thân bình luận, không lồng (RN #120).
+      Button {
+        if let id = comment.author?.userId { openUser?(id) }
+      } label: {
+        MascotAvatar(mascotId: comment.author?.mascotId, size: reply ? 24 : 32)
+          .frame(minWidth: 44, minHeight: 44, alignment: .top)
+          .contentShape(Rectangle())
+      }
+      .buttonStyle(.plain)
+      .disabled(comment.author == nil || openUser == nil)
+      .accessibilityLabel(Text(verbatim: comment.author?.displayName ?? "—"))
       VStack(alignment: .leading, spacing: 4) {
         VStack(alignment: .leading, spacing: 2) {
           HStack(alignment: .firstTextBaseline, spacing: DS.Spacing.sm) {
@@ -354,6 +366,12 @@ struct CommentRow<Notice: View>: View {
               .foregroundStyle(DS.Color.mutedForeground.swiftUI)
           }
           Text(Self.body(comment))
+            // `@handle` đã xác nhận là một liên kết tới hồ sơ người ấy.
+            .environment(\.openURL, OpenURLAction { url in
+              guard let id = Self.mentionUserId(url) else { return .systemAction }
+              openUser?(id)
+              return .handled
+            })
             .font(DS.TextStyle.body)
             .foregroundStyle(DS.Color.foreground.swiftUI)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -385,13 +403,28 @@ struct CommentRow<Notice: View>: View {
   }
 
   /// `mentionParts`: đoạn nhắc server đã xác nhận được tô; còn lại là chữ.
+  /// Liên kết nội bộ của một lượt nhắc: `ascnd-user:<user_id>`.
+  static func mentionURL(_ userId: String) -> URL? {
+    var c = URLComponents()
+    c.scheme = "ascnd-user"
+    c.path = userId
+    return c.url
+  }
+
+  static func mentionUserId(_ url: URL) -> String? {
+    guard url.scheme == "ascnd-user" else { return nil }
+    let id = URLComponents(url: url, resolvingAgainstBaseURL: false)?.path ?? ""
+    return id.isEmpty ? nil : id
+  }
+
   static func body(_ c: CommunityComment) -> AttributedString {
     var out = AttributedString()
     for part in CommentThread.mentionParts(c.body, known: c.mentions) {
       var s = AttributedString(part.text)
-      if part.userId != nil {
+      if let id = part.userId {
         s.foregroundColor = DS.Color.metricBlue.swiftUI
         s.font = DS.TextStyle.body.weight(.semibold)
+        s.link = Self.mentionURL(id)
       }
       out += s
     }

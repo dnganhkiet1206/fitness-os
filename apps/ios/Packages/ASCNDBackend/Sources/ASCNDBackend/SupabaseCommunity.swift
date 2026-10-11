@@ -7,7 +7,7 @@ import Supabase
 /// server lọc (`20260927120000_community_foundation.sql`,
 /// `20261007220000_community_report_trust.sql`); thích / lưu chỉ đọc hàng của
 /// mình.
-public struct SupabaseCommunity: CommunityFeedRemote, CommunityProfileRemote, CommunityPostRemote {
+public struct SupabaseCommunity: CommunityFeedRemote, CommunityProfileRemote, CommunityPostRemote, CommunityUserRemote {
   private let client: SupabaseClient
 
   public init(backend: Backend) {
@@ -286,6 +286,187 @@ public struct SupabaseCommunity: CommunityFeedRemote, CommunityProfileRemote, Co
     let code = (error as? PostgrestError)?.code
     if code == "54000" { return .reportLimit }
     return .server(code: code)
+  }
+
+  // MARK: - Hồ sơ một người (#527, lát 5)
+
+  struct UserParams: Encodable, Sendable {
+    let p_user: String
+  }
+
+  struct FolloweeDTO2: Decodable, Sendable {
+    let followee_id: String
+  }
+
+  struct KindDTO: Decodable, Sendable {
+    let kind: String
+  }
+
+  struct MutedIdDTO: Decodable, Sendable {
+    let muted_id: String
+  }
+
+  /// `useCommunityUser`: hồ sơ (`maybeSingle`).
+  public func userProfile(id: String) async throws -> JSONValue? {
+    let rows: [JSONValue] = try await client.from("community_profiles")
+      .select(CommunityFeed.profileColumns)
+      .eq("user_id", value: id)
+      .limit(1)
+      .execute().value
+    return rows.first
+  }
+
+  /// Hai `count: 'exact', head: true` của `useCommunityUser`.
+  public func followCounts(userId: String) async throws -> (followers: Int, following: Int) {
+    async let a = client.from("community_follows").select("follower_id", head: true, count: .exact)
+      .eq("followee_id", value: userId).execute()
+    async let b = client.from("community_follows").select("followee_id", head: true, count: .exact)
+      .eq("follower_id", value: userId).execute()
+    let (x, y) = try await (a, b)
+    return (x.count ?? 0, y.count ?? 0)
+  }
+
+  public func iFollow(me: String, userId: String) async throws -> Bool {
+    let rows: [FolloweeDTO2] = try await client.from("community_follows")
+      .select("followee_id")
+      .eq("follower_id", value: me)
+      .eq("followee_id", value: userId)
+      .execute().value
+    return !rows.isEmpty
+  }
+
+  /// `useCommunityUserKinds`: `select('kind').limit(500)`.
+  public func userKinds(userId: String) async throws -> [String] {
+    let rows: [KindDTO] = try await client.from("community_posts")
+      .select("kind")
+      .eq("author_id", value: userId)
+      .limit(500)
+      .execute().value
+    return rows.map(\.kind)
+  }
+
+  public func userStats(userId: String) async throws -> [JSONValue] {
+    let v: JSONValue = try await client.rpc("community_user_stats", params: UserParams(p_user: userId)).execute().value
+    if case .array(let a) = v { return a }
+    return []
+  }
+
+  public func userBadges(userId: String) async throws -> [JSONValue] {
+    let v: JSONValue = try await client.rpc("community_user_badges", params: UserParams(p_user: userId)).execute().value
+    if case .array(let a) = v { return a }
+    return []
+  }
+
+  /// `useMutedUsers` (phần hàng): còn hạn, hạn gần nhất trước.
+  public func mutes(me: String, nowISO: String) async throws -> [JSONValue] {
+    try await client.from("community_mutes")
+      .select("muted_id, until")
+      .eq("user_id", value: me)
+      .gt("until", value: nowISO)
+      .order("until", ascending: true)
+      .execute().value
+  }
+
+  /// `useProgressJourney`: 100 bài Tiến trình mới nhất.
+  public func journeyPosts(userId: String) async throws -> [JSONValue] {
+    try await client.from("community_posts")
+      .select("id, created_at, payload")
+      .eq("author_id", value: userId)
+      .eq("kind", value: "progress")
+      .order("created_at", ascending: false)
+      .order("id", ascending: false)
+      .limit(100)
+      .execute().value
+  }
+
+  /// `useFollow`: chèn (23505 = đã theo dõi) / xoá phải chạm ≥ 1 hàng.
+  public func follow(me: String, userId: String, on: Bool) async throws {
+    do {
+      if on {
+        do {
+          try await client.from("community_follows")
+            .insert(JSONValue.object(["follower_id": .string(me), "followee_id": .string(userId)])).execute()
+        } catch {
+          if (error as? PostgrestError)?.code == "23505" { return }
+          throw error
+        }
+      } else {
+        let gone: [FolloweeDTO2] = try await client.from("community_follows")
+          .delete().eq("follower_id", value: me).eq("followee_id", value: userId)
+          .select("followee_id").execute().value
+        if gone.isEmpty { throw CommunityModerationFailure.nothingWritten }
+      }
+    } catch let f as CommunityModerationFailure {
+      throw f
+    } catch {
+      throw Self.moderationFailure(error)
+    }
+  }
+
+  /// `useMute`: 23505 = đã có dòng (có thể HẾT HẠN) → xoá dòng của mình rồi
+  /// chèn lại để có hạn mới 30 ngày (không có policy UPDATE).
+  public func mute(me: String, userId: String) async throws {
+    let row = JSONValue.object(["muted_id": .string(userId)])
+    do {
+      do {
+        try await client.from("community_mutes").insert(row).execute()
+        return
+      } catch {
+        guard (error as? PostgrestError)?.code == "23505" else { throw error }
+      }
+      let gone: [MutedIdDTO] = try await client.from("community_mutes")
+        .delete().eq("user_id", value: me).eq("muted_id", value: userId)
+        .select("muted_id").execute().value
+      if gone.isEmpty { throw CommunityModerationFailure.nothingWritten }
+      do {
+        try await client.from("community_mutes").insert(row).execute()
+      } catch {
+        if (error as? PostgrestError)?.code == "23505" { return }
+        throw error
+      }
+    } catch let f as CommunityModerationFailure {
+      throw f
+    } catch {
+      throw Self.moderationFailure(error)
+    }
+  }
+
+  /// `useUnmute`: xoá phải chạm ≥ 1 hàng (`nPgUnmuteGone`).
+  public func unmute(me: String, userId: String) async throws {
+    let gone: [MutedIdDTO]
+    do {
+      gone = try await client.from("community_mutes")
+        .delete().eq("user_id", value: me).eq("muted_id", value: userId)
+        .select("muted_id").execute().value
+    } catch {
+      throw Self.moderationFailure(error)
+    }
+    if gone.isEmpty { throw CommunityModerationFailure.nothingWritten }
+  }
+
+  /// `useBlock`: 23505 = đã chặn — kết quả người ta muốn.
+  public func block(me: String, userId: String) async throws {
+    do {
+      try await client.from("community_blocks")
+        .insert(JSONValue.object(["blocker_id": .string(me), "blocked_id": .string(userId)])).execute()
+    } catch {
+      if (error as? PostgrestError)?.code == "23505" { return }
+      throw Self.moderationFailure(error)
+    }
+  }
+
+  /// `useReport` cho một người (`reported_user_id`).
+  public func reportUser(me: String, userId: String, reason: CommunityReportReason) async throws {
+    let row: JSONValue = .object([
+      "reporter_id": .string(me), "post_id": .null, "comment_id": .null,
+      "reported_user_id": .string(userId), "reason": .string(reason.rawValue),
+    ])
+    do {
+      try await client.from("community_reports").insert(row).execute()
+    } catch {
+      if (error as? PostgrestError)?.code == "23505" { return }
+      throw Self.moderationFailure(error)
+    }
   }
 
   public func artURL(path: String) -> URL? {
