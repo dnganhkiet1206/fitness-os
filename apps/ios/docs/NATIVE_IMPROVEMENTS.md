@@ -170,5 +170,8 @@ miễn **giữ nguyên ý định** của app và chỉ làm app tốt hơn — 
 | Cộng đồng — màn một thử thách: đầu màn | Hình cúp (đặc khi đã đạt / đã nhận) | Linh vật của người dùng, cảm xúc "ăn mừng" khi đạt / nhận | tạm thời (chưa có hình linh vật native) | không cần | #527 (`native/ios-rewrite`) | E |
 | Cộng đồng — nhận thưởng thử thách | Rung thành công + thẻ chúc mừng (cùng hàng đợi với thử thách tuần); không toast | Thẻ chúc mừng + `toast.success` | lệch nền tảng (app chưa có toast) | không cần | #527 (`native/ios-rewrite`) | E |
 | Cộng đồng — câu hạn chót nhận thưởng | Ghép "Nhận N xu" + " · " + "còn N ngày" / "hôm nay là ngày cuối" từ khoá số ít / số nhiều riêng | Một chuỗi với hai biến số nhiều (`{c:…}` và `{n:…}`) | lệch nền tảng (xcstrings của native không dùng hai biến thể số nhiều trong một khoá); chữ hiện ra giống hệt | không cần | #527 (`native/ios-rewrite`) | E |
+| Ghi giấc ngủ — ghi ngược Apple Health | Không ghi (`writeSleepToHealth` không port) | Ghi một mẫu `asleepCore` sau mỗi lần lưu | guardrail #527 (No HealthKit writeback) | không cần | #527 (`native/ios-rewrite`) | A |
+| Ghi giấc ngủ — phát lại lần sửa lúc mất mạng | Hàng cần sửa được GHI ĐÈ (upsert theo id của nó) — vẫn idempotent | `upsert(…, { ignoreDuplicates: true })` với id của hàng cần sửa → hàng đã có nên bị bỏ qua: lần sửa mất | sửa lỗi RN | không cần | #527 (`native/ios-rewrite`) | A |
+| Ghi giấc ngủ — dựng lại `daily_logs` hỏng sau khi đã ghi | Vẫn là "đã lưu" (giấc đã ghi); ngày tự sửa ở lần ghi kế (như `rebuildAfterWrite`) | `recomputeDailyLog` ném → `toast.fail`, dù hàng đã ghi — bấm lại thì thành SỬA | sửa lỗi RN | không cần | #527 (`native/ios-rewrite`) | A |
 
 Thêm dòng mới ở cuối bảng; giữ dòng cũ — sổ là lịch sử, không phải danh sách việc.

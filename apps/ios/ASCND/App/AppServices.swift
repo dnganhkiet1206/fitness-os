@@ -340,6 +340,14 @@ final class AppServices {
       onSaved: { [weak self] _ in self?.weightSaved += 1 })
   }
 
+  /// Ghi giấc ngủ (#527 `log-sleep`): đọc / ghi `sleep_logs` và dựng lại
+  /// `daily_logs` qua `RowStore`; mất mạng xếp outbox kind `sleep`.
+  func makeSleepLogger(userId: String) -> SleepLogger? {
+    guard let rows else { return nil }
+    let sync = self.sync
+    return SleepLogger(userId: userId, store: rows, outbox: outbox, onEnqueued: { _ in sync.kick() })
+  }
+
   /// Ghi số đo cơ thể (#527 `log-measurement`): có mạng upsert thẳng; mất
   /// mạng xếp outbox kind `measurement`, gửi ngay khi có mạng.
   func makeMeasurementLogger(userId: String) -> MeasurementLogger? {

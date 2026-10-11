@@ -37,6 +37,9 @@ public struct SupabaseRemoteWriter: RemoteWriter {
     // Một lần đo (#527 `log-measurement`): upsert theo `(user_id, date)`, GHI
     // ĐÈ — như `applyOfflineWrite` `case 'measurement'`.
     MeasurementLog.kind: "body_measurements",
+    // Một giấc ngủ (#527 `log-sleep`): luật "ghi lại là sửa" rồi upsert theo
+    // `id` — như `case 'sleep'`, nhưng GHI ĐÈ (xem `sendSleep`).
+    SleepLog.kind: "sleep_logs",
   ]
 
   /// Bản ghi lại (#296) GHI ĐÈ hàng có sẵn; bản ghi mới thì bỏ trùng
@@ -104,6 +107,8 @@ public struct SupabaseRemoteWriter: RemoteWriter {
         try await SupabaseWeightLog.write(client, row: entry.payload, userId: entry.userId)
       } else if entry.kind == MeasurementLog.kind {
         try await SupabaseMeasurementLog.write(client, row: entry.payload)
+      } else if entry.kind == SleepLog.kind {
+        try await sendSleep(entry)
       } else if entry.kind == PlanEdit.routineDayKind {
         // Gán ngày (#401): `upsert … onConflict: 'user_id,day_of_week'` như
         // baseline (`use-library.ts:461`) — một hàng mỗi ngày, gửi lại là ghi
@@ -120,6 +125,34 @@ public struct SupabaseRemoteWriter: RemoteWriter {
       throw Self.classify(error)
     }
     await afterWrite(entry)
+  }
+
+  /// `case 'sleep'`: hàng của ngày thức dậy CHỒNG LẤN giấc này thì upsert vào
+  /// đúng id ấy (sửa), không thì vào id cố định của lần chạm.
+  ///
+  /// RN behavior: `upsert(…, { onConflict: 'id', ignoreDuplicates: true })` — với
+  ///   id của hàng cần sửa, hàng ấy ĐÃ có nên bị bỏ qua: lần sửa lúc mất mạng mất.
+  /// Native behavior: ghi đè. Vẫn idempotent — phát lại là cùng nội dung vào
+  ///   cùng id. Đọc hỏng: ghi như hàng mới (như RN).
+  private func sendSleep(_ entry: OutboxEntry) async throws {
+    guard case .object(var row) = entry.payload,
+      let wake = row["waketime"]?.stringValue.flatMap({ EpochMillis(iso8601: $0) })
+    else { return }
+    let r = DailyLog.dayRange(LocalDate(wake, in: .current), in: .current)
+    let found: [JSONValue]? = try? await client.from("sleep_logs")
+      .select("id, bedtime, waketime")
+      .eq("user_id", value: entry.userId)
+      .gte("waketime", value: r.start)
+      .lt("waketime", value: r.end)
+      .execute()
+      .value
+    if let found,
+      let id = SleepLog.replaceId(
+        bed: row["bedtime"]?.stringValue ?? "", wake: row["waketime"]?.stringValue ?? "", rows: found)
+    {
+      row["id"] = .string(id)
+    }
+    try await client.from("sleep_logs").upsert(JSONValue.object(row), onConflict: "id").execute()
   }
 
   /// Bản ghi lại / gỡ set có `base`: đọc hàng NGAY lúc gửi, áp phần máy này
@@ -165,6 +198,7 @@ public struct SupabaseRemoteWriter: RemoteWriter {
     // Không có `id` hàng: hàng xác định bởi (người, ngày) — `WeightLog.isRow`.
     if entry.kind == WeightLog.kind { return WeightLog.isRow(entry) }
     if entry.kind == MeasurementLog.kind { return MeasurementLog.isRow(entry) }
+    if entry.kind == SleepLog.kind { return SleepLog.isRow(entry) }
     if entry.kind == MealLog.kind { return MealLog.isRow(entry) }
     if entry.kind == PlanEdit.routineDayKind {
       // Không có `id`: hàng xác định bởi (người, ngày). Người phải là chủ bản

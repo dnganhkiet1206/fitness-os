@@ -32,6 +32,7 @@ public enum DeepLink {
     case mealPlan(id: String)
     case logWeight
     case logMeasurement
+    case logSleep
     /// `sessions`.
     case history
     case logWorkout
@@ -51,7 +52,7 @@ public enum DeepLink {
         switch s {
         case .water, .supplements, .diary, .logMeal, .foods, .nutritionInsights, .mealPlans, .mealPlan: .nutrition
         case .history, .logWorkout, .templates: .workouts
-        case .logWeight, .logMeasurement, .reminders: .today
+        case .logWeight, .logMeasurement, .logSleep, .reminders: .today
         }
       }
     }
@@ -90,6 +91,7 @@ public enum DeepLink {
     case "meal-plan": return q["plan"].map { .screen(.mealPlan(id: $0)) } ?? .screen(.mealPlans)
     case "log-weight": return .screen(.logWeight)
     case "log-measurement": return .screen(.logMeasurement)
+    case "log-sleep": return .screen(.logSleep)
     case "sessions": return .screen(.history)
     case "log-workout": return .screen(.logWorkout)
     case "reminders": return .screen(.reminders)
@@ -100,7 +102,7 @@ public enum DeepLink {
     case "exercises", "exercise-guide", "exercise-insight", "media-viewer": return .tab(.workouts)
     case "ai-coach", "coach-memory": return .tab(.assistant)
     case "mascot-room", "koa-sheet", "shop", "awards", "challenges", "biometrics", "log-biometrics", "weekly-review",
-      "steps", "sleep-insights", "log-sleep", "smart-goals", "measurements-trend", "progress-photos", "settings",
+      "steps", "sleep-insights", "smart-goals", "measurements-trend", "progress-photos", "settings",
       "edit-profile", "change-password", "legal":
       return .tab(.today)
     default:
