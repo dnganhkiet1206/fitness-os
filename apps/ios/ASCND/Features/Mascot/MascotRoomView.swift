@@ -101,12 +101,13 @@ struct MascotRoomView: View {
               .background(DS.Color.secondary.swiftUI, in: Capsule())
           }
           energyCard
+          dressingChip
           levelCard
           freezeCard
           journeyCard
           questsCard
           weeklyCard
-          counts
+          shortcuts
         }
         .padding(DS.Spacing.md)
       }
@@ -359,7 +360,7 @@ struct MascotRoomView: View {
         if room.showsStreakBonus {
           rewardRow(
             title: streakText(room.streak.count), coins: room.streakBonus, xp: MascotRules.streakXp,
-            claimed: room.isClaimed(room.streakRefKey)
+            claimed: room.isClaimed(room.streakRefKey), flame: true
           ) {
             Button(String(localized: "mr.claim")) {
               Task { await claimStreak() }
@@ -373,23 +374,43 @@ struct MascotRoomView: View {
     }
   }
 
+  /// Một hàng thưởng (`questRow` của RN): tên (đã nhận thì mờ đi), dưới là
+  /// đồng xu + "+N" vàng + "+N XP" tím; bên phải "✓ Đã nhận" xanh hoặc việc.
   private func rewardRow<Action: View>(
-    title: String, coins: Int, xp: Int, claimed: Bool, @ViewBuilder action: () -> Action
+    title: String, coins: Int, xp: Int, claimed: Bool, flame: Bool = false, @ViewBuilder action: () -> Action
   ) -> some View {
-    HStack {
-      VStack(alignment: .leading, spacing: 2) {
-        Text(verbatim: title)
-          .strikethrough(claimed)
-          .foregroundStyle(claimed ? DS.Color.mutedForeground.swiftUI : DS.Color.foreground.swiftUI)
-        Text(verbatim: "+\(coins) · +\(xp) XP")
-          .font(DS.TextStyle.caption.monospacedDigit())
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+    HStack(spacing: DS.Spacing.md) {
+      VStack(alignment: .leading, spacing: 3) {
+        HStack(spacing: 6) {
+          if flame {
+            Image(systemName: "flame.fill").font(.footnote)
+              .foregroundStyle(DS.Color.metricOrangeGraphic.swiftUI)
+              .accessibilityHidden(true)
+          }
+          Text(verbatim: title)
+            .font(DS.TextStyle.body)
+            .foregroundStyle(claimed ? DS.Color.mutedForeground.swiftUI : DS.Color.foreground.swiftUI)
+        }
+        HStack(spacing: 4) {
+          Image(systemName: "circle.circle.fill").font(.system(size: 11))
+            .foregroundStyle(DS.Color.readinessYellowGraphic.swiftUI)
+            .accessibilityHidden(true)
+          Text(verbatim: "+\(coins)")
+            .foregroundStyle(DS.Color.readinessYellow.swiftUI)
+          Text(verbatim: "+\(xp) XP")
+            .foregroundStyle(DS.Color.metricPurple.swiftUI)
+            .padding(.leading, 4)
+        }
+        .font(DS.TextStyle.caption.weight(.bold).monospacedDigit())
       }
-      Spacer()
+      Spacer(minLength: 0)
       if claimed {
-        Label(String(localized: "mr.claimed"), systemImage: "checkmark")
-          .font(DS.TextStyle.caption.weight(.semibold))
-          .foregroundStyle(DS.Color.readinessGreen.swiftUI)
+        HStack(spacing: 4) {
+          Image(systemName: "checkmark").font(.system(size: 12, weight: .heavy))
+          Text(String(localized: "mr.claimed"))
+        }
+        .font(DS.TextStyle.footnote.weight(.semibold))
+        .foregroundStyle(DS.Color.readinessGreen.swiftUI)
       } else {
         action()
       }
@@ -417,58 +438,64 @@ struct MascotRoomView: View {
     }
   }
 
-  /// Số thử thách đã xong / tổng; số huy hiệu — mỗi hàng dẫn tới màn của nó khi có sổ.
-  private var counts: some View {
-    DSCard {
-      VStack(spacing: DS.Spacing.sm) {
-        if let challenges {
-          NavigationLink {
-            ChallengesView(book: challenges, lang: lang)
-          } label: {
-            challengesRow
-          }
-        } else {
-          challengesRow
+  /// Lối vào phòng thử đồ (`ActionChip` "Phòng thay đồ" của RN): ô biểu tượng
+  /// tím + tên, trên thẻ có viền. RN có thêm "Đổi bạn đồng hành" (mở Cài đặt);
+  /// native chỉ có Koa nên chưa có ô ấy.
+  @ViewBuilder private var dressingChip: some View {
+    if let shop {
+      NavigationLink {
+        ShopView(book: shop, lang: lang) { Task { await room.load() } }
+      } label: {
+        HStack(spacing: 6) {
+          Image(systemName: "tshirt.fill")
+            .font(.system(size: 15))
+            .foregroundStyle(DS.Color.metricPurple.swiftUI)
+            .frame(width: 28, height: 28)
+            .background(DS.Color.metricPurple.swiftUI.opacity(0.11), in: RoundedRectangle(cornerRadius: 9))
+            .accessibilityHidden(true)
+          Text(String(localized: "shop.title"))
+            .font(DS.TextStyle.caption.weight(.semibold))
+            .foregroundStyle(DS.Color.foreground.swiftUI)
+            .lineLimit(1)
         }
-        if let awards {
-          NavigationLink {
-            AwardsView(book: awards, lang: lang)
-          } label: {
-            awardsRow
-          }
-        } else {
-          awardsRow
-        }
-        if let shop {
-          NavigationLink {
-            ShopView(book: shop, lang: lang) { Task { await room.load() } }
-          } label: {
-            LabeledContent(String(localized: "shop.title")) {
-              Image(systemName: "bag.fill")
-            }
-            // giá trị chỉ là biểu tượng → gộp hàng thành một phần tử có tên,
-            // không thì VoiceOver đọc nút trống
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(Text(String(localized: "shop.title")))
-          }
-        }
+        .frame(maxWidth: .infinity, minHeight: 46)
+        .padding(.horizontal, DS.Spacing.sm)
+        .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.lg))
+        .overlay(RoundedRectangle(cornerRadius: DS.Radius.lg).stroke(DS.Color.border.swiftUI, lineWidth: 1))
+        .contentShape(Rectangle())
       }
+      .buttonStyle(.plain)
     }
   }
 
-  private var challengesRow: some View {
-    LabeledContent(String(localized: "mr.challenges")) {
-      if let all = room.challenges, !all.isEmpty {
-        Text(verbatim: "\(all.filter(\.completed).count)/\(all.count)").monospacedDigit()
+  /// Thử thách (đã xong / tổng) và Huy chương (số đã đạt) — hai `ShortcutRow`
+  /// của RN: thẻ riêng, biểu tượng, tên, số, mũi tên; mỗi hàng dẫn tới màn của
+  /// nó khi có sổ.
+  private var shortcuts: some View {
+    let all = room.challenges ?? []
+    let challengeValue = all.isEmpty ? nil : "\(all.filter(\.completed).count)/\(all.count)"
+    let awardValue = room.awardCount.flatMap { $0 > 0 ? String($0) : nil }
+    return VStack(spacing: DS.Spacing.sm) {
+      if let challenges {
+        NavigationLink {
+          ChallengesView(book: challenges, lang: lang)
+        } label: {
+          ShortcutRow(symbol: "flag.2.crossed.fill", label: String(localized: "mr.challenges"), value: challengeValue)
+        }
+        .buttonStyle(.plain)
       } else {
-        Text(verbatim: "—")
+        ShortcutRow(symbol: "flag.2.crossed.fill", label: String(localized: "mr.challenges"), value: challengeValue)
       }
-    }
-  }
-
-  private var awardsRow: some View {
-    LabeledContent(String(localized: "mr.awards")) {
-      Text(verbatim: room.awardCount.map { $0 > 0 ? String($0) : "—" } ?? "—").monospacedDigit()
+      if let awards {
+        NavigationLink {
+          AwardsView(book: awards, lang: lang)
+        } label: {
+          ShortcutRow(symbol: "medal", label: String(localized: "mr.awards"), value: awardValue)
+        }
+        .buttonStyle(.plain)
+      } else {
+        ShortcutRow(symbol: "medal", label: String(localized: "mr.awards"), value: awardValue)
+      }
     }
   }
 
@@ -756,5 +783,41 @@ extension Color {
     let v = UInt32(s, radix: 16) ?? 0x8b93a4
     self.init(
       red: Double((v >> 16) & 0xff) / 255, green: Double((v >> 8) & 0xff) / 255, blue: Double(v & 0xff) / 255)
+  }
+}
+
+/// Một hàng lối tắt (`shortcut-row.tsx`): biểu tượng mờ, tên (xuống dòng khi
+/// cần, không cắt), số, mũi tên — trên thẻ có viền. VoiceOver đọc "tên, số".
+private struct ShortcutRow: View {
+  let symbol: String
+  let label: String
+  let value: String?
+
+  var body: some View {
+    HStack(spacing: DS.Spacing.sm) {
+      Image(systemName: symbol).font(.system(size: 15))
+        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        .frame(width: 20)
+      Text(label)
+        .font(DS.TextStyle.body)
+        .foregroundStyle(DS.Color.foreground.swiftUI)
+        .frame(maxWidth: .infinity, alignment: .leading)
+      if let value {
+        Text(verbatim: value)
+          .font(DS.TextStyle.footnote.monospacedDigit())
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          .lineLimit(1)
+      }
+      Image(systemName: "chevron.right").font(.system(size: 14, weight: .semibold))
+        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+    }
+    .frame(minHeight: 28)
+    .padding(.horizontal, DS.Spacing.card)
+    .padding(.vertical, DS.Spacing.sm + 2)
+    .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.lg))
+    .overlay(RoundedRectangle(cornerRadius: DS.Radius.lg).stroke(DS.Color.border.swiftUI, lineWidth: 1))
+    .contentShape(Rectangle())
+    .accessibilityElement(children: .ignore)
+    .accessibilityLabel(Text(verbatim: value.map { "\(label), \($0)" } ?? label))
   }
 }
