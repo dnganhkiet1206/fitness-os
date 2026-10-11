@@ -66,6 +66,11 @@ struct ASCNDApp: App {
           services.sync.setSignedInUser(user)
           services.widgets.setUser(user)
         }
+        // `ascnd://` (#527 deep link): link email auth (xác nhận đăng ký, đặt
+        // lại mật khẩu) mở phiên; các link khác chưa dẫn đi đâu.
+        .onOpenURL { url in
+          Task { await services.session.open(url) }
+        }
     }
     .onChange(of: scenePhase) { _, phase in
       // Quay lại foreground: tính lại từ `endsAt` ngay, đóng quãng nghỉ đã hết

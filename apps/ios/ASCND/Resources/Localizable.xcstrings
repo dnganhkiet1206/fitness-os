@@ -1590,6 +1590,190 @@
     }
    }
   },
+  "auth.link.error.expired": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "The link has expired or was already used. Request a new one from the sign-in screen."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Liên kết đã hết hạn hoặc đã được dùng. Hãy yêu cầu liên kết mới từ màn đăng nhập."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "El enlace caducó o ya se usó. Solicita uno nuevo desde la pantalla de inicio de sesión."
+     }
+    }
+   }
+  },
+  "auth.link.error.invalid": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Something went wrong with this link. Request a new one and try again."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Liên kết này bị lỗi. Hãy yêu cầu liên kết mới rồi thử lại."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Algo falló con este enlace. Solicita uno nuevo e inténtalo otra vez."
+     }
+    }
+   }
+  },
+  "auth.link.error.otherDevice": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Open the link on the same device where you requested it."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hãy mở liên kết trên đúng máy đã yêu cầu nó."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Abre el enlace en el mismo dispositivo donde lo solicitaste."
+     }
+    }
+   }
+  },
+  "auth.link.error.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "This link can't be used"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Không dùng được liên kết này"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "No se puede usar este enlace"
+     }
+    }
+   }
+  },
+  "auth.link.error.title.recovery": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Couldn't reset your password"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Không đặt lại được mật khẩu"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "No se pudo restablecer la contraseña"
+     }
+    }
+   }
+  },
+  "auth.link.later": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Later"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Để sau"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Más tarde"
+     }
+    }
+   }
+  },
+  "auth.link.recovery.message": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "You opened a password reset link. Choose a new password for your account."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bạn đã mở liên kết đặt lại mật khẩu. Hãy chọn mật khẩu mới cho tài khoản."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Abriste un enlace para restablecer la contraseña. Elige una contraseña nueva para tu cuenta."
+     }
+    }
+   }
+  },
+  "auth.link.verifying": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Opening your link…"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đang mở liên kết…"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Abriendo tu enlace…"
+     }
+    }
+   }
+  },
   "auth.error.appleCancelled": {
    "extractionState": "manual",
    "localizations": {

@@ -41,6 +41,15 @@ struct RootGate: View {
       reduceMotion ? nil : .easeInOut(duration: 0.25),
       value: phaseKey
     )
+    // Link email auth (#527 deep link lát 1): ngoài cây theo phiên, để mở
+    // phiên (đăng nhập → app) không dựng lại màn đặt mật khẩu mới.
+    .sheet(
+      isPresented: Binding(
+        get: { services.session.authLink != nil },
+        set: { if !$0 { services.session.dismissAuthLink() } })
+    ) {
+      AuthLinkSheet()
+    }
   }
 
   /// Key để SwiftUI biết khi nào phase đổi → chạy transition.

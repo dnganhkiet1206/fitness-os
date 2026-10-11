@@ -1,3 +1,4 @@
+public import Foundation
 public import Observation
 
 /// Phiên đăng nhập như phần còn lại của app thấy nó.
@@ -31,6 +32,14 @@ public protocol AuthAPI: Sendable {
   /// ném `PasswordChangeFailure` đã gọi đúng tên.
   func updatePassword(_ password: String) async throws
   func signOut() async throws
+  /// Mở phiên từ link email (`auth.session(from:)`). Nên ném
+  /// `AuthLinkFailure` đã gọi đúng tên.
+  func session(from url: URL) async throws
+}
+
+extension AuthAPI {
+  /// Mặc định: không hỗ trợ link — bản giả trong test không cần viết.
+  public func session(from url: URL) async throws { throw AuthLinkFailure.invalid }
 }
 
 /// Trạng thái đăng nhập của app — một nguồn, quan sát được.
@@ -53,6 +62,8 @@ public final class SessionStore {
   }
 
   public private(set) var phase: Phase = .loading
+  /// Link email auth đang mở (`open(_:)`); `nil` khi không có.
+  public private(set) var authLink: AuthLinkState?
 
   public var session: AuthSession? {
     if case .signedIn(let s) = phase { return s }
@@ -133,6 +144,38 @@ public final class SessionStore {
 
   public func resetPassword(email: String) async throws {
     try await api.resetPassword(email: email)
+  }
+
+  /// Link `ascnd://` vừa mở app. `false` khi không phải link auth (để bộ định
+  /// tuyến route lo). Link đặt lại mật khẩu: mở phiên rồi `recoveryReady` —
+  /// màn gốc hỏi mật khẩu mới. Phiên mở xong được áp ngay (qua cùng `apply`
+  /// như một sự kiện, nên đổi tài khoản vẫn dọn dữ liệu người trước), không
+  /// đợi sự kiện tới muộn.
+  @discardableResult
+  public func open(_ url: URL) async -> Bool {
+    guard let link = AuthLink(url) else { return false }
+    if let failure = link.failure {
+      authLink = .failed(link.kind, failure)
+      return true
+    }
+    authLink = .verifying(link.kind)
+    do {
+      try await api.session(from: url)
+      if let s = try? await api.currentSession(), s != session {
+        await apply(.signedIn, s)
+      }
+      authLink = link.kind == .recovery ? .recoveryReady : nil
+    } catch let f as AuthLinkFailure {
+      authLink = .failed(link.kind, f)
+    } catch {
+      authLink = .failed(link.kind, NetworkFailure.isOffline(error) ? .offline : .invalid)
+    }
+    return true
+  }
+
+  /// Người dùng đóng màn link (đã đặt mật khẩu, hay bỏ qua — phiên vẫn mở).
+  public func dismissAuthLink() {
+    authLink = nil
   }
 
   /// Đăng xuất và đợi dọn xong. Lỗi mạng khi báo server không giữ người dùng

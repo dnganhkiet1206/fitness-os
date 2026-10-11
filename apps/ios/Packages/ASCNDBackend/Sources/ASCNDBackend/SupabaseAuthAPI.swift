@@ -85,6 +85,26 @@ public struct SupabaseAuthAPI: AuthAPI {
     try await client.auth.signOut()
   }
 
+  /// Link email quay về app (`ascnd:///…?code=…`, PKCE — mặc định của
+  /// supabase-swift): đổi `code` lấy phiên. Thành công thì supabase-swift lưu
+  /// phiên và phát `signedIn`.
+  public func session(from url: URL) async throws {
+    do {
+      _ = try await client.auth.session(from: url)
+    } catch {
+      throw Self.linkFailure(error)
+    }
+  }
+
+  /// Lỗi của `session(from:)` → `AuthLinkFailure`. Lỗi gắn trong link đến qua
+  /// `pkceGrantCodeExchange(code:)`; lỗi của server qua `errorCode`.
+  static func linkFailure(_ error: any Error) -> AuthLinkFailure {
+    if NetworkFailure.isOffline(error) { return .offline }
+    guard let auth = error as? AuthError else { return .invalid }
+    if case .pkceGrantCodeExchange(_, _, let code) = auth { return AuthLinkFailure(code: code) }
+    return AuthLinkFailure(code: auth.errorCode.rawValue)
+  }
+
   static func session(from s: Session) -> AuthSession {
     AuthSession(userId: s.user.id.uuidString.lowercased(), email: s.user.email)
   }
