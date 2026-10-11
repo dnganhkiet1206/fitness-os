@@ -309,10 +309,7 @@ struct CommunityChallengeView: View {
     let left = CommunityChallenges.dayGap(book.today, ch.endsOn)
     let open = (left ?? -1) >= 0
     VStack(spacing: DS.Spacing.sm) {
-      Image(systemName: done || ch.claimed ? "trophy.fill" : "trophy")
-        .font(.system(size: 56))
-        .foregroundStyle(DS.Color.readinessYellow.swiftUI)
-        .accessibilityHidden(true)
+      MascotFigureView(emotion: done || ch.claimed ? .celebrate : .idle, size: 120)
       Text(verbatim: ch.title)
         .font(DS.TextStyle.title)
         .foregroundStyle(DS.Color.foreground.swiftUI)

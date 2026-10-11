@@ -51,6 +51,27 @@ struct KoaFigureView: View {
   }
 }
 
+/// Linh vật theo cảm xúc (#527, K4) — `MascotFigure` của RN cho Koa: cảm xúc →
+/// biểu cảm / tư thế (`koaStateFor`), đồ đang mặc từ tủ đồ (`wornFrom`) với đồ
+/// của cảm xúc chồng lên; thử đồ thì luôn `happy` + `idle`.
+struct MascotFigureView: View {
+  var emotion: KoaEmotion.Emotion = .idle
+  /// Khoá `mascot_inventory` đang mặc, theo thứ tự hàng.
+  var equipped: [String] = []
+  var size: CGFloat = 160
+  var animated = true
+  var dress = false
+  var paper: Bool?
+
+  var body: some View {
+    let state = KoaEmotion.state(emotion)
+    KoaFigureView(
+      expression: dress ? .happy : state.expression, pose: dress ? .idle : state.pose, dress: dress,
+      worn: KoaEmotion.worn(equipped).merging(state.outfit) { _, new in new }, size: size, animated: animated,
+      paper: paper)
+  }
+}
+
 /// Đồng hồ của nhân vật (`figure-clock.ts`): CỘNG DỒN thời gian đã chạy, nên
 /// dừng (Reduce Motion, ra nền, rời màn) rồi chạy lại thì tiếp từ khung đang
 /// giữ chứ không nhảy cóc. Không quan sát được — chỉ là ô nhớ giữa các khung.

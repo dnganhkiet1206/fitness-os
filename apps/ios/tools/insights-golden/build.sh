@@ -36,6 +36,9 @@ for f in koa-scene koa-flags koa-pose koa-dress koa-frame figure-clock; do
   git show "fac9ac2:native/src/components/ascnd/koa/$f.ts" > "lib/$f.ts"
 done
 git show "fac9ac2:native/src/components/ascnd/koa/koa-figure.tsx" | node extract-koa.mjs > lib/koa-math.ts
+# Koa (#527, K4): bảng cảm xúc → biểu cảm / tư thế / đồ; `mascot-emotion.ts` chỉ cho kiểu.
+git show "fac9ac2:native/src/lib/koa-emotion.ts" > lib/koa-emotion.ts
+echo "export type MascotEmotion = string;" > lib/mascot-emotion.ts
 sed -i.bak "s#'@/components/ascnd/koa/\([a-z-]*\)'#'./\1'#g" lib/*.ts && rm -f lib/*.bak
 sed -i.bak "s#'@/lib/\([a-z0-9-]*\)'#'./\1'#g" lib/*.ts && rm -f lib/*.bak
 ../../../../native/node_modules/.bin/tsc --ignoreConfig --module commonjs --target es2020 --skipLibCheck --outDir out lib/*.ts

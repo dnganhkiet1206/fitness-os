@@ -13,8 +13,8 @@ import SwiftUI
 /// tuần (biên nhận, không nút); số thử thách / huy hiệu.
 ///
 /// Chưa có (ghi ở #527, không giả vờ):
-/// - Koa vẽ bằng SVG/Reanimated (`MascotScene`) → `MascotStage` là chỗ giữ
-///   chỗ có cấu trúc, nhận đúng các đầu vào của cảnh RN;
+/// - phần studio của `MascotScene` (cây, côn trùng, cái liếc) và cảm xúc do
+///   engine chọn — `MascotStage` vẽ Koa thật (K4) đứng `idle`, mặc đồ trong tủ;
 /// - câu nói / tâm trạng của Koa (`useMascot`), dòng "Koa để ý" (mô hình cá
 ///   nhân trên máy) — không có nguồn native;
 /// - tự nhận nhiệm vụ (`use-quest-autoclaim`, gắn toàn app ở RN);
@@ -36,6 +36,8 @@ struct MascotRoomView: View {
   @State private var burst: Burst?
   @State private var notice: String?
   @State private var celebrate = 0
+  /// Thanh DEV: ép một cảm xúc để soát hình (`setDevEmotion`), chỉ bản Debug.
+  @State private var devEmotion: KoaEmotion.Emotion?
 
   struct Burst: Equatable {
     let id: Int
@@ -52,8 +54,13 @@ struct MascotRoomView: View {
       .task {
         if shop == nil { shop = services.makeMascotShop(userId: room.userId) }
         await room.load()
+        // tủ đồ cho đồ Koa đang mặc trên sân khấu (`equippedOutfits` của RN)
+        if let shop, case .loading = shop.phase { await shop.load() }
       }
-      .refreshable { await room.load() }
+      .refreshable {
+        await room.load()
+        await shop?.load()
+      }
       .onChange(of: room.welcomeGranted) { _, amount in
         guard let amount else { return }
         say(amount == 1 ? String(localized: "mr.welcome.one") : String(localized: "mr.welcome.other \(amount)"))
@@ -83,6 +90,9 @@ struct MascotRoomView: View {
       ScrollView {
         VStack(spacing: DS.Spacing.md) {
           stage
+          #if DEBUG
+            devBar
+          #endif
           if let notice {
             Text(notice)
               .font(DS.TextStyle.footnote)
@@ -118,12 +128,50 @@ struct MascotRoomView: View {
       Text(room.balance == 1 ? String(localized: "mr.balance.one") : String(localized: "mr.balance.other \(room.balance)")))
   }
 
+  #if DEBUG
+    /// Thanh DEV của RN (`__DEV__`): ép một cảm xúc để soát hình, mở spec
+    /// sheet. Chữ cố ý không dịch — công cụ cho dev, bản Release không có.
+    private var devBar: some View {
+      ScrollView(.horizontal, showsIndicators: false) {
+        HStack(spacing: DS.Spacing.xs) {
+          devChip("auto", on: devEmotion == nil) { devEmotion = nil }
+          ForEach(KoaEmotion.devEmotions, id: \.self) { e in
+            devChip(e.rawValue, on: devEmotion == e) { devEmotion = e }
+          }
+          NavigationLink {
+            KoaSheetView()
+          } label: {
+            Text(verbatim: "spec sheet →")
+              .font(DS.TextStyle.caption.monospaced())
+              .padding(.horizontal, DS.Spacing.sm)
+              .padding(.vertical, DS.Spacing.xs)
+              .background(DS.Color.secondary.swiftUI, in: Capsule())
+          }
+        }
+      }
+    }
+
+    private func devChip(_ label: String, on: Bool, action: @escaping () -> Void) -> some View {
+      Button(action: action) {
+        Text(verbatim: label)
+          .font(DS.TextStyle.caption.monospaced())
+          .foregroundStyle(on ? DS.Color.background.swiftUI : DS.Color.foreground.swiftUI)
+          .padding(.horizontal, DS.Spacing.sm)
+          .padding(.vertical, DS.Spacing.xs)
+          .background(on ? DS.Color.foreground.swiftUI : DS.Color.secondary.swiftUI, in: Capsule())
+      }
+      .buttonStyle(.plain)
+      .sensoryFeedback(.selection, trigger: on)
+    }
+  #endif
+
   private var stage: some View {
     ZStack(alignment: .top) {
       MascotStage(
         level: room.level, accent: Color(hex: room.rank.colorHex),
         energy: Double(room.energyCount) / Double(MascotRules.energySignals.count),
-        streak: room.streak.count, celebrateSignal: celebrate)
+        streak: room.streak.count, celebrateSignal: celebrate, emotion: devEmotion ?? .idle,
+        equipped: shop?.inventory.filter(\.equipped).map(\.itemKey) ?? [])
       if let burst {
         Text(verbatim: "+\(burst.amount)")
           .font(DS.TextStyle.headline.monospacedDigit())
@@ -548,11 +596,12 @@ struct EnergyRing: View {
   }
 }
 
-/// Chỗ của Koa. RN vẽ Koa bằng SVG + Reanimated (`MascotScene` → `StageRenderer`:
-/// `KoaStudio`, `PlantsCanvas`, `MascotBuddy`, trang phục, cảm xúc) — CHƯA có bản
-/// native. View này nhận ĐÚNG các đầu vào ấy (cấp, màu hạng, năng lượng, chuỗi,
-/// tín hiệu ăn mừng) để bản vẽ thật thay vào mà không đổi màn; còn nay nó là một
-/// hình giữ chỗ, và nói rõ như vậy với VoiceOver.
+/// Sân khấu của Koa. Koa là `MascotFigureView` thật (#527 K4: bộ dựng của
+/// `KoaFigure`), mặc đúng đồ trong tủ, gật đầu khi vừa nhận thưởng
+/// (`acknowledge` của `stage-renderer.tsx`: nghiêng 6° rồi lò xo về, phóng
+/// 1,03). CHƯA có phần còn lại của `MascotScene` / `StageRenderer` — studio,
+/// cây, côn trùng, cái liếc, cảm xúc tự chọn của engine (`useMascotEmotion`):
+/// vòng năng lượng sau lưng giữ chỗ cho đèn của studio.
 struct MascotStage: View {
   let level: Int
   let accent: Color
@@ -560,28 +609,46 @@ struct MascotStage: View {
   let energy: Double
   let streak: Int
   let celebrateSignal: Int
+  var emotion: KoaEmotion.Emotion = .idle
+  /// Khoá đang mặc, theo thứ tự hàng của `mascot_inventory`.
+  var equipped: [String] = []
 
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+  private struct Nod {
+    var angle = 0.0
+    var scale = 1.0
+  }
+
   var body: some View {
-    ZStack {
-      Circle()
-        .fill(accent.opacity(0.12))
-      Circle()
-        .trim(from: 0, to: energy)
-        .stroke(accent, style: StrokeStyle(lineWidth: 6, lineCap: .round))
-        .rotationEffect(.degrees(-90))
-        .padding(6)
-      VStack(spacing: DS.Spacing.xs) {
-        Image(systemName: "pawprint.fill")
-          .font(.system(size: 56))
-          .foregroundStyle(accent)
-          // reduceMotion: giá trị không đổi thì không nảy.
-          .symbolEffect(.bounce, value: reduceMotion ? 0 : celebrateSignal)
-        Text(String(localized: "mr.level \(level)")).font(DS.TextStyle.caption.weight(.semibold))
+    VStack(spacing: DS.Spacing.xs) {
+      ZStack(alignment: .bottom) {
+        Circle()
+          .fill(accent.opacity(0.12))
+          .frame(width: 180, height: 180)
+        Circle()
+          .trim(from: 0, to: energy)
+          .stroke(accent, style: StrokeStyle(lineWidth: 6, lineCap: .round))
+          .rotationEffect(.degrees(-90))
+          .padding(6)
+          .frame(width: 180, height: 180)
+        MascotFigureView(emotion: emotion, equipped: equipped, size: 150)
+          // reduceMotion: giá trị không đổi thì không gật
+          .keyframeAnimator(initialValue: Nod(), trigger: reduceMotion ? 0 : celebrateSignal) { view, v in
+            view.rotationEffect(.degrees(v.angle), anchor: .bottom).scaleEffect(v.scale, anchor: .bottom)
+          } keyframes: { _ in
+            KeyframeTrack(\.angle) {
+              CubicKeyframe(6, duration: 0.2)
+              SpringKeyframe(0, spring: .init(mass: 1, stiffness: 160, damping: 14))
+            }
+            KeyframeTrack(\.scale) {
+              LinearKeyframe(1.03, duration: 0.18)
+              SpringKeyframe(1, spring: .init(mass: 1, stiffness: 180, damping: 14))
+            }
+          }
       }
+      Text(String(localized: "mr.level \(level)")).font(DS.TextStyle.caption.weight(.semibold))
     }
-    .frame(width: 180, height: 180)
     .frame(maxWidth: .infinity)
     .padding(.vertical, DS.Spacing.md)
     .accessibilityElement(children: .ignore)
