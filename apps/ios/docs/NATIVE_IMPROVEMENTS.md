@@ -189,5 +189,6 @@ miễn **giữ nguyên ý định** của app và chỉ làm app tốt hơn — 
 | Ghi buổi tập — ăn mừng kỷ lục | Màn kỷ lục với Koa "tự hào"; KHÔNG phát sự kiện `personal_record` cho sân khấu Koa | `emitKoa({ kind: 'personal_record', … })` sau khi màn hiện | tạm thời (sân khấu phản ứng của Koa chưa có ở native) | không cần | #527 (`native/ios-rewrite`) | A |
 | Dinh dưỡng — thẻ calo hôm nay: nút "?" | Chưa có nút "?" giải thích mục tiêu calo và lời nhắc "tập xong mà calo không tăng?" | `HelpButton` + `HelpNudge` + `NutritionExplainer` | tạm thời (màn giải thích chưa port) | không cần | #527 (`native/ios-rewrite`) | A |
 | Dinh dưỡng — thẻ calo hôm nay: VoiceOver | Cả thẻ đọc thành MỘT câu (calo / mục tiêu / %, dòng trạng thái, bốn macro theo mặt đang lật) + gợi ý "đổi giữa đã ăn và còn lại" | Một `PressScale` không nhãn quanh thẻ | sửa lỗi a11y của RN | RN / Android có thể thêm nhãn | #527 (`native/ios-rewrite`) | A |
+| Dinh dưỡng — phân đoạn Kế hoạch ăn: đọc hỏng | Lời báo lỗi có thử lại (mất mạng: màn ngoại tuyến) | `plans` là `undefined` khi lỗi → thẻ "Chưa có kế hoạch ăn nào" + nút tạo, như thể tài khoản không có kế hoạch | sửa lỗi RN | RN / Android nên tách nhánh lỗi | #527 (`native/ios-rewrite`) | A |
 
 Thêm dòng mới ở cuối bảng; giữ dòng cũ — sổ là lịch sử, không phải danh sách việc.

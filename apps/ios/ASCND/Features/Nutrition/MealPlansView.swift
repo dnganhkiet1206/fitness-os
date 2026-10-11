@@ -93,7 +93,7 @@ struct MealPlanRoute: Hashable {
 }
 
 /// Một hàng kế hoạch: tên, "mục tiêu · n bữa/ngày", bảy chấm ngày có món.
-private struct PlanRowView: View {
+struct PlanRowView: View {
   let plan: MealPlans.Plan
   let fill: [Int: Int]
 
@@ -134,7 +134,7 @@ private struct PlanRowView: View {
 }
 
 /// Tạo kế hoạch: tên, mục tiêu, số bữa, xem trước.
-private struct CreatePlanSheet: View {
+struct CreatePlanSheet: View {
   let book: MealPlansBook
   let onCreated: (String) -> Void
   @Environment(AppServices.self) private var services
@@ -615,30 +615,6 @@ private struct AddPlanFoodSheet: View {
 /// Hàng "Kế hoạch ăn" ở tab Dinh dưỡng.
 struct MealPlansRoute: Hashable {
   let userId: String
-}
-
-struct MealPlansRow: View {
-  let userId: String
-
-  var body: some View {
-    NavigationLink(value: MealPlansRoute(userId: userId)) {
-      HStack {
-        Label(String(localized: "plans.title"), systemImage: "calendar")
-          .font(DS.TextStyle.headline)
-          .foregroundStyle(DS.Color.foreground.swiftUI)
-          .lineLimit(1)
-        Spacer()
-        Image(systemName: "chevron.right")
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-          .accessibilityHidden(true)
-      }
-      .padding(DS.Spacing.md)
-      .frame(minHeight: 44)
-      .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.md))
-      .contentShape(Rectangle())
-    }
-    .buttonStyle(.plain)
-  }
 }
 
 struct MealPlansScreen: View {

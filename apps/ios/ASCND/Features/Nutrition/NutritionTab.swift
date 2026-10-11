@@ -20,28 +20,27 @@ struct NutritionTab: View {
   @State private var today: NutritionTodayBook?
   /// Bữa của hôm nay (`DayMeals` của RN) — cùng sổ / cùng thẻ với màn Nhật ký.
   @State private var meals: MealDiaryBook?
+  /// Kế hoạch ăn của phân đoạn thứ hai; dựng khi phân đoạn ấy mở lần đầu.
+  @State private var plans: MealPlansBook?
+  /// Hai phân đoạn của RN: "Hôm nay" (mặc định) và "Kế hoạch ăn".
+  @State private var segment: Segment = .today
+
+  enum Segment: Hashable { case today, plan }
 
   var body: some View {
     NavigationStack {
       ScrollView {
         VStack(spacing: DS.Spacing.md) {
-          if let today { NutritionTodayCard(book: today) }
-          if let water = books?.water { WaterCard(book: water) }
-          // Cạnh Nước, trên nhật ký (`(tabs)/nutrition.tsx`: "supplements belong
-          // beside water") — hàng mang sẵn "2/4 hôm nay".
-          if let supplements = books?.supplements { SupplementsRow(book: supplements) }
-          if let userId = books?.water?.userId ?? books?.supplements?.userId {
-            // Lối ghi bữa (`LogMealFab` ⊕ của RN): hôm nay, "Bữa trưa".
-            LogMealButton(userId: userId) { Task { await reload() } }
-            // "Bữa ăn hôm nay" + "Ngày khác" trên cùng hàng tiêu đề (RN): tab
-            // này là HÔM NAY, ngày khác là màn riêng (`/diary`).
-            if let meals {
-              mealsHeader(userId: userId)
-              DayMealsSection(book: meals) { Task { await today?.load() } }
-            }
-            FoodsRow(userId: userId)
-            MealPlansRow(userId: userId)
-            InsightsRow(userId: userId)
+          Picker(String(localized: "tab.nutrition"), selection: $segment) {
+            Text(String(localized: "nc.seg.today")).tag(Segment.today)
+            Text(String(localized: "nc.seg.plan")).tag(Segment.plan)
+          }
+          .pickerStyle(.segmented)
+          .sensoryFeedback(.selection, trigger: segment)
+          if segment == .plan {
+            if let plans { MealPlansPreview(book: plans) }
+          } else {
+            todaySegment
           }
           Text(String(localized: "placeholder.building"))
             .font(DS.TextStyle.footnote)
@@ -54,7 +53,7 @@ struct NutritionTab: View {
       }
       .refreshable {
         await books?.refresh()
-        await reload()
+        if segment == .plan { await plans?.load() } else { await reload() }
       }
       // Gốc của stack: chạy cả khi quay lại từ Nhật ký / Ghi bữa, không chỉ khi
       // đổi tab — số của hôm nay đổi ở những màn ấy.
@@ -78,6 +77,7 @@ struct NutritionTab: View {
       .navigationDestination(for: MealPlansRoute.self) { route in
         MealPlansScreen(userId: route.userId)
       }
+      .navigationDestination(for: MealPlanRoute.self) { route in MealPlanScreen(route: route) }
     }
     .task { await books?.loadOnce() }
     .task(id: userId) {
@@ -87,9 +87,35 @@ struct NutritionTab: View {
         today = services?.makeNutritionToday(userId: userId)
         meals?.close()
         meals = services?.makeMealDiary(userId: userId)
+        plans = nil
       }
+      if segment == .plan, plans == nil { plans = services?.makeMealPlans(userId: userId) }
     }
     .onChange(of: today?.userId) { Task { await reload() } }
+    .onChange(of: segment) { _, s in
+      if s == .plan, plans == nil, let userId { plans = services?.makeMealPlans(userId: userId) }
+    }
+  }
+
+  /// Phân đoạn "Hôm nay": thẻ calo, Nước, Thực phẩm bổ sung, ghi bữa, các bữa hôm nay.
+  @ViewBuilder private var todaySegment: some View {
+    if let today { NutritionTodayCard(book: today) }
+    if let water = books?.water { WaterCard(book: water) }
+    // Cạnh Nước, trên nhật ký (`(tabs)/nutrition.tsx`: "supplements belong
+    // beside water") — hàng mang sẵn "2/4 hôm nay".
+    if let supplements = books?.supplements { SupplementsRow(book: supplements) }
+    if let userId = books?.water?.userId ?? books?.supplements?.userId {
+      // Lối ghi bữa (`LogMealFab` ⊕ của RN): hôm nay, "Bữa trưa".
+      LogMealButton(userId: userId) { Task { await reload() } }
+      // "Bữa ăn hôm nay" + "Ngày khác" trên cùng hàng tiêu đề (RN): tab
+      // này là HÔM NAY, ngày khác là màn riêng (`/diary`).
+      if let meals {
+        mealsHeader(userId: userId)
+        DayMealsSection(book: meals) { Task { await today?.load() } }
+      }
+      FoodsRow(userId: userId)
+      InsightsRow(userId: userId)
+    }
   }
 
   private var userId: String? { books?.water?.userId ?? books?.supplements?.userId }
