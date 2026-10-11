@@ -25,6 +25,9 @@ struct AwardsView: View {
 
   var body: some View {
     content
+      // nền trang như mọi màn (`Screen` của RN) — thẻ trắng mới nổi lên trên nó
+      .frame(maxWidth: .infinity, maxHeight: .infinity)
+      .background(DS.Color.background.swiftUI)
       .navigationTitle(String(localized: "aw.title"))
       .task { if case .loading = book.phase { await book.load() } }
       .refreshable { await book.load() }
@@ -84,8 +87,8 @@ struct AwardsView: View {
         .frame(width: 64, height: 64)
         .background(DS.Color.readinessYellow.swiftUI.opacity(0.12), in: RoundedRectangle(cornerRadius: DS.Radius.lg))
         .accessibilityHidden(true)
-      Text(String(localized: "aw.hero \(earned) \(total)"))
-        .font(DS.TextStyle.body)
+      Text(Self.heroLine(String(localized: "aw.hero \(earned) \(total)"), earned: earned))
+        .font(DS.TextStyle.footnote)
         .foregroundStyle(DS.Color.mutedForeground.swiftUI)
       ZStack {
         Circle().stroke(DS.Color.ringTrack.swiftUI, lineWidth: 4)
@@ -98,13 +101,27 @@ struct AwardsView: View {
             style: StrokeStyle(lineWidth: 4, lineCap: .round)
           )
           .rotationEffect(.degrees(-90))
-        Text(verbatim: "\(pct)%").font(DS.TextStyle.headline.monospacedDigit())
+        Text(verbatim: "\(pct)%").font(DS.TextStyle.mono(.headline).weight(.bold))
       }
+      // hộp 80, vòng bán kính 32, nét 4 như RN
       .frame(width: 64, height: 64)
+      .padding(8)
       .accessibilityHidden(true)
     }
     .frame(maxWidth: .infinity)
     .accessibilityElement(children: .combine)
+  }
+
+  /// "Đã đạt **N** / 29 huy chương" (`heroCountNum`: số đã đạt đậm, màu chữ
+  /// chính). Số đã đạt đứng trước tổng trong cả ba ngôn ngữ nên lần xuất hiện
+  /// đầu là nó.
+  static func heroLine(_ line: String, earned: Int) -> AttributedString {
+    var a = AttributedString(line)
+    if let r = a.range(of: String(earned)) {
+      a[r].font = DS.TextStyle.mono(.footnote).weight(.bold)
+      a[r].foregroundColor = DS.Color.foreground.swiftUI
+    }
+    return a
   }
 
   // MARK: - Nhóm
@@ -120,18 +137,20 @@ struct AwardsView: View {
           .font(.caption)
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
           .accessibilityHidden(true)
+        // `tierTitle`: 13 đậm, chữ hoa giãn 2, màu chữ chính
         Text(Self.domainName(d))
-          .font(DS.TextStyle.caption.weight(.semibold))
+          .font(DS.TextStyle.footnote.weight(.bold))
           .textCase(.uppercase)
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-        Rectangle().fill(DS.Color.mutedForeground.swiftUI.opacity(0.2)).frame(height: 1)
+          .tracking(2)
+          .foregroundStyle(DS.Color.foreground.swiftUI)
+        Rectangle().fill(DS.Color.border.swiftUI.opacity(0.4)).frame(height: 1)
         Text(verbatim: "\(done)/\(list.count)")
-          .font(DS.TextStyle.caption.monospacedDigit())
+          .font(DS.TextStyle.mono(.caption2))
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
       }
       .accessibilityElement(children: .combine)
       .accessibilityAddTraits(.isHeader)
-      LazyVGrid(columns: [GridItem(.flexible(), spacing: DS.Spacing.sm), GridItem(.flexible())], spacing: DS.Spacing.sm) {
+      LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible())], spacing: 12) {
         ForEach(list) { award in
           MedalCard(award: award, earned: book.earned[award.key], current: current, lang: lang)
         }
@@ -167,12 +186,12 @@ private struct MedalCard: View {
     let title = text?.title ?? earned?.title ?? ""
     let desc = text?.desc ?? earned?.description ?? ""
     let progress = Awards.progress(award, earned: earned != nil, current: current)
-    VStack(spacing: DS.Spacing.xs) {
+    VStack(spacing: DS.Spacing.sm) {
       MedalDisc(award: award, earned: earned != nil)
         .frame(width: 72, height: 72)
         .accessibilityHidden(true)
       Text(title)
-        .font(DS.TextStyle.footnote.weight(.semibold))
+        .font(DS.TextStyle.footnote.weight(.bold))
         .foregroundStyle(earned == nil ? DS.Color.mutedForeground.swiftUI : DS.Color.foreground.swiftUI)
         .lineLimit(1)
       Text(desc)
@@ -188,7 +207,7 @@ private struct MedalCard: View {
             verbatim:
               "\(current.formatted(.number.locale(.app))) / \(need.formatted(.number.locale(.app)))"
           )
-          .font(DS.TextStyle.caption.monospacedDigit())
+          .font(DS.TextStyle.footnote.weight(.bold).monospacedDigit())
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
         }
       }
@@ -196,7 +215,7 @@ private struct MedalCard: View {
         HStack {
           if let at = earned.earnedAt {
             Text(verbatim: at.date.formatted(.dateTime.day().month(.abbreviated).year().locale(.app)))
-              .font(DS.TextStyle.caption)
+              .font(DS.TextStyle.mono(.caption2))
               .foregroundStyle(DS.Color.mutedForeground.swiftUI)
           }
           Spacer()
@@ -211,9 +230,11 @@ private struct MedalCard: View {
         }
       }
     }
-    .padding(DS.Spacing.sm)
-    .frame(maxWidth: .infinity)
-    .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.md))
+    // `medalCard`: thẻ có mặt trên trang — nền thẻ, viền, bo `radius.lg`, đệm `md`
+    .padding(DS.Spacing.md)
+    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+    .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.lg))
+    .overlay(RoundedRectangle(cornerRadius: DS.Radius.lg).stroke(DS.Color.border.swiftUI, lineWidth: 1))
     .accessibilityElement(children: .contain)
     .accessibilityLabel(Text(verbatim: "\(title). \(desc)"))
     .accessibilityValue(Text(a11yValue(progress: progress)))
