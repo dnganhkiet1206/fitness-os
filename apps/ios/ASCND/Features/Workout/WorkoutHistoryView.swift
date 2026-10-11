@@ -13,9 +13,10 @@
 //   luôn hỏi lại trước (`sessions.tsx:64`).
 // Khác RN (cải tiến, không mất gì): có cache mà làm mới lỗi thì vẫn hiện danh
 // sách kèm dải báo, thay vì giấu cả danh sách.
-// Chưa port (ghi ở PARITY_MATRIX): kcal mỗi buổi (cần hồ sơ năng lượng), đơn
-// vị lb, nút "Ghi buổi tập" ở trạng thái rỗng (chưa có màn ghi tay), dựng lại
-// điểm sẵn sàng sau khi xoá (#266) — nên câu hỏi lại KHÔNG hứa điều đó.
+// - kcal mỗi buổi (`sessions.tsx:235`, `session-row.tsx:106`): ƯỚC LƯỢNG tính
+//   lúc hiện từ `sets` + RPE của hàng và hồ sơ (`SessionEnergy`, golden RN),
+//   `~N kcal`; hồ sơ chưa có / chưa đủ thì ẩn, không bao giờ một số bịa. Số
+//   theo ngôn ngữ app như mọi số khác của màn (RN: locale máy — #527 6103811310).
 import ASCNDCore
 import ASCNDDesignSystem
 import SwiftUI
@@ -30,6 +31,9 @@ public struct WorkoutHistoryView: View {
   @Environment(WorkoutFlow.self) private var flow: WorkoutFlow?
   @State private var showsManualLog = false
   @State private var deleteFailed = false
+  /// Hồ sơ của phiên (RootGate) — đọc MỘT lần cho cả danh sách, như RN
+  /// (`sessions.tsx:59`); `nil` (preview) = không có kcal.
+  @Environment(ProfileBook.self) private var profileBook: ProfileBook?
 
   public init(book: HistoryBook) {
     self.book = book
@@ -80,8 +84,14 @@ public struct WorkoutHistoryView: View {
     }
   }
 
+  /// `energyProfileFrom(profile)` — tuổi theo ngày địa phương hôm nay.
+  private var energyBody: SessionEnergy.Body? {
+    SessionEnergy.body(profile: profileBook?.profile, today: LocalDate(EpochMillis(Date()), in: .current))
+  }
+
   private var list: some View {
     let months = HistoryMonths.group(book.entries, timeZone: .current, now: EpochMillis(Date()))
+    let energy = energyBody
     return List {
       if book.failure != nil {
         staleBanner
@@ -89,7 +99,7 @@ public struct WorkoutHistoryView: View {
       ForEach(months) { m in
         Section {
           ForEach(m.entries) { e in
-            row(e, peak: m.peakKg)
+            row(e, peak: m.peakKg, kcal: SessionEnergy.kcal(of: e, body: energy))
               .swipeActions(edge: .trailing) {
                 Button(role: .destructive) { pendingDelete = e } label: {
                   Label(String(localized: "history.delete.confirm"), systemImage: "trash")
@@ -157,7 +167,7 @@ public struct WorkoutHistoryView: View {
 
   // MARK: - Hàng
 
-  private func row(_ e: HistoryEntry, peak: Int) -> some View {
+  private func row(_ e: HistoryEntry, peak: Int, kcal: Int?) -> some View {
     HStack(spacing: DS.Spacing.sm) {
       // Phần thông tin: MỘT phần tử VoiceOver. Nút xoá đứng riêng để vẫn bấm
       // được (không `.combine` cả hàng — P2 #523).
@@ -177,9 +187,17 @@ public struct WorkoutHistoryView: View {
                   .foregroundStyle(DS.Color.readinessYellow.swiftUI)
               }
             }
-            Text(e.at.date, format: .dateTime.weekday(.abbreviated).day().month(.abbreviated))
-              .font(DS.TextStyle.caption)
-              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            HStack(spacing: DS.Spacing.xs) {
+              Text(e.at.date, format: .dateTime.weekday(.abbreviated).day().month(.abbreviated))
+              // Dấu ngã: ƯỚC LƯỢNG, không phải số đo (`session-row.tsx:100`).
+              if let kcal {
+                Text(verbatim: "·")
+                Text(String(format: String(localized: "history.kcal"), kcal.formatted(.number.locale(.app))))
+                  .monospacedDigit()
+              }
+            }
+            .font(DS.TextStyle.caption)
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
             // Thanh tỉ lệ với buổi nặng nhất tháng (RN `volumeRatio`).
             if peak > 0 {
               GeometryReader { g in
@@ -201,7 +219,7 @@ public struct WorkoutHistoryView: View {
           }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(verbatim: rowLabel(e)))
+        .accessibilityLabel(Text(verbatim: rowLabel(e, kcal: kcal)))
       }
       .buttonStyle(.plain)
       .accessibilityHint(Text("sd.open.hint"))
@@ -216,14 +234,18 @@ public struct WorkoutHistoryView: View {
     }
   }
 
-  /// "Push A, 4.200 kg, 12 hiệp, thứ Hai 5 thg 10[, Kỷ lục cá nhân]".
-  private func rowLabel(_ e: HistoryEntry) -> String {
+  /// "Push A, 4.200 kg, 12 hiệp, thứ Hai 5 thg 10[, khoảng 312 kcal tiêu hao
+  /// (ước lượng)][, Kỷ lục cá nhân]".
+  private func rowLabel(_ e: HistoryEntry, kcal: Int?) -> String {
     var parts = [
       String(
         format: String(localized: "history.a11y.row"), e.templateName, unit.volume(Double(e.volumeKg)), unit.label,
         e.completedSets),
       e.at.date.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(.app)),
     ]
+    if let kcal {
+      parts.append(String(format: String(localized: "history.a11y.kcal"), kcal.formatted(.number.locale(.app))))
+    }
     if e.prDetected { parts.append(String(localized: "history.pr")) }
     return parts.joined(separator: ", ")
   }

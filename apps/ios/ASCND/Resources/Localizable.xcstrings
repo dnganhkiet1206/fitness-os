@@ -22521,6 +22521,52 @@
     }
    }
   },
+  "history.kcal": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "~%@ kcal"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "~%@ kcal"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "~%@ kcal"
+     }
+    }
+   }
+  },
+  "history.a11y.kcal": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "about %@ kcal burned (estimate)"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "khoảng %@ kcal tiêu hao (ước lượng)"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "unas %@ kcal quemadas (estimación)"
+     }
+    }
+   }
+  },
   "history.sets": {
    "extractionState": "manual",
    "localizations": {
