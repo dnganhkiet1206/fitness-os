@@ -82,7 +82,7 @@ for (const unit of ['cm', 'in'])
   for (const key of ['waist_cm', 'body_fat_pct'])
     for (const text of TEXTS) {
       const fields = { [key]: text };
-      single.push({ unit, key, text, error: split(errorFor(fields, unit, key)), payload: payloadOf(fields, unit)[key] ?? null });
+      single.push({ unit, key, text, error: split(errorFor(fields, unit, key)), payload: enc(payloadOf(fields, unit)[key] ?? null) });
     }
 
 const forms = [];
