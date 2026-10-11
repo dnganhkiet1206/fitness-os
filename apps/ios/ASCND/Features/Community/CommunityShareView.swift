@@ -168,79 +168,12 @@ struct CommunityShareWorkoutView: View {
       PostCardView(post: preview, artURL: preview.art.flatMap(book.artURL), unit: unit)
         .allowsHitTesting(false)
     }
-    if book.styles.count >= 2, let current = book.art?.style {
-      VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-        Text("community.share.artstyle")
-          .font(DS.TextStyle.footnote.weight(.semibold))
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-        Picker(selection: Binding(get: { current }, set: { book.stylePick = $0 })) {
-          ForEach(book.styles, id: \.self) { s in
-            Text(verbatim: Self.styleText(s)).tag(s)
-          }
-        } label: {
-          Text("community.share.artstyle")
-        }
-        .pickerStyle(.segmented)
-      }
-    }
-    DSCard {
-      VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-        Text("community.share.caption")
-          .font(DS.TextStyle.footnote)
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-        TextField(
-          text: $book.caption, prompt: Text("community.share.captionph"), axis: .vertical
-        ) { Text("community.share.caption") }
-          .lineLimit(3...8)
-          .font(DS.TextStyle.body)
-          .padding(DS.Spacing.sm)
-          .background(DS.Color.secondary.swiftUI, in: RoundedRectangle(cornerRadius: 8))
-          .onChange(of: book.caption) { _, v in
-            // `maxLength={500}` đếm UTF-16 như JS.
-            if v.utf16.count > CommunityShare.captionLimit {
-              book.caption = String(v.utf16.prefix(CommunityShare.captionLimit)) ?? String(v.prefix(CommunityShare.captionLimit))
-            }
-          }
-        Text("community.share.visibility")
-          .font(DS.TextStyle.footnote)
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-        Picker(selection: Binding(get: { book.visibility }, set: { book.visibilityPick = $0 })) {
-          Text("community.privacy.public").tag(CommunityShare.Visibility.public)
-          Text("community.privacy.followers").tag(CommunityShare.Visibility.followers)
-        } label: {
-          Text("community.share.visibility")
-        }
-        .pickerStyle(.segmented)
-      }
-    }
-    HStack(alignment: .top, spacing: DS.Spacing.sm) {
-      Image(systemName: "lock.fill")
-        .font(.footnote)
-        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-        .accessibilityHidden(true)
-      Text("community.share.privacynote")
-        .font(DS.TextStyle.footnote)
-        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-        .fixedSize(horizontal: false, vertical: true)
-    }
-    .padding(.horizontal, DS.Spacing.xs)
-    Button {
-      Task { await post() }
-    } label: {
-      Group {
-        if book.posting {
-          ProgressView().tint(DS.Color.primaryForeground.swiftUI)
-        } else {
-          Text("community.share.post").font(DS.TextStyle.headline)
-        }
-      }
-      .foregroundStyle(DS.Color.primaryForeground.swiftUI)
-      .frame(maxWidth: .infinity, minHeight: 50)
-      .background(DS.Color.primary.swiftUI, in: Capsule())
-      .opacity(book.posting ? 0.6 : 1)
-    }
-    .buttonStyle(.plain)
-    .disabled(book.posting)
+    ShareStylePicker(styles: book.styles, current: book.art?.style) { book.stylePick = $0 }
+    ShareCaptionCard(
+      caption: $book.caption, placeholder: "community.share.captionph",
+      visibility: Binding(get: { book.visibility }, set: { book.visibilityPick = $0 }))
+    SharePrivacyNote(text: "community.share.privacynote")
+    SharePostButton(posting: book.posting, enabled: true) { Task { await post() } }
   }
 
   private func post() async {
@@ -258,6 +191,44 @@ struct CommunityShareWorkoutView: View {
     }
   }
 
+  static func failureText(_ f: CommunityShareFailure) -> String {
+    switch f {
+    case .alreadyShared: String(localized: "community.share.alreadyshared")
+    case .postLimit: String(localized: "community.share.postlimit")
+    case .restricted: String(localized: "community.post.restricted")
+    case .offline: String(localized: "community.action.onlineonly")
+    case .profileRequired, .server: String(localized: "community.action.server")
+    }
+  }
+}
+
+// MARK: - Khối dùng chung của ba màn chia sẻ
+
+/// Chọn phong cách ảnh — chỉ khi thư viện có ≥ 2 phong cách cho loại bài
+/// (`ArtStylePicker`).
+struct ShareStylePicker: View {
+  let styles: [String]
+  let current: String?
+  let onPick: (String) -> Void
+
+  var body: some View {
+    if styles.count >= 2, let current {
+      VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+        Text("community.share.artstyle")
+          .font(DS.TextStyle.footnote.weight(.semibold))
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        Picker(selection: Binding(get: { current }, set: onPick)) {
+          ForEach(styles, id: \.self) { s in
+            Text(verbatim: Self.styleText(s)).tag(s)
+          }
+        } label: {
+          Text("community.share.artstyle")
+        }
+        .pickerStyle(.segmented)
+      }
+    }
+  }
+
   /// Tên phong cách ảnh; khoá lạ thì viết hoa chữ đầu.
   static func styleText(_ s: String) -> String {
     switch s {
@@ -269,14 +240,85 @@ struct CommunityShareWorkoutView: View {
     default: CommunityArtLibrary.styleLabel(s)
     }
   }
+}
 
-  static func failureText(_ f: CommunityShareFailure) -> String {
-    switch f {
-    case .alreadyShared: String(localized: "community.share.alreadyshared")
-    case .postLimit: String(localized: "community.share.postlimit")
-    case .restricted: String(localized: "community.post.restricted")
-    case .offline: String(localized: "community.action.onlineonly")
-    case .profileRequired, .server: String(localized: "community.action.server")
+/// Chú thích ≤ 500 (UTF-16 như `maxLength`) + ai thấy.
+struct ShareCaptionCard: View {
+  @Binding var caption: String
+  let placeholder: LocalizedStringKey
+  @Binding var visibility: CommunityShare.Visibility
+
+  var body: some View {
+    DSCard {
+      VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+        Text("community.share.caption")
+          .font(DS.TextStyle.footnote)
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        TextField(text: $caption, prompt: Text(placeholder), axis: .vertical) { Text("community.share.caption") }
+          .lineLimit(3...8)
+          .font(DS.TextStyle.body)
+          .padding(DS.Spacing.sm)
+          .background(DS.Color.secondary.swiftUI, in: RoundedRectangle(cornerRadius: 8))
+          .onChange(of: caption) { _, v in
+            if v.utf16.count > CommunityShare.captionLimit {
+              caption = String(v.utf16.prefix(CommunityShare.captionLimit)) ?? String(v.prefix(CommunityShare.captionLimit))
+            }
+          }
+        Text("community.share.visibility")
+          .font(DS.TextStyle.footnote)
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        Picker(selection: $visibility) {
+          Text("community.privacy.public").tag(CommunityShare.Visibility.public)
+          Text("community.privacy.followers").tag(CommunityShare.Visibility.followers)
+        } label: {
+          Text("community.share.visibility")
+        }
+        .pickerStyle(.segmented)
+      }
     }
+  }
+}
+
+/// Ổ khoá + câu "chỉ những gì … được chia sẻ".
+struct SharePrivacyNote: View {
+  let text: LocalizedStringKey
+
+  var body: some View {
+    HStack(alignment: .top, spacing: DS.Spacing.sm) {
+      Image(systemName: "lock.fill")
+        .font(.footnote)
+        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        .accessibilityHidden(true)
+      Text(text)
+        .font(DS.TextStyle.footnote)
+        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        .fixedSize(horizontal: false, vertical: true)
+    }
+    .padding(.horizontal, DS.Spacing.xs)
+  }
+}
+
+/// Nút Đăng: mờ khi chưa đăng được hoặc đang gửi.
+struct SharePostButton: View {
+  let posting: Bool
+  let enabled: Bool
+  let action: () -> Void
+
+  var body: some View {
+    Button(action: action) {
+      Group {
+        if posting {
+          ProgressView().tint(DS.Color.primaryForeground.swiftUI)
+        } else {
+          Text("community.share.post").font(DS.TextStyle.headline)
+        }
+      }
+      .foregroundStyle(DS.Color.primaryForeground.swiftUI)
+      .frame(maxWidth: .infinity, minHeight: 50)
+      .background(DS.Color.primary.swiftUI, in: Capsule())
+      .opacity(posting || !enabled ? 0.6 : 1)
+    }
+    .buttonStyle(.plain)
+    .disabled(posting || !enabled)
   }
 }

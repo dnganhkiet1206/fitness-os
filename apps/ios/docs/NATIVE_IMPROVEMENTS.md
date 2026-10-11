@@ -164,5 +164,6 @@ miễn **giữ nguyên ý định** của app và chỉ làm app tốt hơn — 
 | Cộng đồng — tên phong cách ảnh | Theo xcstrings, có tiếng Tây Ban Nha | `styleLabel(k, lang === 'vi' ? 'vi' : 'en')` — người dùng es thấy tên tiếng Anh dù bảng có chữ es | sửa lỗi i18n của RN (RN / Android nên truyền `lang` es) | RN / Android có thể làm theo | #527 (`native/ios-rewrite`) | E |
 | Cộng đồng — đăng bài xong | Màn đóng, rung thành công, feed đọc lại; không có toast "Đã đăng" | `toast.success` + `nav.back()` | lệch nền tảng (app chưa có toast) | không cần | #527 (`native/ios-rewrite`) | E |
 | Cộng đồng — mời chia sẻ sau khi chốt buổi | Chưa có | `use-workout-share-invite` (toast "Chia sẻ" sau buổi) | tạm thời (cần toast + luồng chốt buổi của A) | không cần | #527 (`native/ios-rewrite`) | E |
+| Cộng đồng — lối vào chia sẻ tiến trình | Chỉ từ thẻ soạn bài đầu feed | Thêm hàng "Chia sẻ tiến trình" ở bảng Cơ thể (`body-panel.tsx`) | tạm thời (bảng Cơ thể native chưa có hàng lối tắt này) | không cần | #527 (`native/ios-rewrite`) | E |
 
 Thêm dòng mới ở cuối bảng; giữ dòng cũ — sổ là lịch sử, không phải danh sách việc.

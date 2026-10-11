@@ -598,6 +598,13 @@ final class AppServices {
     return CommunityUserBook(userId: userId, targetId: targetId, remote: SupabaseCommunity(backend: backend))
   }
 
+  /// Chia sẻ tiến trình (#527, lát 12): bài có tạ 90 ngày qua `historySource`
+  /// (chỉ đọc), xem trước + đăng qua RPC.
+  func makeCommunityShareProgress(userId: String) -> CommunityShareProgressBook? {
+    guard let backend else { return nil }
+    return CommunityShareProgressBook(userId: userId, remote: SupabaseCommunity(backend: backend), history: historySource)
+  }
+
   /// Chia sẻ một buổi tập (#527, lát 11): buổi 30 ngày qua `historySource`
   /// (chỉ đọc), ảnh thư viện, RPC `share_workout*`.
   func makeCommunityShareWorkout(userId: String, sessionId: String?) -> CommunityShareWorkoutBook? {

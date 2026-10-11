@@ -9,7 +9,7 @@ import Supabase
 /// mình.
 public struct SupabaseCommunity: CommunityFeedRemote, CommunityProfileRemote, CommunityPostRemote, CommunityUserRemote,
   CommunityPostActionsRemote, CommunitySavedRemote, CommunitySearchRemote, CommunityInboxRemote,
-  CommunityPrivacyRemote, CommunityShareRemote
+  CommunityPrivacyRemote, CommunityShareRemote, CommunityShareProgressRemote
 {
   private let client: SupabaseClient
 
@@ -748,6 +748,70 @@ public struct SupabaseCommunity: CommunityFeedRemote, CommunityProfileRemote, Co
           "share_workout",
           params: ShareWorkoutParams(
             p_session_id: sessionId, p_caption: caption, p_visibility: visibility.rawValue, p_minutes: minutes)
+        ).execute()
+      }
+    } catch {
+      throw Self.shareFailure(error)
+    }
+  }
+
+  /// `build_progress_payload` / `share_progress`: bài sức mạnh vắng mặt khi
+  /// không chọn (`?? undefined`).
+  struct ProgressParams: Encodable, Sendable {
+    let p_weeks: Int
+    let p_weight: Bool
+    let p_waist: Bool
+    let p_lift_exercise_id: String?
+    var p_caption: String?
+    var p_visibility: String?
+  }
+
+  /// `share_progress_with_art`: bài sức mạnh gửi `null` thật khi không chọn.
+  struct ProgressArtParams: Encodable, Sendable {
+    let p_weeks: Int
+    let p_weight: Bool
+    let p_waist: Bool
+    let p_lift_exercise_id: String?
+    let p_caption: String
+    let p_visibility: String
+    let p_art_id: String
+
+    func encode(to encoder: any Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(p_weeks, forKey: .p_weeks)
+      try c.encode(p_weight, forKey: .p_weight)
+      try c.encode(p_waist, forKey: .p_waist)
+      try c.encode(p_lift_exercise_id, forKey: .p_lift_exercise_id)
+      try c.encode(p_caption, forKey: .p_caption)
+      try c.encode(p_visibility, forKey: .p_visibility)
+      try c.encode(p_art_id, forKey: .p_art_id)
+    }
+  }
+
+  public func progressPreview(_ o: CommunityShareProgress.Options) async throws -> JSONValue {
+    try await client.rpc(
+      "build_progress_payload",
+      params: ProgressParams(p_weeks: o.weeks, p_weight: o.weight, p_waist: o.waist, p_lift_exercise_id: o.liftId)
+    ).execute().value
+  }
+
+  public func shareProgress(
+    _ o: CommunityShareProgress.Options, caption: String, visibility: CommunityShare.Visibility, artId: String?
+  ) async throws {
+    do {
+      if let artId {
+        try await client.rpc(
+          "share_progress_with_art",
+          params: ProgressArtParams(
+            p_weeks: o.weeks, p_weight: o.weight, p_waist: o.waist, p_lift_exercise_id: o.liftId, p_caption: caption,
+            p_visibility: visibility.rawValue, p_art_id: artId)
+        ).execute()
+      } else {
+        try await client.rpc(
+          "share_progress",
+          params: ProgressParams(
+            p_weeks: o.weeks, p_weight: o.weight, p_waist: o.waist, p_lift_exercise_id: o.liftId, p_caption: caption,
+            p_visibility: visibility.rawValue)
         ).execute()
       }
     } catch {
