@@ -67,7 +67,9 @@ struct AuthView: View {
                 contentType: .username,
                 keyboard: .emailAddress
               )
-              fieldError(attemptedSubmit ? emailError : nil)
+              // Nối VÀO ô: đứng riêng thì là `self.fieldError` — bọc chính
+              // AuthView vào thân nó, lồng vô hạn, tràn stack (SIGSEGV) lúc mở.
+              .fieldError(attemptedSubmit ? emailError : nil)
 
               if mode != .forgot {
                 SecureField(
@@ -82,7 +84,7 @@ struct AuthView: View {
                 .background(DS.Color.secondary.swiftUI)
                 .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
                 .accessibilityLabel(Text(String(localized: "auth.password")))
-                fieldError(attemptedSubmit ? passwordError : nil)
+                .fieldError(attemptedSubmit ? passwordError : nil)
 
                 // Nhập lại mật khẩu (chỉ signup, #313).
                 if mode == .signup {
@@ -97,7 +99,7 @@ struct AuthView: View {
                   .background(DS.Color.secondary.swiftUI)
                   .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
                   .accessibilityLabel(Text(String(localized: "auth.confirmPassword")))
-                  fieldError(attemptedSubmit ? confirmError : nil)
+                  .fieldError(attemptedSubmit ? confirmError : nil)
                 }
               }
 
