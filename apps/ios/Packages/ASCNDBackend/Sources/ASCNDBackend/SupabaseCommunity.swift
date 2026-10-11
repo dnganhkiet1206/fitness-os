@@ -8,7 +8,8 @@ import Supabase
 /// `20261007220000_community_report_trust.sql`); thích / lưu chỉ đọc hàng của
 /// mình.
 public struct SupabaseCommunity: CommunityFeedRemote, CommunityProfileRemote, CommunityPostRemote, CommunityUserRemote,
-  CommunityPostActionsRemote, CommunitySavedRemote, CommunitySearchRemote, CommunityInboxRemote
+  CommunityPostActionsRemote, CommunitySavedRemote, CommunitySearchRemote, CommunityInboxRemote,
+  CommunityPrivacyRemote
 {
   private let client: SupabaseClient
 
@@ -620,6 +621,65 @@ public struct SupabaseCommunity: CommunityFeedRemote, CommunityProfileRemote, Co
 
   public func markNotificationsRead() async throws {
     try await client.rpc("community_mark_notifications_read").execute()
+  }
+
+  // MARK: - Quyền riêng tư (#527, lát 10)
+
+  struct BlockedIdDTO: Decodable, Sendable {
+    let blocked_id: String
+  }
+
+  public func privacySettings(me: String) async throws -> JSONValue? {
+    let rows: [JSONValue] = try await client.from("community_settings")
+      .select(CommunityPrivacy.columns)
+      .eq("user_id", value: me)
+      .limit(1)
+      .execute().value
+    return rows.first
+  }
+
+  public func updateSettings(me: String, patch: [String: JSONValue]) async throws {
+    var row = patch
+    row["user_id"] = .string(me)
+    row["updated_at"] = .string(ISO8601DateFormatter().string(from: Date()))
+    do {
+      try await client.from("community_settings").upsert(JSONValue.object(row), onConflict: "user_id").execute()
+    } catch {
+      throw Self.moderationFailure(error)
+    }
+  }
+
+  public func blocks(me: String) async throws -> [JSONValue] {
+    try await client.from("community_blocks")
+      .select("blocked_id, created_at")
+      .eq("blocker_id", value: me)
+      .order("created_at", ascending: false)
+      .execute().value
+  }
+
+  /// `useUnblock`: hỏi lại chính `blocked_id` (bảng không có cột `id`).
+  public func unblock(me: String, userId: String) async throws {
+    let gone: [BlockedIdDTO]
+    do {
+      gone = try await client.from("community_blocks")
+        .delete().eq("blocker_id", value: me).eq("blocked_id", value: userId)
+        .select("blocked_id").execute().value
+    } catch {
+      throw Self.moderationFailure(error)
+    }
+    if gone.isEmpty { throw CommunityModerationFailure.nothingWritten }
+  }
+
+  /// `useDeleteAllMyPosts`: số bài đã xoá (0 là câu trả lời đúng).
+  public func deleteAllPosts(me: String) async throws -> Int {
+    do {
+      let gone: [IdOnly] = try await client.from("community_posts")
+        .delete().eq("author_id", value: me)
+        .select("id").execute().value
+      return gone.count
+    } catch {
+      throw Self.moderationFailure(error)
+    }
   }
 
   public func artURL(path: String) -> URL? {

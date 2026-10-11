@@ -598,6 +598,13 @@ final class AppServices {
     return CommunityUserBook(userId: userId, targetId: targetId, remote: SupabaseCommunity(backend: backend))
   }
 
+  /// Quyền riêng tư Cộng đồng (#527, lát 10): cài đặt riêng, chặn / tắt
+  /// tiếng, xoá mọi bài — qua RLS.
+  func makeCommunityPrivacy(userId: String) -> CommunityPrivacyBook? {
+    guard let backend else { return nil }
+    return CommunityPrivacyBook(userId: userId, remote: SupabaseCommunity(backend: backend))
+  }
+
   /// Hộp thông báo Cộng đồng (#527, lát 9): thông báo + hồ sơ + tên thử thách,
   /// đánh dấu đã đọc qua RPC.
   func makeCommunityInbox(userId: String) -> CommunityInboxBook? {

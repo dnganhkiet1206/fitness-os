@@ -43,8 +43,7 @@ extension View {
 /// lọc theo loại khi có ≥ 2 loại (lọc ở server); thẻ Hành trình khi xem bài
 /// Tiến trình; ghi chú "đang tắt tiếng đến …" + nút bỏ; bài theo trang 30.
 ///
-/// Chưa có (lát sau): lối "Quyền riêng tư" trên hồ sơ của mình (màn chưa
-/// port).
+/// Hồ sơ của mình: Sửa hồ sơ · Quyền riêng tư (lát 10), Đã lưu (lát 7).
 struct CommunityUserScreen: View {
   let targetId: String
   @Environment(WorkoutFlow.self) private var flow
@@ -235,12 +234,12 @@ struct CommunityUserView: View {
   @ViewBuilder private func primaryAction(_ p: CommunityFeed.Author) -> some View {
     if book.isMe {
       VStack(spacing: DS.Spacing.sm) {
-        NavigationLink {
-          CommunityProfileScreen(userId: book.userId) { Task { await book.load() } }
-        } label: {
-          quiet(Text("community.user.edit"))
+        // Hai việc ngang hàng của chính mình: sửa thứ người khác thấy, và
+        // quyết định ai thấy. Chữ lớn thì xuống dòng.
+        ViewThatFits(in: .horizontal) {
+          HStack(spacing: DS.Spacing.sm) { editLink; privacyLink }
+          VStack(spacing: DS.Spacing.sm) { editLink; privacyLink }
         }
-        .buttonStyle(.plain)
         // Thư viện Đã lưu: viên trầm riêng, rộng hết hàng; chỉ trên hồ sơ của mình.
         NavigationLink {
           CommunitySavedScreen(userId: book.userId)
@@ -274,6 +273,24 @@ struct CommunityUserView: View {
       .disabled(book.working)
       .accessibilityAddTraits(book.iFollow ? .isSelected : [])
     }
+  }
+
+  private var editLink: some View {
+    NavigationLink {
+      CommunityProfileScreen(userId: book.userId) { Task { await book.load() } }
+    } label: {
+      quiet(Text("community.user.edit"))
+    }
+    .buttonStyle(.plain)
+  }
+
+  private var privacyLink: some View {
+    NavigationLink {
+      CommunityPrivacyScreen(userId: book.userId)
+    } label: {
+      quiet(Text("community.privacy.title"))
+    }
+    .buttonStyle(.plain)
   }
 
   private func quiet(_ t: Text) -> some View {
