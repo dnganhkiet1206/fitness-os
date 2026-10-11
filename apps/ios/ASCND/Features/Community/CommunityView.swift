@@ -16,10 +16,11 @@ import SwiftUI
 /// Lát 3: chạm thẻ (hoặc hàng Hữu ích) mở `CommunityPostScreen`.
 ///
 /// Lát 6: thích / lưu / menu "⋯" trên thẻ. Lát 8: kính lúp mở tìm kiếm.
-/// Lát 9: chuông mở hộp thông báo (chấm khi có dòng chưa đọc).
+/// Lát 9: chuông mở hộp thông báo (chấm khi có dòng chưa đọc). Lát 11: thẻ
+/// soạn bài đầu feed (có hồ sơ, không bị khoá đăng) → chia sẻ buổi tập.
 ///
-/// Chưa có (các lát sau, #527): Thử workout, Thêm vào bữa, soạn bài, hộp thư,
-/// thử thách nổi bật. Ảnh đại diện là emoji của linh vật (chưa có hình linh
+/// Chưa có (các lát sau, #527): Thử workout, Thêm vào bữa, chia sẻ Tiến
+/// trình / Công thức, thử thách nổi bật. Ảnh đại diện là emoji của linh vật (chưa có hình linh
 /// vật native).
 struct CommunityTab: View {
   @Environment(WorkoutFlow.self) private var flow
@@ -63,6 +64,13 @@ struct CommunityFeedView: View {
   @Environment(\.weightUnit) private var unit
   /// "Tìm người để theo dõi" khi tab Đang theo dõi trống.
   @State private var findPeople = false
+  @State private var askShare = false
+  @State private var shareRoute: ShareRoute?
+
+  enum ShareRoute: Hashable, Identifiable {
+    case workout
+    var id: Self { self }
+  }
 
   var body: some View {
     ScrollView {
@@ -118,6 +126,11 @@ struct CommunityFeedView: View {
     .communityUserLinks()
     .communityPostActions(userId: book.userId, host: book)
     .navigationDestination(isPresented: $findPeople) { CommunitySearchScreen() }
+    .navigationDestination(item: $shareRoute) { route in
+      switch route {
+      case .workout: CommunityShareWorkoutScreen { Task { await book.load() } }
+      }
+    }
     .task { if book.phase == .loading { await book.load() } }
     .task { if inbox?.phase == .loading { await inbox?.load(lang: AppServices.appLang) } }
     .refreshable {
@@ -171,6 +184,30 @@ struct CommunityFeedView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
       }
+    } else if book.hasProfile == true {
+      composer
+    }
+  }
+
+  /// Soạn bài: hỏi chia sẻ GÌ — mỗi loại bài một màn riêng (lát 11–13).
+  private var composer: some View {
+    Button {
+      askShare = true
+    } label: {
+      DSCard {
+        HStack(spacing: DS.Spacing.sm) {
+          MascotAvatar(mascotId: nil, size: 36)
+          Text("community.share.composer")
+            .font(DS.TextStyle.body)
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+      }
+    }
+    .buttonStyle(.plain)
+    .confirmationDialog(Text("community.share.ask"), isPresented: $askShare, titleVisibility: .visible) {
+      Button(String(localized: "community.share.askworkout")) { shareRoute = .workout }
+      Button(String(localized: "common.cancel"), role: .cancel) {}
     }
   }
 

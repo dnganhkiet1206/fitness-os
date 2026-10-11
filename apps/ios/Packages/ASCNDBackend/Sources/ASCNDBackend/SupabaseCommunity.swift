@@ -9,7 +9,7 @@ import Supabase
 /// mình.
 public struct SupabaseCommunity: CommunityFeedRemote, CommunityProfileRemote, CommunityPostRemote, CommunityUserRemote,
   CommunityPostActionsRemote, CommunitySavedRemote, CommunitySearchRemote, CommunityInboxRemote,
-  CommunityPrivacyRemote
+  CommunityPrivacyRemote, CommunityShareRemote
 {
   private let client: SupabaseClient
 
@@ -679,6 +679,91 @@ public struct SupabaseCommunity: CommunityFeedRemote, CommunityProfileRemote, Co
       return gone.count
     } catch {
       throw Self.moderationFailure(error)
+    }
+  }
+
+  // MARK: - Chia sẻ (#527, lát 11)
+
+  struct SourceIdDTO: Decodable, Sendable {
+    let source_id: String?
+  }
+
+  /// `share_workout`: `p_minutes` vắng mặt khi không có (`?? undefined`).
+  struct ShareWorkoutParams: Encodable, Sendable {
+    let p_session_id: String
+    let p_caption: String
+    let p_visibility: String
+    let p_minutes: Int?
+  }
+
+  /// `share_workout_with_art`: `p_minutes` gửi `null` thật khi không có.
+  struct ShareWorkoutArtParams: Encodable, Sendable {
+    let p_session_id: String
+    let p_caption: String
+    let p_visibility: String
+    let p_minutes: Int?
+    let p_art_id: String
+
+    func encode(to encoder: any Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(p_session_id, forKey: .p_session_id)
+      try c.encode(p_caption, forKey: .p_caption)
+      try c.encode(p_visibility, forKey: .p_visibility)
+      try c.encode(p_minutes, forKey: .p_minutes)
+      try c.encode(p_art_id, forKey: .p_art_id)
+    }
+  }
+
+  public func artLibrary() async throws -> [JSONValue] {
+    try await client.from("community_art")
+      .select(CommunityFeed.artColumns)
+      .eq("active", value: true)
+      .order("sort")
+      .order("id")
+      .execute().value
+  }
+
+  public func sharedSessionIds(me: String) async throws -> [String] {
+    let rows: [SourceIdDTO] = try await client.from("community_posts")
+      .select("source_id")
+      .eq("author_id", value: me)
+      .not("source_id", operator: .is, value: "null")
+      .execute().value
+    return rows.compactMap(\.source_id)
+  }
+
+  public func shareWorkout(
+    sessionId: String, caption: String, visibility: CommunityShare.Visibility, minutes: Int?, artId: String?
+  ) async throws {
+    do {
+      if let artId {
+        try await client.rpc(
+          "share_workout_with_art",
+          params: ShareWorkoutArtParams(
+            p_session_id: sessionId, p_caption: caption, p_visibility: visibility.rawValue, p_minutes: minutes,
+            p_art_id: artId)
+        ).execute()
+      } else {
+        try await client.rpc(
+          "share_workout",
+          params: ShareWorkoutParams(
+            p_session_id: sessionId, p_caption: caption, p_visibility: visibility.rawValue, p_minutes: minutes)
+        ).execute()
+      }
+    } catch {
+      throw Self.shareFailure(error)
+    }
+  }
+
+  /// `postingError` + 23505 / P0001 của `useShareWorkout`.
+  static func shareFailure(_ error: any Error) -> CommunityShareFailure {
+    if NetworkFailure.isOffline(error) { return .offline }
+    switch (error as? PostgrestError)?.code {
+    case "23505": return .alreadyShared
+    case "P0001": return .profileRequired
+    case "54000": return .postLimit
+    case "CR001": return .restricted
+    case let code: return .server(code: code)
     }
   }
 
