@@ -10,10 +10,13 @@ import SwiftUI
 /// khác"; tên người (hoặc tên thử thách) in đậm trong câu của app, ba dòng;
 /// huy hiệu loại việc ở góc avatar; chạm: theo dõi → hồ sơ, còn lại → bài.
 ///
-/// Chưa có (lát thử thách): thẻ "đã đạt mà chưa nhận" trên cùng, và chạm dòng
-/// mốc thử thách mở thử thách (màn thử thách cộng đồng chưa port).
+/// Lát 14: thẻ thử thách "đã đạt mà chưa nhận" đứng TRÊN mọi thông báo (việc
+/// còn phải làm, có hạn — không mang chấm "mới"); chạm dòng mốc thử thách mở
+/// thử thách.
 struct CommunityInboxView: View {
   let book: CommunityInboxBook
+  var challenges: CommunityChallengesBook?
+  @State private var openChallenge: ChallengeRoute?
   @Environment(\.openCommunityUser) private var openUser
   @State private var openPost: CommunityPostRoute?
   /// Một lần mỗi lần MỞ màn — quay lại từ một bài không chụp lại chấm "mới".
@@ -37,6 +40,53 @@ struct CommunityInboxView: View {
     .refreshable { await book.load(lang: AppServices.appLang) }
     .communityUserLinks()
     .navigationDestination(item: $openPost) { CommunityPostScreen(postId: $0.id) }
+    .navigationDestination(item: $openChallenge) { route in
+      if let challenges { CommunityChallengeView(book: challenges, id: route.id) }
+    }
+  }
+
+  private var due: [CommunityChallenges.Pending] { challenges?.pending ?? [] }
+
+  /// "Bạn đã đạt **tên** · Nhận 100 xu · còn 4 ngày".
+  private var dueCard: some View {
+    DSCard {
+      VStack(spacing: 0) {
+        ForEach(Array(due.enumerated()), id: \.element.id) { i, p in
+          if i > 0 { Divider() }
+          let halves = String(localized: "community.inbox.reached \(Self.mark)").components(separatedBy: Self.mark)
+          let before = halves.first ?? "", after = halves.dropFirst().joined(separator: p.challenge.title)
+          let line = ChallengeText.claimLine(p)
+          Button {
+            openChallenge = ChallengeRoute(id: p.challenge.id)
+          } label: {
+            HStack(spacing: DS.Spacing.sm) {
+              Image(systemName: "trophy.fill")
+                .foregroundStyle(DS.Color.readinessYellow.swiftUI)
+                .frame(width: 44, height: 44)
+                .accessibilityHidden(true)
+              VStack(alignment: .leading, spacing: 2) {
+                Text(Self.sentence((before: before, name: p.challenge.title, after: after)))
+                  .font(DS.TextStyle.body)
+                  .foregroundStyle(DS.Color.foreground.swiftUI)
+                  .lineLimit(3)
+                  .multilineTextAlignment(.leading)
+                Text(verbatim: line)
+                  .font(DS.TextStyle.footnote)
+                  .foregroundStyle(p.daysLeft == 0 ? DS.Color.readinessRed.swiftUI : DS.Color.mutedForeground.swiftUI)
+              }
+              .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .padding(.vertical, DS.Spacing.sm)
+            .frame(minHeight: 60)
+            .contentShape(Rectangle())
+          }
+          .buttonStyle(.plain)
+          .accessibilityElement(children: .ignore)
+          .accessibilityLabel(Text(verbatim: "\(before)\(p.challenge.title)\(after), \(line)"))
+          .accessibilityAddTraits(.isButton)
+        }
+      }
+    }
   }
 
   @ViewBuilder private var content: some View {
@@ -47,16 +97,19 @@ struct CommunityInboxView: View {
       DSErrorView(message: String(localized: "community.loadfailed")) {
         Task { await book.load(lang: AppServices.appLang) }
       }
-    case .ready where book.items.isEmpty:
+    case .ready where book.items.isEmpty && due.isEmpty:
       DSEmptyState(
         systemImage: "bell", title: String(localized: "community.inbox.empty"),
         message: String(localized: "community.inbox.emptyhint"))
     case .ready:
-      DSCard {
-        VStack(spacing: 0) {
-          ForEach(Array(book.items.enumerated()), id: \.element.id) { i, x in
-            if i > 0 { Divider() }
-            row(x)
+      if !due.isEmpty { dueCard }
+      if !book.items.isEmpty {
+        DSCard {
+          VStack(spacing: 0) {
+            ForEach(Array(book.items.enumerated()), id: \.element.id) { i, x in
+              if i > 0 { Divider() }
+              row(x)
+            }
           }
         }
       }
@@ -71,7 +124,8 @@ struct CommunityInboxView: View {
       switch CommunityInbox.target(x) {
       case .user(let id): openUser?(id)
       case .post(let id): openPost = CommunityPostRoute(id: id)
-      case .challenge, nil: break
+      case .challenge(let id): openChallenge = ChallengeRoute(id: id)
+      case nil: break
       }
     } label: {
       HStack(spacing: DS.Spacing.sm) {

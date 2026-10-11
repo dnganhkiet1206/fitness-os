@@ -609,6 +609,13 @@ final class AppServices {
     return CommunityUserBook(userId: userId, targetId: targetId, remote: SupabaseCommunity(backend: backend))
   }
 
+  /// Thử thách cộng đồng (#527, lát 14): tổng quan / lịch sử qua RPC, tham
+  /// gia / rời qua RLS, nhận thưởng qua `claim_community_challenge`.
+  func makeCommunityChallenges(userId: String) -> CommunityChallengesBook? {
+    guard let backend else { return nil }
+    return CommunityChallengesBook(userId: userId, remote: SupabaseCommunity(backend: backend))
+  }
+
   /// Chia sẻ một công thức (#527, lát 13): bữa 30 ngày + món + khẩu phần gốc,
   /// RPC `share_recipe*`.
   func makeCommunityShareRecipe(userId: String, mealId: String?) -> CommunityShareRecipeBook? {

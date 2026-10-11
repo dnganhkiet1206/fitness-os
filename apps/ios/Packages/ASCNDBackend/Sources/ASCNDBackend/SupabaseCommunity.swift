@@ -9,7 +9,8 @@ import Supabase
 /// mình.
 public struct SupabaseCommunity: CommunityFeedRemote, CommunityProfileRemote, CommunityPostRemote, CommunityUserRemote,
   CommunityPostActionsRemote, CommunitySavedRemote, CommunitySearchRemote, CommunityInboxRemote,
-  CommunityPrivacyRemote, CommunityShareRemote, CommunityShareProgressRemote, CommunityShareRecipeRemote
+  CommunityPrivacyRemote, CommunityShareRemote, CommunityShareProgressRemote, CommunityShareRecipeRemote,
+  CommunityChallengesRemote
 {
   private let client: SupabaseClient
 
@@ -881,6 +882,70 @@ public struct SupabaseCommunity: CommunityFeedRemote, CommunityProfileRemote, Co
     case "54000": return .postLimit
     case "CR001": return .restricted
     case let code: return .server(code: code)
+    }
+  }
+
+  // MARK: - Thử thách cộng đồng (#527, lát 14)
+
+  struct OffsetParams: Encodable, Sendable {
+    let p_offset_min: Int
+  }
+
+  struct ClaimChallengeParams: Encodable, Sendable {
+    let p_challenge: String
+    let p_offset_min: Int
+  }
+
+  struct ChallengeIdDTO: Decodable, Sendable {
+    let challenge_id: String
+  }
+
+  public func challengesOverview(offsetMinutes: Int) async throws -> [JSONValue] {
+    rpcRows(
+      try await client.rpc("community_challenges_overview", params: OffsetParams(p_offset_min: offsetMinutes))
+        .execute().value)
+  }
+
+  public func challengeHistory() async throws -> [JSONValue] {
+    rpcRows(try await client.rpc("community_challenge_history").execute().value)
+  }
+
+  /// `useJoinChallenge`: chèn kèm `offset_min` (23505 = đã tham gia); rời
+  /// phải chạm ≥ 1 hàng (hỏi lại `challenge_id`).
+  public func setChallengeMembership(me: String, challengeId: String, join: Bool, offsetMinutes: Int) async throws {
+    if join {
+      do {
+        try await client.from("community_challenge_members")
+          .insert(
+            JSONValue.object([
+              "challenge_id": .string(challengeId), "user_id": .string(me), "offset_min": .number(Double(offsetMinutes)),
+            ])
+          ).execute()
+      } catch {
+        if (error as? PostgrestError)?.code == "23505" { return }
+        throw Self.moderationFailure(error)
+      }
+      return
+    }
+    let gone: [ChallengeIdDTO]
+    do {
+      gone = try await client.from("community_challenge_members")
+        .delete().eq("challenge_id", value: challengeId).eq("user_id", value: me)
+        .select("challenge_id").execute().value
+    } catch {
+      throw Self.moderationFailure(error)
+    }
+    if gone.isEmpty { throw CommunityModerationFailure.nothingWritten }
+  }
+
+  public func claimChallenge(_ challengeId: String, offsetMinutes: Int) async throws -> Int {
+    do {
+      let v: JSONValue = try await client.rpc(
+        "claim_community_challenge", params: ClaimChallengeParams(p_challenge: challengeId, p_offset_min: offsetMinutes)
+      ).execute().value
+      return v.doubleValue.map { Int($0) } ?? 0
+    } catch {
+      throw Self.moderationFailure(error)
     }
   }
 

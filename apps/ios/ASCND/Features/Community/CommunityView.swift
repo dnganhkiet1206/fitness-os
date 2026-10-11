@@ -20,21 +20,23 @@ import SwiftUI
 /// soạn bài đầu feed (có hồ sơ, không bị khoá đăng) → chia sẻ buổi tập; lát
 /// 12: tiến trình; lát 13: công thức.
 ///
-/// Chưa có (các lát sau, #527): Thử workout, Thêm vào bữa, thử thách nổi
-/// bật. Ảnh đại diện là emoji của linh vật (chưa có hình linh
+/// Lát 14: thẻ thử thách nổi bật ở đầu Khám phá + "Tất cả thử thách".
+///
+/// Chưa có (các lát sau, #527): Thử workout, Thêm vào bữa. Ảnh đại diện là emoji của linh vật (chưa có hình linh
 /// vật native).
 struct CommunityTab: View {
   @Environment(WorkoutFlow.self) private var flow
   @Environment(AppServices.self) private var services
   @State private var book: CommunityFeedBook?
   @State private var inbox: CommunityInboxBook?
+  @State private var challenges: CommunityChallengesBook?
   @State private var built = false
 
   var body: some View {
     NavigationStack {
       Group {
         if let book {
-          CommunityFeedView(book: book, inbox: inbox)
+          CommunityFeedView(book: book, inbox: inbox, challenges: challenges)
         } else if built {
           ContentUnavailableView {
             Label("tab.community", systemImage: "person.2")
@@ -51,6 +53,7 @@ struct CommunityTab: View {
       guard !built else { return }
       book = services.makeCommunityFeed(userId: flow.today.userId)
       inbox = services.makeCommunityInbox(userId: flow.today.userId)
+      challenges = services.makeCommunityChallenges(userId: flow.today.userId)
       built = true
     }
     .onChange(of: services.session.session?.userId) { _, id in
@@ -62,6 +65,9 @@ struct CommunityTab: View {
 struct CommunityFeedView: View {
   let book: CommunityFeedBook
   var inbox: CommunityInboxBook?
+  var challenges: CommunityChallengesBook?
+  @State private var challengeRoute: ChallengeRoute?
+  @State private var openAllChallenges = false
   @Environment(\.weightUnit) private var unit
   /// "Tìm người để theo dõi" khi tab Đang theo dõi trống.
   @State private var findPeople = false
@@ -84,6 +90,7 @@ struct CommunityFeedView: View {
         }
         .pickerStyle(.segmented)
         if book.phase == .ready { header }
+        if book.tab == .discover, let challenges { challengeBlock(challenges) }
         if book.tab == .discover, !book.useful.isEmpty { UsefulThisWeekCard(posts: book.useful) }
         content
       }
@@ -94,13 +101,13 @@ struct CommunityFeedView: View {
       // Chuông: hộp thông báo, chấm khi còn dòng chưa đọc (lát 9).
       if let inbox {
         ToolbarItem(placement: .topBarTrailing) {
+          let hasNew = inbox.hasNew || !(challenges?.pending.isEmpty ?? true)
           NavigationLink {
-            CommunityInboxView(book: inbox)
+            CommunityInboxView(book: inbox, challenges: challenges)
           } label: {
-            Image(systemName: inbox.hasNew ? "bell.badge" : "bell")
+            Image(systemName: hasNew ? "bell.badge" : "bell")
           }
-          .accessibilityLabel(
-            inbox.hasNew ? Text("community.inbox.opennew") : Text("community.inbox.title"))
+          .accessibilityLabel(hasNew ? Text("community.inbox.opennew") : Text("community.inbox.title"))
         }
       }
       // Kính lúp: tìm người / công thức / bài (lát 8).
@@ -136,9 +143,17 @@ struct CommunityFeedView: View {
     }
     .task { if book.phase == .loading { await book.load() } }
     .task { if inbox?.phase == .loading { await inbox?.load(lang: AppServices.appLang) } }
+    .task { if challenges?.phase == .loading { await loadChallenges() } }
+    .navigationDestination(item: $challengeRoute) { route in
+      if let challenges { CommunityChallengeView(book: challenges, id: route.id, fromAll: route.fromAll) }
+    }
+    .navigationDestination(isPresented: $openAllChallenges) {
+      if let challenges { CommunityChallengesView(book: challenges) }
+    }
     .refreshable {
       await book.load()
       await inbox?.load(lang: AppServices.appLang)
+      await loadChallenges()
     }
   }
 
@@ -189,6 +204,24 @@ struct CommunityFeedView: View {
       }
     } else if book.hasProfile == true {
       composer
+    }
+  }
+
+  /// Tổng quan; khi không có thẻ nổi bật thì đọc lịch sử để biết có nên mời
+  /// sang trang thử thách không.
+  private func loadChallenges() async {
+    guard let challenges else { return }
+    await challenges.load(lang: AppServices.appLang)
+    if challenges.featured == nil { await challenges.loadHistory(lang: AppServices.appLang) }
+  }
+
+  /// Thẻ thử thách nổi bật (lát 14); không có thẻ mà đã từng hoàn thành thì
+  /// chỉ còn lối "Tất cả thử thách".
+  @ViewBuilder private func challengeBlock(_ c: CommunityChallengesBook) -> some View {
+    if let ch = c.featured {
+      ChallengeHeroCard(book: c, ch: ch, open: { challengeRoute = $0 }, openAll: { openAllChallenges = true })
+    } else if !c.history.isEmpty {
+      SeeAllChallengesLink { openAllChallenges = true }
     }
   }
 
