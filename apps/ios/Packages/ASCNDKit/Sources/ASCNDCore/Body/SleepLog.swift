@@ -149,17 +149,11 @@ public enum SleepLog {
 
   // MARK: - Đêm Apple Health ghi
 
-  /// `MANUAL_SOURCE`.
-  static let manualSource = "manual"
   /// Ba giai đoạn, đúng thứ tự ô.
   public static let stageColumns = ["deep_min", "rem_min", "light_min"]
 
-  /// `fromHealth(row)`: `source` (bỏ khoảng trắng) có chữ và khác `manual`.
-  public static func fromHealth(_ row: JSONValue?) -> Bool {
-    guard case .string(let s)? = row?["source"] else { return false }
-    let t = RepEntry.trimJS(s)
-    return !t.isEmpty && t != manualSource
-  }
+  /// `fromHealth(row)` — `HealthOwned`.
+  public static func fromHealth(_ row: JSONValue?) -> Bool { HealthOwned.fromHealth(row) }
 
   /// `healthValues(row, stages)`: chỉ hàng của Health; số hữu hạn > 0.
   public static func healthStages(_ row: JSONValue?) -> [String: Double] {

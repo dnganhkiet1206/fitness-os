@@ -179,5 +179,6 @@ miễn **giữ nguyên ý định** của app và chỉ làm app tốt hơn — 
 | Koa — `koa-sheet` (K4) | Tiêu đề, nhãn VoiceOver và lời gợi ý qua xcstrings (vi/en/es); nhãn của tài liệu thiết kế vẫn tiếng Việt | Toàn màn tiếng Việt cố ý (màn dev) | cổng i18n của native không cho chữ người dùng thấy viết thẳng | không cần | #527 (`native/ios-rewrite`) | E |
 | Phòng linh vật — sân khấu (K4) | Koa thật (đồ trong tủ, gật khi nhận thưởng) trên vòng năng lượng; cảm xúc luôn `idle` trừ khi thanh DEV ép | `MascotScene`: studio, cây, côn trùng, cái liếc, cảm xúc do engine `useMascotEmotion` chọn | tạm thời (studio + engine chưa port) | không cần | #527 (`native/ios-rewrite`) | E |
 | Cộng đồng — màn một thử thách: đầu màn (K4) | Koa (`celebrate` khi đạt / đã nhận, còn lại `idle`) — thay hình cúp tạm của lát 14 | `MascotFigure` của linh vật người dùng chọn | linh vật khác Koa (`vector-mascot`) chưa port; với Koa thì giống RN | không cần | #527 (`native/ios-rewrite`) | E |
+| Nhập sinh trắc — nhập lại trong ngày | Hàng `manual` mới nhất của ngày được GHI ĐÈ (upsert theo id của nó) | `upsert(…, { ignoreDuplicates: true })` với id của hàng ấy → bị bỏ qua: nhập lại không đổi gì, cả khi có mạng (cùng `applyOfflineWrite`) | sửa lỗi RN | không cần | #527 (`native/ios-rewrite`) | A |
 
 Thêm dòng mới ở cuối bảng; giữ dòng cũ — sổ là lịch sử, không phải danh sách việc.

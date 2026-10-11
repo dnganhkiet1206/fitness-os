@@ -43,7 +43,7 @@ struct DeepLinkTests {
   @Test func everyNativeScreen() {
     let cases: [(String, DeepLink.Screen)] = [
       ("supplements", .supplements), ("food-list", .foods), ("food-editor?id=x", .foods),
-      ("nutrition-insights", .nutritionInsights), ("meal-plans", .mealPlans), ("log-weight", .logWeight), ("log-measurement", .logMeasurement), ("log-sleep", .logSleep),
+      ("nutrition-insights", .nutritionInsights), ("meal-plans", .mealPlans), ("log-weight", .logWeight), ("log-measurement", .logMeasurement), ("log-sleep", .logSleep), ("log-biometrics", .logBiometrics),
       ("sessions", .history), ("log-workout", .logWorkout), ("reminders", .reminders), ("templates", .templates),
       ("workout-builder", .templates),
     ]

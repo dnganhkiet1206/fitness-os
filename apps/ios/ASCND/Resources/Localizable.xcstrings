@@ -10975,6 +10975,282 @@
     }
    }
   },
+  "bioLog.baselineNote": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Resting HR and HRV are scored against your own baseline, so it takes 5 readings within 28 days before they appear on the readiness card. Entering them by hand counts exactly like Apple Health — no watch needed."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nhịp tim nghỉ và HRV được chấm so với nền của chính bạn, nên cần 5 lần đo trong 28 ngày mới hiện lên thẻ điểm sẵn sàng. Nhập tay tính y như Apple Health — không cần đồng hồ."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "La FC en reposo y la HRV se puntúan contra tu propia base, así que se necesitan 5 lecturas en 28 días antes de que aparezcan en la tarjeta de preparación. Ingresarlas a mano cuenta igual que Apple Health — no necesitas reloj."
+     }
+    }
+   }
+  },
+  "bioLog.breathUnit": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "breaths/min"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "nhịp/phút"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "resp/min"
+     }
+    }
+   }
+  },
+  "bioLog.hr": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Resting heart rate (bpm)"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nhịp tim nghỉ (bpm)"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Frecuencia cardíaca en reposo (lpm)"
+     }
+    }
+   }
+  },
+  "bioLog.hrv": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "HRV RMSSD (ms)"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "HRV RMSSD (ms)"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "HRV RMSSD (ms)"
+     }
+    }
+   }
+  },
+  "bioLog.ill": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Feeling ill today"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hôm nay bị ốm"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Me siento enfermo hoy"
+     }
+    }
+   }
+  },
+  "bioLog.resp": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Respiratory rate (rpm)"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nhịp thở (rpm)"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Frecuencia respiratoria (rpm)"
+     }
+    }
+   }
+  },
+  "bioLog.saved": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Biometrics saved!"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đã lưu chỉ số sinh trắc!"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "¡Biometría guardada!"
+     }
+    }
+   }
+  },
+  "bioLog.soreness": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Soreness today (optional)"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đau nhức hôm nay (không bắt buộc)"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Dolor muscular hoy (opcional)"
+     }
+    }
+   }
+  },
+  "bioLog.sorenessHint": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "1 = none, 10 = worst"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "1 = không đau, 10 = đau nhất"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "1 = nada, 10 = máximo"
+     }
+    }
+   }
+  },
+  "bioLog.spo2": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "SpO₂ (%)"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "SpO₂ (%)"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "SpO₂ (%)"
+     }
+    }
+   }
+  },
+  "bioLog.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Enter Biometrics"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nhập Chỉ Số Sinh Trắc"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ingresar biometría"
+     }
+    }
+   }
+  },
+  "bioLog.vo2": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "VO₂max (ml/kg/min) — estimate"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "VO₂max (ml/kg/min) — ước tính"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "VO₂max (ml/kg/min) — estimado"
+     }
+    }
+   }
+  },
   "bio.empty.title": {
    "extractionState": "manual",
    "localizations": {

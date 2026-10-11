@@ -40,6 +40,9 @@ public struct SupabaseRemoteWriter: RemoteWriter {
     // Một giấc ngủ (#527 `log-sleep`): luật "ghi lại là sửa" rồi upsert theo
     // `id` — như `case 'sleep'`, nhưng GHI ĐÈ (xem `sendSleep`).
     SleepLog.kind: "sleep_logs",
+    // Một bộ số sinh trắc (#527 `log-biometrics`): hàng `manual` mới nhất của
+    // ngày ấy được sửa — như `case 'biometrics'`, nhưng GHI ĐÈ.
+    BiometricLog.kind: "biometric_samples",
   ]
 
   /// Bản ghi lại (#296) GHI ĐÈ hàng có sẵn; bản ghi mới thì bỏ trùng
@@ -109,6 +112,8 @@ public struct SupabaseRemoteWriter: RemoteWriter {
         try await SupabaseMeasurementLog.write(client, row: entry.payload)
       } else if entry.kind == SleepLog.kind {
         try await sendSleep(entry)
+      } else if entry.kind == BiometricLog.kind {
+        try await sendBiometrics(entry)
       } else if entry.kind == PlanEdit.routineDayKind {
         // Gán ngày (#401): `upsert … onConflict: 'user_id,day_of_week'` như
         // baseline (`use-library.ts:461`) — một hàng mỗi ngày, gửi lại là ghi
@@ -155,6 +160,28 @@ public struct SupabaseRemoteWriter: RemoteWriter {
     try await client.from("sleep_logs").upsert(JSONValue.object(row), onConflict: "id").execute()
   }
 
+  /// `case 'biometrics'`: hàng `manual` mới nhất trong ngày địa phương của bộ
+  /// số thì upsert vào id ấy, không thì vào id cố định của lần chạm. GHI ĐÈ
+  /// (RN `ignoreDuplicates: true` làm lần nhập lại trong ngày không đổi gì).
+  private func sendBiometrics(_ entry: OutboxEntry) async throws {
+    guard case .object(var row) = entry.payload,
+      let at = row["date_time"]?.stringValue.flatMap({ EpochMillis(iso8601: $0) })
+    else { return }
+    let r = DailyLog.dayRange(LocalDate(at, in: .current), in: .current)
+    let found: [JSONValue]? = try? await client.from("biometric_samples")
+      .select("id")
+      .eq("user_id", value: entry.userId)
+      .eq("source", value: "manual")
+      .gte("date_time", value: r.start)
+      .lt("date_time", value: r.end)
+      .order("date_time", ascending: false)
+      .limit(1)
+      .execute()
+      .value
+    if let id = found?.first?["id"]?.stringValue { row["id"] = .string(id) }
+    try await client.from("biometric_samples").upsert(JSONValue.object(row), onConflict: "id").execute()
+  }
+
   /// Bản ghi lại / gỡ set có `base`: đọc hàng NGAY lúc gửi, áp phần máy này
   /// đã đổi lên đó (`SessionRevisionMerge`) — không đè set máy khác đã ghi vào
   /// cùng buổi (#523 P1). Như baseline (`useAppendToSession`, gỡ set): đọc rồi
@@ -199,6 +226,7 @@ public struct SupabaseRemoteWriter: RemoteWriter {
     if entry.kind == WeightLog.kind { return WeightLog.isRow(entry) }
     if entry.kind == MeasurementLog.kind { return MeasurementLog.isRow(entry) }
     if entry.kind == SleepLog.kind { return SleepLog.isRow(entry) }
+    if entry.kind == BiometricLog.kind { return BiometricLog.isRow(entry) }
     if entry.kind == MealLog.kind { return MealLog.isRow(entry) }
     if entry.kind == PlanEdit.routineDayKind {
       // Không có `id`: hàng xác định bởi (người, ngày). Người phải là chủ bản

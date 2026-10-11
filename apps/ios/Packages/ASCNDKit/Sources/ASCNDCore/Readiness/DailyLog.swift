@@ -488,6 +488,8 @@ extension DailyLog {
     if entry.kind == MealLog.kind { return MealLog.day(entry, in: tz).map { [$0] } ?? [] }
     // Giấc ngủ (#527 `log-sleep`): ngày THỨC DẬY — `case 'sleep'`.
     if entry.kind == SleepLog.kind { return SleepLog.replayDay(entry, in: tz).map { [$0] } ?? [] }
+    // Sinh trắc (#527 `log-biometrics`): ngày của bộ số — `case 'biometrics'`.
+    if entry.kind == BiometricLog.kind { return BiometricLog.day(entry, in: tz).map { [$0] } ?? [] }
     let kinds = [WorkoutSessionRecord.outboxKind, WorkoutSessionRecord.revisionKind, WorkoutSessionRecord.deleteKind]
     guard kinds.contains(entry.kind) else { return [] }
     guard let at = entry.payload["date_time"]?.stringValue.flatMap({ EpochMillis(iso8601: $0) }) else {
