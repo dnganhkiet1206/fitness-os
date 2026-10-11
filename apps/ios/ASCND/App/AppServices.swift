@@ -363,11 +363,12 @@ final class AppServices {
 
   /// Nhật ký bữa ăn (#527 Phase 3 · 3.10): đọc một ngày; xoá / hoàn tác / sửa
   /// khẩu phần thẳng server (chỉ online, như RN) rồi dựng lại `daily_logs`.
-  func makeMealDiary(userId: String) -> MealDiaryBook? {
+  /// `date`: ngày đầu (`diary?date=` của deep link); `nil` = hôm nay.
+  func makeMealDiary(userId: String, date: LocalDate? = nil) -> MealDiaryBook? {
     guard let rows, let backend else { return nil }
     // Bữa còn trong outbox hiện cùng bữa của server (chỉ đọc hàng đợi).
     return MealDiaryBook(
-      userId: userId, source: SupabaseMealDiary(backend: backend), store: rows, pending: outbox,
+      userId: userId, source: SupabaseMealDiary(backend: backend), store: rows, pending: outbox, date: date,
       onRebuilt: { [weak self] day in
         guard let self else { return }
         self.mealDiaryRebuilt = DayPulse(day: day, seq: (self.mealDiaryRebuilt?.seq ?? 0) + 1)

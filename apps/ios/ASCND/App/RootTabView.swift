@@ -12,6 +12,9 @@ struct RootTabView: View {
   /// Nhớ tab đang mở qua những lần hệ thống thu hồi scene.
   @SceneStorage("root.tab") private var selection: AppTab = .today
   @Environment(AppServices.self) private var services
+  /// Link `ascnd://` chờ mở (#527 deep link lát 2).
+  @Environment(DeepLinkInbox.self) private var links: DeepLinkInbox?
+  @State private var linked: DeepLink.Screen?
 
   var body: some View {
     TabView(selection: $selection) {
@@ -47,6 +50,18 @@ struct RootTabView: View {
     // Ăn mừng huy chương / thử thách (#527, `CelebrationHost` ở layout gốc của
     // RN): trên mọi tab, phủ cả thanh tab.
     .overlay { CelebrationHost(queue: services.celebrations) }
+    // Link tới một màn: mở tab của nó, rồi màn ấy thành sheet. `initial`: link
+    // đến lúc chưa đăng nhập được mở ngay khi cây của phiên dựng xong.
+    .onChange(of: links?.pending, initial: true) { _, _ in
+      guard let target = links?.take() else { return }
+      selection = AppTab(target.tab)
+      if case .screen(let screen) = target { linked = screen }
+    }
+    .sheet(
+      isPresented: Binding(get: { linked != nil }, set: { if !$0 { linked = nil } })
+    ) {
+      if let linked { DeepLinkScreen(screen: linked) }
+    }
   }
 }
 

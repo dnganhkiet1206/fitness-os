@@ -167,6 +167,8 @@ struct LogMealButton: View {
 /// khoản thì đóng — lượt đọc về muộn không đổi gì nữa.
 struct DiaryScreen: View {
   let userId: String
+  /// Ngày đầu (`diary?date=`, deep link) — kẹp về hôm nay như RN.
+  var date: LocalDate?
   @Environment(AppServices.self) private var services
   @State private var book: MealDiaryBook?
 
@@ -179,7 +181,7 @@ struct DiaryScreen: View {
       }
     }
     .task {
-      if book == nil { book = services.makeMealDiary(userId: userId) }
+      if book == nil { book = services.makeMealDiary(userId: userId, date: date) }
     }
     .onDisappear { book?.close() }
   }

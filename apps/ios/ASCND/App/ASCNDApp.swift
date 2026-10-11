@@ -8,6 +8,8 @@ struct ASCNDApp: App {
   @Environment(\.scenePhase) private var scenePhase
   @State private var rest: RestTimerController
   @State private var services: AppServices
+  /// Link `ascnd://` tới một màn, chờ phiên mở (#527 deep link lát 2).
+  @State private var links = DeepLinkInbox()
 
   init() {
     let store = RestTimerStore()
@@ -54,6 +56,7 @@ struct ASCNDApp: App {
         .preferredColorScheme(Self.colorScheme(services.preferences.theme))
         .environment(rest)
         .environment(services)
+        .environment(links)
         // Phiên trước, Island sau (#252): mở app khi phiên đã mất lúc app
         // không chạy thì quãng nghỉ đã lưu là của người trước — không phát lại.
         .task {
@@ -67,9 +70,12 @@ struct ASCNDApp: App {
           services.widgets.setUser(user)
         }
         // `ascnd://` (#527 deep link): link email auth (xác nhận đăng ký, đặt
-        // lại mật khẩu) mở phiên; các link khác chưa dẫn đi đâu.
+        // lại mật khẩu) mở phiên; link khác tới màn của nó (`DeepLink`).
         .onOpenURL { url in
-          Task { await services.session.open(url) }
+          Task {
+            if await services.session.open(url) { return }
+            if let target = DeepLink.target(url) { links.receive(target) }
+          }
         }
     }
     .onChange(of: scenePhase) { _, phase in

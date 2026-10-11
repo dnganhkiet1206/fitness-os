@@ -166,5 +166,6 @@ miễn **giữ nguyên ý định** của app và chỉ làm app tốt hơn — 
 | Cộng đồng — mời chia sẻ sau khi chốt buổi | Chưa có | `use-workout-share-invite` (toast "Chia sẻ" sau buổi) | tạm thời (cần toast + luồng chốt buổi của A) | không cần | #527 (`native/ios-rewrite`) | E |
 | Cộng đồng — lối vào chia sẻ tiến trình | Chỉ từ thẻ soạn bài đầu feed | Thêm hàng "Chia sẻ tiến trình" ở bảng Cơ thể (`body-panel.tsx`) | tạm thời (bảng Cơ thể native chưa có hàng lối tắt này) | không cần | #527 (`native/ios-rewrite`) | E |
 | Cộng đồng — lối vào chia sẻ công thức | Chỉ từ thẻ soạn bài đầu feed | Thêm nút trên thẻ bữa ở Hôm nay (`today-meals.tsx`, `?meal=`) | tạm thời (thẻ bữa Hôm nay là tệp của A; màn đã nhận `mealId`) | không cần | #527 (`native/ios-rewrite`) | E |
+| Link `ascnd://<route>` | Màn mở thẳng thành sheet trên tab của nó (đóng là về tab); màn chỉ có bên trong một tab hay chưa có bản native → mở tab ấy; quản trị / gỡ lỗi / route lạ → chỉ mở app; `diary?date=` hỏng → hôm nay | expo-router đẩy đúng màn lên stack gốc; route lạ → màn "Unmatched Route"; `diary?date=` chỉ so chuỗi `<= today` | lệch nền tảng (điều hướng SwiftUI theo tab) | không cần | #527 (`native/ios-rewrite`) | A |
 
 Thêm dòng mới ở cuối bảng; giữ dòng cũ — sổ là lịch sử, không phải danh sách việc.
