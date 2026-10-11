@@ -340,6 +340,16 @@ final class AppServices {
       onSaved: { [weak self] _ in self?.weightSaved += 1 })
   }
 
+  /// Ghi số đo cơ thể (#527 `log-measurement`): có mạng upsert thẳng; mất
+  /// mạng xếp outbox kind `measurement`, gửi ngay khi có mạng.
+  func makeMeasurementLogger(userId: String) -> MeasurementLogger? {
+    guard let backend else { return nil }
+    let sync = self.sync
+    return MeasurementLogger(
+      userId: userId, source: SupabaseMeasurementLog(backend: backend), store: outbox,
+      onEnqueued: { _ in sync.kick() })
+  }
+
   /// Thực phẩm bổ sung (#527 Phase 3 · 3.9): đọc server; thêm / xoá thẳng
   /// server khi online, như RN. `nil` khi thiếu cấu hình Supabase.
   func makeSupplementBook(userId: String) -> SupplementBook? {

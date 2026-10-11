@@ -47,11 +47,13 @@ struct DeepLinkScreen: View {
 
   var body: some View {
     switch screen {
-    // Ba màn ghi tự có `NavigationStack` và nút đóng của chúng.
+    // Bốn màn ghi tự có `NavigationStack` và nút đóng của chúng.
     case .logMeal(let date, let meal):
       LogMealView(userId: userId, date: date, mealType: meal) { dismiss() }
     case .logWeight:
       LogWeightView(makeLogger: { services.makeWeightLogger(userId: userId) }) { dismiss() }
+    case .logMeasurement:
+      LogMeasurementView(makeLogger: { services.makeMeasurementLogger(userId: userId) }) { dismiss() }
     case .logWorkout:
       ManualLogView(flow: flow)
     default:
@@ -88,7 +90,7 @@ struct DeepLinkScreen: View {
       RemindersView()
     case .templates:
       TemplateListView(flow: flow)
-    case .logMeal, .logWeight, .logWorkout:
+    case .logMeal, .logWeight, .logMeasurement, .logWorkout:
       EmptyView()
     }
   }
