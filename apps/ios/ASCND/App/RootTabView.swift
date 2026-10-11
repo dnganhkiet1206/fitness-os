@@ -1,3 +1,4 @@
+import ASCNDCore
 import SwiftUI
 
 /// Năm điểm đến cấp cao, đúng thứ tự và biểu tượng của app RN
