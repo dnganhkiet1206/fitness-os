@@ -8,7 +8,7 @@ import Supabase
 /// `20261007220000_community_report_trust.sql`); thích / lưu chỉ đọc hàng của
 /// mình.
 public struct SupabaseCommunity: CommunityFeedRemote, CommunityProfileRemote, CommunityPostRemote, CommunityUserRemote,
-  CommunityPostActionsRemote, CommunitySavedRemote
+  CommunityPostActionsRemote, CommunitySavedRemote, CommunitySearchRemote
 {
   private let client: SupabaseClient
 
@@ -566,6 +566,37 @@ public struct SupabaseCommunity: CommunityFeedRemote, CommunityProfileRemote, Co
     guard !ids.isEmpty else { return [] }
     return try await client.from("community_posts").select(CommunityFeed.postColumns).in("id", values: ids)
       .execute().value
+  }
+
+  // MARK: - Tìm (#527, lát 8)
+
+  struct QueryParams: Encodable, Sendable {
+    let p_q: String
+  }
+
+  private func rpcRows(_ v: JSONValue) -> [JSONValue] {
+    if case .array(let a) = v { return a }
+    return []
+  }
+
+  /// `useSearchPeople`: tối đa 20, server lọc cặp đã chặn nhau.
+  public func searchProfiles(term: String) async throws -> [JSONValue] {
+    rpcRows(try await client.rpc("community_search_profiles", params: QueryParams(p_q: term)).execute().value)
+  }
+
+  /// `useFollowSuggestions`: chính thức trước, rồi người có bài công khai gần đây.
+  public func followSuggestions() async throws -> [JSONValue] {
+    rpcRows(try await client.rpc("community_follow_suggestions").execute().value)
+  }
+
+  /// `useFindRecipes`: theo tên món, không phân biệt dấu.
+  public func findRecipes(term: String) async throws -> [JSONValue] {
+    rpcRows(try await client.rpc("community_find_recipes", params: QueryParams(p_q: term)).execute().value)
+  }
+
+  /// `useSearchPosts`: chú thích + tên trong payload, không phân biệt dấu.
+  public func findPosts(term: String) async throws -> [JSONValue] {
+    rpcRows(try await client.rpc("community_find_posts", params: QueryParams(p_q: term)).execute().value)
   }
 
   public func artURL(path: String) -> URL? {

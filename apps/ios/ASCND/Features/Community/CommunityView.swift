@@ -15,10 +15,11 @@ import SwiftUI
 ///
 /// Lát 3: chạm thẻ (hoặc hàng Hữu ích) mở `CommunityPostScreen`.
 ///
-/// Chưa có (các lát sau, #527): thích / lưu / menu, Thử
-/// workout, Thêm vào bữa, soạn bài, tìm kiếm, hộp thư, thử thách nổi bật.
-/// Hàng thích · bình luận · lưu là số đếm chỉ đọc. Ảnh đại diện là emoji của
-/// linh vật (chưa có hình linh vật native).
+/// Lát 6: thích / lưu / menu "⋯" trên thẻ. Lát 8: kính lúp mở tìm kiếm.
+///
+/// Chưa có (các lát sau, #527): Thử workout, Thêm vào bữa, soạn bài, hộp thư,
+/// thử thách nổi bật. Ảnh đại diện là emoji của linh vật (chưa có hình linh
+/// vật native).
 struct CommunityTab: View {
   @Environment(WorkoutFlow.self) private var flow
   @Environment(AppServices.self) private var services
@@ -56,6 +57,8 @@ struct CommunityTab: View {
 struct CommunityFeedView: View {
   let book: CommunityFeedBook
   @Environment(\.weightUnit) private var unit
+  /// "Tìm người để theo dõi" khi tab Đang theo dõi trống.
+  @State private var findPeople = false
 
   var body: some View {
     ScrollView {
@@ -75,6 +78,15 @@ struct CommunityFeedView: View {
     }
     .background(DS.Color.background.swiftUI)
     .toolbar {
+      // Kính lúp: tìm người / công thức / bài (lát 8).
+      ToolbarItem(placement: .topBarTrailing) {
+        NavigationLink {
+          CommunitySearchScreen()
+        } label: {
+          Image(systemName: "magnifyingglass")
+        }
+        .accessibilityLabel(Text("community.search.open"))
+      }
       // Avatar ở đầu trang → trang người dùng của mình (Sửa hồ sơ ở đó), như RN.
       if book.hasProfile == true {
         ToolbarItem(placement: .topBarTrailing) {
@@ -89,6 +101,7 @@ struct CommunityFeedView: View {
     }
     .communityUserLinks()
     .communityPostActions(userId: book.userId, host: book)
+    .navigationDestination(isPresented: $findPeople) { CommunitySearchScreen() }
     .task { if book.phase == .loading { await book.load() } }
     .refreshable { await book.load() }
   }
@@ -149,7 +162,14 @@ struct CommunityFeedView: View {
       DSErrorView(message: String(localized: "community.loadfailed")) { Task { await book.load() } }
         .frame(minHeight: 240)
     case .ready where book.posts.isEmpty:
-      if book.tab == .following {
+      if book.tab == .following, book.hasProfile == true {
+        // Có hồ sơ: việc cần làm là TÌM người; chưa có thì mở Khám phá.
+        DSEmptyState(
+          systemImage: "person.2", title: String(localized: "community.empty.following"),
+          message: String(localized: "community.empty.following.hint"),
+          actionTitle: String(localized: "community.search.find")
+        ) { findPeople = true }
+      } else if book.tab == .following {
         DSEmptyState(
           systemImage: "person.2", title: String(localized: "community.empty.following"),
           message: String(localized: "community.empty.following.hint"),

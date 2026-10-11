@@ -10,8 +10,8 @@ import SwiftUI
 /// mà còn trang cũ hơn thì đọc tiếp; chưa lưu gì thì dạy cách lưu, lọc rỗng
 /// thì chỉ nói loại ấy chưa có. Lối vào: "Đã lưu" trên hồ sơ của chính mình.
 ///
-/// Chưa có (lát sau): nút "Tìm công thức" khi lọc Công thức rỗng (màn Tìm
-/// chưa port).
+/// Lọc Công thức mà chưa lưu công thức nào: "Tìm công thức" mở thẳng phân
+/// đoạn Công thức của màn Tìm (lát 8).
 struct CommunitySavedScreen: View {
   let userId: String
   @Environment(AppServices.self) private var services
@@ -46,6 +46,7 @@ struct CommunitySavedView: View {
   /// Đọc một lần mỗi lần MỞ màn (quay lại từ một bài không đọc lại — mục vừa
   /// bỏ lưu ở lại tới lần mở sau, như RN).
   @State private var opened = false
+  @State private var findRecipes = false
 
   var body: some View {
     ScrollView {
@@ -77,6 +78,7 @@ struct CommunitySavedView: View {
     .refreshable { await book.load() }
     .communityUserLinks()
     .communityPostActions(userId: book.userId, host: book)
+    .navigationDestination(isPresented: $findRecipes) { CommunitySearchScreen(mode: .recipe) }
   }
 
   private struct HuntKey: Hashable {
@@ -137,6 +139,9 @@ struct CommunitySavedView: View {
             .font(DS.TextStyle.footnote)
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
             .multilineTextAlignment(.center)
+        }
+        if book.filter == .recipe {
+          DSButton(String(localized: "community.saved.findrecipes"), style: .secondary) { findRecipes = true }
         }
       }
       .frame(maxWidth: .infinity)

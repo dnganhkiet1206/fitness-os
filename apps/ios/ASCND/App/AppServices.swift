@@ -598,6 +598,12 @@ final class AppServices {
     return CommunityUserBook(userId: userId, targetId: targetId, remote: SupabaseCommunity(backend: backend))
   }
 
+  /// Tìm người / công thức / bài (#527, lát 8): RPC tìm + theo dõi qua RLS.
+  func makeCommunitySearch(userId: String, mode: CommunitySearch.Mode) -> CommunitySearchBook? {
+    guard let backend else { return nil }
+    return CommunitySearchBook(userId: userId, mode: mode, remote: SupabaseCommunity(backend: backend))
+  }
+
   /// Thư viện Đã lưu (#527, lát 7): dòng lưu của mình + bài qua RLS.
   func makeCommunitySaved(userId: String) -> CommunitySavedBook? {
     guard let backend else { return nil }
