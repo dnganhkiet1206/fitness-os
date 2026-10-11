@@ -70,9 +70,13 @@ struct CommunityFeedHoldTests {
 
   @Test func ledgerOnlyGrows() {
     var ledger = CommunityFeedHold.Ledger()
-    #expect(ledger.ack(["a", "b"], tab: "t"))
-    #expect(!ledger.ack(["b", "a"], tab: "t"))  // vẽ lại cùng danh sách: không ghi
-    #expect(ledger.ack(["c"], tab: "t"))
+    // `ack` là `mutating` — gọi ngoài `#expect` (macro chỉ thấy bản sao bất biến)
+    let first = ledger.ack(["a", "b"], tab: "t")
+    let again = ledger.ack(["b", "a"], tab: "t")  // vẽ lại cùng danh sách: không ghi
+    let more = ledger.ack(["c"], tab: "t")
+    #expect(first)
+    #expect(!again)
+    #expect(more)
     #expect(ledger.seen("t") == ["a", "b", "c"])  // bài cuộn qua rồi vẫn là đã thấy
   }
 
