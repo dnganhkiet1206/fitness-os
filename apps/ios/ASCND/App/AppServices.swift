@@ -598,6 +598,13 @@ final class AppServices {
     return CommunityUserBook(userId: userId, targetId: targetId, remote: SupabaseCommunity(backend: backend))
   }
 
+  /// Hộp thông báo Cộng đồng (#527, lát 9): thông báo + hồ sơ + tên thử thách,
+  /// đánh dấu đã đọc qua RPC.
+  func makeCommunityInbox(userId: String) -> CommunityInboxBook? {
+    guard let backend else { return nil }
+    return CommunityInboxBook(userId: userId, remote: SupabaseCommunity(backend: backend))
+  }
+
   /// Tìm người / công thức / bài (#527, lát 8): RPC tìm + theo dõi qua RLS.
   func makeCommunitySearch(userId: String, mode: CommunitySearch.Mode) -> CommunitySearchBook? {
     guard let backend else { return nil }

@@ -8,7 +8,7 @@ import Supabase
 /// `20261007220000_community_report_trust.sql`); thích / lưu chỉ đọc hàng của
 /// mình.
 public struct SupabaseCommunity: CommunityFeedRemote, CommunityProfileRemote, CommunityPostRemote, CommunityUserRemote,
-  CommunityPostActionsRemote, CommunitySavedRemote, CommunitySearchRemote
+  CommunityPostActionsRemote, CommunitySavedRemote, CommunitySearchRemote, CommunityInboxRemote
 {
   private let client: SupabaseClient
 
@@ -597,6 +597,29 @@ public struct SupabaseCommunity: CommunityFeedRemote, CommunityProfileRemote, Co
   /// `useSearchPosts`: chú thích + tên trong payload, không phân biệt dấu.
   public func findPosts(term: String) async throws -> [JSONValue] {
     rpcRows(try await client.rpc("community_find_posts", params: QueryParams(p_q: term)).execute().value)
+  }
+
+  // MARK: - Hộp thư (#527, lát 9)
+
+  public func notifications(me: String, limit: Int) async throws -> [JSONValue] {
+    try await client.from("community_notifications")
+      .select("id, actor_id, kind, post_id, challenge_id, milestone, created_at, read_at")
+      .eq("user_id", value: me)
+      .order("created_at", ascending: false)
+      .limit(limit)
+      .execute().value
+  }
+
+  public func challenges(ids: [String]) async throws -> [JSONValue] {
+    guard !ids.isEmpty else { return [] }
+    return try await client.from("community_challenges")
+      .select("id, title, title_en, description, description_en")
+      .in("id", values: ids)
+      .execute().value
+  }
+
+  public func markNotificationsRead() async throws {
+    try await client.rpc("community_mark_notifications_read").execute()
   }
 
   public func artURL(path: String) -> URL? {

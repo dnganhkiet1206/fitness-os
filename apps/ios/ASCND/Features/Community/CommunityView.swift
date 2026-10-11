@@ -16,6 +16,7 @@ import SwiftUI
 /// Lát 3: chạm thẻ (hoặc hàng Hữu ích) mở `CommunityPostScreen`.
 ///
 /// Lát 6: thích / lưu / menu "⋯" trên thẻ. Lát 8: kính lúp mở tìm kiếm.
+/// Lát 9: chuông mở hộp thông báo (chấm khi có dòng chưa đọc).
 ///
 /// Chưa có (các lát sau, #527): Thử workout, Thêm vào bữa, soạn bài, hộp thư,
 /// thử thách nổi bật. Ảnh đại diện là emoji của linh vật (chưa có hình linh
@@ -24,13 +25,14 @@ struct CommunityTab: View {
   @Environment(WorkoutFlow.self) private var flow
   @Environment(AppServices.self) private var services
   @State private var book: CommunityFeedBook?
+  @State private var inbox: CommunityInboxBook?
   @State private var built = false
 
   var body: some View {
     NavigationStack {
       Group {
         if let book {
-          CommunityFeedView(book: book)
+          CommunityFeedView(book: book, inbox: inbox)
         } else if built {
           ContentUnavailableView {
             Label("tab.community", systemImage: "person.2")
@@ -46,6 +48,7 @@ struct CommunityTab: View {
     .task {
       guard !built else { return }
       book = services.makeCommunityFeed(userId: flow.today.userId)
+      inbox = services.makeCommunityInbox(userId: flow.today.userId)
       built = true
     }
     .onChange(of: services.session.session?.userId) { _, id in
@@ -56,6 +59,7 @@ struct CommunityTab: View {
 
 struct CommunityFeedView: View {
   let book: CommunityFeedBook
+  var inbox: CommunityInboxBook?
   @Environment(\.weightUnit) private var unit
   /// "Tìm người để theo dõi" khi tab Đang theo dõi trống.
   @State private var findPeople = false
@@ -78,6 +82,18 @@ struct CommunityFeedView: View {
     }
     .background(DS.Color.background.swiftUI)
     .toolbar {
+      // Chuông: hộp thông báo, chấm khi còn dòng chưa đọc (lát 9).
+      if let inbox {
+        ToolbarItem(placement: .topBarTrailing) {
+          NavigationLink {
+            CommunityInboxView(book: inbox)
+          } label: {
+            Image(systemName: inbox.hasNew ? "bell.badge" : "bell")
+          }
+          .accessibilityLabel(
+            inbox.hasNew ? Text("community.inbox.opennew") : Text("community.inbox.title"))
+        }
+      }
       // Kính lúp: tìm người / công thức / bài (lát 8).
       ToolbarItem(placement: .topBarTrailing) {
         NavigationLink {
@@ -103,7 +119,11 @@ struct CommunityFeedView: View {
     .communityPostActions(userId: book.userId, host: book)
     .navigationDestination(isPresented: $findPeople) { CommunitySearchScreen() }
     .task { if book.phase == .loading { await book.load() } }
-    .refreshable { await book.load() }
+    .task { if inbox?.phase == .loading { await inbox?.load(lang: AppServices.appLang) } }
+    .refreshable {
+      await book.load()
+      await inbox?.load(lang: AppServices.appLang)
+    }
   }
 
   /// Lưu hồ sơ xong: đọc lại feed (nhãn mời / tên tác giả trên bài của mình).

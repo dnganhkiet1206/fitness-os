@@ -23142,6 +23142,374 @@
     }
    }
   },
+  "community.inbox.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Notifications"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Thông báo"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Notificaciones"
+     }
+    }
+   }
+  },
+  "community.inbox.opennew": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Notifications, new activity"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Thông báo, có mục mới"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Notificaciones, actividad nueva"
+     }
+    }
+   }
+  },
+  "community.inbox.like %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ liked your post"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ đã thích bài của bạn"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "A %@ le gustó tu publicación"
+     }
+    }
+   }
+  },
+  "community.inbox.likemany.one %@ %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ and %lld other liked your post"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ và %lld người khác đã thích bài của bạn"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "A %@ y a %lld persona más les gustó tu publicación"
+     }
+    }
+   }
+  },
+  "community.inbox.likemany.other %@ %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ and %lld others liked your post"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ và %lld người khác đã thích bài của bạn"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "A %@ y a %lld personas más les gustó tu publicación"
+     }
+    }
+   }
+  },
+  "community.inbox.comment %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ commented on your post"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ đã bình luận bài của bạn"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ comentó tu publicación"
+     }
+    }
+   }
+  },
+  "community.inbox.follow %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ started following you"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ đã theo dõi bạn"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ empezó a seguirte"
+     }
+    }
+   }
+  },
+  "community.inbox.reply %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ replied to your comment"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ đã trả lời bình luận của bạn"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ respondió a tu comentario"
+     }
+    }
+   }
+  },
+  "community.inbox.mention %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ mentioned you in a comment"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ đã nhắc bạn trong một bình luận"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ te mencionó en un comentario"
+     }
+    }
+   }
+  },
+  "community.inbox.save %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ saved your post"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ đã lưu bài của bạn"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ guardó tu publicación"
+     }
+    }
+   }
+  },
+  "community.inbox.try %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ tried your workout"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ đã thử buổi tập của bạn"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ probó tu entrenamiento"
+     }
+    }
+   }
+  },
+  "community.inbox.half %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "You're halfway through %@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bạn đã đi được nửa chặng %@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Vas por la mitad de %@"
+     }
+    }
+   }
+  },
+  "community.inbox.done %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "You completed %@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bạn đã hoàn thành %@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Completaste %@"
+     }
+    }
+   }
+  },
+  "community.inbox.empty": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "No notifications yet"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chưa có thông báo nào"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Aún no hay notificaciones"
+     }
+    }
+   }
+  },
+  "community.inbox.emptyhint": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "When someone likes, comments on or follows you, you'll see it here."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Khi có người thích, bình luận hay theo dõi bạn, bạn sẽ thấy ở đây."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cuando a alguien le guste algo tuyo, te comente o te siga, lo verás aquí."
+     }
+    }
+   }
+  },
+  "community.inbox.unread": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "unread"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "chưa đọc"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "sin leer"
+     }
+    }
+   }
+  },
   "ex.title": {
    "extractionState": "manual",
    "localizations": {

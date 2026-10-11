@@ -156,5 +156,7 @@ miễn **giữ nguyên ý định** của app và chỉ làm app tốt hơn — 
 | Cộng đồng — Tìm: đang tải kết quả | Vòng quay | Skeleton đúng hình thẻ / dòng + fade so le khi kết quả mới về (Reduce Motion: hiện ngay) | tạm thời (DS chưa có skeleton dùng chung) | không cần | #527 (`native/ios-rewrite`) | E |
 | Cộng đồng — Tìm: kết quả theo dõi hỏng | Hộp thoại (app chưa có toast) | `toast.fail` | lệch nền tảng | không cần | #527 (`native/ios-rewrite`) | E |
 | Cộng đồng — Đã lưu: lọc Công thức rỗng | Có nút "Tìm công thức" (thay dòng "Không có nút" ở trên) | Nút mở `community-search` phân đoạn Công thức | khớp RN | không cần | #527 (`native/ios-rewrite`) | E |
+| Cộng đồng — hộp thư: thử thách đã đạt mà chưa nhận | Chưa có thẻ trên cùng; chuông chỉ chấm theo thông báo chưa đọc; dòng mốc thử thách chưa chạm được | Thẻ `pendingClaims` trên mọi thông báo + chấm chuông theo nó; dòng mốc mở `community-challenge` | tạm thời (lát thử thách cộng đồng) | không cần | #527 (`native/ios-rewrite`) | E |
+| Cộng đồng — hộp thư: đọc chuông | Hộp thư đọc cùng feed khi mở tab và khi kéo làm mới feed | `useInbox` đọc theo cache của react-query (mọi màn dùng chung) | lệch nền tảng | không cần | #527 (`native/ios-rewrite`) | E |
 
 Thêm dòng mới ở cuối bảng; giữ dòng cũ — sổ là lịch sử, không phải danh sách việc.
