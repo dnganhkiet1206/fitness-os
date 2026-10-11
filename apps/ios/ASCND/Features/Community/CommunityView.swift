@@ -22,7 +22,10 @@ import SwiftUI
 ///
 /// Lát 14: thẻ thử thách nổi bật ở đầu Khám phá + "Tất cả thử thách".
 ///
-/// Chưa có (các lát sau, #527): Thử workout, Thêm vào bữa. Ảnh đại diện là hình linh vật thật (`MascotAvatar`).
+/// Lát 17: bài mới về khi đang đọc giữa feed thì bị giữ sau viên "N bài mới"
+/// (`CommunityFeedHold`), chạm thì lên đầu và thấy chúng.
+///
+/// Chưa có (các lát sau, #527): Thêm vào bữa. Ảnh đại diện là hình linh vật thật (`MascotAvatar`).
 struct CommunityTab: View {
   @Environment(WorkoutFlow.self) private var flow
   @Environment(AppServices.self) private var services
@@ -72,29 +75,64 @@ struct CommunityFeedView: View {
   @State private var findPeople = false
   @State private var askShare = false
   @State private var shareRoute: ShareRoute?
+  /// "Đã thấy" theo tab + đang ở đầu feed (lát 17).
+  @State private var ledger = CommunityFeedHold.Ledger()
+  @State private var atTop = true
+  @State private var released = 0
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
   enum ShareRoute: Hashable, Identifiable {
     case workout, progress, recipe
     var id: Self { self }
   }
 
+  /// Bài vẽ ra / bài giữ lại (chỉ khi đang ở giữa feed).
+  private var hold: (shown: [CommunityFeed.Post], held: [CommunityFeed.Post]) {
+    CommunityFeedHold.split(book.posts, tab: book.tab.rawValue, atTop: atTop, ledger: ledger)
+  }
+
   var body: some View {
-    ScrollView {
-      LazyVStack(spacing: DS.Spacing.md) {
-        Picker(selection: Binding(get: { book.tab }, set: { t in Task { await book.select(t) } })) {
-          Text("community.tab.following").tag(CommunityFeed.Tab.following)
-          Text("community.tab.discover").tag(CommunityFeed.Tab.discover)
-        } label: {
-          Text("tab.community")
+    let hold = hold
+    ScrollViewReader { proxy in
+      ScrollView {
+        LazyVStack(spacing: DS.Spacing.md) {
+          Picker(selection: Binding(get: { book.tab }, set: { t in Task { await book.select(t) } })) {
+            Text("community.tab.following").tag(CommunityFeed.Tab.following)
+            Text("community.tab.discover").tag(CommunityFeed.Tab.discover)
+          } label: {
+            Text("tab.community")
+          }
+          .pickerStyle(.segmented)
+          .id(Self.topId)
+          if book.phase == .ready { header }
+          if book.tab == .discover, let challenges { challengeBlock(challenges) }
+          if book.tab == .discover, !book.useful.isEmpty { UsefulThisWeekCard(posts: book.useful) }
+          content(hold.shown)
         }
-        .pickerStyle(.segmented)
-        if book.phase == .ready { header }
-        if book.tab == .discover, let challenges { challengeBlock(challenges) }
-        if book.tab == .discover, !book.useful.isEmpty { UsefulThisWeekCard(posts: book.useful) }
-        content
+        .padding(DS.Spacing.md)
       }
-      .padding(DS.Spacing.md)
+      .onScrollGeometryChange(for: Bool.self) { g in
+        CommunityFeedHold.atTop(Double(g.contentOffset.y + g.contentInsets.top))
+      } action: { _, top in
+        atTop = top
+      }
+      .overlay(alignment: .top) {
+        if book.phase == .ready, !hold.held.isEmpty {
+          NewPostsPill(held: hold.held) {
+            // mọi bài đang về thành đã thấy NGAY, rồi lên đầu
+            released += 1
+            ledger.release(book.posts.map(\.id), tab: book.tab.rawValue)
+            withAnimation(reduceMotion ? nil : .snappy) { proxy.scrollTo(Self.topId, anchor: .top) }
+          }
+          .transition(reduceMotion ? .opacity : .move(edge: .top).combined(with: .opacity))
+        }
+      }
     }
+    // đã vẽ thì đã thấy — sổ chỉ thêm
+    .onChange(of: hold.shown.map(\.id), initial: true) { _, ids in
+      if book.phase == .ready { ledger.ack(ids, tab: book.tab.rawValue) }
+    }
+    .sensoryFeedback(.selection, trigger: released)
     .background(DS.Color.background.swiftUI)
     .toolbar {
       // Chuông: hộp thông báo, chấm khi còn dòng chưa đọc (lát 9).
@@ -248,7 +286,9 @@ struct CommunityFeedView: View {
     }
   }
 
-  @ViewBuilder private var content: some View {
+  private static let topId = "community.feed.top"
+
+  @ViewBuilder private func content(_ shown: [CommunityFeed.Post]) -> some View {
     switch book.phase {
     case .loading:
       DSLoadingView().frame(minHeight: 240)
@@ -275,7 +315,7 @@ struct CommunityFeedView: View {
           message: String(localized: "community.empty.discover.hint"))
       }
     case .ready:
-      ForEach(book.posts) { post in
+      ForEach(shown) { post in
         // Lát 3: chạm thẻ mở bài + bình luận (`community-post`).
         NavigationLink {
           CommunityPostScreen(postId: post.id) { Task { await book.load() } }
@@ -825,5 +865,40 @@ struct UsefulThisWeekCard: View {
     case .likes(let n):
       n == 1 ? String(localized: "community.useful.likes.one \(n)") : String(localized: "community.useful.likes.other \(n)")
     }
+  }
+}
+
+/// Viên "N bài mới" (`new-posts-pill.tsx`): mũi tên lên, tối đa ba gương mặt
+/// của người vừa đăng, con số. Nổi ở đầu feed.
+private struct NewPostsPill: View {
+  let held: [CommunityFeed.Post]
+  let action: () -> Void
+
+  var body: some View {
+    let n = held.count
+    Button(action: action) {
+      HStack(spacing: DS.Spacing.xs) {
+        Image(systemName: "arrow.up").font(DS.TextStyle.footnote.weight(.bold))
+        HStack(spacing: -6) {
+          ForEach(CommunityFeedHold.faces(held), id: \.userId) { a in
+            MascotAvatar(mascotId: a.mascotId, size: 22)
+              .overlay(Circle().strokeBorder(DS.Color.primary.swiftUI, lineWidth: 1.5))
+          }
+        }
+        Text(n == 1 ? String(localized: "community.newposts.one \(n)") : String(localized: "community.newposts.other \(n)"))
+          .font(DS.TextStyle.footnote.weight(.semibold))
+      }
+      .foregroundStyle(DS.Color.primaryForeground.swiftUI)
+      .padding(.horizontal, DS.Spacing.md)
+      .frame(minHeight: 44)
+      .background(DS.Color.primary.swiftUI, in: Capsule())
+      .contentShape(Capsule())
+    }
+    .buttonStyle(.plain)
+    .padding(.top, DS.Spacing.sm)
+    .accessibilityElement(children: .ignore)
+    .accessibilityLabel(
+      Text(n == 1 ? String(localized: "community.newposts.a11y.one \(n)") : String(localized: "community.newposts.a11y.other \(n)")))
+    .accessibilityAddTraits(.isButton)
   }
 }
