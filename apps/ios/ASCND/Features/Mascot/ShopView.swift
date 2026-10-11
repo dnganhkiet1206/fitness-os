@@ -61,6 +61,8 @@ struct ShopView: View {
       }
       .padding(DS.Spacing.md)
     }
+    // nền trang như mọi màn (`Screen` của RN) — không thì ScrollView để lộ nền trắng
+    .background(DS.Color.background.swiftUI)
     .navigationTitle(Text("shop.title"))
     .navigationBarTitleDisplayMode(.inline)
     .toolbar {
@@ -68,7 +70,8 @@ struct ShopView: View {
         Label {
           Text(verbatim: book.balance.formatted(.number.locale(.app)))
         } icon: {
-          Image(systemName: "dollarsign.circle.fill")
+          // cùng đồng xu với ô số dư của phòng linh vật (`Coin` của RN)
+          Image(systemName: "circle.circle.fill")
         }
         .labelStyle(.titleAndIcon)
         .font(DS.TextStyle.headline.monospacedDigit())
