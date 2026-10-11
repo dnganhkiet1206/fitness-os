@@ -9,7 +9,7 @@ import SwiftUI
 
 // MARK: - Chữ dùng chung
 
-enum ChallengeText {
+enum CommunityChallengeText {
   static func days(_ a: Int, _ b: Int) -> String {
     b == 1
       ? String(localized: "community.challenge.days.one \(a) \(b)")
@@ -140,7 +140,7 @@ struct CommunityChallengesView: View {
           ForEach(Array(g.open.enumerated()), id: \.element.id) { i, x in
             if i > 0 { Divider() }
             row(
-              x, meta: "\(ChallengeText.people(x.participants)) · \(ChallengeText.endsIn(Self.gap(book.today, x.endsOn)))",
+              x, meta: "\(CommunityChallengeText.people(x.participants)) · \(CommunityChallengeText.endsIn(Self.gap(book.today, x.endsOn)))",
               lead: nil, pct: nil)
           }
         }
@@ -149,7 +149,7 @@ struct CommunityChallengesView: View {
         section("community.challenges.soon", count: nil) {
           ForEach(Array(g.soon.enumerated()), id: \.element.id) { i, x in
             if i > 0 { Divider() }
-            row(x, meta: ChallengeText.startsIn(Self.gap(book.today, x.startsOn)), lead: nil, pct: nil)
+            row(x, meta: CommunityChallengeText.startsIn(Self.gap(book.today, x.startsOn)), lead: nil, pct: nil)
           }
         }
       }
@@ -157,7 +157,7 @@ struct CommunityChallengesView: View {
         section("community.challenges.done", count: done.count) {
           ForEach(Array(done.enumerated()), id: \.element.id) { i, x in
             if i > 0 { Divider() }
-            row(CommunityChallenges.fromHistory(x), meta: ChallengeText.doneMeta(x), lead: .claimed, pct: nil)
+            row(CommunityChallenges.fromHistory(x), meta: CommunityChallengeText.doneMeta(x), lead: .claimed, pct: nil)
           }
         }
       }
@@ -167,11 +167,11 @@ struct CommunityChallengesView: View {
   static func gap(_ from: String, _ to: String) -> Int { CommunityChallenges.dayGap(from, to) ?? 0 }
 
   private func joinedMeta(_ x: CommunityChallenges.Challenge, due: CommunityChallenges.Pending?) -> String {
-    if let due { return ChallengeText.claimLine(due) }
+    if let due { return CommunityChallengeText.claimLine(due) }
     if x.reached { return String(localized: "community.challenges.ready") }
-    let days = ChallengeText.days(min(x.progress, x.target), x.target)
+    let days = CommunityChallengeText.days(min(x.progress, x.target), x.target)
     let left = CommunityChallenges.dayGap(book.today, x.endsOn) ?? 0
-    return "\(days) · \(left < 0 ? String(localized: "community.challenge.ended") : ChallengeText.endsIn(left))"
+    return "\(days) · \(left < 0 ? String(localized: "community.challenge.ended") : CommunityChallengeText.endsIn(left))"
   }
 
   private enum Lead { case reached, claimed }
@@ -328,7 +328,7 @@ struct CommunityChallengeView: View {
     DSCard {
       VStack(alignment: .leading, spacing: DS.Spacing.md) {
         if ch.joined {
-          Text(verbatim: ChallengeText.days(min(ch.progress, ch.target), ch.target))
+          Text(verbatim: CommunityChallengeText.days(min(ch.progress, ch.target), ch.target))
             .font(DS.TextStyle.title2.monospacedDigit())
             .foregroundStyle(DS.Color.foreground.swiftUI)
           ProgressView(value: ch.percent, total: 100)
@@ -340,12 +340,12 @@ struct CommunityChallengeView: View {
           .fixedSize(horizontal: false, vertical: true)
         infoRow(
           "\(Self.day(ch.startsOn)) → \(Self.day(ch.endsOn))",
-          open ? ChallengeText.endsIn(left ?? 0) : String(localized: "community.challenge.ended"))
+          open ? CommunityChallengeText.endsIn(left ?? 0) : String(localized: "community.challenge.ended"))
         if ch.rewardCoins > 0 {
-          infoRow(String(localized: "community.challenge.reward"), ChallengeText.coins(ch.rewardCoins))
+          infoRow(String(localized: "community.challenge.reward"), CommunityChallengeText.coins(ch.rewardCoins))
         }
         if !ch.fromHistory {
-          infoRow(ChallengeText.people(ch.participants), "")
+          infoRow(CommunityChallengeText.people(ch.participants), "")
         }
       }
     }
@@ -364,7 +364,7 @@ struct CommunityChallengeView: View {
         .foregroundStyle(DS.Color.foreground.swiftUI)
         .frame(maxWidth: .infinity, minHeight: 44)
     } else if done {
-      solid(ChallengeText.claim(ch.rewardCoins), busy: busy) { Task { await claim(ch) } }
+      solid(CommunityChallengeText.claim(ch.rewardCoins), busy: busy) { Task { await claim(ch) } }
     } else {
       Button {
         askLeave = true
@@ -442,7 +442,7 @@ struct CommunityChallengeView: View {
 /// Màn chúc mừng khi nhận thưởng — cùng hàng đợi với thử thách tuần.
 enum ChallengeCelebration {
   @MainActor static func enqueue(_ services: AppServices, coins: Int, title: String) {
-    let got = coins > 0 ? ChallengeText.got(coins) : ""
+    let got = coins > 0 ? CommunityChallengeText.got(coins) : ""
     services.celebrations.enqueue(
       title: String(localized: "community.challenge.done"),
       description: [title, got].filter { !$0.isEmpty }.joined(separator: " · "), icon: "trophy", tier: "gold")
@@ -503,7 +503,7 @@ struct ChallengeHeroCard: View {
                 .foregroundStyle(DS.Color.readinessYellow.swiftUI)
               Image(systemName: "person.2").font(.footnote).foregroundStyle(DS.Color.mutedForeground.swiftUI)
                 .accessibilityHidden(true)
-              Text(verbatim: ChallengeText.people(ch.participants))
+              Text(verbatim: CommunityChallengeText.people(ch.participants))
                 .font(DS.TextStyle.footnote)
                 .foregroundStyle(DS.Color.mutedForeground.swiftUI)
             }
@@ -513,12 +513,12 @@ struct ChallengeHeroCard: View {
             }
             HStack {
               if ch.joined {
-                Text(verbatim: ChallengeText.days(min(ch.progress, ch.target), ch.target))
+                Text(verbatim: CommunityChallengeText.days(min(ch.progress, ch.target), ch.target))
                   .font(DS.TextStyle.footnote.weight(.semibold).monospacedDigit())
                   .foregroundStyle(DS.Color.foreground.swiftUI)
               }
               Spacer()
-              Text(verbatim: startsIn > 0 ? ChallengeText.startsIn(startsIn) : ChallengeText.endsIn(left))
+              Text(verbatim: startsIn > 0 ? CommunityChallengeText.startsIn(startsIn) : CommunityChallengeText.endsIn(left))
                 .font(DS.TextStyle.footnote)
                 .foregroundStyle(DS.Color.mutedForeground.swiftUI)
             }
@@ -556,7 +556,7 @@ struct ChallengeHeroCard: View {
         .foregroundStyle(DS.Color.foreground.swiftUI)
         .frame(maxWidth: .infinity, minHeight: 44)
     } else if done {
-      pill(ChallengeText.claim(ch.rewardCoins), busy: busy) {
+      pill(CommunityChallengeText.claim(ch.rewardCoins), busy: busy) {
         taps += 1
         Task {
           switch await book.claim(ch.id, lang: AppServices.appLang) {

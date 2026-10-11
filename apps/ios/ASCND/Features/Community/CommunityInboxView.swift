@@ -55,7 +55,7 @@ struct CommunityInboxView: View {
           if i > 0 { Divider() }
           let halves = String(localized: "community.inbox.reached \(Self.mark)").components(separatedBy: Self.mark)
           let before = halves.first ?? "", after = halves.dropFirst().joined(separator: p.challenge.title)
-          let line = ChallengeText.claimLine(p)
+          let line = CommunityChallengeText.claimLine(p)
           Button {
             openChallenge = ChallengeRoute(id: p.challenge.id)
           } label: {
