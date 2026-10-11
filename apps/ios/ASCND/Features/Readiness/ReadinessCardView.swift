@@ -18,8 +18,12 @@ import SwiftUI
 /// - mở: nút "?" mở tấm giải thích (`ReadinessExplainerSheet`); cuối phần chi
 ///   tiết là lối "Xem sinh trắc học" khi Today truyền `onOpenBiometrics`.
 ///
-/// Khác RN / chưa có: lời nhắc "?" đếm ba lần (`help-nudge.ts`); vòng không
-/// chạy hoạt ảnh khi bật Giảm chuyển động. Màu ô ACWR đọc CÙNG bảng vùng với
+/// - lời nhắc "?" (`help-nudge.ts` + `useHelpTopic`, #527): khi thẻ có điểm,
+///   tối đa một lần mỗi lần chạy app, ba lần suốt đời, không bao giờ nữa khi
+///   đã mở giải thích (`HelpNudge`); nằm trong phần mở, chạm dải = mở giải
+///   thích, X = chỉ ẩn (lần hiện đã được đếm).
+///
+/// Khác RN / chưa có: vòng không chạy hoạt ảnh khi bật Giảm chuyển động. Màu ô ACWR đọc CÙNG bảng vùng với
 /// thẻ tập luyện.
 struct ReadinessCardView: View {
   let book: ReadinessBook
@@ -30,6 +34,11 @@ struct ReadinessCardView: View {
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var expanded = false
   @State private var helpOpen = false
+  @State private var nudge = false
+  @State private var taps = 0
+
+  /// Kho đếm lời nhắc (`ascnd-help-nudge`), theo người.
+  static let nudges = HelpNudge(store: UserDefaultsStore())
 
   var body: some View {
     DSCard {
@@ -62,6 +71,26 @@ struct ReadinessCardView: View {
       }
     }
     .sheet(isPresented: $helpOpen) { ReadinessExplainerSheet() }
+    .sensoryFeedback(.selection, trigger: taps)
+    // `useHelpTopic` chạy khi thẻ sẵn sàng DỰNG — RN chỉ dựng nó khi có điểm.
+    .task(id: hasScore) {
+      guard hasScore, !nudge, Self.nudges.shouldNudge(HelpNudge.readiness, userId: book.userId) else { return }
+      nudge = true
+      Self.nudges.noteNudged(HelpNudge.readiness, userId: book.userId)
+    }
+  }
+
+  private var hasScore: Bool {
+    if case .ready = book.phase { return true }
+    return false
+  }
+
+  /// `openHelp`: tắt lời nhắc, mở giải thích, chủ đề này xong.
+  private func openHelp() {
+    taps += 1
+    nudge = false
+    helpOpen = true
+    Self.nudges.noteHelpOpened(HelpNudge.readiness, userId: book.userId)
   }
 
   // MARK: - Có điểm
@@ -117,7 +146,7 @@ struct ReadinessCardView: View {
       HStack {
         Spacer()
         Button {
-          helpOpen = true
+          openHelp()
         } label: {
           Image(systemName: "questionmark.circle")
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
@@ -127,6 +156,7 @@ struct ReadinessCardView: View {
         .buttonStyle(.plain)
         .accessibilityLabel(Text(String(localized: "rd.help.a11y")))
       }
+      if nudge { nudgeRow }
       HStack(spacing: DS.Spacing.xs) {
         ForEach(tiles, id: \.kind) { tile($0) }
       }
@@ -163,6 +193,47 @@ struct ReadinessCardView: View {
         .accessibilityAddTraits(.isLink)
       }
     }
+  }
+
+  /// `HelpNudge` của RN: dải chạm-để-mở và nút X là hai nút CẠNH nhau (nút
+  /// trong nút thì VoiceOver không thấy X).
+  private var nudgeRow: some View {
+    HStack(spacing: DS.Spacing.sm) {
+      Button {
+        openHelp()
+      } label: {
+        HStack(spacing: DS.Spacing.sm) {
+          Image(systemName: "questionmark.circle")
+            .font(.caption)
+            .foregroundStyle(DS.Color.metricBlue.swiftUI)
+            .accessibilityHidden(true)
+          Text(String(localized: "rd.nudge.text"))
+            .font(DS.TextStyle.caption)
+            .foregroundStyle(DS.Color.foreground.swiftUI)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .frame(minHeight: 44)
+        .contentShape(Rectangle())
+      }
+      .buttonStyle(.plain)
+      Button {
+        // Ẩn không phải là đọc: lần hiện đã được đếm, mai có thể quay lại.
+        taps += 1
+        nudge = false
+      } label: {
+        Image(systemName: "xmark")
+          .font(.caption)
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          .frame(width: 44, height: 44)
+          .contentShape(Rectangle())
+      }
+      .buttonStyle(.plain)
+      .accessibilityLabel(Text(String(localized: "rd.nudge.dismiss")))
+    }
+    .padding(.horizontal, DS.Spacing.sm)
+    .background(DS.Color.metricBlue.swiftUI.opacity(0.10), in: RoundedRectangle(cornerRadius: DS.Radius.md))
+    .overlay(
+      RoundedRectangle(cornerRadius: DS.Radius.md).strokeBorder(DS.Color.metricBlue.swiftUI.opacity(0.25), lineWidth: 0.5))
   }
 
   private func tile(_ t: ReadinessCard.Tile) -> some View {

@@ -3,7 +3,7 @@
 set -e
 cd "$(dirname "$0")"
 rm -rf lib out && mkdir lib
-for f in exercise-trend exercise-performance personal-record local-date exercise-kind exercise-key muscle-group equipment guide-content exercise-media guide-related fitness-calc plausible reminder-plan reminder-timing units plan-exercises copy-fill macro-targets mascot-room streak readiness-i18n training-card award-grant challenge-progress nutrition-mean readiness-week assistant-suggestions assistant-brief metric-analysis adaptive-tdee photo-urls feed-page recipe-post community-art time-ago meal-names planned-meal recent-meals todo comment-thread user-rhythm activity energy; do
+for f in exercise-trend exercise-performance personal-record local-date exercise-kind exercise-key muscle-group equipment guide-content exercise-media guide-related fitness-calc plausible reminder-plan reminder-timing units plan-exercises copy-fill macro-targets mascot-room streak readiness-i18n training-card award-grant challenge-progress nutrition-mean readiness-week assistant-suggestions assistant-brief metric-analysis adaptive-tdee photo-urls feed-page recipe-post community-art time-ago meal-names planned-meal recent-meals todo comment-thread user-rhythm activity energy help-nudge user-scoped-reset; do
   git show "fac9ac2:native/src/lib/$f.ts" > "lib/$f.ts"
 done
 # Hai phụ thuộc chỉ để lấy một hằng / một kiểu.
@@ -19,6 +19,18 @@ echo "export const getLocale = (l: string) => (l === 'vi' ? 'vi-VN' : l === 'es'
 git show "fac9ac2:native/src/hooks/use-community.ts" | node extract-community.mjs > lib/community-readers.ts
 # Builder (#527 Phase 2): `estimatedMinutes` / `effortRange` / `DEFAULT_*`.
 git show "fac9ac2:native/src/lib/prescription.ts" > lib/prescription.ts
+# Lời nhắc "?" (#527): `help-nudge.ts` chỉ cần AsyncStorage — bản giả trong bộ
+# nhớ (`__raw` để golden đặt / đọc chuỗi thô, kể cả chuỗi hỏng).
+cat > lib/async-storage.ts <<'TS'
+const mem = new Map<string, string>();
+export const __raw = mem;
+export default {
+  getItem: async (k: string) => (mem.has(k) ? mem.get(k)! : null),
+  setItem: async (k: string, v: string) => { mem.set(k, v); },
+  removeItem: async (k: string) => { mem.delete(k); },
+};
+TS
+sed -i.bak "s#'@react-native-async-storage/async-storage'#'./async-storage'#g" lib/help-nudge.ts && rm -f lib/help-nudge.ts.bak
 sed -i.bak "s#'@/lib/\([a-z0-9-]*\)'#'./\1'#g" lib/*.ts && rm -f lib/*.bak
 ../../../../native/node_modules/.bin/tsc --ignoreConfig --module commonjs --target es2020 --skipLibCheck --outDir out lib/*.ts
 echo '{"type":"commonjs"}' > out/package.json
