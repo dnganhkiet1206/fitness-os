@@ -324,17 +324,18 @@ public enum KoaPaint {
       return [.move(Point(x, y)), .line(Point(x + w, y)), .line(Point(x + w, y + h)), .line(Point(x, y + h)), .close]
     }
     let k = 0.5522847498307936
-    return [
-      .move(Point(x + a, y)), .line(Point(x + w - a, y)),
-      .cubic(Point(x + w - a + a * k, y), Point(x + w, y + b - b * k), Point(x + w, y + b)),
-      .line(Point(x + w, y + h - b)),
-      .cubic(Point(x + w, y + h - b + b * k), Point(x + w - a + a * k, y + h), Point(x + w - a, y + h)),
-      .line(Point(x + a, y + h)),
-      .cubic(Point(x + a - a * k, y + h), Point(x, y + h - b + b * k), Point(x, y + h - b)),
-      .line(Point(x, y + b)),
-      .cubic(Point(x, y + b - b * k), Point(x + a - a * k, y), Point(x + a, y)),
-      .close,
-    ]
+    let ka: Double = a * k, kb: Double = b * k
+    let r: Double = x + w, btm: Double = y + h
+    var out: [Segment] = [.move(Point(x + a, y)), .line(Point(r - a, y))]
+    out.append(.cubic(Point(r - a + ka, y), Point(r, y + b - kb), Point(r, y + b)))
+    out.append(.line(Point(r, btm - b)))
+    out.append(.cubic(Point(r, btm - b + kb), Point(r - a + ka, btm), Point(r - a, btm)))
+    out.append(.line(Point(x + a, btm)))
+    out.append(.cubic(Point(x + a - ka, btm), Point(x, btm - b + kb), Point(x, btm - b)))
+    out.append(.line(Point(x, y + b)))
+    out.append(.cubic(Point(x, y + b - kb), Point(x + a - ka, y), Point(x + a, y)))
+    out.append(.close)
+    return out
   }
 
   /// Khung bao hình học chặt (cực trị thật của bezier, không phải điểm điều khiển).
@@ -376,7 +377,8 @@ public enum KoaPaint {
           guard den != 0 else { continue }
           let t = (a0 - a1) / den
           guard t > 0 && t < 1 else { continue }
-          let v = (1 - t) * (1 - t) * a0 + 2 * (1 - t) * t * a1 + t * t * a2
+          let u: Double = 1 - t
+          let v: Double = u * u * a0 + 2.0 * u * t * a1 + t * t * a2
           isX ? addX(v) : addY(v)
         }
         cur = p
@@ -384,12 +386,16 @@ public enum KoaPaint {
         add(p)
         for (p0, p1, p2, p3, isX) in [(cur.x, c1.x, c2.x, p.x, true), (cur.y, c1.y, c2.y, p.y, false)] {
           // B'(t) / 3 = a t² + b t + c
-          let a = -p0 + 3 * p1 - 3 * p2 + p3
-          let b = 2 * (p0 - 2 * p1 + p2)
-          let c = p1 - p0
+          let a: Double = 3.0 * (p1 - p2) + p3 - p0
+          let b: Double = 2.0 * (p0 - 2.0 * p1 + p2)
+          let c: Double = p1 - p0
           for t in roots(a, b, c) where t > 0 && t < 1 {
-            let u = 1 - t
-            let v = u * u * u * p0 + 3 * u * u * t * p1 + 3 * u * t * t * p2 + t * t * t * p3
+            let u: Double = 1 - t
+            let w0: Double = u * u * u * p0
+            let w1: Double = 3.0 * u * u * t * p1
+            let w2: Double = 3.0 * u * t * t * p2
+            let w3: Double = t * t * t * p3
+            let v: Double = w0 + w1 + w2 + w3
             isX ? addX(v) : addY(v)
           }
         }
@@ -455,21 +461,29 @@ public enum KoaPaint {
       guard case .string(let id)? = e.props["id"] else { return }
       let p = e.props
       let bbox = p["gradientUnits"] != .string("userSpaceOnUse")
-      let stops = e.kids.filter { $0.tag == "Stop" }.map { s -> Stop in
-        var c = s.props["stopColor"].flatMap { v -> RGBA? in
-          if case .string(let t) = v { return colour(t) }
-          return nil
-        } ?? RGBA(r: 0, g: 0, b: 0, a: 1)
-        c.a *= number(s.props["stopOpacity"]) ?? 1
-        return Stop(offset: min(1, max(0, number(s.props["offset"]) ?? 0)), colour: c)
+      var stops: [Stop] = []
+      for k in e.kids where k.tag == "Stop" {
+        var c = RGBA(r: 0, g: 0, b: 0, a: 1)
+        if case .string(let t)? = k.props["stopColor"], let parsed = colour(t) { c = parsed }
+        let alpha: Double = number(k.props["stopOpacity"]) ?? 1
+        c.a *= alpha
+        let offset: Double = number(k.props["offset"]) ?? 0
+        stops.append(Stop(offset: min(1, max(0, offset)), colour: c))
       }
-      d.gradients[id] =
-        e.tag == "LinearGradient"
-        ? .linear(
-          x1: number(p["x1"]) ?? 0, y1: number(p["y1"]) ?? 0, x2: number(p["x2"]) ?? (bbox ? 1 : 0),
-          y2: number(p["y2"]) ?? 0, bbox: bbox, stops: stops)
-        : .radial(
-          cx: number(p["cx"]) ?? 0.5, cy: number(p["cy"]) ?? 0.5, r: number(p["r"]) ?? 0.5, bbox: bbox, stops: stops)
+      let g: Gradient
+      if e.tag == "LinearGradient" {
+        let x1: Double = number(p["x1"]) ?? 0
+        let y1: Double = number(p["y1"]) ?? 0
+        let x2: Double = number(p["x2"]) ?? (bbox ? 1 : 0)
+        let y2: Double = number(p["y2"]) ?? 0
+        g = .linear(x1: x1, y1: y1, x2: x2, y2: y2, bbox: bbox, stops: stops)
+      } else {
+        let cx: Double = number(p["cx"]) ?? 0.5
+        let cy: Double = number(p["cy"]) ?? 0.5
+        let r: Double = number(p["r"]) ?? 0.5
+        g = .radial(cx: cx, cy: cy, r: r, bbox: bbox, stops: stops)
+      }
+      d.gradients[id] = g
     case "ClipPath":
       if case .string(let id)? = e.props["id"] { d.clips[id] = e.kids }
     default:

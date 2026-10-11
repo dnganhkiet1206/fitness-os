@@ -58,9 +58,9 @@ struct KoaPaintTests {
     // mọi điểm giữa của mỗi khúc bezier nằm trên đường tròn
     if case .cubic(let c1, let c2, let p)? = s.dropFirst().first {
       let a = P(0, 0)
-      let mid = P(
-        (a.x + 3 * c1.x + 3 * c2.x + p.x) / 8, (a.y + 3 * c1.y + 3 * c2.y + p.y) / 8)
-      let r = ((mid.x - 10) * (mid.x - 10) + mid.y * mid.y).squareRoot()
+      let mx: Double = (a.x + 3.0 * c1.x + 3.0 * c2.x + p.x) / 8.0
+      let my: Double = (a.y + 3.0 * c1.y + 3.0 * c2.y + p.y) / 8.0
+      let r: Double = ((mx - 10.0) * (mx - 10.0) + my * my).squareRoot()
       #expect(Self.close(r, 10, 1e-2))  // sai số của bezier một phần tư vòng ≈ 2,7e-4 r
     }
     // các lá của cảnh: "M64 96 A18 23.5 0 0 1 100 96 Z"
