@@ -433,11 +433,16 @@ public struct WorkoutView: View {
   }
 
   /// "Bench Press, hiệp 2 trên 3, 60 kg × 8, đã xong" (#276).
+  /// Bodyweight (0 kg): đọc "tạ cơ thể" thay vì "0 kg" hay khoảng trống.
   private func rowVoiceOver(_ row: PlannedSet, performed: PerformedSet, done: Bool) -> String {
-    String(
+    let weight = NumberInput.plannedLoad(performed.weightKg)
+    let weightSegment = weight.isEmpty
+      ? String(localized: "workout.bodyweight")
+      : "\(weight) kg"
+    return String(
       format: String(localized: "workout.row.accessibility"),
       row.exerciseName, row.ordinal, row.of,
-      a11yLoad(performed.weightKg), performed.reps,
+      weightSegment, performed.reps,
       String(localized: done ? "workout.row.done" : "workout.row.notDone")
     )
   }
@@ -713,11 +718,6 @@ public struct WorkoutView: View {
     }
   }
 
-  /// Mức tạ cho VoiceOver — cùng phần lẻ với ô nhập, "0" khi không tạ.
-  private func a11yLoad(_ kg: Double) -> String {
-    let t = NumberInput.plannedLoad(kg)
-    return t.isEmpty ? "0" : t
-  }
 }
 
 // MARK: - Preview (không cần A, không cần máy)
