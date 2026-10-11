@@ -31,6 +31,12 @@ export default {
 };
 TS
 sed -i.bak "s#'@react-native-async-storage/async-storage'#'./async-storage'#g" lib/help-nudge.ts && rm -f lib/help-nudge.ts.bak
+# Koa (#527, K1): dữ liệu cảnh + toán thuần của bộ dựng hình — xem `extract-koa.mjs`.
+for f in koa-scene koa-flags koa-pose koa-dress koa-frame figure-clock; do
+  git show "fac9ac2:native/src/components/ascnd/koa/$f.ts" > "lib/$f.ts"
+done
+git show "fac9ac2:native/src/components/ascnd/koa/koa-figure.tsx" | node extract-koa.mjs > lib/koa-math.ts
+sed -i.bak "s#'@/components/ascnd/koa/\([a-z-]*\)'#'./\1'#g" lib/*.ts && rm -f lib/*.bak
 sed -i.bak "s#'@/lib/\([a-z0-9-]*\)'#'./\1'#g" lib/*.ts && rm -f lib/*.bak
 ../../../../native/node_modules/.bin/tsc --ignoreConfig --module commonjs --target es2020 --skipLibCheck --outDir out lib/*.ts
 echo '{"type":"commonjs"}' > out/package.json
