@@ -121,9 +121,9 @@ private struct Clock: WallClock {
 struct MeasurementLoggerTests {
   static let utc = TimeZone(identifier: "UTC")!
   /// 2026-10-10 12:00 UTC.
-  static let noon = Clock(date: Date(timeIntervalSince1970: 1_791_633_600))
+  fileprivate static let noon = Clock(date: Date(timeIntervalSince1970: 1_791_633_600))
 
-  static func logger(_ source: Source, _ store: Outbox?) -> MeasurementLogger {
+  fileprivate static func logger(_ source: Source, _ store: Outbox?) -> MeasurementLogger {
     MeasurementLogger(userId: "u1", source: source, store: store, clock: noon, timeZone: utc, makeId: { "ID-1" })
   }
 
