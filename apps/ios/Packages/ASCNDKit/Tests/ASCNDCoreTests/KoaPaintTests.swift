@@ -33,7 +33,9 @@ struct KoaPaintTests {
       ])
     // tọa độ sau moveto là lineto; số dính nhau bằng dấu / dấu chấm / số mũ
     #expect(KoaPaint.parsePath("M0 0 10 10 20 0") == [.move(P(0, 0)), .line(P(10, 10)), .line(P(20, 0))])
-    #expect(KoaPaint.parsePath("M1-2.5.5L3e1,4") == [.move(P(1, -2.5)), .line(P(0.5, 0)), .line(P(30, 4))])
+    #expect(KoaPaint.parsePath("M1-2.5.5.5L3e1,4") == [.move(P(1, -2.5)), .line(P(0.5, 0.5)), .line(P(30, 4))])
+    // path hỏng: dừng ở chỗ hỏng, giữ phần đã đọc (luật xử lý lỗi của SVG)
+    #expect(KoaPaint.parsePath("M1-2.5.5L3e1,4") == [.move(P(1, -2.5))])
     // S / T phản chiếu điểm điều khiển trước
     #expect(
       KoaPaint.parsePath("M0 0 C0 10 10 10 10 0 S20 -10 20 0") == [
