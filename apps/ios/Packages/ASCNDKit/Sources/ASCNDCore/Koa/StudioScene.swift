@@ -42,7 +42,12 @@ public enum StudioScene {
 
   /// Skin của căn phòng theo đồ đang mặc — sân khấu đang dùng, không có thì mặc định.
   public static func skinKey(equipped: Set<String>) -> String {
-    MascotShop.activeStageKey(equipped).flatMap { stageThemes[$0] } ?? "default"
+    skinKey(stage: MascotShop.activeStageKey(equipped))
+  }
+
+  /// Skin của một món sân khấu (`stage_night` → `night`); không có / lạ → mặc định.
+  public static func skinKey(stage: String?) -> String {
+    stage.flatMap { stageThemes[$0] } ?? "default"
   }
 
   public struct Options: Sendable, Hashable {
@@ -100,7 +105,10 @@ public enum StudioScene {
   }()
 
   /// Cả căn phòng, theo toạ độ 390 × `sceneBottom` (đi tiếp xuống dưới cũng được).
-  public static func tree(_ o: Options) -> [KoaRender.Element] {
+  public static func tree(_ o: Options) -> [KoaRender.Element] { build(template, o) }
+
+  /// Một template (studio, phòng thử đồ) → cây phần tử, token đã giải.
+  static func build(_ template: [JSONValue], _ o: Options) -> [KoaRender.Element] {
     let skin = skins[o.skin] ?? skins["default"]!
     return template.compactMap { element($0, o, skin) }
   }

@@ -12,20 +12,35 @@ import SwiftUI
 /// Cởi (sân khấu: Dùng / Đang dùng); tủ trống mời sang Trang phục; bộ sưu tập
 /// là một tấm riêng, đủ món thì Nhận.
 ///
-/// Khác RN: chưa có cảnh Koa (`ShopScene`: xem trước trên người, tab Toàn
-/// cảnh) — native chưa có bản vẽ Koa, nên màn mở ở Trang phục; mặc / cởi chỉ
-/// khi có mạng (chưa có lớp Trạng thái #165).
+/// S2: phòng thử đồ ở đầu màn (`ShopSceneView`, VẼ LẠI theo `ShopScene` của RN),
+/// tab Toàn cảnh, máy quay theo tab; món đang xem mặc thử lên Koa (sân khấu thì
+/// đổi skin căn phòng), Koa cúi nhìn đồ vài giây khi một món lên người.
+///
+/// Khác RN: danh sách thẻ thay cho trang lật (`ShopPager`) — chạm thẻ để xem
+/// thử; mặc / cởi chỉ khi có mạng (chưa có lớp Trạng thái #165).
 struct ShopView: View {
   let book: MascotShopBook
   let lang: AppPreferences.Lang
   /// Sổ xu đổi (mua / nhận thưởng) — phòng linh vật đọc lại.
   var onWalletChange: () -> Void = {}
 
-  @State private var tab: MascotShop.Tab = .outfit
+  /// Tab = khung hình của máy quay; mở ở Toàn cảnh như RN.
+  @State private var shot: ShopScene.ShotName = .overview
+  /// Món đang xem thử (`browsing`), `nil` = không xem gì.
+  @State private var preview: String?
+  /// Bộ đếm lượt mặc (`wearTick`) — mặc lại cùng món vẫn có phản ứng.
+  @State private var wearTick = 0
+  @State private var dressing = false
   @State private var category: MascotShop.Category?
   @State private var notice: Notice?
   @State private var collectionsOpen = false
   @State private var bought = 0
+
+  /// `DRESS_HOLD` = 4,2 giây.
+  private static let dressHold = Duration.milliseconds(4200)
+
+  /// Tab có hàng; Toàn cảnh thì không.
+  private var tab: MascotShop.Tab? { MascotShop.Tab(rawValue: shot.rawValue) }
 
   struct Notice: Equatable {
     let text: String
@@ -68,16 +83,72 @@ struct ShopView: View {
   }
 
   @ViewBuilder private var ready: some View {
-    Picker(selection: $tab) {
-      Text("shop.tab.stage").tag(MascotShop.Tab.stage)
-      Text("shop.tab.outfit").tag(MascotShop.Tab.outfit)
-      Text("shop.tab.closet").tag(MascotShop.Tab.closet)
+    scene
+    Picker(selection: $shot) {
+      Text("shop.tab.overview").tag(ShopScene.ShotName.overview)
+      Text("shop.tab.stage").tag(ShopScene.ShotName.stage)
+      Text("shop.tab.outfit").tag(ShopScene.ShotName.outfit)
+      Text("shop.tab.closet").tag(ShopScene.ShotName.closet)
     } label: {
       Text("shop.title")
     }
     .pickerStyle(.segmented)
-    .onChange(of: tab) { _, _ in notice = nil }
+    .onChange(of: shot) { _, _ in
+      notice = nil
+      preview = nil
+    }
 
+    if let tab {
+      shelf(tab)
+    } else {
+      Text("shop.overview.hint")
+        .font(DS.TextStyle.footnote)
+        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, DS.Spacing.lg)
+    }
+  }
+
+  // MARK: - Phòng thử đồ
+
+  /// Món đang xem, nếu nó còn trong catalog.
+  private var browsing: MascotShop.Item? { preview.flatMap { k in MascotShop.items.first { $0.key == k } } }
+
+  /// Đồ trên người Koa: đang mặc + món trang phục đang xem (`preview`).
+  private var worn: [String] {
+    let on = book.inventory.filter(\.equipped).map(\.itemKey)
+    guard let it = browsing, it.kind == .outfit, !on.contains(it.key) else { return on }
+    return on + [it.key]
+  }
+
+  /// Skin căn phòng: sân khấu đang xem, không thì sân khấu đang dùng.
+  private var roomSkin: String {
+    if let it = browsing, it.kind == .stage { return StudioScene.skinKey(stage: it.key) }
+    return StudioScene.skinKey(equipped: book.equipped)
+  }
+
+  private var scene: some View {
+    ShopSceneView(shot: shot, equipped: worn, skin: roomSkin, dress: dressing)
+      // căn phòng phủ ngang cả màn như RN, không theo lề trang
+      .padding(.horizontal, -DS.Spacing.md)
+      .task(id: DressCue(key: browsing?.kind == .outfit ? browsing?.key : nil, tick: wearTick)) {
+        // Koa phản ứng khi một món LÊN NGƯỜI (xem thử hay bấm mặc), rồi về đứng yên
+        guard browsing?.kind == .outfit else {
+          dressing = false
+          return
+        }
+        dressing = true
+        try? await Task.sleep(for: Self.dressHold)
+        if !Task.isCancelled { dressing = false }
+      }
+  }
+
+  private struct DressCue: Equatable {
+    let key: String?
+    let tick: Int
+  }
+
+  @ViewBuilder private func shelf(_ tab: MascotShop.Tab) -> some View {
     if tab != .stage { categories }
 
     if let notice {
@@ -138,7 +209,7 @@ struct ShopView: View {
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
           .multilineTextAlignment(.center)
         Button {
-          tab = .outfit
+          shot = .outfit
         } label: {
           Text("shop.gotooutfits")
         }
@@ -187,6 +258,16 @@ struct ShopView: View {
     .padding(DS.Spacing.md)
     .frame(minHeight: 64)
     .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.md))
+    .overlay {
+      if preview == it.key {
+        RoundedRectangle(cornerRadius: DS.Radius.md).strokeBorder(tint, lineWidth: 2)
+      }
+    }
+    // chạm thẻ = xem thử trên Koa / trong căn phòng (trang lật của RN)
+    .contentShape(RoundedRectangle(cornerRadius: DS.Radius.md))
+    .onTapGesture { preview = it.key }
+    .accessibilityAction(named: Text("shop.preview")) { preview = it.key }
+    .accessibilityAddTraits(preview == it.key ? .isSelected : [])
   }
 
   @ViewBuilder private func action(_ it: MascotShop.Item) -> some View {
@@ -266,6 +347,10 @@ struct ShopView: View {
   }
 
   private func wear(_ it: MascotShop.Item, on: Bool) async {
+    // món vừa bấm thành món đang xem (RN: nút mặc nằm trên trang đang lật tới);
+    // mặc vào là sự kiện Koa phản ứng, cởi ra thì không
+    preview = it.key
+    if on { wearTick += 1 }
     switch await book.setWorn(it.key, on: on) {
     case .done, .busy: notice = nil
     case .gone: notice = Notice(text: String(localized: "shop.error.gone"), good: false)

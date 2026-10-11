@@ -72,6 +72,9 @@ struct StudioSceneTests {
     #expect(StudioScene.skinKey(equipped: ["stage_night"]) == "night")
     // nhiều sân khấu đang bật: món đắt nhất thắng (`activeStageKey`)
     #expect(StudioScene.skinKey(equipped: ["stage_night", "stage_champion", "stage_sunset"]) == "champion")
+    #expect(StudioScene.skinKey(stage: "stage_sunset") == "sunset")
+    #expect(StudioScene.skinKey(stage: "hat_cap") == "default")
+    #expect(StudioScene.skinKey(stage: nil) == "default")
   }
 
   /// Cả căn phòng lập được kế hoạch vẽ: mọi `url(#…)` có dải màu, có chữ.
