@@ -88,6 +88,7 @@ struct CommunityFeedView: View {
       }
     }
     .communityUserLinks()
+    .communityPostActions(userId: book.userId, host: book)
     .task { if book.phase == .loading { await book.load() } }
     .refreshable { await book.load() }
   }
@@ -217,6 +218,7 @@ struct PostCardView: View {
   var full = false
   /// Số bình luận đang biết ở màn chi tiết (gồm câu mình vừa gửi).
   var commentCount: Int?
+  @Environment(\.communityPostActions) private var actions
 
   var body: some View {
     DSCard {
@@ -234,7 +236,9 @@ struct PostCardView: View {
             .foregroundStyle(DS.Color.foreground.swiftUI)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        PostCountsView(post: post, commentCount: commentCount)
+        if let actions { PostActionsRow(post: post, context: actions, commentCount: commentCount) } else {
+          PostCountsView(post: post, commentCount: commentCount)
+        }
       }
     }
   }
@@ -248,9 +252,29 @@ struct PostCardView: View {
 struct PostHeaderView: View {
   let post: CommunityFeed.Post
   @Environment(\.openCommunityUser) private var openUser
+  @Environment(\.communityPostActions) private var actions
+
+  /// Ai · khi nào · menu "⋯" (khi màn có ngữ cảnh lệnh).
+  var body: some View {
+    HStack(spacing: DS.Spacing.sm) {
+      author
+      if let actions {
+        Button {
+          actions.openMenu(post)
+        } label: {
+          Image(systemName: "ellipsis")
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .frame(width: 44, height: 44, alignment: .trailing)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text("community.post.more"))
+      }
+    }
+  }
 
   /// Có tác giả → chạm mở hồ sơ (`ZoomLink` của RN); không có → chỉ là chữ.
-  var body: some View {
+  @ViewBuilder private var author: some View {
     if let author = post.author, let openUser {
       Button {
         openUser(author.userId)

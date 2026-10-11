@@ -396,3 +396,17 @@ public final class CommunityPostBook {
     }
   }
 }
+
+// MARK: - Thích / lưu / menu bài (#527, lát 6)
+
+extension CommunityPostBook: CommunityPostHost {
+  public func post(id: String) -> CommunityFeed.Post? { post?.id == id ? post : nil }
+
+  public func replace(_ post: CommunityFeed.Post) {
+    guard self.post?.id == post.id else { return }
+    self.post = post
+  }
+
+  /// Bài vừa bị xoá / ẩn / báo cáo: đọc lại (không còn → "Bài không còn nữa").
+  public func reloadAfterAction() async { await load() }
+}

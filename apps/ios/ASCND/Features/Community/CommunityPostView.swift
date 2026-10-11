@@ -95,6 +95,7 @@ struct CommunityPostView: View {
     }
     .sensoryFeedback(.selection, trigger: menuFor?.id) { _, new in new != nil }
     .communityUserLinks()
+    .communityPostActions(userId: book.userId, host: book)
   }
 
   /// Một hộp thoại cho mọi kết quả cần nói ra (app chưa có toast).

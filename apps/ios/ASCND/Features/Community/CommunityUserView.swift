@@ -111,6 +111,7 @@ struct CommunityUserView: View {
     .refreshable { await book.load() }
     .sensoryFeedback(.selection, trigger: taps)
     .communityUserLinks()
+    .communityPostActions(userId: book.userId, host: book)
     .confirmationDialog(
       Text(verbatim: book.profile?.displayName ?? ""), isPresented: $menuOpen, titleVisibility: .visible
     ) {

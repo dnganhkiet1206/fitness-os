@@ -147,5 +147,9 @@ miễn **giữ nguyên ý định** của app và chỉ làm app tốt hơn — 
 | Cộng đồng — Hành trình: vòng eo | Luôn cm (như ô eo của thẻ bài Tiến trình native) | `displayLength(v, lUnit)` theo đơn vị chiều dài của hồ sơ | lệch nền tảng (native chưa có đơn vị chiều dài cho Cộng đồng) | không cần | #527 (`native/ios-rewrite`) | E |
 | Cộng đồng — trang người dùng: ngày | Theo ngôn ngữ app (`Locale.app`) | `toLocaleDateString(getLocale(lang))` | khớp RN | không cần | #527 (`native/ios-rewrite`) | E |
 | Cộng đồng — `@handle` trong bình luận | Đã mở hồ sơ người ấy (thay dòng "chưa mở" ở trên) | Liên kết tới `community-user` | khớp RN | không cần | #527 (`native/ios-rewrite`) | E |
+| Cộng đồng — thích / lưu / menu: cập nhật sau lệnh | Mỗi màn (feed, một bài, trang người dùng) sửa bài của chính nó; lệnh làm bài biến mất thì màn ấy đọc lại | `patchPost` sửa mọi cache react-query đang giữ bài + `invalidateQueries` cả ba khoá | lệch nền tảng (native chưa có cache dùng chung giữa các màn; màn khác đọc lại khi mở) | không cần | #527 (`native/ios-rewrite`) | E |
+| Cộng đồng — kết quả lệnh menu bài | Hộp thoại (app chưa có toast); thích / lưu hỏng cũng là hộp thoại | `toast` / `toast.fail` | lệch nền tảng | không cần | #527 (`native/ios-rewrite`) | E |
+| Cộng đồng — lưu bài | Không có toast "Đã lưu · Xem thư viện" | Toast có nút mở `community-saved` | tạm thời (màn Đã lưu là lát 7) | không cần | #527 (`native/ios-rewrite`) | E |
+| Cộng đồng — nút chia sẻ trên thẻ | Chưa có | `Share.share` với chữ theo loại bài | tạm thời (lát chia sẻ 11–13) | không cần | #527 (`native/ios-rewrite`) | E |
 
 Thêm dòng mới ở cuối bảng; giữ dòng cũ — sổ là lịch sử, không phải danh sách việc.

@@ -49,19 +49,19 @@ public enum CommunityFeed {
     public let recipe: CommunityPayloads.Recipe?
     public let caption: String
     public let followersOnly: Bool
-    public let likeCount: Int
-    public let commentCount: Int
-    public let saveCount: Int
+    public internal(set) var likeCount: Int
+    public internal(set) var commentCount: Int
+    public internal(set) var saveCount: Int
     public let hidden: Bool
     public let createdAt: String
     public let author: Author?
-    public let liked: Bool
-    public let saved: Bool
+    public internal(set) var liked: Bool
+    public internal(set) var saved: Bool
     public let mine: Bool
     public let art: Art?
-    public let commentsOff: Bool
+    public internal(set) var commentsOff: Bool
     /// "Hữu ích tuần này": số lần người khác thử bài.
-    public let tries: Int?
+    public internal(set) var tries: Int?
   }
 
   public struct Restriction: Sendable, Hashable {
@@ -325,4 +325,26 @@ public final class CommunityFeedBook {
     do { profile = try await remote.myProfile(me: userId) != nil } catch { profile = nil }
     return (useful, restriction, profile)
   }
+}
+
+// MARK: - Thích / lưu / menu bài (#527, lát 6)
+
+extension CommunityFeedBook: CommunityPostHost {
+  public func post(id: String) -> CommunityFeed.Post? {
+    posts.first { $0.id == id } ?? useful.first { $0.id == id }
+  }
+
+  /// `patchPost`: cùng một bài ở cả bảng tin lẫn "Hữu ích tuần này".
+  public func replace(_ post: CommunityFeed.Post) {
+    if let i = posts.firstIndex(where: { $0.id == post.id }) { posts[i] = post }
+    if let i = useful.firstIndex(where: { $0.id == post.id }) {
+      // "Hữu ích" mang thêm `tries` của truy vấn riêng — giữ nó.
+      var p = post
+      p.tries = useful[i].tries
+      useful[i] = p
+    }
+  }
+
+  /// `invalidateQueries(['community_feed'])`.
+  public func reloadAfterAction() async { await load() }
 }

@@ -7,7 +7,9 @@ import Supabase
 /// server lọc (`20260927120000_community_foundation.sql`,
 /// `20261007220000_community_report_trust.sql`); thích / lưu chỉ đọc hàng của
 /// mình.
-public struct SupabaseCommunity: CommunityFeedRemote, CommunityProfileRemote, CommunityPostRemote, CommunityUserRemote {
+public struct SupabaseCommunity: CommunityFeedRemote, CommunityProfileRemote, CommunityPostRemote, CommunityUserRemote,
+  CommunityPostActionsRemote
+{
   private let client: SupabaseClient
 
   public init(backend: Backend) {
@@ -465,6 +467,91 @@ public struct SupabaseCommunity: CommunityFeedRemote, CommunityProfileRemote, Co
       try await client.from("community_reports").insert(row).execute()
     } catch {
       if (error as? PostgrestError)?.code == "23505" { return }
+      throw Self.moderationFailure(error)
+    }
+  }
+
+  // MARK: - Thích / lưu / menu bài (#527, lát 6)
+
+  struct PostIdOnly: Decodable, Sendable {
+    let post_id: String
+  }
+
+  struct IdOnly: Decodable, Sendable {
+    let id: String
+  }
+
+  struct CommentsOffParams: Encodable, Sendable {
+    let p_post_id: String
+    let p_off: Bool
+  }
+
+  /// `useToggle`: chèn (23505 = đã bật) / xoá (không còn dòng = đã tắt ở máy
+  /// khác — trạng thái người ta muốn, không phải lỗi).
+  public func toggle(_ t: CommunityToggle, postId: String, me: String, on: Bool) async throws {
+    let table = t == .like ? "community_likes" : "community_saves"
+    do {
+      if on {
+        do {
+          try await client.from(table)
+            .insert(JSONValue.object(["post_id": .string(postId), "user_id": .string(me)])).execute()
+        } catch {
+          if (error as? PostgrestError)?.code == "23505" { return }
+          throw error
+        }
+      } else {
+        let _: [PostIdOnly] = try await client.from(table)
+          .delete().eq("post_id", value: postId).eq("user_id", value: me)
+          .select("post_id").execute().value
+      }
+    } catch {
+      throw Self.moderationFailure(error)
+    }
+  }
+
+  /// `useHidePost`: ẩn riêng (23505 = đã ẩn).
+  public func hidePost(postId: String) async throws {
+    do {
+      try await client.from("community_post_hides").insert(JSONValue.object(["post_id": .string(postId)])).execute()
+    } catch {
+      if (error as? PostgrestError)?.code == "23505" { return }
+      throw Self.moderationFailure(error)
+    }
+  }
+
+  /// `useReport` cho một bài (`post_id`); 23505 = đã báo cáo, 54000 = trần.
+  public func reportPost(me: String, postId: String, reason: CommunityReportReason) async throws {
+    let row: JSONValue = .object([
+      "reporter_id": .string(me), "post_id": .string(postId), "comment_id": .null,
+      "reported_user_id": .null, "reason": .string(reason.rawValue),
+    ])
+    do {
+      try await client.from("community_reports").insert(row).execute()
+    } catch {
+      if (error as? PostgrestError)?.code == "23505" { return }
+      throw Self.moderationFailure(error)
+    }
+  }
+
+  /// `useDeletePost`: phải chạm ≥ 1 hàng.
+  public func deletePost(me: String, postId: String) async throws {
+    let gone: [IdOnly]
+    do {
+      gone = try await client.from("community_posts")
+        .delete().eq("id", value: postId).eq("author_id", value: me)
+        .select("id").execute().value
+    } catch {
+      throw Self.moderationFailure(error)
+    }
+    if gone.isEmpty { throw CommunityModerationFailure.nothingWritten }
+  }
+
+  /// `useSetCommentsOff`: RPC tự kiểm "bài của mình".
+  public func setCommentsOff(postId: String, off: Bool) async throws {
+    do {
+      try await client.rpc("community_set_comments_off", params: CommentsOffParams(p_post_id: postId, p_off: off))
+        .execute()
+    } catch {
       throw Self.moderationFailure(error)
     }
   }

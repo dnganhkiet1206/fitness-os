@@ -459,3 +459,16 @@ public final class CommunityUserBook {
     await reloadPosts()
   }
 }
+
+// MARK: - Thích / lưu / menu bài (#527, lát 6)
+
+extension CommunityUserBook: CommunityPostHost {
+  public func post(id: String) -> CommunityFeed.Post? { posts.first { $0.id == id } }
+
+  public func replace(_ post: CommunityFeed.Post) {
+    if let i = posts.firstIndex(where: { $0.id == post.id }) { posts[i] = post }
+  }
+
+  /// `invalidateQueries(['community_user'])` + `['community_user_posts']`.
+  public func reloadAfterAction() async { await load() }
+}

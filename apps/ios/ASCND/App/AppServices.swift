@@ -598,6 +598,12 @@ final class AppServices {
     return CommunityUserBook(userId: userId, targetId: targetId, remote: SupabaseCommunity(backend: backend))
   }
 
+  /// Thích / lưu / menu bài (#527, lát 6): ghi thẳng server qua RLS + RPC.
+  func makeCommunityPostActions(userId: String) -> CommunityPostActions? {
+    guard let backend else { return nil }
+    return CommunityPostActions(userId: userId, remote: SupabaseCommunity(backend: backend))
+  }
+
   func didBecomeActive() {
     // Quay lại tiền cảnh: đo lại đường mạng, dò lại internet ngay.
     network.resume(Self.netPath(monitor.currentPath))
