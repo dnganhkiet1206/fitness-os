@@ -49,19 +49,7 @@ private struct CommunityPostActionsModifier: ViewModifier {
 
   func body(content: Content) -> some View {
     content
-      .environment(
-        \.communityPostActions,
-        actions.map { a in
-          CommunityPostActionsContext(
-            actions: a, host: host,
-            openMenu: { post in
-              taps += 1
-              menuFor = post
-            },
-            tryWorkout: tryBook == nil ? nil : { post in Task { await tryPost(post) } },
-            trying: tryBook?.busy ?? [])
-        }
-      )
+      .environment(\.communityPostActions, context)
       .task {
         if actions == nil { actions = services.makeCommunityPostActions(userId: userId) }
         if tryBook == nil { tryBook = services.makeCommunityTry(userId: userId) }
@@ -114,6 +102,23 @@ private struct CommunityPostActionsModifier: ViewModifier {
       ) {
         Button(String(localized: "common.ok"), role: .cancel) {}
       }
+  }
+
+  /// Ngữ cảnh cho thẻ — dựng từng bước (một biểu thức gộp làm trình biên dịch
+  /// quá thời gian suy kiểu).
+  private var context: CommunityPostActionsContext? {
+    guard let actions else { return nil }
+    let open: @MainActor (CommunityFeed.Post) -> Void = { post in
+      taps += 1
+      menuFor = post
+    }
+    var c = CommunityPostActionsContext(actions: actions, host: host, openMenu: open)
+    if let tryBook {
+      let tryIt: @MainActor (CommunityFeed.Post) -> Void = { post in Task { await tryPost(post) } }
+      c.tryWorkout = tryIt
+      c.trying = tryBook.busy
+    }
+    return c
   }
 
   private func present<T>(_ b: Binding<T?>) -> Binding<Bool> {
