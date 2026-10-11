@@ -208,5 +208,6 @@ miễn **giữ nguyên ý định** của app và chỉ làm app tốt hơn — 
 | Phòng linh vật — ô xu đầu màn (đối chiếu RN web ↔ simulator) | Ô xu là `Label` + `.titleAndIcon` trong nút kính của thanh công cụ (như ô số dư của Cửa hàng), hiện số dư; VoiceOver đọc "N xu" | ô `Coin` trong đầu màn trong suốt phủ lên studio | như RN về nội dung; vỏ là thanh công cụ iOS 26 (đầu màn trong suốt: việc riêng) | không cần | #527 (`native/ios-rewrite`) | E |
 | Huy chương — thanh tiến độ trên thẻ | `ProgressView` hệ thống tô màu hạng (sàn 2% giữ như RN); không chạy hoạt hoạ riêng | `<ProgressBar>` cao 4, rãnh `alpha(ink, 0.08)` | gần như RN; độ dày / rãnh là của hệ thống | không cần | #527 (`native/ios-rewrite`) | E |
 | Phòng linh vật — lối vào phòng thử đồ | Một ô "Phòng thay đồ" trọn hàng (kiểu `ActionChip`); hàng "Phòng thay đồ" trong thẻ đếm cũ bỏ đi (thay dòng ô xu / tên VoiceOver ở trên cho phần lối vào) | hai ô: Phòng thay đồ + Đổi bạn đồng hành (mở Cài đặt) | native chưa có chọn bạn đồng hành nên chưa có ô thứ hai | không cần | #527 (`native/ios-rewrite`) | E |
+| Phòng linh vật — trục hạng (VoiceOver) | Trục là một phần tử: "Hành trình" + danh sách "hạng, Cấp N" nối nhau, hạng hiện tại có dấu ✓ | SVG không có nhãn trợ năng | tốt hơn RN | không cần | #527 (`native/ios-rewrite`) | E |
 
 Thêm dòng mới ở cuối bảng; giữ dòng cũ — sổ là lịch sử, không phải danh sách việc.

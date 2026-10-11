@@ -306,37 +306,50 @@ struct MascotRoomView: View {
 
   // MARK: - Hành trình hạng
 
+  /// Hành trình (`journeyCard` của RN): tiêu đề trái, "còn N cấp tới **Hạng**"
+  /// phải (tên hạng tô màu của nó, đậm), dưới là trục hạng.
   private var journeyCard: some View {
     DSCard {
-      VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-        Text(String(localized: "mr.journey")).font(DS.TextStyle.headline)
-        Text(journeySubtitle).font(DS.TextStyle.footnote).foregroundStyle(DS.Color.mutedForeground.swiftUI)
-        ForEach(MascotRules.ranks, id: \.key) { r in
-          let current = r.key == room.rank.key
-          let reached = room.level >= r.minLevel
-          HStack {
-            Image(systemName: reached ? "star.fill" : "star")
-              .foregroundStyle(reached ? Color(hex: r.colorHex) : DS.Color.mutedForeground.swiftUI)
-              .accessibilityHidden(true)
-            Text(verbatim: r.name(lang)).font(current ? DS.TextStyle.body.weight(.semibold) : DS.TextStyle.body)
-            Spacer()
-            Text(String(localized: "mr.level \(r.minLevel)"))
-              .font(DS.TextStyle.caption)
-              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+      VStack(alignment: .leading, spacing: DS.Spacing.md) {
+        ViewThatFits(in: .horizontal) {
+          HStack(alignment: .firstTextBaseline) {
+            journeyTitle
+            Spacer(minLength: DS.Spacing.sm)
+            journeySub
           }
-          .accessibilityElement(children: .combine)
-          .accessibilityAddTraits(current ? .isSelected : [])
+          VStack(alignment: .leading, spacing: 2) {
+            journeyTitle
+            journeySub
+          }
         }
+        RankJourneyView(ranks: MascotRules.ranks, currentKey: room.rank.key, lang: lang)
       }
     }
   }
 
-  private var journeySubtitle: String {
-    guard let next = room.nextRank else { return String(localized: "mr.maxRank") }
+  private var journeyTitle: some View {
+    Text(String(localized: "mr.journey")).font(DS.TextStyle.headline)
+  }
+
+  private var journeySub: some View {
+    Text(journeySubtitle)
+      .font(DS.TextStyle.footnote)
+      .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+  }
+
+  private var journeySubtitle: AttributedString {
+    guard let next = room.nextRank else { return AttributedString(String(localized: "mr.maxRank")) }
     let n = next.minLevel - room.level
-    return n == 1
-      ? String(localized: "mr.levelsToRank.one \(next.name(lang))")
-      : String(localized: "mr.levelsToRank.other \(n) \(next.name(lang))")
+    let name = next.name(lang)
+    var a = AttributedString(
+      n == 1
+        ? String(localized: "mr.levelsToRank.one \(name)")
+        : String(localized: "mr.levelsToRank.other \(n) \(name)"))
+    if let r = a.range(of: name, options: .backwards) {
+      a[r].foregroundColor = Color(hex: next.colorHex)
+      a[r].font = DS.TextStyle.footnote.weight(.bold)
+    }
+    return a
   }
 
   // MARK: - Nhiệm vụ
