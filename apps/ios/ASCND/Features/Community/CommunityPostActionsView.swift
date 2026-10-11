@@ -17,6 +17,8 @@ struct CommunityPostActionsContext {
   var tryWorkout: (@MainActor (CommunityFeed.Post) -> Void)? = nil
   /// Bài đang thử — nút tắt trong lúc đó.
   var trying: Set<String> = []
+  /// Vừa LƯU xong một bài (lát 16) — màn báo "Đã lưu" kèm lối vào thư viện.
+  var saved: (@MainActor () -> Void)? = nil
 }
 
 extension EnvironmentValues {
@@ -46,10 +48,33 @@ private struct CommunityPostActionsModifier: ViewModifier {
   @State private var afterReport: CommunityFeed.Author?
   @State private var message: String?
   @State private var taps = 0
+  /// "Đã lưu" đang hiện (mỗi lần lưu một số mới, để băng hiện lại đủ giờ).
+  @State private var savedNotice: Int?
+  @State private var openLibrary = false
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+  /// Đang ở chính thư viện thì không kèm nút dẫn về chỗ đang đứng (RN).
+  private var inLibrary: Bool { host is CommunitySavedBook }
 
   func body(content: Content) -> some View {
     content
       .environment(\.communityPostActions, context)
+      .overlay(alignment: .bottom) {
+        if let savedNotice {
+          SavedNoticeView(showOpen: !inLibrary) {
+            self.savedNotice = nil
+            openLibrary = true
+          }
+          .id(savedNotice)
+          .transition(reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity))
+        }
+      }
+      .task(id: savedNotice) {
+        guard savedNotice != nil else { return }
+        try? await Task.sleep(for: .seconds(4))
+        if !Task.isCancelled { withAnimation(reduceMotion ? nil : .easeOut(duration: 0.2)) { savedNotice = nil } }
+      }
+      .navigationDestination(isPresented: $openLibrary) { CommunitySavedScreen(userId: userId) }
       .task {
         if actions == nil { actions = services.makeCommunityPostActions(userId: userId) }
         if tryBook == nil { tryBook = services.makeCommunityTry(userId: userId) }
@@ -113,6 +138,10 @@ private struct CommunityPostActionsModifier: ViewModifier {
       menuFor = post
     }
     var c = CommunityPostActionsContext(actions: actions, host: host, openMenu: open)
+    c.saved = {
+      AccessibilityNotification.Announcement(String(localized: "community.saved.toast")).post()
+      withAnimation(reduceMotion ? nil : .snappy) { savedNotice = (savedNotice ?? 0) + 1 }
+    }
     if let tryBook {
       let tryIt: @MainActor (CommunityFeed.Post) -> Void = { post in Task { await tryPost(post) } }
       c.tryWorkout = tryIt
@@ -229,12 +258,83 @@ private struct CommunityPostActionsModifier: ViewModifier {
   }
 }
 
-/// Thích · bình luận · (khoảng trống) · lưu — mỗi nút một ô 44 điểm. Bình luận
-/// không phải nút riêng: chạm vào đó rơi xuống thẻ, mở bài.
+/// "Đã lưu vào thư viện" + "Xem thư viện" (`showToast` của RN) — băng nổi ở đáy
+/// màn, tự ẩn sau 4 giây; app chưa có toast chung.
+private struct SavedNoticeView: View {
+  let showOpen: Bool
+  let open: () -> Void
+
+  var body: some View {
+    HStack(spacing: DS.Spacing.sm) {
+      Image(systemName: "bookmark.fill")
+        .foregroundStyle(DS.Color.readinessGreen.swiftUI)
+        .accessibilityHidden(true)
+      Text("community.saved.toast")
+        .font(DS.TextStyle.footnote.weight(.semibold))
+        .foregroundStyle(DS.Color.foreground.swiftUI)
+      if showOpen {
+        Spacer(minLength: DS.Spacing.sm)
+        Button(action: open) {
+          Text("community.saved.open")
+            .font(DS.TextStyle.footnote.weight(.semibold))
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(DS.Color.primary.swiftUI)
+      }
+    }
+    .padding(.horizontal, DS.Spacing.md)
+    .frame(minHeight: 44)
+    .background(DS.Color.card.swiftUI, in: Capsule())
+    .overlay(Capsule().strokeBorder(DS.Color.border.swiftUI))
+    .padding(DS.Spacing.md)
+  }
+}
+
+/// Chữ của nút "Chia sẻ" (`shareText` của ba thẻ RN): dòng đầu dịch ở đây,
+/// phần thân là `CommunityShareText`.
+enum PostShareText {
+  static func text(_ post: CommunityFeed.Post, unit: WeightUnit) -> String {
+    switch post.kind {
+    case .workout:
+      let w = post.workout
+      let title = w.title ?? String(localized: "community.workout")
+      let n = Int(w.exerciseCount)
+      let head =
+        n == 1
+        ? String(localized: "community.sharetext.workout.one \(title) \(n)")
+        : String(localized: "community.sharetext.workout.other \(title) \(n)")
+      return CommunityShareText.workout(w, head: head, unit: unit)
+    case .progress:
+      guard let p = post.progress else { return "" }
+      let n = Int(p.weeks)
+      let head =
+        n == 1
+        ? String(localized: "community.sharetext.progress.one \(n)")
+        : String(localized: "community.sharetext.progress.other \(n)")
+      let tiles = CommunityCard.tiles(p, unit: unit).map { (label: ProgressPostBody.label($0), tile: $0) }
+      return CommunityShareText.progress(head: head, tiles: tiles)
+    case .recipe:
+      guard let r = post.recipe else { return "" }
+      let title = r.title.isEmpty ? String(localized: "community.recipe") : r.title
+      let kcal = CommunityCard.grouped(r.kcal, locale: .app)
+      let head = String(localized: "community.sharetext.recipe \(title) \(kcal)")
+      let macros = CommunityShareText.MacroLabels(
+        protein: String(localized: "logMeal.protein"), carbs: String(localized: "logMeal.carbs"),
+        fat: String(localized: "logMeal.fat"))
+      return CommunityShareText.recipe(r, head: head, macros: macros, locale: .app)
+    }
+  }
+}
+
+/// Thích · bình luận · (khoảng trống) · lưu · chia sẻ — mỗi nút một ô 44 điểm.
+/// Bình luận không phải nút riêng: chạm vào đó rơi xuống thẻ, mở bài.
 struct PostActionsRow: View {
   let post: CommunityFeed.Post
   let context: CommunityPostActionsContext
   var commentCount: Int?
+  @Environment(\.weightUnit) private var unit
   @State private var taps = 0
   @State private var message: String?
 
@@ -259,6 +359,16 @@ struct PostActionsRow: View {
         .save, on: post.saved, icon: post.saved ? "bookmark.fill" : "bookmark", count: nil,
         label: String(localized: "community.save"),
         tint: post.saved ? DS.Color.foreground.swiftUI : DS.Color.mutedForeground.swiftUI)
+      ShareLink(item: PostShareText.text(post, unit: unit)) {
+        Image(systemName: "square.and.arrow.up")
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          .padding(.horizontal, DS.Spacing.sm)
+          .frame(minWidth: 44, minHeight: 44)
+          .contentShape(Rectangle())
+      }
+      .buttonStyle(.plain)
+      .simultaneousGesture(TapGesture().onEnded { taps += 1 })
+      .accessibilityLabel(Text("community.share.action"))
     }
     .padding(.horizontal, -DS.Spacing.sm)
     .sensoryFeedback(.selection, trigger: taps)
@@ -276,9 +386,12 @@ struct PostActionsRow: View {
     Button {
       // `Haptics.selection()` của `onMutate`: mỗi lần chạm thích / lưu.
       taps += 1
+      let saving = t == .save && !post.saved
       Task {
-        if case .failed(let f) = await context.actions.toggle(t, postId: post.id, host: context.host) {
-          message = CommunityPostView.failureText(f)
+        switch await context.actions.toggle(t, postId: post.id, host: context.host) {
+        case .failed(let f): message = CommunityPostView.failureText(f)
+        case .done: if saving { context.saved?() }
+        default: break
         }
       }
     } label: {

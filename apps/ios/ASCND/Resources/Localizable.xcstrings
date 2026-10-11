@@ -27926,6 +27926,190 @@
     }
    }
   },
+  "community.share.action": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Share"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chia sẻ"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Compartir"
+     }
+    }
+   }
+  },
+  "community.sharetext.workout.one %@ %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@ on ASCND — %2$lld exercise"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@ trên ASCND — %2$lld bài tập"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@ en ASCND — %2$lld ejercicio"
+     }
+    }
+   }
+  },
+  "community.sharetext.workout.other %@ %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@ on ASCND — %2$lld exercises"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@ trên ASCND — %2$lld bài tập"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@ en ASCND — %2$lld ejercicios"
+     }
+    }
+   }
+  },
+  "community.sharetext.progress.one %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld-week progress on ASCND"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tiến trình %lld tuần trên ASCND"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "progreso de %lld semana en ASCND"
+     }
+    }
+   }
+  },
+  "community.sharetext.progress.other %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld-week progress on ASCND"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tiến trình %lld tuần trên ASCND"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "progreso de %lld semanas en ASCND"
+     }
+    }
+   }
+  },
+  "community.sharetext.recipe %@ %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@ on ASCND — %2$@ kcal"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@ trên ASCND — %2$@ kcal"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@ en ASCND — %2$@ kcal"
+     }
+    }
+   }
+  },
+  "community.saved.toast": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Saved to your library"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đã lưu vào thư viện"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Guardado en tu biblioteca"
+     }
+    }
+   }
+  },
+  "community.saved.open": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "View library"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Xem thư viện"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ver biblioteca"
+     }
+    }
+   }
+  },
   "ex.title": {
    "extractionState": "manual",
    "localizations": {

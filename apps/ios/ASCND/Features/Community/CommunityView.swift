@@ -615,13 +615,17 @@ struct ProgressPostBody: View {
     }
   }
 
+  /// Nhãn của một ô (thẻ và chữ chia sẻ dùng chung).
+  static func label(_ t: CommunityCard.Tile) -> String {
+    switch t.kind {
+    case .weight: String(localized: "community.progress.weight")
+    case .waist: String(localized: "community.progress.waist")
+    case .lift: t.liftName ?? ""
+    }
+  }
+
   private func tile(_ t: CommunityCard.Tile) -> some View {
-    let label =
-      switch t.kind {
-      case .weight: String(localized: "community.progress.weight")
-      case .waist: String(localized: "community.progress.waist")
-      case .lift: t.liftName ?? ""
-      }
+    let label = Self.label(t)
     let (icon, tint): (String, Color) =
       switch t.kind {
       case .weight: ("scalemass", DS.Color.metricBeige.swiftUI)

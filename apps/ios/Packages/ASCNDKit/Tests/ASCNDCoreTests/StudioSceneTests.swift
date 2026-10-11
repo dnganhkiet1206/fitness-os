@@ -45,7 +45,7 @@ struct StudioSceneTests {
   }
 
   /// Cùng lệnh, cùng cờ, số bằng nhau theo `close` — `cos` của libm và của V8
-  /// có thể lệch 1 ulp (pha 0,425: `rx` …017 vs …016), cùng sai số mà cây cảnh
+  /// có thể lệch 1 ulp (pha 0,175 / 0,325 / 0,675 / 0,825: `rx` …017 vs …016), cùng sai số mà cây cảnh
   /// đã dùng cho mọi thuộc tính số.
   static func samePath(_ a: String, _ b: String) -> Bool {
     let x = a.split(separator: " "), y = b.split(separator: " ")
