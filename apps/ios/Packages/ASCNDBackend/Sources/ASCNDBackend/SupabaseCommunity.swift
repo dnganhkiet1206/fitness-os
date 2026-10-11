@@ -10,7 +10,7 @@ import Supabase
 public struct SupabaseCommunity: CommunityFeedRemote, CommunityProfileRemote, CommunityPostRemote, CommunityUserRemote,
   CommunityPostActionsRemote, CommunitySavedRemote, CommunitySearchRemote, CommunityInboxRemote,
   CommunityPrivacyRemote, CommunityShareRemote, CommunityShareProgressRemote, CommunityShareRecipeRemote,
-  CommunityChallengesRemote
+  CommunityChallengesRemote, CommunityTryRemote
 {
   private let client: SupabaseClient
 
@@ -912,6 +912,17 @@ public struct SupabaseCommunity: CommunityFeedRemote, CommunityProfileRemote, Co
 
   /// `useJoinChallenge`: chèn kèm `offset_min` (23505 = đã tham gia); rời
   /// phải chạm ≥ 1 hàng (hỏi lại `challenge_id`).
+  /// `useRecordTry`: một lượt "Thử workout"; 23505 = đã ghi rồi.
+  public func recordTry(postId: String, userId: String) async throws {
+    do {
+      try await client.from("community_post_tries")
+        .insert(JSONValue.object(["post_id": .string(postId), "user_id": .string(userId)])).execute()
+    } catch {
+      if (error as? PostgrestError)?.code == "23505" { return }
+      throw Self.moderationFailure(error)
+    }
+  }
+
   public func setChallengeMembership(me: String, challengeId: String, join: Bool, offsetMinutes: Int) async throws {
     if join {
       do {

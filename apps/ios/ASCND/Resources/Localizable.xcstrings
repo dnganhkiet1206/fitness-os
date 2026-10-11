@@ -27742,6 +27742,121 @@
     }
    }
   },
+  "community.try": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Try workout"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Thử workout"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Probar entrenamiento"
+     }
+    }
+   }
+  },
+  "community.tried": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Added to your workouts"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đã thêm vào Buổi tập của bạn"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Añadido a tus entrenamientos"
+     }
+    }
+   }
+  },
+  "community.tried.skipped.one %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld of the author's own exercises couldn't be copied"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld bài tự tạo của người đăng không chép được"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld de los ejercicios propios del autor no se pudo copiar"
+     }
+    }
+   }
+  },
+  "community.tried.skipped.other %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld of the author's own exercises couldn't be copied"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld bài tự tạo của người đăng không chép được"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld de los ejercicios propios del autor no se pudieron copiar"
+     }
+    }
+   }
+  },
+  "community.trynone": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "This workout only has custom exercises — nothing to copy"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Buổi này chỉ có bài tập tự tạo — không chép được"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Este entrenamiento solo tiene ejercicios personalizados — nada que copiar"
+     }
+    }
+   }
+  },
   "ex.title": {
    "extractionState": "manual",
    "localizations": {

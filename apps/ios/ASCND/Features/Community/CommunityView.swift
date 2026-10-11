@@ -340,7 +340,11 @@ struct PostCardView: View {
         PostHeaderView(post: post)
         PostArtView(kind: post.kind, url: artURL, alt: post.art.map(Self.alt))
         switch post.kind {
-        case .workout: WorkoutPostBody(workout: post.workout, unit: unit, full: full)
+        case .workout:
+          WorkoutPostBody(workout: post.workout, unit: unit, full: full)
+          if let tryIt = actions?.tryWorkout, CommunityTry.offered(post) {
+            TryWorkoutButton(busy: actions?.trying.contains(post.id) ?? false) { tryIt(post) }
+          }
         case .progress: if let p = post.progress { ProgressPostBody(progress: p, unit: unit) }
         case .recipe: if let r = post.recipe { RecipePostBody(recipe: r, full: full) }
         }
@@ -360,6 +364,27 @@ struct PostCardView: View {
   /// Chữ thay ảnh theo ngôn ngữ app (RN: `vi` → `alt_vi`, còn lại `alt_en`).
   static func alt(_ a: CommunityFeed.Art) -> String {
     Locale.app.language.languageCode?.identifier == "vi" ? a.altVi : a.altEn
+  }
+}
+
+/// "Thử workout" (`tryBtn` của RN): viên trầm, không đặc — ba mươi bài là ba
+/// mươi nút, ba mươi nút đặc là một bức tường.
+struct TryWorkoutButton: View {
+  let busy: Bool
+  let action: () -> Void
+
+  var body: some View {
+    Button(action: action) {
+      Label(String(localized: "community.try"), systemImage: "doc.on.doc")
+        .font(DS.TextStyle.body.weight(.semibold))
+        .foregroundStyle(DS.Color.foreground.swiftUI)
+        .frame(maxWidth: .infinity, minHeight: 44)
+        .background(DS.Color.secondary.swiftUI, in: Capsule())
+        .contentShape(Capsule())
+    }
+    .buttonStyle(.plain)
+    .disabled(busy)
+    .opacity(busy ? 0.5 : 1)
   }
 }
 

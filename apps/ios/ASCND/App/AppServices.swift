@@ -681,6 +681,13 @@ final class AppServices {
   }
 
   /// Thích / lưu / menu bài (#527, lát 6): ghi thẳng server qua RLS + RPC.
+  /// "Thử workout" (#527, lát 15): ghi `community_post_tries`; template do
+  /// `PlanEditor.copyShared` của luồng tập tạo (màn truyền vào).
+  func makeCommunityTry(userId: String) -> CommunityTryBook? {
+    guard let backend else { return nil }
+    return CommunityTryBook(userId: userId, remote: SupabaseCommunity(backend: backend)) { UUID().uuidString.lowercased() }
+  }
+
   func makeCommunityPostActions(userId: String) -> CommunityPostActions? {
     guard let backend else { return nil }
     return CommunityPostActions(userId: userId, remote: SupabaseCommunity(backend: backend))

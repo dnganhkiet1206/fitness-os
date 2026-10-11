@@ -13,6 +13,10 @@ struct CommunityPostActionsContext {
   let actions: CommunityPostActions
   let host: any CommunityPostHost
   let openMenu: @MainActor (CommunityFeed.Post) -> Void
+  /// "Thử workout" (lát 15) — `nil` khi chưa dựng được sổ / luồng tập.
+  var tryWorkout: (@MainActor (CommunityFeed.Post) -> Void)? = nil
+  /// Bài đang thử — nút tắt trong lúc đó.
+  var trying: Set<String> = []
 }
 
 extension EnvironmentValues {
@@ -29,7 +33,10 @@ private struct CommunityPostActionsModifier: ViewModifier {
   let userId: String
   let host: any CommunityPostHost
   @Environment(AppServices.self) private var services
+  @Environment(WorkoutFlow.self) private var flow
   @State private var actions: CommunityPostActions?
+  @State private var tryBook: CommunityTryBook?
+  @State private var tried = 0
   /// Bài của menu đang mở.
   @State private var menuFor: CommunityFeed.Post?
   @State private var reasonFor: CommunityFeed.Post?
@@ -45,14 +52,22 @@ private struct CommunityPostActionsModifier: ViewModifier {
       .environment(
         \.communityPostActions,
         actions.map { a in
-          CommunityPostActionsContext(actions: a, host: host) { post in
-            taps += 1
-            menuFor = post
-          }
+          CommunityPostActionsContext(
+            actions: a, host: host,
+            openMenu: { post in
+              taps += 1
+              menuFor = post
+            },
+            tryWorkout: tryBook == nil ? nil : { post in Task { await tryPost(post) } },
+            trying: tryBook?.busy ?? [])
         }
       )
-      .task { if actions == nil { actions = services.makeCommunityPostActions(userId: userId) } }
+      .task {
+        if actions == nil { actions = services.makeCommunityPostActions(userId: userId) }
+        if tryBook == nil { tryBook = services.makeCommunityTry(userId: userId) }
+      }
       .sensoryFeedback(.selection, trigger: taps)
+      .sensoryFeedback(.success, trigger: tried)
       .confirmationDialog(
         Text(verbatim: menuTitle), isPresented: present($menuFor), titleVisibility: .visible, presenting: menuFor
       ) { post in
@@ -139,6 +154,35 @@ private struct CommunityPostActionsModifier: ViewModifier {
     case .failed(let f): message = CommunityPostView.failureText(f)
     case .ignored: break
     }
+  }
+
+  /// `tryIt`: chép CẤU TRÚC buổi (tạ về 0, chỉ bài thư viện) thành template
+  /// `community` rồi ghi lượt thử; báo số bài tự tạo không chép được.
+  private func tryPost(_ post: CommunityFeed.Post) async {
+    taps += 1
+    guard let tryBook, let editor = flow.plan else {
+      message = String(localized: "async.error.generic")
+      return
+    }
+    let out = await tryBook.tryWorkout(post, fallbackName: String(localized: "community.workout")) {
+      id, title, lines, fallback in
+      try await editor.copyShared(id: id, title: title, lines: lines, fallbackName: fallback).skipped
+    }
+    switch out {
+    case .tried(let skipped):
+      tried += 1
+      message =
+        skipped == 0
+        ? String(localized: "community.tried")
+        : String(localized: "community.tried") + " · " + Self.skippedText(skipped)
+    case .nothingToCopy: message = String(localized: "community.trynone")
+    case .refused: message = String(localized: "async.error.generic")
+    case .busy: break
+    }
+  }
+
+  static func skippedText(_ n: Int) -> String {
+    n == 1 ? String(localized: "community.tried.skipped.one \(n)") : String(localized: "community.tried.skipped.other \(n)")
   }
 
   private func setCommentsOff(_ off: Bool, _ post: CommunityFeed.Post) async {
