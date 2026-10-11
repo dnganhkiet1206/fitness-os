@@ -23,6 +23,9 @@ public final class HelpNudge: @unchecked Sendable {
   public static let storeKey = "ascnd-help-nudge"
   /// Chủ đề của thẻ sẵn sàng (`HELP_TOPIC`, `readiness-gauge.tsx:37`).
   public static let readiness = "readiness"
+  /// Chủ đề của thẻ calo trên tab Dinh dưỡng (`useHelpTopic('nutrition')`,
+  /// `dashboard-cards.tsx`).
+  public static let nutrition = "nutrition"
 
   struct State: Codable, Equatable {
     var count: Int

@@ -17,12 +17,16 @@ import SwiftUI
 ///   "đã ăn / mục tiêu" và "phần còn lại"; vượt thì ghi chú nói "+N g vượt mục
 ///   tiêu", vượt quá 10 % thì chữ đỏ.
 ///
-/// Khác RN: nút "?" giải thích mục tiêu calo và lời nhắc kèm theo chưa port.
+/// - nút "?" ở góc thẻ mở tấm giải thích mục tiêu calo; lời nhắc "Tập xong mà
+///   số calo không tăng lên?" hiện tối đa 3 lần, thôi khi đã mở giải thích.
 struct NutritionTodayCard: View {
   let book: NutritionTodayBook
   @Environment(ProfileBook.self) private var profile: ProfileBook?
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var showLeft = false
+  @State private var helpOpen = false
+  /// Lời nhắc "?" (`useHelpTopic('nutrition')`): tối đa 3 lần, thôi khi đã mở.
+  @State private var nudge = false
 
   var body: some View {
     switch book.phase {
@@ -33,8 +37,74 @@ struct NutritionTodayCard: View {
     case .failed:
       DSErrorView(message: String(localized: "async.error.generic")) { Task { await book.load() } }
     case .ready(let totals):
-      card(totals)
+      VStack(spacing: DS.Spacing.sm) {
+        // Nút "?" là ANH EM của mặt thẻ, không nằm trong nút của thẻ — nút
+        // trong nút thì VoiceOver không với tới.
+        ZStack(alignment: .topTrailing) {
+          card(totals)
+          Button { openHelp() } label: {
+            Image(systemName: "questionmark.circle")
+              .font(.body)
+              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+              .frame(width: 44, height: 44)
+              .contentShape(Rectangle())
+          }
+          .buttonStyle(.plain)
+          .padding(.top, DS.Spacing.xs)
+          .padding(.trailing, DS.Spacing.xs)
+          .accessibilityLabel(Text(String(localized: "nc.help")))
+        }
+        if nudge { nudgeRow }
+      }
+      .sheet(isPresented: $helpOpen) { NutritionExplainerSheet() }
+      .task {
+        guard !nudge, ReadinessCardView.nudges.shouldNudge(HelpNudge.nutrition, userId: book.userId) else { return }
+        nudge = true
+        ReadinessCardView.nudges.noteNudged(HelpNudge.nutrition, userId: book.userId)
+      }
     }
+  }
+
+  /// `openHelp`: tắt lời nhắc, mở giải thích, chủ đề này xong.
+  private func openHelp() {
+    nudge = false
+    helpOpen = true
+    ReadinessCardView.nudges.noteHelpOpened(HelpNudge.nutrition, userId: book.userId)
+  }
+
+  /// `HelpNudge`: dải chạm-để-mở và nút đóng là hai nút cạnh nhau.
+  private var nudgeRow: some View {
+    HStack(spacing: DS.Spacing.sm) {
+      Button { openHelp() } label: {
+        HStack(spacing: DS.Spacing.sm) {
+          Image(systemName: "questionmark.circle")
+            .font(.caption)
+            .foregroundStyle(DS.Color.metricBlue.swiftUI)
+            .accessibilityHidden(true)
+          Text(String(localized: "nc.nudge.text"))
+            .font(DS.TextStyle.caption)
+            .foregroundStyle(DS.Color.foreground.swiftUI)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .frame(minHeight: 44)
+        .contentShape(Rectangle())
+      }
+      .buttonStyle(.plain)
+      Button {
+        // Ẩn không phải là đọc: lần hiện đã được đếm.
+        nudge = false
+      } label: {
+        Image(systemName: "xmark")
+          .font(.caption)
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          .frame(width: 44, height: 44)
+          .contentShape(Rectangle())
+      }
+      .buttonStyle(.plain)
+      .accessibilityLabel(Text(String(localized: "rd.nudge.dismiss")))
+    }
+    .padding(.horizontal, DS.Spacing.sm)
+    .background(DS.Color.metricBlue.swiftUI.opacity(0.10), in: RoundedRectangle(cornerRadius: DS.Radius.md))
   }
 
   // MARK: - Thẻ

@@ -39171,6 +39171,259 @@
      }
     }
    }
+  },
+  "nx.lede": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "The big ring is today’s calories against your own target. Here is how that number is worked out."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Vòng lớn là calo hôm nay so với mục tiêu của riêng bạn. Đây là cách con số đó được tính."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "El anillo grande son las calorías de hoy frente a tu propio objetivo. Así se calcula ese número."
+     }
+    }
+   }
+  },
+  "nx.target.term": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Where the calorie target comes from"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mục tiêu calo đến từ đâu"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "De dónde sale el objetivo de calorías"
+     }
+    }
+   }
+  },
+  "nx.target.body": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Your basal metabolic rate (Mifflin-St Jeor, from weight, height, age and sex) times the activity level you picked at sign-up, then adjusted for your goal — 20% off to cut, 10% on to gain."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chuyển hoá cơ bản của bạn (theo công thức Mifflin-St Jeor, từ cân nặng, chiều cao, tuổi, giới) nhân với mức vận động bạn chọn lúc đăng ký, rồi điều chỉnh theo mục tiêu — giảm cân trừ 20%, tăng cân cộng 10%."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tu metabolismo basal (Mifflin-St Jeor, a partir de peso, altura, edad y sexo) por el nivel de actividad que elegiste al registrarte, ajustado a tu objetivo: un 20% menos para perder, un 10% más para ganar."
+     }
+    }
+   }
+  },
+  "nx.training.term": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Training does not add calories back"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tập xong, số này KHÔNG tăng lên"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Entrenar no te devuelve calorías"
+     }
+    }
+   }
+  },
+  "nx.training.body": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Some apps hand calories back after a workout. This one does not, because the activity level you chose already includes your training — adding a session on top counts the same hour twice. That is how somebody eats several hundred calories over while believing they are on plan."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Một số app trả lại calo cho bạn sau mỗi buổi tập. App này thì không, vì mức vận động bạn chọn ĐÃ bao gồm việc tập rồi — cộng thêm buổi tập vào nữa là tính cùng một giờ đó hai lần. Đó là cách ăn vượt vài trăm calo mỗi ngày mà vẫn tưởng mình đúng kế hoạch."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Algunas apps te devuelven calorías después de entrenar. Esta no, porque el nivel de actividad que elegiste ya incluye tu entrenamiento: sumar la sesión cuenta la misma hora dos veces. Así se comen cientos de calorías de más creyendo que se sigue el plan."
+     }
+    }
+   }
+  },
+  "nx.wrong.term": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "If the activity level is wrong"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nếu mức vận động chọn sai"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Si el nivel de actividad no es correcto"
+     }
+    }
+   }
+  },
+  "nx.wrong.body": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Then the target is wrong with it, and the fix is to change it rather than to credit sessions one by one. After about two weeks of logged food and regular weigh-ins, the app can measure what you actually burn from your intake and what the scale did, and suggest a better number."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Thì mục tiêu sai theo, và cách sửa là sửa nó chứ không phải cộng bù từng buổi. Sau khoảng hai tuần có ghi ăn và cân đều, app có thể ĐO tiêu hao thật của bạn từ lượng ăn và biến động cân nặng, rồi đề xuất con số đúng hơn."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Entonces el objetivo también lo es, y la solución es cambiarlo, no sumar sesión por sesión. Tras unas dos semanas registrando comidas y pesándote con regularidad, la app puede medir lo que realmente gastas a partir de lo que comes y lo que marca la báscula, y sugerir un número mejor."
+     }
+    }
+   }
+  },
+  "nx.macros.term": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "The four macro tiles"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bốn ô macro"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Las cuatro casillas de macros"
+     }
+    }
+   }
+  },
+  "nx.macros.body": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Protein from body weight (2.0–2.4 g/kg depending on goal), fat at 25% of calories, carbohydrate as the remainder, and fibre at 14 g per 1,000 kcal — the IOM adequate intake. The first three always add up to exactly the calorie target, so filling every macro ring cannot put you over the calorie ring."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đạm tính theo cân nặng (2,0–2,4 g/kg tuỳ mục tiêu), béo 25% calo, tinh bột là phần còn lại, và chất xơ 14g cho mỗi 1.000 kcal theo khuyến nghị của IOM. Ba cái đầu luôn cộng lại đúng bằng mục tiêu calo — no đủ ba vòng macro thì không thể vượt vòng calo."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Proteína según el peso corporal (2,0–2,4 g/kg según el objetivo), grasa al 25% de las calorías, carbohidratos lo que queda y fibra a 14 g por cada 1.000 kcal (ingesta adecuada del IOM). Las tres primeras suman exactamente el objetivo de calorías, así que completar los macros no puede pasarte del anillo de calorías."
+     }
+    }
+   }
+  },
+  "nc.help": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Explain the calorie target"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Giải thích mục tiêu calo"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Explicar el objetivo de calorías"
+     }
+    }
+   }
+  },
+  "nc.nudge.text": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Trained today and the calories did not go up? Tap here."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tập xong mà số calo không tăng lên? Bấm vào đây."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "¿Entrenaste y las calorías no subieron? Toca aquí."
+     }
+    }
+   }
   }
  }
 }
