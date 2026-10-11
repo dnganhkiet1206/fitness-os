@@ -199,5 +199,7 @@ miễn **giữ nguyên ý định** của app và chỉ làm app tốt hơn — 
 | Cửa hàng — xem thử món | Danh sách thẻ; chạm thẻ (hoặc thao tác VoiceOver "Xem thử") để mặc thử / đổi skin, thẻ đang xem có viền màu độ hiếm; bấm Mặc cũng thành món đang xem | Trang lật `ShopPager`: món đang lật tới là món xem thử | tạm thời (chưa port trang lật) | không cần | #527 (`native/ios-rewrite`) | E |
 | Cửa hàng — linh vật trong phòng thử đồ | Luôn là Koa | Linh vật của người dùng (`useMascotIdentity`) | tạm thời (native chưa đọc danh tính linh vật ở cửa hàng) | không cần | #527 (`native/ios-rewrite`) | E |
 | Cửa hàng — đầu màn | Thanh tiêu đề thường nằm trên căn phòng | Tiêu đề trong suốt nổi trên trần phòng (`transparentHeader`) | tạm thời | không cần | #527 (`native/ios-rewrite`) | E |
+| Dinh dưỡng — khối Thực phẩm: chạm món mẫu chung | Chỉ món CỦA MÌNH mở trình sửa; món mẫu chung chỉ để xem | Mọi kết quả tìm mở `/food-editor?id=` — kể cả món mẫu chung người dùng không sửa được | sửa lỗi RN | RN / Android nên chỉ mở trình sửa cho món của mình | #527 (`native/ios-rewrite`) | A |
+| Dinh dưỡng — khối Thực phẩm: tìm không ra / tìm hỏng | "Không tìm thấy thực phẩm"; tìm hỏng nói ra; lượt tìm về muộn bị bỏ | Câu "Không tìm thấy bài tập" (`nNoExercisesFound`); tìm hỏng thì không hiện gì | sửa lỗi RN | RN / Android nên dùng câu của thực phẩm | #527 (`native/ios-rewrite`) | A |
 
 Thêm dòng mới ở cuối bảng; giữ dòng cũ — sổ là lịch sử, không phải danh sách việc.

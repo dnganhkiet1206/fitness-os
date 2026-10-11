@@ -429,6 +429,13 @@ final class AppServices {
     return FoodLibraryBook(userId: userId, source: SupabaseFoodLibrary(backend: backend))
   }
 
+  /// Ô tìm thực phẩm trên tab Dinh dưỡng (#527): chỉ đọc `food_items`.
+  func makeFoodSearch() -> FoodSearchBook? {
+    guard let backend else { return nil }
+    let source = SupabaseFoodLibrary(backend: backend)
+    return FoodSearchBook { text, limit in try await source.search(text, limit: limit) }
+  }
+
   /// Dinh dưỡng 7 ngày (#527 Phase 3 · 3.6): chỉ đọc `daily_logs`.
   /// Số dinh dưỡng hôm nay cho thẻ trên tab Dinh dưỡng (#527, `NutritionCard`).
   func makeNutritionToday(userId: String) -> NutritionTodayBook? {

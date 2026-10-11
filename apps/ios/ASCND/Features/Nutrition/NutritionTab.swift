@@ -6,9 +6,9 @@ import SwiftUI
 /// calo + macro hôm nay (`NutritionTodayCard`, như `NutritionCard` của RN),
 /// rồi thẻ Nước uống (`WaterWidget`), Thực phẩm bổ sung, nút ghi bữa, "Bữa ăn
 /// hôm nay" (cùng thẻ bữa với màn Nhật ký — `DayMealsSection`) với lối "Ngày
-/// khác", rồi thực phẩm / kế hoạch / xu hướng. Phần còn lại (hai phân đoạn Hôm
-/// nay / Kế hoạch ăn, tìm món, gợi ý AI) chưa port — dòng "đang dựng" nói thật
-/// điều đó thay vì một nút không làm gì.
+/// khác", khối Thực phẩm (tìm / Của tôi / Gần đây) và lối xu hướng; phân đoạn
+/// "Kế hoạch ăn". Phần còn lại (quét mã vạch, danh sách đi chợ, gợi ý AI) chưa
+/// port — dòng "đang dựng" nói thật điều đó thay vì một nút không làm gì.
 ///
 /// Sổ thuộc PHIÊN (`NutritionBooks`, dựng và đóng ở `SignedInScope`): thẻ, màn
 /// và kế hoạch nhắc nhở cùng đọc một bản.
@@ -22,6 +22,9 @@ struct NutritionTab: View {
   @State private var meals: MealDiaryBook?
   /// Kế hoạch ăn của phân đoạn thứ hai; dựng khi phân đoạn ấy mở lần đầu.
   @State private var plans: MealPlansBook?
+  /// Khối Thực phẩm của phân đoạn Hôm nay: thư viện (Của tôi / Gần đây) + ô tìm.
+  @State private var foods: FoodLibraryBook?
+  @State private var foodSearch: FoodSearchBook?
   /// Hai phân đoạn của RN: "Hôm nay" (mặc định) và "Kế hoạch ăn".
   @State private var segment: Segment = .today
 
@@ -69,7 +72,7 @@ struct NutritionTab: View {
         DiaryScreen(userId: route.userId)
       }
       .navigationDestination(for: FoodsRoute.self) { route in
-        FoodsScreen(userId: route.userId)
+        FoodsScreen(userId: route.userId, recent: route.recent)
       }
       .navigationDestination(for: InsightsRoute.self) { route in
         InsightsScreen(userId: route.userId)
@@ -88,6 +91,10 @@ struct NutritionTab: View {
         meals?.close()
         meals = services?.makeMealDiary(userId: userId)
         plans = nil
+        foods?.close()
+        foods = services?.makeFoodLibrary(userId: userId)
+        foodSearch?.close()
+        foodSearch = services?.makeFoodSearch()
       }
       if segment == .plan, plans == nil { plans = services?.makeMealPlans(userId: userId) }
     }
@@ -113,7 +120,9 @@ struct NutritionTab: View {
         mealsHeader(userId: userId)
         DayMealsSection(book: meals) { Task { await today?.load() } }
       }
-      FoodsRow(userId: userId)
+      if let foods, let foodSearch {
+        FoodsSection(userId: userId, library: foods, search: foodSearch)
+      }
       InsightsRow(userId: userId)
     }
   }
@@ -124,6 +133,7 @@ struct NutritionTab: View {
   private func reload() async {
     async let card: Void = loadToday()
     await meals?.load()
+    await foods?.load()
     await card
   }
 
@@ -165,43 +175,21 @@ struct DiaryRoute: Hashable {
 /// Đích điều hướng của hàng → màn Thực phẩm (của đúng người đang đăng nhập).
 struct FoodsRoute: Hashable {
   let userId: String
-}
-
-/// Hàng "Thực phẩm" — thư viện món của tôi + món gần đây.
-struct FoodsRow: View {
-  let userId: String
-
-  var body: some View {
-    NavigationLink(value: FoodsRoute(userId: userId)) {
-      HStack {
-        Label(String(localized: "foods.title"), systemImage: "carrot")
-          .font(DS.TextStyle.headline)
-          .foregroundStyle(DS.Color.foreground.swiftUI)
-          .lineLimit(1)
-        Spacer()
-        Image(systemName: "chevron.right")
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-          .accessibilityHidden(true)
-      }
-      .padding(DS.Spacing.md)
-      .frame(minHeight: 44)
-      .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.md))
-      .contentShape(Rectangle())
-    }
-    .buttonStyle(.plain)
-  }
+  /// Mở thẳng đoạn "Gần đây" ("Xem thêm" dưới Gần đây của tab).
+  var recent = false
 }
 
 /// Sổ thư viện thuộc MÀN: rời màn / đổi tài khoản thì đóng.
 struct FoodsScreen: View {
   let userId: String
+  var recent = false
   @Environment(AppServices.self) private var services
   @State private var book: FoodLibraryBook?
 
   var body: some View {
     Group {
       if let book {
-        FoodListView(book: book)
+        FoodListView(book: book, segment: recent ? .recent : .mine)
       } else {
         DSLoadingView()
       }

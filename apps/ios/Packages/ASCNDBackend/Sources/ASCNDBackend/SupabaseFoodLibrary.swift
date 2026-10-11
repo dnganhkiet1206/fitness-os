@@ -27,6 +27,18 @@ public struct SupabaseFoodLibrary: FoodLibrarySource {
       .execute().value
   }
 
+  /// Ô tìm của tab Dinh dưỡng (`nutrition_food_search`): món của người lẫn món
+  /// mẫu chung theo tên, yêu thích trước rồi theo tên.
+  public func search(_ text: String, limit: Int) async throws -> [JSONValue] {
+    try await client.from("food_items")
+      .select(FoodLibrary.columns)
+      .ilike("name", pattern: "%\(text)%")
+      .order("is_favorite", ascending: false)
+      .order("name")
+      .limit(limit)
+      .execute().value
+  }
+
   public func recentItems(userId: String, limit: Int) async throws -> [JSONValue] {
     try await SupabaseMealLog(client: client).recentItems(userId: userId, limit: limit)
   }

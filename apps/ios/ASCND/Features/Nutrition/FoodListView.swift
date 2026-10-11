@@ -17,12 +17,19 @@ import SwiftUI
 struct FoodListView: View {
   let book: FoodLibraryBook
   @Environment(AppServices.self) private var services
-  @State private var segment: Segment = .mine
+  @State private var segment: Segment
   @State private var query = ""
   @State private var editing: EditorRequest?
   @State private var message: String?
 
   enum Segment: Hashable { case mine, recent }
+
+  /// - Parameter segment: đoạn mở đầu — "Xem thêm" dưới "Gần đây" của tab Dinh
+  ///   dưỡng mở thẳng "Gần đây" (`food-list?tab=recent`).
+  init(book: FoodLibraryBook, segment: Segment = .mine) {
+    self.book = book
+    _segment = State(initialValue: segment)
+  }
 
   /// Mở form: `food == nil` là thêm mới.
   struct EditorRequest: Identifiable {
@@ -107,7 +114,7 @@ struct FoodListView: View {
       VStack(spacing: DS.Spacing.xs) {
         ForEach(shown) { f in
           Button { editing = EditorRequest(food: f) } label: {
-            row(name: f.name, brand: f.brand, kcal: f.kcal, p: f.protein, c: f.carbs, fat: f.fat, favorite: f.isFavorite) {
+            FoodRow(name: f.name, brand: f.brand, kcal: f.kcal, p: f.protein, c: f.carbs, fat: f.fat, favorite: f.isFavorite) {
               Image(systemName: "chevron.right")
                 .foregroundStyle(DS.Color.mutedForeground.swiftUI)
                 .accessibilityHidden(true)
@@ -128,7 +135,7 @@ struct FoodListView: View {
     } else {
       VStack(spacing: DS.Spacing.xs) {
         ForEach(shown) { r in
-          row(name: r.name, brand: nil, kcal: r.kcal, p: r.protein, c: r.carbs, fat: r.fat, favorite: false) {
+          FoodRow(name: r.name, brand: nil, kcal: r.kcal, p: r.protein, c: r.carbs, fat: r.fat, favorite: false) {
             // Ô cố định dù có nút hay không — cột kcal không xô lệch.
             Group {
               if !saved.contains(r.name.lowercased()) {
@@ -159,38 +166,6 @@ struct FoodListView: View {
       .foregroundStyle(DS.Color.mutedForeground.swiftUI)
       .frame(maxWidth: .infinity)
       .padding(.vertical, DS.Spacing.lg)
-  }
-
-  private func row<Trailing: View>(
-    name: String, brand: String?, kcal: Double, p: Double, c: Double, fat: Double, favorite: Bool,
-    @ViewBuilder trailing: () -> Trailing
-  ) -> some View {
-    HStack(spacing: DS.Spacing.sm) {
-      VStack(alignment: .leading, spacing: 2) {
-        HStack(spacing: 4) {
-          if favorite {
-            Image(systemName: "star.fill")
-              .font(.caption)
-              .foregroundStyle(DS.Color.primary.swiftUI)
-              .accessibilityLabel(Text(String(localized: "logMeal.a11y.favorite")))
-          }
-          Text(verbatim: name).font(DS.TextStyle.body).lineLimit(1)
-        }
-        let sub = DiaryView.macros(p, c, fat)
-        Text(verbatim: (brand?.isEmpty == false ? "\(brand!) · " : "") + sub)
-          .font(DS.TextStyle.caption.monospacedDigit())
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-          .lineLimit(1)
-      }
-      Spacer(minLength: 0)
-      Text(verbatim: "\(DiaryView.whole(kcal)) kcal")
-        .font(DS.TextStyle.footnote.monospacedDigit())
-      trailing()
-    }
-    .padding(.horizontal, DS.Spacing.md)
-    .frame(minHeight: 52)
-    .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.md))
-    .accessibilityElement(children: .combine)
   }
 
   private func saveRecent(_ r: MealLog.Food) async {
@@ -366,5 +341,47 @@ struct FoodEditorView: View {
     }
     message = text
     AccessibilityNotification.Announcement(text).post()
+  }
+}
+
+/// Một món trong danh sách: tên (sao khi yêu thích), thương hiệu · P/C/F, kcal,
+/// ô bên phải tuỳ chỗ dùng. Dùng ở màn Thực phẩm và khối Thực phẩm của tab.
+struct FoodRow<Trailing: View>: View {
+  let name: String
+  let brand: String?
+  let kcal: Double
+  let p: Double
+  let c: Double
+  let fat: Double
+  let favorite: Bool
+  @ViewBuilder let trailing: () -> Trailing
+
+  var body: some View {
+    HStack(spacing: DS.Spacing.sm) {
+      VStack(alignment: .leading, spacing: 2) {
+        HStack(spacing: 4) {
+          if favorite {
+            Image(systemName: "star.fill")
+              .font(.caption)
+              .foregroundStyle(DS.Color.primary.swiftUI)
+              .accessibilityLabel(Text(String(localized: "logMeal.a11y.favorite")))
+          }
+          Text(verbatim: name).font(DS.TextStyle.body).lineLimit(1)
+        }
+        let sub = DiaryView.macros(p, c, fat)
+        Text(verbatim: (brand?.isEmpty == false ? "\(brand!) · " : "") + sub)
+          .font(DS.TextStyle.caption.monospacedDigit())
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          .lineLimit(1)
+      }
+      Spacer(minLength: 0)
+      Text(verbatim: "\(DiaryView.whole(kcal)) kcal")
+        .font(DS.TextStyle.footnote.monospacedDigit())
+      trailing()
+    }
+    .padding(.horizontal, DS.Spacing.md)
+    .frame(minHeight: 52)
+    .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.md))
+    .accessibilityElement(children: .combine)
   }
 }
