@@ -38,7 +38,21 @@ struct StudioSceneTests {
     #expect(moons.count == 41)
     for m in moons {
       let phase = m["phase"]?.doubleValue ?? -1
-      #expect(StudioScene.moonPath(cx: 301, cy: 125, r: 11, phase: phase) == m["d"]?.stringValue, "\(phase)")
+      let got = StudioScene.moonPath(cx: 301, cy: 125, r: 11, phase: phase)
+      let want = m["d"]?.stringValue ?? ""
+      #expect(Self.samePath(got, want), "\(phase): \(got) ≠ \(want)")
+    }
+  }
+
+  /// Cùng lệnh, cùng cờ, số bằng nhau theo `close` — `cos` của libm và của V8
+  /// có thể lệch 1 ulp (pha 0,425: `rx` …017 vs …016), cùng sai số mà cây cảnh
+  /// đã dùng cho mọi thuộc tính số.
+  static func samePath(_ a: String, _ b: String) -> Bool {
+    let x = a.split(separator: " "), y = b.split(separator: " ")
+    guard x.count == y.count else { return false }
+    return zip(x, y).allSatisfy { p, q in
+      if let u = Double(p), let v = Double(q) { return KoaRenderGoldenTests.close(u, v) }
+      return p == q
     }
   }
 
