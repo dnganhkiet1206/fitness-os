@@ -704,6 +704,8 @@ public struct SupabaseCommunity: CommunityFeedRemote, CommunityProfileRemote, Co
     let p_minutes: Int?
     let p_art_id: String
 
+    enum CodingKeys: String, CodingKey { case p_session_id, p_caption, p_visibility, p_minutes, p_art_id }
+
     func encode(to encoder: any Encoder) throws {
       var c = encoder.container(keyedBy: CodingKeys.self)
       try c.encode(p_session_id, forKey: .p_session_id)
@@ -775,6 +777,10 @@ public struct SupabaseCommunity: CommunityFeedRemote, CommunityProfileRemote, Co
     let p_caption: String
     let p_visibility: String
     let p_art_id: String
+
+    enum CodingKeys: String, CodingKey {
+      case p_weeks, p_weight, p_waist, p_lift_exercise_id, p_caption, p_visibility, p_art_id
+    }
 
     func encode(to encoder: any Encoder) throws {
       var c = encoder.container(keyedBy: CodingKeys.self)
