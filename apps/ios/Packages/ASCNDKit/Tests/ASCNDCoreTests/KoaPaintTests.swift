@@ -97,6 +97,15 @@ struct KoaPaintTests {
     #expect(Self.close(tall[0], 0.5) && Self.close(tall[4], 0) && Self.close(tall[5], 150))
   }
 
+  @Test func fitIsMeet() {
+    // rig 240 × 350 trong khung 100 × 100: theo chiều cao, canh giữa ngang
+    let m = KoaPaint.fit(width: 100, height: 100, viewWidth: 240, viewHeight: 350)
+    #expect(Self.close(m[0], 100.0 / 350) && Self.close(m[4], (100 - 240 * 100.0 / 350) / 2) && Self.close(m[5], 0))
+    let w = KoaPaint.fit(width: 240, height: 400, viewWidth: 240, viewHeight: 350)
+    #expect(Self.close(w[0], 1) && Self.close(w[5], 25))
+    #expect(Self.close(KoaPaint.fit(width: 240, height: 400, viewWidth: 240, viewHeight: 350, bottom: true)[5], 50))
+  }
+
   static func shapes(_ ops: [KoaPaint.Op]) -> [KoaPaint.Shape] {
     ops.flatMap { op -> [KoaPaint.Shape] in
       switch op {

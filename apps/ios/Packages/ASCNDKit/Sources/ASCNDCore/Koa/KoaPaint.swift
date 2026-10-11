@@ -557,6 +557,16 @@ public enum KoaPaint {
     return root.kids.flatMap { ops($0, KoaMath.identity, Style(), defs) }
   }
 
+  /// `meet` cho một `viewBox` bất kỳ: tỉ lệ nhỏ hơn của hai chiều, canh giữa
+  /// ngang; dọc canh giữa (`xMidYMid`, mặc định của SVG) hoặc chạm đáy (`YMax`).
+  public static func fit(
+    width: Double, height: Double, viewWidth: Double, viewHeight: Double, bottom: Bool = false
+  ) -> Mat {
+    let s = min(width / viewWidth, height / viewHeight)
+    let dy = bottom ? height - viewHeight * s : (height - viewHeight * s) / 2
+    return [s, 0, 0, s, (width - viewWidth * s) / 2, dy]
+  }
+
   /// `preserveAspectRatio="xMidYMax meet"`: tỉ lệ và độ dời để `viewBox` vừa
   /// khung `width × height`, canh giữa ngang, chạm đáy.
   public static func viewport(width: Double, height: Double) -> Mat {

@@ -11,8 +11,8 @@ import SwiftUI
 /// kèm lối đọc Điều khoản (App Store 1.2); điền một lần khi hồ sơ về; lưu xong
 /// thì quay lại.
 ///
-/// Khác RN: linh vật hiện bằng emoji của nó (chưa có hình linh vật native); hồ
-/// sơ đọc hỏng là thẻ lỗi có thử lại (RN coi như chưa có hồ sơ và mời tạo mới).
+/// Linh vật vẽ thật (Koa K4 + V1). Khác RN: hồ sơ đọc hỏng là thẻ lỗi có thử
+/// lại (RN coi như chưa có hồ sơ và mời tạo mới).
 struct CommunityProfileScreen: View {
   let userId: String
   var onSaved: () -> Void = {}
@@ -223,17 +223,29 @@ struct CommunityProfileView: View {
   }
 }
 
-/// Linh vật làm ảnh đại diện: emoji của linh vật trong vòng tròn (RN vẽ hình
-/// linh vật — native chưa có bản vẽ).
+/// Linh vật làm ảnh đại diện (`CommunityAvatar` của RN): hình thật của linh vật
+/// người ấy chọn, cắt vào mặt trong vòng tròn.
 struct MascotAvatar: View {
   let mascotId: String?
   let size: CGFloat
 
+  /// `community-avatar.tsx`: hình phóng `ZOOM` × đường kính, đỉnh nhô `LIFT` ×
+  /// đường kính — phần lọt vào vòng là đầu và vai; đứng yên (một feed ba mươi
+  /// bài không chạy ba mươi vòng lặp).
+  static let zoom: CGFloat = 1.25
+  static let lift: CGFloat = 0.08
+
   var body: some View {
-    Text(verbatim: CommunityMascots.mascot(mascotId).emoji)
-      .font(.system(size: size * 0.55))
+    Circle()
+      .fill(DS.Color.secondary.swiftUI)
       .frame(width: size, height: size)
-      .background(DS.Color.secondary.swiftUI, in: Circle())
+      .overlay(alignment: .topLeading) {
+        MascotFigureView(
+          mascotId: CommunityMascots.mascot(mascotId).id, size: (size * Self.zoom).rounded(), animated: false
+        )
+        .offset(x: (size - size * Self.zoom) / 2, y: -size * Self.lift)
+      }
+      .clipShape(Circle())
       .accessibilityHidden(true)
   }
 }

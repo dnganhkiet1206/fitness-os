@@ -51,10 +51,13 @@ struct KoaFigureView: View {
   }
 }
 
-/// Linh vật theo cảm xúc (#527, K4) — `MascotFigure` của RN cho Koa: cảm xúc →
-/// biểu cảm / tư thế (`koaStateFor`), đồ đang mặc từ tủ đồ (`wornFrom`) với đồ
-/// của cảm xúc chồng lên; thử đồ thì luôn `happy` + `idle`.
+/// Linh vật theo cảm xúc (#527, K4 + V1) — `MascotFigure` của RN: Koa →
+/// `KoaFigureView` (cảm xúc → biểu cảm / tư thế qua `koaStateFor`, đồ trong tủ
+/// qua `wornFrom` với đồ của cảm xúc chồng lên; thử đồ thì luôn `happy` +
+/// `idle`); linh vật khác → `VectorMascotView` (khung đứng yên).
 struct MascotFigureView: View {
+  /// `mascot.id` (`koa`, `blaze`, `swift`, `titan`, `drago`, `nova`).
+  var mascotId = CommunityMascots.defaultId
   var emotion: KoaEmotion.Emotion = .idle
   /// Khoá `mascot_inventory` đang mặc, theo thứ tự hàng.
   var equipped: [String] = []
@@ -64,11 +67,40 @@ struct MascotFigureView: View {
   var paper: Bool?
 
   var body: some View {
-    let state = KoaEmotion.state(emotion)
-    KoaFigureView(
-      expression: dress ? .happy : state.expression, pose: dress ? .idle : state.pose, dress: dress,
-      worn: KoaEmotion.worn(equipped).merging(state.outfit) { _, new in new }, size: size, animated: animated,
-      paper: paper)
+    if mascotId == "koa" {
+      let state = KoaEmotion.state(emotion)
+      KoaFigureView(
+        expression: dress ? .happy : state.expression, pose: dress ? .idle : state.pose, dress: dress,
+        worn: KoaEmotion.worn(equipped).merging(state.outfit) { _, new in new }, size: size, animated: animated,
+        paper: paper)
+    } else {
+      VectorMascotView(id: mascotId, size: size, equipped: Set(equipped))
+    }
+  }
+}
+
+/// Linh vật vector (#527, V1) — `VectorMascot` của RN ở khung đứng yên: cây
+/// `VectorMascot.figure` → `KoaPaint` → `Canvas`. Thở / lắc / chớp mắt chưa
+/// port (avatar và lưới chọn của RN đều đứng yên).
+struct VectorMascotView: View {
+  let id: String
+  var size: CGFloat = 160
+  var mood: VectorMascot.Mood = .neutral
+  var level = 1
+  var equipped: Set<String> = []
+
+  var body: some View {
+    let tree = VectorMascot.figure(id: id, size: size, mood: mood, level: level, equipped: equipped)
+    let plan = KoaPaint.plan(tree)
+    Canvas { ctx, canvas in
+      var c = ctx
+      let fit = KoaPaint.fit(
+        width: canvas.width, height: canvas.height, viewWidth: VectorMascot.rigWidth, viewHeight: VectorMascot.rigHeight)
+      c.concatenate(KoaCanvas.affine(fit))
+      KoaCanvas.draw(plan, in: &c)
+    }
+    .frame(width: size, height: size * VectorMascot.rigHeight / VectorMascot.rigWidth)
+    .accessibilityHidden(true)
   }
 }
 

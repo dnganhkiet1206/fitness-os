@@ -22,8 +22,7 @@ import SwiftUI
 ///
 /// Lát 14: thẻ thử thách nổi bật ở đầu Khám phá + "Tất cả thử thách".
 ///
-/// Chưa có (các lát sau, #527): Thử workout, Thêm vào bữa. Ảnh đại diện là emoji của linh vật (chưa có hình linh
-/// vật native).
+/// Chưa có (các lát sau, #527): Thử workout, Thêm vào bữa. Ảnh đại diện là hình linh vật thật (`MascotAvatar`).
 struct CommunityTab: View {
   @Environment(WorkoutFlow.self) private var flow
   @Environment(AppServices.self) private var services
