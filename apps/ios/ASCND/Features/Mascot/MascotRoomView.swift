@@ -193,39 +193,58 @@ struct MascotRoomView: View {
 
   // MARK: - Năng lượng
 
+  /// `energyCard` của RN: vòng 104 (nét 10) mỗi đoạn một tín hiệu, giữa là
+  /// "3/5" + "HÔM NAY"; dưới là năm ô — nền xám, xong thì tô màu tín hiệu.
   private var energyCard: some View {
     DSCard {
       VStack(alignment: .leading, spacing: DS.Spacing.md) {
         HStack(spacing: DS.Spacing.md) {
           EnergyRing(segments: MascotRules.energySignals.map { (on: room.questDone($0), color: Self.signalColor($0)) })
-            .frame(width: 96, height: 96)
+            .frame(width: 104, height: 104)
             .overlay {
-              VStack(spacing: 0) {
-                Text(verbatim: "\(room.energyCount)/\(MascotRules.energySignals.count)")
-                  .font(DS.TextStyle.title2.monospacedDigit())
-                Text(String(localized: "mr.today")).font(DS.TextStyle.caption)
+              VStack(spacing: 3) {
+                (Text(verbatim: "\(room.energyCount)")
+                  .font(.system(size: 26, weight: .heavy).monospacedDigit())
+                  .foregroundStyle(DS.Color.foreground.swiftUI)
+                  + Text(verbatim: "/\(MascotRules.energySignals.count)")
+                  .font(DS.TextStyle.footnote.weight(.bold))
+                  .foregroundStyle(DS.Color.mutedForeground.swiftUI))
+                Text(String(localized: "mr.today"))
+                  .font(.system(size: 11, weight: .bold))
+                  .tracking(1.5)
+                  .textCase(.uppercase)
+                  .foregroundStyle(DS.Color.mutedForeground.swiftUI)
               }
             }
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(
               Text(String(localized: "mr.energy.a11y \(room.energyCount) \(MascotRules.energySignals.count)")))
-          VStack(alignment: .leading, spacing: DS.Spacing.xs) {
+          VStack(alignment: .leading, spacing: 4) {
             Text(String(localized: "mr.energy")).font(DS.TextStyle.headline)
             Text(Self.headline(room.energyHeadline))
               .font(DS.TextStyle.footnote)
               .foregroundStyle(DS.Color.mutedForeground.swiftUI)
           }
         }
-        HStack(spacing: DS.Spacing.xs) {
+        HStack(spacing: 6) {
           ForEach(MascotRules.energySignals, id: \.self) { q in
             let on = room.questDone(q)
-            VStack(spacing: 2) {
+            let color = Self.signalColor(q)
+            VStack(spacing: 4) {
               Image(systemName: Self.signalSymbol(q))
-                .foregroundStyle(on ? Self.signalColor(q) : DS.Color.mutedForeground.swiftUI)
-              Text(Self.signalName(q)).font(DS.TextStyle.caption)
+                .font(.system(size: 15))
+                .foregroundStyle(on ? color : DS.Color.mutedForeground.swiftUI)
+              Text(Self.signalName(q))
+                .font(DS.TextStyle.caption.weight(.semibold))
+                .foregroundStyle(on ? DS.Color.foreground.swiftUI : DS.Color.mutedForeground.swiftUI)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
             }
+            .padding(.vertical, DS.Spacing.sm)
             .frame(maxWidth: .infinity, minHeight: 44)
-            .background(on ? Self.signalColor(q).opacity(0.12) : .clear, in: RoundedRectangle(cornerRadius: DS.Radius.sm))
+            .background(on ? color.opacity(0.12) : DS.Color.secondary.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.md))
+            .overlay(
+              RoundedRectangle(cornerRadius: DS.Radius.md).stroke(on ? color.opacity(0.4) : .clear, lineWidth: 1))
             .accessibilityElement(children: .combine)
             .accessibilityValue(Text(Self.signalState(on)))
           }
@@ -236,27 +255,59 @@ struct MascotRoomView: View {
 
   // MARK: - Cấp, hạng
 
+  /// `levelCard` của RN: huy hiệu sao + số cấp tô màu hạng; tên hạng đậm màu
+  /// hạng cạnh "Cấp N"; thanh 6 điểm màu hạng trên rãnh xám; còn bao nhiêu XP.
   private var levelCard: some View {
-    DSCard {
-      VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-        HStack {
-          VStack(alignment: .leading, spacing: 2) {
-            Text(verbatim: room.rank.name(lang)).font(DS.TextStyle.headline).foregroundStyle(Color(hex: room.rank.colorHex))
-            Text(String(localized: "mr.level \(room.level)")).font(DS.TextStyle.footnote)
-          }
-          Spacer()
-          if room.streak.count >= 2 {
-            Label(streakText(room.streak.count), systemImage: "flame.fill")
-              .font(DS.TextStyle.caption.weight(.semibold))
-              .foregroundStyle(DS.Color.metricOrange.swiftUI)
-          }
+    let rankColor = Color(hex: room.rank.colorHex)
+    return DSCard {
+      HStack(spacing: DS.Spacing.md) {
+        VStack(spacing: 1) {
+          Image(systemName: "star").font(.system(size: 18, weight: .semibold))
+          Text(verbatim: "\(room.level)").font(.system(size: 11, weight: .heavy).monospacedDigit())
         }
-        ProgressView(value: Double(room.intoLevel), total: Double(MascotRules.levelXp))
-          .tint(Color(hex: room.rank.colorHex))
+        .foregroundStyle(rankColor)
+        .frame(width: 46, height: 46)
+        .background(rankColor.opacity(0.13), in: RoundedRectangle(cornerRadius: 14))
+        .overlay(RoundedRectangle(cornerRadius: 14).stroke(rankColor.opacity(0.33), lineWidth: 1))
+        .accessibilityHidden(true)
+        VStack(alignment: .leading, spacing: 6) {
+          HStack(alignment: .firstTextBaseline) {
+            HStack(alignment: .firstTextBaseline, spacing: DS.Spacing.sm) {
+              Text(verbatim: room.rank.name(lang))
+                .font(DS.TextStyle.headline.weight(.heavy))
+                .foregroundStyle(rankColor)
+              Text(String(localized: "mr.level \(room.level)"))
+                .font(DS.TextStyle.caption.weight(.semibold))
+                .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            }
+            Spacer(minLength: 0)
+            if room.streak.count >= 2 {
+              HStack(spacing: 4) {
+                Image(systemName: "flame.fill").font(.system(size: 11))
+                Text(streakText(room.streak.count))
+              }
+              .font(DS.TextStyle.caption.weight(.bold))
+              .foregroundStyle(DS.Color.metricOrange.swiftUI)
+              .padding(.horizontal, DS.Spacing.sm)
+              .frame(height: 22)
+              .background(DS.Color.metricOrange.swiftUI.opacity(0.12), in: Capsule())
+            }
+          }
+          GeometryReader { g in
+            let pct = Double(room.intoLevel) / Double(MascotRules.levelXp)
+            ZStack(alignment: .leading) {
+              Capsule().fill(DS.Color.secondary.swiftUI)
+              Capsule().fill(rankColor).frame(width: g.size.width * min(1, max(0, pct)))
+            }
+          }
+          .frame(height: 6)
+          .accessibilityElement()
           .accessibilityLabel(Text(String(localized: "mr.level \(room.level)")))
-        Text(String(localized: "mr.levelHint \(MascotRules.levelXp - room.intoLevel)"))
-          .font(DS.TextStyle.caption)
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          .accessibilityValue(Text(verbatim: "\(Int((Double(room.intoLevel) / Double(MascotRules.levelXp) * 100).rounded()))%"))
+          Text(String(localized: "mr.levelHint \(MascotRules.levelXp - room.intoLevel)"))
+            .font(DS.TextStyle.caption)
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        }
       }
     }
   }
@@ -265,10 +316,15 @@ struct MascotRoomView: View {
 
   private var freezeCard: some View {
     DSCard {
-      VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-        HStack {
-          Image(systemName: "snowflake").foregroundStyle(DS.Color.metricBlue.swiftUI).accessibilityHidden(true)
-          VStack(alignment: .leading, spacing: 2) {
+      VStack(alignment: .leading, spacing: DS.Spacing.xs) {
+        HStack(spacing: DS.Spacing.sm) {
+          Image(systemName: "snowflake")
+            .font(.system(size: 17, weight: .semibold))
+            .foregroundStyle(DS.Color.metricBlue.swiftUI)
+            .frame(width: 36, height: 36)
+            .background(DS.Color.metricBlue.swiftUI.opacity(0.12), in: RoundedRectangle(cornerRadius: DS.Radius.sm))
+            .accessibilityHidden(true)
+          VStack(alignment: .leading, spacing: 0) {
             Text(String(localized: "mr.freeze.title")).font(DS.TextStyle.headline)
             Text(String(localized: "mr.freeze.held \(room.freezesHeld) \(MascotRules.freezeMax)"))
               .font(DS.TextStyle.caption)
@@ -286,19 +342,29 @@ struct MascotRoomView: View {
               Text(String(localized: "mr.freeze.buy \(MascotRules.freezePrice)"))
             }
           }
-          .buttonStyle(.bordered)
+          // `freezeBuy`: viên chữ đậm nhỏ, nền trắng 8% (trên thẻ sáng gần như
+          // chỉ còn chữ, như RN); không mua được thì mờ 45%
+          .buttonStyle(.plain)
+          .font(DS.TextStyle.caption.weight(.bold))
+          .foregroundStyle(DS.Color.foreground.swiftUI)
+          .padding(.horizontal, DS.Spacing.md)
+          .frame(minHeight: 36)
+          .background(Color.white.opacity(0.08), in: Capsule())
+          .opacity(room.canBuyFreeze || room.buyingFreeze ? 1 : 0.45)
           .frame(minHeight: 44)
+          .contentShape(Rectangle())
           .disabled(!room.canBuyFreeze)
         }
         Text(String(localized: "mr.freeze.hint"))
-          .font(DS.TextStyle.footnote)
+          .font(DS.TextStyle.caption)
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
         if room.freezesUsed > 0 {
           Text(
             room.freezesUsed == 1
               ? String(localized: "mr.freeze.saved.one") : String(localized: "mr.freeze.saved.other \(room.freezesUsed)")
           )
-          .font(DS.TextStyle.caption)
+          .font(DS.TextStyle.caption.weight(.semibold))
+          .foregroundStyle(DS.Color.metricBlue.swiftUI)
         }
       }
     }
@@ -684,14 +750,12 @@ struct MascotStage: View {
   private static let heroWidth = 138.0
 
   var body: some View {
-    VStack(spacing: DS.Spacing.xs) {
-      StudioBackdrop(options: studio)
-        .overlay { GeometryReader { g in hero(g.size.width) } }
-        .overlay { StageFade() }
-        .aspectRatio(StudioScene.width / StudioScene.sceneBottom, contentMode: .fit)
-      Text(String(localized: "mr.level \(level)")).font(DS.TextStyle.caption.weight(.semibold))
-    }
-    .frame(maxWidth: .infinity)
+    // không có dòng "Cấp N" dưới sân khấu (RN cũng không) — thẻ cấp ngay dưới nói rồi
+    StudioBackdrop(options: studio)
+      .overlay { GeometryReader { g in hero(g.size.width) } }
+      .overlay { StageFade() }
+      .aspectRatio(StudioScene.width / StudioScene.sceneBottom, contentMode: .fit)
+      .frame(maxWidth: .infinity)
     .accessibilityElement(children: .ignore)
     .accessibilityLabel(Text(String(localized: "mr.stage.a11y \(level)")))
   }
