@@ -179,7 +179,7 @@ struct TodayExtras<Plan: View>: View {
     }
   }
 
-  static let waterStepMl = 250
+  static var waterStepMl: Int { 250 }
 
   private func addWater() async {
     guard let water else { return }
