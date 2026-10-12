@@ -47,6 +47,7 @@ struct ExerciseInsightView: View {
   var body: some View {
     content
       .navigationTitle(Text("xi.title"))
+      .ascndPage()
       .refreshable { await insights.refresh() }
       .task { if !insights.loaded { await insights.load() } }
   }

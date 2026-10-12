@@ -92,6 +92,7 @@ struct ReadinessExplainerSheet: View {
         .padding(DS.Spacing.md)
       }
       .navigationTitle(String(localized: "rd.title"))
+      .ascndPage()
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {

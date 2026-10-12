@@ -60,6 +60,7 @@ struct CommunityProfileView: View {
   var body: some View {
     content
       .navigationTitle(book.existing == nil ? Text("community.profile.title") : Text("community.profile.edit"))
+      .ascndPage()
       .navigationBarTitleDisplayMode(.inline)
       .task { if book.phase == .loading { await book.load() } }
       .onChange(of: book.phase, initial: true) { _, phase in fill(phase) }

@@ -40,6 +40,7 @@ struct NutritionExplainerSheet: View {
         .padding(DS.Spacing.md)
       }
       .navigationTitle(String(localized: "nc.seg.today"))
+      .ascndPage()
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {

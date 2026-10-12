@@ -50,6 +50,7 @@ struct ManualLogView: View {
         }
       }
       .navigationTitle(Text("manualLog.title"))
+      .ascndPage()
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {

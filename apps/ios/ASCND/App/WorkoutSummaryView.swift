@@ -160,6 +160,7 @@ public struct WorkoutSummaryView: View {
       .padding(DS.Spacing.md)
     }
     .navigationTitle(Text(summary.templateName))
+    .ascndPage()
   }
 
   private func setLabel(_ s: SummarySet) -> String {

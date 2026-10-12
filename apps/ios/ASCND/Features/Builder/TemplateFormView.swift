@@ -44,6 +44,7 @@ struct TemplateFormView: View {
         if step == 1 { pickStep } else { reviewStep }
       }
       .navigationTitle(Text("wb.title"))
+      .ascndPage()
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {

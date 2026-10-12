@@ -71,6 +71,7 @@ struct WorkoutsTab: View {
           // builder, lịch sử, thư viện bài tập, tiến bộ từng bài.
           WorkoutsHomeView(flow: flow)
           .navigationTitle(Text("tab.workouts"))
+          .ascndPage()
           .toolbar {
             if let openHistory {
               ToolbarItem(placement: .topBarTrailing) {

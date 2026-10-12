@@ -31,6 +31,7 @@ struct NutritionInsightsView: View {
       .padding(DS.Spacing.md)
     }
     .navigationTitle(String(localized: "insights.title"))
+    .ascndPage()
     .navigationBarTitleDisplayMode(.inline)
     .refreshable { await book.load() }
     .task { await book.load() }

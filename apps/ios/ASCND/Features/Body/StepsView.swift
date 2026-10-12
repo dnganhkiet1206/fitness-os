@@ -36,6 +36,7 @@ struct StepsView: View {
       .padding(DS.Spacing.md)
     }
     .navigationTitle(Text("steps.title"))
+    .ascndPage()
     .task { if case .loading = book.phase { await book.load() } }
     .refreshable { await book.load() }
     .sensoryFeedback(.selection, trigger: book.goal)

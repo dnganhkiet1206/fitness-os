@@ -61,6 +61,7 @@ struct SupplementsView: View {
   var body: some View {
     content
       .navigationTitle(String(localized: "supplements.title"))
+      .ascndPage()
       .toolbar {
         ToolbarItem(placement: .primaryAction) {
           Button {

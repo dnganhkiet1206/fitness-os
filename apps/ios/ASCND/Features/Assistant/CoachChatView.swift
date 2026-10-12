@@ -40,6 +40,7 @@ struct CoachChatView: View {
     }
     .safeAreaInset(edge: .bottom) { composer }
     .navigationTitle(Text("coach.title"))
+    .ascndPage()
     .navigationBarTitleDisplayMode(.inline)
     .toolbar {
       ToolbarItem(placement: .topBarTrailing) {
@@ -320,6 +321,7 @@ private struct CoachHistorySheet: View {
     NavigationStack {
       content
         .navigationTitle(Text("coach.history"))
+        .ascndPage()
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
           ToolbarItem(placement: .cancellationAction) {

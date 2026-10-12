@@ -42,6 +42,7 @@ public struct WorkoutHistoryView: View {
   public var body: some View {
     content
       .navigationTitle(String(localized: "history.title"))
+      .ascndPage()
       .task { if !book.loaded { await book.load() } }
       .refreshable { await book.refresh() }
       .confirmationDialog(

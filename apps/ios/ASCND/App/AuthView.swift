@@ -189,6 +189,7 @@ struct AuthView: View {
         .padding(DS.Spacing.md)
       }
       .navigationTitle(Text(String(localized: "auth.title")))
+      .ascndPage()
       .navigationBarTitleDisplayMode(.inline)
     }
   }

@@ -53,6 +53,7 @@ struct EditProfileView: View {
       }
       .scrollDismissesKeyboard(.interactively)
       .navigationTitle(Text(String(localized: "ep.title")))
+      .ascndPage()
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {

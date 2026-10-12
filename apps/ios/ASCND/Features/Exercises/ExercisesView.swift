@@ -49,6 +49,7 @@ struct ExercisesView: View {
   var body: some View {
     content
       .navigationTitle(Text("ex.title"))
+      .ascndPage()
       .searchable(text: $search, prompt: Text("ex.search"))
       .toolbar {
         ToolbarItem(placement: .primaryAction) {
@@ -235,6 +236,7 @@ struct AddExerciseSheet: View {
         }
       }
       .navigationTitle(Text("ex.add.title"))
+      .ascndPage()
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {

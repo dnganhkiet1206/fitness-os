@@ -86,6 +86,7 @@ struct AssistantTab: View {
         await loadInsight()
       }
       .navigationTitle(Text("tab.assistant"))
+      .ascndPage()
       .navigationBarTitleDisplayMode(.inline)
       .navigationDestination(for: AssistantRoute.self) { route in
         switch route {

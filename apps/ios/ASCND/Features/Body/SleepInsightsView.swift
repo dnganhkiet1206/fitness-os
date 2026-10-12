@@ -48,6 +48,7 @@ struct SleepInsightsView: View {
       .padding(DS.Spacing.md)
     }
     .navigationTitle(Text("sleep.title"))
+    .ascndPage()
     .task { if case .loading = book.phase { await book.load() } }
     .refreshable { await book.load() }
     .sensoryFeedback(trigger: outcome) { _, new in

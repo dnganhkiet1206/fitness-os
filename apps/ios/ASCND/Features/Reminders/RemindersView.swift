@@ -87,6 +87,7 @@ struct RemindersView: View {
       }
     }
     .navigationTitle(Text(String(localized: "reminders.title")))
+    .ascndPage()
     .sensoryFeedback(.selection, trigger: center.prefs)
     .task { await load() }
     .refreshable { await load() }

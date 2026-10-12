@@ -60,6 +60,7 @@ struct WeekPlanView: View {
       suggestionsSection
     }
     .navigationTitle(Text("wp.title"))
+    .ascndPage()
     .refreshable { await flow.refresh() }
     .sheet(item: $picking) { target in
       DayPicker(flow: flow, day: target.day, failed: $failed) { building = target }
@@ -329,6 +330,7 @@ private struct DayPicker: View {
         }
       }
       .navigationTitle(Text("wp.chooseWorkout"))
+      .ascndPage()
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {

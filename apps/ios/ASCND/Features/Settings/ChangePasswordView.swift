@@ -99,6 +99,7 @@ struct ChangePasswordView: View {
       }
     }
     .navigationTitle(Text(String(localized: "settings.changePassword")))
+    .ascndPage()
     .navigationBarTitleDisplayMode(.inline)
     .onChange(of: controller.failure) { _, failure in
       if let failure {

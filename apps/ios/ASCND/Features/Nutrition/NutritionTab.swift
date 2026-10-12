@@ -62,6 +62,7 @@ struct NutritionTab: View {
       // đổi tab — số của hôm nay đổi ở những màn ấy.
       .onAppear { Task { await reload() } }
       .navigationTitle(Text("tab.nutrition"))
+      .ascndPage()
       .navigationDestination(for: WaterRoute.self) { _ in
         if let water = books?.water { WaterView(book: water) }
       }

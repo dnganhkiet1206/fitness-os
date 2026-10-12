@@ -105,6 +105,7 @@ public struct WorkoutView: View {
         }
       }
       .navigationTitle(controller.plan.templateName)
+      .ascndPage()
       .navigationBarTitleDisplayMode(.large)
       // Một thanh "Xong" trên bàn phím cho cả màn — gắn trên từng ô reps thì
       // mỗi hàng góp một nút.

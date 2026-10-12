@@ -228,6 +228,7 @@ public struct SettingsView: View {
         }
       }
       .navigationTitle(Text("settings.title"))
+      .ascndPage()
       .sheet(isPresented: $editingProfile) {
         if let profileBook { EditProfileView(book: profileBook) }
       }

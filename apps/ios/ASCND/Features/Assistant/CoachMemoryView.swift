@@ -29,6 +29,7 @@ struct CoachMemoryView: View {
       .padding(DS.Spacing.md)
     }
     .navigationTitle(Text("cm.title"))
+    .ascndPage()
     .task { await book.load() }
     .refreshable { await book.load() }
     .sensoryFeedback(.error, trigger: book.forgetFailed) { _, failed in failed }

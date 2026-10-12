@@ -68,6 +68,7 @@ struct ProgressPhotosView: View {
       .padding(DS.Spacing.md)
     }
     .navigationTitle(Text("photos.title"))
+    .ascndPage()
     .toolbar {
       if !book.photos.isEmpty {
         ToolbarItem(placement: .topBarTrailing) {
@@ -266,6 +267,7 @@ private struct AddProgressPhotoSheet: View {
         }
       }
       .navigationTitle(Text("photos.add"))
+      .ascndPage()
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) { Button("common.cancel") { dismiss() } }
@@ -380,6 +382,7 @@ private struct CompareSheet: View {
         .padding(DS.Spacing.md)
       }
       .navigationTitle(Text("photos.compare"))
+      .ascndPage()
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) { Button("photos.close") { dismiss() } }

@@ -27,6 +27,7 @@ struct TemplateListView: View {
   var body: some View {
     content
       .navigationTitle(Text("wb.list.title"))
+      .ascndPage()
       .safeAreaInset(edge: .bottom) {
         DSButton(String(localized: "wb.createNew"), style: .primary) { showsBuilder = true }
           .disabled(flow.plan == nil)

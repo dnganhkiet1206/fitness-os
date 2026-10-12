@@ -36,6 +36,7 @@ struct MeasurementsView: View {
       .padding(DS.Spacing.md)
     }
     .navigationTitle(Text("measure.title"))
+    .ascndPage()
     .task { if case .loading = book.phase { await book.load() } }
     .refreshable { await book.load() }
   }

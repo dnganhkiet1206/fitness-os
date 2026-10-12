@@ -27,6 +27,7 @@ struct BiometricsView: View {
   var body: some View {
     content
       .navigationTitle(String(localized: "bio.title"))
+      .ascndPage()
       .task { if case .loading = book.phase { await book.load() } }
       .refreshable { await book.load() }
       .confirmationDialog(

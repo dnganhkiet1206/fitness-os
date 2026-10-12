@@ -31,6 +31,7 @@ struct SessionDetailView: View {
   var body: some View {
     content
       .navigationTitle(Text(title))
+      .ascndPage()
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         if case .ready = book.detail(id) {
