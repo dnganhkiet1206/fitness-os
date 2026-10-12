@@ -4,90 +4,48 @@ import SwiftUI
 
 // Chất liệu và chuyển động của tab Hôm nay (#527).
 //
-// Một ý duy nhất, như nền ảnh bìa nhoè của Apple Music: sau mọi thẻ là MỘT
-// trường màu sống dựng từ năm màu tín hiệu, và mọi thẻ là kính thật làm nhoè
-// nó. Trường màu có nghĩa — tín hiệu nào xong thì vũng màu của nó đậm lên, nên
-// một ngày càng đầy thì căn phòng càng nhiều màu. Kính là của hệ thống
-// (`glassEffect` iOS 26, material ở máy cũ), không tự vẽ.
+// Tối giản: sau mọi thẻ chỉ có MỘT vầng sáng rất nhạt ở đầu trang, mang màu
+// của việc kế tiếp (cùng màu nút trong bong bóng Koa) — đủ để kính có thứ làm
+// nhoè, không thành bảng màu. Xong hết việc thì vầng sáng tắt về nền giấy.
+// Kính là của hệ thống (`glassEffect` iOS 26, material ở máy cũ), không tự vẽ.
 //
-// Trợ năng: Reduce Transparency → nền đặc, không trường màu; Reduce Motion →
-// trường màu đứng yên, chuyển cảnh chỉ còn mờ dần.
+// Trợ năng: Reduce Transparency → nền đặc, không vầng sáng; Reduce Motion →
+// đổi màu tức thì thay vì chuyển dần.
 
-/// Trường màu phía sau trang. `done`: tín hiệu đã xong (đậm hơn).
+/// Vầng sáng sau trang. `accent`: màu việc kế tiếp; `nil` = chỉ nền.
 struct TodayAmbient: View {
-  let done: Set<MascotRules.Quest>
+  let accent: MascotRules.Quest?
 
   @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Environment(\.colorScheme) private var scheme
 
   var body: some View {
-    ZStack {
+    ZStack(alignment: .top) {
       DS.Color.background.swiftUI
-      if !reduceTransparency {
-        if reduceMotion {
-          field(t: 0)
-        } else {
-          TimelineView(.animation(minimumInterval: 1.0 / 20)) { ctx in
-            field(t: ctx.date.timeIntervalSinceReferenceDate)
-          }
+      if !reduceTransparency, let accent {
+        GeometryReader { geo in
+          Ellipse()
+            .fill(MascotRoomView.signalColor(accent).opacity(scheme == .dark ? 0.22 : 0.16))
+            .frame(width: geo.size.width * 1.3, height: geo.size.height * 0.55)
+            .position(x: geo.size.width * 0.5, y: geo.size.height * 0.08)
+            .blur(radius: 90)
         }
+        .transition(.opacity)
       }
     }
     .ignoresSafeArea()
-    .animation(.smooth(duration: 1.2), value: done)
+    .animation(reduceMotion ? nil : .smooth(duration: 1.0), value: accent)
     .accessibilityHidden(true)
-  }
-
-  /// Lưới 3×3: hàng giữa trôi rất chậm (chu kỳ ~20–30 s) — đủ để kính "sống",
-  /// không đủ để mắt bám theo.
-  private func field(t: Double) -> some View {
-    let s = { (k: Double, a: Double) in Float(0.5 + a * sin(t / k)) }
-    let points: [SIMD2<Float>] = [
-      [0, 0], [s(23, 0.12), 0], [1, 0],
-      [0, s(29, 0.1)], [s(19, 0.14), s(27, 0.12)], [1, s(31, 0.1)],
-      [0, 1], [s(25, 0.12), 1], [1, 1],
-    ]
-    return MeshGradient(width: 3, height: 3, points: points, colors: colors)
-      .blur(radius: 30)
-  }
-
-  /// Chín màu: năm màu tín hiệu ở nửa trên (nơi khối ngày nằm), tâm và giữa
-  /// đáy là nền để chữ dễ đọc, hai góc dưới vọng lại nước / ngủ ở nửa độ đậm.
-  /// Tín hiệu xong ≈ 50 %, chưa xong ≈ 20 % (tối: ×0,75).
-  private var colors: [Color] {
-    let base = DS.Color.background.swiftUI
-    let k = scheme == .dark ? 0.75 : 1.0
-    func hue(_ q: MascotRules.Quest, _ w: Double = 1) -> Color {
-      MascotRoomView.signalColor(q).opacity((done.contains(q) ? 0.5 : 0.2) * k * w)
-    }
-    return [
-      hue(.sleep), hue(.meal), hue(.water),
-      hue(.workout, 0.8), base, hue(.steps, 0.8),
-      hue(.water, 0.5), base, hue(.sleep, 0.5),
-    ].map { blend($0, over: base) }
-  }
-
-  private func blend(_ c: Color, over base: Color) -> Color {
-    // MeshGradient nội suy theo kênh; trộn sẵn lên nền để không lộ vệt xám.
-    Color(uiColor: UIColor { traits in
-      let b = UIColor(base).resolvedColor(with: traits)
-      let f = UIColor(c).resolvedColor(with: traits)
-      var (br, bg, bb, ba): (CGFloat, CGFloat, CGFloat, CGFloat) = (0, 0, 0, 0)
-      var (fr, fg, fb, fa): (CGFloat, CGFloat, CGFloat, CGFloat) = (0, 0, 0, 0)
-      b.getRed(&br, green: &bg, blue: &bb, alpha: &ba)
-      f.getRed(&fr, green: &fg, blue: &fb, alpha: &fa)
-      return UIColor(red: br + (fr - br) * fa, green: bg + (fg - bg) * fa, blue: bb + (fb - bb) * fa, alpha: 1)
-    })
   }
 }
 
-/// Tín hiệu đã xong, từ `TodayExtras` lên `TodayView` (trường màu nằm sau
-/// cả ScrollView, đứng yên khi cuộn).
-struct TodayDonePreference: PreferenceKey {
-  static let defaultValue: Set<MascotRules.Quest> = []
-  static func reduce(value: inout Set<MascotRules.Quest>, nextValue: () -> Set<MascotRules.Quest>) {
-    value.formUnion(nextValue())
+/// Việc kế tiếp, từ `TodayExtras` lên `TodayView` (vầng sáng nằm sau cả
+/// ScrollView, đứng yên khi cuộn).
+struct TodayAccentPreference: PreferenceKey {
+  static let defaultValue: MascotRules.Quest? = nil
+  static func reduce(value: inout MascotRules.Quest?, nextValue: () -> MascotRules.Quest?) {
+    value = value ?? nextValue()
   }
 }
 

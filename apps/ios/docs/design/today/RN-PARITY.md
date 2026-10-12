@@ -92,11 +92,11 @@ None of this exists in RN. RN draws `GlassCard` as an opaque white card, and its
 Everything below lives in `TodayGlass.swift`.
 
 **Material**
-- **Ambient field (`TodayAmbient`).** One `MeshGradient` sits behind the whole page, made from the five signal hues.
-  - Its job is the one Apple Music's blurred album art does: give the glass something to refract.
-  - It carries meaning: a signal that is done is about 50 % strong, an open one about 20 %, so the room fills with colour as the day fills.
-  - It drifts very slowly (20 fps timeline, 20–30 s periods).
-  - Reduce Motion: it stands still. Reduce Transparency: no field, plain background.
+- **Ambient glow (`TodayAmbient`).** One very soft glow sits at the top of the page, behind everything, in the colour of Koa's next thing (the same colour as the bubble's action pill).
+  - It gives the glass something to blur without turning into a palette.
+  - When nothing is due, it fades back to plain paper.
+  - Reduce Transparency: no glow. Reduce Motion: the colour changes instantly.
+  - The first version used a five-hue mesh; the owner found it too colourful on 2026-10-12 and asked for minimal and clean.
 - **Cards (`todayCard`).** System glass (`glassEffect` on iOS 26, `.regularMaterial` before that), continuous corners, a 0.75 pt top-lit hairline, and a soft offset shadow.
   - Reduce Transparency: a solid card with a plain border.
   - There is no hand-drawn blur.
@@ -113,4 +113,4 @@ Everything below lives in `TodayGlass.swift`.
 - **Entrance.** First appearance only: opacity, a 6 pt blur and a 14 pt rise. Delays are staggered 50 ms per section and capped at 200 ms.
 - **Reduce Motion.** Every spring becomes a 0.2 s ease and the entrance is opacity only. The system turns the zoom into a fade.
 
-Checked on the Limrun simulator (iOS 26.4, light): material, entrance, water tap (tube rise and Koa line change), and the zoom into the buddy room. **Not checked:** dark mode, Reduce Transparency, Reduce Motion, frame rate on a real device.
+Checked on the Limrun simulator (iOS 26.4, light): material, glow, entrance, water tap (tube rise and Koa line change), and the zoom into the buddy room. **Not checked:** dark mode, Reduce Transparency, Reduce Motion, frame rate on a real device.

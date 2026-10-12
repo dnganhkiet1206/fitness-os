@@ -68,7 +68,7 @@ struct TodayExtras<Plan: View>: View {
           room: mascot, localWaterMl: water?.loaded == true ? water?.totalMl : nil,
           onAct: act, onOpenRoom: { roomSource = "koa"; showsRoom = true }, zoom: zoom)
           .todayEntrance(1)
-          .preference(key: TodayDonePreference.self, value: doneSignals(mascot))
+          .preference(key: TodayAccentPreference.self, value: nextSignal(mascot))
           // Rung NGAY lúc chạm nước (RN `Haptics.light()` trong `onPress`).
           .sensoryFeedback(.impact(weight: .light), trigger: waterTaps)
         if let waterNote {
@@ -307,10 +307,11 @@ struct TodayExtras<Plan: View>: View {
     return rows
   }
 
-  /// Tín hiệu đã xong — trường màu phía sau trang đậm lên theo chúng.
-  private func doneSignals(_ room: MascotRoomController) -> Set<MascotRules.Quest> {
+  /// Việc kế tiếp của Koa (cùng `MascotLine` với khối ngày) — màu vầng sáng.
+  private func nextSignal(_ room: MascotRoomController) -> MascotRules.Quest? {
     let s = TodayDay.merging(room.signals, localWaterMl: water?.loaded == true ? water?.totalMl : nil)
-    return Set(TodayDay.order.filter { s?.done($0, stepsGoal: room.stepsGoal) ?? false })
+    let hour = Calendar.current.component(.hour, from: .now)
+    return MascotLine.line(TodayDay.mascotDay(s, hour: hour)).gap.map(TodayDay.quest)
   }
 
   /// "+8%" / "−12%" so với tuần thói quen; chưa có ACWR → "—".

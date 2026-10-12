@@ -22,8 +22,8 @@ public struct TodayView: View {
   /// Người của phiên: có thì hiện các thẻ dưới nút chính (sẵn sàng, Apple
   /// Health, phòng linh vật — `TodayExtras`, #527). `nil` (preview) thì không.
   var extrasUserId: String?
-  /// Tín hiệu đã xong (từ `TodayExtras`) cho trường màu phía sau trang.
-  @State private var doneSignals: Set<MascotRules.Quest> = []
+  /// Việc kế tiếp (từ `TodayExtras`) — màu vầng sáng phía sau trang.
+  @State private var accent: MascotRules.Quest?
 
   public init(
     state: TodayDisplay,
@@ -59,8 +59,8 @@ public struct TodayView: View {
           .padding(.bottom, DS.Spacing.lg)
         }
         .scrollContentBackground(.hidden)
-        .background { TodayAmbient(done: doneSignals) }
-        .onPreferenceChange(TodayDonePreference.self) { doneSignals = $0 }
+        .background { TodayAmbient(accent: accent) }
+        .onPreferenceChange(TodayAccentPreference.self) { accent = $0 }
         .toolbar(.hidden, for: .navigationBar)
       } else {
         ScrollView {
