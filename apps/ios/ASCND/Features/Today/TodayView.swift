@@ -47,7 +47,7 @@ public struct TodayView: View {
         // Có phiên (#527, E): bố cục của RN — đầu trang riêng thay thanh tiêu
         // đề, các khối của `TodayExtras`, phần buổi tập ở giữa.
         ScrollView {
-          TodayExtras(userId: extrasUserId, onOpenSettings: onOpenSettings) {
+          TodayExtras(userId: extrasUserId, onOpenSettings: onOpenSettings, onLogWorkout: onLogWorkout) {
             VStack(alignment: .leading, spacing: DS.Spacing.lg) {
               plan
             }

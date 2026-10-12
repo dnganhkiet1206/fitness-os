@@ -212,5 +212,6 @@ miễn **giữ nguyên ý định** của app và chỉ làm app tốt hơn — 
 | Hôm nay — đầu trang (T1) | Đầu trang nằm trong nội dung cuộn, không ghim / không mờ dần khi cuộn | thanh đầu ghim trên cùng, trượt + mờ khi cuộn | tạm thời — làm cùng bộ trang trượt | sau | #527 (`native/ios-rewrite`) | E |
 | Hôm nay — trang sẵn sàng (T1) | Một trang (sẵn sàng), không chấm trang; vòng không chạy đếm số khi mở; không có quầng màu theo vùng (`ReadinessAura`) | bộ 5 trang trượt, vòng chạy 1,6 s, nền đổi màu theo trang | thiếu — bộ trang trượt chưa port | sau | #527 (`native/ios-rewrite`) | E |
 | Hôm nay — hàng Koa (T1) | Koa nhỏ + chấm nhiệm vụ + xu chờ nhận; chưa có bong bóng lời nói, chưa nhảy khi chạm (chạm mở phòng linh vật) | bong bóng `mascotLine` theo khung giờ, chạm thì Koa lộn vòng rồi mở phòng | thiếu — `mascotLine` chưa port, không bịa câu | sau | #527 (`native/ios-rewrite`) | E |
+| Hôm nay — thẻ việc (T2) | Năm dòng, nút Ghi / Đã ghi; chưa vuốt để bỏ qua hôm nay / sửa / bật tắt nhắc, chưa có giờ nhắc cạnh tên; mẫu số luôn 5 | `SwipeRow` bỏ qua (mẫu số co lại), sửa, bật tắt nhắc + giờ nhắc | thiếu — làm sau | sau | #527 (`native/ios-rewrite`) | E |
 
 Thêm dòng mới ở cuối bảng; giữ dòng cũ — sổ là lịch sử, không phải danh sách việc.

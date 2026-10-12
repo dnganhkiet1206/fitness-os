@@ -15,6 +15,8 @@ struct TodayExtras<Plan: View>: View {
   let userId: String
   /// Avatar → Cài đặt; `nil` thì không có avatar.
   var onOpenSettings: (() -> Void)?
+  /// "Ghi" ở dòng Buổi tập → màn ghi buổi tay (`/log-workout`); `nil` thì nút không làm gì.
+  var onLogWorkout: (() -> Void)?
   /// Thẻ buổi tập hôm nay + nút chính (`TodayView`).
   @ViewBuilder var plan: () -> Plan
 
@@ -33,6 +35,9 @@ struct TodayExtras<Plan: View>: View {
   @State private var showsWeight = false
   @State private var showsBiometrics = false
   @State private var showsRoom = false
+  /// Tín hiệu bữa / ngủ / sinh trắc / cân của hôm nay cho thẻ việc.
+  @State private var todo: ReminderTodayBook?
+  @State private var logging: TodayTodo?
   @Environment(ProfileBook.self) private var profile: ProfileBook?
   @State private var built = false
 
@@ -52,6 +57,9 @@ struct TodayExtras<Plan: View>: View {
       if let mascot, case .ready = mascot.phase {
         Button { showsRoom = true } label: { TodayKoaRow(room: mascot) }
           .buttonStyle(.plain)
+      }
+      if let todo {
+        TodayTodoCard(done: { isDone($0, todo) }, onLog: log)
       }
       plan()
       if let trend {
@@ -79,6 +87,14 @@ struct TodayExtras<Plan: View>: View {
         .buttonStyle(.plain)
       }
     }
+    .sheet(item: $logging, onDismiss: { Task { await reloadDay() } }) { item in
+      switch item {
+      case .meal: LogMealView(userId: userId)
+      case .sleep: LogSleepView(makeLogger: { services.makeSleepLogger(userId: userId) })
+      case .bio: LogBiometricsView(makeLogger: { services.makeBiometricLogger(userId: userId) })
+      case .workout, .weight: EmptyView()
+      }
+    }
     .navigationDestination(isPresented: $showsRoom) {
       if let mascot { MascotRoomView(room: mascot, awards: awards, challenges: challenges) }
     }
@@ -86,6 +102,7 @@ struct TodayExtras<Plan: View>: View {
       LogWeightView(makeLogger: { services.makeWeightLogger(userId: userId) }) {
         Task { await weight?.load() }
       }
+      .onDisappear { Task { await reloadDay() } }
     }
     .navigationDestination(isPresented: $showsBiometrics) {
       if let biometrics { BiometricsView(book: biometrics) }
@@ -102,6 +119,8 @@ struct TodayExtras<Plan: View>: View {
       weekly = services.makeWeeklyReview(userId: userId, today: today)
       trend = services.makeReadinessTrend(userId: userId, today: today)
       weight = services.makeWeightLogger(userId: userId)
+      todo = services.makeReminderToday(userId: userId)
+      await todo?.refresh()
       await weight?.load()
       await mascot?.load()
       await readiness?.load()
@@ -117,6 +136,7 @@ struct TodayExtras<Plan: View>: View {
         // Tuần "này" của màn tổng kết đổi khi qua Chủ nhật.
         await weekly?.move(to: today)
         await mascot?.load()
+        await todo?.refresh()
         await trend?.move(to: today)
       }
     }
@@ -133,7 +153,38 @@ struct TodayExtras<Plan: View>: View {
       weekly?.close()
       trend?.close()
       weight?.close()
+      todo?.close()
     }
+  }
+
+  // MARK: - Việc hôm nay
+
+  /// Cờ "đã ghi" của từng dòng như `todo-card.tsx`: bữa = `kcal > 0`, buổi tập =
+  /// `workout_count > 0`, ngủ = có hàng ngủ hoặc `sleep_duration_min > 0`, sinh
+  /// trắc / cân = có hàng hôm nay. Chưa đọc được → chưa ghi (nút "Ghi").
+  private func isDone(_ item: TodayTodo, _ book: ReminderTodayBook) -> Bool {
+    switch item {
+    case .meal: book.signals.mealLogged ?? false
+    case .workout: (mascot?.signals?.workoutCount ?? 0) > 0
+    case .sleep: book.signals.sleepLogged ?? false
+    case .bio: book.signals.bioLogged ?? false
+    case .weight: book.signals.weighed ?? (weight?.todayKg != nil)
+    }
+  }
+
+  private func log(_ item: TodayTodo) {
+    switch item {
+    case .workout: onLogWorkout?()
+    case .weight: showsWeight = true
+    case .meal, .sleep, .bio: logging = item
+    }
+  }
+
+  /// Sau một lần ghi: đọc lại những gì thẻ việc, năng lượng và điểm sẵn sàng hiện.
+  private func reloadDay() async {
+    await todo?.refresh()
+    await mascot?.load()
+    await readiness?.load()
   }
 
   // MARK: - Đầu trang
