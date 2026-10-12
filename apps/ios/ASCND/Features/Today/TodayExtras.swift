@@ -39,6 +39,9 @@ struct TodayExtras<Plan: View>: View {
   /// Tín hiệu bữa / ngủ / sinh trắc / cân của hôm nay cho thẻ việc.
   @State private var todo: ReminderTodayBook?
   @State private var logging: TodayTodo?
+  /// "+250 ml" của khối ngày.
+  @State private var water: WaterBook?
+  @State private var waterNote: String?
   @Environment(ProfileBook.self) private var profile: ProfileBook?
   @State private var built = false
 
@@ -46,18 +49,18 @@ struct TodayExtras<Plan: View>: View {
     VStack(spacing: DS.Spacing.md) {
       header
       if let mascot, case .ready = mascot.phase {
-        Button { showsRoom = true } label: { TodayEnergyRow(room: mascot) }
-          .buttonStyle(.plain)
-          .accessibilityAddTraits(.isButton)
+        TodayDayBlock(room: mascot, onAct: act, onOpenRoom: { showsRoom = true })
+        if let waterNote {
+          Text(verbatim: waterNote)
+            .font(DS.TextStyle.footnote)
+            .foregroundStyle(DS.Color.destructive.swiftUI)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
       }
       if let readiness {
         ReadinessCardView(
           book: readiness, lang: services.preferences.lang,
           onOpenBiometrics: biometrics == nil ? nil : { showsBiometrics = true })
-      }
-      if let mascot, case .ready = mascot.phase {
-        Button { showsRoom = true } label: { TodayKoaRow(room: mascot) }
-          .buttonStyle(.plain)
       }
       if let todo {
         TodayTodoCard(done: { isDone($0, todo) }, onLog: log)
@@ -101,6 +104,7 @@ struct TodayExtras<Plan: View>: View {
       trend = services.makeReadinessTrend(userId: userId, today: today)
       weight = services.makeWeightLogger(userId: userId)
       todo = services.makeReminderToday(userId: userId)
+      water = services.makeWaterBook(userId: userId)
       await todo?.refresh()
       await weight?.load()
       await mascot?.load()
@@ -136,6 +140,7 @@ struct TodayExtras<Plan: View>: View {
       trend?.close()
       weight?.close()
       todo?.close()
+      water?.close()
     }
   }
 
@@ -159,6 +164,32 @@ struct TodayExtras<Plan: View>: View {
     case .workout: onLogWorkout?()
     case .weight: showsWeight = true
     case .meal, .sleep, .bio: logging = item
+    }
+  }
+
+  /// Nút của khối ngày / chạm ống: ngủ, bữa → màn ghi; nước → +250 ml ngay;
+  /// buổi tập → màn ghi buổi tay; bước đến từ Apple Health, không có nút.
+  private func act(_ q: MascotRules.Quest) {
+    switch q {
+    case .sleep: logging = .sleep
+    case .meal: logging = .meal
+    case .workout: onLogWorkout?()
+    case .water: Task { await addWater() }
+    case .steps: break
+    }
+  }
+
+  static let waterStepMl = 250
+
+  private func addWater() async {
+    guard let water else { return }
+    waterNote = nil
+    do {
+      _ = try await water.add(amountMl: Self.waterStepMl, online: services.sync.online)
+      AccessibilityNotification.Announcement(String(localized: "today.water.added")).post()
+      await mascot?.load()
+    } catch {
+      waterNote = String(localized: "async.error.generic")
     }
   }
 
