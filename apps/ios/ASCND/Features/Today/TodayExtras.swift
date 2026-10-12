@@ -35,6 +35,7 @@ struct TodayExtras<Plan: View>: View {
   @State private var showsWeight = false
   @State private var showsBiometrics = false
   @State private var showsRoom = false
+  @State private var showsSteps = false
   /// Tín hiệu bữa / ngủ / sinh trắc / cân của hôm nay cho thẻ việc.
   @State private var todo: ReminderTodayBook?
   @State private var logging: TodayTodo?
@@ -61,31 +62,8 @@ struct TodayExtras<Plan: View>: View {
       if let todo {
         TodayTodoCard(done: { isDone($0, todo) }, onLog: log)
       }
-      plan()
-      if let trend {
-        ReadinessTrendCardView(book: trend)
-      }
       HealthSyncCard(isAvailable: services.health.isAvailable, sync: syncHealth)
-      if let weight {
-        // Lối vào màn ghi cân (#527 Phase 4) — RN mở từ thẻ việc hôm nay.
-        Button {
-          showsWeight = true
-        } label: {
-          weightRow(weight)
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(Text(String(localized: "weight.row")))
-        .accessibilityValue(Text(verbatim: weightValue(weight) ?? ""))
-      }
-      if let weekly {
-        // RN mở từ tab Trợ lý ("Tổng kết tuần"), tab ấy chưa có ở bản iOS.
-        NavigationLink {
-          WeeklyReviewView(book: weekly, lang: services.preferences.lang)
-        } label: {
-          row(String(localized: "wr.title"), systemImage: "calendar")
-        }
-        .buttonStyle(.plain)
-      }
+      groups
     }
     .sheet(item: $logging, onDismiss: { Task { await reloadDay() } }) { item in
       switch item {
@@ -94,6 +72,9 @@ struct TodayExtras<Plan: View>: View {
       case .bio: LogBiometricsView(makeLogger: { services.makeBiometricLogger(userId: userId) })
       case .workout, .weight: EmptyView()
       }
+    }
+    .navigationDestination(isPresented: $showsSteps) {
+      if let steps = services.makeStepsBook(userId: userId, today: Self.today()) { StepsView(book: steps) }
     }
     .navigationDestination(isPresented: $showsRoom) {
       if let mascot { MascotRoomView(room: mascot, awards: awards, challenges: challenges) }
@@ -125,6 +106,7 @@ struct TodayExtras<Plan: View>: View {
       await mascot?.load()
       await readiness?.load()
       await trend?.load()
+      await biometrics?.load()
     }
     .onChange(of: scenePhase) { _, phase in
       // Ra tiền cảnh: qua nửa đêm thì đổi ngày; không thì đọc lại điểm (đồng
@@ -185,6 +167,66 @@ struct TodayExtras<Plan: View>: View {
     await todo?.refresh()
     await mascot?.load()
     await readiness?.load()
+    await biometrics?.load()
+  }
+
+  // MARK: - Nhóm
+
+  /// Các nhóm mặc định của RN (`DEFAULT_CONFIG`): Sức khoẻ (sinh trắc, bước),
+  /// Thể lực (buổi tập hôm nay, cân nặng), Phân tích (xu hướng sẵn sàng; tổng
+  /// kết tuần là lối riêng của bản iOS). Dinh dưỡng chưa có thẻ ở đây — danh
+  /// sách thực phẩm bổ sung có tích chưa port (xem NATIVE_IMPROVEMENTS).
+  @ViewBuilder private var groups: some View {
+    group(String(localized: "today.group.health"), symbol: "heart.fill", tint: DS.Color.readinessRed.swiftUI) {
+      if let sample = todayBiometrics, TodayBiometricsCard.shows(sample) {
+        Button { showsBiometrics = true } label: { TodayBiometricsCard(sample: sample) }
+          .buttonStyle(.plain)
+      }
+      if let mascot, case .ready = mascot.phase {
+        Button { showsSteps = true } label: {
+          TodayStepsCard(steps: Int(mascot.signals?.steps ?? 0), goal: mascot.stepsGoal)
+        }
+        .buttonStyle(.plain)
+      }
+    }
+    group(String(localized: "today.group.fitness"), symbol: "dumbbell.fill", tint: DS.Color.champagne.swiftUI) {
+      VStack(alignment: .leading, spacing: DS.Spacing.md) { plan() }
+      if let weight {
+        TodayWeightCard(value: weight.todayKg.map { OnboardingRuler.fixed1(unit.display($0)) }, unit: unit.label)
+      }
+    }
+    group(String(localized: "today.group.insights"), symbol: "chart.line.uptrend.xyaxis", tint: DS.Color.metricBlue.swiftUI) {
+      if let trend { ReadinessTrendCardView(book: trend) }
+      if let weekly {
+        // RN mở từ tab Trợ lý ("Tổng kết tuần").
+        NavigationLink {
+          WeeklyReviewView(book: weekly, lang: services.preferences.lang)
+        } label: {
+          row(String(localized: "wr.title"), systemImage: "calendar")
+        }
+        .buttonStyle(.plain)
+      }
+    }
+  }
+
+  /// Một nhóm: đầu nhóm rồi các thẻ, cách 12, lùi trên 4.
+  private func group<Content: View>(
+    _ title: String, symbol: String, tint: Color, @ViewBuilder content: () -> Content
+  ) -> some View {
+    VStack(alignment: .leading, spacing: 12) {
+      TodayGroupHeader(title: title, symbol: symbol, tint: tint)
+      content()
+    }
+    .padding(.top, 4)
+  }
+
+  /// Lần đo sinh trắc mới nhất của HÔM NAY (`useTodayBiometrics`).
+  private var todayBiometrics: Biometrics.Sample? {
+    guard let biometrics, case .ready(let samples) = biometrics.phase else { return nil }
+    let cal = Calendar.current
+    return samples
+      .filter { cal.isDateInToday(Date(timeIntervalSince1970: Double($0.at.millis) / 1000)) }
+      .max { $0.at < $1.at }
   }
 
   // MARK: - Đầu trang
@@ -220,31 +262,6 @@ struct TodayExtras<Plan: View>: View {
     .frame(minHeight: 44)
     .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.md))
     .contentShape(Rectangle())
-  }
-
-  /// "Cân nặng · 72.4 kg" khi hôm nay đã cân; chưa cân thì chỉ nhãn.
-  private func weightRow(_ w: WeightLogger) -> some View {
-    HStack {
-      Label(String(localized: "weight.row"), systemImage: "scalemass")
-        .font(DS.TextStyle.headline)
-      Spacer()
-      if let v = weightValue(w) {
-        Text(verbatim: v)
-          .font(DS.TextStyle.footnote.monospacedDigit())
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-      }
-      Image(systemName: "chevron.right")
-        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-        .accessibilityHidden(true)
-    }
-    .padding(DS.Spacing.md)
-    .frame(minHeight: 44)
-    .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.md))
-    .contentShape(Rectangle())
-  }
-
-  private func weightValue(_ w: WeightLogger) -> String? {
-    w.todayKg.map { "\(OnboardingRuler.fixed1(unit.display($0))) \(unit.label)" }
   }
 
   private var isCurrentSession: Bool { services.session.session?.userId == userId }
