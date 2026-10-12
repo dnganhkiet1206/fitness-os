@@ -25,6 +25,8 @@ struct NutritionTab: View {
   @State private var meals: MealDiaryBook?
   /// Kế hoạch ăn của phân đoạn thứ hai; dựng khi phân đoạn ấy mở lần đầu.
   @State private var plans: MealPlansBook?
+  /// Danh sách đi chợ của phân đoạn Kế hoạch ăn (#527, N1).
+  @State private var grocery: GroceryBook?
   /// Khối Thực phẩm của phân đoạn Hôm nay: thư viện (Của tôi / Gần đây) + ô tìm.
   @State private var foods: FoodLibraryBook?
   @State private var foodSearch: FoodSearchBook?
@@ -82,6 +84,9 @@ struct NutritionTab: View {
         MealPlansScreen(userId: route.userId)
       }
       .navigationDestination(for: MealPlanRoute.self) { route in MealPlanScreen(route: route) }
+      .navigationDestination(for: GroceryRoute.self) { _ in
+        if let grocery { GroceryView(book: grocery) }
+      }
     }
     .task { await books?.loadOnce() }
     .task(id: userId) {
@@ -92,16 +97,20 @@ struct NutritionTab: View {
         meals?.close()
         meals = services?.makeMealDiary(userId: userId)
         plans = nil
+        grocery?.close()
+        grocery = nil
         foods?.close()
         foods = services?.makeFoodLibrary(userId: userId)
         foodSearch?.close()
         foodSearch = services?.makeFoodSearch()
       }
       if segment == .plan, plans == nil { plans = services?.makeMealPlans(userId: userId) }
+      if segment == .plan, grocery == nil { grocery = services?.makeGrocery(userId: userId) }
     }
     .onChange(of: today?.userId) { Task { await reload() } }
     .onChange(of: segment) { _, s in
       if s == .plan, plans == nil, let userId { plans = services?.makeMealPlans(userId: userId) }
+      if s == .plan, grocery == nil, let userId { grocery = services?.makeGrocery(userId: userId) }
     }
   }
 
@@ -127,10 +136,11 @@ struct NutritionTab: View {
     }
   }
 
-  /// Phân đoạn "Kế hoạch ăn" (RN): kế hoạch, rồi thư viện Thực phẩm. Gợi ý AI
-  /// và danh sách đi chợ chưa port.
+  /// Phân đoạn "Kế hoạch ăn" (RN): kế hoạch, danh sách đi chợ ("còn N món"),
+  /// rồi thư viện Thực phẩm. Gợi ý AI chưa port.
   @ViewBuilder private var planSegment: some View {
     if let plans { MealPlansPreview(book: plans) }
+    if let grocery { GroceryRow(book: grocery) }
     if let userId, let foods, let foodSearch {
       FoodsSection(userId: userId, library: foods, search: foodSearch)
     }

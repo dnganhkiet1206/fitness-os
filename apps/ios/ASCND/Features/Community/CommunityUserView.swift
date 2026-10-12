@@ -531,6 +531,8 @@ struct JourneyCard: View {
 /// `justifyContent: 'center'`): không viên nào bị mép màn cắt.
 struct FlowRows: Layout {
   var spacing: CGFloat = 8
+  /// `false`: hàng bám mép trái (`flexWrap` của RN, vd. chip đi chợ).
+  var centered = true
 
   func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
     let width = proposal.width ?? .infinity
@@ -543,7 +545,7 @@ struct FlowRows: Layout {
   func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
     var y = bounds.minY
     for row in Self.rows(subviews, width: bounds.width, spacing: spacing) {
-      var x = bounds.minX + (bounds.width - row.width) / 2
+      var x = bounds.minX + (centered ? (bounds.width - row.width) / 2 : 0)
       for i in row.items {
         let size = subviews[i].sizeThatFits(ProposedViewSize(width: bounds.width, height: nil))
         let w = min(size.width, bounds.width)

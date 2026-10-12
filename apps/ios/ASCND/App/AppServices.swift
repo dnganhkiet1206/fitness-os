@@ -392,6 +392,12 @@ final class AppServices {
     return SupplementBook(userId: userId, source: SupabaseSupplementSource(backend: backend), cache: supplementCache)
   }
 
+  /// Danh sách đi chợ (#527, N1) — `grocery_items` + thực đơn gần nhất.
+  func makeGrocery(userId: String) -> GroceryBook? {
+    guard let backend else { return nil }
+    return GroceryBook(userId: userId, source: SupabaseGrocerySource(backend: backend))
+  }
+
   // MARK: - Thẻ / màn đọc server (#527 Phase 4/7/9)
   //
   // `nil` khi thiếu cấu hình Supabase: màn không hiện thẻ thay vì một thẻ lỗi mãi.
