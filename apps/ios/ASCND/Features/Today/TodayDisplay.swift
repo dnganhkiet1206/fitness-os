@@ -16,12 +16,15 @@ public struct TodayExercise: Equatable, Sendable {
   public let sets: Int
   public let reps: Int
   public let weightKg: Double
+  /// Nghỉ giữa set của kế hoạch — cho số phút ước tính (`estimatedMinutes`).
+  public let restSeconds: Int?
 
-  public init(name: String, sets: Int, reps: Int, weightKg: Double) {
+  public init(name: String, sets: Int, reps: Int, weightKg: Double, restSeconds: Int? = nil) {
     self.name = name
     self.sets = sets
     self.reps = reps
     self.weightKg = weightKg
+    self.restSeconds = restSeconds
   }
 }
 

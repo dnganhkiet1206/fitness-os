@@ -30,6 +30,8 @@ struct ReadinessCardView: View {
   let lang: AppPreferences.Lang
   /// Đường đi sâu sang màn sinh trắc học — Today (B) quyết định đẩy màn nào.
   var onOpenBiometrics: (() -> Void)? = nil
+  /// Mở sẵn phần chi tiết — khi thẻ là màn chi tiết của dòng sẵn sàng trên Today.
+  var startExpanded = false
 
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var expanded = false
@@ -67,6 +69,7 @@ struct ReadinessCardView: View {
     .padding(.bottom, DS.Spacing.sm)
     .padding(.horizontal, DS.Spacing.card)
     .sheet(isPresented: $helpOpen) { ReadinessExplainerSheet() }
+    .onAppear { if startExpanded { expanded = true } }
     .sensoryFeedback(.selection, trigger: taps)
     // `useHelpTopic` chạy khi thẻ sẵn sàng DỰNG — RN chỉ dựng nó khi có điểm.
     .task(id: hasScore) {

@@ -111,7 +111,8 @@ public struct TodayScreen: View {
           name: $0.exerciseName,
           sets: $0.sets,
           reps: $0.reps,
-          weightKg: $0.weightKg
+          weightKg: $0.weightKg,
+          restSeconds: $0.restSeconds
         )
       } ?? [],
       isDeload: plan.isDeload

@@ -2,11 +2,11 @@ import ASCNDCore
 import ASCNDDesignSystem
 import SwiftUI
 
-/// Thân tab Hôm nay khi có phiên (#527) — theo thứ tự của `(tabs)/index.tsx`:
-/// đầu trang (logo, chuỗi ngày, avatar → Cài đặt), hàng năng lượng (→ phòng
-/// linh vật), trang sẵn sàng lớn (→ sinh trắc học, tấm giải thích), hàng Koa,
-/// rồi phần buổi tập (`plan`, do `TodayView` vẽ), xu hướng 7 ngày, thẻ Apple
-/// Health, cân nặng, lối vào tổng kết tuần.
+/// Thân tab Hôm nay khi có phiên (#527) — bản thiết kế Today đã duyệt
+/// (`docs/design/today`), đối chiếu RN ở `docs/design/today/RN-PARITY.md`:
+/// tiêu đề lớn + ngày (chuỗi ngày, avatar), khối ngày (Koa + năm ống), thẻ
+/// buổi tập mang dòng sẵn sàng (`plan`, do `TodayView` vẽ), "Your day",
+/// "More about today", rồi thẻ Apple Health.
 ///
 /// Chỉ là nối dây: sổ dựng ở `AppServices`, một lần mỗi phiên (cây của tab
 /// dựng lại theo `.id(userId)`), đóng khi phiên kết thúc. Thiếu cấu hình
@@ -18,7 +18,12 @@ struct TodayExtras<Plan: View>: View {
   /// "Ghi" ở dòng Buổi tập → màn ghi buổi tay (`/log-workout`); `nil` thì nút không làm gì.
   var onLogWorkout: (() -> Void)?
   /// Thẻ buổi tập hôm nay + nút chính (`TodayView`).
-  @ViewBuilder var plan: () -> Plan
+  /// Nhận dòng sẵn sàng để đặt trong thẻ buổi tập (bản thiết kế Today).
+  /// Tên buổi của hôm nay (dòng Buổi tập của "Your day"); `nil` = chưa lên lịch.
+  var planName: String?
+  /// Nhận dòng sẵn sàng và nút "Ghi giấc ngủ" (khi chưa có điểm) để đặt trong
+  /// thẻ buổi tập.
+  @ViewBuilder var plan: (_ readiness: AnyView?, _ logSleep: AnyView?) -> Plan
 
   @Environment(AppServices.self) private var services
   @Environment(\.scenePhase) private var scenePhase
@@ -35,6 +40,9 @@ struct TodayExtras<Plan: View>: View {
   @State private var showsWeight = false
   @State private var showsBiometrics = false
   @State private var showsRoom = false
+  @State private var showsReadiness = false
+  @State private var showsTrend = false
+  @State private var showsWeekly = false
   @State private var showsSteps = false
   /// Tín hiệu bữa / ngủ / sinh trắc / cân của hôm nay cho thẻ việc.
   @State private var todo: ReminderTodayBook?
@@ -62,16 +70,13 @@ struct TodayExtras<Plan: View>: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
       }
-      if let readiness {
-        ReadinessCardView(
-          book: readiness, lang: services.preferences.lang,
-          onOpenBiometrics: biometrics == nil ? nil : { showsBiometrics = true })
+      // Thẻ buổi tập ngay dưới khối ngày, mang dòng sẵn sàng.
+      VStack(alignment: .leading, spacing: DS.Spacing.md) { plan(readinessRow, logSleepButton) }
+      if let mascot, case .ready = mascot.phase {
+        TodayYourDay(rows: dayRows(mascot), onTap: tap)
       }
-      if let todo {
-        TodayTodoCard(done: { isDone($0, todo) }, onLog: log)
-      }
+      TodayMore(rows: moreRows)
       HealthSyncCard(isAvailable: services.health.isAvailable, sync: syncHealth)
-      groups
     }
     // Bữa / nước / ngủ đi qua outbox: hàng đợi vơi đi (server đã nhận) thì đọc
     // lại ngày — như `invalidateQueries` sau `onSettled` của RN.
@@ -92,11 +97,54 @@ struct TodayExtras<Plan: View>: View {
     .navigationDestination(isPresented: $showsRoom) {
       if let mascot { MascotRoomView(room: mascot, awards: awards, challenges: challenges) }
     }
+    .sheet(isPresented: $showsReadiness) {
+      if let readiness {
+        NavigationStack {
+          ScrollView {
+            ReadinessCardView(
+              book: readiness, lang: services.preferences.lang,
+              onOpenBiometrics: biometrics == nil ? nil : {
+                showsReadiness = false
+                showsBiometrics = true
+              },
+              startExpanded: true)
+          }
+          .background(DS.Color.background.swiftUI)
+          .toolbar {
+            ToolbarItem(placement: .confirmationAction) {
+              Button(String(localized: "common.close")) { showsReadiness = false }
+            }
+          }
+        }
+        .presentationDetents([.large])
+      }
+    }
     .sheet(isPresented: $showsWeight) {
       LogWeightView(makeLogger: { services.makeWeightLogger(userId: userId) }) {
         Task { await weight?.load() }
       }
       .onDisappear { Task { await reloadDay() } }
+    }
+    .navigationDestination(isPresented: $showsTrend) {
+      if let trend {
+        ScrollView {
+          // Thẻ RN tự ẩn khi dưới 2 ngày — ở màn riêng thì nói lý do thay vì trang trắng.
+          if trend.stats == nil {
+            DSEmptyState(
+              systemImage: "chart.bar", title: String(localized: "rt.title"),
+              message: String(localized: "today.more.trend.empty"))
+          } else {
+            ReadinessTrendCardView(book: trend)
+          }
+        }
+        .contentMargins(DS.Spacing.md, for: .scrollContent)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(DS.Color.background.swiftUI)
+          .navigationTitle(Text(String(localized: "rt.title")))
+      }
+    }
+    .navigationDestination(isPresented: $showsWeekly) {
+      if let weekly { WeeklyReviewView(book: weekly, lang: services.preferences.lang) }
     }
     .navigationDestination(isPresented: $showsBiometrics) {
       if let biometrics { BiometricsView(book: biometrics) }
@@ -155,27 +203,111 @@ struct TodayExtras<Plan: View>: View {
     }
   }
 
-  // MARK: - Việc hôm nay
+  // MARK: - Your day
 
-  /// Cờ "đã ghi" của từng dòng như `todo-card.tsx`: bữa = `kcal > 0`, buổi tập =
-  /// `workout_count > 0`, ngủ = có hàng ngủ hoặc `sleep_duration_min > 0`, sinh
-  /// trắc / cân = có hàng hôm nay. Chưa đọc được → chưa ghi (nút "Ghi").
-  private func isDone(_ item: TodayTodo, _ book: ReminderTodayBook) -> Bool {
-    switch item {
-    case .meal: book.signals.mealLogged ?? false
-    case .workout: (mascot?.signals?.workoutCount ?? 0) > 0
-    case .sleep: book.signals.sleepLogged ?? false
-    case .bio: book.signals.bioLogged ?? false
-    case .weight: book.signals.weighed ?? (weight?.todayKg != nil)
+  /// Năm tín hiệu (cùng `DailySignals` với khối ngày, nước gộp phần chờ gửi)
+  /// rồi cân nặng và sinh trắc. Cờ "đã ghi" như `todo-card.tsx`: bữa = `kcal >
+  /// 0`, ngủ = có hàng ngủ hoặc phút ngủ, sinh trắc / cân = có hàng hôm nay.
+  private func dayRows(_ room: MascotRoomController) -> [TodayYourDay.Row] {
+    let s = TodayDay.merging(room.signals, localWaterMl: water?.loaded == true ? water?.totalMl : nil)
+    let goal = room.stepsGoal
+    let flags = todo?.signals
+    func done(_ q: MascotRules.Quest) -> Bool { s?.done(q, stepsGoal: goal) ?? false }
+    let num = { (v: Double, digits: Int) in v.formatted(.number.precision(.fractionLength(0...digits)).locale(.app)) }
+    let sleepMin = Int((s?.sleepMinutes ?? 0).rounded())
+    let sleep = done(.sleep) && sleepMin > 0
+      ? String(localized: "today.d.sleep \(sleepMin / 60) \(sleepMin % 60)")
+      : done(.sleep) ? String(localized: "today.tube.done") : String(localized: "today.d.sleep.ask")
+    let kcal = s?.kcal ?? 0
+    let meal = kcal > 0 ? String(localized: "today.d.meal \(num(kcal, 0))") : String(localized: "today.d.meal.none")
+    let waterLine = String(
+      localized: "today.d.water \(num((s?.waterMl ?? 0) / 1000, 1)) \(num(TodayDay.waterTarget(s) / 1000, 1))")
+    let workouts = Int(s?.workoutCount ?? 0)
+    let workout =
+      workouts > 0
+      ? (workouts == 1 ? String(localized: "today.d.workout.done.one") : String(localized: "today.d.workout.done.other \(workouts)"))
+      : planName.map { String(localized: "today.d.workout.planned \($0)") } ?? String(localized: "today.d.workout.none")
+    let steps = String(localized: "today.d.steps \(num(s?.steps ?? 0, 0)) \(num(Double(goal), 0))")
+    let kg = weight?.todayKg
+    let weighed = flags?.weighed ?? (kg != nil)
+    let weightLine = kg.map { "\(OnboardingRuler.fixed1(unit.display($0))) \(unit.label)" }
+      ?? (weighed ? String(localized: "today.tube.done") : String(localized: "today.d.weight.none"))
+    return [
+      .init(kind: .sleep, detail: sleep, done: done(.sleep)),
+      .init(kind: .meal, detail: meal, done: done(.meal)),
+      .init(kind: .water, detail: waterLine, done: done(.water)),
+      .init(kind: .workout, detail: workout, done: done(.workout)),
+      .init(kind: .steps, detail: steps, done: done(.steps)),
+      .init(kind: .weight, detail: weightLine, done: weighed),
+      .init(kind: .bio, detail: String(localized: "today.d.bio"), done: flags?.bioLogged ?? false),
+    ]
+  }
+
+  private func tap(_ kind: TodayYourDay.Row.Kind) {
+    switch kind {
+    case .sleep: act(.sleep)
+    case .meal: act(.meal)
+    case .water: act(.water)
+    case .workout: act(.workout)
+    case .steps: showsSteps = true
+    case .weight: showsWeight = true
+    case .bio: logging = .bio
     }
   }
 
-  private func log(_ item: TodayTodo) {
-    switch item {
-    case .workout: onLogWorkout?()
-    case .weight: showsWeight = true
-    case .meal, .sleep, .bio: logging = item
+  // MARK: - More about today
+
+  /// Sinh trắc hôm nay, tải tuần so với thói quen (`loadComparison` trên ACWR
+  /// mà engine đã ghi — RN `training-card.ts`), trung bình sẵn sàng 7 ngày,
+  /// tổng kết tuần, phòng linh vật.
+  private var moreRows: [TodayMore.Row] {
+    var rows: [TodayMore.Row] = []
+    if biometrics != nil {
+      let b = todayBiometrics
+      let hrv = b?.hrvSdnn ?? b?.hrvRmssd
+      let parts = [b?.hr.map { "\(Int($0.rounded())) bpm" }, hrv.map { "\(Int($0.rounded())) ms" }].compactMap { $0 }
+      rows.append(.init(
+        id: "bio", title: String(localized: "today.todo.bio"),
+        value: parts.isEmpty ? "—" : parts.joined(separator: " · "), action: { showsBiometrics = true }))
     }
+    if readiness != nil {
+      rows.append(.init(id: "load", title: String(localized: "today.more.training"), value: loadText, action: { showsReadiness = true }))
+    }
+    if let trend {
+      let avg = trend.stats.map { String(localized: "today.more.avg \(Int($0.average))") } ?? "—"
+      rows.append(.init(id: "trend", title: String(localized: "rt.title"), value: avg, action: { showsTrend = true }))
+    }
+    if weekly != nil {
+      rows.append(.init(id: "weekly", title: String(localized: "wr.title"), value: nil, action: { showsWeekly = true }))
+    }
+    if let mascot, case .ready = mascot.phase {
+      rows.append(.init(
+        id: "room", title: String(localized: "mr.title"),
+        value: String(localized: "today.more.level \(mascot.level)"), action: { showsRoom = true }))
+    }
+    return rows
+  }
+
+  /// "+8%" / "−12%" so với tuần thói quen; chưa có ACWR → "—".
+  private var loadText: String {
+    guard let readiness, case .ready(let day) = readiness.phase, let acwr = day.acwr else { return "—" }
+    let c = ReadinessCard.loadComparison(acwr)
+    return c.percent == 0 ? "0%" : "\(c.heavier ? "+" : "−")\(c.percent)%"
+  }
+
+  /// Dòng sẵn sàng của thẻ buổi tập; chạm → thẻ sẵn sàng RN ở dạng mở.
+  private var readinessRow: AnyView? {
+    guard let readiness else { return nil }
+    return AnyView(
+      TodayReadinessRow(
+        book: readiness, lang: services.preferences.lang, onOpen: { showsReadiness = true }))
+  }
+
+  /// "Ghi giấc ngủ" cạnh nút chính khi chưa có điểm sẵn sàng — một đêm ngủ là
+  /// một cách để có điểm (`rd.empty.message`).
+  private var logSleepButton: AnyView? {
+    guard let readiness, case .empty = readiness.phase else { return nil }
+    return AnyView(DSButton(String(localized: "today.do.sleep"), style: .secondary) { logging = .sleep })
   }
 
   /// Nút của khối ngày / chạm ống: ngủ, bữa → màn ghi; nước → +250 ml ngay;
@@ -214,56 +346,6 @@ struct TodayExtras<Plan: View>: View {
     await biometrics?.load()
   }
 
-  // MARK: - Nhóm
-
-  /// Các nhóm mặc định của RN (`DEFAULT_CONFIG`): Sức khoẻ (sinh trắc, bước),
-  /// Thể lực (buổi tập hôm nay, cân nặng), Phân tích (xu hướng sẵn sàng; tổng
-  /// kết tuần là lối riêng của bản iOS). Dinh dưỡng chưa có thẻ ở đây — danh
-  /// sách thực phẩm bổ sung có tích chưa port (xem NATIVE_IMPROVEMENTS).
-  @ViewBuilder private var groups: some View {
-    group(String(localized: "today.group.health"), symbol: "heart.fill", tint: DS.Color.readinessRed.swiftUI) {
-      if let sample = todayBiometrics, TodayBiometricsCard.shows(sample) {
-        Button { showsBiometrics = true } label: { TodayBiometricsCard(sample: sample) }
-          .buttonStyle(.plain)
-      }
-      if let mascot, case .ready = mascot.phase {
-        Button { showsSteps = true } label: {
-          TodayStepsCard(steps: Int(mascot.signals?.steps ?? 0), goal: mascot.stepsGoal)
-        }
-        .buttonStyle(.plain)
-      }
-    }
-    group(String(localized: "today.group.fitness"), symbol: "dumbbell.fill", tint: DS.Color.champagne.swiftUI) {
-      VStack(alignment: .leading, spacing: DS.Spacing.md) { plan() }
-      if let weight {
-        TodayWeightCard(value: weight.todayKg.map { OnboardingRuler.fixed1(unit.display($0)) }, unit: unit.label)
-      }
-    }
-    group(String(localized: "today.group.insights"), symbol: "chart.line.uptrend.xyaxis", tint: DS.Color.metricBlue.swiftUI) {
-      if let trend { ReadinessTrendCardView(book: trend) }
-      if let weekly {
-        // RN mở từ tab Trợ lý ("Tổng kết tuần").
-        NavigationLink {
-          WeeklyReviewView(book: weekly, lang: services.preferences.lang)
-        } label: {
-          row(String(localized: "wr.title"), systemImage: "calendar")
-        }
-        .buttonStyle(.plain)
-      }
-    }
-  }
-
-  /// Một nhóm: đầu nhóm rồi các thẻ, cách 12, lùi trên 4.
-  private func group<Content: View>(
-    _ title: String, symbol: String, tint: Color, @ViewBuilder content: () -> Content
-  ) -> some View {
-    VStack(alignment: .leading, spacing: 12) {
-      TodayGroupHeader(title: title, symbol: symbol, tint: tint)
-      content()
-    }
-    .padding(.top, 4)
-  }
-
   /// Lần đo sinh trắc mới nhất của HÔM NAY (`useTodayBiometrics`).
   private var todayBiometrics: Biometrics.Sample? {
     guard let biometrics, case .ready(let samples) = biometrics.phase else { return nil }
@@ -275,11 +357,19 @@ struct TodayExtras<Plan: View>: View {
 
   // MARK: - Đầu trang
 
-  /// `BrandLockup` trái; phải là viên chuỗi ngày (≥ 1, → phòng linh vật) và
-  /// avatar (→ Cài đặt).
+  /// Tiêu đề lớn "Hôm nay" + ngày; phải là viên chuỗi ngày (≥ 1, → phòng linh
+  /// vật) và avatar (→ Cài đặt). Logo của RN bỏ — đã ở biểu tượng app.
   private var header: some View {
     HStack(alignment: .top, spacing: DS.Spacing.sm) {
-      BrandLockup()
+      VStack(alignment: .leading, spacing: 0) {
+        Text(String(localized: "tab.today"))
+          .font(.largeTitle.bold())
+          .foregroundStyle(DS.Color.foreground.swiftUI)
+          .accessibilityAddTraits(.isHeader)
+        Text(verbatim: Date.now.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(.app)))
+          .font(DS.TextStyle.body)
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+      }
       Spacer(minLength: 0)
       if let mascot, mascot.streak.count >= 1 {
         StreakChip(count: mascot.streak.count, lit: mascot.streak.loggedToday) { showsRoom = true }
@@ -290,22 +380,6 @@ struct TodayExtras<Plan: View>: View {
           action: onOpenSettings)
       }
     }
-  }
-
-  /// Một hàng dẫn sang màn con.
-  private func row(_ title: String, systemImage: String) -> some View {
-    HStack {
-      Label(title, systemImage: systemImage)
-        .font(DS.TextStyle.headline)
-      Spacer()
-      Image(systemName: "chevron.right")
-        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-        .accessibilityHidden(true)
-    }
-    .padding(DS.Spacing.md)
-    .frame(minHeight: 44)
-    .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.md))
-    .contentShape(Rectangle())
   }
 
   private var isCurrentSession: Bool { services.session.session?.userId == userId }

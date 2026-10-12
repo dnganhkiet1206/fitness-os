@@ -2,32 +2,9 @@ import ASCNDCore
 import ASCNDDesignSystem
 import SwiftUI
 
-// Phần đầu tab Hôm nay (#527, E — chủ dự án giao làm lại Today theo RN):
-// `BrandLockup`, `StreakChip`, `AccountAvatar`, hàng năng lượng và hàng Koa của
-// `(tabs)/index.tsx` @ fac9ac2. Chỉ là vẽ: số liệu đến từ `MascotRoomController`
-// (tín hiệu ngày, chuỗi, nhiệm vụ) mà `TodayExtras` dựng.
-
-/// Logo + chữ "ASCND" (`brand-lockup.tsx`): dấu 37 điểm, chữ 22 đậm giãn 0,6;
-/// một phần tử tiêu đề cho VoiceOver.
-struct BrandLockup: View {
-  var body: some View {
-    HStack(spacing: 7) {
-      Image("BrandMark")
-        .resizable()
-        .interpolation(.high)
-        .frame(width: 37, height: 37)
-      Text(String(localized: "brand.name"))
-        .font(.system(size: 22, weight: .bold))
-        .tracking(0.6)
-        .foregroundStyle(DS.Color.foreground.swiftUI)
-        .dynamicTypeSize(...DynamicTypeSize.xxLarge)
-    }
-    .frame(height: 44)
-    .accessibilityElement(children: .ignore)
-    .accessibilityLabel(Text(String(localized: "brand.name")))
-    .accessibilityAddTraits(.isHeader)
-  }
-}
+// Phần đầu tab Hôm nay (#527): `StreakChip`, `AccountAvatar` của
+// `(tabs)/index.tsx` @ fac9ac2. Logo (`BrandLockup`), hàng năng lượng và hàng
+// Koa của RN đã thay bằng tiêu đề lớn và khối ngày (`RN-PARITY.md`).
 
 /// Viên chuỗi ngày (`streak-chip.tsx`): cao 44, ngọn lửa + số; hôm nay đã ghi
 /// thì cam, chưa ghi thì xám. Chỉ hiện khi chuỗi ≥ 1 (nơi gọi quyết).

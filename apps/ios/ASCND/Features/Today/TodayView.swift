@@ -47,10 +47,11 @@ public struct TodayView: View {
         // Có phiên (#527, E): bố cục của RN — đầu trang riêng thay thanh tiêu
         // đề, các khối của `TodayExtras`, phần buổi tập ở giữa.
         ScrollView {
-          TodayExtras(userId: extrasUserId, onOpenSettings: onOpenSettings, onLogWorkout: onLogWorkout) {
-            VStack(alignment: .leading, spacing: DS.Spacing.lg) {
-              plan
-            }
+          TodayExtras(
+            userId: extrasUserId, onOpenSettings: onOpenSettings, onLogWorkout: onLogWorkout,
+            planName: state.status == .todo || state.status == .missed ? state.templateName : nil
+          ) { readiness, logSleep in
+            planCard(readiness: readiness, logSleep: logSleep)
           }
           .padding(.horizontal, DS.Spacing.md)
           .padding(.bottom, DS.Spacing.lg)
@@ -59,10 +60,8 @@ public struct TodayView: View {
         .toolbar(.hidden, for: .navigationBar)
       } else {
         ScrollView {
-          VStack(alignment: .leading, spacing: DS.Spacing.lg) {
-            plan
-          }
-          .padding(DS.Spacing.md)
+          planCard(readiness: nil, logSleep: nil)
+            .padding(DS.Spacing.md)
         }
         .navigationTitle(Text("tab.today"))
         .toolbar {
@@ -80,22 +79,50 @@ public struct TodayView: View {
     }
     // Không gắn accessibilityLabel lên cả cây: container không gộp thì nhãn
     // đè xuống từng phần tử con (nút Bắt đầu, từng bài đều đọc thành
-    // "Hôm nay: …"). Trạng thái đã có ở DSSectionHeader / tiêu đề DSEmptyState.
+    // "Hôm nay: …"). Trạng thái đã có ở tiêu đề thẻ buổi tập.
   }
 
-  /// Thẻ buổi tập theo trạng thái + nút chính.
-  @ViewBuilder private var plan: some View {
-    switch state.status {
-    case .todo: todoView
-    case .done: doneView
-    case .missed: missedView
-    case .rest: restView
-    case .unplanned: unplannedView
+  /// Thẻ buổi tập (bản thiết kế Today; RN `today-training.tsx`): tiêu đề là tên
+  /// buổi khi có, còn không là trạng thái; dòng dưới là "bài · ~N phút" (RN
+  /// `nExerciseCount` · `estimatedMinutes`) hoặc câu của trạng thái; dòng sẵn
+  /// sàng của Today; rồi nút chính (và "Ghi giấc ngủ" khi chưa có điểm).
+  /// Danh sách bài chi tiết ở màn buổi tập — RN cũng không liệt kê trên Today.
+  private func planCard(readiness: AnyView?, logSleep: AnyView?) -> some View {
+    VStack(alignment: .leading, spacing: DS.Spacing.md) {
+      VStack(alignment: .leading, spacing: 4) {
+        HStack(alignment: .firstTextBaseline) {
+          Text(verbatim: heading)
+            .font(DS.TextStyle.title)
+            .foregroundStyle(DS.Color.foreground.swiftUI)
+            .accessibilityAddTraits(.isHeader)
+          Spacer(minLength: 0)
+          if state.isDeload && state.status == .todo {
+            Text("today.deload")
+              .font(DS.TextStyle.caption)
+              .padding(.horizontal, DS.Spacing.sm)
+              .padding(.vertical, DS.Spacing.xs)
+              .background(DS.Color.secondary.swiftUI)
+              .foregroundStyle(DS.Color.secondaryForeground.swiftUI)
+              .clipShape(Capsule())
+          }
+        }
+        if let sub = subline {
+          Text(verbatim: sub)
+            .font(DS.TextStyle.body)
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        }
+      }
+      if let readiness { readiness }
+      HStack(spacing: DS.Spacing.sm) {
+        ctaButton
+        if let logSleep { logSleep }
+      }
     }
-    ctaButton
+    .padding(DS.Spacing.card)
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.lg))
+    .overlay(RoundedRectangle(cornerRadius: DS.Radius.lg).strokeBorder(DS.Color.border.swiftUI.opacity(0.7)))
   }
-
-  // MARK: - Nhãn đọc màn hình
 
   private var statusText: String {
     switch state.status {
@@ -107,39 +134,27 @@ public struct TodayView: View {
     }
   }
 
-  // MARK: - todo: có buổi, chưa tập
+  private var heading: String {
+    switch state.status {
+    case .todo, .missed, .done: state.templateName ?? statusText
+    case .rest, .unplanned: statusText
+    }
+  }
 
-  private var todoView: some View {
-    VStack(alignment: .leading, spacing: DS.Spacing.md) {
-      DSSectionHeader(statusText)
-      DSCard {
-        VStack(alignment: .leading, spacing: DS.Spacing.md) {
-          HStack {
-            if let name = state.templateName {
-              Text(name)
-                .font(DS.TextStyle.title2)
-                .foregroundStyle(DS.Color.foreground.swiftUI)
-            }
-            Spacer()
-            if state.isDeload {
-              Text("today.deload")
-                .font(DS.TextStyle.caption)
-                .padding(.horizontal, DS.Spacing.sm)
-                .padding(.vertical, DS.Spacing.xs)
-                .background(DS.Color.secondary.swiftUI)
-                .foregroundStyle(DS.Color.secondaryForeground.swiftUI)
-                .clipShape(Capsule())
-            }
-          }
-          if !state.exercises.isEmpty {
-            VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-              ForEach(state.exercises.indices, id: \.self) { i in
-                exerciseRow(state.exercises[i])
-              }
-            }
-          }
-        }
-      }
+  private var subline: String? {
+    switch state.status {
+    case .todo:
+      guard !state.exercises.isEmpty else { return nil }
+      let names = state.exercises.prefix(3).map(\.name).joined(separator: ", ")
+      let more = state.exercises.count > 3 ? "…" : ""
+      let minutes = TemplateDraft.estimatedMinutes(state.exercises.map { ($0.sets, $0.reps, $0.restSeconds) })
+      return "\(names)\(more) · \(String(localized: "today.minutes \(minutes)"))"
+    case .done:
+      return state.templateName.map { String(format: String(localized: "today.done.message"), $0) }
+    case .missed:
+      return state.templateName.map { String(format: String(localized: "today.missed.message"), $0) }
+    case .rest: return String(localized: "today.rest.message")
+    case .unplanned: return String(localized: "today.unplanned.message")
     }
   }
 
@@ -164,7 +179,7 @@ public struct TodayView: View {
       }
     case .pick:
       if let onChoosePlan {
-        DSButton(String(localized: "today.choosePlan"), style: .secondary, action: onChoosePlan)
+        DSButton(String(localized: "today.choosePlan"), style: .primary, action: onChoosePlan)
       }
     }
   }
@@ -179,85 +194,6 @@ public struct TodayView: View {
     }
   }
 
-  /// Đơn vị tạ của tài khoản (#527 1.9-B) — kế hoạch vẫn lưu kg.
-  @Environment(\.weightUnit) private var unit
-
-  private func exerciseRow(_ e: TodayExercise) -> some View {
-    HStack {
-      Text(e.name)
-        .font(DS.TextStyle.body)
-        .foregroundStyle(DS.Color.foreground.swiftUI)
-      Spacer()
-      Text(weightText(e).map { "\(e.sets)×\(e.reps) · \($0)" } ?? "\(e.sets)×\(e.reps)")
-        .font(DS.TextStyle.footnote)
-        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-        .monospacedDigit()
-    }
-    .accessibilityElement(children: .combine)
-    .accessibilityLabel(Text(exerciseAccessibility(e)))
-  }
-
-  /// Mức tạ theo locale và theo đơn vị của tài khoản (#527 1.9-B), một chữ
-  /// số lẻ như RN `displayWeight` (`day-plan.tsx:1820`): "62,5 kg", "137,8 lb"
-  /// — không cắt `Int` thành 62. `nil` = bài không tạ, không hiện "0 kg".
-  private func weightText(_ e: TodayExercise) -> String? {
-    unit.localizedLoad(e.weightKg)
-  }
-
-  private func exerciseAccessibility(_ e: TodayExercise) -> String {
-    if let w = weightText(e) {
-      return String(
-        format: String(localized: "today.exercise.accessibility"),
-        e.name, e.sets, e.reps, w)
-    }
-    return String(
-      format: String(localized: "today.exercise.accessibility.noWeight"),
-      e.name, e.sets, e.reps)
-  }
-
-  // MARK: - done: đã tập xong
-
-  private var doneView: some View {
-    DSEmptyState(
-      systemImage: "checkmark.circle.fill",
-      title: statusText,
-      message: state.templateName.map {
-        String(format: String(localized: "today.done.message"), $0)
-      }
-    )
-  }
-
-  // MARK: - missed: bỏ lỡ
-
-  private var missedView: some View {
-    DSEmptyState(
-      systemImage: "exclamationmark.circle",
-      title: statusText,
-      message: state.templateName.map {
-        String(format: String(localized: "today.missed.message"), $0)
-      }
-    )
-  }
-
-  // MARK: - rest: ngày nghỉ đã chọn
-
-  private var restView: some View {
-    DSEmptyState(
-      systemImage: "moon.zzz.fill",
-      title: statusText,
-      message: String(localized: "today.rest.message")
-    )
-  }
-
-  // MARK: - unplanned: chưa lên lịch (KHÁC ngày nghỉ, #215)
-
-  private var unplannedView: some View {
-    DSEmptyState(
-      systemImage: "calendar.badge.plus",
-      title: statusText,
-      message: String(localized: "today.unplanned.message")
-    )
-  }
 }
 
 // MARK: - Fixture (cùng hình dạng hợp đồng A6; không phải dữ liệu thật)
