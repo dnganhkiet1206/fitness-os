@@ -76,6 +76,41 @@ Status:
 
 **Not ported:** RN's full training card (weekly volume bars, ACWR bar with bands, `weeklyVolumes`). The row only reports the comparison. Port `training-card.ts` as its own screen before adding a chart here.
 
+## Audit of RN Today features (2026-10-12)
+
+The whole of RN `(tabs)/index.tsx` @ fac9ac2 (14 widgets, hero deck, edit mode, focus hooks) was checked against native Today.
+
+### Added in this pass
+
+| RN behaviour | Native now |
+|---|---|
+| `useCheckAwards` on every focus: grants newly earned awards and celebrates them | Awards are checked on build, on return to the foreground and on pull-to-refresh (`AwardsBook.load`, which grants). A new award shows a glass toast "New award: …" with a success haptic and a VoiceOver announcement; tapping it opens the mascot room. **Before this pass, native Today created the awards book but never loaded it, so nothing was granted from Today.** |
+| `useUpdateChallengeProgress` on every focus | `WeeklyChallengesBook.refreshProgress()` runs at the same moments. Before, it ran only from the Challenges screen's pull, so a week of workouts sat at 0 until that screen was opened (the same bug RN fixed). |
+| Pull to refresh: `invalidateQueries()` + light haptic | The pull reloads the plan (`TodayScreen`) **and** every Today book: signals, water, readiness, biometrics, trend, awards and challenges. Light haptic on pull. |
+| `TodaySkeleton` / `LoadFailed` | The day block shows a placeholder of the same size while loading, and "couldn't load" with Retry on failure. Before, it simply vanished. |
+| Sleep widget → `/sleep-insights` | "More about today" has a **Sleep** row: last night's `7h40`, or "—". It opens `SleepInsightsView`. |
+| `SupplementChecklistCard` (nutrition group) | A **Supplements** row shows `taken/total` when there are any and opens `SupplementsView`. |
+| `useTodayWater`: one cache shared by every screen | Today uses the **session's shared** `NutritionBooks.water` (the same instance as the Nutrition tab). A glass added on either tab shows on the other at once. Before, Today had its own `WaterBook`. |
+
+### Deliberately not on Today (on purpose, or living elsewhere)
+
+| RN widget / feature | Where it is instead / why |
+|---|---|
+| Hero deck (swipe pages: readiness, activity, nutrition, water, sleep) | Replaced by the day block (spec option C). Readiness → workout card row; nutrition, water and sleep → "Your day" rows plus the tubes. |
+| Edit layout (drag to reorder, add/remove groups, `useWidgetConfig`) | Dropped by design: fixed page order (spec). |
+| `NutritionHero` / `NutritionCard` (kcal vs target, macros) | Nutrition tab (`NutritionTodayCard`). Today's Meal row shows kcal logged. |
+| `WeightCheckinCard` history | The Weight row opens the logger; history lives in Progress. |
+| `RecentAwardsCard` | Buddy room → Awards; new awards toast on Today (above). |
+| `SmartTipsCard` (AI tips) | Assistant tab (`SmartNudges`). |
+| `WorkoutStatusCard` | The workout card. |
+
+### Still missing (port as their own tasks)
+
+- `ActivityRingsCard`: Move kcal (Health `active_kcal`, otherwise an estimate from sessions) and exercise minutes. Native has the inputs (`HealthSync`, `SessionEnergy`) but no screen.
+- `TrainingCard`: weekly volume bars and the ACWR band bar (`training-card.ts`). Today only shows `loadComparison`.
+- `PeekHost`: Koa peeking from behind a card when a quest completes (`allowPeek` budget). Native has no peek; the tube rise and done-check bounce stand in.
+- `SleepHero` stages and quality on Today: the Sleep row shows duration only.
+
 ## Removed on purpose (do not port back onto Today)
 
 - `BrandLockup`: the logo is on the app icon.

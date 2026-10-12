@@ -19,6 +19,8 @@ struct TodayExtras<Plan: View>: View {
   var onLogWorkout: (() -> Void)?
   /// Thẻ buổi tập hôm nay + nút chính (`TodayView`).
   /// Nhận dòng sẵn sàng để đặt trong thẻ buổi tập (bản thiết kế Today).
+  /// Nhịp "kéo để tải lại" của trang.
+  var refreshTick = 0
   /// Tên buổi của hôm nay (dòng Buổi tập của "Your day"); `nil` = chưa lên lịch.
   var planName: String?
   /// Nhận dòng sẵn sàng và nút "Ghi giấc ngủ" (khi chưa có điểm) để đặt trong
@@ -53,7 +55,17 @@ struct TodayExtras<Plan: View>: View {
   @State private var todo: ReminderTodayBook?
   @State private var logging: TodayTodo?
   /// "+250 ml" của khối ngày.
-  @State private var water: WaterBook?
+  /// Nước của Today là CÙNG sổ với tab Dinh dưỡng (`NutritionBooks` của phiên)
+  /// — ly thêm ở đây hiện ngay ở kia và ngược lại; chỉ khi không có (preview)
+  /// thì Today tự dựng sổ riêng và tự đóng.
+  @Environment(NutritionBooks.self) private var nutrition: NutritionBooks?
+  @State private var ownWater: WaterBook?
+  private var water: WaterBook? { nutrition?.water ?? ownWater }
+  /// Huy chương vừa trao trong lượt xét này (`useCheckAwards` → ăn mừng).
+  @State private var awardToast: String?
+  @State private var showsSleep = false
+  @State private var showsSupplements = false
+  @State private var sleepInsights: SleepInsightsBook?
   @State private var waterNote: String?
   @State private var waterTaps = 0
   @Environment(ProfileBook.self) private var profile: ProfileBook?
@@ -63,6 +75,27 @@ struct TodayExtras<Plan: View>: View {
     VStack(spacing: DS.Spacing.md) {
       header
         .todayEntrance(0)
+      if let mascot, case .loading = mascot.phase {
+        // Bóng đúng cỡ khối ngày (RN `TodaySkeleton part="hero"`) — không để
+        // trang nhảy khi dữ liệu về, không vẽ một ngày "0 of 5" giả.
+        RoundedRectangle(cornerRadius: 30, style: .continuous)
+          .fill(DS.Color.foreground.swiftUI.opacity(0.05))
+          .frame(height: 300)
+          .accessibilityLabel(Text(String(localized: "today.loading")))
+      } else if let mascot, case .failed = mascot.phase {
+        // RN `LoadFailed`: nói là không đọc được và cho thử lại.
+        VStack(spacing: DS.Spacing.sm) {
+          Text(String(localized: "async.error.generic"))
+            .font(DS.TextStyle.body)
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          Button(String(localized: "common.retry")) { Task { await mascot.load() } }
+            .buttonStyle(.bordered)
+            .frame(minHeight: 44)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(DS.Spacing.lg)
+        .todayCard(radius: 30)
+      }
       if let mascot, case .ready = mascot.phase {
         TodayDayBlock(
           room: mascot, localWaterMl: water?.loaded == true ? water?.totalMl : nil,
@@ -159,6 +192,35 @@ struct TodayExtras<Plan: View>: View {
           .todayZoom("trend", in: zoom)
       }
     }
+    .overlay(alignment: .top) {
+      if let awardToast {
+        Button { self.awardToast = nil; roomSource = "koa"; showsRoom = true } label: {
+          Label(awardToast, systemImage: "rosette")
+            .font(DS.TextStyle.headline)
+            .foregroundStyle(DS.Color.foreground.swiftUI)
+            .padding(.horizontal, DS.Spacing.md)
+            .frame(minHeight: 48)
+            .todayCard(radius: 24)
+        }
+        .buttonStyle(TodayPressStyle())
+        .transition(.move(edge: .top).combined(with: .opacity))
+        .task {
+          try? await Task.sleep(for: .seconds(4))
+          withAnimation(.smooth(duration: 0.35)) { self.awardToast = nil }
+        }
+      }
+    }
+    .sensoryFeedback(.success, trigger: awardToast) { _, new in new != nil }
+    .navigationDestination(isPresented: $showsSleep) {
+      if let sleepInsights {
+        SleepInsightsView(book: sleepInsights, lang: services.preferences.lang).todayZoom("sleep", in: zoom)
+      }
+    }
+    .navigationDestination(isPresented: $showsSupplements) {
+      if let supplements = nutrition?.supplements {
+        SupplementsView(book: supplements).todayZoom("supplements", in: zoom)
+      }
+    }
     .navigationDestination(isPresented: $showsWeekly) {
       if let weekly { WeeklyReviewView(book: weekly, lang: services.preferences.lang).todayZoom("weekly", in: zoom) }
     }
@@ -178,14 +240,22 @@ struct TodayExtras<Plan: View>: View {
       trend = services.makeReadinessTrend(userId: userId, today: today)
       weight = services.makeWeightLogger(userId: userId)
       todo = services.makeReminderToday(userId: userId)
-      water = services.makeWaterBook(userId: userId)
+      if nutrition == nil { ownWater = services.makeWaterBook(userId: userId) }
       await todo?.refresh()
       await weight?.load()
       await mascot?.load()
-      await water?.load()
+      if let nutrition { await nutrition.loadOnce() } else { await ownWater?.load() }
       await readiness?.load()
       await trend?.load()
       await biometrics?.load()
+      await focusChecks()
+    }
+    .onChange(of: refreshTick) { _, _ in
+      Task {
+        await reloadDay()
+        await trend?.load()
+        await focusChecks()
+      }
     }
     .onChange(of: scenePhase) { _, phase in
       // Ra tiền cảnh: qua nửa đêm thì đổi ngày; không thì đọc lại điểm (đồng
@@ -198,6 +268,7 @@ struct TodayExtras<Plan: View>: View {
         await weekly?.move(to: today)
         await mascot?.load()
         await todo?.refresh()
+        await focusChecks()
         await trend?.move(to: today)
       }
     }
@@ -215,7 +286,7 @@ struct TodayExtras<Plan: View>: View {
       trend?.close()
       weight?.close()
       todo?.close()
-      water?.close()
+      ownWater?.close()
     }
   }
 
@@ -287,6 +358,21 @@ struct TodayExtras<Plan: View>: View {
         value: parts.isEmpty ? "—" : parts.joined(separator: " · "),
         action: { biometricsSource = "bio"; showsBiometrics = true }))
     }
+    // Giấc ngủ (RN `SleepCard` → `/sleep-insights`): đêm qua, rồi màn phân tích.
+    let sleepMin = Int((mascot?.signals?.sleepMinutes ?? 0).rounded())
+    rows.append(.init(
+      id: "sleep", title: String(localized: "today.sig.sleep"),
+      value: sleepMin > 0 ? "\(sleepMin / 60)h\(String(format: "%02d", sleepMin % 60))" : "—",
+      action: {
+        if sleepInsights == nil { sleepInsights = services.makeSleepInsights(userId: userId) }
+        showsSleep = sleepInsights != nil
+      }))
+    // Thực phẩm bổ sung (RN `SupplementChecklistCard` trong nhóm Dinh dưỡng).
+    if let sup = nutrition?.supplements, !sup.items.isEmpty {
+      rows.append(.init(
+        id: "supplements", title: String(localized: "supplements.title"),
+        value: "\(sup.takenCount)/\(sup.items.count)", action: { showsSupplements = true }))
+    }
     if readiness != nil {
       rows.append(.init(
         id: "load", title: String(localized: "today.more.training"), value: loadText,
@@ -319,6 +405,21 @@ struct TodayExtras<Plan: View>: View {
     guard let readiness, case .ready(let day) = readiness.phase, let acwr = day.acwr else { return "—" }
     let c = ReadinessCard.loadComparison(acwr)
     return c.percent == 0 ? "0%" : "\(c.heavier ? "+" : "−")\(c.percent)%"
+  }
+
+  /// RN chạy hai việc này mỗi lần Today có focus (`useCheckAwards`,
+  /// `useUpdateChallengeProgress`): huy chương vừa đủ điều kiện được trao và
+  /// ăn mừng ngay, thử thách tuần nhích theo tuần đã tập — không đợi người
+  /// dùng mở màn Thử thách. Cả hai an toàn khi chạy lại (`ref_key` cố định).
+  private func focusChecks() async {
+    await awards?.load()
+    if let key = awards?.newlyGranted.first {
+      let title = AwardText.text(key, lang: services.preferences.lang)?.title ?? key
+      let text = String(localized: "aw.granted \(title)")
+      withAnimation(.spring(duration: 0.5, bounce: 0.25)) { awardToast = text }
+      AccessibilityNotification.Announcement(text).post()
+    }
+    await challenges?.refreshProgress()
   }
 
   /// Dòng sẵn sàng của thẻ buổi tập; chạm → thẻ sẵn sàng RN ở dạng mở.
@@ -369,7 +470,7 @@ struct TodayExtras<Plan: View>: View {
   private func reloadDay() async {
     await todo?.refresh()
     await mascot?.load()
-    await water?.refresh()
+    if let nutrition { await nutrition.refresh() } else { await ownWater?.refresh() }
     await readiness?.load()
     await biometrics?.load()
   }

@@ -24,6 +24,10 @@ public struct TodayView: View {
   var extrasUserId: String?
   /// Việc kế tiếp (từ `TodayExtras`) — màu vầng sáng phía sau trang.
   @State private var accent: MascotRules.Quest?
+  /// Kéo để tải lại (RN `onRefresh` → `invalidateQueries()`): kế hoạch qua
+  /// `refreshable` của `TodayScreen`, các sổ của Today qua nhịp này.
+  @Environment(\.refresh) private var parentRefresh
+  @State private var refreshTick = 0
 
   public init(
     state: TodayDisplay,
@@ -51,6 +55,7 @@ public struct TodayView: View {
         ScrollView {
           TodayExtras(
             userId: extrasUserId, onOpenSettings: onOpenSettings, onLogWorkout: onLogWorkout,
+            refreshTick: refreshTick,
             planName: state.status == .todo || state.status == .missed ? state.templateName : nil
           ) { readiness, logSleep in
             planCard(readiness: readiness, logSleep: logSleep)
@@ -59,6 +64,11 @@ public struct TodayView: View {
           .padding(.bottom, DS.Spacing.lg)
         }
         .scrollContentBackground(.hidden)
+        .refreshable {
+          refreshTick += 1
+          await parentRefresh?()
+        }
+        .sensoryFeedback(.impact(weight: .light), trigger: refreshTick)
         .background { TodayAmbient(accent: accent) }
         .onPreferenceChange(TodayAccentPreference.self) { accent = $0 }
         .toolbar(.hidden, for: .navigationBar)
