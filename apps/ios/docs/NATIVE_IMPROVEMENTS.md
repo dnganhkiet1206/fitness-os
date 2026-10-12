@@ -217,5 +217,6 @@ miễn **giữ nguyên ý định** của app và chỉ làm app tốt hơn — 
 | Hôm nay — cân nặng (T3) | Số cân của HÔM NAY, chưa cân thì "—" | lần cân mới nhất (90 ngày) + nhãn ngày khi không phải hôm nay, viên chênh lệch theo BMI, ba lần trước | thiếu — chưa có sổ lịch sử cân cho Today | sau | #527 (`native/ios-rewrite`) | E |
 | Đi chợ — bản lưu trên máy (N1) | Không có bản lưu: mở lúc mất mạng là màn lỗi có thử lại; tick khi mất mạng vẫn giữ ý trong phiên (#161) | cache React Query hiện danh sách cũ khi mất mạng | thiếu — chưa có `read_cache` cho `grocery_items` | sau | #527 (`native/ios-rewrite`) | E |
 | Đi chợ — hỏi lại khi xoá (N1) | Hộp hỏi (`confirmationDialog`) trỏ vào đúng nút ✕ của món; ô tick đọc "đang chờ gửi" khi ý chưa tới server | `Alert.alert` giữa màn; không có dấu chờ trên món | tốt hơn RN | không cần | #527 (`native/ios-rewrite`) | E |
+| Thực phẩm — ngôi sao (N2) | Hàng có sao không có mũi tên ">" (cột phải là sao, như `FoodCard`); món mẫu chung trong kết quả tìm cũng có sao; lời báo "đã bị xoá ở nơi khác" chỉ hiện ở màn đang mở | `FoodCard`: sao + chấm chờ; báo qua toast toàn app | khác cách báo, cùng hành vi | không cần | #527 (`native/ios-rewrite`) | E |
 
 Thêm dòng mới ở cuối bảng; giữ dòng cũ — sổ là lịch sử, không phải danh sách việc.

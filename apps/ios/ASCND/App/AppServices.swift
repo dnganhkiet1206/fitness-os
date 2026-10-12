@@ -440,7 +440,8 @@ final class AppServices {
   /// thêm / sửa / xoá thẳng server, chỉ khi có mạng (như RN).
   func makeFoodLibrary(userId: String) -> FoodLibraryBook? {
     guard let backend else { return nil }
-    return FoodLibraryBook(userId: userId, source: SupabaseFoodLibrary(backend: backend))
+    let source = SupabaseFoodLibrary(backend: backend)
+    return FoodLibraryBook(userId: userId, source: source, favorites: source)
   }
 
   /// Ô tìm thực phẩm trên tab Dinh dưỡng (#527): chỉ đọc `food_items`.

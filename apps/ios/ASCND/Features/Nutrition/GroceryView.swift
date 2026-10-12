@@ -142,7 +142,7 @@ struct GroceryView: View {
   private func row(_ item: GroceryItem) -> some View {
     let checked = book.shownChecked(item, writer: services.stateWriter)
     let pending = book.isPending(item, writer: services.stateWriter)
-    let label = [item.quantity.map { "\(item.name), \($0)" } ?? item.name, pending ? String(localized: "grocery.pending") : nil]
+    let label = [item.quantity.map { "\(item.name), \($0)" } ?? item.name, pending ? String(localized: "state.pending") : nil]
       .compactMap { $0 }.joined(separator: ", ")
     return HStack(spacing: DS.Spacing.md) {
       Button {

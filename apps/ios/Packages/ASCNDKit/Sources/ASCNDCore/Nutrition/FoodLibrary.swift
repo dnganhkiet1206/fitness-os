@@ -18,9 +18,8 @@ public import Observation
 ///   0–2000 g (`meal_kcal` / `macro_g`); tên bắt buộc;
 /// - thêm / sửa / xoá CHỈ khi có mạng (`useOnlineMutation`); sửa / xoá không
 ///   chạm hàng nào → lỗi "có thể đã xoá ở thiết bị khác".
-///
-/// Chưa port: nút sao (đánh / bỏ yêu thích) — RN đi qua lớp Trạng thái #161
-/// (`setState` / `useStateOverlay`), chờ chốt owner như tick supplements.
+/// - nút sao (`useToggleFavoriteFood`, #527 N2): lớp Trạng thái #161 — xem
+///   `FoodFavorite`.
 public enum FoodLibrary {
   /// `MY_FOODS_PAGE`.
   public static let pageSize = 500
@@ -173,6 +172,52 @@ public enum FoodLibrary {
   }
 }
 
+/// Ngôi sao "yêu thích" (`useToggleFavoriteFood`, #527 N2) — một cờ TUYỆT ĐỐI
+/// qua lớp Trạng thái #161: chạm là sao đổi ngay, mất mạng thì ý đợi mạng về,
+/// chạm hai lần lúc mất mạng là không gửi gì.
+public enum FoodFavorite {
+  /// `favoriteKey(id)`.
+  public static func key(_ id: String) -> String { "food:favorite:\(id)" }
+
+  /// `send` của RN — gửi lại bao nhiêu lần cũng ra một kết quả:
+  /// - món không còn → `.gone`;
+  /// - món của mình: `update is_favorite = v`; 0 dòng → `.gone`;
+  /// - món dùng chung (seed): RLS không cho sửa, nên yêu thích là CHÉP nó vào
+  ///   danh sách của mình theo tên — đã có bản chép thì đánh dấu bản ấy (bản
+  ///   ấy vừa bị xoá thì rơi xuống chèn); bỏ yêu thích seed: không có gì để làm.
+  public static func send(
+    id: String, value: Bool, userId: String, source: any FoodFavoriteSource
+  ) async throws -> StateWriter.SendResult {
+    guard let row = try await source.food(id: id) else { return .gone }
+    if row["user_id"]?.stringValue == userId {
+      return try await source.setFavorite(id: id, userId: nil, value: value) > 0 ? .ok : .gone
+    }
+    guard value else { return .ok }
+    let name = row["name"]?.stringValue ?? ""
+    if let mine = try await source.myFoodId(userId: userId, name: name),
+      try await source.setFavorite(id: mine, userId: userId, value: true) > 0
+    {
+      return .ok
+    }
+    var copy: [String: JSONValue] = ["name": .string(name), "is_favorite": .bool(true)]
+    for k in ["brand", "serving_g", "kcal", "protein_g", "carbs_g", "fat_g", "fiber_g"] { copy[k] = row[k] ?? .null }
+    try await source.insert(userId: userId, copy)
+    return .ok
+  }
+}
+
+/// Đọc / ghi cho ngôi sao (`ASCNDBackend.SupabaseFoodLibrary`).
+public protocol FoodFavoriteSource: Sendable {
+  /// `select('user_id, name, brand, serving_g, kcal, protein_g, carbs_g, fat_g, fiber_g').eq('id').maybeSingle()`.
+  func food(id: String) async throws -> JSONValue?
+  /// `update({ is_favorite }).eq('id')` (+ `.eq('user_id')` khi có); số hàng đã chạm.
+  func setFavorite(id: String, userId: String?, value: Bool) async throws -> Int
+  /// Bản chép của người theo tên (`.eq('name').limit(1)`).
+  func myFoodId(userId: String, name: String) async throws -> String?
+  /// Chèn món của người (`user_id` thêm ở đây).
+  func insert(userId: String, _ row: [String: JSONValue]) async throws
+}
+
 /// Đọc / ghi `food_items` (`ASCNDBackend.SupabaseFoodLibrary`).
 public protocol FoodLibrarySource: Sendable {
   /// Một trang `[from, to]` món của người, theo tên rồi id.
@@ -211,6 +256,12 @@ public final class FoodLibraryBook {
   public private(set) var phase: Phase = .loading
   public private(set) var recents: [MealLog.Food] = []
   public private(set) var busy = false
+  /// Tăng sau mỗi lượt đọc xong — ô tìm đọc lại theo nó (`refresh:
+  /// FOOD_QUERY_KEYS` của RN gồm cả kết quả tìm).
+  public private(set) var revision = 0
+  /// Cờ sao server đã xác nhận mà bản đọc chưa mang (ý chờ đã gỡ, không được
+  /// nháy về bản cũ). Lượt đọc mới có món ấy thì bỏ.
+  public private(set) var settledFavorites: [String: Bool] = [:]
 
   /// "Của tôi", đã xếp.
   public var mine: [FoodLibrary.Food] {
@@ -219,12 +270,45 @@ public final class FoodLibraryBook {
   }
 
   @ObservationIgnored private let source: any FoodLibrarySource
+  @ObservationIgnored private let favorites: (any FoodFavoriteSource)?
   @ObservationIgnored private var generation = 0
   @ObservationIgnored private var closed = false
 
-  public init(userId: String, source: any FoodLibrarySource) {
+  /// - Parameter favorites: `nil` → không có ngôi sao (màn chỉ vẽ sao tĩnh).
+  public init(userId: String, source: any FoodLibrarySource, favorites: (any FoodFavoriteSource)? = nil) {
     self.userId = userId
     self.source = source
+    self.favorites = favorites
+  }
+
+  public var canFavorite: Bool { favorites != nil }
+
+  // MARK: - Ngôi sao (#161)
+
+  /// `toggleFav.set(f, value)`; `server` = cờ đang hiện của bản đọc.
+  @discardableResult
+  public func setFavorite(_ f: FoodLibrary.Food, value: Bool, writer: StateWriter) -> StateWriter.Outcome? {
+    guard let favorites else { return nil }
+    let userId = self.userId, id = f.id
+    return writer.set(key: FoodFavorite.key(id), value: value, server: settledFavorites[id] ?? f.isFavorite) {
+      [weak self] v in
+      let result = try await FoodFavorite.send(id: id, value: v, userId: userId, source: favorites)
+      if result == .ok, let self, !self.closed {
+        self.settledFavorites[id] = v
+        Task { await self.load() }
+      }
+      return result
+    }
+  }
+
+  /// `toggleFav.is(f)`: ý chờ gửi, rồi cờ đã xác nhận, rồi bản đọc.
+  public func shownFavorite(_ f: FoodLibrary.Food, writer: StateWriter?) -> Bool {
+    writer?.pending(FoodFavorite.key(f.id)) ?? settledFavorites[f.id] ?? f.isFavorite
+  }
+
+  /// `toggleFav.pending(f)`.
+  public func favoritePending(_ f: FoodLibrary.Food, writer: StateWriter?) -> Bool {
+    writer?.pending(FoodFavorite.key(f.id)) != nil
   }
 
   public func close() {
@@ -250,8 +334,11 @@ public final class FoodLibraryBook {
       }
       let rows = await recentRows
       guard !closed, gen == generation else { return }
-      phase = .ready(all.compactMap(FoodLibrary.Food.init(row:)))
+      let foods = all.compactMap(FoodLibrary.Food.init(row:))
+      for f in foods { settledFavorites[f.id] = nil }
+      phase = .ready(foods)
       recents = MealLog.recentFoods(rows ?? [])
+      revision += 1
     } catch {
       _ = await recentRows
       guard !closed, gen == generation else { return }

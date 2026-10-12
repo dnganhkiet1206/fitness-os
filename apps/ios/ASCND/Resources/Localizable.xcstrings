@@ -41587,7 +41587,7 @@
     }
    }
   },
-  "grocery.pending": {
+  "state.pending": {
    "extractionState": "manual",
    "localizations": {
     "en": {

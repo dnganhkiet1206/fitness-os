@@ -20,8 +20,10 @@ import SwiftUI
 ///   thứ người dùng không lưu được;
 /// - tìm không ra nói "Không tìm thấy thực phẩm" (RN dùng nhầm câu "Không tìm
 ///   thấy bài tập"); tìm hỏng nói ra thay vì không hiện gì;
-/// - chưa có nút quét mã vạch trong ô tìm (`scan-barcode` chưa port) và nút
-///   sao (lớp Trạng thái #161).
+/// - chưa có nút quét mã vạch trong ô tìm (`scan-barcode` chưa port).
+///
+/// Ngôi sao (#527 N2, `FoodCard` của RN): trên mọi hàng món — của tôi lẫn kết
+/// quả tìm (món mẫu chung: yêu thích là chép vào thư viện, xem `FoodFavorite`).
 struct FoodsSection: View {
   let userId: String
   let library: FoodLibraryBook
@@ -30,6 +32,8 @@ struct FoodsSection: View {
   @State private var query = ""
   @State private var editing: FoodListView.EditorRequest?
   @State private var message: String?
+  /// Lời báo chung của lớp Trạng thái không mang khoá — chỉ màn đang hiện nói.
+  @State private var visible = false
 
   static let mineShown = 5
   static let recentShown = 4
@@ -76,8 +80,16 @@ struct FoodsSection: View {
     }
     .padding(DS.Spacing.md)
     .todayCard(radius: DS.Radius.lg)
-    // Trễ 250 ms sau phím cuối; đổi chữ huỷ lượt chờ trước.
-    .task(id: query) {
+    .onAppear { visible = true }
+    .onDisappear { visible = false }
+    .onChange(of: services.stateWriter.notice) { _, notice in
+      guard visible, let notice else { return }
+      say(notice == .gone ? String(localized: "state.gone") : String(localized: "async.error.generic"))
+      services.stateWriter.clearNotice()
+    }
+    // Trễ 250 ms sau phím cuối; đổi chữ huỷ lượt chờ trước. Thư viện đọc lại
+    // (vd. sau ngôi sao) thì kết quả tìm đọc lại theo.
+    .task(id: SearchKey(query: query, revision: library.revision)) {
       if !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
         try? await Task.sleep(for: FoodSearch.debounce)
         if Task.isCancelled { return }
@@ -106,11 +118,40 @@ struct FoodsSection: View {
     }
   }
 
-  /// Món của mình chạm để sửa; món mẫu chung chỉ để xem.
+  private struct SearchKey: Hashable {
+    let query: String
+    let revision: Int
+  }
+
+  /// Hàng món: ngôi sao khi sổ có nguồn ghi, không thì sao tĩnh như trước.
   @ViewBuilder private func food(_ f: FoodLibrary.Food) -> some View {
+    if library.canFavorite {
+      let writer = services.stateWriter
+      StarredFoodRow(
+        on: library.shownFavorite(f, writer: writer), pending: library.favoritePending(f, writer: writer),
+        toggle: { star(f) }
+      ) { foodBody(f, chrome: false) }
+    } else {
+      foodBody(f, chrome: true)
+    }
+  }
+
+  private func star(_ f: FoodLibrary.Food) {
+    let writer = services.stateWriter
+    let wasEmpty = writer.size == 0
+    let outcome = library.setFavorite(f, value: !library.shownFavorite(f, writer: writer), writer: writer)
+    if outcome == .queued, !services.sync.online, wasEmpty { say(String(localized: "state.queued")) }
+  }
+
+  /// Món của mình chạm để sửa; món mẫu chung chỉ để xem.
+  @ViewBuilder private func foodBody(_ f: FoodLibrary.Food, chrome: Bool) -> some View {
     let mine = f.userId == userId
-    let row = FoodRow(name: f.name, brand: f.brand, kcal: f.kcal, p: f.protein, c: f.carbs, fat: f.fat, favorite: f.isFavorite) {
-      if mine {
+    let row = FoodRow(
+      name: f.name, brand: f.brand, kcal: f.kcal, p: f.protein, c: f.carbs, fat: f.fat, favorite: f.isFavorite,
+      chrome: chrome
+    ) {
+      // Có ngôi sao thì cột phải là sao (như `FoodCard`), không thêm mũi tên.
+      if mine, chrome {
         Image(systemName: "chevron.right")
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
           .accessibilityHidden(true)

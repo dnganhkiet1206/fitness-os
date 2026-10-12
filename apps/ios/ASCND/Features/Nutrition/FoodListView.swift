@@ -12,9 +12,7 @@ import SwiftUI
 ///   lưu lại;
 /// - đọc hỏng là lỗi có thử lại, không phải "chưa có gì";
 /// - thêm / sửa / xoá / lưu chỉ khi có mạng.
-///
-/// Chưa có: nút sao (đánh / bỏ yêu thích) — lớp Trạng thái #161 đã có
-/// (`StateWriter`), còn nối nút.
+/// - ngôi sao trên món của tôi (#527 N2) qua lớp Trạng thái #161.
 struct FoodListView: View {
   let book: FoodLibraryBook
   @Environment(AppServices.self) private var services
@@ -22,6 +20,8 @@ struct FoodListView: View {
   @State private var query = ""
   @State private var editing: EditorRequest?
   @State private var message: String?
+  /// Lời báo chung của lớp Trạng thái không mang khoá — chỉ màn đang hiện nói.
+  @State private var visible = false
 
   enum Segment: Hashable { case mine, recent }
 
@@ -84,6 +84,13 @@ struct FoodListView: View {
     .sheet(item: $editing) { req in
       FoodEditorView(book: book, food: req.food)
     }
+    .onAppear { visible = true }
+    .onDisappear { visible = false }
+    .onChange(of: services.stateWriter.notice) { _, notice in
+      guard visible, let notice else { return }
+      message = notice == .gone ? String(localized: "state.gone") : String(localized: "async.error.generic")
+      services.stateWriter.clearNotice()
+    }
     .alert(message ?? "", isPresented: Binding(get: { message != nil }, set: { if !$0 { message = nil } })) {
       Button(String(localized: "common.cancel"), role: .cancel) {}
     }
@@ -114,18 +121,42 @@ struct FoodListView: View {
     } else {
       VStack(spacing: DS.Spacing.xs) {
         ForEach(shown) { f in
-          Button { editing = EditorRequest(food: f) } label: {
-            FoodRow(name: f.name, brand: f.brand, kcal: f.kcal, p: f.protein, c: f.carbs, fat: f.fat, favorite: f.isFavorite) {
-              Image(systemName: "chevron.right")
-                .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-                .accessibilityHidden(true)
-            }
+          if book.canFavorite {
+            let writer = services.stateWriter
+            StarredFoodRow(
+              on: book.shownFavorite(f, writer: writer), pending: book.favoritePending(f, writer: writer),
+              toggle: { star(f) }
+            ) { mineRow(f, chrome: false) }
+          } else {
+            mineRow(f, chrome: true)
           }
-          .buttonStyle(.plain)
-          .accessibilityHint(Text(String(localized: "foods.a11y.edit")))
         }
       }
     }
+  }
+
+  private func mineRow(_ f: FoodLibrary.Food, chrome: Bool) -> some View {
+    Button { editing = EditorRequest(food: f) } label: {
+      FoodRow(
+        name: f.name, brand: f.brand, kcal: f.kcal, p: f.protein, c: f.carbs, fat: f.fat, favorite: f.isFavorite,
+        chrome: chrome
+      ) {
+        if chrome {
+          Image(systemName: "chevron.right")
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .accessibilityHidden(true)
+        }
+      }
+    }
+    .buttonStyle(.plain)
+    .accessibilityHint(Text(String(localized: "foods.a11y.edit")))
+  }
+
+  private func star(_ f: FoodLibrary.Food) {
+    let writer = services.stateWriter
+    let wasEmpty = writer.size == 0
+    let outcome = book.setFavorite(f, value: !book.shownFavorite(f, writer: writer), writer: writer)
+    if outcome == .queued, !services.sync.online, wasEmpty { message = String(localized: "state.queued") }
   }
 
   @ViewBuilder private var recentList: some View {
@@ -355,13 +386,15 @@ struct FoodRow<Trailing: View>: View {
   let c: Double
   let fat: Double
   let favorite: Bool
+  /// `false`: không nền / đệm phải — hàng nằm trong `StarredFoodRow`.
+  var chrome = true
   @ViewBuilder let trailing: () -> Trailing
 
   var body: some View {
     HStack(spacing: DS.Spacing.sm) {
       VStack(alignment: .leading, spacing: 2) {
         HStack(spacing: 4) {
-          if favorite {
+          if favorite, chrome {
             Image(systemName: "star.fill")
               .font(.caption)
               .foregroundStyle(DS.Color.primary.swiftUI)
@@ -380,9 +413,45 @@ struct FoodRow<Trailing: View>: View {
         .font(DS.TextStyle.footnote.monospacedDigit())
       trailing()
     }
-    .padding(.horizontal, DS.Spacing.md)
+    .padding(.leading, DS.Spacing.md)
+    .padding(.trailing, chrome ? DS.Spacing.md : 0)
     .frame(minHeight: 52)
-    .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.md))
+    .contentShape(Rectangle())
+    .background(chrome ? DS.Color.card.swiftUI : .clear, in: RoundedRectangle(cornerRadius: DS.Radius.md))
     .accessibilityElement(children: .combine)
+  }
+}
+
+/// Hàng món CÓ ngôi sao (`FoodCard` của RN, #527 N2): thân hàng và ngôi sao là
+/// HAI nút cạnh nhau — VoiceOver thấy cả "mở món" lẫn "Yêu thích".
+struct StarredFoodRow<Content: View>: View {
+  let on: Bool
+  let pending: Bool
+  let toggle: () -> Void
+  @ViewBuilder let content: () -> Content
+
+  var body: some View {
+    HStack(spacing: 0) {
+      content()
+      Button(action: toggle) {
+        Image(systemName: on ? "star.fill" : "star")
+          .font(.system(size: 17, weight: on ? .semibold : .regular))
+          .foregroundStyle(on ? DS.Color.readinessYellow.swiftUI : DS.Color.mutedForeground.swiftUI)
+          .overlay(alignment: .topTrailing) {
+            if pending {
+              Circle().fill(DS.Color.mutedForeground.swiftUI).frame(width: 6, height: 6).offset(x: 4, y: -2)
+            }
+          }
+          .frame(width: 44, height: 52)
+          .contentShape(Rectangle())
+      }
+      .buttonStyle(.plain)
+      .sensoryFeedback(.selection, trigger: on)
+      .accessibilityLabel(Text(verbatim: [String(localized: "logMeal.a11y.favorite"), pending ? String(localized: "state.pending") : nil]
+        .compactMap { $0 }.joined(separator: ", ")))
+      .accessibilityAddTraits(on ? [.isButton, .isSelected] : .isButton)
+    }
+    .padding(.trailing, 4)
+    .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.md))
   }
 }

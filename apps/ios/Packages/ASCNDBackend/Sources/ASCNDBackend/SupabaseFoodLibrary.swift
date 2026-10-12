@@ -5,7 +5,7 @@ import Supabase
 /// `FoodLibrarySource` thật — `useMyFoods` / `useCreateFoodItem` /
 /// `useUpdateFoodItem` / `useDeleteFoodItem` (`use-nutrition.ts`) trên
 /// `food_items` (RLS: món mẫu chung `user_id IS NULL` + món của chính người).
-public struct SupabaseFoodLibrary: FoodLibrarySource {
+public struct SupabaseFoodLibrary: FoodLibrarySource, FoodFavoriteSource {
   private let client: SupabaseClient
 
   public init(backend: Backend) {
@@ -68,5 +68,33 @@ public struct SupabaseFoodLibrary: FoodLibrarySource {
       .select("id")
       .execute().value
     return gone.count
+  }
+
+  // MARK: - Ngôi sao (`useToggleFavoriteFood`, #527 N2)
+
+  public func food(id: String) async throws -> JSONValue? {
+    let rows: [JSONValue] = try await client.from("food_items")
+      .select("user_id, name, brand, serving_g, kcal, protein_g, carbs_g, fat_g, fiber_g")
+      .eq("id", value: id)
+      .limit(1)
+      .execute().value
+    return rows.first
+  }
+
+  public func setFavorite(id: String, userId: String?, value: Bool) async throws -> Int {
+    var q = try client.from("food_items").update(["is_favorite": value]).eq("id", value: id)
+    if let userId { q = q.eq("user_id", value: userId) }
+    let hit: [JSONValue] = try await q.select("id").execute().value
+    return hit.count
+  }
+
+  public func myFoodId(userId: String, name: String) async throws -> String? {
+    let rows: [JSONValue] = try await client.from("food_items")
+      .select("id")
+      .eq("user_id", value: userId)
+      .eq("name", value: name)
+      .limit(1)
+      .execute().value
+    return rows.first?["id"]?.stringValue
   }
 }
