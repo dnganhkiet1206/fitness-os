@@ -56,4 +56,16 @@ struct TodayDayTests {
   @Test func coinsPerSignal() {
     #expect(TodayDay.order.map(TodayDay.coins) == [15, 10, 15, 25, 10])
   }
+
+  /// Lần uống còn trong outbox: ống nước và việc "xong" đọc tổng cục bộ; số
+  /// server lớn hơn (máy khác vừa ghi) thì giữ số server; chưa có ngày → nil.
+  @Test func localWaterCountsBeforeSync() {
+    let server = DailySignals(waterMl: 500)
+    let merged = TodayDay.merging(server, localWaterMl: 2_750)
+    #expect(merged?.waterMl == 2_750)
+    #expect(TodayDay.tubes(merged, stepsGoal: 10_000).first { $0.quest == .water }?.done == true)
+    #expect(TodayDay.merging(server, localWaterMl: 250)?.waterMl == 500)
+    #expect(TodayDay.merging(server, localWaterMl: nil)?.waterMl == 500)
+    #expect(TodayDay.merging(nil, localWaterMl: 250) == nil)
+  }
 }

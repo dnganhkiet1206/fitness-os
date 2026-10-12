@@ -42,6 +42,7 @@ struct TodayExtras<Plan: View>: View {
   /// "+250 ml" của khối ngày.
   @State private var water: WaterBook?
   @State private var waterNote: String?
+  @State private var waterTaps = 0
   @Environment(ProfileBook.self) private var profile: ProfileBook?
   @State private var built = false
 
@@ -49,7 +50,11 @@ struct TodayExtras<Plan: View>: View {
     VStack(spacing: DS.Spacing.md) {
       header
       if let mascot, case .ready = mascot.phase {
-        TodayDayBlock(room: mascot, onAct: act, onOpenRoom: { showsRoom = true })
+        TodayDayBlock(
+          room: mascot, localWaterMl: water?.loaded == true ? water?.totalMl : nil,
+          onAct: act, onOpenRoom: { showsRoom = true })
+          // Rung NGAY lúc chạm nước (RN `Haptics.light()` trong `onPress`).
+          .sensoryFeedback(.impact(weight: .light), trigger: waterTaps)
         if let waterNote {
           Text(verbatim: waterNote)
             .font(DS.TextStyle.footnote)
@@ -67,6 +72,11 @@ struct TodayExtras<Plan: View>: View {
       }
       HealthSyncCard(isAvailable: services.health.isAvailable, sync: syncHealth)
       groups
+    }
+    // Bữa / nước / ngủ đi qua outbox: hàng đợi vơi đi (server đã nhận) thì đọc
+    // lại ngày — như `invalidateQueries` sau `onSettled` của RN.
+    .onChange(of: services.sync.pendingCount) { old, new in
+      if new < old { Task { await reloadDay() } }
     }
     .sheet(item: $logging, onDismiss: { Task { await reloadDay() } }) { item in
       switch item {
@@ -108,6 +118,7 @@ struct TodayExtras<Plan: View>: View {
       await todo?.refresh()
       await weight?.load()
       await mascot?.load()
+      await water?.load()
       await readiness?.load()
       await trend?.load()
       await biometrics?.load()
@@ -174,7 +185,9 @@ struct TodayExtras<Plan: View>: View {
     case .sleep: logging = .sleep
     case .meal: logging = .meal
     case .workout: onLogWorkout?()
-    case .water: Task { await addWater() }
+    case .water:
+      waterTaps += 1
+      Task { await addWater() }
     case .steps: break
     }
   }
@@ -187,7 +200,6 @@ struct TodayExtras<Plan: View>: View {
     do {
       _ = try await water.add(amountMl: Self.waterStepMl, online: services.sync.online)
       AccessibilityNotification.Announcement(String(localized: "today.water.added")).post()
-      await mascot?.load()
     } catch {
       waterNote = String(localized: "async.error.generic")
     }
@@ -197,6 +209,7 @@ struct TodayExtras<Plan: View>: View {
   private func reloadDay() async {
     await todo?.refresh()
     await mascot?.load()
+    await water?.refresh()
     await readiness?.load()
     await biometrics?.load()
   }

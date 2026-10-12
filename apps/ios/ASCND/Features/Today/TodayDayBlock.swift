@@ -21,6 +21,10 @@ import SwiftUI
 /// Reduce Transparency → nền đặc. Reduce Motion → không quầng sáng động.
 struct TodayDayBlock: View {
   let room: MascotRoomController
+  /// Tổng nước hôm nay của sổ nước (gồm lần còn chờ gửi) — như `useTodayWater`
+  /// mà Koa của RN đọc: chạm "+250 ml" là ống và câu đổi ngay. `nil` khi sổ
+  /// chưa đọc xong.
+  var localWaterMl: Int?
   /// Nút trong bong bóng / chạm ống: ghi đúng việc ấy.
   let onAct: (MascotRules.Quest) -> Void
   let onOpenRoom: () -> Void
@@ -40,8 +44,9 @@ struct TodayDayBlock: View {
   }
 
   private func content(hour: Int) -> some View {
-    let tubes = TodayDay.tubes(room.signals, stepsGoal: room.stepsGoal)
-    let line = MascotLine.line(TodayDay.mascotDay(room.signals, hour: hour))
+    let signals = TodayDay.merging(room.signals, localWaterMl: localWaterMl)
+    let tubes = TodayDay.tubes(signals, stepsGoal: room.stepsGoal)
+    let line = MascotLine.line(TodayDay.mascotDay(signals, hour: hour))
     let next = line.gap.map(TodayDay.quest)
     let total = MascotRules.energySignals.count
     return VStack(spacing: 18) {
@@ -49,7 +54,7 @@ struct TodayDayBlock: View {
         koa
         VStack(alignment: .leading, spacing: DS.Spacing.sm) {
           HStack(alignment: .firstTextBaseline) {
-            countText(done: room.energyCount, total: total)
+            countText(done: tubes.filter(\.done).count, total: total)
             Spacer(minLength: 0)
             if waitingCoins > 0 { coinPill(waitingCoins) }
           }

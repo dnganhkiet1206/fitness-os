@@ -45,6 +45,16 @@ public enum TodayDay {
     }
   }
 
+  /// Tín hiệu của server cộng phần nước đã ghi trên máy mà server chưa thấy
+  /// (lần uống còn trong outbox). `localWaterMl` là tổng của sổ nước hôm nay —
+  /// gồm cả hàng server lẫn hàng chờ gửi — nên lấy số lớn hơn: chạm "+250 ml"
+  /// thì ống đầy lên NGAY, không đợi một vòng đồng bộ.
+  public static func merging(_ s: DailySignals?, localWaterMl: Int?) -> DailySignals? {
+    guard var s else { return nil }
+    if let local = localWaterMl { s.waterMl = max(s.waterMl, Double(local)) }
+    return s
+  }
+
   /// Mục tiêu nước: của hồ sơ, không có thì 2.500 ml (như nhiệm vụ nước).
   public static func waterTarget(_ s: DailySignals?) -> Double {
     guard let t = s?.waterTargetMl, t > 0 else { return DailySignals.defaultWaterTargetMl }
