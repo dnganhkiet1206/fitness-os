@@ -15,6 +15,22 @@ public enum Supplements {
   /// `localDayRangeISO(dateStr)`: nửa đêm ĐỊA PHƯƠNG của ngày ấy tới nửa đêm
   /// địa phương ngày sau, ra ISO UTC. Ngày đổi giờ dài 23 / 25 giờ — tính bằng
   /// lịch, không cộng 24 giờ.
+  /// Khoá gộp của lớp Trạng thái (#161): (mục, ngày). Tick và bỏ tick của
+  /// cùng một nút phải nói cùng một ngày, nên ngày nằm trong khoá.
+  public static func takenKey(_ id: String, _ date: LocalDate) -> String {
+    "supplement:taken:\(id.lowercased()):\(date)"
+  }
+
+  /// Hàng chèn khi tick: `diaryStamp` — hôm nay để `now()` của cột đứng, ngày
+  /// đã qua đóng dấu 12:00 địa phương, nên đường xoá theo khoảng ngày tìm thấy nó.
+  public static func intakeRow(userId: String, id: String, date: LocalDate, now: EpochMillis, in tz: TimeZone) -> JSONValue {
+    var row: [String: JSONValue] = [
+      "user_id": .string(userId), "supplement_id": .string(id.lowercased()), "taken": .bool(true),
+    ]
+    if date != LocalDate(now, in: tz) { row["date_time"] = .string(MealLog.stamp(date, now: now, in: tz)) }
+    return .object(row)
+  }
+
   public static func dayRange(_ date: LocalDate, in timeZone: TimeZone) -> (start: String, end: String) {
     (WorkoutSessionRecord.iso8601(midnight(date, timeZone)), WorkoutSessionRecord.iso8601(midnight(date.adding(days: 1), timeZone)))
   }
@@ -75,6 +91,13 @@ public protocol SupplementSource: Sendable {
   func insert(_ row: JSONValue) async throws
   /// `delete().eq(id).eq(user_id)` + `confirmWrite`: số hàng đã xoá.
   func delete(id: String, userId: String) async throws -> Int
+  /// "Đã uống" (#161): số dòng `taken = true` của mục trong `[start, end)`.
+  func intakeCount(userId: String, supplementId: String, start: String, end: String) async throws -> Int
+  /// "Chưa uống" (#161): xoá mọi dòng của mục trong `[start, end)`.
+  func deleteIntakes(userId: String, supplementId: String, start: String, end: String) async throws
+  /// Chèn một dòng uống. `false` khi khoá ngoại hỏng (23503) — mục đã bị xoá
+  /// ở máy khác.
+  func insertIntake(_ row: JSONValue) async throws -> Bool
 }
 
 public protocol SupplementCache: Sendable {
@@ -253,6 +276,42 @@ public final class SupplementBook {
     guard !closed else { return outcome }
     await refresh()
     return outcome
+  }
+
+  // MARK: - Đã uống (#161)
+
+  /// `useToggleSupplement().set`: đặt giá trị TUYỆT ĐỐI "đã uống hôm nay" qua
+  /// lớp Trạng thái. `true` = có một dòng trong ngày (chèn chỉ khi chưa có —
+  /// gửi lại bao nhiêu lần cũng là một dòng); `false` = không dòng nào (xoá theo
+  /// khoảng ngày). Mục đã bị xoá ở máy khác → `.gone`.
+  @discardableResult
+  public func setTaken(_ item: Supplement, taken: Bool, writer: StateWriter) -> StateWriter.Outcome {
+    let day = today()
+    // Bản đang hiện là của hôm khác (app mở qua nửa đêm) → server của hôm nay chưa uống.
+    let server = day == date ? item.taken : false
+    let range = Supplements.dayRange(day, in: timeZone)
+    let source = self.source, userId = self.userId, clock = self.clock, tz = self.timeZone
+    let id = item.id.lowercased()
+    return writer.set(key: Supplements.takenKey(id, day), value: taken, server: server) { value in
+      if !value {
+        try await source.deleteIntakes(userId: userId, supplementId: id, start: range.start, end: range.end)
+        return .ok
+      }
+      if try await source.intakeCount(userId: userId, supplementId: id, start: range.start, end: range.end) > 0 {
+        return .ok
+      }
+      let row = Supplements.intakeRow(userId: userId, id: id, date: day, now: clock.nowMillis(), in: tz)
+      return try await source.insertIntake(row) ? .ok : .gone
+    }
+  }
+
+  /// "Đã uống" để HIỆN: ý đang chờ gửi thắng bản của server.
+  public func shownTaken(_ item: Supplement, writer: StateWriter?) -> Bool {
+    writer?.pending(Supplements.takenKey(item.id, today())) ?? item.taken
+  }
+
+  public func shownTakenCount(writer: StateWriter?) -> Int {
+    items.filter { shownTaken($0, writer: writer) }.count
   }
 
   static func untaken(_ s: Supplement) -> Supplement {

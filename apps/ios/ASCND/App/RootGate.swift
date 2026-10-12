@@ -103,6 +103,11 @@ private struct SignedInScope<Content: View>: View {
       let books = NutritionBooks(
         water: services.makeWaterBook(userId: userId), supplements: services.makeSupplementBook(userId: userId))
       nutrition = books
+      // Lớp Trạng thái xong một khoá "đã uống" → đọc lại danh sách của server
+      // (`refresh: [listKey, ['daily_log']]` của RN).
+      services.stateWriter.environment.onSettled = { [weak books] key in
+        if key.hasPrefix("supplement:") { Task { await books?.supplements?.refresh() } }
+      }
       reminderToday = services.makeReminderToday(userId: userId)
       // "Đang kết nối lại" thoát khi lượt tải của phiên này xong. Giữ `weak`:
       // phiên đã đóng thì không còn gì để chờ. Không gỡ ở `onDisappear` — cây
@@ -208,6 +213,8 @@ private struct SignedInScope<Content: View>: View {
     .onChange(of: services.sync.online) { _, online in
       // Có mạng lại (`refetchOnReconnect` của baseline).
       if online, let flow { Task { await flow.reconnected() } }
+      // #161: gửi các ý "đã uống" còn chờ (`onlineManager.subscribe` của RN).
+      if online { services.stateWriter.flush() }
       // Hồ sơ cũng là một query của RN (`['profile', id]`, `refetchOnReconnect`
       // chung): đổi đơn vị tạ ở máy khác lúc máy này offline thì có mạng lại
       // là thấy, không đợi lần ra tiền cảnh sau. Lượt đọc này được busy-probe

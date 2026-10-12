@@ -50,6 +50,40 @@ public struct SupabaseSupplementSource: SupplementSource {
     return gone.count
   }
 
+  /// `useToggleSupplement` (#161), vế `true`: đã có dòng uống trong ngày chưa.
+  public func intakeCount(userId: String, supplementId: String, start: String, end: String) async throws -> Int {
+    let res = try await client.from("supplement_intake_logs")
+      .select("id", head: true, count: .exact)
+      .eq("user_id", value: userId)
+      .eq("supplement_id", value: supplementId)
+      .eq("taken", value: true)
+      .gte("date_time", value: start)
+      .lt("date_time", value: end)
+      .execute()
+    return res.count ?? 0
+  }
+
+  /// Vế `false`: xoá theo khoảng ngày.
+  public func deleteIntakes(userId: String, supplementId: String, start: String, end: String) async throws {
+    try await client.from("supplement_intake_logs")
+      .delete()
+      .eq("user_id", value: userId)
+      .eq("supplement_id", value: supplementId)
+      .gte("date_time", value: start)
+      .lt("date_time", value: end)
+      .execute()
+  }
+
+  /// Vế `true`, chèn. Khoá ngoại 23503 = mục đã bị xoá ở máy khác → `false`.
+  public func insertIntake(_ row: JSONValue) async throws -> Bool {
+    do {
+      try await client.from("supplement_intake_logs").insert(row).execute()
+      return true
+    } catch let error as PostgrestError where error.code == "23503" {
+      return false
+    }
+  }
+
   struct Row: Decodable, Sendable {
     let id: String
     let name: String

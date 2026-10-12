@@ -6,17 +6,21 @@ import SwiftUI
 /// thời điểm. Nút xoá nằm ở `SupplementsView`, ngoài phần tử gộp này.
 struct SupplementRowLabel: View {
   let item: Supplement
+  /// Đã uống để HIỆN (ý đang chờ của lớp Trạng thái thắng bản server).
+  var taken: Bool? = nil
+
+  private var shown: Bool { taken ?? item.taken }
 
   var body: some View {
     HStack(spacing: DS.Spacing.md) {
-      Image(systemName: item.taken ? "checkmark.circle.fill" : "circle")
+      Image(systemName: shown ? "checkmark.circle.fill" : "circle")
         .font(.title3)
-        .foregroundStyle(item.taken ? DS.Color.readinessGreen.swiftUI : DS.Color.mutedForeground.swiftUI)
+        .foregroundStyle(shown ? DS.Color.readinessGreen.swiftUI : DS.Color.mutedForeground.swiftUI)
         .accessibilityHidden(true)
       VStack(alignment: .leading, spacing: 2) {
         Text(verbatim: item.name)
           .font(DS.TextStyle.headline)
-          .strikethrough(item.taken)
+          .strikethrough(shown)
         let detail = Supplements.detail(dose: item.doseText, timingLabel: SupplementsView.timingLabel(item.timing))
         if !detail.isEmpty {
           Text(verbatim: detail)
@@ -28,7 +32,7 @@ struct SupplementRowLabel: View {
     }
     .accessibilityElement(children: .combine)
     .accessibilityValue(
-      Text(item.taken ? String(localized: "supplements.a11y.taken") : String(localized: "supplements.a11y.notTaken")))
+      Text(shown ? String(localized: "supplements.a11y.taken") : String(localized: "supplements.a11y.notTaken")))
   }
 }
 
@@ -43,9 +47,10 @@ struct SupplementRowLabel: View {
 /// - rỗng: "Chưa có supplement nào" + gợi ý (chữ của RN, nguyên văn).
 ///
 /// Khác RN / chưa có:
-/// - **tick "đã uống" chưa port** — RN đi qua lớp Trạng thái #161
-///   (`state-write`), native chưa có lõi ấy (chờ chốt owner, #527). Dấu tick
-///   ở đây CHỈ ĐỌC trạng thái server, không bấm được;
+/// - tick "đã uống" qua lớp Trạng thái #161 (`StateWriter`, chủ dự án chốt
+///   port 2026-10-12): giá trị tuyệt đối, gộp theo (mục, ngày), ý cuối thắng;
+///   mất mạng thì giữ trong phiên và báo MỘT lần ("tắt app trước lúc đó thì
+///   thay đổi này mất"); mục đã xoá ở nơi khác thì bỏ ý và báo;
 /// - chưa có toast: kết quả hiện bằng hộp thoại và được VoiceOver đọc;
 /// - lần đọc đầu hỏng thì nói lỗi (RN cũng ném lỗi, không hiện "chưa uống").
 struct SupplementsView: View {
@@ -75,6 +80,14 @@ struct SupplementsView: View {
         }
       }
       .refreshable { await book.refresh() }
+      .onChange(of: services.stateWriter.notice) { _, notice in
+        switch notice {
+        case .gone: message = String(localized: "state.gone")
+        case .failed: message = String(localized: "async.error.generic")
+        case nil: return
+        }
+        services.stateWriter.clearNotice()
+      }
       .task { await book.refresh() }
       .confirmationDialog(
         pendingDelete.map { String(localized: "supplements.delete.confirm \($0.name)") } ?? "",
@@ -130,7 +143,7 @@ struct SupplementsView: View {
         Text(String(localized: "supplements.today")).font(DS.TextStyle.headline)
         Spacer()
         VStack(alignment: .trailing, spacing: 2) {
-          Text(verbatim: "\(book.takenCount) / \(items.count)")
+          Text(verbatim: "\(book.shownTakenCount(writer: services.stateWriter)) / \(items.count)")
             .font(DS.TextStyle.title.monospacedDigit())
           Text(String(localized: "supplements.takenToday"))
             .font(DS.TextStyle.footnote)
@@ -142,8 +155,25 @@ struct SupplementsView: View {
   }
 
   private func row(_ item: Supplement) -> some View {
-    HStack(spacing: DS.Spacing.sm) {
-      SupplementRowLabel(item: item)
+    let taken = book.shownTaken(item, writer: services.stateWriter)
+    return HStack(spacing: DS.Spacing.sm) {
+      // `toggle.set(s.id, !s.taken)`: cả hàng (trừ nút xoá) là ô tick.
+      Button {
+        let wasEmpty = services.stateWriter.size == 0
+        let outcome = book.setTaken(item, taken: !taken, writer: services.stateWriter)
+        // Nói MỘT lần mỗi đợt mất mạng, lúc ý chờ đầu tiên xuất hiện — và nói
+        // trước điều sẽ mất.
+        if outcome == .queued, !services.sync.online, wasEmpty {
+          message = String(localized: "state.queued")
+        }
+      } label: {
+        SupplementRowLabel(item: item, taken: taken)
+          .frame(minHeight: 44)
+          .contentShape(Rectangle())
+      }
+      .buttonStyle(.plain)
+      .sensoryFeedback(.selection, trigger: taken)
+      .accessibilityAddTraits(taken ? [.isButton, .isSelected] : .isButton)
       Button {
         pendingDelete = item
       } label: {

@@ -13,7 +13,8 @@ import SwiftUI
 /// - đọc hỏng là lỗi có thử lại, không phải "chưa có gì";
 /// - thêm / sửa / xoá / lưu chỉ khi có mạng.
 ///
-/// Chưa có: nút sao (đánh / bỏ yêu thích) — lớp Trạng thái #161 chưa port.
+/// Chưa có: nút sao (đánh / bỏ yêu thích) — lớp Trạng thái #161 đã có
+/// (`StateWriter`), còn nối nút.
 struct FoodListView: View {
   let book: FoodLibraryBook
   @Environment(AppServices.self) private var services

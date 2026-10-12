@@ -41218,6 +41218,52 @@
      }
     }
    }
+  },
+  "state.queued": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Will update when you are back online. Closing the app before then drops this change."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sẽ cập nhật khi có mạng lại. Tắt app trước lúc đó thì thay đổi này mất."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Se actualizará cuando vuelvas a estar en línea. Si cierras la app antes, este cambio se perderá."
+     }
+    }
+   }
+  },
+  "state.gone": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "That item was removed elsewhere, so your change was dropped."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mục này đã bị xoá ở nơi khác, nên thay đổi của bạn đã bỏ."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ese elemento se eliminó en otro lugar, así que tu cambio se descartó."
+     }
+    }
+   }
   }
  }
 }

@@ -100,6 +100,27 @@ private actor SupplementServer: SupplementSource {
     items.append(Item(id: "s\(items.count + 1)", user: user, name: name, timing: row["timing"]?.stringValue ?? ""))
   }
 
+  func intakeCount(userId: String, supplementId: String, start: String, end: String) async throws -> Int {
+    if let e = failWrite { throw e }
+    return intakes.filter { $0.user == userId && $0.id == supplementId && $0.at >= start && $0.at < end }.count
+  }
+
+  func deleteIntakes(userId: String, supplementId: String, start: String, end: String) async throws {
+    writes += 1
+    if let e = failWrite { throw e }
+    intakes.removeAll { $0.user == userId && $0.id == supplementId && $0.at >= start && $0.at < end }
+  }
+
+  /// Mục không còn (đã xoá ở máy khác) → khoá ngoại hỏng → `false`.
+  func insertIntake(_ row: JSONValue) async throws -> Bool {
+    writes += 1
+    if let e = failWrite { throw e }
+    guard let user = row["user_id"]?.stringValue, let id = row["supplement_id"]?.stringValue else { return false }
+    guard items.contains(where: { $0.id == id }) else { return false }
+    intakes.append((user, id, row["date_time"]?.stringValue ?? "2026-10-08T07:00:00.000Z"))
+    return true
+  }
+
   func delete(id: String, userId: String) async throws -> Int {
     writes += 1
     if let e = failWrite { throw e }
@@ -266,5 +287,82 @@ struct SupplementBookTests {
     await loading
     #expect(book.phase == .loading)
     #expect(await book.add(name: "X", dose: "", timing: "morning", online: true) == .failed)
+  }
+}
+
+/// "Đã uống" qua lớp Trạng thái #161 (`useToggleSupplement`).
+@MainActor
+struct SupplementTakenTests {
+  private func writer(online: Bool = true) -> StateWriter {
+    StateWriter(environment: .init(online: { online }, isOffline: { NetworkFailure.isOffline($0) }))
+  }
+
+  private func drain() async { for _ in 0..<40 { await Task.yield() } }
+
+  /// Tick có mạng: MỘT dòng; tick lại khi server đã có dòng: không chèn thêm.
+  @Test func tickInsertsOnceAndIsIdempotent() async {
+    let h = SupplementHarness()
+    await h.server.put(.init(id: "a", user: "u1", name: "Creatine", timing: "morning"))
+    let book = h.book()
+    await book.load()
+    let w = writer()
+    let item = book.items[0]
+    #expect(book.setTaken(item, taken: true, writer: w) == .sending)
+    #expect(book.shownTaken(item, writer: w))
+    await drain()
+    #expect(await h.server.intakes.count == 1)
+    // Server đã có dòng, nhưng bản đang hiện vẫn cũ (chưa đọc lại): gửi "true"
+    // lần nữa chỉ đếm, không chèn.
+    book.setTaken(item, taken: true, writer: w)
+    await drain()
+    #expect(await h.server.intakes.count == 1)
+  }
+
+  /// Bỏ tick: xoá mọi dòng của ngày.
+  @Test func untickDeletesTheDay() async {
+    let h = SupplementHarness()
+    await h.server.put(.init(id: "a", user: "u1", name: "Creatine", timing: "morning"))
+    await h.server.take(user: "u1", id: "a", at: "2026-10-08T01:00:00.000Z")
+    let book = h.book()
+    await book.load()
+    #expect(book.items[0].taken)
+    let w = writer()
+    book.setTaken(book.items[0], taken: false, writer: w)
+    await drain()
+    #expect(await h.server.intakes.isEmpty)
+  }
+
+  /// Mất mạng: tick → bỏ → tick là một ý; có mạng lại thì một dòng.
+  @Test func offlineMergesToOneWrite() async {
+    let h = SupplementHarness()
+    await h.server.put(.init(id: "a", user: "u1", name: "Creatine", timing: "morning"))
+    let book = h.book()
+    await book.load()
+    var online = false
+    let w = StateWriter(environment: .init(online: { online }, isOffline: { NetworkFailure.isOffline($0) }))
+    let item = book.items[0]
+    #expect(book.setTaken(item, taken: true, writer: w) == .queued)
+    #expect(book.setTaken(item, taken: false, writer: w) == .unchanged)
+    #expect(book.setTaken(item, taken: true, writer: w) == .queued)
+    #expect(book.shownTakenCount(writer: w) == 1)
+    online = true
+    w.flush()
+    await drain()
+    #expect(await h.server.intakes.count == 1)
+    #expect(await h.server.writes == 1)
+  }
+
+  /// Mục đã xoá ở máy khác: bỏ ý và báo.
+  @Test func deletedElsewhereIsGone() async {
+    let h = SupplementHarness()
+    await h.server.put(.init(id: "a", user: "u1", name: "Creatine", timing: "morning"))
+    let book = h.book()
+    await book.load()
+    _ = try? await h.server.delete(id: "a", userId: "u1")
+    let w = writer()
+    book.setTaken(book.items[0], taken: true, writer: w)
+    await drain()
+    #expect(w.notice == .gone)
+    #expect(w.size == 0)
   }
 }

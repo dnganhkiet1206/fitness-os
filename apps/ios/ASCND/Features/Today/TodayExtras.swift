@@ -61,8 +61,6 @@ struct TodayExtras<Plan: View>: View {
   @Environment(NutritionBooks.self) private var nutrition: NutritionBooks?
   @State private var ownWater: WaterBook?
   private var water: WaterBook? { nutrition?.water ?? ownWater }
-  /// Huy chương vừa trao trong lượt xét này (`useCheckAwards` → ăn mừng).
-  @State private var awardToast: String?
   @State private var showsSleep = false
   @State private var showsSupplements = false
   @State private var sleepInsights: SleepInsightsBook?
@@ -192,25 +190,6 @@ struct TodayExtras<Plan: View>: View {
           .todayZoom("trend", in: zoom)
       }
     }
-    .overlay(alignment: .top) {
-      if let awardToast {
-        Button { self.awardToast = nil; roomSource = "koa"; showsRoom = true } label: {
-          Label(awardToast, systemImage: "rosette")
-            .font(DS.TextStyle.headline)
-            .foregroundStyle(DS.Color.foreground.swiftUI)
-            .padding(.horizontal, DS.Spacing.md)
-            .frame(minHeight: 48)
-            .todayCard(radius: 24)
-        }
-        .buttonStyle(TodayPressStyle())
-        .transition(.move(edge: .top).combined(with: .opacity))
-        .task {
-          try? await Task.sleep(for: .seconds(4))
-          withAnimation(.smooth(duration: 0.35)) { self.awardToast = nil }
-        }
-      }
-    }
-    .sensoryFeedback(.success, trigger: awardToast) { _, new in new != nil }
     .navigationDestination(isPresented: $showsSleep) {
       if let sleepInsights {
         SleepInsightsView(book: sleepInsights, lang: services.preferences.lang).todayZoom("sleep", in: zoom)
@@ -371,7 +350,8 @@ struct TodayExtras<Plan: View>: View {
     if let sup = nutrition?.supplements, !sup.items.isEmpty {
       rows.append(.init(
         id: "supplements", title: String(localized: "supplements.title"),
-        value: "\(sup.takenCount)/\(sup.items.count)", action: { showsSupplements = true }))
+        value: "\(sup.shownTakenCount(writer: services.stateWriter))/\(sup.items.count)",
+        action: { showsSupplements = true }))
     }
     if readiness != nil {
       rows.append(.init(
@@ -412,14 +392,28 @@ struct TodayExtras<Plan: View>: View {
   /// ăn mừng ngay, thử thách tuần nhích theo tuần đã tập — không đợi người
   /// dùng mở màn Thử thách. Cả hai an toàn khi chạy lại (`ref_key` cố định).
   private func focusChecks() async {
+    let lang = services.preferences.lang
     await awards?.load()
-    if let key = awards?.newlyGranted.first {
-      let title = AwardText.text(key, lang: services.preferences.lang)?.title ?? key
-      let text = String(localized: "aw.granted \(title)")
-      withAnimation(.spring(duration: 0.5, bounce: 0.25)) { awardToast = text }
-      AccessibilityNotification.Announcement(text).post()
+    // `enqueueAward` của `useCheckAwards`: màn ăn mừng ở gốc app
+    // (`CelebrationHost`), cùng đường với màn Huy chương.
+    for key in awards?.newlyGranted ?? [] {
+      guard let def = Awards.def(key) else { continue }
+      let text = AwardText.text(key, lang: lang)
+      services.celebrations.enqueue(
+        title: text?.title ?? key, description: text?.desc ?? "", icon: def.icon, tier: def.tier.rawValue,
+        awardKey: key)
     }
     await challenges?.refreshProgress()
+    // `use-extras.ts:711`: chỉ thử thách CÓ phần thưởng mới có thẻ ăn mừng.
+    if let challenges, case .ready(let rows) = challenges.phase {
+      for key in challenges.justCompleted {
+        guard let ch = rows.first(where: { $0.key == key }), let reward = ch.rewardTitle else { continue }
+        services.celebrations.enqueue(
+          title: ChallengeText.reward(key, lang: lang) ?? reward,
+          description: String(localized: "ch.done \(ChallengeText.title(key, lang: lang) ?? ch.title)"),
+          icon: ch.icon ?? "trophy", tier: ch.rewardTier ?? "bronze")
+      }
+    }
   }
 
   /// Dòng sẵn sàng của thẻ buổi tập; chạm → thẻ sẵn sàng RN ở dạng mở.

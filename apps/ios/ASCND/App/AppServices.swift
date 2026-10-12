@@ -57,6 +57,10 @@ final class AppServices {
   /// Hàng đợi ăn mừng (#527, `celebration-queue.ts`): huy chương vừa trao,
   /// thử thách vừa xong — gốc Hôm nay hiện từng cái một; đăng xuất thì bỏ hết.
   let celebrations = CelebrationQueue()
+  /// Lớp Trạng thái (#161, `state-write.ts`): cờ "chỉ giá trị cuối có nghĩa"
+  /// — "đã uống hôm nay" của thực phẩm bổ sung. Chỉ trong phiên (chủ dự án
+  /// chọn), đăng xuất thì bỏ; có mạng lại thì gửi các ý còn chờ.
+  let stateWriter = StateWriter(environment: .init(online: { false }, isOffline: { NetworkFailure.isOffline($0) }))
   /// Đường mạng + phép dò internet của NetInfo (#530) — nuôi `net` và vòng sync.
   @ObservationIgnored private(set) var network: NetworkObserver!
   @ObservationIgnored let workouts: GRDBWorkoutStore
@@ -178,6 +182,7 @@ final class AppServices {
       } ?? UnconfiguredRemote(),
       online: false)
     startupError = problems.isEmpty ? nil : problems.joined(separator: "\n")
+    stateWriter.environment.online = { [sync = self.sync] in sync.online }
 
     // Phiên kết thúc (nút Đăng xuất, token hết hạn, tài khoản bị xoá, hay đổi
     // thẳng sang tài khoản khác): mọi thứ của người vừa rời đi rời khỏi máy —
@@ -185,9 +190,12 @@ final class AppServices {
     // chạy tuần tự, để thứ tự không phụ thuộc thứ tự đăng ký.
     let lifecycle = self.lifecycle
     session.onSignedOut {
-      [sync = self.sync, weak session = self.session, celebrations = self.celebrations, habitHours = self.habitHours] in
+      [sync = self.sync, weak session = self.session, celebrations = self.celebrations, habitHours = self.habitHours,
+       stateWriter = self.stateWriter] in
       // Pháo hoa của người vừa rời đi không hiện cho người sau (`onUserScopedReset`).
       celebrations.clear()
+      // Ý "đã uống" chưa gửi thuộc về người vừa rời đi (`onUserScopedReset`).
+      stateWriter.clear()
       // Người của phiên mới khi đổi thẳng tài khoản; `nil` khi đăng xuất.
       let next = session?.session?.userId
       // Đóng chốt TRƯỚC khi dọn: lượt làm mới / lượt ghi muộn của người vừa
