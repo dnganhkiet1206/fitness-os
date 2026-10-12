@@ -70,6 +70,8 @@ struct TodayReadinessRow: View {
           .font(.custom("Menlo", size: 30, relativeTo: .title).weight(.bold))
           .foregroundStyle(color)
           .monospacedDigit()
+          .contentTransition(.numericText(value: Double(score ?? 0)))
+          .animation(.smooth(duration: 0.5), value: score)
           .frame(minWidth: 48, alignment: .leading)
         VStack(alignment: .leading, spacing: 2) {
           Text(verbatim: title)
@@ -90,10 +92,10 @@ struct TodayReadinessRow: View {
       }
       .padding(DS.Spacing.sm)
       .frame(minHeight: 56)
-      .background(DS.Color.muted.swiftUI.opacity(0.5), in: RoundedRectangle(cornerRadius: DS.Radius.md))
+      .background(DS.Color.foreground.swiftUI.opacity(0.05), in: RoundedRectangle(cornerRadius: DS.Radius.md, style: .continuous))
       .contentShape(Rectangle())
     }
-    .buttonStyle(.plain)
+    .buttonStyle(TodayPressStyle(scale: 0.98))
     .accessibilityElement(children: .ignore)
     .accessibilityLabel(Text(verbatim: [
       String(localized: "rd.empty.title"), score.map(String.init) ?? "—", title, reason,

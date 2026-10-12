@@ -42,6 +42,11 @@ struct TodayExtras<Plan: View>: View {
   @State private var showsRoom = false
   @State private var showsReadiness = false
   @State private var showsTrend = false
+  /// Chuyển cảnh zoom: màn con phóng ra từ dòng / Koa vừa chạm.
+  @Namespace private var zoom
+  @State private var roomSource = "koa"
+  @State private var readinessSource = "readiness"
+  @State private var biometricsSource = "bio"
   @State private var showsWeekly = false
   @State private var showsSteps = false
   /// Tín hiệu bữa / ngủ / sinh trắc / cân của hôm nay cho thẻ việc.
@@ -57,10 +62,13 @@ struct TodayExtras<Plan: View>: View {
   var body: some View {
     VStack(spacing: DS.Spacing.md) {
       header
+        .todayEntrance(0)
       if let mascot, case .ready = mascot.phase {
         TodayDayBlock(
           room: mascot, localWaterMl: water?.loaded == true ? water?.totalMl : nil,
-          onAct: act, onOpenRoom: { showsRoom = true })
+          onAct: act, onOpenRoom: { roomSource = "koa"; showsRoom = true }, zoom: zoom)
+          .todayEntrance(1)
+          .preference(key: TodayDonePreference.self, value: doneSignals(mascot))
           // Rung NGAY lúc chạm nước (RN `Haptics.light()` trong `onPress`).
           .sensoryFeedback(.impact(weight: .light), trigger: waterTaps)
         if let waterNote {
@@ -72,10 +80,13 @@ struct TodayExtras<Plan: View>: View {
       }
       // Thẻ buổi tập ngay dưới khối ngày, mang dòng sẵn sàng.
       VStack(alignment: .leading, spacing: DS.Spacing.md) { plan(readinessRow, logSleepButton) }
+        .todayEntrance(2)
       if let mascot, case .ready = mascot.phase {
         TodayYourDay(rows: dayRows(mascot), onTap: tap)
+          .todayEntrance(3)
       }
-      TodayMore(rows: moreRows)
+      TodayMore(rows: moreRows, zoom: zoom)
+        .todayEntrance(4)
       HealthSyncCard(isAvailable: services.health.isAvailable, sync: syncHealth)
     }
     // Bữa / nước / ngủ đi qua outbox: hàng đợi vơi đi (server đã nhận) thì đọc
@@ -95,7 +106,9 @@ struct TodayExtras<Plan: View>: View {
       if let steps = services.makeStepsBook(userId: userId, today: Self.today()) { StepsView(book: steps) }
     }
     .navigationDestination(isPresented: $showsRoom) {
-      if let mascot { MascotRoomView(room: mascot, awards: awards, challenges: challenges) }
+      if let mascot {
+        MascotRoomView(room: mascot, awards: awards, challenges: challenges).todayZoom(roomSource, in: zoom)
+      }
     }
     .sheet(isPresented: $showsReadiness) {
       if let readiness {
@@ -117,6 +130,8 @@ struct TodayExtras<Plan: View>: View {
           }
         }
         .presentationDetents([.large])
+        .presentationBackground(.regularMaterial)
+        .todayZoom(readinessSource, in: zoom)
       }
     }
     .sheet(isPresented: $showsWeight) {
@@ -141,13 +156,14 @@ struct TodayExtras<Plan: View>: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(DS.Color.background.swiftUI)
           .navigationTitle(Text(String(localized: "rt.title")))
+          .todayZoom("trend", in: zoom)
       }
     }
     .navigationDestination(isPresented: $showsWeekly) {
-      if let weekly { WeeklyReviewView(book: weekly, lang: services.preferences.lang) }
+      if let weekly { WeeklyReviewView(book: weekly, lang: services.preferences.lang).todayZoom("weekly", in: zoom) }
     }
     .navigationDestination(isPresented: $showsBiometrics) {
-      if let biometrics { BiometricsView(book: biometrics) }
+      if let biometrics { BiometricsView(book: biometrics).todayZoom(biometricsSource, in: zoom) }
     }
     .task {
       guard !built else { return }
@@ -268,10 +284,13 @@ struct TodayExtras<Plan: View>: View {
       let parts = [b?.hr.map { "\(Int($0.rounded())) bpm" }, hrv.map { "\(Int($0.rounded())) ms" }].compactMap { $0 }
       rows.append(.init(
         id: "bio", title: String(localized: "today.todo.bio"),
-        value: parts.isEmpty ? "—" : parts.joined(separator: " · "), action: { showsBiometrics = true }))
+        value: parts.isEmpty ? "—" : parts.joined(separator: " · "),
+        action: { biometricsSource = "bio"; showsBiometrics = true }))
     }
     if readiness != nil {
-      rows.append(.init(id: "load", title: String(localized: "today.more.training"), value: loadText, action: { showsReadiness = true }))
+      rows.append(.init(
+        id: "load", title: String(localized: "today.more.training"), value: loadText,
+        action: { readinessSource = "load"; showsReadiness = true }))
     }
     if let trend {
       let avg = trend.stats.map { String(localized: "today.more.avg \(Int($0.average))") } ?? "—"
@@ -283,9 +302,15 @@ struct TodayExtras<Plan: View>: View {
     if let mascot, case .ready = mascot.phase {
       rows.append(.init(
         id: "room", title: String(localized: "mr.title"),
-        value: String(localized: "today.more.level \(mascot.level)"), action: { showsRoom = true }))
+        value: String(localized: "today.more.level \(mascot.level)"), action: { roomSource = "room"; showsRoom = true }))
     }
     return rows
+  }
+
+  /// Tín hiệu đã xong — trường màu phía sau trang đậm lên theo chúng.
+  private func doneSignals(_ room: MascotRoomController) -> Set<MascotRules.Quest> {
+    let s = TodayDay.merging(room.signals, localWaterMl: water?.loaded == true ? water?.totalMl : nil)
+    return Set(TodayDay.order.filter { s?.done($0, stepsGoal: room.stepsGoal) ?? false })
   }
 
   /// "+8%" / "−12%" so với tuần thói quen; chưa có ACWR → "—".
@@ -300,7 +325,9 @@ struct TodayExtras<Plan: View>: View {
     guard let readiness else { return nil }
     return AnyView(
       TodayReadinessRow(
-        book: readiness, lang: services.preferences.lang, onOpen: { showsReadiness = true }))
+        book: readiness, lang: services.preferences.lang,
+        onOpen: { readinessSource = "readiness"; showsReadiness = true }
+      ).matchedTransitionSource(id: "readiness", in: zoom))
   }
 
   /// "Ghi giấc ngủ" cạnh nút chính khi chưa có điểm sẵn sàng — một đêm ngủ là

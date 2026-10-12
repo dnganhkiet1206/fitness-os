@@ -52,17 +52,16 @@ struct TodayYourDay: View {
         ForEach(Array(rows.enumerated()), id: \.element.id) { i, row in
           if i > 0 {
             if row.kind == .weight {
-              DS.Color.background.swiftUI.frame(height: 6)
+              DS.Color.foreground.swiftUI.opacity(0.05).frame(height: 6)
             } else {
-              Divider().padding(.leading, 60)
+              Divider().padding(.leading, 60).opacity(0.6)
             }
           }
           rowView(row)
         }
       }
-      .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.lg))
-      .overlay(RoundedRectangle(cornerRadius: DS.Radius.lg).strokeBorder(DS.Color.border.swiftUI.opacity(0.7)))
-      .clipShape(RoundedRectangle(cornerRadius: DS.Radius.lg))
+      .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+      .todayCard()
     }
   }
 
@@ -100,8 +99,9 @@ struct TodayYourDay: View {
       .frame(minHeight: 64)
       .contentShape(Rectangle())
     }
-    .buttonStyle(.plain)
-    .sensoryFeedback(.selection, trigger: row.done)
+    .buttonStyle(TodayPressStyle(scale: 0.98))
+    .sensoryFeedback(.success, trigger: row.done) { old, new in !old && new }
+    .animation(.spring(duration: 0.45, bounce: 0.3), value: row.done)
     .accessibilityElement(children: .ignore)
     .accessibilityLabel(Text(verbatim: Self.name(row.kind)))
     .accessibilityValue(Text(verbatim: [
@@ -115,10 +115,13 @@ struct TodayYourDay: View {
 
   @ViewBuilder private func trailing(_ row: Row, color: Color) -> some View {
     if row.done {
+      // Vừa xong: dấu tích nảy nhẹ thay chỗ nút "Ghi".
       Image(systemName: "checkmark.circle.fill")
         .font(.system(size: 24))
-        .foregroundStyle(color)
+        .foregroundStyle(.white, color)
+        .symbolEffect(.bounce, value: row.done)
         .frame(minWidth: 44, minHeight: 44)
+        .transition(.scale(scale: 0.6).combined(with: .opacity))
     } else if row.kind == .steps {
       Text(String(localized: "today.auto"))
         .font(.system(size: 15))
@@ -130,9 +133,10 @@ struct TodayYourDay: View {
         .foregroundStyle(DS.Color.foreground.swiftUI)
         .padding(.horizontal, 14)
         .frame(minHeight: 36)
-        .background(DS.Color.background.swiftUI, in: Capsule())
-        .overlay(Capsule().strokeBorder(DS.Color.border.swiftUI))
+        .background(.thinMaterial, in: Capsule())
+        .overlay(Capsule().strokeBorder(DS.Color.foreground.swiftUI.opacity(0.12), lineWidth: 0.75))
         .frame(minHeight: 44)
+        .transition(.scale(scale: 0.8).combined(with: .opacity))
     }
   }
 

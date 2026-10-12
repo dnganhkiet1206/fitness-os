@@ -16,6 +16,8 @@ struct TodayMore: View {
   }
 
   let rows: [Row]
+  /// Nguồn của chuyển cảnh zoom sang màn chi tiết (id = `Row.id`).
+  let zoom: Namespace.ID
 
   var body: some View {
     VStack(alignment: .leading, spacing: DS.Spacing.sm) {
@@ -26,7 +28,7 @@ struct TodayMore: View {
         .padding(.horizontal, 4)
       VStack(spacing: 0) {
         ForEach(Array(rows.enumerated()), id: \.element.id) { i, row in
-          if i > 0 { Divider().padding(.leading, DS.Spacing.md) }
+          if i > 0 { Divider().padding(.leading, DS.Spacing.md).opacity(0.6) }
           Button(action: row.action) {
             HStack(spacing: DS.Spacing.sm) {
               Text(verbatim: row.title)
@@ -48,16 +50,16 @@ struct TodayMore: View {
             .frame(minHeight: 56)
             .contentShape(Rectangle())
           }
-          .buttonStyle(.plain)
+          .buttonStyle(TodayPressStyle(scale: 0.98))
+          .matchedTransitionSource(id: row.id, in: zoom)
           .accessibilityElement(children: .ignore)
           .accessibilityLabel(Text(verbatim: row.title))
           .accessibilityValue(Text(verbatim: row.value ?? ""))
           .accessibilityAddTraits(.isButton)
         }
       }
-      .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.lg))
-      .overlay(RoundedRectangle(cornerRadius: DS.Radius.lg).strokeBorder(DS.Color.border.swiftUI.opacity(0.7)))
-      .clipShape(RoundedRectangle(cornerRadius: DS.Radius.lg))
+      .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+      .todayCard()
     }
   }
 }

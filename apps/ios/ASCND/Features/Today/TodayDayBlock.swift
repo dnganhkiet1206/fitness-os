@@ -28,11 +28,15 @@ struct TodayDayBlock: View {
   /// Nút trong bong bóng / chạm ống: ghi đúng việc ấy.
   let onAct: (MascotRules.Quest) -> Void
   let onOpenRoom: () -> Void
+  /// Nguồn zoom sang phòng linh vật (Koa phóng thành phòng).
+  var zoom: Namespace.ID?
 
   @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   /// Được khen hôm nay chưa (khen một lần mỗi ngày, `allowPraise`).
   @State private var praiseAllowed = false
+  /// Nhãn "Next" và viền của ống kế tiếp là MỘT vật trượt giữa các ống.
+  @Namespace private var nextSpace
 
   /// Đã khen trong phiên app này — giữ câu khen đến hết phiên.
   @MainActor static var praisedThisSession = false
@@ -60,20 +64,21 @@ struct TodayDayBlock: View {
           }
           if let text = bubbleText(line, tubes: tubes) {
             bubble(text, next: next)
+              .animation(reduceMotion ? .easeInOut(duration: 0.2) : .smooth(duration: 0.45), value: text)
           }
         }
       }
       HStack(alignment: .bottom, spacing: 0) {
         ForEach(tubes) { t in
-          TodayTube(tube: t, isNext: t.quest == next, reduceMotion: reduceMotion) { onAct(t.quest) }
+          TodayTube(tube: t, isNext: t.quest == next, reduceMotion: reduceMotion, space: nextSpace) { onAct(t.quest) }
             .frame(maxWidth: .infinity)
         }
       }
     }
     .padding(DS.Spacing.md)
-    .background(alignment: .center) { pools }
-    .todayGlass(cornerRadius: 30, solid: reduceTransparency)
-    .shadow(color: .black.opacity(0.04), radius: 12, y: 4)
+    .todayCard(radius: 30)
+    // Việc kế tiếp đổi → nhãn và viền trượt sang ống mới; ống dâng như chất lỏng.
+    .animation(reduceMotion ? .easeInOut(duration: 0.2) : .spring(duration: 0.6, bounce: 0.22), value: next)
     .task(id: line) { updatePraise(line) }
   }
 
@@ -88,7 +93,8 @@ struct TodayDayBlock: View {
         }
         .contentShape(Rectangle())
     }
-    .buttonStyle(.plain)
+    .buttonStyle(TodayPressStyle(scale: 0.94))
+    .modifier(ZoomSource(id: "koa", space: zoom))
     .accessibilityLabel(Text(String(localized: "today.koa.a11y")))
   }
 
@@ -97,6 +103,8 @@ struct TodayDayBlock: View {
       Text(verbatim: "\(done)")
         .font(.custom("Menlo", size: 26, relativeTo: .title).weight(.bold))
         .foregroundStyle(DS.Color.foreground.swiftUI)
+        .contentTransition(.numericText(value: Double(done)))
+        .animation(.smooth(duration: 0.4), value: done)
       Text(String(localized: "today.day.of \(total)"))
         .font(.custom("Menlo", size: 15, relativeTo: .body).weight(.bold))
         .foregroundStyle(DS.Color.mutedForeground.swiftUI)
@@ -154,6 +162,9 @@ struct TodayDayBlock: View {
         .font(.system(size: 15))
         .foregroundStyle(DS.Color.foreground.swiftUI)
         .fixedSize(horizontal: false, vertical: true)
+        // Koa đổi câu: câu cũ nhoè đi, câu mới hiện ra (Reduce Motion: mờ dần).
+        .id(text)
+        .transition(reduceMotion ? AnyTransition.opacity : AnyTransition(.blurReplace))
       if let next, next != .steps {
         Button { onAct(next) } label: {
           HStack(spacing: 6) {
@@ -179,29 +190,6 @@ struct TodayDayBlock: View {
     .background(
       UnevenRoundedRectangle(topLeadingRadius: 16, bottomLeadingRadius: 5, bottomTrailingRadius: 16, topTrailingRadius: 16)
         .fill(DS.Color.card.swiftUI.opacity(reduceTransparency ? 1 : 0.82)))
-  }
-
-  // MARK: - Nền
-
-  /// Năm vũng màu mờ (16–26 %) cho kính có thứ để làm nhoè.
-  @ViewBuilder private var pools: some View {
-    if !reduceTransparency {
-      GeometryReader { geo in
-        ZStack {
-          ForEach(Array(TodayDay.order.enumerated()), id: \.offset) { i, q in
-            Circle()
-              .fill(MascotRoomView.signalColor(q).opacity(0.16 + 0.025 * Double(i % 4)))
-              .frame(width: geo.size.width * 0.45, height: geo.size.width * 0.45)
-              .position(
-                x: geo.size.width * (0.1 + 0.2 * Double(i)),
-                y: geo.size.height * (i.isMultiple(of: 2) ? 0.78 : 0.3))
-          }
-        }
-        .blur(radius: 40)
-      }
-      .clipShape(RoundedRectangle(cornerRadius: 30))
-      .accessibilityHidden(true)
-    }
   }
 
   // MARK: - Khen một lần mỗi ngày
@@ -293,6 +281,7 @@ struct TodayTube: View {
   let tube: TodayDay.Tube
   let isNext: Bool
   let reduceMotion: Bool
+  let space: Namespace.ID
   let action: () -> Void
 
   static let size = CGSize(width: 30, height: 104)
@@ -301,20 +290,27 @@ struct TodayTube: View {
     let color = MascotRoomView.signalColor(tube.quest)
     Button(action: action) {
       VStack(spacing: 6) {
-        Text(String(localized: "today.next"))
-          .font(.system(size: 11, weight: .bold))
-          .foregroundStyle(.white)
-          .padding(.horizontal, 6)
-          .padding(.vertical, 2)
-          .background(color, in: Capsule())
-          .opacity(isNext ? 1 : 0)
-          .accessibilityHidden(true)
+        ZStack {
+          // Giữ chỗ cho nhãn ở mọi ống để hàng không nhảy khi nhãn trượt đi.
+          Text(String(localized: "today.next")).font(.system(size: 11, weight: .bold)).padding(.vertical, 2).hidden()
+          if isNext {
+            Text(String(localized: "today.next"))
+              .font(.system(size: 11, weight: .bold))
+              .foregroundStyle(.white)
+              .padding(.horizontal, 6)
+              .padding(.vertical, 2)
+              .background(color, in: Capsule())
+              .matchedGeometryEffect(id: "nextTag", in: space)
+          }
+        }
+        .accessibilityHidden(true)
         ZStack(alignment: .bottom) {
-          Capsule().fill(DS.Color.card.swiftUI.opacity(0.85))
+          Capsule().fill(DS.Color.card.swiftUI.opacity(0.6))
           Capsule()
             .fill(LinearGradient(colors: [color.opacity(0.75), color], startPoint: .top, endPoint: .bottom))
             .frame(height: max(tube.fill > 0 ? Self.size.width : 0, Self.size.height * tube.fill))
             .opacity(tube.fill > 0 ? 1 : 0)
+            .animation(reduceMotion ? .easeInOut(duration: 0.2) : .spring(duration: 0.8, bounce: 0.18), value: tube.fill)
           // Vệt sáng dọc.
           Capsule()
             .fill(.white.opacity(0.45))
@@ -329,8 +325,15 @@ struct TodayTube: View {
         }
         .frame(width: Self.size.width, height: Self.size.height)
         .clipShape(Capsule())
-        .overlay(Capsule().strokeBorder(isNext ? color : DS.Color.border.swiftUI.opacity(0.6), lineWidth: isNext ? 2 : 0.5))
-        .shadow(color: isNext ? color.opacity(reduceMotion ? 0.25 : 0.35) : .clear, radius: isNext ? 8 : 0)
+        .overlay(Capsule().strokeBorder(.white.opacity(0.6), lineWidth: 0.5))
+        .overlay {
+          if isNext {
+            Capsule()
+              .strokeBorder(color, lineWidth: 2)
+              .shadow(color: color.opacity(0.45), radius: 8)
+              .matchedGeometryEffect(id: "nextRing", in: space)
+          }
+        }
         Text(verbatim: TodayDayBlock.value(tube))
           .font(.custom("Menlo", size: 11, relativeTo: .caption2).weight(.bold))
           .foregroundStyle(tube.done || isNext ? color : DS.Color.mutedForeground.swiftUI)
@@ -370,9 +373,9 @@ extension View {
     if solid {
       self.background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: cornerRadius))
     } else if #available(iOS 26.0, *) {
-      self.glassEffect(.regular, in: RoundedRectangle(cornerRadius: cornerRadius))
+      self.glassEffect(.regular, in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
     } else {
-      self.background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: cornerRadius))
+      self.background(.regularMaterial, in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
     }
   }
 }

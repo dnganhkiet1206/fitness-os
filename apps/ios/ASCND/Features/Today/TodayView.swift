@@ -22,6 +22,8 @@ public struct TodayView: View {
   /// Người của phiên: có thì hiện các thẻ dưới nút chính (sẵn sàng, Apple
   /// Health, phòng linh vật — `TodayExtras`, #527). `nil` (preview) thì không.
   var extrasUserId: String?
+  /// Tín hiệu đã xong (từ `TodayExtras`) cho trường màu phía sau trang.
+  @State private var doneSignals: Set<MascotRules.Quest> = []
 
   public init(
     state: TodayDisplay,
@@ -56,7 +58,9 @@ public struct TodayView: View {
           .padding(.horizontal, DS.Spacing.md)
           .padding(.bottom, DS.Spacing.lg)
         }
-        .background(DS.Color.background.swiftUI)
+        .scrollContentBackground(.hidden)
+        .background { TodayAmbient(done: doneSignals) }
+        .onPreferenceChange(TodayDonePreference.self) { doneSignals = $0 }
         .toolbar(.hidden, for: .navigationBar)
       } else {
         ScrollView {
@@ -120,8 +124,7 @@ public struct TodayView: View {
     }
     .padding(DS.Spacing.card)
     .frame(maxWidth: .infinity, alignment: .leading)
-    .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.lg))
-    .overlay(RoundedRectangle(cornerRadius: DS.Radius.lg).strokeBorder(DS.Color.border.swiftUI.opacity(0.7)))
+    .todayCard()
   }
 
   private var statusText: String {
