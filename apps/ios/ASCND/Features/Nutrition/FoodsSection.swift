@@ -62,7 +62,7 @@ struct FoodsSection: View {
       }
       .padding(DS.Spacing.sm)
       .frame(minHeight: 44)
-      .background(DS.Color.input.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.sm))
+      .background(DS.Color.foreground.swiftUI.opacity(0.05), in: RoundedRectangle(cornerRadius: DS.Radius.sm, style: .continuous))
       if search.phase == .idle {
         lists
       } else {
@@ -75,7 +75,7 @@ struct FoodsSection: View {
       }
     }
     .padding(DS.Spacing.md)
-    .background(DS.Color.muted.swiftUI.opacity(0.35), in: RoundedRectangle(cornerRadius: DS.Radius.lg))
+    .todayCard(radius: DS.Radius.lg)
     // Trễ 250 ms sau phím cuối; đổi chữ huỷ lượt chờ trước.
     .task(id: query) {
       if !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {

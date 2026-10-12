@@ -2,13 +2,16 @@ import ASCNDCore
 import ASCNDDesignSystem
 import SwiftUI
 
-/// Tab Dinh dưỡng (#527 Phase 3) — `(tabs)/nutrition.tsx`. Trên cùng là thẻ
-/// calo + macro hôm nay (`NutritionTodayCard`, như `NutritionCard` của RN),
-/// rồi thẻ Nước uống (`WaterWidget`), Thực phẩm bổ sung, nút ghi bữa, "Bữa ăn
-/// hôm nay" (cùng thẻ bữa với màn Nhật ký — `DayMealsSection`) với lối "Ngày
-/// khác", khối Thực phẩm (tìm / Của tôi / Gần đây) và lối xu hướng; phân đoạn
-/// "Kế hoạch ăn". Phần còn lại (quét mã vạch, danh sách đi chợ, gợi ý AI) chưa
-/// port — dòng "đang dựng" nói thật điều đó thay vì một nút không làm gì.
+/// Tab Dinh dưỡng (#527 Phase 3) — `(tabs)/nutrition.tsx`, đúng thứ tự khối
+/// của RN (đối chiếu: `docs/design/nutrition/RN-PARITY.md`):
+/// - "Hôm nay": thẻ calo + macro (`NutritionCard`) với lối xu hướng 7 ngày
+///   ngay dưới, "Ghi bữa" (`MealLogActions`: Tìm món / Nhập tay — ảnh và mã
+///   vạch chưa port), Nước (`WaterWidget`), Thực phẩm bổ sung, "Bữa ăn hôm
+///   nay" với lối "Ngày khác";
+/// - "Kế hoạch ăn": kế hoạch rồi thư viện Thực phẩm (tìm / Của tôi / Gần đây).
+///
+/// Chất liệu chung với Hôm nay: kính trên nền giấy, một vầng sáng rất nhạt
+/// màu bữa ăn ở đầu trang.
 ///
 /// Sổ thuộc PHIÊN (`NutritionBooks`, dựng và đóng ở `SignedInScope`): thẻ, màn
 /// và kế hoạch nhắc nhở cùng đọc một bản.
@@ -41,18 +44,14 @@ struct NutritionTab: View {
           .pickerStyle(.segmented)
           .sensoryFeedback(.selection, trigger: segment)
           if segment == .plan {
-            if let plans { MealPlansPreview(book: plans) }
+            planSegment
           } else {
             todaySegment
           }
-          Text(String(localized: "placeholder.building"))
-            .font(DS.TextStyle.footnote)
-            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-            .multilineTextAlignment(.center)
-            .frame(maxWidth: .infinity)
-            .padding(.top, DS.Spacing.lg)
         }
         .padding(DS.Spacing.md)
+        .padding(.bottom, DS.Spacing.lg)
+        .animation(.smooth(duration: 0.3), value: segment)
       }
       .refreshable {
         await books?.refresh()
@@ -62,7 +61,8 @@ struct NutritionTab: View {
       // đổi tab — số của hôm nay đổi ở những màn ấy.
       .onAppear { Task { await reload() } }
       .navigationTitle(Text("tab.nutrition"))
-      .ascndPage()
+      .scrollContentBackground(.hidden)
+      .background { TodayAmbient(accent: .meal) }
       .navigationDestination(for: WaterRoute.self) { _ in
         if let water = books?.water { WaterView(book: water) }
       }
@@ -105,26 +105,34 @@ struct NutritionTab: View {
     }
   }
 
-  /// Phân đoạn "Hôm nay": thẻ calo, Nước, Thực phẩm bổ sung, ghi bữa, các bữa hôm nay.
+  /// Phân đoạn "Hôm nay" theo thứ tự RN: thẻ calo + lối xu hướng, Ghi bữa,
+  /// Nước, Thực phẩm bổ sung, các bữa hôm nay.
   @ViewBuilder private var todaySegment: some View {
     if let today { NutritionTodayCard(book: today) }
+    if let userId {
+      // Ngay dưới thẻ (RN): xu hướng là phần tiếp của con số hôm nay.
+      InsightsRow(userId: userId)
+      // `MealLogActions`: cách ghi bữa, cách đầu là cách chính.
+      MealLogWays(userId: userId) { Task { await reload() } }
+    }
     if let water = books?.water { WaterCard(book: water) }
     // Cạnh Nước, trên nhật ký (`(tabs)/nutrition.tsx`: "supplements belong
     // beside water") — hàng mang sẵn "2/4 hôm nay".
     if let supplements = books?.supplements { SupplementsRow(book: supplements) }
-    if let userId = books?.water?.userId ?? books?.supplements?.userId {
-      // Lối ghi bữa (`LogMealFab` ⊕ của RN): hôm nay, "Bữa trưa".
-      LogMealButton(userId: userId) { Task { await reload() } }
+    if let userId, let meals {
       // "Bữa ăn hôm nay" + "Ngày khác" trên cùng hàng tiêu đề (RN): tab
       // này là HÔM NAY, ngày khác là màn riêng (`/diary`).
-      if let meals {
-        mealsHeader(userId: userId)
-        DayMealsSection(book: meals) { Task { await today?.load() } }
-      }
-      if let foods, let foodSearch {
-        FoodsSection(userId: userId, library: foods, search: foodSearch)
-      }
-      InsightsRow(userId: userId)
+      mealsHeader(userId: userId)
+      DayMealsSection(book: meals) { Task { await today?.load() } }
+    }
+  }
+
+  /// Phân đoạn "Kế hoạch ăn" (RN): kế hoạch, rồi thư viện Thực phẩm. Gợi ý AI
+  /// và danh sách đi chợ chưa port.
+  @ViewBuilder private var planSegment: some View {
+    if let plans { MealPlansPreview(book: plans) }
+    if let userId, let foods, let foodSearch {
+      FoodsSection(userId: userId, library: foods, search: foodSearch)
     }
   }
 
@@ -143,7 +151,7 @@ struct NutritionTab: View {
   private func mealsHeader(userId: String) -> some View {
     HStack(alignment: .firstTextBaseline) {
       Text(String(localized: "nc.meals"))
-        .font(DS.TextStyle.headline)
+        .font(DS.TextStyle.title)
         .accessibilityAddTraits(.isHeader)
       Spacer()
       NavigationLink(value: DiaryRoute(userId: userId)) {
@@ -202,17 +210,65 @@ struct FoodsScreen: View {
   }
 }
 
-/// Nút "Ghi bữa ăn" — mở `LogMealView` cho hôm nay.
-struct LogMealButton: View {
+/// "Ghi bữa" — `MealLogActions` của RN: các cách ghi một bữa, cách đầu nổi
+/// bật. RN có bốn (Ảnh, Mã vạch, Tìm món, Nhập tay); ảnh và mã vạch cần
+/// camera (`scan-*`) chưa port nên không có ô — không vẽ một ô không làm gì.
+/// "Tìm món" mở màn ghi với con trỏ trong ô tìm; "Nhập tay" mở sẵn phần món
+/// tự nhập — hai việc khác nhau, cùng kết thúc bằng một bữa đã ghi.
+struct MealLogWays: View {
   let userId: String
   /// Sheet ghi bữa đóng lại — thẻ calo đọc lại số của hôm nay.
   var onClose: () -> Void = {}
-  @State private var open = false
+  @State private var open: LogMealView.Start?
 
   var body: some View {
-    DSButton(String(localized: "logMeal.title")) { open = true }
-      .sheet(isPresented: $open, onDismiss: onClose) { LogMealView(userId: userId) }
+    VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+      Text(String(localized: "logMeal.title"))
+        .font(DS.TextStyle.headline)
+        .foregroundStyle(DS.Color.foreground.swiftUI)
+        .accessibilityAddTraits(.isHeader)
+      HStack(spacing: DS.Spacing.sm) {
+        way(.search, symbol: "magnifyingglass", label: "nc.way.search", spoken: "nc.way.search.a11y", lead: true)
+        way(.manual, symbol: "square.and.pencil", label: "nc.way.manual", spoken: "nc.way.manual.a11y", lead: false)
+      }
+    }
+    .padding(DS.Spacing.md)
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .todayCard(radius: DS.Radius.lg)
+    .sheet(item: $open, onDismiss: onClose) { start in
+      LogMealView(userId: userId, start: start)
+    }
   }
+
+  private func way(_ start: LogMealView.Start, symbol: String, label: String.LocalizationValue, spoken: String.LocalizationValue, lead: Bool) -> some View {
+    let meal = MascotRoomView.signalColor(.meal)
+    return Button { open = start } label: {
+      HStack(spacing: DS.Spacing.sm) {
+        Image(systemName: symbol)
+          .font(.system(size: 15, weight: .semibold))
+        Text(String(localized: label))
+          .font(.system(size: 16, weight: .semibold))
+          .lineLimit(1)
+      }
+      .foregroundStyle(lead ? Color.white : DS.Color.foreground.swiftUI)
+      .frame(maxWidth: .infinity, minHeight: 48)
+      .background {
+        if lead {
+          Capsule().fill(meal)
+        } else {
+          Capsule().fill(.thinMaterial)
+          Capsule().strokeBorder(DS.Color.foreground.swiftUI.opacity(0.12), lineWidth: 0.75)
+        }
+      }
+      .contentShape(Capsule())
+    }
+    .buttonStyle(TodayPressStyle())
+    .accessibilityLabel(Text(String(localized: spoken)))
+  }
+}
+
+extension LogMealView.Start: Identifiable {
+  var id: Self { self }
 }
 
 /// Sổ nhật ký thuộc MÀN: mở là một sổ mới (ngày hôm nay), rời màn / đổi tài
@@ -262,11 +318,11 @@ struct SupplementsRow: View {
           .accessibilityHidden(true)
       }
       .padding(DS.Spacing.md)
-      .frame(minHeight: 44)
-      .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.md))
+      .frame(minHeight: 56)
+      .todayCard(radius: DS.Radius.lg)
       .contentShape(Rectangle())
     }
-    .buttonStyle(.plain)
+    .buttonStyle(TodayPressStyle(scale: 0.98))
   }
 }
 

@@ -152,11 +152,11 @@ struct InsightsRow: View {
           .accessibilityHidden(true)
       }
       .padding(DS.Spacing.md)
-      .frame(minHeight: 44)
-      .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.md))
+      .frame(minHeight: 56)
+      .todayCard(radius: DS.Radius.lg)
       .contentShape(Rectangle())
     }
-    .buttonStyle(.plain)
+    .buttonStyle(TodayPressStyle(scale: 0.98))
   }
 }
 

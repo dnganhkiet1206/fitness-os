@@ -26,7 +26,14 @@ struct LogMealView: View {
   let userId: String
   var date: LocalDate?
   var mealType: String?
+  /// Cách mở (`MealLogActions` của RN): ô tìm đã có con trỏ, hay mở sẵn phần
+  /// "Món tự nhập".
+  var start: Start = .plain
   var onDone: () -> Void = {}
+
+  enum Start: Hashable { case plain, search, manual }
+
+  @FocusState private var searchFocused: Bool
 
   @Environment(AppServices.self) private var services
   @Environment(\.dismiss) private var dismiss
@@ -70,6 +77,13 @@ struct LogMealView: View {
     }
     .task {
       guard logger == nil else { return }
+      // Cách mở của `MealLogActions`: "Tìm món" đặt con trỏ vào ô tìm,
+      // "Nhập tay" mở sẵn phần món tự nhập.
+      switch start {
+      case .search: searchFocused = true
+      case .manual: customOpen = true
+      case .plain: break
+      }
       let l = services.makeMealLogger(userId: userId, date: date, mealType: mealType)
       logger = l
       await l?.loadRecents()
@@ -146,6 +160,7 @@ struct LogMealView: View {
       TextField(text: $query, prompt: Text(String(localized: "logMeal.search"))) {
         Text(String(localized: "logMeal.search"))
       }
+      .focused($searchFocused)
       .textInputAutocapitalization(.never)
       .autocorrectionDisabled()
       .submitLabel(.search)

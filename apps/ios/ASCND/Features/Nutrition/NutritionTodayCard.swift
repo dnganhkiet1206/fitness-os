@@ -117,10 +117,6 @@ struct NutritionTodayCard: View {
       if reduceMotion { showLeft.toggle() } else { withAnimation(.easeInOut(duration: 0.25)) { showLeft.toggle() } }
     } label: {
       VStack(alignment: .leading, spacing: DS.Spacing.md) {
-        Text(String(localized: "nc.title"))
-          .font(DS.TextStyle.caption.weight(.bold))
-          .textCase(.uppercase)
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
         HStack(spacing: DS.Spacing.lg) {
           ringView(ring, kcal: t.kcal)
           side(ring, target: target)
@@ -133,10 +129,10 @@ struct NutritionTodayCard: View {
       }
       .padding(DS.Spacing.card)
       .frame(maxWidth: .infinity, alignment: .leading)
-      .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.lg))
+      .todayCard(radius: DS.Radius.xl)
       .contentShape(Rectangle())
     }
-    .buttonStyle(.plain)
+    .buttonStyle(TodayPressStyle(scale: 0.99))
     .sensoryFeedback(.selection, trigger: showLeft)
     .accessibilityElement(children: .ignore)
     .accessibilityLabel(Text(verbatim: summary(t, ring: ring, target: target, tiles: tiles)))
@@ -307,7 +303,7 @@ struct NutritionTodayCard: View {
     }
     .padding(DS.Spacing.sm)
     .frame(maxWidth: .infinity, alignment: .leading)
-    .background(DS.Color.background.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.sm))
+    .background(DS.Color.foreground.swiftUI.opacity(0.045), in: RoundedRectangle(cornerRadius: DS.Radius.sm, style: .continuous))
   }
 
   private func wordText(_ w: NutritionToday.Word) -> String {
