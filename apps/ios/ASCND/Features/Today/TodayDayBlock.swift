@@ -305,7 +305,15 @@ struct TodayTube: View {
         }
         .accessibilityHidden(true)
         ZStack(alignment: .bottom) {
-          Capsule().fill(DS.Color.card.swiftUI.opacity(0.6))
+          // Rãnh lõm: tối hơn mặt kính một chút và nhuốm màu tín hiệu, nên ống
+          // rỗng vẫn đọc ra hình và ra "ống nào" — không hoà vào thẻ.
+          Capsule().fill(DS.Color.foreground.swiftUI.opacity(0.06))
+          Capsule().fill(color.opacity(0.10))
+          Capsule()
+            .strokeBorder(
+              LinearGradient(colors: [.black.opacity(0.10), .clear], startPoint: .top, endPoint: .center),
+              lineWidth: 3)
+            .blur(radius: 2)
           Capsule()
             .fill(LinearGradient(colors: [color.opacity(0.75), color], startPoint: .top, endPoint: .bottom))
             .frame(height: max(tube.fill > 0 ? Self.size.width : 0, Self.size.height * tube.fill))
@@ -325,7 +333,7 @@ struct TodayTube: View {
         }
         .frame(width: Self.size.width, height: Self.size.height)
         .clipShape(Capsule())
-        .overlay(Capsule().strokeBorder(.white.opacity(0.6), lineWidth: 0.5))
+        .overlay(Capsule().strokeBorder(color.opacity(tube.fill > 0 ? 0.25 : 0.4), lineWidth: 1))
         .overlay {
           if isNext {
             Capsule()
