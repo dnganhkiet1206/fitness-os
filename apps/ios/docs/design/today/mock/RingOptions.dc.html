@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ASCND Today — day ring options</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 390px; box-sizing: border-box; background: #f7f4ef; color: #1a1917; font-family: -apple-system, 'SF Pro Text', system-ui, sans-serif; padding: 20px 16px 28px; display: flex; flex-direction: column; gap: 18px">
+
+  <sc-if value="{{isA}}" hint-placeholder-val="{{ true }}">
+    <section aria-label="Your day so far" style="display: flex; flex-direction: column; align-items: center; gap: 14px">
+      <div style="position: relative; width: 236px; height: 236px">
+        <svg width="236" height="236" viewBox="0 0 236 236" role="img" aria-label="2 of 5 done; water 32 percent">
+          <sc-for list="{{segs}}" as="s" hint-placeholder-count="5">
+            <path d="{{s.track}}" fill="none" stroke="{{s.wash}}" stroke-width="20" stroke-linecap="round"></path>
+            <path d="{{s.fill}}" fill="none" stroke="{{s.color}}" stroke-width="20" stroke-linecap="round"></path>
+          </sc-for>
+        </svg>
+        <sc-for list="{{segs}}" as="s" hint-placeholder-count="5">
+          <span style="position: absolute; left: {{s.ix}}; top: {{s.iy}}; width: 26px; height: 26px; margin: -13px 0 0 -13px; border-radius: 13px; background: #ffffff; box-shadow: 0 1px 3px rgba(26,25,23,0.18); display: flex; align-items: center; justify-content: center">
+            <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="{{s.glyph}}" fill="none" stroke="{{s.color}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          </span>
+        </sc-for>
+        <div style="position: absolute; inset: 44px; border-radius: 74px; background: #efeae1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px">
+          <span style="font-size: 11px; color: #6b6559">[Koa]</span>
+          <span style="font: 700 22px Menlo, ui-monospace, monospace">2<span style="font-size: 14px; color: #6b6559">/5</span></span>
+        </div>
+      </div>
+      <div style="font-size: 15px; text-align: center">Sleep is in. A meal and some water next.</div>
+    </section>
+  </sc-if>
+
+  <sc-if value="{{isB}}" hint-placeholder-val="{{ false }}">
+    <section aria-label="Your day so far" style="display: flex; flex-direction: column; gap: 6px">
+      <div style="position: relative; width: 358px; height: 196px">
+        <svg width="358" height="196" viewBox="0 0 358 196" aria-hidden="true" style="position: absolute; inset: 0">
+          <path d="M 24 180 A 155 155 0 0 1 334 180" fill="none" stroke="#e6e0d5" stroke-width="3" stroke-dasharray="2 7" stroke-linecap="round"></path>
+          <path d="M 24 180 A 155 155 0 0 1 112.6 52.0" fill="none" stroke="#1a1917" stroke-width="3" stroke-linecap="round"></path>
+        </svg>
+        <sc-for list="{{beads}}" as="b" hint-placeholder-count="5">
+          <span style="position: absolute; left: {{b.x}}; top: {{b.y}}; width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 22px; background: {{b.bg}}; border: {{b.border}}; box-sizing: border-box; display: flex; align-items: center; justify-content: center">
+            <svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true"><path d="{{b.glyph}}" fill="none" stroke="{{b.ink}}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          </span>
+          <span style="position: absolute; left: {{b.x}}; top: {{b.ly}}; transform: translateX(-50%); font-size: 11px; font-weight: 600; color: {{b.labelInk}}; white-space: nowrap">{{b.label}}</span>
+        </sc-for>
+        <div style="position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 2px">
+          <div style="width: 84px; height: 84px; border-radius: 42px; background: #efeae1; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #6b6559">[Koa]</div>
+        </div>
+        <span style="position: absolute; left: 116px; top: 30px; font: 600 11px -apple-system, system-ui, sans-serif; color: #1a1917">now</span>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: baseline; padding: 0 6px">
+        <span style="font-size: 15px">Sleep is in. A meal and some water next.</span>
+        <span style="font: 700 15px Menlo, ui-monospace, monospace">2/5</span>
+      </div>
+    </section>
+  </sc-if>
+
+  <sc-if value="{{isC}}" hint-placeholder-val="{{ false }}">
+    <section aria-label="Your day so far" style="position: relative; border-radius: 30px; overflow: hidden; isolation: isolate">
+      <div aria-hidden="true" style="position: absolute; inset: 0; z-index: -1; background: #f3eee6">
+        <span style="position: absolute; width: 170px; height: 170px; left: -40px; top: -30px; border-radius: 85px; background: #b98be6; filter: blur(44px); opacity: 0.26"></span>
+        <span style="position: absolute; width: 150px; height: 150px; left: 120px; top: 90px; border-radius: 75px; background: #f0a24a; filter: blur(46px); opacity: 0.2"></span>
+        <span style="position: absolute; width: 160px; height: 160px; right: -30px; top: -40px; border-radius: 80px; background: #4fb8c4; filter: blur(46px); opacity: 0.2"></span>
+        <span style="position: absolute; width: 140px; height: 140px; right: 20px; bottom: -60px; border-radius: 70px; background: #4cbf8c; filter: blur(46px); opacity: 0.2"></span>
+        <span style="position: absolute; width: 110px; height: 110px; left: 40px; bottom: -50px; border-radius: 55px; background: #e07a8a; filter: blur(46px); opacity: 0.16"></span>
+      </div>
+      <div style="margin: 1px; border-radius: 29px; padding: 16px 16px 18px; background: rgba(255,255,255,0.55); backdrop-filter: blur(20px) saturate(125%); -webkit-backdrop-filter: blur(20px) saturate(125%); border: 1px solid rgba(255,255,255,0.7); box-shadow: inset 0 1px 0 rgba(255,255,255,0.8), 0 4px 16px rgba(26,25,23,0.06); display: flex; flex-direction: column; gap: 16px">
+        <div style="display: flex; gap: 12px; align-items: flex-end">
+          <a href="#buddy" aria-label="Buddy room" style="position: relative; width: 92px; height: 116px; flex: none; display: block">
+            <span aria-hidden="true" style="position: absolute; left: 10px; right: 10px; bottom: 0; height: 14px; border-radius: 50%; background: radial-gradient(closest-side, rgba(26,25,23,0.22), rgba(26,25,23,0))"></span>
+            <img src="koa-idle.png" alt="" style="position: absolute; left: 4px; bottom: 5px; width: 84px; height: auto">
+          </a>
+          <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px; padding-bottom: 6px">
+            <div style="display: flex; justify-content: space-between; align-items: center">
+              <span style="font: 700 26px/1 Menlo, ui-monospace, monospace; letter-spacing: -1px">2<span style="font-size: 14px; color: #57524a; letter-spacing: 0"> of 5</span></span>
+              <span style="display: flex; align-items: center; gap: 5px; height: 26px; padding: 0 10px; border-radius: 13px; background: rgba(255,255,255,0.6); border: 1px solid rgba(255,255,255,0.85); font: 700 13px -apple-system, system-ui, sans-serif; color: #846e06">
+                <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="5" fill="none" stroke="#846e06" stroke-width="1.6"></circle><circle cx="6" cy="6" r="2" fill="#846e06"></circle></svg>
+                +15
+              </span>
+            </div>
+            <div style="position: relative; padding: 10px 12px; border-radius: 16px 16px 16px 5px; background: rgba(255,255,255,0.82); border: 1px solid rgba(255,255,255,0.95); box-shadow: 0 2px 8px rgba(26,25,23,0.06); display: flex; flex-direction: column; gap: 8px">
+              <span style="font-size: 14px; line-height: 19px; color: #1a1917">Sleep's in. I'm hungry — a meal is next, worth <span style="font-weight: 700; color: #846e06">+10</span>.</span>
+              <button style="align-self: flex-start; height: 34px; padding: 0 14px; border-radius: 17px; border: 0; background: #d87300; color: #ffffff; font: 600 14px -apple-system, system-ui, sans-serif; display: flex; align-items: center; gap: 6px">
+                <svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round"></path></svg>
+                Log a meal
+              </button>
+            </div>
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 7px; padding-top: 6px">
+          <sc-for list="{{bars}}" as="b" hint-placeholder-count="5">
+            <div style="position: relative; display: flex; flex-direction: column; align-items: center; gap: 5px">
+              <sc-if value="{{b.next}}" hint-placeholder-val="{{ false }}">
+                <span style="position: absolute; top: -9px; left: 50%; transform: translateX(-50%); z-index: 2; height: 18px; padding: 0 7px; border-radius: 9px; background: {{b.color}}; color: #ffffff; font: 700 10px -apple-system, system-ui, sans-serif; letter-spacing: 0.3px; display: flex; align-items: center">Next</span>
+              </sc-if>
+              <div role="img" aria-label="{{b.a11y}}" style="position: relative; width: 30px; height: 104px; box-sizing: border-box; border-radius: 15px; overflow: hidden; background: rgba(255,255,255,0.5); border: {{b.border}}; box-shadow: {{b.glow}}; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px)">
+                <div style="position: absolute; left: 0; right: 0; bottom: 0; height: {{b.h}}; background: {{b.liquid}}; border-radius: 4px 4px 0 0; box-shadow: inset 0 1px 0 rgba(255,255,255,0.4)"></div>
+                <span style="position: absolute; left: 6px; top: 10px; bottom: 30px; width: 2px; border-radius: 1px; background: linear-gradient(rgba(255,255,255,0.7), rgba(255,255,255,0))"></span>
+                <span style="position: absolute; left: 50%; bottom: 4px; width: 22px; height: 22px; margin-left: -11px; border-radius: 11px; background: {{b.chip}}; display: flex; align-items: center; justify-content: center">
+                  <svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><path d="{{b.glyph}}" fill="none" stroke="{{b.ink}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                </span>
+              </div>
+              <span style="font: 600 11px Menlo, ui-monospace, monospace; color: {{b.valueInk}}">{{b.value}}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </section>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"option":{"editor":"enum","options":["A","B","C"],"default":"A"},"$preview":{"width":390,"height":360}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const opt = this.props.option ?? 'A';
+    const glyph = {
+      sleep: 'M11.5 2.5a5.5 5.5 0 1 0 2 7.5A4.5 4.5 0 0 1 11.5 2.5z',
+      meal: 'M3 8h10M4 8a4 4 0 0 0 8 0M8 2v2',
+      water: 'M8 2s4 4.5 4 7.5a4 4 0 0 1-8 0C4 6.5 8 2 8 2z',
+      workout: 'M2 8h2M12 8h2M4 5v6M12 5v6M6 8h4',
+      steps: 'M5 3c1.2 0 1.6 1.6 1.6 3S5.8 9 5 9 3.4 7.4 3.4 6 3.8 3 5 3zM11 7c1.2 0 1.6 1.6 1.6 3S11.8 13 11 13s-1.6-1.6-1.6-3 .4-3 1.6-3z'
+    };
+    const sig = [
+      { key: 'sleep', label: 'Sleep', color: '#8c35d0', wash: 'rgba(140,53,208,0.12)', pct: 1 },
+      { key: 'meal', label: 'Meal', color: '#d87300', wash: 'rgba(216,115,0,0.12)', pct: 0 },
+      { key: 'water', label: 'Water', color: '#077b8b', wash: 'rgba(7,123,139,0.12)', pct: 0.32 },
+      { key: 'workout', label: 'Workout', color: '#b83044', wash: 'rgba(184,48,68,0.12)', pct: 0 },
+      { key: 'steps', label: 'Steps', color: '#078055', wash: 'rgba(7,128,85,0.12)', pct: 0.41 }
+    ];
+    // A: thick segmented ring, each segment fills by its own progress, icon on the arc
+    const R = 100, cx = 118, cy = 118, gap = 14;
+    const pt = (deg) => [cx + R * Math.cos(deg * Math.PI / 180), cy + R * Math.sin(deg * Math.PI / 180)];
+    const path = (a0, a1) => {
+      const p0 = pt(a0), p1 = pt(a1);
+      return 'M ' + p0[0].toFixed(2) + ' ' + p0[1].toFixed(2) + ' A ' + R + ' ' + R + ' 0 0 1 ' + p1[0].toFixed(2) + ' ' + p1[1].toFixed(2);
+    };
+    const segs = sig.map((s, i) => {
+      const a0 = -90 + i * 72 + gap / 2, a1 = -90 + (i + 1) * 72 - gap / 2;
+      const af = a0 + (a1 - a0) * s.pct;
+      const mid = pt(a0 - 0.0);
+      return {
+        color: s.color, wash: s.wash, glyph: glyph[s.key],
+        track: path(a0, a1), fill: s.pct > 0 ? path(a0, Math.max(af, a0 + 0.5)) : 'M 0 0',
+        ix: mid[0].toFixed(1) + 'px', iy: mid[1].toFixed(1) + 'px'
+      };
+    });
+    // B: the day as an arc from morning to night; beads in the order the day is lived
+    const order = ['sleep', 'meal', 'workout', 'water', 'steps'];
+    const beads = order.map((k, i) => {
+      const s = sig.find((x) => x.key === k);
+      const deg = 180 + i * 45;
+      const x = 179 + 155 * Math.cos(deg * Math.PI / 180), y = 180 + 155 * Math.sin(deg * Math.PI / 180);
+      const done = s.pct >= 1;
+      return {
+        x: x.toFixed(1) + 'px', y: y.toFixed(1) + 'px', ly: (y + 28).toFixed(1) + 'px', label: s.label,
+        glyph: glyph[k], bg: done ? s.color : '#ffffff', border: done ? '0' : '1.5px solid ' + (s.pct > 0 ? s.color : '#dcd5c8'),
+        ink: done ? '#ffffff' : s.color, labelInk: done ? '#1a1917' : '#6b6559'
+      };
+    });
+    // C: five glass tubes filled with liquid, Koa on a glass plinth
+    const values = { sleep: '7h40', meal: '0', water: '0.8L', workout: '0', steps: '4.1k' };
+    const bars = sig.map((s) => ({
+      color: s.color, next: s.key === 'meal',
+      h: Math.round(s.pct * 100) + '%', glyph: glyph[s.key], value: values[s.key],
+      liquid: 'linear-gradient(to top, ' + s.color + 'd9, ' + s.color + '99)',
+      chip: s.pct >= 0.25 ? 'rgba(255,255,255,0.28)' : 'rgba(255,255,255,0.75)',
+      ink: s.pct >= 0.25 ? '#ffffff' : s.color,
+      valueInk: s.key === 'meal' ? s.color : (s.pct >= 1 ? s.color : '#57524a'),
+      border: s.key === 'meal' ? '2px solid ' + s.color : '1px solid rgba(255,255,255,0.8)',
+      glow: s.key === 'meal' ? '0 0 0 4px ' + s.color + '22, 0 4px 12px ' + s.color + '33' : 'inset 0 1px 0 rgba(255,255,255,0.9), 0 2px 6px rgba(26,25,23,0.05)',
+      a11y: s.label + ' ' + Math.round(s.pct * 100) + '%' + (s.key === 'meal' ? ', next' : '')
+    }));
+    return { isA: opt === 'A', isB: opt === 'B', isC: opt === 'C', segs, beads, bars };
+  }
+}
+</script>
+</body>
+</html>

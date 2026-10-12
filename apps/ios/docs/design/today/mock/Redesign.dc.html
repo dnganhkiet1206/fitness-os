@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ASCND Today — redesign</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<!--
+THESIS: Today counts the day once. One day ring with Koa at its centre and one list that logs; the workout card carries readiness and answers "push or go easy". Refuses the RN stack of three overlapping trackers and a half-screen gauge that can only say "—".
+OWN-WORLD: ASCND paper — #f7f4ef ground, #ffffff surfaces with 1px #dcd5c8 hairlines, ink #1a1917, muted #6b6559; five signal hues (meal #d87300, workout #b83044, water #077b8b, sleep #8c35d0, steps #078055) used only on the ring and their own rows; SF for words, Menlo only for measurements; black pill for the one primary action.
+STORY: in one glance the user sees how far the day has come, whether to train hard, and the next thing to log; one tap logs it; coins show what each log is worth.
+FIRST VIEWPORT: large title Today + date; streak chip and avatar trailing. Ring (168) left with Koa inside, "2 of 5" + coins right. Workout card below: name, readiness score inline, Start workout.
+FORM: one ring, one list — candidate 3 of 7, seed 598debb8.
+FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance
+-->
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+a{color:#6b6559}a:hover{color:#1a1917}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="width: 390px; min-height: 1560px; box-sizing: border-box; background: {{c.bg}}; color: {{c.fg}}; font-family: -apple-system, 'SF Pro Text', system-ui, sans-serif; padding: 8px 16px 48px; display: flex; flex-direction: column; gap: 22px">
+
+  <header style="display: flex; align-items: flex-end; justify-content: space-between; padding-top: 8px">
+    <div style="display: flex; flex-direction: column; gap: 2px">
+      <h1 style="margin: 0; font-size: 34px; line-height: 41px; font-weight: 700; letter-spacing: -0.4px">Today</h1>
+      <span style="font-size: 15px; color: {{c.muted}}">Monday, 12 October</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 8px; padding-bottom: 4px">
+      <sc-if value="{{d.hasStreak}}" hint-placeholder-val="{{ true }}">
+        <a href="#buddy" aria-label="5-day streak, today is logged" style="text-decoration: none; height: 36px; padding: 0 12px; border-radius: 18px; background: {{c.orangeWash}}; display: flex; align-items: center; gap: 5px; font: 800 16px -apple-system, system-ui, sans-serif; color: {{c.orangeInk}}">
+          <svg width="13" height="16" viewBox="0 0 14 16" aria-hidden="true"><path d="M7 1c1 3 5 5 5 9a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-5 1-8z" fill="{{c.orange}}"></path></svg>
+          5
+        </a>
+      </sc-if>
+      <a href="#settings" aria-label="Open settings" style="text-decoration: none; width: 36px; height: 36px; border-radius: 18px; background: {{c.inkWash}}; border: 1px solid {{c.inkLine}}; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font: 600 14px -apple-system, system-ui, sans-serif; color: {{c.fg}}">KD</a>
+    </div>
+  </header>
+
+  <section aria-label="Your day so far" style="display: flex; align-items: center; gap: 18px">
+    <a href="#buddy" aria-label="Buddy room" style="position: relative; width: 168px; height: 168px; flex: none; display: block">
+      <svg width="168" height="168" viewBox="0 0 168 168" aria-hidden="true" style="position: absolute; inset: 0">
+        <sc-for list="{{d.arcs}}" as="a" hint-placeholder-count="5">
+          <path d="{{a.d}}" fill="none" stroke="{{a.color}}" stroke-width="11" stroke-linecap="round"></path>
+        </sc-for>
+      </svg>
+      <div style="position: absolute; inset: 26px; border-radius: 58px; background: {{c.koaBg}}; display: flex; align-items: center; justify-content: center; font-size: 11px; color: {{c.muted}}">[Koa]</div>
+    </a>
+    <div style="display: flex; flex-direction: column; gap: 6px; min-width: 0">
+      <div><span style="font: 700 34px/1 Menlo, ui-monospace, monospace; letter-spacing: -1px">{{d.done}}</span><span style="font: 600 17px Menlo, ui-monospace, monospace; color: {{c.muted}}"> of 5</span></div>
+      <div style="font-size: 15px; line-height: 20px; color: {{c.fg}}">{{d.headline}}</div>
+      <sc-if value="{{d.hasCoins}}" hint-placeholder-val="{{ true }}">
+        <div style="align-self: flex-start; display: flex; align-items: center; gap: 5px; height: 26px; padding: 0 10px; border-radius: 13px; background: {{c.coinWash}}; font: 700 13px -apple-system, system-ui, sans-serif; color: {{c.coinInk}}">
+          <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="5" fill="none" stroke="{{c.coinInk}}" stroke-width="1.6"></circle><circle cx="6" cy="6" r="2" fill="{{c.coinInk}}"></circle></svg>
+          {{d.coins}}
+        </div>
+      </sc-if>
+    </div>
+  </section>
+
+  <section aria-label="Today's workout" style="background: {{c.card}}; border: 1px solid {{c.line}}; border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 16px; box-shadow: 0 1px 8px {{c.shadow}}">
+    <div style="display: flex; flex-direction: column; gap: 4px">
+      <h2 style="margin: 0; font-size: 22px; line-height: 28px; font-weight: 700; letter-spacing: -0.3px">{{d.planTitle}}</h2>
+      <span style="font-size: 15px; color: {{c.muted}}">{{d.planMeta}}</span>
+    </div>
+    <a href="#readiness" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 14px; padding: 12px 14px; border-radius: 14px; background: {{c.inset}}">
+      <span style="font: 700 30px/1 Menlo, ui-monospace, monospace; color: {{d.zoneColor}}; min-width: 50px">{{d.score}}</span>
+      <span style="flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0">
+        <span style="font-size: 15px; font-weight: 600; color: {{d.zoneColor}}">{{d.zoneWord}}</span>
+        <span style="font-size: 13px; line-height: 17px; color: {{c.muted}}">{{d.zoneWhy}}</span>
+      </span>
+      <svg width="8" height="14" viewBox="0 0 8 14" aria-hidden="true"><path d="M1.5 1.5L6.5 7l-5 5.5" fill="none" stroke="{{c.muted}}" stroke-width="1.8" stroke-linecap="round"></path></svg>
+    </a>
+    <div style="display: flex; gap: 10px">
+      <button style="flex: 1; height: 50px; border-radius: 25px; border: 0; background: {{c.action}}; color: {{c.actionInk}}; font-size: 17px; font-weight: 600">{{d.planCta}}</button>
+      <sc-if value="{{d.isNew}}" hint-placeholder-val="{{ false }}">
+        <button style="height: 50px; padding: 0 18px; border-radius: 25px; border: 1px solid {{c.line}}; background: transparent; color: {{c.fg}}; font-size: 17px; font-weight: 600">Log sleep</button>
+      </sc-if>
+    </div>
+  </section>
+
+  <section aria-label="Your day" style="display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: baseline; justify-content: space-between; padding: 0 4px">
+      <h2 style="margin: 0; font-size: 20px; font-weight: 700; letter-spacing: -0.2px">Your day</h2>
+      <span style="font-size: 13px; color: {{c.muted}}">Each one fills the ring</span>
+    </div>
+    <div style="background: {{c.card}}; border: 1px solid {{c.line}}; border-radius: 20px; overflow: hidden">
+      <sc-for list="{{d.rows}}" as="r" hint-placeholder-count="5">
+        <div style="display: flex; align-items: center; gap: 12px; min-height: 64px; padding: 8px 14px 8px 16px; border-top: {{r.sep}}">
+          <span style="width: 32px; height: 32px; border-radius: 16px; flex: none; display: flex; align-items: center; justify-content: center; background: {{r.dotBg}}">
+            <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="{{r.glyph}}" fill="none" stroke="{{r.dotInk}}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          </span>
+          <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+            <span style="display: flex; align-items: baseline; gap: 8px">
+              <span style="font-size: 17px; font-weight: 600; color: {{c.fg}}">{{r.label}}</span>
+              <span style="font: 700 12px -apple-system, system-ui, sans-serif; color: {{r.coinColor}}">{{r.coin}}</span>
+            </span>
+            <span style="font-size: 13px; line-height: 17px; color: {{c.muted}}">{{r.detail}}</span>
+          </span>
+          <sc-if value="{{r.done}}" hint-placeholder-val="{{ false }}">
+            <svg width="24" height="24" viewBox="0 0 24 24" role="img" aria-label="Logged"><circle cx="12" cy="12" r="11" fill="{{r.color}}"></circle><path d="M7 12.5l3.2 3.2L17 9" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          </sc-if>
+          <sc-if value="{{r.open}}" hint-placeholder-val="{{ true }}">
+            <button aria-label="{{r.a11y}}" style="height: 36px; min-width: 64px; padding: 0 14px; border-radius: 18px; border: 1px solid {{c.line}}; background: {{c.inset}}; color: {{c.fg}}; font-size: 15px; font-weight: 600">{{r.action}}</button>
+          </sc-if>
+          <sc-if value="{{r.auto}}" hint-placeholder-val="{{ false }}">
+            <span style="font-size: 13px; color: {{c.muted}}">Auto</span>
+          </sc-if>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section aria-label="More about today" style="display: flex; flex-direction: column; gap: 10px">
+    <h2 style="margin: 0; padding: 0 4px; font-size: 20px; font-weight: 700; letter-spacing: -0.2px">More about today</h2>
+    <div style="background: {{c.card}}; border: 1px solid {{c.line}}; border-radius: 20px; overflow: hidden">
+      <sc-for list="{{d.more}}" as="m" hint-placeholder-count="5">
+        <a href="#more" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 6px 14px 6px 16px; border-top: {{m.sep}}">
+          <span style="flex: 1; font-size: 17px; color: {{c.fg}}">{{m.label}}</span>
+          <span style="font: 500 15px Menlo, ui-monospace, monospace; color: {{c.muted}}">{{m.value}}</span>
+          <svg width="8" height="14" viewBox="0 0 8 14" aria-hidden="true"><path d="M1.5 1.5L6.5 7l-5 5.5" fill="none" stroke="{{c.chev}}" stroke-width="1.8" stroke-linecap="round"></path></svg>
+        </a>
+      </sc-for>
+    </div>
+  </section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"variant":{"editor":"enum","options":["day","new"],"default":"day"},"dark":{"editor":"boolean","default":false},"$preview":{"width":390,"height":1560}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const dark = this.props.dark ?? false;
+    const isNew = (this.props.variant ?? 'day') === 'new';
+    const c = dark ? {
+      bg: '#070708', card: '#0e0e11', inset: '#18181b', line: '#2b2b31', fg: '#ededed', muted: '#9a9a9a', chev: '#5c5c64',
+      track: '#2a2a31', shadow: 'rgba(0,0,0,0)', action: '#ededed', actionInk: '#0e0e11', koaBg: '#18181b',
+      inkWash: 'rgba(237,237,237,0.10)', inkLine: 'rgba(237,237,237,0.22)', orange: '#ff9130', orangeInk: '#ff9130',
+      orangeWash: 'rgba(255,145,48,0.14)', coinWash: 'rgba(205,172,0,0.16)', coinInk: '#e3c22a',
+      meal: '#ff9130', workout: '#ff5c7a', water: '#2fd3e0', sleep: '#b45cff', steps: '#00c785', weight: '#3ba6ff', bio: '#ff5c7a',
+      green: '#00c785', yellow: '#e3c22a', red: '#ff5c7a'
+    } : {
+      bg: '#f7f4ef', card: '#ffffff', inset: '#f7f4ef', line: '#dcd5c8', fg: '#1a1917', muted: '#6b6559', chev: '#b3ab9c',
+      track: '#e6e0d5', shadow: 'rgba(26,25,23,0.05)', action: '#1a1917', actionInk: '#ffffff', koaBg: '#efeae1',
+      inkWash: 'rgba(26,25,23,0.06)', inkLine: 'rgba(26,25,23,0.18)', orange: '#d87300', orangeInk: '#ac5b06',
+      orangeWash: 'rgba(216,115,0,0.12)', coinWash: 'rgba(167,139,0,0.12)', coinInk: '#846e06',
+      meal: '#d87300', workout: '#b83044', water: '#077b8b', sleep: '#8c35d0', steps: '#078055', weight: '#0673be', bio: '#de0b44',
+      green: '#078055', yellow: '#846e06', red: '#de0b44'
+    };
+    const glyph = {
+      sleep: 'M11.5 2.5a5.5 5.5 0 1 0 2 7.5A4.5 4.5 0 0 1 11.5 2.5z',
+      meal: 'M3 8h10M4 8a4 4 0 0 0 8 0M8 2v2',
+      water: 'M8 2s4 4.5 4 7.5a4 4 0 0 1-8 0C4 6.5 8 2 8 2z',
+      workout: 'M2 8h2M12 8h2M4 5v6M12 5v6M6 8h4',
+      steps: 'M5 3c1.2 0 1.6 1.6 1.6 3S5.8 9 5 9 3.4 7.4 3.4 6 3.8 3 5 3zM11 7c1.2 0 1.6 1.6 1.6 3S11.8 13 11 13s-1.6-1.6-1.6-3 .4-3 1.6-3z',
+      weight: 'M3 13h10l-1.5-8h-7zM6 5a2 2 0 0 1 4 0',
+      bio: 'M1.5 8h3l1.5-3 3 6 1.5-3h4'
+    };
+    const day = [
+      { key: 'sleep', label: 'Sleep', coin: '+15', done: true, detail: '7 h 40 min · logged 06:50' },
+      { key: 'meal', label: 'Meal', coin: '+10', done: false, detail: 'Nothing logged yet', action: 'Log' },
+      { key: 'water', label: 'Water', coin: '+15', done: false, detail: '0.8 of 2.5 L', action: '+250 ml' },
+      { key: 'workout', label: 'Workout', coin: '+25', done: false, detail: 'Chest day is planned', action: 'Log' },
+      { key: 'steps', label: 'Steps', coin: '+10', done: false, auto: true, detail: '4,120 of 10,000 · Apple Health' },
+      { key: 'weight', label: 'Weight', coin: '', done: true, detail: '71.5 kg · this morning' },
+      { key: 'bio', label: 'Biometrics', coin: '', done: false, detail: 'Resting HR, HRV, SpO₂', action: 'Log' }
+    ];
+    const fresh = day.map((r) => ({
+      ...r, done: false,
+      detail: { sleep: 'How did you sleep?', meal: 'Nothing logged yet', water: '0 of 2.5 L', workout: 'No workout planned', steps: '0 of 10,000 · Apple Health', weight: 'Not weighed yet', bio: 'Resting HR, HRV, SpO₂' }[r.key],
+      action: r.key === 'steps' ? undefined : (r.action ?? 'Log')
+    }));
+    const src = isNew ? fresh : day;
+    const rows = src.map((r, i) => ({
+      label: r.label, detail: r.detail, coin: r.coin, done: r.done, auto: !r.done && !!r.auto, open: !r.done && !r.auto,
+      action: r.action, a11y: (r.action ?? '') + ' — ' + r.label, glyph: glyph[r.key], color: c[r.key],
+      dotBg: r.done ? c[r.key] + (dark ? '33' : '1f') : c.inset, dotInk: r.done ? c[r.key] : c[r.key],
+      coinColor: r.done ? c.muted : c.coinInk,
+      sep: i === 0 ? '0' : (i === 5 ? '6px solid ' + c.inset : '1px solid ' + c.line)
+    }));
+    const ringKeys = ['sleep', 'meal', 'water', 'workout', 'steps'];
+    const doneSet = new Set(src.filter((r) => r.done).map((r) => r.key));
+    const R = 78, cx = 84, cy = 84, gap = 9;
+    const arc = (i) => {
+      const a0 = (-90 + i * 72 + gap / 2) * Math.PI / 180, a1 = (-90 + (i + 1) * 72 - gap / 2) * Math.PI / 180;
+      const p = (a) => (cx + R * Math.cos(a)).toFixed(2) + ' ' + (cy + R * Math.sin(a)).toFixed(2);
+      return 'M ' + p(a0) + ' A ' + R + ' ' + R + ' 0 0 1 ' + p(a1);
+    };
+    const arcs = ringKeys.map((k, i) => ({ d: arc(i), color: doneSet.has(k) ? c[k] : c.track }));
+    const done = ringKeys.filter((k) => doneSet.has(k)).length;
+    const d = isNew ? {
+      isNew: true, hasStreak: false, hasCoins: false, coins: '', done, arcs, rows,
+      headline: 'A fresh day. Log anything below and Koa wakes up.',
+      planTitle: 'No workout planned', planMeta: 'Pick one for today, or just log what you do.',
+      score: '—', zoneColor: c.muted, zoneWord: 'No readiness score yet', zoneWhy: 'One night of sleep or one workout with sets gives you one.',
+      planCta: 'Pick a workout',
+      more: [['Biometrics', '—'], ['Training this week', '—'], ['Readiness trend', '—'], ['Weekly review', ''], ['Buddy room', 'Lv 1']]
+    } : {
+      isNew: false, hasStreak: true, hasCoins: true, coins: '+15 coins waiting', done, arcs, rows,
+      headline: 'Sleep is in. A meal and some water next.',
+      planTitle: 'Chest day', planMeta: 'Bench press, incline press, dips · ~40 min',
+      score: '74', zoneColor: c.yellow, zoneWord: 'Train moderately', zoneWhy: 'HRV a little low; sleep on target.',
+      planCta: 'Start workout',
+      more: [['Biometrics', '54 bpm · 62 ms'], ['Training this week', '+8%'], ['Readiness trend', 'avg 71'], ['Weekly review', ''], ['Buddy room', 'Lv 4']]
+    };
+    d.more = d.more.map(([label, value], i) => ({ label, value, sep: i === 0 ? '0' : '1px solid ' + c.line }));
+    return { c, d };
+  }
+}
+</script>
+</body>
+</html>
