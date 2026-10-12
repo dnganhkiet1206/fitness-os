@@ -43,29 +43,37 @@ public struct TodayView: View {
 
   public var body: some View {
     NavigationStack {
-      ScrollView {
-        VStack(alignment: .leading, spacing: DS.Spacing.lg) {
-          switch state.status {
-          case .todo: todoView
-          case .done: doneView
-          case .missed: missedView
-          case .rest: restView
-          case .unplanned: unplannedView
-          }
-          ctaButton
-          if let extrasUserId { TodayExtras(userId: extrasUserId) }
-        }
-        .padding(DS.Spacing.md)
-      }
-      .navigationTitle(Text("tab.today"))
-      .toolbar {
-        if let onOpenSettings {
-          ToolbarItem(placement: .topBarTrailing) {
-            Button(action: onOpenSettings) {
-              Image(systemName: "person.crop.circle")
-                .frame(minWidth: 44, minHeight: 44)
+      if let extrasUserId {
+        // Có phiên (#527, E): bố cục của RN — đầu trang riêng thay thanh tiêu
+        // đề, các khối của `TodayExtras`, phần buổi tập ở giữa.
+        ScrollView {
+          TodayExtras(userId: extrasUserId, onOpenSettings: onOpenSettings) {
+            VStack(alignment: .leading, spacing: DS.Spacing.lg) {
+              plan
             }
-            .accessibilityLabel(Text("settings.title"))
+          }
+          .padding(.horizontal, DS.Spacing.md)
+          .padding(.bottom, DS.Spacing.lg)
+        }
+        .background(DS.Color.background.swiftUI)
+        .toolbar(.hidden, for: .navigationBar)
+      } else {
+        ScrollView {
+          VStack(alignment: .leading, spacing: DS.Spacing.lg) {
+            plan
+          }
+          .padding(DS.Spacing.md)
+        }
+        .navigationTitle(Text("tab.today"))
+        .toolbar {
+          if let onOpenSettings {
+            ToolbarItem(placement: .topBarTrailing) {
+              Button(action: onOpenSettings) {
+                Image(systemName: "person.crop.circle")
+                  .frame(minWidth: 44, minHeight: 44)
+              }
+              .accessibilityLabel(Text("settings.title"))
+            }
           }
         }
       }
@@ -73,6 +81,18 @@ public struct TodayView: View {
     // Không gắn accessibilityLabel lên cả cây: container không gộp thì nhãn
     // đè xuống từng phần tử con (nút Bắt đầu, từng bài đều đọc thành
     // "Hôm nay: …"). Trạng thái đã có ở DSSectionHeader / tiêu đề DSEmptyState.
+  }
+
+  /// Thẻ buổi tập theo trạng thái + nút chính.
+  @ViewBuilder private var plan: some View {
+    switch state.status {
+    case .todo: todoView
+    case .done: doneView
+    case .missed: missedView
+    case .rest: restView
+    case .unplanned: unplannedView
+    }
+    ctaButton
   }
 
   // MARK: - Nhãn đọc màn hình

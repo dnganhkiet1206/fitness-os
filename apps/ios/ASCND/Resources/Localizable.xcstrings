@@ -39700,6 +39700,190 @@
      }
     }
    }
+  },
+  "today.streak.lit.one": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "1-day streak, today is logged"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chuỗi 1 ngày, hôm nay đã ghi"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "racha de 1 día, hoy registrado"
+     }
+    }
+   }
+  },
+  "today.streak.lit.other %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld-day streak, today is logged"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chuỗi %lld ngày, hôm nay đã ghi"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "racha de %lld días, hoy registrado"
+     }
+    }
+   }
+  },
+  "today.streak.risk.one": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "1-day streak, nothing logged today yet"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chuỗi 1 ngày, hôm nay chưa ghi gì"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "racha de 1 día, aún nada registrado hoy"
+     }
+    }
+   }
+  },
+  "today.streak.risk.other %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld-day streak, nothing logged today yet"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chuỗi %lld ngày, hôm nay chưa ghi gì"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "racha de %lld días, aún nada registrado hoy"
+     }
+    }
+   }
+  },
+  "today.settings.a11y": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Open settings"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mở cài đặt"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Abrir ajustes"
+     }
+    }
+   }
+  },
+  "today.hero.details %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Details for %@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chi tiết %@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Detalles de %@"
+     }
+    }
+   }
+  },
+  "today.quests.a11y %lld %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Daily quests: %1$lld of %2$lld done"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nhiệm vụ hôm nay: xong %1$lld / %2$lld"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Misiones diarias: %1$lld de %2$lld hechas"
+     }
+    }
+   }
+  },
+  "brand.name": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "ASCND"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "ASCND"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "ASCND"
+     }
+    }
+   }
   }
  }
 }

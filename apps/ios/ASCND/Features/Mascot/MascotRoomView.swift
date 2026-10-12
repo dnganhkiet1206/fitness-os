@@ -689,13 +689,14 @@ struct MascotRoomView: View {
 /// Vòng năng lượng (`EnergyRing`): năm cung, cung nào xong thì sáng màu của nó.
 struct EnergyRing: View {
   let segments: [(on: Bool, color: Color)]
+  /// Nét và khe (độ) — phòng linh vật 10 / 6; vòng nhỏ trên Today 8 / 8 (RN `size 64, stroke 8`).
+  var lineWidth: CGFloat = 10
+  var gap = 6.0
 
   var body: some View {
     Canvas { ctx, size in
       let n = max(segments.count, 1)
-      let lineWidth: CGFloat = 10
       let rect = CGRect(origin: .zero, size: size).insetBy(dx: lineWidth / 2, dy: lineWidth / 2)
-      let gap = 6.0
       for (i, s) in segments.enumerated() {
         let start = -90.0 + Double(i) * 360 / Double(n) + gap / 2
         let end = -90.0 + Double(i + 1) * 360 / Double(n) - gap / 2

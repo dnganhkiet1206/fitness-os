@@ -2,15 +2,21 @@ import ASCNDCore
 import ASCNDDesignSystem
 import SwiftUI
 
-/// Các thẻ dưới phần buổi tập của Today (#527 Phase 4/7/9) — như RN, Today là
-/// cửa của chúng: thẻ sẵn sàng (→ sinh trắc học, tấm giải thích), xu hướng 7 ngày, thẻ Apple
-/// Health, lối vào tổng kết tuần và phòng linh vật (→ huy chương, thử thách tuần).
+/// Thân tab Hôm nay khi có phiên (#527) — theo thứ tự của `(tabs)/index.tsx`:
+/// đầu trang (logo, chuỗi ngày, avatar → Cài đặt), hàng năng lượng (→ phòng
+/// linh vật), trang sẵn sàng lớn (→ sinh trắc học, tấm giải thích), hàng Koa,
+/// rồi phần buổi tập (`plan`, do `TodayView` vẽ), xu hướng 7 ngày, thẻ Apple
+/// Health, cân nặng, lối vào tổng kết tuần.
 ///
 /// Chỉ là nối dây: sổ dựng ở `AppServices`, một lần mỗi phiên (cây của tab
 /// dựng lại theo `.id(userId)`), đóng khi phiên kết thúc. Thiếu cấu hình
 /// Supabase thì sổ là `nil` và thẻ không hiện.
-struct TodayExtras: View {
+struct TodayExtras<Plan: View>: View {
   let userId: String
+  /// Avatar → Cài đặt; `nil` thì không có avatar.
+  var onOpenSettings: (() -> Void)?
+  /// Thẻ buổi tập hôm nay + nút chính (`TodayView`).
+  @ViewBuilder var plan: () -> Plan
 
   @Environment(AppServices.self) private var services
   @Environment(\.scenePhase) private var scenePhase
@@ -26,15 +32,28 @@ struct TodayExtras: View {
   @State private var weight: WeightLogger?
   @State private var showsWeight = false
   @State private var showsBiometrics = false
+  @State private var showsRoom = false
+  @Environment(ProfileBook.self) private var profile: ProfileBook?
   @State private var built = false
 
   var body: some View {
     VStack(spacing: DS.Spacing.md) {
+      header
+      if let mascot, case .ready = mascot.phase {
+        Button { showsRoom = true } label: { TodayEnergyRow(room: mascot) }
+          .buttonStyle(.plain)
+          .accessibilityAddTraits(.isButton)
+      }
       if let readiness {
         ReadinessCardView(
           book: readiness, lang: services.preferences.lang,
           onOpenBiometrics: biometrics == nil ? nil : { showsBiometrics = true })
       }
+      if let mascot, case .ready = mascot.phase {
+        Button { showsRoom = true } label: { TodayKoaRow(room: mascot) }
+          .buttonStyle(.plain)
+      }
+      plan()
       if let trend {
         ReadinessTrendCardView(book: trend)
       }
@@ -59,14 +78,9 @@ struct TodayExtras: View {
         }
         .buttonStyle(.plain)
       }
-      if let mascot {
-        NavigationLink {
-          MascotRoomView(room: mascot, awards: awards, challenges: challenges)
-        } label: {
-          row(String(localized: "mr.title"), systemImage: "pawprint.fill")
-        }
-        .buttonStyle(.plain)
-      }
+    }
+    .navigationDestination(isPresented: $showsRoom) {
+      if let mascot { MascotRoomView(room: mascot, awards: awards, challenges: challenges) }
     }
     .sheet(isPresented: $showsWeight) {
       LogWeightView(makeLogger: { services.makeWeightLogger(userId: userId) }) {
@@ -89,6 +103,7 @@ struct TodayExtras: View {
       trend = services.makeReadinessTrend(userId: userId, today: today)
       weight = services.makeWeightLogger(userId: userId)
       await weight?.load()
+      await mascot?.load()
       await readiness?.load()
       await trend?.load()
     }
@@ -101,6 +116,7 @@ struct TodayExtras: View {
         if today != readiness.date { await readiness.move(to: today) } else { await readiness.load() }
         // Tuần "này" của màn tổng kết đổi khi qua Chủ nhật.
         await weekly?.move(to: today)
+        await mascot?.load()
         await trend?.move(to: today)
       }
     }
@@ -117,6 +133,25 @@ struct TodayExtras: View {
       weekly?.close()
       trend?.close()
       weight?.close()
+    }
+  }
+
+  // MARK: - Đầu trang
+
+  /// `BrandLockup` trái; phải là viên chuỗi ngày (≥ 1, → phòng linh vật) và
+  /// avatar (→ Cài đặt).
+  private var header: some View {
+    HStack(alignment: .top, spacing: DS.Spacing.sm) {
+      BrandLockup()
+      Spacer(minLength: 0)
+      if let mascot, mascot.streak.count >= 1 {
+        StreakChip(count: mascot.streak.count, lit: mascot.streak.loggedToday) { showsRoom = true }
+      }
+      if let onOpenSettings {
+        AccountAvatar(
+          initials: AccountInitials.of(name: profile?.profile?.name, email: services.session.session?.email),
+          action: onOpenSettings)
+      }
     }
   }
 

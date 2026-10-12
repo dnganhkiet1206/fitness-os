@@ -40,12 +40,14 @@ struct ReadinessCardView: View {
   /// Kho đếm lời nhắc (`ascnd-help-nudge`), theo người.
   static let nudges = HelpNudge(store: UserDefaultsStore())
 
+  /// Trang hero của Today (`ReadinessGauge` / `EmptyHero` trong `HeroPanel`):
+  /// không có nền thẻ — nằm thẳng trên trang; đệm trên 24, dưới 8, ngang 20.
   var body: some View {
-    DSCard {
+    Group {
       switch book.phase {
       case .loading:
         ProgressView()
-          .frame(maxWidth: .infinity, minHeight: 120)
+          .frame(maxWidth: .infinity, minHeight: Self.ring)
           .accessibilityLabel(Text(String(localized: "rd.loading")))
       case .failed:
         VStack(spacing: DS.Spacing.sm) {
@@ -56,20 +58,14 @@ struct ReadinessCardView: View {
         }
         .frame(maxWidth: .infinity)
       case .empty:
-        VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-          Label(String(localized: "rd.empty.title"), systemImage: "heart")
-            .font(DS.TextStyle.headline)
-            .foregroundStyle(DS.Color.readinessYellow.swiftUI)
-          Text(String(localized: "rd.empty.message"))
-            .font(DS.TextStyle.footnote)
-            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .accessibilityElement(children: .combine)
+        empty
       case .ready(let day):
         ready(day)
       }
     }
+    .padding(.top, DS.Spacing.lg)
+    .padding(.bottom, DS.Spacing.sm)
+    .padding(.horizontal, DS.Spacing.card)
     .sheet(isPresented: $helpOpen) { ReadinessExplainerSheet() }
     .sensoryFeedback(.selection, trigger: taps)
     // `useHelpTopic` chạy khi thẻ sẵn sàng DỰNG — RN chỉ dựng nó khi có điểm.
@@ -78,6 +74,94 @@ struct ReadinessCardView: View {
       nudge = true
       Self.nudges.noteNudged(HelpNudge.readiness, userId: book.userId)
     }
+  }
+
+  /// `HERO_RING` của RN: vòng 264 điểm, nét ≈ 13 (r 52 / nét 6 trong hộp 120).
+  static let ring: CGFloat = 264
+  static let stroke: CGFloat = 13.2
+
+  /// Nhãn trên vòng: chữ hoa 12, giãn chữ, mờ.
+  private func eyebrow(_ text: String, tracking: CGFloat) -> some View {
+    Text(text)
+      .font(.system(size: 12, weight: .semibold))
+      .textCase(.uppercase)
+      .tracking(tracking)
+      .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+  }
+
+  /// Nút mũi tên mở / đóng phần chi tiết (xoay 180° khi mở).
+  private func chevron(expanded: Bool) -> some View {
+    Image(systemName: "chevron.down")
+      .font(.system(size: 17, weight: .semibold))
+      .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+      .rotationEffect(.degrees(expanded ? 180 : 0))
+  }
+
+  private func toggle() {
+    withAnimation(DSMotion.animation(.easeInOut(duration: 0.24), reduceMotion: reduceMotion)) { expanded.toggle() }
+  }
+
+  // MARK: - Chưa có điểm (`EmptyHero`)
+
+  /// Vòng chỉ có rãnh, giữa là trái tim và "—" (không bao giờ "0": chưa đo
+  /// được không phải điểm tệ nhất); mũi tên mở câu giải thích.
+  private var empty: some View {
+    VStack(spacing: DS.Spacing.md) {
+      eyebrow(String(localized: "rd.empty.title"), tracking: 1.6)
+      ZStack {
+        Circle().stroke(DS.Color.ringTrack.swiftUI, lineWidth: Self.stroke)
+        VStack(spacing: DS.Spacing.sm) {
+          Image(systemName: "heart")
+            .font(.system(size: 20))
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          Text(verbatim: "—")
+            .font(.system(size: 28, weight: .bold))
+            .tracking(-0.4)
+            .foregroundStyle(DS.Color.foreground.swiftUI)
+        }
+      }
+      .frame(width: Self.ring - Self.stroke, height: Self.ring - Self.stroke)
+      .accessibilityHidden(true)
+      Button(action: toggle) {
+        chevron(expanded: expanded)
+          .frame(width: 44, height: 44)
+          .contentShape(Rectangle())
+      }
+      .buttonStyle(.plain)
+      .accessibilityLabel(Text(String(localized: "today.hero.details \(String(localized: "rd.empty.title"))")))
+      .accessibilityValue(Text(Self.hint(expanded: expanded)))
+      if expanded {
+        VStack(spacing: DS.Spacing.sm) {
+          Text(String(localized: "rd.empty.message"))
+            .font(DS.TextStyle.footnote)
+            .lineSpacing(3)
+            .multilineTextAlignment(.center)
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          if let onOpenBiometrics { detailRow(String(localized: "rd.biometrics.open"), action: onOpenBiometrics) }
+        }
+      }
+    }
+    .frame(maxWidth: .infinity)
+  }
+
+  /// Hàng dẫn sâu trong phần chi tiết (`detailRow`: nền mực 4,5%, bo 12).
+  private func detailRow(_ title: String, action: @escaping () -> Void) -> some View {
+    Button(action: action) {
+      HStack {
+        Text(title).font(DS.TextStyle.footnote).foregroundStyle(DS.Color.foreground.swiftUI)
+        Spacer()
+        Image(systemName: "chevron.right")
+          .font(.system(size: 13, weight: .semibold))
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          .accessibilityHidden(true)
+      }
+      .padding(.horizontal, DS.Spacing.sm)
+      .frame(minHeight: 44)
+      .background(DS.Color.foreground.swiftUI.opacity(0.045), in: RoundedRectangle(cornerRadius: 12))
+      .contentShape(Rectangle())
+    }
+    .buttonStyle(.plain)
+    .accessibilityAddTraits(.isLink)
   }
 
   private var hasScore: Bool {
@@ -95,32 +179,49 @@ struct ReadinessCardView: View {
 
   // MARK: - Có điểm
 
+  /// `ReadinessGauge`: chấm trạng thái + "ĐIỂM SẴN SÀNG", vòng 264 tô theo vùng
+  /// (dải màu đậm → màu vùng), điểm 60 Menlo đậm + nhãn vùng, nút "Chạm để
+  /// xem chi tiết" có mũi tên.
   private func ready(_ day: ReadinessCard.Day) -> some View {
     let score = day.score ?? 0
     let color = Self.statusColor(day.status)
     return VStack(spacing: DS.Spacing.md) {
-      Button {
-        withAnimation(DSMotion.animation(.easeInOut(duration: 0.25), reduceMotion: reduceMotion)) { expanded.toggle() }
-      } label: {
-        VStack(spacing: DS.Spacing.sm) {
-          Text(String(localized: "rd.title")).font(DS.TextStyle.headline)
+      Button(action: toggle) {
+        VStack(spacing: DS.Spacing.md) {
+          HStack(spacing: DS.Spacing.sm) {
+            Circle().fill(Self.statusGraphic(day.status)).frame(width: 10, height: 10)
+            eyebrow(String(localized: "rd.title"), tracking: 2.4)
+          }
           ZStack {
-            Circle().stroke(DS.Color.ringTrack.swiftUI.opacity(0.4), lineWidth: 12)
+            Circle().stroke(DS.Color.ringTrack.swiftUI, lineWidth: Self.stroke)
             Circle()
               .trim(from: 0, to: min(max(Double(score) / 100, 0), 1))
-              .stroke(color, style: StrokeStyle(lineWidth: 12, lineCap: .round))
+              .stroke(
+                LinearGradient(colors: [Self.statusDeep(day.status), color], startPoint: .topLeading, endPoint: .bottomTrailing),
+                style: StrokeStyle(lineWidth: Self.stroke, lineCap: .round)
+              )
               .rotationEffect(.degrees(-90))
-            Text(verbatim: "\(score)").font(DS.TextStyle.hero.monospacedDigit())
+            VStack(spacing: 6) {
+              Text(verbatim: "\(score)")
+                .font(.custom("Menlo", size: 60).weight(.bold).monospacedDigit())
+                .foregroundStyle(color)
+                .dynamicTypeSize(...DynamicTypeSize.xxLarge)
+              Text(Self.statusLabel(day.status))
+                .font(.system(size: 12, weight: .bold))
+                .tracking(2.4)
+                .foregroundStyle(color)
+            }
           }
-          .frame(width: 140, height: 140)
-          Text(Self.statusLabel(day.status))
-            .font(DS.TextStyle.caption.weight(.bold))
-            .foregroundStyle(color)
-          Text(Self.hint(expanded: expanded))
-            .font(DS.TextStyle.caption)
-            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          .frame(width: Self.ring - Self.stroke, height: Self.ring - Self.stroke)
+          HStack(spacing: 6) {
+            Text(Self.hint(expanded: expanded))
+              .font(.system(size: 12))
+              .tracking(0.2)
+              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            chevron(expanded: expanded)
+          }
+          .frame(maxWidth: .infinity, minHeight: 44)
         }
-        .frame(maxWidth: .infinity, minHeight: 44)
         .contentShape(Rectangle())
       }
       .buttonStyle(.plain)
@@ -290,6 +391,20 @@ struct ReadinessCardView: View {
     case .green: DS.Color.readinessGreen.swiftUI
     case .yellow: DS.Color.readinessYellow.swiftUI
     case .red: DS.Color.readinessRed.swiftUI
+    }
+  }
+
+  /// Màu đồ hoạ của chấm (vàng dùng `readinessYellowGraphic` như RN).
+  static func statusGraphic(_ s: ReadinessResult.Status) -> Color {
+    s == .yellow ? DS.Color.readinessYellowGraphic.swiftUI : statusColor(s)
+  }
+
+  /// Đầu dải màu của cung (`ZONE_DEEP` của RN, bản sáng).
+  static func statusDeep(_ s: ReadinessResult.Status) -> Color {
+    switch s {
+    case .green: Color(hex: "#006e48")
+    case .yellow: Color(hex: "#725e00")
+    case .red: Color(hex: "#c30039")
     }
   }
 
