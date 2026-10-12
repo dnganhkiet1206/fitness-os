@@ -7,7 +7,7 @@ for f in exercise-trend exercise-performance personal-record local-date exercise
   git show "fac9ac2:native/src/lib/$f.ts" > "lib/$f.ts"
 done
 # Gợi ý tải của `log-workout` (#527): bản thật (trước là hằng / kiểu giả cho `exercise-trend`).
-for f in load-progression user-state goal-training; do
+for f in load-progression user-state goal-training mascot-message; do
   git show "fac9ac2:native/src/lib/$f.ts" > "lib/$f.ts"
 done
 # Phòng linh vật (#527 Phase 7): `mascot-room.ts` chỉ lấy kiểu `AppLang`.
