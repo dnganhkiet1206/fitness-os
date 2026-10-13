@@ -258,6 +258,9 @@ struct MealPlanView: View {
   @Environment(\.dismiss) private var dismiss
   @State private var day = 0
   @State private var adding = false
+  /// Bữa mà sheet thêm món mở sẵn (chạm "+" của một bữa).
+  @State private var addMeal: String?
+  @State private var expanded: Set<String> = []
   @State private var confirmDelete = false
   @State private var again: String?
   @State private var message: String?
@@ -289,7 +292,9 @@ struct MealPlanView: View {
     .refreshable { await book.load() }
     .task { await book.load() }
     .sheet(isPresented: $adding) {
-      AddPlanFoodSheet(book: book, slots: MealPlans.rows(mealsPerDay: plan?.mealsPerDay, items: book.items), startDay: day)
+      AddPlanFoodSheet(
+        book: book, slots: MealPlans.rows(mealsPerDay: plan?.mealsPerDay, items: book.items), startDay: day,
+        startMeal: addMeal)
     }
     .confirmationDialog(
       String(localized: "plans.delete.confirm \(plan?.name ?? "")"), isPresented: $confirmDelete,
@@ -324,108 +329,174 @@ struct MealPlanView: View {
     case .ready(let items):
       dayStrip(items)
       summary(items)
-      let meals = MealPlans.meals(items, day: day)
-      if meals.isEmpty {
-        Label(String(localized: "plans.dayEmpty"), systemImage: "fork.knife")
-          .font(DS.TextStyle.footnote)
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-          .frame(maxWidth: .infinity)
-          .padding(.vertical, DS.Spacing.md)
-      }
-      ForEach(meals.map { $0.meal }, id: \.self) { meal in
-        mealSection(meal, items.filter { $0.day == day && $0.mealType == meal })
-      }
-      Button { adding = true } label: {
-        Label(String(localized: "plans.addFood"), systemImage: "plus")
-          .font(DS.TextStyle.footnote.weight(.semibold))
-          .foregroundStyle(DS.Color.primary.swiftUI)
-          .frame(maxWidth: .infinity, minHeight: 44)
-          .overlay(RoundedRectangle(cornerRadius: DS.Radius.sm).stroke(DS.Color.border.swiftUI, lineWidth: 1))
-      }
-      .buttonStyle(.plain)
-      .accessibilityLabel(Text(String(localized: "plans.a11y.addFood \(day + 1)")))
+      mealList(items)
     }
   }
 
+  /// Bảy ô ngày, mỗi ô ghi kcal của ngày ấy (thiết kế lại 13/10): nhìn là biết
+  /// ngày nào còn trống, không phải mở từng ngày.
   private func dayStrip(_ items: [MealPlans.Item]) -> some View {
-    HStack(spacing: 0) {
+    HStack(spacing: 4) {
       ForEach(MealPlans.days, id: \.self) { d in
         let on = d == day
-        let has = items.contains { $0.day == d }
+        let kcal = MealPlans.dayKcal(items, day: d)
         Button { day = d } label: {
-          VStack(spacing: 4) {
+          VStack(spacing: 2) {
             Text(verbatim: "\(d + 1)")
-              .font(DS.TextStyle.footnote.weight(.semibold).monospacedDigit())
-              .foregroundStyle(on ? DS.Color.background.swiftUI : DS.Color.foreground.swiftUI)
-              .frame(width: 38, height: 38)
-              .background(on ? DS.Color.foreground.swiftUI : DS.Color.muted.swiftUI, in: Circle())
-            Circle()
-              .fill(has ? DS.Color.primary.swiftUI : .clear)
-              .frame(width: 5, height: 5)
+              .font(.system(size: 15, weight: .semibold).monospacedDigit())
+            Text(verbatim: kcal > 0 ? DiaryView.whole(kcal) : "—")
+              .font(.custom("Menlo", size: 10, relativeTo: .caption2))
+              .lineLimit(1)
+              .minimumScaleFactor(0.6)
+              .opacity(on ? 0.75 : 1)
+              .foregroundStyle(on ? DS.Color.background.swiftUI : DS.Color.mutedForeground.swiftUI)
           }
-          .frame(maxWidth: .infinity, minHeight: 44)
+          .foregroundStyle(on ? DS.Color.background.swiftUI : DS.Color.foreground.swiftUI)
+          .frame(maxWidth: .infinity, minHeight: 52)
+          .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+              .fill(on ? DS.Color.foreground.swiftUI : DS.Color.foreground.swiftUI.opacity(0.06)))
           .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(TodayPressStyle(scale: 0.94))
         .accessibilityLabel(Text(String(localized: "plans.day \(d + 1)")))
+        .accessibilityValue(Text(verbatim: kcal > 0 ? "\(DiaryView.whole(kcal)) kcal" : String(localized: "nc.slot.empty")))
         .accessibilityAddTraits(on ? [.isSelected] : [])
       }
     }
     .sensoryFeedback(.selection, trigger: day)
   }
 
+  /// kcal của ngày (Menlo), % mục tiêu và một thanh; tổng cả tuần ở dòng phụ.
   private func summary(_ items: [MealPlans.Item]) -> some View {
     let kcal = MealPlans.dayKcal(items, day: day)
     let week = MealPlans.weekKcal(items)
-    let sub = [
-      target > 0 ? String(localized: "plans.pctTarget \(MealPlans.percent(kcal, target: target))") : nil,
-      week > 0 ? String(localized: "plans.weekTotal \(DiaryView.whole(week))") : nil,
-    ].compactMap { $0 }.joined(separator: "  ·  ")
-    return VStack(alignment: .leading, spacing: 2) {
-      Text(String(localized: "plans.day \(day + 1)"))
-        .font(DS.TextStyle.caption.weight(.semibold))
-        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-      Text(verbatim: "\(DiaryView.whole(kcal)) kcal")
-        .font(DS.TextStyle.title.monospacedDigit())
-      if !sub.isEmpty {
-        Text(verbatim: sub).font(DS.TextStyle.footnote).foregroundStyle(DS.Color.mutedForeground.swiftUI)
+    let pct = target > 0 ? MealPlans.percent(kcal, target: target) : 0
+    let fraction = target > 0 ? min(1, kcal / target) : 0
+    let meal = MascotRoomView.signalColor(.meal)
+    return VStack(alignment: .leading, spacing: 8) {
+      HStack(alignment: .firstTextBaseline) {
+        Text(verbatim: DiaryView.whole(kcal))
+          .font(.custom("Menlo", size: 26, relativeTo: .title).weight(.bold))
+        Text(verbatim: "kcal").font(DS.TextStyle.footnote).foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        Spacer(minLength: 0)
+        if target > 0 {
+          Text(String(localized: "plans.pctTarget \(pct)"))
+            .font(DS.TextStyle.footnote)
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        }
+      }
+      GeometryReader { g in
+        ZStack(alignment: .leading) {
+          Capsule().fill(meal.opacity(0.16))
+          Capsule().fill(meal).frame(width: g.size.width * fraction)
+        }
+      }
+      .frame(height: 5)
+      .accessibilityHidden(true)
+      if week > 0 {
+        Text(String(localized: "plans.weekTotal \(DiaryView.whole(week))"))
+          .font(DS.TextStyle.caption)
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
       }
     }
+    .padding(DS.Spacing.md)
+    .todayCard(radius: DS.Radius.xl)
     .accessibilityElement(children: .combine)
   }
 
-  private func mealSection(_ meal: String, _ foods: [MealPlans.Item]) -> some View {
-    let already = book.isLoggedToday(meal, day: day)
-    let kcal = foods.reduce(0.0) { $0 + $1.kcal.rounded() }
-    return VStack(alignment: .leading, spacing: DS.Spacing.xs) {
-      HStack {
-        Text(verbatim: DiaryView.mealName(meal).uppercased())
-          .font(DS.TextStyle.caption.weight(.semibold))
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-        Text(verbatim: "\(DiaryView.whole(kcal)) kcal")
-          .font(DS.TextStyle.caption.monospacedDigit())
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-        Spacer()
+  /// Các bữa của ngày như khung bữa của tab: bữa có món → tên món + "Ăn"
+  /// (ghi vào hôm nay), chạm để mở danh sách món; bữa trống → "+" thêm món
+  /// đúng bữa ấy.
+  private func mealList(_ items: [MealPlans.Item]) -> some View {
+    let rows = MealPlans.rows(mealsPerDay: plan?.mealsPerDay, items: items)
+    return VStack(spacing: 0) {
+      ForEach(Array(rows.enumerated()), id: \.element) { i, meal in
+        if i > 0 { Divider().padding(.leading, 58).opacity(0.6) }
+        mealRow(meal, items.filter { $0.day == day && $0.mealType == meal })
+      }
+    }
+    .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous))
+    .todayCard(radius: DS.Radius.xl)
+  }
+
+  @ViewBuilder private func mealRow(_ meal: String, _ foods: [MealPlans.Item]) -> some View {
+    let open = expanded.contains(meal)
+    VStack(alignment: .leading, spacing: 0) {
+      HStack(spacing: 12) {
         Button {
-          if already { again = meal } else { Task { await eat(meal) } }
+          if foods.isEmpty {
+            addMeal = meal
+            adding = true
+          } else {
+            withAnimation(.smooth(duration: 0.25)) {
+              if open { expanded.remove(meal) } else { expanded.insert(meal) }
+            }
+          }
         } label: {
-          Label(
-            already ? String(localized: "plans.eaten") : String(localized: "plans.eatIt"),
-            systemImage: already ? "checkmark" : "fork.knife"
-          )
-          .font(DS.TextStyle.caption.weight(.semibold))
-          .foregroundStyle(DS.Color.readinessGreen.swiftUI)
-          .frame(minHeight: 44)
+          HStack(spacing: 12) {
+            MealSlotGlyph(type: meal, filled: !foods.isEmpty)
+            VStack(alignment: .leading, spacing: 2) {
+              Text(verbatim: DiaryView.mealName(meal))
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundStyle(DS.Color.foreground.swiftUI)
+              Text(verbatim: foods.isEmpty
+                ? String(localized: "plans.slot.empty")
+                : foods.map(\.name).formatted(.list(type: .and).locale(.app)))
+                .font(DS.TextStyle.caption)
+                .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+                .lineLimit(1)
+            }
+            Spacer(minLength: 0)
+            if !foods.isEmpty {
+              Text(verbatim: DiaryView.whole(foods.reduce(0.0) { $0 + $1.kcal.rounded() }))
+                .font(.custom("Menlo", size: 14, relativeTo: .body))
+                .foregroundStyle(DS.Color.foreground.swiftUI)
+            }
+          }
+          .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityHint(Text(foods.isEmpty ? String(localized: "plans.a11y.addFood \(day + 1)") : ""))
+        if foods.isEmpty {
+          Image(systemName: "plus")
+            .font(.system(size: 15, weight: .semibold))
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .frame(width: 44, height: 44)
+            .accessibilityHidden(true)
+        } else {
+          let already = book.isLoggedToday(meal, day: day)
+          Button {
+            if already { again = meal } else { Task { await eat(meal) } }
+          } label: {
+            Label(
+              already ? String(localized: "plans.eaten") : String(localized: "plans.eat.short"),
+              systemImage: already ? "checkmark" : "fork.knife"
+            )
+            .labelStyle(.titleAndIcon)
+            .font(.system(size: 14, weight: .semibold))
+            .foregroundStyle(already ? MascotRoomView.signalColor(.meal) : DS.Color.foreground.swiftUI)
+            .padding(.horizontal, 12)
+            .frame(minHeight: 34)
+            .background(Capsule().strokeBorder(DS.Color.foreground.swiftUI.opacity(0.18), lineWidth: 1))
+            .frame(minHeight: 44)
+            .contentShape(Capsule())
+          }
+          .buttonStyle(TodayPressStyle())
+          .accessibilityLabel(Text(already ? String(localized: "plans.eaten") : String(localized: "plans.eatIt")))
+        }
       }
-      VStack(spacing: 0) {
+      .padding(.horizontal, DS.Spacing.md)
+      .padding(.vertical, 8)
+      .frame(minHeight: 60)
+
+      if open {
         ForEach(foods) { it in
           HStack {
             Text(verbatim: it.name).font(DS.TextStyle.body).lineLimit(1)
             Spacer()
-            Text(verbatim: "\(DiaryView.whole(it.kcal)) kcal")
-              .font(DS.TextStyle.footnote.monospacedDigit())
+            Text(verbatim: DiaryView.whole(it.kcal))
+              .font(.custom("Menlo", size: 13, relativeTo: .footnote))
               .foregroundStyle(DS.Color.mutedForeground.swiftUI)
             Button { Task { await deleteItem(it) } } label: {
               Image(systemName: "xmark")
@@ -438,10 +509,22 @@ struct MealPlanView: View {
             .disabled(book.busy)
             .accessibilityLabel(Text(String(localized: "plans.a11y.remove \(it.name)")))
           }
-          .padding(.leading, DS.Spacing.md)
+          .padding(.leading, 58)
+          .padding(.trailing, DS.Spacing.sm)
         }
+        Button {
+          addMeal = meal
+          adding = true
+        } label: {
+          Label(String(localized: "diary.meal.addAction"), systemImage: "plus")
+            .font(DS.TextStyle.footnote.weight(.semibold))
+            .foregroundStyle(MascotRoomView.signalColor(.meal))
+            .frame(minHeight: 44)
+        }
+        .buttonStyle(.plain)
+        .padding(.leading, 58)
+        .padding(.bottom, 4)
       }
-      .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.md))
     }
   }
 
@@ -487,6 +570,7 @@ private struct AddPlanFoodSheet: View {
   let book: MealPlanBook
   let slots: [String]
   let startDay: Int
+  var startMeal: String?
   @Environment(AppServices.self) private var services
   @Environment(\.dismiss) private var dismiss
   @State private var day = 0
@@ -538,7 +622,7 @@ private struct AddPlanFoodSheet: View {
       }
       .task {
         day = startDay
-        meal = slots.first ?? "breakfast"
+        meal = startMeal.flatMap { slots.contains($0) ? $0 : nil } ?? slots.first ?? "breakfast"
         await book.loadMyFoods()
       }
       .task(id: query) {
