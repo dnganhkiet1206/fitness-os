@@ -20,9 +20,11 @@ import SwiftUI
 /// - chạm vào một món đã thêm để sửa kcal / đạm / tinh bột / béo của MỘT khẩu
 ///   phần (cùng dải với món tự nhập).
 ///
-/// Khác RN / chưa có: gợi ý bữa bằng AI, quét ảnh; chưa đánh / bỏ sao một món
-/// ở màn này. Mã vạch: nút cạnh ô tìm mở `ScanBarcodeView`, món tìm được vào bữa
-/// (`consumePendingScan` của RN, không cần kênh trung gian vì là cùng màn).
+/// Khác RN: chưa đánh / bỏ sao một món ở màn này. Mã vạch: nút cạnh ô tìm mở
+/// `ScanBarcodeView`, món tìm được vào bữa (`consumePendingScan` của RN, không
+/// cần kênh trung gian vì là cùng màn). AI (13/10): nút camera cạnh ô tìm mở
+/// `ScanFoodView` (món xem lại rồi vào bữa); "Chưa biết ăn gì?" (`MealSuggestCard`)
+/// gợi ý ba món cho bữa đang chọn, thêm thẳng vào bữa.
 struct LogMealView: View {
   let userId: String
   var date: LocalDate?
@@ -32,7 +34,7 @@ struct LogMealView: View {
   var start: Start = .plain
   var onDone: () -> Void = {}
 
-  enum Start: Hashable { case plain, search, manual, scan }
+  enum Start: Hashable { case plain, search, manual, scan, photo }
 
   @FocusState private var searchFocused: Bool
 
@@ -53,6 +55,8 @@ struct LogMealView: View {
   /// Máy quét mã vạch (`/scan-barcode`): mở từ nút cạnh ô tìm, hoặc ngay khi
   /// màn mở bằng `.scan` (nút mã vạch của tab — RN `nav.replace('/log-meal')`).
   @State private var scanning = false
+  /// Chụp ảnh món (AI): nút camera cạnh ô tìm, hoặc mở bằng `.photo`.
+  @State private var photographing = false
 
   /// Bốn ô của khung sửa một món (`draft` của RN).
   struct Draft: Equatable {
@@ -87,6 +91,7 @@ struct LogMealView: View {
       switch start {
       case .manual: customOpen = true
       case .scan: scanning = true
+      case .photo: photographing = true
       case .search, .plain: break
       }
       let l = services.makeMealLogger(userId: userId, date: date, mealType: mealType)
@@ -111,6 +116,11 @@ struct LogMealView: View {
         logger?.add(food.mealFood(id: UUID().uuidString.lowercased()))
       }
     }
+    .fullScreenCover(isPresented: $photographing) {
+      ScanFoodView { foods in
+        for f in foods { logger?.add(f) }
+      }
+    }
     .alert(error ?? "", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
       Button(String(localized: "common.cancel"), role: .cancel) {}
     }
@@ -126,6 +136,9 @@ struct LogMealView: View {
           searchResults(logger)
           if !logger.quickAdds.isEmpty && query.trimmingCharacters(in: .whitespaces).count < MealLog.searchMinLength {
             recents(logger)
+          }
+          if query.trimmingCharacters(in: .whitespaces).count < MealLog.searchMinLength {
+            MealSuggestCard(logger: logger)
           }
           customCard(logger)
           itemsSection(logger)
@@ -218,7 +231,16 @@ struct LogMealView: View {
       .textInputAutocapitalization(.never)
       .autocorrectionDisabled()
       .submitLabel(.search)
-      // Quét là một cách tìm (RN đặt nút mã vạch cạnh ô tìm).
+      // Chụp ảnh / quét là cách tìm (RN đặt nút mã vạch cạnh ô tìm).
+      Button { photographing = true } label: {
+        Image(systemName: "camera")
+          .font(.body.weight(.semibold))
+          .foregroundStyle(DS.Color.foreground.swiftUI)
+          .frame(minWidth: 40, minHeight: 44)
+          .contentShape(Rectangle())
+      }
+      .buttonStyle(.plain)
+      .accessibilityLabel(Text(String(localized: "sf.a11y")))
       Button { scanning = true } label: {
         Image(systemName: "barcode.viewfinder")
           .font(.body.weight(.semibold))

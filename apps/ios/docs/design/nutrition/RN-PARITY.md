@@ -14,7 +14,7 @@ nhầm: thứ tự khối, cái gì giữ, cái gì đổi, cái gì còn thiế
 | | `ShortcutRow` Thực phẩm bổ sung | `SupplementsRow` |
 | | Bữa hôm nay + `nDiaryOtherDays` | `DayMealsSection` + "Ngày khác" |
 | Thực đơn | `MealPlanTab` | `MealPlansPreview` |
-| | `AiMealSuggest` | — thiếu |
+| | `AiMealSuggest` | `MealSuggestCard` — trong màn Ghi bữa (13/10) |
 | | `ShortcutRow` Đi chợ (`nGroceryLeft`) | — thiếu |
 | | Thư viện thực phẩm | `FoodsSection` |
 
@@ -23,6 +23,9 @@ Trước đợt này Swift đặt `FoodsSection` ở phân đoạn Hôm nay và 
 chỗ, đưa link xu hướng lên ngay dưới thẻ calo như RN.
 
 ## Ghi bữa: 2 cách thay vì 4
+
+> Cập nhật 13/10: đã đủ 4 lối — ô ghi bữa có tìm · camera (`ScanFoodView`) ·
+> mã vạch (`ScanBarcodeView`) · nhập tay. Phần dưới là ghi chép lúc trước.
 
 RN có 4 lối: chụp ảnh (`/scan-food`), mã vạch (`/scan-barcode`), tìm
 (`/log-meal?focus=search`), nhập tay (`/log-meal`). Native chưa có màn quét ảnh
@@ -51,9 +54,9 @@ màn quét, thêm ô vào `MealLogWays` — bố cục ô viên nang đã chừa
 
 | Mục RN | Trạng thái | Chặn bởi |
 |---|---|---|
-| Chụp ảnh món (`/scan-food`) | thiếu | chưa có màn camera + gọi AI ảnh |
-| Quét mã vạch (`/scan-barcode`) | thiếu | chưa có màn quét + nguồn tra mã |
-| `AiMealSuggest` | thiếu | chưa port lớp gợi ý AI |
+| Chụp ảnh món (`/scan-food`) | **đã có** (13/10) — `ScanFoodView` | server chưa deploy `scan-food` (404) |
+| Quét mã vạch (`/scan-barcode`) | **đã có** (13/10) — `ScanBarcodeView` | — |
+| `AiMealSuggest` | **đã có** (13/10) — `MealSuggestCard` trong Ghi bữa | server chưa deploy `ai-meal-suggest` (404) |
 | Đi chợ (`ShortcutRow` + màn) | thiếu | trước chặn bởi #161 — nay lớp Trạng thái đã có, làm được |
 | Sao yêu thích thực phẩm | thiếu | như trên, dùng `StateWriter` |
 

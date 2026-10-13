@@ -76,3 +76,16 @@ Số liệu, luật làm tròn, mục tiêu, outbox, cách ghi, màn con (Ghi b�
 
 Chi tiết kế hoạch, Ghi bữa, Nhật ký, Thực phẩm — cùng ngôn ngữ với tab. Ảnh: `docs/qa/nutrition-audit-2026-10-13/sub-*.jpg`.
 
+
+## AI: chụp ảnh món + gợi ý món (13/10, chủ dự án bật)
+
+- **Chụp ảnh món** (`ScanFoodView`): nút camera trong ô ghi bữa của tab và
+  cạnh ô tìm của Ghi bữa. Ba pha: chụp (nền đen, chọn Món ăn / Nhãn dinh
+  dưỡng, khung nét đứt cho nhãn, nút Thư viện) → đang nhận diện (ảnh mờ +
+  vòng xoay) → xem lại (thẻ danh sách có ô chọn, số kcal Menlo, chạm để sửa
+  tên / số / phần ăn; nút cam "Thêm vào bữa · ~N kcal" + "Chụp lại").
+- **Gợi ý món** (`MealSuggestCard`): thẻ "Chưa biết ăn gì?" trong Ghi bữa,
+  dưới Thêm nhanh; ba món với kcal Menlo, macro, thời gian; chạm để xem mô tả
+  + nguyên liệu; nút cam "+ Thêm" → "Đã thêm".
+- Ảnh: `apps/ios/docs/qa/nutrition-ai-2026-10-13/` (trả lời AI giả của bản Debug — server
+  chưa deploy hàm).

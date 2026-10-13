@@ -544,6 +544,17 @@ final class AppServices {
     return SmartNudgesBook(userId: userId, edge: SupabaseEdgeCaller(backend: backend), cache: SmartNudgesDefaultsCache())
   }
 
+  /// Edge function của Supabase (chụp ảnh món, gợi ý món — #527). Thiếu cấu
+  /// hình thì `nil`: màn nói "chưa triển khai".
+  func makeEdgeCaller() -> (any EdgeCaller)? {
+    #if DEBUG
+      // Thử giao diện AI khi server chưa deploy hàm: mở app với
+      // `SIMCTL_CHILD_ASCND_FAKE_AI=1`. Chỉ bản Debug.
+      if ProcessInfo.processInfo.environment["ASCND_FAKE_AI"] == "1" { return FakeAIEdgeCaller() }
+    #endif
+    return backend.map { SupabaseEdgeCaller(backend: $0) }
+  }
+
   /// Trí nhớ coach (#527): đọc + xoá `coach_memory`.
   func makeCoachMemory(userId: String) -> CoachMemoryBook? {
     guard let backend else { return nil }
