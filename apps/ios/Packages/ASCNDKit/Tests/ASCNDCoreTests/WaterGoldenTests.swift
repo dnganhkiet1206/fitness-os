@@ -168,3 +168,25 @@ struct WaterRuleTests {
     #expect(back.row == WaterRow(id: "abc", date: LocalDate("2026-10-08")!, amountMl: 330))
   }
 }
+
+/// Nhãn ngắn của nước cho Hôm nay / "Trong ngày" (native, 13/10): đúng đơn vị
+/// đã chọn, oz số nguyên, lít một chữ số lẻ theo locale.
+struct WaterShortLabelTests {
+  static let vi = Locale(identifier: "vi_VN")
+  static let en = Locale(identifier: "en_US")
+
+  @Test func ozIsWholeAndFollowsTheUnit() {
+    #expect(Water.shortLabel(ml: 1931, .oz, locale: Self.en) == "65 oz")
+    #expect(Water.progressLabel(ml: 0, targetMl: 1931, .oz, locale: Self.en) == "0 / 65 oz")
+    #expect(Water.stepLabel(.oz) == "+8 oz")
+    #expect(Water.stepMl(.oz) == 237)
+  }
+
+  @Test func litresHaveOneDecimalInTheAppLocale() {
+    #expect(Water.shortLabel(ml: 1900, .ml, locale: Self.vi) == "1,9 L")
+    #expect(Water.progressLabel(ml: 750, targetMl: 1900, .ml, locale: Self.vi) == "0,8 / 1,9 L")
+    #expect(Water.progressLabel(ml: 2000, targetMl: 2500, .ml, locale: Self.en) == "2 / 2.5 L")
+    #expect(Water.stepLabel(.ml) == "+250 ml")
+    #expect(Water.stepMl(.ml) == 250)
+  }
+}

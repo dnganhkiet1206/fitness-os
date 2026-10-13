@@ -21,7 +21,7 @@ enum TodayTodo: String, CaseIterable, Identifiable {
 ///   (`MascotRules.dailyQuests`) — chính là năm ống của khối ngày;
 /// - dòng chi tiết nói số đã đo ("7 h 40 min", "0.8 of 2.5 L"), "—" không bao
 ///   giờ thành "0" giả;
-/// - nước "+250 ml" ghi ngay (như nút nhanh của thẻ Nước RN), bước chân "Auto"
+/// - nước "+250 ml" / "+8 oz" (theo đơn vị đã chọn) ghi ngay (như nút nhanh của thẻ Nước RN), bước chân "Auto"
 ///   (Apple Health ghi, chạm → màn Bước).
 struct TodayYourDay: View {
   struct Row: Identifiable {
@@ -34,6 +34,7 @@ struct TodayYourDay: View {
 
   let rows: [Row]
   let onTap: (Row.Kind) -> Void
+  @Environment(AppServices.self) private var services: AppServices?
 
   var body: some View {
     VStack(alignment: .leading, spacing: DS.Spacing.sm) {
@@ -128,7 +129,8 @@ struct TodayYourDay: View {
         .foregroundStyle(DS.Color.mutedForeground.swiftUI)
         .frame(minHeight: 44)
     } else {
-      Text(verbatim: row.kind == .water ? String(localized: "today.water.step") : String(localized: "today.todo.log"))
+      Text(verbatim: row.kind == .water
+        ? Water.stepLabel(services?.preferences.volumeUnit ?? .ml) : String(localized: "today.todo.log"))
         .font(.system(size: 15, weight: .semibold))
         .foregroundStyle(DS.Color.foreground.swiftUI)
         .padding(.horizontal, 14)

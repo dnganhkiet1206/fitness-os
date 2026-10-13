@@ -120,6 +120,33 @@ public enum Water {
     unit == .oz ? "\(jsNumber(displayVolume(targetMl, .oz))) oz" : "\(jsToFixed(targetMl / 1000, 1))L"
   }
 
+  /// Nhãn NGẮN cho dòng tóm tắt (Hôm nay, "Trong ngày" của Dinh dưỡng — native,
+  /// 13/10): theo đơn vị đã chọn và theo locale của app. ml → lít, một chữ số
+  /// lẻ ("0,8 L"); oz → số nguyên ("27 oz" — "65.3 oz" là độ chính xác giả của
+  /// một mục tiêu đổi từ ml).
+  public static func shortLabel(ml: Double, _ unit: Unit, locale: Locale) -> String {
+    switch unit {
+    case .oz:
+      return "\(Int(jsRound(ml / mlPerFloz)).formatted(.number.locale(locale))) oz"
+    case .ml:
+      return "\((jsRound(ml / 100) / 10).formatted(.number.precision(.fractionLength(0...1)).locale(locale))) L"
+    }
+  }
+
+  /// "0,8 / 1,9 L" · "27 / 65 oz": đã uống / mục tiêu, một đơn vị ở cuối.
+  public static func progressLabel(ml: Double, targetMl: Double, _ unit: Unit, locale: Locale) -> String {
+    let a = shortLabel(ml: ml, unit, locale: locale)
+    let b = shortLabel(ml: targetMl, unit, locale: locale)
+    let suffix = unit == .oz ? " oz" : " L"
+    return "\(a.replacingOccurrences(of: suffix, with: "")) / \(b)"
+  }
+
+  /// Bước một chạm: mức thêm nhanh đầu tiên của đơn vị (250 ml / 8 oz), ra ml.
+  public static func stepMl(_ unit: Unit) -> Int { toMl(Double(quickAmounts(unit).first ?? 250), unit) }
+
+  /// "+250 ml" / "+8 oz".
+  public static func stepLabel(_ unit: Unit) -> String { "+\(quickAmounts(unit).first ?? 250) \(unitLabel(unit))" }
+
   /// Phần trăm: `{Math.round(pct)}%`.
   public static func percentLabel(_ pct: Double) -> String { "\(jsNumber(jsRound(pct)))%" }
 

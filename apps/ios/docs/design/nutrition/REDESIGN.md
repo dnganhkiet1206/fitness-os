@@ -66,7 +66,7 @@ Số liệu, luật làm tròn, mục tiêu, outbox, cách ghi, màn con (Ghi b�
 
 Ảnh trước / sau: `apps/ios/docs/qa/nutrition-audit-2026-10-13/` (`before-*`, `after-*`). Chưa làm: máy quét mã vạch (lát kế tiếp — nút trong ô ghi bữa sẽ hiện khi có màn quét).
 
-Phát hiện ngoài phạm vi: thẻ Nước của Hôm nay luôn ghi ml ("+250 ml", "0 / 1,9 L") trong khi Dinh dưỡng theo đơn vị đã chọn (oz ở tài khoản thử) — hai tab nói hai đơn vị.
+Đã sửa (13/10): Hôm nay và Dinh dưỡng cùng đơn vị nước đã chọn (trước: Hôm nay luôn ml).
 
 ## Wizard kế hoạch ăn (13/10, chủ dự án duyệt mock + "chọn thêm bữa")
 

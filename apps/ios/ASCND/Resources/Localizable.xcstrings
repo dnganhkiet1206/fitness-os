@@ -40782,29 +40782,6 @@
     }
    }
   },
-  "today.water.step": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "+250 ml"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "+250 ml"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "+250 ml"
-     }
-    }
-   }
-  },
   "today.steps.open": {
    "extractionState": "manual",
    "localizations": {
@@ -40916,29 +40893,6 @@
      "stringUnit": {
       "state": "translated",
       "value": "Nada registrado aún"
-     }
-    }
-   }
-  },
-  "today.d.water %@ %@": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "%1$@ of %2$@ L"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "%1$@ / %2$@ L"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "%1$@ de %2$@ L"
      }
     }
    }

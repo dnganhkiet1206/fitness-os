@@ -363,7 +363,7 @@ struct DayExtrasList: View {
               .font(.system(size: 17, weight: .semibold))
               .foregroundStyle(DS.Color.foreground.swiftUI)
             Text(verbatim: book.loaded
-              ? "\(Water.bigValue(totalMl: book.totalMl, unit)) / \(Water.targetLabel(target, unit))" : "—")
+              ? Water.progressLabel(ml: Double(book.totalMl), targetMl: target, unit, locale: .app) : "—")
               .font(.custom("Menlo", size: 13, relativeTo: .footnote))
               .foregroundStyle(DS.Color.mutedForeground.swiftUI)
               .lineLimit(1)

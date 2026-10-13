@@ -254,15 +254,16 @@ struct TodayDayBlock: View {
     }
   }
 
-  /// Số dưới ống, Menlo: `7h40` · kcal · `0.8L` · số buổi · `4.1k`.
-  static func value(_ t: TodayDay.Tube) -> String {
+  /// Số dưới ống, Menlo: `7h40` · kcal · `0.8L` / `27oz` · số buổi · `4.1k`.
+  static func value(_ t: TodayDay.Tube, unit: Water.Unit = .ml) -> String {
     switch t.quest {
     case .sleep:
       let m = Int(t.amount.rounded())
       return m <= 0 ? "0" : "\(m / 60)h\(String(format: "%02d", m % 60))"
     case .meal: return compact(t.amount)
     case .water:
-      return (t.amount / 1000).formatted(.number.precision(.fractionLength(0...1)).locale(.app)) + "L"
+      // Theo đơn vị đã chọn (trước: luôn lít, kể cả khi người dùng chọn oz).
+      return Water.shortLabel(ml: t.amount, unit, locale: .app).replacingOccurrences(of: " ", with: "")
     case .workout: return "\(Int(t.amount))"
     case .steps: return compact(t.amount)
     }
@@ -283,8 +284,11 @@ struct TodayTube: View {
   let reduceMotion: Bool
   let space: Namespace.ID
   let action: () -> Void
+  @Environment(AppServices.self) private var services: AppServices?
 
   static let size = CGSize(width: 30, height: 104)
+
+  private var unit: Water.Unit { services?.preferences.volumeUnit ?? .ml }
 
   var body: some View {
     let color = MascotRoomView.signalColor(tube.quest)
@@ -342,7 +346,7 @@ struct TodayTube: View {
               .matchedGeometryEffect(id: "nextRing", in: space)
           }
         }
-        Text(verbatim: TodayDayBlock.value(tube))
+        Text(verbatim: TodayDayBlock.value(tube, unit: unit))
           .font(.custom("Menlo", size: 11, relativeTo: .caption2).weight(.bold))
           .foregroundStyle(tube.done || isNext ? color : DS.Color.mutedForeground.swiftUI)
           .lineLimit(1)
@@ -356,7 +360,7 @@ struct TodayTube: View {
     .accessibilityElement(children: .ignore)
     .accessibilityLabel(Text(verbatim: TodayDayBlock.name(tube.quest)))
     .accessibilityValue(Text(verbatim: [
-      TodayDayBlock.value(tube),
+      TodayDayBlock.value(tube, unit: unit),
       tube.done ? String(localized: "today.tube.done") : nil,
       isNext ? String(localized: "today.next") : nil,
     ].compactMap { $0 }.joined(separator: ", ")))

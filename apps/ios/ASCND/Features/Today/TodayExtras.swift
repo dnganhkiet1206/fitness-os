@@ -306,8 +306,9 @@ struct TodayExtras<Plan: View>: View {
       : done(.sleep) ? String(localized: "today.tube.done") : String(localized: "today.d.sleep.ask")
     let kcal = s?.kcal ?? 0
     let meal = kcal > 0 ? String(localized: "today.d.meal \(num(kcal, 0))") : String(localized: "today.d.meal.none")
-    let waterLine = String(
-      localized: "today.d.water \(num((s?.waterMl ?? 0) / 1000, 1)) \(num(TodayDay.waterTarget(s) / 1000, 1))")
+    // Theo đơn vị đã chọn, như Dinh dưỡng (trước: luôn lít).
+    let waterLine = Water.progressLabel(
+      ml: s?.waterMl ?? 0, targetMl: TodayDay.waterTarget(s), services.preferences.volumeUnit, locale: .app)
     let workouts = Int(s?.workoutCount ?? 0)
     let workout =
       workouts > 0
@@ -494,13 +495,14 @@ struct TodayExtras<Plan: View>: View {
     }
   }
 
-  static var waterStepMl: Int { 250 }
+  /// Một chạm thêm mức nhanh đầu tiên của đơn vị (250 ml / 8 oz).
+  private var waterStepMl: Int { Water.stepMl(services.preferences.volumeUnit) }
 
   private func addWater() async {
     guard let water else { return }
     waterNote = nil
     do {
-      _ = try await water.add(amountMl: Self.waterStepMl, online: services.sync.online)
+      _ = try await water.add(amountMl: waterStepMl, online: services.sync.online)
       AccessibilityNotification.Announcement(String(localized: "today.water.added")).post()
     } catch {
       waterNote = String(localized: "async.error.generic")
