@@ -224,7 +224,8 @@ public final class CommunityFeedBook {
     let gen = generation
     let tab = self.tab
     do {
-      let kinds = try await discoverFilter()
+      // Đang theo dõi không lọc theo loại — không đọc cài đặt.
+      let kinds = tab == .discover ? await discoverFilter() : nil
       var q = CommunityPostQuery()
       if tab == .following {
         let followees = try await remote.followees(me: userId)
@@ -261,7 +262,7 @@ public final class CommunityFeedBook {
         let followees = try await remote.followees(me: userId)
         q.authors = [userId] + followees
       } else {
-        q.kinds = try await discoverFilter()
+        q.kinds = await discoverFilter()
       }
       q.cursorFilter = CommunityPayloads.olderThan(cursor)
       let page = try await fetch(q)
@@ -280,8 +281,14 @@ public final class CommunityFeedBook {
   // MARK: - Nội bộ
 
   /// `discoverFilter`: loại bài đã chọn, `nil` khi chọn đủ ba (không lọc).
-  private func discoverFilter() async throws -> [String]? {
-    let kinds = CommunityPayloads.discover(try await remote.settings(me: userId)?["discover_kinds"])
+  /// Đọc hỏng = chưa biết = đủ ba, như RN (`settings` của query lỗi là
+  /// `undefined`, feed vẫn chạy) — không để cài đặt làm hỏng cả feed. Đo trên
+  /// DB thật 13/10: cột `discover_kinds` chưa có (migration
+  /// `20261007233000` chưa áp) → 400 → cả hai tab Cộng đồng báo lỗi.
+  private func discoverFilter() async -> [String]? {
+    // Không có dòng cài đặt cũng là đủ ba (DEFAULT của cột).
+    guard let row = try? await remote.settings(me: userId) else { return nil }
+    let kinds = CommunityPayloads.discover(row["discover_kinds"])
     return kinds.count < CommunityPayloads.discoverKinds.count ? kinds : nil
   }
 

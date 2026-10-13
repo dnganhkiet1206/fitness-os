@@ -178,10 +178,14 @@ struct CommunityFeedBookTests {
     var failRestriction = false
     var failProfile = false
     var failUseful = false
+    var failSettings = false
     var queries: [CommunityPostQuery] = []
 
     func followees(me: String) async throws -> [String] { follows[me] ?? [] }
-    func settings(me: String) async throws -> JSONValue? { settingsRow[me] }
+    func settings(me: String) async throws -> JSONValue? {
+      if failSettings { throw Boom() }
+      return settingsRow[me]
+    }
 
     func posts(_ q: CommunityPostQuery) async throws -> [JSONValue] {
       queries.append(q)
@@ -329,6 +333,23 @@ struct CommunityFeedBookTests {
     await b.select(.discover)
     #expect(r.queries.last(where: { $0.usefulSince == nil })?.kinds == nil)
     #expect(b.posts.count == 3)
+  }
+
+  /// Đọc cài đặt hỏng (server thiếu cột `discover_kinds` — 400, đo trên DB
+  /// thật 13/10) KHÔNG làm hỏng feed: như RN (`settings` là `undefined` → đủ ba
+  /// loại), Khám phá không lọc; Đang theo dõi không cần cài đặt.
+  @Test func unreadableSettingsShowAllKindsNotAnError() async {
+    let r = Remote()
+    r.table = [Remote.post(2, author: "x", kind: "recipe"), Remote.post(1, author: "me", kind: "workout")]
+    r.failSettings = true
+    let b = Self.book(r)
+    await b.load()
+    #expect(b.phase == .ready)
+    #expect(r.queries.first?.kinds == nil)
+    #expect(b.posts.count == 2)
+    await b.select(.following)
+    #expect(b.phase == .ready)
+    #expect(b.posts.map(\.mine) == [true])
   }
 
   @Test func hydrationMarksOnlyMyLikesAndSavesAndKeepsRetiredArt() async {
