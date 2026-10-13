@@ -31529,6 +31529,29 @@
     }
    }
   },
+  "summary.share": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Share to community"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chia sẻ lên cộng đồng"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Compartir en la comunidad"
+     }
+    }
+   }
+  },
   "workout.untick.title": {
    "comment": "RN nRdUntickTitle",
    "extractionState": "manual",

@@ -47,6 +47,10 @@ struct WorkoutsTab: View {
   @Environment(AppServices.self) private var services
   @Environment(RestTimerController.self) private var rest
   @State private var showsHistory = false
+  /// Buổi vừa chốt → màn tóm tắt (audit #527 6138699103: trước đây kết quả
+  /// của `finish()` bị bỏ đi và `WorkoutSummaryView` không được mở ở đâu).
+  @State private var finished: FinishedWorkout?
+  @State private var sharing = false
 
   var body: some View {
     Group {
@@ -61,7 +65,13 @@ struct WorkoutsTab: View {
           onSkipRest: { rest.handle(.cancel) },
           onSetRestPaused: { rest.setPaused($0) },
           outboxStatus: outboxStatus,
-          onFinish: { _ = try await flow.finish() },
+          onFinish: {
+            // Set dựng TRƯỚC khi chốt, từ đúng đầu vào `finish()` dùng: sau khi
+            // chốt, tiến độ của ngày được neo lại (`anchoring`).
+            let sets = Self.summarySets(session)
+            let summary = try await flow.finish()
+            finished = FinishedWorkout(summary: summary, sets: sets)
+          },
           onAppend: { _ = try await flow.append() },
           onOpenHistory: openHistory
         )
@@ -90,6 +100,33 @@ struct WorkoutsTab: View {
       if let history = flow.history {
         NavigationStack { WorkoutHistoryView(book: history) }
       }
+    }
+    .sheet(item: $finished, onDismiss: { sharing = false }) { f in
+      NavigationStack {
+        WorkoutSummaryView(
+          summary: f.summary, sets: f.sets,
+          onDone: { finished = nil },
+          onShare: { sharing = true })
+        .navigationDestination(isPresented: $sharing) {
+          CommunityShareWorkoutScreen(sessionId: f.summary.sessionId) { finished = nil }
+        }
+      }
+    }
+  }
+
+  struct FinishedWorkout: Identifiable {
+    let summary: WorkoutSummary
+    let sets: [SummarySet]
+    var id: String { summary.sessionId }
+  }
+
+  /// Set đã làm của buổi (kể cả khởi động — màn tóm tắt hiện mờ), theo
+  /// `WorkoutDay.sessionSets` như bản ghi `finish()` gửi đi.
+  static func summarySets(_ session: WorkoutSessionController) -> [SummarySet] {
+    WorkoutDay.sessionSets(session.rows, session.progress, toKg: session.weightUnit.toKg).map {
+      SummarySet(
+        exerciseName: $0.exerciseName, weightKg: $0.weightKg > 0 ? $0.weightKg : nil,
+        reps: $0.reps, durationSec: $0.durationSec, warmup: $0.warmup)
     }
   }
 

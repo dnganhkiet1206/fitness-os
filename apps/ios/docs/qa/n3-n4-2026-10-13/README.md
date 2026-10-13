@@ -36,6 +36,7 @@
 | `today-more-healthcard-axxxl-after-fix.jpg` | AX5 sau khi B sửa: tiêu đề hàng lớn theo cỡ chữ, số đo xuống dưới; thẻ Apple Health xếp dọc |
 | `workout-logger-axxxl-finding.jpg` | **Lỗi:** màn ghi set của tab Tập luyện ở AX5 bẻ "1/3" và "kg" từng ký tự theo chiều dọc, cắt "90s" còn "9" |
 | `workout-logger-axxxl-after-fix.jpg` | AX5 sau khi B sửa: "2/3 · ô · kg × 10" một hàng, hai chip nghỉ / RPE xếp dọc |
+| `workout-summary-after-finish.jpg` | Màn tóm tắt mở ngay sau "Hoàn thành buổi tập" (buổi thử 3 × Dumbbell Curl không tạ, chủ dự án xoá sau), có "Chia sẻ lên cộng đồng" + "Về Hôm nay" |
 
 **Chưa chạy:**
 - VoiceOver: NOT RUN (chỉ soát nhãn trong mã).

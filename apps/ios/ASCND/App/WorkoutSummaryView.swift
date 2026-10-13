@@ -43,17 +43,21 @@ public struct WorkoutSummaryView: View {
   let sets: [SummarySet]
   /// Về Today — A8 nối navigation thật (#305).
   var onDone: (() -> Void)?
+  /// Chia sẻ buổi lên cộng đồng (`CommunityShareWorkoutScreen`); `nil` = không có nút.
+  var onShare: (() -> Void)?
   /// Đơn vị tạ của tài khoản (#527 1.9-A) — số lưu vẫn là kg.
   @Environment(\.weightUnit) private var unit
 
   public init(
     summary: WorkoutSummary,
     sets: [SummarySet],
-    onDone: (() -> Void)? = nil
+    onDone: (() -> Void)? = nil,
+    onShare: (() -> Void)? = nil
   ) {
     self.summary = summary
     self.sets = sets
     self.onDone = onDone
+    self.onShare = onShare
   }
 
   private var exerciseGroups: [(name: String, rows: [SummarySet])] {
@@ -145,6 +149,11 @@ public struct WorkoutSummaryView: View {
               }
             }
           }
+        }
+
+        if let onShare {
+          DSButton(String(localized: "summary.share"), style: .secondary, action: onShare)
+            .padding(.top, DS.Spacing.md)
         }
 
         // CTA về Today (#305).
