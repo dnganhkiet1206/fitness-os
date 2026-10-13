@@ -37275,7 +37275,7 @@
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Protein trung bình/ngày · mục tiêu %@g"
+      "value": "Đạm trung bình/ngày · mục tiêu %@g"
      }
     },
     "es": {
@@ -37298,7 +37298,7 @@
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Protein 7 ngày qua"
+      "value": "Đạm 7 ngày qua"
      }
     },
     "es": {
@@ -37390,7 +37390,7 @@
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Protein trung bình %1$lldg/ngày, thiếu %2$lldg so với mục tiêu %3$lldg."
+      "value": "Đạm trung bình %1$lldg/ngày, thiếu %2$lldg so với mục tiêu %3$lldg."
      }
     },
     "es": {
@@ -37413,7 +37413,7 @@
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Đạt mục tiêu protein %1$lld/%2$lld ngày — giữ vững!"
+      "value": "Đạt mục tiêu đạm %1$lld/%2$lld ngày — giữ vững!"
      }
     },
     "es": {
@@ -45516,6 +45516,190 @@
      "stringUnit": {
       "state": "translated",
       "value": "Compartir en la comunidad"
+     }
+    }
+   }
+  },
+  "supplements.allTaken": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "All taken today"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đã uống đủ hôm nay"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Todo tomado hoy"
+     }
+    }
+   }
+  },
+  "supplements.left %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld left"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Còn %lld"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Faltan %lld"
+     }
+    }
+   }
+  },
+  "supplements.swipeHint": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Swipe left on an item to delete it."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Vuốt sang trái trên một mục để xoá."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Desliza a la izquierda sobre un elemento para borrarlo."
+     }
+    }
+   }
+  },
+  "insights.avgProtein": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Avg protein"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đạm TB"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Proteína media"
+     }
+    }
+   }
+  },
+  "insights.avgKcal": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Avg kcal"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Kcal TB"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Kcal media"
+     }
+    }
+   }
+  },
+  "insights.legend.hit": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hit target"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đạt mục tiêu"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Objetivo cumplido"
+     }
+    }
+   }
+  },
+  "insights.legend.miss": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Below target"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Dưới mục tiêu"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bajo el objetivo"
+     }
+    }
+   }
+  },
+  "insights.a11y.none": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nothing logged"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chưa ghi gì"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sin registros"
      }
     }
    }

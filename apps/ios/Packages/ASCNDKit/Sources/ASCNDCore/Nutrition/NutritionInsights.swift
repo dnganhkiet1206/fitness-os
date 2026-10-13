@@ -115,6 +115,22 @@ public enum NutritionInsights {
     return out
   }
 
+  /// kcal trung bình trên các ngày CÓ dữ liệu (cùng mẫu số với đạm); rỗng → nil.
+  public static func avgKcal(_ days: [Day]) -> Double? {
+    days.isEmpty ? nil : days.reduce(0) { $0 + $1.kcal } / Double(days.count)
+  }
+
+  /// Bảy ô liền nhau kết thúc ở `today` (thiết kế lại 13/10): ngày không ghi
+  /// gì là `nil` — biểu đồ vẫn đủ bảy cột, khoảng trống là thật. RN chỉ vẽ ngày
+  /// có dữ liệu; số trung bình KHÔNG đổi (vẫn chia cho ngày có dữ liệu).
+  public static func week(_ days: [Day], today: LocalDate) -> [(date: LocalDate, day: Day?)] {
+    let byDate = Dictionary(days.map { ($0.date, $0) }, uniquingKeysWith: { a, _ in a })
+    return (0..<7).map { i in
+      let d = today.adding(days: i - 6)
+      return (d, byDate[d])
+    }
+  }
+
   /// Trục cao nhất của biểu đồ.
   public static func maxProtein(_ days: [Day], target: Double) -> Double {
     days.reduce(target * 1.15) { Swift.max($0, $1.protein) }

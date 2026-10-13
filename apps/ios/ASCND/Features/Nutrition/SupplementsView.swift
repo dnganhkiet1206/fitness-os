@@ -14,13 +14,14 @@ struct SupplementRowLabel: View {
   var body: some View {
     HStack(spacing: DS.Spacing.md) {
       Image(systemName: shown ? "checkmark.circle.fill" : "circle")
-        .font(.title3)
-        .foregroundStyle(shown ? DS.Color.readinessGreen.swiftUI : DS.Color.mutedForeground.swiftUI)
+        .font(.title2)
+        .foregroundStyle(shown ? MascotRoomView.signalColor(.meal) : DS.Color.mutedForeground.swiftUI.opacity(0.6))
         .accessibilityHidden(true)
       VStack(alignment: .leading, spacing: 2) {
         Text(verbatim: item.name)
-          .font(DS.TextStyle.headline)
+          .font(DS.TextStyle.body)
           .strikethrough(shown)
+          .foregroundStyle(shown ? DS.Color.mutedForeground.swiftUI : DS.Color.foreground.swiftUI)
         let detail = Supplements.detail(dose: item.doseText, timingLabel: SupplementsView.timingLabel(item.timing))
         if !detail.isEmpty {
           Text(verbatim: detail)
@@ -47,6 +48,9 @@ struct SupplementRowLabel: View {
 /// - rỗng: "Chưa có supplement nào" + gợi ý (chữ của RN, nguyên văn).
 ///
 /// Khác RN / chưa có:
+/// - thiết kế lại 13/10 (chủ dự án duyệt mock): vòng tiến độ + việc còn lại,
+///   một thẻ danh sách, dấu tick màu cam bữa ăn, xoá bằng vuốt / giữ lâu /
+///   hành động VoiceOver (RN: nút thùng rác trên mỗi hàng);
 /// - tick "đã uống" qua lớp Trạng thái #161 (`StateWriter`, chủ dự án chốt
 ///   port 2026-10-12): giá trị tuyệt đối, gộp theo (mục, ngày), ý cuối thắng;
 ///   mất mạng thì giữ trong phiên và báo MỘT lần ("tắt app trước lúc đó thì
@@ -62,6 +66,15 @@ struct SupplementsView: View {
   @State private var timing = Supplements.defaultTiming
   @State private var pendingDelete: Supplement?
   @State private var message: String?
+  @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+  @Environment(\.colorScheme) private var scheme
+
+  /// Nền hàng gần với thẻ kính (`todayCard`) trên giấy ấm; Giảm trong suốt → đặc.
+  private var rowFill: some View {
+    Group {
+      if reduceTransparency { DS.Color.card.swiftUI } else { Color.white.opacity(scheme == .dark ? 0.08 : 0.55) }
+    }
+  }
 
   var body: some View {
     content
@@ -117,47 +130,86 @@ struct SupplementsView: View {
     case .failed:
       DSErrorView(message: String(localized: "async.error.generic")) { Task { await book.refresh() } }
     case .ready(let items):
-      ScrollView {
-        VStack(spacing: DS.Spacing.md) {
-          if adding { form }
-          if items.isEmpty {
-            DSEmptyState(
-              systemImage: "pills",
-              title: String(localized: "supplements.empty.title"),
-              message: String(localized: "supplements.empty.hint"))
-          } else {
+      // `List` để có vuốt-xoá của hệ thống; tô như thẻ danh sách của tab
+      // (thiết kế lại 13/10, chủ dự án duyệt mock).
+      List {
+        if adding {
+          form.listRowInsets(EdgeInsets()).listRowBackground(Color.clear)
+        }
+        if items.isEmpty {
+          DSEmptyState(
+            systemImage: "pills",
+            title: String(localized: "supplements.empty.title"),
+            message: String(localized: "supplements.empty.hint"))
+            .listRowBackground(Color.clear)
+        } else {
+          Section {
             summary(items)
-            ForEach(items) { item in row(item) }
+          }
+          .listRowBackground(Color.clear)
+          .listRowInsets(EdgeInsets())
+          Section {
+            ForEach(items) { item in
+              row(item)
+                .listRowBackground(rowFill)
+                .alignmentGuide(.listRowSeparatorLeading) { _ in 44 }
+            }
+          } footer: {
+            Text(String(localized: "supplements.swipeHint"))
+              .font(DS.TextStyle.caption)
+              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
           }
         }
-        .padding(DS.Spacing.md)
       }
+      .listStyle(.insetGrouped)
+      .scrollContentBackground(.hidden)
+      .listSectionSpacing(DS.Spacing.md)
     }
   }
 
   // MARK: - Hôm nay
 
+  /// Vòng "đã uống / tổng" + việc còn lại (thiết kế lại 13/10).
   private func summary(_ items: [Supplement]) -> some View {
-    DSCard {
-      HStack(alignment: .firstTextBaseline) {
-        Text(String(localized: "supplements.today")).font(DS.TextStyle.headline)
-        Spacer()
-        VStack(alignment: .trailing, spacing: 2) {
-          Text(verbatim: "\(book.shownTakenCount(writer: services.stateWriter)) / \(items.count)")
-            .font(DS.TextStyle.title.monospacedDigit())
-          Text(String(localized: "supplements.takenToday"))
-            .font(DS.TextStyle.footnote)
-            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-        }
+    let taken = book.shownTakenCount(writer: services.stateWriter)
+    let left = items.filter { !book.shownTaken($0, writer: services.stateWriter) }
+    let accent = MascotRoomView.signalColor(.meal)
+    return HStack(spacing: DS.Spacing.md) {
+      ZStack {
+        Circle().stroke(accent.opacity(0.18), lineWidth: 6)
+        Circle()
+          .trim(from: 0, to: items.isEmpty ? 0 : CGFloat(taken) / CGFloat(items.count))
+          .stroke(accent, style: StrokeStyle(lineWidth: 6, lineCap: .round))
+          .rotationEffect(.degrees(-90))
+          .animation(.snappy, value: taken)
+        Text(verbatim: "\(taken)/\(items.count)")
+          .font(.custom("Menlo", size: 15, relativeTo: .body).weight(.semibold))
+          .monospacedDigit()
       }
-      .accessibilityElement(children: .combine)
+      .frame(width: 60, height: 60)
+      .accessibilityHidden(true)
+      VStack(alignment: .leading, spacing: 2) {
+        Text(String(localized: "supplements.today")).font(DS.TextStyle.headline)
+        Text(left.isEmpty
+          ? String(localized: "supplements.allTaken")
+          : String(localized: "supplements.left \(left.count)") + " — " + left.map(\.name).formatted(.list(type: .and).locale(.app)))
+          .font(DS.TextStyle.footnote)
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          .lineLimit(2)
+      }
+      Spacer(minLength: 0)
     }
+    .padding(DS.Spacing.md)
+    .todayCard(radius: DS.Radius.xl)
+    .accessibilityElement(children: .combine)
+    .accessibilityLabel(Text(String(localized: "supplements.today")))
+    .accessibilityValue(Text(verbatim: "\(taken) / \(items.count) " + String(localized: "supplements.takenToday")))
   }
 
   private func row(_ item: Supplement) -> some View {
     let taken = book.shownTaken(item, writer: services.stateWriter)
     return HStack(spacing: DS.Spacing.sm) {
-      // `toggle.set(s.id, !s.taken)`: cả hàng (trừ nút xoá) là ô tick.
+      // `toggle.set(s.id, !s.taken)`: cả hàng là ô tick; xoá bằng vuốt.
       Button {
         let wasEmpty = services.stateWriter.size == 0
         let outcome = book.setTaken(item, taken: !taken, writer: services.stateWriter)
@@ -174,21 +226,25 @@ struct SupplementsView: View {
       .buttonStyle(.plain)
       .sensoryFeedback(.selection, trigger: taken)
       .accessibilityAddTraits(taken ? [.isButton, .isSelected] : .isButton)
-      Button {
+      .accessibilityAction(named: Text(String(localized: "supplements.a11y.delete \(item.name)"))) {
+        pendingDelete = item
+      }
+    }
+    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+      Button(role: .destructive) {
         pendingDelete = item
       } label: {
-        Image(systemName: "trash")
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-          .frame(minWidth: 44, minHeight: 44)
-          .contentShape(Rectangle())
+        Label(String(localized: "supplements.delete"), systemImage: "trash")
       }
-      .buttonStyle(.plain)
       .disabled(book.deleting)
-      .accessibilityLabel(Text(String(localized: "supplements.a11y.delete \(item.name)")))
     }
-    .padding(.horizontal, DS.Spacing.md)
-    .padding(.vertical, DS.Spacing.xs)
-    .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.md))
+    .contextMenu {
+      Button(role: .destructive) {
+        pendingDelete = item
+      } label: {
+        Label(String(localized: "supplements.delete"), systemImage: "trash")
+      }
+    }
   }
 
   // MARK: - Thêm

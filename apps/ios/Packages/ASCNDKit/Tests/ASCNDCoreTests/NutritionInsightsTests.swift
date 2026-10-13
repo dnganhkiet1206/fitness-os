@@ -68,3 +68,23 @@ struct NutritionInsightsTests {
     #expect(NutritionInsights.maxProtein([Self.day("2026-10-09", protein: 300)], target: 150) == 300)
   }
 }
+
+/// Thiết kế lại 13/10: đủ bảy cột + kcal trung bình.
+struct NutritionInsightsWeekTests {
+  func day(_ d: String, _ kcal: Double) -> NutritionInsights.Day {
+    NutritionInsights.Day(date: LocalDate(d)!, protein: 10, fiber: 0, kcal: kcal)
+  }
+
+  @Test func weekIsSevenDaysEndingTodayWithGaps() {
+    let w = NutritionInsights.week([day("2026-10-11", 500), day("2026-10-13", 700)], today: LocalDate("2026-10-13")!)
+    #expect(w.map(\.date.description) == [
+      "2026-10-07", "2026-10-08", "2026-10-09", "2026-10-10", "2026-10-11", "2026-10-12", "2026-10-13",
+    ])
+    #expect(w.map { $0.day?.kcal } == [nil, nil, nil, nil, 500, nil, 700])
+  }
+
+  @Test func avgKcalOverDaysWithData() {
+    #expect(NutritionInsights.avgKcal([day("2026-10-11", 500), day("2026-10-13", 700)]) == 600)
+    #expect(NutritionInsights.avgKcal([]) == nil)
+  }
+}
