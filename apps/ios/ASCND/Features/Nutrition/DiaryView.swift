@@ -149,6 +149,11 @@ struct DiaryView: View {
 /// thêm của chính nó; ngày nào là việc của sổ.
 struct DayMealsSection: View {
   let book: MealDiaryBook
+  /// Tab Dinh dưỡng (thiết kế lại 13/10): một thẻ danh sách theo KHUNG bữa
+  /// (sáng / trưa / tối / ăn vặt luôn có hàng; khung trống có nút "Ghi" vào
+  /// đúng khung ấy), không có thẻ tổng ngày (thẻ ngân sách đã nói). Màn Nhật ký
+  /// giữ kiểu thẻ từng bữa.
+  var slots = false
   /// Sau mỗi lần ghi / sửa / xoá thành công — để thẻ khác trên cùng màn
   /// (thẻ calo của tab) đọc lại.
   var onChanged: () -> Void = {}
@@ -232,6 +237,8 @@ struct DayMealsSection: View {
       DSOfflineView { Task { await book.load() } }
     case .failed:
       DSErrorView(message: String(localized: "async.error.generic")) { Task { await book.load() } }
+    case .ready(let meals) where slots:
+      slotList(MealDiary.groups(meals))
     case .ready(let meals):
       let total = MealDiary.dayTotal(meals)
       if total.kcal > 0 {
@@ -283,6 +290,33 @@ struct DayMealsSection: View {
         .buttonStyle(.plain)
       }
     }
+  }
+
+  /// Khung bữa luôn có hàng, theo thứ tự trong ngày; trước / sau tập chỉ khi
+  /// đã có món (không phải ai cũng tập).
+  static let standardSlots = ["breakfast", "lunch", "dinner", "snack"]
+
+  private func slotList(_ groups: [MealDiary.Group]) -> some View {
+    let byType = Dictionary(groups.map { ($0.type, $0) }, uniquingKeysWith: { a, _ in a })
+    let extra = groups.map(\.type).filter { !Self.standardSlots.contains($0) }
+    let types = Self.standardSlots + extra
+    return VStack(spacing: 0) {
+      ForEach(Array(types.enumerated()), id: \.element) { i, type in
+        if i > 0 { Divider().padding(.leading, 58).opacity(0.6) }
+        if let g = byType[type] {
+          MealGroupCard(
+            group: g, busy: book.busy, plain: true,
+            onEdit: { editing = $0 },
+            onDelete: { pendingItem = $0 },
+            onDeleteGroup: { pendingGroup = g },
+            onAddTo: { logging = LogMealRequest(mealType: g.type) })
+        } else {
+          EmptySlotRow(type: type) { logging = LogMealRequest(mealType: type) }
+        }
+      }
+    }
+    .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous))
+    .todayCard(radius: DS.Radius.xl)
   }
 
   private func undoBar(_ text: String) -> some View {
@@ -369,6 +403,9 @@ struct DayMealsSection: View {
 private struct MealGroupCard: View {
   let group: MealDiary.Group
   let busy: Bool
+  /// Hàng trong thẻ danh sách khung bữa (tab Dinh dưỡng): không có `DSCard`
+  /// riêng, có vòng màu bữa ở đầu, dòng phụ là tên món.
+  var plain = false
   let onEdit: (MealDiary.Item) -> Void
   let onDelete: (MealDiary.Item) -> Void
   let onDeleteGroup: () -> Void
@@ -385,23 +422,38 @@ private struct MealGroupCard: View {
     return entries + count + " · " + DiaryView.macros(group.protein, group.carbs, group.fat)
   }
 
+  /// Dòng phụ của hàng khung bữa: tên các món, ngắn.
+  private var itemNames: String {
+    group.items.map(\.foodName).formatted(.list(type: .and).locale(.app))
+  }
+
   var body: some View {
-    DSCard {
+    if plain {
+      content.padding(.horizontal, DS.Spacing.md).padding(.vertical, 10)
+    } else {
+      DSCard { content }
+    }
+  }
+
+  private var content: some View {
       VStack(alignment: .leading, spacing: DS.Spacing.sm) {
         Button {
           withAnimation(reduceMotion ? nil : .easeOut(duration: 0.26)) { open.toggle() }
         } label: {
-          HStack(alignment: .firstTextBaseline) {
+          HStack(alignment: plain ? .center : .firstTextBaseline, spacing: plain ? 12 : 8) {
+            if plain { MealSlotGlyph(type: group.type, filled: true) }
             VStack(alignment: .leading, spacing: 2) {
-              Text(verbatim: name).font(DS.TextStyle.headline)
-              Text(verbatim: sub)
+              Text(verbatim: name).font(plain ? .system(size: 17, weight: .semibold) : DS.TextStyle.headline)
+              Text(verbatim: plain ? itemNames : sub)
                 .font(DS.TextStyle.caption.monospacedDigit())
                 .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+                .lineLimit(plain ? 1 : nil)
             }
             Spacer()
-            Text(verbatim: "\(DiaryView.whole(group.kcal)) kcal")
-              .font(DS.TextStyle.headline.monospacedDigit())
+            Text(verbatim: plain ? DiaryView.whole(group.kcal) : "\(DiaryView.whole(group.kcal)) kcal")
+              .font(plain ? .custom("Menlo", size: 15, relativeTo: .body) : DS.TextStyle.headline.monospacedDigit())
             Image(systemName: "chevron.down")
+              .font(plain ? .caption.weight(.semibold) : .body)
               .rotationEffect(.degrees(open ? 180 : 0))
               .foregroundStyle(DS.Color.mutedForeground.swiftUI)
               .accessibilityHidden(true)
@@ -411,12 +463,13 @@ private struct MealGroupCard: View {
         }
         .buttonStyle(.plain)
         .sensoryFeedback(.selection, trigger: open)
-        .accessibilityValue(Text(open ? String(localized: "diary.a11y.expanded") : String(localized: "diary.a11y.collapsed")))
+        .accessibilityValue(Text(verbatim: (plain ? "\(DiaryView.whole(group.kcal)) kcal, " : "")
+          + (open ? String(localized: "diary.a11y.expanded") : String(localized: "diary.a11y.collapsed"))))
         .accessibilityAction(named: Text(String(localized: "diary.meal.addAction"))) { onAddTo() }
         .accessibilityAction(named: Text(String(localized: "diary.meal.deleteAction"))) { onDeleteGroup() }
 
         if open {
-          ForEach(group.items) { it in row(it) }
+          ForEach(group.items) { it in row(it).padding(.leading, plain ? 46 : 0) }
           Button(action: onAddTo) {
             Label(String(localized: "diary.meal.addAction"), systemImage: "plus")
               .font(DS.TextStyle.footnote.weight(.semibold))
@@ -434,7 +487,6 @@ private struct MealGroupCard: View {
           .disabled(busy)
         }
       }
-    }
   }
 
   private func row(_ it: MealDiary.Item) -> some View {
@@ -564,4 +616,72 @@ private struct ServingsSheet: View {
 struct LogMealRequest: Identifiable {
   let id = UUID()
   let mealType: String?
+}
+
+/// Vòng biểu tượng của một khung bữa (32pt, như hàng "Your day" của Hôm nay):
+/// màu bữa khi đã có món, xám khi trống.
+struct MealSlotGlyph: View {
+  let type: String
+  let filled: Bool
+
+  static func symbol(_ type: String) -> String {
+    switch type {
+    case "breakfast": "sunrise"
+    case "lunch": "sun.max"
+    case "dinner": "moon.stars"
+    case "snack": "carrot"
+    case "preworkout": "bolt"
+    case "postworkout": "figure.cooldown"
+    default: "fork.knife"
+    }
+  }
+
+  var body: some View {
+    let meal = MascotRoomView.signalColor(.meal)
+    Image(systemName: Self.symbol(type))
+      .font(.system(size: 14, weight: .semibold))
+      .foregroundStyle(filled ? meal : DS.Color.mutedForeground.swiftUI)
+      .frame(width: 34, height: 34)
+      .background(Circle().fill(filled ? meal.opacity(0.14) : DS.Color.foreground.swiftUI.opacity(0.06)))
+      .accessibilityHidden(true)
+  }
+}
+
+/// Khung bữa chưa có món: tên, "Chưa ghi", nút "Ghi" mở màn ghi đúng khung này.
+private struct EmptySlotRow: View {
+  let type: String
+  let onLog: () -> Void
+
+  var body: some View {
+    Button(action: onLog) {
+      HStack(spacing: 12) {
+        MealSlotGlyph(type: type, filled: false)
+        VStack(alignment: .leading, spacing: 2) {
+          Text(verbatim: DiaryView.mealName(type))
+            .font(.system(size: 17, weight: .semibold))
+            .foregroundStyle(DS.Color.foreground.swiftUI)
+          Text(String(localized: "nc.slot.empty"))
+            .font(DS.TextStyle.caption)
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        }
+        Spacer(minLength: 0)
+        Text(String(localized: "nc.slot.log"))
+          .font(.system(size: 15, weight: .semibold))
+          .foregroundStyle(DS.Color.foreground.swiftUI)
+          .padding(.horizontal, 14)
+          .frame(minHeight: 34)
+          .background(Capsule().strokeBorder(DS.Color.foreground.swiftUI.opacity(0.18), lineWidth: 1))
+      }
+      .padding(.horizontal, DS.Spacing.md)
+      .padding(.vertical, 10)
+      .frame(minHeight: 56)
+      .contentShape(Rectangle())
+    }
+    .buttonStyle(TodayPressStyle(scale: 0.98))
+    .accessibilityElement(children: .ignore)
+    .accessibilityLabel(Text(verbatim: DiaryView.mealName(type)))
+    .accessibilityValue(Text(String(localized: "nc.slot.empty")))
+    .accessibilityHint(Text(String(localized: "nc.slot.hint")))
+    .accessibilityAddTraits(.isButton)
+  }
 }

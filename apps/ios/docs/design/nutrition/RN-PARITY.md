@@ -62,3 +62,7 @@ màn quét, thêm ô vào `MealLogWays` — bố cục ô viên nang đã chừa
 Phân đoạn Hôm nay cuộn hết; Tìm mở sheet với ô tìm focus; Nhập tay mở sheet
 với phần tự nhập mở sẵn; phân đoạn Thực đơn hiện kế hoạch + Thực phẩm. Chưa
 kiểm: chế độ tối, máy thật.
+
+## Cập nhật B (13/10): thiết kế lại
+
+Thứ tự và cách trình bày ở trên đã được thay bằng bản thiết kế lại trong `REDESIGN.md` (chủ dự án cho phép rời RN). Số liệu và luật giữ nguyên; xem bảng khác biệt ở `NATIVE_IMPROVEMENTS.md`.

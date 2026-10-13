@@ -224,32 +224,75 @@ struct GroceryView: View {
 /// "còn N món" khi danh sách có món; đọc chưa xong / hỏng thì không có số.
 struct GroceryRow: View {
   let book: GroceryBook
+  /// Hàng trong thẻ danh sách lối tắt của Kế hoạch ăn (thiết kế lại 13/10):
+  /// vòng biểu tượng, không có thẻ riêng.
+  var plain = false
   @Environment(AppServices.self) private var services
 
   var body: some View {
     NavigationLink(value: GroceryRoute()) {
-      HStack {
-        Label(String(localized: "grocery.title"), systemImage: "cart")
-          .font(DS.TextStyle.headline)
-          .foregroundStyle(DS.Color.foreground.swiftUI)
-          .lineLimit(1)
-        Spacer()
-        if !book.items.isEmpty {
-          let n = book.remaining(writer: services.stateWriter)
-          Text(n == 1 ? String(localized: "grocery.left.one") : String(localized: "grocery.left.other \(n)"))
-            .font(DS.TextStyle.footnote.monospacedDigit())
-            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-        }
-        Image(systemName: "chevron.right")
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-          .accessibilityHidden(true)
-      }
-      .padding(DS.Spacing.md)
-      .frame(minHeight: 56)
-      .todayCard(radius: DS.Radius.lg)
-      .contentShape(Rectangle())
+      if plain { plainRow } else { cardRow }
     }
     .buttonStyle(TodayPressStyle(scale: 0.98))
     .task { if case .loading = book.phase { await book.refresh() } }
+  }
+
+  private var leftText: String? {
+    guard !book.items.isEmpty else { return nil }
+    let n = book.remaining(writer: services.stateWriter)
+    return n == 1 ? String(localized: "grocery.left.one") : String(localized: "grocery.left.other \(n)")
+  }
+
+  private var cardRow: some View {
+    HStack {
+      Label(String(localized: "grocery.title"), systemImage: "cart")
+        .font(DS.TextStyle.headline)
+        .foregroundStyle(DS.Color.foreground.swiftUI)
+        .lineLimit(1)
+      Spacer()
+      if let leftText {
+        Text(verbatim: leftText)
+          .font(DS.TextStyle.footnote.monospacedDigit())
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+      }
+      Image(systemName: "chevron.right")
+        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        .accessibilityHidden(true)
+    }
+    .padding(DS.Spacing.md)
+    .frame(minHeight: 56)
+    .todayCard(radius: DS.Radius.lg)
+    .contentShape(Rectangle())
+  }
+
+  private var plainRow: some View {
+    let tint = MascotRoomView.signalColor(.meal)
+    return HStack(spacing: 12) {
+      Image(systemName: "cart.fill")
+        .font(.system(size: 14, weight: .semibold))
+        .foregroundStyle(tint)
+        .frame(width: 34, height: 34)
+        .background(Circle().fill(tint.opacity(0.12)))
+        .accessibilityHidden(true)
+      VStack(alignment: .leading, spacing: 2) {
+        Text(String(localized: "grocery.title"))
+          .font(.system(size: 17, weight: .semibold))
+          .foregroundStyle(DS.Color.foreground.swiftUI)
+        if let leftText {
+          Text(verbatim: leftText)
+            .font(DS.TextStyle.caption.monospacedDigit())
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        }
+      }
+      Spacer(minLength: 0)
+      Image(systemName: "chevron.right")
+        .font(.caption.weight(.semibold))
+        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        .accessibilityHidden(true)
+    }
+    .padding(.horizontal, DS.Spacing.md)
+    .padding(.vertical, 8)
+    .frame(minHeight: 60)
+    .contentShape(Rectangle())
   }
 }

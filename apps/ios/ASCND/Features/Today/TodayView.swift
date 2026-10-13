@@ -71,6 +71,7 @@ public struct TodayView: View {
         .sensoryFeedback(.impact(weight: .light), trigger: refreshTick)
         .background { TodayAmbient(accent: accent) }
         .onPreferenceChange(TodayAccentPreference.self) { accent = $0 }
+        .statusBarScrim()
         .toolbar(.hidden, for: .navigationBar)
       } else {
         ScrollView {

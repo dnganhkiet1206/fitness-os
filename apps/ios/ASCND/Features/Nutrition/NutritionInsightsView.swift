@@ -136,30 +136,6 @@ struct InsightsRoute: Hashable {
   let userId: String
 }
 
-struct InsightsRow: View {
-  let userId: String
-
-  var body: some View {
-    NavigationLink(value: InsightsRoute(userId: userId)) {
-      HStack {
-        Label(String(localized: "insights.link"), systemImage: "chart.bar")
-          .font(DS.TextStyle.headline)
-          .foregroundStyle(DS.Color.foreground.swiftUI)
-          .lineLimit(1)
-        Spacer()
-        Image(systemName: "chevron.right")
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-          .accessibilityHidden(true)
-      }
-      .padding(DS.Spacing.md)
-      .frame(minHeight: 56)
-      .todayCard(radius: DS.Radius.lg)
-      .contentShape(Rectangle())
-    }
-    .buttonStyle(TodayPressStyle(scale: 0.98))
-  }
-}
-
 struct InsightsScreen: View {
   let userId: String
   @Environment(AppServices.self) private var services

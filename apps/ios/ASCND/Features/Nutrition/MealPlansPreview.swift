@@ -51,42 +51,47 @@ struct MealPlansPreview: View {
       VStack(alignment: .leading, spacing: DS.Spacing.sm) {
         HStack(alignment: .firstTextBaseline) {
           Text(String(localized: "nc.plans \(plans.count)"))
-            .font(DS.TextStyle.headline)
+            .font(DS.TextStyle.title)
             .accessibilityAddTraits(.isHeader)
           Spacer()
           if plans.count > Self.preview {
             NavigationLink(value: MealPlansRoute(userId: book.userId)) {
               HStack(spacing: 2) {
                 Text(String(localized: "nc.seeAll"))
-                Image(systemName: "chevron.right").font(.caption).accessibilityHidden(true)
+                Image(systemName: "chevron.right").font(.caption.weight(.semibold)).accessibilityHidden(true)
               }
               .font(DS.TextStyle.footnote.weight(.semibold))
-              .foregroundStyle(DS.Color.primary.swiftUI)
-              .padding(.horizontal, DS.Spacing.sm)
+              .foregroundStyle(DS.Color.foreground.swiftUI)
               .frame(minHeight: 44)
-              .overlay(Capsule().stroke(DS.Color.border.swiftUI, lineWidth: 1).padding(.vertical, 8))
               .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
           }
         }
-        ForEach(plans.prefix(Self.preview)) { p in
-          NavigationLink(value: MealPlanRoute(userId: book.userId, planId: p.id, plan: p)) {
-            PlanRowView(plan: p, fill: book.fill[p.id] ?? [:])
+        .padding(.horizontal, 4)
+        // Một thẻ danh sách (thiết kế lại 13/10): mỗi kế hoạch một hàng, "+ Tạo"
+        // là hàng cuối — không còn một thẻ trắng to cho mỗi tên.
+        VStack(spacing: 0) {
+          ForEach(plans.prefix(Self.preview)) { p in
+            NavigationLink(value: MealPlanRoute(userId: book.userId, planId: p.id, plan: p)) {
+              PlanRowView(plan: p, fill: book.fill[p.id] ?? [:], plain: true)
+            }
+            .buttonStyle(TodayPressStyle(scale: 0.98))
+            Divider().padding(.leading, DS.Spacing.md).opacity(0.6)
           }
-          .buttonStyle(.plain)
+          Button { creating = true } label: {
+            Label(String(localized: "plans.create"), systemImage: "plus")
+              .font(.system(size: 16, weight: .semibold))
+              .foregroundStyle(MascotRoomView.signalColor(.meal))
+              .frame(maxWidth: .infinity, alignment: .leading)
+              .padding(.horizontal, DS.Spacing.md)
+              .frame(minHeight: 52)
+              .contentShape(Rectangle())
+          }
+          .buttonStyle(TodayPressStyle(scale: 0.98))
         }
-        Button { creating = true } label: {
-          Label(String(localized: "plans.create"), systemImage: "plus")
-            .font(DS.TextStyle.footnote.weight(.semibold))
-            .foregroundStyle(DS.Color.primary.swiftUI)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, DS.Spacing.md)
-            .frame(minHeight: 44)
-            .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.md))
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous))
+        .todayCard(radius: DS.Radius.xl)
       }
     }
   }

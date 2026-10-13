@@ -96,6 +96,9 @@ struct MealPlanRoute: Hashable {
 struct PlanRowView: View {
   let plan: MealPlans.Plan
   let fill: [Int: Int]
+  /// Hàng trong thẻ danh sách (phân đoạn Kế hoạch ăn, thiết kế lại 13/10):
+  /// không nền riêng, chấm ngày màu bữa.
+  var plain = false
 
   var body: some View {
     let meta = [
@@ -113,7 +116,9 @@ struct PlanRowView: View {
         HStack(spacing: 4) {
           ForEach(MealPlans.days, id: \.self) { d in
             Circle()
-              .fill((fill[d] ?? 0) > 0 ? DS.Color.primary.swiftUI : DS.Color.muted.swiftUI)
+              .fill((fill[d] ?? 0) > 0
+                ? (plain ? MascotRoomView.signalColor(.meal) : DS.Color.primary.swiftUI)
+                : (plain ? DS.Color.foreground.swiftUI.opacity(0.1) : DS.Color.muted.swiftUI))
               .frame(width: 6, height: 6)
           }
         }
@@ -126,7 +131,7 @@ struct PlanRowView: View {
     }
     .padding(DS.Spacing.md)
     .frame(minHeight: 62)
-    .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.md))
+    .background(plain ? Color.clear : DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.md))
     .contentShape(Rectangle())
     .accessibilityElement(children: .combine)
     .accessibilityValue(Text(String(localized: "plans.a11y.filled \(fill.values.filter { $0 > 0 }.count)")))

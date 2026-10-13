@@ -32,6 +32,7 @@ struct NutritionTab: View {
   @State private var foodSearch: FoodSearchBook?
   /// Hai phân đoạn của RN: "Hôm nay" (mặc định) và "Kế hoạch ăn".
   @State private var segment: Segment = .today
+  @Environment(\.dynamicTypeSize) private var typeSize
 
   enum Segment: Hashable { case today, plan }
 
@@ -39,6 +40,7 @@ struct NutritionTab: View {
     NavigationStack {
       ScrollView {
         VStack(spacing: DS.Spacing.md) {
+          header
           Picker(String(localized: "tab.nutrition"), selection: $segment) {
             Text(String(localized: "nc.seg.today")).tag(Segment.today)
             Text(String(localized: "nc.seg.plan")).tag(Segment.plan)
@@ -63,6 +65,11 @@ struct NutritionTab: View {
       // đổi tab — số của hôm nay đổi ở những màn ấy.
       .onAppear { Task { await reload() } }
       .navigationTitle(Text("tab.nutrition"))
+      // Đầu trang nằm trong nội dung như Hôm nay: thanh điều hướng của trang
+      // gốc để lại một hàng trống ~60pt dưới Dynamic Island (chủ dự án báo,
+      // 13/10). Màn con vẫn có thanh của chúng.
+      .toolbar(.hidden, for: .navigationBar)
+      .statusBarScrim()
       .scrollContentBackground(.hidden)
       .background { TodayAmbient(accent: .meal) }
       .navigationDestination(for: WaterRoute.self) { _ in
@@ -114,36 +121,78 @@ struct NutritionTab: View {
     }
   }
 
-  /// Phân đoạn "Hôm nay" theo thứ tự RN: thẻ calo + lối xu hướng, Ghi bữa,
-  /// Nước, Thực phẩm bổ sung, các bữa hôm nay.
+  /// Phân đoạn "Hôm nay" (thiết kế lại 13/10, `docs/design/nutrition/REDESIGN.md`):
+  /// thẻ ngân sách (còn lại + macro + "7 ngày"), ô ghi bữa, các khung bữa của
+  /// hôm nay, rồi Nước + Thực phẩm bổ sung trong một thẻ danh sách.
   @ViewBuilder private var todaySegment: some View {
     if let today { NutritionTodayCard(book: today) }
     if let userId {
-      // Ngay dưới thẻ (RN): xu hướng là phần tiếp của con số hôm nay.
-      InsightsRow(userId: userId)
-      // `MealLogActions`: cách ghi bữa, cách đầu là cách chính.
-      MealLogWays(userId: userId) { Task { await reload() } }
+      MealLogBar(userId: userId) { Task { await reload() } }
     }
-    if let water = books?.water { WaterCard(book: water) }
-    // Cạnh Nước, trên nhật ký (`(tabs)/nutrition.tsx`: "supplements belong
-    // beside water") — hàng mang sẵn "2/4 hôm nay".
-    if let supplements = books?.supplements { SupplementsRow(book: supplements) }
-    if let userId, let meals {
-      // "Bữa ăn hôm nay" + "Ngày khác" trên cùng hàng tiêu đề (RN): tab
-      // này là HÔM NAY, ngày khác là màn riêng (`/diary`).
-      mealsHeader(userId: userId)
-      DayMealsSection(book: meals) { Task { await today?.load() } }
+    if let meals {
+      sectionTitle(String(localized: "nc.meals"))
+      DayMealsSection(book: meals, slots: true) { Task { await today?.load() } }
+    }
+    if books?.water != nil || books?.supplements != nil {
+      sectionTitle(String(localized: "nc.inDay"))
+      DayExtrasList(water: books?.water, supplements: books?.supplements)
     }
   }
 
-  /// Phân đoạn "Kế hoạch ăn" (RN): kế hoạch, danh sách đi chợ ("còn N món"),
-  /// rồi thư viện Thực phẩm. Gợi ý AI chưa port.
+  /// Phân đoạn "Kế hoạch ăn": kế hoạch, rồi một thẻ danh sách lối tắt (đi chợ,
+  /// thực phẩm của tôi). Thư viện đầy đủ — ô tìm, Của tôi / Gần đây — ở màn
+  /// Thực phẩm, một chạm. Gợi ý AI chưa port.
   @ViewBuilder private var planSegment: some View {
     if let plans { MealPlansPreview(book: plans) }
-    if let grocery { GroceryRow(book: grocery) }
-    if let userId, let foods, let foodSearch {
-      FoodsSection(userId: userId, library: foods, search: foodSearch)
+    if let userId {
+      PlanShortcuts(userId: userId, grocery: grocery, foods: foods)
     }
+  }
+
+  /// Đầu trang như Hôm nay: tiêu đề lớn + ngày; phải là "Ngày khác" (Nhật ký).
+  private var header: some View {
+    HStack(alignment: .top, spacing: DS.Spacing.sm) {
+      VStack(alignment: .leading, spacing: 0) {
+        Text(String(localized: "tab.nutrition"))
+          .font(.largeTitle.bold())
+          .foregroundStyle(DS.Color.foreground.swiftUI)
+          .accessibilityAddTraits(.isHeader)
+        Text(verbatim: Date.now.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(.app)))
+          .font(DS.TextStyle.body)
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+      }
+      Spacer(minLength: 0)
+      if let userId {
+        NavigationLink(value: DiaryRoute(userId: userId)) {
+          // Cỡ chữ trợ năng: chỉ biểu tượng (chữ bị bẻ từng âm tiết bên cạnh
+          // tiêu đề lớn); VoiceOver vẫn đọc nhãn.
+          Label(String(localized: "nc.otherDays"), systemImage: "calendar")
+            .labelStyle(AdaptiveLabelStyle(iconOnly: typeSize.isAccessibilitySize))
+            .font(DS.TextStyle.footnote.weight(.semibold))
+            .foregroundStyle(DS.Color.foreground.swiftUI)
+            .padding(.horizontal, 12)
+            .frame(minHeight: 36)
+            .background(Capsule().fill(.thinMaterial))
+            .overlay(Capsule().strokeBorder(DS.Color.foreground.swiftUI.opacity(0.12), lineWidth: 0.75))
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(TodayPressStyle())
+        .accessibilityLabel(Text(String(localized: "nc.otherDays")))
+        .padding(.top, 6)
+      }
+    }
+    .frame(maxWidth: .infinity, alignment: .leading)
+  }
+
+  private func sectionTitle(_ text: String) -> some View {
+    Text(verbatim: text)
+      .font(DS.TextStyle.title)
+      .foregroundStyle(DS.Color.foreground.swiftUI)
+      .accessibilityAddTraits(.isHeader)
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .padding(.horizontal, 4)
+      .padding(.top, DS.Spacing.sm)
   }
 
   private var userId: String? { books?.water?.userId ?? books?.supplements?.userId }
@@ -157,27 +206,6 @@ struct NutritionTab: View {
   }
 
   private func loadToday() async { await today?.load() }
-
-  private func mealsHeader(userId: String) -> some View {
-    HStack(alignment: .firstTextBaseline) {
-      Text(String(localized: "nc.meals"))
-        .font(DS.TextStyle.title)
-        .accessibilityAddTraits(.isHeader)
-      Spacer()
-      NavigationLink(value: DiaryRoute(userId: userId)) {
-        HStack(spacing: 2) {
-          Text(String(localized: "nc.otherDays"))
-          Image(systemName: "chevron.right").font(.caption).accessibilityHidden(true)
-        }
-        .font(DS.TextStyle.footnote.weight(.semibold))
-        .foregroundStyle(DS.Color.primary.swiftUI)
-        .frame(minHeight: 44)
-        .contentShape(Rectangle())
-      }
-      .buttonStyle(.plain)
-    }
-    .padding(.top, DS.Spacing.sm)
-  }
 }
 
 /// Đích điều hướng của thẻ → màn Nước.
@@ -220,60 +248,54 @@ struct FoodsScreen: View {
   }
 }
 
-/// "Ghi bữa" — `MealLogActions` của RN: các cách ghi một bữa, cách đầu nổi
-/// bật. RN có bốn (Ảnh, Mã vạch, Tìm món, Nhập tay); ảnh và mã vạch cần
-/// camera (`scan-*`) chưa port nên không có ô — không vẽ một ô không làm gì.
-/// "Tìm món" mở màn ghi với con trỏ trong ô tìm; "Nhập tay" mở sẵn phần món
-/// tự nhập — hai việc khác nhau, cùng kết thúc bằng một bữa đã ghi.
-struct MealLogWays: View {
+/// Ô ghi bữa (thiết kế lại 13/10) — `MealLogActions` của RN thu về MỘT viên
+/// như ô tìm, vì tìm là cách chính: chạm → màn ghi với con trỏ trong ô tìm;
+/// bút → mở sẵn phần món tự nhập. Ảnh và mã vạch: chưa có màn quét thì không
+/// vẽ nút — không vẽ một nút không làm gì.
+struct MealLogBar: View {
   let userId: String
-  /// Sheet ghi bữa đóng lại — thẻ calo đọc lại số của hôm nay.
+  /// Sheet ghi bữa đóng lại — thẻ ngân sách đọc lại số của hôm nay.
   var onClose: () -> Void = {}
   @State private var open: LogMealView.Start?
 
   var body: some View {
-    VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-      Text(String(localized: "logMeal.title"))
-        .font(DS.TextStyle.headline)
-        .foregroundStyle(DS.Color.foreground.swiftUI)
-        .accessibilityAddTraits(.isHeader)
-      HStack(spacing: DS.Spacing.sm) {
-        way(.search, symbol: "magnifyingglass", label: "nc.way.search", spoken: "nc.way.search.a11y", lead: true)
-        way(.manual, symbol: "square.and.pencil", label: "nc.way.manual", spoken: "nc.way.manual.a11y", lead: false)
+    let meal = MascotRoomView.signalColor(.meal)
+    HStack(spacing: 0) {
+      Button { open = .search } label: {
+        HStack(spacing: 10) {
+          Image(systemName: "magnifyingglass")
+            .font(.system(size: 16, weight: .semibold))
+            .foregroundStyle(meal)
+          Text(String(localized: "nc.log.prompt"))
+            .font(.system(size: 17))
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .lineLimit(1)
+          Spacer(minLength: 0)
+        }
+        .padding(.leading, 18)
+        .frame(maxWidth: .infinity, minHeight: 52)
+        .contentShape(Rectangle())
       }
+      .buttonStyle(.plain)
+      .accessibilityLabel(Text(String(localized: "nc.way.search.a11y")))
+      Divider().frame(height: 24).opacity(0.6)
+      Button { open = .manual } label: {
+        Image(systemName: "square.and.pencil")
+          .font(.system(size: 17, weight: .semibold))
+          .foregroundStyle(DS.Color.foreground.swiftUI)
+          .frame(width: 56, height: 52)
+          .contentShape(Rectangle())
+      }
+      .buttonStyle(.plain)
+      .accessibilityLabel(Text(String(localized: "nc.way.manual.a11y")))
     }
-    .padding(DS.Spacing.md)
-    .frame(maxWidth: .infinity, alignment: .leading)
-    .todayCard(radius: DS.Radius.lg)
+    .background(Capsule().fill(.regularMaterial))
+    .overlay(Capsule().strokeBorder(meal.opacity(0.55), lineWidth: 1.5))
+    .shadow(color: meal.opacity(0.12), radius: 10, y: 4)
+    .sensoryFeedback(.selection, trigger: open)
     .sheet(item: $open, onDismiss: onClose) { start in
       LogMealView(userId: userId, start: start)
     }
-  }
-
-  private func way(_ start: LogMealView.Start, symbol: String, label: String.LocalizationValue, spoken: String.LocalizationValue, lead: Bool) -> some View {
-    let meal = MascotRoomView.signalColor(.meal)
-    return Button { open = start } label: {
-      HStack(spacing: DS.Spacing.sm) {
-        Image(systemName: symbol)
-          .font(.system(size: 15, weight: .semibold))
-        Text(String(localized: label))
-          .font(.system(size: 16, weight: .semibold))
-          .lineLimit(1)
-      }
-      .foregroundStyle(lead ? Color.white : DS.Color.foreground.swiftUI)
-      .frame(maxWidth: .infinity, minHeight: 48)
-      .background {
-        if lead {
-          Capsule().fill(meal)
-        } else {
-          Capsule().fill(.thinMaterial)
-          Capsule().strokeBorder(DS.Color.foreground.swiftUI.opacity(0.12), lineWidth: 0.75)
-        }
-      }
-      .contentShape(Capsule())
-    }
-    .buttonStyle(TodayPressStyle())
-    .accessibilityLabel(Text(String(localized: spoken)))
   }
 }
 
@@ -305,90 +327,185 @@ struct DiaryScreen: View {
   }
 }
 
-/// Hàng Thực phẩm bổ sung (`ShortcutRow` của RN): nhãn + "2/4 hôm nay" khi có
-/// mục. Lần đọc đầu hỏng / đang tải thì không có số — không bao giờ "0/4" giả.
-struct SupplementsRow: View {
-  let book: SupplementBook
-
-  var body: some View {
-    NavigationLink(value: SupplementsRoute()) {
-      HStack {
-        Label(String(localized: "supplements.title"), systemImage: "pills")
-          .font(DS.TextStyle.headline)
-          .foregroundStyle(DS.Color.foreground.swiftUI)
-          .lineLimit(1)
-        Spacer()
-        if !book.items.isEmpty {
-          Text(String(localized: "supplements.row.value \(book.takenCount) \(book.items.count)"))
-            .font(DS.TextStyle.footnote.monospacedDigit())
-            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-        }
-        Image(systemName: "chevron.right")
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-          .accessibilityHidden(true)
-      }
-      .padding(DS.Spacing.md)
-      .frame(minHeight: 56)
-      .todayCard(radius: DS.Radius.lg)
-      .contentShape(Rectangle())
-    }
-    .buttonStyle(TodayPressStyle(scale: 0.98))
-  }
-}
-
-/// Thẻ Nước uống trên tab Dinh dưỡng (`WaterWidget` + `WaterQuickAdd` của RN).
-/// Lần đọc đầu hỏng thì không hiện thẻ (`waterFailed ? null`) — không bao giờ
-/// một thẻ nói "0" thay cho "không đọc được".
-struct WaterCard: View {
-  let book: WaterBook
+/// "Trong ngày": Nước và Thực phẩm bổ sung trong MỘT thẻ danh sách, hàng kiểu
+/// "Your day" của Hôm nay (thiết kế lại 13/10). Nước: một chạm thêm mức nhanh
+/// đầu tiên ("+250 ml" / "+8 oz") — các mức khác và nút bớt ở màn Nước. Lần
+/// đọc đầu hỏng / đang tải thì hàng không có số — không bao giờ "0" giả.
+struct DayExtrasList: View {
+  let water: WaterBook?
+  let supplements: SupplementBook?
   @Environment(AppServices.self) private var services
   @Environment(ProfileBook.self) private var profile: ProfileBook?
   @State private var feedback = WaterFeedback()
+  @State private var taps = 0
 
   private var unit: Water.Unit { services.preferences.volumeUnit }
 
   var body: some View {
-    if book.loaded {
-      let target = Water.target(profile?.profile?.waterTargetMl)
-      let pct = Water.percent(totalMl: book.totalMl, targetMl: target)
-      DSCard {
-        VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-          NavigationLink(value: WaterRoute()) {
-            HStack(alignment: .firstTextBaseline) {
-              VStack(alignment: .leading, spacing: 2) {
-                Label(String(localized: "water.card.title"), systemImage: "drop.fill")
-                  .font(DS.TextStyle.headline)
-                  .foregroundStyle(DS.Color.foreground.swiftUI)
-                Text(verbatim: Water.bigValue(totalMl: book.totalMl, unit))
-                  .font(DS.TextStyle.mono(.title).weight(.bold))
-                  .foregroundStyle(DS.Color.foreground.swiftUI)
-                Text(String(localized: "water.ofTarget \(Water.targetLabel(target, unit))"))
-                  .font(DS.TextStyle.footnote)
-                  .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-              }
-              Spacer()
-              Image(systemName: "chevron.right")
-                .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-                .accessibilityHidden(true)
-            }
+    VStack(spacing: DS.Spacing.xs) {
+      VStack(spacing: 0) {
+        if let water { waterRow(water) }
+        if water != nil, supplements != nil { Divider().padding(.leading, 58).opacity(0.6) }
+        if let supplements { supplementsRow(supplements) }
+      }
+      .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous))
+      .todayCard(radius: DS.Radius.xl)
+      WaterFeedbackLine(feedback: feedback)
+    }
+    .sensoryFeedback(.impact(weight: .light), trigger: taps)
+  }
+
+  private func waterRow(_ book: WaterBook) -> some View {
+    let tint = MascotRoomView.signalColor(.water)
+    let target = Water.target(profile?.profile?.waterTargetMl)
+    let step = Water.quickAmounts(unit).first ?? 250
+    return HStack(spacing: 12) {
+      NavigationLink(value: WaterRoute()) {
+        HStack(spacing: 12) {
+          glyph("drop.fill", tint: tint, filled: book.loaded && book.totalMl > 0)
+          VStack(alignment: .leading, spacing: 2) {
+            Text(String(localized: "water.card.title"))
+              .font(.system(size: 17, weight: .semibold))
+              .foregroundStyle(DS.Color.foreground.swiftUI)
+            Text(verbatim: book.loaded
+              ? "\(Water.bigValue(totalMl: book.totalMl, unit)) / \(Water.targetLabel(target, unit))" : "—")
+              .font(.custom("Menlo", size: 13, relativeTo: .footnote))
+              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+              .lineLimit(1)
+              .minimumScaleFactor(0.8)
+          }
+          Spacer(minLength: 0)
+        }
+        .contentShape(Rectangle())
+      }
+      .buttonStyle(.plain)
+      .accessibilityElement(children: .ignore)
+      .accessibilityLabel(Text(String(localized: "water.card.title")))
+      .accessibilityValue(Text(verbatim: book.loaded
+        ? WaterView.summaryValue(book.totalMl, target: target,
+            pct: Water.percent(totalMl: book.totalMl, targetMl: target), unit: unit) : ""))
+      .accessibilityAddTraits(.isButton)
+      if book.loaded {
+        Button {
+          taps += 1
+          Task { await feedback.add(Water.toMl(Double(step), unit), to: book, online: services.sync.online) }
+        } label: {
+          Text(verbatim: "+\(step) \(Water.unitLabel(unit))")
+            .font(.system(size: 15, weight: .semibold).monospacedDigit())
+            .foregroundStyle(DS.Color.foreground.swiftUI)
+            .padding(.horizontal, 14)
+            .frame(minHeight: 34)
+            .background(Capsule().strokeBorder(DS.Color.foreground.swiftUI.opacity(0.18), lineWidth: 1))
             .frame(minHeight: 44)
             .contentShape(Rectangle())
-          }
-          .buttonStyle(.plain)
-          .accessibilityElement(children: .ignore)
-          .accessibilityLabel(Text(String(localized: "water.card.title")))
-          .accessibilityValue(Text(verbatim: WaterView.summaryValue(book.totalMl, target: target, pct: pct, unit: unit)))
-          .accessibilityAddTraits(.isButton)
-
-          WaterProgressBar(fraction: pct / 100)
-
-          Text(String(localized: "water.quickAdd.unit \(Water.unitLabel(unit))"))
-            .font(DS.TextStyle.caption.weight(.semibold))
-            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-            .padding(.top, DS.Spacing.xs)
-          WaterQuickAddRow(book: book, unit: unit, feedback: feedback)
-          WaterFeedbackLine(feedback: feedback)
         }
+        .buttonStyle(TodayPressStyle())
+        .accessibilityLabel(Text(String(localized: "water.a11y.add \(String(step)) \(Water.unitLabel(unit))")))
+      }
+    }
+    .padding(.horizontal, DS.Spacing.md)
+    .padding(.vertical, 8)
+    .frame(minHeight: 60)
+  }
+
+  private func supplementsRow(_ book: SupplementBook) -> some View {
+    let tint = MascotRoomView.signalColor(.steps)
+    let done = !book.items.isEmpty && book.takenCount >= book.items.count
+    return NavigationLink(value: SupplementsRoute()) {
+      HStack(spacing: 12) {
+        glyph("pills.fill", tint: tint, filled: done)
+        VStack(alignment: .leading, spacing: 2) {
+          Text(String(localized: "supplements.title"))
+            .font(.system(size: 17, weight: .semibold))
+            .foregroundStyle(DS.Color.foreground.swiftUI)
+          if !book.items.isEmpty {
+            Text(String(localized: "supplements.row.value \(book.takenCount) \(book.items.count)"))
+              .font(DS.TextStyle.caption.monospacedDigit())
+              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          }
+        }
+        Spacer(minLength: 0)
+        Image(systemName: "chevron.right")
+          .font(.caption.weight(.semibold))
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          .accessibilityHidden(true)
+      }
+      .padding(.horizontal, DS.Spacing.md)
+      .padding(.vertical, 8)
+      .frame(minHeight: 60)
+      .contentShape(Rectangle())
+    }
+    .buttonStyle(TodayPressStyle(scale: 0.98))
+  }
+
+  private func glyph(_ symbol: String, tint: Color, filled: Bool) -> some View {
+    Image(systemName: symbol)
+      .font(.system(size: 14, weight: .semibold))
+      .foregroundStyle(tint)
+      .frame(width: 34, height: 34)
+      .background(Circle().fill(tint.opacity(filled ? 0.2 : 0.1)))
+      .accessibilityHidden(true)
+  }
+}
+
+/// Lối tắt của phân đoạn Kế hoạch ăn: đi chợ ("còn N món") và thư viện thực
+/// phẩm — một thẻ danh sách (thiết kế lại 13/10; RN đặt cả thư viện trong tab).
+struct PlanShortcuts: View {
+  let userId: String
+  let grocery: GroceryBook?
+  let foods: FoodLibraryBook?
+
+  var body: some View {
+    VStack(spacing: 0) {
+      if let grocery {
+        GroceryRow(book: grocery, plain: true)
+        Divider().padding(.leading, 58).opacity(0.6)
+      }
+      NavigationLink(value: FoodsRoute(userId: userId)) {
+        HStack(spacing: 12) {
+          Image(systemName: "carrot.fill")
+            .font(.system(size: 14, weight: .semibold))
+            .foregroundStyle(MascotRoomView.signalColor(.steps))
+            .frame(width: 34, height: 34)
+            .background(Circle().fill(MascotRoomView.signalColor(.steps).opacity(0.12)))
+            .accessibilityHidden(true)
+          VStack(alignment: .leading, spacing: 2) {
+            Text(String(localized: "nc.myFoods"))
+              .font(.system(size: 17, weight: .semibold))
+              .foregroundStyle(DS.Color.foreground.swiftUI)
+            Text(String(localized: "nc.myFoods.sub"))
+              .font(DS.TextStyle.caption)
+              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          }
+          Spacer(minLength: 0)
+          Image(systemName: "chevron.right")
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .accessibilityHidden(true)
+        }
+        .padding(.horizontal, DS.Spacing.md)
+        .padding(.vertical, 8)
+        .frame(minHeight: 60)
+        .contentShape(Rectangle())
+      }
+      .buttonStyle(TodayPressStyle(scale: 0.98))
+    }
+    .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous))
+    .todayCard(radius: DS.Radius.xl)
+  }
+}
+
+/// Nhãn chữ + biểu tượng, hoặc chỉ biểu tượng (nút mang nhãn VoiceOver riêng).
+private struct AdaptiveLabelStyle: LabelStyle {
+  let iconOnly: Bool
+
+  func makeBody(configuration: Configuration) -> some View {
+    if iconOnly {
+      configuration.icon
+    } else {
+      HStack(spacing: 6) {
+        configuration.icon
+        configuration.title
       }
     }
   }

@@ -62,6 +62,53 @@ extension View {
   func todayEntrance(_ order: Int) -> some View {
     modifier(TodayEntrance(order: order))
   }
+
+  /// Lớp che vùng thanh trạng thái cho trang ẩn thanh điều hướng (Hôm nay, Dinh
+  /// dưỡng): không có nó, nội dung cuộn chạy thẳng dưới giờ và Dynamic Island
+  /// (chữ đè chữ). Kính trong (iOS 26) tắt dần xuống dưới; máy cũ dùng
+  /// material mỏng; Reduce Transparency → nền đặc.
+  func statusBarScrim() -> some View {
+    modifier(StatusBarScrim())
+  }
+}
+
+private struct StatusBarScrim: ViewModifier {
+  @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+  /// Chiều cao vùng thanh trạng thái, đọc từ nội dung (một `GeometryReader` đã
+  /// bỏ qua vùng an toàn thì đọc ra 0).
+  @State private var top: CGFloat = 0
+
+  func body(content: Content) -> some View {
+    content
+      .background {
+        GeometryReader { g in
+          Color.clear
+            .onAppear { top = g.safeAreaInsets.top }
+            .onChange(of: g.safeAreaInsets.top) { _, t in top = t }
+        }
+      }
+      .overlay(alignment: .top) {
+        Group {
+          if reduceTransparency {
+            Rectangle().fill(DS.Color.background.swiftUI)
+          } else if #available(iOS 26.0, *) {
+            // Kính TRONG (chủ dự án, 13/10): không phủ màu giấy, chỉ khúc xạ
+            // phần nội dung đi qua dưới giờ.
+            Rectangle().fill(.clear).glassEffect(.clear, in: Rectangle())
+          } else {
+            Rectangle().fill(.ultraThinMaterial)
+          }
+        }
+        .frame(height: top + 18)
+        .mask(
+          LinearGradient(
+            stops: [.init(color: .black, location: 0), .init(color: .black, location: 0.72), .init(color: .clear, location: 1)],
+            startPoint: .top, endPoint: .bottom))
+        .ignoresSafeArea(edges: .top)
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+      }
+  }
 }
 
 private struct TodayCardStyle: ViewModifier {
