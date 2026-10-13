@@ -47,4 +47,33 @@ struct BarcodeLookupGoldenTests {
     let body: JSONValue = .object(["status": .string("1"), "product": .object(["product_name": .string("x")])])
     #expect(BarcodeLookup.parse(body, ok: true, code: "1", lang: "en") == nil)
   }
+
+  /// Luật native (khác RN, có chủ ý): thiếu `serving_quantity` thì 100 g chứ
+  /// không phải cả gói; có `serving_quantity` thì như RN.
+  @Test func nativeDefaultsToHundredGramsNotThePackage() throws {
+    let jar: JSONValue = .object([
+      "status": .number(1),
+      "product": .object([
+        "product_name": .string("Nutella"), "product_quantity": .number(400),
+        "nutriments": .object(["energy-kcal_100g": .number(539), "fat_100g": .number(30.9)]),
+      ]),
+    ])
+    let rn = try #require(BarcodeLookup.parse(jar, ok: true, code: "3017620422003", lang: "en"))
+    #expect(rn.servingG == 400 && rn.kcal == 2156, "luật RN giữ nguyên")
+    let native = try #require(
+      BarcodeLookup.parse(jar, ok: true, code: "3017620422003", lang: "en", packageAsServing: false))
+    #expect(native.servingG == 100)
+    #expect(native.kcal == 539)
+    #expect(native.fatG == 31)
+
+    let withServing: JSONValue = .object([
+      "status": .number(1),
+      "product": .object([
+        "product_name": .string("Bar"), "serving_quantity": .number(40), "product_quantity": .number(400),
+        "nutriments": .object(["energy-kcal_100g": .number(400)]),
+      ]),
+    ])
+    let n2 = try #require(BarcodeLookup.parse(withServing, ok: true, code: "1", lang: "en", packageAsServing: false))
+    #expect(n2.servingG == 40 && n2.kcal == 160)
+  }
 }

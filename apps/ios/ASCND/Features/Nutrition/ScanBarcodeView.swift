@@ -207,7 +207,8 @@ struct ScanBarcodeView: View {
       let (data, response) = try await URLSession.shared.data(from: url)
       let ok = (response as? HTTPURLResponse).map { (200..<300).contains($0.statusCode) } ?? false
       let body = try? JSONDecoder().decode(JSONValue.self, from: data)
-      return BarcodeLookup.parse(body, ok: ok, code: code, lang: lang)
+      // Thiếu khẩu phần → 100 g, không phải cả gói (khác RN, NATIVE_IMPROVEMENTS).
+      return BarcodeLookup.parse(body, ok: ok, code: code, lang: lang, packageAsServing: false)
     } catch {
       return nil
     }

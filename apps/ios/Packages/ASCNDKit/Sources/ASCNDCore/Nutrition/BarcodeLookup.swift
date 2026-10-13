@@ -39,7 +39,15 @@ public enum BarcodeLookup {
   }
 
   /// Đọc trả lời (`res.json()`). `ok == false` (HTTP lỗi) → `nil`.
-  public static func parse(_ body: JSONValue?, ok: Bool, code: String, lang: String) -> Food? {
+  ///
+  /// `packageAsServing`: `true` = luật RN (thiếu `serving_quantity` thì CẢ GÓI
+  /// `product_quantity` là một khẩu phần — golden khoá đúng luật này); `false` =
+  /// luật của app native (thiết kế lại 13/10, NATIVE_IMPROVEMENTS): thiếu khẩu
+  /// phần thì 100 g — số của nhãn là trên 100 g, cả hũ 400 g Nutella thành một
+  /// lần thêm 2.156 kcal là sai cho gần như mọi người.
+  public static func parse(
+    _ body: JSONValue?, ok: Bool, code: String, lang: String, packageAsServing: Bool = true
+  ) -> Food? {
     guard ok, let body else { return nil }
     // `json.status !== 1`: so sánh nghiêm ngặt — chuỗi "1" không phải 1.
     guard case .number(let status)? = body["status"], status == 1 else { return nil }
@@ -49,7 +57,7 @@ public enum BarcodeLookup {
     let servingG: Double
     if let sq = p["serving_quantity"], JS.truthyValue(sq) {
       servingG = JS.number(sq)
-    } else if let pq = p["product_quantity"], JS.truthyValue(pq) {
+    } else if packageAsServing, let pq = p["product_quantity"], JS.truthyValue(pq) {
       servingG = JS.number(pq)
     } else {
       servingG = 100

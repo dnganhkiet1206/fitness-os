@@ -4,39 +4,23 @@ import SwiftUI
 
 // Chất liệu và chuyển động của tab Hôm nay (#527).
 //
-// Tối giản: sau mọi thẻ chỉ có MỘT vầng sáng rất nhạt ở đầu trang, mang màu
-// của việc kế tiếp (cùng màu nút trong bong bóng Koa) — đủ để kính có thứ làm
-// nhoè, không thành bảng màu. Xong hết việc thì vầng sáng tắt về nền giấy.
+// Nền là giấy phẳng như mọi màn (bỏ vầng sáng màu, 13/10).
 // Kính là của hệ thống (`glassEffect` iOS 26, material ở máy cũ), không tự vẽ.
 //
-// Trợ năng: Reduce Transparency → nền đặc, không vầng sáng; Reduce Motion →
-// đổi màu tức thì thay vì chuyển dần.
+// Trợ năng: Reduce Transparency → thẻ nền đặc.
 
-/// Vầng sáng sau trang. `accent`: màu việc kế tiếp; `nil` = chỉ nền.
+/// Nền trang của Hôm nay / Dinh dưỡng: GIẤY PHẲNG, cùng màu với mọi màn khác
+/// (`ascndPage`). Trước đây có một quầng màu đổi theo việc kế tiếp (tím / cam
+/// / xanh…) và Dinh dưỡng luôn cam — chủ dự án báo "tone giấy chỗ có chỗ
+/// không, lúc hiện lúc không" (13/10, B). Màu tín hiệu chỉ còn ở ống, vòng và
+/// nút — nơi nó mang nghĩa. `accent` giữ lại cho nơi gọi, không còn vẽ.
 struct TodayAmbient: View {
   let accent: MascotRules.Quest?
 
-  @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
-  @Environment(\.accessibilityReduceMotion) private var reduceMotion
-  @Environment(\.colorScheme) private var scheme
-
   var body: some View {
-    ZStack(alignment: .top) {
-      DS.Color.background.swiftUI
-      if !reduceTransparency, let accent {
-        GeometryReader { geo in
-          Ellipse()
-            .fill(MascotRoomView.signalColor(accent).opacity(scheme == .dark ? 0.22 : 0.16))
-            .frame(width: geo.size.width * 1.3, height: geo.size.height * 0.55)
-            .position(x: geo.size.width * 0.5, y: geo.size.height * 0.08)
-            .blur(radius: 90)
-        }
-        .transition(.opacity)
-      }
-    }
-    .ignoresSafeArea()
-    .animation(reduceMotion ? nil : .smooth(duration: 1.0), value: accent)
-    .accessibilityHidden(true)
+    DS.Color.background.swiftUI
+      .ignoresSafeArea()
+      .accessibilityHidden(true)
   }
 }
 
