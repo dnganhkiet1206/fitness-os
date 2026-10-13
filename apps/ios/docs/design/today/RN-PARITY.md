@@ -69,12 +69,12 @@ Status:
 | Row | Value | Destination | RN source |
 |---|---|---|---|
 | Biometrics | `hr bpm · hrv ms` from today's latest sample, else "—" | `BiometricsView` | `BiometricsCard` |
-| Training this week | `loadComparison(acwr)`: "+8%" or "−12%" against the 4-week habit; "—" without ACWR | readiness details (the ACWR tile) | `training-card.ts` (`loadComparison`), already ported in `ReadinessCard` |
+| Training this week | `loadComparison(acwr)`: "+8%" or "−12%" against the 4-week habit; "—" without ACWR | `TrainingCardView` — the full RN training card (B, N3) | `TrainingCard` (`today-widgets-2.tsx:400`) + `training-card.ts`, `training-week.ts`, `goal-training.ts` → `TrainingCard` / `TrainingCardBook` (Core, `training-card-golden.json`) |
 | Readiness trend | `avg N` (7 days), "—" under 2 days | trend screen. **New:** an empty state instead of a blank page under 2 days; RN hides the card | `ReadinessTrendCard` |
 | Weekly review | — | `WeeklyReviewView` | Assistant tab in RN |
 | Buddy room | `Lv N` | `MascotRoomView` | Koa row in RN |
 
-**Not ported:** RN's full training card (weekly volume bars, ACWR bar with bands, `weeklyVolumes`). The row only reports the comparison. Port `training-card.ts` as its own screen before adding a chart here.
+**Training card (N3, B):** the row opens the full card as its own screen, in RN order: the verdict sentence tinted by zone and what to do about it, the two load figures it compares (tonnage printed small under each), strength days against the goal, the stale note past 7 days, the 8-week volume chart with the dashed habit line drawn over the bars, and the latest session (tap → history). The "?" opens `TrainingExplainerSheet` (`training-explainer.tsx`). RN at fac9ac2 has no ACWR band bar on this card any more (the chart replaced it), so none is drawn.
 
 ## Audit of RN Today features (2026-10-12)
 
@@ -107,7 +107,6 @@ The whole of RN `(tabs)/index.tsx` @ fac9ac2 (14 widgets, hero deck, edit mode, 
 ### Still missing (port as their own tasks)
 
 - `ActivityRingsCard`: Move kcal (Health `active_kcal`, otherwise an estimate from sessions) and exercise minutes. Native has the inputs (`HealthSync`, `SessionEnergy`) but no screen.
-- `TrainingCard`: weekly volume bars and the ACWR band bar (`training-card.ts`). Today only shows `loadComparison`.
 - `PeekHost`: Koa peeking from behind a card when a quest completes (`allowPeek` budget). Native has no peek; the tube rise and done-check bounce stand in.
 - `SleepHero` stages and quality on Today: the Sleep row shows duration only.
 

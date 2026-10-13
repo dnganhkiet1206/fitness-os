@@ -412,6 +412,12 @@ final class AppServices {
     rows.map { ReadinessTrendBook(userId: userId, today: today, store: $0) }
   }
 
+  /// Thẻ tập luyện (#527 N3, `TrainingCard` của Hôm nay): các buổi 56 ngày và
+  /// buổi gần nhất, qua kho hàng chung.
+  func makeTrainingCard(userId: String) -> TrainingCardBook? {
+    rows.map { TrainingCardBook(userId: userId, store: $0, in: .current) }
+  }
+
   /// Nhật ký bữa ăn (#527 Phase 3 · 3.10): đọc một ngày; xoá / hoàn tác / sửa
   /// khẩu phần thẳng server (chỉ online, như RN) rồi dựng lại `daily_logs`.
   /// `date`: ngày đầu (`diary?date=` của deep link); `nil` = hôm nay.

@@ -10,6 +10,10 @@ done
 for f in load-progression user-state goal-training mascot-message; do
   git show "fac9ac2:native/src/lib/$f.ts" > "lib/$f.ts"
 done
+# Thẻ tập luyện (#527 N3): `strengthDaysIn` (`training-week.ts`) cần `totalReps` của `session-load.ts`.
+for f in training-week session-load; do
+  git show "fac9ac2:native/src/lib/$f.ts" > "lib/$f.ts"
+done
 # Phòng linh vật (#527 Phase 7): `mascot-room.ts` chỉ lấy kiểu `AppLang`.
 echo "export type AppLang = 'vi' | 'en' | 'es';" > lib/i18n.ts
 # Cộng đồng (#527): `time-ago.ts` chỉ cần `getLocale` cho nhánh "> 7 ngày" (ngày

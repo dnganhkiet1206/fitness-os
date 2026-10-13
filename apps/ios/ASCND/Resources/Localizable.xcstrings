@@ -41678,6 +41678,1547 @@
      }
     }
    }
+  },
+  "tc.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Training"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tập Luyện"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Entrenamiento"
+     }
+    }
+   }
+  },
+  "tc.pr": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "New PR"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Kỷ lục mới"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nuevo récord"
+     }
+    }
+   }
+  },
+  "tc.help.a11y": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Explain the training card"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Giải thích thẻ tập luyện"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Explicar la tarjeta de entrenamiento"
+     }
+    }
+   }
+  },
+  "tc.empty": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "No workouts logged yet. Record one to see volume and the weekly comparison."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chưa có buổi tập nào được ghi. Ghi một buổi để thấy khối lượng và so sánh theo tuần."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Aún no hay entrenamientos registrados. Registra uno para ver el volumen y la comparación semanal."
+     }
+    }
+   }
+  },
+  "tc.verdict.same": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "This week matches your habit exactly"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tuần này đúng bằng thói quen của bạn"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Esta semana coincide exactamente con tu hábito"
+     }
+    }
+   }
+  },
+  "tc.verdict.heavier %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "This week is %lld%% heavier than your habit"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tuần này nặng hơn %lld%% so với thói quen"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Esta semana es un %lld%% más pesada que tu hábito"
+     }
+    }
+   }
+  },
+  "tc.verdict.lighter %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "This week is %lld%% lighter than your habit"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tuần này nhẹ hơn %lld%% so với thói quen"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Esta semana es un %lld%% más ligera que tu hábito"
+     }
+    }
+   }
+  },
+  "tc.advice.detraining": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "A long gap costs you your base. Come back gradually — do not try to make up the missed weeks."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nghỉ lâu làm mất nền thể lực. Quay lại từ từ — đừng tập bù cho những tuần đã nghỉ."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Un parón largo te hace perder la base. Vuelve poco a poco: no intentes recuperar las semanas perdidas."
+     }
+    }
+   }
+  },
+  "tc.advice.low": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Lighter than usual. One easier week is normal, and useful."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nhẹ hơn thường lệ. Một tuần giảm tải là bình thường và có ích."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Más ligera de lo habitual. Una semana más suave es normal y útil."
+     }
+    }
+   }
+  },
+  "tc.advice.optimal": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Progressing at a sensible rate. Keep this up."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đang tăng ở mức hợp lý. Cứ giữ nhịp này."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Progresas a un ritmo sensato. Sigue así."
+     }
+    }
+   }
+  },
+  "tc.advice.elevated": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ramping up quickly. Hold this volume next week rather than adding more."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tăng hơi nhanh. Tuần tới nên giữ nguyên khối lượng thay vì tăng tiếp."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Estás subiendo rápido. La próxima semana mantén este volumen en vez de añadir más."
+     }
+    }
+   }
+  },
+  "tc.advice.spike": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "A sharp jump is when injuries happen. Ease off next week."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tăng vọt là lúc dễ chấn thương nhất. Tuần tới nên giảm tải."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Un salto brusco es cuando llegan las lesiones. Afloja la próxima semana."
+     }
+    }
+   }
+  },
+  "tc.needHistory": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "About four weeks of history are needed before this week can be compared to your habit."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cần khoảng 4 tuần ghi chép để so được tuần này với thói quen của bạn."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hacen falta unas cuatro semanas de historial para comparar esta semana con tu hábito."
+     }
+    }
+   }
+  },
+  "tc.week.label": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Last 7 days"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "7 ngày qua"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Últimos 7 días"
+     }
+    }
+   }
+  },
+  "tc.sessions.one": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "1 session"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "1 buổi"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "1 sesión"
+     }
+    }
+   }
+  },
+  "tc.sessions %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld sessions"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld buổi"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld sesiones"
+     }
+    }
+   }
+  },
+  "tc.habit.label": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Habit · 4 weeks"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Thói quen · 4 tuần"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hábito · 4 semanas"
+     }
+    }
+   }
+  },
+  "tc.habit.sub": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "per week on average"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "trung bình mỗi tuần"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "de media por semana"
+     }
+    }
+   }
+  },
+  "tc.strength.label": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Strength days · last 7"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ngày tập cơ · 7 ngày qua"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Días de fuerza · últimos 7"
+     }
+    }
+   }
+  },
+  "tc.stale %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Last session was %lld days ago — that is why the last 7 days is zero."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Buổi gần nhất đã %lld ngày — vì thế 7 ngày qua bằng 0."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "La última sesión fue hace %lld días: por eso los últimos 7 días están en cero."
+     }
+    }
+   }
+  },
+  "tc.trend.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Volume per week"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Khối lượng mỗi tuần"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Volumen por semana"
+     }
+    }
+   }
+  },
+  "tc.trend.habit %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "habit %@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "thói quen %@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "hábito %@"
+     }
+    }
+   }
+  },
+  "tc.trend.start": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "8 weeks ago"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "8 tuần trước"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "hace 8 semanas"
+     }
+    }
+   }
+  },
+  "tc.trend.now": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "this week"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "tuần này"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "esta semana"
+     }
+    }
+   }
+  },
+  "tc.latest.a11y": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "See all logged workouts"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Xem tất cả buổi tập đã ghi"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ver todos los entrenamientos registrados"
+     }
+    }
+   }
+  },
+  "tc.latest.workout": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Workout"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Buổi tập"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Entrenamiento"
+     }
+    }
+   }
+  },
+  "tc.when.today": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Today"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hôm nay"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hoy"
+     }
+    }
+   }
+  },
+  "tc.when.yesterday": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Yesterday"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hôm qua"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ayer"
+     }
+    }
+   }
+  },
+  "tc.when.ago %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld days ago"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld ngày trước"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "hace %lld días"
+     }
+    }
+   }
+  },
+  "tc.sets.one": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "1 set"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "1 set"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "1 serie"
+     }
+    }
+   }
+  },
+  "tc.sets %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld sets"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld set"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld series"
+     }
+    }
+   }
+  },
+  "tc.effort %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "effort %@/10"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "gắng sức %@/10"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "esfuerzo %@/10"
+     }
+    }
+   }
+  },
+  "tx.lede": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "This card answers one question: are you ramping up too fast for yourself? Everything else on it is the evidence for that answer."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Thẻ này trả lời một câu: tuần này bạn có đang tăng tải quá nhanh so với chính mình không. Mọi thứ còn lại trên thẻ là bằng chứng cho câu trả lời đó."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Esta tarjeta responde a una pregunta: ¿estás subiendo la carga demasiado rápido para ti? Todo lo demás es la evidencia de esa respuesta."
+     }
+    }
+   }
+  },
+  "tx.top.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "The sentence at the top"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Câu ở trên cùng"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "La frase de arriba"
+     }
+    }
+   }
+  },
+  "tx.top.body1": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "\"This week is 70% heavier than your habit\" compares the two numbers directly beneath it: your LOAD over the last 7 days, against an average week from your last 4. You can do the division yourself — 18,900 against 11,100 is 70% more. Nothing is hidden. (The kg printed small under each is tonnage, a different quantity — see the glossary.)"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "\"Tuần này nặng hơn 70% so với thói quen\" là cách so hai con số ngay bên dưới nó: TẢI của 7 ngày qua, và một tuần trung bình của bạn trong 4 tuần gần nhất. Bạn tự chia được — 18.900 so với 11.100 là hơn 70%. Không có gì giấu bên trong. (Số kg in nhỏ bên dưới mỗi ô là tổng khối lượng, một đại lượng khác — xem phần từ ngữ.)"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "«Esta semana es un 70% más pesada que tu hábito» compara los dos números que tiene justo debajo: tu CARGA de los últimos 7 días frente a una semana media de tus últimas 4. Puedes hacer la división tú mismo: 18.900 frente a 11.100 es un 70% más. No hay nada oculto. (Los kg en pequeño bajo cada uno son el tonelaje, otra magnitud: mira el glosario.)"
+     }
+    }
+   }
+  },
+  "tx.top.body2": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Against you, not against anybody else. A beginner and an athlete can both read 1.2 — both are progressing sensibly relative to their own base."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "So với chính bạn, không so với ai khác. Một người mới tập và một vận động viên có thể cùng ra 1.2 — nghĩa là cả hai đều đang tăng ở mức hợp lý so với nền của chính họ."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Contra ti, no contra nadie más. Un principiante y un atleta pueden marcar ambos 1.2: los dos progresan con sensatez respecto a su propia base."
+     }
+    }
+   }
+  },
+  "tx.habit.term": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Habit · 4 weeks"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Thói quen · 4 tuần"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hábito · 4 semanas"
+     }
+    }
+   }
+  },
+  "tx.habit.body": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "The 28-day total divided by four. Four weeks rather than one, because a sick week or a holiday should not redefine what your normal is."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tổng 28 ngày chia cho 4. Dùng 4 tuần chứ không phải 1 vì một tuần ốm hay một tuần đi chơi không nên định nghĩa lại thói quen của bạn."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "El total de 28 días dividido entre cuatro. Cuatro semanas y no una, porque una semana enfermo o de vacaciones no debería redefinir lo que es normal para ti."
+     }
+    }
+   }
+  },
+  "tx.acwr.name": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "The technical name for this ratio is ACWR — the acute:chronic workload ratio — in case you have met it elsewhere."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Con số kỹ thuật của tỉ lệ này gọi là ACWR (acute:chronic workload ratio) — nếu bạn từng đọc ở đâu đó thì đây chính là nó."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "El nombre técnico de esta proporción es ACWR (acute:chronic workload ratio), por si lo has visto en otro sitio."
+     }
+    }
+   }
+  },
+  "tx.chart.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "The 8-week chart"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Biểu đồ 8 tuần"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "El gráfico de 8 semanas"
+     }
+    }
+   }
+  },
+  "tx.chart.body1": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Each bar is one week’s total volume, the rightmost being this week. The dashed line is the same \"habit\" the sentence above compares against — so you can see at a glance whether this week is above your baseline, and in what shape."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mỗi cột là tổng khối lượng của một tuần, cột ngoài cùng bên phải là tuần này. Đường nét đứt chính là \"thói quen\" mà câu ở trên đang so — nên bạn thấy được ngay tuần này cao hơn hay thấp hơn nền của mình, và cao hơn theo kiểu nào."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cada barra es el volumen total de una semana; la de más a la derecha es esta semana. La línea discontinua es el mismo «hábito» con el que compara la frase de arriba, así que ves de un vistazo si esta semana está por encima de tu base y de qué forma."
+     }
+    }
+   }
+  },
+  "tx.chart.body2": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "This is what a single number cannot say: 70% heavier might be the fourth week of a deliberate build, or one wild session after a fortnight off. Those are very different, and the chart tells them apart."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đây là thứ mà một con số không nói được: nặng hơn 70% có thể là tuần thứ tư của một chu kỳ tăng dần có chủ đích, cũng có thể là một buổi quá đà sau hai tuần nghỉ. Hai chuyện đó rất khác nhau, và nhìn biểu đồ là phân biệt được."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Esto es lo que un solo número no puede decir: un 70% más puede ser la cuarta semana de una subida planificada o una sesión desmedida tras dos semanas sin entrenar. Son cosas muy distintas, y el gráfico las distingue."
+     }
+    }
+   }
+  },
+  "tx.levels.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "The ratio’s five levels"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Năm mức của tỉ lệ"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Los cinco niveles de la proporción"
+     }
+    }
+   }
+  },
+  "tx.zone.detraining": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Detraining — losing your base"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tập quá thưa — đang mất nền"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Desentrenamiento: estás perdiendo la base"
+     }
+    }
+   }
+  },
+  "tx.zone.low": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Lighter than your habit"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hơi ít so với thói quen"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Más ligero que tu hábito"
+     }
+    }
+   }
+  },
+  "tx.zone.optimal": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Optimal — steady progression"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Vừa sức — tăng đều"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Óptimo: progresión constante"
+     }
+    }
+   }
+  },
+  "tx.zone.elevated": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ramping fast"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tăng nhanh"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Subiendo rápido"
+     }
+    }
+   }
+  },
+  "tx.zone.spike": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Spiking — injury risk"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nhảy vọt — nguy cơ chấn thương"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Pico: riesgo de lesión"
+     }
+    }
+   }
+  },
+  "tx.bothEnds": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Both ends are red. Training too little is flagged as well as too much — losing your base is what makes coming back risky."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cả hai đầu đều đỏ. Tập quá ít cũng bị cảnh báo chứ không riêng tập quá nhiều — mất nền thể lực là thứ khiến bạn dễ chấn thương khi quay lại."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Los dos extremos están en rojo. Se avisa tanto de entrenar demasiado poco como demasiado: perder la base es lo que hace arriesgada la vuelta."
+     }
+    }
+   }
+  },
+  "tx.latest.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "The latest session"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Buổi gần nhất"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "La última sesión"
+     }
+    }
+   }
+  },
+  "tx.latest.when.term": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Today / 5 days ago"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hôm nay / 5 ngày trước"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hoy / hace 5 días"
+     }
+    }
+   }
+  },
+  "tx.latest.when.body": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "How long ago the most recent session was. Past seven days it turns amber and the card says so, because at that point every \"7 days\" figure below is legitimately zero rather than broken."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Buổi gần nhất được ghi cách đây bao lâu. Nếu quá 7 ngày, chữ chuyển sang vàng và thẻ nói rõ — vì lúc đó mọi con số \"7 ngày\" bên dưới đều bằng 0 một cách chính đáng, chứ không phải hỏng."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hace cuánto fue la sesión más reciente. Pasados siete días se vuelve ámbar y la tarjeta lo dice, porque entonces cada cifra de «7 días» es cero con razón, no por un fallo."
+     }
+    }
+   }
+  },
+  "tx.latest.sets.term": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "12 sets"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "12 set"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "12 series"
+     }
+    }
+   }
+  },
+  "tx.latest.sets.body": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "How many sets were logged in that session. Warm-ups count only if you logged them."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Số set đã ghi trong buổi đó. Khởi động chỉ được tính nếu bạn có ghi lại."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cuántas series se registraron en esa sesión. El calentamiento solo cuenta si lo registraste."
+     }
+    }
+   }
+  },
+  "tx.latest.effort.term": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Effort 8/10"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Gắng sức 8/10"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Esfuerzo 8/10"
+     }
+    }
+   }
+  },
+  "tx.latest.effort.body": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "How hard the session was, 1–10 (elsewhere called RPE). 8 means about two reps left in the tank, 10 means nothing left. You set this; the app cannot measure it."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mức gắng sức của cả buổi, thang 1–10 (nơi khác gọi là RPE). 8 nghĩa là còn khoảng 2 rep nữa mới hết sức, 10 là không còn gì. Đây là số bạn tự chấm, app không đo được."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Lo dura que fue la sesión, del 1 al 10 (en otros sitios, RPE). 8 significa que te quedaban unas dos repeticiones; 10, que no te quedaba nada. Lo pones tú; la app no puede medirlo."
+     }
+    }
+   }
+  },
+  "tx.latest.volume.term": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "4,200 kg"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "4.200 kg"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "4.200 kg"
+     }
+    }
+   }
+  },
+  "tx.latest.volume.body": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "NOT the weight you lifted. It is tonnage: weight × reps, summed over every set. 60kg × 10 reps × 3 sets = 1,800 kg. Numbers in the thousands are normal. It measures what you LIFTED, so a session of pull-ups or press-ups comes to 0 — which is why it is not the number the week-versus-habit comparison uses."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "KHÔNG phải mức tạ bạn nâng. Đây là tổng khối lượng: cộng (tạ × số rep) của từng set. 60kg × 10 rep × 3 set = 1.800 kg. Nên số hàng nghìn là bình thường. Nó đo thứ bạn NÂNG, nên một buổi hít xà hay chống đẩy ra 0 — đó là lý do nó không phải con số dùng để so tuần này với thói quen."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "NO es el peso que levantaste. Es el tonelaje: peso × repeticiones, sumado en cada serie. 60 kg × 10 repeticiones × 3 series = 1.800 kg. Las cifras de miles son normales. Mide lo que LEVANTASTE, así que una sesión de dominadas o flexiones da 0: por eso no es el número que usa la comparación de la semana con tu hábito."
+     }
+    }
+   }
+  },
+  "tx.latest.load.term": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Load 2,400"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tải 2.400"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Carga 2.400"
+     }
+    }
+   }
+  },
+  "tx.latest.load.body": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "The number the week-versus-habit comparison uses. Session effort × total reps: effort 8 × 300 reps = 2,400. It measures what the session cost YOUR BODY, so a bodyweight session still has a load — unlike tonnage, which is zero without weights. It has no unit and needs none: it only means anything against your own recent sessions."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Con số dùng để so tuần này với thói quen. Bằng mức gắng sức của buổi nhân tổng số rep: gắng sức 8 × 300 rep = 2.400. Nó đo buổi tập tốn gì với CƠ THỂ bạn, nên một buổi tay không vẫn có tải — khác với tổng khối lượng, vốn bằng 0 khi không có tạ. Không có đơn vị, và cũng không cần: nó chỉ có nghĩa khi so với chính các buổi gần đây của bạn."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "El número que usa la comparación de la semana con tu hábito. Esfuerzo de la sesión × repeticiones totales: esfuerzo 8 × 300 repeticiones = 2.400. Mide lo que la sesión le costó a TU CUERPO, así que una sesión con tu propio peso también tiene carga, a diferencia del tonelaje, que es cero sin pesas. No tiene unidad ni la necesita: solo significa algo frente a tus propias sesiones recientes."
+     }
+    }
+   }
+  },
+  "tx.latest.noload.term": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "A session with no load"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Buổi không có tải"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Una sesión sin carga"
+     }
+    }
+   }
+  },
+  "tx.latest.noload.body": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sessions imported from a watch (a run, a ride) have no effort rating and no reps, so the app does not compute a load for them — and does not treat them as zero. They are dropped from both sides of the comparison, because \"not measurable\" is not the same as \"cost nothing\"."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Buổi nhập từ đồng hồ (chạy bộ, đạp xe) không có mức gắng sức bạn tự chấm và cũng không có rep, nên app KHÔNG tính tải cho nó — và không coi nó bằng 0. Nó được bỏ khỏi cả hai vế của phép so, vì \"không đo được\" khác với \"tốn 0\"."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Las sesiones importadas de un reloj (una carrera, una salida en bici) no tienen esfuerzo ni repeticiones, así que la app no les calcula carga, y tampoco las cuenta como cero. Se quitan de los dos lados de la comparación, porque «no medible» no es lo mismo que «no costó nada»."
+     }
+    }
+   }
+  },
+  "tx.latest.strength.term": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Strength days 2/3"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ngày tập cơ 2/3"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Días de fuerza 2/3"
+     }
+    }
+   }
+  },
+  "tx.latest.strength.body": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "How many DAYS in the last 7 you did strength work, and what your goal aims at. Counted in days, not sessions: two sessions on the same day is still one day. The floor is 2 days a week — the WHO recommendation for every adult, including while training for endurance; a strength or muscle-gain goal aims at 3. A run imported from a watch does not count here, because it is not strength work."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Số NGÀY trong 7 ngày qua bạn có tập cơ, và mức mục tiêu của bạn nhắm tới. Đếm theo ngày chứ không theo buổi: hai buổi cùng một ngày vẫn là một ngày. Mức tối thiểu là 2 ngày/tuần — khuyến nghị của WHO cho mọi người lớn, kể cả khi bạn đang tập vì sức bền; mục tiêu sức mạnh hoặc tăng cơ nhắm tới 3. Buổi chạy nhập từ đồng hồ không tính vào đây vì nó không phải tập cơ."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cuántos DÍAS de los últimos 7 hiciste trabajo de fuerza, y a qué apunta tu objetivo. Se cuentan días, no sesiones: dos sesiones el mismo día siguen siendo un día. El mínimo es 2 días por semana, la recomendación de la OMS para todo adulto, también si entrenas resistencia; un objetivo de fuerza o de ganar músculo apunta a 3. Una carrera importada de un reloj no cuenta aquí, porque no es trabajo de fuerza."
+     }
+    }
+   }
+  },
+  "tx.markers.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Two more markers"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hai dấu hiệu còn lại"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Dos indicadores más"
+     }
+    }
+   }
+  },
+  "tx.pr.body": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "A session in the last 7 days hit a personal record on at least one lift."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Có một buổi trong 7 ngày qua đạt kỷ lục cá nhân ở ít nhất một bài."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Una sesión de los últimos 7 días batió un récord personal en al menos un ejercicio."
+     }
+    }
+   }
+  },
+  "tx.caveat": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Every number here comes from what you logged. A session you did not record does not exist to this card — the load falls even though you trained."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mọi con số ở đây tính từ những gì bạn đã ghi. Buổi tập không ghi thì không tồn tại với thẻ này — đà tập sẽ tụt dù bạn vẫn đang tập."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cada número sale de lo que registraste. Una sesión que no registraste no existe para esta tarjeta: la carga baja aunque hayas entrenado."
+     }
+    }
+   }
   }
  }
 }

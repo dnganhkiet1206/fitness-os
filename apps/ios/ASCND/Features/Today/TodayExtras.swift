@@ -37,6 +37,9 @@ struct TodayExtras<Plan: View>: View {
   @State private var challenges: WeeklyChallengesBook?
   @State private var weekly: WeeklyReviewBook?
   @State private var trend: ReadinessTrendBook?
+  /// Thẻ tập luyện đầy đủ (RN `TrainingCard`) — dựng khi chạm hàng lần đầu.
+  @State private var training: TrainingCardBook?
+  @State private var showsTraining = false
   /// Cân hôm nay cho hàng "Cân nặng" (`todo-card.tsx: weight → /log-weight`).
   @State private var weight: WeightLogger?
   @State private var showsWeight = false
@@ -190,6 +193,9 @@ struct TodayExtras<Plan: View>: View {
           .todayZoom("trend", in: zoom)
       }
     }
+    .navigationDestination(isPresented: $showsTraining) {
+      if let training { TrainingCardView(book: training, acwr: todayAcwr).todayZoom("load", in: zoom) }
+    }
     .navigationDestination(isPresented: $showsSleep) {
       if let sleepInsights {
         SleepInsightsView(book: sleepInsights, lang: services.preferences.lang).todayZoom("sleep", in: zoom)
@@ -233,6 +239,7 @@ struct TodayExtras<Plan: View>: View {
       Task {
         await reloadDay()
         await trend?.load()
+        await training?.load()
         await focusChecks()
       }
     }
@@ -263,6 +270,7 @@ struct TodayExtras<Plan: View>: View {
       challenges?.close()
       weekly?.close()
       trend?.close()
+      training?.close()
       weight?.close()
       todo?.close()
       ownWater?.close()
@@ -354,9 +362,19 @@ struct TodayExtras<Plan: View>: View {
         action: { showsSupplements = true }))
     }
     if readiness != nil {
+      // RN `TrainingCard`: chạm → thẻ đầy đủ (biểu đồ 8 tuần, ngày tập cơ, buổi
+      // gần nhất). Không có kho đọc (preview) thì vẫn mở thẻ sẵn sàng như trước.
       rows.append(.init(
         id: "load", title: String(localized: "today.more.training"), value: loadText,
-        action: { readinessSource = "load"; showsReadiness = true }))
+        action: {
+          if training == nil { training = services.makeTrainingCard(userId: userId) }
+          if training != nil {
+            showsTraining = true
+          } else {
+            readinessSource = "load"
+            showsReadiness = true
+          }
+        }))
     }
     if let trend {
       let avg = trend.stats.map { String(localized: "today.more.avg \(Int($0.average))") } ?? "—"
@@ -380,9 +398,15 @@ struct TodayExtras<Plan: View>: View {
     return MascotLine.line(TodayDay.mascotDay(s, hour: hour)).gap.map(TodayDay.quest)
   }
 
+  /// ACWR engine đã ghi cho hôm nay; chưa có → `nil`.
+  private var todayAcwr: Double? {
+    guard let readiness, case .ready(let day) = readiness.phase else { return nil }
+    return day.acwr
+  }
+
   /// "+8%" / "−12%" so với tuần thói quen; chưa có ACWR → "—".
   private var loadText: String {
-    guard let readiness, case .ready(let day) = readiness.phase, let acwr = day.acwr else { return "—" }
+    guard let acwr = todayAcwr else { return "—" }
     let c = ReadinessCard.loadComparison(acwr)
     return c.percent == 0 ? "0%" : "\(c.heavier ? "+" : "−")\(c.percent)%"
   }
