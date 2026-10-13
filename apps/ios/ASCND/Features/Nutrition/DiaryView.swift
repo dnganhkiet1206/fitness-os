@@ -228,11 +228,28 @@ struct DayMealsSection: View {
   @State private var notice: String?
   @State private var error: String?
   @State private var logging: LogMealRequest?
+  /// Bản ghi bữa đã đăng lên Cộng đồng; `nil` = chưa biết (chưa hiện lối chia sẻ).
+  @State private var shared: Set<String>?
+  @State private var sharing: ShareMealRequest?
 
   var body: some View {
     VStack(spacing: DS.Spacing.md) {
       content
       if let notice { undoBar(notice) }
+    }
+    .task(id: book.userId) { shared = await services.sharedPostSourceIds(userId: book.userId) }
+    .sheet(item: $sharing) { req in
+      NavigationStack {
+        CommunityShareRecipeScreen(mealId: req.mealId) {
+          sharing = nil
+          Task { shared = await services.sharedPostSourceIds(userId: book.userId) }
+        }
+        .toolbar {
+          ToolbarItem(placement: .cancellationAction) {
+            Button(String(localized: "common.cancel")) { sharing = nil }
+          }
+        }
+      }
     }
     // Bữa vừa lưu đi qua hàng đợi: hàng đợi vơi đi thì đọc lại ngày.
     .onChange(of: services.sync.pendingCount) { old, new in
@@ -341,7 +358,8 @@ struct DayMealsSection: View {
             onEdit: { editing = $0 },
             onDelete: { pendingItem = $0 },
             onDeleteGroup: { pendingGroup = g },
-            onAddTo: { logging = LogMealRequest(mealType: g.type) })
+            onAddTo: { logging = LogMealRequest(mealType: g.type) },
+            onShare: shareAction(g))
         }
         Button { logging = LogMealRequest(mealType: nil) } label: {
           Label(String(localized: "diary.addMeal"), systemImage: "plus")
@@ -372,7 +390,8 @@ struct DayMealsSection: View {
             onEdit: { editing = $0 },
             onDelete: { pendingItem = $0 },
             onDeleteGroup: { pendingGroup = g },
-            onAddTo: { logging = LogMealRequest(mealType: g.type) })
+            onAddTo: { logging = LogMealRequest(mealType: g.type) },
+            onShare: shareAction(g))
         } else {
           EmptySlotRow(type: type) { logging = LogMealRequest(mealType: type) }
         }
@@ -441,6 +460,16 @@ struct DayMealsSection: View {
     AccessibilityNotification.Announcement(text).post()
   }
 
+  /// Lối chia sẻ của một nhóm bữa (`shareTarget`), `nil` = không hiện.
+  private func shareAction(_ g: MealDiary.Group) -> (() -> Void)? {
+    let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
+    switch CommunityShareRecipe.target(group: g, shared: shared, viewed: book.date, today: today) {
+    case .meal(let id)?: return { sharing = ShareMealRequest(mealId: id) }
+    case .pick?: return { sharing = ShareMealRequest(mealId: nil) }
+    case nil: return nil
+    }
+  }
+
   private func clearNotice() {
     notice = nil
     undo = []
@@ -473,6 +502,8 @@ private struct MealGroupCard: View {
   let onDelete: (MealDiary.Item) -> Void
   let onDeleteGroup: () -> Void
   let onAddTo: () -> Void
+  /// "Chia sẻ lên Cộng đồng" (`onShare` của RN) — chỉ có khi còn bản ghi chưa đăng.
+  var onShare: (() -> Void)?
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var open = false
 
@@ -530,6 +561,9 @@ private struct MealGroupCard: View {
           + (open ? String(localized: "diary.a11y.expanded") : String(localized: "diary.a11y.collapsed"))))
         .accessibilityAction(named: Text(String(localized: "diary.meal.addAction"))) { onAddTo() }
         .accessibilityAction(named: Text(String(localized: "diary.meal.deleteAction"))) { onDeleteGroup() }
+        .accessibilityActions {
+          if let onShare { Button(String(localized: "diary.meal.share"), action: onShare) }
+        }
 
         if open {
           ForEach(group.items) { it in row(it).padding(.leading, plain ? 46 : 0) }
@@ -548,6 +582,16 @@ private struct MealGroupCard: View {
           .buttonStyle(.plain)
           .foregroundStyle(DS.Color.destructive.swiftUI)
           .disabled(busy)
+          // Mục cuối của thẻ đã mở, như một dòng menu (RN).
+          if let onShare {
+            Button(action: onShare) {
+              Label(String(localized: "diary.meal.share"), systemImage: "square.and.arrow.up")
+                .font(DS.TextStyle.footnote.weight(.semibold))
+                .frame(maxWidth: .infinity, minHeight: 44)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(DS.Color.primary.swiftUI)
+          }
         }
       }
   }
@@ -676,6 +720,12 @@ private struct ServingsSheet: View {
 }
 
 /// Mở màn ghi bữa từ nhật ký; `mealType` khi vào từ một thẻ bữa.
+struct ShareMealRequest: Identifiable {
+  let id = UUID()
+  /// `nil` = mở danh sách chọn bữa.
+  let mealId: String?
+}
+
 struct LogMealRequest: Identifiable {
   let id = UUID()
   let mealType: String?

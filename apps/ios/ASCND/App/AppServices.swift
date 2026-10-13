@@ -696,6 +696,14 @@ final class AppServices {
 
   /// Chia sẻ một công thức (#527, lát 13): bữa 30 ngày + món + khẩu phần gốc,
   /// RPC `share_recipe*`.
+  /// Bản ghi bữa / buổi đã đăng lên Cộng đồng (`useMySharedSessions`) — lối
+  /// "Chia sẻ lên Cộng đồng" của thẻ bữa. Không đọc được → `nil` (chưa biết
+  /// thì chưa hiện lối, như RN).
+  func sharedPostSourceIds(userId: String) async -> Set<String>? {
+    guard let backend else { return nil }
+    return (try? await SupabaseCommunity(backend: backend).sharedSessionIds(me: userId)).map(Set.init)
+  }
+
   func makeCommunityShareRecipe(userId: String, mealId: String?) -> CommunityShareRecipeBook? {
     guard let backend else { return nil }
     return CommunityShareRecipeBook(userId: userId, picked: mealId, remote: SupabaseCommunity(backend: backend))

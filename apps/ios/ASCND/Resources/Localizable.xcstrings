@@ -45496,6 +45496,29 @@
      }
     }
    }
+  },
+  "diary.meal.share": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Share to Community"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chia sẻ lên Cộng đồng"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Compartir en la comunidad"
+     }
+    }
+   }
   }
  }
 }

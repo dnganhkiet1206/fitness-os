@@ -224,3 +224,31 @@ public final class CommunityShareRecipeBook {
     }
   }
 }
+
+extension CommunityShareRecipe {
+  /// Lối "Chia sẻ lên Cộng đồng" trên thẻ bữa (`shareTarget` của
+  /// `today-meals.tsx` @ fac9ac2).
+  public enum ShareTarget: Sendable, Hashable {
+    /// Còn đúng một bản ghi bữa chưa đăng — vào thẳng bước xem trước của nó.
+    case meal(String)
+    /// Nhiều bản chưa đăng — mở danh sách chọn.
+    case pick
+  }
+
+  /// Như RN: chưa biết bữa nào đã đăng (`shared == nil`) hoặc ngày đang xem
+  /// ngoài cửa sổ `days` của màn chia sẻ → không có lối; các bản ghi của nhóm
+  /// trừ bản đã đăng: 0 → không, 1 → thẳng, nhiều → chọn. Khác RN: bản còn
+  /// trong outbox (server chưa có) không tính — chưa đăng được.
+  public static func target(
+    group: MealDiary.Group, shared: Set<String>?, viewed: LocalDate, today: LocalDate
+  ) -> ShareTarget? {
+    guard let shared, today.daysSinceEpoch - viewed.daysSinceEpoch < days else { return nil }
+    var seen = Set<String>()
+    let open = group.items.filter { !$0.pending }.map(\.entryId).filter { seen.insert($0).inserted && !shared.contains($0) }
+    switch open.count {
+    case 0: return nil
+    case 1: return .meal(open[0])
+    default: return .pick
+    }
+  }
+}
