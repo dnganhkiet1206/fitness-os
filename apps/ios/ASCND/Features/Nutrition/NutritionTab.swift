@@ -27,9 +27,6 @@ struct NutritionTab: View {
   @State private var plans: MealPlansBook?
   /// Danh sách đi chợ của phân đoạn Kế hoạch ăn (#527, N1).
   @State private var grocery: GroceryBook?
-  /// Khối Thực phẩm của phân đoạn Hôm nay: thư viện (Của tôi / Gần đây) + ô tìm.
-  @State private var foods: FoodLibraryBook?
-  @State private var foodSearch: FoodSearchBook?
   /// Hai phân đoạn của RN: "Hôm nay" (mặc định) và "Kế hoạch ăn".
   @State private var segment: Segment = .today
   @Environment(\.dynamicTypeSize) private var typeSize
@@ -57,9 +54,13 @@ struct NutritionTab: View {
         .padding(.bottom, DS.Spacing.lg)
         .animation(.smooth(duration: 0.3), value: segment)
       }
+      // Kéo để làm mới: mọi lượt đọc chạy SONG SONG — chạy nối tiếp (nước →
+      // thực phẩm bổ sung → thẻ → bữa → cả thư viện thực phẩm) giữ vòng xoay
+      // lâu rồi bố cục bật lại khi thả tay (chủ dự án: "khựng nhẹ", 13/10).
       .refreshable {
-        await books?.refresh()
+        async let shared: Void = refreshShared()
         if segment == .plan { await plans?.load() } else { await reload() }
+        await shared
       }
       // Gốc của stack: chạy cả khi quay lại từ Nhật ký / Ghi bữa, không chỉ khi
       // đổi tab — số của hôm nay đổi ở những màn ấy.
@@ -106,10 +107,6 @@ struct NutritionTab: View {
         plans = nil
         grocery?.close()
         grocery = nil
-        foods?.close()
-        foods = services?.makeFoodLibrary(userId: userId)
-        foodSearch?.close()
-        foodSearch = services?.makeFoodSearch()
       }
       if segment == .plan, plans == nil { plans = services?.makeMealPlans(userId: userId) }
       if segment == .plan, grocery == nil { grocery = services?.makeGrocery(userId: userId) }
@@ -145,7 +142,7 @@ struct NutritionTab: View {
   @ViewBuilder private var planSegment: some View {
     if let plans { MealPlansPreview(book: plans) }
     if let userId {
-      PlanShortcuts(userId: userId, grocery: grocery, foods: foods)
+      PlanShortcuts(userId: userId, grocery: grocery)
     }
   }
 
@@ -192,13 +189,14 @@ struct NutritionTab: View {
 
   private var userId: String? { books?.water?.userId ?? books?.supplements?.userId }
 
-  /// Thẻ calo và các bữa của hôm nay cùng đọc lại.
+  /// Thẻ calo và các bữa của hôm nay cùng đọc lại (song song).
   private func reload() async {
     async let card: Void = loadToday()
     await meals?.load()
-    await foods?.load()
     await card
   }
+
+  private func refreshShared() async { await books?.refresh() }
 
   private func loadToday() async { await today?.load() }
 }
@@ -457,7 +455,6 @@ struct DayExtrasList: View {
 struct PlanShortcuts: View {
   let userId: String
   let grocery: GroceryBook?
-  let foods: FoodLibraryBook?
 
   var body: some View {
     VStack(spacing: 0) {

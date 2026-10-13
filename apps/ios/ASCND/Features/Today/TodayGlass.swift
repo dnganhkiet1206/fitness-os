@@ -57,9 +57,18 @@ private struct StatusBarScrim: ViewModifier {
   /// Chiều cao vùng thanh trạng thái, đọc từ nội dung (một `GeometryReader` đã
   /// bỏ qua vùng an toàn thì đọc ra 0).
   @State private var top: CGFloat = 0
+  /// Nội dung đã cuộn lên dưới thanh trạng thái. Ở đầu trang — và khi đang KÉO
+  /// XUỐNG để làm mới — dải nhoè tắt: không có gì bên dưới để nhoè, và nó
+  /// phủ đúng chỗ hệ thống vẽ vòng xoay làm mới (chủ dự án: "khựng" khi thả).
+  @State private var scrolled = false
 
   func body(content: Content) -> some View {
     content
+      .onScrollGeometryChange(for: Bool.self) { g in
+        g.contentOffset.y + g.contentInsets.top > 6
+      } action: { _, now in
+        withAnimation(.easeOut(duration: 0.18)) { scrolled = now }
+      }
       .background {
         GeometryReader { g in
           Color.clear
@@ -78,6 +87,7 @@ private struct StatusBarScrim: ViewModifier {
           }
         }
         .frame(height: top + 20)
+        .opacity(scrolled ? 1 : 0)
         .mask(
           LinearGradient(
             stops: [.init(color: .black, location: 0), .init(color: .black, location: 0.55), .init(color: .clear, location: 1)],

@@ -35,9 +35,12 @@ final class NutritionBooks {
   }
 
   func refresh() async {
-    await water?.refresh()
+    async let w: Void = refreshWater()
     await supplements?.refresh()
+    await w
   }
+
+  private func refreshWater() async { await water?.refresh() }
 
   /// Phiên không còn là của người này: không lượt nào của hai sổ đổi màn nữa.
   func close() {
