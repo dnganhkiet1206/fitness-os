@@ -7,12 +7,14 @@ import SwiftUI
 /// thiết kế Today bỏ bộ trang hero, nên thẻ là một màn riêng như thẻ tập luyện).
 ///
 /// Như RN: ba vòng đồng tâm Move / Exercise / Steps, cùng cặp màu gradient,
-/// rãnh `ringTrack`, đầu bo tròn, bắt đầu ở 12 giờ; ba vòng ở 0 vẫn vẽ (hình
+/// đầu bo tròn, bắt đầu ở 12 giờ; ba vòng ở 0 vẫn vẽ (hình
 /// dạng thật của "hôm nay chưa vận động") và câu giải thích đi kèm; số ước
 /// lượng có `~` và một dòng nói nó từ đâu; "?" mở tấm giải thích.
 ///
 /// Khác RN: vòng hiện ngay khi bật Reduce Motion (RN luôn chạy hiệu ứng); chữ
-/// đủ vi / en / es; con số nhóm nghìn theo ngôn ngữ của app.
+/// đủ vi / en / es; con số nhóm nghìn theo ngôn ngữ của app; rãnh tô nhạt màu
+/// của từng vòng thay cho `ringTrack` xám; nhãn ô là chấm màu + chữ phụ thay
+/// cho chữ tô màu vòng (tương phản).
 struct ActivityRingsView: View {
   let book: ActivityRingsBook
   /// Mục tiêu bước của người dùng (`MascotRoomController.stepsGoal`).
@@ -20,6 +22,7 @@ struct ActivityRingsView: View {
 
   @Environment(ProfileBook.self) private var profile: ProfileBook?
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @Environment(\.dynamicTypeSize) private var typeSize
   @State private var showsHelp = false
   @State private var drawn = false
 
@@ -49,7 +52,9 @@ struct ActivityRingsView: View {
     }
     .refreshable { await book.load() }
     .sheet(isPresented: $showsHelp) { ActivityExplainerSheet(stepsTarget: stepsTarget) }
-    .task { if case .loading = book.phase { await book.load() } }
+    // Luôn đọc lại khi mở: buổi vừa ghi trên Hôm nay phải hiện ngay (sổ giữ số
+    // cũ trong lúc đọc, nên không nháy về trạng thái tải).
+    .task { await book.load(today: LocalDate(EpochMillis(Date()), in: .current)) }
   }
 
   /// `energyProfileFrom` trên hồ sơ đã nạp — cho kcal ước lượng của Move.
@@ -66,7 +71,11 @@ struct ActivityRingsView: View {
           .accessibilityElement(children: .ignore)
           .accessibilityLabel(Text(String(localized: "ar.title")))
           .accessibilityValue(Text(verbatim: model.rings.map { "\(Self.label($0.key)) \(text($0))" }.joined(separator: ", ")))
-        HStack(alignment: .top, spacing: DS.Spacing.sm) {
+        // Cỡ chữ trợ năng: ba ô thành ba hàng — ba cột ở cỡ đó cắt cả nhãn lẫn
+        // mục tiêu ("VẬN…", "/ 300…").
+        (typeSize.isAccessibilitySize
+          ? AnyLayout(VStackLayout(alignment: .leading, spacing: DS.Spacing.md))
+          : AnyLayout(HStackLayout(alignment: .top, spacing: DS.Spacing.sm))) {
           ForEach(model.rings, id: \.key) { r in tile(r) }
         }
         if !model.hasAny || model.estimated {
@@ -98,9 +107,13 @@ struct ActivityRingsView: View {
         ForEach(Array(model.rings.enumerated()), id: \.element.key) { i, r in
           let inset = stroke / 2 + 1 + Double(i) * gap
           let colors = Self.colors(r.key)
-          Circle()
-            .inset(by: inset)
-            .stroke(DS.Color.ringTrack.swiftUI, lineWidth: stroke)
+          // Rãnh tô nhạt chính màu của vòng (như Fitness của Apple và ống rỗng
+          // của Hôm nay), không phải ba khối `ringTrack` xám giống nhau: ở 0, ba
+          // vòng vẫn đọc ra là ba thứ khác nhau.
+          ZStack {
+            Circle().inset(by: inset).stroke(DS.Color.foreground.swiftUI.opacity(0.05), lineWidth: stroke)
+            Circle().inset(by: inset).stroke(colors[0].opacity(0.22), lineWidth: stroke)
+          }
           Circle()
             .inset(by: inset)
             .trim(from: 0, to: drawn ? Swift.min(Swift.max(r.pct.isFinite ? r.pct : 0, 0), 1) : 0)
@@ -116,10 +129,19 @@ struct ActivityRingsView: View {
 
   private func tile(_ r: ActivityRings.Ring) -> some View {
     VStack(alignment: .leading, spacing: 2) {
-      Text(Self.label(r.key))
-        .font(DS.TextStyle.caption.weight(.semibold))
-        .foregroundStyle(Self.colors(r.key)[0])
-        .textCase(.uppercase)
+      // Màu nằm ở chấm, chữ giữ màu chữ phụ: vàng #ffc53d trên nền giấy chỉ
+      // ~1,6:1 — đọc không nổi ở chế độ sáng.
+      HStack(spacing: 6) {
+        Circle()
+          .fill(LinearGradient(colors: Self.colors(r.key), startPoint: .topLeading, endPoint: .bottomTrailing))
+          .frame(width: 8, height: 8)
+        Text(Self.label(r.key))
+          .font(DS.TextStyle.caption.weight(.semibold))
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          .textCase(.uppercase)
+          .lineLimit(1)
+          .minimumScaleFactor(0.8)
+      }
       Text(verbatim: ActivityRings.valueText(r, locale: .app))
         .font(.custom("Menlo", size: 20, relativeTo: .title3).weight(.semibold))
         .foregroundStyle(DS.Color.foreground.swiftUI)

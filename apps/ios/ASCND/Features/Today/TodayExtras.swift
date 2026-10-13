@@ -250,8 +250,6 @@ struct TodayExtras<Plan: View>: View {
       Task {
         await reloadDay()
         await trend?.load()
-        await training?.load()
-        await activity?.load(today: Self.today())
         await focusChecks()
       }
     }
@@ -516,6 +514,9 @@ struct TodayExtras<Plan: View>: View {
     if let nutrition { await nutrition.refresh() } else { await ownWater?.refresh() }
     await readiness?.load()
     await biometrics?.load()
+    // Buổi vừa ghi đổi cả thẻ tập luyện lẫn phút của vòng Tập luyện.
+    await training?.load()
+    await activity?.load(today: Self.today())
   }
 
   /// Lần đo sinh trắc mới nhất của HÔM NAY (`useTodayBiometrics`).

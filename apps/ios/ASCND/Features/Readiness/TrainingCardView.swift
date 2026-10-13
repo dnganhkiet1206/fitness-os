@@ -24,6 +24,7 @@ struct TrainingCardView: View {
   @Environment(\.weightUnit) private var unit
   @Environment(ProfileBook.self) private var profile: ProfileBook?
   @Environment(WorkoutFlow.self) private var flow: WorkoutFlow?
+  @Environment(\.dynamicTypeSize) private var typeSize
   @State private var showsHelp = false
   @State private var showsHistory = false
 
@@ -56,7 +57,9 @@ struct TrainingCardView: View {
     .navigationDestination(isPresented: $showsHistory) {
       if let history = flow?.history { WorkoutHistoryView(book: history) }
     }
-    .task { if case .loading = book.phase { await book.load() } }
+    // Luôn đọc lại khi mở: buổi vừa ghi phải vào thẻ ngay (sổ giữ thẻ cũ trong
+    // lúc đọc, nên không nháy về trạng thái tải).
+    .task { await book.load() }
   }
 
   /// `profile === undefined` của RN: hồ sơ chưa nạp thì dòng ngày tập cơ đợi.
@@ -139,9 +142,18 @@ struct TrainingCardView: View {
     let weekSub = card.weekVolume > 0 ? "\(sessions) · \(kg(card.weekVolume))" : sessions
     let habitBase = String(localized: "tc.habit.sub")
     let habitSub = card.habitVolume > 0 ? "\(habitBase) · \(kg(card.habitVolume))" : habitBase
-    return HStack(alignment: .top, spacing: DS.Spacing.md) {
+    // Cỡ chữ trợ năng: hai ô chồng lên nhau, vạch ngăn nằm ngang — hai cột ở
+    // cỡ đó chỉ còn một từ mỗi dòng.
+    let stacked = typeSize.isAccessibilitySize
+    let layout =
+      stacked
+      ? AnyLayout(VStackLayout(alignment: .leading, spacing: DS.Spacing.sm))
+      : AnyLayout(HStackLayout(alignment: .top, spacing: DS.Spacing.md))
+    return layout {
       cell(String(localized: "tc.week.label"), Self.int(card.weekLoad), weekSub, muted: false)
-      Rectangle().fill(DS.Color.foreground.swiftUI.opacity(0.1)).frame(width: 1).accessibilityHidden(true)
+      Rectangle().fill(DS.Color.foreground.swiftUI.opacity(0.1))
+        .frame(width: stacked ? nil : 1, height: stacked ? 1 : nil)
+        .accessibilityHidden(true)
       cell(String(localized: "tc.habit.label"), card.habitLoad > 0 ? Self.int(card.habitLoad) : "—", habitSub, muted: true)
     }
     .fixedSize(horizontal: false, vertical: true)
@@ -188,10 +200,11 @@ struct TrainingCardView: View {
 
   private func trend(_ card: TrainingCard.Card) -> some View {
     VStack(alignment: .leading, spacing: 6) {
-      HStack {
+      (typeSize.isAccessibilitySize
+        ? AnyLayout(VStackLayout(alignment: .leading, spacing: 4)) : AnyLayout(HStackLayout())) {
         Text(String(localized: "tc.trend.title"))
           .font(DS.TextStyle.footnote.weight(.semibold))
-        Spacer()
+        if !typeSize.isAccessibilitySize { Spacer() }
         if card.habitVolume > 0 {
           HStack(spacing: 4) {
             DashedRule().frame(width: 14, height: 1)

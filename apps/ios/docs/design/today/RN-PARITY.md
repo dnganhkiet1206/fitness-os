@@ -77,6 +77,8 @@ Status:
 
 **Training card (N3, B):** the row opens the full card as its own screen, in RN order: the verdict sentence tinted by zone and what to do about it, the two load figures it compares (tonnage printed small under each), strength days against the goal, the stale note past 7 days, the 8-week volume chart with the dashed habit line drawn over the bars, and the latest session (tap → history). The "?" opens `TrainingExplainerSheet` (`training-explainer.tsx`). RN at fac9ac2 has no ACWR band bar on this card any more (the chart replaced it), so none is drawn.
 
+**Simulator QA (N3, N4, B, 13/10):** run on iPhone 17 Pro (iOS 26.5). Both screens now re-read on every open and after anything is logged on Today (they used to show the numbers from when Today first loaded). At accessibility type sizes the ring tiles and the two load figures stack vertically. The rings' empty tracks are tinted with each ring's own colour and the tile labels carry the colour in a dot, not in the text (see NATIVE_IMPROVEMENTS).
+
 ## Audit of RN Today features (2026-10-12)
 
 The whole of RN `(tabs)/index.tsx` @ fac9ac2 (14 widgets, hero deck, edit mode, focus hooks) was checked against native Today.
