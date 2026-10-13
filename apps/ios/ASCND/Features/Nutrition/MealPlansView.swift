@@ -378,7 +378,7 @@ struct MealPlanView: View {
       HStack(alignment: .firstTextBaseline) {
         Text(verbatim: DiaryView.whole(kcal))
           .font(.custom("Menlo", size: 26, relativeTo: .title).weight(.bold))
-        Text(verbatim: "kcal").font(DS.TextStyle.footnote).foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        Text(String(localized: "nc.kcal")).font(DS.TextStyle.footnote).foregroundStyle(DS.Color.mutedForeground.swiftUI)
         Spacer(minLength: 0)
         if target > 0 {
           Text(String(localized: "plans.pctTarget \(pct)"))
