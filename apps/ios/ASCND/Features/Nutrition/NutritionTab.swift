@@ -54,14 +54,9 @@ struct NutritionTab: View {
         .padding(.bottom, DS.Spacing.lg)
         .animation(.smooth(duration: 0.3), value: segment)
       }
-      // Kéo để làm mới: mọi lượt đọc chạy SONG SONG — chạy nối tiếp (nước →
-      // thực phẩm bổ sung → thẻ → bữa → cả thư viện thực phẩm) giữ vòng xoay
-      // lâu rồi bố cục bật lại khi thả tay (chủ dự án: "khựng nhẹ", 13/10).
-      .refreshable {
-        async let shared: Void = refreshShared()
-        if segment == .plan { await plans?.load() } else { await reload() }
-        await shared
-      }
+      // Không kéo để làm mới (chủ dự án, 13/10: chỉ Hôm nay có): tab tự đọc
+      // lại mỗi lần hiện và sau mỗi lần ghi; nước / thực phẩm bổ sung đọc lại
+      // theo phiên.
       // Gốc của stack: chạy cả khi quay lại từ Nhật ký / Ghi bữa, không chỉ khi
       // đổi tab — số của hôm nay đổi ở những màn ấy.
       .onAppear { Task { await reload() } }
@@ -195,8 +190,6 @@ struct NutritionTab: View {
     await meals?.load()
     await card
   }
-
-  private func refreshShared() async { await books?.refresh() }
 
   private func loadToday() async { await today?.load() }
 }
