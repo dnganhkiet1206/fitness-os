@@ -72,3 +72,7 @@ Số liệu, luật làm tròn, mục tiêu, outbox, cách ghi, màn con (Ghi b�
 
 `PlanWizardView` thay `CreatePlanSheet` ở Kế hoạch ăn (xem NATIVE_IMPROVEMENTS). Ảnh: `docs/qa/nutrition-audit-2026-10-13/wizard-*.jpg`.
 
+## Bốn màn con (13/10, chủ dự án duyệt mock)
+
+Chi tiết kế hoạch, Ghi bữa, Nhật ký, Thực phẩm — cùng ngôn ngữ với tab. Ảnh: `docs/qa/nutrition-audit-2026-10-13/sub-*.jpg`.
+

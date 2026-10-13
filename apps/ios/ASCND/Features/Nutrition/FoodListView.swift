@@ -41,6 +41,34 @@ struct FoodListView: View {
   var body: some View {
     ScrollView {
       VStack(alignment: .leading, spacing: DS.Spacing.md) {
+        // Ô lọc + nút thêm gộp một viên (thiết kế lại 13/10), như ô ghi bữa.
+        HStack(spacing: 10) {
+          Image(systemName: "magnifyingglass")
+            .font(.system(size: 16, weight: .semibold))
+            .foregroundStyle(MascotRoomView.signalColor(.meal))
+            .accessibilityHidden(true)
+          TextField(text: $query, prompt: Text(String(localized: "foods.filter"))) {
+            Text(String(localized: "foods.filter"))
+          }
+          .autocorrectionDisabled()
+          if segment == .mine {
+            Divider().frame(height: 24).opacity(0.6)
+            Button { editing = EditorRequest(food: nil) } label: {
+              Image(systemName: "plus")
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundStyle(DS.Color.foreground.swiftUI)
+                .frame(width: 48, height: 52)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text(String(localized: "foods.add")))
+          }
+        }
+        .padding(.leading, 18)
+        .padding(.trailing, segment == .mine ? 4 : 18)
+        .frame(minHeight: 52)
+        .background(Capsule().fill(.regularMaterial))
+        .overlay(Capsule().strokeBorder(MascotRoomView.signalColor(.meal).opacity(0.55), lineWidth: 1.5))
         Picker(selection: $segment) {
           Text(verbatim: "\(String(localized: "foods.mine")) \(book.mine.count)").tag(Segment.mine)
           Text(verbatim: "\(String(localized: "foods.recent")) \(book.recents.count)").tag(Segment.recent)
@@ -48,31 +76,6 @@ struct FoodListView: View {
           Text(String(localized: "foods.title"))
         }
         .pickerStyle(.segmented)
-        HStack(spacing: DS.Spacing.sm) {
-          HStack {
-            Image(systemName: "magnifyingglass")
-              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-              .accessibilityHidden(true)
-            TextField(text: $query, prompt: Text(String(localized: "foods.filter"))) {
-              Text(String(localized: "foods.filter"))
-            }
-            .autocorrectionDisabled()
-          }
-          .padding(DS.Spacing.sm)
-          .frame(minHeight: 44)
-          .background(DS.Color.input.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.sm))
-          if segment == .mine {
-            Button { editing = EditorRequest(food: nil) } label: {
-              Image(systemName: "plus")
-                .font(.body.weight(.bold))
-                .foregroundStyle(DS.Color.background.swiftUI)
-                .frame(width: 44, height: 44)
-                .background(DS.Color.foreground.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.sm))
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(Text(String(localized: "foods.add")))
-          }
-        }
         content
       }
       .padding(DS.Spacing.md)
@@ -120,8 +123,9 @@ struct FoodListView: View {
     if shown.isEmpty {
       empty
     } else {
-      VStack(spacing: DS.Spacing.xs) {
-        ForEach(shown) { f in
+      listCard {
+        ForEach(Array(shown.enumerated()), id: \.element.id) { i, f in
+          if i > 0 { Divider().padding(.leading, DS.Spacing.md).opacity(0.6) }
           if book.canFavorite {
             let writer = services.stateWriter
             StarredFoodRow(
@@ -129,7 +133,7 @@ struct FoodListView: View {
               toggle: { star(f) }
             ) { mineRow(f, chrome: false) }
           } else {
-            mineRow(f, chrome: true)
+            mineRow(f, chrome: false)
           }
         }
       }
@@ -142,7 +146,7 @@ struct FoodListView: View {
         name: f.name, brand: f.brand, kcal: f.kcal, p: f.protein, c: f.carbs, fat: f.fat, favorite: f.isFavorite,
         chrome: chrome
       ) {
-        if chrome {
+        if !book.canFavorite {
           Image(systemName: "chevron.right")
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
             .accessibilityHidden(true)
@@ -166,16 +170,19 @@ struct FoodListView: View {
     if shown.isEmpty {
       empty
     } else {
-      VStack(spacing: DS.Spacing.xs) {
-        ForEach(shown) { r in
-          FoodRow(name: r.name, brand: nil, kcal: r.kcal, p: r.protein, c: r.carbs, fat: r.fat, favorite: false) {
+      listCard {
+        ForEach(Array(shown.enumerated()), id: \.element.id) { i, r in
+          if i > 0 { Divider().padding(.leading, DS.Spacing.md).opacity(0.6) }
+          FoodRow(
+            name: r.name, brand: nil, kcal: r.kcal, p: r.protein, c: r.carbs, fat: r.fat, favorite: false, chrome: false
+          ) {
             // Ô cố định dù có nút hay không — cột kcal không xô lệch.
             Group {
               if !saved.contains(r.name.lowercased()) {
                 Button { Task { await saveRecent(r) } } label: {
-                  Image(systemName: "plus")
-                    .font(.body.weight(.bold))
-                    .foregroundStyle(DS.Color.primary.swiftUI)
+                  Image(systemName: "plus.circle")
+                    .font(.title3)
+                    .foregroundStyle(MascotRoomView.signalColor(.meal))
                     .frame(width: 44, height: 44)
                     .contentShape(Rectangle())
                 }
@@ -191,6 +198,13 @@ struct FoodListView: View {
         }
       }
     }
+  }
+
+  /// Thẻ danh sách chung (cùng kiểu thẻ với tab Dinh dưỡng).
+  private func listCard<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+    VStack(spacing: 0) { content() }
+      .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous))
+      .todayCard(radius: DS.Radius.xl)
   }
 
   private var empty: some View {
@@ -411,13 +425,14 @@ struct FoodRow<Trailing: View>: View {
           .lineLimit(1)
       }
       Spacer(minLength: 0)
-      Text(verbatim: "\(DiaryView.whole(kcal)) kcal")
-        .font(DS.TextStyle.footnote.monospacedDigit())
+      Text(verbatim: DiaryView.whole(kcal))
+        .font(.custom("Menlo", size: 14, relativeTo: .body))
+        .accessibilityLabel(Text(verbatim: "\(DiaryView.whole(kcal)) kcal"))
       trailing()
     }
     .padding(.leading, DS.Spacing.md)
     .padding(.trailing, chrome ? DS.Spacing.md : 0)
-    .frame(minHeight: 52)
+    .frame(minHeight: 56)
     .contentShape(Rectangle())
     .background(chrome ? DS.Color.card.swiftUI : .clear, in: RoundedRectangle(cornerRadius: DS.Radius.md))
     .accessibilityElement(children: .combine)
@@ -454,6 +469,5 @@ struct StarredFoodRow<Content: View>: View {
       .accessibilityAddTraits(on ? [.isButton, .isSelected] : .isButton)
     }
     .padding(.trailing, 4)
-    .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.md))
   }
 }
