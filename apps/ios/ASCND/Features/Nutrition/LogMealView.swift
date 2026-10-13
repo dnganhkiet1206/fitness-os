@@ -20,8 +20,9 @@ import SwiftUI
 /// - chạm vào một món đã thêm để sửa kcal / đạm / tinh bột / béo của MỘT khẩu
 ///   phần (cùng dải với món tự nhập).
 ///
-/// Khác RN / chưa có: gợi ý bữa bằng AI, quét ảnh / mã vạch; chưa đánh / bỏ
-/// sao một món ở màn này.
+/// Khác RN / chưa có: gợi ý bữa bằng AI, quét ảnh; chưa đánh / bỏ sao một món
+/// ở màn này. Mã vạch: nút cạnh ô tìm mở `ScanBarcodeView`, món tìm được vào bữa
+/// (`consumePendingScan` của RN, không cần kênh trung gian vì là cùng màn).
 struct LogMealView: View {
   let userId: String
   var date: LocalDate?
@@ -31,7 +32,7 @@ struct LogMealView: View {
   var start: Start = .plain
   var onDone: () -> Void = {}
 
-  enum Start: Hashable { case plain, search, manual }
+  enum Start: Hashable { case plain, search, manual, scan }
 
   @FocusState private var searchFocused: Bool
 
@@ -49,6 +50,9 @@ struct LogMealView: View {
   @State private var error: String?
   @State private var editingId: String?
   @State private var draft = Draft()
+  /// Máy quét mã vạch (`/scan-barcode`): mở từ nút cạnh ô tìm, hoặc ngay khi
+  /// màn mở bằng `.scan` (nút mã vạch của tab — RN `nav.replace('/log-meal')`).
+  @State private var scanning = false
 
   /// Bốn ô của khung sửa một món (`draft` của RN).
   struct Draft: Equatable {
@@ -81,12 +85,18 @@ struct LogMealView: View {
       // Cách mở của `MealLogActions`: "Tìm món" đặt con trỏ vào ô tìm,
       // "Nhập tay" mở sẵn phần món tự nhập.
       switch start {
-      case .search: searchFocused = true
       case .manual: customOpen = true
-      case .plain: break
+      case .scan: scanning = true
+      case .search, .plain: break
       }
       let l = services.makeMealLogger(userId: userId, date: date, mealType: mealType)
       logger = l
+      // Con trỏ chỉ vào được ô tìm khi ô đã có trên màn — tức là sau khi có
+      // sổ (trước đó màn là vòng chờ, đặt tiêu điểm lúc ấy không làm gì).
+      if start == .search {
+        try? await Task.sleep(for: .milliseconds(350))
+        searchFocused = true
+      }
       await l?.loadRecents()
     }
     .task(id: query) {
@@ -96,6 +106,11 @@ struct LogMealView: View {
       await logger?.search(query)
     }
     .onDisappear { logger?.close() }
+    .fullScreenCover(isPresented: $scanning) {
+      ScanBarcodeView { food in
+        logger?.add(food.mealFood(id: UUID().uuidString.lowercased()))
+      }
+    }
     .alert(error ?? "", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
       Button(String(localized: "common.cancel"), role: .cancel) {}
     }
@@ -165,6 +180,16 @@ struct LogMealView: View {
       .textInputAutocapitalization(.never)
       .autocorrectionDisabled()
       .submitLabel(.search)
+      // Quét là một cách tìm (RN đặt nút mã vạch cạnh ô tìm).
+      Button { scanning = true } label: {
+        Image(systemName: "barcode.viewfinder")
+          .font(.body.weight(.semibold))
+          .foregroundStyle(DS.Color.foreground.swiftUI)
+          .frame(minWidth: 44, minHeight: 44)
+          .contentShape(Rectangle())
+      }
+      .buttonStyle(.plain)
+      .accessibilityLabel(Text(String(localized: "scan.a11y")))
     }
     .padding(DS.Spacing.sm)
     .frame(minHeight: 44)

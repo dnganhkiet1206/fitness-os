@@ -110,3 +110,4 @@ Các mảng sau **not ported** và nằm ngoài phạm vi A cho tới khi #222 g
 | A20 #399 | Bài thêm ngoài kế hoạch trong buổi | `day-plan.tsx:739`, `:896-906`, `:989-1000` |
 | A21 #400 | Lịch sử buổi + xoá buổi (dữ liệu) | `sessions.tsx`, `use-fitness-data.ts:210` |
 | A22 #401 | Ghi template + gán ngày | `templates.tsx`, `workout-builder.tsx`, `use-library.ts:472` |
+| Quét mã vạch → món trong bữa | `app/scan-barcode.tsx` (`lookupBarcode`), `lib/scan-bridge.ts`, `log-meal.tsx:224` | `BarcodeLookup` (Core), `ScanBarcodeView`, nút trong `MealLogBar` / `LogMealView` (B #527) | ported (golden; simulator RUN tra mã tay; camera / thiết bị NOT RUN) |

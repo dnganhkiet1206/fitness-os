@@ -245,8 +245,8 @@ struct FoodsScreen: View {
 
 /// Ô ghi bữa (thiết kế lại 13/10) — `MealLogActions` của RN thu về MỘT viên
 /// như ô tìm, vì tìm là cách chính: chạm → màn ghi với con trỏ trong ô tìm;
-/// bút → mở sẵn phần món tự nhập. Ảnh và mã vạch: chưa có màn quét thì không
-/// vẽ nút — không vẽ một nút không làm gì.
+/// mã vạch → màn ghi mở thẳng máy quét; bút → mở sẵn phần món tự nhập. Ảnh
+/// (AI) chưa port — không vẽ một nút không làm gì.
 struct MealLogBar: View {
   let userId: String
   /// Sheet ghi bữa đóng lại — thẻ ngân sách đọc lại số của hôm nay.
@@ -274,6 +274,15 @@ struct MealLogBar: View {
       .buttonStyle(.plain)
       .accessibilityLabel(Text(String(localized: "nc.way.search.a11y")))
       Divider().frame(height: 24).opacity(0.6)
+      Button { open = .scan } label: {
+        Image(systemName: "barcode.viewfinder")
+          .font(.system(size: 17, weight: .semibold))
+          .foregroundStyle(DS.Color.foreground.swiftUI)
+          .frame(width: 50, height: 52)
+          .contentShape(Rectangle())
+      }
+      .buttonStyle(.plain)
+      .accessibilityLabel(Text(String(localized: "scan.a11y")))
       Button { open = .manual } label: {
         Image(systemName: "square.and.pencil")
           .font(.system(size: 17, weight: .semibold))

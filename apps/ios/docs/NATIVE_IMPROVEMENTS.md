@@ -230,3 +230,5 @@ miễn **giữ nguyên ý định** của app và chỉ làm app tốt hơn — 
 
 Thêm dòng mới ở cuối bảng; giữ dòng cũ — sổ là lịch sử, không phải danh sách việc.
 | Nền giấy trên mọi màn (13/10) | `ascndPage()` thêm cho các màn còn nền trắng hệ thống: Ghi sinh trắc / số đo / giấc ngủ / cân nặng, Mục tiêu thông minh, Hướng dẫn bài tập, Ghi bữa, Thực phẩm, Kế hoạch ăn, Nước | (RN: mọi màn trên `background` của bảng màu) | sửa lỗi native (chủ dự án: "tone giấy chỗ có chỗ không") | — | #527 (`native/ios-rewrite`) | B |
+| Quét mã vạch — nhập mã tay (13/10) | Màn quét luôn có ô nhập mã (máy không quét được / mã mờ vẫn tra được); máy không hỗ trợ thì không xin quyền camera | Chỉ camera | tốt hơn RN | nên: thêm ô nhập mã | #527 (`native/ios-rewrite`) | B |
+| Quét mã vạch — khẩu phần khi thiếu `serving_quantity` (PHÁT HIỆN, chưa đổi) | Giữ đúng RN (golden khoá) | Thiếu `serving_quantity` thì lấy `product_quantity` = CẢ GÓI làm một khẩu phần: Nutella 3017620422003 → 400 g → 2.156 kcal | cần chủ dự án quyết | đề xuất: thiếu khẩu phần thì 100 g, để người dùng chỉnh | #527 | B |

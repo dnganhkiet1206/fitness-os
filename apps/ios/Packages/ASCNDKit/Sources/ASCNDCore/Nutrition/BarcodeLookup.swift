@@ -87,3 +87,15 @@ public enum BarcodeLookup {
     }
   }
 }
+
+extension BarcodeLookup.Food {
+  /// Thành món tìm được của màn Ghi bữa (`consumePendingScan` của `log-meal.tsx`):
+  /// không gắn `food_items` (`food_item_id: null`), một khẩu phần. Số NaN (khẩu
+  /// phần là chuỗi hỏng) thành 0 — RN để NaN đi vào bữa; ở đây không ghi NaN.
+  public func mealFood(id: String) -> MealLog.Food {
+    func n(_ x: Double) -> Double { x.isFinite ? x : 0 }
+    return MealLog.Food(
+      id: id, foodItemId: nil, name: foodName, kcal: n(kcal), protein: n(proteinG), carbs: n(carbsG), fat: n(fatG),
+      fiber: n(fiberG))
+  }
+}
