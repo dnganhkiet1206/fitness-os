@@ -90,7 +90,10 @@ struct KoaPaintTests {
   }
 
   @Test func viewportIsXMidYMaxMeet() {
-    #expect(KoaPaint.viewport(width: 160, height: 200) == [160.0 / 240, 0, 0, 160.0 / 240, 0, 0])
+    // Kiểu khai báo riêng: viết thẳng mảng trong `#expect`, Swift của Xcode 26.6
+    // không suy được kiểu kịp ("unable to type-check … in reasonable time").
+    let narrow: [Double] = [160.0 / 240, 0, 0, 160.0 / 240, 0, 0]
+    #expect(KoaPaint.viewport(width: 160, height: 200) == narrow)
     let wide = KoaPaint.viewport(width: 200, height: 200)
     #expect(Self.close(wide[0], 200.0 / 300) && Self.close(wide[4], 20) && Self.close(wide[5], 0))
     let tall = KoaPaint.viewport(width: 120, height: 300)

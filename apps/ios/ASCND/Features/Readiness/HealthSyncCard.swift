@@ -17,6 +17,7 @@ struct HealthSyncCard: View {
 
   @State private var running = false
   @State private var result: Result?
+  @Environment(\.dynamicTypeSize) private var typeSize
 
   enum Result: Equatable {
     case synced
@@ -29,24 +30,34 @@ struct HealthSyncCard: View {
         Button {
           Task { await run() }
         } label: {
-          HStack(spacing: DS.Spacing.md) {
-            Image(systemName: "heart.fill")
-              .foregroundStyle(DS.Color.destructive.swiftUI)
-              .frame(width: 36, height: 36)
-              .background(DS.Color.destructive.swiftUI.opacity(0.12), in: Circle())
-              .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 2) {
-              Text(String(localized: "hs.title")).font(DS.TextStyle.headline)
-              Text(String(localized: "hs.brings"))
-                .font(DS.TextStyle.caption)
-                .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-                .lineLimit(2)
-            }
-            Spacer()
-            if running {
-              ProgressView()
+          // Cỡ chữ trợ năng: icon + tiêu đề, mô tả, rồi nút — xếp ngang ở cỡ đó
+          // chữ chỉ còn một khe hẹp và bị bẻ giữa từ ("Appl / e / Healt / h").
+          Group {
+            if typeSize.isAccessibilitySize {
+              VStack(alignment: .leading, spacing: DS.Spacing.xs) {
+                HStack(spacing: DS.Spacing.sm) {
+                  icon
+                  Text(String(localized: "hs.title")).font(DS.TextStyle.headline)
+                }
+                Text(String(localized: "hs.brings"))
+                  .font(DS.TextStyle.caption)
+                  .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+                trailing
+              }
+              .frame(maxWidth: .infinity, alignment: .leading)
             } else {
-              Text(String(localized: "hs.sync")).font(DS.TextStyle.footnote.weight(.semibold))
+              HStack(spacing: DS.Spacing.md) {
+                icon
+                VStack(alignment: .leading, spacing: 2) {
+                  Text(String(localized: "hs.title")).font(DS.TextStyle.headline)
+                  Text(String(localized: "hs.brings"))
+                    .font(DS.TextStyle.caption)
+                    .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+                    .lineLimit(2)
+                }
+                Spacer()
+                trailing
+              }
             }
           }
           .frame(minHeight: 44)
@@ -67,6 +78,22 @@ struct HealthSyncCard: View {
       }
       .padding(DS.Spacing.md)
       .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.md))
+    }
+  }
+
+  private var icon: some View {
+    Image(systemName: "heart.fill")
+      .foregroundStyle(DS.Color.destructive.swiftUI)
+      .frame(width: 36, height: 36)
+      .background(DS.Color.destructive.swiftUI.opacity(0.12), in: Circle())
+      .accessibilityHidden(true)
+  }
+
+  @ViewBuilder private var trailing: some View {
+    if running {
+      ProgressView()
+    } else {
+      Text(String(localized: "hs.sync")).font(DS.TextStyle.footnote.weight(.semibold))
     }
   }
 

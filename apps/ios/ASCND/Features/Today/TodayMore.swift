@@ -18,6 +18,7 @@ struct TodayMore: View {
   let rows: [Row]
   /// Nguồn của chuyển cảnh zoom sang màn chi tiết (id = `Row.id`).
   let zoom: Namespace.ID
+  @Environment(\.dynamicTypeSize) private var typeSize
 
   var body: some View {
     VStack(alignment: .leading, spacing: DS.Spacing.sm) {
@@ -31,15 +32,21 @@ struct TodayMore: View {
           if i > 0 { Divider().padding(.leading, DS.Spacing.md).opacity(0.6) }
           Button(action: row.action) {
             HStack(spacing: DS.Spacing.sm) {
-              Text(verbatim: row.title)
-                .font(.system(size: 17))
-                .foregroundStyle(DS.Color.foreground.swiftUI)
-                .frame(maxWidth: .infinity, alignment: .leading)
-              if let value = row.value {
-                Text(verbatim: value)
-                  .font(.custom("Menlo", size: 15, relativeTo: .body))
-                  .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-                  .lineLimit(1)
+              // Tiêu đề theo `.body` (17 ở cỡ mặc định) để lớn cùng số đo Menlo;
+              // cỡ chữ trợ năng thì số đo xuống dưới tiêu đề thay vì chen ngang.
+              (typeSize.isAccessibilitySize
+                ? AnyLayout(VStackLayout(alignment: .leading, spacing: 2))
+                : AnyLayout(HStackLayout(spacing: DS.Spacing.sm))) {
+                Text(verbatim: row.title)
+                  .font(.body)
+                  .foregroundStyle(DS.Color.foreground.swiftUI)
+                  .frame(maxWidth: .infinity, alignment: .leading)
+                if let value = row.value {
+                  Text(verbatim: value)
+                    .font(.custom("Menlo", size: 15, relativeTo: .body))
+                    .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+                    .lineLimit(1)
+                }
               }
               Image(systemName: "chevron.right")
                 .font(.footnote.weight(.semibold))
