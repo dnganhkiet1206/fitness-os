@@ -1,0 +1,842 @@
+{
+ "source": "native/src/app/scan-barcode.tsx@fac9ac2 lookupBarcode",
+ "cases": [
+  {
+   "code": "8930000000000",
+   "lang": "vi",
+   "ok": true,
+   "body": {
+    "status": 1,
+    "product": {
+     "product_name": "Greek yogurt",
+     "serving_quantity": 170,
+     "nutriments": {
+      "energy-kcal_100g": 97,
+      "proteins_100g": 9,
+      "carbohydrates_100g": 3.98,
+      "fat_100g": 5,
+      "fiber_100g": 0
+     }
+    }
+   },
+   "url": "https://world.openfoodfacts.org/api/v2/product/8930000000000.json",
+   "result": {
+    "food_name": "Greek yogurt",
+    "kcal": 165,
+    "protein_g": 15,
+    "carbs_g": 7,
+    "fat_g": 9,
+    "fiber_g": 0,
+    "serving_g": 170
+   }
+  },
+  {
+   "code": "8930000000001",
+   "lang": "vi",
+   "ok": true,
+   "body": {
+    "status": 1,
+    "product": {
+     "product_name": "Sữa tươi",
+     "product_name_vi": "Sữa tươi Vinamilk",
+     "product_name_en": "Fresh milk",
+     "serving_quantity": "180",
+     "nutriments": {
+      "energy-kcal_100g": 63.5,
+      "proteins_100g": 3.15,
+      "carbohydrates_100g": 4.85,
+      "fat_100g": 3.25
+     }
+    }
+   },
+   "url": "https://world.openfoodfacts.org/api/v2/product/8930000000001.json",
+   "result": {
+    "food_name": "Sữa tươi Vinamilk",
+    "kcal": 114,
+    "protein_g": 6,
+    "carbs_g": 9,
+    "fat_g": 6,
+    "fiber_g": 0,
+    "serving_g": 180
+   }
+  },
+  {
+   "code": "8930000000002",
+   "lang": "vi",
+   "ok": true,
+   "body": {
+    "status": 1,
+    "product": {
+     "product_name_en": "Oat bar",
+     "product_quantity": 40,
+     "nutriments": {
+      "energy-kcal": 410,
+      "proteins_100g": 8.75,
+      "carbohydrates_100g": 62.5,
+      "fat_100g": 13.75,
+      "fiber_100g": 6.25
+     }
+    }
+   },
+   "url": "https://world.openfoodfacts.org/api/v2/product/8930000000002.json",
+   "result": {
+    "food_name": "Oat bar",
+    "kcal": 164,
+    "protein_g": 4,
+    "carbs_g": 25,
+    "fat_g": 6,
+    "fiber_g": 3,
+    "serving_g": 40
+   }
+  },
+  {
+   "code": "8930000000003",
+   "lang": "vi",
+   "ok": true,
+   "body": {
+    "status": 1,
+    "product": {
+     "nutriments": {
+      "proteins_100g": 2.5
+     }
+    }
+   },
+   "url": "https://world.openfoodfacts.org/api/v2/product/8930000000003.json",
+   "result": {
+    "food_name": "8930000000003",
+    "kcal": 0,
+    "protein_g": 3,
+    "carbs_g": 0,
+    "fat_g": 0,
+    "fiber_g": 0,
+    "serving_g": 100
+   }
+  },
+  {
+   "code": "8930000000004",
+   "lang": "vi",
+   "ok": true,
+   "body": {
+    "status": 1,
+    "product": {
+     "product_name": "",
+     "product_name_en": "Water",
+     "nutriments": {}
+    }
+   },
+   "url": "https://world.openfoodfacts.org/api/v2/product/8930000000004.json",
+   "result": {
+    "food_name": "Water",
+    "kcal": 0,
+    "protein_g": 0,
+    "carbs_g": 0,
+    "fat_g": 0,
+    "fiber_g": 0,
+    "serving_g": 100
+   }
+  },
+  {
+   "code": "8930000000005",
+   "lang": "vi",
+   "ok": true,
+   "body": {
+    "status": 1,
+    "product": {
+     "product_name": "Chips",
+     "serving_quantity": 0,
+     "product_quantity": "150",
+     "nutriments": {
+      "energy-kcal_100g": 536.7,
+      "fat_100g": 34.5,
+      "carbohydrates_100g": 53.5,
+      "proteins_100g": 6.5,
+      "fiber_100g": 4.5
+     }
+    }
+   },
+   "url": "https://world.openfoodfacts.org/api/v2/product/8930000000005.json",
+   "result": {
+    "food_name": "Chips",
+    "kcal": 805,
+    "protein_g": 10,
+    "carbs_g": 80,
+    "fat_g": 52,
+    "fiber_g": 7,
+    "serving_g": 150
+   }
+  },
+  {
+   "code": "8930000000006",
+   "lang": "vi",
+   "ok": true,
+   "body": {
+    "status": 1,
+    "product": {
+     "product_name": "Half",
+     "serving_quantity": 50,
+     "nutriments": {
+      "energy-kcal_100g": 1,
+      "proteins_100g": 1,
+      "carbohydrates_100g": 3,
+      "fat_100g": 5,
+      "fiber_100g": 7
+     }
+    }
+   },
+   "url": "https://world.openfoodfacts.org/api/v2/product/8930000000006.json",
+   "result": {
+    "food_name": "Half",
+    "kcal": 1,
+    "protein_g": 1,
+    "carbs_g": 2,
+    "fat_g": 3,
+    "fiber_g": 4,
+    "serving_g": 50
+   }
+  },
+  {
+   "code": "8930000000007",
+   "lang": "vi",
+   "ok": true,
+   "body": {
+    "status": 1,
+    "product": {
+     "product_name": "No nutriments",
+     "serving_quantity": 30
+    }
+   },
+   "url": "https://world.openfoodfacts.org/api/v2/product/8930000000007.json",
+   "result": {
+    "food_name": "No nutriments",
+    "kcal": 0,
+    "protein_g": 0,
+    "carbs_g": 0,
+    "fat_g": 0,
+    "fiber_g": 0,
+    "serving_g": 30
+   }
+  },
+  {
+   "code": "8930000000008",
+   "lang": "vi",
+   "ok": true,
+   "body": {
+    "status": 1,
+    "product": {
+     "product_name_vi": "Chỉ có tên Việt",
+     "nutriments": {
+      "energy-kcal_100g": 250
+     }
+    }
+   },
+   "url": "https://world.openfoodfacts.org/api/v2/product/8930000000008.json",
+   "result": {
+    "food_name": "Chỉ có tên Việt",
+    "kcal": 250,
+    "protein_g": 0,
+    "carbs_g": 0,
+    "fat_g": 0,
+    "fiber_g": 0,
+    "serving_g": 100
+   }
+  },
+  {
+   "code": "8930000000009",
+   "lang": "vi",
+   "ok": true,
+   "body": {
+    "status": 0,
+    "product": {
+     "product_name": "Not found flag"
+    }
+   },
+   "url": "https://world.openfoodfacts.org/api/v2/product/8930000000009.json",
+   "result": null
+  },
+  {
+   "code": "8930000000010",
+   "lang": "vi",
+   "ok": true,
+   "body": {
+    "status": 1
+   },
+   "url": "https://world.openfoodfacts.org/api/v2/product/8930000000010.json",
+   "result": null
+  },
+  {
+   "code": "8930000000011",
+   "lang": "vi",
+   "ok": true,
+   "body": {
+    "status_verbose": "product not found"
+   },
+   "url": "https://world.openfoodfacts.org/api/v2/product/8930000000011.json",
+   "result": null
+  },
+  {
+   "code": "8930000000000",
+   "lang": "en",
+   "ok": true,
+   "body": {
+    "status": 1,
+    "product": {
+     "product_name": "Greek yogurt",
+     "serving_quantity": 170,
+     "nutriments": {
+      "energy-kcal_100g": 97,
+      "proteins_100g": 9,
+      "carbohydrates_100g": 3.98,
+      "fat_100g": 5,
+      "fiber_100g": 0
+     }
+    }
+   },
+   "url": "https://world.openfoodfacts.org/api/v2/product/8930000000000.json",
+   "result": {
+    "food_name": "Greek yogurt",
+    "kcal": 165,
+    "protein_g": 15,
+    "carbs_g": 7,
+    "fat_g": 9,
+    "fiber_g": 0,
+    "serving_g": 170
+   }
+  },
+  {
+   "code": "8930000000001",
+   "lang": "en",
+   "ok": true,
+   "body": {
+    "status": 1,
+    "product": {
+     "product_name": "Sữa tươi",
+     "product_name_vi": "Sữa tươi Vinamilk",
+     "product_name_en": "Fresh milk",
+     "serving_quantity": "180",
+     "nutriments": {
+      "energy-kcal_100g": 63.5,
+      "proteins_100g": 3.15,
+      "carbohydrates_100g": 4.85,
+      "fat_100g": 3.25
+     }
+    }
+   },
+   "url": "https://world.openfoodfacts.org/api/v2/product/8930000000001.json",
+   "result": {
+    "food_name": "Sữa tươi",
+    "kcal": 114,
+    "protein_g": 6,
+    "carbs_g": 9,
+    "fat_g": 6,
+    "fiber_g": 0,
+    "serving_g": 180
+   }
+  },
+  {
+   "code": "8930000000002",
+   "lang": "en",
+   "ok": true,
+   "body": {
+    "status": 1,
+    "product": {
+     "product_name_en": "Oat bar",
+     "product_quantity": 40,
+     "nutriments": {
+      "energy-kcal": 410,
+      "proteins_100g": 8.75,
+      "carbohydrates_100g": 62.5,
+      "fat_100g": 13.75,
+      "fiber_100g": 6.25
+     }
+    }
+   },
+   "url": "https://world.openfoodfacts.org/api/v2/product/8930000000002.json",
+   "result": {
+    "food_name": "Oat bar",
+    "kcal": 164,
+    "protein_g": 4,
+    "carbs_g": 25,
+    "fat_g": 6,
+    "fiber_g": 3,
+    "serving_g": 40
+   }
+  },
+  {
+   "code": "8930000000003",
+   "lang": "en",
+   "ok": true,
+   "body": {
+    "status": 1,
+    "product": {
+     "nutriments": {
+      "proteins_100g": 2.5
+     }
+    }
+   },
+   "url": "https://world.openfoodfacts.org/api/v2/product/8930000000003.json",
+   "result": {
+    "food_name": "8930000000003",
+    "kcal": 0,
+    "protein_g": 3,
+    "carbs_g": 0,
+    "fat_g": 0,
+    "fiber_g": 0,
+    "serving_g": 100
+   }
+  },
+  {
+   "code": "8930000000004",
+   "lang": "en",
+   "ok": true,
+   "body": {
+    "status": 1,
+    "product": {
+     "product_name": "",
+     "product_name_en": "Water",
+     "nutriments": {}
+    }
+   },
+   "url": "https://world.openfoodfacts.org/api/v2/product/8930000000004.json",
+   "result": {
+    "food_name": "Water",
+    "kcal": 0,
+    "protein_g": 0,
+    "carbs_g": 0,
+    "fat_g": 0,
+    "fiber_g": 0,
+    "serving_g": 100
+   }
+  },
+  {
+   "code": "8930000000005",
+   "lang": "en",
+   "ok": true,
+   "body": {
+    "status": 1,
+    "product": {
+     "product_name": "Chips",
+     "serving_quantity": 0,
+     "product_quantity": "150",
+     "nutriments": {
+      "energy-kcal_100g": 536.7,
+      "fat_100g": 34.5,
+      "carbohydrates_100g": 53.5,
+      "proteins_100g": 6.5,
+      "fiber_100g": 4.5
+     }
+    }
+   },
+   "url": "https://world.openfoodfacts.org/api/v2/product/8930000000005.json",
+   "result": {
+    "food_name": "Chips",
+    "kcal": 805,
+    "protein_g": 10,
+    "carbs_g": 80,
+    "fat_g": 52,
+    "fiber_g": 7,
+    "serving_g": 150
+   }
+  },
+  {
+   "code": "8930000000006",
+   "lang": "en",
+   "ok": true,
+   "body": {
+    "status": 1,
+    "product": {
+     "product_name": "Half",
+     "serving_quantity": 50,
+     "nutriments": {
+      "energy-kcal_100g": 1,
+      "proteins_100g": 1,
+      "carbohydrates_100g": 3,
+      "fat_100g": 5,
+      "fiber_100g": 7
+     }
+    }
+   },
+   "url": "https://world.openfoodfacts.org/api/v2/product/8930000000006.json",
+   "result": {
+    "food_name": "Half",
+    "kcal": 1,
+    "protein_g": 1,
+    "carbs_g": 2,
+    "fat_g": 3,
+    "fiber_g": 4,
+    "serving_g": 50
+   }
+  },
+  {
+   "code": "8930000000007",
+   "lang": "en",
+   "ok": true,
+   "body": {
+    "status": 1,
+    "product": {
+     "product_name": "No nutriments",
+     "serving_quantity": 30
+    }
+   },
+   "url": "https://world.openfoodfacts.org/api/v2/product/8930000000007.json",
+   "result": {
+    "food_name": "No nutriments",
+    "kcal": 0,
+    "protein_g": 0,
+    "carbs_g": 0,
+    "fat_g": 0,
+    "fiber_g": 0,
+    "serving_g": 30
+   }
+  },
+  {
+   "code": "8930000000008",
+   "lang": "en",
+   "ok": true,
+   "body": {
+    "status": 1,
+    "product": {
+     "product_name_vi": "Chỉ có tên Việt",
+     "nutriments": {
+      "energy-kcal_100g": 250
+     }
+    }
+   },
+   "url": "https://world.openfoodfacts.org/api/v2/product/8930000000008.json",
+   "result": {
+    "food_name": "8930000000008",
+    "kcal": 250,
+    "protein_g": 0,
+    "carbs_g": 0,
+    "fat_g": 0,
+    "fiber_g": 0,
+    "serving_g": 100
+   }
+  },
+  {
+   "code": "8930000000009",
+   "lang": "en",
+   "ok": true,
+   "body": {
+    "status": 0,
+    "product": {
+     "product_name": "Not found flag"
+    }
+   },
+   "url": "https://world.openfoodfacts.org/api/v2/product/8930000000009.json",
+   "result": null
+  },
+  {
+   "code": "8930000000010",
+   "lang": "en",
+   "ok": true,
+   "body": {
+    "status": 1
+   },
+   "url": "https://world.openfoodfacts.org/api/v2/product/8930000000010.json",
+   "result": null
+  },
+  {
+   "code": "8930000000011",
+   "lang": "en",
+   "ok": true,
+   "body": {
+    "status_verbose": "product not found"
+   },
+   "url": "https://world.openfoodfacts.org/api/v2/product/8930000000011.json",
+   "result": null
+  },
+  {
+   "code": "8930000000000",
+   "lang": "es",
+   "ok": true,
+   "body": {
+    "status": 1,
+    "product": {
+     "product_name": "Greek yogurt",
+     "serving_quantity": 170,
+     "nutriments": {
+      "energy-kcal_100g": 97,
+      "proteins_100g": 9,
+      "carbohydrates_100g": 3.98,
+      "fat_100g": 5,
+      "fiber_100g": 0
+     }
+    }
+   },
+   "url": "https://world.openfoodfacts.org/api/v2/product/8930000000000.json",
+   "result": {
+    "food_name": "Greek yogurt",
+    "kcal": 165,
+    "protein_g": 15,
+    "carbs_g": 7,
+    "fat_g": 9,
+    "fiber_g": 0,
+    "serving_g": 170
+   }
+  },
+  {
+   "code": "8930000000001",
+   "lang": "es",
+   "ok": true,
+   "body": {
+    "status": 1,
+    "product": {
+     "product_name": "Sữa tươi",
+     "product_name_vi": "Sữa tươi Vinamilk",
+     "product_name_en": "Fresh milk",
+     "serving_quantity": "180",
+     "nutriments": {
+      "energy-kcal_100g": 63.5,
+      "proteins_100g": 3.15,
+      "carbohydrates_100g": 4.85,
+      "fat_100g": 3.25
+     }
+    }
+   },
+   "url": "https://world.openfoodfacts.org/api/v2/product/8930000000001.json",
+   "result": {
+    "food_name": "Sữa tươi",
+    "kcal": 114,
+    "protein_g": 6,
+    "carbs_g": 9,
+    "fat_g": 6,
+    "fiber_g": 0,
+    "serving_g": 180
+   }
+  },
+  {
+   "code": "8930000000002",
+   "lang": "es",
+   "ok": true,
+   "body": {
+    "status": 1,
+    "product": {
+     "product_name_en": "Oat bar",
+     "product_quantity": 40,
+     "nutriments": {
+      "energy-kcal": 410,
+      "proteins_100g": 8.75,
+      "carbohydrates_100g": 62.5,
+      "fat_100g": 13.75,
+      "fiber_100g": 6.25
+     }
+    }
+   },
+   "url": "https://world.openfoodfacts.org/api/v2/product/8930000000002.json",
+   "result": {
+    "food_name": "Oat bar",
+    "kcal": 164,
+    "protein_g": 4,
+    "carbs_g": 25,
+    "fat_g": 6,
+    "fiber_g": 3,
+    "serving_g": 40
+   }
+  },
+  {
+   "code": "8930000000003",
+   "lang": "es",
+   "ok": true,
+   "body": {
+    "status": 1,
+    "product": {
+     "nutriments": {
+      "proteins_100g": 2.5
+     }
+    }
+   },
+   "url": "https://world.openfoodfacts.org/api/v2/product/8930000000003.json",
+   "result": {
+    "food_name": "8930000000003",
+    "kcal": 0,
+    "protein_g": 3,
+    "carbs_g": 0,
+    "fat_g": 0,
+    "fiber_g": 0,
+    "serving_g": 100
+   }
+  },
+  {
+   "code": "8930000000004",
+   "lang": "es",
+   "ok": true,
+   "body": {
+    "status": 1,
+    "product": {
+     "product_name": "",
+     "product_name_en": "Water",
+     "nutriments": {}
+    }
+   },
+   "url": "https://world.openfoodfacts.org/api/v2/product/8930000000004.json",
+   "result": {
+    "food_name": "Water",
+    "kcal": 0,
+    "protein_g": 0,
+    "carbs_g": 0,
+    "fat_g": 0,
+    "fiber_g": 0,
+    "serving_g": 100
+   }
+  },
+  {
+   "code": "8930000000005",
+   "lang": "es",
+   "ok": true,
+   "body": {
+    "status": 1,
+    "product": {
+     "product_name": "Chips",
+     "serving_quantity": 0,
+     "product_quantity": "150",
+     "nutriments": {
+      "energy-kcal_100g": 536.7,
+      "fat_100g": 34.5,
+      "carbohydrates_100g": 53.5,
+      "proteins_100g": 6.5,
+      "fiber_100g": 4.5
+     }
+    }
+   },
+   "url": "https://world.openfoodfacts.org/api/v2/product/8930000000005.json",
+   "result": {
+    "food_name": "Chips",
+    "kcal": 805,
+    "protein_g": 10,
+    "carbs_g": 80,
+    "fat_g": 52,
+    "fiber_g": 7,
+    "serving_g": 150
+   }
+  },
+  {
+   "code": "8930000000006",
+   "lang": "es",
+   "ok": true,
+   "body": {
+    "status": 1,
+    "product": {
+     "product_name": "Half",
+     "serving_quantity": 50,
+     "nutriments": {
+      "energy-kcal_100g": 1,
+      "proteins_100g": 1,
+      "carbohydrates_100g": 3,
+      "fat_100g": 5,
+      "fiber_100g": 7
+     }
+    }
+   },
+   "url": "https://world.openfoodfacts.org/api/v2/product/8930000000006.json",
+   "result": {
+    "food_name": "Half",
+    "kcal": 1,
+    "protein_g": 1,
+    "carbs_g": 2,
+    "fat_g": 3,
+    "fiber_g": 4,
+    "serving_g": 50
+   }
+  },
+  {
+   "code": "8930000000007",
+   "lang": "es",
+   "ok": true,
+   "body": {
+    "status": 1,
+    "product": {
+     "product_name": "No nutriments",
+     "serving_quantity": 30
+    }
+   },
+   "url": "https://world.openfoodfacts.org/api/v2/product/8930000000007.json",
+   "result": {
+    "food_name": "No nutriments",
+    "kcal": 0,
+    "protein_g": 0,
+    "carbs_g": 0,
+    "fat_g": 0,
+    "fiber_g": 0,
+    "serving_g": 30
+   }
+  },
+  {
+   "code": "8930000000008",
+   "lang": "es",
+   "ok": true,
+   "body": {
+    "status": 1,
+    "product": {
+     "product_name_vi": "Chỉ có tên Việt",
+     "nutriments": {
+      "energy-kcal_100g": 250
+     }
+    }
+   },
+   "url": "https://world.openfoodfacts.org/api/v2/product/8930000000008.json",
+   "result": {
+    "food_name": "8930000000008",
+    "kcal": 250,
+    "protein_g": 0,
+    "carbs_g": 0,
+    "fat_g": 0,
+    "fiber_g": 0,
+    "serving_g": 100
+   }
+  },
+  {
+   "code": "8930000000009",
+   "lang": "es",
+   "ok": true,
+   "body": {
+    "status": 0,
+    "product": {
+     "product_name": "Not found flag"
+    }
+   },
+   "url": "https://world.openfoodfacts.org/api/v2/product/8930000000009.json",
+   "result": null
+  },
+  {
+   "code": "8930000000010",
+   "lang": "es",
+   "ok": true,
+   "body": {
+    "status": 1
+   },
+   "url": "https://world.openfoodfacts.org/api/v2/product/8930000000010.json",
+   "result": null
+  },
+  {
+   "code": "8930000000011",
+   "lang": "es",
+   "ok": true,
+   "body": {
+    "status_verbose": "product not found"
+   },
+   "url": "https://world.openfoodfacts.org/api/v2/product/8930000000011.json",
+   "result": null
+  },
+  {
+   "code": "0000000000001",
+   "lang": "en",
+   "ok": false,
+   "body": {
+    "status": 1,
+    "product": {
+     "product_name": "Greek yogurt",
+     "serving_quantity": 170,
+     "nutriments": {
+      "energy-kcal_100g": 97,
+      "proteins_100g": 9,
+      "carbohydrates_100g": 3.98,
+      "fat_100g": 5,
+      "fiber_100g": 0
+     }
+    }
+   },
+   "url": "https://world.openfoodfacts.org/api/v2/product/0000000000001.json",
+   "result": null
+  }
+ ]
+}
