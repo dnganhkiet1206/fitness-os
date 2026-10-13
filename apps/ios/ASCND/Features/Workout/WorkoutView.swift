@@ -42,6 +42,7 @@ public struct WorkoutView: View {
   /// Debounce ghi controller — tránh ghi mỗi phím gõ (#300).
   @State private var pendingWrites: [String: Task<Void, Never>] = [:]
   @Environment(\.scenePhase) private var scenePhase
+  @Environment(\.dynamicTypeSize) private var typeSize
   /// Đơn vị tạ của tài khoản (#527 1.9-B): ô tạ hiện và nhận số theo đơn vị
   /// này; controller đổi về kg (cùng đơn vị, `WorkoutFlow.setWeightUnit`).
   @Environment(\.weightUnit) private var unit
@@ -308,9 +309,13 @@ public struct WorkoutView: View {
         .accessibilityLabel(Text(tickLabel(row, performed: performed, done: done, ready: ready)))
         .accessibilityAddTraits(done ? [.isButton, .isSelected] : .isButton)
 
+        // Nhãn ngắn không bao giờ bẻ dòng: ở cỡ chữ trợ năng "1/3" và "kg"
+        // từng xuống dòng từng ký tự vì hai ô số giữ chỗ cố định.
         Text("\(row.ordinal)/\(row.of)")
           .font(DS.TextStyle.footnote.monospacedDigit())
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          .lineLimit(1)
+          .fixedSize()
           .frame(minWidth: 36)
 
         // Ô tạ / reps — gõ chữ, View debounce rồi truyền cho controller (#300).
@@ -318,7 +323,7 @@ public struct WorkoutView: View {
           .keyboardType(.decimalPad)
           .multilineTextAlignment(.trailing)
           .font(DS.TextStyle.body.monospacedDigit())
-          .frame(width: 64)
+          .frame(minWidth: 64, maxWidth: typeSize.isAccessibilitySize ? .infinity : 64)
           .frame(minHeight: 44)
           .padding(.horizontal, DS.Spacing.xs)
           .background(DS.Color.secondary.swiftUI)
@@ -340,10 +345,12 @@ public struct WorkoutView: View {
         Text(verbatim: unit.label)
           .font(DS.TextStyle.footnote)
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          .fixedSize()
           .accessibilityHidden(true)
 
         Text("×")
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          .fixedSize()
 
         TextField("", text: repsBinding(for: row))
           // Ô reps nhận cả "45s" (bài giữ, `RepEntry.parse`): bàn phím số thuần
@@ -351,7 +358,7 @@ public struct WorkoutView: View {
           .keyboardType(.numbersAndPunctuation)
           .multilineTextAlignment(.trailing)
           .font(DS.TextStyle.body.monospacedDigit())
-          .frame(width: 64)
+          .frame(minWidth: 64, maxWidth: typeSize.isAccessibilitySize ? .infinity : 64)
           .frame(minHeight: 44)
           .padding(.horizontal, DS.Spacing.xs)
           .background(DS.Color.secondary.swiftUI)
@@ -369,7 +376,10 @@ public struct WorkoutView: View {
         Spacer(minLength: 0)
       }
 
-      HStack(spacing: DS.Spacing.sm) {
+      // Cỡ chữ trợ năng: hai chip chồng lên nhau thay vì cắt "90s" còn "9".
+      (typeSize.isAccessibilitySize
+        ? AnyLayout(VStackLayout(alignment: .leading, spacing: DS.Spacing.xs))
+        : AnyLayout(HStackLayout(spacing: DS.Spacing.sm))) {
         // Chip nghỉ.
         Menu {
           ForEach([30, 60, 90, 120, 180, 300], id: \.self) { s in
@@ -383,6 +393,7 @@ public struct WorkoutView: View {
             systemImage: "timer"
           )
           .font(DS.TextStyle.footnote)
+          .fixedSize()
           .padding(.horizontal, DS.Spacing.sm)
           .frame(minHeight: 44)
           .background(DS.Color.secondary.swiftUI)
@@ -401,6 +412,7 @@ public struct WorkoutView: View {
         } label: {
           Text("RPE \(controller.progress.rpe[row.key] ?? row.plannedRpe)")
             .font(DS.TextStyle.footnote)
+            .fixedSize()
             .padding(.horizontal, DS.Spacing.sm)
             .frame(minHeight: 44)
             .background(DS.Color.secondary.swiftUI)

@@ -34,7 +34,8 @@
 | `n4-empty-after-delete-no-relaunch-vi-light.jpg` | Sau khi xoá buổi thử, mở lại màn **không khởi động lại app**: về rỗng (xác nhận bản sửa) |
 | `today-more-axxxl-dark-findings.jpg` | Phát hiện cho agent khác: `TodayMore` (tiêu đề không phóng to theo cỡ chữ) và `HealthSyncCard` (bẻ chữ giữa từ) |
 | `today-more-healthcard-axxxl-after-fix.jpg` | AX5 sau khi B sửa: tiêu đề hàng lớn theo cỡ chữ, số đo xuống dưới; thẻ Apple Health xếp dọc |
-| `workout-logger-axxxl-finding.jpg` | Phát hiện, **chưa sửa**: màn ghi set của tab Tập luyện ở AX5 bẻ "1/3" và "kg" từng ký tự theo chiều dọc |
+| `workout-logger-axxxl-finding.jpg` | **Lỗi:** màn ghi set của tab Tập luyện ở AX5 bẻ "1/3" và "kg" từng ký tự theo chiều dọc, cắt "90s" còn "9" |
+| `workout-logger-axxxl-after-fix.jpg` | AX5 sau khi B sửa: "2/3 · ô · kg × 10" một hàng, hai chip nghỉ / RPE xếp dọc |
 
 **Chưa chạy:**
 - VoiceOver: NOT RUN (chỉ soát nhãn trong mã).
