@@ -149,18 +149,14 @@ struct NutritionTab: View {
     }
   }
 
-  /// Đầu trang như Hôm nay: tiêu đề lớn + ngày; phải là "Ngày khác" (Nhật ký).
+  /// Đầu trang trong nội dung (như Hôm nay): tiêu đề lớn; phải là "Ngày khác"
+  /// (Nhật ký). Không có dòng thứ / ngày (chủ dự án, 13/10).
   private var header: some View {
-    HStack(alignment: .top, spacing: DS.Spacing.sm) {
-      VStack(alignment: .leading, spacing: 0) {
-        Text(String(localized: "tab.nutrition"))
-          .font(.largeTitle.bold())
-          .foregroundStyle(DS.Color.foreground.swiftUI)
-          .accessibilityAddTraits(.isHeader)
-        Text(verbatim: Date.now.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(.app)))
-          .font(DS.TextStyle.body)
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-      }
+    HStack(alignment: .center, spacing: DS.Spacing.sm) {
+      Text(String(localized: "tab.nutrition"))
+        .font(.largeTitle.bold())
+        .foregroundStyle(DS.Color.foreground.swiftUI)
+        .accessibilityAddTraits(.isHeader)
       Spacer(minLength: 0)
       if let userId {
         NavigationLink(value: DiaryRoute(userId: userId)) {
@@ -179,7 +175,6 @@ struct NutritionTab: View {
         }
         .buttonStyle(TodayPressStyle())
         .accessibilityLabel(Text(String(localized: "nc.otherDays")))
-        .padding(.top, 6)
       }
     }
     .frame(maxWidth: .infinity, alignment: .leading)

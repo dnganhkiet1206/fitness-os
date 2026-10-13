@@ -34,6 +34,7 @@ struct SmartGoalsView: View {
       }
       .padding(DS.Spacing.md)
     }
+    .ascndPage()
     .navigationTitle(Text("smartgoals.title"))
     .task { if case .loading = book.phase { await book.load() } }
     .refreshable { await book.load() }

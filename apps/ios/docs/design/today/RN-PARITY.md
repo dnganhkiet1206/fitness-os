@@ -150,3 +150,5 @@ Everything below lives in `TodayGlass.swift`.
 - **Reduce Motion.** Every spring becomes a 0.2 s ease and the entrance is opacity only. The system turns the zoom into a fade.
 
 Checked on the Limrun simulator (iOS 26.4, light): material, glow, entrance, water tap (tube rise and Koa line change), and the zoom into the buddy room. **Not checked:** dark mode, Reduce Transparency, Reduce Motion, frame rate on a real device.
+
+**Owner update (B, 13/10):** the header is back to RN — `BrandLockup` (ASCND mark + word) on the left, streak chip and avatar on the right; the large "Today" title and the date line are gone.

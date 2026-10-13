@@ -530,19 +530,12 @@ struct TodayExtras<Plan: View>: View {
 
   // MARK: - Đầu trang
 
-  /// Tiêu đề lớn "Hôm nay" + ngày; phải là viên chuỗi ngày (≥ 1, → phòng linh
-  /// vật) và avatar (→ Cài đặt). Logo của RN bỏ — đã ở biểu tượng app.
+  /// Đầu trang như RN (`(tabs)/index.tsx`): logo ASCND; phải là viên chuỗi ngày
+  /// (≥ 1, → phòng linh vật) và avatar (→ Cài đặt). Không có dòng thứ / ngày
+  /// (chủ dự án, 13/10).
   private var header: some View {
-    HStack(alignment: .top, spacing: DS.Spacing.sm) {
-      VStack(alignment: .leading, spacing: 0) {
-        Text(String(localized: "tab.today"))
-          .font(.largeTitle.bold())
-          .foregroundStyle(DS.Color.foreground.swiftUI)
-          .accessibilityAddTraits(.isHeader)
-        Text(verbatim: Date.now.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(.app)))
-          .font(DS.TextStyle.body)
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-      }
+    HStack(alignment: .center, spacing: DS.Spacing.sm) {
+      BrandLockup()
       Spacer(minLength: 0)
       if let mascot, mascot.streak.count >= 1 {
         StreakChip(count: mascot.streak.count, lit: mascot.streak.loggedToday) { showsRoom = true }

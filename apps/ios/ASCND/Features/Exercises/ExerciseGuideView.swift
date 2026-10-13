@@ -75,6 +75,7 @@ struct ExerciseGuideView: View {
         }
         .padding(DS.Spacing.md)
       }
+      .ascndPage()
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
           Button {

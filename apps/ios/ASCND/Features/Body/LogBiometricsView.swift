@@ -61,6 +61,7 @@ struct LogBiometricsView: View {
         .padding(DS.Spacing.lg)
       }
       .scrollDismissesKeyboard(.interactively)
+      .ascndPage()
       .navigationTitle(Text("bioLog.title"))
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {

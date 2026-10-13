@@ -28,6 +28,7 @@ struct MealPlansView: View {
       }
       .padding(DS.Spacing.md)
     }
+    .ascndPage()
     .navigationTitle(String(localized: "plans.title"))
     .navigationBarTitleDisplayMode(.inline)
     .toolbar {
@@ -199,6 +200,7 @@ struct CreatePlanSheet: View {
         }
         .padding(DS.Spacing.md)
       }
+      .ascndPage()
       .navigationTitle(String(localized: "plans.new"))
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
@@ -272,6 +274,7 @@ struct MealPlanView: View {
       }
       .padding(DS.Spacing.md)
     }
+    .ascndPage()
     .navigationTitle(plan?.name ?? String(localized: "plans.title"))
     .navigationBarTitleDisplayMode(.inline)
     .toolbar {
@@ -523,6 +526,7 @@ private struct AddPlanFoodSheet: View {
         }
         .padding(DS.Spacing.md)
       }
+      .ascndPage()
       .navigationTitle(String(localized: "plans.addFood"))
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {

@@ -77,6 +77,7 @@ struct FoodListView: View {
       }
       .padding(DS.Spacing.md)
     }
+    .ascndPage()
     .navigationTitle(String(localized: "foods.title"))
     .navigationBarTitleDisplayMode(.inline)
     .refreshable { await book.load() }
@@ -284,6 +285,7 @@ struct FoodEditorView: View {
         }
         .padding(DS.Spacing.md)
       }
+      .ascndPage()
       .navigationTitle(food == nil ? String(localized: "foods.addTitle") : String(localized: "foods.editTitle"))
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {

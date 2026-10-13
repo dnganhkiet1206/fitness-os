@@ -59,7 +59,9 @@ Số liệu, luật làm tròn, mục tiêu, outbox, cách ghi, màn con (Ghi b�
 ## Trạng thái (13/10, B)
 
 Đã làm (phân đoạn Hôm nay + Kế hoạch ăn như trên), kèm:
-- `statusBarScrim` (Today + Dinh dưỡng): dải **kính trong** ở vùng thanh trạng thái theo yêu cầu chủ dự án ("dải mờ đó nên làm clear");
+- `statusBarScrim` (Today + Dinh dưỡng): dải **nhoè thuần** ở vùng thanh trạng thái (chủ dự án: thử kính trong thì hiện lớp trắng — "phải blur, không phải kính");
+- bỏ dòng thứ / ngày dưới tiêu đề (cả Hôm nay); Hôm nay trở lại logo ASCND như RN;
+- nền giấy cho mọi màn con của Dinh dưỡng (Ghi bữa, Thực phẩm, Kế hoạch, Nước) và các màn ghi của Cơ thể;
 - cỡ chữ trợ năng: vòng trên / macro dưới, giá trị macro xuống dòng, "Ngày khác" chỉ biểu tượng, chữ trong vòng giới hạn ở xLarge.
 
 Ảnh trước / sau: `apps/ios/docs/qa/nutrition-audit-2026-10-13/` (`before-*`, `after-*`). Chưa làm: máy quét mã vạch (lát kế tiếp — nút trong ô ghi bữa sẽ hiện khi có màn quét).

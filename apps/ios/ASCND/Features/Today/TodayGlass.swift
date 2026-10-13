@@ -65,8 +65,8 @@ extension View {
 
   /// Lớp che vùng thanh trạng thái cho trang ẩn thanh điều hướng (Hôm nay, Dinh
   /// dưỡng): không có nó, nội dung cuộn chạy thẳng dưới giờ và Dynamic Island
-  /// (chữ đè chữ). Kính trong (iOS 26) tắt dần xuống dưới; máy cũ dùng
-  /// material mỏng; Reduce Transparency → nền đặc.
+  /// (chữ đè chữ). Nhoè thuần (không tô màu) tắt dần xuống dưới; Reduce
+  /// Transparency → nền đặc.
   func statusBarScrim() -> some View {
     modifier(StatusBarScrim())
   }
@@ -88,26 +88,58 @@ private struct StatusBarScrim: ViewModifier {
         }
       }
       .overlay(alignment: .top) {
+        // NHOÈ thuần, không phủ màu và không phải kính (chủ dự án, 13/10):
+        // kính / material đều mang một lớp trắng. Tắt dần xuống dưới.
         Group {
           if reduceTransparency {
             Rectangle().fill(DS.Color.background.swiftUI)
-          } else if #available(iOS 26.0, *) {
-            // Kính TRONG (chủ dự án, 13/10): không phủ màu giấy, chỉ khúc xạ
-            // phần nội dung đi qua dưới giờ.
-            Rectangle().fill(.clear).glassEffect(.clear, in: Rectangle())
           } else {
-            Rectangle().fill(.ultraThinMaterial)
+            PureBlur()
           }
         }
-        .frame(height: top + 18)
+        .frame(height: top + 20)
         .mask(
           LinearGradient(
-            stops: [.init(color: .black, location: 0), .init(color: .black, location: 0.72), .init(color: .clear, location: 1)],
+            stops: [.init(color: .black, location: 0), .init(color: .black, location: 0.55), .init(color: .clear, location: 1)],
             startPoint: .top, endPoint: .bottom))
         .ignoresSafeArea(edges: .top)
         .allowsHitTesting(false)
         .accessibilityHidden(true)
       }
+  }
+}
+
+/// Nhoè của hệ thống KHÔNG có lớp tô: `UIVisualEffectView` giữ lớp nhoè nền
+/// (backdrop) và ẩn các lớp tô màu / độ sáng mà mọi kiểu material mang theo.
+/// Không gọi API riêng — chỉ ẩn các view con công khai trong cây của nó.
+private struct PureBlur: UIViewRepresentable {
+  func makeUIView(context: Context) -> UntintedBlurView { UntintedBlurView() }
+  func updateUIView(_ view: UntintedBlurView, context: Context) {}
+}
+
+private final class UntintedBlurView: UIVisualEffectView {
+  init() {
+    super.init(effect: UIBlurEffect(style: .systemUltraThinMaterial))
+    isUserInteractionEnabled = false
+  }
+
+  required init?(coder: NSCoder) { nil }
+
+  override func layoutSubviews() {
+    super.layoutSubviews()
+    stripTint()
+  }
+
+  override func traitCollectionDidChange(_ previous: UITraitCollection?) {
+    super.traitCollectionDidChange(previous)
+    stripTint()
+  }
+
+  /// Lớp tô là các `_UIVisualEffectSubview`; lớp nhoè là `_UIVisualEffectBackdropView`.
+  private func stripTint() {
+    for v in subviews where String(describing: type(of: v)).contains("VisualEffectSubview") {
+      v.isHidden = true
+    }
   }
 }
 

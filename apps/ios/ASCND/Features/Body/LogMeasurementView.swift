@@ -60,6 +60,7 @@ struct LogMeasurementView: View {
         .padding(DS.Spacing.lg)
       }
       .scrollDismissesKeyboard(.interactively)
+      .ascndPage()
       .navigationTitle(Text("measureLog.title"))
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {

@@ -67,6 +67,7 @@ struct LogMealView: View {
           DSLoadingView()
         }
       }
+      .ascndPage()
       .navigationTitle(String(localized: "logMeal.title"))
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {

@@ -90,6 +90,7 @@ struct LogSleepView: View {
         .padding(DS.Spacing.lg)
       }
       .scrollDismissesKeyboard(.interactively)
+      .ascndPage()
       .navigationTitle(Text("sleepLog.title"))
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {

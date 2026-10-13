@@ -98,6 +98,7 @@ struct LogWeightView: View {
           .opacity(logger == nil || logger?.pending == true || outOfRange ? 0.5 : 1)
       }
       .padding(DS.Spacing.lg)
+      .ascndPage()
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
           Button(String(localized: "common.cancel")) { dismiss() }

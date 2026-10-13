@@ -65,6 +65,7 @@ struct WaterView: View {
 
   var body: some View {
     content
+      .ascndPage()
       .navigationTitle(String(localized: "water.title"))
       .task { await book.clockTick() }
       .refreshable { await book.refresh() }
