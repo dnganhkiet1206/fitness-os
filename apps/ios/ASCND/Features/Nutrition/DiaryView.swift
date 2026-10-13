@@ -28,26 +28,18 @@ import SwiftUI
 /// - xoá cả bữa là nút trong thẻ đã mở + hành động VoiceOver, không phải vuốt.
 struct DiaryView: View {
   let book: MealDiaryBook
+  /// kcal 7 ngày gần nhất cho dải ngày (`NutritionInsightsBook`, cùng truy vấn
+  /// với màn xu hướng). `nil` / hỏng: dải vẫn chuyển ngày, chỉ không tô đậm nhạt.
+  var week: NutritionInsightsBook?
+  @Environment(ProfileBook.self) private var profile: ProfileBook?
 
   var body: some View {
     ScrollView {
-      VStack(spacing: DS.Spacing.md) {
+      VStack(alignment: .leading, spacing: DS.Spacing.md) {
         dayBar
-        if !book.isToday {
-          Button {
-            book.goToday()
-          } label: {
-            Text(String(localized: "diary.today"))
-              .font(DS.TextStyle.footnote.weight(.semibold))
-              .foregroundStyle(DS.Color.primary.swiftUI)
-              .padding(.horizontal, DS.Spacing.lg)
-              .frame(minHeight: 44)
-              .background(DS.Color.muted.swiftUI, in: Capsule())
-          }
-          .buttonStyle(.plain)
-          .sensoryFeedback(.selection, trigger: book.date)
-        }
-        DayMealsSection(book: book)
+        weekStrip
+        dayTotal
+        DayMealsSection(book: book, slots: true)
       }
       .padding(DS.Spacing.md)
     }
@@ -56,30 +48,100 @@ struct DiaryView: View {
     .navigationBarTitleDisplayMode(.inline)
     .refreshable { await book.load() }
     .task(id: book.date) { await book.load() }
+    .task { await week?.load() }
   }
 
   // MARK: - Ngày
 
+  /// ‹ Hôm nay / Thứ Hai, 12 thg 10 › — không thẻ (thiết kế lại 13/10); nút
+  /// "Hôm nay" chỉ khi đang ở ngày khác.
   private var dayBar: some View {
-    DSCard {
-      HStack(spacing: DS.Spacing.sm) {
-        arrow("chevron.left", label: String(localized: "diary.prevDay"), enabled: true) { _ = book.go(-1) }
-        VStack(spacing: 1) {
-          Text(verbatim: Self.dayLabel(book.date, today: book.today))
-            .font(DS.TextStyle.headline)
+    HStack(spacing: DS.Spacing.sm) {
+      arrow("chevron.left", label: String(localized: "diary.prevDay"), enabled: true) { _ = book.go(-1) }
+      VStack(spacing: 1) {
+        Text(verbatim: Self.dayLabel(book.date, today: book.today))
+          .font(DS.TextStyle.headline)
+          .lineLimit(1)
+        if let sub = Self.daySub(book.date, today: book.today) {
+          Text(verbatim: sub)
+            .font(DS.TextStyle.caption)
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
             .lineLimit(1)
-          if let sub = Self.daySub(book.date, today: book.today) {
-            Text(verbatim: sub)
+        } else {
+          Button { book.goToday() } label: {
+            Text(String(localized: "diary.today"))
+              .font(DS.TextStyle.caption.weight(.semibold))
+              .foregroundStyle(MascotRoomView.signalColor(.meal))
+          }
+          .buttonStyle(.plain)
+          .frame(minHeight: 22)
+        }
+      }
+      .frame(maxWidth: .infinity)
+      .accessibilityElement(children: .combine)
+      .accessibilityAddTraits(.isHeader)
+      arrow("chevron.right", label: String(localized: "diary.nextDay"), enabled: !book.isToday) { _ = book.go(1) }
+    }
+  }
+
+  /// Bảy ngày gần nhất: ô càng đậm càng gần mục tiêu calo; chạm để xem ngày ấy.
+  private var weekStrip: some View {
+    let today = book.today
+    let days = (0..<7).map { today.adding(days: $0 - 6) }
+    var kcal: [LocalDate: Double] = [:]
+    if case .ready(let rows)? = week?.phase { for r in rows { kcal[r.date] = r.kcal } }
+    let target = NutritionToday.calorieTarget(profile?.profile)
+    let meal = MascotRoomView.signalColor(.meal)
+    return HStack(spacing: 4) {
+      ForEach(days, id: \.self) { d in
+        let k = kcal[d] ?? 0
+        let level = target > 0 ? min(1, k / target) : 0
+        let on = d == book.date
+        Button { _ = book.go(Self.distance(from: book.date, to: d)) } label: {
+          VStack(spacing: 3) {
+            Text(verbatim: d.calendarDate.formatted(Date.FormatStyle().weekday(.narrow).locale(.app)))
               .font(DS.TextStyle.caption)
               .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-              .lineLimit(1)
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+              .fill(k > 0 ? meal.opacity(0.25 + 0.75 * level) : DS.Color.foreground.swiftUI.opacity(0.06))
+              .frame(height: 30)
+              .overlay(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                  .strokeBorder(on ? DS.Color.foreground.swiftUI : .clear, lineWidth: 2))
           }
+          .frame(maxWidth: .infinity)
+          .contentShape(Rectangle())
         }
-        .frame(maxWidth: .infinity)
-        .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(.isHeader)
-        arrow("chevron.right", label: String(localized: "diary.nextDay"), enabled: !book.isToday) { _ = book.go(1) }
+        .buttonStyle(TodayPressStyle(scale: 0.94))
+        .accessibilityLabel(Text(verbatim: Self.dayLabel(d, today: today)))
+        .accessibilityValue(Text(verbatim: k > 0 ? "\(DiaryView.whole(k)) kcal" : String(localized: "nc.slot.empty")))
+        .accessibilityAddTraits(on ? .isSelected : [])
       }
+    }
+  }
+
+  static func distance(from a: LocalDate, to b: LocalDate) -> Int { b.daysSinceEpoch - a.daysSinceEpoch }
+
+  /// "1.840 / 2.508 kcal" của ngày đang xem (cộng từ chính danh sách bữa).
+  @ViewBuilder private var dayTotal: some View {
+    if case .ready(let meals) = book.phase {
+      let total = MealDiary.dayTotal(meals)
+      let target = NutritionToday.calorieTarget(profile?.profile)
+      HStack(alignment: .firstTextBaseline, spacing: 6) {
+        Text(verbatim: DiaryView.whole(total.kcal))
+          .font(.custom("Menlo", size: 26, relativeTo: .title).weight(.bold))
+        Text(verbatim: target > 0 ? "/ \(DiaryView.whole(target)) kcal" : "kcal")
+          .font(DS.TextStyle.footnote)
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        Spacer(minLength: 0)
+        if total.kcal > 0 {
+          Text(verbatim: DiaryView.macros(total.protein, total.carbs, total.fat))
+            .font(DS.TextStyle.caption.monospacedDigit())
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        }
+      }
+      .padding(.horizontal, 4)
+      .accessibilityElement(children: .combine)
     }
   }
 
@@ -89,9 +151,10 @@ struct DiaryView: View {
         .font(.body.weight(.semibold))
         .foregroundStyle(DS.Color.foreground.swiftUI)
         .frame(width: 44, height: 44)
-        .background(DS.Color.muted.swiftUI, in: Circle())
+        .background(Circle().fill(.thinMaterial))
+        .overlay(Circle().strokeBorder(DS.Color.foreground.swiftUI.opacity(0.1)))
     }
-    .buttonStyle(.plain)
+    .buttonStyle(TodayPressStyle())
     .disabled(!enabled)
     .opacity(enabled ? 1 : 0.35)
     .accessibilityLabel(Text(verbatim: label))

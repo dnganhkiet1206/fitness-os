@@ -306,19 +306,24 @@ struct DiaryScreen: View {
   var date: LocalDate?
   @Environment(AppServices.self) private var services
   @State private var book: MealDiaryBook?
+  @State private var week: NutritionInsightsBook?
 
   var body: some View {
     Group {
       if let book {
-        DiaryView(book: book)
+        DiaryView(book: book, week: week)
       } else {
         DSLoadingView()
       }
     }
     .task {
       if book == nil { book = services.makeMealDiary(userId: userId, date: date) }
+      if week == nil { week = services.makeNutritionInsights(userId: userId) }
     }
-    .onDisappear { book?.close() }
+    .onDisappear {
+      book?.close()
+      week?.close()
+    }
   }
 }
 
