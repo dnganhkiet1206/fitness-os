@@ -40,6 +40,9 @@ struct TodayExtras<Plan: View>: View {
   /// Thẻ tập luyện đầy đủ (RN `TrainingCard`) — dựng khi chạm hàng lần đầu.
   @State private var training: TrainingCardBook?
   @State private var showsTraining = false
+  /// Ba vòng hoạt động (RN `ActivityRingsCard`).
+  @State private var activity: ActivityRingsBook?
+  @State private var showsActivity = false
   /// Cân hôm nay cho hàng "Cân nặng" (`todo-card.tsx: weight → /log-weight`).
   @State private var weight: WeightLogger?
   @State private var showsWeight = false
@@ -193,6 +196,12 @@ struct TodayExtras<Plan: View>: View {
           .todayZoom("trend", in: zoom)
       }
     }
+    .navigationDestination(isPresented: $showsActivity) {
+      if let activity {
+        ActivityRingsView(book: activity, stepsTarget: mascot?.stepsGoal ?? DailySignals.defaultStepsGoal)
+          .todayZoom("activity", in: zoom)
+      }
+    }
     .navigationDestination(isPresented: $showsTraining) {
       if let training { TrainingCardView(book: training, acwr: todayAcwr).todayZoom("load", in: zoom) }
     }
@@ -223,6 +232,7 @@ struct TodayExtras<Plan: View>: View {
       challenges = services.makeWeeklyChallenges(userId: userId, today: today)
       weekly = services.makeWeeklyReview(userId: userId, today: today)
       trend = services.makeReadinessTrend(userId: userId, today: today)
+      activity = services.makeActivityRings(userId: userId, today: today)
       weight = services.makeWeightLogger(userId: userId)
       todo = services.makeReminderToday(userId: userId)
       if nutrition == nil { ownWater = services.makeWaterBook(userId: userId) }
@@ -232,6 +242,7 @@ struct TodayExtras<Plan: View>: View {
       if let nutrition { await nutrition.loadOnce() } else { await ownWater?.load() }
       await readiness?.load()
       await trend?.load()
+      await activity?.load()
       await biometrics?.load()
       await focusChecks()
     }
@@ -240,6 +251,7 @@ struct TodayExtras<Plan: View>: View {
         await reloadDay()
         await trend?.load()
         await training?.load()
+        await activity?.load(today: Self.today())
         await focusChecks()
       }
     }
@@ -256,6 +268,7 @@ struct TodayExtras<Plan: View>: View {
         await todo?.refresh()
         await focusChecks()
         await trend?.move(to: today)
+        await activity?.load(today: today)
       }
     }
     // Đóng khi phiên không còn là của người này (đăng xuất / đổi tài khoản) —
@@ -271,6 +284,7 @@ struct TodayExtras<Plan: View>: View {
       weekly?.close()
       trend?.close()
       training?.close()
+      activity?.close()
       weight?.close()
       todo?.close()
       ownWater?.close()
@@ -376,6 +390,12 @@ struct TodayExtras<Plan: View>: View {
           }
         }))
     }
+    // Ba vòng (RN `ActivityRingsCard`): số vòng đã đóng hôm nay.
+    if let activity, let m = activity.model(body: energyBody, stepsTarget: mascot?.stepsGoal ?? DailySignals.defaultStepsGoal) {
+      rows.append(.init(
+        id: "activity", title: String(localized: "ar.title"), value: "\(m.closed)/\(m.rings.count)",
+        action: { showsActivity = true }))
+    }
     if let trend {
       let avg = trend.stats.map { String(localized: "today.more.avg \(Int($0.average))") } ?? "—"
       rows.append(.init(id: "trend", title: String(localized: "rt.title"), value: avg, action: { showsTrend = true }))
@@ -396,6 +416,11 @@ struct TodayExtras<Plan: View>: View {
     let s = TodayDay.merging(room.signals, localWaterMl: water?.loaded == true ? water?.totalMl : nil)
     let hour = Calendar.current.component(.hour, from: .now)
     return MascotLine.line(TodayDay.mascotDay(s, hour: hour)).gap.map(TodayDay.quest)
+  }
+
+  /// Hồ sơ năng lượng cho kcal ước lượng của vòng Move (`energyProfileFrom`).
+  private var energyBody: SessionEnergy.Body? {
+    SessionEnergy.body(profile: profile?.profile, today: Self.today())
   }
 
   /// ACWR engine đã ghi cho hôm nay; chưa có → `nil`.

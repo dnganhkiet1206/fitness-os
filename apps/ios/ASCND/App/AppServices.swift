@@ -418,6 +418,12 @@ final class AppServices {
     rows.map { TrainingCardBook(userId: userId, store: $0, in: .current) }
   }
 
+  /// Ba vòng hoạt động (#527 N4, `ActivityRingsCard`): hàng `daily_logs` hôm nay
+  /// (Health) và các buổi trong ngày, qua kho hàng chung.
+  func makeActivityRings(userId: String, today: LocalDate) -> ActivityRingsBook? {
+    rows.map { ActivityRingsBook(userId: userId, today: today, store: $0, in: .current) }
+  }
+
   /// Nhật ký bữa ăn (#527 Phase 3 · 3.10): đọc một ngày; xoá / hoàn tác / sửa
   /// khẩu phần thẳng server (chỉ online, như RN) rồi dựng lại `daily_logs`.
   /// `date`: ngày đầu (`diary?date=` của deep link); `nil` = hôm nay.

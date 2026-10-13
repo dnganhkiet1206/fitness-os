@@ -71,6 +71,7 @@ Status:
 | Biometrics | `hr bpm · hrv ms` from today's latest sample, else "—" | `BiometricsView` | `BiometricsCard` |
 | Training this week | `loadComparison(acwr)`: "+8%" or "−12%" against the 4-week habit; "—" without ACWR | `TrainingCardView` — the full RN training card (B, N3) | `TrainingCard` (`today-widgets-2.tsx:400`) + `training-card.ts`, `training-week.ts`, `goal-training.ts` → `TrainingCard` / `TrainingCardBook` (Core, `training-card-golden.json`) |
 | Readiness trend | `avg N` (7 days), "—" under 2 days | trend screen. **New:** an empty state instead of a blank page under 2 days; RN hides the card | `ReadinessTrendCard` |
+| Activity | rings closed today, "N/3" (native-only value) | `ActivityRingsView` — the RN activity rings card (B, N4) | `ActivityRingsCard` (`activity-rings.tsx`) + `lib/activity.ts` → `ActivityRings` / `ActivityRingsBook` (Core, `activity-golden.json`) |
 | Weekly review | — | `WeeklyReviewView` | Assistant tab in RN |
 | Buddy room | `Lv N` | `MascotRoomView` | Koa row in RN |
 
@@ -106,7 +107,6 @@ The whole of RN `(tabs)/index.tsx` @ fac9ac2 (14 widgets, hero deck, edit mode, 
 
 ### Still missing (port as their own tasks)
 
-- `ActivityRingsCard`: Move kcal (Health `active_kcal`, otherwise an estimate from sessions) and exercise minutes. Native has the inputs (`HealthSync`, `SessionEnergy`) but no screen.
 - `PeekHost`: Koa peeking from behind a card when a quest completes (`allowPeek` budget). Native has no peek; the tube rise and done-check bounce stand in.
 - `SleepHero` stages and quality on Today: the Sleep row shows duration only.
 

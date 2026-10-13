@@ -43219,6 +43219,489 @@
      }
     }
    }
+  },
+  "ar.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Activity"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hoạt Động"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Actividad"
+     }
+    }
+   }
+  },
+  "ar.help.a11y": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Explain the three activity rings"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Giải thích ba vòng hoạt động"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Explicar los tres anillos de actividad"
+     }
+    }
+   }
+  },
+  "ar.move": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Move"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Vận Động"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Moverse"
+     }
+    }
+   }
+  },
+  "ar.exercise": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Exercise"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tập Luyện"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ejercicio"
+     }
+    }
+   }
+  },
+  "ar.steps": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Steps"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bước Chân"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Pasos"
+     }
+    }
+   }
+  },
+  "ar.unit.kcal": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "kcal"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "kcal"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "kcal"
+     }
+    }
+   }
+  },
+  "ar.unit.min": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "min"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "phút"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "min"
+     }
+    }
+   }
+  },
+  "ar.unit.steps": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "steps"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "bước"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "pasos"
+     }
+    }
+   }
+  },
+  "ar.empty": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "No activity today yet. Connect Apple Health for calories and steps, or log a workout."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chưa có hoạt động nào hôm nay. Kết nối Apple Health để tự động lấy calo và bước chân, hoặc ghi một buổi tập."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Aún no hay actividad hoy. Conecta Apple Health para calorías y pasos, o registra un entrenamiento."
+     }
+    }
+   }
+  },
+  "ar.estimated": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "~ Tilde numbers are estimated from the workouts you logged, not measured by a device."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "~ Số có dấu ngã là ước tính từ buổi tập bạn đã ghi, không phải số đo từ thiết bị."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "~ Los números con tilde son estimaciones de los entrenamientos que registraste, no mediciones de un dispositivo."
+     }
+    }
+   }
+  },
+  "ax.lede": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Three rings for three different questions about today: how much you burned, how long you trained, and how far you walked. A ring \"closes\" when it reaches or passes its target."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ba vòng cho ba câu hỏi khác nhau về hôm nay: bạn đốt bao nhiêu, bạn tập bao lâu, và bạn đi được bao xa. Một vòng \"đóng\" khi nó chạm hoặc vượt mục tiêu của nó."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tres anillos para tres preguntas distintas sobre hoy: cuánto quemaste, cuánto entrenaste y cuánto caminaste. Un anillo «se cierra» cuando alcanza o supera su objetivo."
+     }
+    }
+   }
+  },
+  "ax.move.term": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "MOVE — active calories"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "MOVE — calo hoạt động"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "MOVE: calorías activas"
+     }
+    }
+   }
+  },
+  "ax.move.body %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "The calories you burn beyond resting metabolism, read from Apple Health. The %lld kcal target is a fixed app constant — not something you set, and not derived from your profile."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Calo bạn đốt thêm ngoài mức trao đổi chất khi nghỉ, đọc từ Apple Health. Mục tiêu %lld kcal là một hằng số của app — không phải con số bạn đặt, cũng không suy ra từ hồ sơ."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Las calorías que quemas por encima del metabolismo en reposo, leídas de Apple Health. El objetivo de %lld kcal es una constante de la app: no lo eliges tú ni sale de tu perfil."
+     }
+    }
+   }
+  },
+  "ax.exercise.term": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "EXERCISE — minutes, from two sources"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "EXERCISE — phút tập, và nó có HAI nguồn"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "EXERCISE: minutos, de dos fuentes"
+     }
+    }
+   }
+  },
+  "ax.exercise.body %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "A fixed %lld-minute target. When Apple Health has a number the measurement wins; when Health reports 0 the ring falls back to an ESTIMATE from the sets you logged today, and the card says so.\n\nIt does not take the larger of the two: \"whichever is bigger wins\" is a rule nobody can hold in their head, and a ring that quietly changes which kind of number it shows cannot be labelled honestly."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mục tiêu %lld phút, cũng là hằng số. Có số từ Apple Health thì số đo thắng; Health báo 0 thì vòng chuyển sang ƯỚC LƯỢNG từ các set bạn đã ghi hôm nay, và thẻ ghi rõ lúc đó nó đang ước lượng.\n\nNó không lấy số lớn hơn trong hai nguồn: \"cái nào lớn hơn thì thắng\" là luật không ai nhớ nổi, và một vòng lặng lẽ đổi loại số nó đang hiện thì không ghi nhãn cho trung thực được."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Un objetivo fijo de %lld minutos. Si Apple Health tiene un número, gana la medición; si Health marca 0, el anillo pasa a una ESTIMACIÓN a partir de las series que registraste hoy, y la tarjeta lo indica.\n\nNo toma el mayor de los dos: «gana el más grande» es una regla que nadie recuerda, y un anillo que cambia en silencio el tipo de número que muestra no puede etiquetarse con honestidad."
+     }
+    }
+   }
+  },
+  "ax.steps.term": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "STEPS — the only target that is yours"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "STEPS — mục tiêu duy nhất là của bạn"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "STEPS: el único objetivo que es tuyo"
+     }
+    }
+   }
+  },
+  "ax.steps.body %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ steps, changeable in Settings; unset, it defaults to 10,000. The step count comes from Apple Health."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ bước, đổi được trong Cài đặt; chưa đặt thì mặc định 10.000. Số bước đến từ Apple Health."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ pasos, se cambia en Ajustes; si no lo pones, son 10.000. Los pasos vienen de Apple Health."
+     }
+    }
+   }
+  },
+  "ax.zero.term": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "What a zero here means"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Số 0 ở đây nghĩa là gì"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Qué significa un cero aquí"
+     }
+    }
+   }
+  },
+  "ax.zero.body": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "MOVE and STEPS can only be filled by Apple Health. Without it they sit at 0 all day — that means \"nobody measured\", not \"you did not move\". EXERCISE still works from the sessions you log yourself."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "MOVE và STEPS chỉ Apple Health mới lấp được. Không kết nối Health thì hai vòng đó ở 0 cả ngày — đó là \"chưa ai đo\", không phải \"bạn không vận động\". EXERCISE vẫn chạy được từ buổi tập bạn tự ghi."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "MOVE y STEPS solo los puede llenar Apple Health. Sin él se quedan en 0 todo el día: eso significa «nadie midió», no «no te moviste». EXERCISE sigue funcionando con las sesiones que registras tú."
+     }
+    }
+   }
+  },
+  "ax.readiness.term": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "These rings are not in the readiness score"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ba vòng này không tính vào điểm sẵn sàng"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Estos anillos no entran en la puntuación de preparación"
+     }
+    }
+   }
+  },
+  "ax.readiness.body": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Readiness reads only HRV, resting heart rate, sleep, and training load computed from logged sessions. Steps and active calories are in no formula."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Điểm sẵn sàng chỉ đọc HRV, nhịp tim nghỉ, giấc ngủ và tải tập tính từ các buổi tập đã ghi. Bước chân và calo hoạt động không nằm trong công thức nào."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "La preparación solo lee la VFC, la frecuencia cardiaca en reposo, el sueño y la carga calculada de las sesiones registradas. Los pasos y las calorías activas no están en ninguna fórmula."
+     }
+    }
+   }
   }
  }
 }
