@@ -129,16 +129,49 @@ struct LogMealView: View {
           }
           customCard(logger)
           itemsSection(logger)
-          if !logger.items.isEmpty { totalsCard(logger) }
         }
         .padding(DS.Spacing.md)
       }
       .scrollDismissesKeyboard(.interactively)
-      DSButton(String(localized: "logMeal.save")) { Task { await save(logger) } }
-        .disabled(!logger.canSave)
-        .opacity(logger.canSave ? 1 : 0.5)
-        .padding(DS.Spacing.md)
+      saveBar(logger)
     }
+  }
+
+  /// "Lưu bữa" mang luôn tổng kcal, macro ngay trên (thiết kế lại 13/10) —
+  /// thay thẻ "Tổng dinh dưỡng" nằm lệch trái giữa trang.
+  private func saveBar(_ logger: MealLogger) -> some View {
+    let t = logger.totals
+    return VStack(spacing: 6) {
+      if !logger.items.isEmpty {
+        Text(verbatim: [
+          "\(String(localized: "logMeal.protein")) \(DiaryView.whole(t.protein)) g",
+          "\(String(localized: "logMeal.carbs")) \(DiaryView.whole(t.carbs)) g",
+          "\(String(localized: "logMeal.fat")) \(DiaryView.whole(t.fat)) g",
+        ].joined(separator: "  ·  "))
+          .font(DS.TextStyle.caption.monospacedDigit())
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+      }
+      Button { Task { await save(logger) } } label: {
+        HStack {
+          Text(String(localized: "logMeal.save"))
+          if !logger.items.isEmpty {
+            Spacer()
+            Text(verbatim: "\(DiaryView.whole(t.kcal)) kcal")
+              .font(.custom("Menlo", size: 15, relativeTo: .body).weight(.semibold))
+          }
+        }
+        .font(DS.TextStyle.headline)
+        .foregroundStyle(DS.Color.background.swiftUI)
+        .padding(.horizontal, 22)
+        .frame(maxWidth: .infinity, minHeight: 52)
+        .background(Capsule().fill(DS.Color.foreground.swiftUI))
+        .opacity(logger.canSave ? 1 : 0.4)
+      }
+      .buttonStyle(TodayPressStyle())
+      .disabled(!logger.canSave)
+      .accessibilityValue(Text(verbatim: logger.items.isEmpty ? "" : "\(DiaryView.whole(t.kcal)) kcal"))
+    }
+    .padding(DS.Spacing.md)
   }
 
   // MARK: - Bữa
@@ -151,12 +184,16 @@ struct LogMealView: View {
           Button {
             logger.mealType = key
           } label: {
-            Text(verbatim: DiaryView.mealName(key))
-              .font(DS.TextStyle.footnote.weight(on ? .semibold : .regular))
-              .foregroundStyle(on ? DS.Color.background.swiftUI : DS.Color.foreground.swiftUI)
-              .padding(.horizontal, DS.Spacing.md)
-              .frame(minHeight: 44)
-              .background(on ? DS.Color.foreground.swiftUI : DS.Color.muted.swiftUI, in: Capsule())
+            HStack(spacing: 6) {
+              Image(systemName: MealSlotGlyph.symbol(key)).font(.footnote.weight(.semibold))
+              Text(verbatim: DiaryView.mealName(key)).font(DS.TextStyle.footnote.weight(.semibold))
+            }
+            .foregroundStyle(on ? Color.white : DS.Color.foreground.swiftUI)
+            .padding(.horizontal, 14)
+            .frame(minHeight: 40)
+            .background(Capsule().fill(on ? MascotRoomView.signalColor(.meal) : Color.clear))
+            .overlay(Capsule().strokeBorder(on ? Color.clear : DS.Color.foreground.swiftUI.opacity(0.18), lineWidth: 1))
+            .frame(minHeight: 44)
           }
           .buttonStyle(.plain)
           .accessibilityAddTraits(on ? .isSelected : [])
@@ -169,9 +206,10 @@ struct LogMealView: View {
   // MARK: - Tìm
 
   private var searchField: some View {
-    HStack {
+    HStack(spacing: 10) {
       Image(systemName: "magnifyingglass")
-        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        .font(.system(size: 16, weight: .semibold))
+        .foregroundStyle(MascotRoomView.signalColor(.meal))
         .accessibilityHidden(true)
       TextField(text: $query, prompt: Text(String(localized: "logMeal.search"))) {
         Text(String(localized: "logMeal.search"))
@@ -191,9 +229,11 @@ struct LogMealView: View {
       .buttonStyle(.plain)
       .accessibilityLabel(Text(String(localized: "scan.a11y")))
     }
-    .padding(DS.Spacing.sm)
-    .frame(minHeight: 44)
-    .background(DS.Color.input.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.sm))
+    .padding(.leading, 18)
+    .padding(.trailing, 6)
+    .frame(minHeight: 52)
+    .background(Capsule().fill(.regularMaterial))
+    .overlay(Capsule().strokeBorder(MascotRoomView.signalColor(.meal).opacity(0.55), lineWidth: 1.5))
   }
 
   @ViewBuilder private func searchResults(_ logger: MealLogger) -> some View {
@@ -207,8 +247,9 @@ struct LogMealView: View {
           .font(DS.TextStyle.footnote)
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
       } else {
-        VStack(spacing: DS.Spacing.xs) {
-          ForEach(results) { food in
+        listCard {
+          ForEach(Array(results.enumerated()), id: \.element.id) { i, food in
+            if i > 0 { Divider().padding(.leading, DS.Spacing.md).opacity(0.6) }
             foodRow(food) {
               logger.add(food)
               query = ""
@@ -225,10 +266,20 @@ struct LogMealView: View {
         .font(DS.TextStyle.caption.weight(.semibold))
         .foregroundStyle(DS.Color.mutedForeground.swiftUI)
         .accessibilityAddTraits(.isHeader)
-      ForEach(logger.quickAdds) { q in
-        foodRow(q.food, favorite: q.favorite) { logger.add(q.food) }
+      listCard {
+        ForEach(Array(logger.quickAdds.enumerated()), id: \.element.id) { i, q in
+          if i > 0 { Divider().padding(.leading, DS.Spacing.md).opacity(0.6) }
+          foodRow(q.food, favorite: q.favorite) { logger.add(q.food) }
+        }
       }
     }
+  }
+
+  /// Thẻ danh sách chung của màn (cùng kiểu thẻ với tab Dinh dưỡng).
+  private func listCard<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+    VStack(spacing: 0) { content() }
+      .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous))
+      .todayCard(radius: DS.Radius.xl)
   }
 
   // MARK: - Ăn lại bữa này
@@ -298,7 +349,7 @@ struct LogMealView: View {
             if favorite {
               Image(systemName: "star.fill")
                 .font(.caption)
-                .foregroundStyle(DS.Color.primary.swiftUI)
+                .foregroundStyle(DS.Color.metricOrange.swiftUI)
                 .accessibilityLabel(Text(String(localized: "logMeal.a11y.favorite")))
             }
             Text(verbatim: food.name).font(DS.TextStyle.body).lineLimit(1)
@@ -308,14 +359,13 @@ struct LogMealView: View {
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
         }
         Spacer()
-        Image(systemName: "plus.circle.fill")
+        Image(systemName: "plus.circle")
           .font(.title3)
-          .foregroundStyle(DS.Color.primary.swiftUI)
+          .foregroundStyle(MascotRoomView.signalColor(.meal))
           .accessibilityHidden(true)
       }
       .padding(.horizontal, DS.Spacing.md)
-      .frame(minHeight: 52)
-      .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.md))
+      .frame(minHeight: 56)
       .contentShape(Rectangle())
     }
     .buttonStyle(.plain)
@@ -424,7 +474,12 @@ struct LogMealView: View {
         .font(DS.TextStyle.caption.weight(.semibold))
         .foregroundStyle(DS.Color.mutedForeground.swiftUI)
         .accessibilityAddTraits(.isHeader)
-      ForEach(logger.items) { it in itemRow(logger, it) }
+      listCard {
+        ForEach(Array(logger.items.enumerated()), id: \.element.id) { i, it in
+          if i > 0 { Divider().padding(.leading, DS.Spacing.md).opacity(0.6) }
+          itemRow(logger, it)
+        }
+      }
     }
   }
 
@@ -433,8 +488,8 @@ struct LogMealView: View {
       itemLine(logger, it)
       if editingId == it.id { editPanel(logger, it) }
     }
-    .padding(.horizontal, DS.Spacing.sm)
-    .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.md))
+    .padding(.leading, DS.Spacing.md)
+    .padding(.trailing, DS.Spacing.xs)
   }
 
   /// Chạm phần chữ để mở / đóng khung sửa macro của món (`openEdit`).
@@ -547,34 +602,6 @@ struct LogMealView: View {
     .buttonStyle(.plain)
     .disabled(next == current)
     .sensoryFeedback(.selection, trigger: current)
-  }
-
-  private func totalsCard(_ logger: MealLogger) -> some View {
-    let t = logger.totals
-    return DSCard {
-      VStack(alignment: .leading, spacing: DS.Spacing.xs) {
-        Text(String(localized: "logMeal.total"))
-          .font(DS.TextStyle.caption.weight(.semibold))
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-        Text(verbatim: "\(DiaryView.whole(t.kcal)) kcal")
-          .font(DS.TextStyle.title.monospacedDigit())
-        HStack(spacing: DS.Spacing.md) {
-          macro(String(localized: "logMeal.protein"), t.protein)
-          macro(String(localized: "logMeal.carbs"), t.carbs)
-          macro(String(localized: "logMeal.fat"), t.fat)
-        }
-      }
-      .accessibilityElement(children: .combine)
-    }
-  }
-
-  private func macro(_ label: String, _ grams: Double) -> some View {
-    VStack(alignment: .leading, spacing: 0) {
-      Text(verbatim: "\(DiaryView.whole(grams)) g").font(DS.TextStyle.headline.monospacedDigit())
-      Text(verbatim: label)
-        .font(DS.TextStyle.caption)
-        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-    }
   }
 
   // MARK: - Lưu
