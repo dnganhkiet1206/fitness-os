@@ -453,7 +453,7 @@ struct StarredFoodRow<Content: View>: View {
       Button(action: toggle) {
         Image(systemName: on ? "star.fill" : "star")
           .font(.system(size: 17, weight: on ? .semibold : .regular))
-          .foregroundStyle(on ? DS.Color.readinessYellow.swiftUI : DS.Color.mutedForeground.swiftUI)
+          .foregroundStyle(on ? DS.Color.metricOrange.swiftUI : DS.Color.mutedForeground.swiftUI)
           .overlay(alignment: .topTrailing) {
             if pending {
               Circle().fill(DS.Color.mutedForeground.swiftUI).frame(width: 6, height: 6).offset(x: 4, y: -2)

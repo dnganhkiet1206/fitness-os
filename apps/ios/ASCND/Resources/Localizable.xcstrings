@@ -28335,7 +28335,7 @@
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "e.g. Bench Press"
+      "value": "p. ej. Press de banca"
      }
     }
    }
@@ -41507,13 +41507,13 @@
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Từ meal plan của bạn"
+      "value": "Từ kế hoạch ăn của bạn"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "From your meal plan"
+      "value": "De tu plan de comidas"
      }
     }
    }
