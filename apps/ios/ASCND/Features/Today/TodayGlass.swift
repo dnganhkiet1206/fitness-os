@@ -4,24 +4,20 @@ import SwiftUI
 
 // Chất liệu và chuyển động của tab Hôm nay (#527).
 //
-// Nền là giấy phẳng như mọi màn (bỏ vầng sáng màu, 13/10).
+// Nền là giấy ấm `WarmPaper` như mọi màn (một quầng cam nhạt cố định, 13/10).
 // Kính là của hệ thống (`glassEffect` iOS 26, material ở máy cũ), không tự vẽ.
 //
 // Trợ năng: Reduce Transparency → thẻ nền đặc.
 
-/// Nền trang của Hôm nay / Dinh dưỡng: GIẤY PHẲNG, cùng màu với mọi màn khác
-/// (`ascndPage`). Trước đây có một quầng màu đổi theo việc kế tiếp (tím / cam
+/// Nền trang của Hôm nay / Dinh dưỡng: GIẤY ẤM `WarmPaper`, giống hệt mọi màn
+/// khác (`ascndPage`). Trước đây có một quầng màu đổi theo việc kế tiếp (tím / cam
 /// / xanh…) và Dinh dưỡng luôn cam — chủ dự án báo "tone giấy chỗ có chỗ
 /// không, lúc hiện lúc không" (13/10, B). Màu tín hiệu chỉ còn ở ống, vòng và
 /// nút — nơi nó mang nghĩa. `accent` giữ lại cho nơi gọi, không còn vẽ.
 struct TodayAmbient: View {
   let accent: MascotRules.Quest?
 
-  var body: some View {
-    DS.Color.background.swiftUI
-      .ignoresSafeArea()
-      .accessibilityHidden(true)
-  }
+  var body: some View { WarmPaper() }
 }
 
 /// Việc kế tiếp, từ `TodayExtras` lên `TodayView` (vầng sáng nằm sau cả
