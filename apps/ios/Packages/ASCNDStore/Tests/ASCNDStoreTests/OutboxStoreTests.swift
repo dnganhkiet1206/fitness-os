@@ -78,6 +78,57 @@ struct OutboxStoreTests {
     #expect(try store.load().pending.map(\.id) == ["late"])
   }
 
+  /// Audit #527 (6138699103): một hàng không giải mã được (bản app mới hơn ghi
+  /// rồi quay về bản cũ) từng làm `load()` ném — worker không nạp được hàng
+  /// đợi và mọi bản ghi "đã lưu" đứng yên mãi. Nay nó bị bỏ qua, các hàng còn
+  /// lại gửi được, và nó vẫn nằm trên đĩa (không xoá dữ liệu).
+  @Test func undecodableRowNeitherBlocksLoadNorIsDeleted() throws {
+    let database = try ASCNDDatabase()
+    let store = OutboxStore(database)
+    try store.append(entry("a"))
+    try database.queue.write { db in
+      try db.execute(
+        sql: "INSERT INTO outbox (id, userId, entry) VALUES (?, ?, ?)",
+        arguments: ["future", "u1", #"{"kind":"water","shape":"from-a-newer-app"}"#])
+    }
+    try store.append(entry("b"))
+
+    var box = try store.load()
+    #expect(box.pending.map(\.id) == ["a", "b"])
+    #expect(try store.undecodableIds() == ["future"])
+
+    _ = box.next(now: EpochMillis(0), online: true, signedInUser: "u1")
+    box.succeeded(id: "a")
+    try store.persist(box, settled: ["a"])
+    #expect(try store.load().pending.map(\.id) == ["b"])
+    #expect(try store.undecodableIds() == ["future"], "persist không xoá hàng nó không đọc được")
+  }
+
+  /// Hàng `dead` không giải mã được bị `load()` bỏ qua, nên `outbox.dead` ngắn
+  /// hơn số hàng trên đĩa; `persist` đếm như `load()`, không thì bản ghi
+  /// `dead` mới nhất bị nuốt.
+  @Test func undecodableDeadRowDoesNotSwallowTheNextDeadEntry() throws {
+    let database = try ASCNDDatabase()
+    let store = OutboxStore(database)
+    try database.queue.write { db in
+      try db.execute(
+        sql: "INSERT INTO outbox_dead (id, dead) VALUES (?, ?)", arguments: ["old", #"{"not":"a dead entry"}"#])
+    }
+    try store.append(entry("a"))
+    var box = try store.load()
+    #expect(box.dead.isEmpty)
+    _ = box.next(now: EpochMillis(0), online: true, signedInUser: "u1")
+    box.failed(id: "a", .server(code: "23514"), now: EpochMillis(0))
+    try store.persist(box, settled: [])
+
+    let loaded = try store.load()
+    #expect(loaded.dead.map(\.entry.id) == ["a"])
+    #expect(loaded.pending.isEmpty)
+    #expect(try store.undecodableIds() == ["old"])
+    try store.persist(box, settled: [])
+    #expect(try store.load().dead.count == 1, "persist lần hai không nhân đôi `dead`")
+  }
+
   /// "Tắt app": mở lại cùng tệp, hàng đợi còn nguyên. Migration chạy lại
   /// trên một tệp đã có là vô hại.
   @Test func survivesReopen() throws {

@@ -36,15 +36,49 @@ public final class OutboxStore: Sendable {
   }
 
   /// Nạp hàng đợi theo đúng thứ tự đã ghi.
+  ///
+  /// Giải mã TỪNG hàng: hàng không giải mã được (bản app mới hơn ghi rồi người
+  /// dùng quay về bản cũ, hay một lỗi ghi) bị bỏ qua chứ không làm hỏng cả lần
+  /// nạp. Trước đây một hàng hỏng làm `load()` ném, `SyncWorker` không bao giờ
+  /// nạp được hàng đợi, và mọi bản ghi "đã lưu trên máy" đứng yên mãi (audit
+  /// #527, 6138699103). Hàng bị bỏ qua vẫn NẰM trên đĩa — không xoá dữ liệu
+  /// người dùng; `persist` chỉ xoá theo id worker báo xong, nên không đụng tới
+  /// nó; bản app đọc được nó sẽ gửi nó. `undecodableIds()` liệt kê chúng.
   public func load() throws -> Outbox {
     try db.read { db in
-      let decoder = JSONDecoder()
-      let pending = try String.fetchAll(db, sql: "SELECT entry FROM outbox ORDER BY seq")
-        .map { try decoder.decode(OutboxEntry.self, from: Data($0.utf8)) }
-      let dead = try String.fetchAll(db, sql: "SELECT dead FROM outbox_dead ORDER BY seq")
-        .map { try decoder.decode(DeadEntry.self, from: Data($0.utf8)) }
-      return Outbox(pending: pending, dead: dead)
+      Outbox(
+        pending: try Self.rows(db, "SELECT id, entry FROM outbox ORDER BY seq", as: OutboxEntry.self).decoded,
+        dead: try Self.rows(db, "SELECT id, dead FROM outbox_dead ORDER BY seq", as: DeadEntry.self).decoded)
     }
+  }
+
+  /// Id các hàng (chờ gửi và `dead`) đang nằm trên đĩa mà bản app này không
+  /// giải mã được — `load()` bỏ qua chúng.
+  public func undecodableIds() throws -> [String] {
+    try db.read { db in
+      try Self.rows(db, "SELECT id, entry FROM outbox ORDER BY seq", as: OutboxEntry.self).undecodable
+        + Self.rows(db, "SELECT id, dead FROM outbox_dead ORDER BY seq", as: DeadEntry.self).undecodable
+    }
+  }
+
+  /// Hàng `(id, json)` của `sql`, chia thành giá trị giải mã được và id của
+  /// hàng không giải mã được, giữ thứ tự.
+  private static func rows<T: Decodable>(
+    _ db: Database, _ sql: String, as type: T.Type
+  ) throws -> (decoded: [T], undecodable: [String]) {
+    let decoder = JSONDecoder()
+    var decoded: [T] = []
+    var undecodable: [String] = []
+    for row in try Row.fetchAll(db, sql: sql) {
+      let id: String = row[0]
+      let json: String = row[1]
+      if let value = try? decoder.decode(T.self, from: Data(json.utf8)) {
+        decoded.append(value)
+      } else {
+        undecodable.append(id)
+      }
+    }
+    return (decoded, undecodable)
   }
 
   /// Ghi một bản ghi mới. Trả về SAU khi commit. Cùng `id` ghi hai lần là một
@@ -86,7 +120,10 @@ public final class OutboxStore: Sendable {
             """,
           arguments: [entry.id, entry.userId, json])
       }
-      let stored = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM outbox_dead") ?? 0
+      // Đếm hàng `dead` mà `load()` thấy — hàng không giải mã được bị bỏ qua ở
+      // đó nên cũng không tính ở đây, không thì `outbox.dead` (ngắn hơn số hàng
+      // trên đĩa) mất bản ghi `dead` mới nhất ở lần ghi kế tiếp.
+      let stored = try Self.rows(db, "SELECT id, dead FROM outbox_dead ORDER BY seq", as: DeadEntry.self).decoded.count
       for (id, json) in dead.dropFirst(stored) {
         try db.execute(sql: "INSERT INTO outbox_dead (id, dead) VALUES (?, ?)", arguments: [id, json])
       }
