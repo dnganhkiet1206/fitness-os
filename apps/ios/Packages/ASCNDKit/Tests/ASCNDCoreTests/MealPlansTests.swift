@@ -322,3 +322,26 @@ struct MealPlansBookTests {
     #expect(b.myFoods.map(\.name) == ["Bánh", "Táo"])
   }
 }
+
+/// Bữa chọn thêm khi lên kế hoạch (native, 13/10): hàng = bữa theo
+/// `meals_per_day` ∪ bữa đã có món ∪ bữa vừa bật; `meals_per_day` ghi xuống
+/// luôn trong 3…6.
+struct MealPlanRowsTests {
+  @Test func rowsAreSlotsPlusMealsWithFoodInDayOrder() {
+    let items = [
+      MealPlansRuleTests.item("a", day: 0, meal: "postworkout", name: "Shake", kcal: 200),
+      MealPlansRuleTests.item("b", day: 3, meal: "breakfast", name: "Oats", kcal: 300),
+    ]
+    #expect(MealPlans.rows(mealsPerDay: 3, items: items) == ["breakfast", "lunch", "dinner", "postworkout"])
+    #expect(MealPlans.rows(mealsPerDay: 3, items: [], extra: ["preworkout"]) == ["breakfast", "lunch", "dinner", "preworkout"])
+    #expect(MealPlans.rows(mealsPerDay: 6, items: []) == MealDiary.order)
+  }
+
+  @Test func storedMealsPerDayStaysInTheAllowedChoices() {
+    #expect(MealPlans.storedMealsPerDay(["breakfast"]) == 3)
+    #expect(MealPlans.storedMealsPerDay(["breakfast", "lunch", "dinner", "postworkout"]) == 4)
+    #expect(MealPlans.storedMealsPerDay(Set(MealDiary.order)) == 6)
+    #expect(MealPlans.storedMealsPerDay(["nonsense", "breakfast"]) == 3)
+  }
+}
+

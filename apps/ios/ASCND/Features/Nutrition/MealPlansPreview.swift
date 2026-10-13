@@ -27,7 +27,7 @@ struct MealPlansPreview: View {
     content
       .task { await book.load() }
       .sheet(isPresented: $creating) {
-        CreatePlanSheet(book: book) { id in
+        PlanWizardView(plans: book) { id in
           opened = MealPlanRoute(userId: book.userId, planId: id, plan: book.plans.first { $0.id == id })
         }
       }

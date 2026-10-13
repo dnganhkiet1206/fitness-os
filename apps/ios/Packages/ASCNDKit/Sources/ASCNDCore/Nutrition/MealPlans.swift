@@ -106,6 +106,20 @@ public enum MealPlans {
     Array(MealDiary.order.prefix(Swift.max(1, Swift.min(MealDiary.order.count, mealsPerDay ?? 3))))
   }
 
+  /// Các bữa của một kế hoạch (native, 13/10): bữa theo `meals_per_day` CỘNG
+  /// mọi bữa đã có món — người dùng chọn thêm bữa (Trước / Sau tập…) khi lên
+  /// kế hoạch mà không đổi schema. Thứ tự trong ngày (`MealDiary.order`).
+  public static func rows(mealsPerDay: Int?, items: [Item], extra: Set<String> = []) -> [String] {
+    let have = Set(slots(mealsPerDay)).union(items.map(\.mealType)).union(extra)
+    return MealDiary.order.filter { have.contains($0) }
+  }
+
+  /// `meals_per_day` ghi xuống cho một tập bữa đã chọn: trong `mealsPerDayChoices`.
+  public static func storedMealsPerDay(_ chosen: Set<String>) -> Int {
+    let n = chosen.filter { MealDiary.order.contains($0) }.count
+    return Swift.min(mealsPerDayChoices.last ?? 6, Swift.max(mealsPerDayChoices.first ?? 3, n))
+  }
+
   /// kcal một ngày: mỗi món làm tròn rồi cộng (`byDay`).
   public static func dayKcal(_ items: [Item], day: Int) -> Double {
     items.filter { $0.day == day }.reduce(0) { $0 + JS.round($1.kcal) }

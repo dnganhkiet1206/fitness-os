@@ -42,7 +42,7 @@ struct MealPlansView: View {
     .refreshable { await book.load() }
     .task { await book.load() }
     .sheet(isPresented: $creating) {
-      CreatePlanSheet(book: book) { id in
+      PlanWizardView(plans: book) { id in
         opened = MealPlanRoute(userId: book.userId, planId: id, plan: book.plans.first { $0.id == id })
       }
     }
@@ -289,7 +289,7 @@ struct MealPlanView: View {
     .refreshable { await book.load() }
     .task { await book.load() }
     .sheet(isPresented: $adding) {
-      AddPlanFoodSheet(book: book, slots: MealPlans.slots(plan?.mealsPerDay), startDay: day)
+      AddPlanFoodSheet(book: book, slots: MealPlans.rows(mealsPerDay: plan?.mealsPerDay, items: book.items), startDay: day)
     }
     .confirmationDialog(
       String(localized: "plans.delete.confirm \(plan?.name ?? "")"), isPresented: $confirmDelete,
