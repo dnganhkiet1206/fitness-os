@@ -87,5 +87,17 @@ public struct DSColor: Sendable, Hashable {
     )
     #endif
   }
+
+  /// Bản light, cố định ở mọi chế độ — cho MẶT MÀU ĐẶC có chữ trắng (thẻ bài
+  /// Cộng đồng, 14/10): bản dark của các màu chỉ số sáng hơn để làm CHỮ trên
+  /// nền tối, đặt chữ trắng lên nó thì thiếu tương phản.
+  public var solid: SwiftUI.Color {
+    SwiftUI.Color(red: Double(light.r) / 255, green: Double(light.g) / 255, blue: Double(light.b) / 255)
+  }
+
+  /// Bản dark, cố định — màu nhấn sáng đặt TRÊN một mặt tối cố định.
+  public var bright: SwiftUI.Color {
+    SwiftUI.Color(red: Double(dark.r) / 255, green: Double(dark.g) / 255, blue: Double(dark.b) / 255)
+  }
 }
 #endif

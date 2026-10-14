@@ -73,7 +73,6 @@ struct CommunityFeedView: View {
   @Environment(\.weightUnit) private var unit
   /// "Tìm người để theo dõi" khi tab Đang theo dõi trống.
   @State private var findPeople = false
-  @State private var askShare = false
   @State private var shareRoute: ShareRoute?
   /// "Đã thấy" theo tab + đang ở đầu feed (lát 17).
   @State private var ledger = CommunityFeedHold.Ledger()
@@ -96,6 +95,8 @@ struct CommunityFeedView: View {
     ScrollViewReader { proxy in
       ScrollView {
         LazyVStack(spacing: DS.Spacing.md) {
+          topBar
+            .id(Self.topId)
           Picker(selection: Binding(get: { book.tab }, set: { t in Task { await book.select(t) } })) {
             Text("community.tab.following").tag(CommunityFeed.Tab.following)
             Text("community.tab.discover").tag(CommunityFeed.Tab.discover)
@@ -103,7 +104,6 @@ struct CommunityFeedView: View {
             Text("tab.community")
           }
           .pickerStyle(.segmented)
-          .id(Self.topId)
           if book.phase == .ready { header }
           if book.tab == .discover, let challenges { challengeBlock(challenges) }
           if book.tab == .discover, !book.useful.isEmpty { UsefulThisWeekCard(posts: book.useful) }
@@ -133,41 +133,10 @@ struct CommunityFeedView: View {
       if book.phase == .ready { ledger.ack(ids, tab: book.tab.rawValue) }
     }
     .sensoryFeedback(.selection, trigger: released)
-    .background(DS.Color.background.swiftUI)
-    .toolbar {
-      // Chuông: hộp thông báo, chấm khi còn dòng chưa đọc (lát 9).
-      if let inbox {
-        ToolbarItem(placement: .topBarTrailing) {
-          let hasNew = inbox.hasNew || !(challenges?.pending.isEmpty ?? true)
-          NavigationLink {
-            CommunityInboxView(book: inbox, challenges: challenges)
-          } label: {
-            Image(systemName: hasNew ? "bell.badge" : "bell")
-          }
-          .accessibilityLabel(hasNew ? Text("community.inbox.opennew") : Text("community.inbox.title"))
-        }
-      }
-      // Kính lúp: tìm người / công thức / bài (lát 8).
-      ToolbarItem(placement: .topBarTrailing) {
-        NavigationLink {
-          CommunitySearchScreen()
-        } label: {
-          Image(systemName: "magnifyingglass")
-        }
-        .accessibilityLabel(Text("community.search.open"))
-      }
-      // Avatar ở đầu trang → trang người dùng của mình (Sửa hồ sơ ở đó), như RN.
-      if book.hasProfile == true {
-        ToolbarItem(placement: .topBarTrailing) {
-          NavigationLink {
-            CommunityUserScreen(targetId: book.userId)
-          } label: {
-            Image(systemName: "person.crop.circle")
-          }
-          .accessibilityLabel(Text("community.user.mine"))
-        }
-      }
-    }
+    // Đầu trang trong nội dung như Hôm nay / Tập luyện (thiết kế lại 14/10).
+    .toolbar(.hidden, for: .navigationBar)
+    .statusBarScrim()
+    .background { TodayAmbient(accent: nil) }
     .communityUserLinks()
     .communityPostActions(userId: book.userId, host: book)
     .navigationDestination(isPresented: $findPeople) { CommunitySearchScreen() }
@@ -262,28 +231,85 @@ struct CommunityFeedView: View {
     }
   }
 
-  /// Soạn bài: hỏi chia sẻ GÌ — mỗi loại bài một màn riêng (lát 11–13).
-  private var composer: some View {
-    Button {
-      askShare = true
-    } label: {
-      DSCard {
-        HStack(spacing: DS.Spacing.sm) {
-          MascotAvatar(mascotId: nil, size: 36)
-          Text("community.share.composer")
-            .font(DS.TextStyle.body)
-            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
+  // MARK: - Đầu trang (thiết kế lại 14/10, mock v2)
+
+  /// "Cộng đồng" lớn + nút tròn: tìm, chuông (chấm khi có mới), hồ sơ.
+  private var topBar: some View {
+    HStack(spacing: DS.Spacing.sm) {
+      Text(String(localized: "tab.community"))
+        .font(.largeTitle.bold())
+        .foregroundStyle(DS.Color.foreground.swiftUI)
+        .accessibilityAddTraits(.isHeader)
+      Spacer(minLength: 0)
+      NavigationLink { CommunitySearchScreen() } label: { roundIcon("magnifyingglass", dot: false) }
+        .buttonStyle(TodayPressStyle())
+        .accessibilityLabel(Text("community.search.open"))
+      if let inbox {
+        let hasNew = inbox.hasNew || !(challenges?.pending.isEmpty ?? true)
+        NavigationLink { CommunityInboxView(book: inbox, challenges: challenges) } label: { roundIcon("bell", dot: hasNew) }
+          .buttonStyle(TodayPressStyle())
+          .accessibilityLabel(hasNew ? Text("community.inbox.opennew") : Text("community.inbox.title"))
+      }
+      if book.hasProfile == true {
+        NavigationLink { CommunityUserScreen(targetId: book.userId) } label: { roundIcon("person.crop.circle", dot: false) }
+          .buttonStyle(TodayPressStyle())
+          .accessibilityLabel(Text("community.user.mine"))
       }
     }
-    .buttonStyle(.plain)
-    .confirmationDialog(Text("community.share.ask"), isPresented: $askShare, titleVisibility: .visible) {
-      Button(String(localized: "community.share.askworkout")) { shareRoute = .workout }
-      Button(String(localized: "community.share.askprogress")) { shareRoute = .progress }
-      Button(String(localized: "community.share.askrecipe")) { shareRoute = .recipe }
-      Button(String(localized: "common.cancel"), role: .cancel) {}
+    .padding(.top, DS.Spacing.sm)
+  }
+
+  private func roundIcon(_ symbol: String, dot: Bool) -> some View {
+    Image(systemName: symbol)
+      .font(.body.weight(.semibold))
+      .foregroundStyle(DS.Color.foreground.swiftUI)
+      .frame(width: 40, height: 40)
+      .background(Circle().fill(.thinMaterial))
+      .overlay(Circle().strokeBorder(DS.Color.foreground.swiftUI.opacity(0.12), lineWidth: 0.75))
+      .overlay(alignment: .topTrailing) {
+        if dot {
+          Circle().fill(DS.Color.readinessRed.swiftUI).frame(width: 9, height: 9)
+            .overlay(Circle().strokeBorder(DS.Color.background.swiftUI, lineWidth: 1.5))
+            .offset(x: -2, y: 2)
+        }
+      }
+      .frame(minWidth: 44, minHeight: 44)
+      .contentShape(Rectangle())
+  }
+
+  /// Có hồ sơ, không bị khoá: "Đang tập hôm nay" (khi có người) + ba nút
+  /// chia sẻ màu đặc — mỗi loại bài một màn riêng (lát 11–13).
+  private var composer: some View {
+    VStack(alignment: .leading, spacing: DS.Spacing.md) {
+      let faces = CommunityToday.faces(book.posts, me: book.userId, now: EpochMillis(Date()), timeZone: .current)
+      if !faces.isEmpty { TodayFaces(faces: faces) }
+      HStack(spacing: DS.Spacing.sm) {
+        shareChip(.workout, "community.share.chip.workout")
+        shareChip(.progress, "community.share.chip.progress")
+        shareChip(.recipe, "community.share.chip.recipe")
+      }
     }
+  }
+
+  private func shareChip(_ route: ShareRoute, _ key: String.LocalizationValue) -> some View {
+    let kind: CommunityFeed.Kind = switch route {
+    case .workout: .workout
+    case .progress: .progress
+    case .recipe: .recipe
+    }
+    return Button {
+      shareRoute = route
+    } label: {
+      Label(String(localized: key), systemImage: PostArtView.glyph(kind))
+        .font(DS.TextStyle.footnote.weight(.bold))
+        .lineLimit(1)
+        .minimumScaleFactor(0.8)
+        .foregroundStyle(.white)
+        .padding(.horizontal, 10)
+        .frame(maxWidth: .infinity, minHeight: 44)
+        .background(PostTint.fill(kind), in: Capsule())
+    }
+    .buttonStyle(TodayPressStyle())
   }
 
   private static let topId = "community.feed.top"
@@ -362,7 +388,28 @@ struct CommunityFeedView: View {
   }
 }
 
-// MARK: - Thẻ bài
+// MARK: - Thẻ bài (thiết kế lại 14/10 — chủ dự án chọn mock v2)
+//
+// Mặt trên ĐẶC MÀU theo loại bài, chữ trắng, số lớn Menlo — màu khớp phần
+// tương ứng của app: buổi tập = hồng Tập luyện, tiến bộ = xám thép (cân
+// nặng), công thức = cam Bữa ăn. Đáy thẻ là dải sáng chứa thích / bình luận /
+// lưu / chia sẻ. Không ảnh thì không chừa khung xám: mặt màu chính là hình.
+
+/// Màu của loại bài (mặt đặc, chữ trắng).
+enum PostTint {
+  static func fill(_ k: CommunityFeed.Kind) -> Color {
+    switch k {
+    case .workout: DS.Color.metricRose.solid
+    case .progress: DS.Color.metricSteel.solid
+    case .recipe: DS.Color.metricOrange.solid
+    }
+  }
+
+  /// Chữ phụ trên mặt màu.
+  static let soft = Color.white.opacity(0.78)
+  /// Mặt lõm trên mặt màu.
+  static let inset = Color.white.opacity(0.14)
+}
 
 struct PostCardView: View {
   let post: CommunityFeed.Post
@@ -375,30 +422,47 @@ struct PostCardView: View {
   @Environment(\.communityPostActions) private var actions
 
   var body: some View {
-    DSCard {
+    VStack(spacing: 0) {
       VStack(alignment: .leading, spacing: DS.Spacing.md) {
         PostHeaderView(post: post)
-        PostArtView(kind: post.kind, url: artURL, alt: post.art.map(Self.alt))
+        if artURL != nil {
+          PostArtView(kind: post.kind, url: artURL, alt: post.art.map(Self.alt))
+        }
         switch post.kind {
-        case .workout:
-          WorkoutPostBody(workout: post.workout, unit: unit, full: full)
-          if let tryIt = actions?.tryWorkout, CommunityTry.offered(post) {
-            TryWorkoutButton(busy: actions?.trying.contains(post.id) ?? false) { tryIt(post) }
-          }
+        case .workout: WorkoutPostBody(workout: post.workout, unit: unit, full: full)
         case .progress: if let p = post.progress { ProgressPostBody(progress: p, unit: unit) }
         case .recipe: if let r = post.recipe { RecipePostBody(recipe: r, full: full) }
         }
         if !post.caption.isEmpty {
           Text(verbatim: post.caption)
             .font(DS.TextStyle.body)
-            .foregroundStyle(DS.Color.foreground.swiftUI)
+            .foregroundStyle(.white)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+        if post.kind == .workout, let tryIt = actions?.tryWorkout, CommunityTry.offered(post) {
+          TryWorkoutButton(busy: actions?.trying.contains(post.id) ?? false, tint: PostTint.fill(.workout)) {
+            tryIt(post)
+          }
+        }
+      }
+      .padding(DS.Spacing.card)
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .background(PostTint.fill(post.kind))
+      // Mọi chữ / biểu tượng mặc định trong mặt màu là sáng.
+      .environment(\.colorScheme, .dark)
+
+      Group {
         if let actions { PostActionsRow(post: post, context: actions, commentCount: commentCount) } else {
           PostCountsView(post: post, commentCount: commentCount)
         }
       }
+      .padding(.horizontal, DS.Spacing.card)
+      .padding(.vertical, 2)
+      .frame(maxWidth: .infinity)
+      .background(DS.Color.card.swiftUI)
     }
+    .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+    .shadow(color: .black.opacity(0.08), radius: 14, y: 6)
   }
 
   /// Chữ thay ảnh theo ngôn ngữ app (RN: `vi` → `alt_vi`, còn lại `alt_en`).
@@ -407,24 +471,24 @@ struct PostCardView: View {
   }
 }
 
-/// "Thử workout" (`tryBtn` của RN): viên trầm, không đặc — ba mươi bài là ba
-/// mươi nút, ba mươi nút đặc là một bức tường.
+/// "Thử buổi này" (`tryBtn` của RN): viên trắng chữ màu trên mặt màu.
 struct TryWorkoutButton: View {
   let busy: Bool
+  var tint: Color = DS.Color.foreground.swiftUI
   let action: () -> Void
 
   var body: some View {
     Button(action: action) {
-      Label(String(localized: "community.try"), systemImage: "doc.on.doc")
-        .font(DS.TextStyle.body.weight(.semibold))
-        .foregroundStyle(DS.Color.foreground.swiftUI)
-        .frame(maxWidth: .infinity, minHeight: 44)
-        .background(DS.Color.secondary.swiftUI, in: Capsule())
+      Label(String(localized: "community.try"), systemImage: "play.fill")
+        .font(DS.TextStyle.headline)
+        .foregroundStyle(tint)
+        .frame(maxWidth: .infinity, minHeight: 46)
+        .background(Color.white, in: Capsule())
         .contentShape(Capsule())
     }
-    .buttonStyle(.plain)
+    .buttonStyle(TodayPressStyle())
     .disabled(busy)
-    .opacity(busy ? 0.5 : 1)
+    .opacity(busy ? 0.6 : 1)
   }
 }
 
@@ -442,7 +506,8 @@ struct PostHeaderView: View {
           actions.openMenu(post)
         } label: {
           Image(systemName: "ellipsis")
-            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .font(.body.weight(.semibold))
+            .foregroundStyle(PostTint.soft)
             .frame(width: 44, height: 44, alignment: .trailing)
             .contentShape(Rectangle())
         }
@@ -469,22 +534,23 @@ struct PostHeaderView: View {
   private var who: some View {
     HStack(spacing: DS.Spacing.sm) {
       MascotAvatar(mascotId: post.author?.mascotId, size: 40)
+        .overlay(Circle().strokeBorder(.white.opacity(0.85), lineWidth: 2))
       VStack(alignment: .leading, spacing: 2) {
         HStack(spacing: 4) {
           Text(verbatim: post.author?.displayName ?? "—")
             .font(DS.TextStyle.headline)
-            .foregroundStyle(DS.Color.foreground.swiftUI)
+            .foregroundStyle(.white)
             .lineLimit(1)
           if post.author?.isOfficial == true {
             Image(systemName: "checkmark.seal.fill")
               .font(.footnote)
-              .foregroundStyle(DS.Color.metricBlue.swiftUI)
+              .foregroundStyle(.white)
               .accessibilityLabel(Text("community.verified"))
           }
         }
         Text(verbatim: meta)
           .font(DS.TextStyle.footnote)
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          .foregroundStyle(PostTint.soft)
           .lineLimit(2)
       }
       Spacer(minLength: 0)
@@ -509,7 +575,7 @@ struct PostHeaderView: View {
   }
 }
 
-/// Ảnh minh hoạ 16:9; chưa có / tải hỏng thì nền với biểu tượng loại bài.
+/// Ảnh minh hoạ 16:9 (chỉ khi bài có ảnh); tải hỏng thì mặt lõm có biểu tượng.
 struct PostArtView: View {
   let kind: CommunityFeed.Kind
   let url: URL?
@@ -517,10 +583,10 @@ struct PostArtView: View {
 
   var body: some View {
     ZStack {
-      DS.Color.secondary.swiftUI
+      PostTint.inset
       Image(systemName: Self.glyph(kind))
-        .font(.system(size: 40, weight: .light))
-        .foregroundStyle(DS.Color.mutedForeground.swiftUI.opacity(0.45))
+        .font(.system(size: 36, weight: .light))
+        .foregroundStyle(.white.opacity(0.5))
         .accessibilityHidden(true)
       if let url {
         AsyncImage(url: url) { phase in
@@ -533,7 +599,7 @@ struct PostArtView: View {
     }
     .aspectRatio(16 / 9, contentMode: .fit)
     .frame(maxWidth: .infinity)
-    .clipShape(RoundedRectangle(cornerRadius: DS.Radius.md))
+    .clipShape(RoundedRectangle(cornerRadius: DS.Radius.lg, style: .continuous))
     .accessibilityHidden(url == nil)
   }
 
@@ -546,15 +612,56 @@ struct PostArtView: View {
   }
 }
 
-/// Mặt lõm chứa dòng dữ liệu của thẻ (`m.inset`).
+/// Nhãn loại bài nhỏ, chữ hoa, trên mặt màu ("BUỔI TẬP").
+private struct KindTag: View {
+  let kind: CommunityFeed.Kind
+
+  var body: some View {
+    Label(Self.text(kind), systemImage: PostArtView.glyph(kind))
+      .font(DS.TextStyle.caption.weight(.bold))
+      .textCase(.uppercase)
+      .tracking(0.6)
+      .foregroundStyle(PostTint.soft)
+  }
+
+  static func text(_ k: CommunityFeed.Kind) -> String {
+    switch k {
+    case .workout: String(localized: "community.workout")
+    case .progress: String(localized: "community.kind.progress")
+    case .recipe: String(localized: "community.recipe")
+    }
+  }
+}
+
+/// Một số lớn Menlo + nhãn nhỏ dưới.
+private struct BigStat: View {
+  let value: String
+  let label: String
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 2) {
+      Text(verbatim: value)
+        .font(.system(size: 30, weight: .semibold, design: .monospaced))
+        .foregroundStyle(.white)
+        .lineLimit(1)
+        .minimumScaleFactor(0.6)
+      Text(verbatim: label)
+        .font(DS.TextStyle.caption)
+        .foregroundStyle(PostTint.soft)
+        .lineLimit(1)
+    }
+    .accessibilityElement(children: .combine)
+  }
+}
+
+/// Mặt lõm trong mặt màu chứa dòng dữ liệu.
 private struct InsetPanel<Content: View>: View {
   @ViewBuilder let content: Content
 
   var body: some View {
     VStack(spacing: 0) { content }
       .padding(.horizontal, DS.Spacing.md)
-      .background(DS.Color.recessBg.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.md))
-      .overlay(RoundedRectangle(cornerRadius: DS.Radius.md).stroke(DS.Color.recessBorder.swiftUI, lineWidth: 1))
+      .background(PostTint.inset, in: RoundedRectangle(cornerRadius: DS.Radius.lg, style: .continuous))
   }
 }
 
@@ -565,27 +672,32 @@ private struct PanelLine: View {
 
   var body: some View {
     HStack(spacing: DS.Spacing.md) {
-      Text(verbatim: name).font(DS.TextStyle.body).foregroundStyle(DS.Color.foreground.swiftUI).lineLimit(1)
+      Text(verbatim: name).font(DS.TextStyle.body).foregroundStyle(.white).lineLimit(1)
       Spacer(minLength: 0)
-      Text(verbatim: value).font(DS.TextStyle.body.monospacedDigit()).foregroundStyle(DS.Color.mutedForeground.swiftUI)
+      Text(verbatim: value).font(DS.TextStyle.body.monospacedDigit()).foregroundStyle(PostTint.soft)
     }
     .frame(minHeight: 44)
-    .overlay(alignment: .top) { if rule { Divider() } }
+    .overlay(alignment: .top) { if rule { Rectangle().fill(.white.opacity(0.15)).frame(height: 0.5) } }
     .accessibilityElement(children: .combine)
   }
 }
 
-private struct StatLabel: View {
-  let systemImage: String
-  let text: String
-  var tint: Color = DS.Color.mutedForeground.swiftUI
-
+/// "Kỷ lục" — viên vàng.
+private struct RecordChip: View {
   var body: some View {
-    HStack(spacing: 6) {
-      Image(systemName: systemImage).font(.footnote).foregroundStyle(tint).accessibilityHidden(true)
-      Text(verbatim: text).font(DS.TextStyle.footnote.monospacedDigit()).foregroundStyle(DS.Color.foreground.swiftUI)
-    }
+    Label(String(localized: "community.pr"), systemImage: "trophy.fill")
+      .font(DS.TextStyle.caption.weight(.bold))
+      .foregroundStyle(Color(red: 0.25, green: 0.14, blue: 0.01))
+      .padding(.horizontal, 10)
+      .padding(.vertical, 5)
+      .background(DS.Color.readinessYellow.bright, in: Capsule())
   }
+}
+
+/// Tách "1.234 kg" thành ("1.234", "kg") cho số lớn.
+private func splitUnit(_ s: String) -> (String, String) {
+  guard let i = s.lastIndex(of: " ") else { return (s, "") }
+  return (String(s[..<i]), String(s[s.index(after: i)...]))
 }
 
 struct WorkoutPostBody: View {
@@ -602,18 +714,28 @@ struct WorkoutPostBody: View {
   var body: some View {
     let lines = workout.exercises.prefix(full ? workout.exercises.count : CommunityCard.previewLines)
     let more = workout.exercises.count - lines.count
-    VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-      Text(verbatim: workout.title ?? String(localized: "community.workout"))
-        .font(DS.TextStyle.title)
-        .foregroundStyle(DS.Color.foreground.swiftUI)
-      HStack(spacing: DS.Spacing.md) {
-        if let m = workout.minutes {
-          StatLabel(systemImage: "clock", text: String(localized: "community.minutes \(CommunityCard.number(m))"))
+    VStack(alignment: .leading, spacing: DS.Spacing.md) {
+      VStack(alignment: .leading, spacing: 4) {
+        HStack(alignment: .center) {
+          KindTag(kind: .workout)
+          Spacer(minLength: 0)
+          if workout.pr { RecordChip() }
         }
+        Text(verbatim: workout.title ?? String(localized: "community.workout"))
+          .font(.system(size: 26, weight: .bold))
+          .foregroundStyle(.white)
+      }
+      HStack(alignment: .top, spacing: DS.Spacing.lg) {
         if let v = CommunityCard.volumeText(workout.volumeKg, unit: unit, locale: .app) {
-          StatLabel(systemImage: "dumbbell", text: v)
+          let (n, u) = splitUnit(v)
+          BigStat(value: n, label: String(localized: "community.stat.lifted \(u)"))
         }
-        if workout.pr { StatLabel(systemImage: "trophy", text: "PR", tint: DS.Color.readinessYellow.swiftUI) }
+        if let m = workout.minutes {
+          BigStat(value: CommunityCard.number(m), label: String(localized: "community.stat.minutes"))
+        }
+        if workout.exerciseCount > 0 {
+          BigStat(value: CommunityCard.number(workout.exerciseCount), label: String(localized: "community.stat.exercises"))
+        }
       }
       if !workout.exercises.isEmpty {
         InsetPanel {
@@ -640,14 +762,17 @@ struct ProgressPostBody: View {
 
   var body: some View {
     let tiles = CommunityCard.tiles(progress, unit: unit)
-    VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-      Text(verbatim: Self.title(Int(progress.weeks)))
-        .font(DS.TextStyle.title)
-        .foregroundStyle(DS.Color.foreground.swiftUI)
-      if let lead = tiles.first {
-        Text("community.progress.fromto \(lead.startText) \(lead.endText)")
-          .font(DS.TextStyle.body)
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+    VStack(alignment: .leading, spacing: DS.Spacing.md) {
+      VStack(alignment: .leading, spacing: 4) {
+        KindTag(kind: .progress)
+        Text(verbatim: Self.title(Int(progress.weeks)))
+          .font(.system(size: 26, weight: .bold))
+          .foregroundStyle(.white)
+        if let lead = tiles.first {
+          Text("community.progress.fromto \(lead.startText) \(lead.endText)")
+            .font(DS.TextStyle.footnote)
+            .foregroundStyle(PostTint.soft)
+        }
       }
       HStack(alignment: .top, spacing: DS.Spacing.sm) {
         ForEach(tiles, id: \.kind) { tile($0) }
@@ -666,39 +791,41 @@ struct ProgressPostBody: View {
 
   private func tile(_ t: CommunityCard.Tile) -> some View {
     let label = Self.label(t)
-    let (icon, tint): (String, Color) =
+    let icon =
       switch t.kind {
-      case .weight: ("scalemass", DS.Color.metricBeige.swiftUI)
-      case .waist: ("ruler", DS.Color.readinessYellowGraphic.swiftUI)
-      case .lift: ("dumbbell", DS.Color.metricOrange.swiftUI)
+      case .weight: "scalemass"
+      case .waist: "ruler"
+      case .lift: "dumbbell"
       }
     return VStack(alignment: .leading, spacing: 4) {
       HStack(spacing: 4) {
-        Image(systemName: icon).font(.caption2).foregroundStyle(tint)
-        Text(verbatim: label).font(DS.TextStyle.caption).foregroundStyle(DS.Color.mutedForeground.swiftUI).lineLimit(1)
+        Image(systemName: icon).font(.caption2)
+        Text(verbatim: label).font(DS.TextStyle.caption).lineLimit(1)
       }
+      .foregroundStyle(PostTint.soft)
       Text(verbatim: t.deltaText)
-        .font(DS.TextStyle.headline.monospacedDigit())
-        .foregroundStyle(DS.Color.foreground.swiftUI)
+        .font(.system(size: 22, weight: .semibold, design: .monospaced))
+        .foregroundStyle(.white)
         .lineLimit(1)
-        .minimumScaleFactor(0.8)
+        .minimumScaleFactor(0.6)
       if t.series.count >= 2 {
         Chart(Array(t.series.enumerated()), id: \.offset) { point in
           LineMark(x: .value("i", point.offset), y: .value("v", point.element))
-            .foregroundStyle(tint)
-            .interpolationMethod(.linear)
+            .foregroundStyle(.white)
+            .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round))
+            .interpolationMethod(.monotone)
         }
         .chartXAxis(.hidden)
         .chartYAxis(.hidden)
         .chartYScale(domain: .automatic(includesZero: false))
-        .frame(height: 28)
+        .frame(height: 30)
       } else {
-        Color.clear.frame(height: 28)
+        Color.clear.frame(height: 30)
       }
     }
     .padding(DS.Spacing.sm)
     .frame(maxWidth: .infinity, alignment: .leading)
-    .background(DS.Color.recessBg.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.md))
+    .background(PostTint.inset, in: RoundedRectangle(cornerRadius: DS.Radius.lg, style: .continuous))
     .accessibilityElement(children: .ignore)
     .accessibilityLabel(Text(verbatim: "\(label): \(t.startText) → \(t.endText)"))
   }
@@ -716,15 +843,18 @@ struct RecipePostBody: View {
   var body: some View {
     let lines = recipe.ingredients.prefix(full ? recipe.ingredients.count : CommunityCard.previewLines)
     let more = recipe.ingredients.count - lines.count
-    VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-      Text(verbatim: recipe.title.isEmpty ? String(localized: "community.recipe") : recipe.title)
-        .font(DS.TextStyle.title)
-        .foregroundStyle(DS.Color.foreground.swiftUI)
-      StatLabel(systemImage: "flame", text: Self.kcal(recipe.kcal))
-      HStack(spacing: DS.Spacing.sm) {
-        chip(String(localized: "logMeal.protein"), recipe.protein)
-        chip(String(localized: "logMeal.carbs"), recipe.carbs)
-        chip(String(localized: "logMeal.fat"), recipe.fat)
+    VStack(alignment: .leading, spacing: DS.Spacing.md) {
+      VStack(alignment: .leading, spacing: 4) {
+        KindTag(kind: .recipe)
+        Text(verbatim: recipe.title.isEmpty ? String(localized: "community.recipe") : recipe.title)
+          .font(.system(size: 26, weight: .bold))
+          .foregroundStyle(.white)
+      }
+      HStack(alignment: .top, spacing: DS.Spacing.lg) {
+        BigStat(value: CommunityCard.grouped(recipe.kcal, locale: .app), label: "kcal")
+        BigStat(value: "\(CommunityCard.grouped(recipe.protein, locale: .app))g", label: String(localized: "logMeal.protein"))
+        BigStat(value: "\(CommunityCard.grouped(recipe.carbs, locale: .app))g", label: String(localized: "logMeal.carbs"))
+        BigStat(value: "\(CommunityCard.grouped(recipe.fat, locale: .app))g", label: String(localized: "logMeal.fat"))
       }
       if !recipe.ingredients.isEmpty {
         InsetPanel {
@@ -745,19 +875,6 @@ struct RecipePostBody: View {
   static func ingredientName(_ x: CommunityPayloads.Ingredient) -> String {
     guard let g = x.grams else { return x.name }
     return "\(x.name)  \(CommunityCard.grouped(g, locale: .app)) g"
-  }
-
-  private func chip(_ label: String, _ grams: Double) -> some View {
-    VStack(alignment: .leading, spacing: 2) {
-      Text(verbatim: label).font(DS.TextStyle.caption).foregroundStyle(DS.Color.mutedForeground.swiftUI).lineLimit(1)
-      Text(verbatim: "\(CommunityCard.grouped(grams, locale: .app)) g")
-        .font(DS.TextStyle.headline.monospacedDigit())
-        .foregroundStyle(DS.Color.foreground.swiftUI)
-    }
-    .padding(DS.Spacing.sm)
-    .frame(maxWidth: .infinity, alignment: .leading)
-    .background(DS.Color.recessBg.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.md))
-    .accessibilityElement(children: .combine)
   }
 }
 
@@ -900,5 +1017,47 @@ private struct NewPostsPill: View {
     .accessibilityLabel(
       Text(n == 1 ? String(localized: "community.newposts.a11y.one \(n)") : String(localized: "community.newposts.a11y.other \(n)")))
     .accessibilityAddTraits(.isButton)
+  }
+}
+
+/// "Đang tập hôm nay": người đăng bài trong ngày, vòng màu theo loại bài mới
+/// nhất của họ; chạm mở hồ sơ. Chỉ từ bài đang có trong feed.
+private struct TodayFaces: View {
+  let faces: [CommunityToday.Face]
+  @Environment(\.openCommunityUser) private var openUser
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+      Text(String(localized: "community.today.title"))
+        .font(DS.TextStyle.footnote.weight(.semibold))
+        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        .padding(.horizontal, 4)
+        .accessibilityAddTraits(.isHeader)
+      ScrollView(.horizontal, showsIndicators: false) {
+        HStack(spacing: DS.Spacing.md) {
+          ForEach(faces) { f in
+            Button {
+              openUser?(f.author.userId)
+            } label: {
+              VStack(spacing: 4) {
+                MascotAvatar(mascotId: f.author.mascotId, size: 50)
+                  .padding(3)
+                  .overlay(Circle().strokeBorder(PostTint.fill(f.kind), lineWidth: 3))
+                Text(verbatim: f.author.displayName.split(separator: " ").last.map(String.init) ?? f.author.displayName)
+                  .font(DS.TextStyle.caption)
+                  .foregroundStyle(DS.Color.foreground.swiftUI)
+                  .lineLimit(1)
+                  .frame(maxWidth: 64)
+              }
+            }
+            .buttonStyle(TodayPressStyle())
+            .accessibilityLabel(Text(verbatim: f.author.displayName))
+          }
+        }
+        .padding(.horizontal, 4)
+        .padding(.vertical, 2)
+      }
+      .scrollClipDisabled()
+    }
   }
 }

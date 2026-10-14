@@ -485,46 +485,46 @@ struct ChallengeHeroCard: View {
     let startsIn = CommunityChallenges.dayGap(book.today, ch.startsOn) ?? 0
     let busy = book.working.contains(ch.id)
     VStack(spacing: 0) {
-      Button {
-        open(ChallengeRoute(id: ch.id))
-      } label: {
-        DSCard {
-          VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-            Text(verbatim: ch.title)
-              .font(DS.TextStyle.title2)
-              .foregroundStyle(DS.Color.foreground.swiftUI)
-              .multilineTextAlignment(.leading)
-            HStack(spacing: DS.Spacing.sm) {
+      // Mặt tối cố định, vòng tiến độ lớn (thiết kế lại 14/10, mock v2).
+      VStack(alignment: .leading, spacing: DS.Spacing.md) {
+        Button {
+          open(ChallengeRoute(id: ch.id))
+        } label: {
+          HStack(spacing: DS.Spacing.md) {
+            ring(done: done)
+            VStack(alignment: .leading, spacing: 3) {
               Label("community.challenge.badge", systemImage: "trophy.fill")
-                .font(DS.TextStyle.footnote.weight(.semibold))
-                .foregroundStyle(DS.Color.readinessYellow.swiftUI)
-              Image(systemName: "person.2").font(.footnote).foregroundStyle(DS.Color.mutedForeground.swiftUI)
-                .accessibilityHidden(true)
-              Text(verbatim: CommunityChallengeText.people(ch.participants))
-                .font(DS.TextStyle.footnote)
-                .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+                .font(DS.TextStyle.caption.weight(.bold))
+                .textCase(.uppercase)
+                .tracking(0.6)
+                .foregroundStyle(Self.glow)
+              Text(verbatim: ch.title)
+                .font(DS.TextStyle.headline)
+                .foregroundStyle(.white)
+                .multilineTextAlignment(.leading)
+                .lineLimit(2)
+              Text(verbatim: [
+                startsIn > 0 ? CommunityChallengeText.startsIn(startsIn) : CommunityChallengeText.endsIn(left),
+                CommunityChallengeText.people(ch.participants),
+              ].joined(separator: " · "))
+                .font(DS.TextStyle.caption)
+                .foregroundStyle(.white.opacity(0.65))
             }
-            if ch.joined {
-              ProgressView(value: ch.percent, total: 100)
-                .tint(done ? DS.Color.readinessGreen.swiftUI : DS.Color.foreground.swiftUI)
-            }
-            HStack {
-              if ch.joined {
-                Text(verbatim: CommunityChallengeText.days(min(ch.progress, ch.target), ch.target))
-                  .font(DS.TextStyle.footnote.weight(.semibold).monospacedDigit())
-                  .foregroundStyle(DS.Color.foreground.swiftUI)
-              }
-              Spacer()
-              Text(verbatim: startsIn > 0 ? CommunityChallengeText.startsIn(startsIn) : CommunityChallengeText.endsIn(left))
-                .font(DS.TextStyle.footnote)
-                .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-            }
-            heroAction(done: done, busy: busy)
+            Spacer(minLength: 0)
+            Image(systemName: "chevron.right")
+              .font(.footnote.weight(.semibold))
+              .foregroundStyle(.white.opacity(0.5))
+              .accessibilityHidden(true)
           }
-          .frame(maxWidth: .infinity, alignment: .leading)
+          .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
+        heroAction(done: done, busy: busy)
       }
-      .buttonStyle(.plain)
+      .padding(DS.Spacing.card)
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .background(DS.Color.primary.solid, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
+      .shadow(color: .black.opacity(0.12), radius: 14, y: 6)
       SeeAllChallengesLink(open: openAll)
     }
     .sensoryFeedback(.selection, trigger: taps)
@@ -535,6 +535,32 @@ struct ChallengeHeroCard: View {
     ) {
       Button(String(localized: "common.ok"), role: .cancel) {}
     }
+  }
+
+  /// Hồng sáng của Tập luyện trên mặt tối.
+  private static var glow: Color { DS.Color.metricRose.bright }
+
+  /// Vòng tiến độ: đã tham gia thì x/y, chưa thì cúp.
+  private func ring(done: Bool) -> some View {
+    ZStack {
+      Circle().stroke(.white.opacity(0.14), lineWidth: 7)
+      if ch.joined {
+        Circle()
+          .trim(from: 0, to: ch.percent / 100)
+          .stroke(done ? DS.Color.readinessGreen.bright : Self.glow, style: StrokeStyle(lineWidth: 7, lineCap: .round))
+          .rotationEffect(.degrees(-90))
+        Text(verbatim: "\(min(ch.progress, ch.target))/\(ch.target)")
+          .font(.system(size: 15, weight: .semibold, design: .monospaced))
+          .foregroundStyle(.white)
+          .minimumScaleFactor(0.6)
+          .padding(8)
+      } else {
+        Image(systemName: "trophy.fill").font(.title3).foregroundStyle(Self.glow)
+      }
+    }
+    .frame(width: 64, height: 64)
+    .accessibilityElement()
+    .accessibilityLabel(Text(verbatim: ch.joined ? CommunityChallengeText.days(min(ch.progress, ch.target), ch.target) : ""))
   }
 
   @ViewBuilder private func heroAction(done: Bool, busy: Bool) -> some View {
@@ -550,7 +576,7 @@ struct ChallengeHeroCard: View {
     } else if ch.claimed {
       Label("community.challenge.claimed", systemImage: "checkmark")
         .font(DS.TextStyle.footnote.weight(.semibold))
-        .foregroundStyle(DS.Color.foreground.swiftUI)
+        .foregroundStyle(.white.opacity(0.8))
         .frame(maxWidth: .infinity, minHeight: 44)
     } else if done {
       pill(CommunityChallengeText.claim(ch.rewardCoins), busy: busy) {
@@ -572,15 +598,16 @@ struct ChallengeHeroCard: View {
   private func pill(_ label: String, busy: Bool, _ run: @escaping () -> Void) -> some View {
     Button(action: run) {
       Group {
-        if busy { ProgressView().tint(DS.Color.primaryForeground.swiftUI) } else { Text(verbatim: label) }
+        if busy { ProgressView().tint(DS.Color.primary.solid) } else { Text(verbatim: label) }
       }
       .font(DS.TextStyle.headline)
-      .foregroundStyle(DS.Color.primaryForeground.swiftUI)
-      .frame(maxWidth: .infinity, minHeight: 44)
-      .background(DS.Color.primary.swiftUI, in: Capsule())
+      .foregroundStyle(DS.Color.primary.solid)
+      .frame(maxWidth: .infinity, minHeight: 46)
+      .background(Color.white, in: Capsule())
     }
-    .buttonStyle(.plain)
+    .buttonStyle(TodayPressStyle())
     .disabled(busy)
     .accessibilityLabel(Text(verbatim: label))
   }
+
 }

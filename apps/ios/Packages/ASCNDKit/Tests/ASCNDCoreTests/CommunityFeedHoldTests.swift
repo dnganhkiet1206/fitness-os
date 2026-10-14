@@ -84,4 +84,29 @@ struct CommunityFeedHoldTests {
     let held = Self.posts([("1", "u1"), ("2", "u2"), ("3", "u3"), ("4", "u4")])
     #expect(CommunityFeedHold.faces(held).map(\.userId) == ["u1", "u2", "u3"])
   }
+
+  /// "Đang tập hôm nay" (14/10): trong ngày địa phương, mới nhất trước, mỗi
+  /// người một lần, không có mình.
+  @Test func todayFacesAreTodaysPostersNewestFirst() {
+    func post(_ id: String, _ who: String, _ at: String, _ kind: String = "workout") -> JSONValue {
+      .object([
+        "id": .string(id), "kind": .string(kind), "payload": .object([:]), "author_id": .string(who),
+        "created_at": .string(at),
+      ])
+    }
+    let authors = ["u1", "u2", "me"].map { a -> JSONValue in
+      .object(["user_id": .string(a), "handle": .string(a), "display_name": .string(a)])
+    }
+    let posts = CommunityFeed.hydrate(
+      [
+        post("a", "u1", "2026-10-14T08:00:00Z"), post("b", "u2", "2026-10-14T09:00:00Z", "recipe"),
+        post("c", "u1", "2026-10-14T10:00:00Z", "progress"), post("d", "me", "2026-10-14T11:00:00Z"),
+        post("e", "u2", "2026-10-13T09:00:00Z"),
+      ], me: "me", authors: authors, liked: [], saved: [], arts: [])
+    let utc = TimeZone(identifier: "UTC")!
+    let f = CommunityToday.faces(posts, me: "me", now: EpochMillis(iso8601: "2026-10-14T12:00:00Z")!, timeZone: utc)
+    #expect(f.map(\.author.userId) == ["u1", "u2"])
+    #expect(f.map(\.kind) == [.progress, .recipe])
+    #expect(CommunityToday.faces(posts, me: "me", now: EpochMillis(iso8601: "2026-10-16T12:00:00Z")!, timeZone: utc).isEmpty)
+  }
 }

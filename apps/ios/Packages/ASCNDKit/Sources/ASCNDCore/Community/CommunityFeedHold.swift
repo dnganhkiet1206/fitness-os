@@ -65,3 +65,36 @@ public enum CommunityFeedHold {
     return out
   }
 }
+
+/// Hàng "Đang tập hôm nay" đầu bảng tin (#527, thiết kế lại 14/10 — chủ dự án
+/// chọn mock v2): người đã đăng bài TRONG NGÀY địa phương, mới nhất trước,
+/// mỗi người một lần (loại của bài mới nhất tô vòng), trừ chính mình. Chỉ từ
+/// bài đang có trong feed — không đọc thêm gì, không có ai thì hàng ẩn.
+public enum CommunityToday {
+  public struct Face: Sendable, Hashable, Identifiable {
+    public let author: CommunityFeed.Author
+    public let kind: CommunityFeed.Kind
+    public let postId: String
+    public var id: String { author.userId }
+  }
+
+  public static func faces(
+    _ posts: [CommunityFeed.Post], me: String, now: EpochMillis, timeZone: TimeZone, limit: Int = 12
+  ) -> [Face] {
+    let today = LocalDate(now, in: timeZone)
+    let dated = posts.compactMap { p -> (CommunityFeed.Post, EpochMillis)? in
+      guard let a = p.author, a.userId != me, let t = EpochMillis(iso8601: p.createdAt),
+        LocalDate(t, in: timeZone) == today
+      else { return nil }
+      return (p, t)
+    }
+    var seen = Set<String>()
+    var out: [Face] = []
+    for (p, _) in dated.sorted(by: { $0.1 > $1.1 }) {
+      guard let a = p.author, seen.insert(a.userId).inserted else { continue }
+      out.append(Face(author: a, kind: p.kind, postId: p.id))
+      if out.count == limit { break }
+    }
+    return out
+  }
+}
