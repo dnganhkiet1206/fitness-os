@@ -1,4 +1,5 @@
 public import Foundation
+public import Observation
 
 /// Thẻ Cân nặng của phân đoạn Cơ thể (#527, tab Tập luyện thiết kế lại 14/10)
 /// — phần cân nặng của `components/ascnd/body-panel.tsx` + `useWeightHistory`
@@ -100,7 +101,38 @@ public enum WeightTrend {
     max(0, min(1, (bmi - 15) / 25))
   }
 
+  // MARK: - Danh sách lần cân
+
+  /// Một lần cân, mới nhất trước, kèm chênh lệch so với lần cân TRƯỚC đó.
+  public struct Entry: Sendable, Hashable, Identifiable {
+    public let date: LocalDate
+    public let kg: Double
+    /// `nil` cho lần cân đầu tiên.
+    public let changeKg: Double?
+    public var id: LocalDate { date }
+  }
+
+  public static func entries(_ all: [Point]) -> [Entry] {
+    all.enumerated().map { i, p in
+      Entry(date: p.date, kg: p.kg, changeKg: i > 0 ? p.kg - all[i - 1].kg : nil)
+    }.reversed()
+  }
+
   // MARK: - Cân mục tiêu (`use-weight-goal.ts`)
+
+  /// Hướng của mục tiêu so với cân hiện tại (`weight-goal-dialog.tsx`):
+  /// lệch < 0,05 kg là giữ cân.
+  public enum Intent: Sendable, Hashable {
+    case maintain
+    case lose(Double)
+    case gain(Double)
+  }
+
+  public static func intent(goalKg: Double, currentKg: Double) -> Intent {
+    let d = goalKg - currentKg
+    if abs(d) < 0.05 { return .maintain }
+    return d < 0 ? .lose(-d) : .gain(d)
+  }
 
   public static let goalRange = 30.0...300.0
 
