@@ -28,7 +28,7 @@ màn ngày 14/10. RN đối chiếu @ fac9ac2: `app/(tabs)/workouts/{index,libra
 - **Màn tập** là lớp toàn màn hình (`fullScreenCover`), nút thu nhỏ ở góc trái; tiến độ và đồng hồ nghỉ giữ nguyên. "Bắt đầu" ở tab Hôm nay mở thẳng lớp này.
 - **Mẫu buổi tập (n)**: 3 mẫu mới nhất trong một thẻ danh sách + hàng "+ Tạo buổi tập"; "Xem tất cả".
 - **Công cụ**: Thư viện & lịch sử (số buổi gần đây) → trang `LibraryHistoryView`; Tiến bộ từng bài.
-- **Cơ thể**: thẻ Cân nặng + "Ghi cân nặng"; Số đo, Ảnh tiến trình, Hiệu chỉnh mục tiêu (màn đã có). Biểu đồ cân nặng của `BodyPanel`: lát sau.
+- **Cơ thể**: thẻ Cân nặng `WeightTrendCard` (phần cân nặng của `BodyPanel`: số hiện tại Menlo + chênh lệch 90 ngày xanh khi đúng hướng mục tiêu, biểu đồ Tuần / Tháng / Năm / Tất cả, đường cân mục tiêu nét đứt lưu trên máy, thước BMI 4 vùng WHO, "Ghi cân nặng"); Số đo, Ảnh tiến trình, Hiệu chỉnh mục tiêu (màn đã có). Chưa có: danh sách lần cân, kéo đọc số trên biểu đồ.
 - **Màu**: nhấn = `metricRose`, đúng màu ống Tập luyện ở Hôm nay (chủ dự án nhắc 14/10); Cơ thể = `metricPurple`.
 - Bản Debug: công tắc App / Lab thu thành một nút nhỏ ở góc.
 

@@ -639,6 +639,12 @@ final class AppServices {
   }
 
   /// Số đo cơ thể (#527): 24 lần đo `body_measurements` mới nhất.
+  /// Thẻ Cân nặng của phân đoạn Cơ thể (tab Tập luyện, 14/10): `weight_logs`
+  /// qua kho hàng chung + cân mục tiêu trên máy.
+  func makeWeightTrend(userId: String) -> WeightTrendBook? {
+    rows.map { WeightTrendBook(userId: userId, store: $0, defaults: UserDefaultsStore()) }
+  }
+
   func makeMeasurements(userId: String) -> MeasurementsBook? {
     rows.map { MeasurementsBook(userId: userId, store: $0) }
   }

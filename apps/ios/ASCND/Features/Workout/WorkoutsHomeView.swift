@@ -20,8 +20,8 @@ import SwiftUI
 /// - trạng thái thứ năm "Đang tập" (đã tick, chưa chốt): màn tập là lớp toàn
 ///   màn hình, thu xuống vẫn giữ tiến độ — thẻ nói còn bao nhiêu set và mời
 ///   "Tiếp tục";
-/// - Cơ thể: các màn đã port (số đo, ảnh tiến trình, mục tiêu, ghi cân nặng);
-///   biểu đồ cân nặng của `BodyPanel` chưa port;
+/// - Cơ thể: thẻ Cân nặng (`WeightTrendCard`, phần cân nặng của `BodyPanel`)
+///   + các màn đã port (số đo, ảnh tiến trình, mục tiêu);
 /// - gợi ý ngày nghỉ là chữ (RN: ô bấm không làm gì ngoài rung).
 struct WorkoutsHomeView: View {
   let flow: WorkoutFlow
@@ -38,6 +38,7 @@ struct WorkoutsHomeView: View {
   @State private var measure: MeasurementsBook?
   @State private var photos: ProgressPhotosBook?
   @State private var goals: SmartGoalsBook?
+  @State private var weight: WeightTrendBook?
 
   static let accent = MascotRoomView.signalColor(.workout)
   /// Màu của phân đoạn Cơ thể (tím cân nặng).
@@ -82,6 +83,9 @@ struct WorkoutsHomeView: View {
     .sheet(isPresented: $showsManualLog) { ManualLogView(flow: flow) }
     .sheet(isPresented: $showsWeight) {
       LogWeightView(makeLogger: { services.makeWeightLogger(userId: userId) }) { showsWeight = false }
+    }
+    .onChange(of: showsWeight) { _, open in
+      if !open { Task { await weight?.load() } }
     }
     .onChange(of: segment) { _, s in if s == .body { makeBodyBooks() } }
   }
@@ -575,29 +579,9 @@ struct WorkoutsHomeView: View {
   // MARK: - Cơ thể
 
   @ViewBuilder private var bodySegment: some View {
-    VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-      HStack(spacing: DS.Spacing.sm) {
-        Image(systemName: "scalemass")
-          .font(.title3)
-          .foregroundStyle(Self.body)
-          .accessibilityHidden(true)
-        Text(String(localized: "wh.body.weight"))
-          .font(DS.TextStyle.title.weight(.bold))
-          .accessibilityAddTraits(.isHeader)
-      }
-      Text(String(localized: "wh.body.weightHint"))
-        .font(DS.TextStyle.footnote)
-        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-      Button {
-        showsWeight = true
-      } label: {
-        buttonLabel(String(localized: "wh.body.logWeight"), systemImage: "plus", fill: DS.Color.foreground.swiftUI)
-      }
-      .buttonStyle(TodayPressStyle())
+    if let weight {
+      WeightTrendCard(book: weight) { showsWeight = true }
     }
-    .padding(DS.Spacing.card)
-    .frame(maxWidth: .infinity, alignment: .leading)
-    .todayCard()
 
     VStack(spacing: 0) {
       if let measure {
@@ -626,6 +610,10 @@ struct WorkoutsHomeView: View {
   }
 
   private func makeBodyBooks() {
+    if weight == nil {
+      weight = services.makeWeightTrend(userId: userId)
+      Task { await weight?.load() }
+    }
     if measure == nil { measure = services.makeMeasurements(userId: userId) }
     if photos == nil { photos = services.makeProgressPhotos(userId: userId) }
     if goals == nil { goals = services.makeSmartGoals(userId: userId, today: flow.today.today) }
