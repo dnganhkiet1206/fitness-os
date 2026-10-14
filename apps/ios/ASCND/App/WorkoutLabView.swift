@@ -187,6 +187,7 @@ private struct LabWorkout: View {
               Button { rest.setPaused(rest.timer?.isPaused != true) } label: {
                 Image(systemName: rest.timer?.isPaused == true ? "play.fill" : "pause.fill")
               }
+              .accessibilityLabel(Text(verbatim: rest.timer?.isPaused == true ? "Resume" : "Pause"))
               Button(role: .destructive) { rest.handle(.cancel) } label: { Text(verbatim: "Skip") }
             }
             .buttonStyle(.borderless)

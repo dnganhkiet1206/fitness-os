@@ -62,6 +62,7 @@ struct DiaryView: View {
         Text(verbatim: Self.dayLabel(book.date, today: book.today))
           .font(DS.TextStyle.headline)
           .lineLimit(1)
+          .accessibilityAddTraits(.isHeader)
         if let sub = Self.daySub(book.date, today: book.today) {
           Text(verbatim: sub)
             .font(DS.TextStyle.caption)
@@ -78,8 +79,7 @@ struct DiaryView: View {
         }
       }
       .frame(maxWidth: .infinity)
-      .accessibilityElement(children: .combine)
-      .accessibilityAddTraits(.isHeader)
+      // Không gộp: nút "Hôm nay" bên trong phải bấm được bằng VoiceOver.
       arrow("chevron.right", label: String(localized: "diary.nextDay"), enabled: !book.isToday) { _ = book.go(1) }
     }
   }

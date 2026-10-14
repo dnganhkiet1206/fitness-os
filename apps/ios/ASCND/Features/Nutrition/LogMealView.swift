@@ -624,6 +624,7 @@ struct LogMealView: View {
     .buttonStyle(.plain)
     .disabled(next == current)
     .sensoryFeedback(.selection, trigger: current)
+    .accessibilityLabel(Text(String(localized: icon.contains("minus") ? "a11y.decrease" : "a11y.increase")))
   }
 
   // MARK: - Lưu

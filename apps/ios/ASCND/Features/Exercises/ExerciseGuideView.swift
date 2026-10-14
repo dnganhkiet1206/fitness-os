@@ -265,6 +265,8 @@ struct ExerciseGuideView: View {
                   }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel(Text(String(localized: "eg.step \(step.id + 1)") + ". " + [step.title, step.text].compactMap { $0 }.joined(separator: ". ")))
                 // Ảnh của bước: ảnh nhỏ cạnh chữ (ảnh lớn đã ở đầu trang);
                 // chạm mở trình xem đúng tấm ấy.
                 if let item = step.media {
@@ -280,8 +282,6 @@ struct ExerciseGuideView: View {
                 }
               }
               .padding(.bottom, DS.Spacing.lg)
-              .accessibilityElement(children: .combine)
-              .accessibilityLabel(Text(String(localized: "eg.step \(step.id + 1)") + ". " + [step.title, step.text].compactMap { $0 }.joined(separator: ". ")))
             }
           }
         }
