@@ -250,7 +250,7 @@ struct WorkoutsHomeView: View {
         .accessibilityLabel(Text("workout.loading"))
     case .start:
       planCard(eyebrow: eyebrow, title: templateName) {
-        primaryButton(String(localized: "today.start"), systemImage: "play.fill", fill: DS.Color.foreground.swiftUI) {
+        primaryButton(String(localized: "today.start"), systemImage: "play.fill", fill: Self.ink, inkText: true) {
           onOpenSession()
         }
       }
@@ -283,7 +283,7 @@ struct WorkoutsHomeView: View {
         message: String(localized: "today.unplanned.message")
       ) {
         if flow.plan != nil {
-          primaryButton(String(localized: "today.choosePlan"), systemImage: "calendar", fill: DS.Color.foreground.swiftUI) {
+          primaryButton(String(localized: "today.choosePlan"), systemImage: "calendar", fill: Self.ink, inkText: true) {
             showsPicker = true
           }
         }
@@ -423,10 +423,14 @@ struct WorkoutsHomeView: View {
     }
   }
 
-  private func buttonLabel(_ title: String, systemImage: String, fill: Color?) -> some View {
+  /// Nút "mực": nền theo màu chữ của chế độ (đen ở sáng, sáng ở tối) — chữ
+  /// phải là màu nền, không phải trắng cố định (14/10, rà chế độ tối).
+  static let ink = DS.Color.foreground.swiftUI
+
+  private func buttonLabel(_ title: String, systemImage: String, fill: Color?, inkText: Bool = false) -> some View {
     Label(title, systemImage: systemImage)
       .font(DS.TextStyle.headline)
-      .foregroundStyle(fill == nil ? DS.Color.foreground.swiftUI : Color.white)
+      .foregroundStyle(fill == nil ? DS.Color.foreground.swiftUI : inkText ? DS.Color.background.swiftUI : Color.white)
       .frame(maxWidth: .infinity, minHeight: 50)
       .background {
         if let fill {
@@ -438,8 +442,8 @@ struct WorkoutsHomeView: View {
       .contentShape(Capsule())
   }
 
-  private func primaryButton(_ title: String, systemImage: String, fill: Color, action: @escaping () -> Void) -> some View {
-    Button(action: action) { buttonLabel(title, systemImage: systemImage, fill: fill) }
+  private func primaryButton(_ title: String, systemImage: String, fill: Color, inkText: Bool = false, action: @escaping () -> Void) -> some View {
+    Button(action: action) { buttonLabel(title, systemImage: systemImage, fill: fill, inkText: inkText) }
       .buttonStyle(TodayPressStyle())
       .sensoryFeedback(.impact(weight: .medium), trigger: flow.session?.phase)
   }

@@ -142,13 +142,19 @@ private struct TodayCardStyle: ViewModifier {
     let shape = RoundedRectangle(cornerRadius: radius, style: .continuous)
     content
       .todayGlass(cornerRadius: radius, solid: reduceTransparency)
+      // Tối: kính trên nền gần đen (#070708) lấy đúng màu đen ấy — thẻ chìm
+      // vào nền (chủ dự án 14/10: "thẻ ở giao diện tối hơi khó nhìn"). Lót
+      // một mặt xám than dưới kính để thẻ nổi lên một bậc.
+      .background {
+        if scheme == .dark { shape.fill(DS.Color.secondary.swiftUI) }
+      }
       .overlay {
         shape.strokeBorder(
           reduceTransparency
             ? AnyShapeStyle(DS.Color.border.swiftUI)
             : AnyShapeStyle(
               LinearGradient(
-                colors: [.white.opacity(scheme == .dark ? 0.22 : 0.7), .white.opacity(scheme == .dark ? 0.04 : 0.15)],
+                colors: [.white.opacity(scheme == .dark ? 0.26 : 0.7), .white.opacity(scheme == .dark ? 0.08 : 0.15)],
                 startPoint: .top, endPoint: .bottom)),
           lineWidth: 0.75)
       }

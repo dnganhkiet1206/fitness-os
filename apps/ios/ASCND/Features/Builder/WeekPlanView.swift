@@ -310,7 +310,7 @@ struct WeekPlanView: View {
               Text("wp.openBoard")
             }
             .font(DS.TextStyle.headline)
-            .foregroundStyle(.white)
+            .foregroundStyle(DS.Color.background.swiftUI)
             .frame(maxWidth: .infinity, minHeight: 48)
             .background(Capsule().fill(DS.Color.foreground.swiftUI))
           }
@@ -322,7 +322,7 @@ struct WeekPlanView: View {
         } label: {
           Label(String(localized: p.template == nil ? "wp.chooseWorkout" : "wp.change"), systemImage: "arrow.left.arrow.right")
             .font(DS.TextStyle.headline)
-            .foregroundStyle(p.template == nil ? Color.white : DS.Color.foreground.swiftUI)
+            .foregroundStyle(p.template == nil ? DS.Color.background.swiftUI : DS.Color.foreground.swiftUI)
             .frame(maxWidth: .infinity, minHeight: 48)
             .background {
               if p.template == nil {

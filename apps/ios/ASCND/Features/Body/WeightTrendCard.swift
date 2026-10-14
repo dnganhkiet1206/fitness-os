@@ -50,7 +50,7 @@ struct WeightTrendCard: View {
       Button(action: onLog) {
         Label(String(localized: "wh.body.logWeight"), systemImage: "plus")
           .font(DS.TextStyle.headline)
-          .foregroundStyle(.white)
+          .foregroundStyle(DS.Color.background.swiftUI)
           .frame(maxWidth: .infinity, minHeight: 50)
           .background(Capsule().fill(DS.Color.foreground.swiftUI))
       }
@@ -511,7 +511,7 @@ struct WeightGoalSheet: View {
         } label: {
           Text(String(localized: "wt.goal.done"))
             .font(DS.TextStyle.headline)
-            .foregroundStyle(.white)
+            .foregroundStyle(DS.Color.background.swiftUI)
             .frame(maxWidth: .infinity, minHeight: 52)
             .background(Capsule().fill(DS.Color.foreground.swiftUI))
         }
