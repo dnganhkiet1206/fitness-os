@@ -122,7 +122,7 @@ public struct WorkoutView: View {
       }
       .navigationTitle(isPreview ? "" : controller.plan.templateName)
       .ascndPage()
-      .navigationBarTitleDisplayMode(showsTable ? .large : .inline)
+      .navigationBarTitleDisplayMode(.inline)
       // Một thanh "Xong" trên bàn phím cho cả màn — gắn trên từng ô reps thì
       // mỗi hàng góp một nút.
       .toolbar {
@@ -135,10 +135,10 @@ public struct WorkoutView: View {
             .accessibilityLabel(Text(isPreview ? "common.close" : "workout.minimize"))
           }
         }
-        if !isPreview, controller.loggedSessionId == nil || onOpenHistory != nil {
+        if !isPreview, !controller.isLogged || onOpenHistory != nil {
           ToolbarItem(placement: .topBarTrailing) {
             Menu {
-              if controller.loggedSessionId == nil, !controller.plan.rows.isEmpty {
+              if !controller.isLogged, !controller.plan.rows.isEmpty {
                 Button {
                   withAnimation(.snappy) { tableLayout.toggle() }
                 } label: {
@@ -219,21 +219,28 @@ public struct WorkoutView: View {
           undoBar(removal)
         }
         SyncStrip(status: outboxStatus)
-        if let timer = restTimer {
-          RestCard(timer: timer, onAdjust: onAdjustRest, onSkip: onSkipRest, onSetPaused: onSetRestPaused)
-        }
         if controller.plan.rows.isEmpty {
           emptyView
         } else {
+          let exercises = WorkoutFocus.exercises(controller.plan.rows, controller.progress)
+          let next = WorkoutFocus.next(controller.plan.rows, controller.progress, pinned: pinned)
+          SessionProgressHeader(eyebrow: eyebrow, exercises: exercises, current: next.map(WorkoutFocus.exerciseKey))
+            .padding(.horizontal, 4)
+          if let timer = restTimer {
+            RestStrip(timer: timer, onAdjust: onAdjustRest, onSkip: onSkipRest, onSetPaused: onSetRestPaused)
+          }
           ForEach(exerciseGroups, id: \.key) { group in
-            exerciseCard(group)
+            exerciseCard(group, next: next)
           }
           finishButton
             .padding(.top, DS.Spacing.sm)
         }
       }
       .padding(DS.Spacing.md)
+      .animation(.snappy, value: editingKey)
+      .animation(.snappy, value: controller.progress.done)
     }
+    .scrollDismissesKeyboard(.interactively)
   }
 
   // MARK: - Từng set một (#527, thiết kế lại 14/10)
@@ -246,11 +253,11 @@ public struct WorkoutView: View {
 
   /// Ngày chưa tới mà chưa ghi: chỉ xem trước.
   private var isPreview: Bool {
-    controller.isFuture && controller.loggedSessionId == nil && !controller.plan.rows.isEmpty
+    controller.isFuture && !controller.isLogged && !controller.plan.rows.isEmpty
   }
 
   private var showsTable: Bool {
-    !isPreview && (tableLayout || controller.loggedSessionId != nil || controller.plan.rows.isEmpty)
+    !isPreview && (tableLayout || controller.isLogged || controller.plan.rows.isEmpty)
   }
 
   @ViewBuilder private var sessionContent: some View {
@@ -538,22 +545,229 @@ public struct WorkoutView: View {
   /// Bài đang mở hướng dẫn (`day-plan.tsx:1784`).
   @State private var guideTarget: GuideTarget?
 
-  private func exerciseCard(_ group: (key: String, name: String, rows: [PlannedSet])) -> some View {
-    DSCard {
-      VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+  // MARK: - Dạng bảng (phương án A, chủ dự án chọn 14/10)
+  //
+  // Mỗi bài một thẻ. Set đã xong / chưa tới là MỘT DÒNG chữ ("✓ 15 kg × 10 ·
+  // RPE 7"); chỉ một set MỞ ra để nhập — set kế tiếp, hay set người dùng chạm.
+  // Bài không chứa set kế tiếp thu thành một dòng tóm tắt, chạm để mở.
+
+  /// Set đang mở để sửa (người dùng chạm). `nil` = set kế tiếp.
+  @State private var editingKey: String?
+  /// Bài người dùng mở tay (bài không chứa set kế tiếp mặc định thu gọn).
+  @State private var openGroups: Set<String> = []
+
+  private func exerciseCard(_ group: (key: String, name: String, rows: [PlannedSet]), next: PlannedSet?) -> some View {
+    let done = group.rows.filter { controller.progress.done[$0.key] == true }.count
+    let holdsNext = next.map { WorkoutFocus.exerciseKey($0) == group.key } ?? false
+    let editing = editingKey.flatMap { k in group.rows.first { $0.key == k } }
+    let open = holdsNext || editing != nil || openGroups.contains(group.key) || controller.isLogged
+    let editor = editing ?? (holdsNext && !controller.isLogged ? next : nil)
+    return VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+      HStack(alignment: .firstTextBaseline, spacing: DS.Spacing.sm) {
         exerciseTitle(group)
+        Spacer(minLength: DS.Spacing.sm)
+        Text(verbatim: "\(done)/\(group.rows.count)")
+          .font(DS.TextStyle.mono(.footnote))
+          .foregroundStyle(done == group.rows.count ? WorkoutsHomeView.accent : DS.Color.mutedForeground.swiftUI)
+        if !holdsNext, !controller.isLogged {
+          Button {
+            withAnimation(.snappy) {
+              if openGroups.contains(group.key) { openGroups.remove(group.key) } else { openGroups.insert(group.key) }
+            }
+          } label: {
+            Image(systemName: open ? "chevron.up" : "chevron.down")
+              .font(.footnote.weight(.semibold))
+              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+              .frame(minWidth: 44, minHeight: 44)
+          }
+          .accessibilityLabel(Text(open ? "ws.collapse" : "ws.expand"))
+        }
+      }
+      if open {
         // "Lần trước" — thứ đọc TRƯỚC khi làm một hiệp (`day-plan.tsx:1876`).
         if let flow, let insights = flow.insights {
           ExerciseProgressRow(insights: insights, today: flow.today, name: group.name)
         }
-        ForEach(group.rows) { row in
-          setRow(row)
-          if row.key != group.rows.last?.key {
-            Divider()
+        VStack(spacing: 0) {
+          ForEach(group.rows) { row in
+            if row.key == editor?.key {
+              setEditor(row, group: group)
+                .padding(.vertical, DS.Spacing.xs)
+                .transition(.opacity.combined(with: .scale(scale: 0.98, anchor: .top)))
+            } else {
+              setLine(row)
+            }
           }
         }
+      } else {
+        Text(verbatim: groupSummary(group.rows))
+          .font(DS.TextStyle.footnote.monospacedDigit())
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
       }
     }
+    .padding(DS.Spacing.card)
+    .todayCard()
+  }
+
+  /// "3 × 12 · 12 kg · nghỉ 60s" cho bài đang thu gọn.
+  private func groupSummary(_ rows: [PlannedSet]) -> String {
+    guard let first = rows.first else { return "" }
+    let p = controller.performed(first)
+    var parts = ["\(rows.count) × \(p.durationSec.map { "\($0)s" } ?? "\(p.reps)")"]
+    if p.weightKg > 0 { parts.append(unit.localizedLoad(p.weightKg, locale: locale) ?? unit.load(p.weightKg)) }
+    parts.append(String(localized: "ws.preview.rest \(WorkoutDay.restSeconds(first, controller.progress))"))
+    return parts.joined(separator: " · ")
+  }
+
+  /// Một set gọn: vòng tick + "15 kg × 10" + RPE. Chạm chữ để mở ô nhập.
+  private func setLine(_ row: PlannedSet) -> some View {
+    let done = controller.progress.done[row.key] == true
+    let ready = WorkoutDay.isReady(row, controller.progress)
+    let performed = controller.performed(row)
+    return HStack(spacing: 12) {
+      Button {
+        if controller.canRemove(row.key) {
+          untickTarget = row
+          return
+        }
+        Task {
+          await flushWrites()
+          await controller.toggle(row.key)
+        }
+      } label: {
+        ZStack {
+          Circle()
+            .fill(done ? WorkoutsHomeView.accent : Color.clear)
+          Circle()
+            .strokeBorder(done ? WorkoutsHomeView.accent : DS.Color.mutedForeground.swiftUI.opacity(0.5), lineWidth: 1.5)
+          if done {
+            Image(systemName: "checkmark").font(.caption.weight(.bold)).foregroundStyle(.white)
+          } else {
+            Text(verbatim: "\(row.ordinal)")
+              .font(DS.TextStyle.mono(.caption))
+              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          }
+        }
+        .frame(width: 30, height: 30)
+        .frame(minWidth: 44, minHeight: 44)
+        .contentShape(Rectangle())
+      }
+      .buttonStyle(.plain)
+      .disabled(!ready && !done)
+      .accessibilityLabel(Text(tickLabel(row, performed: performed, done: done, ready: ready)))
+      .accessibilityAddTraits(done ? [.isButton, .isSelected] : .isButton)
+
+      Button {
+        guard controller.canEdit(row.key) else { return }
+        withAnimation(.snappy) { editingKey = row.key }
+      } label: {
+        HStack(spacing: DS.Spacing.sm) {
+          Text(verbatim: setText(row))
+            .font(DS.TextStyle.body.monospacedDigit().weight(done ? .semibold : .regular))
+            .foregroundStyle(done ? DS.Color.foreground.swiftUI : DS.Color.mutedForeground.swiftUI)
+          if row.warmup {
+            Text(String(localized: "ws.warmup"))
+              .font(DS.TextStyle.caption.weight(.semibold))
+              .foregroundStyle(DS.Color.readinessYellow.swiftUI)
+          }
+          Spacer(minLength: DS.Spacing.sm)
+          Text(verbatim: "RPE \(controller.progress.rpe[row.key] ?? row.plannedRpe)")
+            .font(DS.TextStyle.caption.monospacedDigit())
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          if restingRowKey == row.key {
+            Image(systemName: "hourglass").font(.caption).foregroundStyle(DS.Color.metricBlue.swiftUI)
+          }
+        }
+        .frame(minHeight: 44)
+        .contentShape(Rectangle())
+      }
+      .buttonStyle(.plain)
+      .accessibilityLabel(Text(String(localized: "ws.editSet \(row.ordinal)")))
+      .accessibilityValue(Text(verbatim: setText(row)))
+    }
+  }
+
+  /// Set đang mở: ± tạ / reps, nghỉ, RPE, "Xong set N" — cùng ô với thẻ set.
+  private func setEditor(_ row: PlannedSet, group: (key: String, name: String, rows: [PlannedSet])) -> some View {
+    let done = controller.progress.done[row.key] == true
+    let ready = WorkoutDay.isReady(row, controller.progress)
+    let editable = controller.canEdit(row.key)
+    let previous = group.rows.last { $0.ordinal < row.ordinal && !(controller.progress.weightText[$0.key] ?? "").isEmpty }
+      .flatMap { controller.progress.weightText[$0.key] }
+    let hint = previous ?? flow?.insights?.history(for: row.exerciseName).last?.bestWeightKg.map { unit.seed($0) } ?? ""
+    let weight = weightBinding(for: row)
+    return VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+      HStack {
+        Text(String(localized: done ? "ws.editingSet \(row.ordinal)" : "ws.nextSet \(row.ordinal)"))
+          .font(DS.TextStyle.footnote.weight(.semibold))
+          .foregroundStyle(WorkoutsHomeView.accent)
+        Spacer()
+        if editingKey != nil {
+          Button(String(localized: "workout.done")) {
+            Task { await flushWrites() }
+            focusedField = nil
+            withAnimation(.snappy) { editingKey = nil }
+          }
+          .font(DS.TextStyle.footnote.weight(.semibold))
+          .foregroundStyle(WorkoutsHomeView.accent)
+          .frame(minHeight: 44)
+        }
+      }
+      HStack(spacing: DS.Spacing.sm) {
+        FocusStepper(
+          text: weight, unitLabel: unit.label,
+          name: String(localized: "workout.weight.unit \(unit.label)"), editable: editable,
+          keyboard: .decimalPad, placeholder: "0", focus: $focusedField, field: .weight(row.key), compact: true
+        ) { WorkoutFocus.stepWeight($0, by: $1, unit: unit, hint: hint) }
+        FocusStepper(
+          text: repsBinding(for: row), unitLabel: String(localized: "ws.reps.unit"),
+          name: String(localized: "workout.reps"), editable: editable,
+          keyboard: .numbersAndPunctuation, placeholder: "0", focus: $focusedField, field: .reps(row.key), compact: true
+        ) { WorkoutFocus.stepReps($0, by: $1) }
+      }
+      if weight.wrappedValue.isEmpty, !hint.isEmpty, editable {
+        Button {
+          weight.wrappedValue = hint
+        } label: {
+          Label(
+            previous != nil
+              ? String(localized: "ws.usePrevious \(hint) \(unit.label)")
+              : String(localized: "ws.useLast \(hint) \(unit.label)"),
+            systemImage: "arrow.uturn.backward")
+            .font(DS.TextStyle.footnote.weight(.semibold).monospacedDigit())
+            .foregroundStyle(WorkoutsHomeView.accent)
+            .frame(maxWidth: .infinity, minHeight: 36)
+        }
+        .buttonStyle(.plain)
+      }
+      HStack(spacing: DS.Spacing.sm) {
+        restMenu(row)
+        rpeMenu(row)
+        Spacer(minLength: 0)
+      }
+      if !done {
+        Button {
+          Task {
+            focusedField = nil
+            await flushWrites()
+            await controller.toggle(row.key)
+            editingKey = nil
+          }
+        } label: {
+          Label(String(localized: "ws.doneSetN \(row.ordinal)"), systemImage: "checkmark")
+            .font(DS.TextStyle.headline)
+            .foregroundStyle(.white)
+            .frame(maxWidth: .infinity, minHeight: 50)
+            .background(WorkoutsHomeView.accent, in: Capsule())
+        }
+        .buttonStyle(TodayPressStyle())
+        .disabled(!ready || !editable)
+        .opacity(ready && editable ? 1 : 0.45)
+        .accessibilityLabel(Text(tickLabel(row, performed: controller.performed(row), done: false, ready: ready)))
+      }
+    }
+    .padding(DS.Spacing.md)
+    .background(WorkoutsHomeView.accent.opacity(0.08), in: RoundedRectangle(cornerRadius: DS.Radius.lg, style: .continuous))
   }
 
   /// Chạm tên bài để biết về bài ấy: tên + glyph ⓘ là MỘT control. Bài thêm
@@ -589,132 +803,6 @@ public struct WorkoutView: View {
         .font(DS.TextStyle.title2)
         .foregroundStyle(DS.Color.foreground.swiftUI)
         .accessibilityAddTraits(.isHeader)
-    }
-  }
-
-  // MARK: - Hàng set: chưa làm / đang nghỉ / xong
-
-  private func setRow(_ row: PlannedSet) -> some View {
-    let done = controller.progress.done[row.key] == true
-    let ready = WorkoutDay.isReady(row, controller.progress)
-    let performed = controller.performed(row)
-    let resting = restingRowKey == row.key
-
-    // Không `.combine`: mỗi phần tử tương tác (nút tick, ô nhập, menu)
-    // là một điểm dừng VoiceOver riêng. Thông tin hàng ("Bench Press,
-    // hiệp 2 trên 3, 60 kg × 8, đã xong") nằm trong label của nút tick.
-    return VStack(alignment: .leading, spacing: DS.Spacing.xs) {
-      HStack(spacing: DS.Spacing.sm) {
-        // Tick — controller từ chối khi chưa đủ (không tên/không reps).
-        Button {
-          // Chữ vừa gõ (đang chờ debounce) phải tới controller TRƯỚC khi tick,
-          // không thì set được chốt với số cũ.
-          // Hàng đã nằm trong buổi đã chốt: bỏ tích là nói nó KHÔNG xảy ra —
-          // hỏi lại trước (RN `nRdUntick*`), rồi gỡ khỏi buổi.
-          if controller.canRemove(row.key) {
-            untickTarget = row
-            return
-          }
-          Task {
-            await flushWrites()
-            await controller.toggle(row.key)
-          }
-        } label: {
-          Image(systemName: done ? "checkmark.circle.fill" : "circle")
-            .font(.system(size: 26))
-            .foregroundStyle(
-              done ? WorkoutsHomeView.accent : DS.Color.mutedForeground.swiftUI
-            )
-            .frame(width: 44, height: 44)
-        }
-        .disabled(!ready && !done)
-        .opacity((!ready && !done) ? 0.4 : 1)
-        .accessibilityLabel(Text(tickLabel(row, performed: performed, done: done, ready: ready)))
-        .accessibilityAddTraits(done ? [.isButton, .isSelected] : .isButton)
-
-        // Nhãn ngắn không bao giờ bẻ dòng: ở cỡ chữ trợ năng "1/3" và "kg"
-        // từng xuống dòng từng ký tự vì hai ô số giữ chỗ cố định.
-        Text("\(row.ordinal)/\(row.of)")
-          .font(DS.TextStyle.footnote.monospacedDigit())
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-          .lineLimit(1)
-          .fixedSize()
-          .frame(minWidth: 36)
-
-        // Ô tạ / reps — gõ chữ, View debounce rồi truyền cho controller (#300).
-        TextField("", text: weightBinding(for: row))
-          .keyboardType(.decimalPad)
-          .multilineTextAlignment(.trailing)
-          .font(DS.TextStyle.body.monospacedDigit())
-          .frame(minWidth: 64, maxWidth: typeSize.isAccessibilitySize ? .infinity : 64)
-          .frame(minHeight: 44)
-          .padding(.horizontal, DS.Spacing.xs)
-          .background(DS.Color.secondary.swiftUI)
-          .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
-          .accessibilityLabel(Text(String(localized: "workout.weight.unit \(unit.label)")))
-          // Hàng controller không cho sửa (đang tải, đã nằm trong buổi đã
-          // chốt, đang chốt): khoá ô — gõ vào sẽ hiện một con số controller
-          // đã từ chối, tức ô nói dối.
-          .disabled(!controller.canEdit(row.key))
-          .focused($focusedField, equals: .weight(row.key))
-          .submitLabel(.next)
-          .onSubmit {
-            // Focus weight → reps (#300).
-            focusedField = .reps(row.key)
-          }
-
-        // Nhãn đơn vị cạnh ô tạ (`day-plan.tsx:1986`): "kg" / "lb" — ký hiệu,
-        // không dịch; VoiceOver đã nghe đơn vị trong nhãn của ô.
-        Text(verbatim: unit.label)
-          .font(DS.TextStyle.footnote)
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-          .fixedSize()
-          .accessibilityHidden(true)
-
-        Text("×")
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-          .fixedSize()
-
-        TextField("", text: repsBinding(for: row))
-          // Ô reps nhận cả "45s" (bài giữ, `RepEntry.parse`): bàn phím số thuần
-          // không có chữ "s".
-          .keyboardType(.numbersAndPunctuation)
-          .multilineTextAlignment(.trailing)
-          .font(DS.TextStyle.body.monospacedDigit())
-          .frame(minWidth: 64, maxWidth: typeSize.isAccessibilitySize ? .infinity : 64)
-          .frame(minHeight: 44)
-          .padding(.horizontal, DS.Spacing.xs)
-          .background(DS.Color.secondary.swiftUI)
-          .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
-          .accessibilityLabel(Text(String(localized: "workout.reps")))
-          .disabled(!controller.canEdit(row.key))
-          .focused($focusedField, equals: .reps(row.key))
-          .submitLabel(.done)
-          .onSubmit {
-            // Done: flush ghi ngay + hạ bàn phím (#300).
-            Task { await flushWrites() }
-            focusedField = nil
-          }
-
-        Spacer(minLength: 0)
-      }
-
-      // Cỡ chữ trợ năng: hai chip chồng lên nhau thay vì cắt "90s" còn "9".
-      (typeSize.isAccessibilitySize
-        ? AnyLayout(VStackLayout(alignment: .leading, spacing: DS.Spacing.xs))
-        : AnyLayout(HStackLayout(spacing: DS.Spacing.sm))) {
-        restMenu(row)
-        rpeMenu(row)
-
-        if resting {
-          Label(String(localized: "workout.resting"), systemImage: "hourglass")
-            .font(DS.TextStyle.footnote)
-            .foregroundStyle(DS.Color.metricBlue.swiftUI)
-        }
-
-        Spacer(minLength: 0)
-      }
-      .padding(.leading, 52)
     }
   }
 
@@ -917,11 +1005,11 @@ public struct WorkoutView: View {
   /// Nút cuối danh sách — bốn trạng thái như RN (`day-plan.tsx` nút finish):
   /// nối thêm (có hàng mới sau khi chốt), đã ghi, ngày chưa tới, hoàn thành.
   @ViewBuilder private var finishButton: some View {
-    if controller.loggedSessionId != nil, !controller.pendingRows.isEmpty {
+    if controller.isLogged, !controller.pendingRows.isEmpty {
       DSButton(String(localized: "workout.append"), style: .secondary, action: { Task { await doAppend() } })
         .disabled(!controller.canAppend || isFinishing)
         .opacity(controller.canAppend && !isFinishing ? 1 : 0.5)
-    } else if controller.loggedSessionId != nil {
+    } else if controller.isLogged {
       // Không phải một nút tắt mang chữ cũ: nói điều đã xảy ra (RN nRdAlready).
       Label(String(localized: "workout.finishError.alreadyLogged"), systemImage: "checkmark.circle.fill")
         .font(DS.TextStyle.headline)

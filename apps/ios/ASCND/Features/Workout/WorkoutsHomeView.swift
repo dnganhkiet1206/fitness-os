@@ -252,7 +252,7 @@ struct WorkoutsHomeView: View {
         symbol: "checkmark.seal.fill", symbolColor: Self.accent, title: String(localized: "today.status.done"),
         message: templateName.map { String(format: String(localized: "today.done.message"), $0) }
       ) {
-        if flow.session?.loggedSessionId != nil {
+        if flow.session?.isLogged == true {
           secondaryButton(String(localized: "wh.viewSession"), systemImage: "list.bullet") { onOpenSession() }
         }
         secondaryButton(String(localized: "today.cta.extra"), systemImage: "plus") { showsManualLog = true }

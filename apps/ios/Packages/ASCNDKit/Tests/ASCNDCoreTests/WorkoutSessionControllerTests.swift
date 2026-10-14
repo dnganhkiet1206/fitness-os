@@ -603,6 +603,49 @@ struct RemoveLoggedSetTests {
     #expect(c.summary == nil)
   }
 
+  /// 14/10 (chủ dự án): gỡ hết set → buổi không còn trong lịch sử, nên ngày
+  /// KHÔNG còn là "đã ghi": tập lại được, "Hoàn thành" dựng lại buổi cùng id
+  /// (ngày vẫn khoá vào id ấy), và từ đó lại là đã ghi như thường.
+  @Test func emptiedSessionIsNotLoggedAndFinishRebuildsIt() async throws {
+    let store = InMemoryWorkoutStore()
+    let c = await controller(store)
+    await c.toggle("b1")
+    let first = try await c.finish()
+    _ = try await c.removeLoggedSet("b1")
+    #expect(!c.isLogged)
+    #expect(c.phase == .idle)
+    #expect(c.pendingRows.isEmpty && !c.canAppend)
+    #expect(!c.canFinish, "chưa tick gì thì chưa chốt")
+    #expect(c.canEdit("b1"))
+    await c.toggle("b1")
+    await c.toggle("b2")
+    #expect(c.phase == .active)
+    #expect(c.canFinish)
+    let rebuilt = try await c.finish()
+    #expect(rebuilt.sessionId == first.sessionId)
+    #expect(rebuilt.completedSets == 2)
+    #expect(c.isLogged && c.loggedKeys == ["b1", "b2"])
+    #expect(c.phase == .finished(sessionId: first.sessionId))
+    let last = try #require(await store.outbox.last)
+    #expect(last.kind == WorkoutSessionRecord.revisionKind)
+    #expect(sets(last) == 2)
+    // Bền qua lần mở lại.
+    let again = await controller(store)
+    #expect(again.isLogged && again.loggedKeys == ["b1", "b2"])
+  }
+
+  /// Mở lại ngày có buổi đã bị gỡ hết set: vẫn không phải "đã ghi".
+  @Test func emptiedSessionStaysUnloggedAcrossReload() async throws {
+    let store = InMemoryWorkoutStore()
+    let c = await controller(store)
+    await c.toggle("b1")
+    _ = try await c.finish()
+    _ = try await c.removeLoggedSet("b1")
+    let again = await controller(store)
+    #expect(!again.isLogged)
+    #expect(again.phase == .idle)
+  }
+
   /// Hoàn tác trong cửa sổ: set trở lại buổi, hàng được ghi lại — dựng lại cả
   /// khi đã bị xoá (RS-5a).
   @Test func undoRestoresTheSetEvenAfterDelete() async throws {

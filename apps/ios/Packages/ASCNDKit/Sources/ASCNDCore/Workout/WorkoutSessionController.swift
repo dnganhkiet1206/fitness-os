@@ -233,21 +233,38 @@ public final class WorkoutSessionController {
 
   public var phase: Phase {
     if !loaded { return .loading }
-    if let id = loggedSessionId { return .finished(sessionId: id) }
+    if let id = loggedSessionId, !emptied { return .finished(sessionId: id) }
     return progress.done.values.contains(true) ? .active : .idle
   }
+
+  /// Ngày có một buổi ĐANG nằm trong lịch sử. Buổi bị gỡ hết set (bỏ tick set
+  /// cuối, hay xoá từ lịch sử — #400) thì hàng server đã xoá: ngày giữ id buổi
+  /// (khoá của `WorkoutStore`, để dựng lại đúng buổi ấy) nhưng KHÔNG còn là
+  /// "đã ghi" — tập lại được, và "Hoàn thành" dựng lại buổi cùng id.
+  /// (14/10, chủ dự án: "bỏ tích hết, lịch sử không còn buổi mà vẫn tính là
+  /// đã ghi, không sửa được".)
+  public var isLogged: Bool { loggedSessionId != nil && !emptied }
+
+  /// Buổi của ngày đã bị gỡ hết set — `finish()` dựng lại nó.
+  private var emptiedSessionId: String? { emptied ? loggedSessionId : nil }
+
+  /// Hàng buổi đã bị XOÁ vì gỡ hết set (bản ghi lại không còn set, hay xoá từ
+  /// lịch sử: `loggedKeys` bền là `[]`). Khác với ngày bị khoá bởi controller
+  /// khác (`DayAlreadyLogged`): khi ấy máy này chưa biết set nào — `loggedKeys`
+  /// rỗng mà buổi vẫn còn nguyên.
+  private var emptied = false
 
   public var isFuture: Bool { plan.date > LocalDate(clock.nowMillis(), in: timeZone) }
 
   /// Nút Chốt sáng khi nào (baseline `canFinish`, nhánh ghi mới).
   public var canFinish: Bool {
-    loaded && loggedSessionId == nil && !loggedElsewhere && !finishing && !isFuture
+    loaded && !isLogged && (emptiedSessionId != nil || !loggedElsewhere) && !finishing && !isFuture
       && rows.contains { progress.done[$0.key] == true }
   }
 
   /// Hàng tick sau khi chốt, chưa có trong buổi (`pendingRows`, `day-plan.tsx:1260`).
   public var pendingRows: [PlannedSet] {
-    guard loggedSessionId != nil else { return [] }
+    guard isLogged else { return [] }
     return rows.filter {
       progress.done[$0.key] == true && !loggedKeys.contains($0.key) && !olderProven.contains($0.key)
     }
@@ -287,6 +304,7 @@ public final class WorkoutSessionController {
         loggedRevision = s.loggedRevision ?? 0
         loggedRpe = s.loggedRpe
         olderProven = Set(s.provenElsewhere ?? [])
+        emptied = s.loggedSessionId != nil && s.loggedKeys?.isEmpty == true
         // Buổi đã bị xoá từ lịch sử (#400): không còn gì để tổng kết.
         if loggedKeys.isEmpty { summary = nil }
       }
@@ -423,6 +441,7 @@ public final class WorkoutSessionController {
   /// Gọi lại sau khi đã chốt trả lại đúng tổng kết cũ, không ghi gì thêm.
   public func finish(toKg: ((Double) -> Double)? = nil) async throws(FinishRefusal) -> WorkoutSummary {
     let toKg = toKg ?? weightUnit.toKg
+    if let id = emptiedSessionId { return try await rebuild(id, toKg: toKg) }
     if let id = loggedSessionId {
       if let s = summary, s.sessionId == id { return s }
       throw .alreadyLogged(sessionId: id)
@@ -480,6 +499,35 @@ public final class WorkoutSessionController {
     let result = WorkoutSummary(record, records: records)
     summary = result
     onEnqueued(entry)
+    return result
+  }
+
+  /// Chốt lại một ngày mà buổi đã bị gỡ hết set: ghi lại TOÀN BỘ hàng đã tick
+  /// thành buổi CÙNG id (ngày đã khoá vào id ấy — `WorkoutStore`), qua cùng
+  /// đường bản ghi lại như nối thêm / hoàn tác: hàng outbox upsert dựng lại
+  /// hàng server đã xoá. Kỷ lục so với lịch sử như một lần chốt mới.
+  private func rebuild(_ sessionId: String, toKg: @escaping (Double) -> Double) async throws(FinishRefusal) -> WorkoutSummary {
+    guard loaded else { throw .loading }
+    guard !finishing else { throw .inProgress }
+    guard !isFuture else { throw .futureDay }
+    let done = rows.filter { progress.done[$0.key] == true }
+    let sets = WorkoutDay.sessionSets(done, progress, toKg: toKg).map {
+      RecordSet(exerciseName: $0.exerciseName, weightKg: $0.weightKg, reps: $0.reps, warmup: $0.warmup, durationSec: $0.durationSec)
+    }
+    guard !sets.isEmpty else { throw .nothingDone }
+    let records = bests().map { PersonalRecords.findRecords(sets, bests: $0) } ?? []
+    let outcome: Revised
+    do throws(RevisionFailure) {
+      outcome = try await revise(sessionId: sessionId, keys: Set(done.map(\.key)), pr: !records.isEmpty, toKg: toKg)
+    } catch {
+      switch error {
+      case .alreadyLogged(let id): throw .alreadyLogged(sessionId: id)
+      case .storage(let e): throw .storage(e)
+      }
+    }
+    guard let record = outcome.record else { throw .nothingDone }
+    let result = WorkoutSummary(record, records: records)
+    summary = result
     return result
   }
 
@@ -728,6 +776,7 @@ public final class WorkoutSessionController {
     loggedPR = pr
     loggedRevision = revision
     loggedRpe = rpe
+    emptied = record == nil
     onEnqueued(entry)
     return Revised(record: record)
   }

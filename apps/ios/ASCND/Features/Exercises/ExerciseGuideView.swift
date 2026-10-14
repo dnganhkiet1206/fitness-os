@@ -10,9 +10,8 @@ import SwiftUI
 ///
 /// RN behavior (giữ nguyên):
 /// - tên bài + MỘT dòng "Nhóm cơ · Dụng cụ" (nhãn đầy đủ ở VoiceOver);
-/// - ba tab: Tổng quan / Cơ & dụng cụ / Liên quan — tab là state của sheet,
-///   không phải một chỗ để Back lùi về; chỉ thanh tab chuyển động, nội dung
-///   đổi ngay;
+/// - (RN: ba tab Tổng quan / Cơ & dụng cụ / Liên quan — native 14/10 gộp
+///   thành MỘT trang, xem "Khác RN");
 /// - Tổng quan: các bước có hình (chỉ tấm CÓ chú thích), "Cách thực hiện" có
 ///   số, kẻ ngang khi có hai khối, "Điểm kỹ thuật" ✓ / "Lỗi thường gặp" ✕ (hai
 ///   cột khi đủ chỗ và chữ chưa phóng to), "chưa có hướng dẫn" chỉ khi không
@@ -24,6 +23,11 @@ import SwiftUI
 /// - nút "Bắt đầu bài tập" ở đáy và ✕ cùng làm một việc: đóng sheet.
 ///
 /// Khác RN có chủ đích:
+/// - thiết kế lại 14/10 (chủ dự án: "chưa đẹp, hơi phức tạp"): một trang cuộn
+///   không tab — ảnh / video lớn, tên + nhãn (nhóm cơ, dụng cụ, cơ phụ), "Cách
+///   làm" là chuỗi bước nối nhau (ảnh có chú thích nằm trong bước), "Nên" /
+///   "Tránh" hai ô màu, "Bài tương tự" một hàng thẻ trượt; nút đáy "Đã hiểu"
+///   (RN ghi "Bắt đầu bài tập" mà chỉ đóng sheet);
 /// - không có ảnh demo `DEMO_HERO` (RN tự ghi là tạm thời, "phải gỡ"): không
 ///   có media thì không dựng khung hình;
 /// - chưa có hình giải phẫu `MuscleArt` (cùng chỗ thiếu với builder): ô nhóm
@@ -32,15 +36,13 @@ import SwiftUI
 ///   mới chỉ chiếm màn khi chưa có bản nào.
 struct ExerciseGuideView: View {
   let guides: ExerciseGuideBook
-  /// Cho tab Liên quan; `nil` thì tab ấy nói "không tải được".
+  /// Cho "Bài tương tự"; `nil` thì mục ấy nói "không tải được".
   let library: ExerciseLibrary?
   let exerciseId: String?
   let name: String
 
   @Environment(\.dismiss) private var dismiss
   @Environment(\.locale) private var locale
-  @Environment(\.dynamicTypeSize) private var typeSize
-  @State private var tab: GuideTab = .overview
   @State private var page = 0
   @State private var viewer: ViewerTarget?
 
@@ -51,29 +53,20 @@ struct ExerciseGuideView: View {
   /// RN `showMedia = !isPending && !isError`: đã có một bản để vẽ.
   private var shown: Bool { g != nil }
   private var media: MediaState { g?.media ?? .none }
+  private static var accent: Color { WorkoutsHomeView.accent }
 
   var body: some View {
     NavigationStack {
       ScrollView {
-        VStack(alignment: .leading, spacing: DS.Spacing.md) {
+        VStack(alignment: .leading, spacing: DS.Spacing.lg) {
           if shown, media.hasMedia {
             hero
           }
           header
-          if shown {
-            Picker(selection: $tab) {
-              ForEach(GuideTab.allCases) { t in
-                Text(t.title).tag(t)
-              }
-            } label: {
-              EmptyView()
-            }
-            .pickerStyle(.segmented)
-            .sensoryFeedback(.selection, trigger: tab)
-          }
-          tabBody
+          content
         }
-        .padding(DS.Spacing.md)
+        .padding(.horizontal, DS.Spacing.md)
+        .padding(.bottom, DS.Spacing.lg)
       }
       .ascndPage()
       .toolbar {
@@ -82,15 +75,26 @@ struct ExerciseGuideView: View {
             dismiss()
           } label: {
             Image(systemName: "xmark")
+              .frame(minWidth: 44, minHeight: 44)
           }
           .accessibilityLabel(Text("eg.close"))
         }
       }
       .safeAreaInset(edge: .bottom) {
         if shown {
-          DSButton(String(localized: "eg.start"), style: .primary) { dismiss() }
-            .padding(DS.Spacing.md)
-            .background(.bar)
+          Button {
+            dismiss()
+          } label: {
+            Text(String(localized: "eg.gotIt"))
+              .font(DS.TextStyle.headline)
+              .foregroundStyle(DS.Color.foreground.swiftUI)
+              .frame(maxWidth: .infinity, minHeight: 50)
+              .background(.ultraThinMaterial, in: Capsule())
+              .overlay(Capsule().strokeBorder(DS.Color.foreground.swiftUI.opacity(0.12)))
+          }
+          .buttonStyle(TodayPressStyle())
+          .padding(.horizontal, DS.Spacing.md)
+          .padding(.bottom, DS.Spacing.sm)
         }
       }
       .fullScreenCover(item: $viewer) { target in
@@ -100,69 +104,31 @@ struct ExerciseGuideView: View {
     .task(id: "\(exerciseId ?? "")|\(title)|\(lang.rawValue)") {
       await guides.open(exerciseId: exerciseId, name: title, lang: lang)
     }
-    .task(id: tab) {
-      // Thư viện chỉ được hỏi khi tab cần nó: đọc "Tổng quan" không trả giá mạng.
-      if tab == .related, let library, !library.loaded { await library.load() }
+    .task(id: shown) {
+      // "Bài tương tự" nằm ngay trong trang — đọc thư viện khi đã có bài.
+      if shown, let library, !library.loaded { await library.load() }
     }
   }
 
-  // MARK: - Đầu sheet
+  // MARK: - Đầu trang
 
-  private var meta: String {
-    [g?.muscleGroup, g?.equipment].compactMap { $0 }.joined(separator: "  ·  ")
-  }
-
-  /// Nhãn không mất đi — chúng chuyển sang VoiceOver: "Ngực · Tạ đơn" đọc lên
-  /// không nói rõ cái nào là cái gì.
-  private var metaA11y: String {
-    [
-      g?.muscleGroup.map { "\(String(localized: "eg.muscles")): \($0)" },
-      g?.equipment.map { "\(String(localized: "eg.equipment")): \($0)" },
-    ].compactMap { $0 }.joined(separator: ". ")
-  }
-
-  private var header: some View {
-    HStack(alignment: .top, spacing: DS.Spacing.sm) {
-      VStack(alignment: .leading, spacing: DS.Spacing.xs) {
-        if !displayName.isEmpty {
-          Text(verbatim: displayName)
-            .font(DS.TextStyle.title2)
-            .accessibilityAddTraits(.isHeader)
-        }
-        if !meta.isEmpty {
-          Text(verbatim: meta)
-            .font(DS.TextStyle.footnote)
-            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-            .accessibilityLabel(Text(verbatim: metaA11y))
-        }
-      }
-      .frame(maxWidth: .infinity, alignment: .leading)
-      if shown, media.hasMedia {
-        Button {
-          viewer = ViewerTarget(index: page)
-        } label: {
-          Image(systemName: media.shape == .video ? "play.fill" : "arrow.up.left.and.arrow.down.right")
-            .frame(minWidth: 44, minHeight: 44)
-        }
-        .buttonStyle(.bordered)
-        .buttonBorderShape(.circle)
-        .accessibilityLabel(Text("eg.openMedia"))
-      }
-    }
-  }
-
-  // MARK: - Khung hình
-
+  /// Ảnh / video lớn, chạm mở trình xem đúng tấm; video có nút ▶ và thời lượng.
   private var hero: some View {
     TabView(selection: $page) {
       ForEach(Array(media.items.enumerated()), id: \.offset) { i, item in
-        MediaThumb(item: item, label: mediaA11y(item))
-          .tag(i)
+        Button {
+          viewer = ViewerTarget(index: i)
+        } label: {
+          MediaThumb(item: item, label: mediaA11y(item))
+        }
+        .buttonStyle(.plain)
+        .accessibilityHint(Text("eg.openMedia"))
+        .tag(i)
       }
     }
     .tabViewStyle(.page(indexDisplayMode: media.showsDots ? .always : .never))
-    .aspectRatio(3 / 4, contentMode: .fit)
-    .clipShape(RoundedRectangle(cornerRadius: DS.Radius.lg))
+    .frame(height: 260)
+    .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous))
     .overlay(alignment: .bottomTrailing) {
       if let d = media.displayDuration {
         Text(verbatim: MediaState.clockLabel(d))
@@ -180,9 +146,49 @@ struct ExerciseGuideView: View {
     item.title.map { "\(displayName) — \($0)" } ?? item.alt ?? String(localized: "eg.mediaAlt \(displayName)")
   }
 
-  // MARK: - Thân tab
+  /// Tên lớn + nhãn: nhóm cơ chính (màu Tập luyện), dụng cụ, cơ phụ.
+  private var header: some View {
+    VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+      if !displayName.isEmpty {
+        Text(verbatim: displayName)
+          .font(DS.TextStyle.largeTitle)
+          .accessibilityAddTraits(.isHeader)
+      }
+      let others = (g?.muscles ?? []).dropFirst().map(\.label)
+      if g?.muscleGroup != nil || g?.equipment != nil || !others.isEmpty {
+        GuideChipFlow {
+          if let m = g?.muscleGroup {
+            chip(m, symbol: "scope", tint: Self.accent, a11y: "\(String(localized: "eg.muscles")): \(m)")
+          }
+          if let e = g?.equipment {
+            chip(e, symbol: "dumbbell", tint: DS.Color.mutedForeground.swiftUI, a11y: "\(String(localized: "eg.equipment")): \(e)")
+          }
+          if !others.isEmpty {
+            let list = others.joined(separator: ", ")
+            let text = String(localized: "eg.secondary \(list)")
+            chip(text, symbol: nil, tint: DS.Color.mutedForeground.swiftUI, a11y: text)
+          }
+        }
+      }
+    }
+  }
 
-  @ViewBuilder private var tabBody: some View {
+  private func chip(_ text: String, symbol: String?, tint: Color, a11y: String) -> some View {
+    HStack(spacing: 4) {
+      if let symbol { Image(systemName: symbol).font(.caption2.weight(.semibold)).accessibilityHidden(true) }
+      Text(verbatim: text).font(DS.TextStyle.caption.weight(.semibold)).lineLimit(1)
+    }
+    .foregroundStyle(tint)
+    .padding(.horizontal, 10)
+    .padding(.vertical, 6)
+    .background(tint.opacity(0.12), in: Capsule())
+    .accessibilityElement(children: .ignore)
+    .accessibilityLabel(Text(verbatim: a11y))
+  }
+
+  // MARK: - Nội dung: một trang, không tab
+
+  @ViewBuilder private var content: some View {
     if g == nil, guides.failure == nil {
       ProgressView().frame(maxWidth: .infinity, minHeight: 88)
     } else if g == nil {
@@ -190,204 +196,185 @@ struct ExerciseGuideView: View {
         Task { await guides.open(exerciseId: exerciseId, name: title, lang: lang) }
       }
     } else if let g {
-      switch tab {
-      case .overview: overview(g)
-      case .muscles: muscles(g)
-      case .related: related(g)
+      if !g.hasContent, !g.media.hasMedia {
+        VStack(alignment: .leading, spacing: DS.Spacing.xs) {
+          Text("eg.empty").font(DS.TextStyle.body)
+          Text("eg.empty.hint")
+            .font(DS.TextStyle.footnote)
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        }
       }
+      steps(g)
+      dosAndDonts(g)
+      similar(g)
     }
   }
 
-  @ViewBuilder private func overview(_ g: ExerciseGuide) -> some View {
-    let steps4 = g.media.captionedItems
-    if !steps4.isEmpty {
-      VStack(alignment: .leading, spacing: DS.Spacing.lg) {
-        ForEach(Array(steps4.enumerated()), id: \.offset) { i, item in
-          mediaStep(item, index: i)
-        }
-      }
+  /// Một bước của "Cách làm": chữ, và ảnh của bước ấy nếu có.
+  private struct Step: Identifiable {
+    let id: Int
+    let title: String?
+    let text: String
+    let media: MediaItem?
+  }
+
+  /// Các bước: chữ hướng dẫn, kèm ảnh có chú thích theo cùng thứ tự; bộ ảnh
+  /// có chú thích mà không có chữ thì chính chú thích là bước.
+  private func stepList(_ g: ExerciseGuide) -> [Step] {
+    let pics = g.media.captionedItems
+    let count = max(g.instructions.count, pics.count)
+    return (0..<count).map { i in
+      let pic = i < pics.count ? pics[i] : nil
+      let text = i < g.instructions.count ? g.instructions[i] : (pic?.description ?? "")
+      return Step(id: i, title: pic?.title, text: text, media: pic)
     }
-    if !g.instructions.isEmpty {
+  }
+
+  @ViewBuilder private func steps(_ g: ExerciseGuide) -> some View {
+    let list = stepList(g)
+    if !list.isEmpty {
       VStack(alignment: .leading, spacing: DS.Spacing.sm) {
         sectionTitle("eg.howTo")
-        ForEach(Array(g.instructions.enumerated()), id: \.offset) { i, t in
-          HStack(alignment: .firstTextBaseline, spacing: DS.Spacing.sm) {
-            Text(verbatim: "\(i + 1)")
-              .font(DS.TextStyle.caption.monospacedDigit())
-              .frame(minWidth: 22, minHeight: 22)
-              .background(DS.Color.secondary.swiftUI, in: Circle())
-            Text(verbatim: t).font(DS.TextStyle.body)
+        VStack(alignment: .leading, spacing: 0) {
+          ForEach(list) { step in
+            HStack(alignment: .top, spacing: DS.Spacing.md) {
+              VStack(spacing: 4) {
+                Text(verbatim: "\(step.id + 1)")
+                  .font(DS.TextStyle.mono(.footnote).weight(.semibold))
+                  .foregroundStyle(step.id == 0 ? .white : Self.accent)
+                  .frame(width: 28, height: 28)
+                  .background(step.id == 0 ? Self.accent : Self.accent.opacity(0.14), in: Circle())
+                if step.id < list.count - 1 {
+                  Rectangle()
+                    .fill(DS.Color.foreground.swiftUI.opacity(0.12))
+                    .frame(width: 1.5)
+                    .frame(maxHeight: .infinity)
+                }
+              }
+              .accessibilityHidden(true)
+              HStack(alignment: .top, spacing: DS.Spacing.sm) {
+                VStack(alignment: .leading, spacing: DS.Spacing.xs) {
+                  if let t = step.title {
+                    Text(verbatim: t).font(DS.TextStyle.headline)
+                  }
+                  if !step.text.isEmpty {
+                    Text(verbatim: step.text)
+                      .font(DS.TextStyle.body)
+                      .foregroundStyle(step.title == nil ? DS.Color.foreground.swiftUI : DS.Color.mutedForeground.swiftUI)
+                      .fixedSize(horizontal: false, vertical: true)
+                  }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                // Ảnh của bước: ảnh nhỏ cạnh chữ (ảnh lớn đã ở đầu trang);
+                // chạm mở trình xem đúng tấm ấy.
+                if let item = step.media {
+                  Button {
+                    viewer = ViewerTarget(index: media.items.firstIndex(of: item) ?? 0)
+                  } label: {
+                    MediaThumb(item: item, label: mediaA11y(item))
+                      .frame(width: 76, height: 76)
+                      .clipShape(RoundedRectangle(cornerRadius: DS.Radius.md, style: .continuous))
+                  }
+                  .buttonStyle(.plain)
+                  .accessibilityHint(Text("eg.openMedia"))
+                }
+              }
+              .padding(.bottom, DS.Spacing.lg)
+              .accessibilityElement(children: .combine)
+              .accessibilityLabel(Text(String(localized: "eg.step \(step.id + 1)") + ". " + [step.title, step.text].compactMap { $0 }.joined(separator: ". ")))
+            }
           }
-          .accessibilityElement(children: .combine)
         }
       }
     }
-    let ruled = !g.instructions.isEmpty && (!g.formCues.isEmpty || !g.commonMistakes.isEmpty)
-    if ruled { Divider() }
+  }
+
+  /// "Nên" (xanh, ✓) và "Tránh" (đỏ, ✕): dấu mang nghĩa, không chỉ ở màu
+  /// (WCAG 1.4.1). Mỗi ô rộng hết hàng — hai cột lệch chiều cao khi một bên
+  /// dài (thử trên simulator 14/10).
+  @ViewBuilder private func dosAndDonts(_ g: ExerciseGuide) -> some View {
     if !g.formCues.isEmpty || !g.commonMistakes.isEmpty {
-      // Hai cột chỉ khi có cả hai danh sách và chữ chưa bị phóng: không hy
-      // sinh độ dễ đọc để giống ảnh tham chiếu.
-      let twoCols = !g.formCues.isEmpty && !g.commonMistakes.isEmpty && typeSize <= .large
-      let layout = twoCols
-        ? AnyLayout(HStackLayout(alignment: .top, spacing: DS.Spacing.md))
-        : AnyLayout(VStackLayout(alignment: .leading, spacing: DS.Spacing.md))
-      layout {
+      VStack(alignment: .leading, spacing: DS.Spacing.sm) {
         if !g.formCues.isEmpty {
-          markedList("eg.cues", g.formCues, symbol: "checkmark", tint: DS.Color.primary.swiftUI)
+          tipBox("eg.do", g.formCues, symbol: "checkmark", tint: DS.Color.readinessGreen.swiftUI)
         }
         if !g.commonMistakes.isEmpty {
-          markedList("eg.mistakes", g.commonMistakes, symbol: "xmark", tint: DS.Color.destructive.swiftUI)
+          tipBox("eg.avoid", g.commonMistakes, symbol: "xmark", tint: DS.Color.destructive.swiftUI)
         }
       }
     }
-    // Siêu dữ liệu không phải hướng dẫn; media thì có tính.
-    if !g.hasContent, !g.media.hasMedia {
-      VStack(alignment: .leading, spacing: DS.Spacing.xs) {
-        Text("eg.empty").font(DS.TextStyle.body)
-        Text("eg.empty.hint")
-          .font(DS.TextStyle.footnote)
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-      }
-    }
   }
 
-  /// ảnh → số bước → tiêu đề → mô tả; chạm ảnh mở trình xem ở đúng tấm ấy.
-  private func mediaStep(_ item: MediaItem, index: Int) -> some View {
-    VStack(alignment: .leading, spacing: DS.Spacing.xs) {
-      Button {
-        let at = media.items.firstIndex(of: item) ?? 0
-        viewer = ViewerTarget(index: at)
-      } label: {
-        MediaThumb(item: item, label: mediaA11y(item))
-          .aspectRatio(4 / 3, contentMode: .fit)
-          .clipShape(RoundedRectangle(cornerRadius: DS.Radius.md))
-      }
-      .buttonStyle(.plain)
-      .accessibilityLabel(Text(verbatim: mediaA11y(item)))
-      .accessibilityHint(Text("eg.openMedia"))
-      Text(verbatim: "\(index + 1)")
-        .font(DS.TextStyle.caption.monospacedDigit())
-        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-      if let t = item.title {
-        Text(verbatim: t).font(DS.TextStyle.headline)
-      }
-      if !item.description.isEmpty {
-        Text(verbatim: item.description)
-          .font(DS.TextStyle.body)
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-      }
-    }
-  }
-
-  /// Dấu mang NGHĨA và không chỉ ở màu (WCAG 1.4.1): tiêu đề nói thẳng nó là
-  /// gì, hai glyph khác hình.
-  private func markedList(_ titleKey: LocalizedStringKey, _ items: [String], symbol: String, tint: Color) -> some View {
+  private func tipBox(_ titleKey: LocalizedStringKey, _ items: [String], symbol: String, tint: Color) -> some View {
     VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-      sectionTitle(titleKey)
+      Label(titleKey, systemImage: symbol)
+        .font(DS.TextStyle.footnote.weight(.bold))
+        .foregroundStyle(tint)
+        .accessibilityAddTraits(.isHeader)
       ForEach(Array(items.enumerated()), id: \.offset) { _, t in
         HStack(alignment: .firstTextBaseline, spacing: DS.Spacing.sm) {
-          Image(systemName: symbol)
-            .font(.caption2.weight(.bold))
-            .foregroundStyle(.white)
-            .frame(width: 20, height: 20)
-            .background(tint, in: Circle())
-            .accessibilityHidden(true)
-          Text(verbatim: t).font(DS.TextStyle.body)
+          Circle().fill(tint).frame(width: 5, height: 5).accessibilityHidden(true)
+          Text(verbatim: t)
+            .font(DS.TextStyle.footnote)
+            .foregroundStyle(DS.Color.foreground.swiftUI)
+            .fixedSize(horizontal: false, vertical: true)
         }
       }
     }
-    .frame(maxWidth: .infinity, alignment: .leading)
+    .padding(DS.Spacing.md)
+    .frame(maxWidth: .infinity, alignment: .topLeading)
+    .background(tint.opacity(0.10), in: RoundedRectangle(cornerRadius: DS.Radius.lg, style: .continuous))
   }
 
-  @ViewBuilder private func muscles(_ g: ExerciseGuide) -> some View {
-    VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-      sectionTitle("eg.muscles")
-      if g.muscles.isEmpty {
-        hint("eg.noMuscles")
-      } else {
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: 88), spacing: DS.Spacing.sm)], spacing: DS.Spacing.sm) {
-          ForEach(g.muscles, id: \.key) { m in
-            Text(verbatim: m.label)
-              .font(DS.TextStyle.footnote)
-              .lineLimit(1)
-              .frame(maxWidth: .infinity, minHeight: 64)
-              .background(DS.Color.secondary.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.md))
-          }
-        }
-      }
-      sectionTitle("eg.equipment").padding(.top, DS.Spacing.sm)
-      if let gear = g.equipment {
-        HStack(spacing: DS.Spacing.sm) {
-          // Hình chỉ khi đã vẽ đúng dụng cụ ấy: vẽ tạ đơn cho bài kéo cáp là nói sai.
-          if g.equipmentKey == Equipment.dumbbell.rawValue {
-            Image(systemName: "dumbbell.fill")
-              .font(.title2)
-              .frame(width: 64, height: 64)
-              .background(DS.Color.secondary.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.md))
-              .accessibilityHidden(true)
-          }
-          Text(verbatim: gear).font(DS.TextStyle.body).lineLimit(2)
-        }
-      } else {
-        hint("eg.noEquipment")
-      }
-    }
-  }
-
-  @ViewBuilder private func related(_ g: ExerciseGuide) -> some View {
+  /// Bài tương tự: cùng nhóm cơ (chung nhiều trước), rồi cùng dụng cụ — một
+  /// hàng thẻ trượt ngang. Đọc hỏng ≠ không có.
+  @ViewBuilder private func similar(_ g: ExerciseGuide) -> some View {
     // RN đưa `guideLang` (es → en) cho nhãn nhóm cơ của bài liên quan.
     let relatedLang = MuscleGroup.Language(rawValue: GuideLang(lang).rawValue) ?? .en
     let subject = GuideRelated.Subject(g)
     let rows = library?.exercises ?? []
-    VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-      sectionTitle("eg.alsoMuscles")
-      if g.muscles.isEmpty {
-        hint("eg.noMuscles")
-      } else {
-        relatedList(GuideRelated.sameMuscle(rows, subject, lang: relatedLang), empty: "eg.noRelated")
-      }
-      // Không có dụng cụ thì mục này không dựng — tab Cơ & dụng cụ đã nói rồi.
-      if let gear = g.equipment {
-        Text(String(localized: "eg.alsoEquipment \(gear)"))
-          .font(DS.TextStyle.footnote.weight(.semibold))
-          .padding(.top, DS.Spacing.sm)
-        relatedList(GuideRelated.sameEquipment(rows, subject, lang: relatedLang), empty: nil)
-      }
-    }
-  }
-
-  @ViewBuilder private func relatedList(_ items: [GuideRelated.Item], empty: LocalizedStringKey?) -> some View {
+    let muscle = g.muscles.isEmpty ? [] : GuideRelated.sameMuscle(rows, subject, lang: relatedLang)
+    let gear = g.equipment == nil ? [] : GuideRelated.sameEquipment(rows, subject, lang: relatedLang)
+    var seen = Set<String>()
+    let items = (muscle + gear).filter { seen.insert($0.id).inserted }
     if let library, !library.loaded, library.failure == nil {
       ProgressView().frame(maxWidth: .infinity, minHeight: 44)
-    } else if library == nil || (library?.exercises.isEmpty == true && library?.failure != nil) {
-      // Đọc hỏng không phải "không có": họ có thể có ba mươi bài.
-      hint("eg.loadFailed")
-    } else if items.isEmpty {
-      if let empty { hint(empty) }
-    } else {
-      VStack(alignment: .leading, spacing: 0) {
-        ForEach(items) { r in
-          HStack {
-            Text(verbatim: r.name).font(DS.TextStyle.body).lineLimit(1)
-            Spacer()
-            Text(verbatim: r.muscleLabel)
-              .font(DS.TextStyle.caption)
-              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-              .lineLimit(1)
+    } else if library == nil || (rows.isEmpty && library?.failure != nil) {
+      VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+        sectionTitle("eg.similar")
+        hint("eg.loadFailed")
+      }
+    } else if !items.isEmpty {
+      VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+        sectionTitle("eg.similar")
+        ScrollView(.horizontal, showsIndicators: false) {
+          HStack(spacing: DS.Spacing.sm) {
+            ForEach(items) { r in
+              VStack(alignment: .leading, spacing: 2) {
+                Text(verbatim: r.name)
+                  .font(DS.TextStyle.footnote.weight(.semibold))
+                  .lineLimit(2)
+                Text(verbatim: r.muscleLabel)
+                  .font(DS.TextStyle.caption)
+                  .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+                  .lineLimit(1)
+              }
+              .padding(DS.Spacing.sm)
+              .frame(width: 140, height: 64, alignment: .topLeading)
+              .todayCard(radius: DS.Radius.lg)
+              .accessibilityElement(children: .combine)
+            }
           }
-          .frame(minHeight: 44)
-          .accessibilityElement(children: .combine)
-          if r.id != items.last?.id { Divider() }
+          .padding(.vertical, 4)
         }
+        .scrollClipDisabled()
       }
     }
   }
 
   private func sectionTitle(_ key: LocalizedStringKey) -> some View {
     Text(key)
-      .font(DS.TextStyle.footnote.weight(.semibold))
-      .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-      .textCase(.uppercase)
+      .font(DS.TextStyle.headline)
       .accessibilityAddTraits(.isHeader)
   }
 
@@ -398,15 +385,31 @@ struct ExerciseGuideView: View {
   }
 }
 
-enum GuideTab: String, CaseIterable, Identifiable {
-  case overview, muscles, related
-  var id: String { rawValue }
+/// Nhãn xuống dòng khi hết chỗ.
+private struct GuideChipFlow: Layout {
+  var spacing: CGFloat = 6
 
-  var title: String {
-    switch self {
-    case .overview: String(localized: "eg.tab.overview")
-    case .muscles: String(localized: "eg.tab.muscles")
-    case .related: String(localized: "eg.tab.related")
+  func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+    let width = proposal.width ?? .infinity
+    var x: CGFloat = 0, y: CGFloat = 0, line: CGFloat = 0, maxX: CGFloat = 0
+    for v in subviews {
+      let s = v.sizeThatFits(.unspecified)
+      if x > 0, x + s.width > width { x = 0; y += line + spacing; line = 0 }
+      x += s.width + spacing
+      maxX = max(maxX, x - spacing)
+      line = max(line, s.height)
+    }
+    return CGSize(width: min(maxX, width), height: y + line)
+  }
+
+  func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+    var x = bounds.minX, y = bounds.minY, line: CGFloat = 0
+    for v in subviews {
+      let s = v.sizeThatFits(.unspecified)
+      if x > bounds.minX, x + s.width > bounds.maxX { x = bounds.minX; y += line + spacing; line = 0 }
+      v.place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(s))
+      x += s.width + spacing
+      line = max(line, s.height)
     }
   }
 }

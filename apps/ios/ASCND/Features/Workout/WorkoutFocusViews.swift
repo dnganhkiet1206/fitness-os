@@ -73,16 +73,18 @@ struct FocusStepper: View {
   var placeholder = "0"
   let focus: FocusState<WorkoutView.FieldFocus?>.Binding
   let field: WorkoutView.FieldFocus
+  /// Bản nhỏ cho ô nhập trong dạng bảng (hai ô cạnh nhau).
+  var compact = false
   let step: (String, Int) -> String
 
   var body: some View {
-    HStack(spacing: DS.Spacing.sm) {
+    HStack(spacing: compact ? 0 : DS.Spacing.sm) {
       roundButton("minus", String(localized: "ws.step.dec \(name)")) { text = step(text, -1) }
       VStack(spacing: 0) {
         TextField(placeholder, text: $text)
           .keyboardType(keyboard)
           .multilineTextAlignment(.center)
-          .font(.system(size: 34, weight: .semibold, design: .monospaced))
+          .font(.system(size: compact ? 22 : 34, weight: .semibold, design: .monospaced))
           .minimumScaleFactor(0.6)
           .lineLimit(1)
           .focused(focus, equals: field)
@@ -96,19 +98,22 @@ struct FocusStepper: View {
       .frame(maxWidth: .infinity)
       roundButton("plus", String(localized: "ws.step.inc \(name)")) { text = step(text, 1) }
     }
-    .padding(DS.Spacing.sm)
-    .background(DS.Color.foreground.swiftUI.opacity(0.04), in: RoundedRectangle(cornerRadius: DS.Radius.lg, style: .continuous))
+    .padding(compact ? 4 : DS.Spacing.sm)
+    .background((compact ? DS.Color.card.swiftUI : DS.Color.foreground.swiftUI.opacity(0.04)), in: RoundedRectangle(cornerRadius: DS.Radius.lg, style: .continuous))
     .sensoryFeedback(.selection, trigger: text)
   }
 
   private func roundButton(_ symbol: String, _ label: String, action: @escaping () -> Void) -> some View {
     Button(action: action) {
       Image(systemName: symbol)
-        .font(.title3.weight(.semibold))
+        .font((compact ? Font.footnote : Font.title3).weight(.semibold))
         .foregroundStyle(DS.Color.foreground.swiftUI)
-        .frame(width: 48, height: 48)
-        .background(DS.Color.card.swiftUI, in: Circle())
-        .overlay(Circle().strokeBorder(DS.Color.foreground.swiftUI.opacity(0.08)))
+        .frame(minWidth: compact ? 44 : 48, minHeight: compact ? 44 : 48)
+        // Vòng nhỏ vẽ BÊN TRONG vùng chạm ≥ 44pt.
+        .background(
+          Circle().fill(compact ? DS.Color.foreground.swiftUI.opacity(0.05) : DS.Color.card.swiftUI)
+            .padding(compact ? 6 : 0))
+        .overlay(Circle().strokeBorder(DS.Color.foreground.swiftUI.opacity(compact ? 0 : 0.08)))
     }
     .buttonStyle(TodayPressStyle())
     .buttonRepeatBehavior(.enabled)
@@ -360,5 +365,71 @@ struct WorkoutPreviewView: View {
     .padding(.horizontal, DS.Spacing.md)
     .padding(.vertical, 12)
     .accessibilityElement(children: .combine)
+  }
+}
+
+// MARK: - Dải nghỉ gọn (dạng bảng)
+
+/// Nghỉ trong dạng bảng: một dải xanh — vòng nhỏ, thời gian, −15 / tạm dừng /
+/// +15, Bỏ qua. Thẻ nghỉ lớn chỉ hợp với màn từng set.
+struct RestStrip: View {
+  let timer: RestTimer
+  var onAdjust: (Int) -> Void
+  var onSkip: () -> Void
+  var onSetPaused: (Bool) -> Void
+
+  private var tint: Color { DS.Color.metricBlue.swiftUI }
+
+  var body: some View {
+    TimelineView(.periodic(from: .now, by: 0.25)) { context in
+      let now = EpochMillis(context.date)
+      let left = timer.remaining(at: now)
+      let paused = timer.isPaused
+      let warning = RestTimer.warns(left: left, paused: paused)
+      HStack(spacing: DS.Spacing.sm) {
+        ZStack {
+          Circle().stroke(tint.opacity(0.18), lineWidth: 4)
+          Circle()
+            .trim(from: 0, to: timer.ringFraction(at: now))
+            .stroke(warning ? DS.Color.destructive.swiftUI : tint, style: StrokeStyle(lineWidth: 4, lineCap: .round))
+            .rotationEffect(.degrees(-90))
+        }
+        .frame(width: 30, height: 30)
+        .accessibilityHidden(true)
+        VStack(alignment: .leading, spacing: 0) {
+          Text(paused ? String(localized: "workout.rest.title.paused") : String(localized: "workout.rest.title"))
+            .font(DS.TextStyle.caption.weight(.semibold))
+            .foregroundStyle(tint)
+          Text(verbatim: RestTimer.label(seconds: left))
+            .font(DS.TextStyle.mono(.title3).weight(.semibold))
+            .contentTransition(.numericText(countsDown: true))
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Text(String(format: String(localized: "workout.rest.left"), left)))
+        Spacer(minLength: 0)
+        button(Text(verbatim: "−15"), String(format: String(localized: "workout.rest.adjust"), "-15")) { onAdjust(-15) }
+        button(Image(systemName: paused ? "play.fill" : "pause.fill"),
+               String(localized: paused ? "workout.rest.resume" : "workout.rest.pause")) { onSetPaused(!paused) }
+        button(Text(verbatim: "+15"), String(format: String(localized: "workout.rest.adjust"), "+15")) { onAdjust(15) }
+        Button(String(localized: "workout.rest.skip"), action: onSkip)
+          .font(DS.TextStyle.footnote.weight(.semibold))
+          .foregroundStyle(tint)
+          .frame(minWidth: 44, minHeight: 44)
+      }
+      .padding(.horizontal, DS.Spacing.md)
+      .padding(.vertical, DS.Spacing.xs)
+      .background(tint.opacity(0.10), in: RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous))
+    }
+  }
+
+  private func button<L: View>(_ label: L, _ a11y: String, action: @escaping () -> Void) -> some View {
+    Button(action: action) {
+      label
+        .font(DS.TextStyle.footnote.weight(.semibold).monospacedDigit())
+        .foregroundStyle(tint)
+        .frame(minWidth: 44, minHeight: 44)
+    }
+    .buttonStyle(TodayPressStyle())
+    .accessibilityLabel(Text(verbatim: a11y))
   }
 }
