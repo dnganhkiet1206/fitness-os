@@ -433,3 +433,54 @@ struct RestStrip: View {
     .accessibilityLabel(Text(verbatim: a11y))
   }
 }
+
+// MARK: - Ảnh của bài (lối vào hướng dẫn)
+
+/// Ảnh vuông bo góc của một bài: ảnh / poster hướng dẫn, dấu ▶ khi có video.
+/// Chưa có ảnh: chữ cái đầu trên nền màu Tập luyện. Trang trí — nút bọc nó
+/// (cùng tên bài) mới là vùng chạm.
+struct ExerciseThumb: View {
+  let name: String
+  let thumbnail: ExerciseGuideBook.Thumbnail?
+  /// Có hướng dẫn để mở (bài thêm tay thì không).
+  let linked: Bool
+  var size: CGFloat = 52
+
+  var body: some View {
+    ZStack {
+      RoundedRectangle(cornerRadius: 14, style: .continuous)
+        .fill(accent.opacity(0.12))
+      if let url = thumbnail?.url {
+        AsyncImage(url: url) { phase in
+          if case .success(let image) = phase {
+            image.resizable().scaledToFill()
+          } else {
+            initial
+          }
+        }
+      } else {
+        initial
+      }
+    }
+    .frame(width: size, height: size)
+    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+    .overlay(alignment: .bottomTrailing) {
+      if linked {
+        Image(systemName: thumbnail?.isVideo == true ? "play.fill" : "book.fill")
+          .font(.system(size: 9, weight: .bold))
+          .foregroundStyle(.white)
+          .padding(5)
+          .background(accent, in: Circle())
+          .overlay(Circle().strokeBorder(DS.Color.card.swiftUI, lineWidth: 2))
+          .offset(x: 4, y: 4)
+      }
+    }
+    .accessibilityHidden(true)
+  }
+
+  private var initial: some View {
+    Text(verbatim: String(name.trimmingCharacters(in: .whitespaces).prefix(1)).uppercased())
+      .font(.system(size: size * 0.4, weight: .bold, design: .rounded))
+      .foregroundStyle(accent)
+  }
+}

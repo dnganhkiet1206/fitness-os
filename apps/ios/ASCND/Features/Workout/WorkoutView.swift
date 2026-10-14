@@ -773,25 +773,40 @@ public struct WorkoutView: View {
   /// Chạm tên bài để biết về bài ấy: tên + glyph ⓘ là MỘT control. Bài thêm
   /// tay không có lối này — tên chưa có trong thư viện thì không có hướng dẫn.
   /// Id lấy từ hàng đầu của khối; thiếu (template cũ) thì lõi lùi về tên.
+  /// Đầu một bài: ẢNH của bài + tên + "Tay trước · Tạ đơn" (14/10, chủ dự
+  /// án duyệt phương án A). Ảnh và tên cùng là MỘT nút mở hướng dẫn; dấu ▶
+  /// khi bài có video. Bài thêm tay / không có hướng dẫn: chữ cái đầu, không
+  /// bấm được — tên chưa có trong thư viện thì không có hướng dẫn.
   @ViewBuilder private func exerciseTitle(_ group: (key: String, name: String, rows: [PlannedSet])) -> some View {
-    if let guides = flow?.guides, let first = group.rows.first, first.adHoc == nil {
+    let first = group.rows.first
+    let lang = MuscleGroup.Language(locale: locale)
+    if let guides = flow?.guides, let first, first.adHoc == nil {
+      let thumb = guides.thumbnail(exerciseId: first.exerciseId, name: group.name, lang: lang)
       Button {
         guideTarget = GuideTarget(key: group.key, exerciseId: first.exerciseId, name: group.name)
       } label: {
-        HStack(spacing: DS.Spacing.xs) {
-          Text(group.name)
-            .font(DS.TextStyle.title2)
-            .foregroundStyle(DS.Color.foreground.swiftUI)
-            .multilineTextAlignment(.leading)
-          Image(systemName: "info.circle")
-            .font(.footnote)
-            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        HStack(spacing: DS.Spacing.sm) {
+          ExerciseThumb(name: group.name, thumbnail: thumb, linked: true)
+          VStack(alignment: .leading, spacing: 2) {
+            Text(group.name)
+              .font(DS.TextStyle.title2)
+              .foregroundStyle(DS.Color.foreground.swiftUI)
+              .multilineTextAlignment(.leading)
+            if let meta = thumb?.meta {
+              Text(verbatim: meta)
+                .font(DS.TextStyle.caption)
+                .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+                .lineLimit(1)
+            }
+          }
         }
         .frame(minHeight: 44)
+        .contentShape(Rectangle())
       }
       .buttonStyle(.plain)
       .accessibilityLabel(Text(String(localized: "eg.open.a11y \(group.name)")))
       .accessibilityAddTraits(.isHeader)
+      .task(id: group.key) { await guides.peek(exerciseId: first.exerciseId, name: group.name, lang: lang) }
       .sheet(item: Binding(
         get: { guideTarget?.key == group.key ? guideTarget : nil },
         set: { guideTarget = $0 }
@@ -799,12 +814,17 @@ public struct WorkoutView: View {
         ExerciseGuideView(guides: guides, library: flow?.library, exerciseId: t.exerciseId, name: t.name)
       }
     } else {
-      Text(group.name)
-        .font(DS.TextStyle.title2)
-        .foregroundStyle(DS.Color.foreground.swiftUI)
-        .accessibilityAddTraits(.isHeader)
+      HStack(spacing: DS.Spacing.sm) {
+        ExerciseThumb(name: group.name, thumbnail: nil, linked: false)
+        Text(group.name)
+          .font(DS.TextStyle.title2)
+          .foregroundStyle(DS.Color.foreground.swiftUI)
+      }
+      .accessibilityElement(children: .combine)
+      .accessibilityAddTraits(.isHeader)
     }
   }
+
 
   /// Chip nghỉ của một hàng (dạng bảng và thẻ set).
   private func restMenu(_ row: PlannedSet) -> some View {

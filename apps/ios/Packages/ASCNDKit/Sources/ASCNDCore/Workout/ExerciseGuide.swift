@@ -466,4 +466,54 @@ public final class ExerciseGuideBook {
       failure = TodayController.failure([error])
     }
   }
+
+  // MARK: - Ảnh đại diện (thẻ bài ở màn tập, 14/10)
+
+  /// Ảnh đại diện đã biết, theo `cacheKey`. Không có khoá = chưa đọc; có mà
+  /// `nil` = bài không có hướng dẫn / media (thẻ hiện chữ cái đầu).
+  public private(set) var thumbnails: [String: Thumbnail?] = [:]
+  @ObservationIgnored private var peeking: Set<String> = []
+
+  public struct Thumbnail: Sendable, Hashable {
+    /// Ảnh, hay poster của video. `nil` = bài có hướng dẫn mà không có media.
+    public let url: URL?
+    public let isVideo: Bool
+    /// "Tay trước · Tạ đơn".
+    public let meta: String?
+  }
+
+  /// Ảnh + dòng phụ của một hướng dẫn: tấm đầu (ảnh), hay poster của video.
+  /// Bài không khớp hướng dẫn nào → nil (không bấm được, như bài thêm tay).
+  public static func thumbnail(_ guide: ExerciseGuide) -> Thumbnail? {
+    guard guide.matchedBy != .none else { return nil }
+    let first = guide.media.items.first
+    let raw = first.map { $0.kind == .video ? ($0.posterUri ?? "") : $0.uri } ?? ""
+    let meta = [guide.muscleGroup, guide.equipment].compactMap { $0 }.joined(separator: " · ")
+    return Thumbnail(
+      url: raw.isEmpty ? nil : URL(string: raw), isVideo: guide.media.shape == .video,
+      meta: meta.isEmpty ? nil : meta)
+  }
+
+  public func thumbnail(exerciseId: String?, name: String, lang: MuscleGroup.Language) -> Thumbnail? {
+    thumbnails[ExerciseGuides.cacheKey(exerciseId: exerciseId, name: name, lang: lang)] ?? nil
+  }
+
+  /// Đọc ảnh cho thẻ bài mà KHÔNG đụng sheet đang mở (`guide`): bản trên máy
+  /// trước; chưa có thì đọc server một lần và lưu như `open` — mở sheet sau
+  /// đó hiện ngay. Đọc hỏng thì để trống, lần sau thử lại.
+  public func peek(exerciseId: String?, name: String, lang: MuscleGroup.Language) async {
+    let key = ExerciseGuides.cacheKey(exerciseId: exerciseId, name: name, lang: lang)
+    guard thumbnails[key] == nil, !peeking.contains(key) else { return }
+    peeking.insert(key)
+    defer { peeking.remove(key) }
+    if let cached = try? await cache.load(userId: userId, key: key) {
+      thumbnails[key] = .some(Self.thumbnail(cached))
+      return
+    }
+    guard let fresh = try? await ExerciseGuides.fetch(source, userId: userId, exerciseId: exerciseId, name: name, lang: lang)
+    else { return }
+    fetchedAt[key] = clock.nowMillis()
+    try? await cache.save(userId: userId, key: key, fresh)
+    thumbnails[key] = .some(Self.thumbnail(fresh))
+  }
 }

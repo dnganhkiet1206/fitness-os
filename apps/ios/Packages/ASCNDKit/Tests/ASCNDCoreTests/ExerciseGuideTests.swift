@@ -235,6 +235,23 @@ struct ExerciseGuideLookupTests {
     #expect(other.guide == nil, "cache theo người")
   }
 
+  /// Ảnh thẻ bài (14/10): `peek` không đụng sheet đang mở, đọc server một
+  /// lần rồi lưu — mở sheet sau đó dùng bản đã lưu; bài không có media → nil.
+  @Test func peekFillsThumbnailWithoutTouchingTheOpenGuide() async throws {
+    let source = Source([seed])
+    let cache = Cache()
+    let book = ExerciseGuideBook(userId: "u1", source: source, cache: cache,
+                                 clock: ManualClock(EpochMillis(1_791_183_600_000)))
+    await book.peek(exerciseId: "seed", name: "Bench Press", lang: .vi)
+    #expect(book.guide == nil)
+    let key = ExerciseGuides.cacheKey(exerciseId: "seed", name: "Bench Press", lang: .vi)
+    #expect(book.thumbnails.keys.contains(key))
+    let calls = await source.calls
+    await book.peek(exerciseId: "seed", name: "Bench Press", lang: .vi)
+    #expect(await source.calls == calls, "đã biết thì không đọc lại")
+    #expect(try await cache.load(userId: "u1", key: key) != nil, "đã lưu cho sheet")
+  }
+
   /// Busy-probe (#527 A-NEXT 2): đang đọc bài A thì mở bài B đã có bản nhớ
   /// còn mới — `loading` phải hạ (trước đây kẹt `true` vì `defer` của A chỉ
   /// hạ khi A vẫn là bài hiện tại).
