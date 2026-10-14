@@ -218,6 +218,31 @@ struct WeekPlanView: View {
   @ViewBuilder private var dayPanel: some View {
     let d = dates[day]
     let p = plan(d)
+    if p.status == .rest {
+      RestDayCard(
+        eyebrow: d == today
+          ? String(localized: "wh.eyebrow \(Self.date(d).formatted(.dateTime.weekday(.wide).locale(.app)))")
+          : Self.date(d).formatted(.dateTime.weekday(.wide).day().month(.wide).locale(.app)),
+        isToday: d == today
+      ) {
+        Button {
+          picking = DayTarget(day: day)
+        } label: {
+          Label(String(localized: "wp.chooseWorkout"), systemImage: "arrow.left.arrow.right")
+            .font(DS.TextStyle.headline)
+            .foregroundStyle(DS.Color.foreground.swiftUI)
+            .frame(maxWidth: .infinity, minHeight: 48)
+            .background(Capsule().strokeBorder(DS.Color.foreground.swiftUI.opacity(0.18), lineWidth: 1))
+        }
+        .buttonStyle(TodayPressStyle())
+        .disabled(flow.plan == nil)
+      }
+    } else {
+      dayCard(d, p)
+    }
+  }
+
+  private func dayCard(_ d: LocalDate, _ p: TodayPlan) -> some View {
     VStack(alignment: .leading, spacing: DS.Spacing.sm) {
       HStack(alignment: .firstTextBaseline) {
         Text(verbatim: Self.date(d).formatted(.dateTime.weekday(.wide).day().month(.wide).locale(.app)))

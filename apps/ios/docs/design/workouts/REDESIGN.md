@@ -39,3 +39,7 @@ màn ngày 14/10. RN đối chiếu @ fac9ac2: `app/(tabs)/workouts/{index,libra
 
 Trước: tiêu đề "Plan" chưa dịch (vi / es), dải ngày kiểu cũ (ô đen, chấm màu không chú giải), link xanh hệ thống, nút Lab che màn. Sau: tiêu đề "Kế hoạch tuần"; một thẻ tuần (mũi tên tròn, "Tuần này" quay về), ô ngày Menlo, ngày chọn tô màu Tập luyện, cùng bộ dấu với dải tuần trang gốc + chú giải (Hoàn thành / Có buổi / Chưa tập / Nghỉ ngơi); thẻ ngày: trạng thái dạng nhãn, buổi tập, "Mở bảng tập" + "Đổi buổi" (dùng `WorkoutPickerSheet` cho mọi ngày), công tắc Deload; Gợi ý trong một thẻ. `DayPicker` cũ bỏ (deload chuyển vào thẻ ngày). Nút Lab của bản Debug dời xuống góc dưới phải.
 
+## Ngày nghỉ (14/10, chủ dự án: "chưa được thiết kế đầy đủ")
+
+`RestDayCard` dùng chung cho thẻ hôm nay và thẻ ngày của Kế hoạch tuần: minh hoạ trăng + sao trên quầng tím ("thở" chậm, đứng yên khi Giảm chuyển động), dòng ngày, "Ngày nghỉ" + câu dẫn, "Vận động nhẹ" — ba ô (đi bộ 20–30 phút, giãn cơ 10–15 phút, vận động nhẹ tuỳ chọn) có mẹo ngắn; hôm nay thêm "Phục hồi tốt hơn" (ngủ 7–9 tiếng, uống nước, đủ đạm — màu các ống ở Hôm nay); nút: hôm nay "Vẫn muốn tập" + "Ghi buổi tập", Kế hoạch tuần "Chọn buổi tập".
+

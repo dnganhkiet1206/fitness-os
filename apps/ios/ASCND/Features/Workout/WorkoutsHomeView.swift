@@ -393,32 +393,9 @@ struct WorkoutsHomeView: View {
     .todayCard()
   }
 
-  /// Ngày nghỉ: gợi ý vận động nhẹ + vẫn có đường tập.
+  /// Ngày nghỉ: thẻ chung `RestDayCard` + vẫn có đường tập.
   private var restCard: some View {
-    VStack(spacing: DS.Spacing.sm) {
-      Image(systemName: "moon.zzz")
-        .font(.system(size: 34, weight: .light))
-        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-        .padding(.top, DS.Spacing.xs)
-        .accessibilityHidden(true)
-      Text(verbatim: eyebrow)
-        .font(DS.TextStyle.caption.weight(.semibold))
-        .textCase(.uppercase)
-        .tracking(0.6)
-        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-      Text(String(localized: "today.status.rest"))
-        .font(DS.TextStyle.title.weight(.bold))
-        .accessibilityAddTraits(.isHeader)
-      Text(String(localized: "today.rest.message"))
-        .font(DS.TextStyle.footnote)
-        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-        .multilineTextAlignment(.center)
-      HStack(spacing: DS.Spacing.sm) {
-        suggestion("figure.walk", .orange, String(localized: "wh.suggest.walk"), String(localized: "wh.suggest.walk.time"))
-        suggestion("leaf", .green, String(localized: "wh.suggest.stretch"), String(localized: "wh.suggest.stretch.time"))
-        suggestion("sun.max", .yellow, String(localized: "wh.suggest.light"), String(localized: "wh.suggest.optional"))
-      }
-      .padding(.top, DS.Spacing.xs)
+    RestDayCard(eyebrow: eyebrow) {
       HStack(spacing: DS.Spacing.sm) {
         if flow.plan != nil {
           secondaryButton(String(localized: "wh.rest.pick"), systemImage: "calendar") { showsPicker = true }
@@ -426,21 +403,6 @@ struct WorkoutsHomeView: View {
         secondaryButton(String(localized: "today.cta.logFree"), systemImage: "square.and.pencil") { showsManualLog = true }
       }
     }
-    .padding(DS.Spacing.card)
-    .frame(maxWidth: .infinity)
-    .todayCard()
-  }
-
-  private func suggestion(_ symbol: String, _ tint: Color, _ title: String, _ sub: String) -> some View {
-    VStack(spacing: 4) {
-      Image(systemName: symbol).font(.title3).foregroundStyle(tint).accessibilityHidden(true)
-      Text(verbatim: title).font(DS.TextStyle.caption.weight(.semibold)).multilineTextAlignment(.center)
-      Text(verbatim: sub).font(DS.TextStyle.caption).foregroundStyle(DS.Color.mutedForeground.swiftUI)
-    }
-    .frame(maxWidth: .infinity, minHeight: 78)
-    .padding(.vertical, DS.Spacing.xs)
-    .background(DS.Color.foreground.swiftUI.opacity(0.04), in: RoundedRectangle(cornerRadius: DS.Radius.lg))
-    .accessibilityElement(children: .combine)
   }
 
   private func buttonLabel(_ title: String, systemImage: String, fill: Color?) -> some View {

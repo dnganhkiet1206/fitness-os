@@ -46991,6 +46991,213 @@
      }
     }
    }
+  },
+  "rest.lead": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Muscles repair and grow while you rest — a rest day is part of the plan."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cơ bắp phục hồi và lớn lên trong lúc nghỉ — ngày nghỉ cũng là một phần của kế hoạch."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Los músculos se reparan y crecen mientras descansas: el descanso también es parte del plan."
+     }
+    }
+   }
+  },
+  "rest.suggest.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Light movement"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Vận động nhẹ"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Movimiento suave"
+     }
+    }
+   }
+  },
+  "rest.tip.walk": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Easy pace — you can still chat."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nhịp thong thả, vẫn nói chuyện được."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ritmo suave: aún puedes conversar."
+     }
+    }
+   }
+  },
+  "rest.tip.stretch": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hips, hamstrings, chest. Hold 30 s."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hông, đùi sau, ngực. Giữ 30 giây."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cadera, isquios, pecho. 30 s cada uno."
+     }
+    }
+   }
+  },
+  "rest.tip.light": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Yoga, cycling, swimming — keep it easy."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Yoga, đạp xe, bơi — giữ nhẹ nhàng."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Yoga, bici, natación: con calma."
+     }
+    }
+   }
+  },
+  "rest.recover.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Recover better"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Phục hồi tốt hơn"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Recupera mejor"
+     }
+    }
+   }
+  },
+  "rest.recover.sleep": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sleep 7–9 hours tonight"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ngủ 7–9 tiếng đêm nay"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Duerme 7–9 horas esta noche"
+     }
+    }
+   }
+  },
+  "rest.recover.water": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Keep drinking water through the day"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Uống nước đều trong ngày"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bebe agua a lo largo del día"
+     }
+    }
+   }
+  },
+  "rest.recover.protein": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hit your protein — repair needs it"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ăn đủ đạm — cơ cần nó để phục hồi"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Llega a tu proteína: la reparación la necesita"
+     }
+    }
+   }
   }
  }
 }
