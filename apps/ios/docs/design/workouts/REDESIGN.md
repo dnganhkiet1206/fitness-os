@@ -34,3 +34,8 @@ màn ngày 14/10. RN đối chiếu @ fac9ac2: `app/(tabs)/workouts/{index,libra
 - Bản Debug: công tắc App / Lab thu thành một nút nhỏ ở góc.
 
 Ảnh: `apps/ios/docs/qa/workouts-2026-10-14/`.
+
+## Kế hoạch tuần (14/10, chủ dự án báo lỗi màn này)
+
+Trước: tiêu đề "Plan" chưa dịch (vi / es), dải ngày kiểu cũ (ô đen, chấm màu không chú giải), link xanh hệ thống, nút Lab che màn. Sau: tiêu đề "Kế hoạch tuần"; một thẻ tuần (mũi tên tròn, "Tuần này" quay về), ô ngày Menlo, ngày chọn tô màu Tập luyện, cùng bộ dấu với dải tuần trang gốc + chú giải (Hoàn thành / Có buổi / Chưa tập / Nghỉ ngơi); thẻ ngày: trạng thái dạng nhãn, buổi tập, "Mở bảng tập" + "Đổi buổi" (dùng `WorkoutPickerSheet` cho mọi ngày), công tắc Deload; Gợi ý trong một thẻ. `DayPicker` cũ bỏ (deload chuyển vào thẻ ngày). Nút Lab của bản Debug dời xuống góc dưới phải.
+

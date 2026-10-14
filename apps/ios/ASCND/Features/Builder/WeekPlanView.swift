@@ -30,7 +30,6 @@ struct WeekPlanView: View {
   @State private var offset = 0
   @State private var selected: Int?
   @State private var picking: DayTarget?
-  @State private var building: DayTarget?
   @State private var failed = false
   /// Bảng tập đang mở (theo ngày) và ngày đang mở dở — kết quả về muộn của
   /// ngày đã bỏ chọn không bao giờ hiện thành bảng của ngày khác.
@@ -49,24 +48,24 @@ struct WeekPlanView: View {
     return out
   }
 
+  private static let accent = WorkoutsHomeView.accent
+
   var body: some View {
-    List {
-      Section {
-        weekHeader
-        WeekStripView(cells: cells, selected: day, onPick: { selected = $0 })
-          .listRowInsets(EdgeInsets(top: DS.Spacing.xs, leading: DS.Spacing.sm, bottom: DS.Spacing.xs, trailing: DS.Spacing.sm))
+    ScrollView {
+      VStack(alignment: .leading, spacing: DS.Spacing.md) {
+        weekCard
+        dayPanel
+        suggestionsSection
       }
-      dayPanel
-      suggestionsSection
+      .padding(DS.Spacing.md)
+      .padding(.bottom, DS.Spacing.lg)
     }
     .navigationTitle(Text("wp.title"))
+    .navigationBarTitleDisplayMode(.large)
     .ascndPage()
     .refreshable { await flow.refresh() }
     .sheet(item: $picking) { target in
-      DayPicker(flow: flow, day: target.day, failed: $failed) { building = target }
-    }
-    .sheet(item: $building) { target in
-      TemplateFormView(flow: flow, scheduleOn: target.day)
+      WorkoutPickerSheet(flow: flow, day: target.day)
     }
     .sheet(item: $openDay) { board in
       WorkoutView(controller: board.controller)
@@ -77,28 +76,128 @@ struct WeekPlanView: View {
     }
   }
 
-  // MARK: - Tuần
+  // MARK: - Tuần (thiết kế lại 14/10, cùng ngôn ngữ trang gốc Tập luyện)
+
+  private var weekCard: some View {
+    VStack(spacing: DS.Spacing.sm) {
+      weekHeader
+      HStack(spacing: 4) {
+        ForEach(Array(dates.enumerated()), id: \.offset) { i, d in
+          dayCell(i, d)
+        }
+      }
+      legend
+    }
+    .padding(DS.Spacing.md)
+    .todayCard(radius: DS.Radius.xl)
+  }
+
+  private func dayCell(_ i: Int, _ d: LocalDate) -> some View {
+    let on = i == day
+    let isToday = d == today
+    let status = plan(d).status
+    return Button {
+      selected = i
+    } label: {
+      VStack(spacing: 6) {
+        Text(verbatim: Self.date(d).formatted(.dateTime.weekday(.abbreviated).locale(.app)))
+          .font(DS.TextStyle.caption.weight(isToday ? .bold : .regular))
+          .foregroundStyle(on ? Color.white.opacity(0.85) : DS.Color.mutedForeground.swiftUI)
+          .lineLimit(1)
+          .minimumScaleFactor(0.7)
+        Text(verbatim: "\(d.day)")
+          .font(.custom("Menlo", size: 17, relativeTo: .body).weight(.semibold))
+          .foregroundStyle(on ? Color.white : DS.Color.foreground.swiftUI)
+        mark(status, selected: on)
+      }
+      .frame(maxWidth: .infinity, minHeight: 78)
+      .background {
+        RoundedRectangle(cornerRadius: DS.Radius.lg, style: .continuous)
+          .fill(on ? Self.accent : (isToday ? Self.accent.opacity(0.08) : Color.clear))
+      }
+      .contentShape(Rectangle())
+    }
+    .buttonStyle(.plain)
+    .accessibilityLabel(Text(verbatim: Self.date(d).formatted(.dateTime.weekday(.wide).day().month(.wide).locale(.app))))
+    .accessibilityValue(Text(Self.statusLabel(status)))
+    .accessibilityAddTraits(on ? .isSelected : [])
+    .sensoryFeedback(.selection, trigger: selected)
+  }
+
+  /// Dấu của một ngày — cùng bộ dấu dải tuần ở trang gốc.
+  @ViewBuilder private func mark(_ s: DayStatus, selected on: Bool) -> some View {
+    let tint = on ? Color.white : Self.accent
+    switch s {
+    case .done:
+      Image(systemName: "checkmark.circle.fill").font(.caption).foregroundStyle(tint)
+    case .todo:
+      Circle().strokeBorder(tint, lineWidth: 1.5).frame(width: 11, height: 11)
+    case .missed:
+      Circle().strokeBorder(tint.opacity(0.5), style: StrokeStyle(lineWidth: 1.2, dash: [2, 2])).frame(width: 11, height: 11)
+    case .rest:
+      Image(systemName: "leaf").font(.system(size: 10)).foregroundStyle(on ? Color.white : DS.Color.mutedForeground.swiftUI)
+    case .unplanned:
+      Circle().fill((on ? Color.white : DS.Color.foreground.swiftUI).opacity(0.2)).frame(width: 5, height: 5)
+    }
+  }
+
+  private var legend: some View {
+    HStack(spacing: 10) {
+      legendItem(AnyView(Image(systemName: "checkmark.circle.fill").font(.caption2).foregroundStyle(Self.accent)), "wp.status.done")
+      legendItem(AnyView(Circle().strokeBorder(Self.accent, lineWidth: 1.5).frame(width: 9, height: 9)), "wp.legend.planned")
+      legendItem(AnyView(Circle().strokeBorder(Self.accent.opacity(0.5), style: StrokeStyle(lineWidth: 1.2, dash: [2, 2])).frame(width: 9, height: 9)), "wp.status.missed")
+      legendItem(AnyView(Image(systemName: "leaf").font(.system(size: 9)).foregroundStyle(DS.Color.mutedForeground.swiftUI)), "wp.status.rest")
+    }
+    .font(DS.TextStyle.caption)
+    .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+    .frame(maxWidth: .infinity)
+    .accessibilityHidden(true)
+  }
+
+  private func legendItem(_ icon: AnyView, _ key: String.LocalizationValue) -> some View {
+    HStack(spacing: 4) {
+      icon
+      Text(String(localized: key))
+    }
+  }
 
   private var weekHeader: some View {
     HStack {
       Button {
         offset = WeekPlanning.clamp(offset: offset - 1)
       } label: {
-        Image(systemName: "chevron.left").frame(minWidth: 44, minHeight: 44)
+        Image(systemName: "chevron.left")
+          .font(.body.weight(.semibold))
+          .frame(width: 36, height: 36)
+          .background(Circle().fill(DS.Color.foreground.swiftUI.opacity(0.05)))
+          .frame(minWidth: 44, minHeight: 44)
       }
-      .buttonStyle(.borderless)
+      .buttonStyle(.plain)
+      .foregroundStyle(offset <= -WeekPlanning.weeksBack ? DS.Color.mutedForeground.swiftUI.opacity(0.4) : DS.Color.foreground.swiftUI)
       .disabled(offset <= -WeekPlanning.weeksBack)
       .accessibilityLabel(Text("wp.prevWeek"))
       Spacer()
-      Text(verbatim: rangeLabel)
-        .font(DS.TextStyle.headline)
+      VStack(spacing: 2) {
+        Text(verbatim: rangeLabel)
+          .font(DS.TextStyle.headline)
+        if offset != 0 {
+          Button(String(localized: "wp.thisWeek")) { offset = 0 }
+            .font(DS.TextStyle.caption.weight(.semibold))
+            .foregroundStyle(Self.accent)
+        }
+      }
       Spacer()
       Button {
         offset = WeekPlanning.clamp(offset: offset + 1)
       } label: {
-        Image(systemName: "chevron.right").frame(minWidth: 44, minHeight: 44)
+        Image(systemName: "chevron.right")
+          .font(.body.weight(.semibold))
+          .frame(width: 36, height: 36)
+          .background(Circle().fill(DS.Color.foreground.swiftUI.opacity(0.05)))
+          .frame(minWidth: 44, minHeight: 44)
       }
-      .buttonStyle(.borderless)
+      .buttonStyle(.plain)
+      .foregroundStyle(offset >= WeekPlanning.weeksForward ? DS.Color.mutedForeground.swiftUI.opacity(0.4) : DS.Color.foreground.swiftUI)
       .disabled(offset >= WeekPlanning.weeksForward)
       .accessibilityLabel(Text("wp.nextWeek"))
     }
@@ -114,69 +213,109 @@ struct WeekPlanView: View {
     return "\(Self.date(first).formatted(style)) – \(Self.date(last).formatted(style))"
   }
 
-  private var cells: [DayCellDisplay] {
-    dates.map { d in
-      let date = Self.date(d)
-      return DayCellDisplay(
-        shortName: date.formatted(.dateTime.weekday(.abbreviated).locale(.app)),
-        longName: date.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(.app)),
-        dayNumber: d.day,
-        state: Self.state(plan(d).status),
-        isToday: d == today)
-    }
-  }
-
   // MARK: - Ngày đang chọn
 
   @ViewBuilder private var dayPanel: some View {
     let d = dates[day]
     let p = plan(d)
-    Section {
-      HStack {
+    VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+      HStack(alignment: .firstTextBaseline) {
         Text(verbatim: Self.date(d).formatted(.dateTime.weekday(.wide).day().month(.wide).locale(.app)))
           .font(DS.TextStyle.headline)
         Spacer()
-        if p.isDeload {
-          Text("wp.deload")
-            .font(DS.TextStyle.caption.weight(.bold))
-            .padding(.horizontal, DS.Spacing.xs)
-            .background(DS.Color.metricOrangeGraphic.swiftUI.opacity(0.15), in: Capsule())
-        }
         Text(Self.statusLabel(p.status))
-          .font(DS.TextStyle.caption)
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          .font(DS.TextStyle.caption.weight(.semibold))
+          .foregroundStyle(p.status == .done || p.status == .todo ? Self.accent : DS.Color.mutedForeground.swiftUI)
+          .padding(.horizontal, 8)
+          .padding(.vertical, 3)
+          .background((p.status == .done || p.status == .todo ? Self.accent : DS.Color.foreground.swiftUI).opacity(0.08), in: Capsule())
       }
       .accessibilityElement(children: .combine)
       if let t = p.template {
-        VStack(alignment: .leading, spacing: 2) {
-          Text(verbatim: t.name).font(DS.TextStyle.body.weight(.semibold))
-          Text(verbatim: meta(t)).font(DS.TextStyle.caption).foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        HStack(spacing: 12) {
+          Image(systemName: "dumbbell.fill")
+            .font(.footnote)
+            .foregroundStyle(Self.accent)
+            .frame(width: 36, height: 36)
+            .background(Self.accent.opacity(0.12), in: Circle())
+            .accessibilityHidden(true)
+          VStack(alignment: .leading, spacing: 2) {
+            Text(verbatim: t.name).font(DS.TextStyle.title.weight(.bold))
+            Text(verbatim: meta(t)).font(DS.TextStyle.caption).foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          }
+          Spacer(minLength: 0)
         }
         .accessibilityElement(children: .combine)
+        .padding(.vertical, 4)
+      } else {
+        Label(
+          p.status == .rest ? String(localized: "today.rest.message") : String(localized: "wp.status.unplanned"),
+          systemImage: p.status == .rest ? "moon.zzz" : "calendar.badge.plus"
+        )
+        .font(DS.TextStyle.body)
+        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        .padding(.vertical, 4)
       }
-      if p.template != nil {
-        Button {
-          Task { await open(d) }
-        } label: {
-          HStack {
-            Text("wp.openBoard")
-            Spacer()
-            if opening == d {
-              ProgressView()
-            } else {
-              Image(systemName: "chevron.right")
-                .font(.footnote)
-                .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-                .accessibilityHidden(true)
+      HStack(spacing: DS.Spacing.sm) {
+        if p.template != nil {
+          Button {
+            Task { await open(d) }
+          } label: {
+            HStack(spacing: 6) {
+              if opening == d { ProgressView() } else { Image(systemName: "list.bullet.rectangle") }
+              Text("wp.openBoard")
             }
+            .font(DS.TextStyle.headline)
+            .foregroundStyle(.white)
+            .frame(maxWidth: .infinity, minHeight: 48)
+            .background(Capsule().fill(DS.Color.foreground.swiftUI))
           }
-          .frame(minHeight: 44)
+          .buttonStyle(TodayPressStyle())
+          .disabled(opening != nil)
         }
-        .disabled(opening != nil)
-      }
-      Button(String(localized: "wp.chooseWorkout")) { picking = DayTarget(day: day) }
+        Button {
+          picking = DayTarget(day: day)
+        } label: {
+          Label(String(localized: p.template == nil ? "wp.chooseWorkout" : "wp.change"), systemImage: "arrow.left.arrow.right")
+            .font(DS.TextStyle.headline)
+            .foregroundStyle(p.template == nil ? Color.white : DS.Color.foreground.swiftUI)
+            .frame(maxWidth: .infinity, minHeight: 48)
+            .background {
+              if p.template == nil {
+                Capsule().fill(DS.Color.foreground.swiftUI)
+              } else {
+                Capsule().strokeBorder(DS.Color.foreground.swiftUI.opacity(0.18), lineWidth: 1)
+              }
+            }
+        }
+        .buttonStyle(TodayPressStyle())
         .disabled(flow.plan == nil)
+      }
+      if p.template != nil, let editor = flow.plan {
+        Divider().opacity(0.5).padding(.top, 4)
+        Toggle(isOn: Binding(
+          get: { snapshot?.day(day)?.isDeload ?? false },
+          set: { on in Task { await setDeload(editor, on) } })
+        ) {
+          VStack(alignment: .leading, spacing: 2) {
+            Text("wp.deload").font(DS.TextStyle.body)
+            Text("wp.deload.hint").font(DS.TextStyle.caption).foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          }
+        }
+        .tint(Self.accent)
         .frame(minHeight: 44)
+      }
+    }
+    .padding(DS.Spacing.card)
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .todayCard()
+  }
+
+  private func setDeload(_ editor: PlanEditor, _ on: Bool) async {
+    do throws(PlanEditor.Refusal) {
+      try await editor.setDeload(day: day, on)
+    } catch {
+      failed = true
     }
   }
 
@@ -194,27 +333,41 @@ struct WeekPlanView: View {
     let picks = WeekPlanning.suggestions(
       snapshot?.templates ?? [], sessions: (flow.history?.entries ?? []).map { ($0.templateName, $0.at) })
     if p.status == .unplanned, !picks.isEmpty, let editor = flow.plan {
-      Section {
-        ForEach(picks, id: \.id) { t in
+      Text("wp.suggested")
+        .font(DS.TextStyle.title)
+        .accessibilityAddTraits(.isHeader)
+        .padding(.horizontal, 4)
+        .padding(.top, DS.Spacing.sm)
+      VStack(spacing: 0) {
+        ForEach(Array(picks.enumerated()), id: \.element.id) { i, t in
+          if i > 0 { Divider().padding(.leading, 58).opacity(0.6) }
           Button {
             Task { await assign(editor, t.id) }
           } label: {
-            HStack {
-              Image(systemName: "dumbbell").foregroundStyle(DS.Color.mutedForeground.swiftUI).accessibilityHidden(true)
+            HStack(spacing: 12) {
+              Image(systemName: "dumbbell.fill")
+                .font(.footnote)
+                .foregroundStyle(Self.accent)
+                .frame(width: 32, height: 32)
+                .background(Self.accent.opacity(0.12), in: Circle())
+                .accessibilityHidden(true)
               VStack(alignment: .leading, spacing: 2) {
-                Text(verbatim: t.name).foregroundStyle(DS.Color.foreground.swiftUI)
+                Text(verbatim: t.name).font(DS.TextStyle.body.weight(.semibold)).foregroundStyle(DS.Color.foreground.swiftUI)
                 Text(verbatim: meta(t)).font(DS.TextStyle.caption).foregroundStyle(DS.Color.mutedForeground.swiftUI)
               }
               Spacer()
-              Image(systemName: "plus").accessibilityHidden(true)
+              Image(systemName: "plus.circle.fill").font(.title3).foregroundStyle(Self.accent).accessibilityHidden(true)
             }
-            .frame(minHeight: 44)
+            .padding(.horizontal, DS.Spacing.md)
+            .frame(minHeight: 60)
+            .contentShape(Rectangle())
           }
+          .buttonStyle(.plain)
           .accessibilityLabel(Text(String(localized: "wp.chooseNamed \(t.name)")))
         }
-      } header: {
-        Text("wp.suggested")
       }
+      .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous))
+      .todayCard(radius: DS.Radius.xl)
     }
   }
 
@@ -279,111 +432,6 @@ struct WeekPlanView: View {
 struct DayTarget: Identifiable, Hashable {
   let day: Int
   var id: Int { day }
-}
-
-/// Bộ chọn của một ngày: tạo buổi mới, nghỉ, buổi đã lưu, deload — cùng một
-/// câu hỏi "ngày này là gì" nên hỏi ở cùng một chỗ.
-private struct DayPicker: View {
-  let flow: WorkoutFlow
-  let day: Int
-  @Binding var failed: Bool
-  var onBuild: () -> Void
-  @Environment(\.dismiss) private var dismiss
-
-  private var snapshot: TemplateSnapshot? { flow.today.library }
-  private var row: RoutineDay? { snapshot?.day(day) }
-
-  var body: some View {
-    NavigationStack {
-      List {
-        Section {
-          Button {
-            dismiss()
-            onBuild()
-          } label: {
-            Label(String(localized: "wp.newWorkout"), systemImage: "plus")
-              .frame(minHeight: 44)
-          }
-          choice(String(localized: "wp.status.rest"), systemImage: "moon", on: row?.templateId == nil) {
-            Task { await assign(nil) }
-          }
-        }
-        Section {
-          let templates = (snapshot?.templates ?? []).sorted(by: WorkoutTemplate.newestFirst)
-          if templates.isEmpty {
-            Text(snapshot == nil && flow.today.failure != nil ? String(localized: "history.loadFailed") : String(localized: "wp.noTemplates"))
-              .font(DS.TextStyle.footnote)
-              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-          }
-          let dups = WeekPlanning.duplicateNames(templates)
-          ForEach(templates, id: \.id) { t in
-            choice(t.name, detail: WeekPlanView.meta(t, duplicates: dups), on: row?.templateId == t.id) {
-              Task { await assign(t.id) }
-            }
-          }
-        }
-        Section {
-          Toggle(String(localized: "wp.deload"), isOn: Binding(
-            get: { row?.isDeload ?? false },
-            set: { on in Task { await setDeload(on) } }))
-            .frame(minHeight: 44)
-        }
-      }
-      .navigationTitle(Text("wp.chooseWorkout"))
-      .ascndPage()
-      .navigationBarTitleDisplayMode(.inline)
-      .toolbar {
-        ToolbarItem(placement: .cancellationAction) {
-          Button(String(localized: "common.cancel")) { dismiss() }
-        }
-      }
-    }
-    .presentationDetents([.medium, .large])
-  }
-
-  private func choice(
-    _ title: String, detail: String? = nil, systemImage: String? = nil, on: Bool, action: @escaping () -> Void
-  ) -> some View {
-    Button(action: action) {
-      HStack {
-        if let systemImage {
-          Image(systemName: systemImage).foregroundStyle(DS.Color.mutedForeground.swiftUI).accessibilityHidden(true)
-        }
-        VStack(alignment: .leading, spacing: 2) {
-          Text(verbatim: title).foregroundStyle(DS.Color.foreground.swiftUI)
-          if let detail {
-            Text(verbatim: detail).font(DS.TextStyle.caption).foregroundStyle(DS.Color.mutedForeground.swiftUI)
-          }
-        }
-        Spacer()
-        if on {
-          Image(systemName: "checkmark.circle.fill").foregroundStyle(DS.Color.primary.swiftUI).accessibilityHidden(true)
-        }
-      }
-      .frame(minHeight: 44)
-    }
-    .disabled(flow.plan == nil)
-    .accessibilityAddTraits(on ? [.isButton, .isSelected] : .isButton)
-  }
-
-  private func assign(_ templateId: String?) async {
-    guard let editor = flow.plan else { return }
-    do throws(PlanEditor.Refusal) {
-      try await editor.assign(day: day, templateId: templateId)
-      dismiss()
-    } catch {
-      failed = true
-    }
-  }
-
-  private func setDeload(_ on: Bool) async {
-    guard let editor = flow.plan else { return }
-    do throws(PlanEditor.Refusal) {
-      try await editor.setDeload(day: day, on)
-    } catch {
-      failed = true
-    }
-  }
 }
 
 /// Bảng tập của một ngày, mở thành sheet.

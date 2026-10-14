@@ -84,7 +84,7 @@ struct RootTabView: View {
       Group {
         if showsLab { LabsView() } else { WorkoutsTab(launch: $launch) }
       }
-      .overlay(alignment: .topTrailing) {
+      .overlay(alignment: .bottomTrailing) {
         Button {
           showsLab.toggle()
         } label: {
@@ -94,8 +94,9 @@ struct RootTabView: View {
             .padding(.vertical, 4)
             .background(.ultraThinMaterial, in: Capsule())
         }
-        .padding(.trailing, 72)
-        .padding(.top, 2)
+        .opacity(0.7)
+        .padding(.trailing, 12)
+        .padding(.bottom, 92)
       }
     }
   }

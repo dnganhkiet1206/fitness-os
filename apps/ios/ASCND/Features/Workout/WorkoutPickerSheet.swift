@@ -14,14 +14,16 @@ import SwiftUI
 /// "Gợi ý" (3 buổi dùng gần nhất, `WeekPlanning.suggestions`) như Kế hoạch tuần.
 struct WorkoutPickerSheet: View {
   let flow: WorkoutFlow
+  /// Ngày trong tuần (0 = Thứ Hai) — mặc định hôm nay; Kế hoạch tuần truyền ngày đang chọn.
+  var day: Int? = nil
   @Environment(\.dismiss) private var dismiss
   @State private var saving = false
   @State private var failed = false
   @State private var showsBuilder = false
 
-  private var date: LocalDate { flow.today.today }
-  private var day: Int { WorkoutPlanning.routineIndex(date) }
-  private var routineDay: RoutineDay? { flow.today.library?.routine.first { $0.dayOfWeek == day } }
+  private var weekday: Int { day ?? WorkoutPlanning.routineIndex(flow.today.today) }
+  private var date: LocalDate { WeekPlanning.weekDates(today: flow.today.today, offset: 0)[weekday] }
+  private var routineDay: RoutineDay? { flow.today.library?.routine.first { $0.dayOfWeek == weekday } }
   private var templates: [WorkoutTemplate] {
     (flow.today.library?.templates ?? []).sorted(by: WorkoutTemplate.newestFirst)
   }
@@ -81,7 +83,7 @@ struct WorkoutPickerSheet: View {
         Button(String(localized: "common.cancel"), role: .cancel) {}
       }
       .sheet(isPresented: $showsBuilder, onDismiss: { dismiss() }) {
-        TemplateFormView(flow: flow, scheduleOn: day)
+        TemplateFormView(flow: flow, scheduleOn: weekday)
       }
     }
   }
@@ -155,7 +157,7 @@ struct WorkoutPickerSheet: View {
     saving = true
     Task {
       do throws(PlanEditor.Refusal) {
-        try await editor.assign(day: day, templateId: templateId)
+        try await editor.assign(day: weekday, templateId: templateId)
         saving = false
         dismiss()
       } catch {

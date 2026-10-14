@@ -29059,19 +29059,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "Plan"
+      "value": "Weekly plan"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Plan"
+      "value": "Kế hoạch tuần"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Plan"
+      "value": "Plan semanal"
      }
     }
    }
@@ -46919,6 +46919,75 @@
      "stringUnit": {
       "state": "translated",
       "value": "Cambiar el entrenamiento de hoy"
+     }
+    }
+   }
+  },
+  "wp.legend.planned": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Planned"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Có buổi"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Planificado"
+     }
+    }
+   }
+  },
+  "wp.change": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Change"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đổi buổi"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cambiar"
+     }
+    }
+   }
+  },
+  "wp.deload.hint": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "A lighter week: same workout, marked as deload."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tuần nhẹ: giữ buổi tập, đánh dấu giảm tải."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Semana ligera: mismo entrenamiento, marcado como descarga."
      }
     }
    }
