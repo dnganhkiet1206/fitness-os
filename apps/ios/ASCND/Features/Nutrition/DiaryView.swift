@@ -749,13 +749,21 @@ struct MealSlotGlyph: View {
     }
   }
 
+  /// Đã ăn: tròn đặc màu Bữa ăn, biểu tượng trắng; chưa: viền nét đứt
+  /// (thiết kế lại 14/10) — liếc là biết bữa nào còn trống.
   var body: some View {
     let meal = MascotRoomView.signalColor(.meal)
     Image(systemName: Self.symbol(type))
       .font(.system(size: 14, weight: .semibold))
-      .foregroundStyle(filled ? meal : DS.Color.mutedForeground.swiftUI)
+      .foregroundStyle(filled ? Color.white : DS.Color.mutedForeground.swiftUI)
       .frame(width: 34, height: 34)
-      .background(Circle().fill(filled ? meal.opacity(0.14) : DS.Color.foreground.swiftUI.opacity(0.06)))
+      .background {
+        if filled {
+          Circle().fill(meal)
+        } else {
+          Circle().strokeBorder(DS.Color.mutedForeground.swiftUI.opacity(0.5), style: StrokeStyle(lineWidth: 1.2, dash: [3, 3]))
+        }
+      }
       .accessibilityHidden(true)
   }
 }
@@ -778,12 +786,11 @@ private struct EmptySlotRow: View {
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
         }
         Spacer(minLength: 0)
-        Text(String(localized: "nc.slot.log"))
-          .font(.system(size: 15, weight: .semibold))
-          .foregroundStyle(DS.Color.foreground.swiftUI)
-          .padding(.horizontal, 14)
-          .frame(minHeight: 34)
-          .background(Capsule().strokeBorder(DS.Color.foreground.swiftUI.opacity(0.18), lineWidth: 1))
+        Image(systemName: "plus")
+          .font(.system(size: 15, weight: .bold))
+          .foregroundStyle(.white)
+          .frame(width: 34, height: 34)
+          .background(Circle().fill(MascotRoomView.signalColor(.meal)))
       }
       .padding(.horizontal, DS.Spacing.md)
       .padding(.vertical, 10)

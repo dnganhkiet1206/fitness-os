@@ -89,3 +89,9 @@ Chi tiết kế hoạch, Ghi bữa, Nhật ký, Thực phẩm — cùng ngôn ng
   + nguyên liệu; nút cam "+ Thêm" → "Đã thêm".
 - Ảnh: `apps/ios/docs/qa/nutrition-ai-2026-10-13/` (trả lời AI giả của bản Debug — server
   chưa deploy hàm).
+
+## Lượt 14/10 — cùng kiểu Tập luyện / Cộng đồng (chủ dự án: "làm phần còn lại của mock, thẻ giữ nguyên")
+- Thẻ calo **giữ nguyên** (B đề xuất không đổi sang mặt màu đặc: mất màu riêng của từng chất, quá nặng cho màn xem nhiều lần mỗi ngày; chủ dự án đồng ý).
+- Đầu trang: nút tròn Nhật ký (lịch) + 7 ngày (thống kê) thay viên "Ngày khác"; dải 7 ngày tới hôm nay (hôm nay tô màu Bữa ăn), chạm ngày đã qua mở Nhật ký ngày ấy (`DiaryRoute.date`).
+- Khung bữa: đã ăn = tròn đặc màu Bữa ăn biểu tượng trắng (+ tên món + kcal như trước); chưa ăn = viền nét đứt + nút "+" tròn màu Bữa ăn (thay viên "Ghi"). Áp dụng cả Nhật ký và kế hoạch ăn (`MealSlotGlyph` dùng chung).
+- Trong ngày: Nước và Thực phẩm bổ sung thành hai ô cạnh nhau, số lớn Menlo; Nước giữ nút thêm nhanh ở đáy ô.

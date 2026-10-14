@@ -75,7 +75,7 @@ struct NutritionTab: View {
         if let supplements = books?.supplements { SupplementsView(book: supplements) }
       }
       .navigationDestination(for: DiaryRoute.self) { route in
-        DiaryScreen(userId: route.userId)
+        DiaryScreen(userId: route.userId, date: route.date)
       }
       .navigationDestination(for: FoodsRoute.self) { route in
         FoodsScreen(userId: route.userId, recent: route.recent)
@@ -141,35 +141,75 @@ struct NutritionTab: View {
     }
   }
 
-  /// Đầu trang trong nội dung (như Hôm nay): tiêu đề lớn; phải là "Ngày khác"
-  /// (Nhật ký). Không có dòng thứ / ngày (chủ dự án, 13/10).
+  /// Đầu trang trong nội dung (thiết kế lại 14/10, cùng kiểu Tập luyện /
+  /// Cộng đồng): tiêu đề lớn + nút tròn Nhật ký (lịch) và 7 ngày (thống kê);
+  /// dưới là dải 7 ngày gần nhất — chạm một ngày đã qua mở Nhật ký ngày ấy.
   private var header: some View {
-    HStack(alignment: .center, spacing: DS.Spacing.sm) {
-      Text(String(localized: "tab.nutrition"))
-        .font(.largeTitle.bold())
-        .foregroundStyle(DS.Color.foreground.swiftUI)
-        .accessibilityAddTraits(.isHeader)
-      Spacer(minLength: 0)
-      if let userId {
-        NavigationLink(value: DiaryRoute(userId: userId)) {
-          // Cỡ chữ trợ năng: chỉ biểu tượng (chữ bị bẻ từng âm tiết bên cạnh
-          // tiêu đề lớn); VoiceOver vẫn đọc nhãn.
-          Label(String(localized: "nc.otherDays"), systemImage: "calendar")
-            .labelStyle(AdaptiveLabelStyle(iconOnly: typeSize.isAccessibilitySize))
-            .font(DS.TextStyle.footnote.weight(.semibold))
-            .foregroundStyle(DS.Color.foreground.swiftUI)
-            .padding(.horizontal, 12)
-            .frame(minHeight: 36)
-            .background(Capsule().fill(.thinMaterial))
-            .overlay(Capsule().strokeBorder(DS.Color.foreground.swiftUI.opacity(0.12), lineWidth: 0.75))
-            .frame(minHeight: 44)
-            .contentShape(Rectangle())
+    VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+      HStack(alignment: .center, spacing: DS.Spacing.sm) {
+        Text(String(localized: "tab.nutrition"))
+          .font(.largeTitle.bold())
+          .foregroundStyle(DS.Color.foreground.swiftUI)
+          .accessibilityAddTraits(.isHeader)
+        Spacer(minLength: 0)
+        if let userId {
+          NavigationLink(value: DiaryRoute(userId: userId)) { roundIcon("calendar") }
+            .buttonStyle(TodayPressStyle())
+            .accessibilityLabel(Text(String(localized: "nc.otherDays")))
+          NavigationLink(value: InsightsRoute(userId: userId)) { roundIcon("chart.bar.xaxis") }
+            .buttonStyle(TodayPressStyle())
+            .accessibilityLabel(Text(String(localized: "nc.week")))
         }
-        .buttonStyle(TodayPressStyle())
-        .accessibilityLabel(Text(String(localized: "nc.otherDays")))
       }
+      if let userId, segment == .today { dayStrip(userId) }
     }
     .frame(maxWidth: .infinity, alignment: .leading)
+  }
+
+  private func roundIcon(_ symbol: String) -> some View {
+    Image(systemName: symbol)
+      .font(.body.weight(.semibold))
+      .foregroundStyle(DS.Color.foreground.swiftUI)
+      .frame(width: 40, height: 40)
+      .background(Circle().fill(.thinMaterial))
+      .overlay(Circle().strokeBorder(DS.Color.foreground.swiftUI.opacity(0.12), lineWidth: 0.75))
+      .frame(minWidth: 44, minHeight: 44)
+      .contentShape(Rectangle())
+  }
+
+  /// Bảy ngày tới hôm nay; hôm nay tô màu Bữa ăn (đang xem ở trang này).
+  private func dayStrip(_ userId: String) -> some View {
+    let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
+    let accent = MascotRoomView.signalColor(.meal)
+    return HStack(spacing: 4) {
+      ForEach(-6...0, id: \.self) { offset in
+        let d = today.adding(days: offset)
+        let isToday = offset == 0
+        let label = VStack(spacing: 2) {
+          Text(verbatim: d.calendarDate.formatted(Date.FormatStyle().weekday(.narrow).locale(.app)))
+            .font(DS.TextStyle.caption)
+            .foregroundStyle(isToday ? Color.white.opacity(0.85) : DS.Color.mutedForeground.swiftUI)
+          Text(verbatim: "\(d.day)")
+            .font(.custom("Menlo", size: 15, relativeTo: .body).weight(.semibold))
+            .foregroundStyle(isToday ? Color.white : DS.Color.foreground.swiftUI)
+        }
+        .frame(maxWidth: .infinity, minHeight: 50)
+        .background {
+          if isToday { RoundedRectangle(cornerRadius: 14, style: .continuous).fill(accent) }
+        }
+        .contentShape(Rectangle())
+        if isToday {
+          label
+            .accessibilityElement(children: .combine)
+            .accessibilityAddTraits(.isSelected)
+        } else {
+          NavigationLink(value: DiaryRoute(userId: userId, date: d)) { label }
+            .buttonStyle(TodayPressStyle())
+            .accessibilityLabel(Text(verbatim: d.calendarDate.formatted(
+              Date.FormatStyle().weekday(.wide).day().month(.wide).locale(.app))))
+        }
+      }
+    }
   }
 
   private func sectionTitle(_ text: String) -> some View {
@@ -203,6 +243,8 @@ struct SupplementsRoute: Hashable {}
 /// Đích điều hướng của hàng → màn Nhật ký bữa ăn (của đúng người đang đăng nhập).
 struct DiaryRoute: Hashable {
   let userId: String
+  /// Ngày mở (dải ngày đầu tab, 14/10). `nil` = hôm nay.
+  var date: LocalDate? = nil
 }
 
 /// Đích điều hướng của hàng → màn Thực phẩm (của đúng người đang đăng nhập).
@@ -350,42 +392,52 @@ struct DayExtrasList: View {
 
   private var unit: Water.Unit { services.preferences.volumeUnit }
 
+  /// Hai ô cạnh nhau (thiết kế lại 14/10): tên + số lớn Menlo; Nước có nút
+  /// thêm nhanh ở đáy ô. Chạm phần trên mở màn chi tiết.
   var body: some View {
     VStack(spacing: DS.Spacing.xs) {
-      VStack(spacing: 0) {
-        if let water { waterRow(water) }
-        if water != nil, supplements != nil { Divider().padding(.leading, 58).opacity(0.6) }
-        if let supplements { supplementsRow(supplements) }
+      HStack(alignment: .top, spacing: DS.Spacing.sm) {
+        if let water { waterTile(water) }
+        if let supplements { supplementsTile(supplements) }
       }
-      .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous))
-      .todayCard(radius: DS.Radius.xl)
       WaterFeedbackLine(feedback: feedback)
     }
     .sensoryFeedback(.impact(weight: .light), trigger: taps)
   }
 
-  private func waterRow(_ book: WaterBook) -> some View {
+  private func tileHead(_ symbol: String, tint: Color, filled: Bool, title: String, value: String) -> some View {
+    VStack(alignment: .leading, spacing: 8) {
+      HStack(spacing: 8) {
+        glyph(symbol, tint: tint, filled: filled)
+        Spacer(minLength: 0)
+        Image(systemName: "chevron.right")
+          .font(.caption.weight(.semibold))
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          .accessibilityHidden(true)
+      }
+      Text(verbatim: title)
+        .font(DS.TextStyle.footnote.weight(.semibold))
+        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        .lineLimit(1)
+      Text(verbatim: value)
+        .font(.custom("Menlo", size: 20, relativeTo: .title3).weight(.bold))
+        .foregroundStyle(DS.Color.foreground.swiftUI)
+        .lineLimit(1)
+        .minimumScaleFactor(0.6)
+    }
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .contentShape(Rectangle())
+  }
+
+  private func waterTile(_ book: WaterBook) -> some View {
     let tint = MascotRoomView.signalColor(.water)
     let target = Water.target(profile?.profile?.waterTargetMl)
     let step = Water.quickAmounts(unit).first ?? 250
-    return HStack(spacing: 12) {
+    let value = book.loaded ? Water.progressLabel(ml: Double(book.totalMl), targetMl: target, unit, locale: .app) : "—"
+    return VStack(alignment: .leading, spacing: DS.Spacing.sm) {
       NavigationLink(value: WaterRoute()) {
-        HStack(spacing: 12) {
-          glyph("drop.fill", tint: tint, filled: book.loaded && book.totalMl > 0)
-          VStack(alignment: .leading, spacing: 2) {
-            Text(String(localized: "water.card.title"))
-              .font(.system(size: 17, weight: .semibold))
-              .foregroundStyle(DS.Color.foreground.swiftUI)
-            Text(verbatim: book.loaded
-              ? Water.progressLabel(ml: Double(book.totalMl), targetMl: target, unit, locale: .app) : "—")
-              .font(.custom("Menlo", size: 13, relativeTo: .footnote))
-              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-              .lineLimit(1)
-              .minimumScaleFactor(0.8)
-          }
-          Spacer(minLength: 0)
-        }
-        .contentShape(Rectangle())
+        tileHead("drop.fill", tint: tint, filled: book.loaded && book.totalMl > 0,
+                 title: String(localized: "water.card.title"), value: value)
       }
       .buttonStyle(.plain)
       .accessibilityElement(children: .ignore)
@@ -400,11 +452,10 @@ struct DayExtrasList: View {
           Task { await feedback.add(Water.toMl(Double(step), unit), to: book, online: services.sync.online) }
         } label: {
           Text(verbatim: "+\(step) \(Water.unitLabel(unit))")
-            .font(.system(size: 15, weight: .semibold).monospacedDigit())
-            .foregroundStyle(DS.Color.foreground.swiftUI)
-            .padding(.horizontal, 14)
-            .frame(minHeight: 34)
-            .background(Capsule().strokeBorder(DS.Color.foreground.swiftUI.opacity(0.18), lineWidth: 1))
+            .font(.system(size: 14, weight: .semibold).monospacedDigit())
+            .foregroundStyle(tint)
+            .frame(maxWidth: .infinity, minHeight: 36)
+            .background(Capsule().fill(tint.opacity(0.14)))
             .frame(minHeight: 44)
             .contentShape(Rectangle())
         }
@@ -412,39 +463,26 @@ struct DayExtrasList: View {
         .accessibilityLabel(Text(String(localized: "water.a11y.add \(String(step)) \(Water.unitLabel(unit))")))
       }
     }
-    .padding(.horizontal, DS.Spacing.md)
-    .padding(.vertical, 8)
-    .frame(minHeight: 60)
+    .padding(DS.Spacing.md)
+    .frame(maxWidth: .infinity, alignment: .topLeading)
+    .todayCard(radius: DS.Radius.xl)
   }
 
-  private func supplementsRow(_ book: SupplementBook) -> some View {
+  private func supplementsTile(_ book: SupplementBook) -> some View {
     let tint = MascotRoomView.signalColor(.steps)
     let done = !book.items.isEmpty && book.takenCount >= book.items.count
     return NavigationLink(value: SupplementsRoute()) {
-      HStack(spacing: 12) {
-        glyph("pills.fill", tint: tint, filled: done)
-        VStack(alignment: .leading, spacing: 2) {
-          Text(String(localized: "supplements.title"))
-            .font(.system(size: 17, weight: .semibold))
-            .foregroundStyle(DS.Color.foreground.swiftUI)
-          if !book.items.isEmpty {
-            Text(String(localized: "supplements.row.value \(book.takenCount) \(book.items.count)"))
-              .font(DS.TextStyle.caption.monospacedDigit())
-              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-          }
-        }
-        Spacer(minLength: 0)
-        Image(systemName: "chevron.right")
-          .font(.caption.weight(.semibold))
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-          .accessibilityHidden(true)
-      }
-      .padding(.horizontal, DS.Spacing.md)
-      .padding(.vertical, 8)
-      .frame(minHeight: 60)
-      .contentShape(Rectangle())
+      tileHead("pills.fill", tint: tint, filled: done, title: String(localized: "supplements.title"),
+               value: book.items.isEmpty ? "—" : "\(book.takenCount)/\(book.items.count)")
+        .padding(DS.Spacing.md)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .todayCard(radius: DS.Radius.xl)
     }
     .buttonStyle(TodayPressStyle(scale: 0.98))
+    .accessibilityElement(children: .ignore)
+    .accessibilityLabel(Text(String(localized: "supplements.title")))
+    .accessibilityValue(Text(book.items.isEmpty ? "" : String(localized: "supplements.row.value \(book.takenCount) \(book.items.count)")))
+    .accessibilityAddTraits(.isButton)
   }
 
   private func glyph(_ symbol: String, tint: Color, filled: Bool) -> some View {
