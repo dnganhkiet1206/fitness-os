@@ -141,27 +141,17 @@ struct WeekPlanView: View {
 
   /// Dấu của một ngày — cùng bộ dấu dải tuần ở trang gốc.
   @ViewBuilder private func mark(_ s: DayStatus, selected on: Bool) -> some View {
-    let tint = on ? Color.white : Self.accent
-    switch s {
-    case .done:
-      Image(systemName: "checkmark.circle.fill").font(.caption).foregroundStyle(tint)
-    case .todo:
-      Circle().strokeBorder(tint, lineWidth: 1.5).frame(width: 11, height: 11)
-    case .missed:
-      Circle().strokeBorder(tint.opacity(0.5), style: StrokeStyle(lineWidth: 1.2, dash: [2, 2])).frame(width: 11, height: 11)
-    case .rest:
-      Image(systemName: "leaf").font(.system(size: 10)).foregroundStyle(on ? Color.white : DS.Color.mutedForeground.swiftUI)
-    case .unplanned:
-      Circle().fill((on ? Color.white : DS.Color.foreground.swiftUI).opacity(0.2)).frame(width: 5, height: 5)
-    }
+    PlanDayMark(
+      status: s, tint: on ? Color.white : Self.accent,
+      muted: on ? Color.white : (s == .rest ? DS.Color.mutedForeground.swiftUI : DS.Color.foreground.swiftUI))
   }
 
   private var legend: some View {
     HStack(spacing: 10) {
-      legendItem(AnyView(Image(systemName: "checkmark.circle.fill").font(.caption2).foregroundStyle(Self.accent)), "wp.status.done")
-      legendItem(AnyView(Circle().strokeBorder(Self.accent, lineWidth: 1.5).frame(width: 9, height: 9)), "wp.legend.planned")
-      legendItem(AnyView(Circle().strokeBorder(Self.accent.opacity(0.5), style: StrokeStyle(lineWidth: 1.2, dash: [2, 2])).frame(width: 9, height: 9)), "wp.status.missed")
-      legendItem(AnyView(Image(systemName: "leaf").font(.system(size: 9)).foregroundStyle(DS.Color.mutedForeground.swiftUI)), "wp.status.rest")
+      legendItem(.done, "wp.status.done")
+      legendItem(.todo, "wp.legend.planned")
+      legendItem(.missed, "wp.status.missed")
+      legendItem(.rest, "wp.status.rest")
     }
     .font(DS.TextStyle.caption)
     .foregroundStyle(DS.Color.mutedForeground.swiftUI)
@@ -169,9 +159,9 @@ struct WeekPlanView: View {
     .accessibilityHidden(true)
   }
 
-  private func legendItem(_ icon: AnyView, _ key: String.LocalizationValue) -> some View {
+  private func legendItem(_ status: DayStatus, _ key: String.LocalizationValue) -> some View {
     HStack(spacing: 4) {
-      icon
+      PlanDayMark(status: status, tint: Self.accent, muted: DS.Color.mutedForeground.swiftUI, size: 9)
       Text(String(localized: key))
     }
   }
@@ -183,9 +173,9 @@ struct WeekPlanView: View {
       } label: {
         Image(systemName: "chevron.left")
           .font(.body.weight(.semibold))
-          .frame(width: 36, height: 36)
-          .background(Circle().fill(DS.Color.foreground.swiftUI.opacity(0.05)))
           .frame(minWidth: 44, minHeight: 44)
+          // Vòng 36pt vẽ BÊN TRONG vùng chạm 44pt.
+          .background(Circle().fill(DS.Color.foreground.swiftUI.opacity(0.05)).padding(4))
       }
       .buttonStyle(.plain)
       .foregroundStyle(offset <= -WeekPlanning.weeksBack ? DS.Color.mutedForeground.swiftUI.opacity(0.4) : DS.Color.foreground.swiftUI)
@@ -207,9 +197,9 @@ struct WeekPlanView: View {
       } label: {
         Image(systemName: "chevron.right")
           .font(.body.weight(.semibold))
-          .frame(width: 36, height: 36)
-          .background(Circle().fill(DS.Color.foreground.swiftUI.opacity(0.05)))
           .frame(minWidth: 44, minHeight: 44)
+          // Vòng 36pt vẽ BÊN TRONG vùng chạm 44pt.
+          .background(Circle().fill(DS.Color.foreground.swiftUI.opacity(0.05)).padding(4))
       }
       .buttonStyle(.plain)
       .foregroundStyle(offset >= WeekPlanning.weeksForward ? DS.Color.mutedForeground.swiftUI.opacity(0.4) : DS.Color.foreground.swiftUI)
@@ -273,12 +263,7 @@ struct WeekPlanView: View {
       .accessibilityElement(children: .combine)
       if let t = p.template {
         HStack(spacing: 12) {
-          Image(systemName: "dumbbell.fill")
-            .font(.footnote)
-            .foregroundStyle(Self.accent)
-            .frame(width: 36, height: 36)
-            .background(Self.accent.opacity(0.12), in: Circle())
-            .accessibilityHidden(true)
+          PlanIconBadge(symbol: "dumbbell.fill", tint: Self.accent)
           VStack(alignment: .leading, spacing: 2) {
             Text(verbatim: t.name).font(DS.TextStyle.title.weight(.bold))
             Text(verbatim: meta(t)).font(DS.TextStyle.caption).foregroundStyle(DS.Color.mutedForeground.swiftUI)
@@ -385,12 +370,7 @@ struct WeekPlanView: View {
             Task { await assign(editor, t.id) }
           } label: {
             HStack(spacing: 12) {
-              Image(systemName: "dumbbell.fill")
-                .font(.footnote)
-                .foregroundStyle(Self.accent)
-                .frame(width: 32, height: 32)
-                .background(Self.accent.opacity(0.12), in: Circle())
-                .accessibilityHidden(true)
+              PlanIconBadge(symbol: "dumbbell.fill", tint: Self.accent, size: 32)
               VStack(alignment: .leading, spacing: 2) {
                 Text(verbatim: t.name).font(DS.TextStyle.body.weight(.semibold)).foregroundStyle(DS.Color.foreground.swiftUI)
                 Text(verbatim: meta(t)).font(DS.TextStyle.caption).foregroundStyle(DS.Color.mutedForeground.swiftUI)
