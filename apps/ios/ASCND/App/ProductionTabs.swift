@@ -70,7 +70,14 @@ struct WorkoutsTab: View {
     .onChange(of: launch, initial: true) { _, go in
       guard go else { return }
       launch = false
-      if flow.session != nil { showsSession = true }
+      guard flow.session != nil else { return }
+      // Cùng nhịp với lần đổi tab, tab này còn chưa lên cửa sổ — SwiftUI bỏ
+      // qua lớp toàn màn hình mở lúc ấy (14/10: "Bắt đầu" ở Hôm nay chỉ đổi
+      // tab). Mở sau khi tab đã hiện.
+      Task { @MainActor in
+        try? await Task.sleep(for: .milliseconds(350))
+        if flow.session != nil { showsSession = true }
+      }
     }
     .fullScreenCover(isPresented: $showsSession) {
       sessionScreen

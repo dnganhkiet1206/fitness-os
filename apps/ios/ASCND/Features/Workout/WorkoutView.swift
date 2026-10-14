@@ -35,6 +35,14 @@ public struct WorkoutView: View {
   var onOpenHistory: (() -> Void)?
   /// Thu màn tập về trang gốc tab (lớp toàn màn hình, 14/10) — tiến độ giữ nguyên.
   var onClose: (() -> Void)?
+  /// Ngày chưa tới (mở từ Kế hoạch tuần): "Đổi buổi khác". `nil` = không hiện.
+  var onChangeWorkout: (() -> Void)?
+
+  /// Dạng bảng (RN) thay cho "từng set một" — người dùng chọn ở menu ⋯, nhớ
+  /// trên máy (#527, thiết kế lại 14/10).
+  @AppStorage("ascnd.workout.tableLayout") private var tableLayout = false
+  /// Bài người dùng chạm ở "Các bài trong buổi" — set kế tiếp lấy từ bài ấy.
+  @State private var pinned: String?
 
   @State private var weightTexts: [String: String] = [:]
   @State private var repsTexts: [String: String] = [:]
@@ -48,6 +56,7 @@ public struct WorkoutView: View {
   /// Đơn vị tạ của tài khoản (#527 1.9-B): ô tạ hiện và nhận số theo đơn vị
   /// này; controller đổi về kg (cùng đơn vị, `WorkoutFlow.setWeightUnit`).
   @Environment(\.weightUnit) private var unit
+  @Environment(\.locale) private var locale
 
   /// Ô nào đang focus.
   enum FieldFocus: Hashable {
@@ -78,7 +87,8 @@ public struct WorkoutView: View {
     onFinish: (@MainActor () async throws -> Void)? = nil,
     onAppend: (@MainActor () async throws -> Void)? = nil,
     onOpenHistory: (() -> Void)? = nil,
-    onClose: (() -> Void)? = nil
+    onClose: (() -> Void)? = nil,
+    onChangeWorkout: (() -> Void)? = nil
   ) {
     self.controller = controller
     self.restingRowKey = restingRowKey
@@ -91,6 +101,7 @@ public struct WorkoutView: View {
     self.onAppend = onAppend
     self.onOpenHistory = onOpenHistory
     self.onClose = onClose
+    self.onChangeWorkout = onChangeWorkout
   }
 
   public var body: some View {
@@ -100,7 +111,7 @@ public struct WorkoutView: View {
         case .loading:
           ProgressView(String(localized: "workout.loading"))
         case .idle, .active:
-          workoutContent
+          sessionContent
         case .finished:
           // Như RN: buổi đã chốt VẪN là danh sách hàng — bỏ tích một hàng đã
           // ghi để gỡ nó (có hoàn tác), tích thêm hàng để nối vào buổi.
@@ -109,28 +120,43 @@ public struct WorkoutView: View {
           workoutContent
         }
       }
-      .navigationTitle(controller.plan.templateName)
+      .navigationTitle(isPreview ? "" : controller.plan.templateName)
       .ascndPage()
-      .navigationBarTitleDisplayMode(.large)
+      .navigationBarTitleDisplayMode(showsTable ? .large : .inline)
       // Một thanh "Xong" trên bàn phím cho cả màn — gắn trên từng ô reps thì
       // mỗi hàng góp một nút.
       .toolbar {
         if let onClose {
           ToolbarItem(placement: .topBarLeading) {
             Button(action: onClose) {
-              Image(systemName: "chevron.down")
+              Image(systemName: isPreview ? "xmark" : "chevron.down")
                 .frame(minWidth: 44, minHeight: 44)
             }
-            .accessibilityLabel(Text("workout.minimize"))
+            .accessibilityLabel(Text(isPreview ? "common.close" : "workout.minimize"))
           }
         }
-        if let onOpenHistory {
+        if !isPreview, controller.loggedSessionId == nil || onOpenHistory != nil {
           ToolbarItem(placement: .topBarTrailing) {
-            Button(action: onOpenHistory) {
-              Image(systemName: "clock.arrow.circlepath")
+            Menu {
+              if controller.loggedSessionId == nil, !controller.plan.rows.isEmpty {
+                Button {
+                  withAnimation(.snappy) { tableLayout.toggle() }
+                } label: {
+                  Label(
+                    String(localized: tableLayout ? "ws.layout.focus" : "ws.layout.table"),
+                    systemImage: tableLayout ? "rectangle.portrait" : "list.bullet")
+                }
+              }
+              if let onOpenHistory {
+                Button(action: onOpenHistory) {
+                  Label(String(localized: "history.title"), systemImage: "clock.arrow.circlepath")
+                }
+              }
+            } label: {
+              Image(systemName: "ellipsis")
                 .frame(minWidth: 44, minHeight: 44)
             }
-            .accessibilityLabel(Text("history.title"))
+            .accessibilityLabel(Text("ws.more"))
           }
         }
         ToolbarItemGroup(placement: .keyboard) {
@@ -208,6 +234,290 @@ public struct WorkoutView: View {
       }
       .padding(DS.Spacing.md)
     }
+  }
+
+  // MARK: - Từng set một (#527, thiết kế lại 14/10)
+  //
+  // Mặc định: một thẻ lớn cho SET KẾ TIẾP (± thay bàn phím, "Xong set"), thẻ
+  // nghỉ thay chỗ nó khi đang nghỉ, "Các bài trong buổi" để nhảy bài. Dạng
+  // bảng của RN vẫn ở menu ⋯ và là dạng của buổi đã ghi (gỡ / nối thêm).
+
+  private var today: LocalDate { flow?.today.today ?? LocalDate(SystemWallClock().nowMillis(), in: .current) }
+
+  /// Ngày chưa tới mà chưa ghi: chỉ xem trước.
+  private var isPreview: Bool {
+    controller.isFuture && controller.loggedSessionId == nil && !controller.plan.rows.isEmpty
+  }
+
+  private var showsTable: Bool {
+    !isPreview && (tableLayout || controller.loggedSessionId != nil || controller.plan.rows.isEmpty)
+  }
+
+  @ViewBuilder private var sessionContent: some View {
+    if isPreview {
+      previewContent
+    } else if showsTable {
+      workoutContent
+    } else {
+      focusContent
+    }
+  }
+
+  private var eyebrow: String {
+    let d = controller.plan.date
+    return d == today
+      ? String(localized: "wh.eyebrow \(WorkoutsHomeView.longWeekday(d))")
+      : WorkoutsHomeView.longDay(d)
+  }
+
+  private var previewContent: some View {
+    let rows = controller.plan.rows
+    let p = controller.progress
+    let d = controller.plan.date
+    return ScrollView {
+      WorkoutPreviewView(
+        eyebrow: WorkoutsHomeView.longDay(d),
+        name: controller.plan.templateName,
+        meta: String(localized: "wh.meta \(WorkoutFocus.exercises(rows, p).count) \(rows.count) \(WorkoutFocus.minutes(rows, p))"),
+        lines: WorkoutFocus.preview(rows, p),
+        opensOn: WorkoutsHomeView.longWeekday(d),
+        onChange: onChangeWorkout)
+      .padding(DS.Spacing.md)
+    }
+  }
+
+  private var focusContent: some View {
+    let rows = controller.plan.rows
+    let exercises = WorkoutFocus.exercises(rows, controller.progress)
+    let next = WorkoutFocus.next(rows, controller.progress, pinned: pinned)
+    let current = next.map(WorkoutFocus.exerciseKey)
+    let doneCount = exercises.reduce(0) { $0 + $1.done }
+    return ScrollView {
+      VStack(alignment: .leading, spacing: DS.Spacing.md) {
+        if controller.unsaved != nil { unsavedBanner }
+        if let removal { undoBar(removal) }
+        SyncStrip(status: outboxStatus)
+        SessionProgressHeader(eyebrow: eyebrow, exercises: exercises, current: current)
+          .padding(.horizontal, 4)
+
+        if let timer = restTimer {
+          FocusRestCard(
+            timer: timer, next: next.map { nextLine($0) },
+            onAdjust: onAdjustRest, onSkip: onSkipRest, onSetPaused: onSetRestPaused)
+          .transition(.blurReplace)
+          if let last = WorkoutFocus.lastDone(rows, controller.progress, before: next) {
+            justDone(last)
+          }
+        } else if let next {
+          focusCard(next, exercises: exercises)
+            .id(next.key)
+            .transition(.asymmetric(insertion: .move(edge: .trailing).combined(with: .opacity), removal: .opacity))
+        } else {
+          allDoneCard
+        }
+
+        if exercises.count > 1 {
+          ExerciseQueue(exercises: exercises, current: current) { key in
+            withAnimation(.snappy) { pinned = key }
+          }
+        }
+
+        if next != nil, controller.canFinish {
+          outlineButton(
+            isFinishing ? String(localized: "workout.finishing") : String(localized: "ws.finishEarly \(doneCount) \(rows.count)")
+          ) { Task { await doFinish() } }
+          .disabled(isFinishing)
+        }
+      }
+      .padding(DS.Spacing.md)
+      .padding(.bottom, DS.Spacing.lg)
+      .animation(.snappy, value: next?.key)
+      .animation(.snappy, value: restTimer == nil)
+    }
+    .scrollDismissesKeyboard(.interactively)
+    .sensoryFeedback(.impact(weight: .medium), trigger: doneCount)
+  }
+
+  private func focusCard(_ row: PlannedSet, exercises: [WorkoutFocus.Exercise]) -> some View {
+    let key = WorkoutFocus.exerciseKey(row)
+    let index = exercises.firstIndex { $0.key == key } ?? 0
+    let group = (key: key, name: row.exerciseName, rows: index < exercises.count ? exercises[index].rows : [row])
+    let ready = WorkoutDay.isReady(row, controller.progress)
+    let editable = controller.canEdit(row.key)
+    // Gợi ý tạ cho ô trống: set trước của CHÍNH bài này hôm nay, không thì
+    // mức tạ (ngoài, không gồm thân) của buổi gần nhất có bài.
+    let previous = group.rows.last { $0.ordinal < row.ordinal && !(controller.progress.weightText[$0.key] ?? "").isEmpty }
+      .flatMap { controller.progress.weightText[$0.key] }
+    let hint = previous ?? flow?.insights?.history(for: row.exerciseName).last?.bestWeightKg.map { unit.seed($0) } ?? ""
+    return VStack(alignment: .leading, spacing: DS.Spacing.md) {
+      VStack(alignment: .leading, spacing: 2) {
+        HStack(spacing: DS.Spacing.sm) {
+          Text(String(localized: "ws.focus.eyebrow \(index + 1) \(exercises.count) \(row.ordinal) \(row.of)"))
+            .font(DS.TextStyle.caption.weight(.semibold).monospacedDigit())
+            .textCase(.uppercase)
+            .tracking(0.6)
+            .foregroundStyle(WorkoutsHomeView.accent)
+          if row.warmup {
+            Text(String(localized: "ws.warmup"))
+              .font(DS.TextStyle.caption.weight(.semibold))
+              .foregroundStyle(DS.Color.readinessYellow.swiftUI)
+              .padding(.horizontal, 8)
+              .padding(.vertical, 2)
+              .background(DS.Color.readinessYellow.swiftUI.opacity(0.14), in: Capsule())
+          }
+        }
+        exerciseTitle(group)
+        if let flow, let insights = flow.insights {
+          ExerciseProgressRow(insights: insights, today: flow.today, name: row.exerciseName)
+        }
+      }
+
+      let weight = weightBinding(for: row)
+      FocusStepper(
+        text: weight, unitLabel: unit.label,
+        name: String(localized: "workout.weight.unit \(unit.label)"), editable: editable,
+        keyboard: .decimalPad, placeholder: "0", focus: $focusedField, field: .weight(row.key)
+      ) { WorkoutFocus.stepWeight($0, by: $1, unit: unit, hint: hint) }
+      // Ô trống mà lần trước có tạ: một chạm để lấy lại mức ấy. Không điền
+      // ngầm — ô trống là bodyweight, ghi 0 kg; chữ mờ "15" sẽ nói dối.
+      if weight.wrappedValue.isEmpty, !hint.isEmpty, editable {
+        Button {
+          weight.wrappedValue = hint
+        } label: {
+          Label(
+            previous != nil
+              ? String(localized: "ws.usePrevious \(hint) \(unit.label)")
+              : String(localized: "ws.useLast \(hint) \(unit.label)"),
+            systemImage: "arrow.uturn.backward")
+            .font(DS.TextStyle.footnote.weight(.semibold).monospacedDigit())
+            .foregroundStyle(WorkoutsHomeView.accent)
+            .frame(maxWidth: .infinity, minHeight: 36)
+        }
+        .buttonStyle(.plain)
+        .padding(.top, -DS.Spacing.sm)
+      }
+      FocusStepper(
+        text: repsBinding(for: row), unitLabel: String(localized: "ws.reps.unit"),
+        name: String(localized: "workout.reps"), editable: editable,
+        keyboard: .numbersAndPunctuation, placeholder: "0", focus: $focusedField, field: .reps(row.key)
+      ) { WorkoutFocus.stepReps($0, by: $1) }
+
+      HStack(spacing: DS.Spacing.sm) {
+        restMenu(row)
+        rpeMenu(row)
+        Spacer(minLength: 0)
+      }
+
+      Button {
+        Task {
+          focusedField = nil
+          await flushWrites()
+          await controller.toggle(row.key)
+        }
+      } label: {
+        Label(String(localized: "ws.doneSet"), systemImage: "checkmark")
+          .font(DS.TextStyle.headline)
+          .foregroundStyle(.white)
+          .frame(maxWidth: .infinity, minHeight: 54)
+          .background(WorkoutsHomeView.accent, in: Capsule())
+      }
+      .buttonStyle(TodayPressStyle())
+      .disabled(!ready || !editable)
+      .opacity(ready && editable ? 1 : 0.45)
+      .accessibilityLabel(Text(tickLabel(row, performed: controller.performed(row), done: false, ready: ready)))
+    }
+    .padding(DS.Spacing.card)
+    .todayCard()
+  }
+
+  /// "15 kg × 10" / "45s" / "10 reps" — chữ đọc của một set.
+  private func setText(_ row: PlannedSet) -> String {
+    let p = controller.performed(row)
+    let reps = p.durationSec.map { "\($0)s" } ?? "\(p.reps)"
+    guard p.weightKg > 0 else { return p.durationSec == nil ? String(localized: "xi.reps.other \(p.reps)") : reps }
+    return "\(unit.localizedLoad(p.weightKg, locale: locale) ?? unit.load(p.weightKg)) × \(reps)"
+  }
+
+  private func nextLine(_ row: PlannedSet) -> String {
+    String(localized: "ws.rest.nextLine \(row.exerciseName) \(row.ordinal) \(row.of)") + " · " + setText(row)
+  }
+
+  /// Set vừa xong, dưới thẻ nghỉ — "Sửa" bỏ tích nó (huỷ quãng nghỉ) để thẻ
+  /// set quay lại đúng set ấy với số đang có.
+  private func justDone(_ row: PlannedSet) -> some View {
+    HStack(spacing: DS.Spacing.sm) {
+      Image(systemName: "checkmark.circle.fill")
+        .foregroundStyle(WorkoutsHomeView.accent)
+        .accessibilityHidden(true)
+      VStack(alignment: .leading, spacing: 2) {
+        Text(String(localized: "ws.justDone"))
+          .font(DS.TextStyle.caption)
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        Text(verbatim: "\(row.exerciseName) · \(setText(row))")
+          .font(DS.TextStyle.footnote.weight(.semibold).monospacedDigit())
+          .lineLimit(1)
+      }
+      Spacer(minLength: DS.Spacing.sm)
+      if controller.canEdit(row.key) {
+        Button(String(localized: "ws.edit")) {
+          Task {
+            await flushWrites()
+            await controller.toggle(row.key)
+          }
+        }
+        .font(DS.TextStyle.footnote.weight(.semibold))
+        .foregroundStyle(WorkoutsHomeView.accent)
+        .frame(minHeight: 44)
+      }
+    }
+    .padding(.horizontal, DS.Spacing.md)
+    .padding(.vertical, DS.Spacing.sm)
+    .todayCard()
+  }
+
+  private var allDoneCard: some View {
+    VStack(spacing: DS.Spacing.md) {
+      Image(systemName: "checkmark.seal.fill")
+        .font(.system(size: 48))
+        .foregroundStyle(WorkoutsHomeView.accent.gradient)
+        .symbolEffect(.bounce, value: controller.progress.done.count)
+        .accessibilityHidden(true)
+      VStack(spacing: 4) {
+        Text(String(localized: "ws.allDone.title"))
+          .font(DS.TextStyle.title2)
+        Text(String(localized: "ws.allDone.lead"))
+          .font(DS.TextStyle.footnote)
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          .multilineTextAlignment(.center)
+      }
+      finishButton
+    }
+    .padding(DS.Spacing.card)
+    .frame(maxWidth: .infinity)
+    .todayCard()
+  }
+
+  private func accentButton(_ title: String, action: @escaping () -> Void) -> some View {
+    Button(action: action) {
+      Text(verbatim: title)
+        .font(DS.TextStyle.headline)
+        .foregroundStyle(.white)
+        .frame(maxWidth: .infinity, minHeight: 54)
+        .background(WorkoutsHomeView.accent, in: Capsule())
+    }
+    .buttonStyle(TodayPressStyle())
+  }
+
+  private func outlineButton(_ title: String, action: @escaping () -> Void) -> some View {
+    Button(action: action) {
+      Text(verbatim: title)
+        .font(DS.TextStyle.headline)
+        .foregroundStyle(DS.Color.foreground.swiftUI)
+        .frame(maxWidth: .infinity, minHeight: 50)
+        .overlay(Capsule().strokeBorder(DS.Color.foreground.swiftUI.opacity(0.15)))
+        .contentShape(Capsule())
+    }
+    .buttonStyle(TodayPressStyle())
   }
 
   /// Gom set theo bài, giữ đúng thứ tự kế hoạch (baseline `day-plan.tsx`).
@@ -313,7 +623,7 @@ public struct WorkoutView: View {
           Image(systemName: done ? "checkmark.circle.fill" : "circle")
             .font(.system(size: 26))
             .foregroundStyle(
-              done ? DS.Color.primary.swiftUI : DS.Color.mutedForeground.swiftUI
+              done ? WorkoutsHomeView.accent : DS.Color.mutedForeground.swiftUI
             )
             .frame(width: 44, height: 44)
         }
@@ -393,46 +703,8 @@ public struct WorkoutView: View {
       (typeSize.isAccessibilitySize
         ? AnyLayout(VStackLayout(alignment: .leading, spacing: DS.Spacing.xs))
         : AnyLayout(HStackLayout(spacing: DS.Spacing.sm))) {
-        // Chip nghỉ.
-        Menu {
-          ForEach([30, 60, 90, 120, 180, 300], id: \.self) { s in
-            Button("\(s)s") {
-              Task { await controller.setRest(s, for: row.key) }
-            }
-          }
-        } label: {
-          Label(
-            "\(WorkoutDay.restSeconds(row, controller.progress))s",
-            systemImage: "timer"
-          )
-          .font(DS.TextStyle.footnote)
-          .fixedSize()
-          .padding(.horizontal, DS.Spacing.sm)
-          .frame(minHeight: 44)
-          .background(DS.Color.secondary.swiftUI)
-          .foregroundStyle(DS.Color.foreground.swiftUI)
-          .clipShape(Capsule())
-        }
-        .accessibilityLabel(Text(String(localized: "workout.rest")))
-
-        // Chip RPE.
-        Menu {
-          ForEach(1...10, id: \.self) { v in
-            Button("RPE \(v)") {
-              Task { await controller.setRpe(v, for: row.key) }
-            }
-          }
-        } label: {
-          Text("RPE \(controller.progress.rpe[row.key] ?? row.plannedRpe)")
-            .font(DS.TextStyle.footnote)
-            .fixedSize()
-            .padding(.horizontal, DS.Spacing.sm)
-            .frame(minHeight: 44)
-            .background(DS.Color.secondary.swiftUI)
-            .foregroundStyle(DS.Color.foreground.swiftUI)
-            .clipShape(Capsule())
-        }
-        .accessibilityLabel(Text("RPE"))
+        restMenu(row)
+        rpeMenu(row)
 
         if resting {
           Label(String(localized: "workout.resting"), systemImage: "hourglass")
@@ -444,6 +716,51 @@ public struct WorkoutView: View {
       }
       .padding(.leading, 52)
     }
+  }
+
+  /// Chip nghỉ của một hàng (dạng bảng và thẻ set).
+  private func restMenu(_ row: PlannedSet) -> some View {
+    Menu {
+      ForEach([30, 60, 90, 120, 180, 300], id: \.self) { s in
+        Button("\(s)s") {
+          Task { await controller.setRest(s, for: row.key) }
+        }
+      }
+    } label: {
+      Label(
+        "\(WorkoutDay.restSeconds(row, controller.progress))s",
+        systemImage: "timer"
+      )
+      .font(DS.TextStyle.footnote)
+      .fixedSize()
+      .padding(.horizontal, DS.Spacing.sm)
+      .frame(minHeight: 44)
+      .background(DS.Color.secondary.swiftUI)
+      .foregroundStyle(DS.Color.foreground.swiftUI)
+      .clipShape(Capsule())
+    }
+    .accessibilityLabel(Text(String(localized: "workout.rest")))
+  }
+
+  /// Chip RPE của một hàng.
+  private func rpeMenu(_ row: PlannedSet) -> some View {
+    Menu {
+      ForEach(1...10, id: \.self) { v in
+        Button("RPE \(v)") {
+          Task { await controller.setRpe(v, for: row.key) }
+        }
+      }
+    } label: {
+      Text("RPE \(controller.progress.rpe[row.key] ?? row.plannedRpe)")
+        .font(DS.TextStyle.footnote)
+        .fixedSize()
+        .padding(.horizontal, DS.Spacing.sm)
+        .frame(minHeight: 44)
+        .background(DS.Color.secondary.swiftUI)
+        .foregroundStyle(DS.Color.foreground.swiftUI)
+        .clipShape(Capsule())
+    }
+    .accessibilityLabel(Text("RPE"))
   }
 
   /// Label nút tick: thông tin hàng + hành động (#276, #278).
@@ -619,15 +936,13 @@ public struct WorkoutView: View {
           .sheet(isPresented: $showsManualLog) { ManualLogView(flow: flow) }
       }
     } else {
-      DSButton(
+      accentButton(
         isFinishing
           ? String(localized: "workout.finishing")
           : controller.isFuture
             ? String(localized: "workout.finishError.future")
-            : String(localized: "workout.finish"),
-        style: .primary,
-        action: { Task { await doFinish() } }
-      )
+            : String(localized: "workout.finish")
+      ) { Task { await doFinish() } }
       .disabled(!controller.canFinish || isFinishing)
       .opacity(controller.canFinish && !isFinishing ? 1 : 0.5)
     }

@@ -43,3 +43,19 @@ Trước: tiêu đề "Plan" chưa dịch (vi / es), dải ngày kiểu cũ (ô 
 
 `RestDayCard` dùng chung cho thẻ hôm nay và thẻ ngày của Kế hoạch tuần: minh hoạ trăng + sao trên quầng tím ("thở" chậm, đứng yên khi Giảm chuyển động), dòng ngày, "Ngày nghỉ" + câu dẫn, "Vận động nhẹ" — ba ô (đi bộ 20–30 phút, giãn cơ 10–15 phút, vận động nhẹ tuỳ chọn) có mẹo ngắn; hôm nay thêm "Phục hồi tốt hơn" (ngủ 7–9 tiếng, uống nước, đủ đạm — màu các ống ở Hôm nay); nút: hôm nay "Vẫn muốn tập" + "Ghi buổi tập", Kế hoạch tuần "Chọn buổi tập".
 
+
+## Màn tập "từng set một" (14/10, chủ dự án duyệt mock v2)
+
+Chủ dự án: màn bảng tập "chưa ưng — đẹp hơn, dễ dùng hơn". Mock v1 (bảng một dòng mỗi set) bị chê; mock v2 được duyệt ("nhìn bản này ok hơn nhiều").
+
+- **Mặc định: một thẻ lớn cho SET KẾ TIẾP** (`WorkoutFocus.next` — set chưa xong đầu tiên, hay của bài vừa chạm): dòng "BÀI 1/2 · SET 2/3", tên bài + ⓘ (hướng dẫn), "Lần trước"; hai ô số lớn Menlo với nút − / + tròn (giữ để lặp, rung chọn mỗi bước): tạ ±2,5 kg / ±5 lb, reps ±1 (bài giữ "45s" ±5 giây) — chạm số vẫn gõ được; chip nghỉ + RPE; nút hồng "Xong set". Ô tạ trống mà có số để gợi ý: hàng "Như set trước · 15 kg" (set trước của chính bài hôm nay) hoặc "Như lần trước · 15 kg" (buổi gần nhất) — MỘT CHẠM mới điền, không điền ngầm (ô trống = bodyweight, ghi 0 kg); bấm ± từ ô trống lấy đúng mức gợi ý trước.
+- **Đang nghỉ**: thẻ set nhường chỗ cho vòng đếm ngược xanh lớn (`RestTimer.ringFraction`, đỏ 5 giây cuối), −15s / tạm dừng / +15s, "Tiếp theo: Curl · Set 3/3 · 15 kg × 10", "Bỏ qua nghỉ"; dưới đó "Set vừa xong · Sửa" — Sửa bỏ tích set ấy (huỷ nghỉ) để thẻ quay về đúng set.
+- **Đầu màn**: dòng ngày + "x/y set" + thanh chia đoạn theo bài (dài theo số set).
+- **Các bài trong buổi** (khi ≥ 2 bài): số thứ tự / dấu xong, x/y; chạm để nhảy bài.
+- **Hết set**: dấu tích lớn + "Xong hết các set" + nút hồng "Hoàn thành buổi tập". Còn set mà đã có set xong: nút viền "Kết thúc buổi · x/y set".
+- **Menu ⋯**: "Xem dạng bảng" (dạng RN, nhớ trên máy) ↔ "Tập từng set"; Buổi tập đã ghi. Buổi ĐÃ ghi luôn ở dạng bảng (gỡ set / ghi thêm sống ở đó).
+- **Ngày chưa tới** (mở từ Kế hoạch tuần): không còn ô nhập + nút xám "Chưa tới ngày này" — bản xem trước: ngày, tên, "bài · set · phút", mỗi bài một dòng "3 × 10 · 15 kg · nghỉ 90s", dải tím "Bắt đầu được vào Thứ Sáu", "Đổi buổi khác" (mở `WorkoutPickerSheet` cho đúng thứ ấy sau khi sheet đóng); nút ✕.
+- Dạng bảng: dấu tích + nút Hoàn thành theo màu Tập luyện.
+- Sửa kèm: "Bắt đầu buổi tập" ở Hôm nay chỉ đổi tab mà không mở màn tập (lớp toàn màn hình mở cùng nhịp đổi tab bị SwiftUI bỏ qua) — nay mở sau khi tab đã hiện.
+
+Không đổi cách ghi: mọi thao tác vẫn là `setWeightText` / `setRepsText` / `setRest` / `setRpe` / `toggle` / `finish` của `WorkoutSessionController`. Core: `WorkoutFocus` (test `WorkoutFocusTests`).

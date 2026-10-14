@@ -34,6 +34,7 @@ struct WeekPlanView: View {
   /// Bảng tập đang mở (theo ngày) và ngày đang mở dở — kết quả về muộn của
   /// ngày đã bỏ chọn không bao giờ hiện thành bảng của ngày khác.
   @State private var openDay: DayBoard?
+  @State private var pickAfterClose: DayTarget?
   @State private var opening: LocalDate?
 
   private var today: LocalDate { flow.today.today }
@@ -67,9 +68,23 @@ struct WeekPlanView: View {
     .sheet(item: $picking) { target in
       WorkoutPickerSheet(flow: flow, day: target.day)
     }
-    .sheet(item: $openDay) { board in
-      WorkoutView(controller: board.controller)
-        .environment(flow)
+    .sheet(item: $openDay, onDismiss: {
+      // "Đổi buổi khác" của bảng ngày chưa tới: bảng chọn mở SAU khi sheet
+      // này đã đóng hẳn — hai sheet không chồng lên nhau được.
+      if let target = pickAfterClose {
+        pickAfterClose = nil
+        picking = target
+      }
+    }) { board in
+      WorkoutView(
+        controller: board.controller,
+        onClose: { openDay = nil },
+        onChangeWorkout: {
+          pickAfterClose = DayTarget(day: board.weekday)
+          openDay = nil
+        }
+      )
+      .environment(flow)
     }
     .alert(String(localized: "workout.finishError.generic"), isPresented: $failed) {
       Button(String(localized: "workout.ok")) {}
@@ -464,4 +479,6 @@ private struct DayBoard: Identifiable {
   let date: LocalDate
   let controller: WorkoutSessionController
   var id: String { date.description }
+  /// 0 = Thứ Hai — chỗ "Đổi buổi khác" gán vào.
+  var weekday: Int { WorkoutPlanning.routineIndex(date) }
 }
