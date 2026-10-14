@@ -73,3 +73,10 @@ Không đổi cách ghi: mọi thao tác vẫn là `setWeightText` / `setRepsTex
 2. **"Bắt đầu" ở Hôm nay**: thay chờ 0,35 s bằng điều kiện — chỉ mở lớp toàn màn hình khi tab đã lên màn (`onAppear`) VÀ buổi đã dựng, sang nhịp sau.
 3. **Kế hoạch tuần → "Mở bảng tập" của HÔM NAY** mở đúng màn tập của tab (đồng hồ nghỉ, Live Activity, tổng kết); ngày khác vẫn là sheet và chốt xong có màn tổng kết.
 4. **Sau khi chốt**: màn tổng kết đã có "Chia sẻ lên cộng đồng" (thay toast mời của RN `useWorkoutShareInvite`) — nay có ở cả lối Kế hoạch tuần. Không thêm "RPE cả buổi": `session_rpe` là số tính từ RPE từng set theo RN, đổi nghĩa nó là việc của chủ dự án.
+
+## Lượt cải thiện 5–8 (14/10, chủ dự án: "tiếp tục đi")
+
+5. **Kéo đọc số trên biểu đồ cân nặng**: kéo ngón tay trên biểu đồ → số lớn ở đầu thẻ đổi sang lần cân gần nhất (ngày + chênh lệch với lần trước, như Sức khoẻ / Chứng khoán), đường dọc + chấm, rung chọn. Không có nhãn nổi đè lên đường. Core `WeightTrend.nearest` / `change`.
+6. **Thư viện theo nhóm cơ** (`muscle-grid.tsx`): mười ô theo thứ tự tập (đẩy, kéo, chân, vai, tay trước, tay sau, bụng, mông, bắp chân, tim mạch), số bài dưới ô, hai hàng thu gọn + "Xem tất cả nhóm"; chạm → thư viện chỉ nhóm ấy (`ExercisesView(only:)` có từ trước mà chưa ai gọi). Biểu tượng SF thay cho hình `MuscleArt`. Core `MuscleGroup.tileOrder` / `counts`.
+7. **Lịch sử**: biểu đồ cột khối lượng 8 tuần (tuần trống vẫn có chỗ, tuần này tô đậm, "Tuần này · N kg") + chip lọc theo tên buổi; tháng và biểu đồ theo bộ lọc. Core `HistoryWeeks`.
+8. **Mẫu buổi tập ở trang gốc**: nút ⋯ (và nhấn giữ) — "Đặt cho mọi Thứ X" (nói rõ là lịch lặp), "Nhân bản" ("… (bản sao)"), "Xoá" (hỏi lại, nói rõ các ngày dùng mẫu thành chưa lên lịch). Không có "Sửa": builder chỉ tạo mới (như RN); nhân bản là đường sửa an toàn.

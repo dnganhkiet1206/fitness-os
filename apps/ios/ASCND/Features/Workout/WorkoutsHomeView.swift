@@ -33,6 +33,9 @@ struct WorkoutsHomeView: View {
   @Environment(\.dynamicTypeSize) private var typeSize
   @State private var segment: Segment = .training
   @State private var showsBuilder = false
+  /// Mẫu đang chờ xác nhận xoá (menu ⋯ của hàng mẫu, 14/10).
+  @State private var deletingTemplate: WorkoutTemplate?
+  @State private var templateFailed = false
   @State private var showsManualLog = false
   @State private var showsWeight = false
   @State private var showsPicker = false
@@ -81,6 +84,21 @@ struct WorkoutsHomeView: View {
     .statusBarScrim()
     .background { TodayAmbient(accent: .workout) }
     .sheet(isPresented: $showsBuilder) { TemplateFormView(flow: flow) }
+    .alert(
+      String(localized: "wb.delete.title"),
+      isPresented: Binding(get: { deletingTemplate != nil }, set: { if !$0 { deletingTemplate = nil } }),
+      presenting: deletingTemplate
+    ) { t in
+      Button(String(localized: "common.cancel"), role: .cancel) {}
+      Button(String(localized: "wb.delete.title"), role: .destructive) {
+        Task { await templateAction { try await $0.delete(templateId: t.id) } }
+      }
+    } message: { t in
+      Text(String(localized: "wh.tpl.deleteMessage \(t.name)"))
+    }
+    .alert(String(localized: "workout.finishError.generic"), isPresented: $templateFailed) {
+      Button(String(localized: "workout.ok")) {}
+    }
     .sheet(isPresented: $showsManualLog) { ManualLogView(flow: flow) }
     .sheet(isPresented: $showsPicker) { WorkoutPickerSheet(flow: flow) }
     .sheet(isPresented: $showsWeight) {
@@ -519,10 +537,61 @@ struct WorkoutsHomeView: View {
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
       }
       Spacer(minLength: 0)
+      if flow.plan != nil {
+        Menu {
+          templateMenu(t)
+        } label: {
+          Image(systemName: "ellipsis")
+            .font(.body.weight(.semibold))
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .frame(minWidth: 44, minHeight: 44)
+        }
+        .accessibilityLabel(Text(String(localized: "wh.tpl.actions \(t.name)")))
+      }
     }
-    .padding(.horizontal, DS.Spacing.md)
+    .padding(.leading, DS.Spacing.md)
+    .padding(.trailing, DS.Spacing.xs)
     .frame(minHeight: 60)
-    .accessibilityElement(children: .combine)
+    .contentShape(Rectangle())
+    .contextMenu { if flow.plan != nil { templateMenu(t) } }
+  }
+
+  /// Thao tác nhanh của một mẫu (14/10): gán cho thứ hôm nay (kế hoạch tuần
+  /// là lịch lặp — nói rõ "mọi Thứ X"), nhân bản, xoá (hỏi lại). Mẫu không sửa
+  /// tại chỗ được: builder chỉ TẠO (như RN), nhân bản là đường sửa an toàn.
+  @ViewBuilder private func templateMenu(_ t: WorkoutTemplate) -> some View {
+    let day = WorkoutPlanning.routineIndex(flow.today.today)
+    Button {
+      Task { await templateAction { try await $0.assign(day: day, templateId: t.id) } }
+    } label: {
+      Label(String(localized: "wh.tpl.assignToday \(Self.longWeekday(flow.today.today))"), systemImage: "calendar.badge.plus")
+    }
+    Button {
+      Task {
+        await templateAction { editor in
+          try await editor.create(
+            id: editor.newTemplateId(), name: String(localized: "wh.tpl.copyName \(t.name)"),
+            type: t.type ?? PlanEdit.defaultType, exercises: t.exercises)
+        }
+      }
+    } label: {
+      Label(String(localized: "wh.tpl.duplicate"), systemImage: "plus.square.on.square")
+    }
+    Divider()
+    Button(role: .destructive) {
+      deletingTemplate = t
+    } label: {
+      Label(String(localized: "wb.delete.short"), systemImage: "trash")
+    }
+  }
+
+  private func templateAction(_ op: (PlanEditor) async throws -> Void) async {
+    guard let editor = flow.plan else { return }
+    do {
+      try await op(editor)
+    } catch {
+      templateFailed = true
+    }
   }
 
   // MARK: - Công cụ
