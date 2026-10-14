@@ -347,51 +347,103 @@ struct WaterFeedbackLine: View {
 
 // MARK: - Cốc nước
 
-/// Hình cốc: miệng rộng, đáy hẹp, góc đáy bo.
-struct CupShape: Shape {
-  func path(in r: CGRect) -> Path {
-    let inset = r.width * 0.14
-    let radius = r.width * 0.12
+/// Hình học chung của cốc trong khung `r`: miệng elip ở trên, thân thuôn
+/// nhẹ, đáy cong (vẽ lại 14/10 — chủ dự án: cốc trước "chưa đẹp").
+struct CupGeometry {
+  let r: CGRect
+
+  /// Độ cao nửa elip miệng / đáy.
+  var rimH: CGFloat { r.height * 0.075 }
+  var topY: CGFloat { r.minY + rimH }
+  var bottomY: CGFloat { r.maxY - rimH * 1.1 }
+  var inset: CGFloat { r.width * 0.11 }
+
+  /// Mép trái / phải của thân ở độ cao `y` (thân thuôn tuyến tính).
+  func halfWidth(at y: CGFloat) -> CGFloat {
+    let t = max(0, min(1, (y - topY) / max(1, bottomY - topY)))
+    return (r.width / 2) - inset * t
+  }
+
+  /// Bóng của thân (trước + sau), dùng để tô và cắt.
+  var body: Path {
     var p = Path()
-    p.move(to: CGPoint(x: r.minX, y: r.minY))
-    p.addLine(to: CGPoint(x: r.maxX, y: r.minY))
-    p.addLine(to: CGPoint(x: r.maxX - inset, y: r.maxY - radius))
-    p.addQuadCurve(
-      to: CGPoint(x: r.maxX - inset - radius, y: r.maxY), control: CGPoint(x: r.maxX - inset, y: r.maxY))
-    p.addLine(to: CGPoint(x: r.minX + inset + radius, y: r.maxY))
-    p.addQuadCurve(
-      to: CGPoint(x: r.minX + inset, y: r.maxY - radius), control: CGPoint(x: r.minX + inset, y: r.maxY))
+    let w0 = halfWidth(at: topY), w1 = halfWidth(at: bottomY)
+    p.move(to: CGPoint(x: r.midX - w0, y: topY))
+    p.addLine(to: CGPoint(x: r.midX - w1, y: bottomY))
+    p.addQuadCurve(to: CGPoint(x: r.midX + w1, y: bottomY), control: CGPoint(x: r.midX, y: bottomY + rimH * 2))
+    p.addLine(to: CGPoint(x: r.midX + w0, y: topY))
+    p.addQuadCurve(to: CGPoint(x: r.midX - w0, y: topY), control: CGPoint(x: r.midX, y: topY - rimH * 2))
+    p.closeSubpath()
+    return p
+  }
+
+  /// Elip ngang ở độ cao `y` (miệng cốc, mặt nước).
+  func ellipse(at y: CGFloat, scale: CGFloat = 1) -> CGRect {
+    let w = halfWidth(at: y) * scale
+    let h = rimH * (w / (r.width / 2))
+    return CGRect(x: r.midX - w, y: y - h, width: w * 2, height: h * 2)
+  }
+
+  /// Độ cao của mặt nước cho mực 0…1.
+  func waterY(_ level: Double) -> CGFloat { bottomY - (bottomY - topY) * CGFloat(level) * 0.94 }
+}
+
+/// Khối nước: phần thân dưới mặt nước (mặt nước là nửa trước của elip).
+struct WaterBody: Shape {
+  var level: Double
+  var animatableData: Double {
+    get { level }
+    set { level = newValue }
+  }
+
+  func path(in r: CGRect) -> Path {
+    let g = CupGeometry(r: r)
+    guard level > 0.001 else { return Path() }
+    let y = g.waterY(level)
+    let w = g.halfWidth(at: y), w1 = g.halfWidth(at: g.bottomY)
+    let e = g.ellipse(at: y)
+    var p = Path()
+    p.move(to: CGPoint(x: r.midX - w, y: y))
+    p.addLine(to: CGPoint(x: r.midX - w1, y: g.bottomY))
+    p.addQuadCurve(to: CGPoint(x: r.midX + w1, y: g.bottomY), control: CGPoint(x: r.midX, y: g.bottomY + g.rimH * 2))
+    p.addLine(to: CGPoint(x: r.midX + w, y: y))
+    p.addQuadCurve(to: CGPoint(x: r.midX - w, y: y), control: CGPoint(x: r.midX, y: y + e.height))
     p.closeSubpath()
     return p
   }
 }
 
-/// Mặt nước: phần dưới của khung, mép trên gợn nhẹ.
-struct WaterSurface: Shape {
-  /// 0…1 — mực nước.
+/// Mặt nước: một elip sáng ở mực nước.
+struct WaterTop: Shape {
   var level: Double
-  /// Pha của gợn (0…2π); đứng yên khi Giảm chuyển động.
-  var phase: Double
-  var amplitude: CGFloat
-
-  var animatableData: AnimatablePair<Double, Double> {
-    get { AnimatablePair(level, phase) }
-    set { level = newValue.first; phase = newValue.second }
+  var animatableData: Double {
+    get { level }
+    set { level = newValue }
   }
 
   func path(in r: CGRect) -> Path {
-    let top = r.maxY - r.height * max(0, min(1, level))
-    var p = Path()
-    p.move(to: CGPoint(x: r.minX, y: r.maxY))
-    let steps = 24
-    for i in 0...steps {
-      let x = r.minX + r.width * CGFloat(i) / CGFloat(steps)
-      let y = top + (level >= 1 || level <= 0 ? 0 : amplitude * sin(CGFloat(phase) + CGFloat(i) / CGFloat(steps) * .pi * 2))
-      p.addLine(to: CGPoint(x: x, y: y))
-    }
-    p.addLine(to: CGPoint(x: r.maxX, y: r.maxY))
-    p.closeSubpath()
-    return p
+    let g = CupGeometry(r: r)
+    guard level > 0.001 else { return Path() }
+    return Path(ellipseIn: g.ellipse(at: g.waterY(level)))
+  }
+}
+
+struct CupBody: Shape {
+  func path(in r: CGRect) -> Path { CupGeometry(r: r).body }
+}
+
+struct CupRim: Shape {
+  func path(in r: CGRect) -> Path {
+    let g = CupGeometry(r: r)
+    return Path(ellipseIn: g.ellipse(at: g.topY))
+  }
+}
+
+/// Đáy kính dày: một thấu kính mờ sát đáy.
+struct CupBase: Shape {
+  func path(in r: CGRect) -> Path {
+    let g = CupGeometry(r: r)
+    return Path(ellipseIn: g.ellipse(at: g.bottomY - g.rimH * 0.2, scale: 0.86))
   }
 }
 
@@ -401,30 +453,56 @@ struct WaterCup: View {
   let fraction: Double
   let reduceMotion: Bool
   var small = false
-  @State private var phase = 0.0
+  @Environment(\.colorScheme) private var scheme
+
+  private var water: LinearGradient {
+    LinearGradient(
+      colors: [Color(red: 0.49, green: 0.80, blue: 1.0), WaterView.blue, Color(red: 0.10, green: 0.50, blue: 0.93)],
+      startPoint: .top, endPoint: .bottom)
+  }
 
   var body: some View {
     let level = max(0, min(1, fraction))
+    let glass = Color.white.opacity(scheme == .dark ? 0.06 : 0.45)
+    let edge = WaterView.blue.opacity(scheme == .dark ? 0.55 : 0.4)
     ZStack {
-      CupShape().fill(WaterView.blue.opacity(small ? 0.12 : 0.10))
-      WaterSurface(level: level, phase: phase, amplitude: small ? 1 : 3.5)
-        .fill(WaterView.blue)
-        .clipShape(CupShape())
-      CupShape().stroke(WaterView.blue.opacity(0.55), lineWidth: small ? 1 : 2)
       if !small {
-        // Ánh sáng trên thành cốc.
-        Capsule()
-          .fill(.white.opacity(0.35))
-          .frame(width: 6)
-          .padding(.vertical, 18)
-          .offset(x: -36)
+        // Bóng đổ mềm dưới đáy.
+        Ellipse()
+          .fill(.black.opacity(scheme == .dark ? 0.35 : 0.08))
+          .frame(height: 12)
+          .blur(radius: 5)
+          .frame(maxHeight: .infinity, alignment: .bottom)
+          .offset(y: 6)
       }
+      CupBody().fill(glass)
+      CupBody().fill(WaterView.blue.opacity(0.07))
+      WaterBody(level: level).fill(water)
+      WaterTop(level: level)
+        .fill(Color(red: 0.70, green: 0.88, blue: 1.0).opacity(0.95))
+        .overlay(WaterTop(level: level).stroke(.white.opacity(0.6), lineWidth: small ? 0.5 : 1))
+      if !small {
+        CupBase().fill(.white.opacity(0.35))
+        // Hai vệt sáng trên thành cốc.
+        GeometryReader { geo in
+          let g = CupGeometry(r: CGRect(origin: .zero, size: geo.size))
+          let x = geo.size.width / 2 - g.halfWidth(at: g.topY) * 0.7
+          Capsule()
+            .fill(LinearGradient(colors: [.white.opacity(0.75), .white.opacity(0.1)], startPoint: .top, endPoint: .bottom))
+            .frame(width: 7, height: (g.bottomY - g.topY) * 0.72)
+            .position(x: x + 6, y: g.topY + (g.bottomY - g.topY) * 0.42)
+          Capsule()
+            .fill(.white.opacity(0.35))
+            .frame(width: 3, height: (g.bottomY - g.topY) * 0.3)
+            .position(x: geo.size.width - x - 4, y: g.topY + (g.bottomY - g.topY) * 0.3)
+        }
+        .clipShape(CupBody())
+      }
+      CupBody().stroke(edge, lineWidth: small ? 1 : 1.5)
+      CupRim().stroke(edge, lineWidth: small ? 1 : 1.5)
+      if !small { CupRim().fill(.white.opacity(0.25)) }
     }
-    .animation(reduceMotion ? nil : .spring(duration: 0.6, bounce: 0.25), value: level)
-    .onAppear {
-      guard !reduceMotion, !small else { return }
-      withAnimation(.linear(duration: 3).repeatForever(autoreverses: false)) { phase = .pi * 2 }
-    }
+    .animation(reduceMotion ? nil : .spring(duration: 0.7, bounce: 0.2), value: level)
     .accessibilityHidden(true)
   }
 }
