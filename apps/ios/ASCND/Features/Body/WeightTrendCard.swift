@@ -18,10 +18,13 @@ struct WeightTrendCard: View {
   var onLog: () -> Void
 
   @Environment(\.weightUnit) private var unit
+  @Environment(\.locale) private var locale
   @Environment(ProfileBook.self) private var profile: ProfileBook?
   @State private var range: WeightTrend.Range = .all
   @State private var editingGoal = false
   @State private var showsAll = false
+  /// Ngày ngón tay đang chỉ trên biểu đồ (kéo để đọc số, 14/10).
+  @State private var scrubDate: Date?
 
   static let tint = DS.Color.metricBlue.swiftUI
 
@@ -189,12 +192,32 @@ struct WeightTrendCard: View {
         Label(String(localized: "wh.body.weight"), systemImage: "scalemass.fill")
           .font(DS.TextStyle.footnote.weight(.semibold))
           .foregroundStyle(Self.tint)
-        if let s {
+        // Đang kéo trên biểu đồ: số lớn là của ngày đang chỉ, dòng dưới là
+        // ngày + chênh lệch với lần cân trước (như Sức khoẻ / Chứng khoán) —
+        // không có nhãn nổi đè lên đường.
+        let all = WeightTrend.filter(book.all, range: range, today: book.today)
+        if let p = scrubbed(all) {
+          (Text(verbatim: Self.number(unit.convert(p.kg)))
+            .font(.custom("Menlo", size: 32, relativeTo: .largeTitle).weight(.bold))
+            + Text(verbatim: " " + unit.label)
+            .font(.custom("Menlo", size: 15, relativeTo: .body))
+            .foregroundColor(DS.Color.mutedForeground.swiftUI))
+            .contentTransition(.numericText())
+          HStack(spacing: 6) {
+            Text(p.date.calendarDate, format: .dateTime.weekday(.abbreviated).day().month(.abbreviated).locale(.app))
+            if let c = WeightTrend.change(of: p, in: all) {
+              Text(verbatim: "\(Self.signed(unit.convert(c))) \(unit.label)").monospacedDigit()
+            }
+          }
+          .font(DS.TextStyle.caption.weight(.semibold))
+          .foregroundStyle(Self.tint)
+        } else if let s {
           (Text(verbatim: Self.number(unit.convert(s.currentKg)))
             .font(.custom("Menlo", size: 32, relativeTo: .largeTitle).weight(.bold))
             + Text(verbatim: " " + unit.label)
             .font(.custom("Menlo", size: 15, relativeTo: .body))
             .foregroundColor(DS.Color.mutedForeground.swiftUI))
+            .contentTransition(.numericText())
           let d = unit.convert(s.deltaKg)
           let good = WeightTrend.deltaGood(s.deltaKg, goal: profile?.profile?.goal)
           Text(String(localized: "wt.delta \(Self.signed(d)) \(unit.label)"))
@@ -232,7 +255,14 @@ struct WeightTrendCard: View {
               .lineStyle(StrokeStyle(lineWidth: 2.5, lineCap: .round))
               .interpolationMethod(.monotone)
           }
-          if let last = points.last {
+          if let picked = scrubbed(points) {
+            RuleMark(x: .value("date", picked.date.calendarDate))
+              .foregroundStyle(Self.tint.opacity(0.35))
+              .lineStyle(StrokeStyle(lineWidth: 1))
+            PointMark(x: .value("date", picked.date.calendarDate), y: .value("kg", unit.convert(picked.kg)))
+              .foregroundStyle(Self.tint)
+              .symbolSize(80)
+          } else if let last = points.last {
             PointMark(x: .value("date", last.date.calendarDate), y: .value("kg", unit.convert(last.kg)))
               .foregroundStyle(Self.tint)
               .symbolSize(50)
@@ -255,10 +285,18 @@ struct WeightTrendCard: View {
             AxisValueLabel(format: .dateTime.day().month(.abbreviated))
           }
         }
+        .chartXSelection(value: $scrubDate)
+        .sensoryFeedback(.selection, trigger: scrubbed(points)?.date)
         .frame(height: 170)
         .accessibilityLabel(Text(String(localized: "wh.body.weight")))
       }
     }
+  }
+
+  /// Lần cân gần chỗ ngón tay nhất.
+  private func scrubbed(_ points: [WeightTrend.Point]) -> WeightTrend.Point? {
+    guard let scrubDate else { return nil }
+    return WeightTrend.nearest(points, to: LocalDate(EpochMillis(scrubDate), in: .current))
   }
 
   private var rangePicker: some View {

@@ -112,4 +112,16 @@ struct WeightTrendTests {
     #expect(WeightTrend.intent(goalKg: 68, currentKg: 70) == .lose(2))
     #expect(WeightTrend.intent(goalKg: 72.5, currentKg: 70) == .gain(2.5))
   }
+
+  @Test func nearestPointAndChangeForScrubbing() {
+    let pts = [("2026-10-01", 60.0), ("2026-10-05", 59.5), ("2026-10-09", 59.0)].map {
+      WeightTrend.Point(date: LocalDate($0.0)!, kg: $0.1)
+    }
+    #expect(WeightTrend.nearest(pts, to: LocalDate("2026-10-04")!)?.kg == 59.5)
+    #expect(WeightTrend.nearest(pts, to: LocalDate("2026-10-03")!)?.kg == 60, "hoà thì lần sớm hơn")
+    #expect(WeightTrend.nearest(pts, to: LocalDate("2026-12-01")!)?.kg == 59)
+    #expect(WeightTrend.nearest([], to: LocalDate("2026-10-04")!) == nil)
+    #expect(WeightTrend.change(of: pts[2], in: pts) == -0.5)
+    #expect(WeightTrend.change(of: pts[0], in: pts) == nil)
+  }
 }

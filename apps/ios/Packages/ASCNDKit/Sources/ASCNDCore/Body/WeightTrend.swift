@@ -101,6 +101,24 @@ public enum WeightTrend {
     max(0, min(1, (bmi - 15) / 25))
   }
 
+  // MARK: - Kéo đọc số trên biểu đồ (14/10)
+
+  /// Lần cân gần ngày `day` nhất (hoà thì lần sớm hơn) — chỗ ngón tay đang
+  /// chỉ trên biểu đồ. Không có điểm → nil.
+  public static func nearest(_ points: [Point], to day: LocalDate) -> Point? {
+    points.min { a, b in
+      let da = abs(a.date.daysSinceEpoch - day.daysSinceEpoch)
+      let db = abs(b.date.daysSinceEpoch - day.daysSinceEpoch)
+      return da != db ? da < db : a.date < b.date
+    }
+  }
+
+  /// Chênh lệch của `p` so với lần cân ngay trước nó trong `points`.
+  public static func change(of p: Point, in points: [Point]) -> Double? {
+    guard let i = points.firstIndex(of: p), i > 0 else { return nil }
+    return p.kg - points[i - 1].kg
+  }
+
   // MARK: - Danh sách lần cân
 
   /// Một lần cân, mới nhất trước, kèm chênh lệch so với lần cân TRƯỚC đó.
