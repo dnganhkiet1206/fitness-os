@@ -138,7 +138,7 @@ struct WorkoutsHomeView: View {
         .accessibilityValue(Text(Self.statusText(d.status)))
       }
     }
-    .padding(.vertical, DS.Spacing.sm)
+    .padding(.top, DS.Spacing.sm)
     if flow.plan != nil {
       NavigationLink {
         WeekPlanView(flow: flow)
@@ -150,6 +150,37 @@ struct WorkoutsHomeView: View {
     } else {
       strip
     }
+    weekLegend
+  }
+
+  /// Chú giải bộ dấu của dải tuần (chủ dự án, 14/10: vòng nét đứt chưa có chú thích).
+  private var weekLegend: some View {
+    HStack(spacing: 10) {
+      HStack(spacing: 4) {
+        Image(systemName: "checkmark").font(.system(size: 7, weight: .bold)).foregroundStyle(.white)
+          .frame(width: 11, height: 11).background(Circle().fill(Self.accent))
+        Text(String(localized: "wp.status.done"))
+      }
+      HStack(spacing: 4) {
+        Circle().strokeBorder(Self.accent, lineWidth: 1.5).frame(width: 11, height: 11)
+        Text(String(localized: "wp.legend.planned"))
+      }
+      HStack(spacing: 4) {
+        Circle().strokeBorder(Self.accent.opacity(0.35), style: StrokeStyle(lineWidth: 1.5, dash: [3, 3])).frame(width: 11, height: 11)
+        Text(String(localized: "wp.status.missed"))
+      }
+      HStack(spacing: 4) {
+        Image(systemName: "leaf").font(.system(size: 9)).foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        Text(String(localized: "wp.status.rest"))
+      }
+    }
+    .font(DS.TextStyle.caption)
+    .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+    .lineLimit(1)
+    .minimumScaleFactor(0.8)
+    .frame(maxWidth: .infinity)
+    .padding(.bottom, DS.Spacing.xs)
+    .accessibilityHidden(true)
   }
 
   @ViewBuilder private func dayMark(_ d: WorkoutHome.WeekDay) -> some View {
