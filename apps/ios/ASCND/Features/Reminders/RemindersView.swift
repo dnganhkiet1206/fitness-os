@@ -51,7 +51,7 @@ struct RemindersView: View {
 
       Section {
         Toggle(isOn: binding(.water)) {
-          RowTitle(title: String(localized: "reminders.water"), systemImage: "drop.fill", color: DS.Color.metricBlue)
+          RowTitle(title: String(localized: "reminders.water"), systemImage: "drop.fill", color: DS.Color.metricCyan)
         }
         if center.prefs.water.enabled {
           Picker(selection: Binding(
@@ -216,7 +216,9 @@ struct RemindersView: View {
     case .meal, .bedtime, .challengeClaim: DS.Color.metricOrangeGraphic
     case .supplements: DS.Color.metricPurple
     case .workout: DS.Color.primary
-    case .weighIn, .water: DS.Color.metricBlue
+    // Cân = xám thép, nước = màu ống nước ở Hôm nay (14/10).
+    case .weighIn: DS.Color.metricSteel
+    case .water: DS.Color.metricCyan
     case .biometrics: DS.Color.readinessRed
     case .sleepLog: DS.Color.metricCyan
     }

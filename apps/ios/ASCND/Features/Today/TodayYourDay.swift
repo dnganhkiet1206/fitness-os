@@ -171,7 +171,8 @@ struct TodayYourDay: View {
 
   static func color(_ k: Row.Kind) -> Color {
     if let q = quest(k) { return MascotRoomView.signalColor(q) }
-    return k == .weight ? DS.Color.metricBlue.swiftUI : DS.Color.readinessRed.swiftUI
+    // Cân nặng = xám thép (14/10, chủ dự án: xanh dương trùng với nước).
+    return k == .weight ? DS.Color.metricSteel.swiftUI : DS.Color.readinessRed.swiftUI
   }
 
   static func glyph(_ k: Row.Kind) -> String {

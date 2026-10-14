@@ -46,7 +46,7 @@ struct WorkoutsHomeView: View {
 
   static let accent = MascotRoomView.signalColor(.workout)
   /// Màu của phân đoạn Cơ thể = màu cân nặng ở Hôm nay (`TodayYourDay.color`).
-  static let body = DS.Color.metricBlue.swiftUI
+  static let body = DS.Color.metricSteel.swiftUI
 
   private var templates: [WorkoutTemplate] {
     (flow.today.library?.templates ?? []).sorted(by: WorkoutTemplate.newestFirst)
