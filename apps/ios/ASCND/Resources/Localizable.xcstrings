@@ -46279,52 +46279,6 @@
     }
    }
   },
-  "wt.goal": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Goal"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Mục tiêu"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Meta"
-     }
-    }
-   }
-  },
-  "wt.goal.set": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Set"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Đặt"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Fijar"
-     }
-    }
-   }
-  },
   "wt.goal.title": {
    "extractionState": "manual",
    "localizations": {
@@ -46344,29 +46298,6 @@
      "stringUnit": {
       "state": "translated",
       "value": "Peso objetivo"
-     }
-    }
-   }
-  },
-  "wt.goal.hint": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Shown as a dashed line on the chart. Saved on this device."
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Hiện thành đường nét đứt trên biểu đồ. Lưu trên máy này."
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Se muestra como línea discontinua. Se guarda en este dispositivo."
      }
     }
    }
@@ -46597,6 +46528,397 @@
      "stringUnit": {
       "state": "translated",
       "value": "IMC"
+     }
+    }
+   }
+  },
+  "wt.goal.unset": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Not set"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chưa đặt"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sin fijar"
+     }
+    }
+   }
+  },
+  "wt.goal.reached": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Goal reached"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đã đạt mục tiêu"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Meta alcanzada"
+     }
+    }
+   }
+  },
+  "wt.goal.toGo %@ %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@ %2$@ to go"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Còn %1$@ %2$@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Faltan %1$@ %2$@"
+     }
+    }
+   }
+  },
+  "wt.goal.maintain": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Maintain your weight"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Giữ cân hiện tại"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mantener tu peso"
+     }
+    }
+   }
+  },
+  "wt.goal.lose %@ %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Lose %1$@ %2$@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Giảm %1$@ %2$@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bajar %1$@ %2$@"
+     }
+    }
+   }
+  },
+  "wt.goal.gain %@ %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Gain %1$@ %2$@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tăng %1$@ %2$@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Subir %1$@ %2$@"
+     }
+    }
+   }
+  },
+  "wt.goal.done": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Done"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Xong"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Listo"
+     }
+    }
+   }
+  },
+  "wt.goal.up": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Increase by 0.1"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tăng 0,1"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Subir 0,1"
+     }
+    }
+   }
+  },
+  "wt.goal.down": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Decrease by 0.1"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Giảm 0,1"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bajar 0,1"
+     }
+    }
+   }
+  },
+  "wt.log.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Weigh-ins"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Các lần cân"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Pesajes"
+     }
+    }
+   }
+  },
+  "wt.log.count %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld weigh-ins"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld lần"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld pesajes"
+     }
+    }
+   }
+  },
+  "wt.log.all %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Show all %lld"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Xem tất cả %lld lần"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ver los %lld"
+     }
+    }
+   }
+  },
+  "wt.log.less": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Show less"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Thu gọn"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ver menos"
+     }
+    }
+   }
+  },
+  "wpk.repeats %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Applies to every %@ in your weekly plan."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Áp dụng cho mọi %@ trong kế hoạch tuần."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Se aplica a cada %@ de tu plan semanal."
+     }
+    }
+   }
+  },
+  "wpk.yours": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Your workouts"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Buổi tập của bạn"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tus entrenamientos"
+     }
+    }
+   }
+  },
+  "wpk.createNew": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Create a new workout"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tạo buổi tập mới"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Crear un entrenamiento nuevo"
+     }
+    }
+   }
+  },
+  "wpk.change": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Change today's workout"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đổi buổi tập hôm nay"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cambiar el entrenamiento de hoy"
      }
     }
    }

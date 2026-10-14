@@ -35,14 +35,15 @@ struct WorkoutsHomeView: View {
   @State private var showsBuilder = false
   @State private var showsManualLog = false
   @State private var showsWeight = false
+  @State private var showsPicker = false
   @State private var measure: MeasurementsBook?
   @State private var photos: ProgressPhotosBook?
   @State private var goals: SmartGoalsBook?
   @State private var weight: WeightTrendBook?
 
   static let accent = MascotRoomView.signalColor(.workout)
-  /// Màu của phân đoạn Cơ thể (tím cân nặng).
-  static let body = DS.Color.metricPurple.swiftUI
+  /// Màu của phân đoạn Cơ thể = màu cân nặng ở Hôm nay (`TodayYourDay.color`).
+  static let body = DS.Color.metricBlue.swiftUI
 
   private var templates: [WorkoutTemplate] {
     (flow.today.library?.templates ?? []).sorted(by: WorkoutTemplate.newestFirst)
@@ -81,6 +82,7 @@ struct WorkoutsHomeView: View {
     .background { TodayAmbient(accent: .workout) }
     .sheet(isPresented: $showsBuilder) { TemplateFormView(flow: flow) }
     .sheet(isPresented: $showsManualLog) { ManualLogView(flow: flow) }
+    .sheet(isPresented: $showsPicker) { WorkoutPickerSheet(flow: flow) }
     .sheet(isPresented: $showsWeight) {
       LogWeightView(makeLogger: { services.makeWeightLogger(userId: userId) }) { showsWeight = false }
     }
@@ -232,12 +234,9 @@ struct WorkoutsHomeView: View {
         message: String(localized: "today.unplanned.message")
       ) {
         if flow.plan != nil {
-          NavigationLink {
-            WeekPlanView(flow: flow)
-          } label: {
-            buttonLabel(String(localized: "today.choosePlan"), systemImage: "calendar", fill: DS.Color.foreground.swiftUI)
+          primaryButton(String(localized: "today.choosePlan"), systemImage: "calendar", fill: DS.Color.foreground.swiftUI) {
+            showsPicker = true
           }
-          .buttonStyle(TodayPressStyle())
         }
         secondaryButton(String(localized: "today.cta.logFree"), systemImage: "square.and.pencil") { showsManualLog = true }
       }
@@ -260,11 +259,29 @@ struct WorkoutsHomeView: View {
     let sets = lines.reduce(0) { $0 + $1.sets }
     return VStack(alignment: .leading, spacing: DS.Spacing.sm) {
       VStack(alignment: .leading, spacing: 4) {
-        Text(verbatim: eyebrow)
-          .font(DS.TextStyle.caption.weight(.semibold))
-          .textCase(.uppercase)
-          .tracking(0.6)
-          .foregroundStyle(Self.accent)
+        HStack {
+          Text(verbatim: eyebrow)
+            .font(DS.TextStyle.caption.weight(.semibold))
+            .textCase(.uppercase)
+            .tracking(0.6)
+            .foregroundStyle(Self.accent)
+          Spacer()
+          // Đổi buổi của hôm nay (nút "…" của RN) — chưa tick set nào mới đổi.
+          if !highlighted, flow.plan != nil {
+            Button { showsPicker = true } label: {
+              Image(systemName: "arrow.left.arrow.right")
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+                .frame(width: 32, height: 32)
+                .background(Circle().fill(DS.Color.foreground.swiftUI.opacity(0.05)))
+                .frame(minWidth: 44, minHeight: 44)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text("wpk.change"))
+          }
+        }
+        .frame(minHeight: 32)
         if let title {
           Text(verbatim: title)
             .font(DS.TextStyle.title.weight(.bold))
@@ -373,12 +390,7 @@ struct WorkoutsHomeView: View {
       .padding(.top, DS.Spacing.xs)
       HStack(spacing: DS.Spacing.sm) {
         if flow.plan != nil {
-          NavigationLink {
-            WeekPlanView(flow: flow)
-          } label: {
-            buttonLabel(String(localized: "wh.rest.pick"), systemImage: "calendar", fill: nil)
-          }
-          .buttonStyle(TodayPressStyle())
+          secondaryButton(String(localized: "wh.rest.pick"), systemImage: "calendar") { showsPicker = true }
         }
         secondaryButton(String(localized: "today.cta.logFree"), systemImage: "square.and.pencil") { showsManualLog = true }
       }

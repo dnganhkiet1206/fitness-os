@@ -99,4 +99,17 @@ struct WeightTrendTests {
     await book.load()
     #expect(book.all.count == 3)
   }
+
+  @Test func entriesAreNewestFirstWithChange() {
+    let e = WeightTrend.entries(WeightTrend.points([Self.row("2026-10-01", 73), Self.row("2026-10-05", 72.4)]))
+    #expect(e.map(\.date.description) == ["2026-10-05", "2026-10-01"])
+    #expect(abs((e[0].changeKg ?? 0) + 0.6) < 1e-9)
+    #expect(e[1].changeKg == nil)
+  }
+
+  @Test func intentAgainstCurrentWeight() {
+    #expect(WeightTrend.intent(goalKg: 70, currentKg: 70.04) == .maintain)
+    #expect(WeightTrend.intent(goalKg: 68, currentKg: 70) == .lose(2))
+    #expect(WeightTrend.intent(goalKg: 72.5, currentKg: 70) == .gain(2.5))
+  }
 }
