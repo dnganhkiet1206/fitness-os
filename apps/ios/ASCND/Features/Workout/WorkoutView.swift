@@ -33,6 +33,8 @@ public struct WorkoutView: View {
   var onAppend: (@MainActor () async throws -> Void)?
   /// Mở lịch sử buổi tập. `nil` = không hiện nút (Preview, test).
   var onOpenHistory: (() -> Void)?
+  /// Thu màn tập về trang gốc tab (lớp toàn màn hình, 14/10) — tiến độ giữ nguyên.
+  var onClose: (() -> Void)?
 
   @State private var weightTexts: [String: String] = [:]
   @State private var repsTexts: [String: String] = [:]
@@ -75,7 +77,8 @@ public struct WorkoutView: View {
     outboxStatus: OutboxStatus = .ok,
     onFinish: (@MainActor () async throws -> Void)? = nil,
     onAppend: (@MainActor () async throws -> Void)? = nil,
-    onOpenHistory: (() -> Void)? = nil
+    onOpenHistory: (() -> Void)? = nil,
+    onClose: (() -> Void)? = nil
   ) {
     self.controller = controller
     self.restingRowKey = restingRowKey
@@ -87,6 +90,7 @@ public struct WorkoutView: View {
     self.onFinish = onFinish
     self.onAppend = onAppend
     self.onOpenHistory = onOpenHistory
+    self.onClose = onClose
   }
 
   public var body: some View {
@@ -111,6 +115,15 @@ public struct WorkoutView: View {
       // Một thanh "Xong" trên bàn phím cho cả màn — gắn trên từng ô reps thì
       // mỗi hàng góp một nút.
       .toolbar {
+        if let onClose {
+          ToolbarItem(placement: .topBarLeading) {
+            Button(action: onClose) {
+              Image(systemName: "chevron.down")
+                .frame(minWidth: 44, minHeight: 44)
+            }
+            .accessibilityLabel(Text("workout.minimize"))
+          }
+        }
         if let onOpenHistory {
           ToolbarItem(placement: .topBarTrailing) {
             Button(action: onOpenHistory) {

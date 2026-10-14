@@ -41,76 +41,90 @@ struct TodayTab: View {
   }
 }
 
-/// Tab Tập luyện: màn tập của hôm nay, lịch sử qua nút trên thanh điều hướng.
+/// Tab Tập luyện (thiết kế lại 14/10, chủ dự án duyệt mock): trang gốc LUÔN
+/// là trang chính (`(tabs)/workouts/index.tsx` — thẻ hôm nay + nút bắt đầu);
+/// màn tập là một lớp toàn màn hình mở từ thẻ (hay từ "Bắt đầu" ở Hôm nay),
+/// thu xuống vẫn giữ tiến độ. Trước đây hễ có buổi trong kế hoạch thì cả tab
+/// là màn tập — không vào được mẫu, thư viện, kế hoạch tuần.
 struct WorkoutsTab: View {
+  /// "Bắt đầu" ở tab Hôm nay: mở thẳng màn tập (về `false` khi đã nhận).
+  @Binding var launch: Bool
   @Environment(WorkoutFlow.self) private var flow
   @Environment(AppServices.self) private var services
   @Environment(RestTimerController.self) private var rest
   @State private var showsHistory = false
+  @State private var showsSession = false
   /// Buổi vừa chốt → màn tóm tắt (audit #527 6138699103: trước đây kết quả
   /// của `finish()` bị bỏ đi và `WorkoutSummaryView` không được mở ở đâu).
   @State private var finished: FinishedWorkout?
   @State private var sharing = false
 
+  init(launch: Binding<Bool> = .constant(false)) {
+    _launch = launch
+  }
+
   var body: some View {
-    Group {
-      if let session = flow.session {
-        WorkoutView(
-          controller: session,
-          // Hàng "đang nghỉ" cần biết set nào vừa tick; `RestTimerController`
-          // chỉ giữ set KẾ TIẾP. Chưa nối (#527 PARTIAL) — thẻ nghỉ vẫn hiện.
-          restingRowKey: nil,
-          restTimer: rest.timer,
-          onAdjustRest: { rest.adjust(by: $0) },
-          onSkipRest: { rest.handle(.cancel) },
-          onSetRestPaused: { rest.setPaused($0) },
-          outboxStatus: outboxStatus,
-          onFinish: {
-            // Set dựng TRƯỚC khi chốt, từ đúng đầu vào `finish()` dùng: sau khi
-            // chốt, tiến độ của ngày được neo lại (`anchoring`).
-            let sets = Self.summarySets(session)
-            let summary = try await flow.finish()
-            finished = FinishedWorkout(summary: summary, sets: sets)
-          },
-          onAppend: { _ = try await flow.append() },
-          onOpenHistory: openHistory
-        )
-      } else {
-        NavigationStack {
-          // Trang gốc của tab (`(tabs)/workouts/index.tsx`): mẫu buổi tập,
-          // builder, lịch sử, thư viện bài tập, tiến bộ từng bài.
-          WorkoutsHomeView(flow: flow)
-          .navigationTitle(Text("tab.workouts"))
-          .ascndPage()
-          .toolbar {
-            if let openHistory {
-              ToolbarItem(placement: .topBarTrailing) {
-                Button(action: openHistory) {
-                  Image(systemName: "clock.arrow.circlepath")
-                    .frame(minWidth: 44, minHeight: 44)
-                }
-                .accessibilityLabel(Text("history.title"))
+    NavigationStack {
+      WorkoutsHomeView(flow: flow, onOpenSession: { showsSession = true })
+    }
+    .onChange(of: launch, initial: true) { _, go in
+      guard go else { return }
+      launch = false
+      if flow.session != nil { showsSession = true }
+    }
+    .fullScreenCover(isPresented: $showsSession) {
+      sessionScreen
+        .sheet(isPresented: $showsHistory) {
+          if let history = flow.history {
+            NavigationStack { WorkoutHistoryView(book: history) }
+          }
+        }
+        .sheet(item: $finished, onDismiss: { sharing = false }) { f in
+          NavigationStack {
+            WorkoutSummaryView(
+              summary: f.summary, sets: f.sets,
+              onDone: {
+                finished = nil
+                showsSession = false
+              },
+              onShare: { sharing = true })
+            .navigationDestination(isPresented: $sharing) {
+              CommunityShareWorkoutScreen(sessionId: f.summary.sessionId) {
+                finished = nil
+                showsSession = false
               }
             }
           }
         }
-      }
     }
-    .sheet(isPresented: $showsHistory) {
-      if let history = flow.history {
-        NavigationStack { WorkoutHistoryView(book: history) }
-      }
-    }
-    .sheet(item: $finished, onDismiss: { sharing = false }) { f in
-      NavigationStack {
-        WorkoutSummaryView(
-          summary: f.summary, sets: f.sets,
-          onDone: { finished = nil },
-          onShare: { sharing = true })
-        .navigationDestination(isPresented: $sharing) {
-          CommunityShareWorkoutScreen(sessionId: f.summary.sessionId) { finished = nil }
-        }
-      }
+  }
+
+  @ViewBuilder private var sessionScreen: some View {
+    if let session = flow.session {
+      WorkoutView(
+        controller: session,
+        // Hàng "đang nghỉ" cần biết set nào vừa tick; `RestTimerController`
+        // chỉ giữ set KẾ TIẾP. Chưa nối (#527 PARTIAL) — thẻ nghỉ vẫn hiện.
+        restingRowKey: nil,
+        restTimer: rest.timer,
+        onAdjustRest: { rest.adjust(by: $0) },
+        onSkipRest: { rest.handle(.cancel) },
+        onSetRestPaused: { rest.setPaused($0) },
+        outboxStatus: outboxStatus,
+        onFinish: {
+          // Set dựng TRƯỚC khi chốt, từ đúng đầu vào `finish()` dùng: sau khi
+          // chốt, tiến độ của ngày được neo lại (`anchoring`).
+          let sets = Self.summarySets(session)
+          let summary = try await flow.finish()
+          finished = FinishedWorkout(summary: summary, sets: sets)
+        },
+        onAppend: { _ = try await flow.append() },
+        onOpenHistory: openHistory,
+        onClose: { showsSession = false }
+      )
+    } else {
+      // Phiên biến mất khi đang mở (qua nửa đêm, đổi tài khoản): đóng lớp.
+      Color.clear.onAppear { showsSession = false }
     }
   }
 

@@ -16,11 +16,16 @@ struct RootTabView: View {
   /// Link `ascnd://` chờ mở (#527 deep link lát 2).
   @Environment(DeepLinkInbox.self) private var links: DeepLinkInbox?
   @State private var linked: DeepLink.Screen?
+  /// "Bắt đầu" ở Hôm nay → tab Tập luyện mở thẳng màn tập.
+  @State private var launchWorkout = false
 
   var body: some View {
     TabView(selection: $selection) {
       Tab("tab.today", systemImage: "house", value: AppTab.today) {
-        TodayTab(onStartWorkout: { selection = .workouts })
+        TodayTab(onStartWorkout: {
+          selection = .workouts
+          launchWorkout = true
+        })
       }
       .accessibilityHint(Text(String(localized: "tab.today.hint")))
       Tab("tab.nutrition", systemImage: "fork.knife", value: AppTab.nutrition) {
@@ -31,9 +36,9 @@ struct RootTabView: View {
       Tab("tab.workouts", systemImage: "dumbbell", value: AppTab.workouts) {
         #if DEBUG
           // Bản Debug: màn thật + các màn thử (Lab) cho Kiệt kiểm trên máy.
-          DebugWorkoutsTab()
+          DebugWorkoutsTab(launch: $launchWorkout)
         #else
-          WorkoutsTab()
+          WorkoutsTab(launch: $launchWorkout)
         #endif
       }
       .accessibilityHint(Text(String(localized: "tab.workouts.hint")))
@@ -70,20 +75,27 @@ struct RootTabView: View {
   /// Tab Tập luyện của bản Debug: màn thật (như Release) hoặc Lab. Nhớ lựa
   /// chọn qua các lần mở app.
   private struct DebugWorkoutsTab: View {
+    @Binding var launch: Bool
     @AppStorage("lab.showsLab") private var showsLab = false
 
+    /// Công tắc App / Lab là một nút nhỏ ở góc (14/10): dải chọn trên cùng che
+    /// mất đầu trang của tab khi soát giao diện.
     var body: some View {
-      VStack(spacing: 0) {
-        Picker(selection: $showsLab) {
-          Text(verbatim: "App").tag(false)
-          Text(verbatim: "Lab").tag(true)
+      Group {
+        if showsLab { LabsView() } else { WorkoutsTab(launch: $launch) }
+      }
+      .overlay(alignment: .topTrailing) {
+        Button {
+          showsLab.toggle()
         } label: {
-          Text(verbatim: "Mode")
+          Text(verbatim: showsLab ? "App" : "Lab")
+            .font(.caption2.weight(.bold).monospaced())
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(.ultraThinMaterial, in: Capsule())
         }
-        .pickerStyle(.segmented)
-        .padding(.horizontal)
-        .padding(.top, 8)
-        if showsLab { LabsView() } else { WorkoutsTab() }
+        .padding(.trailing, 72)
+        .padding(.top, 2)
       }
     }
   }
