@@ -657,6 +657,9 @@ struct LibraryHistoryView: View {
   var body: some View {
     ScrollView {
       VStack(spacing: DS.Spacing.md) {
+        if let library = flow.library {
+          MuscleGrid(library: library)
+        }
         VStack(spacing: 0) {
           if let library = flow.library {
             NavigationLink { ExercisesView(library: library) } label: {
@@ -707,5 +710,89 @@ struct LibraryHistoryView: View {
     .padding(.horizontal, DS.Spacing.md)
     .frame(minHeight: 60)
     .contentShape(Rectangle())
+  }
+}
+
+/// Vào thư viện theo NHÓM CƠ (`muscle-grid.tsx` @ fac9ac2, 14/10): đủ mười ô
+/// theo thứ tự tập một cơ thể (không đổi chỗ khi có thêm bài), số bài dưới
+/// mỗi ô; thu gọn hai hàng, "Xem tất cả nhóm" mở phần còn lại. Chạm → thư
+/// viện chỉ nhóm ấy (`ExercisesView(only:)`).
+///
+/// Khác RN: chưa có hình giải phẫu `MuscleArt` — ô dùng biểu tượng SF hợp
+/// nhóm, màu Tập luyện.
+struct MuscleGrid: View {
+  let library: ExerciseLibrary
+  @Environment(\.locale) private var locale
+  @State private var expanded = false
+
+  private var lang: MuscleGroup.Language { MuscleGroup.Language(locale: locale) }
+
+  var body: some View {
+    let counts = MuscleGroup.counts(library.exercises)
+    let tiles = expanded ? MuscleGroup.tileOrder : Array(MuscleGroup.tileOrder.prefix(MuscleGroup.tilesCollapsed))
+    VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+      Text(String(localized: "lib.byMuscle"))
+        .font(DS.TextStyle.headline)
+        .padding(.horizontal, 4)
+        .accessibilityAddTraits(.isHeader)
+      LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: DS.Spacing.sm), count: 3), spacing: DS.Spacing.sm) {
+        ForEach(tiles, id: \.self) { g in
+          NavigationLink {
+            ExercisesView(library: library, only: g)
+          } label: {
+            tile(g, count: counts[g] ?? 0)
+          }
+          .buttonStyle(TodayPressStyle())
+        }
+      }
+      Button {
+        withAnimation(.snappy) { expanded.toggle() }
+      } label: {
+        Label(
+          String(localized: expanded ? "lib.fewerGroups" : "lib.allGroups"),
+          systemImage: expanded ? "chevron.up" : "chevron.down")
+          .font(DS.TextStyle.footnote.weight(.semibold))
+          .foregroundStyle(WorkoutsHomeView.accent)
+          .frame(maxWidth: .infinity, minHeight: 44)
+      }
+      .buttonStyle(.plain)
+    }
+    .task { if !library.loaded { await library.load() } }
+  }
+
+  private func tile(_ g: MuscleGroup, count: Int) -> some View {
+    VStack(spacing: 6) {
+      Image(systemName: Self.symbol(g))
+        .font(.system(size: 24, weight: .semibold))
+        .foregroundStyle(WorkoutsHomeView.accent)
+        .frame(width: 48, height: 48)
+        .background(WorkoutsHomeView.accent.opacity(0.10), in: Circle())
+      Text(verbatim: g.label(lang))
+        .font(DS.TextStyle.footnote.weight(.semibold))
+        .foregroundStyle(DS.Color.foreground.swiftUI)
+        .lineLimit(1)
+        .minimumScaleFactor(0.8)
+      Text(String(localized: "lib.count \(count)"))
+        .font(DS.TextStyle.caption.monospacedDigit())
+        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+    }
+    .frame(maxWidth: .infinity, minHeight: 116)
+    .todayCard(radius: DS.Radius.xl)
+    .accessibilityElement(children: .combine)
+  }
+
+  static func symbol(_ g: MuscleGroup) -> String {
+    switch g {
+    case .chest: "figure.strengthtraining.traditional"
+    case .back: "figure.rower"
+    case .legs: "figure.step.training"
+    case .shoulders: "figure.arms.open"
+    case .biceps: "dumbbell.fill"
+    case .triceps: "figure.strengthtraining.functional"
+    case .abs: "figure.core.training"
+    case .glutes: "figure.cross.training"
+    case .calves: "figure.walk"
+    case .cardio: "heart.fill"
+    }
   }
 }

@@ -147,6 +147,25 @@ public enum MuscleGroup: String, Sendable, Hashable, Codable, CaseIterable {
     }
   }
 
+  /// Thứ tự ô nhóm cơ của thư viện (`muscle-grid.tsx` `MUSCLE_TILES`): theo
+  /// cách tập một cơ thể — đẩy, kéo, chân, vai, hai tay, thân, dưới hông.
+  public static let tileOrder: [MuscleGroup] = [
+    .chest, .back, .legs, .shoulders, .biceps, .triceps, .abs, .glutes, .calves, .cardio,
+  ]
+
+  /// Số ô hiện khi thu gọn (`TILES_COLLAPSED`): hai hàng ba ô.
+  public static let tilesCollapsed = 6
+
+  /// Số bài của mỗi nhóm (một bài nhiều nhóm thì tính ở mỗi nhóm), như số
+  /// dưới ô của RN — cùng khoá hình với bộ lọc `only:` của thư viện.
+  public static func counts(_ list: [LibraryExercise]) -> [MuscleGroup: Int] {
+    var out: [MuscleGroup: Int] = [:]
+    for e in list {
+      for k in Set(e.muscles) { out[k, default: 0] += 1 }
+    }
+    return out
+  }
+
   /// `muscleGroupLabel`: nhãn theo ngôn ngữ; không nhận ra thì chữ gốc (cắt).
   public static func label(_ group: String?, _ lang: Language) -> String {
     let k = keys(for: group)

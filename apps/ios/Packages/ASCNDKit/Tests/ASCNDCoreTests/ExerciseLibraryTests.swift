@@ -195,3 +195,19 @@ struct ExerciseLibraryTests {
     #expect(performance.declaredKinds["plank"] == "timed")
   }
 }
+
+/// Lưới nhóm cơ của thư viện (14/10): đủ mười ô theo thứ tự RN, số bài mỗi
+/// nhóm (bài nhiều nhóm tính ở mỗi nhóm, bài không nhận ra không tính).
+struct MuscleTileTests {
+  @Test func orderAndCounts() {
+    #expect(MuscleGroup.tileOrder.count == MuscleGroup.allCases.count)
+    #expect(Set(MuscleGroup.tileOrder) == Set(MuscleGroup.allCases))
+    #expect(Array(MuscleGroup.tileOrder.prefix(3)) == [.chest, .back, .legs])
+    let c = MuscleGroup.counts(catalog)
+    #expect(c[.chest] == 3)
+    #expect(c[.shoulders] == 1)
+    #expect(c[.biceps] == 3)
+    #expect(c[.abs] == 1)
+    #expect(c[.calves] == nil)
+  }
+}
