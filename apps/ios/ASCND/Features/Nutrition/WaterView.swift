@@ -1,6 +1,5 @@
 import ASCNDCore
 import ASCNDDesignSystem
-import Charts
 import SwiftUI
 
 /// Một lần uống: giọt nước, lượng + đơn vị, giờ.
@@ -11,9 +10,9 @@ struct WaterLogRow: View {
   var body: some View {
     HStack(spacing: DS.Spacing.md) {
       Image(systemName: "drop.fill")
-        .foregroundStyle(DS.Color.metricBlue.swiftUI)
+        .foregroundStyle(WaterView.blue)
         .frame(width: 32, height: 32)
-        .background(DS.Color.metricBlue.swiftUI.opacity(0.12), in: Circle())
+        .background(WaterView.blue.opacity(0.14), in: Circle())
         .accessibilityHidden(true)
       HStack(alignment: .firstTextBaseline, spacing: 4) {
         Text(verbatim: Water.entryAmount(log.amountMl, unit)).font(DS.TextStyle.headline.monospacedDigit())
@@ -28,8 +27,7 @@ struct WaterLogRow: View {
     }
     .padding(.horizontal, DS.Spacing.md)
     .padding(.vertical, DS.Spacing.sm)
-    .frame(minHeight: 44)
-    .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.md))
+    .frame(minHeight: 52)
     .accessibilityElement(children: .combine)
   }
 }
@@ -49,8 +47,16 @@ struct WaterLogRow: View {
 /// Khác RN / chưa có:
 /// - app chưa có toast: kết quả ghi (đã giữ khi mất mạng, lỗi) hiện thành MỘT
 ///   dòng dưới hàng nút và được đọc bằng VoiceOver;
-/// - lần đọc đầu hỏng thì nói "không đọc được" thay vì hiện 0 (RN hiện 0).
+/// - lần đọc đầu hỏng thì nói "không đọc được" thay vì hiện 0 (RN hiện 0);
+/// - thiết kế lại 13/10 (chủ dự án chọn hướng B, "màu xanh dương của nước",
+///   vòng thay bằng CỐC NƯỚC): cốc dâng theo lượng đã uống + số Menlo, hàng
+///   nút viên nang xanh nhạt, tuần là bảy cốc nhỏ (chạm một cốc để đọc số),
+///   nhật ký trong một thẻ danh sách.
 struct WaterView: View {
+  /// Xanh nước (DS `metricBlueWash`, #3ba6ff) và mực xanh cho chữ trên nền nhạt.
+  static let blue = DS.Color.metricBlueWash.swiftUI
+  static let ink = DS.Color.metricBlueInk.swiftUI
+
   let book: WaterBook
   @Environment(AppServices.self) private var services
   @Environment(ProfileBook.self) private var profile: ProfileBook?
@@ -96,11 +102,14 @@ struct WaterView: View {
       ScrollView {
         VStack(spacing: DS.Spacing.md) {
           summary
-          DSCard { WaterWeekChart(days: book.week, today: book.date, target: target, unit: unit) }
+          WaterWeekCups(days: book.week, today: book.date, target: target, unit: unit)
+            .padding(DS.Spacing.md)
+            .todayCard(radius: DS.Radius.xl)
           if !book.logs.isEmpty { logSection }
         }
         .padding(DS.Spacing.md)
       }
+      .statusBarScrim()
     }
   }
 
@@ -108,54 +117,50 @@ struct WaterView: View {
 
   private var summary: some View {
     let pct = Water.percent(totalMl: book.totalMl, targetMl: target)
-    return DSCard {
-      VStack(alignment: .leading, spacing: 0) {
-        HStack(alignment: .firstTextBaseline) {
-          VStack(alignment: .leading, spacing: 2) {
-            Text(verbatim: Water.bigValue(totalMl: book.totalMl, unit))
-              .font(DS.TextStyle.mono(.largeTitle).weight(.bold))
-            Text(String(localized: "water.ofTarget \(Water.targetLabel(target, unit))"))
-              .font(DS.TextStyle.footnote)
-              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-          }
-          Spacer()
-          Text(verbatim: Water.percentLabel(pct))
-            .font(DS.TextStyle.title.monospacedDigit())
-            .foregroundStyle(DS.Color.metricBlue.swiftUI)
-        }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(String(localized: "water.title")))
-        .accessibilityValue(Text(verbatim: Self.summaryValue(book.totalMl, target: target, pct: pct, unit: unit)))
-
-        WaterProgressBar(fraction: pct / 100)
-          .padding(.top, DS.Spacing.md)
-
-        Text(String(localized: "water.quickAdd"))
-          .font(DS.TextStyle.caption.weight(.semibold))
-          .textCase(.uppercase)
-          .tracking(1)
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-          .padding(.top, DS.Spacing.md)
-        WaterQuickAddRow(book: book, unit: unit, feedback: feedback)
-          .padding(.top, DS.Spacing.sm)
-
-        Button {
-          showsManual = true
-        } label: {
-          Label(String(localized: "water.custom"), systemImage: "pencil.line")
-            .font(DS.TextStyle.footnote)
+    return VStack(spacing: DS.Spacing.md) {
+      VStack(spacing: DS.Spacing.sm) {
+        WaterCup(fraction: pct / 100, reduceMotion: reduceMotion)
+          .frame(width: 118, height: 150)
+        HStack(alignment: .firstTextBaseline, spacing: 4) {
+          Text(verbatim: Water.shortLabel(ml: Double(book.totalMl), unit, locale: .app)
+            .replacingOccurrences(of: unit == .oz ? " oz" : " L", with: ""))
+            .font(.custom("Menlo", size: 34, relativeTo: .largeTitle).weight(.bold))
+            .monospacedDigit()
+          Text(verbatim: "/ " + Water.shortLabel(ml: target, unit, locale: .app))
+            .font(.custom("Menlo", size: 15, relativeTo: .body))
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-            .frame(maxWidth: .infinity, minHeight: 44)
-            .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel(Text(String(localized: "water.custom")))
-        .sensoryFeedback(.selection, trigger: showsManual) { _, open in open }
-        .padding(.top, DS.Spacing.xs)
-
-        WaterFeedbackLine(feedback: feedback)
+        Text(verbatim: Water.percentLabel(pct))
+          .font(DS.TextStyle.footnote.weight(.semibold).monospacedDigit())
+          .foregroundStyle(Self.ink)
+          .padding(.horizontal, DS.Spacing.sm)
+          .padding(.vertical, 3)
+          .background(Self.blue.opacity(0.16), in: Capsule())
       }
+      .accessibilityElement(children: .ignore)
+      .accessibilityLabel(Text(String(localized: "water.title")))
+      .accessibilityValue(Text(verbatim: Self.summaryValue(book.totalMl, target: target, pct: pct, unit: unit)))
+
+      WaterQuickAddRow(book: book, unit: unit, feedback: feedback)
+
+      Button {
+        showsManual = true
+      } label: {
+        Label(String(localized: "water.custom"), systemImage: "pencil.line")
+          .font(DS.TextStyle.footnote)
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          .frame(maxWidth: .infinity, minHeight: 44)
+          .contentShape(Rectangle())
+      }
+      .buttonStyle(.plain)
+      .accessibilityLabel(Text(String(localized: "water.custom")))
+      .sensoryFeedback(.selection, trigger: showsManual) { _, open in open }
+
+      WaterFeedbackLine(feedback: feedback)
     }
+    .padding(DS.Spacing.md)
+    .frame(maxWidth: .infinity)
+    .todayCard(radius: DS.Radius.xl)
   }
 
   /// VoiceOver: "1.80L, mục tiêu 2.5L, 72%".
@@ -174,10 +179,15 @@ struct WaterView: View {
         .accessibilityValue(Text(verbatim: logState))
         .sensoryFeedback(.selection, trigger: logsOpen)
       if logsOpen {
-        ForEach(book.logs) { log in
-          WaterLogRow(log: log, unit: unit)
-            .transition(reduceMotion ? .identity : .opacity.combined(with: .move(edge: .top)))
+        VStack(spacing: 0) {
+          ForEach(Array(book.logs.enumerated()), id: \.element.id) { i, log in
+            if i > 0 { Divider().padding(.leading, 62).opacity(0.6) }
+            WaterLogRow(log: log, unit: unit)
+          }
         }
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous))
+        .todayCard(radius: DS.Radius.xl)
+        .transition(reduceMotion ? .identity : .opacity.combined(with: .move(edge: .top)))
       }
     }
   }
@@ -249,7 +259,7 @@ struct WaterQuickAddRow: View {
       }
       .buttonStyle(.plain)
       .foregroundStyle(DS.Color.foreground.swiftUI)
-      .overlay(RoundedRectangle(cornerRadius: DS.Radius.md).stroke(DS.Color.border.swiftUI, lineWidth: 1))
+      .overlay(Capsule().stroke(DS.Color.border.swiftUI, lineWidth: 1))
       .opacity(book.canRemove ? 1 : 0.4)
       .disabled(!book.canRemove)
       .sensoryFeedback(.selection, trigger: book.removing) { _, running in running }
@@ -264,9 +274,9 @@ struct WaterQuickAddRow: View {
             Image(systemName: "plus").font(.caption.weight(.bold))
             Text(verbatim: "\(amount)").font(DS.TextStyle.headline.monospacedDigit())
           }
-          .foregroundStyle(DS.Color.foreground.swiftUI)
+          .foregroundStyle(WaterView.ink)
           .frame(maxWidth: .infinity, minHeight: 46)
-          .background(DS.Color.secondary.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.md))
+          .background(WaterView.blue.opacity(0.16), in: Capsule())
           .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -335,23 +345,163 @@ struct WaterFeedbackLine: View {
   }
 }
 
-// MARK: - Thanh tiến độ
+// MARK: - Cốc nước
 
-struct WaterProgressBar: View {
-  /// 0…1.
+/// Hình cốc: miệng rộng, đáy hẹp, góc đáy bo.
+struct CupShape: Shape {
+  func path(in r: CGRect) -> Path {
+    let inset = r.width * 0.14
+    let radius = r.width * 0.12
+    var p = Path()
+    p.move(to: CGPoint(x: r.minX, y: r.minY))
+    p.addLine(to: CGPoint(x: r.maxX, y: r.minY))
+    p.addLine(to: CGPoint(x: r.maxX - inset, y: r.maxY - radius))
+    p.addQuadCurve(
+      to: CGPoint(x: r.maxX - inset - radius, y: r.maxY), control: CGPoint(x: r.maxX - inset, y: r.maxY))
+    p.addLine(to: CGPoint(x: r.minX + inset + radius, y: r.maxY))
+    p.addQuadCurve(
+      to: CGPoint(x: r.minX + inset, y: r.maxY - radius), control: CGPoint(x: r.minX + inset, y: r.maxY))
+    p.closeSubpath()
+    return p
+  }
+}
+
+/// Mặt nước: phần dưới của khung, mép trên gợn nhẹ.
+struct WaterSurface: Shape {
+  /// 0…1 — mực nước.
+  var level: Double
+  /// Pha của gợn (0…2π); đứng yên khi Giảm chuyển động.
+  var phase: Double
+  var amplitude: CGFloat
+
+  var animatableData: AnimatablePair<Double, Double> {
+    get { AnimatablePair(level, phase) }
+    set { level = newValue.first; phase = newValue.second }
+  }
+
+  func path(in r: CGRect) -> Path {
+    let top = r.maxY - r.height * max(0, min(1, level))
+    var p = Path()
+    p.move(to: CGPoint(x: r.minX, y: r.maxY))
+    let steps = 24
+    for i in 0...steps {
+      let x = r.minX + r.width * CGFloat(i) / CGFloat(steps)
+      let y = top + (level >= 1 || level <= 0 ? 0 : amplitude * sin(CGFloat(phase) + CGFloat(i) / CGFloat(steps) * .pi * 2))
+      p.addLine(to: CGPoint(x: x, y: y))
+    }
+    p.addLine(to: CGPoint(x: r.maxX, y: r.maxY))
+    p.closeSubpath()
+    return p
+  }
+}
+
+/// Cốc nước dâng theo lượng đã uống (thay vòng tiến độ — chủ dự án, 13/10).
+struct WaterCup: View {
+  /// 0…1+ (quá mục tiêu vẫn đầy cốc).
   let fraction: Double
+  let reduceMotion: Bool
+  var small = false
+  @State private var phase = 0.0
 
   var body: some View {
-    GeometryReader { geo in
-      ZStack(alignment: .leading) {
-        Capsule().fill(DS.Color.background.swiftUI)
+    let level = max(0, min(1, fraction))
+    ZStack {
+      CupShape().fill(WaterView.blue.opacity(small ? 0.12 : 0.10))
+      WaterSurface(level: level, phase: phase, amplitude: small ? 1 : 3.5)
+        .fill(WaterView.blue)
+        .clipShape(CupShape())
+      CupShape().stroke(WaterView.blue.opacity(0.55), lineWidth: small ? 1 : 2)
+      if !small {
+        // Ánh sáng trên thành cốc.
         Capsule()
-          .fill(DS.Color.metricBlue.swiftUI)
-          .frame(width: geo.size.width * max(0, min(1, fraction)))
+          .fill(.white.opacity(0.35))
+          .frame(width: 6)
+          .padding(.vertical, 18)
+          .offset(x: -36)
       }
     }
-    .frame(height: 10)
+    .animation(reduceMotion ? nil : .spring(duration: 0.6, bounce: 0.25), value: level)
+    .onAppear {
+      guard !reduceMotion, !small else { return }
+      withAnimation(.linear(duration: 3).repeatForever(autoreverses: false)) { phase = .pi * 2 }
+    }
     .accessibilityHidden(true)
+  }
+}
+
+// MARK: - Bảy cốc của tuần
+
+/// Trung bình 7 ngày + bảy cốc nhỏ (hôm nay đậm chữ); chạm một cốc để đọc số
+/// của ngày ấy. Số và thang như `WaterChart` của RN (trung bình, mục tiêu).
+struct WaterWeekCups: View {
+  let days: [WaterDay]
+  let today: LocalDate
+  let target: Double
+  let unit: Water.Unit
+  @State private var picked: LocalDate?
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: DS.Spacing.md) {
+      HStack(alignment: .firstTextBaseline) {
+        VStack(alignment: .leading, spacing: 2) {
+          Text(String(localized: "water.average"))
+            .font(DS.TextStyle.caption)
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          Text(verbatim: Water.averageLabel(days, unit))
+            .font(.custom("Menlo", size: 20, relativeTo: .title3).weight(.bold))
+        }
+        Spacer()
+        Text(verbatim: pickedLabel)
+          .font(DS.TextStyle.footnote.monospacedDigit())
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          .multilineTextAlignment(.trailing)
+      }
+      HStack(alignment: .bottom, spacing: 0) {
+        ForEach(days, id: \.date) { d in
+          let isToday = d.date == today
+          Button {
+            picked = picked == d.date ? nil : d.date
+          } label: {
+            VStack(spacing: 6) {
+              WaterCup(fraction: target > 0 ? Double(d.totalMl) / target : 0, reduceMotion: reduceMotion, small: true)
+                .frame(width: 26, height: 34)
+                .opacity(picked == nil || picked == d.date ? 1 : 0.45)
+              Text(verbatim: WaterWeekCups.weekday(d.date))
+                .font(DS.TextStyle.caption.weight(isToday ? .bold : .regular))
+                .foregroundStyle(isToday ? DS.Color.foreground.swiftUI : DS.Color.mutedForeground.swiftUI)
+            }
+            .frame(maxWidth: .infinity, minHeight: 56)
+            .contentShape(Rectangle())
+          }
+          .buttonStyle(.plain)
+          .accessibilityLabel(Text(verbatim: WaterWeekCups.dayName(d.date, long: true)))
+          .accessibilityValue(Text(verbatim: Water.chartVolume(Double(d.totalMl), unit)))
+        }
+      }
+      .sensoryFeedback(.selection, trigger: picked)
+    }
+  }
+
+  /// "7 ngày qua", hoặc số của ngày đang chạm.
+  private var pickedLabel: String {
+    guard let picked, let d = days.first(where: { $0.date == picked }) else {
+      return String(localized: "water.last7")
+    }
+    return Water.chartVolume(Double(d.totalMl), unit) + " · " + Self.dayName(d.date, long: false)
+  }
+
+  static func weekday(_ d: LocalDate) -> String {
+    d.calendarDate.formatted(Date.FormatStyle().weekday(.abbreviated).locale(.app))
+  }
+
+  /// `dayLabel`: dài cho VoiceOver, ngắn cho ô số.
+  static func dayName(_ d: LocalDate, long: Bool) -> String {
+    let style =
+      long
+      ? Date.FormatStyle().weekday(.wide).day().month(.wide)
+      : Date.FormatStyle().weekday(.abbreviated).day().month(.abbreviated)
+    return d.calendarDate.formatted(style.locale(.app))
   }
 }
 
@@ -413,113 +563,4 @@ struct WaterManualSheet: View {
     .onAppear { focused = true }
   }
 
-}
-
-// MARK: - Biểu đồ 7 ngày
-
-/// `WaterChart`: trung bình, trục 0 / nửa / trần tròn (trần ≥ ngày cao nhất
-/// và mục tiêu), mỗi ngày một cột — sáng nhất là hôm nay đã đạt; chạm một ngày
-/// để đọc số.
-struct WaterWeekChart: View {
-  let days: [WaterDay]
-  let today: LocalDate
-  let target: Double
-  let unit: Water.Unit
-  @State private var picked: String?
-
-  var body: some View {
-    let best = Double(days.map(\.totalMl).max() ?? 0)
-    let top = Water.scaleTop(needMl: max(best, target), unit)
-    VStack(alignment: .leading, spacing: 2) {
-      Text(String(localized: "water.average"))
-        .font(DS.TextStyle.caption.weight(.semibold))
-        .textCase(.uppercase)
-        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-      Text(verbatim: Water.averageLabel(days, unit))
-        .font(DS.TextStyle.mono(.title2).weight(.bold))
-      Text(String(localized: "water.last7"))
-        .font(DS.TextStyle.footnote)
-        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-
-      Chart(days, id: \.date) { d in
-        BarMark(
-          x: .value("day", d.date.description),
-          y: .value("ml", min(Double(d.totalMl), Double(top.ml))),
-          width: .ratio(0.42)
-        )
-        .foregroundStyle(DS.Color.metricBlue.swiftUI.opacity(Self.brightness(d, today: today, target: target, picked: picked)))
-        .cornerRadius(4)
-        .accessibilityLabel(Text(verbatim: Self.dayName(d.date, long: true)))
-        .accessibilityValue(Text(verbatim: Water.chartVolume(Double(d.totalMl), unit)))
-
-        if let picked, picked == d.date.description {
-          RuleMark(x: .value("day", picked))
-            .foregroundStyle(.clear)
-            .annotation(position: .top, spacing: 0, overflowResolution: .init(x: .fit(to: .chart), y: .fit(to: .chart))) {
-              VStack(spacing: 0) {
-                Text(verbatim: Water.chartVolume(Double(d.totalMl), unit)).font(DS.TextStyle.footnote.weight(.bold))
-                Text(verbatim: Self.dayName(d.date, long: false)).font(DS.TextStyle.caption)
-                  .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-              }
-              .padding(.horizontal, DS.Spacing.sm)
-              .padding(.vertical, DS.Spacing.xs)
-              .background(DS.Color.secondary.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.sm))
-            }
-        }
-      }
-      .chartYScale(domain: 0...Double(top.ml))
-      .chartYAxis {
-        AxisMarks(position: .trailing, values: [0, Double(top.ml) / 2, Double(top.ml)]) { value in
-          AxisGridLine()
-          AxisValueLabel {
-            if let ml = value.as(Double.self) {
-              Text(verbatim: Water.axisLabel(Self.axisValue(ml, top: top, unit: unit), unit))
-            }
-          }
-        }
-      }
-      .chartXAxis {
-        AxisMarks { value in
-          AxisValueLabel {
-            if let key = value.as(String.self), let d = LocalDate(key) {
-              Text(verbatim: Self.weekday(d))
-            }
-          }
-        }
-      }
-      .chartXSelection(value: $picked)
-      .frame(height: 170)
-      .padding(.top, DS.Spacing.md)
-      .sensoryFeedback(.selection, trigger: picked)
-    }
-  }
-
-  /// `brightness`: (hôm nay ? 1 : 0.72) × (đạt ? 1 : 0.625) × (ngày khác đang
-  /// được chọn ? 0.4 : 1) — số của `water-chart.tsx`.
-  static func brightness(_ d: WaterDay, today: LocalDate, target: Double, picked: String?) -> Double {
-    let isToday = d.date == today
-    let met = Double(d.totalMl) >= target
-    let faded = picked != nil && picked != d.date.description
-    return (isToday ? 1 : 0.72) * (met ? 1 : 0.625) * (faded ? 0.4 : 1)
-  }
-
-  /// Giá trị trục theo ĐƠN VỊ HIỂN THỊ (`axisLabel(top.display * f, unit)` của
-  /// RN) — với ml thì chính là ml.
-  static func axisValue(_ ml: Double, top: (ml: Int, display: Double), unit: Water.Unit) -> Double {
-    guard top.ml > 0 else { return 0 }
-    return unit == .oz ? top.display * ml / Double(top.ml) : ml
-  }
-
-  static func weekday(_ d: LocalDate) -> String {
-    d.calendarDate.formatted(Date.FormatStyle().weekday(.abbreviated).locale(.app))
-  }
-
-  /// `dayLabel`: dài cho VoiceOver, ngắn cho ô số.
-  static func dayName(_ d: LocalDate, long: Bool) -> String {
-    let style =
-      long
-      ? Date.FormatStyle().weekday(.wide).day().month(.wide)
-      : Date.FormatStyle().weekday(.abbreviated).day().month(.abbreviated)
-    return d.calendarDate.formatted(style.locale(.app))
-  }
 }
