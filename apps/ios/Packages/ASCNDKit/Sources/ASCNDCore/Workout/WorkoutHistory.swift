@@ -219,3 +219,39 @@ public final class HistoryBook {
     await onDeleted?(id, victim.at)
   }
 }
+
+/// Khối lượng theo tuần cho biểu đồ đầu màn Lịch sử (14/10): `count` tuần
+/// gần nhất (Thứ Hai → Chủ nhật, theo ngày địa phương), tuần không tập là 0
+/// — biểu đồ phải cho thấy chỗ trống chứ không co lại.
+public enum HistoryWeeks {
+  public struct Week: Sendable, Hashable, Identifiable {
+    /// Thứ Hai của tuần.
+    public let start: LocalDate
+    public let volumeKg: Int
+    public let sessions: Int
+    public var id: LocalDate { start }
+  }
+
+  public static func weeks(
+    _ entries: [HistoryEntry], count: Int = 8, timeZone: TimeZone, now: EpochMillis
+  ) -> [Week] {
+    let today = LocalDate(now, in: timeZone)
+    let thisMonday = today.adding(days: -WorkoutPlanning.routineIndex(today))
+    let starts = (0..<max(0, count)).reversed().map { thisMonday.adding(days: -7 * $0) }
+    var volume: [LocalDate: Int] = [:]
+    var sessions: [LocalDate: Int] = [:]
+    for e in entries {
+      let d = LocalDate(e.at, in: timeZone)
+      let monday = d.adding(days: -WorkoutPlanning.routineIndex(d))
+      volume[monday, default: 0] += e.volumeKg
+      sessions[monday, default: 0] += 1
+    }
+    return starts.map { Week(start: $0, volumeKg: volume[$0] ?? 0, sessions: sessions[$0] ?? 0) }
+  }
+
+  /// Tên buổi để lọc: khác nhau, theo lần dùng gần nhất trước.
+  public static func names(_ entries: [HistoryEntry]) -> [String] {
+    var seen = Set<String>()
+    return entries.sorted { $0.at > $1.at }.compactMap { seen.insert($0.templateName).inserted ? $0.templateName : nil }
+  }
+}

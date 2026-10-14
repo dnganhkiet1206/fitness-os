@@ -19,6 +19,7 @@
 //   theo ngôn ngữ app như mọi số khác của màn (RN: locale máy — #527 6103811310).
 import ASCNDCore
 import ASCNDDesignSystem
+import Charts
 import SwiftUI
 
 public struct WorkoutHistoryView: View {
@@ -31,6 +32,8 @@ public struct WorkoutHistoryView: View {
   @Environment(WorkoutFlow.self) private var flow: WorkoutFlow?
   @State private var showsManualLog = false
   @State private var deleteFailed = false
+  /// Lọc theo tên buổi (14/10). `nil` = mọi buổi.
+  @State private var filter: String?
   /// Hồ sơ của phiên (RootGate) — đọc MỘT lần cho cả danh sách, như RN
   /// (`sessions.tsx:59`); `nil` (preview) = không có kcal.
   @Environment(ProfileBook.self) private var profileBook: ProfileBook?
@@ -90,12 +93,27 @@ public struct WorkoutHistoryView: View {
     SessionEnergy.body(profile: profileBook?.profile, today: LocalDate(EpochMillis(Date()), in: .current))
   }
 
+  private var shown: [HistoryEntry] {
+    guard let filter else { return book.entries }
+    return book.entries.filter { $0.templateName == filter }
+  }
+
   private var list: some View {
-    let months = HistoryMonths.group(book.entries, timeZone: .current, now: EpochMillis(Date()))
+    let months = HistoryMonths.group(shown, timeZone: .current, now: EpochMillis(Date()))
     let energy = energyBody
     return List {
       if book.failure != nil {
         staleBanner
+      }
+      Section {
+        weeklyChart
+          .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
+        let names = HistoryWeeks.names(book.entries)
+        if names.count > 1 {
+          filterChips(names)
+            .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
+            .listRowBackground(Color.clear)
+        }
       }
       ForEach(months) { m in
         Section {
@@ -113,6 +131,76 @@ public struct WorkoutHistoryView: View {
       }
     }
     .listStyle(.insetGrouped)
+  }
+
+  // MARK: - Biểu đồ tuần + lọc (14/10)
+
+  /// Khối lượng 8 tuần gần nhất, tuần này tô đậm; theo bộ lọc đang chọn.
+  private var weeklyChart: some View {
+    let weeks = HistoryWeeks.weeks(shown, timeZone: .current, now: EpochMillis(Date()))
+    let accent = WorkoutsHomeView.accent
+    return VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+      HStack(alignment: .firstTextBaseline) {
+        Text(String(localized: "history.weekly"))
+          .font(DS.TextStyle.headline)
+        Spacer()
+        if let last = weeks.last {
+          Text(String(localized: "history.thisWeek \(volume(last.volumeKg))"))
+            .font(DS.TextStyle.mono(.footnote).weight(.semibold))
+            .foregroundStyle(accent)
+        }
+      }
+      Chart(weeks) { w in
+        BarMark(
+          x: .value("week", w.start.calendarDate, unit: .weekOfYear),
+          y: .value("kg", unit.convert(Double(w.volumeKg))))
+          .foregroundStyle(w.id == weeks.last?.id ? accent : accent.opacity(0.35))
+          .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+      }
+      .chartYAxis {
+        AxisMarks(position: .trailing, values: .automatic(desiredCount: 3)) { _ in
+          AxisGridLine().foregroundStyle(DS.Color.foreground.swiftUI.opacity(0.08))
+          AxisValueLabel()
+        }
+      }
+      .chartXAxis {
+        AxisMarks(values: .stride(by: .weekOfYear, count: 2)) { _ in
+          AxisValueLabel(format: .dateTime.day().month(.abbreviated))
+        }
+      }
+      .frame(height: 140)
+      .accessibilityLabel(Text(String(localized: "history.weekly")))
+    }
+  }
+
+  private func filterChips(_ names: [String]) -> some View {
+    ScrollView(.horizontal, showsIndicators: false) {
+      HStack(spacing: DS.Spacing.xs) {
+        chip(String(localized: "history.filter.all"), on: filter == nil) { filter = nil }
+        ForEach(names, id: \.self) { n in
+          chip(n, on: filter == n) { filter = filter == n ? nil : n }
+        }
+      }
+      .padding(.horizontal, DS.Spacing.md)
+    }
+    .sensoryFeedback(.selection, trigger: filter)
+  }
+
+  private func chip(_ title: String, on: Bool, action: @escaping () -> Void) -> some View {
+    Button {
+      withAnimation(.snappy) { action() }
+    } label: {
+      Text(verbatim: title)
+        .font(DS.TextStyle.footnote.weight(.semibold))
+        .lineLimit(1)
+        .foregroundStyle(on ? Color.white : DS.Color.foreground.swiftUI)
+        .padding(.horizontal, 14)
+        .frame(minHeight: 36)
+        .background(on ? WorkoutsHomeView.accent : DS.Color.foreground.swiftUI.opacity(0.06), in: Capsule())
+    }
+    .buttonStyle(.plain)
+    .frame(minHeight: 44)
+    .accessibilityAddTraits(on ? .isSelected : [])
   }
 
   // MARK: - Đầu tháng
