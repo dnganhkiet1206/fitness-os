@@ -141,7 +141,7 @@ struct WorkoutsHomeView: View {
     .padding(.top, DS.Spacing.sm)
     if flow.plan != nil {
       NavigationLink {
-        WeekPlanView(flow: flow)
+        WeekPlanView(flow: flow, onOpenToday: onOpenSession)
       } label: {
         strip.contentShape(Rectangle())
       }

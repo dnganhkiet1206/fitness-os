@@ -27,6 +27,12 @@ import SwiftUI
 /// Chưa có (ghi ở #527): mở nhạc (`MusicLaunch`).
 struct WeekPlanView: View {
   let flow: WorkoutFlow
+  /// "Mở bảng tập" của HÔM NAY mở đúng màn tập của tab (đồng hồ nghỉ, Live
+  /// Activity, màn tổng kết) thay vì một sheet thiếu những thứ ấy (14/10).
+  /// `nil` (mở từ chỗ khác) = sheet như mọi ngày.
+  var onOpenToday: (() -> Void)? = nil
+  /// Ngày khác vừa chốt từ sheet → màn tổng kết.
+  @State private var finishedPast: WorkoutsTab.FinishedWorkout?
   @State private var offset = 0
   @State private var selected: Int?
   @State private var picking: DayTarget?
@@ -78,6 +84,11 @@ struct WeekPlanView: View {
     }) { board in
       WorkoutView(
         controller: board.controller,
+        onFinish: {
+          let sets = WorkoutsTab.summarySets(board.controller)
+          let summary = try await board.controller.finish()
+          finishedPast = WorkoutsTab.FinishedWorkout(summary: summary, sets: sets)
+        },
         onClose: { openDay = nil },
         onChangeWorkout: {
           pickAfterClose = DayTarget(day: board.weekday)
@@ -85,6 +96,14 @@ struct WeekPlanView: View {
         }
       )
       .environment(flow)
+      .sheet(item: $finishedPast) { f in
+        NavigationStack {
+          WorkoutSummaryView(summary: f.summary, sets: f.sets, onDone: {
+            finishedPast = nil
+            openDay = nil
+          })
+        }
+      }
     }
     .alert(String(localized: "workout.finishError.generic"), isPresented: $failed) {
       Button(String(localized: "workout.ok")) {}
@@ -346,6 +365,10 @@ struct WeekPlanView: View {
 
   /// Dựng bảng của ngày `d`; chỉ hiện nếu ngày ấy VẪN đang chọn khi xong.
   private func open(_ d: LocalDate) async {
+    if d == today, let onOpenToday, flow.session != nil {
+      onOpenToday()
+      return
+    }
     opening = d
     defer { if opening == d { opening = nil } }
     guard let controller = await flow.daySession(on: d), dates[day] == d else { return }

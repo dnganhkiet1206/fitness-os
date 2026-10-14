@@ -40,6 +40,13 @@ struct WorkoutFocusTests {
     #expect(ex[0].done == 1 && ex[0].total == 2 && !ex[0].isComplete)
   }
 
+  @Test func adHocExercisesNeverMergeEvenUnnamed() {
+    let extra = WorkoutPlanning.adHocRows([AdHocExercise(id: "a"), AdHocExercise(id: "b", name: "Curl", sets: 2)])
+    let ex = WorkoutFocus.exercises(rows + extra, DayProgress())
+    #expect(ex.map(\.key) == ["curl", "Plank", "x:a", "x:b"])
+    #expect(ex[3].total == 2)
+  }
+
   @Test func weightStepsByPlateAndNeverGoesNegative() {
     #expect(WorkoutFocus.stepWeight("15", by: 1, unit: .kg) == "17.5")
     #expect(WorkoutFocus.stepWeight("17.5", by: -1, unit: .kg) == "15")

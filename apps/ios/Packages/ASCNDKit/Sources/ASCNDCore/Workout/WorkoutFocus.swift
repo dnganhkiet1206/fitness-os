@@ -21,7 +21,11 @@ public enum WorkoutFocus {
     public var id: String { key }
   }
 
-  public static func exerciseKey(_ row: PlannedSet) -> String { row.exerciseId ?? row.exerciseName }
+  /// Bài thêm trong buổi theo id của nó (tên còn trống / trùng tên bài kế
+  /// hoạch thì vẫn là một bài riêng); bài kế hoạch theo id, thiếu thì tên.
+  public static func exerciseKey(_ row: PlannedSet) -> String {
+    row.adHoc.map { "x:\($0)" } ?? row.exerciseId ?? row.exerciseName
+  }
 
   /// Gom hàng theo bài, giữ thứ tự xuất hiện đầu tiên.
   public static func exercises(_ rows: [PlannedSet], _ progress: DayProgress) -> [Exercise] {

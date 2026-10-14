@@ -62,6 +62,8 @@ public struct WorkoutView: View {
   enum FieldFocus: Hashable {
     case weight(String)
     case reps(String)
+    /// Tên của một bài thêm trong buổi (id bài).
+    case name(String)
   }
   @State private var isFinishing = false
   /// Hàng đã nằm trong buổi đã chốt mà người dùng vừa bấm bỏ tích — chờ hỏi
@@ -219,11 +221,12 @@ public struct WorkoutView: View {
           undoBar(removal)
         }
         SyncStrip(status: outboxStatus)
-        if controller.plan.rows.isEmpty {
+        if controller.rows.isEmpty {
           emptyView
+          addExerciseButton
         } else {
-          let exercises = WorkoutFocus.exercises(controller.plan.rows, controller.progress)
-          let next = WorkoutFocus.next(controller.plan.rows, controller.progress, pinned: pinned)
+          let exercises = WorkoutFocus.exercises(controller.rows, controller.progress)
+          let next = WorkoutFocus.next(controller.rows, controller.progress, pinned: pinned)
           SessionProgressHeader(eyebrow: eyebrow, exercises: exercises, current: next.map(WorkoutFocus.exerciseKey))
             .padding(.horizontal, 4)
           if let timer = restTimer {
@@ -232,6 +235,7 @@ public struct WorkoutView: View {
           ForEach(exerciseGroups, id: \.key) { group in
             exerciseCard(group, next: next)
           }
+          addExerciseButton
           finishButton
             .padding(.top, DS.Spacing.sm)
         }
@@ -257,7 +261,7 @@ public struct WorkoutView: View {
   }
 
   private var showsTable: Bool {
-    !isPreview && (tableLayout || controller.isLogged || controller.plan.rows.isEmpty)
+    !isPreview && (tableLayout || controller.isLogged || controller.rows.isEmpty)
   }
 
   @ViewBuilder private var sessionContent: some View {
@@ -294,7 +298,7 @@ public struct WorkoutView: View {
   }
 
   private var focusContent: some View {
-    let rows = controller.plan.rows
+    let rows = controller.rows
     let exercises = WorkoutFocus.exercises(rows, controller.progress)
     let next = WorkoutFocus.next(rows, controller.progress, pinned: pinned)
     let current = next.map(WorkoutFocus.exerciseKey)
@@ -328,6 +332,7 @@ public struct WorkoutView: View {
             withAnimation(.snappy) { pinned = key }
           }
         }
+        addExerciseButton
 
         if next != nil, controller.canFinish {
           outlineButton(
@@ -413,6 +418,9 @@ public struct WorkoutView: View {
         restMenu(row)
         rpeMenu(row)
         Spacer(minLength: 0)
+        if let id = row.adHoc {
+          addSetButton(id, count: group.rows.count)
+        }
       }
 
       Button {
@@ -531,8 +539,8 @@ public struct WorkoutView: View {
   private var exerciseGroups: [(key: String, name: String, rows: [PlannedSet])] {
     var order: [String] = []
     var groups: [String: [PlannedSet]] = [:]
-    for row in controller.plan.rows {
-      let k = row.exerciseId ?? row.exerciseName
+    for row in controller.rows {
+      let k = WorkoutFocus.exerciseKey(row)
       if groups[k] == nil { order.append(k) }
       groups[k, default: []].append(row)
     }
@@ -598,6 +606,9 @@ public struct WorkoutView: View {
               setLine(row)
             }
           }
+        }
+        if let id = group.rows.first?.adHoc {
+          addSetButton(id, count: group.rows.count)
         }
       } else {
         Text(verbatim: groupSummary(group.rows))
@@ -780,7 +791,9 @@ public struct WorkoutView: View {
   @ViewBuilder private func exerciseTitle(_ group: (key: String, name: String, rows: [PlannedSet])) -> some View {
     let first = group.rows.first
     let lang = MuscleGroup.Language(locale: locale)
-    if let guides = flow?.guides, let first, first.adHoc == nil {
+    if let id = first?.adHoc {
+      adHocHeader(id, name: group.name)
+    } else if let guides = flow?.guides, let first, first.adHoc == nil {
       let thumb = guides.thumbnail(exerciseId: first.exerciseId, name: group.name, lang: lang)
       Button {
         guideTarget = GuideTarget(key: group.key, exerciseId: first.exerciseId, name: group.name)
@@ -825,6 +838,93 @@ public struct WorkoutView: View {
     }
   }
 
+
+  // MARK: - Bài / set thêm trong buổi (#527, 14/10 — RN `nRdAddExercise` / `nRdAddSet`)
+
+  /// Chữ tên bài thêm đang chờ debounce (như ô tạ / reps).
+  @State private var nameTexts: [String: String] = [:]
+
+  /// "+ Bài tập khác": thêm một bài trống một hiệp, nhảy tới nó, đặt con trỏ
+  /// vào ô tên (`addExercise`, `day-plan.tsx:987`).
+  @ViewBuilder private var addExerciseButton: some View {
+    if !isPreview, controller.loaded {
+      Button {
+        Task {
+          await flushWrites()
+          guard let id = await controller.addExercise() else { return }
+          withAnimation(.snappy) { pinned = "x:\(id)" }
+          try? await Task.sleep(for: .milliseconds(250))
+          focusedField = .name(id)
+        }
+      } label: {
+        Label(String(localized: "ws.addExercise"), systemImage: "plus")
+          .font(DS.TextStyle.headline)
+          .foregroundStyle(WorkoutsHomeView.accent)
+          .frame(maxWidth: .infinity, minHeight: 50)
+          .overlay(
+            Capsule().strokeBorder(WorkoutsHomeView.accent.opacity(0.35), style: StrokeStyle(lineWidth: 1.5, dash: [5, 4])))
+          .contentShape(Capsule())
+      }
+      .buttonStyle(TodayPressStyle())
+    }
+  }
+
+  /// "+ Thêm set" của một bài thêm (trần 20, `addSet`).
+  @ViewBuilder private func addSetButton(_ id: String, count: Int) -> some View {
+    if count < WorkoutPlanning.maxSets {
+      Button {
+        Task { await controller.addSet(to: id) }
+      } label: {
+        Label(String(localized: "ws.addSet"), systemImage: "plus")
+          .font(DS.TextStyle.footnote.weight(.semibold))
+          .foregroundStyle(WorkoutsHomeView.accent)
+          .frame(minHeight: 44)
+      }
+      .buttonStyle(.plain)
+    }
+  }
+
+  /// Đầu một bài thêm: ô tên (chưa có tên thì chưa tick được — `rowReady`)
+  /// + nút bỏ bài. Bài đã có set nằm trong buổi đã ghi: chỉ đọc.
+  private func adHocHeader(_ id: String, name: String) -> some View {
+    let locked = controller.adHocLocked(id)
+    let binding = Binding<String>(
+      get: { nameTexts[id] ?? controller.progress.extra.first { $0.id == id }?.name ?? name },
+      set: { new in
+        nameTexts[id] = new
+        scheduleWrite(key: "n:\(id)") {
+          await controller.renameExercise(id, to: new)
+          if nameTexts[id] == new { nameTexts[id] = nil }
+        }
+      })
+    return HStack(spacing: DS.Spacing.sm) {
+      ExerciseThumb(name: binding.wrappedValue.isEmpty ? "+" : binding.wrappedValue, thumbnail: nil, linked: false)
+      TextField(String(localized: "ws.exerciseName"), text: binding)
+        .font(DS.TextStyle.title2)
+        .textInputAutocapitalization(.words)
+        .autocorrectionDisabled()
+        .submitLabel(.done)
+        .focused($focusedField, equals: .name(id))
+        .disabled(locked)
+        .onSubmit { Task { await flushWrites() } }
+        .accessibilityLabel(Text("ws.exerciseName"))
+      if !locked {
+        Button {
+          Task {
+            await flushWrites()
+            await controller.removeExercise(id)
+            if pinned == "x:\(id)" { pinned = nil }
+          }
+        } label: {
+          Image(systemName: "trash")
+            .font(.footnote)
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .frame(minWidth: 44, minHeight: 44)
+        }
+        .accessibilityLabel(Text("ws.removeExercise"))
+      }
+    }
+  }
 
   /// Chip nghỉ của một hàng (dạng bảng và thẻ set).
   private func restMenu(_ row: PlannedSet) -> some View {
@@ -992,6 +1092,12 @@ public struct WorkoutView: View {
         if let r = repsTexts[key] {
           await controller.setRepsText(r, for: key)
           if repsTexts[key] == r { repsTexts[key] = nil }
+        }
+      } else if pkey.hasPrefix("n:") {
+        let id = String(pkey.dropFirst(2))
+        if let n = nameTexts[id] {
+          await controller.renameExercise(id, to: n)
+          if nameTexts[id] == n { nameTexts[id] = nil }
         }
       }
     }

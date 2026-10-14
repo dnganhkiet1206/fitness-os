@@ -58,6 +58,10 @@ struct WorkoutsTab: View {
   /// của `finish()` bị bỏ đi và `WorkoutSummaryView` không được mở ở đâu).
   @State private var finished: FinishedWorkout?
   @State private var sharing = false
+  /// Tab đang trên màn (giữa `onAppear` và `onDisappear`).
+  @State private var visible = false
+  /// "Bắt đầu" ở Hôm nay đã bấm, chờ tab lên màn / buổi dựng xong.
+  @State private var pendingLaunch = false
 
   init(launch: Binding<Bool> = .constant(false)) {
     _launch = launch
@@ -67,18 +71,21 @@ struct WorkoutsTab: View {
     NavigationStack {
       WorkoutsHomeView(flow: flow, onOpenSession: { showsSession = true })
     }
+    // "Bắt đầu" ở Hôm nay: chỉ mở lớp toàn màn hình khi tab ĐÃ lên màn và
+    // buổi đã dựng xong. Mở cùng nhịp đổi tab thì SwiftUI bỏ qua (14/10: chỉ
+    // đổi tab); chờ một khoảng cố định thì máy chậm vẫn trượt.
+    .onAppear {
+      visible = true
+      tryLaunch()
+    }
+    .onDisappear { visible = false }
     .onChange(of: launch, initial: true) { _, go in
       guard go else { return }
       launch = false
-      guard flow.session != nil else { return }
-      // Cùng nhịp với lần đổi tab, tab này còn chưa lên cửa sổ — SwiftUI bỏ
-      // qua lớp toàn màn hình mở lúc ấy (14/10: "Bắt đầu" ở Hôm nay chỉ đổi
-      // tab). Mở sau khi tab đã hiện.
-      Task { @MainActor in
-        try? await Task.sleep(for: .milliseconds(350))
-        if flow.session != nil { showsSession = true }
-      }
+      pendingLaunch = true
+      tryLaunch()
     }
+    .onChange(of: flow.session != nil) { _, _ in tryLaunch() }
     .fullScreenCover(isPresented: $showsSession) {
       sessionScreen
         .sheet(isPresented: $showsHistory) {
@@ -103,6 +110,16 @@ struct WorkoutsTab: View {
             }
           }
         }
+    }
+  }
+
+  private func tryLaunch() {
+    guard pendingLaunch, visible, flow.session != nil else { return }
+    pendingLaunch = false
+    // Sang nhịp sau: lần trình bày này không chung giao dịch với lần tab hiện.
+    Task { @MainActor in
+      await Task.yield()
+      showsSession = true
     }
   }
 
