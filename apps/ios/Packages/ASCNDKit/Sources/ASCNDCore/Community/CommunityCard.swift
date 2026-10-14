@@ -106,3 +106,19 @@ public enum CommunityCard {
     return Array(out.prefix(2))
   }
 }
+
+extension CommunityCard {
+  /// "Thêm vào bữa" từ bài công thức (14/10; RN chưa có — ghi ở đầu
+  /// `CommunityView`): MỘT món tự nhập, một khẩu phần, đúng số của bài
+  /// (kcal / đạm / tinh bột / béo làm tròn như ô nhập tay), không gắn
+  /// `food_items`. Bài không có kcal thì không có gì để ghi.
+  public static func mealFood(_ r: CommunityPayloads.Recipe, id: String, fallbackName: String) -> MealLog.Food? {
+    let kcal = r.kcal.isFinite ? r.kcal.rounded() : 0
+    guard kcal > 0 else { return nil }
+    let name = r.title.trimmingCharacters(in: .whitespacesAndNewlines)
+    func g(_ v: Double) -> Double { v.isFinite && v > 0 ? (v * 10).rounded() / 10 : 0 }
+    return MealLog.Food(
+      id: id, foodItemId: nil, name: name.isEmpty ? fallbackName : name, kcal: kcal, protein: g(r.protein),
+      carbs: g(r.carbs), fat: g(r.fat), fiber: 0)
+  }
+}

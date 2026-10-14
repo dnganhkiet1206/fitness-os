@@ -323,12 +323,11 @@ struct CommunityFeedView: View {
         .frame(minHeight: 240)
     case .ready where book.posts.isEmpty:
       if book.tab == .following, book.hasProfile == true {
-        // Có hồ sơ: việc cần làm là TÌM người; chưa có thì mở Khám phá.
-        DSEmptyState(
-          systemImage: "person.2", title: String(localized: "community.empty.following"),
-          message: String(localized: "community.empty.following.hint"),
-          actionTitle: String(localized: "community.search.find")
-        ) { findPeople = true }
+        // Có hồ sơ: gợi ý người ngay tại chỗ, theo dõi một chạm (14/10) —
+        // thay vì một nút dẫn sang màn tìm kiếm.
+        FollowSuggestionsCard(userId: book.userId, findMore: { findPeople = true }) {
+          Task { await book.load() }
+        }
       } else if book.tab == .following {
         DSEmptyState(
           systemImage: "person.2", title: String(localized: "community.empty.following"),
@@ -438,6 +437,19 @@ struct PostCardView: View {
             .font(DS.TextStyle.body)
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        if post.kind == .recipe, let add = actions?.addToMeal, (post.recipe?.kcal ?? 0) > 0 {
+          Button {
+            add(post)
+          } label: {
+            Label(String(localized: "community.addtomeal"), systemImage: "plus")
+              .font(DS.TextStyle.headline)
+              .foregroundStyle(PostTint.fill(.recipe))
+              .frame(maxWidth: .infinity, minHeight: 46)
+              .background(Color.white, in: Capsule())
+              .contentShape(Capsule())
+          }
+          .buttonStyle(TodayPressStyle())
         }
         if post.kind == .workout, let tryIt = actions?.tryWorkout, CommunityTry.offered(post) {
           TryWorkoutButton(busy: actions?.trying.contains(post.id) ?? false, tint: PostTint.fill(.workout)) {
@@ -914,9 +926,11 @@ struct PostCountsView: View {
 struct UsefulThisWeekCard: View {
   let posts: [CommunityFeed.Post]
 
+  /// Hàng thẻ màu trượt ngang (thiết kế lại 14/10): cùng màu theo loại với
+  /// thẻ bài — mỗi thẻ: loại, tiêu đề, @tác giả, lý do ("12 người đã thử").
   var body: some View {
-    DSCard {
-      VStack(alignment: .leading, spacing: DS.Spacing.xs) {
+    VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+      VStack(alignment: .leading, spacing: 2) {
         Text("community.useful.title")
           .font(DS.TextStyle.headline)
           .foregroundStyle(DS.Color.foreground.swiftUI)
@@ -924,40 +938,56 @@ struct UsefulThisWeekCard: View {
         Text("community.useful.sub")
           .font(DS.TextStyle.footnote)
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-        ForEach(Array(posts.enumerated()), id: \.element.id) { i, p in
-          NavigationLink {
-            CommunityPostScreen(postId: p.id)
-          } label: {
-            row(p, rule: i > 0)
-          }
-          .buttonStyle(.plain)
-        }
       }
-      .frame(maxWidth: .infinity, alignment: .leading)
+      .padding(.horizontal, 4)
+      ScrollView(.horizontal, showsIndicators: false) {
+        HStack(spacing: DS.Spacing.sm) {
+          ForEach(posts) { p in
+            NavigationLink {
+              CommunityPostScreen(postId: p.id)
+            } label: {
+              tile(p)
+            }
+            .buttonStyle(TodayPressStyle())
+          }
+        }
+        .padding(.horizontal, 4)
+        .padding(.vertical, 4)
+      }
+      .scrollClipDisabled()
     }
   }
 
-  private func row(_ p: CommunityFeed.Post, rule: Bool) -> some View {
+  private func tile(_ p: CommunityFeed.Post) -> some View {
     let title = CommunityCard.usefulTitle(p) ?? Self.fallback(p.kind)
     let who = p.author.map { "@\($0.handle)" } ?? ""
     let why = CommunityCard.reasons(p).map(Self.reason).joined(separator: " · ")
-    return HStack(spacing: DS.Spacing.sm) {
+    return VStack(alignment: .leading, spacing: 6) {
       Image(systemName: PostArtView.glyph(p.kind))
-        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-        .frame(width: 24)
-      VStack(alignment: .leading, spacing: 2) {
-        Text(verbatim: title).font(DS.TextStyle.body.weight(.semibold)).foregroundStyle(DS.Color.foreground.swiftUI)
-          .lineLimit(2)
-        if !who.isEmpty {
-          Text(verbatim: who).font(DS.TextStyle.footnote).foregroundStyle(DS.Color.mutedForeground.swiftUI).lineLimit(1)
-        }
-        Text(verbatim: why).font(DS.TextStyle.footnote).foregroundStyle(DS.Color.foreground.swiftUI)
-      }
+        .font(.footnote.weight(.semibold))
+        .foregroundStyle(.white)
+        .frame(width: 30, height: 30)
+        .background(.white.opacity(0.18), in: Circle())
+        .accessibilityHidden(true)
+      Text(verbatim: title)
+        .font(DS.TextStyle.headline)
+        .foregroundStyle(.white)
+        .lineLimit(2)
+        .multilineTextAlignment(.leading)
       Spacer(minLength: 0)
+      if !why.isEmpty {
+        Text(verbatim: why)
+          .font(DS.TextStyle.caption.weight(.semibold))
+          .foregroundStyle(.white)
+          .lineLimit(1)
+      }
+      if !who.isEmpty {
+        Text(verbatim: who).font(DS.TextStyle.caption).foregroundStyle(PostTint.soft).lineLimit(1)
+      }
     }
-    .frame(minHeight: 56)
-    .padding(.vertical, DS.Spacing.sm)
-    .overlay(alignment: .top) { if rule { Divider() } }
+    .padding(DS.Spacing.md)
+    .frame(width: 176, height: 150, alignment: .topLeading)
+    .background(PostTint.fill(p.kind), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
     .accessibilityElement(children: .ignore)
     .accessibilityLabel(Text(verbatim: [title, who, why].filter { !$0.isEmpty }.joined(separator: ", ")))
   }
@@ -1059,5 +1089,123 @@ private struct TodayFaces: View {
       }
       .scrollClipDisabled()
     }
+  }
+}
+
+/// Bảng tin "Đang theo dõi" trống (14/10): gợi ý người (`community_follow_
+/// suggestions`, cùng nguồn với màn tìm kiếm), nút Theo dõi tại chỗ; theo dõi
+/// được ai thì "Xem bảng tin" đọc lại feed.
+private struct FollowSuggestionsCard: View {
+  let userId: String
+  let findMore: () -> Void
+  let showFeed: () -> Void
+  @Environment(AppServices.self) private var services
+  @Environment(\.openCommunityUser) private var openUser
+  @State private var book: CommunitySearchBook?
+  @State private var followed: Set<String> = []
+  @State private var message: String?
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: DS.Spacing.md) {
+      VStack(alignment: .leading, spacing: 4) {
+        Text("community.empty.following")
+          .font(DS.TextStyle.title2)
+          .foregroundStyle(DS.Color.foreground.swiftUI)
+        Text("community.suggest.lead")
+          .font(DS.TextStyle.footnote)
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+      }
+      .padding(.horizontal, 4)
+      if let book, book.suggestionsPhase == .ready, !book.suggestions.isEmpty {
+        VStack(spacing: 0) {
+          ForEach(Array(book.suggestions.prefix(5).enumerated()), id: \.element.id) { i, p in
+            if i > 0 { Divider().padding(.leading, 68).opacity(0.5) }
+            row(p, book: book)
+          }
+        }
+        .todayCard()
+      } else if book?.suggestionsPhase == .loading || book == nil {
+        ProgressView().frame(maxWidth: .infinity, minHeight: 88)
+      }
+      if !followed.isEmpty {
+        Button(action: showFeed) {
+          Label(String(localized: "community.suggest.showfeed"), systemImage: "arrow.down")
+            .font(DS.TextStyle.headline)
+            .foregroundStyle(DS.Color.primaryForeground.swiftUI)
+            .frame(maxWidth: .infinity, minHeight: 50)
+            .background(DS.Color.primary.swiftUI, in: Capsule())
+        }
+        .buttonStyle(TodayPressStyle())
+      }
+      Button(action: findMore) {
+        Label(String(localized: "community.search.find"), systemImage: "magnifyingglass")
+          .font(DS.TextStyle.footnote.weight(.semibold))
+          .foregroundStyle(DS.Color.foreground.swiftUI)
+          .frame(maxWidth: .infinity, minHeight: 44)
+      }
+      .buttonStyle(.plain)
+    }
+    .task {
+      if book == nil { book = services.makeCommunitySearch(userId: userId, mode: .people) }
+      await book?.loadSuggestions()
+    }
+    .alert(
+      Text(verbatim: message ?? ""),
+      isPresented: Binding(get: { message != nil }, set: { if !$0 { message = nil } })
+    ) {
+      Button(String(localized: "common.ok"), role: .cancel) {}
+    }
+  }
+
+  private func row(_ p: CommunitySearch.Person, book: CommunitySearchBook) -> some View {
+    let on = p.iFollow
+    let label = on ? String(localized: "community.user.unfollowstate") : String(localized: "community.user.follow")
+    return HStack(spacing: DS.Spacing.sm) {
+      Button {
+        openUser?(p.author.userId)
+      } label: {
+        HStack(spacing: DS.Spacing.sm) {
+          MascotAvatar(mascotId: p.author.mascotId, size: 44)
+          VStack(alignment: .leading, spacing: 2) {
+            Text(verbatim: p.author.displayName)
+              .font(DS.TextStyle.body.weight(.semibold))
+              .foregroundStyle(DS.Color.foreground.swiftUI)
+              .lineLimit(1)
+            Text(verbatim: CommunitySearchView.whyText(CommunitySearch.why(p)))
+              .font(DS.TextStyle.footnote)
+              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+              .lineLimit(1)
+          }
+          Spacer(minLength: 0)
+        }
+        .contentShape(Rectangle())
+      }
+      .buttonStyle(.plain)
+      .accessibilityLabel(Text(verbatim: p.author.displayName))
+      Button {
+        Task {
+          switch await book.follow(p.author.userId, on: !on) {
+          case .failed(let f): message = CommunityPostView.failureText(f)
+          case .done: if !on { followed.insert(p.author.userId) } else { followed.remove(p.author.userId) }
+          default: break
+          }
+        }
+      } label: {
+        Text(verbatim: label)
+          .font(DS.TextStyle.footnote.weight(.semibold))
+          .foregroundStyle(on ? DS.Color.foreground.swiftUI : DS.Color.primaryForeground.swiftUI)
+          .padding(.horizontal, DS.Spacing.md)
+          .frame(minHeight: 36)
+          .background(on ? DS.Color.secondary.swiftUI : DS.Color.primary.swiftUI, in: Capsule())
+          .frame(minHeight: 44)
+          .contentShape(Rectangle())
+      }
+      .buttonStyle(.plain)
+      .disabled(book.following.contains(p.author.userId))
+      .sensoryFeedback(.selection, trigger: on)
+      .accessibilityLabel(Text(verbatim: "\(label) \(p.author.displayName)"))
+    }
+    .padding(.horizontal, DS.Spacing.md)
+    .padding(.vertical, DS.Spacing.sm)
   }
 }

@@ -19,6 +19,14 @@ struct CommunityPostActionsContext {
   var trying: Set<String> = []
   /// Vừa LƯU xong một bài (lát 16) — màn báo "Đã lưu" kèm lối vào thư viện.
   var saved: (@MainActor () -> Void)? = nil
+  /// "Thêm vào bữa" của bài công thức (14/10) — mở Ghi bữa có sẵn món.
+  var addToMeal: (@MainActor (CommunityFeed.Post) -> Void)? = nil
+}
+
+/// Món chờ thêm vào bữa (từ bài công thức).
+private struct PendingMeal: Identifiable {
+  let food: MealLog.Food
+  var id: String { food.id }
 }
 
 extension EnvironmentValues {
@@ -51,6 +59,7 @@ private struct CommunityPostActionsModifier: ViewModifier {
   /// "Đã lưu" đang hiện (mỗi lần lưu một số mới, để băng hiện lại đủ giờ).
   @State private var savedNotice: Int?
   @State private var openLibrary = false
+  @State private var addingMeal: PendingMeal?
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
   /// Đang ở chính thư viện thì không kèm nút dẫn về chỗ đang đứng (RN).
@@ -75,6 +84,9 @@ private struct CommunityPostActionsModifier: ViewModifier {
         if !Task.isCancelled { withAnimation(reduceMotion ? nil : .easeOut(duration: 0.2)) { savedNotice = nil } }
       }
       .navigationDestination(isPresented: $openLibrary) { CommunitySavedScreen(userId: userId) }
+      .sheet(item: $addingMeal) { m in
+        LogMealView(userId: userId, prefill: [m.food])
+      }
       .task {
         if actions == nil { actions = services.makeCommunityPostActions(userId: userId) }
         if tryBook == nil { tryBook = services.makeCommunityTry(userId: userId) }
@@ -141,6 +153,12 @@ private struct CommunityPostActionsModifier: ViewModifier {
     c.saved = {
       AccessibilityNotification.Announcement(String(localized: "community.saved.toast")).post()
       withAnimation(reduceMotion ? nil : .snappy) { savedNotice = (savedNotice ?? 0) + 1 }
+    }
+    c.addToMeal = { post in
+      guard let r = post.recipe,
+        let food = CommunityCard.mealFood(r, id: UUID().uuidString.lowercased(), fallbackName: String(localized: "community.recipe"))
+      else { return }
+      addingMeal = PendingMeal(food: food)
     }
     if let tryBook {
       let tryIt: @MainActor (CommunityFeed.Post) -> Void = { post in Task { await tryPost(post) } }
@@ -396,16 +414,23 @@ struct PostActionsRow: View {
       }
     } label: {
       HStack(spacing: 4) {
-        Image(systemName: icon).foregroundStyle(tint)
+        // Tim nảy khi bật (14/10): phản hồi ngay, trước khi server trả lời.
+        Image(systemName: icon)
+          .foregroundStyle(tint)
+          .contentTransition(.symbolEffect(.replace))
+          .symbolEffect(.bounce.up.byLayer, value: on)
         if let count {
           Text(verbatim: "\(count)").font(DS.TextStyle.footnote.monospacedDigit()).foregroundStyle(tint)
+            .contentTransition(.numericText(value: Double(count)))
         }
       }
       .padding(.horizontal, DS.Spacing.sm)
       .frame(minWidth: 44, minHeight: 44)
       .contentShape(Rectangle())
+      .animation(.snappy, value: on)
     }
     .buttonStyle(.plain)
+    .sensoryFeedback(.impact(weight: .light), trigger: on) { _, new in t == .like && new }
     .accessibilityLabel(Text(verbatim: count.map { "\(label) · \($0)" } ?? label))
     .accessibilityAddTraits(on ? .isSelected : [])
   }
