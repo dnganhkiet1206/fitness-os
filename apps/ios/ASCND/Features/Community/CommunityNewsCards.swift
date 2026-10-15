@@ -158,7 +158,12 @@ private struct FeedFooter: View {
   }
 }
 
-/// "Ảnh" của thẻ: ảnh thật nếu có; không có thì mảng màu chuyên mục + số lớn.
+/// "Ảnh" của thẻ: ảnh thật nếu có; không có thì một bức "ảnh" vẽ từ dữ liệu
+/// (15/10, chủ dự án: "thay vì màu plain thì cho một vài hiệu ứng") — nền lưới
+/// chuyển màu (MeshGradient) theo chuyên mục, mỗi bài lệch nhẹ một kiểu nên hai
+/// thẻ không giống hệt; biểu tượng lớn chìm; ánh sáng trên / tối dưới như ảnh
+/// thật; nét dữ liệu: đường + vùng sáng cho tiến bộ, vòng ba chất cho món,
+/// bảng điểm cho buổi tập; nhãn trên mặt kính mờ.
 struct PostArtTile: View {
   enum Shape { case wide, square, grid }
 
@@ -169,26 +174,32 @@ struct PostArtTile: View {
 
   private var big: CGFloat {
     switch shape {
-    case .wide: 60
-    case .square: 22
-    case .grid: 28
+    case .wide: 72
+    case .square: 28
+    case .grid: 34
     }
   }
 
+  private var pad: CGFloat { shape == .square ? 10 : 16 }
+
   var body: some View {
-    ZStack {
-      fill
-      if let artURL {
-        AsyncImage(url: artURL) { phase in
-          if let image = phase.image { image.resizable().scaledToFill() }
+    // Mọi lớp nằm trong overlay của một khung trống: biểu tượng chìm cỡ lớn
+    // không bao giờ đẩy khung to ra / tràn lên dải chuyên mục.
+    Color.clear
+      .overlay { ArtBackdrop(kind: post.kind, seed: post.id, shape: shape) }
+      .overlay { content }
+      .overlay {
+        if let artURL {
+          AsyncImage(url: artURL) { phase in
+            if let image = phase.image { image.resizable().scaledToFill() }
+          }
         }
       }
-    }
-    .clipped()
+      .clipped()
     .accessibilityHidden(true)
   }
 
-  @ViewBuilder private var fill: some View {
+  @ViewBuilder private var content: some View {
     switch post.kind {
     case .workout: workout
     case .recipe: recipe
@@ -196,120 +207,354 @@ struct PostArtTile: View {
     }
   }
 
+  // MARK: buổi tập — bảng điểm dưới đèn
+
   private var workout: some View {
     let w = post.workout
     let volume = CommunityCard.volumeText(w.volumeKg, unit: unit, locale: .app)
     let (n, u) = Self.split(
-      volume ?? w.minutes.map {
-        "\(CommunityCard.number($0)) \(String(localized: "community.stat.minutes"))"
-      } ?? "")
-    return ZStack(alignment: .topLeading) {
-      PostTint.board
-      VStack(alignment: .leading, spacing: 0) {
+      volume ?? w.minutes.map { "\(CommunityCard.number($0)) \(String(localized: "community.stat.minutes"))" } ?? "")
+    return VStack(alignment: .leading, spacing: 0) {
+      HStack(alignment: .top) {
         if shape != .square {
-          HStack {
-            Text(verbatim: w.title ?? String(localized: "community.workout"))
-              .font(.system(size: 11, weight: .bold)).tracking(1.3).textCase(.uppercase)
-              .foregroundStyle(PostTint.soft).lineLimit(1)
-            Spacer(minLength: 0)
-            if w.pr { RecordChip() }
-          }
+          GlassTag(text: w.title ?? String(localized: "community.workout"))
         }
         Spacer(minLength: 0)
-        HStack(alignment: .firstTextBaseline, spacing: 3) {
-          Text(verbatim: n)
-            .font(.system(size: big, weight: .heavy).monospacedDigit()).tracking(
-              shape == .wide ? -2 : -0.5
-            )
-            .foregroundStyle(.white)
-          Text(verbatim: u).font(.system(size: shape == .wide ? 20 : 12, weight: .semibold))
-            .foregroundStyle(PostTint.soft)
-        }
-        .lineLimit(1).minimumScaleFactor(0.5)
-        if shape == .wide {
-          Text(verbatim: Self.workoutLine(w))
-            .font(.system(size: 12)).foregroundStyle(PostTint.soft).padding(.top, 4)
-        } else if shape == .square, w.pr {
-          RecordChip().padding(.top, 4)
-        }
+        if w.pr, shape != .square { RecordChip() }
       }
-      .padding(shape == .square ? 10 : 16)
+      Spacer(minLength: 0)
+      HStack(alignment: .firstTextBaseline, spacing: 3) {
+        Text(verbatim: n)
+          .font(.system(size: big, weight: .heavy).monospacedDigit())
+          .fontWidth(.condensed)
+          .tracking(shape == .wide ? -1 : -0.3)
+          .foregroundStyle(.white)
+          .shadow(color: .black.opacity(0.35), radius: 8, y: 2)
+        Text(verbatim: u)
+          .font(.system(size: shape == .wide ? 20 : 12, weight: .semibold))
+          .foregroundStyle(.white.opacity(0.7))
+      }
+      .lineLimit(1).minimumScaleFactor(0.5)
+      if shape == .wide {
+        Text(verbatim: PostArtTile.workoutLine(w))
+          .font(.system(size: 13, weight: .medium)).foregroundStyle(.white.opacity(0.7)).padding(.top, 2)
+      } else if shape == .square, w.pr {
+        RecordChip().padding(.top, 4)
+      }
+    }
+    .padding(pad)
+    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+  }
+
+  // MARK: món — vòng ba chất
+
+  private var recipe: some View {
+    let r = post.recipe
+    let kcal = r?.kcal ?? 0
+    return Group {
+      if shape == .wide {
+        HStack(alignment: .center, spacing: 16) {
+          VStack(alignment: .leading, spacing: 8) {
+            if let t = r?.title, !t.isEmpty { GlassTag(text: t) }
+            Spacer(minLength: 0)
+            if kcal > 0 {
+              HStack(alignment: .firstTextBaseline, spacing: 3) {
+                Text(verbatim: CommunityCard.grouped(kcal, locale: .app))
+                  .font(.system(size: 56, weight: .heavy).monospacedDigit()).fontWidth(.condensed).tracking(-1)
+                Text(String(localized: "nc.kcal")).font(.system(size: 18, weight: .semibold)).opacity(0.75)
+              }
+              .foregroundStyle(.white)
+              .shadow(color: .black.opacity(0.25), radius: 8, y: 2)
+            }
+            if let r { macroLine(r) }
+          }
+          Spacer(minLength: 0)
+          if let r { MacroRing(protein: r.protein, carbs: r.carbs, fat: r.fat, size: 104, line: 12) }
+        }
+        .padding(pad)
+      } else {
+        VStack(spacing: 6) {
+          if let r {
+            ZStack {
+              MacroRing(protein: r.protein, carbs: r.carbs, fat: r.fat, size: shape == .square ? 62 : 70, line: 7)
+              Image(systemName: "fork.knife").font(.system(size: shape == .square ? 18 : 20, weight: .semibold))
+                .foregroundStyle(.white)
+            }
+          }
+          if kcal > 0 {
+            Text(verbatim: RecipePostBody.kcal(kcal))
+              .font(.system(size: 12, weight: .bold).monospacedDigit())
+              .foregroundStyle(.white)
+          }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+      }
     }
   }
 
-  private var recipe: some View {
-    ZStack {
-      DS.Color.metricOrange.solid
-      VStack(spacing: 4) {
-        Image(systemName: "frying.pan")
-          .font(.system(size: shape == .wide ? 48 : 30, weight: .regular))
-        if let kcal = post.recipe?.kcal, kcal > 0 {
-          Text(verbatim: RecipePostBody.kcal(kcal))
-            .font(.system(size: shape == .wide ? 20 : 13, weight: .bold).monospacedDigit())
+  private func macroLine(_ r: CommunityPayloads.Recipe) -> some View {
+    HStack(spacing: 6) {
+      ForEach(
+        [("P", r.protein, MacroRing.tints[0]), ("C", r.carbs, MacroRing.tints[1]), ("F", r.fat, MacroRing.tints[2])],
+        id: \.0
+      ) { label, grams, tint in
+        HStack(spacing: 4) {
+          Circle().fill(tint).frame(width: 6, height: 6)
+          Text(verbatim: "\(label) \(CommunityCard.grouped(grams, locale: .app))g")
         }
+        .font(.system(size: 12, weight: .semibold).monospacedDigit())
+        .foregroundStyle(.white)
+        .padding(.horizontal, 8).padding(.vertical, 4)
+        .background(.ultraThinMaterial.opacity(0.7), in: Capsule())
+        .environment(\.colorScheme, .dark)
       }
-      .foregroundStyle(.white)
     }
   }
+
+  // MARK: tiến bộ — đường sáng, vùng mờ, điểm cuối phát sáng
 
   private var progress: some View {
     let tile = post.progress.flatMap { CommunityCard.tiles($0, unit: unit).first }
     return ZStack(alignment: .topLeading) {
-      DS.Color.metricSteel.solid
+      if let tile, tile.series.count >= 2 {
+        TrendGlow(series: tile.series, line: shape == .wide ? 3 : 2.2)
+          .padding(.top, shape == .wide ? 90 : shape == .grid ? 46 : 40)
+      }
       VStack(alignment: .leading, spacing: 6) {
         if let tile {
           if shape == .wide {
             HStack {
-              Text(verbatim: ProgressPostBody.label(tile))
-                .font(.system(size: 11, weight: .bold)).tracking(1.3).textCase(.uppercase)
+              GlassTag(text: ProgressPostBody.label(tile))
               Spacer(minLength: 0)
-              Text(verbatim: "\(tile.startText) → \(tile.endText)").font(
-                .system(size: 12).monospacedDigit())
+              Text(verbatim: "\(tile.startText) → \(tile.endText)")
+                .font(.system(size: 12, weight: .medium).monospacedDigit())
+                .foregroundStyle(.white.opacity(0.8))
             }
-            .foregroundStyle(.white.opacity(0.75))
             .lineLimit(1)
           }
           Text(verbatim: tile.deltaText)
-            .font(.system(size: shape == .wide ? 44 : big, weight: .heavy).monospacedDigit())
+            .font(.system(size: shape == .wide ? 56 : big, weight: .heavy).monospacedDigit())
+            .fontWidth(.condensed)
             .tracking(-0.8)
-            .foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.5)
-          Spacer(minLength: 0)
-          if tile.series.count >= 2 {
-            Chart(Array(tile.series.enumerated()), id: \.offset) { point in
-              LineMark(x: .value("i", point.offset), y: .value("v", point.element))
-                .foregroundStyle(.white.opacity(0.85))
-                .lineStyle(StrokeStyle(lineWidth: shape == .wide ? 3 : 2.2, lineCap: .round))
-                .interpolationMethod(.monotone)
-            }
-            .chartXAxis(.hidden).chartYAxis(.hidden)
-            .chartYScale(domain: .automatic(includesZero: false))
-            .frame(height: shape == .wide ? 60 : 28)
-          }
-        } else {
-          Image(systemName: "chart.line.uptrend.xyaxis").font(.system(size: 30)).foregroundStyle(
-            .white)
+            .foregroundStyle(.white)
+            .shadow(color: .black.opacity(0.25), radius: 8, y: 2)
+            .lineLimit(1).minimumScaleFactor(0.5)
         }
+        Spacer(minLength: 0)
       }
-      .padding(shape == .square ? 10 : 16)
+      .padding(pad)
     }
+    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
   }
 
   /// "5 bài · 42 phút".
   static func workoutLine(_ w: CommunityPayloads.Workout) -> String {
     var parts: [String] = []
     if w.exerciseCount > 0 {
-      parts.append(
-        "\(CommunityCard.number(w.exerciseCount)) \(String(localized: "community.stat.exercises"))")
+      parts.append("\(CommunityCard.number(w.exerciseCount)) \(String(localized: "community.stat.exercises"))")
     }
-    if let m = w.minutes {
-      parts.append("\(CommunityCard.number(m)) \(String(localized: "community.stat.minutes"))")
-    }
+    if let m = w.minutes { parts.append("\(CommunityCard.number(m)) \(String(localized: "community.stat.minutes"))") }
     return parts.joined(separator: " · ")
   }
 
   static func split(_ s: String) -> (String, String) {
     guard let i = s.firstIndex(of: " ") else { return (s, "") }
     return (String(s[..<i]), String(s[s.index(after: i)...]))
+  }
+}
+
+/// Nền "ảnh": lưới chuyển màu theo chuyên mục + biểu tượng chìm + ánh sáng.
+private struct ArtBackdrop: View {
+  let kind: CommunityFeed.Kind
+  let seed: String
+  let shape: PostArtTile.Shape
+
+  /// Số nhỏ ổn định theo id bài (không dùng `hashValue` — đổi mỗi lần chạy).
+  private var jitter: (Float, Float, Double) {
+    let n = seed.unicodeScalars.reduce(UInt32(7)) { ($0 &* 31) &+ $1.value }
+    let a = Float(n % 100) / 100, b = Float((n / 100) % 100) / 100
+    return (0.35 + a * 0.3, 0.35 + b * 0.3, Double(n % 30) - 15)
+  }
+
+  var body: some View {
+    let (cx, cy, tilt) = jitter
+    ZStack {
+      MeshGradient(
+        width: 3, height: 3,
+        points: [
+          [0, 0], [0.5, 0], [1, 0],
+          [0, 0.5], [cx, cy], [1, 0.5],
+          [0, 1], [0.5, 1], [1, 1],
+        ],
+        colors: Self.palette(kind))
+      // biểu tượng lớn chìm, lệch góc — như bóng đồ vật trong ảnh
+      Image(systemName: Self.watermark(kind))
+        .font(.system(size: shape == .wide ? 190 : shape == .grid ? 110 : 90, weight: .bold))
+        .foregroundStyle(.white.opacity(kind == .workout ? 0.06 : 0.08))
+        .rotationEffect(.degrees(-18 + tilt))
+        .offset(x: shape == .wide ? 110 : 34, y: shape == .wide ? 30 : 24)
+        .blendMode(.plusLighter)
+      // ánh sáng trên, tối dưới
+      LinearGradient(
+        colors: [.white.opacity(0.14), .clear, .black.opacity(0.22)], startPoint: .top, endPoint: .bottom)
+      // đèn phòng tập: quầng màu chuyên mục hắt từ góc trên
+      RadialGradient(
+        colors: [Self.glow(kind).opacity(0.55), Self.glow(kind).opacity(0.12), .clear], center: .topTrailing,
+        startRadius: 0, endRadius: shape == .wide ? 300 : 140)
+        .blendMode(.plusLighter)
+      Grain(seed: UInt64(seed.unicodeScalars.reduce(UInt32(7)) { ($0 &* 31) &+ $1.value }))
+    }
+    .overlay {
+      // viền kim loại mảnh bên trong
+      Rectangle().strokeBorder(
+        LinearGradient(colors: [.white.opacity(0.18), .white.opacity(0.02)], startPoint: .top, endPoint: .bottom),
+        lineWidth: 0.75)
+    }
+  }
+
+  static func watermark(_ k: CommunityFeed.Kind) -> String {
+    switch k {
+    case .workout: "dumbbell.fill"
+    case .progress: "waveform.path.ecg"
+    case .recipe: "leaf.fill"
+    }
+  }
+
+  /// Nền tối trầm hơi ánh màu chuyên mục — "gym premium" (15/10).
+  static func palette(_ k: CommunityFeed.Kind) -> [Color] {
+    func c(_ r: Double, _ g: Double, _ b: Double) -> Color { Color(red: r, green: g, blue: b) }
+    switch k {
+    case .workout:
+      return [
+        c(0.10, 0.09, 0.09), c(0.14, 0.10, 0.11), c(0.30, 0.08, 0.12),
+        c(0.07, 0.07, 0.07), c(0.12, 0.09, 0.10), c(0.18, 0.07, 0.09),
+        c(0.03, 0.03, 0.03), c(0.06, 0.06, 0.06), c(0.09, 0.07, 0.08),
+      ]
+    case .progress:
+      return [
+        c(0.07, 0.09, 0.13), c(0.10, 0.14, 0.21), c(0.16, 0.24, 0.38),
+        c(0.05, 0.07, 0.10), c(0.09, 0.13, 0.20), c(0.12, 0.19, 0.29),
+        c(0.03, 0.04, 0.06), c(0.05, 0.07, 0.10), c(0.07, 0.10, 0.15),
+      ]
+    case .recipe:
+      return [
+        c(0.11, 0.08, 0.06), c(0.18, 0.11, 0.06), c(0.40, 0.20, 0.07),
+        c(0.08, 0.06, 0.04), c(0.15, 0.09, 0.05), c(0.25, 0.13, 0.06),
+        c(0.04, 0.03, 0.02), c(0.07, 0.05, 0.04), c(0.10, 0.07, 0.05),
+      ]
+    }
+  }
+
+  /// Màu "đèn" hắt từ góc trên.
+  static func glow(_ k: CommunityFeed.Kind) -> Color {
+    switch k {
+    case .workout: Color(red: 0.95, green: 0.25, blue: 0.32)
+    case .progress: Color(red: 0.35, green: 0.58, blue: 0.95)
+    case .recipe: Color(red: 1.0, green: 0.55, blue: 0.18)
+    }
+  }
+}
+
+/// Hạt nhám rất nhẹ — mặt ảnh có chất liệu, không phẳng lì. Cố định theo
+/// hạt giống để không nhấp nháy khi cuộn.
+private struct Grain: View {
+  let seed: UInt64
+
+  var body: some View {
+    Canvas { ctx, size in
+      var x = seed | 1
+      func next() -> Double {
+        x ^= x << 13; x ^= x >> 7; x ^= x << 17
+        return Double(x % 10_000) / 10_000
+      }
+      let n = min(1600, Int(size.width * size.height / 70))
+      for _ in 0..<n {
+        let r = CGRect(x: next() * size.width, y: next() * size.height, width: 1, height: 1)
+        ctx.fill(Path(r), with: .color(.white.opacity(0.03 + next() * 0.07)))
+      }
+    }
+    .drawingGroup()
+    .allowsHitTesting(false)
+  }
+}
+
+/// Nhãn chữ hoa trên mặt kính mờ.
+private struct GlassTag: View {
+  let text: String
+
+  var body: some View {
+    Text(verbatim: text)
+      .font(.system(size: 11, weight: .bold)).tracking(1.2).textCase(.uppercase)
+      .foregroundStyle(.white)
+      .lineLimit(1)
+      .padding(.horizontal, 9).padding(.vertical, 5)
+      .background(.ultraThinMaterial.opacity(0.8), in: Capsule())
+      .overlay { Capsule().strokeBorder(.white.opacity(0.18), lineWidth: 0.5) }
+      .environment(\.colorScheme, .dark)
+  }
+}
+
+/// Vòng ba chất (đạm · tinh bột · béo) theo kcal mỗi chất.
+private struct MacroRing: View {
+  let protein: Double
+  let carbs: Double
+  let fat: Double
+  let size: CGFloat
+  let line: CGFloat
+
+  static let tints: [Color] = [.white, Color(red: 1, green: 0.88, blue: 0.62), Color(red: 1, green: 0.72, blue: 0.62)]
+
+  var body: some View {
+    let parts = [protein * 4, carbs * 4, fat * 9]
+    let total = max(parts.reduce(0, +), 1)
+    let gap = 0.012
+    ZStack {
+      Circle().stroke(.white.opacity(0.18), lineWidth: line)
+      ForEach(0..<3, id: \.self) { i in
+        let start = parts[..<i].reduce(0, +) / total
+        let end = start + parts[i] / total
+        Circle()
+          .trim(from: start + gap, to: max(start + gap, end - gap))
+          .stroke(Self.tints[i], style: StrokeStyle(lineWidth: line, lineCap: .round))
+          .rotationEffect(.degrees(-90))
+      }
+    }
+    .frame(width: size, height: size)
+    .shadow(color: .black.opacity(0.2), radius: 6, y: 2)
+  }
+}
+
+/// Đường tiến bộ: vùng sáng mờ dưới đường, điểm cuối phát sáng.
+private struct TrendGlow: View {
+  let series: [Double]
+  let line: CGFloat
+
+  var body: some View {
+    let points = Array(series.enumerated())
+    let lo = series.min() ?? 0, hi = series.max() ?? 1
+    let floor = lo - max(hi - lo, 0.001) * 0.6
+    Chart {
+      ForEach(points, id: \.offset) { p in
+        // vùng từ đáy chuỗi (không từ 0 — từ 0 thì đường bị ép phẳng)
+        AreaMark(x: .value("i", p.offset), yStart: .value("lo", floor), yEnd: .value("v", p.element))
+          .foregroundStyle(
+            LinearGradient(colors: [.white.opacity(0.32), .white.opacity(0)], startPoint: .top, endPoint: .bottom))
+          .interpolationMethod(.monotone)
+        LineMark(x: .value("i", p.offset), y: .value("v", p.element))
+          .foregroundStyle(.white)
+          .lineStyle(StrokeStyle(lineWidth: line, lineCap: .round))
+          .interpolationMethod(.monotone)
+      }
+      if let last = points.last {
+        PointMark(x: .value("i", last.offset), y: .value("v", last.element))
+          .symbolSize(line * 28)
+          .foregroundStyle(.white)
+          .shadow(color: .white.opacity(0.9), radius: 6)
+      }
+    }
+    .chartXAxis(.hidden).chartYAxis(.hidden)
+    .chartYScale(domain: floor...(hi + max(hi - lo, 0.001) * 0.15))
+    .chartXScale(range: .plotDimension(startPadding: 0, endPadding: line * 6))
   }
 }
 

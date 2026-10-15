@@ -56,3 +56,14 @@ tinh tế giữa apple news và instagram". Duyệt mock v2.
   buổi tập, cam + kcal cho món, thép + chênh lệch + đường cho tiến bộ). Đáy: thời gian,
   tim (chạm = thích, không mở bài), "⋯". Chạm phần trên mở bài; màn chi tiết vẫn là
   `PostCardView` đầy đủ.
+
+### "Ảnh" khi bài chưa có ảnh — gym premium (15/10)
+
+Chủ dự án: "thẻ nhìn hơi đơn điệu… thay vì màu plain thì cho một vài hiệu ứng", "làm theo
+kiểu gym premium aesthetics". Lớp từ dưới lên (`ArtBackdrop`): lưới chuyển màu tối trầm
+ánh màu chuyên mục (MeshGradient; điểm giữa lệch theo id bài nên mỗi thẻ hơi khác) →
+biểu tượng lớn chìm xoay nghiêng → sáng trên / tối dưới → quầng "đèn phòng tập" màu
+chuyên mục từ góc trên → hạt nhám rất nhẹ (cố định theo id, không nhấp nháy) → viền kim
+loại mảnh. Số lớn chữ hẹp đậm (`.condensed`), nhãn trên kính mờ. Theo dữ liệu: tiến bộ =
+đường trắng + vùng sáng + điểm cuối phát sáng; món = vòng ba chất + kcal + viên P/C/F;
+buổi tập = khối lượng nâng + "N bài · M phút" + PR vàng.
