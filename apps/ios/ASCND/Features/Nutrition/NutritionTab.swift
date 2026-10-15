@@ -117,6 +117,9 @@ struct NutritionTab: View {
   /// thẻ ngân sách (còn lại + macro + "7 ngày"), ô ghi bữa, các khung bữa của
   /// hôm nay, rồi Nước + Thực phẩm bổ sung trong một thẻ danh sách.
   @ViewBuilder private var todaySegment: some View {
+    // Dải ngày DƯỚI thanh phân đoạn (15/10, chủ dự án): trên thanh thì đổi
+    // sang Kế hoạch ăn làm thanh nhảy lên / xuống — như dải tuần của Tập luyện.
+    if let userId { dayStrip(userId) }
     if let today { NutritionTodayCard(book: today) }
     if let userId {
       MealLogBar(userId: userId) { Task { await reload() } }
@@ -161,7 +164,6 @@ struct NutritionTab: View {
             .accessibilityLabel(Text(String(localized: "nc.week")))
         }
       }
-      if let userId, segment == .today { dayStrip(userId) }
     }
     .frame(maxWidth: .infinity, alignment: .leading)
   }
