@@ -38,6 +38,26 @@ extension CommunityLayout.Category {
   }
 }
 
+/// Logo chuyên mục: ASCND dùng đúng logo thương hiệu (`BrandMark`, có bản sáng /
+/// tối), hai chuyên mục kia là biểu tượng hệ thống.
+struct CategoryGlyph: View {
+  let cat: CommunityLayout.Category
+  let size: CGFloat
+
+  var body: some View {
+    if cat == .ascnd {
+      Image("BrandMark")
+        .resizable()
+        .interpolation(.high)
+        .scaledToFit()
+        .frame(width: size * 1.45, height: size * 1.45)
+        .accessibilityHidden(true)
+    } else {
+      Image(systemName: cat.symbol).font(.system(size: size, weight: .bold))
+    }
+  }
+}
+
 /// Tiêu đề của thẻ: lời người đăng; không có thì tên buổi / món / "Tiến bộ N tuần".
 enum PostHeadline {
   static func text(_ p: CommunityFeed.Post) -> String {
@@ -59,12 +79,15 @@ enum PostHeadline {
 /// Dải chuyên mục: logo + tên chuyên mục · loại bài.
 struct CategoryBand: View {
   let post: CommunityFeed.Post
+  @Environment(\.colorScheme) private var scheme
 
   var body: some View {
     let cat = CommunityLayout.Category.of(post.kind)
     HStack(spacing: 5) {
-      Image(systemName: cat.symbol).font(.system(size: 11, weight: .bold))
+      CategoryGlyph(cat: cat, size: 11)
+      // trên nền ảnh tối: tên chuyên mục trắng, logo giữ màu chuyên mục
       Text(verbatim: cat.title).font(.system(size: 13, weight: .bold))
+        .foregroundStyle(scheme == .dark ? Color.white.opacity(0.92) : cat.ink)
       if cat == .ascnd {
         Text(verbatim: "· \(KindTag.text(post.kind))")
           .font(.system(size: 13))
@@ -75,7 +98,8 @@ struct CategoryBand: View {
     .foregroundStyle(cat.ink)
     .padding(.horizontal, 16)
     .frame(height: 32)
-    .background(DS.Color.foreground.swiftUI.opacity(0.04))
+    // trên nền ảnh tối (thẻ lớn) không kẻ dải — ảnh liền một khối
+    .background(scheme == .dark ? Color.clear : DS.Color.foreground.swiftUI.opacity(0.04))
     .accessibilityElement(children: .combine)
   }
 }
@@ -171,6 +195,11 @@ struct PostArtTile: View {
   let artURL: URL?
   let unit: WeightUnit
   let shape: Shape
+  /// Khi ảnh trải cả dưới phần chữ (thẻ lớn / lưới): nội dung chỉ nằm trong
+  /// `contentHeight` trên cùng, nền ảnh phủ hết.
+  var contentHeight: CGFloat?
+  /// Chừa phía trên nội dung (dải chuyên mục nằm trên nền ảnh).
+  var contentInset: CGFloat = 0
 
   private var big: CGFloat {
     switch shape {
@@ -187,7 +216,7 @@ struct PostArtTile: View {
     // không bao giờ đẩy khung to ra / tràn lên dải chuyên mục.
     Color.clear
       .overlay { ArtBackdrop(kind: post.kind, seed: post.id, shape: shape) }
-      .overlay { content }
+      .overlay(alignment: .top) { content.frame(height: contentHeight).padding(.top, contentInset) }
       .overlay {
         if let artURL {
           AsyncImage(url: artURL) { phase in
@@ -558,11 +587,33 @@ private struct TrendGlow: View {
   }
 }
 
-/// Mặt thẻ chung: trắng, bo 22, viền mảnh — kèm ÁNH SÁNG MÔI TRƯỜNG (15/10,
-/// chủ dự án: "làm ambient light cho mấy cái thẻ đỡ có cảm giác thẻ bị cứng"):
-/// màu "đèn" của ảnh tràn nhẹ xuống mặt chữ, và một quầng màu mờ dưới thẻ như
-/// ánh sáng hắt lên mặt bàn (kiểu Apple Music / widget iOS). Viền trên sáng hơn
-/// viền dưới như mép kính bắt sáng.
+/// Nhoè dần chính ảnh (progressive blur) — không phủ màu (15/10, chủ dự án: "làm
+/// cho ảnh blur chứ bạn thêm lớp phủ nhìn không tự nhiên"). Ảnh trải xuống dưới
+/// phần chữ; từ `start` trở xuống, một bản nhoè của chính nó hiện dần qua `ramp`.
+private struct ProgressiveBlur: ViewModifier {
+  let start: CGFloat
+  var ramp: CGFloat = 70
+  var radius: CGFloat = 22
+
+  func body(content: Content) -> some View {
+    content.overlay {
+      content
+        .blur(radius: radius, opaque: true)
+        .mask {
+          VStack(spacing: 0) {
+            Color.clear.frame(height: start)
+            LinearGradient(colors: [.clear, .black], startPoint: .top, endPoint: .bottom).frame(height: ramp)
+            Color.black
+          }
+        }
+        .allowsHitTesting(false)
+    }
+  }
+}
+
+/// Mặt thẻ chung: trắng, bo 22, viền mảnh; màu "đèn" của ảnh tràn nhẹ xuống mặt
+/// chữ, viền trên sáng hơn viền dưới như mép kính bắt sáng. (Quầng màu phía sau
+/// thẻ đã gỡ 15/10 theo chủ dự án.)
 private struct NewsCardSurface: ViewModifier {
   var kind: CommunityFeed.Kind?
   @Environment(\.colorScheme) private var scheme
@@ -591,18 +642,6 @@ private struct NewsCardSurface: ViewModifier {
             startPoint: .top, endPoint: .bottom),
           lineWidth: 0.75)
       }
-      .background {
-        if let kind {
-          shape
-            .fill(ArtBackdrop.glow(kind))
-            .blur(radius: 26)
-            .opacity(dark ? 0.38 : 0.28)
-            .padding(.horizontal, 22)
-            .offset(y: 16)
-            .allowsHitTesting(false)
-            .accessibilityHidden(true)
-        }
-      }
       .shadow(color: .black.opacity(dark ? 0.25 : 0.05), radius: 10, y: 4)
       .contentShape(shape)
   }
@@ -610,6 +649,7 @@ private struct NewsCardSurface: ViewModifier {
 
 /// Thẻ lớn: dải chuyên mục, ảnh rộng, tác giả, tiêu đề đậm, đáy.
 struct HeroPostCard: View {
+  static let art: CGFloat = 220
   let post: CommunityFeed.Post
   let artURL: URL?
   let unit: WeightUnit
@@ -618,11 +658,12 @@ struct HeroPostCard: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
+      // Ảnh trải cả thẻ — cả dải chuyên mục lẫn phần chữ (chữ sáng) nằm trên
+      // chính ảnh; đáy là ảnh đã nhoè, không có đường cắt nào.
       VStack(alignment: .leading, spacing: 0) {
         CategoryBand(post: post)
-        PostArtTile(post: post, artURL: artURL, unit: unit, shape: .wide)
-          .frame(height: 200)
         VStack(alignment: .leading, spacing: 6) {
+          Color.clear.frame(height: Self.art)
           FeedAuthor(post: post)
           Text(verbatim: PostHeadline.text(post))
             .font(.system(size: 22, weight: .bold)).tracking(-0.4)
@@ -631,12 +672,16 @@ struct HeroPostCard: View {
             .fixedSize(horizontal: false, vertical: true)
         }
         .padding(.horizontal, 16)
-        .padding(.top, 14)
+        .contentShape(Rectangle())
+        .onTapGesture(perform: open)
+        .accessibilityAddTraits(.isButton)
+        FeedFooter(post: post).padding(.horizontal, 16).padding(.bottom, 6)
       }
-      .contentShape(Rectangle())
-      .onTapGesture(perform: open)
-      .accessibilityAddTraits(.isButton)
-      FeedFooter(post: post).padding(.horizontal, 16).padding(.bottom, 6)
+      .environment(\.colorScheme, .dark)
+      .background {
+        PostArtTile(post: post, artURL: artURL, unit: unit, shape: .wide, contentHeight: Self.art, contentInset: 32)
+          .modifier(ProgressiveBlur(start: Self.art - 8))
+      }
     }
     .modifier(NewsCardSurface(kind: post.kind))
   }
@@ -687,30 +732,30 @@ struct GridPostCard: View {
 
   var body: some View {
     let cat = CommunityLayout.Category.of(post.kind)
-    VStack(alignment: .leading, spacing: 0) {
-      PostArtTile(post: post, artURL: artURL, unit: unit, shape: .grid)
-        .frame(height: 124)
-      VStack(alignment: .leading, spacing: 4) {
-        HStack(spacing: 4) {
-          Image(systemName: cat.symbol).font(.system(size: 10, weight: .bold))
-          Text(verbatim: cat.title).font(.system(size: 12, weight: .bold))
-        }
-        .foregroundStyle(cat.ink)
-        Text(verbatim: PostHeadline.text(post))
-          .font(.system(size: 16, weight: .bold)).tracking(-0.2)
-          .foregroundStyle(DS.Color.foreground.swiftUI)
-          .lineLimit(3)
-          .frame(maxWidth: .infinity, alignment: .leading)
-        Spacer(minLength: 0)
-        Text(
-          verbatim: "\(PostHeaderView.agoText(post.createdAt)) · \(post.author?.displayName ?? "—")"
-        )
+    VStack(alignment: .leading, spacing: 4) {
+      Color.clear.frame(height: 124)
+      HStack(spacing: 4) {
+        CategoryGlyph(cat: cat, size: 10)
+        Text(verbatim: cat.title).font(.system(size: 12, weight: .bold))
+      }
+      .foregroundStyle(cat.ink)
+      Text(verbatim: PostHeadline.text(post))
+        .font(.system(size: 16, weight: .bold)).tracking(-0.2)
+        .foregroundStyle(DS.Color.foreground.swiftUI)
+        .lineLimit(3)
+        .frame(maxWidth: .infinity, alignment: .leading)
+      Spacer(minLength: 0)
+      Text(verbatim: "\(PostHeaderView.agoText(post.createdAt)) · \(post.author?.displayName ?? "—")")
         .font(.system(size: 12))
         .foregroundStyle(DS.Color.mutedForeground.swiftUI)
         .lineLimit(1)
-      }
-      .padding(12)
-      .frame(maxHeight: .infinity, alignment: .top)
+    }
+    .padding([.horizontal, .bottom], 12)
+    .frame(maxHeight: .infinity, alignment: .top)
+    .environment(\.colorScheme, .dark)
+    .background {
+      PostArtTile(post: post, artURL: artURL, unit: unit, shape: .grid, contentHeight: 124)
+        .modifier(ProgressiveBlur(start: 96, ramp: 50, radius: 18))
     }
     .modifier(NewsCardSurface(kind: post.kind))
   }
@@ -753,7 +798,7 @@ struct TrendingList: View {
               .frame(width: 24, alignment: .leading)
             VStack(alignment: .leading, spacing: 3) {
               HStack(spacing: 4) {
-                Image(systemName: cat.symbol).font(.system(size: 10, weight: .bold))
+                CategoryGlyph(cat: cat, size: 10)
                 Text(verbatim: cat.title).font(.system(size: 12, weight: .bold))
               }
               .foregroundStyle(cat.ink)

@@ -74,3 +74,12 @@ Chủ dự án: "làm ambient light cho mấy cái thẻ đỡ có cảm giác t
 màu "đèn" của ảnh (`ArtBackdrop.glow`) tràn nhẹ xuống mặt chữ (radial từ trên, 10% sáng / 22%
 tối); quầng màu mờ dưới thẻ như ánh sáng hắt lên mặt bàn (blur 26, 28% sáng / 38% tối); viền
 trên sáng hơn viền dưới như mép kính bắt sáng. Danh sách Thịnh hành giữ mặt trung tính.
+
+### Ảnh liền khối, nhoè dần; logo ASCND (15/10)
+
+- Chủ dự án: "thay vì một đường thẳng cắt ngay thì làm blur", "làm cho ảnh blur chứ bạn thêm lớp phủ
+  nhìn không tự nhiên". Thẻ lớn và thẻ lưới: ảnh trải cả thẻ, dải chuyên mục + phần chữ (chữ sáng,
+  `colorScheme(.dark)`) nằm trên chính ảnh; từ đáy vùng nội dung trở xuống là bản nhoè của chính ảnh
+  hiện dần (`ProgressiveBlur`) — không phủ màu, không đường cắt. Thẻ hàng giữ ảnh vuông trong mặt trắng.
+- Gỡ quầng màu phía sau thẻ (chủ dự án: "gỡ ambient light sau thẻ").
+- Chuyên mục ASCND dùng logo thương hiệu `BrandMark` (`CategoryGlyph`) thay tam giác; dải ảnh chia sẻ cũng vậy.
