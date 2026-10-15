@@ -83,3 +83,13 @@ trên sáng hơn viền dưới như mép kính bắt sáng. Danh sách Thịnh 
   hiện dần (`ProgressiveBlur`) — không phủ màu, không đường cắt. Thẻ hàng giữ ảnh vuông trong mặt trắng.
 - Gỡ quầng màu phía sau thẻ (chủ dự án: "gỡ ambient light sau thẻ").
 - Chuyên mục ASCND dùng logo thương hiệu `BrandMark` (`CategoryGlyph`) thay tam giác; dải ảnh chia sẻ cũng vậy.
+
+### Bình luận ngay trên thẻ, tên lớn mở hồ sơ, nút Thử trở lại (15/10)
+
+- Nút bình luận ở đáy thẻ → `CommunityCommentsSheet`: nửa màn (kéo được cả màn), mặt kính
+  `.regularMaterial`, bo 32, tiêu đề "Bình luận · N" ở giữa, nút đóng; dùng lại `CommunityPostView`
+  (`commentsOnly`) nên luồng / trả lời / menu / thanh viết y như màn bài. Thanh viết mới: ô bo 20 + nút
+  gửi tròn đặc (cả màn bài).
+- Tên người đăng 16pt semibold, avatar 26, chạm mở trang cá nhân (`openCommunityUser`).
+- "Thử" (buổi tập của người khác) / "Thêm vào bữa" (công thức) ở đáy thẻ (`FooterPill`).
+- Nhắn tin: chưa có backend — xem `MESSAGING-PLAN.md`.

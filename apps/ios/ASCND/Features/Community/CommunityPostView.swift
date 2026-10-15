@@ -49,9 +49,69 @@ struct CommunityPostScreen: View {
   }
 }
 
+/// Màn bình luận bật lên ngay từ thẻ (15/10, chủ dự án: "thêm nút bình luận trên
+/// thẻ… mở một màn pop up để bình luận như instagram nhưng mang hơi hướng premium
+/// tối giản của apple style gym"): nửa màn, kéo lên được cả màn; mặt kính mờ,
+/// bo lớn, tiêu đề "Bình luận · N" ở giữa; dùng chung sổ / luồng / thanh viết
+/// với màn bài.
+struct CommunityCommentsSheet: View {
+  let postId: String
+  var onCommented: () -> Void = {}
+  @Environment(WorkoutFlow.self) private var flow
+  @Environment(AppServices.self) private var services
+  @Environment(\.dismiss) private var dismiss
+  @State private var book: CommunityPostBook?
+
+  var body: some View {
+    NavigationStack {
+      Group {
+        if let book {
+          CommunityPostView(book: book, onCommented: onCommented, commentsOnly: true)
+        } else {
+          DSLoadingView()
+        }
+      }
+      .toolbar {
+        ToolbarItem(placement: .principal) {
+          HStack(spacing: 6) {
+            Text("community.comment").font(.system(size: 16, weight: .semibold))
+            if let n = book?.commentCount, n > 0 {
+              Text(verbatim: "\(n)")
+                .font(.system(size: 16, weight: .semibold).monospacedDigit())
+                .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+                .contentTransition(.numericText(value: Double(n)))
+            }
+          }
+          .accessibilityElement(children: .combine)
+          .accessibilityAddTraits(.isHeader)
+        }
+        ToolbarItem(placement: .topBarTrailing) {
+          Button {
+            dismiss()
+          } label: {
+            Image(systemName: "xmark")
+          }
+          .accessibilityLabel(Text("common.close"))
+        }
+      }
+      .navigationBarTitleDisplayMode(.inline)
+    }
+    .presentationDetents([.medium, .large])
+    .presentationDragIndicator(.visible)
+    .presentationCornerRadius(32)
+    .presentationBackground(.regularMaterial)
+    .task {
+      if book == nil { book = services.makeCommunityPost(userId: flow.today.userId, postId: postId) }
+    }
+  }
+}
+
 struct CommunityPostView: View {
   let book: CommunityPostBook
   var onCommented: () -> Void = {}
+  /// Màn bình luận bật lên từ thẻ (15/10): chỉ luồng bình luận + thanh viết,
+  /// không lặp lại thẻ; nền trong để lộ mặt kính của sheet.
+  var commentsOnly = false
   @Environment(\.weightUnit) private var unit
   @State private var draft = ""
   @State private var replyTo: CommunityComment?
@@ -66,7 +126,7 @@ struct CommunityPostView: View {
       }
       .padding(DS.Spacing.md)
     }
-    .background(DS.Color.background.swiftUI)
+    .background(commentsOnly ? Color.clear : DS.Color.background.swiftUI)
     .scrollDismissesKeyboard(.interactively)
     .safeAreaInset(edge: .bottom) { if book.post != nil { composer } }
     .task { if book.phase == .loading { await book.load() } }
@@ -116,8 +176,10 @@ struct CommunityPostView: View {
       DSEmptyState(systemImage: "bubble.left.and.bubble.right", title: String(localized: "community.post.gone"))
     case .ready:
       if let post = book.post {
-        PostCardView(
-          post: post, artURL: post.art.flatMap(book.artURL), unit: unit, full: true, commentCount: book.commentCount)
+        if !commentsOnly {
+          PostCardView(
+            post: post, artURL: post.art.flatMap(book.artURL), unit: unit, full: true, commentCount: book.commentCount)
+        }
         comments
       }
     }
@@ -136,10 +198,18 @@ struct CommunityPostView: View {
       }
       .frame(maxWidth: .infinity)
     case .ready where book.comments.isEmpty:
-      Text("community.post.empty")
-        .font(DS.TextStyle.footnote)
-        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-        .frame(maxWidth: .infinity, minHeight: 44)
+      VStack(spacing: DS.Spacing.sm) {
+        if commentsOnly {
+          Image(systemName: "bubble.left.and.bubble.right")
+            .font(.system(size: 30, weight: .light))
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .accessibilityHidden(true)
+        }
+        Text("community.post.empty")
+          .font(DS.TextStyle.footnote)
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+      }
+      .frame(maxWidth: .infinity, minHeight: commentsOnly ? 180 : 44)
     case .ready:
       VStack(alignment: .leading, spacing: DS.Spacing.md) {
         older
@@ -222,7 +292,7 @@ struct CommunityPostView: View {
     }
     .padding(.horizontal, DS.Spacing.md)
     .padding(.vertical, DS.Spacing.sm)
-    .background(DS.Color.background.swiftUI)
+    .background(commentsOnly ? AnyShapeStyle(.bar) : AnyShapeStyle(DS.Color.background.swiftUI))
     .overlay(alignment: .top) { Divider() }
   }
 
@@ -242,13 +312,19 @@ struct CommunityPostView: View {
         .focused($composing)
         .padding(.horizontal, DS.Spacing.md)
         .padding(.vertical, 10)
-        .background(DS.Color.secondary.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.lg))
+        .background(DS.Color.secondary.swiftUI, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        // Nút gửi tròn đặc kiểu iMessage (15/10): đậm khi gửi được.
         Button {
           Task { await send() }
         } label: {
-          Image(systemName: "paperplane.fill")
-            .foregroundStyle(canSend ? DS.Color.foreground.swiftUI : DS.Color.mutedForeground.swiftUI)
+          Image(systemName: "arrow.up")
+            .font(.system(size: 15, weight: .bold))
+            .foregroundStyle(canSend ? DS.Color.background.swiftUI : DS.Color.mutedForeground.swiftUI)
+            .frame(width: 34, height: 34)
+            .background(canSend ? DS.Color.foreground.swiftUI : DS.Color.secondary.swiftUI, in: Circle())
             .frame(width: 44, height: 44)
+            .contentShape(Circle())
+            .animation(.snappy, value: canSend)
         }
         .buttonStyle(.plain)
         .disabled(!canSend)

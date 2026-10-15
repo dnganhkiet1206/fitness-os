@@ -104,30 +104,56 @@ struct CategoryBand: View {
   }
 }
 
-/// Tác giả nhỏ trên tiêu đề (vị trí "tên báo" của Apple News).
+/// Tác giả trên tiêu đề (vị trí "tên báo" của Apple News). Lớn hơn từ 15/10 và
+/// chạm mở trang cá nhân (chủ dự án: "tên người đăng nên được làm lớn hơn và khi
+/// bấm vào thì vào trang cá nhân của họ").
 private struct FeedAuthor: View {
   let post: CommunityFeed.Post
-  var size: CGFloat = 20
+  var size: CGFloat = 26
+  @Environment(\.openCommunityUser) private var openUser
 
   var body: some View {
-    HStack(spacing: 6) {
+    if let author = post.author, let openUser {
+      Button {
+        openUser(author.userId)
+      } label: {
+        who
+      }
+      .buttonStyle(TodayPressStyle())
+      .accessibilityHint(Text("community.openprofile"))
+    } else {
+      who
+    }
+  }
+
+  private var who: some View {
+    HStack(spacing: 8) {
       MascotAvatar(mascotId: post.author?.mascotId, size: size)
       Text(verbatim: post.author?.displayName ?? "—")
-        .font(.system(size: 13, weight: .semibold))
+        .font(.system(size: 16, weight: .semibold))
         .foregroundStyle(DS.Color.foreground.swiftUI)
         .lineLimit(1)
       if post.author?.isOfficial == true {
-        Image(systemName: "checkmark.seal.fill").font(.caption2).foregroundStyle(
-          DS.Color.metricBlue.swiftUI)
+        Image(systemName: "checkmark.seal.fill").font(.footnote).foregroundStyle(DS.Color.metricBlue.swiftUI)
+          .accessibilityLabel(Text("community.verified"))
       }
     }
+    .frame(minHeight: 32)
+    .contentShape(Rectangle())
   }
 }
 
-/// Đáy thẻ: "2 giờ trước" · tim + số (chạm để thích) · "⋯".
+extension EnvironmentValues {
+  /// Mở màn bình luận bật lên của một bài (feed đặt; `nil` → không có nút).
+  @Entry var openCommunityComments: ((CommunityFeed.Post) -> Void)? = nil
+}
+
+/// Đáy thẻ: "2 giờ trước" · tim + số (chạm để thích) · bình luận (mở màn bật
+/// lên, 15/10) · "⋯".
 private struct FeedFooter: View {
   let post: CommunityFeed.Post
   @Environment(\.communityPostActions) private var actions
+  @Environment(\.openCommunityComments) private var openComments
   @State private var taps = 0
 
   var body: some View {
@@ -138,6 +164,13 @@ private struct FeedFooter: View {
         .lineLimit(1)
       Spacer(minLength: 0)
       if let actions {
+        // "Thử buổi này" / "Thêm vào bữa" ngay trên thẻ (15/10 — trước chỉ có ở màn bài).
+        if post.kind == .workout, let tryIt = actions.tryWorkout, CommunityTry.offered(post) {
+          FooterPill(title: String(localized: "community.try"), symbol: "arrow.trianglehead.2.clockwise",
+                     busy: actions.trying.contains(post.id)) { tryIt(post) }
+        } else if post.kind == .recipe, let add = actions.addToMeal, (post.recipe?.kcal ?? 0) > 0 {
+          FooterPill(title: String(localized: "community.addtomeal"), symbol: "plus", busy: false) { add(post) }
+        }
         Button {
           taps += 1
           Task { _ = await actions.actions.toggle(.like, postId: post.id, host: actions.host) }
@@ -166,6 +199,24 @@ private struct FeedFooter: View {
           Text(verbatim: "\(String(localized: "community.like")) · \(post.likeCount)")
         )
         .accessibilityAddTraits(post.liked ? .isSelected : [])
+        if let openComments {
+          Button {
+            openComments(post)
+          } label: {
+            HStack(spacing: 4) {
+              Image(systemName: "bubble.right")
+              if post.commentCount > 0 {
+                Text(verbatim: "\(post.commentCount)").font(.system(size: 13).monospacedDigit())
+              }
+            }
+            .font(.system(size: 14))
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .frame(minWidth: 44, minHeight: 36)
+            .contentShape(Rectangle())
+          }
+          .buttonStyle(.plain)
+          .accessibilityLabel(Text(verbatim: "\(String(localized: "community.comment")) · \(post.commentCount)"))
+        }
         Button {
           actions.openMenu(post)
         } label: {
@@ -179,6 +230,31 @@ private struct FeedFooter: View {
         .accessibilityLabel(Text("community.post.more"))
       }
     }
+  }
+}
+
+/// Viên hành động nhỏ ở đáy thẻ (Thử / Thêm vào bữa).
+private struct FooterPill: View {
+  let title: String
+  let symbol: String
+  let busy: Bool
+  let action: () -> Void
+
+  var body: some View {
+    Button(action: action) {
+      Label(title, systemImage: symbol)
+        .font(.system(size: 13, weight: .semibold))
+        .lineLimit(1)
+        .foregroundStyle(DS.Color.foreground.swiftUI)
+        .padding(.horizontal, 12)
+        .frame(height: 30)
+        .background(DS.Color.foreground.swiftUI.opacity(0.10), in: Capsule())
+        .frame(minHeight: 44)
+        .contentShape(Rectangle())
+    }
+    .buttonStyle(TodayPressStyle())
+    .disabled(busy)
+    .opacity(busy ? 0.5 : 1)
   }
 }
 

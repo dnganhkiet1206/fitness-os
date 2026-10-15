@@ -49015,6 +49015,29 @@
      }
     }
    }
+  },
+  "community.openprofile": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Opens their profile"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Abre su perfil"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mở trang cá nhân"
+     }
+    }
+   }
   }
  }
 }

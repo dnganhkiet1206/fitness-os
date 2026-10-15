@@ -78,6 +78,8 @@ struct CommunityFeedView: View {
   /// "Thịnh hành" chốt theo mỗi lần tải feed — thích / bỏ thích không làm
   /// bài nhảy chỗ ngay dưới ngón tay.
   @State private var trendIds: [String] = []
+  /// Bài đang mở màn bình luận bật lên.
+  @State private var commentsFor: OpenPost?
 
   struct OpenPost: Hashable, Identifiable { let id: String }
   /// "Đã thấy" theo tab + đang ở đầu feed (lát 17).
@@ -147,6 +149,10 @@ struct CommunityFeedView: View {
     .communityUserLinks()
     .communityPostActions(userId: book.userId, host: book)
     .navigationDestination(isPresented: $findPeople) { CommunitySearchScreen() }
+    .environment(\.openCommunityComments) { commentsFor = OpenPost(id: $0.id) }
+    .sheet(item: $commentsFor) { p in
+      CommunityCommentsSheet(postId: p.id) { Task { await book.load() } }
+    }
     .navigationDestination(item: $openPost) { p in
       CommunityPostScreen(postId: p.id) { Task { await book.load() } }
     }
