@@ -418,12 +418,26 @@ struct EditProfileView: View {
   private func save() async {
     do throws(ProfileSaveFailure) {
       try await book.save(form)
+      await syncCommunityName(form.name)
       saved = true
       AccessibilityNotification.Announcement(String(localized: "ep.saved")).post()
       dismiss()
     } catch {
       failure = error
     }
+  }
+
+  /// Một tên (15/10, gộp tên — chủ dự án: "gộp tên luôn"): đã có hồ sơ cộng đồng
+  /// thì tên công khai theo tên vừa lưu (giữ handle / tiểu sử / linh vật). Lỗi ở
+  /// bước này không làm hỏng lần lưu hồ sơ — hai tên khớp lại lần lưu sau.
+  private func syncCommunityName(_ raw: String) async {
+    let name = CommunityProfileForm.clamp(
+      raw.trimmingCharacters(in: .whitespacesAndNewlines), max: CommunityProfileForm.nameMax)
+    guard !name.isEmpty, let community = services.makeCommunityProfile(userId: book.userId) else { return }
+    defer { community.close() }
+    await community.load()
+    guard let p = community.existing, p.displayName != name else { return }
+    _ = await community.save(handle: p.handle, name: name, bio: p.bio, mascotId: p.mascotId)
   }
 
   // MARK: - Chữ

@@ -446,6 +446,26 @@ public final class ProfileBook {
     }
   }
 
+  /// Chỉ đổi TÊN (15/10, gộp hai tên — chủ dự án: "gộp tên luôn"): tên công khai
+  /// của cộng đồng là tên chính; lưu ở đâu cũng ghi `profiles.name` theo. Cùng cột
+  /// `name` mà form vẫn ghi — không đổi schema. Tên trống hoặc không đổi → không ghi.
+  public func saveName(_ name: String) async throws(ProfileSaveFailure) {
+    let name = name.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !name.isEmpty, name != profile?.name else { return }
+    do {
+      try await writer.update(userId: userId, row: .object(["name": .string(name)]))
+    } catch let f as ProfileSaveFailure {
+      throw f
+    } catch {
+      throw NetworkFailure.isOffline(error) ? .offline : .server(code: nil)
+    }
+    if var next = profile {
+      next.name = name
+      profile = next
+      try? await cache.save(userId: userId, next)
+    }
+  }
+
   /// Hồ sơ → hàng (để trộn với hàng vừa ghi).
   static func row(_ p: Profile) -> JSONValue {
     func n(_ v: Double?) -> JSONValue { v.map(JSONValue.number) ?? .null }

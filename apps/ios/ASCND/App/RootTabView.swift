@@ -140,16 +140,48 @@ private struct QuickLogBar: ViewModifier {
       content
         .tabViewBottomAccessory { QuickLogAccessory { picking = true } }
         .tabBarMinimizeBehavior(.onScrollDown)
-        .sheet(isPresented: $picking, onDismiss: {
-          if let chosen { open(chosen) }
-          chosen = nil
-        }) {
-          QuickLogSheet { chosen = $0; picking = false }
-            .presentationDetents([.height(250)])
-            .presentationDragIndicator(.visible)
-        }
+        .modifier(sheet)
     } else {
+      // iOS 18–25 (15/10, chủ dự án: "làm nút + cho máy cũ luôn"): không có thanh
+      // phụ — một nút "+" tròn nổi ở góc phải, ngay trên thanh tab, mở cùng bảng.
       content
+        .overlay(alignment: .bottomTrailing) {
+          Button { picking = true } label: {
+            Image(systemName: "plus")
+              .font(.system(size: 22, weight: .bold))
+              .foregroundStyle(DS.Color.background.swiftUI)
+              .frame(width: 56, height: 56)
+              .background(DS.Color.foreground.swiftUI, in: Circle())
+              .shadow(color: .black.opacity(0.2), radius: 10, y: 4)
+          }
+          .buttonStyle(.plain)
+          .padding(.trailing, DS.Spacing.md)
+          .padding(.bottom, 64)
+          .accessibilityLabel(Text("quicklog.title"))
+        }
+        .modifier(sheet)
+    }
+  }
+
+  private var sheet: QuickLogSheetHost {
+    QuickLogSheetHost(picking: $picking, chosen: $chosen, open: open)
+  }
+}
+
+/// Bảng 5 ô của "Ghi nhanh" — chung cho thanh phụ (iOS 26) và nút nổi (máy cũ).
+private struct QuickLogSheetHost: ViewModifier {
+  @Binding var picking: Bool
+  @Binding var chosen: DeepLink.Screen?
+  let open: (DeepLink.Screen) -> Void
+
+  func body(content: Content) -> some View {
+    content.sheet(isPresented: $picking, onDismiss: {
+      if let chosen { open(chosen) }
+      chosen = nil
+    }) {
+      QuickLogSheet { chosen = $0; picking = false }
+        .presentationDetents([.height(250)])
+        .presentationDragIndicator(.visible)
     }
   }
 }

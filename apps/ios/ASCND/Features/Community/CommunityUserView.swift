@@ -142,6 +142,7 @@ struct CommunityUserView: View {
       if let awards { AwardsView(book: awards, lang: services.preferences.lang) }
     }
     .task(id: book.isMe) { await loadMine() }
+    .task(id: book.profile?.displayName) { await syncName() }
     .task {
       if dm == nil, let src = services.makeDirectMessages() { dm = DMInboxBook(userId: book.userId, source: src) }
     }
@@ -351,6 +352,15 @@ struct CommunityUserView: View {
     .padding(12)
     .dsCard()
     .accessibilityElement(children: .combine)
+  }
+
+  /// Một tên (15/10, gộp tên): hồ sơ của mình có tên cộng đồng khác tên hồ sơ tập
+  /// (tài khoản cũ) → hồ sơ tập theo tên cộng đồng — tên công khai là tên chính.
+  private func syncName() async {
+    guard book.isMe, let shown = book.profile?.displayName, let fitness, fitness.loaded,
+      fitness.profile?.name != shown
+    else { return }
+    try? await fitness.saveName(shown)
   }
 
   /// Nạp chuỗi ngày + huy chương (chỉ hồ sơ của mình).

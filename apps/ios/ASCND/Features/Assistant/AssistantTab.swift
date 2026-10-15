@@ -63,9 +63,8 @@ struct AssistantTab: View {
           if let signal {
             SummaryCard(
               signal: signal, metrics: metrics, lang: lang, hour: hour, openTrends: { path.append(.trends) },
-              // iOS 26 có "Ghi nhanh" trên thanh tab — Trợ lý để hiểu, không lặp nút ghi
-              // (15/10, audit toàn app). iOS 18–25 giữ nút.
-              logSleep: TodayView.hasQuickLog ? nil : { logging = .sleep })
+              // "Ghi nhanh" có trên mọi máy — Trợ lý để hiểu, không lặp nút ghi (15/10).
+              logSleep: nil)
           }
           // Máy chủ chưa bật tính năng → không hiện thẻ lỗi vĩnh viễn (15/10, audit).
           if let nudges, !nudges.isNotDeployed {
@@ -337,8 +336,7 @@ struct AssistantTab: View {
               "assistant.protein \(Int(s.proteinG).formatted(.number.locale(.app))) \(Int(s.proteinTarget).formatted(.number.locale(.app)))")
           : nil,
         progress: s.kcalTarget > 0 ? s.kcal / s.kcalTarget : nil,
-        action: s.kcal > 0 || TodayView.hasQuickLog
-          ? nil : (String(localized: "assistant.action.meal"), "plus", { logging = .meal }))
+        action: nil)
     }
   }
 

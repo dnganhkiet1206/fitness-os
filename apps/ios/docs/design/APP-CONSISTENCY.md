@@ -46,6 +46,13 @@ tính năng đồng bộ trong toàn app" → "làm đi".
   `DSCardSurface` trong ASCNDDesignSystem — kính hệ thống iOS 26, material ở máy cũ, lót xám than khi tối, viền sáng
   mảnh, bóng mềm, Reduce Transparency → đặc. `todayCard`, `DSCard`, `AssistantSurface`, `NewsCardSurface` và 5 mặt
   trắng tự vẽ (hồ sơ, gợi ý theo dõi) đều đi qua nó. Bo góc chung `DS.Radius.xl` (24); 30 / 20 cũ về 24.
+- **Ghi nhanh trên mọi máy** (chủ dự án: "làm nút + cho máy cũ luôn"): iOS 18–25 có nút "+" tròn nổi ở góc phải
+  trên thanh tab, mở cùng bảng 5 ô (`QuickLogSheetHost`). Bỏ `TodayView.hasQuickLog`: nút ghi trùng ở thẻ Ngày nghỉ
+  và Trợ lý ẩn trên mọi máy. Chưa chạy thử trên iOS 18–25 (máy chỉ có runtime iOS 26).
+- **Một tên** (chủ dự án: "gộp tên luôn"; không đổi schema — hai cột cũ, ghi theo nhau): tên công khai của cộng đồng
+  là tên chính. Lưu hồ sơ cộng đồng → `ProfileBook.saveName` ghi `profiles.name`; lưu "Thông tin cá nhân" → đã có
+  hồ sơ cộng đồng thì `display_name` theo (giữ handle / tiểu sử / linh vật); mở hồ sơ của mình mà hai tên lệch →
+  `profiles.name` theo tên cộng đồng (một lần).
 - **Cài đặt không lặp chữ**: mục Ngôn ngữ bỏ tiêu đề; dòng "Ngôn ngữ" có icon quả cầu như Nhắc nhở / Đổi mật khẩu.
 
 ## Quy ước (giữ khi làm màn mới)
@@ -56,5 +63,3 @@ tính năng đồng bộ trong toàn app" → "làm đi".
 - Hành động chính: viên đen đặc; phụ: viên viền mảnh.
 
 ## Chưa làm (cần chủ dự án chọn / việc lớn)
-- Nút "+" ghi nhanh cho iOS 18–25 (máy không có runtime cũ để thử — chờ chủ dự án).
-- Tên cộng đồng và tên hồ sơ tập là hai trường ở server — gộp cần đổi schema.

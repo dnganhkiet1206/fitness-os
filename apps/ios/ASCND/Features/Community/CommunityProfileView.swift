@@ -49,6 +49,7 @@ struct CommunityProfileView: View {
 
   @Environment(\.dismiss) private var dismiss
   @Environment(AppServices.self) private var services
+  @Environment(ProfileBook.self) private var fitness: ProfileBook?
   @State private var handle = ""
   @State private var name = ""
   @State private var bio = ""
@@ -214,6 +215,8 @@ struct CommunityProfileView: View {
     taken = false
     switch await book.save(handle: handle, name: name, bio: bio, mascotId: pick) {
     case .saved:
+      // Một tên (15/10, gộp tên): tên cộng đồng là tên chính — hồ sơ tập theo.
+      try? await fitness?.saveName(name)
       onSaved()
       dismiss()
     case .handleTaken:

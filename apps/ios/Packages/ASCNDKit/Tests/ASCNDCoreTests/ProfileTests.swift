@@ -225,6 +225,19 @@ struct ProfileBookTests {
     #expect(book.profile?.weightKg == 80 && book.profile?.goal == "bulk" && book.profile?.onboardingCompleted == true)
   }
 
+  /// Gộp tên: chỉ cột `name`; trống / không đổi → không ghi.
+  @Test func saveNameWritesOnlyTheName() async throws {
+    let writer = Writer()
+    let book = ProfileBook(userId: "u1", source: Source(storedRow), writer: writer, cache: Cache())
+    await book.load()
+    try await book.saveName("  Đặng Anh Kiệt ")
+    #expect(await writer.rows == [.object(["name": .string("Đặng Anh Kiệt")])])
+    #expect(book.profile?.name == "Đặng Anh Kiệt" && book.profile?.weightKg == 78.5)
+    try await book.saveName("Đặng Anh Kiệt")
+    try await book.saveName("   ")
+    #expect(await writer.rows.count == 1)
+  }
+
   @Test func saveFailuresAreNamed() async {
     let writer = Writer()
     let book = ProfileBook(userId: "u1", source: Source(storedRow), writer: writer, cache: Cache())
