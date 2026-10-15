@@ -14,9 +14,15 @@ import SwiftUI
 /// Chạm dòng → chi tiết sẵn sàng (thẻ RN ở dạng mở: năm ô, lời khuyên, "?").
 /// Chưa có điểm thì có thêm nút "Ghi giấc ngủ" — một đêm ngủ là một trong các
 /// cách để có điểm (`rd.empty.message`).
+///
+/// 15/10 (audit toàn app): vòng + nhãn + quyết định điểm nào hiện là CHUNG với
+/// thẻ Tóm tắt của Trợ lý (`ReadinessGauge`, `AssistantSummary.shown`). Hôm nay
+/// chưa có điểm mà 7 ngày qua có → điểm gần nhất, ghi "Điểm gần nhất · hôm qua".
 struct TodayReadinessRow: View {
   let book: ReadinessBook
   let lang: AppPreferences.Lang
+  /// Điểm các ngày trước hôm nay (cũ → mới) — cho điểm gần nhất khi hôm nay trống.
+  var recent: [(date: LocalDate, value: Int)] = []
   let onOpen: () -> Void
   var onLogSleep: (() -> Void)?
 
@@ -37,10 +43,14 @@ struct TodayReadinessRow: View {
           .frame(minHeight: 44)
       }
     case .empty:
+      let latest = AssistantSummary.shown(today: nil, status: nil, recent: recent)
       VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-        row(
-          score: nil, color: DS.Color.mutedForeground.swiftUI,
-          title: String(localized: "today.rd.none"), reason: String(localized: "today.rd.none.how"))
+        if let latest {
+          row(
+            shown: latest, title: AssistantText.label(latest.level), reason: ReadinessGauge.staleNote(latest) ?? "")
+        } else {
+          row(shown: nil, title: String(localized: "today.rd.none"), reason: String(localized: "today.rd.none.how"))
+        }
         if let onLogSleep {
           Button(action: onLogSleep) {
             Label(String(localized: "today.do.sleep"), systemImage: "moon.fill")
@@ -57,26 +67,20 @@ struct TodayReadinessRow: View {
     case .ready(let day):
       let copy = ReadinessCopyStore.copy
       let reason = copy.map { ReadinessCard.explainText(day.explain, lang: lang, copy: $0) } ?? ""
-      row(
-        score: day.score, color: ReadinessCardView.statusColor(day.status),
-        title: ReadinessCardView.statusLabel(day.status), reason: reason)
+      let shown = AssistantSummary.shown(today: day.score, status: day.status.rawValue, recent: [])
+      row(shown: shown, title: AssistantText.label(shown?.level), reason: reason)
     }
   }
 
-  private func row(score: Int?, color: Color, title: String, reason: String) -> some View {
-    Button(action: onOpen) {
+  private func row(shown: AssistantSummary.Shown?, title: String, reason: String) -> some View {
+    let score = shown?.score
+    return Button(action: onOpen) {
       HStack(spacing: DS.Spacing.md) {
-        Text(verbatim: score.map(String.init) ?? "—")
-          .font(.custom("Menlo", size: 30, relativeTo: .title).weight(.bold))
-          .foregroundStyle(color)
-          .monospacedDigit()
-          .contentTransition(.numericText(value: Double(score ?? 0)))
-          .animation(.smooth(duration: 0.5), value: score)
-          .frame(minWidth: 48, alignment: .leading)
+        ReadinessGauge(shown: shown, size: 48)
         VStack(alignment: .leading, spacing: 2) {
           Text(verbatim: title)
             .font(DS.TextStyle.headline)
-            .foregroundStyle(DS.Color.foreground.swiftUI)
+            .foregroundStyle(shown == nil ? DS.Color.foreground.swiftUI : AssistantText.tint(shown?.level))
           if !reason.isEmpty {
             Text(verbatim: reason)
               .font(DS.TextStyle.footnote)

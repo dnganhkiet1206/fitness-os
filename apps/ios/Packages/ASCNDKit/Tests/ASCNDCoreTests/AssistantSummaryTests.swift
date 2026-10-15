@@ -16,12 +16,14 @@ struct AssistantSummaryTests {
     return out
   }
 
-  @Test func score10RoundsAndClamps() {
-    #expect(AssistantSummary.score10(nil) == nil)
-    #expect(AssistantSummary.score10(55) == 6)
-    #expect(AssistantSummary.score10(54) == 5)
-    #expect(AssistantSummary.score10(100) == 10)
-    #expect(AssistantSummary.score10(0) == 0)
+  @Test func shownPrefersTodayThenLatest() {
+    let d1 = LocalDate("2026-10-13")!, d2 = LocalDate("2026-10-14")!
+    let today = AssistantSummary.shown(today: 80, status: "yellow", recent: [(d1, 40)])
+    #expect(today == .init(score: 80, level: .pace, asOf: nil))
+    let latest = AssistantSummary.shown(today: nil, status: nil, recent: [(d1, 40), (d2, 66)])
+    #expect(latest == .init(score: 66, level: .pace, asOf: d2))
+    #expect(AssistantSummary.shown(today: nil, status: nil, recent: [])?.score == nil)
+    #expect(AssistantSummary.shown(today: nil, status: "green", recent: [(d2, 76)])?.level == .go)
   }
 
   @Test func readinessLabelPrefersStatus() {

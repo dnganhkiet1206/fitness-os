@@ -27,6 +27,11 @@ tính năng đồng bộ trong toàn app" → "làm đi".
   Ba vòng, Phòng linh vật. Sinh trắc học, Giấc ngủ, Xu hướng sẵn sàng, Tổng kết tuần ở công cụ Trợ lý; thẻ Tập luyện
   (`TrainingCardView`, tải tuần / 8 tuần) chuyển sang Trợ lý (`AssistantRoute.training`, "Tải tập luyện"). Chạm
   dòng sẵn sàng ở Hôm nay → tab Trợ lý (`DeepLinkInbox.receive(.tab(.assistant))`).
+- **Một điểm sẵn sàng cho cả app**: trước đây Hôm nay "Chưa có điểm sẵn sàng" (0–100) trong khi Trợ lý hiện
+  "7" (thang 0–10, điểm hôm qua) — mà "Điểm nổi bật" lại ghi "52/100". Nay `AssistantSummary.shown` quyết định điểm
+  nào hiện (hôm nay, không thì gần nhất + "Điểm gần nhất · hôm qua"), `ReadinessGauge` vẽ cùng một vòng 0–100, cùng
+  nhãn Tập hết mình / Giữ nhịp / Phục hồi và cùng màu ở dòng sẵn sàng của Hôm nay và thẻ Tóm tắt của Trợ lý. Bỏ
+  `score10`.
 
 ## Quy ước (giữ khi làm màn mới)
 - Công tắc 2–3 trang ở đầu tab (Hôm nay/Kế hoạch ăn, Buổi tập/Cơ thể, Đang theo dõi/Khám phá) và ô trong form
@@ -37,5 +42,5 @@ tính năng đồng bộ trong toàn app" → "làm đi".
 
 ## Chưa làm (cần chủ dự án chọn / việc lớn)
 - Gộp "Hữu ích" vào "Thịnh hành".
-- Một thành phần điểm sẵn sàng dùng chung cho Hôm nay và Trợ lý; gom các kiểu thẻ (`todayCard`, `DSCard`,
+- Gom các kiểu thẻ (`todayCard`, `DSCard`,
   `NewsCardSurface`, `AssistantSurface`).

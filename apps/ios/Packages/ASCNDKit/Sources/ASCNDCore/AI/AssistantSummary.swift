@@ -17,9 +17,30 @@ public enum AssistantSummary {
   /// So với mức thường (trung bình 7 ngày) của chính người dùng.
   public enum Versus: String, Sendable, Hashable { case above, typical, below }
 
-  /// Điểm 0–100 → thang 0–10 (làm tròn), như vòng của Apple Health.
-  public static func score10(_ readiness: Int?) -> Int? {
-    readiness.map { min(10, max(0, Int((Double($0) / 10).rounded()))) }
+  /// Điểm sẵn sàng đang hiện — CÙNG một quyết định cho Hôm nay và Trợ lý (15/10,
+  /// audit: Hôm nay "chưa có điểm" trong khi Trợ lý hiện 7/10 của hôm qua).
+  public struct Shown: Sendable, Hashable {
+    /// 0–100, như engine.
+    public let score: Int
+    public let level: Readiness
+    /// Ngày của điểm khi KHÔNG phải hôm nay (điểm gần nhất); `nil` = hôm nay.
+    public let asOf: LocalDate?
+
+    public init(score: Int, level: Readiness, asOf: LocalDate?) {
+      self.score = score
+      self.level = level
+      self.asOf = asOf
+    }
+  }
+
+  /// Hôm nay có điểm → điểm hôm nay (nhãn theo trạng thái engine); không thì điểm
+  /// gần nhất trong `recent` (cũ → mới, chỉ các ngày trước hôm nay), nhãn theo ngưỡng.
+  public static func shown(today: Int?, status: String?, recent: [(date: LocalDate, value: Int)]) -> Shown? {
+    if let today, let level = readiness(status: status, score: today) {
+      return Shown(score: today, level: level, asOf: nil)
+    }
+    guard let last = recent.last, let level = readiness(status: nil, score: last.value) else { return nil }
+    return Shown(score: last.value, level: level, asOf: last.date)
   }
 
   public static func readiness(status: String?, score: Int?) -> Readiness? {

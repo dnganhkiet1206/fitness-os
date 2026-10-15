@@ -35,6 +35,9 @@ struct TodayExtras<Plan: View>: View {
   @State private var awards: AwardsBook?
   @State private var mascot: MascotRoomController?
   @State private var challenges: WeeklyChallengesBook?
+  /// Điểm 7 ngày qua — chỉ để dòng sẵn sàng hiện điểm gần nhất khi hôm nay chưa có
+  /// (cùng quyết định với Trợ lý, `AssistantSummary.shown`).
+  @State private var trend: ReadinessTrendBook?
   /// Ba vòng hoạt động (RN `ActivityRingsCard`).
   @State private var activity: ActivityRingsBook?
   @State private var showsActivity = false
@@ -199,6 +202,7 @@ struct TodayExtras<Plan: View>: View {
       awards = services.makeAwardsBook(userId: userId)
       mascot = services.makeMascotRoom(userId: userId, today: today)
       challenges = services.makeWeeklyChallenges(userId: userId, today: today)
+      trend = services.makeReadinessTrend(userId: userId, today: today)
       activity = services.makeActivityRings(userId: userId, today: today)
       weight = services.makeWeightLogger(userId: userId)
       todo = services.makeReminderToday(userId: userId)
@@ -208,6 +212,7 @@ struct TodayExtras<Plan: View>: View {
       await mascot?.load()
       if let nutrition { await nutrition.loadOnce() } else { await ownWater?.load() }
       await readiness?.load()
+      await trend?.load()
       await activity?.load()
       await biometrics?.load()
       await focusChecks()
@@ -232,6 +237,7 @@ struct TodayExtras<Plan: View>: View {
         await mascot?.load()
         await todo?.refresh()
         await focusChecks()
+        await trend?.move(to: today)
         await activity?.load(today: today)
       }
     }
@@ -245,6 +251,7 @@ struct TodayExtras<Plan: View>: View {
       awards?.close()
       mascot?.close()
       challenges?.close()
+      trend?.close()
       activity?.close()
       weight?.close()
       todo?.close()
@@ -380,6 +387,7 @@ struct TodayExtras<Plan: View>: View {
     return AnyView(
       TodayReadinessRow(
         book: readiness, lang: services.preferences.lang,
+        recent: (trend?.points ?? []).filter { $0.date < readiness.date }.map { ($0.date, Int($0.value.rounded())) },
         onOpen: {
           // Hiểu điểm là việc của Trợ lý (15/10, "Chia rõ"); không có hộp link
           // (preview) thì mở thẻ phân tích tại chỗ như trước.
@@ -464,6 +472,7 @@ struct TodayExtras<Plan: View>: View {
   /// không đọc lại nên giữ số cũ tới lần ra tiền cảnh sau (15/10).
   private func reloadAfterHealthSync() async {
     await readiness?.load()
+    await trend?.load()
     await mascot?.load()
   }
 

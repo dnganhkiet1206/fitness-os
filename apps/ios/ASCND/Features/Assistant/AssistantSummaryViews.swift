@@ -85,7 +85,7 @@ enum AssistantText {
   }
 }
 
-/// Thẻ đầu: vòng sẵn sàng 0–10 + nhãn chữ + so với mức thường; dưới vạch là gợi
+/// Thẻ đầu: vòng sẵn sàng 0–100 (`ReadinessGauge`, chung với Hôm nay) + nhãn chữ + so với mức thường; dưới vạch là gợi
 /// ý hôm nay (các dòng tóm tắt của `AssistantBrief`).
 struct SummaryCard: View {
   let signal: AssistantSignalBook
@@ -100,31 +100,19 @@ struct SummaryCard: View {
     let s = signal.signal
     let bars: [MetricAnalysis.Bar] =
       if let metrics, metrics.kind == .readiness, case .ready(let a) = metrics.phase { a.bars } else { [] }
-    // Hôm nay chưa có điểm → điểm gần nhất, ghi rõ ngày (15/10, audit).
-    let latest = s.readiness == nil ? AssistantSummary.latest(bars) : nil
-    let shown = s.readiness ?? latest?.value
-    let ready = AssistantSummary.readiness(status: s.readiness == nil ? nil : s.status, score: shown)
+    // Cùng quyết định với Hôm nay (`AssistantSummary.shown`): hôm nay chưa có điểm
+    // → điểm gần nhất, ghi rõ ngày.
+    let shown = AssistantSummary.shown(
+      today: s.readiness, status: s.status,
+      recent: bars.filter { !$0.missing && !$0.today }.map { ($0.date, Int($0.value.rounded())) })
+    let ready = shown?.level
     let tint = AssistantText.tint(ready)
-    let score = AssistantSummary.score10(shown)
-    let note =
-      if let latest { String(localized: "assistant.latest \(Self.dayText(latest.date))") } else {
-        AssistantText.versus(AssistantSummary.versus(today: s.readiness, bars: bars))
-      }
+    let note = ReadinessGauge.staleNote(shown) ?? AssistantText.versus(AssistantSummary.versus(today: s.readiness, bars: bars))
     let brief = signal.brief(hour: hour)
     VStack(alignment: .leading, spacing: 12) {
       Button(action: openTrends) {
         HStack(spacing: 14) {
-          ZStack {
-            Circle().stroke(DS.Color.foreground.swiftUI.opacity(0.08), lineWidth: 7)
-            Circle()
-              .trim(from: 0, to: CGFloat(score ?? 0) / 10)
-              .stroke(tint, style: StrokeStyle(lineWidth: 7, lineCap: .round))
-              .rotationEffect(.degrees(-90))
-            Text(verbatim: score.map(String.init) ?? "—")
-              .font(.system(size: 22, weight: .bold).monospacedDigit())
-              .foregroundStyle(DS.Color.foreground.swiftUI)
-          }
-          .frame(width: 64, height: 64)
+          ReadinessGauge(shown: shown)
           VStack(alignment: .leading, spacing: 2) {
             Text("metric.readiness")
               .font(.system(size: 13))
