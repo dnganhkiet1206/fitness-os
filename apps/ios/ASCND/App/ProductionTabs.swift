@@ -200,7 +200,12 @@ private struct SettingsSheet: View {
       },
       makePasswordChange: { PasswordChangeController(session: services.session) },
       legalLang: services.preferences.lang,
-      profileBook: profile
+      profileBook: profile,
+      healthAvailable: services.health.isAvailable,
+      healthSync: { () async throws(HealthSync.Failure) in
+        guard case .signedIn(let s) = services.session.phase else { return }
+        try await services.health.syncNow(userId: s.userId, lang: AppServices.appLang)
+      }
     )
     .presentationDragIndicator(.visible)
   }

@@ -199,59 +199,6 @@ struct AssistantActionPill: View {
   }
 }
 
-/// Apple Health thu gọn một dòng (15/10, audit: thẻ cuối trang quá to).
-struct HealthSyncLine: View {
-  let isAvailable: Bool
-  let sync: @MainActor () async throws(HealthSync.Failure) -> Void
-  @State private var running = false
-  @State private var failed = false
-  @State private var lastSync: Date?
-
-  var body: some View {
-    if isAvailable {
-      Button {
-        guard !running else { return }
-        running = true
-        failed = false
-        Task {
-          do {
-            try await sync()
-            lastSync = Date()
-          } catch {
-            failed = true
-          }
-          running = false
-        }
-      } label: {
-        HStack(spacing: 8) {
-          Image(systemName: "heart.fill").foregroundStyle(DS.Color.readinessRed.swiftUI)
-          Text(verbatim: status)
-            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-          Spacer(minLength: 0)
-          if running {
-            ProgressView().controlSize(.small)
-          } else {
-            Text("assistant.health.sync").fontWeight(.semibold).foregroundStyle(DS.Color.foreground.swiftUI)
-          }
-        }
-        .font(.system(size: 13))
-        .padding(.horizontal, 4)
-        .frame(minHeight: 44)
-        .contentShape(Rectangle())
-      }
-      .buttonStyle(.plain)
-    }
-  }
-
-  private var status: String {
-    if failed { return String(localized: "assistant.health.failed") }
-    if let lastSync {
-      return String(localized: "assistant.health.synced \(lastSync.formatted(.relative(presentation: .named).locale(.app)))")
-    }
-    return String(localized: "assistant.health")
-  }
-}
-
 /// Thẻ xu hướng 7 ngày (loại đang chọn) — một câu + đường nhỏ; chạm mở bảng đầy đủ.
 struct TrendHighlight: View {
   let book: MetricHistoryBook

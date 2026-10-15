@@ -433,7 +433,7 @@ struct ReadinessCardView: View {
 
   static func tileValue(_ t: ReadinessCard.Tile) -> String {
     if let v = t.subscore { return String(v) }
-    if let a = t.acwr { return Units.text(a) }
+    if let a = t.acwr { return Units.display(a, locale: .app) }
     return "—"
   }
 

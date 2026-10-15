@@ -301,7 +301,7 @@ struct NutritionTodayCard: View {
         if !typeSize.isAccessibilitySize { Spacer(minLength: 4) }
         Text(verbatim: showLeft
           ? "\(tile.leftText) g \(wordText(tile.word))"
-          : "\(Units.text(tile.eaten))/\(Units.text(tile.target)) g")
+          : "\(Units.display(tile.eaten, locale: .app))/\(Units.display(tile.target, locale: .app)) g")
           .font(.custom("Menlo", size: 12, relativeTo: .footnote))
           .foregroundStyle(tile.over ? overColor : DS.Color.mutedForeground.swiftUI)
           .lineLimit(1)
@@ -322,7 +322,7 @@ struct NutritionTodayCard: View {
     (typeSize.isAccessibilitySize
       ? AnyLayout(VStackLayout(alignment: .leading, spacing: 2)) : AnyLayout(HStackLayout(spacing: 4))) {
       Text(verbatim: Macro.fiber.label)
-      Text(verbatim: "\(Units.text(tile.eaten))/\(Units.text(tile.target)) g")
+      Text(verbatim: "\(Units.display(tile.eaten, locale: .app))/\(Units.display(tile.target, locale: .app)) g")
         .font(.custom("Menlo", size: 12, relativeTo: .footnote))
     }
     .font(DS.TextStyle.caption)
@@ -350,7 +350,7 @@ struct NutritionTodayCard: View {
     for (m, tile) in zip(Macro.allCases, tiles) {
       parts.append(showLeft
         ? "\(m.label): \(tile.leftText)g \(wordText(tile.word))"
-        : "\(m.label): \(Units.text(tile.eaten))/\(Units.text(tile.target))g")
+        : "\(m.label): \(Units.display(tile.eaten, locale: .app))/\(Units.display(tile.target, locale: .app))g")
     }
     return parts.joined(separator: ". ")
   }

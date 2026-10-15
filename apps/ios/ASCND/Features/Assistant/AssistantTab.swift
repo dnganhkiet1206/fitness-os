@@ -91,9 +91,8 @@ struct AssistantTab: View {
             .contentShape(Rectangle())
           }
           .buttonStyle(TodayPressStyle())
-          // Nguồn của các con số, đặt DƯỚI những thứ dùng chúng (RN: cuối
-          // trang). Không có Apple Health trên máy thì không hiện gì.
-          HealthSyncLine(isAvailable: services.health.isAvailable, sync: syncHealth)
+          // Apple Health chỉ ở Cài đặt (15/10, chủ dự án: "chỉ để apple health trong
+          // cài đặt các tab khác gỡ").
         }
         .padding(DS.Spacing.md)
       }
@@ -213,6 +212,9 @@ struct AssistantTab: View {
         await goals?.move(to: today)
       }
     }
+    .onReceive(NotificationCenter.default.publisher(for: .healthSynced)) { _ in
+      Task { await reloadAfterHealthSync() }
+    }
     .onChange(of: isCurrentSession) { _, current in
       guard !current else { return }
       chat?.close()
@@ -243,10 +245,9 @@ struct AssistantTab: View {
       force: force)
   }
 
-  /// Đồng bộ Apple Health (`HealthSyncCoordinator.syncNow`, không đụng dịch vụ);
-  /// xong thì tín hiệu, ô chỉ số và insight hôm nay đọc lại.
-  private func syncHealth() async throws(HealthSync.Failure) {
-    try await services.health.syncNow(userId: flow.today.userId, lang: AppServices.appLang)
+  /// Sau một lượt đồng bộ Apple Health (giờ chỉ ở Cài đặt, hoặc tự chạy khi ra
+  /// tiền cảnh): tín hiệu, ô chỉ số và insight hôm nay đọc lại.
+  private func reloadAfterHealthSync() async {
     await signal?.load()
     await metrics?.load(kcalTarget: kcalTarget)
     await loadInsight()
@@ -314,13 +315,6 @@ struct AssistantTab: View {
           detail: hr < 60
             ? String(localized: "metric.note.low")
             : hr <= 80 ? String(localized: "metric.note.normal") : String(localized: "metric.note.high"))
-      } else if services.health.isAvailable {
-        AreaHighlight(
-          symbol: "heart.fill", title: String(localized: "metric.hr"), tint: DS.Color.readinessRed.swiftUI,
-          headline: String(localized: "assistant.hr.none"),
-          action: (String(localized: "assistant.health.sync"), "arrow.triangle.2.circlepath", {
-            Task { try? await syncHealth() }
-          }))
       }
     case .nutrition:
       AreaHighlight(
@@ -455,6 +449,9 @@ struct AssistantTab: View {
     var id: AssistantRoute { route }
   }
 
+  /// Công cụ của Trợ lý. Số đo / Ảnh tiến trình / Hiệu chỉnh mục tiêu đã có ở
+  /// Tập luyện → Cơ thể — bỏ khỏi đây (15/10, audit toàn app: phần cơ thể bị chia
+  /// đôi); màn và route vẫn giữ.
   private var availableTools: [Tool] {
     var out: [Tool] = []
     if weekly != nil {
@@ -480,24 +477,6 @@ struct AssistantTab: View {
         Tool(
           route: .sleep, symbol: "moon.fill", tint: DS.Color.metricPurple.swiftUI,
           label: String(localized: "assistant.tool.sleep"), hint: String(localized: "assistant.tool.sleep.hint")))
-    }
-    if goals != nil {
-      out.append(
-        Tool(
-          route: .goals, symbol: "scope", tint: DS.Color.readinessGreen.swiftUI,
-          label: String(localized: "assistant.tool.goals"), hint: String(localized: "assistant.tool.goals.hint")))
-    }
-    if measure != nil {
-      out.append(
-        Tool(
-          route: .measure, symbol: "ruler", tint: DS.Color.metricCyan.swiftUI,
-          label: String(localized: "assistant.tool.measure"), hint: String(localized: "assistant.tool.measure.hint")))
-    }
-    if photos != nil {
-      out.append(
-        Tool(
-          route: .photos, symbol: "camera.fill", tint: DS.Color.metricOrange.swiftUI,
-          label: String(localized: "assistant.tool.photos"), hint: String(localized: "assistant.tool.photos.hint")))
     }
     if memory != nil {
       out.append(

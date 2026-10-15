@@ -40,6 +40,10 @@ public struct SettingsView: View {
   /// Hồ sơ của phiên (`settings.tsx:350`): thẻ tài khoản mở màn sửa hồ sơ.
   /// `nil` (preview, chưa nạp) thì thẻ chỉ hiện email như trước.
   var profileBook: ProfileBook?
+  /// Apple Health (15/10, audit toàn app: thẻ đồng bộ lặp ở Hôm nay và Trợ lý) —
+  /// thẻ đầy đủ ở đây; các tab chỉ còn một dòng. `nil` → không hiện.
+  var healthSync: (@MainActor () async throws(HealthSync.Failure) -> Void)?
+  var healthAvailable = false
   @State private var editingProfile = false
 
   /// Vừa đổi mật khẩu xong — RN `toast.success(settingsPasswordChanged)`;
@@ -80,7 +84,9 @@ public struct SettingsView: View {
     onThemeChange: @escaping (String) -> Void = { _ in },
     makePasswordChange: (@MainActor () -> PasswordChangeController)? = nil,
     legalLang: AppPreferences.Lang? = nil,
-    profileBook: ProfileBook? = nil
+    profileBook: ProfileBook? = nil,
+    healthAvailable: Bool = false,
+    healthSync: (@MainActor () async throws(HealthSync.Failure) -> Void)? = nil
   ) {
     self.account = account
     self.onSignOut = onSignOut
@@ -92,6 +98,8 @@ public struct SettingsView: View {
     self.makePasswordChange = makePasswordChange
     self.legalLang = legalLang
     self.profileBook = profileBook
+    self.healthAvailable = healthAvailable
+    self.healthSync = healthSync
     _selectedLanguage = State(initialValue: language)
     _selectedTheme = State(initialValue: theme)
   }
@@ -156,6 +164,14 @@ public struct SettingsView: View {
             }
           } header: {
             Text(String(localized: "settings.language"))
+          }
+        }
+
+        if let healthSync, healthAvailable {
+          Section {
+            HealthSyncCard(isAvailable: true, sync: healthSync)
+              .listRowInsets(EdgeInsets())
+              .listRowBackground(Color.clear)
           }
         }
 

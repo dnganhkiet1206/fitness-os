@@ -77,4 +77,11 @@ struct AssistantSummaryTests {
     #expect(b.first(where: { $0.tool == .sleep })?.reason == nil)
     #expect(b.count == all.count)
   }
+
+  @Test func unitsDisplayFollowsLocale() {
+    #expect(Units.display(3.3, locale: Locale(identifier: "vi_VN")) == "3,3")
+    #expect(Units.display(3.3, locale: Locale(identifier: "en_US")) == "3.3")
+    #expect(Units.display(2508, locale: Locale(identifier: "vi_VN")) == "2508")
+    #expect(Units.text(3.3) == "3.3", "ô nhập giữ dạng JS")
+  }
 }

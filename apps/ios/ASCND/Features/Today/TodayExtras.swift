@@ -128,7 +128,7 @@ struct TodayExtras<Plan: View>: View {
       if let awards {
         RecentAwardsCard(book: awards, lang: services.preferences.lang) { showsAwards = true }
       }
-      HealthSyncCard(isAvailable: services.health.isAvailable, sync: syncHealth)
+      // Apple Health chỉ ở Cài đặt (15/10, chủ dự án).
     }
     // Bữa / nước / ngủ đi qua outbox: hàng đợi vơi đi (server đã nhận) thì đọc
     // lại ngày — như `invalidateQueries` sau `onSettled` của RN.
@@ -562,12 +562,6 @@ struct TodayExtras<Plan: View>: View {
   }
 
   private var isCurrentSession: Bool { services.session.session?.userId == userId }
-
-  /// Đồng bộ Apple Health của B (#554); xong thì điểm hôm nay đọc lại.
-  private func syncHealth() async throws(HealthSync.Failure) {
-    try await services.health.syncNow(userId: userId, lang: AppServices.appLang)
-    await reloadAfterHealthSync()
-  }
 
   /// Sau một lượt đồng bộ Apple Health: điểm, xu hướng VÀ các ống của Koa
   /// (bước chân đọc từ `daily_logs` qua phòng linh vật) — trước đây ống bước

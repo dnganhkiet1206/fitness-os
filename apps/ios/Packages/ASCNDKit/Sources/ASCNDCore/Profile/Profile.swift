@@ -95,6 +95,18 @@ public enum Units {
   /// `Math.round(v * 10) / 10`.
   static func jsRound1(_ v: Double) -> Double { (v * 10 + 0.5).rounded(.down) / 10 }
 
+  /// Số để HIỂN THỊ theo ngôn ngữ app (15/10, audit toàn app: "3.3" kiểu Anh giữa
+  /// chữ tiếng Việt) — không nhóm nghìn, tối đa hai chữ số lẻ. Ô nhập vẫn dùng `text`.
+  public static func display(_ v: Double, locale: Locale) -> String {
+    let f = NumberFormatter()
+    f.locale = locale
+    f.numberStyle = .decimal
+    f.usesGroupingSeparator = false
+    f.minimumFractionDigits = 0
+    f.maximumFractionDigits = 2
+    return f.string(from: NSNumber(value: v)) ?? text(v)
+  }
+
   /// `String(n)` của JS cho số đã làm tròn: 70 → "70", 72.5 → "72.5".
   public static func text(_ v: Double) -> String {
     v == v.rounded() && abs(v) < 1e15 ? String(Int(v)) : String(v)

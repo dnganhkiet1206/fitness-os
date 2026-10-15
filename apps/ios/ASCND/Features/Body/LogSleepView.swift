@@ -45,7 +45,7 @@ struct LogSleepView: View {
     case .outOfRange?:
       String(localized: "weight.outOfRange \("0") \("1440") \(String(localized: "sleepLog.minutes"))")
     case .overrun(let sum, let total)?:
-      String(localized: "sleepLog.overrun \(Units.text(sum)) \(total)")
+      String(localized: "sleepLog.overrun \(Units.display(sum, locale: .app)) \(total)")
     case nil:
       nil
     }
