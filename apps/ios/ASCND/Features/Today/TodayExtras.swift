@@ -35,11 +35,6 @@ struct TodayExtras<Plan: View>: View {
   @State private var awards: AwardsBook?
   @State private var mascot: MascotRoomController?
   @State private var challenges: WeeklyChallengesBook?
-  @State private var weekly: WeeklyReviewBook?
-  @State private var trend: ReadinessTrendBook?
-  /// Thẻ tập luyện đầy đủ (RN `TrainingCard`) — dựng khi chạm hàng lần đầu.
-  @State private var training: TrainingCardBook?
-  @State private var showsTraining = false
   /// Ba vòng hoạt động (RN `ActivityRingsCard`).
   @State private var activity: ActivityRingsBook?
   @State private var showsActivity = false
@@ -50,13 +45,12 @@ struct TodayExtras<Plan: View>: View {
   @State private var showsRoom = false
   @State private var showsAwards = false
   @State private var showsReadiness = false
-  @State private var showsTrend = false
+  @Environment(DeepLinkInbox.self) private var links: DeepLinkInbox?
   /// Chuyển cảnh zoom: màn con phóng ra từ dòng / Koa vừa chạm.
   @Namespace private var zoom
   @State private var roomSource = "koa"
   @State private var readinessSource = "readiness"
   @State private var biometricsSource = "bio"
-  @State private var showsWeekly = false
   @State private var showsSteps = false
   /// Tín hiệu bữa / ngủ / sinh trắc / cân của hôm nay cho thẻ việc.
   @State private var todo: ReminderTodayBook?
@@ -68,9 +62,7 @@ struct TodayExtras<Plan: View>: View {
   @Environment(NutritionBooks.self) private var nutrition: NutritionBooks?
   @State private var ownWater: WaterBook?
   private var water: WaterBook? { nutrition?.water ?? ownWater }
-  @State private var showsSleep = false
   @State private var showsSupplements = false
-  @State private var sleepInsights: SleepInsightsBook?
   @State private var waterNote: String?
   @State private var waterTaps = 0
   @Environment(ProfileBook.self) private var profile: ProfileBook?
@@ -184,46 +176,16 @@ struct TodayExtras<Plan: View>: View {
       }
       .onDisappear { Task { await reloadDay() } }
     }
-    .navigationDestination(isPresented: $showsTrend) {
-      if let trend {
-        ScrollView {
-          // Thẻ RN tự ẩn khi dưới 2 ngày — ở màn riêng thì nói lý do thay vì trang trắng.
-          if trend.stats == nil {
-            DSEmptyState(
-              systemImage: "chart.bar", title: String(localized: "rt.title"),
-              message: String(localized: "today.more.trend.empty"))
-          } else {
-            ReadinessTrendCardView(book: trend)
-          }
-        }
-        .contentMargins(DS.Spacing.md, for: .scrollContent)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(DS.Color.background.swiftUI)
-          .navigationTitle(Text(String(localized: "rt.title")))
-          .todayZoom("trend", in: zoom)
-      }
-    }
     .navigationDestination(isPresented: $showsActivity) {
       if let activity {
         ActivityRingsView(book: activity, stepsTarget: mascot?.stepsGoal ?? DailySignals.defaultStepsGoal)
           .todayZoom("activity", in: zoom)
       }
     }
-    .navigationDestination(isPresented: $showsTraining) {
-      if let training { TrainingCardView(book: training, acwr: todayAcwr).todayZoom("load", in: zoom) }
-    }
-    .navigationDestination(isPresented: $showsSleep) {
-      if let sleepInsights {
-        SleepInsightsView(book: sleepInsights, lang: services.preferences.lang).todayZoom("sleep", in: zoom)
-      }
-    }
     .navigationDestination(isPresented: $showsSupplements) {
       if let supplements = nutrition?.supplements {
         SupplementsView(book: supplements).todayZoom("supplements", in: zoom)
       }
-    }
-    .navigationDestination(isPresented: $showsWeekly) {
-      if let weekly { WeeklyReviewView(book: weekly, lang: services.preferences.lang).todayZoom("weekly", in: zoom) }
     }
     .navigationDestination(isPresented: $showsBiometrics) {
       if let biometrics { BiometricsView(book: biometrics).todayZoom(biometricsSource, in: zoom) }
@@ -237,8 +199,6 @@ struct TodayExtras<Plan: View>: View {
       awards = services.makeAwardsBook(userId: userId)
       mascot = services.makeMascotRoom(userId: userId, today: today)
       challenges = services.makeWeeklyChallenges(userId: userId, today: today)
-      weekly = services.makeWeeklyReview(userId: userId, today: today)
-      trend = services.makeReadinessTrend(userId: userId, today: today)
       activity = services.makeActivityRings(userId: userId, today: today)
       weight = services.makeWeightLogger(userId: userId)
       todo = services.makeReminderToday(userId: userId)
@@ -248,7 +208,6 @@ struct TodayExtras<Plan: View>: View {
       await mascot?.load()
       if let nutrition { await nutrition.loadOnce() } else { await ownWater?.load() }
       await readiness?.load()
-      await trend?.load()
       await activity?.load()
       await biometrics?.load()
       await focusChecks()
@@ -256,7 +215,6 @@ struct TodayExtras<Plan: View>: View {
     .onChange(of: refreshTick) { _, _ in
       Task {
         await reloadDay()
-        await trend?.load()
         await focusChecks()
       }
     }
@@ -271,12 +229,9 @@ struct TodayExtras<Plan: View>: View {
       Task {
         let today = Self.today()
         if today != readiness.date { await readiness.move(to: today) } else { await readiness.load() }
-        // Tuần "này" của màn tổng kết đổi khi qua Chủ nhật.
-        await weekly?.move(to: today)
         await mascot?.load()
         await todo?.refresh()
         await focusChecks()
-        await trend?.move(to: today)
         await activity?.load(today: today)
       }
     }
@@ -290,9 +245,6 @@ struct TodayExtras<Plan: View>: View {
       awards?.close()
       mascot?.close()
       challenges?.close()
-      weekly?.close()
-      trend?.close()
-      training?.close()
       activity?.close()
       weight?.close()
       todo?.close()
@@ -355,29 +307,11 @@ struct TodayExtras<Plan: View>: View {
 
   // MARK: - More about today
 
-  /// Sinh trắc hôm nay, tải tuần so với thói quen (`loadComparison` trên ACWR
-  /// mà engine đã ghi — RN `training-card.ts`), trung bình sẵn sàng 7 ngày,
-  /// tổng kết tuần, phòng linh vật.
+  /// Hôm nay để LÀM (15/10, chủ dự án chọn "Chia rõ"): thực phẩm bổ sung, ba vòng,
+  /// phòng linh vật. Sinh trắc học, giấc ngủ, tập luyện, xu hướng, tổng kết tuần
+  /// — những thứ để HIỂU — ở tab Trợ lý.
   private var moreRows: [TodayMore.Row] {
     var rows: [TodayMore.Row] = []
-    if biometrics != nil {
-      let b = todayBiometrics
-      let hrv = b?.hrvSdnn ?? b?.hrvRmssd
-      let parts = [b?.hr.map { "\(Int($0.rounded())) bpm" }, hrv.map { "\(Int($0.rounded())) ms" }].compactMap { $0 }
-      rows.append(.init(
-        id: "bio", title: String(localized: "today.todo.bio"),
-        value: parts.isEmpty ? "—" : parts.joined(separator: " · "),
-        action: { biometricsSource = "bio"; showsBiometrics = true }))
-    }
-    // Giấc ngủ (RN `SleepCard` → `/sleep-insights`): đêm qua, rồi màn phân tích.
-    let sleepMin = Int((mascot?.signals?.sleepMinutes ?? 0).rounded())
-    rows.append(.init(
-      id: "sleep", title: String(localized: "today.sig.sleep"),
-      value: sleepMin > 0 ? "\(sleepMin / 60)h\(String(format: "%02d", sleepMin % 60))" : "—",
-      action: {
-        if sleepInsights == nil { sleepInsights = services.makeSleepInsights(userId: userId) }
-        showsSleep = sleepInsights != nil
-      }))
     // Thực phẩm bổ sung (RN `SupplementChecklistCard` trong nhóm Dinh dưỡng).
     if let sup = nutrition?.supplements, !sup.items.isEmpty {
       rows.append(.init(
@@ -385,33 +319,11 @@ struct TodayExtras<Plan: View>: View {
         value: "\(sup.shownTakenCount(writer: services.stateWriter))/\(sup.items.count)",
         action: { showsSupplements = true }))
     }
-    if readiness != nil {
-      // RN `TrainingCard`: chạm → thẻ đầy đủ (biểu đồ 8 tuần, ngày tập cơ, buổi
-      // gần nhất). Không có kho đọc (preview) thì vẫn mở thẻ sẵn sàng như trước.
-      rows.append(.init(
-        id: "load", title: String(localized: "today.more.training"), value: loadText,
-        action: {
-          if training == nil { training = services.makeTrainingCard(userId: userId) }
-          if training != nil {
-            showsTraining = true
-          } else {
-            readinessSource = "load"
-            showsReadiness = true
-          }
-        }))
-    }
     // Ba vòng (RN `ActivityRingsCard`): số vòng đã đóng hôm nay.
     if let activity, let m = activity.model(body: energyBody, stepsTarget: mascot?.stepsGoal ?? DailySignals.defaultStepsGoal) {
       rows.append(.init(
         id: "activity", title: String(localized: "ar.title"), value: "\(m.closed)/\(m.rings.count)",
         action: { showsActivity = true }))
-    }
-    if let trend {
-      let avg = trend.stats.map { String(localized: "today.more.avg \(Int($0.average))") } ?? "—"
-      rows.append(.init(id: "trend", title: String(localized: "rt.title"), value: avg, action: { showsTrend = true }))
-    }
-    if weekly != nil {
-      rows.append(.init(id: "weekly", title: String(localized: "wr.title"), value: nil, action: { showsWeekly = true }))
     }
     if let mascot, case .ready = mascot.phase {
       rows.append(.init(
@@ -431,19 +343,6 @@ struct TodayExtras<Plan: View>: View {
   /// Hồ sơ năng lượng cho kcal ước lượng của vòng Move (`energyProfileFrom`).
   private var energyBody: SessionEnergy.Body? {
     SessionEnergy.body(profile: profile?.profile, today: Self.today())
-  }
-
-  /// ACWR engine đã ghi cho hôm nay; chưa có → `nil`.
-  private var todayAcwr: Double? {
-    guard let readiness, case .ready(let day) = readiness.phase else { return nil }
-    return day.acwr
-  }
-
-  /// "+8%" / "−12%" so với tuần thói quen; chưa có ACWR → "—".
-  private var loadText: String {
-    guard let acwr = todayAcwr else { return "—" }
-    let c = ReadinessCard.loadComparison(acwr)
-    return c.percent == 0 ? "0%" : "\(c.heavier ? "+" : "−")\(c.percent)%"
   }
 
   /// RN chạy hai việc này mỗi lần Today có focus (`useCheckAwards`,
@@ -481,7 +380,14 @@ struct TodayExtras<Plan: View>: View {
     return AnyView(
       TodayReadinessRow(
         book: readiness, lang: services.preferences.lang,
-        onOpen: { readinessSource = "readiness"; showsReadiness = true }
+        onOpen: {
+          // Hiểu điểm là việc của Trợ lý (15/10, "Chia rõ"); không có hộp link
+          // (preview) thì mở thẻ phân tích tại chỗ như trước.
+          if let links { links.receive(.tab(.assistant)) } else {
+            readinessSource = "readiness"
+            showsReadiness = true
+          }
+        }
       ).matchedTransitionSource(id: "readiness", in: zoom))
   }
 
@@ -527,18 +433,8 @@ struct TodayExtras<Plan: View>: View {
     if let nutrition { await nutrition.refresh() } else { await ownWater?.refresh() }
     await readiness?.load()
     await biometrics?.load()
-    // Buổi vừa ghi đổi cả thẻ tập luyện lẫn phút của vòng Tập luyện.
-    await training?.load()
+    // Buổi vừa ghi đổi phút của vòng Tập luyện.
     await activity?.load(today: Self.today())
-  }
-
-  /// Lần đo sinh trắc mới nhất của HÔM NAY (`useTodayBiometrics`).
-  private var todayBiometrics: Biometrics.Sample? {
-    guard let biometrics, case .ready(let samples) = biometrics.phase else { return nil }
-    let cal = Calendar.current
-    return samples
-      .filter { cal.isDateInToday(Date(timeIntervalSince1970: Double($0.at.millis) / 1000)) }
-      .max { $0.at < $1.at }
   }
 
   // MARK: - Đầu trang
@@ -568,7 +464,6 @@ struct TodayExtras<Plan: View>: View {
   /// không đọc lại nên giữ số cũ tới lần ra tiền cảnh sau (15/10).
   private func reloadAfterHealthSync() async {
     await readiness?.load()
-    await trend?.load()
     await mascot?.load()
   }
 

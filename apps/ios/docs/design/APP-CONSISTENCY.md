@@ -23,6 +23,10 @@ tính năng đồng bộ trong toàn app" → "làm đi".
   `SettingsSheet`. Cài đặt bỏ thẻ hồ sơ, chỉ còn email. Chưa có hồ sơ cộng đồng: trang vẫn có mục tiêu + tập luyện
   và nút "Tạo hồ sơ cộng đồng". Còn lại: tên hiển thị cộng đồng và tên trong hồ sơ tập là hai trường riêng ở
   server (không đổi schema).
+- **Hôm nay để làm, Trợ lý để hiểu** (chủ dự án chọn "Chia rõ"): "Xem thêm" của Hôm nay chỉ còn Thực phẩm bổ sung,
+  Ba vòng, Phòng linh vật. Sinh trắc học, Giấc ngủ, Xu hướng sẵn sàng, Tổng kết tuần ở công cụ Trợ lý; thẻ Tập luyện
+  (`TrainingCardView`, tải tuần / 8 tuần) chuyển sang Trợ lý (`AssistantRoute.training`, "Tải tập luyện"). Chạm
+  dòng sẵn sàng ở Hôm nay → tab Trợ lý (`DeepLinkInbox.receive(.tab(.assistant))`).
 
 ## Quy ước (giữ khi làm màn mới)
 - Công tắc 2–3 trang ở đầu tab (Hôm nay/Kế hoạch ăn, Buổi tập/Cơ thể, Đang theo dõi/Khám phá) và ô trong form
@@ -32,6 +36,6 @@ tính năng đồng bộ trong toàn app" → "làm đi".
 - Hành động chính: viên đen đặc; phụ: viên viền mảnh.
 
 ## Chưa làm (cần chủ dự án chọn / việc lớn)
-- Vai trò Hôm nay (làm) vs Trợ lý (hiểu); gộp "Hữu ích" vào "Thịnh hành".
+- Gộp "Hữu ích" vào "Thịnh hành".
 - Một thành phần điểm sẵn sàng dùng chung cho Hôm nay và Trợ lý; gom các kiểu thẻ (`todayCard`, `DSCard`,
   `NewsCardSurface`, `AssistantSurface`).

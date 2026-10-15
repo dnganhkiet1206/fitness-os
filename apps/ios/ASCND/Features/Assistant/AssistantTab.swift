@@ -4,7 +4,7 @@ import SwiftUI
 
 /// Đích của tab Trợ lý.
 enum AssistantRoute: Hashable {
-  case chat, weekly, steps, biometrics, sleep, goals, measure, photos, memory, trends, tools
+  case chat, weekly, steps, training, biometrics, sleep, goals, measure, photos, memory, trends, tools
 }
 
 /// Tab Trợ lý (#527 Phase 6) — `(tabs)/assistant.tsx` @ fac9ac2.
@@ -37,6 +37,9 @@ struct AssistantTab: View {
   @State private var nudges: SmartNudgesBook?
   @State private var steps: StepsBook?
   @State private var sleep: SleepInsightsBook?
+  /// Thẻ tập luyện đầy đủ (RN `TrainingCard`) — chuyển từ "Xem thêm" của Hôm nay
+  /// (15/10, "Chia rõ": Hôm nay để làm, Trợ lý để hiểu).
+  @State private var training: TrainingCardBook?
   @State private var goals: SmartGoalsBook?
   @State private var measure: MeasurementsBook?
   @State private var photos: ProgressPhotosBook?
@@ -129,6 +132,8 @@ struct AssistantTab: View {
           if let weekly { WeeklyReviewView(book: weekly, lang: lang) }
         case .steps:
           if let steps { StepsView(book: steps) }
+        case .training:
+          if let training { TrainingCardView(book: training, acwr: signal?.signal.acwr) }
         case .biometrics:
           if let biometrics { BiometricsView(book: biometrics) }
         case .sleep:
@@ -184,6 +189,7 @@ struct AssistantTab: View {
       nudges = services.makeSmartNudges(userId: userId)
       steps = services.makeStepsBook(userId: userId, today: today)
       sleep = services.makeSleepInsights(userId: userId)
+      training = services.makeTrainingCard(userId: userId)
       goals = services.makeSmartGoals(userId: userId, today: today)
       measure = services.makeMeasurements(userId: userId)
       photos = services.makeProgressPhotos(userId: userId)
@@ -226,6 +232,7 @@ struct AssistantTab: View {
       nudges?.close()
       steps?.close()
       sleep?.close()
+      training?.close()
       goals?.close()
       measure?.close()
       photos?.close()
@@ -365,7 +372,7 @@ struct AssistantTab: View {
     case .measure: .measure
     case .photos: .photos
     case .memory: .memory
-    case .chat, .trends, .tools: nil
+    case .chat, .trends, .tools, .training: nil
     }
   }
 
@@ -465,6 +472,12 @@ struct AssistantTab: View {
         Tool(
           route: .steps, symbol: "figure.walk", tint: DS.Color.metricBlue.swiftUI,
           label: String(localized: "assistant.tool.steps"), hint: String(localized: "assistant.tool.steps.hint")))
+    }
+    if training != nil {
+      out.append(
+        Tool(
+          route: .training, symbol: "dumbbell.fill", tint: DS.Color.metricRose.swiftUI,
+          label: String(localized: "assistant.tool.training"), hint: String(localized: "assistant.tool.training.hint")))
     }
     if biometrics != nil {
       out.append(

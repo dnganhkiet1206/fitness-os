@@ -50947,6 +50947,52 @@
      }
     }
    }
+  },
+  "assistant.tool.training": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Training load"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Carga de entrenamiento"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tải tập luyện"
+     }
+    }
+   }
+  },
+  "assistant.tool.training.hint": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "This week vs your usual, 8-week chart"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Esta semana vs lo habitual, gráfico de 8 semanas"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tuần này so với thói quen, biểu đồ 8 tuần"
+     }
+    }
+   }
   }
  }
 }
