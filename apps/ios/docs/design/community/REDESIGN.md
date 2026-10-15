@@ -103,3 +103,15 @@ trên sáng hơn viền dưới như mép kính bắt sáng. Danh sách Thịnh 
 - (15/10, sau) Chủ dự án: "thêm nút đăng bài hiện chưa có" (ba viên màu Buổi tập · Tiến bộ · Món trông như
   bộ lọc). Thay bằng hàng đăng bài kiểu Threads: avatar + "Hôm nay bạn tập gì?" + nút "+" tròn đặc; cả hàng
   là `Menu` ba loại bài → đúng ba màn đăng cũ. Không thêm "+" ở đầu trang (bốn nút làm tiêu đề xuống dòng).
+
+## Trang cá nhân — "thẻ vận động viên" (15/10)
+
+Chủ dự án: mock đầu "hơi giống tiktok, sửa lại cho khác biệt" → duyệt bản thẻ vận động viên.
+- Thẻ tối kiểu thẻ thành viên phòng tập, nền `ArtBackdrop` như feed (lưới tối, quầng hồng, hạt nhám,
+  logo BrandMark): "ASCND · VẬN ĐỘNG VIÊN", avatar, tên, @handle; ba số bảng điểm CHỈ từ dữ liệu server
+  có: bài · người theo dõi · lượt người khác thử buổi tập.
+- Hàng nút: một nút dài + nút tròn. Của mình: Sửa hồ sơ · Đã lưu · Quyền riêng tư · Chia sẻ. Người khác:
+  Theo dõi (đen đặc) · Chia sẻ. Nhắn tin chờ server (MESSAGING-PLAN.md) — chưa có nút.
+- Dưới thẻ: tiểu sử, "Đang theo dõi N", Huy hiệu; "Bài đăng" là thẻ hàng kiểu Apple News như feed.
+- Chưa làm (cần dữ liệu): chuỗi ngày / kỷ lục / nhịp tập 4 tuần — với người khác cần server có "chỉ số
+  công khai"; với chính mình có thể lấy từ app, làm lô sau.

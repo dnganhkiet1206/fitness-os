@@ -81,6 +81,7 @@ struct CommunityUserView: View {
   @State private var confirmBlock = false
   @State private var message: String?
   @State private var taps = 0
+  @State private var openPost: String?
 
   var body: some View {
     ScrollView {
@@ -108,6 +109,7 @@ struct CommunityUserView: View {
     }
     .task { if book.phase == .loading { await book.load() } }
     .refreshable { await book.load() }
+    .navigationDestination(item: $openPost) { CommunityPostScreen(postId: $0) }
     .sensoryFeedback(.selection, trigger: taps)
     .communityUserLinks()
     .communityPostActions(userId: book.userId, host: book)
@@ -157,6 +159,10 @@ struct CommunityUserView: View {
       if let p = book.profile {
         hero(p)
         primaryAction(p)
+        about(p)
+        if !book.posts.isEmpty || book.showsKindRow {
+          Text("community.pass.poststitle").font(.system(size: 17, weight: .bold)).padding(.top, DS.Spacing.sm)
+        }
         if book.showsKindRow { kindRow }
         if book.showsJourney, let j = book.journey, !j.lines.isEmpty { JourneyCard(journey: j, unit: unit) }
         if let until = book.mutedUntil { mutedCard(p, until: until) }
@@ -167,42 +173,102 @@ struct CommunityUserView: View {
 
   // MARK: - Đầu trang
 
+  /// "Thẻ vận động viên" (15/10, chủ dự án duyệt mock — "giống tiktok, sửa lại cho
+  /// khác biệt"): thẻ tối như thẻ thành viên phòng tập, cùng nền "ảnh" với feed
+  /// (`ArtBackdrop`: lưới tối, quầng hồng, hạt nhám); ba số kiểu bảng điểm CHỈ từ
+  /// dữ liệu server có — bài · người theo dõi · lượt người khác thử buổi tập. Không
+  /// có số nào bịa (chuỗi ngày / kỷ lục của người khác cần server — để sau).
   private func hero(_ p: CommunityFeed.Author) -> some View {
-    VStack(spacing: DS.Spacing.sm) {
-      MascotAvatar(mascotId: p.mascotId, size: 88)
-      HStack(spacing: 6) {
-        Text(verbatim: p.displayName)
-          .font(DS.TextStyle.title2)
-          .foregroundStyle(DS.Color.foreground.swiftUI)
-          .multilineTextAlignment(.center)
-        if p.isOfficial {
-          Image(systemName: "checkmark.seal.fill")
-            .foregroundStyle(DS.Color.metricBlue.swiftUI)
-            .accessibilityLabel(Text("community.verified"))
+    VStack(alignment: .leading, spacing: 0) {
+      HStack {
+        Text("community.pass.caption")
+          .font(.system(size: 10, weight: .bold)).tracking(1.4)
+          .foregroundStyle(.white.opacity(0.6))
+        Spacer(minLength: 0)
+        Image("BrandMark").resizable().interpolation(.high).frame(width: 18, height: 18)
+          .environment(\.colorScheme, .dark)
+          .accessibilityHidden(true)
+      }
+      HStack(spacing: 12) {
+        MascotAvatar(mascotId: p.mascotId, size: 60)
+          .overlay { Circle().strokeBorder(.white.opacity(0.25), lineWidth: 1) }
+        VStack(alignment: .leading, spacing: 2) {
+          HStack(spacing: 6) {
+            Text(verbatim: p.displayName)
+              .font(.system(size: 22, weight: .bold)).tracking(-0.3)
+              .foregroundStyle(.white)
+              .lineLimit(2)
+            if p.isOfficial {
+              Image(systemName: "checkmark.seal.fill")
+                .foregroundStyle(DS.Color.metricBlue.bright)
+                .accessibilityLabel(Text("community.verified"))
+            }
+          }
+          Text(verbatim: "@\(p.handle)")
+            .font(.system(size: 13))
+            .foregroundStyle(.white.opacity(0.6))
         }
       }
+      .padding(.top, 14)
+      HStack(spacing: 0) {
+        passStat(book.stats?.posts ?? book.posts.count, label: String(localized: "community.pass.posts"))
+        passDivider
+        passStat(book.followers, label: String(localized: "community.user.followers"))
+        passDivider
+        passStat(book.stats?.tries ?? 0, label: String(localized: "community.pass.tries"))
+      }
+      .padding(.top, 14)
+      .overlay(alignment: .top) { Rectangle().fill(.white.opacity(0.14)).frame(height: 0.5) }
+      .padding(.top, 16)
+    }
+    .padding(16)
+    .background {
+      ArtBackdrop(kind: .workout, seed: p.userId, shape: .wide)
+    }
+    .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+    .overlay {
+      RoundedRectangle(cornerRadius: 24, style: .continuous).strokeBorder(.white.opacity(0.08), lineWidth: 0.75)
+    }
+    .padding(.top, DS.Spacing.xs)
+  }
+
+  private func passStat(_ n: Int, label: String) -> some View {
+    VStack(alignment: .leading, spacing: 2) {
+      Text(verbatim: CommunityCard.number(Double(n)))
+        .font(.system(size: 24, weight: .heavy).monospacedDigit()).fontWidth(.condensed)
+        .foregroundStyle(.white)
+      Text(verbatim: label)
+        .font(.system(size: 10, weight: .bold)).tracking(1.1).textCase(.uppercase)
+        .foregroundStyle(.white.opacity(0.6))
+        .lineLimit(1).minimumScaleFactor(0.7)
+    }
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .padding(.top, 12)
+    .accessibilityElement(children: .combine)
+  }
+
+  private var passDivider: some View {
+    Rectangle().fill(.white.opacity(0.14)).frame(width: 0.5, height: 34).padding(.trailing, 12).padding(.top, 12)
+  }
+
+  /// Dưới thẻ: tiểu sử, "Đang theo dõi N", huy hiệu.
+  @ViewBuilder private func about(_ p: CommunityFeed.Author) -> some View {
+    VStack(alignment: .leading, spacing: DS.Spacing.sm) {
       if let bio = p.bio, !bio.isEmpty {
         Text(verbatim: bio)
-          .font(DS.TextStyle.body)
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-          .multilineTextAlignment(.center)
+          .font(.system(size: 15))
+          .foregroundStyle(DS.Color.foreground.swiftUI)
+          .fixedSize(horizontal: false, vertical: true)
       }
-      HStack(spacing: DS.Spacing.xl) {
-        count(book.followers, label: String(localized: "community.user.followers"))
-        count(book.following, label: String(localized: "community.user.followingcount"))
+      Text(verbatim: "\(String(localized: "community.user.followingcount")) \(book.following)")
+        .font(DS.TextStyle.footnote)
+        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+      if !book.badges.isEmpty {
+        Text("community.pass.badges").font(.system(size: 17, weight: .bold)).padding(.top, DS.Spacing.sm)
+        badges
       }
-      .padding(.top, DS.Spacing.xs)
-      // Một dòng chữ, chỉ khi có bài (server đếm trên bài người xem được thấy).
-      if let s = book.stats, s.posts > 0 {
-        Text(verbatim: Self.statsText(s))
-          .font(DS.TextStyle.footnote)
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-          .multilineTextAlignment(.center)
-      }
-      if !book.badges.isEmpty { badges }
     }
-    .frame(maxWidth: .infinity)
-    .padding(.top, DS.Spacing.sm)
+    .frame(maxWidth: .infinity, alignment: .leading)
   }
 
   private func count(_ n: Int, label: String) -> some View {
@@ -228,51 +294,66 @@ struct CommunityUserView: View {
         .accessibilityLabel(Text("community.user.badge \(b.title)"))
       }
     }
-    .padding(.horizontal, DS.Spacing.md)
   }
 
+  /// Hàng nút dưới thẻ: một nút dài + các nút tròn (không phải hai nút to bằng
+  /// nhau kiểu TikTok). Của mình: Sửa hồ sơ · Đã lưu · Quyền riêng tư. Người khác:
+  /// Theo dõi · Chia sẻ hồ sơ. (Nhắn tin: chờ server — MESSAGING-PLAN.md.)
   @ViewBuilder private func primaryAction(_ p: CommunityFeed.Author) -> some View {
-    if book.isMe {
-      VStack(spacing: DS.Spacing.sm) {
-        // Hai việc ngang hàng của chính mình: sửa thứ người khác thấy, và
-        // quyết định ai thấy. Chữ lớn thì xuống dòng.
-        ViewThatFits(in: .horizontal) {
-          HStack(spacing: DS.Spacing.sm) { editLink; privacyLink }
-          VStack(spacing: DS.Spacing.sm) { editLink; privacyLink }
-        }
-        // Thư viện Đã lưu: viên trầm riêng, rộng hết hàng; chỉ trên hồ sơ của mình.
+    HStack(spacing: DS.Spacing.sm) {
+      if book.isMe {
+        editLink
         NavigationLink {
           CommunitySavedScreen(userId: book.userId)
         } label: {
-          Label("community.saved.title", systemImage: "bookmark")
-            .font(DS.TextStyle.headline)
-            .foregroundStyle(DS.Color.foreground.swiftUI)
-            .frame(maxWidth: .infinity, minHeight: 44)
-            .background(DS.Color.secondary.swiftUI, in: Capsule())
+          roundIcon("bookmark")
+        }
+        .buttonStyle(TodayPressStyle())
+        .accessibilityLabel(Text("community.saved.title"))
+        NavigationLink {
+          CommunityPrivacyScreen(userId: book.userId)
+        } label: {
+          roundIcon("lock")
+        }
+        .buttonStyle(TodayPressStyle())
+        .accessibilityLabel(Text("community.privacy.title"))
+      } else {
+        Button {
+          taps += 1
+          Task {
+            if case .failed(let f) = await book.toggleFollow() { message = CommunityPostView.failureText(f) }
+          }
+        } label: {
+          if book.iFollow {
+            quiet(Text("community.user.unfollowstate"))
+          } else {
+            Text("community.user.follow")
+              .font(DS.TextStyle.headline)
+              .foregroundStyle(DS.Color.background.swiftUI)
+              .frame(maxWidth: .infinity, minHeight: 44)
+              .background(DS.Color.foreground.swiftUI, in: Capsule())
+          }
         }
         .buttonStyle(.plain)
+        .disabled(book.working)
+        .accessibilityAddTraits(book.iFollow ? .isSelected : [])
       }
-    } else {
-      Button {
-        taps += 1
-        Task {
-          if case .failed(let f) = await book.toggleFollow() { message = CommunityPostView.failureText(f) }
-        }
-      } label: {
-        if book.iFollow {
-          quiet(Text("community.user.unfollowstate"))
-        } else {
-          Text("community.user.follow")
-            .font(DS.TextStyle.headline)
-            .foregroundStyle(DS.Color.primaryForeground.swiftUI)
-            .frame(maxWidth: .infinity, minHeight: 44)
-            .background(DS.Color.primary.swiftUI, in: Capsule())
-        }
+      ShareLink(item: String(localized: "community.pass.sharetext \(p.handle)")) {
+        roundIcon("square.and.arrow.up")
       }
-      .buttonStyle(.plain)
-      .disabled(book.working)
-      .accessibilityAddTraits(book.iFollow ? .isSelected : [])
+      .buttonStyle(TodayPressStyle())
+      .accessibilityLabel(Text("community.pass.share"))
     }
+  }
+
+  private func roundIcon(_ symbol: String) -> some View {
+    Image(systemName: symbol)
+      .font(.system(size: 16, weight: .semibold))
+      .foregroundStyle(DS.Color.foreground.swiftUI)
+      .frame(width: 44, height: 44)
+      .background(DS.Color.card.swiftUI, in: Circle())
+      .overlay { Circle().strokeBorder(DS.Color.foreground.swiftUI.opacity(0.12), lineWidth: 0.75) }
+      .contentShape(Circle())
   }
 
   private var editLink: some View {
@@ -280,15 +361,6 @@ struct CommunityUserView: View {
       CommunityProfileScreen(userId: book.userId) { Task { await book.load() } }
     } label: {
       quiet(Text("community.user.edit"))
-    }
-    .buttonStyle(.plain)
-  }
-
-  private var privacyLink: some View {
-    NavigationLink {
-      CommunityPrivacyScreen(userId: book.userId)
-    } label: {
-      quiet(Text("community.privacy.title"))
     }
     .buttonStyle(.plain)
   }
@@ -345,14 +417,10 @@ struct CommunityUserView: View {
           .frame(maxWidth: .infinity, minHeight: 44)
       }
     case .ready:
+      // Bài dạng thẻ hàng kiểu Apple News như feed (không phải lưới ảnh).
       ForEach(book.posts) { post in
-        NavigationLink {
-          CommunityPostScreen(postId: post.id)
-        } label: {
-          PostCardView(post: post, artURL: post.art.flatMap(book.artURL), unit: unit)
-        }
-        .buttonStyle(.plain)
-        .onAppear { if post.id == book.posts.last?.id { Task { await book.loadMore() } } }
+        RowPostCard(post: post, artURL: post.art.flatMap(book.artURL), unit: unit) { openPost = post.id }
+          .onAppear { if post.id == book.posts.last?.id { Task { await book.loadMore() } } }
       }
       if book.loadingMore {
         ProgressView().frame(maxWidth: .infinity, minHeight: 44)
