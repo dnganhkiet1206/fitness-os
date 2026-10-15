@@ -4,7 +4,19 @@
 > schema/RPC/RLS. Yêu cầu (15/10): bấm tên người đăng → trang cá nhân, "thêm tuỳ chọn nhắn tin".
 
 Hiện trạng: database chỉ có hội thoại với AI coach (`ai_conversations` / `ai_messages`), **chưa có
-nhắn tin người – người**. App iOS chưa thêm nút "Nhắn tin" vì nút không làm được gì là nút giả.
+nhắn tin người – người**.
+
+**iOS đã làm sẵn (15/10, chủ dự án duyệt mock)** — ẩn cho tới khi có server:
+- Lõi `ASCNDCore/Community/DirectMessages.swift`: `DirectMessages` (Thread, Message, Body text / workout,
+  Row có vạch ngày + "Đã xem" chỉ dưới tin cuối của mình đã đọc, split tin chờ, lọc bỏ dấu), giao thức
+  `DMSource`, `DMInboxBook`, `DMThreadBook` (gửi, đánh dấu đã đọc, tin chờ → chính khi trả lời). Có test.
+- Màn `CommunityMessagesView.swift`: Hộp thư (tiêu đề lớn, tìm, "Tin chờ", hàng có vòng hồng khi người ấy
+  đang tập, chấm chưa đọc), Tin chờ, Hội thoại (bong bóng đen / trắng, buổi tập dạng bảng điểm, "+" gửi
+  buổi tập gần nhất, nút gửi tròn). Lối vào: nút giấy bay ở đầu tab Cộng đồng (chấm khi có tin chưa đọc),
+  nút tròn trên trang cá nhân người khác.
+- `AppServices.makeDirectMessages()` trả `nil` → không lối vào nào hiện. Bản Debug thử với
+  `SIMCTL_CHILD_ASCND_FAKE_DM=1` (`FakeDMSource`, dữ liệu mẫu trong bộ nhớ, ghi chú "Dữ liệu mẫu").
+- Khi server xong: viết `SupabaseDMSource: DMSource` theo bảng dưới, cho `makeDirectMessages` trả nó.
 
 ## Server (cần migration)
 - `dm_threads(id, a uuid, b uuid, created_at, last_message_at)` — `a < b`, unique (a, b).

@@ -81,6 +81,9 @@ struct CommunityUserView: View {
   @State private var awards: AwardsBook?
   @State private var streak: Int?
   @State private var showsAwards = false
+  /// Nhắn tin (15/10) — chỉ khi có nguồn; mở hội thoại với người này.
+  @State private var dm: DMInboxBook?
+  @State private var dmThread: DirectMessages.Thread?
   @Environment(\.dismiss) private var dismiss
   @State private var menuOpen = false
   @State private var confirmBlock = false
@@ -121,6 +124,12 @@ struct CommunityUserView: View {
       if let awards { AwardsView(book: awards, lang: services.preferences.lang) }
     }
     .task(id: book.isMe) { await loadMine() }
+    .task {
+      if dm == nil, let src = services.makeDirectMessages() { dm = DMInboxBook(userId: book.userId, source: src) }
+    }
+    .navigationDestination(item: $dmThread) { t in
+      if let dm { ConversationScreen(inbox: dm, thread: t) }
+    }
     .sensoryFeedback(.selection, trigger: taps)
     .communityUserLinks()
     .communityPostActions(userId: book.userId, host: book)
@@ -357,6 +366,16 @@ struct CommunityUserView: View {
         .buttonStyle(.plain)
         .disabled(book.working)
         .accessibilityAddTraits(book.iFollow ? .isSelected : [])
+      }
+      if !book.isMe, let dm {
+        Button {
+          taps += 1
+          Task { dmThread = await dm.open(with: p) }
+        } label: {
+          roundIcon("paperplane")
+        }
+        .buttonStyle(TodayPressStyle())
+        .accessibilityLabel(Text("dm.open"))
       }
       ShareLink(
         item: PassShareImage(

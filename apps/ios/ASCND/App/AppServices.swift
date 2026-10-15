@@ -555,6 +555,15 @@ final class AppServices {
     return backend.map { SupabaseEdgeCaller(backend: $0) }
   }
 
+  /// Nhắn tin (15/10): server chưa có (`MESSAGING-PLAN.md`) → `nil`, app không hiện
+  /// lối vào nào. Bản Debug thử giao diện với `SIMCTL_CHILD_ASCND_FAKE_DM=1`.
+  func makeDirectMessages() -> (any DMSource)? {
+    #if DEBUG
+      if ProcessInfo.processInfo.environment["ASCND_FAKE_DM"] == "1" { return FakeDMSource.shared }
+    #endif
+    return nil
+  }
+
   /// Trí nhớ coach (#527): đọc + xoá `coach_memory`.
   func makeCoachMemory(userId: String) -> CoachMemoryBook? {
     guard let backend else { return nil }

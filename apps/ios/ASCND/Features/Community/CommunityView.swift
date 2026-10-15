@@ -68,6 +68,9 @@ struct CommunityFeedView: View {
   let book: CommunityFeedBook
   var inbox: CommunityInboxBook?
   var challenges: CommunityChallengesBook?
+  @Environment(AppServices.self) private var services
+  /// Tin nhắn (15/10) — `nil` khi chưa có nguồn (server chưa có nhắn tin).
+  @State private var messages: DMInboxBook?
   @State private var challengeRoute: ChallengeRoute?
   @State private var openAllChallenges = false
   @Environment(\.weightUnit) private var unit
@@ -173,6 +176,13 @@ struct CommunityFeedView: View {
       }
     }
     .task { if book.phase == .loading { await book.load() } }
+    .task {
+      if messages == nil, let src = services.makeDirectMessages() {
+        let m = DMInboxBook(userId: book.userId, source: src)
+        messages = m
+        await m.load()
+      }
+    }
     .task { if inbox?.phase == .loading { await inbox?.load(lang: AppServices.appLang) } }
     .task { if challenges?.phase == .loading { await loadChallenges() } }
     .navigationDestination(item: $challengeRoute) { route in
@@ -264,8 +274,17 @@ struct CommunityFeedView: View {
       Text(String(localized: "tab.community"))
         .font(.largeTitle.bold())
         .foregroundStyle(DS.Color.foreground.swiftUI)
+        .lineLimit(1)
+        .minimumScaleFactor(0.7)
         .accessibilityAddTraits(.isHeader)
       Spacer(minLength: 0)
+      if let messages {
+        NavigationLink { MessagesInboxView(book: messages) } label: {
+          roundIcon("paperplane", dot: messages.unreadCount > 0)
+        }
+        .buttonStyle(TodayPressStyle())
+        .accessibilityLabel(Text("dm.title"))
+      }
       NavigationLink { CommunitySearchScreen() } label: { roundIcon("magnifyingglass", dot: false) }
         .buttonStyle(TodayPressStyle())
         .accessibilityLabel(Text("community.search.open"))
