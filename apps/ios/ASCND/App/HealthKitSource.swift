@@ -198,6 +198,16 @@ final class HealthSyncCoordinator {
     defer { running = false }
     let now = SystemWallClock().nowMillis()
     let snapshot = await source.snapshot(now: now, in: .current)
+    // Báo màn đang mở đọc lại SAU khi ghi xong — cả khi lượt ghi ném lỗi
+    // (`HealthSync.run` vẫn lưu phần cứu được rồi mới ném). Không có tín hiệu
+    // này, Hôm nay đọc `daily_logs` cùng lúc lượt tự đồng bộ chạy và giữ số
+    // bước cũ (15/10).
+    defer { Task { @MainActor in NotificationCenter.default.post(name: .healthSynced, object: nil) } }
     try await HealthSync.run(snapshot, userId: userId, lang: lang, store: store, now: now, in: .current)
   }
+}
+
+extension Notification.Name {
+  /// Một lượt đồng bộ Apple Health vừa ghi xong `daily_logs` của máy này.
+  static let healthSynced = Notification.Name("ascnd.healthSynced")
 }

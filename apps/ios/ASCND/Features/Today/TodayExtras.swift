@@ -48,6 +48,7 @@ struct TodayExtras<Plan: View>: View {
   @State private var showsWeight = false
   @State private var showsBiometrics = false
   @State private var showsRoom = false
+  @State private var showsAwards = false
   @State private var showsReadiness = false
   @State private var showsTrend = false
   /// Chuyển cảnh zoom: màn con phóng ra từ dòng / Koa vừa chạm.
@@ -124,6 +125,9 @@ struct TodayExtras<Plan: View>: View {
       }
       TodayMore(rows: moreRows, zoom: zoom)
         .todayEntrance(4)
+      if let awards {
+        RecentAwardsCard(book: awards, lang: services.preferences.lang) { showsAwards = true }
+      }
       HealthSyncCard(isAvailable: services.health.isAvailable, sync: syncHealth)
     }
     // Bữa / nước / ngủ đi qua outbox: hàng đợi vơi đi (server đã nhận) thì đọc
@@ -141,6 +145,9 @@ struct TodayExtras<Plan: View>: View {
     }
     .navigationDestination(isPresented: $showsSteps) {
       if let steps = services.makeStepsBook(userId: userId, today: Self.today()) { StepsView(book: steps) }
+    }
+    .navigationDestination(isPresented: $showsAwards) {
+      if let awards { AwardsView(book: awards, lang: services.preferences.lang) }
     }
     .navigationDestination(isPresented: $showsRoom) {
       if let mascot {
@@ -252,6 +259,10 @@ struct TodayExtras<Plan: View>: View {
         await trend?.load()
         await focusChecks()
       }
+    }
+    // Lượt tự đồng bộ (ra tiền cảnh, AppServices) xong sau lần đọc của màn.
+    .onReceive(NotificationCenter.default.publisher(for: .healthSynced)) { _ in
+      Task { await reloadAfterHealthSync() }
     }
     .onChange(of: scenePhase) { _, phase in
       // Ra tiền cảnh: qua nửa đêm thì đổi ngày; không thì đọc lại điểm (đồng
@@ -555,9 +566,121 @@ struct TodayExtras<Plan: View>: View {
   /// Đồng bộ Apple Health của B (#554); xong thì điểm hôm nay đọc lại.
   private func syncHealth() async throws(HealthSync.Failure) {
     try await services.health.syncNow(userId: userId, lang: AppServices.appLang)
+    await reloadAfterHealthSync()
+  }
+
+  /// Sau một lượt đồng bộ Apple Health: điểm, xu hướng VÀ các ống của Koa
+  /// (bước chân đọc từ `daily_logs` qua phòng linh vật) — trước đây ống bước
+  /// không đọc lại nên giữ số cũ tới lần ra tiền cảnh sau (15/10).
+  private func reloadAfterHealthSync() async {
     await readiness?.load()
     await trend?.load()
+    await mascot?.load()
   }
 
   private static func today() -> LocalDate { LocalDate(SystemWallClock().nowMillis(), in: .current) }
+}
+
+/// "Huy chương gần đây" (`RecentAwardsCard`, `today-widgets-2.tsx` @ fac9ac2;
+/// 15/10 — chủ dự án: "không thấy mục huy chương ở đâu cả"): ba huy chương
+/// mới nhất — CÙNG đĩa với màn Huy chương (`MedalDisc`, tra danh mục để có
+/// dáng / mốc của hôm nay), tên + mô tả hai dòng, tên hạng màu kim loại; "Xem
+/// tất cả" mở màn Huy chương.
+///
+/// Khác RN (tốt hơn): RN ẩn thẻ khi chưa có huy chương nào — nên người mới
+/// không biết mục này tồn tại. Ở đây là một hàng "0/N huy chương" dẫn tới màn.
+struct RecentAwardsCard: View {
+  let book: AwardsBook
+  let lang: AppPreferences.Lang
+  let openAll: () -> Void
+
+  private var recent: [EarnedAward] {
+    book.earned.values
+      .sorted { ($0.earnedAt?.millis ?? 0) > ($1.earnedAt?.millis ?? 0) }
+      .prefix(3).map { $0 }
+  }
+
+  var body: some View {
+    if case .ready = book.phase {
+      VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+        Button(action: openAll) {
+          HStack(spacing: 6) {
+            Image(systemName: "trophy.fill").font(.caption).foregroundStyle(MedalDisc.gold)
+              .accessibilityHidden(true)
+            Text(String(localized: "aw.recent"))
+              .font(DS.TextStyle.caption.weight(.semibold))
+              .textCase(.uppercase)
+              .tracking(1.2)
+              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            Spacer(minLength: 0)
+            Text(verbatim: "\(book.earnedCount)/\(Awards.catalogue.count)")
+              .font(DS.TextStyle.mono(.caption))
+              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            Text(String(localized: "aw.viewAll"))
+              .font(DS.TextStyle.footnote.weight(.semibold))
+              .foregroundStyle(DS.Color.foreground.swiftUI)
+            Image(systemName: "chevron.right").font(.caption.weight(.semibold))
+              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+              .accessibilityHidden(true)
+          }
+          .frame(minHeight: 44)
+          .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text(String(localized: "aw.recent")))
+        .accessibilityValue(Text(verbatim: "\(book.earnedCount)/\(Awards.catalogue.count)"))
+        if recent.isEmpty {
+          Text(String(localized: "aw.none"))
+            .font(DS.TextStyle.footnote)
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        } else {
+          ForEach(recent, id: \.key) { row($0) }
+        }
+      }
+      .padding(DS.Spacing.card)
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .todayCard()
+    }
+  }
+
+  private func row(_ e: EarnedAward) -> some View {
+    let def = Awards.def(e.key)
+    let text = AwardText.text(e.key, lang: lang)
+    let title = text?.title ?? e.title ?? e.key
+    let desc = text?.desc ?? e.description ?? ""
+    let tier = def?.tier ?? .bronze
+    return HStack(spacing: DS.Spacing.sm) {
+      MedalDisc(
+        type: def?.type ?? "weight", tier: tier, icon: def?.icon ?? "trophy",
+        requirement: def?.requirement, earned: true)
+        .frame(width: 44, height: 44)
+        .accessibilityHidden(true)
+      VStack(alignment: .leading, spacing: 2) {
+        Text(verbatim: title)
+          .font(DS.TextStyle.body.weight(.semibold))
+          .foregroundStyle(DS.Color.foreground.swiftUI)
+          .lineLimit(1)
+        if !desc.isEmpty {
+          Text(verbatim: desc)
+            .font(DS.TextStyle.caption)
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .lineLimit(2)
+        }
+      }
+      Spacer(minLength: 0)
+      Text(Self.tierName(tier))
+        .font(DS.TextStyle.caption.weight(.bold))
+        .foregroundStyle(MedalDisc.onSurface(tier, dark: false))
+    }
+    .accessibilityElement(children: .combine)
+  }
+
+  static func tierName(_ t: Awards.Tier) -> String {
+    switch t {
+    case .bronze: String(localized: "aw.tier.bronze")
+    case .silver: String(localized: "aw.tier.silver")
+    case .gold: String(localized: "aw.tier.gold")
+    case .platinum: String(localized: "aw.tier.platinum")
+    }
+  }
 }

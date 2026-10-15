@@ -356,7 +356,10 @@ struct TodayTube: View {
       .contentShape(Rectangle())
     }
     .buttonStyle(.plain)
-    .disabled(tube.quest == .steps)
+    // Bước chân tự đến từ Apple Health — không bấm được. KHÔNG dùng
+    // `.disabled`: iOS làm mờ nút bị tắt, nên ống trông như chưa đồng bộ
+    // dù đã có số (chủ dự án 15/10: "Apple Health đã sync sao thanh vẫn mờ").
+    .allowsHitTesting(tube.quest != .steps)
     .accessibilityElement(children: .ignore)
     .accessibilityLabel(Text(verbatim: TodayDayBlock.name(tube.quest)))
     .accessibilityValue(Text(verbatim: [
