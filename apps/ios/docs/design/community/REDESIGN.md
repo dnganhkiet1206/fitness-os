@@ -67,3 +67,10 @@ chuyên mục từ góc trên → hạt nhám rất nhẹ (cố định theo id,
 loại mảnh. Số lớn chữ hẹp đậm (`.condensed`), nhãn trên kính mờ. Theo dữ liệu: tiến bộ =
 đường trắng + vùng sáng + điểm cuối phát sáng; món = vòng ba chất + kcal + viên P/C/F;
 buổi tập = khối lượng nâng + "N bài · M phút" + PR vàng.
+
+### Ánh sáng môi trường cho thẻ (15/10)
+
+Chủ dự án: "làm ambient light cho mấy cái thẻ đỡ có cảm giác thẻ bị cứng". `NewsCardSurface(kind:)`:
+màu "đèn" của ảnh (`ArtBackdrop.glow`) tràn nhẹ xuống mặt chữ (radial từ trên, 10% sáng / 22%
+tối); quầng màu mờ dưới thẻ như ánh sáng hắt lên mặt bàn (blur 26, 28% sáng / 38% tối); viền
+trên sáng hơn viền dưới như mép kính bắt sáng. Danh sách Thịnh hành giữ mặt trung tính.

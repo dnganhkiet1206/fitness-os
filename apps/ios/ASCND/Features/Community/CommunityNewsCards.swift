@@ -364,7 +364,7 @@ struct PostArtTile: View {
 }
 
 /// Nền "ảnh": lưới chuyển màu theo chuyên mục + biểu tượng chìm + ánh sáng.
-private struct ArtBackdrop: View {
+struct ArtBackdrop: View {
   let kind: CommunityFeed.Kind
   let seed: String
   let shape: PostArtTile.Shape
@@ -558,19 +558,53 @@ private struct TrendGlow: View {
   }
 }
 
-/// Mặt thẻ chung: trắng, bo 20, viền mảnh.
+/// Mặt thẻ chung: trắng, bo 22, viền mảnh — kèm ÁNH SÁNG MÔI TRƯỜNG (15/10,
+/// chủ dự án: "làm ambient light cho mấy cái thẻ đỡ có cảm giác thẻ bị cứng"):
+/// màu "đèn" của ảnh tràn nhẹ xuống mặt chữ, và một quầng màu mờ dưới thẻ như
+/// ánh sáng hắt lên mặt bàn (kiểu Apple Music / widget iOS). Viền trên sáng hơn
+/// viền dưới như mép kính bắt sáng.
 private struct NewsCardSurface: ViewModifier {
+  var kind: CommunityFeed.Kind?
+  @Environment(\.colorScheme) private var scheme
+
+  private var shape: RoundedRectangle { RoundedRectangle(cornerRadius: 22, style: .continuous) }
+
   func body(content: Content) -> some View {
+    let dark = scheme == .dark
     content
       .frame(maxWidth: .infinity, alignment: .leading)
-      .background(DS.Color.card.swiftUI)
-      .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-      .overlay {
-        RoundedRectangle(cornerRadius: 20, style: .continuous)
-          .strokeBorder(DS.Color.foreground.swiftUI.opacity(0.06), lineWidth: 0.75)
+      .background {
+        ZStack {
+          DS.Color.card.swiftUI
+          if let kind {
+            RadialGradient(
+              colors: [ArtBackdrop.glow(kind).opacity(dark ? 0.22 : 0.10), .clear], center: .top, startRadius: 40,
+              endRadius: 460)
+          }
+        }
       }
-      .shadow(color: .black.opacity(0.04), radius: 8, y: 3)
-      .contentShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+      .clipShape(shape)
+      .overlay {
+        shape.strokeBorder(
+          LinearGradient(
+            colors: [.white.opacity(dark ? 0.16 : 0.9), DS.Color.foreground.swiftUI.opacity(dark ? 0.04 : 0.06)],
+            startPoint: .top, endPoint: .bottom),
+          lineWidth: 0.75)
+      }
+      .background {
+        if let kind {
+          shape
+            .fill(ArtBackdrop.glow(kind))
+            .blur(radius: 26)
+            .opacity(dark ? 0.38 : 0.28)
+            .padding(.horizontal, 22)
+            .offset(y: 16)
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
+        }
+      }
+      .shadow(color: .black.opacity(dark ? 0.25 : 0.05), radius: 10, y: 4)
+      .contentShape(shape)
   }
 }
 
@@ -604,7 +638,7 @@ struct HeroPostCard: View {
       .accessibilityAddTraits(.isButton)
       FeedFooter(post: post).padding(.horizontal, 16).padding(.bottom, 6)
     }
-    .modifier(NewsCardSurface())
+    .modifier(NewsCardSurface(kind: post.kind))
   }
 }
 
@@ -641,7 +675,7 @@ struct RowPostCard: View {
       .accessibilityAddTraits(.isButton)
       FeedFooter(post: post).padding(.horizontal, 16).padding(.bottom, 6)
     }
-    .modifier(NewsCardSurface())
+    .modifier(NewsCardSurface(kind: post.kind))
   }
 }
 
@@ -678,7 +712,7 @@ struct GridPostCard: View {
       .padding(12)
       .frame(maxHeight: .infinity, alignment: .top)
     }
-    .modifier(NewsCardSurface())
+    .modifier(NewsCardSurface(kind: post.kind))
   }
 }
 
