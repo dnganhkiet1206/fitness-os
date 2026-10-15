@@ -192,20 +192,27 @@ struct FlowChips: View {
   let suggestions: [AssistantSuggestions.Suggestion]
   let lang: AppPreferences.Lang
   let disabled: Bool
+  /// `false`: hàng bám mép trái (thẻ AI Coach); `true`: căn giữa (chat trống).
+  var centered = true
   let onPick: (String) -> Void
 
   var body: some View {
-    VStack(spacing: DS.Spacing.sm) {
+    // Viên xuống dòng tự do (15/10, audit: trước là cột dọc, mỗi viên một dòng,
+    // mép phải lởm chởm).
+    FlowRows(spacing: DS.Spacing.sm, centered: centered) {
       ForEach(suggestions) { s in
         Button {
           onPick(s.question(lang))
         } label: {
           Label(s.label(lang), systemImage: Self.symbol(s.glyph))
-            .font(DS.TextStyle.footnote)
+            .font(DS.TextStyle.footnote.weight(.medium))
             .foregroundStyle(DS.Color.foreground.swiftUI)
-            .padding(.horizontal, DS.Spacing.md)
+            .lineLimit(1)
+            .padding(.horizontal, 14)
+            .frame(minHeight: 40)
+            .background(DS.Color.card.swiftUI, in: Capsule())
+            .overlay { Capsule().strokeBorder(DS.Color.foreground.swiftUI.opacity(0.10), lineWidth: 0.75) }
             .frame(minHeight: 44)
-            .background(DS.Color.secondary.swiftUI, in: Capsule())
         }
         .buttonStyle(.plain)
         .disabled(disabled)

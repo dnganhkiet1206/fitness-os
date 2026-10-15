@@ -82,7 +82,7 @@ struct MetricPanelView: View {
       Tile(
         kind: .kcal, symbol: "flame.fill", tint: DS.Color.metricBlue.swiftUI, label: String(localized: "metric.kcal"),
         value: kcal > 0 ? Int(kcal).formatted(.number.locale(.app)) : "—", note: String(localized: "metric.note.today"),
-        noteTint: DS.Color.metricBlue.swiftUI),
+        noteTint: muted),
       Tile(
         kind: .readiness, symbol: "gauge.with.dots.needle.50percent", tint: green,
         label: String(localized: "metric.readiness"), value: readiness.map(String.init) ?? "—", note: readinessNote.0,
@@ -194,9 +194,13 @@ struct MetricPanelView: View {
           .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 3]))
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
           .annotation(position: .top, alignment: .trailing) {
+            // Nền nhỏ để chữ không lẫn vào cột (15/10, audit).
             Text(verbatim: base.label(lang))
               .font(DS.TextStyle.caption)
               .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+              .padding(.horizontal, 6)
+              .padding(.vertical, 1)
+              .background(DS.Color.card.swiftUI, in: Capsule())
           }
       }
     }

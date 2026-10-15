@@ -52,7 +52,10 @@ struct AssistantTab: View {
         VStack(alignment: .leading, spacing: DS.Spacing.lg) {
           header
           if let signal { BriefCard(brief: signal.brief(hour: hour), lang: lang) }
-          if let nudges { InsightCard(book: nudges) { Task { await loadInsight(force: true) } } }
+          // Máy chủ chưa bật tính năng → không hiện thẻ lỗi vĩnh viễn (15/10, audit).
+          if let nudges, !nudges.isNotDeployed {
+            InsightCard(book: nudges) { Task { await loadInsight(force: true) } }
+          }
           if let metrics {
             MetricPanelView(book: metrics, signal: signal, lang: lang) { question in
               guard let chat else { return }
@@ -87,7 +90,10 @@ struct AssistantTab: View {
       }
       .navigationTitle(Text("tab.assistant"))
       .ascndPage()
-      .navigationBarTitleDisplayMode(.inline)
+      // Tiêu đề lớn đã nằm trong nội dung — thanh điều hướng ẩn như các tab khác
+      // (15/10, audit: tiêu đề nhỏ trôi đè lên thẻ khi cuộn).
+      .toolbar(.hidden, for: .navigationBar)
+      .statusBarScrim()
       .navigationDestination(for: AssistantRoute.self) { route in
         switch route {
         case .chat:
@@ -293,18 +299,23 @@ struct AssistantTab: View {
             NavigationLink(value: t.route) {
               VStack(alignment: .leading, spacing: DS.Spacing.xs) {
                 Image(systemName: t.symbol)
+                  .font(.system(size: 18, weight: .semibold))
                   .foregroundStyle(t.tint)
+                  .frame(width: 26, height: 26, alignment: .leading)
                   .accessibilityHidden(true)
                 Text(verbatim: t.label)
                   .font(DS.TextStyle.headline)
                   .foregroundStyle(DS.Color.foreground.swiftUI)
+                  .lineLimit(1)
+                  .minimumScaleFactor(0.8)
                 Text(verbatim: t.hint)
                   .font(DS.TextStyle.caption)
                   .foregroundStyle(DS.Color.mutedForeground.swiftUI)
                   .lineLimit(2, reservesSpace: true)
               }
               .padding(DS.Spacing.md)
-              .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+              // Mọi ô cùng cao (15/10, audit: tên dài xuống dòng làm lưới lệch).
+              .frame(maxWidth: .infinity, minHeight: 124, alignment: .topLeading)
               .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.md))
               .contentShape(Rectangle())
             }
@@ -410,7 +421,7 @@ private struct CoachCard: View {
       .buttonStyle(.plain)
       .accessibilityLabel(Text("assistant.coach.open.a11y"))
       if lastAsked == nil && !suggestions.isEmpty {
-        FlowChips(suggestions: suggestions, lang: lang, disabled: chat.isLoading) { open($0) }
+        FlowChips(suggestions: suggestions, lang: lang, disabled: chat.isLoading, centered: false) { open($0) }
       }
     }
     .padding(DS.Spacing.md)
@@ -505,5 +516,12 @@ private struct InsightCard: View {
   private static func time(_ at: EpochMillis) -> String {
     Date(timeIntervalSince1970: TimeInterval(at.millis) / 1000)
       .formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(.app))
+  }
+}
+
+extension SmartNudgesBook {
+  /// Máy chủ chưa triển khai `ai-smart-nudges`.
+  var isNotDeployed: Bool {
+    if case .failed(.notDeployed) = phase { true } else { false }
   }
 }
