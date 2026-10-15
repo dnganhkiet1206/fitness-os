@@ -457,13 +457,13 @@ struct PostArtTile: View {
             HStack {
               GlassTag(text: ProgressPostBody.label(tile))
               Spacer(minLength: 0)
-              Text(verbatim: "\(tile.startText) → \(tile.endText)")
+              Text(verbatim: "\(tile.startText(locale: .app)) → \(tile.endText(locale: .app))")
                 .font(.system(size: 12, weight: .medium).monospacedDigit())
                 .foregroundStyle(.white.opacity(0.8))
             }
             .lineLimit(1)
           }
-          Text(verbatim: tile.deltaText)
+          Text(verbatim: tile.deltaText(locale: .app))
             .font(.system(size: shape == .wide ? 56 : big, weight: .heavy).monospacedDigit())
             .fontWidth(.condensed)
             .tracking(-0.8)

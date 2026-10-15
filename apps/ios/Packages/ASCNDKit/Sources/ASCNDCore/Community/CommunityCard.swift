@@ -17,6 +17,24 @@ public enum CommunityCard {
       : "\(number(l.sets)) × \(number(l.reps))"
   }
 
+  /// Số theo ngôn ngữ app, tối đa một chữ số lẻ (15/10, audit: "121.7" lẫn với dấu
+  /// nhóm nghìn "6.757" ở tiếng Việt — tab Cơ thể đã ghi "121,7").
+  public static func decimal(_ v: Double, locale: Locale) -> String {
+    let f = NumberFormatter()
+    f.locale = locale
+    f.numberStyle = .decimal
+    f.minimumFractionDigits = 0
+    f.maximumFractionDigits = 1
+    return f.string(from: NSNumber(value: JS.round(v * 10) / 10)) ?? number(v)
+  }
+
+  /// `setText` theo ngôn ngữ app.
+  public static func setText(_ l: CommunityPayloads.WorkoutLine, unit: WeightUnit, locale: Locale) -> String {
+    l.weight > 0
+      ? "\(decimal(unit.display(l.weight), locale: locale)) \(unit.label) × \(number(l.reps))"
+      : "\(number(l.sets)) × \(number(l.reps))"
+  }
+
   /// `Math.round(n).toLocaleString(locale)` — số nguyên có nhóm nghìn.
   public static func grouped(_ v: Double, locale: Locale) -> String {
     let f = NumberFormatter()
@@ -53,6 +71,15 @@ public enum CommunityCard {
 
     public var startText: String { "\(CommunityCard.number(start)) \(unit)" }
     public var endText: String { "\(CommunityCard.number(end)) \(unit)" }
+
+    /// Bản hiển thị theo ngôn ngữ app (cùng làm tròn với `deltaText`).
+    public func deltaText(locale: Locale) -> String {
+      let d = JS.round((end - start) * 10) / 10
+      return (d > 0 ? "+" : "") + "\(CommunityCard.decimal(d, locale: locale)) \(unit)"
+    }
+
+    public func startText(locale: Locale) -> String { "\(CommunityCard.decimal(start, locale: locale)) \(unit)" }
+    public func endText(locale: Locale) -> String { "\(CommunityCard.decimal(end, locale: locale)) \(unit)" }
   }
 
   /// Ô theo thứ tự cân → eo → bài nâng; ô đầu là dòng "Từ … → …". Vòng eo in

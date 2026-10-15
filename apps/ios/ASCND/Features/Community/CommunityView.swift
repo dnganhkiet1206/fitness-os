@@ -989,7 +989,7 @@ struct WorkoutPostBody: View {
         VStack(spacing: 0) {
           ForEach(Array(lines.enumerated()), id: \.offset) { i, e in
             DataLine(
-              name: e.exerciseName, value: CommunityCard.setText(e, unit: unit), rule: true,
+              name: e.exerciseName, value: CommunityCard.setText(e, unit: unit, locale: .app), rule: true,
               color: .white, soft: PostTint.soft, ruleColor: .white.opacity(0.12))
           }
           if more > 0 {
@@ -1026,7 +1026,7 @@ struct ProgressPostBody: View {
         CapsLabel(text: Self.title(Int(progress.weeks)), color: ink)
         Spacer(minLength: 0)
         if let lead = tiles.first {
-          Text("community.progress.fromto \(lead.startText) \(lead.endText)")
+          Text("community.progress.fromto \(lead.startText(locale: .app)) \(lead.endText(locale: .app))")
             .font(DS.TextStyle.caption.monospacedDigit())
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
             .lineLimit(1)
@@ -1052,7 +1052,7 @@ struct ProgressPostBody: View {
   private func tile(_ t: CommunityCard.Tile, ink: Color) -> some View {
     let label = Self.label(t)
     return VStack(alignment: .leading, spacing: 4) {
-      BoardStat(value: t.deltaText, label: label, color: DS.Color.foreground.swiftUI, soft: DS.Color.mutedForeground.swiftUI)
+      BoardStat(value: t.deltaText(locale: .app), label: label, color: DS.Color.foreground.swiftUI, soft: DS.Color.mutedForeground.swiftUI)
       if t.series.count >= 2 {
         Chart(Array(t.series.enumerated()), id: \.offset) { point in
           LineMark(x: .value("i", point.offset), y: .value("v", point.element))
@@ -1068,7 +1068,7 @@ struct ProgressPostBody: View {
     }
     .frame(maxWidth: .infinity, alignment: .leading)
     .accessibilityElement(children: .ignore)
-    .accessibilityLabel(Text(verbatim: "\(label): \(t.startText) → \(t.endText)"))
+    .accessibilityLabel(Text(verbatim: "\(label): \(t.startText(locale: .app)) → \(t.endText(locale: .app))"))
   }
 }
 

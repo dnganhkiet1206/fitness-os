@@ -66,4 +66,17 @@ struct CommunityLayoutTests {
                                        Self.post("c", kind: "recipe"), Self.post("d", kind: "recipe")])
     #expect(slots.map(\.id) == ["r:a", "r:b", "r:c", "r:d"])
   }
+
+  @Test func localizedNumbersUseTheAppLocale() {
+    let vi = Locale(identifier: "vi_VN")
+    let en = Locale(identifier: "en_US")
+    #expect(CommunityCard.decimal(121.7, locale: vi) == "121,7")
+    #expect(CommunityCard.decimal(121.7, locale: en) == "121.7")
+    #expect(CommunityCard.decimal(6757, locale: vi) == "6.757")
+    #expect(CommunityCard.decimal(80, locale: vi) == "80")
+    let t = CommunityCard.Tile(kind: .weight, liftName: nil, unit: "lb", start: 119, end: 121.7, series: [119, 121.7])
+    #expect(t.deltaText(locale: vi) == "+2,7 lb")
+    #expect(t.endText(locale: vi) == "121,7 lb")
+    #expect(t.deltaText == "+2.7 lb", "bản RN giữ nguyên")
+  }
 }
