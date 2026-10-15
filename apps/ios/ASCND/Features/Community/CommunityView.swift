@@ -1094,6 +1094,7 @@ struct UsefulThisWeekCard: View {
             } label: {
               tile(p)
             }
+            .accessibilityLabel(Text(verbatim: CommunityCard.usefulTitle(p) ?? Self.fallback(p.kind)))
             .buttonStyle(TodayPressStyle())
           }
         }

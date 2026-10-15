@@ -107,6 +107,7 @@ struct CommunitySavedView: View {
         } label: {
           PostCardView(post: post, artURL: post.art.flatMap(book.artURL), unit: unit)
         }
+        .accessibilityLabel(Text(verbatim: PostHeadline.text(post)))
         .buttonStyle(.plain)
         .onAppear { if post.id == visible.last?.id { Task { await book.loadMore() } } }
       }

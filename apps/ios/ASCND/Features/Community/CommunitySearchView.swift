@@ -300,6 +300,7 @@ struct CommunitySearchView: View {
           } label: {
             PostCardView(post: post, artURL: post.art.flatMap(book.artURL), unit: unit)
           }
+          .accessibilityLabel(Text(verbatim: PostHeadline.text(post)))
           .buttonStyle(.plain)
         }
       }
