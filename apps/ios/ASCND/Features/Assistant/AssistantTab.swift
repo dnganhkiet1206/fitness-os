@@ -97,7 +97,9 @@ struct AssistantTab: View {
         }
         .padding(DS.Spacing.md)
       }
-      .background { AssistantAura(status: signal?.signal.status) }
+      // Nền như các tab khác (15/10, chủ dự án: "lớp aura phía sau làm xấu quá") —
+      // thay bốn quầng màu trôi.
+      .background { TodayAmbient(accent: nil) }
       .sheet(item: $logging, onDismiss: {
         Task {
           await signal?.load()

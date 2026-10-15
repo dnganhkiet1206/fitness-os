@@ -37,3 +37,5 @@ mỗi mảng một thẻ với một câu nhận xét; dữ liệu → nhận x�
   — chưa ngủ / ngủ < 7 giờ → Giấc ngủ; sẵn sàng Giữ nhịp / Phục hồi (hôm nay hoặc điểm gần nhất) → Sinh trắc
   học; sau 15h còn < 5.000 bước → Vận động; Chủ nhật / Thứ hai → Tổng kết tuần; ngày 1–3 → Mục tiêu, Ảnh, Số đo.
   Thẻ có lý do hiện câu lý do thay dòng mô tả chung; "Coach nhớ gì" luôn cuối.
+
+- Gỡ `AssistantAura` (bốn quầng màu trôi; chủ dự án: "lớp aura phía sau làm xấu quá") → `TodayAmbient(accent: nil)` như các tab khác.
