@@ -33,4 +33,7 @@ mỗi mảng một thẻ với một câu nhận xét; dữ liệu → nhận x�
 - Bỏ nút ✨ đầu trang (trùng ô Hỏi coach). Apple Health thu thành một dòng (`HealthSyncLine`).
 - Điểm nổi bật xếp theo mức quan trọng (`AssistantSummary.order`): ngủ ngắn / nhịp tim cao lên trước, mảng
   chưa có dữ liệu xuống cuối.
-- Chưa làm: "Dành cho bạn" chọn theo ngữ cảnh.
+- "Dành cho bạn" theo ngữ cảnh (`AssistantSummary.forYou`, có test): công cụ có lý do lên trước theo mức khẩn
+  — chưa ngủ / ngủ < 7 giờ → Giấc ngủ; sẵn sàng Giữ nhịp / Phục hồi (hôm nay hoặc điểm gần nhất) → Sinh trắc
+  học; sau 15h còn < 5.000 bước → Vận động; Chủ nhật / Thứ hai → Tổng kết tuần; ngày 1–3 → Mục tiêu, Ảnh, Số đo.
+  Thẻ có lý do hiện câu lý do thay dòng mô tả chung; "Coach nhớ gì" luôn cuối.

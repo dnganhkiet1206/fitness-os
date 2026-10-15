@@ -60,4 +60,21 @@ struct AssistantSummaryTests {
       AssistantSummary.order(sleepMin: 480, heartRate: nil, kcal: 800, hasTrend: false)
         == [.sleep, .nutrition, .trend, .heart])
   }
+
+  @Test func forYouRaisesToolsWithReasons() {
+    let all = AssistantSummary.Tool.allCases
+    // Thứ Năm 15, 13h, chưa ngủ, sẵn sàng vừa
+    let thu = AssistantSummary.Context(weekday: 5, dayOfMonth: 15, hour: 13, sleepMin: 0, steps: 0, readiness: .pace)
+    let a = AssistantSummary.forYou(all, context: thu)
+    #expect(a.prefix(2).map(\.tool) == [.sleep, .biometrics])
+    #expect(a.first?.reason == .noSleep)
+    #expect(a.last?.tool == .memory)
+    #expect(a.first(where: { $0.tool == .steps })?.reason == nil, "13h: chưa nhắc bước")
+    // Chủ nhật 1, 18h, ngủ đủ, ít bước, sẵn sàng tốt
+    let sun = AssistantSummary.Context(weekday: 1, dayOfMonth: 1, hour: 18, sleepMin: 480, steps: 1200, readiness: .go)
+    let b = AssistantSummary.forYou(all, context: sun)
+    #expect(b.prefix(3).map(\.tool) == [.steps, .weekly, .goals])
+    #expect(b.first(where: { $0.tool == .sleep })?.reason == nil)
+    #expect(b.count == all.count)
+  }
 }

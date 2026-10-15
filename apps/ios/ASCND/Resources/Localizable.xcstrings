@@ -50694,6 +50694,144 @@
      }
     }
    }
+  },
+  "assistant.why.weekEnd": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "The week is wrapping up — see how it went"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "La semana termina: mira cómo fue"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tuần sắp khép lại — xem tuần của bạn"
+     }
+    }
+   }
+  },
+  "assistant.why.noSleep": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Last night isn't logged yet"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Anoche aún no está registrada"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đêm qua chưa có dữ liệu ngủ"
+     }
+    }
+   }
+  },
+  "assistant.why.shortSleep": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "You slept under 7 hours"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Dormiste menos de 7 horas"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đêm qua ngủ chưa đủ 7 tiếng"
+     }
+    }
+   }
+  },
+  "assistant.why.fewSteps": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Few steps so far today"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Pocos pasos hoy"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hôm nay còn ít bước chân"
+     }
+    }
+   }
+  },
+  "assistant.why.lowReadiness": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Readiness is down — check your body"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Preparación baja: revisa tu cuerpo"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sẵn sàng chưa cao — xem cơ thể ra sao"
+     }
+    }
+   }
+  },
+  "assistant.why.monthStart": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "New month — a good time to recheck"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nuevo mes: buen momento para revisar"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tháng mới — lúc tốt để xem lại"
+     }
+    }
+   }
   }
  }
 }

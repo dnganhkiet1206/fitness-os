@@ -77,4 +77,74 @@ public enum AssistantSummary {
     let base: [Area] = [.trend, .sleep, .heart, .nutrition]
     return base.enumerated().sorted { (rank($0.element), $0.offset) < (rank($1.element), $1.offset) }.map(\.element)
   }
+
+  // MARK: - Dành cho bạn theo ngữ cảnh (15/10)
+
+  public enum Tool: String, Sendable, Hashable, CaseIterable {
+    case weekly, steps, biometrics, sleep, goals, measure, photos, memory
+  }
+
+  /// Vì sao thẻ được đưa lên — câu ngắn hiện thay dòng gợi ý chung.
+  public enum Reason: String, Sendable, Hashable {
+    /// Cuối / đầu tuần: xem lại tuần.
+    case weekEnd
+    /// Đêm qua chưa có giấc ngủ.
+    case noSleep
+    /// Đêm qua ngủ < 7 giờ.
+    case shortSleep
+    /// Chiều tối mà còn ít bước.
+    case fewSteps
+    /// Sẵn sàng thấp / vừa — xem cơ thể đang ra sao.
+    case lowReadiness
+    /// Đầu tháng: hiệu chỉnh mục tiêu, chụp ảnh / đo lại.
+    case monthStart
+  }
+
+  public struct Context: Sendable, Hashable {
+    public var weekday: Int
+    public var dayOfMonth: Int
+    public var hour: Int
+    public var sleepMin: Double
+    public var steps: Double
+    public var readiness: Readiness?
+
+    /// `weekday` theo `Calendar` (1 = Chủ nhật … 7 = Thứ bảy).
+    public init(weekday: Int, dayOfMonth: Int, hour: Int, sleepMin: Double, steps: Double, readiness: Readiness?) {
+      self.weekday = weekday
+      self.dayOfMonth = dayOfMonth
+      self.hour = hour
+      self.sleepMin = sleepMin
+      self.steps = steps
+      self.readiness = readiness
+    }
+  }
+
+  public struct Pick: Sendable, Hashable {
+    public let tool: Tool
+    public let reason: Reason?
+  }
+
+  /// Thẻ có lý do lên trước (theo thứ tự mức khẩn: ngủ → sẵn sàng → bước → tuần →
+  /// tháng), rồi phần còn lại theo thứ tự gốc; "Coach nhớ gì" luôn cuối.
+  public static func forYou(_ available: [Tool], context c: Context) -> [Pick] {
+    var reasons: [Tool: Reason] = [:]
+    if c.sleepMin == 0 { reasons[.sleep] = .noSleep } else if c.sleepMin < 420 { reasons[.sleep] = .shortSleep }
+    if c.readiness == .recover || c.readiness == .pace { reasons[.biometrics] = .lowReadiness }
+    if c.hour >= 15, c.steps < 5000 { reasons[.steps] = .fewSteps }
+    if c.weekday == 1 || c.weekday == 2 { reasons[.weekly] = .weekEnd }
+    if c.dayOfMonth <= 3 {
+      reasons[.goals] = .monthStart
+      reasons[.photos] = .monthStart
+      reasons[.measure] = .monthStart
+    }
+    let urgency: [Reason] = [.noSleep, .shortSleep, .lowReadiness, .fewSteps, .weekEnd, .monthStart]
+    func rank(_ t: Tool) -> Int {
+      if t == .memory { return 99 }
+      guard let r = reasons[t] else { return 50 }
+      return urgency.firstIndex(of: r) ?? 50
+    }
+    return available.enumerated()
+      .sorted { (rank($0.element), $0.offset) < (rank($1.element), $1.offset) }
+      .map { Pick(tool: $0.element, reason: reasons[$0.element]) }
+  }
 }
