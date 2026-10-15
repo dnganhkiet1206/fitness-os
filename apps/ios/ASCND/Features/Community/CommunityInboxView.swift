@@ -25,13 +25,12 @@ struct CommunityInboxView: View {
   var body: some View {
     ScrollView {
       LazyVStack(alignment: .leading, spacing: DS.Spacing.md) {
+        CommunityPageTitle(text: String(localized: "community.inbox.title"))
         content
       }
       .padding(DS.Spacing.md)
     }
-    .background(DS.Color.background.swiftUI)
-    .navigationTitle(Text("community.inbox.title"))
-    .navigationBarTitleDisplayMode(.inline)
+    .communityPage()
     .task {
       guard !opened else { return }
       opened = true

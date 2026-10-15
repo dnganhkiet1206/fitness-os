@@ -52,22 +52,20 @@ struct CommunitySavedView: View {
   var body: some View {
     ScrollView {
       LazyVStack(alignment: .leading, spacing: DS.Spacing.md) {
-        Picker(selection: $book.filter) {
-          Text("community.saved.workouts").tag(CommunitySaved.Filter.workout)
-          Text("community.saved.recipes").tag(CommunitySaved.Filter.recipe)
-          Text("community.saved.all").tag(CommunitySaved.Filter.all)
-        } label: {
-          Text("community.saved.title")
-        }
-        .pickerStyle(.segmented)
+        CommunityPageTitle(text: String(localized: "community.saved.title"))
+        ChipPicker(
+          selection: $book.filter,
+          options: [
+            (.workout, String(localized: "community.saved.workouts")),
+            (.recipe, String(localized: "community.saved.recipes")),
+            (.all, String(localized: "community.saved.all")),
+          ])
         list
       }
       .padding(DS.Spacing.md)
     }
-    .background(DS.Color.background.swiftUI)
+    .communityPage()
     .communityPostSheet($sheetPost)
-    .navigationTitle(Text("community.saved.title"))
-    .navigationBarTitleDisplayMode(.inline)
     // `refetchOnMount: 'always'`: mỗi lần mở đọc lại.
     .task {
       guard !opened else { return }

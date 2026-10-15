@@ -53,14 +53,14 @@ struct CommunitySearchView: View {
   var body: some View {
     ScrollView {
       LazyVStack(alignment: .leading, spacing: DS.Spacing.md) {
-        Picker(selection: Binding(get: { book.mode }, set: { m in Task { await book.select(m) } })) {
-          Text("community.search.people").tag(CommunitySearch.Mode.people)
-          Text("community.search.recipes").tag(CommunitySearch.Mode.recipe)
-          Text("community.search.posts").tag(CommunitySearch.Mode.posts)
-        } label: {
-          Text(title)
-        }
-        .pickerStyle(.segmented)
+        CommunityPageTitle(text: title)
+        ChipPicker(
+          selection: Binding(get: { book.mode }, set: { m in Task { await book.select(m) } }),
+          options: [
+            (.people, String(localized: "community.search.people")),
+            (.recipe, String(localized: "community.search.recipes")),
+            (.posts, String(localized: "community.search.posts")),
+          ])
         field
         if CommunitySearch.showsMinHint(typed: q, searched: book.searched) {
           Text("community.search.min")
@@ -76,10 +76,8 @@ struct CommunitySearchView: View {
       }
       .padding(DS.Spacing.md)
     }
-    .background(DS.Color.background.swiftUI)
+    .communityPage()
     .communityPostSheet($sheetPost)
-    .navigationTitle(Text(title))
-    .navigationBarTitleDisplayMode(.inline)
     .task { await book.loadSuggestions() }
     .task(id: q) {
       // Gõ tới đâu tìm tới đó, trễ 250 ms.
@@ -157,8 +155,10 @@ struct CommunitySearchView: View {
     let searching = book.isSearching
     if !searching {
       Text("community.search.suggested")
-        .font(DS.TextStyle.headline)
+        .font(.system(size: 20, weight: .bold)).tracking(-0.3)
         .foregroundStyle(DS.Color.foreground.swiftUI)
+        .padding(.top, DS.Spacing.xs)
+        .accessibilityAddTraits(.isHeader)
     }
     let phase = searching ? book.peoplePhase : book.suggestionsPhase
     let rows = searching ? book.people : book.suggestions

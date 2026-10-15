@@ -154,3 +154,6 @@ Chủ dự án: mock đầu "hơi giống tiktok, sửa lại cho khác biệt" 
 - (15/10, sau) Chủ dự án: "đẩy nút tìm kiếm vào một phần nào đó để gọn hơn vì có tới 4 nút" → tìm kiếm là nút
   tròn nhỏ cuối thanh "Đang theo dõi / Khám phá" (thanh ghim, nên luôn trong tầm tay); đầu trang còn Tin nhắn
   (khi có) · Thông báo · Hồ sơ. Nền thanh ghim đặc hơn (`.bar` + nền 75%) — trước lộ mờ hàng đăng bài phía sau.
+- (15/10, audit) Thông báo, Tìm kiếm, Đã lưu đồng bộ với feed / hồ sơ: `CommunityPageTitle` (tiêu đề lớn trong
+  nội dung), `.communityPage()` (nền `TodayAmbient`, che thanh trạng thái, bỏ tiêu đề nhỏ trên thanh điều
+  hướng), `ChipPicker` (viên chữ thay segmented hệ thống). "Gợi ý cho bạn" 20pt bold như các tiêu đề mục.

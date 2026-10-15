@@ -945,3 +945,65 @@ enum NewsPalette {
   /// Hồng "Trending" của Apple News — dùng hồng của app.
   static let trending = DS.Color.metricRose.swiftUI
 }
+
+// MARK: - Khung trang phụ của Cộng đồng (15/10, audit: Thông báo / Tìm kiếm / Đã lưu
+// còn nền phẳng, tiêu đề nhỏ, segmented hệ thống — lệch tông với feed và hồ sơ)
+
+/// Tiêu đề lớn trong nội dung, như "Cộng đồng" / "Hồ sơ".
+struct CommunityPageTitle: View {
+  let text: String
+
+  var body: some View {
+    Text(verbatim: text)
+      .font(.largeTitle.bold())
+      .foregroundStyle(DS.Color.foreground.swiftUI)
+      .lineLimit(1)
+      .minimumScaleFactor(0.7)
+      .accessibilityAddTraits(.isHeader)
+  }
+}
+
+/// Bộ lọc viên chữ: đang chọn đen đặc, còn lại mặt thẻ viền mảnh.
+struct ChipPicker<Value: Hashable>: View {
+  @Binding var selection: Value
+  let options: [(Value, String)]
+  @State private var taps = 0
+
+  var body: some View {
+    ScrollView(.horizontal, showsIndicators: false) {
+      HStack(spacing: DS.Spacing.sm) {
+        ForEach(options, id: \.0) { value, label in
+          let on = selection == value
+          Button {
+            taps += 1
+            selection = value
+          } label: {
+            Text(verbatim: label)
+              .font(.system(size: 14, weight: .semibold))
+              .foregroundStyle(on ? DS.Color.background.swiftUI : DS.Color.foreground.swiftUI)
+              .padding(.horizontal, 16)
+              .frame(height: 36)
+              .background(on ? DS.Color.foreground.swiftUI : DS.Color.card.swiftUI, in: Capsule())
+              .overlay { Capsule().strokeBorder(DS.Color.foreground.swiftUI.opacity(on ? 0 : 0.10), lineWidth: 0.75) }
+              .frame(minHeight: 44)
+              .contentShape(Capsule())
+          }
+          .buttonStyle(TodayPressStyle())
+          .accessibilityAddTraits(on ? .isSelected : [])
+        }
+      }
+    }
+    .scrollClipDisabled()
+    .sensoryFeedback(.selection, trigger: taps)
+  }
+}
+
+extension View {
+  /// Nền như feed + che thanh trạng thái; tiêu đề nằm trong nội dung.
+  func communityPage() -> some View {
+    background { TodayAmbient(accent: nil) }
+      .statusBarScrim()
+      .navigationTitle(Text(verbatim: ""))
+      .navigationBarTitleDisplayMode(.inline)
+  }
+}
