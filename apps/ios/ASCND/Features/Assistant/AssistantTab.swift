@@ -42,6 +42,12 @@ struct AssistantTab: View {
   @State private var photos: ProgressPhotosBook?
   @State private var hour = Calendar.current.component(.hour, from: Date())
   @State private var built = false
+  /// Ghi nhanh từ thẻ (15/10): ngủ / bữa.
+  @State private var logging: AssistantLog?
+  enum AssistantLog: String, Identifiable {
+    case sleep, meal
+    var id: String { rawValue }
+  }
 
   var body: some View {
     NavigationStack(path: $path) {
@@ -52,7 +58,9 @@ struct AssistantTab: View {
         VStack(alignment: .leading, spacing: DS.Spacing.md) {
           header
           if let signal {
-            SummaryCard(signal: signal, metrics: metrics, lang: lang, hour: hour) { path.append(.trends) }
+            SummaryCard(
+              signal: signal, metrics: metrics, lang: lang, hour: hour, openTrends: { path.append(.trends) },
+              logSleep: { logging = .sleep })
           }
           // Máy chủ chưa bật tính năng → không hiện thẻ lỗi vĩnh viễn (15/10, audit).
           if let nudges, !nudges.isNotDeployed {
@@ -85,11 +93,22 @@ struct AssistantTab: View {
           .buttonStyle(TodayPressStyle())
           // Nguồn của các con số, đặt DƯỚI những thứ dùng chúng (RN: cuối
           // trang). Không có Apple Health trên máy thì không hiện gì.
-          HealthSyncCard(isAvailable: services.health.isAvailable, sync: syncHealth)
+          HealthSyncLine(isAvailable: services.health.isAvailable, sync: syncHealth)
         }
         .padding(DS.Spacing.md)
       }
       .background { AssistantAura(status: signal?.signal.status) }
+      .sheet(item: $logging, onDismiss: {
+        Task {
+          await signal?.load()
+          await metrics?.load(kcalTarget: kcalTarget)
+        }
+      }) { item in
+        switch item {
+        case .sleep: LogSleepView(makeLogger: { services.makeSleepLogger(userId: flow.today.userId) })
+        case .meal: LogMealView(userId: flow.today.userId)
+        }
+      }
       .refreshable {
         await signal?.load()
         await metrics?.load(kcalTarget: kcalTarget)
@@ -126,6 +145,9 @@ struct AssistantTab: View {
             ScrollView {
               VStack(alignment: .leading, spacing: DS.Spacing.md) {
                 Text("assistant.trends").font(.largeTitle.bold()).accessibilityAddTraits(.isHeader)
+                // Vì sao điểm như vậy (15/10, audit — Apple Health: chạm điểm xem yếu tố).
+                ReadinessFactors(
+                  makeBook: { services.makeReadinessBook(userId: flow.today.userId, date: readinessDate) }, lang: lang)
                 MetricPanelView(book: metrics, signal: signal, lang: lang) { question in
                   guard let chat else { return }
                   path.append(.chat)
@@ -248,21 +270,6 @@ struct AssistantTab: View {
           .accessibilityAddTraits(.isHeader)
       }
       Spacer(minLength: 0)
-      if chat != nil {
-        Button {
-          path.append(.chat)
-        } label: {
-          Image(systemName: "sparkles")
-            .font(.body.weight(.semibold))
-            .foregroundStyle(DS.Color.metricPurple.swiftUI)
-            .frame(width: 40, height: 40)
-            .background(Circle().fill(.thinMaterial))
-            .overlay(Circle().strokeBorder(DS.Color.foreground.swiftUI.opacity(0.12), lineWidth: 0.75))
-            .frame(minWidth: 44, minHeight: 44)
-        }
-        .buttonStyle(TodayPressStyle())
-        .accessibilityLabel(Text("assistant.coach.open.a11y"))
-      }
     }
   }
 
@@ -271,39 +278,72 @@ struct AssistantTab: View {
   @ViewBuilder private var highlights: some View {
     if let signal {
       let s = signal.signal
+      let hasTrend: Bool = if case .ready(let a) = metrics?.phase, a.bars.contains(where: { !$0.missing }) { true } else { false }
+      let order = AssistantSummary.order(
+        sleepMin: s.sleepMin, heartRate: signal.heartRate, kcal: s.kcal, hasTrend: hasTrend)
       VStack(alignment: .leading, spacing: DS.Spacing.sm) {
         sectionTitle("assistant.highlights")
-        if let metrics { TrendHighlight(book: metrics, lang: lang) { path.append(.trends) } }
-        let sleepMin = Int(s.sleepMin)
-        AreaHighlight(
-          symbol: "moon.fill", title: String(localized: "metric.sleep"), tint: DS.Color.metricPurple.swiftUI,
-          headline: sleepMin > 0
-            ? String(localized: "assistant.sleep.value \(sleepMin / 60) \(sleepMin % 60)")
-            : String(localized: "assistant.sleep.none"),
-          detail: sleepMin > 0
-            ? (sleepMin >= 420 ? String(localized: "metric.note.good") : String(localized: "metric.note.short"))
-            : String(localized: "assistant.sleep.none.hint"))
-        if let hr = signal.heartRate {
-          AreaHighlight(
-            symbol: "heart.fill", title: String(localized: "metric.hr"), tint: DS.Color.readinessRed.swiftUI,
-            headline: String(localized: "assistant.hr \(hr)"),
-            detail: hr < 60
-              ? String(localized: "metric.note.low")
-              : hr <= 80 ? String(localized: "metric.note.normal") : String(localized: "metric.note.high"))
-        }
-        AreaHighlight(
-          symbol: "flame.fill", title: String(localized: "metric.kcal"), tint: DS.Color.metricOrange.swiftUI,
-          headline: String(
-            localized:
-              "assistant.kcal \(Int(s.kcal).formatted(.number.locale(.app))) \(Int(s.kcalTarget).formatted(.number.locale(.app)))"),
-          detail: s.proteinTarget > 0
-            ? String(
-              localized:
-                "assistant.protein \(Int(s.proteinG).formatted(.number.locale(.app))) \(Int(s.proteinTarget).formatted(.number.locale(.app)))")
-            : nil,
-          progress: s.kcalTarget > 0 ? s.kcal / s.kcalTarget : nil)
+        ForEach(order, id: \.self) { area in highlight(area, signal: signal) }
       }
     }
+  }
+
+  @ViewBuilder private func highlight(_ area: AssistantSummary.Area, signal: AssistantSignalBook) -> some View {
+    let s = signal.signal
+    switch area {
+    case .trend:
+      if let metrics { TrendHighlight(book: metrics, lang: lang) { path.append(.trends) } }
+    case .sleep:
+      let sleepMin = Int(s.sleepMin)
+      AreaHighlight(
+        symbol: "moon.fill", title: String(localized: "metric.sleep"), tint: DS.Color.metricPurple.swiftUI,
+        headline: sleepMin > 0
+          ? String(localized: "assistant.sleep.value \(sleepMin / 60) \(sleepMin % 60)")
+          : String(localized: "assistant.sleep.none"),
+        detail: sleepMin > 0
+          ? (sleepMin >= 420 ? String(localized: "metric.note.good") : String(localized: "metric.note.short"))
+          : String(localized: "assistant.sleep.none.hint"))
+      // "Ghi giấc ngủ" nằm ở thẻ Sẵn sàng phía trên — không lặp ở đây.
+    case .heart:
+      if let hr = signal.heartRate {
+        AreaHighlight(
+          symbol: "heart.fill", title: String(localized: "metric.hr"), tint: DS.Color.readinessRed.swiftUI,
+          headline: String(localized: "assistant.hr \(hr)"),
+          detail: hr < 60
+            ? String(localized: "metric.note.low")
+            : hr <= 80 ? String(localized: "metric.note.normal") : String(localized: "metric.note.high"))
+      } else if services.health.isAvailable {
+        AreaHighlight(
+          symbol: "heart.fill", title: String(localized: "metric.hr"), tint: DS.Color.readinessRed.swiftUI,
+          headline: String(localized: "assistant.hr.none"),
+          action: (String(localized: "assistant.health.sync"), "arrow.triangle.2.circlepath", {
+            Task { try? await syncHealth() }
+          }))
+      }
+    case .nutrition:
+      AreaHighlight(
+        symbol: "flame.fill", title: String(localized: "metric.kcal"), tint: DS.Color.metricOrange.swiftUI,
+        headline: String(
+          localized:
+            "assistant.kcal \(Int(s.kcal).formatted(.number.locale(.app))) \(Int(s.kcalTarget).formatted(.number.locale(.app)))"),
+        detail: s.proteinTarget > 0
+          ? String(
+            localized:
+              "assistant.protein \(Int(s.proteinG).formatted(.number.locale(.app))) \(Int(s.proteinTarget).formatted(.number.locale(.app)))")
+          : nil,
+        progress: s.kcalTarget > 0 ? s.kcal / s.kcalTarget : nil,
+        action: s.kcal > 0 ? nil : (String(localized: "assistant.action.meal"), "plus", { logging = .meal }))
+    }
+  }
+
+  /// Ngày của bảng yếu tố: hôm nay nếu có điểm, không thì ngày gần nhất có điểm.
+  private var readinessDate: LocalDate {
+    if signal?.signal.readiness == nil, case .ready(let a) = metrics?.phase, metrics?.kind == .readiness,
+      let latest = AssistantSummary.latest(a.bars)
+    {
+      return latest.date
+    }
+    return Self.today()
   }
 
   // MARK: - Dành cho bạn

@@ -21,3 +21,16 @@ mỗi mảng một thẻ với một câu nhận xét; dữ liệu → nhận x�
 - Điểm nổi bật: Xu hướng 7 ngày (câu + đường nhỏ), Giấc ngủ, Nhịp tim (khi có), Calo (+ đạm, thanh tiến độ).
 - Dành cho bạn: hàng thẻ trượt ngang từ các công cụ; "Tất cả công cụ" → lưới đầy đủ.
 - Apple Health giữ ở cuối trang.
+
+## Cải thiện sau v2 (15/10, chủ dự án: "làm đi")
+- Hôm nay chưa có điểm → thẻ Sẵn sàng hiện **điểm gần nhất** ("Điểm gần nhất · hôm qua",
+  `AssistantSummary.latest`) thay cho "—"; nhãn chữ dùng cùng ngưỡng với Hôm nay (≥ 75 / ≥ 50); "go" đổi thành
+  "Tập hết mình" (trùng chữ với tiêu đề "Sẵn sàng").
+- Nút hành động: "Ghi giấc ngủ" trong thẻ Sẵn sàng (khi đêm qua chưa có), "Ghi bữa" trong thẻ Calo, "Đồng bộ"
+  trong thẻ Nhịp tim (khi có Apple Health) — mở đúng màn ghi, xong đọc lại số.
+- "Xu hướng 7 ngày" mở bằng thẻ sẵn sàng đầy đủ (HRV · RHR · ngủ · tải · ACWR, `ReadinessCardView` mở sẵn) của
+  hôm nay hoặc ngày gần nhất có điểm — "vì sao điểm như vậy".
+- Bỏ nút ✨ đầu trang (trùng ô Hỏi coach). Apple Health thu thành một dòng (`HealthSyncLine`).
+- Điểm nổi bật xếp theo mức quan trọng (`AssistantSummary.order`): ngủ ngắn / nhịp tim cao lên trước, mảng
+  chưa có dữ liệu xuống cuối.
+- Chưa làm: "Dành cho bạn" chọn theo ngữ cảnh.

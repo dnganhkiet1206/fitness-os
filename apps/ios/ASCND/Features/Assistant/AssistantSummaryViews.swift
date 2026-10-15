@@ -93,14 +93,23 @@ struct SummaryCard: View {
   let lang: AppPreferences.Lang
   let hour: Int
   let openTrends: () -> Void
+  /// "Ghi giấc ngủ" — khi đêm qua chưa có (điểm hôm nay cần nó).
+  var logSleep: (() -> Void)?
 
   var body: some View {
     let s = signal.signal
-    let ready = AssistantSummary.readiness(status: s.status, score: s.readiness)
-    let tint = AssistantText.tint(ready)
-    let score = AssistantSummary.score10(s.readiness)
     let bars: [MetricAnalysis.Bar] =
       if let metrics, metrics.kind == .readiness, case .ready(let a) = metrics.phase { a.bars } else { [] }
+    // Hôm nay chưa có điểm → điểm gần nhất, ghi rõ ngày (15/10, audit).
+    let latest = s.readiness == nil ? AssistantSummary.latest(bars) : nil
+    let shown = s.readiness ?? latest?.value
+    let ready = AssistantSummary.readiness(status: s.readiness == nil ? nil : s.status, score: shown)
+    let tint = AssistantText.tint(ready)
+    let score = AssistantSummary.score10(shown)
+    let note =
+      if let latest { String(localized: "assistant.latest \(Self.dayText(latest.date))") } else {
+        AssistantText.versus(AssistantSummary.versus(today: s.readiness, bars: bars))
+      }
     let brief = signal.brief(hour: hour)
     VStack(alignment: .leading, spacing: 12) {
       Button(action: openTrends) {
@@ -123,7 +132,7 @@ struct SummaryCard: View {
             Text(verbatim: AssistantText.label(ready))
               .font(.system(size: 21, weight: .bold)).tracking(-0.3)
               .foregroundStyle(ready == nil ? DS.Color.foreground.swiftUI : tint)
-            Text(verbatim: AssistantText.versus(AssistantSummary.versus(today: s.readiness, bars: bars)))
+            Text(verbatim: note)
               .font(.system(size: 13))
               .foregroundStyle(DS.Color.mutedForeground.swiftUI)
               .fixedSize(horizontal: false, vertical: true)
@@ -138,6 +147,9 @@ struct SummaryCard: View {
       }
       .buttonStyle(TodayPressStyle())
       .accessibilityElement(children: .combine)
+      if s.sleepMin == 0, let logSleep {
+        AssistantActionPill(title: String(localized: "assistant.action.sleep"), symbol: "moon.fill", action: logSleep)
+      }
       if !brief.lines.isEmpty {
         Rectangle().fill(DS.Color.foreground.swiftUI.opacity(0.08)).frame(height: 0.5)
         VStack(alignment: .leading, spacing: 6) {
@@ -152,6 +164,91 @@ struct SummaryCard: View {
     }
     .padding(2)
     .modifier(AssistantSurface())
+  }
+
+  /// "hôm qua" / "Thứ Ba".
+  static func dayText(_ d: LocalDate) -> String {
+    var c = DateComponents()
+    c.year = d.year
+    c.month = d.month
+    c.day = d.day
+    guard let date = Calendar.current.date(from: c) else { return d.description }
+    if Calendar.current.isDateInYesterday(date) { return String(localized: "dm.yesterday").lowercased() }
+    return date.formatted(Date.FormatStyle().weekday(.wide).locale(.app))
+  }
+}
+
+/// Viên hành động nhỏ trong thẻ (Ghi giấc ngủ / Ghi bữa / Đồng bộ).
+struct AssistantActionPill: View {
+  let title: String
+  let symbol: String
+  let action: () -> Void
+
+  var body: some View {
+    Button(action: action) {
+      Label(title, systemImage: symbol)
+        .font(.system(size: 14, weight: .semibold))
+        .foregroundStyle(DS.Color.background.swiftUI)
+        .padding(.horizontal, 14)
+        .frame(height: 34)
+        .background(DS.Color.foreground.swiftUI, in: Capsule())
+        .frame(minHeight: 44)
+        .contentShape(Capsule())
+    }
+    .buttonStyle(TodayPressStyle())
+  }
+}
+
+/// Apple Health thu gọn một dòng (15/10, audit: thẻ cuối trang quá to).
+struct HealthSyncLine: View {
+  let isAvailable: Bool
+  let sync: @MainActor () async throws(HealthSync.Failure) -> Void
+  @State private var running = false
+  @State private var failed = false
+  @State private var lastSync: Date?
+
+  var body: some View {
+    if isAvailable {
+      Button {
+        guard !running else { return }
+        running = true
+        failed = false
+        Task {
+          do {
+            try await sync()
+            lastSync = Date()
+          } catch {
+            failed = true
+          }
+          running = false
+        }
+      } label: {
+        HStack(spacing: 8) {
+          Image(systemName: "heart.fill").foregroundStyle(DS.Color.readinessRed.swiftUI)
+          Text(verbatim: status)
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          Spacer(minLength: 0)
+          if running {
+            ProgressView().controlSize(.small)
+          } else {
+            Text("assistant.health.sync").fontWeight(.semibold).foregroundStyle(DS.Color.foreground.swiftUI)
+          }
+        }
+        .font(.system(size: 13))
+        .padding(.horizontal, 4)
+        .frame(minHeight: 44)
+        .contentShape(Rectangle())
+      }
+      .buttonStyle(.plain)
+    }
+  }
+
+  private var status: String {
+    if failed { return String(localized: "assistant.health.failed") }
+    if let lastSync {
+      return String(localized: "assistant.health.synced \(lastSync.formatted(.relative(presentation: .named).locale(.app)))")
+    }
+    return String(localized: "assistant.health")
   }
 }
 
@@ -233,6 +330,8 @@ struct AreaHighlight: View {
   let headline: String
   var detail: String?
   var progress: Double?
+  /// Hành động khi mảng chưa có dữ liệu (dữ liệu → hành động, như Apple Health).
+  var action: (title: String, symbol: String, run: () -> Void)?
 
   var body: some View {
     VStack(alignment: .leading, spacing: 4) {
@@ -256,9 +355,12 @@ struct AreaHighlight: View {
         .frame(height: 5)
         .padding(.top, 6)
       }
+      if let action {
+        AssistantActionPill(title: action.title, symbol: action.symbol, action: action.run).padding(.top, 4)
+      }
     }
     .modifier(AssistantSurface())
-    .accessibilityElement(children: .combine)
+    .accessibilityElement(children: .contain)
   }
 }
 
@@ -305,5 +407,30 @@ struct AskCoachBar: View {
     }
     .buttonStyle(TodayPressStyle())
     .accessibilityLabel(Text("assistant.coach.open.a11y"))
+  }
+}
+
+/// Thẻ sẵn sàng mở sẵn (yếu tố HRV · nhịp tim nghỉ · giấc ngủ · tải tập) cho màn
+/// "Xu hướng 7 ngày" — dùng lại `ReadinessCardView` của Hôm nay.
+struct ReadinessFactors: View {
+  let makeBook: () -> ReadinessBook?
+  let lang: AppPreferences.Lang
+  @State private var book: ReadinessBook?
+
+  var body: some View {
+    // Khung luôn có (kể cả lúc chưa dựng sổ) — `Group` rỗng không chạy `.task`.
+    VStack {
+      if let book {
+        ReadinessCardView(book: book, lang: lang, startExpanded: true)
+          .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+      } else {
+        Color.clear.frame(height: 1)
+      }
+    }
+    .task {
+      guard book == nil, let b = makeBook() else { return }
+      book = b
+      await b.load()
+    }
   }
 }

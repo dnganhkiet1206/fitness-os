@@ -28,9 +28,9 @@ struct AssistantSummaryTests {
     #expect(AssistantSummary.readiness(status: "green", score: 40) == .go)
     #expect(AssistantSummary.readiness(status: "yellow", score: 90) == .pace)
     #expect(AssistantSummary.readiness(status: "red", score: 90) == .recover)
-    #expect(AssistantSummary.readiness(status: nil, score: 70) == .go)
-    #expect(AssistantSummary.readiness(status: nil, score: 50) == .pace)
-    #expect(AssistantSummary.readiness(status: nil, score: 20) == .recover)
+    #expect(AssistantSummary.readiness(status: nil, score: 80) == .go)
+    #expect(AssistantSummary.readiness(status: nil, score: 74) == .pace)
+    #expect(AssistantSummary.readiness(status: nil, score: 49) == .recover)
     #expect(AssistantSummary.readiness(status: "green", score: nil) == nil)
   }
 
@@ -41,5 +41,23 @@ struct AssistantSummaryTests {
     #expect(AssistantSummary.versus(today: 55, bars: b) == .typical)
     #expect(AssistantSummary.versus(today: 41, bars: b) == .below)
     #expect(AssistantSummary.versus(today: nil, bars: b) == nil)
+  }
+
+  @Test func latestSkipsTodayAndMissing() {
+    let b = Self.bars([50, 74, nil], todayValue: nil)
+    #expect(AssistantSummary.latest(b)?.value == 74)
+    #expect(AssistantSummary.latest(Self.bars([nil, nil])) == nil)
+  }
+
+  @Test func orderPutsNoteworthyFirstAndEmptyLast() {
+    #expect(
+      AssistantSummary.order(sleepMin: 0, heartRate: nil, kcal: 0, hasTrend: true)
+        == [.trend, .sleep, .heart, .nutrition])
+    #expect(
+      AssistantSummary.order(sleepMin: 300, heartRate: 90, kcal: 1200, hasTrend: true)
+        == [.sleep, .heart, .trend, .nutrition])
+    #expect(
+      AssistantSummary.order(sleepMin: 480, heartRate: nil, kcal: 800, hasTrend: false)
+        == [.sleep, .nutrition, .trend, .heart])
   }
 }

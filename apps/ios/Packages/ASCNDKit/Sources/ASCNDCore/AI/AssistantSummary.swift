@@ -30,7 +30,8 @@ public enum AssistantSummary {
     case "red": return .recover
     default:
       guard let s = score else { return nil }
-      return s >= 67 ? .go : s >= 34 ? .pace : .recover
+      // Cùng ngưỡng với thẻ sẵn sàng của Hôm nay (≥ 75 tập, ≥ 50 vừa phải).
+      return s >= 75 ? .go : s >= 50 ? .pace : .recover
     }
   }
 
@@ -48,5 +49,32 @@ public enum AssistantSummary {
   /// Hướng 7 ngày từ các cột có dữ liệu (`MetricAnalysis.direction`, cần đủ điểm).
   public static func trend(_ bars: [MetricAnalysis.Bar]) -> MetricAnalysis.Direction? {
     MetricAnalysis.direction(bars.filter { !$0.missing }.map(\.value))
+  }
+
+  /// Điểm gần nhất TRƯỚC hôm nay (khi hôm nay chưa có) — thẻ không trống khi lịch
+  /// sử vẫn có số (15/10, audit).
+  public static func latest(_ bars: [MetricAnalysis.Bar]) -> (value: Int, date: LocalDate)? {
+    guard let b = bars.last(where: { !$0.missing && !$0.today }) else { return nil }
+    return (Int(b.value.rounded()), b.date)
+  }
+
+  /// Mảng của "Điểm nổi bật".
+  public enum Area: String, Sendable, Hashable, CaseIterable { case trend, sleep, heart, nutrition }
+
+  /// Thứ tự: mảng có điều đáng chú ý trước (ngủ ngắn, nhịp tim cao), rồi mảng có
+  /// số, mảng chưa có dữ liệu cuối cùng; hoà thì theo thứ tự gốc.
+  public static func order(
+    sleepMin: Double, heartRate: Int?, kcal: Double, hasTrend: Bool
+  ) -> [Area] {
+    func rank(_ a: Area) -> Int {
+      switch a {
+      case .sleep: sleepMin == 0 ? 2 : sleepMin < 420 ? 0 : 1
+      case .heart: heartRate == nil ? 2 : heartRate! > 80 ? 0 : 1
+      case .nutrition: kcal == 0 ? 2 : 1
+      case .trend: hasTrend ? 1 : 2
+      }
+    }
+    let base: [Area] = [.trend, .sleep, .heart, .nutrition]
+    return base.enumerated().sorted { (rank($0.element), $0.offset) < (rank($1.element), $1.offset) }.map(\.element)
   }
 }

@@ -49988,19 +49988,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "Ready to train"
+      "value": "Go for it"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Listo para entrenar"
+      "value": "A por ello"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Sẵn sàng tập"
+      "value": "Tập hết mình"
      }
     }
    }
@@ -50507,6 +50507,190 @@
      "stringUnit": {
       "state": "translated",
       "value": "Đạm %@ / %@ g"
+     }
+    }
+   }
+  },
+  "assistant.latest %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Latest score · %@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Último puntaje · %@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Điểm gần nhất · %@"
+     }
+    }
+   }
+  },
+  "assistant.action.sleep": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Log sleep"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Registrar sueño"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ghi giấc ngủ"
+     }
+    }
+   }
+  },
+  "assistant.action.meal": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Log a meal"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Registrar comida"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ghi bữa"
+     }
+    }
+   }
+  },
+  "assistant.health": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Apple Health"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Apple Health"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Apple Health"
+     }
+    }
+   }
+  },
+  "assistant.health.sync": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sync"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sincronizar"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đồng bộ"
+     }
+    }
+   }
+  },
+  "assistant.health.synced %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Apple Health · synced %@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Apple Health · sincronizado %@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Apple Health · đồng bộ %@"
+     }
+    }
+   }
+  },
+  "assistant.health.failed": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Couldn't sync Apple Health"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "No se pudo sincronizar Apple Health"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chưa đồng bộ được Apple Health"
+     }
+    }
+   }
+  },
+  "assistant.hr.none": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "No data today yet"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Aún sin datos hoy"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chưa có dữ liệu hôm nay"
      }
     }
    }
