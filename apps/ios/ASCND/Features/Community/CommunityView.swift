@@ -478,7 +478,7 @@ struct PostCardView: View {
         if forShare {
           HStack(spacing: 6) {
             Image(systemName: "triangle.fill").font(.caption2)
-            Text(verbatim: "ASCND").font(.system(size: 13, weight: .heavy)).tracking(1.5)
+            Text(String(localized: "brand.name")).font(.system(size: 13, weight: .heavy)).tracking(1.5)
             Spacer(minLength: 0)
             Text(String(localized: "community.share.cta")).font(DS.TextStyle.caption)
           }
