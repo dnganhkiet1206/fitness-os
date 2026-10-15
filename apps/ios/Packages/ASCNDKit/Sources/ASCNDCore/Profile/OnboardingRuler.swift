@@ -74,6 +74,12 @@ public enum OnboardingRuler {
   /// `toFixed(1)` cho số đã nằm trên vạch 0,1 (không còn ca nửa vạch).
   public static func fixed1(_ v: Double) -> String { String(format: "%.1f", v) }
 
+  /// `fixed1` để HIỂN THỊ: cùng chữ số, dấu thập phân của ngôn ngữ ("121,7" ở bản
+  /// tiếng Việt — 15/10, audit toàn app).
+  public static func fixed1(_ v: Double, locale: Locale) -> String {
+    fixed1(v).replacingOccurrences(of: ".", with: locale.decimalSeparator ?? ".")
+  }
+
   /// `weightLabel`: `lbs` hiện là `lb`.
   public static func weightLabel(_ unit: String) -> String { unit == "lbs" ? "lb" : "kg" }
 

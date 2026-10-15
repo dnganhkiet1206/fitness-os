@@ -150,11 +150,11 @@ struct TrainingCardView: View {
       ? AnyLayout(VStackLayout(alignment: .leading, spacing: DS.Spacing.sm))
       : AnyLayout(HStackLayout(alignment: .top, spacing: DS.Spacing.md))
     return layout {
-      cell(String(localized: "tc.week.label"), Self.int(card.weekLoad), weekSub, muted: false)
+      cell(String(localized: "tc.week.loadLabel"), Self.int(card.weekLoad), weekSub, muted: false)
       Rectangle().fill(DS.Color.foreground.swiftUI.opacity(0.1))
         .frame(width: stacked ? nil : 1, height: stacked ? 1 : nil)
         .accessibilityHidden(true)
-      cell(String(localized: "tc.habit.label"), card.habitLoad > 0 ? Self.int(card.habitLoad) : "—", habitSub, muted: true)
+      cell(String(localized: "tc.habit.loadLabel"), card.habitLoad > 0 ? Self.int(card.habitLoad) : "—", habitSub, muted: true)
     }
     .fixedSize(horizontal: false, vertical: true)
   }

@@ -526,7 +526,7 @@ struct WaterWeekCups: View {
           Text(String(localized: "water.average"))
             .font(DS.TextStyle.caption)
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-          Text(verbatim: Water.averageLabel(days, unit))
+          Text(verbatim: Water.averageLabel(days, unit, locale: .app))
             .font(.custom("Menlo", size: 20, relativeTo: .title3).weight(.bold))
         }
         Spacer()

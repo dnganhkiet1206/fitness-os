@@ -287,7 +287,7 @@ struct TodayExtras<Plan: View>: View {
     let steps = String(localized: "today.d.steps \(num(s?.steps ?? 0, 0)) \(num(Double(goal), 0))")
     let kg = weight?.todayKg
     let weighed = flags?.weighed ?? (kg != nil)
-    let weightLine = kg.map { "\(OnboardingRuler.fixed1(unit.display($0))) \(unit.label)" }
+    let weightLine = kg.map { "\(OnboardingRuler.fixed1(unit.display($0), locale: .app)) \(unit.label)" }
       ?? (weighed ? String(localized: "today.tube.done") : String(localized: "today.d.weight.none"))
     return [
       .init(kind: .sleep, detail: sleep, done: done(.sleep)),

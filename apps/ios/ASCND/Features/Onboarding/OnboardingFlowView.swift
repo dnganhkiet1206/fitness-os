@@ -426,7 +426,7 @@ private struct OnboardingStepsView: View {
   private func water(_ ml: Int) -> String {
     let unit = services.preferences.volumeUnit
     let v = OnboardingRuler.displayVolume(ml, unit: unit)
-    return unit == .oz ? "\(OnboardingRuler.fixed1(v)) oz" : "\(Int(v).formatted(.number.locale(.app))) ml"
+    return unit == .oz ? "\(OnboardingRuler.fixed1(v, locale: .app)) oz" : "\(Int(v).formatted(.number.locale(.app))) ml"
   }
 
   static func date(_ d: LocalDate) -> Date { d.calendarDate }
@@ -600,12 +600,12 @@ private struct RulerScreen: View {
     if quantity == .height, unit == "in" {
       return OnboardingRuler.formatHeight(Units.heightToCm(value, unit: unit), unit: unit)
     }
-    return OnboardingRuler.fixed1(value)
+    return OnboardingRuler.fixed1(value, locale: .app)
   }
 
   private var small: String {
     if quantity == .height {
-      return unit == "in" ? "\(OnboardingRuler.fixed1(value)) in" : "cm"
+      return unit == "in" ? "\(OnboardingRuler.fixed1(value, locale: .app)) in" : "cm"
     }
     return OnboardingRuler.weightLabel(unit)
   }

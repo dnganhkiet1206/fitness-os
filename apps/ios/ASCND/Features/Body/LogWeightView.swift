@@ -58,7 +58,7 @@ struct LogWeightView: View {
         }
         Spacer(minLength: DS.Spacing.md)
         HStack(alignment: .firstTextBaseline, spacing: DS.Spacing.xs) {
-          Text(verbatim: OnboardingRuler.fixed1(value))
+          Text(verbatim: OnboardingRuler.fixed1(value, locale: .app))
             .font(DS.TextStyle.hero)
             .monospacedDigit()
           Text(verbatim: unit.label)
@@ -70,7 +70,7 @@ struct LogWeightView: View {
         if logger?.loaded == true {
           RulerStrip(
             scale: scale, seed: seedIndex, haptics: true, label: String(localized: "weight.title"),
-            readout: "\(OnboardingRuler.fixed1(value)) \(unit.label)"
+            readout: "\(OnboardingRuler.fixed1(value, locale: .app)) \(unit.label)"
           ) { i in index = i }
           .id(seedIndex)
           .padding(.horizontal, -DS.Spacing.lg)

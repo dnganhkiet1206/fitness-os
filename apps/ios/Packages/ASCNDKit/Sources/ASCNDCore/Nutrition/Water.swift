@@ -169,6 +169,13 @@ public enum Water {
     return unit == .oz ? "\(jsNumber(displayVolume(avg, .oz))) oz" : "\(jsToFixed(avg / 1000, 2))L"
   }
 
+  /// `averageLabel` hiển thị theo ngôn ngữ (15/10, audit: "18.8 oz" ở bản tiếng Việt):
+  /// CÙNG chữ số với golden của RN, chỉ đổi dấu thập phân sang của `locale`.
+  public static func averageLabel(_ days: [WaterDay], _ unit: Unit, locale: Locale) -> String {
+    let sep = locale.decimalSeparator ?? "."
+    return averageLabel(days, unit).replacingOccurrences(of: ".", with: sep)
+  }
+
   /// Ngày đầu của khung 7 ngày (`useWaterWeek`: hôm nay − 6).
   public static func weekStart(_ today: LocalDate) -> LocalDate { today.adding(days: -6) }
 

@@ -12,6 +12,9 @@ import SwiftUI
 /// - năm ống mảnh (ngủ / bữa / nước / buổi tập / bước) tô dần từ đáy; ống "kế
 ///   tiếp" có viền màu, quầng sáng nhẹ và nhãn "Next" — khớp bong bóng.
 ///
+/// 15/10 (audit toàn app, chủ dự án chọn "Danh sách là chỗ ghi"): ống chỉ còn là
+/// thanh tiến độ thấp, chạm không ghi — ghi ở "Ngày của bạn" (và "Ghi nhanh").
+///
 /// "Kế tiếp" và câu của Koa là `MascotLine` (port `mascotLine` của RN, có
 /// golden) — không có câu nào được bịa; số liệu là `TodayDay` trên CÙNG
 /// `DailySignals` của nhiệm vụ ngày. Lời chào khi chưa ghi gì là chữ của bản
@@ -25,7 +28,7 @@ struct TodayDayBlock: View {
   /// mà Koa của RN đọc: chạm "+250 ml" là ống và câu đổi ngay. `nil` khi sổ
   /// chưa đọc xong.
   var localWaterMl: Int?
-  /// Nút trong bong bóng / chạm ống: ghi đúng việc ấy.
+  /// Nút trong bong bóng: ghi đúng việc kế tiếp.
   let onAct: (MascotRules.Quest) -> Void
   let onOpenRoom: () -> Void
   /// Nguồn zoom sang phòng linh vật (Koa phóng thành phòng).
@@ -70,7 +73,7 @@ struct TodayDayBlock: View {
       }
       HStack(alignment: .bottom, spacing: 0) {
         ForEach(tubes) { t in
-          TodayTube(tube: t, isNext: t.quest == next, reduceMotion: reduceMotion, space: nextSpace) { onAct(t.quest) }
+          TodayTube(tube: t, isNext: t.quest == next, reduceMotion: reduceMotion, space: nextSpace)
             .frame(maxWidth: .infinity)
         }
       }
@@ -283,83 +286,74 @@ struct TodayTube: View {
   let isNext: Bool
   let reduceMotion: Bool
   let space: Namespace.ID
-  let action: () -> Void
   @Environment(AppServices.self) private var services: AppServices?
 
-  static let size = CGSize(width: 30, height: 104)
+  static let size = CGSize(width: 26, height: 60)
 
   private var unit: Water.Unit { services?.preferences.volumeUnit ?? .ml }
 
   var body: some View {
     let color = MascotRoomView.signalColor(tube.quest)
-    Button(action: action) {
-      VStack(spacing: 6) {
-        ZStack {
-          // Giữ chỗ cho nhãn ở mọi ống để hàng không nhảy khi nhãn trượt đi.
-          Text(String(localized: "today.next")).font(.system(size: 11, weight: .bold)).padding(.vertical, 2).hidden()
-          if isNext {
-            Text(String(localized: "today.next"))
-              .font(.system(size: 11, weight: .bold))
-              .foregroundStyle(.white)
-              .padding(.horizontal, 6)
-              .padding(.vertical, 2)
-              .background(color, in: Capsule())
-              .matchedGeometryEffect(id: "nextTag", in: space)
-          }
-        }
-        .accessibilityHidden(true)
-        ZStack(alignment: .bottom) {
-          // Rãnh lõm: tối hơn mặt kính một chút và nhuốm màu tín hiệu, nên ống
-          // rỗng vẫn đọc ra hình và ra "ống nào" — không hoà vào thẻ.
-          Capsule().fill(DS.Color.foreground.swiftUI.opacity(0.06))
-          Capsule().fill(color.opacity(0.10))
-          Capsule()
-            .strokeBorder(
-              LinearGradient(colors: [.black.opacity(0.10), .clear], startPoint: .top, endPoint: .center),
-              lineWidth: 3)
-            .blur(radius: 2)
-          Capsule()
-            .fill(LinearGradient(colors: [color.opacity(0.75), color], startPoint: .top, endPoint: .bottom))
-            .frame(height: max(tube.fill > 0 ? Self.size.width : 0, Self.size.height * tube.fill))
-            .opacity(tube.fill > 0 ? 1 : 0)
-            .animation(reduceMotion ? .easeInOut(duration: 0.2) : .spring(duration: 0.8, bounce: 0.18), value: tube.fill)
-          // Vệt sáng dọc.
-          Capsule()
-            .fill(.white.opacity(0.45))
-            .frame(width: 2, height: Self.size.height * 0.62)
-            .offset(x: -7, y: -Self.size.height * 0.2)
-          Image(systemName: Self.glyph(tube.quest))
+    VStack(spacing: 6) {
+      ZStack {
+        // Giữ chỗ cho nhãn ở mọi ống để hàng không nhảy khi nhãn trượt đi.
+        Text(String(localized: "today.next")).font(.system(size: 11, weight: .bold)).padding(.vertical, 2).hidden()
+        if isNext {
+          Text(String(localized: "today.next"))
             .font(.system(size: 11, weight: .bold))
-            .foregroundStyle(tube.fill > 0.3 ? .white : color)
-            .frame(width: 22, height: 22)
-            .background(Circle().fill(tube.fill > 0.3 ? Color.white.opacity(0.22) : color.opacity(0.12)))
-            .padding(.bottom, 4)
+            .foregroundStyle(.white)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(color, in: Capsule())
+            .matchedGeometryEffect(id: "nextTag", in: space)
         }
-        .frame(width: Self.size.width, height: Self.size.height)
-        .clipShape(Capsule())
-        .overlay(Capsule().strokeBorder(color.opacity(tube.fill > 0 ? 0.25 : 0.4), lineWidth: 1))
-        .overlay {
-          if isNext {
-            Capsule()
-              .strokeBorder(color, lineWidth: 2)
-              .shadow(color: color.opacity(0.45), radius: 8)
-              .matchedGeometryEffect(id: "nextRing", in: space)
-          }
-        }
-        Text(verbatim: TodayDayBlock.value(tube, unit: unit))
-          .font(.custom("Menlo", size: 11, relativeTo: .caption2).weight(.bold))
-          .foregroundStyle(tube.done || isNext ? color : DS.Color.mutedForeground.swiftUI)
-          .lineLimit(1)
-          .minimumScaleFactor(0.7)
       }
-      .frame(minWidth: 44)
-      .contentShape(Rectangle())
+      .accessibilityHidden(true)
+      ZStack(alignment: .bottom) {
+        // Rãnh lõm: tối hơn mặt kính một chút và nhuốm màu tín hiệu, nên ống
+        // rỗng vẫn đọc ra hình và ra "ống nào" — không hoà vào thẻ.
+        Capsule().fill(DS.Color.foreground.swiftUI.opacity(0.06))
+        Capsule().fill(color.opacity(0.10))
+        Capsule()
+          .strokeBorder(
+            LinearGradient(colors: [.black.opacity(0.10), .clear], startPoint: .top, endPoint: .center),
+            lineWidth: 3)
+          .blur(radius: 2)
+        Capsule()
+          .fill(LinearGradient(colors: [color.opacity(0.75), color], startPoint: .top, endPoint: .bottom))
+          .frame(height: max(tube.fill > 0 ? Self.size.width : 0, Self.size.height * tube.fill))
+          .opacity(tube.fill > 0 ? 1 : 0)
+          .animation(reduceMotion ? .easeInOut(duration: 0.2) : .spring(duration: 0.8, bounce: 0.18), value: tube.fill)
+        // Vệt sáng dọc.
+        Capsule()
+          .fill(.white.opacity(0.45))
+          .frame(width: 2, height: Self.size.height * 0.62)
+          .offset(x: -7, y: -Self.size.height * 0.2)
+        Image(systemName: Self.glyph(tube.quest))
+          .font(.system(size: 11, weight: .bold))
+          .foregroundStyle(tube.fill > 0.3 ? .white : color)
+          .frame(width: 22, height: 22)
+          .background(Circle().fill(tube.fill > 0.3 ? Color.white.opacity(0.22) : color.opacity(0.12)))
+          .padding(.bottom, 4)
+      }
+      .frame(width: Self.size.width, height: Self.size.height)
+      .clipShape(Capsule())
+      .overlay(Capsule().strokeBorder(color.opacity(tube.fill > 0 ? 0.25 : 0.4), lineWidth: 1))
+      .overlay {
+        if isNext {
+          Capsule()
+            .strokeBorder(color, lineWidth: 2)
+            .shadow(color: color.opacity(0.45), radius: 8)
+            .matchedGeometryEffect(id: "nextRing", in: space)
+        }
+      }
+      Text(verbatim: TodayDayBlock.value(tube, unit: unit))
+        .font(.custom("Menlo", size: 11, relativeTo: .caption2).weight(.bold))
+        .foregroundStyle(tube.done || isNext ? color : DS.Color.mutedForeground.swiftUI)
+        .lineLimit(1)
+        .minimumScaleFactor(0.7)
     }
-    .buttonStyle(.plain)
-    // Bước chân tự đến từ Apple Health — không bấm được. KHÔNG dùng
-    // `.disabled`: iOS làm mờ nút bị tắt, nên ống trông như chưa đồng bộ
-    // dù đã có số (chủ dự án 15/10: "Apple Health đã sync sao thanh vẫn mờ").
-    .allowsHitTesting(tube.quest != .steps)
+    .frame(minWidth: 44)
     .accessibilityElement(children: .ignore)
     .accessibilityLabel(Text(verbatim: TodayDayBlock.name(tube.quest)))
     .accessibilityValue(Text(verbatim: [
@@ -367,7 +361,6 @@ struct TodayTube: View {
       tube.done ? String(localized: "today.tube.done") : nil,
       isNext ? String(localized: "today.next") : nil,
     ].compactMap { $0 }.joined(separator: ", ")))
-    .accessibilityAddTraits(tube.quest == .steps ? [] : .isButton)
   }
 
   static func glyph(_ q: MascotRules.Quest) -> String {

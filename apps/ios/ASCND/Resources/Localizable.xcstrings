@@ -50993,6 +50993,52 @@
      }
     }
    }
+  },
+  "tc.week.loadLabel": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Load · last 7 days"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Carga · últimos 7 días"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tải · 7 ngày qua"
+     }
+    }
+   }
+  },
+  "tc.habit.loadLabel": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Usual load · 4 weeks"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Carga habitual · 4 semanas"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tải thói quen · 4 tuần"
+     }
+    }
+   }
   }
  }
 }
