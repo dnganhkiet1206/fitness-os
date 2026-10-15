@@ -142,3 +142,6 @@ Chủ dự án: mock đầu "hơi giống tiktok, sửa lại cho khác biệt" 
 - (15/10, sau) Chủ dự án: "nút tim, bình luận đang nhỏ quá khó bấm" → biểu tượng 21pt, số 15pt, vùng chạm
   ≥ 52 × 48; "⋯" 17pt trong 44 × 48. "Nút tim và bình luận không nên xuất hiện trong mục đăng bài" →
   `PostCardView(preview: true)` ở ba màn đăng: không có hàng tim / bình luận / lưu.
+- (15/10, sau) Chủ dự án: "thanh đang theo dõi và khám phá khi cuộn thì giữ lại… vuốt sang để sang trang" →
+  thanh chọn trang là header GHIM của section feed (nền kính `.bar` khi đã cuộn qua đầu); vuốt ngang rõ ràng
+  (|dx| > 70, ngang hơn dọc 1.6×) trên feed: trái → Khám phá, phải → Đang theo dõi, có rung nhẹ.

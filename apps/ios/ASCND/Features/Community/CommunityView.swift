@@ -88,6 +88,9 @@ struct CommunityFeedView: View {
   /// "Đã thấy" theo tab + đang ở đầu feed (lát 17).
   @State private var ledger = CommunityFeedHold.Ledger()
   @State private var atTop = true
+  /// Thanh chọn trang đang ghim (đã cuộn qua đầu trang) → có nền kính.
+  @State private var pickerPinned = false
+  @State private var swipes = 0
   @State private var released = 0
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -105,22 +108,27 @@ struct CommunityFeedView: View {
     let hold = hold
     ScrollViewReader { proxy in
       ScrollView {
-        LazyVStack(spacing: DS.Spacing.md) {
+        // Thanh "Đang theo dõi / Khám phá" GHIM ở đầu khi cuộn; vuốt ngang trên
+        // feed để đổi trang (15/10, chủ dự án).
+        LazyVStack(spacing: DS.Spacing.md, pinnedViews: [.sectionHeaders]) {
           topBar
             .id(Self.topId)
-          Picker(selection: Binding(get: { book.tab }, set: { t in Task { await book.select(t) } })) {
-            Text("community.tab.following").tag(CommunityFeed.Tab.following)
-            Text("community.tab.discover").tag(CommunityFeed.Tab.discover)
-          } label: {
-            Text("tab.community")
+          Section {
+            if book.phase == .ready { header }
+            if book.tab == .discover, let challenges { challengeBlock(challenges) }
+            if book.tab == .discover, !book.useful.isEmpty { UsefulThisWeekCard(posts: book.useful) }
+            content(hold.shown)
+          } header: {
+            tabPicker
           }
-          .pickerStyle(.segmented)
-          if book.phase == .ready { header }
-          if book.tab == .discover, let challenges { challengeBlock(challenges) }
-          if book.tab == .discover, !book.useful.isEmpty { UsefulThisWeekCard(posts: book.useful) }
-          content(hold.shown)
         }
         .padding(DS.Spacing.md)
+      }
+      .simultaneousGesture(tabSwipe)
+      .onScrollGeometryChange(for: Bool.self) { g in
+        g.contentOffset.y + g.contentInsets.top > 64
+      } action: { _, p in
+        withAnimation(.easeOut(duration: 0.2)) { pickerPinned = p }
       }
       .onScrollGeometryChange(for: Bool.self) { g in
         CommunityFeedHold.atTop(Double(g.contentOffset.y + g.contentInsets.top))
@@ -346,6 +354,40 @@ struct CommunityFeedView: View {
     }
     Button { shareRoute = .recipe } label: {
       Label(String(localized: "community.share.chip.recipe"), systemImage: PostArtView.glyph(.recipe))
+    }
+  }
+
+  private var tabPicker: some View {
+    Picker(selection: Binding(get: { book.tab }, set: { t in Task { await book.select(t) } })) {
+      Text("community.tab.following").tag(CommunityFeed.Tab.following)
+      Text("community.tab.discover").tag(CommunityFeed.Tab.discover)
+    } label: {
+      Text("tab.community")
+    }
+    .pickerStyle(.segmented)
+    .padding(.vertical, DS.Spacing.sm)
+    .background {
+      // nền kính chỉ khi đã ghim — ở đầu trang thanh nằm trên nền như cũ
+      Rectangle()
+        .fill(.bar)
+        .padding(.horizontal, -DS.Spacing.md)
+        .padding(.top, -80)
+        .opacity(pickerPinned ? 1 : 0)
+    }
+    .sensoryFeedback(.selection, trigger: swipes)
+  }
+
+  /// Vuốt ngang rõ ràng (không phải cuộn dọc) trên danh sách bài: trái → Khám phá,
+  /// phải → Đang theo dõi.
+  private var tabSwipe: some Gesture {
+    DragGesture(minimumDistance: 24).onEnded { v in
+      let dx = v.translation.width
+      let dy = v.translation.height
+      guard abs(dx) > 70, abs(dx) > abs(dy) * 1.6 else { return }
+      let next: CommunityFeed.Tab = dx < 0 ? .discover : .following
+      guard next != book.tab else { return }
+      swipes += 1
+      Task { await book.select(next) }
     }
   }
 
