@@ -301,33 +301,52 @@ struct CommunityFeedView: View {
     VStack(alignment: .leading, spacing: DS.Spacing.md) {
       let faces = CommunityToday.faces(book.posts, me: book.userId, now: EpochMillis(Date()), timeZone: .current)
       if !faces.isEmpty { TodayFaces(faces: faces) }
-      HStack(spacing: DS.Spacing.sm) {
-        shareChip(.workout, "community.share.chip.workout")
-        shareChip(.progress, "community.share.chip.progress")
-        shareChip(.recipe, "community.share.chip.recipe")
-      }
+      composeRow
     }
   }
 
-  private func shareChip(_ route: ShareRoute, _ key: String.LocalizationValue) -> some View {
-    let kind: CommunityFeed.Kind = switch route {
-    case .workout: .workout
-    case .progress: .progress
-    case .recipe: .recipe
-    }
-    return Button {
-      shareRoute = route
+  /// Đăng bài (15/10, chủ dự án: "thêm nút đăng bài hiện chưa có" — ba viên màu
+  /// trước đây trông như bộ lọc): hàng "Hôm nay bạn tập gì?" kiểu Threads, cả hàng
+  /// là một menu chọn loại bài (không thêm "+" ở đầu trang — tiêu đề sẽ xuống dòng).
+  private var composeRow: some View {
+    Menu {
+      postMenu
     } label: {
-      Label(String(localized: key), systemImage: PostArtView.glyph(kind))
-        .font(DS.TextStyle.footnote.weight(.bold))
-        .lineLimit(1)
-        .minimumScaleFactor(0.8)
-        .foregroundStyle(.white)
-        .padding(.horizontal, 10)
-        .frame(maxWidth: .infinity, minHeight: 44)
-        .background(PostTint.fill(kind), in: Capsule())
+      HStack(spacing: DS.Spacing.sm) {
+        MascotAvatar(mascotId: book.posts.first { $0.mine }?.author?.mascotId, size: 36)
+        Text("community.compose.prompt")
+          .font(.system(size: 15))
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          .lineLimit(1)
+        Spacer(minLength: 0)
+        Image(systemName: "plus")
+          .font(.system(size: 15, weight: .bold))
+          .foregroundStyle(DS.Color.background.swiftUI)
+          .frame(width: 34, height: 34)
+          .background(DS.Color.foreground.swiftUI, in: Circle())
+      }
+      .padding(.leading, 8)
+      .padding(.trailing, 6)
+      .frame(height: 50)
+      .background(DS.Color.card.swiftUI, in: Capsule())
+      .overlay { Capsule().strokeBorder(DS.Color.foreground.swiftUI.opacity(0.08), lineWidth: 0.75) }
+      .contentShape(Capsule())
     }
     .buttonStyle(TodayPressStyle())
+    .accessibilityLabel(Text("community.compose"))
+  }
+
+  /// Ba loại bài — mỗi loại một màn đăng riêng (lát 11–13).
+  @ViewBuilder private var postMenu: some View {
+    Button { shareRoute = .workout } label: {
+      Label(String(localized: "community.share.chip.workout"), systemImage: PostArtView.glyph(.workout))
+    }
+    Button { shareRoute = .progress } label: {
+      Label(String(localized: "community.share.chip.progress"), systemImage: PostArtView.glyph(.progress))
+    }
+    Button { shareRoute = .recipe } label: {
+      Label(String(localized: "community.share.chip.recipe"), systemImage: PostArtView.glyph(.recipe))
+    }
   }
 
   private static let topId = "community.feed.top"

@@ -100,3 +100,6 @@ trên sáng hơn viền dưới như mép kính bắt sáng. Danh sách Thịnh 
   sang `CommunityPostScreen`: chạm thẻ = mở màn bình luận bật lên; dòng Thịnh hành 2–3 (bài chỉ là một
   dòng) mở màn bật lên KÈM thẻ đầy đủ (`showsPost`). Màn bài vẫn giữ cho Hộp thư, Tìm kiếm, Đã lưu, Trang
   cá nhân và ô "Hữu ích" — những nơi đó bài chỉ hiện thu gọn.
+- (15/10, sau) Chủ dự án: "thêm nút đăng bài hiện chưa có" (ba viên màu Buổi tập · Tiến bộ · Món trông như
+  bộ lọc). Thay bằng hàng đăng bài kiểu Threads: avatar + "Hôm nay bạn tập gì?" + nút "+" tròn đặc; cả hàng
+  là `Menu` ba loại bài → đúng ba màn đăng cũ. Không thêm "+" ở đầu trang (bốn nút làm tiêu đề xuống dòng).
