@@ -48877,6 +48877,29 @@
      }
     }
    }
+  },
+  "community.share.cta": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Train with me on ASCND"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Entrena conmigo en ASCND"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tập cùng mình trên ASCND"
+     }
+    }
+   }
   }
  }
 }

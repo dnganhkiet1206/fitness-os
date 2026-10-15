@@ -313,6 +313,15 @@ private struct SavedNoticeView: View {
 /// Chữ của nút "Chia sẻ" (`shareText` của ba thẻ RN): dòng đầu dịch ở đây,
 /// phần thân là `CommunityShareText`.
 enum PostShareText {
+  /// Tiêu đề ngắn cho khung xem trước của bảng chia sẻ.
+  static func title(_ post: CommunityFeed.Post) -> String {
+    switch post.kind {
+    case .workout: post.workout.title ?? String(localized: "community.workout")
+    case .progress: String(localized: "community.kind.progress")
+    case .recipe: post.recipe.map { $0.title.isEmpty ? String(localized: "community.recipe") : $0.title } ?? ""
+    }
+  }
+
   static func text(_ post: CommunityFeed.Post, unit: WeightUnit) -> String {
     switch post.kind {
     case .workout:
@@ -377,7 +386,12 @@ struct PostActionsRow: View {
         .save, on: post.saved, icon: post.saved ? "bookmark.fill" : "bookmark", count: nil,
         label: String(localized: "community.save"),
         tint: post.saved ? DS.Color.foreground.swiftUI : DS.Color.mutedForeground.swiftUI)
-      ShareLink(item: PostShareText.text(post, unit: unit)) {
+      // Chia sẻ thành ẢNH của chính thẻ (15/10) kèm chữ như trước.
+      ShareLink(
+        item: PostShareImage(post: post, unit: unit),
+        message: Text(verbatim: PostShareText.text(post, unit: unit)),
+        preview: SharePreview(Text(verbatim: PostShareText.title(post)), image: PostShareImage(post: post, unit: unit))
+      ) {
         Image(systemName: "square.and.arrow.up")
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
           .padding(.horizontal, DS.Spacing.sm)
@@ -433,5 +447,31 @@ struct PostActionsRow: View {
     .sensoryFeedback(.impact(weight: .light), trigger: on) { _, new in t == .like && new }
     .accessibilityLabel(Text(verbatim: count.map { "\(label) · \($0)" } ?? label))
     .accessibilityAddTraits(on ? .isSelected : [])
+  }
+}
+
+/// Thẻ bài thành ảnh PNG để chia sẻ (Story, tin nhắn): vẽ đúng `PostCardView`
+/// ở chế độ `forShare` (không nút, dải thương hiệu), 3×, nền trong suốt bo góc.
+/// Ảnh minh hoạ tải mạng không vẽ được đồng bộ nên bỏ — mặt màu là hình.
+struct PostShareImage: Transferable {
+  let post: CommunityFeed.Post
+  let unit: WeightUnit
+
+  static var transferRepresentation: some TransferRepresentation {
+    DataRepresentation(exportedContentType: .png) { item in
+      try await item.png()
+    }
+  }
+
+  @MainActor private func png() throws -> Data {
+    let card = PostCardView(post: post, artURL: nil, unit: unit, full: true, forShare: true)
+      .frame(width: 360)
+      .padding(20)
+      .background(DS.Color.metricBeige.solid.opacity(0.18))
+      .environment(\.locale, Locale.app)
+    let renderer = ImageRenderer(content: card)
+    renderer.scale = 3
+    guard let data = renderer.uiImage?.pngData() else { throw CocoaError(.fileWriteUnknown) }
+    return data
   }
 }

@@ -19,3 +19,7 @@ Không đổi dữ liệu, RPC hay luật đăng / khoá đăng / lời mời t�
 2. **Thêm vào bữa** (bài công thức; RN chưa có): viên trắng trên thẻ → Ghi bữa mở với MỘT món tự nhập = số của bài (`CommunityCard.mealFood`, test `CommunityRecipeMealTests`); `LogMealView(prefill:)`. Người dùng chọn bữa / sửa trước khi lưu — không tự ghi.
 3. **Đang theo dõi trống**: gợi ý 5 người (`community_follow_suggestions`, cùng nguồn màn tìm), Theo dõi tại chỗ; đã theo dõi ai thì "Xem bảng tin".
 4. **Thả tim**: tim nảy + đổi biểu tượng + số chạy + rung nhẹ khi bật.
+
+## 15/10 — chia sẻ thành ảnh, chạm hai lần để thích
+- **Chia sẻ thành ảnh**: nút chia sẻ gửi ẢNH PNG của chính thẻ (`PostShareImage`: `PostCardView(forShare:)` không nút, dải "ASCND · Tập cùng mình trên ASCND", 3×) kèm chữ như trước; khung xem trước của bảng chia sẻ là chính ảnh ấy. Ảnh minh hoạ tải mạng không vẽ (mặt màu là hình).
+- **Chạm hai lần để thích**: tim trắng lớn giữa thẻ + rung; chỉ BẬT (không bỏ thích), nút tim ở đáy vẫn bật / tắt. Bảng tin: chạm một lần mở bài (chờ phân biệt với chạm hai lần, như Instagram); có hành động VoiceOver "Thích".

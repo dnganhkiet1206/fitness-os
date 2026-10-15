@@ -74,6 +74,9 @@ struct CommunityFeedView: View {
   /// "Tìm người để theo dõi" khi tab Đang theo dõi trống.
   @State private var findPeople = false
   @State private var shareRoute: ShareRoute?
+  @State private var openPost: OpenPost?
+
+  struct OpenPost: Hashable, Identifiable { let id: String }
   /// "Đã thấy" theo tab + đang ở đầu feed (lát 17).
   @State private var ledger = CommunityFeedHold.Ledger()
   @State private var atTop = true
@@ -140,6 +143,9 @@ struct CommunityFeedView: View {
     .communityUserLinks()
     .communityPostActions(userId: book.userId, host: book)
     .navigationDestination(isPresented: $findPeople) { CommunitySearchScreen() }
+    .navigationDestination(item: $openPost) { p in
+      CommunityPostScreen(postId: p.id) { Task { await book.load() } }
+    }
     .navigationDestination(item: $shareRoute) { route in
       switch route {
       case .workout: CommunityShareWorkoutScreen { Task { await book.load() } }
@@ -341,14 +347,14 @@ struct CommunityFeedView: View {
       }
     case .ready:
       ForEach(shown) { post in
-        // Lát 3: chạm thẻ mở bài + bình luận (`community-post`).
-        NavigationLink {
-          CommunityPostScreen(postId: post.id) { Task { await book.load() } }
-        } label: {
-          PostCardView(post: post, artURL: post.art.flatMap(book.artURL), unit: unit)
-        }
-        .buttonStyle(.plain)
-        .onAppear { if post.id == book.posts.last?.id { Task { await book.loadMore() } } }
+        // Lát 3: chạm thẻ mở bài + bình luận (`community-post`). Chạm một lần
+        // (sau khi chắc không phải chạm hai lần để thích, 15/10) thay cho
+        // NavigationLink — link nuốt cú chạm đầu của chạm hai lần.
+        PostCardView(post: post, artURL: post.art.flatMap(book.artURL), unit: unit)
+          .contentShape(Rectangle())
+          .onTapGesture { openPost = OpenPost(id: post.id) }
+          .accessibilityAddTraits(.isButton)
+          .onAppear { if post.id == book.posts.last?.id { Task { await book.loadMore() } } }
       }
       footer
     }
@@ -418,7 +424,12 @@ struct PostCardView: View {
   var full = false
   /// Số bình luận đang biết ở màn chi tiết (gồm câu mình vừa gửi).
   var commentCount: Int?
+  /// Bản vẽ để xuất ảnh chia sẻ (15/10): không nút, đáy là dải thương hiệu.
+  var forShare = false
   @Environment(\.communityPostActions) private var actions
+  /// Tim lớn giữa thẻ khi chạm hai lần để thích.
+  @State private var burst = 0
+  @State private var showsBurst = false
 
   var body: some View {
     VStack(spacing: 0) {
@@ -438,7 +449,7 @@ struct PostCardView: View {
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        if post.kind == .recipe, let add = actions?.addToMeal, (post.recipe?.kcal ?? 0) > 0 {
+        if !forShare, post.kind == .recipe, let add = actions?.addToMeal, (post.recipe?.kcal ?? 0) > 0 {
           Button {
             add(post)
           } label: {
@@ -451,7 +462,7 @@ struct PostCardView: View {
           }
           .buttonStyle(TodayPressStyle())
         }
-        if post.kind == .workout, let tryIt = actions?.tryWorkout, CommunityTry.offered(post) {
+        if !forShare, post.kind == .workout, let tryIt = actions?.tryWorkout, CommunityTry.offered(post) {
           TryWorkoutButton(busy: actions?.trying.contains(post.id) ?? false, tint: PostTint.fill(.workout)) {
             tryIt(post)
           }
@@ -464,17 +475,56 @@ struct PostCardView: View {
       .environment(\.colorScheme, .dark)
 
       Group {
-        if let actions { PostActionsRow(post: post, context: actions, commentCount: commentCount) } else {
+        if forShare {
+          HStack(spacing: 6) {
+            Image(systemName: "triangle.fill").font(.caption2)
+            Text(verbatim: "ASCND").font(.system(size: 13, weight: .heavy)).tracking(1.5)
+            Spacer(minLength: 0)
+            Text(String(localized: "community.share.cta")).font(DS.TextStyle.caption)
+          }
+          .foregroundStyle(Color(white: 0.15))
+          .frame(minHeight: 44)
+        } else if let actions {
+          PostActionsRow(post: post, context: actions, commentCount: commentCount)
+        } else {
           PostCountsView(post: post, commentCount: commentCount)
         }
       }
       .padding(.horizontal, DS.Spacing.card)
       .padding(.vertical, 2)
       .frame(maxWidth: .infinity)
-      .background(DS.Color.card.swiftUI)
+      .background(forShare ? Color.white : DS.Color.card.swiftUI)
     }
     .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
-    .shadow(color: .black.opacity(0.08), radius: 14, y: 6)
+    .overlay {
+      if showsBurst {
+        Image(systemName: "heart.fill")
+          .font(.system(size: 96))
+          .foregroundStyle(.white)
+          .shadow(color: .black.opacity(0.25), radius: 12)
+          .transition(.scale(scale: 0.4).combined(with: .opacity))
+          .accessibilityHidden(true)
+      }
+    }
+    .shadow(color: .black.opacity(forShare ? 0 : 0.08), radius: 14, y: 6)
+    // Chạm hai lần để thích (15/10) — chỉ BẬT, không bao giờ bỏ thích; nút tim
+    // ở đáy vẫn là lối bật / tắt.
+    .onTapGesture(count: 2) { doubleTapLike() }
+    .sensoryFeedback(.impact(weight: .medium), trigger: burst)
+    .accessibilityAction(named: Text(String(localized: "community.like"))) { doubleTapLike() }
+  }
+
+  private func doubleTapLike() {
+    guard !forShare, let actions else { return }
+    burst += 1
+    withAnimation(.spring(duration: 0.35, bounce: 0.5)) { showsBurst = true }
+    Task {
+      try? await Task.sleep(for: .milliseconds(650))
+      withAnimation(.easeOut(duration: 0.25)) { showsBurst = false }
+    }
+    if !post.liked {
+      Task { _ = await actions.actions.toggle(.like, postId: post.id, host: actions.host) }
+    }
   }
 
   /// Chữ thay ảnh theo ngôn ngữ app (RN: `vi` → `alt_vi`, còn lại `alt_en`).
