@@ -90,6 +90,11 @@ struct CommunityUserView: View {
   @State private var message: String?
   @State private var taps = 0
   @State private var openPost: String?
+  /// Một trang Hồ sơ (15/10, chủ dự án chọn "Một trang Hồ sơ"): hồ sơ của mình
+  /// mang luôn mục tiêu tập (trước ở Cài đặt) và bánh răng mở Cài đặt.
+  @Environment(ProfileBook.self) private var fitness: ProfileBook?
+  @State private var showsSettings = false
+  @State private var editingGoals = false
 
   var body: some View {
     ScrollView {
@@ -104,6 +109,15 @@ struct CommunityUserView: View {
     .navigationTitle(Text(verbatim: ""))
     .navigationBarTitleDisplayMode(.inline)
     .toolbar {
+      if book.isMe {
+        ToolbarItem(placement: .topBarTrailing) {
+          Button { showsSettings = true } label: {
+            Image(systemName: "gearshape")
+              .frame(minWidth: 44, minHeight: 44)
+          }
+          .accessibilityLabel(Text("settings.title"))
+        }
+      }
       if book.profile != nil, !book.isMe {
         ToolbarItem(placement: .topBarTrailing) {
           Button {
@@ -118,6 +132,10 @@ struct CommunityUserView: View {
       }
     }
     .task { if book.phase == .loading { await book.load() } }
+    .sheet(isPresented: $showsSettings) { SettingsSheet() }
+    .sheet(isPresented: $editingGoals) {
+      if let fitness { EditProfileView(book: fitness) }
+    }
     .refreshable { await book.load() }
     .communityPostSheet(Binding(get: { openPost.map { CommunityPostSheetRoute(id: $0) } }, set: { openPost = $0?.id }))
     .navigationDestination(isPresented: $showsAwards) {
@@ -173,19 +191,25 @@ struct CommunityUserView: View {
     case .failed:
       DSErrorView(message: String(localized: "community.loadfailed")) { Task { await book.load() } }
         .frame(minHeight: 240)
+    case .gone where book.isMe:
+      // Của mình mà chưa tạo hồ sơ cộng đồng: trang Hồ sơ vẫn có mục tiêu + tập luyện.
+      heading
+      createLink
+      goals
+      training
     case .gone:
       DSEmptyState(systemImage: "person.crop.circle.badge.questionmark", title: String(localized: "community.user.gone"))
     case .ready:
       if let p = book.profile {
         // Tiêu đề lớn trong nội dung như "Cộng đồng" (15/10, chủ dự án: "tiêu đề của
         // trang này chưa có").
-        Text("community.user.heading")
-          .font(.largeTitle.bold())
-          .foregroundStyle(DS.Color.foreground.swiftUI)
-          .accessibilityAddTraits(.isHeader)
+        heading
         hero(p)
         primaryAction(p)
-        if book.isMe { training }
+        if book.isMe {
+          goals
+          training
+        }
         about(p)
         if !book.posts.isEmpty || book.showsKindRow {
           sectionTitle(String(localized: "community.pass.poststitle"))
@@ -199,6 +223,74 @@ struct CommunityUserView: View {
   }
 
   // MARK: - Đầu trang
+
+  private var heading: some View {
+    Text("community.user.heading")
+      .font(.largeTitle.bold())
+      .foregroundStyle(DS.Color.foreground.swiftUI)
+      .accessibilityAddTraits(.isHeader)
+  }
+
+  /// Chưa có hồ sơ cộng đồng: một nút đặc tạo hồ sơ (tên, linh vật, giới thiệu).
+  private var createLink: some View {
+    NavigationLink {
+      CommunityProfileScreen(userId: book.userId) { Task { await book.load() } }
+    } label: {
+      Text("profile.community.create")
+        .font(.system(size: 15, weight: .semibold))
+        .foregroundStyle(DS.Color.background.swiftUI)
+        .frame(maxWidth: .infinity, minHeight: 44)
+        .background(DS.Color.foreground.swiftUI, in: Capsule())
+    }
+    .buttonStyle(.plain)
+  }
+
+  // MARK: - Mục tiêu (chỉ mình thấy)
+
+  /// Mục tiêu ngày · mục tiêu · trình độ (`settings.tsx:350`, trước ở Cài đặt) —
+  /// chạm để sửa. Không công khai: chỉ hiện trên hồ sơ của mình.
+  @ViewBuilder private var goals: some View {
+    if let fitness {
+      VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+        HStack(alignment: .firstTextBaseline) {
+          sectionTitle(String(localized: "profile.goals"))
+          Spacer(minLength: 0)
+          Label("profile.goals.private", systemImage: "lock.fill")
+            .font(.system(size: 11, weight: .semibold))
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        }
+        Button { editingGoals = true } label: {
+          VStack(spacing: 10) {
+            goalRow("ep.dailyTarget", fitness.profile?.tdeeTargetKcal.map {
+              "\(Int(($0 + 0.5).rounded(.down)).formatted(.number.locale(.app))) kcal"
+            } ?? "—")
+            Divider()
+            goalRow("ep.goal", EditProfileView.label(EditProfileView.goals, fitness.profile?.goal))
+            Divider()
+            goalRow("ep.level", EditProfileView.label(EditProfileView.levels, fitness.profile?.trainingLevel))
+          }
+          .padding(14)
+          .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+          .overlay {
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+              .strokeBorder(DS.Color.foreground.swiftUI.opacity(0.08), lineWidth: 0.75)
+          }
+          .contentShape(Rectangle())
+        }
+        .buttonStyle(TodayPressStyle())
+        .accessibilityElement(children: .combine)
+        .accessibilityHint(Text("ep.open.hint"))
+      }
+    }
+  }
+
+  private func goalRow(_ key: LocalizedStringKey, _ value: String) -> some View {
+    HStack {
+      Text(key).font(.system(size: 15)).foregroundStyle(DS.Color.mutedForeground.swiftUI)
+      Spacer(minLength: DS.Spacing.sm)
+      Text(verbatim: value).font(.system(size: 15, weight: .semibold)).foregroundStyle(DS.Color.foreground.swiftUI)
+    }
+  }
 
   private func hero(_ p: CommunityFeed.Author) -> some View {
     AthletePassCard(

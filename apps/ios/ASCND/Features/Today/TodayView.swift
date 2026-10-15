@@ -86,7 +86,7 @@ public struct TodayView: View {
                 Image(systemName: "person.crop.circle")
                   .frame(minWidth: 44, minHeight: 44)
               }
-              .accessibilityLabel(Text("settings.title"))
+              .accessibilityLabel(Text("community.user.heading"))
             }
           }
         }

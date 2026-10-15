@@ -31,7 +31,7 @@ struct TodayTab: View {
       // Thẻ sẵn sàng / Apple Health / phòng linh vật (#527) — cửa của RN là Today.
       extrasUserId: flow.today.userId
     )
-    .sheet(isPresented: $showsSettings) { SettingsSheet() }
+    .sheet(isPresented: $showsSettings) { MyProfileSheet(userId: flow.today.userId) }
     .sheet(isPresented: $showsPlan) {
       // Kế hoạch tuần mở trên hôm nay; từ đó: gán buổi, builder, thư viện,
       // bảng tập của mọi ngày (#541, #540, #543, #547).
@@ -180,10 +180,30 @@ struct WorkoutsTab: View {
   }
 }
 
-/// Cài đặt của phiên: tài khoản, phiên bản, đăng xuất.
-private struct SettingsSheet: View {
+/// Trang Hồ sơ của mình (15/10, chủ dự án chọn "Một trang Hồ sơ"): avatar ở Hôm nay
+/// mở cùng trang với nút hồ sơ của Cộng đồng — công khai + mục tiêu + tập luyện;
+/// bánh răng → Cài đặt.
+private struct MyProfileSheet: View {
+  let userId: String
+  @Environment(\.dismiss) private var dismiss
+
+  var body: some View {
+    NavigationStack {
+      CommunityUserScreen(targetId: userId)
+        .toolbar {
+          ToolbarItem(placement: .topBarLeading) {
+            Button(String(localized: "common.close")) { dismiss() }
+          }
+        }
+    }
+    .presentationDragIndicator(.visible)
+  }
+}
+
+/// Cài đặt của phiên: tài khoản, phiên bản, đăng xuất. Mở từ bánh răng của trang
+/// Hồ sơ (`CommunityUserView`).
+struct SettingsSheet: View {
   @Environment(AppServices.self) private var services
-  @Environment(ProfileBook.self) private var profile: ProfileBook?
 
   var body: some View {
     SettingsView(
@@ -200,7 +220,6 @@ private struct SettingsSheet: View {
       },
       makePasswordChange: { PasswordChangeController(session: services.session) },
       legalLang: services.preferences.lang,
-      profileBook: profile,
       healthAvailable: services.health.isAvailable,
       healthSync: { () async throws(HealthSync.Failure) in
         guard case .signedIn(let s) = services.session.phase else { return }

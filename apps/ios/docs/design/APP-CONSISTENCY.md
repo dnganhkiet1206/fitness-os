@@ -17,6 +17,12 @@ tính năng đồng bộ trong toàn app" → "làm đi".
   đúng màn ghi qua `DeepLinkScreen`. `Menu` trong thanh phụ không mở được bằng chạm nên dùng nút + bảng. Thẻ "Ngày
   nghỉ" của Hôm nay không còn "Ghi buổi tập / Ghi giấc ngủ" (`TodayView.hasQuickLog`); iOS 18–25 không có
   thanh phụ nên giữ nút.
+- **Một trang Hồ sơ** (chủ dự án chọn "Một trang Hồ sơ"): avatar ở Hôm nay (`MyProfileSheet`) và nút hồ sơ của
+  Cộng đồng mở CÙNG trang `CommunityUserView` của mình: thẻ công khai · Sửa hồ sơ · **Mục tiêu của bạn** (mục tiêu
+  ngày / mục tiêu / trình độ → `EditProfileView`, nhãn "Chỉ mình bạn") · Tập luyện · bài. Bánh răng trên trang →
+  `SettingsSheet`. Cài đặt bỏ thẻ hồ sơ, chỉ còn email. Chưa có hồ sơ cộng đồng: trang vẫn có mục tiêu + tập luyện
+  và nút "Tạo hồ sơ cộng đồng". Còn lại: tên hiển thị cộng đồng và tên trong hồ sơ tập là hai trường riêng ở
+  server (không đổi schema).
 
 ## Quy ước (giữ khi làm màn mới)
 - Công tắc 2–3 trang ở đầu tab (Hôm nay/Kế hoạch ăn, Buổi tập/Cơ thể, Đang theo dõi/Khám phá) và ô trong form
@@ -26,6 +32,6 @@ tính năng đồng bộ trong toàn app" → "làm đi".
 - Hành động chính: viên đen đặc; phụ: viên viền mảnh.
 
 ## Chưa làm (cần chủ dự án chọn / việc lớn)
-- Gộp hai hồ sơ (Cài đặt ↔ hồ sơ cộng đồng); vai trò Hôm nay (làm) vs Trợ lý (hiểu); gộp "Hữu ích" vào "Thịnh hành".
+- Vai trò Hôm nay (làm) vs Trợ lý (hiểu); gộp "Hữu ích" vào "Thịnh hành".
 - Một thành phần điểm sẵn sàng dùng chung cho Hôm nay và Trợ lý; gom các kiểu thẻ (`todayCard`, `DSCard`,
   `NewsCardSurface`, `AssistantSurface`).

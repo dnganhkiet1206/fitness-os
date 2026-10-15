@@ -101,6 +101,6 @@ struct AccountAvatar: View {
       .contentShape(Circle())
     }
     .buttonStyle(.plain)
-    .accessibilityLabel(Text(String(localized: "today.settings.a11y")))
+    .accessibilityLabel(Text(String(localized: "community.user.heading")))
   }
 }
