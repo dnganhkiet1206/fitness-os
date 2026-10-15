@@ -115,3 +115,6 @@ Chủ dự án: mock đầu "hơi giống tiktok, sửa lại cho khác biệt" 
 - Dưới thẻ: tiểu sử, "Đang theo dõi N", Huy hiệu; "Bài đăng" là thẻ hàng kiểu Apple News như feed.
 - Chưa làm (cần dữ liệu): chuỗi ngày / kỷ lục / nhịp tập 4 tuần — với người khác cần server có "chỉ số
   công khai"; với chính mình có thể lấy từ app, làm lô sau.
+- (15/10, sau) Chủ dự án: "nền đang bị trùng với bài đăng" → thẻ dùng `PassMaterial` riêng: kim loại đen
+  đơn sắc (than → đen), vân xước chéo rất mảnh, logo ASCND dập chìm cỡ lớn, vệt sáng chéo, viền ánh bạc.
+  Không màu chuyên mục, không biểu tượng dụng cụ.

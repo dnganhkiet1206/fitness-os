@@ -174,8 +174,8 @@ struct CommunityUserView: View {
   // MARK: - Đầu trang
 
   /// "Thẻ vận động viên" (15/10, chủ dự án duyệt mock — "giống tiktok, sửa lại cho
-  /// khác biệt"): thẻ tối như thẻ thành viên phòng tập, cùng nền "ảnh" với feed
-  /// (`ArtBackdrop`: lưới tối, quầng hồng, hạt nhám); ba số kiểu bảng điểm CHỈ từ
+  /// khác biệt"): thẻ thành viên kim loại đen (`PassMaterial` — KHÁC nền bài đăng,
+  /// chủ dự án: "nền đang bị trùng với bài đăng"); ba số kiểu bảng điểm CHỈ từ
   /// dữ liệu server có — bài · người theo dõi · lượt người khác thử buổi tập. Không
   /// có số nào bịa (chuỗi ngày / kỷ lục của người khác cần server — để sau).
   private func hero(_ p: CommunityFeed.Author) -> some View {
@@ -222,12 +222,15 @@ struct CommunityUserView: View {
       .padding(.top, 16)
     }
     .padding(16)
-    .background {
-      ArtBackdrop(kind: .workout, seed: p.userId, shape: .wide)
-    }
+    .background { PassMaterial() }
     .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
     .overlay {
-      RoundedRectangle(cornerRadius: 24, style: .continuous).strokeBorder(.white.opacity(0.08), lineWidth: 0.75)
+      // viền ánh bạc: sáng ở góc trên trái, tắt dần
+      RoundedRectangle(cornerRadius: 24, style: .continuous).strokeBorder(
+        LinearGradient(
+          colors: [.white.opacity(0.45), .white.opacity(0.06), .white.opacity(0.18)], startPoint: .topLeading,
+          endPoint: .bottomTrailing),
+        lineWidth: 0.8)
     }
     .padding(.top, DS.Spacing.xs)
   }
@@ -499,6 +502,45 @@ struct CommunityUserView: View {
     guard let t = EpochMillis(iso8601: iso) else { return iso }
     let d = Date(timeIntervalSince1970: TimeInterval(t.millis) / 1000)
     return d.formatted(Date.FormatStyle().day().month(.abbreviated).locale(.app))
+  }
+}
+
+/// Chất liệu thẻ vận động viên: kim loại đen đơn sắc — chuyển than → đen, vân
+/// xước chéo rất mảnh, logo ASCND dập chìm cỡ lớn, một vệt sáng chéo. Không màu
+/// chuyên mục, không biểu tượng dụng cụ — để không lẫn với thẻ bài đăng.
+private struct PassMaterial: View {
+  var body: some View {
+    ZStack {
+      LinearGradient(
+        colors: [Color(white: 0.17), Color(white: 0.07), Color(white: 0.11)], startPoint: .topLeading,
+        endPoint: .bottomTrailing)
+      Canvas { ctx, size in
+        var x: CGFloat = -size.height
+        while x < size.width {
+          var path = Path()
+          path.move(to: CGPoint(x: x, y: size.height))
+          path.addLine(to: CGPoint(x: x + size.height, y: 0))
+          ctx.stroke(path, with: .color(.white.opacity(0.035)), lineWidth: 0.5)
+          x += 3
+        }
+      }
+      .allowsHitTesting(false)
+      Image("BrandMark")
+        .resizable()
+        .interpolation(.high)
+        .scaledToFit()
+        .frame(width: 210, height: 210)
+        .environment(\.colorScheme, .dark)
+        .opacity(0.07)
+        .blendMode(.plusLighter)
+        .offset(x: 120, y: 40)
+        .accessibilityHidden(true)
+      LinearGradient(
+        stops: [
+          .init(color: .clear, location: 0.25), .init(color: .white.opacity(0.10), location: 0.42),
+          .init(color: .clear, location: 0.6),
+        ], startPoint: .topLeading, endPoint: .bottomTrailing)
+    }
   }
 }
 
