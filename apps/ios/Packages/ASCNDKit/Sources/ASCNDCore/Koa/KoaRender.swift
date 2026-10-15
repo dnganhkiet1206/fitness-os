@@ -38,8 +38,8 @@ public enum KoaRender {
     /// Bản giấy (theme sáng) thay vì bản có đèn.
     public var paper = false
     /// Màu GỐC của bản vẽ, không đèn (15/10, chủ dự án: "koa đang bị phủ một lớp tối
-    /// của bản tối"): không dải sáng-tối, không viền đèn vàng; giữ điểm sáng trên đầu
-    /// và khối tai / thân ("thêm lớp phủ để đỡ giống sticker"). Thắng `paper`.
+    /// của bản tối"): không dải sáng-tối, không lượt tô theo mảnh (quầng / khối / viền —
+    /// lộ chỗ các mảnh chồng nhau). Lớp nắng cả hình do view vẽ. Thắng `paper`.
     public var flat = false
     /// Đồng hồ của nhân vật, ms.
     public var t = 0.0
@@ -163,25 +163,17 @@ public enum KoaRender {
     if let shape {
       // mỗi lượt đèn là chính hình ấy với một lớp sơn khác
       var passes = [Element(shape, own)]
-      // `flat` (ban ngày) vẫn giữ điểm sáng + khối tai / thân để Koa có khối, không
-      // phẳng như sticker (15/10, chủ dự án) — chỉ bỏ dải tối dần và viền đèn vàng.
-      if !c.paper || c.flat, let glow = l.glow {
+      // `flat` (ban ngày): không lượt nào tô theo từng mảnh — tô từng mảnh làm lộ
+      // chỗ các mảnh chồng nhau (15/10, chủ dự án). Khối do một dải nắng phủ cả hình.
+      if !c.paper, !c.flat, let glow = l.glow {
         var p = own
         p["fill"] = .string("url(#\(glow))")
         p["stroke"] = .string("none")
         passes.append(Element(shape, p))
       }
-      for (on, id) in [(l.form, KoaLight.formGradient), (l.body, KoaLight.bodyGradient)] where on {
+      for (on, id) in [(l.form, KoaLight.formGradient), (l.body, KoaLight.bodyGradient)] where on && !c.flat {
         var p = own
         p["fill"] = .string("url(#\(id))")
-        p["stroke"] = .string("none")
-        passes.append(Element(shape, p))
-      }
-      // Ban ngày: nắng từ cửa sổ (phải) — mặt phải sáng, mặt trái hơi tối nâu ấm, trên
-      // đầu / tai / thân / tay; bớt cảm giác sticker (15/10, chủ dự án).
-      if c.flat, n.id.map({ KoaLight.rimIds.contains($0) }) ?? false {
-        var p = own
-        p["fill"] = .string("url(#\(dayGradient))")
         p["stroke"] = .string("none")
         passes.append(Element(shape, p))
       }
@@ -286,7 +278,7 @@ public enum KoaRender {
         "width": .number(o.size), "height": .number(o.size * KoaMath.aspect), "viewBox": .string("0 0 240 300"),
         "preserveAspectRatio": .string("xMidYMax meet"),
       ],
-      kids: [defs(f, paper: o.paper, flat: o.flat), Element("G", matrix: KoaMath.insetMat, kids: tree)])
+      kids: [defs(f, paper: o.paper), Element("G", matrix: KoaMath.insetMat, kids: tree)])
   }
 
   static func stop(_ offset: Double, _ colour: String, _ opacity: Double? = nil) -> Element {
@@ -301,21 +293,8 @@ public enum KoaRender {
 
   /// Đèn: một dải dọc mỗi màu, điểm sáng, khối, bóng, viền — chỉ những gì tư
   /// thế này dùng.
-  /// Dải nắng ban ngày (chỉ khi `flat`): ngang, tối nâu ấm bên trái → sáng bên phải.
-  static let dayGradient = "koaDay"
-  static let dayStops: [(Double, String, Double)] = [
-    (0, "#4A3A2C", 0.2), (0.42, "#4A3A2C", 0), (0.7, "#FFFFFF", 0), (1, "#FFF6E6", 0.22),
-  ]
-
-  static func defs(_ flags: KoaFlags.Flags, paper: Bool, flat: Bool = false) -> Element {
+  static func defs(_ flags: KoaFlags.Flags, paper: Bool) -> Element {
     var kids: [Element] = []
-    if flat {
-      kids.append(
-        Element(
-          "LinearGradient",
-          ["id": .string(dayGradient), "x1": .string("0"), "y1": .string("0"), "x2": .string("1"), "y2": .string("0")],
-          kids: dayStops.map { stop($0.0, $0.1, $0.2) }))
-    }
     for r in KoaLight.ramps(flags, paper: paper) {
       kids.append(
         Element(

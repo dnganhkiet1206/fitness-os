@@ -31,26 +31,45 @@ struct KoaFigureView: View {
     let running = animated && !reduceMotion && scenePhase == .active
     TimelineView(.animation(minimumInterval: 1.0 / 60, paused: !running)) { timeline in
       let t = animated ? clock.tick(timeline.date.timeIntervalSinceReferenceDate * 1000, running: running) : 0
-      Canvas { ctx, canvas in
-        var o = KoaRender.Options()
-        o.expression = expression
-        o.pose = pose
-        o.dress = dress
-        o.worn = worn
-        o.live = animated
-        o.paper = isPaper
-        // Ban ngày: Koa đúng màu bản vẽ, không phủ đèn / hạ sáng; bản tối giữ Koa có
-        // đèn như cũ (15/10, chủ dự án).
-        o.flat = isPaper
-        o.t = t
-        let plan = KoaPaint.plan(KoaRender.figure(o))
-        var c = ctx
-        c.concatenate(KoaCanvas.affine(KoaPaint.viewport(width: canvas.width, height: canvas.height)))
-        KoaCanvas.draw(plan, in: &c)
-      }
+      canvas(t: t, paper: isPaper)
     }
     .frame(width: size, height: size * KoaMath.aspect)
     .accessibilityHidden(true)
+  }
+
+  private func canvas(t: Double, paper: Bool) -> some View {
+    Canvas { ctx, canvas in
+      var o = KoaRender.Options()
+      o.expression = expression
+      o.pose = pose
+      o.dress = dress
+      o.worn = worn
+      o.live = animated
+      o.paper = paper
+      // Ban ngày: Koa đúng màu bản vẽ, không phủ đèn / hạ sáng; bản tối giữ Koa có
+      // đèn như cũ (15/10, chủ dự án).
+      o.flat = paper
+      o.t = t
+      let plan = KoaPaint.plan(KoaRender.figure(o))
+      ctx.drawLayer { layer in
+        var c = layer
+        c.concatenate(KoaCanvas.affine(KoaPaint.viewport(width: canvas.width, height: canvas.height)))
+        KoaCanvas.draw(plan, in: &c)
+        guard paper else { return }
+        // Ban ngày: MỘT dải nắng trên cả hình (`sourceAtop` — chỉ dính chỗ đã có Koa),
+        // không phủ từng mảnh nên chỗ các mảnh chồng nhau không lộ (15/10, chủ dự án).
+        layer.blendMode = .sourceAtop
+        layer.fill(
+          Path(CGRect(origin: .zero, size: canvas)),
+          with: .linearGradient(
+            Gradient(stops: [
+              .init(color: Color(red: 1, green: 0.97, blue: 0.9).opacity(0.22), location: 0),
+              .init(color: .clear, location: 0.38),
+              .init(color: .clear, location: 0.55),
+              .init(color: Color(red: 0.29, green: 0.23, blue: 0.17).opacity(0.2), location: 1),
+            ]), startPoint: CGPoint(x: canvas.width, y: 0), endPoint: CGPoint(x: 0, y: canvas.height)))
+      }
+    }
   }
 }
 
