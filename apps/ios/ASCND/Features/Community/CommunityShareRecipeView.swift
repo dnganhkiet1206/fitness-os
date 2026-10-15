@@ -177,7 +177,7 @@ struct CommunityShareRecipeView: View {
   @ViewBuilder private var compose: some View {
     if let preview = book.preview {
       // `full`: người đăng thấy MỌI dòng sẽ rời tài khoản.
-      PostCardView(post: preview, artURL: preview.art.flatMap(book.artURL), unit: unit, full: true)
+      PostCardView(post: preview, artURL: preview.art.flatMap(book.artURL), unit: unit, full: true, preview: true)
         .allowsHitTesting(false)
       ShareStylePicker(styles: book.styles, current: book.art?.style) { book.stylePick = $0 }
     }

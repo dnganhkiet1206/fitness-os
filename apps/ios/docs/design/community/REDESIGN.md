@@ -139,3 +139,6 @@ Chủ dự án: mock đầu "hơi giống tiktok, sửa lại cho khác biệt" 
     màn bật lên (`communityPostSheet`): kèm thẻ khi nơi mở chưa hiện cả bài, chỉ bình luận khi đã hiện.
   - Bài buổi tập của CHÍNH MÌNH có nút "Thử lại" (người khác: "Thử buổi tập" — đổi từ "Thử workout" theo chủ
     dự án): cùng lõi chép template, KHÔNG ghi lượt thử (`CommunityTry.redo`, có test).
+- (15/10, sau) Chủ dự án: "nút tim, bình luận đang nhỏ quá khó bấm" → biểu tượng 21pt, số 15pt, vùng chạm
+  ≥ 52 × 48; "⋯" 17pt trong 44 × 48. "Nút tim và bình luận không nên xuất hiện trong mục đăng bài" →
+  `PostCardView(preview: true)` ở ba màn đăng: không có hàng tim / bình luận / lưu.

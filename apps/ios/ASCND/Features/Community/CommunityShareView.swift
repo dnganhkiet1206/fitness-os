@@ -165,7 +165,7 @@ struct CommunityShareWorkoutView: View {
 
   @ViewBuilder private var compose: some View {
     if let preview = book.preview {
-      PostCardView(post: preview, artURL: preview.art.flatMap(book.artURL), unit: unit)
+      PostCardView(post: preview, artURL: preview.art.flatMap(book.artURL), unit: unit, preview: true)
         .allowsHitTesting(false)
     }
     ShareStylePicker(styles: book.styles, current: book.art?.style) { book.stylePick = $0 }

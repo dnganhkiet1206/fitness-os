@@ -500,6 +500,9 @@ struct PostCardView: View {
   var commentCount: Int?
   /// Bản vẽ để xuất ảnh chia sẻ (15/10): không nút, đáy là dải thương hiệu.
   var forShare = false
+  /// Xem trước ở màn đăng bài (15/10, chủ dự án: "nút tim và bình luận không nên
+  /// xuất hiện trong mục đăng bài"): không có hàng tim / bình luận / lưu.
+  var preview = false
   @Environment(\.communityPostActions) private var actions
   /// Tim lớn giữa thẻ khi chạm hai lần để thích.
   @State private var burst = 0
@@ -547,6 +550,8 @@ struct PostCardView: View {
           }
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
           .frame(minHeight: 32)
+        } else if preview {
+          EmptyView()
         } else if let actions {
           PostActionsRow(post: post, context: actions, commentCount: commentCount)
         } else {

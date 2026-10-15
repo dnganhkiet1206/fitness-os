@@ -177,13 +177,15 @@ private struct FeedFooter: View {
               .symbolEffect(.bounce.up.byLayer, value: post.liked)
             if post.likeCount > 0 {
               Text(verbatim: "\(post.likeCount)")
-                .font(.system(size: 13).monospacedDigit())
+                .font(.system(size: 15, weight: .medium).monospacedDigit())
                 .foregroundStyle(DS.Color.mutedForeground.swiftUI)
                 .contentTransition(.numericText(value: Double(post.likeCount)))
             }
           }
-          .font(.system(size: 14))
-          .frame(minWidth: 44, minHeight: 36)
+          // Lớn hơn, vùng chạm rộng (15/10, chủ dự án: "nút tim, bình luận đang nhỏ quá khó bấm").
+          .font(.system(size: 21))
+          .padding(.horizontal, 6)
+          .frame(minWidth: 52, minHeight: 48)
           .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -199,12 +201,13 @@ private struct FeedFooter: View {
             HStack(spacing: 4) {
               Image(systemName: "bubble.right")
               if post.commentCount > 0 {
-                Text(verbatim: "\(post.commentCount)").font(.system(size: 13).monospacedDigit())
+                Text(verbatim: "\(post.commentCount)").font(.system(size: 15, weight: .medium).monospacedDigit())
               }
             }
-            .font(.system(size: 14))
+            .font(.system(size: 21))
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-            .frame(minWidth: 44, minHeight: 36)
+            .padding(.horizontal, 6)
+            .frame(minWidth: 52, minHeight: 48)
             .contentShape(Rectangle())
           }
           .buttonStyle(.plain)
@@ -214,9 +217,9 @@ private struct FeedFooter: View {
           actions.openMenu(post)
         } label: {
           Image(systemName: "ellipsis")
-            .font(.system(size: 14, weight: .bold))
+            .font(.system(size: 17, weight: .bold))
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-            .frame(width: 36, height: 36, alignment: .trailing)
+            .frame(width: 44, height: 48, alignment: .trailing)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
