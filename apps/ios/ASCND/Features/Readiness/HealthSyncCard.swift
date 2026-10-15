@@ -14,6 +14,9 @@ import SwiftUI
 struct HealthSyncCard: View {
   let isAvailable: Bool
   let sync: @MainActor () async throws(HealthSync.Failure) -> Void
+  /// Một hàng gọn trong danh sách Cài đặt (15/10, chủ dự án: "thẻ apple health làm
+  /// gọn lại"): icon vuông nhỏ + "Apple Health" + "Đồng bộ"; mô tả ở chân mục.
+  var compact = false
 
   @State private var running = false
   @State private var result: Result?
@@ -25,7 +28,39 @@ struct HealthSyncCard: View {
   }
 
   var body: some View {
-    if isAvailable {
+    if isAvailable, compact {
+      VStack(alignment: .leading, spacing: 4) {
+        Button {
+          Task { await run() }
+        } label: {
+          HStack(spacing: 12) {
+            Image(systemName: "heart.fill")
+              .font(.system(size: 14, weight: .semibold))
+              .foregroundStyle(.white)
+              .frame(width: 28, height: 28)
+              .background(DS.Color.destructive.swiftUI, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+              .accessibilityHidden(true)
+            Text(String(localized: "hs.title"))
+              .foregroundStyle(DS.Color.foreground.swiftUI)
+            Spacer(minLength: 0)
+            trailing
+          }
+          .frame(minHeight: 44)
+          .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(running)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(String(localized: "hs.a11y")))
+        .accessibilityAddTraits(.isButton)
+        .accessibilityValue(Text(running ? String(localized: "hs.running") : ""))
+        if let result {
+          Text(Self.message(result))
+            .font(DS.TextStyle.caption)
+            .foregroundStyle(result == .synced ? DS.Color.readinessGreen.swiftUI : DS.Color.destructive.swiftUI)
+        }
+      }
+    } else if isAvailable {
       VStack(alignment: .leading, spacing: DS.Spacing.xs) {
         Button {
           Task { await run() }

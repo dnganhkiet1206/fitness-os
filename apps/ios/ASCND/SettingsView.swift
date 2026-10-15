@@ -169,9 +169,9 @@ public struct SettingsView: View {
 
         if let healthSync, healthAvailable {
           Section {
-            HealthSyncCard(isAvailable: true, sync: healthSync)
-              .listRowInsets(EdgeInsets())
-              .listRowBackground(Color.clear)
+            HealthSyncCard(isAvailable: true, sync: healthSync, compact: true)
+          } footer: {
+            Text(String(localized: "hs.brings"))
           }
         }
 
