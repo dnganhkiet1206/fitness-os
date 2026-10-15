@@ -123,3 +123,12 @@ Chủ dự án: mock đầu "hơi giống tiktok, sửa lại cho khác biệt" 
   trong thẻ; huy hiệu viên trắng; lọc loại bài = viên chữ (đang chọn đen đặc) thay segmented hệ thống;
   tiêu đề mục 20pt bold; nền `TodayAmbient` + che thanh trạng thái như feed; bỏ tiêu đề "@handle" lặp;
   thẻ bài trên trang cá nhân không lặp tác giả (`RowPostCard(showsAuthor: false)`).
+- (15/10, sau) Cải thiện trang cá nhân (chủ dự án: "làm đi"):
+  - Của mình: mục "Tập luyện" — chuỗi ngày (cùng số với 🔥 ở Hôm nay, `MascotRoomController.streak`), buổi
+    tháng này, buổi có kỷ lục trong 90 ngày (`ProfileTraining`, ASCNDCore, từ `HistoryBook` trên máy), nhịp
+    tập 28 ngày (2 × 14 ô hồng, đậm dần về gần đây), "Huy chương gần đây" (dùng lại `RecentAwardsCard` →
+    `AwardsView`).
+  - Bài đăng: lưới 2 cột `GridPostCard` (ảnh lớn) thay thẻ hàng.
+  - Chạm avatar trên thẻ của mình → Sửa hồ sơ (đổi linh vật).
+  - Chia sẻ hồ sơ = ẢNH của thẻ vận động viên (`PassShareImage`, `AthletePassCard` dùng chung).
+  - Chưa làm: trạng thái "mới bắt đầu" thay các số 0.

@@ -76,6 +76,11 @@ struct CommunityUserScreen: View {
 struct CommunityUserView: View {
   let book: CommunityUserBook
   @Environment(\.weightUnit) private var unit
+  @Environment(WorkoutFlow.self) private var flow
+  @Environment(AppServices.self) private var services
+  @State private var awards: AwardsBook?
+  @State private var streak: Int?
+  @State private var showsAwards = false
   @Environment(\.dismiss) private var dismiss
   @State private var menuOpen = false
   @State private var confirmBlock = false
@@ -112,6 +117,10 @@ struct CommunityUserView: View {
     .task { if book.phase == .loading { await book.load() } }
     .refreshable { await book.load() }
     .navigationDestination(item: $openPost) { CommunityPostScreen(postId: $0) }
+    .navigationDestination(isPresented: $showsAwards) {
+      if let awards { AwardsView(book: awards, lang: services.preferences.lang) }
+    }
+    .task(id: book.isMe) { await loadMine() }
     .sensoryFeedback(.selection, trigger: taps)
     .communityUserLinks()
     .communityPostActions(userId: book.userId, host: book)
@@ -161,6 +170,7 @@ struct CommunityUserView: View {
       if let p = book.profile {
         hero(p)
         primaryAction(p)
+        if book.isMe { training }
         about(p)
         if !book.posts.isEmpty || book.showsKindRow {
           sectionTitle(String(localized: "community.pass.poststitle"))
@@ -175,94 +185,84 @@ struct CommunityUserView: View {
 
   // MARK: - Đầu trang
 
-  /// "Thẻ vận động viên" (15/10, chủ dự án duyệt mock — "giống tiktok, sửa lại cho
-  /// khác biệt"): thẻ thành viên kim loại đen (`PassMaterial` — KHÁC nền bài đăng,
-  /// chủ dự án: "nền đang bị trùng với bài đăng"); ba số kiểu bảng điểm CHỈ từ
-  /// dữ liệu server có — bài · người theo dõi · lượt người khác thử buổi tập. Không
-  /// có số nào bịa (chuỗi ngày / kỷ lục của người khác cần server — để sau).
   private func hero(_ p: CommunityFeed.Author) -> some View {
-    VStack(alignment: .leading, spacing: 0) {
-      HStack {
-        Text("community.pass.caption")
-          .font(.system(size: 10, weight: .bold)).tracking(1.4)
-          .foregroundStyle(.white.opacity(0.6))
-        Spacer(minLength: 0)
-        Image("BrandMark").resizable().interpolation(.high).frame(width: 18, height: 18)
-          .environment(\.colorScheme, .dark)
-          .accessibilityHidden(true)
-      }
-      HStack(spacing: 12) {
-        MascotAvatar(mascotId: p.mascotId, size: 60)
-          .overlay { Circle().strokeBorder(.white.opacity(0.25), lineWidth: 1) }
-        VStack(alignment: .leading, spacing: 2) {
-          HStack(spacing: 6) {
-            Text(verbatim: p.displayName)
-              .font(.system(size: 22, weight: .bold)).tracking(-0.3)
-              .foregroundStyle(.white)
-              .lineLimit(2)
-            if p.isOfficial {
-              Image(systemName: "checkmark.seal.fill")
-                .foregroundStyle(DS.Color.metricBlue.bright)
-                .accessibilityLabel(Text("community.verified"))
-            }
-          }
-          Text(verbatim: "@\(p.handle) · \(String(localized: "community.user.followingcount")) \(book.following)")
-            .font(.system(size: 13))
-            .foregroundStyle(.white.opacity(0.6))
-            .lineLimit(1)
-            .minimumScaleFactor(0.8)
+    AthletePassCard(
+      author: p, posts: book.stats?.posts ?? book.posts.count, followers: book.followers, following: book.following,
+      tries: book.stats?.tries ?? 0
+    ) {
+      // Của mình: chạm avatar → sửa hồ sơ (đổi linh vật / tên / tiểu sử).
+      if book.isMe {
+        NavigationLink {
+          CommunityProfileScreen(userId: book.userId) { Task { await book.load() } }
+        } label: {
+          PassAvatar(author: p)
         }
+        .buttonStyle(TodayPressStyle())
+        .accessibilityLabel(Text("community.user.edit"))
+      } else {
+        PassAvatar(author: p)
       }
-      .padding(.top, 14)
-      if let bio = p.bio, !bio.isEmpty {
-        Text(verbatim: bio)
-          .font(.system(size: 14))
-          .foregroundStyle(.white.opacity(0.85))
-          .fixedSize(horizontal: false, vertical: true)
-          .padding(.top, 10)
-      }
-      HStack(spacing: 0) {
-        passStat(book.stats?.posts ?? book.posts.count, label: String(localized: "community.pass.posts"))
-        passDivider
-        passStat(book.followers, label: String(localized: "community.user.followers"))
-        passDivider
-        passStat(book.stats?.tries ?? 0, label: String(localized: "community.pass.tries"))
-      }
-      .padding(.top, 14)
-      .overlay(alignment: .top) { Rectangle().fill(.white.opacity(0.14)).frame(height: 0.5) }
-      .padding(.top, 16)
-    }
-    .padding(16)
-    .background { PassMaterial() }
-    .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-    .overlay {
-      // viền ánh bạc: sáng ở góc trên trái, tắt dần
-      RoundedRectangle(cornerRadius: 24, style: .continuous).strokeBorder(
-        LinearGradient(
-          colors: [.white.opacity(0.45), .white.opacity(0.06), .white.opacity(0.18)], startPoint: .topLeading,
-          endPoint: .bottomTrailing),
-        lineWidth: 0.8)
     }
     .padding(.top, DS.Spacing.xs)
   }
 
-  private func passStat(_ n: Int, label: String) -> some View {
-    VStack(alignment: .leading, spacing: 2) {
-      Text(verbatim: CommunityCard.number(Double(n)))
-        .font(.system(size: 24, weight: .heavy).monospacedDigit()).fontWidth(.condensed)
-        .foregroundStyle(.white)
-      Text(verbatim: label)
-        .font(.system(size: 10, weight: .bold)).tracking(1.1).textCase(.uppercase)
-        .foregroundStyle(.white.opacity(0.6))
-        .lineLimit(1).minimumScaleFactor(0.7)
+  // MARK: - Tập luyện của chính mình
+
+  /// Chuỗi ngày (như viên 🔥 ở Hôm nay) · buổi tháng này · buổi có kỷ lục; nhịp tập
+  /// 28 ngày; huy chương. Chỉ trên hồ sơ của mình — số của người khác cần server.
+  @ViewBuilder private var training: some View {
+    let s = ProfileTraining.summary(flow.history?.entries ?? [], now: EpochMillis(Date()), timeZone: .current)
+    VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+      sectionTitle(String(localized: "community.pass.training"))
+      HStack(spacing: DS.Spacing.sm) {
+        trainingTile(
+          streak.map { "\($0)" } ?? "—", label: String(localized: "community.pass.streak"), symbol: "flame.fill",
+          tint: DS.Color.metricOrange.swiftUI)
+        trainingTile(
+          "\(s.sessionsThisMonth)", label: String(localized: "community.pass.month"), symbol: "dumbbell.fill",
+          tint: DS.Color.metricRose.swiftUI)
+        trainingTile(
+          "\(s.prSessions)", label: String(localized: "community.pass.prs"), symbol: "trophy.fill",
+          tint: DS.Color.readinessYellow.swiftUI)
+      }
+      .fixedSize(horizontal: false, vertical: true)
+      RhythmCard(days: s.rhythm)
+      if let awards {
+        RecentAwardsCard(book: awards, lang: services.preferences.lang) { showsAwards = true }
+      }
     }
-    .frame(maxWidth: .infinity, alignment: .leading)
-    .padding(.top, 12)
+  }
+
+  private func trainingTile(_ value: String, label: String, symbol: String, tint: Color) -> some View {
+    VStack(alignment: .leading, spacing: 4) {
+      Image(systemName: symbol).font(.system(size: 13, weight: .bold)).foregroundStyle(tint)
+      Text(verbatim: value)
+        .font(.system(size: 26, weight: .heavy).monospacedDigit()).fontWidth(.condensed)
+        .foregroundStyle(DS.Color.foreground.swiftUI)
+      Text(verbatim: label)
+        .font(.system(size: 11, weight: .semibold))
+        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        .lineLimit(2).minimumScaleFactor(0.8)
+    }
+    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    .padding(12)
+    .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+    .overlay {
+      RoundedRectangle(cornerRadius: 18, style: .continuous)
+        .strokeBorder(DS.Color.foreground.swiftUI.opacity(0.08), lineWidth: 0.75)
+    }
     .accessibilityElement(children: .combine)
   }
 
-  private var passDivider: some View {
-    Rectangle().fill(.white.opacity(0.14)).frame(width: 0.5, height: 34).padding(.trailing, 12).padding(.top, 12)
+  /// Nạp chuỗi ngày + huy chương (chỉ hồ sơ của mình).
+  private func loadMine() async {
+    guard book.isMe, awards == nil else { return }
+    awards = services.makeAwardsBook(userId: book.userId)
+    let room = services.makeMascotRoom(userId: book.userId, today: LocalDate(EpochMillis(Date()), in: .current))
+    async let a: Void = awards?.load() ?? ()
+    async let r: Void = room?.load() ?? ()
+    _ = await (a, r)
+    if let room { streak = room.streak.count }
   }
 
   /// Dưới thẻ: huy hiệu (tiểu sử / đang theo dõi đã vào thẻ).
@@ -352,7 +352,17 @@ struct CommunityUserView: View {
         .disabled(book.working)
         .accessibilityAddTraits(book.iFollow ? .isSelected : [])
       }
-      ShareLink(item: String(localized: "community.pass.sharetext \(p.handle)")) {
+      ShareLink(
+        item: PassShareImage(
+          author: p, posts: book.stats?.posts ?? book.posts.count, followers: book.followers,
+          following: book.following, tries: book.stats?.tries ?? 0),
+        message: Text(String(localized: "community.pass.sharetext \(p.handle)")),
+        preview: SharePreview(
+          Text(verbatim: p.displayName),
+          image: PassShareImage(
+            author: p, posts: book.stats?.posts ?? book.posts.count, followers: book.followers,
+            following: book.following, tries: book.stats?.tries ?? 0))
+      ) {
         roundIcon("square.and.arrow.up")
       }
       .buttonStyle(TodayPressStyle())
@@ -452,12 +462,15 @@ struct CommunityUserView: View {
           .frame(maxWidth: .infinity, minHeight: 44)
       }
     case .ready:
-      // Bài dạng thẻ hàng kiểu Apple News như feed (không phải lưới ảnh).
-      ForEach(book.posts) { post in
-        RowPostCard(post: post, artURL: post.art.flatMap(book.artURL), unit: unit, showsAuthor: false) {
-          openPost = post.id
+      // Lưới hai cột thẻ có ảnh lớn — trang cá nhân như bộ hồ sơ thành tích (15/10).
+      LazyVGrid(columns: [GridItem(.flexible(), spacing: DS.Spacing.md), GridItem(.flexible())], spacing: DS.Spacing.md) {
+        ForEach(book.posts) { post in
+          GridPostCard(post: post, artURL: post.art.flatMap(book.artURL), unit: unit)
+            .frame(height: 250)
+            .onTapGesture { openPost = post.id }
+            .accessibilityAddTraits(.isButton)
+            .onAppear { if post.id == book.posts.last?.id { Task { await book.loadMore() } } }
         }
-          .onAppear { if post.id == book.posts.last?.id { Task { await book.loadMore() } } }
       }
       if book.loadingMore {
         ProgressView().frame(maxWidth: .infinity, minHeight: 44)
@@ -536,6 +549,174 @@ struct CommunityUserView: View {
     guard let t = EpochMillis(iso8601: iso) else { return iso }
     let d = Date(timeIntervalSince1970: TimeInterval(t.millis) / 1000)
     return d.formatted(Date.FormatStyle().day().month(.abbreviated).locale(.app))
+  }
+}
+
+/// Thẻ vận động viên (15/10, chủ dự án duyệt mock — "giống tiktok, sửa lại cho khác
+/// biệt"): thẻ thành viên kim loại đen (`PassMaterial` — khác nền bài đăng); ba số
+/// kiểu bảng điểm CHỈ từ dữ liệu server có — bài · người theo dõi · lượt người khác
+/// thử buổi tập. Dùng chung cho trang cá nhân và ảnh chia sẻ hồ sơ.
+struct AthletePassCard<Avatar: View>: View {
+  let author: CommunityFeed.Author
+  let posts: Int
+  let followers: Int
+  let following: Int
+  let tries: Int
+  @ViewBuilder var avatarSlot: () -> Avatar
+
+  var body: some View {
+    let p = author
+    VStack(alignment: .leading, spacing: 0) {
+      HStack {
+        Text("community.pass.caption")
+          .font(.system(size: 10, weight: .bold)).tracking(1.4)
+          .foregroundStyle(.white.opacity(0.6))
+        Spacer(minLength: 0)
+        Image("BrandMark").resizable().interpolation(.high).frame(width: 18, height: 18)
+          .environment(\.colorScheme, .dark)
+          .accessibilityHidden(true)
+      }
+      HStack(spacing: 12) {
+        avatarSlot()
+        VStack(alignment: .leading, spacing: 2) {
+          HStack(spacing: 6) {
+            Text(verbatim: p.displayName)
+              .font(.system(size: 22, weight: .bold)).tracking(-0.3)
+              .foregroundStyle(.white)
+              .lineLimit(2)
+            if p.isOfficial {
+              Image(systemName: "checkmark.seal.fill")
+                .foregroundStyle(DS.Color.metricBlue.bright)
+                .accessibilityLabel(Text("community.verified"))
+            }
+          }
+          Text(verbatim: "@\(p.handle) · \(String(localized: "community.user.followingcount")) \(following)")
+            .font(.system(size: 13))
+            .foregroundStyle(.white.opacity(0.6))
+            .lineLimit(1)
+            .minimumScaleFactor(0.8)
+        }
+      }
+      .padding(.top, 14)
+      if let bio = p.bio, !bio.isEmpty {
+        Text(verbatim: bio)
+          .font(.system(size: 14))
+          .foregroundStyle(.white.opacity(0.85))
+          .fixedSize(horizontal: false, vertical: true)
+          .padding(.top, 10)
+      }
+      HStack(spacing: 0) {
+        stat(posts, label: String(localized: "community.pass.posts"))
+        divider
+        stat(followers, label: String(localized: "community.user.followers"))
+        divider
+        stat(tries, label: String(localized: "community.pass.tries"))
+      }
+      .padding(.top, 14)
+      .overlay(alignment: .top) { Rectangle().fill(.white.opacity(0.14)).frame(height: 0.5) }
+      .padding(.top, 16)
+    }
+    .padding(16)
+    .background { PassMaterial() }
+    .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+    .overlay {
+      // viền ánh bạc: sáng ở góc trên trái, tắt dần
+      RoundedRectangle(cornerRadius: 24, style: .continuous).strokeBorder(
+        LinearGradient(
+          colors: [.white.opacity(0.45), .white.opacity(0.06), .white.opacity(0.18)], startPoint: .topLeading,
+          endPoint: .bottomTrailing),
+        lineWidth: 0.8)
+    }
+  }
+
+  private func stat(_ n: Int, label: String) -> some View {
+    VStack(alignment: .leading, spacing: 2) {
+      Text(verbatim: CommunityCard.number(Double(n)))
+        .font(.system(size: 24, weight: .heavy).monospacedDigit()).fontWidth(.condensed)
+        .foregroundStyle(.white)
+      Text(verbatim: label)
+        .font(.system(size: 10, weight: .bold)).tracking(1.1).textCase(.uppercase)
+        .foregroundStyle(.white.opacity(0.6))
+        .lineLimit(1).minimumScaleFactor(0.7)
+    }
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .padding(.top, 12)
+    .accessibilityElement(children: .combine)
+  }
+
+  private var divider: some View {
+    Rectangle().fill(.white.opacity(0.14)).frame(width: 0.5, height: 34).padding(.trailing, 12).padding(.top, 12)
+  }
+}
+
+/// Avatar trên thẻ vận động viên.
+struct PassAvatar: View {
+  let author: CommunityFeed.Author
+
+  var body: some View {
+    MascotAvatar(mascotId: author.mascotId, size: 60)
+      .overlay { Circle().strokeBorder(.white.opacity(0.25), lineWidth: 1) }
+  }
+}
+
+/// Chia sẻ hồ sơ thành ẢNH của chính thẻ vận động viên (15/10).
+struct PassShareImage: Transferable {
+  let author: CommunityFeed.Author
+  let posts: Int
+  let followers: Int
+  let following: Int
+  let tries: Int
+
+  static var transferRepresentation: some TransferRepresentation {
+    DataRepresentation(exportedContentType: .png) { item in try await item.png() }
+  }
+
+  @MainActor private func png() throws -> Data {
+    let card = AthletePassCard(author: author, posts: posts, followers: followers, following: following, tries: tries) {
+      PassAvatar(author: author)
+    }
+    .frame(width: 360)
+    .padding(20)
+    .background(Color(white: 0.96))
+    .environment(\.locale, Locale.app)
+    let renderer = ImageRenderer(content: card)
+    renderer.scale = 3
+    guard let data = renderer.uiImage?.pngData() else { throw CocoaError(.fileWriteUnknown) }
+    return data
+  }
+}
+
+/// Nhịp tập 28 ngày: 2 hàng × 14 ô, ngày có tập tô hồng, đậm dần về gần đây.
+private struct RhythmCard: View {
+  let days: [Bool]
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 10) {
+      HStack {
+        Text("community.pass.rhythm").font(.system(size: 13, weight: .semibold))
+          .foregroundStyle(DS.Color.foreground.swiftUI)
+        Spacer(minLength: 0)
+        Text(verbatim: "\(days.filter { $0 }.count)/\(days.count)")
+          .font(.system(size: 13, weight: .semibold).monospacedDigit())
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+      }
+      LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 5), count: 14), spacing: 5) {
+        ForEach(Array(days.enumerated()), id: \.offset) { i, on in
+          RoundedRectangle(cornerRadius: 4, style: .continuous)
+            .fill(on ? DS.Color.metricRose.swiftUI.opacity(0.55 + 0.45 * Double(i) / Double(max(days.count - 1, 1))) : DS.Color.foreground.swiftUI.opacity(0.06))
+            .aspectRatio(1, contentMode: .fit)
+        }
+      }
+    }
+    .padding(14)
+    .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+    .overlay {
+      RoundedRectangle(cornerRadius: 18, style: .continuous)
+        .strokeBorder(DS.Color.foreground.swiftUI.opacity(0.08), lineWidth: 0.75)
+    }
+    .accessibilityElement(children: .ignore)
+    .accessibilityLabel(Text("community.pass.rhythm"))
+    .accessibilityValue(Text(verbatim: "\(days.filter { $0 }.count)/\(days.count)"))
   }
 }
 
