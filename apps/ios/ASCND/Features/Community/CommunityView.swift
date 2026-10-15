@@ -285,9 +285,6 @@ struct CommunityFeedView: View {
         .buttonStyle(TodayPressStyle())
         .accessibilityLabel(Text("dm.title"))
       }
-      NavigationLink { CommunitySearchScreen() } label: { roundIcon("magnifyingglass", dot: false) }
-        .buttonStyle(TodayPressStyle())
-        .accessibilityLabel(Text("community.search.open"))
       if let inbox {
         let hasNew = inbox.hasNew || !(challenges?.pending.isEmpty ?? true)
         NavigationLink { CommunityInboxView(book: inbox, challenges: challenges) } label: { roundIcon("bell", dot: hasNew) }
@@ -380,19 +377,35 @@ struct CommunityFeedView: View {
     let pinned: Bool
   }
 
+  /// Thanh chọn trang + tìm kiếm (15/10, chủ dự án: đầu trang có 4 nút, đưa tìm
+  /// kiếm vào chỗ khác cho gọn) — thanh ghim khi cuộn nên tìm kiếm luôn trong tầm tay.
   private var tabPicker: some View {
-    Picker(selection: Binding(get: { book.tab }, set: { t in Task { await book.select(t) } })) {
-      Text("community.tab.following").tag(CommunityFeed.Tab.following)
-      Text("community.tab.discover").tag(CommunityFeed.Tab.discover)
-    } label: {
-      Text("tab.community")
+    HStack(spacing: DS.Spacing.sm) {
+      Picker(selection: Binding(get: { book.tab }, set: { t in Task { await book.select(t) } })) {
+        Text("community.tab.following").tag(CommunityFeed.Tab.following)
+        Text("community.tab.discover").tag(CommunityFeed.Tab.discover)
+      } label: {
+        Text("tab.community")
+      }
+      .pickerStyle(.segmented)
+      NavigationLink { CommunitySearchScreen() } label: {
+        Image(systemName: "magnifyingglass")
+          .font(.system(size: 15, weight: .semibold))
+          .foregroundStyle(DS.Color.foreground.swiftUI)
+          .frame(width: 36, height: 36)
+          .background(DS.Color.foreground.swiftUI.opacity(0.07), in: Circle())
+          .frame(minWidth: 44, minHeight: 44)
+          .contentShape(Rectangle())
+      }
+      .buttonStyle(TodayPressStyle())
+      .accessibilityLabel(Text("community.search.open"))
     }
-    .pickerStyle(.segmented)
-    .padding(.vertical, DS.Spacing.sm)
+    .padding(.vertical, DS.Spacing.xs)
     .background {
       // nền kính chỉ khi đã ghim — ở đầu trang thanh nằm trên nền như cũ
       Rectangle()
         .fill(.bar)
+        .overlay { DS.Color.background.swiftUI.opacity(0.75) }
         .padding(.horizontal, -DS.Spacing.md)
         .padding(.top, -80)
         .opacity(pickerPinned ? 1 : 0)

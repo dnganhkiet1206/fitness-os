@@ -151,3 +151,6 @@ Chủ dự án: mock đầu "hơi giống tiktok, sửa lại cho khác biệt" 
   khi lỗi") → `figure.strengthtraining.traditional` cho cả "Thử buổi tập". Thẻ lớn: nút nằm dưới tiêu đề, căn
   trái như thẻ hàng (trước nổi giữa vùng số). Gộp hai `onScrollGeometryChange` của feed thành một — hai cái
   làm `statusBarScrim` mất tín hiệu cuộn (tiêu đề chồng lên đồng hồ).
+- (15/10, sau) Chủ dự án: "đẩy nút tìm kiếm vào một phần nào đó để gọn hơn vì có tới 4 nút" → tìm kiếm là nút
+  tròn nhỏ cuối thanh "Đang theo dõi / Khám phá" (thanh ghim, nên luôn trong tầm tay); đầu trang còn Tin nhắn
+  (khi có) · Thông báo · Hồ sơ. Nền thanh ghim đặc hơn (`.bar` + nền 75%) — trước lộ mờ hàng đăng bài phía sau.
