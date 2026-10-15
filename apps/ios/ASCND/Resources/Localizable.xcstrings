@@ -48900,6 +48900,29 @@
      }
     }
    }
+  },
+  "community.pr.short": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "PR"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "PR"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "PR"
+     }
+    }
+   }
   }
  }
 }

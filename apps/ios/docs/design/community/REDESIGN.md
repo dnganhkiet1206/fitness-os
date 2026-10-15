@@ -23,3 +23,14 @@ Không đổi dữ liệu, RPC hay luật đăng / khoá đăng / lời mời t�
 ## 15/10 — chia sẻ thành ảnh, chạm hai lần để thích
 - **Chia sẻ thành ảnh**: nút chia sẻ gửi ẢNH PNG của chính thẻ (`PostShareImage`: `PostCardView(forShare:)` không nút, dải "ASCND · Tập cùng mình trên ASCND", 3×) kèm chữ như trước; khung xem trước của bảng chia sẻ là chính ảnh ấy. Ảnh minh hoạ tải mạng không vẽ (mặt màu là hình).
 - **Chạm hai lần để thích**: tim trắng lớn giữa thẻ + rung; chỉ BẬT (không bỏ thích), nút tim ở đáy vẫn bật / tắt. Bảng tin: chạm một lần mở bài (chờ phân biệt với chạm hai lần, như Instagram); có hành động VoiceOver "Thích".
+
+## Thẻ bài kiểu "bài đăng" (15/10)
+
+Chủ dự án: "thiên về bài đăng một tí kiểu apple style mà vẫn có yếu tố gym aesthetics".
+- Mặt trắng (`DS.Color.card`), bo 22, viền mảnh + bóng nhẹ; chế độ tối dùng mặt card tối.
+- Đầu thẻ: avatar · tên · thời gian; dòng dưới là loại bài · tiêu đề · "Chỉ người theo dõi".
+- Lời người đăng đứng TRƯỚC tệp đính kèm (16pt).
+- Buổi tập: "bảng điểm" than cố định (`PostTint.board`) — tên buổi chữ hoa giãn, viên PR vàng, ba số lớn ngăn bằng vạch mảnh, các bài dạng mono.
+- Tiến bộ / công thức: mặt lõm sáng, nhãn chữ hoa màu loại bài (`PostTint.ink`), số lớn.
+- Ảnh minh hoạ chỉ hiện khi bài có ảnh. Thêm vào bữa / Thử buổi này là viên mảnh màu loại bài.
+- Giữ: chạm hai lần để thích, ảnh chia sẻ (`forShare`), menu ⋯.
