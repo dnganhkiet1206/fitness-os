@@ -119,7 +119,6 @@ struct CommunityFeedView: View {
           Section {
             if book.phase == .ready { header }
             if book.tab == .discover, let challenges { challengeBlock(challenges) }
-            if book.tab == .discover, !book.useful.isEmpty { UsefulThisWeekCard(posts: book.useful) }
             content(hold.shown)
           } header: {
             tabPicker
@@ -458,7 +457,14 @@ struct CommunityFeedView: View {
       // Feed kiểu Apple News pha Instagram (15/10): "Thịnh hành" đánh số ở
       // Khám phá, rồi nhịp thẻ lớn → thẻ hàng → lưới (`CommunityLayout`).
       // Chạm một lần mở bài + bình luận (`community-post`).
-      let trend = book.tab == .discover ? trendIds.compactMap { id in shown.first { $0.id == id } } : []
+      //
+      // Một khối "Thịnh hành" (15/10, chủ dự án chọn): bài của server — 7 ngày, xếp
+      // theo thử / lưu / bình luận (trước là thẻ "Hữu ích tuần này" riêng); server
+      // chưa có bài nào đủ điểm thì xếp 72 giờ trên các bài đã tải như cũ.
+      let trend: [CommunityFeed.Post] =
+        book.tab != .discover ? []
+        : !book.useful.isEmpty ? Array(book.useful.prefix(3))
+        : trendIds.compactMap { id in shown.first { $0.id == id } }
       let rest = shown.filter { p in !trend.contains { $0.id == p.id } }
       let slots = CommunityLayout.slots(rest)
       if let first = trend.first {
@@ -1148,103 +1154,6 @@ struct PostCountsView: View {
     .frame(minHeight: 44)
     .accessibilityElement(children: .ignore)
     .accessibilityLabel(Text(verbatim: "\(label), \(n)"))
-  }
-}
-
-// MARK: - Hữu ích tuần này
-
-struct UsefulThisWeekCard: View {
-  let posts: [CommunityFeed.Post]
-  @State private var sheetPost: CommunityPostSheetRoute?
-
-  /// Hàng thẻ màu trượt ngang (thiết kế lại 14/10): cùng màu theo loại với
-  /// thẻ bài — mỗi thẻ: loại, tiêu đề, @tác giả, lý do ("12 người đã thử").
-  var body: some View {
-    VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-      VStack(alignment: .leading, spacing: 2) {
-        Text("community.useful.title")
-          .font(DS.TextStyle.headline)
-          .foregroundStyle(DS.Color.foreground.swiftUI)
-          .accessibilityAddTraits(.isHeader)
-        Text("community.useful.sub")
-          .font(DS.TextStyle.footnote)
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-      }
-      .padding(.horizontal, 4)
-      ScrollView(.horizontal, showsIndicators: false) {
-        HStack(spacing: DS.Spacing.sm) {
-          ForEach(posts) { p in
-            Button {
-              sheetPost = CommunityPostSheetRoute(id: p.id)
-            } label: {
-              tile(p)
-            }
-            .accessibilityLabel(Text(verbatim: CommunityCard.usefulTitle(p) ?? Self.fallback(p.kind)))
-            .buttonStyle(TodayPressStyle())
-          }
-        }
-        .padding(.horizontal, 4)
-        .padding(.vertical, 4)
-      }
-      .scrollClipDisabled()
-    }
-    .communityPostSheet($sheetPost)
-  }
-
-  private func tile(_ p: CommunityFeed.Post) -> some View {
-    let title = CommunityCard.usefulTitle(p) ?? Self.fallback(p.kind)
-    let who = p.author.map { "@\($0.handle)" } ?? ""
-    let why = CommunityCard.reasons(p).map(Self.reason).joined(separator: " · ")
-    return VStack(alignment: .leading, spacing: 6) {
-      Image(systemName: PostArtView.glyph(p.kind))
-        .font(.footnote.weight(.semibold))
-        .foregroundStyle(.white)
-        .frame(width: 30, height: 30)
-        .background(.white.opacity(0.18), in: Circle())
-        .accessibilityHidden(true)
-      Text(verbatim: title)
-        .font(DS.TextStyle.headline)
-        .foregroundStyle(.white)
-        .lineLimit(2)
-        .multilineTextAlignment(.leading)
-      Spacer(minLength: 0)
-      if !why.isEmpty {
-        Text(verbatim: why)
-          .font(DS.TextStyle.caption.weight(.semibold))
-          .foregroundStyle(.white)
-          .lineLimit(1)
-      }
-      if !who.isEmpty {
-        Text(verbatim: who).font(DS.TextStyle.caption).foregroundStyle(PostTint.soft).lineLimit(1)
-      }
-    }
-    .padding(DS.Spacing.md)
-    .frame(width: 176, height: 150, alignment: .topLeading)
-    .background(PostTint.fill(p.kind), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-    .accessibilityElement(children: .ignore)
-    .accessibilityLabel(Text(verbatim: [title, who, why].filter { !$0.isEmpty }.joined(separator: ", ")))
-  }
-
-  static func fallback(_ k: CommunityFeed.Kind) -> String {
-    switch k {
-    case .workout: String(localized: "community.useful.training")
-    case .recipe: String(localized: "community.useful.recipe")
-    case .progress: String(localized: "community.useful.progress")
-    }
-  }
-
-  static func reason(_ r: CommunityCard.Reason) -> String {
-    switch r {
-    case .tries(let n):
-      n == 1 ? String(localized: "community.useful.tries.one \(n)") : String(localized: "community.useful.tries.other \(n)")
-    case .saves(let n):
-      n == 1 ? String(localized: "community.useful.saves.one \(n)") : String(localized: "community.useful.saves.other \(n)")
-    case .comments(let n):
-      n == 1
-        ? String(localized: "community.useful.comments.one \(n)") : String(localized: "community.useful.comments.other \(n)")
-    case .likes(let n):
-      n == 1 ? String(localized: "community.useful.likes.one \(n)") : String(localized: "community.useful.likes.other \(n)")
-    }
   }
 }
 

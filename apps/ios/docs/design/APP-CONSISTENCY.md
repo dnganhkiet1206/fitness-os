@@ -39,6 +39,9 @@ tính năng đồng bộ trong toàn app" → "làm đi".
 - **Số hiển thị theo ngôn ngữ (đợt 2)**: trung bình nước (`Water.averageLabel(_:_:locale:)` — cùng chữ số với golden
   RN, đổi dấu thập phân), cân nặng / chiều cao / nước của onboarding và Hôm nay (`OnboardingRuler.fixed1(_:locale:)`).
   Thẻ Tải tập luyện ghi rõ "Tải · 7 ngày qua" / "Tải thói quen · 4 tuần" (tải không có đơn vị — xem "?" của thẻ).
+- **Một khối Thịnh hành** (chủ dự án chọn): Khám phá bỏ thẻ "Hữu ích tuần này"; "Thịnh hành" (thẻ lớn + danh sách
+  đánh số) lấy tối đa 3 bài của `book.useful` (server: 7 ngày, xếp theo thử / lưu / bình luận, không gồm bài của
+  mình); chưa có thì xếp 72 giờ trên các bài đã tải (`CommunityLayout.trending`) như cũ.
 - **Cài đặt không lặp chữ**: mục Ngôn ngữ bỏ tiêu đề; dòng "Ngôn ngữ" có icon quả cầu như Nhắc nhở / Đổi mật khẩu.
 
 ## Quy ước (giữ khi làm màn mới)
@@ -49,6 +52,5 @@ tính năng đồng bộ trong toàn app" → "làm đi".
 - Hành động chính: viên đen đặc; phụ: viên viền mảnh.
 
 ## Chưa làm (cần chủ dự án chọn / việc lớn)
-- Gộp "Hữu ích" vào "Thịnh hành".
 - Gom các kiểu thẻ (`todayCard`, `DSCard`,
   `NewsCardSurface`, `AssistantSurface`).
