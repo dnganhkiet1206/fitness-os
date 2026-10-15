@@ -128,9 +128,15 @@ public struct TodayView: View {
         }
       }
       if let readiness { readiness }
-      HStack(spacing: DS.Spacing.sm) {
+      // iOS 26 có "Ghi nhanh" trên thanh tab (audit toàn app 15/10): ngày nghỉ
+      // không lặp lại "Ghi buổi tập / Ghi giấc ngủ" ở đây. iOS 18–25 giữ nút.
+      if !Self.hasQuickLog {
+        HStack(spacing: DS.Spacing.sm) {
+          ctaButton
+          if let logSleep { logSleep }
+        }
+      } else if cta != .logFree {
         ctaButton
-        if let logSleep { logSleep }
       }
     }
     .padding(DS.Spacing.card)
@@ -177,6 +183,11 @@ public struct TodayView: View {
   /// Một nút theo `cta`: "Bắt đầu" đặc; ba nút còn lại nhẹ; chưa biết lịch thì
   /// không có nút. Bắt đầu và Chọn buổi tập mở kế hoạch của hôm nay; Ghi buổi
   /// (ngày nghỉ) và Ghi thêm buổi phát sinh (đã tập) mở màn ghi tay.
+  /// Thanh "Ghi nhanh" (`RootTabView.QuickLogBar`) chỉ có từ iOS 26.
+  static var hasQuickLog: Bool {
+    if #available(iOS 26, *) { true } else { false }
+  }
+
   @ViewBuilder private var ctaButton: some View {
     switch cta {
     case .none:

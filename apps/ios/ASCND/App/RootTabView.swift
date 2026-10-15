@@ -1,4 +1,5 @@
 import ASCNDCore
+import ASCNDDesignSystem
 import SwiftUI
 
 /// Năm điểm đến cấp cao, đúng thứ tự và biểu tượng của app RN
@@ -53,6 +54,10 @@ struct RootTabView: View {
       }
       .accessibilityHint(Text(String(localized: "tab.assistant.hint")))
     }
+    // Ghi nhanh (15/10, chủ dự án chọn "thanh phụ trên tab bar"): một dải kính
+    // trên thanh tab ở mọi tab, thu gọn khi cuộn; mở các màn ghi qua cùng đường
+    // với deep link (`DeepLinkScreen`) nên dữ liệu không tách đôi.
+    .modifier(QuickLogBar { linked = $0 })
     // Ăn mừng huy chương / thử thách (#527, `CelebrationHost` ở layout gốc của
     // RN): trên mọi tab, phủ cả thanh tab.
     .overlay { CelebrationHost(queue: services.celebrations) }
@@ -121,3 +126,109 @@ struct RootTabView: View {
     }
   }
 #endif
+
+/// Chỉ iOS 26 có thanh phụ trên tab bar; máy cũ hơn không có dải này (các lối ghi
+/// trong từng tab vẫn đủ).
+private struct QuickLogBar: ViewModifier {
+  let open: (DeepLink.Screen) -> Void
+  @State private var picking = false
+  /// Màn chọn trong bảng — mở sau khi bảng đóng hẳn (hai sheet không chồng nhau).
+  @State private var chosen: DeepLink.Screen?
+
+  func body(content: Content) -> some View {
+    if #available(iOS 26, *) {
+      content
+        .tabViewBottomAccessory { QuickLogAccessory { picking = true } }
+        .tabBarMinimizeBehavior(.onScrollDown)
+        .sheet(isPresented: $picking, onDismiss: {
+          if let chosen { open(chosen) }
+          chosen = nil
+        }) {
+          QuickLogSheet { chosen = $0; picking = false }
+            .presentationDetents([.height(250)])
+            .presentationDragIndicator(.visible)
+        }
+    } else {
+      content
+    }
+  }
+}
+
+/// Dải "Ghi nhanh" trên thanh tab: chạm mở bảng Bữa ăn · Nước · Giấc ngủ · Cân nặng ·
+/// Buổi tập. (Một `Menu` trong thanh phụ không mở được bằng chạm — dùng nút + bảng.)
+@available(iOS 26, *)
+private struct QuickLogAccessory: View {
+  let tap: () -> Void
+  @Environment(\.tabViewBottomAccessoryPlacement) private var placement
+
+  var body: some View {
+    Button(action: tap) {
+      HStack(spacing: 8) {
+        // Nút đặc tương phản cao — nền kính của thanh phụ lộ nội dung phía sau.
+        Image(systemName: "plus")
+          .font(.system(size: 13, weight: .bold))
+          .foregroundStyle(DS.Color.background.swiftUI)
+          .frame(width: 26, height: 26)
+          .background(DS.Color.foreground.swiftUI, in: Circle())
+        if placement != .inline {
+          Text("quicklog.title").font(.system(size: 15, weight: .bold))
+            .foregroundStyle(DS.Color.foreground.swiftUI)
+          Spacer(minLength: 0)
+          Text("quicklog.hint").font(.system(size: 13))
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .lineLimit(1)
+        }
+      }
+      .padding(.horizontal, 16)
+      .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+      .contentShape(Rectangle())
+    }
+    .buttonStyle(.plain)
+    .accessibilityLabel(Text("quicklog.title"))
+  }
+}
+
+/// Bảng chọn của "Ghi nhanh": năm ô lớn, chạm là mở đúng màn ghi.
+private struct QuickLogSheet: View {
+  let pick: (DeepLink.Screen) -> Void
+
+  private var items: [(LocalizedStringKey, String, Color, DeepLink.Screen)] {
+    [
+      ("quicklog.meal", "fork.knife", DS.Color.metricOrangeGraphic.swiftUI, .logMeal(date: nil, meal: nil)),
+      ("quicklog.water", "drop.fill", DS.Color.metricCyan.swiftUI, .water),
+      ("quicklog.sleep", "moon.fill", DS.Color.metricPurple.swiftUI, .logSleep),
+      ("quicklog.weight", "scalemass.fill", DS.Color.foreground.swiftUI, .logWeight),
+      ("quicklog.workout", "dumbbell.fill", DS.Color.metricRose.swiftUI, .logWorkout),
+    ]
+  }
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: DS.Spacing.md) {
+      Text("quicklog.title").font(.system(size: 20, weight: .bold))
+        .accessibilityAddTraits(.isHeader)
+      HStack(spacing: 8) {
+        ForEach(items.indices, id: \.self) { i in
+          let item = items[i]
+          Button { pick(item.3) } label: {
+            VStack(spacing: 8) {
+              Image(systemName: item.1)
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundStyle(item.2)
+                .frame(width: 48, height: 48)
+                .background(item.2.opacity(0.14), in: Circle())
+              Text(item.0).font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(DS.Color.foreground.swiftUI)
+                .lineLimit(1).minimumScaleFactor(0.8)
+            }
+            .frame(maxWidth: .infinity, minHeight: 88)
+            .contentShape(Rectangle())
+          }
+          .buttonStyle(.plain)
+        }
+      }
+    }
+    .padding(.horizontal, DS.Spacing.lg)
+    .padding(.top, DS.Spacing.lg)
+    .frame(maxHeight: .infinity, alignment: .top)
+  }
+}

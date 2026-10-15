@@ -11,6 +11,12 @@ tính năng đồng bộ trong toàn app" → "làm đi".
   Trợ lý (Trợ lý giữ Tổng kết tuần, Vận động, Sinh trắc học, Giấc ngủ, Coach nhớ gì).
 - **Số theo ngôn ngữ**: `Units.display(_:locale:)` cho số hiển thị (ACWR "3,3", gram macro, thông báo ngủ vượt);
   ô nhập vẫn dùng `Units.text` kiểu JS. Cộng đồng đã dùng `CommunityCard.decimal`.
+- **Ghi nhanh trên thanh tab** (chủ dự án chọn "Thanh phụ trên tab bar"): iOS 26 `tabViewBottomAccessory`
+  trong `RootTabView` (`QuickLogBar`): dải "+ Ghi nhanh · Bữa · Nước · Ngủ · Cân" trên mọi tab, thu gọn khi cuộn
+  (`tabBarMinimizeBehavior(.onScrollDown)`). Chạm → bảng 5 ô (Bữa ăn, Nước, Giấc ngủ, Cân nặng, Buổi tập) → mở
+  đúng màn ghi qua `DeepLinkScreen`. `Menu` trong thanh phụ không mở được bằng chạm nên dùng nút + bảng. Thẻ "Ngày
+  nghỉ" của Hôm nay không còn "Ghi buổi tập / Ghi giấc ngủ" (`TodayView.hasQuickLog`); iOS 18–25 không có
+  thanh phụ nên giữ nút.
 
 ## Quy ước (giữ khi làm màn mới)
 - Công tắc 2–3 trang ở đầu tab (Hôm nay/Kế hoạch ăn, Buổi tập/Cơ thể, Đang theo dõi/Khám phá) và ô trong form
@@ -20,7 +26,6 @@ tính năng đồng bộ trong toàn app" → "làm đi".
 - Hành động chính: viên đen đặc; phụ: viên viền mảnh.
 
 ## Chưa làm (cần chủ dự án chọn / việc lớn)
-- Nút "+" ghi nhanh trong tab bar.
 - Gộp hai hồ sơ (Cài đặt ↔ hồ sơ cộng đồng); vai trò Hôm nay (làm) vs Trợ lý (hiểu); gộp "Hữu ích" vào "Thịnh hành".
 - Một thành phần điểm sẵn sàng dùng chung cho Hôm nay và Trợ lý; gom các kiểu thẻ (`todayCard`, `DSCard`,
   `NewsCardSurface`, `AssistantSurface`).
