@@ -4,18 +4,15 @@ import SwiftUI
 
 /// Đích của tab Trợ lý.
 enum AssistantRoute: Hashable {
-  case chat, weekly, steps, biometrics, sleep, goals, measure, photos, memory
+  case chat, weekly, steps, biometrics, sleep, goals, measure, photos, memory, trends, tools
 }
 
 /// Tab Trợ lý (#527 Phase 6) — `(tabs)/assistant.tsx` @ fac9ac2.
 ///
-/// Như RN: tiêu đề "Trợ lý sức khoẻ" + dòng phụ; lời chào theo giờ và tên
-/// với tối đa ba dòng tóm tắt hôm nay (`AssistantBrief`); thẻ AI Coach — chạm
-/// mở chat, bốn chip hỏi luôn câu của chip (cùng bốn chip với chat trống),
-/// đang có cuộc trò chuyện thì thẻ mời "Tiếp tục: <câu hỏi cuối>" và ẩn chip;
-/// lưới công cụ có gợi ý dưới nhãn.
-///
-/// Bốn ô chỉ số hôm nay + bảng 7 ngày (`MetricPanelView`).
+/// Thiết kế v2 (15/10): xem `AssistantSummaryViews.swift`. Tóm tắt dùng các dòng
+/// của `AssistantBrief`; chip hỏi nhanh ở màn chat trống; bốn ô chỉ số + bảng 7
+/// ngày (`MetricPanelView`) ở màn "Xu hướng 7 ngày"; lưới đủ công cụ ở "Tất cả
+/// công cụ".
 ///
 /// "Insight hôm nay" (`ai-smart-nudges`, `InsightCard`).
 ///
@@ -49,25 +46,20 @@ struct AssistantTab: View {
   var body: some View {
     NavigationStack(path: $path) {
       ScrollView {
-        VStack(alignment: .leading, spacing: DS.Spacing.lg) {
+        // v2 (15/10, chủ dự án duyệt mock theo Apple Health mới): tóm tắt trước —
+        // thẻ Sẵn sàng có nhãn chữ, Điểm nổi bật mỗi mảng một câu, Dành cho bạn,
+        // ô hỏi coach; bảng 7 ngày và đủ công cụ nằm sau một lần chạm.
+        VStack(alignment: .leading, spacing: DS.Spacing.md) {
           header
-          if let signal { BriefCard(brief: signal.brief(hour: hour), lang: lang) }
+          if let signal {
+            SummaryCard(signal: signal, metrics: metrics, lang: lang, hour: hour) { path.append(.trends) }
+          }
           // Máy chủ chưa bật tính năng → không hiện thẻ lỗi vĩnh viễn (15/10, audit).
           if let nudges, !nudges.isNotDeployed {
             InsightCard(book: nudges) { Task { await loadInsight(force: true) } }
           }
-          if let metrics {
-            MetricPanelView(book: metrics, signal: signal, lang: lang) { question in
-              guard let chat else { return }
-              path.append(.chat)
-              CoachChatView.ask(chat, question, lang: lang)
-            }
-          }
           if let chat {
-            CoachCard(chat: chat, suggestions: signal?.suggestions ?? [], lang: lang) { question in
-              path.append(.chat)
-              if let question { CoachChatView.ask(chat, question, lang: lang) }
-            }
+            AskCoachBar(lastAsked: chat.messages.last { $0.role == .user }?.content) { path.append(.chat) }
           } else if built {
             ContentUnavailableView {
               Label("coach.title", systemImage: "sparkles")
@@ -75,7 +67,22 @@ struct AssistantTab: View {
               Text("coach.unavailable")
             }
           }
-          tools
+          highlights
+          forYou
+          Button {
+            path.append(.tools)
+          } label: {
+            HStack {
+              Text("assistant.alltools").font(.system(size: 15, weight: .medium))
+              Spacer(minLength: 0)
+              Image(systemName: "chevron.right").font(.footnote.weight(.semibold))
+            }
+            .foregroundStyle(DS.Color.foreground.swiftUI)
+            .frame(minHeight: 44)
+            .padding(.horizontal, 4)
+            .contentShape(Rectangle())
+          }
+          .buttonStyle(TodayPressStyle())
           // Nguồn của các con số, đặt DƯỚI những thứ dùng chúng (RN: cuối
           // trang). Không có Apple Health trên máy thì không hiện gì.
           HealthSyncCard(isAvailable: services.health.isAvailable, sync: syncHealth)
@@ -114,6 +121,30 @@ struct AssistantTab: View {
           if let photos { ProgressPhotosView(book: photos) }
         case .memory:
           if let memory { CoachMemoryView(book: memory) }
+        case .trends:
+          if let metrics {
+            ScrollView {
+              VStack(alignment: .leading, spacing: DS.Spacing.md) {
+                Text("assistant.trends").font(.largeTitle.bold()).accessibilityAddTraits(.isHeader)
+                MetricPanelView(book: metrics, signal: signal, lang: lang) { question in
+                  guard let chat else { return }
+                  path.append(.chat)
+                  CoachChatView.ask(chat, question, lang: lang)
+                }
+              }
+              .padding(DS.Spacing.md)
+            }
+            .ascndPage()
+          }
+        case .tools:
+          ScrollView {
+            VStack(alignment: .leading, spacing: DS.Spacing.md) {
+              Text("assistant.alltools").font(.largeTitle.bold()).accessibilityAddTraits(.isHeader)
+              tools
+            }
+            .padding(DS.Spacing.md)
+          }
+          .ascndPage()
         }
       }
     }
@@ -206,18 +237,115 @@ struct AssistantTab: View {
   // MARK: - Đầu trang
 
   private var header: some View {
-    VStack(alignment: .leading, spacing: 2) {
-      HStack(spacing: DS.Spacing.sm) {
-        Text("tab.assistant")
-          .font(DS.TextStyle.largeTitle)
+    HStack(alignment: .bottom) {
+      VStack(alignment: .leading, spacing: 0) {
+        Text(verbatim: Date().formatted(Date.FormatStyle().weekday(.wide).day().month(.wide).locale(.app)))
+          .font(.system(size: 13, weight: .medium))
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        Text("assistant.summary")
+          .font(.largeTitle.bold())
           .foregroundStyle(DS.Color.foreground.swiftUI)
           .accessibilityAddTraits(.isHeader)
-        AIBadge()
       }
-      Text("assistant.subtitle")
-        .font(DS.TextStyle.footnote)
-        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+      Spacer(minLength: 0)
+      if chat != nil {
+        Button {
+          path.append(.chat)
+        } label: {
+          Image(systemName: "sparkles")
+            .font(.body.weight(.semibold))
+            .foregroundStyle(DS.Color.metricPurple.swiftUI)
+            .frame(width: 40, height: 40)
+            .background(Circle().fill(.thinMaterial))
+            .overlay(Circle().strokeBorder(DS.Color.foreground.swiftUI.opacity(0.12), lineWidth: 0.75))
+            .frame(minWidth: 44, minHeight: 44)
+        }
+        .buttonStyle(TodayPressStyle())
+        .accessibilityLabel(Text("assistant.coach.open.a11y"))
+      }
     }
+  }
+
+  // MARK: - Điểm nổi bật
+
+  @ViewBuilder private var highlights: some View {
+    if let signal {
+      let s = signal.signal
+      VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+        sectionTitle("assistant.highlights")
+        if let metrics { TrendHighlight(book: metrics, lang: lang) { path.append(.trends) } }
+        let sleepMin = Int(s.sleepMin)
+        AreaHighlight(
+          symbol: "moon.fill", title: String(localized: "metric.sleep"), tint: DS.Color.metricPurple.swiftUI,
+          headline: sleepMin > 0
+            ? String(localized: "assistant.sleep.value \(sleepMin / 60) \(sleepMin % 60)")
+            : String(localized: "assistant.sleep.none"),
+          detail: sleepMin > 0
+            ? (sleepMin >= 420 ? String(localized: "metric.note.good") : String(localized: "metric.note.short"))
+            : String(localized: "assistant.sleep.none.hint"))
+        if let hr = signal.heartRate {
+          AreaHighlight(
+            symbol: "heart.fill", title: String(localized: "metric.hr"), tint: DS.Color.readinessRed.swiftUI,
+            headline: String(localized: "assistant.hr \(hr)"),
+            detail: hr < 60
+              ? String(localized: "metric.note.low")
+              : hr <= 80 ? String(localized: "metric.note.normal") : String(localized: "metric.note.high"))
+        }
+        AreaHighlight(
+          symbol: "flame.fill", title: String(localized: "metric.kcal"), tint: DS.Color.metricOrange.swiftUI,
+          headline: String(
+            localized:
+              "assistant.kcal \(Int(s.kcal).formatted(.number.locale(.app))) \(Int(s.kcalTarget).formatted(.number.locale(.app)))"),
+          detail: s.proteinTarget > 0
+            ? String(
+              localized:
+                "assistant.protein \(Int(s.proteinG).formatted(.number.locale(.app))) \(Int(s.proteinTarget).formatted(.number.locale(.app)))")
+            : nil,
+          progress: s.kcalTarget > 0 ? s.kcal / s.kcalTarget : nil)
+      }
+    }
+  }
+
+  // MARK: - Dành cho bạn
+
+  @ViewBuilder private var forYou: some View {
+    let list = availableTools
+    if !list.isEmpty {
+      VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+        sectionTitle("assistant.foryou")
+        ScrollView(.horizontal, showsIndicators: false) {
+          HStack(spacing: DS.Spacing.sm) {
+            ForEach(list) { t in
+              NavigationLink(value: t.route) {
+                VStack(alignment: .leading, spacing: 6) {
+                  AssistantCaption(symbol: t.symbol, text: t.label, tint: t.tint)
+                    .lineLimit(1)
+                  Text(verbatim: t.hint)
+                    .font(.system(size: 13))
+                    .foregroundStyle(DS.Color.foreground.swiftUI)
+                    .lineLimit(2, reservesSpace: true)
+                    .multilineTextAlignment(.leading)
+                }
+                .frame(width: 150, alignment: .leading)
+                .modifier(AssistantSurface())
+                .contentShape(Rectangle())
+              }
+              .buttonStyle(TodayPressStyle())
+              .accessibilityElement(children: .combine)
+            }
+          }
+        }
+        .scrollClipDisabled()
+      }
+    }
+  }
+
+  private func sectionTitle(_ key: LocalizedStringKey) -> some View {
+    Text(key)
+      .font(.system(size: 20, weight: .bold)).tracking(-0.3)
+      .foregroundStyle(DS.Color.foreground.swiftUI)
+      .padding(.top, DS.Spacing.sm)
+      .accessibilityAddTraits(.isHeader)
   }
 
   // MARK: - Công cụ
@@ -288,10 +416,6 @@ struct AssistantTab: View {
     let list = availableTools
     if !list.isEmpty {
       VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-        Text("assistant.tools")
-          .font(DS.TextStyle.headline)
-          .foregroundStyle(DS.Color.foreground.swiftUI)
-          .accessibilityAddTraits(.isHeader)
         LazyVGrid(
           columns: [GridItem(.flexible(), spacing: DS.Spacing.sm), GridItem(.flexible())], spacing: DS.Spacing.sm
         ) {
@@ -325,107 +449,6 @@ struct AssistantTab: View {
         }
       }
     }
-  }
-}
-
-/// Nhãn "AI" cạnh tiêu đề (`aiBadge`).
-private struct AIBadge: View {
-  var body: some View {
-    HStack(spacing: 2) {
-      Image(systemName: "sparkles").font(.caption2)
-      Text(verbatim: "AI").font(DS.TextStyle.caption.weight(.bold))
-    }
-    .padding(.horizontal, 6)
-    .padding(.vertical, 2)
-    .foregroundStyle(DS.Color.brand.swiftUI)
-    .background(DS.Color.secondary.swiftUI, in: Capsule())
-    .accessibilityHidden(true)
-  }
-}
-
-/// Lời chào + tối đa ba dòng tóm tắt hôm nay (`briefFor`).
-private struct BriefCard: View {
-  let brief: AssistantBrief.Brief
-  let lang: AppPreferences.Lang
-
-  var body: some View {
-    VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-      Text(verbatim: brief.greeting(lang))
-        .font(DS.TextStyle.title)
-        .foregroundStyle(DS.Color.foreground.swiftUI)
-      ForEach(brief.lines) { line in
-        Text(verbatim: line.text(lang))
-          .font(DS.TextStyle.body)
-          .foregroundStyle(DS.Color.foreground.swiftUI)
-          .fixedSize(horizontal: false, vertical: true)
-      }
-    }
-    .frame(maxWidth: .infinity, alignment: .leading)
-    .accessibilityElement(children: .combine)
-  }
-}
-
-/// Thẻ AI Coach: phần đầu (+ "Tiếp tục: …" khi đang chat) là MỘT nút mở chat;
-/// chip là các nút anh em riêng (RN: tách ra để VoiceOver nghe được từng chip).
-private struct CoachCard: View {
-  let chat: CoachChat
-  let suggestions: [AssistantSuggestions.Suggestion]
-  let lang: AppPreferences.Lang
-  /// `nil` = chỉ mở chat; có câu = mở chat và hỏi luôn.
-  let open: (String?) -> Void
-
-  /// Câu hỏi cuối của người dùng trong cuộc trò chuyện đang mở.
-  private var lastAsked: String? {
-    chat.messages.last { $0.role == .user }?.content
-  }
-
-  var body: some View {
-    VStack(alignment: .leading, spacing: DS.Spacing.md) {
-      Button {
-        open(nil)
-      } label: {
-        VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-          HStack(spacing: DS.Spacing.md) {
-            Image(systemName: "sparkles")
-              .font(.title3)
-              .foregroundStyle(DS.Color.brand.swiftUI)
-              .frame(width: 44, height: 44)
-              .background(DS.Color.secondary.swiftUI, in: Circle())
-              .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 2) {
-              Text("coach.title")
-                .font(DS.TextStyle.headline)
-                .foregroundStyle(DS.Color.foreground.swiftUI)
-              Text("assistant.coach.hint")
-                .font(DS.TextStyle.footnote)
-                .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-            }
-            Spacer(minLength: 0)
-            Image(systemName: "chevron.right")
-              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-              .accessibilityHidden(true)
-          }
-          if let lastAsked {
-            Label {
-              Text("assistant.coach.continue \(lastAsked)")
-                .lineLimit(1)
-            } icon: {
-              Image(systemName: "clock")
-            }
-            .font(DS.TextStyle.footnote)
-            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-          }
-        }
-        .contentShape(Rectangle())
-      }
-      .buttonStyle(.plain)
-      .accessibilityLabel(Text("assistant.coach.open.a11y"))
-      if lastAsked == nil && !suggestions.isEmpty {
-        FlowChips(suggestions: suggestions, lang: lang, disabled: chat.isLoading, centered: false) { open($0) }
-      }
-    }
-    .padding(DS.Spacing.md)
-    .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.lg))
   }
 }
 
