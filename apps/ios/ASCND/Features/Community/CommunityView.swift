@@ -569,7 +569,7 @@ struct PostCardView: View {
       case .recipe: if let r = post.recipe { RecipePostBody(recipe: r, full: full) }
       }
       if !forShare, post.kind == .recipe, let add = actions?.addToMeal, (post.recipe?.kcal ?? 0) > 0 {
-        PostAction(title: String(localized: "community.addtomeal"), symbol: "plus", tint: PostTint.ink(.recipe)) {
+        PostAction(title: String(localized: "community.addtomeal"), symbol: "plus", tint: DS.Color.foreground.swiftUI) {
           add(post)
         }
       }
@@ -577,7 +577,7 @@ struct PostCardView: View {
         CommunityTry.offered(post) || CommunityTry.redo(post)
       {
         TryWorkoutButton(
-          busy: actions?.trying.contains(post.id) ?? false, tint: PostTint.ink(.workout), redo: CommunityTry.redo(post)
+          busy: actions?.trying.contains(post.id) ?? false, tint: DS.Color.foreground.swiftUI, redo: CommunityTry.redo(post)
         ) {
           tryIt(post)
         }
@@ -657,9 +657,10 @@ private struct PostAction: View {
     Button(action: action) {
       Label(title, systemImage: symbol)
         .font(DS.TextStyle.footnote.weight(.semibold))
-        .foregroundStyle(tint)
+        // Viên đặc trung tính (15/10, chủ dự án: "nút thử lại màu đỏ như bị lỗi").
+        .foregroundStyle(DS.Color.background.swiftUI)
         .frame(maxWidth: .infinity, minHeight: 44)
-        .background(tint.opacity(0.10), in: Capsule())
+        .background(tint, in: Capsule())
         .contentShape(Capsule())
     }
     .buttonStyle(TodayPressStyle())
@@ -680,9 +681,10 @@ struct TryWorkoutButton: View {
         redo ? String(localized: "community.redo") : String(localized: "community.try"),
         systemImage: "arrow.trianglehead.2.clockwise")
         .font(DS.TextStyle.footnote.weight(.semibold))
-        .foregroundStyle(tint)
+        // Viên đặc trung tính (15/10, chủ dự án: "nút thử lại màu đỏ như bị lỗi").
+        .foregroundStyle(DS.Color.background.swiftUI)
         .frame(maxWidth: .infinity, minHeight: 44)
-        .background(tint.opacity(0.10), in: Capsule())
+        .background(tint, in: Capsule())
         .contentShape(Capsule())
     }
     .buttonStyle(TodayPressStyle())

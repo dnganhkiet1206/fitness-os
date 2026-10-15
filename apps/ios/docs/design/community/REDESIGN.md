@@ -145,3 +145,5 @@ Chủ dự án: mock đầu "hơi giống tiktok, sửa lại cho khác biệt" 
 - (15/10, sau) Chủ dự án: "thanh đang theo dõi và khám phá khi cuộn thì giữ lại… vuốt sang để sang trang" →
   thanh chọn trang là header GHIM của section feed (nền kính `.bar` khi đã cuộn qua đầu); vuốt ngang rõ ràng
   (|dx| > 70, ngang hơn dọc 1.6×) trên feed: trái → Khám phá, phải → Đang theo dõi, có rung nhẹ.
+- (15/10, sau) Chủ dự án: "nút thử lại màu đỏ như bị lỗi" → "Thử lại / Thử buổi tập / Thêm vào bữa" trên thẻ
+  đầy đủ là viên đặc trung tính (màu chữ chính, chữ màu nền), không dùng màu hồng/đỏ của loại bài.
