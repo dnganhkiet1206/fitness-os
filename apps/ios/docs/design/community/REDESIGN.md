@@ -93,3 +93,6 @@ trên sáng hơn viền dưới như mép kính bắt sáng. Danh sách Thịnh 
 - Tên người đăng 16pt semibold, avatar 26, chạm mở trang cá nhân (`openCommunityUser`).
 - "Thử" (buổi tập của người khác) / "Thêm vào bữa" (công thức) ở đáy thẻ (`FooterPill`).
 - Nhắn tin: chưa có backend — xem `MESSAGING-PLAN.md`.
+- (15/10, sau) Chủ dự án: "cho nút thử nằm ngay trên thẻ luôn" → `CardAction`: thẻ lớn đặt viên kính mờ
+  "Thử buổi này" / "Thêm vào bữa" ngay trên ảnh, góc dưới phải vùng số; thẻ hàng đặt viên đặc dưới tiêu
+  đề. Bỏ khỏi đáy thẻ. Vẫn theo `CommunityTry.offered` (không hiện trên bài của chính mình).

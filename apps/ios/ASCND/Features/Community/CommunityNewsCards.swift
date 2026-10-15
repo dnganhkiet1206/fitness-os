@@ -164,13 +164,6 @@ private struct FeedFooter: View {
         .lineLimit(1)
       Spacer(minLength: 0)
       if let actions {
-        // "Thử buổi này" / "Thêm vào bữa" ngay trên thẻ (15/10 — trước chỉ có ở màn bài).
-        if post.kind == .workout, let tryIt = actions.tryWorkout, CommunityTry.offered(post) {
-          FooterPill(title: String(localized: "community.try"), symbol: "arrow.trianglehead.2.clockwise",
-                     busy: actions.trying.contains(post.id)) { tryIt(post) }
-        } else if post.kind == .recipe, let add = actions.addToMeal, (post.recipe?.kcal ?? 0) > 0 {
-          FooterPill(title: String(localized: "community.addtomeal"), symbol: "plus", busy: false) { add(post) }
-        }
         Button {
           taps += 1
           Task { _ = await actions.actions.toggle(.like, postId: post.id, host: actions.host) }
@@ -233,28 +226,53 @@ private struct FeedFooter: View {
   }
 }
 
-/// Viên hành động nhỏ ở đáy thẻ (Thử / Thêm vào bữa).
-private struct FooterPill: View {
-  let title: String
-  let symbol: String
-  let busy: Bool
-  let action: () -> Void
+/// Hành động chính của bài, nằm ngay trên ảnh (15/10, chủ dự án: "cho nút thử
+/// nằm ngay trên thẻ luôn"): "Thử buổi này" cho buổi tập của người khác
+/// (`CommunityTry.offered`), "Thêm vào bữa" cho công thức có kcal. Viên kính mờ
+/// tối, chữ trắng — hợp với ảnh tối.
+struct CardAction: View {
+  let post: CommunityFeed.Post
+  /// `false` trên mặt sáng (thẻ hàng): viên đặc màu chữ, chữ màu nền.
+  var onArt = true
+  @Environment(\.communityPostActions) private var actions
 
   var body: some View {
+    if let actions {
+      if post.kind == .workout, let tryIt = actions.tryWorkout, CommunityTry.offered(post) {
+        pill(String(localized: "community.try"), "arrow.trianglehead.2.clockwise", busy: actions.trying.contains(post.id)) {
+          tryIt(post)
+        }
+      } else if post.kind == .recipe, let add = actions.addToMeal, (post.recipe?.kcal ?? 0) > 0 {
+        pill(String(localized: "community.addtomeal"), "plus", busy: false) { add(post) }
+      }
+    }
+  }
+
+  private func pill(_ title: String, _ symbol: String, busy: Bool, action: @escaping () -> Void) -> some View {
     Button(action: action) {
-      Label(title, systemImage: symbol)
-        .font(.system(size: 13, weight: .semibold))
-        .lineLimit(1)
-        .foregroundStyle(DS.Color.foreground.swiftUI)
-        .padding(.horizontal, 12)
-        .frame(height: 30)
-        .background(DS.Color.foreground.swiftUI.opacity(0.10), in: Capsule())
-        .frame(minHeight: 44)
-        .contentShape(Rectangle())
+      HStack(spacing: 6) {
+        if busy { ProgressView().controlSize(.small).tint(.white) } else { Image(systemName: symbol) }
+        Text(verbatim: title)
+      }
+      .font(.system(size: 14, weight: .semibold))
+      .lineLimit(1)
+      .foregroundStyle(onArt ? Color.white : DS.Color.background.swiftUI)
+      .padding(.horizontal, 14)
+      .frame(height: 36)
+      .background {
+        if onArt {
+          Capsule().fill(.ultraThinMaterial)
+            .overlay { Capsule().strokeBorder(.white.opacity(0.22), lineWidth: 0.5) }
+            .environment(\.colorScheme, .dark)
+        } else {
+          Capsule().fill(DS.Color.foreground.swiftUI)
+        }
+      }
+      .frame(minHeight: 44)
+      .contentShape(Capsule())
     }
     .buttonStyle(TodayPressStyle())
     .disabled(busy)
-    .opacity(busy ? 0.5 : 1)
   }
 }
 
@@ -754,6 +772,11 @@ struct HeroPostCard: View {
         FeedFooter(post: post).padding(.horizontal, 16).padding(.bottom, 6)
       }
       .environment(\.colorScheme, .dark)
+      .overlay(alignment: .topTrailing) {
+        CardAction(post: post)
+          .padding(.top, 32 + Self.art - 52)
+          .padding(.trailing, 16)
+      }
       .background {
         PostArtTile(post: post, artURL: artURL, unit: unit, shape: .wide, contentHeight: Self.art, contentInset: 32)
           .modifier(ProgressiveBlur(start: Self.art - 8))
@@ -782,6 +805,7 @@ struct RowPostCard: View {
               .foregroundStyle(DS.Color.foreground.swiftUI)
               .lineLimit(4)
               .fixedSize(horizontal: false, vertical: true)
+            CardAction(post: post, onArt: false).padding(.top, 2)
           }
           .frame(maxWidth: .infinity, alignment: .leading)
           PostArtTile(post: post, artURL: artURL, unit: unit, shape: .square)
