@@ -122,6 +122,11 @@ struct PlanRowView: View {
                 : (plain ? DS.Color.foreground.swiftUI.opacity(0.1) : DS.Color.muted.swiftUI))
               .frame(width: 6, height: 6)
           }
+          // Chú thích cho dãy chấm (15/10, audit: chấm không nhãn khó hiểu).
+          Text(verbatim: "\(fill.values.filter { $0 > 0 }.count)/7")
+            .font(.system(size: 11, weight: .medium).monospacedDigit())
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .padding(.leading, 2)
         }
         .accessibilityHidden(true)
       }
