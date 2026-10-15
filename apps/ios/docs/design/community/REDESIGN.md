@@ -147,3 +147,7 @@ Chủ dự án: mock đầu "hơi giống tiktok, sửa lại cho khác biệt" 
   (|dx| > 70, ngang hơn dọc 1.6×) trên feed: trái → Khám phá, phải → Đang theo dõi, có rung nhẹ.
 - (15/10, sau) Chủ dự án: "nút thử lại màu đỏ như bị lỗi" → "Thử lại / Thử buổi tập / Thêm vào bữa" trên thẻ
   đầy đủ là viên đặc trung tính (màu chữ chính, chữ màu nền), không dùng màu hồng/đỏ của loại bài.
+- (15/10, sau) "Thử lại" → "Thử lại buổi này" (en "Do this session again"); icon mũi tên vòng (giống "thử lại
+  khi lỗi") → `figure.strengthtraining.traditional` cho cả "Thử buổi tập". Thẻ lớn: nút nằm dưới tiêu đề, căn
+  trái như thẻ hàng (trước nổi giữa vùng số). Gộp hai `onScrollGeometryChange` của feed thành một — hai cái
+  làm `statusBarScrim` mất tín hiệu cuộn (tiêu đề chồng lên đồng hồ).

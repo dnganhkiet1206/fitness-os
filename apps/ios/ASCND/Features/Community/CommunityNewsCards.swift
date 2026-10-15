@@ -242,12 +242,12 @@ struct CardAction: View {
   var body: some View {
     if let actions {
       if post.kind == .workout, let tryIt = actions.tryWorkout, CommunityTry.offered(post) {
-        pill(String(localized: "community.try"), "arrow.trianglehead.2.clockwise", busy: actions.trying.contains(post.id)) {
+        pill(String(localized: "community.try"), "figure.strengthtraining.traditional", busy: actions.trying.contains(post.id)) {
           tryIt(post)
         }
       } else if post.kind == .workout, let tryIt = actions.tryWorkout, CommunityTry.redo(post) {
         // Bài của chính mình: "Thử lại" (chủ dự án) — chép vào Buổi tập, không ghi lượt thử.
-        pill(String(localized: "community.redo"), "arrow.trianglehead.2.clockwise", busy: actions.trying.contains(post.id)) {
+        pill(String(localized: "community.redo"), "figure.strengthtraining.traditional", busy: actions.trying.contains(post.id)) {
           tryIt(post)
         }
       } else if post.kind == .recipe, let add = actions.addToMeal, (post.recipe?.kcal ?? 0) > 0 {
@@ -772,6 +772,9 @@ struct HeroPostCard: View {
             .foregroundStyle(DS.Color.foreground.swiftUI)
             .lineLimit(3)
             .fixedSize(horizontal: false, vertical: true)
+          // Hành động nằm dưới tiêu đề, căn trái như thẻ hàng (15/10, chủ dự án: "sắp
+          // xếp bố cục cho chuẩn") — không nổi giữa vùng số.
+          CardAction(post: post).padding(.top, 2)
         }
         .padding(.horizontal, 16)
         .contentShape(Rectangle())
@@ -780,11 +783,6 @@ struct HeroPostCard: View {
         FeedFooter(post: post).padding(.horizontal, 16).padding(.bottom, 6)
       }
       .environment(\.colorScheme, .dark)
-      .overlay(alignment: .topTrailing) {
-        CardAction(post: post)
-          .padding(.top, 32 + Self.art - 52)
-          .padding(.trailing, 16)
-      }
       .background {
         PostArtTile(post: post, artURL: artURL, unit: unit, shape: .wide, contentHeight: Self.art, contentInset: 32)
           .modifier(ProgressiveBlur(start: Self.art - 8))

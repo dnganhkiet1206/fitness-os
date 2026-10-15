@@ -125,15 +125,14 @@ struct CommunityFeedView: View {
         .padding(DS.Spacing.md)
       }
       .simultaneousGesture(tabSwipe)
-      .onScrollGeometryChange(for: Bool.self) { g in
-        g.contentOffset.y + g.contentInsets.top > 64
-      } action: { _, p in
-        withAnimation(.easeOut(duration: 0.2)) { pickerPinned = p }
-      }
-      .onScrollGeometryChange(for: Bool.self) { g in
-        CommunityFeedHold.atTop(Double(g.contentOffset.y + g.contentInsets.top))
-      } action: { _, top in
-        atTop = top
+      // MỘT bộ theo dõi cuộn trên ScrollView (hai cái làm `statusBarScrim` ở ngoài
+      // không nhận được cuộn — tiêu đề chồng lên đồng hồ).
+      .onScrollGeometryChange(for: ScrollMarks.self) { g in
+        let y = Double(g.contentOffset.y + g.contentInsets.top)
+        return ScrollMarks(atTop: CommunityFeedHold.atTop(y), pinned: y > 64)
+      } action: { _, m in
+        atTop = m.atTop
+        if m.pinned != pickerPinned { withAnimation(.easeOut(duration: 0.2)) { pickerPinned = m.pinned } }
       }
       .overlay(alignment: .top) {
         if book.phase == .ready, !hold.held.isEmpty {
@@ -355,6 +354,11 @@ struct CommunityFeedView: View {
     Button { shareRoute = .recipe } label: {
       Label(String(localized: "community.share.chip.recipe"), systemImage: PostArtView.glyph(.recipe))
     }
+  }
+
+  struct ScrollMarks: Equatable {
+    let atTop: Bool
+    let pinned: Bool
   }
 
   private var tabPicker: some View {
@@ -679,7 +683,7 @@ struct TryWorkoutButton: View {
     Button(action: action) {
       Label(
         redo ? String(localized: "community.redo") : String(localized: "community.try"),
-        systemImage: "arrow.trianglehead.2.clockwise")
+        systemImage: "figure.strengthtraining.traditional")
         .font(DS.TextStyle.footnote.weight(.semibold))
         // Viên đặc trung tính (15/10, chủ dự án: "nút thử lại màu đỏ như bị lỗi").
         .foregroundStyle(DS.Color.background.swiftUI)

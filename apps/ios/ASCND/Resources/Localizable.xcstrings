@@ -49436,19 +49436,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "Try again"
+      "value": "Do this session again"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Probar de nuevo"
+      "value": "Repetir esta sesión"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Thử lại"
+      "value": "Thử lại buổi này"
      }
     }
    }
