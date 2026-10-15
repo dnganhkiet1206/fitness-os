@@ -37,6 +37,9 @@ public enum KoaRender {
     public var live = true
     /// Bản giấy (theme sáng) thay vì bản có đèn.
     public var paper = false
+    /// Màu GỐC của bản vẽ, không đèn (15/10, chủ dự án: "koa đang bị phủ một lớp tối
+    /// của bản tối"): không dải sáng-tối, không quầng / khối / viền. Thắng `paper`.
+    public var flat = false
     /// Đồng hồ của nhân vật, ms.
     public var t = 0.0
     /// Độ hiện của tư thế thử đồ, 0 → 1; mặc định theo `dress`.
@@ -83,6 +86,7 @@ public enum KoaRender {
     let dress: Bool
     let blend: Double
     let paper: Bool
+    var flat = false
   }
 
   static func isEyeGroup(_ n: KoaScene.Node) -> Bool { n.kids?.contains { $0.id == "pupil_left" } ?? false }
@@ -148,7 +152,8 @@ public enum KoaRender {
     if !drivesTf { base += ownTf(n, c.flags) }
     let over = drivesTf ? ownTf(n, c.flags) : []
 
-    let own = KoaLight.litProps(l, attrs(n.a, dropOpacity: drivesOp))
+    let raw = attrs(n.a, dropOpacity: drivesOp)
+    let own = c.flat ? raw : KoaLight.litProps(l, raw)
     let ownOpacity = drivesOp && n.a?["opacity"] != nil ? (n.a?["opacity"]?.number ?? .nan) : 1
     let shape = shapes[n.t]
     let gProps = shape == nil ? own : [:]
@@ -157,19 +162,19 @@ public enum KoaRender {
     if let shape {
       // mỗi lượt đèn là chính hình ấy với một lớp sơn khác
       var passes = [Element(shape, own)]
-      if !c.paper, let glow = l.glow {
+      if !c.paper, !c.flat, let glow = l.glow {
         var p = own
         p["fill"] = .string("url(#\(glow))")
         p["stroke"] = .string("none")
         passes.append(Element(shape, p))
       }
-      for (on, id) in [(l.form, KoaLight.formGradient), (l.body, KoaLight.bodyGradient)] where on {
+      for (on, id) in [(l.form, KoaLight.formGradient), (l.body, KoaLight.bodyGradient)] where on && !c.flat {
         var p = own
         p["fill"] = .string("url(#\(id))")
         p["stroke"] = .string("none")
         passes.append(Element(shape, p))
       }
-      if !c.paper, n.id.map({ KoaLight.rimIds.contains($0) }) ?? false {
+      if !c.paper, !c.flat, n.id.map({ KoaLight.rimIds.contains($0) }) ?? false {
         var p = own
         p["fill"] = .string("none")
         p["stroke"] = .string("url(#\(KoaLight.rimGradient))")
@@ -261,7 +266,8 @@ public enum KoaRender {
     let swapMouth = KoaMath.swapMouths.contains { f[$0]?.truthy ?? false }
     let c = Context(
       flags: f, t: o.t, live: o.live, gaze: o.live ? o.gaze : nil, swapMouth: swapMouth,
-      rest: KoaMath.restsAt(f) && !o.dress, dress: o.dress, blend: o.blend ?? (o.dress ? 1 : 0), paper: o.paper)
+      rest: KoaMath.restsAt(f) && !o.dress, dress: o.dress, blend: o.blend ?? (o.dress ? 1 : 0), paper: o.paper,
+      flat: o.flat)
     let tree = KoaLight.nodes.flatMap { node($0, c) }
     return Element(
       "Svg",

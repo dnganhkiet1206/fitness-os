@@ -55,6 +55,10 @@ public enum StudioScene {
     "#0F142E": "#E6D7C2",  // chân tường, viền tối
     "#2C2439": "#A88F76",
     "#000000": "#6B5440",  // bóng — nâu ấm thay đen
+    // đồ vật tím của cảnh đêm (tạ, ấm tạ, chậu, bóng, viền bảng, chữ STREAK) → đất nung
+    // ấm hợp phòng ban ngày (15/10, chủ dự án: "đồ vật màu tím nên đổi màu ở bản sáng")
+    "#7B61FF": "#D9774F",
+    "#8F83FF": "#E39A6B",
   ]
 
   /// Trời ngoài cửa sổ ban ngày (thay `studioSky` đêm).
@@ -87,6 +91,12 @@ public enum StudioScene {
     public var label = ""
     /// Căn phòng ban ngày (giao diện sáng).
     public var light = false
+    /// Đèn treo (dây, chao, bóng, vệt sáng, quầng, bụi trong vệt, vũng sáng). Chủ dự án
+    /// 15/10: "bản tối thì bỏ đèn trong phòng của koa đi".
+    public var lamp = true
+    /// Lớp chiều sâu: tường tối về góc, chân tường, ván sàn hội tụ (15/10, chủ dự án:
+    /// "phòng cũng chưa có chiều sâu"). Mặc định tắt — cảnh RN giữ nguyên golden.
+    public var depth = false
 
     public init() {}
   }
@@ -138,7 +148,18 @@ public enum StudioScene {
   static func build(_ template: [JSONValue], _ o: Options) -> [KoaRender.Element] {
     let table = o.light ? lightSkins : skins
     let skin = table[o.skin] ?? table["default"]!
-    return template.compactMap { element($0, o, skin) }
+    var out: [KoaRender.Element] = []
+    for v in template {
+      if !o.lamp, isLamp(v) { continue }
+      // ban ngày không có sao ngoài cửa sổ
+      if o.light, v["t"]?.stringValue == "Circle", v["p"]?["fill"]?.stringValue == "#FFFFFF",
+        v["p"]?["opacity"]?.doubleValue == 0.85
+      { continue }
+      if let e = element(v, o, skin) { out.append(e) }
+      // lớp chiều sâu ngay sau mép sàn, trước đồ đạc
+      if o.depth, isFloorEdge(v) { out += depthLayer.compactMap { element($0, o, skin) } }
+    }
+    return out
   }
 
   static func element(_ v: JSONValue, _ o: Options, _ skin: Skin) -> KoaRender.Element? {
@@ -168,6 +189,30 @@ public enum StudioScene {
     if case .array(let k)? = v["k"] { kids = k.compactMap { element($0, o, skin) } }
     return KoaRender.Element(tag, props, matrix: matrix, kids: kids)
   }
+
+  /// Phần tử của đèn treo trong template studio.
+  static func isLamp(_ v: JSONValue) -> Bool {
+    let p = v["p"]
+    let fill = p?["fill"]?.stringValue ?? ""
+    if ["url(#nsHalo)", "url(#studioCone)", "url(#nsPool)"].contains(fill) { return true }
+    let t = v["t"]?.stringValue
+    if t == "Rect", p?["x"]?.doubleValue == 194, p?["y"]?.doubleValue == 0 { return true }
+    if t == "Path", (p?["d"]?.stringValue ?? "").hasPrefix("M 195 52") { return true }
+    if t == "Ellipse", p?["cx"]?.doubleValue == 195, p?["cy"]?.doubleValue == 78 { return true }
+    if t == "Circle", fill == "#FFC24D", (p?["r"]?.doubleValue ?? 9) < 2 { return true }
+    return false
+  }
+
+  /// Vạch sáng mảnh ở mép sàn (y 358) — lớp chiều sâu chèn ngay sau nó.
+  static func isFloorEdge(_ v: JSONValue) -> Bool {
+    v["t"]?.stringValue == "Rect" && v["p"]?["y"]?.doubleValue == 358 && v["p"]?["height"]?.doubleValue == 1
+  }
+
+  static let depthLayer: [JSONValue] = {
+    (try? JSONDecoder().decode([JSONValue].self, from: Data(depthJSON.utf8))) ?? []
+  }()
+
+  static let depthJSON = ##"[{"t":"Defs","p":{},"k":[{"t":"LinearGradient","p":{"id":"studioWallSide","x1":0,"y1":0,"x2":1,"y2":0},"k":[{"t":"Stop","p":{"offset":0,"stopColor":"#000000","stopOpacity":0.34}},{"t":"Stop","p":{"offset":0.22,"stopColor":"#000000","stopOpacity":0}},{"t":"Stop","p":{"offset":0.78,"stopColor":"#000000","stopOpacity":0}},{"t":"Stop","p":{"offset":1,"stopColor":"#000000","stopOpacity":0.34}}]},{"t":"LinearGradient","p":{"id":"studioWallFoot","x1":0,"y1":0,"x2":0,"y2":1},"k":[{"t":"Stop","p":{"offset":0,"stopColor":"#000000","stopOpacity":0}},{"t":"Stop","p":{"offset":1,"stopColor":"#000000","stopOpacity":0.26}}]},{"t":"LinearGradient","p":{"id":"studioFloorDepth","x1":0,"y1":0,"x2":0,"y2":1},"k":[{"t":"Stop","p":{"offset":0,"stopColor":"#000000","stopOpacity":0.26}},{"t":"Stop","p":{"offset":0.4,"stopColor":"#000000","stopOpacity":0}}]}]},{"t":"Rect","p":{"x":0,"y":0,"width":390,"height":360,"fill":"url(#studioWallSide)"}},{"t":"Path","p":{"d":"M 0 0 L 26 0 L 26 360 L 0 388 Z","fill":"#000000","opacity":0.14}},{"t":"Path","p":{"d":"M 390 0 L 364 0 L 364 360 L 390 388 Z","fill":"#000000","opacity":0.14}},{"t":"Rect","p":{"x":0,"y":296,"width":390,"height":64,"fill":"url(#studioWallFoot)"}},{"t":"Path","p":{"d":"M -26.46 360 L -260 476","fill":"none","stroke":"#000000","strokeWidth":1.4,"opacity":0.3}},{"t":"Path","p":{"d":"M 46.55 360 L -110 476","fill":"none","stroke":"#000000","strokeWidth":1.4,"opacity":0.3}},{"t":"Path","p":{"d":"M 119.56 360 L 40 476","fill":"none","stroke":"#000000","strokeWidth":1.4,"opacity":0.3}},{"t":"Path","p":{"d":"M 195.0 360 L 195 476","fill":"none","stroke":"#000000","strokeWidth":1.4,"opacity":0.3}},{"t":"Path","p":{"d":"M 270.44 360 L 350 476","fill":"none","stroke":"#000000","strokeWidth":1.4,"opacity":0.3}},{"t":"Path","p":{"d":"M 343.45 360 L 500 476","fill":"none","stroke":"#000000","strokeWidth":1.4,"opacity":0.3}},{"t":"Path","p":{"d":"M 416.46 360 L 650 476","fill":"none","stroke":"#000000","strokeWidth":1.4,"opacity":0.3}},{"t":"Path","p":{"d":"M 0 374 L 390 374","fill":"none","stroke":"#000000","strokeWidth":1,"opacity":0.16}},{"t":"Path","p":{"d":"M 0 396 L 390 396","fill":"none","stroke":"#000000","strokeWidth":1,"opacity":0.16}},{"t":"Path","p":{"d":"M 0 428 L 390 428","fill":"none","stroke":"#000000","strokeWidth":1,"opacity":0.16}},{"t":"Path","p":{"d":"M 0 470 L 390 470","fill":"none","stroke":"#000000","strokeWidth":1,"opacity":0.16}},{"t":"Rect","p":{"x":0,"y":360,"width":390,"height":116,"fill":"url(#studioFloorDepth)"}},{"t":"Rect","p":{"x":26,"y":346,"width":338,"height":14,"fill":"#151A33"}},{"t":"Rect","p":{"x":26,"y":346,"width":338,"height":1.5,"fill":"#FFFFFF","opacity":0.14}},{"t":"Rect","p":{"x":0,"y":359,"width":390,"height":3,"fill":"#000000","opacity":0.28}},{"t":"Path","p":{"d":"M 26 0 L 26 360 L 0 388","fill":"none","stroke":"#000000","strokeWidth":1.5,"opacity":0.3}},{"t":"Path","p":{"d":"M 364 0 L 364 360 L 390 388","fill":"none","stroke":"#000000","strokeWidth":1.5,"opacity":0.3}},{"t":"Path","p":{"d":"M 27.5 0 L 27.5 346","fill":"none","stroke":"#FFFFFF","strokeWidth":1,"opacity":0.1}}]"##
 
   /// Một token → giá trị (cùng luật với `resolve` của `gen.cjs`).
   static func resolve(_ s: String, _ o: Options, _ skin: Skin) -> KoaScene.Value {

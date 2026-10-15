@@ -62,7 +62,11 @@ tính năng đồng bộ trong toàn app" → "làm đi".
   - Phòng Koa: Hôm nay → Hạng (cấp + hành trình một thẻ) → Chuỗi ngày (số ngày + thưởng chuỗi + bảo hiểm) →
     Nhiệm vụ (vòng rỗng / tô thay "—" / "…") → Khám phá thêm (ô Phòng thay đồ / Thử thách / Thành tích).
   - Huy chương: một thẻ đầu (vòng + % + "Đã đạt N / 29"); Thử thách: icon vòng tròn, thanh viên.
-  - Vẽ lại nhân vật Koa: CHƯA — chủ dự án: phải gửi mock trước.
+  - Vẽ lại nhân vật Koa: KHÔNG — mock 3 hướng bị chê "xấu hơn bản tui vẽ"; Koa giữ bản của chủ dự án.
+  - Bản tối giữ y nguyên đèn treo + Koa có đèn; bản sáng tắt đèn (`Options.lamp`), Koa đúng màu bản vẽ
+    (`KoaRender.Options.flat`, không dải sáng-tối / quầng / viền — golden của bản giấy không đổi), không sao ngoài
+    cửa sổ, đồ vật tím → đất nung (`dayColors`). Cả hai bản có lớp chiều sâu (`Options.depth`: tường bên, góc phòng,
+    chân tường, ván sàn hội tụ).
 - **Cài đặt không lặp chữ**: mục Ngôn ngữ bỏ tiêu đề; dòng "Ngôn ngữ" có icon quả cầu như Nhắc nhở / Đổi mật khẩu.
 
 ## Quy ước (giữ khi làm màn mới)

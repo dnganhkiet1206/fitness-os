@@ -762,6 +762,11 @@ struct MascotStage: View {
     o.label = "Koa"
     // Phòng ban ngày ở giao diện sáng (15/10 — trước đây chỉ có cảnh đêm).
     o.light = scheme == .light
+    // Bản tối giữ nguyên đèn treo như cũ; ban ngày tắt đèn (15/10, chủ dự án: "đèn
+    // và koa bản cũ phải giữ y nguyên ở bản tối, bản buổi sáng mới là tắt đèn").
+    // Cả hai bản có lớp chiều sâu.
+    o.lamp = scheme == .dark
+    o.depth = true
     return o
   }
 

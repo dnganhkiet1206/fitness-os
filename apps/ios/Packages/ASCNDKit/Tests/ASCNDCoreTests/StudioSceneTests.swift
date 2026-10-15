@@ -119,9 +119,23 @@ struct StudioSceneTests {
     let night = StudioScene.tree(o)
     o.light = true
     let day = StudioScene.tree(o)
-    #expect(night.count == day.count)
+    // ban ngày bỏ sao ngoài cửa sổ — ít phần tử hơn, không nhiều hơn
+    #expect(day.count < night.count)
+    #expect(!String(describing: day).contains("#7B61FF"))
     let dayText = String(describing: day)
     #expect(!dayText.contains("#151A33") && dayText.contains("#F7EEE2"))
     #expect(String(describing: night).contains("#151A33"))
+  }
+
+  /// Tắt đèn: bỏ vệt sáng, chao, dây; bật chiều sâu: thêm lớp ván sàn / chân tường.
+  @Test func lampAndDepthToggles() {
+    var o = StudioScene.Options()
+    let base = String(describing: StudioScene.tree(o))
+    #expect(base.contains("studioCone") && !base.contains("studioWallSide"))
+    o.lamp = false
+    o.depth = true
+    let next = String(describing: StudioScene.tree(o))
+    #expect(!next.contains("url(#studioCone)") && !next.contains("url(#nsHalo)"))
+    #expect(next.contains("studioWallSide") && next.contains("studioFloorDepth"))
   }
 }

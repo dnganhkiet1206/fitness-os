@@ -85,4 +85,14 @@ struct KoaRenderGoldenTests {
     ]
     for (v, s) in cases { #expect(KoaLight.toFixed3(v) == s, "\(v)") }
   }
+
+  /// `flat`: màu gốc của bản vẽ, không dải đèn (url(#koaL…)) và không quầng / viền.
+  @Test func flatKeepsTheDrawingsColours() {
+    var o = KoaRender.Options()
+    let lit = String(describing: KoaRender.figure(o))
+    o.flat = true
+    let flat = String(describing: KoaRender.figure(o))
+    #expect(lit.contains("url(#koaL"))
+    #expect(!flat.contains("url(#koaL") && !flat.contains("url(#koaRim)") && !flat.contains("url(#koaGlow)"))
+  }
 }

@@ -39,6 +39,9 @@ struct KoaFigureView: View {
         o.worn = worn
         o.live = animated
         o.paper = isPaper
+        // Ban ngày: Koa đúng màu bản vẽ, không phủ đèn / hạ sáng; bản tối giữ Koa có
+        // đèn như cũ (15/10, chủ dự án).
+        o.flat = isPaper
         o.t = t
         let plan = KoaPaint.plan(KoaRender.figure(o))
         var c = ctx
