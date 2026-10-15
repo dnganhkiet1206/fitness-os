@@ -136,8 +136,9 @@ public struct SettingsView: View {
         // Language
         if showsLanguage {
           Section {
+            // Một chữ "Ngôn ngữ" (15/10, audit: tiêu đề mục và tên dòng lặp nhau) —
+            // dòng có icon như Nhắc nhở / Đổi mật khẩu, mục không còn tiêu đề.
             Picker(
-              String(localized: "settings.language"),
               selection: $selectedLanguage
             ) {
               // Tên ngôn ngữ viết bằng CHÍNH ngôn ngữ ấy, không dịch — người
@@ -147,12 +148,12 @@ public struct SettingsView: View {
               ForEach(Self.languages, id: \.code) { lang in
                 Text(verbatim: lang.endonym).tag(lang.code)
               }
+            } label: {
+              Label(String(localized: "settings.language"), systemImage: "globe")
             }
             .onChange(of: selectedLanguage) { _, new in
               onLanguageChange(new)
             }
-          } header: {
-            Text(String(localized: "settings.language"))
           }
         }
 

@@ -39,6 +39,7 @@ tính năng đồng bộ trong toàn app" → "làm đi".
 - **Số hiển thị theo ngôn ngữ (đợt 2)**: trung bình nước (`Water.averageLabel(_:_:locale:)` — cùng chữ số với golden
   RN, đổi dấu thập phân), cân nặng / chiều cao / nước của onboarding và Hôm nay (`OnboardingRuler.fixed1(_:locale:)`).
   Thẻ Tải tập luyện ghi rõ "Tải · 7 ngày qua" / "Tải thói quen · 4 tuần" (tải không có đơn vị — xem "?" của thẻ).
+- **Cài đặt không lặp chữ**: mục Ngôn ngữ bỏ tiêu đề; dòng "Ngôn ngữ" có icon quả cầu như Nhắc nhở / Đổi mật khẩu.
 
 ## Quy ước (giữ khi làm màn mới)
 - Công tắc 2–3 trang ở đầu tab (Hôm nay/Kế hoạch ăn, Buổi tập/Cơ thể, Đang theo dõi/Khám phá) và ô trong form
