@@ -47,24 +47,138 @@ CHECK của `community_posts.kind`.
 4. Moderator duyệt / từ chối (lý do theo danh sách `community_hide_reasons`), ghi nhật ký.
    Báo cáo từ người dùng (`community_reports`) vẫn áp dụng cho bài đã duyệt.
 
-## 4. Quy tắc kiểm duyệt (đề xuất ban đầu)
+## 4. Duyệt tự động bằng thuật toán (không dùng AI — không tốn phí theo lượt)
 
-Từ chối khi:
-- quảng cáo / tiếp thị liên kết, mã giảm giá, bán thực phẩm chức năng;
-- khẳng định y tế không có nguồn (chữa bệnh, giảm cân thần tốc, thuốc / steroid);
-- tiêu đề giật gân không khớp nội dung;
-- nội dung trả phí mà người đọc không mở được;
-- trùng một bài đã có trong 7 ngày (cùng `canonical_url`).
+Chủ dự án (15/10) hỏi bot có miễn phí không → chọn **thuật toán chấm điểm** chạy
+trong Postgres / edge function sẵn có. AI chỉ cân nhắc sau này, và chỉ cho vùng giữa.
 
-Danh sách nguồn khởi đầu do chủ dự án chọn (ví dụ: tạp chí khoa học thể thao, các
-hiệp hội huấn luyện, báo lớn có chuyên mục sức khoẻ). Agent không tự chọn nguồn.
+### 4.1 Chuẩn hoá chữ (mọi ngôn ngữ)
+1. Nhận ngôn ngữ bài (xem §5): `vi`, `en`, `es` (khớp ba ngôn ngữ của app).
+2. Viết thường, bỏ dấu (`unaccent` — đã dùng cho tìm kiếm), gộp khoảng trắng.
+3. Bỏ ký tự lách: `0→o, 1→i, 3→e, 4→a, 5→s, @→a`, bỏ dấu chấm / gạch chen giữa chữ
+   ("s.t.e.r.o.i.d" → "steroid").
 
-## 5. Minh bạch trong app
+### 4.2 Cổng cứng — sai một điều là từ chối ngay (lý do hiện cho người đăng)
+| Mã | Điều kiện |
+|---|---|
+| `source_not_allowed` | tên miền không trong `community_article_sources` |
+| `bad_link` | không `https`, link rút gọn, chuyển hướng sang tên miền khác |
+| `affiliate` | tham số `aff=`, `ref=`, `tag=`, `coupon=`… |
+| `duplicate` | trùng `canonical_url` trong 7 ngày (cùng khu vực) |
+| `rate_limit` | > 3 bài báo / ngày / người |
+| `banned_substance` | từ trong danh sách chất cấm (steroid, SARMs, clenbuterol, DNP…) ở bất kỳ ngôn ngữ nào |
+| `language_unsupported` | không nhận được ngôn ngữ, hoặc ngôn ngữ ngoài danh sách khu vực cho phép |
+
+### 4.3 Điểm rủi ro 0–100
+Từ khoá đặt trong bảng `community_moderation_terms(term_folded, lang, category, weight, active)`
+— **mỗi ngôn ngữ một bộ**, admin sửa được, không cần ra bản app mới. Ví dụ hạt giống:
+
+| Nhóm | vi | en | es | Điểm |
+|---|---|---|---|---|
+| Bán hàng | mua ngay, giảm giá, mã ưu đãi | buy now, discount, promo code | compra ya, descuento, código | +40 |
+| Hứa hẹn thần kỳ | thần tốc, cam kết, giảm 10kg | miracle, guaranteed, lose 10kg | milagro, garantizado | +30 |
+| Khẳng định y tế | chữa, điều trị, khỏi bệnh | cure, treat, heal | cura, tratamiento | +15 |
+| Giật gân | sốc, bất ngờ | shocking, you won't believe | impactante | +10 |
+
+Tín hiệu không phụ thuộc ngôn ngữ:
+- tiêu đề > 40% chữ in hoa hoặc có "!!!": +10;
+- tiêu đề và mô tả trùng < 15% từ (Jaccard): +15;
+- lời bình có số điện thoại / link / email: +40; lời bình < 3 từ: +10.
+
+### 4.4 Điểm tin cậy (trừ / cộng)
+- Nguồn hạng `trusted`: −20.
+- Tài khoản > 30 ngày và có ≥ 1 bài đã duyệt: −10.
+- Tỉ lệ bài bị từ chối / báo cáo cao (`community_report_trust`): +20.
+
+### 4.5 Quyết định
+- **≤ 20** và nguồn `trusted` → `approved`, hiện ngay (nhãn "Duyệt tự động").
+- **≥ 70** → `rejected`, lý do = tín hiệu nặng nhất; người đăng có nút **khiếu nại** → hàng người duyệt.
+- Còn lại → `pending`, vào hàng moderator **cùng khu vực / ngôn ngữ**.
+- Cột `moderated_by`: `'rule' | 'human'`; mọi quyết định vào `moderation_audit_log` (actor = `system` cho luật).
+
+### 4.6 Sau khi hiện, và tự chỉnh
+- Báo cáo cộng theo độ tin cậy người báo cáo; vượt ngưỡng → tự ẩn, chờ người xem.
+- Moderator kiểm ngẫu nhiên 10% bài tự duyệt.
+- Nguồn ≥ 20 bài duyệt, 0 bị từ chối → **đề xuất** nâng `trusted` (admin xác nhận).
+- Từ khoá hay gây từ chối nhầm (bị lật khi khiếu nại) → hạ điểm, báo admin.
+
+### 4.7 Hạn chế
+Không hiểu ngữ cảnh ("điều trị chấn thương" trong bài khoa học vẫn bị +15) → nhờ
+vùng giữa + nguồn tin cậy. Ngưỡng cần chỉnh theo dữ liệu thật vài tuần đầu.
+
+## 5. Đa ngôn ngữ
+
+- Mỗi bài có `lang` (`vi|en|es`):
+  - bài báo: lấy `<html lang>` / `og:locale` khi server tải xem trước; thiếu thì
+    đoán bằng tỉ lệ từ dừng (stopwords) của từng ngôn ngữ trên tiêu đề + mô tả;
+  - bài người dùng (buổi tập / tiến bộ / công thức): ngôn ngữ app của người đăng
+    lúc đăng; lời bình đoán như trên, lệch thì lấy lời bình.
+- Nguồn có `langs` (một trang báo tiếng Việt chỉ được duyệt cho `vi`).
+- Moderator gắn với ngôn ngữ họ đọc được (`app_roles` thêm `langs`); hàng chờ chia theo ngôn ngữ.
+- Tờ minh bạch, dải nguồn, lý do từ chối: đủ vi/en/es (`Localizable.xcstrings`).
+- Người xem chọn "Ngôn ngữ bài viết" (mặc định = ngôn ngữ app; có thể bật thêm).
+
+## 6. Khu vực — không trộn bài giữa các khu vực
+
+### 6.1 Xác định khu vực (khuyến nghị: KHÔNG dựa chính vào IP)
+IP sai khi dùng VPN / 4G chuyển vùng / đi du lịch, và là dữ liệu cá nhân nhạy cảm.
+Thứ tự ưu tiên:
+1. **Khu vực người dùng tự chọn** trong Cài đặt (`profiles.community_region`).
+2. Mặc định khi chưa chọn: vùng của thiết bị (`Locale.current.region`) lúc đăng ký.
+3. IP **chỉ** là dự phòng phía server, tra ra mã quốc gia rồi **bỏ IP, không lưu**.
+
+Khu vực là nhóm quốc gia, ví dụ `VN`, `SEA`, `US`, `LATAM`, `EU` (bảng
+`community_regions(code, countries[], langs[])`). Đổi khu vực tối đa 1 lần / 30 ngày
+để chống lách.
+
+### 6.2 Áp dụng
+- Bài lưu `region` = khu vực người đăng lúc đăng (không đổi về sau).
+- Feed "Khám phá", tìm kiếm, thử thách, gợi ý theo dõi: **chỉ** bài cùng `region`.
+- "Đang theo dõi": vẫn thấy người mình theo dõi ở khu vực khác (mình chủ động chọn họ),
+  có nhãn khu vực nhỏ. Nếu chủ dự án muốn tách tuyệt đối → tắt ngoại lệ này.
+- Nguồn báo có `regions` — trang báo Việt chỉ duyệt cho `VN`.
+- Lọc ở **RLS / RPC phía server**, không lọc ở app (app lọc thì lách được).
+
+## 7. Xếp hạng feed theo điều người dùng quan tâm
+
+### 7.1 Hồ sơ sở thích (tính trên server, chỉ từ dữ liệu trong app)
+Vector chủ đề, mỗi chủ đề 0–1, cập nhật mỗi đêm + khi có tương tác:
+- **Mục tiêu** (`profiles.goal`: giảm mỡ / tăng cơ / giữ dáng) → chủ đề tương ứng.
+- **Tập gì**: nhóm cơ & bài trong 4 tuần gần nhất (`MuscleGroup`).
+- **Ăn gì**: bữa có ghi → protein cao / ít carb / món Việt…
+- **Tương tác**: thích +1, lưu +3, bình luận +2, mở bài báo +1, đọc > 10 giây +1,
+  ẩn bài −5, "Không quan tâm" −8. Giảm dần, nửa đời 14 ngày.
+
+Mỗi bài có chủ đề: bài buổi tập → nhóm cơ; công thức → nhãn dinh dưỡng; bài báo →
+từ khoá chủ đề theo ngôn ngữ (bảng tương tự §4.3, nhóm `topic`).
+
+### 7.2 Điểm xếp hạng (chỉ trên tập đã qua lọc khu vực + ngôn ngữ + duyệt)
+```
+điểm = 0.40 · khớp_sở_thích     (cosine vector người dùng · chủ đề bài)
+     + 0.25 · độ_mới           (e^(−giờ/24))
+     + 0.20 · xã_hội           (người mình theo dõi, bạn của bạn, đã tương tác với tác giả)
+     + 0.15 · chất_lượng       (tương tác / lượt xem, chuẩn hoá; bài báo nguồn trusted +)
+```
+Rồi áp luật đa dạng:
+- tối đa 2 bài liền nhau cùng tác giả hoặc cùng loại;
+- tối đa 1 bài báo trong mỗi 4 bài (cộng đồng là chính, báo là phụ);
+- 10% chỗ dành cho bài ngoài sở thích (khám phá), để feed không bị đóng khung.
+
+Người mới (chưa đủ dữ liệu): dùng mục tiêu + bài nổi bật trong khu vực.
+
+### 7.3 Minh bạch & quyền chọn
+- "⋯ → Vì sao tôi thấy bài này?": "Vì bạn tập ngực tuần này", "Từ người bạn theo dõi"…
+- "Không quan tâm chủ đề này".
+- Công tắc **"Feed theo thời gian"** (không cá nhân hoá) trong Cài đặt — nên có cho
+  minh bạch và cho thị trường EU (DSA yêu cầu lựa chọn không dựa trên hồ sơ).
+- Dữ liệu sở thích không rời server, không bán / chia sẻ; xoá tài khoản là xoá theo.
+
+## 8. Minh bạch trong app
 
 ### Tờ giải thích (hiện lần đầu đọc hoặc chia sẻ bài báo; mở lại từ "Vì sao?")
 
 1. **Nguồn đã kiểm duyệt.** Chỉ các trang trong danh sách nguồn của ASCND mới được chia sẻ.
-2. **Người thật duyệt.** Bài từ nguồn chưa tin cậy phải được người kiểm duyệt xem trước khi hiện.
+2. **Kiểm tra tự động + người thật.** Hệ thống chấm điểm mọi bài; bài chưa chắc chắn được người kiểm duyệt xem trước khi hiện.
 3. **Không phải lời khuyên y tế.** Hỏi bác sĩ / chuyên gia trước khi đổi chế độ tập hoặc ăn.
 4. **Mở ra ngoài app.** Bấm vào thẻ sẽ mở trang gốc. ASCND không sở hữu nội dung đó.
 5. **Bạn có thể báo cáo.** Thấy sai hoặc quảng cáo, dùng "⋯ → Báo cáo".
@@ -81,16 +195,19 @@ Nút: "Đã hiểu". Lưu đã xem theo từng người dùng (không cần serv
 nguồn, tiêu đề 2 dòng, mô tả 2 dòng) → dải nguồn → hàng thích / bình luận / lưu / chia sẻ.
 Mở bằng `SFSafariViewController` (đọc trong app, có thanh địa chỉ thật), không WebView tự dựng.
 
-## 6. Việc của từng bên
+## 9. Việc của từng bên
 
 | Bên | Việc |
 |---|---|
 | Chủ dự án | Duyệt kế hoạch; chọn danh sách nguồn ban đầu; chọn moderator. |
-| Agent server | Migration (mục 2), RPC + edge function xem trước (mục 3), hàng duyệt cho moderator, test RLS. |
-| Agent B (iOS) | Sau khi server lên: kind `article` trong `CommunityFeed`, ô dán liên kết trong composer, thẻ + dải nguồn, tờ giải thích, nhãn "Đang chờ duyệt", chuỗi vi/en/es. |
+| Agent server | Migration (mục 2 + `lang`, `region`, `moderated_by`, bảng từ khoá / khu vực), RPC + edge function xem trước (mục 3), thuật toán duyệt (mục 4), lọc khu vực ở RLS/RPC (mục 6), job sở thích + RPC feed xếp hạng (mục 7), test RLS. |
+| Agent B (iOS) | Sau khi server lên: kind `article`, ô dán liên kết, thẻ + dải nguồn, tờ giải thích, nhãn "Đang chờ duyệt" / lý do từ chối + khiếu nại, chọn khu vực & ngôn ngữ bài viết trong Cài đặt, "Vì sao tôi thấy bài này", "Không quan tâm", công tắc feed theo thời gian, chuỗi vi/en/es. |
 
-## 7. Câu hỏi còn mở
+## 10. Câu hỏi còn mở
 
 - Bài báo có hiện ở tab "Đang theo dõi" hay chỉ "Khám phá"?
+- "Đang theo dõi" có được thấy người ở khu vực khác không (§6.2), hay tách tuyệt đối?
+- Danh sách khu vực ban đầu (đề xuất: `VN`, `SEA`, `US`, `LATAM`, `EU`).
+- Trọng số xếp hạng §7.2 — giữ đề xuất rồi chỉnh theo số liệu?
 - Có cho người dùng đề xuất nguồn mới (vào hàng duyệt của admin) không?
 - Ngôn ngữ: chỉ nguồn tiếng Việt / Anh, hay mở theo ngôn ngữ app?
