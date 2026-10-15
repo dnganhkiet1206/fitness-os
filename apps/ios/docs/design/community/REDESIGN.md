@@ -34,3 +34,25 @@ Chủ dự án: "thiên về bài đăng một tí kiểu apple style mà vẫn 
 - Tiến bộ / công thức: mặt lõm sáng, nhãn chữ hoa màu loại bài (`PostTint.ink`), số lớn.
 - Ảnh minh hoạ chỉ hiện khi bài có ảnh. Thêm vào bữa / Thử buổi này là viên mảnh màu loại bài.
 - Giữ: chạm hai lần để thích, ảnh chia sẻ (`forShare`), menu ⋯.
+
+## Feed kiểu Apple News pha Instagram (15/10)
+
+Chủ dự án: mỗi bài "được phân loại là sức khoẻ, đồ ăn hay các thứ thuộc hệ thống của
+ASCND và có logo phân loại như apple news, có xếp hạng trending", sắp xếp "pha trộn
+tinh tế giữa apple news và instagram". Duyệt mock v2.
+
+- **Chuyên mục** (`CommunityLayout.Category`, ASCNDCore): tiến bộ → Sức khoẻ (thép,
+  `waveform.path.ecg`), công thức → Đồ ăn (cam, `fork.knife`), buổi tập → ASCND (hồng,
+  tam giác). Dải chuyên mục trên đầu mỗi thẻ (`CategoryBand`).
+- **Thịnh hành** (chỉ Khám phá): điểm = (thích + 2·bình luận + 3·lưu) / (giờ + 2)^1.5,
+  bài ≤ 72 giờ, chưa có tương tác thì không vào. Top 3: số 1 là thẻ lớn, 2–3 là danh
+  sách đánh số. Chốt theo mỗi lần tải feed để thích / bỏ thích không làm bài nhảy chỗ.
+  Chỉ tính trên các bài đã tải — xếp hạng toàn cộng đồng cần server (xem ARTICLES-PLAN §7).
+- **Nhịp**: thẻ lớn (bài "mạnh": PR / có số / có ảnh / ≥ 3 tương tác; không thì thẻ
+  hàng) → 2 thẻ hàng → lưới 2 cột → lặp. Hai bài cùng chuyên mục không đứng liền nhau
+  (nhìn trước 3 bài, gần đúng thứ tự thời gian).
+- **Thẻ**: tiêu đề đậm = lời người đăng (không có thì tên buổi / món / "Tiến trình N tuần");
+  "ảnh" = ảnh thật nếu có, không thì mảng màu chuyên mục + số lớn (bảng điểm than cho
+  buổi tập, cam + kcal cho món, thép + chênh lệch + đường cho tiến bộ). Đáy: thời gian,
+  tim (chạm = thích, không mở bài), "⋯". Chạm phần trên mở bài; màn chi tiết vẫn là
+  `PostCardView` đầy đủ.

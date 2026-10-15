@@ -75,6 +75,9 @@ struct CommunityFeedView: View {
   @State private var findPeople = false
   @State private var shareRoute: ShareRoute?
   @State private var openPost: OpenPost?
+  /// "Thịnh hành" chốt theo mỗi lần tải feed — thích / bỏ thích không làm
+  /// bài nhảy chỗ ngay dưới ngón tay.
+  @State private var trendIds: [String] = []
 
   struct OpenPost: Hashable, Identifiable { let id: String }
   /// "Đã thấy" theo tab + đang ở đầu feed (lát 17).
@@ -134,6 +137,7 @@ struct CommunityFeedView: View {
     // đã vẽ thì đã thấy — sổ chỉ thêm
     .onChange(of: hold.shown.map(\.id), initial: true) { _, ids in
       if book.phase == .ready { ledger.ack(ids, tab: book.tab.rawValue) }
+      trendIds = CommunityLayout.trending(hold.shown, now: EpochMillis(Date())).map(\.id)
     }
     .sensoryFeedback(.selection, trigger: released)
     // Đầu trang trong nội dung như Hôm nay / Tập luyện (thiết kế lại 14/10).
@@ -346,18 +350,48 @@ struct CommunityFeedView: View {
           message: String(localized: "community.empty.discover.hint"))
       }
     case .ready:
-      ForEach(shown) { post in
-        // Lát 3: chạm thẻ mở bài + bình luận (`community-post`). Chạm một lần
-        // (sau khi chắc không phải chạm hai lần để thích, 15/10) thay cho
-        // NavigationLink — link nuốt cú chạm đầu của chạm hai lần.
-        PostCardView(post: post, artURL: post.art.flatMap(book.artURL), unit: unit)
-          .contentShape(Rectangle())
-          .onTapGesture { openPost = OpenPost(id: post.id) }
-          .accessibilityAddTraits(.isButton)
-          .onAppear { if post.id == book.posts.last?.id { Task { await book.loadMore() } } }
+      // Feed kiểu Apple News pha Instagram (15/10): "Thịnh hành" đánh số ở
+      // Khám phá, rồi nhịp thẻ lớn → thẻ hàng → lưới (`CommunityLayout`).
+      // Chạm một lần mở bài + bình luận (`community-post`).
+      let trend = book.tab == .discover ? trendIds.compactMap { id in shown.first { $0.id == id } } : []
+      let rest = shown.filter { p in !trend.contains { $0.id == p.id } }
+      let slots = CommunityLayout.slots(rest)
+      if let first = trend.first {
+        NewsSectionTitle(title: String(localized: "community.trending"), tint: NewsPalette.trending)
+        HeroPostCard(post: first, artURL: first.art.flatMap(book.artURL), unit: unit) { openPost = OpenPost(id: first.id) }
+        if trend.count > 1 {
+          TrendingList(posts: Array(trend.dropFirst()), start: 2) { openPost = OpenPost(id: $0.id) }
+        }
+        if !slots.isEmpty { NewsSectionTitle(title: String(localized: "community.foryou")) }
+      }
+      ForEach(slots) { slot in
+        slotView(slot)
+          .onAppear { if slot.id == slots.last?.id { Task { await book.loadMore() } } }
       }
       footer
     }
+  }
+
+  @ViewBuilder private func slotView(_ slot: CommunityLayout.Slot) -> some View {
+    switch slot {
+    case .hero(let p):
+      HeroPostCard(post: p, artURL: p.art.flatMap(book.artURL), unit: unit) { openPost = OpenPost(id: p.id) }
+    case .row(let p):
+      RowPostCard(post: p, artURL: p.art.flatMap(book.artURL), unit: unit) { openPost = OpenPost(id: p.id) }
+    case .grid(let a, let b):
+      HStack(alignment: .top, spacing: DS.Spacing.md) {
+        tappable(a) { GridPostCard(post: a, artURL: a.art.flatMap(book.artURL), unit: unit) }
+        tappable(b) { GridPostCard(post: b, artURL: b.art.flatMap(book.artURL), unit: unit) }
+      }
+      .fixedSize(horizontal: false, vertical: true)
+    }
+  }
+
+  /// Thẻ lưới không có nút ở đáy — chạm cả thẻ mở bài.
+  private func tappable<Card: View>(_ post: CommunityFeed.Post, @ViewBuilder _ card: () -> Card) -> some View {
+    card()
+      .onTapGesture { openPost = OpenPost(id: post.id) }
+      .accessibilityAddTraits(.isButton)
   }
 
   @ViewBuilder private var footer: some View {
@@ -775,7 +809,7 @@ private struct DataLine: View {
 }
 
 /// "PR" — viên vàng.
-private struct RecordChip: View {
+struct RecordChip: View {
   var body: some View {
     Text(String(localized: "community.pr.short"))
       .font(.system(size: 10, weight: .heavy))
