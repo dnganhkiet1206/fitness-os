@@ -118,3 +118,8 @@ Chủ dự án: mock đầu "hơi giống tiktok, sửa lại cho khác biệt" 
 - (15/10, sau) Chủ dự án: "nền đang bị trùng với bài đăng" → thẻ dùng `PassMaterial` riêng: kim loại đen
   đơn sắc (than → đen), vân xước chéo rất mảnh, logo ASCND dập chìm cỡ lớn, vệt sáng chéo, viền ánh bạc.
   Không màu chuyên mục, không biểu tượng dụng cụ.
+- (15/10, sau) Chủ dự án: "trang cá nhân vẫn có nhiều chỗ lệch tông" → đồng bộ: nút phụ (Sửa hồ sơ / Đang
+  theo dõi / Bỏ tắt tiếng) cùng họ nút tròn (mặt thẻ trắng + viền mảnh); tiểu sử + "Đang theo dõi N" vào
+  trong thẻ; huy hiệu viên trắng; lọc loại bài = viên chữ (đang chọn đen đặc) thay segmented hệ thống;
+  tiêu đề mục 20pt bold; nền `TodayAmbient` + che thanh trạng thái như feed; bỏ tiêu đề "@handle" lặp;
+  thẻ bài trên trang cá nhân không lặp tác giả (`RowPostCard(showsAuthor: false)`).

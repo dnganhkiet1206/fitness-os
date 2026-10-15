@@ -791,6 +791,8 @@ struct RowPostCard: View {
   let post: CommunityFeed.Post
   let artURL: URL?
   let unit: WeightUnit
+  /// Trang cá nhân: tác giả đã ở thẻ vận động viên — không lặp lại trên từng bài.
+  var showsAuthor = true
   var open: () -> Void = {}
 
   var body: some View {
@@ -799,7 +801,7 @@ struct RowPostCard: View {
         CategoryBand(post: post)
         HStack(alignment: .top, spacing: 14) {
           VStack(alignment: .leading, spacing: 6) {
-            FeedAuthor(post: post)
+            if showsAuthor { FeedAuthor(post: post) }
             Text(verbatim: PostHeadline.text(post))
               .font(.system(size: 19, weight: .bold)).tracking(-0.3)
               .foregroundStyle(DS.Color.foreground.swiftUI)

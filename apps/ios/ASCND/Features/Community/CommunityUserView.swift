@@ -90,8 +90,10 @@ struct CommunityUserView: View {
       }
       .padding(DS.Spacing.md)
     }
-    .background(DS.Color.background.swiftUI)
-    .navigationTitle(Text(verbatim: book.profile.map { "@\($0.handle)" } ?? String(localized: "community.user.title")))
+    // Nền như feed; tiêu đề trống (handle đã nằm trong thẻ).
+    .background { TodayAmbient(accent: nil) }
+    .statusBarScrim()
+    .navigationTitle(Text(verbatim: ""))
     .navigationBarTitleDisplayMode(.inline)
     .toolbar {
       if book.profile != nil, !book.isMe {
@@ -161,7 +163,7 @@ struct CommunityUserView: View {
         primaryAction(p)
         about(p)
         if !book.posts.isEmpty || book.showsKindRow {
-          Text("community.pass.poststitle").font(.system(size: 17, weight: .bold)).padding(.top, DS.Spacing.sm)
+          sectionTitle(String(localized: "community.pass.poststitle"))
         }
         if book.showsKindRow { kindRow }
         if book.showsJourney, let j = book.journey, !j.lines.isEmpty { JourneyCard(journey: j, unit: unit) }
@@ -204,12 +206,21 @@ struct CommunityUserView: View {
                 .accessibilityLabel(Text("community.verified"))
             }
           }
-          Text(verbatim: "@\(p.handle)")
+          Text(verbatim: "@\(p.handle) · \(String(localized: "community.user.followingcount")) \(book.following)")
             .font(.system(size: 13))
             .foregroundStyle(.white.opacity(0.6))
+            .lineLimit(1)
+            .minimumScaleFactor(0.8)
         }
       }
       .padding(.top, 14)
+      if let bio = p.bio, !bio.isEmpty {
+        Text(verbatim: bio)
+          .font(.system(size: 14))
+          .foregroundStyle(.white.opacity(0.85))
+          .fixedSize(horizontal: false, vertical: true)
+          .padding(.top, 10)
+      }
       HStack(spacing: 0) {
         passStat(book.stats?.posts ?? book.posts.count, label: String(localized: "community.pass.posts"))
         passDivider
@@ -254,24 +265,23 @@ struct CommunityUserView: View {
     Rectangle().fill(.white.opacity(0.14)).frame(width: 0.5, height: 34).padding(.trailing, 12).padding(.top, 12)
   }
 
-  /// Dưới thẻ: tiểu sử, "Đang theo dõi N", huy hiệu.
+  /// Dưới thẻ: huy hiệu (tiểu sử / đang theo dõi đã vào thẻ).
   @ViewBuilder private func about(_ p: CommunityFeed.Author) -> some View {
-    VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-      if let bio = p.bio, !bio.isEmpty {
-        Text(verbatim: bio)
-          .font(.system(size: 15))
-          .foregroundStyle(DS.Color.foreground.swiftUI)
-          .fixedSize(horizontal: false, vertical: true)
-      }
-      Text(verbatim: "\(String(localized: "community.user.followingcount")) \(book.following)")
-        .font(DS.TextStyle.footnote)
-        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-      if !book.badges.isEmpty {
-        Text("community.pass.badges").font(.system(size: 17, weight: .bold)).padding(.top, DS.Spacing.sm)
+    if !book.badges.isEmpty {
+      VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+        sectionTitle(String(localized: "community.pass.badges"))
         badges
       }
+      .frame(maxWidth: .infinity, alignment: .leading)
     }
-    .frame(maxWidth: .infinity, alignment: .leading)
+  }
+
+  private func sectionTitle(_ t: String) -> some View {
+    Text(verbatim: t)
+      .font(.system(size: 20, weight: .bold)).tracking(-0.3)
+      .foregroundStyle(DS.Color.foreground.swiftUI)
+      .padding(.top, DS.Spacing.sm)
+      .accessibilityAddTraits(.isHeader)
   }
 
   private func count(_ n: Int, label: String) -> some View {
@@ -291,8 +301,9 @@ struct CommunityUserView: View {
           Text(verbatim: b.title).font(DS.TextStyle.footnote.weight(.semibold)).lineLimit(1)
         }
         .padding(.horizontal, 10)
-        .frame(height: 28)
-        .background(DS.Color.secondary.swiftUI, in: Capsule())
+        .frame(height: 30)
+        .background(DS.Color.card.swiftUI, in: Capsule())
+        .overlay { Capsule().strokeBorder(DS.Color.foreground.swiftUI.opacity(0.10), lineWidth: 0.75) }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text("community.user.badge \(b.title)"))
       }
@@ -331,7 +342,7 @@ struct CommunityUserView: View {
             quiet(Text("community.user.unfollowstate"))
           } else {
             Text("community.user.follow")
-              .font(DS.TextStyle.headline)
+              .font(.system(size: 15, weight: .semibold))
               .foregroundStyle(DS.Color.background.swiftUI)
               .frame(maxWidth: .infinity, minHeight: 44)
               .background(DS.Color.foreground.swiftUI, in: Capsule())
@@ -368,24 +379,45 @@ struct CommunityUserView: View {
     .buttonStyle(.plain)
   }
 
+  /// Nút phụ cùng họ với nút tròn: mặt thẻ trắng + viền mảnh (15/10, hết lệch tông
+  /// be / trắng).
   private func quiet(_ t: Text) -> some View {
-    t.font(DS.TextStyle.headline)
+    t.font(.system(size: 15, weight: .semibold))
       .foregroundStyle(DS.Color.foreground.swiftUI)
       .frame(maxWidth: .infinity, minHeight: 44)
-      .background(DS.Color.secondary.swiftUI, in: Capsule())
+      .background(DS.Color.card.swiftUI, in: Capsule())
+      .overlay { Capsule().strokeBorder(DS.Color.foreground.swiftUI.opacity(0.12), lineWidth: 0.75) }
   }
 
+  /// Lọc loại bài: viên chữ — đang chọn đen đặc, còn lại mặt thẻ (thay segmented
+  /// mặc định lệch tông).
   private var kindRow: some View {
-    Picker(
-      selection: Binding(get: { book.kind }, set: { k in Task { await book.select(k) } })
-    ) {
-      ForEach([CommunityUser.KindFilter.all] + book.kinds, id: \.self) { k in
-        Text(Self.kindLabel(k)).tag(k)
+    ScrollView(.horizontal, showsIndicators: false) {
+      HStack(spacing: DS.Spacing.sm) {
+        ForEach([CommunityUser.KindFilter.all] + book.kinds, id: \.self) { k in
+          let on = book.kind == k
+          Button {
+            taps += 1
+            Task { await book.select(k) }
+          } label: {
+            Text(Self.kindLabel(k))
+              .font(.system(size: 14, weight: .semibold))
+              .foregroundStyle(on ? DS.Color.background.swiftUI : DS.Color.foreground.swiftUI)
+              .padding(.horizontal, 16)
+              .frame(height: 36)
+              .background(on ? DS.Color.foreground.swiftUI : DS.Color.card.swiftUI, in: Capsule())
+              .overlay {
+                Capsule().strokeBorder(DS.Color.foreground.swiftUI.opacity(on ? 0 : 0.10), lineWidth: 0.75)
+              }
+              .frame(minHeight: 44)
+              .contentShape(Capsule())
+          }
+          .buttonStyle(TodayPressStyle())
+          .accessibilityAddTraits(on ? .isSelected : [])
+        }
       }
-    } label: {
-      Text("community.user.title")
     }
-    .pickerStyle(.segmented)
+    .scrollClipDisabled()
   }
 
   private func mutedCard(_ p: CommunityFeed.Author, until: String) -> some View {
@@ -422,7 +454,9 @@ struct CommunityUserView: View {
     case .ready:
       // Bài dạng thẻ hàng kiểu Apple News như feed (không phải lưới ảnh).
       ForEach(book.posts) { post in
-        RowPostCard(post: post, artURL: post.art.flatMap(book.artURL), unit: unit) { openPost = post.id }
+        RowPostCard(post: post, artURL: post.art.flatMap(book.artURL), unit: unit, showsAuthor: false) {
+          openPost = post.id
+        }
           .onAppear { if post.id == book.posts.last?.id { Task { await book.loadMore() } } }
       }
       if book.loadingMore {
