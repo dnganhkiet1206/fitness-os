@@ -242,6 +242,11 @@ struct CardAction: View {
         pill(String(localized: "community.try"), "arrow.trianglehead.2.clockwise", busy: actions.trying.contains(post.id)) {
           tryIt(post)
         }
+      } else if post.kind == .workout, let tryIt = actions.tryWorkout, CommunityTry.redo(post) {
+        // Bài của chính mình: "Thử lại" (chủ dự án) — chép vào Buổi tập, không ghi lượt thử.
+        pill(String(localized: "community.redo"), "arrow.trianglehead.2.clockwise", busy: actions.trying.contains(post.id)) {
+          tryIt(post)
+        }
       } else if post.kind == .recipe, let add = actions.addToMeal, (post.recipe?.kcal ?? 0) > 0 {
         pill(String(localized: "community.addtomeal"), "plus", busy: false) { add(post) }
       }

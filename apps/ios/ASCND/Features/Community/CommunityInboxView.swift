@@ -39,7 +39,8 @@ struct CommunityInboxView: View {
     }
     .refreshable { await book.load(lang: AppServices.appLang) }
     .communityUserLinks()
-    .navigationDestination(item: $openPost) { CommunityPostScreen(postId: $0.id) }
+    // Bài mở bằng màn bật lên kèm thẻ (15/10), như feed.
+    .communityPostSheet(Binding(get: { openPost.map { CommunityPostSheetRoute(id: $0.id) } }, set: { openPost = $0.map { CommunityPostRoute(id: $0.id) } }))
     .navigationDestination(item: $openChallenge) { route in
       if let challenges { CommunityChallengeView(book: challenges, id: route.id) }
     }

@@ -132,3 +132,10 @@ Chủ dự án: mock đầu "hơi giống tiktok, sửa lại cho khác biệt" 
   - Chạm avatar trên thẻ của mình → Sửa hồ sơ (đổi linh vật).
   - Chia sẻ hồ sơ = ẢNH của thẻ vận động viên (`PassShareImage`, `AthletePassCard` dùng chung).
   - Chưa làm: trạng thái "mới bắt đầu" thay các số 0.
+- (15/10, sau) Việc còn dở (chủ dự án: "ok làm đi"):
+  - Trang cá nhân có tiêu đề lớn "Hồ sơ" (chủ dự án: "tiêu đề của trang này chưa có").
+  - Trang của mình chưa có bài: thẻ mời "Chia sẻ buổi tập đầu tiên" thay một dòng chữ.
+  - Mọi nơi còn đẩy sang màn "Bài đăng" (Hộp thư, Tìm kiếm, Đã lưu, ô Hữu ích, lưới trang cá nhân) nay mở
+    màn bật lên (`communityPostSheet`): kèm thẻ khi nơi mở chưa hiện cả bài, chỉ bình luận khi đã hiện.
+  - Bài buổi tập của CHÍNH MÌNH có nút "Thử lại" (người khác: "Thử buổi tập" — đổi từ "Thử workout" theo chủ
+    dự án): cùng lõi chép template, KHÔNG ghi lượt thử (`CommunityTry.redo`, có test).

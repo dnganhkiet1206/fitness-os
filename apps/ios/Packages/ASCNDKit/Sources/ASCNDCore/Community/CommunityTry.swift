@@ -32,6 +32,11 @@ public enum CommunityTry {
   /// Nút có hiện không: bài workout của người khác, trên thẻ thật (không phải xem trước).
   public static func offered(_ post: CommunityFeed.Post) -> Bool { post.kind == .workout && !post.mine }
 
+  /// "Thử lại" trên buổi của CHÍNH MÌNH (15/10, chủ dự án duyệt): cùng lõi chép
+  /// cấu trúc vào template, nhưng KHÔNG ghi lượt thử (không tự cộng "lượt thử",
+  /// không tự báo cho mình).
+  public static func redo(_ post: CommunityFeed.Post) -> Bool { post.kind == .workout && post.mine }
+
   public enum Outcome: Sendable, Hashable {
     /// Đã thêm vào Buổi tập; `skipped` bài tự tạo của người đăng không chép được.
     case tried(skipped: Int)
@@ -88,7 +93,8 @@ public final class CommunityTryBook {
     // Sau template, không trước. Template đã BỀN trên máy (hàng đợi gửi khi có
     // mạng) — ghi lượt thử hỏng chỉ làm tác giả thiếu một thông báo, không
     // biến một template đã lưu thành "thất bại".
-    try? await remote.recordTry(postId: post.id, userId: userId)
+    // Bài của chính mình ("Thử lại"): không ghi lượt thử.
+    if !post.mine { try? await remote.recordTry(postId: post.id, userId: userId) }
     return .tried(skipped: skipped)
   }
 }

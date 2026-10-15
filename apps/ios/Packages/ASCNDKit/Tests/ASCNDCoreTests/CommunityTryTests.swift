@@ -81,6 +81,21 @@ struct CommunityTryBookTests {
   @Test func ownPostsHaveNoTry() throws {
     let p = try #require(Self.post("p4", mine: true, lines: [Self.line("ex", library: true)]))
     #expect(!CommunityTry.offered(p))
+    #expect(CommunityTry.redo(p))
+  }
+
+  @Test func redoOwnPostCopiesButRecordsNoTry() async throws {
+    let r = Remote()
+    let b = CommunityTryBook(userId: "me", remote: r) { "tpl" }
+    let p = try #require(Self.post("p5", mine: true, lines: [Self.line("ex-squat", library: true)]))
+    var copied = false
+    let out = await b.tryWorkout(p, fallbackName: "x") { _, _, _, _ in
+      copied = true
+      return 0
+    }
+    #expect(out == .tried(skipped: 0))
+    #expect(copied)
+    #expect(r.calls.isEmpty, "bài của mình: không tự cộng lượt thử / tự báo")
   }
 
   @Test func payloadNumbersBecomeLines() {

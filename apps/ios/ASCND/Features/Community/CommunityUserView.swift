@@ -116,7 +116,7 @@ struct CommunityUserView: View {
     }
     .task { if book.phase == .loading { await book.load() } }
     .refreshable { await book.load() }
-    .navigationDestination(item: $openPost) { CommunityPostScreen(postId: $0) }
+    .communityPostSheet(Binding(get: { openPost.map { CommunityPostSheetRoute(id: $0) } }, set: { openPost = $0?.id }))
     .navigationDestination(isPresented: $showsAwards) {
       if let awards { AwardsView(book: awards, lang: services.preferences.lang) }
     }
@@ -168,6 +168,12 @@ struct CommunityUserView: View {
       DSEmptyState(systemImage: "person.crop.circle.badge.questionmark", title: String(localized: "community.user.gone"))
     case .ready:
       if let p = book.profile {
+        // Tiêu đề lớn trong nội dung như "Cộng đồng" (15/10, chủ dự án: "tiêu đề của
+        // trang này chưa có").
+        Text("community.user.heading")
+          .font(.largeTitle.bold())
+          .foregroundStyle(DS.Color.foreground.swiftUI)
+          .accessibilityAddTraits(.isHeader)
         hero(p)
         primaryAction(p)
         if book.isMe { training }
@@ -455,7 +461,29 @@ struct CommunityUserView: View {
       DSErrorView(message: String(localized: "community.loadfailed")) { Task { await book.reloadPosts() } }
     case .ready where book.posts.isEmpty:
       // Đang tắt tiếng: ghi chú ở trên đã nói vì sao trang trống.
-      if book.mutedUntil == nil {
+      if book.isMe {
+        // Trang của mình còn trống: lời mời thay vì một dòng "chưa có bài" (15/10).
+        VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+          Image(systemName: "dumbbell.fill")
+            .font(.system(size: 22, weight: .semibold))
+            .foregroundStyle(DS.Color.metricRose.swiftUI)
+            .accessibilityHidden(true)
+          Text("community.user.empty.mine.title")
+            .font(.system(size: 17, weight: .bold))
+            .foregroundStyle(DS.Color.foreground.swiftUI)
+          Text("community.user.empty.mine.body")
+            .font(.system(size: 14))
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay {
+          RoundedRectangle(cornerRadius: 18, style: .continuous)
+            .strokeBorder(DS.Color.foreground.swiftUI.opacity(0.08), lineWidth: 0.75)
+        }
+      } else if book.mutedUntil == nil {
         Text("community.user.empty")
           .font(DS.TextStyle.footnote)
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)

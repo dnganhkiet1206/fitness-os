@@ -528,8 +528,12 @@ struct PostCardView: View {
           add(post)
         }
       }
-      if !forShare, post.kind == .workout, let tryIt = actions?.tryWorkout, CommunityTry.offered(post) {
-        TryWorkoutButton(busy: actions?.trying.contains(post.id) ?? false, tint: PostTint.ink(.workout)) {
+      if !forShare, post.kind == .workout, let tryIt = actions?.tryWorkout,
+        CommunityTry.offered(post) || CommunityTry.redo(post)
+      {
+        TryWorkoutButton(
+          busy: actions?.trying.contains(post.id) ?? false, tint: PostTint.ink(.workout), redo: CommunityTry.redo(post)
+        ) {
           tryIt(post)
         }
       }
@@ -619,11 +623,15 @@ private struct PostAction: View {
 struct TryWorkoutButton: View {
   let busy: Bool
   var tint: Color = DS.Color.foreground.swiftUI
+  /// Bài của chính mình: "Thử lại" (không ghi lượt thử).
+  var redo = false
   let action: () -> Void
 
   var body: some View {
     Button(action: action) {
-      Label(String(localized: "community.try"), systemImage: "arrow.trianglehead.2.clockwise")
+      Label(
+        redo ? String(localized: "community.redo") : String(localized: "community.try"),
+        systemImage: "arrow.trianglehead.2.clockwise")
         .font(DS.TextStyle.footnote.weight(.semibold))
         .foregroundStyle(tint)
         .frame(maxWidth: .infinity, minHeight: 44)
@@ -1062,6 +1070,7 @@ struct PostCountsView: View {
 
 struct UsefulThisWeekCard: View {
   let posts: [CommunityFeed.Post]
+  @State private var sheetPost: CommunityPostSheetRoute?
 
   /// Hàng thẻ màu trượt ngang (thiết kế lại 14/10): cùng màu theo loại với
   /// thẻ bài — mỗi thẻ: loại, tiêu đề, @tác giả, lý do ("12 người đã thử").
@@ -1080,8 +1089,8 @@ struct UsefulThisWeekCard: View {
       ScrollView(.horizontal, showsIndicators: false) {
         HStack(spacing: DS.Spacing.sm) {
           ForEach(posts) { p in
-            NavigationLink {
-              CommunityPostScreen(postId: p.id)
+            Button {
+              sheetPost = CommunityPostSheetRoute(id: p.id)
             } label: {
               tile(p)
             }
@@ -1093,6 +1102,7 @@ struct UsefulThisWeekCard: View {
       }
       .scrollClipDisabled()
     }
+    .communityPostSheet($sheetPost)
   }
 
   private func tile(_ p: CommunityFeed.Post) -> some View {

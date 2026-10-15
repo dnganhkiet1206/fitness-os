@@ -47,6 +47,7 @@ struct CommunitySearchView: View {
   @State private var q = ""
   @State private var message: String?
   @State private var taps = 0
+  @State private var sheetPost: CommunityPostSheetRoute?
   @FocusState private var focused: Bool
 
   var body: some View {
@@ -76,6 +77,7 @@ struct CommunitySearchView: View {
       .padding(DS.Spacing.md)
     }
     .background(DS.Color.background.swiftUI)
+    .communityPostSheet($sheetPost)
     .navigationTitle(Text(title))
     .navigationBarTitleDisplayMode(.inline)
     .task { await book.loadSuggestions() }
@@ -293,8 +295,8 @@ struct CommunitySearchView: View {
             ? String(localized: "community.search.recipenonehint") : String(localized: "community.search.postnonehint"))
       case .ready:
         ForEach(book.hits) { post in
-          NavigationLink {
-            CommunityPostScreen(postId: post.id)
+          Button {
+            sheetPost = CommunityPostSheetRoute(id: post.id, withPost: false)
           } label: {
             PostCardView(post: post, artURL: post.art.flatMap(book.artURL), unit: unit)
           }

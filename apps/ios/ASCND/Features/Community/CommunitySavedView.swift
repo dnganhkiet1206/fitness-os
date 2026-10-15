@@ -47,6 +47,7 @@ struct CommunitySavedView: View {
   /// bỏ lưu ở lại tới lần mở sau, như RN).
   @State private var opened = false
   @State private var findRecipes = false
+  @State private var sheetPost: CommunityPostSheetRoute?
 
   var body: some View {
     ScrollView {
@@ -64,6 +65,7 @@ struct CommunitySavedView: View {
       .padding(DS.Spacing.md)
     }
     .background(DS.Color.background.swiftUI)
+    .communityPostSheet($sheetPost)
     .navigationTitle(Text("community.saved.title"))
     .navigationBarTitleDisplayMode(.inline)
     // `refetchOnMount: 'always'`: mỗi lần mở đọc lại.
@@ -100,8 +102,8 @@ struct CommunitySavedView: View {
       empty
     case .ready:
       ForEach(visible) { post in
-        NavigationLink {
-          CommunityPostScreen(postId: post.id)
+        Button {
+          sheetPost = CommunityPostSheetRoute(id: post.id, withPost: false)
         } label: {
           PostCardView(post: post, artURL: post.art.flatMap(book.artURL), unit: unit)
         }

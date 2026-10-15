@@ -27708,7 +27708,7 @@
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Thử workout"
+      "value": "Thử buổi tập"
      }
     },
     "es": {
@@ -49357,6 +49357,98 @@
      "stringUnit": {
       "state": "translated",
       "value": "Nhịp tập · 4 tuần"
+     }
+    }
+   }
+  },
+  "community.user.heading": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Profile"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Perfil"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hồ sơ"
+     }
+    }
+   }
+  },
+  "community.user.empty.mine.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Share your first session"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Comparte tu primera sesión"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chia sẻ buổi tập đầu tiên"
+     }
+    }
+   }
+  },
+  "community.user.empty.mine.body": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Post a workout, progress or recipe from the Community tab — others can try it and follow along."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Publica un entrenamiento, progreso o receta desde la pestaña Comunidad: otros podrán probarlo y seguirte."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đăng buổi tập, tiến bộ hoặc món ăn từ tab Cộng đồng — mọi người có thể thử theo và theo dõi bạn."
+     }
+    }
+   }
+  },
+  "community.redo": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Try again"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Probar de nuevo"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Thử lại"
      }
     }
    }

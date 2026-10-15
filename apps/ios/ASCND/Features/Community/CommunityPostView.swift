@@ -49,6 +49,21 @@ struct CommunityPostScreen: View {
   }
 }
 
+/// Bài mở bằng màn bật lên (15/10 — thay màn "Bài đăng" đẩy sang ở mọi nơi).
+struct CommunityPostSheetRoute: Identifiable, Hashable {
+  let id: String
+  /// Kèm thẻ đầy đủ — khi nơi mở chưa hiện cả bài.
+  var withPost = true
+}
+
+extension View {
+  func communityPostSheet(_ route: Binding<CommunityPostSheetRoute?>, onCommented: @escaping () -> Void = {})
+    -> some View
+  {
+    sheet(item: route) { r in CommunityCommentsSheet(postId: r.id, showsPost: r.withPost, onCommented: onCommented) }
+  }
+}
+
 /// Màn bình luận bật lên ngay từ thẻ (15/10, chủ dự án: "thêm nút bình luận trên
 /// thẻ… mở một màn pop up để bình luận như instagram nhưng mang hơi hướng premium
 /// tối giản của apple style gym"): nửa màn, kéo lên được cả màn; mặt kính mờ,
