@@ -96,3 +96,7 @@ trên sáng hơn viền dưới như mép kính bắt sáng. Danh sách Thịnh 
 - (15/10, sau) Chủ dự án: "cho nút thử nằm ngay trên thẻ luôn" → `CardAction`: thẻ lớn đặt viên kính mờ
   "Thử buổi này" / "Thêm vào bữa" ngay trên ảnh, góc dưới phải vùng số; thẻ hàng đặt viên đặc dưới tiêu
   đề. Bỏ khỏi đáy thẻ. Vẫn theo `CommunityTry.offered` (không hiện trên bài của chính mình).
+- (15/10, sau) Chủ dự án: "màn này giờ thừa rồi gỡ đi" (màn "Bài đăng" mở từ feed). Feed không còn đẩy
+  sang `CommunityPostScreen`: chạm thẻ = mở màn bình luận bật lên; dòng Thịnh hành 2–3 (bài chỉ là một
+  dòng) mở màn bật lên KÈM thẻ đầy đủ (`showsPost`). Màn bài vẫn giữ cho Hộp thư, Tìm kiếm, Đã lưu, Trang
+  cá nhân và ô "Hữu ích" — những nơi đó bài chỉ hiện thu gọn.

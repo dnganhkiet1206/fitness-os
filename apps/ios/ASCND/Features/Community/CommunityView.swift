@@ -74,14 +74,17 @@ struct CommunityFeedView: View {
   /// "Tìm người để theo dõi" khi tab Đang theo dõi trống.
   @State private var findPeople = false
   @State private var shareRoute: ShareRoute?
-  @State private var openPost: OpenPost?
   /// "Thịnh hành" chốt theo mỗi lần tải feed — thích / bỏ thích không làm
   /// bài nhảy chỗ ngay dưới ngón tay.
   @State private var trendIds: [String] = []
   /// Bài đang mở màn bình luận bật lên.
   @State private var commentsFor: OpenPost?
 
-  struct OpenPost: Hashable, Identifiable { let id: String }
+  struct OpenPost: Hashable, Identifiable {
+    let id: String
+    /// Màn bật lên kèm cả thẻ đầy đủ (từ danh sách Thịnh hành — nơi bài chỉ là một dòng).
+    var withPost = false
+  }
   /// "Đã thấy" theo tab + đang ở đầu feed (lát 17).
   @State private var ledger = CommunityFeedHold.Ledger()
   @State private var atTop = true
@@ -151,10 +154,9 @@ struct CommunityFeedView: View {
     .navigationDestination(isPresented: $findPeople) { CommunitySearchScreen() }
     .environment(\.openCommunityComments) { commentsFor = OpenPost(id: $0.id) }
     .sheet(item: $commentsFor) { p in
-      CommunityCommentsSheet(postId: p.id) { Task { await book.load() } }
-    }
-    .navigationDestination(item: $openPost) { p in
-      CommunityPostScreen(postId: p.id) { Task { await book.load() } }
+      // Feed không còn đẩy sang màn bài (15/10, chủ dự án: "màn này giờ thừa rồi
+      // gỡ đi") — thẻ đã đủ thông tin; chạm thẻ / nút bình luận mở màn bật lên.
+      CommunityCommentsSheet(postId: p.id, showsPost: p.withPost) { Task { await book.load() } }
     }
     .navigationDestination(item: $shareRoute) { route in
       switch route {
@@ -364,9 +366,9 @@ struct CommunityFeedView: View {
       let slots = CommunityLayout.slots(rest)
       if let first = trend.first {
         NewsSectionTitle(title: String(localized: "community.trending"), tint: NewsPalette.trending)
-        HeroPostCard(post: first, artURL: first.art.flatMap(book.artURL), unit: unit) { openPost = OpenPost(id: first.id) }
+        HeroPostCard(post: first, artURL: first.art.flatMap(book.artURL), unit: unit) { commentsFor = OpenPost(id: first.id) }
         if trend.count > 1 {
-          TrendingList(posts: Array(trend.dropFirst()), start: 2) { openPost = OpenPost(id: $0.id) }
+          TrendingList(posts: Array(trend.dropFirst()), start: 2) { commentsFor = OpenPost(id: $0.id, withPost: true) }
         }
         if !slots.isEmpty { NewsSectionTitle(title: String(localized: "community.foryou")) }
       }
@@ -381,9 +383,9 @@ struct CommunityFeedView: View {
   @ViewBuilder private func slotView(_ slot: CommunityLayout.Slot) -> some View {
     switch slot {
     case .hero(let p):
-      HeroPostCard(post: p, artURL: p.art.flatMap(book.artURL), unit: unit) { openPost = OpenPost(id: p.id) }
+      HeroPostCard(post: p, artURL: p.art.flatMap(book.artURL), unit: unit) { commentsFor = OpenPost(id: p.id) }
     case .row(let p):
-      RowPostCard(post: p, artURL: p.art.flatMap(book.artURL), unit: unit) { openPost = OpenPost(id: p.id) }
+      RowPostCard(post: p, artURL: p.art.flatMap(book.artURL), unit: unit) { commentsFor = OpenPost(id: p.id) }
     case .grid(let a, let b):
       HStack(alignment: .top, spacing: DS.Spacing.md) {
         tappable(a) { GridPostCard(post: a, artURL: a.art.flatMap(book.artURL), unit: unit) }
@@ -396,7 +398,7 @@ struct CommunityFeedView: View {
   /// Thẻ lưới không có nút ở đáy — chạm cả thẻ mở bài.
   private func tappable<Card: View>(_ post: CommunityFeed.Post, @ViewBuilder _ card: () -> Card) -> some View {
     card()
-      .onTapGesture { openPost = OpenPost(id: post.id) }
+      .onTapGesture { commentsFor = OpenPost(id: post.id) }
       .accessibilityAddTraits(.isButton)
   }
 

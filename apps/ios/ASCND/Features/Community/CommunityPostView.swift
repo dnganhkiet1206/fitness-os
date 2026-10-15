@@ -56,6 +56,8 @@ struct CommunityPostScreen: View {
 /// với màn bài.
 struct CommunityCommentsSheet: View {
   let postId: String
+  /// Kèm thẻ đầy đủ ở đầu (khi nơi mở chưa hiện bài).
+  var showsPost = false
   var onCommented: () -> Void = {}
   @Environment(WorkoutFlow.self) private var flow
   @Environment(AppServices.self) private var services
@@ -66,7 +68,7 @@ struct CommunityCommentsSheet: View {
     NavigationStack {
       Group {
         if let book {
-          CommunityPostView(book: book, onCommented: onCommented, commentsOnly: true)
+          CommunityPostView(book: book, onCommented: onCommented, commentsOnly: !showsPost, inSheet: true)
         } else {
           DSLoadingView()
         }
@@ -112,6 +114,8 @@ struct CommunityPostView: View {
   /// Màn bình luận bật lên từ thẻ (15/10): chỉ luồng bình luận + thanh viết,
   /// không lặp lại thẻ; nền trong để lộ mặt kính của sheet.
   var commentsOnly = false
+  /// Đang nằm trong màn bật lên: nền trong / thanh kính.
+  var inSheet = false
   @Environment(\.weightUnit) private var unit
   @State private var draft = ""
   @State private var replyTo: CommunityComment?
@@ -126,7 +130,7 @@ struct CommunityPostView: View {
       }
       .padding(DS.Spacing.md)
     }
-    .background(commentsOnly ? Color.clear : DS.Color.background.swiftUI)
+    .background(inSheet ? Color.clear : DS.Color.background.swiftUI)
     .scrollDismissesKeyboard(.interactively)
     .safeAreaInset(edge: .bottom) { if book.post != nil { composer } }
     .task { if book.phase == .loading { await book.load() } }
@@ -292,7 +296,7 @@ struct CommunityPostView: View {
     }
     .padding(.horizontal, DS.Spacing.md)
     .padding(.vertical, DS.Spacing.sm)
-    .background(commentsOnly ? AnyShapeStyle(.bar) : AnyShapeStyle(DS.Color.background.swiftUI))
+    .background(inSheet ? AnyShapeStyle(.bar) : AnyShapeStyle(DS.Color.background.swiftUI))
     .overlay(alignment: .top) { Divider() }
   }
 
