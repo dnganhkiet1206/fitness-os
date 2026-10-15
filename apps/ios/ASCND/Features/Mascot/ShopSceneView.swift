@@ -9,7 +9,7 @@ import SwiftUI
 /// đổi `<View>` bọc ngoài chứ không vẽ lại SVG. Lò xo không nảy (`SPRING`:
 /// damping 26, stiffness 120) để chạm tab giữa chừng thì đổi hướng mượt;
 /// Reduce Motion → chuyển thẳng. Mép tan vào nền trang đứng yên ngoài máy quay
-/// (`shopFadeH` / `shopFadeV`). Cảnh luôn là cảnh đêm — Koa luôn vẽ bản đèn.
+/// Cảnh ngày ở giao diện sáng, đêm ở giao diện tối (15/10).
 ///
 /// Cả bức dựng ở `SS` lần toạ độ cảnh rồi máy quay thu về (`m[0] / SS`): khung
 /// gần nhất phóng ~1,9 lần, nên phóng một ảnh đã rời rạc hoá ở 1× sẽ mờ; ở 2×
@@ -25,6 +25,7 @@ struct ShopSceneView: View {
   var dress = false
 
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @Environment(\.colorScheme) private var scheme
 
   /// `SS`.
   private static let ss = 2.0
@@ -37,8 +38,8 @@ struct ShopSceneView: View {
       let box = ShopScene.figureBox
       let ss = Self.ss
       ZStack(alignment: .topLeading) {
-        ShopRoomCanvas(skin: skin, energy: energy, scale: ss)
-        MascotFigureView(emotion: .idle, equipped: equipped, size: (box.w * ss).rounded(), dress: dress, paper: false)
+        ShopRoomCanvas(skin: skin, energy: energy, light: scheme == .light, scale: ss)
+        MascotFigureView(emotion: .idle, equipped: equipped, size: (box.w * ss).rounded(), dress: dress)
           .offset(x: box.x * ss, y: box.y * ss)
       }
       .frame(width: ShopScene.width * ss, height: ShopScene.height * ss, alignment: .topLeading)
@@ -47,8 +48,13 @@ struct ShopSceneView: View {
       .animation(reduceMotion ? nil : .interpolatingSpring(mass: 1, stiffness: 120, damping: 26), value: shot)
     }
     .aspectRatio(ShopScene.width / ShopScene.height, contentMode: .fit)
-    .clipped()
-    .overlay { ShopFade() }
+    // Thẻ bo góc như sân khấu phòng Koa (15/10, thay mép tan của RN).
+    .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+    .overlay {
+      RoundedRectangle(cornerRadius: 28, style: .continuous)
+        .strokeBorder(DS.Color.foreground.swiftUI.opacity(0.08), lineWidth: 0.75)
+    }
+    .shadow(color: .black.opacity(0.08), radius: 18, y: 8)
     .accessibilityHidden(true)
   }
 }
@@ -57,35 +63,16 @@ struct ShopSceneView: View {
 private struct ShopRoomCanvas: View {
   let skin: String
   let energy: Double
+  var light = false
   let scale: Double
 
   var body: some View {
-    let plan = KoaPaint.plan(KoaRender.Element("Svg", kids: ShopScene.tree(skin: skin, energy: energy)))
+    let plan = KoaPaint.plan(KoaRender.Element("Svg", kids: ShopScene.tree(skin: skin, energy: energy, light: light)))
     Canvas { ctx, _ in
       var c = ctx
       c.concatenate(CGAffineTransform(scaleX: scale, y: scale))
       KoaCanvas.draw(plan, in: &c)
     }
     .frame(width: ShopScene.width * scale, height: ShopScene.height * scale)
-  }
-}
-
-/// `shopFadeH` rồi `shopFadeV` — theo màu trang của theme.
-private struct ShopFade: View {
-  var body: some View {
-    let page = DS.Color.background.swiftUI
-    ZStack {
-      LinearGradient(
-        stops: [
-          .init(color: page.opacity(0.55), location: 0), .init(color: page.opacity(0), location: 0.09),
-          .init(color: page.opacity(0), location: 0.91), .init(color: page.opacity(0.55), location: 1),
-        ], startPoint: .leading, endPoint: .trailing)
-      LinearGradient(
-        stops: [
-          .init(color: page.opacity(0), location: 0), .init(color: page.opacity(0), location: 0.83),
-          .init(color: page, location: 1),
-        ], startPoint: .top, endPoint: .bottom)
-    }
-    .allowsHitTesting(false)
   }
 }

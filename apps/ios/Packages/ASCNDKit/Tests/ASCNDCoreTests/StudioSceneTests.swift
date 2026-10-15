@@ -112,4 +112,16 @@ struct StudioSceneTests {
       }
     }
   }
+
+  /// Bản ngày: tường sáng, không còn màu khung đêm; bản đêm không đổi.
+  @Test func dayRoomRecolorsWithoutTouchingNight() {
+    var o = StudioScene.Options()
+    let night = StudioScene.tree(o)
+    o.light = true
+    let day = StudioScene.tree(o)
+    #expect(night.count == day.count)
+    let dayText = String(describing: day)
+    #expect(!dayText.contains("#151A33") && dayText.contains("#F7EEE2"))
+    #expect(String(describing: night).contains("#151A33"))
+  }
 }

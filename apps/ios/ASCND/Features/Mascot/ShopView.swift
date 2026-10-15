@@ -50,6 +50,7 @@ struct ShopView: View {
   var body: some View {
     ScrollView {
       VStack(alignment: .leading, spacing: DS.Spacing.md) {
+        header
         switch book.phase {
         case .loading:
           DSLoadingView()
@@ -61,28 +62,38 @@ struct ShopView: View {
       }
       .padding(DS.Spacing.md)
     }
-    // nền trang như mọi màn (`Screen` của RN) — không thì ScrollView để lộ nền trắng
-    .background(DS.Color.background.swiftUI)
-    .navigationTitle(Text("shop.title"))
+    // Thiết kế lại 15/10: nền giấy + tiêu đề lớn trong nội dung, số xu ở đầu trang.
+    .background { TodayAmbient(accent: nil) }
+    .statusBarScrim()
+    .navigationTitle(Text(verbatim: ""))
     .navigationBarTitleDisplayMode(.inline)
-    .toolbar {
-      ToolbarItem(placement: .primaryAction) {
-        Label {
-          Text(verbatim: book.balance.formatted(.number.locale(.app)))
-        } icon: {
-          // cùng đồng xu với ô số dư của phòng linh vật (`Coin` của RN)
-          Image(systemName: "circle.circle.fill")
-        }
-        .labelStyle(.titleAndIcon)
-        .font(DS.TextStyle.headline.monospacedDigit())
-        .foregroundStyle(DS.Color.readinessYellow.swiftUI)
-        .accessibilityLabel(Text("shop.balance \(book.balance.formatted(.number.locale(.app)))"))
-      }
-    }
     .task { if case .loading = book.phase { await book.load() } }
     .refreshable { await book.load() }
     .sensoryFeedback(.success, trigger: bought)
     .sheet(isPresented: $collectionsOpen) { collections }
+  }
+
+  private var header: some View {
+    HStack(alignment: .center) {
+      Text("shop.title")
+        .font(.largeTitle.bold())
+        .foregroundStyle(DS.Color.foreground.swiftUI)
+        .accessibilityAddTraits(.isHeader)
+      Spacer(minLength: DS.Spacing.sm)
+      Label {
+        Text(verbatim: book.balance.formatted(.number.locale(.app)))
+      } icon: {
+        Image(systemName: "circle.circle.fill").foregroundStyle(DS.Color.readinessYellowGraphic.swiftUI)
+      }
+      .labelStyle(.titleAndIcon)
+      .font(DS.TextStyle.footnote.weight(.semibold).monospacedDigit())
+      .foregroundStyle(DS.Color.foreground.swiftUI)
+      .padding(.horizontal, 14)
+      .frame(height: 40)
+      .dsCard(radius: 20)
+      .accessibilityElement(children: .ignore)
+      .accessibilityLabel(Text("shop.balance \(book.balance.formatted(.number.locale(.app)))"))
+    }
   }
 
   @ViewBuilder private var ready: some View {
@@ -132,8 +143,6 @@ struct ShopView: View {
 
   private var scene: some View {
     ShopSceneView(shot: shot, equipped: worn, skin: roomSkin, dress: dressing)
-      // căn phòng phủ ngang cả màn như RN, không theo lề trang
-      .padding(.horizontal, -DS.Spacing.md)
       .task(id: DressCue(key: browsing?.kind == .outfit ? browsing?.key : nil, tick: wearTick)) {
         // Koa phản ứng khi một món LÊN NGƯỜI (xem thử hay bấm mặc), rồi về đứng yên
         guard browsing?.kind == .outfit else {
@@ -216,7 +225,7 @@ struct ShopView: View {
         } label: {
           Text("shop.gotooutfits")
         }
-        .buttonStyle(.bordered)
+        .buttonStyle(.dsPillSecondary)
       }
       .frame(maxWidth: .infinity)
       .padding(.vertical, DS.Spacing.lg)
@@ -260,10 +269,10 @@ struct ShopView: View {
     }
     .padding(DS.Spacing.md)
     .frame(minHeight: 64)
-    .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.md))
+    .dsCard(radius: 20)
     .overlay {
       if preview == it.key {
-        RoundedRectangle(cornerRadius: DS.Radius.md).strokeBorder(tint, lineWidth: 2)
+        RoundedRectangle(cornerRadius: 20, style: .continuous).strokeBorder(tint, lineWidth: 2)
       }
     }
     // chạm thẻ = xem thử trên Koa / trong căn phòng (trang lật của RN)
@@ -281,11 +290,8 @@ struct ShopView: View {
         Task { await wear(it, on: !on) }
       } label: {
         Text(wearLabel(it, on: on))
-          .font(DS.TextStyle.footnote.weight(.semibold))
-          .frame(minWidth: 72, minHeight: 44)
       }
-      .buttonStyle(.bordered)
-      .tint(on ? DS.Color.mutedForeground.swiftUI : DS.Color.primary.swiftUI)
+      .buttonStyle(DSPillButtonStyle(on ? .secondary : .primary))
       .disabled(busy)
     } else if let need = it.unlockLevel, book.level < need {
       Label {
@@ -306,15 +312,17 @@ struct ShopView: View {
           if book.buying == it.key {
             ProgressView().controlSize(.small)
           } else {
-            Image(systemName: "dollarsign.circle.fill").accessibilityHidden(true)
+            Image(systemName: "circle.circle.fill")
+              .foregroundStyle(DS.Color.readinessYellowGraphic.swiftUI)
+              .accessibilityHidden(true)
           }
           Text(verbatim: it.price.formatted(.number.locale(.app))).monospacedDigit()
         }
-        .font(DS.TextStyle.footnote.weight(.semibold))
-        .frame(minWidth: 72, minHeight: 44)
       }
-      .buttonStyle(.borderedProminent)
-      .tint(poor ? DS.Color.mutedForeground.swiftUI : DS.Color.primary.swiftUI)
+      // Mua = viên viền + đồng xu (thiết kế lại 15/10): danh sách dài không thành một
+      // cột viên đen; thiếu xu thì mờ.
+      .buttonStyle(.dsPillSecondary)
+      .opacity(poor ? 0.5 : 1)
       // RN: một lượt mua đang chạy khoá mọi nút mua.
       .disabled(book.buying != nil)
       .accessibilityLabel(Text("shop.buy \(it.name(lang)) \(it.price.formatted(.number.locale(.app)))"))
@@ -398,7 +406,7 @@ struct ShopView: View {
         }
       }
       .padding(DS.Spacing.md)
-      .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.md))
+      .dsCard(radius: 20)
       .foregroundStyle(DS.Color.foreground.swiftUI)
     }
     .buttonStyle(.plain)
@@ -430,7 +438,7 @@ struct ShopView: View {
               Text("shop.claim \(c.rewardCoins.formatted(.number.locale(.app)))")
                 .frame(minHeight: 44)
             }
-            .buttonStyle(.borderedProminent)
+            .buttonStyle(.dsPill)
             .disabled(!p.complete || book.claiming)
           }
         }

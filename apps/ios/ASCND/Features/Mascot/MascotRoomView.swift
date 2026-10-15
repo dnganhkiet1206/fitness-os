@@ -46,11 +46,10 @@ struct MascotRoomView: View {
 
   var body: some View {
     content
-      .navigationTitle(Text(String(localized: "mr.title")))
+      // Thiết kế lại 15/10 (chủ dự án: "redesign toàn bộ, bản cũ chỉ là đối chiếu"):
+      // tiêu đề lớn trong nội dung như mọi tab, thanh điều hướng chỉ còn nút lùi.
+      .navigationTitle(Text(verbatim: ""))
       .navigationBarTitleDisplayMode(.inline)
-      .toolbar {
-        ToolbarItem(placement: .primaryAction) { coinPill }
-      }
       .task {
         if shop == nil { shop = services.makeMascotShop(userId: room.userId) }
         await room.load()
@@ -88,34 +87,63 @@ struct MascotRoomView: View {
       }
     case .ready:
       ScrollView {
-        VStack(spacing: DS.Spacing.md) {
+        VStack(alignment: .leading, spacing: DS.Spacing.md) {
+          header
           stage
           #if DEBUG
             devBar
           #endif
           if let notice {
             Text(notice)
-              .font(DS.TextStyle.footnote)
-              .padding(DS.Spacing.sm)
+              .font(DS.TextStyle.footnote.weight(.semibold))
+              .padding(.horizontal, DS.Spacing.md)
+              .padding(.vertical, DS.Spacing.sm)
               .frame(maxWidth: .infinity)
-              .background(DS.Color.secondary.swiftUI, in: Capsule())
+              .dsCard(radius: 22)
           }
+          sectionTitle(String(localized: "mr.sec.today"))
           energyCard
-          dressingChip
-          levelCard
-          freezeCard
-          journeyCard
+          sectionTitle(String(localized: "mr.sec.rank"))
+          rankCard
+          sectionTitle(String(localized: "mr.sec.streak"))
+          streakCard
+          sectionTitle(String(localized: "mr.quests"))
           questsCard
           weeklyCard
+          sectionTitle(String(localized: "mr.sec.more"))
           shortcuts
         }
         .padding(DS.Spacing.md)
       }
-      .background(DS.Color.background.swiftUI)
+      .background { TodayAmbient(accent: nil) }
+      .statusBarScrim()
     }
   }
 
   // MARK: - Đầu màn
+
+  /// Tiêu đề lớn + số xu (viên kính) bên phải.
+  private var header: some View {
+    HStack(alignment: .center) {
+      Text(String(localized: "mr.title"))
+        .font(.largeTitle.bold())
+        .foregroundStyle(DS.Color.foreground.swiftUI)
+        .accessibilityAddTraits(.isHeader)
+      Spacer(minLength: DS.Spacing.sm)
+      coinPill
+        .padding(.horizontal, 14)
+        .frame(height: 40)
+        .dsCard(radius: 20)
+    }
+  }
+
+  private func sectionTitle(_ t: String) -> some View {
+    Text(verbatim: t)
+      .font(.system(size: 22, weight: .bold))
+      .foregroundStyle(DS.Color.foreground.swiftUI)
+      .accessibilityAddTraits(.isHeader)
+      .padding(.top, DS.Spacing.sm)
+  }
 
   private var coinPill: some View {
     // như ô số dư của `ShopView`: `Label` + `.titleAndIcon`, không gói thành
@@ -176,14 +204,20 @@ struct MascotRoomView: View {
         energy: Double(room.energyCount) / Double(MascotRules.energySignals.count),
         streak: room.streak.count, celebrateSignal: celebrate, emotion: devEmotion ?? .idle,
         equipped: shop?.inventory.filter(\.equipped).map(\.itemKey) ?? [])
-        // căn phòng phủ ngang cả màn như RN, không theo lề trang
-        .padding(.horizontal, -DS.Spacing.md)
+        // Thẻ sân khấu bo góc (thay cảnh tràn ngang + mép tan của RN).
+        .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .overlay {
+          RoundedRectangle(cornerRadius: 28, style: .continuous)
+            .strokeBorder(DS.Color.foreground.swiftUI.opacity(0.08), lineWidth: 0.75)
+        }
+        .shadow(color: .black.opacity(0.08), radius: 18, y: 8)
       if let burst {
         Text(verbatim: "+\(burst.amount)")
           .font(DS.TextStyle.headline.monospacedDigit())
           .padding(.horizontal, DS.Spacing.sm)
           .padding(.vertical, DS.Spacing.xs)
-          .background(DS.Color.card.swiftUI, in: Capsule())
+          .dsCard(radius: 16)
+          .padding(.top, DS.Spacing.sm)
           .transition(reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity))
           .id(burst.id)
           .accessibilityHidden(true)
@@ -242,9 +276,9 @@ struct MascotRoomView: View {
             }
             .padding(.vertical, DS.Spacing.sm)
             .frame(maxWidth: .infinity, minHeight: 44)
-            .background(on ? color.opacity(0.12) : DS.Color.secondary.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.md))
-            .overlay(
-              RoundedRectangle(cornerRadius: DS.Radius.md).stroke(on ? color.opacity(0.4) : .clear, lineWidth: 1))
+            .background(
+              on ? color.opacity(0.14) : DS.Color.foreground.swiftUI.opacity(0.05),
+              in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             .accessibilityElement(children: .combine)
             .accessibilityValue(Text(Self.signalState(on)))
           }
@@ -257,9 +291,22 @@ struct MascotRoomView: View {
 
   /// `levelCard` của RN: huy hiệu sao + số cấp tô màu hạng; tên hạng đậm màu
   /// hạng cạnh "Cấp N"; thanh 6 điểm màu hạng trên rãnh xám; còn bao nhiêu XP.
-  private var levelCard: some View {
+  /// Hạng (thiết kế lại 15/10): cấp + thanh XP + trục hạng trong MỘT thẻ (trước là
+  /// hai thẻ "Cấp" và "Hành trình").
+  private var rankCard: some View {
+    DSCard {
+      VStack(alignment: .leading, spacing: DS.Spacing.md) {
+        levelRow
+        Divider().opacity(0.6)
+        journeySub
+        RankJourneyView(ranks: MascotRules.ranks, currentKey: room.rank.key, lang: lang)
+      }
+    }
+  }
+
+  private var levelRow: some View {
     let rankColor = Color(hex: room.rank.colorHex)
-    return DSCard {
+    return Group {
       HStack(spacing: DS.Spacing.md) {
         VStack(spacing: 1) {
           Image(systemName: "star").font(.system(size: 18, weight: .semibold))
@@ -281,17 +328,6 @@ struct MascotRoomView: View {
                 .foregroundStyle(DS.Color.mutedForeground.swiftUI)
             }
             Spacer(minLength: 0)
-            if room.streak.count >= 2 {
-              HStack(spacing: 4) {
-                Image(systemName: "flame.fill").font(.system(size: 11))
-                Text(streakText(room.streak.count))
-              }
-              .font(DS.TextStyle.caption.weight(.bold))
-              .foregroundStyle(DS.Color.metricOrange.swiftUI)
-              .padding(.horizontal, DS.Spacing.sm)
-              .frame(height: 22)
-              .background(DS.Color.metricOrange.swiftUI.opacity(0.12), in: Capsule())
-            }
           }
           GeometryReader { g in
             let pct = Double(room.intoLevel) / Double(MascotRules.levelXp)
@@ -314,50 +350,87 @@ struct MascotRoomView: View {
 
   // MARK: - Băng chuỗi
 
-  private var freezeCard: some View {
+  /// Chuỗi (thiết kế lại 15/10): số ngày lớn + thưởng chuỗi (nút nhận duy nhất) +
+  /// băng chuỗi — mọi thứ về chuỗi ở một thẻ (trước rải ở thẻ cấp, nhiệm vụ, băng).
+  private var streakCard: some View {
     DSCard {
-      VStack(alignment: .leading, spacing: DS.Spacing.xs) {
+      VStack(alignment: .leading, spacing: DS.Spacing.md) {
+        HStack(spacing: DS.Spacing.md) {
+          Image(systemName: "flame.fill")
+            .font(.system(size: 26, weight: .semibold))
+            .foregroundStyle(DS.Color.metricOrangeGraphic.swiftUI)
+            .frame(width: 52, height: 52)
+            .background(DS.Color.metricOrange.swiftUI.opacity(0.13), in: Circle())
+            .accessibilityHidden(true)
+          VStack(alignment: .leading, spacing: 2) {
+            Text(verbatim: streakText(room.streak.count))
+              .font(.system(size: 22, weight: .bold))
+              .foregroundStyle(DS.Color.foreground.swiftUI)
+          }
+          Spacer(minLength: 0)
+        }
+        if room.showsStreakBonus {
+          rewardRow(
+            title: String(localized: "mr.streak.bonus"), coins: room.streakBonus, xp: MascotRules.streakXp,
+            claimed: room.isClaimed(room.streakRefKey), flame: true
+          ) {
+            Button {
+              Task { await claimStreak() }
+            } label: {
+              Text(String(localized: "mr.claim"))
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(DS.Color.background.swiftUI)
+                .padding(.horizontal, 18)
+                .frame(minHeight: 40)
+                .background(DS.Color.foreground.swiftUI, in: Capsule())
+            }
+            .buttonStyle(TodayPressStyle())
+            .frame(minHeight: 44)
+            .disabled(room.claiming)
+          }
+        }
+        Divider().opacity(0.6)
         HStack(spacing: DS.Spacing.sm) {
           Image(systemName: "snowflake")
-            .font(.system(size: 17, weight: .semibold))
+            .font(.system(size: 15, weight: .semibold))
             .foregroundStyle(DS.Color.metricBlue.swiftUI)
-            .frame(width: 36, height: 36)
-            .background(DS.Color.metricBlue.swiftUI.opacity(0.12), in: RoundedRectangle(cornerRadius: DS.Radius.sm))
+            .frame(width: 32, height: 32)
+            .background(DS.Color.metricBlue.swiftUI.opacity(0.12), in: Circle())
             .accessibilityHidden(true)
-          VStack(alignment: .leading, spacing: 0) {
+          VStack(alignment: .leading, spacing: 1) {
             Text(String(localized: "mr.freeze.title")).font(DS.TextStyle.headline)
             Text(String(localized: "mr.freeze.held \(room.freezesHeld) \(MascotRules.freezeMax)"))
+              .font(DS.TextStyle.caption.weight(.semibold))
+              .foregroundStyle(DS.Color.metricBlue.swiftUI)
+            Text(String(localized: "mr.freeze.hint"))
               .font(DS.TextStyle.caption)
               .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+              .fixedSize(horizontal: false, vertical: true)
           }
-          Spacer()
+          Spacer(minLength: DS.Spacing.sm)
           Button {
             Task { await room.buyFreeze() }
           } label: {
-            if room.buyingFreeze {
-              ProgressView()
-            } else if room.freezeFull {
-              Text(String(localized: "mr.freeze.full"))
-            } else {
-              Text(String(localized: "mr.freeze.buy \(MascotRules.freezePrice)"))
+            Group {
+              if room.buyingFreeze {
+                ProgressView()
+              } else if room.freezeFull {
+                Text(String(localized: "mr.freeze.full"))
+              } else {
+                Text(String(localized: "mr.freeze.buy \(MascotRules.freezePrice)"))
+              }
             }
+            .font(.system(size: 14, weight: .semibold))
+            .foregroundStyle(DS.Color.foreground.swiftUI)
+            .padding(.horizontal, 14)
+            .frame(minHeight: 36)
+            .overlay(Capsule().strokeBorder(DS.Color.foreground.swiftUI.opacity(0.18), lineWidth: 1))
           }
-          // `freezeBuy`: viên chữ đậm nhỏ, nền trắng 8% (trên thẻ sáng gần như
-          // chỉ còn chữ, như RN); không mua được thì mờ 45%
-          .buttonStyle(.plain)
-          .font(DS.TextStyle.caption.weight(.bold))
-          .foregroundStyle(DS.Color.foreground.swiftUI)
-          .padding(.horizontal, DS.Spacing.md)
-          .frame(minHeight: 36)
-          .background(Color.white.opacity(0.08), in: Capsule())
+          .buttonStyle(TodayPressStyle())
           .opacity(room.canBuyFreeze || room.buyingFreeze ? 1 : 0.45)
           .frame(minHeight: 44)
-          .contentShape(Rectangle())
           .disabled(!room.canBuyFreeze)
         }
-        Text(String(localized: "mr.freeze.hint"))
-          .font(DS.TextStyle.caption)
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
         if room.freezesUsed > 0 {
           Text(
             room.freezesUsed == 1
@@ -371,31 +444,6 @@ struct MascotRoomView: View {
   }
 
   // MARK: - Hành trình hạng
-
-  /// Hành trình (`journeyCard` của RN): tiêu đề trái, "còn N cấp tới **Hạng**"
-  /// phải (tên hạng tô màu của nó, đậm), dưới là trục hạng.
-  private var journeyCard: some View {
-    DSCard {
-      VStack(alignment: .leading, spacing: DS.Spacing.md) {
-        ViewThatFits(in: .horizontal) {
-          HStack(alignment: .firstTextBaseline) {
-            journeyTitle
-            Spacer(minLength: DS.Spacing.sm)
-            journeySub
-          }
-          VStack(alignment: .leading, spacing: 2) {
-            journeyTitle
-            journeySub
-          }
-        }
-        RankJourneyView(ranks: MascotRules.ranks, currentKey: room.rank.key, lang: lang)
-      }
-    }
-  }
-
-  private var journeyTitle: some View {
-    Text(String(localized: "mr.journey")).font(DS.TextStyle.headline)
-  }
 
   private var journeySub: some View {
     Text(journeySubtitle)
@@ -423,30 +471,19 @@ struct MascotRoomView: View {
   private var questsCard: some View {
     DSCard {
       VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-        Text(String(localized: "mr.quests")).font(DS.TextStyle.headline)
         Text(String(localized: "mr.quests.hint")).font(DS.TextStyle.footnote).foregroundStyle(DS.Color.mutedForeground.swiftUI)
         ForEach(room.activeQuests, id: \.key) { q in
           let claimed = room.isClaimed(MascotRules.questRefKey(room.today, q.key))
           rewardRow(
             title: q.name(lang, stepsGoal: room.stepsGoal), coins: q.coins, xp: q.xp, claimed: claimed
           ) {
-            // Không có nút: nhiệm vụ tự nhận ở nơi khác (RN). Xong mà chưa nhận → "…".
-            Text(verbatim: room.questDone(q.key) ? "…" : "—")
-              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            // Không có nút: nhiệm vụ tự nhận ở nơi khác. Vòng rỗng = chưa làm; vòng
+            // tô = đã làm, đang chờ nhận (thiết kế lại 15/10, thay "—" / "…").
+            Image(systemName: room.questDone(q.key) ? "circle.inset.filled" : "circle")
+              .font(.system(size: 20))
+              .foregroundStyle(
+                room.questDone(q.key) ? DS.Color.readinessGreen.swiftUI : DS.Color.mutedForeground.swiftUI.opacity(0.5))
               .accessibilityLabel(Text(Self.questState(done: room.questDone(q.key))))
-          }
-        }
-        if room.showsStreakBonus {
-          rewardRow(
-            title: streakText(room.streak.count), coins: room.streakBonus, xp: MascotRules.streakXp,
-            claimed: room.isClaimed(room.streakRefKey), flame: true
-          ) {
-            Button(String(localized: "mr.claim")) {
-              Task { await claimStreak() }
-            }
-            .buttonStyle(.borderedProminent)
-            .frame(minHeight: 44)
-            .disabled(room.claiming)
           }
         }
       }
@@ -517,65 +554,43 @@ struct MascotRoomView: View {
     }
   }
 
-  /// Lối vào phòng thử đồ (`ActionChip` "Phòng thay đồ" của RN): ô biểu tượng
-  /// tím + tên, trên thẻ có viền. RN có thêm "Đổi bạn đồng hành" (mở Cài đặt);
-  /// native chỉ có Koa nên chưa có ô ấy.
-  @ViewBuilder private var dressingChip: some View {
-    if let shop {
-      NavigationLink {
-        ShopView(book: shop, lang: lang) { Task { await room.load() } }
-      } label: {
-        HStack(spacing: 6) {
-          Image(systemName: "tshirt.fill")
-            .font(.system(size: 15))
-            .foregroundStyle(DS.Color.metricPurple.swiftUI)
-            .frame(width: 28, height: 28)
-            .background(DS.Color.metricPurple.swiftUI.opacity(0.11), in: RoundedRectangle(cornerRadius: 9))
-            .accessibilityHidden(true)
-          Text(String(localized: "shop.title"))
-            .font(DS.TextStyle.caption.weight(.semibold))
-            .foregroundStyle(DS.Color.foreground.swiftUI)
-            .lineLimit(1)
-        }
-        .frame(maxWidth: .infinity, minHeight: 46)
-        .padding(.horizontal, DS.Spacing.sm)
-        .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.lg))
-        .overlay(RoundedRectangle(cornerRadius: DS.Radius.lg).stroke(DS.Color.border.swiftUI, lineWidth: 1))
-        .contentShape(Rectangle())
-      }
-      .buttonStyle(.plain)
-    }
-  }
-
-  /// Thử thách (đã xong / tổng) và Huy chương (số đã đạt) — hai `ShortcutRow`
-  /// của RN: thẻ riêng, biểu tượng, tên, số, mũi tên; mỗi hàng dẫn tới màn của
-  /// nó khi có sổ.
+  /// Khám phá thêm (thiết kế lại 15/10): ba ô — Tủ đồ, Thử thách, Huy hiệu — mỗi ô
+  /// một biểu tượng màu, tên và số; ô nào chưa có sổ thì không bấm được.
   private var shortcuts: some View {
     let all = room.challenges ?? []
     let challengeValue = all.isEmpty ? nil : "\(all.filter(\.completed).count)/\(all.count)"
     let awardValue = room.awardCount.flatMap { $0 > 0 ? String($0) : nil }
-    return VStack(spacing: DS.Spacing.sm) {
+    return HStack(spacing: DS.Spacing.sm) {
+      if let shop {
+        NavigationLink {
+          ShopView(book: shop, lang: lang) { Task { await room.load() } }
+        } label: {
+          ShortcutTile(symbol: "tshirt.fill", tint: DS.Color.metricPurple.swiftUI, label: String(localized: "shop.title"), value: nil)
+        }
+        .buttonStyle(TodayPressStyle())
+      }
       if let challenges {
         NavigationLink {
           ChallengesView(book: challenges, lang: lang)
         } label: {
-          ShortcutRow(symbol: "flag.2.crossed.fill", label: String(localized: "mr.challenges"), value: challengeValue)
+          ShortcutTile(
+            symbol: "flag.2.crossed.fill", tint: DS.Color.metricOrangeGraphic.swiftUI,
+            label: String(localized: "mr.challenges"), value: challengeValue)
         }
-        .buttonStyle(.plain)
-      } else {
-        ShortcutRow(symbol: "flag.2.crossed.fill", label: String(localized: "mr.challenges"), value: challengeValue)
+        .buttonStyle(TodayPressStyle())
       }
       if let awards {
         NavigationLink {
           AwardsView(book: awards, lang: lang)
         } label: {
-          ShortcutRow(symbol: "medal", label: String(localized: "mr.awards"), value: awardValue)
+          ShortcutTile(
+            symbol: "medal.fill", tint: DS.Color.readinessYellowGraphic.swiftUI, label: String(localized: "mr.awards"),
+            value: awardValue)
         }
-        .buttonStyle(.plain)
-      } else {
-        ShortcutRow(symbol: "medal", label: String(localized: "mr.awards"), value: awardValue)
+        .buttonStyle(TodayPressStyle())
       }
     }
+    .fixedSize(horizontal: false, vertical: true)
   }
 
   // MARK: - Việc
@@ -731,6 +746,7 @@ struct MascotStage: View {
   var equipped: [String] = []
 
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @Environment(\.colorScheme) private var scheme
 
   private struct Nod {
     var angle = 0.0
@@ -744,6 +760,8 @@ struct MascotStage: View {
     o.streak = streak
     o.moon = StudioScene.moonPhase(.now)
     o.label = "Koa"
+    // Phòng ban ngày ở giao diện sáng (15/10 — trước đây chỉ có cảnh đêm).
+    o.light = scheme == .light
     return o
   }
 
@@ -754,7 +772,6 @@ struct MascotStage: View {
     // không có dòng "Cấp N" dưới sân khấu (RN cũng không) — thẻ cấp ngay dưới nói rồi
     StudioBackdrop(options: studio)
       .overlay { GeometryReader { g in hero(g.size.width) } }
-      .overlay { StageFade() }
       .aspectRatio(StudioScene.width / StudioScene.sceneBottom, contentMode: .fit)
       .frame(maxWidth: .infinity)
     .accessibilityElement(children: .ignore)
@@ -805,28 +822,6 @@ struct StudioBackdrop: View {
   }
 }
 
-/// Mép cảnh tan vào nền trang (`stageFadeH` rồi `stageFadeV`). Cảnh luôn
-/// tối (minh hoạ), lớp tan theo màu trang của theme.
-private struct StageFade: View {
-  var body: some View {
-    let page = DS.Color.background.swiftUI
-    ZStack {
-      LinearGradient(
-        stops: [
-          .init(color: page.opacity(0.9), location: 0), .init(color: page.opacity(0), location: 0.1),
-          .init(color: page.opacity(0), location: 0.9), .init(color: page.opacity(0.9), location: 1),
-        ], startPoint: .leading, endPoint: .trailing)
-      LinearGradient(
-        stops: [
-          .init(color: page.opacity(0.66), location: 0), .init(color: page.opacity(0), location: 0.12),
-          .init(color: page.opacity(0), location: 0.82), .init(color: page, location: 1),
-        ], startPoint: .top, endPoint: .bottom)
-    }
-    .allowsHitTesting(false)
-    .accessibilityHidden(true)
-  }
-}
-
 /// Chữ thử thách tuần (`CHALLENGE_TEXT`: tên, mô tả, phần thưởng), chép máy
 /// vào `challenge-text.json` (`apps/ios/tools/challenge-text/gen.mjs --check`).
 enum ChallengeText {
@@ -864,38 +859,36 @@ extension Color {
   }
 }
 
-/// Một hàng lối tắt (`shortcut-row.tsx`): biểu tượng mờ, tên (xuống dòng khi
-/// cần, không cắt), số, mũi tên — trên thẻ có viền. VoiceOver đọc "tên, số".
-private struct ShortcutRow: View {
+/// Một ô "Khám phá thêm": biểu tượng màu trong vòng tròn, tên, số (nếu có).
+private struct ShortcutTile: View {
   let symbol: String
+  let tint: Color
   let label: String
   let value: String?
 
   var body: some View {
-    HStack(spacing: DS.Spacing.sm) {
-      Image(systemName: symbol).font(.system(size: 15))
-        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-        .frame(width: 20)
+    VStack(alignment: .leading, spacing: 8) {
+      Image(systemName: symbol)
+        .font(.system(size: 16, weight: .semibold))
+        .foregroundStyle(tint)
+        .frame(width: 36, height: 36)
+        .background(tint.opacity(0.13), in: Circle())
+      Spacer(minLength: 0)
       Text(label)
-        .font(DS.TextStyle.body)
+        .font(.system(size: 14, weight: .semibold))
         .foregroundStyle(DS.Color.foreground.swiftUI)
-        .frame(maxWidth: .infinity, alignment: .leading)
-      if let value {
-        Text(verbatim: value)
-          .font(DS.TextStyle.footnote.monospacedDigit())
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-          .lineLimit(1)
-      }
-      Image(systemName: "chevron.right").font(.system(size: 14, weight: .semibold))
+        .lineLimit(2)
+        .minimumScaleFactor(0.85)
+      Text(verbatim: value ?? " ")
+        .font(.system(size: 13).monospacedDigit())
         .foregroundStyle(DS.Color.mutedForeground.swiftUI)
     }
-    .frame(minHeight: 28)
-    .padding(.horizontal, DS.Spacing.card)
-    .padding(.vertical, DS.Spacing.sm + 2)
-    .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.lg))
-    .overlay(RoundedRectangle(cornerRadius: DS.Radius.lg).stroke(DS.Color.border.swiftUI, lineWidth: 1))
+    .padding(12)
+    .frame(maxWidth: .infinity, minHeight: 116, alignment: .topLeading)
+    .dsCard(radius: 20)
     .contentShape(Rectangle())
     .accessibilityElement(children: .ignore)
     .accessibilityLabel(Text(verbatim: value.map { "\(label), \($0)" } ?? label))
+    .accessibilityAddTraits(.isButton)
   }
 }

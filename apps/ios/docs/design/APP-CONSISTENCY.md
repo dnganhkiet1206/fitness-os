@@ -53,6 +53,16 @@ tính năng đồng bộ trong toàn app" → "làm đi".
   là tên chính. Lưu hồ sơ cộng đồng → `ProfileBook.saveName` ghi `profiles.name`; lưu "Thông tin cá nhân" → đã có
   hồ sơ cộng đồng thì `display_name` theo (giữ handle / tiểu sử / linh vật); mở hồ sơ của mình mà hai tên lệch →
   `profiles.name` theo tên cộng đồng (một lần).
+- **Linh vật — thiết kế lại** (chủ dự án: "redesign toàn bộ, bản cũ chỉ là đối chiếu"; "phòng koa chỉ đc vẽ cho
+  màn tối"): phòng Koa, Phòng thay đồ, Huy chương, Thử thách — nền giấy + `statusBarScrim`, tiêu đề lớn trong nội
+  dung, `dsCard`, nút `DSPillButtonStyle` (`.dsPill` / `.dsPillSecondary`, mới trong ASCNDDesignSystem).
+  - Căn phòng / phòng thay đồ có **bản ngày** (`StudioScene.Options.light`, `lightSkins`, `dayColors`, `daySky`;
+    `ShopScene.tree(light:)`): đổi màu theo vai trò, hình khối giữ; ban ngày không có trăng. Sân khấu là thẻ bo 28
+    (bỏ mép tan tràn ngang). Koa ở phòng thay đồ theo giao diện (bỏ `paper: false`).
+  - Phòng Koa: Hôm nay → Hạng (cấp + hành trình một thẻ) → Chuỗi ngày (số ngày + thưởng chuỗi + bảo hiểm) →
+    Nhiệm vụ (vòng rỗng / tô thay "—" / "…") → Khám phá thêm (ô Phòng thay đồ / Thử thách / Thành tích).
+  - Huy chương: một thẻ đầu (vòng + % + "Đã đạt N / 29"); Thử thách: icon vòng tròn, thanh viên.
+  - Vẽ lại nhân vật Koa: CHƯA — chủ dự án: phải gửi mock trước.
 - **Cài đặt không lặp chữ**: mục Ngôn ngữ bỏ tiêu đề; dòng "Ngôn ngữ" có icon quả cầu như Nhắc nhở / Đổi mật khẩu.
 
 ## Quy ước (giữ khi làm màn mới)

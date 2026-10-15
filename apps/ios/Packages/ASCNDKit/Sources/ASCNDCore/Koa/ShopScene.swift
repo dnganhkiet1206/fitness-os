@@ -75,10 +75,12 @@ public enum ShopScene {
   }()
 
   /// Cả căn phòng, toạ độ 390 × 476. `skin` lạ → mặc định (như `STUDIO_SKINS[skin] ?? default`).
-  public static func tree(skin: String, energy: Double) -> [KoaRender.Element] {
+  public static func tree(skin: String, energy: Double, light: Bool = false) -> [KoaRender.Element] {
     var o = StudioScene.Options()
     o.skin = skin
     o.energy = energy
+    // Bản ngày (15/10): cùng bảng đổi màu với căn phòng studio.
+    o.light = light
     return StudioScene.build(template, o)
   }
 }

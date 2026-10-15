@@ -37,6 +37,31 @@ public enum StudioScene {
     "champion": Skin(wall: ("#151228", "#241C3E"), glow: "#FFD97A"),
   ]
 
+  /// Tường của căn phòng BAN NGÀY (15/10, chủ dự án: "phòng koa hiện cũng chỉ đc vẽ
+  /// cho màn tối, chưa có màn sáng") — cùng bốn skin, tông giấy ấm của app.
+  public static let lightSkins: [String: Skin] = [
+    "default": Skin(wall: ("#F7EEE2", "#EADCC8"), glow: "#FFB020"),
+    "night": Skin(wall: ("#ECEAF6", "#DCD8EE"), glow: "#7B61FF"),
+    "sunset": Skin(wall: ("#FCEBDD", "#F4D3BC"), glow: "#FF9A3D"),
+    "champion": Skin(wall: ("#FAF0D8", "#EFDDB2"), glow: "#E8B13A"),
+  ]
+
+  /// Bản ngày đổi màu theo VAI TRÒ của màu trong cảnh đêm (khung gỗ, đồ tập, sàn,
+  /// bóng…); neon, đèn, cây giữ màu. Hình khối không đổi.
+  static let dayColors: [String: String] = [
+    "#151A33": "#9C8268",  // kệ, khung, bảng — gỗ ấm
+    "#212B4E": "#6F5E4E",  // tạ, đồ tập
+    "#0B0F22": "#D8C6AD",  // sàn
+    "#0F142E": "#E6D7C2",  // chân tường, viền tối
+    "#2C2439": "#A88F76",
+    "#000000": "#6B5440",  // bóng — nâu ấm thay đen
+  ]
+
+  /// Trời ngoài cửa sổ ban ngày (thay `studioSky` đêm).
+  static let daySky: [(Double, String, Double)] = [
+    (0, "#8EC5F0", 1), (0.55, "#BFDDF5", 1), (0.82, "#FFE2A8", 0.7), (1, "#FFD27A", 0.8),
+  ]
+
   /// `STAGE_THEME` (`mascot-scene.tsx`): món sân khấu đang dùng → skin.
   static let stageThemes = ["stage_champion": "champion", "stage_sunset": "sunset", "stage_night": "night"]
 
@@ -60,6 +85,8 @@ public enum StudioScene {
     public var moon = 0.18
     /// Tên in trên mặt trước bục.
     public var label = ""
+    /// Căn phòng ban ngày (giao diện sáng).
+    public var light = false
 
     public init() {}
   }
@@ -109,7 +136,8 @@ public enum StudioScene {
 
   /// Một template (studio, phòng thử đồ) → cây phần tử, token đã giải.
   static func build(_ template: [JSONValue], _ o: Options) -> [KoaRender.Element] {
-    let skin = skins[o.skin] ?? skins["default"]!
+    let table = o.light ? lightSkins : skins
+    let skin = table[o.skin] ?? table["default"]!
     return template.compactMap { element($0, o, skin) }
   }
 
@@ -120,10 +148,19 @@ public enum StudioScene {
       for (k, x) in p {
         switch x {
         case .number(let d): props[k] = .number(d)
-        case .string(let s): props[k] = s.hasPrefix("$") ? resolve(s, o, skin) : .string(s)
+        case .string(let s):
+          props[k] = s.hasPrefix("$") ? resolve(s, o, skin) : .string(o.light ? dayColors[s] ?? s : s)
         default: break
         }
       }
+    }
+    if o.light, tag == "LinearGradient", v["p"]?["id"]?.stringValue == "studioSky" {
+      let stops = daySky.map { off, color, op in
+        KoaRender.Element(
+          "Stop", ["offset": .number(off), "stopColor": .string(color), "stopOpacity": .number(op)], matrix: nil,
+          kids: [])
+      }
+      return KoaRender.Element(tag, props, matrix: nil, kids: stops)
     }
     var matrix: KoaMath.Mat?
     if case .array(let m)? = v["m"] { matrix = m.compactMap { $0.doubleValue } }
@@ -154,6 +191,8 @@ public enum StudioScene {
     if parts[0] == "$moon", parts.count == 4, let cx = Double(parts[1]), let cy = Double(parts[2]),
       let r = Double(parts[3])
     {
+      // Ban ngày không có trăng trên trời.
+      if o.light { return .string("M 0 0") }
       return .string(moonPath(cx: cx, cy: cy, r: r, phase: o.moon))
     }
     if parts[0].hasPrefix("$dot"), parts.count == 3, let i = Int(parts[0].dropFirst(4)) {

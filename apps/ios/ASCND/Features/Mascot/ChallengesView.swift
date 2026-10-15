@@ -20,8 +20,11 @@ struct ChallengesView: View {
     content
       // nền trang như mọi màn (RN: `Screen`) — không thì ScrollView để lộ nền trắng
       .frame(maxWidth: .infinity, maxHeight: .infinity)
-      .background(DS.Color.background.swiftUI)
-      .navigationTitle(String(localized: "ch.title"))
+      // Thiết kế lại 15/10: nền giấy + tiêu đề lớn trong nội dung.
+      .background { TodayAmbient(accent: nil) }
+      .statusBarScrim()
+      .navigationTitle(Text(verbatim: ""))
+      .navigationBarTitleDisplayMode(.inline)
       .task { if case .loading = book.phase { await book.load() } }
       .refreshable { await book.refreshProgress() }
       .onChange(of: book.justCompleted) { _, keys in
@@ -58,6 +61,11 @@ struct ChallengesView: View {
     case .ready(let rows):
       ScrollView {
         VStack(spacing: DS.Spacing.md) {
+          Text(String(localized: "ch.title"))
+            .font(.largeTitle.bold())
+            .foregroundStyle(DS.Color.foreground.swiftUI)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .accessibilityAddTraits(.isHeader)
           if book.progressFailure != nil {
             Label(String(localized: "ch.error.progress"), systemImage: "exclamationmark.triangle")
               .font(DS.TextStyle.footnote)
@@ -81,14 +89,15 @@ struct ChallengesView: View {
     let d = ch.display
     let name = title(ch.key, fallback: ch.title)
     let desc = ChallengeText.desc(ch.key, lang: lang) ?? ch.description
-    let tint = ch.completed ? DS.Color.readinessGreen.swiftUI : DS.Color.primary.swiftUI
+    let tint = ch.completed ? DS.Color.readinessGreen.swiftUI : DS.Color.metricOrangeGraphic.swiftUI
     return DSCard {
       VStack(alignment: .leading, spacing: DS.Spacing.sm) {
         HStack(spacing: DS.Spacing.md) {
-          Image(systemName: "target")
-            .foregroundStyle(DS.Color.primary.swiftUI)
+          Image(systemName: ch.completed ? "checkmark" : "flag.2.crossed.fill")
+            .font(.system(size: 16, weight: .semibold))
+            .foregroundStyle(tint)
             .frame(width: 40, height: 40)
-            .background(DS.Color.secondary.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.sm))
+            .background(tint.opacity(0.13), in: Circle())
             .accessibilityHidden(true)
           VStack(alignment: .leading, spacing: 2) {
             Text(name).font(DS.TextStyle.headline)
@@ -97,16 +106,15 @@ struct ChallengesView: View {
             }
           }
           Spacer(minLength: 0)
-          if ch.completed {
-            Image(systemName: "checkmark")
-              .font(.body.weight(.bold))
-              .foregroundStyle(DS.Color.readinessGreen.swiftUI)
-              .accessibilityHidden(true)
+        }
+        GeometryReader { g in
+          ZStack(alignment: .leading) {
+            Capsule().fill(DS.Color.foreground.swiftUI.opacity(0.07))
+            Capsule().fill(tint).frame(width: g.size.width * min(1, max(0, Double(d.percent) / 100)))
           }
         }
-        ProgressView(value: Double(d.percent), total: 100)
-          .tint(tint)
-          .accessibilityHidden(true)
+        .frame(height: 8)
+        .accessibilityHidden(true)
         Text(ch.completed ? String(localized: "ch.completed") : "\(d.current) / \(d.target)")
           .font(DS.TextStyle.caption.monospacedDigit())
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
