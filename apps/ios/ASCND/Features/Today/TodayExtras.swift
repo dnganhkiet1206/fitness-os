@@ -94,7 +94,7 @@ struct TodayExtras<Plan: View>: View {
         }
         .frame(maxWidth: .infinity)
         .padding(DS.Spacing.lg)
-        .todayCard(radius: 30)
+        .todayCard()
       }
       if let mascot, case .ready = mascot.phase {
         TodayDayBlock(

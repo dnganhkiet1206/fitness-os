@@ -78,7 +78,7 @@ struct NutritionInsightsView: View {
         .accessibilityHidden(true)
       }
       .padding(DS.Spacing.md)
-      .todayCard(radius: DS.Radius.xl)
+      .todayCard()
       let notes = NutritionInsights.insights(stats, targets: t)
       if !notes.isEmpty {
         VStack(alignment: .leading, spacing: DS.Spacing.sm) {
@@ -97,7 +97,7 @@ struct NutritionInsightsView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(DS.Spacing.md)
-        .todayCard(radius: DS.Radius.xl)
+        .todayCard()
       }
     }
   }
@@ -116,7 +116,7 @@ struct NutritionInsightsView: View {
     }
     .frame(maxWidth: .infinity, alignment: .leading)
     .padding(DS.Spacing.md)
-    .todayCard(radius: DS.Radius.xl)
+    .todayCard()
     .accessibilityElement(children: .combine)
   }
 

@@ -40,7 +40,7 @@ struct MealSuggestCard: View {
       }
     }
     .padding(DS.Spacing.md)
-    .todayCard(radius: DS.Radius.xl)
+    .todayCard()
     .onChange(of: logger.mealType) { _, _ in
       work?.cancel()
       state = .idle

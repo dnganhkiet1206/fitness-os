@@ -406,7 +406,7 @@ struct MealPlanView: View {
       }
     }
     .padding(DS.Spacing.md)
-    .todayCard(radius: DS.Radius.xl)
+    .todayCard()
     .accessibilityElement(children: .combine)
   }
 
@@ -422,7 +422,7 @@ struct MealPlanView: View {
       }
     }
     .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous))
-    .todayCard(radius: DS.Radius.xl)
+    .todayCard()
   }
 
   @ViewBuilder private func mealRow(_ meal: String, _ foods: [MealPlans.Item]) -> some View {

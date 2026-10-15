@@ -517,7 +517,7 @@ struct WorkoutsHomeView: View {
           }
         }
         .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous))
-        .todayCard(radius: DS.Radius.xl)
+        .todayCard()
       }
     }
   }
@@ -621,7 +621,7 @@ struct WorkoutsHomeView: View {
       }
     }
     .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous))
-    .todayCard(radius: DS.Radius.xl)
+    .todayCard()
   }
 
   private var sessionsLine: String? {
@@ -684,7 +684,7 @@ struct WorkoutsHomeView: View {
       }
     }
     .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous))
-    .todayCard(radius: DS.Radius.xl)
+    .todayCard()
   }
 
   private func makeBodyBooks() {
@@ -751,7 +751,7 @@ struct LibraryHistoryView: View {
           }
         }
         .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous))
-        .todayCard(radius: DS.Radius.xl)
+        .todayCard()
       }
       .padding(DS.Spacing.md)
     }
@@ -850,7 +850,7 @@ struct MuscleGrid: View {
         .foregroundStyle(DS.Color.mutedForeground.swiftUI)
     }
     .frame(maxWidth: .infinity, minHeight: 116)
-    .todayCard(radius: DS.Radius.xl)
+    .todayCard()
     .accessibilityElement(children: .combine)
   }
 

@@ -137,7 +137,7 @@ struct NutritionTodayCard: View {
     .padding([.top, .horizontal], DS.Spacing.card)
     .padding(.bottom, DS.Spacing.xs)
     .frame(maxWidth: .infinity, alignment: .leading)
-    .todayCard(radius: DS.Radius.xl)
+    .todayCard()
   }
 
   /// Chân thẻ: "Đã ăn N · mục tiêu M", nút "?" (giải thích mục tiêu), "7 ngày ›"
@@ -375,7 +375,7 @@ struct NutritionTodayCard: View {
     }
     .padding(DS.Spacing.card)
     .frame(maxWidth: .infinity, alignment: .leading)
-    .todayCard(radius: DS.Radius.xl)
+    .todayCard()
     .accessibilityElement(children: .ignore)
     .accessibilityLabel(Text(String(localized: "nc.loading")))
   }

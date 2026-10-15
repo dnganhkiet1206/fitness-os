@@ -713,38 +713,27 @@ private struct ProgressiveBlur: ViewModifier {
   }
 }
 
-/// Mặt thẻ chung: trắng, bo 22, viền mảnh; màu "đèn" của ảnh tràn nhẹ xuống mặt
-/// chữ, viền trên sáng hơn viền dưới như mép kính bắt sáng. (Quầng màu phía sau
-/// thẻ đã gỡ 15/10 theo chủ dự án.)
+/// Mặt thẻ chung `dsCard` (15/10, gom kiểu thẻ — kính iOS 26, máy cũ material);
+/// màu "đèn" của ảnh tràn nhẹ xuống mặt chữ, nằm dưới kính.
 private struct NewsCardSurface: ViewModifier {
   var kind: CommunityFeed.Kind?
   @Environment(\.colorScheme) private var scheme
 
-  private var shape: RoundedRectangle { RoundedRectangle(cornerRadius: 22, style: .continuous) }
+  private var shape: RoundedRectangle { RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous) }
 
   func body(content: Content) -> some View {
     let dark = scheme == .dark
     content
       .frame(maxWidth: .infinity, alignment: .leading)
       .background {
-        ZStack {
-          DS.Color.card.swiftUI
-          if let kind {
-            RadialGradient(
-              colors: [ArtBackdrop.glow(kind).opacity(dark ? 0.22 : 0.10), .clear], center: .top, startRadius: 40,
-              endRadius: 460)
-          }
+        if let kind {
+          RadialGradient(
+            colors: [ArtBackdrop.glow(kind).opacity(dark ? 0.22 : 0.10), .clear], center: .top, startRadius: 40,
+            endRadius: 460)
         }
       }
       .clipShape(shape)
-      .overlay {
-        shape.strokeBorder(
-          LinearGradient(
-            colors: [.white.opacity(dark ? 0.16 : 0.9), DS.Color.foreground.swiftUI.opacity(dark ? 0.04 : 0.06)],
-            startPoint: .top, endPoint: .bottom),
-          lineWidth: 0.75)
-      }
-      .shadow(color: .black.opacity(dark ? 0.25 : 0.05), radius: 10, y: 4)
+      .dsCard()
       .contentShape(shape)
   }
 }

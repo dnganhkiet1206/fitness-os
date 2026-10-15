@@ -212,7 +212,7 @@ struct PlanWizardView: View {
         }
       }
       .padding(DS.Spacing.md)
-      .todayCard(radius: DS.Radius.xl)
+      .todayCard()
 
       let missing = MealDiary.order.filter { !rows.contains($0) }
       if !missing.isEmpty {
@@ -306,7 +306,7 @@ struct PlanWizardView: View {
         }
         .tint(meal)
         .padding(DS.Spacing.md)
-        .todayCard(radius: DS.Radius.lg)
+        .todayCard()
 
         foodList(book, cell: cell)
       }
@@ -331,7 +331,7 @@ struct PlanWizardView: View {
           }
         }
         .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous))
-        .todayCard(radius: DS.Radius.xl)
+        .todayCard()
       }
     } else {
       ProgressView().frame(maxWidth: .infinity)

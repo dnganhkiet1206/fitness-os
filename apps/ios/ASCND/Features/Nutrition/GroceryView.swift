@@ -117,7 +117,7 @@ struct GroceryView: View {
     }
     .padding(DS.Spacing.md)
     .frame(maxWidth: .infinity, alignment: .leading)
-    .todayCard(radius: DS.Radius.lg)
+    .todayCard()
   }
 
   // MARK: - Danh sách
@@ -261,7 +261,7 @@ struct GroceryRow: View {
     }
     .padding(DS.Spacing.md)
     .frame(minHeight: 56)
-    .todayCard(radius: DS.Radius.lg)
+    .todayCard()
     .contentShape(Rectangle())
   }
 

@@ -79,7 +79,7 @@ struct TodayDayBlock: View {
       }
     }
     .padding(DS.Spacing.md)
-    .todayCard(radius: 30)
+    .todayCard()
     // Việc kế tiếp đổi → nhãn và viền trượt sang ống mới; ống dâng như chất lỏng.
     .animation(reduceMotion ? .easeInOut(duration: 0.2) : .spring(duration: 0.6, bounce: 0.22), value: next)
     .task(id: line) { updatePraise(line) }

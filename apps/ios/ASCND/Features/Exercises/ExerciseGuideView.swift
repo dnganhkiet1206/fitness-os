@@ -361,7 +361,7 @@ struct ExerciseGuideView: View {
               }
               .padding(DS.Spacing.sm)
               .frame(width: 140, height: 64, alignment: .topLeading)
-              .todayCard(radius: DS.Radius.lg)
+              .todayCard()
               .accessibilityElement(children: .combine)
             }
           }

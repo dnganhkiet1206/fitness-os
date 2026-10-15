@@ -398,7 +398,7 @@ struct DayMealsSection: View {
       }
     }
     .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous))
-    .todayCard(radius: DS.Radius.xl)
+    .todayCard()
   }
 
   private func undoBar(_ text: String) -> some View {

@@ -152,7 +152,7 @@ struct WeightTrendCard: View {
         }
       }
       .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous))
-      .todayCard(radius: DS.Radius.xl)
+      .todayCard()
     }
   }
 

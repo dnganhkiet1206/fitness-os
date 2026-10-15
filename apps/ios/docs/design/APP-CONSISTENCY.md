@@ -42,6 +42,10 @@ tính năng đồng bộ trong toàn app" → "làm đi".
 - **Một khối Thịnh hành** (chủ dự án chọn): Khám phá bỏ thẻ "Hữu ích tuần này"; "Thịnh hành" (thẻ lớn + danh sách
   đánh số) lấy tối đa 3 bài của `book.useful` (server: 7 ngày, xếp theo thử / lưu / bình luận, không gồm bài của
   mình); chưa có thì xếp 72 giờ trên các bài đã tải (`CommunityLayout.trending`) như cũ.
+- **Một mặt thẻ cho cả app** (chủ dự án: "kính iOS 26 nhưng vẫn có fallback cho máy cũ"): `View.dsCard(radius:)` /
+  `DSCardSurface` trong ASCNDDesignSystem — kính hệ thống iOS 26, material ở máy cũ, lót xám than khi tối, viền sáng
+  mảnh, bóng mềm, Reduce Transparency → đặc. `todayCard`, `DSCard`, `AssistantSurface`, `NewsCardSurface` và 5 mặt
+  trắng tự vẽ (hồ sơ, gợi ý theo dõi) đều đi qua nó. Bo góc chung `DS.Radius.xl` (24); 30 / 20 cũ về 24.
 - **Cài đặt không lặp chữ**: mục Ngôn ngữ bỏ tiêu đề; dòng "Ngôn ngữ" có icon quả cầu như Nhắc nhở / Đổi mật khẩu.
 
 ## Quy ước (giữ khi làm màn mới)
@@ -52,5 +56,5 @@ tính năng đồng bộ trong toàn app" → "làm đi".
 - Hành động chính: viên đen đặc; phụ: viên viền mảnh.
 
 ## Chưa làm (cần chủ dự án chọn / việc lớn)
-- Gom các kiểu thẻ (`todayCard`, `DSCard`,
-  `NewsCardSurface`, `AssistantSurface`).
+- Nút "+" ghi nhanh cho iOS 18–25 (máy không có runtime cũ để thử — chờ chủ dự án).
+- Tên cộng đồng và tên hồ sơ tập là hai trường ở server — gộp cần đổi schema.

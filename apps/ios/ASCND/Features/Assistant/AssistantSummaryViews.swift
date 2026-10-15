@@ -6,17 +6,13 @@ import SwiftUI
 // tóm tắt trước, chi tiết khi chạm; điểm sẵn sàng có NHÃN CHỮ và so với mức
 // thường của chính mình; mỗi mảng một thẻ với MỘT câu nhận xét).
 
-/// Mặt thẻ chung của tab: trắng, bo 20, viền mảnh.
+/// Mặt thẻ của tab = mặt thẻ chung `dsCard` (15/10, gom kiểu thẻ).
 struct AssistantSurface: ViewModifier {
   func body(content: Content) -> some View {
     content
       .padding(14)
       .frame(maxWidth: .infinity, alignment: .leading)
-      .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-      .overlay {
-        RoundedRectangle(cornerRadius: 20, style: .continuous)
-          .strokeBorder(DS.Color.foreground.swiftUI.opacity(0.07), lineWidth: 0.75)
-      }
+      .dsCard()
   }
 }
 

@@ -467,7 +467,7 @@ struct DayExtrasList: View {
     }
     .padding(DS.Spacing.md)
     .frame(maxWidth: .infinity, alignment: .topLeading)
-    .todayCard(radius: DS.Radius.xl)
+    .todayCard()
   }
 
   private func supplementsTile(_ book: SupplementBook) -> some View {
@@ -478,7 +478,7 @@ struct DayExtrasList: View {
                value: book.items.isEmpty ? "—" : "\(book.takenCount)/\(book.items.count)")
         .padding(DS.Spacing.md)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .todayCard(radius: DS.Radius.xl)
+        .todayCard()
     }
     .buttonStyle(TodayPressStyle(scale: 0.98))
     .accessibilityElement(children: .ignore)
@@ -539,7 +539,7 @@ struct PlanShortcuts: View {
       .buttonStyle(TodayPressStyle(scale: 0.98))
     }
     .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous))
-    .todayCard(radius: DS.Radius.xl)
+    .todayCard()
   }
 }
 

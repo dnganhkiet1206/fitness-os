@@ -104,7 +104,7 @@ struct WaterView: View {
           summary
           WaterWeekCups(days: book.week, today: book.date, target: target, unit: unit)
             .padding(DS.Spacing.md)
-            .todayCard(radius: DS.Radius.xl)
+            .todayCard()
           if !book.logs.isEmpty { logSection }
         }
         .padding(DS.Spacing.md)
@@ -160,7 +160,7 @@ struct WaterView: View {
     }
     .padding(DS.Spacing.md)
     .frame(maxWidth: .infinity)
-    .todayCard(radius: DS.Radius.xl)
+    .todayCard()
   }
 
   /// VoiceOver: "1.80L, mục tiêu 2.5L, 72%".
@@ -186,7 +186,7 @@ struct WaterView: View {
           }
         }
         .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous))
-        .todayCard(radius: DS.Radius.xl)
+        .todayCard()
         .transition(reduceMotion ? .identity : .opacity.combined(with: .move(edge: .top)))
       }
     }

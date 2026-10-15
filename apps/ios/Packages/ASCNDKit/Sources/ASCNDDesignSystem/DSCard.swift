@@ -18,20 +18,48 @@ public struct DSCard<Content: View>: View {
   /// viền sáng mảnh ở mép trên, bóng mềm có độ lệch. Reduce Transparency →
   /// mặt thẻ đặc với viền token như trước.
   public var body: some View {
-    let shape = RoundedRectangle(cornerRadius: DS.Radius.lg, style: .continuous)
     content
       .padding(DS.Spacing.card)
+      .dsCard()
+  }
+}
+
+extension View {
+  /// MẶT THẺ DUY NHẤT của app (15/10, audit toàn app — chủ dự án: "kính iOS 26
+  /// nhưng vẫn có fallback cho máy cũ"). Thay `todayCard`, `DSCard`,
+  /// `AssistantSurface`, `NewsCardSurface` và các mặt trắng tự vẽ:
+  /// - iOS 26: kính hệ thống (`glassEffect`); máy cũ: material hệ thống;
+  /// - tối: lót mặt xám than dưới kính để thẻ nổi khỏi nền gần đen;
+  /// - viền sáng mảnh (sáng ở trên, tắt dần xuống), bóng mềm có độ lệch;
+  /// - Reduce Transparency: mặt thẻ đặc, viền token.
+  public func dsCard(radius: CGFloat = DS.Radius.xl) -> some View {
+    modifier(DSCardSurface(radius: radius))
+  }
+}
+
+public struct DSCardSurface: ViewModifier {
+  let radius: CGFloat
+  @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+  @Environment(\.colorScheme) private var scheme
+
+  public init(radius: CGFloat = DS.Radius.xl) { self.radius = radius }
+
+  public func body(content: Content) -> some View {
+    let shape = RoundedRectangle(cornerRadius: radius, style: .continuous)
+    content
       .modifier(DSGlassSurface(shape: shape, solid: reduceTransparency))
+      .background {
+        if scheme == .dark { shape.fill(DS.Color.secondary.swiftUI) }
+      }
       .overlay {
-        if reduceTransparency {
-          shape.stroke(DS.Color.border.swiftUI, lineWidth: 1)
-        } else {
-          shape.strokeBorder(
-            LinearGradient(
-              colors: [.white.opacity(scheme == .dark ? 0.22 : 0.7), .white.opacity(scheme == .dark ? 0.04 : 0.15)],
-              startPoint: .top, endPoint: .bottom),
-            lineWidth: 0.75)
-        }
+        shape.strokeBorder(
+          reduceTransparency
+            ? AnyShapeStyle(DS.Color.border.swiftUI)
+            : AnyShapeStyle(
+              LinearGradient(
+                colors: [.white.opacity(scheme == .dark ? 0.26 : 0.7), .white.opacity(scheme == .dark ? 0.08 : 0.15)],
+                startPoint: .top, endPoint: .bottom)),
+          lineWidth: 0.75)
       }
       .shadow(color: .black.opacity(scheme == .dark ? 0.3 : 0.07), radius: 18, y: 8)
   }

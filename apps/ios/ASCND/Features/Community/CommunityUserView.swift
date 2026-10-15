@@ -270,11 +270,7 @@ struct CommunityUserView: View {
             goalRow("ep.level", EditProfileView.label(EditProfileView.levels, fitness.profile?.trainingLevel))
           }
           .padding(14)
-          .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-          .overlay {
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-              .strokeBorder(DS.Color.foreground.swiftUI.opacity(0.08), lineWidth: 0.75)
-          }
+          .dsCard()
           .contentShape(Rectangle())
         }
         .buttonStyle(TodayPressStyle())
@@ -353,11 +349,7 @@ struct CommunityUserView: View {
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     .padding(12)
-    .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-    .overlay {
-      RoundedRectangle(cornerRadius: 18, style: .continuous)
-        .strokeBorder(DS.Color.foreground.swiftUI.opacity(0.08), lineWidth: 0.75)
-    }
+    .dsCard()
     .accessibilityElement(children: .combine)
   }
 
@@ -589,11 +581,7 @@ struct CommunityUserView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
-        .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .overlay {
-          RoundedRectangle(cornerRadius: 18, style: .continuous)
-            .strokeBorder(DS.Color.foreground.swiftUI.opacity(0.08), lineWidth: 0.75)
-        }
+        .dsCard()
       } else if book.mutedUntil == nil {
         Text("community.user.empty")
           .font(DS.TextStyle.footnote)
@@ -848,11 +836,7 @@ private struct RhythmCard: View {
       }
     }
     .padding(14)
-    .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-    .overlay {
-      RoundedRectangle(cornerRadius: 18, style: .continuous)
-        .strokeBorder(DS.Color.foreground.swiftUI.opacity(0.08), lineWidth: 0.75)
-    }
+    .dsCard()
     .accessibilityElement(children: .ignore)
     .accessibilityLabel(Text("community.pass.rhythm"))
     .accessibilityValue(Text(verbatim: "\(days.filter { $0 }.count)/\(days.count)"))

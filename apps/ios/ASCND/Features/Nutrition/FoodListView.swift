@@ -204,7 +204,7 @@ struct FoodListView: View {
   private func listCard<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
     VStack(spacing: 0) { content() }
       .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous))
-      .todayCard(radius: DS.Radius.xl)
+      .todayCard()
   }
 
   private var empty: some View {

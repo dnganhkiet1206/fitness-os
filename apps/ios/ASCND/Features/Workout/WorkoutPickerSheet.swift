@@ -140,7 +140,7 @@ struct WorkoutPickerSheet: View {
   private func card<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
     VStack(spacing: 0) { content() }
       .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous))
-      .todayCard(radius: DS.Radius.xl)
+      .todayCard()
   }
 
   private func section(_ title: String) -> some View {

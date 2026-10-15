@@ -123,7 +123,7 @@ struct WeekPlanView: View {
       legend
     }
     .padding(DS.Spacing.md)
-    .todayCard(radius: DS.Radius.xl)
+    .todayCard()
   }
 
   private func dayCell(_ i: Int, _ d: LocalDate) -> some View {
@@ -410,7 +410,7 @@ struct WeekPlanView: View {
         }
       }
       .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous))
-      .todayCard(radius: DS.Radius.xl)
+      .todayCard()
     }
   }
 

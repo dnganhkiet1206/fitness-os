@@ -91,7 +91,7 @@ struct MealPlansPreview: View {
           .buttonStyle(TodayPressStyle(scale: 0.98))
         }
         .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous))
-        .todayCard(radius: DS.Radius.xl)
+        .todayCard()
       }
     }
   }

@@ -646,11 +646,7 @@ struct PostCardView: View {
     }
     .padding(16)
     .frame(maxWidth: .infinity, alignment: .leading)
-    .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-    .overlay {
-      RoundedRectangle(cornerRadius: 22, style: .continuous)
-        .strokeBorder(DS.Color.foreground.swiftUI.opacity(0.06), lineWidth: 0.75)
-    }
+    .dsCard()
     .overlay {
       if showsBurst {
         Image(systemName: "heart.fill")

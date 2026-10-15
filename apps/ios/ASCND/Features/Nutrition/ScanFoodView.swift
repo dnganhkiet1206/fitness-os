@@ -287,7 +287,7 @@ struct ScanFoodView: View {
               }
             }
             .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous))
-            .todayCard(radius: DS.Radius.xl)
+            .todayCard()
           }
         }
         .padding(DS.Spacing.md)
@@ -309,7 +309,7 @@ struct ScanFoodView: View {
     }
     .frame(maxWidth: .infinity)
     .padding(DS.Spacing.lg)
-    .todayCard(radius: DS.Radius.xl)
+    .todayCard()
   }
 
   private func rowView(_ row: Binding<Row>) -> some View {

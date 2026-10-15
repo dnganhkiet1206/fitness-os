@@ -200,7 +200,7 @@ struct SupplementsView: View {
       Spacer(minLength: 0)
     }
     .padding(DS.Spacing.md)
-    .todayCard(radius: DS.Radius.xl)
+    .todayCard()
     .accessibilityElement(children: .combine)
     .accessibilityLabel(Text(String(localized: "supplements.today")))
     .accessibilityValue(Text(verbatim: "\(taken) / \(items.count) " + String(localized: "supplements.takenToday")))
