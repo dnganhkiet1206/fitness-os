@@ -24,6 +24,10 @@ struct CoachChatView: View {
   @State private var collapsed = false
   /// Chỉ tay người dùng mới thu / bung — cuộn tự động theo câu trả lời thì không.
   @State private var userScrolling = false
+  /// Mốc để cộng dồn quãng vuốt: vuốt chậm chỉ dịch vài điểm mỗi nhịp, so từng
+  /// nhịp thì không bao giờ vượt ngưỡng (16/10: viên không bung khi vuốt lên chậm
+  /// trong khi thanh tab đã bung → viên đè lên thanh tab).
+  @State private var scrollAnchor: CGFloat = 0
   /// Đang ở cuối cuộc trò chuyện — không thì hiện nút mũi tên kéo về cuối như ChatGPT.
   @State private var atBottom = true
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -40,7 +44,7 @@ struct CoachChatView: View {
       .scrollDismissesKeyboard(.interactively)
       .defaultScrollAnchor(chat.messages.isEmpty ? .center : .bottom)
       .onScrollPhaseChange { _, phase in
-        userScrolling = phase == .interacting || phase == .decelerating
+        userScrolling = phase == .tracking || phase == .interacting || phase == .decelerating
       }
       .onScrollGeometryChange(for: Bool.self) { g in
         // Chỉ hiện mũi tên khi đã cuộn lên xa (16/10, chủ dự án: "hiện sớm quá"):
@@ -72,15 +76,20 @@ struct CoachChatView: View {
         }
       }
       .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y } action: { old, new in
-        guard userScrolling else { return }
-        let delta = new - old
-        if delta > 6, !collapsed {
+        // Cuộn tự động (theo câu trả lời, nút mũi tên): dời mốc, không thu / bung.
+        guard userScrolling else { scrollAnchor = new; return }
+        let delta = new - scrollAnchor
+        // Đổi hướng thì đặt lại mốc — chỉ quãng vuốt liên tục một chiều mới tính.
+        if (delta > 0 && new < old) || (delta < 0 && new > old) { scrollAnchor = old }
+        guard abs(new - scrollAnchor) > 24 else { return }
+        scrollAnchor = new
+        if delta > 0, !collapsed {
           // Ô đang có con trỏ nhưng trống (vừa chạm mở rồi cuộn đi): thôi gõ và thu
           // lại. Đang gõ dở thì giữ nguyên — không giật mất chữ của người dùng.
           guard draft.isEmpty else { return }
           composing = false
           setCollapsed(true)
-        } else if delta < -6, collapsed {
+        } else if delta < 0, collapsed {
           setCollapsed(false)
         }
       }

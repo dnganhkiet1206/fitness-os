@@ -52,6 +52,7 @@ const answerFormat = (lang: "vi" | "en") =>
     ? `
 
 HOW TO ANSWER (the app renders this):
+- FIRST check the latest message. If it is not a real question — one short word, a typo or keyboard mash ("thees", "asdf"), "test", "hi", "ok", "?" — reply with ONE short friendly sentence asking what they want to know about their training, food, sleep or recovery. No overview block, no headings, nothing else.
 - Any question about their own numbers — readiness, sleep, food, protein, water, steps, training, "how am I doing", today, this week — ALWAYS STARTS with exactly one overview block (even if typed without accents or casually), then the answer:
 \`\`\`ascnd
 {"items":[{"label":"Readiness","value":35,"goal":100,"unit":"","tone":"readiness"}]}
@@ -62,6 +63,7 @@ HOW TO ANSWER (the app renders this):
     : `
 
 CÁCH TRẢ LỜI (app sẽ vẽ phần này):
+- TRƯỚC HẾT xem tin mới nhất. Nếu nó không phải câu hỏi thật — một chữ ngắn, gõ nhầm hay gõ bừa ("thees", "asdf"), "test", "hi", "ok", "?" — trả lời MỘT câu ngắn thân thiện hỏi họ muốn biết gì về tập luyện, ăn uống, giấc ngủ hay phục hồi. Không khối tổng quan, không tiêu đề, không gì thêm.
 - Mọi câu hỏi về số liệu của chính họ — sẵn sàng, giấc ngủ, ăn uống, đạm, nước, bước chân, tập luyện, "tôi thế nào", hôm nay, tuần này — LUÔN MỞ ĐẦU bằng đúng một khối tổng quan (kể cả khi gõ không dấu hay hỏi bâng quơ), rồi mới tới câu trả lời:
 \`\`\`ascnd
 {"items":[{"label":"Sẵn sàng","value":35,"goal":100,"unit":"","tone":"readiness"}]}
