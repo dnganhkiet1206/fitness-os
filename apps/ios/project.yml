@@ -130,6 +130,13 @@ targets:
     # Archive (Release) → dSYM lên Sentry để stack crash / treo có tên hàm
     # (16/10). Thiếu sentry-cli / khoá thì chỉ cảnh báo, không hỏng build.
     postBuildScripts:
+      - name: Set build number
+        script: |
+          [ "$CONFIGURATION" = "Release" ] || exit 0
+          "${SRCROOT}/tools/set-build-number.sh"
+        basedOnDependencyAnalysis: false
+        inputFiles:
+          - "${SRCROOT}/tools/set-build-number.sh"
       - name: Upload dSYMs to Sentry
         # Debug thoát ngay tại đây: hộp cát của Debug không cho đọc file script.
         script: |
@@ -169,6 +176,17 @@ targets:
           PRODUCT_BUNDLE_IDENTIFIER: com.ascnd.fitnessos.dev.widgets
         Release:
           PRODUCT_BUNDLE_IDENTIFIER: com.ascnd.fitnessos.widgets
+          # Script số build ghi vào Info.plist đã build — ngoài hộp cát.
+          ENABLE_USER_SCRIPT_SANDBOXING: "NO"
+    # Số build khớp app (App Store từ chối widget lệch số build với app).
+    postBuildScripts:
+      - name: Set build number
+        script: |
+          [ "$CONFIGURATION" = "Release" ] || exit 0
+          "${SRCROOT}/tools/set-build-number.sh"
+        basedOnDependencyAnalysis: false
+        inputFiles:
+          - "${SRCROOT}/tools/set-build-number.sh"
 
 schemes:
   ASCND:
