@@ -283,6 +283,8 @@ struct FoodsScreen: View {
 /// camera → màn ghi mở thẳng Chụp ảnh món (AI); mã vạch → máy quét; bút → mở
 /// sẵn phần món tự nhập.
 struct MealLogBar: View {
+  /// Edge function AI đã deploy chưa — nút chụp ảnh món chỉ hiện khi có (15/10).
+  @Environment(AppServices.self) private var services: AppServices?
   let userId: String
   /// Sheet ghi bữa đóng lại — thẻ ngân sách đọc lại số của hôm nay.
   var onClose: () -> Void = {}
@@ -309,15 +311,18 @@ struct MealLogBar: View {
       .buttonStyle(.plain)
       .accessibilityLabel(Text(String(localized: "nc.way.search.a11y")))
       Divider().frame(height: 24).opacity(0.6)
-      Button { open = .photo } label: {
-        Image(systemName: "camera")
-          .font(.system(size: 17, weight: .semibold))
-          .foregroundStyle(DS.Color.foreground.swiftUI)
-          .frame(width: 46, height: 52)
-          .contentShape(Rectangle())
+      // Chụp ảnh món cần edge function AI — ẩn khi chưa deploy (`AppServices.probeAI`).
+      if services?.aiDeployed == true {
+        Button { open = .photo } label: {
+          Image(systemName: "camera")
+            .font(.system(size: 17, weight: .semibold))
+            .foregroundStyle(DS.Color.foreground.swiftUI)
+            .frame(width: 46, height: 52)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text(String(localized: "sf.a11y")))
       }
-      .buttonStyle(.plain)
-      .accessibilityLabel(Text(String(localized: "sf.a11y")))
       Button { open = .scan } label: {
         Image(systemName: "barcode.viewfinder")
           .font(.system(size: 17, weight: .semibold))

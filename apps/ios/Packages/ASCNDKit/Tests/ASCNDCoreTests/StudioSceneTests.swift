@@ -138,4 +138,13 @@ struct StudioSceneTests {
     #expect(!next.contains("url(#studioCone)") && !next.contains("url(#nsHalo)"))
     #expect(next.contains("studioWallSide") && next.contains("studioFloorDepth"))
   }
+
+  /// Chữ trên tranh theo ngôn ngữ; tiếng Anh giữ nguyên.
+  @Test func signTextFollowsLanguage() {
+    var o = StudioScene.Options()
+    #expect(String(describing: StudioScene.tree(o)).contains("STRONGER"))
+    o.lang = "vi"
+    let vi = String(describing: StudioScene.tree(o))
+    #expect(vi.contains("MẠNH HƠN") && vi.contains("CHUỖI") && !vi.contains("STRONGER") && !vi.contains("STREAK"))
+  }
 }

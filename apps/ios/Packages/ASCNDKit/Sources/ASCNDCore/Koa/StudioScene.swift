@@ -94,6 +94,8 @@ public enum StudioScene {
     /// Đèn treo (dây, chao, bóng, vệt sáng, quầng, bụi trong vệt, vũng sáng). Chủ dự án
     /// 15/10: "bản tối thì bỏ đèn trong phòng của koa đi".
     public var lamp = true
+    /// Ngôn ngữ của chữ vẽ trên tranh (bảng hiệu, thẻ chuỗi) — `vi` / `es` / `en`.
+    public var lang = "en"
     /// Lớp chiều sâu: tường tối về góc, chân tường, ván sàn hội tụ (15/10, chủ dự án:
     /// "phòng cũng chưa có chiều sâu"). Mặc định tắt — cảnh RN giữ nguyên golden.
     public var depth = false
@@ -175,6 +177,11 @@ public enum StudioScene {
         }
       }
     }
+    if tag == "Text", case .string(let t)? = props["text"], let swap = signText[o.lang]?[t] {
+      props["text"] = .string(swap.text)
+      if let x = swap.x { props["x"] = .number(x) }
+      if let size = swap.size { props["fontSize"] = .number(size) }
+    }
     if o.light, tag == "LinearGradient", v["p"]?["id"]?.stringValue == "studioSky" {
       let stops = daySky.map { off, color, op in
         KoaRender.Element(
@@ -189,6 +196,21 @@ public enum StudioScene {
     if case .array(let k)? = v["k"] { kids = k.compactMap { element($0, o, skin) } }
     return KoaRender.Element(tag, props, matrix: matrix, kids: kids)
   }
+
+  /// Chữ vẽ trên tranh theo ngôn ngữ (15/10, audit: "WIN TODAY STRONGER TOMORROW",
+  /// "STREAK" tiếng Anh ở bản tiếng Việt). Chữ gốc → (chữ mới, x mới nếu dời). Hàng đầu
+  /// của bảng tách màu (cam căn phải | trắng căn trái) nên điểm tách dời theo độ dài.
+  /// `size`: cỡ chữ mới khi câu dài hơn khung (bảng rộng 84, tâm x 66).
+  static let signText: [String: [String: (text: String, x: Double?, size: Double?)]] = [
+    "vi": [
+      "WIN": ("THẮNG", 59, 8.6), "TODAY": ("HÔM NAY", 61.5, 8.6), "STRONGER": ("NGÀY MAI", nil, nil),
+      "TOMORROW": ("MẠNH HƠN", nil, nil), "STREAK": ("CHUỖI", nil, nil),
+    ],
+    "es": [
+      "WIN": ("GANA", 62, nil), "TODAY": ("HOY", 65, nil), "STRONGER": ("MAÑANA", nil, nil),
+      "TOMORROW": ("MÁS FUERTE", nil, 9), "STREAK": ("RACHA", nil, nil),
+    ],
+  ]
 
   /// Phần tử của đèn treo trong template studio.
   static func isLamp(_ v: JSONValue) -> Bool {

@@ -67,12 +67,12 @@ struct AssistantTab: View {
               logSleep: nil)
           }
           // Máy chủ chưa bật tính năng → không hiện thẻ lỗi vĩnh viễn (15/10, audit).
-          if let nudges, !nudges.isNotDeployed {
+          if let nudges, !nudges.isNotDeployed, ai {
             InsightCard(book: nudges) { Task { await loadInsight(force: true) } }
           }
-          if let chat {
+          if let chat, ai {
             AskCoachBar(lastAsked: chat.messages.last { $0.role == .user }?.content) { path.append(.chat) }
-          } else if built {
+          } else if built, ai {
             ContentUnavailableView {
               Label("coach.title", systemImage: "sparkles")
             } description: {
@@ -155,11 +155,11 @@ struct AssistantTab: View {
                 // Vì sao điểm như vậy (15/10, audit — Apple Health: chạm điểm xem yếu tố).
                 ReadinessFactors(
                   makeBook: { services.makeReadinessBook(userId: flow.today.userId, date: readinessDate) }, lang: lang)
-                MetricPanelView(book: metrics, signal: signal, lang: lang) { question in
+                MetricPanelView(book: metrics, signal: signal, lang: lang, onAsk: ai ? { question in
                   guard let chat else { return }
                   path.append(.chat)
                   CoachChatView.ask(chat, question, lang: lang)
-                }
+                } : nil)
               }
               .padding(DS.Spacing.md)
             }
@@ -462,7 +462,8 @@ struct AssistantTab: View {
   /// đôi); màn và route vẫn giữ.
   private var availableTools: [Tool] {
     var out: [Tool] = []
-    if weekly != nil {
+    // Tổng kết tuần và trí nhớ coach cần edge function AI — ẩn khi chưa deploy.
+    if weekly != nil, ai {
       out.append(
         Tool(
           route: .weekly, symbol: "calendar", tint: DS.Color.metricBlue.swiftUI,
@@ -492,7 +493,7 @@ struct AssistantTab: View {
           route: .sleep, symbol: "moon.fill", tint: DS.Color.metricPurple.swiftUI,
           label: String(localized: "assistant.tool.sleep"), hint: String(localized: "assistant.tool.sleep.hint")))
     }
-    if memory != nil {
+    if memory != nil, ai {
       out.append(
         Tool(
           route: .memory, symbol: "sparkles", tint: DS.Color.metricPurple.swiftUI,
@@ -500,6 +501,9 @@ struct AssistantTab: View {
     }
     return out
   }
+
+  /// Edge function AI đã deploy (`AppServices.probeAI`) — chưa thì ẩn mọi lối vào AI.
+  private var ai: Bool { services.aiDeployed == true }
 
   @ViewBuilder private var tools: some View {
     let list = availableTools

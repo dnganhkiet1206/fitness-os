@@ -140,7 +140,8 @@ struct LogMealView: View {
           if !logger.quickAdds.isEmpty && query.trimmingCharacters(in: .whitespaces).count < MealLog.searchMinLength {
             recents(logger)
           }
-          if query.trimmingCharacters(in: .whitespaces).count < MealLog.searchMinLength {
+          // Gợi ý bữa cần edge function AI — ẩn khi chưa deploy.
+          if query.trimmingCharacters(in: .whitespaces).count < MealLog.searchMinLength, services.aiDeployed == true {
             MealSuggestCard(logger: logger)
           }
           customCard(logger)
@@ -234,16 +235,18 @@ struct LogMealView: View {
       .textInputAutocapitalization(.never)
       .autocorrectionDisabled()
       .submitLabel(.search)
-      // Chụp ảnh / quét là cách tìm (RN đặt nút mã vạch cạnh ô tìm).
-      Button { photographing = true } label: {
-        Image(systemName: "camera")
-          .font(.body.weight(.semibold))
-          .foregroundStyle(DS.Color.foreground.swiftUI)
-          .frame(minWidth: 40, minHeight: 44)
-          .contentShape(Rectangle())
+      // Chụp ảnh / quét là cách tìm (RN đặt nút mã vạch cạnh ô tìm). Chụp ảnh cần AI.
+      if services.aiDeployed == true {
+        Button { photographing = true } label: {
+          Image(systemName: "camera")
+            .font(.body.weight(.semibold))
+            .foregroundStyle(DS.Color.foreground.swiftUI)
+            .frame(minWidth: 40, minHeight: 44)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text(String(localized: "sf.a11y")))
       }
-      .buttonStyle(.plain)
-      .accessibilityLabel(Text(String(localized: "sf.a11y")))
       Button { scanning = true } label: {
         Image(systemName: "barcode.viewfinder")
           .font(.body.weight(.semibold))

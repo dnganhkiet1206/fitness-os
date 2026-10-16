@@ -747,6 +747,9 @@ struct MascotStage: View {
 
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Environment(\.colorScheme) private var scheme
+  @Environment(\.locale) private var locale
+  /// Ngôn ngữ của chữ vẽ trên tranh trong phòng.
+  private var lang: String { String(locale.identifier.prefix(2)) }
 
   private struct Nod {
     var angle = 0.0
@@ -767,6 +770,7 @@ struct MascotStage: View {
     // Cả hai bản có lớp chiều sâu.
     o.lamp = scheme == .dark
     o.depth = true
+    o.lang = lang
     return o
   }
 

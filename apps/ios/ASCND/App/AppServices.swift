@@ -235,6 +235,35 @@ final class AppServices {
     sync.kick()
     autoSyncHealth()
     await reminders.refreshPermission()
+    await probeAI()
+  }
+
+  /// Edge function AI đã deploy chưa (15/10: server trả 404 "function not found" cho
+  /// MỌI function). `true` mới hiện lối vào AI (Coach, tổng kết tuần, Insight, gợi ý
+  /// bữa, chụp ảnh món); `nil` (chưa biết / không có mạng) và `false` → ẩn, không để
+  /// người dùng chạm vào một màn lỗi. Server deploy xong → lần mở app sau tự hiện.
+  private(set) var aiDeployed: Bool?
+
+  /// Một lượt hỏi gateway, không đăng nhập: function có → 401 (chưa chạy gì), không
+  /// có → 404. Lỗi mạng: giữ `nil`, thử lại lần ra tiền cảnh sau.
+  func probeAI() async {
+    guard aiDeployed != true, let base = Self.supabaseURL, let key = Self.supabaseKey else { return }
+    var req = URLRequest(url: base.appendingPathComponent("functions/v1/ai-coach"))
+    req.httpMethod = "POST"
+    req.timeoutInterval = 8
+    req.setValue(key, forHTTPHeaderField: "apikey")
+    req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+    req.httpBody = Data("{}".utf8)
+    guard let (_, resp) = try? await URLSession.shared.data(for: req), let http = resp as? HTTPURLResponse else { return }
+    aiDeployed = http.statusCode != 404
+  }
+
+  private static var supabaseURL: URL? {
+    (Bundle.main.object(forInfoDictionaryKey: "ASCNDSupabaseURL") as? String).flatMap(URL.init(string:))
+  }
+
+  private static var supabaseKey: String? {
+    (Bundle.main.object(forInfoDictionaryKey: "ASCNDSupabaseKey") as? String).flatMap { $0.isEmpty ? nil : $0 }
   }
 
   /// Ngôn ngữ cho widget / Live Activity (App Group). "Theo máy" thì không

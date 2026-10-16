@@ -16,7 +16,8 @@ struct MetricPanelView: View {
   let book: MetricHistoryBook
   let signal: AssistantSignalBook?
   let lang: AppPreferences.Lang
-  let onAsk: (String) -> Void
+  /// Hỏi coach về số này; `nil` (AI chưa deploy) → không có nút.
+  let onAsk: ((String) -> Void)?
 
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -161,6 +162,7 @@ struct MetricPanelView: View {
             }
           }
           chart(a)
+          if let onAsk {
           Button {
             onAsk(a.ask(lang))
           } label: {
@@ -172,6 +174,7 @@ struct MetricPanelView: View {
           .foregroundStyle(DS.Color.brand.swiftUI)
           // Đọc cả câu sẽ hỏi.
           .accessibilityHint(Text(verbatim: a.ask(lang)))
+          }
         }
       }
     }

@@ -76,6 +76,14 @@ tính năng đồng bộ trong toàn app" → "làm đi".
     7 ngày kể từ lần đầu thấy trên máy, ẩn khi đủ ba hoặc bấm ẩn.
   - Ghi nhanh: mục **"Ăn lại"** — 3 bữa gần đây, một chạm ghi đúng các món + khẩu phần (`MealLogger.repeatMeal` +
     `save` qua hàng đợi), bảng tự đóng.
+- **Trước TestFlight (15/10):**
+  - Edge function AI: server trả 404 "Requested function was not found" cho MỌI function (`ai-coach`,
+    `ai-weekly-review`, `ai-smart-nudges`, `ai-meal-suggest`, `ai-coach-memory`). `AppServices.probeAI` hỏi gateway một
+    lần lúc mở app (không đăng nhập: 401 = có, 404 = chưa); chưa có → ẩn ô Hỏi coach, Insight, nút "Hỏi coach về số
+    này", công cụ Tổng kết tuần + Coach nhớ gì, gợi ý bữa, nút chụp ảnh món. Server deploy xong → tự hiện, không cần
+    bản mới. Tin nhắn: bản Release vốn đã ẩn (chỉ dữ liệu giả ở Debug).
+  - Chữ trên tranh phòng Koa theo ngôn ngữ (`StudioScene.Options.lang`, `signText`): "THẮNG HÔM NAY / NGÀY MAI /
+    MẠNH HƠN", "CHUỖI"; es: "GANA HOY / MAÑANA / MÁS FUERTE", "RACHA".
 - **Cài đặt không lặp chữ**: mục Ngôn ngữ bỏ tiêu đề; dòng "Ngôn ngữ" có icon quả cầu như Nhắc nhở / Đổi mật khẩu.
 
 ## Quy ước (giữ khi làm màn mới)
