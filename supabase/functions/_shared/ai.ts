@@ -233,36 +233,44 @@ export async function callAI(
 
   let last: Response | null = null;
   for (const p of list) {
-    let res: Response;
-    /* Một controller cho mỗi bên: huỷ bên A không được đụng tới bên B. */
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
-    try {
-      res = await fetch(p.url, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${p.key}`, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...body,
-          messages: withUserTurn(body.messages),
-          model: opts.vision ? p.visionModel : p.model,
-          ...(aiReasoningEffort() ? { reasoning_effort: aiReasoningEffort() } : {}),
-        }),
-        signal: ctrl.signal,
-      });
-    } catch (e) {
-      /* Mạng hỏng, DNS không phân giải được, hoặc hết giờ: cả ba đều là "bên đó
-         không trả lời", và câu trả lời đúng cho cả ba là thử bên tiếp theo.
-         Log ở server — thông báo này mang theo hostname. */
-      console.error("ai provider unreachable", e);
-      continue;
-    } finally {
-      /* Tắt NGAY khi có header. Để nó chạy tiếp là để nó huỷ thân đang stream. */
-      clearTimeout(timer);
+    /* 503 "high demand" của gói Gemini miễn phí thường qua trong vài trăm ms
+       (16/10: tin "Hi" hỏng vì một lần 503). Thử lại cùng bên hai lần, cách
+       0,6 s rồi 1,2 s, trước khi coi là bên đó hỏng và chuyển bên dự phòng.
+       Mạng hỏng / hết giờ thì không thử lại — sang bên dự phòng như trước. */
+    for (let attempt = 0; attempt < 3; attempt++) {
+      if (attempt > 0) await new Promise((r) => setTimeout(r, 600 * attempt));
+      let res: Response;
+      /* Một controller cho mỗi bên: huỷ bên A không được đụng tới bên B. */
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+      try {
+        res = await fetch(p.url, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${p.key}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...body,
+            messages: withUserTurn(body.messages),
+            model: opts.vision ? p.visionModel : p.model,
+            ...(aiReasoningEffort() ? { reasoning_effort: aiReasoningEffort() } : {}),
+          }),
+          signal: ctrl.signal,
+        });
+      } catch (e) {
+        /* Mạng hỏng, DNS không phân giải được, hoặc hết giờ: cả ba đều là "bên đó
+           không trả lời", và câu trả lời đúng cho cả ba là thử bên tiếp theo.
+           Log ở server — thông báo này mang theo hostname. */
+        console.error("ai provider unreachable", e);
+        break;
+      } finally {
+        /* Tắt NGAY khi có header. Để nó chạy tiếp là để nó huỷ thân đang stream. */
+        clearTimeout(timer);
+      }
+      if (res.ok) return res;
+      last = res;
+      if (!providerFault(res.status)) return res;
+      console.error("ai provider fault", res.status, "attempt", attempt + 1);
+      if (res.status !== 503) break;
     }
-    if (res.ok) return res;
-    last = res;
-    if (!providerFault(res.status)) return res;
-    console.error("ai provider fault", res.status);
   }
   return last;
 }

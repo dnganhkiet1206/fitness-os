@@ -55,6 +55,7 @@ Bản Debug (simulator) không upload — sự kiện từ bản Debug vẫn kh�
 | `quick_log_pick` | chọn một ô trong Ghi nhanh | `target` (meal/water/sleep/weight/workout) |
 | `eat_again_used` | "Ăn lại" ghi xong một bữa | — |
 | `start_card_action` | bấm thẻ "Bắt đầu" | `item` (health/meal/workout/hide) |
+| `coach_quick_reply` | Koa Coach trả lời bằng câu mẫu, không gọi AI (`CoachQuickReply`) | — |
 
 ## Không gửi
 

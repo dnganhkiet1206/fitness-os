@@ -26,6 +26,8 @@ enum Telemetry {
     case quickLogPick = "quick_log_pick"
     case eatAgainUsed = "eat_again_used"
     case startCardAction = "start_card_action"
+    /// Koa Coach trả lời bằng câu mẫu (không gọi AI) — đo tỉ lệ để chỉnh bộ lọc.
+    case coachQuickReply = "coach_quick_reply"
   }
 
   private static var analytics = false

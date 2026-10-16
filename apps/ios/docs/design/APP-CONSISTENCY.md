@@ -114,6 +114,15 @@ tính năng đồng bộ trong toàn app" → "làm đi".
   - Server (`ai-coach`, `_shared/scope.ts`): luật trình bày nối cuối system prompt (model nhẹ theo chỉ dẫn cuối tốt hơn);
     luật 4 cho câu "không đáng trả lời" (vô nghĩa, thử, khiêu khích, làm thơ / đùa) → một câu ngắn kéo về chủ đề.
   - App dò lại AI 3 lần khi lỗi mạng lúc mở và mỗi lần về tiền cảnh (trước: mạng chưa sẵn → AI ẩn cả phiên).
+- **Koa Coach — trả lời không cần AI + gọn đáy màn (16/10, chủ dự án):**
+  - `CoachQuickReply` (ASCNDCore): lời chào, cảm ơn, "ok", gõ nhầm / tin thử, và tra MỘT số của hôm nay (calo, đạm,
+    bước, giấc ngủ, sẵn sàng, "hôm nay tôi thế nào") trả lời ngay bằng kho câu mẫu vi/en/es điền số thật + khối tổng
+    quan dựng bằng code. Không lặp: `Memory` nhớ mẫu vừa dùng (lưu `UserDefaults`), lần sau chọn mẫu khác. Bộ lọc cố ý
+    hẹp: có "vì sao / nên / gợi ý / đủ chưa…", nhắc ngày khác hôm nay (hôm qua, tuần, trung bình), hai chỉ số trở lên,
+    hay thiếu từ hỏi số → đi AI. Chưa có dữ liệu → câu "chưa có số", không đoán. Sự kiện `coach_quick_reply`.
+  - Màn chat ẩn thanh tab (như ChatGPT / iMessage): viên thu gọn không còn đè thanh tab. Lời nhắc y tế ở cuối cuộc trò
+    chuyện (trôi theo nội dung), không dính dưới ô chat.
+  - Server: `callAI` thử lại 503 "high demand" hai lần (0,6 s / 1,2 s) trước khi báo lỗi; quá tải thật vẫn hiện lỗi.
 - **Cài đặt không lặp chữ**: mục Ngôn ngữ bỏ tiêu đề; dòng "Ngôn ngữ" có icon quả cầu như Nhắc nhở / Đổi mật khẩu.
 
 ## Quy ước (giữ khi làm màn mới)

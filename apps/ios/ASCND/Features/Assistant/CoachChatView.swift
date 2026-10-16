@@ -15,6 +15,8 @@ struct CoachChatView: View {
   /// Cùng bốn chip với thẻ coach của Trợ lý (`useAssistantSignal`): chạm là
   /// hỏi luôn câu của chip.
   let suggestions: [AssistantSuggestions.Suggestion]
+  /// Số liệu hôm nay của Trợ lý — cho câu trả lời tự động (`CoachQuickReply`).
+  var signal: AssistantSuggestions.Signal?
 
   @State private var draft = ""
   @State private var showsHistory = false
@@ -102,6 +104,10 @@ struct CoachChatView: View {
       }
     }
     .safeAreaInset(edge: .bottom) { composer }
+    // Màn chat không có thanh tab, như ChatGPT / iMessage (16/10): viên thu gọn hạ
+    // vào hàng tab bằng vị trí đoán thì đè lên thanh tab mỗi khi hai bên lệch nhịp
+    // thu / bung — app không đọc được thanh tab đang thu hay mở.
+    .toolbar(.hidden, for: .tabBar)
     .navigationTitle(Text("coach.title"))
     .ascndPage()
     .navigationBarTitleDisplayMode(.inline)
@@ -182,6 +188,11 @@ struct CoachChatView: View {
           .foregroundStyle(DS.Color.destructive.swiftUI)
           .frame(maxWidth: .infinity, alignment: .leading)
       }
+      // Lời nhắc y tế ở cuối cuộc trò chuyện (16/10, chủ dự án): nhỏ, mờ, căn giữa —
+      // trôi theo nội dung thay vì dính dưới ô chat (ở đó nó đè lên chữ khi cuộn).
+      if !chat.isLoading, chat.messages.last?.role == .assistant {
+        disclaimer.padding(.top, 4)
+      }
       Color.clear.frame(height: 1).id(Self.bottom)
     }
     // Tin vừa gửi bay lên như iMessage (`messageSendTransition`).
@@ -204,15 +215,21 @@ struct CoachChatView: View {
     withAnimation(reduceMotion ? nil : .spring(response: 0.42, dampingFraction: 0.82)) { collapsed = value }
   }
 
+  private var disclaimer: some View {
+    Text("coach.disclaimer")
+      .font(.system(size: 11))
+      .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+      .multilineTextAlignment(.center)
+      .frame(maxWidth: .infinity)
+      .padding(.horizontal, DS.Spacing.lg)
+  }
+
   /// Ô soạn: MỘT viên kính duy nhất co giãn giữa hai dạng (16/10, chủ dự án: bản
   /// hai view thay nhau "giật, như hai phần bị ép chung"). Khung, độ bo và vị trí
-  /// cùng chuyển trong một nhịp lò xo; chỉ nội dung bên trong mờ chuyển. Lời nhắc
-  /// y tế chỉ mờ đi chứ không rời bố cục — chiều cao vùng đáy không đổi, nội dung
-  /// chat không nhảy.
+  /// cùng chuyển trong một nhịp lò xo; chỉ nội dung bên trong mờ chuyển.
   ///
-  /// Đầy đủ: ô chữ + nút gửi, dưới là lời nhắc y tế nhỏ mờ (như các app AI hiện
-  /// nay). Thu gọn (vuốt xuống): viên nhỏ ký hiệu + chữ gợi ý; iOS 26 hạ xuống
-  /// giữa hai nút tab đã thu như thanh phát của Apple Music.
+  /// Đầy đủ: ô chữ + nút gửi. Thu gọn (vuốt xuống, như thanh phát của Apple Music): viên nhỏ ký hiệu
+  /// + chữ gợi ý ngay tại đáy màn.
   private var composer: some View {
     VStack(spacing: 6) {
       ZStack(alignment: .leading) {
@@ -235,22 +252,18 @@ struct CoachChatView: View {
       .frame(minHeight: collapsed ? 40 : 48)
       .frame(maxWidth: collapsed ? 250 : .infinity)
       .glassComposer(radius: collapsed ? 20 : 26)
-      .contentShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
-      .onTapGesture {
-        guard collapsed else { return }
-        setCollapsed(false)
-        composing = true
+      // Chỉ bắt chạm khi đang thu: lúc đầy đủ, chạm thuộc về ô chữ và nút gửi.
+      .overlay {
+        if collapsed {
+          Color.clear
+            .contentShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .onTapGesture {
+              setCollapsed(false)
+              composing = true
+            }
+        }
       }
-      .offset(y: collapsed && Self.besideTabBar ? 57 : 0)
       .accessibilityAddTraits(collapsed ? .isButton : [])
-      Text("coach.disclaimer")
-        .font(.system(size: 11))
-        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-        .multilineTextAlignment(.center)
-        .frame(maxWidth: .infinity)
-        .padding(.horizontal, DS.Spacing.lg)
-        .opacity(collapsed ? 0 : 1)
-        .accessibilityHidden(collapsed)
     }
     .padding(.horizontal, DS.Spacing.md)
     .padding(.top, 14)
@@ -295,10 +308,6 @@ struct CoachChatView: View {
     }
   }
 
-  private static var besideTabBar: Bool {
-    if #available(iOS 26, *) { true } else { false }
-  }
-
   private func submit() {
     setCollapsed(false)
     let text = draft
@@ -307,15 +316,46 @@ struct CoachChatView: View {
     send(text)
   }
 
-  private func send(_ text: String) { Self.ask(chat, text, lang: lang) }
+  private func send(_ text: String) { Self.ask(chat, text, lang: lang, signal: signal) }
 
   /// Một câu hỏi tới coach với ngày + múi giờ của máy lúc bấm — dùng chung
   /// cho ô soạn, chip trong chat và chip trên thẻ coach của tab Trợ lý.
-  static func ask(_ chat: CoachChat, _ text: String, lang: AppPreferences.Lang) {
+  ///
+  /// Câu gần như không cần AI (chào, cảm ơn, gõ nhầm, tra một số của hôm nay) được
+  /// trả lời ngay bằng câu mẫu điền số thật, không lặp mẫu vừa dùng
+  /// (`CoachQuickReply`, 16/10, chủ dự án). Mọi câu cần suy luận vẫn đi AI.
+  static func ask(
+    _ chat: CoachChat, _ text: String, lang: AppPreferences.Lang, signal: AssistantSuggestions.Signal? = nil
+  ) {
     let code = lang.rawValue
+    var memory = QuickReplyMemory.load()
+    if let reply = CoachQuickReply.answer(text, signal: signal, lang: code, memory: &memory) {
+      QuickReplyMemory.save(memory)
+      Telemetry.capture(.coachQuickReply)
+      Task { await chat.answerLocally(text, reply: reply) }
+      return
+    }
     let now = Date()
     let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
     Task { await chat.send(text, lang: code, today: today, tzOffset: Coach.tzOffset(.current, at: now)) }
+  }
+}
+
+/// Các mẫu câu trả lời tự động vừa dùng — lưu trên máy để hỏi lại (kể cả sau khi
+/// mở lại app) không ra đúng câu cũ.
+@MainActor
+enum QuickReplyMemory {
+  private static let key = "coach.quickReplyMemory"
+
+  static func load() -> CoachQuickReply.Memory {
+    guard let data = UserDefaults.standard.data(forKey: key),
+      let m = try? JSONDecoder().decode(CoachQuickReply.Memory.self, from: data)
+    else { return .init() }
+    return m
+  }
+
+  static func save(_ m: CoachQuickReply.Memory) {
+    if let data = try? JSONEncoder().encode(m) { UserDefaults.standard.set(data, forKey: key) }
   }
 }
 

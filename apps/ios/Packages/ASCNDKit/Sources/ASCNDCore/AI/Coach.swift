@@ -208,6 +208,32 @@ public final class CoachChat {
     try? await store.touch(conversationId: convo, userId: userId)
   }
 
+  /// Trả lời không qua AI (`CoachQuickReply`, 16/10): câu hỏi và câu trả lời dựng
+  /// sẵn vào cuộc trò chuyện như một lượt thường — lưu vào lịch sử, có "đang gõ"
+  /// một nhịp ngắn cho tự nhiên, nhưng không gọi edge function.
+  public func answerLocally(_ raw: String, reply: String) async {
+    let text = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !text.isEmpty, !isLoading, !closed else { return }
+    isLoading = true
+    failure = nil
+    messages.append(Coach.Message(id: nextId(), role: .user, content: text))
+    defer { if !closed { isLoading = false } }
+    if conversationId == nil, let id = try? await store.createConversation(userId: userId, title: Coach.title(text)) {
+      guard !closed else { return }
+      conversationId = id
+    }
+    if let convo = conversationId { try? await store.saveMessage(conversationId: convo, role: .user, content: text) }
+    try? await Task.sleep(for: .milliseconds(650))
+    guard !closed else { return }
+    messages.append(Coach.Message(id: nextId(), role: .assistant, content: reply))
+    // Một nhịp để màn thấy tin mới lúc còn "đang về" — chữ nhả dần như câu AI.
+    try? await Task.sleep(for: .milliseconds(60))
+    if let convo = conversationId {
+      try? await store.saveMessage(conversationId: convo, role: .assistant, content: reply)
+      try? await store.touch(conversationId: convo, userId: userId)
+    }
+  }
+
   /// Chat mới: học từ cuộc vừa xong rồi xoá màn.
   public func newChat() {
     learn()
