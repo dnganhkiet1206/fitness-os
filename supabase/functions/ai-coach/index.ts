@@ -50,7 +50,7 @@ function sanitize(raw: unknown): ChatMessage[] {
 const answerFormat = (lang: "vi" | "en") =>
   lang === "en"
     ? `
-
+Reply in English.
 HOW TO ANSWER (the app renders this):
 - FIRST check the latest message. If it is not a real question — one short word, a typo or keyboard mash ("thees", "asdf"), "test", "hi", "ok", "?" — reply with ONE short friendly sentence asking what they want to know about their training, food, sleep or recovery. No overview block, no headings, nothing else.
 - Any question about their own numbers — readiness, sleep, food, protein, water, steps, training, "how am I doing", today, this week — ALWAYS STARTS with exactly one overview block (even if typed without accents or casually), then the answer:
@@ -61,7 +61,7 @@ HOW TO ANSWER (the app renders this):
 - Then write like ChatGPT: one bold sentence that answers directly. Then at most 3 short sections, each with a ### heading; bullets start with a **bold key phrase** followed by a short explanation (one line). Paragraphs at most two lines. Put a line with only --- between sections. No filler intro, no recap.
 - Do NOT end with a doctor reminder or disclaimer — the app shows one under the chat box.`
     : `
-
+Trả lời bằng tiếng Việt.
 CÁCH TRẢ LỜI (app sẽ vẽ phần này):
 - TRƯỚC HẾT xem tin mới nhất. Nếu nó không phải câu hỏi thật — một chữ ngắn, gõ nhầm hay gõ bừa ("thees", "asdf"), "test", "hi", "ok", "?" — trả lời MỘT câu ngắn thân thiện hỏi họ muốn biết gì về tập luyện, ăn uống, giấc ngủ hay phục hồi. Không khối tổng quan, không tiêu đề, không gì thêm.
 - Mọi câu hỏi về số liệu của chính họ — sẵn sàng, giấc ngủ, ăn uống, đạm, nước, bước chân, tập luyện, "tôi thế nào", hôm nay, tuần này — LUÔN MỞ ĐẦU bằng đúng một khối tổng quan (kể cả khi gõ không dấu hay hỏi bâng quơ), rồi mới tới câu trả lời:
