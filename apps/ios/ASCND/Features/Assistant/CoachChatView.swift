@@ -108,6 +108,10 @@ struct CoachChatView: View {
     // vào hàng tab bằng vị trí đoán thì đè lên thanh tab mỗi khi hai bên lệch nhịp
     // thu / bung — app không đọc được thanh tab đang thu hay mở.
     .toolbar(.hidden, for: .tabBar)
+    // Câu trả lời lưu vào lịch sử đã được đối chiếu với số thật của hôm nay.
+    .onChange(of: signal, initial: true) { _, now in
+      chat.sanitize = now.map { s in { CoachOverview.sanitize($0, against: s) } }
+    }
     .navigationTitle(Text("coach.title"))
     .ascndPage()
     .navigationBarTitleDisplayMode(.inline)
@@ -175,7 +179,10 @@ struct CoachChatView: View {
       ForEach(chat.messages) { message in
         CoachMessageRow(
           message: message,
-          streaming: chat.isLoading && message.id == chat.messages.last?.id && message.role == .assistant)
+          streaming: chat.isLoading && message.id == chat.messages.last?.id && message.role == .assistant,
+          // Chỉ tin của phiên này (id "local-…") mới đối chiếu với số hôm nay; tin
+          // tải từ lịch sử có thể của ngày khác (đã được làm sạch lúc lưu).
+          checkAgainst: message.id.hasPrefix("local-") ? signal : nil)
           .messageSendTransition(mine: message.role == .user)
       }
       if chat.isLoading, chat.messages.last?.role != .assistant {
@@ -414,6 +421,8 @@ private struct CoachMessageRow: View {
   let message: Coach.Message
   /// Câu trả lời đang về từng mẩu — chưa hiện nút chép.
   let streaming: Bool
+  /// Số hôm nay để đối chiếu khối tổng quan (`CoachOverview.checked`).
+  var checkAgainst: AssistantSuggestions.Signal?
   @State private var copied = false
   /// Số ký tự đang hiện (`CoachReveal`): chữ nhả đều theo từng từ như ChatGPT
   /// thay vì nhảy theo cục mạng trả về. `nil` = hiện hết (tin cũ, lịch sử).
@@ -461,6 +470,14 @@ private struct CoachMessageRow: View {
     }
   }
 
+  /// Khối tổng quan sau khi đối chiếu số thật (bỏ dòng sai, sửa mục tiêu); tin
+  /// không đối chiếu được (lịch sử) thì giữ nguyên.
+  private func checkedOverview(_ o: CoachOverview?) -> CoachOverview? {
+    guard let o else { return nil }
+    guard let s = checkAgainst else { return o }
+    return o.checked(against: s)
+  }
+
   /// Đang nhả chữ dở (chưa tới cuối tin hay tin còn về) — chưa hiện nút chép.
   private var revealing: Bool { streaming || shown != nil }
 
@@ -474,7 +491,8 @@ private struct CoachMessageRow: View {
   }
 
   @ViewBuilder private var answer: some View {
-      let parts = CoachOverview.split(visible)
+      let raw = CoachOverview.split(visible)
+      let parts = (overview: checkedOverview(raw.overview), text: raw.text)
       VStack(alignment: .leading, spacing: 14) {
         if let overview = parts.overview {
           CoachOverviewCard(overview: overview)

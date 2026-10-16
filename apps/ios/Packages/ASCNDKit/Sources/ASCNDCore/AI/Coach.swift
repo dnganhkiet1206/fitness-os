@@ -135,6 +135,9 @@ public final class CoachChat {
   }
 
   public let userId: String
+  /// Làm sạch câu trả lời trước khi lưu (16/10: đối chiếu khối tổng quan với số
+  /// thật — `CoachOverview.sanitize`). App gán; `nil` = lưu nguyên văn.
+  @ObservationIgnored public var sanitize: ((String) -> String)?
   public private(set) var messages: [Coach.Message] = []
   public private(set) var isLoading = false
   public private(set) var conversationId: String?
@@ -203,8 +206,13 @@ public final class CoachChat {
       failure = (error as? EdgeFunction.Failure) ?? .unknown
       return
     }
-    guard !closed, !answer.isEmpty, let convo else { return }
-    try? await store.saveMessage(conversationId: convo, role: .assistant, content: answer)
+    guard !closed, !answer.isEmpty else { return }
+    let final = sanitize?(answer) ?? answer
+    if final != answer, let last = messages.last, last.role == .assistant {
+      messages[messages.count - 1].content = final
+    }
+    guard let convo else { return }
+    try? await store.saveMessage(conversationId: convo, role: .assistant, content: final)
     try? await store.touch(conversationId: convo, userId: userId)
   }
 
