@@ -195,81 +195,58 @@ struct CoachChatView: View {
     withAnimation(reduceMotion ? nil : .spring(response: 0.42, dampingFraction: 0.82)) { collapsed = value }
   }
 
-  /// Viên thu gọn: ký hiệu + chữ gợi ý, chạm là bung ra và gõ được ngay.
-  private var compactComposer: some View {
-    Button {
-      setCollapsed(false)
-      composing = true
-    } label: {
-      HStack(spacing: 8) {
-        IntelligenceMark(size: 16)
-        Text(draft.isEmpty ? String(localized: "coach.placeholder") : draft)
-          .font(.system(size: 15))
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-          .lineLimit(1)
-      }
-      .padding(.horizontal, 16)
-      .frame(height: 40)
-      .contentShape(Rectangle())
-    }
-    .buttonStyle(.plain)
-    .glassComposer(radius: 20)
-    .frame(maxWidth: 250)
-    // iOS 26: thanh tab cũng thu gọn khi vuốt xuống (nút Hôm nay trái, Trợ lý
-    // phải) — viên hạ xuống nằm giữa hai nút ấy trên cùng một hàng, như thanh
-    // phát của Apple Music. Máy cũ không thu thanh tab: giữ chỗ cũ.
-    .offset(y: Self.besideTabBar ? 57 : 0)
-    .accessibilityLabel(Text("coach.placeholder"))
-  }
-
-  private static var besideTabBar: Bool {
-    if #available(iOS 26, *) { true } else { false }
-  }
-
+  /// Ô soạn: MỘT viên kính duy nhất co giãn giữa hai dạng (16/10, chủ dự án: bản
+  /// hai view thay nhau "giật, như hai phần bị ép chung"). Khung, độ bo và vị trí
+  /// cùng chuyển trong một nhịp lò xo; chỉ nội dung bên trong mờ chuyển. Lời nhắc
+  /// y tế chỉ mờ đi chứ không rời bố cục — chiều cao vùng đáy không đổi, nội dung
+  /// chat không nhảy.
+  ///
+  /// Đầy đủ: ô chữ + nút gửi, dưới là lời nhắc y tế nhỏ mờ (như các app AI hiện
+  /// nay). Thu gọn (vuốt xuống): viên nhỏ ký hiệu + chữ gợi ý; iOS 26 hạ xuống
+  /// giữa hai nút tab đã thu như thanh phát của Apple Music.
   private var composer: some View {
     VStack(spacing: 6) {
-      if collapsed {
-        compactComposer
-          .transition(.scale(scale: 0.85, anchor: .bottom).combined(with: .opacity))
-      } else {
-      HStack(alignment: .bottom, spacing: 6) {
-        TextField(String(localized: "coach.placeholder"), text: $draft, axis: .vertical)
-          .lineLimit(1...6)
-          .focused($composing)
-          .font(DS.TextStyle.body)
-          .padding(.leading, 18)
-          .padding(.vertical, 12)
-          .frame(minHeight: 48)
-        Button(action: submit) {
-          Image(systemName: "arrow.up")
-            .font(.system(size: 16, weight: .bold))
-            .foregroundStyle(DS.Color.background.swiftUI)
-            .frame(width: 36, height: 36)
-            .background(DS.Color.foreground.swiftUI.opacity(canSend ? 1 : 0.25), in: Circle())
-            .frame(width: 44, height: 48)
-            .contentShape(Rectangle())
+      ZStack(alignment: .leading) {
+        if collapsed {
+          HStack(spacing: 8) {
+            IntelligenceMark(size: 16)
+            Text(draft.isEmpty ? String(localized: "coach.placeholder") : draft)
+              .font(.system(size: 15))
+              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+              .lineLimit(1)
+          }
+          .padding(.horizontal, 16)
+          .frame(maxWidth: .infinity, alignment: .center)
+          .transition(.opacity)
+        } else {
+          fullField
+            .transition(.opacity)
         }
-        .buttonStyle(.plain)
-        .disabled(!canSend)
-        .padding(.trailing, 4)
-        .accessibilityLabel(Text("coach.send.a11y"))
       }
-      .glassComposer(radius: 26)
-      .transition(.scale(scale: 0.95, anchor: .bottom).combined(with: .opacity))
+      .frame(minHeight: collapsed ? 40 : 48)
+      .frame(maxWidth: collapsed ? 250 : .infinity)
+      .glassComposer(radius: collapsed ? 20 : 26)
+      .contentShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+      .onTapGesture {
+        guard collapsed else { return }
+        setCollapsed(false)
+        composing = true
+      }
+      .offset(y: collapsed && Self.besideTabBar ? 57 : 0)
+      .accessibilityAddTraits(collapsed ? .isButton : [])
       Text("coach.disclaimer")
         .font(.system(size: 11))
         .foregroundStyle(DS.Color.mutedForeground.swiftUI)
         .multilineTextAlignment(.center)
         .frame(maxWidth: .infinity)
         .padding(.horizontal, DS.Spacing.lg)
-        .transition(.opacity)
-      }
+        .opacity(collapsed ? 0 : 1)
+        .accessibilityHidden(collapsed)
     }
     .padding(.horizontal, DS.Spacing.md)
     .padding(.top, 14)
     .padding(.bottom, 6)
-    // Nền mờ dần lên trên (16/10: lời nhắc không nền đè lên chữ khi cuộn): nội dung
-    // trôi xuống dưới ô chat thì tan vào nền trang, như ChatGPT.
+    // Nền mờ dần lên trên: nội dung trôi xuống dưới ô chat thì tan vào nền trang.
     .background(alignment: .bottom) {
       LinearGradient(
         stops: [
@@ -280,7 +257,37 @@ struct CoachChatView: View {
       )
       .ignoresSafeArea(edges: .bottom)
       .allowsHitTesting(false)
+      .opacity(collapsed ? 0 : 1)
     }
+  }
+
+  private var fullField: some View {
+    HStack(alignment: .bottom, spacing: 6) {
+      TextField(String(localized: "coach.placeholder"), text: $draft, axis: .vertical)
+        .lineLimit(1...6)
+        .focused($composing)
+        .font(DS.TextStyle.body)
+        .padding(.leading, 18)
+        .padding(.vertical, 12)
+        .frame(minHeight: 48)
+      Button(action: submit) {
+        Image(systemName: "arrow.up")
+          .font(.system(size: 16, weight: .bold))
+          .foregroundStyle(DS.Color.background.swiftUI)
+          .frame(width: 36, height: 36)
+          .background(DS.Color.foreground.swiftUI.opacity(canSend ? 1 : 0.25), in: Circle())
+          .frame(width: 44, height: 48)
+          .contentShape(Rectangle())
+      }
+      .buttonStyle(.plain)
+      .disabled(!canSend)
+      .padding(.trailing, 4)
+      .accessibilityLabel(Text("coach.send.a11y"))
+    }
+  }
+
+  private static var besideTabBar: Bool {
+    if #available(iOS 26, *) { true } else { false }
   }
 
   private func submit() {
