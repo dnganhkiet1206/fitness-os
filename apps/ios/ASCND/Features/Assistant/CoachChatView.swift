@@ -784,8 +784,16 @@ private struct CoachOverviewCard: View {
       if overview.items.count == 1, let item = overview.items.first {
         hero(item)
       } else if !overview.items.isEmpty {
-        LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
-          ForEach(Array(overview.items.enumerated()), id: \.offset) { _, item in tile(item) }
+        // Số ô lẻ: ô cuối trải hết bề ngang thay vì đứng một mình cạnh chỗ trống.
+        let items = overview.items
+        let paired = items.count.isMultiple(of: 2) ? items : Array(items.dropLast())
+        VStack(spacing: 10) {
+          if !paired.isEmpty {
+            LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
+              ForEach(Array(paired.enumerated()), id: \.offset) { _, item in tile(item) }
+            }
+          }
+          if !items.count.isMultiple(of: 2), let last = items.last { tile(last) }
         }
       }
       if let trend = overview.trend {
@@ -807,7 +815,7 @@ private struct CoachOverviewCard: View {
     VStack(alignment: .leading, spacing: 12) {
       label(item, size: 14)
       HStack(alignment: .firstTextBaseline, spacing: 5) {
-        Text(verbatim: item.valueText)
+        Text(verbatim: Self.number(item.value))
           .font(.system(size: 44, weight: .bold, design: .rounded).monospacedDigit())
           .foregroundStyle(Self.ink)
           .minimumScaleFactor(0.6)
@@ -824,7 +832,7 @@ private struct CoachOverviewCard: View {
             .foregroundStyle(Self.muted)
         }
       }
-      if let p = item.progress, let goal = item.goalText {
+      if let p = item.progress, let goal = item.goal.map(Self.number) {
         VStack(alignment: .leading, spacing: 6) {
           bar(p, height: 8)
           Text("coach.overview.goal \(goal + (item.unit.isEmpty ? "" : " \(item.unit)"))")
@@ -843,7 +851,7 @@ private struct CoachOverviewCard: View {
     VStack(alignment: .leading, spacing: 8) {
       label(item, size: 12)
       HStack(alignment: .firstTextBaseline, spacing: 3) {
-        Text(verbatim: item.valueText)
+        Text(verbatim: Self.number(item.value))
           .font(.system(size: 24, weight: .bold, design: .rounded).monospacedDigit())
           .foregroundStyle(Self.ink)
           .minimumScaleFactor(0.6)
@@ -856,7 +864,7 @@ private struct CoachOverviewCard: View {
       }
       if let p = item.progress {
         bar(p, height: 5)
-        if let goal = item.goalText {
+        if let goal = item.goal.map(Self.number) {
           Text(verbatim: "/ \(goal)")
             .font(.system(size: 11).monospacedDigit())
             .foregroundStyle(Self.muted)
@@ -910,10 +918,17 @@ private struct CoachOverviewCard: View {
   }
 
   static func spoken(_ item: CoachOverview.Item) -> String {
-    var s = "\(item.label): \(item.valueText)"
+    var s = "\(item.label): \(number(item.value))"
     if !item.unit.isEmpty { s += " \(item.unit)" }
-    if let goal = item.goalText { s += " / \(goal)" }
+    if let goal = item.goal.map(number) { s += " / \(goal)" }
     return s
+  }
+
+  /// Số hiển thị theo ngôn ngữ app, có dấu phân cách hàng nghìn (2.508 / 2,508);
+  /// dưới 100 giữ một chữ số thập phân khi cần (7,5 giờ).
+  static func number(_ v: Double) -> String {
+    let digits = v < 100 && v.rounded() != v ? 1 : 0
+    return v.formatted(.number.grouping(.automatic).precision(.fractionLength(digits)).locale(.app))
   }
 }
 
