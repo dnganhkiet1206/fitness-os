@@ -152,10 +152,11 @@ struct IntelligenceSheenText: View {
   }
 }
 
-/// Quả cầu ASCND Intelligence khi AI đang làm việc (16/10, chủ dự án chọn hướng 1
-/// — kiểu quả cầu tối Liquid Glass của Siri iOS 27): cầu kính tối, ánh màu dịu
-/// xoay chậm bên trong, sóng trắng nhịp nhẹ. Thay ba chấm / vòng quay ở mọi chỗ
-/// AI đang nghĩ. Giảm chuyển động: cầu đứng yên, sóng phẳng.
+/// Quả cầu ASCND Intelligence khi AI đang làm việc (16/10, chủ dự án: kiểu Siri
+/// iOS 27 — "trong suốt hơn, ba chấm thay vạch, chuyển động như Siri"). Cầu kính
+/// trong (vật liệu mờ, nhìn xuyên nền), ba đốm màu dịu trôi lượn bên trong theo
+/// quỹ đạo lệch nhịp, cầu "thở" nhẹ, ba chấm trắng nhấp nhô lần lượt. Thay ba
+/// chấm / vòng quay ở mọi chỗ AI đang nghĩ. Giảm chuyển động: đứng yên.
 struct IntelligenceOrb: View {
   var size: CGFloat = 40
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -164,45 +165,54 @@ struct IntelligenceOrb: View {
     TimelineView(.animation(minimumInterval: 1 / 30, paused: reduceMotion)) { ctx in
       let t = reduceMotion ? 0 : ctx.date.timeIntervalSinceReferenceDate
       ZStack {
-        // Kính tối: sáng nhẹ góc trên trái, tối dần ra mép.
-        Circle().fill(
-          RadialGradient(
-            colors: [Color(red: 0.23, green: 0.24, blue: 0.28), Color(red: 0.09, green: 0.09, blue: 0.11),
-                     Color(red: 0.04, green: 0.04, blue: 0.05)],
-            center: UnitPoint(x: 0.35, y: 0.3), startRadius: 0, endRadius: size * 0.75))
-        // Ánh màu dịu xoay chậm (một vòng ~6 giây).
-        AngularGradient(
-          colors: [IntelligenceTones.rose, IntelligenceTones.navy, IntelligenceTones.violet,
-                   IntelligenceTones.apricot, IntelligenceTones.rose],
-          center: .center, angle: .degrees(t.truncatingRemainder(dividingBy: 6) / 6 * 360))
-          .opacity(0.5)
-          .blur(radius: size * 0.18)
-          .blendMode(.screen)
-          .clipShape(Circle())
-        // Sóng trắng.
-        HStack(spacing: size * 0.05) {
-          ForEach(0..<5, id: \.self) { i in
-            Capsule()
-              .fill(.white.opacity(0.88))
-              .frame(width: size * 0.055, height: size * Self.bar(i, t))
+        // Kính trong: vật liệu mờ + một lớp tối rất nhẹ cho chấm trắng nổi.
+        Circle().fill(.ultraThinMaterial)
+        Circle().fill(Color.black.opacity(0.16))
+        // Ba đốm màu dịu trôi lượn (quỹ đạo Lissajous, mỗi đốm một nhịp).
+        ZStack {
+          blob(IntelligenceTones.violet, t, speed: 0.55, phase: 0)
+          blob(IntelligenceTones.rose, t, speed: 0.43, phase: 2.1)
+          blob(IntelligenceTones.navy, t, speed: 0.37, phase: 4.2)
+          blob(IntelligenceTones.apricot, t, speed: 0.61, phase: 1.3).opacity(0.7)
+        }
+        .blur(radius: size * 0.16)
+        .clipShape(Circle())
+        // Ba chấm trắng nhấp nhô lần lượt.
+        HStack(spacing: size * 0.09) {
+          ForEach(0..<3, id: \.self) { i in
+            let p = Self.dot(i, t)
+            Circle()
+              .fill(.white.opacity(0.65 + 0.35 * p))
+              .frame(width: size * 0.12, height: size * 0.12)
+              .offset(y: -size * 0.06 * p)
           }
         }
-        // Viền kính: một đường sáng mảnh phía trên.
+        // Mép kính: sáng phía trên, mảnh.
         Circle().strokeBorder(
-          LinearGradient(colors: [.white.opacity(0.28), .clear], startPoint: .top, endPoint: .bottom),
-          lineWidth: 0.75)
+          LinearGradient(colors: [.white.opacity(0.55), .white.opacity(0.08)], startPoint: .top, endPoint: .bottom),
+          lineWidth: 0.8)
       }
       .frame(width: size, height: size)
-      .shadow(color: .black.opacity(0.22), radius: size * 0.2, y: size * 0.08)
+      .scaleEffect(reduceMotion ? 1 : 1 + 0.035 * sin(t * 2 * Double.pi / 2.4))
+      .shadow(color: IntelligenceTones.violet.opacity(0.25), radius: size * 0.22, y: size * 0.06)
     }
     .accessibilityHidden(true)
   }
 
-  /// Chiều cao một vạch sóng (tỉ lệ cỡ cầu): nhịp ~1,1 s, các vạch lệch pha.
-  static func bar(_ i: Int, _ t: TimeInterval) -> CGFloat {
-    let base: [Double] = [0.18, 0.28, 0.36, 0.28, 0.18]
-    guard t > 0 else { return base[i] * 0.6 }
-    let wave = (sin(t * 2 * Double.pi / 1.1 - Double(i) * 0.7) + 1) / 2
-    return base[i] * (0.4 + 0.6 * wave)
+  private func blob(_ color: Color, _ t: TimeInterval, speed: Double, phase: Double) -> some View {
+    let r = size * 0.22
+    let x = r * cos(t * speed * 2 + phase)
+    let y = r * sin(t * speed * 3 + phase * 1.3)
+    return Circle()
+      .fill(color.opacity(0.75))
+      .frame(width: size * 0.62, height: size * 0.62)
+      .offset(x: x, y: y)
+  }
+
+  /// 0…1 cho chấm thứ `i`: nhịp ~1,2 s, mỗi chấm trễ 0,18 s.
+  static func dot(_ i: Int, _ t: TimeInterval) -> Double {
+    guard t > 0 else { return 0.5 }
+    let local = (t - Double(i) * 0.18).truncatingRemainder(dividingBy: 1.2) / 1.2
+    return local < 0.5 ? sin(local * 2 * Double.pi) * 1 : 0
   }
 }
