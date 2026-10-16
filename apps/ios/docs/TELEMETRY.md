@@ -19,6 +19,12 @@ ASCND_POSTHOG_HOST = us.i.posthog.com
 Build lại là chạy. Trên CI / bản phát hành: đặt ba biến này qua cấu hình build bí mật
 của CI, không ghi vào repo. Mỗi sự kiện mang `build` = `debug` / `release` để lọc.
 
+### Kiểm tra cấu hình Sentry
+
+Bản Debug chạy với biến môi trường `ASCND_TELEMETRY_TEST=1` gửi một tin
+"ASCND: kiểm tra Sentry (debug)" lên Sentry (simulator:
+`SIMCTL_CHILD_ASCND_TELEMETRY_TEST=1 xcrun simctl launch …`). Bản Release không có lối này.
+
 ## Sự kiện (danh sách cố định — `Telemetry.Event`)
 
 | Sự kiện | Khi nào | Thuộc tính |

@@ -49,6 +49,12 @@ enum Telemetry {
         o.sendDefaultPii = false
         o.tracesSampleRate = 0.2
       }
+      #if DEBUG
+        // Kiểm tra cấu hình: chạy bản Debug với ASCND_TELEMETRY_TEST=1 → một tin lên Sentry.
+        if ProcessInfo.processInfo.environment["ASCND_TELEMETRY_TEST"] == "1" {
+          SentrySDK.capture(message: "ASCND: kiểm tra Sentry (debug)")
+        }
+      #endif
     }
     if let key = configured(info["ASCNDPostHogKey"]), let host = configured(info["ASCNDPostHogHost"]) {
       let config = PostHogConfig(apiKey: key, host: host)
