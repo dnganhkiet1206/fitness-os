@@ -597,7 +597,7 @@ private struct InsightCard: View {
     switch book.phase {
     case .idle, .loading:
       HStack(spacing: DS.Spacing.sm) {
-        ProgressView()
+        IntelligenceOrb(size: 24)
         Text("insight.loading")
           .font(DS.TextStyle.footnote)
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)

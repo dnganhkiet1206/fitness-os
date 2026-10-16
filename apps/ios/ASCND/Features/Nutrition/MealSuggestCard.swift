@@ -88,7 +88,7 @@ struct MealSuggestCard: View {
 
   private var loading: some View {
     HStack(spacing: DS.Spacing.sm) {
-      ProgressView()
+      IntelligenceOrb(size: 24)
       Text(String(localized: "ms.loading"))
         .font(DS.TextStyle.footnote)
         .foregroundStyle(DS.Color.mutedForeground.swiftUI)

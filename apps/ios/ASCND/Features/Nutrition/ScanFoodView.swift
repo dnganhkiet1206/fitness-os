@@ -235,7 +235,7 @@ struct ScanFoodView: View {
       photo(img, height: 280)
         .overlay {
           RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous).fill(.black.opacity(0.25))
-          ProgressView().controlSize(.large).tint(.white)
+          IntelligenceOrb(size: 64)
         }
       Text(mode == .food ? String(localized: "sf.analyzing") : String(localized: "sf.analyzing.label"))
         .font(DS.TextStyle.headline)

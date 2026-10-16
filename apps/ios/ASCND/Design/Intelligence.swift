@@ -90,6 +90,9 @@ struct IntelligenceMark: View {
 
 /// Ký hiệu + chữ "ASCND Intelligence": nhãn "do AI làm" ở thẻ và màn AI.
 /// `mark: false` khi ký hiệu lớn đã đứng ngay cạnh (không lặp hai ký hiệu).
+///
+/// Chữ màu mực, một vệt ánh tím xám rất nhẹ lướt qua (16/10, chủ dự án chọn
+/// hướng 3 — tông tối kiểu Siri iOS 27, ít màu). Giảm chuyển động: chữ đứng yên.
 struct IntelligenceBadge: View {
   var size: CGFloat = 14
   var mark = true
@@ -97,10 +100,109 @@ struct IntelligenceBadge: View {
   var body: some View {
     HStack(spacing: size * 0.55) {
       if mark { IntelligenceMark(size: size) }
-      Text("ai.brand")
-        .font(.system(size: size * 0.86, weight: .semibold))
-        .foregroundStyle(Intelligence.ink)
+      IntelligenceSheenText(text: Text("ai.brand"), font: .system(size: size * 0.86, weight: .semibold))
     }
     .accessibilityElement(children: .combine)
+  }
+}
+
+/// Bảng màu dịu của ASCND Intelligence (hồng, xanh đậm, tím, cam nhạt — như sóng
+/// của Siri iOS 27): chỉ dùng cho ánh, không bao giờ làm màu chữ hay nền.
+enum IntelligenceTones {
+  static let rose = Color(red: 0.91, green: 0.59, blue: 0.67)
+  static let navy = Color(red: 0.27, green: 0.35, blue: 0.67)
+  static let violet = Color(red: 0.59, green: 0.43, blue: 0.78)
+  static let apricot = Color(red: 0.88, green: 0.59, blue: 0.43)
+  static let sheen = Color(red: 0.44, green: 0.42, blue: 0.56)
+}
+
+/// Chữ mực có một vệt ánh lướt qua mỗi ~4 giây.
+struct IntelligenceSheenText: View {
+  let text: Text
+  let font: Font
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+  var body: some View {
+    if reduceMotion {
+      text.font(font).foregroundStyle(Intelligence.ink)
+    } else {
+      TimelineView(.animation(minimumInterval: 1 / 30)) { ctx in
+        let phase = Self.phase(ctx.date)
+        text.font(font).foregroundStyle(Self.gradient(phase))
+      }
+    }
+  }
+
+  /// 0…1 trong 4 giây; vệt đi từ ngoài trái qua ngoài phải (−0,3 → 1,3).
+  static func phase(_ date: Date) -> Double {
+    date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 4) / 4
+  }
+
+  static func gradient(_ phase: Double) -> LinearGradient {
+    let c = -0.3 + 1.6 * phase
+    let w = 0.14
+    return LinearGradient(
+      stops: [
+        .init(color: Intelligence.ink, location: 0),
+        .init(color: Intelligence.ink, location: max(0, min(1, c - w))),
+        .init(color: IntelligenceTones.sheen, location: max(0, min(1, c))),
+        .init(color: Intelligence.ink, location: max(0, min(1, c + w))),
+        .init(color: Intelligence.ink, location: 1),
+      ], startPoint: .leading, endPoint: .trailing)
+  }
+}
+
+/// Quả cầu ASCND Intelligence khi AI đang làm việc (16/10, chủ dự án chọn hướng 1
+/// — kiểu quả cầu tối Liquid Glass của Siri iOS 27): cầu kính tối, ánh màu dịu
+/// xoay chậm bên trong, sóng trắng nhịp nhẹ. Thay ba chấm / vòng quay ở mọi chỗ
+/// AI đang nghĩ. Giảm chuyển động: cầu đứng yên, sóng phẳng.
+struct IntelligenceOrb: View {
+  var size: CGFloat = 40
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+  var body: some View {
+    TimelineView(.animation(minimumInterval: 1 / 30, paused: reduceMotion)) { ctx in
+      let t = reduceMotion ? 0 : ctx.date.timeIntervalSinceReferenceDate
+      ZStack {
+        // Kính tối: sáng nhẹ góc trên trái, tối dần ra mép.
+        Circle().fill(
+          RadialGradient(
+            colors: [Color(red: 0.23, green: 0.24, blue: 0.28), Color(red: 0.09, green: 0.09, blue: 0.11),
+                     Color(red: 0.04, green: 0.04, blue: 0.05)],
+            center: UnitPoint(x: 0.35, y: 0.3), startRadius: 0, endRadius: size * 0.75))
+        // Ánh màu dịu xoay chậm (một vòng ~6 giây).
+        AngularGradient(
+          colors: [IntelligenceTones.rose, IntelligenceTones.navy, IntelligenceTones.violet,
+                   IntelligenceTones.apricot, IntelligenceTones.rose],
+          center: .center, angle: .degrees(t.truncatingRemainder(dividingBy: 6) / 6 * 360))
+          .opacity(0.5)
+          .blur(radius: size * 0.18)
+          .blendMode(.screen)
+          .clipShape(Circle())
+        // Sóng trắng.
+        HStack(spacing: size * 0.05) {
+          ForEach(0..<5, id: \.self) { i in
+            Capsule()
+              .fill(.white.opacity(0.88))
+              .frame(width: size * 0.055, height: size * Self.bar(i, t))
+          }
+        }
+        // Viền kính: một đường sáng mảnh phía trên.
+        Circle().strokeBorder(
+          LinearGradient(colors: [.white.opacity(0.28), .clear], startPoint: .top, endPoint: .bottom),
+          lineWidth: 0.75)
+      }
+      .frame(width: size, height: size)
+      .shadow(color: .black.opacity(0.22), radius: size * 0.2, y: size * 0.08)
+    }
+    .accessibilityHidden(true)
+  }
+
+  /// Chiều cao một vạch sóng (tỉ lệ cỡ cầu): nhịp ~1,1 s, các vạch lệch pha.
+  static func bar(_ i: Int, _ t: TimeInterval) -> CGFloat {
+    let base: [Double] = [0.18, 0.28, 0.36, 0.28, 0.18]
+    guard t > 0 else { return base[i] * 0.6 }
+    let wave = (sin(t * 2 * Double.pi / 1.1 - Double(i) * 0.7) + 1) / 2
+    return base[i] * (0.4 + 0.6 * wave)
   }
 }

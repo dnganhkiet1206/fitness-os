@@ -757,11 +757,14 @@ private struct CoachMessageRow: View {
   }
 }
 
-/// Đang nghĩ: ba chấm kiểu iMessage (16/10, chủ dự án) thay vòng quay.
+/// Koa đang nghĩ: quả cầu ASCND Intelligence (16/10, chủ dự án chọn kiểu Siri
+/// iOS 27). Ba chấm iMessage giữ cho tin nhắn giữa người với người.
 private struct CoachThinking: View {
   var body: some View {
-    TypingBubble()
+    IntelligenceOrb(size: 36)
+      .padding(.vertical, 4)
       .frame(maxWidth: .infinity, alignment: .leading)
+      .accessibilityElement(children: .ignore)
       .accessibilityLabel(Text("coach.thinking.a11y"))
   }
 }

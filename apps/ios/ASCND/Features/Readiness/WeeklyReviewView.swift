@@ -265,8 +265,9 @@ struct WeeklyReviewView: View {
               .foregroundStyle(DS.Color.destructive.swiftUI)
           }
           if state == .loading {
-            ProgressView()
+            IntelligenceOrb(size: 40)
               .frame(maxWidth: .infinity)
+              .accessibilityElement(children: .ignore)
               .accessibilityLabel(Text(String(localized: "wr.ai.analyzing")))
           }
           DSButton(String(localized: "wr.ai.analyze")) {
