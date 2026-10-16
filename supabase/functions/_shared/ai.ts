@@ -51,6 +51,16 @@ export const aiModel = () => env("ASCND_AI_MODEL", "google/gemini-3-flash-previe
  */
 export const aiVisionModel = () => env("ASCND_AI_VISION_MODEL", "google/gemini-2.5-flash");
 
+/**
+ * Mức "suy nghĩ" của model — chỉ gửi khi đặt `ASCND_AI_REASONING_EFFORT`.
+ *
+ * Gemini 2.5 Flash qua endpoint OpenAI của Google mặc định suy nghĩ trước khi trả
+ * lời, và phần ấy ăn vào CHÍNH `max_tokens` (700–1500 ở đây) — câu trả lời cụt
+ * hoặc rỗng. `none` tắt nó. Không đặt biến → không gửi tham số, hành vi như cũ
+ * (gateway Lovable, OpenAI non-reasoning có thể từ chối tham số lạ).
+ */
+export const aiReasoningEffort = () => Deno.env.get("ASCND_AI_REASONING_EFFORT") || undefined;
+
 /*
   Khoá mới cắm vào endpoint cũ — sai lầm dễ gặp nhất của ngày chuyển đổi.
 
@@ -218,7 +228,11 @@ export async function callAI(
       res = await fetch(p.url, {
         method: "POST",
         headers: { Authorization: `Bearer ${p.key}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ ...body, model: opts.vision ? p.visionModel : p.model }),
+        body: JSON.stringify({
+          ...body,
+          model: opts.vision ? p.visionModel : p.model,
+          ...(aiReasoningEffort() ? { reasoning_effort: aiReasoningEffort() } : {}),
+        }),
         signal: ctrl.signal,
       });
     } catch (e) {
