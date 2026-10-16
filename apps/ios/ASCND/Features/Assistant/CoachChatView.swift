@@ -759,26 +759,34 @@ private struct CoachThinking: View {
 }
 
 /// Khối tổng quan (16/10, chủ dự án: "dùng code để vẽ ra đơn giản như ChatGPT"):
-/// hình học một màu, không mượn thẻ của app — mỗi chỉ số một thanh mảnh so với
-/// mục tiêu, xu hướng nhiều ngày là hàng cột nhỏ; số thật do model chọn
-/// (`CoachOverview`), app chỉ vẽ.
+/// hình học một màu, không mượn thẻ của app; số thật do model chọn
+/// (`CoachOverview`, đã đối chiếu), app chỉ vẽ.
+///
+/// Một chỉ số → thẻ "hero" kiểu Apple Health: biểu tượng + nhãn, số lớn, thanh
+/// mục tiêu và phần trăm (chủ dự án: thẻ một dòng "Giấc ngủ … 8 giờ" quá đơn
+/// điệu). 2–4 chỉ số → lưới ô hai cột. Xu hướng nhiều ngày: hàng cột nhỏ.
 private struct CoachOverviewCard: View {
   let overview: CoachOverview
 
-  private static let ink = DS.Color.foreground.swiftUI
-  private static let track = DS.Color.foreground.swiftUI.opacity(0.08)
+  static let ink = DS.Color.foreground.swiftUI
+  static let track = DS.Color.foreground.swiftUI.opacity(0.08)
+  static let muted = DS.Color.mutedForeground.swiftUI
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 16) {
+    VStack(alignment: .leading, spacing: 14) {
       if let title = overview.title {
         Text(verbatim: title)
-          .font(.system(size: 13, weight: .semibold))
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          .font(.system(size: 12, weight: .semibold))
+          .foregroundStyle(Self.muted)
           .textCase(.uppercase)
-          .tracking(0.4)
+          .tracking(0.5)
       }
-      ForEach(Array(overview.items.enumerated()), id: \.offset) { _, item in
-        row(item)
+      if overview.items.count == 1, let item = overview.items.first {
+        hero(item)
+      } else if !overview.items.isEmpty {
+        LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
+          ForEach(Array(overview.items.enumerated()), id: \.offset) { _, item in tile(item) }
+        }
       }
       if let trend = overview.trend {
         TrendBars(trend: trend)
@@ -786,49 +794,125 @@ private struct CoachOverviewCard: View {
     }
     .padding(18)
     .frame(maxWidth: .infinity, alignment: .leading)
-    .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+    .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
     .overlay {
-      RoundedRectangle(cornerRadius: 20, style: .continuous)
+      RoundedRectangle(cornerRadius: 22, style: .continuous)
         .strokeBorder(Self.ink.opacity(0.07), lineWidth: 0.75)
     }
   }
 
-  /// Nhãn trái, số phải (số đậm, mục tiêu nhạt), dưới là thanh mảnh.
-  private func row(_ item: CoachOverview.Item) -> some View {
-    VStack(alignment: .leading, spacing: 7) {
-      HStack(alignment: .firstTextBaseline) {
-        Text(verbatim: item.label)
-          .font(.system(size: 15))
+  // MARK: Một chỉ số
+
+  private func hero(_ item: CoachOverview.Item) -> some View {
+    VStack(alignment: .leading, spacing: 12) {
+      label(item, size: 14)
+      HStack(alignment: .firstTextBaseline, spacing: 5) {
+        Text(verbatim: item.valueText)
+          .font(.system(size: 44, weight: .bold, design: .rounded).monospacedDigit())
           .foregroundStyle(Self.ink)
-        Spacer(minLength: 8)
-        (Text(verbatim: item.valueText).font(.system(size: 15, weight: .semibold).monospacedDigit())
-          + Text(verbatim: item.goalText.map { " / \($0)" } ?? "")
-          .font(.system(size: 15).monospacedDigit())
-          .foregroundColor(DS.Color.mutedForeground.swiftUI)
-          + Text(verbatim: item.unit.isEmpty ? "" : " \(item.unit)")
-          .font(.system(size: 13))
-          .foregroundColor(DS.Color.mutedForeground.swiftUI))
-          .foregroundStyle(Self.ink)
-      }
-      if let progress = item.progress {
-        GeometryReader { geo in
-          ZStack(alignment: .leading) {
-            Capsule().fill(Self.track)
-            Capsule().fill(Self.ink)
-              .frame(width: max(6, geo.size.width * progress))
-          }
+          .minimumScaleFactor(0.6)
+          .lineLimit(1)
+        if !item.unit.isEmpty {
+          Text(verbatim: item.unit)
+            .font(.system(size: 18, weight: .semibold, design: .rounded))
+            .foregroundStyle(Self.muted)
         }
-        .frame(height: 6)
+        Spacer(minLength: 0)
+        if let p = item.progress {
+          Text(verbatim: "\(Int((p * 100).rounded()))%")
+            .font(.system(size: 15, weight: .semibold, design: .rounded).monospacedDigit())
+            .foregroundStyle(Self.muted)
+        }
+      }
+      if let p = item.progress, let goal = item.goalText {
+        VStack(alignment: .leading, spacing: 6) {
+          bar(p, height: 8)
+          Text("coach.overview.goal \(goal + (item.unit.isEmpty ? "" : " \(item.unit)"))")
+            .font(.system(size: 12))
+            .foregroundStyle(Self.muted)
+        }
       }
     }
     .accessibilityElement(children: .ignore)
     .accessibilityLabel(Text(verbatim: Self.spoken(item)))
   }
 
+  // MARK: Nhiều chỉ số
+
+  private func tile(_ item: CoachOverview.Item) -> some View {
+    VStack(alignment: .leading, spacing: 8) {
+      label(item, size: 12)
+      HStack(alignment: .firstTextBaseline, spacing: 3) {
+        Text(verbatim: item.valueText)
+          .font(.system(size: 24, weight: .bold, design: .rounded).monospacedDigit())
+          .foregroundStyle(Self.ink)
+          .minimumScaleFactor(0.6)
+          .lineLimit(1)
+        if !item.unit.isEmpty {
+          Text(verbatim: item.unit)
+            .font(.system(size: 12, weight: .semibold, design: .rounded))
+            .foregroundStyle(Self.muted)
+        }
+      }
+      if let p = item.progress {
+        bar(p, height: 5)
+        if let goal = item.goalText {
+          Text(verbatim: "/ \(goal)")
+            .font(.system(size: 11).monospacedDigit())
+            .foregroundStyle(Self.muted)
+        }
+      }
+    }
+    .padding(12)
+    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    .background(Self.ink.opacity(0.035), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+    .accessibilityElement(children: .ignore)
+    .accessibilityLabel(Text(verbatim: Self.spoken(item)))
+  }
+
+  // MARK: Phần chung
+
+  private func label(_ item: CoachOverview.Item, size: CGFloat) -> some View {
+    HStack(spacing: 6) {
+      Image(systemName: Self.symbol(item.tone))
+        .font(.system(size: size - 1, weight: .semibold))
+        .foregroundStyle(Self.ink)
+        .frame(width: size + 12, height: size + 12)
+        .background(Self.ink.opacity(0.07), in: Circle())
+      Text(verbatim: item.label)
+        .font(.system(size: size, weight: .semibold))
+        .foregroundStyle(Self.muted)
+        .lineLimit(1)
+    }
+  }
+
+  private func bar(_ progress: Double, height: CGFloat) -> some View {
+    GeometryReader { geo in
+      ZStack(alignment: .leading) {
+        Capsule().fill(Self.track)
+        Capsule().fill(Self.ink).frame(width: max(height, geo.size.width * progress))
+      }
+    }
+    .frame(height: height)
+  }
+
+  static func symbol(_ tone: CoachOverview.Tone) -> String {
+    switch tone {
+    case .readiness: "gauge.with.dots.needle.67percent"
+    case .sleep: "moon.fill"
+    case .meal: "flame.fill"
+    case .protein: "fork.knife"
+    case .water: "drop.fill"
+    case .steps: "figure.walk"
+    case .workout: "dumbbell.fill"
+    case .other: "chart.bar.fill"
+    }
+  }
+
   static func spoken(_ item: CoachOverview.Item) -> String {
     var s = "\(item.label): \(item.valueText)"
-    if let goal = item.goalText { s += " / \(goal)" }
     if !item.unit.isEmpty { s += " \(item.unit)" }
+    if let goal = item.goalText { s += " / \(goal)" }
     return s
   }
 }
