@@ -107,6 +107,8 @@ tính năng đồng bộ trong toàn app" → "làm đi".
   làm" = `AppNotice` (chuỗi sắp đứt sau 18 giờ, xu chưa nhận — tính trên máy, tự hết khi xong, không cần "đã đọc") +
   thử thách cộng đồng chưa nhận; rồi tin cộng đồng. Dòng gọn (chủ dự án: "thanh thông báo to quá"): biểu tượng 34,
   chữ 15, giờ 12, dòng ~52, nhóm bo 18 không lề dọc thừa; lỗi tải tin cộng đồng là một dòng nhỏ có "Thử lại".
+  Chấm đỏ trên chuông CHỈ khi có tin chưa đọc (chủ dự án): tin cộng đồng chưa đọc (server) hoặc tin nhắc việc /
+  thử thách chưa xem — `NoticeSeen` lưu khoá (loại + giá trị + ngày) trên máy khi mở màn.
   - Ghi nhanh ẩn ở màn có ô nhập riêng ở đáy (Koa Coach, nhắn tin): `.hidesQuickLog()` đếm màn đang mở
     (`QuickLogVisibility`); iOS 26.1+ `tabViewBottomAccessory(isEnabled:)`, 26.0 giữ thanh, máy cũ ẩn nút "+". Màn
     tập và màn ghi bữa vốn là toàn màn hình / sheet nên đã che thanh.

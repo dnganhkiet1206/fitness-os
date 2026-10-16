@@ -49,6 +49,8 @@ struct TodayExtras<Plan: View>: View {
   /// Mục Thông báo (16/10): hộp cộng đồng + thử thách cộng đồng chưa nhận.
   @State private var inbox: CommunityInboxBook?
   @State private var communityChallenges: CommunityChallengesBook?
+  /// Tin nhắc việc đã xem (`NoticeSeen`).
+  @State private var seenNotices: Set<String> = []
   @State private var showsAwards = false
   @State private var showsReadiness = false
   @Environment(DeepLinkInbox.self) private var links: DeepLinkInbox?
@@ -218,6 +220,7 @@ struct TodayExtras<Plan: View>: View {
       todo = services.makeReminderToday(userId: userId)
       inbox = services.makeCommunityInbox(userId: userId)
       communityChallenges = services.makeCommunityChallenges(userId: userId)
+      seenNotices = NoticeSeen.load(userId: userId)
       if nutrition == nil { ownWater = services.makeWaterBook(userId: userId) }
       await todo?.refresh()
       await weight?.load()
@@ -473,14 +476,21 @@ struct TodayExtras<Plan: View>: View {
       // chuỗi sắp đứt thành một tin nhắc việc trong Thông báo.
       if let inbox {
         let notices = AppNotice.of(mascot)
+        let current = NoticeSeen.keys(
+          notices: notices, challengeIds: communityChallenges?.pending.map(\.id) ?? [], day: "\(Self.today())")
         NavigationLink {
           CommunityInboxView(book: inbox, challenges: communityChallenges, notices: notices) { _ in
             roomSource = "room"
             showsRoom = true
           }
+          // Mở màn = đã xem mọi tin nhắc việc đang có (tin cộng đồng đánh dấu qua RPC).
+          .onAppear {
+            seenNotices.formUnion(current)
+            NoticeSeen.save(seenNotices, userId: userId)
+          }
         } label: {
-          NotificationBell(
-            dot: inbox.hasNew || !notices.isEmpty || !(communityChallenges?.pending.isEmpty ?? true))
+          // Chấm chỉ khi có tin CHƯA ĐỌC (16/10, chủ dự án).
+          NotificationBell(dot: inbox.hasNew || !current.isSubset(of: seenNotices))
         }
         .buttonStyle(TodayPressStyle())
       }
