@@ -85,10 +85,11 @@ tính năng đồng bộ trong toàn app" → "làm đi".
   - Chữ trên tranh phòng Koa theo ngôn ngữ (`StudioScene.Options.lang`, `signText`): "THẮNG HÔM NAY / NGÀY MAI /
     MẠNH HƠN", "CHUỖI"; es: "GANA HOY / MAÑANA / MÁS FUERTE", "RACHA".
 - **ASCND Intelligence + Koa Coach (15/10, chủ dự án):** mọi tính năng AI mang tên "ASCND Intelligence" (chuỗi
-  `ai.brand`; lỗi AI, Phân tích tuần, gợi ý bữa, quét món). Ký hiệu chung `IntelligenceMark` (chữ "A" logo + tia
-  sáng bốn cánh, dải cyan → tím) và `IntelligenceBadge` (ký hiệu + chữ) ở `ASCND/Design/Intelligence.swift` thay
-  `sparkles` ở Insight, ô Hỏi coach, chat, gợi ý bữa, Phân tích tuần, quét món. "AI Coach" đổi thành **Koa Coach**
-  (vi/en/es; giới thiệu "Mình là Koa, coach của bạn…").
+  `ai.brand`; lỗi AI, Phân tích tuần, gợi ý bữa, quét món). Ký hiệu chung `IntelligenceMark` (chủ dự án chọn mock E:
+  chữ "A" khối đặc của logo, gạch ngang là đường nhịp tim, đầu Koa giữa hai chân; một màu = màu chữ, vẽ bằng Canvas) và `IntelligenceBadge` (ký hiệu + chữ) ở `ASCND/Design/Intelligence.swift` thay
+  `sparkles` ở Insight, chat, gợi ý bữa, Phân tích tuần, quét món. "AI Coach" đổi thành **Koa Coach**
+  (vi/en/es; giới thiệu "Mình là Koa, coach của bạn…"). Một ký hiệu mỗi chỗ: cạnh ký hiệu lớn chỉ ghi chữ
+  (`IntelligenceBadge(mark: false)`); ô Hỏi coach không ký hiệu (thẻ Insight ngay trên đã có).
   - Ghi nhanh ẩn ở màn có ô nhập riêng ở đáy (Koa Coach, nhắn tin): `.hidesQuickLog()` đếm màn đang mở
     (`QuickLogVisibility`); iOS 26.1+ `tabViewBottomAccessory(isEnabled:)`, 26.0 giữ thanh, máy cũ ẩn nút "+". Màn
     tập và màn ghi bữa vốn là toàn màn hình / sheet nên đã che thanh.
