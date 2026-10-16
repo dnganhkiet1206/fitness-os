@@ -100,7 +100,7 @@ tính năng đồng bộ trong toàn app" → "làm đi".
   - Koa Coach trống (16/10, chủ dự án): bỏ hết chữ — chỉ ký hiệu ASCND Intelligence lớn (132), mờ 16 %, nhịp tim chạy
     nhẹ như app Siri; VoiceOver đọc lời chào. Câu hỏi mẫu là thẻ hai dòng (chủ đề đậm + câu sẽ gửi mờ) cuộn ngang ngay
     trên ô chat như ChatGPT, ẩn khi đã có tin hoặc ô chat thu gọn. Tin của người dùng trong Koa Coach: bong bóng
-    iMessage màu xám (`messageBubble(fill:)`, mực 7 %), chữ thường; nhắn tin giữa người vẫn xanh.
+    iMessage màu xám trung tính `systemGray5` (`messageBubble(fill:)`; mực 7 % ra màu be, lẫn nền kem — chủ dự án: khó nhìn), chữ thường; nhắn tin giữa người vẫn xanh.
   - Ghi nhanh ẩn ở màn có ô nhập riêng ở đáy (Koa Coach, nhắn tin): `.hidesQuickLog()` đếm màn đang mở
     (`QuickLogVisibility`); iOS 26.1+ `tabViewBottomAccessory(isEnabled:)`, 26.0 giữ thanh, máy cũ ẩn nút "+". Màn
     tập và màn ghi bữa vốn là toàn màn hình / sheet nên đã che thanh.

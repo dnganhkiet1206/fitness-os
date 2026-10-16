@@ -787,9 +787,11 @@ private struct CoachMessageRow: View {
       HStack {
         Spacer(minLength: 56)
         // Bong bóng có đuôi kiểu iMessage, màu xám như ChatGPT (16/10, chủ dự án:
-        // "ô chat không dùng màu xanh mà làm màu xám"). Nhắn tin giữa người vẫn xanh.
+        // "ô chat không dùng màu xanh mà làm màu xám"). Xám trung tính hệ thống
+        // (systemGray5), không pha mực: mực 7 % trên nền kem ra màu be, lẫn vào nền,
+        // khó nhìn (chủ dự án). Nhắn tin giữa người vẫn xanh.
         Text(verbatim: message.content)
-          .messageBubble(mine: true, fill: DS.Color.foreground.swiftUI.opacity(0.07))
+          .messageBubble(mine: true, fill: Color(uiColor: .systemGray5))
           .textSelection(.enabled)
       }
   }
