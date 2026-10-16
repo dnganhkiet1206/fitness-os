@@ -136,7 +136,9 @@ struct AssistantTab: View {
         case .chat:
           if let chat {
             // Ô hỏi ở đáy — dải Ghi nhanh ẩn khi chat mở (15/10, chủ dự án).
-            CoachChatView(chat: chat, lang: lang, suggestions: signal?.suggestions ?? [], signal: signal?.signal)
+            CoachChatView(
+              chat: chat, lang: lang, suggestions: signal?.suggestions ?? [], signal: signal?.signal,
+              logged: signal?.logged, onLogged: { await signal?.load() })
               .hidesQuickLog()
           }
         case .weekly:
@@ -168,7 +170,7 @@ struct AssistantTab: View {
                 MetricPanelView(book: metrics, signal: signal, lang: lang, onAsk: ai ? { question in
                   guard let chat else { return }
                   path.append(.chat)
-                  CoachChatView.ask(chat, question, lang: lang, signal: signal?.signal)
+                  CoachChatView.ask(chat, question, lang: lang, signal: signal?.signal, logged: signal?.logged)
                 } : nil)
               }
               .padding(DS.Spacing.md)

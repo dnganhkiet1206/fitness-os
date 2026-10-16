@@ -123,6 +123,16 @@ tính năng đồng bộ trong toàn app" → "làm đi".
   - Màn chat ẩn thanh tab (như ChatGPT / iMessage): viên thu gọn không còn đè thanh tab. Lời nhắc y tế ở cuối cuộc trò
     chuyện (trôi theo nội dung), không dính dưới ô chat.
   - Server: `callAI` thử lại 503 "high demand" hai lần (0,6 s / 1,2 s) trước khi báo lỗi; quá tải thật vẫn hiện lỗi.
+- **Koa Coach — ghi từ lời kể + hỏi lại khi lệch số (16/10, chủ dự án):** `CoachLogPrompt` (ASCNDCore) nhận ra người
+  dùng KỂ đã ngủ / tập / ăn / uống nước / cân (vi/en/es, có hay không dấu; câu hỏi và câu nói mục tiêu không tính) và
+  so với hôm nay (`AssistantSignalBook.logged`: `daily_logs`, `meal_entries` theo bữa, `weight_logs`):
+  - Chưa ghi → nút dưới câu trả lời: "Ghi 7 giờ ngủ" (mở màn ghi điền sẵn), "Ghi cân 60 kg", "Ghi buổi tập", "Ghi bữa
+    này" (đúng bữa), "Ghi thêm 1.5 L nước" (một chạm lưu — phần còn thiếu). Ghi xong, đọc lại → nút tự ẩn.
+  - Đã ghi mà khác (ngủ lệch > 15 phút, cân ≥ 0,3 kg, nước nói ít hơn) → gửi cả hai số cho `ai-coach` (`checks`); AI hỏi
+    MỘT câu số nào đúng; nút "8 giờ (vừa nói)" / "7 giờ (đã ghi)" — hoặc gõ trả lời (đọc số). Chọn số mới → hộp thoại
+    "Cập nhật nhật ký? App đang ghi 7 giờ. Đổi thành 8 giờ?" → màn ghi điền sẵn (ghi đè, không trùng). AI chép chỉ dẫn
+    thay vì hỏi → app thay bằng câu hỏi dựng sẵn.
+  - Khớp → không gì. Server: `today` trong context; "tối qua" chỉ là bản ghi của hôm nay; số người dùng nói thắng số cũ.
 - **Cài đặt không lặp chữ**: mục Ngôn ngữ bỏ tiêu đề; dòng "Ngôn ngữ" có icon quả cầu như Nhắc nhở / Đổi mật khẩu.
 
 ## Quy ước (giữ khi làm màn mới)

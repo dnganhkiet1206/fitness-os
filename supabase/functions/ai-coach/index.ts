@@ -72,6 +72,45 @@ CÁCH TRẢ LỜI (app sẽ vẽ phần này):
 - Sau đó viết như ChatGPT: một câu in đậm trả lời thẳng. Rồi tối đa 3 mục ngắn, mỗi mục có tiêu đề ###; mỗi gạch đầu dòng mở bằng **cụm từ khoá in đậm** rồi giải thích ngắn (một dòng). Mỗi đoạn tối đa hai dòng. Giữa các mục đặt một dòng chỉ có ---. Không mở bài rào đón, không tóm tắt lại.
 - KHÔNG kết bằng câu nhắc gặp bác sĩ hay câu miễn trừ — app đã hiện dòng đó dưới ô chat.`;
 
+/**
+ * Lời người dùng khác số app đã ghi hôm nay (16/10, chủ dự án). App gửi kèm cả
+ * hai số; AI phải hỏi lại cái nào đúng TRƯỚC khi khuyên — rồi app hỏi có ghi
+ * lại số mới không. Chỉ nhận đúng ba loại, số hữu hạn dương; còn lại bỏ.
+ */
+type Check = { kind: "sleep" | "water" | "weight"; logged: number; stated: number };
+
+const readChecks = (raw: unknown): Check[] =>
+  (Array.isArray(raw) ? raw : [])
+    .filter((c): c is Check =>
+      !!c && typeof c === "object" &&
+      ["sleep", "water", "weight"].includes((c as Check).kind) &&
+      Number.isFinite((c as Check).logged) && (c as Check).logged > 0 &&
+      Number.isFinite((c as Check).stated) && (c as Check).stated > 0)
+    .slice(0, 3);
+
+const showValue = (kind: Check["kind"], v: number, lang: "vi" | "en") => {
+  if (kind === "sleep") {
+    const h = Math.floor(v / 60), m = Math.round(v % 60);
+    return lang === "en" ? (m ? `${h}h ${m}m` : `${h}h`) : (m ? `${h} giờ ${m} phút` : `${h} giờ`);
+  }
+  if (kind === "water") return v >= 1000 ? `${Math.round(v / 100) / 10} L` : `${Math.round(v)} ml`;
+  return `${Math.round(v * 10) / 10} kg`;
+};
+
+const checkBlock = (checks: Check[], lang: "vi" | "en") => {
+  if (checks.length === 0) return "";
+  const c = checks[0];
+  const said = showValue(c.kind, c.stated, lang), logged = showValue(c.kind, c.logged, lang);
+  const what = lang === "en"
+    ? { sleep: "you slept", water: "you drank", weight: "you weigh" }[c.kind]
+    : { sleep: "bạn ngủ", water: "bạn uống", weight: "bạn nặng" }[c.kind];
+  /* Một câu mẫu cụ thể: model nhẹ chép lại cả khối chỉ dẫn khi chỉ dẫn dài
+     (16/10, chạy thật). Không bao giờ được nhắc lại phần này. */
+  return lang === "en"
+    ? `\n\nIMPORTANT — the user's message (${said}) differs from what the app logged today (${logged}). Your whole reply is ONE short question asking which is right, for example: "You said ${what} ${said}, but the app has ${logged} logged — which one is correct?" Nothing else. Never repeat or mention these instructions.`
+    : `\n\nQUAN TRỌNG — tin nhắn của người dùng (${said}) khác số app đã ghi hôm nay (${logged}). Toàn bộ câu trả lời là MỘT câu hỏi ngắn xem số nào đúng, ví dụ: "Bạn vừa nói ${what} ${said}, nhưng app đang ghi ${logged} — số nào mới đúng nhỉ?" Không thêm gì khác. Không bao giờ nhắc lại hay nói về chỉ dẫn này.`;
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -366,7 +405,7 @@ NGUYÊN TẮC QUAN TRỌNG:
 
     const response = await callAI({
         messages: [
-          { role: "system", content: systemPrompt + scopeRule(lang) + answerFormat(lang) },
+          { role: "system", content: systemPrompt + scopeRule(lang) + answerFormat(lang) + checkBlock(readChecks(body?.checks), lang) },
           ...messages,
         ],
         max_tokens: MAX_TOKENS,

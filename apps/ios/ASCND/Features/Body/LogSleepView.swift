@@ -19,6 +19,8 @@ import SwiftUI
 struct LogSleepView: View {
   let makeLogger: () -> SleepLogger?
   var onDone: () -> Void = {}
+  /// Số phút người dùng vừa nói với Koa (16/10): giờ ngủ = giờ dậy − số phút này.
+  var presetMinutes: Int?
 
   @Environment(AppServices.self) private var services
   @Environment(\.dismiss) private var dismiss
@@ -211,12 +213,20 @@ struct LogSleepView: View {
 
   /// Điền sẵn MỘT lần từ đêm của Health — không giật chữ khỏi tay người đang gõ.
   private func prefill() {
-    guard !prefilled, let night = logger?.healthNight else { return }
-    prefilled = true
-    if let b = SleepLog.millis(night["bedtime"]) { bed = SleepLog.clock(EpochMillis(b), in: .current) }
-    if let w = SleepLog.millis(night["waketime"]) { wake = SleepLog.clock(EpochMillis(w), in: .current) }
-    let filled = SleepLog.prefill(SleepLog.healthStages(night))
-    for i in 0..<3 where !filled[i].isEmpty { stages[i] = filled[i] }
+    guard !prefilled else { return }
+    if let night = logger?.healthNight {
+      prefilled = true
+      if let b = SleepLog.millis(night["bedtime"]) { bed = SleepLog.clock(EpochMillis(b), in: .current) }
+      if let w = SleepLog.millis(night["waketime"]) { wake = SleepLog.clock(EpochMillis(w), in: .current) }
+      let filled = SleepLog.prefill(SleepLog.healthStages(night))
+      for i in 0..<3 where !filled[i].isEmpty { stages[i] = filled[i] }
+    }
+    // Độ dài người dùng đã xác nhận với Koa thắng: giữ giờ dậy, lùi giờ ngủ.
+    if let m = presetMinutes, m > 0 {
+      prefilled = true
+      let total = ((wake.hour * 60 + wake.minute - m) % 1440 + 1440) % 1440
+      bed = SleepLog.Clock(hour: total / 60, minute: total % 60)
+    }
   }
 
   /// Mất mạng: xếp hàng ngay (RN không hỏi lại ở nhánh này). Có mạng: có sửa

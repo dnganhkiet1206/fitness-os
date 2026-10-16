@@ -108,6 +108,19 @@ public enum Coach {
 public protocol CoachStream: Sendable {
   func stream(messages: [Coach.Message], lang: String, date: LocalDate, tzOffset: Int)
     -> AsyncThrowingStream<String, any Error>
+  /// Kèm các chỗ lời người dùng khác số đã ghi (`CoachLogPrompt.Conflict`) để AI
+  /// hỏi lại số nào đúng (16/10).
+  func stream(
+    messages: [Coach.Message], lang: String, date: LocalDate, tzOffset: Int, checks: [CoachLogPrompt.Conflict]
+  ) -> AsyncThrowingStream<String, any Error>
+}
+
+extension CoachStream {
+  public func stream(
+    messages: [Coach.Message], lang: String, date: LocalDate, tzOffset: Int, checks: [CoachLogPrompt.Conflict]
+  ) -> AsyncThrowingStream<String, any Error> {
+    stream(messages: messages, lang: lang, date: date, tzOffset: tzOffset)
+  }
 }
 
 /// Kho cuộc trò chuyện (`ai_conversations`, `ai_messages`) — RLS theo người dùng.
@@ -139,6 +152,9 @@ public final class CoachChat {
   /// thật — `CoachOverview.sanitize`). App gán; `nil` = lưu nguyên văn.
   @ObservationIgnored public var sanitize: ((String) -> String)?
   public private(set) var messages: [Coach.Message] = []
+  /// Chỗ lệch giữa lời kể và số đã ghi, theo id tin của người dùng — màn chat hiện
+  /// nút chọn số đúng dưới câu trả lời ngay sau tin đó.
+  public private(set) var conflicts: [String: [CoachLogPrompt.Conflict]] = [:]
   public private(set) var isLoading = false
   public private(set) var conversationId: String?
   /// Lỗi của lượt gửi gần nhất (RN: `Alert`); xoá khi gửi lượt mới.
@@ -170,12 +186,16 @@ public final class CoachChat {
   }
 
   /// Gửi một câu (đã cắt khoảng trắng); không làm gì khi rỗng hoặc đang gửi.
-  public func send(_ raw: String, lang: String, today: LocalDate, tzOffset: Int) async {
+  public func send(
+    _ raw: String, lang: String, today: LocalDate, tzOffset: Int, checks: [CoachLogPrompt.Conflict] = []
+  ) async {
     let text = raw.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !text.isEmpty, !isLoading, !closed else { return }
     isLoading = true
     failure = nil
-    messages.append(Coach.Message(id: nextId(), role: .user, content: text))
+    let askedId = nextId()
+    messages.append(Coach.Message(id: askedId, role: .user, content: text))
+    if !checks.isEmpty { conflicts[askedId] = checks }
     let outgoing = messages
     defer { if !closed { isLoading = false } }
 
@@ -190,7 +210,8 @@ public final class CoachChat {
     var answer = ""
     do {
       for try await chunk in stream.stream(
-        messages: Array(outgoing.suffix(Coach.sendWindow)), lang: lang, date: today, tzOffset: tzOffset)
+        messages: Array(outgoing.suffix(Coach.sendWindow)), lang: lang, date: today, tzOffset: tzOffset,
+        checks: checks)
       {
         guard !closed else { return }
         answer += chunk
@@ -207,6 +228,10 @@ public final class CoachChat {
       return
     }
     guard !closed, !answer.isEmpty else { return }
+    // Hỏi lại khi lệch: AI chép chỉ dẫn ra thay vì hỏi → câu hỏi dựng sẵn.
+    if let c = checks.first, CoachLogPrompt.leaksInstructions(answer) {
+      answer = CoachLogPrompt.question(c, lang: lang)
+    }
     let final = sanitize?(answer) ?? answer
     if final != answer, let last = messages.last, last.role == .assistant {
       messages[messages.count - 1].content = final
@@ -247,6 +272,7 @@ public final class CoachChat {
     learn()
     conversationId = nil
     messages = []
+    conflicts = [:]
     failure = nil
     learnedAt = 0
   }

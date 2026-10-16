@@ -17,8 +17,22 @@ struct CoachChatView: View {
   let suggestions: [AssistantSuggestions.Suggestion]
   /// Số liệu hôm nay của Trợ lý — cho câu trả lời tự động (`CoachQuickReply`).
   var signal: AssistantSuggestions.Signal?
+  /// Hôm nay đã ghi gì (`CoachLogPrompt`) — nút "Ghi …" và hỏi lại khi lệch.
+  var logged: CoachLogPrompt.LoggedToday?
+  /// Đọc lại số liệu hôm nay sau khi người dùng ghi từ trong chat.
+  var onLogged: () async -> Void = {}
 
   @State private var draft = ""
+  /// Màn ghi đang mở từ một nút trong chat.
+  @State private var logSheet: CoachLogTarget?
+  /// Lệch đã chọn xong (khoá: id tin + loại) — ẩn nút chọn.
+  @State private var resolved: Set<String> = []
+  /// Người dùng chọn số mới khác số đã ghi → hỏi có cập nhật nhật ký không.
+  @State private var confirmUpdate: CoachLogPrompt.Conflict?
+  @State private var waterAdded: Set<String> = []
+  @Environment(NutritionBooks.self) private var nutrition: NutritionBooks?
+  @Environment(AppServices.self) private var services
+  @Environment(WorkoutFlow.self) private var flow
   @State private var showsHistory = false
   @FocusState private var composing: Bool
   /// Ô chat thu thành viên nhỏ khi người dùng vuốt xuống, như thanh phát của
@@ -108,6 +122,24 @@ struct CoachChatView: View {
     // vào hàng tab bằng vị trí đoán thì đè lên thanh tab mỗi khi hai bên lệch nhịp
     // thu / bung — app không đọc được thanh tab đang thu hay mở.
     .toolbar(.hidden, for: .tabBar)
+    .sheet(item: $logSheet, onDismiss: { Task { await onLogged() } }) { t in logScreen(t) }
+    .alert(
+      Text("coach.check.update.title"),
+      isPresented: Binding(get: { confirmUpdate != nil }, set: { if !$0 { confirmUpdate = nil } }),
+      presenting: confirmUpdate
+    ) { c in
+      Button(String(localized: "coach.check.update.confirm")) {
+        switch c.kind {
+        case .sleep: logSheet = .sleep(c.stated)
+        case .weight: logSheet = .weight(c.stated)
+        case .water: logSheet = .water
+        case .workout, .meal: break
+        }
+      }
+      Button(String(localized: "common.cancel"), role: .cancel) {}
+    } message: { c in
+      Text("coach.check.update.message \(CoachLogPrompt.display(c.kind, c.logged, lang: lang.rawValue)) \(CoachLogPrompt.display(c.kind, c.stated, lang: lang.rawValue))")
+    }
     // Câu trả lời lưu vào lịch sử đã được đối chiếu với số thật của hôm nay.
     .onChange(of: signal, initial: true) { _, now in
       chat.sanitize = now.map { s in { CoachOverview.sanitize($0, against: s) } }
@@ -177,13 +209,17 @@ struct CoachChatView: View {
   private var transcript: some View {
     LazyVStack(alignment: .leading, spacing: 28) {
       ForEach(chat.messages) { message in
+        let streaming = chat.isLoading && message.id == chat.messages.last?.id && message.role == .assistant
         CoachMessageRow(
           message: message,
-          streaming: chat.isLoading && message.id == chat.messages.last?.id && message.role == .assistant,
+          streaming: streaming,
           // Chỉ tin của phiên này (id "local-…") mới đối chiếu với số hôm nay; tin
           // tải từ lịch sử có thể của ngày khác (đã được làm sạch lúc lưu).
           checkAgainst: message.id.hasPrefix("local-") ? signal : nil)
           .messageSendTransition(mine: message.role == .user)
+        if message.role == .assistant, !streaming, let asked = question(before: message) {
+          logActions(for: asked)
+        }
       }
       if chat.isLoading, chat.messages.last?.role != .assistant {
         CoachThinking()
@@ -323,7 +359,130 @@ struct CoachChatView: View {
     send(text)
   }
 
-  private func send(_ text: String) { Self.ask(chat, text, lang: lang, signal: signal) }
+  private func send(_ text: String) {
+    // Trả lời một câu hỏi lại "số nào đúng" bằng chữ: đọc số người dùng chọn.
+    if let (key, c) = openConflict() {
+      switch CoachLogPrompt.choice(text, for: c) {
+      case .stated:
+        resolved.insert(key)
+        confirmUpdate = c
+      case .logged: resolved.insert(key)
+      case .unclear: break
+      }
+    }
+    Self.ask(chat, text, lang: lang, signal: signal, logged: logged)
+  }
+
+  // MARK: - Ghi từ chat (16/10)
+
+  /// Tin người dùng ngay trước một câu trả lời (chỉ tin của phiên này).
+  private func question(before answer: Coach.Message) -> Coach.Message? {
+    guard let i = chat.messages.firstIndex(where: { $0.id == answer.id }), i > 0 else { return nil }
+    let q = chat.messages[i - 1]
+    return q.role == .user && q.id.hasPrefix("local-") ? q : nil
+  }
+
+  /// Lệch còn chờ chọn ở lượt gần nhất.
+  private func openConflict() -> (String, CoachLogPrompt.Conflict)? {
+    guard let q = chat.messages.last(where: { $0.role == .user }) else { return nil }
+    for c in chat.conflicts[q.id] ?? [] where !resolved.contains(q.id + c.kind.rawValue) {
+      return (q.id + c.kind.rawValue, c)
+    }
+    return nil
+  }
+
+  private var hour: Int { Calendar.current.component(.hour, from: Date()) }
+
+  @ViewBuilder private func logActions(for asked: Coach.Message) -> some View {
+    let conflicts = (chat.conflicts[asked.id] ?? []).filter { !resolved.contains(asked.id + $0.kind.rawValue) }
+    let suggestions = logged.map { CoachLogPrompt.analyze(asked.content, logged: $0, hour: hour).suggestions } ?? []
+    if !conflicts.isEmpty || !suggestions.isEmpty {
+      FlowRows(spacing: DS.Spacing.sm, centered: false) {
+        ForEach(conflicts, id: \.kind) { c in
+          chip(Text("coach.check.stated \(CoachLogPrompt.display(c.kind, c.stated, lang: lang.rawValue))"), primary: true) {
+            resolved.insert(asked.id + c.kind.rawValue)
+            send(Self.replyText(c.stated, c.kind, lang: lang))
+            confirmUpdate = c
+          }
+          chip(Text("coach.check.logged \(CoachLogPrompt.display(c.kind, c.logged, lang: lang.rawValue))"), primary: false) {
+            resolved.insert(asked.id + c.kind.rawValue)
+            send(Self.replyText(c.logged, c.kind, lang: lang))
+          }
+        }
+        ForEach(Array(suggestions.enumerated()), id: \.offset) { _, d in
+          suggestionChip(d, key: asked.id)
+        }
+      }
+      .frame(maxWidth: .infinity, alignment: .leading)
+    }
+  }
+
+  @ViewBuilder private func suggestionChip(_ d: CoachLogPrompt.Detected, key: String) -> some View {
+    let v = d.value.map { CoachLogPrompt.display(d.kind, $0, lang: lang.rawValue) } ?? ""
+    switch d.kind {
+    case .sleep: chip(Text("coach.log.sleep \(v)"), primary: true) { logSheet = .sleep(d.value ?? 0) }
+    case .weight: chip(Text("coach.log.weight \(v)"), primary: true) { logSheet = .weight(d.value ?? 0) }
+    case .workout: chip(Text("coach.log.workout"), primary: true) { logSheet = .workout }
+    case .meal: chip(Text("coach.log.meal"), primary: true) { logSheet = .meal(d.meal ?? MealLog.defaultMeal) }
+    case .water:
+      if waterAdded.contains(key) {
+        Label("coach.log.saved", systemImage: "checkmark.circle.fill")
+          .font(DS.TextStyle.footnote.weight(.semibold))
+          .foregroundStyle(DS.Color.readinessGreen.swiftUI)
+          .frame(minHeight: 40)
+      } else {
+        // Lượng nước đã rõ — một chạm là lưu.
+        chip(Text("coach.log.water \(v)"), primary: true) {
+          Task {
+            guard let water = nutrition?.water, let ml = d.value else { return }
+            if (try? await water.add(amountMl: Int(ml), online: services.sync.online)) != nil {
+              waterAdded.insert(key)
+              await onLogged()
+            }
+          }
+        }
+      }
+    }
+  }
+
+  private func chip(_ label: Text, primary: Bool, action: @escaping () -> Void) -> some View {
+    Button(action: action) {
+      label
+        .font(DS.TextStyle.footnote.weight(.semibold))
+        .foregroundStyle(primary ? DS.Color.background.swiftUI : DS.Color.foreground.swiftUI)
+        .padding(.horizontal, 14)
+        .frame(minHeight: 40)
+        .background(primary ? DS.Color.foreground.swiftUI : DS.Color.card.swiftUI, in: Capsule())
+        .overlay { if !primary { Capsule().strokeBorder(DS.Color.foreground.swiftUI.opacity(0.12), lineWidth: 0.75) } }
+        .frame(minHeight: 44)
+    }
+    .buttonStyle(.plain)
+    .accessibilityLabel(label)
+  }
+
+  /// Câu gửi đi khi chạm một nút chọn số: "8 giờ mới đúng".
+  static func replyText(_ v: Double, _ kind: CoachLogPrompt.Kind, lang: AppPreferences.Lang) -> String {
+    String(localized: "coach.check.reply \(CoachLogPrompt.display(kind, v, lang: lang.rawValue))")
+  }
+
+  /// Màn ghi mở từ chat, điền sẵn số người dùng đã nói / đã chọn.
+  @ViewBuilder private func logScreen(_ t: CoachLogTarget) -> some View {
+    let userId = services.session.session?.userId ?? ""
+    switch t {
+    case .sleep(let m):
+      LogSleepView(makeLogger: { services.makeSleepLogger(userId: userId) }, onDone: { logSheet = nil },
+                   presetMinutes: Int(m))
+    case .weight(let kg):
+      LogWeightView(makeLogger: { services.makeWeightLogger(userId: userId) }, onDone: { logSheet = nil },
+                    presetKg: kg)
+    case .workout:
+      ManualLogView(flow: flow)
+    case .meal(let meal):
+      LogMealView(userId: userId, date: nil, mealType: meal) { logSheet = nil }
+    case .water:
+      if let water = nutrition?.water { NavigationStack { WaterView(book: water) } }
+    }
+  }
 
   /// Một câu hỏi tới coach với ngày + múi giờ của máy lúc bấm — dùng chung
   /// cho ô soạn, chip trong chat và chip trên thẻ coach của tab Trợ lý.
@@ -332,9 +491,21 @@ struct CoachChatView: View {
   /// trả lời ngay bằng câu mẫu điền số thật, không lặp mẫu vừa dùng
   /// (`CoachQuickReply`, 16/10, chủ dự án). Mọi câu cần suy luận vẫn đi AI.
   static func ask(
-    _ chat: CoachChat, _ text: String, lang: AppPreferences.Lang, signal: AssistantSuggestions.Signal? = nil
+    _ chat: CoachChat, _ text: String, lang: AppPreferences.Lang, signal: AssistantSuggestions.Signal? = nil,
+    logged: CoachLogPrompt.LoggedToday? = nil
   ) {
     let code = lang.rawValue
+    let now = Date()
+    let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
+    // Lời kể khác số đã ghi → AI hỏi lại số nào đúng (16/10); không trả lời tự động.
+    let hour = Calendar.current.component(.hour, from: now)
+    let checks = logged.map { CoachLogPrompt.analyze(text, logged: $0, hour: hour).conflicts } ?? []
+    if !checks.isEmpty {
+      Task {
+        await chat.send(text, lang: code, today: today, tzOffset: Coach.tzOffset(.current, at: now), checks: checks)
+      }
+      return
+    }
     var memory = QuickReplyMemory.load()
     if let reply = CoachQuickReply.answer(text, signal: signal, lang: code, memory: &memory) {
       QuickReplyMemory.save(memory)
@@ -342,9 +513,21 @@ struct CoachChatView: View {
       Task { await chat.answerLocally(text, reply: reply) }
       return
     }
-    let now = Date()
-    let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
     Task { await chat.send(text, lang: code, today: today, tzOffset: Coach.tzOffset(.current, at: now)) }
+  }
+}
+
+/// Màn ghi mở từ một nút trong Koa Coach.
+enum CoachLogTarget: Identifiable, Hashable {
+  case sleep(Double), weight(Double), workout, meal(String), water
+  var id: String {
+    switch self {
+    case .sleep(let m): "sleep\(m)"
+    case .weight(let k): "weight\(k)"
+    case .workout: "workout"
+    case .meal(let m): "meal\(m)"
+    case .water: "water"
+    }
   }
 }
 

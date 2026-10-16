@@ -81,6 +81,9 @@ public final class AssistantSignalBook {
   /// Dấu "đã ghi ngủ / đã ăn / đã tập" của hôm nay cho insight
   /// (`SmartNudges.stamp`); `nil` khi chưa đọc xong lượt nào.
   public private(set) var nudgeStamp: String?
+  /// Hôm nay đã ghi gì — để Koa chỉ gợi ý ghi thứ còn thiếu (`CoachLogPrompt`).
+  /// `nil` khi chưa đọc xong.
+  public private(set) var logged: CoachLogPrompt.LoggedToday?
 
   @ObservationIgnored private let store: any RowStore
   @ObservationIgnored private let tz: TimeZone
@@ -136,8 +139,32 @@ public final class AssistantSignalBook {
         table: "biometric_samples", columns: "date_time, hr_bpm",
         filters: [.eq("user_id", user), .gte("date_time", .string(window.start)), .lt("date_time", .string(window.end))],
         order: RowQuery.Order(column: "date_time", ascending: false), limit: 1, mode: .maybeSingle))
+    async let meals = Self.readAll(
+      store,
+      RowQuery(
+        table: "meal_entries", columns: "meal_type",
+        filters: [.eq("user_id", user), .gte("date_time", .string(window.start)), .lt("date_time", .string(window.end))]))
+    async let weighed = Self.read(
+      store,
+      RowQuery(
+        table: "weight_logs", columns: "date, weight_kg",
+        filters: [.eq("user_id", user), .eq("date", .string(day.description))], limit: 1))
     let (l, p, w, b) = await (log, profile, last, bio)
+    let (m, wt) = await (meals, weighed)
     guard !closed, day == today else { return }
+    // Đọc bữa hỏng thì không biết hôm nay đã ghi gì — không gợi ý (`logged` nil).
+    // `l` nil = hôm nay chưa có dòng nào (mọi số 0).
+    if let m {
+      let kg = JS.number(wt?["weight_kg"])
+      logged = CoachLogPrompt.LoggedToday(
+        sleepMin: max(0, JS.number(l?["sleep_duration_min"])),
+        workout: JS.number(l?["workout_count"]) > 0,
+        waterMl: max(0, JS.number(l?["water_ml"])),
+        weightKg: kg > 0 ? kg : nil,
+        meals: Set(m.compactMap { $0["meal_type"]?.stringValue }))
+    } else {
+      logged = nil
+    }
     // `bio?.hr_bpm != null ? Math.round(Number(bio.hr_bpm)) : null`.
     if JS.present(b?["hr_bpm"]) {
       let v = JS.round(JS.number(b?["hr_bpm"]))
@@ -150,6 +177,11 @@ public final class AssistantSignalBook {
     signal = .from(
       log: l, profile: p, lastWorkoutAt: w?["date_time"], today: day, in: tz,
       hasRecovery: { explain in copy.map { ReadinessCard.hasRecoverySignal(explain, copy: $0) } ?? false })
+  }
+
+  /// Mọi dòng; hỏng → `nil`.
+  nonisolated private static func readAll(_ store: any RowStore, _ q: RowQuery) async -> [JSONValue]? {
+    try? await store.select(q)
   }
 
   /// Một lượt đọc; hỏng → `nil` (RN: `data` của query là `undefined`).

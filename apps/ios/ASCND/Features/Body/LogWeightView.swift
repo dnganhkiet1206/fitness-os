@@ -27,6 +27,8 @@ struct LogWeightView: View {
   @Environment(\.weightUnit) private var unit
   @Environment(\.dismiss) private var dismiss
   @State private var logger: WeightLogger?
+  /// Số cân người dùng vừa nói với Koa (16/10) — vạch khởi đầu.
+  var presetKg: Double?
   @State private var index: Int?
   @State private var message: String?
 
@@ -34,7 +36,7 @@ struct LogWeightView: View {
 
   /// Vạch hạt giống: `round(displayWeight(seedKg) × 10) − min10`, kẹp vào thang.
   private var seedIndex: Int {
-    let kg = WeightLog.seedKg(today: logger?.todayKg, profile: profile?.profile?.weightKg)
+    let kg = WeightLog.seedKg(today: presetKg ?? logger?.todayKg, profile: profile?.profile?.weightKg)
     return scale.seed(Units.text(kg))
   }
 
