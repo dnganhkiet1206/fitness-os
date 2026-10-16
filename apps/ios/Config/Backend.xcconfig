@@ -10,4 +10,14 @@
 ASCND_SUPABASE_HOST = guqmbqtgxqleuwajvwvg.supabase.co
 ASCND_SUPABASE_KEY = sb_publishable_HU-mMPAU34iCDOHOukYPWA_XY_Vh9nX
 
+// Đo lường (15/10, Sentry + PostHog) — TRỐNG = tắt hẳn, không SDK nào khởi động.
+// Điền ở Backend.local.xcconfig (không commit), KHÔNG ở đây. Bỏ "https://" như
+// host Supabase (// là chú thích trong .xcconfig):
+//   ASCND_SENTRY_DSN = <key>@o<org>.ingest.<region>.sentry.io/<project>
+//   ASCND_POSTHOG_KEY = phc_…
+//   ASCND_POSTHOG_HOST = us.i.posthog.com   (hoặc eu.i.posthog.com)
+ASCND_SENTRY_DSN =
+ASCND_POSTHOG_KEY =
+ASCND_POSTHOG_HOST =
+
 #include? "Backend.local.xcconfig"

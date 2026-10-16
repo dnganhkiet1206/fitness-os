@@ -140,6 +140,7 @@ struct WorkoutsTab: View {
           // chốt, tiến độ của ngày được neo lại (`anchoring`).
           let sets = Self.summarySets(session)
           let summary = try await flow.finish()
+          Telemetry.capture(.workoutCompleted)
           finished = FinishedWorkout(summary: summary, sets: sets)
         },
         onAppend: { _ = try await flow.append() },

@@ -175,6 +175,7 @@ final class HealthSyncCoordinator {
   func syncNow(userId: String, lang: String) async throws(HealthSync.Failure) {
     guard await source.requestPermission() else { throw .write("Health access was not granted") }
     try await run(userId: userId, lang: lang)
+    Telemetry.capture(.healthConnected)
   }
 
   /// `useAutoHealthSync`: về tiền cảnh, đã hỏi quyền, cách lần trước ≥ 15

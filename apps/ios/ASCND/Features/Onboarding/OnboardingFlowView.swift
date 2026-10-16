@@ -173,7 +173,11 @@ private struct OnboardingStepsView: View {
   private func primary() {
     if step == .ready {
       Task {
-        if !(await flow.finish()), let f = flow.failure { failure = f.copy }
+        if await flow.finish() {
+          Telemetry.capture(.onboardingCompleted)
+        } else if let f = flow.failure {
+          failure = f.copy
+        }
       }
     } else if step == .health {
       // Xin quyền + đồng bộ lần đầu; từ chối / lỗi vẫn đi tiếp — Cài đặt còn nút Đồng bộ.

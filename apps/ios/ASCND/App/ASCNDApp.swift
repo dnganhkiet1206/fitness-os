@@ -20,6 +20,8 @@ struct ASCNDApp: App {
     // RT-6: hết giờ tự nhiên → một rung "thành công", đúng một lần.
     controller.onRestFinished = { UINotificationFeedbackGenerator().notificationOccurred(.success) }
     _rest = State(initialValue: controller)
+    // Đo lường (15/10): chỉ khởi động khi có khoá — xem Telemetry.swift.
+    Telemetry.start()
     let services = AppServices()
     // Ngôn ngữ đã chọn (hoặc theo máy, như `deviceDefaultLang` của RN) cho
     // MỌI lần tra chữ, từ khung hình đầu tiên (#527 · 1.7).
@@ -68,6 +70,7 @@ struct ASCNDApp: App {
         .onChange(of: services.session.session?.userId, initial: true) { _, user in
           services.sync.setSignedInUser(user)
           services.widgets.setUser(user)
+          Telemetry.setUser(user)
         }
         // `ascnd://` (#527 deep link): link email auth (xác nhận đăng ký, đặt
         // lại mật khẩu) mở phiên; link khác tới màn của nó (`DeepLink`).
@@ -84,6 +87,8 @@ struct ASCNDApp: App {
       if phase == .active {
         rest.settle()
         services.didBecomeActive()
+        // `app_opened` (ngày 1 / ngày 7… cho tỉ lệ quay lại) — tắt khi chưa có khoá.
+        Telemetry.appOpened()
       } else if phase == .background {
         services.didEnterBackground()
       }

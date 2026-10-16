@@ -73,7 +73,8 @@ struct TodayStartCard: View {
         }
         Spacer(minLength: 0)
         Button {
-          withAnimation(.easeOut(duration: 0.2)) { hidden = true }
+          Telemetry.capture(.startCardAction, ["item": "hide"])
+        withAnimation(.easeOut(duration: 0.2)) { hidden = true }
         } label: {
           Image(systemName: "xmark")
             .font(.system(size: 13, weight: .bold))
@@ -87,6 +88,7 @@ struct TodayStartCard: View {
           done: healthDone, symbol: "heart.fill", tint: Color(red: 1, green: 0.22, blue: 0.37),
           title: "today.start.health", sub: "today.start.health.sub", busy: connecting
         ) {
+          Telemetry.capture(.startCardAction, ["item": "health"])
           connecting = true
           Task {
             try? await services.health.syncNow(userId: userId, lang: AppServices.appLang)
@@ -97,11 +99,19 @@ struct TodayStartCard: View {
       }
       row(
         done: meal, symbol: "fork.knife", tint: DS.Color.metricOrangeGraphic.swiftUI, title: "today.start.meal",
-        sub: "today.start.meal.sub", busy: false, action: onMeal)
+        sub: "today.start.meal.sub", busy: false
+      ) {
+        Telemetry.capture(.startCardAction, ["item": "meal"])
+        onMeal()
+      }
       if let onWorkout {
         row(
           done: workout, symbol: "dumbbell.fill", tint: DS.Color.metricRose.swiftUI, title: "today.start.workout",
-          sub: "today.start.workout.sub", busy: false, action: onWorkout)
+          sub: "today.start.workout.sub", busy: false
+        ) {
+          Telemetry.capture(.startCardAction, ["item": "workout"])
+          onWorkout()
+        }
       }
     }
     .padding(DS.Spacing.card)

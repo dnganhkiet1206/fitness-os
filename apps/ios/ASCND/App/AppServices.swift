@@ -304,7 +304,10 @@ final class AppServices {
       planStore: outbox,
       onRest: { event, target in rest.handle(event, target: target) },
       onEnqueued: { _ in sync.kick() })
-    flow.onManualLogged = { [health] entry in health.mirrorManualWorkout(entry) }
+    flow.onManualLogged = { [health] entry in
+      health.mirrorManualWorkout(entry)
+      Telemetry.capture(.workoutLogged, ["source": "manual"])
+    }
     return flow
   }
 
@@ -445,7 +448,10 @@ final class AppServices {
     let sync = self.sync
     return MealLogger(
       userId: userId, source: SupabaseMealLog(backend: backend), store: outbox, date: date, mealType: mealType,
-      onEnqueued: { _ in sync.kick() })
+      onEnqueued: { _ in
+        sync.kick()
+        Telemetry.capture(.mealLogged)
+      })
   }
 
   /// Thư viện thực phẩm (#527 Phase 3 · 3.3): đọc "Của tôi" + "Gần đây";

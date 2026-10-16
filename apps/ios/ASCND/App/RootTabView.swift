@@ -179,7 +179,14 @@ private struct QuickLogSheetHost: ViewModifier {
       if let chosen { open(chosen) }
       chosen = nil
     }) {
-      QuickLogSheet(pick: { chosen = $0; picking = false }, close: { picking = false })
+      QuickLogSheet(
+        pick: {
+          chosen = $0
+          picking = false
+          Telemetry.capture(.quickLogPick, ["target": QuickLogSheet.telemetryName($0)])
+        }, close: { picking = false }
+      )
+      .onAppear { Telemetry.capture(.quickLogOpened) }
         .presentationDragIndicator(.visible)
     }
   }
@@ -238,6 +245,18 @@ private struct QuickLogSheet: View {
       ("quicklog.weight", "scalemass.fill", DS.Color.foreground.swiftUI, .logWeight),
       ("quicklog.workout", "dumbbell.fill", DS.Color.metricRose.swiftUI, .logWorkout),
     ]
+  }
+
+  /// Tên màn cho sự kiện `quick_log_pick` — chỉ loại màn, không dữ liệu.
+  static func telemetryName(_ s: DeepLink.Screen) -> String {
+    switch s {
+    case .logMeal: "meal"
+    case .water: "water"
+    case .logSleep: "sleep"
+    case .logWeight: "weight"
+    case .logWorkout: "workout"
+    default: "other"
+    }
   }
 
   private var recentMeals: [MealLog.RecentMeal] { Array((logger?.recentMeals ?? []).prefix(3)) }
@@ -338,6 +357,7 @@ private struct QuickLogSheet: View {
     logger.repeatMeal(m)
     if case .queued = await logger.save(online: services.sync.online) {
       logged = m.id
+      Telemetry.capture(.eatAgainUsed)
       AccessibilityNotification.Announcement(String(localized: "quicklog.again.done")).post()
       try? await Task.sleep(for: .milliseconds(700))
       close()

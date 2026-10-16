@@ -31,6 +31,14 @@ packages:
     path: Packages/ASCNDBackend
   ASCNDStore:
     path: Packages/ASCNDStore
+  # Đo lường (15/10): crash / lỗi và phễu người dùng. Tắt khi chưa có khoá —
+  # xem ASCND/App/Telemetry.swift và Config/Backend.xcconfig.
+  Sentry:
+    url: https://github.com/getsentry/sentry-cocoa
+    from: 8.36.0
+  PostHog:
+    url: https://github.com/PostHog/posthog-ios
+    from: 3.13.0
 
 targets:
   ASCND:
@@ -49,6 +57,10 @@ targets:
         product: ASCNDStore
       - package: ASCNDKit
         product: ASCNDLiveActivity
+      - package: Sentry
+        product: Sentry
+      - package: PostHog
+        product: PostHog
       - target: ASCNDWidgets
     # App Group dùng chung với widget màn hình chính — CÙNG nhóm bản RN dùng
     # (`group.com.ascnd.fitnessos`, `WidgetData.swift`), để dữ liệu widget còn
@@ -90,6 +102,10 @@ targets:
         # `com.apple.developer.applesignin: [Default]` — xem
         # `docs/APPLE_DEVELOPER_PROGRAM.md`.
         ASCNDSignInWithApple: $(ASCND_SIGN_IN_WITH_APPLE)
+        # Đo lường (15/10) — trống = tắt. Khoá thật ở Backend.local.xcconfig.
+        ASCNDSentryDSN: https://$(ASCND_SENTRY_DSN)
+        ASCNDPostHogKey: $(ASCND_POSTHOG_KEY)
+        ASCNDPostHogHost: https://$(ASCND_POSTHOG_HOST)
         # Câu chữ của bản RN (`app.json`), nguyên văn.
         NSHealthShareUsageDescription: ASCND reads your steps, heart rate, HRV and sleep to compute your daily readiness score.
         NSHealthUpdateUsageDescription: ASCND writes your logged weight, workouts and sleep to Apple Health so they appear in Apple Fitness and other apps.
