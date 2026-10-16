@@ -279,6 +279,7 @@ struct ScanFoodView: View {
               Text(String(localized: "sf.review.hint"))
                 .font(DS.TextStyle.footnote)
                 .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+              IntelligenceBadge(size: 12)
             }
             VStack(spacing: 0) {
               ForEach($rows) { $row in

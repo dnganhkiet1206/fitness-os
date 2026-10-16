@@ -254,8 +254,7 @@ struct WeeklyReviewView: View {
     case let state:
       DSCard {
         VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-          Label(String(localized: "wr.ai.title"), systemImage: "sparkles")
-            .font(DS.TextStyle.headline)
+          IntelligenceBadge(size: 17)
             .accessibilityAddTraits(.isHeader)
           Text(String(localized: "wr.ai.hint"))
             .font(DS.TextStyle.footnote)

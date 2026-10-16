@@ -65,10 +65,7 @@ struct CoachChatView: View {
 
   private var hello: some View {
     VStack(spacing: DS.Spacing.sm) {
-      Image(systemName: "sparkles")
-        .font(.largeTitle)
-        .foregroundStyle(DS.Color.brand.swiftUI)
-        .accessibilityHidden(true)
+      IntelligenceMark(size: 44)
       Text("coach.hello")
         .font(DS.TextStyle.largeTitle)
         .foregroundStyle(DS.Color.foreground.swiftUI)
@@ -76,6 +73,7 @@ struct CoachChatView: View {
         .font(DS.TextStyle.body)
         .foregroundStyle(DS.Color.mutedForeground.swiftUI)
         .multilineTextAlignment(.center)
+      IntelligenceBadge()
       if !suggestions.isEmpty {
         FlowChips(suggestions: suggestions, lang: lang, disabled: chat.isLoading) { send($0) }
           .padding(.top, DS.Spacing.md)
@@ -266,9 +264,7 @@ private struct CoachBubble: View {
 
 private struct CoachAvatar: View {
   var body: some View {
-    Image(systemName: "sparkles")
-      .font(.caption)
-      .foregroundStyle(DS.Color.brand.swiftUI)
+    IntelligenceMark(size: 15)
       .frame(width: 28, height: 28)
       .background(DS.Color.secondary.swiftUI, in: Circle())
       .accessibilityHidden(true)

@@ -13856,19 +13856,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "This AI feature is not set up on the server yet."
+      "value": "This ASCND Intelligence feature is not set up on the server yet."
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Tính năng AI này chưa được cài trên máy chủ."
+      "value": "Tính năng ASCND Intelligence này chưa được cài trên máy chủ."
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Esta función de IA aún no está configurada en el servidor."
+      "value": "Esta función de ASCND Intelligence aún no está configurada en el servidor."
      }
     }
    }
@@ -13879,19 +13879,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "The AI service could not answer. Try again in a moment."
+      "value": "ASCND Intelligence could not answer. Try again in a moment."
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Dịch vụ AI chưa trả lời được. Thử lại sau một lát nhé."
+      "value": "ASCND Intelligence chưa trả lời được. Thử lại sau một lát nhé."
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "El servicio de IA no pudo responder. Inténtalo de nuevo en un momento."
+      "value": "ASCND Intelligence no pudo responder. Inténtalo de nuevo en un momento."
      }
     }
    }
@@ -13902,19 +13902,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "Please sign in again to use AI features."
+      "value": "Please sign in again to use ASCND Intelligence."
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Bạn cần đăng nhập lại để dùng tính năng AI."
+      "value": "Bạn cần đăng nhập lại để dùng ASCND Intelligence."
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Inicia sesión de nuevo para usar las funciones de IA."
+      "value": "Inicia sesión de nuevo para usar ASCND Intelligence."
      }
     }
    }
@@ -13925,19 +13925,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "No connection — AI needs the internet."
+      "value": "No connection — ASCND Intelligence needs the internet."
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Không có kết nối — AI cần internet."
+      "value": "Không có kết nối — ASCND Intelligence cần internet."
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Sin conexión — la IA necesita internet."
+      "value": "Sin conexión — ASCND Intelligence necesita internet."
      }
     }
    }
@@ -13948,19 +13948,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "You have used up the AI for now. Try again later."
+      "value": "You have used up ASCND Intelligence for now. Try again later."
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Bạn đã dùng hết lượt AI lúc này. Thử lại sau nhé."
+      "value": "Bạn đã dùng hết lượt ASCND Intelligence lúc này. Thử lại sau nhé."
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Has agotado la IA por ahora. Inténtalo más tarde."
+      "value": "Has agotado ASCND Intelligence por ahora. Inténtalo más tarde."
      }
     }
    }
@@ -13971,19 +13971,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "Something went wrong with the AI request."
+      "value": "Something went wrong with ASCND Intelligence."
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Có lỗi khi gọi AI."
+      "value": "Có lỗi khi gọi ASCND Intelligence."
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Algo salió mal con la solicitud de IA."
+      "value": "Algo salió mal con ASCND Intelligence."
      }
     }
    }
@@ -13994,19 +13994,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "AI Analysis"
+      "value": "ASCND Intelligence"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Phân tích AI"
+      "value": "ASCND Intelligence"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Análisis de IA"
+      "value": "ASCND Intelligence"
      }
     }
    }
@@ -14017,19 +14017,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "Let AI analyze your week and give recommendations for the next one"
+      "value": "Let ASCND Intelligence analyze your week and give recommendations for the next one"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Để AI phân tích tuần của bạn và đưa gợi ý cho tuần tới"
+      "value": "Để ASCND Intelligence phân tích tuần của bạn và đưa gợi ý cho tuần tới"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Deja que la IA analice tu semana y te dé recomendaciones para la siguiente"
+      "value": "Deja que ASCND Intelligence analice tu semana y te dé recomendaciones para la siguiente"
      }
     }
    }
@@ -14040,19 +14040,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "Analyze with AI"
+      "value": "Analyze with ASCND Intelligence"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Phân tích với AI"
+      "value": "Phân tích với ASCND Intelligence"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Analizar con IA"
+      "value": "Analizar con ASCND Intelligence"
      }
     }
    }
@@ -14431,19 +14431,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "AI Coach"
+      "value": "Koa Coach"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "AI Coach"
+      "value": "Koa Coach"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Entrenador IA"
+      "value": "Koa Coach"
      }
     }
    }
@@ -14477,19 +14477,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "I'm your AI Coach — I analyze your training, nutrition, sleep and recovery data to give personalized advice."
+      "value": "I'm Koa, your coach — I read your training, nutrition, sleep and recovery data to give you personal advice."
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Tôi là AI Coach — tôi phân tích dữ liệu tập luyện, dinh dưỡng, giấc ngủ và phục hồi của bạn để đưa ra lời khuyên cá nhân hoá."
+      "value": "Mình là Koa, coach của bạn — mình đọc dữ liệu tập luyện, dinh dưỡng, giấc ngủ và phục hồi để đưa ra lời khuyên dành riêng cho bạn."
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Soy tu entrenador IA — analizo tus datos de entrenamiento, nutrición, sueño y recuperación para darte consejos personalizados."
+      "value": "Soy Koa, tu coach — leo tus datos de entrenamiento, nutrición, sueño y recuperación para darte consejos personalizados."
      }
     }
    }
@@ -14730,19 +14730,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "AI Coach isn't available in this build."
+      "value": "Koa Coach isn't available in this build."
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "AI Coach chưa sẵn sàng trên bản này."
+      "value": "Koa Coach chưa sẵn sàng trên bản này."
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "El entrenador IA no está disponible en esta versión."
+      "value": "Koa Coach no está disponible en esta versión."
      }
     }
    }
@@ -15265,7 +15265,7 @@
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "AI đọc cả tuần và gợi ý tuần tới"
+      "value": "ASCND Intelligence đọc cả tuần và gợi ý tuần tới"
      }
     },
     "es": {
@@ -15420,19 +15420,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "Open AI Coach"
+      "value": "Open Koa Coach"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Mở AI Coach"
+      "value": "Mở Koa Coach"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Abrir Entrenador IA"
+      "value": "Abrir Koa Coach"
      }
     }
    }
@@ -32807,19 +32807,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "Your AI coach uses this to pick how it talks to you."
+      "value": "Koa Coach uses this to pick how it talks to you."
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Huấn luyện viên AI dùng câu này để chọn cách nói với bạn."
+      "value": "Koa Coach dùng câu này để chọn cách nói với bạn."
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Tu entrenador IA usa esto para elegir cómo hablarte."
+      "value": "Koa Coach usa esto para elegir cómo hablarte."
      }
     }
    }
@@ -44997,19 +44997,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "AI estimates, one serving each. Tap an item to fix it; untick what's wrong."
+      "value": "ASCND Intelligence estimates, one serving each. Tap an item to fix it; untick what's wrong."
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Số do AI ước lượng, mỗi món một phần. Chạm một món để sửa, bỏ chọn món sai."
+      "value": "Số do ASCND Intelligence ước lượng, mỗi món một phần. Chạm một món để sửa, bỏ chọn món sai."
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Estimaciones de IA, una ración cada una. Toca un alimento para corregirlo; desmarca lo que no sea."
+      "value": "Estimaciones de ASCND Intelligence, una ración cada una. Toca un alimento para corregirlo; desmarca lo que no sea."
      }
     }
    }
@@ -45273,19 +45273,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "AI ideas that fit what's left of today"
+      "value": "ASCND Intelligence ideas that fit what's left of today"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "AI gợi ý món hợp phần còn lại hôm nay"
+      "value": "ASCND Intelligence gợi ý món hợp phần còn lại hôm nay"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Ideas de IA según lo que te queda hoy"
+      "value": "Ideas de ASCND Intelligence según lo que te queda hoy"
      }
     }
    }
@@ -51657,6 +51657,52 @@
      "stringUnit": {
       "state": "translated",
       "value": "Đã ghi bữa"
+     }
+    }
+   }
+  },
+  "ai.brand": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "ASCND Intelligence"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "ASCND Intelligence"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "ASCND Intelligence"
+     }
+    }
+   }
+  },
+  "quicklog.coach": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ask Koa Coach"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hỏi Koa Coach"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Pregunta a Koa Coach"
      }
     }
    }

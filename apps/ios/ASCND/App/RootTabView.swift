@@ -19,6 +19,10 @@ struct RootTabView: View {
   @State private var linked: DeepLink.Screen?
   /// "Bắt đầu" ở Hôm nay → tab Tập luyện mở thẳng màn tập.
   @State private var launchWorkout = false
+  /// Màn có ô nhập riêng (Koa Coach, nhắn tin) ẩn dải Ghi nhanh khi đang mở.
+  @State private var quickLog = QuickLogVisibility()
+  /// "Hỏi Koa Coach" trong Ghi nhanh → tab Trợ lý mở thẳng màn chat.
+  @State private var openCoach = false
 
   var body: some View {
     TabView(selection: $selection) {
@@ -50,14 +54,23 @@ struct RootTabView: View {
       .accessibilityHint(Text(String(localized: "tab.community.hint")))
       Tab("tab.assistant", systemImage: "heart.text.square", value: AppTab.assistant, role: .search) {
         // Lát đầu của Trợ lý (#527 Phase 6): AI Coach.
-        AssistantTab()
+        AssistantTab(openCoach: $openCoach)
       }
       .accessibilityHint(Text(String(localized: "tab.assistant.hint")))
     }
     // Ghi nhanh (15/10, chủ dự án chọn "thanh phụ trên tab bar"): một dải kính
     // trên thanh tab ở mọi tab, thu gọn khi cuộn; mở các màn ghi qua cùng đường
     // với deep link (`DeepLinkScreen`) nên dữ liệu không tách đôi.
-    .modifier(QuickLogBar { linked = $0 })
+    .modifier(QuickLogBar(
+      hidden: quickLog.hidden,
+      // Chỉ khi các function AI có trên máy chủ (`probeAI`), như mọi lối vào AI khác.
+      askCoach: services.aiDeployed == true
+        ? {
+          selection = .assistant
+          openCoach = true
+        } : nil
+    ) { linked = $0 })
+    .environment(quickLog)
     // Ăn mừng huy chương / thử thách (#527, `CelebrationHost` ở layout gốc của
     // RN): trên mọi tab, phủ cả thanh tab.
     .overlay { CelebrationHost(queue: services.celebrations) }
@@ -130,6 +143,10 @@ struct RootTabView: View {
 /// Chỉ iOS 26 có thanh phụ trên tab bar; máy cũ hơn không có dải này (các lối ghi
 /// trong từng tab vẫn đủ).
 private struct QuickLogBar: ViewModifier {
+  /// Một màn có ô nhập riêng đang mở (`hidesQuickLog()`).
+  var hidden = false
+  /// Mở Koa Coach (ASCND Intelligence); `nil` khi AI chưa có trên máy chủ.
+  var askCoach: (() -> Void)?
   let open: (DeepLink.Screen) -> Void
   @State private var picking = false
   /// Màn chọn trong bảng — mở sau khi bảng đóng hẳn (hai sheet không chồng nhau).
@@ -137,54 +154,111 @@ private struct QuickLogBar: ViewModifier {
 
   func body(content: Content) -> some View {
     if #available(iOS 26, *) {
-      content
-        .tabViewBottomAccessory { QuickLogAccessory { picking = true } }
-        .tabBarMinimizeBehavior(.onScrollDown)
-        .modifier(sheet)
+      // 26.1+ tắt được thanh phụ mà không dựng lại TabView (đổi nhánh modifier
+      // thì mất vị trí điều hướng của các tab); 26.0 giữ thanh như cũ.
+      Group {
+        if #available(iOS 26.1, *) {
+          content.tabViewBottomAccessory(isEnabled: !hidden) { QuickLogAccessory(askCoach: askCoach) { picking = true } }
+        } else {
+          content.tabViewBottomAccessory { QuickLogAccessory(askCoach: askCoach) { picking = true } }
+        }
+      }
+      .tabBarMinimizeBehavior(.onScrollDown)
+      .modifier(sheet)
     } else {
       // iOS 18–25 (15/10, chủ dự án: "làm nút + cho máy cũ luôn"): không có thanh
       // phụ — một nút "+" tròn nổi ở góc phải, ngay trên thanh tab, mở cùng bảng.
       content
         .overlay(alignment: .bottomTrailing) {
-          Button { picking = true } label: {
-            Image(systemName: "plus")
-              .font(.system(size: 22, weight: .bold))
-              .foregroundStyle(DS.Color.background.swiftUI)
-              .frame(width: 56, height: 56)
-              .background(DS.Color.foreground.swiftUI, in: Circle())
-              .shadow(color: .black.opacity(0.2), radius: 10, y: 4)
-          }
-          .buttonStyle(.plain)
-          .padding(.trailing, DS.Spacing.md)
-          .padding(.bottom, 64)
-          .accessibilityLabel(Text("quicklog.title"))
+          if !hidden { plusButton }
         }
         .modifier(sheet)
     }
   }
 
-  private var sheet: QuickLogSheetHost {
-    QuickLogSheetHost(picking: $picking, chosen: $chosen, open: open)
+  private var plusButton: some View {
+    Button { picking = true } label: {
+      Image(systemName: "plus")
+        .font(.system(size: 22, weight: .bold))
+        .foregroundStyle(DS.Color.background.swiftUI)
+        .frame(width: 56, height: 56)
+        .background(DS.Color.foreground.swiftUI, in: Circle())
+        .shadow(color: .black.opacity(0.2), radius: 10, y: 4)
+    }
+    .buttonStyle(.plain)
+    .padding(.trailing, DS.Spacing.md)
+    .padding(.bottom, 64)
+    .accessibilityLabel(Text("quicklog.title"))
   }
+
+  private var sheet: QuickLogSheetHost {
+    QuickLogSheetHost(picking: $picking, chosen: $chosen, askCoach: askCoach, open: open)
+  }
+}
+
+/// Đếm các màn đang ẩn dải Ghi nhanh (15/10, chủ dự án: không để Ghi nhanh trong
+/// chat AI — hai ô nhập chồng nhau ở đáy). Đếm, không cờ: màn nhắn tin đẩy lên
+/// trên Koa Coach vẫn giữ thanh ẩn khi một trong hai rời đi.
+@MainActor @Observable
+final class QuickLogVisibility {
+  fileprivate(set) var hiders = 0
+  var hidden: Bool { hiders > 0 }
+}
+
+private struct HidesQuickLog: ViewModifier {
+  @Environment(QuickLogVisibility.self) private var visibility: QuickLogVisibility?
+  @State private var counted = false
+
+  func body(content: Content) -> some View {
+    content
+      .onAppear {
+        guard let visibility, !counted else { return }
+        counted = true
+        visibility.hiders += 1
+      }
+      .onDisappear {
+        guard let visibility, counted else { return }
+        counted = false
+        visibility.hiders = max(0, visibility.hiders - 1)
+      }
+  }
+}
+
+extension View {
+  /// Ẩn dải Ghi nhanh khi màn này đang trên màn — cho màn có ô nhập riêng ở đáy.
+  func hidesQuickLog() -> some View { modifier(HidesQuickLog()) }
 }
 
 /// Bảng 5 ô của "Ghi nhanh" — chung cho thanh phụ (iOS 26) và nút nổi (máy cũ).
 private struct QuickLogSheetHost: ViewModifier {
   @Binding var picking: Bool
   @Binding var chosen: DeepLink.Screen?
+  let askCoach: (() -> Void)?
   let open: (DeepLink.Screen) -> Void
+  /// "Hỏi Koa Coach" đã chạm — mở sau khi bảng đóng hẳn, như `chosen`.
+  @State private var coachChosen = false
 
   func body(content: Content) -> some View {
     content.sheet(isPresented: $picking, onDismiss: {
       if let chosen { open(chosen) }
+      if coachChosen { askCoach?() }
       chosen = nil
+      coachChosen = false
     }) {
       QuickLogSheet(
         pick: {
           chosen = $0
           picking = false
           Telemetry.capture(.quickLogPick, ["target": QuickLogSheet.telemetryName($0)])
-        }, close: { picking = false }
+        },
+        askCoach: askCoach.map { _ in
+          {
+            coachChosen = true
+            picking = false
+            Telemetry.capture(.quickLogPick, ["target": "coach"])
+          }
+        },
+        close: { picking = false }
       )
       .onAppear { Telemetry.capture(.quickLogOpened) }
         .presentationDragIndicator(.visible)
@@ -196,10 +270,35 @@ private struct QuickLogSheetHost: ViewModifier {
 /// Buổi tập. (Một `Menu` trong thanh phụ không mở được bằng chạm — dùng nút + bảng.)
 @available(iOS 26, *)
 private struct QuickLogAccessory: View {
+  /// Nút ASCND Intelligence ở đầu phải: chạm thẳng vào Koa Coach (15/10, chủ dự
+  /// án: "thêm nút AI vào ô ghi nhanh để người dùng đỡ phải đi tìm").
+  var askCoach: (() -> Void)?
   let tap: () -> Void
   @Environment(\.tabViewBottomAccessoryPlacement) private var placement
 
   var body: some View {
+    HStack(spacing: 0) {
+      log
+      if let askCoach {
+        Button {
+          Telemetry.capture(.quickLogPick, ["target": "coach"])
+          askCoach()
+        } label: {
+          IntelligenceMark(size: 18)
+            .frame(width: 34, height: 34)
+            .background(Intelligence.wash, in: Circle())
+            .padding(.trailing, placement == .inline ? 6 : 10)
+            .padding(.leading, 4)
+            .frame(maxHeight: .infinity)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text("quicklog.coach"))
+      }
+    }
+  }
+
+  private var log: some View {
     Button(action: tap) {
       HStack(spacing: 8) {
         // Nút đặc tương phản cao — nền kính của thanh phụ lộ nội dung phía sau.
@@ -217,7 +316,8 @@ private struct QuickLogAccessory: View {
             .lineLimit(1)
         }
       }
-      .padding(.horizontal, 16)
+      .padding(.leading, 16)
+      .padding(.trailing, askCoach == nil ? 16 : 6)
       .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
       .contentShape(Rectangle())
     }
@@ -229,6 +329,8 @@ private struct QuickLogAccessory: View {
 /// Bảng chọn của "Ghi nhanh": năm ô lớn, chạm là mở đúng màn ghi.
 private struct QuickLogSheet: View {
   let pick: (DeepLink.Screen) -> Void
+  /// "Hỏi Koa Coach" — `nil` khi AI chưa có trên máy chủ (hàng ẩn).
+  var askCoach: (() -> Void)?
   /// Đóng bảng (sau khi "Ăn lại" đã ghi xong).
   let close: () -> Void
   @Environment(AppServices.self) private var services
@@ -288,11 +390,12 @@ private struct QuickLogSheet: View {
           .buttonStyle(.plain)
         }
       }
+      if let askCoach { coachRow(askCoach) }
     }
     .padding(.horizontal, DS.Spacing.lg)
     .padding(.top, DS.Spacing.lg)
     .frame(maxHeight: .infinity, alignment: .top)
-    .presentationDetents([.height(recentMeals.isEmpty ? 250 : 400)])
+    .presentationDetents([.height((recentMeals.isEmpty ? 250 : 400) + (askCoach == nil ? 0 : 76))])
     .sensoryFeedback(.success, trigger: logged)
     .task {
       guard logger == nil, let userId = services.session.session?.userId else { return }
@@ -300,6 +403,31 @@ private struct QuickLogSheet: View {
       logger = l
       await l?.loadRecents()
     }
+  }
+
+  /// Hàng "Hỏi Koa Coach": cùng một bảng với các lối ghi — máy cũ (không có thanh
+  /// phụ) cũng tới được coach từ nút "+".
+  private func coachRow(_ ask: @escaping () -> Void) -> some View {
+    Button(action: ask) {
+      HStack(spacing: 12) {
+        IntelligenceMark(size: 22)
+          .frame(width: 44, height: 44)
+          .background(Intelligence.wash, in: Circle())
+        VStack(alignment: .leading, spacing: 3) {
+          Text("quicklog.coach").font(.system(size: 15, weight: .bold))
+            .foregroundStyle(DS.Color.foreground.swiftUI)
+          IntelligenceBadge(size: 11)
+        }
+        Spacer(minLength: 0)
+        Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold))
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+      }
+      .padding(12)
+      .dsCard(radius: 18)
+      .contentShape(Rectangle())
+    }
+    .buttonStyle(TodayPressStyle())
+    .accessibilityElement(children: .combine)
   }
 
   /// "Ăn lại": bữa gần đây — một chạm ghi đúng các món và khẩu phần ấy cho hôm nay.

@@ -226,7 +226,8 @@ struct ConversationScreen: View {
     _book = State(initialValue: inbox.thread(thread))
   }
 
-  var body: some View { ConversationView(book: book) }
+  // Ô nhắn ở đáy — không để dải Ghi nhanh chồng lên.
+  var body: some View { ConversationView(book: book).hidesQuickLog() }
 }
 
 struct ConversationView: View {

@@ -52,12 +52,9 @@ struct MealSuggestCard: View {
 
   private var header: some View {
     HStack(spacing: DS.Spacing.sm) {
-      Image(systemName: "sparkles")
-        .font(.system(size: 18, weight: .semibold))
-        .foregroundStyle(MascotRoomView.signalColor(.meal))
+      IntelligenceMark(size: 18)
         .frame(width: 32, height: 32)
-        .background(MascotRoomView.signalColor(.meal).opacity(0.14), in: Circle())
-        .accessibilityHidden(true)
+        .background(Intelligence.wash, in: Circle())
       VStack(alignment: .leading, spacing: 1) {
         Text(String(localized: "ms.title")).font(DS.TextStyle.headline)
         Text(String(localized: "ms.hint"))

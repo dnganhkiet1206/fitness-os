@@ -84,6 +84,19 @@ tính năng đồng bộ trong toàn app" → "làm đi".
     bản mới. Tin nhắn: bản Release vốn đã ẩn (chỉ dữ liệu giả ở Debug).
   - Chữ trên tranh phòng Koa theo ngôn ngữ (`StudioScene.Options.lang`, `signText`): "THẮNG HÔM NAY / NGÀY MAI /
     MẠNH HƠN", "CHUỖI"; es: "GANA HOY / MAÑANA / MÁS FUERTE", "RACHA".
+- **ASCND Intelligence + Koa Coach (15/10, chủ dự án):** mọi tính năng AI mang tên "ASCND Intelligence" (chuỗi
+  `ai.brand`; lỗi AI, Phân tích tuần, gợi ý bữa, quét món). Ký hiệu chung `IntelligenceMark` (chữ "A" logo + tia
+  sáng bốn cánh, dải cyan → tím) và `IntelligenceBadge` (ký hiệu + chữ) ở `ASCND/Design/Intelligence.swift` thay
+  `sparkles` ở Insight, ô Hỏi coach, chat, gợi ý bữa, Phân tích tuần, quét món. "AI Coach" đổi thành **Koa Coach**
+  (vi/en/es; giới thiệu "Mình là Koa, coach của bạn…").
+  - Ghi nhanh ẩn ở màn có ô nhập riêng ở đáy (Koa Coach, nhắn tin): `.hidesQuickLog()` đếm màn đang mở
+    (`QuickLogVisibility`); iOS 26.1+ `tabViewBottomAccessory(isEnabled:)`, 26.0 giữ thanh, máy cũ ẩn nút "+". Màn
+    tập và màn ghi bữa vốn là toàn màn hình / sheet nên đã che thanh.
+  - Nút AI trong Ghi nhanh: ký hiệu tròn ở đầu phải dải (iOS 26) mở thẳng Koa Coach; bảng Ghi nhanh có hàng "Hỏi
+    Koa Coach" (mọi máy). Chỉ hiện khi `aiDeployed == true`.
+  - Server AI (Gemini, khoá miễn phí): `ASCND_AI_MODEL=gemini-flash-lite-latest`, `ASCND_AI_VISION_MODEL=
+    gemini-flash-latest`, `ASCND_AI_REASONING_EFFORT=low` (3.x từ chối `none`); `_shared/ai.ts` thêm lượt `user` khi
+    function chỉ gửi system (Gemini 400 "contents is not specified").
 - **Cài đặt không lặp chữ**: mục Ngôn ngữ bỏ tiêu đề; dòng "Ngôn ngữ" có icon quả cầu như Nhắc nhở / Đổi mật khẩu.
 
 ## Quy ước (giữ khi làm màn mới)

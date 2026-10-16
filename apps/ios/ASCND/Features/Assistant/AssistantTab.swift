@@ -27,6 +27,8 @@ struct AssistantTab: View {
   @Environment(WorkoutFlow.self) private var flow
   @Environment(AppServices.self) private var services
   @Environment(\.scenePhase) private var scenePhase
+  /// "Hỏi Koa Coach" từ Ghi nhanh: mở thẳng màn chat (về `false` khi đã nhận).
+  var openCoach: Binding<Bool> = .constant(false)
   @State private var path: [AssistantRoute] = []
   @State private var chat: CoachChat?
   @State private var signal: AssistantSignalBook?
@@ -74,7 +76,7 @@ struct AssistantTab: View {
             AskCoachBar(lastAsked: chat.messages.last { $0.role == .user }?.content) { path.append(.chat) }
           } else if built, ai {
             ContentUnavailableView {
-              Label("coach.title", systemImage: "sparkles")
+              Label { Text("coach.title") } icon: { IntelligenceMark(size: 28) }
             } description: {
               Text("coach.unavailable")
             }
@@ -128,7 +130,10 @@ struct AssistantTab: View {
       .navigationDestination(for: AssistantRoute.self) { route in
         switch route {
         case .chat:
-          if let chat { CoachChatView(chat: chat, lang: lang, suggestions: signal?.suggestions ?? []) }
+          if let chat {
+            // Ô hỏi ở đáy — dải Ghi nhanh ẩn khi chat mở (15/10, chủ dự án).
+            CoachChatView(chat: chat, lang: lang, suggestions: signal?.suggestions ?? []).hidesQuickLog()
+          }
         case .weekly:
           if let weekly { WeeklyReviewView(book: weekly, lang: lang) }
         case .steps:
@@ -203,6 +208,12 @@ struct AssistantTab: View {
     }
     // RN học khi app vào nền (`AppState` → `background`): đó mới là lúc cuộc
     // trò chuyện thật sự "xong".
+    // `initial`: lần đầu tab dựng (chưa từng mở) cũng nhận lời mời.
+    .onChange(of: openCoach.wrappedValue, initial: true) { _, go in
+      guard go else { return }
+      openCoach.wrappedValue = false
+      if path != [.chat] { path = [.chat] }
+    }
     .onChange(of: scenePhase) { _, phase in
       if phase == .background { chat?.appBackgrounded() }
       // Ra tiền cảnh: số hôm nay có thể đã đổi (ghi bữa / đồng bộ Health), hoặc
@@ -555,7 +566,7 @@ private struct InsightCard: View {
   var body: some View {
     VStack(alignment: .leading, spacing: DS.Spacing.sm) {
       HStack {
-        Label("insight.title", systemImage: "sparkles")
+        Label { Text("insight.title") } icon: { IntelligenceMark(size: 18) }
           .font(DS.TextStyle.headline)
           .foregroundStyle(DS.Color.foreground.swiftUI)
           .accessibilityAddTraits(.isHeader)

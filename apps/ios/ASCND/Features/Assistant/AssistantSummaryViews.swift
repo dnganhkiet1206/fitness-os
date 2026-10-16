@@ -305,9 +305,7 @@ struct AskCoachBar: View {
     Button(action: open) {
       VStack(alignment: .leading, spacing: 6) {
         HStack(spacing: 10) {
-          Image(systemName: "sparkles")
-            .font(.system(size: 16, weight: .semibold))
-            .foregroundStyle(DS.Color.metricPurple.swiftUI)
+          IntelligenceMark(size: 18)
           Text("assistant.ask")
             .font(.system(size: 15))
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
