@@ -147,28 +147,43 @@ struct CoachChatView: View {
     .navigationTitle(Text("coach.title"))
     .ascndPage()
     .navigationBarTitleDisplayMode(.inline)
+    // Nội dung cuộn lên tan vào nền dưới thanh trên (16/10, chủ dự án: chữ chat
+    // chèn sau tiêu đề trông rối): mép cuộn của iOS 26, nền đặc ở máy cũ.
+    .modifier(TopEdgeFade())
     .toolbar {
-      // "Cuộc trò chuyện mới" lên thanh trên như ChatGPT (16/10) — trước là một
-      // viên giữa đầu cuộc trò chuyện, cuộn đi mất.
-      ToolbarItem(placement: .topBarTrailing) {
-        Button {
-          chat.newChat()
-          draft = ""
-        } label: {
-          Image(systemName: "square.and.pencil")
-            .frame(minWidth: 44, minHeight: 44)
+      // Tiêu đề giữa thanh, có ký hiệu ASCND Intelligence (như ChatGPT) — thay chữ
+      // inline bám sát nút quay lại.
+      ToolbarItem(placement: .principal) {
+        HStack(spacing: 6) {
+          IntelligenceMark(size: 16)
+          Text("coach.title")
+            .font(.system(size: 16, weight: .semibold))
+            .foregroundStyle(DS.Color.foreground.swiftUI)
         }
-        .disabled(chat.isLoading || chat.messages.isEmpty)
-        .accessibilityLabel(Text("coach.newChat"))
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isHeader)
       }
+      // Một nút gộp "Cuộc trò chuyện mới" + "Lịch sử" (16/10, chủ dự án) — một nút
+      // mỗi bên nên tiêu đề nằm đúng giữa.
       ToolbarItem(placement: .topBarTrailing) {
-        Button {
-          showsHistory = true
+        Menu {
+          Button {
+            chat.newChat()
+            draft = ""
+          } label: {
+            Label("coach.newChat", systemImage: "square.and.pencil")
+          }
+          .disabled(chat.isLoading || chat.messages.isEmpty)
+          Button {
+            showsHistory = true
+          } label: {
+            Label("coach.history", systemImage: "clock.arrow.circlepath")
+          }
         } label: {
-          Image(systemName: "clock.arrow.circlepath")
+          Image(systemName: "ellipsis")
             .frame(minWidth: 44, minHeight: 44)
         }
-        .accessibilityLabel(Text("coach.history.a11y"))
+        .accessibilityLabel(Text("coach.menu.a11y"))
       }
     }
     .sheet(isPresented: $showsHistory) {
@@ -515,6 +530,19 @@ struct CoachChatView: View {
       return
     }
     Task { await chat.send(text, lang: code, today: today, tzOffset: Coach.tzOffset(.current, at: now)) }
+  }
+}
+
+/// Mép trên của màn chat: nội dung cuộn dưới thanh trên tan vào nền.
+private struct TopEdgeFade: ViewModifier {
+  func body(content: Content) -> some View {
+    if #available(iOS 26, *) {
+      content.scrollEdgeEffectStyle(.hard, for: .top)
+    } else {
+      content
+        .toolbarBackground(DS.Color.background.swiftUI, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
+    }
   }
 }
 

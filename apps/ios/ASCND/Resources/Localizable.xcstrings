@@ -52074,6 +52074,29 @@
      }
     }
    }
+  },
+  "coach.menu.a11y": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "New chat or history"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cuộc trò chuyện mới hoặc lịch sử"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nueva conversación o historial"
+     }
+    }
+   }
   }
  }
 }
