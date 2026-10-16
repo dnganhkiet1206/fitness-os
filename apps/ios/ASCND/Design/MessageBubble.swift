@@ -77,7 +77,7 @@ struct TypingBubble: View {
       let t = ctx.date.timeIntervalSinceReferenceDate
       HStack(spacing: 5) {
         ForEach(0..<3, id: \.self) { i in
-          let phase = reduceMotion ? 0.5 : (sin((t * 2 * .pi / 1.2) - Double(i) * 0.9) + 1) / 2
+          let phase = reduceMotion ? 0.5 : Self.phase(at: t, dot: i)
           Circle()
             .fill(Color.secondary)
             .frame(width: 8, height: 8)
@@ -91,5 +91,12 @@ struct TypingBubble: View {
       .background(MessageBubbleStyle.theirs, in: MessageBubbleShape(mine: false, tail: true))
     }
     .accessibilityElement(children: .ignore)
+  }
+
+  /// 0…1 cho chấm thứ `dot` tại thời điểm `t` — chu kỳ 1,2 s, các chấm lệch pha.
+  /// Tách riêng: viết liền trong view, trình biên dịch của CI không kịp suy kiểu.
+  static func phase(at t: TimeInterval, dot: Int) -> Double {
+    let angle: Double = t * 2 * Double.pi / 1.2 - Double(dot) * 0.9
+    return (sin(angle) + 1) / 2
   }
 }

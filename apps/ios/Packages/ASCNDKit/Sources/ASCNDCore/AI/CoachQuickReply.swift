@@ -159,7 +159,6 @@ public enum CoachQuickReply {
     f.numberStyle = .decimal
     f.maximumFractionDigits = 0
     f.locale = Locale(identifier: l == .en ? "en_US" : l == .es ? "es_ES" : "vi_VN")
-    if l == .es { f.usesGroupingSeparator = true; f.minimumGroupingDigits = 1 }
     return f.string(from: NSNumber(value: v.rounded())) ?? String(Int(v.rounded()))
   }
 

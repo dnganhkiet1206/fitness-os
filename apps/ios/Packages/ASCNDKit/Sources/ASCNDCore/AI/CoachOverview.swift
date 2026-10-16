@@ -71,49 +71,78 @@ public struct CoachOverview: Equatable, Sendable {
     return (parse(body), text)
   }
 
+  /// Số trong JSON: số hoặc chuỗi số. `true` / `false` không phải số — giải mã
+  /// bằng `JSONDecoder` (không ép kiểu Bool → số như `JSONSerialization` + NSNumber,
+  /// và chạy được trên Linux, nơi không có `CFGetTypeID`).
+  struct Number: Decodable {
+    let value: Double?
+    init(from decoder: any Decoder) throws {
+      let c = try decoder.singleValueContainer()
+      if let d = try? c.decode(Double.self) {
+        value = d
+      } else if let s = try? c.decode(String.self) {
+        value = Double(s)
+      } else {
+        value = nil
+      }
+    }
+  }
+
+  struct RawItem: Decodable {
+    let label: String?, value: Number?, goal: Number?, unit: String?, tone: String?
+  }
+
+  struct RawPoint: Decodable {
+    let label: String?, value: Number?
+  }
+
+  struct RawTrend: Decodable {
+    let label: String?, unit: String?, points: [Lenient<RawPoint>]?
+  }
+
+  struct Raw: Decodable {
+    let title: String?, items: [Lenient<RawItem>]?, trend: RawTrend?
+  }
+
+  /// Một phần tử hỏng không làm hỏng cả mảng.
+  struct Lenient<T: Decodable>: Decodable {
+    let value: T?
+    init(from decoder: any Decoder) throws { value = try? T(from: decoder) }
+  }
+
   static func parse(_ json: String) -> CoachOverview? {
-    guard let data = json.data(using: .utf8),
-      let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+    guard let data = json.data(using: .utf8), let root = try? JSONDecoder().decode(Raw.self, from: data)
     else { return nil }
-    let raw = root["items"] as? [[String: Any]] ?? []
-    let items = raw.compactMap { d -> Item? in
-      guard let label = (d["label"] as? String)?.trimmingCharacters(in: .whitespaces), !label.isEmpty,
-        let value = number(d["value"]), value.isFinite, value >= 0
+    let items = (root.items ?? []).compactMap(\.value).compactMap { d -> Item? in
+      guard let label = d.label?.trimmingCharacters(in: .whitespaces), !label.isEmpty,
+        let value = d.value?.value, value.isFinite, value >= 0
       else { return nil }
-      let goal = number(d["goal"]).flatMap { $0.isFinite && $0 > 0 ? $0 : nil }
+      let goal = d.goal?.value.flatMap { $0.isFinite && $0 > 0 ? $0 : nil }
       return Item(
         label: String(label.prefix(24)), value: value, goal: goal,
-        unit: String(((d["unit"] as? String) ?? "").prefix(8)),
-        tone: Tone(rawValue: (d["tone"] as? String) ?? "") ?? .other)
+        unit: String((d.unit ?? "").prefix(8)),
+        tone: Tone(rawValue: d.tone ?? "") ?? .other)
     }
-    let trend = (root["trend"] as? [String: Any]).flatMap(parseTrend)
+    let trend = root.trend.flatMap(parseTrend)
     guard !items.isEmpty || trend != nil else { return nil }
-    let title = (root["title"] as? String).map { String($0.trimmingCharacters(in: .whitespaces).prefix(40)) }
+    let title = root.title.map { String($0.trimmingCharacters(in: .whitespaces).prefix(40)) }
     return CoachOverview(
       title: title?.isEmpty == false ? title : nil, items: Array(items.prefix(maxItems)), trend: trend)
   }
 
-  static func parseTrend(_ d: [String: Any]) -> Trend? {
-    let points = (d["points"] as? [[String: Any]] ?? []).compactMap { p -> Point? in
-      guard let label = (p["label"] as? String)?.trimmingCharacters(in: .whitespaces), !label.isEmpty,
-        let value = number(p["value"]), value.isFinite, value >= 0
+  static func parseTrend(_ d: RawTrend) -> Trend? {
+    let points = (d.points ?? []).compactMap(\.value).compactMap { p -> Point? in
+      guard let label = p.label?.trimmingCharacters(in: .whitespaces), !label.isEmpty,
+        let value = p.value?.value, value.isFinite, value >= 0
       else { return nil }
       return Point(label: String(label.prefix(6)), value: value)
     }
     // Một cột không phải xu hướng.
     guard points.count >= 2 else { return nil }
     return Trend(
-      label: String(((d["label"] as? String) ?? "").prefix(24)),
-      unit: String(((d["unit"] as? String) ?? "").prefix(8)),
+      label: String((d.label ?? "").prefix(24)),
+      unit: String((d.unit ?? "").prefix(8)),
       points: Array(points.suffix(maxPoints)))
-  }
-
-  private static func number(_ any: Any?) -> Double? {
-    switch any {
-    case let n as NSNumber where CFGetTypeID(n) != CFBooleanGetTypeID(): n.doubleValue
-    case let s as String: Double(s)
-    default: nil
-    }
   }
 }
 
