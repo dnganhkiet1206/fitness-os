@@ -256,7 +256,9 @@ struct CoachChatView: View {
       // Chỉ khi cuộc trò chuyện có câu hỏi về sức khoẻ (16/10, chủ dự án) — chào
       // hỏi, tra calo, hỏi bài tập thì không cần lời nhắc y tế.
       if !chat.isLoading, chat.messages.last?.role == .assistant,
-        chat.messages.contains(where: { $0.role == .user && Coach.isHealthTopic($0.content) })
+        chat.messages.contains(where: {
+          $0.role == .user ? Coach.isHealthTopic($0.content) : Coach.answerTouchesHealth($0.content)
+        })
       {
         disclaimer.padding(.top, 4)
       }

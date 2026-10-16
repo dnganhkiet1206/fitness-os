@@ -7,12 +7,34 @@ extension Coach {
   /// mạch, giấc ngủ, phục hồi, thuốc / thực phẩm bổ sung, ăn kiêng, giảm cân thì có.
   /// vi / en / es, có dấu hay không dấu.
   public static func isHealthTopic(_ raw: String) -> Bool {
-    let t = " " + CoachQuickReply.fold(raw).replacingOccurrences(of: ",", with: " ")
-      .replacingOccurrences(of: "?", with: " ").replacingOccurrences(of: ".", with: " ") + " "
+    let t = words(raw)
     return healthWords.contains { t.contains(" \($0) ") }
   }
 
+  /// Chữ thường bỏ dấu, mọi ký tự không phải chữ / số thành khoảng trắng — để
+  /// "phục hồi:" hay "(ACWR)" vẫn khớp nguyên từ.
+  static func words(_ raw: String) -> String {
+    let folded = CoachQuickReply.fold(raw)
+    return " " + String(folded.map { $0.isLetter || $0.isNumber ? $0 : " " }) + " "
+  }
+
+  /// Câu trả lời của Koa có lời khuyên chạm tới sức khoẻ (chấn thương, phục hồi,
+  /// gặp bác sĩ…) — câu hỏi không có từ sức khoẻ ("ACWR 3,43, có nên giảm tải?")
+  /// mà câu trả lời có thì vẫn cần lời nhắc (16/10, chủ dự án).
+  public static func answerTouchesHealth(_ raw: String) -> Bool {
+    let t = words(raw)
+    return answerWords.contains { t.contains(" \($0) ") }
+  }
+
+  static let answerWords = [
+    "chan thuong", "phuc hoi", "qua tai", "bac si", "nghi ngoi", "injury", "injuries", "recovery", "recover",
+    "overtraining", "doctor", "physician", "lesion", "lesiones", "recuperacion", "sobreentrenamiento", "medico",
+  ]
+
   static let healthWords = [
+    // Tải tập / nguy cơ chấn thương (vi, en, es).
+    "acwr", "tai cap tinh", "giam tai", "qua tai", "tap qua suc", "deload", "overtraining", "overreaching",
+    "injury risk", "training load", "sobreentrenamiento", "carga de entrenamiento",
     // vi (bỏ dấu)
     // Chữ trùng khi bỏ dấu (cảm/cảm ơn, ho/họ, tim/tìm, ốm/ôm) chỉ nhận theo cụm.
     "dau", "nhuc", "chan thuong", "bi thuong", "sung", "viem", "bi om", "om dau", "benh", "sot", "bi ho", "cam cum",
