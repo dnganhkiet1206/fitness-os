@@ -84,6 +84,11 @@ targets:
         CFBundleAllowMixedLocalizations: true
         ITSAppUsesNonExemptEncryption: false
         UILaunchScreen: {}
+        # Làm mới nền cho thông báo cộng đồng khi app không mở (16/10).
+        UIBackgroundModes:
+          - fetch
+        BGTaskSchedulerPermittedIdentifiers:
+          - com.ascnd.fitnessos.community-refresh
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: false
         UISupportedInterfaceOrientations:

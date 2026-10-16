@@ -158,12 +158,17 @@ public final class CommunityInboxBook {
   public private(set) var fresh: Set<String>?
 
   @ObservationIgnored private let remote: any CommunityInboxRemote
+  @ObservationIgnored private let retryDelay: Duration
   @ObservationIgnored private var generation = 0
   @ObservationIgnored private var viewing = false
 
-  public init(userId: String, remote: any CommunityInboxRemote) {
+  /// `retryDelay`: chờ trước lần thử lại duy nhất khi lượt đọc hỏng (16/10: lượt
+  /// đọc đầu ngay lúc mở app hay hỏng — phiên / mạng chưa sẵn — và cả màn Thông
+  /// báo hiện lỗi dù bấm "Thử lại" là được).
+  public init(userId: String, remote: any CommunityInboxRemote, retryDelay: Duration = .milliseconds(1500)) {
     self.userId = userId
     self.remote = remote
+    self.retryDelay = retryDelay
   }
 
   /// Chấm trên chuông: còn dòng chưa đọc.
@@ -174,8 +179,23 @@ public final class CommunityInboxBook {
 
   public func load(lang: String) async {
     generation += 1
-    let gen = generation, remote = self.remote, me = userId
+    let gen = generation
     if items.isEmpty { phase = .loading }
+    for attempt in 0..<2 {
+      if attempt > 0 {
+        try? await Task.sleep(for: retryDelay)
+        guard gen == generation, !Task.isCancelled else { return }
+      }
+      if await fetch(lang: lang, gen: gen) { return }
+    }
+    guard gen == generation, !Task.isCancelled else { return }
+    if phase != .ready { phase = .failed }
+  }
+
+  /// Một lượt đọc; `true` = xong (có dữ liệu, hoặc lượt đã bị lượt mới / huỷ thay
+  /// thế — không có gì để thử lại).
+  private func fetch(lang: String, gen: Int) async -> Bool {
+    let remote = self.remote, me = userId
     do {
       let rows = try await remote.notifications(me: me, limit: CommunityInbox.limit)
       var profiles: [JSONValue] = []
@@ -186,13 +206,14 @@ public final class CommunityInboxBook {
         if !actorIds.isEmpty { profiles = try await remote.profiles(ids: actorIds) }
         if !chIds.isEmpty { challenges = try await remote.challenges(ids: chIds) }
       }
-      guard gen == generation else { return }
+      guard gen == generation else { return true }
       items = CommunityInbox.build(rows: rows, profiles: profiles, challenges: challenges, lang: lang)
       phase = .ready
       if viewing && fresh == nil { await snapshot() }
+      return true
     } catch {
-      guard gen == generation else { return }
-      if phase != .ready { phase = .failed }
+      // Bị huỷ (rời màn, lượt mới) không phải lỗi để báo.
+      return gen != generation || Task.isCancelled || error is CancellationError
     }
   }
 

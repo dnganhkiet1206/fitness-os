@@ -1,6 +1,7 @@
 import ASCNDCore
 import ASCNDDesignSystem
 import SwiftUI
+import UIKit
 
 /// Hộp thông báo (#527, lát 9) — `app/community-inbox.tsx` @ fac9ac2 trên
 /// `CommunityInboxBook`.
@@ -25,6 +26,11 @@ struct CommunityInboxView: View {
   var notices: [AppNotice] = []
   var onNotice: ((AppNotice) -> Void)?
   @State private var filter: Filter = .all
+  @Environment(AppServices.self) private var services
+  @Environment(\.openURL) private var openURL
+  /// Đã hỏi quyền mà iOS vẫn từ chối (người dùng từng bấm "Không cho phép") —
+  /// chỉ còn Cài đặt của máy mới bật lại được.
+  @State private var denied = false
 
   enum Filter: CaseIterable { case all, community, reminders }
 
@@ -44,6 +50,7 @@ struct CommunityInboxView: View {
     ScrollView {
       LazyVStack(alignment: .leading, spacing: DS.Spacing.md) {
         CommunityPageTitle(text: String(localized: "community.inbox.title"))
+        if needsEnable { enableCard }
         filterChips
         content
       }
@@ -108,6 +115,78 @@ struct CommunityInboxView: View {
         }
       }
     }
+  }
+
+  /// Thẻ "Bật thông báo" (16/10, chủ dự án: "app chưa gửi thông báo"): trước đây
+  /// mọi nhắc nhở mặc định tắt và quyền chỉ được hỏi trong Cài đặt → Nhắc nhở,
+  /// nên phần lớn người dùng không bao giờ nhận thông báo nào.
+  private var needsEnable: Bool {
+    let r = services.reminders
+    return r.isAvailable && !r.permission
+  }
+
+  private var enableCard: some View {
+    HStack(spacing: DS.Spacing.sm) {
+      Image(systemName: "bell.badge.fill")
+        .font(.system(size: 15, weight: .semibold))
+        .foregroundStyle(DS.Color.background.swiftUI)
+        .frame(width: Self.iconSize, height: Self.iconSize)
+        .background(DS.Color.foreground.swiftUI, in: Circle())
+        .accessibilityHidden(true)
+      VStack(alignment: .leading, spacing: 2) {
+        Text("notif.enable.title")
+          .font(Self.textFont.weight(.semibold))
+          .foregroundStyle(DS.Color.foreground.swiftUI)
+        Text("notif.enable.body")
+          .font(Self.timeFont)
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          .fixedSize(horizontal: false, vertical: true)
+      }
+      .frame(maxWidth: .infinity, alignment: .leading)
+      Button {
+        Task { await enable() }
+      } label: {
+        Text(denied ? "notif.enable.settings" : "notif.enable.button")
+          .font(.system(size: 14, weight: .semibold))
+          .foregroundStyle(DS.Color.background.swiftUI)
+          .padding(.horizontal, 14)
+          .frame(minHeight: 32)
+          .background(DS.Color.foreground.swiftUI, in: Capsule())
+          .frame(minHeight: 44)
+          .contentShape(Capsule())
+      }
+      .buttonStyle(.plain)
+    }
+    .padding(.vertical, 10)
+    .padding(.horizontal, 14)
+    .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+    .overlay {
+      RoundedRectangle(cornerRadius: 18, style: .continuous)
+        .strokeBorder(DS.Color.foreground.swiftUI.opacity(0.06), lineWidth: 0.75)
+    }
+  }
+
+  /// Bật bộ nhắc nên có (ghi bữa 20:00, ghi giấc ngủ 8:00 — tự bỏ qua khi hôm đó
+  /// đã ghi; nhận thưởng thử thách vốn bật) và xin quyền; thông báo cộng đồng đi
+  /// theo quyền ấy. Bị từ chối rồi thì mở Cài đặt của máy.
+  private func enable() async {
+    if denied {
+      if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
+      return
+    }
+    let r = services.reminders
+    // Nhận thưởng thử thách bật sẵn nên `anyEnabled` luôn đúng: xét riêng các nhắc
+    // theo giờ. Người đã tự chọn nhắc nào thì giữ nguyên lựa chọn ấy.
+    let chosen = ReminderKey.allCases.contains { $0 != .challengeClaim && r.prefs.isEnabled($0) }
+    if !chosen {
+      await r.setEnabled(.meal, true)
+      await r.setEnabled(.sleepLog, true)
+    } else {
+      await r.setEnabled(.challengeClaim, r.prefs.isEnabled(.challengeClaim))
+    }
+    await r.refreshPermission()
+    denied = !r.permission
+    if r.permission { CommunityAlerts.schedule() }
   }
 
   private var showsReminders: Bool { filter != .community }

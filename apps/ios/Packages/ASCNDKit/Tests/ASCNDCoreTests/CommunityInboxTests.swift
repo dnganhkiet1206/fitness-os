@@ -79,8 +79,15 @@ struct CommunityInboxBookTests {
     var rows: [JSONValue] = []
     var failMark = false
     var marks = 0
+    /// Số lượt đọc đầu tiên sẽ hỏng.
+    var failReads = 0
+    var reads = 0
 
-    func notifications(me: String, limit: Int) async throws -> [JSONValue] { Array(rows.prefix(limit)) }
+    func notifications(me: String, limit: Int) async throws -> [JSONValue] {
+      reads += 1
+      if reads <= failReads { throw Boom() }
+      return Array(rows.prefix(limit))
+    }
     func profiles(ids: [String]) async throws -> [JSONValue] {
       ids.map { .object(["user_id": .string($0), "handle": .string($0), "display_name": .string($0)]) }
     }
@@ -135,5 +142,25 @@ struct CommunityInboxBookTests {
     await b.beginViewing(lang: "vi")
     #expect(r.marks == 2)
     #expect(!b.hasNew)
+  }
+
+  @Test func aFailedFirstReadIsRetriedOnce() async {
+    let r = Remote()
+    r.rows = [Self.row("n1", unread: true)]
+    r.failReads = 1
+    let b = CommunityInboxBook(userId: "me", remote: r, retryDelay: .zero)
+    await b.load(lang: "vi")
+    #expect(r.reads == 2)
+    #expect(b.phase == .ready)
+    #expect(b.hasNew)
+  }
+
+  @Test func twoFailedReadsShowTheError() async {
+    let r = Remote()
+    r.failReads = 5
+    let b = CommunityInboxBook(userId: "me", remote: r, retryDelay: .zero)
+    await b.load(lang: "vi")
+    #expect(r.reads == 2)
+    #expect(b.phase == .failed)
   }
 }

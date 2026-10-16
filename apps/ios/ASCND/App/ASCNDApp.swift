@@ -27,6 +27,8 @@ struct ASCNDApp: App {
     // MỌI lần tra chữ, từ khung hình đầu tiên (#527 · 1.7).
     AppLanguage.shared.set(services.preferences.lang.rawValue)
     _services = State(initialValue: services)
+    // Làm mới nền cho thông báo cộng đồng (16/10) — cần dịch vụ khi không có view.
+    CommunityAlerts.services = services
     // Quãng nghỉ (và Live Activity trên màn khoá, có tên bài) của người vừa
     // rời đi không ở lại cho người sau.
     services.onSessionEnded { controller.handle(.cancel) }
@@ -64,6 +66,9 @@ struct ASCNDApp: App {
         .task {
           await services.start()
           await rest.reconcile(signedIn: services.session.session != nil)
+          #if DEBUG
+            await CommunityAlerts.postTestIfAsked(services: services)
+          #endif
         }
         // Phiên đổi (đăng nhập, đăng xuất, đổi tài khoản) → vòng sync biết
         // gửi hàng của ai; bản ghi của tài khoản khác không bao giờ đi.
@@ -91,7 +96,12 @@ struct ASCNDApp: App {
         Telemetry.appOpened()
       } else if phase == .background {
         services.didEnterBackground()
+        CommunityAlerts.schedule()
       }
+    }
+    // Tin cộng đồng khi app không mở (16/10): iOS gọi lượt làm mới nền.
+    .backgroundTask(.appRefresh(CommunityAlerts.taskId)) {
+      await CommunityAlerts.runInBackground()
     }
   }
 }

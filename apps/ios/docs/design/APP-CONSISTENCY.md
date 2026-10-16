@@ -109,6 +109,13 @@ tính năng đồng bộ trong toàn app" → "làm đi".
   chữ 15, giờ 12, dòng ~52, nhóm bo 18 không lề dọc thừa; lỗi tải tin cộng đồng là một dòng nhỏ có "Thử lại".
   Chấm đỏ trên chuông CHỈ khi có tin chưa đọc (chủ dự án): tin cộng đồng chưa đọc (server) hoặc tin nhắc việc /
   thử thách chưa xem — `NoticeSeen` lưu khoá (loại + giá trị + ngày) trên máy khi mở màn.
+  Gửi thông báo (16/10, chủ dự án: "app chưa gửi thông báo"): trước đây mọi nhắc nhở tắt sẵn và quyền chỉ hỏi ở
+  Cài đặt → Nhắc nhở, nên không ai nhận gì. Màn Thông báo có thẻ "Bật thông báo" (khi chưa có quyền): bật nhắc ghi bữa
+  20:00 + ghi giấc ngủ 8:00 (tự bỏ qua ngày đã ghi; ai đã tự chọn nhắc thì giữ) và xin quyền; bị từ chối thì nút thành
+  "Cài đặt". Tin cộng đồng khi app đóng: `CommunityAlerts` — làm mới nền iOS (`BGAppRefreshTask`, xin lại mỗi lần ra
+  nền), đọc tin chưa đọc mới hơn mốc đã báo, hiện MỘT thông báo cục bộ (một tin nói rõ ai làm gì, nhiều tin thì đếm);
+  lần đầu chỉ ghi mốc. Chưa phải push thật (cần APNs + bảng token phía server). Lượt đọc hộp thư hỏng thì tự thử lại
+  một lần sau 1,5 giây (lượt đầu lúc mở app hay hỏng).
   - Ghi nhanh ẩn ở màn có ô nhập riêng ở đáy (Koa Coach, nhắn tin): `.hidesQuickLog()` đếm màn đang mở
     (`QuickLogVisibility`); iOS 26.1+ `tabViewBottomAccessory(isEnabled:)`, 26.0 giữ thanh, máy cũ ẩn nút "+". Màn
     tập và màn ghi bữa vốn là toàn màn hình / sheet nên đã che thanh.
