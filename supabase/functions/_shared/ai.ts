@@ -276,3 +276,18 @@ export async function callAI(
   }
   return last;
 }
+
+/**
+ * Tiếng Tây Ban Nha (16/10): app có vi / en / es, nhưng các prompt chỉ có hai nhánh
+ * vi / en — "es" từng rơi vào nhánh tiếng Việt và người dùng nhận câu trả lời
+ * tiếng Việt. Spanish dùng nhánh tiếng Anh, đổi mọi "in English" thành tiếng Tây
+ * Ban Nha lúc chạy (giữ chữ "in English" trong mã cho cổng `ai-language`).
+ */
+export const promptLang = (raw: unknown): "vi" | "en" => (raw === "en" || raw === "es" ? "en" : "vi");
+
+export const forSpanish = (prompt: string, raw: unknown): string =>
+  raw !== "es" ? prompt : prompt
+    .replaceAll("in English", "in Spanish (español)")
+    .replaceAll("English", "Spanish")
+    .replaceAll("I only help with training, nutrition, sleep and recovery.",
+      "Solo te ayudo con entrenamiento, nutrición, sueño y recuperación.");

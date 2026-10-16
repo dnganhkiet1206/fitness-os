@@ -32,6 +32,7 @@
 export const REFUSAL = {
   vi: "Mình chỉ hỗ trợ về tập luyện, dinh dưỡng, giấc ngủ và phục hồi thôi nhé.",
   en: "I only help with training, nutrition, sleep and recovery.",
+  es: "Solo te ayudo con entrenamiento, nutrición, sueño y recuperación.",
 } as const;
 
 /**
@@ -112,7 +113,7 @@ export function looksHostile(text: string): boolean {
  * họ hỏi một câu ngoài phạm vi. Trả lỗi ở đây sẽ hiện ra "kết nối thất bại",
  * một câu vừa sai vừa khiến người ta thử lại.
  */
-export function refusalStream(lang: "vi" | "en", corsHeaders: Record<string, string>): Response {
+export function refusalStream(lang: "vi" | "en" | "es", corsHeaders: Record<string, string>): Response {
   const chunk = JSON.stringify({ choices: [{ delta: { content: REFUSAL[lang] } }] });
   return new Response(`data: ${chunk}\n\ndata: [DONE]\n\n`, {
     status: 200,

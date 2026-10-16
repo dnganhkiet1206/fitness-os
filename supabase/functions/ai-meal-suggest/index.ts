@@ -1,4 +1,4 @@
-import { callAI } from "../_shared/ai.ts";
+import { callAI, forSpanish, promptLang } from "../_shared/ai.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 import { aiGate, aiPayload, corsHeaders, localDate, oneOf, opaque, quotaExceeded, requireUser, toolArgs } from "../_shared/guard.ts";
@@ -24,7 +24,9 @@ serve(async (req) => {
       not the gateway is reached, so a malformed one used to cost a call for
       nothing — see the same note in `ai-coach`.
     */
-    const { meal_type, lang = "vi", date, tzOffset } = await req.json().catch(() => ({}));
+    const { meal_type, lang: asked_lang = "vi", date, tzOffset } = await req.json().catch(() => ({}));
+    // es → nhánh tiếng Anh, đổi sang tiếng Tây Ban Nha khi gửi (`forSpanish`).
+    const lang = promptLang(asked_lang);
 
     /*
       `meal_type` is copied into the prompt below. It used to go there exactly
@@ -107,7 +109,7 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: lang === "en"
+            content: forSpanish(lang === "en"
               ? `You are a nutrition AI. Suggest 3 meals that fit the remaining macros and the user's preferences. Reply in English.
 
 DATA: ${JSON.stringify(ctx)}
@@ -133,7 +135,7 @@ NGUYÊN TẮC:
 - Phù hợp với thời điểm trong ngày; nếu current_hour là null thì không nhắc và không suy đoán thời điểm trong ngày
 - Nếu remaining_macros là null nghĩa là app không đọc được mục tiêu của người này: gợi ý bữa cân đối và TUYỆT ĐỐI không nói hay ám chỉ còn bao nhiêu calo/macro
 - Nếu một giá trị remaining âm nghĩa là hôm nay họ đã vượt mục tiêu đó: gợi ý bữa nhẹ, và không trình bày con số âm như một hạn mức còn được ăn
-- Gợi ý thực tế, dễ nấu`,
+- Gợi ý thực tế, dễ nấu`, asked_lang),
           },
         ],
         tools: [

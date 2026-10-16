@@ -58,7 +58,11 @@ struct CoachChatView: View {
         }
       }
       .scrollDismissesKeyboard(.interactively)
-      .defaultScrollAnchor(chat.messages.isEmpty ? .center : .bottom)
+      // Tin xếp từ trên xuống (16/10, chủ dự án: không chừa khoảng trống phía trên
+      // khi cuộc trò chuyện còn ngắn); mở cuộc dài hay có tin mới thì vẫn ở cuối.
+      .defaultScrollAnchor(chat.messages.isEmpty ? .center : .top, for: .alignment)
+      .defaultScrollAnchor(.bottom, for: .initialOffset)
+      .defaultScrollAnchor(.bottom, for: .sizeChanges)
       .onScrollPhaseChange { _, phase in
         userScrolling = phase == .tracking || phase == .interacting || phase == .decelerating
       }
@@ -248,7 +252,11 @@ struct CoachChatView: View {
       }
       // Lời nhắc y tế ở cuối cuộc trò chuyện (16/10, chủ dự án): nhỏ, mờ, căn giữa —
       // trôi theo nội dung thay vì dính dưới ô chat (ở đó nó đè lên chữ khi cuộn).
-      if !chat.isLoading, chat.messages.last?.role == .assistant {
+      // Chỉ khi cuộc trò chuyện có câu hỏi về sức khoẻ (16/10, chủ dự án) — chào
+      // hỏi, tra calo, hỏi bài tập thì không cần lời nhắc y tế.
+      if !chat.isLoading, chat.messages.last?.role == .assistant,
+        chat.messages.contains(where: { $0.role == .user && Coach.isHealthTopic($0.content) })
+      {
         disclaimer.padding(.top, 4)
       }
       Color.clear.frame(height: 1).id(Self.bottom)

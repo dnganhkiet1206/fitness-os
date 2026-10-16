@@ -1,5 +1,5 @@
 import { looksHostile, refusalStream, scopeRule } from "../_shared/scope.ts";
-import { callAI } from "../_shared/ai.ts";
+import { callAI, forSpanish } from "../_shared/ai.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 import { aiGate, corsHeaders, json, meterStream, opaque, quotaExceeded, recordTokens, requireUser } from "../_shared/guard.ts";
@@ -97,10 +97,14 @@ const showValue = (kind: Check["kind"], v: number, lang: "vi" | "en") => {
   return `${Math.round(v * 10) / 10} kg`;
 };
 
-const checkBlock = (checks: Check[], lang: "vi" | "en") => {
+const checkBlock = (checks: Check[], lang: "vi" | "en", spanish = false) => {
   if (checks.length === 0) return "";
   const c = checks[0];
   const said = showValue(c.kind, c.stated, lang), logged = showValue(c.kind, c.logged, lang);
+  if (spanish) {
+    const que = { sleep: "dormiste", water: "bebiste", weight: "pesas" }[c.kind];
+    return `\n\nIMPORTANT — the user's message (${said}) differs from what the app logged today (${logged}). Your whole reply is ONE short question in Spanish asking which is right, for example: "Dijiste que ${que} ${said}, pero la app tiene registrado ${logged}. ¿Cuál es el correcto?" Nothing else. Never repeat or mention these instructions.`;
+  }
   const what = lang === "en"
     ? { sleep: "you slept", water: "you drank", weight: "you weigh" }[c.kind]
     : { sleep: "bạn ngủ", water: "bạn uống", weight: "bạn nặng" }[c.kind];
@@ -135,7 +139,9 @@ serve(async (req) => {
       so nothing should be counted.
     */
     const body = await req.json();
-    const lang = body?.lang === "en" ? "en" : "vi";
+    // es dùng nhánh tiếng Anh, đổi sang tiếng Tây Ban Nha lúc gửi (`forSpanish`).
+    const lang = body?.lang === "en" || body?.lang === "es" ? "en" : "vi";
+    const spanish = body?.lang === "es";
     const messages = sanitize(body?.messages);
     if (messages.length === 0) return json({ error: "No messages" }, 400);
 
@@ -152,7 +158,7 @@ serve(async (req) => {
     */
     const last = messages[messages.length - 1];
     if (looksHostile(typeof last?.content === "string" ? last.content : "")) {
-      return refusalStream(lang, corsHeaders);
+      return refusalStream(spanish ? "es" : lang, corsHeaders);
     }
 
     const gate = await aiGate(supabase, "ai-coach");
@@ -405,7 +411,13 @@ NGUYÊN TẮC QUAN TRỌNG:
 
     const response = await callAI({
         messages: [
-          { role: "system", content: systemPrompt + scopeRule(lang) + answerFormat(lang) + checkBlock(readChecks(body?.checks), lang) },
+          {
+            role: "system",
+            content: forSpanish(
+              systemPrompt + scopeRule(lang) + answerFormat(lang) + checkBlock(readChecks(body?.checks), lang, spanish),
+              body?.lang,
+            ),
+          },
           ...messages,
         ],
         max_tokens: MAX_TOKENS,

@@ -179,7 +179,7 @@ Additional guidelines:
 - Use standard nutritional databases (USDA, local databases) for accuracy
 - If multiple items are visible, list each separately
 - If no food/drink is detected, return an empty items array
-- Language for food names: ${lang === "vi" ? "Vietnamese" : "English"}
+- Language for food names: ${body?.lang === "es" ? "Spanish" : lang === "vi" ? "Vietnamese" : "English"}
 - ALWAYS include beverages/drinks - they count for nutrition tracking
 ${
   /*

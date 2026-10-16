@@ -1,4 +1,4 @@
-import { callAI } from "../_shared/ai.ts";
+import { callAI, forSpanish, promptLang } from "../_shared/ai.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 import { aiGate, aiPayload, corsHeaders, json, localDate, opaque, quotaExceeded, requireUser, toolArgs } from "../_shared/guard.ts";
@@ -23,7 +23,9 @@ serve(async (req) => {
       because the quota was claimed before the body was read. Same shape check
       `ai-coach` already applies to its own `date`.
     */
-    const { week_start, lang = "vi" } = await req.json().catch(() => ({}));
+    const { week_start, lang: asked_lang = "vi" } = await req.json().catch(() => ({}));
+    // es → nhánh tiếng Anh, đổi sang tiếng Tây Ban Nha khi gửi (`forSpanish`).
+    const lang = promptLang(asked_lang);
     /*
       The shape check this used to do was `^\d{4}-\d{2}-\d{2}$` and nothing
       more, which `9999-99-99` satisfies — and `new Date("9999-99-99")` is an
@@ -141,7 +143,7 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: lang === "en"
+            content: forSpanish(lang === "en"
               ? `You are an AI assistant for weekly lifestyle-habit tracking. Analyze the data and give observations + suggestions in English.
 
 DATA: ${JSON.stringify(ctx)}
@@ -171,7 +173,7 @@ NGUYÊN TẮC QUAN TRỌNG:
 - Gợi ý phải là những điều người bình thường đều biết nhưng hay bỏ qua
 - Không đưa lời khuyên y tế dưới bất kỳ hình thức nào
 
-Trả về insights (quan sát từ dữ liệu) và recommendations (hành động cụ thể cho tuần tới).`,
+Trả về insights (quan sát từ dữ liệu) và recommendations (hành động cụ thể cho tuần tới).`, asked_lang),
           },
         ],
         tools: [

@@ -1,4 +1,4 @@
-import { callAI } from "../_shared/ai.ts";
+import { callAI, forSpanish, promptLang } from "../_shared/ai.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 import { aiGate, aiPayload, corsHeaders, localDate, opaque, quotaExceeded, requireUser, toolArgs } from "../_shared/guard.ts";
@@ -22,7 +22,9 @@ serve(async (req) => {
       not the gateway is reached, so a malformed one used to cost a call for
       nothing — see the same note in `ai-coach`.
     */
-    const { lang = "vi", date, tzOffset } = await req.json().catch(() => ({}));
+    const { lang: asked_lang = "vi", date, tzOffset } = await req.json().catch(() => ({}));
+    // es → nhánh tiếng Anh, đổi sang tiếng Tây Ban Nha khi gửi (`forSpanish`).
+    const lang = promptLang(asked_lang);
 
     const gate = await aiGate(supabase, "ai-smart-nudges");
     if (gate === "denied") return quotaExceeded();
@@ -115,7 +117,7 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: lang === "en"
+            content: forSpanish(lang === "en"
               ? `You are an AI habit-reminder assistant. Reply in English. Based on the user's data, create 2-4 short nudges for today.
 
 DATA: ${JSON.stringify(ctx)}
@@ -149,7 +151,7 @@ NGUYÊN TẮC QUAN TRỌNG:
 - Ưu tiên: thiếu hụt lớn nhất trước
 - Nếu buổi tối: nhắc ngủ sớm, nếu sáng: nhắc uống nước + protein
 - Không đưa lời khuyên y tế dưới bất kỳ hình thức nào
-- Mọi gợi ý viết bằng tiếng Việt`,
+- Mọi gợi ý viết bằng tiếng Việt`, asked_lang),
           },
         ],
         tools: [
