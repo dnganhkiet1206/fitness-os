@@ -53,9 +53,11 @@ extension CoachOverview {
         "\"trend\":{\"label\":\(str(trend.label)),\"unit\":\(str(trend.unit)),\"points\":[\(pts.joined(separator: ","))]}")
     }
     if let g = gauge {
-      let zones = g.zones.map { "{\"from\":\(num($0.from)),\"to\":\(num($0.to)),\"label\":\(str($0.label))}" }
+      let zones = g.zones.map {
+        "{\"from\":\(num($0.from)),\"to\":\(num($0.to)),\"label\":\(str($0.label)),\"tone\":\(str($0.tone.rawValue))}"
+      }
       parts.append(
-        "\"gauge\":{\"label\":\(str(g.label)),\"value\":\(num(g.value)),\"min\":\(num(g.min)),\"max\":\(num(g.max)),\"unit\":\(str(g.unit)),\"zones\":[\(zones.joined(separator: ","))]}")
+        "\"gauge\":{\"label\":\(str(g.label)),\"value\":\(num(g.value)),\"min\":\(num(g.min)),\"max\":\(num(g.max)),\"unit\":\(str(g.unit)),\"note\":\(str(g.note)),\"zones\":[\(zones.joined(separator: ","))]}")
     }
     if let sp = split {
       let ps = sp.parts.map { "{\"label\":\(str($0.label)),\"value\":\(num($0.value))}" }

@@ -1007,40 +1007,65 @@ private struct TrendChart: View {
   }
 }
 
-/// Đồng hồ vùng: thanh ngang chia vùng (vùng có nhãn tô đậm dần), kim tròn ở giá
-/// trị hiện tại, số lớn và tên vùng đang đứng — đọc trong một giây.
+/// Đồng hồ vùng (16/10, chủ dự án: "chưa hiểu cách đồng hồ hiện"): tên + vùng
+/// đang đứng, một dòng giải thích chỉ số, số lớn, thanh phủ kín dải với vùng tô
+/// theo NGHĨA (xanh an toàn, vàng cần chú ý, đỏ rủi ro, xám ngoài vùng), số mốc
+/// dưới thanh, chú thích có tên cho cả đoạn trống.
 private struct ZoneGauge: View {
   let gauge: CoachOverview.Gauge
+  @Environment(\.locale) private var locale
+
+  static func color(_ tone: CoachOverview.Gauge.Tone) -> Color {
+    switch tone {
+    case .good: DS.Color.readinessGreen.swiftUI
+    case .caution: DS.Color.readinessYellow.swiftUI
+    case .risk: DS.Color.readinessRed.swiftUI
+    case .neutral: CoachOverviewCard.ink.opacity(0.35)
+    }
+  }
+
+  /// Tên hiển thị của một đoạn: tên model đưa, hoặc tên app đặt cho đoạn trống.
+  private func name(_ z: CoachOverview.Gauge.Zone, isFirst: Bool) -> String? {
+    if !z.label.isEmpty { return z.label }
+    switch z.tone {
+    case .caution: return String(localized: "coach.gauge.caution")
+    case .neutral where isFirst: return String(localized: "coach.gauge.low")
+    default: return nil
+    }
+  }
+
+  private var note: String {
+    if !gauge.note.isEmpty { return gauge.note }
+    return CoachQuickReply.fold(gauge.label).contains("acwr") ? String(localized: "coach.gauge.acwr.note") : ""
+  }
 
   private func x(_ v: Double, _ w: CGFloat) -> CGFloat {
     CGFloat((v - gauge.min) / (gauge.max - gauge.min)) * w
   }
 
-  /// Tỉ số như ACWR cần hai chữ số thập phân (3,43 — không phải 3,4).
-  static func precise(_ v: Double) -> String {
-    let digits = v.rounded() == v ? 0 : (v < 10 ? 2 : 1)
-    return v.formatted(.number.grouping(.automatic).precision(.fractionLength(0...digits)).locale(.app))
-  }
-
-  private var currentZone: String? {
-    gauge.zones.first { gauge.value >= $0.from && gauge.value <= $0.to }?.label
-  }
-
   var body: some View {
-    VStack(alignment: .leading, spacing: 12) {
+    let segments = gauge.segments
+    let current = gauge.current
+    VStack(alignment: .leading, spacing: 10) {
       HStack(alignment: .firstTextBaseline, spacing: 6) {
         Text(verbatim: gauge.label)
           .font(.system(size: 14, weight: .semibold))
-          .foregroundStyle(CoachOverviewCard.muted)
+          .foregroundStyle(CoachOverviewCard.ink)
         Spacer(minLength: 8)
-        if let z = currentZone, !z.isEmpty {
-          Text(verbatim: z)
+        if let c = current, let n = name(c, isFirst: c.from == gauge.min) {
+          Text(verbatim: n)
             .font(.system(size: 12, weight: .semibold))
-            .foregroundStyle(CoachOverviewCard.ink)
+            .foregroundStyle(c.tone == .neutral ? CoachOverviewCard.ink : Self.color(c.tone))
             .padding(.horizontal, 10)
             .padding(.vertical, 4)
-            .background(CoachOverviewCard.ink.opacity(0.07), in: Capsule())
+            .background(Self.color(c.tone).opacity(0.14), in: Capsule())
         }
+      }
+      if !note.isEmpty {
+        Text(verbatim: note)
+          .font(.system(size: 12))
+          .foregroundStyle(CoachOverviewCard.muted)
+          .padding(.top, -6)
       }
       HStack(alignment: .firstTextBaseline, spacing: 4) {
         Text(verbatim: Self.precise(gauge.value))
@@ -1052,16 +1077,19 @@ private struct ZoneGauge: View {
             .foregroundStyle(CoachOverviewCard.muted)
         }
       }
+      // Thanh: mỗi đoạn một màu theo nghĩa; đoạn đang đứng đậm, còn lại nhạt.
       GeometryReader { geo in
         let w = geo.size.width
         ZStack(alignment: .leading) {
-          Capsule().fill(CoachOverviewCard.track).frame(height: 10)
-          ForEach(Array(gauge.zones.enumerated()), id: \.offset) { i, z in
-            Capsule()
-              .fill(CoachOverviewCard.ink.opacity(0.14 + 0.12 * Double(i)))
-              .frame(width: max(4, x(z.to, w) - x(z.from, w)), height: 10)
-              .offset(x: x(z.from, w))
+          HStack(spacing: 2) {
+            ForEach(Array(segments.enumerated()), id: \.offset) { _, z in
+              Rectangle()
+                .fill(Self.color(z.tone).opacity(z == current ? 0.95 : 0.32))
+                .frame(width: max(2, x(z.to, w) - x(z.from, w) - 2))
+            }
           }
+          .frame(height: 10)
+          .clipShape(Capsule())
           Circle()
             .fill(DS.Color.card.swiftUI)
             .overlay { Circle().strokeBorder(CoachOverviewCard.ink, lineWidth: 3) }
@@ -1071,21 +1099,57 @@ private struct ZoneGauge: View {
         .frame(height: 20)
       }
       .frame(height: 20)
-      // Chú thích vùng: một hàng riêng (không đặt theo vị trí — nhãn đè nhau khi
-      // các vùng sát nhau, 16/10).
-      FlowRows(spacing: 12, centered: false) {
-        ForEach(Array(gauge.zones.enumerated()), id: \.offset) { i, z in
-          HStack(spacing: 5) {
-            Capsule().fill(CoachOverviewCard.ink.opacity(0.14 + 0.12 * Double(i))).frame(width: 14, height: 6)
-            Text(verbatim: "\(z.label) \(Self.precise(z.from))–\(Self.precise(z.to))")
-              .font(.system(size: 11))
+      // Số mốc dưới thanh: ranh giới các đoạn (bỏ mốc quá sát nhau).
+      GeometryReader { geo in
+        let w = geo.size.width
+        ZStack(alignment: .topLeading) {
+          ForEach(Array(Self.ticks(segments, w: w, x: x).enumerated()), id: \.offset) { _, v in
+            Text(verbatim: Self.precise(v))
+              .font(.system(size: 10).monospacedDigit())
               .foregroundStyle(CoachOverviewCard.muted)
+              .fixedSize()
+              .frame(width: 36)
+              .offset(x: min(max(-6, x(v, w) - 18), w - 30))
           }
         }
       }
+      .frame(height: 12)
+      // Chú thích: chấm màu + tên + dải số, đủ mọi đoạn có tên.
+      FlowRows(spacing: 12, centered: false) {
+        ForEach(Array(segments.enumerated()), id: \.offset) { i, z in
+          if let n = name(z, isFirst: i == 0) {
+            HStack(spacing: 5) {
+              Circle().fill(Self.color(z.tone)).frame(width: 8, height: 8)
+              Text(verbatim: "\(n) \(Self.precise(z.from))–\(Self.precise(z.to))")
+                .font(.system(size: 11, weight: z == current ? .semibold : .regular))
+                .foregroundStyle(z == current ? CoachOverviewCard.ink : CoachOverviewCard.muted)
+            }
+          }
+        }
+      }
+      .padding(.top, 2)
     }
     .accessibilityElement(children: .ignore)
-    .accessibilityLabel(Text(verbatim: "\(gauge.label): \(CoachOverviewCard.number(gauge.value)) \(gauge.unit) \(currentZone ?? "")"))
+    .accessibilityLabel(Text(verbatim: Self.spoken(gauge, zone: current.flatMap { name($0, isFirst: $0.from == gauge.min) })))
+  }
+
+  /// Mốc: điểm đầu, ranh giới các đoạn, điểm cuối — bỏ mốc cách mốc trước < 26 pt.
+  static func ticks(_ segs: [CoachOverview.Gauge.Zone], w: CGFloat, x: (Double, CGFloat) -> CGFloat) -> [Double] {
+    var values = segs.map(\.from)
+    if let last = segs.last { values.append(last.to) }
+    var out: [Double] = []
+    for v in values where out.last.map({ x(v, w) - x($0, w) >= 26 }) ?? true { out.append(v) }
+    return out
+  }
+
+  static func spoken(_ g: CoachOverview.Gauge, zone: String?) -> String {
+    "\(g.label): \(precise(g.value)) \(g.unit) \(zone ?? "")"
+  }
+
+  /// Tỉ số như ACWR cần hai chữ số thập phân (3,43 — không phải 3,4).
+  static func precise(_ v: Double) -> String {
+    let digits = v.rounded() == v ? 0 : (v < 10 ? 2 : 1)
+    return v.formatted(.number.grouping(.automatic).precision(.fractionLength(0...digits)).locale(.app))
   }
 }
 
@@ -1107,7 +1171,7 @@ private struct SplitBar: View {
           ForEach(Array(split.parts.enumerated()), id: \.offset) { i, p in
             RoundedRectangle(cornerRadius: 5, style: .continuous)
               .fill(Self.shade(i))
-              .frame(width: max(6, (geo.size.width - CGFloat(split.parts.count - 1) * 3) * CGFloat(p.value / total)))
+              .frame(width: width(p.value, in: geo.size.width))
           }
         }
       }
@@ -1132,6 +1196,13 @@ private struct SplitBar: View {
         }
       }
     }
+  }
+
+  /// Bề rộng một phần: tỉ lệ trên phần bề ngang còn lại sau các khe 3 pt.
+  private func width(_ value: Double, in total: CGFloat) -> CGFloat {
+    let gaps: CGFloat = CGFloat(split.parts.count - 1) * 3
+    let share: CGFloat = CGFloat(value / self.total)
+    return max(6, (total - gaps) * share)
   }
 
   /// Sắc mực đậm → nhạt theo thứ tự phần (một màu, như phần còn lại của thẻ).

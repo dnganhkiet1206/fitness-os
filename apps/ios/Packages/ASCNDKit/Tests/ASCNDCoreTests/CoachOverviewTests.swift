@@ -100,4 +100,23 @@ struct CoachOverviewTests {
     #expect(CoachOverview.parse(#"{"split":{"parts":[{"label":"A","value":1}]}}"#) == nil)
     #expect(CoachOverview.parse(#"{"gauge":{"value":1,"min":2,"max":1}}"#) == nil)
   }
+
+  @Test func gaugeZonesGetMeaningAndGapsAreFilled() {
+    let o = CoachOverview.parse("""
+      {"gauge":{"label":"ACWR","value":3.43,"min":0,"max":4,"note":"Tải 7 ngày so với 4 tuần",
+       "zones":[{"from":0.8,"to":1.3,"label":"An toàn"},{"from":1.5,"to":4,"label":"Rủi ro cao"}]}}
+      """)!
+    let g = o.gauge!
+    #expect(g.note == "Tải 7 ngày so với 4 tuần")
+    #expect(g.zones.map(\.tone) == [.good, .risk])
+    let seg = g.segments
+    #expect(seg.map(\.from) == [0, 0.8, 1.3, 1.5])
+    #expect(seg.map(\.tone) == [.neutral, .good, .caution, .risk])
+    #expect(seg.map(\.gap) == [true, false, true, false])
+    #expect(g.current?.label == "Rủi ro cao")
+    // Tone model đưa thắng đoán theo tên; vòng qua json giữ tone + note.
+    #expect(CoachOverview.Gauge.tone("caution", label: "Safe") == .caution)
+    #expect(CoachOverview.Gauge.tone(nil, label: "Zona segura") == .good)
+    #expect(CoachOverview.parse(o.json) == o)
+  }
 }

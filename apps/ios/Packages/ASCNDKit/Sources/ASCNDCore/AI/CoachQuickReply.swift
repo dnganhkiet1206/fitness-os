@@ -81,7 +81,7 @@ public enum CoachQuickReply {
   }
 
   /// Chữ thường, bỏ dấu (người dùng hay gõ không dấu), đ → d.
-  static func fold(_ s: String) -> String {
+  public static func fold(_ s: String) -> String {
     s.lowercased().replacingOccurrences(of: "đ", with: "d")
       .folding(options: .diacriticInsensitive, locale: Locale(identifier: "en_US_POSIX"))
   }

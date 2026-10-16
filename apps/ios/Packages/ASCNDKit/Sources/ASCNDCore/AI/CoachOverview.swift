@@ -37,10 +37,18 @@ public struct CoachOverview: Equatable, Sendable {
 
   /// Một chỉ số nằm ở vùng nào (ACWR 3.43 trong vùng an toàn 0.8–1.3…).
   public struct Gauge: Equatable, Sendable {
+    /// Nghĩa của một vùng — app tô màu theo nghĩa (16/10, chủ dự án: các sắc xám
+    /// không cho biết đâu tốt đâu xấu).
+    public enum Tone: String, Sendable {
+      case good, caution, risk, neutral
+    }
     public struct Zone: Equatable, Sendable {
       public let from: Double
       public let to: Double
       public let label: String
+      public var tone: Tone = .neutral
+      /// Đoạn app tự lấp giữa các vùng model đưa (không có tên từ model).
+      public var gap = false
     }
     public let label: String
     public let value: Double
@@ -48,6 +56,52 @@ public struct CoachOverview: Equatable, Sendable {
     public let max: Double
     public let unit: String
     public let zones: [Zone]
+    /// Một dòng giải thích chỉ số ("Tải 7 ngày so với trung bình 4 tuần").
+    public var note: String = ""
+
+    /// Phủ kín [min, max]: các vùng model đưa, xếp theo thứ tự, đoạn trống được lấp.
+    /// Đoạn trống nằm giữa vùng tốt và vùng rủi ro là "cần chú ý"; còn lại trung tính.
+    public var segments: [Zone] {
+      let sorted = zones.sorted { $0.from < $1.from }
+      var out: [Zone] = []
+      var cursor = min
+      for (i, z) in sorted.enumerated() {
+        if z.from > cursor + 1e-9 {
+          let prev = i > 0 ? sorted[i - 1].tone : nil
+          let tone: Tone = prev == .good && (z.tone == .risk || z.tone == .caution) ? .caution : .neutral
+          out.append(Zone(from: cursor, to: z.from, label: "", tone: tone, gap: true))
+        }
+        let from = Swift.max(z.from, cursor)
+        if z.to > from { out.append(Zone(from: from, to: z.to, label: z.label, tone: z.tone)) }
+        cursor = Swift.max(cursor, z.to)
+      }
+      if cursor < max - 1e-9 {
+        let last = sorted.last?.tone
+        out.append(Zone(from: cursor, to: max, label: "", tone: last == .risk ? .risk : .neutral, gap: true))
+      }
+      return out
+    }
+
+    /// Vùng chứa giá trị hiện tại (trong `segments`).
+    public var current: Zone? {
+      segments.first { value >= $0.from && value <= $0.to }
+    }
+
+    /// Nghĩa của một vùng theo "tone" model đưa, hoặc đoán theo tên (vi/en/es).
+    static func tone(_ raw: String?, label: String) -> Tone {
+      if let raw, let t = Tone(rawValue: raw) { return t }
+      let l = CoachQuickReply.fold(label)
+      if ["an toan", "tot", "safe", "optimal", "good", "segur", "optim", "ideal"].contains(where: { l.contains($0) }) {
+        return .good
+      }
+      if ["rui ro", "nguy", "cao", "risk", "danger", "high", "riesgo", "alto", "peligro"].contains(where: { l.contains($0) }) {
+        return .risk
+      }
+      if ["chu y", "trung binh", "caution", "moderate", "watch", "precaucion", "moderado"].contains(where: { l.contains($0) }) {
+        return .caution
+      }
+      return .neutral
+    }
   }
 
   /// Các phần của một tổng (đạm / carb / béo…).
@@ -146,9 +200,10 @@ public struct CoachOverview: Equatable, Sendable {
     let label: String?, unit: String?, points: [Lenient<RawPoint>]?
   }
 
-  struct RawZone: Decodable { let from: Number?, to: Number?, label: String? }
+  struct RawZone: Decodable { let from: Number?, to: Number?, label: String?, tone: String? }
   struct RawGauge: Decodable {
-    let label: String?, value: Number?, min: Number?, max: Number?, unit: String?, zones: [Lenient<RawZone>]?
+    let label: String?, value: Number?, min: Number?, max: Number?, unit: String?, zones: [Lenient<RawZone>]?,
+      note: String?
   }
   struct RawPart: Decodable { let label: String?, value: Number? }
   struct RawSplit: Decodable { let label: String?, unit: String?, parts: [Lenient<RawPart>]? }
@@ -201,11 +256,14 @@ public struct CoachOverview: Equatable, Sendable {
     else { return nil }
     let zones = (g.zones ?? []).compactMap(\.value).compactMap { z -> Gauge.Zone? in
       guard let a = z.from?.value, let b = z.to?.value, a < b else { return nil }
-      return Gauge.Zone(from: Swift.max(lo, a), to: Swift.min(hi, b), label: String((z.label ?? "").prefix(20)))
+      let label = String((z.label ?? "").prefix(20))
+      return Gauge.Zone(
+        from: Swift.max(lo, a), to: Swift.min(hi, b), label: label, tone: Gauge.tone(z.tone, label: label))
     }
     return Gauge(
       label: String((g.label ?? "").prefix(24)), value: Swift.min(Swift.max(v, lo), hi), min: lo, max: hi,
-      unit: String((g.unit ?? "").prefix(8)), zones: Array(zones.prefix(4)))
+      unit: String((g.unit ?? "").prefix(8)), zones: Array(zones.prefix(4)),
+      note: String((g.note ?? "").trimmingCharacters(in: .whitespaces).prefix(70)))
   }
 
   /// Chia phần: ít nhất hai phần dương.
