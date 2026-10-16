@@ -254,8 +254,16 @@ final class AppServices {
     req.setValue(key, forHTTPHeaderField: "apikey")
     req.setValue("application/json", forHTTPHeaderField: "Content-Type")
     req.httpBody = Data("{}".utf8)
-    guard let (_, resp) = try? await URLSession.shared.data(for: req), let http = resp as? HTTPURLResponse else { return }
-    aiDeployed = http.statusCode != 404
+    // Mở app lúc mạng chưa sẵn (16/10: dải "Offline" lúc khởi động) thì lần dò
+    // đầu hỏng và mọi lối AI ẩn cả phiên. Thử lại ba lần, cách 2 giây; quay lại
+    // tiền cảnh cũng dò lại (`didBecomeActive`).
+    for attempt in 0..<3 {
+      if attempt > 0 { try? await Task.sleep(for: .seconds(2)) }
+      if let (_, resp) = try? await URLSession.shared.data(for: req), let http = resp as? HTTPURLResponse {
+        aiDeployed = http.statusCode != 404
+        return
+      }
+    }
   }
 
   private static var supabaseURL: URL? {
@@ -819,6 +827,8 @@ final class AppServices {
     sync.kick()
     Task { [widgets] in await widgets.refresh() }
     autoSyncHealth()
+    // Lần dò AI lúc mở app có thể đã hỏng vì mạng — dò lại (bỏ qua nếu đã có).
+    Task { await probeAI() }
   }
 
   /// `useAutoHealthSync`: về tiền cảnh, đã hỏi quyền, cách lần trước ≥ 15 phút;

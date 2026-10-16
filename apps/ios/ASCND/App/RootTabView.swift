@@ -318,7 +318,8 @@ private struct QuickLogAccessory: View {
       }
       .padding(.leading, 16)
       .padding(.trailing, askCoach == nil ? 16 : 6)
-      .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+      // Thu gọn (inline) thanh hẹp: không giãn hết bề ngang, để nút AI còn chỗ.
+      .frame(maxWidth: placement == .inline ? nil : .infinity, maxHeight: .infinity, alignment: .leading)
       .contentShape(Rectangle())
     }
     .buttonStyle(.plain)

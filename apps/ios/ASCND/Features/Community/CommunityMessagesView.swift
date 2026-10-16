@@ -237,6 +237,7 @@ struct ConversationView: View {
   @State private var draft = ""
   @FocusState private var typing: Bool
   @State private var sent = 0
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
   var body: some View {
     let rows = book.rows(timeZone: .current)
@@ -254,11 +255,15 @@ struct ConversationView: View {
               .padding(.bottom, 8)
           }
           if book.phase == .loading { ProgressView().frame(minHeight: 120) }
-          ForEach(rows) { r in rowView(r).id(r.id) }
+          ForEach(Array(rows.enumerated()), id: \.element.id) { i, r in
+            rowView(r, tail: Self.endsGroup(rows, i)).id(r.id)
+          }
           Color.clear.frame(height: 1).id("bottom")
         }
         .padding(.horizontal, DS.Spacing.md)
         .padding(.vertical, DS.Spacing.sm)
+        // Tin vừa gửi bay lên như iMessage (`messageSendTransition`).
+        .animation(reduceMotion ? nil : .spring(response: 0.38, dampingFraction: 0.82), value: book.messages.count)
       }
       .scrollDismissesKeyboard(.interactively)
       .defaultScrollAnchor(.bottom)
@@ -288,7 +293,14 @@ struct ConversationView: View {
     .sensoryFeedback(.impact(weight: .light), trigger: sent)
   }
 
-  @ViewBuilder private func rowView(_ r: DirectMessages.Row) -> some View {
+  /// Tin cuối của một cụm cùng người gửi → có đuôi (như iMessage).
+  static func endsGroup(_ rows: [DirectMessages.Row], _ i: Int) -> Bool {
+    guard case .message(_, let mine, _) = rows[i] else { return false }
+    guard i + 1 < rows.count, case .message(_, let nextMine, _) = rows[i + 1] else { return true }
+    return nextMine != mine
+  }
+
+  @ViewBuilder private func rowView(_ r: DirectMessages.Row, tail: Bool) -> some View {
     switch r {
     case .day(let d):
       Text(verbatim: Self.dayText(d))
@@ -299,7 +311,7 @@ struct ConversationView: View {
       VStack(alignment: mine ? .trailing : .leading, spacing: 3) {
         HStack {
           if mine { Spacer(minLength: 60) }
-          bubble(m, mine: mine)
+          bubble(m, mine: mine, tail: tail)
           if !mine { Spacer(minLength: 60) }
         }
         if seen {
@@ -307,33 +319,17 @@ struct ConversationView: View {
         }
       }
       .frame(maxWidth: .infinity, alignment: mine ? .trailing : .leading)
+      .padding(.bottom, tail ? 6 : 0)
+      .messageSendTransition(mine: mine)
     }
   }
 
-  @ViewBuilder private func bubble(_ m: DirectMessages.Message, mine: Bool) -> some View {
+  @ViewBuilder private func bubble(_ m: DirectMessages.Message, mine: Bool, tail: Bool) -> some View {
     switch m.body {
     case .text(let t):
+      // Bong bóng iMessage (16/10, chủ dự án): xanh / xám, đuôi ở tin cuối cụm.
       Text(verbatim: t)
-        .font(.system(size: 16))
-        .foregroundStyle(mine ? DS.Color.background.swiftUI : DS.Color.foreground.swiftUI)
-        .padding(.horizontal, 14)
-        .padding(.vertical, 9)
-        .background {
-          UnevenRoundedRectangle(
-            topLeadingRadius: 20, bottomLeadingRadius: mine ? 20 : 6, bottomTrailingRadius: mine ? 6 : 20,
-            topTrailingRadius: 20, style: .continuous
-          )
-          .fill(mine ? DS.Color.foreground.swiftUI : DS.Color.card.swiftUI)
-        }
-        .overlay {
-          if !mine {
-            UnevenRoundedRectangle(
-              topLeadingRadius: 20, bottomLeadingRadius: 6, bottomTrailingRadius: 20, topTrailingRadius: 20,
-              style: .continuous
-            )
-            .strokeBorder(DS.Color.foreground.swiftUI.opacity(0.10), lineWidth: 0.75)
-          }
-        }
+        .messageBubble(mine: mine, tail: tail)
     case .workout(let w):
       workoutBubble(w)
     }
@@ -391,9 +387,8 @@ struct ConversationView: View {
       TextField(String(localized: "dm.placeholder"), text: $draft, axis: .vertical)
         .lineLimit(1...5)
         .focused($typing)
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(DS.Color.foreground.swiftUI.opacity(0.06), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .padding(.horizontal, 6)
+        .padding(.vertical, 12)
       Button {
         let text = draft
         Task {
@@ -416,9 +411,12 @@ struct ConversationView: View {
       .disabled(DirectMessages.sendable(draft) == nil || book.sending)
       .accessibilityLabel(Text("dm.send"))
     }
-    .padding(.horizontal, DS.Spacing.sm)
-    .padding(.vertical, 6)
-    .background(.bar)
+    .padding(.horizontal, 4)
+    // Viên kính nổi chung cho mọi ô chat (`glassComposer`).
+    .glassComposer(radius: 26)
+    .padding(.horizontal, DS.Spacing.md)
+    .padding(.bottom, DS.Spacing.sm)
+    .padding(.top, 4)
     .overlay(alignment: .top) {
       if book.sendFailed {
         Text("dm.sendfailed").font(.system(size: 12)).foregroundStyle(DS.Color.readinessRed.swiftUI)

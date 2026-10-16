@@ -98,6 +98,22 @@ tính năng đồng bộ trong toàn app" → "làm đi".
   - Server AI (Gemini, khoá miễn phí): `ASCND_AI_MODEL=gemini-flash-lite-latest`, `ASCND_AI_VISION_MODEL=
     gemini-flash-latest`, `ASCND_AI_REASONING_EFFORT=low` (3.x từ chối `none`); `_shared/ai.ts` thêm lượt `user` khi
     function chỉ gửi system (Gemini 400 "contents is not specified").
+- **Koa Coach làm lại khung chat (16/10, chủ dự án):**
+  - Câu trả lời kiểu ChatGPT: chữ trải ngang, không bong bóng, không avatar mỗi tin; một câu đậm trả lời thẳng, tối đa 3
+    mục `###`, gạch đầu dòng mở bằng cụm in đậm, `---` vẽ thành đường kẻ mảnh; nút chép dưới câu trả lời.
+  - Khối tổng quan ```` ```ascnd ```` (`CoachOverview`, ASCNDCore): model chọn 2–4 số THẬT, app vẽ bằng code — hình một
+    màu, không mượn thẻ của app: thanh mảnh (giá trị / mục tiêu), cột nhỏ cho xu hướng nhiều ngày. Khối hỏng / đang stream
+    dở không bao giờ lộ JSON; nhận cả rào ```` ```json ```` khi có `items` / `trend`.
+  - Chữ nhả đều theo từng từ (`CoachReveal`, 70 ms/từ, đuổi kịp khi tụt xa) + vệt mờ ở đuôi; `**` dở được đóng tạm.
+  - Tin nhắn kiểu iMessage (`MessageBubble.swift`, dùng chung với nhắn tin): xanh / xám, đuôi ở tin cuối cụm, tin gửi bay
+    lên; AI đang trả lời = ba chấm nhấp nhô.
+  - Ô chat Liquid Glass (`glassComposer`, kính iOS 26 / vật liệu mờ iOS 18–25) cho Koa Coach, nhắn tin, bình luận.
+    Koa Coach: vuốt xuống thì thu thành viên giữa hai nút tab (như Apple Music), vuốt lên / chạm là bung; nút mũi tên về
+    cuối chỉ hiện khi đã cuộn lên xa; nền mờ dần sau ô chat.
+  - Lời nhắc y tế là dòng nhỏ mờ dưới ô chat (`coach.disclaimer`), không còn trong câu trả lời.
+  - Server (`ai-coach`, `_shared/scope.ts`): luật trình bày nối cuối system prompt (model nhẹ theo chỉ dẫn cuối tốt hơn);
+    luật 4 cho câu "không đáng trả lời" (vô nghĩa, thử, khiêu khích, làm thơ / đùa) → một câu ngắn kéo về chủ đề.
+  - App dò lại AI 3 lần khi lỗi mạng lúc mở và mỗi lần về tiền cảnh (trước: mạng chưa sẵn → AI ẩn cả phiên).
 - **Cài đặt không lặp chữ**: mục Ngôn ngữ bỏ tiêu đề; dòng "Ngôn ngữ" có icon quả cầu như Nhắc nhở / Đổi mật khẩu.
 
 ## Quy ước (giữ khi làm màn mới)

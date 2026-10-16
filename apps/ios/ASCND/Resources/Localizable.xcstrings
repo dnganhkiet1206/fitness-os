@@ -51706,6 +51706,75 @@
      }
     }
    }
+  },
+  "coach.copy.a11y": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Copy answer"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chép câu trả lời"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Copiar respuesta"
+     }
+    }
+   }
+  },
+  "coach.disclaimer": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa Coach can make mistakes and isn't medical advice. See a doctor for health concerns."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa Coach có thể mắc lỗi và không thay cho lời khuyên y tế. Có vấn đề sức khoẻ hãy gặp bác sĩ."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa Coach puede equivocarse y no es consejo médico. Consulta a un médico si te preocupa tu salud."
+     }
+    }
+   }
+  },
+  "coach.scrollbottom.a11y": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Jump to latest"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Về tin mới nhất"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ir al último mensaje"
+     }
+    }
+   }
   }
  }
 }

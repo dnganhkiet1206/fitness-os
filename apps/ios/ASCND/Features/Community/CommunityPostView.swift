@@ -323,31 +323,36 @@ struct CommunityPostView: View {
     } else if let me = book.myProfile {
       HStack(alignment: .bottom, spacing: DS.Spacing.sm) {
         MascotAvatar(mascotId: me.mascotId, size: 32)
-        TextField(
-          String(localized: "community.post.placeholder"),
-          text: Binding(get: { draft }, set: { draft = CommentThread.clamp($0) }), axis: .vertical
-        )
-        .lineLimit(1...5)
-        .focused($composing)
-        .padding(.horizontal, DS.Spacing.md)
-        .padding(.vertical, 10)
-        .background(DS.Color.secondary.swiftUI, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-        // Nút gửi tròn đặc kiểu iMessage (15/10): đậm khi gửi được.
-        Button {
-          Task { await send() }
-        } label: {
-          Image(systemName: "arrow.up")
-            .font(.system(size: 15, weight: .bold))
-            .foregroundStyle(canSend ? DS.Color.background.swiftUI : DS.Color.mutedForeground.swiftUI)
-            .frame(width: 34, height: 34)
-            .background(canSend ? DS.Color.foreground.swiftUI : DS.Color.secondary.swiftUI, in: Circle())
-            .frame(width: 44, height: 44)
-            .contentShape(Circle())
-            .animation(.snappy, value: canSend)
+          .padding(.bottom, 8)
+        HStack(alignment: .bottom, spacing: 4) {
+          TextField(
+            String(localized: "community.post.placeholder"),
+            text: Binding(get: { draft }, set: { draft = CommentThread.clamp($0) }), axis: .vertical
+          )
+          .lineLimit(1...5)
+          .focused($composing)
+          .padding(.leading, DS.Spacing.md)
+          .padding(.vertical, 12)
+          // Nút gửi tròn đặc kiểu iMessage (15/10): đậm khi gửi được.
+          Button {
+            Task { await send() }
+          } label: {
+            Image(systemName: "arrow.up")
+              .font(.system(size: 15, weight: .bold))
+              .foregroundStyle(canSend ? DS.Color.background.swiftUI : DS.Color.mutedForeground.swiftUI)
+              .frame(width: 34, height: 34)
+              .background(canSend ? DS.Color.foreground.swiftUI : DS.Color.secondary.swiftUI, in: Circle())
+              .frame(width: 44, height: 44)
+              .contentShape(Circle())
+              .animation(.snappy, value: canSend)
+          }
+          .buttonStyle(.plain)
+          .disabled(!canSend)
+          .accessibilityLabel(Text("community.post.send"))
         }
-        .buttonStyle(.plain)
-        .disabled(!canSend)
-        .accessibilityLabel(Text("community.post.send"))
+        .padding(.trailing, 2)
+        // Viên kính nổi chung cho mọi ô chat (`glassComposer`).
+        .glassComposer()
       }
     } else if book.hasProfile == false {
       NavigationLink {

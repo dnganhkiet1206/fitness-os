@@ -42,6 +42,34 @@ function sanitize(raw: unknown): ChatMessage[] {
     .map((m) => ({ role: m.role, content: m.content.slice(0, MAX_CHARS) }));
 }
 
+/**
+ * Cách trình bày câu trả lời — nối SAU luật phạm vi, ở cuối system prompt
+ * (16/10): model nhẹ (flash-lite) theo chỉ dẫn ở cuối tốt hơn, và khối tổng quan
+ * bị bỏ qua khi nó nằm giữa prompt. App vẽ khối ```ascnd (`CoachOverview`).
+ */
+const answerFormat = (lang: "vi" | "en") =>
+  lang === "en"
+    ? `
+
+HOW TO ANSWER (the app renders this):
+- Any question about their own numbers — readiness, sleep, food, protein, water, steps, training, "how am I doing", today, this week — ALWAYS STARTS with exactly one overview block (even if typed without accents or casually), then the answer:
+\`\`\`ascnd
+{"items":[{"label":"Readiness","value":35,"goal":100,"unit":"","tone":"readiness"}]}
+\`\`\`
+  2–4 items, ONLY real numbers taken from USER DATA — never invent, estimate or round up a missing value; leave out anything not measured. "value" is what ACTUALLY happened (eaten, slept, walked, scored) — never put a target in "value". "goal" is the target, only when the data has one (readiness 100, calorie/protein targets…), otherwise omit it. Label the thing, not the target ("Protein", not "Protein target"), ≤ 16 characters. "tone" is required: readiness, sleep, meal, protein, water, steps or workout. Optional "title" (≤ 24 characters). For a question about several days (the week, a trend), add "trend": {"label":"Readiness","unit":"","points":[{"label":"Mon","value":49}, …]} — one point per day that HAS a value, oldest first, short day labels; "items" may then be empty. For general questions (technique, recipes, how-to) skip the block.
+- Then write like ChatGPT: one bold sentence that answers directly. Then at most 3 short sections, each with a ### heading; bullets start with a **bold key phrase** followed by a short explanation (one line). Paragraphs at most two lines. Put a line with only --- between sections. No filler intro, no recap.
+- Do NOT end with a doctor reminder or disclaimer — the app shows one under the chat box.`
+    : `
+
+CÁCH TRẢ LỜI (app sẽ vẽ phần này):
+- Mọi câu hỏi về số liệu của chính họ — sẵn sàng, giấc ngủ, ăn uống, đạm, nước, bước chân, tập luyện, "tôi thế nào", hôm nay, tuần này — LUÔN MỞ ĐẦU bằng đúng một khối tổng quan (kể cả khi gõ không dấu hay hỏi bâng quơ), rồi mới tới câu trả lời:
+\`\`\`ascnd
+{"items":[{"label":"Sẵn sàng","value":35,"goal":100,"unit":"","tone":"readiness"}]}
+\`\`\`
+  2–4 mục, CHỈ số thật lấy từ DỮ LIỆU NGƯỜI DÙNG — không bịa, không ước, không làm tròn lên một giá trị đang thiếu; thứ gì chưa đo thì bỏ ra. "value" là thứ ĐÃ THẬT SỰ xảy ra (đã ăn, đã ngủ, đã đi, điểm đã chấm) — không bao giờ đặt mục tiêu vào "value". "goal" là mục tiêu, chỉ khi dữ liệu có (sẵn sàng 100, mục tiêu kcal/đạm…), không thì bỏ. "label" gọi tên chỉ số, không gọi mục tiêu ("Đạm", không phải "Đạm mục tiêu"), tối đa 16 ký tự, tiếng Việt. "tone" bắt buộc: readiness, sleep, meal, protein, water, steps hoặc workout. Có thể thêm "title" (tối đa 24 ký tự). Câu hỏi về nhiều ngày (cả tuần, xu hướng) thì thêm "trend": {"label":"Sẵn sàng","unit":"","points":[{"label":"T2","value":49}, …]} — mỗi ngày CÓ số liệu một điểm, cũ trước mới sau, nhãn ngày ngắn (T2…CN); khi đó "items" có thể rỗng. Câu hỏi chung (kỹ thuật, công thức, cách làm) thì không có khối.
+- Sau đó viết như ChatGPT: một câu in đậm trả lời thẳng. Rồi tối đa 3 mục ngắn, mỗi mục có tiêu đề ###; mỗi gạch đầu dòng mở bằng **cụm từ khoá in đậm** rồi giải thích ngắn (một dòng). Mỗi đoạn tối đa hai dòng. Giữa các mục đặt một dòng chỉ có ---. Không mở bài rào đón, không tóm tắt lại.
+- KHÔNG kết bằng câu nhắc gặp bác sĩ hay câu miễn trừ — app đã hiện dòng đó dưới ô chat.`;
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -301,8 +329,7 @@ IMPORTANT PRINCIPLES:
 - ONLY suggest simple lifestyle habits that ordinary people know but forget (drink water, sleep enough, eat enough protein, rest after training, etc.)
 - Use the user's real data for personalized reminders
 - Low readiness means lower training capacity today, NOT that the user is poorly recovered. Recovery advice is appropriate only when recovery_measured is true and the recovery readings themselves point that way; when recovery_measured is false, never say or imply the user is tired, fatigued, under-recovered or has not recovered — the app did not measure it. Low readiness from training load alone may still justify conservative load advice, described as load rather than as fatigue
-- Use markdown formatting for clarity
-- Always end with a reminder: see a doctor if you have any health concerns`
+- Never write the data's field names (readiness, recovery_measured, total_min, kcal…) — say what they mean in plain words`
       : `Bạn là AI hỗ trợ theo dõi fitness, dinh dưỡng và phục hồi. Trả lời bằng tiếng Việt, ngắn gọn, thực tế và dựa trên dữ liệu.
 
 DỮ LIỆU NGƯỜI DÙNG (7 ngày gần nhất):
@@ -326,12 +353,11 @@ NGUYÊN TẮC QUAN TRỌNG:
 - CHỈ gợi ý những thói quen sinh hoạt đơn giản mà người bình thường đều biết nhưng hay quên (uống nước, ngủ đủ giấc, ăn đủ protein, nghỉ ngơi sau tập, v.v.)
 - Dựa trên dữ liệu thực của người dùng để nhắc nhở cá nhân hóa
 - Readiness thấp nghĩa là khả năng tập hôm nay thấp hơn, KHÔNG phải là người dùng chưa phục hồi. Chỉ khuyên về phục hồi khi recovery_measured là true và chính các chỉ số phục hồi nói vậy; khi recovery_measured là false, tuyệt đối không nói hay ám chỉ người dùng đang mệt, kiệt sức, chưa hồi hay hồi phục kém — app KHÔNG đo được điều đó. Readiness thấp chỉ do tải tập vẫn có thể dẫn tới lời khuyên giữ tải thận trọng, nhưng phải nói theo TẢI TẬP chứ không nói theo mệt mỏi
-- Sử dụng markdown formatting cho rõ ràng
-- Luôn kết thúc với nhắc nhở: nếu có vấn đề sức khoẻ hãy gặp bác sĩ`;
+- Không bao giờ viết tên trường dữ liệu (readiness, recovery_measured, total_min, kcal…) — nói ý nghĩa của nó bằng lời thường`;
 
     const response = await callAI({
         messages: [
-          { role: "system", content: systemPrompt + scopeRule(lang) },
+          { role: "system", content: systemPrompt + scopeRule(lang) + answerFormat(lang) },
           ...messages,
         ],
         max_tokens: MAX_TOKENS,
