@@ -179,8 +179,7 @@ private struct QuickLogSheetHost: ViewModifier {
       if let chosen { open(chosen) }
       chosen = nil
     }) {
-      QuickLogSheet { chosen = $0; picking = false }
-        .presentationDetents([.height(250)])
+      QuickLogSheet(pick: { chosen = $0; picking = false }, close: { picking = false })
         .presentationDragIndicator(.visible)
     }
   }
@@ -223,6 +222,13 @@ private struct QuickLogAccessory: View {
 /// Bảng chọn của "Ghi nhanh": năm ô lớn, chạm là mở đúng màn ghi.
 private struct QuickLogSheet: View {
   let pick: (DeepLink.Screen) -> Void
+  /// Đóng bảng (sau khi "Ăn lại" đã ghi xong).
+  let close: () -> Void
+  @Environment(AppServices.self) private var services
+  /// "Ăn lại" (15/10, audit giữ chân — ghi bữa quá nhiều bước): sổ ghi bữa của bữa
+  /// hiện tại, chỉ để đọc bữa gần đây và ghi lại một bữa bằng một chạm.
+  @State private var logger: MealLogger?
+  @State private var logged: String?
 
   private var items: [(LocalizedStringKey, String, Color, DeepLink.Screen)] {
     [
@@ -234,10 +240,15 @@ private struct QuickLogSheet: View {
     ]
   }
 
+  private var recentMeals: [MealLog.RecentMeal] { Array((logger?.recentMeals ?? []).prefix(3)) }
+
   var body: some View {
     VStack(alignment: .leading, spacing: DS.Spacing.md) {
       Text("quicklog.title").font(.system(size: 20, weight: .bold))
         .accessibilityAddTraits(.isHeader)
+      if !recentMeals.isEmpty {
+        again
+      }
       HStack(spacing: 8) {
         ForEach(items.indices, id: \.self) { i in
           let item = items[i]
@@ -262,5 +273,74 @@ private struct QuickLogSheet: View {
     .padding(.horizontal, DS.Spacing.lg)
     .padding(.top, DS.Spacing.lg)
     .frame(maxHeight: .infinity, alignment: .top)
+    .presentationDetents([.height(recentMeals.isEmpty ? 250 : 400)])
+    .sensoryFeedback(.success, trigger: logged)
+    .task {
+      guard logger == nil, let userId = services.session.session?.userId else { return }
+      let l = services.makeMealLogger(userId: userId, date: nil, mealType: nil)
+      logger = l
+      await l?.loadRecents()
+    }
+  }
+
+  /// "Ăn lại": bữa gần đây — một chạm ghi đúng các món và khẩu phần ấy cho hôm nay.
+  private var again: some View {
+    VStack(alignment: .leading, spacing: DS.Spacing.xs) {
+      Text("quicklog.again")
+        .font(.system(size: 13, weight: .semibold))
+        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        .accessibilityAddTraits(.isHeader)
+      ScrollView(.horizontal, showsIndicators: false) {
+        HStack(spacing: DS.Spacing.sm) {
+          ForEach(recentMeals) { m in
+            Button { Task { await relog(m) } } label: {
+              VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 6) {
+                  Text(verbatim: DiaryView.mealName(m.mealType)).font(.system(size: 14, weight: .bold))
+                  Spacer(minLength: 0)
+                  if logged == m.id {
+                    Image(systemName: "checkmark.circle.fill").foregroundStyle(DS.Color.readinessGreen.swiftUI)
+                  } else {
+                    Image(systemName: "arrow.counterclockwise").font(.system(size: 12, weight: .bold))
+                      .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+                  }
+                }
+                Text(verbatim: m.foods.map { $0.food.name }.joined(separator: ", "))
+                  .font(.system(size: 13))
+                  .foregroundStyle(DS.Color.foreground.swiftUI)
+                  .lineLimit(2, reservesSpace: true)
+                  .multilineTextAlignment(.leading)
+                Text(verbatim: "\(DiaryView.whole(m.kcal)) kcal")
+                  .font(.system(size: 12, weight: .semibold).monospacedDigit())
+                  .foregroundStyle(DS.Color.metricOrangeGraphic.swiftUI)
+              }
+              .padding(12)
+              .frame(width: 210, alignment: .leading)
+              .dsCard(radius: 18)
+              .contentShape(Rectangle())
+            }
+            .buttonStyle(TodayPressStyle())
+            .disabled(logged != nil || (logger?.saving ?? false))
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(
+              Text("quicklog.again.a11y \(DiaryView.mealName(m.mealType)) \(DiaryView.whole(m.kcal))"))
+            .accessibilityAddTraits(.isButton)
+          }
+        }
+        .padding(.vertical, 6)
+        .padding(.horizontal, 2)
+      }
+    }
+  }
+
+  private func relog(_ m: MealLog.RecentMeal) async {
+    guard let logger else { return }
+    logger.repeatMeal(m)
+    if case .queued = await logger.save(online: services.sync.online) {
+      logged = m.id
+      AccessibilityNotification.Announcement(String(localized: "quicklog.again.done")).post()
+      try? await Task.sleep(for: .milliseconds(700))
+      close()
+    }
   }
 }

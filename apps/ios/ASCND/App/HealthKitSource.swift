@@ -168,6 +168,9 @@ final class HealthSyncCoordinator {
 
   var isAvailable: Bool { source.isAvailable }
 
+  /// Đã hỏi quyền Apple Health trên máy này chưa (thẻ "Bắt đầu" của Hôm nay).
+  func isConnected() async -> Bool { await source.alreadyAsked() }
+
   /// Nút "Đồng bộ" (`useHealthSync`): xin quyền nếu cần, rồi chạy.
   func syncNow(userId: String, lang: String) async throws(HealthSync.Failure) {
     guard await source.requestPermission() else { throw .write("Health access was not granted") }

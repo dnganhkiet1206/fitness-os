@@ -75,6 +75,13 @@ struct TodayExtras<Plan: View>: View {
     VStack(spacing: DS.Spacing.md) {
       header
         .todayEntrance(0)
+      // Ba việc đầu tiên cho người mới (15/10) — tự ẩn khi xong / sau 7 ngày.
+      if isCurrentSession {
+        TodayStartCard(
+          userId: userId,
+          signals: mascot.flatMap { TodayDay.merging($0.signals, localWaterMl: nil) },
+          onMeal: { logging = .meal }, onWorkout: onLogWorkout)
+      }
       if let mascot, case .loading = mascot.phase {
         // Bóng đúng cỡ khối ngày (RN `TodaySkeleton part="hero"`) — không để
         // trang nhảy khi dữ liệu về, không vẽ một ngày "0 of 5" giả.

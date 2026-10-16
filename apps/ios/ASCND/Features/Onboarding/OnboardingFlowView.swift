@@ -8,9 +8,9 @@ import SwiftUI
 /// tệp này chỉ dựng màn.
 ///
 /// Khác RN, có chủ đích và ghi ra:
-/// - màn Sức khoẻ (12) vắng mặt: native chưa có HealthKit (#527 4.1), và RN
-///   cũng bỏ màn này trên máy không có HealthKit — không mời điều không nhận
-///   lời được. Bật lại bằng `healthAvailable` khi 4.1 vào;
+/// - màn Sức khoẻ (12): bật lại 15/10 (HealthKit đã có) — "Kết nối Apple Health"
+///   xin quyền + đồng bộ lần đầu rồi đi tiếp, "Để sau" đi tiếp; máy không có
+///   HealthKit thì bỏ màn như RN;
 /// - chưa có Koa ở màn 01 / 13 và chưa có hình chiếc cân ở màn 08 (linh vật là
 ///   Phase 7) — không vẽ hình giả thay vào;
 /// - cây thước có VoiceOver (vuốt lên / xuống đổi 1 đơn vị); thước RN không có.
@@ -29,7 +29,9 @@ struct OnboardingFlowView: View {
       }
     }
     .task {
-      let c = services.makeOnboarding(userId: userId, gate: gate, healthAvailable: false)
+      // Màn Sức khoẻ bật lại (15/10 — HealthKit đã có): ngày đầu không trống, bước /
+      // giấc ngủ / nhịp tim về ngay từ lúc vào app.
+      let c = services.makeOnboarding(userId: userId, gate: gate, healthAvailable: services.health.isAvailable)
       await c.load()
       flow = c
       // Đơn vị theo hồ sơ (`useUnits`): bản nhớ trước, rồi server. Hồ sơ về
@@ -50,6 +52,7 @@ private struct OnboardingStepsView: View {
   @State private var forward = true
   @State private var legalOpen = false
   @State private var failure: OnboardingFailureCopy?
+  @State private var connecting = false
 
   private var step: OnboardingDraft.Step { flow.draft.step }
 
@@ -126,7 +129,18 @@ private struct OnboardingStepsView: View {
   private var footer: some View {
     VStack(spacing: DS.Spacing.sm) {
       DSButton(ctaTitle, style: .primary) { primary() }
-        .disabled(!flow.canAdvance || flow.finishing)
+        .disabled(!flow.canAdvance || flow.finishing || connecting)
+      if step == .health {
+        Button {
+          go(forward: true)
+        } label: {
+          Text(String(localized: "onboarding.health.later"))
+            .font(DS.TextStyle.body.weight(.semibold))
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .frame(maxWidth: .infinity, minHeight: 44)
+        }
+        .disabled(connecting)
+      }
       if step == .ready {
         // Dòng pháp lý MỞ ĐƯỢC tài liệu: một lời đồng ý cho văn bản không mở
         // nổi không phải lời đồng ý (`LegalSheet` của RN).
@@ -151,6 +165,7 @@ private struct OnboardingStepsView: View {
     switch step {
     case .welcome: String(localized: "onboarding.start")
     case .ready: String(localized: "onboarding.ready.cta")
+    case .health: String(localized: "onboarding.health.connect")
     default: String(localized: "onboarding.next")
     }
   }
@@ -159,6 +174,14 @@ private struct OnboardingStepsView: View {
     if step == .ready {
       Task {
         if !(await flow.finish()), let f = flow.failure { failure = f.copy }
+      }
+    } else if step == .health {
+      // Xin quyền + đồng bộ lần đầu; từ chối / lỗi vẫn đi tiếp — Cài đặt còn nút Đồng bộ.
+      connecting = true
+      Task {
+        try? await services.health.syncNow(userId: flow.userId, lang: AppServices.appLang)
+        connecting = false
+        go(forward: true)
       }
     } else {
       go(forward: true)
@@ -269,8 +292,40 @@ private struct OnboardingStepsView: View {
         }
       }
     case .plan: plan
-    case .health: EmptyView()  // healthAvailable = false: màn này không bao giờ hiện.
+    case .health: health
     case .ready: ready
+    }
+  }
+
+  /// Kết nối Apple Health (bật lại 15/10): bốn thứ app đọc, một câu về quyền riêng tư.
+  private var health: some View {
+    VStack(alignment: .leading, spacing: DS.Spacing.lg) {
+      Image(systemName: "heart.fill")
+        .font(.system(size: 30, weight: .semibold))
+        .foregroundStyle(.white)
+        .frame(width: 64, height: 64)
+        .background(Color(red: 1, green: 0.22, blue: 0.37), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .accessibilityHidden(true)
+      Ask(q: String(localized: "onboarding.health.q"), why: String(localized: "onboarding.health.why"))
+      VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+        healthRow("moon.fill", String(localized: "onboarding.health.sleep"))
+        healthRow("figure.walk", String(localized: "onboarding.health.steps"))
+        healthRow("heart.text.square", String(localized: "onboarding.health.heart"))
+        healthRow("dumbbell.fill", String(localized: "onboarding.health.workouts"))
+      }
+      Text(String(localized: "onboarding.health.privacy"))
+        .font(DS.TextStyle.footnote)
+        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+    }
+  }
+
+  private func healthRow(_ symbol: String, _ text: String) -> some View {
+    Label {
+      Text(text).font(DS.TextStyle.body)
+    } icon: {
+      Image(systemName: symbol)
+        .foregroundStyle(DS.Color.foreground.swiftUI)
+        .frame(width: 28)
     }
   }
 

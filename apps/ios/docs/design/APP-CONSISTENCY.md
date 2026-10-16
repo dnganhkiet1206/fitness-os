@@ -67,6 +67,15 @@ tính năng đồng bộ trong toàn app" → "làm đi".
     (`KoaRender.Options.flat`, không dải sáng-tối / quầng / viền — golden của bản giấy không đổi), không sao ngoài
     cửa sổ, đồ vật tím → đất nung (`dayColors`). Cả hai bản có lớp chiều sâu (`Options.depth`: tường bên, góc phòng,
     chân tường, ván sàn hội tụ).
+- **Giữ chân người dùng mới** (15/10, chủ dự án chọn "làm 2 và 3 trước"; chưa có analytics — bản native không có
+  Sentry / sự kiện):
+  - Onboarding bật lại màn **Sức khoẻ** (`healthAvailable: services.health.isAvailable`): "Kết nối Apple Health"
+    xin quyền + đồng bộ lần đầu rồi đi tiếp; "Để sau" đi tiếp.
+  - Hôm nay: thẻ **"Bắt đầu với ASCND"** (`TodayStartCard`) — Kết nối Apple Health · Ghi bữa đầu tiên · Ghi buổi tập
+    đầu tiên, mỗi việc một chạm; tick theo HealthKit / tín hiệu hôm nay (nhớ bằng `@AppStorage` theo tài khoản);
+    7 ngày kể từ lần đầu thấy trên máy, ẩn khi đủ ba hoặc bấm ẩn.
+  - Ghi nhanh: mục **"Ăn lại"** — 3 bữa gần đây, một chạm ghi đúng các món + khẩu phần (`MealLogger.repeatMeal` +
+    `save` qua hàng đợi), bảng tự đóng.
 - **Cài đặt không lặp chữ**: mục Ngôn ngữ bỏ tiêu đề; dòng "Ngôn ngữ" có icon quả cầu như Nhắc nhở / Đổi mật khẩu.
 
 ## Quy ước (giữ khi làm màn mới)
