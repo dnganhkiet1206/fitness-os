@@ -34,9 +34,17 @@ struct MealSuggestCard: View {
       case .loading: loading
       case .loaded(let list): suggestions(list)
       case .failed(let message):
-        Text(message)
-          .font(DS.TextStyle.footnote)
-          .foregroundStyle(DS.Color.destructive.swiftUI)
+        // Lỗi AI (thường là quá tải) không phải lỗi của người dùng: chữ nhạt + thử
+        // lại ngay tại chỗ, thay cho một dòng đỏ không làm được gì (16/10).
+        HStack(alignment: .firstTextBaseline, spacing: DS.Spacing.sm) {
+          Text(message)
+            .font(DS.TextStyle.footnote)
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .frame(maxWidth: .infinity, alignment: .leading)
+          Button("common.retry") { load() }
+            .font(DS.TextStyle.footnote.weight(.semibold))
+            .frame(minHeight: 44)
+        }
       }
     }
     .padding(DS.Spacing.md)

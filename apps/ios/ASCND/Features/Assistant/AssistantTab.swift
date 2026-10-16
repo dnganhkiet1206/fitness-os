@@ -70,7 +70,11 @@ struct AssistantTab: View {
           }
           // Máy chủ chưa bật tính năng → không hiện thẻ lỗi vĩnh viễn (15/10, audit).
           if let nudges, !nudges.isNotDeployed, ai {
-            InsightCard(book: nudges) { Task { await loadInsight(force: true) } }
+            InsightCard(
+              book: nudges,
+              // AI lỗi (quá tải, mạng…): nhắc dựng từ số thật thay cho dòng lỗi.
+              fallback: signal.map { SmartNudges.fallback($0.signal, lang: lang.rawValue, hour: hour) } ?? []
+            ) { Task { await loadInsight(force: true) } }
           }
           if let chat, ai {
             AskCoachBar(lastAsked: chat.messages.last { $0.role == .user }?.content) { path.append(.chat) }
@@ -562,6 +566,8 @@ struct AssistantTab: View {
 /// về (ẩn khi chưa có lần nào).
 private struct InsightCard: View {
   let book: SmartNudgesBook
+  /// Nhắc từ số thật khi AI không trả lời (`SmartNudges.fallback`).
+  var fallback: [SmartNudges.Nudge] = []
   let retry: () -> Void
 
   var body: some View {
@@ -594,6 +600,20 @@ private struct InsightCard: View {
           .font(DS.TextStyle.footnote)
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
       }
+    case .failed where !fallback.isEmpty:
+      // Bản tóm tắt từ số liệu (16/10, chủ dự án): thẻ không trống mỗi lần AI quá
+      // tải. Ghi rõ nguồn; chạm dòng nguồn để thử lại AI.
+      VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+        nudgeList(fallback)
+        Button(action: retry) {
+          Label("insight.fallback", systemImage: "arrow.clockwise")
+            .font(DS.TextStyle.caption)
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .frame(maxWidth: .infinity, minHeight: 32, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+      }
     case .failed(let failure):
       Button(action: retry) {
         Label {
@@ -616,8 +636,13 @@ private struct InsightCard: View {
         .font(DS.TextStyle.footnote)
         .foregroundStyle(DS.Color.mutedForeground.swiftUI)
     case .ready(let entry):
+      nudgeList(entry.nudges)
+    }
+  }
+
+  private func nudgeList(_ nudges: [SmartNudges.Nudge]) -> some View {
       VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-        ForEach(Array(entry.nudges.enumerated()), id: \.offset) { _, n in
+        ForEach(Array(nudges.enumerated()), id: \.offset) { _, n in
           HStack(alignment: .firstTextBaseline, spacing: DS.Spacing.sm) {
             Circle()
               .fill(Self.tint(n.priority))
@@ -630,7 +655,6 @@ private struct InsightCard: View {
           }
         }
       }
-    }
   }
 
   private static func tint(_ p: SmartNudges.Priority) -> Color {

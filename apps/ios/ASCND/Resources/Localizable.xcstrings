@@ -51775,6 +51775,29 @@
      }
     }
    }
+  },
+  "insight.fallback": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Summary from your numbers · tap to retry"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tóm tắt từ số liệu của bạn · chạm để thử lại"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Resumen de tus datos · toca para reintentar"
+     }
+    }
+   }
   }
  }
 }
