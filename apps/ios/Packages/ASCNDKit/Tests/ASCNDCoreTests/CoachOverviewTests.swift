@@ -82,4 +82,22 @@ struct CoachOverviewTests {
     #expect(CoachOverview.split(code).overview == nil)
     #expect(CoachOverview.split(code).text == code)
   }
+
+  @Test func gaugeSplitAndStepsParseAndRoundTrip() {
+    let json = """
+      {"gauge":{"label":"ACWR","value":3.43,"min":0,"max":4,"unit":"","zones":[{"from":0.8,"to":1.3,"label":"An toàn"},{"from":1.5,"to":9,"label":"Rủi ro"},{"from":2,"to":1,"label":"x"}]},
+       "split":{"label":"Macro","unit":"g","parts":[{"label":"Đạm","value":120},{"label":"Carb","value":250},{"label":"Béo","value":0}]},
+       "steps":[{"title":"Giảm 20% khối lượng","detail":"Tuần này"},{"title":""},{"title":"Ngủ đủ 8 giờ"}]}
+      """
+    let o = CoachOverview.parse(json)!
+    #expect(o.gauge?.value == 3.43)
+    #expect(o.gauge?.zones.count == 2)
+    #expect(o.gauge?.zones[1].to == 4)
+    #expect(o.split?.parts.map(\.label) == ["Đạm", "Carb"])
+    #expect(o.steps.map(\.title) == ["Giảm 20% khối lượng", "Ngủ đủ 8 giờ"])
+    #expect(CoachOverview.parse(o.json) == o)
+    // Một phần không thành biểu đồ chia; gauge min ≥ max bị bỏ.
+    #expect(CoachOverview.parse(#"{"split":{"parts":[{"label":"A","value":1}]}}"#) == nil)
+    #expect(CoachOverview.parse(#"{"gauge":{"value":1,"min":2,"max":1}}"#) == nil)
+  }
 }

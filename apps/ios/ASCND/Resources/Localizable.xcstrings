@@ -52120,6 +52120,29 @@
      }
     }
    }
+  },
+  "coach.overview.avg %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Avg %@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "TB %@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Media %@"
+     }
+    }
+   }
   }
  }
 }

@@ -15,8 +15,8 @@ import Foundation
 extension CoachOverview {
   public func checked(against s: AssistantSuggestions.Signal) -> CoachOverview? {
     let kept = items.compactMap { $0.checked(against: s) }
-    guard !kept.isEmpty || trend != nil else { return nil }
-    return CoachOverview(title: title, items: kept, trend: trend)
+    guard !kept.isEmpty || trend != nil || gauge != nil || split != nil || !steps.isEmpty else { return nil }
+    return CoachOverview(title: title, items: kept, trend: trend, gauge: gauge, split: split, steps: steps)
   }
 
   /// Câu trả lời với khối tổng quan đã đối chiếu (viết lại khối, hoặc bỏ hẳn nếu
@@ -51,6 +51,19 @@ extension CoachOverview {
       let pts = trend.points.map { "{\"label\":\(str($0.label)),\"value\":\(num($0.value))}" }
       parts.append(
         "\"trend\":{\"label\":\(str(trend.label)),\"unit\":\(str(trend.unit)),\"points\":[\(pts.joined(separator: ","))]}")
+    }
+    if let g = gauge {
+      let zones = g.zones.map { "{\"from\":\(num($0.from)),\"to\":\(num($0.to)),\"label\":\(str($0.label))}" }
+      parts.append(
+        "\"gauge\":{\"label\":\(str(g.label)),\"value\":\(num(g.value)),\"min\":\(num(g.min)),\"max\":\(num(g.max)),\"unit\":\(str(g.unit)),\"zones\":[\(zones.joined(separator: ","))]}")
+    }
+    if let sp = split {
+      let ps = sp.parts.map { "{\"label\":\(str($0.label)),\"value\":\(num($0.value))}" }
+      parts.append("\"split\":{\"label\":\(str(sp.label)),\"unit\":\(str(sp.unit)),\"parts\":[\(ps.joined(separator: ","))]}")
+    }
+    if !steps.isEmpty {
+      let ss = steps.map { "{\"title\":\(str($0.title)),\"detail\":\(str($0.detail))}" }
+      parts.append("\"steps\":[\(ss.joined(separator: ","))]")
     }
     return "{\(parts.joined(separator: ","))}"
   }

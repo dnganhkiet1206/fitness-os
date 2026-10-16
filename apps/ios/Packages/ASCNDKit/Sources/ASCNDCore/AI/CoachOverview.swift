@@ -35,9 +35,55 @@ public struct CoachOverview: Equatable, Sendable {
     public let points: [Point]
   }
 
+  /// Một chỉ số nằm ở vùng nào (ACWR 3.43 trong vùng an toàn 0.8–1.3…).
+  public struct Gauge: Equatable, Sendable {
+    public struct Zone: Equatable, Sendable {
+      public let from: Double
+      public let to: Double
+      public let label: String
+    }
+    public let label: String
+    public let value: Double
+    public let min: Double
+    public let max: Double
+    public let unit: String
+    public let zones: [Zone]
+  }
+
+  /// Các phần của một tổng (đạm / carb / béo…).
+  public struct Split: Equatable, Sendable {
+    public struct Part: Equatable, Sendable {
+      public let label: String
+      public let value: Double
+    }
+    public let label: String
+    public let unit: String
+    public let parts: [Part]
+  }
+
+  /// Kế hoạch / cách làm theo bước.
+  public struct Step: Equatable, Sendable {
+    public let title: String
+    public let detail: String
+  }
+
   public let title: String?
   public let items: [Item]
   public let trend: Trend?
+  public var gauge: Gauge? = nil
+  public var split: Split? = nil
+  public var steps: [Step] = []
+
+  public init(
+    title: String?, items: [Item], trend: Trend?, gauge: Gauge? = nil, split: Split? = nil, steps: [Step] = []
+  ) {
+    self.title = title
+    self.items = items
+    self.trend = trend
+    self.gauge = gauge
+    self.split = split
+    self.steps = steps
+  }
 
   /// Tối đa bốn dòng: nhiều hơn là một bảng, không còn là "tổng quan".
   public static let maxItems = 4
@@ -100,7 +146,18 @@ public struct CoachOverview: Equatable, Sendable {
     let label: String?, unit: String?, points: [Lenient<RawPoint>]?
   }
 
+  struct RawZone: Decodable { let from: Number?, to: Number?, label: String? }
+  struct RawGauge: Decodable {
+    let label: String?, value: Number?, min: Number?, max: Number?, unit: String?, zones: [Lenient<RawZone>]?
+  }
+  struct RawPart: Decodable { let label: String?, value: Number? }
+  struct RawSplit: Decodable { let label: String?, unit: String?, parts: [Lenient<RawPart>]? }
+  struct RawStep: Decodable { let title: String?, detail: String? }
+
   struct Raw: Decodable {
+    let gauge: RawGauge?
+    let split: RawSplit?
+    let steps: [Lenient<RawStep>]?
     let title: String?, items: [Lenient<RawItem>]?, trend: RawTrend?
   }
 
@@ -124,10 +181,42 @@ public struct CoachOverview: Equatable, Sendable {
         tone: Tone(rawValue: d.tone ?? "") ?? .other)
     }
     let trend = root.trend.flatMap(parseTrend)
-    guard !items.isEmpty || trend != nil else { return nil }
+    let gauge = root.gauge.flatMap(parseGauge)
+    let split = root.split.flatMap(parseSplit)
+    let steps = (root.steps ?? []).compactMap(\.value).compactMap { r -> Step? in
+      guard let t = r.title?.trimmingCharacters(in: .whitespaces), !t.isEmpty else { return nil }
+      return Step(title: String(t.prefix(60)), detail: String((r.detail ?? "").prefix(140)))
+    }.prefix(5)
+    guard !items.isEmpty || trend != nil || gauge != nil || split != nil || !steps.isEmpty else { return nil }
     let title = root.title.map { String($0.trimmingCharacters(in: .whitespaces).prefix(40)) }
     return CoachOverview(
-      title: title?.isEmpty == false ? title : nil, items: Array(items.prefix(maxItems)), trend: trend)
+      title: title?.isEmpty == false ? title : nil, items: Array(items.prefix(maxItems)), trend: trend,
+      gauge: gauge, split: split, steps: Array(steps))
+  }
+
+  /// Đồng hồ vùng: cần value trong [min, max] và min < max; vùng hỏng bị bỏ.
+  static func parseGauge(_ g: RawGauge) -> Gauge? {
+    guard let v = g.value?.value, let lo = g.min?.value, let hi = g.max?.value,
+      v.isFinite, lo.isFinite, hi.isFinite, lo < hi
+    else { return nil }
+    let zones = (g.zones ?? []).compactMap(\.value).compactMap { z -> Gauge.Zone? in
+      guard let a = z.from?.value, let b = z.to?.value, a < b else { return nil }
+      return Gauge.Zone(from: Swift.max(lo, a), to: Swift.min(hi, b), label: String((z.label ?? "").prefix(20)))
+    }
+    return Gauge(
+      label: String((g.label ?? "").prefix(24)), value: Swift.min(Swift.max(v, lo), hi), min: lo, max: hi,
+      unit: String((g.unit ?? "").prefix(8)), zones: Array(zones.prefix(4)))
+  }
+
+  /// Chia phần: ít nhất hai phần dương.
+  static func parseSplit(_ s: RawSplit) -> Split? {
+    let parts = (s.parts ?? []).compactMap(\.value).compactMap { p -> Split.Part? in
+      guard let l = p.label?.trimmingCharacters(in: .whitespaces), !l.isEmpty, let v = p.value?.value, v.isFinite, v > 0
+      else { return nil }
+      return Split.Part(label: String(l.prefix(16)), value: v)
+    }
+    guard parts.count >= 2 else { return nil }
+    return Split(label: String((s.label ?? "").prefix(24)), unit: String((s.unit ?? "").prefix(8)), parts: Array(parts.prefix(5)))
   }
 
   static func parseTrend(_ d: RawTrend) -> Trend? {

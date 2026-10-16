@@ -1,4 +1,5 @@
 import ASCNDCore
+import Charts
 import ASCNDDesignSystem
 import SwiftUI
 import UIKit
@@ -807,9 +808,10 @@ private struct CoachOverviewCard: View {
           if !items.count.isMultiple(of: 2), let last = items.last { tile(last) }
         }
       }
-      if let trend = overview.trend {
-        TrendBars(trend: trend)
-      }
+      if let gauge = overview.gauge { ZoneGauge(gauge: gauge) }
+      if let split = overview.split { SplitBar(split: split) }
+      if let trend = overview.trend { TrendChart(trend: trend) }
+      if !overview.steps.isEmpty { StepList(steps: overview.steps) }
     }
     .padding(18)
     .frame(maxWidth: .infinity, alignment: .leading)
@@ -943,41 +945,56 @@ private struct CoachOverviewCard: View {
   }
 }
 
-/// Xu hướng: cột bo tròn một màu cao theo giá trị; cột cuối (gần nhất) đậm,
-/// các cột trước nhạt; số của cột cuối ghi trên đầu.
-private struct TrendBars: View {
+/// Xu hướng nhiều ngày — Swift Charts (16/10, chủ dự án: "Apple style"): cột bo
+/// tròn một màu, cột gần nhất đậm, đường trung bình đứt nét có nhãn.
+private struct TrendChart: View {
   let trend: CoachOverview.Trend
 
+  private var average: Double { trend.points.map(\.value).reduce(0, +) / Double(max(trend.points.count, 1)) }
+
   var body: some View {
-    let top = max(trend.points.map(\.value).max() ?? 1, 1)
     VStack(alignment: .leading, spacing: 10) {
-      if !trend.label.isEmpty {
-        Text(verbatim: trend.label)
-          .font(.system(size: 15))
-          .foregroundStyle(DS.Color.foreground.swiftUI)
+      HStack(alignment: .firstTextBaseline) {
+        if !trend.label.isEmpty {
+          Text(verbatim: trend.label)
+            .font(.system(size: 14, weight: .semibold))
+            .foregroundStyle(CoachOverviewCard.muted)
+        }
+        Spacer(minLength: 8)
+        Text("coach.overview.avg \(CoachOverviewCard.number(average) + (trend.unit.isEmpty ? "" : " \(trend.unit)"))")
+          .font(.system(size: 12, weight: .medium).monospacedDigit())
+          .foregroundStyle(CoachOverviewCard.muted)
       }
-      HStack(alignment: .bottom, spacing: 6) {
+      Chart {
         ForEach(Array(trend.points.enumerated()), id: \.offset) { i, p in
-          let last = i == trend.points.count - 1
-          VStack(spacing: 6) {
-            Text(verbatim: last ? CoachOverview.format(p.value) : " ")
-              .font(.system(size: 11, weight: .semibold).monospacedDigit())
-              .foregroundStyle(DS.Color.foreground.swiftUI)
-              .lineLimit(1)
-              .fixedSize()
-            RoundedRectangle(cornerRadius: 4, style: .continuous)
-              .fill(DS.Color.foreground.swiftUI.opacity(last ? 1 : 0.22))
-              .frame(height: max(4, 72 * p.value / top))
-            Text(verbatim: p.label)
-              .font(.system(size: 10))
-              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-              .lineLimit(1)
-              .minimumScaleFactor(0.7)
+          BarMark(x: .value("day", "\(i)|\(p.label)"), y: .value("value", p.value), width: .ratio(0.55))
+            .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
+            .foregroundStyle(CoachOverviewCard.ink.opacity(i == trend.points.count - 1 ? 1 : 0.22))
+            .annotation(position: .top, spacing: 4) {
+              if i == trend.points.count - 1 {
+                Text(verbatim: CoachOverviewCard.number(p.value))
+                  .font(.system(size: 11, weight: .semibold).monospacedDigit())
+                  .foregroundStyle(CoachOverviewCard.ink)
+              }
+            }
+        }
+        RuleMark(y: .value("avg", average))
+          .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 3]))
+          .foregroundStyle(CoachOverviewCard.muted.opacity(0.7))
+      }
+      .chartXAxis {
+        AxisMarks { v in
+          AxisValueLabel {
+            if let key = v.as(String.self) {
+              Text(verbatim: String(key.split(separator: "|").last ?? ""))
+                .font(.system(size: 10))
+                .foregroundStyle(CoachOverviewCard.muted)
+            }
           }
-          .frame(maxWidth: .infinity)
         }
       }
-      .frame(height: 112, alignment: .bottom)
+      .chartYAxis(.hidden)
+      .frame(height: 120)
     }
     .accessibilityElement(children: .ignore)
     .accessibilityLabel(Text(verbatim: Self.spoken(trend)))
@@ -985,8 +1002,178 @@ private struct TrendBars: View {
 
   static func spoken(_ t: CoachOverview.Trend) -> String {
     let unit = t.unit.isEmpty ? "" : " \(t.unit)"
-    let pts = t.points.map { "\($0.label) \(CoachOverview.format($0.value))\(unit)" }.joined(separator: ", ")
+    let pts = t.points.map { "\($0.label) \(CoachOverviewCard.number($0.value))\(unit)" }.joined(separator: ", ")
     return t.label.isEmpty ? pts : "\(t.label): \(pts)"
+  }
+}
+
+/// Đồng hồ vùng: thanh ngang chia vùng (vùng có nhãn tô đậm dần), kim tròn ở giá
+/// trị hiện tại, số lớn và tên vùng đang đứng — đọc trong một giây.
+private struct ZoneGauge: View {
+  let gauge: CoachOverview.Gauge
+
+  private func x(_ v: Double, _ w: CGFloat) -> CGFloat {
+    CGFloat((v - gauge.min) / (gauge.max - gauge.min)) * w
+  }
+
+  /// Tỉ số như ACWR cần hai chữ số thập phân (3,43 — không phải 3,4).
+  static func precise(_ v: Double) -> String {
+    let digits = v.rounded() == v ? 0 : (v < 10 ? 2 : 1)
+    return v.formatted(.number.grouping(.automatic).precision(.fractionLength(0...digits)).locale(.app))
+  }
+
+  private var currentZone: String? {
+    gauge.zones.first { gauge.value >= $0.from && gauge.value <= $0.to }?.label
+  }
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 12) {
+      HStack(alignment: .firstTextBaseline, spacing: 6) {
+        Text(verbatim: gauge.label)
+          .font(.system(size: 14, weight: .semibold))
+          .foregroundStyle(CoachOverviewCard.muted)
+        Spacer(minLength: 8)
+        if let z = currentZone, !z.isEmpty {
+          Text(verbatim: z)
+            .font(.system(size: 12, weight: .semibold))
+            .foregroundStyle(CoachOverviewCard.ink)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 4)
+            .background(CoachOverviewCard.ink.opacity(0.07), in: Capsule())
+        }
+      }
+      HStack(alignment: .firstTextBaseline, spacing: 4) {
+        Text(verbatim: Self.precise(gauge.value))
+          .font(.system(size: 40, weight: .bold, design: .rounded).monospacedDigit())
+          .foregroundStyle(CoachOverviewCard.ink)
+        if !gauge.unit.isEmpty {
+          Text(verbatim: gauge.unit)
+            .font(.system(size: 16, weight: .semibold, design: .rounded))
+            .foregroundStyle(CoachOverviewCard.muted)
+        }
+      }
+      GeometryReader { geo in
+        let w = geo.size.width
+        ZStack(alignment: .leading) {
+          Capsule().fill(CoachOverviewCard.track).frame(height: 10)
+          ForEach(Array(gauge.zones.enumerated()), id: \.offset) { i, z in
+            Capsule()
+              .fill(CoachOverviewCard.ink.opacity(0.14 + 0.12 * Double(i)))
+              .frame(width: max(4, x(z.to, w) - x(z.from, w)), height: 10)
+              .offset(x: x(z.from, w))
+          }
+          Circle()
+            .fill(DS.Color.card.swiftUI)
+            .overlay { Circle().strokeBorder(CoachOverviewCard.ink, lineWidth: 3) }
+            .frame(width: 20, height: 20)
+            .offset(x: min(max(0, x(gauge.value, w) - 10), w - 20))
+        }
+        .frame(height: 20)
+      }
+      .frame(height: 20)
+      // Chú thích vùng: một hàng riêng (không đặt theo vị trí — nhãn đè nhau khi
+      // các vùng sát nhau, 16/10).
+      FlowRows(spacing: 12, centered: false) {
+        ForEach(Array(gauge.zones.enumerated()), id: \.offset) { i, z in
+          HStack(spacing: 5) {
+            Capsule().fill(CoachOverviewCard.ink.opacity(0.14 + 0.12 * Double(i))).frame(width: 14, height: 6)
+            Text(verbatim: "\(z.label) \(Self.precise(z.from))–\(Self.precise(z.to))")
+              .font(.system(size: 11))
+              .foregroundStyle(CoachOverviewCard.muted)
+          }
+        }
+      }
+    }
+    .accessibilityElement(children: .ignore)
+    .accessibilityLabel(Text(verbatim: "\(gauge.label): \(CoachOverviewCard.number(gauge.value)) \(gauge.unit) \(currentZone ?? "")"))
+  }
+}
+
+/// Chia phần: một thanh xếp chồng, mỗi phần một sắc mực, chú thích kèm số và %.
+private struct SplitBar: View {
+  let split: CoachOverview.Split
+
+  private var total: Double { split.parts.map(\.value).reduce(0, +) }
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 12) {
+      if !split.label.isEmpty {
+        Text(verbatim: split.label)
+          .font(.system(size: 14, weight: .semibold))
+          .foregroundStyle(CoachOverviewCard.muted)
+      }
+      GeometryReader { geo in
+        HStack(spacing: 3) {
+          ForEach(Array(split.parts.enumerated()), id: \.offset) { i, p in
+            RoundedRectangle(cornerRadius: 5, style: .continuous)
+              .fill(Self.shade(i))
+              .frame(width: max(6, (geo.size.width - CGFloat(split.parts.count - 1) * 3) * CGFloat(p.value / total)))
+          }
+        }
+      }
+      .frame(height: 14)
+      VStack(alignment: .leading, spacing: 8) {
+        ForEach(Array(split.parts.enumerated()), id: \.offset) { i, p in
+          HStack(spacing: 8) {
+            RoundedRectangle(cornerRadius: 3).fill(Self.shade(i)).frame(width: 10, height: 10)
+            Text(verbatim: p.label)
+              .font(.system(size: 14))
+              .foregroundStyle(CoachOverviewCard.ink)
+            Spacer(minLength: 8)
+            Text(verbatim: CoachOverviewCard.number(p.value) + (split.unit.isEmpty ? "" : " \(split.unit)"))
+              .font(.system(size: 14, weight: .semibold).monospacedDigit())
+              .foregroundStyle(CoachOverviewCard.ink)
+            Text(verbatim: "\(Int((p.value / total * 100).rounded()))%")
+              .font(.system(size: 12).monospacedDigit())
+              .foregroundStyle(CoachOverviewCard.muted)
+              .frame(width: 36, alignment: .trailing)
+          }
+          .accessibilityElement(children: .combine)
+        }
+      }
+    }
+  }
+
+  /// Sắc mực đậm → nhạt theo thứ tự phần (một màu, như phần còn lại của thẻ).
+  static func shade(_ i: Int) -> Color {
+    CoachOverviewCard.ink.opacity([1, 0.55, 0.3, 0.18, 0.1][min(i, 4)])
+  }
+}
+
+/// Các bước: số tròn nối bằng một đường dọc mảnh (timeline), tiêu đề đậm + mô tả.
+private struct StepList: View {
+  let steps: [CoachOverview.Step]
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 0) {
+      ForEach(Array(steps.enumerated()), id: \.offset) { i, step in
+        HStack(alignment: .top, spacing: 12) {
+          VStack(spacing: 0) {
+            Text(verbatim: "\(i + 1)")
+              .font(.system(size: 12, weight: .bold, design: .rounded))
+              .foregroundStyle(DS.Color.background.swiftUI)
+              .frame(width: 24, height: 24)
+              .background(CoachOverviewCard.ink, in: Circle())
+            if i < steps.count - 1 {
+              Rectangle().fill(CoachOverviewCard.ink.opacity(0.15)).frame(width: 1.5).frame(maxHeight: .infinity)
+            }
+          }
+          VStack(alignment: .leading, spacing: 3) {
+            Text(verbatim: step.title)
+              .font(.system(size: 15, weight: .semibold))
+              .foregroundStyle(CoachOverviewCard.ink)
+            if !step.detail.isEmpty {
+              Text(verbatim: step.detail)
+                .font(.system(size: 13))
+                .foregroundStyle(CoachOverviewCard.muted)
+                .fixedSize(horizontal: false, vertical: true)
+            }
+          }
+          .padding(.bottom, i < steps.count - 1 ? 16 : 0)
+        }
+        .accessibilityElement(children: .combine)
+      }
+    }
   }
 }
 
