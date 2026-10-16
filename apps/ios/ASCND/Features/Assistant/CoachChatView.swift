@@ -764,7 +764,12 @@ private struct CoachMessageRow: View {
 /// chọn, màu Siri iOS 27). Ba chấm iMessage giữ cho tin nhắn giữa người với người.
 private struct CoachThinking: View {
   var body: some View {
-    IntelligenceOrb(size: 36)
+    HStack(spacing: 12) {
+      IntelligenceOrb(size: 40)
+      Text("coach.thinking")
+        .font(.system(size: 12, weight: .medium))
+        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+    }
       .padding(.vertical, 4)
       .frame(maxWidth: .infinity, alignment: .leading)
       .accessibilityElement(children: .ignore)
