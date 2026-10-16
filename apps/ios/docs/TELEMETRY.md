@@ -25,6 +25,22 @@ Bản Debug chạy với biến môi trường `ASCND_TELEMETRY_TEST=1` gửi m�
 "ASCND: kiểm tra Sentry (debug)" lên Sentry (simulator:
 `SIMCTL_CHILD_ASCND_TELEMETRY_TEST=1 xcrun simctl launch …`). Bản Release không có lối này.
 
+### dSYM cho Sentry (stack có tên hàm)
+
+Không có dSYM, stack của crash / treo hiện `<redacted>`. Build phase **Upload dSYMs
+to Sentry** (target ASCND, `tools/sentry-upload-dsyms.sh`) chạy ở mọi bản **Release**
+— tức mỗi lần Archive cho TestFlight / App Store — và đẩy cả thư mục dSYM (app,
+widget, framework) lên org `ascnd-fitness`, project `apple-ios`.
+
+Một lần trên máy Archive:
+
+1. Sentry → Settings → Auth Tokens (https://ascnd-fitness.sentry.io/settings/auth-tokens/)
+   → tạo **Organization Token**.
+2. Terminal: `sentry-cli login` → dán token (lưu ở `~/.sentryclirc`, ngoài repo).
+
+Thiếu sentry-cli hay thiếu đăng nhập: build vẫn chạy, chỉ có một cảnh báo trong Xcode.
+Bản Debug (simulator) không upload — sự kiện từ bản Debug vẫn không có tên hàm.
+
 ## Sự kiện (danh sách cố định — `Telemetry.Event`)
 
 | Sự kiện | Khi nào | Thuộc tính |
