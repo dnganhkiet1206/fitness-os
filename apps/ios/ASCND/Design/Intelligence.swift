@@ -41,7 +41,7 @@ struct IntelligenceMark: View {
     .accessibilityHidden(true)
   }
 
-  private static let letter: Path = {
+  static let letter: Path = {
     var p = Path()
     p.move(to: CGPoint(x: 14, y: 190))
     p.addLine(to: CGPoint(x: 92, y: 38))
@@ -55,7 +55,7 @@ struct IntelligenceMark: View {
     return p
   }()
 
-  private static let pulse: Path = {
+  static let pulse: Path = {
     var p = Path()
     let pts: [(CGFloat, CGFloat)] = [(52, 124), (84, 124), (94, 104), (108, 146), (120, 116), (128, 124), (168, 124)]
     p.move(to: CGPoint(x: pts[0].0, y: pts[0].1))
@@ -69,7 +69,7 @@ struct IntelligenceMark: View {
     return Path(ellipseIn: CGRect(x: c.x - rr, y: c.y - rr, width: rr * 2, height: rr * 2))
   }
 
-  private static let koa: Path = {
+  static let koa: Path = {
     var p = Path()
     p.addPath(circle(-17, -9, 11))
     p.addPath(circle(17, -9, 11))
@@ -77,7 +77,7 @@ struct IntelligenceMark: View {
     return p
   }()
 
-  private static let koaHoles: Path = {
+  static let koaHoles: Path = {
     var p = Path()
     p.addPath(circle(-17, -9, 5.5))
     p.addPath(circle(17, -9, 5.5))
@@ -152,67 +152,69 @@ struct IntelligenceSheenText: View {
   }
 }
 
-/// Quả cầu ASCND Intelligence khi AI đang làm việc (16/10, chủ dự án: kiểu Siri
-/// iOS 27 — "trong suốt hơn, ba chấm thay vạch, chuyển động như Siri"). Cầu kính
-/// trong (vật liệu mờ, nhìn xuyên nền), ba đốm màu dịu trôi lượn bên trong theo
-/// quỹ đạo lệch nhịp, cầu "thở" nhẹ, ba chấm trắng nhấp nhô lần lượt. Thay ba
-/// chấm / vòng quay ở mọi chỗ AI đang nghĩ. Giảm chuyển động: đứng yên.
+/// ASCND Intelligence khi AI đang làm việc (16/10, chủ dự án: bỏ quả cầu tròn —
+/// "hơi giống chatbot", phải hợp nền kem; chọn mock "1 · Nhịp tim chạy qua logo,
+/// màu theo Siri mới"). Chính ký hiệu chữ A: một nhịp sáng nhiều màu dịu (hồng,
+/// tím, xanh đậm, cam nhạt — dải màu Siri iOS 27) chạy dọc gạch nhịp tim, có quầng
+/// mờ, màu trôi dần; chữ A "thở" rất nhẹ. Không khung, đặt thẳng lên nền giấy.
+/// `ink`: màu chữ A (trắng khi đè lên ảnh tối). Giảm chuyển động: nhịp tim tô
+/// đủ màu, đứng yên.
 struct IntelligenceOrb: View {
   var size: CGFloat = 40
+  var ink: Color = Intelligence.ink
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
   var body: some View {
-    TimelineView(.animation(minimumInterval: 1 / 30, paused: reduceMotion)) { ctx in
-      let t = reduceMotion ? 0 : ctx.date.timeIntervalSinceReferenceDate
-      ZStack {
-        // Kính trong: vật liệu mờ + một lớp tối rất nhẹ cho chấm trắng nổi.
-        Circle().fill(.ultraThinMaterial)
-        Circle().fill(Color.black.opacity(0.16))
-        // Ba đốm màu dịu trôi lượn (quỹ đạo Lissajous, mỗi đốm một nhịp).
-        ZStack {
-          blob(IntelligenceTones.violet, t, speed: 0.55, phase: 0)
-          blob(IntelligenceTones.rose, t, speed: 0.43, phase: 2.1)
-          blob(IntelligenceTones.navy, t, speed: 0.37, phase: 4.2)
-          blob(IntelligenceTones.apricot, t, speed: 0.61, phase: 1.3).opacity(0.7)
+    TimelineView(.animation(minimumInterval: 1 / 30, paused: reduceMotion)) { tl in
+      let t = reduceMotion ? 0 : tl.date.timeIntervalSinceReferenceDate
+      Canvas { ctx, canvas in
+        let k = min(canvas.width, canvas.height) / 220
+        ctx.scaleBy(x: k, y: k)
+        let mark = IntelligenceMark.self
+        ctx.opacity = reduceMotion ? 1 : 0.88 + 0.12 * (0.5 + 0.5 * sin(t * 2 * Double.pi / 2.4))
+        ctx.fill(mark.letter, with: .color(ink))
+        var cut = ctx
+        cut.blendMode = .destinationOut
+        cut.stroke(mark.pulse, with: .color(.black),
+                   style: StrokeStyle(lineWidth: 16, lineCap: .round, lineJoin: .round))
+        ctx.fill(mark.koa, with: .color(ink))
+        cut.fill(mark.koaHoles, with: .color(.black))
+        ctx.opacity = 1
+        // Rãnh nhịp tim mờ làm nền cho nhịp sáng.
+        let line = StrokeStyle(lineWidth: 7, lineCap: .round, lineJoin: .round)
+        ctx.stroke(mark.pulse, with: .color(ink.opacity(0.18)), style: line)
+        let (from, to) = Self.sweep(t)
+        guard to > from else { return }
+        let lit = mark.pulse.trimmedPath(from: from, to: to)
+        let shade = Self.shading(t)
+        ctx.drawLayer { glow in
+          glow.addFilter(.blur(radius: 7))
+          glow.opacity = 0.7
+          glow.stroke(lit, with: shade, style: StrokeStyle(lineWidth: 14, lineCap: .round, lineJoin: .round))
         }
-        .blur(radius: size * 0.16)
-        .clipShape(Circle())
-        // Ba chấm trắng nhấp nhô lần lượt.
-        HStack(spacing: size * 0.09) {
-          ForEach(0..<3, id: \.self) { i in
-            let p = Self.dot(i, t)
-            Circle()
-              .fill(.white.opacity(0.65 + 0.35 * p))
-              .frame(width: size * 0.12, height: size * 0.12)
-              .offset(y: -size * 0.06 * p)
-          }
-        }
-        // Mép kính: sáng phía trên, mảnh.
-        Circle().strokeBorder(
-          LinearGradient(colors: [.white.opacity(0.55), .white.opacity(0.08)], startPoint: .top, endPoint: .bottom),
-          lineWidth: 0.8)
+        ctx.stroke(lit, with: shade, style: line)
       }
       .frame(width: size, height: size)
-      .scaleEffect(reduceMotion ? 1 : 1 + 0.035 * sin(t * 2 * Double.pi / 2.4))
-      .shadow(color: IntelligenceTones.violet.opacity(0.25), radius: size * 0.22, y: size * 0.06)
     }
     .accessibilityHidden(true)
   }
 
-  private func blob(_ color: Color, _ t: TimeInterval, speed: Double, phase: Double) -> some View {
-    let r = size * 0.22
-    let x = r * cos(t * speed * 2 + phase)
-    let y = r * sin(t * speed * 3 + phase * 1.3)
-    return Circle()
-      .fill(color.opacity(0.75))
-      .frame(width: size * 0.62, height: size * 0.62)
-      .offset(x: x, y: y)
+  /// Đoạn sáng trên gạch nhịp tim (0…1 theo chiều dài): đầu chạy từ trái sang phải
+  /// trong 1,8 s, đuôi dài ~45 %, mờ ra ở hai mép. Đứng yên (t = 0): cả đường.
+  static func sweep(_ t: TimeInterval) -> (CGFloat, CGFloat) {
+    guard t > 0 else { return (0, 1) }
+    let p = t.truncatingRemainder(dividingBy: 1.8) / 1.8
+    let head = -0.05 + 1.55 * p
+    return (CGFloat(max(0, min(1, head - 0.45))), CGFloat(max(0, min(1, head))))
   }
 
-  /// 0…1 cho chấm thứ `i`: nhịp ~1,2 s, mỗi chấm trễ 0,18 s.
-  static func dot(_ i: Int, _ t: TimeInterval) -> Double {
-    guard t > 0 else { return 0.5 }
-    let local = (t - Double(i) * 0.18).truncatingRemainder(dividingBy: 1.2) / 1.2
-    return local < 0.5 ? sin(local * 2 * Double.pi) * 1 : 0
+  /// Dải màu Siri dọc gạch nhịp tim (x 52 → 168), trôi dần sang phải.
+  static func shading(_ t: TimeInterval) -> GraphicsContext.Shading {
+    let tones = [IntelligenceTones.rose, IntelligenceTones.violet, IntelligenceTones.navy, IntelligenceTones.apricot]
+    let shift = t.truncatingRemainder(dividingBy: 3.2) / 3.2
+    let colors = (0..<5).map { tones[(Int(Double($0) + shift * 4)) % tones.count] }
+    let offset = CGFloat(shift.truncatingRemainder(dividingBy: 0.25) / 0.25) * 58
+    return .linearGradient(Gradient(colors: colors),
+                           startPoint: CGPoint(x: 52 - offset, y: 124), endPoint: CGPoint(x: 284 - offset, y: 124))
   }
 }

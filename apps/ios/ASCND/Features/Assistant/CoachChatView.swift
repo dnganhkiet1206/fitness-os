@@ -760,8 +760,8 @@ private struct CoachMessageRow: View {
   }
 }
 
-/// Koa đang nghĩ: quả cầu ASCND Intelligence (16/10, chủ dự án chọn kiểu Siri
-/// iOS 27). Ba chấm iMessage giữ cho tin nhắn giữa người với người.
+/// Koa đang nghĩ: nhịp tim chạy qua ký hiệu ASCND Intelligence (16/10, chủ dự án
+/// chọn, màu Siri iOS 27). Ba chấm iMessage giữ cho tin nhắn giữa người với người.
 private struct CoachThinking: View {
   var body: some View {
     IntelligenceOrb(size: 36)
