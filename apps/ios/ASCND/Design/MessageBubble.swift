@@ -45,16 +45,17 @@ struct MessageBubbleShape: Shape {
 }
 
 extension View {
-  /// Chữ trong bong bóng iMessage: lề, nền, đuôi (lề thêm phía đuôi).
-  func messageBubble(mine: Bool, tail: Bool = true) -> some View {
+  /// Chữ trong bong bóng iMessage: lề, nền, đuôi (lề thêm phía đuôi). `fill`: nền
+  /// riêng (chữ màu thường) — Koa Coach dùng xám thay xanh.
+  func messageBubble(mine: Bool, tail: Bool = true, fill: Color? = nil) -> some View {
     let t = tail ? MessageBubbleStyle.tailWidth : 0
     return self
       .font(.system(size: 17))
-      .foregroundStyle(mine ? Color.white : Color.primary)
+      .foregroundStyle(mine && fill == nil ? Color.white : Color.primary)
       .padding(.vertical, 8)
       .padding(.leading, 13 + (mine ? 0 : t))
       .padding(.trailing, 13 + (mine ? t : 0))
-      .background(mine ? MessageBubbleStyle.mine : MessageBubbleStyle.theirs, in: MessageBubbleShape(mine: mine, tail: tail))
+      .background(fill ?? (mine ? MessageBubbleStyle.mine : MessageBubbleStyle.theirs), in: MessageBubbleShape(mine: mine, tail: tail))
   }
 
   /// Tin vừa gửi bay lên từ ô soạn và nở ra như iMessage.

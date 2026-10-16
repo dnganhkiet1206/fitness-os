@@ -201,25 +201,55 @@ struct CoachChatView: View {
 
   // MARK: - Trống
 
+  /// Màn trống kiểu app Siri (16/10, chủ dự án: "bỏ hết mấy cái chữ, làm logo AI
+  /// to lên và mờ"): chỉ một ký hiệu ASCND Intelligence lớn, mờ, nhịp tim chạy nhẹ.
+  /// Gợi ý nằm sát trên ô chat (`starterCards`). VoiceOver vẫn đọc lời chào.
   private var hello: some View {
-    VStack(spacing: DS.Spacing.sm) {
-      IntelligenceMark(size: 44)
-      Text("coach.hello")
-        .font(DS.TextStyle.largeTitle)
-        .foregroundStyle(DS.Color.foreground.swiftUI)
-      Text("coach.intro")
-        .font(DS.TextStyle.body)
-        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-        .multilineTextAlignment(.center)
-      IntelligenceBadge(mark: false)
-      if !suggestions.isEmpty {
-        FlowChips(suggestions: suggestions, lang: lang, disabled: chat.isLoading) { send($0) }
-          .padding(.top, DS.Spacing.md)
+    IntelligenceOrb(size: 132)
+      .opacity(0.16)
+      .frame(maxWidth: .infinity)
+      .containerRelativeFrame(.vertical, alignment: .center)
+      .accessibilityElement(children: .ignore)
+      .accessibilityLabel(Text("coach.hello"))
+      .accessibilityHint(Text("coach.intro"))
+  }
+
+  /// Thẻ câu hỏi mẫu ngay trên ô chat, cuộn ngang như ChatGPT (16/10, chủ dự án):
+  /// dòng đậm là chủ đề, dòng mờ là câu sẽ gửi.
+  private var starterCards: some View {
+    ScrollView(.horizontal) {
+      HStack(spacing: 8) {
+        ForEach(suggestions) { s in
+          Button {
+            send(s.question(lang))
+          } label: {
+            VStack(alignment: .leading, spacing: 2) {
+              Text(verbatim: s.label(lang))
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(DS.Color.foreground.swiftUI)
+              Text(verbatim: s.question(lang))
+                .font(.system(size: 14))
+                .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            }
+            .lineLimit(1)
+            .frame(width: 210, alignment: .leading)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 11)
+            .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay {
+              RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .strokeBorder(DS.Color.foreground.swiftUI.opacity(0.08), lineWidth: 0.75)
+            }
+          }
+          .buttonStyle(.plain)
+          .disabled(chat.isLoading)
+          .accessibilityLabel(Text(verbatim: s.question(lang)))
+        }
       }
+      .padding(.horizontal, DS.Spacing.md)
     }
-    .padding(DS.Spacing.lg)
-    .frame(maxWidth: .infinity)
-    .containerRelativeFrame(.vertical, alignment: .center)
+    .scrollIndicators(.hidden)
+    .padding(.horizontal, -DS.Spacing.md)
   }
 
   // MARK: - Cuộc trò chuyện
@@ -301,7 +331,11 @@ struct CoachChatView: View {
   /// Đầy đủ: ô chữ + nút gửi. Thu gọn (vuốt xuống, như thanh phát của Apple Music): viên nhỏ ký hiệu
   /// + chữ gợi ý ngay tại đáy màn.
   private var composer: some View {
-    VStack(spacing: 6) {
+    VStack(spacing: 10) {
+      if chat.messages.isEmpty, !collapsed, !suggestions.isEmpty {
+        starterCards
+          .transition(.opacity)
+      }
       ZStack(alignment: .leading) {
         if collapsed {
           HStack(spacing: 8) {
@@ -752,9 +786,10 @@ private struct CoachMessageRow: View {
   private var user: some View {
       HStack {
         Spacer(minLength: 56)
-        // Bong bóng xanh có đuôi kiểu iMessage (16/10, chủ dự án).
+        // Bong bóng có đuôi kiểu iMessage, màu xám như ChatGPT (16/10, chủ dự án:
+        // "ô chat không dùng màu xanh mà làm màu xám"). Nhắn tin giữa người vẫn xanh.
         Text(verbatim: message.content)
-          .messageBubble(mine: true)
+          .messageBubble(mine: true, fill: DS.Color.foreground.swiftUI.opacity(0.07))
           .textSelection(.enabled)
       }
   }
