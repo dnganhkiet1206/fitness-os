@@ -416,7 +416,7 @@ private struct QuickLogSheet: View {
         VStack(alignment: .leading, spacing: 3) {
           Text("quicklog.coach").font(.system(size: 15, weight: .bold))
             .foregroundStyle(DS.Color.foreground.swiftUI)
-          IntelligenceBadge(size: 11)
+          IntelligenceBadge(size: 11, mark: false)
         }
         Spacer(minLength: 0)
         Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold))

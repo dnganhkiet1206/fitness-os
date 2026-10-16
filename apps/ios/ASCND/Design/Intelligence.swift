@@ -36,12 +36,14 @@ struct IntelligenceMark: View {
 }
 
 /// Ký hiệu + chữ "ASCND Intelligence": nhãn "do AI làm" ở thẻ và màn AI.
+/// `mark: false` khi ký hiệu lớn đã đứng ngay cạnh (không lặp hai ký hiệu).
 struct IntelligenceBadge: View {
   var size: CGFloat = 14
+  var mark = true
 
   var body: some View {
     HStack(spacing: size * 0.55) {
-      IntelligenceMark(size: size)
+      if mark { IntelligenceMark(size: size) }
       Text("ai.brand")
         .font(.system(size: size * 0.86, weight: .semibold))
         .foregroundStyle(Intelligence.ink)

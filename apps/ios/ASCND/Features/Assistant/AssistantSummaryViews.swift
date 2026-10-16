@@ -304,8 +304,8 @@ struct AskCoachBar: View {
   var body: some View {
     Button(action: open) {
       VStack(alignment: .leading, spacing: 6) {
+        // Không ký hiệu ASCND Intelligence ở đây: thẻ Insight ngay trên đã mang nó.
         HStack(spacing: 10) {
-          IntelligenceMark(size: 18)
           Text("assistant.ask")
             .font(.system(size: 15))
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)

@@ -73,7 +73,7 @@ struct CoachChatView: View {
         .font(DS.TextStyle.body)
         .foregroundStyle(DS.Color.mutedForeground.swiftUI)
         .multilineTextAlignment(.center)
-      IntelligenceBadge()
+      IntelligenceBadge(mark: false)
       if !suggestions.isEmpty {
         FlowChips(suggestions: suggestions, lang: lang, disabled: chat.isLoading) { send($0) }
           .padding(.top, DS.Spacing.md)
