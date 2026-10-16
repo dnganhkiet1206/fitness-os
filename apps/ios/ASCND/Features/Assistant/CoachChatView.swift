@@ -698,6 +698,9 @@ private struct CoachMarkdown: View {
             Text(verbatim: "\(n).").monospacedDigit().foregroundStyle(DS.Color.mutedForeground.swiftUI)
             Self.line(runs, fade: fade)
           }
+        case .paragraph(let runs) where Self.isRule(runs) && (i == 0 || i == blocks.count - 1):
+          // Đường kẻ ở đầu / cuối không ngăn cách gì (model hay để thừa một `---`).
+          EmptyView()
         case .paragraph(let runs) where Self.isRule(runs):
           // `---` giữa các mục (bố cục kiểu ChatGPT): một đường kẻ mảnh.
           Rectangle()

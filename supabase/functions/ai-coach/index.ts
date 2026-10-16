@@ -239,6 +239,9 @@ serve(async (req) => {
 
     // Build context
     const ctx = {
+      /* Hôm nay của người dùng (16/10): không có nó, model gọi một đêm cũ là
+         "tối qua" ("ngủ 9 tiếng tối qua" trong khi người dùng vừa nói 7). */
+      today,
       /* P0-2: aggregates the coach reasons with — null means not measured. */
       streak_days,
       protein_avg_7d_g: protein_avg_7d,
@@ -323,6 +326,8 @@ READING THE DATA:
 - A field that is null or missing was NOT MEASURED. It is not a zero and not a reading of nothing. Never say or imply the user slept no hours, has no heart-rate variability, did no training or ate nothing because a field is null — say the app has no reading for it, or leave it out.
 - total_min is how long a night lasted. deep_min, rem_min and light_min are 0 on any night the user typed in by hand rather than synced from a watch; zeroes there mean the stages are unknown, not that the stages did not happen.
 - readiness is 0-100 and is absent on days the app could not score. It measures how much TRAINING CAPACITY the user appears to have today, combining HRV, resting heart rate, sleep and training load over whichever of those were actually measured. It is NOT a recovery score.
+- "today" is the user's date. "Last night" means ONLY a recent_sleep entry whose date is today; an older entry is that older night — name its date, never call it last night. No entry dated today means last night is not recorded.
+- When the user TELLS you a number (I slept 7 hours, I ate 2000 kcal), that is the truth for this answer: use it, never contradict it with an older or different value from the data. If the app has nothing recorded for it, suggest saving it with Quick log (Ghi nhanh) so the app can use it.
 - recovery_measured says whether that day's readiness rested on a recovery reading (HRV, resting heart rate or sleep). When it is false the score came from training load alone: the number is real, but nothing about how the user recovered was measured.
 
 IMPORTANT PRINCIPLES:
@@ -347,6 +352,8 @@ CÁCH ĐỌC DỮ LIỆU:
 - Trường nào là null hoặc không có nghĩa là CHƯA ĐO ĐƯỢC. Đó không phải số 0, cũng không phải phép đo ra không. Tuyệt đối không nói hay ám chỉ người dùng không ngủ, không có biến thiên nhịp tim, không tập, hay không ăn gì chỉ vì trường đó null — hãy nói app không có số liệu, hoặc bỏ qua.
 - total_min là độ dài của đêm đó. deep_min, rem_min, light_min bằng 0 với mọi đêm người dùng tự gõ tay thay vì đồng bộ từ đồng hồ; số 0 ở đó nghĩa là không biết các giai đoạn, không phải là các giai đoạn đó không xảy ra.
 - readiness thang 0-100, và vắng mặt vào những ngày app không chấm được điểm. Nó đo KHẢ NĂNG TẬP LUYỆN hôm nay, ghép HRV, nhịp tim nghỉ, giấc ngủ và tải tập trên những chiều thật sự đo được. Nó KHÔNG phải điểm phục hồi.
+- "today" là ngày hôm nay của người dùng. "Đêm qua / tối qua" CHỈ là mục recent_sleep có date bằng today; mục cũ hơn là đêm của ngày đó — nói rõ ngày, không bao giờ gọi là tối qua. Không có mục nào date bằng today nghĩa là đêm qua chưa được ghi.
+- Khi người dùng NÓI một con số (tôi ngủ 7 tiếng, tôi ăn 2000 kcal), đó là sự thật cho câu trả lời này: dùng nó, không bao giờ cãi lại bằng một số cũ hay số khác trong dữ liệu. Nếu app chưa ghi con số đó, gợi ý lưu bằng Ghi nhanh để app dùng được.
 - recovery_measured cho biết điểm hôm đó có dựa trên một phép đo phục hồi (HRV, nhịp tim nghỉ hoặc giấc ngủ) hay không. Khi nó là false, điểm được dựng từ mỗi tải tập: con số vẫn thật, nhưng app chưa đo được gì về việc người dùng phục hồi ra sao.
 
 NGUYÊN TẮC QUAN TRỌNG:
