@@ -14661,19 +14661,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "The coach is replying"
+      "value": "Koa is replying"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Coach đang trả lời"
+      "value": "Koa đang trả lời"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "El entrenador está respondiendo"
+      "value": "Koa está respondiendo"
      }
     }
    }
@@ -14753,19 +14753,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "What the coach remembers"
+      "value": "What Koa remembers"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Coach nhớ gì"
+      "value": "Koa nhớ gì"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Lo que recuerda el coach"
+      "value": "Lo que recuerda Koa"
      }
     }
    }
@@ -14776,19 +14776,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "Things you mentioned in past conversations, so the coach does not ask again. Daily numbers are not here — the app already has those."
+      "value": "Things you mentioned in past conversations, so Koa does not ask again. Daily numbers are not here — the app already has those."
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Những điều bạn đã kể trong các cuộc trò chuyện, để coach không hỏi lại. Số liệu hằng ngày không nằm ở đây — app đã có sẵn."
+      "value": "Những điều bạn đã kể trong các cuộc trò chuyện, để Koa không hỏi lại. Số liệu hằng ngày không nằm ở đây — app đã có sẵn."
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Lo que mencionaste en conversaciones anteriores, para que el coach no vuelva a preguntar. Los datos diarios no están aquí: la app ya los tiene."
+      "value": "Lo que mencionaste en conversaciones anteriores, para que Koa no vuelva a preguntar. Los datos diarios no están aquí: la app ya los tiene."
      }
     }
    }
@@ -14799,19 +14799,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "Could not load what the coach remembers."
+      "value": "Could not load what Koa remembers."
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Chưa đọc được trí nhớ của coach."
+      "value": "Chưa đọc được trí nhớ của Koa."
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "No se pudo cargar lo que recuerda el coach."
+      "value": "No se pudo cargar lo que recuerda Koa."
      }
     }
    }
@@ -14845,19 +14845,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "The coach remembers durable things — an injury, a food you avoid, when you train, what you are working towards. It skips anything that changes day to day."
+      "value": "Koa remembers durable things — an injury, a food you avoid, when you train, what you are working towards. It skips anything that changes day to day."
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Coach sẽ ghi nhớ khi bạn kể những điều bền lâu — chấn thương, món không ăn được, lịch tập, mục tiêu. Nó bỏ qua những thứ đổi theo ngày."
+      "value": "Koa sẽ ghi nhớ khi bạn kể những điều bền lâu — chấn thương, món không ăn được, lịch tập, mục tiêu. Koa bỏ qua những thứ đổi theo ngày."
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "El coach recuerda cosas duraderas: una lesión, un alimento que evitas, cuándo entrenas, hacia qué trabajas. Ignora lo que cambia de un día a otro."
+      "value": "Koa recuerda cosas duraderas: una lesión, un alimento que evitas, cuándo entrenas, hacia qué trabajas. Ignora lo que cambia de un día a otro."
      }
     }
    }
@@ -15029,19 +15029,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "“%@”\n\nThe coach will no longer remember this. If it is still true, you can mention it again in a conversation."
+      "value": "“%@”\n\nKoa will no longer remember this. If it is still true, you can mention it again in a conversation."
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "“%@”\n\nCoach sẽ không còn nhớ điều này. Nếu nó vẫn đúng, bạn có thể kể lại trong một cuộc trò chuyện."
+      "value": "“%@”\n\nKoa sẽ không còn nhớ điều này. Nếu nó vẫn đúng, bạn có thể kể lại trong một cuộc trò chuyện."
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "“%@”\n\nEl coach ya no recordará esto. Si sigue siendo cierto, puedes volver a mencionarlo en una conversación."
+      "value": "“%@”\n\nKoa ya no recordará esto. Si sigue siendo cierto, puedes volver a mencionarlo en una conversación."
      }
     }
    }
@@ -15121,19 +15121,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "The coach will start from nothing. Your training and nutrition data is untouched."
+      "value": "Koa will start from nothing. Your training and nutrition data is untouched."
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Coach sẽ bắt đầu lại từ con số không. Dữ liệu tập luyện và dinh dưỡng của bạn không bị ảnh hưởng."
+      "value": "Koa sẽ bắt đầu lại từ con số không. Dữ liệu tập luyện và dinh dưỡng của bạn không bị ảnh hưởng."
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "El coach empezará desde cero. Tus datos de entrenamiento y nutrición no se tocan."
+      "value": "Koa empezará desde cero. Tus datos de entrenamiento y nutrición no se tocan."
      }
     }
    }
@@ -15328,19 +15328,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "Coach memory"
+      "value": "Koa memory"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Coach nhớ gì"
+      "value": "Koa nhớ gì"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Memoria del coach"
+      "value": "Memoria de Koa"
      }
     }
    }
@@ -15765,19 +15765,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "Ask the coach about this"
+      "value": "Ask Koa about this"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Hỏi coach về chỉ số này"
+      "value": "Hỏi Koa về chỉ số này"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Pregúntale al coach sobre esto"
+      "value": "Pregúntale a Koa sobre esto"
      }
     }
    }
@@ -50195,19 +50195,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "Ask the coach about today…"
+      "value": "Ask Koa about today…"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Pregunta al coach sobre hoy…"
+      "value": "Pregúntale a Koa sobre hoy…"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Hỏi coach về hôm nay…"
+      "value": "Hỏi Koa về hôm nay…"
      }
     }
    }
@@ -50402,19 +50402,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "Sync Apple Health or log it so the coach can read it."
+      "value": "Sync Apple Health or log it so Koa can read it."
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Sincroniza Apple Health o regístralo para que el coach lo lea."
+      "value": "Sincroniza Apple Health o regístralo para que Koa lo lea."
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Đồng bộ Apple Health hoặc ghi tay để coach đọc được."
+      "value": "Đồng bộ Apple Health hoặc ghi tay để Koa đọc được."
      }
     }
    }
@@ -51391,19 +51391,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "Three things so Koa and your coach get to know you"
+      "value": "Three things so Koa gets to know you"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Tres cosas para que Koa y tu coach te conozcan"
+      "value": "Tres cosas para que Koa te conozca"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "3 việc để Koa và coach hiểu bạn"
+      "value": "3 việc để Koa hiểu bạn hơn"
      }
     }
    }

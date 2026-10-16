@@ -242,7 +242,9 @@ export async function callAI(
       let res: Response;
       /* Một controller cho mỗi bên: huỷ bên A không được đụng tới bên B. */
       const ctrl = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+      /* Ảnh chậm hơn chữ nhiều (16/10: scan-food bị huỷ ở 20 s, log ghi nhầm
+         "no ai provider configured") — lời gọi đọc ảnh được tối thiểu 45 s. */
+      const timer = setTimeout(() => ctrl.abort(), opts.vision ? Math.max(TIMEOUT_MS, 45_000) : TIMEOUT_MS);
       try {
         res = await fetch(p.url, {
           method: "POST",

@@ -512,7 +512,7 @@ struct AssistantTab: View {
     if memory != nil, ai {
       out.append(
         Tool(
-          route: .memory, symbol: "sparkles", tint: DS.Color.metricPurple.swiftUI,
+          route: .memory, symbol: "brain.head.profile", tint: DS.Color.metricPurple.swiftUI,
           label: String(localized: "assistant.tool.memory"), hint: String(localized: "assistant.tool.memory.hint")))
     }
     return out

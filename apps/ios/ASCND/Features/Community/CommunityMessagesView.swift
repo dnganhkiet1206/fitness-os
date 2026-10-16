@@ -226,8 +226,13 @@ struct ConversationScreen: View {
     _book = State(initialValue: inbox.thread(thread))
   }
 
-  // Ô nhắn ở đáy — không để dải Ghi nhanh chồng lên.
-  var body: some View { ConversationView(book: book).hidesQuickLog() }
+  // Ô nhắn ở đáy — không để dải Ghi nhanh chồng lên; không thanh tab, như
+  // iMessage và Koa Coach (16/10).
+  var body: some View {
+    ConversationView(book: book)
+      .hidesQuickLog()
+      .toolbar(.hidden, for: .tabBar)
+  }
 }
 
 struct ConversationView: View {

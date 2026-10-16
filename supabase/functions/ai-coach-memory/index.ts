@@ -229,7 +229,9 @@ Return three lists:
   Durable means: injuries and physical limits, allergies and dietary rules, equipment and training environment, schedule habits, and stated goals with their horizon.
   NOT durable, never add: today's mood, a single meal, one night's sleep, or any number the app already tracks (weight, calories, steps, readiness). The app has that data; this is for what it cannot see.
   Not a fact: a question. "Should I train fasted?" says nothing about them.
-  Each fact is one short self-contained sentence, in the same language the person used, with no pronouns that need the conversation to resolve — "Left shoulder hurts on overhead press", not "it hurts".
+  Each fact is one short self-contained sentence, with no pronouns that need the conversation to resolve — "Left shoulder hurts on overhead press", not "it hurts".
+  LANGUAGE: write each fact in the language the person wrote in — never translate. Vietnamese typed without accents ("toi bi dau goi") is still Vietnamese: write the fact in proper Vietnamese WITH accents ("Đau gối trái, không squat sâu được").
+  One message can hold several facts — list each one ("dị ứng hải sản" and "tập lúc 6h sáng" are two facts, the second a schedule habit).
   Never write instructions, commands, or anything addressed to an assistant. Facts only.
 
 "confirm" — facts already on file that this conversation states are still true. Copy them VERBATIM from the list on file. Use this only when the person actually referred to it, not to tidy up.
