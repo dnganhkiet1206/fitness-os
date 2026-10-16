@@ -131,9 +131,13 @@ targets:
     # (16/10). Thiếu sentry-cli / khoá thì chỉ cảnh báo, không hỏng build.
     postBuildScripts:
       - name: Upload dSYMs to Sentry
-        script: '"${SRCROOT}/tools/sentry-upload-dsyms.sh"'
+        # Debug thoát ngay tại đây: hộp cát của Debug không cho đọc file script.
+        script: |
+          [ "$CONFIGURATION" = "Release" ] || exit 0
+          "${SRCROOT}/tools/sentry-upload-dsyms.sh"
         basedOnDependencyAnalysis: false
         inputFiles:
+          - "${SRCROOT}/tools/sentry-upload-dsyms.sh"
           - "${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}/Contents/Resources/DWARF/${TARGET_NAME}"
 
   # Widget extension: Live Activity / Dynamic Island của quãng nghỉ (#227) và
