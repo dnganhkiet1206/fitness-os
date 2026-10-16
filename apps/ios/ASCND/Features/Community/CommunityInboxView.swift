@@ -13,9 +13,27 @@ import SwiftUI
 /// Lát 14: thẻ thử thách "đã đạt mà chưa nhận" đứng TRÊN mọi thông báo (việc
 /// còn phải làm, có hạn — không mang chấm "mới"); chạm dòng mốc thử thách mở
 /// thử thách.
+///
+/// 16/10 (chủ dự án): thành mục Thông báo của cả app — mở từ chuông trên trang
+/// Hôm nay (thay viên chuỗi ngày; chuông và nút hồ sơ ở tab Cộng đồng bỏ). Thêm
+/// tin nhắc việc của app (`AppNotice`) cạnh thẻ thử thách ở "Cần làm", và bộ lọc
+/// Tất cả / Cộng đồng / Nhắc việc. Tin nhắn không vào đây (tab Cộng đồng có nút
+/// riêng).
 struct CommunityInboxView: View {
   let book: CommunityInboxBook
   var challenges: CommunityChallengesBook?
+  var notices: [AppNotice] = []
+  var onNotice: ((AppNotice) -> Void)?
+  @State private var filter: Filter = .all
+
+  enum Filter: CaseIterable { case all, community, reminders }
+
+  /// Dòng gọn (16/10, chủ dự án: "các thanh thông báo to quá, làm gọn và dễ
+  /// nhìn"): biểu tượng 34, chữ 15, giờ 12, dòng ~52 — gần Trung tâm thông báo
+  /// của iOS hơn thẻ chữ lớn trước đây.
+  static let iconSize: CGFloat = 34
+  static let textFont = Font.system(size: 15)
+  static let timeFont = Font.system(size: 12)
   @State private var openChallenge: ChallengeRoute?
   @Environment(\.openCommunityUser) private var openUser
   @State private var openPost: CommunityPostRoute?
@@ -26,6 +44,7 @@ struct CommunityInboxView: View {
     ScrollView {
       LazyVStack(alignment: .leading, spacing: DS.Spacing.md) {
         CommunityPageTitle(text: String(localized: "community.inbox.title"))
+        filterChips
         content
       }
       .padding(DS.Spacing.md)
@@ -49,7 +68,7 @@ struct CommunityInboxView: View {
 
   /// "Bạn đã đạt **tên** · Nhận 100 xu · còn 4 ngày".
   private var dueCard: some View {
-    DSCard {
+    NoticeGroup {
       VStack(spacing: 0) {
         ForEach(Array(due.enumerated()), id: \.element.id) { i, p in
           if i > 0 { Divider() }
@@ -61,23 +80,25 @@ struct CommunityInboxView: View {
           } label: {
             HStack(spacing: DS.Spacing.sm) {
               Image(systemName: "trophy.fill")
+                .font(.system(size: 15, weight: .semibold))
                 .foregroundStyle(DS.Color.readinessYellow.swiftUI)
-                .frame(width: 44, height: 44)
+                .frame(width: Self.iconSize, height: Self.iconSize)
+                .background(DS.Color.readinessYellow.swiftUI.opacity(0.14), in: Circle())
                 .accessibilityHidden(true)
               VStack(alignment: .leading, spacing: 2) {
                 Text(Self.sentence((before: before, name: p.challenge.title, after: after)))
-                  .font(DS.TextStyle.body)
+                  .font(Self.textFont)
                   .foregroundStyle(DS.Color.foreground.swiftUI)
                   .lineLimit(3)
                   .multilineTextAlignment(.leading)
                 Text(verbatim: line)
-                  .font(DS.TextStyle.footnote)
+                  .font(Self.timeFont)
                   .foregroundStyle(p.daysLeft == 0 ? DS.Color.readinessRed.swiftUI : DS.Color.mutedForeground.swiftUI)
               }
               .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .padding(.vertical, DS.Spacing.sm)
-            .frame(minHeight: 60)
+            .padding(.vertical, 10)
+            .frame(minHeight: 52)
             .contentShape(Rectangle())
           }
           .buttonStyle(.plain)
@@ -89,22 +110,141 @@ struct CommunityInboxView: View {
     }
   }
 
+  private var showsReminders: Bool { filter != .community }
+  private var showsCommunity: Bool { filter != .reminders }
+  private var hasReminders: Bool { !notices.isEmpty || !due.isEmpty }
+
+  private var filterChips: some View {
+    HStack(spacing: 6) {
+      ForEach(Filter.allCases, id: \.self) { f in
+        let on = filter == f
+        Button {
+          filter = f
+        } label: {
+          Text(Self.title(f))
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundStyle(on ? DS.Color.background.swiftUI : DS.Color.foreground.swiftUI)
+            .padding(.horizontal, 12)
+            .frame(minHeight: 30)
+            .background(on ? DS.Color.foreground.swiftUI : DS.Color.card.swiftUI, in: Capsule())
+            .overlay { Capsule().strokeBorder(DS.Color.foreground.swiftUI.opacity(on ? 0 : 0.10), lineWidth: 0.75) }
+            .frame(minHeight: 44)
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(on ? .isSelected : [])
+      }
+    }
+    .sensoryFeedback(.selection, trigger: filter)
+  }
+
+  static func title(_ f: Filter) -> String {
+    switch f {
+    case .all: String(localized: "notif.filter.all")
+    case .community: String(localized: "tab.community")
+    case .reminders: String(localized: "notif.filter.reminders")
+    }
+  }
+
+  /// Tin nhắc việc của app: chuỗi sắp đứt, xu đang chờ.
+  private var noticeCard: some View {
+    NoticeGroup {
+      VStack(spacing: 0) {
+        ForEach(Array(notices.enumerated()), id: \.element.id) { i, n in
+          if i > 0 { Divider() }
+          let (symbol, tint, text) = Self.look(n)
+          Button {
+            onNotice?(n)
+          } label: {
+            HStack(spacing: DS.Spacing.sm) {
+              Image(systemName: symbol)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(tint)
+                .frame(width: Self.iconSize, height: Self.iconSize)
+                .background(tint.opacity(0.14), in: Circle())
+                .accessibilityHidden(true)
+              Text(verbatim: text)
+                .font(Self.textFont)
+                .foregroundStyle(DS.Color.foreground.swiftUI)
+                .lineLimit(3)
+                .multilineTextAlignment(.leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
+              Image(systemName: "chevron.right")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+                .accessibilityHidden(true)
+            }
+            .padding(.vertical, 10)
+            .frame(minHeight: 52)
+            .contentShape(Rectangle())
+          }
+          .buttonStyle(.plain)
+          .accessibilityLabel(Text(verbatim: text))
+        }
+      }
+    }
+  }
+
+  static func look(_ n: AppNotice) -> (String, Color, String) {
+    switch n {
+    case .streakRisk(let days):
+      ("flame.fill", DS.Color.metricOrangeGraphic.swiftUI, String(localized: "notif.streak.risk \(days)"))
+    case .coinsWaiting(let coins):
+      ("circle.circle.fill", DS.Color.readinessYellow.swiftUI, String(localized: "notif.coins \(coins)"))
+    }
+  }
+
+  private func sectionTitle(_ key: LocalizedStringKey) -> some View {
+    Text(key)
+      .font(DS.TextStyle.footnote.weight(.semibold))
+      .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+      .padding(.top, DS.Spacing.xs)
+      .accessibilityAddTraits(.isHeader)
+  }
+
   @ViewBuilder private var content: some View {
+    if showsReminders, hasReminders {
+      sectionTitle("notif.section.todo")
+      if !notices.isEmpty { noticeCard }
+      if !due.isEmpty { dueCard }
+    }
+    if showsCommunity { communityContent }
+    if filter == .reminders, !hasReminders {
+      DSEmptyState(
+        systemImage: "checkmark.circle", title: String(localized: "notif.reminders.empty"),
+        message: String(localized: "notif.reminders.emptyhint"))
+    }
+  }
+
+  @ViewBuilder private var communityContent: some View {
     switch book.phase {
     case .loading:
       ProgressView().frame(maxWidth: .infinity, minHeight: 120)
     case .failed:
-      DSErrorView(message: String(localized: "community.loadfailed")) {
-        Task { await book.load(lang: AppServices.appLang) }
+      // Một dòng nhỏ, không phải khung lỗi nửa màn (16/10): tin nhắc việc phía
+      // trên vẫn dùng được.
+      HStack(spacing: DS.Spacing.sm) {
+        Image(systemName: "exclamationmark.triangle")
+          .foregroundStyle(DS.Color.destructive.swiftUI)
+          .accessibilityHidden(true)
+        Text("notif.community.failed")
+          .font(Self.textFont)
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        Spacer(minLength: 0)
+        Button(String(localized: "common.retry")) {
+          Task { await book.load(lang: AppServices.appLang) }
+        }
+        .font(Self.textFont.weight(.semibold))
+        .frame(minHeight: 44)
       }
-    case .ready where book.items.isEmpty && due.isEmpty:
+    case .ready where book.items.isEmpty && (filter == .community || !hasReminders):
       DSEmptyState(
         systemImage: "bell", title: String(localized: "community.inbox.empty"),
         message: String(localized: "community.inbox.emptyhint"))
     case .ready:
-      if !due.isEmpty { dueCard }
       if !book.items.isEmpty {
-        DSCard {
+        if filter == .all, hasReminders { sectionTitle("tab.community") }
+        NoticeGroup {
           VStack(spacing: 0) {
             ForEach(Array(book.items.enumerated()), id: \.element.id) { i, x in
               if i > 0 { Divider() }
@@ -131,16 +271,18 @@ struct CommunityInboxView: View {
       HStack(spacing: DS.Spacing.sm) {
         if x.challenge != nil {
           Image(systemName: "trophy.fill")
+            .font(.system(size: 15, weight: .semibold))
             .foregroundStyle(DS.Color.readinessYellow.swiftUI)
-            .frame(width: 44, height: 44)
+            .frame(width: Self.iconSize, height: Self.iconSize)
+            .background(DS.Color.readinessYellow.swiftUI.opacity(0.14), in: Circle())
             .accessibilityHidden(true)
         } else {
-          MascotAvatar(mascotId: x.actors.first?.mascotId, size: 44)
+          MascotAvatar(mascotId: x.actors.first?.mascotId, size: Self.iconSize)
             .overlay(alignment: .bottomTrailing) {
               Image(systemName: Self.icon(x.kind))
-                .font(.system(size: 10, weight: .semibold))
+                .font(.system(size: 8, weight: .semibold))
                 .foregroundStyle(DS.Color.foreground.swiftUI)
-                .frame(width: 20, height: 20)
+                .frame(width: 16, height: 16)
                 .background(DS.Color.secondary.swiftUI, in: Circle())
                 .overlay(Circle().stroke(DS.Color.background.swiftUI, lineWidth: 2))
                 .offset(x: 2, y: 2)
@@ -149,12 +291,12 @@ struct CommunityInboxView: View {
         }
         VStack(alignment: .leading, spacing: 2) {
           Text(Self.sentence(parts))
-            .font(DS.TextStyle.body)
+            .font(Self.textFont)
             .foregroundStyle(DS.Color.foreground.swiftUI)
-            .lineLimit(3)
+            .lineLimit(2)
             .multilineTextAlignment(.leading)
           Text(verbatim: when)
-            .font(DS.TextStyle.footnote)
+            .font(Self.timeFont)
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -162,8 +304,8 @@ struct CommunityInboxView: View {
           Circle().fill(DS.Color.primary.swiftUI).frame(width: 8, height: 8)
         }
       }
-      .padding(.vertical, DS.Spacing.sm)
-      .frame(minHeight: 60)
+      .padding(.vertical, 10)
+      .frame(minHeight: 52)
       .contentShape(Rectangle())
     }
     .buttonStyle(.plain)
@@ -225,4 +367,20 @@ struct CommunityInboxView: View {
 
 struct CommunityPostRoute: Hashable, Identifiable {
   let id: String
+}
+
+/// Khung gọn cho một nhóm dòng thông báo: nền thẻ, bo 18, lề ngang 14, không lề
+/// dọc thừa (DSCard dày quá cho danh sách — 16/10, chủ dự án).
+private struct NoticeGroup<Content: View>: View {
+  @ViewBuilder let content: Content
+
+  var body: some View {
+    content
+      .padding(.horizontal, 14)
+      .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+      .overlay {
+        RoundedRectangle(cornerRadius: 18, style: .continuous)
+          .strokeBorder(DS.Color.foreground.swiftUI.opacity(0.06), lineWidth: 0.75)
+      }
+  }
 }

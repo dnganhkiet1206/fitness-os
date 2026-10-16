@@ -101,6 +101,12 @@ tính năng đồng bộ trong toàn app" → "làm đi".
     nhẹ như app Siri; VoiceOver đọc lời chào. Câu hỏi mẫu là thẻ hai dòng (chủ đề đậm + câu sẽ gửi mờ) cuộn ngang ngay
     trên ô chat như ChatGPT, ẩn khi đã có tin hoặc ô chat thu gọn. Tin của người dùng trong Koa Coach: bong bóng
     iMessage màu xám trung tính `systemGray5` (`messageBubble(fill:)`; mực 7 % ra màu be, lẫn nền kem — chủ dự án: khó nhìn), chữ thường; nhắn tin giữa người vẫn xanh.
+- **Thông báo (16/10, chủ dự án duyệt mock):** một chuông cho cả app ở đầu trang Hôm nay, THAY viên chuỗi ngày (chuỗi vẫn
+  ở phòng Koa; chuỗi sắp đứt thành tin nhắc việc). Chuông và nút hồ sơ ở tab Cộng đồng bỏ — tab chỉ còn nút tin nhắn;
+  tin nhắn không vào Thông báo. Màn Thông báo (`CommunityInboxView` mở rộng): lọc Tất cả / Cộng đồng / Nhắc việc; "Cần
+  làm" = `AppNotice` (chuỗi sắp đứt sau 18 giờ, xu chưa nhận — tính trên máy, tự hết khi xong, không cần "đã đọc") +
+  thử thách cộng đồng chưa nhận; rồi tin cộng đồng. Dòng gọn (chủ dự án: "thanh thông báo to quá"): biểu tượng 34,
+  chữ 15, giờ 12, dòng ~52, nhóm bo 18 không lề dọc thừa; lỗi tải tin cộng đồng là một dòng nhỏ có "Thử lại".
   - Ghi nhanh ẩn ở màn có ô nhập riêng ở đáy (Koa Coach, nhắn tin): `.hidesQuickLog()` đếm màn đang mở
     (`QuickLogVisibility`); iOS 26.1+ `tabViewBottomAccessory(isEnabled:)`, 26.0 giữ thanh, máy cũ ẩn nút "+". Màn
     tập và màn ghi bữa vốn là toàn màn hình / sheet nên đã che thanh.

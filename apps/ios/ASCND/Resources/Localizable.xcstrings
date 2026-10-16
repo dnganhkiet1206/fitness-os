@@ -52235,6 +52235,190 @@
      }
     }
    }
+  },
+  "notif.filter.all": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "All"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Todos"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tất cả"
+     }
+    }
+   }
+  },
+  "notif.filter.reminders": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "To-dos"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Pendientes"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nhắc việc"
+     }
+    }
+   }
+  },
+  "notif.section.todo": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "To do"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Por hacer"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cần làm"
+     }
+    }
+   }
+  },
+  "notif.streak.risk %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Your %lld-day streak is about to break — log anything before midnight to keep it"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tu racha de %lld días está por romperse: registra algo antes de medianoche para mantenerla"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chuỗi %lld ngày sắp đứt — ghi một việc bất kỳ trước nửa đêm để giữ chuỗi"
+     }
+    }
+   }
+  },
+  "notif.coins %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld coins waiting — open Koa’s room to claim them"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld monedas esperando: abre la sala de Koa para reclamarlas"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld xu đang chờ — mở phòng Koa để nhận"
+     }
+    }
+   }
+  },
+  "notif.reminders.empty": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nothing to do"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nada pendiente"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Không có việc nào"
+     }
+    }
+   }
+  },
+  "notif.reminders.emptyhint": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Streak and coin reminders show up here"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Aquí aparecen los avisos de racha y monedas"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nhắc chuỗi ngày và xu sẽ hiện ở đây"
+     }
+    }
+   }
+  },
+  "notif.community.failed": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Couldn’t load community updates"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "No se pudieron cargar los avisos de la comunidad"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Không tải được tin cộng đồng"
+     }
+    }
+   }
   }
  }
 }

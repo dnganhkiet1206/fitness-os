@@ -30,7 +30,6 @@ struct CommunityTab: View {
   @Environment(WorkoutFlow.self) private var flow
   @Environment(AppServices.self) private var services
   @State private var book: CommunityFeedBook?
-  @State private var inbox: CommunityInboxBook?
   @State private var challenges: CommunityChallengesBook?
   @State private var built = false
 
@@ -38,7 +37,7 @@ struct CommunityTab: View {
     NavigationStack {
       Group {
         if let book {
-          CommunityFeedView(book: book, inbox: inbox, challenges: challenges)
+          CommunityFeedView(book: book, challenges: challenges)
         } else if built {
           ContentUnavailableView {
             Label("tab.community", systemImage: "person.2")
@@ -54,7 +53,6 @@ struct CommunityTab: View {
     .task {
       guard !built else { return }
       book = services.makeCommunityFeed(userId: flow.today.userId)
-      inbox = services.makeCommunityInbox(userId: flow.today.userId)
       challenges = services.makeCommunityChallenges(userId: flow.today.userId)
       built = true
     }
@@ -66,7 +64,6 @@ struct CommunityTab: View {
 
 struct CommunityFeedView: View {
   let book: CommunityFeedBook
-  var inbox: CommunityInboxBook?
   var challenges: CommunityChallengesBook?
   @Environment(AppServices.self) private var services
   /// Tin nhắn (15/10) — `nil` khi chưa có nguồn (server chưa có nhắn tin).
@@ -182,7 +179,6 @@ struct CommunityFeedView: View {
         await m.load()
       }
     }
-    .task { if inbox?.phase == .loading { await inbox?.load(lang: AppServices.appLang) } }
     .task { if challenges?.phase == .loading { await loadChallenges() } }
     .navigationDestination(item: $challengeRoute) { route in
       if let challenges { CommunityChallengeView(book: challenges, id: route.id, fromAll: route.fromAll) }
@@ -192,7 +188,6 @@ struct CommunityFeedView: View {
     }
     .refreshable {
       await book.load()
-      await inbox?.load(lang: AppServices.appLang)
       await loadChallenges()
     }
   }
@@ -267,7 +262,8 @@ struct CommunityFeedView: View {
 
   // MARK: - Đầu trang (thiết kế lại 14/10, mock v2)
 
-  /// "Cộng đồng" lớn + nút tròn: tìm, chuông (chấm khi có mới), hồ sơ.
+  /// "Cộng đồng" lớn + nút tin nhắn. Chuông chuyển về trang Hôm nay thành mục
+  /// Thông báo của cả app, nút hồ sơ bỏ (16/10, chủ dự án).
   private var topBar: some View {
     HStack(spacing: DS.Spacing.sm) {
       Text(String(localized: "tab.community"))
@@ -283,17 +279,6 @@ struct CommunityFeedView: View {
         }
         .buttonStyle(TodayPressStyle())
         .accessibilityLabel(Text("dm.title"))
-      }
-      if let inbox {
-        let hasNew = inbox.hasNew || !(challenges?.pending.isEmpty ?? true)
-        NavigationLink { CommunityInboxView(book: inbox, challenges: challenges) } label: { roundIcon("bell", dot: hasNew) }
-          .buttonStyle(TodayPressStyle())
-          .accessibilityLabel(hasNew ? Text("community.inbox.opennew") : Text("community.inbox.title"))
-      }
-      if book.hasProfile == true {
-        NavigationLink { CommunityUserScreen(targetId: book.userId) } label: { roundIcon("person.crop.circle", dot: false) }
-          .buttonStyle(TodayPressStyle())
-          .accessibilityLabel(Text("community.user.mine"))
       }
     }
     .padding(.top, DS.Spacing.sm)

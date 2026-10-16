@@ -46,6 +46,9 @@ struct TodayExtras<Plan: View>: View {
   @State private var showsWeight = false
   @State private var showsBiometrics = false
   @State private var showsRoom = false
+  /// Mục Thông báo (16/10): hộp cộng đồng + thử thách cộng đồng chưa nhận.
+  @State private var inbox: CommunityInboxBook?
+  @State private var communityChallenges: CommunityChallengesBook?
   @State private var showsAwards = false
   @State private var showsReadiness = false
   @Environment(DeepLinkInbox.self) private var links: DeepLinkInbox?
@@ -213,6 +216,8 @@ struct TodayExtras<Plan: View>: View {
       activity = services.makeActivityRings(userId: userId, today: today)
       weight = services.makeWeightLogger(userId: userId)
       todo = services.makeReminderToday(userId: userId)
+      inbox = services.makeCommunityInbox(userId: userId)
+      communityChallenges = services.makeCommunityChallenges(userId: userId)
       if nutrition == nil { ownWater = services.makeWaterBook(userId: userId) }
       await todo?.refresh()
       await weight?.load()
@@ -223,11 +228,13 @@ struct TodayExtras<Plan: View>: View {
       await activity?.load()
       await biometrics?.load()
       await focusChecks()
+      await loadNotifications()
     }
     .onChange(of: refreshTick) { _, _ in
       Task {
         await reloadDay()
         await focusChecks()
+        await loadNotifications()
       }
     }
     // Lượt tự đồng bộ (ra tiền cảnh, AppServices) xong sau lần đọc của màn.
@@ -246,6 +253,7 @@ struct TodayExtras<Plan: View>: View {
         await focusChecks()
         await trend?.move(to: today)
         await activity?.load(today: today)
+        await loadNotifications()
       }
     }
     // Đóng khi phiên không còn là của người này (đăng xuất / đổi tài khoản) —
@@ -454,15 +462,27 @@ struct TodayExtras<Plan: View>: View {
 
   // MARK: - Đầu trang
 
-  /// Đầu trang như RN (`(tabs)/index.tsx`): logo ASCND; phải là viên chuỗi ngày
-  /// (≥ 1, → phòng linh vật) và avatar (→ Cài đặt). Không có dòng thứ / ngày
+  /// Đầu trang như RN (`(tabs)/index.tsx`): logo ASCND; phải là chuông Thông báo
+  /// (16/10, thay viên chuỗi ngày) và avatar (→ Cài đặt). Không có dòng thứ / ngày
   /// (chủ dự án, 13/10).
   private var header: some View {
     HStack(alignment: .center, spacing: DS.Spacing.sm) {
       BrandLockup()
       Spacer(minLength: 0)
-      if let mascot, mascot.streak.count >= 1 {
-        StreakChip(count: mascot.streak.count, lit: mascot.streak.loggedToday) { showsRoom = true }
+      // Chuông thay viên chuỗi ngày (16/10, chủ dự án); chuỗi vẫn ở phòng Koa, và
+      // chuỗi sắp đứt thành một tin nhắc việc trong Thông báo.
+      if let inbox {
+        let notices = AppNotice.of(mascot)
+        NavigationLink {
+          CommunityInboxView(book: inbox, challenges: communityChallenges, notices: notices) { _ in
+            roomSource = "room"
+            showsRoom = true
+          }
+        } label: {
+          NotificationBell(
+            dot: inbox.hasNew || !notices.isEmpty || !(communityChallenges?.pending.isEmpty ?? true))
+        }
+        .buttonStyle(TodayPressStyle())
       }
       if let onOpenSettings {
         AccountAvatar(
@@ -470,6 +490,13 @@ struct TodayExtras<Plan: View>: View {
           action: onOpenSettings)
       }
     }
+  }
+
+  /// Chấm trên chuông: thông báo cộng đồng + thử thách đạt mà chưa nhận.
+  private func loadNotifications() async {
+    let lang = AppServices.appLang
+    await inbox?.load(lang: lang)
+    await communityChallenges?.load(lang: lang)
   }
 
   private var isCurrentSession: Bool { services.session.session?.userId == userId }

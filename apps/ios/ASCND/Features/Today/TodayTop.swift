@@ -2,7 +2,8 @@ import ASCNDCore
 import ASCNDDesignSystem
 import SwiftUI
 
-// Phần đầu tab Hôm nay (#527): `BrandLockup`, `StreakChip`, `AccountAvatar` của
+// Phần đầu tab Hôm nay (#527): `BrandLockup`, chuông Thông báo (thay `StreakChip`
+// từ 16/10), `AccountAvatar` của
 // `(tabs)/index.tsx` @ fac9ac2. Hàng năng lượng và hàng Koa của RN đã thay bằng
 // khối ngày (`RN-PARITY.md`). Logo trở lại thay tiêu đề lớn "Hôm nay" theo chỉ
 // thị chủ dự án (13/10, B).
@@ -31,45 +32,30 @@ struct BrandLockup: View {
   }
 }
 
-/// Viên chuỗi ngày (`streak-chip.tsx`): cao 44, ngọn lửa + số; hôm nay đã ghi
-/// thì cam, chưa ghi thì xám. Chỉ hiện khi chuỗi ≥ 1 (nơi gọi quyết).
-struct StreakChip: View {
-  let count: Int
-  let lit: Bool
-  let action: () -> Void
+/// Chuông Thông báo (16/10, chủ dự án: thay viên chuỗi ngày trên đầu trang Hôm
+/// nay — một chuông cho cả app). Nút 44 cùng cỡ avatar; chấm đỏ khi có tin chưa
+/// đọc hoặc việc cần làm.
+struct NotificationBell: View {
+  let dot: Bool
 
   var body: some View {
-    let tint = lit ? DS.Color.metricOrangeGraphic.swiftUI : DS.Color.border.swiftUI
-    Button(action: action) {
-      HStack(spacing: 5) {
-        Image(systemName: lit ? "flame.fill" : "flame")
-          .font(.system(size: 16, weight: .semibold))
-          .foregroundStyle(lit ? DS.Color.metricOrangeGraphic.swiftUI : DS.Color.mutedForeground.swiftUI)
-        Text(verbatim: "\(count)")
-          .font(.system(size: 16, weight: .heavy).monospacedDigit())
-          .tracking(-0.3)
-          .foregroundStyle(lit ? DS.Color.metricOrange.swiftUI : DS.Color.mutedForeground.swiftUI)
+    Image(systemName: "bell")
+      .font(.system(size: 17, weight: .semibold))
+      .foregroundStyle(DS.Color.foreground.swiftUI)
+      .frame(width: 44, height: 44)
+      .background(Circle().fill(.thinMaterial))
+      .overlay(Circle().strokeBorder(DS.Color.foreground.swiftUI.opacity(0.12), lineWidth: 0.75))
+      .overlay(alignment: .topTrailing) {
+        if dot {
+          Circle()
+            .fill(DS.Color.destructive.swiftUI)
+            .frame(width: 10, height: 10)
+            .overlay(Circle().stroke(DS.Color.background.swiftUI, lineWidth: 2))
+            .offset(x: -6, y: 6)
+        }
       }
-      .padding(.horizontal, 10)
-      .frame(height: 44)
-      .background(
-        lit ? DS.Color.metricOrangeGraphic.swiftUI.opacity(0.13) : DS.Color.secondary.swiftUI.opacity(0.2), in: Capsule()
-      )
-      .overlay(Capsule().stroke(tint.opacity(lit ? 0.28 : 0.3), lineWidth: 1))
-      .contentShape(Capsule())
-    }
-    .buttonStyle(.plain)
-    .sensoryFeedback(.selection, trigger: count)
-    .accessibilityLabel(Text(Self.label(count: count, lit: lit)))
-  }
-
-  static func label(count: Int, lit: Bool) -> String {
-    switch (lit, count == 1) {
-    case (true, true): String(localized: "today.streak.lit.one")
-    case (true, false): String(localized: "today.streak.lit.other \(count)")
-    case (false, true): String(localized: "today.streak.risk.one")
-    case (false, false): String(localized: "today.streak.risk.other \(count)")
-    }
+      .contentShape(Circle())
+      .accessibilityLabel(dot ? Text("community.inbox.opennew") : Text("community.inbox.title"))
   }
 }
 
