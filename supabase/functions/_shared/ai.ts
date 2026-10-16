@@ -56,7 +56,8 @@ export const aiVisionModel = () => env("ASCND_AI_VISION_MODEL", "google/gemini-2
  *
  * Gemini 2.5 Flash qua endpoint OpenAI của Google mặc định suy nghĩ trước khi trả
  * lời, và phần ấy ăn vào CHÍNH `max_tokens` (700–1500 ở đây) — câu trả lời cụt
- * hoặc rỗng. `none` tắt nó. Không đặt biến → không gửi tham số, hành vi như cũ
+ * hoặc rỗng. `none` tắt nó ở 2.5; dòng 3.x (`gemini-flash-lite-latest`) từ chối
+ * `none` bằng 400 "invalid argument" — dùng `low`. Không đặt biến → không gửi tham số, hành vi như cũ
  * (gateway Lovable, OpenAI non-reasoning có thể từ chối tham số lạ).
  */
 export const aiReasoningEffort = () => Deno.env.get("ASCND_AI_REASONING_EFFORT") || undefined;
@@ -211,6 +212,18 @@ const TIMEOUT_MS = (() => {
  * cũng không cần: thứ dự phòng cứu là "bên này không trả lời", và điều đó biết
  * được trước khi có byte nào.
  */
+/**
+ * Ba function (nudges, gợi ý bữa, review tuần) chỉ gửi một tin `system` có kèm
+ * dữ liệu. Gateway Lovable chấp nhận, nhưng endpoint OpenAI của Gemini từ chối
+ * 400 "contents is not specified" — với nó, system là chỉ dẫn, không phải nội
+ * dung. Thêm một lượt `user` ngắn khi chưa có lượt nào; prompt đã nói ngôn ngữ.
+ */
+const withUserTurn = (messages: unknown): unknown => {
+  if (!Array.isArray(messages)) return messages;
+  const hasTurn = messages.some((m) => m?.role === "user" || m?.role === "assistant");
+  return hasTurn ? messages : [...messages, { role: "user", content: "Go." }];
+};
+
 export async function callAI(
   body: Record<string, unknown>,
   opts: { vision?: boolean } = {},
@@ -230,6 +243,7 @@ export async function callAI(
         headers: { Authorization: `Bearer ${p.key}`, "Content-Type": "application/json" },
         body: JSON.stringify({
           ...body,
+          messages: withUserTurn(body.messages),
           model: opts.vision ? p.visionModel : p.model,
           ...(aiReasoningEffort() ? { reasoning_effort: aiReasoningEffort() } : {}),
         }),
