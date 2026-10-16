@@ -259,9 +259,10 @@ struct CoachChatView: View {
   }
 
   private var disclaimer: some View {
+    // Nhỏ và mờ hơn chữ phụ thường (16/10, chủ dự án) — nhắc nhẹ, không giành mắt.
     Text("coach.disclaimer")
-      .font(.system(size: 11))
-      .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+      .font(.system(size: 10))
+      .foregroundStyle(DS.Color.mutedForeground.swiftUI.opacity(0.7))
       .multilineTextAlignment(.center)
       .frame(maxWidth: .infinity)
       .padding(.horizontal, DS.Spacing.lg)
