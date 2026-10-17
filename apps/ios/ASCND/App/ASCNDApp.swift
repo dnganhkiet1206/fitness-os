@@ -38,11 +38,15 @@ struct ASCNDApp: App {
     RestIntentRouter.setPaused = { paused in controller.setPaused(paused) }
   }
 
-  static func colorScheme(_ theme: AppPreferences.Theme) -> ColorScheme? {
-    switch theme {
-    case .system: nil
-    case .light: .light
-    case .dark: .dark
+  static func applyTheme(_ theme: AppPreferences.Theme) {
+    let style: UIUserInterfaceStyle =
+      switch theme {
+      case .system: .unspecified
+      case .light: .light
+      case .dark: .dark
+      }
+    for case let scene as UIWindowScene in UIApplication.shared.connectedScenes {
+      for window in scene.windows { window.overrideUserInterfaceStyle = style }
     }
   }
 
@@ -54,10 +58,13 @@ struct ASCNDApp: App {
         // `Text("key")` của SwiftUI tra theo `\.locale`; ngày giờ / số cũng
         // định dạng theo ngôn ngữ đã chọn.
         .environment(\.locale, Locale(identifier: services.preferences.lang.rawValue))
-        // Theme đã chọn cho cả cửa sổ (sheet, alert theo cùng). "Theo máy" là
-        // `nil`: iOS luôn có sáng / tối, nên luật "máy không nói thì tối" của
-        // RN không có ca nào ở đây.
-        .preferredColorScheme(Self.colorScheme(services.preferences.theme))
+        // Theme đã chọn cho CẢ CỬA SỔ (16/10, lỗi chủ dự án báo: đổi sáng ↔ tối thì
+        // Cài đặt / Hồ sơ — đang mở dạng sheet — không đổi theo). `preferredColorScheme`
+        // ở gốc không đẩy xuống sheet đang mở, nhất là khi về "Theo máy" (`nil`);
+        // đặt `overrideUserInterfaceStyle` của cửa sổ thì mọi màn, sheet, alert đổi
+        // cùng lúc. "Theo máy" = `.unspecified`.
+        .onChange(of: services.preferences.theme, initial: true) { _, theme in Self.applyTheme(theme) }
+        .onAppear { Self.applyTheme(services.preferences.theme) }
         .environment(rest)
         .environment(services)
         .environment(links)
