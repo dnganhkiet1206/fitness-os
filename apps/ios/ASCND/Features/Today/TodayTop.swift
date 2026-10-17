@@ -44,7 +44,12 @@ struct BrandLockup: View {
     let key = "ascnd-intelligence-reveal-at"
     let last = UserDefaults.standard.double(forKey: key)
     let now = Date().timeIntervalSince1970
-    guard now - last > 3 * 3600 else { return }
+    var cap: TimeInterval = 3 * 3600
+    #if DEBUG
+      // Đang thử gói trả phí (`ASCND_FAKE_TIER`): hiện MỖI lần mở trang.
+      if ProcessInfo.processInfo.environment["ASCND_FAKE_TIER"] != nil { cap = 0 }
+    #endif
+    guard now - last >= cap else { return }
     try? await Task.sleep(for: .seconds(2.5))
     guard !Task.isCancelled else { return }
     UserDefaults.standard.set(now, forKey: key)
