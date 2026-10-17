@@ -362,7 +362,11 @@ private struct QuickLogSheet: View {
     }
   }
 
-  private var recentMeals: [MealLog.RecentMeal] { Array((logger?.recentMeals ?? []).prefix(3)) }
+  /// Bữa có năng lượng thật — bữa chỉ có nước / đồ uống 0 kcal ("Purified Water ·
+  /// 0 kcal") không phải "bữa để ăn lại" (16/10, ảnh chủ dự án gửi).
+  private var recentMeals: [MealLog.RecentMeal] {
+    Array((logger?.recentMeals ?? []).filter { $0.kcal > 0 }.prefix(3))
+  }
 
   var body: some View {
     VStack(alignment: .leading, spacing: DS.Spacing.md) {
@@ -476,8 +480,12 @@ private struct QuickLogSheet: View {
           }
         }
         .padding(.vertical, 6)
-        .padding(.horizontal, 2)
+        .padding(.horizontal, DS.Spacing.lg)
       }
+      // Dải cuộn chạy tràn tới mép bảng và không cắt bóng thẻ (16/10: thẻ thứ hai bị
+      // cắt cứng ở lề, lộ một khối xám sau thẻ).
+      .scrollClipDisabled()
+      .padding(.horizontal, -DS.Spacing.lg)
     }
   }
 
