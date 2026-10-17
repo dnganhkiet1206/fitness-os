@@ -31,6 +31,8 @@ struct SignOutTimeoutTests {
     await store.signOut(remoteTimeout: .milliseconds(100))
     #expect(store.phase == .signedOut)
     #expect(cleaned)
-    #expect(ContinuousClock.now - started < .seconds(5))
+    // Server treo 600 s; trần rộng vì CI chạy song song hơn 1400 test làm MainActor
+    // trễ hàng chục giây (đo được 13 s), dưới 60 s vẫn chứng tỏ không chờ server.
+    #expect(ContinuousClock.now - started < .seconds(60))
   }
 }
