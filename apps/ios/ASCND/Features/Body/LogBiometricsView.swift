@@ -11,8 +11,8 @@ import SwiftUI
 /// - số Apple Health đo hôm nay: ghi chú, điền sẵn một lần, hỏi lại khi đổi;
 /// - có mạng: lưu rồi đóng; mất mạng: xếp hàng, "đã lưu — sẽ đồng bộ", đóng.
 ///
-/// Mở từ deep link `ascnd://log-biometrics` (lối vào ở màn Sinh trắc / Hôm nay
-/// là màn của E).
+/// Mở từ "+" / nút trống của `BiometricsView` (RN `biometrics.tsx:135,152`),
+/// thẻ việc trên Hôm nay và deep link `ascnd://log-biometrics`.
 struct LogBiometricsView: View {
   let makeLogger: () -> BiometricLogger?
   var onDone: () -> Void = {}

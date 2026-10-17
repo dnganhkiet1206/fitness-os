@@ -11205,6 +11205,29 @@
     }
    }
   },
+  "bio.manual": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Manual entry"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nhập thủ công"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Entrada manual"
+     }
+    }
+   }
+  },
   "bio.empty.title": {
    "extractionState": "manual",
    "localizations": {
@@ -17664,6 +17687,29 @@
      "stringUnit": {
       "state": "translated",
       "value": "Medidas corporales"
+     }
+    }
+   }
+  },
+  "measure.add": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Add measurement"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nhập số đo"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Añadir medida"
      }
     }
    }

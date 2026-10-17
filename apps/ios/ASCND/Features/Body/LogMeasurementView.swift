@@ -12,8 +12,8 @@ import SwiftUI
 /// - nút lưu sáng khi có ô là số và không ô nào sai; có mạng: lưu rồi đóng;
 ///   mất mạng: xếp hàng, "đã lưu — sẽ đồng bộ", đóng; lỗi: báo, ở lại.
 ///
-/// Mở từ deep link `ascnd://log-measurement` (lối vào ở bảng Cơ thể là màn của
-/// E — `body-panel.tsx:952,1016` ở RN).
+/// Mở từ "+" / nút trống của `MeasurementsView` (RN `body-panel.tsx:952,1016`)
+/// và từ deep link `ascnd://log-measurement`.
 struct LogMeasurementView: View {
   let makeLogger: () -> MeasurementLogger?
   var onDone: () -> Void = {}
