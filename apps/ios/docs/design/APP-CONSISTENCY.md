@@ -112,7 +112,8 @@ tính năng đồng bộ trong toàn app" → "làm đi".
     gọi hành động của nút (đo bằng log 16/10: chạm hàng có, chạm nút trong hộp không). Đã chạy thật: đăng xuất → màn
     Đăng nhập.
 - **Màn đăng nhập (16/10, chủ dự án: kiểu app gym cao cấp, thích mock 1 + 2 — `docs/design/mocks/auth-redesign-gym.html`):**
-  màn chào luôn tối (đen ấm `AuthHero.ink`): logo ASCND trắng cỡ lớn, dải sáng lửa cam bầu dục nghiêng sau ĐỈNH chữ A (không tròn, không đặt giữa Koa —
+  màn chào luôn tối (đen ấm `AuthHero.ink`): cụm logo + chữ "ASCND" nhỏ ở góc trên trái (chủ dự
+  án: thay logo lớn giữa màn), dải sáng lửa cam bầu dục nghiêng sau ĐỈNH chữ A (không tròn, không đặt giữa Koa —
   chủ dự án) + một vệt dịu lệch góc dưới trái, thở 3,2 s, trôi 14 s; bụi sáng vàng ấm (mờ nhẹ)
   trôi lên rất chậm (2 lớp xa / gần, 18 + 6 hạt, ánh tan mềm — chủ dự án bỏ đường nhịp tim vì gợi máy đo tim bệnh viện,
   "cho bụi bay nhẹ nhưng premium", "cho ít bụi lại"); slogan lớn ba dòng ("Thức dậy. Tập luyện. Vươn lên." / "Rise. Train. Ascend." / es), dòng phụ,

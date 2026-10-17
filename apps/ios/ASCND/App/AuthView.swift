@@ -54,6 +54,21 @@ struct AuthView: View {
         .ignoresSafeArea()
         .accessibilityHidden(true)
       VStack(alignment: .leading, spacing: 0) {
+        // Logo + tên app, nhỏ, ở góc trên trái (16/10, chủ dự án: thay logo lớn giữa màn).
+        HStack(spacing: 8) {
+          Image("BrandMark")
+            .renderingMode(.template)
+            .resizable()
+            .interpolation(.high)
+            .frame(width: 30, height: 30)
+          Text(String(localized: "brand.name"))
+            .font(.system(size: 19, weight: .heavy))
+            .tracking(1.5)
+        }
+        .foregroundStyle(AuthHero.paper)
+        .padding(.top, 8)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(String(localized: "brand.name")))
         Spacer(minLength: 0)
         Text("auth.hero.slogan")
           .font(.system(size: 46, weight: .black))
@@ -468,7 +483,7 @@ private struct AuthFieldStyle: ViewModifier {
   }
 }
 
-/// Logo ASCND trắng cỡ lớn + dải sáng lửa cam bầu dục nghiêng thở chậm + bụi sáng trôi nhẹ
+/// Dải sáng lửa cam bầu dục nghiêng thở chậm (logo đã thành cụm nhỏ ở góc trên trái) + bụi sáng trôi nhẹ
 /// (16/10, chủ dự án: bỏ đường nhịp tim — gợi máy đo tim bệnh viện; "cho bụi bay nhẹ
 /// nhưng premium"). Giảm chuyển động: đứng yên, bụi ở vị trí cố định.
 private struct AuthHeroBackdrop: View {
@@ -504,13 +519,6 @@ private struct AuthHeroBackdrop: View {
           .position(x: w * 0.22 - w * 0.05 * drift, y: cy + logo * 0.75)
           .blur(radius: 24)
           AuthDust(t: t, layer: 0).blur(radius: 0.6)
-          Image("BrandMark")
-            .renderingMode(.template)
-            .resizable()
-            .interpolation(.high)
-            .foregroundStyle(AuthHero.paper)
-            .frame(width: logo, height: logo)
-            .position(x: w / 2, y: cy)
           AuthDust(t: t, layer: 1)
         }
       }
