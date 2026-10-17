@@ -279,6 +279,8 @@ private struct QuickLogAccessory: View {
   var body: some View {
     HStack(spacing: 0) {
       log
+      // Thu gọn: "+" ở góc trái, AI ở góc phải (16/10, chủ dự án: tách ra 2 góc).
+      if placement == .inline { Spacer(minLength: 0) }
       if let askCoach {
         Button {
           Telemetry.capture(.quickLogPick, ["target": "coach"])
@@ -287,7 +289,7 @@ private struct QuickLogAccessory: View {
           IntelligenceMark(size: 18)
             .frame(width: 34, height: 34)
             .background(Intelligence.wash, in: Circle())
-            .padding(.trailing, placement == .inline ? 6 : 10)
+            .padding(.trailing, placement == .inline ? 8 : 10)
             .padding(.leading, 4)
             .frame(maxHeight: .infinity)
             .contentShape(Rectangle())
@@ -316,7 +318,7 @@ private struct QuickLogAccessory: View {
             .lineLimit(1)
         }
       }
-      .padding(.leading, 16)
+      .padding(.leading, placement == .inline ? 8 : 16)
       .padding(.trailing, askCoach == nil ? 16 : 6)
       // Thu gọn (inline) thanh hẹp: không giãn hết bề ngang, để nút AI còn chỗ.
       .frame(maxWidth: placement == .inline ? nil : .infinity, maxHeight: .infinity, alignment: .leading)
