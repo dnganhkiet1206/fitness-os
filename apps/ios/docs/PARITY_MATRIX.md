@@ -96,9 +96,9 @@ Hiện **không dòng nào DONE**: chưa có lần chạy trên iPhone thật.
 | Ghi cân | `log-weight.tsx` | `LogWeightView` | Hôm nay, Ghi nhanh, Tập luyện | DEVICE_PENDING | #576 |
 | Ghi giấc + insight | `log-sleep.tsx`, `sleep-insights.tsx` | `LogSleepView`, `SleepInsightsView` | Hôm nay, Ghi nhanh, Trợ lý | DEVICE_PENDING | |
 | Số đo: xem xu hướng | `measurements-trend.tsx` | `MeasurementsView` | Trợ lý, Tập luyện | DEVICE_PENDING | |
-| Số đo: ghi | `log-measurement.tsx` (RN mở từ `body-panel.tsx:952`, `:1016`) | `LogMeasurementView` | **chỉ link `ascnd://log-measurement`** | IMPLEMENTED_NOT_WIRED | `MeasurementsView` không có nút thêm; người dùng không ghi được số đo |
+| Số đo: ghi | `log-measurement.tsx` (RN mở từ `body-panel.tsx:952`, `:1016`) | `LogMeasurementView` | Số đo cơ thể: "+" và nút ở trạng thái trống; link `ascnd://log-measurement` | DEVICE_PENDING | #579 (`5d11bdef`). Simulator 17/10: cả hai nút mở sheet; nhập 7878 bị chặn (10–300 cm); lưu 78 cm → thẻ Eo hiện ngay |
 | Sinh trắc: xem / xoá | `biometrics.tsx` | `BiometricsView` | Hôm nay, Trợ lý | DEVICE_PENDING | #562 |
-| Sinh trắc: ghi tay | `log-biometrics.tsx` (RN mở từ `biometrics.tsx:135`, `:152`) | `LogBiometricsView` | chỉ thẻ việc trên Hôm nay | PARTIAL | `BiometricsView` thiếu nút "Nhập tay" của RN |
+| Sinh trắc: ghi tay | `log-biometrics.tsx` (RN mở từ `biometrics.tsx:135`, `:152`) | `LogBiometricsView` | Sinh trắc: "+" và "Nhập thủ công" ở trạng thái trống; thẻ việc trên Hôm nay | DEVICE_PENDING | #579 + nút trạng thái trống đặt ngay dưới chữ. Simulator 17/10: nút mở sheet; lưu nhịp tim nghỉ 58 → màn đọc lại ngay |
 | Bước chân | `steps.tsx` | `StepsView` | Hôm nay, Trợ lý | DEVICE_PENDING | |
 | Mục tiêu thông minh | `smart-goals.tsx` | `SmartGoalsView` | Trợ lý, Tập luyện | DEVICE_PENDING | |
 | Tổng kết tuần | `weekly-review.tsx` | `WeeklyReviewView` | Trợ lý | DEVICE_PENDING | #569 |
@@ -158,16 +158,16 @@ Hiện **không dòng nào DONE**: chưa có lần chạy trên iPhone thật.
 | Trạng thái | Số dòng |
 |---|---|
 | DONE | 0 |
-| DEVICE_PENDING | 49 |
+| DEVICE_PENDING | 51 |
 | PARITY_PENDING | 11 |
-| PARTIAL | 5 |
-| IMPLEMENTED_NOT_WIRED | 4 |
+| PARTIAL | 4 |
+| IMPLEMENTED_NOT_WIRED | 3 |
 | NOT_STARTED | 2 |
 | DECISION | 3 |
 | EXCLUDED | 3 |
 
 **Gap theo ưu tiên:**
-- **P1** — ghi số đo không có lối vào; sinh trắc thiếu "Nhập tay".
+- ~~**P1** — ghi số đo không có lối vào; sinh trắc thiếu "Nhập tay".~~ Đã xong ở #579 (17/10).
 - **P1** — 6 commit của `claude/b-steps-awards` (đăng xuất, xoá tài khoản, pháp lý, đăng nhập mới) đang chạy CI ở phiên khác, sẽ được gộp khi xanh. Sau khi gộp: chuyển các dòng Đăng xuất / Xoá tài khoản / Pháp lý / Đăng nhập theo báo cáo gộp.
 - **P1** — kiểm các alert trong sheet lồng (chặn / tắt tiếng / xoá bài).
 - **P2** — khoá app Face ID; xuất dữ liệu.
