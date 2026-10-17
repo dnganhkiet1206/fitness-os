@@ -112,8 +112,9 @@ tính năng đồng bộ trong toàn app" → "làm đi".
     gọi hành động của nút (đo bằng log 16/10: chạm hàng có, chạm nút trong hộp không). Đã chạy thật: đăng xuất → màn
     Đăng nhập.
 - **Màn đăng nhập (16/10, chủ dự án: kiểu app gym cao cấp, thích mock 1 + 2 — `docs/design/mocks/auth-redesign-gym.html`):**
-  màn chào luôn tối (đen ấm `AuthHero.ink`): logo ASCND trắng cỡ lớn, quầng lửa cam thở 3,2 s phía sau, đường nhịp tim
-  cam chạy ngang 2,6 s; slogan lớn ba dòng ("Thức dậy. Tập luyện. Vươn lên." / "Rise. Train. Ascend." / es), dòng phụ,
+  màn chào luôn tối (đen ấm `AuthHero.ink`): logo ASCND trắng cỡ lớn, quầng lửa cam thở 3,2 s phía sau, bụi sáng vàng ấm
+  trôi lên rất chậm (2 lớp xa / gần, 18 + 6 hạt, ánh tan mềm — chủ dự án bỏ đường nhịp tim vì gợi máy đo tim bệnh viện,
+  "cho bụi bay nhẹ nhưng premium", "cho ít bụi lại"); slogan lớn ba dòng ("Thức dậy. Tập luyện. Vươn lên." / "Rise. Train. Ascend." / es), dòng phụ,
   nút trắng "Đăng nhập bằng email" + nút viền "Tạo tài khoản" (+ nút Apple trắng khi bật). Form email là tấm tối trượt
   lên: tiêu đề lớn, ô nhập nền giấy 8 % bo 16, nút trắng, liên kết quên mật khẩu / đổi chế độ. Giảm chuyển động: đứng yên.
   - Xoá tài khoản: hàng "Xoá tài khoản" trong Cài đặt → hỏi lại → `delete-account` (đã triển khai lên server) →

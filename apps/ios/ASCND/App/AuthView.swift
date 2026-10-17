@@ -468,8 +468,9 @@ private struct AuthFieldStyle: ViewModifier {
   }
 }
 
-/// Logo ASCND trắng cỡ lớn + quầng lửa cam thở chậm (mock 2) + đường nhịp tim cam
-/// chạy ngang qua (mock 1). Giảm chuyển động: đứng yên, nhịp tim vẽ đủ.
+/// Logo ASCND trắng cỡ lớn + quầng lửa cam thở chậm (mock 2) + bụi sáng trôi nhẹ
+/// (16/10, chủ dự án: bỏ đường nhịp tim — gợi máy đo tim bệnh viện; "cho bụi bay nhẹ
+/// nhưng premium"). Giảm chuyển động: đứng yên, bụi ở vị trí cố định.
 private struct AuthHeroBackdrop: View {
   let reduceMotion: Bool
 
@@ -488,7 +489,7 @@ private struct AuthHeroBackdrop: View {
           .scaleEffect(1 + 0.08 * breath)
           .opacity(0.6 + 0.35 * breath)
           .position(x: w / 2, y: cy)
-          pulse(width: w, y: cy + logo * 0.08, t: t)
+          AuthDust(t: t, layer: 0).blur(radius: 0.6)
           Image("BrandMark")
             .renderingMode(.template)
             .resizable()
@@ -496,33 +497,55 @@ private struct AuthHeroBackdrop: View {
             .foregroundStyle(AuthHero.paper)
             .frame(width: logo, height: logo)
             .position(x: w / 2, y: cy)
+          AuthDust(t: t, layer: 1)
         }
       }
     }
   }
+}
 
-  /// Đường nhịp tim cam: đoạn sáng chạy từ trái sang phải mỗi 2,6 s, hai đầu mờ.
-  private func pulse(width w: CGFloat, y: CGFloat, t: TimeInterval) -> some View {
-    let mid = w / 2
-    var path = Path()
-    path.move(to: CGPoint(x: -10, y: y))
-    path.addLine(to: CGPoint(x: mid - 70, y: y))
-    path.addLine(to: CGPoint(x: mid - 50, y: y - 46))
-    path.addLine(to: CGPoint(x: mid - 22, y: y + 58))
-    path.addLine(to: CGPoint(x: mid + 6, y: y - 28))
-    path.addLine(to: CGPoint(x: mid + 22, y: y))
-    path.addLine(to: CGPoint(x: w + 10, y: y))
-    let p = reduceMotion ? 1 : (t.truncatingRemainder(dividingBy: 2.6) / 2.6)
-    let head = CGFloat(-0.1 + 1.4 * p), tail = head - 0.45
-    return path
-      .trimmedPath(from: max(0, reduceMotion ? 0 : tail), to: min(1, reduceMotion ? 1 : head))
-      .stroke(
-        LinearGradient(
-          colors: [AuthHero.ember.opacity(0), AuthHero.ember, AuthHero.ember.opacity(0)], startPoint: .leading,
-          endPoint: .trailing),
-        style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round)
-      )
-      .shadow(color: AuthHero.ember.opacity(0.7), radius: 6)
+/// Bụi sáng: hạt nhỏ màu vàng ấm trôi lên rất chậm, lắc ngang nhẹ, lấp lánh. Hai lớp:
+/// sau logo (mờ, nhỏ, chậm — xa) và trước logo (sắc hơn, ít hạt — gần). Vị trí sinh
+/// từ hạt giống cố định nên mỗi lần mở giống nhau, không tốn bộ nhớ.
+private struct AuthDust: View {
+  let t: TimeInterval
+  let layer: Int
+
+  var body: some View {
+    Canvas { ctx, size in
+      let count = layer == 0 ? 18 : 6  // chủ dự án: "cho ít bụi lại"
+      var dots: [(CGRect, Double, Color)] = []
+      for i in 0..<count {
+        let seed = Double(i * 7919 + layer * 104_729)
+        func r(_ k: Double) -> Double { (sin(seed * 12.9898 + k * 78.233) * 43758.5453).truncatingRemainder(dividingBy: 1).magnitude }
+        let speed = (layer == 0 ? 5.0 : 9.0) + r(1) * 7  // điểm / giây
+        let travel = size.height + 40
+        let y = size.height + 20 - (r(2) * travel + t * speed).truncatingRemainder(dividingBy: travel)
+        let x = r(3) * size.width + sin(t * (0.2 + r(4) * 0.3) + r(5) * 6.28) * (8 + r(6) * 16)
+        let radius = (layer == 0 ? 0.5 : 0.8) + r(7) * (layer == 0 ? 0.9 : 1.1)
+        let twinkle = 0.5 + 0.5 * sin(t * (0.7 + r(8) * 1.2) + r(9) * 6.28)
+        // Mờ dần ở mép trên / dưới để hạt không xuất hiện / biến mất đột ngột.
+        let edge = min(1, min(y / 120, (size.height - y) / 160))
+        let alpha = max(0, (layer == 0 ? 0.5 : 0.8) * twinkle * edge)
+        let warm = Color(red: 1, green: 0.86 + r(10) * 0.1, blue: 0.68 + r(11) * 0.2)
+        dots.append((CGRect(x: x - radius, y: y - radius, width: radius * 2, height: radius * 2), alpha, warm))
+      }
+      // Ánh tan mềm: cùng các hạt, phóng to và làm nhoè cả lớp — không có viền quầng.
+      ctx.drawLayer { glow in
+        glow.addFilter(.blur(radius: layer == 0 ? 5 : 7))
+        for (rect, alpha, _) in dots {
+          var g = glow
+          g.opacity = alpha * 0.55
+          g.fill(Path(ellipseIn: rect.insetBy(dx: -rect.width * 1.6, dy: -rect.height * 1.6)), with: .color(AuthHero.ember))
+        }
+      }
+      for (rect, alpha, color) in dots {
+        var dot = ctx
+        dot.opacity = alpha
+        dot.fill(Path(ellipseIn: rect), with: .color(color))
+      }
+    }
+    .allowsHitTesting(false)
   }
 }
 
