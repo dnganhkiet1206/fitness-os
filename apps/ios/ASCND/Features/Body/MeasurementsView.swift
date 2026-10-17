@@ -12,8 +12,15 @@ import SwiftUI
 /// VoiceOver), đường nhỏ không trục.
 ///
 /// Khác RN: trục ngày thật (cột `date`), 24 lần đo MỚI nhất.
+///
+/// Lối vào ghi số đo (RN `body-panel.tsx:952`, `:1016`: "Nhập số đo" ở đầu mục
+/// và ở trạng thái trống): "+" trên thanh điều hướng, và nút viên nang ở trạng
+/// thái trống. Lưu xong đọc lại để thẻ mới hiện ngay.
 struct MeasurementsView: View {
   let book: MeasurementsBook
+
+  @Environment(AppServices.self) private var services
+  @State private var logging = false
 
   var body: some View {
     ScrollView {
@@ -29,6 +36,7 @@ struct MeasurementsView: View {
           DSEmptyState(
             systemImage: "ruler", title: String(localized: "measure.empty.title"),
             message: String(localized: "measure.empty.message"))
+          BodyLogButton(title: String(localized: "measure.add")) { logging = true }
         case .ready(let series):
           ForEach(series) { card($0) }
         }
@@ -37,8 +45,17 @@ struct MeasurementsView: View {
     }
     .navigationTitle(Text("measure.title"))
     .ascndPage()
+    .toolbar {
+      BodyLogToolbarButton(label: String(localized: "measure.add")) { logging = true }
+    }
     .task { if case .loading = book.phase { await book.load() } }
     .refreshable { await book.load() }
+    .sheet(isPresented: $logging) {
+      let userId = services.session.session?.userId ?? ""
+      LogMeasurementView(makeLogger: { services.makeMeasurementLogger(userId: userId) }) {
+        Task { await book.load() }
+      }
+    }
   }
 
   private func card(_ s: Measurements.Series) -> some View {

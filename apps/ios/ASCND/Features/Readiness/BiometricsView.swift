@@ -15,11 +15,16 @@ import SwiftUI
 ///   điểm ngày ấy và hôm nay;
 /// - dòng miễn trừ y khoa ở cuối.
 ///
-/// Khác RN / chưa có: nút "+" và nút "Nhập thủ công" ở trạng thái trống (màn
-/// `log-biometrics` đi qua hàng đợi offline của B — chưa port); không có toast
-/// — kết quả xoá hiện bằng hộp thoại và đọc bằng VoiceOver.
+/// Như RN (`biometrics.tsx:135`, `:152`): "+" trên thanh điều hướng và nút
+/// "Nhập thủ công" ở trạng thái trống mở `LogBiometricsView`; lưu xong đọc lại.
+///
+/// Khác RN: không có toast — kết quả xoá hiện bằng hộp thoại và đọc bằng
+/// VoiceOver.
 struct BiometricsView: View {
   let book: BiometricsBook
+
+  @Environment(AppServices.self) private var services
+  @State private var logging = false
 
   @State private var pendingDelete: Biometrics.Sample?
   @State private var outcome: BiometricsBook.DeleteOutcome?
@@ -48,6 +53,15 @@ struct BiometricsView: View {
       ) {
         Button(String(localized: "common.cancel"), role: .cancel) {}
       }
+      .toolbar {
+        BodyLogToolbarButton(label: String(localized: "bio.manual")) { logging = true }
+      }
+      .sheet(isPresented: $logging) {
+        let userId = services.session.session?.userId ?? ""
+        LogBiometricsView(makeLogger: { services.makeBiometricLogger(userId: userId) }) {
+          Task { await book.load() }
+        }
+      }
   }
 
   @ViewBuilder private var content: some View {
@@ -59,9 +73,13 @@ struct BiometricsView: View {
         Task { await book.load() }
       }
     case .empty:
-      DSEmptyState(
-        systemImage: "waveform.path.ecg", title: String(localized: "bio.empty.title"),
-        message: String(localized: "bio.empty.message"))
+      VStack(spacing: 0) {
+        DSEmptyState(
+          systemImage: "waveform.path.ecg", title: String(localized: "bio.empty.title"),
+          message: String(localized: "bio.empty.message"))
+        BodyLogButton(title: String(localized: "bio.manual")) { logging = true }
+          .padding(DS.Spacing.md)
+      }
     case .ready(let samples):
       ScrollView {
         LazyVStack(spacing: DS.Spacing.md) {
