@@ -307,9 +307,9 @@ struct FoodEditorView: View {
           Button(String(localized: "common.cancel")) { dismiss() }
         }
       }
-      .confirmationDialog(
+      .alert(
         String(localized: "foods.delete.confirm \(form.name.trimmingCharacters(in: .whitespaces).isEmpty ? (food?.name ?? "") : form.name)"),
-        isPresented: $confirmDelete, titleVisibility: .visible
+        isPresented: $confirmDelete
       ) {
         Button(String(localized: "foods.delete"), role: .destructive) { Task { await delete() } }
         Button(String(localized: "common.cancel"), role: .cancel) {}

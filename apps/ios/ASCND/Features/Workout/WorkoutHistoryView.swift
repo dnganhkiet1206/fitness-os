@@ -48,10 +48,9 @@ public struct WorkoutHistoryView: View {
       .ascndPage()
       .task { if !book.loaded { await book.load() } }
       .refreshable { await book.refresh() }
-      .confirmationDialog(
+      .alert(
         String(localized: "history.delete.title"),
         isPresented: Binding(get: { pendingDelete != nil }, set: { if !$0 { pendingDelete = nil } }),
-        titleVisibility: .visible,
         presenting: pendingDelete
       ) { entry in
         Button(String(localized: "history.delete.confirm"), role: .destructive) {

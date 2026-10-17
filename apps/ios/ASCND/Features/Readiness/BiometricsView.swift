@@ -30,10 +30,9 @@ struct BiometricsView: View {
       .ascndPage()
       .task { if case .loading = book.phase { await book.load() } }
       .refreshable { await book.load() }
-      .confirmationDialog(
+      .alert(
         String(localized: "bio.delete.title"),
         isPresented: Binding(get: { pendingDelete != nil }, set: { if !$0 { pendingDelete = nil } }),
-        titleVisibility: .visible,
         presenting: pendingDelete
       ) { sample in
         Button(String(localized: "bio.delete.confirm"), role: .destructive) {

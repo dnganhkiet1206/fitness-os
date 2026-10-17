@@ -791,6 +791,9 @@ final class AppServices {
 
   /// Hộp thông báo Cộng đồng (#527, lát 9): thông báo + hồ sơ + tên thử thách,
   /// đánh dấu đã đọc qua RPC.
+  /// Xoá tài khoản qua `delete-account` (App Store 5.1.1(v)).
+  var accountDeleter: (any AccountDeleter)? { backend.map { SupabaseAccountDeleter(backend: $0) } }
+
   /// Tài khoản có gói trả phí (plus / max) — đọc `current_tier()` (server ghi,
   /// máy chỉ đọc). Lỗi / chưa cấu hình → `false`. Bản Debug: `ASCND_FAKE_TIER=plus`
   /// để thử giao diện gói trả phí khi chưa bán gói nào.

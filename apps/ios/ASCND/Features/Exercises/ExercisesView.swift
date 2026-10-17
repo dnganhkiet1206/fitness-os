@@ -73,10 +73,9 @@ struct ExercisesView: View {
       .sheet(isPresented: $adding) {
         AddExerciseSheet(library: library, form: $form) { adding = false }
       }
-      .confirmationDialog(
+      .alert(
         pendingDelete.map { String(localized: "ex.delete.confirm \($0.name)") } ?? "",
         isPresented: Binding(get: { pendingDelete != nil }, set: { if !$0 { pendingDelete = nil } }),
-        titleVisibility: .visible,
         presenting: pendingDelete
       ) { e in
         Button(String(localized: "ex.delete"), role: .destructive) {

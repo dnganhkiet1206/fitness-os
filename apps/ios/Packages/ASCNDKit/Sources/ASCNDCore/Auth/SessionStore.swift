@@ -180,8 +180,19 @@ public final class SessionStore {
 
   /// Đăng xuất và đợi dọn xong. Lỗi mạng khi báo server không giữ người dùng
   /// lại trong phiên: trên máy này họ đã đăng xuất.
-  public func signOut() async {
-    try? await api.signOut()
+  ///
+  /// Báo server có TRẦN thời gian (16/10, chủ dự án: "app không đăng xuất được"):
+  /// mạng chậm / treo làm lời gọi server chờ tới hết timeout mạng, và suốt lúc ấy
+  /// màn hình đứng yên như nút không hoạt động. Quá `remoteTimeout` thì đăng xuất
+  /// trên máy luôn.
+  public func signOut(remoteTimeout: Duration = .seconds(4)) async {
+    let api = self.api
+    await withTaskGroup(of: Void.self) { group in
+      group.addTask { try? await api.signOut() }
+      group.addTask { try? await Task.sleep(for: remoteTimeout) }
+      await group.next()
+      group.cancelAll()
+    }
     phase = .signedOut
     await runCleanups()
   }

@@ -102,10 +102,9 @@ struct SupplementsView: View {
         services.stateWriter.clearNotice()
       }
       .task { await book.refresh() }
-      .confirmationDialog(
+      .alert(
         pendingDelete.map { String(localized: "supplements.delete.confirm \($0.name)") } ?? "",
         isPresented: Binding(get: { pendingDelete != nil }, set: { if !$0 { pendingDelete = nil } }),
-        titleVisibility: .visible,
         presenting: pendingDelete
       ) { item in
         Button(String(localized: "supplements.delete"), role: .destructive) {

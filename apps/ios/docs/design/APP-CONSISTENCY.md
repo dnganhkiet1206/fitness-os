@@ -104,7 +104,19 @@ tính năng đồng bộ trong toàn app" → "làm đi".
   Trợ lý) bỏ `sparkles`, dùng ký hiệu ASCND Intelligence + chữ màu mực; màn "Coach nhớ gì" có nhãn ASCND Intelligence
   như các tính năng AI khác; bảng bật lên nửa màn (Bộ sưu tập ở Cửa hàng, nhập lượng nước, sửa khẩu phần) nền đặc màu
   trang thay kính trong (thẻ không chìm). Còn để nguyên có chủ ý: `sparkles` ở Huy chương / Thử thách / Cửa hàng (ăn
-  mừng, không phải AI); bong bóng xanh ở nhắn tin giữa người (iMessage). Gói đọc từ `current_tier()` (plus / max; `entitlements` chỉ server ghi),
+  mừng, không phải AI); bong bóng xanh ở nhắn tin giữa người (iMessage).
+- **Tài khoản & pháp lý (16/10, chủ dự án: "không đăng xuất được, không có xoá tài khoản, chính sách chỉ là bản dựng"):**
+  - Đăng xuất: lời gọi server có trần 4 s (mạng treo không giữ người dùng trong phiên); đóng mọi bảng đang mở trước
+    khi đăng xuất để màn Đăng nhập hiện ngay.
+  - Xoá tài khoản: hàng "Xoá tài khoản" trong Cài đặt → hỏi lại → `delete-account` (đã triển khai lên server) →
+    xong thì đăng xuất; lỗi nói đúng: chưa xoá gì / đã xoá ảnh nhưng chưa xong (`partial`) / mất mạng.
+  - Mọi hộp xác nhận (`confirmationDialog`, 17 chỗ) đổi sang `alert` giữa màn: trên iOS 26 hộp cũ bật lên như bong
+    bóng chỉ vào chỗ lạ (dòng email), trông như lỗi.
+  - Văn bản pháp lý viết lại đầy đủ vi/en/es (`native/src/lib/legal-content.ts` → `legal-content.json`): ngày hiệu
+    lực, quy tắc cộng đồng, xu / phần thưởng ảo, gói trả phí qua App Store, Apple Health (không quảng cáo, thu hồi
+    quyền), Sentry / PostHog, bên xử lý (Supabase, Google Gemini, Apple), AI gửi gì, lưu giữ & xoá, quyền GDPR /
+    CCPA, trẻ em < 16, chuyển dữ liệu quốc tế. Bỏ các câu hứa sai (xuất JSON/CSV trong app, mã PIN, AI "không lưu").
+    Địa chỉ liên hệ là chỗ trống `CONTACT` — chủ dự án điền. Gói đọc từ `current_tier()` (plus / max; `entitlements` chỉ server ghi),
     Debug thử bằng `ASCND_FAKE_TIER=plus` — khi ấy bỏ giới hạn 3 giờ, hiện MỖI lần mở trang. Giảm chuyển động: không đổi.
   - Koa Coach trống (16/10, chủ dự án): bỏ hết chữ — chỉ ký hiệu ASCND Intelligence lớn (132), mờ 14 %, đứng yên
     (chủ dự án: không hiệu ứng động ở đây); VoiceOver đọc lời chào. Câu hỏi mẫu là thẻ hai dòng (chủ đề đậm + câu sẽ gửi mờ) cuộn ngang ngay

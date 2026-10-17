@@ -159,10 +159,9 @@ struct CommunityPostView: View {
     } message: { m in
       if let body = m.body { Text(verbatim: body) }
     }
-    .confirmationDialog(
-      Text(verbatim: menuFor?.author?.displayName ?? ""),
+    .alert(
+      Text(verbatim: menuFor?.author?.displayName ?? String(localized: "community.post.comment.menu")),
       isPresented: Binding(get: { menuFor != nil }, set: { if !$0 { menuFor = nil } }),
-      titleVisibility: menuFor?.author == nil ? .hidden : .visible,
       presenting: menuFor
     ) { c in
       if book.canDelete(c) {
