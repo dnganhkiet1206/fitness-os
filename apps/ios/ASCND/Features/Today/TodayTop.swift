@@ -48,9 +48,9 @@ struct BrandLockup: View {
     try? await Task.sleep(for: .seconds(2.5))
     guard !Task.isCancelled else { return }
     UserDefaults.standard.set(now, forKey: key)
-    withAnimation(.smooth(duration: 0.6)) { showsIntelligence = true }
+    withAnimation(reduceMotion ? nil : .smooth(duration: 0.6)) { showsIntelligence = true }
     try? await Task.sleep(for: .seconds(4))
-    withAnimation(.smooth(duration: 0.6)) { showsIntelligence = false }
+    withAnimation(reduceMotion ? nil : .smooth(duration: 0.6)) { showsIntelligence = false }
   }
 
   private var brand: some View {
