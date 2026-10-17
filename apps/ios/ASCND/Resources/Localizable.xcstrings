@@ -52213,29 +52213,6 @@
     }
    }
   },
-  "coach.thinking": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Koa is thinking…"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Koa está pensando…"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Koa đang suy nghĩ…"
-     }
-    }
-   }
-  },
   "notif.filter.all": {
    "extractionState": "manual",
    "localizations": {

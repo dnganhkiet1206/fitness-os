@@ -90,13 +90,11 @@ tính năng đồng bộ trong toàn app" → "làm đi".
   `sparkles` ở Insight, chat, gợi ý bữa, Phân tích tuần, quét món. "AI Coach" đổi thành **Koa Coach**
   (vi/en/es; giới thiệu "Mình là Koa, coach của bạn…"). Một ký hiệu mỗi chỗ: cạnh ký hiệu lớn chỉ ghi chữ
   (`IntelligenceBadge(mark: false)`); ô Hỏi coach không ký hiệu (thẻ Insight ngay trên đã có).
-  - AI đang làm việc (16/10, chủ dự án bỏ quả cầu tròn — "giống chatbot"; chọn mock "Nhịp tim chạy qua logo, màu
-    Siri mới" và yêu cầu khớp đúng mock): `IntelligenceOrb` vẽ chính ký hiệu A, chữ A thở 55 % ↔ 100 %, gạch nhịp tim
-    được vẽ đi vẽ lại bằng nét đen trong như kính tối, lõi mảnh ánh màu Siri iOS 27 (xanh dương → tím → hồng → cam, trôi 3 s) — chủ dự án:
-    "phải mang màu của Siri" rồi "màu phải đen clear", không dùng tông dịu của mock; nét 130/130, 1,8 s; không khung, không quầng, đặt thẳng
-    trên nền kem. Koa Coach: cỡ 40 + dòng "Koa đang suy nghĩ…" (`coach.thinking`, vi/en/es). `ink: .white` khi đè ảnh
-    (quét món). Giảm chuyển động: nhịp tim tô đủ màu, đứng yên. Dùng ở Koa Coach, Insight, gợi ý bữa, Phân tích tuần,
-    quét món.
+  - Logo v3 (16/10, chủ dự án chọn mock "A + Y", `docs/design/mocks/intelligence-logo-v3.html`): `IntelligenceMark`
+    dùng LẠI ảnh logo ASCND của app (`BrandMark`, tô một màu `ink`; chữ A và Koa không vẽ lại) + đường nhịp tim làm
+    gạch ngang hai chân chữ A, rãnh trong suốt 17 tách nét. AI đang làm việc (`IntelligenceOrb`): ký hiệu ĐỨNG YÊN +
+    chữ "ASCND Intelligence" sáng lên lần lượt như sóng (1,6 s, mỗi chữ trễ 0,05 s); thay nhịp tim chạy cũ. Koa Coach
+    bỏ dòng "Koa đang suy nghĩ…". `ink: .white` khi đè ảnh (quét món). Giảm chuyển động: chữ đứng yên.
   - Koa Coach trống (16/10, chủ dự án): bỏ hết chữ — chỉ ký hiệu ASCND Intelligence lớn (132), mờ 14 %, đứng yên
     (chủ dự án: không hiệu ứng động ở đây); VoiceOver đọc lời chào. Câu hỏi mẫu là thẻ hai dòng (chủ đề đậm + câu sẽ gửi mờ) cuộn ngang ngay
     trên ô chat như ChatGPT, ẩn khi đã có tin hoặc ô chat thu gọn. Tin của người dùng trong Koa Coach: bong bóng

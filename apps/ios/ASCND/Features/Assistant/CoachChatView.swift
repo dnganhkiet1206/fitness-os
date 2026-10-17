@@ -799,16 +799,12 @@ private struct CoachMessageRow: View {
   }
 }
 
-/// Koa đang nghĩ: nhịp tim chạy qua ký hiệu ASCND Intelligence (16/10, chủ dự án
-/// chọn, màu Siri iOS 27). Ba chấm iMessage giữ cho tin nhắn giữa người với người.
+/// Koa đang nghĩ: ký hiệu ASCND Intelligence đứng yên + chữ "ASCND Intelligence"
+/// sáng lên như sóng (16/10, chủ dự án chọn A + Y). Ba chấm iMessage giữ cho tin
+/// nhắn giữa người với người.
 private struct CoachThinking: View {
   var body: some View {
-    HStack(spacing: 12) {
-      IntelligenceOrb(size: 40)
-      Text("coach.thinking")
-        .font(.system(size: 12, weight: .medium))
-        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-    }
+    IntelligenceOrb(size: 32)
       .padding(.vertical, 4)
       .frame(maxWidth: .infinity, alignment: .leading)
       .accessibilityElement(children: .ignore)
