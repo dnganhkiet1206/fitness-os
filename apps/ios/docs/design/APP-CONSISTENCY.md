@@ -104,6 +104,8 @@ tính năng đồng bộ trong toàn app" → "làm đi".
 - **Lời Koa trên thẻ Hôm nay (16/10, chủ dự án chọn mock "A · Bong bóng iMessage"):** câu của Koa là bong bóng
   iMessage xám `systemGray5` có đuôi chỉ về Koa (`messageBubble(mine: false, fill:)`, chữ 15); nút việc kế tiếp tách
   ra ngoài, ngay dưới, viên nhỏ 34 (vùng chạm 44), "＋ Ghi một bữa · +10".
+- **Nút hồ sơ trên trang Hôm nay (16/10, chủ dự án chọn mock "B · Giống chuông"):** `AccountAvatar` cùng vật liệu với
+  chuông — kính mờ `.thinMaterial`, viền mực 12 % mảnh 0,75, chữ cái đầu màu mực; hai nút 44 thành một cặp.
 - **Thông báo (16/10, chủ dự án duyệt mock):** một chuông cho cả app ở đầu trang Hôm nay, THAY viên chuỗi ngày (chuỗi vẫn
   ở phòng Koa; chuỗi sắp đứt thành tin nhắc việc). Chuông và nút hồ sơ ở tab Cộng đồng bỏ — tab chỉ còn nút tin nhắn;
   tin nhắn không vào Thông báo. Màn Thông báo (`CommunityInboxView` mở rộng): lọc Tất cả / Cộng đồng / Nhắc việc; "Cần

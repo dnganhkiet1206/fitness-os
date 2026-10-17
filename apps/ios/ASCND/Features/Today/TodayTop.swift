@@ -59,8 +59,8 @@ struct NotificationBell: View {
   }
 }
 
-/// Avatar tài khoản (`account-avatar.tsx`): nút 44, vòng tròn tô `primary` 12%,
-/// viền 28%, chữ cái đầu (`AccountInitials`); không có gì thì hình người. Lối
+/// Avatar tài khoản (`account-avatar.tsx`): nút 44, kính mờ + viền mảnh như
+/// chuông Thông báo (16/10), chữ cái đầu (`AccountInitials`); không có gì thì hình người. Lối
 /// duy nhất vào Cài đặt.
 struct AccountAvatar: View {
   let initials: String?
@@ -68,9 +68,11 @@ struct AccountAvatar: View {
 
   var body: some View {
     Button(action: action) {
+      // Cùng vật liệu với chuông bên cạnh (16/10, chủ dự án chọn mock "B · Giống
+      // chuông"): kính mờ, viền mực mảnh, chữ mực — hai nút thành một cặp.
       ZStack {
-        Circle().fill(DS.Color.primary.swiftUI.opacity(0.12))
-        Circle().stroke(DS.Color.primary.swiftUI.opacity(0.28), lineWidth: 1)
+        Circle().fill(.thinMaterial)
+        Circle().strokeBorder(DS.Color.foreground.swiftUI.opacity(0.12), lineWidth: 0.75)
         if let initials {
           Text(verbatim: initials)
             .font(.system(size: 15, weight: .semibold))
