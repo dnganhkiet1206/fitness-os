@@ -41,11 +41,15 @@ public struct SettingsView: View {
   /// thẻ đầy đủ ở đây; các tab chỉ còn một dòng. `nil` → không hiện.
   var healthSync: (@MainActor () async throws(HealthSync.Failure) -> Void)?
   var healthAvailable = false
+  /// Xoá tài khoản (App Store 5.1.1(v); 16/10, chủ dự án: "không có tuỳ chọn xoá
+  /// tài khoản"). `nil` → không hiện hàng.
+  var deleteAccount: (@MainActor () async -> AccountDeletion)?
 
   /// Vừa đổi mật khẩu xong — RN `toast.success(settingsPasswordChanged)`;
   /// app chưa có toast nên báo ngay dưới hàng, tới khi rời Cài đặt.
   @State private var passwordChanged = false
-  @State private var showSignOutConfirm = false
+  @State private var deleting = false
+  @State private var deleteResult: AccountDeletion?
   @State private var selectedLanguage: String
   @State private var selectedTheme: String
 
@@ -65,6 +69,28 @@ public struct SettingsView: View {
     ("vi", "Tiếng Việt"), ("en", "English"), ("es", "Español"),
   ]
 
+  private func runDelete() {
+    guard let deleteAccount else { return }
+    deleting = true
+    deleteResult = nil
+    Task {
+      let result = await deleteAccount()
+      deleting = false
+      deleteResult = result
+    }
+  }
+
+  /// Chữ báo sau khi xoá không xong (xoá xong thì app đã đăng xuất).
+  static func deleteText(_ r: AccountDeletion) -> String? {
+    switch r {
+    case .deleted: nil
+    case .failed(partial: true): String(localized: "settings.delete.partial")
+    case .failed(partial: false): String(localized: "settings.delete.failed")
+    case .offline: String(localized: "settings.delete.offline")
+    case .notSignedIn: String(localized: "settings.delete.failed")
+    }
+  }
+
   /// Version từ bundle — không hardcode.
   private var appVersion: String {
     Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—"
@@ -81,7 +107,8 @@ public struct SettingsView: View {
     makePasswordChange: (@MainActor () -> PasswordChangeController)? = nil,
     legalLang: AppPreferences.Lang? = nil,
     healthAvailable: Bool = false,
-    healthSync: (@MainActor () async throws(HealthSync.Failure) -> Void)? = nil
+    healthSync: (@MainActor () async throws(HealthSync.Failure) -> Void)? = nil,
+    deleteAccount: (@MainActor () async -> AccountDeletion)? = nil
   ) {
     self.account = account
     self.onSignOut = onSignOut
@@ -94,6 +121,7 @@ public struct SettingsView: View {
     self.legalLang = legalLang
     self.healthAvailable = healthAvailable
     self.healthSync = healthSync
+    self.deleteAccount = deleteAccount
     _selectedLanguage = State(initialValue: language)
     _selectedTheme = State(initialValue: theme)
   }
@@ -220,38 +248,53 @@ public struct SettingsView: View {
           Text(String(localized: "settings.about"))
         }
 
-        // Sign out
+        // Đăng xuất + xoá tài khoản.
         if account != nil {
           Section {
             Button(role: .destructive) {
-              showSignOutConfirm = true
+              ConfirmAlert.present(
+                title: String(localized: "settings.signOut.confirm.title"),
+                message: String(localized: "settings.signOut.confirm.message"),
+                confirm: String(localized: "settings.signOut"),
+                cancel: String(localized: "settings.cancel"),
+                action: onSignOut)
             } label: {
               Text(String(localized: "settings.signOut"))
                 .frame(maxWidth: .infinity)
                 .frame(minHeight: 44)
             }
           }
+          if deleteAccount != nil {
+            Section {
+              Button(role: .destructive) {
+                ConfirmAlert.present(
+                  title: String(localized: "settings.delete.title"),
+                  message: String(localized: "settings.delete.message"),
+                  confirm: String(localized: "settings.delete.confirm"),
+                  cancel: String(localized: "settings.cancel"),
+                  action: runDelete)
+              } label: {
+                HStack(spacing: 8) {
+                  if deleting { ProgressView() }
+                  Text(deleting ? String(localized: "settings.delete.progress") : String(localized: "settings.delete"))
+                }
+                .frame(maxWidth: .infinity)
+                .frame(minHeight: 44)
+              }
+              .disabled(deleting)
+              if let deleteResult, let text = Self.deleteText(deleteResult) {
+                Text(text)
+                  .font(DS.TextStyle.footnote)
+                  .foregroundStyle(DS.Color.destructive.swiftUI)
+              }
+            } footer: {
+              Text(String(localized: "settings.delete.footer"))
+            }
+          }
         }
       }
       .navigationTitle(Text("settings.title"))
       .ascndPage()
-      .confirmationDialog(
-        String(localized: "settings.signOut.confirm.title"),
-        isPresented: $showSignOutConfirm,
-        titleVisibility: .visible
-      ) {
-        Button(
-          String(localized: "settings.signOut"),
-          role: .destructive,
-          action: onSignOut
-        )
-        Button(
-          String(localized: "settings.cancel"),
-          role: .cancel
-        ) {}
-      } message: {
-        Text(String(localized: "settings.signOut.confirm.message"))
-      }
     }
   }
 }

@@ -301,16 +301,15 @@ struct MealPlanView: View {
         book: book, slots: MealPlans.rows(mealsPerDay: plan?.mealsPerDay, items: book.items), startDay: day,
         startMeal: addMeal)
     }
-    .confirmationDialog(
-      String(localized: "plans.delete.confirm \(plan?.name ?? "")"), isPresented: $confirmDelete,
-      titleVisibility: .visible
+    .alert(
+      String(localized: "plans.delete.confirm \(plan?.name ?? "")"), isPresented: $confirmDelete
     ) {
       Button(String(localized: "plans.delete"), role: .destructive) { Task { await deletePlan() } }
       Button(String(localized: "common.cancel"), role: .cancel) {}
     }
-    .confirmationDialog(
+    .alert(
       String(localized: "plans.again.title"),
-      isPresented: Binding(get: { again != nil }, set: { if !$0 { again = nil } }), titleVisibility: .visible,
+      isPresented: Binding(get: { again != nil }, set: { if !$0 { again = nil } }),
       presenting: again
     ) { meal in
       Button(String(localized: "plans.again.yes")) { Task { await eat(meal) } }

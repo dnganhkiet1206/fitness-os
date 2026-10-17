@@ -52534,6 +52534,328 @@
      }
     }
    }
+  },
+  "settings.delete": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Delete account"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Eliminar cuenta"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Xoá tài khoản"
+     }
+    }
+   }
+  },
+  "settings.delete.progress": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Deleting…"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Eliminando…"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đang xoá…"
+     }
+    }
+   }
+  },
+  "settings.delete.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Delete your account permanently?"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "¿Eliminar tu cuenta de forma permanente?"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Xoá tài khoản vĩnh viễn?"
+     }
+    }
+   }
+  },
+  "settings.delete.message": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Everything will be deleted for good — meals, workouts, sleep, progress photos, community posts, messages and what Koa remembers. This cannot be undone."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Se eliminará todo para siempre: comidas, entrenamientos, sueño, fotos de progreso, publicaciones, mensajes y lo que Koa recuerda. No se puede deshacer."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mọi dữ liệu sẽ bị xoá vĩnh viễn — bữa ăn, buổi tập, giấc ngủ, ảnh tiến trình, bài đăng cộng đồng, tin nhắn và những gì Koa nhớ. Không thể hoàn tác."
+     }
+    }
+   }
+  },
+  "settings.delete.confirm": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Delete permanently"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Eliminar para siempre"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Xoá vĩnh viễn"
+     }
+    }
+   }
+  },
+  "settings.delete.failed": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Your account was not deleted and nothing was removed. Please try again later."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tu cuenta no se eliminó y no se borró nada. Inténtalo de nuevo más tarde."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chưa xoá được tài khoản, chưa có dữ liệu nào bị xoá. Hãy thử lại sau."
+     }
+    }
+   }
+  },
+  "settings.delete.partial": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Your progress photos were deleted but the account is not fully deleted yet. Try again to finish."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tus fotos de progreso se eliminaron, pero la cuenta aún no se ha eliminado por completo. Inténtalo de nuevo para terminar."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ảnh tiến trình đã bị xoá nhưng tài khoản chưa xoá xong. Hãy thử lại để hoàn tất."
+     }
+    }
+   }
+  },
+  "settings.delete.offline": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "No connection. Connect and try again — nothing was deleted."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sin conexión. Conéctate e inténtalo de nuevo; no se eliminó nada."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Không có mạng. Kết nối rồi thử lại — chưa có gì bị xoá."
+     }
+    }
+   }
+  },
+  "settings.delete.footer": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Deletes your account and all of its data from our servers. Data you exported to Apple Health stays in Apple Health."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Elimina tu cuenta y todos sus datos de nuestros servidores. Los datos que guardaste en Apple Salud permanecen en Apple Salud."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Xoá tài khoản và toàn bộ dữ liệu trên máy chủ. Dữ liệu đã ghi sang Apple Health vẫn nằm trong Apple Health."
+     }
+    }
+   }
+  },
+  "community.post.comment.menu": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Comment"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Comentario"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bình luận"
+     }
+    }
+   }
+  },
+  "auth.hero.slogan": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Rise.\nTrain.\nAscend."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Levántate.\nEntrena.\nAsciende."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Thức dậy.\nTập luyện.\nVươn lên."
+     }
+    }
+   }
+  },
+  "auth.hero.tagline": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Train, eat, sleep — Koa reads your body every day."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Entrena, come, duerme: Koa lee tu cuerpo cada día."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tập, ăn, ngủ — Koa đọc cơ thể bạn mỗi ngày."
+     }
+    }
+   }
+  },
+  "auth.hero.email": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sign in with email"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Iniciar sesión con correo"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đăng nhập bằng email"
+     }
+    }
+   }
+  },
+  "auth.hero.create": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Create account"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Crear cuenta"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tạo tài khoản"
+     }
+    }
+   }
   }
  }
 }

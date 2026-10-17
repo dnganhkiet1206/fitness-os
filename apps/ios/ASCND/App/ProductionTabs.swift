@@ -1,6 +1,7 @@
 import ASCNDCore
 import ASCNDDesignSystem
 import SwiftUI
+import UIKit
 
 // Nối những màn ĐÃ có (#527) vào tab của bản Release: Today (nút của thẻ →
 // kế hoạch tuần / ghi tay; thẻ sẵn sàng → sinh trắc học; Apple Health; phòng
@@ -209,7 +210,7 @@ struct SettingsSheet: View {
   var body: some View {
     SettingsView(
       account: account,
-      onSignOut: { Task { await services.session.signOut() } },
+      onSignOut: { Task { await signOut() } },
       // Đổi ngay trong app, mọi chữ theo (`AppLanguage`, #527 · 1.7).
       onLanguageChange: { code in
         if let choice = AppPreferences.LangChoice(rawValue: code) { services.setLanguage(choice) }
@@ -225,9 +226,27 @@ struct SettingsSheet: View {
       healthSync: { () async throws(HealthSync.Failure) in
         guard case .signedIn(let s) = services.session.phase else { return }
         try await services.health.syncNow(userId: s.userId, lang: AppServices.appLang)
+      },
+      // Xoá xong thì đăng xuất (đóng mọi bảng, dọn máy) — tài khoản không còn.
+      deleteAccount: services.accountDeleter.map { deleter in
+        {
+          let result = await deleter.deleteAccount()
+          if result == .deleted { await signOut() }
+          return result
+        }
       }
     )
     .presentationDragIndicator(.visible)
+  }
+
+  /// Đóng mọi bảng đang mở (Hồ sơ → Cài đặt chồng nhau) rồi đăng xuất — để màn
+  /// Đăng nhập hiện ra ngay, không bị bảng cũ che (16/10, chủ dự án: "không đăng
+  /// xuất được").
+  private func signOut() async {
+    for case let scene as UIWindowScene in UIApplication.shared.connectedScenes {
+      for window in scene.windows { window.rootViewController?.dismiss(animated: true) }
+    }
+    await services.session.signOut()
   }
 
   private var account: AccountSummary? {

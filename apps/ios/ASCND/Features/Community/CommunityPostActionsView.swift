@@ -93,13 +93,13 @@ private struct CommunityPostActionsModifier: ViewModifier {
       }
       .sensoryFeedback(.selection, trigger: taps)
       .sensoryFeedback(.success, trigger: tried)
-      .confirmationDialog(
-        Text(verbatim: menuTitle), isPresented: present($menuFor), titleVisibility: .visible, presenting: menuFor
+      .alert(
+        Text(verbatim: menuTitle), isPresented: present($menuFor), presenting: menuFor
       ) { post in
         menuButtons(post)
       }
-      .confirmationDialog(
-        Text("community.menu.reportwhy"), isPresented: present($reasonFor), titleVisibility: .visible,
+      .alert(
+        Text("community.menu.reportwhy"), isPresented: present($reasonFor),
         presenting: reasonFor
       ) { post in
         ForEach([CommunityReportReason.spam, .harassment, .inappropriate, .misleading], id: \.self) { r in

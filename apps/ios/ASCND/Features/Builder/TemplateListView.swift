@@ -37,10 +37,9 @@ struct TemplateListView: View {
       .sheet(isPresented: $showsBuilder) {
         TemplateFormView(flow: flow)
       }
-      .confirmationDialog(
+      .alert(
         String(localized: "wb.delete.title"),
         isPresented: Binding(get: { pendingDelete != nil }, set: { if !$0 { pendingDelete = nil } }),
-        titleVisibility: .visible,
         presenting: pendingDelete
       ) { t in
         Button(String(localized: "wb.delete.title"), role: .destructive) {

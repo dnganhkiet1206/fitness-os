@@ -193,11 +193,10 @@ struct GroceryView: View {
       .disabled(book.busy)
       .accessibilityLabel(Text(String(localized: "grocery.remove.a11y \(item.name)")))
       // Gắn vào chính nút ✕: popover trỏ đúng món sắp xoá.
-      .confirmationDialog(
+      .alert(
         String(localized: "grocery.delete.confirm \(item.name)"),
         isPresented: Binding(
-          get: { pendingDelete?.id == item.id }, set: { if !$0 { pendingDelete = nil } }),
-        titleVisibility: .visible
+          get: { pendingDelete?.id == item.id }, set: { if !$0 { pendingDelete = nil } })
       ) {
         Button(String(localized: "grocery.delete"), role: .destructive) {
           Task { report(await book.remove(id: item.id, online: services.sync.online)) }

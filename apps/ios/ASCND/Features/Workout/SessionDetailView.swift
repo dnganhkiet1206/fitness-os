@@ -45,8 +45,8 @@ struct SessionDetailView: View {
           }
         }
       }
-      .confirmationDialog(
-        String(localized: "history.delete.title"), isPresented: $confirmingDelete, titleVisibility: .visible
+      .alert(
+        String(localized: "history.delete.title"), isPresented: $confirmingDelete
       ) {
         Button(String(localized: "history.delete.confirm"), role: .destructive) {
           Task { await delete() }

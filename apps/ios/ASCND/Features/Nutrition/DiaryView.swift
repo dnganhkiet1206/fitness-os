@@ -277,10 +277,9 @@ struct DayMealsSection: View {
       // Nền đặc màu trang (16/10, chủ dự án: thẻ trên bảng kính khó nhìn — như Ghi nhanh).
       .presentationBackground(DS.Color.background.swiftUI)
     }
-    .confirmationDialog(
+    .alert(
       String(localized: "diary.item.delete"),
       isPresented: Binding(get: { pendingItem != nil }, set: { if !$0 { pendingItem = nil } }),
-      titleVisibility: .visible,
       presenting: pendingItem
     ) { item in
       Button(String(localized: "diary.delete"), role: .destructive) { Task { await delete([item]) } }
@@ -290,10 +289,9 @@ struct DayMealsSection: View {
         ? String(localized: "diary.item.delete.today \(item.foodName)")
         : String(localized: "diary.item.delete.day \(item.foodName)"))
     }
-    .confirmationDialog(
+    .alert(
       pendingGroup.map { String(localized: "diary.meal.delete \(DiaryView.mealName($0.type))") } ?? "",
       isPresented: Binding(get: { pendingGroup != nil }, set: { if !$0 { pendingGroup = nil } }),
-      titleVisibility: .visible,
       presenting: pendingGroup
     ) { group in
       Button(String(localized: "diary.delete"), role: .destructive) { Task { await delete(group.items) } }

@@ -152,8 +152,8 @@ struct CommunityUserView: View {
     .sensoryFeedback(.selection, trigger: taps)
     .communityUserLinks()
     .communityPostActions(userId: book.userId, host: book)
-    .confirmationDialog(
-      Text(verbatim: book.profile?.displayName ?? ""), isPresented: $menuOpen, titleVisibility: .visible
+    .alert(
+      Text(verbatim: book.profile?.displayName ?? ""), isPresented: $menuOpen
     ) {
       if let p = book.profile {
         if book.mutedUntil != nil {
