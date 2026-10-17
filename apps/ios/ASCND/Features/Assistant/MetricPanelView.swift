@@ -166,12 +166,17 @@ struct MetricPanelView: View {
           Button {
             onAsk(a.ask(lang))
           } label: {
-            Label("metric.ask", systemImage: "sparkles")
+            // Lối vào AI mang ký hiệu ASCND Intelligence như mọi chỗ AI (thay `sparkles`).
+            Label {
+              Text("metric.ask")
+            } icon: {
+              IntelligenceMark(size: 16)
+            }
               .font(DS.TextStyle.footnote.weight(.semibold))
               .frame(minHeight: 44)
           }
           .buttonStyle(.plain)
-          .foregroundStyle(DS.Color.brand.swiftUI)
+          .foregroundStyle(DS.Color.foreground.swiftUI)
           // Đọc cả câu sẽ hỏi.
           .accessibilityHint(Text(verbatim: a.ask(lang)))
           }

@@ -21,6 +21,8 @@ struct CoachMemoryView: View {
   var body: some View {
     ScrollView {
       VStack(alignment: .leading, spacing: DS.Spacing.md) {
+        // Tính năng AI → nhãn ASCND Intelligence như Insight, Phân tích tuần (16/10).
+        IntelligenceBadge()
         Text("cm.intro")
           .font(DS.TextStyle.footnote)
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)

@@ -452,6 +452,8 @@ struct ShopView: View {
       }
     }
     .presentationDetents([.medium, .large])
+    // Nền đặc màu trang (16/10, chủ dự án: thẻ trên bảng kính khó nhìn — như Ghi nhanh).
+    .presentationBackground(DS.Color.background.swiftUI)
   }
 
   private func claim(_ c: MascotShop.Collection) async {

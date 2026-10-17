@@ -274,6 +274,8 @@ struct DayMealsSection: View {
         Task { await save(item, servings) }
       }
       .presentationDetents([.medium])
+      // Nền đặc màu trang (16/10, chủ dự án: thẻ trên bảng kính khó nhìn — như Ghi nhanh).
+      .presentationBackground(DS.Color.background.swiftUI)
     }
     .confirmationDialog(
       String(localized: "diary.item.delete"),

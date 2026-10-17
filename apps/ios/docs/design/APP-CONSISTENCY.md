@@ -99,7 +99,12 @@ tính năng đồng bộ trong toàn app" → "làm đi".
     tối đa một lần mỗi 3 giờ) đổi sang "ASCND Intelligence" trong 4 s rồi về logo cũ — để người dùng gói trả phí nhận ra
     thay đổi nhẹ. Cùng cỡ logo mặc định (ký hiệu 37, chữ 22 đậm); đổi LẦN LƯỢT (mờ hẳn 0,3 s rồi hiện 0,35 s, không
     chồng lấn); vệt sáng chạy qua nhịp tim của ký hiệu (`IntelligenceMark(glint:)`) và chữ sáng lần lượt bằng CHUNG
-    hiệu ứng với AI trong chat (`IntelligenceWaveText`). Gói đọc từ `current_tier()` (plus / max; `entitlements` chỉ server ghi),
+    hiệu ứng với AI trong chat (`IntelligenceWaveText`).
+- **Rà thiết kế cũ (16/10, chủ dự án: "còn mục nào thiết kế cũ thì fix luôn"):** nút "Hỏi về chỉ số" (bảng chỉ số
+  Trợ lý) bỏ `sparkles`, dùng ký hiệu ASCND Intelligence + chữ màu mực; màn "Coach nhớ gì" có nhãn ASCND Intelligence
+  như các tính năng AI khác; bảng bật lên nửa màn (Bộ sưu tập ở Cửa hàng, nhập lượng nước, sửa khẩu phần) nền đặc màu
+  trang thay kính trong (thẻ không chìm). Còn để nguyên có chủ ý: `sparkles` ở Huy chương / Thử thách / Cửa hàng (ăn
+  mừng, không phải AI); bong bóng xanh ở nhắn tin giữa người (iMessage). Gói đọc từ `current_tier()` (plus / max; `entitlements` chỉ server ghi),
     Debug thử bằng `ASCND_FAKE_TIER=plus` — khi ấy bỏ giới hạn 3 giờ, hiện MỖI lần mở trang. Giảm chuyển động: không đổi.
   - Koa Coach trống (16/10, chủ dự án): bỏ hết chữ — chỉ ký hiệu ASCND Intelligence lớn (132), mờ 14 %, đứng yên
     (chủ dự án: không hiệu ứng động ở đây); VoiceOver đọc lời chào. Câu hỏi mẫu là thẻ hai dòng (chủ đề đậm + câu sẽ gửi mờ) cuộn ngang ngay

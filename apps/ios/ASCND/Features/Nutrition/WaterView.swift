@@ -638,6 +638,8 @@ struct WaterManualSheet: View {
     }
     .padding(DS.Spacing.lg)
     .presentationDetents([.height(300)])
+    // Nền đặc màu trang (16/10, chủ dự án: thẻ trên bảng kính khó nhìn — như Ghi nhanh).
+    .presentationBackground(DS.Color.background.swiftUI)
     .onAppear { focused = true }
   }
 
