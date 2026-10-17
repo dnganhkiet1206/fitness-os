@@ -202,11 +202,13 @@ struct CoachChatView: View {
   // MARK: - Trống
 
   /// Màn trống kiểu app Siri (16/10, chủ dự án: "bỏ hết mấy cái chữ, làm logo AI
-  /// to lên và mờ"): chỉ một ký hiệu ASCND Intelligence lớn, mờ, nhịp tim chạy nhẹ.
-  /// Gợi ý nằm sát trên ô chat (`starterCards`). VoiceOver vẫn đọc lời chào.
+  /// to lên và mờ"): chỉ một ký hiệu ASCND Intelligence lớn, mờ, ĐỨNG YÊN (chủ dự
+  /// án: "logo trong bản này đừng cho hiệu ứng động" — nhịp tim chạy chỉ dành cho lúc
+  /// Koa đang nghĩ). Gợi ý nằm sát trên ô chat (`starterCards`). VoiceOver vẫn đọc
+  /// lời chào.
   private var hello: some View {
-    IntelligenceOrb(size: 132)
-      .opacity(0.16)
+    IntelligenceMark(size: 132)
+      .opacity(0.14)
       .frame(maxWidth: .infinity)
       .containerRelativeFrame(.vertical, alignment: .center)
       .accessibilityElement(children: .ignore)

@@ -97,8 +97,8 @@ tính năng đồng bộ trong toàn app" → "làm đi".
     trên nền kem. Koa Coach: cỡ 40 + dòng "Koa đang suy nghĩ…" (`coach.thinking`, vi/en/es). `ink: .white` khi đè ảnh
     (quét món). Giảm chuyển động: nhịp tim tô đủ màu, đứng yên. Dùng ở Koa Coach, Insight, gợi ý bữa, Phân tích tuần,
     quét món.
-  - Koa Coach trống (16/10, chủ dự án): bỏ hết chữ — chỉ ký hiệu ASCND Intelligence lớn (132), mờ 16 %, nhịp tim chạy
-    nhẹ như app Siri; VoiceOver đọc lời chào. Câu hỏi mẫu là thẻ hai dòng (chủ đề đậm + câu sẽ gửi mờ) cuộn ngang ngay
+  - Koa Coach trống (16/10, chủ dự án): bỏ hết chữ — chỉ ký hiệu ASCND Intelligence lớn (132), mờ 14 %, đứng yên
+    (chủ dự án: không hiệu ứng động ở đây); VoiceOver đọc lời chào. Câu hỏi mẫu là thẻ hai dòng (chủ đề đậm + câu sẽ gửi mờ) cuộn ngang ngay
     trên ô chat như ChatGPT, ẩn khi đã có tin hoặc ô chat thu gọn. Tin của người dùng trong Koa Coach: bong bóng
     iMessage màu xám trung tính `systemGray5` (`messageBubble(fill:)`; mực 7 % ra màu be, lẫn nền kem — chủ dự án: khó nhìn), chữ thường; nhắn tin giữa người vẫn xanh.
 - **Thông báo (16/10, chủ dự án duyệt mock):** một chuông cho cả app ở đầu trang Hôm nay, THAY viên chuỗi ngày (chuỗi vẫn
