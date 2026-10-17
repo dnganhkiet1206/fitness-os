@@ -25,8 +25,25 @@ enum Intelligence {
 struct IntelligenceMark: View {
   var size: CGFloat = 18
   var ink: Color = Intelligence.ink
+  /// Một vệt sáng chạy dọc nhịp tim MỘT lần khi hiện (logo gói trả phí trên Hôm
+  /// nay — 16/10, chủ dự án: "thanh nhịp tim cũng di chuyển lúc logo AI hiện ra"),
+  /// ngay trước vệt sáng lướt qua chữ. Giảm chuyển động: đứng yên.
+  var glint = false
+  @State private var start = Date()
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
   var body: some View {
+    if glint && !reduceMotion {
+      TimelineView(.animation(minimumInterval: 1 / 30)) { tl in
+        canvas(phase: min(1, max(0, (tl.date.timeIntervalSince(start) - 0.1) / 1.1)))
+      }
+      .onAppear { start = Date() }
+    } else {
+      canvas(phase: nil)
+    }
+  }
+
+  private func canvas(phase: Double?) -> some View {
     Canvas { ctx, canvas in
       // Khung 222 × 222 của ảnh logo gốc.
       let k = min(canvas.width, canvas.height) / 222
@@ -38,7 +55,21 @@ struct IntelligenceMark: View {
       cut.blendMode = .destinationOut
       cut.stroke(Self.pulse, with: .color(.black),
                  style: StrokeStyle(lineWidth: 17, lineCap: .round, lineJoin: .round))
-      ctx.stroke(Self.pulse, with: .color(ink),
+      let shade: GraphicsContext.Shading
+      if let phase {
+        // Vệt sáng theo bề ngang nhịp tim (x 40 → 182).
+        let c = -0.3 + 1.6 * phase, w = 0.22
+        func at(_ v: Double) -> CGFloat { CGFloat(max(0, min(1, v))) }
+        shade = .linearGradient(
+          Gradient(stops: [
+            .init(color: ink, location: 0), .init(color: ink, location: at(c - w)),
+            .init(color: ink.opacity(0.28), location: at(c)),
+            .init(color: ink, location: at(c + w)), .init(color: ink, location: 1),
+          ]), startPoint: CGPoint(x: 40, y: 122), endPoint: CGPoint(x: 182, y: 122))
+      } else {
+        shade = .color(ink)
+      }
+      ctx.stroke(Self.pulse, with: shade,
                  style: StrokeStyle(lineWidth: 8, lineCap: .round, lineJoin: .round))
     }
     .frame(width: size, height: size)
@@ -137,10 +168,32 @@ struct IntelligenceOrb: View {
     .accessibilityHidden(true)
   }
 
-  private var letters: [Character] { Array(String(localized: "ai.brand")) }
   private var font: Font { .system(size: max(13, size * 0.38), weight: .semibold) }
 
-  @ViewBuilder private var wave: some View {
+  private var wave: some View { IntelligenceWaveText(font: font, ink: ink) }
+
+  /// 0…1 cho chữ thứ `i`: lên nhanh tới 30 % vòng rồi lắng dần (như CSS của mock).
+  static func lift(_ t: TimeInterval, _ i: Int) -> Double {
+    let cycle = 1.6
+    var x = (t - Double(i) * 0.05).truncatingRemainder(dividingBy: cycle) / cycle
+    if x < 0 { x += 1 }
+    let r = x < 0.3 ? x / 0.3 : 1 - (x - 0.3) / 0.7
+    return r * r * (3 - 2 * r)
+  }
+}
+
+/// Chữ "ASCND Intelligence" sáng lên lần lượt từng chữ như sóng — MỘT hiệu ứng ánh
+/// sáng dùng chung cho AI trong chat và logo gói trả phí trên Hôm nay (16/10, chủ
+/// dự án: "logo AI dùng chung hiệu ứng ánh sáng của AI trong chat"). Giảm chuyển
+/// động: chữ đứng yên, đậm đủ.
+struct IntelligenceWaveText: View {
+  let font: Font
+  var ink: Color = Intelligence.ink
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+  private var letters: [Character] { Array(String(localized: "ai.brand")) }
+
+  var body: some View {
     if reduceMotion {
       Text("ai.brand").font(font).foregroundStyle(ink)
     } else {
@@ -148,7 +201,7 @@ struct IntelligenceOrb: View {
         let t = tl.date.timeIntervalSinceReferenceDate
         HStack(spacing: 0) {
           ForEach(Array(letters.enumerated()), id: \.offset) { i, c in
-            let p = Self.lift(t, i)
+            let p = IntelligenceOrb.lift(t, i)
             Text(String(c))
               .font(font)
               .foregroundStyle(ink)
@@ -158,14 +211,5 @@ struct IntelligenceOrb: View {
         }
       }
     }
-  }
-
-  /// 0…1 cho chữ thứ `i`: lên nhanh tới 30 % vòng rồi lắng dần (như CSS của mock).
-  static func lift(_ t: TimeInterval, _ i: Int) -> Double {
-    let cycle = 1.6
-    var x = (t - Double(i) * 0.05).truncatingRemainder(dividingBy: cycle) / cycle
-    if x < 0 { x += 1 }
-    let r = x < 0.3 ? x / 0.3 : 1 - (x - 0.3) / 0.7
-    return r * r * (3 - 2 * r)
   }
 }

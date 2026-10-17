@@ -18,18 +18,17 @@ struct BrandLockup: View {
   /// dùng gói trả phí nhận ra một thay đổi nhẹ.
   var paid = false
   @State private var showsIntelligence = false
+  @State private var visible = true
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
   var body: some View {
-    ZStack(alignment: .leading) {
-      if showsIntelligence {
-        IntelligenceOrb(size: 34)
-          .transition(.opacity.combined(with: .scale(scale: 0.96, anchor: .leading)))
-      } else {
-        brand
-          .transition(.opacity.combined(with: .scale(scale: 0.96, anchor: .leading)))
-      }
+    // Đổi lần lượt, không chồng lấn (16/10, chủ dự án): logo này mờ hẳn rồi logo
+    // kia mới hiện.
+    Group {
+      if showsIntelligence { intelligence } else { brand }
     }
+    .opacity(visible ? 1 : 0)
+    .scaleEffect(visible ? 1 : 0.96, anchor: .leading)
     .frame(height: 44)
     .accessibilityElement(children: .ignore)
     .accessibilityLabel(Text(String(localized: "brand.name")))
@@ -53,9 +52,30 @@ struct BrandLockup: View {
     try? await Task.sleep(for: .seconds(2.5))
     guard !Task.isCancelled else { return }
     UserDefaults.standard.set(now, forKey: key)
-    withAnimation(reduceMotion ? nil : .smooth(duration: 0.6)) { showsIntelligence = true }
+    await swap(to: true)
     try? await Task.sleep(for: .seconds(4))
-    withAnimation(reduceMotion ? nil : .smooth(duration: 0.6)) { showsIntelligence = false }
+    await swap(to: false)
+  }
+
+  /// Mờ hẳn (0,3 s) → đổi nội dung → hiện lại (0,35 s).
+  private func swap(to intelligence: Bool) async {
+    withAnimation(reduceMotion ? nil : .easeIn(duration: 0.3)) { visible = false }
+    try? await Task.sleep(for: .milliseconds(320))
+    showsIntelligence = intelligence
+    withAnimation(reduceMotion ? nil : .easeOut(duration: 0.35)) { visible = true }
+  }
+
+  /// Cùng cỡ với logo mặc định (chủ dự án: "cỡ chữ và logo phải tương đương bản
+  /// mặc định"; "dùng chung hiệu ứng ánh sáng của AI trong chat"): ký hiệu 37, chữ 22
+  /// đậm. Vệt sáng chạy qua nhịp tim, chữ sáng lên lần lượt như AI trong chat.
+  private var intelligence: some View {
+    HStack(spacing: 7) {
+      IntelligenceMark(size: 37, glint: true)
+      IntelligenceWaveText(font: .system(size: 22, weight: .bold))
+        .lineLimit(1)
+        .minimumScaleFactor(0.7)
+        .dynamicTypeSize(...DynamicTypeSize.xxLarge)
+    }
   }
 
   private var brand: some View {
