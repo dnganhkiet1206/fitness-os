@@ -1,5 +1,7 @@
 # Kiểm kê port RN → native (A18, #336)
 
+> **Đã cũ (17/10/2026):** nhiều dòng "not ported" ở đây đã được port. Trạng thái hiện hành: [PARITY_MATRIX.md](PARITY_MATRIX.md) mục 0. Trang này giữ làm tham chiếu dòng nguồn RN.
+
 Baseline: `fac9ac2` (`native/src/**`). Native: chuỗi nhánh A tới `agent/a/lifecycle` (#397).
 Mỗi dòng có nguồn RN (file, dòng). Trạng thái chia bốn mức:
 
