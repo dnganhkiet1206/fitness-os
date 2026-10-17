@@ -101,6 +101,9 @@ tính năng đồng bộ trong toàn app" → "làm đi".
     (chủ dự án: không hiệu ứng động ở đây); VoiceOver đọc lời chào. Câu hỏi mẫu là thẻ hai dòng (chủ đề đậm + câu sẽ gửi mờ) cuộn ngang ngay
     trên ô chat như ChatGPT, ẩn khi đã có tin hoặc ô chat thu gọn. Tin của người dùng trong Koa Coach: bong bóng
     iMessage màu xám trung tính `systemGray5` (`messageBubble(fill:)`; mực 7 % ra màu be, lẫn nền kem — chủ dự án: khó nhìn), chữ thường; nhắn tin giữa người vẫn xanh.
+- **Lời Koa trên thẻ Hôm nay (16/10, chủ dự án chọn mock "A · Bong bóng iMessage"):** câu của Koa là bong bóng
+  iMessage xám `systemGray5` có đuôi chỉ về Koa (`messageBubble(mine: false, fill:)`, chữ 15); nút việc kế tiếp tách
+  ra ngoài, ngay dưới, viên nhỏ 34 (vùng chạm 44), "＋ Ghi một bữa · +10".
 - **Thông báo (16/10, chủ dự án duyệt mock):** một chuông cho cả app ở đầu trang Hôm nay, THAY viên chuỗi ngày (chuỗi vẫn
   ở phòng Koa; chuỗi sắp đứt thành tin nhắc việc). Chuông và nút hồ sơ ở tab Cộng đồng bỏ — tab chỉ còn nút tin nhắn;
   tin nhắn không vào Thông báo. Màn Thông báo (`CommunityInboxView` mở rộng): lọc Tất cả / Cộng đồng / Nhắc việc; "Cần

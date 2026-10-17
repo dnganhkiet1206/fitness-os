@@ -159,28 +159,32 @@ struct TodayDayBlock: View {
     }
   }
 
+  /// Lời Koa trong bong bóng iMessage xám có đuôi chỉ về Koa (16/10, chủ dự án chọn
+  /// mock "A · Bong bóng iMessage"); nút việc kế tiếp nhỏ gọn nằm NGOÀI, ngay dưới.
   private func bubble(_ text: String, next: MascotRules.Quest?) -> some View {
-    VStack(alignment: .leading, spacing: 10) {
+    VStack(alignment: .leading, spacing: 8) {
       Text(verbatim: text)
         .font(.system(size: 15))
         .foregroundStyle(DS.Color.foreground.swiftUI)
         .fixedSize(horizontal: false, vertical: true)
+        .messageBubble(mine: false, fill: Color(uiColor: .systemGray5))
         // Koa đổi câu: câu cũ nhoè đi, câu mới hiện ra (Reduce Motion: mờ dần).
         .id(text)
         .transition(reduceMotion ? AnyTransition.opacity : AnyTransition(.blurReplace))
       if let next, next != .steps {
         Button { onAct(next) } label: {
-          HStack(spacing: 6) {
-            Image(systemName: "plus").font(.system(size: 14, weight: .bold))
-            Text(Self.action(next)).font(.system(size: 15, weight: .semibold))
-            Text(verbatim: "+\(TodayDay.coins(next))")
+          HStack(spacing: 5) {
+            Image(systemName: "plus").font(.system(size: 12, weight: .bold))
+            Text(Self.action(next)).font(.system(size: 14, weight: .semibold))
+            Text(verbatim: "· +\(TodayDay.coins(next))")
               .font(.system(size: 13, weight: .bold).monospacedDigit())
               .opacity(0.85)
           }
           .foregroundStyle(.white)
-          .padding(.horizontal, 16)
-          .frame(minHeight: 44)
+          .padding(.horizontal, 14)
+          .frame(minHeight: 34)
           .background(MascotRoomView.signalColor(next), in: Capsule())
+          .frame(minHeight: 44)
           .contentShape(Capsule())
         }
         .buttonStyle(.plain)
@@ -188,11 +192,7 @@ struct TodayDayBlock: View {
         .accessibilityValue(Text(String(localized: "today.day.worth \(TodayDay.coins(next))")))
       }
     }
-    .padding(12)
     .frame(maxWidth: .infinity, alignment: .leading)
-    .background(
-      UnevenRoundedRectangle(topLeadingRadius: 16, bottomLeadingRadius: 5, bottomTrailingRadius: 16, topTrailingRadius: 16)
-        .fill(DS.Color.card.swiftUI.opacity(reduceTransparency ? 1 : 0.82)))
   }
 
   // MARK: - Khen một lần mỗi ngày
