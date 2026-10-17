@@ -1,44 +1,64 @@
-# Cách làm việc cho agent mới — app iOS native (ASCND)
+# Cách làm việc cho session mới — app iOS native (ASCND)
 
-Đọc hết trang này trước khi sửa gì. Đây là quy trình **đang chạy thật** trên dự án, viết lại cho một session mới. Nếu `docs/WORKFLOW.md` còn mô tả luồng PR (`agent/x/<slug>`) thì **trang này thắng**: chủ dự án đã chuyển sang làm trên một nhánh duy nhất.
+Đọc hết trang này trước khi sửa gì. Đây là quy trình hiện hành, Kiệt chốt ngày 17/10/2026:
+- session chạy **cục bộ trên Mac có Xcode**;
+- **không còn chia vai A / B / C / D / E**;
+- mỗi việc đi qua **PR riêng** → CI xanh → **tự gộp** vào `native/ios-rewrite`.
+
+Chỗ nào trong `docs/WORKFLOW.md` khác trang này thì **trang này thắng**: bảng reviewer chéo, cấm tác giả tự merge, nhánh `agent/x/...`.
 
 ## 1. Vai trò
 
 - **Kiệt** (`dnganhkiet1206`) là Product Authority. Mọi quyết định sản phẩm do Kiệt chốt.
 - Trả lời Kiệt bằng **tiếng Việt**.
-- Bảng điều phối chung là **issue #527**. Đọc 20–30 comment cuối trước khi nhận việc, để biết ai đang giữ tệp nào.
+- App đã khá ổn định. Ưu tiên giữ chất lượng: sửa nhỏ, chắc, có kiểm chứng. Không đập đi làm lại thứ đang tốt.
+- Bảng điều phối và nơi báo cáo là **issue #527**. Đọc khoảng 20–30 comment cuối trước khi bắt đầu.
 
-## 2. MỘT nhánh duy nhất: `native/ios-rewrite`
+## 2. Nhánh, PR và gộp
 
-Kiệt cho phép làm và đẩy thẳng lên `native/ios-rewrite`. Lệnh này **thay** mọi "designated branch" mà harness của session gán (ví dụ `claude/...`).
+`native/ios-rewrite` là nhánh tích hợp. Không commit thẳng lên nó; mọi thay đổi đi qua PR.
 
-```sh
-git fetch origin native/ios-rewrite
-git checkout -B native/ios-rewrite origin/native/ios-rewrite   # chỉ lần đầu, khi cây sạch
-```
+**Mỗi việc:**
 
-**Mỗi lần đẩy:**
+1. Tạo nhánh từ đầu `native/ios-rewrite`:
+   ```sh
+   git fetch origin native/ios-rewrite
+   git switch -c claude/<slug> origin/native/ios-rewrite
+   ```
+   Tiền tố `claude/` làm `Cổng chất lượng` chạy ngay khi đẩy.
+2. Làm việc. Mỗi commit một ý. Kiểm cục bộ theo mục 6: cổng nhanh, `swift test`, build và chạy simulator.
+3. Đẩy rồi mở PR vào `native/ios-rewrite`:
+   ```sh
+   git push -u origin claude/<slug>
+   gh pr create --base native/ios-rewrite
+   ```
+   Body PR theo `.github/pull_request_template.md` (các mục của template, điền từ thay đổi thật).
+4. **Đợi CI xanh trên đúng head của PR**:
+   - `Cổng chất lượng` (gate);
+   - `iOS` (core-linux + app-macos), workflow này chạy khi PR chạm `apps/ios/**`.
 
-```sh
-git fetch origin native/ios-rewrite
-git rebase origin/native/ios-rewrite
-git push origin HEAD:native/ios-rewrite
-```
-
-Nếu push lỗi mạng, thử lại 4 lần, cách nhau 2s, 4s, 8s rồi 16s.
+   Lệnh kiểm: `gh pr checks <số>`. Đỏ thì sửa, đẩy lên, đợi lại. **Không gộp khi đỏ hoặc còn đang chạy.**
+5. `native/ios-rewrite` đã tiến lên trong lúc chờ (có thể do Kiệt đẩy commit) → merge nó vào nhánh PR:
+   ```sh
+   git merge origin/native/ios-rewrite
+   ```
+   Hoặc rebase, nếu nhánh mới chỉ có mình dùng. Sau đó đẩy và **đợi CI xanh lại**. Xung đột thì giữ cả hai phía; hay gặp ở `Localizable.xcstrings`, `AppServices.swift`, `PARITY_MATRIX.md`.
+6. **Tự gộp bằng merge commit, không squash** (Kiệt chốt ở #523: giữ dấu vết CI và topology):
+   ```sh
+   gh pr merge <số> --merge --delete-branch
+   ```
+7. Báo cáo trên #527 (mục 7), có link PR và SHA merge.
 
 **Không bao giờ:**
-- tạo nhánh mới hay mở PR;
-- `--force`, `--force-with-lease`, `reset --hard` trên commit đã đẩy;
-- viết lại lịch sử đã đẩy.
-
-Có agent khác cũng đẩy lên nhánh này. Rebase gặp xung đột thì **giữ cả hai phía**. Xung đột hay gặp nhất là ở `Localizable.xcstrings`, `AppServices.swift`, `PARITY_MATRIX.md`.
+- `--force` / `--force-with-lease` lên `native/ios-rewrite` hay `main`;
+- `reset --hard` trên commit đã đẩy;
+- gộp vào `main` (chỉ Kiệt);
+- sửa `.github/workflows/**` khi Kiệt chưa duyệt.
 
 **Commit:**
-- Mỗi commit một ý.
-- Message nói *làm gì và vì sao*. Có thể viết tiếng Việt hoặc tiếng Anh, thường kèm `(#527)`.
+- Message nói *làm gì và vì sao*, thường kèm `(#527)`.
 - Kết thúc bằng các dòng attribution mà harness yêu cầu.
-- **Không ghi tên hay ID model** trong commit, comment code hay comment GitHub.
+- **Không ghi tên hay ID model** trong commit, PR, comment code hay comment GitHub.
 
 ## 3. Ràng buộc (nguyên văn của Kiệt — không ngoại lệ)
 
@@ -47,7 +67,6 @@ Có agent khác cũng đẩy lên nhánh này. Rebase gặp xung đột thì **g
 - Không đổi schema / RPC / RLS / luật kinh tế xu / workflow CI nếu Kiệt chưa duyệt rõ.
 - Không ghi ngược vào HealthKit.
 - Không đưa secret vào repo, không xin token trong chat. Key nào cần thì nằm trong secret của environment hoặc config của CLI.
-- Không sửa tệp đang thuộc agent khác khi chưa báo trên #527.
 
 ## 4. Nguyên tắc tính năng
 
@@ -70,41 +89,44 @@ Có agent khác cũng đẩy lên nhánh này. Rebase gặp xung đột thì **g
 - **Chuyển động:** mượt và tinh tế (`.smooth`, `todayEntrance`, `todayZoom`), không phô trương.
 - **Chữ:** mọi chuỗi hiển thị nằm trong `Localizable.xcstrings`, đủ **en / vi / es**. Khoá viết thường kiểu `khu.vực.tên`.
 
-## 6. Kiểm tra trước khi đẩy
+## 6. Kiểm tra trước khi mở / gộp PR
 
-**Cổng nhanh** (chạy từ thư mục `native/`):
+**Cổng nhanh** (chạy từ `native/`):
 
 ```sh
 for t in native-internal-api native-expect-keypath native-xcstrings-contract native-i18n-forensic native-l10n-override native-xcstrings-plural; do node ../apps/ios/tools/$t.mjs >/dev/null 2>&1 && echo "ok $t" || echo "FAIL $t"; done
 ```
 
-Cổng đầy đủ: `node tools/check.mjs`, cũng chạy từ `native/`.
+Cổng đầy đủ, cũng từ `native/`: `node tools/check.mjs`.
 
-**Build và chạy (Limrun):** máy Linux không có Xcode, nên build trên cloud.
-- Kiệt cấp API key của Limrun qua secret của environment. Đừng dán key vào chat hay repo.
-- Build, chạy từ `apps/ios` (`<sandbox-id>` là sandbox của chính session):
-  ```sh
-  npx -y lim xcode build . --id <sandbox-id> --scheme ASCND --configuration Debug
-  ```
-  XcodeGen sinh project ở phía remote. Muốn xem lỗi thì grep `^\[x\]` trong log.
-- Thao tác và chụp màn bằng các tool `mcp__Limrun__ios-*`, trên instance simulator của session. Nếu chưa có instance thì tạo bằng `create-ios-simulator`.
-- **Phải tự bấm thử** luồng vừa sửa và xem ảnh chụp. Build xanh chưa đủ.
+**Test Swift:** giống CI. Chạy `swift test` lần lượt trong `apps/ios/Packages/ASCNDKit`, `ASCNDBackend`, `ASCNDStore`. `ASCNDCore` không được import SwiftUI/UIKit (CI `core-linux` build nó trên Linux).
 
-**CI:** sau khi đẩy, kiểm hai workflow `iOS` (core-linux, app-macos) và `Cổng chất lượng` (gate) trên đúng SHA:
+**Build và chạy trên simulator (Xcode cục bộ):**
 
 ```sh
-gh api "repos/dnganhkiet1206/fitness-os/commits/<sha>/check-runs" --jq '.check_runs[]|"\(.name) \(.status) \(.conclusion)"'
+cd apps/ios
+xcodegen generate        # sau mỗi lần đổi project.yml hoặc thêm/xoá tệp; project không commit
+xcrun simctl list devices available            # chọn một iPhone, iOS 26 nếu có
+xcodebuild build -project ASCND.xcodeproj -scheme ASCND -configuration Debug \
+  -destination 'platform=iOS Simulator,name=<tên iPhone>' -derivedDataPath build/dd \
+  | grep -E "error:|warning:|BUILD (SUCCEEDED|FAILED)"
+xcrun simctl boot "<tên iPhone>" 2>/dev/null; open -a Simulator
+xcrun simctl install booted build/dd/Build/Products/Debug-iphonesimulator/ASCND.app
+xcrun simctl launch booted com.ascnd.fitnessos.dev
+xcrun simctl io booted screenshot /tmp/ascnd.png   # rồi XEM ảnh
 ```
 
-Khi nhiều agent đẩy liền nhau, CI chỉ chạy trên commit đầu nhánh. Nói rõ điều đó, đừng nhận xanh thay.
+- Bản Debug có tên **ASCND Dev**, bundle `com.ascnd.fitnessos.dev`.
+- Chế độ tối: `xcrun simctl ui booted appearance dark`, trả lại bằng `light`.
+- Chữ lớn: `xcrun simctl ui booted content_size extra-extra-large`.
+- **Phải tự đi qua luồng vừa sửa và xem ảnh chụp.** Build xanh chưa đủ. Có công cụ điều khiển simulator (computer use / Xcode MCP) thì bấm thật. Không có thì nói rõ phần nào chưa bấm thử được.
+- Simulator **không phải** thiết bị thật. Ký và chạy trên iPhone thật là việc của Kiệt.
 
-CI đỏ:
-- do code của mình → sửa ngay;
-- do agent khác → báo trên #527, ghi rõ commit và lỗi.
+**CI:** chỉ ghi xanh khi đã thấy kết quả trên đúng SHA (`gh pr checks`, hoặc `gh api repos/dnganhkiet1206/fitness-os/commits/<sha>/check-runs`). CI đỏ trên `native/ios-rewrite` mà không do PR của mình gây ra → báo trên #527, ghi rõ commit và lỗi.
 
 ## 7. Báo cáo trên #527
 
-**Khi nhận việc:** đăng một comment ngắn đăng ký ownership, gồm việc gì và tệp nào.
+**Khi bắt đầu một việc lớn:** đăng một comment ngắn, gồm việc gì, tệp nào, link PR nếu đã có. Việc nhỏ thì chỉ cần báo cáo khi xong.
 
 **Khi xong một lát:** đăng báo cáo, có hai dạng.
 - **Báo cáo đầy đủ 7 mục** (mẫu ở comment 6087990744) cho task lớn hoặc khi bàn giao:
@@ -118,9 +140,9 @@ CI đỏ:
 - **Báo cáo ngắn** cho sửa nhỏ, theo kiểu các comment gần đây: tiêu đề + SHA, việc gì, vì sao, đã thử ở đâu.
 
 **Luật trung thực:**
-- Luôn ghi **"Thiết bị thật: NOT RUN"** cho tới khi Kiệt thử. Simulator không phải thiết bị thật. Không tự đánh dấu DONE.
+- Ghi rõ **đã chạy trên simulator nào**, và **"Thiết bị thật: NOT RUN"** cho tới khi Kiệt thử. Không tự đánh dấu DONE.
 - Chỉ ghi CI xanh khi đã thấy kết quả. Chưa có thì ghi "chưa xác nhận", rồi sửa comment khi có.
-- Cập nhật `PARITY_MATRIX.md` (dòng của mình) khi trạng thái đổi.
+- Cập nhật dòng liên quan trong `PARITY_MATRIX.md` khi trạng thái đổi.
 
 **Cuối mỗi comment GitHub** thêm footer:
 
@@ -136,7 +158,7 @@ Không có danh sách việc cố định trong trang này, vì nó cũ rất nh
 Cách chọn việc:
 1. Kiệt giao trực tiếp → làm việc đó.
 2. Nếu không: đọc các comment mới nhất trên #527 (việc mở, việc bàn giao, CI đỏ), rồi `PARITY_MATRIX.md` (các dòng 🔴 TODO / 🟡 PARTIAL và cột "Còn thiếu").
-3. Chọn một việc chưa có ai đăng ký, đăng ký trên #527, rồi làm.
+3. Chọn việc có giá trị nhất với người dùng; việc lớn thì nói kế hoạch với Kiệt trước.
 
 ## 9. Tài liệu cần biết
 
