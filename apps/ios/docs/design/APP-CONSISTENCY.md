@@ -107,7 +107,10 @@ tính năng đồng bộ trong toàn app" → "làm đi".
   mừng, không phải AI); bong bóng xanh ở nhắn tin giữa người (iMessage).
 - **Tài khoản & pháp lý (16/10, chủ dự án: "không đăng xuất được, không có xoá tài khoản, chính sách chỉ là bản dựng"):**
   - Đăng xuất: lời gọi server có trần 4 s (mạng treo không giữ người dùng trong phiên); đóng mọi bảng đang mở trước
-    khi đăng xuất để màn Đăng nhập hiện ngay.
+    khi đăng xuất để màn Đăng nhập hiện ngay. Hộp xác nhận đăng xuất / xoá tài khoản là `ConfirmAlert` (UIKit
+    `UIAlertController`): trong Cài đặt — sheet chồng trên sheet Hồ sơ — `.alert` của SwiftUI hiện và đóng nhưng KHÔNG
+    gọi hành động của nút (đo bằng log 16/10: chạm hàng có, chạm nút trong hộp không). Đã chạy thật: đăng xuất → màn
+    Đăng nhập.
   - Xoá tài khoản: hàng "Xoá tài khoản" trong Cài đặt → hỏi lại → `delete-account` (đã triển khai lên server) →
     xong thì đăng xuất; lỗi nói đúng: chưa xoá gì / đã xoá ảnh nhưng chưa xong (`partial`) / mất mạng.
   - Mọi hộp xác nhận (`confirmationDialog`, 17 chỗ) đổi sang `alert` giữa màn: trên iOS 26 hộp cũ bật lên như bong

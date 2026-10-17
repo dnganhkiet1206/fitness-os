@@ -48,8 +48,6 @@ public struct SettingsView: View {
   /// Vừa đổi mật khẩu xong — RN `toast.success(settingsPasswordChanged)`;
   /// app chưa có toast nên báo ngay dưới hàng, tới khi rời Cài đặt.
   @State private var passwordChanged = false
-  @State private var showSignOutConfirm = false
-  @State private var showDeleteConfirm = false
   @State private var deleting = false
   @State private var deleteResult: AccountDeletion?
   @State private var selectedLanguage: String
@@ -70,6 +68,17 @@ public struct SettingsView: View {
   static let languages: [(code: String, endonym: String)] = [
     ("vi", "Tiếng Việt"), ("en", "English"), ("es", "Español"),
   ]
+
+  private func runDelete() {
+    guard let deleteAccount else { return }
+    deleting = true
+    deleteResult = nil
+    Task {
+      let result = await deleteAccount()
+      deleting = false
+      deleteResult = result
+    }
+  }
 
   /// Chữ báo sau khi xoá không xong (xoá xong thì app đã đăng xuất).
   static func deleteText(_ r: AccountDeletion) -> String? {
@@ -243,7 +252,12 @@ public struct SettingsView: View {
         if account != nil {
           Section {
             Button(role: .destructive) {
-              showSignOutConfirm = true
+              ConfirmAlert.present(
+                title: String(localized: "settings.signOut.confirm.title"),
+                message: String(localized: "settings.signOut.confirm.message"),
+                confirm: String(localized: "settings.signOut"),
+                cancel: String(localized: "settings.cancel"),
+                action: onSignOut)
             } label: {
               Text(String(localized: "settings.signOut"))
                 .frame(maxWidth: .infinity)
@@ -253,7 +267,12 @@ public struct SettingsView: View {
           if deleteAccount != nil {
             Section {
               Button(role: .destructive) {
-                showDeleteConfirm = true
+                ConfirmAlert.present(
+                  title: String(localized: "settings.delete.title"),
+                  message: String(localized: "settings.delete.message"),
+                  confirm: String(localized: "settings.delete.confirm"),
+                  cancel: String(localized: "settings.cancel"),
+                  action: runDelete)
               } label: {
                 HStack(spacing: 8) {
                   if deleting { ProgressView() }
@@ -276,29 +295,6 @@ public struct SettingsView: View {
       }
       .navigationTitle(Text("settings.title"))
       .ascndPage()
-      // Hộp hỏi giữa màn hình (16/10: hộp xác nhận cũ bật lên như bong bóng chỉ vào
-      // dòng email ở đầu trang — trông như lỗi, không liên quan tới nút bấm).
-      .alert(String(localized: "settings.signOut.confirm.title"), isPresented: $showSignOutConfirm) {
-        Button(String(localized: "settings.cancel"), role: .cancel) {}
-        Button(String(localized: "settings.signOut"), role: .destructive, action: onSignOut)
-      } message: {
-        Text(String(localized: "settings.signOut.confirm.message"))
-      }
-      .alert(String(localized: "settings.delete.title"), isPresented: $showDeleteConfirm) {
-        Button(String(localized: "settings.cancel"), role: .cancel) {}
-        Button(String(localized: "settings.delete.confirm"), role: .destructive) {
-          guard let deleteAccount else { return }
-          deleting = true
-          deleteResult = nil
-          Task {
-            let result = await deleteAccount()
-            deleting = false
-            deleteResult = result
-          }
-        }
-      } message: {
-        Text(String(localized: "settings.delete.message"))
-      }
     }
   }
 }
