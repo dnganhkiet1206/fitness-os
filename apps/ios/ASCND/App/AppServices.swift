@@ -791,6 +791,17 @@ final class AppServices {
 
   /// Hộp thông báo Cộng đồng (#527, lát 9): thông báo + hồ sơ + tên thử thách,
   /// đánh dấu đã đọc qua RPC.
+  /// Tài khoản có gói trả phí (plus / max) — đọc `current_tier()` (server ghi,
+  /// máy chỉ đọc). Lỗi / chưa cấu hình → `false`. Bản Debug: `ASCND_FAKE_TIER=plus`
+  /// để thử giao diện gói trả phí khi chưa bán gói nào.
+  func isPaid() async -> Bool {
+    #if DEBUG
+      if let fake = ProcessInfo.processInfo.environment["ASCND_FAKE_TIER"] { return fake != "free" }
+    #endif
+    guard let backend, let tier = try? await SupabaseTier(backend: backend).current() else { return false }
+    return tier == "plus" || tier == "max"
+  }
+
   func makeCommunityInbox(userId: String) -> CommunityInboxBook? {
     guard let backend else { return nil }
     return CommunityInboxBook(userId: userId, remote: SupabaseCommunity(backend: backend))

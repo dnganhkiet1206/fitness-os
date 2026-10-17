@@ -51,6 +51,8 @@ struct TodayExtras<Plan: View>: View {
   @State private var communityChallenges: CommunityChallengesBook?
   /// Tin nhắc việc đã xem (`NoticeSeen`).
   @State private var seenNotices: Set<String> = []
+  /// Gói trả phí → thỉnh thoảng hiện "ASCND Intelligence" ở logo đầu trang.
+  @State private var paid = false
   @State private var showsAwards = false
   @State private var showsReadiness = false
   @Environment(DeepLinkInbox.self) private var links: DeepLinkInbox?
@@ -221,6 +223,7 @@ struct TodayExtras<Plan: View>: View {
       inbox = services.makeCommunityInbox(userId: userId)
       communityChallenges = services.makeCommunityChallenges(userId: userId)
       seenNotices = NoticeSeen.load(userId: userId)
+      Task { paid = await services.isPaid() }
       if nutrition == nil { ownWater = services.makeWaterBook(userId: userId) }
       await todo?.refresh()
       await weight?.load()
@@ -470,7 +473,7 @@ struct TodayExtras<Plan: View>: View {
   /// (chủ dự án, 13/10).
   private var header: some View {
     HStack(alignment: .center, spacing: DS.Spacing.sm) {
-      BrandLockup()
+      BrandLockup(paid: paid)
       Spacer(minLength: 0)
       // Chuông thay viên chuỗi ngày (16/10, chủ dự án); chuỗi vẫn ở phòng Koa, và
       // chuỗi sắp đứt thành một tin nhắc việc trong Thông báo.

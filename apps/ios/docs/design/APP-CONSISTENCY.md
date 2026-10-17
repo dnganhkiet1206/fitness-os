@@ -95,6 +95,10 @@ tính năng đồng bộ trong toàn app" → "làm đi".
     gạch ngang hai chân chữ A, rãnh trong suốt 17 tách nét. AI đang làm việc (`IntelligenceOrb`): ký hiệu ĐỨNG YÊN +
     chữ "ASCND Intelligence" sáng lên lần lượt như sóng (1,6 s, mỗi chữ trễ 0,05 s); thay nhịp tim chạy cũ. Koa Coach
     bỏ dòng "Koa đang suy nghĩ…". `ink: .white` khi đè ảnh (quét món). Giảm chuyển động: chữ đứng yên.
+  - Gói trả phí (16/10, chủ dự án): logo đầu trang Hôm nay KHÔNG đổi mặc định; thỉnh thoảng (2,5 s sau khi mở trang,
+    tối đa một lần mỗi 3 giờ) chuyển mờ sang ký hiệu + chữ sóng "ASCND Intelligence" trong 4 s rồi về logo cũ — để người
+    dùng gói trả phí nhận ra thay đổi nhẹ. Gói đọc từ `current_tier()` (plus / max; `entitlements` chỉ server ghi),
+    Debug thử bằng `ASCND_FAKE_TIER=plus`. Giảm chuyển động: không đổi.
   - Koa Coach trống (16/10, chủ dự án): bỏ hết chữ — chỉ ký hiệu ASCND Intelligence lớn (132), mờ 14 %, đứng yên
     (chủ dự án: không hiệu ứng động ở đây); VoiceOver đọc lời chào. Câu hỏi mẫu là thẻ hai dòng (chủ đề đậm + câu sẽ gửi mờ) cuộn ngang ngay
     trên ô chat như ChatGPT, ẩn khi đã có tin hoặc ô chat thu gọn. Tin của người dùng trong Koa Coach: bong bóng

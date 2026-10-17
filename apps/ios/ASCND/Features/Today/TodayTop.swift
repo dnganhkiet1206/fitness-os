@@ -13,7 +13,47 @@ import SwiftUI
 /// "ASCND ASCND"); không bấm được — danh tính, không phải lối đi. Chữ theo cỡ
 /// của máy nhưng có trần (`WORD_MAX_SCALE`).
 struct BrandLockup: View {
+  /// Gói trả phí (16/10, chủ dự án): thỉnh thoảng — không mặc định, không thay
+  /// logo cũ — logo chuyển sang "ASCND Intelligence" vài giây rồi trở lại, để người
+  /// dùng gói trả phí nhận ra một thay đổi nhẹ.
+  var paid = false
+  @State private var showsIntelligence = false
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
   var body: some View {
+    ZStack(alignment: .leading) {
+      if showsIntelligence {
+        IntelligenceOrb(size: 34)
+          .transition(.opacity.combined(with: .scale(scale: 0.96, anchor: .leading)))
+      } else {
+        brand
+          .transition(.opacity.combined(with: .scale(scale: 0.96, anchor: .leading)))
+      }
+    }
+    .frame(height: 44)
+    .accessibilityElement(children: .ignore)
+    .accessibilityLabel(Text(String(localized: "brand.name")))
+    .accessibilityAddTraits(.isHeader)
+    .task(id: paid) { await reveal() }
+  }
+
+  /// Lịch hiện: một lần mỗi lần mở trang (sau 2,5 s), tối đa một lần mỗi 3 giờ;
+  /// giữ 4 s rồi về logo cũ. Giảm chuyển động: không đổi.
+  private func reveal() async {
+    guard paid, !reduceMotion else { return }
+    let key = "ascnd-intelligence-reveal-at"
+    let last = UserDefaults.standard.double(forKey: key)
+    let now = Date().timeIntervalSince1970
+    guard now - last > 3 * 3600 else { return }
+    try? await Task.sleep(for: .seconds(2.5))
+    guard !Task.isCancelled else { return }
+    UserDefaults.standard.set(now, forKey: key)
+    withAnimation(.smooth(duration: 0.6)) { showsIntelligence = true }
+    try? await Task.sleep(for: .seconds(4))
+    withAnimation(.smooth(duration: 0.6)) { showsIntelligence = false }
+  }
+
+  private var brand: some View {
     HStack(spacing: 7) {
       Image("BrandMark")
         .resizable()
@@ -25,10 +65,6 @@ struct BrandLockup: View {
         .foregroundStyle(DS.Color.foreground.swiftUI)
         .dynamicTypeSize(...DynamicTypeSize.xxLarge)
     }
-    .frame(height: 44)
-    .accessibilityElement(children: .ignore)
-    .accessibilityLabel(Text(String(localized: "brand.name")))
-    .accessibilityAddTraits(.isHeader)
   }
 }
 
