@@ -401,6 +401,9 @@ private struct QuickLogSheet: View {
     .padding(.top, DS.Spacing.lg)
     .frame(maxHeight: .infinity, alignment: .top)
     .presentationDetents([.height((recentMeals.isEmpty ? 250 : 400) + (askCoach == nil ? 0 : 76))])
+    // Nền đặc màu trang (16/10, chủ dự án: "thẻ khó nhìn"): bảng kính trong để lộ
+    // trang Hôm nay phía sau, thẻ kính đặt lên đó chìm mất mép.
+    .presentationBackground(DS.Color.background.swiftUI)
     .sensoryFeedback(.success, trigger: logged)
     .task {
       guard logger == nil, let userId = services.session.session?.userId else { return }
@@ -428,7 +431,7 @@ private struct QuickLogSheet: View {
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
       }
       .padding(12)
-      .dsCard(radius: 18)
+      .quickLogCard()
       .contentShape(Rectangle())
     }
     .buttonStyle(TodayPressStyle())
@@ -468,7 +471,7 @@ private struct QuickLogSheet: View {
               }
               .padding(12)
               .frame(width: 210, alignment: .leading)
-              .dsCard(radius: 18)
+              .quickLogCard()
               .contentShape(Rectangle())
             }
             .buttonStyle(TodayPressStyle())
@@ -499,5 +502,17 @@ private struct QuickLogSheet: View {
       try? await Task.sleep(for: .milliseconds(700))
       close()
     }
+  }
+}
+
+private extension View {
+  /// Thẻ trong bảng Ghi nhanh: nền thẻ đặc + viền mảnh + bóng nhẹ — tách rõ khỏi nền
+  /// kem của bảng (thẻ kính `dsCard` lẫn vào bảng — 16/10, chủ dự án).
+  func quickLogCard() -> some View {
+    let shape = RoundedRectangle(cornerRadius: 18, style: .continuous)
+    return self
+      .background(DS.Color.card.swiftUI, in: shape)
+      .overlay { shape.strokeBorder(DS.Color.foreground.swiftUI.opacity(0.08), lineWidth: 0.75) }
+      .shadow(color: .black.opacity(0.05), radius: 6, y: 2)
   }
 }
