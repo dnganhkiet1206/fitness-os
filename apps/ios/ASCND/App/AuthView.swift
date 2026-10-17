@@ -468,7 +468,7 @@ private struct AuthFieldStyle: ViewModifier {
   }
 }
 
-/// Logo ASCND trắng cỡ lớn + quầng lửa cam thở chậm (mock 2) + bụi sáng trôi nhẹ
+/// Logo ASCND trắng cỡ lớn + dải sáng lửa cam bầu dục nghiêng thở chậm + bụi sáng trôi nhẹ
 /// (16/10, chủ dự án: bỏ đường nhịp tim — gợi máy đo tim bệnh viện; "cho bụi bay nhẹ
 /// nhưng premium"). Giảm chuyển động: đứng yên, bụi ở vị trí cố định.
 private struct AuthHeroBackdrop: View {
@@ -481,14 +481,28 @@ private struct AuthHeroBackdrop: View {
         let w = geo.size.width, logo = min(w * 0.58, 250), cy = geo.size.height * 0.27
         let breath = reduceMotion ? 0.5 : 0.5 + 0.5 * sin(t * 2 * .pi / 3.2)
         ZStack {
-          RadialGradient(
-            colors: [AuthHero.ember.opacity(0.55), AuthHero.ember.opacity(0)], center: .center,
-            startRadius: 0, endRadius: logo * 1.25
+          // Quầng sáng KHÔNG tròn, KHÔNG đặt giữa Koa (16/10, chủ dự án): một dải sáng
+          // bầu dục rộng, nghiêng, phía sau đỉnh chữ A — như ánh đèn hắt từ trên cao — và
+          // một vệt dịu hơn lệch xuống góc trái; cả hai trôi rất chậm.
+          let drift = reduceMotion ? 0 : sin(t * 2 * .pi / 14)
+          EllipticalGradient(
+            colors: [AuthHero.ember.opacity(0.5), AuthHero.ember.opacity(0.18), AuthHero.ember.opacity(0)],
+            center: .center, startRadiusFraction: 0, endRadiusFraction: 0.5
           )
-          .frame(width: logo * 2.6, height: logo * 2.6)
-          .scaleEffect(1 + 0.08 * breath)
-          .opacity(0.6 + 0.35 * breath)
-          .position(x: w / 2, y: cy)
+          .frame(width: w * 1.5, height: logo * 1.1)
+          .rotationEffect(.degrees(-14 + 4 * drift))
+          .opacity(0.65 + 0.3 * breath)
+          .position(x: w / 2 + w * 0.08 * drift, y: cy - logo * 0.42)
+          .blur(radius: 18)
+          EllipticalGradient(
+            colors: [AuthHero.ember.opacity(0.22), AuthHero.ember.opacity(0)],
+            center: .center, startRadiusFraction: 0, endRadiusFraction: 0.5
+          )
+          .frame(width: w * 1.1, height: logo * 0.8)
+          .rotationEffect(.degrees(18))
+          .opacity(0.5 + 0.3 * (1 - breath))
+          .position(x: w * 0.22 - w * 0.05 * drift, y: cy + logo * 0.75)
+          .blur(radius: 24)
           AuthDust(t: t, layer: 0).blur(radius: 0.6)
           Image("BrandMark")
             .renderingMode(.template)
@@ -526,7 +540,8 @@ private struct AuthDust: View {
         let twinkle = 0.5 + 0.5 * sin(t * (0.7 + r(8) * 1.2) + r(9) * 6.28)
         // Mờ dần ở mép trên / dưới để hạt không xuất hiện / biến mất đột ngột.
         let edge = min(1, min(y / 120, (size.height - y) / 160))
-        let alpha = max(0, (layer == 0 ? 0.5 : 0.8) * twinkle * edge)
+        // Mờ nhẹ (16/10, chủ dự án: "làm mờ bụi nhẹ đi một chút").
+        let alpha = max(0, (layer == 0 ? 0.34 : 0.55) * twinkle * edge)
         let warm = Color(red: 1, green: 0.86 + r(10) * 0.1, blue: 0.68 + r(11) * 0.2)
         dots.append((CGRect(x: x - radius, y: y - radius, width: radius * 2, height: radius * 2), alpha, warm))
       }
