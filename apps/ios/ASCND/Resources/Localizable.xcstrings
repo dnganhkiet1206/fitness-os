@@ -52764,6 +52764,98 @@
      }
     }
    }
+  },
+  "auth.hero.slogan": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Rise.\nTrain.\nAscend."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Levántate.\nEntrena.\nAsciende."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Thức dậy.\nTập luyện.\nVươn lên."
+     }
+    }
+   }
+  },
+  "auth.hero.tagline": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Train, eat, sleep — Koa reads your body every day."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Entrena, come, duerme: Koa lee tu cuerpo cada día."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tập, ăn, ngủ — Koa đọc cơ thể bạn mỗi ngày."
+     }
+    }
+   }
+  },
+  "auth.hero.email": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sign in with email"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Iniciar sesión con correo"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đăng nhập bằng email"
+     }
+    }
+   }
+  },
+  "auth.hero.create": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Create account"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Crear cuenta"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tạo tài khoản"
+     }
+    }
+   }
   }
  }
 }
