@@ -26,8 +26,11 @@ final class HealthKitSource: @unchecked Sendable {
     legacyReadTypes.union([HKQuantityType(.bodyMass), HKQuantityType(.dietaryWater)])
   }
 
+  /// Chỉ xin quyền ghi thứ app thật sự ghi: buổi tập ghi tay (`writeWorkout`).
+  /// Bỏ cân nặng và giấc ngủ (17/10, chủ dự án: "Không ghi ngược vào
+  /// HealthKit") — app chưa từng ghi hai loại này, mà hộp quyền vẫn hỏi.
   private var shareTypes: Set<HKSampleType> {
-    [HKQuantityType(.bodyMass), HKObjectType.workoutType(), HKCategoryType(.sleepAnalysis)]
+    [HKObjectType.workoutType()]
   }
 
   /// `requestHealthPermissions`. HealthKit không cho biết người dùng đã cho
