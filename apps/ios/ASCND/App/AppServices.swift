@@ -485,10 +485,17 @@ final class AppServices {
     let sync = self.sync
     return MealLogger(
       userId: userId, source: SupabaseMealLog(backend: backend), store: outbox, date: date, mealType: mealType,
-      onEnqueued: { _ in
+      onEnqueued: { [weak self] _ in
         sync.kick()
         Telemetry.capture(.mealLogged)
+        self?.didLog()
       })
+  }
+
+  /// Vừa ghi một việc (bữa, buổi tập): lần đầu thì bật nhắc bữa tối và xin quyền
+  /// thông báo (`ReminderCenter.firstLogNudge` — không đụng ai đã tự cài).
+  func didLog() {
+    Task { await reminders.firstLogNudge() }
   }
 
   /// Thư viện thực phẩm (#527 Phase 3 · 3.3): đọc "Của tôi" + "Gần đây";

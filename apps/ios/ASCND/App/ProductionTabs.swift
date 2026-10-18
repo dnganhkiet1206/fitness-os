@@ -142,6 +142,7 @@ struct WorkoutsTab: View {
           let sets = Self.summarySets(session)
           let summary = try await flow.finish()
           Telemetry.capture(.workoutCompleted)
+          services.didLog()
           finished = FinishedWorkout(summary: summary, sets: sets)
         },
         onAppend: { _ = try await flow.append() },
