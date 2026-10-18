@@ -15598,6 +15598,52 @@
     }
    }
   },
+  "rd.provisional.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Not enough data to score yet"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chưa đủ dữ liệu để chấm"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Aún faltan datos para puntuar"
+     }
+    }
+   }
+  },
+  "rd.provisional.reason": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Only training load so far. Log your sleep or connect Apple Health to get a readiness score."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mới có tải tập. Ghi giấc ngủ hoặc kết nối Apple Health để có điểm sẵn sàng."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Por ahora solo hay carga de entrenamiento. Registra tu sueño o conecta Apple Health para obtener la puntuación."
+     }
+    }
+   }
+  },
   "metric.note.noData": {
    "extractionState": "manual",
    "localizations": {
