@@ -43,6 +43,15 @@ public enum AssistantSummary {
     return Shown(score: last.value, level: level, asOf: last.date)
   }
 
+  /// Điểm hôm nay CHƯA đủ để hiện như một lời khuyên (17/10, chủ dự án: con số
+  /// trung tâm trông như bịa): engine có điểm, nhưng không có chiều phục hồi nào
+  /// (HRV / RHR / giấc ngủ — `hasRecoverySignal`), tức điểm chỉ dựa vào tải tập.
+  /// Khi ấy Hôm nay và Trợ lý nói "chưa đủ dữ liệu" và cách lấp, thay vì "80 ·
+  /// Tập hết mình". Điểm vẫn được tính và lưu như RN; chỉ cách hiện đổi.
+  public static func provisional(score: Int?, hasRecovery: Bool) -> Bool {
+    score != nil && !hasRecovery
+  }
+
   public static func readiness(status: String?, score: Int?) -> Readiness? {
     guard score != nil else { return nil }
     switch status {
