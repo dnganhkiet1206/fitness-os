@@ -68,6 +68,7 @@ struct CoachOverviewCheckTests {
     #expect(o?.items.first?.label == "A")
     #expect(!text.contains("```") && !text.contains("items"))
     #expect(text.contains("Đầu.") && text.contains("Cuối."))
+    #expect(!text.contains("tập.Cuối") && text.contains("Buổi tập.\n"), "khối bỏ đi để lại ngắt đoạn")
     let streaming = "```ascnd\n{\"items\":[]}\n```\nĐầu.```ascnd\n{\"ite"
     #expect(!CoachOverview.split(streaming).text.contains("```"))
   }

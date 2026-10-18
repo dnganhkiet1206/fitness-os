@@ -167,7 +167,8 @@ public struct CoachOverview: Equatable, Sendable {
     }
     let body = String(rest[..<close.lowerBound])
     let after = stripExtraBlocks(String(rest[close.upperBound...]))
-    let text = (before + after).trimmingCharacters(in: .whitespacesAndNewlines)
+    // Khối nằm giữa câu: hai nửa là hai đoạn, không dính liền ("cơ.Hôm nay").
+    let text = (before + "\n\n" + after).trimmingCharacters(in: .whitespacesAndNewlines)
     return (parse(body), text)
   }
 
@@ -178,7 +179,7 @@ public struct CoachOverview: Equatable, Sendable {
     var out = text
     while let open = out.range(of: "```ascnd") {
       if let close = out[open.upperBound...].range(of: "```") {
-        out.removeSubrange(open.lowerBound..<close.upperBound)
+        out.replaceSubrange(open.lowerBound..<close.upperBound, with: "\n\n")
       } else {
         out.removeSubrange(open.lowerBound...)
       }
