@@ -1,0 +1,135 @@
+<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Mock — Ghi cả ngày</title>
+<style>
+:root{--ink:#1c1a17;--paper:#f6f1e8;--card:#fffaf2;--mute:#8a8073;--line:#e8dfd0;--sleep:#8e44d0;--meal:#d9740f;--water:#0f7c86;--work:#b8324a;--steps:#14855a;--ok:#14855a}
+body{margin:0;background:#ece6dc;font-family:-apple-system,system-ui;color:var(--ink);padding:18px}
+h1{font-size:20px;margin:0 0 4px}p.s{color:var(--mute);font-size:13px;margin:0 0 16px;max-width:900px}
+.row{display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start}
+.col{display:flex;flex-direction:column;gap:8px}
+.cap{font-size:14px;font-weight:700;margin:4px 0 0}.d{font-size:12.5px;color:#6f665a;max-width:310px;margin:0}
+.ph{width:310px;height:660px;border-radius:42px;background:var(--paper);position:relative;overflow:hidden;border:1px solid #e2d8c6;box-sizing:border-box;padding:52px 14px 14px}
+.top{display:flex;align-items:center;justify-content:space-between;margin:0 4px 12px}
+.brand{font-weight:800;font-size:20px;letter-spacing:.5px}.round{width:34px;height:34px;border-radius:17px;background:#efe8dc;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+.card{background:var(--card);border-radius:24px;padding:14px;box-shadow:0 1px 0 rgba(0,0,0,.03),0 6px 18px rgba(60,40,10,.06);border:1px solid rgba(28,26,23,.05);margin-bottom:12px}
+.h{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}.h b{font-size:17px}.h span{font-size:12px;color:var(--mute)}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tile{border-radius:16px;padding:10px;background:#f4eee4;min-height:58px;position:relative}
+.tile .n{font-size:12px;font-weight:700;display:flex;gap:6px;align-items:center}.tile .hd{display:flex;justify-content:space-between;align-items:center;gap:4px}
+.tile .v{font-size:13.5px;font-weight:600;margin-top:4px}.tile .v.m{color:var(--mute);font-weight:500}
+.dot{width:20px;height:20px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;color:#fff}
+.badge{font-size:10px;font-weight:700;padding:2px 6px;border-radius:8px;white-space:nowrap}
+.auto{background:#e3efe8;color:var(--steps)}.ok{background:var(--ok);color:#fff}.todo{background:#efe5d6;color:#8a6d45}
+.big{height:50px;border-radius:25px;background:var(--ink);color:var(--paper);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;margin-top:12px;gap:8px}
+.sub{font-size:12px;color:var(--mute);text-align:center;margin-top:7px}
+.ghost{height:38px;border-radius:19px;border:1px solid rgba(28,26,23,.15);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;background:rgba(255,255,255,.5)}
+.health .r{display:flex;align-items:center;gap:10px}.heart{width:36px;height:36px;border-radius:18px;background:#fde4e8;display:flex;align-items:center;justify-content:center;font-size:18px}
+.health .t b{font-size:15px;display:block}.health .t span{font-size:12px;color:var(--mute)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}.chip{font-size:11.5px;padding:4px 8px;border-radius:10px;background:#f1ebe1}
+.chip.on{background:#e3efe8;color:var(--steps);font-weight:600}
+.sheet{position:absolute;left:0;right:0;bottom:0;top:110px;background:var(--paper);border-radius:28px 28px 0 0;box-shadow:0 -10px 30px rgba(0,0,0,.12);padding:14px 16px}
+.dim{position:absolute;inset:0;background:rgba(28,26,23,.28)}
+.grab{width:36px;height:5px;border-radius:3px;background:#d5cbbb;margin:0 auto 10px}
+.st{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}.st b{font-size:17px}.st span{font-size:14px;color:var(--mute)}
+.fr{background:var(--card);border-radius:16px;padding:10px 12px;margin-bottom:8px;border:1px solid rgba(28,26,23,.05)}
+.fr .l{font-size:12px;font-weight:700;display:flex;gap:6px;align-items:center;margin-bottom:6px}
+.fr .x{display:flex;justify-content:space-between;align-items:center;font-size:14px}
+.step{display:flex;gap:6px}.step i{font-style:normal;width:28px;height:28px;border-radius:14px;background:#efe8dc;display:flex;align-items:center;justify-content:center;font-weight:700}
+.seg{display:flex;background:#efe8dc;border-radius:12px;padding:3px;gap:3px;font-size:12px;white-space:nowrap}.seg div{flex:1;text-align:center;padding:6px 0;border-radius:9px}.seg .on{background:#fff;font-weight:700}
+.fine{font-size:11.5px;color:var(--mute);margin-top:4px}
+.toast{position:absolute;left:14px;right:14px;bottom:24px;background:var(--ink);color:var(--paper);border-radius:18px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;font-size:14px}
+.toast b{color:#ffd28a}
+.tag{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.6px;padding:3px 8px;border-radius:8px;background:var(--ink);color:var(--paper);margin-bottom:6px}
+</style>
+<h1>Hôm nay — ghi cả ngày một lần</h1>
+<p class="s">Ngủ · Bữa · Nước · Tập gộp vào MỘT thẻ, một nút. Apple Health là thẻ riêng có nút đồng bộ. Ô nào Health đã điền thì ghi “Tự động” và không hỏi lại. Hai cách cho nút “Ghi cả ngày”: <b>A</b> mở một form điền sẵn → Lưu, <b>B</b> ghi ngay theo thói quen + Hoàn tác.</p>
+
+<div class="row">
+
+<!-- 1. Today -->
+<div class="col">
+<div class="ph">
+  <div class="top"><div class="brand">▲ ASCND</div><div style="display:flex;gap:8px"><div class="round">🔔</div><div class="round">ĐK</div></div></div>
+  <div class="card" style="padding:12px 14px;display:flex;gap:10px;align-items:center"><div style="font-size:34px">🐨</div><div style="font-size:13px">Còn 3 việc nữa là xong ngày — chạm một lần thôi 💪</div></div>
+  <div class="card">
+    <div class="h"><b>Hôm nay của bạn</b><span>1/4 xong</span></div>
+    <div class="tiles">
+      <div class="tile"><div class="hd"><div class="n"><span class="dot" style="background:var(--sleep)">☾</span>Ngủ</div><span class="badge auto">Tự động</span></div><div class="v">7 giờ 20</div></div>
+      <div class="tile"><div class="hd"><div class="n"><span class="dot" style="background:var(--meal)">🍽</span>Bữa</div><span class="badge todo">Chưa ghi</span></div><div class="v m">Hôm qua 1.850 kcal</div></div>
+      <div class="tile"><div class="hd"><div class="n"><span class="dot" style="background:var(--water)">💧</span>Nước</div><span class="badge todo">Chưa ghi</span></div><div class="v m">Hôm qua 2,0 L</div></div>
+      <div class="tile"><div class="hd"><div class="n"><span class="dot" style="background:var(--work)">🏋</span>Tập</div><span class="badge todo">Kế hoạch</span></div><div class="v m">Tay trước · 6′</div></div>
+    </div>
+    <div class="big">✓ Ghi cả ngày</div>
+    <div class="sub">Theo thói quen của bạn — sửa được trước khi lưu</div>
+  </div>
+  <div class="card health">
+    <div class="r"><div class="heart">❤︎</div><div class="t" style="flex:1"><b>Apple Health</b><span>Đã đồng bộ lúc 9:41</span></div><div class="ghost" style="padding:0 12px">↻ Đồng bộ</div></div>
+    <div class="chips"><span class="chip on">✓ Giấc ngủ</span><span class="chip on">✓ Bước 6.420</span><span class="chip">Buổi tập đồng hồ</span><span class="chip">Cân</span><span class="chip">Nước</span><span class="chip">Nhịp tim</span></div>
+  </div>
+</div>
+<div class="cap">1 · Hôm nay</div><p class="d">Thẻ mới thay danh sách “Ngày của bạn”. Bước chân không còn là việc (luôn tự động — nằm ở thẻ Health). Ô có gợi ý từ hôm qua / kế hoạch để người dùng biết nút sẽ ghi gì.</p>
+</div>
+
+<!-- 2A. Form -->
+<div class="col">
+<div class="ph">
+  <div class="dim"></div>
+  <div class="sheet">
+    <div class="grab"></div>
+    <div class="st"><span>Huỷ</span><b>Ghi cả ngày</b><span style="opacity:0">Huỷ</span></div>
+    <div class="fr"><div class="l"><span class="dot" style="background:var(--meal)">🍽</span>Bữa ăn</div>
+      <div class="seg"><div class="on">Như hôm qua</div><div>Chọn món</div><div>Bỏ qua</div></div>
+      <div class="fine">Sáng · Trưa · Tối — 1.850 kcal</div></div>
+    <div class="fr"><div class="l"><span class="dot" style="background:var(--water)">💧</span>Nước</div>
+      <div class="x"><b style="font-size:18px">2,0 L</b><div class="step"><i>−</i><i>+</i></div></div><div class="fine">Bằng hôm qua · mỗi nấc 250 ml</div></div>
+    <div class="fr"><div class="l"><span class="dot" style="background:var(--work)">🏋</span>Buổi tập</div>
+      <div class="seg"><div class="on">Đúng kế hoạch</div><div>Khác</div><div>Nghỉ</div></div>
+      <div class="fine">Tay trước · Dumbbell Curl 3 × 10</div></div>
+    <div class="fr" style="opacity:.55"><div class="l"><span class="dot" style="background:var(--sleep)">☾</span>Giấc ngủ</div><div class="x"><span>7 giờ 20 · Apple Health</span><span style="font-size:12px">Tự động</span></div></div>
+    <div class="big" style="margin-top:14px">Lưu</div>
+    <div class="sub">Lần sau chỉ cần chạm Lưu nếu ngày như thường lệ</div>
+  </div>
+</div>
+<div class="cap"><span class="tag">A</span> Form điền sẵn → Lưu (đề xuất)</div><p class="d">Một form duy nhất cho cả ngày, đã điền theo thói quen. Ngày bình thường = 2 chạm (mở + Lưu). Không bao giờ ghi điều người dùng không thấy.</p>
+</div>
+
+<!-- 2B. Instant -->
+<div class="col">
+<div class="ph">
+  <div class="top"><div class="brand">▲ ASCND</div><div style="display:flex;gap:8px"><div class="round">🔔</div><div class="round">ĐK</div></div></div>
+  <div class="card">
+    <div class="h"><b>Hôm nay của bạn</b><span style="color:var(--ok);font-weight:700">4/4 xong ✓</span></div>
+    <div class="tiles">
+      <div class="tile"><div class="hd"><div class="n"><span class="dot" style="background:var(--sleep)">☾</span>Ngủ</div><span class="badge auto">Tự động</span></div><div class="v">7 giờ 20</div></div>
+      <div class="tile"><div class="hd"><div class="n"><span class="dot" style="background:var(--meal)">🍽</span>Bữa</div><span class="badge ok">✓</span></div><div class="v">3 bữa · 1.850</div></div>
+      <div class="tile"><div class="hd"><div class="n"><span class="dot" style="background:var(--water)">💧</span>Nước</div><span class="badge ok">✓</span></div><div class="v">2,0 L</div></div>
+      <div class="tile"><div class="hd"><div class="n"><span class="dot" style="background:var(--work)">🏋</span>Tập</div><span class="badge ok">✓</span></div><div class="v">Tay trước</div></div>
+    </div>
+    <div class="ghost" style="margin-top:12px">Sửa từng mục</div>
+  </div>
+  <div class="toast"><span>Đã ghi cả ngày theo thói quen</span><b>Hoàn tác</b></div>
+</div>
+<div class="cap"><span class="tag">B</span> Ghi ngay + Hoàn tác</div><p class="d">Một chạm là xong, thanh “Hoàn tác” vài giây. Nhanh nhất, nhưng ngày khác thường dễ ghi sai mà không để ý.</p>
+</div>
+
+<!-- 3. Health not connected + manual -->
+<div class="col">
+<div class="ph">
+  <div class="top"><div class="brand">▲ ASCND</div><div style="display:flex;gap:8px"><div class="round">🔔</div><div class="round">ĐK</div></div></div>
+  <div class="card">
+    <div class="h"><b>Hôm nay của bạn</b><span>0/4 xong</span></div>
+    <div class="tiles">
+      <div class="tile"><div class="hd"><div class="n"><span class="dot" style="background:var(--sleep)">☾</span>Ngủ</div><span class="badge todo">Chưa ghi</span></div><div class="v m">Thường 23:30 – 7:00</div></div>
+      <div class="tile"><div class="hd"><div class="n"><span class="dot" style="background:var(--meal)">🍽</span>Bữa</div><span class="badge todo">Chưa ghi</span></div><div class="v m">Hôm qua 1.850 kcal</div></div>
+      <div class="tile"><div class="hd"><div class="n"><span class="dot" style="background:var(--water)">💧</span>Nước</div><span class="badge todo">Chưa ghi</span></div><div class="v m">Hôm qua 2,0 L</div></div>
+      <div class="tile"><div class="hd"><div class="n"><span class="dot" style="background:var(--work)">🏋</span>Tập</div><span class="badge todo">Nghỉ</span></div><div class="v m">Hôm nay là ngày nghỉ</div></div>
+    </div>
+    <div class="big">✓ Ghi cả ngày</div>
+  </div>
+  <div class="card health">
+    <div class="r"><div class="heart">❤︎</div><div class="t" style="flex:1"><b>Kết nối Apple Health</b><span>Tự điền giấc ngủ, bước, buổi tập, cân, nước — bớt phải ghi tay</span></div></div>
+    <div class="big" style="background:#fff;color:var(--ink);border:1px solid var(--line)">Kết nối</div>
+  </div>
+</div>
+<div class="cap">3 · Chưa kết nối Health</div><p class="d">Không có Health: form có thêm dòng Giấc ngủ điền sẵn giờ thường lệ. Thẻ Health mời kết nối một lần, nói rõ được gì.</p>
+</div>
+
+</div>
