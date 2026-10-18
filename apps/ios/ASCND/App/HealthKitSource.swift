@@ -11,12 +11,19 @@ final class HealthKitSource: @unchecked Sendable {
 
   var isAvailable: Bool { HKHealthStore.isHealthDataAvailable() }
 
-  private var readTypes: Set<HKObjectType> {
+  /// Bộ loại đọc từ trước 17/10 — "đã kết nối" vẫn tính theo bộ này, để người
+  /// đã kết nối không bị coi là chưa kết nối chỉ vì app xin thêm loại mới.
+  private var legacyReadTypes: Set<HKObjectType> {
     [
       HKQuantityType(.stepCount), HKQuantityType(.activeEnergyBurned), HKQuantityType(.appleExerciseTime),
       HKQuantityType(.restingHeartRate), HKQuantityType(.heartRateVariabilitySDNN), HKQuantityType(.oxygenSaturation),
       HKQuantityType(.respiratoryRate), HKCategoryType(.sleepAnalysis), HKObjectType.workoutType(),
     ]
+  }
+
+  /// Thêm cân nặng và nước (17/10, chủ dự án: app bắt ghi quá nhiều) — chỉ đọc.
+  private var readTypes: Set<HKObjectType> {
+    legacyReadTypes.union([HKQuantityType(.bodyMass), HKQuantityType(.dietaryWater)])
   }
 
   private var shareTypes: Set<HKSampleType> {
@@ -35,8 +42,16 @@ final class HealthKitSource: @unchecked Sendable {
     }
   }
 
-  /// `healthAlreadyAsked`: hộp xin quyền đã hiện rồi (không cần hỏi nữa).
+  /// `healthAlreadyAsked`: hộp xin quyền đã hiện rồi (không cần hỏi nữa) —
+  /// theo bộ loại cũ.
   func alreadyAsked() async -> Bool {
+    guard isAvailable else { return false }
+    return (try? await store.statusForAuthorizationRequest(toShare: shareTypes, read: legacyReadTypes)) == .unnecessary
+  }
+
+  /// Đã hỏi cả các loại mới (cân, nước) chưa. Người kết nối trước 17/10 sẽ
+  /// được hỏi thêm MỘT lần ở lượt tự đồng bộ kế tiếp.
+  func askedAllTypes() async -> Bool {
     guard isAvailable else { return false }
     return (try? await store.statusForAuthorizationRequest(toShare: shareTypes, read: readTypes)) == .unnecessary
   }
@@ -54,12 +69,15 @@ final class HealthKitSource: @unchecked Sendable {
     async let sleep = sleepSamples(since: w.sleepSince, to: now)
     async let workouts = workoutSamples(since: w.weekAgo, to: now)
     async let buckets = stepBuckets(anchor: w.todayStart, from: w.stepHistoryStart, to: now)
+    async let weights = weightSamples(since: now - Int64(HealthData.weightDays) * 86_400_000, to: now)
+    async let water = waterSamples(since: now - Int64(HealthData.waterDays) * 86_400_000, to: now)
     return HealthSync.Snapshot(
       bio: HealthData.latestBiometrics(hr: await hr, hrv: await hrv, spo2: await spo2, resp: await resp),
       steps: HealthData.total(await steps), activeKcal: HealthData.total(await kcal),
       exerciseMinutes: HealthData.total(await minutes), sleep: HealthData.lastNight(await sleep),
       workouts: HealthData.workouts(await workouts),
-      stepDays: HealthData.dailySteps(await buckets, today: LocalDate(now, in: tz), in: tz))
+      stepDays: HealthData.dailySteps(await buckets, today: LocalDate(now, in: tz), in: tz),
+      weighIns: HealthData.weighIns(await weights, in: tz), water: HealthData.waterRows(await water, in: tz))
   }
 
   // MARK: - Ghi ngược (gương, nuốt lỗi như RN)
@@ -142,6 +160,28 @@ final class HealthKitSource: @unchecked Sendable {
     }
   }
 
+  /// Mẫu do chính app này ghi thì bỏ — không đọc lại thứ mình đã ghi.
+  private static func isOwn(_ s: HKSample) -> Bool {
+    s.sourceRevision.source.bundleIdentifier == Bundle.main.bundleIdentifier
+  }
+
+  private func weightSamples(since: EpochMillis, to: EpochMillis) async -> [HealthData.WeightSample] {
+    let p = HKQuery.predicateForSamples(withStart: since.date, end: to.date)
+    return await samples(HKQuantityType(.bodyMass), predicate: p, limit: HKObjectQueryNoLimit, ascending: true) { (sample: HKSample) -> HealthData.WeightSample? in
+      guard let s = sample as? HKQuantitySample, !Self.isOwn(s) else { return nil }
+      return HealthData.WeightSample(at: EpochMillis(s.startDate), kg: s.quantity.doubleValue(for: .gramUnit(with: .kilo)))
+    }
+  }
+
+  private func waterSamples(since: EpochMillis, to: EpochMillis) async -> [HealthData.WaterSample] {
+    let p = HKQuery.predicateForSamples(withStart: since.date, end: to.date)
+    return await samples(HKQuantityType(.dietaryWater), predicate: p, limit: HKObjectQueryNoLimit, ascending: true) { (sample: HKSample) -> HealthData.WaterSample? in
+      guard let s = sample as? HKQuantitySample, !Self.isOwn(s) else { return nil }
+      return HealthData.WaterSample(
+        uuid: s.uuid.uuidString, at: EpochMillis(s.startDate), ml: s.quantity.doubleValue(for: .literUnit(with: .milli)))
+    }
+  }
+
   private func workoutSamples(since: EpochMillis, to: EpochMillis) async -> [HealthData.WorkoutSample] {
     let p = HKQuery.predicateForSamples(withStart: since.date, end: to.date)
     return await samples(.workoutType(), predicate: p, limit: HKObjectQueryNoLimit, ascending: false) { (sample: HKSample) -> HealthData.WorkoutSample? in
@@ -186,6 +226,9 @@ final class HealthSyncCoordinator {
     let last = (UserDefaults.standard.object(forKey: Self.lastSyncKey) as? Double).map { EpochMillis(Int64($0)) }
     guard HealthSync.shouldAutoSync(asked: await source.alreadyAsked(), lastSync: last, now: now) else { return }
     UserDefaults.standard.set(Double(now.millis), forKey: Self.lastSyncKey)
+    // Đã kết nối từ trước nhưng chưa được hỏi cân / nước: hỏi một lần (hộp
+    // quyền của hệ thống chỉ hiện các loại chưa hỏi).
+    if !(await source.askedAllTypes()) { _ = await source.requestPermission() }
     try? await run(userId: userId, lang: lang)
   }
 
