@@ -46,6 +46,13 @@ struct TodayExtras<Plan: View>: View {
   /// "Như hôm qua" trên dòng Bữa ăn (17/10): sổ ghi bữa hôm nay, chỉ để đọc các
   /// bữa hôm qua và chép một chạm.
   @State private var meals: MealLogger?
+  /// "Ghi cả ngày" (18/10): form một lần cho mọi việc còn thiếu.
+  @State private var showsDayLog = false
+  /// Thẻ Apple Health (18/10): đã kết nối chưa, lần đồng bộ gần nhất.
+  @State private var healthConnected = false
+  @State private var healthLastSync: Date?
+  /// Giấc đêm qua do Apple Health điền (không phải ghi tay) — ô Ngủ ghi "Apple Health".
+  @State private var sleepFromHealth = false
   @State private var showsWeight = false
   @State private var showsBiometrics = false
   @State private var showsRoom = false
@@ -132,23 +139,43 @@ struct TodayExtras<Plan: View>: View {
       VStack(alignment: .leading, spacing: DS.Spacing.md) { plan(readinessRow, logSleepButton) }
         .todayEntrance(2)
       if let mascot, case .ready = mascot.phase {
-        TodayYourDay(
-          rows: dayRows(mascot), onTap: tap,
-          mealAgain: (meals?.yesterdayMeals.isEmpty == false && meals?.saving == false)
-            ? { Task { await copyYesterday() } } : nil)
+        // "Hôm nay của bạn" (18/10, mock A): thay danh sách "Ngày của bạn".
+        TodayDayCard(
+          tiles: dayTiles(mascot), weighIn: weighInRow, onLogAll: { showsDayLog = true },
+          onTap: tapItem, onWeight: { showsWeight = true })
           .todayEntrance(3)
+      }
+      // Khu vực Apple Health (18/10, mock A): kết nối một lần, một nút đồng bộ.
+      if services.health.isAvailable {
+        TodayHealthCard(connected: healthConnected, lastSync: healthLastSync) { () async throws(HealthSync.Failure) in
+          try await services.health.syncNow(userId: userId, lang: AppServices.appLang)
+          await refreshHealthState()
+          await reloadAfterHealthSync()
+          await reloadDay()
+        }
+        .todayEntrance(3)
       }
       TodayMore(rows: moreRows, zoom: zoom)
         .todayEntrance(4)
       if let awards {
         RecentAwardsCard(book: awards, lang: services.preferences.lang) { showsAwards = true }
       }
-      // Apple Health chỉ ở Cài đặt (15/10, chủ dự án).
     }
     // Bữa / nước / ngủ đi qua outbox: hàng đợi vơi đi (server đã nhận) thì đọc
     // lại ngày — như `invalidateQueries` sau `onSettled` của RN.
     .onChange(of: services.sync.pendingCount) { old, new in
       if new < old { Task { await reloadDay() } }
+    }
+    .sheet(isPresented: $showsDayLog, onDismiss: { Task { await reloadDay() } }) {
+      if let mascot {
+        DayLogSheet(
+          userId: userId, pending: DayCheckIn.pending(dayStates(mascot)), meals: meals, water: water,
+          waterPrefillMl: DayCheckIn.waterPrefillMl(
+            yesterdayMl: water.flatMap { DayCheckIn.yesterdayWaterMl($0.week, today: Self.today()) }),
+          planName: planName,
+          onPickMeal: { Task { try? await Task.sleep(for: .milliseconds(450)); logging = .meal } },
+          onPickWorkout: { Task { try? await Task.sleep(for: .milliseconds(450)); onLogWorkout?() } })
+      }
     }
     .sheet(item: $logging, onDismiss: { Task { await reloadDay() } }) { item in
       switch item {
@@ -234,6 +261,7 @@ struct TodayExtras<Plan: View>: View {
       await todo?.refresh()
       await weight?.load()
       await loadMeals()
+      await refreshHealthState()
       await mascot?.load()
       if let nutrition { await nutrition.loadOnce() } else { await ownWater?.load() }
       await readiness?.load()
@@ -286,67 +314,6 @@ struct TodayExtras<Plan: View>: View {
       meals?.close()
       todo?.close()
       ownWater?.close()
-    }
-  }
-
-  // MARK: - Your day
-
-  /// Năm tín hiệu (cùng `DailySignals` với khối ngày, nước gộp phần chờ gửi)
-  /// rồi cân nặng. Cờ "đã ghi" như `todo-card.tsx`: bữa = `kcal > 0`, ngủ = có
-  /// hàng ngủ hoặc phút ngủ, cân = có hàng hôm nay.
-  ///
-  /// Bớt việc mỗi ngày (17/10, chủ dự án: app bắt ghi quá nhiều — khác RN, ghi
-  /// ở NATIVE_IMPROVEMENTS): cân nặng chỉ hiện khi đã 7 ngày chưa cân
-  /// (`TodayDay.showsWeighIn`); sinh trắc không còn là việc của ngày — vẫn ghi
-  /// được từ màn Sinh trắc ("+" / "Nhập thủ công") và Apple Health tự điền.
-  private func dayRows(_ room: MascotRoomController) -> [TodayYourDay.Row] {
-    let s = TodayDay.merging(room.signals, localWaterMl: water?.loaded == true ? water?.totalMl : nil)
-    let goal = room.stepsGoal
-    let flags = todo?.signals
-    func done(_ q: MascotRules.Quest) -> Bool { s?.done(q, stepsGoal: goal) ?? false }
-    let num = { (v: Double, digits: Int) in v.formatted(.number.precision(.fractionLength(0...digits)).locale(.app)) }
-    let sleepMin = Int((s?.sleepMinutes ?? 0).rounded())
-    let sleep = done(.sleep) && sleepMin > 0
-      ? String(localized: "today.d.sleep \(sleepMin / 60) \(sleepMin % 60)")
-      : done(.sleep) ? String(localized: "today.tube.done") : String(localized: "today.d.sleep.ask")
-    let kcal = s?.kcal ?? 0
-    let meal = kcal > 0 ? String(localized: "today.d.meal \(num(kcal, 0))") : String(localized: "today.d.meal.none")
-    // Theo đơn vị đã chọn, như Dinh dưỡng (trước: luôn lít).
-    let waterLine = Water.progressLabel(
-      ml: s?.waterMl ?? 0, targetMl: TodayDay.waterTarget(s), services.preferences.volumeUnit, locale: .app)
-    let workouts = Int(s?.workoutCount ?? 0)
-    let workout =
-      workouts > 0
-      ? (workouts == 1 ? String(localized: "today.d.workout.done.one") : String(localized: "today.d.workout.done.other \(workouts)"))
-      : planName.map { String(localized: "today.d.workout.planned \($0)") } ?? String(localized: "today.d.workout.none")
-    let steps = String(localized: "today.d.steps \(num(s?.steps ?? 0, 0)) \(num(Double(goal), 0))")
-    let kg = weight?.todayKg
-    let weighed = flags?.weighed ?? (kg != nil)
-    let weightLine = kg.map { "\(OnboardingRuler.fixed1(unit.display($0), locale: .app)) \(unit.label)" }
-      ?? (weighed ? String(localized: "today.tube.done") : String(localized: "today.d.weight.none"))
-    var rows: [TodayYourDay.Row] = [
-      .init(kind: .sleep, detail: sleep, done: done(.sleep)),
-      .init(kind: .meal, detail: meal, done: done(.meal)),
-      .init(kind: .water, detail: waterLine, done: done(.water)),
-      .init(kind: .workout, detail: workout, done: done(.workout)),
-      .init(kind: .steps, detail: steps, done: done(.steps)),
-    ]
-    // Hôm nay vừa cân (kể cả đang chờ gửi) thì giữ dòng để thấy dấu tích.
-    if weighed || TodayDay.showsWeighIn(lastWeighIn: weight?.lastDate, today: Self.today()) {
-      rows.append(.init(kind: .weight, detail: weightLine, done: weighed))
-    }
-    return rows
-  }
-
-  private func tap(_ kind: TodayYourDay.Row.Kind) {
-    switch kind {
-    case .sleep: act(.sleep)
-    case .meal: act(.meal)
-    case .water: act(.water)
-    case .workout: act(.workout)
-    case .steps: showsSteps = true
-    case .weight: showsWeight = true
-    case .bio: logging = .bio
     }
   }
 
@@ -480,15 +447,11 @@ struct TodayExtras<Plan: View>: View {
     let l = services.makeMealLogger(userId: userId, date: nil, mealType: nil)
     meals = l
     await l?.loadRecents()
-  }
-
-  /// "Như hôm qua": chép mọi bữa hôm qua, rồi đọc lại ngày.
-  private func copyYesterday() async {
-    guard let meals else { return }
-    if case .queued = await meals.copyYesterday(online: services.sync.online) {
-      Telemetry.capture(.eatLikeYesterday)
-      AccessibilityNotification.Announcement(String(localized: "meal.yesterday.done")).post()
-      await reloadDay()
+    // Nguồn của giấc đêm qua cho ô Ngủ (cùng lượt đọc với màn ghi giấc ngủ).
+    if let sleep = services.makeSleepLogger(userId: userId) {
+      await sleep.load()
+      sleepFromHealth = sleep.healthNight != nil
+      sleep.close()
     }
   }
 
@@ -554,6 +517,76 @@ struct TodayExtras<Plan: View>: View {
   /// Sau một lượt đồng bộ Apple Health: điểm, xu hướng VÀ các ống của Koa
   /// (bước chân đọc từ `daily_logs` qua phòng linh vật) — trước đây ống bước
   /// không đọc lại nên giữ số cũ tới lần ra tiền cảnh sau (15/10).
+  // MARK: - Hôm nay của bạn (18/10)
+
+  private func dayStates(_ room: MascotRoomController) -> [DayCheckIn.Item: DayCheckIn.State] {
+    let s = TodayDay.merging(room.signals, localWaterMl: water?.loaded == true ? water?.totalMl : nil)
+    let goal = room.stepsGoal
+    func done(_ q: MascotRules.Quest) -> Bool { s?.done(q, stepsGoal: goal) ?? false }
+    return DayCheckIn.states(
+      sleepDone: done(.sleep), mealDone: done(.meal), waterMl: s?.waterMl ?? 0,
+      waterTargetMl: TodayDay.waterTarget(s), workoutDone: done(.workout), workoutPlanned: planName != nil)
+  }
+
+  private func dayTiles(_ room: MascotRoomController) -> [TodayDayCard.Tile] {
+    let states = dayStates(room)
+    let s = TodayDay.merging(room.signals, localWaterMl: water?.loaded == true ? water?.totalMl : nil)
+    let num = { (v: Double) in v.formatted(.number.precision(.fractionLength(0)).locale(.app)) }
+    let todo = String(localized: "day.tile.todo")
+    let sleepMin = Int((s?.sleepMinutes ?? 0).rounded())
+    let sleep = states[.sleep] == .done
+      ? (sleepMin > 0 ? String(localized: "today.d.sleep \(sleepMin / 60) \(sleepMin % 60)") : String(localized: "today.tube.done"))
+      : todo
+    let yMeals = meals?.yesterdayMeals ?? []
+    let meal = states[.meal] == .done
+      ? "\(num(s?.kcal ?? 0)) kcal"
+      : yMeals.isEmpty ? todo : String(localized: "day.tile.yesterday \("\(num(yMeals.reduce(0) { $0 + $1.kcal })) kcal")")
+    let yWater = water.flatMap { DayCheckIn.yesterdayWaterMl($0.week, today: Self.today()) }
+    let unit = services.preferences.volumeUnit
+    let waterText = states[.water] == .done
+      ? Water.progressLabel(ml: s?.waterMl ?? 0, targetMl: TodayDay.waterTarget(s), unit, locale: .app)
+      : yWater.map { String(localized: "day.tile.yesterday \(DayLogSheet.volume($0, unit))") } ?? todo
+    let workout: String
+    switch states[.workout] {
+    case .done: workout = String(localized: "today.tube.done")
+    case .rest: workout = String(localized: "day.tile.restDay")
+    default: workout = planName ?? todo
+    }
+    return [
+      .init(
+        item: .sleep, state: states[.sleep] ?? .todo,
+        detail: sleepFromHealth && states[.sleep] == .done ? "\(sleep) · \(String(localized: "hs.title"))" : sleep),
+      .init(item: .meal, state: states[.meal] ?? .todo, detail: meal),
+      .init(item: .water, state: states[.water] ?? .todo, detail: waterText),
+      .init(item: .workout, state: states[.workout] ?? .todo, detail: workout),
+    ]
+  }
+
+  /// Dòng cân trong thẻ: chỉ khi đã lâu chưa cân (hoặc hôm nay vừa cân).
+  private var weighInRow: (detail: String, done: Bool)? {
+    let kg = weight?.todayKg
+    let weighed = todo?.signals.weighed ?? (kg != nil)
+    guard weighed || TodayDay.showsWeighIn(lastWeighIn: weight?.lastDate, today: Self.today()) else { return nil }
+    let line = kg.map { "\(OnboardingRuler.fixed1(unit.display($0), locale: .app)) \(unit.label)" }
+      ?? (weighed ? String(localized: "today.tube.done") : String(localized: "today.d.weight.none"))
+    return (line, weighed)
+  }
+
+  private func tapItem(_ item: DayCheckIn.Item) {
+    switch item {
+    case .sleep: act(.sleep)
+    case .meal: act(.meal)
+    case .water: act(.water)
+    case .workout: act(.workout)
+    }
+  }
+
+  private func refreshHealthState() async {
+    guard services.health.isAvailable else { return }
+    healthConnected = await services.health.isConnected()
+    healthLastSync = services.health.lastSync
+  }
+
   private func reloadAfterHealthSync() async {
     await readiness?.load()
     await trend?.load()

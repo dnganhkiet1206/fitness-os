@@ -45,7 +45,7 @@ struct WorkoutsHomeView: View {
   @State private var weight: WeightTrendBook?
 
   static let accent = MascotRoomView.signalColor(.workout)
-  /// Màu của phân đoạn Cơ thể = màu cân nặng ở Hôm nay (`TodayYourDay.color`).
+  /// Màu của phân đoạn Cơ thể = màu cân nặng ở Hôm nay (14/10).
   static let body = DS.Color.metricSteel.swiftUI
 
   private var templates: [WorkoutTemplate] {

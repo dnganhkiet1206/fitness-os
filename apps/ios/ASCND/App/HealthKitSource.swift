@@ -192,10 +192,16 @@ final class HealthSyncCoordinator {
   /// Đã hỏi quyền Apple Health trên máy này chưa (thẻ "Bắt đầu" của Hôm nay).
   func isConnected() async -> Bool { await source.alreadyAsked() }
 
+  /// Lần đồng bộ gần nhất (tự hay bấm) — thẻ Apple Health của Hôm nay.
+  var lastSync: Date? {
+    (UserDefaults.standard.object(forKey: Self.lastSyncKey) as? Double).map { Date(timeIntervalSince1970: $0 / 1000) }
+  }
+
   /// Nút "Đồng bộ" (`useHealthSync`): xin quyền nếu cần, rồi chạy.
   func syncNow(userId: String, lang: String) async throws(HealthSync.Failure) {
     guard await source.requestPermission() else { throw .write("Health access was not granted") }
     try await run(userId: userId, lang: lang)
+    UserDefaults.standard.set(Double(SystemWallClock().nowMillis().millis), forKey: Self.lastSyncKey)
     Telemetry.capture(.healthConnected)
   }
 

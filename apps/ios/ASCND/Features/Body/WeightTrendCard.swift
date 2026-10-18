@@ -26,7 +26,7 @@ struct WeightTrendCard: View {
   /// Ngày ngón tay đang chỉ trên biểu đồ (kéo để đọc số, 14/10).
   @State private var scrubDate: Date?
 
-  /// Xám thép = màu cân nặng ở Hôm nay (`TodayYourDay.color`, 14/10).
+  /// Xám thép = màu cân nặng ở Hôm nay (14/10).
   static let tint = DS.Color.metricSteel.swiftUI
 
   var body: some View {
