@@ -343,8 +343,9 @@ final class AppServices {
       onEnqueued: { _ in sync.kick() })
     // Không ghi buổi ghi tay vào Apple Health nữa (17/10, "Không ghi ngược vào
     // HealthKit").
-    flow.onManualLogged = { _ in
+    flow.onManualLogged = { [weak self] _ in
       Telemetry.capture(.workoutLogged, ["source": "manual"])
+      self?.didLog()
     }
     return flow
   }
