@@ -22,7 +22,11 @@ struct HealthSyncTests {
     func insert(_ table: String, _ row: [String: JSONValue]) async throws(RowStoreError) {
       tables[table, default: []].append(.object(row))
     }
-    func update(_ table: String, _ row: [String: JSONValue], where filters: [RowQuery.Filter]) async throws(RowStoreError) -> Int { 1 }
+    var updates: [(table: String, row: [String: JSONValue])] = []
+    func update(_ table: String, _ row: [String: JSONValue], where filters: [RowQuery.Filter]) async throws(RowStoreError) -> Int {
+      updates.append((table, row))
+      return 1
+    }
     func upsert(_ table: String, _ rows: [[String: JSONValue]], onConflict: String) async throws(RowStoreError) {
       if table == failUpsert { throw RowStoreError(code: nil, message: "x") }
       upserts.append((table, rows, onConflict))

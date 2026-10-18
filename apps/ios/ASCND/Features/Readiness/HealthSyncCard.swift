@@ -160,6 +160,8 @@ struct HealthSyncCard: View {
   static func partName(_ key: String) -> String {
     if key == "nCxHealthSyncPartToday" { return String(localized: "hs.part.today") }
     if key == "nCxHealthSyncPartSteps" { return String(localized: "hs.part.steps") }
+    if key == "nCxHealthSyncPartWeight" { return String(localized: "hs.part.weight") }
+    if key == "nCxHealthSyncPartWater" { return String(localized: "hs.part.water") }
     if key.hasPrefix("nCxHealthSyncPartRebuild:") {
       let day = String(key.dropFirst("nCxHealthSyncPartRebuild:".count))
       return String(localized: "hs.part.rebuild \(day)")
