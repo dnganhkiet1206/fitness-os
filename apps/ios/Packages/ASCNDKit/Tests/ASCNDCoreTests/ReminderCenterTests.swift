@@ -145,6 +145,26 @@ struct ReminderCenterTests {
     #expect(ReminderKey.allCases.filter { c.prefs.isEnabled($0) } == [.challengeClaim])
   }
 
+  /// Lần ghi đầu tiên: người chưa từng chạm cài đặt được bật nhắc bữa tối + xin
+  /// quyền + đặt lịch; một lần thôi; ai đã lưu cài đặt (kể cả tắt) thì không đụng.
+  @Test func firstLogTurnsOnTheEveningMealNudgeOnce() async {
+    let store = MemoryStore()
+    let os = FakeCenter()
+    let c = center(store, os)
+    await c.firstLogNudge()
+    #expect(c.prefs.meal.enabled && c.prefs.meal.hour == 20 && c.permission)
+    #expect(await os.requests == 1)
+    #expect(await os.pending.contains { $0.key == .meal })
+    await c.setEnabled(.meal, false)
+    await c.firstLogNudge()
+    #expect(!c.prefs.meal.enabled, "đã tự tắt thì không bật lại")
+    let other = MemoryStore()
+    other.set(ReminderPrefs.defaults.encoded(), forKey: ReminderCenter.prefsKey)
+    let saved = center(other, FakeCenter())
+    await saved.firstLogNudge()
+    #expect(!saved.prefs.meal.enabled, "đã lưu cài đặt trước đó thì không đụng")
+  }
+
   /// Bật cái đầu tiên → xin quyền → đặt lịch; lưu dưới đúng khoá RN.
   @Test func enablingAsksPermissionThenSchedules() async {
     let store = MemoryStore()

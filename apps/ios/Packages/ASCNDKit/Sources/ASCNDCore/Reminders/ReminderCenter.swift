@@ -141,6 +141,19 @@ public final class ReminderCenter {
     await apply(next)
   }
 
+  /// Nhắc buổi tối sau lần ghi đầu tiên (17/10, chủ dự án: không có gì kéo người
+  /// dùng quay lại — mọi nhắc nhở tắt mặc định như RN). Người CHƯA TỪNG chạm cài
+  /// đặt nhắc nhở (chưa có `prefsKey`): bật nhắc bữa 20:00 — vốn chỉ bắn khi hôm
+  /// ấy chưa ghi bữa nào — và xin quyền thông báo ngay lúc họ vừa ghi. Đã từng
+  /// lưu cài đặt (kể cả tắt hết) thì không đụng. Mặc định của RN giữ nguyên.
+  /// Khác RN — NATIVE_IMPROVEMENTS.
+  public func firstLogNudge() async {
+    guard isAvailable, store.string(forKey: Self.prefsKey) == nil else { return }
+    var next = prefs
+    next.setEnabled(.meal, true)
+    await apply(next)
+  }
+
   /// Lưu + đặt lại; xin quyền lần đầu có cái bật.
   ///
   /// Kế hoạch dựng từ `prefs` HIỆN TẠI sau khi chờ quyền, không từ `next`:
