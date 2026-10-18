@@ -26,12 +26,9 @@ final class HealthKitSource: @unchecked Sendable {
     legacyReadTypes.union([HKQuantityType(.bodyMass), HKQuantityType(.dietaryWater)])
   }
 
-  /// Chỉ xin quyền ghi thứ app thật sự ghi: buổi tập ghi tay (`writeWorkout`).
-  /// Bỏ cân nặng và giấc ngủ (17/10, chủ dự án: "Không ghi ngược vào
-  /// HealthKit") — app chưa từng ghi hai loại này, mà hộp quyền vẫn hỏi.
-  private var shareTypes: Set<HKSampleType> {
-    [HKObjectType.workoutType()]
-  }
+  /// Không xin quyền ghi gì (17/10, chủ dự án: "Không ghi ngược vào
+  /// HealthKit"): app chỉ ĐỌC Apple Health.
+  private var shareTypes: Set<HKSampleType> { [] }
 
   /// `requestHealthPermissions`. HealthKit không cho biết người dùng đã cho
   /// đọc gì — "đã trả lời" là tất cả những gì có.
@@ -81,25 +78,6 @@ final class HealthKitSource: @unchecked Sendable {
       workouts: HealthData.workouts(await workouts),
       stepDays: HealthData.dailySteps(await buckets, today: LocalDate(now, in: tz), in: tz),
       weighIns: HealthData.weighIns(await weights, in: tz), water: HealthData.waterRows(await water, in: tz))
-  }
-
-  // MARK: - Ghi ngược (gương, nuốt lỗi như RN)
-
-  /// `writeWorkoutToHealth`: buổi tạ, metadata `HKExternalUUID = ascnd:<id>` —
-  /// lượt đọc sau nhận ra và bỏ qua mẫu của chính app.
-  func writeWorkout(recordId: String, start: EpochMillis, end: EpochMillis) async {
-    guard isAvailable else { return }
-    let config = HKWorkoutConfiguration()
-    config.activityType = .traditionalStrengthTraining
-    let builder = HKWorkoutBuilder(healthStore: store, configuration: config, device: nil)
-    do {
-      try await builder.beginCollection(at: start.date)
-      try await builder.addMetadata([HKMetadataKeyExternalUUID: "ascnd:\(recordId)"])
-      try await builder.endCollection(at: end.date)
-      _ = try await builder.finishWorkout()
-    } catch {
-      // Gương: không làm hỏng luồng lưu.
-    }
   }
 
   // MARK: - Truy vấn
@@ -233,13 +211,6 @@ final class HealthSyncCoordinator {
     // quyền của hệ thống chỉ hiện các loại chưa hỏi).
     if !(await source.askedAllTypes()) { _ = await source.requestPermission() }
     try? await run(userId: userId, lang: lang)
-  }
-
-  /// Ghi ngược buổi ghi tay vào Apple Health (gương).
-  func mirrorManualWorkout(_ entry: OutboxEntry) {
-    let source = self.source
-    let interval = HealthSync.manualWorkoutInterval(payload: entry.payload, end: SystemWallClock().nowMillis())
-    Task { await source.writeWorkout(recordId: entry.id, start: interval.start, end: interval.end) }
   }
 
   private func run(userId: String, lang: String) async throws(HealthSync.Failure) {

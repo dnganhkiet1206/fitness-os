@@ -25,7 +25,7 @@ Bản native thay bản RN trên cùng bundle `com.ascnd.fitnessos` (bản RN ch
 
    | Loại dữ liệu | Gắn với danh tính | Dùng cho | Tracking |
    |---|---|---|---|
-   | Health (Apple Health: bước, năng lượng, phút vận động, nhịp tim, HRV, SpO₂, nhịp thở, giấc ngủ, buổi tập, cân nặng, nước uống — chỉ đọc; app ghi buổi tập ghi tay vào Health) | Có | Chức năng app | Không |
+   | Health (Apple Health: bước, năng lượng, phút vận động, nhịp tim, HRV, SpO₂, nhịp thở, giấc ngủ, buổi tập, cân nặng, nước uống — chỉ đọc; app không ghi gì vào Health) | Có | Chức năng app | Không |
    | Fitness (buổi tập, bài tập) | Có | Chức năng app | Không |
    | Photos (ảnh tiến trình, ảnh món ăn gửi AI) | Có | Chức năng app | Không |
    | Email, Name | Có | Chức năng app (tài khoản) | Không |
