@@ -227,7 +227,9 @@ struct SettingsSheet: View {
       healthSync: { () async throws(HealthSync.Failure) in
         guard case .signedIn(let s) = services.session.phase else { return }
         try await services.health.syncNow(userId: s.userId, lang: AppServices.appLang)
+        services.startHealthObserving()
       },
+      healthConnected: { await services.health.isConnected() },
       // Xoá xong thì đăng xuất (đóng mọi bảng, dọn máy) — tài khoản không còn.
       deleteAccount: services.accountDeleter.map { deleter in
         {
