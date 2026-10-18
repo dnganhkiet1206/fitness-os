@@ -203,7 +203,11 @@ serve(async (req) => {
       return d.toISOString().split("T")[0];
     })();
 
-    const [profileRes, dailyLogsRes, sleepRes, workoutsRes, bioRes, memoryRes, weightRes] = await Promise.all([
+    /* Thứ tự tên PHẢI khớp thứ tự lệnh đọc bên dưới (… weight_logs, coach_memory).
+       Trước 18/10 hai tên cuối bị đảo: "trí nhớ" của Koa là các lần cân (in ra
+       "[undefined] undefined") và trí nhớ thật bị đọc như cân — Koa không bao giờ
+       thấy điều người dùng đã kể (chủ dự án: "Koa nhớ gì không có tác dụng"). */
+    const [profileRes, dailyLogsRes, sleepRes, workoutsRes, bioRes, weightRes, memoryRes] = await Promise.all([
       supabase.from("profiles").select("*").eq("user_id", userId).single(),
       supabase.from("daily_logs").select("*").eq("user_id", userId).gte("date", weekAgo).order("date", { ascending: false }).limit(7),
       supabase.from("sleep_logs").select("*").eq("user_id", userId).gte("waketime", `${weekAgo}T00:00:00Z`).order("waketime", { ascending: false }).limit(7),

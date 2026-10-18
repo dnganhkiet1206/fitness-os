@@ -166,9 +166,24 @@ public struct CoachOverview: Equatable, Sendable {
       return (nil, before.trimmingCharacters(in: .whitespacesAndNewlines))
     }
     let body = String(rest[..<close.lowerBound])
-    let after = String(rest[close.upperBound...])
+    let after = stripExtraBlocks(String(rest[close.upperBound...]))
     let text = (before + after).trimmingCharacters(in: .whitespacesAndNewlines)
     return (parse(body), text)
+  }
+
+  /// Model đôi khi trả THÊM khối ```ascnd giữa câu (18/10: "buổi tập.```ascnd
+  /// {"items":…}```" hiện thành chữ thô). Chỉ khối đầu được vẽ; các khối sau bị
+  /// bỏ khỏi chữ — khối chưa đóng (đang stream) bị cắt tới cuối.
+  static func stripExtraBlocks(_ text: String) -> String {
+    var out = text
+    while let open = out.range(of: "```ascnd") {
+      if let close = out[open.upperBound...].range(of: "```") {
+        out.removeSubrange(open.lowerBound..<close.upperBound)
+      } else {
+        out.removeSubrange(open.lowerBound...)
+      }
+    }
+    return out
   }
 
   /// Số trong JSON: số hoặc chuỗi số. `true` / `false` không phải số — giải mã
