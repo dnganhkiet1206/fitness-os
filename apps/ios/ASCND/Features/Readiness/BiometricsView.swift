@@ -73,12 +73,16 @@ struct BiometricsView: View {
         Task { await book.load() }
       }
     case .empty:
-      VStack(spacing: 0) {
-        DSEmptyState(
-          systemImage: "waveform.path.ecg", title: String(localized: "bio.empty.title"),
-          message: String(localized: "bio.empty.message"))
-        BodyLogButton(title: String(localized: "bio.manual")) { logging = true }
-          .padding(DS.Spacing.md)
+      // Cùng khung với trạng thái trống của `MeasurementsView`: nút ngay dưới
+      // chữ (không bị đẩy xuống đáy), và kéo để làm mới vẫn chạy.
+      ScrollView {
+        VStack(spacing: DS.Spacing.md) {
+          DSEmptyState(
+            systemImage: "waveform.path.ecg", title: String(localized: "bio.empty.title"),
+            message: String(localized: "bio.empty.message"))
+          BodyLogButton(title: String(localized: "bio.manual")) { logging = true }
+        }
+        .padding(DS.Spacing.md)
       }
     case .ready(let samples):
       ScrollView {
