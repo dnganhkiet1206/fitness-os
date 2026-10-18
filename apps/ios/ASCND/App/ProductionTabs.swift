@@ -230,6 +230,14 @@ struct SettingsSheet: View {
         services.startHealthObserving()
       },
       healthConnected: { await services.health.isConnected() },
+      phoneSteps: services.health.phoneStepsAvailable
+        ? PhoneSteps(
+          isOn: { services.health.phoneStepsOn },
+          enable: {
+            guard case .signedIn(let s) = services.session.phase else { return false }
+            return await services.health.enablePhoneSteps(userId: s.userId)
+          })
+        : nil,
       // Xoá xong thì đăng xuất (đóng mọi bảng, dọn máy) — tài khoản không còn.
       deleteAccount: services.accountDeleter.map { deleter in
         {

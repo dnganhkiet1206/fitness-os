@@ -109,4 +109,15 @@ struct HealthIntakeTests {
     }
     #expect(store.upserts.contains { $0.table == "weight_logs" })
   }
+
+  /// Bước từ iPhone khi không có Health: một hàng `daily_logs` hôm nay, chỉ cột bước.
+  @Test func phoneStepsUpsertTodayOnly() async throws {
+    let store = S.Store()
+    try await HealthSync.phoneSteps(6_420, userId: "u1", store: store, now: S.now, in: S.utc)
+    let up = try #require(store.upserts.first)
+    #expect(up.table == "daily_logs" && up.onConflict == "user_id,date")
+    #expect(up.rows == [["user_id": .string("u1"), "date": .string("2026-10-27"), "steps": .number(6_420)]])
+    try await HealthSync.phoneSteps(-1, userId: "u1", store: store, now: S.now, in: S.utc)
+    #expect(store.upserts.count == 1)
+  }
 }
