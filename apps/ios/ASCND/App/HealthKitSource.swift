@@ -56,6 +56,39 @@ final class HealthKitSource: @unchecked Sendable {
     return (try? await store.statusForAuthorizationRequest(toShare: shareTypes, read: readTypes)) == .unnecessary
   }
 
+  /// Đồng bộ nền (18/10, chủ dự án: "Apple Health không tự đồng bộ được à"):
+  /// Health báo khi có mẫu mới của các loại này — kể cả lúc app đang đóng (iOS
+  /// đánh thức app, tối đa mỗi giờ một lần) — để thẻ Hôm nay, widget và nhắc nhở
+  /// luôn đúng mà người dùng không phải mở app hay bấm gì.
+  private var observedTypes: [HKSampleType] {
+    [
+      HKQuantityType(.stepCount), HKCategoryType(.sleepAnalysis), HKObjectType.workoutType(),
+      HKQuantityType(.bodyMass), HKQuantityType(.dietaryWater), HKQuantityType(.restingHeartRate),
+    ]
+  }
+
+  /// Đăng ký theo dõi; `onChange` chạy mỗi lần Health báo (iOS chờ `completion`
+  /// trước khi cho app ngủ lại).
+  func observe(_ onChange: @escaping @Sendable () async -> Void) {
+    guard isAvailable else { return }
+    for type in observedTypes {
+      let query = HKObserverQuery(sampleType: type, predicate: nil) { _, completion, error in
+        guard error == nil else {
+          completion()
+          return
+        }
+        // `completion` của HealthKit không `Sendable`; gọi đúng một lần sau lượt đồng bộ.
+        let done = CompletionBox(completion)
+        Task {
+          await onChange()
+          done.call()
+        }
+      }
+      store.execute(query)
+      store.enableBackgroundDelivery(for: type, frequency: .hourly) { _, _ in }
+    }
+  }
+
   /// Đọc mọi thứ một lượt đồng bộ cần.
   func snapshot(now: EpochMillis, in tz: TimeZone) async -> HealthSync.Snapshot {
     let w = HealthData.windows(now: now, in: tz)
@@ -219,6 +252,29 @@ final class HealthSyncCoordinator {
     try? await run(userId: userId, lang: lang)
   }
 
+  /// Bật đồng bộ nền một lần mỗi lần app chạy (cả khi iOS mở app trong nền), chỉ
+  /// khi đã kết nối. `userId` đọc lúc Health báo — phiên có thể vừa khôi phục.
+  private var observing = false
+  func startObserving(userId: @escaping @MainActor () -> String?, lang: @escaping @MainActor () -> String,
+                      onSynced: @escaping @MainActor () async -> Void = {}) async {
+    guard source.isAvailable, !observing, await source.alreadyAsked() else { return }
+    observing = true
+    source.observe { [weak self] in
+      await self?.backgroundSync(userId: userId(), lang: lang(), onSynced: onSynced)
+    }
+  }
+
+  /// Một lượt do Health báo: không bao giờ xin quyền (app có thể đang ở nền),
+  /// cùng nhịp 15 phút với lượt tự đồng bộ — nhiều loại báo cùng lúc chỉ chạy một.
+  private func backgroundSync(userId: String?, lang: String, onSynced: @MainActor () async -> Void) async {
+    guard let userId, !running else { return }
+    let now = SystemWallClock().nowMillis()
+    let last = (UserDefaults.standard.object(forKey: Self.lastSyncKey) as? Double).map { EpochMillis(Int64($0)) }
+    guard HealthSync.shouldAutoSync(asked: true, lastSync: last, now: now) else { return }
+    UserDefaults.standard.set(Double(now.millis), forKey: Self.lastSyncKey)
+    if (try? await run(userId: userId, lang: lang)) != nil { await onSynced() }
+  }
+
   private func run(userId: String, lang: String) async throws(HealthSync.Failure) {
     guard let store, !running else { return }
     running = true
@@ -237,4 +293,12 @@ final class HealthSyncCoordinator {
 extension Notification.Name {
   /// Một lượt đồng bộ Apple Health vừa ghi xong `daily_logs` của máy này.
   static let healthSynced = Notification.Name("ascnd.healthSynced")
+}
+
+/// Hộp cho `HKObserverQueryCompletionHandler` để gọi từ `Task` (HealthKit cho
+/// gọi từ luồng bất kỳ).
+private final class CompletionBox: @unchecked Sendable {
+  private let completion: HKObserverQueryCompletionHandler
+  init(_ completion: @escaping HKObserverQueryCompletionHandler) { self.completion = completion }
+  func call() { completion() }
 }

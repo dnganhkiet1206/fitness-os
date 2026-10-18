@@ -225,6 +225,9 @@ final class AppServices {
       self?.applyNetwork(connected: connected, reachable: reachable)
     }
     startNetworkMonitor()
+    // Đăng ký theo dõi Health ngay khi app chạy — kể cả khi iOS mở app trong nền
+    // để giao dữ liệu mới (18/10).
+    startHealthObserving()
   }
 
   /// App mở / quay lại tiền cảnh: đọc phiên, thử gửi hàng đợi. Dọn ngày cũ
@@ -867,6 +870,17 @@ final class AppServices {
     Task { [health, widgets] in
       await health.autoSync(userId: user, lang: Self.appLang)
       await widgets.refresh()
+    }
+    startHealthObserving()
+  }
+
+  /// Đồng bộ nền (18/10): Health báo có dữ liệu mới → đồng bộ rồi làm mới widget,
+  /// kể cả khi app đang đóng. Chỉ khi đã kết nối; gọi lại nhiều lần cũng chỉ bật một.
+  func startHealthObserving() {
+    Task { [weak self, health, widgets] in
+      await health.startObserving(
+        userId: { self?.session.session?.userId }, lang: { Self.appLang },
+        onSynced: { await widgets.refresh() })
     }
   }
 

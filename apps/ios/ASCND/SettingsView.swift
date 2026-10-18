@@ -40,6 +40,8 @@ public struct SettingsView: View {
   /// Apple Health (15/10, audit toàn app: thẻ đồng bộ lặp ở Hôm nay và Trợ lý) —
   /// thẻ đầy đủ ở đây; các tab chỉ còn một dòng. `nil` → không hiện.
   var healthSync: (@MainActor () async throws(HealthSync.Failure) -> Void)?
+  /// Đã kết nối Apple Health chưa (18/10: hàng Health có hai trạng thái).
+  var healthConnected: (@MainActor () async -> Bool)?
   var healthAvailable = false
   /// Xoá tài khoản (App Store 5.1.1(v); 16/10, chủ dự án: "không có tuỳ chọn xoá
   /// tài khoản"). `nil` → không hiện hàng.
@@ -108,6 +110,7 @@ public struct SettingsView: View {
     legalLang: AppPreferences.Lang? = nil,
     healthAvailable: Bool = false,
     healthSync: (@MainActor () async throws(HealthSync.Failure) -> Void)? = nil,
+    healthConnected: (@MainActor () async -> Bool)? = nil,
     deleteAccount: (@MainActor () async -> AccountDeletion)? = nil
   ) {
     self.account = account
@@ -121,6 +124,7 @@ public struct SettingsView: View {
     self.legalLang = legalLang
     self.healthAvailable = healthAvailable
     self.healthSync = healthSync
+    self.healthConnected = healthConnected
     self.deleteAccount = deleteAccount
     _selectedLanguage = State(initialValue: language)
     _selectedTheme = State(initialValue: theme)
@@ -185,12 +189,10 @@ public struct SettingsView: View {
           }
         }
 
+        // Apple Health chỉ ở đây (18/10, chủ dự án): chưa kết nối → "Kết nối";
+        // đã kết nối → "Đã kết nối". Đồng bộ tự chạy (mở app + nền), không có nút.
         if let healthSync, healthAvailable {
-          Section {
-            HealthSyncCard(isAvailable: true, sync: healthSync, compact: true)
-          } footer: {
-            Text(String(localized: "hs.brings"))
-          }
+          HealthSettingsSection(sync: healthSync, isConnected: healthConnected ?? { false })
         }
 
         // Nhắc nhở — thông báo cục bộ (`settings.tsx:604`, `nav.push('/reminders')`).
@@ -310,4 +312,65 @@ public struct SettingsView: View {
 #Preview("Settings — signed out") {
   SettingsView(account: nil)
     .preferredColorScheme(.dark)
+}
+
+/// Mục Apple Health của Cài đặt (18/10): một hàng, hai trạng thái.
+private struct HealthSettingsSection: View {
+  let sync: @MainActor () async throws(HealthSync.Failure) -> Void
+  let isConnected: @MainActor () async -> Bool
+
+  @State private var connected: Bool?
+  @State private var running = false
+  @State private var failure: HealthSync.Failure?
+
+  var body: some View {
+    Section {
+      HStack(spacing: 12) {
+        Image(systemName: "heart.fill")
+          .font(.system(size: 14, weight: .semibold))
+          .foregroundStyle(.white)
+          .frame(width: 28, height: 28)
+          .background(DS.Color.destructive.swiftUI, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+          .accessibilityHidden(true)
+        Text(String(localized: "hs.title"))
+        Spacer(minLength: 0)
+        if connected == true {
+          Label(String(localized: "hs.connected"), systemImage: "checkmark.circle.fill")
+            .font(DS.TextStyle.footnote.weight(.semibold))
+            .foregroundStyle(DS.Color.readinessGreen.swiftUI)
+        } else if running {
+          ProgressView()
+        } else if connected == false {
+          Button(String(localized: "hcard.connect")) { Task { await connect() } }
+            .font(DS.TextStyle.footnote.weight(.semibold))
+            .buttonStyle(.bordered)
+            .tint(DS.Color.foreground.swiftUI)
+        }
+      }
+      .frame(minHeight: 44)
+      .accessibilityElement(children: .combine)
+      if let failure {
+        Text(HealthSyncCard.message(.failed(failure)))
+          .font(DS.TextStyle.caption)
+          .foregroundStyle(DS.Color.destructive.swiftUI)
+      }
+    } footer: {
+      Text(String(localized: connected == true ? "hs.auto" : "hs.brings"))
+    }
+    .task { connected = await isConnected() }
+  }
+
+  private func connect() async {
+    guard !running else { return }
+    running = true
+    failure = nil
+    defer { running = false }
+    do throws(HealthSync.Failure) {
+      try await sync()
+    } catch {
+      // Không có dữ liệu cũng là đã kết nối xong (quyền đã hỏi).
+      if error != .noData { failure = error }
+    }
+    connected = await isConnected()
+  }
 }

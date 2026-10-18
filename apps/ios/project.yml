@@ -74,6 +74,8 @@ targets:
         # ghi buổi tập — như plugin `@kingstinct/react-native-healthkit` của RN.
         com.apple.developer.healthkit: true
         com.apple.developer.healthkit.access: []
+        # Đồng bộ nền (18/10): Health đánh thức app khi có dữ liệu mới (HKObserverQuery).
+        com.apple.developer.healthkit.background-delivery: true
     configFiles:
       Debug: Config/Backend.xcconfig
       Release: Config/Backend.xcconfig

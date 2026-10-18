@@ -10952,6 +10952,52 @@
     }
    }
   },
+  "hs.connected": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Connected"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đã kết nối"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Conectado"
+     }
+    }
+   }
+  },
+  "hs.auto": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sleep, steps, workouts, weight and water sync on their own — even while the app is closed."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Giấc ngủ, bước, buổi tập, cân, nước tự đồng bộ — kể cả khi app đang đóng."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sueño, pasos, entrenos, peso y agua se sincronizan solos, incluso con la app cerrada."
+     }
+    }
+   }
+  },
   "bio.title": {
    "extractionState": "manual",
    "localizations": {

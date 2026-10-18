@@ -48,9 +48,6 @@ struct TodayExtras<Plan: View>: View {
   @State private var meals: MealLogger?
   /// "Ghi cả ngày" (18/10): form một lần cho mọi việc còn thiếu.
   @State private var showsDayLog = false
-  /// Thẻ Apple Health (18/10): đã kết nối chưa, lần đồng bộ gần nhất.
-  @State private var healthConnected = false
-  @State private var healthLastSync: Date?
   /// Giấc đêm qua do Apple Health điền (không phải ghi tay) — ô Ngủ ghi "Apple Health".
   @State private var sleepFromHealth = false
   @State private var showsWeight = false
@@ -145,16 +142,8 @@ struct TodayExtras<Plan: View>: View {
           onTap: tapItem, onWeight: { showsWeight = true })
           .todayEntrance(3)
       }
-      // Khu vực Apple Health (18/10, mock A): kết nối một lần, một nút đồng bộ.
-      if services.health.isAvailable {
-        TodayHealthCard(connected: healthConnected, lastSync: healthLastSync) { () async throws(HealthSync.Failure) in
-          try await services.health.syncNow(userId: userId, lang: AppServices.appLang)
-          await refreshHealthState()
-          await reloadAfterHealthSync()
-          await reloadDay()
-        }
-        .todayEntrance(3)
-      }
+      // Apple Health chỉ ở Cài đặt (18/10, chủ dự án): Hôm nay không có thẻ Health —
+      // đồng bộ tự chạy (mở app + nền), người dùng không phải nghĩ tới nó.
       TodayMore(rows: moreRows, zoom: zoom)
         .todayEntrance(4)
       if let awards {
@@ -261,7 +250,6 @@ struct TodayExtras<Plan: View>: View {
       await todo?.refresh()
       await weight?.load()
       await loadMeals()
-      await refreshHealthState()
       await mascot?.load()
       if let nutrition { await nutrition.loadOnce() } else { await ownWater?.load() }
       await readiness?.load()
@@ -579,12 +567,6 @@ struct TodayExtras<Plan: View>: View {
     case .water: act(.water)
     case .workout: act(.workout)
     }
-  }
-
-  private func refreshHealthState() async {
-    guard services.health.isAvailable else { return }
-    healthConnected = await services.health.isConnected()
-    healthLastSync = services.health.lastSync
   }
 
   private func reloadAfterHealthSync() async {
