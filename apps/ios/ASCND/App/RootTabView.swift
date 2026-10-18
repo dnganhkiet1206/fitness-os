@@ -340,6 +340,8 @@ private struct QuickLogSheet: View {
   /// "Ăn lại" (15/10, audit giữ chân — ghi bữa quá nhiều bước): sổ ghi bữa của bữa
   /// hiện tại, chỉ để đọc bữa gần đây và ghi lại một bữa bằng một chạm.
   @State private var logger: MealLogger?
+  /// "Ăn như hôm qua" đã chép: các bữa vừa chép.
+  @State private var copiedMeals: [MealLog.RecentMeal]?
   @State private var logged: String?
 
   private var items: [(LocalizedStringKey, String, Color, DeepLink.Screen)] {
@@ -374,6 +376,11 @@ private struct QuickLogSheet: View {
     VStack(alignment: .leading, spacing: DS.Spacing.md) {
       Text("quicklog.title").font(.system(size: 20, weight: .bold))
         .accessibilityAddTraits(.isHeader)
+      if !yesterday.isEmpty || copiedYesterday {
+        YesterdayMealsCard(meals: yesterday, done: copiedYesterday, busy: logger?.saving ?? false) {
+          Task { await copyYesterday() }
+        }
+      }
       if !recentMeals.isEmpty {
         again
       }
@@ -402,7 +409,8 @@ private struct QuickLogSheet: View {
     .padding(.horizontal, DS.Spacing.lg)
     .padding(.top, DS.Spacing.lg)
     .frame(maxHeight: .infinity, alignment: .top)
-    .presentationDetents([.height((recentMeals.isEmpty ? 250 : 400) + (askCoach == nil ? 0 : 76))])
+    .presentationDetents([.height(
+      (recentMeals.isEmpty ? 250 : 400) + (askCoach == nil ? 0 : 76) + (yesterday.isEmpty && !copiedYesterday ? 0 : 84))])
     // Nền đặc màu trang (16/10, chủ dự án: "thẻ khó nhìn"): bảng kính trong để lộ
     // trang Hôm nay phía sau, thẻ kính đặt lên đó chìm mất mép.
     .presentationBackground(DS.Color.background.swiftUI)
@@ -491,6 +499,22 @@ private struct QuickLogSheet: View {
       // cắt cứng ở lề, lộ một khối xám sau thẻ).
       .scrollClipDisabled()
       .padding(.horizontal, -DS.Spacing.lg)
+    }
+  }
+
+  /// Bữa hôm qua để chép (giữ danh sách khi đã chép để thẻ còn hiện dấu tích).
+  private var yesterday: [MealLog.RecentMeal] { copiedMeals ?? logger?.yesterdayMeals ?? [] }
+  private var copiedYesterday: Bool { copiedMeals != nil }
+
+  private func copyYesterday() async {
+    guard let logger else { return }
+    let meals = logger.yesterdayMeals
+    if case .queued = await logger.copyYesterday(online: services.sync.online) {
+      copiedMeals = meals
+      Telemetry.capture(.eatLikeYesterday)
+      AccessibilityNotification.Announcement(String(localized: "meal.yesterday.done")).post()
+      try? await Task.sleep(for: .milliseconds(700))
+      close()
     }
   }
 

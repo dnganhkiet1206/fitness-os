@@ -40000,6 +40000,29 @@
     }
    }
   },
+  "today.meal.yesterday": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Like yesterday"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Như hôm qua"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Como ayer"
+     }
+    }
+   }
+  },
   "today.koa.a11y": {
    "extractionState": "manual",
    "localizations": {
@@ -51680,6 +51703,52 @@
      "stringUnit": {
       "state": "translated",
       "value": "Ăn lại"
+     }
+    }
+   }
+  },
+  "meal.yesterday.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Eat like yesterday"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ăn như hôm qua"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Comer como ayer"
+     }
+    }
+   }
+  },
+  "meal.yesterday.done": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Logged yesterday's meals for today"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đã ghi các bữa như hôm qua"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Comidas de ayer registradas para hoy"
      }
     }
    }

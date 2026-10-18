@@ -291,6 +291,74 @@ struct MealLoggerTests {
     #expect(!l.edit(l.items[0].id, kcal: "-1", protein: "", carbs: "", fat: ""))
   }
 
+  /// "Ăn như hôm qua" (17/10): bữa của HÔM QUA (giờ Hà Nội), cũ → mới, không gộp
+  /// bữa trùng; bỏ bữa 0 kcal; hôm nay đã ghi thì không đề nghị.
+  @Test func yesterdayMealsOnlyWhenTodayIsEmpty() {
+    func meal(_ id: String, _ type: String, _ at: String, _ kcal: Double) -> JSONValue {
+      .object([
+        "id": .string(id), "meal_type": .string(type), "date_time": .string(at),
+        "meal_entry_items": .array([.object(["food_name": .string("Cơm"), "servings": .number(1), "kcal": .number(kcal)])]),
+      ])
+    }
+    let today = LocalDate("2026-10-09")!
+    let rows: [JSONValue] = [
+      meal("dinner", "dinner", "2026-10-08T12:00:00.000Z", 600),  // 19:00 ngày 08 ở Hà Nội
+      meal("water", "snack", "2026-10-08T09:00:00.000Z", 0),
+      meal("lunch2", "lunch", "2026-10-08T06:00:00.000Z", 300),
+      meal("lunch1", "lunch", "2026-10-08T05:00:00.000Z", 300),  // cùng chữ ký, vẫn giữ
+      meal("old", "breakfast", "2026-10-07T16:00:00.000Z", 400),  // 23:00 ngày 07
+      meal("before", "breakfast", "2026-10-06T01:00:00.000Z", 400),
+    ]
+    let y = MealLog.yesterdayMeals(rows, today: today, in: MealLogRuleTests.hanoi)
+    #expect(y.map(\.id) == ["lunch1", "lunch2", "dinner"])
+    #expect(y.map(\.mealType) == ["lunch", "lunch", "dinner"])
+    let withToday = [meal("now", "breakfast", "2026-10-09T01:00:00.000Z", 350)] + rows
+    #expect(MealLog.yesterdayMeals(withToday, today: today, in: MealLogRuleTests.hanoi).isEmpty)
+  }
+
+  /// Chép: mỗi bữa hôm qua thành một bữa hôm nay (loại bữa, món, khẩu phần),
+  /// vào hàng đợi một lần; chạm lần hai không chép đôi.
+  @Test func copyYesterdayEnqueuesEachMealOnce() async throws {
+    let f = FakeFoods()
+    f.mealRows = [
+      .object([
+        "id": .string("d"), "meal_type": .string("dinner"), "date_time": .string("2026-10-08T12:00:00.000Z"),
+        "meal_entry_items": .array([
+          .object(["food_name": .string("Cá kho"), "food_item_id": .string("fi-1"), "servings": .number(1.5), "kcal": .number(300)]),
+          .object(["food_name": .string("Cơm"), "servings": .number(1), "kcal": .number(200)]),
+        ]),
+      ]),
+      .object([
+        "id": .string("b"), "meal_type": .string("breakfast"), "date_time": .string("2026-10-08T01:00:00.000Z"),
+        "meal_entry_items": .array([.object(["food_name": .string("Phở"), "servings": .number(1), "kcal": .number(450)])]),
+      ]),
+    ]
+    let o = MealOutbox()
+    let l = Self.logger(f, o)
+    await l.loadRecents()
+    #expect(l.yesterdayMeals.map(\.id) == ["b", "d"])
+    #expect(await l.copyYesterday(online: true) == .queued(online: true))
+    #expect(l.yesterdayMeals.isEmpty)
+    #expect(await l.copyYesterday(online: true) == .unavailable)
+    let entries = await o.entries
+    #expect(entries.count == 2)
+    #expect(entries.map { $0.payload["meal_type"] } == [.string("breakfast"), .string("dinner")])
+    #expect(entries.map { $0.payload["total_kcal"] } == [.number(450), .number(500)])
+    let stamp = MealLog.stamp(LocalDate("2026-10-09")!, now: Clock().nowMillis(), in: MealLogRuleTests.hanoi)
+    #expect(entries.allSatisfy { $0.payload["date_time"] == .string(stamp) && MealLog.isRow($0) })
+    guard case .array(let dinnerItems)? = entries[1].payload["items"] else {
+      Issue.record("thiếu món")
+      return
+    }
+    #expect(dinnerItems[0]["servings"] == .number(1.5))
+    #expect(dinnerItems[0]["food_item_id"] == .string("fi-1"))
+    #expect(Set(entries.map(\.id)).count == 2)
+    // Bữa vừa chép còn chờ gửi (server chưa thấy): sổ mới không đề nghị chép lại.
+    let again = Self.logger(f, o)
+    await again.loadRecents()
+    #expect(again.yesterdayMeals.isEmpty)
+  }
+
   @Test func removeAndCustom() {
     let l = Self.logger(FakeFoods(), MealOutbox())
     #expect(!l.addCustom(name: "", kcal: "100", protein: "", carbs: "", fat: ""))

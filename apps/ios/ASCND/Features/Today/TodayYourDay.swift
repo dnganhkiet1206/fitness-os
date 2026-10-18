@@ -34,6 +34,10 @@ struct TodayYourDay: View {
 
   let rows: [Row]
   let onTap: (Row.Kind) -> Void
+  /// "Như hôm qua" trên dòng Bữa ăn (17/10, chủ dự án: app bắt ghi quá nhiều):
+  /// một chạm chép mọi bữa hôm qua; `nil` khi hôm qua không có bữa / hôm nay đã
+  /// ghi. Chạm phần còn lại của dòng vẫn mở màn ghi bữa.
+  var mealAgain: (() -> Void)?
   @Environment(AppServices.self) private var services: AppServices?
 
   var body: some View {
@@ -59,6 +63,14 @@ struct TodayYourDay: View {
             }
           }
           rowView(row)
+            .overlay(alignment: .trailing) {
+              if row.kind == .meal, !row.done, let mealAgain {
+                Button(action: mealAgain) { capsule(String(localized: "today.meal.yesterday")) }
+                  .buttonStyle(TodayPressStyle())
+                  .padding(.trailing, DS.Spacing.md)
+                  .accessibilityLabel(Text("meal.yesterday.title"))
+              }
+            }
         }
       }
       .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
@@ -128,18 +140,25 @@ struct TodayYourDay: View {
         .font(.system(size: 15))
         .foregroundStyle(DS.Color.mutedForeground.swiftUI)
         .frame(minHeight: 44)
+    } else if row.kind == .meal, mealAgain != nil {
+      // Chỗ của nút "Như hôm qua" (nút thật nằm trên dòng, xem `body`).
+      capsule(String(localized: "today.meal.yesterday")).hidden()
     } else {
-      Text(verbatim: row.kind == .water
+      capsule(row.kind == .water
         ? Water.stepLabel(services?.preferences.volumeUnit ?? .ml) : String(localized: "today.todo.log"))
-        .font(.system(size: 15, weight: .semibold))
-        .foregroundStyle(DS.Color.foreground.swiftUI)
-        .padding(.horizontal, 14)
-        .frame(minHeight: 36)
-        .background(.thinMaterial, in: Capsule())
-        .overlay(Capsule().strokeBorder(DS.Color.foreground.swiftUI.opacity(0.12), lineWidth: 0.75))
-        .frame(minHeight: 44)
         .transition(.scale(scale: 0.8).combined(with: .opacity))
     }
+  }
+
+  private func capsule(_ text: String) -> some View {
+    Text(verbatim: text)
+      .font(.system(size: 15, weight: .semibold))
+      .foregroundStyle(DS.Color.foreground.swiftUI)
+      .padding(.horizontal, 14)
+      .frame(minHeight: 36)
+      .background(.thinMaterial, in: Capsule())
+      .overlay(Capsule().strokeBorder(DS.Color.foreground.swiftUI.opacity(0.12), lineWidth: 0.75))
+      .frame(minHeight: 44)
   }
 
   // MARK: - Bảng
