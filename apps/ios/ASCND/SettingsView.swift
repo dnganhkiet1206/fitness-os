@@ -42,6 +42,8 @@ public struct SettingsView: View {
   var healthSync: (@MainActor () async throws(HealthSync.Failure) -> Void)?
   /// Đã kết nối Apple Health chưa (18/10: hàng Health có hai trạng thái).
   var healthConnected: (@MainActor () async -> Bool)?
+  /// Bước chân từ iPhone khi không kết nối Health (18/10).
+  var phoneSteps: PhoneSteps?
   var healthAvailable = false
   /// Xoá tài khoản (App Store 5.1.1(v); 16/10, chủ dự án: "không có tuỳ chọn xoá
   /// tài khoản"). `nil` → không hiện hàng.
@@ -111,6 +113,7 @@ public struct SettingsView: View {
     healthAvailable: Bool = false,
     healthSync: (@MainActor () async throws(HealthSync.Failure) -> Void)? = nil,
     healthConnected: (@MainActor () async -> Bool)? = nil,
+    phoneSteps: PhoneSteps? = nil,
     deleteAccount: (@MainActor () async -> AccountDeletion)? = nil
   ) {
     self.account = account
@@ -125,6 +128,7 @@ public struct SettingsView: View {
     self.healthAvailable = healthAvailable
     self.healthSync = healthSync
     self.healthConnected = healthConnected
+    self.phoneSteps = phoneSteps
     self.deleteAccount = deleteAccount
     _selectedLanguage = State(initialValue: language)
     _selectedTheme = State(initialValue: theme)
@@ -192,7 +196,7 @@ public struct SettingsView: View {
         // Apple Health chỉ ở đây (18/10, chủ dự án): chưa kết nối → "Kết nối";
         // đã kết nối → "Đã kết nối". Đồng bộ tự chạy (mở app + nền), không có nút.
         if let healthSync, healthAvailable {
-          HealthSettingsSection(sync: healthSync, isConnected: healthConnected ?? { false })
+          HealthSettingsSection(sync: healthSync, isConnected: healthConnected ?? { false }, phoneSteps: phoneSteps)
         }
 
         // Nhắc nhở — thông báo cục bộ (`settings.tsx:604`, `nav.push('/reminders')`).
@@ -315,9 +319,22 @@ public struct SettingsView: View {
 }
 
 /// Mục Apple Health của Cài đặt (18/10): một hàng, hai trạng thái.
+/// Bước chân từ cảm biến iPhone — bật một lần, chỉ khi không dùng Apple Health.
+public struct PhoneSteps {
+  let isOn: @MainActor () -> Bool
+  let enable: @MainActor () async -> Bool
+
+  public init(isOn: @escaping @MainActor () -> Bool, enable: @escaping @MainActor () async -> Bool) {
+    self.isOn = isOn
+    self.enable = enable
+  }
+}
+
 private struct HealthSettingsSection: View {
   let sync: @MainActor () async throws(HealthSync.Failure) -> Void
   let isConnected: @MainActor () async -> Bool
+  var phoneSteps: PhoneSteps?
+  @State private var stepsOn = false
 
   @State private var connected: Bool?
   @State private var running = false
@@ -349,6 +366,33 @@ private struct HealthSettingsSection: View {
       }
       .frame(minHeight: 44)
       .accessibilityElement(children: .combine)
+      // Không dùng Health: vẫn có bước chân tự động từ iPhone.
+      if connected == false, let phoneSteps {
+        HStack(spacing: 12) {
+          Image(systemName: "figure.walk")
+            .font(.system(size: 14, weight: .semibold))
+            .foregroundStyle(.white)
+            .frame(width: 28, height: 28)
+            .background(DS.Color.readinessGreen.swiftUI, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+            .accessibilityHidden(true)
+          Text(String(localized: "steps.phone"))
+          Spacer(minLength: 0)
+          if stepsOn {
+            Label(String(localized: "steps.phone.on"), systemImage: "checkmark.circle.fill")
+              .font(DS.TextStyle.footnote.weight(.semibold))
+              .foregroundStyle(DS.Color.readinessGreen.swiftUI)
+          } else {
+            Button(String(localized: "steps.phone.enable")) {
+              Task { stepsOn = await phoneSteps.enable() }
+            }
+            .font(DS.TextStyle.footnote.weight(.semibold))
+            .buttonStyle(.bordered)
+            .tint(DS.Color.foreground.swiftUI)
+          }
+        }
+        .frame(minHeight: 44)
+        .accessibilityElement(children: .combine)
+      }
       if let failure {
         Text(HealthSyncCard.message(.failed(failure)))
           .font(DS.TextStyle.caption)
@@ -357,7 +401,10 @@ private struct HealthSettingsSection: View {
     } footer: {
       Text(String(localized: connected == true ? "hs.auto" : "hs.brings"))
     }
-    .task { connected = await isConnected() }
+    .task {
+      connected = await isConnected()
+      stepsOn = phoneSteps?.isOn() ?? false
+    }
   }
 
   private func connect() async {

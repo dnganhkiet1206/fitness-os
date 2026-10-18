@@ -241,7 +241,12 @@ final class HealthSyncCoordinator {
   /// `useAutoHealthSync`: về tiền cảnh, đã hỏi quyền, cách lần trước ≥ 15
   /// phút. Im lặng — lỗi không hiện cho người dùng.
   func autoSync(userId: String?, lang: String) async {
-    guard let userId, source.isAvailable, !running else { return }
+    guard let userId, !running else { return }
+    // Không kết nối Health: bước chân từ iPhone, nếu người dùng đã bật (18/10).
+    guard source.isAvailable, await source.alreadyAsked() else {
+      await syncPhoneSteps(userId: userId)
+      return
+    }
     let now = SystemWallClock().nowMillis()
     let last = (UserDefaults.standard.object(forKey: Self.lastSyncKey) as? Double).map { EpochMillis(Int64($0)) }
     guard HealthSync.shouldAutoSync(asked: await source.alreadyAsked(), lastSync: last, now: now) else { return }
@@ -250,6 +255,34 @@ final class HealthSyncCoordinator {
     // quyền của hệ thống chỉ hiện các loại chưa hỏi).
     if !(await source.askedAllTypes()) { _ = await source.requestPermission() }
     try? await run(userId: userId, lang: lang)
+  }
+
+  // MARK: - Bước chân từ iPhone (18/10)
+
+  private let pedometer = PedometerSource()
+
+  /// Có thể đếm bước bằng iPhone (máy có cảm biến) — hàng bật ở Cài đặt.
+  var phoneStepsAvailable: Bool { pedometer.isAvailable }
+  /// Đã bật (đã cho quyền Chuyển động & thể chất).
+  var phoneStepsOn: Bool { pedometer.authorized }
+
+  /// Bật từ Cài đặt: lần đọc đầu là lúc hệ thống hỏi quyền; có quyền thì ghi
+  /// bước hôm nay ngay.
+  func enablePhoneSteps(userId: String) async -> Bool {
+    _ = await pedometer.todaySteps()
+    guard pedometer.authorized else { return false }
+    await syncPhoneSteps(userId: userId)
+    return true
+  }
+
+  /// Bước hôm nay từ iPhone → `daily_logs` (chỉ khi đã có quyền — không bao giờ
+  /// tự hỏi), rồi báo màn đọc lại như một lượt Health.
+  private func syncPhoneSteps(userId: String) async {
+    guard let store, pedometer.isAvailable, pedometer.authorized, let steps = await pedometer.todaySteps() else {
+      return
+    }
+    try? await HealthSync.phoneSteps(steps, userId: userId, store: store, now: SystemWallClock().nowMillis(), in: .current)
+    NotificationCenter.default.post(name: .healthSynced, object: nil)
   }
 
   /// Bật đồng bộ nền một lần mỗi lần app chạy (cả khi iOS mở app trong nền), chỉ

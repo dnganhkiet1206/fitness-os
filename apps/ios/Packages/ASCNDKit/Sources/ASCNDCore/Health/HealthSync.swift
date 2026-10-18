@@ -226,6 +226,21 @@ public enum HealthSync {
     _ = try await store.update("profiles", ["weight_kg": .number(newest.kg)], where: [.eq("user_id", me)])
   }
 
+  /// Bước chân từ cảm biến iPhone (`CMPedometer`) khi KHÔNG kết nối Apple Health
+  /// (18/10, chủ dự án: không bắt dùng thêm app): ghi số bước hôm nay vào
+  /// `daily_logs` đúng như phần bước của một lượt Health (`steps`, khoá
+  /// `user_id,date`). Số âm / không hữu hạn thì bỏ.
+  public static func phoneSteps(
+    _ steps: Int, userId: String, store: any RowStore, now: EpochMillis, in tz: TimeZone
+  ) async throws(RowStoreError) {
+    guard steps >= 0 else { return }
+    let today = LocalDate(now, in: tz)
+    try await store.upsert(
+      "daily_logs",
+      [["user_id": .string(userId), "date": .string(today.description), "steps": .number(Double(steps))]],
+      onConflict: "user_id,date")
+  }
+
   /// Tự đồng bộ khi app về tiền cảnh: chỉ khi đã hỏi quyền xong, và cách lần
   /// trước ít nhất 15 phút (`AUTO_SYNC_INTERVAL_MS`). Mốc được ghi TRƯỚC khi
   /// chạy, như RN — lượt hỏng không bị thử lại dồn dập.

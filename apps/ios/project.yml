@@ -114,6 +114,7 @@ targets:
         ASCNDPostHogKey: $(ASCND_POSTHOG_KEY)
         ASCNDPostHogHost: https://$(ASCND_POSTHOG_HOST)
         # Câu chữ của bản RN (`app.json`), nguyên văn.
+        NSMotionUsageDescription: ASCND counts your steps with your iPhone's motion sensor when Apple Health isn't connected.
         NSHealthShareUsageDescription: ASCND reads your steps, heart rate, HRV, sleep, weight and water to compute your daily readiness score and fill in your day, so you log less by hand.
         NSCameraUsageDescription: ASCND uses the camera to take your progress photos, photograph meals for AI logging and scan food barcodes. Photos are stored privately in your account.
     settings:
