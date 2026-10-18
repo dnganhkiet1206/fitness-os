@@ -11,7 +11,7 @@
    "blocks": [
     {
      "title": "Hiệu lực",
-     "body": "Cập nhật lần cuối: 16/10/2026."
+     "body": "Cập nhật lần cuối: 18/10/2026."
     },
     {
      "title": "1. Chấp nhận Điều khoản",
@@ -94,7 +94,7 @@
     },
     {
      "title": "13. Thay đổi",
-     "body": "Chúng tôi có thể cập nhật Điều khoản. Thay đổi quan trọng sẽ được thông báo trong ứng dụng ít nhất 30 ngày trước khi có hiệu lực. Tiếp tục sử dụng sau ngày hiệu lực đồng nghĩa với chấp nhận."
+     "body": "Chúng tôi có thể cập nhật Điều khoản. Thay đổi quan trọng sẽ được thông báo trong ứng dụng trước khi có hiệu lực. Tiếp tục sử dụng sau ngày hiệu lực đồng nghĩa với chấp nhận."
     },
     {
      "title": "14. Liên hệ",
@@ -107,7 +107,7 @@
    "blocks": [
     {
      "title": "Tóm tắt",
-     "body": "Cập nhật lần cuối: 16/10/2026. Chúng tôi chỉ thu thập dữ liệu cần để vận hành ASCND, KHÔNG bán dữ liệu, KHÔNG dùng dữ liệu sức khoẻ cho quảng cáo, và bạn có thể xoá tài khoản cùng toàn bộ dữ liệu ngay trong ứng dụng."
+     "body": "Cập nhật lần cuối: 18/10/2026. Chúng tôi thu thập dữ liệu để vận hành ASCND, KHÔNG bán dữ liệu, KHÔNG dùng dữ liệu sức khoẻ cho quảng cáo, và bạn có thể xoá tài khoản cùng toàn bộ dữ liệu ngay trong ứng dụng."
     },
     {
      "title": "1. Dữ liệu bạn cung cấp",
@@ -123,8 +123,10 @@
     {
      "title": "2. Dữ liệu từ Apple Health",
      "bullets": [
-      "Chỉ khi bạn cho phép: đọc số bước, nhịp tim, HRV, giấc ngủ và buổi tập; ghi cân nặng, buổi tập và giấc ngủ bạn đã ghi trong ứng dụng.",
-      "Dữ liệu Apple Health chỉ dùng để tính điểm sẵn sàng, tiến độ và gợi ý cho chính bạn.",
+      "Chỉ khi bạn cho phép, ứng dụng chỉ ĐỌC: số bước, năng lượng vận động, phút tập, nhịp tim nghỉ, HRV, SpO₂, nhịp thở, giấc ngủ, buổi tập, cân nặng và lượng nước. Ứng dụng không ghi dữ liệu nào vào Apple Health.",
+      "Khi đã kết nối, dữ liệu mới có thể được đồng bộ cả khi ứng dụng đang đóng.",
+      "Nếu không kết nối Apple Health, bạn có thể bật \"Bước chân từ iPhone\" để ứng dụng đọc số bước hôm nay từ cảm biến chuyển động của iPhone (chỉ khi bạn cho phép).",
+      "Dữ liệu Apple Health chỉ dùng cho các tính năng dành cho chính bạn: điểm sẵn sàng, tiến độ và gợi ý, kể cả gợi ý AI (xem tab Dữ liệu & AI).",
       "Chúng tôi KHÔNG dùng dữ liệu Apple Health cho quảng cáo, không bán và không chia sẻ cho bên thứ ba vì mục đích tiếp thị.",
       "Bạn có thể thu hồi quyền bất kỳ lúc nào trong Cài đặt → Sức khoẻ → Truy cập dữ liệu & thiết bị trên iPhone."
      ]
@@ -132,8 +134,8 @@
     {
      "title": "3. Dữ liệu tự động",
      "bullets": [
-      "Báo cáo sự cố (Sentry): loại lỗi, dấu vết ngăn xếp, mẫu máy, phiên bản iOS và ứng dụng, mã người dùng ẩn danh hoá.",
-      "Thống kê sử dụng (PostHog): sự kiện như mở ứng dụng, dùng một tính năng, kèm mã người dùng ẩn danh hoá — để biết tính năng nào hữu ích. Không gồm nội dung nhật ký hay dữ liệu sức khoẻ.",
+      "Báo cáo sự cố (Sentry): loại lỗi, dấu vết ngăn xếp, mẫu máy, phiên bản iOS và ứng dụng, mã tài khoản dạng chuỗi ngẫu nhiên (không kèm email hay tên).",
+      "Thống kê sử dụng (PostHog): sự kiện như mở ứng dụng, dùng một tính năng, kèm mã tài khoản đó — để biết tính năng nào hữu ích. Không gồm nội dung nhật ký hay dữ liệu sức khoẻ.",
       "Ứng dụng không dùng cookie quảng cáo, không theo dõi bạn qua ứng dụng hay trang web của bên khác, và không dùng mã quảng cáo (IDFA)."
      ]
     },
@@ -143,17 +145,17 @@
       "Cung cấp các tính năng: lưu nhật ký, tính mục tiêu, điểm sẵn sàng, chuỗi ngày, phần thưởng.",
       "Tạo gợi ý và câu trả lời AI cá nhân hoá khi bạn dùng tính năng AI.",
       "Hiển thị nội dung Cộng đồng và kiểm duyệt nội dung bị báo cáo.",
-      "Gửi nhắc nhở và thông báo bạn đã bật.",
+      "Gửi nhắc nhở và thông báo (bạn tắt được trong Cài đặt).",
       "Bảo mật, chống lạm dụng, sửa lỗi và cải thiện Dịch vụ.",
       "Tuân thủ nghĩa vụ pháp lý."
      ]
     },
     {
      "title": "5. Bên xử lý dữ liệu",
-     "intro": "Chúng tôi chỉ chia sẻ dữ liệu với các nhà cung cấp cần thiết để vận hành Dịch vụ, theo hợp đồng xử lý dữ liệu của họ:",
+     "intro": "Chúng tôi chia sẻ dữ liệu với các nhà cung cấp giúp vận hành Dịch vụ, theo điều khoản của họ:",
      "bullets": [
       "Supabase — cơ sở dữ liệu, xác thực, lưu trữ tệp (máy chủ tại Hoa Kỳ).",
-      "Google (Gemini API) — xử lý nội dung bạn gửi tới tính năng AI. Xem tab Dữ liệu & AI.",
+      "Nhà cung cấp AI — hiện là mô hình Gemini của Google, gọi qua cổng AI của Lovable; có thể đổi sang nhà cung cấp tương đương. Xem tab Dữ liệu & AI.",
       "Sentry — báo cáo sự cố.",
       "PostHog — thống kê sử dụng.",
       "Apple — Apple Health, thông báo, App Store và thanh toán.",
@@ -164,10 +166,9 @@
      "title": "6. Lưu giữ và xoá",
      "bullets": [
       "Dữ liệu được giữ trong thời gian tài khoản còn hoạt động.",
-      "Xoá tài khoản (Cài đặt → Xoá tài khoản) xoá ngay tài khoản, toàn bộ nhật ký, ảnh tiến trình, bài đăng, bình luận, trò chuyện AI và trí nhớ của Koa khỏi hệ thống đang hoạt động.",
+      "Xoá tài khoản (Cài đặt → Xoá tài khoản) xoá tài khoản, toàn bộ nhật ký, ảnh tiến trình, bài đăng, bình luận, trò chuyện AI và trí nhớ của Koa khỏi hệ thống đang hoạt động.",
       "Bản sao lưu tự động của hạ tầng có thể còn tối đa 30 ngày trước khi bị ghi đè.",
-      "Báo cáo sự cố và thống kê ẩn danh hoá được giữ theo thời hạn lưu của Sentry / PostHog rồi tự xoá.",
-      "Dữ liệu bạn đã ghi sang Apple Health nằm trên thiết bị của bạn và do bạn quản lý trong ứng dụng Sức khoẻ."
+      "Báo cáo sự cố và thống kê sử dụng được giữ theo thời hạn lưu của Sentry / PostHog rồi tự xoá."
      ]
     },
     {
@@ -175,7 +176,7 @@
      "bullets": [
       "Truy cập và chỉnh sửa: xem và sửa hầu hết dữ liệu ngay trong ứng dụng.",
       "Xoá: xoá từng mục, xoá trí nhớ của Koa, hoặc xoá toàn bộ tài khoản trong Cài đặt.",
-      "Nhận bản sao dữ liệu (di chuyển dữ liệu): gửi yêu cầu tới [email hỗ trợ]; chúng tôi trả lời trong vòng 30 ngày.",
+      "Nhận bản sao dữ liệu (di chuyển dữ liệu): gửi yêu cầu tới [email hỗ trợ]; chúng tôi trả lời trong thời hạn pháp luật yêu cầu.",
       "Phản đối hoặc hạn chế xử lý, rút lại đồng ý (ví dụ thu hồi quyền Apple Health, tắt thông báo).",
       "Khiếu nại với cơ quan bảo vệ dữ liệu nơi bạn cư trú.",
       "Cư dân California (CCPA/CPRA): chúng tôi không bán hay \"chia sẻ\" thông tin cá nhân cho quảng cáo theo hành vi; bạn có quyền biết, xoá, sửa và không bị phân biệt đối xử khi thực hiện quyền."
@@ -185,8 +186,8 @@
      "title": "8. Bảo mật",
      "bullets": [
       "Dữ liệu được mã hoá khi truyền (TLS) và khi lưu trữ (do nhà cung cấp hạ tầng mã hoá ổ đĩa).",
-      "Row-Level Security: mỗi tài khoản chỉ đọc và ghi được dữ liệu của chính mình.",
-      "Ảnh tiến trình nằm trong kho riêng tư, chỉ hiển thị qua đường dẫn có chữ ký hết hạn sau 1 giờ.",
+      "Chúng tôi dùng biện pháp kiểm soát truy cập để mỗi tài khoản chỉ truy cập dữ liệu của chính mình.",
+      "Ảnh tiến trình được lưu riêng tư, không công khai.",
       "Không hệ thống nào an toàn tuyệt đối; nếu có sự cố ảnh hưởng tới dữ liệu của bạn, chúng tôi sẽ thông báo theo quy định pháp luật."
      ]
     },
@@ -250,7 +251,7 @@
      "title": "5. Quy định",
      "bullets": [
       "ASCND chưa được FDA hay bất kỳ cơ quan y tế nào đánh giá hoặc phê duyệt.",
-      "Ứng dụng không được phân loại là thiết bị y tế theo FDA, EU MDR, MHRA hay TGA.",
+      "Ứng dụng không được thiết kế hay dự định để là thiết bị y tế.",
       "Các thông tin về thực phẩm bổ sung chưa được cơ quan quản lý nào đánh giá."
      ]
     }
@@ -262,10 +263,10 @@
     {
      "title": "1. AI hoạt động thế nào",
      "bullets": [
-      "Khi bạn dùng Koa Coach, Insight, gợi ý bữa, Phân tích tuần hay quét món, máy chủ của chúng tôi gửi tới Google (Gemini API) câu hỏi của bạn cùng phần dữ liệu cần để trả lời: tên hồ sơ, mục tiêu, nhật ký 7 ngày gần nhất (bữa ăn, giấc ngủ, buổi tập, cân nặng, chỉ số sinh trắc), các điều Koa ghi nhớ, hoặc ảnh món ăn.",
+      "Khi bạn dùng Koa Coach, Insight, gợi ý bữa, Phân tích tuần hay quét món, máy chủ của chúng tôi gửi tới nhà cung cấp AI (xem tab Riêng tư, mục 5) câu hỏi của bạn cùng phần dữ liệu cần để trả lời: tên hồ sơ, mục tiêu, nhật ký gần đây (thường 7–14 ngày: bữa ăn, giấc ngủ, buổi tập, cân nặng, chỉ số sinh trắc), các điều Koa ghi nhớ, hoặc ảnh món ăn.",
       "Không gửi email hay mật khẩu của bạn.",
-      "Google xử lý nội dung này theo điều khoản Gemini API; tuỳ gói dịch vụ, Google có thể lưu tạm nội dung để giám sát lạm dụng. Chúng tôi không cho phép dùng dữ liệu của bạn cho quảng cáo.",
-      "Tính năng AI chỉ chạy khi bạn chủ động dùng; bạn có thể dùng ứng dụng mà không cần AI."
+      "Các nhà cung cấp này xử lý nội dung theo điều khoản của họ và có thể lưu tạm để giám sát lạm dụng. Chúng tôi không dùng dữ liệu của bạn cho quảng cáo.",
+      "Tính năng AI chạy khi bạn mở hoặc dùng chúng (ví dụ mở tab Trợ lý sẽ tạo gợi ý); phần lớn ứng dụng dùng được mà không cần AI."
      ]
     },
     {
@@ -273,19 +274,20 @@
      "bullets": [
       "Lịch sử trò chuyện với Koa Coach được lưu trong tài khoản để bạn xem lại; bạn có thể xoá từng cuộc trò chuyện.",
       "Trí nhớ của Koa: các điều ngắn (giới hạn, mục tiêu, thói quen, hoàn cảnh) rút ra từ trò chuyện để trả lời sát hơn. Xem và xoá trong Trợ lý → Coach nhớ gì.",
-      "Ảnh món ăn gửi để nhận diện không được lưu lại sau khi có kết quả."
+      "Chúng tôi không lưu ảnh món ăn gửi để nhận diện; nhà cung cấp AI có thể lưu tạm theo điều khoản của họ."
      ]
     },
     {
      "title": "3. Giới hạn của AI",
      "bullets": [
       "AI có thể sai, bịa thông tin hoặc hiểu nhầm. Hãy kiểm tra lại trước khi làm theo.",
-      "Ứng dụng đối chiếu các con số AI đưa ra với dữ liệu thật của bạn và bỏ những con số không khớp, nhưng không bảo đảm loại bỏ mọi sai sót.",
-      "Koa Coach từ chối các câu hỏi ngoài phạm vi sức khoẻ, tập luyện và dinh dưỡng."
+      "Ứng dụng có một số bước kiểm tra tự động, nhưng không bảo đảm phát hiện được sai sót.",
+      "Koa Coach được thiết kế để chỉ trả lời về sức khoẻ, tập luyện và dinh dưỡng, nhưng không phải lúc nào cũng làm đúng như vậy."
      ]
     },
     {
-     "title": "4. Không bao giờ chia sẻ với",
+     "title": "4. Không chia sẻ với",
+     "intro": "Trừ khi pháp luật bắt buộc, chúng tôi không bán hay cung cấp dữ liệu của bạn cho:",
      "bullets": [
       "Công ty bảo hiểm hoặc thẩm định rủi ro.",
       "Nhà tuyển dụng.",
@@ -320,7 +322,7 @@
    "blocks": [
     {
      "title": "Effective date",
-     "body": "Last updated: October 16, 2026."
+     "body": "Last updated: October 18, 2026."
     },
     {
      "title": "1. Acceptance",
@@ -403,7 +405,7 @@
     },
     {
      "title": "13. Changes",
-     "body": "We may update these Terms. Material changes will be announced in the app at least 30 days before they take effect. Continuing to use the Service after that date means you accept them."
+     "body": "We may update these Terms. Material changes will be announced in the app before they take effect. Continuing to use the Service after that date means you accept them."
     },
     {
      "title": "14. Contact",
@@ -416,7 +418,7 @@
    "blocks": [
     {
      "title": "Summary",
-     "body": "Last updated: October 16, 2026. We collect only what is needed to run ASCND. We do NOT sell your data, we do NOT use health data for advertising, and you can delete your account and all of its data from inside the app."
+     "body": "Last updated: October 18, 2026. We collect data to run ASCND. We do NOT sell your data, we do NOT use health data for advertising, and you can delete your account and all of its data from inside the app."
     },
     {
      "title": "1. Data you provide",
@@ -432,8 +434,10 @@
     {
      "title": "2. Data from Apple Health",
      "bullets": [
-      "Only with your permission: we read steps, heart rate, HRV, sleep and workouts, and write the weight, workouts and sleep you log in the app.",
-      "Apple Health data is used only to calculate your readiness score, progress and suggestions for you.",
+      "Only with your permission, the app only READS: steps, active energy, exercise minutes, resting heart rate, HRV, SpO₂, respiratory rate, sleep, workouts, weight and water. The app does not write any data to Apple Health.",
+      "Once connected, new data may sync even while the app is closed.",
+      "If you do not connect Apple Health, you can turn on \"Steps from iPhone\" so the app reads today’s steps from the iPhone’s motion sensor (only with your permission).",
+      "Apple Health data is used only for features for you: your readiness score, progress and suggestions, including AI suggestions (see the Data & AI tab).",
       "We do NOT use Apple Health data for advertising, do not sell it and do not share it with third parties for marketing.",
       "You can revoke access at any time in iPhone Settings → Health → Data Access & Devices."
      ]
@@ -452,17 +456,17 @@
       "To provide the features: saving logs, targets, readiness score, streaks and rewards.",
       "To generate personalized AI suggestions and answers when you use AI features.",
       "To show Community content and moderate reported content.",
-      "To send the reminders and notifications you turned on.",
+      "To send reminders and notifications (you can turn them off in Settings).",
       "For security, abuse prevention, fixing bugs and improving the Service.",
       "To meet legal obligations."
      ]
     },
     {
      "title": "5. Service providers",
-     "intro": "We share data only with providers needed to run the Service, under their data processing terms:",
+     "intro": "We share data with providers that help run the Service, under their terms:",
      "bullets": [
       "Supabase — database, authentication and file storage (servers in the United States).",
-      "Google (Gemini API) — processes what you send to AI features. See the Data & AI tab.",
+      "AI providers — currently Google’s Gemini models, accessed through Lovable’s AI gateway; we may switch to an equivalent provider. See the Data & AI tab.",
       "Sentry — crash reporting.",
       "PostHog — usage analytics.",
       "Apple — Apple Health, notifications, App Store and payments.",
@@ -473,10 +477,9 @@
      "title": "6. Retention and deletion",
      "bullets": [
       "We keep your data while your account is active.",
-      "Deleting your account (Settings → Delete account) immediately removes the account, all logs, progress photos, posts, comments, AI conversations and Koa’s memory from our live systems.",
+      "Deleting your account (Settings → Delete account) removes the account, all logs, progress photos, posts, comments, AI conversations and Koa’s memory from our live systems.",
       "Automatic infrastructure backups may persist for up to 30 days before being overwritten.",
-      "Pseudonymous crash reports and analytics are kept for Sentry’s / PostHog’s retention periods and then deleted.",
-      "Data you wrote to Apple Health stays on your device and is managed by you in the Health app."
+      "Pseudonymous crash reports and analytics are kept for Sentry’s / PostHog’s retention periods and then deleted."
      ]
     },
     {
@@ -484,7 +487,7 @@
      "bullets": [
       "Access and correction: view and edit most of your data directly in the app.",
       "Deletion: delete individual entries, Koa’s memory, or your whole account in Settings.",
-      "A copy of your data (portability): email [email hỗ trợ]; we respond within 30 days.",
+      "A copy of your data (portability): email [email hỗ trợ]; we respond within the time the law requires.",
       "Object to or restrict processing, or withdraw consent (for example revoke Apple Health access or turn off notifications).",
       "Complain to the data protection authority where you live.",
       "California residents (CCPA/CPRA): we do not sell or \"share\" personal information for cross-context behavioral advertising; you have the right to know, delete and correct, and not to be discriminated against for exercising your rights."
@@ -494,8 +497,8 @@
      "title": "8. Security",
      "bullets": [
       "Data is encrypted in transit (TLS) and at rest (disk encryption by our infrastructure provider).",
-      "Row-Level Security: each account can read and write only its own data.",
-      "Progress photos are kept in private storage and shown only through signed links that expire after 1 hour.",
+      "We use access controls designed so that each account can reach only its own data.",
+      "Progress photos are stored privately, not publicly.",
       "No system is perfectly secure; if an incident affects your data we will notify you as required by law."
      ]
     },
@@ -559,7 +562,7 @@
      "title": "5. Regulatory status",
      "bullets": [
       "ASCND has not been evaluated, cleared or approved by the FDA or any health authority.",
-      "The app is not classified as a medical device under FDA, EU MDR, MHRA or TGA rules.",
+      "The app is not designed or intended to be a medical device.",
       "Statements about supplements have not been evaluated by any regulator."
      ]
     }
@@ -571,10 +574,10 @@
     {
      "title": "1. How the AI works",
      "bullets": [
-      "When you use Koa Coach, Insight, meal suggestions, the Weekly review or food scanning, our server sends Google (Gemini API) your question plus the data needed to answer it: your profile name, goals, the last 7 days of logs (meals, sleep, workouts, weight, biometrics), the facts Koa remembers, or the food photo.",
+      "When you use Koa Coach, Insight, meal suggestions, the Weekly review or food scanning, our server sends an AI provider (see Privacy, section 5) your question plus the data needed to answer it: your profile name, goals, recent logs (usually 7–14 days: meals, sleep, workouts, weight, biometrics), the facts Koa remembers, or the food photo.",
       "Your email and password are never sent.",
-      "Google processes this content under the Gemini API terms; depending on the service tier, Google may retain it temporarily for abuse monitoring. We do not allow your data to be used for advertising.",
-      "AI features run only when you use them; the app works without AI."
+      "These providers process the content under their own terms and may retain it temporarily for abuse monitoring. We do not use your data for advertising.",
+      "AI features run when you open or use them (for example, opening the Assistant tab generates suggestions); most of the app works without AI."
      ]
     },
     {
@@ -582,19 +585,20 @@
      "bullets": [
       "Your Koa Coach chat history is stored in your account so you can return to it; you can delete any conversation.",
       "Koa’s memory: short facts (limits, goals, habits, circumstances) taken from your chats to give better answers. View and delete them in Assistant → What Koa remembers.",
-      "Food photos sent for recognition are not kept after the result is returned."
+      "We do not store food photos sent for recognition; the AI provider may retain them temporarily under its terms."
      ]
     },
     {
      "title": "3. Limits of AI",
      "bullets": [
       "AI can be wrong, make things up or misunderstand. Check before acting on it.",
-      "The app checks numbers the AI gives against your real data and drops ones that do not match, but this cannot catch every mistake.",
-      "Koa Coach declines questions outside health, training and nutrition."
+      "The app runs some automatic checks, but they are not guaranteed to catch mistakes.",
+      "Koa Coach is designed to answer only about health, training and nutrition, but it may not always do so."
      ]
     },
     {
-     "title": "4. Never shared with",
+     "title": "4. Not shared with",
+     "intro": "Except where the law requires it, we do not sell or provide your data to:",
      "bullets": [
       "Insurers or underwriters.",
       "Employers.",
@@ -629,7 +633,7 @@
    "blocks": [
     {
      "title": "Fecha de vigencia",
-     "body": "Última actualización: 16 de octubre de 2026."
+     "body": "Última actualización: 18 de octubre de 2026."
     },
     {
      "title": "1. Aceptación",
@@ -712,7 +716,7 @@
     },
     {
      "title": "13. Cambios",
-     "body": "Podemos actualizar estos Términos. Los cambios importantes se anunciarán en la app al menos 30 días antes de entrar en vigor. Seguir usando el Servicio después de esa fecha supone aceptarlos."
+     "body": "Podemos actualizar estos Términos. Los cambios importantes se anunciarán en la app antes de entrar en vigor. Seguir usando el Servicio después de esa fecha supone aceptarlos."
     },
     {
      "title": "14. Contacto",
@@ -725,7 +729,7 @@
    "blocks": [
     {
      "title": "Resumen",
-     "body": "Última actualización: 16 de octubre de 2026. Solo recopilamos lo necesario para que ASCND funcione. NO vendemos tus datos, NO usamos datos de salud para publicidad y puedes eliminar tu cuenta y todos sus datos desde la app."
+     "body": "Última actualización: 18 de octubre de 2026. Recopilamos datos para que ASCND funcione. NO vendemos tus datos, NO usamos datos de salud para publicidad y puedes eliminar tu cuenta y todos sus datos desde la app."
     },
     {
      "title": "1. Datos que proporcionas",
@@ -741,8 +745,10 @@
     {
      "title": "2. Datos de Apple Salud",
      "bullets": [
-      "Solo con tu permiso: leemos pasos, frecuencia cardiaca, VFC, sueño y entrenamientos, y escribimos el peso, los entrenamientos y el sueño que registras en la app.",
-      "Los datos de Apple Salud se usan solo para calcular tu puntuación de preparación, tu progreso y tus sugerencias.",
+      "Solo con tu permiso, la app solo LEE: pasos, energía activa, minutos de ejercicio, frecuencia cardiaca en reposo, VFC, SpO₂, frecuencia respiratoria, sueño, entrenamientos, peso y agua. La app no escribe ningún dato en Apple Salud.",
+      "Una vez conectada, los datos nuevos pueden sincronizarse aunque la app esté cerrada.",
+      "Si no conectas Apple Salud, puedes activar \"Pasos del iPhone\" para que la app lea los pasos de hoy del sensor de movimiento del iPhone (solo con tu permiso).",
+      "Los datos de Apple Salud se usan solo para funciones para ti: tu puntuación de preparación, tu progreso y tus sugerencias, incluidas las de IA (consulta la pestaña Datos e IA).",
       "NO usamos datos de Apple Salud para publicidad, no los vendemos ni los compartimos con terceros con fines de marketing.",
       "Puedes retirar el acceso en cualquier momento en Ajustes del iPhone → Salud → Acceso a datos y dispositivos."
      ]
@@ -761,17 +767,17 @@
       "Para ofrecer las funciones: guardar registros, objetivos, puntuación de preparación, rachas y recompensas.",
       "Para generar sugerencias y respuestas de IA personalizadas cuando usas funciones de IA.",
       "Para mostrar contenido de la Comunidad y moderar el contenido denunciado.",
-      "Para enviar los recordatorios y notificaciones que activaste.",
+      "Para enviar recordatorios y notificaciones (puedes desactivarlos en Ajustes).",
       "Para seguridad, prevención de abusos, corrección de errores y mejora del Servicio.",
       "Para cumplir obligaciones legales."
      ]
     },
     {
      "title": "5. Proveedores",
-     "intro": "Solo compartimos datos con los proveedores necesarios para operar el Servicio, según sus condiciones de tratamiento de datos:",
+     "intro": "Compartimos datos con proveedores que ayudan a operar el Servicio, según sus condiciones:",
      "bullets": [
       "Supabase: base de datos, autenticación y almacenamiento de archivos (servidores en Estados Unidos).",
-      "Google (Gemini API): procesa lo que envías a las funciones de IA. Consulta la pestaña Datos e IA.",
+      "Proveedores de IA: actualmente los modelos Gemini de Google, a través de la pasarela de IA de Lovable; podemos cambiar a un proveedor equivalente. Consulta la pestaña Datos e IA.",
       "Sentry: informes de errores.",
       "PostHog: analítica de uso.",
       "Apple: Apple Salud, notificaciones, App Store y pagos.",
@@ -782,10 +788,9 @@
      "title": "6. Conservación y eliminación",
      "bullets": [
       "Conservamos tus datos mientras tu cuenta esté activa.",
-      "Eliminar tu cuenta (Ajustes → Eliminar cuenta) borra de inmediato la cuenta, todos los registros, fotos de progreso, publicaciones, comentarios, conversaciones de IA y la memoria de Koa de nuestros sistemas activos.",
+      "Eliminar tu cuenta (Ajustes → Eliminar cuenta) borra la cuenta, todos los registros, fotos de progreso, publicaciones, comentarios, conversaciones de IA y la memoria de Koa de nuestros sistemas activos.",
       "Las copias de seguridad automáticas de la infraestructura pueden conservarse hasta 30 días antes de sobrescribirse.",
-      "Los informes de errores y la analítica seudonimizados se conservan durante los plazos de Sentry / PostHog y luego se eliminan.",
-      "Los datos que guardaste en Apple Salud permanecen en tu dispositivo y los gestionas tú en la app Salud."
+      "Los informes de errores y la analítica seudonimizados se conservan durante los plazos de Sentry / PostHog y luego se eliminan."
      ]
     },
     {
@@ -793,7 +798,7 @@
      "bullets": [
       "Acceso y rectificación: consulta y edita la mayoría de tus datos en la app.",
       "Supresión: elimina entradas, la memoria de Koa o toda tu cuenta en Ajustes.",
-      "Copia de tus datos (portabilidad): escribe a [email hỗ trợ]; respondemos en un plazo de 30 días.",
+      "Copia de tus datos (portabilidad): escribe a [email hỗ trợ]; respondemos en el plazo que exige la ley.",
       "Oposición o limitación del tratamiento y retirada del consentimiento (por ejemplo, retirar el acceso a Apple Salud o desactivar notificaciones).",
       "Presentar una reclamación ante la autoridad de protección de datos de tu país.",
       "Residentes de California (CCPA/CPRA): no vendemos ni \"compartimos\" información personal para publicidad conductual; tienes derecho a saber, eliminar y corregir, y a no ser discriminado por ejercer tus derechos."
@@ -803,8 +808,8 @@
      "title": "8. Seguridad",
      "bullets": [
       "Los datos se cifran en tránsito (TLS) y en reposo (cifrado de disco de nuestro proveedor de infraestructura).",
-      "Seguridad a nivel de fila: cada cuenta solo puede leer y escribir sus propios datos.",
-      "Las fotos de progreso se guardan en almacenamiento privado y solo se muestran mediante enlaces firmados que caducan en 1 hora.",
+      "Usamos controles de acceso diseñados para que cada cuenta solo acceda a sus propios datos.",
+      "Las fotos de progreso se guardan de forma privada, no pública.",
       "Ningún sistema es totalmente seguro; si un incidente afecta a tus datos, te avisaremos según exija la ley."
      ]
     },
@@ -868,7 +873,7 @@
      "title": "5. Situación regulatoria",
      "bullets": [
       "ASCND no ha sido evaluada, autorizada ni aprobada por la FDA ni por ninguna autoridad sanitaria.",
-      "La app no está clasificada como dispositivo médico según las normas de la FDA, el MDR de la UE, la MHRA o la TGA.",
+      "La app no está diseñada ni destinada a ser un dispositivo médico.",
       "Las afirmaciones sobre suplementos no han sido evaluadas por ningún regulador."
      ]
     }
@@ -880,10 +885,10 @@
     {
      "title": "1. Cómo funciona la IA",
      "bullets": [
-      "Cuando usas Koa Coach, Insight, sugerencias de comidas, el Resumen semanal o el escaneo de comida, nuestro servidor envía a Google (Gemini API) tu pregunta junto con los datos necesarios para responder: el nombre de tu perfil, tus objetivos, los registros de los últimos 7 días (comidas, sueño, entrenamientos, peso, biometría), lo que Koa recuerda o la foto de la comida.",
+      "Cuando usas Koa Coach, Insight, sugerencias de comidas, el Resumen semanal o el escaneo de comida, nuestro servidor envía a un proveedor de IA (consulta Privacidad, sección 5) tu pregunta junto con los datos necesarios para responder: el nombre de tu perfil, tus objetivos, los registros recientes (normalmente 7–14 días: comidas, sueño, entrenamientos, peso, biometría), lo que Koa recuerda o la foto de la comida.",
       "Nunca se envían tu correo ni tu contraseña.",
-      "Google procesa este contenido según los términos de Gemini API; según el nivel de servicio, Google puede conservarlo temporalmente para vigilar abusos. No permitimos que tus datos se usen para publicidad.",
-      "Las funciones de IA solo se ejecutan cuando las usas; la app funciona sin IA."
+      "Estos proveedores procesan el contenido según sus propias condiciones y pueden conservarlo temporalmente para vigilar abusos. No usamos tus datos para publicidad.",
+      "Las funciones de IA se ejecutan cuando las abres o las usas (por ejemplo, abrir la pestaña Asistente genera sugerencias); la mayor parte de la app funciona sin IA."
      ]
     },
     {
@@ -891,19 +896,20 @@
      "bullets": [
       "El historial de chat con Koa Coach se guarda en tu cuenta para que puedas volver a él; puedes eliminar cualquier conversación.",
       "Memoria de Koa: datos breves (límites, objetivos, hábitos, circunstancias) extraídos de tus chats para responder mejor. Consúltalos y elimínalos en Asistente → Lo que Koa recuerda.",
-      "Las fotos de comida enviadas para reconocimiento no se conservan después de devolver el resultado."
+      "No guardamos las fotos de comida enviadas para reconocimiento; el proveedor de IA puede conservarlas temporalmente según sus condiciones."
      ]
     },
     {
      "title": "3. Límites de la IA",
      "bullets": [
       "La IA puede equivocarse, inventar o malinterpretar. Compruébalo antes de actuar.",
-      "La app contrasta las cifras de la IA con tus datos reales y descarta las que no coinciden, pero no puede detectar todos los errores.",
-      "Koa Coach rechaza preguntas ajenas a la salud, el entrenamiento y la nutrición."
+      "La app aplica algunas comprobaciones automáticas, pero no garantizan detectar los errores.",
+      "Koa Coach está diseñado para responder solo sobre salud, entrenamiento y nutrición, pero puede que no siempre lo haga."
      ]
     },
     {
-     "title": "4. Nunca se comparte con",
+     "title": "4. No se comparte con",
+     "intro": "Salvo que la ley lo exija, no vendemos ni facilitamos tus datos a:",
      "bullets": [
       "Aseguradoras o evaluadores de riesgo.",
       "Empleadores.",
