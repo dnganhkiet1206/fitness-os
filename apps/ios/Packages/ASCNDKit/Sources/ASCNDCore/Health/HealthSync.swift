@@ -234,20 +234,3 @@ public enum HealthSync {
     asked && (lastSync.map { now.millis - $0.millis >= autoSyncIntervalMillis } ?? true)
   }
 }
-
-extension HealthSync {
-  /// Khoảng thời gian ghi ngược một buổi ghi tay vào Apple Health
-  /// (`useLogWorkout` `onSuccess`): tổng giây các set có giờ; không có thì 45
-  /// phút — buổi đã diễn ra, ghi với khoảng ước lượng hơn là không ghi.
-  public static func manualWorkoutInterval(payload: JSONValue, end: EpochMillis) -> (start: EpochMillis, end: EpochMillis) {
-    var total = 0.0
-    if case .array(let sets)? = payload["sets"] {
-      for s in sets {
-        let d = JS.number(s["durationSec"])
-        if d > 0 { total += d }
-      }
-    }
-    let seconds = total > 0 ? total : 45 * 60
-    return (end - Int64(seconds * 1000), end)
-  }
-}

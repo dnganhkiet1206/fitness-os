@@ -341,8 +341,9 @@ final class AppServices {
       planStore: outbox,
       onRest: { event, target in rest.handle(event, target: target) },
       onEnqueued: { _ in sync.kick() })
-    flow.onManualLogged = { [health] entry in
-      health.mirrorManualWorkout(entry)
+    // Không ghi buổi ghi tay vào Apple Health nữa (17/10, "Không ghi ngược vào
+    // HealthKit").
+    flow.onManualLogged = { _ in
       Telemetry.capture(.workoutLogged, ["source": "manual"])
     }
     return flow
