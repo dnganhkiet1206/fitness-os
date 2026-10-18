@@ -86,4 +86,16 @@ public enum TodayDay {
   public static func coins(_ q: MascotRules.Quest) -> Int {
     MascotRules.dailyQuests.first { $0.key == q }?.coins ?? 0
   }
+
+  /// Cân nặng không còn là việc MỖI ngày (17/10, chủ dự án: app bắt ghi quá
+  /// nhiều): dòng "Cân nặng" của Hôm nay chỉ hiện khi đã `weighInDays` ngày
+  /// chưa cân (hoặc chưa cân lần nào), và vẫn hiện dấu tích nếu hôm nay vừa
+  /// cân. Khác RN (`todo-card.tsx` hỏi cân mỗi ngày) — NATIVE_IMPROVEMENTS.
+  public static let weighInDays = 7
+
+  public static func showsWeighIn(lastWeighIn: LocalDate?, today: LocalDate) -> Bool {
+    guard let last = lastWeighIn else { return true }
+    if last == today { return true }
+    return today.daysSinceEpoch - last.daysSinceEpoch >= weighInDays
+  }
 }

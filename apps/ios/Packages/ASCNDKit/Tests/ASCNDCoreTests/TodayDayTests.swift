@@ -68,4 +68,18 @@ struct TodayDayTests {
     #expect(TodayDay.merging(server, localWaterMl: nil)?.waterMl == 500)
     #expect(TodayDay.merging(nil, localWaterMl: 250) == nil)
   }
+
+  /// Cân không còn là việc mỗi ngày: chỉ hỏi khi đã 7 ngày chưa cân, chưa cân
+  /// lần nào, hoặc hôm nay vừa cân (giữ dấu tích).
+  @Test func weighInRowOnlyAfterSevenDays() {
+    let today = LocalDate("2026-10-17")!
+    #expect(TodayDay.showsWeighIn(lastWeighIn: nil, today: today))
+    #expect(TodayDay.showsWeighIn(lastWeighIn: today, today: today))
+    #expect(!TodayDay.showsWeighIn(lastWeighIn: today.adding(days: -1), today: today))
+    #expect(!TodayDay.showsWeighIn(lastWeighIn: today.adding(days: -6), today: today))
+    #expect(TodayDay.showsWeighIn(lastWeighIn: today.adding(days: -7), today: today))
+    #expect(TodayDay.showsWeighIn(lastWeighIn: today.adding(days: -40), today: today))
+    // Ngày cân "ở tương lai" (máy khác múi giờ): không hỏi.
+    #expect(!TodayDay.showsWeighIn(lastWeighIn: today.adding(days: 1), today: today))
+  }
 }

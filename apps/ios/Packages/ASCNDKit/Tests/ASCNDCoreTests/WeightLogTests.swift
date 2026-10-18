@@ -74,6 +74,12 @@ private actor WeightServer: WeightLogSource {
     return v
   }
 
+  func latestDate(userId: String) async throws -> LocalDate? {
+    if let e = failRead { throw e }
+    return rows.keys.filter { $0.hasPrefix("\(userId)|") }
+      .compactMap { LocalDate(String($0.dropFirst(userId.count + 1))) }.max()
+  }
+
   func log(userId: String, kg: Double, date: LocalDate) async throws {
     writes += 1
     if let e = failWrite { throw e }
@@ -121,13 +127,26 @@ struct WeightLoggerTests {
     #expect(l.loaded && l.todayKg == 71.4)
   }
 
+  /// Ngày cân gần nhất (cho Hôm nay chỉ hỏi cân sau 7 ngày): chỉ của người này.
+  @Test func loadsTheLatestWeighInDate() async {
+    let h = WeightHarness()
+    await h.server.put("u1", "2026-10-01", 71)
+    await h.server.put("u1", "2026-09-20", 72)
+    await h.server.put("u2", "2026-10-07", 60)
+    let l = h.logger()
+    await l.load()
+    #expect(l.lastDate == LocalDate("2026-10-01"))
+    #expect(await l.submit(kg: 70.5, online: true) == .saved)
+    #expect(l.lastDate == LocalDate("2026-10-08"))
+  }
+
   /// Đọc hỏng = như chưa cân: hạt giống rơi về hồ sơ (`data` là `undefined`).
   @Test func readFailureSeedsFromProfile() async {
     let h = WeightHarness()
     await h.server.setFailRead(URLError(.badServerResponse))
     let l = h.logger()
     await l.load()
-    #expect(l.loaded && l.todayKg == nil)
+    #expect(l.loaded && l.todayKg == nil && l.lastDate == nil)
     #expect(WeightLog.seedKg(today: l.todayKg, profile: 80) == 80)
   }
 
