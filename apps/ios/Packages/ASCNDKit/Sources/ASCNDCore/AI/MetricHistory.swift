@@ -26,7 +26,7 @@ public enum MetricHistory {
     switch kind {
     case .readiness:
       return RowQuery(
-        table: "daily_logs", columns: "date, readiness_score, readiness_status",
+        table: "daily_logs", columns: "date, readiness_score, readiness_status, readiness_explain",
         filters: [user, .gte("date", from), .or("readiness_score.not.is.null")], order: byDate)
     case .sleep:
       return RowQuery(
@@ -50,11 +50,18 @@ public enum MetricHistory {
   }
 
   /// Hàng → điểm.
-  public static func points(_ kind: MetricAnalysis.Kind, rows: [JSONValue], in tz: TimeZone) -> [MetricAnalysis.Point] {
+  ///
+  /// `recovery` (17/10, khác RN ở bảng này — như `readiness-week.ts` của RN): khi
+  /// có, ngày sẵn sàng KHÔNG có chiều phục hồi nào (điểm chỉ dựa vào tải tập,
+  /// `hasRecoverySignal`) bị bỏ — trung bình 7 ngày không trộn điểm "tạm".
+  public static func points(
+    _ kind: MetricAnalysis.Kind, rows: [JSONValue], in tz: TimeZone, recovery: ((String?) -> Bool)? = nil
+  ) -> [MetricAnalysis.Point] {
     switch kind {
     case .readiness:
       return rows.compactMap { r in
         guard let d = r["date"]?.stringValue.flatMap(LocalDate.init) else { return nil }
+        if let recovery, !recovery(r["readiness_explain"]?.stringValue) { return nil }
         let v = JS.number(r["readiness_score"])
         return MetricAnalysis.Point(date: d, value: JS.truthy(v) ? v : 0)
       }
@@ -103,13 +110,16 @@ public final class MetricHistoryBook {
   @ObservationIgnored private let store: any RowStore
   @ObservationIgnored private let tz: TimeZone
   @ObservationIgnored private let clock: @Sendable () -> EpochMillis
+  @ObservationIgnored private let recovery: (@Sendable (String?) -> Bool)?
   @ObservationIgnored private var closed = false
   @ObservationIgnored private var generation = 0
 
   public init(
     userId: String, today: LocalDate, store: any RowStore, in tz: TimeZone,
-    clock: @escaping @Sendable () -> EpochMillis = { SystemWallClock().nowMillis() }
+    clock: @escaping @Sendable () -> EpochMillis = { SystemWallClock().nowMillis() },
+    recovery: (@Sendable (String?) -> Bool)? = nil
   ) {
+    self.recovery = recovery
     self.userId = userId
     self.today = today
     self.store = store
@@ -151,7 +161,7 @@ public final class MetricHistoryBook {
       return
     }
     guard !closed, mine == generation else { return }
-    let points = MetricHistory.points(k, rows: rows, in: tz)
+    let points = MetricHistory.points(k, rows: rows, in: tz, recovery: recovery)
     phase = .ready(MetricAnalysis.analyse(kind: k, points: points, today: day, kcalTarget: kcalTarget))
   }
 }

@@ -170,4 +170,17 @@ struct MetricHistoryTests {
     #expect(book.kind == .sleep)
     #expect(store.queries.last?.columns == "date, sleep_duration_min")
   }
+
+  /// Sẵn sàng 7 ngày (17/10): có bộ lọc thì bỏ ngày chỉ có tải tập; không có thì
+  /// như RN.
+  @Test func readinessDropsLoadOnlyDaysWhenAsked() {
+    let rows: [JSONValue] = [
+      .object(["date": .string("2026-10-15"), "readiness_score": .number(80), "readiness_explain": .string("load:80")]),
+      .object(["date": .string("2026-10-16"), "readiness_score": .number(62), "readiness_explain": .string("sleep:55|load:80")]),
+    ]
+    let utc = TimeZone(identifier: "UTC")!
+    #expect(MetricHistory.points(.readiness, rows: rows, in: utc).count == 2)
+    let honest = MetricHistory.points(.readiness, rows: rows, in: utc) { ($0 ?? "").contains("sleep") }
+    #expect(honest.map(\.value) == [62])
+  }
 }

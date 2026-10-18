@@ -585,7 +585,13 @@ final class AppServices {
   /// Bảng chỉ số 7 ngày của tab Trợ lý (#527): `daily_logs` / `biometric_samples`
   /// qua kho hàng chung.
   func makeMetricHistory(userId: String, today: LocalDate) -> MetricHistoryBook? {
-    rows.map { MetricHistoryBook(userId: userId, today: today, store: $0, in: .current) }
+    // Trung bình sẵn sàng 7 ngày chỉ tính ngày có dữ liệu phục hồi (17/10).
+    var recovery: (@Sendable (String?) -> Bool)?
+    if let copy = ReadinessCopyStore.copy {
+      recovery = { explain in ReadinessCard.hasRecoverySignal(explain, copy: copy) }
+    }
+    guard let rows else { return nil }
+    return MetricHistoryBook(userId: userId, today: today, store: rows, in: .current, recovery: recovery)
   }
 
   /// "Insight hôm nay" của tab Trợ lý (#527): `ai-smart-nudges`, nhớ bền một ô.
