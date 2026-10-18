@@ -98,4 +98,12 @@ struct AssistantSummaryTests {
     #expect(OnboardingRuler.fixed1(121.7, locale: Locale(identifier: "vi_VN")) == "121,7")
     #expect(OnboardingRuler.fixed1(121.7, locale: Locale(identifier: "en_US")) == "121.7")
   }
+
+  /// Điểm chỉ dựa vào tải tập (không HRV / RHR / giấc ngủ) không hiện như lời
+  /// khuyên; chưa có điểm thì không phải "tạm".
+  @Test func loadOnlyScoreIsProvisional() {
+    #expect(AssistantSummary.provisional(score: 80, hasRecovery: false))
+    #expect(!AssistantSummary.provisional(score: 80, hasRecovery: true))
+    #expect(!AssistantSummary.provisional(score: nil, hasRecovery: false))
+  }
 }

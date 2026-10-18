@@ -98,12 +98,16 @@ struct SummaryCard: View {
       if let metrics, metrics.kind == .readiness, case .ready(let a) = metrics.phase { a.bars } else { [] }
     // Cùng quyết định với Hôm nay (`AssistantSummary.shown`): hôm nay chưa có điểm
     // → điểm gần nhất, ghi rõ ngày.
-    let shown = AssistantSummary.shown(
+    // Điểm chỉ dựa vào tải tập (17/10): như Hôm nay — "chưa đủ dữ liệu", không số.
+    let provisional = AssistantSummary.provisional(score: s.readiness, hasRecovery: s.hasRecovery)
+    let shown = provisional ? nil : AssistantSummary.shown(
       today: s.readiness, status: s.status,
       recent: bars.filter { !$0.missing && !$0.today }.map { ($0.date, Int($0.value.rounded())) })
     let ready = shown?.level
     let tint = AssistantText.tint(ready)
-    let note = ReadinessGauge.staleNote(shown) ?? AssistantText.versus(AssistantSummary.versus(today: s.readiness, bars: bars))
+    let note = provisional
+      ? String(localized: "rd.provisional.reason")
+      : ReadinessGauge.staleNote(shown) ?? AssistantText.versus(AssistantSummary.versus(today: s.readiness, bars: bars))
     let brief = signal.brief(hour: hour)
     VStack(alignment: .leading, spacing: 12) {
       Button(action: openTrends) {
@@ -113,7 +117,7 @@ struct SummaryCard: View {
             Text("metric.readiness")
               .font(.system(size: 13))
               .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-            Text(verbatim: AssistantText.label(ready))
+            Text(verbatim: provisional ? String(localized: "rd.provisional.title") : AssistantText.label(ready))
               .font(.system(size: 21, weight: .bold)).tracking(-0.3)
               .foregroundStyle(ready == nil ? DS.Color.foreground.swiftUI : tint)
             Text(verbatim: note)

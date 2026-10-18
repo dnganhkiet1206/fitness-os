@@ -51,24 +51,38 @@ struct TodayReadinessRow: View {
         } else {
           row(shown: nil, title: String(localized: "today.rd.none"), reason: String(localized: "today.rd.none.how"))
         }
-        if let onLogSleep {
-          Button(action: onLogSleep) {
-            Label(String(localized: "today.do.sleep"), systemImage: "moon.fill")
-              .font(DS.TextStyle.footnote.weight(.semibold))
-              .foregroundStyle(DS.Color.foreground.swiftUI)
-              .padding(.horizontal, DS.Spacing.md)
-              .frame(minHeight: 44)
-              .overlay(Capsule().strokeBorder(DS.Color.border.swiftUI))
-              .contentShape(Capsule())
-          }
-          .buttonStyle(.plain)
-        }
+        sleepButton
       }
     case .ready(let day):
       let copy = ReadinessCopyStore.copy
-      let reason = copy.map { ReadinessCard.explainText(day.explain, lang: lang, copy: $0) } ?? ""
-      let shown = AssistantSummary.shown(today: day.score, status: day.status.rawValue, recent: [])
-      row(shown: shown, title: AssistantText.label(shown?.level), reason: reason)
+      let recovery = copy.map { ReadinessCard.hasRecoverySignal(day.explain, copy: $0) } ?? true
+      if AssistantSummary.provisional(score: day.score, hasRecovery: recovery) {
+        // Điểm chỉ dựa vào tải tập (17/10): không hiện "80 · Tập hết mình" như
+        // một lời khuyên — nói còn thiếu gì và cách lấp.
+        VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+          row(shown: nil, title: String(localized: "rd.provisional.title"), reason: String(localized: "rd.provisional.reason"))
+          sleepButton
+        }
+      } else {
+        let reason = copy.map { ReadinessCard.explainText(day.explain, lang: lang, copy: $0) } ?? ""
+        let shown = AssistantSummary.shown(today: day.score, status: day.status.rawValue, recent: [])
+        row(shown: shown, title: AssistantText.label(shown?.level), reason: reason)
+      }
+    }
+  }
+
+  @ViewBuilder private var sleepButton: some View {
+    if let onLogSleep {
+      Button(action: onLogSleep) {
+        Label(String(localized: "today.do.sleep"), systemImage: "moon.fill")
+          .font(DS.TextStyle.footnote.weight(.semibold))
+          .foregroundStyle(DS.Color.foreground.swiftUI)
+          .padding(.horizontal, DS.Spacing.md)
+          .frame(minHeight: 44)
+          .overlay(Capsule().strokeBorder(DS.Color.border.swiftUI))
+          .contentShape(Capsule())
+      }
+      .buttonStyle(.plain)
     }
   }
 
