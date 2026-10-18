@@ -283,8 +283,13 @@ struct TodayExtras<Plan: View>: View {
   // MARK: - Your day
 
   /// Năm tín hiệu (cùng `DailySignals` với khối ngày, nước gộp phần chờ gửi)
-  /// rồi cân nặng và sinh trắc. Cờ "đã ghi" như `todo-card.tsx`: bữa = `kcal >
-  /// 0`, ngủ = có hàng ngủ hoặc phút ngủ, sinh trắc / cân = có hàng hôm nay.
+  /// rồi cân nặng. Cờ "đã ghi" như `todo-card.tsx`: bữa = `kcal > 0`, ngủ = có
+  /// hàng ngủ hoặc phút ngủ, cân = có hàng hôm nay.
+  ///
+  /// Bớt việc mỗi ngày (17/10, chủ dự án: app bắt ghi quá nhiều — khác RN, ghi
+  /// ở NATIVE_IMPROVEMENTS): cân nặng chỉ hiện khi đã 7 ngày chưa cân
+  /// (`TodayDay.showsWeighIn`); sinh trắc không còn là việc của ngày — vẫn ghi
+  /// được từ màn Sinh trắc ("+" / "Nhập thủ công") và Apple Health tự điền.
   private func dayRows(_ room: MascotRoomController) -> [TodayYourDay.Row] {
     let s = TodayDay.merging(room.signals, localWaterMl: water?.loaded == true ? water?.totalMl : nil)
     let goal = room.stepsGoal
@@ -310,15 +315,18 @@ struct TodayExtras<Plan: View>: View {
     let weighed = flags?.weighed ?? (kg != nil)
     let weightLine = kg.map { "\(OnboardingRuler.fixed1(unit.display($0), locale: .app)) \(unit.label)" }
       ?? (weighed ? String(localized: "today.tube.done") : String(localized: "today.d.weight.none"))
-    return [
+    var rows: [TodayYourDay.Row] = [
       .init(kind: .sleep, detail: sleep, done: done(.sleep)),
       .init(kind: .meal, detail: meal, done: done(.meal)),
       .init(kind: .water, detail: waterLine, done: done(.water)),
       .init(kind: .workout, detail: workout, done: done(.workout)),
       .init(kind: .steps, detail: steps, done: done(.steps)),
-      .init(kind: .weight, detail: weightLine, done: weighed),
-      .init(kind: .bio, detail: String(localized: "today.d.bio"), done: flags?.bioLogged ?? false),
     ]
+    // Hôm nay vừa cân (kể cả đang chờ gửi) thì giữ dòng để thấy dấu tích.
+    if weighed || TodayDay.showsWeighIn(lastWeighIn: weight?.lastDate, today: Self.today()) {
+      rows.append(.init(kind: .weight, detail: weightLine, done: weighed))
+    }
+    return rows
   }
 
   private func tap(_ kind: TodayYourDay.Row.Kind) {

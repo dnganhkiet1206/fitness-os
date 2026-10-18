@@ -74,6 +74,14 @@ public protocol WeightLogSource: Sendable {
   func weight(userId: String, date: LocalDate) async throws -> Double?
   /// `useLogWeight`: upsert rồi `syncProfileWeight` — một lượt.
   func log(userId: String, kg: Double, date: LocalDate) async throws
+  /// Ngày của lần cân MỚI nhất; `nil` khi chưa cân lần nào. Hôm nay dùng nó để
+  /// chỉ hỏi cân khi đã lâu chưa cân (`TodayDay.showsWeighIn`).
+  func latestDate(userId: String) async throws -> LocalDate?
+}
+
+extension WeightLogSource {
+  /// Nguồn không biết lịch sử: coi như chưa cân — Hôm nay vẫn hỏi cân.
+  public func latestDate(userId: String) async throws -> LocalDate? { nil }
 }
 
 /// Màn ghi cân của MỘT người.
@@ -97,6 +105,9 @@ public final class WeightLogger {
   /// Cân hôm nay đọc được; `nil` khi chưa cân HOẶC chưa đọc được (RN không
   /// phân biệt: hạt giống rơi về hồ sơ).
   public private(set) var todayKg: Double?
+  /// Ngày cân gần nhất (`nil`: chưa cân, hoặc đọc hỏng — khi ấy Hôm nay vẫn
+  /// hỏi cân như trước).
+  public private(set) var lastDate: LocalDate?
   public private(set) var loaded = false
   public private(set) var submitting = false
   /// Đã xếp hàng một lần cân: nút chết luôn (`queue.isSuccess`).
@@ -141,9 +152,12 @@ public final class WeightLogger {
   /// `useTodayWeight`. Đọc hỏng: như chưa cân — hạt giống rơi về hồ sơ.
   public func load() async {
     guard !closed else { return }
-    let kg = try? await source.weight(userId: userId, date: today())
+    async let kg = try? await source.weight(userId: userId, date: today())
+    async let last = try? await source.latestDate(userId: userId)
+    let (k, l) = await (kg, last)
     guard !closed else { return }
-    todayKg = kg
+    todayKg = k
+    lastDate = l
     loaded = true
   }
 
@@ -171,7 +185,10 @@ public final class WeightLogger {
     } catch {
       return NetworkFailure.isOffline(error) ? .offline : .failed
     }
-    if !closed { todayKg = kg }
+    if !closed {
+      todayKg = kg
+      lastDate = max(lastDate ?? day, day)
+    }
     // Server đã nhận dù màn vừa đóng: nơi khác (kế hoạch nhắc nhở) vẫn phải biết.
     onSaved(day)
     return .saved
