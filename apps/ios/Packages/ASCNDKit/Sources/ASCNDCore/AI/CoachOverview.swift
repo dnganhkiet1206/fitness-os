@@ -145,7 +145,15 @@ public struct CoachOverview: Equatable, Sendable {
   public static let maxPoints = 14
 
   /// Tách khối khỏi câu trả lời. `text` là phần còn lại để vẽ markdown.
+  /// Dấu mốc mở câu trả lời của `ai-coach` (18/10): server bỏ mọi chữ đứng trước
+  /// nó (phần nháp suy nghĩ của model). App cắt thêm một lần cho chắc.
+  public static let answerMark = "@@ANSWER@@"
+
   public static func split(_ message: String) -> (overview: CoachOverview?, text: String) {
+    var message = message
+    if let mark = message.range(of: answerMark) {
+      message = String(message[mark.upperBound...].drop(while: { $0.isNewline || $0 == " " }))
+    }
     // Model nhẹ đôi khi rào bằng ```json — chỉ nhận khi ngay sau là JSON có
     // "items" / "trend", để một khối code JSON thật trong câu trả lời không bị nuốt.
     let open: Range<String.Index>

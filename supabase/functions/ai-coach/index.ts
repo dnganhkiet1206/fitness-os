@@ -1,5 +1,6 @@
 import { looksHostile, refusalStream, scopeRule } from "../_shared/scope.ts";
 import { callAI, forSpanish } from "../_shared/ai.ts";
+import { markRule, stripBeforeMark } from "../_shared/answer.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 import { aiGate, corsHeaders, json, meterStream, opaque, quotaExceeded, recordTokens, requireUser } from "../_shared/guard.ts";
@@ -426,7 +427,7 @@ NGUYÊN TẮC QUAN TRỌNG:
           {
             role: "system",
             content: forSpanish(
-              systemPrompt + scopeRule(lang) + answerFormat(lang) + checkBlock(readChecks(body?.checks), lang, spanish),
+              systemPrompt + scopeRule(lang) + markRule(lang) + answerFormat(lang) + checkBlock(readChecks(body?.checks), lang, spanish),
               body?.lang,
             ),
           },
@@ -498,7 +499,8 @@ NGUYÊN TẮC QUAN TRỌNG:
     const [toClient, toMeter] = response.body.tee();
     meterStream(supabase, "ai-coach", toMeter, gate === "overage");
 
-    return new Response(toClient, {
+    // Bỏ phần nháp suy nghĩ đứng trước dấu mốc (18/10) — `toMeter` vẫn đếm đủ.
+    return new Response(toClient.pipeThrough(stripBeforeMark()), {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
   } catch (e) {

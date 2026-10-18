@@ -72,4 +72,10 @@ struct CoachOverviewCheckTests {
     let streaming = "```ascnd\n{\"items\":[]}\n```\nĐầu.```ascnd\n{\"ite"
     #expect(!CoachOverview.split(streaming).text.contains("```"))
   }
+
+  /// Nháp suy nghĩ trước dấu mốc (18/10) không bao giờ hiện.
+  @Test func textBeforeAnswerMarkIsHidden() {
+    let (_, text) = CoachOverview.split("Người dùng hỏi… prompt nói: …\n@@ANSWER@@\n**Trả lời.**")
+    #expect(text == "**Trả lời.**")
+  }
 }
