@@ -24,11 +24,17 @@ public enum HealthSync {
     public var sleep: HealthData.Sleep?
     public var workouts: [HealthData.Workout]
     public var stepDays: [(date: LocalDate, steps: Int)]
+    /// Cân (lần mới nhất mỗi ngày) và nước đọc từ Apple Health (`HealthIntake`).
+    public var weighIns: [HealthData.WeighIn]
+    public var water: [HealthData.WaterRow]
 
     public init(
       bio: HealthData.Biometrics?, steps: Int?, activeKcal: Int?, exerciseMinutes: Int?, sleep: HealthData.Sleep?,
-      workouts: [HealthData.Workout], stepDays: [(date: LocalDate, steps: Int)]
+      workouts: [HealthData.Workout], stepDays: [(date: LocalDate, steps: Int)],
+      weighIns: [HealthData.WeighIn] = [], water: [HealthData.WaterRow] = []
     ) {
+      self.weighIns = weighIns
+      self.water = water
       self.bio = bio
       self.steps = steps
       self.activeKcal = activeKcal
@@ -41,7 +47,7 @@ public enum HealthSync {
     /// Không có gì cả: thường là chưa cho quyền đọc, hoặc app Sức khoẻ trống.
     public var isEmpty: Bool {
       bio == nil && steps == nil && activeKcal == nil && exerciseMinutes == nil && sleep == nil && workouts.isEmpty
-        && stepDays.isEmpty
+        && stepDays.isEmpty && weighIns.isEmpty && water.isEmpty
     }
   }
 
@@ -157,7 +163,32 @@ public enum HealthSync {
         failures.append("nCxHealthSyncPartSteps")
       }
     }
-    for day in HealthData.touchedDays(bio: s.bio != nil, sleep: s.sleep, workouts: s.workouts, today: today, in: tz) {
+    // Cân và nước (17/10): gom lỗi như `daily_logs` — một phần hỏng không bỏ dở
+    // phần còn lại.
+    if !s.weighIns.isEmpty {
+      do throws(RowStoreError) {
+        try await importWeighIns(s.weighIns, userId: userId, store: store)
+      } catch {
+        failures.append("nCxHealthSyncPartWeight")
+      }
+    }
+    if !s.water.isEmpty {
+      do throws(RowStoreError) {
+        try await store.upsert(
+          "water_logs",
+          s.water.map {
+            [
+              "id": .string($0.id), "user_id": me, "date": .string($0.date.description),
+              "amount_ml": .number(Double($0.ml)), "logged_at": iso($0.loggedAt),
+            ]
+          }, onConflict: "id")
+      } catch {
+        failures.append("nCxHealthSyncPartWater")
+      }
+    }
+    var touched = Set(HealthData.touchedDays(bio: s.bio != nil, sleep: s.sleep, workouts: s.workouts, today: today, in: tz))
+    touched.formUnion(s.water.map(\.date))
+    for day in touched.sorted() {
       do {
         try await DailyLog.recompute(userId: userId, date: day, store: store, now: now, in: tz)
       } catch {
@@ -165,6 +196,34 @@ public enum HealthSync {
       }
     }
     if !failures.isEmpty { throw .incomplete(failures) }
+  }
+
+  /// Chèn lần cân của những ngày CHƯA có hàng `weight_logs` (ghi tay thắng),
+  /// rồi theo `syncProfileWeight`: `profiles.weight_kg` = lần cân mới nhất vừa
+  /// chèn, chỉ khi không có lần cân nào sau ngày ấy.
+  static func importWeighIns(_ list: [HealthData.WeighIn], userId: String, store: any RowStore) async throws(RowStoreError) {
+    guard let first = list.first?.date, let last = list.last?.date else { return }
+    let me: JSONValue = .string(userId)
+    let existing = try await store.select(
+      RowQuery(
+        table: "weight_logs", columns: "date",
+        filters: [.eq("user_id", me), .gte("date", .string(first.description)), .lte("date", .string(last.description))]))
+    let taken = Set(existing.compactMap { $0["date"]?.stringValue.flatMap { LocalDate($0) } })
+    let fresh = list.filter { !taken.contains($0.date) }
+    guard let newest = fresh.last else { return }
+    try await store.upsert(
+      "weight_logs",
+      fresh.map { w in
+        var row: [String: JSONValue] = [:]
+        if case .object(let o) = WeightLog.row(userId: userId, kg: w.kg, date: w.date) { row = o }
+        return row
+      }, onConflict: "user_id,date")
+    let newer = try await store.select(
+      RowQuery(
+        table: "weight_logs", columns: "date",
+        filters: [.eq("user_id", me), .gte("date", .string(newest.date.adding(days: 1).description))], limit: 1))
+    guard newer.isEmpty else { return }
+    _ = try await store.update("profiles", ["weight_kg": .number(newest.kg)], where: [.eq("user_id", me)])
   }
 
   /// Tự đồng bộ khi app về tiền cảnh: chỉ khi đã hỏi quyền xong, và cách lần
