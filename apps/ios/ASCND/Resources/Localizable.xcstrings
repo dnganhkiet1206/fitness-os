@@ -53714,19 +53714,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "Deletes your account and all of its data from our servers. Data you exported to Apple Health stays in Apple Health."
+      "value": "Deletes your account and all of its data from our servers. Your data in Apple Health is not affected."
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Elimina tu cuenta y todos sus datos de nuestros servidores. Los datos que guardaste en Apple Salud permanecen en Apple Salud."
+      "value": "Elimina tu cuenta y todos sus datos de nuestros servidores. Tus datos en Apple Salud no se ven afectados."
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Xoá tài khoản và toàn bộ dữ liệu trên máy chủ. Dữ liệu đã ghi sang Apple Health vẫn nằm trong Apple Health."
+      "value": "Xoá tài khoản và toàn bộ dữ liệu trên máy chủ. Dữ liệu trong Apple Health không bị ảnh hưởng."
      }
     }
    }
