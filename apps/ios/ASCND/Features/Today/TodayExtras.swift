@@ -43,6 +43,9 @@ struct TodayExtras<Plan: View>: View {
   @State private var showsActivity = false
   /// Cân hôm nay cho hàng "Cân nặng" (`todo-card.tsx: weight → /log-weight`).
   @State private var weight: WeightLogger?
+  /// "Như hôm qua" trên dòng Bữa ăn (17/10): sổ ghi bữa hôm nay, chỉ để đọc các
+  /// bữa hôm qua và chép một chạm.
+  @State private var meals: MealLogger?
   @State private var showsWeight = false
   @State private var showsBiometrics = false
   @State private var showsRoom = false
@@ -129,7 +132,10 @@ struct TodayExtras<Plan: View>: View {
       VStack(alignment: .leading, spacing: DS.Spacing.md) { plan(readinessRow, logSleepButton) }
         .todayEntrance(2)
       if let mascot, case .ready = mascot.phase {
-        TodayYourDay(rows: dayRows(mascot), onTap: tap)
+        TodayYourDay(
+          rows: dayRows(mascot), onTap: tap,
+          mealAgain: (meals?.yesterdayMeals.isEmpty == false && meals?.saving == false)
+            ? { Task { await copyYesterday() } } : nil)
           .todayEntrance(3)
       }
       TodayMore(rows: moreRows, zoom: zoom)
@@ -227,6 +233,7 @@ struct TodayExtras<Plan: View>: View {
       if nutrition == nil { ownWater = services.makeWaterBook(userId: userId) }
       await todo?.refresh()
       await weight?.load()
+      await loadMeals()
       await mascot?.load()
       if let nutrition { await nutrition.loadOnce() } else { await ownWater?.load() }
       await readiness?.load()
@@ -259,6 +266,7 @@ struct TodayExtras<Plan: View>: View {
         await focusChecks()
         await trend?.move(to: today)
         await activity?.load(today: today)
+        await loadMeals()
         await loadNotifications()
       }
     }
@@ -275,6 +283,7 @@ struct TodayExtras<Plan: View>: View {
       trend?.close()
       activity?.close()
       weight?.close()
+      meals?.close()
       todo?.close()
       ownWater?.close()
     }
@@ -464,7 +473,27 @@ struct TodayExtras<Plan: View>: View {
   }
 
   /// Sau một lần ghi: đọc lại những gì thẻ việc, năng lượng và điểm sẵn sàng hiện.
+  /// Sổ ghi bữa mới cho hôm nay (mỗi sổ chép được một lần; qua ngày thì "hôm
+  /// qua" đổi theo).
+  private func loadMeals() async {
+    meals?.close()
+    let l = services.makeMealLogger(userId: userId, date: nil, mealType: nil)
+    meals = l
+    await l?.loadRecents()
+  }
+
+  /// "Như hôm qua": chép mọi bữa hôm qua, rồi đọc lại ngày.
+  private func copyYesterday() async {
+    guard let meals else { return }
+    if case .queued = await meals.copyYesterday(online: services.sync.online) {
+      Telemetry.capture(.eatLikeYesterday)
+      AccessibilityNotification.Announcement(String(localized: "meal.yesterday.done")).post()
+      await reloadDay()
+    }
+  }
+
   private func reloadDay() async {
+    await loadMeals()
     await todo?.refresh()
     await mascot?.load()
     if let nutrition { await nutrition.refresh() } else { await ownWater?.refresh() }

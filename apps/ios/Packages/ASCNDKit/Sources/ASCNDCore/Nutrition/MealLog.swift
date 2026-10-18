@@ -227,6 +227,26 @@ public enum MealLog {
     return out
   }
 
+  /// "Ăn như hôm qua" (17/10, chủ dự án: app bắt ghi quá nhiều — khác RN, ghi ở
+  /// NATIVE_IMPROVEMENTS): các bữa của HÔM QUA (ngày địa phương), cũ → mới, mỗi
+  /// bữa giữ nguyên món và khẩu phần (cùng cách đọc với `recentMeals`, nhưng
+  /// không gộp bữa trùng chữ ký). Rỗng khi hôm nay đã ghi bữa nào — để một ngày
+  /// không bao giờ bị chép đôi — hoặc hôm qua không có bữa nào có calo.
+  public static func yesterdayMeals(_ entries: [JSONValue], today: LocalDate, in tz: TimeZone) -> [RecentMeal] {
+    func day(_ e: JSONValue) -> LocalDate? {
+      e["date_time"]?.stringValue.flatMap { EpochMillis(iso8601: $0) }.map { LocalDate($0, in: tz) }
+    }
+    if entries.contains(where: { day($0) == today }) { return [] }
+    let yesterday = today.adding(days: -1)
+    var meals: [RecentMeal] = []
+    for e in entries where day(e) == yesterday {
+      if let m = recentMeals([e], limit: 1).first, m.kcal > 0 { meals.append(m) }
+    }
+    func time(_ m: RecentMeal) -> Int64 { m.at?.millis ?? 0 }
+    meals.sort { time($0) < time($1) }
+    return meals
+  }
+
   /// `whenLabel`: số ngày lịch giữa ngày bữa ăn và hôm nay (≤ 0 = hôm nay).
   public static func daysAgo(_ at: EpochMillis?, today: LocalDate, in tz: TimeZone) -> Int {
     guard let at else { return 0 }
@@ -418,6 +438,8 @@ public final class MealLogger {
   public private(set) var recents: [MealLog.Food] = []
   public private(set) var favorites: [MealLog.Food] = []
   public private(set) var recentMeals: [MealLog.RecentMeal] = []
+  /// Các bữa hôm qua để chép sang hôm nay (`MealLog.yesterdayMeals`).
+  public private(set) var yesterdayMeals: [MealLog.RecentMeal] = []
 
   /// "Thêm nhanh" (yêu thích + gần đây).
   public var quickAdds: [MealLog.QuickAdd] { MealLog.quickAdds(favorites: favorites, recents: recents) }
@@ -473,6 +495,46 @@ public final class MealLogger {
     recents = MealLog.recentFoods(rows ?? [])
     favorites = (favs ?? []).compactMap(MealLog.Food.init(foodRow:))
     recentMeals = MealLog.recentMeals(meals ?? [])
+    let today = LocalDate(clock.nowMillis(), in: timeZone)
+    // Bữa hôm nay còn trong hàng đợi (vừa chép / ghi lúc mất mạng) mà server chưa
+    // thấy: cũng tính là "hôm nay đã ghi" — không đề nghị chép đôi.
+    let queued = (try? await store?.pending(userId: userId)) ?? []
+    guard !closed else { return }
+    let queuedToday = queued.contains { e in
+      e.kind == MealLog.kind
+        && e.payload["date_time"]?.stringValue.flatMap({ EpochMillis(iso8601: $0) }).map { LocalDate($0, in: timeZone) } == today
+    }
+    yesterdayMeals = queuedToday ? [] : MealLog.yesterdayMeals(meals ?? [], today: today, in: timeZone)
+  }
+
+  /// "Ăn như hôm qua": mỗi bữa hôm qua thành MỘT bữa hôm nay (cùng loại bữa,
+  /// món, khẩu phần), tất cả vào hàng đợi trong một lần. Một lần cho mỗi sổ,
+  /// như `save`.
+  public func copyYesterday(online: Bool) async -> Outcome {
+    guard !closed, !saving, !saved, !yesterdayMeals.isEmpty, let store else { return .unavailable }
+    saving = true
+    defer { if !closed { saving = false } }
+    let now = clock.nowMillis()
+    let stamp = MealLog.stamp(date, now: now, in: timeZone)
+    let entries = yesterdayMeals.map { meal -> OutboxEntry in
+      let items = meal.foods.map { f -> MealLog.Item in
+        var it = f.food.item(id: makeId())
+        it.servings = f.servings
+        return it
+      }
+      return MealLog.entry(
+        id: makeId(), itemIds: items.map { _ in makeId() }, userId: userId,
+        mealType: MealLog.mealType(meal.mealType), dateTime: stamp, items: items, createdAt: now)
+    }
+    do {
+      try await store.enqueue(entries)
+    } catch {
+      return .failed
+    }
+    saved = true
+    yesterdayMeals = []
+    for e in entries { onEnqueued(e) }
+    return .queued(online: online)
   }
 
   /// "Ăn lại bữa này": loại bữa + đúng các món và khẩu phần đã ăn.
