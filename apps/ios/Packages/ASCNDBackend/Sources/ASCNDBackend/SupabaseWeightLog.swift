@@ -22,6 +22,16 @@ public struct SupabaseWeightLog: WeightLogSource {
     return rows.first?["weight_kg"]?.doubleValue
   }
 
+  public func latestDate(userId: String) async throws -> LocalDate? {
+    let rows: [JSONValue] = try await client.from("weight_logs")
+      .select("date")
+      .eq("user_id", value: userId)
+      .order("date", ascending: false)
+      .limit(1)
+      .execute().value
+    return rows.first?["date"]?.stringValue.flatMap { LocalDate($0) }
+  }
+
   public func log(userId: String, kg: Double, date: LocalDate) async throws {
     try await Self.write(client, row: WeightLog.row(userId: userId, kg: kg, date: date), userId: userId)
   }

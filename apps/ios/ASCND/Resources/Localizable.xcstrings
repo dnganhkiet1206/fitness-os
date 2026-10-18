@@ -41081,29 +41081,6 @@
     }
    }
   },
-  "today.d.bio": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Resting HR, HRV, SpO₂"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Nhịp tim nghỉ, HRV, SpO₂"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "FC en reposo, VFC, SpO₂"
-     }
-    }
-   }
-  },
   "today.more.title": {
    "extractionState": "manual",
    "localizations": {
