@@ -218,7 +218,9 @@ public enum WeeklyReview {
       return Day(
         date: date, kcal: orZero(JS.number(log?["kcal"])), protein: orZero(JS.number(log?["protein_g"])),
         sleepHours: Double(JS.fixed(sleepMin / 60, 1)) ?? 0, volume: orZero(JS.number(log?["volume_load"])),
-        readiness: orZero(JS.number(log?["readiness_score"])))
+        // Biểu đồ tuần: ngày chỉ có tải tập không chấm được → không vẽ điểm.
+        readiness: ReadinessCard.hasRecoverySignal(log?["readiness_explain"]?.stringValue, copy: copy)
+          ? orZero(JS.number(log?["readiness_score"])) : 0)
     }
 
     let acwr = ReadinessCard.latestAcwr(logs)

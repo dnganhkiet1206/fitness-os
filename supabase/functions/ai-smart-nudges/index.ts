@@ -81,8 +81,10 @@ serve(async (req) => {
         protein_g: d.protein_g,
         carbs_g: d.carbs_g,
         fat_g: d.fat_g,
-        readiness_score: d.readiness_score,
-        readiness_status: d.readiness_status,
+        /* 19/10: không có chiều phục hồi → app hiện "chưa đủ dữ liệu", nên mô
+           hình cũng không được thấy điểm (từng sinh "Sẵn sàng 80" cạnh dòng ấy). */
+        readiness_score: recoveryMeasured(d.readiness_explain) ? d.readiness_score : null,
+        readiness_status: recoveryMeasured(d.readiness_explain) ? d.readiness_status : null,
         recovery_measured: recoveryMeasured(d.readiness_explain),
         sleep_duration_min: d.sleep_duration_min,
         steps: d.steps,
@@ -126,6 +128,7 @@ IMPORTANT PRINCIPLES:
 - A null or missing field was NOT MEASURED. Never say the user slept nothing, drank nothing or trained none because a field is null — skip that topic instead
 - readiness is 0-100 and measures TRAINING CAPACITY — HRV, resting heart rate, sleep and training load combined over whichever were actually measured. readiness_status describes that capacity state. Neither is a direct measurement of recovery
 - recovery_measured says only whether a recovery component (HRV, resting heart rate or sleep) was measured that day. It does NOT say recovery was good or bad. When it is false, never say or imply from readiness alone that the user is recovered, unrecovered, fatigued or needs recovery — the app has no reading for it. When it is true, recovery wording is allowed only as far as the readings themselves support
+- On a day where recovery_measured is false, readiness and readiness_status are null: the app could not score that day (training load alone is not a readiness score) and shows "not enough data". Never state a readiness number or state for such a day.
 - current_hour is null when the app does not know the local time: then do not mention or assume a time of day
 - NEVER predict or diagnose any health condition or illness
 - ONLY remind about simple things everyone knows but forgets: drink water, sleep enough, eat enough, rest
@@ -143,6 +146,7 @@ NGUYÊN TẮC QUAN TRỌNG:
 - Trường nào null hoặc không có nghĩa là CHƯA ĐO ĐƯỢC. Đừng bao giờ nói người dùng không ngủ, không uống nước hay không tập chỉ vì trường đó null — hãy bỏ qua chủ đề đó
 - readiness thang 0-100, đo KHẢ NĂNG TẬP LUYỆN — ghép HRV, nhịp tim nghỉ, giấc ngủ và tải tập trên những chiều thật sự đo được. readiness_status mô tả trạng thái khả năng đó. Cả hai đều KHÔNG phải phép đo trực tiếp về phục hồi
 - recovery_measured chỉ cho biết hôm đó CÓ đo được một chiều phục hồi (HRV, nhịp tim nghỉ hoặc giấc ngủ) hay không. Nó KHÔNG nói phục hồi tốt hay kém. Khi nó là false, tuyệt đối không dựa vào mỗi readiness để nói hay ám chỉ người dùng đã hồi, chưa hồi, đang mệt hay cần phục hồi — app không có số liệu đó. Khi nó là true, chỉ được dùng ngôn ngữ phục hồi trong phạm vi các chỉ số thật sự cho thấy
+- Ngày nào recovery_measured là false thì readiness và readiness_status là null: app không chấm được ngày đó (chỉ có tải tập thì chưa phải điểm sẵn sàng) và hiện "chưa đủ dữ liệu". Không bao giờ nói ra điểm hay trạng thái sẵn sàng cho ngày ấy.
 - current_hour là null khi app không biết giờ địa phương: khi đó không nhắc và không suy đoán thời điểm trong ngày
 - KHÔNG BAO GIỜ dự đoán hay chẩn đoán tình trạng sức khoẻ, bệnh lý
 - CHỈ nhắc nhở những việc đơn giản ai cũng biết nhưng hay quên: uống nước, ngủ đủ, ăn đủ chất, nghỉ ngơi

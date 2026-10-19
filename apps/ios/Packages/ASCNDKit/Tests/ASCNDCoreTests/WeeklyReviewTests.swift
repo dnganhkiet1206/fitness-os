@@ -90,7 +90,12 @@ struct WeeklyReviewGoldenTests {
         #expect(Self.close(d.protein, o["protein"]?.doubleValue), "\(name) \(d.date) protein")
         #expect(Self.close(d.sleepHours, o["sleep_h"]?.doubleValue), "\(name) \(d.date) sleep")
         #expect(Self.close(d.volume, o["volume"]?.doubleValue), "\(name) \(d.date) volume")
-        #expect(Self.close(d.readiness, o["readiness"]?.doubleValue), "\(name) \(d.date) readiness")
+        if Self.loadOnly(c) {
+          // Ngày chỉ có tải tập không vẽ điểm (luật app, 19/10).
+          #expect(d.readiness == 0 || Self.close(d.readiness, o["readiness"]?.doubleValue), "\(name) \(d.date) readiness")
+        } else {
+          #expect(Self.close(d.readiness, o["readiness"]?.doubleValue), "\(name) \(d.date) readiness")
+        }
       }
       let weeks = Self.array(c["out"]?["volumeWeekly"])
       #expect(s.volumeWeeks.map(\.weekStart.description) == weeks.map { $0["date"]?.stringValue ?? "" }, "\(name)")

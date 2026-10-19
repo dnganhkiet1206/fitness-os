@@ -454,7 +454,10 @@ final class AppServices {
 
   /// Xu hướng sẵn sàng 7 ngày (#527) — đọc `daily_logs` qua kho hàng chung.
   func makeReadinessTrend(userId: String, today: LocalDate) -> ReadinessTrendBook? {
-    rows.map { ReadinessTrendBook(userId: userId, today: today, store: $0) }
+    let recovery: (@Sendable (String?) -> Bool)? = ReadinessCopyStore.copy.map { copy in
+      { ReadinessCard.hasRecoverySignal($0, copy: copy) }
+    }
+    return rows.map { ReadinessTrendBook(userId: userId, today: today, store: $0, recovery: recovery) }
   }
 
   /// Thẻ tập luyện (#527 N3, `TrainingCard` của Hôm nay): các buổi 56 ngày và
