@@ -283,3 +283,26 @@ import Testing
     #expect(r.items == [.meal(.init(slot: "breakfast", foods: [.init(name: "bánh mì"), .init(name: "cà phê sữa")]))])
   }
 }
+
+/// Không chắc thì hỏi lại (chủ dự án, 18/10).
+@Suite struct SpokenLogDoubtTests {
+  func doubts(_ s: String, hour: Int = 9) -> [SpokenLog.Doubt] { SpokenLog.parse(s, hour: hour).doubts }
+
+  @Test func clearStoryHasNoDoubts() {
+    #expect(doubts("tối qua ngủ 7 tiếng, sáng ăn phở, uống 2 lít nước, chạy 30 phút").isEmpty)
+    #expect(doubts("slept 8 hours and had eggs for breakfast").isEmpty)
+    #expect(doubts("dormí 7 horas y bebí un litro de agua").isEmpty)
+  }
+
+  @Test func waterWithoutAmount() { #expect(doubts("uống nước rồi") == [.waterAmount]) }
+  @Test func mealSlotGuessed() {
+    #expect(doubts("vừa ăn bánh mì", hour: 16) == [.mealSlot(guess: "snack")])
+    #expect(doubts("just ate a sandwich", hour: 13) == [.mealSlot(guess: "lunch")])
+  }
+  @Test func onlyBedTime() { #expect(doubts("tối qua đi ngủ lúc 11 giờ") == [.sleepHalf]) }
+  @Test func hoursOrClock() { #expect(doubts("ngủ 7 giờ") == [.sleepHoursOrClock(hours: 7)]) }
+  @Test func workoutWithoutMinutes() { #expect(doubts("hôm nay đi tập rồi") == [.workoutMinutes]) }
+  @Test func storyWithAQuestion() {
+    #expect(doubts("sáng ăn phở. ăn vậy có đủ đạm không?").contains(.mixedQuestion))
+  }
+}

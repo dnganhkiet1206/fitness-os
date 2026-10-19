@@ -86,8 +86,28 @@ public enum SpokenLog {
     }
   }
 
+  /// Chỗ app không chắc người dùng muốn gì (18/10, chủ dự án: "hỏi lại có đúng
+  /// không nếu hệ thống không phân biệt được ý định"). Màn xác nhận hỏi lại đúng
+  /// mục ấy, không đoán thay.
+  public enum Doubt: Equatable, Sendable {
+    /// Có nói uống nước mà không nói bao nhiêu.
+    case waterAmount
+    /// Không nói bữa nào — app đoán theo giờ (`guess`); hỏi lại.
+    case mealSlot(guess: String)
+    /// Chỉ có giờ ngủ hay giờ dậy, thiếu nửa kia.
+    case sleepHalf
+    /// "ngủ 7 giờ": 7 tiếng, hay đi ngủ lúc 7 giờ?
+    case sleepHoursOrClock(hours: Int)
+    /// Tập mà không nói bao lâu.
+    case workoutMinutes
+    /// Câu vừa có lời kể vừa có câu hỏi — có muốn ghi không?
+    case mixedQuestion
+  }
+
   public struct Result: Equatable, Sendable {
     public var items: [Item] = []
+    /// Chỗ cần hỏi lại, theo thứ tự xuất hiện.
+    public var doubts: [Doubt] = []
     /// Đoạn không hiểu được, đúng chữ người dùng (để màn hiện "Koa chưa hiểu: …").
     public var unparsed: [String] = []
     /// Đoạn nói về ngày khác hôm nay ("hôm qua…") — không ghi, màn nói rõ lý do.
@@ -110,13 +130,17 @@ public enum SpokenLog {
     var result = Result()
     let text = raw.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !text.isEmpty else { return result }
-    // Cả tin nhắn là câu hỏi → không phải lời kể.
-    if text.hasSuffix("?") || text.hasPrefix("¿") { return result }
+    let all = clauses(tokenize(text))
+    // Cả tin nhắn là MỘT câu hỏi → không phải lời kể. Nhiều câu mà câu cuối hỏi
+    // ("sáng ăn phở. vậy có đủ đạm không?") thì vẫn đọc phần kể và hỏi lại.
+    if (text.hasSuffix("?") || text.hasPrefix("¿")) && all.count <= 1 { return result }
 
     var lastMeal: Int?  // chỉ số trong `result.items` của bữa gần nhất
-    for clause in clauses(tokenize(text)) {
+    var hadQuestion = false
+    for clause in all {
       let c = Clause(clause)
       guard !c.isEmpty else { continue }
+      if c.isQuestion { hadQuestion = true }
       if c.isFuture || c.isQuestion || c.isGoal { continue }
       if c.isOtherDay(sleepOK: c.isSleep) {
         result.otherDay.append(c.original)
@@ -125,10 +149,16 @@ public enum SpokenLog {
       for part in c.parts() {
         if let item = part.nonMealItem(weightUnit: weightUnit) {
           result.items.append(item)
+          if case .sleep(let sl) = item, sl.bed == nil, sl.wake == nil, let m = sl.minutes, m % 60 == 0, m <= 12 * 60,
+            part.has(["gio"]), !part.has(["tieng", "hours", "hour", "hrs", "horas", "luc"])
+          {
+            result.doubts.append(.sleepHoursOrClock(hours: m / 60))
+          }
           continue
         }
         // Bữa: có từ ăn / bữa / đồ uống; hoặc chỉ là món nối tiếp ngay sau một bữa.
         if let meal = part.meal(hour: hour) {
+          if !part.namesSlot, lastMeal == nil { result.doubts.append(.mealSlot(guess: meal.slot)) }
           if let i = lastMeal, case .meal(var m) = result.items[i], !part.namesSlot, m.slot == meal.slot || !part.namesSlot {
             m.foods += meal.foods
             result.items[i] = .meal(m)
@@ -147,6 +177,15 @@ public enum SpokenLog {
       }
     }
     result.items = merged(result.items)
+    for item in result.items {
+      switch item {
+      case .water(nil): result.doubts.append(.waterAmount)
+      case .sleep(let sl) where sl.minutes == nil: result.doubts.append(.sleepHalf)
+      case .workout(let w) where w.minutes == nil: result.doubts.append(.workoutMinutes)
+      default: break
+      }
+    }
+    if !result.items.isEmpty, hadQuestion { result.doubts.append(.mixedQuestion) }
     return result
   }
 
