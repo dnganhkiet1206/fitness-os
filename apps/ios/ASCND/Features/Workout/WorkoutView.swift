@@ -124,6 +124,13 @@ public struct WorkoutView: View {
       }
       .navigationTitle(isPreview ? "" : controller.plan.templateName)
       .ascndPage()
+      .sheet(isPresented: $reordering) {
+        ExerciseOrderSheet(
+          exercises: WorkoutFocus.exercises(controller.rows, controller.progress)
+        ) { keys in
+          Task { await controller.reorderExercises(keys) }
+        }
+      }
       .navigationBarTitleDisplayMode(.inline)
       // Một thanh "Xong" trên bàn phím cho cả màn — gắn trên từng ô reps thì
       // mỗi hàng góp một nút.
@@ -147,6 +154,14 @@ public struct WorkoutView: View {
                   Label(
                     String(localized: tableLayout ? "ws.layout.focus" : "ws.layout.table"),
                     systemImage: tableLayout ? "rectangle.portrait" : "list.bullet")
+                }
+              }
+              // Kéo thả thứ tự bài như Apple Music (19/10).
+              if controller.canReorder, WorkoutFocus.exercises(controller.rows, controller.progress).count > 1 {
+                Button {
+                  reordering = true
+                } label: {
+                  Label(String(localized: "ws.reorder"), systemImage: "arrow.up.arrow.down")
                 }
               }
               if let onOpenHistory {
@@ -553,6 +568,9 @@ public struct WorkoutView: View {
       return (k, first.exerciseName, rows)
     }
   }
+
+  /// Sheet kéo thả thứ tự bài đang mở.
+  @State private var reordering = false
 
   /// Bài đang mở hướng dẫn (`day-plan.tsx:1784`).
   @State private var guideTarget: GuideTarget?
@@ -1532,4 +1550,62 @@ private struct GuideTarget: Identifiable {
   let exerciseId: String?
   let name: String
   var id: String { key }
+}
+
+/// Thứ tự bài trong buổi, kéo thả như hàng đợi Apple Music (19/10): tay nắm ≡
+/// luôn hiện, kéo là đổi ngay; "Xong" đóng. Set trong một bài giữ thứ tự.
+struct ExerciseOrderSheet: View {
+  @State var exercises: [WorkoutFocus.Exercise]
+  let commit: ([String]) -> Void
+  @Environment(\.dismiss) private var dismiss
+
+  init(exercises: [WorkoutFocus.Exercise], commit: @escaping ([String]) -> Void) {
+    _exercises = State(initialValue: exercises)
+    self.commit = commit
+  }
+
+  var body: some View {
+    NavigationStack {
+      List {
+        Section {
+          ForEach(exercises) { ex in
+            HStack(spacing: DS.Spacing.sm) {
+              VStack(alignment: .leading, spacing: 2) {
+                Text(verbatim: ex.name.isEmpty ? String(localized: "manualLog.exercise") : ex.name)
+                  .font(DS.TextStyle.body.weight(.semibold))
+                  .lineLimit(2)
+                Text(verbatim: "\(ex.done)/\(ex.total)")
+                  .font(DS.TextStyle.caption.monospacedDigit())
+                  .foregroundStyle(ex.isComplete ? DS.Color.metricRose.swiftUI : DS.Color.mutedForeground.swiftUI)
+              }
+              Spacer(minLength: 0)
+              if ex.isComplete {
+                Image(systemName: "checkmark.circle.fill")
+                  .foregroundStyle(DS.Color.metricRose.swiftUI)
+                  .accessibilityHidden(true)
+              }
+            }
+            .frame(minHeight: 52)
+          }
+          .onMove { from, to in
+            exercises.move(fromOffsets: from, toOffset: to)
+            commit(exercises.map(\.key))
+          }
+        } footer: {
+          Text(String(localized: "ws.reorder.hint"))
+        }
+      }
+      // Tay nắm luôn hiện, như hàng đợi của Apple Music.
+      .environment(\.editMode, .constant(.active))
+      .navigationTitle(Text("ws.reorder"))
+      .navigationBarTitleDisplayMode(.inline)
+      .toolbar {
+        ToolbarItem(placement: .confirmationAction) {
+          Button(String(localized: "wb.done")) { dismiss() }
+        }
+      }
+    }
+    .presentationDetents([.medium, .large])
+    .sensoryFeedback(.selection, trigger: exercises.map(\.key))
+  }
 }
