@@ -26,7 +26,7 @@ Rules:
 - Never invent numbers. Never estimate calories. Unknown amount → null / servings 1.
 - slot: from words like sáng/trưa/tối/bữa phụ, breakfast/lunch/dinner/snack, desayuno/almuerzo/cena; otherwise null.
 - One meal item per slot; several foods go in the same item.
-- Put any part you could not turn into an item in "unclear" (short quote). Do not explain.`;
+- Put any part you could not turn into an item in "unclear" (short quote). Negations, plans, questions and step counts are understood, not unclear — leave them out of every list. Do not explain.`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });

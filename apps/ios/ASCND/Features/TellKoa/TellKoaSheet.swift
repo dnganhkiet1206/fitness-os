@@ -90,7 +90,9 @@ struct TellKoaSheet: View {
     var slot: String
     var slotGuessed: Bool
     var foods: [FoodEdit]
-    var needsScreen: Bool { foods.contains { $0.match == nil || $0.spoken.grams != nil } }
+    /// Còn món chưa biết số (không khớp thư viện / nói theo gram) mà người dùng chưa
+    /// nhập macro → mở màn ghi bữa sau khi lưu.
+    var needsScreen: Bool { foods.contains { ($0.match == nil || $0.spoken.grams != nil) && !$0.hasMacros } }
   }
 
   struct FoodEdit: Identifiable, Equatable {
@@ -98,6 +100,31 @@ struct TellKoaSheet: View {
     var spoken: SpokenLog.Food
     var match: MealLog.Food?
     var searching = true
+    /// Macro MỖI PHẦN người dùng chỉnh (19/10, chủ dự án: "cho phép người dùng chỉnh
+    /// macro"). Điền sẵn từ món khớp; món không khớp nhập kcal là ghi được luôn.
+    var kcal = ""
+    var protein = ""
+    var carbs = ""
+    var fat = ""
+    var editing = false
+    var hasMacros: Bool { !kcal.trimmingCharacters(in: .whitespaces).isEmpty }
+    /// Macro đã nhập hợp lệ (cùng luật với món nhập tay của màn ghi bữa).
+    var macrosValid: Bool {
+      MealLog.customItem(id: "x", name: spoken.name, kcal: kcal, protein: protein, carbs: carbs, fat: fat) != nil
+    }
+    var shownKcal: Double? {
+      if hasMacros { return Double(kcal.replacingOccurrences(of: ",", with: ".")).map { $0 * spoken.servings } }
+      guard spoken.grams == nil, let match else { return nil }
+      return match.kcal * spoken.servings
+    }
+
+    mutating func prefill(from m: MealLog.Food) {
+      func s(_ v: Double) -> String { v == v.rounded() ? String(Int(v)) : String(format: "%.1f", v) }
+      kcal = s(m.kcal)
+      protein = s(m.protein)
+      carbs = s(m.carbs)
+      fat = s(m.fat)
+    }
   }
 
   enum FollowUp: Identifiable, Hashable {
@@ -425,15 +452,25 @@ struct TellKoaSheet: View {
       guard let m = meals.first(where: { $0.slot == slot }) else { return "" }
       if m.foods.contains(where: \.searching) { return String(localized: "tellkoa.food.searching") }
       let names = m.foods.map { $0.match?.name ?? $0.spoken.name }.joined(separator: ", ")
-      let kcal = m.foods.reduce(0.0) { $0 + (($1.spoken.grams == nil ? $1.match?.kcal : nil) ?? 0) * $1.spoken.servings }
+      let kcal = m.foods.reduce(0.0) { $0 + ($1.shownKcal ?? 0) }
       let tail = m.needsScreen ? String(localized: "tellkoa.meal.later") : "\(Int(kcal.rounded())) kcal"
       return "\(names) · \(tail)"
     case .yesterdayMeals:
       return YesterdayMealsCard.detail(gaps.yesterday)
     case .planMeals:
-      let slots = gaps.planMeals.map { SpokenLogDisplay.slot($0, lang: lang) }.joined(separator: ", ")
-      return "\(gaps.planName ?? "") · \(slots) · \(Int(gaps.planKcal.rounded())) kcal"
+      let open = planMealsToLog
+      let slots = open.map(DiaryView.mealName).joined(separator: ", ")
+      let kcal = open.flatMap { m in planBook?.items.filter { $0.day == MealPlans.dayIndex(Date()) && $0.mealType == m } ?? [] }
+        .reduce(0) { $0 + $1.kcal }
+      return "\(gaps.planName ?? "") · \(slots) · \(Int(kcal.rounded())) kcal"
     }
+  }
+
+  /// Bữa của kế hoạch sẽ ghi: bỏ các khung người dùng vừa kể (bữa kể thắng —
+  /// không ghi hai bữa trưa).
+  private var planMealsToLog: [String] {
+    let spoken = Set(meals.filter { !skipped.contains(.meal($0.slot)) }.map(\.slot))
+    return gaps.planMeals.filter { !spoken.contains($0) }
   }
 
   static func hhmm(_ c: SleepLog.Clock) -> String { String(format: "%d:%02d", c.hour, c.minute) }
@@ -678,22 +715,55 @@ struct TellKoaSheet: View {
           Text(verbatim: SpokenLogDisplay.food(f.spoken, lang: lang)).font(.system(size: 15, weight: .semibold))
           if f.searching {
             Text("tellkoa.food.searching").font(DS.TextStyle.caption).foregroundStyle(DS.Color.mutedForeground.swiftUI)
-          } else if let match = f.match, f.spoken.grams == nil {
-            Text(verbatim: "\(match.name) · \(Int((match.kcal * f.spoken.servings).rounded())) kcal")
+          } else if let kcal = f.shownKcal {
+            Text(verbatim: "\(f.match?.name ?? f.spoken.name) · \(Int(kcal.rounded())) kcal")
               .font(DS.TextStyle.caption).foregroundStyle(DS.Color.mutedForeground.swiftUI)
           } else {
             Text("tellkoa.food.pick").font(DS.TextStyle.caption).foregroundStyle(DS.Color.metricOrange.swiftUI)
           }
         }
         Spacer(minLength: 0)
-        if f.match != nil, f.spoken.grams == nil {
-          Image(systemName: "checkmark.circle.fill").foregroundStyle(.white, DS.Color.readinessGreen.swiftUI)
+        Button {
+          withAnimation(reduceMotion ? nil : .smooth(duration: 0.2)) { f.editing.toggle() }
+        } label: {
+          Text("logday.macros.edit").font(DS.TextStyle.caption.weight(.semibold))
+            .padding(.horizontal, 10).frame(minHeight: 32)
+            .background(DS.Color.foreground.swiftUI.opacity(0.06), in: Capsule())
+            .frame(minHeight: 44)
+        }
+        .buttonStyle(.plain)
+        .disabled(f.searching)
+      }
+      if f.editing {
+        VStack(alignment: .leading, spacing: 6) {
+          HStack(spacing: 8) {
+            macroField("kcal", $f.kcal)
+            macroField(String(localized: "logday.macro.protein"), $f.protein)
+            macroField(String(localized: "logday.macro.carbs"), $f.carbs)
+            macroField(String(localized: "logday.macro.fat"), $f.fat)
+          }
+          Text(f.hasMacros && !f.macrosValid ? "logday.macros.invalid" : "logday.macros.perServing")
+            .font(DS.TextStyle.caption)
+            .foregroundStyle(f.hasMacros && !f.macrosValid ? DS.Color.destructive.swiftUI : DS.Color.mutedForeground.swiftUI)
         }
       }
     }
     if m.wrappedValue.needsScreen {
       Text("tellkoa.meal.later").font(DS.TextStyle.caption).foregroundStyle(DS.Color.mutedForeground.swiftUI)
     }
+  }
+
+  private func macroField(_ label: String, _ value: Binding<String>) -> some View {
+    VStack(alignment: .leading, spacing: 2) {
+      Text(verbatim: label).font(.system(size: 11, weight: .semibold)).foregroundStyle(DS.Color.mutedForeground.swiftUI)
+      TextField("0", text: value)
+        .keyboardType(.decimalPad)
+        .font(.system(size: 15, weight: .semibold).monospacedDigit())
+        .padding(.horizontal, 8).frame(minHeight: 36)
+        .background(DS.Color.foreground.swiftUI.opacity(0.05), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .accessibilityLabel(Text(verbatim: label))
+    }
+    .frame(maxWidth: .infinity)
   }
 
   // Hỏi lại
@@ -741,8 +811,8 @@ struct TellKoaSheet: View {
     if parsed(.weight) { parts.append(.weight) }
     if workout != nil || adds.contains(.workout) { parts.append(.workout) }
     parts += meals.map { .meal($0.slot) }
-    if adds.contains(.planMeals) { parts.append(.planMeals) }
-    if adds.contains(.yesterdayMeals) { parts.append(.yesterdayMeals) }
+    if adds.contains(.planMeals), !planMealsToLog.isEmpty { parts.append(.planMeals) }
+    if adds.contains(.yesterdayMeals), meals.isEmpty { parts.append(.yesterdayMeals) }
     return parts.filter { !skipped.contains($0) }
   }
 
@@ -753,6 +823,7 @@ struct TellKoaSheet: View {
       || (included.contains(.sleep) && sleep?.askHoursOrClock != nil)
       || (included.contains(.weight) && weightKg == nil)
       || meals.contains { included.contains(.meal($0.slot)) && $0.foods.contains(where: \.searching) }
+      || meals.contains { included.contains(.meal($0.slot)) && $0.foods.contains { $0.hasMacros && !$0.macrosValid } }
   }
 
   private var saveBar: some View {
@@ -861,9 +932,25 @@ struct TellKoaSheet: View {
       return true
     }
     guard let logger = services.makeMealLogger(userId: userId, date: nil, mealType: slot) else { return false }
-    for (food, edit) in zip(matched, m.foods) {
-      logger.add(food)
-      if let id = logger.items.last?.id, edit.spoken.servings != 1 { logger.setServings(id, edit.spoken.servings) }
+    _ = matched
+    for f in m.foods {
+      if f.hasMacros {
+        // Macro người dùng chỉnh: món khớp thì sửa số của nó, không thì món nhập tay.
+        if let match = f.match, f.spoken.grams == nil {
+          logger.add(match)
+          guard let id = logger.items.last?.id,
+            logger.edit(id, kcal: f.kcal, protein: f.protein, carbs: f.carbs, fat: f.fat)
+          else { return false }
+        } else {
+          guard logger.addCustom(name: f.spoken.name, kcal: f.kcal, protein: f.protein, carbs: f.carbs, fat: f.fat)
+          else { return false }
+        }
+      } else if let match = f.match, f.spoken.grams == nil {
+        logger.add(match)
+      } else {
+        continue
+      }
+      if let id = logger.items.last?.id, f.spoken.servings != 1 { logger.setServings(id, f.spoken.servings) }
     }
     if case .queued = await logger.save(online: online) { return true }
     return false
@@ -879,7 +966,7 @@ struct TellKoaSheet: View {
   private func savePlan(online: Bool) async -> Bool {
     guard let book = planBook else { return false }
     let day = MealPlans.dayIndex(Date())
-    for meal in gaps.planMeals {
+    for meal in planMealsToLog {
       if case .failed = await book.eat(meal: meal, day: day, online: online) { return false }
     }
     return true
@@ -1011,6 +1098,9 @@ struct TellKoaSheet: View {
       }
       guard let i = meals.firstIndex(where: { $0.slot == slot }), let j = meals[i].foods.firstIndex(where: { $0.id == f.id }) else { continue }
       meals[i].foods[j].match = match
+      if let match, meals[i].foods[j].spoken.grams == nil, !meals[i].foods[j].hasMacros {
+        meals[i].foods[j].prefill(from: match)
+      }
       meals[i].foods[j].searching = false
     }
     logger.close()
