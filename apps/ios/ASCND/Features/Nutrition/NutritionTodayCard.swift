@@ -165,9 +165,15 @@ struct NutritionTodayCard: View {
   private func macroStat(_ m: Macro, _ tile: NutritionToday.Tile) -> some View {
     let color = tile.overHard ? DS.Color.readinessRed.swiftUI : Self.accent
     return VStack(alignment: .leading, spacing: 3) {
-      Text(verbatim: m.label)
-        .font(DS.TextStyle.caption)
-        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+      // Icon cùng màu nhấn trước tên (19/10: "thêm icon cho macro").
+      Label {
+        Text(verbatim: m.label)
+      } icon: {
+        Image(systemName: m.icon).foregroundStyle(Self.accent)
+      }
+      .labelStyle(MacroLabelStyle())
+      .font(DS.TextStyle.caption)
+      .foregroundStyle(DS.Color.mutedForeground.swiftUI)
       HStack(alignment: .firstTextBaseline, spacing: 1) {
         Text(verbatim: showLeft ? tile.leftText : Units.display(tile.eaten, locale: .app))
           .font(.system(.title3, design: .rounded).weight(.semibold).monospacedDigit())
@@ -331,9 +337,9 @@ struct NutritionTodayCard: View {
 
     var icon: String {
       switch self {
-      case .protein: "fork.knife"
-      case .carbs: "leaf"
-      case .fat: "drop"
+      case .protein: "fish"
+      case .carbs: "laurel.leading"
+      case .fat: "drop.fill"
       case .fiber: "carrot"
       }
     }
@@ -386,5 +392,15 @@ struct NutritionTodayCard: View {
     .todayCard()
     .accessibilityElement(children: .ignore)
     .accessibilityLabel(Text(String(localized: "nc.loading")))
+  }
+}
+
+/// Icon sát chữ (Label mặc định để icon cách xa và to bằng chữ to).
+private struct MacroLabelStyle: LabelStyle {
+  func makeBody(configuration: Configuration) -> some View {
+    HStack(spacing: 4) {
+      configuration.icon.font(.caption2.weight(.semibold)).accessibilityHidden(true)
+      configuration.title
+    }
   }
 }
