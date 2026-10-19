@@ -27,7 +27,7 @@ d = json.loads(m.group(1))
 # Các món đã vẽ lại, theo ô. Nhóm vẽ RN của chúng bị bỏ trước khi chèn bản mới.
 REDRAWN = {
     "head": ["cap", "band", "beanie", "santa", "antler", "pumpkin", "witch", "khanxep", "phones", "lion"], "face": ["shades", "goggles", "mask", "eyepatch", "beard", "tuong", "vr", "nosestrip", "heart", "dragon"], "top": ["tee", "tank", "hoodie", "xmas", "aodai", "ghost", "windbreak", "jersey", "lion", "armor"], "bottom": ["short", "legging", "jogger", "xmaspants", "tetpants", "tutu", "camo", "swim", "ghostpants", "flame"],
-    "shoes": ["sneaker"], "back": ["backpack"], "hand": ["bottle"],
+    "shoes": ["sneaker", "runner", "boot", "xmasboot", "hai", "sandal", "socks", "glow", "ghostshoe", "wing"], "back": ["backpack"], "hand": ["bottle"],
 }
 gone = {f"it_{slot}_{i}" for slot, ids in REDRAWN.items() for i in ids}
 def _all(n):
@@ -586,6 +586,97 @@ sit['kids'].append(G([
     E(92, 284, 17, 10, fill="#5B6573"), E(92, 283, 13, 7, fill="#FFFFFF"), E(92, 283, 7, 3.5, fill="#3FA9E5", opacity=0.8),
     E(148, 284, 17, 10, fill="#5B6573"), E(148, 283, 13, 7, fill="#FFFFFF"), E(148, 283, 7, 3.5, fill="#3FA9E5", opacity=0.8),
 ], **{"if": "it_shoes_sneaker"}))
+
+# ── Ô GIÀY (còn lại): cùng khung với sneaker mới (mũ giày, đế, mặt trên có chi tiết),
+#    mỗi chiếc nằm trong nhóm giày có hoạt ảnh (theo bước chạy) + hai đế khi ngồi.
+def shoe_pair(flag, one, sit_one):
+    for g in body['kids']:
+        if g['t'] == 'g' and g.get('animBind') in ('shoeAnimL', 'shoeAnimR'):
+            g['kids'].append(G(one(False) + one(True), **{"if": flag}))
+    sit['kids'].append(G(sit_one(92) + sit_one(148), **{"if": flag}))
+def F(flip): return (lambda x: 240 - x) if flip else (lambda x: x)
+def upper(flip, top=264, colour="#FFFFFF", edge=OUT):
+    f = F(flip)
+    return P(f"M{f(70)} 290 C {f(70)} {top + 10} {f(80)} {top} {f(96)} {top} C {f(112)} {top} {f(122)} {top + 10} {f(123)} 288 "
+             f"L {f(123)} 292 L {f(70)} 292 Z", fill=colour, stroke=edge, stroke_width=1.6)
+def sole(flip, colour="#5B6573"):
+    f = F(flip)
+    return P(f"M{f(68)} 291 C {f(68)} 288 {f(70)} 287 {f(74)} 287 L {f(120)} 287 C {f(123)} 287 {f(124)} 289 {f(124)} 292 "
+             f"C {f(124)} 297 {f(120)} 300 {f(114)} 300 L {f(76)} 300 C {f(70)} 300 {f(68)} 296 {f(68)} 291 Z", fill=colour)
+def sit_sole(colour, inner, accent=None):
+    def one(cx):
+        out = [E(cx, 284, 17, 10, fill=colour), E(cx, 283, 13, 7, fill=inner)]
+        if accent: out.append(E(cx, 283, 7, 3.5, fill=accent, opacity=0.85))
+        return out
+    return one
+
+# giày chạy bộ: xanh, đế trắng dày, vạch phản quang
+shoe_pair("it_shoes_runner", lambda flip: [
+    upper(flip, colour="#3FA9E5", edge="#2A86BC"), sole(flip, "#F4F6F8"),
+    P(("M{0} 284 C {1} 280 {2} 280 {3} 284").format(*[F(flip)(x) for x in (78, 90, 104, 118)]), stroke="#F4F6F8", stroke_width=3.5,
+      fill="none", stroke_linecap="round"),
+    P(("M{0} 272 L {1} 276").format(*[F(flip)(x) for x in (90, 104)]), stroke="#E8B23A", stroke_width=3, stroke_linecap="round"),
+], sit_sole("#F4F6F8", "#3FA9E5"))
+# bốt da: cổ cao tới bắp chân, đế sẫm, dây buộc
+shoe_pair("it_shoes_boot", lambda flip: [
+    P(("M{0} 290 L {0} 262 C {0} 256 {1} 254 {2} 254 L {3} 254 C {4} 254 {5} 258 {5} 266 C {6} 274 {7} 280 {7} 288 "
+       "L {7} 292 L {0} 292 Z").format(*[F(flip)(x) for x in (72, 76, 82, 108, 114, 116, 122, 124)]), fill="#6B4A2E"),
+    sole(flip, "#4A3220"),
+    P(("M{0} 262 L {1} 266 M{0} 270 L {1} 274 M{0} 278 L {1} 282").format(*[F(flip)(x) for x in (98, 108)]),
+      stroke="#C9A06A", stroke_width=2, stroke_linecap="round"),
+], sit_sole("#4A3220", "#6B4A2E"))
+# bốt Noel: đỏ, cổ lông trắng
+shoe_pair("it_shoes_xmasboot", lambda flip: [
+    P(("M{0} 290 L {0} 264 L {1} 264 C {2} 270 {3} 278 {3} 288 L {3} 292 L {0} 292 Z").format(
+        *[F(flip)(x) for x in (72, 114, 120, 124)]), fill="#D64545"),
+    sole(flip, "#8E2A2A"),
+    R(min(F(flip)(70), F(flip)(124)), 270, 54, 10, 5, fill="#F4F6F8", stroke="#A9B2BC", stroke_width=1.6),
+    C(F(flip)(86), 275, 2, fill="#E4E9EE"), C(F(flip)(104), 275, 2, fill="#E4E9EE"),
+], sit_sole("#8E2A2A", "#D64545"))
+# hài: đỏ, mũi cong, hoa văn vàng
+shoe_pair("it_shoes_hai", lambda flip: [
+    P(("M{0} 290 C {0} 282 {1} 276 {2} 276 C {3} 276 {4} 280 {5} 286 C {6} 284 {7} 280 {8} 282 C {9} 288 {10} 292 {5} 293 "
+       "L {0} 293 Z").format(*[F(flip)(x) for x in (72, 80, 96, 110, 116, 120, 124, 128, 130, 128, 124)]), fill="#D64545"),
+    sole(flip, "#8E2A2A"),
+    C(F(flip)(96), 284, 4, fill="#E8B23A"),
+    P(("M{0} 282 C {1} 279 {2} 279 {3} 282").format(*[F(flip)(x) for x in (84, 90, 102, 108)]), stroke="#E8B23A", stroke_width=2,
+      fill="none"),
+], sit_sole("#8E2A2A", "#D64545", "#E8B23A"))
+# dép quai hậu: đế nâu, hai quai sẫm, thấy chân lông
+shoe_pair("it_shoes_sandal", lambda flip: [
+    sole(flip, "#8A6A3B"),
+    P(("M{0} 288 C {1} 278 {2} 278 {3} 288").format(*[F(flip)(x) for x in (76, 86, 104, 116)]), stroke="#39424E", stroke_width=5,
+      fill="none", stroke_linecap="round"),
+    P(("M{0} 288 C {1} 282 {2} 282 {3} 288").format(*[F(flip)(x) for x in (96, 102, 112, 118)]), stroke="#39424E", stroke_width=4,
+      fill="none", stroke_linecap="round"),
+], sit_sole("#8A6A3B", "#BFC7CF"))
+# tất cao cổ: trắng, sọc đỏ, ôm bắp chân
+shoe_pair("it_shoes_socks", lambda flip: [
+    P(("M{0} 290 L {0} 260 L {1} 260 C {2} 268 {3} 278 {3} 288 L {3} 292 L {0} 292 Z").format(
+        *[F(flip)(x) for x in (74, 112, 118, 122)]), fill="#F4F6F8", stroke="#A9B2BC", stroke_width=1.6),
+    P(("M{0} 264 L {1} 264 M{0} 271 L {2} 271").format(*[F(flip)(x) for x in (74, 113, 115)]), stroke="#D64545", stroke_width=4),
+], sit_sole("#F4F6F8", "#E4E9EE"))
+# giày phát sáng: đen, đế viền xanh neon, quầng sáng dưới chân
+shoe_pair("it_shoes_glow", lambda flip: [
+    E(F(flip)(96), 298, 30, 5, fill="#6DE3FF", opacity=0.35),
+    upper(flip, colour="#2A313B", edge="#39424E"), sole(flip, "#39424E"),
+    P(("M{0} 296 L {1} 296").format(*[F(flip)(x) for x in (72, 120)]), stroke="#6DE3FF", stroke_width=4, stroke_linecap="round"),
+    P(("M{0} 276 L {1} 280").format(*[F(flip)(x) for x in (90, 104)]), stroke="#6DE3FF", stroke_width=3, stroke_linecap="round"),
+], sit_sole("#39424E", "#2A313B", "#6DE3FF"))
+# giày ma: tím trong, mép lượn như vạt áo ma
+shoe_pair("it_shoes_ghostshoe", lambda flip: [
+    P(("M{0} 292 C {0} 276 {1} 266 {2} 266 C {3} 266 {4} 276 {4} 292 C {5} 296 {6} 290 {7} 295 C {8} 290 {9} 296 {0} 292 Z").format(
+        *[F(flip)(x) for x in (70, 80, 96, 112, 123, 116, 108, 98, 88, 78)]), fill="#7A5BC4", opacity=0.85),
+    C(F(flip)(90), 280, 2.5, fill="#F4F6F8"), C(F(flip)(102), 280, 2.5, fill="#F4F6F8"),
+], sit_sole("#7A5BC4", "#B9A6F0"))
+# giày cánh: vàng, đôi cánh trắng ở gót
+shoe_pair("it_shoes_wing", lambda flip: [
+    P(("M{0} 278 C {1} 266 {2} 264 {3} 268 C {4} 272 {5} 280 {0} 284 Z").format(*[F(flip)(x) for x in (72, 60, 48, 42, 50, 62)]),
+      fill="#F4F6F8", stroke="#A9B2BC", stroke_width=1.6),
+    P(("M{0} 274 C {1} 270 {2} 272 {3} 276").format(*[F(flip)(x) for x in (66, 58, 52, 50)]), stroke="#A9B2BC", stroke_width=1.4,
+      fill="none"),
+    upper(flip, colour="#E8B23A", edge="#C9952C"), sole(flip, "#C9952C"),
+], sit_sole("#C9952C", "#E8B23A", "#F4F6F8"))
 
 # ── 6. BALO: nhìn thẳng thì thấy quai qua vai + thân balo lộ hai bên; quay / chạy thì thấy ở hông.
 BP, BPD, BPL = "#2F7A4C", "#245E3B", "#3F9E63"
