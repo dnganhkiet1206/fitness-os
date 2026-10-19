@@ -26,7 +26,7 @@ d = json.loads(m.group(1))
 
 # Các món đã vẽ lại, theo ô. Nhóm vẽ RN của chúng bị bỏ trước khi chèn bản mới.
 REDRAWN = {
-    "head": ["cap", "band", "beanie", "santa", "antler", "pumpkin", "witch", "khanxep", "phones", "lion"], "face": ["shades", "goggles", "mask", "eyepatch", "beard", "tuong", "vr", "nosestrip", "heart", "dragon"], "top": ["tee"], "bottom": ["short"],
+    "head": ["cap", "band", "beanie", "santa", "antler", "pumpkin", "witch", "khanxep", "phones", "lion"], "face": ["shades", "goggles", "mask", "eyepatch", "beard", "tuong", "vr", "nosestrip", "heart", "dragon"], "top": ["tee", "tank", "hoodie", "xmas", "aodai", "ghost", "windbreak", "jersey", "lion", "armor"], "bottom": ["short"],
     "shoes": ["sneaker"], "back": ["backpack"], "hand": ["bottle"],
 }
 gone = {f"it_{slot}_{i}" for slot, ids in REDRAWN.items() for i in ids}
@@ -309,6 +309,143 @@ run_arms['kids'].append(G([
     G([sl_idle_L], bind="armLeftTurn", anim={"k": "koaRunArm18", "dur": 18000, "delay": 0, "ease": "lin"}, o=[80, 178]),
     G([sl_idle_R], anim={"k": "koaRunArm18", "dur": 18000, "delay": 0, "ease": "lin"}, o=[160, 178]),
 ], **{"if": "it_top_tee"}))
+
+# ── Ô ÁO (còn lại): thân áo như RN (đã đúng chỗ), thêm tay áo theo từng tư thế — tay
+#    áo RN nằm dưới cánh tay nên mất. Ba kiểu: "short" (cộc), "long" (tới cổ tay, chừa
+#    bàn tay), "pad" (giáp vai). `body` chèn ngay sau nhóm RN của món.
+TORSO_FLAGS = {}
+def top_body(flag, kids):
+    i = [j for j, k in enumerate(body['kids']) if k.get('if') == 'it_top_tee'][0]
+    body['kids'].insert(i + 1, G(kids, **{"if": flag}))
+
+LONG_IDLE_L = "M69 168 C 54 184 44 202 40 220 C 48 228 62 231 71 226 C 77 214 84 202 92 190 C 90 172 80 163 69 168 Z"
+LONG_IDLE_R = "M171 168 C 186 184 196 202 200 220 C 192 228 178 231 169 226 C 163 214 156 202 148 190 C 150 172 160 163 171 168 Z"
+CUFF_IDLE_L = "M41 219 C 49 226 62 229 71 225"
+CUFF_IDLE_R = "M199 219 C 191 226 178 229 169 225"
+PAD_IDLE_L = "M62 168 C 70 158 88 158 94 172 C 94 182 88 188 80 190 C 70 190 60 184 62 168 Z"
+PAD_IDLE_R = "M178 168 C 170 158 152 158 146 172 C 146 182 152 188 160 190 C 170 190 180 184 178 168 Z"
+# Tay dạng nét (tập tạ / ngồi / giãn cơ): đoạn đầu (cộc) và gần hết cánh tay (dài).
+STROKE = {
+    "liftL": ("M84 184 C 79 188 75 193 72 199", "M84 184 C 72 194 68 204 69 212"),
+    "liftR": ("M156 184 C 161 188 165 193 168 199", "M156 184 C 168 194 172 204 171 212"),
+    "relaxL": ("M76 182 C 71 189 67 196 65 204", "M76 182 C 62 202 64 226 80 244"),
+    "relaxR": ("M164 182 C 169 189 173 196 175 204", "M164 182 C 178 202 176 226 160 244"),
+    "stretchR": ("M156 184 C 162 188 166 193 168 199", "M156 184 C 168 194 172 204 170 212"),
+    "stretchL": ("M84 182 C 78 179 74 174 71 168", "M84 182 C 68 172 62 156 68 144"),
+}
+
+def sleeves(flag, kind, fill, edge, cuff=None):
+    def stroke_sleeve(key):
+        short, long = STROKE[key]
+        if kind == "pad":
+            x, y = (short.split()[0][1:], short.split()[1])
+            return [E(float(x), float(y) + 2, 17, 13, fill=fill, stroke=edge, stroke_width=1.6)]
+        d = short if kind == "short" else long
+        out = [P(d, stroke=edge, stroke_width=34, stroke_linecap="round", fill="none"),
+               P(d, stroke=fill, stroke_width=31, stroke_linecap="round", fill="none")]
+        return out  # tay dạng nét: không bo tay — chấm tròn ở cổ tay trông như quả bóng
+    def idle_sleeve(side):
+        if kind == "short":
+            return [P(sl_idle_L["a"]["d"] if side == "L" else sl_idle_R["a"]["d"], fill=fill, stroke=edge, stroke_width=1.6)]
+        if kind == "long":
+            out = [P(LONG_IDLE_L if side == "L" else LONG_IDLE_R, fill=fill, stroke=edge, stroke_width=1.6)]
+            if cuff:
+                out.append(P(CUFF_IDLE_L if side == "L" else CUFF_IDLE_R, stroke=cuff, stroke_width=6, fill="none",
+                             stroke_linecap="round"))
+            return out
+        return [P(PAD_IDLE_L if side == "L" else PAD_IDLE_R, fill=fill, stroke=edge, stroke_width=1.6)]
+    tag = {"if": flag}
+    body['kids'].append(G([G([
+        G(idle_sleeve("L"), anim={"k": "koaArmL", "dur": 3600, "delay": 0, "ease": "io"}, o=[80, 178]),
+        G(idle_sleeve("R"), anim={"k": "koaArmR", "dur": 3600, "delay": 0, "ease": "io"}, o=[160, 178]),
+    ], **{"if": "armsIdle"})], **tag))
+    # dài: vẽ SAU bàn tay (circle) thì che bàn tay — chèn trước nó (index 2) như tee
+    la['kids'].insert(2, G(stroke_sleeve("liftL"), **tag))
+    lb['kids'].insert(2, G(stroke_sleeve("liftR"), **tag))
+    relax['kids'].insert(2, G(stroke_sleeve("relaxL"), **tag))
+    relax['kids'].insert(len(relax['kids']) - 1, G(stroke_sleeve("relaxR"), **tag))
+    st_right['kids'].insert(2, G(stroke_sleeve("stretchR"), tf=[["t", 20, -10]], **tag))
+    st_left['kids'].insert(2, G(stroke_sleeve("stretchL"), **tag))
+    run_arms['kids'].append(G([
+        G(idle_sleeve("L"), bind="armLeftTurn", anim={"k": "koaRunArm18", "dur": 18000, "delay": 0, "ease": "lin"}, o=[80, 178]),
+        G(idle_sleeve("R"), anim={"k": "koaRunArm18", "dur": 18000, "delay": 0, "ease": "lin"}, o=[160, 178]),
+    ], **tag))
+
+NECK = "C 148 184 136 190 120 190 C 104 190 92 184 84 168 Z"
+SHIRT = "M84 168 C 74 178 70 192 69 208 C 68 226 70 240 74 250 C 94 259 146 259 166 250 C 170 240 172 226 171 208 C 170 192 166 178 156 168 " + NECK
+# áo ba lỗ: không tay (đúng kiểu), thêm viền nách / cổ trắng
+top_body("it_top_tank", [
+    P(SHIRT, fill="#3FA9E5"),
+    P("M84 168 C 92 184 104 190 120 190 C 136 190 148 184 156 168", stroke="#FFFFFF", stroke_width=3, fill="none", opacity=0.9),
+    P("M74 250 C 94 259 146 259 166 250", stroke="#2E8FCB", stroke_width=3, fill="none"),
+])
+# hoodie: mũ trùm gập sau cổ, túi kangaroo, dây rút, tay dài có bo
+top_body("it_top_hoodie", [
+    P(SHIRT, fill="#8A94A1"),
+    P("M76 170 C 82 154 100 148 120 148 C 140 148 158 154 164 170 C 152 184 136 190 120 190 C 104 190 88 184 76 170 Z", fill="#6E7885"),
+    P("M92 226 C 104 220 136 220 148 226 L 152 248 C 132 254 108 254 88 248 Z", fill="#7B8592", stroke="#6E7885", stroke_width=1.6),
+    P("M112 190 L 112 214 M128 190 L 128 214", stroke="#F4F6F8", stroke_width=3, stroke_linecap="round"),
+    P("M74 250 C 94 259 146 259 166 250", stroke="#6E7885", stroke_width=5, fill="none", stroke_linecap="round"),
+])
+sleeves("it_top_hoodie", "long", "#8A94A1", "#6E7885", cuff="#6E7885")
+# áo len Noel: thân đỏ, dải trắng, cây thông; tay dài bo trắng
+top_body("it_top_xmas", [
+    P(SHIRT, fill="#D64545"),
+    P("M70 208 C 96 214 144 214 170 208", stroke="#F4F6F8", stroke_width=7, fill="none"),
+    P("M120 220 L 108 242 L 132 242 Z", fill="#3F9E63"), R(117, 242, 6, 5, 1, fill="#8A6A3B"), C(120, 218, 4, fill="#E8B23A"),
+    P("M74 250 C 94 259 146 259 166 250", stroke="#F4F6F8", stroke_width=5, fill="none", stroke_linecap="round"),
+])
+sleeves("it_top_xmas", "long", "#D64545", "#B23636", cuff="#F4F6F8")
+# áo dài: thân dài xẻ tà, cổ đứng đỏ, hoa văn; tay dài
+top_body("it_top_aodai", [
+    P("M84 166 C 72 180 68 198 68 216 C 68 240 72 256 78 270 C 98 278 116 276 118 270 L 122 270 C 124 276 142 278 162 270 "
+      "C 168 256 172 240 172 216 C 172 198 168 180 156 166 C 148 184 134 190 120 190 C 106 190 92 184 84 166 Z", fill="#E8B23A"),
+    P("M108 178 C 110 186 130 186 132 178 L 132 190 C 128 194 112 194 108 190 Z", fill="#D64545"),
+    P("M120 192 C 128 206 132 222 136 238", stroke="#D64545", stroke_width=3, fill="none", stroke_linecap="round"),
+    C(98, 214, 6, fill="#D64545", opacity=0.85), C(146, 232, 5, fill="#D64545", opacity=0.85), C(104, 246, 4, fill="#D64545", opacity=0.85),
+])
+sleeves("it_top_aodai", "long", "#E8B23A", "#C9952C")
+# áo ma: tấm vải trùm, gấu lượn sóng, hai mắt đen — trùm cả vai
+top_body("it_top_ghost", [
+    P("M74 162 C 58 178 54 202 54 226 C 54 246 60 260 66 270 C 78 262 90 272 104 266 C 114 274 126 274 136 266 "
+      "C 150 272 162 262 174 270 C 180 260 186 246 186 226 C 186 202 182 178 166 162 C 152 184 136 192 120 192 "
+      "C 104 192 88 184 74 162 Z", fill="#F4F6F8", stroke="#A9B2BC", stroke_width=1.8),
+    E(106, 214, 6, 8, fill="#39424E"), E(134, 214, 6, 8, fill="#39424E"),
+    P("M112 236 C 116 232 124 232 128 236", stroke="#39424E", stroke_width=3, fill="none", stroke_linecap="round"),
+])
+sleeves("it_top_ghost", "long", "#F4F6F8", "#A9B2BC")
+# áo gió: khoá kéo giữa, sọc trắng ngang ngực và tay, tay dài
+top_body("it_top_windbreak", [
+    P(SHIRT, fill="#3F9E63"),
+    P("M120 190 L 120 256", stroke="#2F7A4C", stroke_width=4), R(116, 192, 8, 10, 2, fill="#E8B23A"),
+    P("M70 222 C 96 228 144 228 170 222", stroke="#FFFFFF", stroke_width=5, fill="none", opacity=0.9),
+    P("M84 168 C 92 184 104 190 120 190 C 136 190 148 184 156 168", stroke="#2F7A4C", stroke_width=5, fill="none"),
+])
+sleeves("it_top_windbreak", "long", "#3F9E63", "#2F7A4C", cuff="#2F7A4C")
+# áo thi đấu: không tay (áo bóng rổ), viền vàng, số 1
+top_body("it_top_jersey", [
+    P(SHIRT, fill="#7A5BC4"),
+    P("M84 168 C 92 184 104 190 120 190 C 136 190 148 184 156 168", stroke="#E8B23A", stroke_width=4, fill="none"),
+    P("M114 210 L 122 202 L 122 240 M114 240 L 130 240", stroke="#F4F6F8", stroke_width=6, fill="none",
+      stroke_linecap="round", stroke_linejoin="round"),
+    P("M74 250 C 94 259 146 259 166 250", stroke="#E8B23A", stroke_width=3, fill="none"),
+])
+# áo lân: đỏ, dải vàng và xanh, tay cộc viền vàng
+top_body("it_top_lion", [
+    P(SHIRT, fill="#D64545"),
+    P("M68 206 C 96 198 144 198 172 206", stroke="#E8B23A", stroke_width=6, fill="none"),
+    P("M70 232 C 98 224 142 224 170 232", stroke="#3F9E63", stroke_width=5, fill="none"),
+    C(120, 218, 9, fill="#E8B23A"),
+])
+sleeves("it_top_lion", "short", "#D64545", "#E8B23A")
+# giáp: tấm ngực kim loại, huy hiệu vàng, giáp vai
+top_body("it_top_armor", [
+    P(SHIRT, fill="#4A5A72"),
+    P("M120 194 L 98 214 L 120 236 L 142 214 Z", fill="#E8B23A"),
+    P("M120 202 L 106 214 L 120 228 L 134 214 Z", fill="#F2C95A"),
+    P("M76 244 C 96 252 144 252 164 244", stroke="#6E7E96", stroke_width=4, fill="none"),
+])
+sleeves("it_top_armor", "pad", "#6E7E96", "#39424E")
 
 # ── 4. QUẦN ĐÙI: có cạp, hai ống quanh đùi; khi ngồi thì phủ lên đùi.
 SHO, SHOD = "#2E8FCB", "#1F6FA3"
