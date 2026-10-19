@@ -24,8 +24,6 @@ struct TodayDayCard: View {
   }
 
   let tiles: [Tile]
-  /// Câu tóm tắt của Koa (19/10): hôm nay còn gì, hoặc khen khi xong.
-  var koaLine: String = ""
   /// Dòng phụ của ô Bữa: bữa kế tiếp theo kế hoạch ăn ("Tiếp theo: Bữa tối · Cơm").
   var planNext: String?
   /// Đã tập xong mà muốn ghi buổi phát sinh.
@@ -58,7 +56,6 @@ struct TodayDayCard: View {
       }
       .padding(.horizontal, 4)
       VStack(alignment: .leading, spacing: 12) {
-        if !koaLine.isEmpty { koa }
         // Grid (không LazyVGrid): hai ô một hàng luôn cao bằng nhau.
         Grid(horizontalSpacing: 10, verticalSpacing: 10) {
           ForEach(Array(stride(from: 0, to: tiles.count, by: 2)), id: \.self) { i in
@@ -76,23 +73,6 @@ struct TodayDayCard: View {
       .padding(DS.Spacing.md)
       .todayCard()
     }
-  }
-
-  /// Câu Koa, cùng kiểu với màn "Ghi hôm nay".
-  private var koa: some View {
-    HStack(alignment: .top, spacing: 10) {
-      MascotAvatar(mascotId: nil, size: 30)
-      Text(verbatim: koaLine)
-        .font(.system(size: 14))
-        .foregroundStyle(DS.Color.foreground.swiftUI)
-        .fixedSize(horizontal: false, vertical: true)
-        .padding(.horizontal, 12).padding(.vertical, 8)
-        .background(
-          DS.Color.foreground.swiftUI.opacity(0.05),
-          in: UnevenRoundedRectangle(topLeadingRadius: 5, bottomLeadingRadius: 16, bottomTrailingRadius: 16, topTrailingRadius: 16, style: .continuous))
-      Spacer(minLength: 0)
-    }
-    .accessibilityElement(children: .combine)
   }
 
   /// Thanh "Ghi hôm nay" (19/10): luôn hiện, cùng viên kính với mọi ô chat.

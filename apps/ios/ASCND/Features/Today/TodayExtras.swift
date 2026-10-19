@@ -142,7 +142,7 @@ struct TodayExtras<Plan: View>: View {
       if let mascot, case .ready = mascot.phase {
         // "Hôm nay của bạn" (18/10, mock A): thay danh sách "Ngày của bạn".
         TodayDayCard(
-          tiles: dayTiles(mascot), koaLine: koaLine(mascot), planNext: planNext,
+          tiles: dayTiles(mascot), planNext: planNext,
           onExtraWorkout: onLogWorkout,
           onTell: { voice in tellVoice = voice; showsDayLog = true },
           weighIn: weighInRow, onLogAll: { showsDayLog = true },
@@ -569,13 +569,6 @@ struct TodayExtras<Plan: View>: View {
     case .water: act(.water)
     case .workout: act(.workout)
     }
-  }
-
-  /// Câu Koa trên thẻ: còn thiếu gì, hay đã xong.
-  private func koaLine(_ room: MascotRoomController) -> String {
-    let pending = DayCheckIn.pending(dayStates(room)).map { TodayDayCard.name($0).lowercased() }
-    if pending.isEmpty { return String(localized: "day.koa.done") }
-    return String(localized: "day.koa.missing \(pending.formatted(.list(type: .and).locale(.app)))")
   }
 
   /// Bữa kế tiếp của kế hoạch ăn hôm nay (chưa ghi), cho ô Bữa.
