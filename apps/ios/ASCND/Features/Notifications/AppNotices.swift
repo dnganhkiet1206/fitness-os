@@ -9,13 +9,11 @@ import Foundation
 enum AppNotice: Hashable, Identifiable {
   /// Chuỗi ≥ 1 ngày, hôm nay chưa ghi gì, đã sang buổi tối.
   case streakRisk(days: Int)
-  /// Việc hôm nay đã xong mà xu chưa nhận (nhận ở phòng linh vật).
-  case coinsWaiting(Int)
+  // "Xu đang chờ — mở phòng Koa để nhận" đã bỏ (Koa đợt 1, 19/10): xu tự về.
 
   var id: String {
     switch self {
     case .streakRisk: "streak"
-    case .coinsWaiting: "coins"
     }
   }
 
@@ -24,7 +22,6 @@ enum AppNotice: Hashable, Identifiable {
   func seenKey(day: String) -> String {
     switch self {
     case .streakRisk(let d): "streak:\(d):\(day)"
-    case .coinsWaiting(let c): "coins:\(c):\(day)"
     }
   }
 
@@ -41,10 +38,6 @@ enum AppNotice: Hashable, Identifiable {
     {
       out.append(.streakRisk(days: room.streak.count))
     }
-    let coins = room.activeQuests
-      .filter { room.questDone($0.key) && !room.isClaimed(MascotRules.questRefKey(room.today, $0.key)) }
-      .map(\.coins).reduce(0, +)
-    if coins > 0 { out.append(.coinsWaiting(coins)) }
     return out
   }
 }

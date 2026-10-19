@@ -268,8 +268,6 @@ struct CommunityInboxView: View {
     switch n {
     case .streakRisk(let days):
       ("flame.fill", DS.Color.metricOrangeGraphic.swiftUI, String(localized: "notif.streak.risk \(days)"))
-    case .coinsWaiting(let coins):
-      ("circle.circle.fill", DS.Color.readinessYellow.swiftUI, String(localized: "notif.coins \(coins)"))
     }
   }
 

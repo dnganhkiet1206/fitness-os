@@ -34,6 +34,12 @@ struct TodayExtras<Plan: View>: View {
   @State private var biometrics: BiometricsBook?
   @State private var awards: AwardsBook?
   @State private var mascot: MascotRoomController?
+  /// Tủ đồ Koa (Koa đợt 1): Koa ở Hôm nay mặc đúng đồ đang mặc trong phòng —
+  /// CÙNG sổ với phòng, nên thay đồ ở phòng là Koa ngoài này đổi theo.
+  @State private var shop: MascotShopBook?
+  /// Ngày đã đọc xong lần đầu: thưởng chuỗi tự về SAU đó là việc vừa làm (mừng),
+  /// còn lúc mở app thì không diễn lại.
+  @State private var dayLoaded = false
   @State private var challenges: WeeklyChallengesBook?
   /// Điểm 7 ngày qua — chỉ để dòng sẵn sàng hiện điểm gần nhất khi hôm nay chưa có
   /// (cùng quyết định với Trợ lý, `AssistantSummary.shown`).
@@ -120,7 +126,9 @@ struct TodayExtras<Plan: View>: View {
       if let mascot, case .ready = mascot.phase {
         TodayDayBlock(
           room: mascot, localWaterMl: water?.loaded == true ? water?.totalMl : nil,
-          onAct: act, onOpenRoom: { roomSource = "koa"; showsRoom = true }, zoom: zoom)
+          onAct: act, onOpenRoom: { roomSource = "koa"; showsRoom = true }, zoom: zoom,
+          profile: profile?.profile, riskHour: KoaToday.riskHour(services.habitHours, userId: userId),
+          equipped: shop?.inventory.filter(\.equipped).map(\.itemKey) ?? [], reward: services.koaReward)
           .todayEntrance(1)
           .preference(key: TodayAccentPreference.self, value: nextSignal(mascot))
           // Rung NGAY lúc chạm nước (RN `Haptics.light()` trong `onPress`).
@@ -175,7 +183,8 @@ struct TodayExtras<Plan: View>: View {
     }
     .navigationDestination(isPresented: $showsRoom) {
       if let mascot {
-        MascotRoomView(room: mascot, awards: awards, challenges: challenges).todayZoom(roomSource, in: zoom)
+        MascotRoomView(room: mascot, awards: awards, challenges: challenges, sharedShop: shop)
+          .todayZoom(roomSource, in: zoom)
       }
     }
     .sheet(isPresented: $showsReadiness) {
@@ -230,6 +239,7 @@ struct TodayExtras<Plan: View>: View {
       biometrics = services.makeBiometricsBook(userId: userId)
       awards = services.makeAwardsBook(userId: userId)
       mascot = services.makeMascotRoom(userId: userId, today: today)
+      shop = services.makeMascotShop(userId: userId)
       challenges = services.makeWeeklyChallenges(userId: userId, today: today)
       trend = services.makeReadinessTrend(userId: userId, today: today)
       activity = services.makeActivityRings(userId: userId, today: today)
@@ -244,6 +254,8 @@ struct TodayExtras<Plan: View>: View {
       await weight?.load()
       await loadMeals()
       await mascot?.load()
+      dayLoaded = true
+      await shop?.load()
       if let nutrition { await nutrition.loadOnce() } else { await ownWater?.load() }
       await readiness?.load()
       await trend?.load()
@@ -262,6 +274,21 @@ struct TodayExtras<Plan: View>: View {
     // Lượt tự đồng bộ (ra tiền cảnh, AppServices) xong sau lần đọc của màn.
     .onReceive(NotificationCenter.default.publisher(for: .healthSynced)) { _ in
       Task { await reloadAfterHealthSync() }
+    }
+    // Koa đợt 1: xu nhiệm vụ tự về (bộ quan sát của app) → đọc lại ví, báo lên cấp.
+    .onChange(of: services.koaReward?.id) { _, _ in
+      guard let mascot, services.koaReward?.userId == userId else { return }
+      Task {
+        let before = mascot.level
+        await mascot.refreshWallet()
+        announceLevel(from: before, mascot)
+      }
+    }
+    // Thưởng chuỗi tự về trong lần đọc ngày.
+    .onChange(of: mascot?.streakAutoClaim) { _, outcome in
+      guard let outcome, let mascot else { return }
+      mascot.streakAutoClaimShown()
+      services.noteKoaReward(userId: userId, amount: outcome.amount, seen: dayLoaded)
     }
     .onChange(of: scenePhase) { _, phase in
       // Ra tiền cảnh: qua nửa đêm thì đổi ngày; không thì đọc lại điểm (đồng
@@ -288,6 +315,7 @@ struct TodayExtras<Plan: View>: View {
       biometrics?.close()
       awards?.close()
       mascot?.close()
+      shop?.close()
       challenges?.close()
       trend?.close()
       activity?.close()
@@ -560,6 +588,17 @@ struct TodayExtras<Plan: View>: View {
     case .water: act(.water)
     case .workout: act(.workout)
     }
+  }
+
+  /// Lên cấp / lên hạng nhờ xu tự về: màn ăn mừng ở gốc app (cùng đường với huy chương).
+  private func announceLevel(from before: Int, _ room: MascotRoomController) {
+    guard room.level > before else { return }
+    let rank = room.rank
+    let rankUp = MascotRules.rank(level: before).key != rank.key
+    let lang = services.preferences.lang
+    services.celebrations.enqueue(
+      title: rankUp ? String(localized: "mr.rankUp \(rank.name(lang))") : String(localized: "mr.levelUp \(room.level)"),
+      description: rank.name(lang), icon: "trophy", tier: MascotRules.celebrationTier(rank.key))
   }
 
   private func reloadAfterHealthSync() async {

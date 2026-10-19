@@ -193,6 +193,9 @@ public final class MascotRoomController {
   public private(set) var actionFailure: MascotFailure?
   /// Lần nhận thưởng chào mừng vừa thành công (số xu) — màn báo một lần.
   public private(set) var welcomeGranted: Int?
+  /// Thưởng chuỗi vừa tự về (Koa đợt 1) — màn ăn mừng một lần rồi gọi
+  /// `streakAutoClaimShown()`.
+  public private(set) var streakAutoClaim: ClaimOutcome?
 
   @ObservationIgnored private let source: any MascotSource
   @ObservationIgnored private let economy: any MascotEconomy
@@ -265,7 +268,11 @@ public final class MascotRoomController {
     }
     if wallet != nil { phase = .ready }
     await grantWelcomeIfNeeded()
+    await autoClaimStreak()
   }
+
+  /// Đọc lại sổ xu — sau khi bộ quan sát tự nhận một nhiệm vụ ở nơi khác.
+  public func refreshWallet() async { await reloadLedger() }
 
   /// Chỉ đọc lại sổ (sau một lần nhận / mua).
   private func reloadLedger() async {
@@ -328,9 +335,21 @@ public final class MascotRoomController {
     return await claim(refKey: streakRefKey, reason: "streak:\(streak.count)", xpGain: MascotRules.streakXp)
   }
 
-  private func claim(refKey: String, reason: String, xpGain: Int) async -> ClaimOutcome? {
+  /// Thưởng chuỗi tự về mỗi lần đọc (RN: "the daily five and the streak land by
+  /// themselves"). Im lặng khi lỗi — lần đọc sau thử lại; nút ở phòng vẫn còn.
+  private func autoClaimStreak() async {
+    guard phase == .ready, showsStreakBonus, !isClaimed(streakRefKey), !claiming else { return }
+    let outcome = await claim(
+      refKey: streakRefKey, reason: "streak:\(streak.count)", xpGain: MascotRules.streakXp, silent: true)
+    if let outcome { streakAutoClaim = outcome }
+  }
+
+  /// Màn đã ăn mừng thưởng chuỗi tự về.
+  public func streakAutoClaimShown() { streakAutoClaim = nil }
+
+  private func claim(refKey: String, reason: String, xpGain: Int, silent: Bool = false) async -> ClaimOutcome? {
     claiming = true
-    actionFailure = nil
+    if !silent { actionFailure = nil }
     defer { claiming = false }
     let before = xp
     do {
@@ -344,7 +363,7 @@ public final class MascotRoomController {
         newRank: newRank.key != oldRank.key ? newRank : nil)
     } catch {
       guard !closed else { return nil }
-      actionFailure = Self.failure(error)
+      if !silent { actionFailure = Self.failure(error) }
       return nil
     }
   }
