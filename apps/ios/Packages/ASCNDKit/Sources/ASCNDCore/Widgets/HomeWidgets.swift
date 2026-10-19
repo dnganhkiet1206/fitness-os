@@ -46,11 +46,14 @@ public enum HomeWidgets {
     public let noWorkout: String
     /// Tên buổi khi `template_name` trống (RN: `'Workout'`).
     public let untitled: String
-    public init(done: String, restDay: String, noWorkout: String, untitled: String) {
+    /// Chưa chấm được điểm hôm nay (19/10 — trước dùng nhầm "Chưa có buổi tập").
+    public let noScore: String
+    public init(done: String, restDay: String, noWorkout: String, untitled: String, noScore: String? = nil) {
       self.done = done
       self.restDay = restDay
       self.noWorkout = noWorkout
       self.untitled = untitled
+      self.noScore = noScore ?? noWorkout
     }
   }
 
@@ -83,13 +86,18 @@ public enum HomeWidgets {
 
   /// Payload "Chuỗi + Sẵn sàng": điểm của hàng `daily_logs` hôm nay (làm tròn),
   /// chữ trạng thái "N/100" hoặc "chưa có buổi tập".
-  public static func streakReadiness(streak: Int, readinessScore: JSONValue?, copy: Copy) -> StreakReadinessWidgetData {
+  ///
+  /// `hasRecovery == false` (điểm chỉ dựa vào tải tập): như mọi màn trong app —
+  /// không hiện số (19/10: widget màn hình chính từng hiện "80").
+  public static func streakReadiness(
+    streak: Int, readinessScore: JSONValue?, hasRecovery: Bool = true, copy: Copy
+  ) -> StreakReadinessWidgetData {
     let present = JS.present(readinessScore)
     let score = present ? JS.number(readinessScore) : .nan
-    guard present, score.isFinite else {
+    guard present, score.isFinite, hasRecovery else {
       // `readiness !== undefined`: NaN vẫn "có" ở RN, ra "NaN/100" — một hàng
       // hỏng không bao giờ đáng hiện; coi như chưa có điểm.
-      return StreakReadinessWidgetData(streakDays: streak, readinessScore: nil, statusText: copy.noWorkout)
+      return StreakReadinessWidgetData(streakDays: streak, readinessScore: nil, statusText: copy.noScore)
     }
     let r = Int(JS.round(score))
     return StreakReadinessWidgetData(streakDays: streak, readinessScore: r, statusText: "\(r)/100")

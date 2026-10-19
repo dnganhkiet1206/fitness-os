@@ -40,8 +40,19 @@ struct AssistantBriefGoldenTests {
         keys[i] = "kcal-on"
         onTargetSeen += 1
       }
-      #expect(b.lines.map(\.key) == keys, "\(s)")
-      for (g, w) in zip(b.lines, want) where g.key != "kcal-on" {
+      // Lệch có chủ ý (19/10): không có chiều phục hồi thì native bỏ câu
+      // "khả năng tập …" (RN nói nó ngay dưới "Chưa đủ dữ liệu để chấm"). Bỏ một
+      // câu thì câu kế tiếp RN đã cắt có thể vào — so phần đầu.
+      var rn = want
+      if !sig.hasRecovery, let i = keys.firstIndex(of: "readiness") {
+        keys.remove(at: i)
+        rn.remove(at: i)
+        #expect(Array(b.lines.map(\.key).prefix(keys.count)) == keys, "\(s)")
+        #expect(!b.lines.contains { $0.key == "readiness" })
+      } else {
+        #expect(b.lines.map(\.key) == keys, "\(s)")
+      }
+      for (g, w) in zip(b.lines, rn) where g.key != "kcal-on" {
         #expect(g.text.vi == w["text"]?["vi"]?.stringValue)
         #expect(g.text.en == w["text"]?["en"]?.stringValue)
         #expect(!g.text.es.isEmpty)

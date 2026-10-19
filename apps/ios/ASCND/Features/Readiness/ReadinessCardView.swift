@@ -187,32 +187,48 @@ struct ReadinessCardView: View {
   /// xem chi tiết" có mũi tên.
   private func ready(_ day: ReadinessCard.Day) -> some View {
     let score = day.score ?? 0
-    let color = Self.statusColor(day.status)
+    // Chỉ có tải tập, chưa có HRV / RHR / giấc ngủ → như Hôm nay: chưa chấm
+    // (`AssistantSummary.provisional`). 19/10: màn này hiện "80 · Sẵn sàng tập"
+    // trong khi Hôm nay nói "Chưa đủ dữ liệu để chấm".
+    let hasRecovery = ReadinessCopyStore.copy.map { ReadinessCard.hasRecoverySignal(day.explain, copy: $0) } ?? true
+    let provisional = AssistantSummary.provisional(score: day.score, hasRecovery: hasRecovery)
+    let color = provisional ? DS.Color.mutedForeground.swiftUI : Self.statusColor(day.status)
     return VStack(spacing: DS.Spacing.md) {
       Button(action: toggle) {
         VStack(spacing: DS.Spacing.md) {
           HStack(spacing: DS.Spacing.sm) {
-            Circle().fill(Self.statusGraphic(day.status)).frame(width: 10, height: 10)
+            Circle().fill(provisional ? DS.Color.ringTrack.swiftUI : Self.statusGraphic(day.status)).frame(width: 10, height: 10)
             eyebrow(String(localized: "rd.title"), tracking: 2.4)
           }
           ZStack {
             Circle().stroke(DS.Color.ringTrack.swiftUI, lineWidth: Self.stroke)
             Circle()
-              .trim(from: 0, to: min(max(Double(score) / 100, 0), 1))
+              .trim(from: 0, to: provisional ? 0 : min(max(Double(score) / 100, 0), 1))
               .stroke(
                 LinearGradient(colors: [Self.statusDeep(day.status), color], startPoint: .topLeading, endPoint: .bottomTrailing),
                 style: StrokeStyle(lineWidth: Self.stroke, lineCap: .round)
               )
               .rotationEffect(.degrees(-90))
             VStack(spacing: 6) {
-              Text(verbatim: "\(score)")
+              Text(verbatim: provisional ? "—" : "\(score)")
                 .font(.custom("Menlo", size: 60).weight(.bold).monospacedDigit())
-                .foregroundStyle(color)
+                .foregroundStyle(provisional ? DS.Color.foreground.swiftUI : color)
                 .dynamicTypeSize(...DynamicTypeSize.xxLarge)
-              Text(Self.statusLabel(day.status))
-                .font(.system(size: 12, weight: .bold))
-                .tracking(2.4)
-                .foregroundStyle(color)
+              if provisional {
+                Text(String(localized: "rd.provisional.title"))
+                  .font(.system(size: 13, weight: .semibold))
+                  .foregroundStyle(DS.Color.foreground.swiftUI)
+                Text(String(localized: "rd.provisional.reason"))
+                  .font(.system(size: 12))
+                  .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+                  .multilineTextAlignment(.center)
+                  .padding(.horizontal, 36)
+              } else {
+                Text(Self.statusLabel(day.status))
+                  .font(.system(size: 12, weight: .bold))
+                  .tracking(2.4)
+                  .foregroundStyle(color)
+              }
             }
           }
           .frame(width: Self.ring - Self.stroke, height: Self.ring - Self.stroke)
@@ -229,15 +245,17 @@ struct ReadinessCardView: View {
       }
       .buttonStyle(.plain)
       .accessibilityElement(children: .ignore)
-      .accessibilityLabel(Text(String(localized: "rd.a11y \(score) \(Self.statusLabel(day.status))")))
+      .accessibilityLabel(Text(provisional
+        ? String(localized: "rd.provisional.title")
+        : String(localized: "rd.a11y \(score) \(Self.statusLabel(day.status))")))
       .accessibilityHint(Text(Self.hint(expanded: expanded)))
       .accessibilityAddTraits(.isButton)
 
-      if expanded { details(day, color: color) }
+      if expanded { details(day, color: color, provisional: provisional) }
     }
   }
 
-  private func details(_ day: ReadinessCard.Day, color: Color) -> some View {
+  private func details(_ day: ReadinessCard.Day, color: Color, provisional: Bool = false) -> some View {
     let copy = ReadinessCopyStore.copy
     let subs = copy.map { ReadinessCard.subscores(day.explain, copy: $0) } ?? [:]
     let tiles = ReadinessCard.tiles(subscores: subs, acwr: day.acwr)
@@ -261,7 +279,9 @@ struct ReadinessCardView: View {
         .accessibilityLabel(Text(String(localized: "rd.help.a11y")))
       }
       if nudge { nudgeRow }
-      HStack(spacing: DS.Spacing.xs) {
+      // Căn đầu dòng: một ô có chú thích hai dòng ("chưa ghi đêm qua") không
+      // còn đẩy ô ấy lệch lên so với các ô khác.
+      HStack(alignment: .top, spacing: DS.Spacing.xs) {
         ForEach(tiles, id: \.kind) { tile($0) }
       }
       if !explain.isEmpty {
@@ -272,7 +292,9 @@ struct ReadinessCardView: View {
           .font(DS.TextStyle.caption)
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
       }
-      if !reco.isEmpty {
+      // Chưa chấm thì không khuyên cách tập (19/10: "Tập theo kế hoạch — đẩy top
+      // set…" ngay dưới "Chưa đủ dữ liệu để chấm"), và không cần bảng màu điểm.
+      if !reco.isEmpty, !provisional {
         Text(verbatim: reco)
           .font(DS.TextStyle.footnote.weight(.semibold))
           .foregroundStyle(color)
@@ -280,7 +302,7 @@ struct ReadinessCardView: View {
           .frame(maxWidth: .infinity, alignment: .leading)
           .background(color.opacity(0.1), in: RoundedRectangle(cornerRadius: DS.Radius.sm))
       }
-      legend
+      if !provisional { legend }
       if let onOpenBiometrics {
         Button(action: onOpenBiometrics) {
           HStack {
@@ -342,7 +364,10 @@ struct ReadinessCardView: View {
 
   private func tile(_ t: ReadinessCard.Tile) -> some View {
     VStack(spacing: 2) {
-      Text(verbatim: Self.tileLabel(t.kind)).font(DS.TextStyle.caption.weight(.semibold))
+      Text(verbatim: Self.tileLabel(t.kind))
+        .font(DS.TextStyle.caption.weight(.semibold))
+        .lineLimit(1)
+        .minimumScaleFactor(0.7)
       Text(verbatim: Self.tileValue(t))
         .font(DS.TextStyle.headline.monospacedDigit())
         .foregroundStyle(Self.toneColor(t.tone))
@@ -420,13 +445,14 @@ struct ReadinessCardView: View {
     }
   }
 
-  /// Nhãn ô — viết tắt kỹ thuật như RN (HRV, RHR, SLEEP, LOAD, ACWR), không dịch.
+  /// Nhãn ô. HRV / RHR / ACWR là viết tắt kỹ thuật (giữ nguyên); "SLEEP" /
+  /// "LOAD" của RN là chữ tiếng Anh thường — dịch theo ngôn ngữ (19/10).
   static func tileLabel(_ k: ReadinessCard.Tile.Kind) -> String {
     switch k {
     case .hrv: "HRV"
     case .rhr: "RHR"
-    case .sleep: "SLEEP"
-    case .load: "LOAD"
+    case .sleep: String(localized: "rd.tile.sleep")
+    case .load: String(localized: "rd.tile.load")
     case .acwr: "ACWR"
     }
   }

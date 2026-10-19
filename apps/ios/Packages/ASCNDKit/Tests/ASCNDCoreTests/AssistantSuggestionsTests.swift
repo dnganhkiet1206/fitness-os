@@ -35,7 +35,10 @@ struct AssistantSuggestionsGoldenTests {
       acwr: optNumber(s["acwr"]), sleepMin: optNumber(s["sleepMin"]) ?? 0, kcal: optNumber(s["kcal"]) ?? 0,
       kcalTarget: optNumber(s["kcalTarget"]) ?? 0, proteinG: optNumber(s["proteinG"]) ?? 0,
       proteinTarget: optNumber(s["proteinTarget"]) ?? 0, steps: optNumber(s["steps"]) ?? 0,
-      daysSinceWorkout: optNumber(s["daysSinceWorkout"]).map { Int($0) })
+      daysSinceWorkout: optNumber(s["daysSinceWorkout"]).map { Int($0) },
+      // RN không có khái niệm "điểm tạm" (fixture ghi `hasRecovery: false` mặc định
+      // nhưng chip RN không đọc nó): ca golden là điểm thật. Điểm tạm có test riêng.
+      hasRecovery: true)
   }
 
   @Test func everyCaseMatchesRN() throws {
@@ -47,7 +50,8 @@ struct AssistantSuggestionsGoldenTests {
         Issue.record("ca hỏng")
         continue
       }
-      let got = AssistantSuggestions.suggestions(for: Self.signal(s), grouping: Self.enUS)
+      let sig = Self.signal(s)
+      let got = AssistantSuggestions.suggestions(for: sig, grouping: Self.enUS)
       #expect(got.map(\.key) == want.compactMap { $0["key"]?.stringValue }, "\(s)")
       for (g, w) in zip(got, want) {
         #expect(g.topic.rawValue == w["topic"]?.stringValue)
@@ -155,5 +159,13 @@ struct AssistantSuggestionsGroupingTests {
     #expect(chip?.question.vi.contains("vi:3250") == true)
     #expect(chip?.question.en.contains("en:3250") == true)
     #expect(chip?.question.es.contains("es:3250") == true)
+  }
+
+  /// 19/10: điểm tạm (không có chiều phục hồi) không thành chip "điểm của tôi là 35/100".
+  @Test func provisionalScoreMakesNoReadinessChip() {
+    let s = AssistantSuggestions.Signal(readiness: 35, status: "red", hasRecovery: false)
+    let chips = AssistantSuggestions.suggestions(for: s, grouping: AssistantSuggestionsGoldenTests.enUS)
+    #expect(!chips.contains { $0.question.en.contains("35/100") })
+    #expect(s.scoredReadiness == nil && s.scoredStatus == nil)
   }
 }

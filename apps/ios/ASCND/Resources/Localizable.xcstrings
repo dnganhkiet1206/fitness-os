@@ -54076,98 +54076,6 @@
     }
    }
   },
-  "macros.short %@ %@ %@": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "P %1$@g · C %2$@g · F %3$@g"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Đạm %1$@g · Bột %2$@g · Béo %3$@g"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "P %1$@g · C %2$@g · G %3$@g"
-     }
-    }
-   }
-  },
-  "nc.howTarget": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "How is my target set?"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Mục tiêu tính thế nào?"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "¿Cómo se calcula mi objetivo?"
-     }
-    }
-   }
-  },
-  "logMeal.tray %lld": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "In this meal · %lld"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Trong bữa này · %lld"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "En esta comida · %lld"
-     }
-    }
-   }
-  },
-  "logMeal.for": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Logging for"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Ghi cho"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Registrar en"
-     }
-    }
-   }
-  },
   "tellkoa.title": {
    "extractionState": "manual",
    "localizations": {
@@ -55613,6 +55521,167 @@
      "stringUnit": {
       "state": "translated",
       "value": "Registrar %lld elementos"
+     }
+    }
+   }
+  },
+  "rd.tile.sleep": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sleep"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Giấc ngủ"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sueño"
+     }
+    }
+   }
+  },
+  "rd.tile.load": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Load"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tải tập"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Carga"
+     }
+    }
+   }
+  },
+  "widget.noScore": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Not enough data yet"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chưa đủ dữ liệu"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Aún faltan datos"
+     }
+    }
+   }
+  },
+  "macros.short %@ %@ %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "P %1$@g · C %2$@g · F %3$@g"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đạm %1$@g · Bột %2$@g · Béo %3$@g"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "P %1$@g · C %2$@g · G %3$@g"
+     }
+    }
+   }
+  },
+  "nc.howTarget": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "How is my target set?"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mục tiêu tính thế nào?"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "¿Cómo se calcula mi objetivo?"
+     }
+    }
+   }
+  },
+  "logMeal.tray %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "In this meal · %lld"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Trong bữa này · %lld"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "En esta comida · %lld"
+     }
+    }
+   }
+  },
+  "logMeal.for": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Logging for"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ghi cho"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Registrar en"
      }
     }
    }

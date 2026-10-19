@@ -216,7 +216,11 @@ struct TrendHighlight: View {
           }
         }
         Spacer(minLength: 0)
-        if case .ready(let a) = book.phase { Sparkline(values: a.bars.filter { !$0.missing }.map(\.value)) }
+        // Chưa đọc được xu hướng → không vẽ đường (19/10: thẻ nói "Chưa đủ dữ
+        // liệu" mà vẫn vẽ một đường dốc xuống — người xem đọc nó như xu hướng).
+        if case .ready(let a) = book.phase, AssistantSummary.trend(a.bars) != nil {
+          Sparkline(values: a.bars.filter { !$0.missing }.map(\.value))
+        }
       }
       .modifier(AssistantSurface())
       .contentShape(Rectangle())

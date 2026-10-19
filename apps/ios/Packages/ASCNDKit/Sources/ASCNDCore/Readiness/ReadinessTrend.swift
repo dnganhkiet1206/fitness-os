@@ -40,7 +40,7 @@ public enum ReadinessTrend {
 
   public static func query(userId: String, today: LocalDate) -> RowQuery {
     RowQuery(
-      table: "daily_logs", columns: "date, readiness_score, readiness_status",
+      table: "daily_logs", columns: "date, readiness_score, readiness_status, readiness_explain",
       filters: [
         .eq("user_id", .string(userId)), .gte("date", .string(today.adding(days: -7).description)),
         .or("readiness_score.not.is.null"),
@@ -50,9 +50,13 @@ public enum ReadinessTrend {
 
   /// Hàng → điểm. Hàng không có ngày đọc được thì bỏ; điểm rỗng (server đã
   /// lọc, phòng hờ) cũng bỏ, không vẽ thành 0.
-  public static func points(_ rows: [JSONValue]) -> [Point] {
+  ///
+  /// `recovery` (19/10): ngày điểm chỉ dựa vào tải tập ("chưa đủ dữ liệu để
+  /// chấm" ở mọi màn) không vào xu hướng / trung bình.
+  public static func points(_ rows: [JSONValue], recovery: ((String?) -> Bool)? = nil) -> [Point] {
     rows.compactMap { r in
       guard let s = r["date"]?.stringValue, let d = LocalDate(s), JS.present(r["readiness_score"]) else { return nil }
+      if let recovery, !recovery(r["readiness_explain"]?.stringValue) { return nil }
       let v = JS.number(r["readiness_score"])
       return Point(date: d, value: JS.truthy(v) ? v : 0)
     }
@@ -69,11 +73,15 @@ public final class ReadinessTrendBook {
 
   @ObservationIgnored private let store: any RowStore
   @ObservationIgnored private var closed = false
+  @ObservationIgnored private let recovery: (@Sendable (String?) -> Bool)?
 
-  public init(userId: String, today: LocalDate, store: any RowStore) {
+  public init(
+    userId: String, today: LocalDate, store: any RowStore, recovery: (@Sendable (String?) -> Bool)? = nil
+  ) {
     self.userId = userId
     self.today = today
     self.store = store
+    self.recovery = recovery
   }
 
   public func close() { closed = true }
@@ -86,7 +94,7 @@ public final class ReadinessTrendBook {
     do {
       let rows = try await store.select(q)
       guard !closed else { return }
-      points = ReadinessTrend.points(rows)
+      points = ReadinessTrend.points(rows, recovery: recovery)
     } catch {
       // RN: lỗi đọc → thẻ không hiện (`!history`). Giữ số cũ nếu đã có.
       _ = error
