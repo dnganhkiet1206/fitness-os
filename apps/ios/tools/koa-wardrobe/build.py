@@ -26,7 +26,7 @@ d = json.loads(m.group(1))
 
 # Các món đã vẽ lại, theo ô. Nhóm vẽ RN của chúng bị bỏ trước khi chèn bản mới.
 REDRAWN = {
-    "head": ["cap", "band", "beanie", "santa", "antler", "pumpkin", "witch", "khanxep", "phones", "lion"], "face": ["shades"], "top": ["tee"], "bottom": ["short"],
+    "head": ["cap", "band", "beanie", "santa", "antler", "pumpkin", "witch", "khanxep", "phones", "lion"], "face": ["shades", "goggles", "mask", "eyepatch", "beard", "tuong", "vr", "nosestrip", "heart", "dragon"], "top": ["tee"], "bottom": ["short"],
     "shoes": ["sneaker"], "back": ["backpack"], "hand": ["bottle"],
 }
 gone = {f"it_{slot}_{i}" for slot, ids in REDRAWN.items() for i in ids}
@@ -177,6 +177,96 @@ shades = G(lens(False) + lens(True) + [
     P("M185 72 L 198 77", stroke=SH, stroke_width=4, stroke_linecap="round"),
 ], **{"if": "it_face_shades"})
 faceshift['kids'].append(shades)
+
+# ── Ô MẶT (còn lại): mọi món nằm trong nhóm mặt (theo đầu nghiêng / quay). Kính, khẩu
+#    trang, râu… vẽ ĐÈ lên mặt; sơn tuồng và mặt nạ rồng vẽ DƯỚI mắt / mũi / miệng để
+#    mắt Koa vẫn hiện (RN che mắt bằng hai vòng tròn). Toạ độ mặt: mắt (82|158, 96),
+#    mắt mở to tới y 69…121, mũi 107…133 × 84…126, miệng 128…148, cằm 168.
+def face_over(flag, kids): faceshift['kids'].append(G(kids, **{"if": flag}))
+def face_under(flag, kids): faceshift['kids'].insert(0, G(kids, **{"if": flag}))
+def temples(colour, w=4):
+    return [P("M55 92 L 42 96", stroke=colour, stroke_width=w, stroke_linecap="round"),
+            P("M185 92 L 198 96", stroke=colour, stroke_width=w, stroke_linecap="round")]
+
+# kính bơi: tròng trong (thấy mắt), viền xanh dày, dây ra hai bên
+face_over("it_face_goggles", temples("#2E8FCB", 6) + [
+    C(82, 96, 27, fill="#8FD8F5", opacity=0.45), C(158, 96, 27, fill="#8FD8F5", opacity=0.45),
+    C(82, 96, 27, fill="none", stroke="#2E8FCB", stroke_width=5), C(158, 96, 27, fill="none", stroke="#2E8FCB", stroke_width=5),
+    P("M109 92 C 114 87 126 87 131 92", stroke="#2E8FCB", stroke_width=5, fill="none", stroke_linecap="round"),
+    P("M66 86 C 70 78 78 75 86 75", stroke="#FFFFFF", stroke_width=3, fill="none", stroke_linecap="round", opacity=0.7),
+    P("M142 86 C 146 78 154 75 162 75", stroke="#FFFFFF", stroke_width=3, fill="none", stroke_linecap="round", opacity=0.7),
+])
+# khẩu trang: che mũi + miệng, nếp gấp, quai vòng ra hai tai
+face_over("it_face_mask", [
+    P("M84 118 C 70 112 56 104 48 94", stroke="#A9B2BC", stroke_width=2.5, fill="none", stroke_linecap="round"),
+    P("M156 118 C 170 112 184 104 192 94", stroke="#A9B2BC", stroke_width=2.5, fill="none", stroke_linecap="round"),
+    P("M100 104 C 112 99 128 99 140 104 C 150 108 156 116 158 126 C 158 146 142 158 120 158 C 98 158 82 146 82 126 "
+      "C 84 116 90 108 100 104 Z", fill="#F4F6F8", stroke="#A9B2BC", stroke_width=1.6),
+    P("M90 122 C 108 118 132 118 150 122 M88 134 C 108 130 132 130 152 134 M92 146 C 108 143 132 143 148 146",
+      stroke="#A9B2BC", stroke_width=1.6, fill="none", opacity=0.8),
+])
+# bịt mắt cướp biển: miếng bịt mắt phải, dây chéo qua trán
+face_over("it_face_eyepatch", [
+    P("M44 78 C 78 62 118 56 140 72", stroke="#39424E", stroke_width=4, fill="none", stroke_linecap="round"),
+    P("M180 84 C 188 90 194 98 198 106", stroke="#39424E", stroke_width=4, fill="none", stroke_linecap="round"),
+    P("M136 78 C 146 69 172 69 182 80 C 187 98 180 117 162 123 C 146 125 135 113 133 96 C 133 88 134 82 136 78 Z", fill="#2A313B"),
+    P("M144 82 C 150 77 160 76 168 79", stroke="#FFFFFF", stroke_width=2.4, fill="none", stroke_linecap="round", opacity=0.25),
+])
+# râu ông già: ria mép trên miệng, chòm râu ôm quanh miệng xuống dưới cằm (miệng vẫn hiện)
+face_over("it_face_beard", [
+    P("M70 122 C 70 160 92 188 120 188 C 148 188 170 160 170 122 C 162 140 150 150 140 152 C 134 156 128 158 120 158 "
+      "C 112 158 106 156 100 152 C 90 150 78 140 70 122 Z", fill="#F4F6F8", stroke="#A9B2BC", stroke_width=1.6),
+    P("M86 160 C 90 166 96 168 100 166 M110 172 C 114 178 122 178 126 174 M138 164 C 142 168 148 166 152 160",
+      stroke="#A9B2BC", stroke_width=1.6, fill="none", stroke_linecap="round", opacity=0.8),
+    P("M120 129 C 110 120 94 120 87 131 C 97 128 108 133 120 135 C 132 133 143 128 153 131 C 146 120 130 120 120 129 Z",
+      fill="#F4F6F8", stroke="#A9B2BC", stroke_width=1.4),
+])
+# sơn mặt tuồng: mảng đỏ nửa trên mặt, mày trắng, hoạ tiết vàng trên trán — DƯỚI mắt
+face_under("it_face_tuong", [
+    P("M50 80 C 66 58 174 58 190 80 C 192 104 182 124 162 128 C 146 130 134 120 120 120 C 106 120 94 130 78 128 "
+      "C 58 124 48 104 50 80 Z", fill="#D64545", opacity=0.92),
+    P("M58 74 C 72 62 94 62 104 72 C 92 69 74 70 58 80 Z", fill="#FFFFFF"),
+    P("M182 74 C 168 62 146 62 136 72 C 148 69 166 70 182 80 Z", fill="#FFFFFF"),
+    P("M106 64 L 120 50 L 134 64", stroke="#E8B23A", stroke_width=3.5, fill="none", stroke_linejoin="round"),
+    C(120, 66, 4, fill="#E8B23A"),
+    P("M50 80 C 66 58 174 58 190 80", stroke="#20242A", stroke_width=2, fill="none", opacity=0.5),
+])
+# kính thực tế ảo: hộp kính che kín mắt, quai trên đỉnh đầu và hai bên
+face_over("it_face_vr", [
+    P("M104 68 C 102 44 138 44 136 68", stroke="#39424E", stroke_width=6, fill="none", stroke_linecap="round"),
+    P("M52 96 L 40 98 M188 96 L 200 98", stroke="#39424E", stroke_width=6, stroke_linecap="round"),
+    R(50, 66, 140, 60, 20, fill="#2A313B"),
+    R(60, 76, 120, 40, 14, fill="#4A5A72"),
+    P("M68 84 C 90 78 120 78 140 82", stroke="#FFFFFF", stroke_width=3, fill="none", stroke_linecap="round", opacity=0.25),
+    C(178, 74, 4, fill="#3FA9E5"),
+])
+# miếng dán mũi: ngang sống mũi, có lỗ thoáng
+face_over("it_face_nosestrip", [
+    R(99, 97, 42, 12, 6, fill="#F4F6F8", stroke="#8A94A1", stroke_width=1.4),
+    C(108, 103, 1.3, fill="#A9B2BC"), C(132, 103, 1.3, fill="#A9B2BC"),
+])
+# kính trái tim: tròng hình tim đủ to che mắt, gọng và càng như kính đen
+def heart(cx, cy=96):
+    return (f"M{cx-27} {cy-8} C {cx-27} {cy-25} {cx-6} {cy-30} {cx} {cy-14} C {cx+6} {cy-30} {cx+27} {cy-25} {cx+27} {cy-8} "
+            f"C {cx+27} {cy+11} {cx+9} {cy+22} {cx} {cy+29} C {cx-9} {cy+22} {cx-27} {cy+11} {cx-27} {cy-8} Z")
+face_over("it_face_heart", temples("#C94A62") + [
+    P(heart(82), fill="#E8657B", stroke="#C94A62", stroke_width=2.5),
+    P(heart(158), fill="#E8657B", stroke="#C94A62", stroke_width=2.5),
+    P("M107 88 C 113 83 127 83 133 88", stroke="#C94A62", stroke_width=4, fill="none", stroke_linecap="round"),
+    P("M66 84 C 68 78 74 75 79 76", stroke="#FFFFFF", stroke_width=3, fill="none", stroke_linecap="round", opacity=0.5),
+    P("M142 84 C 144 78 150 75 155 76", stroke="#FFFFFF", stroke_width=3, fill="none", stroke_linecap="round", opacity=0.5),
+])
+# mặt nạ rồng: mảng vàng nửa trên mặt, viền mắt đỏ, sừng xanh, râu rồng — DƯỚI mắt
+face_under("it_face_dragon", [
+    P("M64 64 L 50 40 M176 64 L 190 40", stroke="#3F9E63", stroke_width=7, stroke_linecap="round"),
+    P("M60 122 C 44 126 36 136 34 148 M180 122 C 196 126 204 136 206 148", stroke="#D64545", stroke_width=4,
+      fill="none", stroke_linecap="round"),
+    P("M48 78 C 70 56 170 56 192 78 C 194 106 180 128 158 132 C 140 134 132 126 120 126 C 108 126 100 134 82 132 "
+      "C 60 128 46 106 48 78 Z", fill="#E8B23A"),
+    E(82, 96, 23, 28, fill="none", stroke="#D64545", stroke_width=5),
+    E(158, 96, 23, 28, fill="none", stroke="#D64545", stroke_width=5),
+    C(104, 68, 3, fill="#3F9E63"), C(120, 64, 3, fill="#3F9E63"), C(136, 68, 3, fill="#3F9E63"),
+])
 
 # ── 3. ÁO THUN: thân + tay áo VẼ SAU tay (cũ: tay che mất tay áo), tay áo theo từng tư thế.
 TEE, TEED = "#F4F6F8", "#A9B2BC"
