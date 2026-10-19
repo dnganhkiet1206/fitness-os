@@ -252,8 +252,12 @@ struct ManualLogView: View {
         ExerciseProgressRow(insights: insights, today: flow.today, name: name)
       }
       columnHead(unit)
+      // Set làm việc đánh số 1, 2, 3… bỏ qua set khởi động (ngọn lửa) — như
+      // khối lượng, kỷ lục, "Lần trước": khởi động được ghi nhưng không đếm.
+      let working = Self.workingNumbers(group.rows)
       ForEach(Array(group.rows.enumerated()), id: \.element.id) { i, row in
-        setRow(row, log: log, number: i + 1, unit: unit, name: name, bad: bad[row.id] ?? [])
+        setRow(
+          row, log: log, working: working[row.id], position: i + 1, unit: unit, name: name, bad: bad[row.id] ?? [])
       }
       Button {
         Task { await log.addSet(toGroup: group.id) }
@@ -287,18 +291,39 @@ struct ManualLogView: View {
 
   static let setCol: CGFloat = 32
 
+  /// Số thứ tự set làm việc trong thẻ; set khởi động không có số.
+  static func workingNumbers(_ rows: [ManualSetRow]) -> [String: Int] {
+    var out: [String: Int] = [:]
+    var n = 0
+    for r in rows where !r.warmup {
+      n += 1
+      out[r.id] = n
+    }
+    return out
+  }
+
   private func setRow(
-    _ row: ManualSetRow, log: ManualLogController, number: Int, unit: WeightUnit, name: String,
+    _ row: ManualSetRow, log: ManualLogController, working: Int?, position: Int, unit: WeightUnit, name: String,
     bad: Set<ManualLogController.Field>
   ) -> some View {
     let spoken = name.isEmpty ? String(localized: "manualLog.exercise") : name
+    // Nhãn đọc màn hình theo vị trí hàng — ô nào cũng có tên riêng, kể cả khởi động.
+    let number = position
     return HStack(spacing: DS.Spacing.sm) {
-      Text(verbatim: "\(number)")
-        .font(DS.TextStyle.footnote.weight(.bold).monospacedDigit())
-        .foregroundStyle(row.warmup ? Self.rose : DS.Color.mutedForeground.swiftUI)
-        .frame(width: Self.setCol, height: 32)
-        .background(DS.Color.secondary.swiftUI, in: Circle())
-        .accessibilityHidden(true)
+      Group {
+        if let working {
+          Text(verbatim: "\(working)")
+            .font(DS.TextStyle.footnote.weight(.bold).monospacedDigit())
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        } else {
+          Image(systemName: "flame.fill")
+            .font(.system(size: 12, weight: .bold))
+            .foregroundStyle(Self.rose)
+        }
+      }
+      .frame(width: Self.setCol, height: 32)
+      .background(row.warmup ? Self.rose.opacity(0.12) : DS.Color.secondary.swiftUI, in: Circle())
+      .accessibilityHidden(true)
       // Gạch ngang, không phải "kg": cột đã nói đơn vị, ô trống là bodyweight.
       numberField(
         text("w:\(row.id)", row.weight) { await log.setWeight($0, row: row.id) }, bad: bad.contains(.weight),
