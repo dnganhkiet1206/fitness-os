@@ -69,7 +69,9 @@ struct KoaRenderGoldenTests {
     let cases = Self.array(try Self.golden()["cases"])
     #expect(cases.count == 38)
     for (i, c) in cases.enumerated() {
-      let tree = KoaRender.figure(try Self.options(c))
+      // So với cảnh RN nguyên văn: tủ đồ vẽ lại (19/10) cố ý khác RN.
+      let o = try Self.options(c)
+      let tree = KoaScene.$rn.withValue(true) { KoaRender.figure(o) }
       let d = Self.diff(tree, c["tree"] ?? .null, "#\(i)")
       #expect(d == nil, "\(d ?? "")")
     }
