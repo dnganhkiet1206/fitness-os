@@ -26,7 +26,7 @@ d = json.loads(m.group(1))
 
 # Các món đã vẽ lại, theo ô. Nhóm vẽ RN của chúng bị bỏ trước khi chèn bản mới.
 REDRAWN = {
-    "head": ["cap"], "face": ["shades"], "top": ["tee"], "bottom": ["short"],
+    "head": ["cap", "band", "beanie", "santa", "antler", "pumpkin", "witch", "khanxep", "phones", "lion"], "face": ["shades"], "top": ["tee"], "bottom": ["short"],
     "shoes": ["sneaker"], "back": ["backpack"], "hand": ["bottle"],
 }
 gone = {f"it_{slot}_{i}" for slot, ids in REDRAWN.items() for i in ids}
@@ -78,8 +78,90 @@ cap = G([G([G([
     P("M70 34 C 84 25 100 21 112 21", stroke="#FFFFFF", stroke_width=4, fill="none", stroke_linecap="round", opacity=0.28),
     C(120, 17, 5, fill="#E8B23A"),
 ])], tf=[["t", 0, 11]])], **{"if": "it_head_cap"})
-hi = [i for i, k in enumerate(headrig['kids']) if k.get('id') == 'HEAD'][0]
+# Chèn ngay TRƯỚC nhóm mặt: sau mặt trước đầu VÀ sau tai gần (`turnedView`, khi quay
+# 3/4 / chạy tai gần vẽ sau đầu — chèn sớm hơn thì tai che nửa nón).
+hi = [i for i, k in enumerate(headrig['kids']) if k.get('id') == 'FACE'][0] - 1
 headrig['kids'].insert(hi + 1, cap)
+
+# ── Ô ĐẦU (còn lại): cùng nguyên tắc với nón — vẽ đè lên đầu (sau HEAD, trước mặt),
+#    ôm từ tai này sang tai kia; mép dưới giữ trên lông mày (y ≈ 50 ở giữa, toạ độ đầu).
+def hat(flag, kids):
+    headrig['kids'].insert(hi + 1, G([G(kids, tf=[["t", 0, 11]])], **{"if": flag}))
+RIM = "C 184 58 154 50 120 50 C 86 50 56 58 40 72 Z"   # mép dưới chung, từ (200,72) về (40,72)
+
+# băng đô thể thao: dải vải ôm trán, sọc trắng, hai đuôi buộc bên phải
+hat("it_head_band", [
+    P("M194 62 C 206 60 214 68 216 80 C 208 76 200 72 192 70 Z", fill="#2E8FCB"),
+    P("M192 64 C 204 68 210 78 210 90 C 202 84 196 78 190 72 Z", fill="#2E8FCB", opacity=0.85),
+    P("M44 62 C 58 44 88 34 120 34 C 152 34 182 44 196 62 L 197 72 C 182 56 152 47 120 47 C 88 47 58 56 43 72 Z", fill="#3FA9E5"),
+    P("M46 66 C 60 49 89 40.5 120 40.5 C 151 40.5 180 49 194 66", stroke="#FFFFFF", stroke_width=2.6, fill="none", opacity=0.85),
+])
+# nón len: thân đan, vành gập có gân, quả bông
+hat("it_head_beanie", [
+    P("M40 70 C 38 34 74 10 120 10 C 166 10 202 34 200 70 " + RIM, fill="#3F9E63"),
+    P("M78 24 C 74 36 74 46 76 54 M100 14 C 98 28 98 40 99 50 M140 14 C 142 28 142 40 141 50 M162 24 C 166 36 166 46 164 54",
+      stroke="#2F7A4C", stroke_width=2, fill="none", opacity=0.5),
+    P("M38 72 C 56 56 86 48 120 48 C 154 48 184 56 202 72 L 201 60 C 184 44 154 37 120 37 C 86 37 56 44 39 60 Z", fill="#2F7A4C"),
+    P("M56 60 L 55 52 M72 54 L 71 45 M88 50 L 88 41 M104 48 L 104 39 M120 48 L 120 38 M136 48 L 136 39 M152 50 L 152 41 "
+      "M168 54 L 169 45 M184 60 L 185 52", stroke="#245E3B", stroke_width=2, opacity=0.6),
+    C(120, 8, 11, fill="#F4F6F8", stroke="#A9B2BC", stroke_width=1.6),
+])
+# nón Noel: chóp đổ sang phải, bông trắng, vành lông trắng
+hat("it_head_santa", [
+    P("M40 66 C 44 30 80 8 124 8 C 160 8 186 22 202 42 C 216 58 222 78 216 94 C 208 78 196 66 182 60 "
+      "C 160 52 140 50 120 50 C 86 50 58 56 40 66 Z", fill="#D64545"),
+    P("M150 14 C 176 22 196 40 206 62", stroke="#B23636", stroke_width=3, fill="none", opacity=0.5),
+    C(217, 98, 11, fill="#F4F6F8", stroke="#A9B2BC", stroke_width=1.6),
+    P("M36 72 C 54 54 86 45 120 45 C 154 45 186 54 204 72 C 206 79 201 83 195 80 C 180 64 152 57 120 57 "
+      "C 88 57 60 64 45 80 C 39 83 34 79 36 72 Z", fill="#F4F6F8", stroke="#A9B2BC", stroke_width=1.6),
+])
+# gạc tuần lộc: gắn trên băng đô nâu, mọc từ đỉnh đầu
+hat("it_head_antler", [
+    G([P("M92 40 C 84 26 80 14 82 2"), P("M84 22 L 68 12"), P("M83 12 L 92 0"),
+       P("M148 40 C 156 26 160 14 158 2"), P("M156 22 L 172 12"), P("M157 12 L 148 0")],
+      a={"stroke": "#8A6A3B", "stroke-width": 7, "stroke-linecap": "round", "fill": "none"}),
+    P("M46 62 C 62 44 90 36 120 36 C 150 36 178 44 194 62", stroke="#6B4F2A", stroke_width=6, fill="none", stroke_linecap="round"),
+])
+# mũ bí ngô: múi cong, vành sẫm, cuống và lá xanh
+hat("it_head_pumpkin", [
+    P("M40 70 C 38 32 74 12 120 12 C 166 12 202 32 200 70 " + RIM, fill="#E8842A"),
+    P("M86 18 C 74 32 70 46 72 56 M108 13 C 102 28 100 40 101 50 M132 13 C 138 28 140 40 139 50 M154 18 C 166 32 170 46 168 56",
+      stroke="#C46A1C", stroke_width=3, fill="none"),
+    P("M40 72 C 56 58 86 50 120 50 C 154 50 184 58 200 72", stroke="#C46A1C", stroke_width=6, fill="none", stroke_linecap="round"),
+    P("M116 14 C 114 4 120 -2 128 0", stroke="#2F7A4C", stroke_width=5, fill="none", stroke_linecap="round"),
+    P("M124 6 C 132 -2 146 0 148 8 C 140 12 130 12 124 6 Z", fill="#3F9E63"),
+])
+# mũ phù thuỷ: vành rộng ngang đầu, chóp cong, băng vàng
+hat("it_head_witch", [
+    P("M70 54 C 86 30 102 6 124 -6 C 130 -8 134 -4 130 2 C 128 8 136 14 142 22 C 154 36 164 46 172 54 Z", fill="#7A5BC4"),
+    P("M76 50 C 100 43 140 43 166 50 L 160 38 C 138 33 102 33 82 38 Z", fill="#E8B23A"),
+    P("M12 62 C 40 44 200 44 228 62 C 200 74 40 74 12 62 Z", fill="#5B41A0"),
+    P("M12 62 C 40 74 200 74 228 62", stroke="#45307D", stroke_width=2, fill="none", opacity=0.7),
+])
+# khăn xếp: khăn quấn nhiều lớp, nếp chéo chữ V phía trước
+hat("it_head_khanxep", [
+    P("M40 72 C 38 40 74 20 120 20 C 166 20 202 40 200 72 " + RIM, fill="#D64545"),
+    P("M42 66 C 66 46 94 38 120 38 C 146 38 174 46 198 66", stroke="#B23636", stroke_width=6, fill="none", stroke_linecap="round"),
+    P("M48 52 C 72 34 98 28 120 28 C 142 28 168 34 192 52", stroke="#E8B23A", stroke_width=4, fill="none", stroke_linecap="round"),
+    P("M100 52 L 120 26 L 140 52", stroke="#B23636", stroke_width=5, fill="none", stroke_linejoin="round"),
+    P("M108 52 L 120 36 L 132 52", stroke="#E8B23A", stroke_width=3, fill="none", stroke_linejoin="round"),
+])
+# tai nghe: vòng qua đỉnh đầu, hai bên tai là chụp tai to có đệm
+hat("it_head_phones", [
+    P("M48 72 C 44 28 80 4 120 4 C 160 4 196 28 192 72", stroke="#39424E", stroke_width=10, fill="none", stroke_linecap="round"),
+    P("M60 40 C 76 16 100 10 120 10", stroke="#5B6573", stroke_width=3, fill="none", stroke_linecap="round", opacity=0.6),
+    R(26, 56, 32, 46, 14, fill="#2A313B"), R(33, 64, 18, 30, 9, fill="#3FA9E5"),
+    R(182, 56, 32, 46, 14, fill="#2A313B"), R(189, 64, 18, 30, 9, fill="#3FA9E5"),
+])
+# mũ lân: đỏ, viền vàng, bông vàng trên đỉnh, chấm xanh, sừng nhỏ
+hat("it_head_lion", [
+    P("M38 72 C 36 34 72 8 120 8 C 168 8 204 34 202 72 " + RIM.replace("40 72", "38 72"), fill="#D64545"),
+    P("M38 72 C 56 57 86 49 120 49 C 154 49 184 57 202 72", stroke="#E8B23A", stroke_width=7, fill="none", stroke_linecap="round"),
+    P("M60 44 C 80 32 100 28 120 28 C 140 28 160 32 180 44", stroke="#E8B23A", stroke_width=3, fill="none", opacity=0.8),
+    C(84, 30, 8, fill="#3F9E63"), C(156, 30, 8, fill="#3F9E63"),
+    P("M120 2 L 112 -8 L 128 -8 Z", fill="#E8B23A"),
+    C(120, 12, 12, fill="#E8B23A"), C(116, 8, 4, fill="#FFFFFF", opacity=0.45),
+])
 
 # ── 2. KÍNH ĐEN: trong nhóm mặt (theo nghiêng / quay), tròng đủ to che cả mắt mở to.
 SH = "#2A313B"
