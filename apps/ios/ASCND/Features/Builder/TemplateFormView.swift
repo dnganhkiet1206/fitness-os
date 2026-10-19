@@ -183,7 +183,7 @@ struct TemplateFormView: View {
         Button { search = "" } label: {
           Image(systemName: "xmark.circle.fill")
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-            .frame(width: 44, height: 44)
+            .frame(minWidth: 44, minHeight: 44)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -237,7 +237,7 @@ struct TemplateFormView: View {
               .foregroundStyle(.white)
           }
         }
-        .frame(width: 30, height: 30)
+        .frame(width: Glyph.badge, height: Glyph.badge)
         .accessibilityHidden(true)
       }
       .padding(.horizontal, DS.Spacing.md)
@@ -452,7 +452,7 @@ struct TemplateFormView: View {
         Text(verbatim: "\(i + 1)")
           .font(DS.TextStyle.footnote.weight(.bold).monospacedDigit())
           .foregroundStyle(Self.rose)
-          .frame(width: 32, height: 32)
+          .frame(width: Glyph.order, height: Glyph.order)
           .background(Self.rose.opacity(0.12), in: Circle())
           .accessibilityHidden(true)
         VStack(alignment: .leading, spacing: 3) {
@@ -618,7 +618,7 @@ struct TemplateFormView: View {
       Image(systemName: symbol)
         .font(.system(size: 14, weight: .bold))
         .foregroundStyle(enabled ? Self.rose : DS.Color.mutedForeground.swiftUI.opacity(0.4))
-        .frame(width: 36, height: 36)
+        .frame(width: Glyph.round, height: Glyph.round)
         .background(Self.rose.opacity(enabled ? 0.12 : 0.05), in: Circle())
         .frame(width: 44, height: 44)
         .contentShape(Rectangle())
@@ -713,6 +713,14 @@ private extension View {
       .listRowSeparator(.hidden)
       .listRowInsets(EdgeInsets(top: vertical, leading: DS.Spacing.md, bottom: vertical, trailing: DS.Spacing.md))
   }
+}
+
+/// Cỡ HÌNH vẽ (không phải vùng chạm): mỗi hình nằm trong một hàng / nút ≥44pt
+/// (hàng chọn bài 56pt, thẻ bài, nút − / + có `.frame(width: 44, height: 44)`).
+private enum Glyph {
+  static let badge: CGFloat = 30
+  static let order: CGFloat = 32
+  static let round: CGFloat = 36
 }
 
 private struct CreateExercise: Hashable {
