@@ -177,37 +177,56 @@ struct NutritionTodayCard: View {
   /// Màu nhấn DUY NHẤT của thẻ (màu bữa) — 19/10: "thẻ bị nhiều màu quá".
   static var accent: Color { MascotRoomView.signalColor(.meal) }
 
-  /// Một viên macro: "Đạm 35/121g" (hoặc "Đạm còn 86g" khi lật); nền viên tô
-  /// màu nhấn theo phần đã ăn, chạy từ 0 khi hiện. Vượt quá 10 % thì đỏ.
+  /// Một viên macro (19/10 lần năm — "hơi khó nhìn"): nền sáng có viền, tên
+  /// bên trái; số đã ăn ĐẬM, "/mục tiêu g" nhạt; tiến độ là vạch đậm ở đáy viên
+  /// (mảng tô nhạt cũ lẫn vào nền). Khi lật: "còn N g". Vượt quá 10 % thì đỏ.
   private func macroChip(_ m: Macro, _ tile: NutritionToday.Tile) -> some View {
     let color = tile.overHard ? DS.Color.readinessRed.swiftUI : Self.accent
-    return HStack(spacing: 4) {
+    let shape = RoundedRectangle(cornerRadius: DS.Radius.md, style: .continuous)
+    return HStack(alignment: .firstTextBaseline, spacing: 4) {
       Text(verbatim: m.label)
-        .font(DS.TextStyle.caption.weight(.semibold))
-        .foregroundStyle(DS.Color.foreground.swiftUI)
+        .font(DS.TextStyle.footnote.weight(.medium))
+        .foregroundStyle(DS.Color.foreground.swiftUI.opacity(0.75))
       Spacer(minLength: 2)
-      Text(verbatim: showLeft
-        ? "\(tile.leftText)g \(wordText(tile.word))"
-        : "\(Units.display(tile.eaten, locale: .app))/\(Units.display(tile.target, locale: .app))g")
-        .font(DS.TextStyle.caption.weight(.medium).monospacedDigit())
-        .foregroundStyle(tile.overHard ? DS.Color.readinessRed.swiftUI : DS.Color.foreground.swiftUI.opacity(0.7))
-        .contentTransition(.numericText())
+      if showLeft {
+        Text(verbatim: tile.leftText)
+          .font(.system(.body, design: .rounded).weight(.bold).monospacedDigit())
+          .foregroundStyle(tile.overHard ? DS.Color.readinessRed.swiftUI : DS.Color.foreground.swiftUI)
+          .contentTransition(.numericText())
+        Text(verbatim: "g \(wordText(tile.word))")
+          .font(DS.TextStyle.caption)
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+      } else {
+        Text(verbatim: Units.display(tile.eaten, locale: .app))
+          .font(.system(.body, design: .rounded).weight(.bold).monospacedDigit())
+          .foregroundStyle(tile.overHard ? DS.Color.readinessRed.swiftUI : DS.Color.foreground.swiftUI)
+          .contentTransition(.numericText())
+        Text(verbatim: "/\(Units.display(tile.target, locale: .app))g")
+          .font(DS.TextStyle.caption.monospacedDigit())
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+      }
     }
     .lineLimit(1)
     .minimumScaleFactor(0.75)
     .padding(.horizontal, 12)
-    .frame(minHeight: 36)
-    .background {
+    .padding(.top, 10)
+    .padding(.bottom, 14)
+    .background(DS.Color.card.swiftUI, in: shape)
+    .overlay(alignment: .bottomLeading) {
       GeometryReader { geo in
         ZStack(alignment: .leading) {
-          Capsule().fill(DS.Color.secondary.swiftUI)
-          Capsule().fill(color.opacity(0.28))
-            .frame(width: geo.size.width * (appeared ? min(100, tile.fill) : 0) / 100)
+          Capsule().fill(DS.Color.border.swiftUI.opacity(0.6))
+          Capsule().fill(color)
+            .frame(width: max(0, geo.size.width * (appeared ? min(100, tile.fill) : 0) / 100))
         }
       }
+      .frame(height: 4)
+      .padding(.horizontal, 12)
+      .padding(.bottom, 6)
     }
-    .clipShape(Capsule())
+    .overlay(shape.strokeBorder(DS.Color.border.swiftUI, lineWidth: 1))
   }
+
 
 
 
