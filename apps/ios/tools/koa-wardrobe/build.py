@@ -27,7 +27,7 @@ d = json.loads(m.group(1))
 # Các món đã vẽ lại, theo ô. Nhóm vẽ RN của chúng bị bỏ trước khi chèn bản mới.
 REDRAWN = {
     "head": ["cap", "band", "beanie", "santa", "antler", "pumpkin", "witch", "khanxep", "phones", "lion"], "face": ["shades", "goggles", "mask", "eyepatch", "beard", "tuong", "vr", "nosestrip", "heart", "dragon"], "top": ["tee", "tank", "hoodie", "xmas", "aodai", "ghost", "windbreak", "jersey", "lion", "armor"], "bottom": ["short", "legging", "jogger", "xmaspants", "tetpants", "tutu", "camo", "swim", "ghostpants", "flame"],
-    "shoes": ["sneaker", "runner", "boot", "xmasboot", "hai", "sandal", "socks", "glow", "ghostshoe", "wing"], "back": ["backpack", "hydro", "angel", "bat", "giftbag", "lixi", "cape", "oxygen", "dragonwing", "jetpack"], "hand": ["bottle"],
+    "shoes": ["sneaker", "runner", "boot", "xmasboot", "hai", "sandal", "socks", "glow", "ghostshoe", "wing"], "back": ["backpack", "hydro", "angel", "bat", "giftbag", "lixi", "cape", "oxygen", "dragonwing", "jetpack"], "hand": ["bottle", "dumbbell", "towel", "rope", "candy", "lantern", "broom", "redenv", "trophy", "sparkler"],
 }
 gone = {f"it_{slot}_{i}" for slot, ids in REDRAWN.items() for i in ids}
 def _all(n):
@@ -826,6 +826,76 @@ hand['kids'].append(G([
 
 d["nodes"] = [prune(n) for n in d["nodes"] if id(n) not in old_groups]
 
+# ── Ô CẦM TAY (còn lại): như bình nước — món nằm ĐÚNG ở đầu cánh tay phải (gốc
+#    `handTf`), to hơn RN, và bàn tay Koa (cùng màu lông, hai nét ngón) vẽ đè lên
+#    chỗ cầm: món nhô ra trên / dưới bàn tay.
+PAW = [P("M-14 -5 C -8 -11 8 -11 14 -4 C 17 3 11 10 0 10 C -10 10 -16 5 -16 0 C -16 -2 -15 -4 -14 -5 Z", fill=FUR),
+       P("M-5 -3 C -3 1 -3 5 -5 8 M3 -4 C 5 0 5 5 3 9", stroke=FURD, stroke_width=1.3, fill="none", stroke_linecap="round",
+         opacity=0.5)]
+def held(flag, under, over=()):
+    hand['kids'].append(G(list(under) + PAW + list(over), **{"if": flag}))
+
+# tạ đơn: tay cầm ngang trong lòng bàn tay, hai quả tạ hai bên
+held("it_hand_dumbbell", [
+    R(-24, -3, 48, 7, 3, fill="#7E8896"),
+    R(-30, -13, 10, 26, 4, fill="#39424E"), R(20, -13, 10, 26, 4, fill="#39424E"),
+    R(-36, -9, 7, 18, 3, fill="#2A313B"), R(29, -9, 7, 18, 3, fill="#2A313B"),
+])
+# khăn: vắt qua tay, hai vạt rủ xuống
+held("it_hand_towel", [
+    P("M-14 -4 C -18 10 -16 26 -10 36 C -4 38 2 36 4 30 C 0 20 0 8 2 -2 Z", fill="#F4F6F8", stroke="#A9B2BC", stroke_width=1.6),
+    P("M4 -2 C 10 10 14 22 12 32 C 16 36 22 34 24 28 C 22 16 18 4 12 -4 Z", fill="#E4E9EE", stroke="#A9B2BC", stroke_width=1.6),
+    P("M-14 26 L 2 26 M6 22 L 20 22", stroke="#3FA9E5", stroke_width=2.5, stroke_linecap="round"),
+])
+# dây nhảy: tay cầm đỏ trong lòng bàn tay, dây vòng xuống chạm đất
+held("it_hand_rope", [
+    P("M0 14 C 14 36 18 58 0 66 C -24 74 -44 60 -38 40", stroke="#39424E", stroke_width=3, fill="none", stroke_linecap="round"),
+    R(-5, -18, 10, 36, 5, fill="#D64545"),
+])
+# kẹo gậy Noel: cán thẳng qua bàn tay, móc cong trên đầu, sọc đỏ
+held("it_hand_candy", [
+    P("M2 22 L 2 -18 C 2 -34 24 -34 24 -18", stroke="#F4F6F8", stroke_width=9, fill="none", stroke_linecap="round"),
+    P("M2 22 L 2 -18 C 2 -34 24 -34 24 -18", stroke="#A9B2BC", stroke_width=10.5, fill="none", stroke_linecap="round", opacity=0),
+    P("M2 16 L 2 12 M2 -10 L 2 -14 M4 -24 L 8 -28 M18 -30 L 20 -26 M24 -20 L 24 -16", stroke="#D64545", stroke_width=4.5,
+      stroke_linecap="round"),
+])
+# lồng đèn: quai cầm trong tay, đèn treo phía dưới, tua vàng
+held("it_hand_lantern", [
+    P("M0 6 L 0 18", stroke="#39424E", stroke_width=3),
+    E(0, 34, 16, 18, fill="#D64545"), E(0, 34, 10, 18, fill="#E36A6A", opacity=0.6),
+    R(-9, 15, 18, 5, 2, fill="#E8B23A"), R(-9, 49, 18, 5, 2, fill="#E8B23A"),
+    P("M-5 54 L -5 62 M0 54 L 0 64 M5 54 L 5 62", stroke="#E8B23A", stroke_width=2.5, stroke_linecap="round"),
+    P("M0 -4 C -6 -14 6 -14 0 -4", stroke="#39424E", stroke_width=3, fill="none"),
+])
+# chổi phù thuỷ: cán dài chéo qua tay, bó rơm dưới đất
+held("it_hand_broom", [
+    P("M-6 -40 L 6 40", stroke="#8A6A3B", stroke_width=5, stroke_linecap="round"),
+    P("M4 34 C 18 40 22 58 12 66 C 0 70 -10 62 -8 40 Z", fill="#C4901F"),
+    P("M2 44 L 0 64 M8 44 L 8 66 M-2 42 L -6 60", stroke="#A57A18", stroke_width=1.6, stroke_linecap="round"),
+    G([R(-1, 32, 12, 6, 2, fill="#D64545")], tf=[["r", 10, 5, 35]]),
+])
+# bao lì xì: kẹp giữa ngón, nửa trên nhô khỏi bàn tay
+held("it_hand_redenv", [
+    R(-12, -34, 24, 34, 4, fill="#D64545", stroke="#B23636", stroke_width=1.4),
+    P("M-12 -26 L 0 -18 L 12 -26", stroke="#B23636", stroke_width=1.6, fill="none"),
+    C(0, -12, 6, fill="#E8B23A"),
+])
+# cúp: chân cúp trong lòng bàn tay, thân cúp vàng phía trên
+held("it_hand_trophy", [
+    P("M-16 -42 L 16 -42 L 13 -22 C 11 -10 -11 -10 -13 -22 Z", fill="#E8B23A"),
+    P("M-16 -38 C -28 -38 -28 -22 -14 -22 M16 -38 C 28 -38 28 -22 14 -22", stroke="#C4901F", stroke_width=3.5, fill="none"),
+    R(-4, -12, 8, 10, 1, fill="#C4901F"),
+    P("M-8 -36 C -8 -28 -6 -24 -2 -20", stroke="#FFFFFF", stroke_width=2.5, fill="none", stroke_linecap="round", opacity=0.5),
+], over=[R(-14, 8, 28, 8, 3, fill="#C4901F")])
+# que pháo hoa: que dài qua tay, chùm tia sáng ở đầu
+held("it_hand_sparkler", [
+    P("M0 18 L 0 -30", stroke="#39424E", stroke_width=4, stroke_linecap="round"),
+    G([P("M0 -32 L 0 -50"), P("M0 -32 L -14 -46"), P("M0 -32 L 14 -46"), P("M0 -32 L -20 -30"), P("M0 -32 L 20 -30"),
+       P("M0 -32 L -10 -20"), P("M0 -32 L 10 -20")],
+      a={"stroke": "#E8B23A", "stroke-width": 3, "stroke-linecap": "round"}),
+    C(0, -32, 5, fill="#FFF6D6"),
+])
+
 # ── Đồ cầm tay ẩn khi tập tạ: hai tay đang cầm tạ (RN: đồ chồng lên quả tạ).
 #    `handFree` do `KoaRender.flags` đặt — không nằm trong cờ golden của RN.
 hand_g = next(n for n in walk(nodes[3]) if n.get('bind') == 'handTf')
@@ -836,6 +906,9 @@ flags_in = {n.get('if') for n in walk({'kids': d['nodes']})}
 missing = sorted(gone - flags_in)
 assert not missing, f"thiếu bản vẽ mới: {missing}"
 
+for n in walk({'kids': d['nodes']}):
+    for k, v in (n.get('a') or {}).items():
+        assert isinstance(v, (str, int, float)), f"thuộc tính {k} phải là chuỗi / số: {v!r}"
 out = json.dumps(d, ensure_ascii=False, separators=(',', ':'))
 if '"##' in out: raise SystemExit("chuỗi thô của Swift sẽ gãy")
 DST.write_text(f"""// SINH TỰ ĐỘNG — đừng sửa tay.
