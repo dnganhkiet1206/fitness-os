@@ -83,7 +83,7 @@ struct MetricPanelView: View {
         label: String(localized: "metric.sleep"),
         value: sleep > 0 ? "\(sleepMin / 60)h \(sleepMin % 60)m" : "—", note: sleepNote.0, noteTint: sleepNote.1),
       Tile(
-        kind: .kcal, symbol: "flame.fill", tint: DS.Color.metricBlue.swiftUI, label: String(localized: "metric.kcal"),
+        kind: .kcal, symbol: "flame.fill", tint: DS.Color.metricOrange.swiftUI, label: String(localized: "metric.kcal"),
         value: kcal > 0 ? Int(kcal).formatted(.number.locale(.app)) : "—", note: String(localized: "metric.note.today"),
         noteTint: muted),
       Tile(

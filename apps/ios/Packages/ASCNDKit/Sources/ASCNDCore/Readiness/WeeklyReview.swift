@@ -185,7 +185,11 @@ public enum WeeklyReview {
         / suppDays.reduce(0.0) { $0 + JS.number(or0($1["supplement_planned"])) } * 100)
     let supp: Int? = suppDays.isEmpty || !suppRatio.isFinite ? nil : Int(suppRatio)
 
-    let scored = logs.filter { truthy($0["readiness_score"]) }
+    // Trung bình tuần chỉ tính ngày có chiều phục hồi (19/10): ngày chỉ có tải
+    // tập là "chưa đủ dữ liệu để chấm" ở mọi màn, không trộn vào trung bình.
+    let scored = logs.filter {
+      truthy($0["readiness_score"]) && ReadinessCard.hasRecoverySignal($0["readiness_explain"]?.stringValue, copy: copy)
+    }
     let readinessDays = scored.count
     let avgReadiness = avg(scored.map { JS.number($0["readiness_score"]) })
 
@@ -259,7 +263,8 @@ public enum WeeklyReview {
         delta: delta(totalVolume, prevVolume)),
       sessions: workoutCount,
       readiness: Card(
-        value: num(JS.round(avgReadiness)), sub: acwr.map { "ACWR \(num($0))" } ?? "—", delta: nil),
+        // Không ngày nào chấm được (chỉ có tải tập): "—", không phải "0".
+        value: readinessDays > 0 ? num(JS.round(avgReadiness)) : "—", sub: acwr.map { "ACWR \(num($0))" } ?? "—", delta: nil),
       supplements: supp.map { Card(value: "\($0)%", sub: "/\(suppDays.count)d", delta: nil) },
       water: Card(value: "\(JS.fixed(water.mean / 1000, 1))L", sub: "/\(num(waterTarget / 1000))L", delta: nil))
 

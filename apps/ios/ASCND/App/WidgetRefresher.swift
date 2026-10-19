@@ -36,7 +36,8 @@ final class WidgetRefresher: @unchecked Sendable {
     guard let store, let userId = lock.withLock({ user }) else { return }
     guard
       let p = await WidgetSync.payloads(
-        userId: userId, store: store, copy: Self.copy, now: SystemWallClock().nowMillis(), in: .current)
+        userId: userId, store: store, copy: Self.copy, now: SystemWallClock().nowMillis(), in: .current,
+        recovery: ReadinessCopyStore.copy.map { copy in { ReadinessCard.hasRecoverySignal($0, copy: copy) } })
     else { return }
     // Phiên đã đổi trong lúc đọc: bỏ, không ghi số của người khác.
     guard lock.withLock({ user }) == userId else { return }
@@ -58,6 +59,7 @@ final class WidgetRefresher: @unchecked Sendable {
   static var copy: HomeWidgets.Copy {
     HomeWidgets.Copy(
       done: String(localized: "widget.done"), restDay: String(localized: "widget.restDay"),
-      noWorkout: String(localized: "widget.noWorkout"), untitled: String(localized: "widget.untitled"))
+      noWorkout: String(localized: "widget.noWorkout"), untitled: String(localized: "widget.untitled"),
+      noScore: String(localized: "widget.noScore"))
   }
 }

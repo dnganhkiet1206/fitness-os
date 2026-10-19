@@ -60,6 +60,12 @@ public enum AssistantSuggestions {
     /// (`hasRecoverySignal`) — chỉ lời tóm tắt đọc.
     public var hasRecovery: Bool
 
+    /// Điểm / trạng thái được phép NÓI RA (19/10): chỉ khi có chiều phục hồi.
+    /// Điểm chỉ dựa vào tải tập là "chưa đủ dữ liệu để chấm" ở mọi màn
+    /// (`AssistantSummary.provisional`) — Koa, gợi ý, nhắc nhở cũng vậy.
+    public var scoredReadiness: Int? { hasRecovery ? readiness : nil }
+    public var scoredStatus: String? { hasRecovery ? status : nil }
+
     public init(
       readiness: Int? = nil, status: String? = nil, acwr: Double? = nil, sleepMin: Double = 0, kcal: Double = 0,
       kcalTarget: Double = 2200, proteinG: Double = 0, proteinTarget: Double = 140, steps: Double = 0,
@@ -133,9 +139,9 @@ public enum AssistantSuggestions {
     let proteinTarget = r(s.proteinTarget)
 
     // ── điều đang sai hôm nay ──
-    if s.status == "red" {
+    if s.scoredStatus == "red" {
       let q =
-        if let score = s.readiness {
+        if let score = s.scoredReadiness {
           Text3(
             vi: "Điểm sẵn sàng của tôi hôm nay là \(score)/100. Vì sao lại thấp và hôm nay tôi nên làm gì?",
             en: "My readiness today is \(score)/100. Why is it low and what should I do today?",
@@ -183,9 +189,9 @@ public enum AssistantSuggestions {
           es: "Anoche solo dormí \(t). ¿Cómo afecta eso al entrenamiento de hoy y cómo debería recuperarme?"))
     }
 
-    if s.status == "yellow" {
+    if s.scoredStatus == "yellow" {
       let q =
-        if let score = s.readiness {
+        if let score = s.scoredReadiness {
           Text3(
             vi: "Điểm sẵn sàng của tôi hôm nay là \(score)/100. Hôm nay tôi nên tập nặng hay tập nhẹ?",
             en: "My readiness today is \(score)/100. Should I train hard or take it easy?",
@@ -271,7 +277,7 @@ public enum AssistantSuggestions {
     }
 
     // ── ngày tốt vẫn đáng hỏi ──
-    if s.status == "green", let score = s.readiness {
+    if s.scoredStatus == "green", let score = s.scoredReadiness {
       add(
         "readiness-high", .readiness, .gauge,
         Text3(vi: "Tận dụng hôm nay", en: "Make it count", es: "Aprovecha el día"),

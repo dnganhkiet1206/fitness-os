@@ -5,7 +5,7 @@ import Testing
 /// Khối tổng quan của model đối chiếu với số thật (16/10).
 struct CoachOverviewCheckTests {
   let s = AssistantSuggestions.Signal(
-    readiness: 35, sleepMin: 440, kcal: 100, kcalTarget: 2508, proteinG: 12, proteinTarget: 121, steps: 4870)
+    readiness: 35, sleepMin: 440, kcal: 100, kcalTarget: 2508, proteinG: 12, proteinTarget: 121, steps: 4870, hasRecovery: true)
 
   func overview(_ items: String) -> CoachOverview { CoachOverview.parse("{\"items\":[\(items)]}")! }
 
