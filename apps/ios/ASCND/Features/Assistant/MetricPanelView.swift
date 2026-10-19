@@ -48,7 +48,9 @@ struct MetricPanelView: View {
     let hr = signal?.heartRate
     let sleep = s?.sleepMin ?? 0
     let kcal = s?.kcal ?? 0
-    let readiness = s?.readiness
+    // Chỉ có tải tập → chưa chấm, như thẻ Hôm nay / Xu hướng (19/10: ô này
+    // từng hiện "80 · Tốt" ngay dưới "Chưa đủ dữ liệu để chấm").
+    let readiness = s.flatMap { AssistantSummary.provisional(score: $0.readiness, hasRecovery: $0.hasRecovery) ? nil : $0.readiness }
     let green = DS.Color.readinessGreen.swiftUI
     let yellow = DS.Color.readinessYellow.swiftUI
     let muted = DS.Color.mutedForeground.swiftUI

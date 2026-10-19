@@ -251,11 +251,11 @@ struct ReadinessCardView: View {
       .accessibilityHint(Text(Self.hint(expanded: expanded)))
       .accessibilityAddTraits(.isButton)
 
-      if expanded { details(day, color: color) }
+      if expanded { details(day, color: color, provisional: provisional) }
     }
   }
 
-  private func details(_ day: ReadinessCard.Day, color: Color) -> some View {
+  private func details(_ day: ReadinessCard.Day, color: Color, provisional: Bool = false) -> some View {
     let copy = ReadinessCopyStore.copy
     let subs = copy.map { ReadinessCard.subscores(day.explain, copy: $0) } ?? [:]
     let tiles = ReadinessCard.tiles(subscores: subs, acwr: day.acwr)
@@ -292,7 +292,9 @@ struct ReadinessCardView: View {
           .font(DS.TextStyle.caption)
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
       }
-      if !reco.isEmpty {
+      // Chưa chấm thì không khuyên cách tập (19/10: "Tập theo kế hoạch — đẩy top
+      // set…" ngay dưới "Chưa đủ dữ liệu để chấm"), và không cần bảng màu điểm.
+      if !reco.isEmpty, !provisional {
         Text(verbatim: reco)
           .font(DS.TextStyle.footnote.weight(.semibold))
           .foregroundStyle(color)
@@ -300,7 +302,7 @@ struct ReadinessCardView: View {
           .frame(maxWidth: .infinity, alignment: .leading)
           .background(color.opacity(0.1), in: RoundedRectangle(cornerRadius: DS.Radius.sm))
       }
-      legend
+      if !provisional { legend }
       if let onOpenBiometrics {
         Button(action: onOpenBiometrics) {
           HStack {
