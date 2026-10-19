@@ -209,7 +209,7 @@ struct ExerciseWriteTests {
     #expect(Equipment.label("dumbbells", .vi) == "Tạ đơn")
     #expect(Equipment.label(" Roller ", .en) == "Roller")
     // Giá trị thư viện chung: có nhãn 3 thứ tiếng nhưng không thành khoá so thiết bị.
-    #expect(Equipment.label("kettlebell", .vi) == "Tạ ấm")
+    #expect(Equipment.label("kettlebell", .vi) == "Kettlebell")
     #expect(Equipment.label("other", .es) == "Otro")
     #expect(Equipment.matchKey("kettlebell") == "raw:kettlebell")
   }

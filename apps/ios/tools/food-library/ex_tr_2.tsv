@@ -40,7 +40,7 @@
 259	Máy elliptical	Elíptica
 260	Gập bụng trên bóng tập	Crunch en fitball
 261	Kéo gối trên bóng tập	Encogimiento de rodillas en fitball
-262	Đẩy sàn tạ ấm một tay biên độ rộng	Press en el suelo a una mano con pesa rusa rango amplio
+262	Đẩy sàn kettlebell một tay biên độ rộng	Press en el suelo a una mano con pesa rusa rango amplio
 263	Xoay vai ngoài	Rotación externa
 264	Xoay vai ngoài dây kháng lực	Rotación externa con banda
 265	Xoay vai ngoài cáp	Rotación externa en polea
@@ -73,7 +73,7 @@
 292	Nâng đĩa tạ trước	Elevación frontal con disco
 293	Nâng tạ trước kèm kéo qua đầu	Elevación frontal y pullover
 294	Squat trước (nắm kiểu clean)	Sentadilla frontal (agarre de cargada)
-295	Squat trước hai tạ ấm	Sentadilla frontal con dos pesas rusas
+295	Squat trước hai kettlebell	Sentadilla frontal con dos pesas rusas
 296	Nâng tạ trước hai tạ đơn	Elevación frontal con dos mancuernas
 297	Kéo xà xuống biên độ đầy đủ	Jalón al pecho rango completo
 298	Hít xà Gironda chạm ức	Dominadas Gironda al esternón
@@ -149,24 +149,24 @@
 368	Squat nhún kiểu jerk	Flexión de envión
 369	Chạy chậm máy chạy bộ	Trotar en cinta
 370	Nâng thùng tạ	Carga de barril
-371	Đẩy vai Arnold tạ ấm	Press Arnold con pesa rusa
-372	Dead clean tạ ấm	Cargada muerta con pesa rusa
-373	Số 8 tạ ấm	Ocho con pesa rusa
-374	Vòng hào quang tạ ấm	Halo con pesa rusa
-375	Vòng hào quang tạ ấm kèm duỗi qua đầu	Halo con pesa rusa y extensión
-376	Hang clean tạ ấm	Cargada colgante con pesa rusa
-377	Deadlift một chân tạ ấm	Peso muerto a una pierna con pesa rusa
-378	Duỗi tay sau qua đầu tạ ấm	Extensión de tríceps sobre la cabeza con pesa rusa
-379	Chuyền tạ ấm qua chân	Pase de pesa rusa entre las piernas
-380	Lắc thuyền tạ ấm	Barco pirata con pesa rusa
-381	Squat một chân tạ ấm	Sentadilla pistol con pesa rusa
-382	Đẩy vai ngồi tạ ấm	Press sentado con pesa rusa
-383	Đẩy vai bập bênh tạ ấm	Press balancín con pesas rusas
-384	Kéo cao sumo tạ ấm	Tirón alto sumo con pesa rusa
-385	Thruster tạ ấm	Thruster con pesa rusa
-386	Turkish get-up tạ ấm (kiểu chùng chân)	Levantamiento turco con pesa rusa (zancada)
-387	Turkish get-up tạ ấm (kiểu squat)	Levantamiento turco con pesa rusa (sentadilla)
-388	Cối xay gió tạ ấm	Molino con pesa rusa
+371	Đẩy vai Arnold kettlebell	Press Arnold con pesa rusa
+372	Dead clean kettlebell	Cargada muerta con pesa rusa
+373	Số 8 kettlebell	Ocho con pesa rusa
+374	Vòng hào quang kettlebell	Halo con pesa rusa
+375	Vòng hào quang kettlebell kèm duỗi qua đầu	Halo con pesa rusa y extensión
+376	Hang clean kettlebell	Cargada colgante con pesa rusa
+377	Deadlift một chân kettlebell	Peso muerto a una pierna con pesa rusa
+378	Duỗi tay sau qua đầu kettlebell	Extensión de tríceps sobre la cabeza con pesa rusa
+379	Chuyền kettlebell qua chân	Pase de pesa rusa entre las piernas
+380	Lắc thuyền kettlebell	Barco pirata con pesa rusa
+381	Squat một chân kettlebell	Sentadilla pistol con pesa rusa
+382	Đẩy vai ngồi kettlebell	Press sentado con pesa rusa
+383	Đẩy vai bập bênh kettlebell	Press balancín con pesas rusas
+384	Kéo cao sumo kettlebell	Tirón alto sumo con pesa rusa
+385	Thruster kettlebell	Thruster con pesa rusa
+386	Turkish get-up kettlebell (kiểu chùng chân)	Levantamiento turco con pesa rusa (zancada)
+387	Turkish get-up kettlebell (kiểu squat)	Levantamiento turco con pesa rusa (sentadilla)
+388	Cối xay gió kettlebell	Molino con pesa rusa
 389	Muscle up có đà	Muscle up con impulso
 390	Kéo gối chéo người	Rodilla cruzada sobre el cuerpo
 391	Xoay gối	Círculos de rodilla
@@ -188,7 +188,7 @@
 407	Bật nhảy ngang qua cọc	Saltos laterales de conos
 408	Nâng tạ ngang dây kháng lực	Elevación lateral con banda
 409	Lăn giãn cơ xô	Liberación del dorsal ancho
-410	Đẩy sàn tạ ấm vắt chân	Press en el suelo con pierna cruzada
+410	Đẩy sàn kettlebell vắt chân	Press en el suelo con pierna cruzada
 411	Giãn đùi sau nâng chân	Estiramiento de isquios con pierna elevada
 412	Duỗi đùi	Extensión de piernas
 413	Nâng chân	Elevación de pierna

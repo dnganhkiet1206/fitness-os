@@ -309,12 +309,12 @@ public enum Equipment: String, Sendable, Hashable, Codable, CaseIterable {
   /// Nhãn cho các giá trị thư viện chung (free-exercise-db, 20261018120000) ngoài
   /// năm khoá — chỉ để hiển thị, không đổi khoá so "cùng thiết bị".
   static let libraryLabels: [String: (vi: String, en: String, es: String)] = [
-    "kettlebell": ("Tạ ấm", "Kettlebell", "Pesa rusa"),
+    "kettlebell": ("Kettlebell", "Kettlebell", "Pesa rusa"),
     "band": ("Dây kháng lực", "Band", "Banda elástica"),
     "medicine ball": ("Bóng tạ", "Medicine ball", "Balón medicinal"),
     "exercise ball": ("Bóng tập", "Exercise ball", "Fitball"),
-    "foam roll": ("Con lăn", "Foam roller", "Rodillo de espuma"),
-    "ez bar": ("Tạ EZ", "EZ bar", "Barra Z"),
+    "foam roll": ("Con lăn foam", "Foam roller", "Rodillo de espuma"),
+    "ez bar": ("Đòn EZ", "EZ bar", "Barra Z"),
     "other": ("Khác", "Other", "Otro"),
   ]
 

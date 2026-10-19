@@ -4,7 +4,7 @@
 3	Lăn bánh xe bụng	Rueda abdominal
 4	Lăn giãn đùi trong	Liberación de aductores con rodillo
 5	Giãn đùi trong và háng	Estiramiento de aductores e ingle
-6	Cối xay gió tạ ấm nâng cao	Molino avanzado con pesa rusa
+6	Cối xay gió kettlebell nâng cao	Molino avanzado con pesa rusa
 7	Gập bụng đạp xe	Abdominales bicicleta
 8	Giãn đùi trước tư thế bò	Estiramiento de cuádriceps en cuadrupedia
 9	Cuốn búa luân phiên	Curl martillo alterno
@@ -13,10 +13,10 @@
 12	Bật xa chéo luân phiên	Saltos diagonales alternos
 13	Đẩy vai cáp luân phiên	Press de hombros alterno en polea
 14	Nâng vai luân phiên	Elevación de deltoides alterna
-15	Đẩy sàn tạ ấm luân phiên	Press en el suelo alterno con pesa rusa
-16	Hang clean tạ ấm luân phiên	Cargada colgante alterna con pesa rusa
-17	Đẩy vai tạ ấm luân phiên	Press alterno con pesa rusa
-18	Chèo tạ ấm luân phiên	Remo alterno con pesa rusa
+15	Đẩy sàn kettlebell luân phiên	Press en el suelo alterno con pesa rusa
+16	Hang clean kettlebell luân phiên	Cargada colgante alterna con pesa rusa
+17	Đẩy vai kettlebell luân phiên	Press alterno con pesa rusa
+18	Chèo kettlebell luân phiên	Remo alterno con pesa rusa
 19	Chèo renegade luân phiên	Remo renegado alterno
 20	Xoay cổ chân	Círculos de tobillo
 21	Giãn mông cổ chân trên gối	Estiramiento de glúteo tobillo sobre rodilla
@@ -84,7 +84,7 @@
 83	Chèo thanh dài hai tay	Remo con barra larga a dos manos
 84	Chèo cúi người hai tạ đơn	Remo inclinado con dos mancuernas
 85	Chèo cúi người tạ đơn lòng bàn tay hướng vào	Remo inclinado con mancuernas agarre neutro
-86	Bent press tạ ấm	Press doblado con pesa rusa
+86	Bent press kettlebell	Press doblado con pesa rusa
 87	Đạp xe	Ciclismo
 88	Đạp xe tại chỗ	Bicicleta estática
 89	Đẩy ngực với ván	Press con tabla
@@ -95,7 +95,7 @@
 94	Squat không tạ	Sentadilla sin peso
 95	Chùng chân bước đi không tạ	Zancadas caminando sin peso
 96	Gập bụng cáp trên bóng Bosu kèm nghiêng lườn	Crunch en polea sobre Bosu con flexión lateral
-97	Clean tạ ấm úp ngược từ thế treo	Cargada invertida con pesa rusa
+97	Clean kettlebell úp ngược từ thế treo	Cargada invertida con pesa rusa
 98	Nâng hông ngược	Elevación de cadera invertida
 99	Bật nhảy lên bục liên tục	Saltos al cajón continuos
 100	Nhảy chân sáo lên bục	Saltos alternos al cajón
@@ -209,11 +209,11 @@
 208	Dips xà kép (ngực)	Fondos para pecho
 209	Dips xà kép (tay sau)	Fondos para tríceps
 210	Nhón bắp chân kiểu con lừa	Elevación de gemelos tipo burro
-211	Hang clean hai tạ ấm luân phiên	Cargada colgante alterna con dos pesas rusas
-212	Jerk hai tạ ấm	Envión con dos pesas rusas
-213	Push press hai tạ ấm	Push press con dos pesas rusas
-214	Snatch hai tạ ấm	Arrancada con dos pesas rusas
-215	Cối xay gió hai tạ ấm	Molino con dos pesas rusas
+211	Hang clean hai kettlebell luân phiên	Cargada colgante alterna con dos pesas rusas
+212	Jerk hai kettlebell	Envión con dos pesas rusas
+213	Push press hai kettlebell	Push press con dos pesas rusas
+214	Snatch hai kettlebell	Arrancada con dos pesas rusas
+215	Cối xay gió hai kettlebell	Molino con dos pesas rusas
 216	Đá gót chạm mông hai chân	Patadas de talón al glúteo
 217	Thăng bằng úp người trên bóng	Equilibrio boca abajo en fitball
 218	Cuốn tạ đòn kéo sát người	Curl de arrastre con barra
