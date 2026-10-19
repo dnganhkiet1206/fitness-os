@@ -26,7 +26,7 @@ d = json.loads(m.group(1))
 
 # Các món đã vẽ lại, theo ô. Nhóm vẽ RN của chúng bị bỏ trước khi chèn bản mới.
 REDRAWN = {
-    "head": ["cap", "band", "beanie", "santa", "antler", "pumpkin", "witch", "khanxep", "phones", "lion"], "face": ["shades", "goggles", "mask", "eyepatch", "beard", "tuong", "vr", "nosestrip", "heart", "dragon"], "top": ["tee", "tank", "hoodie", "xmas", "aodai", "ghost", "windbreak", "jersey", "lion", "armor"], "bottom": ["short"],
+    "head": ["cap", "band", "beanie", "santa", "antler", "pumpkin", "witch", "khanxep", "phones", "lion"], "face": ["shades", "goggles", "mask", "eyepatch", "beard", "tuong", "vr", "nosestrip", "heart", "dragon"], "top": ["tee", "tank", "hoodie", "xmas", "aodai", "ghost", "windbreak", "jersey", "lion", "armor"], "bottom": ["short", "legging", "jogger", "xmaspants", "tetpants", "tutu", "camo", "swim", "ghostpants", "flame"],
     "shoes": ["sneaker"], "back": ["backpack"], "hand": ["bottle"],
 }
 gone = {f"it_{slot}_{i}" for slot, ids in REDRAWN.items() for i in ids}
@@ -464,6 +464,107 @@ sit['kids'].insert(1, G([
     P("M64 266 C 84 250 156 250 176 266 C 179 272 177 277 172 279 C 150 270 90 270 68 279 C 63 277 61 272 64 266 Z", fill=SHO),
     P("M68 279 C 90 270 150 270 172 279", stroke=SHOD, stroke_width=2, fill="none", opacity=0.7),
 ], **{"if": "it_bottom_short"}))
+
+# ── Ô QUẦN (còn lại). Quần dài = phần hông (sau thân) + hai ống quần vẽ đè lên chân
+#    (đứng: ngay sau nhóm chân, trước giày; chạy: trong từng nhóm chân có hoạt ảnh) +
+#    phủ đùi khi ngồi. Quần ngắn dùng lại dáng quần đùi. RN: một khối đứng yên, chạy
+#    không theo bước, ngồi thì mất.
+# đứng: cả quần (hông + hai ống tới mắt cá) vẽ SAU thân; chạy: hông sau thân + hai ống
+# trong nhóm chân có hoạt ảnh (ống lộ dưới thân và theo bước chân).
+FULL = ("M68 234 C 92 245 148 245 172 234 C 175 254 172 274 168 290 C 156 294 138 294 128 290 C 126 278 124 270 120 270 "
+        "C 116 270 114 278 112 290 C 102 294 84 294 72 290 C 68 274 65 254 68 234 Z")
+HIP = ("M68 234 C 92 245 148 245 172 234 C 175 250 172 264 168 274 L 72 274 C 68 264 65 250 68 234 Z")
+def pant_leg(flip):
+    f = (lambda x: 240 - x) if flip else (lambda x: x)
+    return (f"M{f(104)} 250 C {f(115)} 253 {f(118)} 266 {f(118)} 289 C {f(108)} 293 {f(86)} 293 {f(73)} 289 "
+            f"C {f(71)} 268 {f(74)} 258 {f(79)} 254 C {f(86)} 250 {f(96)} 249 {f(104)} 250 Z")
+def cuffs(colour):
+    return [P("M73 287 C 86 291 104 291 112 288", stroke=colour, stroke_width=5, fill="none", stroke_linecap="round"),
+            P("M167 287 C 154 291 136 291 128 288", stroke=colour, stroke_width=5, fill="none", stroke_linecap="round")]
+def cuff1(flip, colour):
+    f = (lambda x: 240 - x) if flip else (lambda x: x)
+    return P(f"M{f(74)} 287 C {f(86)} 291 {f(106)} 291 {f(117)} 287", stroke=colour, stroke_width=5, fill="none", stroke_linecap="round")
+SIT = "M66 268 C 84 252 156 252 174 268 C 182 278 176 290 160 292 C 132 296 108 296 80 292 C 64 290 58 278 66 268 Z"
+run_legs = [k for k in body['kids'] if k.get('if') == 'poseRun'][0]['kids']
+def pants(flag, fill, edge, hip_extra=(), leg_extra=lambda flip: [], sit_extra=(), cuff_colour=None, opacity=1):
+    tag = {"if": flag}
+    def leg(flip):
+        out = [P(pant_leg(flip), fill=fill, opacity=opacity)]
+        if cuff_colour: out.append(cuff1(flip, cuff_colour))
+        return out + leg_extra(flip)
+    run_legs[0]['kids'].append(G(leg(False), **tag))
+    run_legs[1]['kids'].append(G(leg(True), **tag))
+    j = [k for k, n in enumerate(body['kids']) if n.get('if') == 'it_bottom_short'][0]
+    stand = [P(FULL, fill=fill, opacity=opacity),
+             P("M120 248 L 120 268", stroke=edge, stroke_width=1.6, opacity=0.6)]
+    stand += cuffs(cuff_colour) if cuff_colour else []
+    stand += leg_extra(False) + leg_extra(True)
+    body['kids'].insert(j + 1, G([
+        G(stand, **{"if": "legsStand"}),
+        G([P(HIP, fill=fill, opacity=opacity)], **{"if": "poseRun"}),
+        G(list(hip_extra)),
+    ], **tag))
+    sit['kids'].insert(1, G([P(SIT, fill=fill, opacity=opacity),
+                             P("M74 272 C 96 288 144 288 166 272", stroke=edge, stroke_width=2.6, fill="none", opacity=0.6)]
+                            + list(sit_extra), **tag))
+
+pants("it_bottom_legging", "#39424E", "#2A313B",
+      hip_extra=[P("M68 236 C 92 247 148 247 172 236", stroke="#4A5563", stroke_width=5, fill="none", stroke_linecap="round")])
+pants("it_bottom_jogger", "#8A94A1", "#6E7885", cuff_colour="#6E7885",
+      hip_extra=[P("M68 236 C 92 247 148 247 172 236", stroke="#6E7885", stroke_width=6, fill="none", stroke_linecap="round"),
+                 P("M112 246 C 112 252 110 256 108 258 M128 246 C 128 252 130 256 132 258", stroke="#F4F6F8", stroke_width=2,
+                   fill="none", stroke_linecap="round")],
+      leg_extra=lambda flip: [P(f"M{240 - 76 if flip else 76} 256 L {240 - 76 if flip else 76} 278", stroke="#F4F6F8",
+                                stroke_width=3, stroke_linecap="round")])
+pants("it_bottom_tetpants", "#E8B23A", "#C9952C", cuff_colour="#D64545",
+      hip_extra=[P("M68 236 C 92 247 148 247 172 236", stroke="#D64545", stroke_width=5, fill="none", stroke_linecap="round"),
+                 C(96, 254, 3, fill="#D64545"), C(144, 254, 3, fill="#D64545")])
+pants("it_bottom_camo", "#6E7A55", "#55603F",
+      hip_extra=[C(90, 252, 7, fill="#55603F"), C(150, 256, 6, fill="#8A9670"), C(124, 244, 5, fill="#55603F")],
+      leg_extra=lambda flip: [C(240 - 92 if flip else 92, 264, 6, fill="#55603F"), C(240 - 104 if flip else 104, 276, 5, fill="#8A9670")],
+      sit_extra=[C(92, 264, 7, fill="#55603F"), C(140, 270, 6, fill="#8A9670"), C(118, 262, 5, fill="#55603F")])
+pants("it_bottom_ghostpants", "#7A5BC4", "#5B41A0", opacity=0.92,
+      leg_extra=lambda flip: [P(("M{0} 280 C {1} 286 {2} 286 {3} 280 C {4} 286 {5} 286 {6} 280").format(
+          *[str(240 - x if flip else x) for x in (74, 78, 84, 88, 94, 100, 106)]), stroke="#B9A6F0", stroke_width=2.5, fill="none")])
+pants("it_bottom_flame", "#E8842A", "#C46A1C",
+      leg_extra=lambda flip: [P(("M{0} 282 C {1} 272 {0} 266 {2} 258 C {3} 266 {4} 272 {5} 282 Z").format(
+          *[str(240 - x if flip else x) for x in (86, 82, 92, 96, 100, 98)]), fill="#E8B23A"),
+          P(("M{0} 282 C {1} 276 {0} 272 {2} 266 C {3} 272 {4} 276 {5} 282 Z").format(
+          *[str(240 - x if flip else x) for x in (102, 100, 106, 110, 112, 110)]), fill="#D64545", opacity=0.85)])
+
+# quần ngắn: dáng quần đùi (đã vẽ ở trên) đổi màu / viền
+SHORTS = shorts['kids'][0]['a']['d']
+def short_like(flag, fill, band, extra=(), sit_extra=()):
+    j = [k for k, n in enumerate(body['kids']) if n.get('if') == 'it_bottom_short'][0]
+    body['kids'].insert(j + 1, G([P(SHORTS, fill=fill),
+        P("M68 236 C 92 247 148 247 172 236", stroke=band, stroke_width=6, fill="none", stroke_linecap="round")] + list(extra),
+        **{"if": flag}))
+    sit['kids'].insert(1, G([
+        P("M64 266 C 84 250 156 250 176 266 C 179 272 177 277 172 279 C 150 270 90 270 68 279 C 63 277 61 272 64 266 Z", fill=fill)]
+        + list(sit_extra), **{"if": flag}))
+# quần Noel: đỏ, gấu lông trắng
+short_like("it_bottom_xmaspants", "#D64545", "#B23636",
+           extra=[P("M74 271 C 86 278 106 278 114 272 M126 272 C 134 278 154 278 166 271", stroke="#F4F6F8", stroke_width=6,
+                    fill="none", stroke_linecap="round")],
+           sit_extra=[P("M68 277 C 90 268 150 268 172 277", stroke="#F4F6F8", stroke_width=5, fill="none", stroke_linecap="round")])
+# quần bơi: cam, sọc trắng, dây rút
+short_like("it_bottom_swim", "#E8842A", "#C46A1C",
+           extra=[P("M72 254 C 96 262 144 262 168 254", stroke="#F4F6F8", stroke_width=4, fill="none"),
+                  P("M116 242 C 114 250 112 254 110 256 M124 242 C 126 250 128 254 130 256", stroke="#F4F6F8", stroke_width=2,
+                    fill="none", stroke_linecap="round")])
+# váy tutu: xoè từ eo, hai lớp bèo; ngồi thì xoè trên đùi
+j = [k for k, n in enumerate(body['kids']) if n.get('if') == 'it_bottom_short'][0]
+body['kids'].insert(j + 1, G([
+    P("M70 236 C 92 246 148 246 170 236 C 182 246 192 258 194 268 C 178 276 160 272 150 276 C 138 270 128 278 120 272 "
+      "C 112 278 102 270 90 276 C 80 272 62 276 46 268 C 48 258 58 246 70 236 Z", fill="#E8657B"),
+    P("M56 262 C 66 270 78 268 90 272 C 102 266 112 274 120 268 C 128 274 138 266 150 272 C 162 268 174 270 184 262",
+      stroke="#F5A0B0", stroke_width=4, fill="none", stroke_linecap="round"),
+    P("M70 236 C 92 246 148 246 170 236", stroke="#C94A62", stroke_width=6, fill="none", stroke_linecap="round"),
+], **{"if": "it_bottom_tutu"}))
+sit['kids'].insert(1, G([
+    P("M56 268 C 74 248 166 248 184 268 C 190 278 180 284 168 280 C 150 286 90 286 72 280 C 60 284 50 278 56 268 Z", fill="#E8657B"),
+    P("M62 272 C 90 264 150 264 178 272", stroke="#F5A0B0", stroke_width=4, fill="none", stroke_linecap="round"),
+], **{"if": "it_bottom_tutu"}))
 
 # ── 5. GIÀY SNEAKER: to hơn, có đế, dây, sọc màu — đọc được ở cỡ 76pt.
 def sneaker(flip):
