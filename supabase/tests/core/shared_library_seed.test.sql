@@ -1,6 +1,8 @@
 -- Thư viện món ăn và bài tập (20261018120000_food_exercise_library.sql): seed đủ,
 -- đúng 3 thứ tiếng, tìm được bỏ dấu; món / bài chung ai cũng đọc được nhưng không
 -- ai sửa được.
+-- Tên tệp xếp SAU owner_rls.test.sql: reverse.py đòi nhãn X1 / X2 của bộ ấy đỏ
+-- trước khi thư viện chung bị mở / bị đóng; R2 / R3 ở đây là lớp thứ hai.
 \set ON_ERROR_STOP 1
 \set A '''a1a1a1a1-0000-0000-0000-0000000000a1'''
 INSERT INTO auth.users VALUES (:A) ON CONFLICT DO NOTHING;
