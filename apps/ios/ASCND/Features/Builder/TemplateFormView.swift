@@ -123,7 +123,7 @@ struct TemplateFormView: View {
             } label: {
               HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                  Text(verbatim: ex.name).foregroundStyle(DS.Color.foreground.swiftUI)
+                  Text(verbatim: ex.displayName).foregroundStyle(DS.Color.foreground.swiftUI)
                   if let g = ex.muscleGroup, !g.isEmpty {
                     Text(verbatim: ex.muscles.map(Self.muscleName).joined(separator: " / "))
                       .font(DS.TextStyle.caption)

@@ -297,7 +297,7 @@ struct ManualLogView: View {
           ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: DS.Spacing.xs) {
               ForEach(picks) { ex in
-                Button(ex.name) {
+                Button(ex.displayName) {
                   focusedName = nil
                   buffer["n:\(row.id)"] = nil
                   Task { await log.pickExercise(id: ex.id, name: ex.name, row: row.id) }

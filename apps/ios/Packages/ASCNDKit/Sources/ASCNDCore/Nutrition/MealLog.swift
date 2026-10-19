@@ -69,10 +69,14 @@ public enum MealLog {
     public let carbs: Double
     public let fat: Double
     public let fiber: Double
+    /// Phần ăn theo ngôn ngữ app ("1 tô") — chỉ món thư viện có.
+    public let portion: String?
+    /// Món Việt tự soạn: số dinh dưỡng là ước tính từ công thức.
+    public let isEstimate: Bool
 
     public init(
       id: String, foodItemId: String?, name: String, brand: String? = nil, kcal: Double, protein: Double,
-      carbs: Double, fat: Double, fiber: Double
+      carbs: Double, fat: Double, fiber: Double, portion: String? = nil, isEstimate: Bool = false
     ) {
       self.id = id
       self.foodItemId = foodItemId
@@ -83,15 +87,18 @@ public enum MealLog {
       self.carbs = carbs
       self.fat = fat
       self.fiber = fiber
+      self.portion = portion
+      self.isEstimate = isEstimate
     }
 
-    /// `pickFood`: hàng `food_items`, số làm tròn.
+    /// `pickFood`: hàng `food_items`, số làm tròn. Tên theo ngôn ngữ app (`FoodNames`).
     public init?(foodRow r: JSONValue) {
-      guard let id = r["id"]?.stringValue, let name = r["name"]?.stringValue else { return nil }
+      guard let id = r["id"]?.stringValue, let name = FoodNames.pick(r) else { return nil }
       self.init(
         id: id, foodItemId: id, name: name, brand: r["brand"]?.stringValue, kcal: JS.round(JS.number(r["kcal"])),
         protein: JS.round(JS.number(r["protein_g"])), carbs: JS.round(JS.number(r["carbs_g"])),
-        fat: JS.round(JS.number(r["fat_g"])), fiber: JS.round(MealDiary.num(r["fiber_g"])))
+        fat: JS.round(JS.number(r["fat_g"])), fiber: JS.round(MealDiary.num(r["fiber_g"])),
+        portion: FoodNames.portion(r), isEstimate: r["is_estimate"] == .bool(true))
     }
 
     /// Thành một món mới trong bữa, một khẩu phần.
