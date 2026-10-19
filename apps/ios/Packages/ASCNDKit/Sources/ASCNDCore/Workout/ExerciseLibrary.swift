@@ -306,9 +306,29 @@ public enum Equipment: String, Sendable, Hashable, Codable, CaseIterable {
     }
   }
 
+  /// Nhãn cho các giá trị thư viện chung (free-exercise-db, 20261018120000) ngoài
+  /// năm khoá — chỉ để hiển thị, không đổi khoá so "cùng thiết bị".
+  static let libraryLabels: [String: (vi: String, en: String, es: String)] = [
+    "kettlebell": ("Tạ ấm", "Kettlebell", "Pesa rusa"),
+    "band": ("Dây kháng lực", "Band", "Banda elástica"),
+    "medicine ball": ("Bóng tạ", "Medicine ball", "Balón medicinal"),
+    "exercise ball": ("Bóng tập", "Exercise ball", "Fitball"),
+    "foam roll": ("Con lăn", "Foam roller", "Rodillo de espuma"),
+    "ez bar": ("Tạ EZ", "EZ bar", "Barra Z"),
+    "other": ("Khác", "Other", "Otro"),
+  ]
+
   /// `equipmentLabel`: nhãn theo ngôn ngữ, không nhận ra thì chữ gốc (cắt).
   public static func label(_ stored: String?, _ lang: MuscleGroup.Language) -> String {
-    canonical(stored)?.label(lang) ?? (stored ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+    if let key = canonical(stored) { return key.label(lang) }
+    if let l = libraryLabels[fold(stored ?? "")] {
+      switch lang {
+      case .vi: return l.vi
+      case .en: return l.en
+      case .es: return l.es
+      }
+    }
+    return (stored ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
   }
 }
 

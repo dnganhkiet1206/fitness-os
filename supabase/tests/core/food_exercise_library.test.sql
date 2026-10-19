@@ -23,7 +23,11 @@ DO $$ BEGIN
     AND exercise_kind IS NOT NULL AND exercise_kind NOT IN ('compound','isolation','bodyweight','timed')), 'E4 loại bài sai';
   -- Không trùng tên với 10 bài mẫu cũ (tên là khoá lịch sử tập).
   ASSERT (SELECT count(*) FROM exercises WHERE user_id IS NULL AND lower(name) = 'romanian deadlift') = 1, 'E5 bài mẫu bị nhân đôi';
-  ASSERT (SELECT name_vi FROM exercises WHERE user_id IS NULL AND name = 'Bench Press') = 'Đẩy ngực tạ đòn', 'E6 bài mẫu cũ chưa có tên vi';
+  ASSERT (SELECT name_vi FROM exercises WHERE user_id IS NULL AND name = 'Overhead Press') = 'Đẩy vai qua đầu', 'E6 bài mẫu cũ chưa có tên vi';
+  -- Thuật ngữ gym Việt vẫn gọi bằng tiếng Anh thì giữ tiếng Anh; bản dịch vẫn tìm được.
+  ASSERT (SELECT name_vi FROM exercises WHERE user_id IS NULL AND name = 'Bench Press') = 'Bench Press', 'E7 Bench Press bị dịch';
+  ASSERT (SELECT name_vi FROM exercises WHERE source = 'free_exercise_db' AND name = 'Barbell Deadlift') = 'Barbell Deadlift', 'E8 Deadlift bị dịch';
+  ASSERT (SELECT search_text FROM exercises WHERE user_id IS NULL AND name = 'Bench Press') LIKE '%day nguc%', 'E9 mất chữ tìm tiếng Việt';
 END $$;
 
 -- ── Tìm bỏ dấu, theo cả 3 thứ tiếng ──

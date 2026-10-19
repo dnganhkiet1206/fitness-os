@@ -10,7 +10,7 @@ Sinh `supabase/migrations/20261018120000_food_exercise_library.sql` (18/10/2026,
 | 180 món Việt | Tự soạn: công thức gram trong `vn_recipes.py`, dinh dưỡng cộng từ số USDA | Của ASCND. Gắn `is_estimate = true`, nhãn "ước tính". |
 | 873 bài tập | [free-exercise-db](https://github.com/yuhonas/free-exercise-db) (`dist/exercises.json`) | The Unlicense (công cộng) |
 
-Tên vi / es của món: viết tay trong `usda_spec.txt` / `vn_recipes.py`. Tên vi / es của bài tập: dịch tay trong `ex_tr_*.tsv` (chỉ số dòng = vị trí trong `exercises.json`).
+Tên vi / es của món: viết tay trong `usda_spec.txt` / `vn_recipes.py`. Tên vi / es của bài tập: dịch tay trong `ex_tr_*.tsv` (chỉ số dòng = vị trí trong `exercises.json`). Bài có thuật ngữ phòng gym Việt vẫn gọi bằng tiếng Anh (Squat, Deadlift, Bench Press, Curl, Plank… — danh sách `KEEP_EN` trong `gen_migration.py`) giữ tên tiếng Anh làm `name_vi`; bản dịch vẫn nằm trong `search_text`.
 
 ## Chạy lại
 

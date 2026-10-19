@@ -2,7 +2,7 @@
 món (USDA + món Việt ước tính) và bài tập (free-exercise-db). Chạy lại được: mỗi hàng
 seed có khoá (source, source_ref) duy nhất, ON CONFLICT cập nhật.
 """
-import json, sys, unicodedata
+import json, re, sys, unicodedata
 from pathlib import Path
 
 HERE = Path(__file__).parent
@@ -63,6 +63,22 @@ OLD = {
 }
 OLD_FOLD = {fold(k) for k in OLD}
 
+# Thuật ngữ phòng gym Việt vẫn gọi bằng tiếng Anh (chủ dự án, 18/10/2026): bài có
+# một trong các từ này giữ nguyên tên tiếng Anh làm name_vi. Bản dịch vẫn nằm trong
+# search_text, nên gõ tiếng Việt ("day nguc") vẫn tìm ra.
+KEEP_EN = re.compile(r"\b(" + "|".join([
+    r"squats?", r"deadlifts?", r"rdl", r"planks?", r"lunges?", r"burpees?", r"crunch(es)?", r"bench press",
+    r"leg press", r"hip thrusts?", r"shrugs?", r"face pulls?", r"crossovers?", r"fl(y|ye|yes|ies)",
+    r"cleans?", r"snatch(es)?", r"jerks?", r"swings?", r"russian twists?", r"mountain climbers?",
+    r"jumping jacks?", r"good mornings?", r"skull ?crushers?", r"dips?", r"pullovers?", r"muscle[- ]ups?",
+    r"thrusters?", r"box jumps?", r"glute bridges?", r"arnold", r"farmer'?s?", r"superman", r"push press",
+    r"lat pulldowns?", r"curls?", r"t-bar row",
+]) + r")\b", re.I)
+
+
+def vi_name(en, vi):
+    return en if KEEP_EN.search(en) else vi
+
 
 def kind(x):
     if x["category"] == "stretching":
@@ -106,8 +122,8 @@ w("")
 # Seed 10 bài cũ: thêm tên 3 thứ tiếng.
 for en, (vi, es) in OLD.items():
     st = fold(f"{en} {vi} {es}")
-    w(f"UPDATE public.exercises SET name_en = {q(en)}, name_vi = {q(vi)}, name_es = {q(es)}, search_text = {q(st)}")
-    w(f"  WHERE user_id IS NULL AND name = {q(en)} AND name_vi IS NULL;")
+    w(f"UPDATE public.exercises SET name_en = {q(en)}, name_vi = {q(vi_name(en, vi))}, name_es = {q(es)}, search_text = {q(st)}")
+    w(f"  WHERE user_id IS NULL AND name = {q(en)};")
 w("")
 OLD_FOODS = {
     "Ức gà": ("Chicken breast", "Pechuga de pollo"), "Cơm trắng": ("White rice", "Arroz blanco"),
@@ -162,7 +178,7 @@ for i, x in enumerate(ex):
     st = fold(f"{x['name']} {vi} {es}")
     k = kind(x)
     rows.append(
-        f"  (NULL, {q(x['name'])}, {q(vi)}, {q(x['name'])}, {q(es)}, {q(mg)}, {q(EQUIP[x['equipment']])}, {q(k)}, "
+        f"  (NULL, {q(x['name'])}, {q(vi_name(x['name'], vi))}, {q(x['name'])}, {q(es)}, {q(mg)}, {q(EQUIP[x['equipment']])}, {q(k)}, "
         f"'free_exercise_db', {q(x['id'])}, {arr(x['instructions'])}, {arr(x['images'])}, {q(st)})")
 w(",\n".join(rows))
 w("ON CONFLICT (source, source_ref) WHERE source IS NOT NULL DO UPDATE SET")
