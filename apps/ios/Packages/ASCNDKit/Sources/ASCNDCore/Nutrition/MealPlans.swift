@@ -28,6 +28,24 @@ public enum MealPlans {
   public static let goals = ["bulk", "cut", "maintain"]
   public static let searchLimit = 15
 
+  /// Kế hoạch đang áp dụng hôm nay (19/10, chủ dự án: "log, kế hoạch ăn và bữa ăn
+  /// hôm nay có sự liên kết"): kế hoạch MỚI NHẤT (danh sách đã xếp mới → cũ) có món
+  /// cho ngày `day`. Không có kế hoạch nào có món hôm nay → `nil`.
+  public static func activePlan(_ plans: [Plan], fill: [String: [Int: Int]], day: Int) -> Plan? {
+    plans.first { (fill[$0.id]?[day] ?? 0) > 0 }
+  }
+
+  /// Bữa của kế hoạch hôm nay theo khung, theo thứ tự khung của kế hoạch.
+  public static func plannedToday(_ items: [Item], day: Int) -> [String: [Item]] {
+    Dictionary(grouping: items.filter { $0.day == day }, by: \.mealType)
+  }
+
+  /// Ngày của kế hoạch cho hôm nay (19/10, "Ghi hôm nay"): ngày 1 = thứ Hai … ngày
+  /// 7 = Chủ nhật.
+  public static func dayIndex(_ date: Date, calendar: Calendar = .current) -> Int {
+    (calendar.component(.weekday, from: date) + 5) % 7
+  }
+
   public struct Plan: Sendable, Hashable, Identifiable {
     public let id: String
     public let name: String

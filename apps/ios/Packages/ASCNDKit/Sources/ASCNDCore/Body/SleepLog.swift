@@ -296,6 +296,8 @@ public final class SleepLogger {
   public let userId: String
   /// Đêm hôm nay do Apple Health ghi (`fromHealth`); `nil` khi không có / chưa đọc.
   public private(set) var healthNight: JSONValue?
+  /// Hôm nay đã có giấc chính (ghi tay hay Health) — "Ghi hôm nay" không hỏi lại.
+  public private(set) var hasNight = false
   public private(set) var loaded = false
   public private(set) var submitting = false
   public private(set) var done = false
@@ -336,6 +338,7 @@ public final class SleepLogger {
     guard !closed else { return }
     let main = rows.flatMap(DailyLog.mainSleep)
     healthNight = SleepLog.fromHealth(main) ? main : nil
+    hasNight = main != nil
     loaded = true
   }
 

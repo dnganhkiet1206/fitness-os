@@ -1,3 +1,4 @@
+import Foundation
 @testable import ASCNDCore
 import Testing
 
@@ -32,5 +33,30 @@ struct DayCheckInTests {
     #expect(DayCheckIn.yesterdayWaterMl(week, today: today) == 1_750)
     #expect(DayCheckIn.yesterdayWaterMl([], today: today) == nil)
     #expect(DayCheckIn.yesterdayWaterMl([WaterDay(date: LocalDate("2026-10-17")!, totalMl: 0)], today: today) == nil)
+  }
+
+  /// Kế hoạch ăn: ngày 1 = thứ Hai, ngày 7 = Chủ nhật.
+  @Test func mealPlanDayIsMondayFirst() {
+    var cal = Calendar(identifier: .gregorian)
+    cal.timeZone = TimeZone(identifier: "UTC")!
+    func d(_ s: String) -> Date { ISO8601DateFormatter().date(from: s + "T12:00:00Z")! }
+    #expect(MealPlans.dayIndex(d("2026-10-19"), calendar: cal) == 0)
+    #expect(MealPlans.dayIndex(d("2026-10-18"), calendar: cal) == 6)
+    #expect(MealPlans.dayIndex(d("2026-10-24"), calendar: cal) == 5)
+  }
+
+  /// Kế hoạch hôm nay: mới nhất có món cho đúng ngày; không có → nil.
+  @Test func activePlanIsNewestWithFoodToday() {
+    let a = MealPlans.Plan(id: "new", name: "Mới", goal: nil, mealsPerDay: 3)
+    let b = MealPlans.Plan(id: "old", name: "Cũ", goal: nil, mealsPerDay: 3)
+    let fill = ["new": [2: 3], "old": [0: 4, 2: 1]]
+    #expect(MealPlans.activePlan([a, b], fill: fill, day: 0)?.id == "old")
+    #expect(MealPlans.activePlan([a, b], fill: fill, day: 2)?.id == "new")
+    #expect(MealPlans.activePlan([a, b], fill: fill, day: 5) == nil)
+    let items = [
+      MealPlans.Item(id: "1", day: 2, mealType: "lunch", name: "Cơm", kcal: 300),
+      MealPlans.Item(id: "2", day: 3, mealType: "lunch", name: "Phở", kcal: 400),
+    ]
+    #expect(MealPlans.plannedToday(items, day: 2)["lunch"]?.map(\.name) == ["Cơm"])
   }
 }
