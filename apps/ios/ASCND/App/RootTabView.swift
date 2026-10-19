@@ -161,9 +161,9 @@ private struct QuickLogBar: ViewModifier {
       // thì mất vị trí điều hướng của các tab); 26.0 giữ thanh như cũ.
       Group {
         if #available(iOS 26.1, *) {
-          content.tabViewBottomAccessory(isEnabled: !hidden) { QuickLogAccessory(tell: { telling = true }) { picking = true } }
+          content.tabViewBottomAccessory(isEnabled: !hidden) { QuickLogAccessory(tell: askCoach ?? { telling = true }, coach: askCoach != nil) { picking = true } }
         } else {
-          content.tabViewBottomAccessory { QuickLogAccessory(tell: { telling = true }) { picking = true } }
+          content.tabViewBottomAccessory { QuickLogAccessory(tell: askCoach ?? { telling = true }, coach: askCoach != nil) { picking = true } }
         }
       }
       .tabBarMinimizeBehavior(.onScrollDown)
@@ -303,7 +303,10 @@ private struct QuickLogSheetHost: ViewModifier {
 private struct QuickLogAccessory: View {
   /// Nút ASCND Intelligence ở đầu phải (18/10, chủ dự án): mở "Kể cho Koa" — gõ
   /// hay nói là ghi. Koa Coach vẫn ở bảng "+" và tab Trợ lý.
+  /// 19/10 (chủ dự án): nút ASCND Intelligence mở chat Koa Coach; "Ghi hôm nay"
+  /// nằm trong bảng Ghi nhanh. `coach == false` (AI chưa triển khai): mở "Ghi hôm nay".
   let tell: () -> Void
+  var coach = false
   let tap: () -> Void
   @Environment(\.tabViewBottomAccessoryPlacement) private var placement
 
@@ -325,7 +328,7 @@ private struct QuickLogAccessory: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(Text("tellkoa.title"))
+        .accessibilityLabel(Text(coach ? "quicklog.coach" : "tellkoa.title"))
       }
     }
   }
@@ -408,6 +411,8 @@ private struct QuickLogSheet: View {
     VStack(alignment: .leading, spacing: DS.Spacing.md) {
       Text("quicklog.title").font(.system(size: 20, weight: .bold))
         .accessibilityAddTraits(.isHeader)
+      // "Ghi hôm nay" đứng đầu bảng (19/10): một chạm ghi cả ngày, nói hoặc gõ.
+      tellRow
       if !yesterday.isEmpty || copiedYesterday {
         YesterdayMealsCard(meals: yesterday, done: copiedYesterday, busy: logger?.saving ?? false) {
           Task { await copyYesterday() }
@@ -436,7 +441,6 @@ private struct QuickLogSheet: View {
           .buttonStyle(.plain)
         }
       }
-      tellRow
       if let askCoach { coachRow(askCoach) }
     }
     .padding(.horizontal, DS.Spacing.lg)
