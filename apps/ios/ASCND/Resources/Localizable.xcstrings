@@ -5179,6 +5179,75 @@
     }
    }
   },
+  "wb.warmupSets": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Warm-up sets"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Set khởi động"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Series de calentamiento"
+     }
+    }
+   }
+  },
+  "wb.warmupSets.hint": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Lighter, before the working sets — not counted in volume or records"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nhẹ, trước set chính — không tính khối lượng và kỷ lục"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Más ligeras, antes de las series de trabajo — no cuentan para volumen ni récords"
+     }
+    }
+   }
+  },
+  "wb.withWarmups %lld %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$lld warm-up + %2$@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$lld khởi động + %2$@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$lld calent. + %2$@"
+     }
+    }
+   }
+  },
   "wb.reps": {
    "extractionState": "manual",
    "localizations": {
@@ -48418,6 +48487,121 @@
     }
    }
   },
+  "ws.focus.eyebrow.warmup %lld %lld %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Exercise %1$lld/%2$lld · Warm-up %3$lld"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bài %1$lld/%2$lld · Khởi động %3$lld"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ejercicio %1$lld/%2$lld · Calentamiento %3$lld"
+     }
+    }
+   }
+  },
+  "ws.rest.nextWarmup %@ %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@ · Warm-up %2$lld"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@ · Khởi động %2$lld"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@ · Calentamiento %2$lld"
+     }
+    }
+   }
+  },
+  "ws.nextWarmup %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Warm-up %lld · next"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Khởi động %lld · tiếp theo"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Calentamiento %lld · siguiente"
+     }
+    }
+   }
+  },
+  "ws.editingWarmup %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Edit warm-up %lld"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sửa khởi động %lld"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Editar calentamiento %lld"
+     }
+    }
+   }
+  },
+  "ws.doneWarmupN %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Done warm-up %lld"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Xong khởi động %lld"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Calentamiento %lld listo"
+     }
+    }
+   }
+  },
   "ws.reps.unit": {
    "extractionState": "manual",
    "localizations": {
@@ -48920,29 +49104,6 @@
      "stringUnit": {
       "state": "translated",
       "value": "Mở rộng"
-     }
-    }
-   }
-  },
-  "ws.editSet %lld": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Edit set %lld"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Editar serie %lld"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Sửa set %lld"
      }
     }
    }

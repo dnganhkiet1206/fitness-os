@@ -19,10 +19,13 @@ public struct TemplateExercise: Sendable, Hashable, Codable {
   public let weightKg: Double
   public let rpe: Int
   public let restSeconds: Int
+  /// Set khởi động trước các set làm việc (18/10, chủ dự án). Được ghi và hiện
+  /// với ngọn lửa, nhưng không tính khối lượng, kỷ lục, số set, "Lần trước".
+  public let warmupSets: Int
 
   public init(
     exerciseId: String? = nil, exerciseName: String, sets: Int, reps: Int, weightKg: Double,
-    rpe: Int = WorkoutPlanning.defaultRpe, restSeconds: Int = WorkoutPlanning.defaultRest
+    rpe: Int = WorkoutPlanning.defaultRpe, restSeconds: Int = WorkoutPlanning.defaultRest, warmupSets: Int = 0
   ) {
     self.exerciseId = exerciseId
     self.exerciseName = exerciseName
@@ -31,6 +34,20 @@ public struct TemplateExercise: Sendable, Hashable, Codable {
     self.weightKg = weightKg
     self.rpe = rpe
     self.restSeconds = restSeconds
+    self.warmupSets = min(WorkoutPlanning.maxWarmupSets, max(0, warmupSets))
+  }
+
+  /// Cache cũ (trước 18/10) không có `warmupSets` → 0.
+  public init(from decoder: any Decoder) throws {
+    let c = try decoder.container(keyedBy: CodingKeys.self)
+    exerciseId = try c.decodeIfPresent(String.self, forKey: .exerciseId)
+    exerciseName = try c.decode(String.self, forKey: .exerciseName)
+    sets = try c.decode(Int.self, forKey: .sets)
+    reps = try c.decode(Int.self, forKey: .reps)
+    weightKg = try c.decode(Double.self, forKey: .weightKg)
+    rpe = try c.decode(Int.self, forKey: .rpe)
+    restSeconds = try c.decode(Int.self, forKey: .restSeconds)
+    warmupSets = try c.decodeIfPresent(Int.self, forKey: .warmupSets) ?? 0
   }
 
   /// Đọc một phần tử của `workout_templates.exercises`, khoan dung như baseline:
@@ -49,6 +66,9 @@ public struct TemplateExercise: Sendable, Hashable, Codable {
     weightKg = Self.number(json["weight"]) ?? 0
     rpe = Self.jsRound(Self.number(json["rpe"]) ?? Double(WorkoutPlanning.defaultRpe))
     restSeconds = Self.jsRound(Self.number(json["restSeconds"]) ?? Double(WorkoutPlanning.defaultRest))
+    // Trường mới (18/10): bản web / RN không biết nó và bỏ qua khi đọc.
+    let w = Self.jsRound(Self.number(json["warmupSets"]) ?? 0)
+    warmupSets = min(WorkoutPlanning.maxWarmupSets, max(0, w))
   }
 
   /// Một phần tử của `exercises` như builder ghi (`TemplateExercise` của
@@ -64,6 +84,8 @@ public struct TemplateExercise: Sendable, Hashable, Codable {
       "restSeconds": .number(Double(restSeconds)),
     ]
     if let exerciseId { o["exerciseId"] = .string(exerciseId) }
+    // Chỉ ghi khi có: template không khởi động giữ đúng JSON như trước.
+    if warmupSets > 0 { o["warmupSets"] = .number(Double(warmupSets)) }
     return .object(o)
   }
 
@@ -193,6 +215,8 @@ public enum WorkoutPlanning {
   public static let defaultRpe = 7
   /// Trần số set mỗi bài (`expand`): JSON tự do có thể chứa 4000.
   public static let maxSets = 20
+  /// Trần set khởi động mỗi bài.
+  public static let maxWarmupSets = 5
 
   /// Thứ Hai = 0 (`(getDay() + 6) % 7`). 1970-01-01 là Thứ Năm (= 3).
   public static func routineIndex(_ date: LocalDate) -> Int {
@@ -201,9 +225,19 @@ public enum WorkoutPlanning {
 
   /// `expand()`: mỗi bài thành `sets` hàng; khoá `"<bài>-<hiệp>"` theo VỊ TRÍ
   /// như baseline, để điểm quay lại ghi bởi bản nào cũng trỏ đúng hàng.
+  ///
+  /// Set khởi động (18/10) đứng trước, khoá riêng `"<bài>-w<n>"` — thêm / bớt
+  /// khởi động không làm lệch khoá (và điểm quay lại) của set làm việc. Tạ tăng
+  /// dần 50% → 80% tạ làm việc, làm tròn 2,5 kg; nghỉ tối đa 60 giây.
   public static func rows(_ exercises: [TemplateExercise]) -> [PlannedSet] {
     var rows: [PlannedSet] = []
     for (i, ex) in exercises.enumerated() {
+      for n in 0..<ex.warmupSets {
+        rows.append(PlannedSet(
+          key: "\(i)-w\(n)", exerciseId: ex.exerciseId, exerciseName: ex.exerciseName,
+          ordinal: n + 1, of: ex.warmupSets, weightKg: warmupWeight(ex.weightKg, set: n, of: ex.warmupSets),
+          reps: ex.reps, plannedRest: min(ex.restSeconds, warmupRest), plannedRpe: warmupRpe, warmup: true))
+      }
       for n in 0..<ex.sets {
         rows.append(PlannedSet(
           key: "\(i)-\(n)", exerciseId: ex.exerciseId, exerciseName: ex.exerciseName,
@@ -212,6 +246,18 @@ public enum WorkoutPlanning {
       }
     }
     return rows
+  }
+
+  static let warmupRest = 60
+  /// RPE ghi cho set khởi động: nhẹ có chủ đích.
+  static let warmupRpe = 5
+
+  /// Tạ set khởi động thứ `set` (0-based) trong `of` set: 50% → 80% tạ làm
+  /// việc, làm tròn xuống bội 2,5 kg. Bài tay không (0 kg) → 0.
+  public static func warmupWeight(_ workKg: Double, set: Int, of count: Int) -> Double {
+    guard workKg > 0, count > 0 else { return 0 }
+    let pct = count == 1 ? 0.5 : 0.5 + 0.3 * Double(set) / Double(count - 1)
+    return ((workKg * pct) / 2.5).rounded(.down) * 2.5
   }
 
   /// Hàng của các bài thêm trong ngày (`adHocRows`, `day-plan.tsx:509`): cùng

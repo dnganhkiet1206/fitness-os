@@ -429,6 +429,20 @@ public final class WorkoutSessionController {
     return await persist()
   }
 
+  /// Đổi một hàng thành / khỏi set khởi động (18/10). Set khởi động vẫn được
+  /// ghi, nhưng khối lượng / kỷ lục / số set bỏ nó.
+  @discardableResult
+  public func toggleWarmup(_ key: String) async -> Bool {
+    guard editable(key), let row = row(key) else { return false }
+    WorkoutDay.toggleWarmup(row, &progress)
+    return await persist()
+  }
+
+  public func isWarmup(_ key: String) -> Bool {
+    guard let row = row(key) else { return false }
+    return WorkoutDay.isWarmup(row, progress)
+  }
+
   /// RPE 1…10; ngoài khoảng là dữ liệu hỏng, không ghi.
   @discardableResult
   public func setRpe(_ value: Int, for key: String) async -> Bool {

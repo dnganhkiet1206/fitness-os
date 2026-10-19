@@ -89,6 +89,9 @@ public struct DayProgress: Sendable, Hashable, Codable {
   /// theo nội dung). Không phải đơn vị theo set: chữ trong ô vẫn là của đơn
   /// vị người dùng đang xem.
   public var remoteWeight: [String: RemoteWeight] = [:]
+  /// Người dùng đổi một hàng thành / khỏi set khởi động trong buổi (18/10).
+  /// Không có khoá = như kế hoạch (`PlannedSet.warmup`).
+  public var warmup: [String: Bool] = [:]
 
   public init() {}
 
@@ -105,6 +108,7 @@ public struct DayProgress: Sendable, Hashable, Codable {
     let raw = (try? c.decodeIfPresent([JSONValue].self, forKey: .extra)) ?? nil
     extra = (raw ?? []).compactMap(AdHocExercise.init(json:))
     remoteWeight = (try? c.decodeIfPresent([String: RemoteWeight].self, forKey: .remoteWeight)) ?? [:]
+    warmup = (try? c.decodeIfPresent([String: Bool].self, forKey: .warmup)) ?? [:]
   }
 }
 
@@ -163,6 +167,29 @@ public enum WorkoutDay {
     guard !row.exerciseName.trimmingCharacters(in: .whitespaces).isEmpty else { return false }
     let p = performed(row, progress)
     return p.reps > 0 || (p.durationSec ?? 0) > 0
+  }
+
+  /// Hàng có là set khởi động không: ghi đè trong buổi, không thì theo kế hoạch.
+  public static func isWarmup(_ row: PlannedSet, _ progress: DayProgress) -> Bool {
+    progress.warmup[row.key] ?? row.warmup
+  }
+
+  /// Đổi một hàng thành / khỏi set khởi động. Về đúng kế hoạch thì bỏ khoá.
+  public static func toggleWarmup(_ row: PlannedSet, _ progress: inout DayProgress) {
+    let next = !isWarmup(row, progress)
+    progress.warmup[row.key] = next == row.warmup ? nil : next
+  }
+
+  /// Số set làm việc của hàng trong bài (1, 2, 3…, bỏ qua khởi động); `nil`
+  /// cho set khởi động. `rows`: các hàng của MỘT bài, đúng thứ tự.
+  public static func workingNumber(_ row: PlannedSet, in rows: [PlannedSet], _ progress: DayProgress) -> Int? {
+    guard !isWarmup(row, progress) else { return nil }
+    var n = 0
+    for r in rows where !isWarmup(r, progress) {
+      n += 1
+      if r.key == row.key { return n }
+    }
+    return nil
   }
 
   /// Thời gian nghỉ của hàng: ghi đè trong ngày, không thì theo kế hoạch.

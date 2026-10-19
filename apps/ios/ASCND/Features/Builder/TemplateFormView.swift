@@ -306,6 +306,13 @@ struct TemplateFormView: View {
             Stepper(value: Binding(get: { e.sets }, set: { draft.patch(index, sets: $0) }), in: 1...20) {
               row(String(localized: "wb.sets"), value: "\(e.sets)")
             }
+            // Set khởi động (18/10): ghi lại nhưng không tính khối lượng / kỷ lục.
+            Stepper(
+              value: Binding(get: { e.warmupSets }, set: { draft.patch(index, warmupSets: $0) }),
+              in: 0...WorkoutPlanning.maxWarmupSets
+            ) {
+              row(String(localized: "wb.warmupSets"), value: "\(e.warmupSets)", hint: String(localized: "wb.warmupSets.hint"))
+            }
             Stepper(value: Binding(get: { e.reps }, set: { draft.patch(index, reps: $0) }), in: 1...100) {
               row(String(localized: "wb.reps"), value: "\(e.reps)")
             }
@@ -393,7 +400,9 @@ struct TemplateFormView: View {
   }
 
   private func prescription(_ e: TemplateExercise) -> String {
-    let base = "\(e.sets) × \(e.reps)"
+    var base = "\(e.sets) × \(e.reps)"
+    // "🔥2 + 3 × 10": số set khởi động đứng trước, để thấy ngay đã đặt.
+    if e.warmupSets > 0 { base = String(localized: "wb.withWarmups \(e.warmupSets) \(base)") }
     guard let load = unit.localizedLoad(e.weightKg) else { return base }
     return "\(base) · \(load)"
   }

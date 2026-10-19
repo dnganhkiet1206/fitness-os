@@ -15,9 +15,11 @@ public enum WorkoutFocus {
     public let key: String
     public let name: String
     public let rows: [PlannedSet]
+    /// Set LÀM VIỆC đã xong / tổng set làm việc — khởi động không đếm (18/10):
+    /// bỏ qua khởi động không làm bài "chưa xong".
     public let done: Int
-    public var total: Int { rows.count }
-    public var isComplete: Bool { done >= rows.count }
+    public let total: Int
+    public var isComplete: Bool { done >= total }
     public var id: String { key }
   }
 
@@ -38,14 +40,23 @@ public enum WorkoutFocus {
     }
     return order.compactMap { k in
       guard let rs = groups[k], let first = rs.first else { return nil }
-      return Exercise(key: k, name: first.exerciseName, rows: rs, done: rs.filter { progress.done[$0.key] == true }.count)
+      let work = rs.filter { !WorkoutDay.isWarmup($0, progress) }
+      return Exercise(
+        key: k, name: first.exerciseName, rows: rs, done: work.filter { progress.done[$0.key] == true }.count,
+        total: work.count)
     }
   }
 
   /// Set kế tiếp: set chưa xong đầu tiên của bài đang chọn (`pinned`), không
   /// thì của cả buổi. Mọi set xong → `nil`.
+  ///
+  /// Set khởi động chưa tick của một bài đã có set làm việc xong là đã BỎ QUA
+  /// — không kéo người dùng quay lại nó.
   public static func next(_ rows: [PlannedSet], _ progress: DayProgress, pinned: String? = nil) -> PlannedSet? {
-    let open = rows.filter { progress.done[$0.key] != true }
+    let started = Set(rows.filter { progress.done[$0.key] == true && !WorkoutDay.isWarmup($0, progress) }.map(exerciseKey))
+    let open = rows.filter {
+      progress.done[$0.key] != true && !(WorkoutDay.isWarmup($0, progress) && started.contains(exerciseKey($0)))
+    }
     if let pinned, let r = open.first(where: { exerciseKey($0) == pinned }) { return r }
     return open.first
   }
