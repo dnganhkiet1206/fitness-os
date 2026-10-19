@@ -26,7 +26,10 @@ struct NutritionTodayCard: View {
   @Environment(ProfileBook.self) private var profile: ProfileBook?
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Environment(\.dynamicTypeSize) private var typeSize
-  @State private var showLeft = false
+  /// Một trạng thái cho cả thẻ (19/10): "còn lại" (mặc định — vòng nói kcal
+  /// còn lại, macro nói gram còn lại) ↔ "đã ăn" (vòng nói kcal đã ăn + "đạt X%
+  /// mục tiêu", macro nói đã ăn / mục tiêu). Chạm thẻ để lật.
+  @State private var showLeft = true
   /// Vòng / thanh chạy từ 0 lần đầu thẻ hiện.
   @State private var appeared = false
   @State private var helpOpen = false
@@ -117,7 +120,7 @@ struct NutritionTodayCard: View {
           (typeSize.isAccessibilitySize
             ? AnyLayout(VStackLayout(alignment: .leading, spacing: DS.Spacing.md))
             : AnyLayout(HStackLayout(alignment: .center, spacing: DS.Spacing.lg))) {
-            ringView(ring)
+            ringView(ring, eaten: t.kcal)
             // Cạnh vòng: macro 2×2, chữ trơn (19/10 lần sáu — "chip không đẹp,
             // có tới 2 con số kcal"). Không còn số "đã ăn": vòng đã nói phần
             // còn lại, cung vòng nói đã ăn bao nhiêu phần.
@@ -169,7 +172,7 @@ struct NutritionTodayCard: View {
       Label {
         Text(verbatim: m.label)
       } icon: {
-        Image(systemName: m.icon).foregroundStyle(Self.accent)
+        Text(verbatim: m.food)
       }
       .labelStyle(MacroLabelStyle())
       .font(DS.TextStyle.caption)
@@ -179,7 +182,7 @@ struct NutritionTodayCard: View {
           .font(.system(.title3, design: .rounded).weight(.semibold).monospacedDigit())
           .foregroundStyle(tile.overHard ? DS.Color.readinessRed.swiftUI : DS.Color.foreground.swiftUI)
           .contentTransition(.numericText())
-        Text(verbatim: showLeft ? "g" : "/\(Units.display(tile.target, locale: .app))g")
+        Text(verbatim: showLeft ? "g \(wordText(tile.word))" : "/\(Units.display(tile.target, locale: .app))g")
           .font(DS.TextStyle.caption.monospacedDigit())
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
       }
@@ -251,7 +254,7 @@ struct NutritionTodayCard: View {
 
   /// Vòng 128: rãnh tô nhạt màu bữa (rỗng vẫn là "chỗ để ăn", không phải khối
   /// xám), giữa vòng là số còn lại / vượt / vừa đủ.
-  private func ringView(_ r: NutritionToday.Ring) -> some View {
+  private func ringView(_ r: NutritionToday.Ring, eaten: Double) -> some View {
     let color = ringColor(r.band)
     return ZStack {
       Circle().stroke(MascotRoomView.signalColor(.meal).opacity(0.18), lineWidth: 13)
@@ -267,6 +270,18 @@ struct NutritionTodayCard: View {
           .padding(16)
       }
       VStack(spacing: 0) {
+        if !showLeft {
+          Text(verbatim: DiaryView.whole(eaten))
+            .font(.system(size: 28, weight: .bold, design: .rounded).monospacedDigit())
+            .foregroundStyle(DS.Color.foreground.swiftUI)
+            .contentTransition(.numericText(value: eaten))
+          Text(String(localized: "nc.ring.eaten")).font(DS.TextStyle.caption)
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          Text(String(localized: "nc.ring.percent \(Int(r.percentOfTarget.rounded()))"))
+            .font(DS.TextStyle.caption.weight(.semibold).monospacedDigit())
+            .foregroundStyle(tone(r.band) == DS.Color.foreground.swiftUI ? Self.accent : tone(r.band))
+            .padding(.top, 2)
+        } else {
         switch r.line {
         case .remaining(let n):
           Text(verbatim: DiaryView.whole(n))
@@ -288,7 +303,10 @@ struct NutritionTodayCard: View {
           Text(String(localized: "nc.ring.onTarget")).font(DS.TextStyle.caption)
             .foregroundStyle(tone(r.band))
         }
+        }
       }
+      .transition(.opacity)
+      .id(showLeft)
       .lineLimit(1)
       .minimumScaleFactor(0.6)
       .padding(.horizontal, 14)
@@ -330,17 +348,29 @@ struct NutritionTodayCard: View {
       switch self {
       case .protein: DS.Color.metricRose.swiftUI
       case .carbs: DS.Color.metricOrangeGraphic.swiftUI
-      case .fat: DS.Color.metricBlue.swiftUI
+      case .fat: DS.Color.readinessYellow.swiftUI
       case .fiber: DS.Color.readinessGreen.swiftUI
+      }
+    }
+
+    /// Món ăn tiêu biểu (19/10: tạ / lửa / giọt nước là ẩn dụ, người đọc phải
+    /// đoán — đồ ăn thật thì nhìn là hiểu). Emoji có màu sẵn.
+    var food: String {
+      switch self {
+      case .protein: "🍗"
+      case .carbs: "🍚"
+      case .fat: "🥑"
+      case .fiber: "🥦"
       }
     }
 
     var icon: String {
       switch self {
-      case .protein: "fish"
+      // 19/10: giọt nước cho béo / cá cho đạm gây hiểu nhầm.
+      case .protein: "dumbbell.fill"
       case .carbs: "laurel.leading"
-      case .fat: "drop.fill"
-      case .fiber: "carrot"
+      case .fat: "flame.fill"
+      case .fiber: "leaf.fill"
       }
     }
   }
