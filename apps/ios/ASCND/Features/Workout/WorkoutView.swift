@@ -303,6 +303,7 @@ public struct WorkoutView: View {
     let next = WorkoutFocus.next(rows, controller.progress, pinned: pinned)
     let current = next.map(WorkoutFocus.exerciseKey)
     let doneCount = exercises.reduce(0) { $0 + $1.done }
+    let workingTotal = exercises.reduce(0) { $0 + $1.total }
     return ScrollView {
       VStack(alignment: .leading, spacing: DS.Spacing.md) {
         if controller.unsaved != nil { unsavedBanner }
@@ -336,7 +337,7 @@ public struct WorkoutView: View {
 
         if next != nil, controller.canFinish {
           outlineButton(
-            isFinishing ? String(localized: "workout.finishing") : String(localized: "ws.finishEarly \(doneCount) \(rows.count)")
+            isFinishing ? String(localized: "workout.finishing") : String(localized: "ws.finishEarly \(doneCount) \(workingTotal)")
           ) { Task { await doFinish() } }
           .disabled(isFinishing)
         }
@@ -358,18 +359,17 @@ public struct WorkoutView: View {
     let editable = controller.canEdit(row.key)
     // Gợi ý tạ cho ô trống: set trước của CHÍNH bài này hôm nay, không thì
     // mức tạ (ngoài, không gồm thân) của buổi gần nhất có bài.
-    let previous = group.rows.last { $0.ordinal < row.ordinal && !(controller.progress.weightText[$0.key] ?? "").isEmpty }
-      .flatMap { controller.progress.weightText[$0.key] }
+    let previous = previousWeight(row, in: group.rows)
     let hint = previous ?? flow?.insights?.history(for: row.exerciseName).last?.bestWeightKg.map { unit.seed($0) } ?? ""
     return VStack(alignment: .leading, spacing: DS.Spacing.md) {
       VStack(alignment: .leading, spacing: 2) {
         HStack(spacing: DS.Spacing.sm) {
-          Text(String(localized: "ws.focus.eyebrow \(index + 1) \(exercises.count) \(row.ordinal) \(row.of)"))
+          Text(eyebrow(row, exercise: index + 1, of: exercises.count))
             .font(DS.TextStyle.caption.weight(.semibold).monospacedDigit())
             .textCase(.uppercase)
             .tracking(0.6)
             .foregroundStyle(WorkoutsHomeView.accent)
-          if row.warmup {
+          if controller.isWarmup(row.key) {
             Text(String(localized: "ws.warmup"))
               .font(DS.TextStyle.caption.weight(.semibold))
               .foregroundStyle(DS.Color.readinessYellow.swiftUI)
@@ -454,7 +454,11 @@ public struct WorkoutView: View {
   }
 
   private func nextLine(_ row: PlannedSet) -> String {
-    String(localized: "ws.rest.nextLine \(row.exerciseName) \(row.ordinal) \(row.of)") + " · " + setText(row)
+    let n = number(row)
+    let line = n.warmup
+      ? String(localized: "ws.rest.nextWarmup \(row.exerciseName) \(n.n)")
+      : String(localized: "ws.rest.nextLine \(row.exerciseName) \(n.n) \(n.of)")
+    return line + " · " + setText(row)
   }
 
   /// Set vừa xong, dưới thẻ nghỉ — "Sửa" bỏ tích nó (huỷ quãng nghỉ) để thẻ
@@ -565,7 +569,9 @@ public struct WorkoutView: View {
   @State private var openGroups: Set<String> = []
 
   private func exerciseCard(_ group: (key: String, name: String, rows: [PlannedSet]), next: PlannedSet?) -> some View {
-    let done = group.rows.filter { controller.progress.done[$0.key] == true }.count
+    // Đếm set làm việc — khởi động không vào "x/y" (18/10).
+    let work = group.rows.filter { !controller.isWarmup($0.key) }
+    let done = work.filter { controller.progress.done[$0.key] == true }.count
     let holdsNext = next.map { WorkoutFocus.exerciseKey($0) == group.key } ?? false
     let editing = editingKey.flatMap { k in group.rows.first { $0.key == k } }
     let open = holdsNext || editing != nil || openGroups.contains(group.key) || controller.isLogged
@@ -574,9 +580,9 @@ public struct WorkoutView: View {
       HStack(alignment: .firstTextBaseline, spacing: DS.Spacing.sm) {
         exerciseTitle(group)
         Spacer(minLength: DS.Spacing.sm)
-        Text(verbatim: "\(done)/\(group.rows.count)")
+        Text(verbatim: "\(done)/\(work.count)")
           .font(DS.TextStyle.mono(.footnote))
-          .foregroundStyle(done == group.rows.count ? WorkoutsHomeView.accent : DS.Color.mutedForeground.swiftUI)
+          .foregroundStyle(done == work.count ? WorkoutsHomeView.accent : DS.Color.mutedForeground.swiftUI)
         if !holdsNext, !controller.isLogged {
           Button {
             withAnimation(.snappy) {
@@ -654,9 +660,16 @@ public struct WorkoutView: View {
           if done {
             Image(systemName: "checkmark").font(.caption.weight(.bold)).foregroundStyle(.white)
           } else {
-            Text(verbatim: "\(row.ordinal)")
-              .font(DS.TextStyle.mono(.caption))
-              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            if controller.isWarmup(row.key) {
+              // Set khởi động: ngọn lửa, không số (18/10) — như màn ghi tay.
+              Image(systemName: "flame.fill")
+                .font(.caption.weight(.bold))
+                .foregroundStyle(DS.Color.metricRose.swiftUI)
+            } else {
+              Text(verbatim: "\(number(row).n)")
+                .font(DS.TextStyle.mono(.caption))
+                .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            }
           }
         }
         .frame(width: 30, height: 30)
@@ -676,7 +689,7 @@ public struct WorkoutView: View {
           Text(verbatim: setText(row))
             .font(DS.TextStyle.body.monospacedDigit().weight(done ? .semibold : .regular))
             .foregroundStyle(done ? DS.Color.foreground.swiftUI : DS.Color.mutedForeground.swiftUI)
-          if row.warmup {
+          if controller.isWarmup(row.key) {
             Text(String(localized: "ws.warmup"))
               .font(DS.TextStyle.caption.weight(.semibold))
               .foregroundStyle(DS.Color.readinessYellow.swiftUI)
@@ -693,7 +706,7 @@ public struct WorkoutView: View {
         .contentShape(Rectangle())
       }
       .buttonStyle(.plain)
-      .accessibilityLabel(Text(String(localized: "ws.editSet \(row.ordinal)")))
+      .accessibilityLabel(Text(verbatim: setTitle(row, done: true)))
       .accessibilityValue(Text(verbatim: setText(row)))
     }
   }
@@ -703,13 +716,12 @@ public struct WorkoutView: View {
     let done = controller.progress.done[row.key] == true
     let ready = WorkoutDay.isReady(row, controller.progress)
     let editable = controller.canEdit(row.key)
-    let previous = group.rows.last { $0.ordinal < row.ordinal && !(controller.progress.weightText[$0.key] ?? "").isEmpty }
-      .flatMap { controller.progress.weightText[$0.key] }
+    let previous = previousWeight(row, in: group.rows)
     let hint = previous ?? flow?.insights?.history(for: row.exerciseName).last?.bestWeightKg.map { unit.seed($0) } ?? ""
     let weight = weightBinding(for: row)
     return VStack(alignment: .leading, spacing: DS.Spacing.sm) {
       HStack {
-        Text(String(localized: done ? "ws.editingSet \(row.ordinal)" : "ws.nextSet \(row.ordinal)"))
+        Text(verbatim: setTitle(row, done: done))
           .font(DS.TextStyle.footnote.weight(.semibold))
           .foregroundStyle(WorkoutsHomeView.accent)
         Spacer()
@@ -754,6 +766,7 @@ public struct WorkoutView: View {
       HStack(spacing: DS.Spacing.sm) {
         restMenu(row)
         rpeMenu(row)
+        warmupToggle(row, editable: editable)
         Spacer(minLength: 0)
       }
       if !done {
@@ -765,7 +778,7 @@ public struct WorkoutView: View {
             editingKey = nil
           }
         } label: {
-          Label(String(localized: "ws.doneSetN \(row.ordinal)"), systemImage: "checkmark")
+          Label(doneLabel(row), systemImage: "checkmark")
             .font(DS.TextStyle.headline)
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity, minHeight: 50)
@@ -983,11 +996,83 @@ public struct WorkoutView: View {
     return "\(summary). \(action)"
   }
 
+  // MARK: - Số set (18/10: set khởi động đếm riêng)
+
+  /// Hàng của bài chứa `row`, đúng thứ tự.
+  private func rowsOfExercise(_ row: PlannedSet) -> [PlannedSet] {
+    let k = WorkoutFocus.exerciseKey(row)
+    return controller.rows.filter { WorkoutFocus.exerciseKey($0) == k }
+  }
+
+  /// Số của hàng trong bài: khởi động 1…w, set làm việc 1…n (bỏ qua khởi động).
+  private func number(_ row: PlannedSet) -> (warmup: Bool, n: Int, of: Int) {
+    let p = controller.progress
+    let rows = rowsOfExercise(row)
+    let warm = WorkoutDay.isWarmup(row, p)
+    let same = rows.filter { WorkoutDay.isWarmup($0, p) == warm }
+    let n = (same.firstIndex { $0.key == row.key } ?? 0) + 1
+    return (warm, n, same.count)
+  }
+
+  private func eyebrow(_ row: PlannedSet, exercise: Int, of total: Int) -> String {
+    let n = number(row)
+    return n.warmup
+      ? String(localized: "ws.focus.eyebrow.warmup \(exercise) \(total) \(n.n)")
+      : String(localized: "ws.focus.eyebrow \(exercise) \(total) \(n.n) \(n.of)")
+  }
+
+  private func setTitle(_ row: PlannedSet, done: Bool) -> String {
+    let n = number(row)
+    switch (n.warmup, done) {
+    case (true, true): return String(localized: "ws.editingWarmup \(n.n)")
+    case (true, false): return String(localized: "ws.nextWarmup \(n.n)")
+    case (false, true): return String(localized: "ws.editingSet \(n.n)")
+    case (false, false): return String(localized: "ws.nextSet \(n.n)")
+    }
+  }
+
+  private func doneLabel(_ row: PlannedSet) -> String {
+    let n = number(row)
+    return n.warmup ? String(localized: "ws.doneWarmupN \(n.n)") : String(localized: "ws.doneSetN \(n.n)")
+  }
+
+  /// Gợi ý tạ: set trước CÙNG LOẠI của bài này hôm nay — set làm việc đầu
+  /// không lấy tạ nhẹ của set khởi động.
+  private func previousWeight(_ row: PlannedSet, in rows: [PlannedSet]) -> String? {
+    let p = controller.progress
+    guard let i = rows.firstIndex(where: { $0.key == row.key }) else { return nil }
+    let warm = WorkoutDay.isWarmup(row, p)
+    return rows[..<i].last { WorkoutDay.isWarmup($0, p) == warm && !(p.weightText[$0.key] ?? "").isEmpty }
+      .flatMap { p.weightText[$0.key] }
+  }
+
+  /// Bật / tắt set khởi động của set đang mở.
+  private func warmupToggle(_ row: PlannedSet, editable: Bool) -> some View {
+    let on = controller.isWarmup(row.key)
+    let rose = DS.Color.metricRose.swiftUI
+    return Button {
+      Task { await controller.toggleWarmup(row.key) }
+    } label: {
+      Label(String(localized: "ws.warmup"), systemImage: on ? "flame.fill" : "flame")
+        .font(DS.TextStyle.footnote.weight(.semibold))
+        .foregroundStyle(on ? Color.white : rose)
+        .padding(.horizontal, DS.Spacing.sm + 2)
+        .frame(minHeight: 36)
+        .background(on ? rose : rose.opacity(0.12), in: Capsule())
+        .frame(minHeight: 44)
+        .contentShape(Rectangle())
+    }
+    .buttonStyle(.plain)
+    .disabled(!editable)
+    .accessibilityLabel(Text(String(localized: "manualLog.warmup")))
+    .accessibilityAddTraits(on ? [.isButton, .isSelected] : .isButton)
+  }
+
   /// "Bench Press, hiệp 2 trên 3, 60 kg × 8, đã xong" (#276).
   private func rowVoiceOver(_ row: PlannedSet, performed: PerformedSet, done: Bool) -> String {
     String(
       format: String(localized: "workout.row.accessibility"),
-      row.exerciseName, row.ordinal, row.of,
+      row.exerciseName, number(row).n, number(row).of,
       a11yLoad(performed.weightKg), performed.reps,
       String(localized: done ? "workout.row.done" : "workout.row.notDone")
     )

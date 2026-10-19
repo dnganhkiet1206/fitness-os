@@ -231,6 +231,23 @@ struct WorkoutSessionControllerTests {
     #expect(!s.prDetected)
   }
 
+  /// Đổi một set thành khởi động trong buổi (18/10): ghi lại có cờ, khối
+  /// lượng và số set làm việc bỏ nó; điểm quay lại giữ lựa chọn ấy.
+  @Test func warmupToggleReachesTheSavedSession() async throws {
+    let store = InMemoryWorkoutStore()
+    let c = await controller(store)
+    #expect(await c.toggleWarmup("b1"))
+    #expect(c.isWarmup("b1") && !c.isWarmup("b2"))
+    await c.toggle("b1")
+    await c.toggle("b2")
+    let s = try await c.finish()
+    #expect(s.warmupSets == 1)
+    #expect(s.completedSets == 1)
+    #expect(s.volumeKg == 480, "chỉ set làm việc 60 × 8")
+    #expect(await store.days[c.key]?.progress.warmup["b1"] == true)
+    #expect(!(await c.toggleWarmup("b2")), "buổi đã chốt: không đổi được")
+  }
+
   @Test func nothingDoneCannotFinish() async {
     let store = InMemoryWorkoutStore()
     let c = await controller(store)

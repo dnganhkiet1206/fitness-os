@@ -62,13 +62,15 @@ public struct TemplateDraft: Sendable, Hashable {
 
   /// `patch` (`:390`): đổi các số của một bài; trường `nil` giữ nguyên.
   public mutating func patch(
-    _ index: Int, sets: Int? = nil, reps: Int? = nil, weightKg: Double? = nil, rpe: Int? = nil, restSeconds: Int? = nil
+    _ index: Int, sets: Int? = nil, reps: Int? = nil, weightKg: Double? = nil, rpe: Int? = nil, restSeconds: Int? = nil,
+    warmupSets: Int? = nil
   ) {
     guard items.indices.contains(index) else { return }
     let e = items[index]
     items[index] = TemplateExercise(
       exerciseId: e.exerciseId, exerciseName: e.exerciseName, sets: sets ?? e.sets, reps: reps ?? e.reps,
-      weightKg: weightKg ?? e.weightKg, rpe: rpe ?? e.rpe, restSeconds: restSeconds ?? e.restSeconds)
+      weightKg: weightKg ?? e.weightKg, rpe: rpe ?? e.rpe, restSeconds: restSeconds ?? e.restSeconds,
+      warmupSets: warmupSets ?? e.warmupSets)
   }
 
   /// `move` (`:394`): ngoài danh sách thì không làm gì.
