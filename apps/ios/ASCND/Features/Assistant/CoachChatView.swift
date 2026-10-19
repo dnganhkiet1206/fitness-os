@@ -99,7 +99,18 @@ struct CoachChatView: View {
           .accessibilityLabel(Text("coach.scrollbottom.a11y"))
         }
       }
-      .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y } action: { old, new in
+      // Chỉ quãng cuộn TRONG nội dung mới tính (18/10, chủ dự án: kéo quá đầu / cuối
+      // chat thấy như bị ghìm). Phần nảy ở hai đầu từng thu / bung viên chat ngay
+      // giữa lúc kéo → khung cuộn đổi cỡ → neo `.sizeChanges` kéo nội dung ngược tay.
+      // Kẹp vào [đầu, cuối] thì lúc nảy giá trị đứng yên, không có gì chạy.
+      .onScrollGeometryChange(for: CGFloat.self) { g in
+        // Lượng nảy, trong toạ độ nội dung. `visibleRect` gồm cả phần nằm dưới thanh
+        // trên và sau ô chat (đo: cao đúng 912 pt = cả màn), nên mép là đầu / cuối
+        // nội dung cộng khoảng đệm hai đầu — không phải 0 và cỡ nội dung.
+        let v = g.visibleRect, inset = g.contentInsets
+        let over = min(v.minY + inset.top, 0) + max(v.maxY - g.contentSize.height - inset.bottom, 0)
+        return g.contentOffset.y - over
+      } action: { old, new in
         // Cuộn tự động (theo câu trả lời, nút mũi tên): dời mốc, không thu / bung.
         guard userScrolling else { scrollAnchor = new; return }
         let delta = new - scrollAnchor
@@ -264,8 +275,14 @@ struct CoachChatView: View {
 
   /// Kiểu ChatGPT (16/10, chủ dự án): câu trả lời là chữ trải hết bề ngang, không
   /// bong bóng, không avatar lặp ở mỗi tin; câu của người dùng là viên xám bên phải.
+  ///
+  /// `VStack`, không `LazyVStack` (18/10, chủ dự án: kéo quá đầu / cuối thấy bị ghìm):
+  /// tin trả lời cao thấp rất khác nhau, nên bản lười chỉ ĐOÁN chiều cao tin chưa hiện —
+  /// đo trên simulator, cỡ nội dung nhảy 1256 ↔ 1659 pt liên tục khi kéo ở cuối, vị trí
+  /// cuộn nhảy theo, viên chat thu / bung hàng chục lần, và nội dung bị giữ lại ở mép.
+  /// Một cuộc trò chuyện chỉ vài chục tin — dựng hết một lần rẻ hơn cái giá ấy.
   private var transcript: some View {
-    LazyVStack(alignment: .leading, spacing: 28) {
+    VStack(alignment: .leading, spacing: 28) {
       ForEach(chat.messages) { message in
         let streaming = chat.isLoading && message.id == chat.messages.last?.id && message.role == .assistant
         CoachMessageRow(
@@ -300,13 +317,16 @@ struct CoachChatView: View {
       {
         disclaimer.padding(.top, 4)
       }
-      Color.clear.frame(height: 1).id(Self.bottom)
+      // Mốc cuối mang luôn khoảng đệm dưới (18/10): `scrollTo(bottom)` đưa ĐÁY mốc về
+      // đáy màn — mốc 1 pt nằm trên lớp đệm thì 24 pt đệm ở ngoài màn, cú kéo đầu tiên
+      // ở cuối lộ ra 24 pt ấy và nội dung dừng cao hơn chỗ vừa mở.
+      Color.clear.frame(height: DS.Spacing.lg).id(Self.bottom)
     }
     // Tin vừa gửi bay lên như iMessage (`messageSendTransition`).
     .animation(reduceMotion ? nil : .spring(response: 0.38, dampingFraction: 0.82), value: chat.messages.count)
     .animation(reduceMotion ? nil : .easeOut(duration: 0.2), value: chat.isLoading)
     .padding(.horizontal, 20)
-    .padding(.vertical, DS.Spacing.lg)
+    .padding(.top, DS.Spacing.lg)
   }
 
   // MARK: - Ô soạn
