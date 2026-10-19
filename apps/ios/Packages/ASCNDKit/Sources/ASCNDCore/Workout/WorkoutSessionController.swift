@@ -225,7 +225,21 @@ public final class WorkoutSessionController {
   }
 
   /// Mọi hàng của ngày: theo kế hoạch, rồi các bài thêm (#399).
-  public var rows: [PlannedSet] { plan.rows + WorkoutPlanning.adHocRows(progress.extra) }
+  /// Theo thứ tự bài người dùng đã kéo (`DayProgress.order`), nếu có.
+  public var rows: [PlannedSet] {
+    WorkoutDay.ordered(plan.rows + WorkoutPlanning.adHocRows(progress.extra), by: progress.order)
+  }
+
+  /// Kéo thả thứ tự bài trong buổi (19/10). Chỉ trước khi chốt: buổi đã ghi
+  /// giữ thứ tự của nó trên server.
+  public var canReorder: Bool { loaded && !finishing && loggedSessionId == nil }
+
+  @discardableResult
+  public func reorderExercises(_ keys: [String]) async -> Bool {
+    guard canReorder else { return false }
+    progress.order = keys
+    return await persist()
+  }
 
   public var key: String {
     DayProgressStore.key(date: plan.date, templateId: plan.templateId ?? Plan.adHocKey)
