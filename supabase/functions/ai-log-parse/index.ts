@@ -1,7 +1,7 @@
 import { callAI } from "../_shared/ai.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { aiGate, aiPayload, corsHeaders, json, opaque, quotaExceeded, requireUser } from "../_shared/guard.ts";
-import { cleanParse } from "./parse.ts";
+import { cleanParse, readContext } from "./parse.ts";
 
 /**
  * "Ghi hôm nay" — hiểu câu kể (19/10, chủ dự án: "Koa vẫn chưa đủ hiểu nhiều khi
@@ -20,12 +20,17 @@ Item shapes:
 - {"type":"weight","kg":number}  (convert lb to kg; "ký"/"cân" = kg)
 - {"type":"workout","kind":"run|walk|cycle|swim|yoga|gym|other","minutes":int|null}  (step counts are NOT workouts — ignore them)
 - {"type":"meal","slot":"breakfast|lunch|dinner|snack"|null,"foods":[{"name":string,"servings":number,"unit":string|null,"grams":number|null}]}
+- {"type":"meals_like_yesterday"}  ("ăn như hôm qua", "same meals as yesterday")
+- {"type":"meals_as_planned"}  ("ăn theo kế hoạch / thực đơn", "ate my meal plan")
+- {"type":"workout_as_planned"}  ("tập như kế hoạch", "did today's workout")
 Rules:
 - Only things that ALREADY happened TODAY (last night's sleep counts). Plans, wishes, questions, negations ("chưa ăn gì", "didn't drink") and other days produce NO item; put other-day phrases in "otherDay".
 - Food names: just the dish, in the user's language, lowercase, no verbs or fillers ("làm tô bún bò" → name "bún bò", unit "tô"), no people ("ăn lẩu với bạn" → only "lẩu"). Drinks with calories (coffee, milk tea, juice, beer) are foods, not water.
 - Never invent numbers. Never estimate calories. Unknown amount → null / servings 1.
 - slot: from words like sáng/trưa/tối/bữa phụ, breakfast/lunch/dinner/snack, desayuno/almuerzo/cena; otherwise null.
 - One meal item per slot; several foods go in the same item.
+- CONTEXT (if given) is the person's own data. Use it to read their words: typos and missing accents ("pho bo", "com ga") resolve to a name in recentFoods ONLY when it is the very same dish with the same words (just accents/typos fixed) — write it exactly as in recentFoods. Never shorten or generalize a dish to match ("cơm xá xíu" is NOT "cơm"; "phở gà" is NOT "phở bò"): if no recentFoods name is the same dish, keep their dish name with accents restored; "ngủ như mọi khi / as usual" = usualSleep. Never copy a context item they did not mention.
+- "vừa ăn" / "just ate" without a meal word: slot from the local time (5–10 breakfast, 11–14 lunch, 17–22 dinner, otherwise snack).
 - Put any part you could not turn into an item in "unclear" (short quote). Negations, plans, questions and step counts are understood, not unclear — leave them out of every list. Do not explain.`;
 
 serve(async (req) => {
@@ -39,6 +44,7 @@ serve(async (req) => {
     const text = typeof body?.text === "string" ? body.text.trim().slice(0, MAX_CHARS) : "";
     if (!text) return json({ items: [], otherDay: [], unclear: [] });
     const hour = Number.isInteger(body?.hour) && body.hour >= 0 && body.hour < 24 ? body.hour : 12;
+    const context = readContext(body?.context);
 
     const gate = await aiGate(supabase, "ai-log-parse");
     if (gate === "denied") return quotaExceeded();
@@ -46,7 +52,12 @@ serve(async (req) => {
     const res = await callAI({
       messages: [
         { role: "system", content: PROMPT },
-        { role: "user", content: `Local time now: ${hour}:00.\nWhat they said: ${JSON.stringify(text)}` },
+        {
+          role: "user",
+          content: `Local time now: ${hour}:00.\n` +
+            (context ? `CONTEXT: ${JSON.stringify(context)}\n` : "") +
+            `What they said: ${JSON.stringify(text)}`,
+        },
       ],
       max_tokens: 600,
     });

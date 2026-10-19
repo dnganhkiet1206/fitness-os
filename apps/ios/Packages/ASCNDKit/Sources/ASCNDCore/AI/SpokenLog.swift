@@ -104,6 +104,12 @@ public enum SpokenLog {
     case mixedQuestion
   }
 
+  public enum Shortcut: String, Equatable, Hashable, Sendable {
+    case mealsLikeYesterday = "meals_like_yesterday"
+    case mealsAsPlanned = "meals_as_planned"
+    case workoutAsPlanned = "workout_as_planned"
+  }
+
   public struct Result: Equatable, Sendable {
     public var items: [Item] = []
     /// Chỗ cần hỏi lại, theo thứ tự xuất hiện.
@@ -112,6 +118,9 @@ public enum SpokenLog {
     public var unparsed: [String] = []
     /// Đoạn nói về ngày khác hôm nay ("hôm qua…") — không ghi, màn nói rõ lý do.
     public var otherDay: [String] = []
+    /// Câu tắt AI hiểu được (19/10): "ăn như hôm qua", "ăn theo kế hoạch", "tập
+    /// như kế hoạch" — màn thêm đúng mục điền sẵn tương ứng.
+    public var shortcuts: Set<Shortcut> = []
 
     public init(items: [Item] = [], unparsed: [String] = [], otherDay: [String] = []) {
       self.items = items
@@ -142,6 +151,10 @@ public enum SpokenLog {
       return Int(d.rounded())
     }
     for row in rows {
+      if let s = row["type"]?.stringValue.flatMap(Shortcut.init(rawValue:)) {
+        r.shortcuts.insert(s)
+        continue
+      }
       switch row["type"]?.stringValue {
       case "sleep":
         let bed = clock(row["bed"]), wake = clock(row["wake"])

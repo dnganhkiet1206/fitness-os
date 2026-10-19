@@ -1,0 +1,130 @@
+<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Mock — Ghi hôm nay v2</title>
+<style>
+:root{--ink:#1c1a17;--paper:#f6f1e8;--card:#fffdf8;--mute:#7d7365;--line:rgba(28,26,23,.08);--sleep:#8e44d0;--meal:#d9740f;--water:#0f7c86;--work:#b8324a;--ok:#14855a}
+*{box-sizing:border-box}
+body{margin:0;background:#ece6dc;font-family:-apple-system,system-ui;color:var(--ink);padding:20px}
+h1{font-size:20px;margin:0 0 4px}p.s{color:var(--mute);font-size:13px;margin:0 0 18px;max-width:880px;line-height:1.45}
+.row{display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start}
+.col{display:flex;flex-direction:column;gap:8px;width:320px}
+.cap{font-size:14px;font-weight:700;margin:6px 0 0}.d{font-size:12.5px;color:#655c50;margin:0;line-height:1.45}
+.tag{display:inline-block;font-size:11px;font-weight:800;padding:3px 8px;border-radius:8px;background:var(--ink);color:var(--paper);margin-right:6px}
+.ph{width:320px;height:680px;border-radius:44px;background:var(--paper);position:relative;overflow:hidden;border:1px solid #e2d8c6;padding:54px 16px 0}
+.nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.nav .x{font-size:15px;color:var(--mute)} .nav b{font-size:16px}
+.day{display:flex;align-items:baseline;justify-content:space-between;margin:0 2px 12px}
+.day h2{font-size:24px;margin:0;letter-spacing:-.02em}.day span{font-size:13px;color:var(--mute)}
+/* ledger */
+.ledger{background:var(--card);border-radius:22px;box-shadow:0 1px 0 rgba(0,0,0,.03),0 8px 22px rgba(60,40,10,.07)}
+.it{display:grid;grid-template-columns:34px 1fr auto;gap:12px;align-items:center;padding:13px 14px;border-top:1px solid var(--line)}
+.it:first-child{border-top:0}
+.g{width:34px;height:34px;border-radius:11px;display:flex;align-items:center;justify-content:center}
+.g svg{width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.lbl{font-size:12px;color:var(--mute);font-weight:600}
+.val{font-size:19px;font-weight:700;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+.val small{font-size:13px;color:var(--mute);font-weight:500;margin-left:4px}
+.foods{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.food{font-size:12.5px;padding:4px 9px;border-radius:9px;background:#f4ece1}
+.food b{font-weight:700;color:var(--meal);margin-left:4px;font-variant-numeric:tabular-nums}
+.food.q{background:#fff;border:1px dashed #d9740f;color:#a85a0b}
+.step{display:flex;align-items:center;gap:2px;background:#f1ebe1;border-radius:12px;padding:3px}
+.step i{font-style:normal;width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px}
+.rm{width:28px;height:28px;border-radius:14px;display:flex;align-items:center;justify-content:center;color:#a39885;font-size:15px}
+.ghost{display:grid;grid-template-columns:34px 1fr auto;gap:12px;align-items:center;padding:11px 14px;border-top:1px solid var(--line)}
+.ghost .g{background:transparent;border:1.5px dashed currentColor}
+.ghost .g svg{stroke:currentColor}
+.ghost .t{font-size:14px;color:var(--mute)} .ghost .t b{color:var(--ink);font-weight:600}
+.add{font-size:13px;font-weight:700;padding:7px 12px;border-radius:12px;background:var(--ink);color:var(--paper)}
+.ask{margin:8px 0 0;display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:12.5px}
+.ask span{color:var(--mute);margin-right:2px}
+.ask a{padding:5px 10px;border-radius:10px;border:1px solid rgba(28,26,23,.14);background:#fff;font-weight:600}
+.ask a.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.tot{display:flex;justify-content:space-between;font-size:12.5px;color:var(--mute);margin:10px 4px 0}
+.tot b{color:var(--ink);font-variant-numeric:tabular-nums}
+/* dock */
+.dock{position:absolute;left:0;right:0;bottom:0;padding:12px 16px 24px;background:linear-gradient(to top,var(--paper) 70%,rgba(246,241,232,0))}
+.comp{display:flex;align-items:center;gap:8px;background:#fff;border-radius:22px;padding:6px 6px 6px 14px;box-shadow:0 6px 18px rgba(60,40,10,.10);border:1px solid var(--line)}
+.comp .ph2{flex:1;font-size:14.5px;color:#9a8f80}
+.mic{width:40px;height:40px;border-radius:20px;background:#f1ebe1;display:flex;align-items:center;justify-content:center}
+.mic svg{width:18px;height:18px;stroke:var(--ink);fill:none;stroke-width:2;stroke-linecap:round}
+.save{margin-top:10px;height:52px;border-radius:26px;background:var(--ink);color:var(--paper);display:flex;align-items:center;justify-content:center;gap:8px;font-weight:700;font-size:16px}
+.save small{opacity:.65;font-weight:500}
+/* B */
+.koa{display:flex;gap:10px;align-items:flex-start;margin-bottom:12px}
+.koa .av{width:34px;height:34px;border-radius:17px;background:#e9e1d3;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800}
+.bub{background:#fff;border-radius:18px 18px 18px 6px;padding:10px 12px;font-size:14px;line-height:1.4;box-shadow:0 2px 8px rgba(60,40,10,.06)}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.tile{background:var(--card);border-radius:18px;padding:12px;box-shadow:0 4px 14px rgba(60,40,10,.06);position:relative}
+.tile .rm{position:absolute;top:6px;right:6px}
+.tile .big{font-size:22px;font-weight:700;margin-top:8px;font-variant-numeric:tabular-nums}
+.tile .sm{font-size:12px;color:var(--mute)}
+.tile.w2{grid-column:span 2}
+.bigmic{width:72px;height:72px;border-radius:36px;background:var(--ink);display:flex;align-items:center;justify-content:center;margin:0 auto}
+.bigmic svg{width:28px;height:28px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round}
+.hint{text-align:center;font-size:12.5px;color:var(--mute);margin:8px 0 0}
+</style>
+<h1>Ghi hôm nay — thiết kế lại</h1>
+<p class="s">Mở màn = danh sách hôm nay đã điền sẵn → kiểm → Lưu. Nói / gõ để thêm hay sửa. Hai hướng; cả hai giữ màu theo loại của Hôm nay (ngủ tím, nước xanh, bữa cam, tập hồng).</p>
+<div class="row">
+
+<!-- A -->
+<div class="col">
+<div class="ph">
+  <div class="nav"><span class="x">Huỷ</span><b>Ghi hôm nay</b><span class="x" style="opacity:0">Huỷ</span></div>
+  <div class="day"><h2>Chủ nhật, 18/10</h2><span>3 mục</span></div>
+  <div class="ledger">
+    <div class="it">
+      <div class="g" style="background:var(--sleep)"><svg viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg></div>
+      <div><div class="lbl">Ngủ</div><div class="val">6 giờ<small>2:00 – 8:00</small></div></div>
+      <div class="rm">✕</div>
+    </div>
+    <div class="it">
+      <div class="g" style="background:var(--water)"><svg viewBox="0 0 24 24"><path d="M12 3s6 7 6 11a6 6 0 0 1-12 0c0-4 6-11 6-11z"/></svg></div>
+      <div><div class="lbl">Nước</div><div class="val">+500<small>ml</small></div></div>
+      <div class="step"><i>−</i><i>+</i></div>
+    </div>
+    <div class="it" style="align-items:start">
+      <div class="g" style="background:var(--meal)"><svg viewBox="0 0 24 24"><path d="M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10M16 3c-2 0-3 3-3 6s1 4 3 4v8"/></svg></div>
+      <div><div class="lbl">Bữa tối · 1.200 kcal</div>
+        <div class="foods"><span class="food">Cơm<b>780</b></span><span class="food">Salad ức gà<b>420</b></span><span class="food q">Rau? chọn món</span></div>
+        <div class="ask"><span>Bữa nào?</span><a>Trưa</a><a class="on">Tối</a><a>Phụ</a></div>
+      </div>
+      <div class="rm">✕</div>
+    </div>
+    <div class="ghost" style="color:var(--work)">
+      <div class="g"><svg viewBox="0 0 24 24"><path d="M6 8v8M18 8v8M3 10v4M21 10v4M6 12h12"/></svg></div>
+      <div class="t"><b>Tập</b> · Tay trước theo kế hoạch</div>
+      <div class="add">Thêm</div>
+    </div>
+  </div>
+  <div class="tot"><span>Hôm nay sau khi lưu</span><span><b>2.990</b> kcal · <b>42</b> oz nước</span></div>
+  <div class="dock">
+    <div class="comp"><span class="ph2">Kể thêm — “trưa ăn bún bò”</span><div class="mic"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></div></div>
+    <div class="save">Lưu 3 mục</div>
+  </div>
+</div>
+<div class="cap"><span class="tag">A</span>Sổ ghi + thanh kể ở dưới (đề xuất)</div>
+<p class="d">Một danh sách gọn như hoá đơn: số to, chi tiết nhỏ, màu theo loại. Bữa hiện từng món kèm kcal (chạm món để sửa macro); món chưa rõ là ô viền đứt. Việc còn thiếu là dòng mờ ngay trong danh sách với nút “Thêm”. Ô kể + micro nằm dưới, sát ngón cái, ngay trên nút Lưu.</p>
+</div>
+
+<!-- B -->
+<div class="col">
+<div class="ph">
+  <div class="nav"><span class="x">Huỷ</span><b>Ghi hôm nay</b><span class="x" style="opacity:0">Huỷ</span></div>
+  <div class="koa"><div class="av">Koa</div><div class="bub">Mình điền sẵn 3 việc hôm nay. Đúng thì bấm Lưu nhé — sai chỗ nào cứ nói lại.</div></div>
+  <div class="tiles">
+    <div class="tile"><div class="rm">✕</div><div class="g" style="background:var(--sleep)"><svg viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg></div><div class="big">6 giờ</div><div class="sm">2:00 – 8:00</div></div>
+    <div class="tile"><div class="rm">✕</div><div class="g" style="background:var(--water)"><svg viewBox="0 0 24 24"><path d="M12 3s6 7 6 11a6 6 0 0 1-12 0c0-4 6-11 6-11z"/></svg></div><div class="big">+500 ml</div><div class="sm">Như hôm qua</div></div>
+    <div class="tile w2"><div class="rm">✕</div><div class="g" style="background:var(--meal)"><svg viewBox="0 0 24 24"><path d="M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10M16 3c-2 0-3 3-3 6s1 4 3 4v8"/></svg></div>
+      <div class="big">Bữa tối · 1.200 kcal</div><div class="foods"><span class="food">Cơm<b>780</b></span><span class="food">Salad ức gà<b>420</b></span></div></div>
+  </div>
+  <div class="dock" style="padding-bottom:22px">
+    <div class="bigmic"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></div>
+    <p class="hint">Giữ để nói · chạm để gõ</p>
+    <div class="save">Lưu 3 mục</div>
+  </div>
+</div>
+<div class="cap"><span class="tag">B</span>Koa kể lại + ô lớn</div>
+<p class="d">Koa nói một câu tóm tắt, các việc là ô lớn hai cột như thẻ Hôm nay. Micro tròn lớn ở dưới. Thân thiện hơn, nhưng tốn chỗ hơn khi nhiều bữa.</p>
+</div>
+
+</div>

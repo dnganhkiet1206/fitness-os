@@ -49,6 +49,11 @@ export function cleanParse(raw: string): Parsed {
           out.items.push({ type: "workout", kind: i.kind, minutes: int(i.minutes, 1, 600) });
         }
         break;
+      case "meals_like_yesterday":
+      case "meals_as_planned":
+      case "workout_as_planned":
+        if (!out.items.some((x) => x.type === i.type)) out.items.push({ type: i.type });
+        break;
       case "meal": {
         const foods = (Array.isArray(i.foods) ? i.foods : []).slice(0, 10).flatMap((f) => {
           if (!f || typeof f !== "object") return [];
@@ -68,4 +73,29 @@ export function cleanParse(raw: string): Parsed {
     }
   }
   return out;
+}
+
+/**
+ * Ngữ cảnh app gửi kèm (19/10: "áp dụng AI để suy đoán câu chat tốt hơn") — chỉ
+ * giữ đúng hình, cắt độ dài: không để một client lạ nhồi prompt.
+ */
+export function readContext(raw: unknown): Record<string, unknown> | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
+  const names = (v: unknown, n: number) =>
+    Array.isArray(v) ? v.map((s) => text(s, 60)).filter((s): s is string => !!s).slice(0, n) : [];
+  const out: Record<string, unknown> = {};
+  const recent = names(r.recentFoods, 40);
+  if (recent.length) out.recentFoods = recent;
+  const plan = names(r.planToday, 20);
+  if (plan.length) out.planToday = plan;
+  const w = text(r.workoutPlan, 60);
+  if (w) out.workoutPlan = w;
+  if (r.usualSleep && typeof r.usualSleep === "object") {
+    const s = r.usualSleep as Record<string, unknown>;
+    const bed = clock(s.bed), wake = clock(s.wake);
+    if (bed && wake) out.usualSleep = { bed, wake };
+  }
+  if (r.weightUnit === "kg" || r.weightUnit === "lb") out.weightUnit = r.weightUnit;
+  return Object.keys(out).length ? out : null;
 }

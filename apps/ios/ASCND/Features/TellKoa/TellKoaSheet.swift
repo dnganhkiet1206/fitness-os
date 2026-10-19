@@ -33,6 +33,7 @@ struct TellKoaSheet: View {
   @Environment(\.dismiss) private var dismiss
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Environment(\.weightUnit) private var weightUnit
+  @Environment(ProfileBook.self) private var profile: ProfileBook?
 
   @State private var text = ""
   @State private var result = SpokenLog.Result()
@@ -57,6 +58,8 @@ struct TellKoaSheet: View {
   @State private var workoutToPick = false
   /// Dòng đang mở để sửa.
   @State private var expanded: Part?
+  /// Món đang chỉnh macro.
+  @State private var macroTarget: FoodRef?
   /// Việc còn thiếu hôm nay (đọc khi mở màn) và các chip người dùng đã thêm.
   @State private var gaps = Gaps()
   @State private var adds: Set<Add> = []
@@ -73,6 +76,7 @@ struct TellKoaSheet: View {
     var planName: String?
     var planMeals: [String] = []
     var planKcal: Double = 0
+    var trainedToday = false
   }
 
   enum Part: Hashable { case sleep, water, weight, workout, meal(String), yesterdayMeals, planMeals }
@@ -144,12 +148,21 @@ struct TellKoaSheet: View {
     NavigationStack {
       ScrollView {
         VStack(alignment: .leading, spacing: DS.Spacing.md) {
-          if done { doneView } else { inputCard; parsedList; gapChips }
+          if done { doneView } else { koaLine; tiles; gapTiles; notes; inputSummary }
         }
         .padding(DS.Spacing.md)
       }
       .scrollDismissesKeyboard(.interactively)
-      .safeAreaInset(edge: .bottom) { if !done { saveBar } }
+      .safeAreaInset(edge: .bottom) {
+        if !done {
+          VStack(spacing: 10) {
+            chatBar.padding(.horizontal, DS.Spacing.md)
+            saveBar
+          }
+          .padding(.top, 8)
+        }
+      }
+      .sheet(item: $macroTarget) { ref in macroSheet(ref) }
       .toolbar {
         ToolbarItem(placement: .principal) {
           HStack(spacing: 6) {
@@ -200,60 +213,40 @@ struct TellKoaSheet: View {
 
   // MARK: - Ô kể
 
-  private var inputCard: some View {
-    VStack(spacing: 14) {
-      if text.isEmpty || dictation.isListening {
-        // Micro là việc chính (19/10): nút to giữa màn, chữ dưới nó.
-        Button {
-          toggleMic()
-        } label: {
-          Image(systemName: dictation.isListening ? "stop.fill" : "mic.fill")
-            .font(.system(size: 34, weight: .semibold))
-            .foregroundStyle(dictation.isListening ? .white : DS.Color.background.swiftUI)
-            .frame(width: 96, height: 96)
-            .background(dictation.isListening ? DS.Color.destructive.swiftUI : DS.Color.foreground.swiftUI, in: Circle())
-            .symbolEffect(.pulse, isActive: dictation.isListening && !reduceMotion)
+  /// Thanh chat (19/10, chủ dự án: "bỏ nút micro to, để lại thanh chat kèm micro …
+  /// liquid glass có fallback"): cùng viên kính với mọi ô chat của app
+  /// (`glassComposer`), ô chữ giãn tới 4 dòng + micro + xoá.
+  private var chatBar: some View {
+    HStack(alignment: .bottom, spacing: 6) {
+      TextField(String(localized: "logday.type"), text: $text, axis: .vertical)
+        .font(.system(size: 16))
+        .lineLimit(1...4)
+        .focused($typing)
+        .padding(.vertical, 12)
+        .padding(.leading, 16)
+        .accessibilityLabel(Text("tellkoa.field.a11y"))
+      if !text.isEmpty, !dictation.isListening {
+        Button { text = "" } label: {
+          Image(systemName: "xmark.circle.fill").font(.system(size: 17))
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .frame(width: 36, height: 44)
         }
-        .buttonStyle(TodayPressStyle())
-        .accessibilityLabel(Text(dictation.isListening ? "tellkoa.mic.stop" : "tellkoa.mic.start"))
-        .padding(.top, 8)
-        Text(verbatim: dictation.isListening ? micCaption : String(localized: "logday.mic.tap"))
-          .font(DS.TextStyle.footnote)
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-          .multilineTextAlignment(.center)
-        if !dictation.isListening, case .idle = dictation.state {} else if !dictation.isListening {
-          Text(verbatim: micCaption).font(DS.TextStyle.caption).foregroundStyle(DS.Color.destructive.swiftUI)
-        }
+        .accessibilityLabel(Text("tellkoa.clear"))
       }
-      if dictation.isListening, !text.isEmpty {
-        Text(verbatim: text).font(.system(size: 17)).frame(maxWidth: .infinity, alignment: .leading)
-      } else {
-        HStack(alignment: .top, spacing: 8) {
-          TextField(String(localized: "logday.type"), text: $text, axis: .vertical)
-            .font(.system(size: 17))
-            .lineLimit(1...5)
-            .focused($typing)
-            .accessibilityLabel(Text("tellkoa.field.a11y"))
-          if !text.isEmpty {
-            Button { toggleMic() } label: {
-              Image(systemName: "mic.fill").foregroundStyle(DS.Color.foreground.swiftUI)
-                .frame(width: 32, height: 32)
-            }
-            .accessibilityLabel(Text("tellkoa.mic.start"))
-            Button {
-              text = ""
-            } label: {
-              Image(systemName: "xmark.circle.fill").foregroundStyle(DS.Color.mutedForeground.swiftUI)
-                .frame(width: 32, height: 32)
-            }
-            .accessibilityLabel(Text("tellkoa.clear"))
-          }
-        }
-        .padding(12)
-        .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+      Button { toggleMic() } label: {
+        Image(systemName: dictation.isListening ? "stop.fill" : "mic.fill")
+          .font(.system(size: 16, weight: .semibold))
+          .foregroundStyle(dictation.isListening ? .white : DS.Color.background.swiftUI)
+          .frame(width: 38, height: 38)
+          .background(dictation.isListening ? DS.Color.destructive.swiftUI : DS.Color.foreground.swiftUI, in: Circle())
+          .symbolEffect(.pulse, isActive: dictation.isListening && !reduceMotion)
+          .padding(.bottom, 5)
       }
+      .buttonStyle(TodayPressStyle())
+      .accessibilityLabel(Text(dictation.isListening ? "tellkoa.mic.stop" : "tellkoa.mic.start"))
     }
-    .frame(maxWidth: .infinity)
+    .padding(.trailing, 5)
+    .glassComposer(radius: 24)
   }
 
   private func toggleMic() {
@@ -277,105 +270,424 @@ struct TellKoaSheet: View {
 
   // MARK: - Các mục
 
-  @ViewBuilder private var parsedList: some View {
-    let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-    if thinking {
-      Label {
-        Text("logday.understanding").font(DS.TextStyle.footnote)
-      } icon: {
-        IntelligenceMark(size: 14)
+  /// Koa nói một câu tóm tắt (mock B, 19/10).
+  private var koaLine: some View {
+    HStack(alignment: .top, spacing: 10) {
+      MascotAvatar(mascotId: nil, size: 36)
+      HStack(spacing: 6) {
+        if thinking { IntelligenceMark(size: 14).symbolEffect(.pulse, isActive: !reduceMotion) }
+        Text(verbatim: koaSays)
+          .font(.system(size: 15))
+          .foregroundStyle(DS.Color.foreground.swiftUI)
+          .fixedSize(horizontal: false, vertical: true)
       }
-      .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-      .symbolEffect(.pulse, isActive: !reduceMotion)
+      .padding(.horizontal, 13)
+      .padding(.vertical, 10)
+      .background(
+        DS.Color.card.swiftUI,
+        in: UnevenRoundedRectangle(topLeadingRadius: 6, bottomLeadingRadius: 18, bottomTrailingRadius: 18, topTrailingRadius: 18, style: .continuous))
+      .shadow(color: .black.opacity(0.05), radius: 6, y: 2)
+      Spacer(minLength: 0)
     }
-    if !included.isEmpty {
-      Text("tellkoa.found").font(DS.TextStyle.footnote.weight(.semibold)).foregroundStyle(DS.Color.mutedForeground.swiftUI)
-      VStack(spacing: 0) {
-        ForEach(Array(included.enumerated()), id: \.element) { i, part in
-          if i > 0 { Divider().padding(.leading, 44) }
-          row(part)
+    .accessibilityElement(children: .combine)
+  }
+
+  private var koaSays: String {
+    let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+    if dictation.isListening { return trimmed.isEmpty ? String(localized: "logday.koa.listening") : trimmed }
+    if thinking { return String(localized: "logday.understanding") }
+    if included.isEmpty {
+      return trimmed.isEmpty ? String(localized: "logday.koa.empty") : String(localized: "tellkoa.nothing")
+    }
+    return String(localized: "logday.koa.ready \(included.count)")
+  }
+
+  /// Ô lớn hai cột cho ngủ / nước / cân / tập; bữa trải hết bề ngang.
+  @ViewBuilder private var tiles: some View {
+    let small = included.filter { [.sleep, .water, .weight, .workout].contains($0) }
+    let wide = included.filter { ![.sleep, .water, .weight, .workout].contains($0) }
+    if result.doubts.contains(.mixedQuestion), !confirmedQuestion {
+      ask(String(localized: "tellkoa.ask.mixed")) {
+        choice(String(localized: "tellkoa.ask.mixed.yes"), selected: false) { confirmedQuestion = true }
+      }
+    }
+    if !small.isEmpty {
+      LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
+        ForEach(small, id: \.self) { tile($0) }
+      }
+    }
+    if let open = expanded, [.sleep, .water, .weight].contains(open), included.contains(open) {
+      VStack(alignment: .leading, spacing: 10) { editor(open) }
+        .padding(14)
+        .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .transition(.opacity.combined(with: .move(edge: .top)))
+    }
+    ForEach(wide, id: \.self) { mealTile($0) }
+  }
+
+  private func tileShell<Content: View>(_ part: Part, @ViewBuilder _ content: () -> Content) -> some View {
+    VStack(alignment: .leading, spacing: 8) {
+      HStack(alignment: .top) {
+        Image(systemName: Self.glyph(part))
+          .font(.system(size: 13, weight: .bold))
+          .foregroundStyle(.white)
+          .frame(width: 32, height: 32)
+          .background(Self.color(part), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        Spacer(minLength: 0)
+        Button { remove(part) } label: {
+          Image(systemName: "xmark").font(.system(size: 11, weight: .bold))
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .frame(width: 28, height: 28)
+            .frame(width: 44, height: 44, alignment: .topTrailing)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text(verbatim: String(localized: "logday.remove \(title(part))")))
+      }
+      .padding(.bottom, -8)
+      content()
+      if failed.contains(part) {
+        Text("tellkoa.part.failed").font(DS.TextStyle.caption).foregroundStyle(DS.Color.destructive.swiftUI)
+      }
+    }
+    .padding(12)
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+    .overlay {
+      RoundedRectangle(cornerRadius: 20, style: .continuous)
+        .strokeBorder(expanded == part ? Self.color(part).opacity(0.6) : .clear, lineWidth: 1.5)
+    }
+    .shadow(color: .black.opacity(0.05), radius: 8, y: 3)
+  }
+
+  private func tile(_ part: Part) -> some View {
+    let v = bigValue(part)
+    return tileShell(part) {
+      Button {
+        withAnimation(reduceMotion ? nil : .smooth(duration: 0.25)) { expanded = expanded == part ? nil : part }
+      } label: {
+        VStack(alignment: .leading, spacing: 2) {
+          Text(verbatim: v.big).font(.system(size: 22, weight: .bold).monospacedDigit())
+            .foregroundStyle(DS.Color.foreground.swiftUI)
+            .lineLimit(1).minimumScaleFactor(0.7)
+          Text(verbatim: v.small).font(.system(size: 12))
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .lineLimit(2)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
+      }
+      .buttonStyle(.plain)
+      .allowsHitTesting(editable(part))
+      doubts(part)
+    }
+  }
+
+  /// Số to + dòng nhỏ của một ô.
+  private func bigValue(_ p: Part) -> (big: String, small: String) {
+    let unit = services.preferences.volumeUnit
+    switch p {
+    case .sleep:
+      guard let s = sleep else { return ("", "") }
+      return (SpokenLogDisplay.sleep(bed: s.bed, wake: s.wake, lang: lang), "\(Self.hhmm(s.bed)) – \(Self.hhmm(s.wake))")
+    case .water:
+      guard let ml = waterMl else { return ("?", String(localized: "logday.water.howMuch")) }
+      return ("+\(SpokenLogDisplay.water(ml, unit: unit))", String(localized: "tellkoa.water.adds"))
+    case .weight:
+      return (weightKg == nil ? "—" : "\(weightText) \(weightUnit == .lbs ? "lb" : "kg")", title(.weight))
+    case .workout:
+      if let w = workout {
+        return (SpokenLogDisplay.workout(w, lang: lang),
+                gaps.trainedToday ? String(localized: "logday.workout.extra") : title(.workout))
+      }
+      return (gaps.workoutPlan ?? title(.workout), String(localized: "logday.add.workout"))
+    default:
+      return (title(p), summary(p))
+    }
+  }
+
+  /// Bữa: tên bữa + tổng kcal, các món là chip (chạm để chỉnh macro).
+  @ViewBuilder private func mealTile(_ part: Part) -> some View {
+    tileShell(part) {
+      switch part {
+      case .meal(let slot):
+        if let i = meals.firstIndex(where: { $0.slot == slot }) {
+          let m = meals[i]
+          let kcal = m.foods.reduce(0.0) { $0 + ($1.shownKcal ?? 0) }
+          let unknown = m.foods.contains { $0.shownKcal == nil && !$0.searching }
+          Text(verbatim: kcal == 0 && unknown
+            ? "\(title(part)) · \(String(localized: "logday.kcal.unknown"))"
+            : "\(title(part)) · \(Int(kcal.rounded()))\(unknown ? "+" : "") kcal")
+            .font(.system(size: 19, weight: .bold).monospacedDigit())
+          FlowRows(spacing: 6, centered: false) {
+            ForEach(m.foods) { f in foodChip(f, slot: slot) }
+          }
+          doubts(part)
+        }
+      case .planMeals:
+        planTileBody
+      default:
+        Text(verbatim: title(part)).font(.system(size: 19, weight: .bold))
+        Text(verbatim: summary(part)).font(.system(size: 13)).foregroundStyle(DS.Color.mutedForeground.swiftUI)
+      }
+    }
+  }
+
+  /// Thẻ kế hoạch ăn dễ hiểu (19/10, chủ dự án): nói rõ đây là gì, rồi từng bữa sẽ
+  /// ghi kèm món và kcal — người dùng biết chính xác Lưu sẽ ghi gì.
+  @ViewBuilder private var planTileBody: some View {
+    let day = MealPlans.dayIndex(Date())
+    let items = (planBook?.items ?? []).filter { $0.day == day }
+    let open = planMealsToLog
+    let total = items.filter { open.contains($0.mealType) }.reduce(0) { $0 + $1.kcal }
+    VStack(alignment: .leading, spacing: 2) {
+      Text("logday.plan.headline").font(.system(size: 18, weight: .bold))
+      Text(verbatim: String(localized: "logday.plan.sub \(gaps.planName ?? "") \(open.count)"))
+        .font(.system(size: 13)).foregroundStyle(DS.Color.mutedForeground.swiftUI)
+    }
+    VStack(spacing: 0) {
+      ForEach(Array(open.enumerated()), id: \.element) { i, meal in
+        let foods = items.filter { $0.mealType == meal }
+        if i > 0 { Divider() }
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
+          Text(verbatim: DiaryView.mealName(meal)).font(.system(size: 14, weight: .semibold))
+            .frame(width: 84, alignment: .leading)
+          Text(verbatim: foods.map(\.name).joined(separator: ", "))
+            .font(.system(size: 14)).foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .lineLimit(2)
+          Spacer(minLength: 0)
+          Text(verbatim: "\(Int(foods.reduce(0) { $0 + $1.kcal }.rounded()))")
+            .font(.system(size: 14, weight: .semibold).monospacedDigit())
+            .foregroundStyle(DS.Color.metricOrangeGraphic.swiftUI)
+        }
+        .padding(.vertical, 8)
+      }
+    }
+    .padding(.horizontal, 12)
+    .background(DS.Color.foreground.swiftUI.opacity(0.04), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+    Text(verbatim: String(localized: "logday.plan.total \(Int(total.rounded()))"))
+      .font(.system(size: 13, weight: .semibold))
+      .foregroundStyle(DS.Color.foreground.swiftUI)
+  }
+
+  private func foodChip(_ f: FoodEdit, slot: String) -> some View {
+    let known = f.shownKcal != nil
+    return Button { macroTarget = FoodRef(slot: slot, id: f.id) } label: {
+      HStack(spacing: 5) {
+        Text(verbatim: f.match?.name ?? f.spoken.name).lineLimit(1)
+        if f.searching {
+          ProgressView().controlSize(.mini)
+        } else if let k = f.shownKcal {
+          Text(verbatim: "\(Int(k.rounded()))").fontWeight(.bold).monospacedDigit()
+            .foregroundStyle(DS.Color.metricOrangeGraphic.swiftUI)
+        } else {
+          Image(systemName: "plus.circle.fill").foregroundStyle(DS.Color.metricOrangeGraphic.swiftUI)
         }
       }
-      .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+      .font(.system(size: 13))
+      .foregroundStyle(DS.Color.foreground.swiftUI)
+      .padding(.horizontal, 10)
+      .frame(minHeight: 32)
+      .background(known ? DS.Color.metricOrangeGraphic.swiftUI.opacity(0.10) : DS.Color.card.swiftUI,
+                  in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+      .overlay {
+        if !known {
+          RoundedRectangle(cornerRadius: 10, style: .continuous)
+            .strokeBorder(DS.Color.metricOrangeGraphic.swiftUI, style: StrokeStyle(lineWidth: 1, dash: [3, 3]))
+        }
+      }
+      .frame(minHeight: 44)
     }
-    if !trimmed.isEmpty {
-      if result.items.isEmpty {
-        note(String(localized: "tellkoa.nothing"), systemImage: "questionmark.bubble")
-      } else {
-        if result.doubts.contains(.mixedQuestion), !confirmedQuestion {
-          ask(String(localized: "tellkoa.ask.mixed")) {
-            choice(String(localized: "tellkoa.ask.mixed.yes"), selected: false) { confirmedQuestion = true }
+    .buttonStyle(.plain)
+    .disabled(f.searching)
+    .accessibilityHint(Text("logday.macros.edit"))
+  }
+
+  struct FoodRef: Identifiable, Hashable {
+    let slot: String
+    let id: UUID
+  }
+
+  /// Chỉnh macro một món (mock A): khẩu phần + kcal / đạm / tinh bột / béo mỗi phần.
+  @ViewBuilder private func macroSheet(_ ref: FoodRef) -> some View {
+    if let i = meals.firstIndex(where: { $0.slot == ref.slot }), let j = meals[i].foods.firstIndex(where: { $0.id == ref.id }) {
+      let f = $meals[i].foods[j]
+      NavigationStack {
+        VStack(alignment: .leading, spacing: 16) {
+          Text(verbatim: f.wrappedValue.match?.name ?? f.wrappedValue.spoken.name).font(.system(size: 22, weight: .bold))
+          Stepper(value: f.spoken.servings, in: 0.5...20, step: 0.5) {
+            Text(verbatim: String(localized: "logday.servings \(f.wrappedValue.spoken.servings.formatted(.number.precision(.fractionLength(0...1)).locale(.app)))"))
+              .font(.system(size: 16, weight: .semibold))
+          }
+          HStack(spacing: 8) {
+            macroField("kcal", f.kcal)
+            macroField(String(localized: "logday.macro.protein"), f.protein)
+            macroField(String(localized: "logday.macro.carbs"), f.carbs)
+            macroField(String(localized: "logday.macro.fat"), f.fat)
+          }
+          Text(f.wrappedValue.hasMacros && !f.wrappedValue.macrosValid ? "logday.macros.invalid" : "logday.macros.perServing")
+            .font(DS.TextStyle.caption)
+            .foregroundStyle(f.wrappedValue.hasMacros && !f.wrappedValue.macrosValid ? DS.Color.destructive.swiftUI : DS.Color.mutedForeground.swiftUI)
+          Spacer(minLength: 0)
+        }
+        .padding(DS.Spacing.md)
+        .toolbar {
+          ToolbarItem(placement: .confirmationAction) {
+            Button(String(localized: "logMeal.edit.done")) { macroTarget = nil }
+              .disabled(f.wrappedValue.hasMacros && !f.wrappedValue.macrosValid)
           }
         }
+        .ascndPage()
       }
-      ForEach(result.otherDay, id: \.self) { s in
-        note(String(localized: "tellkoa.otherday \(s)"), systemImage: "calendar.badge.exclamationmark")
-      }
-      ForEach(result.unparsed, id: \.self) { s in
-        note(String(localized: "tellkoa.unparsed \(s)"), systemImage: "questionmark.circle")
-      }
-      if !failed.isEmpty {
-        note(String(localized: "tellkoa.failed"), systemImage: "exclamationmark.triangle", tint: DS.Color.destructive.swiftUI)
-      }
-    } else if !dictation.isListening {
+      .presentationDetents([.height(340)])
+      .presentationBackground(DS.Color.background.swiftUI)
+    }
+  }
+
+  /// Phần ngày khác / chưa hiểu / lỗi.
+  @ViewBuilder private var notes: some View {
+    ForEach(result.otherDay, id: \.self) { s in
+      note(String(localized: "tellkoa.otherday \(s)"), systemImage: "calendar.badge.exclamationmark")
+    }
+    ForEach(result.unparsed, id: \.self) { s in
+      note(String(localized: "tellkoa.unparsed \(s)"), systemImage: "questionmark.circle")
+    }
+    if !failed.isEmpty {
+      note(String(localized: "tellkoa.failed"), systemImage: "exclamationmark.triangle", tint: DS.Color.destructive.swiftUI)
+    }
+    if text.isEmpty, included.isEmpty, !dictation.isListening {
       VStack(alignment: .leading, spacing: 6) {
-        Text("tellkoa.examples.title").font(DS.TextStyle.footnote.weight(.semibold))
         ForEach(Self.examples(lang), id: \.self) { ex in
-          Button {
-            text = ex
-          } label: {
+          Button { text = ex } label: {
             Text(verbatim: "“\(ex)”").font(DS.TextStyle.footnote).foregroundStyle(DS.Color.mutedForeground.swiftUI)
               .multilineTextAlignment(.leading)
           }
           .buttonStyle(.plain)
         }
       }
-      .padding(.horizontal, 4)
+      .padding(.leading, 46)
     }
   }
 
-  /// Một dòng gọn: biểu tượng · tóm tắt · ✕. Chạm để mở phần sửa; câu hỏi lại
-  /// luôn hiện ngay dưới dòng.
-  @ViewBuilder private func row(_ part: Part) -> some View {
-    let open = expanded == part
-    VStack(alignment: .leading, spacing: 10) {
-      HStack(spacing: 10) {
-        Image(systemName: Self.glyph(part))
-          .font(.system(size: 12, weight: .bold))
-          .foregroundStyle(.white)
-          .frame(width: 26, height: 26)
-          .background(Self.color(part), in: Circle())
-        Button {
-          withAnimation(reduceMotion ? nil : .smooth(duration: 0.25)) { expanded = open ? nil : part }
-        } label: {
-          VStack(alignment: .leading, spacing: 2) {
-            Text(verbatim: title(part)).font(.system(size: 15, weight: .semibold))
-              .foregroundStyle(DS.Color.foreground.swiftUI)
-            Text(verbatim: summary(part)).font(DS.TextStyle.footnote)
-              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-              .lineLimit(2)
+  /// Tổng sẽ ghi (19/10, chủ dự án: "vẽ lại cho dễ nhìn dễ hiểu"): mỗi chỉ số một
+  /// dòng — biểu tượng màu, tên, số sắp ghi, và hôm nay sẽ thành bao nhiêu so với
+  /// mục tiêu (thanh). Chỉ hiện những gì Lưu thật sự ghi.
+  @ViewBuilder private var inputSummary: some View {
+    let s = entryTotals
+    let rows = summaryRows(s)
+    if !rows.isEmpty {
+      VStack(alignment: .leading, spacing: 12) {
+        Text("logday.total.title").font(.system(size: 15, weight: .bold))
+        ForEach(rows, id: \.label) { r in
+          VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 10) {
+              Image(systemName: r.glyph)
+                .font(.system(size: 11, weight: .bold)).foregroundStyle(.white)
+                .frame(width: 24, height: 24)
+                .background(r.color, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+              Text(verbatim: r.label).font(.system(size: 14))
+              Spacer(minLength: 0)
+              Text(verbatim: r.value).font(.system(size: 16, weight: .bold).monospacedDigit())
+            }
+            if let p = r.progress {
+              HStack(spacing: 8) {
+                GeometryReader { g in
+                  ZStack(alignment: .leading) {
+                    Capsule().fill(r.color.opacity(0.15))
+                    Capsule().fill(r.color).frame(width: g.size.width * min(1, p))
+                  }
+                }
+                .frame(height: 6)
+                Text(verbatim: r.after ?? "").font(.system(size: 11).monospacedDigit())
+                  .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+                  .fixedSize()
+              }
+              .padding(.leading, 34)
+            }
           }
-          .frame(maxWidth: .infinity, alignment: .leading)
-          .contentShape(Rectangle())
+          .accessibilityElement(children: .combine)
         }
-        .buttonStyle(.plain)
-        .allowsHitTesting(editable(part))
-        Button { remove(part) } label: {
-          Image(systemName: "xmark").font(.system(size: 12, weight: .bold))
-            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-            .frame(width: 32, height: 32)
-            .background(DS.Color.foreground.swiftUI.opacity(0.06), in: Circle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(Text(verbatim: String(localized: "logday.remove \(title(part))")))
       }
-      doubts(part)
-      if open { editor(part) }
-      if failed.contains(part) {
-        Text("tellkoa.part.failed").font(DS.TextStyle.caption).foregroundStyle(DS.Color.destructive.swiftUI)
+      .padding(16)
+      .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+      .shadow(color: .black.opacity(0.05), radius: 8, y: 3)
+    }
+  }
+
+  private struct SummaryRow {
+    let glyph: String, label: String, value: String, color: Color
+    var progress: Double?
+    var after: String?
+  }
+
+  private func summaryRows(_ s: (kcal: Double, protein: Double, waterMl: Int, sleepMin: Int)) -> [SummaryRow] {
+    var out: [SummaryRow] = []
+    let fmt = { (v: Double) in v.formatted(.number.precision(.fractionLength(0)).locale(.app)) }
+    if s.kcal > 0 {
+      var r = SummaryRow(glyph: TodayDayCard.glyph(.meal), label: String(localized: "logday.sum.kcal"),
+                         value: "+\(fmt(s.kcal)) kcal", color: TodayDayCard.color(.meal))
+      if let target = todayTargets.kcal, target > 0 {
+        let after = todayTargets.kcalNow + s.kcal
+        r.progress = after / target
+        r.after = String(localized: "logday.sum.after \(fmt(after)) \(fmt(target))")
+      }
+      out.append(r)
+    }
+    if s.protein > 0 {
+      var r = SummaryRow(glyph: "bolt.fill", label: String(localized: "logday.macro.protein"),
+                         value: "+\(fmt(s.protein)) g", color: DS.Color.metricRose.swiftUI)
+      if let target = todayTargets.protein, target > 0 {
+        let after = todayTargets.proteinNow + s.protein
+        r.progress = after / target
+        r.after = String(localized: "logday.sum.after \(fmt(after)) \(fmt(target))")
+      }
+      out.append(r)
+    }
+    if s.waterMl > 0 {
+      out.append(SummaryRow(glyph: TodayDayCard.glyph(.water), label: String(localized: "today.sig.water"),
+                            value: "+\(SpokenLogDisplay.water(s.waterMl, unit: services.preferences.volumeUnit))",
+                            color: TodayDayCard.color(.water)))
+    }
+    if s.sleepMin > 0 {
+      out.append(SummaryRow(glyph: TodayDayCard.glyph(.sleep), label: String(localized: "today.sig.sleep"),
+                            value: SpokenLogDisplay.sleep(bed: .init(hour: 0, minute: 0), wake: .init(hour: s.sleepMin / 60, minute: s.sleepMin % 60), lang: lang),
+                            color: TodayDayCard.color(.sleep)))
+    }
+    if included.contains(.workout) {
+      out.append(SummaryRow(glyph: TodayDayCard.glyph(.workout), label: String(localized: "today.sig.workout"),
+                            value: bigValue(.workout).big, color: TodayDayCard.color(.workout)))
+    }
+    return out
+  }
+
+  private var entryTotals: (kcal: Double, protein: Double, waterMl: Int, sleepMin: Int) {
+    var kcal = 0.0, protein = 0.0
+    for part in included {
+      switch part {
+      case .meal(let slot):
+        for f in meals.first(where: { $0.slot == slot })?.foods ?? [] {
+          kcal += f.shownKcal ?? 0
+          if f.hasMacros { protein += (Double(f.protein.replacingOccurrences(of: ",", with: ".")) ?? 0) * f.spoken.servings }
+          else if let m = f.match, f.spoken.grams == nil { protein += m.protein * f.spoken.servings }
+        }
+      case .planMeals:
+        let day = MealPlans.dayIndex(Date())
+        for it in planBook?.items ?? [] where it.day == day && planMealsToLog.contains(it.mealType) {
+          kcal += it.kcal
+          protein += it.protein
+        }
+      case .yesterdayMeals:
+        for m in gaps.yesterday {
+          kcal += m.kcal
+          protein += m.foods.reduce(0) { $0 + $1.food.protein * $1.servings }
+        }
+      default: break
       }
     }
-    .padding(12)
+    var sleepMin = 0
+    if included.contains(.sleep), let s = sleep {
+      sleepMin = ((s.wake.hour * 60 + s.wake.minute) - (s.bed.hour * 60 + s.bed.minute) + 1440) % 1440
+    }
+    return (kcal, protein, included.contains(.water) ? (waterMl ?? 0) : 0, sleepMin)
   }
 
   private func editable(_ p: Part) -> Bool {
@@ -500,25 +812,30 @@ struct TellKoaSheet: View {
 
   // MARK: - Còn thiếu (chip)
 
-  @ViewBuilder private var gapChips: some View {
+  /// Việc còn thiếu: ô mờ viền đứt, chạm để thêm (mock A/B).
+  @ViewBuilder private var gapTiles: some View {
     let chips = availableAdds
     if !chips.isEmpty, !dictation.isListening {
-      VStack(alignment: .leading, spacing: 8) {
-        Text("logday.missing").font(DS.TextStyle.footnote.weight(.semibold)).foregroundStyle(DS.Color.mutedForeground.swiftUI)
-        FlowRows(spacing: DS.Spacing.sm, centered: false) {
-          ForEach(chips, id: \.self) { a in
-            Button { add(a) } label: {
-              Label(addLabel(a), systemImage: "plus")
-                .font(DS.TextStyle.footnote.weight(.semibold))
-                .foregroundStyle(DS.Color.foreground.swiftUI)
-                .padding(.horizontal, 12)
-                .frame(minHeight: 36)
-                .background(DS.Color.card.swiftUI, in: Capsule())
-                .overlay { Capsule().strokeBorder(DS.Color.foreground.swiftUI.opacity(0.12), lineWidth: 0.75) }
-                .frame(minHeight: 44)
+      LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
+        ForEach(chips, id: \.self) { a in
+          Button { add(a) } label: {
+            HStack(spacing: 8) {
+              Image(systemName: "plus").font(.system(size: 13, weight: .bold))
+              Text(verbatim: addLabel(a)).font(.system(size: 13, weight: .semibold))
+                .multilineTextAlignment(.leading)
+                .lineLimit(2)
+              Spacer(minLength: 0)
             }
-            .buttonStyle(.plain)
+            .foregroundStyle(DS.Color.foreground.swiftUI.opacity(0.75))
+            .padding(12)
+            .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
+            .overlay {
+              RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .strokeBorder(DS.Color.foreground.swiftUI.opacity(0.22), style: StrokeStyle(lineWidth: 1.2, dash: [5, 4]))
+            }
+            .contentShape(Rectangle())
           }
+          .buttonStyle(TodayPressStyle())
         }
       }
     }
@@ -584,9 +901,14 @@ struct TellKoaSheet: View {
     let log = flow.makeManualLog()
     await log.load()
     g.workoutPlan = log.planOffer?.name
+    // Hôm nay đã tập (hay không có kế hoạch): buổi người dùng kể là buổi PHÁT SINH
+    // (19/10, chủ dự án) — vẫn hiện, hỏi rõ, ghi ở màn ghi buổi tập.
+    g.trainedToday = log.planOffer == nil
     if let m = services.makeMealLogger(userId: userId, date: nil, mealType: nil) {
       await m.loadRecents()
       g.yesterday = m.yesterdayMeals
+      var seen = Set<String>()
+      recentFoodNames = (m.favorites + m.recents).map(\.name).filter { seen.insert($0.lowercased()).inserted }
       m.close()
     }
     // Kế hoạch ăn (19/10, chủ dự án: "đưa phần kế hoạch ăn vào áp dụng luôn"): kế
@@ -601,6 +923,16 @@ struct TellKoaSheet: View {
       }
     }
     gaps = g
+    // Hôm nay đã ăn bao nhiêu + mục tiêu: thẻ "Tổng sẽ ghi" nói "sau khi lưu: x / y".
+    if let book = services.makeNutritionToday(userId: userId) {
+      await book.load()
+      let p = profile?.profile
+      if case .ready(let tot) = book.phase {
+        todayTargets = Targets(
+          kcalNow: tot.kcal, proteinNow: tot.protein,
+          kcal: NutritionToday.calorieTarget(p), protein: NutritionToday.macroTargets(p).protein)
+      }
+    }
     // "Mở lên log xong" (19/10, chủ dự án): mọi việc còn thiếu điền sẵn ngay — bấm
     // Lưu là xong; ✕ để bỏ, nói / gõ để sửa. Bữa: kế hoạch ăn trước, không thì như
     // hôm qua (không bao giờ cả hai).
@@ -610,6 +942,14 @@ struct TellKoaSheet: View {
   }
 
   @State private var planBook: MealPlanBook?
+  /// Tên món của chính người dùng (yêu thích + gần đây) — ngữ cảnh cho AI.
+  @State private var recentFoodNames: [String] = []
+  /// Hôm nay đã ăn / mục tiêu (cho thẻ "Tổng sẽ ghi").
+  @State private var todayTargets = Targets()
+  struct Targets {
+    var kcalNow = 0.0, proteinNow = 0.0
+    var kcal: Double?, protein: Double?
+  }
   /// Câu AI đã đọc xong (không gọi lại cho cùng câu) và trạng thái "đang hiểu".
   @State private var understood = ""
   @State private var thinking = false
@@ -916,6 +1256,11 @@ struct TellKoaSheet: View {
   /// Buổi tập: có buổi theo kế hoạch hôm nay thì ghi đúng kế hoạch; không thì để
   /// người dùng ghi ở màn buổi tập (không tự bịa hiệp / tạ).
   private func saveWorkout() async -> Bool {
+    // Buổi phát sinh: không bao giờ tự ghi — mở màn ghi buổi tập sau khi lưu.
+    if gaps.trainedToday {
+      workoutToPick = true
+      return true
+    }
     let log = flow.makeManualLog()
     await log.load()
     if await log.usePlan(), (try? await log.save()) != nil { return true }
@@ -1023,15 +1368,42 @@ struct TellKoaSheet: View {
     thinking = true
     defer { thinking = false }
     let hour = Calendar.current.component(.hour, from: Date())
-    let body: [String: JSONValue] = ["text": .string(asked), "hour": .number(Double(hour))]
+    let body: [String: JSONValue] = ["text": .string(asked), "hour": .number(Double(hour)), "context": aiContext]
     guard let reply = try? await edge.call(.logParse, body: body), !Task.isCancelled,
       text.trimmingCharacters(in: .whitespacesAndNewlines) == asked,
       let r = SpokenLog.fromAI(reply, hour: hour)
     else { return }
     understood = asked
+    // Câu tắt: thêm đúng mục điền sẵn ("ăn như hôm qua" → bữa hôm qua…).
+    for s in r.shortcuts {
+      switch s {
+      case .mealsLikeYesterday where !gaps.yesterday.isEmpty: add(.yesterdayMeals)
+      case .mealsAsPlanned where !gaps.planMeals.isEmpty: add(.planMeals)
+      case .workoutAsPlanned where gaps.workoutPlan != nil: add(.workout)
+      default: break
+      }
+    }
     // AI không thấy gì mà luật thấy: giữ luật (không xoá điều người dùng vừa thấy).
     guard !r.items.isEmpty || result.items.isEmpty else { return }
     apply(r)
+  }
+
+  /// Ngữ cảnh của chính người dùng gửi kèm câu kể (19/10, chủ dự án: "áp dụng AI để
+  /// suy đoán câu chat tốt hơn"): món hay ăn (sửa lỗi gõ / thiếu dấu về đúng tên
+  /// món của họ), kế hoạch ăn / tập hôm nay, giờ ngủ quen, đơn vị cân.
+  private var aiContext: JSONValue {
+    let day = MealPlans.dayIndex(Date())
+    let plan = (planBook?.items ?? []).filter { $0.day == day }.map { JSONValue.string($0.name) }
+    var o: [String: JSONValue] = [
+      "recentFoods": .array(recentFoodNames.prefix(40).map(JSONValue.string)),
+      "planToday": .array(Array(plan.prefix(20))),
+      "usualSleep": .object([
+        "bed": .string(Self.hhmm(SleepLog.Clock.defaultBed)), "wake": .string(Self.hhmm(SleepLog.Clock.defaultWake)),
+      ]),
+      "weightUnit": .string(weightUnit == .lbs ? "lb" : "kg"),
+    ]
+    if let w = gaps.workoutPlan { o["workoutPlan"] = .string(w) }
+    return .object(o)
   }
 
   private func reparse() {

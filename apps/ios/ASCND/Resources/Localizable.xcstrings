@@ -53915,6 +53915,282 @@
     }
    }
   },
+  "logday.koa.empty": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tell me what you did today — type or tap the mic below."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Kể cho mình hôm nay bạn đã làm gì nhé — gõ hoặc bấm micro ở dưới."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cuéntame qué hiciste hoy: escribe o toca el micrófono abajo."
+     }
+    }
+   }
+  },
+  "logday.kcal.unknown": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "tap a food to add kcal"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "chạm món để thêm kcal"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "toca un plato para añadir kcal"
+     }
+    }
+   }
+  },
+  "logday.workout.extra": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Extra workout — you can log the details after saving"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Buổi tập phát sinh — ghi chi tiết sau khi lưu"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Entreno extra: registra los detalles después de guardar"
+     }
+    }
+   }
+  },
+  "logday.plan.headline": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "From your meal plan"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Theo kế hoạch ăn của bạn"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "De tu plan de comidas"
+     }
+    }
+   }
+  },
+  "logday.plan.sub %@ %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "“%1$@” · %2$lld meals not logged yet today"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "“%1$@” · %2$lld bữa hôm nay chưa ghi"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "“%1$@” · %2$lld comidas sin registrar hoy"
+     }
+    }
+   }
+  },
+  "logday.plan.total %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Save logs these meals: %lld kcal"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Lưu sẽ ghi các bữa này: %lld kcal"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Guardar registra estas comidas: %lld kcal"
+     }
+    }
+   }
+  },
+  "logday.sum.kcal": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Calories"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Năng lượng"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Calorías"
+     }
+    }
+   }
+  },
+  "logday.sum.after %@ %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "after: %1$@ / %2$@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "sau khi lưu: %1$@ / %2$@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "después: %1$@ / %2$@"
+     }
+    }
+   }
+  },
+  "logday.koa.listening": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "I'm listening…"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mình đang nghe…"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Te escucho…"
+     }
+    }
+   }
+  },
+  "logday.koa.ready %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "I've filled in %lld things for today. If it's right, tap Save — if not, just tell me."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mình điền sẵn %lld việc hôm nay. Đúng thì bấm Lưu nhé — sai chỗ nào cứ nói lại."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Rellené %lld cosas de hoy. Si está bien, toca Guardar; si no, dímelo."
+     }
+    }
+   }
+  },
+  "logday.total.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "What you are logging"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tổng sẽ ghi"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Lo que vas a registrar"
+     }
+    }
+   }
+  },
+  "logday.servings %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ serving(s)"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ phần"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ porción(es)"
+     }
+    }
+   }
+  },
   "logday.macros.edit": {
    "extractionState": "manual",
    "localizations": {

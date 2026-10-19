@@ -332,6 +332,11 @@ struct SpokenLogAITests {
     #expect(r.otherDay == ["hôm qua ngủ muộn"])
   }
 
+  @Test func shortcutsAreKept() throws {
+    let r = try #require(SpokenLog.fromAI(Self.json(#"{"items":[{"type":"meals_like_yesterday"},{"type":"workout_as_planned"}]}"#), hour: 12))
+    #expect(r.items.isEmpty && r.shortcuts == [.mealsLikeYesterday, .workoutAsPlanned])
+  }
+
   @Test func unreadableIsNil() {
     #expect(SpokenLog.fromAI(Self.json(#"{"error":"ai_unavailable"}"#), hour: 12) == nil)
     #expect(SpokenLog.fromAI(Self.json(#"{"items":[]}"#), hour: 12)?.items.isEmpty == true)
