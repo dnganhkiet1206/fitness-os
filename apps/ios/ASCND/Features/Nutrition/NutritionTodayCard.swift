@@ -264,17 +264,18 @@ struct NutritionTodayCard: View {
         .trim(from: 0, to: appeared ? r.fill / 100 : 0)
         .stroke(color, style: StrokeStyle(lineWidth: 13, lineCap: .round))
         .rotationEffect(.degrees(-90))
+      // Vượt mục tiêu: phần vượt chạy đè lên CHÍNH vòng ngoài, màu đỏ — không
+      // còn vòng phụ bên trong (19/10: vòng phụ vẽ đè lên số "3.120").
       if r.overFill > 0 {
         Circle()
-          .trim(from: 0, to: appeared ? r.overFill / 100 : 0)
-          .stroke(DS.Color.readinessRed.swiftUI, style: StrokeStyle(lineWidth: 4, lineCap: .round))
+          .trim(from: 0, to: appeared ? min(1, r.overFill / 100) : 0)
+          .stroke(DS.Color.readinessRed.swiftUI.opacity(0.55), style: StrokeStyle(lineWidth: 13, lineCap: .round))
           .rotationEffect(.degrees(-90))
-          .padding(16)
       }
       VStack(spacing: 0) {
         if !showLeft {
           Text(verbatim: DiaryView.whole(eaten))
-            .font(.system(size: 28, weight: .bold, design: .rounded).monospacedDigit())
+            .font(.system(size: 26, weight: .bold, design: .rounded).monospacedDigit())
             .foregroundStyle(DS.Color.foreground.swiftUI)
             .contentTransition(.numericText(value: eaten))
           Text(String(localized: "nc.ring.eaten")).font(DS.TextStyle.caption)
@@ -287,14 +288,14 @@ struct NutritionTodayCard: View {
         switch r.line {
         case .remaining(let n):
           Text(verbatim: DiaryView.whole(n))
-            .font(.system(size: 28, weight: .bold, design: .rounded).monospacedDigit())
+            .font(.system(size: 26, weight: .bold, design: .rounded).monospacedDigit())
             .foregroundStyle(DS.Color.foreground.swiftUI)
             .contentTransition(.numericText(value: n))
           Text(String(localized: "nc.ring.left")).font(DS.TextStyle.caption)
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
         case .surplus(let d):
           Text(verbatim: "+" + DiaryView.whole(d))
-            .font(.system(size: 28, weight: .bold, design: .rounded).monospacedDigit())
+            .font(.system(size: 26, weight: .bold, design: .rounded).monospacedDigit())
             .foregroundStyle(DS.Color.readinessRed.swiftUI)
           Text(String(localized: "nc.ring.over")).font(DS.TextStyle.caption)
             .foregroundStyle(DS.Color.readinessRed.swiftUI)
