@@ -231,12 +231,22 @@ struct DayMealsSection: View {
   /// Bản ghi bữa đã đăng lên Cộng đồng; `nil` = chưa biết (chưa hiện lối chia sẻ).
   @State private var shared: Set<String>?
   @State private var sharing: ShareMealRequest?
+  /// Kế hoạch ăn áp dụng hôm nay (19/10: bữa hôm nay ↔ kế hoạch ăn ↔ ghi).
+  @State private var plan: TodayMealPlan?
+  @State private var eatingPlan: String?
+  @State private var planTick = 0
 
   var body: some View {
     VStack(spacing: DS.Spacing.md) {
       content
       if let notice { undoBar(notice) }
     }
+    .task(id: "\(book.userId)|\(book.date)|\(planTick)") {
+      plan = slots && book.isToday ? await TodayMealPlan.load(services, userId: book.userId) : nil
+    }
+    // Bữa hôm nay đổi (ghi ở đâu cũng vậy) → đọc lại kế hoạch: bữa vừa ghi theo
+    // kế hoạch có nhãn, bữa dự kiến đã ăn thôi hiện.
+    .onChange(of: book.phase) { _, _ in planTick += 1 }
     .task(id: book.userId) { shared = await services.sharedPostSourceIds(userId: book.userId) }
     .sheet(item: $sharing) { req in
       NavigationStack {
@@ -391,7 +401,13 @@ struct DayMealsSection: View {
             onDelete: { pendingItem = $0 },
             onDeleteGroup: { pendingGroup = g },
             onAddTo: { logging = LogMealRequest(mealType: g.type) },
-            onShare: shareAction(g))
+            onShare: shareAction(g),
+            fromPlan: plan.map { !$0.planned(type).isEmpty && $0.book.isLoggedToday(type, day: $0.day) } ?? false)
+        } else if let plan, !plan.planned(type).isEmpty {
+          PlannedSlotRow(
+            type: type, items: plan.planned(type), busy: eatingPlan == type,
+            onEat: { Task { await eatPlanned(type) } },
+            onLog: { logging = LogMealRequest(mealType: type) })
         } else {
           EmptySlotRow(type: type) { logging = LogMealRequest(mealType: type) }
         }
@@ -399,6 +415,22 @@ struct DayMealsSection: View {
     }
     .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous))
     .todayCard()
+  }
+
+  /// "Ăn đúng kế hoạch": bữa dự kiến thành bữa hôm nay, một chạm.
+  private func eatPlanned(_ meal: String) async {
+    guard let plan, eatingPlan == nil else { return }
+    eatingPlan = meal
+    defer { eatingPlan = nil }
+    if case .queued = await plan.book.eat(meal: meal, day: plan.day, online: services.sync.online) {
+      Telemetry.capture(.mealLogged, ["source": "plan"])
+      services.didLog()
+      AccessibilityNotification.Announcement(String(localized: "plan.eaten \(DiaryView.mealName(meal))")).post()
+      await book.load()
+      onChanged()
+    } else {
+      error = String(localized: "async.error.generic")
+    }
   }
 
   private func undoBar(_ text: String) -> some View {
@@ -504,6 +536,8 @@ private struct MealGroupCard: View {
   let onAddTo: () -> Void
   /// "Chia sẻ lên Cộng đồng" (`onShare` của RN) — chỉ có khi còn bản ghi chưa đăng.
   var onShare: (() -> Void)?
+  /// Bữa này đúng như kế hoạch ăn hôm nay (19/10) — nhãn nhỏ cạnh tên bữa.
+  var fromPlan = false
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var open = false
 
@@ -537,7 +571,10 @@ private struct MealGroupCard: View {
           HStack(alignment: plain ? .center : .firstTextBaseline, spacing: plain ? 12 : 8) {
             if plain { MealSlotGlyph(type: group.type, filled: true) }
             VStack(alignment: .leading, spacing: 2) {
-              Text(verbatim: name).font(plain ? .system(size: 17, weight: .semibold) : DS.TextStyle.headline)
+              HStack(spacing: 6) {
+                Text(verbatim: name).font(plain ? .system(size: 17, weight: .semibold) : DS.TextStyle.headline)
+                if fromPlan { PlanTag() }
+              }
               Text(verbatim: plain ? itemNames : sub)
                 .font(DS.TextStyle.caption.monospacedDigit())
                 .foregroundStyle(DS.Color.mutedForeground.swiftUI)
@@ -803,5 +840,67 @@ private struct EmptySlotRow: View {
     .accessibilityValue(Text(String(localized: "nc.slot.empty")))
     .accessibilityHint(Text(String(localized: "nc.slot.hint")))
     .accessibilityAddTraits(.isButton)
+  }
+}
+
+/// Khung bữa còn trống mà kế hoạch ăn hôm nay có món (19/10): hiện món dự kiến;
+/// ✓ ghi đúng kế hoạch một chạm, + để ghi bữa khác.
+private struct PlannedSlotRow: View {
+  let type: String
+  let items: [MealPlans.Item]
+  let busy: Bool
+  let onEat: () -> Void
+  let onLog: () -> Void
+
+  private var names: String { items.map(\.name).formatted(.list(type: .and).locale(.app)) }
+  private var kcal: Double { items.reduce(0) { $0 + $1.kcal } }
+
+  var body: some View {
+    HStack(spacing: 12) {
+      MealSlotGlyph(type: type, filled: false)
+      Button(action: onLog) {
+        VStack(alignment: .leading, spacing: 2) {
+          HStack(spacing: 6) {
+            Text(verbatim: DiaryView.mealName(type)).font(.system(size: 17, weight: .semibold))
+              .foregroundStyle(DS.Color.foreground.swiftUI)
+            PlanTag()
+          }
+          Text(verbatim: "\(names) · \(DiaryView.whole(kcal)) kcal")
+            .font(DS.TextStyle.caption)
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .lineLimit(2)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
+      }
+      .buttonStyle(.plain)
+      .accessibilityHint(Text(String(localized: "nc.slot.hint")))
+      Button(action: onEat) {
+        Group {
+          if busy { ProgressView().tint(.white) } else { Image(systemName: "checkmark").font(.system(size: 15, weight: .bold)) }
+        }
+        .foregroundStyle(.white)
+        .frame(width: 34, height: 34)
+        .background(Circle().fill(MascotRoomView.signalColor(.meal)))
+        .frame(width: 44, height: 44)
+      }
+      .buttonStyle(TodayPressStyle())
+      .disabled(busy)
+      .accessibilityLabel(Text(String(localized: "plan.eat.a11y \(DiaryView.mealName(type))")))
+    }
+    .padding(.horizontal, DS.Spacing.md)
+    .padding(.vertical, 10)
+    .frame(minHeight: 56)
+  }
+}
+
+/// Nhãn "Kế hoạch" nhỏ: bữa này đến từ / khớp kế hoạch ăn hôm nay.
+private struct PlanTag: View {
+  var body: some View {
+    Text("plan.tag")
+      .font(.system(size: 10, weight: .bold))
+      .foregroundStyle(DS.Color.metricOrangeGraphic.swiftUI)
+      .padding(.horizontal, 6).padding(.vertical, 2)
+      .background(DS.Color.metricOrangeGraphic.swiftUI.opacity(0.12), in: Capsule())
   }
 }
