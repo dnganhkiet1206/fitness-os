@@ -33,6 +33,22 @@ final class AppServices {
   /// Bộ quan sát nhiệm vụ ngày của tài khoản đang đăng nhập (#527 A-NEXT-7,
   /// cấp app): phiên (`RootGate`) và phòng linh vật dùng CHUNG một bản.
   @ObservationIgnored private var questObserverCache: QuestObserver?
+  /// Phần thưởng vừa tự về (Koa đợt 1): Hôm nay đọc lại ví và — nếu app thấy việc
+  /// vừa xong — cho Koa mừng rỡ với "+N" bay lên.
+  private(set) var koaReward: KoaReward?
+
+  struct KoaReward: Equatable {
+    let id: Int
+    let userId: String
+    let amount: Int
+    /// Bước chuyển app thấy tận mắt (không phải việc đã xong lúc app đóng).
+    let seen: Bool
+  }
+
+  /// Một lần thưởng tự về (nhiệm vụ hay chuỗi) — mã tăng dần để `onChange` bắt.
+  func noteKoaReward(userId: String, amount: Int, seen: Bool) {
+    koaReward = KoaReward(id: (koaReward?.id ?? 0) + 1, userId: userId, amount: amount, seen: seen)
+  }
   /// Số lần cân ONLINE đã được server xác nhận trong lần chạy app này — nhịp
   /// để kế hoạch nhắc nhở đọc lại `weight_logs` ngay (`invalidateQueries` của
   /// `useLogWeight`). Xếp hàng / lỗi không tăng; bữa ăn đi qua outbox nên đã
@@ -665,7 +681,8 @@ final class AppServices {
   }
 
   /// MỘT bộ quan sát nhiệm vụ cho mỗi tài khoản (`<QuestAutoClaim />` gắn ở gốc
-  /// app RN): nhiệm vụ THẤY vừa xong → giờ thói quen — chính `noteDone` của RN;
+  /// app RN): nhiệm vụ đã xong → tự nhận thưởng (Koa đợt 1); nhiệm vụ THẤY vừa
+  /// xong → giờ thói quen — chính `noteDone` của RN;
   /// `HabitHours` tự bỏ nhiệm vụ ngoài `CLOCK_TRUSTED`. Đổi người → bản cũ
   /// đóng, bản mới bắt đầu từ mốc trống.
   func questObserver(userId: String) -> QuestObserver? {
@@ -676,6 +693,11 @@ final class AppServices {
     let goals = StepsGoalStore(store: UserDefaultsStore(), userId: userId)
     let o = QuestObserver(
       userId: userId, source: SupabaseMascotSource(backend: backend), stepsGoal: { goals.goal },
+      economy: SupabaseMascotEconomy(backend: backend),
+      onClaimed: { [weak self] claimed in
+        guard self?.session.session?.userId == userId else { return }
+        self?.noteKoaReward(userId: userId, amount: claimed.amount, seen: claimed.seen)
+      },
       onQuestDone: { [weak self, habitHours] quest, hour in
         // Chỉ khi phiên vẫn là của người này: giờ của người vừa rời đi không
         // được ghi lại sau `habitHours.clear()`.

@@ -5,10 +5,12 @@ import SwiftUI
 /// Khối "ngày" của tab Hôm nay (#527) — bản thiết kế chủ dự án đã duyệt,
 /// phương án C (`docs/design/today/README.md`, `mock/RingOptions.dc.html`).
 ///
-/// Ngày được đếm MỘT lần, ở đây:
-/// - Koa (chạm → phòng linh vật) và bong bóng nói việc kế tiếp, với MỘT nút đặc
-///   màu của việc ấy — điểm nhấn duy nhất của khối;
-/// - "N of 5" và viên xu đang chờ nhận;
+/// Khối gồm:
+/// - Koa (chạm → phòng linh vật) mặc đồ đã mua, nét mặt theo ngày thật
+///   (`KoaMood`, Koa đợt 1) và bong bóng nói về ngày / việc kế tiếp, với MỘT nút
+///   đặc màu của việc ấy — điểm nhấn duy nhất của khối;
+/// - không còn "N of 5" và viên "xu đang chờ" (19/10): số "xong hôm nay" duy nhất
+///   ở "Hôm nay của bạn", và xu tự về — Koa mừng rỡ với "+N" bay lên;
 /// - năm ống mảnh (ngủ / bữa / nước / buổi tập / bước) tô dần từ đáy; ống "kế
 ///   tiếp" có viền màu, quầng sáng nhẹ và nhãn "Next" — khớp bong bóng.
 ///
@@ -33,6 +35,14 @@ struct TodayDayBlock: View {
   let onOpenRoom: () -> Void
   /// Nguồn zoom sang phòng linh vật (Koa phóng thành phòng).
   var zoom: Namespace.ID?
+  /// Hồ sơ: mục tiêu kcal (ăn quá) và ngày sinh (mũ sinh nhật).
+  var profile: Profile?
+  /// Giờ muộn của người này (`KoaToday.riskHour`).
+  var riskHour = KoaMood.riskHour
+  /// Khoá `mascot_inventory` đang mặc — Koa ở đây mặc đúng đồ ở phòng.
+  var equipped: [String] = []
+  /// Thưởng vừa tự về và app thấy việc vừa xong → Koa mừng rỡ, "+N" bay lên.
+  var reward: AppServices.KoaReward?
 
   @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -41,8 +51,14 @@ struct TodayDayBlock: View {
   /// Nhãn "Next" và viền của ống kế tiếp là MỘT vật trượt giữa các ống.
   @Namespace private var nextSpace
 
+  /// Hành động một lần (mừng rỡ) đè lên nét mặt của ngày, rồi tự trả về.
+  @State private var oneShot: KoaEmotion.Emotion?
+  @State private var burst: AppServices.KoaReward?
+
   /// Đã khen trong phiên app này — giữ câu khen đến hết phiên.
   @MainActor static var praisedThisSession = false
+  /// `ACTION_MS.celebrate`.
+  static let celebrateFor: Duration = .milliseconds(2600)
 
   var body: some View {
     TimelineView(.periodic(from: .now, by: 60)) { context in
@@ -55,21 +71,18 @@ struct TodayDayBlock: View {
     let tubes = TodayDay.tubes(signals, stepsGoal: room.stepsGoal)
     let line = MascotLine.line(TodayDay.mascotDay(signals, hour: hour))
     let next = line.gap.map(TodayDay.quest)
-    let total = MascotRules.energySignals.count
+    let mood = KoaToday.read(room: room, localWaterMl: localWaterMl, profile: profile, riskHour: riskHour, hour: hour)
+    let said = KoaToday.line(mood, signals: signals, profile: profile, streak: room.streak.count)
     return VStack(spacing: 18) {
       HStack(alignment: .top, spacing: DS.Spacing.sm) {
-        koa
+        koa(oneShot ?? mood.emotion)
         VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-          HStack(alignment: .firstTextBaseline) {
-            countText(done: tubes.filter(\.done).count, total: total)
-            Spacer(minLength: 0)
-            if waitingCoins > 0 { coinPill(waitingCoins) }
-          }
-          if let text = bubbleText(line, tubes: tubes) {
+          if let text = said ?? bubbleText(line, tubes: tubes) {
             bubble(text, next: next)
               .animation(reduceMotion ? .easeInOut(duration: 0.2) : .smooth(duration: 0.45), value: text)
           }
         }
+        .padding(.top, 6)
       }
       HStack(alignment: .bottom, spacing: 0) {
         ForEach(tubes) { t in
@@ -83,63 +96,68 @@ struct TodayDayBlock: View {
     // Việc kế tiếp đổi → nhãn và viền trượt sang ống mới; ống dâng như chất lỏng.
     .animation(reduceMotion ? .easeInOut(duration: 0.2) : .spring(duration: 0.6, bounce: 0.22), value: next)
     .task(id: line) { updatePraise(line) }
+    .onChange(of: reward?.id) { _, _ in celebrate() }
   }
 
   // MARK: - Koa
 
-  private var koa: some View {
+  private func koa(_ emotion: KoaEmotion.Emotion) -> some View {
     Button(action: onOpenRoom) {
-      MascotFigureView(size: 76, animated: !reduceMotion)
+      MascotFigureView(emotion: emotion, equipped: equipped, size: 76, animated: !reduceMotion)
         .frame(width: 84, height: 96)
+        // Đổi nét mặt: hình cũ mờ sang hình mới (Reduce Motion: đổi ngay).
+        .id(emotion)
+        .transition(.opacity)
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.35), value: emotion)
         .background(alignment: .bottom) {
           Ellipse().fill(.black.opacity(0.08)).frame(width: 56, height: 8).blur(radius: 3)
+        }
+        .overlay(alignment: .top) {
+          if let burst {
+            coinBurst(burst.amount)
+              .id(burst.id)
+              .transition(reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity))
+          }
         }
         .contentShape(Rectangle())
     }
     .buttonStyle(TodayPressStyle(scale: 0.94))
     .modifier(ZoomSource(id: "koa", space: zoom))
     .accessibilityLabel(Text(String(localized: "today.koa.a11y")))
+    .sensoryFeedback(.success, trigger: burst?.id)
   }
 
-  private func countText(done: Int, total: Int) -> some View {
-    HStack(alignment: .firstTextBaseline, spacing: 0) {
-      Text(verbatim: "\(done)")
-        .font(.custom("Menlo", size: 26, relativeTo: .title).weight(.bold))
-        .foregroundStyle(DS.Color.foreground.swiftUI)
-        .contentTransition(.numericText(value: Double(done)))
-        .animation(.smooth(duration: 0.4), value: done)
-      Text(String(localized: "today.day.of \(total)"))
-        .font(.custom("Menlo", size: 15, relativeTo: .body).weight(.bold))
-        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+  /// "+N" vàng bay lên trên đầu Koa khi xu vừa về.
+  private func coinBurst(_ amount: Int) -> some View {
+    HStack(spacing: 3) {
+      Image(systemName: "circle.circle.fill").font(.system(size: 11, weight: .bold))
+      Text(verbatim: "+\(amount)").font(.system(size: 14, weight: .heavy).monospacedDigit())
     }
-    .accessibilityElement(children: .ignore)
-    .accessibilityLabel(Text(String(localized: "today.day.a11y \(done) \(total)")))
+    .foregroundStyle(DS.Color.readinessYellow.swiftUI)
+    .padding(.horizontal, 8)
+    .frame(minHeight: 24)
+    .todayGlass(cornerRadius: 12, solid: reduceTransparency)
+    .offset(y: -14)
+    .accessibilityHidden(true)
   }
 
-  /// Xu của các việc đã xong mà chưa nhận (nhận ở phòng linh vật).
-  private var waitingCoins: Int {
-    room.activeQuests
-      .filter { room.questDone($0.key) && !room.isClaimed(MascotRules.questRefKey(room.today, $0.key)) }
-      .map(\.coins).reduce(0, +)
-  }
-
-  private func coinPill(_ coins: Int) -> some View {
-    Button(action: onOpenRoom) {
-      HStack(spacing: 4) {
-        Image(systemName: "circle.circle.fill")
-          .font(.system(size: 12, weight: .bold))
-        Text(String(localized: "today.day.coins \(coins)"))
-          .font(.system(size: 13, weight: .bold).monospacedDigit())
+  /// Thưởng vừa về: chỉ việc app THẤY vừa xong mới được mừng (không diễn lại
+  /// những việc đã xong lúc app đóng).
+  private func celebrate() {
+    guard let reward, reward.seen, reward.userId == room.userId else { return }
+    AccessibilityNotification.Announcement(String(localized: "koa.say.coins \(reward.amount)")).post()
+    withAnimation(reduceMotion ? nil : .spring(duration: 0.45, bounce: 0.3)) {
+      oneShot = .celebrate
+      burst = reward
+    }
+    Task {
+      try? await Task.sleep(for: Self.celebrateFor)
+      guard burst == reward else { return }
+      withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.4)) {
+        oneShot = nil
+        burst = nil
       }
-      .foregroundStyle(DS.Color.readinessYellow.swiftUI)
-      .padding(.horizontal, 10)
-      .frame(minHeight: 32)
-      .todayGlass(cornerRadius: 16, solid: reduceTransparency)
-      .frame(minHeight: 44)
-      .contentShape(Rectangle())
     }
-    .buttonStyle(.plain)
-    .accessibilityLabel(Text(String(localized: "today.day.coins.a11y \(coins)")))
   }
 
   // MARK: - Bong bóng

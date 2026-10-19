@@ -41058,98 +41058,6 @@
     }
    }
   },
-  "today.day.of %lld": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": " of %lld"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": " trên %lld"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": " de %lld"
-     }
-    }
-   }
-  },
-  "today.day.a11y %lld %lld": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "%1$lld of %2$lld done today"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Hôm nay đã xong %1$lld trên %2$lld"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "%1$lld de %2$lld hechas hoy"
-     }
-    }
-   }
-  },
-  "today.day.coins %lld": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "+%lld coins waiting"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "+%lld xu đang chờ"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "+%lld monedas esperando"
-     }
-    }
-   }
-  },
-  "today.day.coins.a11y %lld": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "%lld coins waiting. Open the companion room to claim them"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "%lld xu đang chờ. Mở phòng bạn đồng hành để nhận"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "%lld monedas esperando. Abre la sala del compañero para reclamarlas"
-     }
-    }
-   }
-  },
   "today.day.worth %lld": {
    "extractionState": "manual",
    "localizations": {
@@ -53524,29 +53432,6 @@
     }
    }
   },
-  "notif.coins %lld": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "%lld coins waiting — open Koa’s room to claim them"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "%lld monedas esperando: abre la sala de Koa para reclamarlas"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "%lld xu đang chờ — mở phòng Koa để nhận"
-     }
-    }
-   }
-  },
   "notif.reminders.empty": {
    "extractionState": "manual",
    "localizations": {
@@ -55889,6 +55774,190 @@
      "stringUnit": {
       "state": "translated",
       "value": "Arrastra ≡ para cambiar el orden. La siguiente serie sigue el nuevo orden."
+     }
+    }
+   }
+  },
+  "koa.say.night": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa's off to bed. We'll pick it up tomorrow 🌙"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa đi ngủ đây. Mai mình làm tiếp nhé 🌙"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa se va a dormir. Mañana seguimos 🌙"
+     }
+    }
+   }
+  },
+  "koa.say.birthday": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Happy birthday! Koa's wearing the hat for you today 🎉"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chúc mừng sinh nhật! Hôm nay Koa đội mũ vì bạn 🎉"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "¡Feliz cumpleaños! Hoy Koa lleva el gorro por ti 🎉"
+     }
+    }
+   }
+  },
+  "koa.say.worry %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Your %lld-day streak just needs one small thing today."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chuỗi %lld ngày chỉ cần một việc nhỏ hôm nay thôi."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tu racha de %lld días solo necesita algo pequeño hoy."
+     }
+    }
+   }
+  },
+  "koa.say.allDone": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Everything's done today! Koa is proud of you."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Xong hết việc hôm nay rồi! Koa tự hào về bạn."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "¡Todo listo por hoy! Koa está orgulloso de ti."
+     }
+    }
+   }
+  },
+  "koa.say.rested %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ of sleep — Koa's wide awake. Let's make today count!"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ngủ %@ — Koa tỉnh như sáo. Hôm nay mình làm tới nhé!"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ de sueño — Koa está muy despierto. ¡A por el día!"
+     }
+    }
+   }
+  },
+  "koa.say.shortSleep %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Only %@ of sleep last night. Take it easy today."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đêm qua chỉ ngủ %@. Hôm nay nhẹ nhàng thôi nhé."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Solo %@ de sueño anoche. Hoy, con calma."
+     }
+    }
+   }
+  },
+  "koa.say.overate %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "You're at %lld%% of your calorie target. Keep the next meal light and you're fine."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hôm nay đã %lld%% mục tiêu kcal. Bữa tới ăn nhẹ là ổn."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Vas al %lld %% de tus calorías. Una próxima comida ligera y listo."
+     }
+    }
+   }
+  },
+  "koa.say.coins %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa just collected %lld coins for you"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa vừa nhận %lld xu cho bạn"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa acaba de recibir %lld monedas para ti"
      }
     }
    }

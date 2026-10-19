@@ -15,8 +15,31 @@ public import Foundation
 /// cần (React chạy một effect một lúc): lượt đọc bắt đầu trước về sau lượt
 /// mới hơn thì bỏ (không làm mốc lùi rồi ghi lặp), và lượt của một ngày đã qua
 /// thì bỏ.
+///
+/// Tự nhận thưởng (Koa đợt 1, 19/10 — `useQuestAutoClaim` của RN, phần native
+/// còn thiếu: xu từng nằm "đang chờ" mãi vì không có nút nào nhận): MỌI lượt đọc
+/// `ready` gửi `claim_quest_reward` cho từng nhiệm vụ đã xong mà chưa nhận — kể
+/// cả nhiệm vụ đã xong lúc app đóng (bước / giấc ngủ từ Apple Health). Server
+/// khoá theo `ref_key` (`ON CONFLICT DO NOTHING`) nên gửi lặp không trả hai lần.
+/// `sent` chặn gửi lại trong phiên; lần bị từ chối thì gỡ khỏi `sent` và giữ ở
+/// `owed` để lượt sau thử lại, kể cả qua nửa đêm (server nhận trong 2 ngày).
+/// Nhận và ăn mừng là hai việc: `onClaimed` báo `seen = true` chỉ cho bước
+/// chuyển app THẤY tận mắt — mở app với bốn việc đã xong đêm qua không diễn bốn
+/// màn ăn mừng.
 @MainActor
 public final class QuestObserver {
+  /// Một lần nhận thưởng thành công.
+  public struct Claimed: Sendable, Hashable {
+    public let quest: MascotRules.Quest
+    public let refKey: String
+    public let amount: Int
+    /// Bước chuyển "chưa xong → xong" thấy ở lượt đọc này.
+    public let seen: Bool
+  }
+
+  /// Nhận lại một khoá bị từ chối trong bao nhiêu ngày (`CLAIM_RETRY_DAYS`).
+  public static let claimRetryDays = 2
+
   public let userId: String
 
   private let source: any MascotSource
@@ -24,6 +47,12 @@ public final class QuestObserver {
   private let clock: any WallClock
   private let timeZone: TimeZone
   private let onQuestDone: @MainActor (MascotRules.Quest, Int) -> Void
+  private let economy: (any MascotEconomy)?
+  private let onClaimed: @MainActor (Claimed) -> Void
+  /// Khoá đã gửi trong phiên này (đang chờ hoặc đã nhận).
+  private var sent: Set<String> = []
+  /// Khoá bị từ chối, còn nợ: khoá → (nhiệm vụ, ngày).
+  private var owed: [String: (MascotRules.Quest, LocalDate)] = [:]
 
   private var watch = QuestWatch()
   /// Số thứ tự lượt đọc đã cấp / lượt mới nhất đã được đưa vào mốc.
@@ -36,8 +65,12 @@ public final class QuestObserver {
     userId: String, source: any MascotSource,
     stepsGoal: @escaping @Sendable () -> Int = { DailySignals.defaultStepsGoal },
     clock: any WallClock = SystemWallClock(), timeZone: TimeZone = .current,
+    economy: (any MascotEconomy)? = nil,
+    onClaimed: @escaping @MainActor (Claimed) -> Void = { _ in },
     onQuestDone: @escaping @MainActor (MascotRules.Quest, Int) -> Void
   ) {
+    self.economy = economy
+    self.onClaimed = onClaimed
     self.userId = userId
     self.source = source
     self.stepsGoal = stepsGoal
@@ -90,11 +123,44 @@ public final class QuestObserver {
         && !claimed.contains(MascotRules.questRefKey(day, q))
     }
     let seen = watch.read(today: day.description, done: done, unclaimed: unclaimed)
+    claim(unclaimed, day: day, seen: Set(seen), claimed: claimed)
     guard !seen.isEmpty else { return }
     // `new Date().getHours()`: giờ nguyên địa phương lúc thấy.
     var cal = Calendar(identifier: .gregorian)
     cal.timeZone = timeZone
     let hour = cal.component(.hour, from: clock.now())
     for q in seen { onQuestDone(q, hour) }
+  }
+
+  /// Gửi nhận thưởng cho các nhiệm vụ chưa nhận của hôm nay, rồi các khoá còn nợ
+  /// của ngày trước (trong `claimRetryDays`).
+  private func claim(_ quests: [MascotRules.Quest], day: LocalDate, seen: Set<MascotRules.Quest>, claimed: Set<String>) {
+    guard let economy else { return }
+    var jobs = quests.map { (MascotRules.questRefKey(day, $0), $0, seen.contains($0)) }
+    let oldest = day.adding(days: -Self.claimRetryDays)
+    for (key, (q, d)) in owed.sorted(by: { $0.key < $1.key }) where !jobs.contains(where: { $0.0 == key }) {
+      if d < oldest || claimed.contains(key) {
+        owed[key] = nil
+      } else {
+        jobs.append((key, q, false))
+      }
+    }
+    for (key, q, saw) in jobs where !sent.contains(key) {
+      sent.insert(key)
+      let date = LocalDate(String(key.dropFirst(2).prefix(10))) ?? day
+      Task { @MainActor [weak self] in
+        do {
+          let amount = try await economy.claimReward(refKey: key, reason: q.rawValue)
+          guard let self, !self.closed else { return }
+          self.owed[key] = nil
+          self.onClaimed(Claimed(quest: q, refKey: key, amount: amount, seen: saw))
+        } catch {
+          guard let self, !self.closed else { return }
+          // Im lặng (như RN): lượt đọc sau thử lại, không mất gì.
+          self.sent.remove(key)
+          self.owed[key] = (q, date)
+        }
+      }
+    }
   }
 }
