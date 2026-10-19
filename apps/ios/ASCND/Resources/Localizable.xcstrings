@@ -53869,29 +53869,6 @@
     }
    }
   },
-  "nc.eatenLine %@ %lld": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Eaten %1$@ kcal · %2$lld%% of target"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Đã ăn %1$@ kcal · đạt %2$lld%% mục tiêu"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Consumido %1$@ kcal · %2$lld%% del objetivo"
-     }
-    }
-   }
-  },
   "logMeal.for": {
    "extractionState": "manual",
    "localizations": {
@@ -55360,6 +55337,52 @@
      "stringUnit": {
       "state": "translated",
       "value": "Registrar %lld elementos"
+     }
+    }
+   }
+  },
+  "nc.stat.eaten": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Eaten"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đã ăn"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Consumido"
+     }
+    }
+   }
+  },
+  "nc.percentOfTarget %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld%% of target"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đạt %lld%% mục tiêu"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld%% del objetivo"
      }
     }
    }

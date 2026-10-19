@@ -118,24 +118,35 @@ struct NutritionTodayCard: View {
             ? AnyLayout(VStackLayout(alignment: .leading, spacing: DS.Spacing.md))
             : AnyLayout(HStackLayout(alignment: .center, spacing: DS.Spacing.lg))) {
             ringView(ring)
-            VStack(alignment: .leading, spacing: 10) {
-              ForEach(Array(zip(Macro.allCases, tiles)), id: \.0) { m, tile in
-                macroRow(m, tile)
+            // Bên cạnh vòng: đã ăn, số to — câu thứ hai người dùng hỏi.
+            VStack(alignment: .leading, spacing: 2) {
+              Label(String(localized: "nc.stat.eaten"), systemImage: "fork.knife")
+                .font(DS.TextStyle.caption)
+                .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+              HStack(alignment: .firstTextBaseline, spacing: 3) {
+                Text(verbatim: DiaryView.whole(t.kcal))
+                  .font(.system(size: 30, weight: .bold, design: .rounded).monospacedDigit())
+                  .contentTransition(.numericText(value: t.kcal))
+                Text(String(localized: "nc.kcal"))
+                  .font(DS.TextStyle.footnote)
+                  .foregroundStyle(DS.Color.mutedForeground.swiftUI)
               }
+              .lineLimit(1)
+              .minimumScaleFactor(0.7)
+              Text(String(localized: "nc.percentOfTarget \(Int(ring.percentOfTarget.rounded()))"))
+                .font(DS.TextStyle.caption.weight(.semibold).monospacedDigit())
+                .foregroundStyle(tone(ring.band))
+                .contentTransition(.numericText())
             }
             .frame(maxWidth: .infinity, alignment: .leading)
           }
-          HStack(spacing: 6) {
-            Image(systemName: "fork.knife")
-              .font(.caption.weight(.semibold))
-              .foregroundStyle(Self.accent)
-              .accessibilityHidden(true)
-            Text(String(localized: "nc.eatenLine \(DiaryView.whole(t.kcal)) \(Int(ring.percentOfTarget.rounded()))"))
-              .font(DS.TextStyle.footnote.monospacedDigit())
-              .foregroundStyle(DS.Color.foreground.swiftUI.opacity(0.8))
-              .contentTransition(.numericText())
-              .lineLimit(1)
-              .minimumScaleFactor(0.8)
+          // Macro: bốn vòng nhỏ một hàng (19/10 lần ba — "không thích kiểu vẽ
+          // macro như này"): số gram giữa vòng, tên + mục tiêu bên dưới.
+          (typeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(spacing: DS.Spacing.sm)) : AnyLayout(HStackLayout(spacing: 0))) {
+            ForEach(Array(zip(Macro.allCases, tiles)), id: \.0) { m, tile in
+              macroGauge(m, tile)
+            }
           }
         }
         .contentShape(Rectangle())
@@ -163,37 +174,41 @@ struct NutritionTodayCard: View {
   /// Màu nhấn DUY NHẤT của thẻ (màu bữa) — 19/10: "thẻ bị nhiều màu quá".
   static var accent: Color { MascotRoomView.signalColor(.meal) }
 
-  /// Một hàng macro: nhãn trái, số phải (đã ăn/mục tiêu, hoặc còn lại khi lật),
-  /// thanh 6pt cùng màu nhấn; vượt quá 10 % thì đỏ.
-  private func macroRow(_ m: Macro, _ tile: NutritionToday.Tile) -> some View {
-    let barColor = tile.overHard ? DS.Color.readinessRed.swiftUI : Self.accent
-    let minor = m == .fiber
-    return VStack(alignment: .leading, spacing: 4) {
-      HStack(alignment: .firstTextBaseline, spacing: 4) {
-        Text(verbatim: m.label)
-          .font(minor ? DS.TextStyle.caption : DS.TextStyle.footnote.weight(.semibold))
-          .foregroundStyle(minor ? DS.Color.mutedForeground.swiftUI : DS.Color.foreground.swiftUI)
-          .lineLimit(1)
-        Spacer(minLength: 4)
-        Text(verbatim: showLeft
-          ? "\(tile.leftText) g \(wordText(tile.word))"
-          : "\(Units.display(tile.eaten, locale: .app)) / \(Units.display(tile.target, locale: .app)) g")
-          .font(DS.TextStyle.caption.monospacedDigit())
-          .foregroundStyle(tile.overHard ? DS.Color.readinessRed.swiftUI : DS.Color.mutedForeground.swiftUI)
+  /// Một vòng macro nhỏ: giữa vòng là gram đã ăn (hoặc còn lại khi lật), dưới
+  /// là tên và "/ mục tiêu g". Cùng màu nhấn; vượt quá 10 % thì đỏ.
+  private func macroGauge(_ m: Macro, _ tile: NutritionToday.Tile) -> some View {
+    let color = tile.overHard ? DS.Color.readinessRed.swiftUI : Self.accent
+    return VStack(spacing: 6) {
+      ZStack {
+        Circle().stroke(Self.accent.opacity(0.15), lineWidth: 6)
+        Circle()
+          .trim(from: 0, to: (appeared ? min(100, tile.fill) : 0) / 100)
+          .stroke(color, style: StrokeStyle(lineWidth: 6, lineCap: .round))
+          .rotationEffect(.degrees(-90))
+        Text(verbatim: showLeft ? tile.leftText : Units.display(tile.eaten, locale: .app))
+          .font(.system(.subheadline, design: .rounded).weight(.bold).monospacedDigit())
+          .foregroundStyle(tile.overHard ? DS.Color.readinessRed.swiftUI : DS.Color.foreground.swiftUI)
           .contentTransition(.numericText())
           .lineLimit(1)
-          .minimumScaleFactor(0.7)
+          .minimumScaleFactor(0.6)
+          .padding(.horizontal, 8)
       }
-      GeometryReader { geo in
-        ZStack(alignment: .leading) {
-          Capsule().fill(DS.Color.muted.swiftUI)
-          Capsule().fill(barColor)
-            .frame(width: geo.size.width * (appeared ? min(100, tile.fill) : 0) / 100)
-        }
+      .frame(width: 58, height: 58)
+      VStack(spacing: 0) {
+        Text(verbatim: m.label)
+          .font(DS.TextStyle.caption.weight(.semibold))
+          .foregroundStyle(DS.Color.foreground.swiftUI.opacity(0.85))
+        Text(verbatim: showLeft ? "g \(wordText(tile.word))" : "/\(Units.display(tile.target, locale: .app)) g")
+          .font(DS.TextStyle.caption.monospacedDigit())
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          .contentTransition(.numericText())
       }
-      .frame(height: minor ? 4 : 6)
+      .lineLimit(1)
+      .minimumScaleFactor(0.75)
     }
+    .frame(maxWidth: .infinity)
   }
+
 
   /// Chân thẻ: "Mục tiêu tính thế nào?" (giải thích) và "7 ngày ›" (xu hướng).
   private var footer: some View {
