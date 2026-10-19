@@ -102,3 +102,14 @@ struct WarmupFocusTests {
     #expect(WorkoutFocus.next(rows, p)?.key == "1-0", "không quay lại khởi động đã bỏ")
   }
 }
+
+/// Danh sách chọn bài của builder xếp theo độ khớp khi có chữ tìm (18/10).
+struct BuilderSearchRankTests {
+  @Test func benchPressComesFirst() {
+    let lib = ["Barbell Rollout from Bench", "Flat Bench Leg Pull-In", "Bench Press", "Squat"]
+      .enumerated().map { LibraryExercise(id: "e\($0.offset)", userId: nil, name: $0.element, muscleGroup: "chest", equipment: nil, kind: nil) }
+    #expect(TemplateDraft.visible(lib, group: nil, search: "bench").map(\.name)
+      == ["Bench Press", "Barbell Rollout from Bench", "Flat Bench Leg Pull-In"])
+    #expect(TemplateDraft.visible(lib, group: nil, search: "").map(\.name) == lib.map(\.name), "không tìm: giữ thứ tự")
+  }
+}

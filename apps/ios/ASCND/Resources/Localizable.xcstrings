@@ -4673,29 +4673,6 @@
     }
    }
   },
-  "wb.summary %@ %@ %lld": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "%1$@ · %2$@ · about %3$lld min"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "%1$@ · %2$@ · khoảng %3$lld phút"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "%1$@ · %2$@ · unos %3$lld min"
-     }
-    }
-   }
-  },
   "wb.count.exercise.one": {
    "extractionState": "manual",
    "localizations": {
@@ -5369,19 +5346,111 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "How the last rep should feel. 10 is failure."
+      "value": "RPE = how many more reps you could do before failure: 10 means not one more, 8 means about 2 left. It is not pain — stop if a joint hurts or you feel a sharp pain."
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Rep cuối nên nặng cỡ nào. 10 là hết sức."
+      "value": "RPE = còn bao nhiêu rep nữa thì thất bại: 10 là không thêm được rep nào, 8 là còn khoảng 2. Không phải mức đau — đau khớp hay nhói thì dừng lại."
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Cómo debería sentirse la última repetición. 10 es el fallo."
+      "value": "RPE = cuántas repeticiones más podrías hacer antes del fallo: 10 es ni una más, 8 es unas 2 más. No es dolor: si duele una articulación o sientes un pinchazo, para."
+     }
+    }
+   }
+  },
+  "effort.5": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Very easy — lots left"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Rất nhẹ — còn dư rất nhiều sức"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Muy fácil — te sobra mucho"
+     }
+    }
+   }
+  },
+  "wb.minutes %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "~%lld min"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "~%lld phút"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "~%lld min"
+     }
+    }
+   }
+  },
+  "wb.restEffort %@ %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Rest %1$@ · RPE %2$lld"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nghỉ %1$@ · RPE %2$lld"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Descanso %1$@ · RPE %2$lld"
+     }
+    }
+   }
+  },
+  "wb.exerciseOf %lld %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Exercise %1$lld of %2$lld"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bài %1$lld / %2$lld"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ejercicio %1$lld de %2$lld"
      }
     }
    }

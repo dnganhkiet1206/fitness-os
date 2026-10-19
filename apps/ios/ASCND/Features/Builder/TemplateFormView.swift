@@ -98,54 +98,58 @@ struct TemplateFormView: View {
   }
 
   // MARK: - Bước 1: chọn bài
+  //
+  // Vẽ lại 18/10 (chủ dự án: "vẽ lại mục tạo buổi tập và sheet"): ô tìm + chip
+  // nhóm cơ ghim trên đầu (`.searchable` của iOS 26 nằm ở đáy, đè nút Tiếp);
+  // mỗi bài một hàng có thẻ thiết bị; bài đã chọn mang SỐ THỨ TỰ trong buổi;
+  // đáy màn: số bài đã chọn + Tiếp.
+
+  static let rose = DS.Color.metricRose.swiftUI
+  private var lang: MuscleGroup.Language { MuscleGroup.Language(locale: .app) }
 
   private var pickStep: some View {
     let library = flow.library
     let visible = TemplateDraft.visible(library?.exercises ?? [], group: group, search: search)
-    return VStack(spacing: 0) {
-      ScrollView(.horizontal, showsIndicators: false) {
-        HStack(spacing: DS.Spacing.xs) {
-          chip(String(localized: "wb.all"), on: group == nil) { group = nil }
-          ForEach(MuscleGroup.allCases, id: \.self) { g in
-            chip(Self.muscleName(g), on: group == g) { group = group == g ? nil : g }
-          }
-        }
-        .padding(.horizontal, DS.Spacing.md)
-        .padding(.vertical, DS.Spacing.xs)
-      }
-      List {
+    return ScrollView {
+      LazyVStack(alignment: .leading, spacing: 0) {
         if visible.isEmpty {
           emptyPick(library)
+            .padding(DS.Spacing.md)
         } else {
           ForEach(visible) { ex in
-            Button {
-              draft.toggle(id: ex.id, name: ex.name)
-            } label: {
-              HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                  Text(verbatim: ex.displayName).foregroundStyle(DS.Color.foreground.swiftUI)
-                  if let g = ex.muscleGroup, !g.isEmpty {
-                    Text(verbatim: ex.muscles.map(Self.muscleName).joined(separator: " / "))
-                      .font(DS.TextStyle.caption)
-                      .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-                  }
-                }
-                Spacer()
-                Image(systemName: draft.contains(ex.id) ? "checkmark.circle.fill" : "circle")
-                  .foregroundStyle(draft.contains(ex.id) ? DS.Color.primary.swiftUI : DS.Color.mutedForeground.swiftUI)
-                  .accessibilityHidden(true)
-              }
-              .frame(minHeight: 44)
+            pickRow(ex)
+            if ex.id != visible.last?.id {
+              Divider().padding(.leading, DS.Spacing.md)
             }
-            .accessibilityAddTraits(draft.contains(ex.id) ? [.isButton, .isSelected] : .isButton)
-          }
-          if library != nil {
-            createButton(String(localized: "wb.createExercise"))
           }
         }
       }
-      .searchable(text: $search, prompt: Text("wb.search"))
-      .scrollDismissesKeyboard(.interactively)
+      .dsCard(radius: DS.Radius.lg)
+      .padding(.horizontal, DS.Spacing.md)
+      if !visible.isEmpty, library != nil {
+        createButton(String(localized: "wb.createExercise"))
+          .padding(.horizontal, DS.Spacing.md)
+          .padding(.top, DS.Spacing.sm)
+      }
+      Color.clear.frame(height: DS.Spacing.lg)
+    }
+    .scrollDismissesKeyboard(.interactively)
+    .safeAreaInset(edge: .top, spacing: 0) {
+      VStack(spacing: DS.Spacing.xs) {
+        searchField
+        ScrollView(.horizontal, showsIndicators: false) {
+          HStack(spacing: DS.Spacing.xs) {
+            chip(String(localized: "wb.all"), on: group == nil) { group = nil }
+            ForEach(MuscleGroup.allCases, id: \.self) { g in
+              chip(Self.muscleName(g), on: group == g) { group = group == g ? nil : g }
+            }
+          }
+          .padding(.horizontal, DS.Spacing.md)
+        }
+      }
+      .padding(.vertical, DS.Spacing.sm)
+    }
+    .safeAreaInset(edge: .bottom, spacing: 0) {
       VStack(spacing: DS.Spacing.xs) {
         Text(draft.items.isEmpty ? String(localized: "wb.pickHint") : String(localized: "wb.selected \(draft.items.count)"))
           .font(DS.TextStyle.footnote)
@@ -155,10 +159,104 @@ struct TemplateFormView: View {
           .disabled(draft.items.isEmpty)
           .opacity(draft.items.isEmpty ? 0.5 : 1)
       }
-      .padding(DS.Spacing.md)
-      .background(.bar)
+      .padding(.horizontal, DS.Spacing.md)
+      .padding(.top, DS.Spacing.sm)
+      .padding(.bottom, DS.Spacing.xs)
+      .background(.regularMaterial)
     }
     .sensoryFeedback(.selection, trigger: draft.items.count)
+  }
+
+  private var searchField: some View {
+    HStack(spacing: 10) {
+      Image(systemName: "magnifyingglass")
+        .font(.system(size: 16, weight: .semibold))
+        .foregroundStyle(Self.rose)
+        .accessibilityHidden(true)
+      TextField(text: $search, prompt: Text(String(localized: "wb.search"))) {
+        Text(String(localized: "wb.search"))
+      }
+      .autocorrectionDisabled()
+      .textInputAutocapitalization(.never)
+      .submitLabel(.search)
+      if !search.isEmpty {
+        Button { search = "" } label: {
+          Image(systemName: "xmark.circle.fill")
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .frame(width: 44, height: 44)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text(String(localized: "community.search.clear")))
+      }
+    }
+    .padding(.leading, 18)
+    .padding(.trailing, search.isEmpty ? 18 : 4)
+    .frame(minHeight: 52)
+    .background(Capsule().fill(.regularMaterial))
+    .overlay(Capsule().strokeBorder(Self.rose.opacity(0.55), lineWidth: 1.5))
+    .padding(.horizontal, DS.Spacing.md)
+  }
+
+  /// Một bài: tên theo ngôn ngữ app (tên gốc nhỏ bên dưới), nhóm cơ + thiết bị;
+  /// đã chọn → vòng tô màu mang số thứ tự trong buổi.
+  private func pickRow(_ ex: LibraryExercise) -> some View {
+    let order = draft.items.firstIndex { $0.exerciseId == ex.id }.map { $0 + 1 }
+    let gear = ex.equipment.flatMap { $0.isEmpty ? nil : Equipment.label($0, lang) }
+    let muscles = ex.muscles.map(Self.muscleName).joined(separator: " / ")
+    return Button {
+      draft.toggle(id: ex.id, name: ex.name)
+    } label: {
+      HStack(spacing: DS.Spacing.sm) {
+        VStack(alignment: .leading, spacing: 3) {
+          Text(verbatim: ex.displayName)
+            .font(DS.TextStyle.body)
+            .foregroundStyle(DS.Color.foreground.swiftUI)
+            .lineLimit(2)
+          if ex.displayName != ex.name {
+            Text(verbatim: ex.name)
+              .font(DS.TextStyle.caption)
+              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+              .lineLimit(1)
+          }
+          HStack(spacing: 6) {
+            if !muscles.isEmpty { tag(muscles, tinted: false) }
+            if let gear { tag(gear, tinted: true) }
+          }
+          .padding(.top, 2)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        ZStack {
+          Circle()
+            .fill(order != nil ? Self.rose : Color.clear)
+          Circle()
+            .strokeBorder(order != nil ? Self.rose : DS.Color.border.swiftUI, lineWidth: 1.5)
+          if let order {
+            Text(verbatim: "\(order)")
+              .font(DS.TextStyle.footnote.weight(.bold).monospacedDigit())
+              .foregroundStyle(.white)
+          }
+        }
+        .frame(width: 30, height: 30)
+        .accessibilityHidden(true)
+      }
+      .padding(.horizontal, DS.Spacing.md)
+      .padding(.vertical, DS.Spacing.sm)
+      .frame(minHeight: 56)
+      .contentShape(Rectangle())
+    }
+    .buttonStyle(.plain)
+    .accessibilityAddTraits(order != nil ? [.isButton, .isSelected] : .isButton)
+  }
+
+  private func tag(_ text: String, tinted: Bool) -> some View {
+    Text(verbatim: text)
+      .font(DS.TextStyle.caption.weight(.semibold))
+      .foregroundStyle(tinted ? Self.rose : DS.Color.foreground.swiftUI.opacity(0.75))
+      .lineLimit(1)
+      .padding(.horizontal, 8)
+      .padding(.vertical, 3)
+      .background(Capsule().fill(tinted ? Self.rose.opacity(0.12) : DS.Color.secondary.swiftUI))
   }
 
   @ViewBuilder private func emptyPick(_ library: ExerciseLibrary?) -> some View {
@@ -171,17 +269,19 @@ struct TemplateFormView: View {
         Task { await library.refresh() }
       }
     } else {
-      Text(
-        !q.isEmpty
-          ? String(localized: "wb.noMatch \(q)")
-          : (library?.exercises.isEmpty ?? true) ? String(localized: "wb.libraryEmpty") : String(localized: "wb.noExercises")
-      )
-      .font(DS.TextStyle.footnote)
-      .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-      .frame(maxWidth: .infinity, minHeight: 88)
-      // Ngõ cụt thành lối đi: chữ đã tìm là tên của bài mới.
-      if library != nil {
-        createButton(q.isEmpty ? String(localized: "wb.createExercise") : String(localized: "wb.createNamed \(q)"))
+      VStack(spacing: DS.Spacing.sm) {
+        Text(
+          !q.isEmpty
+            ? String(localized: "wb.noMatch \(q)")
+            : (library?.exercises.isEmpty ?? true) ? String(localized: "wb.libraryEmpty") : String(localized: "wb.noExercises")
+        )
+        .font(DS.TextStyle.footnote)
+        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        .frame(maxWidth: .infinity, minHeight: 60)
+        // Ngõ cụt thành lối đi: chữ đã tìm là tên của bài mới.
+        if library != nil {
+          createButton(q.isEmpty ? String(localized: "wb.createExercise") : String(localized: "wb.createNamed \(q)"))
+        }
       }
     }
   }
@@ -191,87 +291,102 @@ struct TemplateFormView: View {
       creating = CreateExercise(name: search.trimmingCharacters(in: .whitespacesAndNewlines))
     } label: {
       Label(title, systemImage: "plus")
-        .foregroundStyle(DS.Color.primary.swiftUI)
-        .frame(minHeight: 44)
+        .font(DS.TextStyle.footnote.weight(.semibold))
+        .foregroundStyle(Self.rose)
+        .frame(maxWidth: .infinity, minHeight: 48)
+        .background(
+          RoundedRectangle(cornerRadius: DS.Radius.lg, style: .continuous)
+            .strokeBorder(Self.rose.opacity(0.5), style: StrokeStyle(lineWidth: 1.5, dash: [6, 4])))
+        .contentShape(Rectangle())
     }
+    .buttonStyle(.plain)
   }
 
+  /// Chip chọn: đang chọn tô màu Tập luyện, chữ trắng; chưa chọn kính + viền.
   private func chip(_ title: String, on: Bool, action: @escaping () -> Void) -> some View {
     Button(action: action) {
       Text(verbatim: title)
-        .font(DS.TextStyle.footnote.weight(on ? .bold : .regular))
-        .padding(.horizontal, DS.Spacing.sm)
+        .font(DS.TextStyle.footnote.weight(on ? .bold : .medium))
+        .foregroundStyle(on ? Color.white : DS.Color.foreground.swiftUI)
+        .padding(.horizontal, DS.Spacing.md)
+        .frame(minHeight: 40)
+        .background(Capsule().fill(on ? AnyShapeStyle(Self.rose) : AnyShapeStyle(.regularMaterial)))
+        .overlay(Capsule().strokeBorder(on ? Color.clear : DS.Color.border.swiftUI, lineWidth: 1))
         .frame(minHeight: 44)
-        .background(on ? DS.Color.primary.swiftUI.opacity(0.15) : DS.Color.secondary.swiftUI, in: Capsule())
+        .contentShape(Rectangle())
     }
     .buttonStyle(.plain)
     .accessibilityAddTraits(on ? [.isButton, .isSelected] : .isButton)
   }
 
-  // MARK: - Bước 2: tên, loại, số
+  // MARK: - Bước 2: tên, loại, các bài
 
   private var reviewStep: some View {
     let ranked = draft.ranking { id in flow.library?.exercise(id: id)?.muscleGroup }
     let suggested = suggestedName(ranked)
     let kind = draft.type(ranked: ranked)
-    return List {
-      Section {
-        TextField(
-          String(localized: "wb.name.placeholder"),
-          text: Binding(
-            get: { draft.nameTouched ? draft.name : suggested },
-            set: { draft.nameTouched = true; draft.name = $0 }))
-          .font(DS.TextStyle.headline)
-          .frame(minHeight: 44)
-      } footer: {
-        VStack(alignment: .leading, spacing: 4) {
+    return ScrollView {
+      VStack(alignment: .leading, spacing: DS.Spacing.md) {
+        VStack(alignment: .leading, spacing: DS.Spacing.xs) {
+          TextField(
+            String(localized: "wb.name.placeholder"),
+            text: Binding(
+              get: { draft.nameTouched ? draft.name : suggested },
+              set: { draft.nameTouched = true; draft.name = $0 }))
+            .font(DS.TextStyle.title2)
+            .padding(.horizontal, DS.Spacing.md)
+            .frame(minHeight: 56)
+            .dsCard(radius: DS.Radius.lg)
           Text(String(localized: "wb.name.hint"))
-          Text(String(localized: "wb.summary \(exerciseCount) \(setCount) \(draft.estimatedMinutes)"))
+            .font(DS.TextStyle.caption)
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .padding(.horizontal, DS.Spacing.xs)
         }
-      }
-
-      Section {
-        ScrollView(.horizontal, showsIndicators: false) {
-          HStack(spacing: DS.Spacing.xs) {
-            ForEach(TemplateDraft.Kind.allCases, id: \.self) { k in
-              chip(Self.kindName(k), on: kind == k) { draft.pickedType = k }
+        // Tóm tắt nổi bật: bài · set · phút.
+        HStack(spacing: DS.Spacing.sm) {
+          stat(exerciseCount, systemImage: "dumbbell.fill")
+          stat(setCount, systemImage: "square.stack.3d.up.fill")
+          stat(String(localized: "wb.minutes \(draft.estimatedMinutes)"), systemImage: "clock.fill")
+        }
+        VStack(alignment: .leading, spacing: DS.Spacing.xs) {
+          sectionTitle(String(localized: "wb.type"))
+          ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: DS.Spacing.xs) {
+              ForEach(TemplateDraft.Kind.allCases, id: \.self) { k in
+                chip(Self.kindName(k), on: kind == k) { draft.pickedType = k }
+              }
             }
           }
         }
-      } header: {
-        Text(String(localized: "wb.type"))
-      }
-
-      Section {
-        ForEach(Array(draft.items.enumerated()), id: \.offset) { i, e in
-          Button {
-            editing = i
-          } label: {
-            HStack {
-              Text(verbatim: e.exerciseName).foregroundStyle(DS.Color.foreground.swiftUI)
-              Spacer()
-              Text(verbatim: prescription(e))
-                .font(DS.TextStyle.footnote.monospacedDigit())
-                .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-              Image(systemName: "chevron.right")
-                .font(.caption)
-                .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-                .accessibilityHidden(true)
+        VStack(alignment: .leading, spacing: DS.Spacing.xs) {
+          sectionTitle(String(localized: "wb.added"))
+          VStack(spacing: DS.Spacing.sm) {
+            ForEach(Array(draft.items.enumerated()), id: \.offset) { i, e in
+              exerciseCard(i, e)
             }
-            .frame(minHeight: 44)
+            Button {
+              step = 1
+            } label: {
+              Label(String(localized: "wb.addMore"), systemImage: "plus")
+                .font(DS.TextStyle.body.weight(.semibold))
+                .foregroundStyle(Self.rose)
+                .frame(maxWidth: .infinity, minHeight: 52)
+                .background(
+                  RoundedRectangle(cornerRadius: DS.Radius.lg, style: .continuous)
+                    .strokeBorder(Self.rose.opacity(0.5), style: StrokeStyle(lineWidth: 1.5, dash: [6, 4])))
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
           }
         }
-        Button {
-          step = 1
-        } label: {
-          Label(String(localized: "wb.addMore"), systemImage: "plus")
-            .frame(minHeight: 44)
-        }
-      } header: {
-        Text(String(localized: "wb.added"))
       }
-
-      Section {
+      .padding(.horizontal, DS.Spacing.md)
+      .padding(.top, DS.Spacing.sm)
+      .padding(.bottom, DS.Spacing.lg)
+    }
+    .scrollDismissesKeyboard(.interactively)
+    .safeAreaInset(edge: .bottom, spacing: 0) {
+      VStack(spacing: DS.Spacing.xs) {
         if let failure {
           Text(verbatim: failure)
             .font(DS.TextStyle.footnote)
@@ -284,9 +399,78 @@ struct TemplateFormView: View {
         .opacity(draft.items.isEmpty || saving ? 0.5 : 1)
         .accessibilityLabel(Text(String(localized: "wb.save")))
       }
-      .listRowBackground(Color.clear)
+      .padding(.horizontal, DS.Spacing.md)
+      .padding(.top, DS.Spacing.sm)
+      .padding(.bottom, DS.Spacing.xs)
+      .background(.regularMaterial)
     }
-    .scrollDismissesKeyboard(.interactively)
+  }
+
+  private func sectionTitle(_ text: String) -> some View {
+    Text(verbatim: text)
+      .font(DS.TextStyle.footnote.weight(.semibold))
+      .textCase(.uppercase)
+      .tracking(0.5)
+      .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+      .padding(.horizontal, DS.Spacing.xs)
+  }
+
+  private func stat(_ text: String, systemImage: String) -> some View {
+    HStack(spacing: 6) {
+      Image(systemName: systemImage)
+        .font(.system(size: 12, weight: .semibold))
+        .foregroundStyle(Self.rose)
+        .accessibilityHidden(true)
+      Text(verbatim: text)
+        .font(DS.TextStyle.footnote.weight(.semibold).monospacedDigit())
+        .lineLimit(1)
+        .minimumScaleFactor(0.8)
+    }
+    .frame(maxWidth: .infinity, minHeight: 40)
+    .background(Self.rose.opacity(0.10), in: RoundedRectangle(cornerRadius: DS.Radius.md, style: .continuous))
+  }
+
+  /// Một bài trong buổi: số thứ tự, tên, công thức "2 khởi động + 3 × 10 · 20 kg",
+  /// dòng nghỉ · RPE; chạm để sửa.
+  private func exerciseCard(_ i: Int, _ e: TemplateExercise) -> some View {
+    Button {
+      editing = i
+    } label: {
+      HStack(spacing: DS.Spacing.sm) {
+        Text(verbatim: "\(i + 1)")
+          .font(DS.TextStyle.footnote.weight(.bold).monospacedDigit())
+          .foregroundStyle(Self.rose)
+          .frame(width: 32, height: 32)
+          .background(Self.rose.opacity(0.12), in: Circle())
+          .accessibilityHidden(true)
+        VStack(alignment: .leading, spacing: 3) {
+          Text(verbatim: displayName(e))
+            .font(DS.TextStyle.body.weight(.semibold))
+            .foregroundStyle(DS.Color.foreground.swiftUI)
+            .lineLimit(2)
+          Text(verbatim: prescription(e))
+            .font(DS.TextStyle.footnote.monospacedDigit())
+            .foregroundStyle(DS.Color.foreground.swiftUI.opacity(0.8))
+          Text(verbatim: String(localized: "wb.restEffort \(RestTimer.label(seconds: e.restSeconds)) \(e.rpe)"))
+            .font(DS.TextStyle.caption.monospacedDigit())
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        Image(systemName: "chevron.right")
+          .font(.footnote.weight(.semibold))
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          .accessibilityHidden(true)
+      }
+      .padding(DS.Spacing.md)
+      .dsCard(radius: DS.Radius.lg)
+      .contentShape(Rectangle())
+    }
+    .buttonStyle(.plain)
+  }
+
+  /// Tên theo ngôn ngữ app khi bài có trong thư viện; không thì tên đã lưu.
+  private func displayName(_ e: TemplateExercise) -> String {
+    e.exerciseId.flatMap { flow.library?.exercise(id: $0)?.displayName } ?? e.exerciseName
   }
 
   // MARK: - Sửa một bài
@@ -295,60 +479,90 @@ struct TemplateFormView: View {
     if draft.items.indices.contains(index) {
       let e = draft.items[index]
       NavigationStack {
-        List {
-          Section {
-            Text(verbatim: e.exerciseName).font(DS.TextStyle.headline)
-            Text(verbatim: "\(index + 1) / \(draft.items.count)")
+        ScrollView {
+          VStack(alignment: .leading, spacing: DS.Spacing.md) {
+            VStack(alignment: .leading, spacing: 2) {
+              Text(String(localized: "wb.exerciseOf \(index + 1) \(draft.items.count)"))
+                .font(DS.TextStyle.caption.weight(.semibold))
+                .textCase(.uppercase)
+                .tracking(0.5)
+                .foregroundStyle(Self.rose)
+              Text(verbatim: displayName(e))
+                .font(DS.TextStyle.title2)
+            }
+            .accessibilityElement(children: .combine)
+
+            VStack(spacing: 0) {
+              counter(String(localized: "wb.sets"), value: "\(e.sets)",
+                      minus: e.sets > 1, plus: e.sets < 20) { draft.patch(index, sets: e.sets + $0) }
+              Divider()
+              counter(String(localized: "wb.reps"), value: "\(e.reps)",
+                      minus: e.reps > 1, plus: e.reps < 100) { draft.patch(index, reps: e.reps + $0) }
+              Divider()
+              counter(
+                String(localized: "wb.load \(unit.label)"), value: Units.text(unit.display(e.weightKg)),
+                hint: e.weightKg > 0 ? nil : String(localized: "wb.bodyweight"), minus: e.weightKg > 0, plus: true
+              ) { draft.patch(index, weightKg: TemplateDraft.stepLoad(e.weightKg, unit: unit, up: $0 > 0)) }
+              Divider()
+              counter(String(localized: "wb.rest"), value: RestTimer.label(seconds: e.restSeconds),
+                      minus: e.restSeconds > 0, plus: e.restSeconds < 600) {
+                draft.patch(index, restSeconds: min(600, max(0, e.restSeconds + 15 * $0)))
+              }
+            }
+            .padding(.horizontal, DS.Spacing.md)
+            .dsCard(radius: DS.Radius.lg)
+
+            // Khởi động: thẻ riêng, ngọn lửa — ghi lại nhưng không tính.
+            counter(
+              String(localized: "wb.warmupSets"), value: "\(e.warmupSets)",
+              hint: String(localized: "wb.warmupSets.hint"), icon: "flame.fill",
+              minus: e.warmupSets > 0, plus: e.warmupSets < WorkoutPlanning.maxWarmupSets
+            ) { draft.patch(index, warmupSets: e.warmupSets + $0) }
+              .padding(.horizontal, DS.Spacing.md)
+              .dsCard(radius: DS.Radius.lg)
+
+            VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+              Text(String(localized: "wb.effort"))
+                .font(DS.TextStyle.headline)
+              EffortPicker(values: 5...10, value: e.rpe) { draft.patch(index, rpe: $0) }
+              // RPE là khoảng cách tới thất bại, không phải mức đau (18/10).
+              Label {
+                Text(String(localized: "wb.effort.hint"))
+              } icon: {
+                Image(systemName: "info.circle")
+              }
               .font(DS.TextStyle.caption)
               .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-          }
-          Section {
-            Stepper(value: Binding(get: { e.sets }, set: { draft.patch(index, sets: $0) }), in: 1...20) {
-              row(String(localized: "wb.sets"), value: "\(e.sets)")
+              .fixedSize(horizontal: false, vertical: true)
             }
-            // Set khởi động (18/10): ghi lại nhưng không tính khối lượng / kỷ lục.
-            Stepper(
-              value: Binding(get: { e.warmupSets }, set: { draft.patch(index, warmupSets: $0) }),
-              in: 0...WorkoutPlanning.maxWarmupSets
-            ) {
-              row(String(localized: "wb.warmupSets"), value: "\(e.warmupSets)", hint: String(localized: "wb.warmupSets.hint"))
+            .padding(DS.Spacing.md)
+            .dsCard(radius: DS.Radius.lg)
+
+            HStack(spacing: DS.Spacing.sm) {
+              sheetAction(String(localized: "wb.moveUp"), systemImage: "arrow.up", enabled: index > 0) {
+                draft.move(from: index, to: index - 1)
+                editing = index - 1
+              }
+              sheetAction(String(localized: "wb.moveDown"), systemImage: "arrow.down", enabled: index < draft.items.count - 1) {
+                draft.move(from: index, to: index + 1)
+                editing = index + 1
+              }
             }
-            Stepper(value: Binding(get: { e.reps }, set: { draft.patch(index, reps: $0) }), in: 1...100) {
-              row(String(localized: "wb.reps"), value: "\(e.reps)")
-            }
-            Stepper(
-              onIncrement: { draft.patch(index, weightKg: TemplateDraft.stepLoad(e.weightKg, unit: unit, up: true)) },
-              onDecrement: { draft.patch(index, weightKg: TemplateDraft.stepLoad(e.weightKg, unit: unit, up: false)) }
-            ) {
-              row(
-                String(localized: "wb.load \(unit.label)"),
-                value: Units.text(unit.display(e.weightKg)),
-                hint: e.weightKg > 0 ? nil : String(localized: "wb.bodyweight"))
-            }
-            Stepper(value: Binding(get: { e.restSeconds }, set: { draft.patch(index, restSeconds: $0) }), in: 0...600, step: 15) {
-              row(String(localized: "wb.rest"), value: RestTimer.label(seconds: e.restSeconds))
-            }
-            Stepper(value: Binding(get: { e.rpe }, set: { draft.patch(index, rpe: $0) }), in: 5...10) {
-              row(String(localized: "wb.effort"), value: "\(e.rpe)", hint: String(localized: "wb.effort.hint"))
-            }
-          }
-          Section {
-            Button(String(localized: "wb.moveUp")) {
-              draft.move(from: index, to: index - 1)
-              editing = index - 1
-            }
-            .disabled(index == 0)
-            Button(String(localized: "wb.moveDown")) {
-              draft.move(from: index, to: index + 1)
-              editing = index + 1
-            }
-            .disabled(index >= draft.items.count - 1)
-            Button(String(localized: "wb.remove"), role: .destructive) {
+            Button(role: .destructive) {
               draft.remove(at: index)
               editing = nil
+            } label: {
+              Label(String(localized: "wb.remove"), systemImage: "trash")
+                .font(DS.TextStyle.footnote.weight(.semibold))
+                .foregroundStyle(DS.Color.destructive.swiftUI)
+                .frame(maxWidth: .infinity, minHeight: 48)
+                .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
           }
+          .padding(DS.Spacing.md)
         }
+        .ascndPage()
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
           ToolbarItem(placement: .confirmationAction) {
@@ -356,23 +570,69 @@ struct TemplateFormView: View {
           }
         }
       }
-      .presentationDetents([.medium, .large])
+      .presentationDetents([.large])
     }
   }
 
-  private func row(_ label: String, value: String, hint: String? = nil) -> some View {
-    HStack {
+  /// Một hàng đếm: nhãn (+ chú thích) bên trái, − số + bên phải.
+  private func counter(
+    _ label: String, value: String, hint: String? = nil, icon: String? = nil, minus: Bool, plus: Bool,
+    step: @escaping (Int) -> Void
+  ) -> some View {
+    HStack(spacing: DS.Spacing.sm) {
+      if let icon {
+        Image(systemName: icon)
+          .foregroundStyle(Self.rose)
+          .accessibilityHidden(true)
+      }
       VStack(alignment: .leading, spacing: 2) {
-        Text(verbatim: label)
+        Text(verbatim: label).font(DS.TextStyle.body)
         if let hint {
           Text(verbatim: hint)
             .font(DS.TextStyle.caption)
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .fixedSize(horizontal: false, vertical: true)
         }
       }
-      Spacer()
-      Text(verbatim: value).font(DS.TextStyle.body.monospacedDigit())
+      .frame(maxWidth: .infinity, alignment: .leading)
+      roundButton("minus", enabled: minus) { step(-1) }
+        .accessibilityLabel(Text(verbatim: "\(label) −"))
+      Text(verbatim: value)
+        .font(DS.TextStyle.headline.monospacedDigit())
+        .frame(minWidth: 52)
+        .multilineTextAlignment(.center)
+        .contentTransition(.numericText())
+      roundButton("plus", enabled: plus) { step(1) }
+        .accessibilityLabel(Text(verbatim: "\(label) +"))
     }
+    .frame(minHeight: 60)
+    .accessibilityElement(children: .contain)
+  }
+
+  private func roundButton(_ symbol: String, enabled: Bool, action: @escaping () -> Void) -> some View {
+    Button(action: action) {
+      Image(systemName: symbol)
+        .font(.system(size: 14, weight: .bold))
+        .foregroundStyle(enabled ? Self.rose : DS.Color.mutedForeground.swiftUI.opacity(0.4))
+        .frame(width: 36, height: 36)
+        .background(Self.rose.opacity(enabled ? 0.12 : 0.05), in: Circle())
+        .frame(width: 44, height: 44)
+        .contentShape(Rectangle())
+    }
+    .buttonStyle(.plain)
+    .disabled(!enabled)
+  }
+
+  private func sheetAction(_ title: String, systemImage: String, enabled: Bool, action: @escaping () -> Void) -> some View {
+    Button(action: action) {
+      Label(title, systemImage: systemImage)
+        .font(DS.TextStyle.footnote.weight(.semibold))
+        .foregroundStyle(enabled ? DS.Color.foreground.swiftUI : DS.Color.mutedForeground.swiftUI.opacity(0.5))
+        .frame(maxWidth: .infinity, minHeight: 48)
+        .background(DS.Color.secondary.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.md, style: .continuous))
+    }
+    .buttonStyle(.plain)
+    .disabled(!enabled)
   }
 
   // MARK: - Chữ

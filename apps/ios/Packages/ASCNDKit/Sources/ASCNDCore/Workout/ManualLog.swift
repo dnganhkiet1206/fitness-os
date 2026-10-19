@@ -492,21 +492,9 @@ public final class ManualLogController {
   public static func suggestions(for query: String, in exercises: [LibraryExercise], limit: Int = 5) -> [LibraryExercise] {
     let q = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
     guard !q.isEmpty else { return Array(exercises.prefix(limit)) }
-    // Xếp hạng (18/10 — thư viện ~900 bài, "bench" từng ra "Barbell Rollout from
-    // Bench" trước Bench Press): tên bắt đầu bằng chữ gõ → một từ bắt đầu bằng
-    // chữ gõ → chứa chữ gõ → chỉ khớp chữ tìm bỏ dấu (tên vi / es). Cùng hạng
-    // giữ thứ tự thư viện.
-    func rank(_ e: LibraryExercise) -> Int? {
-      let names = [e.name.lowercased(), e.displayName.lowercased()]
-      if names.contains(q) { return nil }
-      if names.contains(where: { $0.hasPrefix(q) }) { return 0 }
-      let words = names.flatMap { $0.split(whereSeparator: { !$0.isLetter && !$0.isNumber }) }
-      if words.contains(where: { $0.hasPrefix(q) }) { return 1 }
-      if names.contains(where: { $0.contains(q) }) { return 2 }
-      return ExerciseCatalog.matches(e, q) ? 3 : nil
-    }
-    let ranked = exercises.enumerated().compactMap { i, e in rank(e).map { (r: $0, i: i, e: e) } }
-    return ranked.sorted { ($0.r, $0.i) < ($1.r, $1.i) }.prefix(limit).map(\.e)
+    // Xếp hạng chung (`ExerciseCatalog.ranked`); bỏ bài trùng đúng chữ gõ.
+    let pool = exercises.filter { $0.name.lowercased() != q && $0.displayName.lowercased() != q }
+    return Array(ExerciseCatalog.ranked(pool, query: q).prefix(limit))
   }
 
   /// Ô tạ → kg. Trống / không phải số → 0 (`Number(x) || 0`: bodyweight).

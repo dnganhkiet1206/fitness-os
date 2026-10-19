@@ -158,13 +158,12 @@ public struct TemplateDraft: Sendable, Hashable {
     Self.estimatedMinutes(items.map { ($0.sets, $0.reps, $0.restSeconds) })
   }
 
-  /// `visible` (`:302`): nhóm đang chọn và chữ tìm (chứa, không phân biệt
-  /// hoa thường); không cắt số lượng.
+  /// `visible` (`:302`): nhóm đang chọn và chữ tìm (không phân biệt hoa
+  /// thường); không cắt số lượng. Có chữ tìm thì xếp theo độ khớp (18/10).
   public static func visible(_ library: [LibraryExercise], group: MuscleGroup?, search: String) -> [LibraryExercise] {
     let q = search.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-    return library.filter { e in
-      (group.map { e.muscles.contains($0) } ?? true) && ExerciseCatalog.matches(e, q)
-    }
+    let inGroup = library.filter { e in group.map { e.muscles.contains($0) } ?? true }
+    return ExerciseCatalog.ranked(inGroup, query: q)
   }
 
   /// Nút ± của ô tạ (`workout-set-sheet.tsx:163`): bước 2.5 kg / 5 lb, kẹp
