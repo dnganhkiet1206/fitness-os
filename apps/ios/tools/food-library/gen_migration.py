@@ -87,7 +87,9 @@ def kind(x):
         return "bodyweight"
     if x["mechanic"] in ("compound", "isolation"):
         return x["mechanic"]
-    return None
+    # Không để NULL (gate "trí tuệ bài tập": bài app phát hành sẵn phải có loại,
+    # không rơi xuống suy luận): cardio đo bằng thời gian, còn lại là bài nhiều khớp.
+    return "timed" if x["category"] == "cardio" else "compound"
 
 
 L = []
@@ -168,6 +170,7 @@ w("   instructions_en, image_paths, search_text)")
 w("VALUES")
 rows = []
 skipped = []
+by_kind = {}
 for i, x in enumerate(ex):
     if fold(x["name"]) in OLD_FOLD:
         skipped.append(x["name"])
@@ -177,6 +180,7 @@ for i, x in enumerate(ex):
     mg = "cardio" if x["category"] == "cardio" else MUSCLE.get(prim, "abs")
     st = fold(f"{x['name']} {vi} {es}")
     k = kind(x)
+    by_kind.setdefault(k, []).append(x["name"])
     rows.append(
         f"  (NULL, {q(x['name'])}, {q(vi_name(x['name'], vi))}, {q(x['name'])}, {q(es)}, {q(mg)}, {q(EQUIP[x['equipment']])}, {q(k)}, "
         f"'free_exercise_db', {q(x['id'])}, {arr(x['instructions'])}, {arr(x['images'])}, {q(st)})")
@@ -186,5 +190,13 @@ w("  name_vi = EXCLUDED.name_vi, name_en = EXCLUDED.name_en, name_es = EXCLUDED.
 w("  muscle_group = EXCLUDED.muscle_group, equipment = EXCLUDED.equipment, exercise_kind = EXCLUDED.exercise_kind,")
 w("  instructions_en = EXCLUDED.instructions_en, image_paths = EXCLUDED.image_paths,")
 w("  search_text = EXCLUDED.search_text, updated_at = now();")
+w("")
+w("-- Loại động tác khai báo theo tên (luật gate `exercise-intelligence` #14: mọi bài")
+w("-- seed phải được một câu SET exercise_kind gọi tên). Trùng với giá trị INSERT ở trên;")
+w("-- chạy lại vô hại.")
+for k in sorted(by_kind):
+    names = ", ".join(q(n) for n in sorted(by_kind[k]))
+    w(f"UPDATE public.exercises SET exercise_kind = '{k}'")
+    w(f"  WHERE source = 'free_exercise_db' AND name IN ({names});")
 OUT.write_text("\n".join(L) + "\n", encoding="utf-8")
 print("foods", len(foods), "exercises", len(rows), "skipped (already seeded)", skipped)
