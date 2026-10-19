@@ -485,6 +485,9 @@ final class AppServices {
 
   /// Ghi bữa ăn (#527 Phase 3 · 3.2): tìm món / món gần đây đọc server; LƯU
   /// luôn qua outbox kind `meal` (như RN `RECORD`), gửi ngay khi có mạng.
+  /// Gọi edge function (19/10: "Ghi hôm nay" nhờ AI hiểu câu kể).
+  var edge: (any EdgeCaller)? { backend.map(SupabaseEdgeCaller.init(backend:)) }
+
   func makeMealLogger(userId: String, date: LocalDate?, mealType: String?) -> MealLogger? {
     guard let backend else { return nil }
     let sync = self.sync

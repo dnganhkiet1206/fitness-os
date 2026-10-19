@@ -158,6 +158,7 @@ struct TellKoaSheet: View {
       try? await Task.sleep(for: .milliseconds(350))
       guard !Task.isCancelled else { return }
       reparse()
+      await understand()
     }
     .onDisappear { dictation.stop() }
     .sheet(item: $followUp) { f in
@@ -251,6 +252,15 @@ struct TellKoaSheet: View {
 
   @ViewBuilder private var parsedList: some View {
     let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+    if thinking {
+      Label {
+        Text("logday.understanding").font(DS.TextStyle.footnote)
+      } icon: {
+        IntelligenceMark(size: 14)
+      }
+      .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+      .symbolEffect(.pulse, isActive: !reduceMotion)
+    }
     if !included.isEmpty {
       Text("tellkoa.found").font(DS.TextStyle.footnote.weight(.semibold)).foregroundStyle(DS.Color.mutedForeground.swiftUI)
       VStack(spacing: 0) {
@@ -563,6 +573,9 @@ struct TellKoaSheet: View {
   }
 
   @State private var planBook: MealPlanBook?
+  /// Câu AI đã đọc xong (không gọi lại cho cùng câu) và trạng thái "đang hiểu".
+  @State private var understood = ""
+  @State private var thinking = false
 
   // Ngủ
   @ViewBuilder private func sleepRow(_ s: SleepEdit) -> some View {
@@ -760,7 +773,7 @@ struct TellKoaSheet: View {
         .background(Capsule().fill(DS.Color.foreground.swiftUI))
       }
       .buttonStyle(TodayPressStyle())
-      .disabled(saving || included.isEmpty || unanswered || dictation.isListening)
+      .disabled(saving || included.isEmpty || unanswered || dictation.isListening || thinking)
       .padding(.top, 2)
       .opacity(included.isEmpty || unanswered ? 0.45 : 1)
       if unanswered, !included.isEmpty {
@@ -910,9 +923,39 @@ struct TellKoaSheet: View {
 
   // MARK: - Đọc câu
 
+  /// AI hiểu câu kể (19/10, chủ dự án: "Koa vẫn chưa đủ hiểu"): luật trên máy hiện
+  /// ngay; khi người dùng ngừng gõ / nói, `ai-log-parse` đọc lại cả câu và kết quả
+  /// của nó thay vào (nếu đọc được). Mất mạng / hết lượt / lỗi: giữ kết quả luật.
+  private func understand() async {
+    let asked = text.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard asked.count >= 6, asked != understood, !dictation.isListening, services.sync.online,
+      let edge = services.edge
+    else { return }
+    try? await Task.sleep(for: .milliseconds(450))
+    guard !Task.isCancelled else { return }
+    thinking = true
+    defer { thinking = false }
+    let hour = Calendar.current.component(.hour, from: Date())
+    let body: [String: JSONValue] = ["text": .string(asked), "hour": .number(Double(hour))]
+    guard let reply = try? await edge.call(.logParse, body: body), !Task.isCancelled,
+      text.trimmingCharacters(in: .whitespacesAndNewlines) == asked,
+      let r = SpokenLog.fromAI(reply, hour: hour)
+    else { return }
+    understood = asked
+    // AI không thấy gì mà luật thấy: giữ luật (không xoá điều người dùng vừa thấy).
+    guard !r.items.isEmpty || result.items.isEmpty else { return }
+    apply(r)
+  }
+
   private func reparse() {
     let hour = Calendar.current.component(.hour, from: Date())
     let r = SpokenLog.parse(text, hour: hour, weightUnit: weightUnit)
+    // Câu vừa được AI đọc thì giữ kết quả AI.
+    guard r != result, text.trimmingCharacters(in: .whitespacesAndNewlines) != understood else { return }
+    apply(r)
+  }
+
+  private func apply(_ r: SpokenLog.Result) {
     guard r != result else { return }
     result = r
     confirmedQuestion = false

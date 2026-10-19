@@ -53892,6 +53892,29 @@
     }
    }
   },
+  "logday.understanding": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa is reading what you said…"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa đang hiểu câu của bạn…"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa está entendiendo lo que dijiste…"
+     }
+    }
+   }
+  },
   "logday.mic.tap": {
    "extractionState": "manual",
    "localizations": {

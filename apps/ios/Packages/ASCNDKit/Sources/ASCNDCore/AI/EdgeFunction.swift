@@ -17,6 +17,8 @@ public enum EdgeFunction {
     case smartNudges = "ai-smart-nudges"
     case coach = "ai-coach"
     case coachMemory = "ai-coach-memory"
+    /// "Ghi hôm nay": câu kể → các mục (19/10).
+    case logParse = "ai-log-parse"
     case verifyPurchase = "verify-purchase"
     case storeWebhook = "store-webhook"
     case deleteAccount = "delete-account"

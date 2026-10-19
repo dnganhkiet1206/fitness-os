@@ -29,7 +29,7 @@ const problems = [];
 
 /* ── 1. không lỗi nào mang chữ của server ra client ── */
 {
-  const fns = ['ai-coach', 'ai-coach-memory', 'ai-meal-suggest', 'ai-smart-nudges', 'ai-weekly-review', 'scan-food'];
+  const fns = ['ai-coach', 'ai-coach-memory', 'ai-log-parse', 'ai-meal-suggest', 'ai-smart-nudges', 'ai-weekly-review', 'scan-food'];
   for (const f of fns) {
     const code = strip(read(`${f}/index.ts`));
     if (/(Response|json)\([^)]{0,120}e\.message/.test(code)) {
@@ -121,7 +121,7 @@ const problems = [];
    kèm bảy ngày dữ liệu cùng tính là `calls = 1`. "Dùng bao nhiêu trả bấy nhiêu"
    cần một con số tỉ lệ với cái đã tiêu. */
 {
-  const fns = ['ai-coach', 'ai-coach-memory', 'ai-meal-suggest', 'ai-smart-nudges', 'ai-weekly-review', 'scan-food'];
+  const fns = ['ai-coach', 'ai-coach-memory', 'ai-log-parse', 'ai-meal-suggest', 'ai-smart-nudges', 'ai-weekly-review', 'scan-food'];
   for (const f of fns) {
     const code = strip(read(`${f}/index.ts`));
     if (!/aiGate\(supabase, "/.test(code)) {
