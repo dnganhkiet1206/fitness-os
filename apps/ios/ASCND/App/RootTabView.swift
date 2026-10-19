@@ -149,6 +149,9 @@ private struct QuickLogBar: ViewModifier {
   var askCoach: (() -> Void)?
   let open: (DeepLink.Screen) -> Void
   @State private var picking = false
+  /// "Kể cho Koa" (18/10): nút ASCND Intelligence của thanh mở màn ghi bằng lời.
+  @State private var telling = false
+  @Environment(AppServices.self) private var services
   /// Màn chọn trong bảng — mở sau khi bảng đóng hẳn (hai sheet không chồng nhau).
   @State private var chosen: DeepLink.Screen?
 
@@ -158,13 +161,14 @@ private struct QuickLogBar: ViewModifier {
       // thì mất vị trí điều hướng của các tab); 26.0 giữ thanh như cũ.
       Group {
         if #available(iOS 26.1, *) {
-          content.tabViewBottomAccessory(isEnabled: !hidden) { QuickLogAccessory(askCoach: askCoach) { picking = true } }
+          content.tabViewBottomAccessory(isEnabled: !hidden) { QuickLogAccessory(tell: { telling = true }) { picking = true } }
         } else {
-          content.tabViewBottomAccessory { QuickLogAccessory(askCoach: askCoach) { picking = true } }
+          content.tabViewBottomAccessory { QuickLogAccessory(tell: { telling = true }) { picking = true } }
         }
       }
       .tabBarMinimizeBehavior(.onScrollDown)
       .modifier(sheet)
+      .modifier(tellSheet)
     } else {
       // iOS 18–25 (15/10, chủ dự án: "làm nút + cho máy cũ luôn"): không có thanh
       // phụ — một nút "+" tròn nổi ở góc phải, ngay trên thanh tab, mở cùng bảng.
@@ -173,6 +177,7 @@ private struct QuickLogBar: ViewModifier {
           if !hidden { plusButton }
         }
         .modifier(sheet)
+        .modifier(tellSheet)
     }
   }
 
@@ -192,8 +197,10 @@ private struct QuickLogBar: ViewModifier {
   }
 
   private var sheet: QuickLogSheetHost {
-    QuickLogSheetHost(picking: $picking, chosen: $chosen, askCoach: askCoach, open: open)
+    QuickLogSheetHost(picking: $picking, chosen: $chosen, askCoach: askCoach, tell: { telling = true }, open: open)
   }
+
+  private var tellSheet: TellKoaHost { TellKoaHost(telling: $telling) }
 }
 
 /// Đếm các màn đang ẩn dải Ghi nhanh (15/10, chủ dự án: không để Ghi nhanh trong
@@ -229,21 +236,41 @@ extension View {
   func hidesQuickLog() -> some View { modifier(HidesQuickLog()) }
 }
 
+/// Màn "Kể cho Koa" — mở từ nút ASCND Intelligence của thanh Ghi nhanh, hay hàng
+/// "Kể cho Koa" trong bảng (máy chưa có thanh phụ).
+private struct TellKoaHost: ViewModifier {
+  @Binding var telling: Bool
+  @Environment(AppServices.self) private var services
+
+  func body(content: Content) -> some View {
+    content.sheet(isPresented: $telling) {
+      if let userId = services.session.session?.userId {
+        TellKoaSheet(userId: userId)
+          .onAppear { Telemetry.capture(.quickLogPick, ["target": "tell_koa"]) }
+      }
+    }
+  }
+}
+
 /// Bảng 5 ô của "Ghi nhanh" — chung cho thanh phụ (iOS 26) và nút nổi (máy cũ).
 private struct QuickLogSheetHost: ViewModifier {
   @Binding var picking: Bool
   @Binding var chosen: DeepLink.Screen?
   let askCoach: (() -> Void)?
+  let tell: () -> Void
   let open: (DeepLink.Screen) -> Void
   /// "Hỏi Koa Coach" đã chạm — mở sau khi bảng đóng hẳn, như `chosen`.
   @State private var coachChosen = false
+  @State private var tellChosen = false
 
   func body(content: Content) -> some View {
     content.sheet(isPresented: $picking, onDismiss: {
       if let chosen { open(chosen) }
       if coachChosen { askCoach?() }
+      if tellChosen { tell() }
       chosen = nil
       coachChosen = false
+      tellChosen = false
     }) {
       QuickLogSheet(
         pick: {
@@ -258,6 +285,10 @@ private struct QuickLogSheetHost: ViewModifier {
             Telemetry.capture(.quickLogPick, ["target": "coach"])
           }
         },
+        tell: {
+          tellChosen = true
+          picking = false
+        },
         close: { picking = false }
       )
       .onAppear { Telemetry.capture(.quickLogOpened) }
@@ -270,9 +301,9 @@ private struct QuickLogSheetHost: ViewModifier {
 /// Buổi tập. (Một `Menu` trong thanh phụ không mở được bằng chạm — dùng nút + bảng.)
 @available(iOS 26, *)
 private struct QuickLogAccessory: View {
-  /// Nút ASCND Intelligence ở đầu phải: chạm thẳng vào Koa Coach (15/10, chủ dự
-  /// án: "thêm nút AI vào ô ghi nhanh để người dùng đỡ phải đi tìm").
-  var askCoach: (() -> Void)?
+  /// Nút ASCND Intelligence ở đầu phải (18/10, chủ dự án): mở "Kể cho Koa" — gõ
+  /// hay nói là ghi. Koa Coach vẫn ở bảng "+" và tab Trợ lý.
+  let tell: () -> Void
   let tap: () -> Void
   @Environment(\.tabViewBottomAccessoryPlacement) private var placement
 
@@ -281,10 +312,9 @@ private struct QuickLogAccessory: View {
       log
       // Thu gọn: "+" ở góc trái, AI ở góc phải (16/10, chủ dự án: tách ra 2 góc).
       if placement == .inline { Spacer(minLength: 0) }
-      if let askCoach {
+      Group {
         Button {
-          Telemetry.capture(.quickLogPick, ["target": "coach"])
-          askCoach()
+          tell()
         } label: {
           IntelligenceMark(size: 18)
             .frame(width: 34, height: 34)
@@ -295,7 +325,7 @@ private struct QuickLogAccessory: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(Text("quicklog.coach"))
+        .accessibilityLabel(Text("tellkoa.title"))
       }
     }
   }
@@ -319,7 +349,7 @@ private struct QuickLogAccessory: View {
         }
       }
       .padding(.leading, placement == .inline ? 8 : 16)
-      .padding(.trailing, askCoach == nil ? 16 : 6)
+      .padding(.trailing, 6)
       // Thu gọn (inline) thanh hẹp: không giãn hết bề ngang, để nút AI còn chỗ.
       .frame(maxWidth: placement == .inline ? nil : .infinity, maxHeight: .infinity, alignment: .leading)
       .contentShape(Rectangle())
@@ -334,6 +364,8 @@ private struct QuickLogSheet: View {
   let pick: (DeepLink.Screen) -> Void
   /// "Hỏi Koa Coach" — `nil` khi AI chưa có trên máy chủ (hàng ẩn).
   var askCoach: (() -> Void)?
+  /// "Kể cho Koa" — ghi bằng lời.
+  let tell: () -> Void
   /// Đóng bảng (sau khi "Ăn lại" đã ghi xong).
   let close: () -> Void
   @Environment(AppServices.self) private var services
@@ -404,13 +436,14 @@ private struct QuickLogSheet: View {
           .buttonStyle(.plain)
         }
       }
+      tellRow
       if let askCoach { coachRow(askCoach) }
     }
     .padding(.horizontal, DS.Spacing.lg)
     .padding(.top, DS.Spacing.lg)
     .frame(maxHeight: .infinity, alignment: .top)
     .presentationDetents([.height(
-      (recentMeals.isEmpty ? 250 : 400) + (askCoach == nil ? 0 : 76) + (yesterday.isEmpty && !copiedYesterday ? 0 : 84))])
+      (recentMeals.isEmpty ? 250 : 400) + 76 + (askCoach == nil ? 0 : 76) + (yesterday.isEmpty && !copiedYesterday ? 0 : 84))])
     // Nền đặc màu trang (16/10, chủ dự án: "thẻ khó nhìn"): bảng kính trong để lộ
     // trang Hôm nay phía sau, thẻ kính đặt lên đó chìm mất mép.
     .presentationBackground(DS.Color.background.swiftUI)
@@ -421,6 +454,33 @@ private struct QuickLogSheet: View {
       logger = l
       await l?.loadRecents()
     }
+  }
+
+  /// Hàng "Kể cho Koa": gõ hay nói cả ngày một lần.
+  private var tellRow: some View {
+    Button(action: tell) {
+      HStack(spacing: 12) {
+        Image(systemName: "mic.fill")
+          .font(.system(size: 18, weight: .semibold))
+          .foregroundStyle(DS.Color.foreground.swiftUI)
+          .frame(width: 44, height: 44)
+          .background(Intelligence.wash, in: Circle())
+        VStack(alignment: .leading, spacing: 3) {
+          Text("tellkoa.title").font(.system(size: 15, weight: .bold))
+            .foregroundStyle(DS.Color.foreground.swiftUI)
+          Text("tellkoa.row.hint").font(.system(size: 12))
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        }
+        Spacer(minLength: 0)
+        Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold))
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+      }
+      .padding(12)
+      .quickLogCard()
+      .contentShape(Rectangle())
+    }
+    .buttonStyle(TodayPressStyle())
+    .accessibilityElement(children: .combine)
   }
 
   /// Hàng "Hỏi Koa Coach": cùng một bảng với các lối ghi — máy cũ (không có thanh

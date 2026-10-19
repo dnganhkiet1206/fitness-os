@@ -1,0 +1,121 @@
+{
+ "sourceLanguage": "en",
+ "version": "1.0",
+ "strings": {
+  "NSMicrophoneUsageDescription": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "ASCND uses the microphone only while the mic is on in Tell Koa, so you can say what you did instead of typing. Audio is not stored."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "ASCND chỉ dùng micro khi bạn bật micro trong Kể cho Koa, để bạn nói thay vì gõ. Âm thanh không được lưu lại."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "ASCND usa el micrófono solo mientras lo activas en Cuéntale a Koa, para que hables en vez de escribir. El audio no se guarda."
+     }
+    }
+   }
+  },
+  "NSSpeechRecognitionUsageDescription": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "ASCND turns what you say in Tell Koa into text so you can review it before anything is logged. On iPhones that support your language this happens on the device; otherwise Apple processes the audio."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "ASCND chuyển lời bạn nói trong Kể cho Koa thành chữ để bạn xem lại trước khi ghi. Trên iPhone hỗ trợ ngôn ngữ của bạn, việc này chạy ngay trên máy; nếu không, Apple xử lý âm thanh."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "ASCND convierte lo que dices en Cuéntale a Koa en texto para que lo revises antes de registrar nada. En iPhone compatibles con tu idioma ocurre en el dispositivo; si no, Apple procesa el audio."
+     }
+    }
+   }
+  },
+  "NSCameraUsageDescription": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "ASCND uses the camera to take your progress photos, photograph meals for AI logging and scan food barcodes. Photos are stored privately in your account."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "ASCND dùng camera để chụp ảnh tiến trình, chụp món ăn để AI ghi bữa và quét mã vạch thực phẩm. Ảnh được lưu riêng tư trong tài khoản của bạn."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "ASCND usa la cámara para tus fotos de progreso, fotografiar comidas para registrarlas con IA y escanear códigos de barras. Las fotos se guardan de forma privada en tu cuenta."
+     }
+    }
+   }
+  },
+  "NSHealthShareUsageDescription": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "ASCND reads your steps, heart rate, HRV, sleep, weight and water to compute your daily readiness score and fill in your day, so you log less by hand."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "ASCND đọc số bước, nhịp tim, HRV, giấc ngủ, cân nặng và nước uống để tính điểm sẵn sàng mỗi ngày và điền sẵn ngày của bạn, để bạn đỡ phải ghi tay."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "ASCND lee tus pasos, frecuencia cardiaca, VFC, sueño, peso y agua para calcular tu preparación diaria y completar tu día, para que registres menos a mano."
+     }
+    }
+   }
+  },
+  "NSMotionUsageDescription": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "ASCND counts your steps with your iPhone's motion sensor when Apple Health isn't connected."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "ASCND đếm số bước bằng cảm biến chuyển động của iPhone khi chưa kết nối Apple Health."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "ASCND cuenta tus pasos con el sensor de movimiento del iPhone cuando Apple Salud no está conectado."
+     }
+    }
+   }
+  }
+ }
+}

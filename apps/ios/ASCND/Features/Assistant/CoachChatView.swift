@@ -31,6 +31,9 @@ struct CoachChatView: View {
   /// Người dùng chọn số mới khác số đã ghi → hỏi có cập nhật nhật ký không.
   @State private var confirmUpdate: CoachLogPrompt.Conflict?
   @State private var waterAdded: Set<String> = []
+  /// "Kể cho Koa" mở từ một tin nhắn kể việc đã làm (18/10).
+  @State private var tellText: TellText?
+  struct TellText: Identifiable { let id: String; let text: String }
   @Environment(NutritionBooks.self) private var nutrition: NutritionBooks?
   @Environment(AppServices.self) private var services
   @Environment(WorkoutFlow.self) private var flow
@@ -128,6 +131,9 @@ struct CoachChatView: View {
     // thu / bung — app không đọc được thanh tab đang thu hay mở.
     .toolbar(.hidden, for: .tabBar)
     .sheet(item: $logSheet, onDismiss: { Task { await onLogged() } }) { t in logScreen(t) }
+    .sheet(item: $tellText, onDismiss: { Task { await onLogged() } }) { t in
+      if let userId = services.session.session?.userId { TellKoaSheet(userId: userId, initialText: t.text) }
+    }
     .alert(
       Text("coach.check.update.title"),
       isPresented: Binding(get: { confirmUpdate != nil }, set: { if !$0 { confirmUpdate = nil } }),
@@ -472,8 +478,17 @@ struct CoachChatView: View {
             send(Self.replyText(c.logged, c.kind, lang: lang))
           }
         }
-        ForEach(Array(suggestions.enumerated()), id: \.offset) { _, d in
-          suggestionChip(d, key: asked.id)
+        // Lời kể nhiều việc / có bữa ăn (18/10, "log bằng chat"): MỘT nút mở màn
+        // xác nhận đã điền sẵn tin nhắn — ghi đủ mọi mục, hỏi lại chỗ chưa rõ.
+        let spoken = SpokenLog.parse(asked.content, hour: hour)
+        if !suggestions.isEmpty, spoken.items.count > 1 || spoken.items.contains(where: { if case .meal = $0 { true } else { false } }) {
+          chip(Text("coach.log.all \(spoken.items.count)"), primary: true) {
+            tellText = TellText(id: asked.id, text: asked.content)
+          }
+        } else {
+          ForEach(Array(suggestions.enumerated()), id: \.offset) { _, d in
+            suggestionChip(d, key: asked.id)
+          }
         }
       }
       .frame(maxWidth: .infinity, alignment: .leading)
