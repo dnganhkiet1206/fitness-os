@@ -145,7 +145,15 @@ public struct CoachOverview: Equatable, Sendable {
   public static let maxPoints = 14
 
   /// Tách khối khỏi câu trả lời. `text` là phần còn lại để vẽ markdown.
+  /// Dấu mốc mở câu trả lời của `ai-coach` (18/10): server bỏ mọi chữ đứng trước
+  /// nó (phần nháp suy nghĩ của model). App cắt thêm một lần cho chắc.
+  public static let answerMark = "@@ANSWER@@"
+
   public static func split(_ message: String) -> (overview: CoachOverview?, text: String) {
+    var message = message
+    if let mark = message.range(of: answerMark) {
+      message = String(message[mark.upperBound...].drop(while: { $0.isNewline || $0 == " " }))
+    }
     // Model nhẹ đôi khi rào bằng ```json — chỉ nhận khi ngay sau là JSON có
     // "items" / "trend", để một khối code JSON thật trong câu trả lời không bị nuốt.
     let open: Range<String.Index>
@@ -166,9 +174,25 @@ public struct CoachOverview: Equatable, Sendable {
       return (nil, before.trimmingCharacters(in: .whitespacesAndNewlines))
     }
     let body = String(rest[..<close.lowerBound])
-    let after = String(rest[close.upperBound...])
-    let text = (before + after).trimmingCharacters(in: .whitespacesAndNewlines)
+    let after = stripExtraBlocks(String(rest[close.upperBound...]))
+    // Khối nằm giữa câu: hai nửa là hai đoạn, không dính liền ("cơ.Hôm nay").
+    let text = (before + "\n\n" + after).trimmingCharacters(in: .whitespacesAndNewlines)
     return (parse(body), text)
+  }
+
+  /// Model đôi khi trả THÊM khối ```ascnd giữa câu (18/10: "buổi tập.```ascnd
+  /// {"items":…}```" hiện thành chữ thô). Chỉ khối đầu được vẽ; các khối sau bị
+  /// bỏ khỏi chữ — khối chưa đóng (đang stream) bị cắt tới cuối.
+  static func stripExtraBlocks(_ text: String) -> String {
+    var out = text
+    while let open = out.range(of: "```ascnd") {
+      if let close = out[open.upperBound...].range(of: "```") {
+        out.replaceSubrange(open.lowerBound..<close.upperBound, with: "\n\n")
+      } else {
+        out.removeSubrange(open.lowerBound...)
+      }
+    }
+    return out
   }
 
   /// Số trong JSON: số hoặc chuỗi số. `true` / `false` không phải số — giải mã

@@ -155,16 +155,9 @@ struct TodayExtras<Plan: View>: View {
     .onChange(of: services.sync.pendingCount) { old, new in
       if new < old { Task { await reloadDay() } }
     }
+    // "Ghi hôm nay" (19/10): một màn cho cả nói, gõ và chip "như thường lệ".
     .sheet(isPresented: $showsDayLog, onDismiss: { Task { await reloadDay() } }) {
-      if let mascot {
-        DayLogSheet(
-          userId: userId, pending: DayCheckIn.pending(dayStates(mascot)), meals: meals, water: water,
-          waterPrefillMl: DayCheckIn.waterPrefillMl(
-            yesterdayMl: water.flatMap { DayCheckIn.yesterdayWaterMl($0.week, today: Self.today()) }),
-          planName: planName,
-          onPickMeal: { Task { try? await Task.sleep(for: .milliseconds(450)); logging = .meal } },
-          onPickWorkout: { Task { try? await Task.sleep(for: .milliseconds(450)); onLogWorkout?() } })
-      }
+      TellKoaSheet(userId: userId)
     }
     .sheet(item: $logging, onDismiss: { Task { await reloadDay() } }) { item in
       switch item {
@@ -533,7 +526,7 @@ struct TodayExtras<Plan: View>: View {
     let unit = services.preferences.volumeUnit
     let waterText = states[.water] == .done
       ? Water.progressLabel(ml: s?.waterMl ?? 0, targetMl: TodayDay.waterTarget(s), unit, locale: .app)
-      : yWater.map { String(localized: "day.tile.yesterday \(DayLogSheet.volume($0, unit))") } ?? todo
+      : yWater.map { String(localized: "day.tile.yesterday \(SpokenLogDisplay.water($0, unit: unit))") } ?? todo
     let workout: String
     switch states[.workout] {
     case .done: workout = String(localized: "today.tube.done")
