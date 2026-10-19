@@ -5363,98 +5363,6 @@
     }
    }
   },
-  "effort.5": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Very easy — lots left"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Rất nhẹ — còn dư rất nhiều sức"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Muy fácil — te sobra mucho"
-     }
-    }
-   }
-  },
-  "wb.minutes %lld": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "~%lld min"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "~%lld phút"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "~%lld min"
-     }
-    }
-   }
-  },
-  "wb.restEffort %@ %lld": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Rest %1$@ · RPE %2$lld"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Nghỉ %1$@ · RPE %2$lld"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Descanso %1$@ · RPE %2$lld"
-     }
-    }
-   }
-  },
-  "wb.exerciseOf %lld %lld": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Exercise %1$lld of %2$lld"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Bài %1$lld / %2$lld"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Ejercicio %1$lld de %2$lld"
-     }
-    }
-   }
-  },
   "wb.remove": {
    "extractionState": "manual",
    "localizations": {
@@ -36671,42 +36579,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "Search or add a food to start"
+      "value": "Search or tap + on a food to start"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Tìm hoặc thêm món để bắt đầu"
+      "value": "Tìm hoặc bấm + ở một món để bắt đầu"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Busca o añade un alimento para empezar"
-     }
-    }
-   }
-  },
-  "logMeal.items": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Items"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Các món"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Elementos"
+      "value": "Busca o toca + en un alimento para empezar"
      }
     }
    }
@@ -44895,29 +44780,6 @@
      "stringUnit": {
       "state": "translated",
       "value": "La preparación solo lee la VFC, la frecuencia cardiaca en reposo, el sueño y la carga calculada de las sesiones registradas. Los pasos y las calorías activas no están en ninguna fórmula."
-     }
-    }
-   }
-  },
-  "nc.footer %@ %@": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Eaten %1$@ · target %2$@ kcal"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Đã ăn %1$@ · mục tiêu %2$@ kcal"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Comido %1$@ · objetivo %2$@ kcal"
      }
     }
    }
@@ -54214,71 +54076,94 @@
     }
    }
   },
-  "wb.dragHint": {
+  "macros.short %@ %@ %@": {
    "extractionState": "manual",
    "localizations": {
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "Hold and drag to reorder"
+      "value": "P %1$@g · C %2$@g · F %3$@g"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Giữ và kéo để đổi thứ tự"
+      "value": "Đạm %1$@g · Bột %2$@g · Béo %3$@g"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Mantén y arrastra para reordenar"
+      "value": "P %1$@g · C %2$@g · G %3$@g"
      }
     }
    }
   },
-  "ws.reorder": {
+  "nc.howTarget": {
    "extractionState": "manual",
    "localizations": {
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "Reorder exercises"
+      "value": "How is my target set?"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Sắp xếp bài"
+      "value": "Mục tiêu tính thế nào?"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Reordenar ejercicios"
+      "value": "¿Cómo se calcula mi objetivo?"
      }
     }
    }
   },
-  "ws.reorder.hint": {
+  "logMeal.tray %lld": {
    "extractionState": "manual",
    "localizations": {
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "Drag ≡ to change the order. The next set follows the new order."
+      "value": "In this meal · %lld"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Kéo ≡ để đổi thứ tự. Set kế tiếp sẽ theo thứ tự mới."
+      "value": "Trong bữa này · %lld"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Arrastra ≡ para cambiar el orden. La siguiente serie sigue el nuevo orden."
+      "value": "En esta comida · %lld"
+     }
+    }
+   }
+  },
+  "logMeal.for": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Logging for"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ghi cho"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Registrar en"
      }
     }
    }
@@ -55728,6 +55613,213 @@
      "stringUnit": {
       "state": "translated",
       "value": "Registrar %lld elementos"
+     }
+    }
+   }
+  },
+  "nc.ring.eaten": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "kcal eaten"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "kcal đã ăn"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "kcal consumidas"
+     }
+    }
+   }
+  },
+  "nc.ring.percent %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld%% of goal"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld%% mục tiêu"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld%% de la meta"
+     }
+    }
+   }
+  },
+  "effort.5": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Very easy — lots left"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Rất nhẹ — còn dư rất nhiều sức"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Muy fácil — te sobra mucho"
+     }
+    }
+   }
+  },
+  "wb.minutes %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "~%lld min"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "~%lld phút"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "~%lld min"
+     }
+    }
+   }
+  },
+  "wb.restEffort %@ %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Rest %1$@ · RPE %2$lld"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nghỉ %1$@ · RPE %2$lld"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Descanso %1$@ · RPE %2$lld"
+     }
+    }
+   }
+  },
+  "wb.exerciseOf %lld %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Exercise %1$lld of %2$lld"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bài %1$lld / %2$lld"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ejercicio %1$lld de %2$lld"
+     }
+    }
+   }
+  },
+  "wb.dragHint": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hold and drag to reorder"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Giữ và kéo để đổi thứ tự"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mantén y arrastra para reordenar"
+     }
+    }
+   }
+  },
+  "ws.reorder": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Reorder exercises"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sắp xếp bài"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Reordenar ejercicios"
+     }
+    }
+   }
+  },
+  "ws.reorder.hint": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Drag ≡ to change the order. The next set follows the new order."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Kéo ≡ để đổi thứ tự. Set kế tiếp sẽ theo thứ tự mới."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Arrastra ≡ para cambiar el orden. La siguiente serie sigue el nuevo orden."
      }
     }
    }
