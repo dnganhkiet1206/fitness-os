@@ -3500,29 +3500,6 @@
     }
    }
   },
-  "manualLog.sets": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Sets"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Các set"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Series"
-     }
-    }
-   }
-  },
   "manualLog.exercise": {
    "extractionState": "manual",
    "localizations": {
@@ -3592,29 +3569,6 @@
     }
    }
   },
-  "manualLog.warmup.short": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "W"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "K"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "C"
-     }
-    }
-   }
-  },
   "manualLog.remove": {
    "extractionState": "manual",
    "localizations": {
@@ -3661,25 +3615,232 @@
     }
    }
   },
-  "manualLog.newExercise": {
+  "manualLog.col.set": {
    "extractionState": "manual",
    "localizations": {
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "Different exercise"
+      "value": "Set"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Bài tập khác"
+      "value": "Set"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Ejercicio diferente"
+      "value": "Serie"
+     }
+    }
+   }
+  },
+  "manualLog.addExercise": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Add exercise"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Thêm bài tập"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Añadir ejercicio"
+     }
+    }
+   }
+  },
+  "manualLog.removeExercise": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Remove this exercise"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bỏ bài này"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Quitar este ejercicio"
+     }
+    }
+   }
+  },
+  "manualLog.exercise.search": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Exercise — type to search"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tên bài — gõ để tìm"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ejercicio — escribe para buscar"
+     }
+    }
+   }
+  },
+  "manualLog.feel": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "How it felt"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cảm nhận buổi tập"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cómo te sentiste"
+     }
+    }
+   }
+  },
+  "manualLog.rpe.6": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Easy — plenty left"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nhẹ — còn dư sức"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Fácil — te sobra energía"
+     }
+    }
+   }
+  },
+  "manualLog.rpe.7": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Moderate — about 3 reps left"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Vừa — còn khoảng 3 rep"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Moderado — quedan unas 3 reps"
+     }
+    }
+   }
+  },
+  "manualLog.rpe.8": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hard — about 2 reps left"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nặng — còn khoảng 2 rep"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Duro — quedan unas 2 reps"
+     }
+    }
+   }
+  },
+  "manualLog.rpe.9": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Very hard — 1 rep left"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Rất nặng — còn 1 rep"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Muy duro — queda 1 rep"
+     }
+    }
+   }
+  },
+  "manualLog.rpe.10": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Max effort"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hết sức"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Esfuerzo máximo"
      }
     }
    }
@@ -3726,6 +3887,29 @@
      "stringUnit": {
       "state": "translated",
       "value": "Para un sostenido, escribe los segundos — 45 s."
+     }
+    }
+   }
+  },
+  "manualLog.hint.warmup": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Warm-up set: not counted in volume or records."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Set khởi động: không tính vào khối lượng và kỷ lục."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Serie de calentamiento: no cuenta para el volumen ni los récords."
      }
     }
    }
@@ -4991,6 +5175,75 @@
      "stringUnit": {
       "state": "translated",
       "value": "Series"
+     }
+    }
+   }
+  },
+  "wb.warmupSets": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Warm-up sets"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Set khởi động"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Series de calentamiento"
+     }
+    }
+   }
+  },
+  "wb.warmupSets.hint": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Lighter, before the working sets — not counted in volume or records"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nhẹ, trước set chính — không tính khối lượng và kỷ lục"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Más ligeras, antes de las series de trabajo — no cuentan para volumen ni récords"
+     }
+    }
+   }
+  },
+  "wb.withWarmups %lld %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$lld warm-up + %2$@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$lld khởi động + %2$@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$lld calent. + %2$@"
      }
     }
    }
@@ -48188,6 +48441,121 @@
     }
    }
   },
+  "ws.focus.eyebrow.warmup %lld %lld %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Exercise %1$lld/%2$lld · Warm-up %3$lld"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bài %1$lld/%2$lld · Khởi động %3$lld"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ejercicio %1$lld/%2$lld · Calentamiento %3$lld"
+     }
+    }
+   }
+  },
+  "ws.rest.nextWarmup %@ %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@ · Warm-up %2$lld"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@ · Khởi động %2$lld"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@ · Calentamiento %2$lld"
+     }
+    }
+   }
+  },
+  "ws.nextWarmup %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Warm-up %lld · next"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Khởi động %lld · tiếp theo"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Calentamiento %lld · siguiente"
+     }
+    }
+   }
+  },
+  "ws.editingWarmup %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Edit warm-up %lld"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sửa khởi động %lld"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Editar calentamiento %lld"
+     }
+    }
+   }
+  },
+  "ws.doneWarmupN %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Done warm-up %lld"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Xong khởi động %lld"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Calentamiento %lld listo"
+     }
+    }
+   }
+  },
   "ws.reps.unit": {
    "extractionState": "manual",
    "localizations": {
@@ -48690,29 +49058,6 @@
      "stringUnit": {
       "state": "translated",
       "value": "Mở rộng"
-     }
-    }
-   }
-  },
-  "ws.editSet %lld": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Edit set %lld"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Editar serie %lld"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Sửa set %lld"
      }
     }
    }
