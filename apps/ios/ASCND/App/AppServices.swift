@@ -454,8 +454,9 @@ final class AppServices {
 
   /// Xu hướng sẵn sàng 7 ngày (#527) — đọc `daily_logs` qua kho hàng chung.
   func makeReadinessTrend(userId: String, today: LocalDate) -> ReadinessTrendBook? {
-    let recovery: (@Sendable (String?) -> Bool)? = ReadinessCopyStore.copy.map { copy in
-      { ReadinessCard.hasRecoverySignal($0, copy: copy) }
+    var recovery: (@Sendable (String?) -> Bool)?
+    if let copy = ReadinessCopyStore.copy {
+      recovery = { explain in ReadinessCard.hasRecoverySignal(explain, copy: copy) }
     }
     return rows.map { ReadinessTrendBook(userId: userId, today: today, store: $0, recovery: recovery) }
   }

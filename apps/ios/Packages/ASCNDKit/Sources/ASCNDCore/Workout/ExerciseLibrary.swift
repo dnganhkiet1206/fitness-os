@@ -199,6 +199,29 @@ public enum ExerciseCatalog {
     return !key.isEmpty && text.contains(key)
   }
 
+  /// Hạng của một bài với chữ tìm `q` (đã lowercase), nhỏ = khớp tốt hơn;
+  /// `nil` = không khớp (18/10 — thư viện ~900 bài, "bench" từng ra "Barbell
+  /// Rollout from Bench" trước Bench Press): tên bắt đầu bằng chữ gõ → một từ
+  /// bắt đầu bằng chữ gõ → chứa → chỉ khớp chữ tìm bỏ dấu (tên vi / es).
+  public static func searchRank(_ e: LibraryExercise, _ q: String) -> Int? {
+    guard !q.isEmpty else { return 0 }
+    let names = [e.name.lowercased(), e.displayName.lowercased()]
+    if names.contains(where: { $0.hasPrefix(q) }) { return 0 }
+    let words = names.flatMap { $0.split(whereSeparator: { !$0.isLetter && !$0.isNumber }) }
+    if words.contains(where: { $0.hasPrefix(q) }) { return 1 }
+    if names.contains(where: { $0.contains(q) }) { return 2 }
+    return matches(e, q) ? 3 : nil
+  }
+
+  /// Lọc theo chữ tìm và xếp theo `searchRank`; cùng hạng giữ thứ tự thư viện.
+  public static func ranked(_ list: [LibraryExercise], query q: String) -> [LibraryExercise] {
+    guard !q.isEmpty else { return list }
+    return list.enumerated()
+      .compactMap { i, e in searchRank(e, q).map { (r: $0, i: i, e: e) } }
+      .sorted { ($0.r, $0.i) < ($1.r, $1.i) }
+      .map(\.e)
+  }
+
   /// `workout-builder.tsx:310`: lọc theo nhóm cơ và tên, giữ thứ tự server.
   public static func filter(_ list: [LibraryExercise], query: String, muscle: MuscleGroup? = nil) -> [LibraryExercise] {
     let q = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()

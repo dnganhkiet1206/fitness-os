@@ -74,7 +74,13 @@ struct TemplateDraftGoldenTests {
       let search = c["search"]?.stringValue ?? ""
       let ids = TemplateDraft.visible(lib, group: group, search: search).map(\.id)
       guard case .array(let want)? = c["ids"] else { continue }
-      #expect(ids == want.compactMap(\.stringValue), "\(String(describing: group)) '\(search)'")
+      let w = want.compactMap(\.stringValue)
+      // Cùng TẬP bài như RN. Thứ tự: không tìm thì như RN (thứ tự server); có
+      // chữ tìm thì native cố ý xếp theo độ khớp (18/10, `ExerciseCatalog.ranked`).
+      #expect(Set(ids) == Set(w) && ids.count == w.count, "\(String(describing: group)) '\(search)'")
+      if search.trimmingCharacters(in: .whitespaces).isEmpty {
+        #expect(ids == w, "\(String(describing: group)) — không tìm thì giữ thứ tự RN")
+      }
     }
   }
 }

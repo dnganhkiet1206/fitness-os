@@ -401,28 +401,7 @@ struct ManualLogView: View {
       Text(String(localized: "manualLog.rpe"))
         .font(DS.TextStyle.footnote)
         .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-      HStack(spacing: DS.Spacing.xs) {
-        ForEach(Array(ManualLogController.rpeValues), id: \.self) { v in
-          let on = log.rpe == v
-          Button {
-            Task { await log.setRpe(v) }
-          } label: {
-            Text(verbatim: "\(v)")
-              .font(DS.TextStyle.body.weight(on ? .bold : .medium).monospacedDigit())
-              .foregroundStyle(on ? Color.white : DS.Color.foreground.swiftUI)
-              .frame(maxWidth: .infinity, minHeight: 44)
-              .background(
-                on ? AnyShapeStyle(Self.rose) : AnyShapeStyle(DS.Color.secondary.swiftUI),
-                in: RoundedRectangle(cornerRadius: DS.Radius.md, style: .continuous))
-          }
-          .buttonStyle(.plain)
-          .accessibilityLabel(Text(verbatim: "RPE \(v), \(rpeMeaning(v))"))
-          .accessibilityAddTraits(on ? [.isButton, .isSelected] : .isButton)
-        }
-      }
-      Text(verbatim: rpeMeaning(log.rpe))
-        .font(DS.TextStyle.footnote.weight(.medium))
-        .foregroundStyle(Self.rose)
+      EffortPicker(values: ManualLogController.rpeValues, value: log.rpe) { v in Task { await log.setRpe(v) } }
       // Mấy buổi cùng tên gần đây cảm thấy thế nào so với mức buổi tập đặt
       // (`:914-931`): một câu dưới RPE, không đổi gì trong template.
       if let hint = loadHint?.hint(
@@ -436,16 +415,6 @@ struct ManualLogView: View {
     }
     .padding(DS.Spacing.md)
     .dsCard(radius: DS.Radius.lg)
-  }
-
-  private func rpeMeaning(_ v: Int) -> String {
-    switch v {
-    case ...6: String(localized: "manualLog.rpe.6")
-    case 7: String(localized: "manualLog.rpe.7")
-    case 8: String(localized: "manualLog.rpe.8")
-    case 9: String(localized: "manualLog.rpe.9")
-    default: String(localized: "manualLog.rpe.10")
-    }
   }
 
   private func saveBar(_ log: ManualLogController) -> some View {
