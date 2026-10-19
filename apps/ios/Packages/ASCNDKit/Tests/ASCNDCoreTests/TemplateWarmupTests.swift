@@ -113,3 +113,32 @@ struct BuilderSearchRankTests {
     #expect(TemplateDraft.visible(lib, group: nil, search: "").map(\.name) == lib.map(\.name), "không tìm: giữ thứ tự")
   }
 }
+
+/// Kéo thả thứ tự bài (19/10, "như Apple Music").
+@MainActor
+struct ExerciseOrderTests {
+  @Test func draftMoveMatchesListOnMove() {
+    var d = TemplateDraft()
+    for (id, n) in [("a", "A"), ("b", "B"), ("c", "C"), ("d", "D")] { d.toggle(id: id, name: n) }
+    d.move(fromOffsets: IndexSet(integer: 0), toOffset: 3)  // kéo A xuống sau C
+    #expect(d.items.map(\.exerciseName) == ["B", "C", "A", "D"])
+    d.move(fromOffsets: IndexSet(integer: 3), toOffset: 0)  // kéo D lên đầu
+    #expect(d.items.map(\.exerciseName) == ["D", "B", "C", "A"])
+  }
+
+  @Test func rowsFollowTheDraggedOrder() {
+    let rows = WorkoutPlanning.rows([
+      TemplateExercise(exerciseId: "bench", exerciseName: "Bench", sets: 2, reps: 8, weightKg: 60, warmupSets: 1),
+      TemplateExercise(exerciseId: "row", exerciseName: "Row", sets: 1, reps: 10, weightKg: 40),
+      TemplateExercise(exerciseId: "curl", exerciseName: "Curl", sets: 1, reps: 12, weightKg: 10),
+    ])
+    let o = WorkoutDay.ordered(rows, by: ["curl", "bench"])
+    #expect(o.map(\.key) == ["2-0", "0-w0", "0-0", "0-1", "1-0"], "set trong bài giữ thứ tự; bài không có trong order đứng sau")
+    #expect(WorkoutDay.ordered(rows, by: []) == rows)
+  }
+
+  @Test func oldProgressHasNoOrder() throws {
+    let p = try JSONDecoder().decode(DayProgress.self, from: Data(#"{"done":{}}"#.utf8))
+    #expect(p.order.isEmpty)
+  }
+}

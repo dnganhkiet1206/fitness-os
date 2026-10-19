@@ -325,8 +325,10 @@ struct TemplateFormView: View {
     let ranked = draft.ranking { id in flow.library?.exercise(id: id)?.muscleGroup }
     let suggested = suggestedName(ranked)
     let kind = draft.type(ranked: ranked)
-    return ScrollView {
-      VStack(alignment: .leading, spacing: DS.Spacing.md) {
+    // List (không phải ScrollView) để kéo thả thứ tự bài như Apple Music
+    // (19/10): nhấn giữ một thẻ rồi kéo; mọi hàng khác là "hàng trơn".
+    return List {
+      Group {
         VStack(alignment: .leading, spacing: DS.Spacing.xs) {
           TextField(
             String(localized: "wb.name.placeholder"),
@@ -358,32 +360,42 @@ struct TemplateFormView: View {
             }
           }
         }
-        VStack(alignment: .leading, spacing: DS.Spacing.xs) {
+        HStack {
           sectionTitle(String(localized: "wb.added"))
-          VStack(spacing: DS.Spacing.sm) {
-            ForEach(Array(draft.items.enumerated()), id: \.offset) { i, e in
-              exerciseCard(i, e)
-            }
-            Button {
-              step = 1
-            } label: {
-              Label(String(localized: "wb.addMore"), systemImage: "plus")
-                .font(DS.TextStyle.body.weight(.semibold))
-                .foregroundStyle(Self.rose)
-                .frame(maxWidth: .infinity, minHeight: 52)
-                .background(
-                  RoundedRectangle(cornerRadius: DS.Radius.lg, style: .continuous)
-                    .strokeBorder(Self.rose.opacity(0.5), style: StrokeStyle(lineWidth: 1.5, dash: [6, 4])))
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
+          Spacer()
+          if draft.items.count > 1 {
+            Text(String(localized: "wb.dragHint"))
+              .font(DS.TextStyle.caption)
+              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
           }
         }
+        .padding(.top, DS.Spacing.xs)
       }
-      .padding(.horizontal, DS.Spacing.md)
-      .padding(.top, DS.Spacing.sm)
-      .padding(.bottom, DS.Spacing.lg)
+      .plainRow()
+      ForEach(Array(draft.items.enumerated()), id: \.element.exerciseId) { i, e in
+        exerciseCard(i, e).plainRow(vertical: DS.Spacing.xs)
+      }
+      .onMove { from, to in
+        withAnimation(.snappy) { draft.move(fromOffsets: from, toOffset: to) }
+      }
+      Button {
+        step = 1
+      } label: {
+        Label(String(localized: "wb.addMore"), systemImage: "plus")
+          .font(DS.TextStyle.body.weight(.semibold))
+          .foregroundStyle(Self.rose)
+          .frame(maxWidth: .infinity, minHeight: 52)
+          .background(
+            RoundedRectangle(cornerRadius: DS.Radius.lg, style: .continuous)
+              .strokeBorder(Self.rose.opacity(0.5), style: StrokeStyle(lineWidth: 1.5, dash: [6, 4])))
+          .contentShape(Rectangle())
+      }
+      .buttonStyle(.plain)
+      .plainRow()
     }
+    .listStyle(.plain)
+    .scrollContentBackground(.hidden)
+    .sensoryFeedback(.selection, trigger: draft.items.map(\.exerciseId))
     .scrollDismissesKeyboard(.interactively)
     .safeAreaInset(edge: .bottom, spacing: 0) {
       VStack(spacing: DS.Spacing.xs) {
@@ -456,9 +468,11 @@ struct TemplateFormView: View {
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        Image(systemName: "chevron.right")
-          .font(.footnote.weight(.semibold))
+        // Tay nắm như Apple Music: nhấn giữ thẻ rồi kéo để đổi thứ tự.
+        Image(systemName: "line.3.horizontal")
+          .font(.body.weight(.semibold))
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          .frame(width: 28)
           .accessibilityHidden(true)
       }
       .padding(DS.Spacing.md)
@@ -538,16 +552,6 @@ struct TemplateFormView: View {
             .padding(DS.Spacing.md)
             .dsCard(radius: DS.Radius.lg)
 
-            HStack(spacing: DS.Spacing.sm) {
-              sheetAction(String(localized: "wb.moveUp"), systemImage: "arrow.up", enabled: index > 0) {
-                draft.move(from: index, to: index - 1)
-                editing = index - 1
-              }
-              sheetAction(String(localized: "wb.moveDown"), systemImage: "arrow.down", enabled: index < draft.items.count - 1) {
-                draft.move(from: index, to: index + 1)
-                editing = index + 1
-              }
-            }
             Button(role: .destructive) {
               draft.remove(at: index)
               editing = nil
@@ -618,18 +622,6 @@ struct TemplateFormView: View {
         .background(Self.rose.opacity(enabled ? 0.12 : 0.05), in: Circle())
         .frame(width: 44, height: 44)
         .contentShape(Rectangle())
-    }
-    .buttonStyle(.plain)
-    .disabled(!enabled)
-  }
-
-  private func sheetAction(_ title: String, systemImage: String, enabled: Bool, action: @escaping () -> Void) -> some View {
-    Button(action: action) {
-      Label(title, systemImage: systemImage)
-        .font(DS.TextStyle.footnote.weight(.semibold))
-        .foregroundStyle(enabled ? DS.Color.foreground.swiftUI : DS.Color.mutedForeground.swiftUI.opacity(0.5))
-        .frame(maxWidth: .infinity, minHeight: 48)
-        .background(DS.Color.secondary.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.md, style: .continuous))
     }
     .buttonStyle(.plain)
     .disabled(!enabled)
@@ -711,6 +703,15 @@ struct TemplateFormView: View {
     } catch {
       failure = String(localized: "workout.finishError.generic")
     }
+  }
+}
+
+private extension View {
+  /// Hàng List không nền, không kẻ, lề như trang thường.
+  func plainRow(vertical: CGFloat = DS.Spacing.sm) -> some View {
+    listRowBackground(Color.clear)
+      .listRowSeparator(.hidden)
+      .listRowInsets(EdgeInsets(top: vertical, leading: DS.Spacing.md, bottom: vertical, trailing: DS.Spacing.md))
   }
 }
 

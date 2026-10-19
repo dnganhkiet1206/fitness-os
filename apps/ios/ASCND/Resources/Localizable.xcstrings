@@ -5455,52 +5455,6 @@
     }
    }
   },
-  "wb.moveUp": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Move earlier"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Đưa lên trước"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Mover antes"
-     }
-    }
-   }
-  },
-  "wb.moveDown": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Move later"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Đưa xuống sau"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Mover después"
-     }
-    }
-   }
-  },
   "wb.remove": {
    "extractionState": "manual",
    "localizations": {
@@ -54256,6 +54210,75 @@
      "stringUnit": {
       "state": "translated",
       "value": "Tạo tài khoản"
+     }
+    }
+   }
+  },
+  "wb.dragHint": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hold and drag to reorder"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Giữ và kéo để đổi thứ tự"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mantén y arrastra para reordenar"
+     }
+    }
+   }
+  },
+  "ws.reorder": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Reorder exercises"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sắp xếp bài"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Reordenar ejercicios"
+     }
+    }
+   }
+  },
+  "ws.reorder.hint": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Drag ≡ to change the order. The next set follows the new order."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Kéo ≡ để đổi thứ tự. Set kế tiếp sẽ theo thứ tự mới."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Arrastra ≡ para cambiar el orden. La siguiente serie sigue el nuevo orden."
      }
     }
    }
