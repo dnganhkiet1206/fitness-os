@@ -27,7 +27,7 @@ d = json.loads(m.group(1))
 # Các món đã vẽ lại, theo ô. Nhóm vẽ RN của chúng bị bỏ trước khi chèn bản mới.
 REDRAWN = {
     "head": ["cap", "band", "beanie", "santa", "antler", "pumpkin", "witch", "khanxep", "phones", "lion"], "face": ["shades", "goggles", "mask", "eyepatch", "beard", "tuong", "vr", "nosestrip", "heart", "dragon"], "top": ["tee", "tank", "hoodie", "xmas", "aodai", "ghost", "windbreak", "jersey", "lion", "armor"], "bottom": ["short", "legging", "jogger", "xmaspants", "tetpants", "tutu", "camo", "swim", "ghostpants", "flame"],
-    "shoes": ["sneaker", "runner", "boot", "xmasboot", "hai", "sandal", "socks", "glow", "ghostshoe", "wing"], "back": ["backpack"], "hand": ["bottle"],
+    "shoes": ["sneaker", "runner", "boot", "xmasboot", "hai", "sandal", "socks", "glow", "ghostshoe", "wing"], "back": ["backpack", "hydro", "angel", "bat", "giftbag", "lixi", "cape", "oxygen", "dragonwing", "jetpack"], "hand": ["bottle"],
 }
 gone = {f"it_{slot}_{i}" for slot, ids in REDRAWN.items() for i in ids}
 def _all(n):
@@ -700,6 +700,114 @@ straps = G([
 ], **{"if": "it_back_backpack"})
 ai = [i for i, k in enumerate(body['kids']) if k.get('if') == 'armsIdle'][0]
 body['kids'].insert(ai, straps)
+
+# ── Ô SAU LƯNG (còn lại). Túi / bình đeo như balo mới: thân lộ hai bên lưng + quai
+#    qua vai (đứng), ở hông + một quai chéo (quay / chạy). Cánh mọc cao hơn vai để tay
+#    không che; áo choàng phủ từ vai xuống mắt cá, khuy cài trước cổ.
+def back_item(flag, behind, front=()):
+    i = [k for k, n in enumerate(body['kids']) if n.get('if') == 'it_back_backpack'][0]
+    body['kids'].insert(i + 1, G(behind, **{"if": flag}))
+    if front:
+        j = [k for k, n in enumerate(body['kids']) if n.get('if') == 'armsIdle'][0]
+        body['kids'].insert(j, G(list(front), **{"if": flag}))
+
+def worn_pack(flag, colour, dark, light, side_extra=(), straps=True, chest=True):
+    behind = [
+        G([P("M56 176 C 56 164 66 158 78 158 L 162 158 C 174 158 184 164 184 176 L 186 240 C 186 252 176 258 164 258 "
+             "L 76 258 C 64 258 54 252 54 240 Z", fill=colour)], **{"if": "torsoStand"}),
+        G([R(30, 170, 44, 80, 16, fill=colour), R(36, 196, 30, 28, 9, fill=light)] + list(side_extra), **{"if": "torsoRun"}),
+    ]
+    front = []
+    if straps:
+        stand = [P("M86 162 C 82 186 81 210 84 236", stroke=colour, stroke_width=8, fill="none", stroke_linecap="round"),
+                 P("M154 162 C 158 186 159 210 156 236", stroke=colour, stroke_width=8, fill="none", stroke_linecap="round")]
+        if chest: stand.append(P("M85 206 L 155 206", stroke=dark, stroke_width=4, stroke_linecap="round"))
+        front = [G(stand, **{"if": "torsoStand"}),
+                 G([P("M78 168 C 96 186 112 206 124 236", stroke=colour, stroke_width=8, fill="none", stroke_linecap="round")],
+                   **{"if": "torsoRun"})]
+    back_item(flag, behind, front)
+
+# bình nước đeo lưng: túi xanh, ống hút vòng qua vai ra trước ngực
+worn_pack("it_back_hydro", "#2E8FCB", "#1F6FA3", "#3FA9E5", chest=False)
+back_item("it_back_hydro", [], [G([
+    P("M150 162 C 160 176 160 196 148 210", stroke="#39424E", stroke_width=4, fill="none", stroke_linecap="round"),
+    R(142, 206, 10, 8, 3, fill="#39424E")], **{"if": "torsoStand"})])
+# túi quà: túi đỏ thắt nơ vàng, quai đỏ
+worn_pack("it_back_giftbag", "#D64545", "#B23636", "#E36A6A", chest=False)
+back_item("it_back_giftbag", [], [G([
+    P("M85 206 L 155 206", stroke="#E8B23A", stroke_width=4, stroke_linecap="round"),
+    P("M120 206 C 108 194 98 196 100 204 C 102 212 112 210 120 206 C 128 210 138 212 140 204 C 142 196 132 194 120 206 Z",
+      fill="#E8B23A"), C(120, 206, 4, fill="#C9952C")], **{"if": "torsoStand"})])
+# lì xì: bao đỏ to đeo lưng, đồng tiền vàng lộ hai bên
+worn_pack("it_back_lixi", "#D64545", "#B23636", "#E8B23A", chest=False,
+          side_extra=[C(51, 210, 9, fill="#E8B23A"), C(51, 210, 4, fill="#D64545")])
+back_item("it_back_lixi", [], [G([
+    P("M85 200 L 155 200", stroke="#B23636", stroke_width=4, stroke_linecap="round"),
+    R(106, 196, 28, 36, 4, fill="#D64545", stroke="#B23636", stroke_width=1.4),
+    P("M106 204 L 120 212 L 134 204", stroke="#B23636", stroke_width=1.6, fill="none"),
+    C(120, 218, 7, fill="#E8B23A"), R(117.5, 215.5, 5, 5, 0.5, fill="#D64545")], **{"if": "torsoStand"})])
+# bình oxy: hai bình xám dựng sau lưng, van đen trên vai
+back_item("it_back_oxygen", [
+    G([R(52, 150, 30, 96, 14, fill="#8A94A1"), R(158, 150, 30, 96, 14, fill="#8A94A1"),
+       R(60, 138, 14, 14, 5, fill="#39424E"), R(166, 138, 14, 14, 5, fill="#39424E")], **{"if": "torsoStand"}),
+    G([R(30, 160, 28, 88, 13, fill="#8A94A1"), R(37, 148, 14, 14, 5, fill="#39424E")], **{"if": "torsoRun"}),
+], [G([P("M86 162 C 82 186 81 210 84 236", stroke="#5B6573", stroke_width=7, fill="none", stroke_linecap="round"),
+       P("M154 162 C 158 186 159 210 156 236", stroke="#5B6573", stroke_width=7, fill="none", stroke_linecap="round"),
+       P("M150 168 C 166 176 168 196 152 208", stroke="#39424E", stroke_width=4, fill="none", stroke_linecap="round")],
+      **{"if": "torsoStand"})])
+# ba lô phản lực: hai ống đẩy cao hơn vai, lửa cam dưới đáy
+back_item("it_back_jetpack", [
+    G([R(46, 140, 30, 96, 14, fill="#6E7E96"), R(164, 140, 30, 96, 14, fill="#6E7E96"),
+       R(50, 132, 22, 14, 6, fill="#4A5A72"), R(168, 132, 22, 14, 6, fill="#4A5A72"),
+       P("M50 236 C 54 256 64 262 61 276 C 56 266 46 258 50 236 Z", fill="#E8842A"),
+       P("M190 236 C 186 256 176 262 179 276 C 184 266 194 258 190 236 Z", fill="#E8842A"),
+       P("M56 238 C 58 250 62 254 60 262 C 57 256 54 250 56 238 Z", fill="#E8B23A"),
+       P("M184 238 C 182 250 178 254 180 262 C 183 256 186 250 184 238 Z", fill="#E8B23A")], **{"if": "torsoStand"}),
+    G([R(28, 156, 30, 88, 14, fill="#6E7E96"), R(32, 148, 22, 12, 5, fill="#4A5A72"),
+       P("M34 244 C 38 262 46 268 43 280 C 38 270 30 262 34 244 Z", fill="#E8842A")], **{"if": "torsoRun"}),
+], [G([P("M86 162 C 82 186 81 210 84 236", stroke="#4A5A72", stroke_width=8, fill="none", stroke_linecap="round"),
+       P("M154 162 C 158 186 159 210 156 236", stroke="#4A5A72", stroke_width=8, fill="none", stroke_linecap="round"),
+       P("M85 206 L 155 206", stroke="#39424E", stroke_width=4, stroke_linecap="round"), C(120, 206, 5, fill="#E8B23A")],
+      **{"if": "torsoStand"})])
+
+# cánh: mọc từ bả vai, cao hơn vai, toả ra ngoài cánh tay
+def wings(flag, left, fill, edge=None, extra=()):
+    right = left.replace("M", "M").split()
+    def mirror(d):
+        out = []
+        for tok in d.split():
+            head = tok[0] if tok[0].isalpha() else ""
+            num = tok[1:] if head else tok
+            out.append(tok)
+        return d
+    kids = [P(left, fill=fill, **({"stroke": edge, "stroke_width": 1.6} if edge else {})),
+            {"t": "g", "tf": [["t", 240, 0], ["s", -1, 1]], "kids": [P(left, fill=fill, **({"stroke": edge, "stroke_width": 1.6} if edge else {}))]}]
+    back_item(flag, kids + list(extra))
+ANGEL = "M80 172 C 56 150 26 140 10 150 C 2 160 6 176 18 182 C 8 190 8 204 20 210 C 14 220 20 232 32 232 C 48 232 64 214 76 196 Z"
+wings("it_back_angel", ANGEL, "#FFFFFF", edge="#A9B2BC", extra=[
+    P("M22 170 C 36 170 52 176 66 186 M24 198 C 38 196 52 198 64 204", stroke="#D7DDE3", stroke_width=2, fill="none",
+      stroke_linecap="round"),
+    {"t": "g", "tf": [["t", 240, 0], ["s", -1, 1]], "kids": [
+        P("M22 170 C 36 170 52 176 66 186 M24 198 C 38 196 52 198 64 204", stroke="#D7DDE3", stroke_width=2, fill="none",
+          stroke_linecap="round")]}])
+BAT = "M80 174 C 58 146 26 132 4 138 C 12 150 14 162 8 176 C 20 172 30 178 32 190 C 42 182 54 186 58 198 C 66 190 74 186 78 192 Z"
+wings("it_back_bat", BAT, "#4A3A6B", extra=[
+    P("M76 176 L 12 146 M76 182 L 30 186 M76 188 L 56 196", stroke="#35284F", stroke_width=2, fill="none", stroke_linecap="round"),
+    {"t": "g", "tf": [["t", 240, 0], ["s", -1, 1]], "kids": [
+        P("M76 176 L 12 146 M76 182 L 30 186 M76 188 L 56 196", stroke="#35284F", stroke_width=2, fill="none", stroke_linecap="round")]}])
+DRAGON = "M80 172 C 60 136 28 118 2 124 C 10 138 12 150 6 166 C 20 160 30 166 30 180 C 42 170 54 174 56 188 C 64 180 74 180 78 190 Z"
+wings("it_back_dragonwing", DRAGON, "#2F7A4C", extra=[
+    P("M78 174 L 6 128 M78 180 L 28 176 M78 186 L 54 188", stroke="#E8B23A", stroke_width=2.5, fill="none", stroke_linecap="round"),
+    {"t": "g", "tf": [["t", 240, 0], ["s", -1, 1]], "kids": [
+        P("M78 174 L 6 128 M78 180 L 28 176 M78 186 L 54 188", stroke="#E8B23A", stroke_width=2.5, fill="none", stroke_linecap="round")]}])
+
+# áo choàng: phủ sau lưng tới mắt cá, toả rộng, khuy vàng trước cổ
+back_item("it_back_cape", [
+    P("M78 160 C 52 188 40 230 40 284 C 70 296 170 296 200 284 C 200 230 188 188 162 160 C 148 176 92 176 78 160 Z", fill="#B23636"),
+    P("M44 280 C 74 290 166 290 196 280", stroke="#8E2A2A", stroke_width=3, fill="none"),
+], [G([P("M86 164 C 96 176 110 180 120 180 C 130 180 144 176 154 164", stroke="#B23636", stroke_width=7, fill="none",
+         stroke_linecap="round"),
+       C(120, 180, 6, fill="#E8B23A", stroke="#C9952C", stroke_width=1.4)], **{"if": "torsoStand"})])
 
 # ── 7. BÌNH NƯỚC: thân bình xuyên qua CHÍNH đầu cánh tay phải của Koa — vẽ lại đầu bàn
 #     tay (cùng màu lông, không viền) đè lên giữa bình: thấy nắp ở trên, đáy ở dưới.
