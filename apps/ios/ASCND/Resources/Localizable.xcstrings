@@ -55370,19 +55370,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "%lld%% of target"
+      "value": "%lld%% of goal"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "đạt %lld%% mục tiêu"
+      "value": "%lld%% mục tiêu"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "%lld%% del objetivo"
+      "value": "%lld%% de la meta"
      }
     }
    }

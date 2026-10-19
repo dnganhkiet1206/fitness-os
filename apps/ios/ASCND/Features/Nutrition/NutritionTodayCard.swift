@@ -114,7 +114,7 @@ struct NutritionTodayCard: View {
     let tiles = NutritionToday.tiles(t, targets: NutritionToday.macroTargets(profile?.profile))
     return VStack(alignment: .leading, spacing: DS.Spacing.sm) {
       Button {
-        if reduceMotion { showLeft.toggle() } else { withAnimation(.snappy(duration: 0.3)) { showLeft.toggle() } }
+        if reduceMotion { showLeft.toggle() } else { withAnimation(.spring(duration: 0.45, bounce: 0.25)) { showLeft.toggle() } }
       } label: {
         VStack(alignment: .leading, spacing: DS.Spacing.md) {
           (typeSize.isAccessibilitySize
@@ -181,10 +181,12 @@ struct NutritionTodayCard: View {
         Text(verbatim: showLeft ? tile.leftText : Units.display(tile.eaten, locale: .app))
           .font(.system(.title3, design: .rounded).weight(.semibold).monospacedDigit())
           .foregroundStyle(tile.overHard ? DS.Color.readinessRed.swiftUI : DS.Color.foreground.swiftUI)
-          .contentTransition(.numericText())
+          .contentTransition(.numericText(countsDown: showLeft))
         Text(verbatim: showLeft ? "g \(wordText(tile.word))" : "/\(Units.display(tile.target, locale: .app))g")
           .font(DS.TextStyle.caption.monospacedDigit())
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          .transition(.blurReplace)
+          .id(showLeft)
       }
       .lineLimit(1)
       .minimumScaleFactor(0.7)
@@ -278,9 +280,9 @@ struct NutritionTodayCard: View {
           Text(String(localized: "nc.ring.eaten")).font(DS.TextStyle.caption)
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
           Text(String(localized: "nc.ring.percent \(Int(r.percentOfTarget.rounded()))"))
-            .font(DS.TextStyle.caption.weight(.semibold).monospacedDigit())
+            .font(.caption2.weight(.semibold).monospacedDigit())
             .foregroundStyle(tone(r.band) == DS.Color.foreground.swiftUI ? Self.accent : tone(r.band))
-            .padding(.top, 2)
+            .padding(.top, 3)
         } else {
         switch r.line {
         case .remaining(let n):
@@ -305,11 +307,14 @@ struct NutritionTodayCard: View {
         }
         }
       }
-      .transition(.opacity)
+      // Lật còn lại ↔ đã ăn: mờ-rõ + co giãn nhẹ (19/10: "thêm animation").
+      .transition(.blurReplace.combined(with: .scale(0.85)))
       .id(showLeft)
       .lineLimit(1)
       .minimumScaleFactor(0.6)
-      .padding(.horizontal, 14)
+      // Chữ nằm gọn trong lòng vòng (đường kính trong ≈ 92pt) — 19/10: dòng
+      // "% mục tiêu" từng tràn đè lên viền.
+      .frame(maxWidth: 82)
       // Vòng có cỡ cố định: chữ bên trong không lớn quá mức vòng chứa được.
       .dynamicTypeSize(...DynamicTypeSize.xLarge)
     }
