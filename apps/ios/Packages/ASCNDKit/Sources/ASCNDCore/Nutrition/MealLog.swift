@@ -107,10 +107,24 @@ public enum MealLog {
     }
   }
 
-  /// Bữa từ route: chỉ một trong sáu loại.
-  public static func mealType(_ requested: String?) -> String {
-    guard let requested, MealDiary.order.contains(requested) else { return defaultMeal }
-    return requested
+  /// Bữa từ route: chỉ một trong sáu loại. Không có (mở từ ô "Bạn vừa ăn
+  /// gì?", nút ghi nhanh…) mà biết giờ → bữa theo giờ (19/10, chủ dự án: "lúc
+  /// nào cũng mặc định bữa trưa"); không biết giờ → "lunch" như RN.
+  public static func mealType(_ requested: String?, hour: Int? = nil) -> String {
+    if let requested, MealDiary.order.contains(requested) { return requested }
+    return hour.map(mealForHour) ?? defaultMeal
+  }
+
+  /// Bữa theo giờ địa phương: sáng 4–11, trưa 11–15, phụ 15–17, tối 17–22,
+  /// khuya (22–4) là bữa phụ.
+  public static func mealForHour(_ hour: Int) -> String {
+    switch hour {
+    case 4..<11: "breakfast"
+    case 11..<15: "lunch"
+    case 15..<17: "snack"
+    case 17..<22: "dinner"
+    default: "snack"
+    }
   }
 
   /// `diaryStampAt`: hôm nay → đúng lúc này; ngày đã qua → 12:00 địa phương.
@@ -481,7 +495,10 @@ public final class MealLogger {
     self.makeId = makeId
     self.onEnqueued = onEnqueued
     self.date = MealDiary.startDate(date, today: LocalDate(clock.nowMillis(), in: timeZone))
-    self.mealType = MealLog.mealType(mealType)
+    var cal = Calendar(identifier: .gregorian)
+    cal.timeZone = timeZone
+    let hour = cal.component(.hour, from: Date(timeIntervalSince1970: Double(clock.nowMillis().millis) / 1000))
+    self.mealType = MealLog.mealType(mealType, hour: hour)
   }
 
   public func close() {

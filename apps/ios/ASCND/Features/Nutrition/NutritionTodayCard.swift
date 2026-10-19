@@ -27,6 +27,8 @@ struct NutritionTodayCard: View {
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Environment(\.dynamicTypeSize) private var typeSize
   @State private var showLeft = false
+  /// Vòng / thanh chạy từ 0 lần đầu thẻ hiện.
+  @State private var appeared = false
   @State private var helpOpen = false
   /// Lời nhắc "?" (`useHelpTopic('nutrition')`): tối đa 3 lần, thôi khi đã mở.
   @State private var nudge = false
@@ -97,48 +99,44 @@ struct NutritionTodayCard: View {
 
   // MARK: - Thẻ
 
-  /// Thẻ ngân sách (vẽ lại 19/10, chủ dự án: "vẽ lại phần này"): vòng lớn mang
-  /// SỐ CÒN LẠI, bên cạnh là "Đã ăn" / "Mục tiêu" (trước nằm dưới chân thẻ, chữ
-  /// nhỏ); ba ô macro có màu, số to dễ đọc thay cho chữ Menlo xám; chất xơ một
-  /// dòng có thanh riêng; chân thẻ: "Mục tiêu tính thế nào?" và "7 ngày ›".
-  /// Luật số không đổi (`NutritionToday.ring` / `tiles`). Chạm phần trên lật
-  /// macro giữa "đã ăn / mục tiêu" và "còn lại".
+  /// Thẻ ngân sách (vẽ lại 19/10 lần hai, chủ dự án: "mục tiêu và calo còn lại
+  /// bị trùng, nhiều màu quá, chưa có animation"): vòng mang SỐ CÒN LẠI; bên
+  /// cạnh là ba hàng macro + chất xơ cùng MỘT màu nhấn (màu bữa; đỏ khi vượt);
+  /// dưới là một dòng "Đã ăn N kcal · Đạt X% mục tiêu" — không lặp lại số mục
+  /// tiêu (nó ở tấm giải thích). Vòng và thanh chạy từ 0 khi hiện, đổi mượt khi
+  /// số đổi; số đổi bằng hiệu ứng đếm. Chạm lật "đã ăn / mục tiêu" ↔ "còn lại".
   private func card(_ t: NutritionToday.Totals) -> some View {
     let target = NutritionToday.calorieTarget(profile?.profile)
     let ring = NutritionToday.ring(kcal: t.kcal, target: target)
     let tiles = NutritionToday.tiles(t, targets: NutritionToday.macroTargets(profile?.profile))
-    return VStack(alignment: .leading, spacing: DS.Spacing.md) {
+    return VStack(alignment: .leading, spacing: DS.Spacing.sm) {
       Button {
-        if reduceMotion { showLeft.toggle() } else { withAnimation(.easeInOut(duration: 0.25)) { showLeft.toggle() } }
+        if reduceMotion { showLeft.toggle() } else { withAnimation(.snappy(duration: 0.3)) { showLeft.toggle() } }
       } label: {
         VStack(alignment: .leading, spacing: DS.Spacing.md) {
           (typeSize.isAccessibilitySize
             ? AnyLayout(VStackLayout(alignment: .leading, spacing: DS.Spacing.md))
             : AnyLayout(HStackLayout(alignment: .center, spacing: DS.Spacing.lg))) {
             ringView(ring)
-            VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-              kcalStat(String(localized: "nc.stat.eaten"), DiaryView.whole(t.kcal), icon: "fork.knife")
-              kcalStat(String(localized: "nc.stat.target"), DiaryView.whole(target), icon: "target")
-              // Số còn lại đã ở giữa vòng: chip nói phần trăm mục tiêu, hoặc
-              // trạng thái khi đã đủ / vượt.
-              Text(verbatim: chipText(ring))
-                .font(DS.TextStyle.caption.weight(.semibold))
-                .foregroundStyle(tone(ring.band))
-                .padding(.horizontal, 10)
-                .padding(.vertical, 4)
-                .background(ringColor(ring.band).opacity(0.14), in: Capsule())
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
+            VStack(alignment: .leading, spacing: 10) {
+              ForEach(Array(zip(Macro.allCases, tiles)), id: \.0) { m, tile in
+                macroRow(m, tile)
+              }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
           }
-          (typeSize.isAccessibilitySize
-            ? AnyLayout(VStackLayout(spacing: DS.Spacing.sm)) : AnyLayout(HStackLayout(spacing: DS.Spacing.sm))) {
-            ForEach(Array(zip(Macro.allCases, tiles)).prefix(3), id: \.0) { m, tile in
-              macroTile(m, tile)
-            }
+          HStack(spacing: 6) {
+            Image(systemName: "fork.knife")
+              .font(.caption.weight(.semibold))
+              .foregroundStyle(Self.accent)
+              .accessibilityHidden(true)
+            Text(String(localized: "nc.eatenLine \(DiaryView.whole(t.kcal)) \(Int(ring.percentOfTarget.rounded()))"))
+              .font(DS.TextStyle.footnote.monospacedDigit())
+              .foregroundStyle(DS.Color.foreground.swiftUI.opacity(0.8))
+              .contentTransition(.numericText())
+              .lineLimit(1)
+              .minimumScaleFactor(0.8)
           }
-          if let fiber = tiles.last { fiberLine(fiber) }
         }
         .contentShape(Rectangle())
       }
@@ -155,24 +153,45 @@ struct NutritionTodayCard: View {
     .padding(.bottom, DS.Spacing.xs)
     .frame(maxWidth: .infinity, alignment: .leading)
     .todayCard()
+    .animation(reduceMotion ? nil : .easeOut(duration: 0.6), value: t.kcal)
+    .onAppear {
+      guard !appeared else { return }
+      if reduceMotion { appeared = true } else { withAnimation(.easeOut(duration: 0.8).delay(0.1)) { appeared = true } }
+    }
   }
 
-  /// "Đã ăn 0 kcal" / "Mục tiêu 2.508 kcal": nhãn nhỏ trên, số to dưới.
-  private func kcalStat(_ label: String, _ value: String, icon: String) -> some View {
-    VStack(alignment: .leading, spacing: 0) {
-      Label(label, systemImage: icon)
-        .font(DS.TextStyle.caption)
-        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-      HStack(alignment: .firstTextBaseline, spacing: 3) {
-        Text(verbatim: value)
-          .font(.system(.title3, design: .rounded).weight(.bold).monospacedDigit())
-          .foregroundStyle(DS.Color.foreground.swiftUI)
-        Text(String(localized: "nc.kcal"))
-          .font(DS.TextStyle.caption)
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+  /// Màu nhấn DUY NHẤT của thẻ (màu bữa) — 19/10: "thẻ bị nhiều màu quá".
+  static var accent: Color { MascotRoomView.signalColor(.meal) }
+
+  /// Một hàng macro: nhãn trái, số phải (đã ăn/mục tiêu, hoặc còn lại khi lật),
+  /// thanh 6pt cùng màu nhấn; vượt quá 10 % thì đỏ.
+  private func macroRow(_ m: Macro, _ tile: NutritionToday.Tile) -> some View {
+    let barColor = tile.overHard ? DS.Color.readinessRed.swiftUI : Self.accent
+    let minor = m == .fiber
+    return VStack(alignment: .leading, spacing: 4) {
+      HStack(alignment: .firstTextBaseline, spacing: 4) {
+        Text(verbatim: m.label)
+          .font(minor ? DS.TextStyle.caption : DS.TextStyle.footnote.weight(.semibold))
+          .foregroundStyle(minor ? DS.Color.mutedForeground.swiftUI : DS.Color.foreground.swiftUI)
+          .lineLimit(1)
+        Spacer(minLength: 4)
+        Text(verbatim: showLeft
+          ? "\(tile.leftText) g \(wordText(tile.word))"
+          : "\(Units.display(tile.eaten, locale: .app)) / \(Units.display(tile.target, locale: .app)) g")
+          .font(DS.TextStyle.caption.monospacedDigit())
+          .foregroundStyle(tile.overHard ? DS.Color.readinessRed.swiftUI : DS.Color.mutedForeground.swiftUI)
+          .contentTransition(.numericText())
+          .lineLimit(1)
+          .minimumScaleFactor(0.7)
       }
-      .lineLimit(1)
-      .minimumScaleFactor(0.7)
+      GeometryReader { geo in
+        ZStack(alignment: .leading) {
+          Capsule().fill(DS.Color.muted.swiftUI)
+          Capsule().fill(barColor)
+            .frame(width: geo.size.width * (appeared ? min(100, tile.fill) : 0) / 100)
+        }
+      }
+      .frame(height: minor ? 4 : 6)
     }
   }
 
@@ -206,11 +225,11 @@ struct NutritionTodayCard: View {
     }
   }
 
-  /// Màu của vòng: màu bữa dưới mục tiêu, cam đậm trong dải, đỏ khi vượt.
+  /// Màu của vòng: màu nhấn dưới mục tiêu và trong dải, đỏ khi vượt.
   private func ringColor(_ band: NutritionToday.Band) -> Color {
     switch band {
-    case .under: MascotRoomView.signalColor(.meal)
-    case .inBand: DS.Color.metricOrange.swiftUI
+    case .under: Self.accent
+    case .inBand: Self.accent
     case .over: DS.Color.readinessRed.swiftUI
     }
   }
@@ -231,12 +250,12 @@ struct NutritionTodayCard: View {
     return ZStack {
       Circle().stroke(MascotRoomView.signalColor(.meal).opacity(0.18), lineWidth: 13)
       Circle()
-        .trim(from: 0, to: r.fill / 100)
+        .trim(from: 0, to: appeared ? r.fill / 100 : 0)
         .stroke(color, style: StrokeStyle(lineWidth: 13, lineCap: .round))
         .rotationEffect(.degrees(-90))
       if r.overFill > 0 {
         Circle()
-          .trim(from: 0, to: r.overFill / 100)
+          .trim(from: 0, to: appeared ? r.overFill / 100 : 0)
           .stroke(DS.Color.readinessRed.swiftUI, style: StrokeStyle(lineWidth: 4, lineCap: .round))
           .rotationEffect(.degrees(-90))
           .padding(16)
@@ -247,6 +266,7 @@ struct NutritionTodayCard: View {
           Text(verbatim: DiaryView.whole(n))
             .font(.system(size: 28, weight: .bold, design: .rounded).monospacedDigit())
             .foregroundStyle(DS.Color.foreground.swiftUI)
+            .contentTransition(.numericText(value: n))
           Text(String(localized: "nc.ring.left")).font(DS.TextStyle.caption)
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
         case .surplus(let d):
@@ -275,11 +295,6 @@ struct NutritionTodayCard: View {
   private func isSurplus(_ l: NutritionToday.Line) -> Bool {
     if case .surplus = l { return true }
     return false
-  }
-
-  private func chipText(_ r: NutritionToday.Ring) -> String {
-    if case .remaining = r.line { return String(localized: "nc.percentOfTarget \(Int(r.percentOfTarget.rounded()))") }
-    return lineText(r.line)
   }
 
   private func lineText(_ l: NutritionToday.Line) -> String {
@@ -321,68 +336,6 @@ struct NutritionTodayCard: View {
       case .fat: "drop"
       case .fiber: "carrot"
       }
-    }
-  }
-
-  /// Một ô macro: nhãn có màu, số to (đã ăn — hoặc còn lại khi lật), "/ mục
-  /// tiêu g" nhỏ, thanh dày 6pt. Vượt quá 10 % thì đỏ.
-  private func macroTile(_ m: Macro, _ tile: NutritionToday.Tile) -> some View {
-    let overColor = tile.overHard ? DS.Color.readinessRed.swiftUI : m.tint
-    return VStack(alignment: .leading, spacing: 6) {
-      HStack(spacing: 4) {
-        Circle().fill(m.tint).frame(width: 7, height: 7).accessibilityHidden(true)
-        Text(verbatim: m.label)
-          .font(DS.TextStyle.caption.weight(.semibold))
-          .foregroundStyle(DS.Color.foreground.swiftUI.opacity(0.8))
-          .lineLimit(1)
-          .minimumScaleFactor(0.8)
-      }
-      HStack(alignment: .firstTextBaseline, spacing: 2) {
-        Text(verbatim: showLeft ? tile.leftText : Units.display(tile.eaten, locale: .app))
-          .font(.system(.title3, design: .rounded).weight(.bold).monospacedDigit())
-          .foregroundStyle(tile.over ? overColor : DS.Color.foreground.swiftUI)
-        Text(verbatim: showLeft ? "g \(wordText(tile.word))" : "/\(Units.display(tile.target, locale: .app)) g")
-          .font(DS.TextStyle.caption.monospacedDigit())
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-      }
-      .lineLimit(1)
-      .minimumScaleFactor(0.6)
-      GeometryReader { geo in
-        ZStack(alignment: .leading) {
-          Capsule().fill(m.tint.opacity(0.18))
-          Capsule().fill(tile.over ? overColor : m.tint).frame(width: max(6, geo.size.width * tile.fill / 100))
-            .opacity(tile.fill > 0 ? 1 : 0)
-        }
-      }
-      .frame(height: 6)
-    }
-    .padding(10)
-    .frame(maxWidth: .infinity, alignment: .leading)
-    .background(m.tint.opacity(0.08), in: RoundedRectangle(cornerRadius: DS.Radius.md, style: .continuous))
-  }
-
-  /// Chất xơ: một dòng có thanh nhỏ — có mục tiêu, nhưng không phải ngân sách.
-  private func fiberLine(_ tile: NutritionToday.Tile) -> some View {
-    HStack(spacing: DS.Spacing.sm) {
-      Image(systemName: Macro.fiber.icon)
-        .font(.caption.weight(.semibold))
-        .foregroundStyle(Macro.fiber.tint)
-        .accessibilityHidden(true)
-      Text(verbatim: Macro.fiber.label)
-        .font(DS.TextStyle.caption.weight(.semibold))
-        .foregroundStyle(DS.Color.foreground.swiftUI.opacity(0.8))
-      GeometryReader { geo in
-        ZStack(alignment: .leading) {
-          Capsule().fill(Macro.fiber.tint.opacity(0.18))
-          Capsule().fill(Macro.fiber.tint).frame(width: geo.size.width * min(100, tile.fill) / 100)
-        }
-      }
-      .frame(height: 5)
-      Text(verbatim: "\(Units.display(tile.eaten, locale: .app))/\(Units.display(tile.target, locale: .app)) g")
-        .font(DS.TextStyle.caption.monospacedDigit())
-        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-        .lineLimit(1)
-        .fixedSize()
     }
   }
 

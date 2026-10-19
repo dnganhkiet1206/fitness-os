@@ -167,7 +167,9 @@ struct LogMealView: View {
           .font(DS.TextStyle.caption)
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
       } else {
-        MacroDots(protein: t.protein, carbs: t.carbs, fat: t.fat)
+        Text(verbatim: DiaryView.macros(t.protein, t.carbs, t.fat))
+          .font(DS.TextStyle.caption.monospacedDigit())
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
       }
       Button { Task { await save(logger) } } label: {
         HStack {
@@ -197,30 +199,41 @@ struct LogMealView: View {
 
   // MARK: - Bữa
 
+  /// Bữa: MỘT nút menu thay cho hàng sáu chip (19/10, chủ dự án: "chọn bữa
+  /// phức tạp, thao tác quá nhiều"). Bữa đã đúng theo giờ (`MealLog.mealForHour`)
+  /// hoặc theo thẻ bữa đã bấm — thường không cần chạm; muốn đổi thì một chạm mở
+  /// danh sách.
   private func mealPicker(_ logger: MealLogger) -> some View {
-    ScrollView(.horizontal, showsIndicators: false) {
-      HStack(spacing: DS.Spacing.sm) {
-        ForEach(MealDiary.order, id: \.self) { key in
-          let on = logger.mealType == key
-          Button {
-            logger.mealType = key
-          } label: {
-            HStack(spacing: 6) {
-              Image(systemName: MealSlotGlyph.symbol(key)).font(.footnote.weight(.semibold))
-              Text(verbatim: DiaryView.mealName(key)).font(DS.TextStyle.footnote.weight(.semibold))
-            }
-            .foregroundStyle(on ? Color.white : DS.Color.foreground.swiftUI)
-            .padding(.horizontal, 14)
-            .frame(minHeight: 40)
-            .background(Capsule().fill(on ? MascotRoomView.signalColor(.meal) : Color.clear))
-            .overlay(Capsule().strokeBorder(on ? Color.clear : DS.Color.foreground.swiftUI.opacity(0.18), lineWidth: 1))
-            .frame(minHeight: 44)
+    let meal = MascotRoomView.signalColor(.meal)
+    return HStack(spacing: DS.Spacing.sm) {
+      Text(String(localized: "logMeal.for"))
+        .font(DS.TextStyle.footnote)
+        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+      Menu {
+        Picker(selection: Binding(get: { logger.mealType }, set: { logger.mealType = $0 })) {
+          ForEach(MealDiary.order, id: \.self) { key in
+            Label(DiaryView.mealName(key), systemImage: MealSlotGlyph.symbol(key)).tag(key)
           }
-          .buttonStyle(.plain)
-          .accessibilityAddTraits(on ? .isSelected : [])
-          .sensoryFeedback(.selection, trigger: on)
+        } label: {
+          EmptyView()
         }
+      } label: {
+        HStack(spacing: 6) {
+          Image(systemName: MealSlotGlyph.symbol(logger.mealType)).font(.footnote.weight(.semibold))
+          Text(verbatim: DiaryView.mealName(logger.mealType)).font(DS.TextStyle.footnote.weight(.bold))
+          Image(systemName: "chevron.down").font(.caption2.weight(.bold))
+        }
+        .foregroundStyle(meal)
+        .padding(.horizontal, 14)
+        .frame(minHeight: 36)
+        .background(meal.opacity(0.12), in: Capsule())
+        .frame(minHeight: 44)
+        .contentShape(Rectangle())
       }
+      .accessibilityLabel(Text(String(localized: "logMeal.for")))
+      .accessibilityValue(Text(verbatim: DiaryView.mealName(logger.mealType)))
+      .sensoryFeedback(.selection, trigger: logger.mealType)
+      Spacer(minLength: 0)
     }
   }
 
@@ -702,29 +715,4 @@ extension LogMealView {
   }
 
 
-}
-
-/// "● Đạm 35g  ● Bột 10g  ● Béo 5g" — chấm cùng màu với thẻ Dinh dưỡng.
-struct MacroDots: View {
-  let protein: Double
-  let carbs: Double
-  let fat: Double
-
-  var body: some View {
-    HStack(spacing: DS.Spacing.sm) {
-      dot(NutritionTodayCard.Macro.protein, protein)
-      dot(NutritionTodayCard.Macro.carbs, carbs)
-      dot(NutritionTodayCard.Macro.fat, fat)
-    }
-    .font(DS.TextStyle.caption.monospacedDigit())
-    .foregroundStyle(DS.Color.foreground.swiftUI.opacity(0.8))
-    .accessibilityElement(children: .combine)
-  }
-
-  private func dot(_ m: NutritionTodayCard.Macro, _ g: Double) -> some View {
-    HStack(spacing: 4) {
-      Circle().fill(m.tint).frame(width: 7, height: 7).accessibilityHidden(true)
-      Text(verbatim: "\(m.label) \(DiaryView.whole(g))g")
-    }
-  }
 }
