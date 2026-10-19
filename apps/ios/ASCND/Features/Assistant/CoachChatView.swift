@@ -132,6 +132,23 @@ struct CoachChatView: View {
       .onChange(of: chat.failure) { _, failure in
         if failure != nil { proxy.scrollTo(Self.bottom, anchor: .bottom) }
       }
+      // Câu trả lời xong có thể NGẮN lại (bỏ khối thừa, làm sạch số — 18/10): vị trí
+      // cuộn cũ nằm quá cuối nội dung → màn trống dù tin vẫn còn (chủ dự án: "mất
+      // thông tin cuộc trò chuyện"). Xong lượt và mỗi lần quay lại: về cuối.
+      .onChange(of: chat.isLoading) { _, loading in
+        guard !loading else { return }
+        Task {
+          try? await Task.sleep(for: .milliseconds(350))
+          proxy.scrollTo(Self.bottom, anchor: .bottom)
+        }
+      }
+      .onAppear {
+        guard !chat.messages.isEmpty else { return }
+        Task {
+          try? await Task.sleep(for: .milliseconds(150))
+          proxy.scrollTo(Self.bottom, anchor: .bottom)
+        }
+      }
     }
     .safeAreaInset(edge: .bottom) { composer }
     // Màn chat không có thanh tab, như ChatGPT / iMessage (16/10): viên thu gọn hạ

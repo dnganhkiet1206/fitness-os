@@ -1,5 +1,6 @@
 import { looksHostile, refusalStream, scopeRule } from "../_shared/scope.ts";
 import { callAI, forSpanish } from "../_shared/ai.ts";
+import { appLang, markRule, stripBeforeMark } from "../_shared/answer.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 import { aiGate, corsHeaders, json, meterStream, opaque, quotaExceeded, recordTokens, requireUser } from "../_shared/guard.ts";
@@ -203,7 +204,11 @@ serve(async (req) => {
       return d.toISOString().split("T")[0];
     })();
 
-    const [profileRes, dailyLogsRes, sleepRes, workoutsRes, bioRes, memoryRes, weightRes] = await Promise.all([
+    /* Thứ tự tên PHẢI khớp thứ tự lệnh đọc bên dưới (… weight_logs, coach_memory).
+       Trước 18/10 hai tên cuối bị đảo: "trí nhớ" của Koa là các lần cân (in ra
+       "[undefined] undefined") và trí nhớ thật bị đọc như cân — Koa không bao giờ
+       thấy điều người dùng đã kể (chủ dự án: "Koa nhớ gì không có tác dụng"). */
+    const [profileRes, dailyLogsRes, sleepRes, workoutsRes, bioRes, weightRes, memoryRes] = await Promise.all([
       supabase.from("profiles").select("*").eq("user_id", userId).single(),
       supabase.from("daily_logs").select("*").eq("user_id", userId).gte("date", weekAgo).order("date", { ascending: false }).limit(7),
       supabase.from("sleep_logs").select("*").eq("user_id", userId).gte("waketime", `${weekAgo}T00:00:00Z`).order("waketime", { ascending: false }).limit(7),
@@ -421,10 +426,11 @@ NGUYÊN TẮC QUAN TRỌNG:
         messages: [
           {
             role: "system",
+            // Quy tắc đầu ra + ngôn ngữ (vi / en / es) nối SAU `forSpanish` và ở cuối.
             content: forSpanish(
               systemPrompt + scopeRule(lang) + answerFormat(lang) + checkBlock(readChecks(body?.checks), lang, spanish),
               body?.lang,
-            ),
+            ) + markRule(appLang(body?.lang)),
           },
           ...messages,
         ],
@@ -494,7 +500,8 @@ NGUYÊN TẮC QUAN TRỌNG:
     const [toClient, toMeter] = response.body.tee();
     meterStream(supabase, "ai-coach", toMeter, gate === "overage");
 
-    return new Response(toClient, {
+    // Bỏ phần nháp suy nghĩ đứng trước dấu mốc (18/10) — `toMeter` vẫn đếm đủ.
+    return new Response(toClient.pipeThrough(stripBeforeMark()), {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
   } catch (e) {
