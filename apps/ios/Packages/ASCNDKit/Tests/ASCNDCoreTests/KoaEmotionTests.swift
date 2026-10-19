@@ -2,7 +2,7 @@
 import Foundation
 import Testing
 
-/// Koa K4 = CHÍNH RN @ fac9ac2 — `Fixtures/koa-emotion-golden.json`
+/// Koa K4 = RN @ fac9ac2, trừ `wave`/`run` đã bỏ (19/10) nên fixture ghi chúng về `idle` — `Fixtures/koa-emotion-golden.json`
 /// (`gen-koa-emotion.mjs`: `koaStateFor` biên dịch; `wornFrom` chép nguyên văn
 /// trên `getShopItem` biên dịch).
 struct KoaEmotionGoldenTests {
@@ -32,8 +32,9 @@ struct KoaEmotionGoldenTests {
       #expect(s.pose.rawValue == c["s"]?["pose"]?.stringValue, "\(e)")
       #expect(s.outfit == Self.worn(c["s"]?["outfit"]), "\(e)")
     }
-    // mọi cảm xúc của RN đều có trong bảng
-    #expect(KoaEmotion.Emotion.allCases.count == 15)
+    // mọi cảm xúc của RN trừ `wave`/`run` (đã bỏ, rơi về `idle` — xem fixture)
+    #expect(KoaEmotion.Emotion.allCases.count == 13)
+    #expect(KoaEmotion.Emotion(rawValue: "wave") == nil && KoaEmotion.Emotion(rawValue: "run") == nil)
     let dev = Self.array(try Self.golden()["dev"]).compactMap { $0.stringValue }
     #expect(KoaEmotion.devEmotions.map { $0.rawValue } == dev)
   }
