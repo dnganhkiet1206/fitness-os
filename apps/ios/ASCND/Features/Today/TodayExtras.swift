@@ -48,6 +48,10 @@ struct TodayExtras<Plan: View>: View {
   @State private var meals: MealLogger?
   /// "Ghi cả ngày" (18/10): form một lần cho mọi việc còn thiếu.
   @State private var showsDayLog = false
+  /// Mở "Ghi hôm nay" bằng micro (bắt đầu nghe ngay).
+  @State private var tellVoice = false
+  /// Bữa kế tiếp theo kế hoạch ăn cho ô Bữa (19/10).
+  @State private var planNext: String?
   /// Giấc đêm qua do Apple Health điền (không phải ghi tay) — ô Ngủ ghi "Apple Health".
   @State private var sleepFromHealth = false
   @State private var showsWeight = false
@@ -138,7 +142,10 @@ struct TodayExtras<Plan: View>: View {
       if let mascot, case .ready = mascot.phase {
         // "Hôm nay của bạn" (18/10, mock A): thay danh sách "Ngày của bạn".
         TodayDayCard(
-          tiles: dayTiles(mascot), weighIn: weighInRow, onLogAll: { showsDayLog = true },
+          tiles: dayTiles(mascot), koaLine: koaLine(mascot), planNext: planNext,
+          onExtraWorkout: onLogWorkout,
+          onTell: { voice in tellVoice = voice; showsDayLog = true },
+          weighIn: weighInRow, onLogAll: { showsDayLog = true },
           onTap: tapItem, onWeight: { showsWeight = true })
           .todayEntrance(3)
       }
@@ -157,7 +164,7 @@ struct TodayExtras<Plan: View>: View {
     }
     // "Ghi hôm nay" (19/10): một màn cho cả nói, gõ và chip "như thường lệ".
     .sheet(isPresented: $showsDayLog, onDismiss: { Task { await reloadDay() } }) {
-      TellKoaSheet(userId: userId)
+      TellKoaSheet(userId: userId, startListening: tellVoice)
     }
     .sheet(item: $logging, onDismiss: { Task { await reloadDay() } }) { item in
       switch item {
@@ -243,6 +250,7 @@ struct TodayExtras<Plan: View>: View {
       await todo?.refresh()
       await weight?.load()
       await loadMeals()
+      await loadPlanNext()
       await mascot?.load()
       if let nutrition { await nutrition.loadOnce() } else { await ownWater?.load() }
       await readiness?.load()
@@ -438,6 +446,7 @@ struct TodayExtras<Plan: View>: View {
 
   private func reloadDay() async {
     await loadMeals()
+    await loadPlanNext()
     await todo?.refresh()
     await mascot?.load()
     if let nutrition { await nutrition.refresh() } else { await ownWater?.refresh() }
@@ -560,6 +569,23 @@ struct TodayExtras<Plan: View>: View {
     case .water: act(.water)
     case .workout: act(.workout)
     }
+  }
+
+  /// Câu Koa trên thẻ: còn thiếu gì, hay đã xong.
+  private func koaLine(_ room: MascotRoomController) -> String {
+    let pending = DayCheckIn.pending(dayStates(room)).map { TodayDayCard.name($0).lowercased() }
+    if pending.isEmpty { return String(localized: "day.koa.done") }
+    return String(localized: "day.koa.missing \(pending.formatted(.list(type: .and).locale(.app)))")
+  }
+
+  /// Bữa kế tiếp của kế hoạch ăn hôm nay (chưa ghi), cho ô Bữa.
+  private func loadPlanNext() async {
+    guard let p = await TodayMealPlan.load(services, userId: userId), let meal = p.openMeals.first else {
+      planNext = nil
+      return
+    }
+    let foods = p.planned(meal).map(\.name).joined(separator: ", ")
+    planNext = String(localized: "day.plan.next \(DiaryView.mealName(meal)) \(foods)")
   }
 
   private func reloadAfterHealthSync() async {

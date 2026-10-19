@@ -40184,6 +40184,121 @@
     }
    }
   },
+  "day.tell.placeholder": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tell Koa what you did today…"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Kể cho Koa hôm nay bạn làm gì…"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cuéntale a Koa qué hiciste hoy…"
+     }
+    }
+   }
+  },
+  "day.workout.extra": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Extra workout"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Buổi phát sinh"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Entreno extra"
+     }
+    }
+   }
+  },
+  "day.koa.done": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "All logged today — nice work!"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hôm nay ghi đủ rồi — giỏi lắm!"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "¡Todo registrado hoy, buen trabajo!"
+     }
+    }
+   }
+  },
+  "day.koa.missing %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Still to log: %@. Tell me in one go below."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Còn thiếu: %@. Kể một lần ở dưới là xong."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Falta: %@. Cuéntamelo todo abajo."
+     }
+    }
+   }
+  },
+  "day.plan.next %@ %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Next: %1$@ · %2$@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tiếp theo: %1$@ · %2$@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Siguiente: %1$@ · %2$@"
+     }
+    }
+   }
+  },
   "day.card.progress %@": {
    "extractionState": "manual",
    "localizations": {
