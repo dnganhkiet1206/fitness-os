@@ -3,11 +3,13 @@
 public enum KoaEmotion {
   /// `MascotEmotion`.
   public enum Emotion: String, Sendable, Hashable, CaseIterable {
-    case idle, happy, sad, tired, sleep, celebrate, curl, wave, worry, proud, rested, oops, run, hat, coat
+    case idle, happy, sad, tired, sleep, celebrate, curl, worry, proud, rested, oops, hat, coat
   }
 
   /// `DEV_EMOTIONS`: các cảm xúc thanh DEV của phòng linh vật cho ép, đúng thứ tự.
-  public static let devEmotions: [Emotion] = [.idle, .happy, .sad, .tired, .sleep, .celebrate, .curl, .wave, .run]
+  /// Đã bỏ `wave` và `run` của RN (19/10, Kiệt): `turn34` không vẫy tay và
+  /// `running` đứng yên trên sân khấu nên không đọc ra được; tên thô cũ rơi về `idle`.
+  public static let devEmotions: [Emotion] = [.idle, .happy, .sad, .tired, .sleep, .celebrate, .curl]
 
   public struct State: Sendable, Hashable {
     public let expression: KoaFlags.Expression
@@ -33,9 +35,6 @@ public enum KoaEmotion {
     .celebrate: State(.delighted, .idle),
     // ghi buổi tập → cùng cuốn tạ
     .curl: State(.strain, .lifting),
-    // chào → quay 3/4 (KHÔNG phải `stretching`, tư thế ấy nghiêng người)
-    .wave: State(.happy, .turn34),
-    .run: State(.happytired, .running),
     .worry: State(.plead, .idle),
     .proud: State(.confident, .idle),
     .oops: State(.surprised, .idle),
