@@ -140,12 +140,15 @@ struct NutritionTodayCard: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
           }
-          // Macro: bốn vòng nhỏ một hàng (19/10 lần ba — "không thích kiểu vẽ
-          // macro như này"): số gram giữa vòng, tên + mục tiêu bên dưới.
-          (typeSize.isAccessibilitySize
-            ? AnyLayout(VStackLayout(spacing: DS.Spacing.sm)) : AnyLayout(HStackLayout(spacing: 0))) {
+          // Macro: bốn viên gọn 2×2 (19/10 lần bốn — chủ dự án chọn "dòng chip
+          // gọn"): "Đạm 35/121g", nền viên tô dần theo phần đã ăn.
+          LazyVGrid(
+            columns: typeSize.isAccessibilitySize
+              ? [GridItem(.flexible())] : [GridItem(.flexible(), spacing: 8), GridItem(.flexible())],
+            spacing: 8
+          ) {
             ForEach(Array(zip(Macro.allCases, tiles)), id: \.0) { m, tile in
-              macroGauge(m, tile)
+              macroChip(m, tile)
             }
           }
         }
@@ -174,40 +177,38 @@ struct NutritionTodayCard: View {
   /// Màu nhấn DUY NHẤT của thẻ (màu bữa) — 19/10: "thẻ bị nhiều màu quá".
   static var accent: Color { MascotRoomView.signalColor(.meal) }
 
-  /// Một vòng macro nhỏ: giữa vòng là gram đã ăn (hoặc còn lại khi lật), dưới
-  /// là tên và "/ mục tiêu g". Cùng màu nhấn; vượt quá 10 % thì đỏ.
-  private func macroGauge(_ m: Macro, _ tile: NutritionToday.Tile) -> some View {
+  /// Một viên macro: "Đạm 35/121g" (hoặc "Đạm còn 86g" khi lật); nền viên tô
+  /// màu nhấn theo phần đã ăn, chạy từ 0 khi hiện. Vượt quá 10 % thì đỏ.
+  private func macroChip(_ m: Macro, _ tile: NutritionToday.Tile) -> some View {
     let color = tile.overHard ? DS.Color.readinessRed.swiftUI : Self.accent
-    return VStack(spacing: 6) {
-      ZStack {
-        Circle().stroke(Self.accent.opacity(0.15), lineWidth: 6)
-        Circle()
-          .trim(from: 0, to: (appeared ? min(100, tile.fill) : 0) / 100)
-          .stroke(color, style: StrokeStyle(lineWidth: 6, lineCap: .round))
-          .rotationEffect(.degrees(-90))
-        Text(verbatim: showLeft ? tile.leftText : Units.display(tile.eaten, locale: .app))
-          .font(.system(.subheadline, design: .rounded).weight(.bold).monospacedDigit())
-          .foregroundStyle(tile.overHard ? DS.Color.readinessRed.swiftUI : DS.Color.foreground.swiftUI)
-          .contentTransition(.numericText())
-          .lineLimit(1)
-          .minimumScaleFactor(0.6)
-          .padding(.horizontal, 8)
-      }
-      .frame(width: 58, height: 58)
-      VStack(spacing: 0) {
-        Text(verbatim: m.label)
-          .font(DS.TextStyle.caption.weight(.semibold))
-          .foregroundStyle(DS.Color.foreground.swiftUI.opacity(0.85))
-        Text(verbatim: showLeft ? "g \(wordText(tile.word))" : "/\(Units.display(tile.target, locale: .app)) g")
-          .font(DS.TextStyle.caption.monospacedDigit())
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-          .contentTransition(.numericText())
-      }
-      .lineLimit(1)
-      .minimumScaleFactor(0.75)
+    return HStack(spacing: 4) {
+      Text(verbatim: m.label)
+        .font(DS.TextStyle.caption.weight(.semibold))
+        .foregroundStyle(DS.Color.foreground.swiftUI)
+      Spacer(minLength: 2)
+      Text(verbatim: showLeft
+        ? "\(tile.leftText)g \(wordText(tile.word))"
+        : "\(Units.display(tile.eaten, locale: .app))/\(Units.display(tile.target, locale: .app))g")
+        .font(DS.TextStyle.caption.weight(.medium).monospacedDigit())
+        .foregroundStyle(tile.overHard ? DS.Color.readinessRed.swiftUI : DS.Color.foreground.swiftUI.opacity(0.7))
+        .contentTransition(.numericText())
     }
-    .frame(maxWidth: .infinity)
+    .lineLimit(1)
+    .minimumScaleFactor(0.75)
+    .padding(.horizontal, 12)
+    .frame(minHeight: 36)
+    .background {
+      GeometryReader { geo in
+        ZStack(alignment: .leading) {
+          Capsule().fill(DS.Color.secondary.swiftUI)
+          Capsule().fill(color.opacity(0.28))
+            .frame(width: geo.size.width * (appeared ? min(100, tile.fill) : 0) / 100)
+        }
+      }
+    }
+    .clipShape(Capsule())
   }
+
 
 
   /// Chân thẻ: "Mục tiêu tính thế nào?" (giải thích) và "7 ngày ›" (xu hướng).
