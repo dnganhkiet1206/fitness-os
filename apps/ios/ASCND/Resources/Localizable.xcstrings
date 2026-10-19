@@ -53915,6 +53915,29 @@
     }
    }
   },
+  "logday.understanding.short": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa is reading…"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa đang hiểu…"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa está leyendo…"
+     }
+    }
+   }
+  },
   "logday.koa.empty": {
    "extractionState": "manual",
    "localizations": {

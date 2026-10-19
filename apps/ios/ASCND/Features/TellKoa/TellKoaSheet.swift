@@ -274,9 +274,11 @@ struct TellKoaSheet: View {
   private var koaLine: some View {
     HStack(alignment: .top, spacing: 10) {
       MascotAvatar(mascotId: nil, size: 36)
-      HStack(spacing: 6) {
-        if thinking { IntelligenceMark(size: 14).symbolEffect(.pulse, isActive: !reduceMotion) }
+      HStack(spacing: 8) {
+        // Đang hiểu câu: cùng quả cầu ASCND Intelligence với Koa Coach (19/10, chủ dự án).
+        if thinking { IntelligenceOrb(size: 22).transition(.scale.combined(with: .opacity)) }
         Text(verbatim: koaSays)
+          .contentTransition(.opacity)
           .font(.system(size: 15))
           .foregroundStyle(DS.Color.foreground.swiftUI)
           .fixedSize(horizontal: false, vertical: true)
@@ -290,6 +292,7 @@ struct TellKoaSheet: View {
       Spacer(minLength: 0)
     }
     .accessibilityElement(children: .combine)
+    .animation(reduceMotion ? nil : .smooth(duration: 0.3), value: thinking)
   }
 
   private var koaSays: String {
@@ -304,6 +307,13 @@ struct TellKoaSheet: View {
 
   /// Ô lớn hai cột cho ngủ / nước / cân / tập; bữa trải hết bề ngang.
   @ViewBuilder private var tiles: some View {
+    tilesBody
+      .opacity(thinking ? 0.45 : 1)
+      .blur(radius: thinking && !reduceMotion ? 1.5 : 0)
+      .animation(reduceMotion ? nil : .smooth(duration: 0.35), value: thinking)
+  }
+
+  @ViewBuilder private var tilesBody: some View {
     let small = included.filter { [.sleep, .water, .weight, .workout].contains($0) }
     let wide = included.filter { ![.sleep, .water, .weight, .workout].contains($0) }
     if result.doubts.contains(.mixedQuestion), !confirmedQuestion {
@@ -1174,6 +1184,12 @@ struct TellKoaSheet: View {
         Group {
           if saving {
             ProgressView().tint(DS.Color.background.swiftUI)
+          } else if thinking {
+            // Nút Lưu chờ AI: quả cầu Intelligence + "Koa đang hiểu…".
+            HStack(spacing: 8) {
+              IntelligenceOrb(size: 20)
+              Text("logday.understanding.short")
+            }
           } else {
             Text(included.isEmpty ? String(localized: "tellkoa.save.none") : String(localized: "tellkoa.save \(included.count)"))
           }
