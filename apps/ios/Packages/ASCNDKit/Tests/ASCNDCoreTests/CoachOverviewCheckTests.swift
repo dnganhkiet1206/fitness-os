@@ -59,4 +59,23 @@ struct CoachOverviewCheckTests {
     let o = CoachOverview.parse(#"{"title":"Tuần \"này\"","items":[{"label":"A","value":1.5,"tone":"other"}],"trend":{"label":"T","unit":"","points":[{"label":"T2","value":1},{"label":"T3","value":2}]}}"#)!
     #expect(CoachOverview.parse(o.json) == o)
   }
+
+  /// Hai khối ```ascnd trong một câu trả lời (18/10): khối đầu được vẽ, khối sau
+  /// không bao giờ hiện thành chữ thô — kể cả khi đang stream (chưa đóng).
+  @Test func extraAscndBlocksNeverShowAsText() {
+    let msg = "```ascnd\n{\"items\":[{\"label\":\"A\",\"value\":1}]}\n```\nĐầu.\nBuổi tập.```ascnd\n{\"items\":[{\"label\":\"B\",\"value\":2}]}\n```\nCuối."
+    let (o, text) = CoachOverview.split(msg)
+    #expect(o?.items.first?.label == "A")
+    #expect(!text.contains("```") && !text.contains("items"))
+    #expect(text.contains("Đầu.") && text.contains("Cuối."))
+    #expect(!text.contains("tập.Cuối") && text.contains("Buổi tập.\n"), "khối bỏ đi để lại ngắt đoạn")
+    let streaming = "```ascnd\n{\"items\":[]}\n```\nĐầu.```ascnd\n{\"ite"
+    #expect(!CoachOverview.split(streaming).text.contains("```"))
+  }
+
+  /// Nháp suy nghĩ trước dấu mốc (18/10) không bao giờ hiện.
+  @Test func textBeforeAnswerMarkIsHidden() {
+    let (_, text) = CoachOverview.split("Người dùng hỏi… prompt nói: …\n@@ANSWER@@\n**Trả lời.**")
+    #expect(text == "**Trả lời.**")
+  }
 }

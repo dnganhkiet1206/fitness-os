@@ -31,6 +31,9 @@ struct CoachChatView: View {
   /// Người dùng chọn số mới khác số đã ghi → hỏi có cập nhật nhật ký không.
   @State private var confirmUpdate: CoachLogPrompt.Conflict?
   @State private var waterAdded: Set<String> = []
+  /// "Kể cho Koa" mở từ một tin nhắn kể việc đã làm (18/10).
+  @State private var tellText: TellText?
+  struct TellText: Identifiable { let id: String; let text: String }
   @Environment(NutritionBooks.self) private var nutrition: NutritionBooks?
   @Environment(AppServices.self) private var services
   @Environment(WorkoutFlow.self) private var flow
@@ -132,6 +135,23 @@ struct CoachChatView: View {
       .onChange(of: chat.failure) { _, failure in
         if failure != nil { proxy.scrollTo(Self.bottom, anchor: .bottom) }
       }
+      // Câu trả lời xong có thể NGẮN lại (bỏ khối thừa, làm sạch số — 18/10): vị trí
+      // cuộn cũ nằm quá cuối nội dung → màn trống dù tin vẫn còn (chủ dự án: "mất
+      // thông tin cuộc trò chuyện"). Xong lượt và mỗi lần quay lại: về cuối.
+      .onChange(of: chat.isLoading) { _, loading in
+        guard !loading else { return }
+        Task {
+          try? await Task.sleep(for: .milliseconds(350))
+          proxy.scrollTo(Self.bottom, anchor: .bottom)
+        }
+      }
+      .onAppear {
+        guard !chat.messages.isEmpty else { return }
+        Task {
+          try? await Task.sleep(for: .milliseconds(150))
+          proxy.scrollTo(Self.bottom, anchor: .bottom)
+        }
+      }
     }
     .safeAreaInset(edge: .bottom) { composer }
     // Màn chat không có thanh tab, như ChatGPT / iMessage (16/10): viên thu gọn hạ
@@ -139,6 +159,9 @@ struct CoachChatView: View {
     // thu / bung — app không đọc được thanh tab đang thu hay mở.
     .toolbar(.hidden, for: .tabBar)
     .sheet(item: $logSheet, onDismiss: { Task { await onLogged() } }) { t in logScreen(t) }
+    .sheet(item: $tellText, onDismiss: { Task { await onLogged() } }) { t in
+      if let userId = services.session.session?.userId { TellKoaSheet(userId: userId, initialText: t.text) }
+    }
     .alert(
       Text("coach.check.update.title"),
       isPresented: Binding(get: { confirmUpdate != nil }, set: { if !$0 { confirmUpdate = nil } }),
@@ -492,8 +515,17 @@ struct CoachChatView: View {
             send(Self.replyText(c.logged, c.kind, lang: lang))
           }
         }
-        ForEach(Array(suggestions.enumerated()), id: \.offset) { _, d in
-          suggestionChip(d, key: asked.id)
+        // Lời kể nhiều việc / có bữa ăn (18/10, "log bằng chat"): MỘT nút mở màn
+        // xác nhận đã điền sẵn tin nhắn — ghi đủ mọi mục, hỏi lại chỗ chưa rõ.
+        let spoken = SpokenLog.parse(asked.content, hour: hour)
+        if !suggestions.isEmpty, spoken.items.count > 1 || spoken.items.contains(where: { if case .meal = $0 { true } else { false } }) {
+          chip(Text("coach.log.all \(spoken.items.count)"), primary: true) {
+            tellText = TellText(id: asked.id, text: asked.content)
+          }
+        } else {
+          ForEach(Array(suggestions.enumerated()), id: \.offset) { _, d in
+            suggestionChip(d, key: asked.id)
+          }
         }
       }
       .frame(maxWidth: .infinity, alignment: .leading)

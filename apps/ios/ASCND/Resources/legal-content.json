@@ -117,7 +117,8 @@
       "Nhật ký: bữa ăn và món ăn, nước, giấc ngủ, buổi tập (bài, hiệp, tạ, số lần, cảm nhận), cân nặng, số đo cơ thể, chỉ số sinh trắc (nhịp tim nghỉ, HRV, SpO₂, mức đau mỏi), thực phẩm bổ sung.",
       "Ảnh tiến trình và ảnh món ăn bạn chụp để nhận diện.",
       "Cộng đồng: tên hiển thị, tên người dùng, linh vật đại diện, bài đăng, bình luận, lượt thích, lưu, theo dõi, báo cáo, chặn.",
-      "Trò chuyện với Koa Coach và các điều Koa ghi nhớ về bạn (bạn xem và xoá được)."
+      "Trò chuyện với Koa Coach và các điều Koa ghi nhớ về bạn (bạn xem và xoá được).",
+      "Giọng nói khi bạn bật micro trong Kể cho Koa: được chuyển thành chữ để bạn xem trước khi ghi; trên iPhone hỗ trợ ngôn ngữ của bạn việc này chạy ngay trên máy, nếu không Apple xử lý âm thanh. Chúng tôi không lưu âm thanh."
      ]
     },
     {
@@ -428,7 +429,8 @@
       "Logs: meals and foods, water, sleep, workouts (exercises, sets, weight, reps, effort), weight, body measurements, biometrics (resting heart rate, HRV, SpO₂, soreness), supplements.",
       "Progress photos, and food photos you take for recognition.",
       "Community: display name, username, mascot avatar, posts, comments, likes, saves, follows, reports and blocks.",
-      "Conversations with Koa Coach and the facts Koa remembers about you (you can view and delete them)."
+      "Conversations with Koa Coach and the facts Koa remembers about you (you can view and delete them).",
+      "Your voice when you turn on the mic in Tell Koa: it is turned into text for you to review before anything is logged; on iPhones that support your language this happens on the device, otherwise Apple processes the audio. We do not store the audio."
      ]
     },
     {
@@ -739,7 +741,8 @@
       "Registros: comidas y alimentos, agua, sueño, entrenamientos (ejercicios, series, peso, repeticiones, esfuerzo), peso, medidas corporales, biometría (frecuencia cardiaca en reposo, VFC, SpO₂, dolor muscular), suplementos.",
       "Fotos de progreso y fotos de comida que tomas para reconocerla.",
       "Comunidad: nombre visible, nombre de usuario, avatar de mascota, publicaciones, comentarios, me gusta, guardados, seguidos, denuncias y bloqueos.",
-      "Conversaciones con Koa Coach y lo que Koa recuerda de ti (puedes verlo y eliminarlo)."
+      "Conversaciones con Koa Coach y lo que Koa recuerda de ti (puedes verlo y eliminarlo).",
+      "Tu voz cuando activas el micrófono en Cuéntale a Koa: se convierte en texto para que lo revises antes de registrar nada; en iPhone compatibles con tu idioma ocurre en el dispositivo y, si no, Apple procesa el audio. No guardamos el audio."
      ]
     },
     {

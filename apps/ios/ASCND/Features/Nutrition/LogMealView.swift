@@ -34,6 +34,9 @@ struct LogMealView: View {
   var start: Start = .plain
   /// Món có sẵn khi mở (14/10: "Thêm vào bữa" từ bài công thức Cộng đồng).
   var prefill: [MealLog.Food] = []
+  /// Chữ có sẵn trong ô tìm (18/10, "Kể cho Koa": món người dùng kể mà app chưa
+  /// khớp chắc — tìm sẵn để người dùng chỉ việc chọn).
+  var initialQuery = ""
   var onDone: () -> Void = {}
 
   enum Start: Hashable { case plain, search, manual, scan, photo }
@@ -99,6 +102,7 @@ struct LogMealView: View {
       let l = services.makeMealLogger(userId: userId, date: date, mealType: mealType)
       logger = l
       for f in prefill { l?.add(f) }
+      if !initialQuery.isEmpty { query = initialQuery }
       // Con trỏ chỉ vào được ô tìm khi ô đã có trên màn — tức là sau khi có
       // sổ (trước đó màn là vòng chờ, đặt tiêu điểm lúc ấy không làm gì).
       if start == .search {
