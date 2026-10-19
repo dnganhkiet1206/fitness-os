@@ -123,16 +123,28 @@ public enum KoaScene {
     let keyframes: [String: Track]
   }
 
-  static let payload: Payload = {
+  static func decode(_ text: String) -> Payload {
     do {
-      return try JSONDecoder().decode(Payload.self, from: Data(json.utf8))
+      return try JSONDecoder().decode(Payload.self, from: Data(text.utf8))
     } catch {
       preconditionFailure("koa-scene: \(error)")
     }
-  }()
+  }
 
-  /// `NODES`.
+  /// Cảnh RN nguyên văn (`KoaSceneData.swift`) — chuẩn của các test golden.
+  static let rnPayload = decode(json)
+  /// Cảnh app vẽ: cảnh RN + tủ đồ vẽ lại (`KoaWardrobeData.swift`,
+  /// `tools/koa-wardrobe/build.py`, #527 19/10 — khác RN có chủ đích).
+  static let wardrobePayload = decode(wardrobeJSON)
+
+  /// Đọc cảnh RN nguyên văn thay cho cảnh app — chỉ test golden bật
+  /// (`KoaScene.$rn.withValue(true) { … }`).
+  @TaskLocal public static var rn = false
+
+  static var payload: Payload { rn ? rnPayload : wardrobePayload }
+
+  /// `NODES` (đã phủ tủ đồ vẽ lại, trừ khi `rn`).
   public static var nodes: [Node] { payload.nodes }
-  /// `KEYFRAMES`.
+  /// `KEYFRAMES` — tủ đồ không thêm khung nào.
   public static var keyframes: [String: Track] { payload.keyframes }
 }

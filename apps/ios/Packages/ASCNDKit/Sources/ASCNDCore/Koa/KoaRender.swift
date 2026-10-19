@@ -254,6 +254,8 @@ public enum KoaRender {
   /// Cờ của `KoaFigure`: thử đồ thì miệng "o" và hai trái tim của `delighted`.
   public static func flags(_ o: Options) -> KoaFlags.Flags {
     var f = KoaFlags.flags(o.expression, o.pose, worn: o.worn)
+    // Tủ đồ vẽ lại: tập tạ thì hai tay đang cầm tạ — đồ cầm tay ẩn (không có ở RN).
+    f["handFree"] = .bool(o.pose != .lifting)
     if o.dress {
       f["mouthSmile"] = .bool(false)
       f["mouthGrin"] = .bool(false)
