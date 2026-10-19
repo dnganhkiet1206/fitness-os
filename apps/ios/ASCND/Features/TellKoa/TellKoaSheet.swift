@@ -15,6 +15,12 @@ import SwiftUI
 ///   `MealLogger`; bữa còn món chưa khớp (hay nói theo gram) thì sau khi lưu có nút
 ///   mở màn ghi bữa đã điền sẵn các món đã khớp — không đoán calo;
 /// - Tập: "Đúng kế hoạch" (`ManualLogController.usePlan`) hoặc mở màn ghi buổi tập.
+///
+/// 19/10 (chủ dự án: "chưa đủ đơn giản" — audit #596): MỘT màn "Ghi hôm nay" thay
+/// cả "Ghi cả ngày" lẫn "Kể cho Koa". Micro to là việc chính; kết quả là danh sách
+/// gọn mỗi mục một dòng (chạm để sửa, ✕ để bỏ — không còn công tắc); việc hôm nay
+/// còn thiếu là chip "+ như thường lệ / như hôm qua / theo kế hoạch / theo kế hoạch
+/// ăn". Không nói gì mà chỉ chạm chip rồi Lưu cũng được.
 struct TellKoaSheet: View {
   let userId: String
   /// Chữ có sẵn (tin nhắn vừa gửi Koa Coach).
@@ -49,8 +55,27 @@ struct TellKoaSheet: View {
   @State private var followUp: FollowUp?
   @State private var mealsToPick: [MealEdit] = []
   @State private var workoutToPick = false
+  /// Dòng đang mở để sửa.
+  @State private var expanded: Part?
+  /// Việc còn thiếu hôm nay (đọc khi mở màn) và các chip người dùng đã thêm.
+  @State private var gaps = Gaps()
+  @State private var adds: Set<Add> = []
 
-  enum Part: Hashable { case sleep, water, weight, workout, meal(String) }
+  enum Add: Hashable { case sleep, water, workout, yesterdayMeals, planMeals }
+
+  /// Hôm nay còn thiếu gì + số điền sẵn cho chip.
+  struct Gaps {
+    var sleep = false
+    var waterMl: Int?
+    var workoutPlan: String?
+    var yesterday: [MealLog.RecentMeal] = []
+    /// Kế hoạch ăn: tên, các bữa hôm nay chưa ghi.
+    var planName: String?
+    var planMeals: [String] = []
+    var planKcal: Double = 0
+  }
+
+  enum Part: Hashable { case sleep, water, weight, workout, meal(String), yesterdayMeals, planMeals }
 
   struct SleepEdit: Equatable {
     var bed: SleepLog.Clock
@@ -92,7 +117,7 @@ struct TellKoaSheet: View {
     NavigationStack {
       ScrollView {
         VStack(alignment: .leading, spacing: DS.Spacing.md) {
-          if done { doneView } else { inputCard; parsedList }
+          if done { doneView } else { inputCard; parsedList; gapChips }
         }
         .padding(DS.Spacing.md)
       }
@@ -102,7 +127,7 @@ struct TellKoaSheet: View {
         ToolbarItem(placement: .principal) {
           HStack(spacing: 6) {
             IntelligenceMark(size: 16)
-            Text("tellkoa.title").font(.system(size: 16, weight: .semibold))
+            Text("logday.title").font(.system(size: 16, weight: .semibold))
           }
         }
         ToolbarItem(placement: .cancellationAction) {
@@ -121,10 +146,9 @@ struct TellKoaSheet: View {
       if text.isEmpty, !initialText.isEmpty {
         text = initialText
         reparse()
-      } else if initialText.isEmpty {
-        typing = true
       }
     }
+    .task { await loadGaps() }
     .onChange(of: dictation.transcript) { _, t in
       guard !t.isEmpty else { return }
       text = t
@@ -149,63 +173,68 @@ struct TellKoaSheet: View {
   // MARK: - Ô kể
 
   private var inputCard: some View {
-    VStack(alignment: .leading, spacing: 10) {
-      ZStack(alignment: .topLeading) {
-        if text.isEmpty {
-          Text("tellkoa.placeholder")
-            .font(.system(size: 17))
-            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-            .padding(.top, 8)
-            .padding(.leading, 5)
-            .allowsHitTesting(false)
+    VStack(spacing: 14) {
+      if text.isEmpty || dictation.isListening {
+        // Micro là việc chính (19/10): nút to giữa màn, chữ dưới nó.
+        Button {
+          toggleMic()
+        } label: {
+          Image(systemName: dictation.isListening ? "stop.fill" : "mic.fill")
+            .font(.system(size: 34, weight: .semibold))
+            .foregroundStyle(dictation.isListening ? .white : DS.Color.background.swiftUI)
+            .frame(width: 96, height: 96)
+            .background(dictation.isListening ? DS.Color.destructive.swiftUI : DS.Color.foreground.swiftUI, in: Circle())
+            .symbolEffect(.pulse, isActive: dictation.isListening && !reduceMotion)
         }
-        TextEditor(text: $text)
-          .font(.system(size: 17))
-          .scrollContentBackground(.hidden)
-          .frame(minHeight: 96, maxHeight: 180)
-          .focused($typing)
-          .accessibilityLabel(Text("tellkoa.field.a11y"))
-      }
-      HStack(spacing: 10) {
-        micButton
-        Text(verbatim: micCaption)
-          .font(DS.TextStyle.caption)
+        .buttonStyle(TodayPressStyle())
+        .accessibilityLabel(Text(dictation.isListening ? "tellkoa.mic.stop" : "tellkoa.mic.start"))
+        .padding(.top, 8)
+        Text(verbatim: dictation.isListening ? micCaption : String(localized: "logday.mic.tap"))
+          .font(DS.TextStyle.footnote)
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-          .lineLimit(2)
-        Spacer(minLength: 0)
-        if !text.isEmpty {
-          Button {
-            text = ""
-            typing = true
-          } label: {
-            Image(systemName: "xmark.circle.fill").foregroundStyle(DS.Color.mutedForeground.swiftUI)
-          }
-          .accessibilityLabel(Text("tellkoa.clear"))
+          .multilineTextAlignment(.center)
+        if !dictation.isListening, case .idle = dictation.state {} else if !dictation.isListening {
+          Text(verbatim: micCaption).font(DS.TextStyle.caption).foregroundStyle(DS.Color.destructive.swiftUI)
         }
+      }
+      if dictation.isListening, !text.isEmpty {
+        Text(verbatim: text).font(.system(size: 17)).frame(maxWidth: .infinity, alignment: .leading)
+      } else {
+        HStack(alignment: .top, spacing: 8) {
+          TextField(String(localized: "logday.type"), text: $text, axis: .vertical)
+            .font(.system(size: 17))
+            .lineLimit(1...5)
+            .focused($typing)
+            .accessibilityLabel(Text("tellkoa.field.a11y"))
+          if !text.isEmpty {
+            Button { toggleMic() } label: {
+              Image(systemName: "mic.fill").foregroundStyle(DS.Color.foreground.swiftUI)
+                .frame(width: 32, height: 32)
+            }
+            .accessibilityLabel(Text("tellkoa.mic.start"))
+            Button {
+              text = ""
+            } label: {
+              Image(systemName: "xmark.circle.fill").foregroundStyle(DS.Color.mutedForeground.swiftUI)
+                .frame(width: 32, height: 32)
+            }
+            .accessibilityLabel(Text("tellkoa.clear"))
+          }
+        }
+        .padding(12)
+        .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
       }
     }
-    .padding(14)
-    .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+    .frame(maxWidth: .infinity)
   }
 
-  private var micButton: some View {
-    Button {
-      if dictation.isListening {
-        dictation.stop()
-      } else {
-        typing = false
-        Task { await dictation.start(lang: lang) }
-      }
-    } label: {
-      Image(systemName: dictation.isListening ? "stop.fill" : "mic.fill")
-        .font(.system(size: 16, weight: .semibold))
-        .foregroundStyle(dictation.isListening ? .white : DS.Color.foreground.swiftUI)
-        .frame(width: 44, height: 44)
-        .background(dictation.isListening ? DS.Color.destructive.swiftUI : DS.Color.foreground.swiftUI.opacity(0.08), in: Circle())
-        .symbolEffect(.pulse, isActive: dictation.isListening && !reduceMotion)
+  private func toggleMic() {
+    if dictation.isListening {
+      dictation.stop()
+    } else {
+      typing = false
+      Task { await dictation.start(lang: lang) }
     }
-    .buttonStyle(.plain)
-    .accessibilityLabel(Text(dictation.isListening ? "tellkoa.mic.stop" : "tellkoa.mic.start"))
   }
 
   private var micCaption: String {
@@ -222,21 +251,25 @@ struct TellKoaSheet: View {
 
   @ViewBuilder private var parsedList: some View {
     let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+    if !included.isEmpty {
+      Text("tellkoa.found").font(DS.TextStyle.footnote.weight(.semibold)).foregroundStyle(DS.Color.mutedForeground.swiftUI)
+      VStack(spacing: 0) {
+        ForEach(Array(included.enumerated()), id: \.element) { i, part in
+          if i > 0 { Divider().padding(.leading, 44) }
+          row(part)
+        }
+      }
+      .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+    }
     if !trimmed.isEmpty {
       if result.items.isEmpty {
         note(String(localized: "tellkoa.nothing"), systemImage: "questionmark.bubble")
       } else {
-        Text("tellkoa.found").font(DS.TextStyle.footnote.weight(.semibold)).foregroundStyle(DS.Color.mutedForeground.swiftUI)
         if result.doubts.contains(.mixedQuestion), !confirmedQuestion {
           ask(String(localized: "tellkoa.ask.mixed")) {
             choice(String(localized: "tellkoa.ask.mixed.yes"), selected: false) { confirmedQuestion = true }
           }
         }
-        if let sleep { card(.sleep) { sleepRow(sleep) } }
-        if result.items.contains(where: { if case .water = $0 { true } else { false } }) { card(.water) { waterRow } }
-        if result.items.contains(where: { if case .weight = $0 { true } else { false } }) { card(.weight) { weightRow } }
-        if let workout { card(.workout) { workoutRow(workout) } }
-        ForEach($meals) { $m in card(.meal(m.slot)) { mealRow($m) } }
       }
       ForEach(result.otherDay, id: \.self) { s in
         note(String(localized: "tellkoa.otherday \(s)"), systemImage: "calendar.badge.exclamationmark")
@@ -247,7 +280,7 @@ struct TellKoaSheet: View {
       if !failed.isEmpty {
         note(String(localized: "tellkoa.failed"), systemImage: "exclamationmark.triangle", tint: DS.Color.destructive.swiftUI)
       }
-    } else {
+    } else if !dictation.isListening {
       VStack(alignment: .leading, spacing: 6) {
         Text("tellkoa.examples.title").font(DS.TextStyle.footnote.weight(.semibold))
         ForEach(Self.examples(lang), id: \.self) { ex in
@@ -264,32 +297,272 @@ struct TellKoaSheet: View {
     }
   }
 
-  private func card(_ part: Part, @ViewBuilder _ content: () -> some View) -> some View {
-    let off = skipped.contains(part)
-    return VStack(alignment: .leading, spacing: 10) {
-      HStack(spacing: 8) {
+  /// Một dòng gọn: biểu tượng · tóm tắt · ✕. Chạm để mở phần sửa; câu hỏi lại
+  /// luôn hiện ngay dưới dòng.
+  @ViewBuilder private func row(_ part: Part) -> some View {
+    let open = expanded == part
+    VStack(alignment: .leading, spacing: 10) {
+      HStack(spacing: 10) {
         Image(systemName: Self.glyph(part))
-          .font(.system(size: 11, weight: .bold))
+          .font(.system(size: 12, weight: .bold))
           .foregroundStyle(.white)
-          .frame(width: 22, height: 22)
+          .frame(width: 26, height: 26)
           .background(Self.color(part), in: Circle())
-        Text(verbatim: title(part)).font(.system(size: 15, weight: .bold))
-        Spacer(minLength: 0)
-        Toggle(isOn: Binding(get: { !off }, set: { on in if on { skipped.remove(part) } else { skipped.insert(part) } })) {
-          Text("tellkoa.include")
+        Button {
+          withAnimation(reduceMotion ? nil : .smooth(duration: 0.25)) { expanded = open ? nil : part }
+        } label: {
+          VStack(alignment: .leading, spacing: 2) {
+            Text(verbatim: title(part)).font(.system(size: 15, weight: .semibold))
+              .foregroundStyle(DS.Color.foreground.swiftUI)
+            Text(verbatim: summary(part)).font(DS.TextStyle.footnote)
+              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+              .lineLimit(2)
+          }
+          .frame(maxWidth: .infinity, alignment: .leading)
+          .contentShape(Rectangle())
         }
-        .labelsHidden()
-        .accessibilityLabel(Text(verbatim: title(part)))
+        .buttonStyle(.plain)
+        .allowsHitTesting(editable(part))
+        Button { remove(part) } label: {
+          Image(systemName: "xmark").font(.system(size: 12, weight: .bold))
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .frame(width: 32, height: 32)
+            .background(DS.Color.foreground.swiftUI.opacity(0.06), in: Circle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text(verbatim: String(localized: "logday.remove \(title(part))")))
       }
-      if !off { content() }
+      doubts(part)
+      if open { editor(part) }
       if failed.contains(part) {
         Text("tellkoa.part.failed").font(DS.TextStyle.caption).foregroundStyle(DS.Color.destructive.swiftUI)
       }
     }
     .padding(12)
-    .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-    .opacity(off ? 0.55 : 1)
   }
+
+  private func editable(_ p: Part) -> Bool {
+    switch p {
+    case .sleep, .water, .weight, .meal: true
+    case .workout, .yesterdayMeals, .planMeals: false
+    }
+  }
+
+  @ViewBuilder private func editor(_ p: Part) -> some View {
+    switch p {
+    case .sleep: if let sleep { sleepRow(sleep) }
+    case .water: waterRow
+    case .weight: weightRow
+    case .meal(let slot):
+      if let i = meals.firstIndex(where: { $0.slot == slot }) { mealRow($meals[i]) }
+    default: EmptyView()
+    }
+  }
+
+  /// Câu hỏi lại của dòng — hiện luôn, không cần mở.
+  @ViewBuilder private func doubts(_ p: Part) -> some View {
+    switch p {
+    case .sleep:
+      if let h = sleep?.askHoursOrClock {
+        ask(String(localized: "tellkoa.ask.sleepHoursOrClock \(h)")) {
+          choice(String(localized: "tellkoa.ask.sleepHours \(h)"), selected: false) { sleep?.askHoursOrClock = nil }
+          choice(String(localized: "tellkoa.ask.sleepAt \(h)"), selected: false) {
+            sleep?.bed = SleepLog.Clock(hour: h < 12 ? h + 12 : h, minute: 0)
+            sleep?.askHoursOrClock = nil
+            expanded = .sleep
+          }
+        }
+      }
+    case .water:
+      if waterMl == nil {
+        ask(String(localized: "tellkoa.ask.water")) {
+          ForEach([250, 500, 1000], id: \.self) { ml in
+            choice(SpokenLogDisplay.water(ml, unit: services.preferences.volumeUnit), selected: false) { waterMl = ml }
+          }
+        }
+      }
+    case .meal(let slot):
+      if let i = meals.firstIndex(where: { $0.slot == slot }), meals[i].slotGuessed {
+        ask(String(localized: "tellkoa.ask.slot")) {
+          ForEach(Self.slots, id: \.self) { s in
+            choice(SpokenLogDisplay.slot(s, lang: lang), selected: s == slot) {
+              meals[i].slot = s
+              meals[i].slotGuessed = false
+            }
+          }
+        }
+      }
+    default: EmptyView()
+    }
+  }
+
+  private func summary(_ p: Part) -> String {
+    let unit = services.preferences.volumeUnit
+    switch p {
+    case .sleep:
+      guard let s = sleep else { return "" }
+      let span = "\(Self.hhmm(s.bed))–\(Self.hhmm(s.wake))"
+      return "\(SpokenLogDisplay.sleep(bed: s.bed, wake: s.wake, lang: lang)) · \(span)"
+    case .water:
+      guard let ml = waterMl else { return String(localized: "logday.water.howMuch") }
+      return "+\(SpokenLogDisplay.water(ml, unit: unit))"
+    case .weight:
+      return weightKg == nil ? String(localized: "tellkoa.weight.invalid") : "\(weightText) \(weightUnit == .lbs ? "lb" : "kg")"
+    case .workout:
+      if let w = workout { return SpokenLogDisplay.workout(w, lang: lang) }
+      return gaps.workoutPlan.map { String(localized: "logday.workout.plan \($0)") } ?? ""
+    case .meal(let slot):
+      guard let m = meals.first(where: { $0.slot == slot }) else { return "" }
+      if m.foods.contains(where: \.searching) { return String(localized: "tellkoa.food.searching") }
+      let names = m.foods.map { $0.match?.name ?? $0.spoken.name }.joined(separator: ", ")
+      let kcal = m.foods.reduce(0.0) { $0 + (($1.spoken.grams == nil ? $1.match?.kcal : nil) ?? 0) * $1.spoken.servings }
+      let tail = m.needsScreen ? String(localized: "tellkoa.meal.later") : "\(Int(kcal.rounded())) kcal"
+      return "\(names) · \(tail)"
+    case .yesterdayMeals:
+      return YesterdayMealsCard.detail(gaps.yesterday)
+    case .planMeals:
+      let slots = gaps.planMeals.map { SpokenLogDisplay.slot($0, lang: lang) }.joined(separator: ", ")
+      return "\(gaps.planName ?? "") · \(slots) · \(Int(gaps.planKcal.rounded())) kcal"
+    }
+  }
+
+  static func hhmm(_ c: SleepLog.Clock) -> String { String(format: "%d:%02d", c.hour, c.minute) }
+
+  private func remove(_ p: Part) {
+    withAnimation(reduceMotion ? nil : .smooth(duration: 0.2)) {
+      if expanded == p { expanded = nil }
+      switch p {
+      case .sleep: if adds.contains(.sleep), !parsed(.sleep) { adds.remove(.sleep); sleep = nil } else { skipped.insert(p) }
+      case .water: if adds.contains(.water), !parsed(.water) { adds.remove(.water); waterMl = nil } else { skipped.insert(p) }
+      case .workout: if adds.contains(.workout), workout == nil { adds.remove(.workout) } else { skipped.insert(p) }
+      case .yesterdayMeals: adds.remove(.yesterdayMeals)
+      case .planMeals: adds.remove(.planMeals)
+      default: skipped.insert(p)
+      }
+    }
+  }
+
+  private func parsed(_ p: Part) -> Bool {
+    result.items.contains { item in
+      switch (item, p) {
+      case (.sleep, .sleep), (.water, .water), (.weight, .weight), (.workout, .workout): true
+      default: false
+      }
+    }
+  }
+
+  // MARK: - Còn thiếu (chip)
+
+  @ViewBuilder private var gapChips: some View {
+    let chips = availableAdds
+    if !chips.isEmpty, !dictation.isListening {
+      VStack(alignment: .leading, spacing: 8) {
+        Text("logday.missing").font(DS.TextStyle.footnote.weight(.semibold)).foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        FlowRows(spacing: DS.Spacing.sm, centered: false) {
+          ForEach(chips, id: \.self) { a in
+            Button { add(a) } label: {
+              Label(addLabel(a), systemImage: "plus")
+                .font(DS.TextStyle.footnote.weight(.semibold))
+                .foregroundStyle(DS.Color.foreground.swiftUI)
+                .padding(.horizontal, 12)
+                .frame(minHeight: 36)
+                .background(DS.Color.card.swiftUI, in: Capsule())
+                .overlay { Capsule().strokeBorder(DS.Color.foreground.swiftUI.opacity(0.12), lineWidth: 0.75) }
+                .frame(minHeight: 44)
+            }
+            .buttonStyle(.plain)
+          }
+        }
+      }
+    }
+  }
+
+  /// Chip còn chọn được: việc hôm nay còn thiếu, chưa có trong danh sách.
+  private var availableAdds: [Add] {
+    var out: [Add] = []
+    if gaps.sleep, sleep == nil { out.append(.sleep) }
+    if gaps.waterMl != nil, !included.contains(.water) { out.append(.water) }
+    if gaps.workoutPlan != nil, !included.contains(.workout) { out.append(.workout) }
+    let anyMeal = included.contains { if case .meal = $0 { true } else { $0 == .yesterdayMeals || $0 == .planMeals } }
+    if !anyMeal {
+      if !gaps.planMeals.isEmpty { out.append(.planMeals) }
+      if !gaps.yesterday.isEmpty { out.append(.yesterdayMeals) }
+    }
+    return out
+  }
+
+  private func addLabel(_ a: Add) -> String {
+    switch a {
+    case .sleep:
+      let b = SleepLog.Clock.defaultBed, w = SleepLog.Clock.defaultWake
+      return String(localized: "logday.add.sleep \("\(Self.hhmm(b))–\(Self.hhmm(w))")")
+    case .water: return String(localized: "logday.add.water \(SpokenLogDisplay.water(gaps.waterMl ?? 0, unit: services.preferences.volumeUnit))")
+    case .workout: return String(localized: "logday.add.workout")
+    case .yesterdayMeals: return String(localized: "meal.yesterday.title")
+    case .planMeals: return String(localized: "logday.add.plan")
+    }
+  }
+
+  private func add(_ a: Add) {
+    withAnimation(reduceMotion ? nil : .smooth(duration: 0.25)) {
+      adds.insert(a)
+      switch a {
+      case .sleep:
+        sleep = SleepEdit(bed: .defaultBed, wake: .defaultWake, askHoursOrClock: nil, askHalf: false)
+        skipped.remove(.sleep)
+      case .water:
+        waterMl = gaps.waterMl
+        skipped.remove(.water)
+      case .workout: skipped.remove(.workout)
+      case .yesterdayMeals, .planMeals: break
+      }
+    }
+  }
+
+  /// Hôm nay còn thiếu gì — đọc từ đúng các sổ sẽ ghi.
+  private func loadGaps() async {
+    var g = Gaps()
+    if let s = services.makeSleepLogger(userId: userId) {
+      await s.load()
+      g.sleep = !s.hasNight
+      s.close()
+    }
+    if let water = nutrition?.water {
+      if !water.loaded { await water.load() }
+      if water.totalMl == 0 {
+        let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
+        g.waterMl = DayCheckIn.waterPrefillMl(yesterdayMl: DayCheckIn.yesterdayWaterMl(water.week, today: today))
+      }
+    }
+    let log = flow.makeManualLog()
+    await log.load()
+    g.workoutPlan = log.planOffer?.name
+    if let m = services.makeMealLogger(userId: userId, date: nil, mealType: nil) {
+      await m.loadRecents()
+      g.yesterday = m.yesterdayMeals
+      m.close()
+    }
+    // Kế hoạch ăn (19/10, chủ dự án: "đưa phần kế hoạch ăn vào áp dụng luôn"): kế
+    // hoạch mới nhất có món; ngày 1 = thứ Hai. Chỉ các bữa hôm nay chưa ghi.
+    if let today = await TodayMealPlan.load(services, userId: userId) {
+      let open = today.openMeals
+      if !open.isEmpty {
+        g.planName = today.plan.name
+        g.planMeals = open
+        g.planKcal = open.flatMap(today.planned).reduce(0) { $0 + $1.kcal }
+        planBook = today.book
+      }
+    }
+    gaps = g
+    // "Mở lên log xong" (19/10, chủ dự án): mọi việc còn thiếu điền sẵn ngay — bấm
+    // Lưu là xong; ✕ để bỏ, nói / gõ để sửa. Bữa: kế hoạch ăn trước, không thì như
+    // hôm qua (không bao giờ cả hai).
+    if text.isEmpty {
+      for a in availableAdds where a != .yesterdayMeals || !availableAdds.contains(.planMeals) { add(a) }
+    }
+  }
+
+  @State private var planBook: MealPlanBook?
 
   // Ngủ
   @ViewBuilder private func sleepRow(_ s: SleepEdit) -> some View {
@@ -451,10 +724,12 @@ struct TellKoaSheet: View {
   private var included: [Part] {
     var parts: [Part] = []
     if sleep != nil { parts.append(.sleep) }
-    if result.items.contains(where: { if case .water = $0 { true } else { false } }) { parts.append(.water) }
-    if result.items.contains(where: { if case .weight = $0 { true } else { false } }) { parts.append(.weight) }
-    if workout != nil { parts.append(.workout) }
+    if parsed(.water) || adds.contains(.water) { parts.append(.water) }
+    if parsed(.weight) { parts.append(.weight) }
+    if workout != nil || adds.contains(.workout) { parts.append(.workout) }
     parts += meals.map { .meal($0.slot) }
+    if adds.contains(.planMeals) { parts.append(.planMeals) }
+    if adds.contains(.yesterdayMeals) { parts.append(.yesterdayMeals) }
     return parts.filter { !skipped.contains($0) }
   }
 
@@ -486,6 +761,7 @@ struct TellKoaSheet: View {
       }
       .buttonStyle(TodayPressStyle())
       .disabled(saving || included.isEmpty || unanswered || dictation.isListening)
+      .padding(.top, 2)
       .opacity(included.isEmpty || unanswered ? 0.45 : 1)
       if unanswered, !included.isEmpty {
         Text("tellkoa.answer.first").font(DS.TextStyle.caption).foregroundStyle(DS.Color.mutedForeground.swiftUI)
@@ -512,6 +788,8 @@ struct TellKoaSheet: View {
       case .workout:
         ok = await saveWorkout()
       case .meal(let slot): ok = await saveMeal(slot, online: online)
+      case .yesterdayMeals: ok = await saveYesterday(online: online)
+      case .planMeals: ok = await savePlan(online: online)
       }
       if ok { savedAny = true } else { failed.append(part) }
     }
@@ -576,6 +854,22 @@ struct TellKoaSheet: View {
     }
     if case .queued = await logger.save(online: online) { return true }
     return false
+  }
+
+  private func saveYesterday(online: Bool) async -> Bool {
+    guard let logger = services.makeMealLogger(userId: userId, date: nil, mealType: nil) else { return false }
+    await logger.loadRecents()
+    if case .queued = await logger.copyYesterday(online: online) { return true }
+    return false
+  }
+
+  private func savePlan(online: Bool) async -> Bool {
+    guard let book = planBook else { return false }
+    let day = MealPlans.dayIndex(Date())
+    for meal in gaps.planMeals {
+      if case .failed = await book.eat(meal: meal, day: day, online: online) { return false }
+    }
+    return true
   }
 
   // MARK: - Xong
@@ -650,6 +944,10 @@ struct TellKoaSheet: View {
       }
     }
     meals = nextMeals
+    // Chip "+ Ngủ như thường lệ" vẫn giữ khi câu kể không nói gì về giấc ngủ.
+    if sleep == nil, adds.contains(.sleep) {
+      sleep = SleepEdit(bed: .defaultBed, wake: .defaultWake, askHoursOrClock: nil, askHalf: false)
+    }
     Task { await matchFoods() }
   }
 
@@ -687,6 +985,8 @@ struct TellKoaSheet: View {
     case .weight: String(localized: "tellkoa.part.weight")
     case .workout: String(localized: "tellkoa.part.workout")
     case .meal(let slot): SpokenLogDisplay.slot(slot, lang: lang)
+    case .yesterdayMeals: String(localized: "meal.yesterday.title")
+    case .planMeals: String(localized: "logday.plan.title")
     }
   }
 
@@ -696,7 +996,7 @@ struct TellKoaSheet: View {
     case .water: TodayDayCard.glyph(.water)
     case .weight: "scalemass.fill"
     case .workout: TodayDayCard.glyph(.workout)
-    case .meal: TodayDayCard.glyph(.meal)
+    case .meal, .yesterdayMeals, .planMeals: TodayDayCard.glyph(.meal)
     }
   }
 
@@ -706,7 +1006,7 @@ struct TellKoaSheet: View {
     case .water: TodayDayCard.color(.water)
     case .weight: DS.Color.foreground.swiftUI.opacity(0.7)
     case .workout: TodayDayCard.color(.workout)
-    case .meal: TodayDayCard.color(.meal)
+    case .meal, .yesterdayMeals, .planMeals: TodayDayCard.color(.meal)
     }
   }
 
