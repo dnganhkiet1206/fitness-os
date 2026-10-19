@@ -44,10 +44,13 @@ public struct ManualSetRow: Sendable, Hashable, Codable, Identifiable {
   /// "10" hoặc "45s" (`RepEntry`).
   public var reps: String
   public var warmup: Bool
+  /// Thẻ bài của hàng (màn ghi vẽ lại 18/10): các set cùng thẻ đứng liền nhau.
+  /// Nháp cũ không có khoá → gom theo tên như trước.
+  public var group: String?
 
   public init(
     id: String, exerciseId: String = "", exerciseName: String = "", weight: String = "", reps: String = "",
-    warmup: Bool = false
+    warmup: Bool = false, group: String? = nil
   ) {
     self.id = id
     self.exerciseId = exerciseId
@@ -55,7 +58,21 @@ public struct ManualSetRow: Sendable, Hashable, Codable, Identifiable {
     self.weight = weight
     self.reps = reps
     self.warmup = warmup
+    self.group = group
   }
+
+  /// Khoá gom thẻ: khoá nhóm, không có thì tên đã gập.
+  var groupKey: String {
+    group ?? "name:" + exerciseName.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+  }
+}
+
+/// Một thẻ bài trên màn ghi: các hàng liền nhau cùng khoá.
+public struct ManualExerciseGroup: Sendable, Hashable, Identifiable {
+  /// Id hàng đầu — ổn định khi thêm / bỏ set phía sau.
+  public let id: String
+  public let rows: [ManualSetRow]
+  public var name: String { rows.first?.exerciseName ?? "" }
 }
 
 @MainActor @Observable
@@ -141,7 +158,7 @@ public final class ManualLogController {
     self.clock = clock
     self.makeId = makeId
     self.onEnqueued = onEnqueued
-    rows = [ManualSetRow(id: makeId())]
+    rows = [ManualSetRow(id: makeId(), group: makeId())]
   }
 
   // MARK: - Mở
@@ -178,7 +195,7 @@ public final class ManualLogController {
     summary = nil
     name = ""
     rpe = Self.defaultRpe
-    rows = [ManualSetRow(id: makeId())]
+    rows = [ManualSetRow(id: makeId(), group: makeId())]
     planUsed = false
     slot += 1
   }
@@ -222,14 +239,15 @@ public final class ManualLogController {
   ) -> [ManualSetRow] {
     var out: [ManualSetRow] = []
     for ex in exercises {
+      let group = makeId()
       for _ in 0..<min(WorkoutPlanning.maxSets, max(1, ex.sets)) {
         out.append(ManualSetRow(
           id: makeId(), exerciseId: ex.exerciseId ?? "", exerciseName: ex.exerciseName,
           weight: ex.weightKg != 0 ? jsNumber((display(ex.weightKg) * 10).rounded() / 10) : "",
-          reps: ex.reps != 0 ? String(ex.reps) : ""))
+          reps: ex.reps != 0 ? String(ex.reps) : "", group: group))
       }
     }
-    return out.isEmpty ? [ManualSetRow(id: makeId())] : out
+    return out.isEmpty ? [ManualSetRow(id: makeId(), group: makeId())] : out
   }
 
   /// `String(n)` của JS cho số đã làm tròn một chữ số: 60 → "60", 82.5 → "82.5".
@@ -295,7 +313,75 @@ public final class ManualLogController {
     let last = rows.last
     rows.append(ManualSetRow(
       id: makeId(), exerciseId: last?.exerciseId ?? "", exerciseName: last?.exerciseName ?? "",
-      weight: last?.weight ?? ""))
+      weight: last?.weight ?? "", group: last?.group))
+    return await persist()
+  }
+
+  /// "Thêm set" của một thẻ: chép bài + tạ của set cuối thẻ, chèn ngay sau nó.
+  @discardableResult
+  public func addSet(toGroup id: String) async -> Bool {
+    guard editable, let g = exerciseGroups.first(where: { $0.id == id }), let last = g.rows.last,
+      let i = rows.firstIndex(where: { $0.id == last.id })
+    else { return false }
+    rows.insert(
+      ManualSetRow(
+        id: makeId(), exerciseId: last.exerciseId, exerciseName: last.exerciseName, weight: last.weight,
+        group: last.group),
+      at: i + 1)
+    return await persist()
+  }
+
+  /// Thẻ bài trên màn, theo thứ tự hàng.
+  public var exerciseGroups: [ManualExerciseGroup] {
+    var out: [ManualExerciseGroup] = []
+    var cur: [ManualSetRow] = []
+    for r in rows {
+      if let first = cur.first, first.groupKey != r.groupKey {
+        out.append(ManualExerciseGroup(id: first.id, rows: cur))
+        cur = []
+      }
+      cur.append(r)
+    }
+    if let first = cur.first { out.append(ManualExerciseGroup(id: first.id, rows: cur)) }
+    return out
+  }
+
+  /// Đổi tên bài cả thẻ (gõ tay bỏ bài đã chọn).
+  @discardableResult
+  public func setExerciseName(_ text: String, group id: String) async -> Bool {
+    await editGroup(id) {
+      $0.exerciseName = text
+      $0.exerciseId = ""
+    }
+  }
+
+  @discardableResult
+  public func pickExercise(id exerciseId: String, name: String, group id: String) async -> Bool {
+    await editGroup(id) {
+      $0.exerciseId = exerciseId
+      $0.exerciseName = name
+    }
+  }
+
+  /// Bỏ cả thẻ; thẻ cuối cùng thì còn lại một hàng trống.
+  @discardableResult
+  public func removeGroup(_ id: String) async -> Bool {
+    guard editable, let g = exerciseGroups.first(where: { $0.id == id }) else { return false }
+    let ids = Set(g.rows.map(\.id))
+    rows.removeAll { ids.contains($0.id) }
+    if rows.isEmpty { rows = [ManualSetRow(id: makeId(), group: makeId())] }
+    return await persist()
+  }
+
+  private func editGroup(_ id: String, _ change: (inout ManualSetRow) -> Void) async -> Bool {
+    guard editable, let g = exerciseGroups.first(where: { $0.id == id }) else { return false }
+    // Hàng cũ không có khoá nhóm: gắn khoá chung trước khi đổi tên, kẻo thẻ vỡ ra.
+    let key = g.rows.first?.group ?? makeId()
+    let ids = Set(g.rows.map(\.id))
+    for i in rows.indices where ids.contains(rows[i].id) {
+      rows[i].group = key
+      change(&rows[i])
+    }
     return await persist()
   }
 
@@ -303,7 +389,7 @@ public final class ManualLogController {
   @discardableResult
   public func addExercise() async -> Bool {
     guard editable else { return false }
-    rows.append(ManualSetRow(id: makeId()))
+    rows.append(ManualSetRow(id: makeId(), group: makeId()))
     return await persist()
   }
 
@@ -391,9 +477,11 @@ public final class ManualLogController {
   /// vẫn cộng. (test `volumePreviewIgnoresHolds`.)
   public func volumeKg(toKg: ((Double) -> Double)? = nil) -> Double {
     let toKg = toKg ?? weightUnit.toKg
+    // Bỏ set khởi động như khối lượng được ghi (`volume_load`): xem trước và
+    // buổi đã lưu phải ra cùng một số (18/10 — trước đó xem trước có cộng).
     return validRows.reduce(0) { sum, r in
       let entry = RepEntry.parse(r.reps)
-      guard entry.durationSec == nil else { return sum }
+      guard entry.durationSec == nil, !r.warmup else { return sum }
       return sum + Self.weightKg(r.weight, toKg: toKg) * Double(entry.reps)
     }
   }
@@ -403,8 +491,22 @@ public final class ManualLogController {
   /// bài trùng đúng chữ gõ; tối đa 5.
   public static func suggestions(for query: String, in exercises: [LibraryExercise], limit: Int = 5) -> [LibraryExercise] {
     let q = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-    let pool = q.isEmpty ? exercises : exercises.filter { $0.name.lowercased().contains(q) }
-    return Array(pool.filter { $0.name.lowercased() != q }.prefix(limit))
+    guard !q.isEmpty else { return Array(exercises.prefix(limit)) }
+    // Xếp hạng (18/10 — thư viện ~900 bài, "bench" từng ra "Barbell Rollout from
+    // Bench" trước Bench Press): tên bắt đầu bằng chữ gõ → một từ bắt đầu bằng
+    // chữ gõ → chứa chữ gõ → chỉ khớp chữ tìm bỏ dấu (tên vi / es). Cùng hạng
+    // giữ thứ tự thư viện.
+    func rank(_ e: LibraryExercise) -> Int? {
+      let names = [e.name.lowercased(), e.displayName.lowercased()]
+      if names.contains(q) { return nil }
+      if names.contains(where: { $0.hasPrefix(q) }) { return 0 }
+      let words = names.flatMap { $0.split(whereSeparator: { !$0.isLetter && !$0.isNumber }) }
+      if words.contains(where: { $0.hasPrefix(q) }) { return 1 }
+      if names.contains(where: { $0.contains(q) }) { return 2 }
+      return ExerciseCatalog.matches(e, q) ? 3 : nil
+    }
+    let ranked = exercises.enumerated().compactMap { i, e in rank(e).map { (r: $0, i: i, e: e) } }
+    return ranked.sorted { ($0.r, $0.i) < ($1.r, $1.i) }.prefix(limit).map(\.e)
   }
 
   /// Ô tạ → kg. Trống / không phải số → 0 (`Number(x) || 0`: bodyweight).
