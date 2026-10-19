@@ -117,10 +117,20 @@ struct ExercisesView: View {
   private func row(_ e: LibraryExercise) -> some View {
     let own = e.userId?.lowercased() == library.userId.lowercased()
     return HStack(spacing: DS.Spacing.sm) {
-      Text(verbatim: e.name)
-        .font(DS.TextStyle.body)
-        .lineLimit(1)
-        .frame(maxWidth: .infinity, alignment: .leading)
+      // Bài thư viện: tên theo ngôn ngữ app, tên gốc tiếng Anh nhỏ bên dưới (dễ đối
+      // chiếu với video / tài liệu). Bài của mình: đúng tên đã đặt.
+      VStack(alignment: .leading, spacing: 1) {
+        Text(verbatim: e.displayName)
+          .font(DS.TextStyle.body)
+          .lineLimit(1)
+        if e.displayName != e.name {
+          Text(verbatim: e.name)
+            .font(DS.TextStyle.caption)
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .lineLimit(1)
+        }
+      }
+      .frame(maxWidth: .infinity, alignment: .leading)
       // Loại đã khai báo: không hiện gì khi chưa ai nói.
       if let kind = e.kind.flatMap(ExerciseKind.init(rawValue:)) {
         Text(verbatim: AddExerciseSheet.kindName(kind))

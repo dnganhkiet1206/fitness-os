@@ -25,15 +25,29 @@ public struct LibraryExercise: Sendable, Hashable, Codable, Identifiable {
   public let equipment: String?
   /// `exercise_kind` như server lưu; `nil` = chưa khai báo (động cơ xu hướng tự suy).
   public let kind: String?
+  /// Tên theo ngôn ngữ (`vi` / `en` / `es`) của bài thư viện (18/10). `name` vẫn là tên
+  /// GỐC (tiếng Anh) — lịch sử, kỷ lục, gợi ý đều khoá theo nó, nên chỉ phần HIỆN
+  /// dùng bản dịch. `nil` với bài của người dùng và bản lưu cũ.
+  public let localNames: [String: String]?
+  /// Chữ tìm đã bỏ dấu, gộp 3 thứ tiếng (server dựng).
+  public let searchText: String?
 
-  public init(id: String, userId: String?, name: String, muscleGroup: String?, equipment: String?, kind: String?) {
+  public init(
+    id: String, userId: String?, name: String, muscleGroup: String?, equipment: String?, kind: String?,
+    localNames: [String: String]? = nil, searchText: String? = nil
+  ) {
     self.id = id
     self.userId = userId
     self.name = name
     self.muscleGroup = muscleGroup
     self.equipment = equipment
     self.kind = kind
+    self.localNames = localNames
+    self.searchText = searchText
   }
+
+  /// Tên để hiện theo ngôn ngữ app; không có bản dịch thì tên gốc.
+  public var displayName: String { localNames?[FoodNames.lang] ?? name }
 
   /// Bài mẫu của app, không phải của người dùng.
   public var isBuiltIn: Bool { userId == nil }
@@ -178,7 +192,11 @@ public enum MuscleGroup: String, Sendable, Hashable, Codable, CaseIterable {
 public enum ExerciseCatalog {
   /// Tìm theo tên: chứa, không phân biệt hoa thường (`name.toLowerCase().includes(q)`).
   static func matches(_ e: LibraryExercise, _ q: String) -> Bool {
-    q.isEmpty || e.name.lowercased().contains(q)
+    if q.isEmpty || e.name.lowercased().contains(q) || e.displayName.lowercased().contains(q) { return true }
+    // Bài thư viện: tìm bỏ dấu theo cả 3 thứ tiếng ("day nguc", "press de banca").
+    guard let text = e.searchText else { return false }
+    let key = FoodNames.searchKey(q)
+    return !key.isEmpty && text.contains(key)
   }
 
   /// `workout-builder.tsx:310`: lọc theo nhóm cơ và tên, giữ thứ tự server.

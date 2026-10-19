@@ -24,7 +24,7 @@ public enum FoodLibrary {
   /// `MY_FOODS_PAGE`.
   public static let pageSize = 500
   public static let columns =
-    "id, user_id, name, brand, kcal, protein_g, carbs_g, fat_g, fiber_g, serving_g, is_favorite"
+    "id, user_id, name, brand, kcal, protein_g, carbs_g, fat_g, fiber_g, serving_g, is_favorite, " + FoodNames.columns
 
   /// Một hàng `food_items`.
   public struct Food: Sendable, Hashable, Identifiable {
@@ -58,7 +58,7 @@ public enum FoodLibrary {
     }
 
     public init?(row r: JSONValue) {
-      guard let id = r["id"]?.stringValue, let name = r["name"]?.stringValue else { return nil }
+      guard let id = r["id"]?.stringValue, let name = FoodNames.pick(r) else { return nil }
       self.init(
         id: id, userId: r["user_id"]?.stringValue, name: name, brand: r["brand"]?.stringValue,
         kcal: MealDiary.num(r["kcal"]), protein: MealDiary.num(r["protein_g"]), carbs: MealDiary.num(r["carbs_g"]),
@@ -193,7 +193,8 @@ public enum FoodFavorite {
       return try await source.setFavorite(id: id, userId: nil, value: value) > 0 ? .ok : .gone
     }
     guard value else { return .ok }
-    let name = row["name"]?.stringValue ?? ""
+    // Món chung có tên 3 thứ tiếng: bản chép mang tên theo ngôn ngữ đang dùng.
+    let name = FoodNames.pick(row) ?? ""
     if let mine = try await source.myFoodId(userId: userId, name: name),
       try await source.setFavorite(id: mine, userId: userId, value: true) > 0
     {

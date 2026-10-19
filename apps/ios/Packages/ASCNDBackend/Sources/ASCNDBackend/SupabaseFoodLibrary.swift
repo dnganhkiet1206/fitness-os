@@ -32,7 +32,7 @@ public struct SupabaseFoodLibrary: FoodLibrarySource, FoodFavoriteSource {
   public func search(_ text: String, limit: Int) async throws -> [JSONValue] {
     try await client.from("food_items")
       .select(FoodLibrary.columns)
-      .ilike("name", pattern: "%\(text)%")
+      .or(Self.searchFilter(text))
       .order("is_favorite", ascending: false)
       .order("name")
       .limit(limit)
@@ -74,7 +74,7 @@ public struct SupabaseFoodLibrary: FoodLibrarySource, FoodFavoriteSource {
 
   public func food(id: String) async throws -> JSONValue? {
     let rows: [JSONValue] = try await client.from("food_items")
-      .select("user_id, name, brand, serving_g, kcal, protein_g, carbs_g, fat_g, fiber_g")
+      .select("user_id, name, brand, serving_g, kcal, protein_g, carbs_g, fat_g, fiber_g, " + FoodNames.columns)
       .eq("id", value: id)
       .limit(1)
       .execute().value
@@ -96,5 +96,13 @@ public struct SupabaseFoodLibrary: FoodLibrarySource, FoodFavoriteSource {
       .limit(1)
       .execute().value
     return rows.first?["id"]?.stringValue
+  }
+
+  /// Tìm theo tên như trước, HOẶC theo `search_text` (tên 3 thứ tiếng đã bỏ dấu của
+  /// món thư viện): "pho bo", "beef pho", "huevo" đều ra. `*` là ký tự đại diện của
+  /// PostgREST trong `or`.
+  static func searchFilter(_ text: String) -> String {
+    let name = FoodNames.nameKey(text), folded = FoodNames.searchKey(text)
+    return "name.ilike.*\(name)*,search_text.ilike.*\(folded)*"
   }
 }

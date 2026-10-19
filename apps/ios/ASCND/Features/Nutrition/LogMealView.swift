@@ -382,7 +382,8 @@ struct LogMealView: View {
             }
             Text(verbatim: food.name).font(DS.TextStyle.body).lineLimit(1)
           }
-          Text(verbatim: "\(DiaryView.whole(food.kcal)) kcal · " + DiaryView.macros(food.protein, food.carbs, food.fat))
+          // Món thư viện: phần ăn ("1 tô") đứng trước số, món Việt ước tính có dấu "≈".
+          Text(verbatim: Self.resultDetail(food))
             .font(DS.TextStyle.caption.monospacedDigit())
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
         }
@@ -648,5 +649,14 @@ struct LogMealView: View {
       error = String(localized: "async.error.generic")
       AccessibilityNotification.Announcement(String(localized: "async.error.generic")).post()
     }
+  }
+}
+
+extension LogMealView {
+  /// "1 tô · ≈393 kcal · P30 · C54 · F5" — phần ăn và dấu ước tính chỉ khi có.
+  static func resultDetail(_ food: MealLog.Food) -> String {
+    let kcal = (food.isEstimate ? "≈" : "") + "\(DiaryView.whole(food.kcal)) kcal"
+    return ([food.portion, kcal].compactMap { $0 }.joined(separator: " · ")) + " · "
+      + DiaryView.macros(food.protein, food.carbs, food.fat)
   }
 }
