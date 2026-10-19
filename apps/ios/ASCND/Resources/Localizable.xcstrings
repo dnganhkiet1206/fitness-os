@@ -36395,42 +36395,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "Search or add a food to start"
+      "value": "Search or tap + on a food to start"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Tìm hoặc thêm món để bắt đầu"
+      "value": "Tìm hoặc bấm + ở một món để bắt đầu"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Busca o añade un alimento para empezar"
-     }
-    }
-   }
-  },
-  "logMeal.items": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Items"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Các món"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Elementos"
+      "value": "Busca o toca + en un alimento para empezar"
      }
     }
    }
@@ -44619,29 +44596,6 @@
      "stringUnit": {
       "state": "translated",
       "value": "La preparación solo lee la VFC, la frecuencia cardiaca en reposo, el sueño y la carga calculada de las sesiones registradas. Los pasos y las calorías activas no están en ninguna fórmula."
-     }
-    }
-   }
-  },
-  "nc.footer %@ %@": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Eaten %1$@ · target %2$@ kcal"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Đã ăn %1$@ · mục tiêu %2$@ kcal"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Comido %1$@ · objetivo %2$@ kcal"
      }
     }
    }
@@ -53842,6 +53796,144 @@
      "stringUnit": {
       "state": "translated",
       "value": "Tạo tài khoản"
+     }
+    }
+   }
+  },
+  "macros.short %@ %@ %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "P %1$@g · C %2$@g · F %3$@g"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đạm %1$@g · Bột %2$@g · Béo %3$@g"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "P %1$@g · C %2$@g · G %3$@g"
+     }
+    }
+   }
+  },
+  "nc.stat.eaten": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Eaten"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đã ăn"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Consumido"
+     }
+    }
+   }
+  },
+  "nc.stat.target": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Target"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mục tiêu"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Objetivo"
+     }
+    }
+   }
+  },
+  "nc.howTarget": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "How is my target set?"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mục tiêu tính thế nào?"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "¿Cómo se calcula mi objetivo?"
+     }
+    }
+   }
+  },
+  "logMeal.tray %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "In this meal · %lld"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Trong bữa này · %lld"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "En esta comida · %lld"
+     }
+    }
+   }
+  },
+  "nc.percentOfTarget %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld%% of target"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đạt %lld%% mục tiêu"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld%% del objetivo"
      }
     }
    }
