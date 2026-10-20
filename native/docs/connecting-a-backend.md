@@ -126,7 +126,7 @@ dòng vừa ghi, kèm cột `sets` dạng JSON.
 
 ## 0f. Chín edge function — chưa cần cho việc test
 
-Function chạy local được bằng `supabase functions serve`, nhưng **sáu function
+Function chạy local được bằng `supabase functions serve`, nhưng **bảy function
 AI đều gọi `https://ai.gateway.lovable.dev`** và cần `LOVABLE_API_KEY`. Không có
 key thì chúng deploy được và trả 5xx.
 
@@ -448,13 +448,13 @@ nên `ON DELETE CASCADE` không đụng tới chúng.** Xem §3.
 
 ---
 
-## 3. Edge function — cả 10 cái đã có sẵn
+## 3. Edge function — cả 11 cái đã có sẵn
 
-Mã nguồn của **cả mười** function đã nằm trong repo ở `supabase/functions/`,
+Mã nguồn của **cả mười một** function đã nằm trong repo ở `supabase/functions/`,
 nên đây chỉ là việc deploy chứ không phải việc viết:
 
 ```bash
-supabase functions deploy ai-coach ai-coach-memory ai-meal-suggest \
+supabase functions deploy ai-coach ai-coach-memory ai-log-parse ai-meal-suggest \
   ai-smart-nudges ai-weekly-review scan-food \
   verify-purchase store-webhook delete-account admin-art
 ```
@@ -480,6 +480,7 @@ checklist, không phải tiện ích:
 | `ai-smart-nudges` | thẻ gợi ý ở Today | im lặng — đây là phần thưởng thêm |
 | `ai-coach` | chat coach (**streaming**) | chat báo lỗi |
 | `ai-coach-memory` | trích trí nhớ coach | coach quên giữa các phiên |
+| `ai-log-parse` | "Ghi hôm nay" — hiểu câu kể | luật trên máy vẫn đọc câu, kém hiểu hơn |
 | `verify-purchase` | sau giao dịch StoreKit | mua xong không mở khoá |
 | `store-webhook` | Apple gọi vào | gia hạn/huỷ không phản ánh vào app |
 | `delete-account` | nút Xoá tài khoản ở Cài đặt | app báo "máy chủ chưa bật chức năng này" |

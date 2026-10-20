@@ -156,9 +156,11 @@ struct NutritionTab: View {
           .accessibilityAddTraits(.isHeader)
         Spacer(minLength: 0)
         if let userId {
-          NavigationLink(value: DiaryRoute(userId: userId)) { roundIcon("calendar") }
+          // Nhật ký bữa ăn: hình cuốn sổ, không phải lịch (19/10, chủ dự án: "icon
+          // nhật ký bữa ăn đang để thành lịch dễ bị nhầm lẫn").
+          NavigationLink(value: DiaryRoute(userId: userId)) { roundIcon("book.pages") }
             .buttonStyle(TodayPressStyle())
-            .accessibilityLabel(Text(String(localized: "nc.otherDays")))
+            .accessibilityLabel(Text(String(localized: "diary.title")))
           NavigationLink(value: InsightsRoute(userId: userId)) { roundIcon("chart.bar.xaxis") }
             .buttonStyle(TodayPressStyle())
             .accessibilityLabel(Text(String(localized: "nc.week")))

@@ -104,6 +104,12 @@ public enum SpokenLog {
     case mixedQuestion
   }
 
+  public enum Shortcut: String, Equatable, Hashable, Sendable {
+    case mealsLikeYesterday = "meals_like_yesterday"
+    case mealsAsPlanned = "meals_as_planned"
+    case workoutAsPlanned = "workout_as_planned"
+  }
+
   public struct Result: Equatable, Sendable {
     public var items: [Item] = []
     /// Chỗ cần hỏi lại, theo thứ tự xuất hiện.
@@ -112,6 +118,9 @@ public enum SpokenLog {
     public var unparsed: [String] = []
     /// Đoạn nói về ngày khác hôm nay ("hôm qua…") — không ghi, màn nói rõ lý do.
     public var otherDay: [String] = []
+    /// Câu tắt AI hiểu được (19/10): "ăn như hôm qua", "ăn theo kế hoạch", "tập
+    /// như kế hoạch" — màn thêm đúng mục điền sẵn tương ứng.
+    public var shortcuts: Set<Shortcut> = []
 
     public init(items: [Item] = [], unparsed: [String] = [], otherDay: [String] = []) {
       self.items = items
@@ -120,6 +129,88 @@ public enum SpokenLog {
     }
 
     public var isEmpty: Bool { items.isEmpty }
+  }
+
+  // MARK: - Đọc bằng AI (19/10)
+
+  /// Câu trả lời của `ai-log-parse` → cùng kiểu `Result` như luật trên máy, kèm
+  /// đúng các câu hỏi lại (nước không có lượng, bữa không rõ, giấc thiếu nửa, tập
+  /// không rõ phút). Server đã lọc; ở đây kiểm lại dải. `nil` khi không đọc được
+  /// (khi ấy màn giữ kết quả của luật trên máy).
+  public static func fromAI(_ json: JSONValue, hour: Int) -> Result? {
+    guard case .array(let rows)? = json["items"] else { return nil }
+    var r = Result()
+    func clock(_ v: JSONValue?) -> SleepLog.Clock? {
+      guard let s = v?.stringValue else { return nil }
+      let p = s.split(separator: ":").compactMap { Int($0) }
+      guard p.count == 2, (0...23).contains(p[0]), (0...59).contains(p[1]) else { return nil }
+      return SleepLog.Clock(hour: p[0], minute: p[1])
+    }
+    func int(_ v: JSONValue?, _ range: ClosedRange<Double>) -> Int? {
+      guard let d = v?.doubleValue, d.isFinite, range.contains(d) else { return nil }
+      return Int(d.rounded())
+    }
+    for row in rows {
+      if let s = row["type"]?.stringValue.flatMap(Shortcut.init(rawValue:)) {
+        r.shortcuts.insert(s)
+        continue
+      }
+      switch row["type"]?.stringValue {
+      case "sleep":
+        let bed = clock(row["bed"]), wake = clock(row["wake"])
+        var minutes = int(row["minutes"], 30...960)
+        if let bed, let wake {
+          var m = (wake.hour * 60 + wake.minute) - (bed.hour * 60 + bed.minute)
+          if m <= 0 { m += 1440 }
+          minutes = m
+        }
+        guard bed != nil || wake != nil || minutes != nil else { continue }
+        r.items.append(.sleep(Sleep(minutes: minutes, bed: bed, wake: wake)))
+        if minutes == nil { r.doubts.append(.sleepHalf) }
+      case "water":
+        let ml = int(row["ml"], 50...5000)
+        r.items.append(.water(ml: ml))
+        if ml == nil { r.doubts.append(.waterAmount) }
+      case "weight":
+        guard let kg = row["kg"]?.doubleValue, WeightLog.plausible(kg) else { continue }
+        r.items.append(.weight(kg: (kg * 10).rounded() / 10))
+      case "workout":
+        guard let k = row["kind"]?.stringValue.flatMap(Workout.Kind.init(rawValue:)) else { continue }
+        let m = int(row["minutes"], 1...600)
+        r.items.append(.workout(Workout(kind: k, minutes: m)))
+        if m == nil { r.doubts.append(.workoutMinutes) }
+      case "meal":
+        guard case .array(let fs)? = row["foods"] else { continue }
+        let foods: [Food] = fs.compactMap { f in
+          guard let name = f["name"]?.stringValue?.trimmingCharacters(in: .whitespacesAndNewlines), !name.isEmpty else { return nil }
+          let s = f["servings"]?.doubleValue ?? 1
+          let g = f["grams"]?.doubleValue
+          return Food(
+            name: name.lowercased(), servings: (0.1...20).contains(s) ? s : 1,
+            unit: f["unit"]?.stringValue?.lowercased(), grams: g.flatMap { (1...3000).contains($0) ? $0 : nil })
+        }
+        guard !foods.isEmpty else { continue }
+        let named = row["slot"]?.stringValue.flatMap { ["breakfast", "lunch", "dinner", "snack"].contains($0) ? $0 : nil }
+        let slot = named ?? Self.slot(hour: hour)
+        if named == nil { r.doubts.append(.mealSlot(guess: slot)) }
+        if let i = r.items.firstIndex(where: { if case .meal(let m) = $0 { m.slot == slot } else { false } }),
+          case .meal(var m) = r.items[i]
+        {
+          m.foods += foods
+          r.items[i] = .meal(m)
+        } else {
+          r.items.append(.meal(Meal(slot: slot, foods: foods)))
+        }
+      default: continue
+      }
+    }
+    func strings(_ k: String) -> [String] {
+      guard case .array(let a)? = json[k] else { return [] }
+      return a.compactMap { $0.stringValue }.filter { !$0.isEmpty }
+    }
+    r.otherDay = strings("otherDay")
+    r.unparsed = strings("unclear")
+    return r
   }
 
   // MARK: - Đọc

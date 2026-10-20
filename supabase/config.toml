@@ -18,6 +18,9 @@ verify_jwt = false
 [functions.ai-coach-memory]
 verify_jwt = false
 
+[functions.ai-log-parse]
+verify_jwt = false
+
 [functions.verify-purchase]
 verify_jwt = false
 

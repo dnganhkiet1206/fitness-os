@@ -18,7 +18,7 @@ struct TodayMealPlan {
 
   /// Khung có món dự kiến mà hôm nay chưa ghi.
   var openMeals: [String] {
-    MealPlans.slots(plan.mealsPerDay).filter { !planned($0).isEmpty && !book.isLoggedToday($0, day: day) }
+    MealPlans.rows(mealsPerDay: plan.mealsPerDay, items: book.items.filter { $0.day == day }).filter { !planned($0).isEmpty && !book.isLoggedToday($0, day: day) }
   }
 
   static func load(_ services: AppServices, userId: String, now: Date = Date()) async -> TodayMealPlan? {

@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 
 @testable import ASCNDCore
@@ -304,5 +305,40 @@ import Testing
   @Test func workoutWithoutMinutes() { #expect(doubts("hôm nay đi tập rồi") == [.workoutMinutes]) }
   @Test func storyWithAQuestion() {
     #expect(doubts("sáng ăn phở. ăn vậy có đủ đạm không?").contains(.mixedQuestion))
+  }
+}
+
+/// "Ghi hôm nay" đọc bằng AI (19/10): JSON của `ai-log-parse` → `Result`.
+struct SpokenLogAITests {
+  static func json(_ s: String) -> JSONValue { try! JSONDecoder().decode(JSONValue.self, from: Data(s.utf8)) }
+
+  @Test func turnsAIItemsIntoTheSameResult() throws {
+    let r = try #require(SpokenLog.fromAI(Self.json("""
+      {"items":[
+        {"type":"sleep","bed":"02:00","wake":"08:00","minutes":480},
+        {"type":"water","ml":null},
+        {"type":"meal","slot":"dinner","foods":[{"name":"Lẩu","servings":1,"unit":null,"grams":null}]},
+        {"type":"meal","slot":null,"foods":[{"name":"bún bò","servings":1,"unit":"tô","grams":null}]},
+        {"type":"weight","kg":900},
+        {"type":"workout","kind":"walk","minutes":null}
+      ],"otherDay":["hôm qua ngủ muộn"],"unclear":[]}
+      """), hour: 12))
+    #expect(r.items.first == .sleep(SpokenLog.Sleep(minutes: 360, bed: .init(hour: 2, minute: 0), wake: .init(hour: 8, minute: 0))))
+    #expect(r.items.contains(.water(ml: nil)))
+    #expect(r.items.contains(.meal(SpokenLog.Meal(slot: "dinner", foods: [SpokenLog.Food(name: "lẩu")]))))
+    #expect(r.items.contains(.meal(SpokenLog.Meal(slot: "lunch", foods: [SpokenLog.Food(name: "bún bò", unit: "tô")]))))
+    #expect(!r.items.contains { if case .weight = $0 { true } else { false } }, "900 kg bị bỏ")
+    #expect(r.doubts.contains(.waterAmount) && r.doubts.contains(.mealSlot(guess: "lunch")) && r.doubts.contains(.workoutMinutes))
+    #expect(r.otherDay == ["hôm qua ngủ muộn"])
+  }
+
+  @Test func shortcutsAreKept() throws {
+    let r = try #require(SpokenLog.fromAI(Self.json(#"{"items":[{"type":"meals_like_yesterday"},{"type":"workout_as_planned"}]}"#), hour: 12))
+    #expect(r.items.isEmpty && r.shortcuts == [.mealsLikeYesterday, .workoutAsPlanned])
+  }
+
+  @Test func unreadableIsNil() {
+    #expect(SpokenLog.fromAI(Self.json(#"{"error":"ai_unavailable"}"#), hour: 12) == nil)
+    #expect(SpokenLog.fromAI(Self.json(#"{"items":[]}"#), hour: 12)?.items.isEmpty == true)
   }
 }

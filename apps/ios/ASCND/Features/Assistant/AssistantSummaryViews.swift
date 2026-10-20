@@ -327,8 +327,8 @@ struct AskCoachBar: View {
         .padding(.leading, 16)
         .padding(.trailing, 6)
         .frame(height: 50)
-        .background(DS.Color.card.swiftUI, in: Capsule())
-        .overlay { Capsule().strokeBorder(DS.Color.foreground.swiftUI.opacity(0.10), lineWidth: 0.75) }
+        // Cùng viên kính với mọi ô chat của app (19/10, chủ dự án).
+        .glassComposer(radius: 25)
         if let lastAsked {
           Label {
             Text("assistant.coach.continue \(lastAsked)").lineLimit(1)
