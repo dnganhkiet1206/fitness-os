@@ -211,7 +211,10 @@ final class AppServices {
     let rows = backend.map { SupabaseRowStore(backend: $0) }
     self.backend = backend
     self.rows = rows
-    let widgets = WidgetRefresher(store: rows)
+    // Lịch tập (cache trên máy) cho widget "Buổi tập hôm nay": buổi có lịch chưa
+    // tập, và buổi ngày mai (20/10).
+    let planRepo = templates
+    let widgets = WidgetRefresher(store: rows, plans: { await planRepo.cached(userId: $0) })
     KoaWidgetResetHook.reset = { [koaWidget] in koaWidget.reset() }
     self.widgets = widgets
     health = HealthSyncCoordinator(store: rows)
