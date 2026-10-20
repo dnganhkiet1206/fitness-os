@@ -54,6 +54,8 @@ struct TodayDayBlock: View {
 
   @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @Environment(\.colorScheme) private var scheme
+  @Environment(AppServices.self) private var services: AppServices?
   /// Được khen hôm nay chưa (khen một lần mỗi ngày, `allowPraise`).
   @State private var praiseAllowed = false
   /// Nhãn "Next" và viền của ống kế tiếp là MỘT vật trượt giữa các ống.
@@ -81,26 +83,58 @@ struct TodayDayBlock: View {
     let next = line.gap.map(TodayDay.quest)
     let mood = KoaToday.read(room: room, localWaterMl: localWaterMl, profile: profile, riskHour: riskHour, hour: hour)
     let said = KoaToday.line(mood, signals: signals, profile: profile, streak: room.streak.count)
-    return VStack(spacing: 18) {
-      HStack(alignment: .top, spacing: DS.Spacing.sm) {
+    // Premium (20/10, Kiệt duyệt mock `today-koa-card.html` + `today-koa-meters.html`
+    // kiểu 2): sáng = giấy ấm (A), tối = titan đen như widget (B); năm ống thay
+    // bằng năm thanh ngang; câu Koa to không bong bóng; chân thẻ "x/5 · chuỗi".
+    let dark = scheme == .dark
+    let doneCount = tubes.filter(\.done).count
+    return VStack(alignment: .leading, spacing: 16) {
+      HStack(alignment: .center, spacing: 12) {
         koa(oneShot ?? mood.emotion)
-        VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+          .frame(width: 104, height: 104)
+          .background(
+            RadialGradient(
+              colors: dark ? [.white.opacity(0.10), .white.opacity(0.02)] : [Color(red: 0.94, green: 0.90, blue: 0.85), Color(red: 0.97, green: 0.95, blue: 0.91)],
+              center: UnitPoint(x: 0.5, y: 0.7), startRadius: 0, endRadius: 70),
+            in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+        VStack(alignment: .leading, spacing: 6) {
+          Text("koa.card.name")
+            .font(.system(size: 12, weight: .semibold))
+            .foregroundStyle(KoaCardInk.muted(dark))
           if let text = said ?? bubbleText(line, tubes: tubes) {
-            bubble(text, next: next)
+            Text(verbatim: text)
+              .font(.system(size: 17, weight: .semibold))
+              .foregroundStyle(KoaCardInk.ink(dark))
+              .fixedSize(horizontal: false, vertical: true)
+              .id(text)
+              .transition(reduceMotion ? AnyTransition.opacity : AnyTransition(.blurReplace))
               .animation(reduceMotion ? .easeInOut(duration: 0.2) : .smooth(duration: 0.45), value: text)
           }
+          if let next, next != .steps { nextButton(next, dark: dark) }
         }
-        .padding(.top, 6)
+        .frame(maxWidth: .infinity, alignment: .leading)
       }
-      HStack(alignment: .bottom, spacing: 0) {
+      VStack(spacing: 10) {
         ForEach(tubes) { t in
-          TodayTube(tube: t, isNext: t.quest == next, reduceMotion: reduceMotion, space: nextSpace)
-            .frame(maxWidth: .infinity)
+          KoaBar(tube: t, isNext: t.quest == next, dark: dark, reduceMotion: reduceMotion, unit: services?.preferences.volumeUnit ?? .ml)
+        }
+      }
+      HStack {
+        Text(verbatim: "\(doneCount)/\(tubes.count)").font(.system(size: 12, weight: .bold).monospacedDigit())
+          .foregroundStyle(KoaCardInk.ink(dark))
+          + Text(verbatim: " ") + Text("koa.card.doneToday").font(.system(size: 12)).foregroundStyle(KoaCardInk.muted(dark))
+        Spacer()
+        if room.streak.count > 0 {
+          Label(String(localized: "koa.card.streak \(room.streak.count)"), systemImage: "flame.fill")
+            .font(.system(size: 12, weight: .bold))
+            .foregroundStyle(MascotRoomView.signalColor(.meal))
         }
       }
     }
-    .padding(DS.Spacing.md)
-    .todayCard()
+    .padding(18)
+    .background { KoaCardBackground(dark: dark) }
+    .clipShape(RoundedRectangle(cornerRadius: 30, style: .continuous))
+    .shadow(color: .black.opacity(dark ? 0.25 : 0.08), radius: 14, y: 8)
     // Việc kế tiếp đổi → nhãn và viền trượt sang ống mới; ống dâng như chất lỏng.
     .animation(reduceMotion ? .easeInOut(duration: 0.2) : .spring(duration: 0.6, bounce: 0.22), value: next)
     .task(id: line) { updatePraise(line) }
@@ -222,6 +256,26 @@ struct TodayDayBlock: View {
       }
     }
     .frame(maxWidth: .infinity, alignment: .leading)
+  }
+
+  /// Nút "việc kế tiếp": viên đen (sáng) / trắng (tối) có chấm màu việc ấy.
+  private func nextButton(_ next: MascotRules.Quest, dark: Bool) -> some View {
+    Button { onAct(next) } label: {
+      HStack(spacing: 6) {
+        Circle().fill(MascotRoomView.signalColor(next)).frame(width: 8, height: 8)
+        Text(Self.action(next)).font(.system(size: 13, weight: .bold))
+        Text(verbatim: "+\(TodayDay.coins(next))").font(.system(size: 12, weight: .bold).monospacedDigit()).opacity(0.6)
+      }
+      .foregroundStyle(dark ? Color.black : .white)
+      .padding(.horizontal, 12)
+      .frame(minHeight: 32)
+      .background(dark ? KoaCardInk.ink(true) : KoaCardInk.ink(false), in: Capsule())
+      .frame(minHeight: 44)
+      .contentShape(Capsule())
+    }
+    .buttonStyle(TodayPressStyle())
+    .accessibilityLabel(Text(Self.action(next)))
+    .accessibilityValue(Text(String(localized: "today.day.worth \(TodayDay.coins(next))")))
   }
 
   // MARK: - Khen một lần mỗi ngày
@@ -414,5 +468,92 @@ extension View {
     } else {
       self.background(.regularMaterial, in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
     }
+  }
+}
+
+/// Màu chữ của thẻ Koa (sáng: giấy ấm; tối: titan) — giá trị của widget Koa.
+enum KoaCardInk {
+  static func ink(_ dark: Bool) -> Color { dark ? Color(red: 245/255, green: 243/255, blue: 240/255) : Color(red: 28/255, green: 27/255, blue: 26/255) }
+  static func muted(_ dark: Bool) -> Color { dark ? Color(red: 160/255, green: 156/255, blue: 150/255) : Color(red: 118/255, green: 112/255, blue: 104/255) }
+  static func track(_ dark: Bool) -> Color { dark ? .white.opacity(0.10) : .black.opacity(0.07) }
+}
+
+/// Nền thẻ Koa: sáng = giấy ấm có viền sáng trên + quầng cam góc trên trái (A);
+/// tối = titan đen chải ngang + quầng cam (B, như widget Koa).
+struct KoaCardBackground: View {
+  let dark: Bool
+  var body: some View {
+    ZStack {
+      if dark {
+        LinearGradient(colors: [Color(white: 0.15), Color(white: 0.08), Color(white: 0.06)], startPoint: .top, endPoint: .bottom)
+        Canvas { ctx, size in
+          var y: CGFloat = 0
+          var i = 0
+          while y < size.height {
+            var p = Path()
+            p.move(to: CGPoint(x: 0, y: y))
+            p.addLine(to: CGPoint(x: size.width, y: y))
+            ctx.stroke(p, with: .color(.white.opacity(i % 3 == 0 ? 0.045 : 0.022)), lineWidth: 0.5)
+            y += 2
+            i += 1
+          }
+        }
+      } else {
+        LinearGradient(colors: [Color(red: 1, green: 0.98, blue: 0.95), Color(red: 0.97, green: 0.945, blue: 0.90)], startPoint: .top, endPoint: .bottom)
+      }
+      RadialGradient(
+        colors: [Color(red: 1, green: 0.57, blue: 0.19).opacity(dark ? 0.24 : 0.20), .clear],
+        center: UnitPoint(x: 0.05, y: 0.0), startRadius: 0, endRadius: 190)
+      LinearGradient(stops: [.init(color: .white.opacity(dark ? 0.10 : 0.6), location: 0), .init(color: .clear, location: 0.12)], startPoint: .top, endPoint: .bottom)
+      RoundedRectangle(cornerRadius: 30, style: .continuous)
+        .strokeBorder(dark ? Color.white.opacity(0.08) : Color.black.opacity(0.05), lineWidth: 0.75)
+    }
+  }
+}
+
+/// Một chỉ số: biểu tượng · tên · thanh · số (mock kiểu 2). Việc kế tiếp: tên đậm
+/// và nhãn "Tiếp".
+struct KoaBar: View {
+  let tube: TodayDay.Tube
+  let isNext: Bool
+  let dark: Bool
+  let reduceMotion: Bool
+  let unit: Water.Unit
+
+  var body: some View {
+    let color = MascotRoomView.signalColor(tube.quest)
+    HStack(spacing: 10) {
+      Image(systemName: TodayTube.glyph(tube.quest))
+        .font(.system(size: 12, weight: .bold))
+        .foregroundStyle(color)
+        .frame(width: 18)
+      Text(verbatim: TodayDayBlock.name(tube.quest))
+        .font(.system(size: 13.5, weight: isNext ? .bold : .regular))
+        .foregroundStyle(KoaCardInk.ink(dark))
+        .frame(width: 64, alignment: .leading)
+        .lineLimit(1).minimumScaleFactor(0.8)
+      GeometryReader { g in
+        ZStack(alignment: .leading) {
+          Capsule().fill(KoaCardInk.track(dark))
+          Capsule().fill(color)
+            .frame(width: tube.fill > 0 ? max(7, g.size.width * min(1, tube.fill)) : 0)
+            .animation(reduceMotion ? .easeInOut(duration: 0.2) : .spring(duration: 0.7, bounce: 0.15), value: tube.fill)
+        }
+      }
+      .frame(height: 7)
+      Text(verbatim: tube.amount > 0 ? TodayDayBlock.value(tube, unit: unit) : "—")
+        .font(.custom("Menlo", size: 12.5, relativeTo: .caption).weight(.bold))
+        .foregroundStyle(tube.done ? color : KoaCardInk.ink(dark))
+        .frame(width: 58, alignment: .trailing)
+        .lineLimit(1).minimumScaleFactor(0.7)
+    }
+    .frame(minHeight: 20)
+    .accessibilityElement(children: .ignore)
+    .accessibilityLabel(Text(verbatim: TodayDayBlock.name(tube.quest)))
+    .accessibilityValue(Text(verbatim: [
+      TodayDayBlock.value(tube, unit: unit),
+      tube.done ? String(localized: "today.tube.done") : nil,
+      isNext ? String(localized: "today.next") : nil,
+    ].compactMap { $0 }.joined(separator: ", ")))
   }
 }
