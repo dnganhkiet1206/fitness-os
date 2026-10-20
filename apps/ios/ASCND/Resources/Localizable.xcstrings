@@ -40391,6 +40391,29 @@
     }
    }
   },
+  "koa.card.name": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa"
+     }
+    }
+   }
+  },
   "koa.card.streak %lld": {
    "extractionState": "manual",
    "localizations": {
