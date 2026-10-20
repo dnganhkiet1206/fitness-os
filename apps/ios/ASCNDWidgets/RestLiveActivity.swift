@@ -249,47 +249,52 @@ struct AdjustButtons: View {
   }
 }
 
-/// Màn khoá: thẻ titan đen như widget Koa, quầng cam góc TRÊN trái (Kiệt, 20/10).
-/// Thẻ màn khoá cao tối đa ~160pt: không dòng tiêu đề riêng (nhãn nằm trên tên
-/// bài), vòng 60, nút 38 — để nội dung không bị ép sát hai mép (20/10, Kiệt).
+/// Màn khoá: đúng bố cục mock đã duyệt (20/10) — dòng "ASCND · NGHỈ GIỮA SET",
+/// tên bài + "Tiếp theo" + vạch set bên trái, vòng lớn có số bên phải, ba nút.
+/// Tính cho vừa trần 160pt của Apple (vượt là bị cắt — lý do bản đầu dính mép):
+/// 13 + 11 + 8 + 66 + 10 + 36 + 13 ≈ 157pt.
 struct RestLockScreen: View {
   let state: RestActivityContent
   var body: some View {
-    VStack(spacing: 12) {
+    VStack(alignment: .leading, spacing: 0) {
+      HStack(spacing: 6) {
+        Image("BrandMark").resizable().interpolation(.high).frame(width: 11, height: 11).opacity(0.75)
+        Text(verbatim: "ASCND")
+        Text(verbatim: "·")
+        Group {
+          if state.pausedLeft != nil { Text("rest.title.paused") } else { Text("rest.title.between") }
+        }
+        .textCase(.uppercase)
+        .lineLimit(1)
+      }
+      .font(.system(size: 11, weight: .heavy)).tracking(0.8)
+      .foregroundStyle(RestInk.muted)
+      .frame(height: 11)
       HStack(alignment: .center, spacing: 14) {
-        VStack(alignment: .leading, spacing: 3) {
-          HStack(spacing: 6) {
-            Image("BrandMark").resizable().interpolation(.high).frame(width: 11, height: 11).opacity(0.75)
-            Group {
-              if state.pausedLeft != nil { Text("rest.title.paused") } else { Text("rest.title.between") }
-            }
-            .font(.system(size: 12, weight: .medium))
-            .lineLimit(1)
-          }
-          .foregroundStyle(RestInk.muted)
-          if let t = state.target {
-            Text(t.exerciseName).font(.system(size: 20, weight: .bold)).foregroundStyle(RestInk.ink)
+        if let t = state.target {
+          VStack(alignment: .leading, spacing: 3) {
+            Text(t.exerciseName).font(.system(size: 21, weight: .bold)).foregroundStyle(RestInk.ink)
               .lineLimit(1).minimumScaleFactor(0.75)
-            HStack(spacing: 10) {
-              Text("rest.next \(t.setNumber) \(t.totalSets)").font(.system(size: 12.5)).foregroundStyle(RestInk.muted)
-              SetPips(done: max(0, t.setNumber - 1), total: t.totalSets, color: RestInk.accent(state))
-            }
-          } else {
-            Text("rest.title").font(.system(size: 20, weight: .bold)).foregroundStyle(RestInk.ink)
+            Text("rest.next \(t.setNumber) \(t.totalSets)").font(.system(size: 13)).foregroundStyle(RestInk.muted)
+            SetPips(done: max(0, t.setNumber - 1), total: t.totalSets, color: RestInk.accent(state)).padding(.top, 4)
           }
+        } else {
+          Text("rest.title").font(.system(size: 21, weight: .bold)).foregroundStyle(RestInk.ink)
         }
         Spacer(minLength: 0)
         ZStack {
-          RestRing(state: state, size: 60, lineWidth: 5)
-          RestDigits(state: state, alignment: .center).font(RestInk.mono(14))
+          RestRing(state: state, size: 66, lineWidth: 6)
+          RestDigits(state: state, alignment: .center).font(RestInk.mono(16))
             .foregroundStyle(state.pausedLeft != nil ? RestInk.paused : RestInk.ink)
-            .frame(width: 48)
+            .frame(width: 54)
         }
       }
-      AdjustButtons(paused: state.pausedLeft != nil, height: 38)
+      .padding(.top, 8)
+      AdjustButtons(paused: state.pausedLeft != nil, height: 36)
+        .padding(.top, 10)
     }
     .padding(.horizontal, 16)
-    .padding(.vertical, 14)
+    .padding(.vertical, 13)
     .background { RestMetal() }
   }
 }
