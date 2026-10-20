@@ -322,8 +322,9 @@ serve(async (req) => {
         protein_g: d.protein_g,
         carbs_g: d.carbs_g,
         fat_g: d.fat_g,
-        readiness: d.readiness_score,
-        readiness_status: d.readiness_status,
+        /* 19/10: như màn hình — chỉ có tải tập thì chưa chấm, null. */
+        readiness: recoveryMeasured(d.readiness_explain) ? d.readiness_score : null,
+        readiness_status: recoveryMeasured(d.readiness_explain) ? d.readiness_status : null,
         recovery_measured: recoveryMeasured(d.readiness_explain),
       })),
       /*
@@ -386,7 +387,7 @@ READING THE DATA:
 - readiness is 0-100 and is absent on days the app could not score. It measures how much TRAINING CAPACITY the user appears to have today, combining HRV, resting heart rate, sleep and training load over whichever of those were actually measured. It is NOT a recovery score.
 - "today" is the user's date. "Last night" means ONLY a recent_sleep entry whose date is today; an older entry is that older night — name its date, never call it last night. No entry dated today means last night is not recorded.
 - When the user TELLS you a number (I slept 7 hours, I ate 2000 kcal), that is the truth for this answer: use it, never contradict it with an older or different value from the data. If the app has nothing recorded for it, suggest saving it with Quick log (Ghi nhanh) so the app can use it.
-- recovery_measured says whether that day's readiness rested on a recovery reading (HRV, resting heart rate or sleep). When it is false the score came from training load alone: the number is real, but nothing about how the user recovered was measured.
+- recovery_measured says whether that day's readiness rested on a recovery reading (HRV, resting heart rate or sleep). When it is false, readiness and readiness_status are null for that day: training load alone is not a readiness score and the app shows "not enough data" — never state a readiness number or state for it.
 
 IMPORTANT PRINCIPLES:
 - NEVER predict, diagnose or detect any health condition or illness

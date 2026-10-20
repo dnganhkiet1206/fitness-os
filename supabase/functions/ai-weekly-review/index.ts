@@ -131,7 +131,7 @@ serve(async (req) => {
           prompt does not present any day's readiness as temporally settled, so
           nothing here over-claims either way.
         */
-        logs: weekLogs.map(l => ({ date: l.date, kcal: l.kcal, protein_g: l.protein_g, carbs_g: l.carbs_g, fat_g: l.fat_g, volume_load: l.volume_load, readiness: l.readiness_score, readiness_status: l.readiness_status, recovery_measured: recoveryMeasured(l.readiness_explain), steps: l.steps, sleep_min: l.sleep_duration_min })),
+        logs: weekLogs.map(l => ({ date: l.date, kcal: l.kcal, protein_g: l.protein_g, carbs_g: l.carbs_g, fat_g: l.fat_g, volume_load: l.volume_load, readiness: recoveryMeasured(l.readiness_explain) ? l.readiness_score : null, readiness_status: recoveryMeasured(l.readiness_explain) ? l.readiness_status : null, recovery_measured: recoveryMeasured(l.readiness_explain), steps: l.steps, sleep_min: l.sleep_duration_min })),
         sleep: sleepLogs.map(s => ({ date: new Date(s.waketime).toISOString().split("T")[0], quality: s.quality, deep_min: s.deep_min, rem_min: s.rem_min, light_min: s.light_min })),
         workouts: workouts.map(w => ({ date: new Date(w.date_time).toISOString().split("T")[0], name: w.template_name, volume: w.volume_load, rpe: w.session_rpe })),
       },
@@ -151,6 +151,7 @@ DATA: ${JSON.stringify(ctx)}
 READING THE DATA:
 - readiness is 0-100 and measures TRAINING CAPACITY — HRV, resting heart rate, sleep and training load combined over whichever were actually measured. readiness_status describes that capacity state. Neither is a direct measurement of recovery
 - recovery_measured says only whether a recovery component (HRV, resting heart rate or sleep) was measured that day. It does NOT say recovery was good or bad. On days where it is false, never say or imply from readiness alone that the user was recovered, unrecovered, fatigued or needed recovery — the app has no reading for it. Where it is true, recovery wording is allowed only as far as the readings themselves support
+- On a day where recovery_measured is false, readiness and readiness_status are null: the app could not score that day (training load alone is not a readiness score) and shows "not enough data". Never state a readiness number or state for such a day.
 
 IMPORTANT PRINCIPLES:
 - NEVER predict, diagnose or detect any illness or health condition
@@ -166,6 +167,7 @@ DỮ LIỆU: ${JSON.stringify(ctx)}
 CÁCH ĐỌC DỮ LIỆU:
 - readiness thang 0-100, đo KHẢ NĂNG TẬP LUYỆN — ghép HRV, nhịp tim nghỉ, giấc ngủ và tải tập trên những chiều thật sự đo được. readiness_status mô tả trạng thái khả năng đó. Cả hai đều KHÔNG phải phép đo trực tiếp về phục hồi
 - recovery_measured chỉ cho biết hôm đó CÓ đo được một chiều phục hồi (HRV, nhịp tim nghỉ hoặc giấc ngủ) hay không. Nó KHÔNG nói phục hồi tốt hay kém. Với những ngày nó là false, tuyệt đối không dựa vào mỗi readiness để nói hay ám chỉ người dùng đã hồi, chưa hồi, đang mệt hay cần phục hồi — app không có số liệu đó. Với ngày nó là true, chỉ được dùng ngôn ngữ phục hồi trong phạm vi các chỉ số thật sự cho thấy
+- Ngày nào recovery_measured là false thì readiness và readiness_status là null: app không chấm được ngày đó (chỉ có tải tập thì chưa phải điểm sẵn sàng) và hiện "chưa đủ dữ liệu". Không bao giờ nói ra điểm hay trạng thái sẵn sàng cho ngày ấy.
 
 NGUYÊN TẮC QUAN TRỌNG:
 - KHÔNG BAO GIỜ dự đoán, chẩn đoán hay phát hiện bệnh lý hoặc tình trạng sức khoẻ

@@ -18,8 +18,8 @@ public struct SupabaseMealLog: MealFoodSource {
 
   public func search(_ text: String, limit: Int) async throws -> [JSONValue] {
     try await client.from("food_items")
-      .select("id, user_id, name, brand, kcal, protein_g, carbs_g, fat_g, fiber_g, serving_g")
-      .ilike("name", pattern: "%\(text)%")
+      .select("id, user_id, name, brand, kcal, protein_g, carbs_g, fat_g, fiber_g, serving_g, " + FoodNames.columns)
+      .or(SupabaseFoodLibrary.searchFilter(text))
       .order("name")
       .limit(limit)
       .execute().value

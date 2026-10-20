@@ -88,7 +88,7 @@ extension CoachOverview.Item {
     switch tone {
     case .meal: (actual, target) = (s.kcal, s.kcalTarget)
     case .protein: (actual, target) = (s.proteinG, s.proteinTarget)
-    case .readiness: (actual, target) = (s.readiness.map(Double.init), 100)
+    case .readiness: (actual, target) = (s.scoredReadiness.map(Double.init), 100)
     case .steps: (actual, target) = (s.steps > 0 ? s.steps : nil, nil)
     case .sleep:
       guard s.sleepMin > 0 else { return nil }

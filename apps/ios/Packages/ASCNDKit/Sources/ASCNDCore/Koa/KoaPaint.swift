@@ -434,7 +434,8 @@ public enum KoaPaint {
         walk(n.kids ?? [])
       }
     }
-    walk(KoaScene.nodes)
+    walk(KoaScene.wardrobePayload.nodes)
+    walk(KoaScene.rnPayload.nodes)
     m[KoaMath.smilePath] = parsePath(KoaMath.smilePath)
     return m
   }()

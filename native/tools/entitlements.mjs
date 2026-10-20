@@ -316,7 +316,11 @@ try {
    ───────────────────────────────────────────────────────────────────────── */
 {
   const sql = strip(
-    execFileSync('sh', ['-c', `cat ${path.join(ROOT, 'supabase/migrations')}/*.sql`], { encoding: 'utf8' }),
+    execFileSync('sh', ['-c', `cat ${path.join(ROOT, 'supabase/migrations')}/*.sql`], {
+      encoding: 'utf8',
+      /* Mặc định 1 MB; migration seed thư viện món / bài tập (18/10) đã hơn thế. */
+      maxBuffer: 64 * 1024 * 1024,
+    }),
   );
 
   const at = sql.indexOf('CREATE TABLE IF NOT EXISTS public.entitlements');

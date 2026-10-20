@@ -36,6 +36,8 @@ struct ASCNDApp: App {
     // Island, không có view nào xuất hiện — intent vẫn phải tìm được controller.
     RestIntentRouter.adjust = { delta in controller.adjust(by: delta) }
     RestIntentRouter.setPaused = { paused in controller.setPaused(paused) }
+    // Nút "+1 ly" trên widget Koa (đợt 2C).
+    KoaIntentRouter.addWater = { await services.addWaterFromWidget() }
   }
 
   static func applyTheme(_ theme: AppPreferences.Theme) {

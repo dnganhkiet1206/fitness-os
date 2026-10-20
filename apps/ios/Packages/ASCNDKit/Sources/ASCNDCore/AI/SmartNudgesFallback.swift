@@ -14,7 +14,7 @@ extension SmartNudges {
     func g(_ v: Double) -> String { CoachQuickReply.grouped(v, l) }
     var out: [Nudge] = []
 
-    if let r = s.readiness, r < 50 {
+    if let r = s.scoredReadiness, r < 50 {
       out.append(Nudge(type: "readiness", message: [
         .vi: "Điểm sẵn sàng \(r)/100 — hôm nay ưu tiên buổi tập nhẹ.",
         .en: "Readiness \(r)/100 — keep today's session light.",

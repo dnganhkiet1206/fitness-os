@@ -27,6 +27,8 @@ struct ExercisesView: View {
 
   @Environment(\.locale) private var locale
   @State private var search = ""
+  /// Nhóm đang lọc (chip); mở từ ô nhóm cơ thì chọn sẵn nhóm ấy.
+  @State private var group: MuscleGroup?
   @State private var debounced = ""
   @State private var adding: Bool
   @State private var form: AddForm
@@ -37,20 +39,28 @@ struct ExercisesView: View {
   init(library: ExerciseLibrary, only: MuscleGroup? = nil, create: String? = nil) {
     self.library = library
     self.only = only
+    _group = State(initialValue: only)
     _adding = State(initialValue: create != nil)
     _form = State(initialValue: AddForm(name: create ?? ""))
   }
 
   private var lang: MuscleGroup.Language { MuscleGroup.Language(locale: locale) }
   private var sections: [ExerciseCatalog.Section] {
-    ExerciseCatalog.sections(library.exercises, query: debounced, muscle: only, lang: lang)
+    ExerciseCatalog.sections(library.exercises, query: debounced, muscle: group, lang: lang)
   }
 
   var body: some View {
     content
       .navigationTitle(Text("ex.title"))
       .ascndPage()
-      .searchable(text: $search, prompt: Text("ex.search"))
+      // Ô tìm ghim trên đầu danh sách: `.searchable` của iOS 26 nằm ở đáy màn và
+      // bị thanh tab của app che (18/10, chủ dự án: "thêm mục tìm kiếm").
+      .safeAreaInset(edge: .top, spacing: 0) {
+        VStack(spacing: 0) {
+          searchField
+          groupChips
+        }
+      }
       .toolbar {
         ToolbarItem(placement: .primaryAction) {
           Button {
@@ -88,6 +98,71 @@ struct ExercisesView: View {
       }
   }
 
+  /// Viên tìm như ô lọc món (`FoodListView`): tên vi / en / es, gõ không dấu cũng ra.
+  private var searchField: some View {
+    HStack(spacing: 10) {
+      Image(systemName: "magnifyingglass")
+        .font(.system(size: 16, weight: .semibold))
+        .foregroundStyle(MascotRoomView.signalColor(.workout))
+        .accessibilityHidden(true)
+      TextField(text: $search, prompt: Text(String(localized: "ex.search"))) {
+        Text(String(localized: "ex.search"))
+      }
+      .autocorrectionDisabled()
+      .textInputAutocapitalization(.never)
+      .submitLabel(.search)
+      if !search.isEmpty {
+        Button { search = "" } label: {
+          Image(systemName: "xmark.circle.fill")
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .frame(width: 44, height: 44)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text(String(localized: "community.search.clear")))
+      }
+    }
+    .padding(.leading, 18)
+    .padding(.trailing, search.isEmpty ? 18 : 4)
+    .frame(minHeight: 52)
+    .background(Capsule().fill(.regularMaterial))
+    .overlay(Capsule().strokeBorder(MascotRoomView.signalColor(.workout).opacity(0.55), lineWidth: 1.5))
+    .padding(.horizontal, DS.Spacing.md)
+    .padding(.vertical, DS.Spacing.sm)
+  }
+
+  /// Lọc theo nhóm cơ — danh sách ~900 bài, cuộn tìm theo mục là quá dài.
+  private var groupChips: some View {
+    ScrollView(.horizontal, showsIndicators: false) {
+      HStack(spacing: DS.Spacing.xs) {
+        chip(String(localized: "wb.all"), on: group == nil) { group = nil }
+        ForEach(MuscleGroup.allCases, id: \.self) { g in
+          chip(g.label(lang), on: group == g) { group = group == g ? nil : g }
+        }
+      }
+      .padding(.horizontal, DS.Spacing.md)
+      .padding(.bottom, DS.Spacing.xs)
+    }
+  }
+
+  /// Chip đang chọn: nền màu Tập luyện, chữ trắng; chưa chọn: nền kính + viền.
+  private func chip(_ title: String, on: Bool, action: @escaping () -> Void) -> some View {
+    let rose = MascotRoomView.signalColor(.workout)
+    return Button(action: action) {
+      Text(verbatim: title)
+        .font(DS.TextStyle.footnote.weight(on ? .bold : .medium))
+        .foregroundStyle(on ? Color.white : DS.Color.foreground.swiftUI)
+        .padding(.horizontal, DS.Spacing.md)
+        .frame(minHeight: 40)
+        .background(Capsule().fill(on ? AnyShapeStyle(rose) : AnyShapeStyle(.regularMaterial)))
+        .overlay(Capsule().strokeBorder(on ? Color.clear : DS.Color.border.swiftUI, lineWidth: 1))
+        .frame(minHeight: 44)
+        .contentShape(Rectangle())
+    }
+    .buttonStyle(.plain)
+    .accessibilityAddTraits(on ? [.isButton, .isSelected] : .isButton)
+  }
+
   @ViewBuilder private var content: some View {
     if !library.loaded, library.exercises.isEmpty, library.failure == nil {
       DSLoadingView()
@@ -98,7 +173,9 @@ struct ExercisesView: View {
       }
     } else if sections.isEmpty {
       DSEmptyState(
-        systemImage: "dumbbell", title: String(localized: "ex.empty"), message: String(localized: "ex.empty.hint"))
+        // Đang tìm: "không tìm thấy" là đủ — câu đồng bộ từ web chỉ đúng khi thư viện trống.
+        systemImage: "dumbbell", title: String(localized: "ex.empty"),
+        message: debounced.isEmpty && group == nil ? String(localized: "ex.empty.hint") : nil)
     } else {
       List {
         ForEach(sections) { section in
@@ -117,24 +194,31 @@ struct ExercisesView: View {
   private func row(_ e: LibraryExercise) -> some View {
     let own = e.userId?.lowercased() == library.userId.lowercased()
     return HStack(spacing: DS.Spacing.sm) {
-      Text(verbatim: e.name)
-        .font(DS.TextStyle.body)
-        .lineLimit(1)
-        .frame(maxWidth: .infinity, alignment: .leading)
-      // Loại đã khai báo: không hiện gì khi chưa ai nói.
-      if let kind = e.kind.flatMap(ExerciseKind.init(rawValue:)) {
-        Text(verbatim: AddExerciseSheet.kindName(kind))
-          .font(DS.TextStyle.caption)
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-          .padding(.horizontal, 7)
-          .padding(.vertical, 1)
-          .overlay(Capsule().stroke(DS.Color.border.swiftUI))
+      // Bài thư viện: tên theo ngôn ngữ app, tên gốc tiếng Anh nhỏ bên dưới (dễ đối
+      // chiếu với video / tài liệu). Bài của mình: đúng tên đã đặt.
+      VStack(alignment: .leading, spacing: 3) {
+        Text(verbatim: e.displayName)
+          .font(DS.TextStyle.body)
+          .lineLimit(2)
+        if e.displayName != e.name {
+          Text(verbatim: e.name)
+            .font(DS.TextStyle.caption)
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .lineLimit(1)
+        }
+        // Thẻ dưới tên (18/10, chủ dự án: "thẻ phân loại hơi khó nhìn"): thiết bị
+        // tô màu Tập luyện, loại bài nền xám; trùng chữ thì chỉ một thẻ ("Không tạ").
+        let gear = e.equipment.flatMap { $0.isEmpty ? nil : Equipment.label($0, lang) }
+        let kind = e.kind.flatMap(ExerciseKind.init(rawValue:)).map(AddExerciseSheet.kindName)
+        if gear != nil || kind != nil {
+          HStack(spacing: 6) {
+            if let gear { tag(gear, tinted: true) }
+            if let kind, kind != gear { tag(kind, tinted: false) }
+          }
+          .padding(.top, 2)
+        }
       }
-      if let gear = e.equipment, !gear.isEmpty {
-        Text(verbatim: Equipment.label(gear, lang))
-          .font(DS.TextStyle.caption)
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-      }
+      .frame(maxWidth: .infinity, alignment: .leading)
       // Chỉ bài của mình mới xoá được (bài mẫu là của chung).
       if own {
         Button {
@@ -149,6 +233,16 @@ struct ExercisesView: View {
       }
     }
     .frame(minHeight: 44)
+  }
+
+  private func tag(_ text: String, tinted: Bool) -> some View {
+    let rose = MascotRoomView.signalColor(.workout)
+    return Text(verbatim: text)
+      .font(DS.TextStyle.caption.weight(.semibold))
+      .foregroundStyle(tinted ? rose : DS.Color.foreground.swiftUI.opacity(0.75))
+      .padding(.horizontal, 8)
+      .padding(.vertical, 3)
+      .background(Capsule().fill(tinted ? rose.opacity(0.12) : DS.Color.secondary.swiftUI))
   }
 
   private func delete(_ e: LibraryExercise) async {

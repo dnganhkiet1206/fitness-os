@@ -22,7 +22,7 @@ public enum WidgetSync {
         filters: [me, .gte("date_time", .string(day.start)), .lt("date_time", .string(day.end))],
         order: .init(column: "date_time", ascending: false)),
       todayLog: RowQuery(
-        table: "daily_logs", columns: "readiness_score", filters: [me, .eq("date", .string(today.description))],
+        table: "daily_logs", columns: "readiness_score, readiness_explain", filters: [me, .eq("date", .string(today.description))],
         mode: .maybeSingle),
       streakDays: RowQuery(
         table: "daily_logs", columns: "date", filters: [me, .or(Streak.loggedDayFilter)],
@@ -37,7 +37,8 @@ public enum WidgetSync {
 
   /// `nil` khi một nguồn bắt buộc đọc hỏng — không ghi gì.
   public static func payloads(
-    userId: String, store: any RowStore, copy: HomeWidgets.Copy, now: EpochMillis, in tz: TimeZone
+    userId: String, store: any RowStore, copy: HomeWidgets.Copy, now: EpochMillis, in tz: TimeZone,
+    recovery: ((String?) -> Bool)? = nil
   ) async -> Payloads? {
     let today = LocalDate(now, in: tz)
     let r = queries(userId: userId, today: today, in: tz)
@@ -50,6 +51,8 @@ public enum WidgetSync {
     let streak = Streak.from(days.compactMap { $0["date"]?.stringValue }, today: today.description, frozen: frozen)
     return Payloads(
       today: HomeWidgets.todayWorkout(sessions: sessions, copy: copy),
-      streak: HomeWidgets.streakReadiness(streak: streak.count, readinessScore: log.first?["readiness_score"], copy: copy))
+      streak: HomeWidgets.streakReadiness(
+        streak: streak.count, readinessScore: log.first?["readiness_score"],
+        hasRecovery: recovery.map { $0(log.first?["readiness_explain"]?.stringValue) } ?? true, copy: copy))
   }
 }

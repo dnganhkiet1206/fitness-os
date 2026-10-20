@@ -5,6 +5,7 @@ import Foundation
 import Network
 import Observation
 import UserNotifications
+import WidgetKit
 
 /// Gốc lắp ráp của app: nơi DUY NHẤT dựng các mảnh thật và nối chúng với nhau.
 ///
@@ -33,6 +34,60 @@ final class AppServices {
   /// Bộ quan sát nhiệm vụ ngày của tài khoản đang đăng nhập (#527 A-NEXT-7,
   /// cấp app): phiên (`RootGate`) và phòng linh vật dùng CHUNG một bản.
   @ObservationIgnored private var questObserverCache: QuestObserver?
+  /// Phần thưởng vừa tự về (Koa đợt 1): Hôm nay đọc lại ví và — nếu app thấy việc
+  /// vừa xong — cho Koa mừng rỡ với "+N" bay lên.
+  private(set) var koaReward: KoaReward?
+
+  struct KoaReward: Equatable {
+    let id: Int
+    let userId: String
+    let amount: Int
+    /// Bước chuyển app thấy tận mắt (không phải việc đã xong lúc app đóng).
+    let seen: Bool
+    /// Nhiệm vụ vừa nhận; `nil` = thưởng chuỗi.
+    var quest: MascotRules.Quest?
+    /// Xong hết việc của ngày (Koa ló lên luôn được hiện).
+    var allDone = false
+  }
+
+  /// Đồ Koa đang mặc (khoá `mascot_inventory`), do Hôm nay ghi khi tủ đồ đọc xong
+  /// / đổi — để Koa ló lên ở tab khác mặc đúng đồ (đợt 2A).
+  var koaEquipped: [String] = []
+  /// Widget Koa (đợt 2C): ảnh + câu của Koa ở Hôm nay ra màn hình chính.
+  @ObservationIgnored let koaWidget = KoaWidgetPublisher()
+  /// Chuỗi ngày của tài khoản đang mở (phòng Koa của Hôm nay ghi) — cho nhắc chuỗi
+  /// của Koa (đợt 2B). `nil` = chưa đọc.
+  var koaStreak: (userId: String, value: Streak.Value)?
+
+  /// Nút "+1 ly" trên widget Koa (đợt 2C): ghi qua CÙNG sổ nước + hàng đợi như
+  /// nút trong app, rồi gửi, đọc lại nhiệm vụ (xu tự về) và vẽ lại widget. Chạy cả
+  /// khi hệ thống mở app ở nền chỉ để chạy intent — phiên có thể chưa đọc.
+  func addWaterFromWidget() async -> Bool {
+    if case .loading = session.phase { await session.start() }
+    guard let userId = session.session?.userId, let book = makeWaterBook(userId: userId) else { return false }
+    defer { book.close() }
+    do {
+      _ = try await book.add(amountMl: Water.stepMl(preferences.volumeUnit), online: sync.online)
+    } catch {
+      return false
+    }
+    WidgetDataStore().markKoaWaterLogged(today: LocalDate(SystemWallClock().nowMillis(), in: .current))
+    WidgetCenter.shared.reloadTimelines(ofKind: KoaWidgetPublisher.kind)
+    sync.kick()
+    Task {
+      await sync.settle()
+      await questObserver(userId: userId)?.refresh()
+    }
+    return true
+  }
+
+  /// Một lần thưởng tự về (nhiệm vụ hay chuỗi) — mã tăng dần để `onChange` bắt.
+  func noteKoaReward(
+    userId: String, amount: Int, seen: Bool, quest: MascotRules.Quest? = nil, allDone: Bool = false
+  ) {
+    koaReward = KoaReward(
+      id: (koaReward?.id ?? 0) + 1, userId: userId, amount: amount, seen: seen, quest: quest, allDone: allDone)
+  }
   /// Số lần cân ONLINE đã được server xác nhận trong lần chạy app này — nhịp
   /// để kế hoạch nhắc nhở đọc lại `weight_logs` ngay (`invalidateQueries` của
   /// `useLogWeight`). Xếp hàng / lỗi không tăng; bữa ăn đi qua outbox nên đã
@@ -157,6 +212,7 @@ final class AppServices {
     self.backend = backend
     self.rows = rows
     let widgets = WidgetRefresher(store: rows)
+    KoaWidgetResetHook.reset = { [koaWidget] in koaWidget.reset() }
     self.widgets = widgets
     health = HealthSyncCoordinator(store: rows)
     let prefs = AppPreferences(store: UserDefaultsStore())
@@ -454,7 +510,11 @@ final class AppServices {
 
   /// Xu hướng sẵn sàng 7 ngày (#527) — đọc `daily_logs` qua kho hàng chung.
   func makeReadinessTrend(userId: String, today: LocalDate) -> ReadinessTrendBook? {
-    rows.map { ReadinessTrendBook(userId: userId, today: today, store: $0) }
+    var recovery: (@Sendable (String?) -> Bool)?
+    if let copy = ReadinessCopyStore.copy {
+      recovery = { explain in ReadinessCard.hasRecoverySignal(explain, copy: copy) }
+    }
+    return rows.map { ReadinessTrendBook(userId: userId, today: today, store: $0, recovery: recovery) }
   }
 
   /// Thẻ tập luyện (#527 N3, `TrainingCard` của Hôm nay): các buổi 56 ngày và
@@ -664,7 +724,8 @@ final class AppServices {
   }
 
   /// MỘT bộ quan sát nhiệm vụ cho mỗi tài khoản (`<QuestAutoClaim />` gắn ở gốc
-  /// app RN): nhiệm vụ THẤY vừa xong → giờ thói quen — chính `noteDone` của RN;
+  /// app RN): nhiệm vụ đã xong → tự nhận thưởng (Koa đợt 1); nhiệm vụ THẤY vừa
+  /// xong → giờ thói quen — chính `noteDone` của RN;
   /// `HabitHours` tự bỏ nhiệm vụ ngoài `CLOCK_TRUSTED`. Đổi người → bản cũ
   /// đóng, bản mới bắt đầu từ mốc trống.
   func questObserver(userId: String) -> QuestObserver? {
@@ -675,6 +736,12 @@ final class AppServices {
     let goals = StepsGoalStore(store: UserDefaultsStore(), userId: userId)
     let o = QuestObserver(
       userId: userId, source: SupabaseMascotSource(backend: backend), stepsGoal: { goals.goal },
+      economy: SupabaseMascotEconomy(backend: backend),
+      onClaimed: { [weak self] claimed in
+        guard self?.session.session?.userId == userId else { return }
+        self?.noteKoaReward(
+          userId: userId, amount: claimed.amount, seen: claimed.seen, quest: claimed.quest, allDone: claimed.allDone)
+      },
       onQuestDone: { [weak self, habitHours] quest, hour in
         // Chỉ khi phiên vẫn là của người này: giờ của người vừa rời đi không
         // được ghi lại sau `habitHours.clear()`.

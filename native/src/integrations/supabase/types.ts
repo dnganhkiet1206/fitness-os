@@ -1209,8 +1209,16 @@ export type Database = {
           exercise_kind: string | null
           form_cues: string[] | null
           id: string
+          image_paths: string[] | null
+          instructions_en: string[] | null
           muscle_group: string
           name: string
+          name_en: string | null
+          name_es: string | null
+          name_vi: string | null
+          search_text: string | null
+          source: string | null
+          source_ref: string | null
           updated_at: string
           user_id: string | null
           video_url: string | null
@@ -1222,8 +1230,16 @@ export type Database = {
           exercise_kind?: string | null
           form_cues?: string[] | null
           id?: string
+          image_paths?: string[] | null
+          instructions_en?: string[] | null
           muscle_group?: string
           name: string
+          name_en?: string | null
+          name_es?: string | null
+          name_vi?: string | null
+          search_text?: string | null
+          source?: string | null
+          source_ref?: string | null
           updated_at?: string
           user_id?: string | null
           video_url?: string | null
@@ -1235,8 +1251,16 @@ export type Database = {
           exercise_kind?: string | null
           form_cues?: string[] | null
           id?: string
+          image_paths?: string[] | null
+          instructions_en?: string[] | null
           muscle_group?: string
           name?: string
+          name_en?: string | null
+          name_es?: string | null
+          name_vi?: string | null
+          search_text?: string | null
+          source?: string | null
+          source_ref?: string | null
           updated_at?: string
           user_id?: string | null
           video_url?: string | null
@@ -1251,12 +1275,22 @@ export type Database = {
           fat_g: number
           fiber_g: number
           id: string
+          is_estimate: boolean
           is_favorite: boolean | null
           kcal: number
           name: string
+          name_en: string | null
+          name_es: string | null
+          name_vi: string | null
+          portion_en: string | null
+          portion_es: string | null
+          portion_vi: string | null
           price_per_serving: number | null
           protein_g: number
+          search_text: string | null
           serving_g: number
+          source: string | null
+          source_ref: string | null
           tags: string[] | null
           updated_at: string
           user_id: string | null
@@ -1268,12 +1302,22 @@ export type Database = {
           fat_g?: number
           fiber_g?: number
           id?: string
+          is_estimate?: boolean
           is_favorite?: boolean | null
           kcal?: number
           name: string
+          name_en?: string | null
+          name_es?: string | null
+          name_vi?: string | null
+          portion_en?: string | null
+          portion_es?: string | null
+          portion_vi?: string | null
           price_per_serving?: number | null
           protein_g?: number
+          search_text?: string | null
           serving_g?: number
+          source?: string | null
+          source_ref?: string | null
           tags?: string[] | null
           updated_at?: string
           user_id?: string | null
@@ -1285,12 +1329,22 @@ export type Database = {
           fat_g?: number
           fiber_g?: number
           id?: string
+          is_estimate?: boolean
           is_favorite?: boolean | null
           kcal?: number
           name?: string
+          name_en?: string | null
+          name_es?: string | null
+          name_vi?: string | null
+          portion_en?: string | null
+          portion_es?: string | null
+          portion_vi?: string | null
           price_per_serving?: number | null
           protein_g?: number
+          search_text?: string | null
           serving_g?: number
+          source?: string | null
+          source_ref?: string | null
           tags?: string[] | null
           updated_at?: string
           user_id?: string | null

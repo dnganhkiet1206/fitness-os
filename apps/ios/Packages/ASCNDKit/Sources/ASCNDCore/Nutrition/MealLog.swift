@@ -69,10 +69,14 @@ public enum MealLog {
     public let carbs: Double
     public let fat: Double
     public let fiber: Double
+    /// Phần ăn theo ngôn ngữ app ("1 tô") — chỉ món thư viện có.
+    public let portion: String?
+    /// Món Việt tự soạn: số dinh dưỡng là ước tính từ công thức.
+    public let isEstimate: Bool
 
     public init(
       id: String, foodItemId: String?, name: String, brand: String? = nil, kcal: Double, protein: Double,
-      carbs: Double, fat: Double, fiber: Double
+      carbs: Double, fat: Double, fiber: Double, portion: String? = nil, isEstimate: Bool = false
     ) {
       self.id = id
       self.foodItemId = foodItemId
@@ -83,15 +87,18 @@ public enum MealLog {
       self.carbs = carbs
       self.fat = fat
       self.fiber = fiber
+      self.portion = portion
+      self.isEstimate = isEstimate
     }
 
-    /// `pickFood`: hàng `food_items`, số làm tròn.
+    /// `pickFood`: hàng `food_items`, số làm tròn. Tên theo ngôn ngữ app (`FoodNames`).
     public init?(foodRow r: JSONValue) {
-      guard let id = r["id"]?.stringValue, let name = r["name"]?.stringValue else { return nil }
+      guard let id = r["id"]?.stringValue, let name = FoodNames.pick(r) else { return nil }
       self.init(
         id: id, foodItemId: id, name: name, brand: r["brand"]?.stringValue, kcal: JS.round(JS.number(r["kcal"])),
         protein: JS.round(JS.number(r["protein_g"])), carbs: JS.round(JS.number(r["carbs_g"])),
-        fat: JS.round(JS.number(r["fat_g"])), fiber: JS.round(MealDiary.num(r["fiber_g"])))
+        fat: JS.round(JS.number(r["fat_g"])), fiber: JS.round(MealDiary.num(r["fiber_g"])),
+        portion: FoodNames.portion(r), isEstimate: r["is_estimate"] == .bool(true))
     }
 
     /// Thành một món mới trong bữa, một khẩu phần.
@@ -100,10 +107,24 @@ public enum MealLog {
     }
   }
 
-  /// Bữa từ route: chỉ một trong sáu loại.
-  public static func mealType(_ requested: String?) -> String {
-    guard let requested, MealDiary.order.contains(requested) else { return defaultMeal }
-    return requested
+  /// Bữa từ route: chỉ một trong sáu loại. Không có (mở từ ô "Bạn vừa ăn
+  /// gì?", nút ghi nhanh…) mà biết giờ → bữa theo giờ (19/10, chủ dự án: "lúc
+  /// nào cũng mặc định bữa trưa"); không biết giờ → "lunch" như RN.
+  public static func mealType(_ requested: String?, hour: Int? = nil) -> String {
+    if let requested, MealDiary.order.contains(requested) { return requested }
+    return hour.map(mealForHour) ?? defaultMeal
+  }
+
+  /// Bữa theo giờ địa phương: sáng 4–11, trưa 11–15, phụ 15–17, tối 17–22,
+  /// khuya (22–4) là bữa phụ.
+  public static func mealForHour(_ hour: Int) -> String {
+    switch hour {
+    case 4..<11: "breakfast"
+    case 11..<15: "lunch"
+    case 15..<17: "snack"
+    case 17..<22: "dinner"
+    default: "snack"
+    }
   }
 
   /// `diaryStampAt`: hôm nay → đúng lúc này; ngày đã qua → 12:00 địa phương.
@@ -474,7 +495,10 @@ public final class MealLogger {
     self.makeId = makeId
     self.onEnqueued = onEnqueued
     self.date = MealDiary.startDate(date, today: LocalDate(clock.nowMillis(), in: timeZone))
-    self.mealType = MealLog.mealType(mealType)
+    var cal = Calendar(identifier: .gregorian)
+    cal.timeZone = timeZone
+    let hour = cal.component(.hour, from: Date(timeIntervalSince1970: Double(clock.nowMillis().millis) / 1000))
+    self.mealType = MealLog.mealType(mealType, hour: hour)
   }
 
   public func close() {

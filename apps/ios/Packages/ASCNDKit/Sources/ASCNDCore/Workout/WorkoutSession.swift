@@ -144,14 +144,16 @@ public struct WorkoutSessionRecord: Sendable, Hashable {
 extension WorkoutDay {
   /// Các set của buổi khi chốt từ màn ngày tập: CHỈ hàng đã tick, đúng thứ tự
   /// màn hình; RPE là ghi đè trong ngày, không thì RPE kế hoạch
-  /// (`day-plan.tsx` `finish`). Hàng kế hoạch là việc thật, không phải khởi
-  /// động — baseline cố ý không có cờ warm-up ở màn này.
+  /// (`day-plan.tsx` `finish`). Baseline không có khởi động ở màn này; native
+  /// (18/10) mang cờ của hàng (kế hoạch hoặc người dùng đổi trong buổi) để
+  /// khối lượng / kỷ lục bỏ đúng các set ấy.
   public static func sessionSets(_ rows: [PlannedSet], _ progress: DayProgress, toKg: (Double) -> Double = { $0 }) -> [SessionSet] {
     rows.filter { progress.done[$0.key] == true }.map { r in
       let p = performed(r, progress, toKg: toKg)
       return SessionSet(
         exerciseId: r.exerciseId ?? "", exerciseName: r.exerciseName, weightKg: p.weightKg,
-        reps: p.reps, rpe: progress.rpe[r.key] ?? r.plannedRpe, durationSec: p.durationSec)
+        reps: p.reps, rpe: progress.rpe[r.key] ?? r.plannedRpe, warmup: isWarmup(r, progress),
+        durationSec: p.durationSec)
     }
   }
 }

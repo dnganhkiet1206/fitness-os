@@ -225,7 +225,21 @@ public final class WorkoutSessionController {
   }
 
   /// Mọi hàng của ngày: theo kế hoạch, rồi các bài thêm (#399).
-  public var rows: [PlannedSet] { plan.rows + WorkoutPlanning.adHocRows(progress.extra) }
+  /// Theo thứ tự bài người dùng đã kéo (`DayProgress.order`), nếu có.
+  public var rows: [PlannedSet] {
+    WorkoutDay.ordered(plan.rows + WorkoutPlanning.adHocRows(progress.extra), by: progress.order)
+  }
+
+  /// Kéo thả thứ tự bài trong buổi (19/10). Chỉ trước khi chốt: buổi đã ghi
+  /// giữ thứ tự của nó trên server.
+  public var canReorder: Bool { loaded && !finishing && loggedSessionId == nil }
+
+  @discardableResult
+  public func reorderExercises(_ keys: [String]) async -> Bool {
+    guard canReorder else { return false }
+    progress.order = keys
+    return await persist()
+  }
 
   public var key: String {
     DayProgressStore.key(date: plan.date, templateId: plan.templateId ?? Plan.adHocKey)
@@ -427,6 +441,20 @@ public final class WorkoutSessionController {
     guard editable(key), let row = row(key) else { return false }
     WorkoutDay.setRest(seconds, for: row, &progress)
     return await persist()
+  }
+
+  /// Đổi một hàng thành / khỏi set khởi động (18/10). Set khởi động vẫn được
+  /// ghi, nhưng khối lượng / kỷ lục / số set bỏ nó.
+  @discardableResult
+  public func toggleWarmup(_ key: String) async -> Bool {
+    guard editable(key), let row = row(key) else { return false }
+    WorkoutDay.toggleWarmup(row, &progress)
+    return await persist()
+  }
+
+  public func isWarmup(_ key: String) -> Bool {
+    guard let row = row(key) else { return false }
+    return WorkoutDay.isWarmup(row, progress)
   }
 
   /// RPE 1…10; ngoài khoảng là dữ liệu hỏng, không ghi.
