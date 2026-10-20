@@ -75,6 +75,12 @@ struct RemindersView: View {
             title: String(localized: "reminders.claim.title"), subtitle: String(localized: "reminders.claim.desc"),
             systemImage: "trophy", color: DS.Color.metricOrangeGraphic)
         }
+        // Koa đợt 2B: chuỗi ≥ 3 ngày mà hôm nay chưa ghi gì → một lời nhắc, giờ muộn của bạn.
+        Toggle(isOn: binding(.streak)) {
+          RowTitle(
+            title: String(localized: "reminders.streak.title"), subtitle: String(localized: "reminders.streak.desc"),
+            systemImage: "flame.fill", color: DS.Color.metricOrangeGraphic)
+        }
       }
 
       ForEach(Self.timed, id: \.self) { key in
@@ -194,6 +200,7 @@ struct RemindersView: View {
     case .bedtime: String(localized: "reminders.bedtime")
     case .water: String(localized: "reminders.water")
     case .challengeClaim: String(localized: "reminders.claim.title")
+    case .streak: String(localized: "reminders.streak.title")
     }
   }
 
@@ -208,12 +215,13 @@ struct RemindersView: View {
     case .bedtime: "moon"
     case .water: "drop.fill"
     case .challengeClaim: "trophy"
+    case .streak: "flame.fill"
     }
   }
 
   static func tint(_ key: ReminderKey) -> DSColor {
     switch key {
-    case .meal, .bedtime, .challengeClaim: DS.Color.metricOrangeGraphic
+    case .meal, .bedtime, .challengeClaim, .streak: DS.Color.metricOrangeGraphic
     case .supplements: DS.Color.metricPurple
     case .workout: DS.Color.primary
     // Cân = xám thép, nước = màu ống nước ở Hôm nay (14/10).

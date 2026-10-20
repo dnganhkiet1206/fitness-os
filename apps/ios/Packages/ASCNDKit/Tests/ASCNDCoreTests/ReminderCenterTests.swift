@@ -142,7 +142,8 @@ struct ReminderCenterTests {
   @Test func defaultsAreOffExceptClaims() {
     let c = center()
     #expect(c.prefs == .defaults && c.prefs.anyEnabled, "challengeClaim bật sẵn")
-    #expect(ReminderKey.allCases.filter { c.prefs.isEnabled($0) } == [.challengeClaim])
+    // Koa đợt 2B: nhắc chuỗi cũng bật sẵn (chỉ bắn khi chuỗi ≥ 3 ngày, hôm nay trống).
+    #expect(ReminderKey.allCases.filter { c.prefs.isEnabled($0) } == [.challengeClaim, .streak])
   }
 
   /// Lần ghi đầu tiên: người chưa từng chạm cài đặt được bật nhắc bữa tối + xin
@@ -451,8 +452,15 @@ struct ReminderCopyTableTests {
     for lang in [AppPreferences.Lang.vi, .en, .es] {
       let copy = ReminderCopyTable.copy(lang)
       #expect(Set(copy.keys) == Set(ReminderKey.allCases), "\(lang)")
-      #expect(copy.values.allSatisfy { !$0.title.isEmpty && !$0.body.isEmpty && !$0.body.contains("{") }, "\(lang)")
+      // Chỗ trống duy nhất là `{n}` của nhắc chuỗi — `ReminderCenter` điền khi đặt.
+      #expect(copy.values.allSatisfy { t in
+        !t.title.isEmpty && !t.body.isEmpty
+          && ![t.title, t.body, t.habitBody ?? ""].contains { $0.replacingOccurrences(of: "{n}", with: "").contains("{") }
+      }, "\(lang)")
+      #expect([ReminderKey.meal, .workout, .sleepLog].allSatisfy { copy[$0]?.habitBody != nil }, "\(lang)")
     }
-    #expect(ReminderCopyTable.copy(.vi)[.bedtime]?.title == "Chuẩn bị ngủ")
+    // Giọng Koa (đợt 2B) thay chữ RN.
+    #expect(ReminderCopyTable.copy(.vi)[.bedtime]?.title == "Sắp tới giờ ngủ")
+    #expect(ReminderCopyTable.copy(.vi)[.meal]?.body.contains("Koa") == true)
   }
 }

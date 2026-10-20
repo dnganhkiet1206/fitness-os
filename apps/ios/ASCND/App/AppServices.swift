@@ -52,6 +52,9 @@ final class AppServices {
   /// Đồ Koa đang mặc (khoá `mascot_inventory`), do Hôm nay ghi khi tủ đồ đọc xong
   /// / đổi — để Koa ló lên ở tab khác mặc đúng đồ (đợt 2A).
   var koaEquipped: [String] = []
+  /// Chuỗi ngày của tài khoản đang mở (phòng Koa của Hôm nay ghi) — cho nhắc chuỗi
+  /// của Koa (đợt 2B). `nil` = chưa đọc.
+  var koaStreak: (userId: String, value: Streak.Value)?
 
   /// Một lần thưởng tự về (nhiệm vụ hay chuỗi) — mã tăng dần để `onChange` bắt.
   func noteKoaReward(
