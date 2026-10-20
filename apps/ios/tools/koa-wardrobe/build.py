@@ -1017,6 +1017,195 @@ body['kids'].insert(last_bottom + 1, G([G([
     P("M120 267 L120 279", stroke="#C9CED4", stroke_width=2.2, stroke_linecap="round"),
 ], **{"if": "rk5"})], **{"if": "torsoStand"}))
 
+# ── ĐỒ GYM ÔM DÁNG (20/10, Kiệt duyệt `docs/design/mocks/koa-gym-fits.html`): áo / quần /
+#    giày vẽ BẰNG CHÍNH ĐƯỜNG VIỀN của Koa — vải = bộ phận ∩ vùng (gấu, cổ tay, cổ chân),
+#    nên không món nào vượt ra ngoài viền và dáng Koa giữ nguyên. Thân áo theo đúng biến
+#    thể thân của hạng; tay áo nằm TRONG nhóm hoạt ảnh của cánh tay; ống quần / giày trên
+#    chân đứng. Tư thế đứng / quay / tập tạ / ngồi / giãn cơ dùng thân mới; tay áo và chân
+#    ở tập tạ / ngồi / chạy giữ nét ôm cũ, đổi màu theo món.
+GYM_TOPS, GYM_BOTTOMS, GYM_SHOES = ("tank tee hoodie xmas aodai ghost windbreak jersey lion armor".split(),
+                                    "short legging jogger xmaspants tetpants tutu camo swim ghostpants flame".split(),
+                                    "sneaker runner boot xmasboot hai sandal socks glow ghostshoe wing".split())
+gym_flags = {f"it_top_{i}" for i in GYM_TOPS} | {f"it_bottom_{i}" for i in GYM_BOTTOMS} | {f"it_shoes_{i}" for i in GYM_SHOES}
+# đổi màu nét ôm cũ (tập tạ / ngồi / chạy) của các món đổi màu
+RECOLOR = {
+    "it_top_tee": {"#F4F6F8": "#2A2A2D", "#A9B2BC": "#1A1A1C", "#FFFFFF": "#2A2A2D"},
+    "it_top_tank": {"#3FA9E5": "#7C8571", "#2E8FCB": "#5F6757"},
+    "it_bottom_short": {"#2E8FCB": "#1D1E21", "#1F6FA3": "#111214"},
+    # hoodie / jogger trùng màu lông Koa (#8A94A1) → xám than, tách khỏi người
+    "it_top_hoodie": {"#8A94A1": "#565D67", "#6E7885": "#3F454E"},
+    "it_bottom_jogger": {"#8A94A1": "#6A707A", "#6E7885": "#535861"},
+}
+
+def _strip_body(n, under_run=False):
+    kids = []
+    for k in n.get('kids', []):
+        run = under_run or k.get('if') == 'poseRun'
+        if k.get('if') in gym_flags and not run:
+            continue
+        _strip_body(k, run)
+        kids.append(k)
+    if 'kids' in n: n['kids'] = kids
+_strip_body(body)
+for n in walk(nodes[3]):
+    f = n.get('if')
+    if f in RECOLOR:
+        for x in walk(n):
+            a = x.get('a') or {}
+            for key in ('fill', 'stroke'):
+                if a.get(key) in RECOLOR[f]: a[key] = RECOLOR[f][a[key]]
+
+TORSO_D = tf0['a']['d']
+RUN_D = next(n for n in walk(nodes[3]) if n.get('id') == 'torso_front_run')['a']['d']
+ARM_D = {s_: next(n for n in walk(nodes[3]) if n.get('id') == f'arm_{s_}_upper')['a']['d'] for s_ in ('left', 'right')}
+LEG_D = {s_: next(n for n in walk(nodes[3]) if n.get('id') == f'leg_{s_}_lower')['a']['d'] for s_ in ('left', 'right')}
+_cid = [0]
+def above(y, c=10): return f"M-10 -10 H250 V{y} Q120 {y + c} -10 {y} Z"
+def below(y, c=10): return f"M-10 {y} Q120 {y + c} 250 {y} V330 H-10 Z"
+def band(y1, y2): return f"M-10 {y1} H250 V{y2} H-10 Z"
+def cut(y): return f"M-10 -10 H250 V{y} H-10 Z"
+def ln(dd, c, w=2, o=1): return stroke(dd, w=w, c=c, o=o)
+def cloth(shape, region, fill, edge, details=(), shade=True, opacity=1):
+    """Vải = `shape` (bộ phận của Koa) ∩ `region`; không bao giờ ra ngoài viền."""
+    _cid[0] += 1
+    a_, b_ = f"gymA{_cid[0]}", f"gymB{_cid[0]}"
+    inner = [R(-10, -10, 260, 340, 0, fill=fill)]
+    if shade:
+        inner += [R(-10, 140, 260, 40, 0, fill="#FFFFFF", opacity=0.08), R(-10, 236, 260, 80, 0, fill="#000000", opacity=0.10)]
+    inner += [P(shape, fill="none", stroke=edge, stroke_width=2.4)] + list(details)
+    g = G([{"t": "clipPath", "id": a_, "kids": [P(shape)]}, {"t": "clipPath", "id": b_, "kids": [P(region)]},
+           G([G(inner, a={"clip-path": f"url(#{b_})"})], a={"clip-path": f"url(#{a_})"})])
+    if opacity != 1: g['a'] = {"opacity": opacity}
+    return g
+def torso_cloth(region, fill, edge, details=(), opacity=1):
+    """Một bản cho mỗi biến thể thân theo hạng + một bản cho thân chạy / quay."""
+    out = [G([cloth(rank_torso(t) if r else TORSO_D, region, fill, edge, details, opacity=opacity)], **{"if": f"rkE{r}"})
+           for r, t in enumerate(RANK_T)]
+    return [G(out, **{"if": "torsoStand"}), G([cloth(RUN_D, region, fill, edge, details, opacity=opacity)], **{"if": "torsoRun"})]
+def legs_cloth(region_l, fill, edge, details_l=(), opacity=1, shade=False):
+    return [cloth(LEG_D['left'], region_l, fill, edge, details_l, shade=shade, opacity=opacity),
+            cloth(LEG_D['right'], mx(region_l) if region_l.startswith('M-10') is False else region_l, fill, edge,
+                  [ {**d_, 'a': {**d_['a'], 'd': mx(d_['a']['d'])}} if d_.get('t') == 'path' else d_ for d_ in details_l],
+                  shade=shade, opacity=opacity)]
+
+# ── thiết kế từng món (màu riêng của món; ba món "gym" + áo thun theo kiểu gym)
+HEM = lambda y: ln(f"M60 {y} Q120 {y + 14} 180 {y}", "#000000", 2.4, 0.25)
+def logo(y=214, c="#5A5A60"):
+    return {"t": "text", "a": {"x": 120, "y": y, "text-anchor": "middle", "font-family": "Helvetica Neue", "font-weight": "800",
+                               "font-size": 10, "letter-spacing": 2, "fill": c, "text": "ASCND"}}
+STRINGER = ("M74 150 L 92 150 L 98 178 C 104 196 136 196 142 178 L 148 150 L 166 150 C 160 176 162 198 172 214 "
+            "L 180 262 Q120 274 60 262 L 68 214 C 78 198 80 176 74 150 Z")
+TOPS = {
+    # món: (vùng thân, màu, viền, chi tiết thân, cắt tay (None = không tay), chi tiết tay)
+    "tank": (STRINGER, "#7C8571", "#5F6757",
+             [ln("M98 178 C 104 196 136 196 142 178", "#5F6757", 2.6), ln("M74 150 C 80 176 78 198 68 214", "#5F6757", 2.2),
+              ln("M166 150 C 160 176 162 198 172 214", "#5F6757", 2.2), ln("M112 216 l8 -7 l8 7", "#E7EAE2", 2.2)], None, []),
+    "tee": (above(258), "#2A2A2D", "#1A1A1C", [HEM(258), ln("M100 168 Q120 180 140 168", "#3A3A3E", 3), logo()], 204,
+            [ln("M20 204 L 220 204", "#1A1A1C", 2.4)]),
+    "hoodie": (above(250), "#565D67", "#3F454E",
+               [ln("M60 250 Q120 264 180 250", "#3F454E", 4), P("M92 218 L 148 218 L 150 238 L 90 238 Z", fill="none", stroke="#3F454E", stroke_width=1.6),
+                ln("M84 170 Q120 196 156 170", "#3F454E", 6, 0.8), ln("M110 180 L 108 200", "#F4F6F8", 1.8), ln("M130 180 L 132 200", "#F4F6F8", 1.8)],
+               232, [ln("M20 229 L 220 229", "#3F454E", 4)]),
+    "xmas": (above(256), "#C84343", "#A63434",
+             [ln("M64 204 L 80 196 L 96 204 L 112 196 L 128 204 L 144 196 L 160 204 L 176 196", "#F4F6F8", 3),
+              ln("M64 216 L 176 216", "#F4F6F8", 2), ln("M60 256 Q120 270 180 256", "#F4F6F8", 5)], 232, [ln("M20 229 L 220 229", "#F4F6F8", 5)]),
+    "aodai": (above(279, 0), "#E8B23A", "#C9952C",
+              [ln("M104 170 L 104 178 Q120 184 136 178 L 136 170", "#C9952C", 3), ln("M120 182 C 132 186 142 196 146 206", "#C9952C", 2),
+               ln("M70 232 L 76 270", "#C9952C", 1.8), ln("M170 232 L 164 270", "#C9952C", 1.8)], 232, [ln("M20 230 L 220 230", "#C9952C", 2.4)]),
+    "ghost": (above(279, 0), "#F1F2F4", "#C9CED4",
+              [E(106, 208, 6, 9, fill="#2B2F36"), E(134, 208, 6, 9, fill="#2B2F36"), E(120, 230, 5, 6, fill="#2B2F36", opacity=0.7),
+               ln("M66 262 Q78 254 90 262 Q102 270 114 262 Q126 254 138 262 Q150 270 162 262 Q170 256 176 260", "#C9CED4", 2)], 236, []),
+    "windbreak": (above(256), "#3F9E63", "#2F7A4C",
+                  [ln("M120 172 L 120 256", "#2F7A4C", 3), ln("M120 172 L 120 256", "#D9DDE1", 1, 0.7),
+                   ln("M100 168 L 120 182 L 140 168", "#2F7A4C", 3), ln("M60 256 Q120 270 180 256", "#2F7A4C", 4)],
+                  232, [ln("M20 229 L 220 229", "#2F7A4C", 4), ln("M52 186 L 34 226", "#F4F6F8", 2.4), ln("M188 186 L 206 226", "#F4F6F8", 2.4)]),
+    "jersey": (above(258), "#7A5BC4", "#5E44A0",
+               [ln("M100 168 L 120 186 L 140 168", "#E8B23A", 3.4), ln("M114 210 L 122 202 L 122 240 M114 240 L 130 240", "#F4F6F8", 6),
+                ln("M60 258 Q120 272 180 258", "#E8B23A", 3)], 206, [ln("M20 206 L 220 206", "#E8B23A", 3)]),
+    "lion": (above(258), "#D64545", "#B23636",
+             [ln("M64 206 Q120 194 176 206", "#E8B23A", 6), ln("M66 232 Q120 222 174 232", "#3F9E63", 5), C(120, 218, 9, fill="#E8B23A"),
+              ln("M60 258 Q120 272 180 258", "#E8B23A", 4)], 206, [ln("M20 206 L 220 206", "#E8B23A", 4)]),
+    "armor": (above(256), "#6E7E96", "#39424E",
+              [ln("M120 176 L 120 256", "#39424E", 2), ln("M72 214 Q120 206 168 214", "#39424E", 2), ln("M70 238 Q120 230 170 238", "#39424E", 2),
+               P("M120 194 L 104 210 L 120 226 L 136 210 Z", fill="#E8B23A"), C(80, 196, 2.4, fill="#C9CED4"), C(160, 196, 2.4, fill="#C9CED4")],
+              196, [ln("M20 196 L 220 196", "#39424E", 3), C(60, 184, 2.2, fill="#C9CED4"), C(180, 184, 2.2, fill="#C9CED4")]),
+}
+BOTTOMS = {
+    # món: (eo y, màu, viền, chi tiết hông, cắt ống chân y, chi tiết ống trái, độ mờ)
+    "short": (250, "#1D1E21", "#111214", [ln("M60 252 Q120 266 180 252", "#2E3034", 3)], 276,
+              [ln("M60 276 L 120 276", "#111214", 2.4), ln("M78 258 L 76 270", "#3A3C41", 1.6)], 1),
+    "jogger": (246, "#6A707A", "#535861", [ln("M60 248 Q120 262 180 248", "#535861", 3), ln("M118 252 L 118 262", "#F4F6F8", 1.6)], 284,
+               [ln("M60 280 L 120 280", "#535861", 4)], 1),
+    "legging": (248, "#39424E", "#2A313B", [ln("M60 250 Q120 264 180 250", "#2A313B", 3)], 287, [ln("M80 262 C 78 272 78 280 80 287", "#55606E", 1.6)], 1),
+    "camo": (246, "#6E7A55", "#55603F", [E(92, 262, 9, 5, fill="#55603F"), E(146, 266, 10, 5, fill="#8A9670"), E(124, 272, 7, 4, fill="#55603F"),
+             ln("M60 248 Q120 262 180 248", "#55603F", 3)], 284,
+             [E(96, 268, 6, 4, fill="#8A9670"), P("M80 262 L 92 262 L 92 274 L 80 274 Z", fill="none", stroke="#55603F", stroke_width=1.4), ln("M60 280 L 120 280", "#55603F", 4)], 1),
+    "xmaspants": (250, "#D64545", "#B23636", [ln("M60 252 Q120 266 180 252", "#B23636", 3)], 276, [ln("M60 274 L 120 274", "#F4F6F8", 5)], 1),
+    "tetpants": (246, "#E8B23A", "#C9952C", [ln("M60 248 Q120 262 180 248", "#D64545", 3)], 284, [ln("M60 280 L 120 280", "#D64545", 5)], 1),
+    "tutu": (248, "#E8657B", "#C94A62", [ln("M62 250 Q120 264 178 250", "#C94A62", 4), ln("M64 262 Q78 256 92 262 Q106 268 120 262 Q134 256 148 262 Q162 268 176 262", "#F5A0B0", 3),
+             ln("M66 272 Q80 266 94 272 Q108 278 120 272 Q132 266 146 272 Q160 278 174 272", "#F5A0B0", 3)], 266, [], 1),
+    "swim": (252, "#E8842A", "#C46A1C", [ln("M60 254 Q120 268 180 254", "#F4F6F8", 4)], 272, [ln("M60 270 L 120 270", "#F4F6F8", 2.4)], 1),
+    "ghostpants": (248, "#7A5BC4", "#5B41A0", [ln("M60 250 Q120 264 180 250", "#5B41A0", 3)], 287, [ln("M60 284 L 120 284", "#5B41A0", 3)], 0.92),
+    "flame": (246, "#E8842A", "#C46A1C", [ln("M60 248 Q120 262 180 248", "#C46A1C", 3)], 284,
+              [P("M72 284 L 78 270 L 84 280 L 92 266 L 98 280 L 106 268 L 112 284 Z", fill="#F2C94C")], 1),
+}
+SHOES = {
+    # món: (từ y, màu, viền, chi tiết chân trái)
+    "sneaker": (282, "#F4F4F2", "#CFCFCB", [ln("M60 289 L 120 289", "#D9D9D6", 4), ln("M84 284 C 92 282 100 282 108 286", "#1D1E21", 2.2)]),
+    "runner": (282, "#3FA9E5", "#2E8FCB", [ln("M60 289 L 120 289", "#F4F6F8", 4), ln("M82 285 L 90 283 M94 285 L 102 283", "#F4F6F8", 2)]),
+    "boot": (268, "#7A5236", "#5C3D27", [ln("M60 289 L 120 289", "#3E2A1C", 4), ln("M92 272 L 104 272 M92 278 L 104 278", "#E9D8C0", 1.6)]),
+    "xmasboot": (268, "#D64545", "#B23636", [R(60, 266, 70, 7, 3, fill="#F4F6F8"), ln("M60 289 L 120 289", "#7A2A2A", 4)]),
+    "hai": (284, "#2B2F36", "#1A1D22", [ln("M84 287 C 92 284 100 284 106 288", "#E8B23A", 2), C(96, 288, 2, fill="#D64545")]),
+    "sandal": (286, "#8A6A4A", "#6A4E34", [ln("M78 280 L 112 280", "#8A6A4A", 3), ln("M60 291 L 120 291", "#6A4E34", 3)]),
+    "socks": (270, "#F6F6F4", "#D9D9D6", [ln("M60 274 L 120 274", "#1D1E21", 1.4), ln("M60 277 L 120 277", "#1D1E21", 1.4)]),
+    "glow": (282, "#1D1E21", "#0F1012", [ln("M60 290 L 120 290", "#22E3FF", 3), ln("M84 285 L 104 285", "#22E3FF", 1.6, 0.8)]),
+    "ghostshoe": (282, "#F1F2F4", "#C9CED4", [E(92, 287, 2, 2.6, fill="#2B2F36"), E(100, 287, 2, 2.6, fill="#2B2F36")]),
+    "wing": (272, "#F4F6F8", "#C9CED4", [P("M76 280 C 80 272 88 270 96 274 C 90 276 86 280 84 284 Z", fill="#E8B23A"), ln("M60 289 L 120 289", "#E8B23A", 3)]),
+}
+
+# hông quần → áo → (đai) sau TORSO; ống quần / giày trên chân đứng; tay áo trong nhóm cánh tay
+ti_ = next(i for i, k in enumerate(body['kids']) if k.get('id') == 'TORSO')
+fit_bottoms = [G(torso_cloth(below(waist), c, e, det, op), **{"if": f"it_bottom_{k}"}) for k, (waist, c, e, det, _, _, op) in BOTTOMS.items()]
+fit_tops = [G(torso_cloth(reg, c, e, det), **{"if": f"it_top_{k}"}) for k, (reg, c, e, det, _, _) in TOPS.items()]
+body['kids'][ti_ + 1:ti_ + 1] = fit_bottoms + fit_tops
+belt_g = next(k for k in body['kids'] if any(x.get('if') == 'rk5' and any(y.get('t') == 'rect' for y in walk(x)) for x in walk(k)) and k.get('if') == 'torsoStand')
+body['kids'].remove(belt_g)
+body['kids'].insert(body['kids'].index(fit_tops[-1]) + 1, belt_g)
+
+legs_g = next(n for n in walk(nodes[3]) if n.get('id') == 'LEGS' and any(k.get('id') == 'leg_left_lower' for k in n.get('kids', [])))
+for k, (_, c, e, _, cuty, det_l, op) in BOTTOMS.items():
+    legs_g['kids'].append(G([cloth(LEG_D['left'], cut(cuty), c, e, det_l, shade=False, opacity=op),
+                             cloth(LEG_D['right'], cut(cuty), c, e, [ {**d_, 'a': {**d_['a'], 'd': mx(d_['a']['d'])}} if d_.get('t') == 'path' else
+                                                                       {**d_, 'a': {**d_['a'], **({'cx': 240 - d_['a']['cx']} if 'cx' in d_['a'] else {}),
+                                                                                    **({'x': 240 - d_['a']['x'] - d_['a'].get('width', 0)} if 'x' in d_['a'] else {})}}
+                                                                       for d_ in det_l], shade=False, opacity=op)],
+                            **{"if": f"it_bottom_{k}"}))
+def mirror_node(d_):
+    a_ = dict(d_['a'])
+    if d_.get('t') == 'path': a_['d'] = mx(a_['d'])
+    if 'cx' in a_: a_['cx'] = 240 - a_['cx']
+    if 'x' in a_: a_['x'] = 240 - a_['x'] - a_.get('width', 0)
+    return {**d_, 'a': a_}
+for k, (fromy, c, e, det_l) in SHOES.items():
+    legs_g['kids'].append(G([cloth(LEG_D['left'], below(fromy, 0), c, e, det_l, shade=False),
+                             cloth(LEG_D['right'], below(fromy, 0), c, e, [mirror_node(d_) for d_ in det_l], shade=False)],
+                            **{"if": f"it_shoes_{k}"}))
+for side in ('left', 'right'):
+    grp = next(n for n in walk(nodes[3]) if (n.get('anim') or {}).get('k') == ('koaArmL' if side == 'left' else 'koaArmR')
+               and any(k.get('id') == f'arm_{side}_upper' for k in n.get('kids', [])))
+    sleeves_ = []
+    for k, (_, c, e, _, cuty, det_a) in TOPS.items():
+        if cuty is None: continue
+        det = det_a if side == 'left' else [mirror_node(d_) for d_ in det_a]
+        sleeves_.append(G([cloth(ARM_D[side], cut(cuty), c, e, det, shade=False)], **{"if": f"it_top_{k}"}))
+    # vệt bóng trong tay (RN để đứng yên ngoài nhóm hoạt ảnh) vào cùng nhóm → đi theo tay;
+    # thứ tự: tay → vệt bóng → nét cơ → tay áo (áo che nét cơ, như áo thật).
+    side_g = next(n for n in walk(nodes[3]) if any(k is grp for k in n.get('kids', [])))
+    shading = [k for k in side_g['kids'] if k is not grp]
+    side_g['kids'] = [grp]
+    grp['kids'][1:1] = shading
+    grp['kids'] += sleeves_
+
 # Mọi món đã vẽ lại phải xuất hiện đúng một lần trở lên trong cây mới.
 flags_in = {n.get('if') for n in walk({'kids': d['nodes']})}
 missing = sorted(gone - flags_in)
