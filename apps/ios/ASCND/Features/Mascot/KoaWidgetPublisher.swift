@@ -36,6 +36,8 @@ final class KoaWidgetPublisher {
     var nextQuest: MascotRules.Quest?
     /// Cấp của Koa (ô "CẤP" của thẻ).
     var level = 1
+    /// Hạng vóc dáng (Gains) của Koa trên widget.
+    var build = 0
   }
 
   func publish(_ s: Snapshot) {
@@ -65,7 +67,7 @@ final class KoaWidgetPublisher {
     case .water: return String(localized: "koa.short.water")
     case .sleep: return String(localized: "koa.short.sleep")
     case .workout: return String(localized: "koa.short.workout")
-    case .steps, nil: return String(localized: "koa.short.keep \(s.done) \(s.total)")
+    case .steps, .recovery, nil: return String(localized: "koa.short.keep \(s.done) \(s.total)")
     }
   }
 
@@ -84,7 +86,7 @@ final class KoaWidgetPublisher {
     for night in [false, true] {
       let figure = MascotFigureView(
         mascotId: s.mascotId, emotion: night ? .sleep : s.emotion, equipped: s.equipped, size: Self.avatarSize,
-        animated: false, paper: false, level: s.level)
+        animated: false, paper: false, build: s.build)
       let r = ImageRenderer(content: figure)
       r.scale = Self.scale
       guard let png = r.uiImage?.pngData() else {

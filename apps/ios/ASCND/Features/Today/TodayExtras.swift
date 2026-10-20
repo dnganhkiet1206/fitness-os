@@ -265,6 +265,7 @@ struct TodayExtras<Plan: View>: View {
       await loadMeals()
       await loadPlanNext()
       await mascot?.load()
+      await loadGains()
       dayLoaded = true
       await shop?.load()
       if let nutrition { await nutrition.loadOnce() } else { await ownWater?.load() }
@@ -296,6 +297,7 @@ struct TodayExtras<Plan: View>: View {
       }
     }
     // Koa ló lên ở tab khác mặc đúng đồ đang mặc.
+    .onChange(of: planName) { _, _ in syncRestDay() }
     .onChange(of: shop?.inventory, initial: true) { _, rows in
       guard let rows else { return }
       services.koaEquipped = rows.filter(\.equipped).map(\.itemKey)
@@ -321,6 +323,7 @@ struct TodayExtras<Plan: View>: View {
         let today = Self.today()
         if today != readiness.date { await readiness.move(to: today) } else { await readiness.load() }
         await mascot?.load()
+        await loadGains()
         await todo?.refresh()
         await focusChecks()
         await trend?.move(to: today)
@@ -453,7 +456,7 @@ struct TodayExtras<Plan: View>: View {
     case .water:
       waterTaps += 1
       Task { await addWater() }
-    case .steps: break
+    case .steps, .recovery: break
     }
   }
 
@@ -492,6 +495,7 @@ struct TodayExtras<Plan: View>: View {
     await loadPlanNext()
     await todo?.refresh()
     await mascot?.load()
+    await loadGains()
     if let nutrition { await nutrition.refresh() } else { await ownWater?.refresh() }
     await readiness?.load()
     await biometrics?.load()
@@ -636,29 +640,62 @@ struct TodayExtras<Plan: View>: View {
       default: "todo"
       }
     }
-    services.koaLevel = room.level
     services.koaWidget.publish(.init(
       userId: userId, mascotId: services.preferences.mascotSelected, emotion: state.emotion,
       equipped: shop?.inventory.filter(\.equipped).map(\.itemKey) ?? [], line: state.line,
       next: state.next.map(TodayDayBlock.action), done: progress.done, total: progress.total,
-      streak: room.streak.count, day: room.today, checks: checks, nextQuest: state.next, level: room.level))
+      streak: room.streak.count, day: room.today, checks: checks, nextQuest: state.next, level: room.level,
+      build: room.gains.rank))
   }
 
-  /// Lên cấp / lên hạng nhờ xu tự về: màn ăn mừng ở gốc app (cùng đường với huy chương).
+  /// Lên cấp nhờ xu tự về: màn ăn mừng ở gốc app (cùng đường với huy chương).
+  /// Hạng giờ theo Gains (`announceRank`), không theo cấp.
   private func announceLevel(from before: Int, _ room: MascotRoomController) {
     guard room.level > before else { return }
     let rank = room.rank
-    let rankUp = MascotRules.rank(level: before).key != rank.key
     let lang = services.preferences.lang
     services.celebrations.enqueue(
-      title: rankUp ? String(localized: "mr.rankUp \(rank.name(lang))") : String(localized: "mr.levelUp \(room.level)"),
+      title: String(localized: "mr.levelUp \(room.level)"),
       description: rank.name(lang), icon: "trophy", tier: MascotRules.celebrationTier(rank.key))
+  }
+
+  /// Gains (#527 đợt 1): vóc dáng / hạng của Koa từ lịch sử tập, cho mọi Koa của
+  /// người dùng (`services.koaBuild`) và cho màn kết thúc buổi tập.
+  private func loadGains() async {
+    guard let mascot else { return }
+    syncRestDay()
+    guard let r = await services.loadKoaGains(userId: userId) else { return }
+    mascot.gains = r.state
+    services.koaBuild = r.state.rank
+    services.koaGainsHistory = .init(days: r.days, week: r.week)
+    announceRank(r.state.rank)
+  }
+
+  /// Không có buổi trong lịch hôm nay → nhiệm vụ chính là hồi phục (#527 đợt 1).
+  private func syncRestDay() {
+    let rest = planName == nil
+    mascot?.restDay = rest
+    services.questObserver(userId: userId)?.restDay = rest
+  }
+
+  /// Koa lên hạng vóc dáng: ăn mừng một lần (mốc nhớ theo tài khoản trên máy).
+  private func announceRank(_ rank: Int) {
+    let key = "ascnd_koa_rank.\(userId)"
+    let before = UserDefaults.standard.object(forKey: key) as? Int
+    UserDefaults.standard.set(rank, forKey: key)
+    guard let before, rank > before, rank < MascotRules.ranks.count else { return }
+    let r = MascotRules.ranks[rank]
+    let lang = services.preferences.lang
+    services.celebrations.enqueue(
+      title: String(localized: "mr.rankUp \(r.name(lang))"), description: String(localized: "koa.gains.rankUp"),
+      icon: "trophy", tier: MascotRules.celebrationTier(r.key))
   }
 
   private func reloadAfterHealthSync() async {
     await readiness?.load()
     await trend?.load()
     await mascot?.load()
+    await loadGains()
   }
 
   private static func today() -> LocalDate { LocalDate(SystemWallClock().nowMillis(), in: .current) }

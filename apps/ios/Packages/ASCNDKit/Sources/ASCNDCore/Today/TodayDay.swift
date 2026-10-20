@@ -39,7 +39,9 @@ public enum TodayDay {
         fill = target > 0 ? min(max(amount / target, 0), 1) : 0
       case .steps:
         amount = s?.steps ?? 0
-        fill = stepsGoal > 0 ? min(max(amount / Double(stepsGoal), 0), 1) : 0
+        fill = stepsGoal > 0 ? min(max(amount / Double(stepsGoal), 0), 1) : 0      case .recovery:  // không phải một ống
+        amount = 0
+        fill = 0
       }
       return Tube(quest: q, fill: done ? 1 : fill, done: done, amount: amount)
     }

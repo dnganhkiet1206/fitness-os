@@ -111,6 +111,19 @@ public final class QuestObserver {
 
   /// Một lượt đọc `ready` từ bất kỳ đâu (phòng linh vật đưa lượt của nó vào
   /// đây). `token` từ `begin()` lúc lượt ấy bắt đầu.
+  /// Hôm nay không có buổi trong lịch — chỉ khi ấy nhiệm vụ hồi phục được tính
+  /// (#527 đợt 1). Hôm nay đặt.
+  public var restDay = false
+
+  /// Nhiệm vụ đang tính: bước cần đã từng có số bước; hồi phục chỉ ở ngày nghỉ.
+  func counts(_ q: MascotRules.Quest, _ signals: DailySignals) -> Bool {
+    switch q {
+    case .steps: signals.stepsEverRecorded
+    case .recovery: restDay && signals.stepsEverRecorded
+    default: true
+    }
+  }
+
   public func observe(token: Int, day: LocalDate, signals: DailySignals, claimed: Set<String>) {
     guard !closed, token > applied else { return }
     if let lastDay, day < lastDay { return }
@@ -121,11 +134,11 @@ public final class QuestObserver {
     for q in MascotRules.Quest.allCases { done[q] = signals.done(q, stepsGoal: goal) }
     // `activeDefs`: nhiệm vụ bước rời danh sách khi chưa từng có số bước.
     let unclaimed = MascotRules.dailyQuests.map(\.key).filter { q in
-      (q != .steps || signals.stepsEverRecorded) && done[q] == true
+      counts(q, signals) && done[q] == true
         && !claimed.contains(MascotRules.questRefKey(day, q))
     }
     let seen = watch.read(today: day.description, done: done, unclaimed: unclaimed)
-    let active = MascotRules.dailyQuests.map(\.key).filter { $0 != .steps || signals.stepsEverRecorded }
+    let active = MascotRules.dailyQuests.map(\.key).filter { counts($0, signals) }
     claim(unclaimed, day: day, seen: Set(seen), claimed: claimed, allDone: active.allSatisfy { done[$0] == true })
     guard !seen.isEmpty else { return }
     // `new Date().getHours()`: giờ nguyên địa phương lúc thấy.

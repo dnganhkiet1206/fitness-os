@@ -36,13 +36,16 @@ struct RankJourneyView: View {
     .accessibilityValue(Text(verbatim: a11yValue))
   }
 
-  /// "Newbie, Cấp 1 (đang ở đây); Gym Rat, Cấp 5; …" — điều trục nói bằng hình.
+  /// "Newbie, 0 Gains (đang ở đây); Gym Rat, 40 Gains; …" — điều trục nói bằng hình.
+  /// Mốc là Gains (vóc dáng theo tập, #527 đợt 1), không còn là cấp.
   private var a11yValue: String {
-    ranks.map { r in
-      let s = "\(r.name(lang)), \(String(localized: "mr.level \(r.minLevel)"))"
+    ranks.enumerated().map { i, r in
+      let s = "\(r.name(lang)), \(String(localized: "koa.gains.at \(Self.mark(i))"))"
       return r.key == currentKey ? "\(s) ✓" : s
     }.joined(separator: "; ")
   }
+
+  static func mark(_ i: Int) -> Int { i < KoaGains.thresholds.count ? KoaGains.thresholds[i] : 0 }
 
   private func draw(_ ctx: inout GraphicsContext, k: Double) {
     guard !ranks.isEmpty else { return }
@@ -108,7 +111,7 @@ struct RankJourneyView: View {
         ctx.stroke(circle(cx, 6), with: .color(hollowRim), lineWidth: 2 * k)
       }
       ctx.draw(
-        Text(verbatim: String(rk.minLevel))
+        Text(verbatim: String(Self.mark(i)))
           .font(.system(size: 10 * k, weight: .bold))
           .foregroundStyle(reached ? reachedLabel : DS.Color.mutedForeground.swiftUI),
         // `y + 24` là đường chân chữ trong SVG; tâm chữ 10 điểm nằm cao hơn ~3,5

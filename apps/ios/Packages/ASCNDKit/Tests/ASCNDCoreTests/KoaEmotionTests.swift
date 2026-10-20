@@ -55,25 +55,25 @@ struct KoaEmotionGoldenTests {
 /// Vóc dáng theo hạng (20/10, Kiệt duyệt `koa-rank-evolution.html`).
 struct KoaRankBuildTests {
   @Test func flagsFollowTheRank() {
-    let newbie = KoaRender.rankFlags(level: 1, pose: .idle)
+    let newbie = KoaRender.rankFlags(rank: 0, pose: .idle)
     #expect(newbie["rkE0"] == .bool(true) && newbie["rk1"] == .bool(false))
     #expect(newbie["armRankL"] == .text("") && newbie["topRank"] == .text(""))
-    let gymRat = KoaRender.rankFlags(level: 5, pose: .idle)
+    let gymRat = KoaRender.rankFlags(rank: 1, pose: .idle)
     #expect(gymRat["rkE1"] == .bool(true) && gymRat["rk1"] == .bool(true) && gymRat["rk2"] == .bool(false))
-    let monster = KoaRender.rankFlags(level: 80, pose: .idle)
+    let monster = KoaRender.rankFlags(rank: 5, pose: .idle)
     #expect(monster["rkE5"] == .bool(true) && monster["rk5"] == .bool(true))
     #expect(monster["armRankR"]?.text.contains("scale(1.22,1.05)") == true)
     // tay chỉ dang theo vai ở tư thế đứng; đồ cầm tay theo cùng
-    #expect(KoaRender.rankFlags(level: 80, pose: .lifting)["handRank"] == .text(""))
+    #expect(KoaRender.rankFlags(rank: 5, pose: .lifting)["handRank"] == .text(""))
     #expect(monster["handRank"] == monster["armRankR"])
   }
 
   /// Mọi hạng × tư thế đều vẽ trọn (thân có đúng một biến thể).
   @Test func everyRankPlans() {
-    for level in MascotRules.ranks.map(\.minLevel) {
+    for level in 0..<MascotRules.ranks.count {
       for pose in KoaFlags.Pose.allCases {
         var o = KoaRender.Options()
-        o.level = level
+        o.build = level
         o.pose = pose
         o.worn = [.top: "tank"]
         #expect(KoaPaint.plan(KoaRender.figure(o)).count > 0, "\(level) \(pose)")

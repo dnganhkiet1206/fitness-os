@@ -49,12 +49,19 @@ const today = () => dayStr(0);
   gõ tay lệch là đúng loại bịa mà thế giới giả không được làm.
 */
 const REWARD_MIGRATION = '20260819120000_reward_amount_authority.sql';
+/* #527 đợt 1: các migration sau (`koa_train_loop_prices`) cập nhật giá bằng cùng câu
+   `INSERT … ON CONFLICT DO UPDATE` — đọc lần lượt theo thứ tự tên, cái sau đè cái trước,
+   đúng như server áp chúng. */
 export const REWARD_PRICES = (() => {
-  const src = readFileSync(path.join(MIGRATIONS, REWARD_MIGRATION), 'utf8');
-  const at = src.indexOf('INSERT INTO public.reward_prices');
-  if (at < 0) throw new Error(`không thấy INSERT INTO public.reward_prices trong ${REWARD_MIGRATION}`);
-  const block = src.slice(at, src.indexOf(';', at));
-  const out = new Map([...block.matchAll(/\('([^']+)',\s*(\d+)\)/g)].map((m) => [m[1], Number(m[2])]));
+  const files = readdirSync(MIGRATIONS).filter((f) => f.endsWith('.sql') && f >= REWARD_MIGRATION).sort();
+  const out = new Map();
+  for (const f of files) {
+    const src = readFileSync(path.join(MIGRATIONS, f), 'utf8');
+    const at = src.indexOf('INSERT INTO public.reward_prices');
+    if (at < 0) continue;
+    const block = src.slice(at, src.indexOf(';', at));
+    for (const m of block.matchAll(/\('([^']+)',\s*(\d+)\)/g)) out.set(m[1], Number(m[2]));
+  }
   if (out.size === 0) throw new Error(`reward_prices trong ${REWARD_MIGRATION} không có dòng nào`);
   return out;
 })();

@@ -135,8 +135,11 @@ if (!PGBIN) {
     const today = day(0);
 
     /* The catalogue, restated here rather than imported, so this notices if the
-       prices in `mascot-room.ts` and the prices the server charges drift. */
-    const CATALOGUE = { meal: 10, workout: 25, water: 15, sleep: 15, steps: 10 };
+       prices the client shows and the prices the server charges drift. Since #527
+       wave 1 (20261020120000_koa_train_loop_prices) the client is the native
+       `MascotRules.dailyQuests` (apps/ios): workout is the main quest, rest days
+       have recovery. */
+    const CATALOGUE = { workout: 35, recovery: 20, meal: 10, water: 8, sleep: 8, steps: 8 };
 
     /* ── baseline: an honest claim must actually pay ── */
     wipe();

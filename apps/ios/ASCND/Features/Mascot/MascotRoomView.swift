@@ -203,7 +203,7 @@ struct MascotRoomView: View {
   private var stage: some View {
     ZStack(alignment: .top) {
       MascotStage(
-        level: room.level,
+        level: room.level, build: room.gains.rank,
         energy: Double(room.energyCount) / Double(MascotRules.energySignals.count),
         streak: room.streak.count, celebrateSignal: celebrate, emotion: devEmotion ?? mood,
         equipped: shop?.inventory.filter(\.equipped).map(\.itemKey) ?? [])
@@ -465,12 +465,10 @@ struct MascotRoomView: View {
 
   private var journeySubtitle: AttributedString {
     guard let next = room.nextRank else { return AttributedString(String(localized: "mr.maxRank")) }
-    let n = next.minLevel - room.level
+    // Hạng theo Gains (#527 đợt 1): còn bao nhiêu Gains — chỉ tập mới cộng.
+    let n = KoaGains.toNext(room.gains.points).map { $0.need - $0.have } ?? 0
     let name = next.name(lang)
-    var a = AttributedString(
-      n == 1
-        ? String(localized: "mr.levelsToRank.one \(name)")
-        : String(localized: "mr.levelsToRank.other \(n) \(name)"))
+    var a = AttributedString(String(localized: "koa.gains.toRank \(n) \(name)"))
     if let r = a.range(of: name, options: .backwards) {
       a[r].foregroundColor = Color(hex: next.colorHex)
       a[r].font = DS.TextStyle.footnote.weight(.bold)
@@ -676,6 +674,7 @@ struct MascotRoomView: View {
     case .water: String(localized: "mr.signal.water")
     case .sleep: String(localized: "mr.signal.sleep")
     case .steps: String(localized: "mr.signal.steps")
+    case .recovery: String(localized: "mr.signal.recovery")
     }
   }
 
@@ -686,6 +685,7 @@ struct MascotRoomView: View {
     case .water: "drop.fill"
     case .sleep: "moon.fill"
     case .steps: "figure.walk"
+    case .recovery: "bed.double.fill"
     }
   }
 
@@ -697,6 +697,7 @@ struct MascotRoomView: View {
     case .water: DS.Color.metricCyan.swiftUI
     case .sleep: DS.Color.metricPurple.swiftUI
     case .steps: DS.Color.readinessGreen.swiftUI
+    case .recovery: DS.Color.metricPurple.swiftUI
     }
   }
 
@@ -749,6 +750,8 @@ struct EnergyRing: View {
 /// yên), côn trùng, cái liếc, cảm xúc tự chọn của engine (`useMascotEmotion`).
 struct MascotStage: View {
   let level: Int
+  /// Hạng vóc dáng (Gains) của Koa trên sân khấu.
+  var build = 0
   /// 0…1 — số tín hiệu đã xong / năm.
   let energy: Double
   let streak: Int
@@ -806,7 +809,7 @@ struct MascotStage: View {
     let left: Double = StudioScene.stageMark.x * k - size / 2
     let top: Double = StudioScene.stageMark.y * k - size * KoaMath.aspect + 6 * k
     let levelScale: Double = min(1 + Double(level - 1) * 0.012, 1.1)
-    return MascotFigureView(emotion: emotion, equipped: equipped, size: size, level: level)
+    return MascotFigureView(emotion: emotion, equipped: equipped, size: size, build: build)
       .scaleEffect(levelScale, anchor: .bottom)
       // reduceMotion: giá trị không đổi thì không gật
       .keyframeAnimator(initialValue: Nod(), trigger: reduceMotion ? 0 : celebrateSignal) { view, v in

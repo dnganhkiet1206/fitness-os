@@ -32,12 +32,14 @@ struct MascotGoldenTests {
 
   @Test func questsRanksAndChallengeRewardsMatchRN() throws {
     let g = try Self.golden()
+    // Khác RN có chủ đích (#527 đợt 1, `koa-train-loop.html`): buổi tập là nhiệm vụ
+    // chính, ngày nghỉ có hồi phục. Tên nhiệm vụ RN vẫn giữ cho bữa / nước / ngủ / bước.
     let quests = try Self.array(g["quests"])
-    #expect(quests.count == MascotRules.dailyQuests.count)
-    for (q, def) in zip(quests, MascotRules.dailyQuests) {
-      #expect(q["key"]?.stringValue == def.key.rawValue)
-      #expect(Self.int(q["coins"]) == def.coins)
-      #expect(Self.int(q["xp"]) == def.xp)
+    #expect(MascotRules.dailyQuests.map { "\($0.key.rawValue):\($0.coins):\($0.xp)" } == [
+      "workout:35:40", "recovery:20:25", "meal:10:10", "water:8:8", "sleep:8:8", "steps:8:8",
+    ])
+    for q in quests where q["key"]?.stringValue != "workout" {
+      let def = try #require(MascotRules.dailyQuests.first { $0.key.rawValue == q["key"]?.stringValue })
       #expect(q["name"]?["vi"]?.stringValue == def.names[0])
       #expect(q["name"]?["en"]?.stringValue == def.names[1])
       #expect(q["name"]?["es"]?.stringValue == def.names[2])
@@ -64,11 +66,20 @@ struct MascotGoldenTests {
         == MascotRules.challengeRefKey(tier: "gold", weekStart: "2026-10-05", key: "steps_week"))
   }
 
+  /// XP của RN, trừ khoá nhiệm vụ ngày (bảng mới, #527 đợt 1) — giá trị native.
+  static func nativeXp(_ key: String, rn: Int) -> Int {
+    let parts = key.split(separator: ":", omittingEmptySubsequences: false)
+    guard parts.count == 3, parts[0] == "d", parts[1].count == 10,
+      let q = MascotRules.dailyQuests.first(where: { $0.key.rawValue == parts[2] })
+    else { return rn }
+    return q.xp
+  }
+
   /// XP đọc từ `ref_key` — gồm khoá giả (`dev:`, `ch:diamond`, `set:nope`, ngày sai dạng).
   @Test func xpForRefKeyMatchesRN() throws {
     for c in try Self.array(Self.golden()["xp"]) {
       let key = try #require(c["refKey"]?.stringValue)
-      #expect(MascotRules.xpForRefKey(key) == Self.int(c["xp"]), "\(key)")
+      #expect(MascotRules.xpForRefKey(key) == Self.nativeXp(key, rn: Self.int(c["xp"]) ?? 0), "\(key)")
     }
   }
 
@@ -100,7 +111,7 @@ struct MascotGoldenTests {
       }
       let w = MascotWallet(rows: rows)
       #expect(w.balance == Self.int(c["balance"]))
-      #expect(w.xp == Self.int(c["xp"]))
+      #expect(w.xp == rows.reduce(0) { $0 + ($1.refKey.map(MascotRules.xpForRefKey) ?? 0) })
       #expect(w.claimed == Set(rows.compactMap(\.refKey)))
     }
   }

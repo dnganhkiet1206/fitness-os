@@ -201,7 +201,9 @@ struct MascotRoomControllerTests {
     #expect(!c.questDone(.steps), "dưới mục tiêu 10.000 mặc định")
     #expect(c.energyCount == 3)
     #expect(c.energyHeadline == .mid)
-    #expect(c.activeQuests.map(\.key) == [.meal, .workout, .water, .sleep, .steps])
+    #expect(c.activeQuests.map(\.key) == [.workout, .meal, .water, .sleep, .steps])
+    c.restDay = true
+    #expect(c.activeQuests.map(\.key) == [.workout, .recovery, .meal, .water, .sleep, .steps])
   }
 
   /// Chưa từng có số bước: nhiệm vụ bước rời danh sách (không ai thắng được nó).
@@ -224,7 +226,7 @@ struct MascotRoomControllerTests {
     await c.load()
     #expect(c.isClaimed(MascotRules.questRefKey(today, .workout)))
     #expect(!c.isClaimed(MascotRules.questRefKey(today, .meal)))
-    #expect(c.xp == 30)
+    #expect(c.xp == 40)
   }
 
   // MARK: - Thưởng chuỗi
@@ -245,8 +247,11 @@ struct MascotRoomControllerTests {
   /// Koa đợt 1: thưởng chuỗi tự về ngay lần đọc, không cần bấm.
   @Test func streakBonusLandsByItselfAndReportsLevelUp() async {
     let s = FakeSource()
-    // 300 xu, 110 XP: còn 10 XP là lên cấp 2.
-    s.ledgerRows = Self.welcomed + [LedgerRow(amount: 0, refKey: "ch:gold:x:y"), LedgerRow(amount: 0, refKey: "d:2026-10-01:workout")]
+    // 300 xu, 115 XP (50 + 25 + 40): còn 5 XP là lên cấp 2.
+    s.ledgerRows = Self.welcomed + [
+      LedgerRow(amount: 0, refKey: "ch:silver:x:y"), LedgerRow(amount: 0, refKey: "ch:bronze:x:y"),
+      LedgerRow(amount: 0, refKey: "d:2026-10-01:workout"),
+    ]
     s.dates = [today, LocalDate("2026-10-07")!]
     let (c, e) = make(s)
     await c.load()
@@ -256,7 +261,7 @@ struct MascotRoomControllerTests {
     let outcome = c.streakAutoClaim
     #expect(outcome?.amount == 25)
     #expect(outcome?.newLevel == 2)
-    #expect(outcome?.newRank == nil, "cấp 2 vẫn là Tập sự")
+    #expect(outcome?.newRank == nil, "hạng theo Gains, không đổi khi nhận XP")
     #expect(c.isClaimed("d:2026-10-08:streak"))
     c.streakAutoClaimShown()
     #expect(c.streakAutoClaim == nil)
