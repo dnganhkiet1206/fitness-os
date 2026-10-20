@@ -1,0 +1,127 @@
+<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Mock — Dynamic Island quãng nghỉ</title>
+<style>
+:root{--rose:#e6485c;--rose2:#b83044;--orange:#ff9130;--ink:#f5f3f0;--mute:#a09c96;--paper:#ece6dc}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);font-family:-apple-system,system-ui;color:#1c1a17;padding:22px}
+h1{font-size:20px;margin:0 0 4px}p.s{color:#7d7365;font-size:13px;margin:0 0 20px;max-width:900px;line-height:1.5}
+.row{display:flex;gap:26px;flex-wrap:wrap;align-items:flex-start}
+.col{display:flex;flex-direction:column;gap:10px}
+.cap{font-size:14px;font-weight:700;margin:4px 0 0}.d{font-size:12.5px;color:#655c50;margin:0;max-width:340px;line-height:1.45}
+.tag{display:inline-block;font-size:11px;font-weight:800;padding:3px 8px;border-radius:8px;background:#1c1a17;color:#f6f1e8;margin-right:6px}
+.mono{font-family:Menlo,ui-monospace,monospace;font-variant-numeric:tabular-nums}
+/* phone top */
+.phone{width:360px;border-radius:46px;background:#c9c2b6 url() ;padding:12px 0 18px;position:relative;overflow:hidden;
+ background:linear-gradient(160deg,#7a8a9e,#3d4757 60%,#232a35)}
+.status{display:flex;justify-content:space-between;padding:6px 30px 0;color:#fff;font-weight:600;font-size:15px}
+/* compact */
+.island{margin:8px auto 0;height:37px;background:#000;border-radius:20px;display:flex;align-items:center;justify-content:space-between;padding:0 12px 0 8px;color:#fff}
+.island.c{width:250px}
+.lead{display:flex;align-items:center;gap:6px}
+.ring{width:22px;height:22px;border-radius:50%;background:conic-gradient(var(--rose) 0 62%,rgba(255,255,255,.14) 62% 100%);display:grid;place-items:center}
+.ring::after{content:"";width:16px;height:16px;border-radius:50%;background:#000}
+.dig{font-size:15px;font-weight:700;color:var(--rose)}
+.koa{width:22px;height:22px;border-radius:50%;background:radial-gradient(circle at 50% 40%,#d9d4cc,#9a948b);display:grid;place-items:center;font-size:9px;color:#333;font-weight:800}
+/* minimal */
+.min{width:37px;height:37px;border-radius:50%;background:#000;display:grid;place-items:center;margin-left:auto;margin-right:24px}
+/* expanded */
+.exp{margin:8px auto 0;width:344px;background:#000;border-radius:44px;padding:18px 20px 16px;color:var(--ink)}
+.erow{display:flex;justify-content:space-between;align-items:flex-start}
+.lbl{font-size:12px;color:var(--mute);display:flex;align-items:center;gap:6px}
+.lbl i{width:7px;height:7px;border-radius:50%;background:var(--rose);display:inline-block}
+.ex{font-size:19px;font-weight:700;letter-spacing:-.01em;margin-top:3px}
+.set{font-size:12.5px;color:var(--mute);margin-top:3px}
+.pips{display:flex;gap:4px;margin-top:8px}.pips b{width:18px;height:4px;border-radius:2px;background:rgba(255,255,255,.16)}.pips b.on{background:var(--rose)}
+.big{font-size:40px;font-weight:700;color:var(--ink);line-height:1;letter-spacing:-.02em}
+.bar{height:5px;border-radius:3px;background:rgba(255,255,255,.12);margin:14px 0 12px;overflow:hidden}.bar i{display:block;height:100%;width:62%;background:linear-gradient(90deg,var(--rose2),var(--rose))}
+.btns{display:flex;gap:8px}
+.btn{flex:1;height:42px;border-radius:21px;background:rgba(255,255,255,.12);display:grid;place-items:center;font-weight:700;font-size:15px}
+.btn.p{background:var(--rose);color:#fff}
+/* lock screen */
+.lock{width:360px;border-radius:46px;padding:60px 12px 18px;background:linear-gradient(170deg,#6b7a90,#2f3846 70%)}
+.time{text-align:center;color:#fff;font-size:68px;font-weight:300;letter-spacing:-.02em;margin-bottom:22px}
+.la{border-radius:26px;padding:16px 16px 14px;color:var(--ink);position:relative;overflow:hidden;
+ background:linear-gradient(180deg,#262626,#141414 60%,#0f0f0f)}
+.la::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(255,255,255,.035) 0 .5px,transparent .5px 2px)}
+.la::after{content:"";position:absolute;left:-40px;top:-60px;width:220px;height:160px;background:radial-gradient(closest-side,rgba(255,145,48,.22),transparent)}
+.la > *{position:relative;z-index:1}
+.brand{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:800;letter-spacing:.08em;color:var(--mute)}
+.brand svg{width:12px;height:12px}
+.lgrid{display:grid;grid-template-columns:1fr auto;gap:14px;align-items:center;margin-top:10px}
+.bigring{width:74px;height:74px;border-radius:50%;background:conic-gradient(var(--rose) 0 62%,rgba(255,255,255,.12) 62% 100%);display:grid;place-items:center}
+.bigring span{width:62px;height:62px;border-radius:50%;background:#151515;display:grid;place-items:center;font-size:17px;font-weight:700}
+.paused .ring,.paused .bigring{background:conic-gradient(#8a8680 0 62%,rgba(255,255,255,.12) 62% 100%)}
+.paused .dig{color:#c9c4bd}
+</style>
+<h1>Dynamic Island — quãng nghỉ giữa set</h1>
+<p class="s">Cùng chất liệu với widget Koa: titan đen chải ngang, quầng cam ấm, số Menlo, màu Tập (hồng đỏ) của app làm điểm nhấn duy nhất. Hệ thống vẫn tự chạy đồng hồ và vòng từ hai mốc thời gian (không đổi cơ chế). Dữ liệu có sẵn: bài, set x/y, thời gian còn, tạm dừng.</p>
+
+<div class="row">
+<div class="col">
+  <div class="phone">
+    <div class="status"><span>9:41</span><span>●●●</span></div>
+    <div class="island c"><div class="lead"><div class="ring"></div><span style="font-size:13px;font-weight:600">Nghỉ</span></div><span class="dig mono">1:05</span></div>
+    <div style="height:28px"></div>
+    <div class="status" style="padding-top:0"><span></span><span></span></div>
+    <div style="display:flex;align-items:center;margin-top:-8px"><div style="flex:1;color:#fff;font-size:12px;padding-left:24px;opacity:.7">+ app khác dùng Island:</div><div class="min"><div class="ring"></div></div></div>
+  </div>
+  <div class="cap"><span class="tag">1</span>Gọn & tối thiểu</div>
+  <p class="d">Trái: vòng hồng nhỏ đang chạy + "Nghỉ". Phải: số còn lại màu hồng, Menlo. Khi chia Island với app khác: chỉ còn vòng.</p>
+</div>
+
+<div class="col">
+  <div class="phone" style="padding-bottom:22px">
+    <div class="status"><span>9:41</span><span>●●●</span></div>
+    <div class="exp">
+      <div class="erow">
+        <div>
+          <div class="lbl"><i></i>Nghỉ giữa set</div>
+          <div class="ex">Bench Press</div>
+          <div class="set">Tiếp theo: set 3 / 4</div>
+          <div class="pips"><b class="on"></b><b class="on"></b><b></b><b></b></div>
+        </div>
+        <div class="big mono">1:05</div>
+      </div>
+      <div class="bar"><i></i></div>
+      <div class="btns"><div class="btn mono">−15</div><div class="btn p">❚❚</div><div class="btn mono">+15</div></div>
+    </div>
+  </div>
+  <div class="cap"><span class="tag">2</span>Mở rộng (nhấn giữ Island)</div>
+  <p class="d">Bài tập to, "set 3 / 4" + vạch tiến độ set. Số đếm ngược lớn bên phải. Thanh thời gian thay vòng. Ba nút: −15 · tạm dừng (hồng, nút chính) · +15.</p>
+</div>
+
+<div class="col">
+  <div class="lock">
+    <div class="time">9:41</div>
+    <div class="la">
+      <div class="brand"><svg viewBox="0 0 24 24"><path d="M12 3 3 21h4l5-10 5 10h4z" fill="#a09c96"/></svg>ASCND · NGHỈ GIỮA SET</div>
+      <div class="lgrid">
+        <div>
+          <div class="ex" style="font-size:21px">Bench Press</div>
+          <div class="set">Tiếp theo: set 3 / 4</div>
+          <div class="pips"><b class="on"></b><b class="on"></b><b></b><b></b></div>
+        </div>
+        <div class="bigring"><span class="mono">1:05</span></div>
+      </div>
+      <div class="btns" style="margin-top:14px"><div class="btn mono">−15</div><div class="btn p">❚❚</div><div class="btn mono">+15</div></div>
+    </div>
+  </div>
+  <div class="cap"><span class="tag">3</span>Màn khoá</div>
+  <p class="d">Thẻ titan đen như widget Koa (vân ngang, quầng cam góc trên trái), logo ASCND nhỏ, vòng lớn có số ở giữa.</p>
+</div>
+
+<div class="col paused">
+  <div class="phone">
+    <div class="status"><span>9:41</span><span>●●●</span></div>
+    <div class="island c"><div class="lead"><div class="ring"></div><span style="font-size:13px;font-weight:600;color:#c9c4bd">Đã dừng</span></div><span class="dig mono">1:05</span></div>
+  </div>
+  <div class="lock" style="padding-top:20px">
+    <div class="la">
+      <div class="brand">ASCND · ĐÃ TẠM DỪNG</div>
+      <div class="lgrid"><div><div class="ex" style="font-size:21px">Bench Press</div><div class="set">Tiếp theo: set 3 / 4</div></div><div class="bigring"><span class="mono" style="color:#c9c4bd">1:05</span></div></div>
+      <div class="btns" style="margin-top:14px"><div class="btn mono">−15</div><div class="btn p" style="background:#f5f3f0;color:#111">▶</div><div class="btn mono">+15</div></div>
+    </div>
+  </div>
+  <div class="cap"><span class="tag">4</span>Tạm dừng</div>
+  <p class="d">Màu hồng chuyển xám, số đứng yên, nút chính thành ▶ trắng.</p>
+</div>
+</div>
