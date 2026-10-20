@@ -56191,6 +56191,75 @@
      }
     }
    }
+  },
+  "reminders.streak.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Streak"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chuỗi ngày"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Racha"
+     }
+    }
+   }
+  },
+  "reminders.streak.desc": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa nudges you once in your evening when a 3+ day streak has nothing logged yet"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa nhắc một lần vào buổi tối của bạn khi chuỗi từ 3 ngày mà hôm nay chưa ghi gì"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa te avisa una vez por la tarde si una racha de 3+ días aún no tiene registros hoy"
+     }
+    }
+   }
+  },
+  "reminders.koa.habit %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa reminds you at your usual time: %@. Pick a time to choose your own."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa nhắc theo giờ quen của bạn: %@. Chọn giờ khác nếu muốn tự đặt."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa te avisa a tu hora habitual: %@. Elige otra hora si prefieres."
+     }
+    }
+   }
   }
  }
 }

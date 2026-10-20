@@ -17,6 +17,9 @@ public import Foundation
 ///   cầu chờ của iOS) — giữ những cái sớm nhất.
 public enum ReminderKey: String, Sendable, Hashable, Codable, CaseIterable {
   case water, supplements, bedtime, weighIn, workout, meal, biometrics, sleepLog, challengeClaim
+  /// Koa (đợt 2B, không có ở RN): chuỗi ≥ 3 ngày mà hôm nay chưa ghi gì — một lời
+  /// nhắc vào giờ muộn của chính người đó.
+  case streak
 
   /// `TimedReminderKey`: mọi khoá trừ `water` (khoảng lặp) và `challengeClaim`
   /// (một lần theo hạn nhận).
@@ -64,6 +67,8 @@ public struct ReminderPrefs: Sendable, Hashable {
   public var biometrics: Timed
   public var sleepLog: Timed
   public var challengeClaim: Bool
+  /// Nhắc chuỗi của Koa (đợt 2B) — mặc định bật như `challengeClaim`.
+  public var streak: Bool
 
   /// `DEFAULT_REMINDERS`. Giờ mặc định đến từ LÚC việc ấy làm được: bữa ăn
   /// 20:00 (cuối ngày, khi "chưa ghi bữa nào" còn sửa được), ghi giấc ngủ
@@ -77,11 +82,11 @@ public struct ReminderPrefs: Sendable, Hashable {
     meal: Timed(enabled: false, hour: 20, minute: 0),
     biometrics: Timed(enabled: false, hour: 7, minute: 30),
     sleepLog: Timed(enabled: false, hour: 8, minute: 0),
-    challengeClaim: true)
+    challengeClaim: true, streak: true)
 
   public init(
     water: Water, supplements: Timed, bedtime: Timed, weighIn: Timed, workout: Timed, meal: Timed, biometrics: Timed,
-    sleepLog: Timed, challengeClaim: Bool
+    sleepLog: Timed, challengeClaim: Bool, streak: Bool = true
   ) {
     self.water = water
     self.supplements = supplements
@@ -92,6 +97,7 @@ public struct ReminderPrefs: Sendable, Hashable {
     self.biometrics = biometrics
     self.sleepLog = sleepLog
     self.challengeClaim = challengeClaim
+    self.streak = streak
   }
 
   /// Khoá có giờ. `water` / `challengeClaim` không có giờ — đọc chúng ở đây là
@@ -106,7 +112,7 @@ public struct ReminderPrefs: Sendable, Hashable {
       case .meal: meal
       case .biometrics: biometrics
       case .sleepLog: sleepLog
-      case .water, .challengeClaim: preconditionFailure("\(key) không có giờ")
+      case .water, .challengeClaim, .streak: preconditionFailure("\(key) không có giờ")
       }
     }
     set {
@@ -118,7 +124,7 @@ public struct ReminderPrefs: Sendable, Hashable {
       case .meal: meal = newValue
       case .biometrics: biometrics = newValue
       case .sleepLog: sleepLog = newValue
-      case .water, .challengeClaim: preconditionFailure("\(key) không có giờ")
+      case .water, .challengeClaim, .streak: preconditionFailure("\(key) không có giờ")
       }
     }
   }
@@ -127,6 +133,7 @@ public struct ReminderPrefs: Sendable, Hashable {
     switch key {
     case .water: water.enabled
     case .challengeClaim: challengeClaim
+    case .streak: streak
     default: self[timed: key].enabled
     }
   }
@@ -135,6 +142,7 @@ public struct ReminderPrefs: Sendable, Hashable {
     switch key {
     case .water: water.enabled = on
     case .challengeClaim: challengeClaim = on
+    case .streak: streak = on
     default: self[timed: key].enabled = on
     }
   }
@@ -172,12 +180,15 @@ extension ReminderPrefs {
       water.enabled = s["enabled"]?.boolValue ?? water.enabled
       if let h = s["everyHours"]?.doubleValue, h.isFinite, h >= 0 { water.everyHours = h }
     }
+    var streak = d.streak
+    if case .object(let s)? = o[ReminderKey.streak.rawValue] { streak = s["enabled"]?.boolValue ?? streak }
     var claim = d.challengeClaim
     if case .object(let s)? = o[ReminderKey.challengeClaim.rawValue] { claim = s["enabled"]?.boolValue ?? claim }
     return ReminderPrefs(
       water: water, supplements: timed(.supplements, d.supplements), bedtime: timed(.bedtime, d.bedtime),
       weighIn: timed(.weighIn, d.weighIn), workout: timed(.workout, d.workout), meal: timed(.meal, d.meal),
-      biometrics: timed(.biometrics, d.biometrics), sleepLog: timed(.sleepLog, d.sleepLog), challengeClaim: claim)
+      biometrics: timed(.biometrics, d.biometrics), sleepLog: timed(.sleepLog, d.sleepLog), challengeClaim: claim,
+      streak: streak)
   }
 
   /// Cùng hình dạng RN ghi (`JSON.stringify(prefs)`), khoá sắp xếp — cùng một
@@ -191,6 +202,7 @@ extension ReminderPrefs {
       "supplements": t(supplements), "bedtime": t(bedtime), "weighIn": t(weighIn), "workout": t(workout),
       "meal": t(meal), "biometrics": t(biometrics), "sleepLog": t(sleepLog),
       "challengeClaim": .object(["enabled": .bool(challengeClaim)]),
+      "streak": .object(["enabled": .bool(streak)]),
     ])
     let encoder = JSONEncoder()
     encoder.outputFormatting = [.sortedKeys]
@@ -233,6 +245,16 @@ public struct ReminderContext: Sendable, Hashable {
   public var trainingDays: [Int]?
   public var pendingClaims: [PendingClaim] = []
 
+  // Koa (đợt 2B) — không có ở RN; để trống thì kế hoạch y như RN.
+  /// Giờ quen của người này (mép muộn của thói quen) cho lời nhắc CÒN ĐỂ giờ mặc
+  /// định: nhắc ngay sau lúc họ thường đã làm, thay cho giờ chung của mọi người.
+  public var habitTimes: [ReminderKey: ReminderClock] = [:]
+  /// Chuỗi hiện tại; `loggedToday == nil` = chưa đọc → không nhắc chuỗi.
+  public var streak = 0
+  public var loggedToday: Bool?
+  /// Giờ muộn của người này (`KoaMood`): lúc nhắc chuỗi.
+  public var streakRiskTime: ReminderClock?
+
   public init() {}
 
   /// Chưa biết gì: không việc nào xong, lịch chưa đọc, không thử thách nào.
@@ -248,6 +270,8 @@ public struct PlannedReminder: Sendable, Hashable {
   public let body: String?
   /// Phần của mục trong chữ ký kế hoạch.
   let token: String
+  /// Bắn theo giờ quen (Koa nói "giờ này mọi hôm bạn đã…").
+  public var habit = false
 }
 
 public enum ReminderPlan {
@@ -305,8 +329,19 @@ public enum ReminderPlan {
     _ prefs: ReminderPrefs, _ ctx: ReminderContext, now: Date, calendar: Calendar
   ) -> [PlannedReminder] {
     var out: [PlannedReminder] = []
-    func push(_ key: ReminderKey, _ when: Date) {
-      if when > now { out.append(PlannedReminder(key: key, at: when, title: nil, body: nil, token: stamp(key, when))) }
+    func push(_ key: ReminderKey, _ when: Date, habit: Bool = false) {
+      if when > now {
+        out.append(PlannedReminder(key: key, at: when, title: nil, body: nil, token: stamp(key, when), habit: habit))
+      }
+    }
+    /// Giờ bắn của một khoá có giờ: giờ quen nếu người dùng chưa đổi giờ mặc định.
+    func timed(_ key: ReminderKey, _ day: Int) {
+      let row = prefs[timed: key]
+      if row.clock == ReminderPrefs.defaults[timed: key].clock, let h = ctx.habitTimes[key] {
+        push(key, at(now, day, h.hour, h.minute, calendar), habit: true)
+      } else {
+        push(key, at(now, day, row.hour, row.minute, calendar))
+      }
     }
     for day in 0..<horizonDays {
       let isToday = day == 0
@@ -325,19 +360,24 @@ public enum ReminderPlan {
         push(.weighIn, at(now, day, prefs.weighIn.hour, prefs.weighIn.minute, calendar))
       }
       if prefs.meal.enabled && !(isToday && ctx.mealLoggedToday) {
-        push(.meal, at(now, day, prefs.meal.hour, prefs.meal.minute, calendar))
+        timed(.meal, day)
       }
       if prefs.biometrics.enabled && !(isToday && ctx.bioLoggedToday) {
         push(.biometrics, at(now, day, prefs.biometrics.hour, prefs.biometrics.minute, calendar))
       }
       // Ghi lại đêm qua XONG được; đi ngủ thì không — hai khoá, hai điều kiện.
       if prefs.sleepLog.enabled && !(isToday && ctx.sleepLoggedToday) {
-        push(.sleepLog, at(now, day, prefs.sleepLog.hour, prefs.sleepLog.minute, calendar))
+        timed(.sleepLog, day)
       }
       let trainsToday = ctx.trainingDays.map { $0.contains(weekday) } ?? true
       if prefs.workout.enabled && trainsToday && !(isToday && ctx.workedOutToday) {
-        push(.workout, at(now, day, prefs.workout.hour, prefs.workout.minute, calendar))
+        timed(.workout, day)
       }
+    }
+
+    // Koa: chuỗi ≥ 3 ngày, hôm nay ĐÃ ĐỌC là chưa ghi gì → một lời nhắc hôm nay.
+    if prefs.streak, ctx.loggedToday == false, ctx.streak >= KoaMood.riskMinStreak, let t = ctx.streakRiskTime {
+      push(.streak, at(now, 0, t.hour, t.minute, calendar))
     }
 
     if prefs.challengeClaim {

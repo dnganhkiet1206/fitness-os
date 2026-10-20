@@ -289,6 +289,11 @@ struct TodayExtras<Plan: View>: View {
       guard let rows else { return }
       services.koaEquipped = rows.filter(\.equipped).map(\.itemKey)
     }
+    // Nhắc chuỗi của Koa (đợt 2B) cần chuỗi hiện tại.
+    .onChange(of: mascot?.streak, initial: true) { _, value in
+      guard let value, let mascot, case .ready = mascot.phase else { return }
+      services.koaStreak = (userId, value)
+    }
     // Thưởng chuỗi tự về trong lần đọc ngày.
     .onChange(of: mascot?.streakAutoClaim) { _, outcome in
       guard let outcome, let mascot else { return }

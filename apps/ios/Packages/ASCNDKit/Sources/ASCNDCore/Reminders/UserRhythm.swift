@@ -74,3 +74,12 @@ public enum UserRhythm {
     return forward(late, floor) <= floorReach ? wrap24(floor) : late
   }
 }
+
+extension UserRhythm {
+  /// Mép muộn của thói quen (`hour + slack × spread`, quấn quanh ngày) thành giờ
+  /// nhắc — Koa đợt 2B: "giờ này mọi hôm bạn đã…". Không có thói quen → `nil`.
+  public static func lateClock(_ h: Habit?) -> ReminderClock? {
+    guard let h else { return nil }
+    return ReminderTiming.toClock(wrap24(h.hour + slack * h.spread) * 60)
+  }
+}
