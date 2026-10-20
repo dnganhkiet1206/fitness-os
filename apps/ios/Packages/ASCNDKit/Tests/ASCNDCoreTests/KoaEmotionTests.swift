@@ -28,7 +28,10 @@ struct KoaEmotionGoldenTests {
     for c in cases {
       let e = c["e"]?.stringValue ?? ""
       let s = KoaEmotion.state(e)
-      #expect(s.expression.rawValue == c["s"]?["expression"]?.stringValue, "\(e)")
+      // Khác RN có chủ đích (20/10, Kiệt): `tired` / `sleep` ngồi thiền, mắt khép
+      // (`meditate`) thay cho mắt mệt của RN. Dáng và đồ vẫn như RN.
+      let want = e == "tired" || e == "sleep" ? "meditate" : c["s"]?["expression"]?.stringValue
+      #expect(s.expression.rawValue == want, "\(e)")
       #expect(s.pose.rawValue == c["s"]?["pose"]?.stringValue, "\(e)")
       #expect(s.outfit == Self.worn(c["s"]?["outfit"]), "\(e)")
     }
