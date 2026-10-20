@@ -621,7 +621,7 @@ struct TodayExtras<Plan: View>: View {
       userId: userId, mascotId: services.preferences.mascotSelected, emotion: state.emotion,
       equipped: shop?.inventory.filter(\.equipped).map(\.itemKey) ?? [], line: state.line,
       next: state.next.map(TodayDayBlock.action), done: progress.done, total: progress.total,
-      streak: room.streak.count, day: room.today, checks: checks, nextQuest: state.next))
+      streak: room.streak.count, day: room.today, checks: checks, nextQuest: state.next, level: room.level))
   }
 
   /// Lên cấp / lên hạng nhờ xu tự về: màn ăn mừng ở gốc app (cùng đường với huy chương).

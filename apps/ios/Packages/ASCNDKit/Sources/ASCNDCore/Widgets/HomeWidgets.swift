@@ -197,6 +197,17 @@ public struct WidgetDataStore: Sendable {
   /// đăng xuất KHÔNG xoá (như `ascnd_lang` của RN nằm trong `DEVICE_KEYS`).
   public static let languageKey = "ascnd.widget.lang"
   public static let koaKey = "ascnd.widget.koa"
+  /// Ảnh phòng Koa vẽ sẵn (Kiệt duyệt mock 20/10): Koa đứng trên bục trong phòng
+  /// của mình, đúng sân khấu đã mua — cỡ nhỏ / vừa × ngày / đêm × sáng / tối.
+  public static func koaRoomImageName(medium: Bool, night: Bool, dark: Bool) -> String {
+    "koa-room-\(medium ? "medium" : "small")-\(night ? "night" : "day")-\(dark ? "dark" : "light").png"
+  }
+  public static var koaRoomImageNames: [String] {
+    [false, true].flatMap { m in [false, true].flatMap { n in [false, true].map { d in
+      koaRoomImageName(medium: m, night: n, dark: d)
+    } } }
+  }
+
   /// Ảnh Koa vẽ sẵn trong thư mục App Group (sáng / tối × ngày / đêm).
   public static func koaImageName(night: Bool, dark: Bool) -> String {
     "koa-widget-\(night ? "night" : "day")-\(dark ? "dark" : "light").png"
@@ -273,6 +284,7 @@ public struct WidgetDataStore: Sendable {
           try? FileManager.default.removeItem(at: dir.appendingPathComponent(Self.koaImageName(night: night, dark: dark)))
         }
       }
+      for name in Self.koaRoomImageNames { try? FileManager.default.removeItem(at: dir.appendingPathComponent(name)) }
     }
   }
 
