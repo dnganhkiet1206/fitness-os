@@ -217,7 +217,15 @@ struct StreakReadinessView: View {
         ring(d.readinessScore, size: 62)
       }
       Spacer(minLength: 0)
-      Text(d.statusText).font(.system(size: 11, weight: .semibold)).foregroundStyle(.white.opacity(0.7)).lineLimit(2)
+      // Lời khuyên theo vùng thay cho "92/100" (vòng đã nói số — 20/10, Kiệt).
+      Group {
+        if let s = d.readinessScore {
+          Text(headline(s)).foregroundStyle(WidgetCard.zone(s))
+        } else {
+          Text(d.statusText).foregroundStyle(.white.opacity(0.7))
+        }
+      }
+      .font(.system(size: 12, weight: .bold)).lineLimit(2).minimumScaleFactor(0.85)
     }
   }
 
@@ -229,20 +237,24 @@ struct StreakReadinessView: View {
         Text(headline(d.readinessScore))
           .font(.system(size: 17, weight: .bold)).tracking(-0.3).foregroundStyle(.white).padding(.top, 8)
           .lineLimit(2).minimumScaleFactor(0.85)
-        if d.readinessScore == nil {
-          Text(d.statusText).font(.system(size: 11.5, weight: .semibold)).foregroundStyle(.white.opacity(0.6))
-            .lineLimit(2).padding(.top, 2)
+        // Dòng phụ: điểm hôm nay ở vùng nào (thay ô SẴN SÀNG trùng với vòng — 20/10, Kiệt).
+        HStack(spacing: 5) {
+          if let s = d.readinessScore { Circle().fill(WidgetCard.zone(s)).frame(width: 7, height: 7) }
+          Text(d.readinessScore.map(zoneLine) ?? d.statusText)
+            .font(.system(size: 11.5, weight: .semibold)).foregroundStyle(.white.opacity(0.65)).lineLimit(2)
         }
+        .padding(.top, 3)
         Spacer(minLength: 0)
-        HStack(spacing: 0) {
-          WidgetCard.stat("\(d.streakDays)", label: String(localized: "widget.card.streakDays"))
-          WidgetCard.hairline
-          WidgetCard.stat(
-            d.readinessScore.map(String.init) ?? "–", label: String(localized: "widget.card.readiness"),
-            tint: d.readinessScore.map(WidgetCard.zone) ?? .white)
-        }
+        WidgetCard.stat("\(d.streakDays)", label: String(localized: "widget.card.streakDays"))
       }
     }
+  }
+
+  /// "Vùng xanh · từ 75 điểm" — ngưỡng của `ReadinessTrend.zone`.
+  private func zoneLine(_ s: Int) -> String {
+    s >= 75
+      ? String(localized: "widget.card.zoneLine.green")
+      : s >= 50 ? String(localized: "widget.card.zoneLine.yellow") : String(localized: "widget.card.zoneLine.red")
   }
 
   private func headline(_ score: Int?) -> String {

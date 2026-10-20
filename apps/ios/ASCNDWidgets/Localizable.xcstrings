@@ -967,6 +967,75 @@
           }
         }
       }
+    },
+    "widget.card.zoneLine.green": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Green zone · 75 and up"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vùng xanh · từ 75 điểm"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zona verde · 75 o más"
+          }
+        }
+      }
+    },
+    "widget.card.zoneLine.yellow": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yellow zone · 50 to 74"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vùng vàng · 50–74 điểm"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zona amarilla · 50 a 74"
+          }
+        }
+      }
+    },
+    "widget.card.zoneLine.red": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Red zone · under 50"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vùng đỏ · dưới 50 điểm"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zona roja · menos de 50"
+          }
+        }
+      }
     }
   }
 }
