@@ -98,7 +98,7 @@ struct TodayDayBlock: View {
               center: UnitPoint(x: 0.5, y: 0.7), startRadius: 0, endRadius: 70),
             in: RoundedRectangle(cornerRadius: 28, style: .continuous))
         VStack(alignment: .leading, spacing: 6) {
-          Text(verbatim: "Koa · \(Date().formatted(.dateTime.weekday(.wide).locale(.app)))")
+          Text(verbatim: "Koa")
             .font(.system(size: 12, weight: .semibold))
             .foregroundStyle(KoaCardInk.muted(dark))
           if let text = said ?? bubbleText(line, tubes: tubes) {

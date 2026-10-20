@@ -19,6 +19,7 @@ struct TodayMore: View {
   /// Nguồn của chuyển cảnh zoom sang màn chi tiết (id = `Row.id`).
   let zoom: Namespace.ID
   @Environment(\.dynamicTypeSize) private var typeSize
+  @Environment(\.colorScheme) private var scheme
 
   var body: some View {
     VStack(alignment: .leading, spacing: DS.Spacing.sm) {
@@ -67,6 +68,9 @@ struct TodayMore: View {
       }
       .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
       .todayCard()
+      // `matchedTransitionSource` giữ ảnh của dòng qua lần đổi sáng / tối
+      // (chủ dự án 20/10: "bị giữ màu cũ") — dựng lại thẻ khi giao diện đổi.
+      .id(scheme)
     }
   }
 }
