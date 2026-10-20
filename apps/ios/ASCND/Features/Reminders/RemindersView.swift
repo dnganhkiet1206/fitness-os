@@ -86,6 +86,11 @@ struct RemindersView: View {
       ForEach(Self.timed, id: \.self) { key in
         Section {
           timedRow(key)
+          if let habit = koaHabit(key) {
+            Text(String(localized: "reminders.koa.habit \(ReminderTiming.format(habit))"))
+              .font(DS.TextStyle.caption)
+              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          }
           if let offer = ReminderTiming.offer(key, prefs: center.prefs, known: known), let source = Self.source(key, known) {
             offerRow(key, offer: offer, source: source)
           }
@@ -97,6 +102,15 @@ struct RemindersView: View {
     .sensoryFeedback(.selection, trigger: center.prefs)
     .task { await load() }
     .refreshable { await load() }
+  }
+
+  /// Koa đang nhắc khoá này theo giờ quen (đợt 2B): bật, còn giờ mặc định, có thói quen.
+  private func koaHabit(_ key: ReminderKey) -> ReminderClock? {
+    let row = center.prefs[timed: key]
+    guard row.enabled, row.clock == ReminderPrefs.defaults[timed: key].clock,
+      let userId = services.session.session?.userId
+    else { return nil }
+    return KoaReminderHabit.times(services.habitHours, userId: userId, profile: profile)[key]
   }
 
   // MARK: - Hàng

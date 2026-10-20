@@ -56237,6 +56237,29 @@
      }
     }
    }
+  },
+  "reminders.koa.habit %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa reminds you at your usual time: %@. Pick a time to choose your own."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa nhắc theo giờ quen của bạn: %@. Chọn giờ khác nếu muốn tự đặt."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa te avisa a tu hora habitual: %@. Elige otra hora si prefieres."
+     }
+    }
+   }
   }
  }
 }
