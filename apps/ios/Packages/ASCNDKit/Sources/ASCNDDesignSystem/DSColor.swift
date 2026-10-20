@@ -26,11 +26,11 @@ public extension DS {
     public static let mutedOnInset = DSColor(light: DSColorRGB(107, 101, 89), dark: DSColorRGB(139, 139, 139)) // #6b6559 / #8b8b8b
     public static let glassMuted = DSColor(light: DSColorRGB(92, 86, 75), dark: DSColorRGB(205, 198, 186)) // #5c564b / #cdc6ba
     public static let secondaryForeground = DSColor(light: DSColorRGB(87, 82, 74), dark: DSColorRGB(153, 153, 153)) // #57524a / #999999
-    public static let brand = DSColor(light: DSColorRGB(82, 88, 101), dark: DSColorRGB(216, 209, 196)) // #525865 / #d8d1c4
+    public static let brand = DSColor(light: DSColorRGB(90, 84, 74), dark: DSColorRGB(216, 209, 196)) // #5a544a / #d8d1c4
     public static let primary = DSColor(light: DSColorRGB(26, 25, 23), dark: DSColorRGB(237, 232, 223)) // #1a1917 / #ede8df
     public static let primaryForeground = DSColor(light: DSColorRGB(255, 255, 255), dark: DSColorRGB(7, 7, 8)) // #ffffff / #070708
     public static let goldLight = DSColor(light: DSColorRGB(125, 103, 51), dark: DSColorRGB(217, 184, 106)) // #7d6733 / #d9b86a
-    public static let champagne = DSColor(light: DSColorRGB(108, 111, 121), dark: DSColorRGB(171, 162, 148)) // #6c6f79 / #aba294
+    public static let champagne = DSColor(light: DSColorRGB(122, 114, 102), dark: DSColorRGB(171, 162, 148)) // #7a7266 / #aba294
     public static let destructive = DSColor(light: DSColorRGB(222, 11, 68), dark: DSColorRGB(255, 59, 92)) // #de0b44 / #ff3b5c
     public static let destructiveForeground = DSColor(light: DSColorRGB(255, 255, 255), dark: DSColorRGB(255, 255, 255)) // #ffffff / #ffffff
     public static let readinessGreen = DSColor(light: DSColorRGB(7, 128, 85), dark: DSColorRGB(0, 199, 133)) // #078055 / #00c785
