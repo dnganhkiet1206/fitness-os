@@ -113,9 +113,10 @@ struct TodayWorkoutView: View {
       Spacer(minLength: 0)
       segments(d).padding(.bottom, 7)
       HStack(spacing: 0) {
-        WidgetCard.stat(rest ? "–" : "\(d.completedExercises)", label: String(localized: "widget.card.done"))
-        WidgetCard.hairline
-        WidgetCard.stat(rest ? "–" : "\(d.totalExercises)", label: String(localized: "widget.card.exercises"))
+        // Một ô "5/5 bài tập" thay cho hai ô "5 xong" + "5 bài tập": chữ "xong" chỉ còn
+        // ở ô trạng thái (20/10, Kiệt).
+        WidgetCard.stat(
+          rest ? "–" : "\(d.completedExercises)/\(d.totalExercises)", label: String(localized: "widget.card.exercises"))
         WidgetCard.hairline
         WidgetCard.stat(
           (rest
