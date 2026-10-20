@@ -24,8 +24,8 @@ struct KoaSheetView: View {
 
   @State private var expression: KoaFlags.Expression = .happy
   @State private var pose: KoaFlags.Pose = .idle
-  /// Cấp của hình lớn — mục "6. HẠNG" (vóc dáng theo hạng, 20/10).
-  @State private var level = 1
+  /// Hạng vóc dáng của hình lớn — mục "6. HẠNG" (Gains, 20/10).
+  @State private var build = 0
   @State private var worn: KoaFlags.Worn = [:]
   /// Một ô tủ đồ mở một lúc — 70 hình cùng lúc là quá nặng.
   @State private var openSlot: KoaFlags.Slot? = .head
@@ -62,11 +62,11 @@ struct KoaSheetView: View {
         }
         card(title: "6. HẠNG", sub: "vóc dáng · \(MascotRules.ranks.count) hạng") {
           LazyVGrid(columns: columns, spacing: DS.Spacing.sm) {
-            ForEach(MascotRules.ranks, id: \.key) { r in
-              tile(label: r.name(.en).uppercased(), on: MascotRules.rank(level: level).key == r.key, crop: false) {
-                level = r.minLevel
+            ForEach(Array(MascotRules.ranks.enumerated()), id: \.element.key) { i, r in
+              tile(label: r.name(.en).uppercased(), on: build == i, crop: false) {
+                build = i
               } figure: {
-                KoaFigureView(pose: .idle, worn: worn, size: 104, animated: false, level: r.minLevel)
+                KoaFigureView(pose: .idle, worn: worn, size: 104, animated: false, build: i)
               }
             }
           }
@@ -89,7 +89,7 @@ struct KoaSheetView: View {
         let i = all.firstIndex(of: expression) ?? 0
         expression = all[(i + 1) % all.count]
       } label: {
-        KoaFigureView(expression: expression, pose: pose, worn: worn, size: 200, level: level)
+        KoaFigureView(expression: expression, pose: pose, worn: worn, size: 200, build: build)
       }
       .buttonStyle(.plain)
       .accessibilityLabel(Text(String(localized: "koa.sheet.cycle")))

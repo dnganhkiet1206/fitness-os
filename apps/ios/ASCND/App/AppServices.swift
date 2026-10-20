@@ -53,9 +53,15 @@ final class AppServices {
   /// Đồ Koa đang mặc (khoá `mascot_inventory`), do Hôm nay ghi khi tủ đồ đọc xong
   /// / đổi — để Koa ló lên ở tab khác mặc đúng đồ (đợt 2A).
   var koaEquipped: [String] = []
-  /// Cấp linh vật của người đang dùng — Koa của chính họ ở mọi màn mang vóc dáng
-  /// theo hạng (20/10). Hôm nay / phòng linh vật ghi khi đọc sổ xong.
-  var koaLevel = 1
+  /// Hạng vóc dáng (Gains, 0…5) của người đang dùng — Koa của chính họ ở mọi màn
+  /// mang vóc dáng ấy (#527 đợt 1: vóc dáng theo tập, không theo cấp). Hôm nay ghi.
+  var koaBuild = 0
+  /// Lịch sử tập đã đọc cho Gains — màn kết thúc buổi tập tính trước phần cộng.
+  struct GainsHistory {
+    let days: [KoaGains.Day]
+    let week: KoaGains.Week
+  }
+  var koaGainsHistory: GainsHistory?
   /// Widget Koa (đợt 2C): ảnh + câu của Koa ở Hôm nay ra màn hình chính.
   @ObservationIgnored let koaWidget = KoaWidgetPublisher()
   /// Chuỗi ngày của tài khoản đang mở (phòng Koa của Hôm nay ghi) — cho nhắc chuỗi
@@ -461,6 +467,14 @@ final class AppServices {
     guard let rows else { return nil }
     let sync = self.sync
     return BiometricLogger(userId: userId, store: rows, outbox: outbox, onEnqueued: { _ in sync.kick() })
+  }
+
+  /// Gains của Koa (#527 đợt 1): lịch sử tập + lịch tuần đã cache → vóc dáng.
+  /// `nil` khi chưa có backend hoặc đọc hỏng (giữ Gains cũ).
+  func loadKoaGains(userId: String) async -> (days: [KoaGains.Day], week: KoaGains.Week, state: KoaGains.State)? {
+    guard let rows else { return nil }
+    let plans = await templates.cached(userId: userId)
+    return await KoaGainsSync.load(userId: userId, store: rows, plans: plans, now: SystemWallClock().nowMillis(), in: .current)
   }
 
   /// Ghi giấc ngủ (#527 `log-sleep`): đọc / ghi `sleep_logs` và dựng lại

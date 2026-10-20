@@ -300,6 +300,7 @@ struct TodayDayBlock: View {
     case .water: String(localized: "today.sig.water")
     case .workout: String(localized: "today.sig.workout")
     case .steps: String(localized: "today.sig.steps")
+    case .recovery: String(localized: "mr.signal.recovery")
     }
   }
 
@@ -310,6 +311,7 @@ struct TodayDayBlock: View {
     case .water: String(localized: "today.do.water")
     case .workout: String(localized: "today.do.workout")
     case .steps: String(localized: "today.sig.steps")
+    case .recovery: String(localized: "mr.signal.recovery")
     }
   }
 
@@ -351,7 +353,7 @@ struct TodayDayBlock: View {
       // Theo đơn vị đã chọn (trước: luôn lít, kể cả khi người dùng chọn oz).
       return Water.shortLabel(ml: t.amount, unit, locale: .app).replacingOccurrences(of: " ", with: "")
     case .workout: return "\(Int(t.amount))"
-    case .steps: return compact(t.amount)
+    case .steps, .recovery: return compact(t.amount)
     }
   }
 
@@ -453,6 +455,7 @@ struct TodayTube: View {
     case .water: "drop.fill"
     case .workout: "dumbbell.fill"
     case .steps: "figure.walk"
+    case .recovery: "bed.double.fill"
     }
   }
 }

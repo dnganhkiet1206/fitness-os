@@ -47,8 +47,8 @@ public enum KoaRender {
     public var blend: Double?
     /// Ánh nhìn đã giải (`gazeAt`), khi nhân vật đứng trong phòng.
     public var gaze: KoaMath.Gaze?
-    /// Cấp của chủ Koa → vóc dáng theo hạng (`rankFlags`).
-    public var level = 1
+    /// Hạng vóc dáng 0…5 (`KoaGains.rank`) → `rankFlags`.
+    public var build = 0
 
     public init() {}
   }
@@ -258,7 +258,7 @@ public enum KoaRender {
     var f = KoaFlags.flags(o.expression, o.pose, worn: o.worn)
     // Tủ đồ vẽ lại: tập tạ thì hai tay đang cầm tạ — đồ cầm tay ẩn (không có ở RN).
     f["handFree"] = .bool(o.pose != .lifting)
-    for (k, v) in rankFlags(level: o.level, pose: o.dress ? .idle : o.pose) { f[k] = v }
+    for (k, v) in rankFlags(rank: o.build, pose: o.dress ? .idle : o.pose) { f[k] = v }
     if o.dress {
       f["mouthSmile"] = .bool(false)
       f["mouthGrin"] = .bool(false)
@@ -274,8 +274,8 @@ public enum KoaRender {
   /// Cờ vóc dáng theo hạng — cảnh tủ đồ (`tools/koa-wardrobe/build.py`) đọc chúng:
   /// `rk1…rk5` hạng ≥ n, `rkE0…rkE5` đúng hạng n; tay đứng (và tay áo, đồ cầm tay)
   /// dang theo vai và dày lên quanh khớp vai; thân áo nở theo vai.
-  public static func rankFlags(level: Int, pose: KoaFlags.Pose) -> KoaFlags.Flags {
-    let r = MascotRules.ranks.lastIndex { level >= $0.minLevel } ?? 0
+  public static func rankFlags(rank: Int, pose: KoaFlags.Pose) -> KoaFlags.Flags {
+    let r = max(0, min(rank, rankBuild.count - 1))
     let t = rankBuild[min(r, rankBuild.count - 1)]
     var f: KoaFlags.Flags = [:]
     for n in 1...5 { f["rk\(n)"] = .bool(r >= n) }

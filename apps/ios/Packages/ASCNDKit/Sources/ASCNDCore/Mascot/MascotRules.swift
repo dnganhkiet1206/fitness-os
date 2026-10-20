@@ -11,6 +11,8 @@ public import Foundation
 public enum MascotRules {
   public enum Quest: String, Sendable, Hashable, CaseIterable {
     case meal, workout, water, sleep, steps
+    /// Ngày nghỉ (không có buổi trong lịch): ngủ đủ + 6 000 bước (#527 đợt 1).
+    case recovery
   }
 
   public struct QuestDef: Sendable, Hashable {
@@ -31,14 +33,20 @@ public enum MascotRules {
     }
   }
 
-  /// `DAILY_QUESTS`.
+  /// `DAILY_QUESTS` — khác RN có chủ đích (#527 đợt 1, Kiệt duyệt 20/10
+  /// `koa-train-loop.html`): buổi tập là nhiệm vụ chính (45% XP, 41% xu của một
+  /// ngày đủ, từ 31% / 25%); ngày nghỉ có nhiệm vụ chính riêng là hồi phục.
+  /// Xu phải khớp `reward_prices` (migration `koa_train_loop_prices`).
   public static let dailyQuests: [QuestDef] = [
+    QuestDef(key: .workout, coins: 35, xp: 40, names: ["Hoàn thành buổi tập hôm nay", "Finish today's workout", "Completa el entrenamiento de hoy"]),
+    QuestDef(key: .recovery, coins: 20, xp: 25, names: ["Hồi phục: ngủ đủ + 6.000 bước", "Recover: sleep + 6,000 steps", "Recupera: sueño + 6.000 pasos"]),
     QuestDef(key: .meal, coins: 10, xp: 10, names: ["Ghi 1 bữa ăn", "Log a meal", "Registra una comida"]),
-    QuestDef(key: .workout, coins: 25, xp: 30, names: ["Hoàn thành 1 buổi tập", "Complete a workout", "Completa un entrenamiento"]),
-    QuestDef(key: .water, coins: 15, xp: 15, names: ["Đạt mục tiêu nước", "Hit your water target", "Alcanza tu objetivo de agua"]),
-    QuestDef(key: .sleep, coins: 15, xp: 15, names: ["Ghi giấc ngủ", "Log your sleep", "Registra tu sueño"]),
-    QuestDef(key: .steps, coins: 10, xp: 12, names: ["Đi {n} bước", "Walk {n} steps", "Camina {n} pasos"]),
+    QuestDef(key: .water, coins: 8, xp: 8, names: ["Đạt mục tiêu nước", "Hit your water target", "Alcanza tu objetivo de agua"]),
+    QuestDef(key: .sleep, coins: 8, xp: 8, names: ["Ghi giấc ngủ", "Log your sleep", "Registra tu sueño"]),
+    QuestDef(key: .steps, coins: 8, xp: 8, names: ["Đi {n} bước", "Walk {n} steps", "Camina {n} pasos"]),
   ]
+  /// Số bước của nhiệm vụ hồi phục.
+  public static let recoverySteps = 6000
 
   /// `ENERGY_SIGNALS`: năm tín hiệu của vòng năng lượng, theo thứ tự này.
   public static let energySignals: [Quest] = [.meal, .workout, .water, .sleep, .steps]
@@ -58,9 +66,9 @@ public enum MascotRules {
   public static func streakCoins(_ streak: Int) -> Int { min(5 + streak * 2, 25) }
 
   /// Số xu server THẬT SỰ trả cho `d:<ngày>:streak`: `reward_prices['streak:max']`
-  /// (`20260819120000_reward_amount_authority.sql`) — cố định 25, mọi độ dài
+  /// (`20260819120000_reward_amount_authority.sql`; hạ còn 15 ở migration `koa_train_loop_prices`, #527 đợt 1) — mọi độ dài
   /// chuỗi. Màn native hiện con số này (xem `MascotRoomController.streakBonus`).
-  public static let streakPayout = 25
+  public static let streakPayout = 15
 
   /// `CHALLENGE_REWARD`: theo hạng thử thách tuần.
   public static let challengeReward: [String: (coins: Int, xp: Int)] = [

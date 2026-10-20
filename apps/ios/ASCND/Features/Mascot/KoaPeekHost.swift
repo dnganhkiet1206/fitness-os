@@ -114,6 +114,7 @@ struct KoaPeekHost: View {
     case .water: return String(localized: "koa.peek.water")
     case .sleep: return String(localized: "koa.peek.sleep")
     case .steps: return String(localized: "koa.peek.steps")
+    case .recovery: return String(localized: "koa.peek.recovery")
     case nil: return String(localized: "koa.peek.streak")
     }
   }

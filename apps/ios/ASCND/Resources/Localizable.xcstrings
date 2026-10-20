@@ -40460,6 +40460,305 @@
     }
    }
   },
+  "koa.gains.at %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld Gains"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld Gains"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld Gains"
+     }
+    }
+   }
+  },
+  "koa.gains.toRank %lld %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$lld more Gains until Koa becomes %2$@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Còn %1$lld Gains nữa Koa lên %2$@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Faltan %1$lld Gains para que Koa sea %2$@"
+     }
+    }
+   }
+  },
+  "koa.gains.rankUp": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "A new build — earned by your workouts"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Vóc dáng mới — nhờ những buổi tập của bạn"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Un físico nuevo, gracias a tus entrenamientos"
+     }
+    }
+   }
+  },
+  "koa.gains.newRank %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa is now %@!"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa lên %@!"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "¡Koa ya es %@!"
+     }
+    }
+   }
+  },
+  "koa.gains.pump %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Pump! +%lld Gains"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Pump! +%lld Gains"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "¡Pump! +%lld Gains"
+     }
+    }
+   }
+  },
+  "koa.gains.part.planned %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Planned session +%lld"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "+%lld buổi trong lịch"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sesión del plan +%lld"
+     }
+    }
+   }
+  },
+  "koa.gains.part.offPlan %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Extra session +%lld"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "+%lld buổi ngoài lịch"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sesión extra +%lld"
+     }
+    }
+   }
+  },
+  "koa.gains.part.pr %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Personal record +%lld"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "+%lld kỷ lục cá nhân"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Récord personal +%lld"
+     }
+    }
+   }
+  },
+  "koa.gains.part.week %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Full week +%lld"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "+%lld tuần đủ buổi"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Semana completa +%lld"
+     }
+    }
+   }
+  },
+  "koa.gains.part.memory": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Muscle memory ×2"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Muscle memory ×2"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Memoria muscular ×2"
+     }
+    }
+   }
+  },
+  "koa.gains.max": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa is at the top rank"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa đã ở hạng cao nhất"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa está en el rango más alto"
+     }
+    }
+   }
+  },
+  "koa.peek.recovery": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Well recovered — Koa trains with you tomorrow!"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hồi phục tốt — mai Koa tập tiếp cùng bạn!"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Buena recuperación: ¡mañana Koa entrena contigo!"
+     }
+    }
+   }
+  },
+  "mr.signal.recovery": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Recovery"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hồi phục"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Recuperación"
+     }
+    }
+   }
+  },
   "koa.card.doneToday": {
    "extractionState": "manual",
    "localizations": {

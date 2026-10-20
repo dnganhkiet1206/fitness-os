@@ -54,7 +54,7 @@ struct TodayDayTests {
   }
 
   @Test func coinsPerSignal() {
-    #expect(TodayDay.order.map(TodayDay.coins) == [15, 10, 15, 25, 10])
+    #expect(TodayDay.order.map(TodayDay.coins) == [8, 10, 8, 35, 8])
   }
 
   /// Lần uống còn trong outbox: ống nước và việc "xong" đọc tổng cục bộ; số

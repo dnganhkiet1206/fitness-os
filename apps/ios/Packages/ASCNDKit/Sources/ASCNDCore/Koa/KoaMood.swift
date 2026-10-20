@@ -88,7 +88,8 @@ public enum KoaMood {
     }
     func done(_ q: MascotRules.Quest) -> Bool { s.done(q, stepsGoal: i.stepsGoal) }
     // `activeDefs`: nhiệm vụ bước không tính khi chưa từng có số bước.
-    let active = MascotRules.dailyQuests.map(\.key).filter { $0 != .steps || s.stepsEverRecorded }
+    // Hồi phục chỉ thay buổi tập vào ngày nghỉ — không là điều kiện của "xong hết".
+    let active = MascotRules.dailyQuests.map(\.key).filter { $0 != .recovery && ($0 != .steps || s.stepsEverRecorded) }
     if active.allSatisfy(done) { return Read(emotion: .celebrate, reason: .allDone) }
     if let target = i.kcalTarget, target > 0, let kcal = s.kcal, kcal > 0,
       NutritionToday.ring(kcal: kcal, target: target).band == .over

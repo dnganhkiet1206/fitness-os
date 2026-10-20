@@ -43,7 +43,7 @@ public enum KoaPeek {
     switch quest {
     case .meal, .water: return .happy
     case .workout, .steps: return .proud
-    case .sleep: return .rested
+    case .sleep, .recovery: return .rested
     case nil: return .celebrate  // thưởng chuỗi
     }
   }

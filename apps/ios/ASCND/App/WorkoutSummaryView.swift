@@ -47,6 +47,9 @@ public struct WorkoutSummaryView: View {
   var onShare: (() -> Void)?
   /// Đơn vị tạ của tài khoản (#527 1.9-A) — số lưu vẫn là kg.
   @Environment(\.weightUnit) private var unit
+  /// Gains của Koa (#527 đợt 1): lịch sử tập đã đọc ở Hôm nay.
+  @Environment(AppServices.self) private var services: AppServices?
+  @Environment(\.locale) private var locale
 
   public init(
     summary: WorkoutSummary,
@@ -58,6 +61,84 @@ public struct WorkoutSummaryView: View {
     self.sets = sets
     self.onDone = onDone
     self.onShare = onShare
+  }
+
+  /// Phần Gains của buổi hôm nay: lịch sử KHÔNG có hôm nay → có hôm nay (không
+  /// đếm trùng dù Hôm nay đã đọc lại lịch sử gồm buổi này).
+  struct GainsGain {
+    let before: KoaGains.State
+    let after: KoaGains.State
+    let planned: Bool
+    let pr: Bool
+    let fullWeek: Bool
+    var delta: Int { after.points - before.points }
+    var raw: Int {
+      (planned ? KoaGains.plannedSession : KoaGains.offPlanSession) + (pr ? KoaGains.personalRecord : 0)
+        + (fullWeek ? KoaGains.fullWeek : 0)
+    }
+  }
+
+  private var gains: GainsGain? {
+    guard let h = services?.koaGainsHistory else { return nil }
+    let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
+    let past = h.days.filter { $0.date != today }
+    let todayPR = summary.prDetected || h.days.contains { $0.date == today && $0.personalRecord }
+    let before = KoaGains.compute(past, week: h.week, today: today)
+    let after = KoaGains.compute(past + [.init(date: today, personalRecord: todayPR)], week: h.week, today: today)
+    // tuần đủ buổi đạt đúng hôm nay?
+    let monday = today.adding(days: -WorkoutPlanning.routineIndex(today))
+    let thisWeek = Set(past.map(\.date).filter { $0 >= monday && $0 < today })
+    return GainsGain(
+      before: before, after: after, planned: h.week.planned.contains(WorkoutPlanning.routineIndex(today)), pr: todayPR,
+      fullWeek: thisWeek.count < h.week.target && thisWeek.count + 1 >= h.week.target)
+  }
+
+  private func gainsCard(_ g: GainsGain) -> some View {
+    let lang = AppPreferences.Lang(rawValue: String(locale.identifier.prefix(2))) ?? .vi
+    let rankUp = g.after.rank > g.before.rank
+    let rank = MascotRules.ranks[min(g.after.rank, MascotRules.ranks.count - 1)]
+    var parts: [String] = [
+      g.planned
+        ? String(localized: "koa.gains.part.planned \(KoaGains.plannedSession)")
+        : String(localized: "koa.gains.part.offPlan \(KoaGains.offPlanSession)"),
+    ]
+    if g.pr { parts.append(String(localized: "koa.gains.part.pr \(KoaGains.personalRecord)")) }
+    if g.fullWeek { parts.append(String(localized: "koa.gains.part.week \(KoaGains.fullWeek)")) }
+    if g.delta > g.raw { parts.append(String(localized: "koa.gains.part.memory")) }
+    let next = KoaGains.toNext(g.after.points)
+    return DSCard {
+      VStack(spacing: DS.Spacing.sm) {
+        MascotFigureView(emotion: .proud, size: 132, animated: false, build: g.after.rank)
+          .frame(height: 150)
+          .accessibilityHidden(true)
+        Text(
+          rankUp
+            ? String(localized: "koa.gains.newRank \(rank.name(lang))")
+            : String(localized: "koa.gains.pump \(g.delta)")
+        )
+        .font(.system(size: 22, weight: .heavy))
+        .foregroundStyle(DS.Color.foreground.swiftUI)
+        Text(verbatim: parts.joined(separator: " · "))
+          .font(DS.TextStyle.footnote)
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          .multilineTextAlignment(.center)
+        if let next {
+          ProgressView(value: Double(next.have), total: Double(next.need))
+            .tint(Color(hex: rank.colorHex))
+            .accessibilityHidden(true)
+          let nextRank = MascotRules.ranks[min(g.after.rank + 1, MascotRules.ranks.count - 1)]
+          Text(String(localized: "koa.gains.toRank \(next.need - next.have) \(nextRank.name(lang))"))
+            .font(DS.TextStyle.caption)
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        } else {
+          Text(String(localized: "koa.gains.max"))
+            .font(DS.TextStyle.caption)
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        }
+      }
+      .frame(maxWidth: .infinity)
+    }
+    .accessibilityElement(children: .combine)
   }
 
   private var exerciseGroups: [(name: String, rows: [SummarySet])] {
@@ -73,6 +154,7 @@ public struct WorkoutSummaryView: View {
   public var body: some View {
     ScrollView {
       VStack(spacing: DS.Spacing.md) {
+        if let gains { gainsCard(gains) }
         // PR section — chỉ hiện khi model báo có (#305).
         // Không tự detect PR; prDetected=false → ẩn section.
         if summary.prDetected {

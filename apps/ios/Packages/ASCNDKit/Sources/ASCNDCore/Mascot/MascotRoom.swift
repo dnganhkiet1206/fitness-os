@@ -112,6 +112,7 @@ public struct DailySignals: Sendable, Hashable {
     case .water: waterMl >= ((waterTargetMl ?? 0) > 0 ? waterTargetMl! : Self.defaultWaterTargetMl)
     case .sleep: hasSleepRow || (sleepMinutes ?? 0) > 0
     case .steps: (steps ?? 0) >= Double(stepsGoal)
+    case .recovery: (hasSleepRow || (sleepMinutes ?? 0) > 0) && (steps ?? 0) >= Double(MascotRules.recoverySteps)
     }
   }
 }
@@ -296,14 +297,30 @@ public final class MascotRoomController {
   public var level: Int { MascotRules.level(xp: xp) }
   /// XP đã có trong cấp hiện tại.
   public var intoLevel: Int { xp % MascotRules.levelXp }
-  public var rank: MascotRules.Rank { MascotRules.rank(level: level) }
-  public var nextRank: MascotRules.Rank? { MascotRules.nextRank(level: level) }
+  /// Gains — vóc dáng / hạng của Koa chỉ từ tập (#527 đợt 1). Hôm nay nạp vào
+  /// (`KoaGainsSync`); phòng linh vật của người khác giữ `.zero`.
+  public var gains: KoaGains.State = .zero
+  /// Hạng theo GAINS (không còn theo cấp — Kiệt 20/10: "vóc dáng theo Gains").
+  public var rank: MascotRules.Rank { MascotRules.ranks[min(gains.rank, MascotRules.ranks.count - 1)] }
+  public var nextRank: MascotRules.Rank? {
+    gains.rank + 1 < MascotRules.ranks.count ? MascotRules.ranks[gains.rank + 1] : nil
+  }
 
   public func isClaimed(_ refKey: String) -> Bool { wallet?.claimed.contains(refKey) ?? false }
 
-  /// Nhiệm vụ đang tính cho tài khoản này: bỏ `steps` khi chưa từng có số bước.
+  /// Hôm nay không có buổi trong lịch (ngày nghỉ / chưa lên lịch) — Hôm nay đặt.
+  public var restDay = false
+
+  /// Nhiệm vụ đang tính cho tài khoản này: bỏ `steps` khi chưa từng có số bước;
+  /// nhiệm vụ hồi phục chỉ ở ngày nghỉ (và cần số bước).
   public var activeQuests: [MascotRules.QuestDef] {
-    MascotRules.dailyQuests.filter { $0.key != .steps || signals?.stepsEverRecorded != false }
+    MascotRules.dailyQuests.filter {
+      switch $0.key {
+      case .steps: signals?.stepsEverRecorded != false
+      case .recovery: restDay && signals?.stepsEverRecorded != false
+      default: true
+      }
+    }
   }
 
   public func questDone(_ q: MascotRules.Quest) -> Bool { signals?.done(q, stepsGoal: stepsGoal) ?? false }
@@ -318,7 +335,7 @@ public final class MascotRoomController {
   /// Dòng thưởng chuỗi: từ ngày 2, và CHỈ khi hôm nay đã nằm trong chuỗi.
   public var showsStreakBonus: Bool { streak.count >= 2 && streak.loggedToday }
   public var streakRefKey: String { MascotRules.streakRefKey(today) }
-  /// Số xu server trả cho dòng chuỗi (cố định 25) — RN hiện `streakCoins(n)`
+  /// Số xu server trả cho dòng chuỗi (cố định 15) — RN hiện `streakCoins(n)`
   /// (9…25), lệch với số thật được trả ở chuỗi 2–9 ngày.
   public var streakBonus: Int { MascotRules.streakPayout }
 
@@ -357,10 +374,8 @@ public final class MascotRoomController {
       guard !closed else { return nil }
       await reloadLedger()
       let oldLevel = MascotRules.level(xp: before), newLevel = MascotRules.level(xp: before + xpGain)
-      let oldRank = MascotRules.rank(level: oldLevel), newRank = MascotRules.rank(level: newLevel)
-      return ClaimOutcome(
-        amount: amount, newLevel: newLevel > oldLevel ? newLevel : nil,
-        newRank: newRank.key != oldRank.key ? newRank : nil)
+      // Hạng giờ theo Gains, không đổi khi nhận xu / XP.
+      return ClaimOutcome(amount: amount, newLevel: newLevel > oldLevel ? newLevel : nil, newRank: nil)
     } catch {
       guard !closed else { return nil }
       if !silent { actionFailure = Self.failure(error) }

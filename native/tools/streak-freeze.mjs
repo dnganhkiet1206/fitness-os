@@ -421,8 +421,8 @@ const press = async () => { const m = useBuyFreeze(); try { await m.mutationFn()
       `cửa sổ ngày của use_streak_freeze đã đổi: ${d.window}`);
 
     /* 17. no coin minting */
-    want(d.mint === '25/1', `một freeze đúc thêm xu: thưởng streak ×5 cùng ngày cho ra ${d.mint} — đúng ra 25 xu, một dòng`);
-    want(d.mintForged === 25, `thưởng streak vẫn nhận giá của người gọi (${d.mintForged}) — Chain Y đã khoá chỗ này`);
+    want(d.mint === '15/1', `một freeze đúc thêm xu: thưởng streak ×5 cùng ngày cho ra ${d.mint} — đúng ra 15 xu (streak:max, #527 đợt 1), một dòng`);
+    want(d.mintForged === 15, `thưởng streak vẫn nhận giá của người gọi (${d.mintForged}) — Chain Y đã khoá chỗ này`);
     want(d.useCosts === '0/0', `TIÊU một freeze cũng lấy tiền (số dư/khoản chi = ${d.useCosts}) — tiền trả lúc MUA, tiêu thì miễn phí`);
   }
 } catch (e) {
