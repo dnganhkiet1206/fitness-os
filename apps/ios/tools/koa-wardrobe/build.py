@@ -901,6 +901,19 @@ held("it_hand_sparkler", [
 hand_g = next(n for n in walk(nodes[3]) if n.get('bind') == 'handTf')
 hand_g['if'] = 'handFree'
 
+# ── MẮT THIỀN (20/10, Kiệt chọn mock B `docs/design/mocks/koa-meditate-eyes.html`):
+#    Koa ngồi thiền lúc "ngủ" — mắt khép: hàng mi cong xuống, nếp mí nhạt phía trên,
+#    một nét mi ở khoé ngoài. Cờ `eyesMeditate` (native, chỉ có khi biểu cảm `meditate`).
+#    Chèn cùng chỗ với các nhóm mắt RN (trước lông mày), để kính / đồ mặt vẫn đè lên.
+def meditate_eye(cx, outer):
+    return [
+        P(f"M{cx-13} 90 Q{cx} 84 {cx+13} 90", stroke="#9AA4AE", stroke_width=3, stroke_linecap="round", fill="none"),
+        P(f"M{cx-17} 100 Q{cx} 113 {cx+17} 100", stroke="#20242A", stroke_width=4.5, stroke_linecap="round", fill="none"),
+        P(f"M{cx+17*outer} 100 l{4*outer} 3", stroke="#20242A", stroke_width=3.5, stroke_linecap="round", fill="none"),
+    ]
+bi = next(i for i, k in enumerate(faceshift['kids']) if k.get('if') == 'browArc')
+faceshift['kids'].insert(bi, G(meditate_eye(82, -1) + meditate_eye(158, 1), **{"if": "eyesMeditate"}))
+
 # Mọi món đã vẽ lại phải xuất hiện đúng một lần trở lên trong cây mới.
 flags_in = {n.get('if') for n in walk({'kids': d['nodes']})}
 missing = sorted(gone - flags_in)

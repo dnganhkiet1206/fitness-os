@@ -5,7 +5,7 @@ public import Foundation
 /// chuỗi transform / hoạt ảnh do lớp logic đưa xuống.
 public enum KoaFlags {
   public enum Expression: String, Sendable, Hashable, CaseIterable {
-    case happy, surprised, grin, confident, sad, tired, angry, delighted, happytired, strain, plead
+    case happy, surprised, grin, confident, sad, tired, angry, delighted, happytired, strain, plead, meditate
   }
 
   public enum Pose: String, Sendable, Hashable, CaseIterable {
@@ -32,7 +32,7 @@ public enum KoaFlags {
   public static let expressionLabel: [Expression: String] = [
     .happy: "VUI VẺ", .surprised: "NGẠC NHIÊN", .grin: "CƯỜI TÍT MẮT", .confident: "TỰ TIN", .sad: "BUỒN",
     .tired: "MỆT MỎI", .angry: "TỨC GIẬN", .delighted: "THÍCH THÚ", .happytired: "VUI MÀ MỆT", .strain: "GỒNG SỨC",
-    .plead: "VAN NÀI",
+    .plead: "VAN NÀI", .meditate: "THIỀN",
   ]
   public static let poseLabel: [Pose: String] = [
     .idle: "ĐỨNG YÊN", .turn34: "TURNAROUND 3/4", .running: "CHẠY BỘ", .lifting: "TẬP TẠ", .stretching: "GIÃN CƠ",
@@ -122,10 +122,14 @@ public enum KoaFlags {
     f["mouthO"] = b(e == .surprised)
     f["mouthSmirk"] = b(e == .confident)
     f["mouthFrown"] = b(e == .sad || e == .plead)
-    f["mouthFlat"] = b(e == .tired)
+    f["mouthFlat"] = b(e == .tired || e == .meditate)
     f["mouthShout"] = b(e == .angry)
     f["showSteam"] = b(e == .angry)
     f["showHearts"] = b(e == .delighted)
+    // Native (20/10, Kiệt chọn mock B `koa-meditate-eyes.html`): mắt khép có nếp mí
+    // khi Koa ngồi thiền. Cờ chỉ có mặt khi bật, để bộ cờ của các biểu cảm RN
+    // giữ nguyên golden.
+    if e == .meditate { f["eyesMeditate"] = b(true) }
     f["armsIdle"] = b(p == .idle || turn)
     f["poseRun"] = b(run)
     f["turnedView"] = b(run || turn)

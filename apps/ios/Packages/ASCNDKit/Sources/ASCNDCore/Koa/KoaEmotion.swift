@@ -29,9 +29,10 @@ public enum KoaEmotion {
     // ngày tốt → cười tít mắt
     .happy: State(.grin, .idle),
     .sad: State(.sad, .idle),
-    // mệt → ngồi xuống thở
-    .tired: State(.tired, .relaxing),
-    .sleep: State(.tired, .relaxing),
+    // mệt → ngồi xuống thở; ngủ (sau 22h) → cũng ngồi. Cả hai ngồi thiền, mắt khép
+    // (20/10, Kiệt chọn mock B; RN: mắt mệt mí nặng).
+    .tired: State(.meditate, .relaxing),
+    .sleep: State(.meditate, .relaxing),
     .celebrate: State(.delighted, .idle),
     // ghi buổi tập → cùng cuốn tạ
     .curl: State(.strain, .lifting),

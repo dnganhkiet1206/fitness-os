@@ -15,7 +15,7 @@ struct KoaSheetView: View {
   /// Biểu cảm vẽ cùng từng tư thế ở mục 4 của bản thiết kế (`POSE_FACE`).
   static let poseFace: [KoaFlags.Pose: KoaFlags.Expression] = [
     .idle: .happy, .turn34: .happy, .running: .happytired, .lifting: .strain, .stretching: .happy,
-    .relaxing: .tired,
+    .relaxing: .meditate,
   ]
 
   static let slotLabel: [KoaFlags.Slot: String] = [
