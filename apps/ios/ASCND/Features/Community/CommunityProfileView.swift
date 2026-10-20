@@ -245,7 +245,8 @@ struct MascotAvatar: View {
       .frame(width: size, height: size)
       .overlay(alignment: .topLeading) {
         MascotFigureView(
-          mascotId: CommunityMascots.mascot(mascotId).id, size: (size * Self.zoom).rounded(), animated: false
+          mascotId: CommunityMascots.mascot(mascotId).id, size: (size * Self.zoom).rounded(), animated: false,
+          level: 1
         )
         .offset(x: (size - size * Self.zoom) / 2, y: -size * Self.lift)
       }

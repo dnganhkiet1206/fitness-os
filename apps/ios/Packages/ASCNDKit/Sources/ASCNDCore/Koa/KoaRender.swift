@@ -47,6 +47,8 @@ public enum KoaRender {
     public var blend: Double?
     /// Ánh nhìn đã giải (`gazeAt`), khi nhân vật đứng trong phòng.
     public var gaze: KoaMath.Gaze?
+    /// Cấp của chủ Koa → vóc dáng theo hạng (`rankFlags`).
+    public var level = 1
 
     public init() {}
   }
@@ -256,12 +258,37 @@ public enum KoaRender {
     var f = KoaFlags.flags(o.expression, o.pose, worn: o.worn)
     // Tủ đồ vẽ lại: tập tạ thì hai tay đang cầm tạ — đồ cầm tay ẩn (không có ở RN).
     f["handFree"] = .bool(o.pose != .lifting)
+    for (k, v) in rankFlags(level: o.level, pose: o.dress ? .idle : o.pose) { f[k] = v }
     if o.dress {
       f["mouthSmile"] = .bool(false)
       f["mouthGrin"] = .bool(false)
       f["mouthO"] = .bool(true)
       f["showHearts"] = .bool(true)
     }
+    return f
+  }
+
+  /// Mức vóc dáng của từng hạng, 0 → 1 (20/10, Kiệt duyệt `koa-rank-evolution.html`).
+  static let rankBuild: [Double] = [0, 0.18, 0.4, 0.6, 0.82, 1]
+
+  /// Cờ vóc dáng theo hạng — cảnh tủ đồ (`tools/koa-wardrobe/build.py`) đọc chúng:
+  /// `rk1…rk5` hạng ≥ n, `rkE0…rkE5` đúng hạng n; tay đứng (và tay áo, đồ cầm tay)
+  /// dang theo vai và dày lên quanh khớp vai; thân áo nở theo vai.
+  public static func rankFlags(level: Int, pose: KoaFlags.Pose) -> KoaFlags.Flags {
+    let r = MascotRules.ranks.lastIndex { level >= $0.minLevel } ?? 0
+    let t = rankBuild[min(r, rankBuild.count - 1)]
+    var f: KoaFlags.Flags = [:]
+    for n in 1...5 { f["rk\(n)"] = .bool(r >= n) }
+    for n in 0...5 { f["rkE\(n)"] = .bool(r == n) }
+    func num(_ v: Double) -> String { String(format: "%g", v) }
+    let dx = 11 * t, sx = 1 + 0.22 * t, sy = 1 + 0.05 * t
+    let armL = "translate(\(num(-dx)),0) translate(70,176) scale(\(num(sx)),\(num(sy))) translate(-70,-176)"
+    let armR = "translate(\(num(dx)),0) translate(170,176) scale(\(num(sx)),\(num(sy))) translate(-170,-176)"
+    let standing = pose == .idle || pose == .turn34
+    f["armRankL"] = .text(r == 0 ? "" : armL)
+    f["armRankR"] = .text(r == 0 ? "" : armR)
+    f["handRank"] = .text(r == 0 || !standing ? "" : armR)
+    f["topRank"] = .text(r == 0 ? "" : "translate(120,0) scale(\(num(1 + 0.16 * t)),1) translate(-120,0)")
     return f
   }
 

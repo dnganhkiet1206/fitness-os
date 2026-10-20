@@ -914,6 +914,109 @@ def meditate_eye(cx, outer):
 bi = next(i for i, k in enumerate(faceshift['kids']) if k.get('if') == 'browArc')
 faceshift['kids'].insert(bi, G(meditate_eye(82, -1) + meditate_eye(158, 1), **{"if": "eyesMeditate"}))
 
+# ── VÓC DÁNG THEO HẠNG (20/10, Kiệt duyệt `docs/design/mocks/koa-rank-evolution.html`):
+#    6 hạng → vai rộng ra, eo gọn chữ V, bắp tay dày + dang theo vai; nét cơ cùng tông
+#    lông. Mọi thứ BÁM theo Koa: nét trên tay nằm TRONG nhóm hoạt ảnh của cánh tay, tay
+#    áo / đồ cầm tay nhận cùng phép biến đổi hạng với cánh tay, thân áo nở theo vai,
+#    nét bụng / đai nằm trong thân (thở theo). Cờ do `KoaRender.flags` đặt từ cấp:
+#    `rk1…rk5` (hạng ≥ n), `rkE0…rkE5` (đúng hạng n), `armRankL/R`, `topRank`, `handRank`.
+RANK_T = [0, .18, .4, .6, .82, 1]
+LINE, SH = "#A3ACB6", "#C8CFD6"
+def rank_torso(t):
+    sw = 54 + 12 * t; ww = 53 - 7 * t
+    L = lambda x: f"{120 - x:g}"; R_ = lambda x: f"{120 + x:g}"
+    return (f"M120 140 C {L(24 + 4 * t)} 140 {L(48 + 10 * t)} 152 {L(sw)} 180 C {L(sw + 2)} 200 {L(ww + 5)} 224 {L(ww)} 244 "
+            f"C {L(ww - 4)} 264 92 279 120 279 C 148 279 {R_(ww - 4)} 264 {R_(ww)} 244 C {R_(ww + 5)} 224 {R_(sw + 2)} 200 {R_(sw)} 180 "
+            f"C {R_(48 + 10 * t)} 152 {R_(24 + 4 * t)} 140 120 140 Z")
+def stroke(dd, w=2.4, c=LINE, o=1):
+    a = dict(stroke=c, stroke_width=w, stroke_linecap="round", fill="none")
+    if o != 1: a['opacity'] = o
+    return P(dd, **a)
+def mx(dd):
+    return re.sub(r'(-?\d+(?:\.\d+)?) (-?\d+(?:\.\d+)?)', lambda m: f"{240 - float(m.group(1)):g} {m.group(2)}", dd)
+def arm_marks(left):
+    f = (lambda d: d) if left else mx
+    out = [G([stroke(f("M57 188 C 48 198 44 207 45 215")), stroke(f("M65 181 C 61 186 58 191 57 196"), w=3, c="#FFFFFF", o=0.35)], **{"if": "rk1"}),
+           G([stroke(f("M69 172 C 62 175 57 181 55 188"), w=2.2)], **{"if": "rk2"}),
+           G([stroke(f("M50 214 C 52 222 56 228 58 233"), w=2)], **{"if": "rk3"})]
+    chalk = [(48, 238, 5, .55), (55, 242, 3.5, .45), (44, 232, 3, .4)]
+    out.append(G([C(x if left else 240 - x, y, r, fill="#FFFFFF", opacity=o) for x, y, r, o in chalk], **{"if": "rk4"}))
+    return out
+
+# 1. Thân: torso_front đứng → 6 biến thể theo hạng (hạng 0 = nguyên bản).
+torso_stand = next(n for n in walk(nodes[3]) if n.get('if') == 'torsoStand' and any(k.get('id') == 'torso_front' for k in n.get('kids', [])))
+ti = next(i for i, k in enumerate(torso_stand['kids']) if k.get('id') == 'torso_front')
+tf0 = torso_stand['kids'][ti]
+variants = []
+for r, t in enumerate(RANK_T):
+    v = json.loads(json.dumps(tf0))
+    if r: v['a']['d'] = rank_torso(t); v.pop('id', None)
+    variants.append(G([v], **{"if": f"rkE{r}"}))
+torso_stand['kids'][ti:ti + 1] = variants
+
+# 2. Cơ bụng + đường chữ V: trong TORSO, ngay sau bụng; chỉ khi thân đứng.
+torso = next(n for n in walk(nodes[3]) if n.get('id') == 'TORSO')
+bi_ = next(i for i, k in enumerate(torso['kids']) if k.get('id') == 'belly')
+def pads(rows):
+    out = []
+    for y, h in rows:
+        for x in (100.5, 121.5):
+            out += [R(x, y, 18, h, 7, fill=SH), stroke(f"M{x + 4:g} {y + 3} L{x + 14:g} {y + 3}", w=2, c="#FFFFFF", o=0.45)]
+    return out
+torso['kids'].insert(bi_ + 1, G([
+    G(pads([(200, 22), (225, 22)]), **{"if": "rkE3"}),
+    G(pads([(198, 19), (220, 19), (242, 19)]), **{"if": "rk4"}),
+    G([stroke("M74 212 C 78 234 88 252 101 262", w=2.2), stroke(mx("M74 212 C 78 234 88 252 101 262"), w=2.2)], **{"if": "rk4"}),
+], **{"if": "torsoStand"}))
+
+# 3. Tay đứng: mỗi cánh tay + nét của nó vào MỘT nhóm hoạt ảnh (nét đi theo tay),
+#    rồi cả bên vào nhóm biến đổi hạng.
+arms_g = next(n for n in walk(nodes[3]) if n.get('id') == 'ARMS' and any(k.get('id') == 'arm_left_upper' for k in n.get('kids', [])))
+def side_of(n):
+    m = re.search(r'M\s*(-?[\d.]+)', (n.get('a') or {}).get('d', ''))
+    return 'L' if (m and float(m.group(1)) < 120) else 'R'
+left, right = [], []
+for k in arms_g['kids']:
+    if k.get('id') in ('arm_left_upper', 'arm_right_upper'):
+        isl = k['id'] == 'arm_left_upper'
+        anim, o = k.pop('anim'), k.pop('o')
+        grp = G([k] + arm_marks(isl), anim=anim, o=o)
+        (left if isl else right).append(grp)
+    else:
+        (left if side_of(k) == 'L' else right).append(k)
+arms_g['kids'] = [G(left, bind="armRankL"), G(right, bind="armRankR")]
+
+# 4. Tay áo (tư thế đứng, mọi áo): nhóm mang hoạt ảnh koaArmL / koaArmR → bọc thêm
+#    biến đổi hạng của đúng bên. Thân áo (nhóm áo không chứa tay áo) nở theo vai.
+def wrap_arm_anims(n):
+    kids = []
+    for k in n.get('kids', []):
+        wrap_arm_anims(k)
+        a = (k.get('anim') or {}).get('k')
+        if a in ('koaArmL', 'koaArmR') and k is not arms_g and k not in left and k not in right:
+            k = G([k], bind="armRankL" if a == 'koaArmL' else "armRankR")
+        kids.append(k)
+    if 'kids' in n: n['kids'] = kids
+wrap_arm_anims(body)
+def has_arm_anim(n): return any((x.get('anim') or {}).get('k') in ('koaArmL', 'koaArmR') for x in walk(n))
+body['kids'] = [G([k], bind="topRank") if (k.get('if', '').startswith('it_top_') and not has_arm_anim(k)) else k
+                for k in body['kids']]
+
+# 5. Đồ cầm tay (tư thế đứng): theo cánh tay phải.
+hand_free = next(n for n in walk(nodes[3]) if n.get('if') == 'handFree')
+hp = next((pn, i) for pn in walk(nodes[3]) for i, k in enumerate(pn.get('kids', [])) if k is hand_free)
+hp[0]['kids'][hp[1]] = G([hand_free], bind="handRank")
+
+# 6. Đai lưng tập tạ (hạng 5): sau quần, trước tay; thở theo thân.
+last_bottom = max(i for i, k in enumerate(body['kids']) if k.get('if', '').startswith('it_bottom_'))
+body['kids'].insert(last_bottom + 1, G([G([
+    P("M70 258 Q120 270 170 258 L169 272 Q120 284 71 272 Z", fill="#2B2F36"),
+    P("M71 261 Q120 273 169 261", stroke="#454B54", stroke_width=1.2, fill="none"),
+    P("M71 269 Q120 281 169 269", stroke="#454B54", stroke_width=1.2, fill="none"),
+    R(110, 266, 20, 14, 3, fill="none", stroke="#C9CED4", stroke_width=2.6),
+    P("M120 267 L120 279", stroke="#C9CED4", stroke_width=2.2, stroke_linecap="round"),
+], **{"if": "rk5"})], **{"if": "torsoStand"}))
+
 # Mọi món đã vẽ lại phải xuất hiện đúng một lần trở lên trong cây mới.
 flags_in = {n.get('if') for n in walk({'kids': d['nodes']})}
 missing = sorted(gone - flags_in)

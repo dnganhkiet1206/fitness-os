@@ -20,6 +20,8 @@ struct KoaFigureView: View {
   var animated = true
   /// `nil` → theo theme: giấy trên nền sáng, đèn trên nền tối.
   var paper: Bool?
+  /// Cấp của chủ Koa → vóc dáng theo hạng.
+  var level = 1
 
   @Environment(\.colorScheme) private var scheme
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -44,6 +46,7 @@ struct KoaFigureView: View {
       o.pose = pose
       o.dress = dress
       o.worn = worn
+      o.level = level
       o.live = animated
       o.paper = paper
       // Ban ngày: Koa đúng màu bản vẽ, không phủ đèn / hạ sáng; bản tối giữ Koa có
@@ -87,6 +90,9 @@ struct MascotFigureView: View {
   var animated = true
   var dress = false
   var paper: Bool?
+  /// Cấp của chủ linh vật; `nil` = người đang dùng (`AppServices.koaLevel`).
+  var level: Int?
+  @Environment(AppServices.self) private var services: AppServices?
 
   var body: some View {
     if mascotId == "koa" {
@@ -94,7 +100,7 @@ struct MascotFigureView: View {
       KoaFigureView(
         expression: dress ? .happy : state.expression, pose: dress ? .idle : state.pose, dress: dress,
         worn: KoaEmotion.worn(equipped).merging(state.outfit) { _, new in new }, size: size, animated: animated,
-        paper: paper)
+        paper: paper, level: level ?? services?.koaLevel ?? 1)
     } else {
       VectorMascotView(id: mascotId, size: size, equipped: Set(equipped))
     }

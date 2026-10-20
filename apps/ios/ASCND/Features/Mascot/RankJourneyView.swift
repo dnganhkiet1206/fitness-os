@@ -36,7 +36,7 @@ struct RankJourneyView: View {
     .accessibilityValue(Text(verbatim: a11yValue))
   }
 
-  /// "Tân binh, Cấp 1 (đang ở đây); Năng động, Cấp 5; …" — điều trục nói bằng hình.
+  /// "Newbie, Cấp 1 (đang ở đây); Gym Rat, Cấp 5; …" — điều trục nói bằng hình.
   private var a11yValue: String {
     ranks.map { r in
       let s = "\(r.name(lang)), \(String(localized: "mr.level \(r.minLevel)"))"
