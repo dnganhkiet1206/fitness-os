@@ -13,7 +13,7 @@ public struct SupabaseExerciseSource: ExerciseSource {
 
   public func exercises(userId: String) async throws -> [LibraryExercise] {
     let rows: [Row] = try await client.from("exercises")
-      .select("id, user_id, name, muscle_group, equipment, exercise_kind")
+      .select("id, user_id, name, muscle_group, equipment, exercise_kind, name_vi, name_en, name_es, search_text")
       .or("user_id.is.null,user_id.eq.\(userId)")
       .order("muscle_group")
       .order("name")
@@ -28,6 +28,10 @@ public struct SupabaseExerciseSource: ExerciseSource {
     let muscle_group: String?
     let equipment: String?
     let exercise_kind: String?
+    var name_vi: String? = nil
+    var name_en: String? = nil
+    var name_es: String? = nil
+    var search_text: String? = nil
   }
 
   /// Hàng → domain. Id chữ thường (uuid so khớp không phân biệt hoa thường);
@@ -35,9 +39,13 @@ public struct SupabaseExerciseSource: ExerciseSource {
   static func map(_ rows: [Row]) -> [LibraryExercise] {
     rows.compactMap { r in
       guard let name = r.name, !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
+      var names: [String: String] = [:]
+      for (k, v) in [("vi", r.name_vi), ("en", r.name_en), ("es", r.name_es)] {
+        if let v, !v.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { names[k] = v }
+      }
       return LibraryExercise(
         id: r.id.lowercased(), userId: r.user_id?.lowercased(), name: name, muscleGroup: r.muscle_group,
-        equipment: r.equipment, kind: r.exercise_kind)
+        equipment: r.equipment, kind: r.exercise_kind, localNames: names.isEmpty ? nil : names, searchText: r.search_text)
     }
   }
 }

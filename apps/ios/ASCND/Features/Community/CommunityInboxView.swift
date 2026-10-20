@@ -177,7 +177,7 @@ struct CommunityInboxView: View {
     let r = services.reminders
     // Nhận thưởng thử thách bật sẵn nên `anyEnabled` luôn đúng: xét riêng các nhắc
     // theo giờ. Người đã tự chọn nhắc nào thì giữ nguyên lựa chọn ấy.
-    let chosen = ReminderKey.allCases.contains { $0 != .challengeClaim && r.prefs.isEnabled($0) }
+    let chosen = ReminderKey.allCases.contains { ![.challengeClaim, .streak].contains($0) && r.prefs.isEnabled($0) }
     if !chosen {
       await r.setEnabled(.meal, true)
       await r.setEnabled(.sleepLog, true)
@@ -268,8 +268,6 @@ struct CommunityInboxView: View {
     switch n {
     case .streakRisk(let days):
       ("flame.fill", DS.Color.metricOrangeGraphic.swiftUI, String(localized: "notif.streak.risk \(days)"))
-    case .coinsWaiting(let coins):
-      ("circle.circle.fill", DS.Color.readinessYellow.swiftUI, String(localized: "notif.coins \(coins)"))
     }
   }
 

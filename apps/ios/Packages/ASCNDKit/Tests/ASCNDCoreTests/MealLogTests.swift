@@ -11,6 +11,13 @@ struct MealLogRuleTests {
     #expect(MealLog.mealType("dinner") == "dinner")
     #expect(MealLog.mealType("brunch") == "lunch")
     #expect(MealLog.mealType(nil) == "lunch")
+    // 19/10: không chỉ định bữa → theo giờ.
+    #expect(MealLog.mealType(nil, hour: 7) == "breakfast")
+    #expect(MealLog.mealType(nil, hour: 12) == "lunch")
+    #expect(MealLog.mealType(nil, hour: 16) == "snack")
+    #expect(MealLog.mealType(nil, hour: 19) == "dinner")
+    #expect(MealLog.mealType(nil, hour: 23) == "snack")
+    #expect(MealLog.mealType("lunch", hour: 19) == "lunch", "bữa được chỉ định thắng giờ")
   }
 
   /// `diaryStampAt`: hôm nay đúng giờ; ngày đã qua 12:00 ĐỊA PHƯƠNG.
@@ -234,11 +241,12 @@ struct MealLoggerTests {
     #expect(l.results == [])
   }
 
-  /// Tương lai kẹp về hôm nay; bữa lạ → "lunch".
+  /// Tương lai kẹp về hôm nay; bữa lạ → bữa theo giờ (19/10; RN luôn "lunch").
+  /// Đồng hồ thử: 10:00 Hà Nội → bữa sáng.
   @Test func dateAndMealAreClamped() {
     let l = Self.logger(FakeFoods(), MealOutbox(), date: LocalDate("2026-12-01"), meal: "brunch")
     #expect(l.date.description == "2026-10-09")
-    #expect(l.mealType == "lunch")
+    #expect(l.mealType == "breakfast")
   }
 
   /// Lưu đúng một lần, vào hàng đợi, đóng dấu giữa trưa cho ngày đã qua.

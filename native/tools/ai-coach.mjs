@@ -307,7 +307,11 @@ for (const [name, kind] of AI) {
    ───────────────────────────────────────────────────────────────────────── */
 {
   const sql = strip(
-    execFileSync('sh', ['-c', `cat ${path.join(ROOT, 'supabase/migrations')}/*.sql`], { encoding: 'utf8' }),
+    execFileSync('sh', ['-c', `cat ${path.join(ROOT, 'supabase/migrations')}/*.sql`], {
+      encoding: 'utf8',
+      /* Mặc định 1 MB; migration seed thư viện món / bài tập (18/10) đã hơn thế. */
+      maxBuffer: 64 * 1024 * 1024,
+    }),
   );
   /* Migrations run in filename order, so the last definition is the live one. */
   /* Bộ đếm nay nằm trong `ai_gate`; `claim_ai_call` chỉ là một lớp mỏng gọi nó,

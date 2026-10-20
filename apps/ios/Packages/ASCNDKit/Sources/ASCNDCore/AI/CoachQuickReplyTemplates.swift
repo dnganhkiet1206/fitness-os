@@ -13,7 +13,7 @@ extension CoachQuickReply {
     let proLeft = grouped(max(0, s.proteinTarget - s.proteinG), l)
     let steps = grouped(s.steps, l)
     let sleep = duration(s.sleepMin, l)
-    let r = s.readiness.map(String.init) ?? ""
+    let r = s.scoredReadiness.map(String.init) ?? ""
     let kcalDone = s.kcal >= s.kcalTarget * 0.95
     let proDone = s.proteinG >= s.proteinTarget * 0.95
 
@@ -111,7 +111,7 @@ extension CoachQuickReply {
       ]
     // MARK: Sẵn sàng
     case (.readiness, .vi):
-      guard s.readiness != nil else {
+      guard s.scoredReadiness != nil else {
         return [
           "Hôm nay app chưa chấm được điểm sẵn sàng. Kết nối Apple Health hoặc ghi giấc ngủ để Koa có số nhé.",
           "Chưa có điểm sẵn sàng cho hôm nay — thiếu giấc ngủ hoặc nhịp tim. Ghi thêm là mình chấm ngay.",
@@ -125,7 +125,7 @@ extension CoachQuickReply {
         "**\(r)/100** — đó là điểm sẵn sàng hôm nay. Hỏi Koa nếu bạn muốn gợi ý buổi tập phù hợp.",
       ]
     case (.readiness, .en):
-      guard s.readiness != nil else {
+      guard s.scoredReadiness != nil else {
         return [
           "The app couldn't score your readiness today yet. Connect Apple Health or log your sleep so Koa has numbers.",
           "No readiness score for today — sleep or heart-rate data is missing. Log it and I'll score right away.",
@@ -139,7 +139,7 @@ extension CoachQuickReply {
         "**\(r)/100** — that's today's readiness. Ask Koa for a session that fits it.",
       ]
     case (.readiness, .es):
-      guard s.readiness != nil else {
+      guard s.scoredReadiness != nil else {
         return [
           "La app aún no pudo calcular tu preparación de hoy. Conecta Apple Health o registra tu sueño.",
           "No hay puntuación de preparación hoy: faltan datos de sueño o pulso. Regístralos y la calculo.",

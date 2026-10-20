@@ -242,35 +242,46 @@ struct MascotRoomControllerTests {
     #expect(e.claims.isEmpty)
   }
 
-  @Test func streakBonusClaimsThroughTheServerAndReportsLevelUp() async {
+  /// Koa đợt 1: thưởng chuỗi tự về ngay lần đọc, không cần bấm.
+  @Test func streakBonusLandsByItselfAndReportsLevelUp() async {
     let s = FakeSource()
     // 300 xu, 110 XP: còn 10 XP là lên cấp 2.
     s.ledgerRows = Self.welcomed + [LedgerRow(amount: 0, refKey: "ch:gold:x:y"), LedgerRow(amount: 0, refKey: "d:2026-10-01:workout")]
     s.dates = [today, LocalDate("2026-10-07")!]
     let (c, e) = make(s)
     await c.load()
-    #expect(c.xp == 110)
     #expect(c.showsStreakBonus)
     #expect(c.streakBonus == MascotRules.streakPayout)
-    let outcome = await c.claimStreakBonus()
     #expect(e.claims == ["d:2026-10-08:streak"])
+    let outcome = c.streakAutoClaim
     #expect(outcome?.amount == 25)
     #expect(outcome?.newLevel == 2)
     #expect(outcome?.newRank == nil, "cấp 2 vẫn là Tập sự")
     #expect(c.isClaimed("d:2026-10-08:streak"))
-    #expect(await c.claimStreakBonus() == nil, "đã nhận thì không gửi lần hai")
+    c.streakAutoClaimShown()
+    #expect(c.streakAutoClaim == nil)
+    await c.load()
+    #expect(e.claims == ["d:2026-10-08:streak"], "đã nhận thì không gửi lần hai")
+    #expect(await c.claimStreakBonus() == nil)
   }
 
+  /// Tự nhận bị từ chối thì im lặng (lần đọc sau thử lại); bấm tay thì báo lỗi.
   @Test func refusedClaimNamesTheFailure() async {
     let s = FakeSource()
     s.ledgerRows = Self.welcomed
     s.dates = [today, LocalDate("2026-10-07")!]
     let (c, e) = make(s)
-    await c.load()
     e.claimError = MascotFailure.dailyCeiling
+    await c.load()
+    #expect(e.claims == ["d:2026-10-08:streak"])
+    #expect(c.actionFailure == nil, "tự nhận không bật lỗi")
+    #expect(c.streakAutoClaim == nil)
     #expect(await c.claimStreakBonus() == nil)
     #expect(c.actionFailure == .dailyCeiling)
     #expect(!c.isClaimed(c.streakRefKey))
+    e.claimError = nil
+    await c.load()
+    #expect(c.isClaimed(c.streakRefKey), "lần đọc sau tự nhận lại")
   }
 
   // MARK: - Băng chuỗi

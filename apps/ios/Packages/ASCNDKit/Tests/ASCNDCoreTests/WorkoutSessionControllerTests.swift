@@ -231,6 +231,39 @@ struct WorkoutSessionControllerTests {
     #expect(!s.prDetected)
   }
 
+  /// Đổi một set thành khởi động trong buổi (18/10): ghi lại có cờ, khối
+  /// lượng và số set làm việc bỏ nó; điểm quay lại giữ lựa chọn ấy.
+  @Test func warmupToggleReachesTheSavedSession() async throws {
+    let store = InMemoryWorkoutStore()
+    let c = await controller(store)
+    #expect(await c.toggleWarmup("b1"))
+    #expect(c.isWarmup("b1") && !c.isWarmup("b2"))
+    await c.toggle("b1")
+    await c.toggle("b2")
+    let s = try await c.finish()
+    #expect(s.warmupSets == 1)
+    #expect(s.completedSets == 1)
+    #expect(s.volumeKg == 480, "chỉ set làm việc 60 × 8")
+    #expect(await store.days[c.key]?.progress.warmup["b1"] == true)
+    #expect(!(await c.toggleWarmup("b2")), "buổi đã chốt: không đổi được")
+  }
+
+  /// Kéo thả thứ tự bài trong buổi (19/10): hàng và "set kế tiếp" theo thứ tự
+  /// mới, giữ qua lần mở lại; buổi đã chốt thì không đổi.
+  @Test func reorderingExercisesMovesTheNextSet() async throws {
+    let store = InMemoryWorkoutStore()
+    let c = await controller(store)
+    #expect(await c.reorderExercises(["Plank", "ex-bench"]))
+    #expect(c.rows.map(\.key) == ["p1", "b1", "b2"])
+    #expect(WorkoutFocus.next(c.rows, c.progress)?.key == "p1")
+    let again = await controller(store)
+    #expect(again.rows.map(\.key) == ["p1", "b1", "b2"], "giữ qua lần mở lại")
+    await c.toggle("b1")
+    _ = try await c.finish()
+    #expect(!c.canReorder)
+    #expect(!(await c.reorderExercises(["ex-bench", "Plank"])))
+  }
+
   @Test func nothingDoneCannotFinish() async {
     let store = InMemoryWorkoutStore()
     let c = await controller(store)

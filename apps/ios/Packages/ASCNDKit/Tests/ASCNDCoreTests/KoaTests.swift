@@ -31,7 +31,8 @@ struct KoaGoldenTests {
   @Test func sceneDecodesWhole() throws {
     let g = try Self.golden()
     func count(_ ns: [KoaScene.Node]) -> Int { ns.reduce(0) { $0 + 1 + count($1.kids ?? []) } }
-    #expect(Double(count(KoaScene.nodes)) == g["nodeCount"]?.doubleValue)
+    // Cảnh RN nguyên văn; cảnh app có thêm tủ đồ vẽ lại (`KoaWardrobeTests`).
+    #expect(Double(count(KoaScene.rnPayload.nodes)) == g["nodeCount"]?.doubleValue)
     #expect(Double(KoaScene.keyframes.count) == g["keyframeCount"]?.doubleValue)
     #expect(Self.close(KoaMath.insetMat, Self.numbers(g["inset"])))
   }

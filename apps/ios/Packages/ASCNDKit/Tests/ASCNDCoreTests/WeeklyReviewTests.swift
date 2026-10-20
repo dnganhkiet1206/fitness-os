@@ -31,6 +31,23 @@ struct WeeklyReviewGoldenTests {
 
   static func close(_ a: Double, _ b: Double?) -> Bool { b.map { abs(a - $0) < 1e-9 } ?? false }
 
+  /// Ca RN có ngày điểm CHỈ dựa vào tải tập (`load:30`). App đi hướng riêng
+  /// (19/10, chủ dự án: "mọi chỉ số phải làm cho đúng"): ngày ấy không vào
+  /// trung bình sẵn sàng của tuần — RN có. Các số sẵn sàng của ca ấy kiểm luật
+  /// mới; mọi số khác vẫn so RN.
+  static func loadOnly(_ c: JSONValue) -> Bool {
+    array(c["input"]?["dailyLogs"]).contains {
+      // Truthy kiểu JS trên giá trị THÔ: chuỗi "0" vẫn là "có điểm".
+      switch $0["readiness_score"] {
+      case .string(let t)? where !t.isEmpty: break
+      case .number(let n)? where n != 0 && !n.isNaN: break
+      default: return false
+      }
+      let ex = $0["readiness_explain"]?.stringValue ?? ""
+      return !["hrv", "rhr", "sleep"].contains { ex.contains($0 + ":") }
+    }
+  }
+
   @Test func numbersMatchRN() throws {
     let cases = Self.array(try Self.golden()["cases"])
     #expect(cases.count == 23)
@@ -48,8 +65,12 @@ struct WeeklyReviewGoldenTests {
       #expect(Self.close(s.totalVolume, o["totalVolume"]?.doubleValue), "\(name) volume")
       #expect(s.workoutCount == o["workoutCount"]?.doubleValue.map { Int($0) }, "\(name)")
       #expect(s.supplementAdherence == o["suppAdherence"]?.doubleValue.map { Int($0) }, "\(name) supp")
-      #expect(s.readinessDays == o["readinessDays"]?.doubleValue.map { Int($0) }, "\(name)")
-      #expect(Self.close(s.avgReadiness, o["avgReadiness"]?.doubleValue), "\(name) readiness")
+      if Self.loadOnly(c) {
+        #expect(s.readinessDays == 0 && s.avgReadiness == 0, "\(name) điểm tạm không vào trung bình")
+      } else {
+        #expect(s.readinessDays == o["readinessDays"]?.doubleValue.map { Int($0) }, "\(name)")
+        #expect(Self.close(s.avgReadiness, o["avgReadiness"]?.doubleValue), "\(name) readiness")
+      }
       #expect(Self.close(s.prevAvgKcal, o["prevAvgKcal"]?.doubleValue), "\(name)")
       #expect(Self.close(s.prevAvgProtein, o["prevAvgProtein"]?.doubleValue), "\(name)")
       #expect(Self.close(s.prevTotalVolume, o["prevTotalVolume"]?.doubleValue), "\(name)")
@@ -69,7 +90,12 @@ struct WeeklyReviewGoldenTests {
         #expect(Self.close(d.protein, o["protein"]?.doubleValue), "\(name) \(d.date) protein")
         #expect(Self.close(d.sleepHours, o["sleep_h"]?.doubleValue), "\(name) \(d.date) sleep")
         #expect(Self.close(d.volume, o["volume"]?.doubleValue), "\(name) \(d.date) volume")
-        #expect(Self.close(d.readiness, o["readiness"]?.doubleValue), "\(name) \(d.date) readiness")
+        if Self.loadOnly(c) {
+          // Ngày chỉ có tải tập không vẽ điểm (luật app, 19/10).
+          #expect(d.readiness == 0 || Self.close(d.readiness, o["readiness"]?.doubleValue), "\(name) \(d.date) readiness")
+        } else {
+          #expect(Self.close(d.readiness, o["readiness"]?.doubleValue), "\(name) \(d.date) readiness")
+        }
       }
       let weeks = Self.array(c["out"]?["volumeWeekly"])
       #expect(s.volumeWeeks.map(\.weekStart.description) == weeks.map { $0["date"]?.stringValue ?? "" }, "\(name)")
@@ -92,7 +118,16 @@ struct WeeklyReviewGoldenTests {
       check(s.cards.sleep, o["sleep"], "sleep")
       check(s.cards.volume, o["volume"], sub: false, "volume")
       #expect(s.cards.sessions == o["volume"]?["sessions"]?.doubleValue.map { Int($0) }, "\(name)")
-      check(s.cards.readiness, o["readiness"], "readiness")
+      if Self.loadOnly(c) {
+        #expect(s.cards.readiness.value == "—", "\(name) chưa chấm được ngày nào")
+      } else {
+        if s.readinessDays == 0 {
+          // Tuần không chấm được ngày nào: "—" (RN in "0", đọc như điểm tệ nhất).
+          #expect(s.cards.readiness.value == "—", "\(name)")
+        } else {
+          check(s.cards.readiness, o["readiness"], "readiness")
+        }
+      }
       check(s.cards.water, o["water"], "water")
       if o["supplements"] == .null {
         #expect(s.cards.supplements == nil, "\(name)")
@@ -108,7 +143,10 @@ struct WeeklyReviewGoldenTests {
       let name = c["name"]?.stringValue ?? "?"
       let s = try Self.summary(c)
       let rest = s.recommendations.filter { !$0.id.hasPrefix("acwr") }
-      let rn = Self.array(c["out"]?["recommendations"])
+      // Ca chỉ có tải tập: RN khen "khả năng tập cao" từ điểm tạm — app thì không.
+      let rn = Self.array(c["out"]?["recommendations"]).filter {
+        !(Self.loadOnly(c) && ["highCapacity", "overloadCapacity"].contains($0["id"]?.stringValue ?? ""))
+      }
       #expect(rest.map(\.id) == rn.map { $0["id"]?.stringValue ?? "" }, "\(name)")
       #expect(rest.map(\.kind.rawValue) == rn.map { $0["kind"]?.stringValue ?? "" }, "\(name)")
       #expect(rest.map(\.args) == rn.map { Self.array($0["args"]).map { $0.stringValue ?? "" } }, "\(name)")

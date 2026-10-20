@@ -51,6 +51,8 @@ public struct SettingsView: View {
 
   /// Vừa đổi mật khẩu xong — RN `toast.success(settingsPasswordChanged)`;
   /// app chưa có toast nên báo ngay dưới hàng, tới khi rời Cài đặt.
+  /// Có trong app thật; preview không có thì ẩn mục Koa.
+  @Environment(AppServices.self) private var services: AppServices?
   @State private var passwordChanged = false
   @State private var deleting = false
   @State private var deleteResult: AccountDeletion?
@@ -213,6 +215,27 @@ public struct SettingsView: View {
               }
             } icon: {
               Image(systemName: "bell")
+            }
+          }
+        }
+
+        // Koa ló lên ở mọi tab (đợt 2A, 19/10): mặc định bật, tắt được ở đây.
+        if let services {
+          Section {
+            Toggle(isOn: Binding(
+              get: { services.preferences.mascotCompanion },
+              set: { services.preferences.setMascotCompanion($0) })
+            ) {
+              Label {
+                VStack(alignment: .leading, spacing: 2) {
+                  Text(String(localized: "settings.koaPeek"))
+                  Text(String(localized: "settings.koaPeek.desc"))
+                    .font(DS.TextStyle.caption)
+                    .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+                }
+              } icon: {
+                Image(systemName: "sparkles")
+              }
             }
           }
         }

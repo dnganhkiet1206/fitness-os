@@ -361,7 +361,10 @@ struct AssistantTab: View {
   /// Nhãn sẵn sàng đang hiện ở thẻ Tóm tắt (hôm nay, hoặc điểm gần nhất).
   private var shownReadiness: AssistantSummary.Readiness? {
     let s = signal?.signal
-    if let r = s?.readiness { return AssistantSummary.readiness(status: s?.status, score: r) }
+    if let s, let r = s.readiness {
+      // Điểm tạm (chỉ tải tập): thẻ Tóm tắt nói "chưa đủ dữ liệu" — nhãn cũng vậy.
+      return s.hasRecovery ? AssistantSummary.readiness(status: s.status, score: r) : nil
+    }
     guard case .ready(let a) = metrics?.phase, metrics?.kind == .readiness,
       let latest = AssistantSummary.latest(a.bars)
     else { return nil }

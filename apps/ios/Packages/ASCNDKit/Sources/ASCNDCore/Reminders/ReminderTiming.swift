@@ -62,7 +62,7 @@ public enum ReminderTiming {
       return toClock(h * 60 - Double(workoutLeadMin))
     case .sleepLog:
       return parseClock(known.waketime).map { toClock(Double($0 + afterWakeMin + sleepLogLagMin)) }
-    case .supplements, .meal, .biometrics, .water, .challengeClaim:
+    case .supplements, .meal, .biometrics, .water, .challengeClaim, .streak:
       return nil
     }
   }

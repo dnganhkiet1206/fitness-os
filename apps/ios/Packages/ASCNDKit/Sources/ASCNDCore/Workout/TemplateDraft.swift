@@ -1,3 +1,5 @@
+public import Foundation
+
 /// Bản nháp của builder buổi tập (#527 Phase 2) — phần thuần của
 /// `app/workout-builder.tsx` @ fac9ac2. Ghi là việc của `PlanEditor.create`.
 ///
@@ -62,13 +64,15 @@ public struct TemplateDraft: Sendable, Hashable {
 
   /// `patch` (`:390`): đổi các số của một bài; trường `nil` giữ nguyên.
   public mutating func patch(
-    _ index: Int, sets: Int? = nil, reps: Int? = nil, weightKg: Double? = nil, rpe: Int? = nil, restSeconds: Int? = nil
+    _ index: Int, sets: Int? = nil, reps: Int? = nil, weightKg: Double? = nil, rpe: Int? = nil, restSeconds: Int? = nil,
+    warmupSets: Int? = nil
   ) {
     guard items.indices.contains(index) else { return }
     let e = items[index]
     items[index] = TemplateExercise(
       exerciseId: e.exerciseId, exerciseName: e.exerciseName, sets: sets ?? e.sets, reps: reps ?? e.reps,
-      weightKg: weightKg ?? e.weightKg, rpe: rpe ?? e.rpe, restSeconds: restSeconds ?? e.restSeconds)
+      weightKg: weightKg ?? e.weightKg, rpe: rpe ?? e.rpe, restSeconds: restSeconds ?? e.restSeconds,
+      warmupSets: warmupSets ?? e.warmupSets)
   }
 
   /// `move` (`:394`): ngoài danh sách thì không làm gì.
@@ -76,6 +80,16 @@ public struct TemplateDraft: Sendable, Hashable {
     guard items.indices.contains(from), items.indices.contains(to) else { return }
     let moved = items.remove(at: from)
     items.insert(moved, at: to)
+  }
+
+  /// Kéo thả trong danh sách (`List.onMove`, 19/10).
+  public mutating func move(fromOffsets source: IndexSet, toOffset destination: Int) {
+    // `Array.move(fromOffsets:)` là của SwiftUI; Core tự làm cùng phép ấy.
+    let moving = source.filter { items.indices.contains($0) }.map { items[$0] }
+    let before = source.filter { $0 < destination }.count
+    var rest = items.enumerated().filter { !source.contains($0.offset) }.map(\.element)
+    rest.insert(contentsOf: moving, at: min(rest.count, max(0, destination - before)))
+    items = rest
   }
 
   public mutating func remove(at index: Int) {
@@ -156,13 +170,12 @@ public struct TemplateDraft: Sendable, Hashable {
     Self.estimatedMinutes(items.map { ($0.sets, $0.reps, $0.restSeconds) })
   }
 
-  /// `visible` (`:302`): nhóm đang chọn và chữ tìm (chứa, không phân biệt
-  /// hoa thường); không cắt số lượng.
+  /// `visible` (`:302`): nhóm đang chọn và chữ tìm (không phân biệt hoa
+  /// thường); không cắt số lượng. Có chữ tìm thì xếp theo độ khớp (18/10).
   public static func visible(_ library: [LibraryExercise], group: MuscleGroup?, search: String) -> [LibraryExercise] {
     let q = search.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-    return library.filter { e in
-      (group.map { e.muscles.contains($0) } ?? true) && ExerciseCatalog.matches(e, q)
-    }
+    let inGroup = library.filter { e in group.map { e.muscles.contains($0) } ?? true }
+    return ExerciseCatalog.ranked(inGroup, query: q)
   }
 
   /// Nút ± của ô tạ (`workout-set-sheet.tsx:163`): bước 2.5 kg / 5 lb, kẹp

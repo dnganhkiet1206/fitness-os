@@ -89,6 +89,12 @@ public struct DayProgress: Sendable, Hashable, Codable {
   /// theo nội dung). Không phải đơn vị theo set: chữ trong ô vẫn là của đơn
   /// vị người dùng đang xem.
   public var remoteWeight: [String: RemoteWeight] = [:]
+  /// Người dùng đổi một hàng thành / khỏi set khởi động trong buổi (18/10).
+  /// Không có khoá = như kế hoạch (`PlannedSet.warmup`).
+  public var warmup: [String: Bool] = [:]
+  /// Thứ tự bài người dùng kéo thả trong buổi (19/10, "như Apple Music"): khoá
+  /// bài (`WorkoutFocus.exerciseKey`). Rỗng = theo kế hoạch.
+  public var order: [String] = []
 
   public init() {}
 
@@ -105,6 +111,8 @@ public struct DayProgress: Sendable, Hashable, Codable {
     let raw = (try? c.decodeIfPresent([JSONValue].self, forKey: .extra)) ?? nil
     extra = (raw ?? []).compactMap(AdHocExercise.init(json:))
     remoteWeight = (try? c.decodeIfPresent([String: RemoteWeight].self, forKey: .remoteWeight)) ?? [:]
+    warmup = (try? c.decodeIfPresent([String: Bool].self, forKey: .warmup)) ?? [:]
+    order = (try? c.decodeIfPresent([String].self, forKey: .order)) ?? []
   }
 }
 
@@ -163,6 +171,48 @@ public enum WorkoutDay {
     guard !row.exerciseName.trimmingCharacters(in: .whitespaces).isEmpty else { return false }
     let p = performed(row, progress)
     return p.reps > 0 || (p.durationSec ?? 0) > 0
+  }
+
+  /// Hàng theo thứ tự bài người dùng đã kéo (`order`): các hàng của một bài
+  /// đi liền nhau, bài có trong `order` theo đúng thứ tự ấy, bài chưa có (bài
+  /// vừa thêm) giữ chỗ tương đối của nó ở sau. Thứ tự set trong bài giữ nguyên.
+  public static func ordered(_ rows: [PlannedSet], by order: [String]) -> [PlannedSet] {
+    guard !order.isEmpty else { return rows }
+    var keys: [String] = []
+    var groups: [String: [PlannedSet]] = [:]
+    for r in rows {
+      let k = WorkoutFocus.exerciseKey(r)
+      if groups[k] == nil { keys.append(k) }
+      groups[k, default: []].append(r)
+    }
+    let rank = Dictionary(order.enumerated().map { ($1, $0) }, uniquingKeysWith: { a, _ in a })
+    let sorted = keys.enumerated().sorted { a, b in
+      (rank[a.element] ?? order.count + a.offset, a.offset) < (rank[b.element] ?? order.count + b.offset, b.offset)
+    }
+    return sorted.flatMap { groups[$0.element] ?? [] }
+  }
+
+  /// Hàng có là set khởi động không: ghi đè trong buổi, không thì theo kế hoạch.
+  public static func isWarmup(_ row: PlannedSet, _ progress: DayProgress) -> Bool {
+    progress.warmup[row.key] ?? row.warmup
+  }
+
+  /// Đổi một hàng thành / khỏi set khởi động. Về đúng kế hoạch thì bỏ khoá.
+  public static func toggleWarmup(_ row: PlannedSet, _ progress: inout DayProgress) {
+    let next = !isWarmup(row, progress)
+    progress.warmup[row.key] = next == row.warmup ? nil : next
+  }
+
+  /// Số set làm việc của hàng trong bài (1, 2, 3…, bỏ qua khởi động); `nil`
+  /// cho set khởi động. `rows`: các hàng của MỘT bài, đúng thứ tự.
+  public static func workingNumber(_ row: PlannedSet, in rows: [PlannedSet], _ progress: DayProgress) -> Int? {
+    guard !isWarmup(row, progress) else { return nil }
+    var n = 0
+    for r in rows where !isWarmup(r, progress) {
+      n += 1
+      if r.key == row.key { return n }
+    }
+    return nil
   }
 
   /// Thời gian nghỉ của hàng: ghi đè trong ngày, không thì theo kế hoạch.

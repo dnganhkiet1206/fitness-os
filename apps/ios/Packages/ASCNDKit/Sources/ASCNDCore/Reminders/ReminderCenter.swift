@@ -5,9 +5,12 @@ public import Observation
 public struct ReminderText: Sendable, Hashable {
   public let title: String
   public let body: String
-  public init(title: String, body: String) {
+  /// Câu khi lời nhắc bắn theo giờ quen ("giờ này mọi hôm bạn đã…"); `nil` = `body`.
+  public let habitBody: String?
+  public init(title: String, body: String, habitBody: String? = nil) {
     self.title = title
     self.body = body
+    self.habitBody = habitBody
   }
 }
 
@@ -189,8 +192,13 @@ public final class ReminderCenter {
   private func commit(_ plan: [PlannedReminder]) async {
     let items = plan.map { p in
       let shared = copy[p.key] ?? ReminderText(title: "", body: "")
+      // Koa (đợt 2B): giờ quen → câu "mọi hôm"; `{n}` = số ngày chuỗi.
+      let n = String(context.streak)
+      let base = ReminderText(
+        title: shared.title.replacingOccurrences(of: "{n}", with: n),
+        body: (p.habit ? shared.habitBody ?? shared.body : shared.body).replacingOccurrences(of: "{n}", with: n))
       let text = p.title != nil || p.body != nil
-        ? ReminderText(title: p.title ?? shared.title, body: p.body ?? shared.body) : shared
+        ? ReminderText(title: p.title ?? base.title, body: p.body ?? base.body) : base
       return ScheduledReminder(key: p.key, at: p.at, text: text)
     }
     guard let outcome = await serialised({ [scheduler] in await scheduler.replaceAll(items) }) else { return }
@@ -271,44 +279,58 @@ public final class ReminderCenter {
 /// ngữ máy), nên bảng nằm ở đây, kiểm được, thay vì trong String Catalog.
 public enum ReminderCopyTable {
   public static func copy(_ lang: AppPreferences.Lang) -> ReminderCopy {
-    let rows: [(ReminderKey, String, String)] = switch lang {
+    // Giọng Koa (đợt 2B, 19/10 — không theo RN): Koa nói ngôi thứ nhất, nhẹ nhàng,
+    // không trách. Cột thứ tư: câu khi bắn theo giờ quen của người này.
+    let rows: [(ReminderKey, String, String, String?)] = switch lang {
     case .vi: [
-        (.water, "Uống nước", "Đến giờ uống một cốc nước rồi 💧"),
-        (.supplements, "Thực phẩm bổ sung", "Nhớ uống thực phẩm bổ sung 💊"),
-        (.bedtime, "Chuẩn bị ngủ", "Sắp đến giờ ngủ — thư giãn thôi 😴"),
-        (.weighIn, "Cân buổi sáng", "Ghi cân nặng trước bữa sáng ⚖️"),
-        (.workout, "Tập hôm nay", "Lịch của bạn có buổi tập hôm nay 💪"),
-        (.meal, "Ghi bữa ăn", "Hôm nay chưa ghi bữa nào — bạn đã ăn gì? 🍽"),
-        (.biometrics, "Số đo buổi sáng", "Nhịp tim nghỉ và HRV, trước khi rời giường ❤️"),
-        (.sleepLog, "Ghi đêm qua", "Đêm qua ngủ thế nào? Ghi lại nhé 🌙"),
-        (.challengeClaim, "Thưởng sắp hết hạn", "Thưởng sắp hết hạn"),
+        (.water, "Uống nước nè", "Koa vừa uống một ngụm, bạn uống cùng nhé 💧", nil),
+        (.supplements, "Thực phẩm bổ sung", "Koa nhắc nhẹ: tới giờ uống thực phẩm bổ sung rồi 💊", nil),
+        (.bedtime, "Sắp tới giờ ngủ", "Koa ngáp rồi nè. Mình thư giãn rồi đi ngủ thôi 😴", nil),
+        (.weighIn, "Cân buổi sáng", "Bước lên cân trước bữa sáng nhé, Koa ghi lại cho ⚖️", nil),
+        (.workout, "Hôm nay có buổi tập", "Koa khởi động xong rồi, chờ bạn vào tập đó 💪",
+          "Giờ này mọi hôm bạn đã tập rồi. Koa sẵn sàng khi bạn sẵn sàng 💪"),
+        (.meal, "Bạn ăn gì chưa?", "Bụng Koa kêu rồi nè. Hôm nay bạn đã ăn gì? 🍽",
+          "Giờ này mọi hôm bạn đã ăn rồi. Ghi bữa giúp Koa nhé 🍽"),
+        (.biometrics, "Số đo buổi sáng", "Đo nhịp tim nghỉ và HRV trước khi rời giường nhé, Koa chờ số ❤️", nil),
+        (.sleepLog, "Đêm qua ngủ sao?", "Koa ngủ ngon lắm. Còn bạn thì sao? Ghi lại nhé 🌙",
+          "Giờ này mọi hôm bạn đã ghi giấc ngủ rồi. Đêm qua thế nào? 🌙"),
+        (.challengeClaim, "Thưởng sắp hết hạn", "Thưởng sắp hết hạn", nil),
+        (.streak, "Chuỗi {n} ngày đang chờ", "Chuỗi {n} ngày chỉ cần một việc nhỏ hôm nay thôi. Koa chờ bạn nè 🔥", nil),
       ]
     case .en: [
-        (.water, "Drink water", "Time for a glass of water 💧"),
-        (.supplements, "Supplements", "Take your supplements 💊"),
-        (.bedtime, "Wind down", "Bedtime soon — start winding down 😴"),
-        (.weighIn, "Morning weigh-in", "Log your weight before breakfast ⚖️"),
-        (.workout, "Train today", "Your plan has a session scheduled 💪"),
-        (.meal, "Log a meal", "Nothing logged today yet — what did you eat? 🍽"),
-        (.biometrics, "Morning readings", "Resting heart rate and HRV, before you get up ❤️"),
-        (.sleepLog, "Log last night", "How did you sleep? Write it down 🌙"),
-        (.challengeClaim, "Reward expiring soon", "Reward expiring soon"),
+        (.water, "Water time", "Koa just had a sip. Join me for a glass 💧", nil),
+        (.supplements, "Supplements", "Gentle nudge from Koa: time for your supplements 💊", nil),
+        (.bedtime, "Bedtime soon", "Koa is yawning. Let's wind down and get some sleep 😴", nil),
+        (.weighIn, "Morning weigh-in", "Hop on the scale before breakfast, Koa will note it ⚖️", nil),
+        (.workout, "Workout today", "Koa is warmed up and waiting for you 💪",
+          "You usually train by now. Koa is ready when you are 💪"),
+        (.meal, "Eaten yet?", "Koa's tummy is rumbling. What did you eat today? 🍽",
+          "You've usually eaten by now. Log it for Koa? 🍽"),
+        (.biometrics, "Morning readings", "Resting heart rate and HRV before you get up, Koa is waiting ❤️", nil),
+        (.sleepLog, "How did you sleep?", "Koa slept great. How about you? Write it down 🌙",
+          "You usually log your sleep by now. How was last night? 🌙"),
+        (.challengeClaim, "Reward expiring soon", "Reward expiring soon", nil),
+        (.streak, "Your {n}-day streak is waiting", "Your {n}-day streak just needs one small thing today. Koa is waiting 🔥", nil),
       ]
     case .es: [
-        (.water, "Bebe agua", "Hora de un vaso de agua 💧"),
-        (.supplements, "Suplementos", "Toma tus suplementos 💊"),
-        (.bedtime, "Relájate", "Pronto es hora de acostarse — empieza a relajarte 😴"),
-        (.weighIn, "Pesaje matutino", "Registra tu peso antes del desayuno ⚖️"),
-        (.workout, "Entrena hoy", "Tu plan tiene una sesión programada 💪"),
-        (.meal, "Registra una comida", "Aún no registraste nada hoy — ¿qué comiste? 🍽"),
-        (.biometrics, "Lecturas matutinas", "Frecuencia cardíaca en reposo y HRV, antes de levantarte ❤️"),
-        (.sleepLog, "Registra anoche", "¿Cómo dormiste? Anótalo 🌙"),
-        (.challengeClaim, "Recompensa por vencer pronto", "Recompensa por vencer pronto"),
+        (.water, "Hora del agua", "Koa acaba de beber un sorbo. ¿Me acompañas con un vaso? 💧", nil),
+        (.supplements, "Suplementos", "Un recordatorio de Koa: es hora de tus suplementos 💊", nil),
+        (.bedtime, "Casi hora de dormir", "Koa está bostezando. Relajémonos y a dormir 😴", nil),
+        (.weighIn, "Pesaje matutino", "Súbete a la báscula antes del desayuno, Koa lo anota ⚖️", nil),
+        (.workout, "Entreno hoy", "Koa ya calentó y te está esperando 💪",
+          "A esta hora sueles entrenar. Koa está listo cuando tú lo estés 💪"),
+        (.meal, "¿Ya comiste?", "A Koa le suena la panza. ¿Qué comiste hoy? 🍽",
+          "A esta hora sueles haber comido. ¿Lo registras para Koa? 🍽"),
+        (.biometrics, "Lecturas matutinas", "Frecuencia en reposo y HRV antes de levantarte, Koa espera los datos ❤️", nil),
+        (.sleepLog, "¿Cómo dormiste?", "Koa durmió genial. ¿Y tú? Anótalo 🌙",
+          "A esta hora sueles registrar tu sueño. ¿Qué tal anoche? 🌙"),
+        (.challengeClaim, "Recompensa por vencer pronto", "Recompensa por vencer pronto", nil),
+        (.streak, "Tu racha de {n} días te espera", "Tu racha de {n} días solo necesita algo pequeño hoy. Koa te espera 🔥", nil),
       ]
     }
     // `challengeClaim`: mỗi mục thật mang chữ riêng (tên thử thách, số xu) từ
     // bên gọi; dòng này chỉ là lưới an toàn. Mẫu RN của nó có chỗ trống
     // `{c}` / `{t}` chưa điền, nên ở đây là tiêu đề — không bao giờ lộ ngoặc.
-    return Dictionary(uniqueKeysWithValues: rows.map { ($0.0, ReminderText(title: $0.1, body: $0.2)) })
+    return Dictionary(uniqueKeysWithValues: rows.map { ($0.0, ReminderText(title: $0.1, body: $0.2, habitBody: $0.3)) })
   }
 }

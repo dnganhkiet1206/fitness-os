@@ -156,7 +156,9 @@ struct ManualLogTests {
     await fill(log, 1, "Bench", "40", "10", warmup: true)
     await fill(log, 2, "Plank", "", "45s")
     await fill(log, 3, "Row", "50", "")  // chưa có reps: không tính
-    #expect(log.volumeKg() == 60 * 8 + 40 * 10)
+    // Khởi động không cộng — cùng số với `volume_load` được ghi (18/10; RN
+    // xem trước có cộng, buổi lưu thì không: hai số khác nhau cho một buổi).
+    #expect(log.volumeKg() == 60 * 8)
     let h2 = Harness()
     h2.flow.setWeightUnit(.lbs)
     let lb = await h2.open()
@@ -187,6 +189,16 @@ struct ManualLogTests {
     #expect(ManualLogController.suggestions(for: "  SQUAT ", in: lib).map(\.name) == ["Front Squat"])
     #expect(ManualLogController.suggestions(for: "", in: lib).count == 5)
     #expect(ManualLogController.suggestions(for: "zzz", in: lib).isEmpty)
+    // Tên bắt đầu bằng chữ gõ đứng trước bài chỉ nhắc tới nó ở cuối tên.
+    let big = ["Barbell Rollout from Bench", "Flat Bench Leg Pull-In", "Bench Press", "Benchmark Row"]
+      .enumerated().map { LibraryExercise(id: "b\($0.offset)", userId: nil, name: $0.element, muscleGroup: nil, equipment: nil, kind: nil) }
+    #expect(ManualLogController.suggestions(for: "bench", in: big).map(\.name)
+      == ["Bench Press", "Benchmark Row", "Barbell Rollout from Bench", "Flat Bench Leg Pull-In"])
+    // Gõ tiếng Việt không dấu: khớp chữ tìm của bài thư viện.
+    let vi = [LibraryExercise(
+      id: "v", userId: nil, name: "Bench Press", muscleGroup: nil, equipment: nil, kind: nil,
+      localNames: ["vi": "Bench Press"], searchText: "bench press day nguc ta don press de banca")]
+    #expect(ManualLogController.suggestions(for: "day nguc", in: vi).map(\.name) == ["Bench Press"])
   }
 
   @Test func emptyNameIsWorkout() async throws {
@@ -325,6 +337,43 @@ struct ManualLogTests {
     #expect(log.rows[0].exerciseId == "ex-sq")
     await log.setExerciseName("Front Squat", row: log.rows[0].id)
     #expect(log.rows[0].exerciseId.isEmpty, "gõ tay bỏ bài đã chọn")
+  }
+
+  /// Màn vẽ lại (18/10): set gom theo thẻ bài. "Thêm set" của thẻ chèn ngay sau
+  /// set cuối của thẻ ấy; đổi tên / chọn bài áp cho cả thẻ; hai bài chưa tên
+  /// vẫn là hai thẻ; bỏ thẻ cuối còn một hàng trống.
+  @Test func setsGroupIntoExerciseCards() async throws {
+    let h = Harness()
+    let log = await h.open()
+    await fill(log, 0, "Squat", "100", "5")
+    await log.addExercise()
+    await log.addExercise()
+    #expect(log.exerciseGroups.count == 3, "hai thẻ chưa tên không gộp")
+    let squat = log.exerciseGroups[0].id
+    await log.addSet(toGroup: squat)
+    #expect(log.exerciseGroups.map(\.rows.count) == [2, 1, 1])
+    #expect(log.rows[1].exerciseName == "Squat" && log.rows[1].weight == "100" && log.rows[1].reps.isEmpty)
+    await log.pickExercise(id: "ex-sq", name: "Back Squat", group: squat)
+    #expect(log.exerciseGroups[0].rows.allSatisfy { $0.exerciseId == "ex-sq" && $0.exerciseName == "Back Squat" })
+    await log.setExerciseName("Front Squat", group: squat)
+    #expect(log.exerciseGroups[0].rows.allSatisfy { $0.exerciseId.isEmpty && $0.exerciseName == "Front Squat" })
+    #expect(log.setNumbers[log.rows[1].id] == 2)
+    let second = log.exerciseGroups[1].id
+    #expect(await log.removeGroup(second))
+    #expect(log.exerciseGroups.count == 2)
+    for g in log.exerciseGroups { await log.removeGroup(g.id) }
+    #expect(log.rows.count == 1 && log.rows[0].exerciseName.isEmpty)
+  }
+
+  /// Nháp cũ (không có khoá nhóm) gom theo tên; đổi tên không làm thẻ vỡ ra.
+  @Test func legacyDraftRowsGroupByName() async throws {
+    let h = Harness()
+    let log = await h.open()
+    await fill(log, 0, "Row", "50", "8")
+    await log.addSet()
+    #expect(log.exerciseGroups.count == 1)
+    await log.setExerciseName("Cable Row", group: log.exerciseGroups[0].id)
+    #expect(log.exerciseGroups.count == 1 && log.rows.allSatisfy { $0.exerciseName == "Cable Row" })
   }
 
   /// Cận chỉ áp cho hàng sẽ ghi; tạ so theo kg.

@@ -28,6 +28,9 @@ struct MascotRoomView: View {
   var awards: AwardsBook? = nil
   /// Sổ thử thách tuần cho hàng "Thử thách" (`nav.push('/challenges')`).
   var challenges: WeeklyChallengesBook? = nil
+  /// Tủ đồ dùng chung với Hôm nay (thay đồ ở đây, Koa ngoài kia đổi theo).
+  var sharedShop: MascotShopBook? = nil
+  @Environment(ProfileBook.self) private var profile: ProfileBook?
 
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Environment(\.locale) private var locale
@@ -51,7 +54,7 @@ struct MascotRoomView: View {
       .navigationTitle(Text(verbatim: ""))
       .navigationBarTitleDisplayMode(.inline)
       .task {
-        if shop == nil { shop = services.makeMascotShop(userId: room.userId) }
+        if shop == nil { shop = sharedShop ?? services.makeMascotShop(userId: room.userId) }
         await room.load()
         // tủ đồ cho đồ Koa đang mặc trên sân khấu (`equippedOutfits` của RN)
         if let shop, case .loading = shop.phase { await shop.load() }
@@ -202,7 +205,7 @@ struct MascotRoomView: View {
       MascotStage(
         level: room.level,
         energy: Double(room.energyCount) / Double(MascotRules.energySignals.count),
-        streak: room.streak.count, celebrateSignal: celebrate, emotion: devEmotion ?? .idle,
+        streak: room.streak.count, celebrateSignal: celebrate, emotion: devEmotion ?? mood,
         equipped: shop?.inventory.filter(\.equipped).map(\.itemKey) ?? [])
         // Thẻ sân khấu bo góc (thay cảnh tràn ngang + mép tan của RN).
         .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
@@ -223,6 +226,15 @@ struct MascotRoomView: View {
           .accessibilityHidden(true)
       }
     }
+  }
+
+  /// Nét mặt của ngày (Koa đợt 1) — CÙNG bộ máy với Koa ở Hôm nay.
+  private var mood: KoaEmotion.Emotion {
+    KoaToday.read(
+      room: room, localWaterMl: nil, profile: profile?.profile,
+      riskHour: KoaToday.riskHour(services.habitHours, userId: room.userId),
+      hour: Calendar.current.component(.hour, from: .now)
+    ).emotion
   }
 
   // MARK: - Năng lượng

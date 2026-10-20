@@ -203,7 +203,9 @@ struct DiaryView: View {
   }
 
   static func macros(_ p: Double, _ c: Double, _ f: Double) -> String {
-    "P\(whole(p)) · C\(whole(c)) · F\(whole(f))"
+    // Theo ngôn ngữ (19/10): "P35 · C0 · F0" là chữ tắt tiếng Anh, người đọc
+    // tiếng Việt không đoán được P / C / F.
+    String(localized: "macros.short \(whole(p)) \(whole(c)) \(whole(f))")
   }
 }
 

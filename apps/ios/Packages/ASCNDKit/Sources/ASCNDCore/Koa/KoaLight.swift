@@ -242,11 +242,16 @@ public enum KoaLight {
     }
   }
 
-  static let built: Built = {
+  static func build(_ nodes: [KoaScene.Node]) -> Built {
     var b = Built()
-    b.nodes = b.walk(KoaScene.nodes, KoaMath.identity, false)
+    b.nodes = b.walk(nodes, KoaMath.identity, false)
     return b
-  }()
+  }
+
+  static let wardrobeBuilt = build(KoaScene.wardrobePayload.nodes)
+  static let rnBuilt = build(KoaScene.rnPayload.nodes)
+  /// Cảnh đang vẽ (`KoaScene.rn` chọn cảnh RN cho test golden).
+  static var built: Built { KoaScene.rn ? rnBuilt : wardrobeBuilt }
 
   /// `NODES` kèm phần đèn, đúng thứ tự.
   public static var nodes: [Lit] { built.nodes }
@@ -273,7 +278,11 @@ public enum KoaLight {
     return (paper ? paperRamps : built.all).filter { want.contains($0.id) }
   }
 
-  static let paperRamps: [Ramp] = built.all.map { r in
+  static var paperRamps: [Ramp] { KoaScene.rn ? rnPaperRamps : wardrobePaperRamps }
+  static let wardrobePaperRamps = paper(wardrobeBuilt.all)
+  static let rnPaperRamps = paper(rnBuilt.all)
+
+  static func paper(_ all: [Ramp]) -> [Ramp] { all.map { r in
     let base = r.stops[3].colour
     return Ramp(
       id: r.id, x1: r.x1, y1: r.y1, x2: r.x2, y2: r.y2,
@@ -282,7 +291,7 @@ public enum KoaLight {
         .init(offset: 0.5, colour: onPaper(base)),
         .init(offset: 1, colour: onPaper(shadeHex(base, 0.97))),
       ])
-  }
+  } }
 
   // MARK: - Bản giấy
 

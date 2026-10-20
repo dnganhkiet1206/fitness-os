@@ -145,7 +145,11 @@ public enum AssistantBrief {
       night = Line(key: "sleep", text: text)
     }
 
-    if let status = s.status, !status.isEmpty {
+    // Không có chiều phục hồi (HRV / RHR / giấc ngủ) → điểm chỉ dựa vào tải tập
+    // và thẻ phía trên nói "Chưa đủ dữ liệu để chấm" (`AssistantSummary.provisional`).
+    // RN vẫn nói "khả năng tập của bạn đang tốt" ngay dưới — hai câu cãi nhau
+    // (19/10, chủ dự án báo lỗi). Native: không nói gì về sẵn sàng khi ấy.
+    if let status = s.status, !status.isEmpty, s.hasRecovery {
       let text: AssistantSuggestions.Text3 =
         switch (s.hasRecovery, status) {
         case (true, "green"):
