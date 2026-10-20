@@ -378,12 +378,13 @@ struct WeeklyReviewView: View {
     }
   }
 
-  /// `PRIORITY_COLOR`: cao đỏ, vừa cam, thấp xám; lạ → màu viền.
+  /// `PRIORITY_COLOR`: cao đỏ, vừa cam, thấp xám (xám ấm của app, không còn
+  /// xanh xám `#a8b2c4` cũ — 20/10); lạ → màu viền.
   static func priorityColor(_ p: WeeklyAnalysis.Advice.Priority?) -> Color {
     switch p {
     case .high?: DS.Color.destructive.swiftUI
     case .medium?: DS.Color.metricOrange.swiftUI
-    case .low?: Color(hex: "#a8b2c4")
+    case .low?: DS.Color.mutedForeground.swiftUI
     case nil: DS.Color.border.swiftUI
     }
   }
