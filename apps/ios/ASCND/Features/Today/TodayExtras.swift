@@ -636,6 +636,7 @@ struct TodayExtras<Plan: View>: View {
       default: "todo"
       }
     }
+    services.koaLevel = room.level
     services.koaWidget.publish(.init(
       userId: userId, mascotId: services.preferences.mascotSelected, emotion: state.emotion,
       equipped: shop?.inventory.filter(\.equipped).map(\.itemKey) ?? [], line: state.line,

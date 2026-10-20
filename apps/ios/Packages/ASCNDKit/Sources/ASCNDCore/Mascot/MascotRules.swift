@@ -119,14 +119,16 @@ public enum MascotRules {
     }
   }
 
-  /// `RANKS`.
+  /// `RANKS` — khoá, cấp, màu như RN. Tên khác RN (20/10, Kiệt: "dùng thuật ngữ của
+  /// gymbro", bỏ "Huyền thoại" / "Tối thượng"): tiếng lóng phòng gym, giữ nguyên
+  /// tiếng Anh ở cả ba ngôn ngữ như dân tập vẫn gọi.
   public static let ranks: [Rank] = [
-    Rank(key: "rookie", minLevel: 1, colorHex: "#8b93a4", names: ["Tập sự", "Rookie", "Novato"]),
-    Rank(key: "active", minLevel: 5, colorHex: "#2bf5a8", names: ["Năng động", "Active", "Activo"]),
-    Rank(key: "prime", minLevel: 10, colorHex: "#3ba6ff", names: ["Sung sức", "Prime", "En forma"]),
-    Rank(key: "peak", minLevel: 20, colorHex: "#b07de0", names: ["Đỉnh cao", "Peak", "Cima"]),
-    Rank(key: "apex", minLevel: 35, colorHex: "#e08a3a", names: ["Tối thượng", "Apex", "Ápice"]),
-    Rank(key: "legend", minLevel: 55, colorHex: "#ffd93d", names: ["Huyền thoại", "Legend", "Leyenda"]),
+    Rank(key: "rookie", minLevel: 1, colorHex: "#8b93a4", names: ["Newbie", "Newbie", "Newbie"]),
+    Rank(key: "active", minLevel: 5, colorHex: "#2bf5a8", names: ["Gym Rat", "Gym Rat", "Gym Rat"]),
+    Rank(key: "prime", minLevel: 10, colorHex: "#3ba6ff", names: ["Lifter", "Lifter", "Lifter"]),
+    Rank(key: "peak", minLevel: 20, colorHex: "#b07de0", names: ["Swole", "Swole", "Swole"]),
+    Rank(key: "apex", minLevel: 35, colorHex: "#e08a3a", names: ["Beast", "Beast", "Beast"]),
+    Rank(key: "legend", minLevel: 55, colorHex: "#ffd93d", names: ["Mass Monster", "Mass Monster", "Mass Monster"]),
   ]
 
   /// `rankForLevel`: hạng cao nhất mà cấp đã chạm; dưới cấp 1 vẫn là hạng đầu.

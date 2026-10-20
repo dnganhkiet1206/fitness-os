@@ -48,10 +48,10 @@ struct MascotGoldenTests {
       #expect(r["key"]?.stringValue == def.key)
       #expect(Self.int(r["minLevel"]) == def.minLevel)
       #expect(r["color"]?.stringValue == def.colorHex)
-      #expect(r["name"]?["vi"]?.stringValue == def.name(.vi))
-      #expect(r["name"]?["en"]?.stringValue == def.name(.en))
-      #expect(r["name"]?["es"]?.stringValue == def.name(.es))
+      // Tên hạng khác RN có chủ đích (20/10, Kiệt): tiếng lóng gym, như nhau ở mọi ngôn ngữ.
+      #expect(!def.name(.vi).isEmpty && def.name(.vi) == def.name(.en) && def.name(.en) == def.name(.es))
     }
+    #expect(MascotRules.ranks.map { $0.name(.en) } == ["Newbie", "Gym Rat", "Lifter", "Swole", "Beast", "Mass Monster"])
     guard case .object(let rewards)? = g["challengeReward"] else { throw CocoaError(.fileReadCorruptFile) }
     #expect(Set(rewards.keys) == Set(MascotRules.challengeReward.keys))
     for (tier, v) in rewards {

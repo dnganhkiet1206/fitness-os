@@ -53,6 +53,9 @@ final class AppServices {
   /// Đồ Koa đang mặc (khoá `mascot_inventory`), do Hôm nay ghi khi tủ đồ đọc xong
   /// / đổi — để Koa ló lên ở tab khác mặc đúng đồ (đợt 2A).
   var koaEquipped: [String] = []
+  /// Cấp linh vật của người đang dùng — Koa của chính họ ở mọi màn mang vóc dáng
+  /// theo hạng (20/10). Hôm nay / phòng linh vật ghi khi đọc sổ xong.
+  var koaLevel = 1
   /// Widget Koa (đợt 2C): ảnh + câu của Koa ở Hôm nay ra màn hình chính.
   @ObservationIgnored let koaWidget = KoaWidgetPublisher()
   /// Chuỗi ngày của tài khoản đang mở (phòng Koa của Hôm nay ghi) — cho nhắc chuỗi

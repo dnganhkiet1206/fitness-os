@@ -84,7 +84,7 @@ final class KoaWidgetPublisher {
     for night in [false, true] {
       let figure = MascotFigureView(
         mascotId: s.mascotId, emotion: night ? .sleep : s.emotion, equipped: s.equipped, size: Self.avatarSize,
-        animated: false, paper: false)
+        animated: false, paper: false, level: s.level)
       let r = ImageRenderer(content: figure)
       r.scale = Self.scale
       guard let png = r.uiImage?.pngData() else {
