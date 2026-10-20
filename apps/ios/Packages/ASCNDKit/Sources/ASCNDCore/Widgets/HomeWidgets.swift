@@ -110,7 +110,9 @@ public enum HomeWidgets {
 /// hai ảnh tĩnh vào App Group (`koaImage` / `nightImage`) và ghi phần chữ ở đây —
 /// câu của Koa đã ở ngôn ngữ của app, CÙNG câu với Hôm nay (một Koa, một bộ não).
 public struct KoaWidgetData: Codable, Sendable, Hashable {
-  enum CodingKeys: String, CodingKey { case day, line, next, done, total, streak, nightLine, imageVersion, checks, nextQuest }
+  enum CodingKeys: String, CodingKey {
+    case day, line, next, done, total, streak, nightLine, imageVersion, checks, nextQuest, waterTaps, short
+  }
 
   public init(from decoder: any Decoder) throws {
     let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -124,6 +126,8 @@ public struct KoaWidgetData: Codable, Sendable, Hashable {
     imageVersion = try c.decode(Int.self, forKey: .imageVersion)
     checks = try c.decodeIfPresent([String].self, forKey: .checks) ?? []
     nextQuest = try c.decodeIfPresent(String.self, forKey: .nextQuest)
+    waterTaps = try c.decodeIfPresent(Int.self, forKey: .waterTaps) ?? 0
+    short = try c.decodeIfPresent(String.self, forKey: .short) ?? ""
   }
 
   /// Ngày địa phương của dữ liệu (`YYYY-MM-DD`). Khác hôm nay → widget không nói
@@ -145,6 +149,10 @@ public struct KoaWidgetData: Codable, Sendable, Hashable {
   public var checks: [String] = []
   /// Nhiệm vụ của việc kế tiếp (`MascotRules.Quest.rawValue`) — màu của nút.
   public var nextQuest: String?
+  /// Câu rất ngắn cho cỡ nhỏ (≤ 5 chữ, đã dịch) — nhìn một giây là hiểu.
+  public var short = ""
+  /// Số ly vừa thêm từ widget từ lần app ghi gần nhất (để widget nói "+1 ly").
+  public var waterTaps = 0
 
   public init(
     day: String, line: String, next: String?, done: Int, total: Int, streak: Int, nightLine: String, imageVersion: Int,
@@ -224,6 +232,20 @@ public struct WidgetDataStore: Sendable {
   public func todayWorkout() -> TodayWorkoutWidgetData? { read(Self.todayWorkoutKey) }
   public func koa() -> KoaWidgetData? { read(Self.koaKey) }
 
+  /// Nút nước trên widget vừa ghi một ly: ô Nước của widget sáng NGAY (lạc quan),
+  /// không chờ app dựng lại Hôm nay. Ngày khác / chưa có dữ liệu → để nguyên.
+  @discardableResult
+  public func markKoaWaterLogged(today: LocalDate) -> Bool {
+    guard var d = koa(), d.day == today.description else { return false }
+    if d.checks.count == 4, d.checks[2] == "todo" {
+      d.checks[2] = "done"
+      d.done = min(d.done + 1, d.total)
+    }
+    d.waterTaps += 1
+    writeKoa(d)
+    return true
+  }
+
   public func writeKoa(_ data: KoaWidgetData) {
     guard let d = defaults, let a = try? JSONEncoder().encode(data) else { return }
     d.set(a, forKey: Self.koaKey)
@@ -231,7 +253,11 @@ public struct WidgetDataStore: Sendable {
 
   /// Thư mục App Group (ảnh Koa); `nil` khi chưa được cấp.
   public var containerURL: URL? {
-    FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: suite)
+    #if canImport(Darwin)
+      FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: suite)
+    #else
+      nil  // Linux (core-linux CI): không có App Group.
+    #endif
   }
   public func streakReadiness() -> StreakReadinessWidgetData? { read(Self.streakReadinessKey) }
 

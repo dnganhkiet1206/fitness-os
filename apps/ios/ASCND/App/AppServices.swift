@@ -5,6 +5,7 @@ import Foundation
 import Network
 import Observation
 import UserNotifications
+import WidgetKit
 
 /// Gốc lắp ráp của app: nơi DUY NHẤT dựng các mảnh thật và nối chúng với nhau.
 ///
@@ -57,6 +58,28 @@ final class AppServices {
   /// Chuỗi ngày của tài khoản đang mở (phòng Koa của Hôm nay ghi) — cho nhắc chuỗi
   /// của Koa (đợt 2B). `nil` = chưa đọc.
   var koaStreak: (userId: String, value: Streak.Value)?
+
+  /// Nút "+1 ly" trên widget Koa (đợt 2C): ghi qua CÙNG sổ nước + hàng đợi như
+  /// nút trong app, rồi gửi, đọc lại nhiệm vụ (xu tự về) và vẽ lại widget. Chạy cả
+  /// khi hệ thống mở app ở nền chỉ để chạy intent — phiên có thể chưa đọc.
+  func addWaterFromWidget() async -> Bool {
+    if case .loading = session.phase { await session.start() }
+    guard let userId = session.session?.userId, let book = makeWaterBook(userId: userId) else { return false }
+    defer { book.close() }
+    do {
+      _ = try await book.add(amountMl: Water.stepMl(preferences.volumeUnit), online: sync.online)
+    } catch {
+      return false
+    }
+    WidgetDataStore().markKoaWaterLogged(today: LocalDate(SystemWallClock().nowMillis(), in: .current))
+    WidgetCenter.shared.reloadTimelines(ofKind: KoaWidgetPublisher.kind)
+    sync.kick()
+    Task {
+      await sync.settle()
+      await questObserver(userId: userId)?.refresh()
+    }
+    return true
+  }
 
   /// Một lần thưởng tự về (nhiệm vụ hay chuỗi) — mã tăng dần để `onChange` bắt.
   func noteKoaReward(

@@ -225,3 +225,28 @@ struct KoaWidgetDataTests {
     UserDefaults().removePersistentDomain(forName: suite)
   }
 }
+
+/// Nút "+1 ly" trên widget (đợt 2C): ô Nước sáng ngay, chỉ cho ngày của dữ liệu.
+struct KoaWidgetWaterTests {
+  @Test func tapLightsTheWaterTubeOnceAndCountsGlasses() {
+    let suite = "koa-widget-water-\(UUID().uuidString)"
+    let store = WidgetDataStore(suite: suite)
+    store.writeKoa(KoaWidgetData(
+      day: "2026-10-20", line: "", next: nil, done: 1, total: 4, streak: 3, nightLine: "", imageVersion: 1,
+      checks: ["done", "todo", "todo", "todo"]))
+    #expect(store.markKoaWaterLogged(today: LocalDate("2026-10-20")!))
+    #expect(store.koa()?.checks == ["done", "todo", "done", "todo"])
+    #expect(store.koa()?.done == 2)
+    #expect(store.markKoaWaterLogged(today: LocalDate("2026-10-20")!))
+    #expect(store.koa()?.done == 2, "ly thứ hai không đếm lại việc")
+    #expect(store.koa()?.waterTaps == 2)
+    #expect(!store.markKoaWaterLogged(today: LocalDate("2026-10-21")!), "dữ liệu hôm qua: để nguyên")
+    UserDefaults().removePersistentDomain(forName: suite)
+  }
+
+  @Test func oldPayloadDecodes() throws {
+    let old = #"{"day":"2026-10-20","line":"x","done":1,"total":4,"streak":2,"nightLine":"n","imageVersion":1}"#
+    let d = try JSONDecoder().decode(KoaWidgetData.self, from: Data(old.utf8))
+    #expect(d.checks.isEmpty && d.waterTaps == 0 && d.short.isEmpty && d.nextQuest == nil)
+  }
+}

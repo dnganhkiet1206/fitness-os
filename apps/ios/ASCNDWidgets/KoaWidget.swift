@@ -1,4 +1,6 @@
 import ASCNDCore
+import ASCNDLiveActivity
+import AppIntents
 import SwiftUI
 import UIKit
 import WidgetKit
@@ -137,33 +139,87 @@ struct KoaWidgetView: View {
 
   // MARK: - Màn hình chính
 
-  /// Nhỏ: bong bóng câu của Koa ở trên; dưới là Koa (chạm mép đáy) và bốn ống.
+  /// Nhỏ (20/10, Kiệt: "ít chữ, nhìn một giây"; không vòng quanh Koa; có logo):
+  /// logo ASCND + giọt nước bấm được ở trên; Koa bên trái; câu rất ngắn, bốn ống
+  /// và chuỗi bên phải.
   private var small: some View {
     VStack(alignment: .leading, spacing: 0) {
-      bubble(lines: 3, size: 12.5)
+      HStack(alignment: .center) {
+        brand(mark: 15, word: 11)
+        Spacer(minLength: 0)
+        if phase == .day { waterButton(compact: true) }
+      }
       Spacer(minLength: 0)
-      HStack(alignment: .bottom, spacing: 0) {
-        koa(height: 78)
-        Spacer(minLength: 4)
-        VStack(alignment: .trailing, spacing: 7) {
+      HStack(alignment: .bottom, spacing: 4) {
+        koa(height: 92).padding(.leading, -6)
+        VStack(alignment: .leading, spacing: 8) {
+          Text(phase == .stale ? String(localized: "widget.koa.stale") : shortLine)
+            .font(.system(size: 13, weight: .bold))
+            .foregroundStyle(KoaWidgetInk.ink(dark))
+            .lineLimit(2)
+            .minimumScaleFactor(0.8)
+            .fixedSize(horizontal: false, vertical: true)
+          tubes(height: 22, width: 8, spacing: 4)
           streakChip
-          tubes(height: 30, width: 9, spacing: 5)
         }
         .padding(.bottom, 12)
       }
     }
-    .padding(.top, 14)
-    .padding(.horizontal, 14)
+    .padding(.top, 12)
+    .padding(.horizontal, 12)
+  }
+
+  /// Logo ASCND như đầu trang Hôm nay (`BrandLockup`): dấu + chữ.
+  private func brand(mark: CGFloat, word: CGFloat) -> some View {
+    HStack(spacing: 4) {
+      Image("BrandMark").resizable().interpolation(.high).frame(width: mark, height: mark)
+      Text(verbatim: "ASCND")
+        .font(.system(size: word, weight: .bold))
+        .tracking(0.5)
+        .foregroundStyle(KoaWidgetInk.ink(dark))
+    }
+    .accessibilityElement(children: .ignore)
+    .accessibilityLabel(Text(verbatim: "ASCND"))
+  }
+
+  private var shortLine: String {
+    guard let d = entry.data else { return "" }
+    if phase == .night { return String(localized: "widget.koa.nightShort") }
+    if d.waterTaps > 0 { return String(localized: "widget.koa.waterAdded \(d.waterTaps)") }
+    return d.short.isEmpty ? d.line : d.short
+  }
+
+  /// Giọt nước bấm được: ghi một ly qua app (`AddWaterIntent`), không mở app.
+  private func waterButton(compact: Bool) -> some View {
+    Button(intent: AddWaterIntent()) {
+      HStack(spacing: 3) {
+        Image(systemName: "drop.fill").font(.system(size: compact ? 12 : 11, weight: .bold))
+        if !compact { Text(verbatim: "+1").font(KoaWidgetInk.mono(12)) }
+      }
+      .foregroundStyle(.white)
+      .frame(width: compact ? 30 : nil, height: compact ? 30 : 26)
+      .padding(.horizontal, compact ? 0 : 10)
+      .background(KoaWidgetInk.tube(2, dark), in: Capsule())
+    }
+    .buttonStyle(.plain)
+    .accessibilityLabel(Text("widget.koa.water"))
   }
 
   /// Vừa: Koa lớn bên trái; bên phải bong bóng, nút việc kế tiếp, hàng ống + số.
   private var medium: some View {
     HStack(alignment: .bottom, spacing: 10) {
-      koa(height: 132)
+      VStack(alignment: .leading, spacing: 0) {
+        brand(mark: 15, word: 11).padding(.leading, 10).padding(.top, 14)
+        Spacer(minLength: 0)
+        koa(height: 116)
+      }
       VStack(alignment: .leading, spacing: 8) {
         bubble(lines: 3, size: 14)
-        if phase == .day, let d = entry.data, let next = d.next {
-          nextChip(next, quest: d.nextQuest)
+        if phase == .day, let d = entry.data {
+          HStack(spacing: 6) {
+            if let next = d.next, d.nextQuest != "water" { nextChip(next, quest: d.nextQuest) }
+            waterButton(compact: false)
+          }
         }
         Spacer(minLength: 0)
         HStack(alignment: .bottom, spacing: 10) {

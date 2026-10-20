@@ -42,14 +42,28 @@ final class KoaWidgetPublisher {
       imageKey = key
       version += 1
     }
-    let data = KoaWidgetData(
+    var data = KoaWidgetData(
       day: s.day.description, line: s.line, next: s.next, done: s.done, total: s.total, streak: s.streak,
       nightLine: String(localized: "koa.say.night"), imageVersion: version, checks: s.checks,
       nextQuest: s.nextQuest?.rawValue)
-    guard data != last else { return }
+    data.short = Self.short(s)
+    // App vừa dựng lại Hôm nay: số ly từ widget đã nằm trong số thật.
+    guard data != last || (store.koa()?.waterTaps ?? 0) > 0 else { return }
     last = data
     store.writeKoa(data)
     WidgetCenter.shared.reloadTimelines(ofKind: Self.kind)
+  }
+
+  /// Câu ngắn của cỡ nhỏ: việc còn thiếu tiếp theo, hay "xong hết".
+  static func short(_ s: Snapshot) -> String {
+    if s.total > 0, s.done >= s.total { return String(localized: "koa.short.allDone") }
+    switch s.nextQuest {
+    case .meal: return String(localized: "koa.short.meal")
+    case .water: return String(localized: "koa.short.water")
+    case .sleep: return String(localized: "koa.short.sleep")
+    case .workout: return String(localized: "koa.short.workout")
+    case .steps, nil: return String(localized: "koa.short.keep \(s.done) \(s.total)")
+    }
   }
 
   /// Phiên kết thúc: lần sau vẽ lại từ đầu (ảnh đã bị `clear` xoá).
