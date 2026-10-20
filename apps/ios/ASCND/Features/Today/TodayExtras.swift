@@ -40,6 +40,8 @@ struct TodayExtras<Plan: View>: View {
   /// Ngày đã đọc xong lần đầu: thưởng chuỗi tự về SAU đó là việc vừa làm (mừng),
   /// còn lúc mở app thì không diễn lại.
   @State private var dayLoaded = false
+  /// Koa của ngày lần gần nhất — đẩy lại ra widget khi đồ đang mặc đổi.
+  @State private var lastKoa: TodayDayBlock.KoaState?
   @State private var challenges: WeeklyChallengesBook?
   /// Điểm 7 ngày qua — chỉ để dòng sẵn sàng hiện điểm gần nhất khi hôm nay chưa có
   /// (cùng quyết định với Trợ lý, `AssistantSummary.shown`).
@@ -128,7 +130,8 @@ struct TodayExtras<Plan: View>: View {
           room: mascot, localWaterMl: water?.loaded == true ? water?.totalMl : nil,
           onAct: act, onOpenRoom: { roomSource = "koa"; showsRoom = true }, zoom: zoom,
           profile: profile?.profile, riskHour: KoaToday.riskHour(services.habitHours, userId: userId),
-          equipped: shop?.inventory.filter(\.equipped).map(\.itemKey) ?? [], reward: services.koaReward)
+          equipped: shop?.inventory.filter(\.equipped).map(\.itemKey) ?? [], reward: services.koaReward,
+          onKoa: { state in publishKoa(state, mascot) })
           .todayEntrance(1)
           .preference(key: TodayAccentPreference.self, value: nextSignal(mascot))
           // Rung NGAY lúc chạm nước (RN `Haptics.light()` trong `onPress`).
@@ -288,6 +291,8 @@ struct TodayExtras<Plan: View>: View {
     .onChange(of: shop?.inventory, initial: true) { _, rows in
       guard let rows else { return }
       services.koaEquipped = rows.filter(\.equipped).map(\.itemKey)
+      // Tủ đồ về sau câu của Koa: widget vẽ lại Koa với đúng đồ đang mặc.
+      if let lastKoa, let mascot { publishKoa(lastKoa, mascot) }
     }
     // Nhắc chuỗi của Koa (đợt 2B) cần chuỗi hiện tại.
     .onChange(of: mascot?.streak, initial: true) { _, value in
@@ -598,6 +603,17 @@ struct TodayExtras<Plan: View>: View {
     case .water: act(.water)
     case .workout: act(.workout)
     }
+  }
+
+  /// Widget Koa (đợt 2C): CÙNG Koa, câu và con số "xong hôm nay" như trang này.
+  private func publishKoa(_ state: TodayDayBlock.KoaState, _ room: MascotRoomController) {
+    lastKoa = state
+    let progress = DayCheckIn.progress(dayStates(room))
+    services.koaWidget.publish(.init(
+      userId: userId, mascotId: services.preferences.mascotSelected, emotion: state.emotion,
+      equipped: shop?.inventory.filter(\.equipped).map(\.itemKey) ?? [], line: state.line,
+      next: state.next.map(TodayDayBlock.action), done: progress.done, total: progress.total,
+      streak: room.streak.count, day: room.today))
   }
 
   /// Lên cấp / lên hạng nhờ xu tự về: màn ăn mừng ở gốc app (cùng đường với huy chương).

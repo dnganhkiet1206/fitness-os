@@ -104,6 +104,56 @@ public enum HomeWidgets {
   }
 }
 
+/// Widget Koa (#527, đợt 2C): Koa của Hôm nay trên màn hình chính / màn khoá.
+///
+/// Widget không chạy được bộ vẽ Canvas của Koa (hoạt ảnh, bộ nhớ), nên app vẽ sẵn
+/// hai ảnh tĩnh vào App Group (`koaImage` / `nightImage`) và ghi phần chữ ở đây —
+/// câu của Koa đã ở ngôn ngữ của app, CÙNG câu với Hôm nay (một Koa, một bộ não).
+public struct KoaWidgetData: Codable, Sendable, Hashable {
+  /// Ngày địa phương của dữ liệu (`YYYY-MM-DD`). Khác hôm nay → widget không nói
+  /// tâm trạng cũ, chỉ mời mở app.
+  public var day: String
+  public var line: String
+  /// Việc kế tiếp, đã dịch ("Ghi bữa ăn"); `nil` = không còn việc tới giờ.
+  public var next: String?
+  /// "Hôm nay của bạn · X/Y xong" — cùng con số với Hôm nay.
+  public var done: Int
+  public var total: Int
+  public var streak: Int
+  /// Câu khi Koa đi ngủ (từ `nightHour`), đã dịch.
+  public var nightLine: String
+  /// Phiên bản ảnh — widget đọc lại ảnh khi số này đổi.
+  public var imageVersion: Int
+
+  public init(
+    day: String, line: String, next: String?, done: Int, total: Int, streak: Int, nightLine: String, imageVersion: Int
+  ) {
+    self.day = day
+    self.line = line
+    self.next = next
+    self.done = done
+    self.total = total
+    self.streak = streak
+    self.nightLine = nightLine
+    self.imageVersion = imageVersion
+  }
+
+  /// Koa đi ngủ lúc 22:00 (như `KoaMood.nightFrom`).
+  public static let nightHour = KoaMood.nightFrom
+
+  /// Widget nên hiện gì lúc `now`: dữ liệu cũ hơn hôm nay → `.stale`; từ 22 giờ
+  /// (hoặc trước 6 giờ) → `.night`; còn lại `.day`.
+  public enum Phase: Sendable, Hashable { case stale, day, night }
+
+  public func phase(now: Date, calendar: Calendar) -> Phase {
+    let c = calendar.dateComponents([.year, .month, .day, .hour], from: now)
+    let today = String(format: "%04d-%02d-%02d", c.year!, c.month!, c.day!)
+    guard today == day else { return .stale }
+    let h = c.hour!
+    return h >= Self.nightHour || h < KoaMood.morningFrom ? .night : .day
+  }
+}
+
 /// Nơi app ghi và widget đọc — UserDefaults của App Group, như
 /// `WidgetDataStore` / `updateWidgetData` của RN.
 public struct WidgetDataStore: Sendable {
@@ -114,6 +164,11 @@ public struct WidgetDataStore: Sendable {
   /// Activity (#527 A-NEXT 4). Vắng = "Theo máy". Theo máy, không theo người:
   /// đăng xuất KHÔNG xoá (như `ascnd_lang` của RN nằm trong `DEVICE_KEYS`).
   public static let languageKey = "ascnd.widget.lang"
+  public static let koaKey = "ascnd.widget.koa"
+  /// Ảnh Koa vẽ sẵn trong thư mục App Group (sáng / tối × ngày / đêm).
+  public static func koaImageName(night: Bool, dark: Bool) -> String {
+    "koa-widget-\(night ? "night" : "day")-\(dark ? "dark" : "light").png"
+  }
 
   private let suite: String
 
@@ -143,6 +198,17 @@ public struct WidgetDataStore: Sendable {
   public var locale: Locale { language().map(Locale.init(identifier:)) ?? .autoupdatingCurrent }
 
   public func todayWorkout() -> TodayWorkoutWidgetData? { read(Self.todayWorkoutKey) }
+  public func koa() -> KoaWidgetData? { read(Self.koaKey) }
+
+  public func writeKoa(_ data: KoaWidgetData) {
+    guard let d = defaults, let a = try? JSONEncoder().encode(data) else { return }
+    d.set(a, forKey: Self.koaKey)
+  }
+
+  /// Thư mục App Group (ảnh Koa); `nil` khi chưa được cấp.
+  public var containerURL: URL? {
+    FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: suite)
+  }
   public func streakReadiness() -> StreakReadinessWidgetData? { read(Self.streakReadinessKey) }
 
   /// Đăng xuất: widget không được hiện dữ liệu của người vừa rời đi
@@ -150,6 +216,14 @@ public struct WidgetDataStore: Sendable {
   public func clear() {
     defaults?.removeObject(forKey: Self.todayWorkoutKey)
     defaults?.removeObject(forKey: Self.streakReadinessKey)
+    defaults?.removeObject(forKey: Self.koaKey)
+    if let dir = containerURL {
+      for night in [false, true] {
+        for dark in [false, true] {
+          try? FileManager.default.removeItem(at: dir.appendingPathComponent(Self.koaImageName(night: night, dark: dark)))
+        }
+      }
+    }
   }
 
   private func read<T: Decodable>(_ key: String) -> T? {

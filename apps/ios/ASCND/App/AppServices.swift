@@ -52,6 +52,8 @@ final class AppServices {
   /// Đồ Koa đang mặc (khoá `mascot_inventory`), do Hôm nay ghi khi tủ đồ đọc xong
   /// / đổi — để Koa ló lên ở tab khác mặc đúng đồ (đợt 2A).
   var koaEquipped: [String] = []
+  /// Widget Koa (đợt 2C): ảnh + câu của Koa ở Hôm nay ra màn hình chính.
+  @ObservationIgnored let koaWidget = KoaWidgetPublisher()
   /// Chuỗi ngày của tài khoản đang mở (phòng Koa của Hôm nay ghi) — cho nhắc chuỗi
   /// của Koa (đợt 2B). `nil` = chưa đọc.
   var koaStreak: (userId: String, value: Streak.Value)?
@@ -187,6 +189,7 @@ final class AppServices {
     self.backend = backend
     self.rows = rows
     let widgets = WidgetRefresher(store: rows)
+    KoaWidgetResetHook.reset = { [koaWidget] in koaWidget.reset() }
     self.widgets = widgets
     health = HealthSyncCoordinator(store: rows)
     let prefs = AppPreferences(store: UserDefaultsStore())
