@@ -25,6 +25,8 @@ struct TellKoaSheet: View {
   let userId: String
   /// Chữ có sẵn (tin nhắn vừa gửi Koa Coach).
   var initialText = ""
+  /// Mở bằng nút micro ở thẻ Hôm nay: bắt đầu nghe ngay.
+  var startListening = false
   var onSaved: () -> Void = {}
 
   @Environment(AppServices.self) private var services
@@ -188,7 +190,10 @@ struct TellKoaSheet: View {
         reparse()
       }
     }
-    .task { await loadGaps() }
+    .task {
+      if startListening { Task { await dictation.start(lang: lang) } }
+      await loadGaps()
+    }
     .onChange(of: dictation.transcript) { _, t in
       guard !t.isEmpty else { return }
       text = t

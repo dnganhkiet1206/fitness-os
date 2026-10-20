@@ -24,6 +24,12 @@ struct TodayDayCard: View {
   }
 
   let tiles: [Tile]
+  /// Dòng phụ của ô Bữa: bữa kế tiếp theo kế hoạch ăn ("Tiếp theo: Bữa tối · Cơm").
+  var planNext: String?
+  /// Đã tập xong mà muốn ghi buổi phát sinh.
+  var onExtraWorkout: (() -> Void)?
+  /// Thanh "Ghi hôm nay" luôn hiện; chạm (hoặc micro) mở màn với chữ / giọng nói.
+  var onTell: (_ voice: Bool) -> Void = { _ in }
   /// Dòng cân nặng khi đã lâu chưa cân (`TodayDay.showsWeighIn`); `nil` = ẩn.
   var weighIn: (detail: String, done: Bool)?
   let onLogAll: () -> Void
@@ -49,67 +55,113 @@ struct TodayDayCard: View {
           .foregroundStyle(pending ? DS.Color.mutedForeground.swiftUI : DS.Color.readinessGreen.swiftUI)
       }
       .padding(.horizontal, 4)
-      VStack(spacing: DS.Spacing.sm) {
-        LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
-          ForEach(tiles) { tile($0) }
+      VStack(alignment: .leading, spacing: 12) {
+        // Grid (không LazyVGrid): hai ô một hàng luôn cao bằng nhau.
+        Grid(horizontalSpacing: 10, verticalSpacing: 10) {
+          ForEach(Array(stride(from: 0, to: tiles.count, by: 2)), id: \.self) { i in
+            GridRow {
+              tile(tiles[i])
+              if i + 1 < tiles.count { tile(tiles[i + 1]) } else { Color.clear }
+            }
+          }
         }
         if let weighIn {
           weightRow(weighIn)
         }
-        if pending {
-          Button(action: onLogAll) {
-            Label(String(localized: "day.card.logAll"), systemImage: "checkmark")
-              .font(DS.TextStyle.headline)
-              .foregroundStyle(DS.Color.background.swiftUI)
-              .frame(maxWidth: .infinity, minHeight: 50)
-              .background(Capsule().fill(DS.Color.foreground.swiftUI))
-          }
-          .buttonStyle(TodayPressStyle())
-          .accessibilityHint(Text("day.card.logAll.hint"))
-          Text("day.card.logAll.hint")
-            .font(DS.TextStyle.caption)
-            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-            .frame(maxWidth: .infinity)
-            .multilineTextAlignment(.center)
-            .accessibilityHidden(true)
-        }
+        tellBar
       }
       .padding(DS.Spacing.md)
       .todayCard()
     }
   }
 
+  /// Thanh "Ghi hôm nay" (19/10): luôn hiện, cùng viên kính với mọi ô chat.
+  private var tellBar: some View {
+    HStack(spacing: 6) {
+      Button { onTell(false) } label: {
+        HStack(spacing: 8) {
+          IntelligenceMark(size: 15)
+          Text("day.tell.placeholder")
+            .font(.system(size: 15))
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .lineLimit(1)
+          Spacer(minLength: 0)
+        }
+        .padding(.leading, 14)
+        .frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
+        .contentShape(Rectangle())
+      }
+      .buttonStyle(.plain)
+      .accessibilityLabel(Text("logday.title"))
+      Button { onTell(true) } label: {
+        Image(systemName: "mic.fill")
+          .font(.system(size: 15, weight: .semibold))
+          .foregroundStyle(DS.Color.background.swiftUI)
+          .frame(width: 38, height: 38)
+          .background(DS.Color.foreground.swiftUI, in: Circle())
+      }
+      .buttonStyle(TodayPressStyle())
+      .accessibilityLabel(Text("tellkoa.mic.start"))
+    }
+    .padding(.trailing, 5)
+    .glassComposer(radius: 24)
+  }
+
   private func tile(_ t: Tile) -> some View {
     let color = Self.color(t.item)
-    return Button { onTap(t.item) } label: {
-      VStack(alignment: .leading, spacing: 6) {
-        HStack(spacing: 6) {
-          Image(systemName: Self.glyph(t.item))
-            .font(.system(size: 11, weight: .bold))
-            .foregroundStyle(.white)
-            .frame(width: 22, height: 22)
-            .background(color, in: Circle())
-          Text(verbatim: Self.name(t.item))
-            .font(.system(size: 14, weight: .bold))
+    let detail = t.detail.prefix(1).uppercased() + t.detail.dropFirst()
+    return VStack(alignment: .leading, spacing: 6) {
+      Button { onTap(t.item) } label: {
+        VStack(alignment: .leading, spacing: 6) {
+          HStack(alignment: .top) {
+            Image(systemName: Self.glyph(t.item))
+              .font(.system(size: 12, weight: .bold))
+              .foregroundStyle(.white)
+              .frame(width: 28, height: 28)
+              .background(color, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+            Spacer(minLength: 0)
+            badge(t)
+          }
+          Text(verbatim: t.state == .done ? detail : Self.name(t.item))
+            .font(.system(size: 18, weight: .bold).monospacedDigit())
             .foregroundStyle(DS.Color.foreground.swiftUI)
-          Spacer(minLength: 0)
-          badge(t)
+            .lineLimit(1).minimumScaleFactor(0.7)
+          Text(verbatim: t.state == .done ? Self.name(t.item) : detail)
+            .font(.system(size: 12))
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .lineLimit(2, reservesSpace: true)
+          if t.item == .meal, let planNext {
+            Label(planNext, systemImage: "list.bullet.clipboard")
+              .font(.system(size: 11, weight: .semibold))
+              .foregroundStyle(DS.Color.metricOrangeGraphic.swiftUI)
+              .lineLimit(1)
+          }
         }
-        Text(verbatim: t.detail.prefix(1).uppercased() + t.detail.dropFirst())
-          .font(.system(size: 13, weight: t.state == .done ? .semibold : .regular))
-          .foregroundStyle(t.state == .done ? DS.Color.foreground.swiftUI : DS.Color.mutedForeground.swiftUI)
-          .lineLimit(2, reservesSpace: true)
-          .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
       }
-      .padding(10)
-      .background(DS.Color.foreground.swiftUI.opacity(0.04), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-      .contentShape(Rectangle())
+      .buttonStyle(TodayPressStyle(scale: 0.97))
+      .accessibilityElement(children: .ignore)
+      .accessibilityLabel(Text(verbatim: Self.name(t.item)))
+      .accessibilityValue(Text(verbatim: [Self.badgeText(t), t.detail].compactMap { $0 }.joined(separator: ", ")))
+      .accessibilityAddTraits(.isButton)
+      // Đã tập xong: nút riêng ghi buổi phát sinh (19/10, chủ dự án).
+      if t.item == .workout, t.state == .done, let onExtraWorkout {
+        Button(action: onExtraWorkout) {
+          Label(String(localized: "day.workout.extra"), systemImage: "plus")
+            .font(.system(size: 12, weight: .semibold))
+            .foregroundStyle(color)
+            .padding(.horizontal, 10).frame(minHeight: 28)
+            .background(color.opacity(0.12), in: Capsule())
+            .frame(minHeight: 44, alignment: .leading)
+        }
+        .buttonStyle(TodayPressStyle())
+      }
     }
-    .buttonStyle(TodayPressStyle(scale: 0.97))
-    .accessibilityElement(children: .ignore)
-    .accessibilityLabel(Text(verbatim: Self.name(t.item)))
-    .accessibilityValue(Text(verbatim: [Self.badgeText(t), t.detail].compactMap { $0 }.joined(separator: ", ")))
-    .accessibilityAddTraits(.isButton)
+    .padding(12)
+    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+    .shadow(color: .black.opacity(0.05), radius: 6, y: 2)
   }
 
   @ViewBuilder private func badge(_ t: Tile) -> some View {
