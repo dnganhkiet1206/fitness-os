@@ -43,6 +43,14 @@ struct TodayDayBlock: View {
   var equipped: [String] = []
   /// Thưởng vừa tự về và app thấy việc vừa xong → Koa mừng rỡ, "+N" bay lên.
   var reward: AppServices.KoaReward?
+  /// Koa của ngày (nét mặt, câu, việc kế) — cho widget Koa (đợt 2C).
+  var onKoa: ((KoaState) -> Void)?
+
+  struct KoaState: Equatable {
+    let emotion: KoaEmotion.Emotion
+    let line: String
+    let next: MascotRules.Quest?
+  }
 
   @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -96,6 +104,9 @@ struct TodayDayBlock: View {
     // Việc kế tiếp đổi → nhãn và viền trượt sang ống mới; ống dâng như chất lỏng.
     .animation(reduceMotion ? .easeInOut(duration: 0.2) : .spring(duration: 0.6, bounce: 0.22), value: next)
     .task(id: line) { updatePraise(line) }
+    .task(id: KoaState(emotion: mood.emotion, line: said ?? bubbleText(line, tubes: tubes) ?? "", next: next)) {
+      onKoa?(KoaState(emotion: mood.emotion, line: said ?? bubbleText(line, tubes: tubes) ?? "", next: next))
+    }
     .onChange(of: reward?.id) { _, _ in celebrate() }
   }
 

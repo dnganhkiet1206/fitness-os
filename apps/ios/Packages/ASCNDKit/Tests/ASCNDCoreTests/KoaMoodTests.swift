@@ -193,3 +193,60 @@ struct KoaPeekTests {
     #expect(KoaPeek.emotion(nil, allDone: false) == .celebrate)
   }
 }
+
+/// Widget Koa (đợt 2C): khi nào nói tâm trạng, khi nào Koa ngủ, khi nào mời mở app.
+struct KoaWidgetDataTests {
+  static let cal: Calendar = {
+    var c = Calendar(identifier: .gregorian)
+    c.timeZone = TimeZone(identifier: "Asia/Ho_Chi_Minh")!
+    return c
+  }()
+  static func at(_ day: Int, _ hour: Int) -> Date {
+    cal.date(from: DateComponents(year: 2026, month: 10, day: day, hour: hour))!
+  }
+  let data = KoaWidgetData(
+    day: "2026-10-19", line: "Ngủ 7 giờ 40 phút", next: "Ghi bữa ăn", done: 2, total: 4, streak: 12,
+    nightLine: "Koa đi ngủ đây", imageVersion: 1)
+
+  @Test func phaseFollowsTheClockAndTheDay() {
+    #expect(data.phase(now: Self.at(19, 9), calendar: Self.cal) == .day)
+    #expect(data.phase(now: Self.at(19, 22), calendar: Self.cal) == .night)
+    #expect(data.phase(now: Self.at(19, 5), calendar: Self.cal) == .night)
+    #expect(data.phase(now: Self.at(20, 9), calendar: Self.cal) == .stale, "hôm sau: không nói tâm trạng cũ")
+  }
+
+  @Test func storeRoundTripsAndClears() {
+    let suite = "koa-widget-test-\(UUID().uuidString)"
+    let store = WidgetDataStore(suite: suite)
+    store.writeKoa(data)
+    #expect(store.koa() == data)
+    store.clear()
+    #expect(store.koa() == nil)
+    UserDefaults().removePersistentDomain(forName: suite)
+  }
+}
+
+/// Nút "+1 ly" trên widget (đợt 2C): ô Nước sáng ngay, chỉ cho ngày của dữ liệu.
+struct KoaWidgetWaterTests {
+  @Test func tapLightsTheWaterTubeOnceAndCountsGlasses() {
+    let suite = "koa-widget-water-\(UUID().uuidString)"
+    let store = WidgetDataStore(suite: suite)
+    store.writeKoa(KoaWidgetData(
+      day: "2026-10-20", line: "", next: nil, done: 1, total: 4, streak: 3, nightLine: "", imageVersion: 1,
+      checks: ["done", "todo", "todo", "todo"]))
+    #expect(store.markKoaWaterLogged(today: LocalDate("2026-10-20")!))
+    #expect(store.koa()?.checks == ["done", "todo", "done", "todo"])
+    #expect(store.koa()?.done == 2)
+    #expect(store.markKoaWaterLogged(today: LocalDate("2026-10-20")!))
+    #expect(store.koa()?.done == 2, "ly thứ hai không đếm lại việc")
+    #expect(store.koa()?.waterTaps == 2)
+    #expect(!store.markKoaWaterLogged(today: LocalDate("2026-10-21")!), "dữ liệu hôm qua: để nguyên")
+    UserDefaults().removePersistentDomain(forName: suite)
+  }
+
+  @Test func oldPayloadDecodes() throws {
+    let old = #"{"day":"2026-10-20","line":"x","done":1,"total":4,"streak":2,"nightLine":"n","imageVersion":1}"#
+    let d = try JSONDecoder().decode(KoaWidgetData.self, from: Data(old.utf8))
+    #expect(d.checks.isEmpty && d.waterTaps == 0 && d.short.isEmpty && d.nextQuest == nil)
+  }
+}

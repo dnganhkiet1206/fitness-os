@@ -24,6 +24,7 @@ final class WidgetRefresher: @unchecked Sendable {
     lock.withLock { user = userId }
     if userId == nil {
       data.clear()
+      Task { @MainActor in KoaWidgetResetHook.reset?() }
       WidgetCenter.shared.reloadAllTimelines()
     } else {
       Task { await refresh() }
@@ -62,4 +63,9 @@ final class WidgetRefresher: @unchecked Sendable {
       noWorkout: String(localized: "widget.noWorkout"), untitled: String(localized: "widget.untitled"),
       noScore: String(localized: "widget.noScore"))
   }
+}
+
+/// Đăng xuất xoá ảnh Koa; bộ đẩy widget (của `AppServices`) quên ảnh đã vẽ.
+@MainActor enum KoaWidgetResetHook {
+  static var reset: (() -> Void)?
 }
