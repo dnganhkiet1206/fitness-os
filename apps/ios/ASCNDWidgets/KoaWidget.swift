@@ -44,7 +44,8 @@ struct KoaWidget: Widget {
     StaticConfiguration(kind: "com.ascnd.fitnessos.widgets.koa", provider: KoaProvider()) { entry in
       KoaWidgetView(entry: entry)
         .environment(\.locale, WidgetDataStore().locale)
-        .containerBackground(for: .widget) { KoaWidgetPaper() }
+        .environment(\.colorScheme, .dark)
+        .containerBackground(for: .widget) { KoaPassMetal() }
         .widgetURL(URL(string: "ascnd://today"))
     }
     .configurationDisplayName(Text("widget.koa.name"))
@@ -63,7 +64,6 @@ enum KoaWidgetInk {
   static func rgb(_ r: Double, _ g: Double, _ b: Double) -> Color { Color(red: r / 255, green: g / 255, blue: b / 255) }
   static func paper(_ dark: Bool) -> Color { dark ? rgb(7, 7, 8) : rgb(247, 244, 239) }
   static func halo(_ dark: Bool) -> Color { rgb(dark ? 255 : 216, dark ? 145 : 115, dark ? 48 : 0) }
-  static func bubble(_ dark: Bool) -> Color { dark ? rgb(44, 44, 48) : rgb(229, 229, 234) }
   static func ink(_ dark: Bool) -> Color { dark ? rgb(245, 243, 240) : rgb(28, 27, 26) }
   static func muted(_ dark: Bool) -> Color { dark ? rgb(160, 156, 150) : rgb(118, 112, 104) }
   static func track(_ dark: Bool) -> Color { dark ? Color.white.opacity(0.10) : Color.black.opacity(0.07) }
@@ -87,6 +87,43 @@ enum KoaWidgetInk {
   }
   static let glyphs = ["moon.fill", "fork.knife", "drop.fill", "dumbbell.fill"]
   static func mono(_ size: CGFloat) -> Font { .custom("Menlo", size: size).weight(.bold) }
+}
+
+/// Titan đen của widget — họ hàng với kim loại thẻ hồ sơ (`PassMaterial`) nhưng
+/// khác (20/10, Kiệt: "biến tấu cho khác thẻ hồ sơ một xíu"): vân xước NGANG kiểu
+/// titan chải, vệt sáng ở mép trên thay vì chéo, quầng cam ấm của app sau Koa ở
+/// góc dưới trái, không có dấu chìm (logo đã ở góc), viền ánh bạc giữ nguyên.
+struct KoaPassMetal: View {
+  var body: some View {
+    ZStack {
+      LinearGradient(
+        colors: [Color(white: 0.15), Color(white: 0.08), Color(white: 0.06)], startPoint: .top, endPoint: .bottom)
+      RadialGradient(
+        colors: [KoaWidgetInk.halo(true).opacity(0.20), .clear], center: UnitPoint(x: 0.12, y: 0.95),
+        startRadius: 0, endRadius: 150)
+      Canvas { ctx, size in
+        var y: CGFloat = 0
+        var i = 0
+        while y < size.height {
+          var p = Path()
+          p.move(to: CGPoint(x: 0, y: y))
+          p.addLine(to: CGPoint(x: size.width, y: y))
+          ctx.stroke(p, with: .color(.white.opacity(i % 3 == 0 ? 0.045 : 0.022)), lineWidth: 0.5)
+          y += 2
+          i += 1
+        }
+      }
+      LinearGradient(
+        stops: [.init(color: .white.opacity(0.12), location: 0), .init(color: .clear, location: 0.22)],
+        startPoint: .top, endPoint: .bottom)
+      ContainerRelativeShape().strokeBorder(
+        LinearGradient(
+          colors: [.white.opacity(0.40), .white.opacity(0.08), .white.opacity(0.16)], startPoint: .top,
+          endPoint: .bottom),
+        lineWidth: 0.8)
+    }
+    .clipped()
+  }
 }
 
 /// Giấy ấm của app: nền + quầng cam nhạt ở góc trên.
@@ -139,47 +176,108 @@ struct KoaWidgetView: View {
 
   // MARK: - Màn hình chính
 
-  /// Nhỏ (20/10, Kiệt: "ít chữ, nhìn một giây"; không vòng quanh Koa; có logo):
-  /// logo ASCND + giọt nước bấm được ở trên; Koa bên trái; câu rất ngắn, bốn ống
-  /// và chuỗi bên phải.
+  /// Nhỏ (20/10, Kiệt chọn mock A — "thẻ vận động viên" của Koa): dòng đầu
+  /// "ASCND · KOA" + dấu; Koa làm avatar với giọt nước và câu rất ngắn; bốn vạch
+  /// việc; hai ô số HÔM NAY · CHUỖI.
   private var small: some View {
     VStack(alignment: .leading, spacing: 0) {
-      HStack(alignment: .center) {
-        brand(mark: 15, word: 11)
-        Spacer(minLength: 0)
-        if phase == .day { waterButton(compact: true) }
-      }
-      Spacer(minLength: 0)
-      HStack(alignment: .bottom, spacing: 4) {
-        koa(height: 92).padding(.leading, -6)
-        VStack(alignment: .leading, spacing: 8) {
+      caption
+      HStack(alignment: .bottom, spacing: 8) {
+        avatar(height: 80)
+        VStack(alignment: .leading, spacing: 6) {
+          if phase == .day { waterButton(compact: true) }
           Text(phase == .stale ? String(localized: "widget.koa.stale") : shortLine)
-            .font(.system(size: 13, weight: .bold))
-            .foregroundStyle(KoaWidgetInk.ink(dark))
+            .font(.system(size: 14, weight: .bold)).tracking(-0.2)
+            .foregroundStyle(.white)
             .lineLimit(2)
             .minimumScaleFactor(0.8)
             .fixedSize(horizontal: false, vertical: true)
-          tubes(height: 22, width: 8, spacing: 4)
-          streakChip
         }
-        .padding(.bottom, 12)
+        .padding(.bottom, 4)
+      }
+      .padding(.top, 6)
+      Spacer(minLength: 0)
+      dayBar.padding(.bottom, 6)
+      HStack(spacing: 0) {
+        stat(todayValue, label: String(localized: "widget.koa.stat.today"), size: 17)
+        statDivider
+        stat(streakValue, label: String(localized: "widget.koa.stat.streak"), size: 17)
       }
     }
-    .padding(.top, 12)
-    .padding(.horizontal, 12)
+    .padding(12)
   }
 
-  /// Logo ASCND như đầu trang Hôm nay (`BrandLockup`): dấu + chữ.
-  private func brand(mark: CGFloat, word: CGFloat) -> some View {
-    HStack(spacing: 4) {
-      Image("BrandMark").resizable().interpolation(.high).frame(width: mark, height: mark)
-      Text(verbatim: "ASCND")
-        .font(.system(size: word, weight: .bold))
-        .tracking(0.5)
-        .foregroundStyle(KoaWidgetInk.ink(dark))
+  private var todayValue: String {
+    guard let d = entry.data, phase != .stale else { return "–" }
+    return "\(d.done)/\(d.total)"
+  }
+  private var streakValue: String {
+    guard let d = entry.data, phase != .stale else { return "–" }
+    return "\(d.streak)"
+  }
+
+  /// Đầu thẻ: chỉ dấu ASCND ở góc (20/10, Kiệt: bỏ chữ "ASCND · KOA" — trùng với
+  /// logo và hình Koa).
+  private var caption: some View {
+    HStack {
+      Spacer(minLength: 0)
+      Image("BrandMark").resizable().interpolation(.high).frame(width: 16, height: 16)
+        .accessibilityHidden(true)
     }
     .accessibilityElement(children: .ignore)
     .accessibilityLabel(Text(verbatim: "ASCND"))
+  }
+
+  /// Ô số của thẻ: số khổ hẹp đậm, nhãn in hoa giãn chữ.
+  private func stat(_ value: String, label: String, size: CGFloat = 20) -> some View {
+    VStack(alignment: .leading, spacing: 1) {
+      Text(verbatim: value).font(.system(size: size, weight: .heavy).monospacedDigit()).fontWidth(.condensed)
+        .foregroundStyle(.white)
+      Text(label).font(.system(size: 8.5, weight: .bold)).tracking(1.1).textCase(.uppercase)
+        .foregroundStyle(.white.opacity(0.6)).lineLimit(1).minimumScaleFactor(0.7)
+    }
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .accessibilityElement(children: .combine)
+  }
+
+  private var statDivider: some View {
+    Rectangle().fill(.white.opacity(0.14)).frame(width: 0.5, height: 26).padding(.trailing, 8)
+  }
+
+  /// Bốn vạch mảnh màu việc (ngủ · bữa · nước · tập): sáng = xong, mờ = chưa, nét đứt = nghỉ.
+  private var dayBar: some View {
+    let checks = entry.data?.checks ?? []
+    return HStack(spacing: 3) {
+      ForEach(0..<4, id: \.self) { i in
+        let state = phase == .stale ? "todo" : (i < checks.count ? checks[i] : "todo")
+        Capsule()
+          .fill(state == "done" ? KoaWidgetInk.tube(i, true) : .white.opacity(state == "rest" ? 0.06 : 0.16))
+          .overlay {
+            if state == "rest" {
+              Capsule().strokeBorder(.white.opacity(0.3), style: StrokeStyle(lineWidth: 0.6, dash: [2, 2]))
+            }
+          }
+          .frame(height: 4)
+      }
+    }
+    .accessibilityHidden(true)
+  }
+
+  /// Koa đứng tự do làm avatar (ảnh app vẽ sẵn), bóng mềm dưới chân.
+  @ViewBuilder private func avatar(height: CGFloat) -> some View {
+    let name = WidgetDataStore.koaImageName(night: phase == .night, dark: true)
+    ZStack(alignment: .bottom) {
+      Ellipse().fill(.white.opacity(0.10)).frame(width: height * 0.55, height: height * 0.08).blur(radius: 3)
+      if let dir = WidgetDataStore().containerURL,
+        let image = UIImage(contentsOfFile: dir.appendingPathComponent(name).path)
+      {
+        Image(uiImage: image).resizable().widgetAccentedRenderingMode(.fullColor).scaledToFit()
+      } else {
+        Image(systemName: "pawprint.fill").resizable().scaledToFit().foregroundStyle(.white.opacity(0.3))
+          .padding(height * 0.25)
+      }
+    }
+    .frame(width: height * 0.8, height: height)
   }
 
   private var shortLine: String {
@@ -205,40 +303,39 @@ struct KoaWidgetView: View {
     .accessibilityLabel(Text("widget.koa.water"))
   }
 
-  /// Vừa: Koa lớn bên trái; bên phải bong bóng, nút việc kế tiếp, hàng ống + số.
+  /// Vừa: Koa avatar lớn bên trái; bên phải dòng đầu, câu của Koa, việc kế tiếp +
+  /// "+1 ly", bốn vạch việc, ba ô số HÔM NAY · CHUỖI · CẤP.
   private var medium: some View {
-    HStack(alignment: .bottom, spacing: 10) {
+    HStack(alignment: .bottom, spacing: 12) {
+      avatar(height: 140)
       VStack(alignment: .leading, spacing: 0) {
-        brand(mark: 15, word: 11).padding(.leading, 10).padding(.top, 14)
-        Spacer(minLength: 0)
-        koa(height: 116)
-      }
-      VStack(alignment: .leading, spacing: 8) {
-        bubble(lines: 3, size: 14)
+        caption
+        Text(line)
+          .font(.system(size: 15, weight: .bold)).tracking(-0.3)
+          .foregroundStyle(.white)
+          .lineLimit(2)
+          .minimumScaleFactor(0.85)
+          .fixedSize(horizontal: false, vertical: true)
+          .padding(.top, 6)
         if phase == .day, let d = entry.data {
           HStack(spacing: 6) {
             if let next = d.next, d.nextQuest != "water" { nextChip(next, quest: d.nextQuest) }
             waterButton(compact: false)
           }
+          .padding(.top, 6)
         }
-        Spacer(minLength: 0)
-        HStack(alignment: .bottom, spacing: 10) {
-          tubes(height: 26, width: 10, spacing: 6, glyphs: true)
-          Spacer(minLength: 0)
-          VStack(alignment: .trailing, spacing: 2) {
-            streakChip
-            if let d = entry.data, phase != .stale {
-              Text("widget.koa.done \(d.done) \(d.total)")
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(KoaWidgetInk.muted(dark))
-            }
-          }
+        Spacer(minLength: 6)
+        dayBar.padding(.bottom, 7)
+        HStack(spacing: 0) {
+          stat(todayValue, label: String(localized: "widget.koa.stat.today"))
+          statDivider
+          stat(streakValue, label: String(localized: "widget.koa.stat.streak"))
+          statDivider
+          stat(entry.data.map { "\($0.level)" } ?? "–", label: String(localized: "widget.koa.stat.level"))
         }
       }
-      .padding(.vertical, 14)
     }
-    .padding(.leading, 6)
-    .padding(.trailing, 16)
+    .padding(14)
   }
 
   // MARK: - Màn khoá (hệ thống tô một màu — chỉ dáng chữ và số)
@@ -274,25 +371,6 @@ struct KoaWidgetView: View {
 
   // MARK: - Mảnh
 
-  /// Bong bóng xám kiểu iMessage với đuôi chỉ xuống Koa (như Hôm nay).
-  private func bubble(lines: Int, size: CGFloat) -> some View {
-    Text(line)
-      .font(.system(size: size, weight: .semibold))
-      .foregroundStyle(KoaWidgetInk.ink(dark))
-      .lineLimit(lines)
-      .minimumScaleFactor(0.8)
-      .fixedSize(horizontal: false, vertical: true)
-      .padding(.horizontal, 10)
-      .padding(.vertical, 7)
-      .background(alignment: .bottomLeading) {
-        ZStack(alignment: .bottomLeading) {
-          RoundedRectangle(cornerRadius: 14, style: .continuous).fill(KoaWidgetInk.bubble(dark))
-          BubbleTail().fill(KoaWidgetInk.bubble(dark)).frame(width: 12, height: 9).offset(x: 10, y: 7)
-        }
-      }
-      .widgetAccentable(false)
-  }
-
   private func nextChip(_ text: String, quest: String?) -> some View {
     HStack(spacing: 4) {
       Image(systemName: "plus").font(.system(size: 10, weight: .heavy))
@@ -304,76 +382,5 @@ struct KoaWidgetView: View {
     .background(KoaWidgetInk.quest(quest, dark), in: Capsule())
   }
 
-  /// Bốn ống mảnh như khối ngày của Hôm nay: đầy màu = xong, mờ = chưa, chấm = nghỉ.
-  private func tubes(height: CGFloat, width: CGFloat, spacing: CGFloat, glyphs: Bool = false) -> some View {
-    let checks = entry.data?.checks ?? []
-    return HStack(alignment: .bottom, spacing: spacing) {
-      ForEach(0..<4, id: \.self) { i in
-        let state = phase == .stale ? "todo" : (i < checks.count ? checks[i] : "todo")
-        VStack(spacing: 4) {
-          ZStack(alignment: .bottom) {
-            Capsule().fill(KoaWidgetInk.track(dark))
-            if state == "done" {
-              Capsule().fill(
-                LinearGradient(
-                  colors: [KoaWidgetInk.tube(i, dark).opacity(0.75), KoaWidgetInk.tube(i, dark)], startPoint: .top,
-                  endPoint: .bottom))
-            } else if state == "rest" {
-              Circle().fill(KoaWidgetInk.muted(dark).opacity(0.6)).frame(width: width * 0.45).padding(.bottom, width * 0.4)
-            }
-          }
-          .frame(width: width, height: height)
-          if glyphs {
-            Image(systemName: KoaWidgetInk.glyphs[i])
-              .font(.system(size: 9, weight: .bold))
-              .foregroundStyle(state == "done" ? KoaWidgetInk.tube(i, dark) : KoaWidgetInk.muted(dark))
-              .frame(width: 14)
-          }
-        }
-      }
-    }
-  }
 
-  @ViewBuilder private var streakChip: some View {
-    if let d = entry.data, phase != .stale, d.streak > 0 {
-      HStack(spacing: 3) {
-        Image(systemName: "flame.fill").font(.system(size: 11, weight: .bold))
-          .foregroundStyle(KoaWidgetInk.quest("meal", dark))
-        Text(verbatim: "\(d.streak)").font(KoaWidgetInk.mono(13)).foregroundStyle(KoaWidgetInk.ink(dark))
-      }
-    }
-  }
-
-  /// Koa vẽ sẵn (app ghi vào App Group), chạm mép đáy, bóng đổ mềm dưới chân.
-  @ViewBuilder private func koa(height: CGFloat) -> some View {
-    let name = WidgetDataStore.koaImageName(night: phase == .night, dark: dark)
-    ZStack(alignment: .bottom) {
-      Ellipse()
-        .fill(Color.black.opacity(dark ? 0.35 : 0.10))
-        .frame(width: height * 0.5, height: height * 0.07)
-        .blur(radius: 2)
-        .padding(.bottom, height * 0.03)
-      if let dir = WidgetDataStore().containerURL,
-        let image = UIImage(contentsOfFile: dir.appendingPathComponent(name).path)
-      {
-        Image(uiImage: image).resizable().widgetAccentedRenderingMode(.fullColor).scaledToFit()
-      } else {
-        Image(systemName: "pawprint.fill").resizable().scaledToFit()
-          .foregroundStyle(KoaWidgetInk.muted(dark)).padding(height * 0.25)
-      }
-    }
-    .frame(width: height * 0.8, height: height)
-  }
-}
-
-/// Đuôi bong bóng: tam giác cong chỉ xuống trái.
-struct BubbleTail: Shape {
-  func path(in r: CGRect) -> Path {
-    var p = Path()
-    p.move(to: CGPoint(x: 0, y: 0))
-    p.addLine(to: CGPoint(x: r.width, y: 0))
-    p.addQuadCurve(to: CGPoint(x: 0, y: r.height), control: CGPoint(x: r.width * 0.35, y: r.height * 0.2))
-    p.closeSubpath()
-    return p
-  }
 }

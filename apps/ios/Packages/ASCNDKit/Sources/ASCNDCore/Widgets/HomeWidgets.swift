@@ -111,7 +111,7 @@ public enum HomeWidgets {
 /// câu của Koa đã ở ngôn ngữ của app, CÙNG câu với Hôm nay (một Koa, một bộ não).
 public struct KoaWidgetData: Codable, Sendable, Hashable {
   enum CodingKeys: String, CodingKey {
-    case day, line, next, done, total, streak, nightLine, imageVersion, checks, nextQuest, waterTaps, short
+    case day, line, next, done, total, streak, nightLine, imageVersion, checks, nextQuest, waterTaps, short, level
   }
 
   public init(from decoder: any Decoder) throws {
@@ -128,6 +128,7 @@ public struct KoaWidgetData: Codable, Sendable, Hashable {
     nextQuest = try c.decodeIfPresent(String.self, forKey: .nextQuest)
     waterTaps = try c.decodeIfPresent(Int.self, forKey: .waterTaps) ?? 0
     short = try c.decodeIfPresent(String.self, forKey: .short) ?? ""
+    level = try c.decodeIfPresent(Int.self, forKey: .level) ?? 1
   }
 
   /// Ngày địa phương của dữ liệu (`YYYY-MM-DD`). Khác hôm nay → widget không nói
@@ -149,6 +150,8 @@ public struct KoaWidgetData: Codable, Sendable, Hashable {
   public var checks: [String] = []
   /// Nhiệm vụ của việc kế tiếp (`MascotRules.Quest.rawValue`) — màu của nút.
   public var nextQuest: String?
+  /// Cấp của Koa (ô "CẤP" của thẻ).
+  public var level = 1
   /// Câu rất ngắn cho cỡ nhỏ (≤ 5 chữ, đã dịch) — nhìn một giây là hiểu.
   public var short = ""
   /// Số ly vừa thêm từ widget từ lần app ghi gần nhất (để widget nói "+1 ly").
@@ -197,7 +200,8 @@ public struct WidgetDataStore: Sendable {
   /// đăng xuất KHÔNG xoá (như `ascnd_lang` của RN nằm trong `DEVICE_KEYS`).
   public static let languageKey = "ascnd.widget.lang"
   public static let koaKey = "ascnd.widget.koa"
-  /// Ảnh Koa vẽ sẵn trong thư mục App Group (sáng / tối × ngày / đêm).
+  /// Ảnh Koa (avatar của thẻ widget) vẽ sẵn trong App Group — ngày / đêm; thẻ
+  /// luôn là kim loại tối nên chỉ dùng bản `dark`.
   public static func koaImageName(night: Bool, dark: Bool) -> String {
     "koa-widget-\(night ? "night" : "day")-\(dark ? "dark" : "light").png"
   }

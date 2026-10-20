@@ -5,15 +5,15 @@ import WidgetKit
 
 /// Đẩy Koa của Hôm nay ra widget (#527, đợt 2C).
 ///
-/// Widget không chạy bộ vẽ Canvas của Koa, nên ở đây vẽ sẵn bốn ảnh tĩnh (ngày /
-/// đêm × giấy / đèn) vào App Group — chỉ vẽ lại khi Koa thật sự đổi (nét mặt, đồ,
-/// linh vật) — và ghi phần chữ (CÙNG câu với Hôm nay). Đăng xuất: `WidgetRefresher`
+/// Widget là một "thẻ vận động viên" của Koa (Kiệt chọn mock A 20/10: kim loại đen
+/// như thẻ hồ sơ, Koa làm avatar). Widget không chạy bộ vẽ Canvas của Koa, nên ở
+/// đây vẽ sẵn ảnh Koa ngày / đêm vào App Group — chỉ vẽ lại khi Koa đổi (nét mặt,
+/// đồ, linh vật) — và ghi phần chữ (CÙNG câu với Hôm nay). Đăng xuất: `WidgetRefresher`
 /// xoá cả dữ liệu lẫn ảnh (`WidgetDataStore.clear`).
 @MainActor
 final class KoaWidgetPublisher {
   static let kind = "com.ascnd.fitnessos.widgets.koa"
-  /// Cỡ vẽ (điểm) × tỉ lệ: đủ nét cho widget vừa, nhẹ cho bộ nhớ widget.
-  static let size: CGFloat = 150
+
   static let scale: CGFloat = 3
 
   private let store = WidgetDataStore()
@@ -34,6 +34,8 @@ final class KoaWidgetPublisher {
     var day: LocalDate
     var checks: [String] = []
     var nextQuest: MascotRules.Quest?
+    /// Cấp của Koa (ô "CẤP" của thẻ).
+    var level = 1
   }
 
   func publish(_ s: Snapshot) {
@@ -47,6 +49,7 @@ final class KoaWidgetPublisher {
       nightLine: String(localized: "koa.say.night"), imageVersion: version, checks: s.checks,
       nextQuest: s.nextQuest?.rawValue)
     data.short = Self.short(s)
+    data.level = s.level
     // App vừa dựng lại Hôm nay: số ly từ widget đã nằm trong số thật.
     guard data != last || (store.koa()?.waterTaps ?? 0) > 0 else { return }
     last = data
@@ -72,23 +75,24 @@ final class KoaWidgetPublisher {
     last = nil
   }
 
+  /// Avatar trên thẻ: Koa đứng tự do, bản đèn (thẻ luôn tối), ngày và đêm.
+  static let avatarSize: CGFloat = 150
+
   private func render(_ s: Snapshot) -> Bool {
     guard let dir = store.containerURL else { return false }
     var ok = true
     for night in [false, true] {
-      for dark in [false, true] {
-        let figure = MascotFigureView(
-          mascotId: s.mascotId, emotion: night ? .sleep : s.emotion, equipped: s.equipped, size: Self.size,
-          animated: false, paper: !dark)
-        let r = ImageRenderer(content: figure)
-        r.scale = Self.scale
-        guard let png = r.uiImage?.pngData() else {
-          ok = false
-          continue
-        }
-        let url = dir.appendingPathComponent(WidgetDataStore.koaImageName(night: night, dark: dark))
-        do { try png.write(to: url, options: .atomic) } catch { ok = false }
+      let figure = MascotFigureView(
+        mascotId: s.mascotId, emotion: night ? .sleep : s.emotion, equipped: s.equipped, size: Self.avatarSize,
+        animated: false, paper: false)
+      let r = ImageRenderer(content: figure)
+      r.scale = Self.scale
+      guard let png = r.uiImage?.pngData() else {
+        ok = false
+        continue
       }
+      let url = dir.appendingPathComponent(WidgetDataStore.koaImageName(night: night, dark: true))
+      do { try png.write(to: url, options: .atomic) } catch { ok = false }
     }
     return ok
   }
