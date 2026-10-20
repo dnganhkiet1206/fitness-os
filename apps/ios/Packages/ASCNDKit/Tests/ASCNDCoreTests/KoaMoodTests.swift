@@ -128,6 +128,7 @@ struct QuestAutoClaimTests {
     await Self.settle { got.all.count == 1 }
     #expect(got.all.map(\.quest) == [.meal])
     #expect(got.all.first?.seen == true)
+    #expect(got.all.first?.allDone == false, "mới xong bữa, chưa xong hết")
     #expect(got.all.first?.amount == 25)
   }
 
@@ -162,5 +163,33 @@ struct QuestAutoClaimTests {
     await o.refresh()
     try? await Task.sleep(for: .milliseconds(20))
     #expect(e.claims.isEmpty)
+  }
+}
+
+/// Koa ló lên ở mọi tab (đợt 2A): hạn mức "ít mà đáng".
+struct KoaPeekTests {
+  let day = LocalDate("2026-10-19")!
+
+  @Test func firstPeekOfTheDayIsAllowed() {
+    #expect(KoaPeek.allow(nil, nowMs: 0, day: day, allDone: false))
+    let old = KoaPeek.Ledger(day: "2026-10-18", shown: 4, lastMs: 0)
+    #expect(KoaPeek.allow(old, nowMs: 1, day: day, allDone: false), "sổ hôm qua không tính")
+  }
+
+  @Test func cooldownAndDailyCap() {
+    var l = KoaPeek.record(nil, nowMs: 1_000, day: day)
+    #expect(!KoaPeek.allow(l, nowMs: 60_000, day: day, allDone: false), "chưa đủ 90 giây")
+    #expect(KoaPeek.allow(l, nowMs: 91_000, day: day, allDone: false))
+    for i in 2...KoaPeek.dailyCap { l = KoaPeek.record(l, nowMs: Double(i) * 200_000, day: day) }
+    #expect(l.shown == KoaPeek.dailyCap)
+    #expect(!KoaPeek.allow(l, nowMs: 9_000_000, day: day, allDone: false), "đủ trần ngày")
+    #expect(KoaPeek.allow(l, nowMs: 9_000_000, day: day, allDone: true), "xong hết luôn được hiện")
+  }
+
+  @Test func faceFitsTheQuest() {
+    #expect(KoaPeek.emotion(.workout, allDone: false) == .proud)
+    #expect(KoaPeek.emotion(.sleep, allDone: false) == .rested)
+    #expect(KoaPeek.emotion(.meal, allDone: true) == .celebrate)
+    #expect(KoaPeek.emotion(nil, allDone: false) == .celebrate)
   }
 }

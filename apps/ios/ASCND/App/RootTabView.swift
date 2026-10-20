@@ -74,6 +74,8 @@ struct RootTabView: View {
     // Ăn mừng huy chương / thử thách (#527, `CelebrationHost` ở layout gốc của
     // RN): trên mọi tab, phủ cả thanh tab.
     .overlay { CelebrationHost(queue: services.celebrations) }
+    // Koa ló lên ở mọi tab khi xu của việc vừa xong tự về (đợt 2A).
+    .overlay { KoaPeekHost(tab: selection) }
     // Link tới một màn: mở tab của nó, rồi màn ấy thành sheet. `initial`: link
     // đến lúc chưa đăng nhập được mở ngay khi cây của phiên dựng xong.
     .onChange(of: links?.pending, initial: true) { _, _ in
