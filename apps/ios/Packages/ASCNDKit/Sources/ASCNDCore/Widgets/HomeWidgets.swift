@@ -110,6 +110,22 @@ public enum HomeWidgets {
 /// hai ảnh tĩnh vào App Group (`koaImage` / `nightImage`) và ghi phần chữ ở đây —
 /// câu của Koa đã ở ngôn ngữ của app, CÙNG câu với Hôm nay (một Koa, một bộ não).
 public struct KoaWidgetData: Codable, Sendable, Hashable {
+  enum CodingKeys: String, CodingKey { case day, line, next, done, total, streak, nightLine, imageVersion, checks, nextQuest }
+
+  public init(from decoder: any Decoder) throws {
+    let c = try decoder.container(keyedBy: CodingKeys.self)
+    day = try c.decode(String.self, forKey: .day)
+    line = try c.decode(String.self, forKey: .line)
+    next = try c.decodeIfPresent(String.self, forKey: .next)
+    done = try c.decode(Int.self, forKey: .done)
+    total = try c.decode(Int.self, forKey: .total)
+    streak = try c.decode(Int.self, forKey: .streak)
+    nightLine = try c.decode(String.self, forKey: .nightLine)
+    imageVersion = try c.decode(Int.self, forKey: .imageVersion)
+    checks = try c.decodeIfPresent([String].self, forKey: .checks) ?? []
+    nextQuest = try c.decodeIfPresent(String.self, forKey: .nextQuest)
+  }
+
   /// Ngày địa phương của dữ liệu (`YYYY-MM-DD`). Khác hôm nay → widget không nói
   /// tâm trạng cũ, chỉ mời mở app.
   public var day: String
@@ -124,10 +140,18 @@ public struct KoaWidgetData: Codable, Sendable, Hashable {
   public var nightLine: String
   /// Phiên bản ảnh — widget đọc lại ảnh khi số này đổi.
   public var imageVersion: Int
+  /// Bốn ống của "Hôm nay của bạn" theo thứ tự ngủ · bữa · nước · tập:
+  /// `done` / `todo` / `rest` (`DayCheckIn.State`). Dữ liệu cũ không có → rỗng.
+  public var checks: [String] = []
+  /// Nhiệm vụ của việc kế tiếp (`MascotRules.Quest.rawValue`) — màu của nút.
+  public var nextQuest: String?
 
   public init(
-    day: String, line: String, next: String?, done: Int, total: Int, streak: Int, nightLine: String, imageVersion: Int
+    day: String, line: String, next: String?, done: Int, total: Int, streak: Int, nightLine: String, imageVersion: Int,
+    checks: [String] = [], nextQuest: String? = nil
   ) {
+    self.checks = checks
+    self.nextQuest = nextQuest
     self.day = day
     self.line = line
     self.next = next

@@ -608,12 +608,20 @@ struct TodayExtras<Plan: View>: View {
   /// Widget Koa (đợt 2C): CÙNG Koa, câu và con số "xong hôm nay" như trang này.
   private func publishKoa(_ state: TodayDayBlock.KoaState, _ room: MascotRoomController) {
     lastKoa = state
-    let progress = DayCheckIn.progress(dayStates(room))
+    let states = dayStates(room)
+    let progress = DayCheckIn.progress(states)
+    let checks = DayCheckIn.Item.allCases.map { item -> String in
+      switch states[item] {
+      case .done: "done"
+      case .rest: "rest"
+      default: "todo"
+      }
+    }
     services.koaWidget.publish(.init(
       userId: userId, mascotId: services.preferences.mascotSelected, emotion: state.emotion,
       equipped: shop?.inventory.filter(\.equipped).map(\.itemKey) ?? [], line: state.line,
       next: state.next.map(TodayDayBlock.action), done: progress.done, total: progress.total,
-      streak: room.streak.count, day: room.today))
+      streak: room.streak.count, day: room.today, checks: checks, nextQuest: state.next))
   }
 
   /// Lên cấp / lên hạng nhờ xu tự về: màn ăn mừng ở gốc app (cùng đường với huy chương).

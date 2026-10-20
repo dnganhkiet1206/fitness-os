@@ -32,6 +32,8 @@ final class KoaWidgetPublisher {
     var total: Int
     var streak: Int
     var day: LocalDate
+    var checks: [String] = []
+    var nextQuest: MascotRules.Quest?
   }
 
   func publish(_ s: Snapshot) {
@@ -42,7 +44,8 @@ final class KoaWidgetPublisher {
     }
     let data = KoaWidgetData(
       day: s.day.description, line: s.line, next: s.next, done: s.done, total: s.total, streak: s.streak,
-      nightLine: String(localized: "koa.say.night"), imageVersion: version)
+      nightLine: String(localized: "koa.say.night"), imageVersion: version, checks: s.checks,
+      nextQuest: s.nextQuest?.rawValue)
     guard data != last else { return }
     last = data
     store.writeKoa(data)
