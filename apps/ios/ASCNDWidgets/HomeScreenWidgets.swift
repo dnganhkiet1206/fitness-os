@@ -83,14 +83,32 @@ struct TodayWorkoutView: View {
         .font(.system(size: 15, weight: .bold)).foregroundStyle(WidgetCard.rose).padding(.bottom, 4)
       Text(d.workoutName).font(.system(size: 18, weight: .bold)).tracking(-0.3)
         .foregroundStyle(.white).lineLimit(2).minimumScaleFactor(0.8)
-      Text(d.statusText).font(.system(size: 11, weight: .semibold)).foregroundStyle(.white.opacity(0.6))
-        .lineLimit(1).padding(.top, 2)
+      Text(verbatim: subline(d)).font(.system(size: 11, weight: .semibold)).foregroundStyle(.white.opacity(0.6))
+        .lineLimit(1).minimumScaleFactor(0.85).padding(.top, 2)
       Spacer(minLength: 0)
       segments(d).padding(.bottom, 6)
-      WidgetCard.stat(
-        rest ? "–" : "\(d.completedExercises)/\(d.totalExercises)", label: String(localized: "widget.card.exercises"),
-        size: 17)
+      if rest, let tomorrow = d.tomorrow {
+        WidgetCard.stat(tomorrow, label: String(localized: "widget.card.tomorrow"), size: 15)
+      } else {
+        WidgetCard.stat(
+          rest ? "–" : "\(d.completedExercises)/\(d.totalExercises)", label: String(localized: "widget.card.exercises"),
+          size: 17)
+      }
     }
+  }
+
+  /// Có lịch mà chưa tập (20/10): app gửi kèm số phút của buổi.
+  private var planned: Bool { !rest && data?.plannedMinutes != nil && (data?.completedExercises ?? 0) == 0 }
+
+  /// Dòng dưới tên: "3 bài · ~17 phút" khi có lịch chưa tập, câu nghỉ ngày nghỉ,
+  /// còn lại là trạng thái app gửi.
+  private func subline(_ d: TodayWorkoutWidgetData) -> String {
+    if planned, let minutes = d.plannedMinutes {
+      return d.totalExercises == 1
+        ? String(localized: "widget.card.planned.one \(d.totalExercises) \(minutes)")
+        : String(localized: "widget.card.planned.other \(d.totalExercises) \(minutes)")
+    }
+    return rest ? String(localized: "widget.card.restLine") : d.statusText
   }
 
   private func medium(_ d: TodayWorkoutWidgetData) -> some View {
@@ -104,7 +122,11 @@ struct TodayWorkoutView: View {
           Text(d.workoutName).font(.system(size: 19, weight: .bold)).tracking(-0.3).foregroundStyle(.white)
             .lineLimit(1).minimumScaleFactor(0.8)
           Group {
-            if let next = d.nextExerciseName { Text("widget.next \(next)") } else { Text(d.statusText) }
+            if !planned, !rest, let next = d.nextExerciseName {
+              Text("widget.next \(next)")
+            } else {
+              Text(verbatim: subline(d))
+            }
           }
           .font(.system(size: 12, weight: .semibold)).foregroundStyle(.white.opacity(0.65)).lineLimit(1)
         }
@@ -115,13 +137,20 @@ struct TodayWorkoutView: View {
       HStack(spacing: 0) {
         // Một ô "5/5 bài tập" thay cho hai ô "5 xong" + "5 bài tập": chữ "xong" chỉ còn
         // ở ô trạng thái (20/10, Kiệt).
-        WidgetCard.stat(
-          rest ? "–" : "\(d.completedExercises)/\(d.totalExercises)", label: String(localized: "widget.card.exercises"))
+        if rest, let tomorrow = d.tomorrow {
+          // Ngày nghỉ: ô thứ nhất là buổi ngày mai thay cho "–" (20/10, Kiệt).
+          WidgetCard.stat(tomorrow, label: String(localized: "widget.card.tomorrow"))
+        } else {
+          WidgetCard.stat(
+            rest ? "–" : "\(d.completedExercises)/\(d.totalExercises)", label: String(localized: "widget.card.exercises"))
+        }
         WidgetCard.hairline
         WidgetCard.stat(
           (rest
             ? String(localized: "widget.card.state.rest")
-            : finished ? String(localized: "widget.card.state.done") : String(localized: "widget.card.state.going"))
+            : finished
+              ? String(localized: "widget.card.state.done")
+              : planned ? String(localized: "widget.card.state.notStarted") : String(localized: "widget.card.state.going"))
             .uppercased(),
           label: String(localized: "widget.card.state"), tint: finished ? WidgetCard.green : .white)
       }

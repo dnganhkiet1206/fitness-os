@@ -129,4 +129,57 @@ struct HomeWidgetsTests {
     let ok = await WidgetSync.payloads(userId: "u1", store: Store(fail: "streak_freezes"), copy: Self.copy, now: now, in: utc)
     #expect(ok?.streak.streakDays == 1)
   }
+
+  /// 20/10 (Kiệt): lịch có buổi mà chưa tập → widget nói buổi ấy, không "Ngày nghỉ";
+  /// ngày không buổi → kèm buổi ngày mai. Payload cũ (không có hai trường mới) vẫn đọc được.
+  @Test func plannedWorkoutAndTomorrow() throws {
+    let copy = HomeWidgets.Copy(
+      done: "Done", restDay: "Rest day", noWorkout: "No workout yet", untitled: "Workout", notStarted: "Not started")
+    let arms = WorkoutTemplate(id: "a", name: "Arms", exercises: [
+      TemplateExercise(exerciseName: "Curl", sets: 3, reps: 10, weightKg: 10),
+      TemplateExercise(exerciseName: "Dip", sets: 3, reps: 10, weightKg: 0),
+    ])
+    let push = WorkoutTemplate(id: "p", name: "Push", exercises: [TemplateExercise(exerciseName: "Bench", sets: 1, reps: 5, weightKg: 60)])
+    let monday = LocalDate("2026-10-19")!  // routineIndex 0
+    let snap = TemplateSnapshot(
+      routine: [
+        RoutineDay(dayOfWeek: 0, isRest: false, templateId: "a"), RoutineDay(dayOfWeek: 1, isRest: true, templateId: nil),
+        RoutineDay(dayOfWeek: 2, isRest: false, templateId: "p"),
+      ], templates: [arms, push], fetchedAt: EpochMillis(1))
+
+    let planned = HomeWidgets.todayWorkout(
+      sessions: [], copy: copy, plan: snap.plan(for: monday, today: monday),
+      tomorrow: snap.plan(for: monday.adding(days: 1), today: monday))
+    #expect(planned.workoutName == "Arms")
+    #expect(planned.statusText == "Not started")
+    #expect(planned.nextExerciseName == "Curl")
+    #expect(planned.completedExercises == 0 && planned.totalExercises == 2)
+    #expect(planned.plannedMinutes == TemplateDraft.estimatedMinutes([(3, 10, 90), (3, 10, 90)]))
+
+    let tuesday = monday.adding(days: 1)
+    let rest = HomeWidgets.todayWorkout(
+      sessions: [], copy: copy, plan: snap.plan(for: tuesday, today: tuesday),
+      tomorrow: snap.plan(for: tuesday.adding(days: 1), today: tuesday))
+    #expect(rest.workoutName == "Rest day" && rest.totalExercises == 0 && rest.plannedMinutes == nil)
+    #expect(rest.tomorrow == "Push")
+
+    // Mai cũng nghỉ / chưa lên lịch → không có dòng "Mai".
+    let unplanned = HomeWidgets.todayWorkout(
+      sessions: [], copy: copy, plan: snap.plan(for: monday.adding(days: 3), today: monday.adding(days: 3)),
+      tomorrow: snap.plan(for: monday.adding(days: 4), today: monday.adding(days: 3)))
+    #expect(unplanned.tomorrow == nil)
+
+    // Đã có buổi hôm nay: buổi đã ghi thắng lịch.
+    let done = HomeWidgets.todayWorkout(
+      sessions: [.object(["template_name": .string("Arms"), "sets": .array([.object(["exerciseName": .string("Curl")])])])],
+      copy: copy,
+      plan: snap.plan(for: monday, today: monday))
+    #expect(done.statusText == "Done" && done.plannedMinutes == nil)
+
+    // Payload cũ không có `plannedMinutes` / `tomorrow`.
+    let old = try JSONDecoder().decode(
+      TodayWorkoutWidgetData.self,
+      from: Data(#"{"workoutName":"Rest day","statusText":"x","completedExercises":0,"totalExercises":0}"#.utf8))
+    #expect(old.plannedMinutes == nil && old.tomorrow == nil)
+  }
 }

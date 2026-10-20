@@ -13,10 +13,16 @@ final class WidgetRefresher: @unchecked Sendable {
   private var user: String?
   private let store: (any RowStore)?
   private let data: WidgetDataStore
+  /// Lịch tập đã cache của người dùng (`TodayRepository.cached`), `nil` = không dùng.
+  private let plans: (@Sendable (String) async -> TemplateSnapshot?)?
 
-  init(store: (any RowStore)?, data: WidgetDataStore = WidgetDataStore()) {
+  init(
+    store: (any RowStore)?, data: WidgetDataStore = WidgetDataStore(),
+    plans: (@Sendable (String) async -> TemplateSnapshot?)? = nil
+  ) {
     self.store = store
     self.data = data
+    self.plans = plans
   }
 
   /// Phiên đổi. Không còn ai: xoá ngay.
@@ -35,10 +41,12 @@ final class WidgetRefresher: @unchecked Sendable {
   /// giữ số cũ (`WidgetSync.payloads` trả `nil`).
   func refresh() async {
     guard let store, let userId = lock.withLock({ user }) else { return }
+    let snapshot = await plans?(userId)
     guard
       let p = await WidgetSync.payloads(
         userId: userId, store: store, copy: Self.copy, now: SystemWallClock().nowMillis(), in: .current,
-        recovery: ReadinessCopyStore.copy.map { copy in { ReadinessCard.hasRecoverySignal($0, copy: copy) } })
+        recovery: ReadinessCopyStore.copy.map { copy in { ReadinessCard.hasRecoverySignal($0, copy: copy) } },
+        plans: snapshot)
     else { return }
     // Phiên đã đổi trong lúc đọc: bỏ, không ghi số của người khác.
     guard lock.withLock({ user }) == userId else { return }
@@ -61,7 +69,7 @@ final class WidgetRefresher: @unchecked Sendable {
     HomeWidgets.Copy(
       done: String(localized: "widget.done"), restDay: String(localized: "widget.restDay"),
       noWorkout: String(localized: "widget.noWorkout"), untitled: String(localized: "widget.untitled"),
-      noScore: String(localized: "widget.noScore"))
+      noScore: String(localized: "widget.noScore"), notStarted: String(localized: "widget.notStarted"))
   }
 }
 

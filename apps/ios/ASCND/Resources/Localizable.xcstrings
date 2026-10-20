@@ -34112,6 +34112,29 @@
     }
    }
   },
+  "widget.notStarted": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Not started yet"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chưa bắt đầu"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Aún sin empezar"
+     }
+    }
+   }
+  },
   "widget.untitled": {
    "extractionState": "manual",
    "localizations": {

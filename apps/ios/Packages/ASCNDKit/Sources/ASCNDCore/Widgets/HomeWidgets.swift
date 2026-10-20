@@ -12,16 +12,25 @@ public struct TodayWorkoutWidgetData: Codable, Sendable, Hashable {
   public var nextExerciseName: String?
   public var completedExercises: Int
   public var totalExercises: Int
+  /// Phút ước tính của buổi ĐÃ LÊN LỊCH mà chưa tập (20/10, Kiệt); khác `nil` ⇔
+  /// trạng thái "có lịch, chưa bắt đầu". Trường mới, tuỳ chọn: payload của RN /
+  /// bản cũ không có nó vẫn đọc được.
+  public var plannedMinutes: Int?
+  /// Tên buổi ngày mai, cho ngày không có buổi ("Mai · Ngực & Vai"); `nil` = mai
+  /// cũng chưa có lịch.
+  public var tomorrow: String?
 
   public init(
     workoutName: String, statusText: String, nextExerciseName: String? = nil, completedExercises: Int,
-    totalExercises: Int
+    totalExercises: Int, plannedMinutes: Int? = nil, tomorrow: String? = nil
   ) {
     self.workoutName = workoutName
     self.statusText = statusText
     self.nextExerciseName = nextExerciseName
     self.completedExercises = completedExercises
     self.totalExercises = totalExercises
+    self.plannedMinutes = plannedMinutes
+    self.tomorrow = tomorrow
   }
 }
 
@@ -48,21 +57,41 @@ public enum HomeWidgets {
     public let untitled: String
     /// Chưa chấm được điểm hôm nay (19/10 — trước dùng nhầm "Chưa có buổi tập").
     public let noScore: String
-    public init(done: String, restDay: String, noWorkout: String, untitled: String, noScore: String? = nil) {
+    /// Buổi có trong lịch, chưa bắt đầu (20/10).
+    public let notStarted: String
+    public init(
+      done: String, restDay: String, noWorkout: String, untitled: String, noScore: String? = nil,
+      notStarted: String? = nil
+    ) {
       self.done = done
       self.restDay = restDay
       self.noWorkout = noWorkout
       self.untitled = untitled
       self.noScore = noScore ?? noWorkout
+      self.notStarted = notStarted ?? noWorkout
     }
   }
 
   /// Payload "Buổi tập hôm nay" từ các buổi của hôm nay (mới trước): buổi mới
   /// nhất, đếm BÀI khác nhau (không đếm hàng set — RN: "12/12" luôn đầy).
-  public static func todayWorkout(sessions: [JSONValue], copy: Copy) -> TodayWorkoutWidgetData {
+  ///
+  /// Chưa có buổi nào hôm nay (20/10, Kiệt): lịch có buổi mà chưa tập thì widget
+  /// nói buổi ấy ("Tập Tay trước · 0/3 · chưa bắt đầu") chứ không nói "Ngày nghỉ";
+  /// ngày không có buổi thì kèm buổi ngày mai nếu đã có lịch.
+  public static func todayWorkout(
+    sessions: [JSONValue], copy: Copy, plan: TodayPlan? = nil, tomorrow: TodayPlan? = nil
+  ) -> TodayWorkoutWidgetData {
     guard let latest = sessions.first else {
+      if let plan, plan.status == .todo, let t = plan.template, !t.exercises.isEmpty {
+        return TodayWorkoutWidgetData(
+          workoutName: t.name.isEmpty ? copy.untitled : t.name, statusText: copy.notStarted,
+          nextExerciseName: t.exercises.first?.exerciseName, completedExercises: 0, totalExercises: t.exercises.count,
+          plannedMinutes: TemplateDraft.estimatedMinutes(t.exercises.map { ($0.sets, $0.reps, $0.restSeconds) }))
+      }
+      let next = tomorrow?.template.map { $0.name.isEmpty ? copy.untitled : $0.name }
       return TodayWorkoutWidgetData(
-        workoutName: copy.restDay, statusText: copy.noWorkout, completedExercises: 0, totalExercises: 0)
+        workoutName: copy.restDay, statusText: copy.noWorkout, completedExercises: 0, totalExercises: 0,
+        tomorrow: next)
     }
     var names = Set<String>()
     if case .array(let sets)? = latest["sets"] {
