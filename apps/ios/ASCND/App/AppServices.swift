@@ -43,11 +43,22 @@ final class AppServices {
     let amount: Int
     /// Bước chuyển app thấy tận mắt (không phải việc đã xong lúc app đóng).
     let seen: Bool
+    /// Nhiệm vụ vừa nhận; `nil` = thưởng chuỗi.
+    var quest: MascotRules.Quest?
+    /// Xong hết việc của ngày (Koa ló lên luôn được hiện).
+    var allDone = false
   }
 
+  /// Đồ Koa đang mặc (khoá `mascot_inventory`), do Hôm nay ghi khi tủ đồ đọc xong
+  /// / đổi — để Koa ló lên ở tab khác mặc đúng đồ (đợt 2A).
+  var koaEquipped: [String] = []
+
   /// Một lần thưởng tự về (nhiệm vụ hay chuỗi) — mã tăng dần để `onChange` bắt.
-  func noteKoaReward(userId: String, amount: Int, seen: Bool) {
-    koaReward = KoaReward(id: (koaReward?.id ?? 0) + 1, userId: userId, amount: amount, seen: seen)
+  func noteKoaReward(
+    userId: String, amount: Int, seen: Bool, quest: MascotRules.Quest? = nil, allDone: Bool = false
+  ) {
+    koaReward = KoaReward(
+      id: (koaReward?.id ?? 0) + 1, userId: userId, amount: amount, seen: seen, quest: quest, allDone: allDone)
   }
   /// Số lần cân ONLINE đã được server xác nhận trong lần chạy app này — nhịp
   /// để kế hoạch nhắc nhở đọc lại `weight_logs` ngay (`invalidateQueries` của
@@ -696,7 +707,8 @@ final class AppServices {
       economy: SupabaseMascotEconomy(backend: backend),
       onClaimed: { [weak self] claimed in
         guard self?.session.session?.userId == userId else { return }
-        self?.noteKoaReward(userId: userId, amount: claimed.amount, seen: claimed.seen)
+        self?.noteKoaReward(
+          userId: userId, amount: claimed.amount, seen: claimed.seen, quest: claimed.quest, allDone: claimed.allDone)
       },
       onQuestDone: { [weak self, habitHours] quest, hour in
         // Chỉ khi phiên vẫn là của người này: giờ của người vừa rời đi không

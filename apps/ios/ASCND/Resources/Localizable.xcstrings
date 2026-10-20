@@ -53461,19 +53461,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "Streak and coin reminders show up here"
+      "value": "Streak reminders will show up here"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Aquí aparecen los avisos de racha y monedas"
+      "value": "Los recordatorios de racha aparecerán aquí"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Nhắc chuỗi ngày và xu sẽ hiện ở đây"
+      "value": "Nhắc chuỗi ngày sẽ hiện ở đây"
      }
     }
    }
@@ -55958,6 +55958,236 @@
      "stringUnit": {
       "state": "translated",
       "value": "Koa acaba de recibir %lld monedas para ti"
+     }
+    }
+   }
+  },
+  "koa.peek.meal": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Yum! Meal logged."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ngon! Bữa này vào sổ rồi."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "¡Rico! Comida registrada."
+     }
+    }
+   }
+  },
+  "koa.peek.workout": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Workout done. Koa is proud of you!"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Xong buổi tập. Koa tự hào về bạn!"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Entrenamiento hecho. ¡Koa está orgulloso de ti!"
+     }
+    }
+   }
+  },
+  "koa.peek.water": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Water goal hit. Nicely hydrated!"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đủ nước rồi. Mát cả người!"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Meta de agua lograda. ¡Bien hidratado!"
+     }
+    }
+   }
+  },
+  "koa.peek.sleep": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sleep logged. Koa feels rested too."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đã ghi giấc ngủ. Koa cũng thấy khoẻ."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sueño registrado. Koa también se siente descansado."
+     }
+    }
+   }
+  },
+  "koa.peek.steps": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Step goal reached. Great walking!"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đủ bước rồi. Đi giỏi quá!"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Meta de pasos alcanzada. ¡Buena caminata!"
+     }
+    }
+   }
+  },
+  "koa.peek.streak": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Today counts for your streak!"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hôm nay đã vào chuỗi!"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "¡Hoy cuenta para tu racha!"
+     }
+    }
+   }
+  },
+  "koa.peek.allDone": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Everything's done today! Koa is celebrating."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Xong hết việc hôm nay! Koa ăn mừng nè."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "¡Todo listo hoy! Koa lo celebra."
+     }
+    }
+   }
+  },
+  "koa.peek.dismiss": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tap to close"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chạm để đóng"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Toca para cerrar"
+     }
+    }
+   }
+  },
+  "settings.koaPeek": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa pops up"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa ló lên"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa aparece"
+     }
+    }
+   }
+  },
+  "settings.koaPeek.desc": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa reacts on every tab when you finish something"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa phản ứng ở mọi tab khi bạn vừa xong một việc"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa reacciona en cada pestaña cuando terminas algo"
      }
     }
    }

@@ -35,6 +35,8 @@ public final class QuestObserver {
     public let amount: Int
     /// Bước chuyển "chưa xong → xong" thấy ở lượt đọc này.
     public let seen: Bool
+    /// Mọi nhiệm vụ đang tính của ngày đã xong ở lượt đọc này.
+    public var allDone = false
   }
 
   /// Nhận lại một khoá bị từ chối trong bao nhiêu ngày (`CLAIM_RETRY_DAYS`).
@@ -123,7 +125,8 @@ public final class QuestObserver {
         && !claimed.contains(MascotRules.questRefKey(day, q))
     }
     let seen = watch.read(today: day.description, done: done, unclaimed: unclaimed)
-    claim(unclaimed, day: day, seen: Set(seen), claimed: claimed)
+    let active = MascotRules.dailyQuests.map(\.key).filter { $0 != .steps || signals.stepsEverRecorded }
+    claim(unclaimed, day: day, seen: Set(seen), claimed: claimed, allDone: active.allSatisfy { done[$0] == true })
     guard !seen.isEmpty else { return }
     // `new Date().getHours()`: giờ nguyên địa phương lúc thấy.
     var cal = Calendar(identifier: .gregorian)
@@ -134,7 +137,9 @@ public final class QuestObserver {
 
   /// Gửi nhận thưởng cho các nhiệm vụ chưa nhận của hôm nay, rồi các khoá còn nợ
   /// của ngày trước (trong `claimRetryDays`).
-  private func claim(_ quests: [MascotRules.Quest], day: LocalDate, seen: Set<MascotRules.Quest>, claimed: Set<String>) {
+  private func claim(
+    _ quests: [MascotRules.Quest], day: LocalDate, seen: Set<MascotRules.Quest>, claimed: Set<String>, allDone: Bool
+  ) {
     guard let economy else { return }
     var jobs = quests.map { (MascotRules.questRefKey(day, $0), $0, seen.contains($0)) }
     let oldest = day.adding(days: -Self.claimRetryDays)
@@ -153,7 +158,8 @@ public final class QuestObserver {
           let amount = try await economy.claimReward(refKey: key, reason: q.rawValue)
           guard let self, !self.closed else { return }
           self.owed[key] = nil
-          self.onClaimed(Claimed(quest: q, refKey: key, amount: amount, seen: saw))
+          // "Xong hết" chỉ gắn với nhiệm vụ của hôm nay, không với khoá nợ hôm qua.
+          self.onClaimed(Claimed(quest: q, refKey: key, amount: amount, seen: saw, allDone: allDone && date == day))
         } catch {
           guard let self, !self.closed else { return }
           // Im lặng (như RN): lượt đọc sau thử lại, không mất gì.

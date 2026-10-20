@@ -284,6 +284,11 @@ struct TodayExtras<Plan: View>: View {
         announceLevel(from: before, mascot)
       }
     }
+    // Koa ló lên ở tab khác mặc đúng đồ đang mặc.
+    .onChange(of: shop?.inventory, initial: true) { _, rows in
+      guard let rows else { return }
+      services.koaEquipped = rows.filter(\.equipped).map(\.itemKey)
+    }
     // Thưởng chuỗi tự về trong lần đọc ngày.
     .onChange(of: mascot?.streakAutoClaim) { _, outcome in
       guard let outcome, let mascot else { return }
