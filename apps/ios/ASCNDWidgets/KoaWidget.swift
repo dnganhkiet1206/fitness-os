@@ -89,40 +89,37 @@ enum KoaWidgetInk {
   static func mono(_ size: CGFloat) -> Font { .custom("Menlo", size: size).weight(.bold) }
 }
 
-/// Kim loại đen của thẻ vận động viên (`PassMaterial` của thẻ hồ sơ): gradient, vân
-/// xước mảnh, dấu ASCND chìm, vệt sáng chéo, viền ánh bạc.
+/// Titan đen của widget — họ hàng với kim loại thẻ hồ sơ (`PassMaterial`) nhưng
+/// khác (20/10, Kiệt: "biến tấu cho khác thẻ hồ sơ một xíu"): vân xước NGANG kiểu
+/// titan chải, vệt sáng ở mép trên thay vì chéo, quầng cam ấm của app sau Koa ở
+/// góc dưới trái, không có dấu chìm (logo đã ở góc), viền ánh bạc giữ nguyên.
 struct KoaPassMetal: View {
   var body: some View {
     ZStack {
       LinearGradient(
-        colors: [Color(white: 0.17), Color(white: 0.07), Color(white: 0.11)], startPoint: .topLeading,
-        endPoint: .bottomTrailing)
+        colors: [Color(white: 0.15), Color(white: 0.08), Color(white: 0.06)], startPoint: .top, endPoint: .bottom)
+      RadialGradient(
+        colors: [KoaWidgetInk.halo(true).opacity(0.20), .clear], center: UnitPoint(x: 0.12, y: 0.95),
+        startRadius: 0, endRadius: 150)
       Canvas { ctx, size in
-        var x: CGFloat = -size.height
-        while x < size.width {
+        var y: CGFloat = 0
+        var i = 0
+        while y < size.height {
           var p = Path()
-          p.move(to: CGPoint(x: x, y: size.height))
-          p.addLine(to: CGPoint(x: x + size.height, y: 0))
-          ctx.stroke(p, with: .color(.white.opacity(0.035)), lineWidth: 0.5)
-          x += 3
+          p.move(to: CGPoint(x: 0, y: y))
+          p.addLine(to: CGPoint(x: size.width, y: y))
+          ctx.stroke(p, with: .color(.white.opacity(i % 3 == 0 ? 0.045 : 0.022)), lineWidth: 0.5)
+          y += 2
+          i += 1
         }
       }
-      GeometryReader { g in
-        Image("BrandMark").resizable().scaledToFit()
-          .frame(width: g.size.height * 1.0, height: g.size.height * 1.0)
-          .environment(\.colorScheme, .dark)
-          .opacity(0.07).blendMode(.plusLighter)
-          .position(x: g.size.width - g.size.height * 0.28, y: g.size.height * 0.68)
-      }
       LinearGradient(
-        stops: [
-          .init(color: .clear, location: 0.25), .init(color: .white.opacity(0.10), location: 0.42),
-          .init(color: .clear, location: 0.6),
-        ], startPoint: .topLeading, endPoint: .bottomTrailing)
+        stops: [.init(color: .white.opacity(0.12), location: 0), .init(color: .clear, location: 0.22)],
+        startPoint: .top, endPoint: .bottom)
       ContainerRelativeShape().strokeBorder(
         LinearGradient(
-          colors: [.white.opacity(0.45), .white.opacity(0.06), .white.opacity(0.18)], startPoint: .topLeading,
-          endPoint: .bottomTrailing),
+          colors: [.white.opacity(0.40), .white.opacity(0.08), .white.opacity(0.16)], startPoint: .top,
+          endPoint: .bottom),
         lineWidth: 0.8)
     }
     .clipped()
@@ -219,11 +216,10 @@ struct KoaWidgetView: View {
     return "\(d.streak)"
   }
 
-  /// Dòng đầu của thẻ, như "ASCND · VẬN ĐỘNG VIÊN" của thẻ hồ sơ.
+  /// Đầu thẻ: chỉ dấu ASCND ở góc (20/10, Kiệt: bỏ chữ "ASCND · KOA" — trùng với
+  /// logo và hình Koa).
   private var caption: some View {
     HStack {
-      Text(verbatim: "ASCND · KOA").font(.system(size: 9.5, weight: .bold)).tracking(1.4)
-        .foregroundStyle(.white.opacity(0.6))
       Spacer(minLength: 0)
       Image("BrandMark").resizable().interpolation(.high).frame(width: 16, height: 16)
         .accessibilityHidden(true)
