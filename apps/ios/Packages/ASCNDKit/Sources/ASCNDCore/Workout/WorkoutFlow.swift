@@ -288,6 +288,24 @@ public final class WorkoutFlow {
 
   /// Chờ các bảng lịch sử nuốt xong buổi vừa chốt (test, và màn Summary nếu
   /// cần "lần trước" mới ngay).
+  /// "Tập nhẹ hơn" cho buổi hôm nay (GĐ1): dựng lại buổi với một hiệp ít hơn mỗi
+  /// bài. Chỉ khi buổi CHƯA chạm — buổi đang tập dở hay đã chốt thì không đổi
+  /// (trả `false`); mẫu gốc không đổi.
+  @discardableResult
+  public func setLighterToday(_ on: Bool) async -> Bool {
+    if let current = session, current.plan.date == today.today, !Self.untouched(current) { return false }
+    guard today.setLighterToday(on) else { return false }
+    await install()
+    return true
+  }
+
+  static func untouched(_ s: WorkoutSessionController) -> Bool {
+    switch s.phase {
+    case .idle, .loading: true
+    case .active, .finished: false
+    }
+  }
+
   public func settled() async {
     await absorbing?.value
   }

@@ -121,6 +121,8 @@ public final class TodayController {
   @ObservationIgnored private let workouts: any WorkoutStore
   @ObservationIgnored private let clock: any WallClock
   @ObservationIgnored private let timeZone: TimeZone
+  /// Nơi lưu lựa chọn "Tập nhẹ hơn" (`LighterSession`).
+  @ObservationIgnored private let choices: UserDefaults
   @ObservationIgnored private var snapshot: TemplateSnapshot?
   @ObservationIgnored private var serverTrained: Set<LocalDate> = []
   /// Các buổi trên server của ngày ấy (đọc khi ngày ấy đã có buổi) — để màn
@@ -137,7 +139,7 @@ public final class TodayController {
 
   public init(
     userId: String, repository: TodayRepository, history: any TrainingHistory, workouts: any WorkoutStore,
-    clock: any WallClock = SystemWallClock(), timeZone: TimeZone = .current
+    clock: any WallClock = SystemWallClock(), timeZone: TimeZone = .current, choices: UserDefaults = .standard
   ) {
     self.userId = userId
     self.repository = repository
@@ -145,6 +147,7 @@ public final class TodayController {
     self.workouts = workouts
     self.clock = clock
     self.timeZone = timeZone
+    self.choices = choices
     self.today = LocalDate(clock.nowMillis(), in: timeZone)
   }
 
@@ -260,12 +263,27 @@ public final class TodayController {
     onRest: @escaping @MainActor (RestEvent, PlannedSet?) -> Void = { _, _ in },
     onEnqueued: @escaping @MainActor (OutboxEntry) -> Void = { _ in }
   ) -> WorkoutSessionController? {
-    guard let sessionPlan = plan?.sessionPlan else { return nil }
+    guard let sessionPlan = plan?.sessionPlan(lighter: lighterToday) else { return nil }
     return WorkoutSessionController(
       plan: sessionPlan, userId: userId, store: workouts, clock: clock, timeZone: timeZone,
       loggedElsewhere: serverTrained.contains(today),
       remoteSessions: serverSessions?.date == today ? serverSessions?.rows ?? [] : [],
       bests: bests, onRest: onRest, onEnqueued: onEnqueued)
+  }
+
+  /// Buổi hôm nay là bản nhẹ ("Tập nhẹ hơn", GĐ1) — lựa chọn của người dùng cho
+  /// đúng (ngày, mẫu) này.
+  public var lighterToday: Bool {
+    guard let id = plan?.template?.id else { return false }
+    return LighterSession.isOn(userId: userId, date: today, templateId: id, in: choices)
+  }
+
+  /// Chọn / bỏ "Tập nhẹ hơn" cho buổi hôm nay. `false` khi hôm nay không có buổi.
+  @discardableResult
+  public func setLighterToday(_ on: Bool) -> Bool {
+    guard let id = plan?.template?.id else { return false }
+    LighterSession.set(on, userId: userId, date: today, templateId: id, in: choices)
+    return true
   }
 
   /// Bảng tập của MỘT NGÀY BẤT KỲ trong tuần (`DayPlan` dưới ngày đang chọn,
