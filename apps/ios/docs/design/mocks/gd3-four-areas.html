@@ -1,0 +1,76 @@
+<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Mock — GĐ3 bốn khu vực</title>
+<style>body{margin:0;background:#0d0d0e;color:#f2f0ec;font-family:-apple-system,system-ui;padding:26px 16px;line-height:1.45}main{max-width:1240px;margin:0 auto}
+h1{font-size:26px;margin:0 0 6px}h2{font-size:18px;margin:32px 0 10px}.lead,.m{color:#9b968f;font-size:13px;max-width:80ch}
+.flow{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start}.ph{width:282px;position:relative}.scr{border-radius:34px;background:#0a0a0b;border:1px solid #2a2a2e;padding:16px 14px 12px;display:flex;flex-direction:column;gap:8px;min-height:470px}
+.tag{position:absolute;top:-10px;left:14px;font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;z-index:2}.tag.old{background:#3a2020;color:#ff8d92}.tag.new{background:#163225;color:#3ee6a4}
+.cap{font-size:12.5px;color:#c9c3b9;margin:8px 4px;font-weight:600}.pt{font-weight:800;font-size:21px}
+.card{background:#161617;border:1px solid #232325;border-radius:16px;padding:10px 12px;display:flex;flex-direction:column;gap:4px;font-size:13px}.card.hi{border-color:#3a2f1e}.card.dim{opacity:.55}
+.lbl{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:#9b968f}.big2{font-weight:800;font-size:17px}
+.row{display:flex;justify-content:space-between;align-items:center;font-size:13px;border-top:1px solid #222;padding-top:6px}.row:first-of-type{border-top:0;padding-top:0}.row span{color:#9b968f;font-size:12px}
+.seg{display:flex;background:#1c1c1f;border-radius:10px;padding:3px;font-size:12px}.seg b,.seg i{flex:1;text-align:center;padding:4px 0;border-radius:8px;font-style:normal}.seg b{background:#2c2c30}.seg i{color:#9b968f}
+.spacer{flex:1}
+.tabs{display:flex;gap:6px;align-items:center}.bar{flex:1;display:flex;justify-content:space-around;background:#1a1a1c;border:1px solid #2a2a2e;border-radius:999px;padding:6px 4px}
+.t{display:flex;flex-direction:column;align-items:center;font-size:9.5px;color:#9b968f;gap:1px}.t .ic{font-size:15px}.t.on{color:#5aa9ff}
+.orb{width:40px;height:40px;border-radius:50%;background:#1a1a1c;border:1px solid #2a2a2e;display:flex;align-items:center;justify-content:center;font-size:15px}
+.ql{display:flex;justify-content:space-between;background:#1a1a1c;border:1px solid #2a2a2e;border-radius:999px;padding:7px 12px;font-size:12px}.ql span{color:#9b968f;text-align:right}.ql b{white-space:nowrap;margin-right:8px}
+.mv{font-size:11px;color:#d6b27a;font-weight:700}.gone{text-decoration:line-through;color:#6e6a64}
+table{width:100%;border-collapse:collapse;font-size:13px;max-width:1100px}td,th{padding:8px 6px;border-bottom:1px solid #26262a;text-align:left;vertical-align:top}th{color:#9b968f;font-size:12px}
+</style><main><h1>GĐ3 — Bốn khu vực: Hôm nay · Tập luyện · Dinh dưỡng · Tiến bộ</h1>
+<p class="lead">Theo <b>PRODUCT_DECISION_V1</b> (GĐ3, QĐ 4, QĐ 5). <b>Không xoá màn nào, không xoá dữ liệu</b> — chỉ đổi chỗ. Cộng đồng và kế hoạch ăn chi tiết xuống khu vực phụ; Koa / Coach xuất hiện theo ngữ cảnh (nút Koa ở thanh Ghi nhanh, ô "Hỏi Koa" ở Tiến bộ). Không cần migration.</p>
+
+<h2>1 · Thanh điều hướng</h2><div class="flow">
+<div class="ph"><span class="tag old">Trước</span><div class="scr"><div class="pt">Hôm nay</div><div class="card dim"><div class="lbl">Nội dung tab</div>…</div><div class="spacer"></div>
+<div class="ql"><b>+ Ghi nhanh</b><span>Bữa · Nước · Ngủ · Cân · ✦</span></div>
+<div class="tabs"><div class="bar"><div class="t on"><div class="ic">⌂</div>Hôm nay</div><div class="t"><div class="ic">🍴</div>Dinh dưỡng</div><div class="t"><div class="ic">🏋</div>Tập luyện</div><div class="t"><div class="ic">👥</div>Cộng đồng</div></div><div class="orb">📋</div></div></div>
+<div class="cap">5 chỗ: 4 tab + vòng "Tóm tắt" (Trợ lý). Cộng đồng ngang hàng với tập / ăn dù chưa có người dùng</div></div>
+<div class="ph"><span class="tag new">Sau</span><div class="scr"><div class="pt">Hôm nay</div><div class="card dim"><div class="lbl">Nội dung tab</div>…</div><div class="spacer"></div>
+<div class="ql"><b>+ Ghi nhanh</b><span>Bữa · Nước · Ngủ · Cân · ✦ Koa</span></div>
+<div class="tabs"><div class="bar"><div class="t on"><div class="ic">⌂</div>Hôm nay</div><div class="t"><div class="ic">🏋</div>Tập luyện</div><div class="t"><div class="ic">🍴</div>Dinh dưỡng</div><div class="t"><div class="ic">📈</div>Tiến bộ</div></div></div></div>
+<div class="cap">4 khu vực, theo thứ tự vòng lõi: hôm nay → tập → ăn → tiến bộ. Nút ✦ Koa (Coach) giữ ở thanh Ghi nhanh</div></div></div>
+
+<h2>2 · Tiến bộ (mới — gộp "Tóm tắt" + phần "Cơ thể" + thành tích)</h2><div class="flow">
+<div class="ph"><span class="tag new">Sau</span><div class="scr"><div class="pt">Tiến bộ</div>
+<div class="card hi"><div class="lbl">Koa</div><div class="big2">Gym Rat · 102 Gains</div><span class="m">còn 18 tới Lifter · Phòng Koa ›</span></div>
+<div class="card"><div class="lbl">Tuần của Koa</div><div class="big2">2/6 buổi</div><span class="m">Tổng kết tuần ›</span></div>
+<div class="card"><div class="lbl">Cơ thể</div><div class="row">Cân nặng<span>72,4 kg · ↘ 0,3</span></div><div class="row">Số đo · Ảnh · Mục tiêu<span>›</span></div></div>
+<div class="card"><div class="lbl">Sức mạnh</div><div class="row">Kỷ lục gần đây<span>Bench 60 kg ›</span></div></div>
+<div class="card"><div class="lbl">Hồi phục</div><div class="row">Sẵn sàng · Giấc ngủ · Bước<span>›</span></div></div>
+</div><div class="cap">Trên: tiến bộ do tập (Gains, tuần). Dưới: cơ thể, sức mạnh, hồi phục</div></div>
+<div class="ph"><span class="tag new">Sau · cuộn xuống</span><div class="scr">
+<div class="card"><div class="lbl">Hỏi Koa</div><span class="m">"Tuần này mình tập đủ chưa?"</span></div>
+<div class="card"><div class="lbl">Huy chương</div><div class="row">8/29<span>Xem tất cả ›</span></div></div>
+<div class="card"><div class="lbl">Khác</div><div class="row">Công cụ (trí nhớ Coach, xu hướng)<span>›</span></div><div class="row">Cộng đồng<span>›</span></div></div>
+<p class="m">"Tóm tắt" cũ (thẻ sẵn sàng, insight, điểm nổi bật) nằm trong "Hồi phục" và "Hỏi Koa" — không còn một tab riêng toàn chữ.</p>
+</div><div class="cap">Coach: theo ngữ cảnh. Cộng đồng: một dòng ở cuối (và ở trang cá nhân)</div></div></div>
+
+<h2>3 · Tập luyện · Dinh dưỡng</h2><div class="flow">
+<div class="ph"><span class="tag new">Tập luyện · sau</span><div class="scr"><div class="pt">Tập luyện</div>
+<div class="seg"><b>Tập luyện</b><i class="gone">Cơ thể</i></div>
+<div class="card"><div class="lbl">Tuần này</div>T2 ✓ · T3 ✓ · T4 …</div>
+<div class="card hi"><div class="big2">Chest day · ~45 phút</div><span class="m">Bắt đầu ›</span></div>
+<div class="card"><div class="lbl">Mẫu buổi tập</div>…</div><div class="card"><div class="lbl">Công cụ</div>Bài tập · Lịch sử · Thư viện</div>
+<p class="mv">"Cơ thể" (cân, số đo, ảnh, mục tiêu) → Tiến bộ</p></div><div class="cap">Train = chỉ việc tập. Bỏ bộ chọn Tập luyện / Cơ thể</div></div>
+<div class="ph"><span class="tag old">Dinh dưỡng · trước</span><div class="scr"><div class="pt">Dinh dưỡng</div>
+<div class="seg"><b>Hôm nay</b><i>Kế hoạch</i></div>
+<div class="card">1.950 / 2.508 kcal · Đạm 25/121 g</div><div class="card">+ Ghi bữa</div><div class="card">Bữa sáng · trưa · tối</div><div class="card">Nước · Thực phẩm bổ sung</div>
+<p class="m">Tab "Kế hoạch": thực đơn, đi chợ, món của tôi — ngang hàng với ghi bữa.</p></div><div class="cap">Hai nửa ngang nhau; bổ sung ở cả Today lẫn đây</div></div>
+<div class="ph"><span class="tag new">Dinh dưỡng · sau</span><div class="scr"><div class="pt">Dinh dưỡng</div>
+<div class="card hi">1.950 / 2.508 kcal · Đạm 25/121 g</div><div class="card">+ Ghi bữa (chụp · quét · ăn lại)</div><div class="card">Bữa sáng · trưa · tối</div><div class="card">Nước 1,4 / 1,9 L</div>
+<div class="card"><div class="lbl">Thêm</div><div class="row">Thực đơn<span>›</span></div><div class="row">Danh sách đi chợ<span>›</span></div><div class="row">Món của tôi<span>›</span></div><div class="row">Thực phẩm bổ sung<span>0/3 ›</span></div></div>
+</div><div class="cap">QĐ 4: ghi nhanh + calo/đạm + nước ở trên; kế hoạch ăn, đi chợ, bổ sung xuống "Thêm"</div></div></div>
+
+<h2>4 · Đi đâu</h2><table><tr><th>Trước</th><th>Sau GĐ3</th><th>Dữ liệu</th></tr>
+<tr><td>Tab Cộng đồng (bảng tin, tìm, DM)</td><td>Bỏ khỏi thanh tab. Vào từ: dòng "Cộng đồng" ở cuối Tiến bộ; trang cá nhân (ảnh đại diện); chuông thông báo. Chia sẻ buổi tập / thành tích giữ nguyên.</td><td>Không đổi</td></tr>
+<tr><td>Vòng "Tóm tắt" (Trợ lý)</td><td>Gộp vào Tiến bộ: Hồi phục (sẵn sàng, ngủ, bước, xu hướng), Hỏi Koa, Tổng kết tuần, Công cụ. Coach chat vẫn mở từ nút ✦ Koa ở Ghi nhanh.</td><td>Không đổi</td></tr>
+<tr><td>Tập luyện › Cơ thể</td><td>Tiến bộ › Cơ thể</td><td>Không đổi</td></tr>
+<tr><td>Dinh dưỡng › Kế hoạch (thực đơn, đi chợ, món của tôi)</td><td>Dinh dưỡng › Thêm (cuối trang)</td><td>Không đổi</td></tr>
+<tr><td>Thực phẩm bổ sung (Today "Thêm về hôm nay" + Dinh dưỡng)</td><td>Chỉ ở Dinh dưỡng › Thêm</td><td>Không đổi</td></tr>
+<tr><td>Phòng Koa, huy chương</td><td>Vẫn từ Today (Koa ở đầu trang) + thẻ Koa / Huy chương ở Tiến bộ</td><td>Không đổi</td></tr>
+<tr><td>Liên kết sâu / widget / thông báo mở tab cũ</td><td>Ánh xạ sang khu vực mới (vd. tab "assistant" → Tiến bộ, "community" → màn Cộng đồng)</td><td>Tab đã lưu cũ đọc lại an toàn</td></tr></table>
+
+<h2>5 · Câu hỏi cho Kiệt</h2><ol class="m">
+<li>Tên tab tiếng Việt: <b>Hôm nay · Tập luyện · Dinh dưỡng · Tiến bộ</b> (giữ tên quen) — hay ngắn hơn: Hôm nay · Tập · Ăn · Tiến bộ?</li>
+<li>Bỏ tab Cộng đồng; vào từ dòng ở cuối Tiến bộ + trang cá nhân + chuông — đồng ý?</li>
+<li>Bỏ vòng "Tóm tắt"; nội dung gộp vào Tiến bộ, Coach mở từ nút ✦ Koa ở Ghi nhanh — đồng ý?</li>
+<li>Dinh dưỡng: bỏ bộ chọn Hôm nay / Kế hoạch; thực đơn, đi chợ, món của tôi, bổ sung xuống "Thêm"; bỏ dòng bổ sung ở Today — đồng ý?</li></ol>
+</main>
