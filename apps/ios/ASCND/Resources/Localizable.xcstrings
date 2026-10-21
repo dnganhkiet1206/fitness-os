@@ -215,19 +215,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "This week · on plan"
+      "value": "On plan"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Tuần này · theo lịch"
+      "value": "Theo lịch tập"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Esta semana · según el plan"
+      "value": "Según el plan"
      }
     }
    }
@@ -284,19 +284,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "Gains this week: +%lld"
+      "value": "Gains earned: +%lld"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Gains tuần này: +%lld"
+      "value": "Gains trong tuần: +%lld"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Gains esta semana: +%lld"
+      "value": "Gains ganados: +%lld"
      }
     }
    }

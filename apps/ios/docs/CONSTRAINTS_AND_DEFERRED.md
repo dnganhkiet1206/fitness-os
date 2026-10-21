@@ -94,7 +94,8 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 **GĐ2 (tiến bộ một thang + Tuần của Koa) — hạn chế đã biết:**
 - **Khoá đồ theo hạng chỉ ở app.** `buy_mascot_item` trên server chỉ kiểm giá và số dư, không kiểm hạng. Ai gọi thẳng API vẫn mua được. Muốn chặn ở server phải có migration (tính Gains trên server); chưa làm vì Gains hiện chỉ tính ở app.
 - **Nhận thưởng Tuần của Koa cần mạng.** Mất mạng thì để lần mở app sau (thẻ ghi "Chưa nhận được — sẽ thử lại."); không xếp hàng outbox.
-- **Chưa kiểm trên simulator:** màn Tổng kết tuần (khối lịch tuần), widget Koa (số Gains), onboarding bước kế hoạch. Mới có test đơn vị + build.
+- **Tổng kết tuần của tuần cũ dùng lịch HIỆN TẠI để tính đích** (app không lưu lịch theo từng tuần). Đổi lịch rồi xem lại tuần trước thì đích có thể khác lúc ấy. Đổi ngày (dời / nghỉ) thì vẫn đúng, vì được lưu theo ngày.
+- **Chưa kiểm trên simulator:** widget Koa (số Gains), onboarding bước kế hoạch. Mới có test đơn vị + build. Tổng kết tuần đã kiểm 21/10 (tuần này 2/6, tuần trước 3/6, khớp số buổi ở thẻ Khối lượng).
 - ~~"Mất pump" sau 3 ngày: chờ Kiệt chốt.~~ Kiệt chốt 21/10: bỏ; chào mừng quay lại (Daily Plan luật ④). Đã làm trên nhánh GĐ1.
 
 **GĐ1 (Daily Plan + Today gọn) — Kiệt duyệt CÓ ĐIỀU KIỆN 21/10, CHƯA duyệt merge production:**
