@@ -1,5 +1,8 @@
 # Cách làm việc cho session mới — app iOS native (ASCND)
 
+> **Trước hết, bắt buộc:** đọc [`CONSTRAINTS_AND_DEFERRED.md`](CONSTRAINTS_AND_DEFERRED.md) (hạn chế, việc hoãn, đầu tư, người dùng thật) và [`PRODUCT_DECISION_V1.md`](PRODUCT_DECISION_V1.md) (hướng sản phẩm, Kiệt chốt 21/10).
+> App **chưa phát hành được**. Giai đoạn này tập trung cải thiện sản phẩm để khi phát hành thì ít phải sửa.
+
 Đọc hết trang này trước khi sửa gì. Đây là quy trình hiện hành, Kiệt chốt ngày 17/10/2026:
 - session chạy **cục bộ trên Mac có Xcode**;
 - **không còn chia vai A / B / C / D / E**;
