@@ -750,6 +750,9 @@ struct PostHeaderView: View {
         who
       }
       .buttonStyle(.plain)
+      // Tên đặt thẳng lên nút (#527): nhãn gộp của `who` không chắc còn khi nó
+      // nằm trong Button, và VoiceOver phải đọc được người sẽ mở.
+      .accessibilityLabel(Text(verbatim: whoSpoken))
     } else {
       who
     }
@@ -783,6 +786,15 @@ struct PostHeaderView: View {
       Spacer(minLength: 0)
     }
     .accessibilityElement(children: .combine)
+  }
+
+  /// Câu VoiceOver của khối tác giả: tên, dấu xác minh, thời gian, loại bài.
+  private var whoSpoken: String {
+    var parts = [post.author?.displayName ?? "—"]
+    if post.author?.isOfficial == true { parts.append(String(localized: "community.verified")) }
+    parts.append(Self.agoText(post.createdAt))
+    parts.append(kindLine)
+    return parts.joined(separator: ", ")
   }
 
   /// "Buổi tập · Chest day" / "Tiến bộ" / "Công thức · Bún gà" (+ "· Chỉ người theo dõi").
