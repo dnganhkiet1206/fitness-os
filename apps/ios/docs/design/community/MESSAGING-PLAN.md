@@ -1,7 +1,10 @@
 # Kế hoạch: nhắn tin giữa người dùng (từ trang cá nhân)
 
-> Trạng thái: **ĐỀ XUẤT — chờ chủ dự án / agent server duyệt.** Agent B (iOS) không đổi
-> schema/RPC/RLS. Yêu cầu (15/10): bấm tên người đăng → trang cá nhân, "thêm tuỳ chọn nhắn tin".
+> Trạng thái (20/10): **chủ dự án duyệt "làm tin nhắn thật"**. Migration
+> `supabase/migrations/20261020130000_direct_messages.sql` + `SupabaseDMSource` đã viết; **chờ chủ dự án
+> chạy `supabase db push`**. Trước khi push, RPC hỏng → hộp thư không đọc được → nút ẩn (không màn lỗi).
+> Đã thử trên PostgreSQL 16 dựng từ mọi migration, vai `authenticated` + RLS: 21/21 ca (xem PR).
+> Chưa có: thông báo đẩy, realtime (đọc lại khi mở), báo cáo tin, gửi ảnh.
 
 Hiện trạng: database chỉ có hội thoại với AI coach (`ai_conversations` / `ai_messages`), **chưa có
 nhắn tin người – người**.

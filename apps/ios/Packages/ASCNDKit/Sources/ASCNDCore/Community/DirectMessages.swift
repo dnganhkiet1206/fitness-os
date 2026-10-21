@@ -258,3 +258,54 @@ extension CommunityFeed.Author {
     self.init(userId: userId, handle: handle, displayName: displayName, mascotId: mascotId, isOfficial: false, bio: nil)
   }
 }
+
+// MARK: - Đọc hàng của server (`20261020130000_direct_messages.sql`)
+
+extension DirectMessages {
+  /// Hộp thư từ `dm_inbox()` + hồ sơ người kia (`community_profiles`). Hàng thiếu
+  /// hồ sơ (người kia đã xoá hồ sơ cộng đồng) bị bỏ — không có tên để hiện.
+  public static func threads(inbox: [JSONValue], profiles: [JSONValue]) -> [Thread] {
+    var byId: [String: CommunityFeed.Author] = [:]
+    for p in profiles { if let a = CommunityFeed.author(p) { byId[a.userId] = a } }
+    return inbox.compactMap { r in
+      guard let id = r["thread_id"]?.stringValue, let other = r["other_id"]?.stringValue,
+        let author = byId[other]
+      else { return nil }
+      return Thread(
+        id: id, other: author, lastText: r["last_text"]?.stringValue ?? "",
+        lastAt: r["last_at"]?.stringValue.flatMap { EpochMillis(iso8601: $0) } ?? EpochMillis(0),
+        lastFromMe: r["last_from_me"] == .bool(true), unread: r["unread"] == .bool(true),
+        isRequest: r["is_request"] == .bool(true), training: nil)
+    }
+  }
+
+  /// Một tin từ `dm_messages` / `dm_send`.
+  public static func message(_ r: JSONValue) -> Message? {
+    guard let id = r["id"]?.stringValue, let sender = r["sender_id"]?.stringValue,
+      let at = r["created_at"]?.stringValue.flatMap({ EpochMillis(iso8601: $0) })
+    else { return nil }
+    let body: Body
+    if case .object? = r["workout"], let w = r["workout"] {
+      let minutes = JS.number(w["minutes"])
+      body = .workout(SharedWorkout(
+        title: w["title"]?.stringValue ?? "", volumeKg: JS.number(w["volume_kg"]).isFinite ? JS.number(w["volume_kg"]) : 0,
+        exerciseCount: Int(JS.number(w["exercises"]).isFinite ? JS.number(w["exercises"]) : 0),
+        minutes: minutes.isFinite && minutes > 0 ? Int(minutes) : nil, pr: w["pr"] == .bool(true)))
+    } else {
+      body = .text(r["body"]?.stringValue ?? "")
+    }
+    return Message(
+      id: id, senderId: sender, body: body, at: at,
+      readAt: r["read_at"]?.stringValue.flatMap { EpochMillis(iso8601: $0) })
+  }
+
+  /// Buổi tập gửi đi → `workout` jsonb của `dm_send`.
+  public static func workoutJSON(_ w: SharedWorkout) -> JSONValue {
+    var o: [String: JSONValue] = [
+      "title": .string(w.title), "volume_kg": .number(w.volumeKg), "exercises": .number(Double(w.exerciseCount)),
+      "pr": .bool(w.pr),
+    ]
+    if let m = w.minutes { o["minutes"] = .number(Double(m)) }
+    return .object(o)
+  }
+}

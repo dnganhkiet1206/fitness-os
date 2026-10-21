@@ -144,7 +144,11 @@ struct CommunityUserView: View {
     .task(id: book.isMe) { await loadMine() }
     .task(id: book.profile?.displayName) { await syncName() }
     .task {
-      if dm == nil, let src = services.makeDirectMessages() { dm = DMInboxBook(userId: book.userId, source: src) }
+      if dm == nil, let src = services.makeDirectMessages() {
+        let d = DMInboxBook(userId: book.userId, source: src)
+        dm = d
+        await d.load()
+      }
     }
     .navigationDestination(item: $dmThread) { t in
       if let dm { ConversationScreen(inbox: dm, thread: t) }
@@ -461,7 +465,7 @@ struct CommunityUserView: View {
         .disabled(book.working)
         .accessibilityAddTraits(book.iFollow ? .isSelected : [])
       }
-      if !book.isMe, let dm {
+      if !book.isMe, let dm, dm.phase == .ready {
         Button {
           taps += 1
           Task { dmThread = await dm.open(with: p) }
