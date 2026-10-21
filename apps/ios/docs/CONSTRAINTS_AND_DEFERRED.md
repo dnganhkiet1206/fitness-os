@@ -68,7 +68,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 |---|---|---|---|
 | Mở rộng Cộng đồng (bảng tin, tương tác, trang người dùng) | Chưa có người dùng; QĐ 5 | Có người dùng thật + Kiệt quyết | V1 21/10 |
 | Nhắn tin riêng (DM) | Server chưa có (`MESSAGING-PLAN.md`); Release đang ẩn | Có backend đáng tin + có nhu cầu | 15/10 |
-| Thử thách cộng đồng | Lớp thử thách thứ ba; chưa có người. **Đã ẩn** ở Today và tab Cộng đồng trên nhánh GĐ2 (`claude/gd2-progress`, Kiệt duyệt 21/10); code và dữ liệu giữ nguyên | Đủ người tham gia + Kiệt quyết | V1 21/10 |
+| Thử thách cộng đồng | Lớp thử thách thứ ba; chưa có người. **Đã ẩn** ở Today và tab Cộng đồng (GĐ2, đã merge #642, Kiệt duyệt 21/10); code và dữ liệu giữ nguyên | Đủ người tham gia + Kiệt quyết | V1 21/10 |
 | Đổi tab Cộng đồng thành "Bạn tập" | Tính năng bạn bè chưa đủ thực chất | Có tính năng bạn tập thật | V1 21/10 |
 | Thẻ chia sẻ Story, bạn tập, xếp hạng bạn bè (đợt 5 cũ) | Cần người dùng | Sau TestFlight + số liệu | V1 21/10 |
 | Mở rộng AI (Coach đọc lịch / Koa, AI lập kế hoạch) | Chỉ dùng AI khi tạo giá trị thật; luồng chính không được phụ thuộc AI | Sau khi vòng lõi chứng minh giá trị (GĐ4) | V1 21/10 |
@@ -85,11 +85,11 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 ## 4. Hạn chế đã biết (lỗi, chỗ lệch, chỗ chưa kiểm)
 
 **Code đã merge nhưng trái với V1** (chi tiết, kèm file và dòng, ở #527 ngày 21/10):
-- ~~Tụt hạng do nghỉ: `KoaGains`, `KoaSchedule.dropped`, lời nhắc ngày 6, màn quay lại.~~ Đã bỏ trên nhánh `claude/gd1-daily-plan` (PR GĐ1, nháp, 21/10). **Chỉ hết hiệu lực khi PR ấy merge.**
-- ~~Cấp XP vẫn hiện, và cửa hàng khoá đồ theo Cấp XP.~~ Đã sửa trên nhánh GĐ2 (`claude/gd2-progress`, PR nháp, 21/10). **Chỉ hết hiệu lực khi PR ấy merge.**
+- ~~Tụt hạng do nghỉ: `KoaGains`, `KoaSchedule.dropped`, lời nhắc ngày 6, màn quay lại.~~ Đã bỏ ở GĐ1 — **merge vào `native/ios-rewrite` 21/10 (#641, `59cb9d92`)**.
+- ~~Cấp XP vẫn hiện, và cửa hàng khoá đồ theo Cấp XP.~~ Đã sửa ở GĐ2 — **merge vào `native/ios-rewrite` 21/10 (#642, `cad8f015`)**.
   - XP **ẩn khỏi giao diện** (thẻ hạng phòng Koa, nhiệm vụ, onboarding, widget, màn lên cấp), **không xoá**: server vẫn cộng XP, bảng và cột giữ nguyên.
   - Cửa hàng khoá theo **hạng Gains** (Kiệt duyệt): Cúp vàng → Lifter, Giày có cánh → Swole, Cánh Rồng → Beast. Không cần migration; không ai mất xu hay đồ đã mua.
-- ~~8 thử thách tuần chung.~~ Thay bằng **Tuần của Koa** trên nhánh GĐ2: đích = số buổi trong lịch của chính người dùng, chỉ đếm ngày có buổi ghi thật. Đủ tuần: +15 Gains, +50 xu, nhận một lần mỗi tuần (khoá `ch:silver:<tuần>:koa_week`, server bỏ trùng). Code thử thách chung còn giữ, chỉ không hiện.
+- ~~8 thử thách tuần chung.~~ Thay bằng **Tuần của Koa** (GĐ2, đã merge #642): đích = số buổi trong lịch của chính người dùng, chỉ đếm ngày có buổi ghi thật. Đủ tuần: +15 Gains, +50 xu, nhận một lần mỗi tuần (khoá `ch:silver:<tuần>:koa_week`, server bỏ trùng). Code thử thách chung còn giữ, chỉ không hiện.
 
 **GĐ2 (tiến bộ một thang + Tuần của Koa) — hạn chế đã biết:**
 - **Khoá đồ theo hạng chỉ ở app.** `buy_mascot_item` trên server chỉ kiểm giá và số dư, không kiểm hạng. Ai gọi thẳng API vẫn mua được. Muốn chặn ở server phải có migration (tính Gains trên server); chưa làm vì Gains hiện chỉ tính ở app.
@@ -98,8 +98,8 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - **Chưa kiểm trên simulator:** widget Koa (số Gains), onboarding bước kế hoạch. Mới có test đơn vị + build. Tổng kết tuần đã kiểm 21/10 (tuần này 2/6, tuần trước 3/6, khớp số buổi ở thẻ Khối lượng).
 - ~~"Mất pump" sau 3 ngày: chờ Kiệt chốt.~~ Kiệt chốt 21/10: bỏ; chào mừng quay lại (Daily Plan luật ④). Đã làm trên nhánh GĐ1.
 
-**GĐ1 (Daily Plan + Today gọn) — Kiệt duyệt CÓ ĐIỀU KIỆN 21/10, CHƯA duyệt merge production:**
-- PR GĐ1 để **nháp**. Chỉ merge khi đủ 6 mục nghiệm thu trong `GD1-DAILY-PLAN.md`, **kể cả kiểm trên iPhone thật** (đang bị chặn, mục 1).
+**GĐ1 (Daily Plan + Today gọn) — Kiệt duyệt CÓ ĐIỀU KIỆN 21/10:**
+- ~~PR GĐ1 để nháp, chỉ merge khi đủ 6 mục nghiệm thu.~~ **Kiệt lệnh "merge toàn bộ" 21/10 trong chat**: #641 và #642 đã merge vào `native/ios-rewrite` (nhánh tích hợp, **không phải phát hành**), CI xanh. **Nghiệm thu CHƯA đủ 6/6**: còn iPhone thật, A1, A2 (dưới đây). Các mục này vẫn phải làm trước khi phát hành.
 - Migration `20261020140000_plan_day_overrides` (đổi lịch theo ngày) **CHƯA deploy** lên production. Cần lệnh duyệt rõ ràng. App đọc bảng này theo kiểu chịu lỗi: thiếu bảng thì coi như chưa đổi ngày nào.
 - "Tập nhẹ hơn" chỉ bớt một hiệp mỗi bài cho buổi hôm nay. Không sửa mẫu, không giảm tạ, không phải kết luận y tế.
 - Hồi quy mất mạng / lỗi / gửi lại (chỉ thị 21/10 14:26, commit `8d2f9d8b`): R1–R7, W1, D1–D5 **PASS** (test Swift + SQL thật trên Postgres ở máy). **Chặn:**
@@ -137,4 +137,5 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - 21/10/2026: tạo sổ (Kiệt yêu cầu, #527).
 - 21/10/2026: thêm điều kiện duyệt GĐ1, migration chưa deploy, kết quả "mất pump" / tụt hạng.
 - 21/10/2026: hồi quy GĐ1 (R / W / D PASS; A1, A2 BLOCKED).
+- 21/10/2026: Kiệt lệnh merge: #641 (GĐ1) và #642 (GĐ2) vào `native/ios-rewrite`; nghiệm thu GĐ1 còn thiếu iPhone thật, A1, A2; migration vẫn chưa deploy.
 - 21/10/2026: GĐ2 — XP ẩn khỏi giao diện, khoá đồ theo hạng Gains, Tuần của Koa thay thử thách chung, ẩn thử thách cộng đồng; thêm hạn chế khoá đồ chỉ ở app.

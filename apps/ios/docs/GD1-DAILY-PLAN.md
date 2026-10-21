@@ -2,7 +2,7 @@
 
 - **Mock:** `docs/design/mocks/daily-plan-today.html`.
 - **Duyệt:** Kiệt duyệt **có điều kiện** ngày 21/10/2026 (#527). Duyệt hướng sản phẩm và UX. **Chưa duyệt merge production.**
-- **Nhánh:** `claude/gd1-daily-plan`, PR để **nháp**.
+- **Nhánh:** `claude/gd1-daily-plan`, PR #641 — **đã merge vào `native/ios-rewrite` 21/10 theo lệnh Kiệt** (`59cb9d92`), khi nghiệm thu chưa đủ 6/6 (còn iPhone thật, A1, A2). Migration `20261020140000` **vẫn chưa deploy**.
 
 ## Phạm vi
 
