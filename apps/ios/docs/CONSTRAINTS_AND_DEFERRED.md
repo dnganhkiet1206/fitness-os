@@ -95,7 +95,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Migration `20261020140000_plan_day_overrides` (đổi lịch theo ngày) **CHƯA deploy** lên production. Cần lệnh duyệt rõ ràng. App đọc bảng này theo kiểu chịu lỗi: thiếu bảng thì coi như chưa đổi ngày nào.
 - "Tập nhẹ hơn" chỉ bớt một hiệp mỗi bài cho buổi hôm nay. Không sửa mẫu, không giảm tạ, không phải kết luận y tế.
 - Hồi quy mất mạng / lỗi / gửi lại (chỉ thị 21/10 14:26, commit `8d2f9d8b`): R1–R7, W1, D1–D5 **PASS** (test Swift + SQL thật trên Postgres ở máy). **Chặn:**
-  - **A1 dời / nghỉ trên app:** cần Supabase dev chạy ở máy (Docker + `supabase start`, build Debug trỏ về máy, tài khoản dev ở máy).
+  - **A1 dời / nghỉ trên app:** Kiệt 21/10 bỏ phương án Supabase dev bằng Docker trên máy này (không đủ tài nguyên). Chỉ kiểm được trên app khi migration được deploy (cần duyệt), hoặc trên một máy / CI có Supabase dev.
   - **A2 mất mạng hẳn trên simulator:** không có công tắc mạng riêng; tắt mạng máy Mac là đổi cài đặt hệ thống.
   - Chi tiết: `GD1-DAILY-PLAN.md`, mục "Hồi quy GĐ1".
 

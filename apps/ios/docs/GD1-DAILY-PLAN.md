@@ -132,7 +132,7 @@
 | D3 SQL thật: ngày nghỉ mang buổi, dời từ chính nó → CHECK 23514 | **PASS** | như trên |
 | D4 SQL thật: B không thấy / không sửa được hàng của A (RLS) | **PASS** | như trên, cùng `owner_rls.test.sql` T0–T2 … và `parent_fk.test.sql` F12–F14 |
 | D5 SQL thật: xoá mẫu → ngày nhận buổi đi theo; ngày nghỉ đã chọn ở lại | **PASS** | như trên |
-| A1 Dời / nghỉ **trên app** với backend dev ở máy | **BLOCKED** | Không có Supabase dev chạy ở máy (Docker tắt). Cần `supabase start`, build Debug trỏ `ASCND_SUPABASE_HOST` về máy, tạo tài khoản dev ở máy. Không làm trên production (không deploy, không tài khoản test production) |
+| A1 Dời / nghỉ **trên app** với backend dev ở máy | **BLOCKED** | Kiệt 21/10: bỏ phương án dựng Supabase dev bằng Docker vì máy không đủ tài nguyên (đã thử `supabase start`, tải image quá lâu). Logic và dữ liệu đã PASS bằng R1–R4, W1, D1–D5. Còn lại: lần đầu chạy trên app khi migration được deploy (cần duyệt), hoặc trên một máy / CI có Supabase dev |
 | A2 Mất mạng hẳn trên simulator (Today, ghi bữa / buổi rồi gửi lại) | **BLOCKED** | Simulator không có công tắc mạng riêng; tắt mạng của máy Mac là đổi cài đặt hệ thống (agent không làm). Đường mã có test (R1–R7, và bộ test outbox / `SyncWorker` sẵn có) |
 
 **Lệnh đã chạy:**
