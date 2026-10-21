@@ -96,7 +96,6 @@ struct TodayExtras<Plan: View>: View {
   @Environment(NutritionBooks.self) private var nutrition: NutritionBooks?
   @State private var ownWater: WaterBook?
   private var water: WaterBook? { nutrition?.water ?? ownWater }
-  @State private var showsSupplements = false
   @State private var showsKoaWeek = false
   @State private var waterNote: String?
   @State private var waterTaps = 0
@@ -165,6 +164,8 @@ struct TodayExtras<Plan: View>: View {
           result: dailyPlan.result, lighterOn: flow.today.lighterToday, busy: planBusy, failed: planFailed,
           onPrimary: { primary(dailyPlan.result.action) }, onAlternative: { alternative($0, flow) })
           .todayEntrance(2)
+        // Koa Coach (Kiệt 21/10, GĐ3): insight + ô hỏi Koa ngay dưới việc chính.
+        TodayCoachSection(userId: userId, today: flow.today.today) { services.coachRequest += 1 }
         // Chạm dải → thẻ Tuần của Koa đầy đủ: chú thích, thưởng, luật đếm (Kiệt 21/10).
         Button { showsKoaWeek = true } label: {
           TodayWeekStrip(
@@ -196,9 +197,7 @@ struct TodayExtras<Plan: View>: View {
       // đồng bộ tự chạy (mở app + nền), người dùng không phải nghĩ tới nó.
       TodayMore(rows: moreRows, zoom: zoom)
         .todayEntrance(4)
-      if let awards {
-        RecentAwardsCard(book: awards, lang: services.preferences.lang) { showsAwards = true }
-      }
+      // Huy chương gần đây ở tab Tiến bộ (GĐ3, Kiệt 21/10: không lặp giữa hai tab).
     }
     // Bữa / nước / ngủ đi qua outbox: hàng đợi vơi đi (server đã nhận) thì đọc
     // lại ngày — như `invalidateQueries` sau `onSettled` của RN.
@@ -281,11 +280,6 @@ struct TodayExtras<Plan: View>: View {
       if let activity {
         ActivityRingsView(book: activity, stepsTarget: mascot?.stepsGoal ?? DailySignals.defaultStepsGoal)
           .todayZoom("activity", in: zoom)
-      }
-    }
-    .navigationDestination(isPresented: $showsSupplements) {
-      if let supplements = nutrition?.supplements {
-        SupplementsView(book: supplements).todayZoom("supplements", in: zoom)
       }
     }
     .navigationDestination(isPresented: $showsBiometrics) {
@@ -413,18 +407,12 @@ struct TodayExtras<Plan: View>: View {
 
   // MARK: - More about today
 
-  /// Hôm nay để LÀM (15/10, chủ dự án chọn "Chia rõ"): thực phẩm bổ sung, ba vòng,
-  /// phòng linh vật. Sinh trắc học, giấc ngủ, tập luyện, xu hướng, tổng kết tuần
-  /// — những thứ để HIỂU — ở tab Trợ lý.
+  /// Hôm nay để LÀM (15/10, chủ dự án chọn "Chia rõ"): ba vòng, phòng linh vật.
+  /// Sinh trắc học, giấc ngủ, tập luyện, xu hướng, tổng kết tuần — những thứ để
+  /// HIỂU — ở tab Tiến bộ. GĐ3 (Kiệt 21/10): thực phẩm bổ sung chỉ còn ở
+  /// Dinh dưỡng › Thêm.
   private var moreRows: [TodayMore.Row] {
     var rows: [TodayMore.Row] = []
-    // Thực phẩm bổ sung (RN `SupplementChecklistCard` trong nhóm Dinh dưỡng).
-    if let sup = nutrition?.supplements, !sup.items.isEmpty {
-      rows.append(.init(
-        id: "supplements", title: String(localized: "supplements.title"),
-        value: "\(sup.shownTakenCount(writer: services.stateWriter))/\(sup.items.count)",
-        action: { showsSupplements = true }))
-    }
     // Ba vòng (RN `ActivityRingsCard`): số vòng đã đóng hôm nay.
     if let activity, let m = activity.model(body: energyBody, stepsTarget: mascot?.stepsGoal ?? DailySignals.defaultStepsGoal) {
       rows.append(.init(

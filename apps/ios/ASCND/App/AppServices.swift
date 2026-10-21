@@ -65,6 +65,9 @@ final class AppServices {
   /// Gains hiện tại (đợt 2): trạng thái của Koa và lời nhắc ngày lỡ. Gắn userId để
   /// phiên khác không dùng nhầm.
   var koaGainsNow: (userId: String, state: KoaGains.State, week: KoaGains.Week)?
+  /// "Hỏi Koa" ở Hôm nay (GĐ3): tăng lên → thanh tab mở Tiến bộ và màn chat của
+  /// phiên (một cuộc trò chuyện, như nút Koa ở Ghi nhanh).
+  var coachRequest = 0
   /// Giờ buổi tập gần nhất — Koa "pump" 2 giờ sau đó.
   var koaLastSessionAt: EpochMillis?
   /// Việc chính của hôm nay (Daily Plan, GĐ1) — Today dựng, widget và lời nhắc
