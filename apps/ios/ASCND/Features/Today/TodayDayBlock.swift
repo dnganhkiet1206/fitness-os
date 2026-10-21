@@ -165,8 +165,6 @@ struct TodayDayBlock: View {
     switch p {
     case .pump: .proud
     case .waiting: .warmup
-    case .pumpLost: .sad
-    case .dropped: .deflated
     }
   }
 
@@ -175,13 +173,6 @@ struct TodayDayBlock: View {
     case .pump: return String(localized: "koa.sched.pump")
     case .waiting:
       return planName.map { String(localized: "koa.sched.waiting \($0)") } ?? String(localized: "koa.sched.waiting.any")
-    case .pumpLost:
-      let days = services?.koaGainsNow?.state.missedDays ?? KoaGains.pumpLostDays
-      return String(localized: "koa.sched.pumpLost \(days)")
-    case .dropped:
-      let lang = services?.preferences.lang ?? .vi
-      let rank = MascotRules.ranks[min(room.gains.rank, MascotRules.ranks.count - 1)].name(lang)
-      return String(localized: "koa.sched.dropped \(rank)")
     }
   }
 

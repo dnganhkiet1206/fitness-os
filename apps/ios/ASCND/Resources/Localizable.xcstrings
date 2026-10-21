@@ -40828,52 +40828,6 @@
     }
    }
   },
-  "koa.sched.pumpLost %lld": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "%lld days now, Koa's arms are deflating 🥲 A short session brings the pump back"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "%lld ngày rồi, bắp tay Koa hơi xẹp 🥲 Một buổi ngắn là lấy lại pump"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Ya son %lld días, los brazos de Koa se desinflan 🥲 Una sesión corta recupera el pump"
-     }
-    }
-   }
-  },
-  "koa.sched.dropped %@": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Koa dropped to %@. Muscle memory: come back and gains count double"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Koa tụt về %@. Muscle memory: quay lại là lên nhanh gấp đôi"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Koa bajó a %@. Memoria muscular: vuelve y las ganancias cuentan doble"
-     }
-    }
-   }
-  },
   "koa.comeback.title": {
    "extractionState": "manual",
    "localizations": {
