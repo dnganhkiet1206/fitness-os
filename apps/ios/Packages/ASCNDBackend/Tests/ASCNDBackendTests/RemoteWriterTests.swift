@@ -111,6 +111,15 @@ struct RemoteWriterClassifyTests {
     #expect(!SupabaseRemoteWriter.isRow(day(7, "u1")))
     #expect(!SupabaseRemoteWriter.isRow(day(1.5, "u1")))
     #expect(!SupabaseRemoteWriter.isRow(day(0, "u2")), "kế hoạch của người khác")
+    // Đổi lịch theo ngày (GĐ1): upsert theo (người, ngày) — gửi lại là ghi đè cùng hàng.
+    #expect(SupabaseRemoteWriter.tables[PlanEdit.dayOverrideKind] == "plan_day_overrides")
+    let override = { (date: String, user: String) in
+      e("2026-10-21@move-x", PlanEdit.dayOverrideKind, .object(["date": .string(date), "user_id": .string(user), "is_rest": .bool(true)]))
+    }
+    #expect(SupabaseRemoteWriter.isRow(override("2026-10-21", "u1")))
+    #expect(!SupabaseRemoteWriter.isRow(override("2026-10-21", "u2")), "lịch của người khác")
+    #expect(!SupabaseRemoteWriter.isRow(override("hôm nay", "u1")), "ngày hỏng")
+    #expect(!SupabaseRemoteWriter.overwrites(PlanEdit.dayOverrideKind) && !SupabaseRemoteWriter.deletes(PlanEdit.dayOverrideKind))
   }
 
   /// #421: thêm bài theo id (bỏ trùng), chỉ cho chính chủ; xoá theo
