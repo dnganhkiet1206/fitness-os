@@ -23,7 +23,8 @@ public import Observation
 ///   không bao giờ thấy nháp của người trước.
 public struct OnboardingDraft: Sendable, Hashable, Codable {
   public enum Step: String, Sendable, Hashable, Codable, CaseIterable {
-    case welcome, intention, goal, sex, dob, height, weight, activity, experience, plan, health, ready
+    // `schedule` (đợt 3, 20/10, không có ở RN): số buổi / ngày tập / nơi tập → lịch tuần.
+    case welcome, intention, goal, sex, dob, height, weight, activity, experience, schedule, plan, health, ready
   }
 
   /// Màn 02: nhánh; màn 03 chọn mục tiêu trong nhánh (`BRANCHES`).
@@ -61,6 +62,9 @@ public struct OnboardingDraft: Sendable, Hashable, Codable {
   /// Đơn vị người dùng chọn; `nil` = theo cài đặt hiện tại.
   public var heightUnit: String?
   public var weightUnit: String?
+  /// Lịch tập chọn ở màn `schedule` (đợt 3); `nil` = chưa tới màn ấy (mặc định
+  /// theo kinh nghiệm khi tới).
+  public var schedule: StarterPrograms.Choice?
 
   public init() {}
 }
@@ -95,6 +99,7 @@ public enum OnboardingRules {
     case .dob: attempt(d, today: today).missing.contains(.dob)
     case .activity: d.activityLevel == nil
     case .experience: d.trainingLevel == nil
+    case .schedule: d.schedule.map { !StarterPrograms.sessionCounts.contains($0.days.count) } ?? false
     default: false
     }
   }
@@ -326,12 +331,52 @@ public final class OnboardingController {
     return true
   }
 
+  // MARK: - Lịch tập (đợt 3)
+
+  /// Chọn số buổi / tuần: đặt lại ngày về ngày mặc định của số ấy.
+  public func setSessions(_ n: Int) {
+    guard StarterPrograms.sessionCounts.contains(n) else { return }
+    edit {
+      var c = $0.schedule ?? .suggested(trainingLevel: $0.trainingLevel)
+      c.sessions = n
+      c.days = StarterPrograms.defaultDays(n)
+      $0.schedule = c
+    }
+  }
+
+  /// Bật / tắt một ngày tập; số buổi theo số ngày (2…5 mới đi tiếp được).
+  public func toggleDay(_ day: Int) {
+    guard (0...6).contains(day) else { return }
+    edit {
+      var c = $0.schedule ?? .suggested(trainingLevel: $0.trainingLevel)
+      if let i = c.days.firstIndex(of: day) { c.days.remove(at: i) } else { c.days.append(day) }
+      c.days.sort()
+      c.sessions = c.days.count
+      $0.schedule = c
+    }
+  }
+
+  public func setPlace(_ place: StarterPrograms.Place) {
+    edit {
+      var c = $0.schedule ?? .suggested(trainingLevel: $0.trainingLevel)
+      c.place = place
+      $0.schedule = c
+    }
+  }
+
   // MARK: - Đi
 
   @discardableResult
   public func next() -> Bool {
     guard canAdvance, draft.step != .ready else { return false }
-    edit { $0.step = OnboardingRules.hop($0, by: 1, healthAvailable: healthAvailable) }
+    edit {
+      $0.step = OnboardingRules.hop($0, by: 1, healthAvailable: healthAvailable)
+      // Tới màn lịch lần đầu: gợi ý theo kinh nghiệm vừa chọn.
+      if $0.step == .schedule, $0.schedule == nil {
+        $0.schedule = .suggested(trainingLevel: $0.trainingLevel)
+      }
+      if var c = $0.schedule { c.beginner = $0.trainingLevel == nil || $0.trainingLevel == "beginner"; $0.schedule = c }
+    }
     return true
   }
 

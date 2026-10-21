@@ -141,6 +141,17 @@ private struct OnboardingStepsView: View {
         }
         .disabled(connecting)
       }
+      if step == .ready, firstSession != nil {
+        Button {
+          finishOrAdvance(startNow: false)
+        } label: {
+          Text(String(localized: "onboarding.ready.later"))
+            .font(DS.TextStyle.body.weight(.semibold))
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .frame(maxWidth: .infinity, minHeight: 44)
+        }
+        .disabled(!flow.canAdvance || flow.finishing)
+      }
       if step == .ready {
         // Dòng pháp lý MỞ ĐƯỢC tài liệu: một lời đồng ý cho văn bản không mở
         // nổi không phải lời đồng ý (`LegalSheet` của RN).
@@ -164,16 +175,28 @@ private struct OnboardingStepsView: View {
   private var ctaTitle: String {
     switch step {
     case .welcome: String(localized: "onboarding.start")
-    case .ready: String(localized: "onboarding.ready.cta")
+    case .ready: firstSession == nil ? String(localized: "onboarding.ready.cta") : String(localized: "onboarding.ready.startNow")
     case .health: String(localized: "onboarding.health.connect")
     default: String(localized: "onboarding.next")
     }
   }
 
-  private func primary() {
+  /// Buổi đầu của lịch vừa chọn (đợt 3).
+  private var firstSession: (name: String, minutes: Int)? {
+    guard let c = flow.draft.schedule, let s = StarterPrograms.schedule(c).first?.session else { return nil }
+    return (Self.sessionName(s), StarterPrograms.minutes(s, place: c.place, beginner: c.beginner))
+  }
+
+  private func primary() { finishOrAdvance(startNow: true) }
+
+  private func finishOrAdvance(startNow: Bool) {
     if step == .ready {
+      // Nháp bị xoá khi xong — giữ lịch lại trước để phiên app áp nó (`StarterPlan`).
+      let choice = flow.draft.schedule
+      let userId = flow.userId
       Task {
         if await flow.finish() {
+          if let choice { StarterPlan.savePending(.init(choice: choice, startNow: startNow), userId: userId) }
           Telemetry.capture(.onboardingCompleted)
         } else if let f = flow.failure {
           failure = f.copy
@@ -295,11 +318,93 @@ private struct OnboardingStepsView: View {
           }
         }
       }
+    case .schedule: schedule
     case .plan: plan
     case .health: health
     case .ready: ready
     }
   }
+
+  // MARK: - Lịch tập (đợt 3, mock `koa-wave3-activation.html`)
+
+  private var schedule: some View {
+    let c = flow.draft.schedule ?? .suggested(trainingLevel: flow.draft.trainingLevel)
+    return VStack(alignment: .leading, spacing: DS.Spacing.lg) {
+      Ask(q: String(localized: "onboarding.schedule.q"), why: String(localized: "onboarding.schedule.why"))
+      HStack(spacing: DS.Spacing.sm) {
+        ForEach(Array(StarterPrograms.sessionCounts), id: \.self) { n in
+          Pill(text: "\(n)", selected: c.sessions == n) { flow.setSessions(n) }
+            .accessibilityLabel(Text(String(localized: "onboarding.schedule.sessions.a11y \(n)")))
+        }
+      }
+      VStack(alignment: .leading, spacing: DS.Spacing.xs) {
+        Eyebrow(text: String(localized: "onboarding.schedule.days"))
+        HStack(spacing: 6) {
+          ForEach(0..<7, id: \.self) { d in
+            Pill(text: Self.dayShort(d), selected: c.days.contains(d), compact: true) { flow.toggleDay(d) }
+          }
+        }
+        Text(String(localized: "onboarding.schedule.rest"))
+          .font(DS.TextStyle.footnote)
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+      }
+      VStack(alignment: .leading, spacing: DS.Spacing.xs) {
+        Eyebrow(text: String(localized: "onboarding.schedule.place"))
+        ForEach(StarterPrograms.Place.allCases, id: \.self) { p in
+          ChoiceCard(label: Self.placeLabel(p), desc: Self.placeDesc(p), selected: c.place == p) { flow.setPlace(p) }
+        }
+      }
+      if StarterPrograms.sessionCounts.contains(c.days.count) {
+        VStack(alignment: .leading, spacing: 6) {
+          Eyebrow(text: String(localized: "onboarding.schedule.preview"))
+          ForEach(StarterPrograms.schedule(c), id: \.day) { row in
+            HStack {
+              Text(verbatim: Self.dayShort(row.day)).font(.body.weight(.bold)).frame(width: 36, alignment: .leading)
+              Text(verbatim: Self.sessionName(row.session))
+              Spacer()
+              Text(String(localized: "today.minutes \(StarterPrograms.minutes(row.session, place: c.place, beginner: c.beginner))"))
+                .font(.custom("Menlo", size: 13, relativeTo: .footnote))
+                .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            }
+            .font(DS.TextStyle.body)
+            .foregroundStyle(DS.Color.foreground.swiftUI)
+          }
+          Text(String(localized: "onboarding.schedule.editLater"))
+            .font(DS.TextStyle.footnote)
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        }
+        .padding(DS.Spacing.md)
+        .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.md))
+      }
+    }
+  }
+
+  static func dayShort(_ d: Int) -> String {
+    [
+      String(localized: "onboarding.day.mon"), String(localized: "onboarding.day.tue"),
+      String(localized: "onboarding.day.wed"), String(localized: "onboarding.day.thu"),
+      String(localized: "onboarding.day.fri"), String(localized: "onboarding.day.sat"),
+      String(localized: "onboarding.day.sun"),
+    ][d]
+  }
+
+  static func placeLabel(_ p: StarterPrograms.Place) -> String {
+    switch p {
+    case .gym: String(localized: "onboarding.place.gym")
+    case .dumbbell: String(localized: "onboarding.place.dumbbell")
+    case .bodyweight: String(localized: "onboarding.place.bodyweight")
+    }
+  }
+
+  static func placeDesc(_ p: StarterPrograms.Place) -> String {
+    switch p {
+    case .gym: String(localized: "onboarding.place.gym.desc")
+    case .dumbbell: String(localized: "onboarding.place.dumbbell.desc")
+    case .bodyweight: String(localized: "onboarding.place.bodyweight.desc")
+    }
+  }
+
+  static func sessionName(_ s: StarterPrograms.Session) -> String { StarterPlan.sessionName(s) }
 
   /// Kết nối Apple Health (bật lại 15/10): bốn thứ app đọc, một câu về quyền riêng tư.
   private var health: some View {
@@ -428,6 +533,12 @@ private struct OnboardingStepsView: View {
 
   private var ready: some View {
     VStack(spacing: DS.Spacing.lg) {
+      // Đợt 3: Koa cầm tạ, mời tập buổi đầu.
+      if firstSession != nil {
+        MascotFigureView(emotion: .warmup, size: 130, animated: false)
+          .frame(height: 150)
+          .accessibilityHidden(true)
+      }
       Eyebrow(text: String(localized: "onboarding.ready.eyebrow"))
       Text(String(localized: "onboarding.ready.line"))
         .font(DS.TextStyle.title)
@@ -444,6 +555,22 @@ private struct OnboardingStepsView: View {
         }
       }
       .accessibilityElement(children: .combine)
+      if let first = firstSession {
+        VStack(spacing: DS.Spacing.xs) {
+          Text(String(localized: "onboarding.ready.first \(first.name) \(first.minutes)"))
+            .font(DS.TextStyle.headline)
+            .foregroundStyle(DS.Color.foreground.swiftUI)
+          Text(String(localized: "onboarding.ready.firstWhy"))
+            .font(DS.TextStyle.footnote)
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        }
+        .multilineTextAlignment(.center)
+        .padding(DS.Spacing.md)
+        .frame(maxWidth: .infinity)
+        .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.md))
+        .accessibilityElement(children: .combine)
+        .padding(.top, DS.Spacing.sm)
+      }
       if flow.finishing {
         ProgressView()
       }
@@ -781,6 +908,26 @@ struct RulerStrip: View {
 // MARK: - Mảnh dùng chung
 
 /// Câu hỏi + lý do hỏi (`Ask`).
+/// Viên chọn của màn lịch (số buổi, ngày).
+private struct Pill: View {
+  let text: String
+  let selected: Bool
+  var compact = false
+  let action: () -> Void
+
+  var body: some View {
+    Button(action: action) {
+      Text(verbatim: text)
+        .font(.system(size: compact ? 13 : 16, weight: .bold))
+        .foregroundStyle(selected ? DS.Color.primaryForeground.swiftUI : DS.Color.foreground.swiftUI)
+        .frame(minWidth: compact ? 38 : 52, minHeight: 44)
+        .background(selected ? DS.Color.primary.swiftUI : DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: 12))
+    }
+    .buttonStyle(.plain)
+    .accessibilityAddTraits(selected ? .isSelected : [])
+  }
+}
+
 private struct Ask: View {
   let q: String
   let why: String

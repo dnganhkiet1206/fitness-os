@@ -28,7 +28,16 @@ struct OnboardingGateView<Content: View>: View {
         case .needsOnboarding:
           OnboardingFlowView(userId: userId, gate: gate)
         case .completed:
-          content
+          #if DEBUG
+            // Soát giao diện onboarding trên tài khoản đã xong (không dùng ở Release).
+            if ProcessInfo.processInfo.environment["ASCND_DEBUG_ONBOARDING"] == "1" {
+              OnboardingFlowView(userId: userId, gate: gate)
+            } else {
+              content
+            }
+          #else
+            content
+          #endif
         case .failed:
           failed(gate)
         }
