@@ -1,0 +1,120 @@
+# Hạn chế, việc hoãn và điều kiện phát hành — BẮT BUỘC ĐỌC
+
+Kiệt yêu cầu ngày 21/10/2026 (#527): những hạn chế và những việc hoãn phát triển phải được ghi lại để người sau đọc, và **không được phép quên**.
+
+**Cách dùng sổ này:**
+- Đọc hết trước khi nhận việc. Sổ đi cùng `PRODUCT_DECISION_V1.md`.
+- Mỗi PR chạm vào một mục ở đây thì **sửa sổ ngay trong PR đó**.
+- Gỡ một mục: **không xoá dòng**. Gạch ngang (`~~…~~`), ghi ngày, ghi bằng chứng (PR, ảnh, link Sentry).
+- Thêm hạn chế hay việc hoãn mới: ghi vào đây **và** báo lên #527.
+
+---
+
+## 0. Trạng thái phát hành: CHƯA PHÁT HÀNH ĐƯỢC
+
+App **chưa thể publish**, vì vài vấn đề thiết yếu chưa giải quyết được (mục 1 và 2).
+
+Chỉ đạo của Kiệt (21/10): giai đoạn này **tập trung cải thiện sản phẩm**, để khi phát hành thì **đỡ phải sửa nhiều**.
+
+Hệ quả cho người làm:
+1. **Chưa phát hành không phải lý do để đứng chờ.** Làm tiếp các giai đoạn GĐ1–GĐ3 của `PRODUCT_DECISION_V1.md`: Daily Plan, Today gọn, hợp nhất tiến bộ, thu gọn vệ tinh. Phần GĐ0 làm được thì làm ngay; phần bị chặn (mục 1) thì ghi lại và đi tiếp.
+2. **Làm như sắp phát hành.** Ưu tiên những gì nếu để tới sau phát hành sẽ đắt để sửa:
+   - mô hình dữ liệu và migration (Gains / XP / cửa hàng);
+   - đường ghi dữ liệu và chạy khi mất mạng;
+   - xoá tài khoản và quyền riêng tư;
+   - accessibility, trạng thái rỗng / lỗi;
+   - tính nhất quán số liệu và đơn vị giữa các màn.
+3. **Không tối ưu theo số liệu chưa có.** Không đặt mục tiêu giữ chân bằng số. Không nói "tăng retention X%". Mọi nhận định về giữ chân hiện chỉ là thiết kế, chưa được đo.
+4. **Không xây thứ chỉ có giá trị khi đã có người dùng**: bảng tin, nhắn tin, bảng xếp hạng, thử thách cộng đồng (mục 3).
+
+---
+
+## 1. Vấn đề đầu tư (chặn bởi chi phí / tài khoản)
+
+| Hạng mục | Chặn gì | Hiện trạng | Ai gỡ |
+|---|---|---|---|
+| **Apple Developer Program ($99/năm)** | TestFlight, App Store, Sign in with Apple, push thật (APNs), archive bản phát hành | Chưa đăng ký | Kiệt |
+| **Khoá AI trả phí** (Gemini; `ASCND_AI_KEY`, `ASCND_AI_MODEL`) | AI ổn định khi có nhiều người dùng. Gói miễn phí giới hạn lượt và hay 503 (`TESTFLIGHT-CHECKLIST.md`) | Đang dùng gói miễn phí. Ngày 21/10 cả 4 hàm thử đều chạy | Kiệt |
+| **iPhone thật để kiểm** | Camera (mã vạch, ảnh món), Apple Health thật, push, Live Activity khi khoá màn hình | Chưa kiểm. Danh sách ở `GD0-DEVICE-CHECKLIST.md` | Kiệt (máy), agent (kịch bản) |
+| **Token Sentry** (dSYM) | Đọc được stack của các lỗi treo APPLE-IOS-4/5/6/7 | Chỉ bản Release mới tải dSYM | Kiệt |
+| **Doanh thu / gói trả phí** | Mua trong app | Server có `verify-purchase` / `store-webhook`; app không có màn nào; chưa có quyết định sản phẩm | Kiệt (quyết định) |
+
+**Quy tắc:**
+- Agent **không** tự đăng ký, mua, tạo tài khoản hay nhập thông tin thanh toán.
+- Agent **không** tạo tài khoản trên Supabase production.
+- Deploy production chỉ khi Kiệt duyệt rõ ràng.
+
+---
+
+## 2. Người dùng thật: 0
+
+- **Chưa có ai ngoài đội dùng app.** Dữ liệu trong app là dữ liệu test (agent được sửa khi kiểm thử; không xoá vĩnh viễn).
+- **Đo lường đã cài, nhưng chưa có dữ liệu thật:** sự kiện PostHog của vòng Koa, onboarding, buổi đầu. Mọi "chỉ số" trong tài liệu là mục tiêu thiết kế, chưa phải số đo.
+- **Mục tiêu bằng số** (D7 / D28, kích hoạt…) chỉ chốt sau khi có baseline từ nhóm TestFlight đầu tiên.
+- **Tính năng cần người dùng thì ẩn hoặc hoãn**, không mặc định hiện ra trống:
+  - bảng tin cộng đồng;
+  - thử thách cộng đồng;
+  - nhắn tin;
+  - bạn tập, bảng xếp hạng.
+- **Cần người thật để biết:** cơ chế pump / quay lại có làm người dùng quay lại hay bỏ đi, và người dùng có hiểu Gains / xu / huy chương không.
+
+---
+
+## 3. Hoãn phát triển (deferred)
+
+Mỗi dòng có lý do, và điều kiện để được làm lại. **Không làm khi chưa đủ điều kiện**, kể cả khi thấy dễ.
+
+| Việc | Lý do hoãn | Điều kiện để làm lại | Từ |
+|---|---|---|---|
+| Mở rộng Cộng đồng (bảng tin, tương tác, trang người dùng) | Chưa có người dùng; QĐ 5 | Có người dùng thật + Kiệt quyết | V1 21/10 |
+| Nhắn tin riêng (DM) | Server chưa có (`MESSAGING-PLAN.md`); Release đang ẩn | Có backend đáng tin + có nhu cầu | 15/10 |
+| Thử thách cộng đồng | Lớp thử thách thứ ba; chưa có người | Đủ người tham gia; **phải ẩn trước** (GĐ3) | V1 21/10 |
+| Đổi tab Cộng đồng thành "Bạn tập" | Tính năng bạn bè chưa đủ thực chất | Có tính năng bạn tập thật | V1 21/10 |
+| Thẻ chia sẻ Story, bạn tập, xếp hạng bạn bè (đợt 5 cũ) | Cần người dùng | Sau TestFlight + số liệu | V1 21/10 |
+| Mở rộng AI (Coach đọc lịch / Koa, AI lập kế hoạch) | Chỉ dùng AI khi tạo giá trị thật; luồng chính không được phụ thuộc AI | Sau khi vòng lõi chứng minh giá trị (GĐ4) | V1 21/10 |
+| Điều hướng 4 khu vực Today · Train · Fuel · Progress | Là hướng đích; không làm khi parity còn mở | GĐ3 | V1 21/10 |
+| Đồ phòng gym của Koa, gói trả phí AI (đợt 6 cũ) | Chưa có người dùng, chưa có quyết định doanh thu | Sau phát hành | 20/10 |
+| Koa Classic tháng (đợt 4 cũ) | Thay bằng "Tuần của Koa" cá nhân hoá (QĐ 2) | Kiệt quyết lại | V1 21/10 |
+| "Buổi ngắn 15 phút" ở màn quay lại | Hoãn từ đợt 2. Theo QĐ 3, phải thành "đề xuất bước tiếp theo theo lịch sử" | GĐ2 | 20/10 |
+| Khoá Face ID, xuất dữ liệu | Chưa ưu tiên | Trước khi phát hành | 20/10 |
+| Kế hoạch ăn chi tiết, đi chợ, thực phẩm bổ sung | **Không xoá**; chỉ đưa xuống khu vực phụ (QĐ 4) | GĐ3 | V1 21/10 |
+| Kiểm iOS 18–25 | Không có máy / simulator | Có máy | 16/10 |
+
+---
+
+## 4. Hạn chế đã biết (lỗi, chỗ lệch, chỗ chưa kiểm)
+
+**Code đã merge nhưng trái với V1** (chi tiết, kèm file và dòng, ở #527 ngày 21/10):
+- Tụt hạng do nghỉ: `KoaGains`, `KoaSchedule.dropped`, lời nhắc ngày 6, màn quay lại. **Phải bỏ ở GĐ2.**
+- Cấp XP vẫn hiện, và cửa hàng khoá đồ theo Cấp XP. **GĐ2, cần migration, không làm mất xu / đồ.**
+- 8 thử thách tuần chung. **GĐ2: thay bằng Tuần của Koa.**
+- Trạng thái "mất pump" (câu "bắp tay Koa hơi xẹp 🥲"): **chờ Kiệt chốt** có bị coi là trừng phạt không.
+
+**Tìm thấy khi kiểm ngày 21/10** (simulator, tài khoản test):
+- Coach AI bị cắt giữa câu, còn sót dấu `**` thô, không trả lời phần hỏi về lịch. Nghi do `MAX_TOKENS = 1024` trong `supabase/functions/ai-coach/index.ts` cộng với phần nháp suy luận của model. Chưa xác nhận.
+- Số buổi lệch: Coach nói 4 (đếm 7 ngày gần nhất), tổng kết tuần nói 2 (tuần lịch).
+- Sẵn sàng lệch: Hôm nay nói "chưa đủ dữ liệu để chấm", tổng kết tuần hiện 92 và khuyên "+2.5kg" dựa trên một điểm duy nhất. **Trái quy tắc bắt buộc của V1: thiếu dữ liệu thì nói thiếu.**
+- Đơn vị lệch: AI viết "2,508", app viết "2.508". Nước tính bằng oz ở Dinh dưỡng, bằng L ở tổng kết tuần.
+- Quá nhiều con số: tổng kết tuần AI sinh thêm "Điểm tuần 55", bên cạnh điểm sẵn sàng, Gains, xu, XP, chuỗi.
+
+**Chưa kiểm:**
+- Tạo lịch tuần ở onboarding trên một **tài khoản mới**.
+- Mẹo buổi đầu trong một buổi tập thật.
+- Kể cho Koa (`ai-log-parse`).
+- Chụp ảnh món (`scan-food`).
+- Mọi mục ở `GD0-DEVICE-CHECKLIST.md`.
+
+**Tài liệu và mã:**
+- `PARITY_MATRIX.md` lạc hậu từ 17/10.
+- `ReadinessTrendCardView` là code chết.
+
+**Giới hạn của môi trường agent:**
+- Simulator không có camera, push APNs, dữ liệu Health thật, hay Live Activity khi khoá màn hình.
+- Công cụ gõ chữ vào simulator làm hỏng dấu tiếng Việt, nên phải kiểm bằng gợi ý có sẵn hoặc tiếng Anh.
+- Agent không được merge PR của phiên khác.
+
+---
+
+## 5. Lịch sử thay đổi sổ
+
+- 21/10/2026: tạo sổ (Kiệt yêu cầu, #527).

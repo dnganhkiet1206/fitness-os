@@ -1,0 +1,365 @@
+<title>Bản đồ sản phẩm ASCND</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: một cột đọc ~70ch, mục lục dính bên trái ở màn rộng; trạng thái mã hoá bằng chip màu */
+:root{
+  --bg:#f6f4f0; --surface:#ffffff; --fg:#1d1b18; --muted:#6b655c; --line:#e3ded5;
+  --accent:#7a5a2e; --accent-soft:#f1e7d6;
+  --ok:#1f7a4d; --ok-soft:#e1f2e8; --warn:#a35a00; --warn-soft:#fbeedb; --bad:#b0323a; --bad-soft:#f8e1e2; --info:#2d5f9a; --info-soft:#e2ecf8;
+  --display:"Bricolage Grotesque", "Be Vietnam Pro", system-ui, sans-serif;
+  --body:"Be Vietnam Pro", system-ui, -apple-system, sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#121110; --surface:#1b1a18; --fg:#eeeae3; --muted:#a39c91; --line:#2e2b27;
+  --accent:#d6b27a; --accent-soft:#2c2419;
+  --ok:#5fd29a; --ok-soft:#14291e; --warn:#f0a54a; --warn-soft:#2e2112; --bad:#f08088; --bad-soft:#321719; --info:#86b4ec; --info-soft:#15212f; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121110; --surface:#1b1a18; --fg:#eeeae3; --muted:#a39c91; --line:#2e2b27;
+  --accent:#d6b27a; --accent-soft:#2c2419;
+  --ok:#5fd29a; --ok-soft:#14291e; --warn:#f0a54a; --warn-soft:#2e2112; --bad:#f08088; --bad-soft:#321719; --info:#86b4ec; --info-soft:#15212f; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:15.5px/1.6 var(--body);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 64px}
+.wrap{max-width:1120px;margin:0 auto;display:grid;grid-template-columns:200px minmax(0,1fr);gap:48px}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 24px);align-self:start;font-size:13.5px;display:flex;flex-direction:column;gap:6px}
+nav.toc b{font:600 11px/1 var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+nav.toc a{color:var(--muted);text-decoration:none}
+nav.toc a:hover,nav.toc a:focus-visible{color:var(--fg)}
+main{min-width:0;display:flex;flex-direction:column;gap:56px}
+h1{font:800 clamp(34px,5vw,52px)/1.05 var(--display);letter-spacing:-.02em;margin:0;text-wrap:balance}
+h2{font:800 28px/1.15 var(--display);letter-spacing:-.01em;margin:0 0 6px;text-wrap:balance}
+h3{font:600 17px/1.3 var(--body);margin:0}
+p{margin:0;max-width:70ch}
+.lede{font-size:18px;color:var(--muted);max-width:62ch}
+.eyebrow{font:600 11.5px/1 var(--body);letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+section{display:flex;flex-direction:column;gap:18px;scroll-margin-top:24px}
+.sub{color:var(--muted);max-width:68ch}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+
+.facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.fact{background:var(--surface);padding:16px 18px;display:flex;flex-direction:column;gap:4px}
+.fact .n{font:500 30px/1.1 var(--mono);font-variant-numeric:tabular-nums}
+.fact .l{font-size:13px;color:var(--muted);line-height:1.4}
+
+.verdict{background:var(--accent-soft);border-radius:14px;padding:20px 22px;display:flex;flex-direction:column;gap:10px}
+.verdict ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+
+.chip{display:inline-flex;align-items:center;gap:6px;font:600 11.5px/1 var(--body);padding:5px 9px;border-radius:999px;white-space:nowrap}
+.chip::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.c-ok{color:var(--ok);background:var(--ok-soft)}
+.c-warn{color:var(--warn);background:var(--warn-soft)}
+.c-bad{color:var(--bad);background:var(--bad-soft)}
+.c-info{color:var(--info);background:var(--info-soft)}
+.legend{display:flex;flex-wrap:wrap;gap:8px 14px;font-size:13px;color:var(--muted);align-items:center}
+
+.tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.area{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.area header{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.area header span{font:500 12px var(--mono);color:var(--muted)}
+.area ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:7px;font-size:14px}
+.area li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:start}
+.area li small{display:block;color:var(--muted);font-size:12.5px;line-height:1.45}
+
+.diagram{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;overflow-x:auto}
+.diagram svg{display:block;min-width:760px;width:100%;height:auto}
+.diagram text{font-family:var(--body)}
+
+.rows{display:flex;flex-direction:column;border-top:1px solid var(--line)}
+.row{display:grid;grid-template-columns:220px minmax(0,1fr);gap:20px;padding:16px 0;border-bottom:1px solid var(--line)}
+.row h3{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.row p+p{margin-top:6px}
+.row .ev{font-size:13px;color:var(--muted)}
+code{font:500 12.5px var(--mono);background:var(--accent-soft);padding:1px 5px;border-radius:5px}
+
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:640px;font-size:14px}
+th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 11.5px/1.2 var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);background:var(--bg)}
+tr:last-child td{border-bottom:0}
+td:first-child{font-weight:600;white-space:nowrap}
+
+.options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.opt{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:10px}
+.opt.pick{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.opt .k{font:500 12px var(--mono);color:var(--muted)}
+.opt ul{margin:0;padding-left:18px;font-size:14px;display:flex;flex-direction:column;gap:4px}
+ol.qs{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:10px;max-width:72ch}
+.foot{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:16px}
+
+@media (max-width:900px){.wrap{grid-template-columns:minmax(0,1fr)}nav.toc{display:none}.options{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:640px){.facts{grid-template-columns:repeat(2,minmax(0,1fr))}.tabs{grid-template-columns:minmax(0,1fr)}.row{grid-template-columns:minmax(0,1fr);gap:8px}}
+</style>
+
+<div class="wrap">
+<nav class="toc" aria-label="Mục lục">
+  <b>Mục lục</b>
+  <a href="#tomtat">Tóm tắt</a>
+  <a href="#tinhnang">Toàn bộ tính năng</a>
+  <a href="#vanhanh">Cách chúng xoay quanh nhau</a>
+  <a href="#colap">Đang bị cô lập</a>
+  <a href="#chuadat">Chưa đạt được</a>
+  <a href="#caithien">Cần cải thiện</a>
+  <a href="#catgiam">Cắt giảm, tinh chỉnh</a>
+  <a href="#huongdi">Hướng đi để chọn</a>
+</nav>
+
+<main>
+<header style="display:flex;flex-direction:column;gap:14px">
+  <span class="eyebrow">Rà soát sản phẩm · 21/10/2026 · nhánh native/ios-rewrite</span>
+  <h1>Bản đồ sản phẩm ASCND</h1>
+  <p class="lede">Mọi tính năng hiện có, chúng nối với nhau ra sao, chỗ nào đứng riêng lẻ, và những gì nên cắt để bạn chọn hướng đi tiếp. Dựng từ mã nguồn thật của app iOS và server, không dựa vào trí nhớ.</p>
+</header>
+
+<section id="tomtat">
+  <div class="facts">
+    <div class="fact"><span class="n">116</span><span class="l">tệp màn hình trong 15 cụm tính năng (~41 nghìn dòng giao diện)</span></div>
+    <div class="fact"><span class="n">0</span><span class="l">người dùng thật. Chưa có TestFlight vì chưa đăng ký Apple Developer</span></div>
+    <div class="fact"><span class="n">4</span><span class="l">loại phần thưởng: xu, XP, Gains, huy chương (thêm vé giữ chuỗi)</span></div>
+    <div class="fact"><span class="n">3</span><span class="l">lớp thử thách chạy song song: nhiệm vụ ngày, thử thách tuần, thử thách cộng đồng</span></div>
+  </div>
+  <div class="verdict">
+    <span class="eyebrow">Kết luận</span>
+    <ul>
+      <li><b>Lõi đã nối tốt:</b> ghi ngày (tập, ăn, nước, ngủ, bước) → nhiệm vụ → xu và Gains → Koa lớn lên, đổi tâm trạng, nhắc đúng giờ, lên widget.</li>
+      <li><b>Bề rộng vượt xa độ sâu:</b> app làm được việc của 4 app (dinh dưỡng, tập luyện, sức khoẻ, mạng xã hội). Nhiều màn vệ tinh không đưa gì trở lại vòng Koa.</li>
+      <li><b>Hệ thống tiến bộ đang chồng nhau:</b> Cấp theo XP và Hạng theo Gains dùng chung tên hạng. Người dùng sẽ thấy "Newbie · Level 01" ở chỗ này, "Koa · Swole" ở chỗ khác.</li>
+      <li><b>Hai mảng dựa vào thứ chưa có:</b> AI cần hàm trên server chạy thật; Cộng đồng cần người.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="tinhnang">
+  <span class="eyebrow">01 · Kiểm kê</span>
+  <h2>Toàn bộ tính năng</h2>
+  <p class="sub">Theo năm tab và các lớp chung. Chip bên phải cho biết tính năng đó đưa gì trở lại vòng lặp chính (Koa, nhiệm vụ, xu).</p>
+  <div class="legend">
+    <span class="chip c-ok">Nối vào vòng Koa</span>
+    <span class="chip c-info">Chỉ đọc dữ liệu chung</span>
+    <span class="chip c-warn">Đứng riêng</span>
+    <span class="chip c-bad">Chưa chạy thật / ẩn</span>
+  </div>
+  <div class="tabs">
+    <div class="area"><header><h3>Hôm nay</h3><span>11 tệp</span></header><ul>
+      <li><div>Thẻ Koa + 5 thanh năng lượng<small>Câu của Koa, việc kế tiếp, nút hành động có xu</small></div><span class="chip c-ok">Lõi</span></li>
+      <li><div>"Hôm nay của bạn"<small>Ghi ngủ, bữa, nước, tập trong một form</small></div><span class="chip c-ok">Nối</span></li>
+      <li><div>Thẻ buổi tập hôm nay<small>Bắt đầu, chọn buổi, ghi tay</small></div><span class="chip c-ok">Nối</span></li>
+      <li><div>Thẻ sẵn sàng, vòng hoạt động, Apple Health<small>Điểm HRV / nhịp tim / ngủ / tải tập</small></div><span class="chip c-info">Đọc</span></li>
+      <li><div>Màn quay lại, Kể cho Koa (giọng nói)<small>Tell Koa dùng AI để tách câu nói thành bản ghi</small></div><span class="chip c-ok">Nối</span></li>
+    </ul></div>
+    <div class="area"><header><h3>Tập luyện</h3><span>13 + 4 + 4 tệp</span></header><ul>
+      <li><div>Màn tập, nghỉ giữa hiệp, Live Activity<small>Gợi ý tải theo trạng thái và điểm sẵn sàng</small></div><span class="chip c-ok">Lõi</span></li>
+      <li><div>Kế hoạch tuần, mẫu buổi, trình dựng buổi<small>Lịch tuần là nguồn của nhiệm vụ chính và trạng thái Koa</small></div><span class="chip c-ok">Lõi</span></li>
+      <li><div>Lịch sử, chi tiết buổi, kỷ lục (PR)<small>PR cộng Gains</small></div><span class="chip c-ok">Nối</span></li>
+      <li><div>Thư viện bài tập, hướng dẫn, phân tích bài</div><span class="chip c-info">Đọc</span></li>
+      <li><div>Tóm tắt buổi → chia sẻ lên Cộng đồng</div><span class="chip c-ok">Nối</span></li>
+    </ul></div>
+    <div class="area"><header><h3>Dinh dưỡng</h3><span>19 tệp</span></header><ul>
+      <li><div>Ghi bữa: tìm món, mã vạch, chụp ảnh món, gợi ý AI<small>Mã vạch và chụp ảnh cần máy thật; chụp ảnh và gợi ý cần AI</small></div><span class="chip c-ok">Nối</span></li>
+      <li><div>Nhật ký, nước, xu hướng 7 ngày</div><span class="chip c-ok">Nối</span></li>
+      <li><div>Kế hoạch ăn + trình tạo, danh sách đi chợ</div><span class="chip c-warn">Riêng</span></li>
+      <li><div>Thực phẩm bổ sung (checklist)</div><span class="chip c-warn">Riêng</span></li>
+      <li><div>Thư viện món của tôi</div><span class="chip c-info">Đọc</span></li>
+    </ul></div>
+    <div class="area"><header><h3>Cộng đồng</h3><span>15 tệp · ~7.800 dòng</span></header><ul>
+      <li><div>Bảng tin, bài viết, bình luận, lưu, tìm kiếm<small>Ảnh bài do app chọn sẵn, không tải ảnh lên</small></div><span class="chip c-warn">Riêng</span></li>
+      <li><div>Trang người dùng, quyền riêng tư, hộp thông báo</div><span class="chip c-warn">Riêng</span></li>
+      <li><div>Thử thách cộng đồng (tham gia / nhận thưởng)</div><span class="chip c-warn">Trùng</span></li>
+      <li><div>Chia sẻ buổi tập, công thức, tiến trình</div><span class="chip c-ok">Nối</span></li>
+      <li><div>Nhắn tin<small>Server chưa có; bản Release ẩn hẳn</small></div><span class="chip c-bad">Ẩn</span></li>
+    </ul></div>
+    <div class="area"><header><h3>Trợ lý (AI)</h3><span>6 tệp</span></header><ul>
+      <li><div>Coach AI (chat stream), trí nhớ coach<small>Đọc buổi tập, cân nặng, ngủ, sinh trắc, nhật ký ngày</small></div><span class="chip c-bad">Chưa xác nhận</span></li>
+      <li><div>Insight hôm nay, tổng kết tuần AI</div><span class="chip c-bad">Chưa xác nhận</span></li>
+      <li><div>Bảng chỉ số, thẻ tập luyện, lối vào màn Cơ thể</div><span class="chip c-info">Đọc</span></li>
+    </ul></div>
+    <div class="area"><header><h3>Koa (phòng linh vật)</h3><span>13 tệp</span></header><ul>
+      <li><div>Vóc dáng theo Gains, 4 trạng thái theo lịch<small>Pump, đợi ở phòng tập, mất pump, tụt hạng</small></div><span class="chip c-ok">Lõi</span></li>
+      <li><div>Nhiệm vụ ngày, chuỗi, vé giữ chuỗi</div><span class="chip c-ok">Lõi</span></li>
+      <li><div>Cửa hàng 36 món + 3 sân khấu, tủ đồ<small>Mở khoá theo Cấp XP</small></div><span class="chip c-ok">Nối</span></li>
+      <li><div>Thử thách tuần (8 mẫu chung), huy chương, hành trình hạng</div><span class="chip c-ok">Nối</span></li>
+    </ul></div>
+    <div class="area"><header><h3>Cơ thể &amp; sức khoẻ</h3><span>11 + 9 tệp</span></header><ul>
+      <li><div>Cân nặng, số đo, ảnh tiến trình</div><span class="chip c-warn">Riêng</span></li>
+      <li><div>Ngủ, bước chân, sinh trắc, phân tích giấc ngủ</div><span class="chip c-ok">Nối</span></li>
+      <li><div>Mục tiêu thông minh (TDEE thích ứng)<small>Chỉ hiển thị, không tự chỉnh mục tiêu calo</small></div><span class="chip c-warn">Riêng</span></li>
+      <li><div>Tổng kết tuần</div><span class="chip c-info">Đọc</span></li>
+    </ul></div>
+    <div class="area"><header><h3>Lớp chung</h3><span>app · widget · server</span></header><ul>
+      <li><div>Onboarding mới: lịch tuần + buổi đầu có hướng dẫn</div><span class="chip c-ok">Lõi</span></li>
+      <li><div>Nhắc nhở (1 lời nhắc Koa/ngày theo giờ quen)</div><span class="chip c-ok">Lõi</span></li>
+      <li><div>Widget Koa, buổi hôm nay, chuỗi + sẵn sàng</div><span class="chip c-ok">Nối</span></li>
+      <li><div>Cài đặt, hồ sơ, đổi mật khẩu, xoá tài khoản</div><span class="chip c-info">Đọc</span></li>
+      <li><div>Mua trong app<small>Server có hàm xác minh mua hàng; app không có màn nào</small></div><span class="chip c-bad">Chưa có</span></li>
+    </ul></div>
+  </div>
+</section>
+
+<section id="vanhanh">
+  <span class="eyebrow">02 · Luồng</span>
+  <h2>Cách chúng xoay quanh nhau</h2>
+  <p class="sub">Mọi thứ đổ vào nhật ký ngày và lịch tuần. Hai nguồn này nuôi các bộ máy tính toán, và bộ máy đẩy kết quả ra Koa, phần thưởng và lời nhắc. Mũi tên đứt là chỗ chưa có dây nối.</p>
+  <div class="diagram" role="img" aria-label="Sơ đồ luồng: đầu vào đổ vào nhật ký và lịch, qua các bộ máy tính, ra Koa, phần thưởng, nhắc nhở và chia sẻ">
+  <svg viewBox="0 0 900 440" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 Z" fill="var(--muted)"/></marker>
+    </defs>
+    <g font-size="11" font-weight="600" fill="var(--muted)" letter-spacing="1.2">
+      <text x="20" y="22">ĐẦU VÀO</text><text x="245" y="22">NGUỒN CHUNG</text><text x="470" y="22">BỘ MÁY</text><text x="700" y="22">ĐẦU RA</text>
+    </g>
+    <g font-size="13">
+      <!-- inputs -->
+      <g fill="var(--surface)" stroke="var(--line)">
+        <rect x="20" y="40" width="170" height="34" rx="8"/><rect x="20" y="84" width="170" height="34" rx="8"/><rect x="20" y="128" width="170" height="34" rx="8"/>
+        <rect x="20" y="172" width="170" height="34" rx="8"/><rect x="20" y="216" width="170" height="34" rx="8"/>
+      </g>
+      <g fill="var(--fg)"><text x="34" y="62">Buổi tập + PR</text><text x="34" y="106">Bữa ăn, nước</text><text x="34" y="150">Ngủ, bước (Health)</text><text x="34" y="194">Onboarding → lịch</text><text x="34" y="238">Kể cho Koa (AI)</text></g>
+      <g fill="var(--warn-soft)" stroke="var(--warn)" stroke-dasharray="4 3">
+        <rect x="20" y="300" width="170" height="34" rx="8"/><rect x="20" y="344" width="170" height="34" rx="8"/><rect x="20" y="388" width="170" height="34" rx="8"/>
+      </g>
+      <g fill="var(--fg)"><text x="34" y="322">Cân, số đo, ảnh</text><text x="34" y="366">Kế hoạch ăn, đi chợ</text><text x="34" y="410">Thực phẩm bổ sung</text></g>
+      <!-- sources -->
+      <g fill="var(--accent-soft)" stroke="var(--accent)">
+        <rect x="245" y="70" width="170" height="60" rx="10"/><rect x="245" y="160" width="170" height="60" rx="10"/>
+      </g>
+      <g fill="var(--fg)"><text x="259" y="96" font-weight="700">Nhật ký ngày</text><text x="259" y="115" font-size="11.5" fill="var(--muted)">daily_logs + sessions</text>
+        <text x="259" y="186" font-weight="700">Lịch tuần</text><text x="259" y="205" font-size="11.5" fill="var(--muted)">mẫu buổi + ngày nghỉ</text></g>
+      <!-- engines -->
+      <g fill="var(--surface)" stroke="var(--line)">
+        <rect x="470" y="40" width="180" height="34" rx="8"/><rect x="470" y="84" width="180" height="34" rx="8"/><rect x="470" y="128" width="180" height="34" rx="8"/>
+        <rect x="470" y="172" width="180" height="34" rx="8"/><rect x="470" y="216" width="180" height="34" rx="8"/><rect x="470" y="260" width="180" height="34" rx="8"/>
+      </g>
+      <g fill="var(--fg)"><text x="484" y="62">Nhiệm vụ ngày</text><text x="484" y="106">Gains + lịch Koa</text><text x="484" y="150">Chuỗi + XP + Cấp</text><text x="484" y="194">Điểm sẵn sàng</text><text x="484" y="238">Thử thách tuần</text><text x="484" y="282">Huy chương</text></g>
+      <!-- outputs -->
+      <g fill="var(--ok-soft)" stroke="var(--ok)">
+        <rect x="700" y="40" width="180" height="34" rx="8"/><rect x="700" y="84" width="180" height="34" rx="8"/><rect x="700" y="128" width="180" height="34" rx="8"/><rect x="700" y="172" width="180" height="34" rx="8"/>
+      </g>
+      <g fill="var(--fg)"><text x="714" y="62">Koa: dáng, tâm trạng</text><text x="714" y="106">Xu → cửa hàng</text><text x="714" y="150">1 lời nhắc / ngày</text><text x="714" y="194">Widget, Live Activity</text></g>
+      <g fill="var(--surface)" stroke="var(--line)"><rect x="700" y="216" width="180" height="34" rx="8"/><rect x="700" y="260" width="180" height="34" rx="8"/></g>
+      <g fill="var(--fg)"><text x="714" y="238">Gợi ý tải ở màn tập</text><text x="714" y="282">Chia sẻ lên Cộng đồng</text></g>
+      <g fill="var(--bad-soft)" stroke="var(--bad)" stroke-dasharray="4 3"><rect x="700" y="330" width="180" height="34" rx="8"/><rect x="700" y="374" width="180" height="34" rx="8"/></g>
+      <g fill="var(--fg)"><text x="714" y="352">Coach AI</text><text x="714" y="396">Thử thách cộng đồng</text></g>
+    </g>
+    <!-- arrows -->
+    <g stroke="var(--muted)" stroke-width="1.4" fill="none" marker-end="url(#ah)">
+      <path d="M190 57 C 220 57 220 95 243 95"/><path d="M190 101 C 220 101 220 100 243 100"/><path d="M190 145 C 220 145 220 110 243 110"/>
+      <path d="M190 189 L243 189"/><path d="M190 233 C 220 233 220 120 243 118"/>
+      <path d="M415 95 C 440 95 445 57 468 57"/><path d="M415 100 C 440 100 445 101 468 101"/><path d="M415 105 C 440 105 445 145 468 145"/><path d="M415 112 C 440 112 445 189 468 189"/><path d="M415 118 C 440 120 445 233 468 233"/><path d="M415 122 C 440 125 445 277 468 277"/>
+      <path d="M415 185 C 440 185 445 62 468 62"/><path d="M415 195 C 440 195 445 106 468 106"/>
+      <path d="M650 101 L698 57"/><path d="M650 57 L698 101"/><path d="M650 145 C 675 145 675 106 698 106"/><path d="M650 233 C 675 233 675 110 698 110"/><path d="M650 277 C 675 277 675 115 698 115"/>
+      <path d="M650 101 C 675 101 675 145 698 145"/><path d="M650 106 C 675 120 675 189 698 189"/><path d="M650 189 C 675 189 675 233 698 233"/>
+    </g>
+    <g stroke="var(--bad)" stroke-width="1.4" fill="none" stroke-dasharray="5 4">
+      <path d="M330 220 L330 347 L698 347" marker-end="url(#ah)"/>
+    </g>
+    <g stroke="var(--warn)" stroke-width="1.4" fill="none" stroke-dasharray="5 4">
+      <path d="M190 317 C 230 317 250 300 300 290"/><path d="M190 361 C 230 361 250 330 300 300"/><path d="M190 405 C 230 405 260 360 300 312"/>
+    </g>
+    <g font-size="11.5" fill="var(--muted)">
+      <text x="306" y="300">không đổ vào nhiệm vụ,</text><text x="306" y="315">Gains hay Koa</text>
+      <text x="470" y="370">Coach không đọc lịch tuần,</text><text x="470" y="385">Koa, bữa chi tiết</text>
+    </g>
+  </svg>
+  </div>
+  <div class="rows">
+    <div class="row"><h3>Vòng chính <span class="chip c-ok">Đang chạy</span></h3><div><p>Một buổi tập trong lịch cộng +10 Gains (PR +4, đủ tuần +15), hoàn thành nhiệm vụ chính (35 xu). Gains đổi vóc dáng Koa qua 6 hạng. Lỡ 3 ngày thì mất pump, 7 ngày thì tụt một hạng, quay lại được ×2. Ngày nghỉ đã đặt có nhiệm vụ hồi phục và không tính là lỡ.</p></div></div>
+    <div class="row"><h3>Vòng phụ hằng ngày <span class="chip c-ok">Đang chạy</span></h3><div><p>Bữa, nước, ngủ, bước là nhiệm vụ nhỏ (8–10 xu), tối đa 85 xu/ngày. Chúng nuôi năm thanh năng lượng trên thẻ Koa và chuỗi ngày ghi.</p></div></div>
+    <div class="row"><h3>Sẵn sàng → tập <span class="chip c-info">Một chiều, yếu</span></h3><div><p>Điểm sẵn sàng chỉ chạm vào màn tập ở một chỗ: khi đỏ và có tín hiệu hồi phục thì gợi ý giữ tải. Nó không đổi lịch, không đổi nhiệm vụ, không đổi câu của Koa.</p></div></div>
+    <div class="row"><h3>Xu → cửa hàng <span class="chip c-ok">Đang chạy</span></h3><div><p>Xu chỉ có một chỗ tiêu: đồ của Koa và vé giữ chuỗi (150). Món trong cửa hàng mở khoá theo Cấp XP, không theo Gains.</p></div></div>
+  </div>
+</section>
+
+<section id="colap">
+  <span class="eyebrow">03 · Đứng riêng</span>
+  <h2>Những tính năng đang bị cô lập</h2>
+  <p class="sub">Có màn, có dữ liệu, nhưng không đưa gì trở lại vòng lặp chính, hoặc không màn nào mở tới.</p>
+  <div class="rows">
+    <div class="row"><h3>Cộng đồng <span class="chip c-warn">Lớn nhất, ít nối nhất</span></h3><div>
+      <p>Cụm lớn thứ hai của app (~7.800 dòng). Chỉ có một dây đi vào: chia sẻ buổi tập, công thức, tiến trình. Ảnh đại diện vẫn là emoji linh vật cũ, không phải Koa của người đó. Thử thách cộng đồng là hệ thống riêng, không dính thử thách tuần của Koa. Với 0 người dùng, bảng tin mở ra sẽ trống.</p>
+      <p class="ev">Nhắn tin (<code>CommunityMessagesView</code>) bị ẩn ở bản Release vì server chưa có.</p></div></div>
+    <div class="row"><h3>Kế hoạch ăn, đi chợ, bổ sung <span class="chip c-warn">Đảo riêng</span></h3><div>
+      <p>Ba công cụ chạy được nhưng không đổ vào nhiệm vụ, Gains hay Koa, và Coach AI không đọc chúng. Thực phẩm bổ sung chỉ là một danh sách tích.</p></div></div>
+    <div class="row"><h3>Cân, số đo, ảnh, mục tiêu thông minh <span class="chip c-warn">Chỉ để xem</span></h3><div>
+      <p>Mục tiêu thông minh tính được TDEE thật từ cân nặng và calo, nhưng chỉ hiển thị. Nó không tự chỉnh mục tiêu calo, dù đó là giá trị lớn nhất nó có thể mang lại. Cân nặng không gắn với Koa hay nhiệm vụ nào.</p></div></div>
+    <div class="row"><h3>Coach AI <span class="chip c-bad">Thiếu ngữ cảnh</span></h3><div>
+      <p>Coach đọc buổi tập 7 ngày, cân, ngủ, sinh trắc, nhật ký ngày, trí nhớ. Nó không đọc lịch tuần, không biết Koa đang ở hạng nào hay sắp tụt hạng. Vì thế nó không nói được "mai Koa tụt hạng, tập 15 phút thôi". Ngày 13/10 mọi hàm AI trên server còn trả 404; tôi chưa xác nhận lại chúng đã chạy chưa.</p></div></div>
+    <div class="row"><h3>Mã không màn nào mở tới <span class="chip c-bad">Code chết</span></h3><div>
+      <p><code>ReadinessTrendCardView</code> không được dùng ở đâu. Màn Lab (<code>WorkoutLabView</code>, <code>RestLabView</code>) và <code>PreviewGallery</code> chỉ có ở bản Debug, như vậy là đúng.</p></div></div>
+  </div>
+</section>
+
+<section id="chuadat">
+  <span class="eyebrow">04 · Khoảng trống</span>
+  <h2>Những gì app chưa đạt được</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>Mảng</th><th>Hiện trạng</th><th>Chặn bởi</th></tr></thead>
+    <tbody>
+      <tr><td>Người dùng thật</td><td>0 người. Mọi quyết định giữ chân đang là đoán</td><td>Apple Developer ($99) → TestFlight</td></tr>
+      <tr><td>Đăng nhập Apple</td><td>Chưa có</td><td>Apple Developer</td></tr>
+      <tr><td>AI thật</td><td>Chụp ảnh món, gợi ý món, Coach, insight, tổng kết tuần chưa từng chạy với server thật</td><td>Deploy hàm + khoá nhà cung cấp AI</td></tr>
+      <tr><td>Máy thật</td><td>Camera (mã vạch, ảnh món), Apple Health thật, push, Live Activity khi khoá màn hình chưa được thử</td><td>iPhone thật</td></tr>
+      <tr><td>Doanh thu</td><td>Server có hàm xác minh mua hàng, app không có gói trả phí nào</td><td>Quyết định sản phẩm</td></tr>
+      <tr><td>Lan truyền</td><td>Chưa có thẻ chia sẻ kiểu Story, chưa có bạn tập</td><td>Đợt 5</td></tr>
+      <tr><td>Thử thách theo sức mình</td><td>Thử thách tuần vẫn là 8 mẫu chung cho mọi người</td><td>Đợt 4</td></tr>
+      <tr><td>Bảo mật, dữ liệu</td><td>Chưa có khoá Face ID, chưa xuất dữ liệu</td><td>—</td></tr>
+      <tr><td>Chất lượng</td><td>VoiceOver chưa đi trọn; bảng đối chiếu PARITY_MATRIX lạc hậu từ 17/10</td><td>—</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="caithien">
+  <span class="eyebrow">05 · Sửa</span>
+  <h2>Những gì cần cải thiện</h2>
+  <div class="rows">
+    <div class="row"><h3>Một thang tiến bộ</h3><div><p>Hiện có Cấp (XP chia 120) và Hạng vóc dáng (Gains), dùng chung sáu tên Newbie → Mass Monster. Onboarding hứa "Level 01", thẻ Koa nói "Koa · Swole", cửa hàng khoá theo Cấp. Đề xuất: Gains là thang duy nhất người dùng thấy. Cửa hàng mở khoá theo hạng Gains. XP chỉ còn chạy ngầm hoặc bỏ hẳn.</p></div></div>
+    <div class="row"><h3>Một lớp thử thách</h3><div><p>Nhiệm vụ ngày, thử thách tuần (8 mẫu chung) và thử thách cộng đồng đang song song, mỗi cái một kiểu thưởng. Đề xuất: giữ nhiệm vụ ngày; gộp thử thách tuần thành "Tuần của Koa" theo sức từng người (đợt 4); thử thách cộng đồng chỉ quay lại khi có người.</p></div></div>
+    <div class="row"><h3>Sẵn sàng phải đổi được kế hoạch</h3><div><p>Khi sẵn sàng đỏ, Koa nên đề xuất buổi nhẹ hay đổi sang ngày hồi phục mà không mất nhiệm vụ. Hiện điểm này chỉ là con số để xem.</p></div></div>
+    <div class="row"><h3>Coach biết Koa và lịch</h3><div><p>Đưa lịch tuần, Gains, số ngày lỡ và bữa ăn vào ngữ cảnh của Coach. Coach trở thành giọng nói của Koa thay vì một chatbot sức khoẻ chung chung.</p></div></div>
+    <div class="row"><h3>Mục tiêu calo tự chỉnh</h3><div><p>Nối mục tiêu thông minh vào mục tiêu dinh dưỡng, có hỏi người dùng đồng ý. Đây là tính năng "thông minh" dễ thấy nhất mà app đã tính xong.</p></div></div>
+    <div class="row"><h3>Hôm nay bớt dày</h3><div><p>Thẻ Koa, năm thanh, thẻ buổi tập, thẻ sẵn sàng, "Hôm nay của bạn" và phần thêm đều nằm trên một trang. Năm thanh năng lượng và "Hôm nay của bạn" đang nói cùng một chuyện.</p></div></div>
+  </div>
+</section>
+
+<section id="catgiam">
+  <span class="eyebrow">06 · Cắt</span>
+  <h2>Những gì cần cắt giảm, tinh chỉnh</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>Tính năng</th><th>Đề xuất</th><th>Lý do</th></tr></thead>
+    <tbody>
+      <tr><td>Cấp XP</td><td><span class="chip c-bad">Bỏ khỏi giao diện</span></td><td>Trùng với hạng Gains, gây hai nghĩa cho cùng một tên</td></tr>
+      <tr><td>Thử thách tuần 8 mẫu</td><td><span class="chip c-warn">Thay</span></td><td>Chung cho mọi người, trùng nhiệm vụ ngày; thay bằng thử thách cá nhân</td></tr>
+      <tr><td>Tab Cộng đồng</td><td><span class="chip c-warn">Thu nhỏ</span></td><td>Không có người thì bảng tin trống là trải nghiệm tệ nhất. Đổi tab thành "Bạn tập" (bạn bè + Koa đứng chung) cho tới khi đủ người</td></tr>
+      <tr><td>Thực phẩm bổ sung</td><td><span class="chip c-bad">Cắt hoặc giấu</span></td><td>Không nối vào đâu, ít giá trị cho vòng tập</td></tr>
+      <tr><td>Kế hoạch ăn, đi chợ</td><td><span class="chip c-warn">Giấu sau "Thêm"</span></td><td>Giữ cho người cần, không chiếm chỗ trên tab Dinh dưỡng</td></tr>
+      <tr><td>Thử thách cộng đồng</td><td><span class="chip c-warn">Tạm ẩn</span></td><td>Lớp thử thách thứ ba; quay lại khi có người</td></tr>
+      <tr><td>Thẻ xu hướng sẵn sàng</td><td><span class="chip c-bad">Xoá</span></td><td>Không màn nào dùng</td></tr>
+      <tr><td>Năm thanh năng lượng</td><td><span class="chip c-warn">Gộp</span></td><td>Gộp với "Hôm nay của bạn" thành một khối</td></tr>
+      <tr><td>Vòng lặp Koa, lịch tuần, màn tập</td><td><span class="chip c-ok">Giữ, đầu tư thêm</span></td><td>Đây là thứ duy nhất làm ASCND khác các app tập khác</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="huongdi">
+  <span class="eyebrow">07 · Quyết định</span>
+  <h2>Ba hướng đi để chọn</h2>
+  <p class="sub">Cả ba đều cần đợt 0 (TestFlight) để đo. Khác nhau ở chỗ app muốn là gì trong đầu người dùng.</p>
+  <div class="options">
+    <div class="opt pick"><span class="k">A · đề xuất</span><h3>App tập gym có Koa</h3><p>Mọi thứ phục vụ một hành vi: tập đủ buổi trong tuần.</p><ul><li>Một thang tiến bộ (Gains)</li><li>Sẵn sàng và Coach đổi được kế hoạch</li><li>Dinh dưỡng chỉ còn ghi nhanh + đạm</li><li>Cộng đồng thành Bạn tập</li></ul><p class="sub" style="font-size:13.5px">Hẹp, dễ giải thích, đúng với công việc đã làm ở đợt 1–3.</p></div>
+    <div class="opt"><span class="k">B</span><h3>App sức khoẻ toàn diện</h3><p>Giữ đủ bốn trụ, Koa là lớp vui phủ lên.</p><ul><li>Giữ hết tính năng</li><li>Nối các đảo riêng vào nhiệm vụ</li><li>Cần AI thật để gánh độ phức tạp</li></ul><p class="sub" style="font-size:13.5px">Cạnh tranh trực tiếp với MyFitnessPal và Apple Fitness; khó nổi bật.</p></div>
+    <div class="opt"><span class="k">C</span><h3>Mạng xã hội tập luyện</h3><p>Cộng đồng là trung tâm, Koa là hình đại diện.</p><ul><li>Đẩy bạn tập, thẻ Story lên trước</li><li>Cần người dùng từ ngày đầu</li></ul><p class="sub" style="font-size:13.5px">Rủi ro cao nhất khi đang có 0 người.</p></div>
+  </div>
+  <h3 style="margin-top:8px">Câu hỏi cần bạn trả lời</h3>
+  <ol class="qs">
+    <li>Chọn A, B hay C? Câu trả lời quyết định phần cắt ở mục 06.</li>
+    <li>Gộp Cấp XP vào hạng Gains: đồng ý không? Người đã có xu và đồ vẫn giữ nguyên.</li>
+    <li>Tab thứ tư khi chưa có người: giữ Cộng đồng, hay đổi thành Bạn tập?</li>
+    <li>Khi nào đăng ký Apple Developer để có TestFlight? Đây là chặn duy nhất cho việc đo.</li>
+    <li>AI chạy bằng nhà cung cấp nào, và đã deploy hàm lên server chưa?</li>
+  </ol>
+</section>
+
+<p class="foot">Nguồn: mã nguồn app iOS (<code>apps/ios/ASCND</code>, <code>ASCNDCore</code>), hàm Supabase, <code>PARITY_MATRIX.md</code>, <code>LATER-DEVICE-AND-AI.md</code>, lộ trình 20/10. Số tệp và số dòng đo ngày 21/10. Trạng thái AI trên server là theo ghi chú ngày 13/10, chưa đo lại.</p>
+</main>
+</div>
