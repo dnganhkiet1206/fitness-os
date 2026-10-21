@@ -1,6 +1,7 @@
 import ASCNDCore
 import Charts
 import ASCNDDesignSystem
+import NaturalLanguage
 import SwiftUI
 import UIKit
 
@@ -355,13 +356,36 @@ struct CoachChatView: View {
   /// Ô soạn nổi: một viên chứa ô chữ và nút gửi, như ô hỏi của ChatGPT; dưới là
   /// lời nhắc y tế nhỏ, mờ, căn giữa như các app AI hiện nay (16/10, chủ dự án) —
   /// thay vì một câu "gặp bác sĩ" cuối mỗi câu trả lời.
+  /// Ngôn ngữ của cuộc chat: tin người dùng gần nhất mà nhận ra chắc chắn (vi / en /
+  /// es, ≥ 60 %); tin quá ngắn ("ok", "?") thì xét tin trước; không có thì ngôn ngữ app.
+  static func chatLanguage(_ messages: [Coach.Message], fallback: String) -> String {
+    let codes: [NLLanguage: String] = [.vietnamese: "vi", .english: "en", .spanish: "es"]
+    for m in messages.reversed() where m.role == .user {
+      let r = NLLanguageRecognizer()
+      r.languageConstraints = Array(codes.keys)
+      r.processString(m.content)
+      if let (top, p) = r.languageHypotheses(withMaximum: 1).first, p >= 0.6, let code = codes[top] { return code }
+    }
+    return fallback
+  }
+
+  /// `coach.disclaimer` theo một ngôn ngữ cụ thể (bản dịch trong `<code>.lproj`).
+  static func disclaimerText(_ code: String) -> String {
+    guard let path = Bundle.main.path(forResource: code, ofType: "lproj"), let bundle = Bundle(path: path) else {
+      return String(localized: "coach.disclaimer")
+    }
+    return bundle.localizedString(forKey: "coach.disclaimer", value: String(localized: "coach.disclaimer"), table: nil)
+  }
+
   private func setCollapsed(_ value: Bool) {
     withAnimation(reduceMotion ? nil : .spring(response: 0.42, dampingFraction: 0.82)) { collapsed = value }
   }
 
   private var disclaimer: some View {
     // Nhỏ và mờ hơn chữ phụ thường (16/10, chủ dự án) — nhắc nhẹ, không giành mắt.
-    Text("coach.disclaimer")
+    // Theo ngôn ngữ người dùng ĐANG CHAT, không theo ngôn ngữ app (Kiệt 21/10): hỏi
+    // tiếng Anh trong app tiếng Việt thì lời nhắc y tế cũng bằng tiếng Anh.
+    Text(verbatim: Self.disclaimerText(Self.chatLanguage(chat.messages, fallback: lang.rawValue)))
       .font(.system(size: 10))
       .foregroundStyle(DS.Color.mutedForeground.swiftUI.opacity(0.7))
       .multilineTextAlignment(.center)
