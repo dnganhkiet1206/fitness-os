@@ -991,6 +991,7 @@ private struct ChoiceCard: View {
     }
     .buttonStyle(.plain)
     .accessibilityElement(children: .combine)
+    .accessibilityLabel(Text(verbatim: ChoiceText.spoken(label: label, desc: desc)))
     .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
   }
 }
@@ -1013,6 +1014,7 @@ private struct ChoiceRow: View {
     }
     .buttonStyle(.plain)
     .accessibilityElement(children: .combine)
+    .accessibilityLabel(Text(verbatim: ChoiceText.spoken(label: label, desc: desc)))
     .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
   }
 }
@@ -1021,6 +1023,12 @@ private struct ChoiceText: View {
   let label: String
   let desc: String?
   let selected: Bool
+
+  /// "nhãn. mô tả" — câu VoiceOver của thẻ / hàng chọn.
+  static func spoken(label: String, desc: String?) -> String {
+    guard let desc, !desc.isEmpty else { return label }
+    return "\(label). \(desc)"
+  }
 
   var body: some View {
     HStack(spacing: DS.Spacing.sm) {

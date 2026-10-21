@@ -599,21 +599,19 @@ struct TemplateFormView: View {
         }
       }
       .frame(maxWidth: .infinity, alignment: .leading)
-      roundButton("minus", enabled: minus) { step(-1) }
-        .accessibilityLabel(Text(verbatim: "\(label) −"))
+      roundButton("minus", label: "\(label) −", enabled: minus) { step(-1) }
       Text(verbatim: value)
         .font(DS.TextStyle.headline.monospacedDigit())
         .frame(minWidth: 52)
         .multilineTextAlignment(.center)
         .contentTransition(.numericText())
-      roundButton("plus", enabled: plus) { step(1) }
-        .accessibilityLabel(Text(verbatim: "\(label) +"))
+      roundButton("plus", label: "\(label) +", enabled: plus) { step(1) }
     }
     .frame(minHeight: 60)
     .accessibilityElement(children: .contain)
   }
 
-  private func roundButton(_ symbol: String, enabled: Bool, action: @escaping () -> Void) -> some View {
+  private func roundButton(_ symbol: String, label: String, enabled: Bool, action: @escaping () -> Void) -> some View {
     Button(action: action) {
       Image(systemName: symbol)
         .font(.system(size: 14, weight: .bold))
@@ -625,6 +623,7 @@ struct TemplateFormView: View {
     }
     .buttonStyle(.plain)
     .disabled(!enabled)
+    .accessibilityLabel(Text(verbatim: label))
   }
 
   // MARK: - Chữ

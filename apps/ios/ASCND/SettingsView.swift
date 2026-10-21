@@ -388,7 +388,8 @@ private struct HealthSettingsSection: View {
         }
       }
       .frame(minHeight: 44)
-      .accessibilityElement(children: .combine)
+      // `.contain`, không `.combine`: gộp sẽ nuốt nút "Kết nối" — VoiceOver không bấm được.
+      .accessibilityElement(children: .contain)
       // Không dùng Health: vẫn có bước chân tự động từ iPhone.
       if connected == false, let phoneSteps {
         HStack(spacing: 12) {
@@ -414,7 +415,7 @@ private struct HealthSettingsSection: View {
           }
         }
         .frame(minHeight: 44)
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .contain)
       }
       if let failure {
         Text(HealthSyncCard.message(.failed(failure)))
