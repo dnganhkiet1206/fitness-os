@@ -67,7 +67,7 @@
 | Mục | Trạng thái |
 |---|---|
 | Unit test đủ 8 luật, kể cả khi nhiều luật cùng đúng | ✅ `DailyPlanTests` (16 test) |
-| Kiểm 6 trạng thái của mock | ✅ Giao diện: cả 6 trạng thái hiển thị đúng mock trên simulator (21/10, giao diện tối; cờ Debug `ASCND_DEBUG_DAILYPLAN=planned/low/rest/comeback/done/none`). ✅ Dữ liệu thật: "có buổi, chưa tập" và "đang tập dở". Các trạng thái khác có unit test cho đường dữ liệu. ⏳ Chưa kiểm giao diện sáng (app đang ép giao diện tối) |
+| Kiểm 6 trạng thái của mock | ✅ Giao diện: cả 6 trạng thái hiển thị đúng mock trên simulator (21/10, giao diện tối; cờ Debug `ASCND_DEBUG_DAILYPLAN=planned/low/rest/comeback/done/none`). ✅ Dữ liệu thật: "có buổi, chưa tập" và "đang tập dở". Các trạng thái khác có unit test cho đường dữ liệu. ✅ Giao diện sáng (21/10, đổi tạm Cài đặt → Sáng rồi trả về Tối): đọc rõ, nút chính đậm, dải tuần rõ |
 | Kiểm thao tác lịch: dời buổi, đổi ngày nghỉ, không trùng, mẫu gốc giữ nguyên | ✅ Core (`DayOverridesTests`, `LighterSessionTests`). ⏳ Trên app: chờ deploy migration. Trước khi deploy, app **không hiện** nút dời / nghỉ (`overridesSupported`) |
 | Today, widget, lời nhắc dùng chung kết quả | ✅ `DailyPlanSource` → `AppServices.dailyPlan`. Widget đọc câu trạng thái từ đó; lời nhắc đọc cùng lịch đã áp (`plannedByOffset`). Có test |
 | Kiểm loading, lỗi, dữ liệu cũ | 🟡 Luật 0 có test. Thẻ tính ngay từ kế hoạch cache (đã thấy trên simulator lúc mạng chậm). Chưa kiểm khi mất mạng hẳn |
