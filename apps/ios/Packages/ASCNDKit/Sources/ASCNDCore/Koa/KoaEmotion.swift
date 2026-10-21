@@ -4,6 +4,10 @@ public enum KoaEmotion {
   /// `MascotEmotion`.
   public enum Emotion: String, Sendable, Hashable, CaseIterable {
     case idle, happy, sad, tired, sleep, celebrate, curl, worry, proud, rested, oops, hat, coat
+    /// Đợt 2 (sống theo lịch, 20/10): đợi ở phòng tập — vui, cầm tạ khởi động.
+    case warmup
+    /// Đợt 2: tụt hạng sau 7 ngày không tập — mắt mệt, đứng (không phải ngồi thiền).
+    case deflated
   }
 
   /// `DEV_EMOTIONS`: các cảm xúc thanh DEV của phòng linh vật cho ép, đúng thứ tự.
@@ -41,6 +45,8 @@ public enum KoaEmotion {
     .oops: State(.surprised, .idle),
     .rested: State(.happytired, .idle, [.head: "beanie"]),
     .hat: State(.happy, .idle, [.head: "santa"]),
+    .warmup: State(.happy, .lifting),
+    .deflated: State(.tired, .idle),
     .coat: State(.happy, .idle),
   ]
 

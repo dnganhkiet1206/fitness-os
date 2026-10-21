@@ -139,6 +139,11 @@ public struct WorkoutSummaryView: View {
       .frame(maxWidth: .infinity)
     }
     .accessibilityElement(children: .combine)
+    .onAppear {
+      Telemetry.capture(
+        .gainsEarned,
+        ["delta": String(g.delta), "planned": String(g.planned), "pr": String(g.pr), "rank_up": String(rankUp)])
+    }
   }
 
   private var exerciseGroups: [(name: String, rows: [SummarySet])] {

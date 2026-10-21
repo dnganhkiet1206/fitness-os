@@ -56,7 +56,8 @@ public struct TodayView: View {
           TodayExtras(
             userId: extrasUserId, onOpenSettings: onOpenSettings, onLogWorkout: onLogWorkout,
             refreshTick: refreshTick,
-            planName: state.status == .todo || state.status == .missed ? state.templateName : nil
+            planName: state.status == .todo || state.status == .missed ? state.templateName : nil,
+            onStartWorkout: onStart
           ) { readiness, logSleep in
             planCard(readiness: readiness, logSleep: logSleep)
           }

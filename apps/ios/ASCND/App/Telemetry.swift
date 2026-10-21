@@ -30,6 +30,14 @@ enum Telemetry {
     case startCardAction = "start_card_action"
     /// Koa Coach trả lời bằng câu mẫu (không gọi AI) — đo tỉ lệ để chỉnh bộ lọc.
     case coachQuickReply = "coach_quick_reply"
+    // Koa — tập vì Koa (#527 đợt 1–2). Không mang số liệu sức khoẻ.
+    case gainsEarned = "gains_earned"
+    case koaRankUp = "koa_rank_up"
+    case questClaimed = "quest_claimed"
+    case pumpLost = "pump_lost"
+    case comebackShown = "comeback_shown"
+    case comebackSession = "comeback_session"
+    case notificationOpened = "notification_opened"
   }
 
   private static var analytics = false

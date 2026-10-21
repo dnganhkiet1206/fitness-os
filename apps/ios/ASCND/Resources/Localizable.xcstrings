@@ -40759,6 +40759,305 @@
     }
    }
   },
+  "koa.sched.pump": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Pump! Great session today 💪"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Pump! Buổi hôm nay đẹp lắm 💪"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "¡Pump! Gran sesión hoy 💪"
+     }
+    }
+   }
+  },
+  "koa.sched.waiting %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa's warmed up and waiting for your %@ session"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa khởi động xong rồi, đợi bạn buổi %@ nhé"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa ya calentó y espera tu sesión de %@"
+     }
+    }
+   }
+  },
+  "koa.sched.waiting.any": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa's warmed up and waiting for you"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa khởi động xong rồi, đợi bạn vào tập nhé"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa ya calentó y te está esperando"
+     }
+    }
+   }
+  },
+  "koa.sched.pumpLost %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld days now, Koa's arms are deflating 🥲 A short session brings the pump back"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld ngày rồi, bắp tay Koa hơi xẹp 🥲 Một buổi ngắn là lấy lại pump"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ya son %lld días, los brazos de Koa se desinflan 🥲 Una sesión corta recupera el pump"
+     }
+    }
+   }
+  },
+  "koa.sched.dropped %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa dropped to %@. Muscle memory: come back and gains count double"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa tụt về %@. Muscle memory: quay lại là lên nhanh gấp đôi"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa bajó a %@. Memoria muscular: vuelve y las ganancias cuentan doble"
+     }
+    }
+   }
+  },
+  "koa.comeback.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "You're back!"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bạn quay lại rồi!"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "¡Volviste!"
+     }
+    }
+   }
+  },
+  "koa.comeback.body": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa missed you. One session today brings the pump back."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa nhớ bạn. Một buổi hôm nay là Koa có pump trở lại."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa te extrañó. Una sesión hoy recupera el pump."
+     }
+    }
+   }
+  },
+  "koa.comeback.memory %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Muscle memory is on: every session counts ×2 Gains until Koa is back to %@."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Muscle memory đang bật: mọi buổi tập được ×2 Gains cho tới khi Koa về lại %@."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Memoria muscular activa: cada sesión cuenta ×2 Gains hasta que Koa vuelva a %@."
+     }
+    }
+   }
+  },
+  "koa.comeback.short": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "No need for the full session — the first 3 exercises, 2 sets each, bring the pump back. Finish whenever you like."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Không cần cả buổi — 3 bài đầu, mỗi bài 2 hiệp là đủ lấy lại pump. Chốt buổi lúc nào cũng được."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "No hace falta la sesión completa: los 3 primeros ejercicios, 2 series cada uno, recuperan el pump. Termina cuando quieras."
+     }
+    }
+   }
+  },
+  "koa.comeback.start %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Start %@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bắt đầu %@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Empezar %@"
+     }
+    }
+   }
+  },
+  "koa.comeback.later": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Later"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Để sau"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Más tarde"
+     }
+    }
+   }
+  },
+  "reminders.koaTraining.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa's workout nudge"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa nhắc buổi tập"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Aviso de entreno de Koa"
+     }
+    }
+   }
+  },
+  "reminders.koaTraining.desc": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Once on days with a planned session, at the time you usually train. Never on rest days."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Một lần vào ngày có buổi trong lịch, đúng giờ bạn quen tập. Không nhắc vào ngày nghỉ."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Una vez los días con sesión planificada, a la hora en que sueles entrenar. Nunca en días de descanso."
+     }
+    }
+   }
+  },
   "koa.card.doneToday": {
    "extractionState": "manual",
    "localizations": {

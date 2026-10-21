@@ -176,10 +176,24 @@ public enum KoaGainsSync {
   /// `nil` khi đọc hỏng — giữ Gains cũ.
   public static func load(
     userId: String, store: any RowStore, plans: TemplateSnapshot?, now: EpochMillis, in tz: TimeZone
-  ) async -> (days: [KoaGains.Day], week: KoaGains.Week, state: KoaGains.State)? {
+  ) async -> Loaded? {
     guard let rows = try? await store.select(query(userId: userId)) else { return nil }
     let days = days(rows, in: tz)
     let week = plans.map(KoaGains.Week.init) ?? .none
-    return (days, week, KoaGains.compute(days, week: week, today: LocalDate(now, in: tz)))
+    return Loaded(
+      days: days, week: week, state: KoaGains.compute(days, week: week, today: LocalDate(now, in: tz)),
+      lastSessionAt: lastSessionAt(rows))
+  }
+
+  public struct Loaded: Sendable {
+    public let days: [KoaGains.Day]
+    public let week: KoaGains.Week
+    public let state: KoaGains.State
+    /// Giờ của buổi tập gần nhất — cho trạng thái "pump" (2 giờ sau buổi tập).
+    public let lastSessionAt: EpochMillis?
+  }
+
+  public static func lastSessionAt(_ rows: [JSONValue]) -> EpochMillis? {
+    rows.compactMap { $0["date_time"]?.stringValue.flatMap { EpochMillis(iso8601: $0) } }.max()
   }
 }

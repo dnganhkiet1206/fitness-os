@@ -23,10 +23,14 @@ struct TodayExtras<Plan: View>: View {
   var refreshTick = 0
   /// Tên buổi của hôm nay (dòng Buổi tập của "Your day"); `nil` = chưa lên lịch.
   var planName: String?
+  /// "Bắt đầu buổi tập" (sang tab Tập luyện) — màn quay lại của Koa (đợt 2).
+  var onStartWorkout: (() -> Void)?
   /// Nhận dòng sẵn sàng và nút "Ghi giấc ngủ" (khi chưa có điểm) để đặt trong
   /// thẻ buổi tập.
   @ViewBuilder var plan: (_ readiness: AnyView?, _ logSleep: AnyView?) -> Plan
 
+  /// Màn quay lại sau ≥ 3 ngày lỡ lịch (đợt 2).
+  @State private var comeback: KoaComeback?
   @Environment(AppServices.self) private var services
   @Environment(\.scenePhase) private var scenePhase
   @Environment(\.weightUnit) private var unit
@@ -135,7 +139,7 @@ struct TodayExtras<Plan: View>: View {
           onAct: act, onOpenRoom: { roomSource = "koa"; showsRoom = true }, zoom: zoom,
           profile: profile?.profile, riskHour: KoaToday.riskHour(services.habitHours, userId: userId),
           equipped: shop?.inventory.filter(\.equipped).map(\.itemKey) ?? [], reward: services.koaReward,
-          onKoa: { state in publishKoa(state, mascot) })
+          onKoa: { state in publishKoa(state, mascot) }, planName: planName)
           .todayEntrance(1)
           .preference(key: TodayAccentPreference.self, value: nextSignal(mascot))
           // Rung NGAY lúc chạm nước (RN `Haptics.light()` trong `onPress`).
@@ -174,6 +178,14 @@ struct TodayExtras<Plan: View>: View {
       if new < old { Task { await reloadDay() } }
     }
     // "Ghi hôm nay" (19/10): một màn cho cả nói, gõ và chip "như thường lệ".
+    .sheet(item: $comeback) { c in
+      KoaComebackView(comeback: c, planName: planName) {
+        Telemetry.capture(.comebackSession)
+        comeback = nil
+        onStartWorkout?()
+      }
+      .presentationDetents([.medium, .large])
+    }
     .sheet(isPresented: $showsDayLog, onDismiss: { Task { await reloadDay() } }) {
       TellKoaSheet(userId: userId, startListening: tellVoice)
     }
@@ -667,6 +679,9 @@ struct TodayExtras<Plan: View>: View {
     guard let r = await services.loadKoaGains(userId: userId) else { return }
     mascot.gains = r.state
     services.koaBuild = r.state.rank
+    services.koaGainsNow = (userId, r.state, r.week)
+    services.koaLastSessionAt = r.lastSessionAt
+    noteSchedule(r.state)
     services.koaGainsHistory = .init(days: r.days, week: r.week)
     announceRank(r.state.rank)
   }
@@ -678,12 +693,27 @@ struct TodayExtras<Plan: View>: View {
     services.questObserver(userId: userId)?.restDay = rest
   }
 
+  /// Đợt 2: mất pump (đo một lần mỗi đợt nghỉ) và màn quay lại (một lần mỗi đợt nghỉ).
+  private func noteSchedule(_ s: KoaGains.State) {
+    guard let key = KoaSchedule.comebackKey(s) else { return }
+    let seen = "ascnd_koa_comeback.\(userId)"
+    guard UserDefaults.standard.string(forKey: seen) != key else { return }
+    UserDefaults.standard.set(key, forKey: seen)
+    Telemetry.capture(.pumpLost, ["missed": String(min(s.missedDays, 30))])
+    let peak = KoaGains.rank(s.peak)
+    comeback = KoaComeback(
+      id: key, missedDays: s.missedDays, rebuilding: s.rebuilding,
+      peakRank: peak, toRegain: max(0, KoaGains.thresholds[peak] - s.points))
+    Telemetry.capture(.comebackShown)
+  }
+
   /// Koa lên hạng vóc dáng: ăn mừng một lần (mốc nhớ theo tài khoản trên máy).
   private func announceRank(_ rank: Int) {
     let key = "ascnd_koa_rank.\(userId)"
     let before = UserDefaults.standard.object(forKey: key) as? Int
     UserDefaults.standard.set(rank, forKey: key)
     guard let before, rank > before, rank < MascotRules.ranks.count else { return }
+    Telemetry.capture(.koaRankUp, ["rank": MascotRules.ranks[rank].key])
     let r = MascotRules.ranks[rank]
     let lang = services.preferences.lang
     services.celebrations.enqueue(

@@ -36,7 +36,8 @@ struct KoaEmotionGoldenTests {
       #expect(s.outfit == Self.worn(c["s"]?["outfit"]), "\(e)")
     }
     // mọi cảm xúc của RN trừ `wave`/`run` (đã bỏ, rơi về `idle` — xem fixture)
-    #expect(KoaEmotion.Emotion.allCases.count == 13)
+    // + `warmup`, `deflated` của native (đợt 2)
+    #expect(KoaEmotion.Emotion.allCases.count == 15)
     #expect(KoaEmotion.Emotion(rawValue: "wave") == nil && KoaEmotion.Emotion(rawValue: "run") == nil)
     let dev = Self.array(try Self.golden()["dev"]).compactMap { $0.stringValue }
     #expect(KoaEmotion.devEmotions.map { $0.rawValue } == dev)

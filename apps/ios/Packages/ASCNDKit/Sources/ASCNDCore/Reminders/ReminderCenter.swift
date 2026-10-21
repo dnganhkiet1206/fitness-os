@@ -278,6 +278,25 @@ public final class ReminderCenter {
 /// trước nhiều ngày theo ngôn ngữ của `AppPreferences.lang` (không phải ngôn
 /// ngữ máy), nên bảng nằm ở đây, kiểm được, thay vì trong String Catalog.
 public enum ReminderCopyTable {
+  /// Câu của Koa cho lời nhắc buổi tập ngày lỡ thứ 3 / thứ 6 (đợt 2, mock
+  /// `koa-wave2-schedule.html`). Không trách, không đếm lỗi.
+  public static func koaWorkout(_ lang: AppPreferences.Lang) -> KoaWorkoutCopy {
+    switch lang {
+    case .vi:
+      KoaWorkoutCopy(
+        pumpLost: ReminderText(title: "3 ngày rồi đó 🥲", body: "Bắp tay Koa sắp xẹp. 15 phút là lấy lại pump."),
+        dropSoon: ReminderText(title: "Mai Koa tụt hạng", body: "Một buổi ngắn hôm nay là giữ được vóc dáng của Koa 💪"))
+    case .en:
+      KoaWorkoutCopy(
+        pumpLost: ReminderText(title: "It's been 3 days 🥲", body: "Koa's arms are deflating. 15 minutes brings the pump back."),
+        dropSoon: ReminderText(title: "Koa drops a rank tomorrow", body: "One short session today keeps Koa's build 💪"))
+    case .es:
+      KoaWorkoutCopy(
+        pumpLost: ReminderText(title: "Ya son 3 días 🥲", body: "Los brazos de Koa se desinflan. 15 minutos recuperan el pump."),
+        dropSoon: ReminderText(title: "Mañana Koa baja de rango", body: "Una sesión corta hoy mantiene el físico de Koa 💪"))
+    }
+  }
+
   public static func copy(_ lang: AppPreferences.Lang) -> ReminderCopy {
     // Giọng Koa (đợt 2B, 19/10 — không theo RN): Koa nói ngôi thứ nhất, nhẹ nhàng,
     // không trách. Cột thứ tư: câu khi bắn theo giờ quen của người này.
@@ -296,6 +315,8 @@ public enum ReminderCopyTable {
           "Giờ này mọi hôm bạn đã ghi giấc ngủ rồi. Đêm qua thế nào? 🌙"),
         (.challengeClaim, "Thưởng sắp hết hạn", "Thưởng sắp hết hạn", nil),
         (.streak, "Chuỗi {n} ngày đang chờ", "Chuỗi {n} ngày chỉ cần một việc nhỏ hôm nay thôi. Koa chờ bạn nè 🔥", nil),
+        (.koaTraining, "Koa khởi động xong rồi 🏋️", "Buổi tập hôm nay đang đợi bạn.",
+          "Giờ này mọi hôm bạn đã vào tập. Koa khởi động xong rồi 🏋️"),
       ]
     case .en: [
         (.water, "Water time", "Koa just had a sip. Join me for a glass 💧", nil),
@@ -311,6 +332,8 @@ public enum ReminderCopyTable {
           "You usually log your sleep by now. How was last night? 🌙"),
         (.challengeClaim, "Reward expiring soon", "Reward expiring soon", nil),
         (.streak, "Your {n}-day streak is waiting", "Your {n}-day streak just needs one small thing today. Koa is waiting 🔥", nil),
+        (.koaTraining, "Koa is warmed up 🏋️", "Today's session is waiting for you.",
+          "You usually train by now. Koa is warmed up 🏋️"),
       ]
     case .es: [
         (.water, "Hora del agua", "Koa acaba de beber un sorbo. ¿Me acompañas con un vaso? 💧", nil),
@@ -326,6 +349,8 @@ public enum ReminderCopyTable {
           "A esta hora sueles registrar tu sueño. ¿Qué tal anoche? 🌙"),
         (.challengeClaim, "Recompensa por vencer pronto", "Recompensa por vencer pronto", nil),
         (.streak, "Tu racha de {n} días te espera", "Tu racha de {n} días solo necesita algo pequeño hoy. Koa te espera 🔥", nil),
+        (.koaTraining, "Koa ya calentó 🏋️", "Tu sesión de hoy te está esperando.",
+          "A esta hora sueles entrenar. Koa ya calentó 🏋️"),
       ]
     }
     // `challengeClaim`: mỗi mục thật mang chữ riêng (tên thử thách, số xu) từ

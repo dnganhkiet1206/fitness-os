@@ -143,7 +143,8 @@ struct ReminderCenterTests {
     let c = center()
     #expect(c.prefs == .defaults && c.prefs.anyEnabled, "challengeClaim bật sẵn")
     // Koa đợt 2B: nhắc chuỗi cũng bật sẵn (chỉ bắn khi chuỗi ≥ 3 ngày, hôm nay trống).
-    #expect(ReminderKey.allCases.filter { c.prefs.isEnabled($0) } == [.challengeClaim, .streak])
+    // Koa đợt 2: nhắc buổi tập của Koa bật sẵn (chỉ khi lịch + Gains đã đọc).
+    #expect(ReminderKey.allCases.filter { c.prefs.isEnabled($0) } == [.challengeClaim, .streak, .koaTraining])
   }
 
   /// Lần ghi đầu tiên: người chưa từng chạm cài đặt được bật nhắc bữa tối + xin

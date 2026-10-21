@@ -81,6 +81,13 @@ struct RemindersView: View {
             title: String(localized: "reminders.streak.title"), subtitle: String(localized: "reminders.streak.desc"),
             systemImage: "flame.fill", color: DS.Color.metricOrangeGraphic)
         }
+        // Koa đợt 2: một lời nhắc mỗi ngày có buổi trong lịch, đúng giờ quen tập.
+        Toggle(isOn: binding(.koaTraining)) {
+          RowTitle(
+            title: String(localized: "reminders.koaTraining.title"),
+            subtitle: String(localized: "reminders.koaTraining.desc"),
+            systemImage: "dumbbell.fill", color: DS.Color.metricRose)
+        }
       }
 
       ForEach(Self.timed, id: \.self) { key in
@@ -215,6 +222,7 @@ struct RemindersView: View {
     case .water: String(localized: "reminders.water")
     case .challengeClaim: String(localized: "reminders.claim.title")
     case .streak: String(localized: "reminders.streak.title")
+    case .koaTraining: String(localized: "reminders.koaTraining.title")
     }
   }
 
@@ -230,6 +238,7 @@ struct RemindersView: View {
     case .water: "drop.fill"
     case .challengeClaim: "trophy"
     case .streak: "flame.fill"
+    case .koaTraining: "dumbbell.fill"
     }
   }
 
@@ -238,6 +247,7 @@ struct RemindersView: View {
     case .meal, .bedtime, .challengeClaim, .streak: DS.Color.metricOrangeGraphic
     case .supplements: DS.Color.metricPurple
     case .workout: DS.Color.primary
+    case .koaTraining: DS.Color.metricRose
     // Cân = xám thép, nước = màu ống nước ở Hôm nay (14/10).
     case .weighIn: DS.Color.metricSteel
     case .water: DS.Color.metricCyan
