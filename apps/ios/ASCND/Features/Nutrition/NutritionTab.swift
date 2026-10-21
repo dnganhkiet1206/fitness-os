@@ -8,7 +8,9 @@ import SwiftUI
 ///   ngay dưới, "Ghi bữa" (`MealLogActions`: Tìm món / Nhập tay — ảnh và mã
 ///   vạch chưa port), Nước (`WaterWidget`), Thực phẩm bổ sung, "Bữa ăn hôm
 ///   nay" với lối "Ngày khác";
-/// - "Kế hoạch ăn": kế hoạch rồi thư viện Thực phẩm (tìm / Của tôi / Gần đây).
+/// - ~~"Kế hoạch ăn" (phân đoạn thứ hai)~~ — GĐ3 (Kiệt duyệt 21/10, mock
+///   `gd3-four-areas.html`; QĐ 4): bỏ bộ chọn; kế hoạch ăn, đi chợ, thực phẩm của
+///   tôi và thực phẩm bổ sung xuống mục "Thêm" cuối trang. Không xoá màn nào.
 ///
 /// Chất liệu chung với Hôm nay: kính trên nền giấy, một vầng sáng rất nhạt
 /// màu bữa ăn ở đầu trang.
@@ -16,7 +18,6 @@ import SwiftUI
 /// Sổ thuộc PHIÊN (`NutritionBooks`, dựng và đóng ở `SignedInScope`): thẻ, màn
 /// và kế hoạch nhắc nhở cùng đọc một bản.
 struct NutritionTab: View {
-  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   /// Sổ của phiên (`SignedInScope`) — cùng sổ mà kế hoạch nhắc nhở đọc.
   @Environment(NutritionBooks.self) private var books: NutritionBooks?
   @Environment(AppServices.self) private var services: AppServices?
@@ -24,36 +25,22 @@ struct NutritionTab: View {
   @State private var today: NutritionTodayBook?
   /// Bữa của hôm nay (`DayMeals` của RN) — cùng sổ / cùng thẻ với màn Nhật ký.
   @State private var meals: MealDiaryBook?
-  /// Kế hoạch ăn của phân đoạn thứ hai; dựng khi phân đoạn ấy mở lần đầu.
+  /// Kế hoạch ăn của mục "Thêm" (GĐ3).
   @State private var plans: MealPlansBook?
-  /// Danh sách đi chợ của phân đoạn Kế hoạch ăn (#527, N1).
+  /// Danh sách đi chợ của mục "Thêm" (#527, N1).
   @State private var grocery: GroceryBook?
-  /// Hai phân đoạn của RN: "Hôm nay" (mặc định) và "Kế hoạch ăn".
-  @State private var segment: Segment = .today
   @Environment(\.dynamicTypeSize) private var typeSize
-
-  enum Segment: Hashable { case today, plan }
 
   var body: some View {
     NavigationStack {
       ScrollView {
         VStack(spacing: DS.Spacing.md) {
           header
-          Picker(String(localized: "tab.nutrition"), selection: $segment) {
-            Text(String(localized: "nc.seg.today")).tag(Segment.today)
-            Text(String(localized: "nc.seg.plan")).tag(Segment.plan)
-          }
-          .pickerStyle(.segmented)
-          .sensoryFeedback(.selection, trigger: segment)
-          if segment == .plan {
-            planSegment
-          } else {
-            todaySegment
-          }
+          todaySegment
+          moreSection
         }
         .padding(DS.Spacing.md)
         .padding(.bottom, DS.Spacing.lg)
-        .animation(DSMotion.animation(.smooth(duration: 0.3), reduceMotion: reduceMotion), value: segment)
       }
       // Không kéo để làm mới (chủ dự án, 13/10: chỉ Hôm nay có): tab tự đọc
       // lại mỗi lần hiện và sau mỗi lần ghi; nước / thực phẩm bổ sung đọc lại
@@ -104,14 +91,10 @@ struct NutritionTab: View {
         grocery?.close()
         grocery = nil
       }
-      if segment == .plan, plans == nil { plans = services?.makeMealPlans(userId: userId) }
-      if segment == .plan, grocery == nil { grocery = services?.makeGrocery(userId: userId) }
+      if plans == nil { plans = services?.makeMealPlans(userId: userId) }
+      if grocery == nil { grocery = services?.makeGrocery(userId: userId) }
     }
     .onChange(of: today?.userId) { Task { await reload() } }
-    .onChange(of: segment) { _, s in
-      if s == .plan, plans == nil, let userId { plans = services?.makeMealPlans(userId: userId) }
-      if s == .plan, grocery == nil, let userId { grocery = services?.makeGrocery(userId: userId) }
-    }
   }
 
   /// Phân đoạn "Hôm nay" (thiết kế lại 13/10, `docs/design/nutrition/REDESIGN.md`):
@@ -129,19 +112,21 @@ struct NutritionTab: View {
       sectionTitle(String(localized: "nc.meals"))
       DayMealsSection(book: meals, slots: true) { Task { await today?.load() } }
     }
-    if books?.water != nil || books?.supplements != nil {
+    if books?.water != nil {
       sectionTitle(String(localized: "nc.inDay"))
-      DayExtrasList(water: books?.water, supplements: books?.supplements)
+      // GĐ3: thực phẩm bổ sung xuống "Thêm"; ở đây chỉ còn Nước.
+      DayExtrasList(water: books?.water, supplements: nil)
     }
   }
 
-  /// Phân đoạn "Kế hoạch ăn": kế hoạch, rồi một thẻ danh sách lối tắt (đi chợ,
-  /// thực phẩm của tôi). Thư viện đầy đủ — ô tìm, Của tôi / Gần đây — ở màn
-  /// Thực phẩm, một chạm. Gợi ý AI chưa port.
-  @ViewBuilder private var planSegment: some View {
+  /// "Thêm" (GĐ3, QĐ 4 — dinh dưỡng hỗ trợ tập luyện): kế hoạch ăn, rồi một thẻ
+  /// danh sách lối tắt (đi chợ, thực phẩm của tôi, thực phẩm bổ sung). Thư viện
+  /// đầy đủ — ô tìm, Của tôi / Gần đây — ở màn Thực phẩm, một chạm.
+  @ViewBuilder private var moreSection: some View {
+    sectionTitle(String(localized: "progress.more"))
     if let plans { MealPlansPreview(book: plans) }
     if let userId {
-      PlanShortcuts(userId: userId, grocery: grocery)
+      PlanShortcuts(userId: userId, grocery: grocery, supplements: books?.supplements)
     }
   }
 
@@ -510,6 +495,9 @@ struct DayExtrasList: View {
 struct PlanShortcuts: View {
   let userId: String
   let grocery: GroceryBook?
+  /// GĐ3: thực phẩm bổ sung ở đây (bỏ khỏi Hôm nay và khỏi "Trong ngày").
+  var supplements: SupplementBook? = nil
+  @Environment(AppServices.self) private var services
 
   var body: some View {
     VStack(spacing: 0) {
@@ -545,9 +533,46 @@ struct PlanShortcuts: View {
         .contentShape(Rectangle())
       }
       .buttonStyle(TodayPressStyle(scale: 0.98))
+      if let supplements {
+        Divider().padding(.leading, 58).opacity(0.6)
+        NavigationLink(value: SupplementsRoute()) {
+          shortcut(
+            "pills.fill", tint: DS.Color.metricPurple.swiftUI, title: String(localized: "supplements.title"),
+            sub: String(localized: "nc.supplements.today \(supplements.shownTakenCount(writer: services.stateWriter)) \(supplements.items.count)"))
+        }
+        .buttonStyle(TodayPressStyle(scale: 0.98))
+      }
     }
     .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous))
     .todayCard()
+  }
+
+  private func shortcut(_ symbol: String, tint: Color, title: String, sub: String) -> some View {
+    HStack(spacing: 12) {
+      Image(systemName: symbol)
+        .font(.system(size: 14, weight: .semibold))
+        .foregroundStyle(tint)
+        .frame(width: 34, height: 34)
+        .background(Circle().fill(tint.opacity(0.12)))
+        .accessibilityHidden(true)
+      VStack(alignment: .leading, spacing: 2) {
+        Text(verbatim: title)
+          .font(.system(size: 17, weight: .semibold))
+          .foregroundStyle(DS.Color.foreground.swiftUI)
+        Text(verbatim: sub)
+          .font(DS.TextStyle.caption)
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+      }
+      Spacer(minLength: 0)
+      Image(systemName: "chevron.right")
+        .font(.caption.weight(.semibold))
+        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        .accessibilityHidden(true)
+    }
+    .padding(.horizontal, DS.Spacing.md)
+    .padding(.vertical, 8)
+    .frame(minHeight: 60)
+    .contentShape(Rectangle())
   }
 }
 

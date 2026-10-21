@@ -7,7 +7,9 @@ import SwiftUI
 /// dự án duyệt mock, `docs/design/workouts/REDESIGN.md`).
 ///
 /// Như RN:
-/// - hai phân đoạn Buổi tập | Cơ thể;
+/// - ~~hai phân đoạn Buổi tập | Cơ thể~~ — GĐ3 (Kiệt duyệt 21/10, mock
+///   `gd3-four-areas.html`): Tập luyện chỉ còn việc tập; Cơ thể sang tab Tiến bộ
+///   (`BodySection`);
 /// - dải tuần (Thứ Hai → Chủ nhật: đã tập / có buổi / nghỉ), chạm → kế hoạch tuần;
 /// - thẻ hôm nay bốn trạng thái: có buổi → "Bắt đầu buổi tập" (nút đặc);
 ///   đã tập → nút nhạt; ngày nghỉ → gợi ý vận động nhẹ + chọn buổi; chưa có
@@ -20,34 +22,21 @@ import SwiftUI
 /// - trạng thái thứ năm "Đang tập" (đã tick, chưa chốt): màn tập là lớp toàn
 ///   màn hình, thu xuống vẫn giữ tiến độ — thẻ nói còn bao nhiêu set và mời
 ///   "Tiếp tục";
-/// - Cơ thể: thẻ Cân nặng (`WeightTrendCard`, phần cân nặng của `BodyPanel`)
-///   + các màn đã port (số đo, ảnh tiến trình, mục tiêu);
 /// - gợi ý ngày nghỉ là chữ (RN: ô bấm không làm gì ngoài rung).
 struct WorkoutsHomeView: View {
-  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   let flow: WorkoutFlow
   var onOpenSession: () -> Void = {}
 
-  enum Segment: Hashable { case training, body }
-
   @Environment(AppServices.self) private var services
   @Environment(\.dynamicTypeSize) private var typeSize
-  @State private var segment: Segment = .training
   @State private var showsBuilder = false
   /// Mẫu đang chờ xác nhận xoá (menu ⋯ của hàng mẫu, 14/10).
   @State private var deletingTemplate: WorkoutTemplate?
   @State private var templateFailed = false
   @State private var showsManualLog = false
-  @State private var showsWeight = false
   @State private var showsPicker = false
-  @State private var measure: MeasurementsBook?
-  @State private var photos: ProgressPhotosBook?
-  @State private var goals: SmartGoalsBook?
-  @State private var weight: WeightTrendBook?
 
   static let accent = MascotRoomView.signalColor(.workout)
-  /// Màu của phân đoạn Cơ thể = màu cân nặng ở Hôm nay (14/10).
-  static let body = DS.Color.metricSteel.swiftUI
 
   private var templates: [WorkoutTemplate] {
     (flow.today.library?.templates ?? []).sorted(by: WorkoutTemplate.newestFirst)
@@ -59,24 +48,13 @@ struct WorkoutsHomeView: View {
     ScrollView {
       VStack(alignment: .leading, spacing: DS.Spacing.md) {
         header
-        Picker(String(localized: "tab.workouts"), selection: $segment) {
-          Text(String(localized: "wh.seg.training")).tag(Segment.training)
-          Text(String(localized: "wh.seg.body")).tag(Segment.body)
-        }
-        .pickerStyle(.segmented)
-        .sensoryFeedback(.selection, trigger: segment)
-        if segment == .training {
-          weekStrip
-          hero
-          templatesSection
-          tools
-        } else {
-          bodySegment
-        }
+        weekStrip
+        hero
+        templatesSection
+        tools
       }
       .padding(DS.Spacing.md)
       .padding(.bottom, DS.Spacing.lg)
-      .animation(DSMotion.animation(.smooth(duration: 0.3), reduceMotion: reduceMotion), value: segment)
     }
     .refreshable { await flow.refresh() }
     // Đầu trang trong nội dung như Hôm nay / Dinh dưỡng.
@@ -102,13 +80,6 @@ struct WorkoutsHomeView: View {
     }
     .sheet(isPresented: $showsManualLog) { ManualLogView(flow: flow) }
     .sheet(isPresented: $showsPicker) { WorkoutPickerSheet(flow: flow) }
-    .sheet(isPresented: $showsWeight) {
-      LogWeightView(makeLogger: { services.makeWeightLogger(userId: userId) }) { showsWeight = false }
-    }
-    .onChange(of: showsWeight) { _, open in
-      if !open { Task { await weight?.load() } }
-    }
-    .onChange(of: segment) { _, s in if s == .body { makeBodyBooks() } }
   }
 
   // MARK: - Đầu trang
@@ -607,7 +578,7 @@ struct WorkoutsHomeView: View {
         NavigationLink {
           LibraryHistoryView(flow: flow)
         } label: {
-          toolRow("books.vertical", String(localized: "wh.libraryHistory"), sub: sessionsLine)
+          Self.toolRow("books.vertical", String(localized: "wh.libraryHistory"), sub: sessionsLine)
         }
         .buttonStyle(.plain)
       }
@@ -616,7 +587,7 @@ struct WorkoutsHomeView: View {
         NavigationLink {
           ExerciseInsightView(insights: insights, today: flow.today)
         } label: {
-          toolRow("chart.line.uptrend.xyaxis", String(localized: "workoutshome.insight"), sub: nil)
+          Self.toolRow("chart.line.uptrend.xyaxis", String(localized: "workoutshome.insight"), sub: nil)
         }
         .buttonStyle(.plain)
       }
@@ -630,7 +601,7 @@ struct WorkoutsHomeView: View {
     return String(localized: "wh.sessions \(n)")
   }
 
-  private func toolRow(_ symbol: String, _ title: String, sub: String?, tint: Color = Self.accent) -> some View {
+  static func toolRow(_ symbol: String, _ title: String, sub: String?, tint: Color = Self.accent) -> some View {
     HStack(spacing: 12) {
       Image(systemName: symbol)
         .font(.footnote.weight(.semibold))
@@ -653,49 +624,6 @@ struct WorkoutsHomeView: View {
     .padding(.horizontal, DS.Spacing.md)
     .frame(minHeight: 60)
     .contentShape(Rectangle())
-  }
-
-  // MARK: - Cơ thể
-
-  @ViewBuilder private var bodySegment: some View {
-    if let weight {
-      WeightTrendCard(book: weight) { showsWeight = true }
-    }
-
-    VStack(spacing: 0) {
-      if let measure {
-        NavigationLink { MeasurementsView(book: measure) } label: {
-          toolRow("ruler", String(localized: "assistant.tool.measure"), sub: nil, tint: Self.body)
-        }
-        .buttonStyle(.plain)
-      }
-      if let photos {
-        Divider().padding(.leading, 58).opacity(0.6)
-        NavigationLink { ProgressPhotosView(book: photos) } label: {
-          toolRow("photo.on.rectangle", String(localized: "assistant.tool.photos"), sub: nil, tint: Self.body)
-        }
-        .buttonStyle(.plain)
-      }
-      if let goals {
-        Divider().padding(.leading, 58).opacity(0.6)
-        NavigationLink { SmartGoalsView(book: goals) } label: {
-          toolRow("target", String(localized: "assistant.tool.goals"), sub: nil, tint: Self.body)
-        }
-        .buttonStyle(.plain)
-      }
-    }
-    .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous))
-    .todayCard()
-  }
-
-  private func makeBodyBooks() {
-    if weight == nil {
-      weight = services.makeWeightTrend(userId: userId)
-      Task { await weight?.load() }
-    }
-    if measure == nil { measure = services.makeMeasurements(userId: userId) }
-    if photos == nil { photos = services.makeProgressPhotos(userId: userId) }
-    if goals == nil { goals = services.makeSmartGoals(userId: userId, today: flow.today.today) }
   }
 
   // MARK: - Chữ

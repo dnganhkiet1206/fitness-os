@@ -28,8 +28,8 @@ extension AppTab {
     case .today: self = .today
     case .nutrition: self = .nutrition
     case .workouts: self = .workouts
-    case .community: self = .community
-    case .assistant: self = .assistant
+    // GĐ3: Cộng đồng mở từ Tiến bộ; Trợ lý đã gộp vào Tiến bộ.
+    case .community, .assistant: self = .progress
     }
   }
 }

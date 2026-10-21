@@ -27,6 +27,16 @@ import SwiftUI
 ///
 /// Chưa có (các lát sau, #527): Thêm vào bữa. Ảnh đại diện là hình linh vật thật (`MascotAvatar`).
 struct CommunityTab: View {
+  var body: some View {
+    NavigationStack { CommunityScreen() }
+  }
+}
+
+/// Nội dung Cộng đồng, không kèm NavigationStack — GĐ3 (Kiệt duyệt 21/10): bỏ khỏi
+/// thanh tab, mở từ dòng "Cộng đồng" cuối tab Tiến bộ (đẩy vào ngăn của Tiến bộ).
+struct CommunityScreen: View {
+  /// Đẩy vào ngăn của Tiến bộ: bảng tin ẩn thanh điều hướng, nên tự có nút quay lại.
+  var pushed = false
   @Environment(WorkoutFlow.self) private var flow
   @Environment(AppServices.self) private var services
   @State private var book: CommunityFeedBook?
@@ -34,22 +44,20 @@ struct CommunityTab: View {
   @State private var built = false
 
   var body: some View {
-    NavigationStack {
-      Group {
-        if let book {
-          CommunityFeedView(book: book, challenges: challenges)
-        } else if built {
-          ContentUnavailableView {
-            Label("tab.community", systemImage: "person.2")
-          } description: {
-            Text("placeholder.building")
-          }
-        } else {
-          DSLoadingView()
+    Group {
+      if let book {
+        CommunityFeedView(book: book, challenges: challenges, showsBack: pushed)
+      } else if built {
+        ContentUnavailableView {
+          Label("tab.community", systemImage: "person.2")
+        } description: {
+          Text("placeholder.building")
         }
+      } else {
+        DSLoadingView()
       }
-      .navigationTitle(Text("tab.community"))
     }
+    .navigationTitle(Text("tab.community"))
     .task {
       guard !built else { return }
       book = services.makeCommunityFeed(userId: flow.today.userId)
@@ -68,6 +76,9 @@ struct CommunityTab: View {
 struct CommunityFeedView: View {
   let book: CommunityFeedBook
   var challenges: CommunityChallengesBook?
+  /// GĐ3: mở từ Tiến bộ (không còn là tab) — nút quay lại ở đầu trang.
+  var showsBack = false
+  @Environment(\.dismiss) private var dismiss
   @Environment(AppServices.self) private var services
   /// Tin nhắn (15/10) — `nil` khi chưa có nguồn (server chưa có nhắn tin).
   @State private var messages: DMInboxBook?
@@ -269,6 +280,11 @@ struct CommunityFeedView: View {
   /// Thông báo của cả app, nút hồ sơ bỏ (16/10, chủ dự án).
   private var topBar: some View {
     HStack(spacing: DS.Spacing.sm) {
+      if showsBack {
+        Button { dismiss() } label: { roundIcon("chevron.left", dot: false) }
+          .buttonStyle(TodayPressStyle())
+          .accessibilityLabel(Text("common.back"))
+      }
       Text(String(localized: "tab.community"))
         .font(.largeTitle.bold())
         .foregroundStyle(DS.Color.foreground.swiftUI)

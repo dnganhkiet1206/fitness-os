@@ -96,7 +96,6 @@ struct TodayExtras<Plan: View>: View {
   @Environment(NutritionBooks.self) private var nutrition: NutritionBooks?
   @State private var ownWater: WaterBook?
   private var water: WaterBook? { nutrition?.water ?? ownWater }
-  @State private var showsSupplements = false
   @State private var showsKoaWeek = false
   @State private var waterNote: String?
   @State private var waterTaps = 0
@@ -283,11 +282,6 @@ struct TodayExtras<Plan: View>: View {
           .todayZoom("activity", in: zoom)
       }
     }
-    .navigationDestination(isPresented: $showsSupplements) {
-      if let supplements = nutrition?.supplements {
-        SupplementsView(book: supplements).todayZoom("supplements", in: zoom)
-      }
-    }
     .navigationDestination(isPresented: $showsBiometrics) {
       if let biometrics { BiometricsView(book: biometrics).todayZoom(biometricsSource, in: zoom) }
     }
@@ -413,18 +407,12 @@ struct TodayExtras<Plan: View>: View {
 
   // MARK: - More about today
 
-  /// Hôm nay để LÀM (15/10, chủ dự án chọn "Chia rõ"): thực phẩm bổ sung, ba vòng,
-  /// phòng linh vật. Sinh trắc học, giấc ngủ, tập luyện, xu hướng, tổng kết tuần
-  /// — những thứ để HIỂU — ở tab Trợ lý.
+  /// Hôm nay để LÀM (15/10, chủ dự án chọn "Chia rõ"): ba vòng, phòng linh vật.
+  /// Sinh trắc học, giấc ngủ, tập luyện, xu hướng, tổng kết tuần — những thứ để
+  /// HIỂU — ở tab Tiến bộ. GĐ3 (Kiệt 21/10): thực phẩm bổ sung chỉ còn ở
+  /// Dinh dưỡng › Thêm.
   private var moreRows: [TodayMore.Row] {
     var rows: [TodayMore.Row] = []
-    // Thực phẩm bổ sung (RN `SupplementChecklistCard` trong nhóm Dinh dưỡng).
-    if let sup = nutrition?.supplements, !sup.items.isEmpty {
-      rows.append(.init(
-        id: "supplements", title: String(localized: "supplements.title"),
-        value: "\(sup.shownTakenCount(writer: services.stateWriter))/\(sup.items.count)",
-        action: { showsSupplements = true }))
-    }
     // Ba vòng (RN `ActivityRingsCard`): số vòng đã đóng hôm nay.
     if let activity, let m = activity.model(body: energyBody, stepsTarget: mascot?.stepsGoal ?? DailySignals.defaultStepsGoal) {
       rows.append(.init(

@@ -2,12 +2,17 @@ import ASCNDCore
 import ASCNDDesignSystem
 import SwiftUI
 
-/// Đích của tab Trợ lý.
+/// Đích của tab Tiến bộ (trước là Trợ lý).
 enum AssistantRoute: Hashable {
   case chat, weekly, steps, training, biometrics, sleep, goals, measure, photos, memory, trends, tools
+  /// GĐ3: phòng Koa, huy chương, Cộng đồng (bỏ khỏi thanh tab).
+  case room, awards, community
 }
 
-/// Tab Trợ lý (#527 Phase 6) — `(tabs)/assistant.tsx` @ fac9ac2.
+/// Tab Tiến bộ — GĐ3 (Kiệt duyệt 21/10, mock `gd3-four-areas.html`): tab Trợ lý
+/// (#527 Phase 6, `(tabs)/assistant.tsx` @ fac9ac2) gộp thêm Koa / Gains, Tuần của
+/// Koa, Cơ thể (từ Tập luyện), huy chương; Cộng đồng còn một dòng ở cuối. Phần
+/// "Tóm tắt" cũ thành mục Hồi phục. Coach vẫn mở từ nút Koa ở Ghi nhanh.
 ///
 /// Thiết kế v2 (15/10): xem `AssistantSummaryViews.swift`. Tóm tắt dùng các dòng
 /// của `AssistantBrief`; chip hỏi nhanh ở màn chat trống; bốn ô chỉ số + bảng 7
@@ -45,6 +50,10 @@ struct AssistantTab: View {
   @State private var goals: SmartGoalsBook?
   @State private var measure: MeasurementsBook?
   @State private var photos: ProgressPhotosBook?
+  /// GĐ3: Koa (phòng dựng khi mở), tủ đồ (Koa mặc gì), huy chương.
+  @State private var room: MascotRoomController?
+  @State private var shop: MascotShopBook?
+  @State private var awards: AwardsBook?
   @State private var hour = Calendar.current.component(.hour, from: Date())
   @State private var built = false
   /// Ghi nhanh từ thẻ (15/10): ngủ / bữa.
@@ -62,12 +71,20 @@ struct AssistantTab: View {
         // ô hỏi coach; bảng 7 ngày và đủ công cụ nằm sau một lần chạm.
         VStack(alignment: .leading, spacing: DS.Spacing.md) {
           header
+          koaCard
+          if let week = koaWeek {
+            KoaWeekCard(state: week, claim: services.koaWeek(userId: flow.today.userId)?.claim ?? .notYet)
+          }
+          sectionTitle("wh.seg.body")
+          BodySection(userId: flow.today.userId, today: flow.today.today)
+          sectionTitle("progress.recovery")
           if let signal {
             SummaryCard(
               signal: signal, metrics: metrics, lang: lang, hour: hour, openTrends: { path.append(.trends) },
-              // "Ghi nhanh" có trên mọi máy — Trợ lý để hiểu, không lặp nút ghi (15/10).
+              // "Ghi nhanh" có trên mọi máy — không lặp nút ghi (15/10).
               logSleep: nil)
           }
+          highlights
           // Máy chủ chưa bật tính năng → không hiện thẻ lỗi vĩnh viễn (15/10, audit).
           if let nudges, !nudges.isNotDeployed, ai {
             InsightCard(
@@ -78,29 +95,27 @@ struct AssistantTab: View {
           }
           if let chat, ai {
             AskCoachBar(lastAsked: chat.messages.last { $0.role == .user }?.content) { path.append(.chat) }
-          } else if built, ai {
-            ContentUnavailableView {
-              Label { Text("coach.title") } icon: { IntelligenceMark(size: 28) }
-            } description: {
-              Text("coach.unavailable")
-            }
           }
-          highlights
           forYou
-          Button {
-            path.append(.tools)
-          } label: {
-            HStack {
-              Text("assistant.alltools").font(.system(size: 15, weight: .medium))
-              Spacer(minLength: 0)
-              Image(systemName: "chevron.right").font(.footnote.weight(.semibold))
-            }
-            .foregroundStyle(DS.Color.foreground.swiftUI)
-            .frame(minHeight: 44)
-            .padding(.horizontal, 4)
-            .contentShape(Rectangle())
+          if let awards {
+            RecentAwardsCard(book: awards, lang: lang) { path.append(.awards) }
           }
-          .buttonStyle(TodayPressStyle())
+          sectionTitle("progress.more")
+          VStack(spacing: 0) {
+            NavigationLink(value: AssistantRoute.tools) {
+              WorkoutsHomeView.toolRow(
+                "square.grid.2x2", String(localized: "assistant.alltools"), sub: nil, tint: DS.Color.metricBlue.swiftUI)
+            }
+            .buttonStyle(.plain)
+            Divider().padding(.leading, 58).opacity(0.6)
+            NavigationLink(value: AssistantRoute.community) {
+              WorkoutsHomeView.toolRow(
+                "person.2", String(localized: "tab.community"), sub: nil, tint: DS.Color.metricRose.swiftUI)
+            }
+            .buttonStyle(.plain)
+          }
+          .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous))
+          .todayCard()
           // Apple Health chỉ ở Cài đặt (15/10, chủ dự án: "chỉ để apple health trong
           // cài đặt các tab khác gỡ").
         }
@@ -125,7 +140,7 @@ struct AssistantTab: View {
         await metrics?.load(kcalTarget: kcalTarget)
         await loadInsight()
       }
-      .navigationTitle(Text("tab.assistant"))
+      .navigationTitle(Text("tab.progress"))
       .ascndPage()
       // Tiêu đề lớn đã nằm trong nội dung — thanh điều hướng ẩn như các tab khác
       // (15/10, audit: tiêu đề nhỏ trôi đè lên thẻ khi cuộn).
@@ -177,6 +192,14 @@ struct AssistantTab: View {
             }
             .ascndPage()
           }
+        case .room:
+          if let room {
+            MascotRoomView(room: room, awards: awards, sharedShop: shop)
+          }
+        case .awards:
+          if let awards { AwardsView(book: awards, lang: lang) }
+        case .community:
+          CommunityScreen(pushed: true)
         case .tools:
           ScrollView {
             VStack(alignment: .leading, spacing: DS.Spacing.md) {
@@ -206,7 +229,11 @@ struct AssistantTab: View {
       goals = services.makeSmartGoals(userId: userId, today: today)
       measure = services.makeMeasurements(userId: userId)
       photos = services.makeProgressPhotos(userId: userId)
+      shop = services.makeMascotShop(userId: userId)
+      awards = services.makeAwardsBook(userId: userId)
       built = true
+      Task { await shop?.load() }
+      Task { await awards?.load() }
       await signal?.load()
       // Sau tín hiệu: phân tích calo cần mục tiêu calo của hồ sơ.
       await metrics?.load(kcalTarget: kcalTarget)
@@ -255,6 +282,9 @@ struct AssistantTab: View {
       goals?.close()
       measure?.close()
       photos?.close()
+      room?.close()
+      shop?.close()
+      awards?.close()
     }
   }
 
@@ -288,17 +318,58 @@ struct AssistantTab: View {
   // MARK: - Đầu trang
 
   private var header: some View {
-    HStack(alignment: .bottom) {
-      VStack(alignment: .leading, spacing: 0) {
-        Text(verbatim: Date().formatted(Date.FormatStyle().weekday(.wide).day().month(.wide).locale(.app)))
-          .font(.system(size: 13, weight: .medium))
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-        Text("assistant.summary")
-          .font(.largeTitle.bold())
-          .foregroundStyle(DS.Color.foreground.swiftUI)
-          .accessibilityAddTraits(.isHeader)
+    Text("tab.progress")
+      .font(.largeTitle.bold())
+      .foregroundStyle(DS.Color.foreground.swiftUI)
+      .accessibilityAddTraits(.isHeader)
+  }
+
+  // MARK: - Koa (GĐ3)
+
+  /// Tuần của Koa theo lịch đã áp — cùng nguồn với Hôm nay và lượt nhận thưởng.
+  private var koaWeek: KoaWeek.State? {
+    KoaWeek.state(today: flow.today.today, library: flow.today.library, trained: flow.today.trained)
+  }
+
+  /// Koa + hạng Gains (cùng dòng với Hôm nay); chạm → phòng Koa.
+  @ViewBuilder private var koaCard: some View {
+    if let now = services.koaGainsNow, now.userId == flow.today.userId {
+      let g = now.state
+      let ranks = MascotRules.ranks
+      Button {
+        if room == nil { room = services.makeMascotRoom(userId: flow.today.userId, today: flow.today.today) }
+        if room != nil { path.append(.room) }
+      } label: {
+        HStack(spacing: 12) {
+          MascotFigureView(
+            emotion: .idle, equipped: shop?.inventory.filter(\.equipped).map(\.itemKey) ?? [], size: 50,
+            animated: false, build: g.rank)
+            .frame(width: 64, height: 64)
+            .background(DS.Color.secondary.swiftUI.opacity(0.6), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+          VStack(alignment: .leading, spacing: 2) {
+            Text("koa.card.name")
+              .font(.system(size: 12, weight: .semibold))
+              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            Text(String(localized: "dp.gains \(ranks[min(g.rank, ranks.count - 1)].name(lang)) \(g.points)"))
+              .font(DS.TextStyle.headline)
+              .foregroundStyle(DS.Color.foreground.swiftUI)
+            if let to = KoaGains.toNext(g.points), g.rank + 1 < ranks.count {
+              Text(String(localized: "dp.gains.next \(to.need - to.have) \(ranks[g.rank + 1].name(lang))"))
+                .font(DS.TextStyle.footnote)
+                .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            }
+          }
+          Spacer(minLength: 0)
+          Image(systemName: "chevron.right")
+            .font(.footnote.weight(.semibold))
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .accessibilityHidden(true)
+        }
+        .contentShape(Rectangle())
       }
-      Spacer(minLength: 0)
+      .buttonStyle(TodayPressStyle())
+      .accessibilityElement(children: .combine)
+      .accessibilityHint(Text("progress.room.hint"))
     }
   }
 
@@ -394,7 +465,7 @@ struct AssistantTab: View {
     case .measure: .measure
     case .photos: .photos
     case .memory: .memory
-    case .chat, .trends, .tools, .training: nil
+    case .chat, .trends, .tools, .training, .room, .awards, .community: nil
     }
   }
 

@@ -2,12 +2,16 @@ import ASCNDCore
 import ASCNDDesignSystem
 import SwiftUI
 
-/// Năm điểm đến cấp cao, đúng thứ tự và biểu tượng của app RN
-/// (`native/src/components/app-tabs.tsx`). Trợ lý sức khoẻ mang vai `.search`:
-/// trên iOS 26 hệ thống vẽ nó thành vòng tròn riêng cạnh thanh tab — cùng lý do
-/// app RN chọn vai này.
+/// Bốn khu vực (GĐ3, Kiệt duyệt 21/10, mock `gd3-four-areas.html`; PRODUCT_DECISION_V1):
+/// Hôm nay · Tập luyện · Dinh dưỡng · Tiến bộ — theo vòng lõi, khác 5 tab của RN
+/// (`app-tabs.tsx`). Cộng đồng bỏ khỏi thanh tab (mở từ Tiến bộ); vòng "Trợ lý"
+/// (vai `.search`) gộp vào Tiến bộ.
+///
+/// `progress` giữ giá trị lưu `"assistant"`: tab đã lưu của bản cũ mở đúng chỗ.
+/// Giá trị lưu `"community"` không còn → `@SceneStorage` về mặc định (Hôm nay).
 enum AppTab: String, Hashable {
-  case today, nutrition, workouts, community, assistant
+  case today, workouts, nutrition
+  case progress = "assistant"
 }
 
 struct RootTabView: View {
@@ -21,7 +25,7 @@ struct RootTabView: View {
   @State private var launchWorkout = false
   /// Màn có ô nhập riêng (Koa Coach, nhắn tin) ẩn dải Ghi nhanh khi đang mở.
   @State private var quickLog = QuickLogVisibility()
-  /// "Hỏi Koa Coach" trong Ghi nhanh → tab Trợ lý mở thẳng màn chat.
+  /// "Hỏi Koa Coach" trong Ghi nhanh → tab Tiến bộ mở thẳng màn chat.
   @State private var openCoach = false
 
   var body: some View {
@@ -33,11 +37,6 @@ struct RootTabView: View {
         })
       }
       .accessibilityHint(Text(String(localized: "tab.today.hint")))
-      Tab("tab.nutrition", systemImage: "fork.knife", value: AppTab.nutrition) {
-        // Lát đầu của Dinh dưỡng (#527 Phase 3): thẻ + màn Nước uống.
-        NutritionTab()
-      }
-      .accessibilityHint(Text(String(localized: "tab.nutrition.hint")))
       Tab("tab.workouts", systemImage: "dumbbell", value: AppTab.workouts) {
         #if DEBUG
           // Bản Debug: màn thật + các màn thử (Lab) cho Kiệt kiểm trên máy.
@@ -47,16 +46,15 @@ struct RootTabView: View {
         #endif
       }
       .accessibilityHint(Text(String(localized: "tab.workouts.hint")))
-      Tab("tab.community", systemImage: "person.2", value: AppTab.community) {
-        // Lát đầu của Cộng đồng (#527): feed chỉ đọc.
-        CommunityTab()
+      Tab("tab.nutrition", systemImage: "fork.knife", value: AppTab.nutrition) {
+        NutritionTab()
       }
-      .accessibilityHint(Text(String(localized: "tab.community.hint")))
-      Tab("tab.assistant", systemImage: "heart.text.square", value: AppTab.assistant, role: .search) {
-        // Lát đầu của Trợ lý (#527 Phase 6): AI Coach.
+      .accessibilityHint(Text(String(localized: "tab.nutrition.hint")))
+      Tab("tab.progress", systemImage: "chart.line.uptrend.xyaxis", value: AppTab.progress) {
+        // Tiến bộ = Trợ lý cũ + Koa / Gains + Cơ thể + huy chương (GĐ3).
         AssistantTab(openCoach: $openCoach)
       }
-      .accessibilityHint(Text(String(localized: "tab.assistant.hint")))
+      .accessibilityHint(Text(String(localized: "tab.progress.hint")))
     }
     // Ghi nhanh (15/10, chủ dự án chọn "thanh phụ trên tab bar"): một dải kính
     // trên thanh tab ở mọi tab, thu gọn khi cuộn; mở các màn ghi qua cùng đường
@@ -66,7 +64,7 @@ struct RootTabView: View {
       // Chỉ khi các function AI có trên máy chủ (`probeAI`), như mọi lối vào AI khác.
       askCoach: services.aiDeployed == true
         ? {
-          selection = .assistant
+          selection = .progress
           openCoach = true
         } : nil
     ) { linked = $0 })
