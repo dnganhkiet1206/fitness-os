@@ -69,6 +69,11 @@ struct RootTabView: View {
         } : nil
     ) { linked = $0 })
     .environment(quickLog)
+    .onChange(of: services.coachRequest) { _, _ in
+      guard services.aiDeployed == true else { return }
+      selection = .progress
+      openCoach = true
+    }
     // Ăn mừng huy chương / thử thách (#527, `CelebrationHost` ở layout gốc của
     // RN): trên mọi tab, phủ cả thanh tab.
     .overlay { CelebrationHost(queue: services.celebrations) }

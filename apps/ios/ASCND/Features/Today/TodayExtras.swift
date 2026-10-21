@@ -164,6 +164,8 @@ struct TodayExtras<Plan: View>: View {
           result: dailyPlan.result, lighterOn: flow.today.lighterToday, busy: planBusy, failed: planFailed,
           onPrimary: { primary(dailyPlan.result.action) }, onAlternative: { alternative($0, flow) })
           .todayEntrance(2)
+        // Koa Coach (Kiệt 21/10, GĐ3): insight + ô hỏi Koa ngay dưới việc chính.
+        TodayCoachSection(userId: userId, today: flow.today.today) { services.coachRequest += 1 }
         // Chạm dải → thẻ Tuần của Koa đầy đủ: chú thích, thưởng, luật đếm (Kiệt 21/10).
         Button { showsKoaWeek = true } label: {
           TodayWeekStrip(

@@ -19,7 +19,7 @@ enum AssistantRoute: Hashable {
 /// ngày (`MetricPanelView`) ở màn "Xu hướng 7 ngày"; lưới đủ công cụ ở "Tất cả
 /// công cụ".
 ///
-/// "Insight hôm nay" (`ai-smart-nudges`, `InsightCard`).
+/// "Insight hôm nay" (`ai-smart-nudges`) ở Hôm nay (`TodayCoachSection`, GĐ3).
 ///
 /// Chưa có (PARTIAL): thẻ nguồn Health, aura / glass; lưới
 /// công cụ chỉ có những màn đã port (tổng kết tuần, vận động, sinh trắc học,
@@ -41,7 +41,6 @@ struct AssistantTab: View {
   @State private var weekly: WeeklyReviewBook?
   @State private var biometrics: BiometricsBook?
   @State private var metrics: MetricHistoryBook?
-  @State private var nudges: SmartNudgesBook?
   @State private var steps: StepsBook?
   @State private var sleep: SleepInsightsBook?
   /// Thẻ tập luyện đầy đủ (RN `TrainingCard`) — chuyển từ "Xem thêm" của Hôm nay
@@ -52,7 +51,6 @@ struct AssistantTab: View {
   @State private var photos: ProgressPhotosBook?
   /// GĐ3: huy chương.
   @State private var awards: AwardsBook?
-  @State private var hour = Calendar.current.component(.hour, from: Date())
   @State private var built = false
   /// Ghi nhanh từ thẻ (15/10): ngủ / bữa.
   @State private var logging: AssistantLog?
@@ -77,14 +75,6 @@ struct AssistantTab: View {
           if let metrics {
             sectionTitle("progress.recovery")
             TrendHighlight(book: metrics, lang: lang) { path.append(.trends) }
-          }
-          // Máy chủ chưa bật tính năng → không hiện thẻ lỗi vĩnh viễn (15/10, audit).
-          if let nudges, !nudges.isNotDeployed, ai {
-            InsightCard(
-              book: nudges,
-              // AI lỗi (quá tải, mạng…): nhắc dựng từ số thật thay cho dòng lỗi.
-              fallback: signal.map { SmartNudges.fallback($0.signal, lang: lang.rawValue, hour: hour) } ?? []
-            ) { Task { await loadInsight(force: true) } }
           }
           if let awards {
             RecentAwardsCard(book: awards, lang: lang) { path.append(.awards) }
@@ -135,7 +125,6 @@ struct AssistantTab: View {
       .refreshable {
         await signal?.load()
         await metrics?.load(kcalTarget: kcalTarget)
-        await loadInsight()
       }
       .navigationTitle(Text("tab.progress"))
       .ascndPage()
@@ -215,7 +204,6 @@ struct AssistantTab: View {
       weekly = services.makeWeeklyReview(userId: userId, today: today)
       biometrics = services.makeBiometricsBook(userId: userId)
       metrics = services.makeMetricHistory(userId: userId, today: today)
-      nudges = services.makeSmartNudges(userId: userId)
       steps = services.makeStepsBook(userId: userId, today: today)
       sleep = services.makeSleepInsights(userId: userId)
       training = services.makeTrainingCard(userId: userId)
@@ -228,8 +216,6 @@ struct AssistantTab: View {
       await signal?.load()
       // Sau tín hiệu: phân tích calo cần mục tiêu calo của hồ sơ.
       await metrics?.load(kcalTarget: kcalTarget)
-      // Sau tín hiệu: khoá của insight cần dấu "đã ngủ / ăn / tập" hôm nay.
-      await loadInsight()
     }
     // RN học khi app vào nền (`AppState` → `background`): đó mới là lúc cuộc
     // trò chuyện thật sự "xong".
@@ -244,13 +230,11 @@ struct AssistantTab: View {
       // Ra tiền cảnh: số hôm nay có thể đã đổi (ghi bữa / đồng bộ Health), hoặc
       // đã qua nửa đêm — lời chào, tóm tắt và chip đọc lại.
       guard phase == .active else { return }
-      hour = Calendar.current.component(.hour, from: Date())
       let today = Self.today()
       Task {
         await signal?.move(to: today)
         await weekly?.move(to: today)
         await metrics?.move(to: today, kcalTarget: kcalTarget)
-        await loadInsight()
         await steps?.move(to: today)
         await goals?.move(to: today)
       }
@@ -266,7 +250,6 @@ struct AssistantTab: View {
       weekly?.close()
       biometrics?.close()
       metrics?.close()
-      nudges?.close()
       steps?.close()
       sleep?.close()
       training?.close()
@@ -282,20 +265,11 @@ struct AssistantTab: View {
   /// `calorieTargetFor(profile)` của tín hiệu hôm nay (mặc định 2200).
   private var kcalTarget: Double { signal?.signal.kcalTarget ?? 2200 }
 
-  /// Insight của hôm nay theo dấu dữ liệu hiện tại (đổi dấu → lượt gọi mới).
-  private func loadInsight(force: Bool = false) async {
-    guard let nudges, let stamp = signal?.nudgeStamp else { return }
-    await nudges.load(
-      date: Self.today(), lang: lang.rawValue, stamp: stamp, tzOffset: Coach.tzOffset(.current, at: Date()),
-      force: force)
-  }
-
   /// Sau một lượt đồng bộ Apple Health (giờ chỉ ở Cài đặt, hoặc tự chạy khi ra
   /// tiền cảnh): tín hiệu, ô chỉ số và insight hôm nay đọc lại.
   private func reloadAfterHealthSync() async {
     await signal?.load()
     await metrics?.load(kcalTarget: kcalTarget)
-    await loadInsight()
   }
 
   private static func today() -> LocalDate { LocalDate(SystemWallClock().nowMillis(), in: .current) }
@@ -441,119 +415,3 @@ struct AssistantTab: View {
   }
 }
 
-/// "Insight hôm nay": đang đọc / lỗi (chạm thử lại) / không có gì nổi bật /
-/// tối đa vài câu với chấm theo mức ưu tiên; "Cập nhật HH:mm" là lúc kết quả
-/// về (ẩn khi chưa có lần nào).
-private struct InsightCard: View {
-  let book: SmartNudgesBook
-  /// Nhắc từ số thật khi AI không trả lời (`SmartNudges.fallback`).
-  var fallback: [SmartNudges.Nudge] = []
-  let retry: () -> Void
-
-  var body: some View {
-    VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-      HStack {
-        Label { Text("insight.title") } icon: { IntelligenceMark(size: 18) }
-          .font(DS.TextStyle.headline)
-          .foregroundStyle(DS.Color.foreground.swiftUI)
-          .accessibilityAddTraits(.isHeader)
-        Spacer()
-        if case .ready(let entry) = book.phase {
-          Text("insight.updated \(Self.time(entry.at))")
-            .font(DS.TextStyle.caption)
-            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-        }
-      }
-      content
-        .padding(DS.Spacing.md)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.lg))
-    }
-  }
-
-  @ViewBuilder private var content: some View {
-    switch book.phase {
-    case .idle, .loading:
-      HStack(spacing: DS.Spacing.sm) {
-        IntelligenceOrb(size: 24)
-        Text("insight.loading")
-          .font(DS.TextStyle.footnote)
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-      }
-    case .failed where !fallback.isEmpty:
-      // Bản tóm tắt từ số liệu (16/10, chủ dự án): thẻ không trống mỗi lần AI quá
-      // tải. Ghi rõ nguồn; chạm dòng nguồn để thử lại AI.
-      VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-        nudgeList(fallback)
-        Button(action: retry) {
-          Label("insight.fallback", systemImage: "arrow.clockwise")
-            .font(DS.TextStyle.caption)
-            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-            .frame(maxWidth: .infinity, minHeight: 32, alignment: .leading)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-      }
-    case .failed(let failure):
-      Button(action: retry) {
-        Label {
-          VStack(alignment: .leading, spacing: 2) {
-            Text("insight.failed")
-            Text(verbatim: WeeklyReviewView.failureText(failure))
-              .font(DS.TextStyle.caption)
-          }
-        } icon: {
-          Image(systemName: "exclamationmark.triangle")
-        }
-        .font(DS.TextStyle.footnote)
-        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-        .contentShape(Rectangle())
-      }
-      .buttonStyle(.plain)
-    case .ready(let entry) where entry.nudges.isEmpty:
-      Text("insight.empty")
-        .font(DS.TextStyle.footnote)
-        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-    case .ready(let entry):
-      nudgeList(entry.nudges)
-    }
-  }
-
-  private func nudgeList(_ nudges: [SmartNudges.Nudge]) -> some View {
-      VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-        ForEach(Array(nudges.enumerated()), id: \.offset) { _, n in
-          HStack(alignment: .firstTextBaseline, spacing: DS.Spacing.sm) {
-            Circle()
-              .fill(Self.tint(n.priority))
-              .frame(width: 8, height: 8)
-              .accessibilityHidden(true)
-            Text(verbatim: n.message)
-              .font(DS.TextStyle.body)
-              .foregroundStyle(DS.Color.foreground.swiftUI)
-              .fixedSize(horizontal: false, vertical: true)
-          }
-        }
-      }
-  }
-
-  private static func tint(_ p: SmartNudges.Priority) -> Color {
-    switch p {
-    case .high: DS.Color.readinessRed.swiftUI
-    case .medium: DS.Color.readinessYellow.swiftUI
-    case .low: DS.Color.readinessGreen.swiftUI
-    }
-  }
-
-  private static func time(_ at: EpochMillis) -> String {
-    Date(timeIntervalSince1970: TimeInterval(at.millis) / 1000)
-      .formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(.app))
-  }
-}
-
-extension SmartNudgesBook {
-  /// Máy chủ chưa triển khai `ai-smart-nudges`.
-  var isNotDeployed: Bool {
-    if case .failed(.notDeployed) = phase { true } else { false }
-  }
-}
