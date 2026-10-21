@@ -94,6 +94,10 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - PR GĐ1 để **nháp**. Chỉ merge khi đủ 6 mục nghiệm thu trong `GD1-DAILY-PLAN.md`, **kể cả kiểm trên iPhone thật** (đang bị chặn, mục 1).
 - Migration `20261020140000_plan_day_overrides` (đổi lịch theo ngày) **CHƯA deploy** lên production. Cần lệnh duyệt rõ ràng. App đọc bảng này theo kiểu chịu lỗi: thiếu bảng thì coi như chưa đổi ngày nào.
 - "Tập nhẹ hơn" chỉ bớt một hiệp mỗi bài cho buổi hôm nay. Không sửa mẫu, không giảm tạ, không phải kết luận y tế.
+- Hồi quy mất mạng / lỗi / gửi lại (chỉ thị 21/10 14:26, commit `8d2f9d8b`): R1–R7, W1, D1–D5 **PASS** (test Swift + SQL thật trên Postgres ở máy). **Chặn:**
+  - **A1 dời / nghỉ trên app:** cần Supabase dev chạy ở máy (Docker + `supabase start`, build Debug trỏ về máy, tài khoản dev ở máy).
+  - **A2 mất mạng hẳn trên simulator:** không có công tắc mạng riêng; tắt mạng máy Mac là đổi cài đặt hệ thống.
+  - Chi tiết: `GD1-DAILY-PLAN.md`, mục "Hồi quy GĐ1".
 
 **Tìm thấy khi kiểm ngày 21/10** (simulator, tài khoản test):
 - Coach AI bị cắt giữa câu, còn sót dấu `**` thô, không trả lời phần hỏi về lịch. Nghi do `MAX_TOKENS = 1024` trong `supabase/functions/ai-coach/index.ts` cộng với phần nháp suy luận của model. Chưa xác nhận.
@@ -124,3 +128,4 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 
 - 21/10/2026: tạo sổ (Kiệt yêu cầu, #527).
 - 21/10/2026: thêm điều kiện duyệt GĐ1, migration chưa deploy, kết quả "mất pump" / tụt hạng.
+- 21/10/2026: hồi quy GĐ1 (R / W / D PASS; A1, A2 BLOCKED).

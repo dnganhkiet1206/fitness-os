@@ -108,3 +108,47 @@
 5. **Lời nhắc:** `plannedByOffset` lấy từ lịch đã áp; câu của lời nhắc hôm nay lấy từ `result`.
 6. **Màn quay lại** dạng sheet bỏ đi. Luật ④ trên Today thay thế; đo bằng `comeback_shown`.
 7. **Kiểm 6 trạng thái trên simulator** bằng tài khoản test có sẵn (dữ liệu test, được sửa), có chụp màn. Cập nhật bảng nghiệm thu.
+
+## Hồi quy GĐ1: mất mạng, lỗi, gửi lại (chỉ thị #527, 21/10 14:26)
+
+**Yêu cầu:**
+- Kiểm phục hồi khi mất mạng, lỗi, gửi lại; gửi lại không tạo bản ghi trùng hay lời nhắc trùng.
+- Thử dời / nghỉ **chỉ ở máy hoặc dev**, không deploy migration.
+
+**Mốc chạy:** commit `8d2f9d8b` (nhánh `claude/gd1-daily-plan`, PR nháp #641).
+
+| Ca | Kết quả | Bằng chứng |
+|---|---|---|
+| R1 Hàng đợi nhận lại cùng lệnh dời (app chết giữa lượt): không thêm hàng | **PASS** | `GD1RegressionTests.reEnqueueingTheSameEntriesAddsNothing` |
+| R2 Áp lại lệnh server đã nhận: không đổi gì | **PASS** | `GD1RegressionTests.reApplyingIsIdempotent` |
+| R3 Bấm hai lần (dời / nghỉ): lần hai bị từ chối, không có lệnh thứ hai | **PASS** | `GD1RegressionTests.doubleTapNeverWritesTwice` |
+| R4 Mất mạng rồi đồng bộ: cùng một lịch, không hai buổi | **PASS** | `GD1RegressionTests.offlineThenSyncedShowsTheSamePlan` |
+| R5 Lên lịch nhắc lại nhiều lần: cùng kế hoạch, tối đa 1 lời nhắc tập mỗi ngày, không trùng khoá | **PASS** | `GD1RegressionTests.remindersAreStableAndOnePerDay`; bộ lên lịch thật xoá hết lời nhắc đang chờ trước khi thêm (`NotificationReminderScheduler.replaceAll`) |
+| R6 Đọc phục hồi lỗi: không tín hiệu, không gợi ý tập nhẹ | **PASS** | `GD1RegressionTests.recoveryReadFailureGivesNoSuggestion` |
+| R7 Chưa đọc được kế hoạch: không đoán, không nút | **PASS** | `GD1RegressionTests.unreadPlanNeverGuesses` |
+| W1 Bộ gửi lên server: `day-override` → `plan_day_overrides`, upsert theo (người, ngày); từ chối hàng của người khác / ngày hỏng | **PASS** | `RemoteWriterTests.planEditsTargetTheirTables` |
+| D1 SQL thật: dời T4 → T5 rồi gửi lại y hệt → vẫn 2 hàng, đúng nội dung | **PASS** | `supabase/tests/core/day_overrides.test.sql` |
+| D2 SQL thật: đổi thành nghỉ rồi gửi lại → 1 hàng | **PASS** | như trên |
+| D3 SQL thật: ngày nghỉ mang buổi, dời từ chính nó → CHECK 23514 | **PASS** | như trên |
+| D4 SQL thật: B không thấy / không sửa được hàng của A (RLS) | **PASS** | như trên, cùng `owner_rls.test.sql` T0–T2 … và `parent_fk.test.sql` F12–F14 |
+| D5 SQL thật: xoá mẫu → ngày nhận buổi đi theo; ngày nghỉ đã chọn ở lại | **PASS** | như trên |
+| A1 Dời / nghỉ **trên app** với backend dev ở máy | **BLOCKED** | Không có Supabase dev chạy ở máy (Docker tắt). Cần `supabase start`, build Debug trỏ `ASCND_SUPABASE_HOST` về máy, tạo tài khoản dev ở máy. Không làm trên production (không deploy, không tài khoản test production) |
+| A2 Mất mạng hẳn trên simulator (Today, ghi bữa / buổi rồi gửi lại) | **BLOCKED** | Simulator không có công tắc mạng riêng; tắt mạng của máy Mac là đổi cài đặt hệ thống (agent không làm). Đường mã có test (R1–R7, và bộ test outbox / `SyncWorker` sẵn có) |
+
+**Lệnh đã chạy:**
+```sh
+# Swift (từ apps/ios/Packages/<gói>)
+swift test                                  # ASCNDKit: 1638/1638
+swift test --filter GD1RegressionTests      # 7/7
+swift test --filter RemoteWriterTests       # ASCNDBackend: 25/25
+# SQL thật trên Postgres 16 ở máy (không đụng project nào)
+LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 PG_BIN=/opt/homebrew/opt/postgresql@16/bin bash supabase/tests/core/run.sh
+#   → "ĐỔI LỊCH THEO NGÀY: D1–D5 xanh", "RLS BẢNG LÕI … xanh trên mọi bảng", "KHOÁ NGOẠI TỚI DÒNG CHA: F1–F14 xanh"
+```
+
+**CI:**
+- Lượt xanh gần nhất trước đợt hồi quy là commit `0f312348`:
+  - `app-macos` + `core-linux`: https://github.com/dnganhkiet1206/fitness-os/actions/runs/39569723816
+  - `gate`: https://github.com/dnganhkiet1206/fitness-os/actions/runs/39569721998
+  - `sql`: https://github.com/dnganhkiet1206/fitness-os/actions/runs/39569722276
+- CI của `8d2f9d8b`: xem PR #641. Kết quả ghi vào báo cáo trên #527.
