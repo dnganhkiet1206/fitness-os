@@ -61,10 +61,42 @@ final class DailyPlanSource {
       date: date, library: library, active: active, doneToday: done, daysOff: daysOff,
       recovery: dataDate == date ? recovery : nil, proteinLeftG: dataDate == date ? proteinLeftG : nil)
     self.input = input
-    let result = DailyPlan.decide(input)
+    var result = DailyPlan.decide(input)
+    #if DEBUG
+      // Kiểm giao diện của từng trạng thái trên simulator: mở app với
+      // `SIMCTL_CHILD_ASCND_DEBUG_DAILYPLAN=<tên>`. Chỉ bản Debug.
+      if let name = ProcessInfo.processInfo.environment["ASCND_DEBUG_DAILYPLAN"],
+        let fixture = Self.debugFixture(name, date: date)
+      {
+        result = fixture
+      }
+    #endif
     let changed = result != self.result || services.dailyPlan?.date != date
     if result != self.result { self.result = result }
     services.dailyPlan = (userId, date, result)
     if changed { services.dailyPlanChanged() }
   }
+
+  #if DEBUG
+    static func debugFixture(_ name: String, date: LocalDate) -> DailyPlan.Result? {
+      let chest = DailyPlan.Session(templateId: "debug-chest", name: "Chest day", minutes: 35)
+      let back = DailyPlan.Session(templateId: "debug-back", name: "Back day", minutes: 35)
+      let tomorrow = date.adding(days: 1)
+      switch name {
+      case "planned":
+        return .init(action: .start(chest), reason: .planned, alternatives: [.postpone(to: tomorrow), .makeRest])
+      case "low":
+        let signals: [DailyPlan.Signal] = [.shortSleep(minutes: 310, target: 480), .lowHRV(percentBelow: 18)]
+        return .init(action: .start(chest), reason: .lowRecovery(signals), alternatives: [.lighter, .postpone(to: tomorrow)])
+      case "rest": return .init(action: .recovery, reason: .restDay, alternatives: [.logFree])
+      case "comeback":
+        return .init(action: .comeback(back), reason: .returning(daysOff: 5), alternatives: [.lighter, .viewPlan])
+      case "done": return .init(action: .postWorkoutMeal, reason: .proteinLeft(grams: 86), alternatives: [.viewSession])
+      case "none": return .init(action: .setUpWeek, reason: .noSchedule, alternatives: [.logFree])
+      case "next":
+        return .init(action: .nextSession(date: date.adding(days: 2), session: back), reason: .nextOn(date.adding(days: 2)))
+      default: return nil
+      }
+    }
+  #endif
 }
