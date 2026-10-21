@@ -25,6 +25,8 @@ SPM119 = '20261001170000_community_search_unaccent_one_fold'
 SPM150 = '20261001200000_community_search_unaccent_folded_column'
 CCM = '20261005120000_community_comment_count_visible'
 ENM = '20261005130000_community_challenges_en'
+DM = 'direct_messages'
+DMM = '20261020130000_community_direct_messages'
 CASES = [
   # ── hồ sơ ──
   dict(suite=F, id='1', mig=FM, how='trigger không gạt is_official khi TẠO',
@@ -1352,5 +1354,53 @@ CASES += [
        old="REVOKE EXECUTE ON FUNCTION public.community_posting_guard() FROM PUBLIC, anon, authenticated;", new="GRANT EXECUTE ON FUNCTION public.community_posting_guard() TO authenticated;", expect='PL27 '),
   dict(suite=PLS, id='PL28', mig=PLM, how='cấp mod_restrict cho anon',
        old="REVOKE EXECUTE ON FUNCTION public.mod_restrict(uuid, integer, text) FROM PUBLIC, anon;", new="GRANT EXECUTE ON FUNCTION public.mod_restrict(uuid, integer, text) TO anon;", expect='PL28 '),
+  # ── nhắn tin (#527, 20261020130000) ──
+  dict(suite=DM, id='M1', mig=DMM, how='mở lại trả mã mới thay vì hội thoại đã có',
+       old='    RETURN v_id;\n  END IF;\n  IF NOT dm_can_message', new='    RETURN gen_random_uuid();\n  END IF;\n  IF NOT dm_can_message', expect='M1 '),
+  dict(suite=DM, id='M2', mig=DMM, how='policy SELECT tin nhắn đóng hẳn',
+       old='  USING (EXISTS (\n    SELECT 1 FROM public.dm_threads t', new='  USING (false AND EXISTS (\n    SELECT 1 FROM public.dm_threads t', expect='M2 '),
+  dict(suite=DM, id='M3', mig=DMM, how='bỏ chặn hai chiều ở cửa mở hội thoại',
+       old='    AND NOT community_blocked_between(p_me, p_other)\n', new='', expect='M3 '),
+  dict(suite=DM, id='M4', mig=DMM, how='"chỉ người tôi theo dõi" cho mọi người nhắn',
+       old="          WHEN 'following' THEN EXISTS (", new="          WHEN 'following' THEN true OR EXISTS (", expect='M4 '),
+  dict(suite=DM, id='M5', mig=DMM, how='bỏ chốt người nhận phải có hồ sơ',
+       old='    AND EXISTS (SELECT 1 FROM community_profiles WHERE user_id = p_other)\n', new='', expect='M5 '),
+  dict(suite=DM, id='M6', mig=DMM, how='bỏ chốt không tự nhắn cho mình',
+       old='  SELECT p_me <> p_other\n    AND EXISTS', new='  SELECT true\n    AND EXISTS', expect='M6 '),
+  dict(suite=DM, id='M7', mig=DMM, how='mở INSERT thẳng vào dm_messages',
+       old='REVOKE INSERT, UPDATE, DELETE ON public.dm_threads, public.dm_messages FROM authenticated;',
+       new='GRANT INSERT ON public.dm_messages TO authenticated;\nCREATE POLICY x_ins ON public.dm_messages FOR INSERT TO authenticated WITH CHECK (true);', expect='M7 '),
+  dict(suite=DM, id='M8', mig=DMM, how='mở UPDATE tin nhắn',
+       old='REVOKE INSERT, UPDATE, DELETE ON public.dm_threads, public.dm_messages FROM authenticated;',
+       new='REVOKE INSERT, DELETE ON public.dm_threads, public.dm_messages FROM authenticated;\nGRANT UPDATE ON public.dm_messages TO authenticated;\nCREATE POLICY x_upd ON public.dm_messages FOR UPDATE TO authenticated USING (true) WITH CHECK (true);', expect='M8 '),
+  dict(suite=DM, id='M9', mig=DMM, how='mở INSERT thẳng vào dm_threads (vượt dm_open)',
+       old='REVOKE INSERT, UPDATE, DELETE ON public.dm_threads, public.dm_messages FROM authenticated;',
+       new='REVOKE INSERT, UPDATE, DELETE ON public.dm_messages FROM authenticated;\nGRANT INSERT ON public.dm_threads TO authenticated;\nCREATE POLICY x_tins ON public.dm_threads FOR INSERT TO authenticated WITH CHECK (true);', expect='M9 '),
+  dict(suite=DM, id='M10', mig=DMM, how='hộp thư đảo "tin cuối của mình"',
+       old='t.last_sender = auth.uid(),', new='t.last_sender <> auth.uid(),', expect='M10 '),
+  dict(suite=DM, id='M11', mig=DMM, how='không bao giờ là tin chờ',
+       old='         t.started_by <> auth.uid()\n           AND NOT EXISTS (SELECT 1 FROM community_follows f',
+       new='         false\n           AND NOT EXISTS (SELECT 1 FROM community_follows f', expect='M11 '),
+  dict(suite=DM, id='M12', mig=DMM, how='policy SELECT hội thoại bỏ chốt người trong cuộc',
+       old='  USING (auth.uid() IN (user_a, user_b) AND NOT public.community_blocked_between(user_a, user_b));',
+       new='  USING (true AND NOT public.community_blocked_between(user_a, user_b));', expect='M12 '),
+  dict(suite=DM, id='M13', mig=DMM, how='dm_send bỏ chốt người gửi phải ở trong cuộc',
+       old='  IF v_t.id IS NULL OR v_me NOT IN (v_t.user_a, v_t.user_b) THEN', new='  IF v_t.id IS NULL THEN', expect='M13 '),
+  dict(suite=DM, id='M14', mig=DMM, how='cấp SELECT cho anon',
+       old='REVOKE ALL ON public.dm_threads, public.dm_messages FROM anon;', new='GRANT SELECT ON public.dm_threads, public.dm_messages TO anon;', expect='M14 '),
+  dict(suite=DM, id='M15', mig=DMM, how='trả lời xong vẫn là tin chờ',
+       old='\n           AND NOT EXISTS (SELECT 1 FROM dm_messages m WHERE m.thread_id = t.id AND m.sender_id = auth.uid())', new='', expect='M15 '),
+  dict(suite=DM, id='M16', mig=DMM, how='đánh dấu đã đọc không ghi gì',
+       old='  UPDATE dm_messages m SET read_at = now()', new='  UPDATE dm_messages m SET read_at = NULL', expect='M16 '),
+  dict(suite=DM, id='M18', mig=DMM, how='bỏ chốt tin rỗng (CHECK của bảng chặn, nhưng mã lỗi sai)',
+       old="  IF v_body = '' AND p_workout IS NULL THEN RAISE EXCEPTION 'empty' USING ERRCODE = '22023'; END IF;\n", new='', expect='M18 '),
+  dict(suite=DM, id='M19', mig=DMM, how='cắt tin dài sai độ dài',
+       old='  IF char_length(v_body) > 1000 THEN v_body := left(v_body, 1000); END IF;', new='  IF char_length(v_body) > 1000 THEN v_body := left(v_body, 999); END IF;', expect='M19 '),
+  dict(suite=DM, id='M20', mig=DMM, how='buổi tập gửi đi mất tên',
+       old='  VALUES (p_thread, v_me, v_body, p_workout)', new="  VALUES (p_thread, v_me, v_body, p_workout - 'title')", expect='M20 '),
+  dict(suite=DM, id='M21', mig=DMM, how='nới giới hạn tốc độ',
+       old="interval '1 minute') >= 30 THEN", new="interval '1 minute') >= 1000 THEN", expect='M21 '),
+  dict(suite=DM, id='M22', mig=DMM, how='chặn sau khi đã nhắn không ẩn hội thoại',
+       old='  USING (auth.uid() IN (user_a, user_b) AND NOT public.community_blocked_between(user_a, user_b));',
+       new='  USING (auth.uid() IN (user_a, user_b));', expect='M22 '),
 ]
-

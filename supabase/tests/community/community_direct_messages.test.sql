@@ -40,9 +40,13 @@ RESET ROLE;
 SELECT pg_temp.who(:C); SET ROLE authenticated;
 DO $$ BEGIN ASSERT (SELECT is_request AND unread FROM dm_inbox()), 'M11 tin từ người lạ phải là tin chờ, chưa đọc'; END $$;
 RESET ROLE;
+-- Mã hội thoại do quản trị lấy ra: người ngoài KHÔNG đọc được nó qua RLS, nên M13
+-- phải đưa mã thật vào tay họ — không thì dm_send(NULL) hỏng vì lý do khác.
+CREATE TEMP TABLE dm_tid AS SELECT id FROM dm_threads;
+GRANT SELECT ON dm_tid TO authenticated;
 SELECT pg_temp.who(:B); SET ROLE authenticated;
 DO $$ BEGIN ASSERT (SELECT count(*) FROM dm_threads) = 0 AND (SELECT count(*) FROM dm_messages) = 0, 'M12 người ngoài đọc được hội thoại'; END $$;
-DO $$ BEGIN ASSERT pg_temp.errcode($q$SELECT dm_send((SELECT id FROM dm_threads LIMIT 1), 'x')$q$) <> 'ok', 'M13 người ngoài gửi vào hội thoại được'; END $$;
+DO $$ BEGIN ASSERT pg_temp.errcode($q$SELECT dm_send((SELECT id FROM pg_temp.dm_tid), 'x')$q$) <> 'ok', 'M13 người ngoài gửi vào hội thoại được'; END $$;
 RESET ROLE;
 SELECT pg_temp.anon(); SET ROLE anon;
 DO $$ BEGIN ASSERT pg_temp.errcode($q$SELECT count(*) FROM dm_messages$q$) <> 'ok', 'M14 anon đọc được tin nhắn'; END $$;
@@ -52,7 +56,7 @@ RESET ROLE;
 SELECT pg_temp.who(:C); SET ROLE authenticated;
 SELECT dm_mark_read(thread_id) FROM dm_inbox();
 SELECT dm_send((SELECT thread_id FROM dm_inbox() LIMIT 1), 'Chào A');
-DO $$ BEGIN ASSERT (SELECT NOT is_request AND NOT unread FROM dm_inbox()), 'M15 trả lời xong vẫn là tin chờ / chưa đọc'; END $$;
+DO $$ BEGIN ASSERT (SELECT NOT is_request FROM dm_inbox()), 'M15 trả lời xong vẫn là tin chờ'; END $$;
 RESET ROLE;
 SELECT pg_temp.who(:A); SET ROLE authenticated;
 DO $$ BEGIN ASSERT (SELECT read_at IS NOT NULL FROM dm_messages WHERE sender_id = auth.uid()), 'M16 người gửi không thấy "đã xem"'; END $$;

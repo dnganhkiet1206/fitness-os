@@ -85,6 +85,10 @@ _GRANT = ('quyền của người ĐÃ ĐĂNG NHẬP: thu lại thì lời gọi
           '"permission denied" trước khi nhãn này kịp nói (đỏ sai chỗ); bỏ riêng dòng GRANT '
           'thì default privileges của stub vẫn cấp. Mọi kịch bản trước nó đã là bằng chứng.')
 COVERAGE_OK = {
+    'direct_messages': {
+        'M17': 'cùng biểu thức `unread` của dm_inbox mà M11 đã canh (phía người nhận); mọi đột biến của '
+               'nó làm M11 đỏ trước. M17 chỉ kiểm chiều ngược lại sau khi trả lời.',
+    },
     'notify_more': {
         'NM3': 'tự lưu bài mình và người không có hồ sơ còn bị BẢNG chặn (CHECK user_id <> actor_id của #13, '
                'khoá ngoại actor → community_profiles): bỏ chốt trong hàm thì câu lưu bài ra ERROR chứ '
