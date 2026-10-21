@@ -24,6 +24,7 @@ import SwiftUI
 ///   + các màn đã port (số đo, ảnh tiến trình, mục tiêu);
 /// - gợi ý ngày nghỉ là chữ (RN: ô bấm không làm gì ngoài rung).
 struct WorkoutsHomeView: View {
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   let flow: WorkoutFlow
   var onOpenSession: () -> Void = {}
 
@@ -75,7 +76,7 @@ struct WorkoutsHomeView: View {
       }
       .padding(DS.Spacing.md)
       .padding(.bottom, DS.Spacing.lg)
-      .animation(.smooth(duration: 0.3), value: segment)
+      .animation(DSMotion.animation(.smooth(duration: 0.3), reduceMotion: reduceMotion), value: segment)
     }
     .refreshable { await flow.refresh() }
     // Đầu trang trong nội dung như Hôm nay / Dinh dưỡng.
@@ -794,6 +795,7 @@ struct LibraryHistoryView: View {
 /// Khác RN: chưa có hình giải phẫu `MuscleArt` — ô dùng biểu tượng SF hợp
 /// nhóm, màu Tập luyện.
 struct MuscleGrid: View {
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   let library: ExerciseLibrary
   @Environment(\.locale) private var locale
   @State private var expanded = false
@@ -819,7 +821,7 @@ struct MuscleGrid: View {
         }
       }
       Button {
-        withAnimation(.snappy) { expanded.toggle() }
+        withAnimation(DSMotion.animation(.snappy, reduceMotion: reduceMotion)) { expanded.toggle() }
       } label: {
         Label(
           String(localized: expanded ? "lib.fewerGroups" : "lib.allGroups"),

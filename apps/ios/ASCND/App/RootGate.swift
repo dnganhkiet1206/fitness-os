@@ -37,10 +37,7 @@ struct RootGate: View {
         .transition(.opacity)
       }
     }
-    .animation(
-      reduceMotion ? nil : .easeInOut(duration: 0.25),
-      value: phaseKey
-    )
+    .animation(reduceMotion ? nil : .easeInOut(duration: 0.25), value: phaseKey)
     // Link email auth (#527 deep link lát 1): ngoài cây theo phiên, để mở
     // phiên (đăng nhập → app) không dựng lại màn đặt mật khẩu mới.
     .sheet(

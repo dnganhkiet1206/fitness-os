@@ -18,6 +18,7 @@ import SwiftUI
 /// - ảnh được thu nhỏ (cạnh dài 1600 px) trước khi gửi: nhanh hơn, không chạm
 ///   trần 4 triệu ký tự của hàm.
 struct ScanFoodView: View {
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   /// Các món người dùng giữ — nơi gọi thêm vào bữa rồi đóng màn.
   let onAdd: ([MealLog.Food]) -> Void
 
@@ -329,7 +330,7 @@ struct ScanFoodView: View {
         .accessibilityValue(Text(r.keep ? String(localized: "sf.a11y.kept") : String(localized: "sf.a11y.skipped")))
         .sensoryFeedback(.selection, trigger: r.keep)
         Button {
-          withAnimation(.snappy) { editing = open ? nil : r.id }
+          withAnimation(DSMotion.animation(.snappy, reduceMotion: reduceMotion)) { editing = open ? nil : r.id }
         } label: {
           HStack {
             VStack(alignment: .leading, spacing: 2) {

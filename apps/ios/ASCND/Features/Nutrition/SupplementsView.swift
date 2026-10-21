@@ -58,6 +58,7 @@ struct SupplementRowLabel: View {
 /// - chưa có toast: kết quả hiện bằng hộp thoại và được VoiceOver đọc;
 /// - lần đọc đầu hỏng thì nói lỗi (RN cũng ném lỗi, không hiện "chưa uống").
 struct SupplementsView: View {
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   let book: SupplementBook
   @Environment(AppServices.self) private var services
   @State private var adding = false
@@ -180,7 +181,7 @@ struct SupplementsView: View {
           .trim(from: 0, to: items.isEmpty ? 0 : CGFloat(taken) / CGFloat(items.count))
           .stroke(accent, style: StrokeStyle(lineWidth: 6, lineCap: .round))
           .rotationEffect(.degrees(-90))
-          .animation(.snappy, value: taken)
+          .animation(DSMotion.animation(.snappy, reduceMotion: reduceMotion), value: taken)
         Text(verbatim: "\(taken)/\(items.count)")
           .font(.custom("Menlo", size: 15, relativeTo: .body).weight(.semibold))
           .monospacedDigit()

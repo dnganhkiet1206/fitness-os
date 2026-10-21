@@ -256,6 +256,7 @@ struct MealPlanScreen: View {
 
 /// Chi tiết một kế hoạch: bảy ngày, các bữa, ghi vào hôm nay, thêm / xoá món.
 struct MealPlanView: View {
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   let book: MealPlanBook
   let plan: MealPlans.Plan?
   @Environment(AppServices.self) private var services
@@ -433,7 +434,7 @@ struct MealPlanView: View {
             addMeal = meal
             adding = true
           } else {
-            withAnimation(.smooth(duration: 0.25)) {
+            withAnimation(DSMotion.animation(.smooth(duration: 0.25), reduceMotion: reduceMotion)) {
               if open { expanded.remove(meal) } else { expanded.insert(meal) }
             }
           }

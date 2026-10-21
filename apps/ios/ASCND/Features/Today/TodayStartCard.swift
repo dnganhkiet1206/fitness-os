@@ -10,6 +10,7 @@ import SwiftUI
 /// ẩn khi đủ ba việc hoặc người dùng bấm ẩn. Việc đã xong được nhớ (một bữa ghi hôm
 /// qua vẫn là "đã ghi bữa đầu tiên").
 struct TodayStartCard: View {
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   let userId: String
   /// Tín hiệu hôm nay (bữa / buổi tập đã ghi).
   let signals: DailySignals?
@@ -74,7 +75,7 @@ struct TodayStartCard: View {
         Spacer(minLength: 0)
         Button {
           Telemetry.capture(.startCardAction, ["item": "hide"])
-        withAnimation(.easeOut(duration: 0.2)) { hidden = true }
+        withAnimation(DSMotion.animation(.easeOut(duration: 0.2), reduceMotion: reduceMotion)) { hidden = true }
         } label: {
           Image(systemName: "xmark")
             .font(.system(size: 13, weight: .bold))

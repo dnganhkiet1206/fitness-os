@@ -21,6 +21,7 @@ import SwiftUI
 ///
 /// Chưa có (ghi ở #527): hình nhóm cơ (`MuscleArt`), toast "Đã thêm vào Plan".
 struct TemplateFormView: View {
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   let flow: WorkoutFlow
   /// Mở từ một ngày của Plan: lưu xong gán luôn vào ngày ấy (0 = Thứ Hai).
   var scheduleOn: Int?
@@ -376,7 +377,7 @@ struct TemplateFormView: View {
         exerciseCard(i, e).plainRow(vertical: DS.Spacing.xs)
       }
       .onMove { from, to in
-        withAnimation(.snappy) { draft.move(fromOffsets: from, toOffset: to) }
+        withAnimation(DSMotion.animation(.snappy, reduceMotion: reduceMotion)) { draft.move(fromOffsets: from, toOffset: to) }
       }
       Button {
         step = 1

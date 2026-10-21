@@ -358,6 +358,7 @@ enum PostShareText {
 /// Thích · bình luận · (khoảng trống) · lưu · chia sẻ — mỗi nút một ô 44 điểm.
 /// Bình luận không phải nút riêng: chạm vào đó rơi xuống thẻ, mở bài.
 struct PostActionsRow: View {
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   let post: CommunityFeed.Post
   let context: CommunityPostActionsContext
   var commentCount: Int?
@@ -441,7 +442,7 @@ struct PostActionsRow: View {
       .padding(.horizontal, DS.Spacing.sm)
       .frame(minWidth: 44, minHeight: 44)
       .contentShape(Rectangle())
-      .animation(.snappy, value: on)
+      .animation(DSMotion.animation(.snappy, reduceMotion: reduceMotion), value: on)
     }
     .buttonStyle(.plain)
     .sensoryFeedback(.impact(weight: .light), trigger: on) { _, new in t == .like && new }

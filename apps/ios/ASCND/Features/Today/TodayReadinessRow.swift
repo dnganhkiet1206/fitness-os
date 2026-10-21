@@ -25,8 +25,14 @@ struct TodayReadinessRow: View {
   var recent: [(date: LocalDate, value: Int)] = []
   let onOpen: () -> Void
   var onLogSleep: (() -> Void)?
+  /// Nguồn zoom của chi tiết sẵn sàng (của `TodayExtras`); `nil` = không zoom.
+  var zoom: Namespace.ID?
 
   var body: some View {
+    row.modifier(ZoomSource(id: "readiness", space: zoom))
+  }
+
+  @ViewBuilder private var row: some View {
     switch book.phase {
     case .loading:
       ProgressView()

@@ -410,7 +410,7 @@ struct ConversationView: View {
           .frame(width: 34, height: 34)
           .background(can ? DS.Color.foreground.swiftUI : DS.Color.foreground.swiftUI.opacity(0.08), in: Circle())
           .frame(width: 44, height: 44)
-          .animation(.snappy, value: can)
+          .animation(DSMotion.animation(.snappy, reduceMotion: reduceMotion), value: can)
       }
       .buttonStyle(.plain)
       .disabled(DirectMessages.sendable(draft) == nil || book.sending)

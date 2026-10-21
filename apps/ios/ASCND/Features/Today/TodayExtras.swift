@@ -25,9 +25,8 @@ struct TodayExtras<Plan: View>: View {
   var planName: String?
   /// "Bắt đầu buổi tập" (sang tab Tập luyện) — màn quay lại của Koa (đợt 2).
   var onStartWorkout: (() -> Void)?
-  /// Nhận dòng sẵn sàng và nút "Ghi giấc ngủ" (khi chưa có điểm) để đặt trong
-  /// thẻ buổi tập.
-  @ViewBuilder var plan: (_ readiness: AnyView?, _ logSleep: AnyView?) -> Plan
+  /// Nhận dòng sẵn sàng để đặt trong thẻ buổi tập.
+  @ViewBuilder var plan: (_ readiness: TodayReadinessRow?) -> Plan
 
   /// Màn quay lại sau ≥ 3 ngày lỡ lịch (đợt 2).
   @State private var comeback: KoaComeback?
@@ -152,7 +151,7 @@ struct TodayExtras<Plan: View>: View {
         }
       }
       // Thẻ buổi tập ngay dưới khối ngày, mang dòng sẵn sàng.
-      VStack(alignment: .leading, spacing: DS.Spacing.md) { plan(readinessRow, logSleepButton) }
+      VStack(alignment: .leading, spacing: DS.Spacing.md) { plan(readinessRow) }
         .todayEntrance(2)
       if let mascot, case .ready = mascot.phase {
         // "Hôm nay của bạn" (18/10, mock A): thay danh sách "Ngày của bạn".
@@ -434,10 +433,9 @@ struct TodayExtras<Plan: View>: View {
   }
 
   /// Dòng sẵn sàng của thẻ buổi tập; chạm → thẻ sẵn sàng RN ở dạng mở.
-  private var readinessRow: AnyView? {
+  private var readinessRow: TodayReadinessRow? {
     guard let readiness else { return nil }
-    return AnyView(
-      TodayReadinessRow(
+    return TodayReadinessRow(
         book: readiness, lang: services.preferences.lang,
         recent: (trend?.points ?? []).filter { $0.date < readiness.date }.map { ($0.date, Int($0.value.rounded())) },
         onOpen: {
@@ -447,15 +445,8 @@ struct TodayExtras<Plan: View>: View {
             readinessSource = "readiness"
             showsReadiness = true
           }
-        }
-      ).matchedTransitionSource(id: "readiness", in: zoom))
-  }
-
-  /// "Ghi giấc ngủ" cạnh nút chính khi chưa có điểm sẵn sàng — một đêm ngủ là
-  /// một cách để có điểm (`rd.empty.message`).
-  private var logSleepButton: AnyView? {
-    guard let readiness, case .empty = readiness.phase else { return nil }
-    return AnyView(DSButton(String(localized: "today.do.sleep"), style: .secondary) { logging = .sleep })
+        },
+        zoom: zoom)
   }
 
   /// Nút của khối ngày / chạm ống: ngủ, bữa → màn ghi; nước → +250 ml ngay;

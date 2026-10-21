@@ -61,10 +61,11 @@ public struct DSButton: View {
 
 /// Pressed state: scale nhẹ khi chạm (#304).
 private struct DSButtonPressStyle: ButtonStyle {
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   func makeBody(configuration: Configuration) -> some View {
     configuration.label
       .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
-      .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
+      .animation(DSMotion.animation(.easeInOut(duration: 0.1), reduceMotion: reduceMotion), value: configuration.isPressed)
   }
 }
 

@@ -14,6 +14,7 @@ import SwiftUI
 /// Khác RN: chưa có danh sách lần cân / kéo đọc số trên biểu đồ; cân mục tiêu
 /// đặt bằng một hộp nhập (RN: `WeightGoalDialog`).
 struct WeightTrendCard: View {
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   let book: WeightTrendBook
   var onLog: () -> Void
 
@@ -141,7 +142,7 @@ struct WeightTrendCard: View {
         if entries.count > 5 {
           Divider().opacity(0.6)
           Button {
-            withAnimation(.snappy) { showsAll.toggle() }
+            withAnimation(DSMotion.animation(.snappy, reduceMotion: reduceMotion)) { showsAll.toggle() }
           } label: {
             Text(showsAll ? String(localized: "wt.log.less") : String(localized: "wt.log.all \(entries.count)"))
               .font(DS.TextStyle.footnote.weight(.semibold))
@@ -305,7 +306,7 @@ struct WeightTrendCard: View {
       ForEach(WeightTrend.Range.allCases, id: \.self) { r in
         let on = range == r
         Button {
-          withAnimation(.snappy) { range = r }
+          withAnimation(DSMotion.animation(.snappy, reduceMotion: reduceMotion)) { range = r }
         } label: {
           Text(Self.rangeLabel(r))
             .font(DS.TextStyle.footnote.weight(.semibold))
@@ -458,7 +459,7 @@ struct WeightGoalSheet: View {
         .padding(.vertical, 6)
         .background(WeightTrendCard.tint.opacity(0.12), in: Capsule())
         .opacity(currentKg == nil ? 0 : 1)
-        .animation(.snappy, value: intentLine)
+        .animation(DSMotion.animation(.snappy, reduceMotion: reduceMotion), value: intentLine)
 
       BathroomScale(value: value, unit: unit.label)
         .frame(width: 250, height: 250)
@@ -471,7 +472,7 @@ struct WeightGoalSheet: View {
           .font(.custom("Menlo", size: 48, relativeTo: .largeTitle).weight(.bold))
           .monospacedDigit()
           .contentTransition(.numericText(value: value))
-          .animation(.snappy(duration: 0.2), value: value)
+          .animation(DSMotion.animation(.snappy(duration: 0.2), reduceMotion: reduceMotion), value: value)
         Text(verbatim: unit.label)
           .font(.custom("Menlo", size: 18, relativeTo: .title3))
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
@@ -542,7 +543,7 @@ struct WeightGoalSheet: View {
 
   private func step(_ by: Int) {
     let next = min(maxTick, max(minTick, current + by))
-    withAnimation(.snappy) { tick = next }
+    withAnimation(DSMotion.animation(.snappy, reduceMotion: reduceMotion)) { tick = next }
   }
 
   private func stepButton(_ symbol: String, _ by: Int) -> some View {

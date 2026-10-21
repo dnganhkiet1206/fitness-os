@@ -131,7 +131,7 @@ struct CommunityFeedView: View {
         return ScrollMarks(atTop: CommunityFeedHold.atTop(y), pinned: y > 64)
       } action: { _, m in
         atTop = m.atTop
-        if m.pinned != pickerPinned { withAnimation(.easeOut(duration: 0.2)) { pickerPinned = m.pinned } }
+        if m.pinned != pickerPinned { withAnimation(DSMotion.animation(.easeOut(duration: 0.2), reduceMotion: reduceMotion)) { pickerPinned = m.pinned } }
       }
       .overlay(alignment: .top) {
         if book.phase == .ready, !hold.held.isEmpty {
@@ -561,6 +561,7 @@ enum PostTint {
 }
 
 struct PostCardView: View {
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   let post: CommunityFeed.Post
   let artURL: URL?
   let unit: WeightUnit
@@ -654,10 +655,10 @@ struct PostCardView: View {
   private func doubleTapLike() {
     guard !forShare, let actions else { return }
     burst += 1
-    withAnimation(.spring(duration: 0.35, bounce: 0.5)) { showsBurst = true }
+    withAnimation(DSMotion.animation(.spring(duration: 0.35, bounce: 0.5), reduceMotion: reduceMotion)) { showsBurst = true }
     Task {
       try? await Task.sleep(for: .milliseconds(650))
-      withAnimation(.easeOut(duration: 0.25)) { showsBurst = false }
+      withAnimation(DSMotion.animation(.easeOut(duration: 0.25), reduceMotion: reduceMotion)) { showsBurst = false }
     }
     if !post.liked {
       Task { _ = await actions.actions.toggle(.like, postId: post.id, host: actions.host) }

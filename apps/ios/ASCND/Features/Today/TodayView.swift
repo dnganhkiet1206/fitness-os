@@ -58,8 +58,8 @@ public struct TodayView: View {
             refreshTick: refreshTick,
             planName: state.status == .todo || state.status == .missed ? state.templateName : nil,
             onStartWorkout: onStart
-          ) { readiness, logSleep in
-            planCard(readiness: readiness, logSleep: logSleep)
+          ) { readiness in
+            planCard(readiness: readiness)
           }
           .padding(.horizontal, DS.Spacing.md)
           .padding(.bottom, DS.Spacing.lg)
@@ -77,7 +77,7 @@ public struct TodayView: View {
         .toolbar(.hidden, for: .navigationBar)
       } else {
         ScrollView {
-          planCard(readiness: nil, logSleep: nil)
+          planCard(readiness: nil)
             .padding(DS.Spacing.md)
         }
         .navigationTitle(Text("tab.today"))
@@ -104,7 +104,7 @@ public struct TodayView: View {
   /// `nExerciseCount` · `estimatedMinutes`) hoặc câu của trạng thái; dòng sẵn
   /// sàng của Today; rồi nút chính (và "Ghi giấc ngủ" khi chưa có điểm).
   /// Danh sách bài chi tiết ở màn buổi tập — RN cũng không liệt kê trên Today.
-  private func planCard(readiness: AnyView?, logSleep: AnyView?) -> some View {
+  private func planCard(readiness: TodayReadinessRow?) -> some View {
     VStack(alignment: .leading, spacing: DS.Spacing.md) {
       VStack(alignment: .leading, spacing: 4) {
         HStack(alignment: .firstTextBaseline) {

@@ -5,6 +5,7 @@ import SwiftUI
 /// Vòng điểm sẵn sàng dùng chung cho Hôm nay và Trợ lý (15/10, audit toàn app):
 /// cùng thang 0–100, cùng màu theo `AssistantSummary.Readiness`. `nil` → "—".
 struct ReadinessGauge: View {
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   let shown: AssistantSummary.Shown?
   var size: CGFloat = 64
 
@@ -17,7 +18,7 @@ struct ReadinessGauge: View {
         .trim(from: 0, to: CGFloat(shown?.score ?? 0) / 100)
         .stroke(tint, style: StrokeStyle(lineWidth: line, lineCap: .round))
         .rotationEffect(.degrees(-90))
-        .animation(.smooth(duration: 0.5), value: shown?.score)
+        .animation(DSMotion.animation(.smooth(duration: 0.5), reduceMotion: reduceMotion), value: shown?.score)
       Text(verbatim: shown.map { "\($0.score)" } ?? "—")
         .font(.system(size: size * 0.32, weight: .bold).monospacedDigit())
         .foregroundStyle(DS.Color.foreground.swiftUI)
