@@ -251,9 +251,21 @@ struct MarkdownLiteTests {
 
   @Test func boldPairsOnlyLikeTheSplit() {
     #expect(MarkdownLite.inline("a **b** c **d**") == [R("a "), R("b", bold: true), R(" c "), R("d", bold: true)])
-    // `**` lẻ (đang stream giữa chừng) giữ nguyên.
-    #expect(MarkdownLite.inline("**đang") == [R("**đang")])
-    #expect(MarkdownLite.inline("****") == [R("****")])
+    // `**` lẻ (đang stream giữa chừng, hay câu bị cắt) bị bỏ — khác RN, lỗi 21/10
+    // "còn sót dấu `**` thô".
+    #expect(MarkdownLite.inline("**đang") == [R("đang")])
+    #expect(MarkdownLite.inline("Ăn **đủ đạm") == [R("Ăn đủ đạm")])
+    #expect(MarkdownLite.inline("a **b** c **d") == [R("a "), R("b", bold: true), R(" c d")])
+    #expect(MarkdownLite.inline("****") == [R("")])
     #expect(MarkdownLite.inline("") == [R("")])
+  }
+
+  /// Lỗi 21/10 "Coach bị cắt giữa câu": hết hạn mức token → `cutOff`, kể cả khi
+  /// mẩu cuối rỗng; dừng bình thường (`stop`) vẫn là chữ / bỏ qua như cũ.
+  @Test func lengthFinishIsACutOff() {
+    #expect(Coach.parse(line: #"data: {"choices":[{"delta":{"content":"ngủ đủ"},"finish_reason":"length"}]}"#) == .cutOff("ngủ đủ"))
+    #expect(Coach.parse(line: #"data: {"choices":[{"delta":{},"finish_reason":"length"}]}"#) == .cutOff(""))
+    #expect(Coach.parse(line: #"data: {"choices":[{"delta":{"content":"xong."},"finish_reason":"stop"}]}"#) == .delta("xong."))
+    #expect(Coach.parse(line: #"data: {"choices":[{"delta":{},"finish_reason":"stop"}]}"#) == .skip)
   }
 }

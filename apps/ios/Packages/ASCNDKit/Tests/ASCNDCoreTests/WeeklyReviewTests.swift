@@ -137,6 +137,30 @@ struct WeeklyReviewGoldenTests {
     }
   }
 
+  /// Lỗi 21/10: Tổng kết tuần hiện "92" và khuyên "+2.5kg" từ MỘT ngày đo được phục
+  /// hồi, trong khi Hôm nay nói "chưa đủ dữ liệu". Dưới `minReadinessDays` ngày: "—",
+  /// không lời khuyên tăng tải. Đủ ngày thì như cũ.
+  @Test func readinessNeedsEnoughMeasuredDays() throws {
+    func log(_ day: Int, _ score: Double) -> JSONValue {
+      .object([
+        "date": .string("2026-10-\(19 + day)"), "kcal": .number(2000), "protein_g": .number(120),
+        "readiness_score": .number(score), "readiness_explain": .string("hrv:80|load:90|sleep:95"),
+      ])
+    }
+    func run(_ logs: [JSONValue]) -> WeeklyReview.Summary {
+      WeeklyReview.summarize(
+        .init(dailyLogs: logs, workouts: [], sleepLogs: [], prevLogs: [], volumeHistory: [], profile: nil),
+        weekStart: LocalDate("2026-10-19")!, in: Self.tz, copy: (try? ReadinessCardGoldenTests.copy())!)
+    }
+    let one = run([log(0, 92)])
+    #expect(one.readinessDays == 1 && one.cards.readiness.value == "—")
+    #expect(!one.recommendations.contains { $0.id.hasPrefix("overload") })
+    let three = run([log(0, 92), log(1, 90), log(2, 88)])
+    #expect(three.cards.readiness.value == "90")
+    #expect(three.recommendations.contains { $0.id == "overloadRecovered" })
+    #expect(three.proteinTarget == 140 && three.waterTargetMl == 2500)
+  }
+
   /// Mọi lời khuyên NGOÀI ACWR giống RN từng chữ chèn; lời ACWR đứng đầu.
   @Test func recommendationsMatchRNBesideACWR() throws {
     for c in Self.array(try Self.golden()["cases"]) {
