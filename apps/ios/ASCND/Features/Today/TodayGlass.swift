@@ -178,3 +178,60 @@ extension View {
     navigationTransition(.zoom(sourceID: id, in: space))
   }
 }
+
+/// Khoá cử chỉ "vuốt về" khi Hôm nay đang là trang gốc (#527, 20/10).
+///
+/// iOS 26: sau một lần mở rồi đóng màn zoom (`todayZoom`), cử chỉ vuốt-về toàn
+/// màn hình của `UINavigationController` vẫn nhận cú kéo sang phải ở trang GỐC —
+/// cả Hôm nay thu nhỏ, trượt theo ngón tay rồi bật về, dù không có gì để quay
+/// lại (chủ dự án quay được). Ngăn xếp lúc ấy chỉ có 1 màn, nên ở gốc ta tắt hai
+/// cử chỉ vuốt-về; rời gốc (đã đẩy màn mới) thì bật lại. Không tắt giữa một lần
+/// vuốt-về đang chạy: chờ chuyển cảnh xong mới tắt, kẻo huỷ chính cú vuốt ấy.
+struct RootSwipeGuard: UIViewRepresentable {
+  func makeUIView(context: Context) -> GuardView { GuardView() }
+  func updateUIView(_ view: GuardView, context: Context) {}
+
+  final class GuardView: UIView {
+    private weak var nav: UINavigationController?
+
+    override init(frame: CGRect) {
+      super.init(frame: frame)
+      isUserInteractionEnabled = false
+    }
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    override func didMoveToWindow() {
+      super.didMoveToWindow()
+      if window == nil {
+        setPopEnabled(true)
+        return
+      }
+      guard let nav = findNav() else { return }
+      self.nav = nav
+      if let coordinator = nav.transitionCoordinator {
+        coordinator.animate(alongsideTransition: nil) { [weak self] _ in self?.lockIfRoot() }
+      } else {
+        lockIfRoot()
+      }
+    }
+
+    private func lockIfRoot() {
+      guard window != nil, let nav, nav.viewControllers.count <= 1 else { return }
+      setPopEnabled(false)
+    }
+
+    private func setPopEnabled(_ on: Bool) {
+      nav?.interactivePopGestureRecognizer?.isEnabled = on
+      if #available(iOS 26, *) { nav?.interactiveContentPopGestureRecognizer?.isEnabled = on }
+    }
+
+    private func findNav() -> UINavigationController? {
+      var r: UIResponder? = self
+      while let next = r?.next {
+        if let vc = next as? UIViewController { return vc.navigationController ?? (vc as? UINavigationController) }
+        r = next
+      }
+      return nil
+    }
+  }
+}
