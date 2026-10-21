@@ -7,8 +7,12 @@ import { aiGate, corsHeaders, json, meterStream, opaque, quotaExceeded, recordTo
 import { recoveryMeasured } from "../_shared/readiness.ts";
 import { asleepMinutes } from "../_shared/sleep.ts";
 
-/** Output ceiling. Unbounded generation is an unbounded bill. */
-const MAX_TOKENS = 1024;
+/** Output ceiling. Unbounded generation is an unbounded bill.
+    21/10: 1024 cut answers mid-sentence — the default model (gemini-3-flash)
+    spends part of the ceiling on hidden reasoning before it writes a word.
+    The app now marks a `length` stop with "…", but the ceiling has to fit a
+    normal answer (overview block + a few short paragraphs). */
+const MAX_TOKENS = 2048;
 /** Turns kept. The client sends the whole conversation; we do not have to pay for it. */
 const MAX_MESSAGES = 20;
 /** Characters per message, before truncation. A chat turn is not an essay. */
@@ -217,7 +221,7 @@ serve(async (req) => {
          gõ cứng `[]` cho mọi buổi tập — nên thứ gửi sang nhà cung cấp luôn là
          một mảng rỗng, và dòng prompt dặn mô hình xử lý "pain flags" chưa bao
          giờ có gì để xử lý. Xem PS-3 trong `docs/FORENSIC-AUDIT.md`. */
-      supabase.from("workout_sessions").select("template_name, volume_load, session_rpe, date_time, sets").eq("user_id", userId).gte("date_time", `${weekAgo}T00:00:00Z`).order("date_time", { ascending: false }).limit(7),
+      supabase.from("workout_sessions").select("template_name, volume_load, session_rpe, date_time, sets").eq("user_id", userId).gte("date_time", `${weekAgo}T00:00:00Z`).order("date_time", { ascending: false }).limit(14),
       supabase.from("biometric_samples").select("hr_bpm, hrv_rmssd_ms, hrv_sdnn_ms, soreness_1_10, illness_flag, date_time").eq("user_id", userId).order("date_time", { ascending: false }).limit(3),
       /* Weight trend for the coach: last 14 days of weigh-ins, oldest → newest. */
       supabase.from("weight_logs").select("date, weight_kg").eq("user_id", userId).order("date", { ascending: false }).limit(14),
@@ -295,11 +299,25 @@ serve(async (req) => {
           .join("\n")
       : null;
 
+    /* Tuần lịch T2 → hôm nay — CÙNG tuần app hiện (Tuần của Koa, Tổng kết tuần).
+       21/10: Coach nói "4 buổi" (đếm 7 ngày gần nhất) khi Tổng kết tuần nói 2.
+       Đếm NGÀY có buổi, như app. */
+    const weekStart = (() => {
+      const d = new Date(`${today}T00:00:00Z`);
+      d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7));
+      return d.toISOString().split("T")[0];
+    })();
+    const this_week = {
+      week_start: weekStart,
+      days_trained: new Set(workouts.map((w) => localDay(w.date_time)).filter((d) => d >= weekStart && d <= today)).size,
+    };
+
     // Build context
     const ctx = {
       /* Hôm nay của người dùng (16/10): không có nó, model gọi một đêm cũ là
          "tối qua" ("ngủ 9 tiếng tối qua" trong khi người dùng vừa nói 7). */
       today,
+      this_week,
       /* P0-2: aggregates the coach reasons with — null means not measured. */
       streak_days,
       protein_avg_7d_g: protein_avg_7d,
@@ -387,6 +405,8 @@ READING THE DATA:
 - readiness is 0-100 and is absent on days the app could not score. It measures how much TRAINING CAPACITY the user appears to have today, combining HRV, resting heart rate, sleep and training load over whichever of those were actually measured. It is NOT a recovery score.
 - "today" is the user's date. "Last night" means ONLY a recent_sleep entry whose date is today; an older entry is that older night — name its date, never call it last night. No entry dated today means last night is not recorded.
 - When the user TELLS you a number (I slept 7 hours, I ate 2000 kcal), that is the truth for this answer: use it, never contradict it with an older or different value from the data. If the app has nothing recorded for it, suggest saving it with Quick log (Ghi nhanh) so the app can use it.
+- this_week is the calendar week from Monday to today — the same week the app shows. For "this week" questions use this_week.days_trained (days with a workout); recent_workouts covers the last 7 days and can span two weeks, so never call its count "this week".
+- Write numbers the way the app does: 2,508 kcal, 121.7 kg.
 - recovery_measured says whether that day's readiness rested on a recovery reading (HRV, resting heart rate or sleep). When it is false, readiness and readiness_status are null for that day: training load alone is not a readiness score and the app shows "not enough data" — never state a readiness number or state for it.
 
 IMPORTANT PRINCIPLES:
@@ -413,6 +433,8 @@ CÁCH ĐỌC DỮ LIỆU:
 - readiness thang 0-100, và vắng mặt vào những ngày app không chấm được điểm. Nó đo KHẢ NĂNG TẬP LUYỆN hôm nay, ghép HRV, nhịp tim nghỉ, giấc ngủ và tải tập trên những chiều thật sự đo được. Nó KHÔNG phải điểm phục hồi.
 - "today" là ngày hôm nay của người dùng. "Đêm qua / tối qua" CHỈ là mục recent_sleep có date bằng today; mục cũ hơn là đêm của ngày đó — nói rõ ngày, không bao giờ gọi là tối qua. Không có mục nào date bằng today nghĩa là đêm qua chưa được ghi.
 - Khi người dùng NÓI một con số (tôi ngủ 7 tiếng, tôi ăn 2000 kcal), đó là sự thật cho câu trả lời này: dùng nó, không bao giờ cãi lại bằng một số cũ hay số khác trong dữ liệu. Nếu app chưa ghi con số đó, gợi ý lưu bằng Ghi nhanh để app dùng được.
+- this_week là tuần lịch từ thứ Hai tới hôm nay — đúng tuần app đang hiện. Câu hỏi về "tuần này" dùng this_week.days_trained (số ngày có buổi tập); recent_workouts là 7 ngày gần nhất, có thể vắt qua hai tuần, nên không bao giờ gọi số của nó là "tuần này".
+- Viết số theo kiểu app: dấu chấm ngăn hàng nghìn (2.508 kcal), dấu phẩy thập phân (121,7 kg).
 - recovery_measured cho biết điểm hôm đó có dựa trên một phép đo phục hồi (HRV, nhịp tim nghỉ hoặc giấc ngủ) hay không. Khi nó là false, điểm được dựng từ mỗi tải tập: con số vẫn thật, nhưng app chưa đo được gì về việc người dùng phục hồi ra sao.
 
 NGUYÊN TẮC QUAN TRỌNG:

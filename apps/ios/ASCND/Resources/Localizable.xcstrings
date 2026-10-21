@@ -2,6 +2,29 @@
  "sourceLanguage": "en",
  "version": "1.0",
  "strings": {
+  "wr.ai.take": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa on your week"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa nhận xét tuần"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa sobre tu semana"
+     }
+    }
+   }
+  },
   "progress.week %lld %lld": {
    "extractionState": "manual",
    "localizations": {
@@ -16054,29 +16077,6 @@
      "stringUnit": {
       "state": "translated",
       "value": "Analizando…"
-     }
-    }
-   }
-  },
-  "wr.ai.score": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Week score"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Điểm tuần"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Puntuación de la semana"
      }
     }
    }

@@ -67,9 +67,16 @@ public enum Coach {
 
   public enum StreamEvent: Sendable, Hashable {
     case delta(String)
+    /// `finish_reason: "length"` — hết hạn mức token giữa câu (lỗi 21/10: Coach bị
+    /// cắt giữa câu). Mang mẩu chữ cuối (có thể rỗng); app nối `cutOffMark` để người
+    /// đọc biết câu chưa xong, thay vì một câu cụt không lời giải thích.
+    case cutOff(String)
     case done
     case skip
   }
+
+  /// Dấu nối vào câu trả lời bị cắt vì hết hạn mức.
+  public static let cutOffMark = "…"
 
   /// Một dòng của luồng SSE: chú thích (`:`), dòng trống, dòng không phải
   /// `data: ` → bỏ qua; `[DONE]` → hết; JSON có `choices[0].delta.content`
@@ -82,9 +89,11 @@ public enum Coach {
     if payload == "[DONE]" { return .done }
     guard let data = payload.data(using: .utf8),
       let json = try? JSONDecoder().decode(JSONValue.self, from: data),
-      case .array(let choices)? = json["choices"], let first = choices.first,
-      let content = first["delta"]?["content"]?.stringValue, !content.isEmpty
+      case .array(let choices)? = json["choices"], let first = choices.first
     else { return .skip }
+    let content = first["delta"]?["content"]?.stringValue ?? ""
+    if first["finish_reason"]?.stringValue == "length" { return .cutOff(content) }
+    guard !content.isEmpty else { return .skip }
     return .delta(content)
   }
 

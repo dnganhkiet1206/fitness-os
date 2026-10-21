@@ -148,15 +148,24 @@ public enum WeeklyReview {
     public let prevAvgProtein: Double
     public let prevTotalVolume: Double
     public let acwr: Double?
-    /// Mục tiêu (kcal / protein theo hồ sơ, mặc định 2200 / 140; giờ ngủ, mặc định 8).
+    /// Mục tiêu (kcal / protein theo hồ sơ, mặc định 2200 / 140; giờ ngủ, mặc định 8;
+    /// nước, mặc định 2500 ml). Màn tự định dạng theo ngôn ngữ / đơn vị (lỗi 21/10:
+    /// "1950", "1.4L" lệch với "2.508", oz của người dùng).
     public let kcalTarget: Double
+    public let proteinTarget: Double
     public let sleepTargetHours: Double
+    public let waterTargetMl: Double
     public let cards: Cards
     public let days: [Day]
     public let volumeWeeks: [VolumeWeek]
     /// Lời khuyên theo thứ tự hiện: ACWR trước, rồi phục hồi, ngủ, protein, khối lượng.
     public let recommendations: [Recommendation]
   }
+
+  /// Ít nhất bấy nhiêu ngày đo được phục hồi mới có điểm sẵn sàng tuần và lời khuyên
+  /// tăng tải — như `deloadWarranted`. Lỗi 21/10: "92" và "+2.5kg" từ MỘT ngày, trái
+  /// quy tắc V1 "thiếu dữ liệu thì nói thiếu".
+  public static let minReadinessDays = 3
 
   // MARK: - Tính
 
@@ -229,7 +238,7 @@ public enum WeeklyReview {
     if let acwr, let advice = acwrAdvice(acwr) { recs.append(advice) }
     if deloadWarranted(logs, avgReadiness: avgReadiness, readinessDays: readinessDays, copy: copy) {
       recs.append(Recommendation(kind: .warning, id: "deload", args: []))
-    } else if avgReadiness >= 75 {
+    } else if avgReadiness >= 75, readinessDays >= minReadinessDays {
       recs.append(
         Recommendation(
           kind: .success, id: recoveryBacked(logs, copy: copy) ? "overloadRecovered" : "overloadCapacity", args: []))
@@ -265,8 +274,9 @@ public enum WeeklyReview {
         delta: delta(totalVolume, prevVolume)),
       sessions: workoutCount,
       readiness: Card(
-        // Không ngày nào chấm được (chỉ có tải tập): "—", không phải "0".
-        value: readinessDays > 0 ? num(JS.round(avgReadiness)) : "—", sub: acwr.map { "ACWR \(num($0))" } ?? "—", delta: nil),
+        // Dưới `minReadinessDays` ngày đo được phục hồi (hay chỉ có tải tập): "—".
+        value: readinessDays >= minReadinessDays ? num(JS.round(avgReadiness)) : "—",
+        sub: acwr.map { "ACWR \(num($0))" } ?? "—", delta: nil),
       supplements: supp.map { Card(value: "\($0)%", sub: "/\(suppDays.count)d", delta: nil) },
       water: Card(value: "\(JS.fixed(water.mean / 1000, 1))L", sub: "/\(num(waterTarget / 1000))L", delta: nil))
 
@@ -279,7 +289,8 @@ public enum WeeklyReview {
       proteinDays: protein.count, avgWaterMl: water.mean, avgSleepHours: avgSleepH, totalVolume: totalVolume,
       workoutCount: workoutCount, supplementAdherence: supp, readinessDays: readinessDays, avgReadiness: avgReadiness,
       prevAvgKcal: prevKcal, prevAvgProtein: prevProtein, prevTotalVolume: prevVolume, acwr: acwr,
-      kcalTarget: JS.number(kcalTarget), sleepTargetHours: sleepTarget, cards: cards, days: days,
+      kcalTarget: JS.number(kcalTarget), proteinTarget: JS.number(proteinTarget), sleepTargetHours: sleepTarget,
+      waterTargetMl: waterTarget, cards: cards, days: days,
       volumeWeeks: volumeWeeks, recommendations: recs)
   }
 

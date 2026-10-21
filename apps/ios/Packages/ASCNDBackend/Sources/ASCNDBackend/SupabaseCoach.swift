@@ -53,6 +53,7 @@ public struct SupabaseCoachStream: CoachStream {
           for try await line in bytes.lines {
             switch Coach.parse(line: line) {
             case .delta(let text): continuation.yield(text)
+            case .cutOff(let text): continuation.yield(text + Coach.cutOffMark)
             case .done:
               continuation.finish()
               return

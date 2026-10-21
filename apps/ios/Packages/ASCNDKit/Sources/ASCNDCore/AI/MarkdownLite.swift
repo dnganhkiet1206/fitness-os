@@ -38,16 +38,19 @@ public enum MarkdownLite {
   }
 
   /// `text.split(/(\*\*[^*]+\*\*)/g)`: phần khớp là chữ đậm (bỏ dấu), phần còn
-  /// lại giữ nguyên — cả `**` lẻ không cặp.
+  /// lại là chữ thường. Khác RN (lỗi 21/10: "còn sót dấu `**` thô"): `**` lẻ không
+  /// cặp — câu bị cắt giữa chữ đậm, hay model viết thiếu — bị bỏ, không hiện ra.
   public static func inline(_ text: String) -> [Run] {
     var runs: [Run] = []
     var rest = text[...]
     while let m = rest.firstMatch(of: /\*\*([^*]+)\*\*/) {
-      if m.range.lowerBound > rest.startIndex { runs.append(Run(String(rest[..<m.range.lowerBound]))) }
+      if m.range.lowerBound > rest.startIndex { runs.append(plain(rest[..<m.range.lowerBound])) }
       runs.append(Run(String(m.1), bold: true))
       rest = rest[m.range.upperBound...]
     }
-    if !rest.isEmpty || runs.isEmpty { runs.append(Run(String(rest))) }
+    if !rest.isEmpty || runs.isEmpty { runs.append(plain(rest)) }
     return runs
   }
+
+  private static func plain(_ s: Substring) -> Run { Run(String(s).replacing("**", with: "")) }
 }

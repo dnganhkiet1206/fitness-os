@@ -141,41 +141,56 @@ struct WeeklyReviewView: View {
 
   // MARK: - Ô số
 
+  /// Số theo ngôn ngữ của app (lỗi 21/10: "1950", "8.0h", "1.4L" cạnh "2.508",
+  /// "121,7" ở mọi màn khác) và nước theo đơn vị người dùng chọn (oz / ml).
   private func stats(_ s: WeeklyReview.Summary) -> some View {
     let c = s.cards
-    var tiles: [(String, String, WeeklyReview.Card, String)] = [
-      ("flame", String(localized: "wr.avgCalories"), c.kcal, c.kcal.sub),
-      ("fork.knife", String(localized: "wr.avgProtein"), c.protein, c.protein.sub),
-      ("moon.fill", String(localized: "wr.avgSleep"), c.sleep, c.sleep.sub),
-      ("dumbbell.fill", String(localized: "wr.volume"), c.volume, Self.sessions(c.sessions)),
-      ("waveform.path.ecg", String(localized: "wr.readiness"), c.readiness, c.readiness.sub),
+    let unit = services?.preferences.volumeUnit ?? .ml
+    let water: (String, String) = unit == .oz
+      ? ("\(Self.n(Water.displayVolume(s.avgWaterMl, .oz), 0)) oz",
+         "/\(Self.n(Water.displayVolume(s.waterTargetMl, .oz), 0)) oz")
+      : ("\(Self.n(s.avgWaterMl / 1000, 1))L", "/\(Self.n(s.waterTargetMl / 1000, 1))L")
+    var tiles: [(String, String, String, Int?, String)] = [
+      ("flame", String(localized: "wr.avgCalories"), Self.n(s.avgKcal, 0), c.kcal.delta, "/\(Self.n(s.kcalTarget, 0))"),
+      ("fork.knife", String(localized: "wr.avgProtein"), "\(Self.n(s.avgProtein, 0))g", c.protein.delta,
+       "/\(Self.n(s.proteinTarget, 0))g"),
+      ("moon.fill", String(localized: "wr.avgSleep"), "\(Self.n(s.avgSleepHours, 1))h", nil,
+       "/\(Self.n(s.sleepTargetHours, 0))h"),
+      ("dumbbell.fill", String(localized: "wr.volume"), c.volume.value, c.volume.delta, Self.sessions(c.sessions)),
+      ("waveform.path.ecg", String(localized: "wr.readiness"), c.readiness.value, nil,
+       s.acwr.map { "ACWR \(Self.n($0, 2))" } ?? "—"),
     ]
     if let supp = c.supplements {
-      tiles.append(("pills.fill", String(localized: "wr.supplements"), supp, supp.sub))
+      tiles.append(("pills.fill", String(localized: "wr.supplements"), supp.value, nil, supp.sub))
     }
-    tiles.append(("drop.fill", String(localized: "wr.water"), c.water, c.water.sub))
+    tiles.append(("drop.fill", String(localized: "wr.water"), water.0, nil, water.1))
     return LazyVGrid(
       columns: [GridItem(.flexible(), spacing: DS.Spacing.sm), GridItem(.flexible())], spacing: DS.Spacing.sm
     ) {
       ForEach(tiles.indices, id: \.self) { i in
         let t = tiles[i]
-        tile(icon: t.0, label: t.1, card: t.2, sub: t.3)
+        tile(icon: t.0, label: t.1, value: t.2, delta: t.3, sub: t.4)
       }
     }
   }
 
-  private func tile(icon: String, label: String, card: WeeklyReview.Card, sub: String) -> some View {
+  /// Số `digits` chữ thập phân (bỏ số 0 thừa), theo ngôn ngữ của app.
+  static func n(_ x: Double, _ digits: Int) -> String {
+    x.formatted(.number.precision(.fractionLength(0...digits)).locale(.app))
+  }
+
+  private func tile(icon: String, label: String, value: String, delta: Int?, sub: String) -> some View {
     VStack(alignment: .leading, spacing: 2) {
       HStack(spacing: 4) {
         Image(systemName: icon).font(.caption2).accessibilityHidden(true)
         Text(label).font(DS.TextStyle.caption).lineLimit(1)
         Spacer(minLength: 0)
-        if let d = card.delta {
-          delta(d)
+        if let d = delta {
+          self.delta(d)
         }
       }
       .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-      Text(verbatim: card.value)
+      Text(verbatim: value)
         .font(DS.TextStyle.title.monospacedDigit())
         .foregroundStyle(DS.Color.foreground.swiftUI)
       Text(verbatim: sub)
@@ -187,7 +202,7 @@ struct WeeklyReviewView: View {
     .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.md))
     .accessibilityElement(children: .ignore)
     .accessibilityLabel(Text(verbatim: label))
-    .accessibilityValue(Text(verbatim: a11yValue(card: card, sub: sub)))
+    .accessibilityValue(Text(verbatim: a11yValue(value: value, delta: delta, sub: sub)))
   }
 
   @ViewBuilder private func delta(_ d: Int) -> some View {
@@ -205,9 +220,9 @@ struct WeeklyReviewView: View {
     }
   }
 
-  private func a11yValue(card: WeeklyReview.Card, sub: String) -> String {
-    var parts = ["\(card.value) \(sub)"]
-    if let d = card.delta, d != 0 {
+  private func a11yValue(value: String, delta: Int?, sub: String) -> String {
+    var parts = ["\(value) \(sub)"]
+    if let d = delta, d != 0 {
       parts.append(d > 0 ? String(localized: "wr.delta.up \(abs(d))") : String(localized: "wr.delta.down \(abs(d))"))
     }
     return parts.joined(separator: ", ")
@@ -321,13 +336,10 @@ struct WeeklyReviewView: View {
     VStack(spacing: DS.Spacing.sm) {
       DSCard {
         VStack(alignment: .leading, spacing: DS.Spacing.xs) {
-          Text(String(localized: "wr.ai.score"))
+          // Lỗi 21/10: AI tự chấm "Điểm tuần 55" — thêm một con số cạnh sẵn sàng, Gains,
+          // xu, chuỗi. Không hiện điểm; giữ lời nhận xét.
+          Text(String(localized: "wr.ai.take"))
             .font(DS.TextStyle.headline)
-          if let score = a.score {
-            Text(verbatim: Self.plain(score))
-              .font(.system(size: 44, weight: .heavy).monospacedDigit())
-              .foregroundStyle(DS.Color.foreground.swiftUI)
-          }
           if !a.summary.isEmpty {
             Text(a.summary)
               .font(DS.TextStyle.body)
