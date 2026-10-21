@@ -67,10 +67,10 @@
 | Mục | Trạng thái |
 |---|---|
 | Unit test đủ 8 luật, kể cả khi nhiều luật cùng đúng | ✅ `DailyPlanTests` (16 test) |
-| Kiểm 6 trạng thái của mock | ⏳ Chưa làm: cần UI (phần 2) |
-| Kiểm thao tác lịch: dời buổi, đổi ngày nghỉ, không trùng, mẫu gốc giữ nguyên | ✅ `DayOverridesTests`, `LighterSessionTests` (Core). ⏳ Chưa kiểm trên app |
-| Today, widget, lời nhắc dùng chung kết quả | ⏳ Lời nhắc đã đọc đổi lịch theo ngày; nối Daily Plan vào cả ba là phần 2 |
-| Kiểm loading, lỗi, dữ liệu cũ | ⏳ Luật 0 có test; UI là phần 2 |
+| Kiểm 6 trạng thái của mock | 🟡 Đã kiểm trên simulator (21/10, tài khoản test): **có buổi, chưa tập** và **đang tập dở**. Chưa kiểm: phục hồi thấp (cần ≥ 7 mẫu HRV / nhịp tim nghỉ), ngày nghỉ, quay lại, đã tập xong, chưa có lịch. Các trạng thái này mới có unit test (`DailyPlanTests`, `DailyPlanInputTests`) |
+| Kiểm thao tác lịch: dời buổi, đổi ngày nghỉ, không trùng, mẫu gốc giữ nguyên | ✅ Core (`DayOverridesTests`, `LighterSessionTests`). ⏳ Trên app: chờ deploy migration. Trước khi deploy, app **không hiện** nút dời / nghỉ (`overridesSupported`) |
+| Today, widget, lời nhắc dùng chung kết quả | ✅ `DailyPlanSource` → `AppServices.dailyPlan`. Widget đọc câu trạng thái từ đó; lời nhắc đọc cùng lịch đã áp (`plannedByOffset`). Có test |
+| Kiểm loading, lỗi, dữ liệu cũ | 🟡 Luật 0 có test. Thẻ tính ngay từ kế hoạch cache (đã thấy trên simulator lúc mạng chậm). Chưa kiểm khi mất mạng hẳn |
 | Parity / CI và kiểm trên iPhone thật | ⏳ iPhone thật đang bị chặn (`CONSTRAINTS_AND_DEFERRED.md` mục 1) |
 
 **Còn chặn:** migration `20261020140000_plan_day_overrides` **chưa deploy**, cần lệnh duyệt rõ ràng.
