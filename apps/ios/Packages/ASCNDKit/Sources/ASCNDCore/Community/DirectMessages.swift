@@ -142,6 +142,9 @@ public protocol DMSource: Sendable {
   func markRead(threadId: String, userId: String) async throws
 }
 
+/// Đánh dấu một nguồn là dữ liệu mẫu (nguồn giả của bản Debug).
+public protocol DMSampleSource: DMSource {}
+
 /// Hộp thư.
 @MainActor
 @Observable
@@ -152,10 +155,13 @@ public final class DMInboxBook {
   public private(set) var phase: Phase = .loading
   public private(set) var threads: [DirectMessages.Thread] = []
   @ObservationIgnored private let source: any DMSource
+  /// Nguồn là dữ liệu mẫu (bản Debug) — màn hiện nhãn "Dữ liệu mẫu"; nguồn thật thì không.
+  public let isSample: Bool
 
   public init(userId: String, source: any DMSource) {
     self.userId = userId
     self.source = source
+    self.isSample = source is any DMSampleSource
   }
 
   public var unreadCount: Int { threads.filter { $0.unread && !$0.isRequest }.count }

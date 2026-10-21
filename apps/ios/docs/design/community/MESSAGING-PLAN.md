@@ -1,8 +1,7 @@
 # Kế hoạch: nhắn tin giữa người dùng (từ trang cá nhân)
 
 > Trạng thái (20/10): **chủ dự án duyệt "làm tin nhắn thật"**. Migration
-> `supabase/migrations/20261020130000_direct_messages.sql` + `SupabaseDMSource` đã viết; **chờ chủ dự án
-> chạy `supabase db push`**. Trước khi push, RPC hỏng → hộp thư không đọc được → nút ẩn (không màn lỗi).
+> `supabase/migrations/20261020130000_direct_messages.sql` + `SupabaseDMSource` đã viết; **đã `supabase db push` lên production (20/10, chủ dự án nhờ)**. Nếu RPC hỏng → hộp thư không đọc được → nút ẩn (không màn lỗi).
 > Đã thử trên PostgreSQL 16 dựng từ mọi migration, vai `authenticated` + RLS: 21/21 ca (xem PR).
 > Chưa có: thông báo đẩy, realtime (đọc lại khi mở), báo cáo tin, gửi ảnh.
 
