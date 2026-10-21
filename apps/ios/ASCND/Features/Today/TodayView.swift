@@ -57,7 +57,7 @@ public struct TodayView: View {
             userId: extrasUserId, onOpenSettings: onOpenSettings, onLogWorkout: onLogWorkout,
             refreshTick: refreshTick,
             planName: state.status == .todo || state.status == .missed ? state.templateName : nil,
-            onStartWorkout: onStart
+            onStartWorkout: onStart, onChoosePlan: onChoosePlan
           ) { readiness in
             planCard(readiness: readiness)
           }

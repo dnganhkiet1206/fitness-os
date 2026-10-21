@@ -67,6 +67,9 @@ final class AppServices {
   var koaGainsNow: (userId: String, state: KoaGains.State, week: KoaGains.Week)?
   /// Giờ buổi tập gần nhất — Koa "pump" 2 giờ sau đó.
   var koaLastSessionAt: EpochMillis?
+  /// Việc chính của hôm nay (Daily Plan, GĐ1) — Today dựng, widget và lời nhắc
+  /// đọc CÙNG kết quả. Gắn người + ngày để phiên / ngày khác không dùng nhầm.
+  var dailyPlan: (userId: String, date: LocalDate, result: DailyPlan.Result)?
   /// Widget Koa (đợt 2C): ảnh + câu của Koa ở Hôm nay ra màn hình chính.
   @ObservationIgnored let koaWidget = KoaWidgetPublisher()
   /// Chuỗi ngày của tài khoản đang mở (phòng Koa của Hôm nay ghi) — cho nhắc chuỗi
