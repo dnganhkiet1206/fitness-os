@@ -38,6 +38,10 @@ public enum KoaMood {
   public struct Read: Sendable, Hashable {
     public let emotion: KoaEmotion.Emotion
     public let reason: Reason
+    public init(emotion: KoaEmotion.Emotion, reason: Reason) {
+      self.emotion = emotion
+      self.reason = reason
+    }
   }
 
   public struct Input: Sendable, Hashable {

@@ -1,0 +1,127 @@
+<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lộ trình ASCND</title>
+<style>
+:root{--ink:#f2f0ec;--mute:#9b968f;--line:#26262a;--card:#161617;--acc:#ff9130;--grn:#3ee6a4;--red:#ff8d92}
+*{box-sizing:border-box}body{margin:0;background:#0d0d0e;color:var(--ink);font-family:-apple-system,system-ui;padding:28px 16px;line-height:1.55}
+main{max-width:960px;margin:0 auto}h1{font-size:28px;margin:0 0 6px;letter-spacing:-.01em}h2{font-size:19px;margin:36px 0 10px}h3{font-size:15px;margin:0 0 6px}
+.lead{color:var(--mute);font-size:15px;max-width:760px}p,li{font-size:14px;color:#d8d4ce}.mute{color:var(--mute)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
+.grid{display:grid;gap:12px}.g2{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}.g3{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.lbl{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute)}
+.big{font-family:Menlo,monospace;font-weight:700;font-size:26px}
+table{width:100%;border-collapse:collapse;font-size:13.5px}td,th{padding:9px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{color:var(--mute);font-weight:600;font-size:12px}
+.tag{display:inline-block;font-size:10.5px;font-weight:800;letter-spacing:.06em;padding:3px 8px;border-radius:7px;background:#232326;color:var(--mute);margin-right:4px}
+.k{background:#3a2a14;color:#ffb35c}.o{background:#14302a;color:#3ee6a4}.r{background:#3a1a1e;color:#ff8d92}
+.phase{border-left:3px solid var(--acc);padding-left:14px;margin:18px 0}
+.mono{font-family:Menlo,monospace}
+ol li,ul li{margin:4px 0}
+</style><main>
+<h1>ASCND — lộ trình giữ chân và kéo người dùng</h1>
+<p class="lead">Góc nhìn người định hướng sản phẩm, 20/10/2026. App đã có rất nhiều tính năng (Hôm nay, dinh dưỡng, tập luyện, sẵn sàng, Trợ lý AI, cộng đồng, Koa, widget, Live Activity). Thứ đang thiếu không phải là thêm màn hình, mà là <b>một vòng lặp rõ ràng</b> và <b>người dùng thật để đo vòng lặp đó</b>.</p>
+
+<h2>1 · Sự thật hiện tại</h2>
+<div class="grid g3">
+ <div class="card"><div class="lbl">Người dùng thật</div><div class="big" style="color:var(--red)">0</div><p class="mute">Chưa có TestFlight. Mọi quyết định giữ chân đang là đoán.</p></div>
+ <div class="card"><div class="lbl">Chặn phát hành</div><div class="big">$99</div><p class="mute">Apple Developer Program — cũng là điều kiện cho Sign in with Apple.</p></div>
+ <div class="card"><div class="lbl">Đo lường vòng Koa</div><div class="big" style="color:var(--red)">0 sự kiện</div><p class="mute">PostHog đã cài, nhưng chưa có sự kiện nào cho Gains, nhiệm vụ, lên hạng.</p></div>
+</div>
+
+<h2>Hướng đi (Kiệt, 20/10): hoàn chỉnh trước, phát hành sau</h2>
+<p class="mute" style="margin-top:0">App chưa đủ điều kiện phát hành, nên ưu tiên làm sản phẩm hoàn chỉnh nhất. Bốn mảng chạy song song; đợt 0 (TestFlight) đợi tới khi phát hành được.</p>
+<div class="grid g2">
+ <div class="card"><div class="lbl">A · Vòng lặp Koa — lõi giữ chân</div><ol>
+  <li><b>Đợt 2:</b> Koa sống theo lịch (pump, đợi ở phòng tập, mất pump, tụt hạng, quay lại) + một thông báo đúng giờ quen tập.</li>
+  <li><b>Đợt 3:</b> onboarding tạo lịch tuần + buổi đầu có hướng dẫn.</li>
+  <li><b>Đợt 4:</b> thử thách theo sức mình + Koa Classic tháng.</li>
+  <li><b>Đợt 5:</b> thẻ chia sẻ Story + bạn tập.</li></ol></div>
+ <div class="card"><div class="lbl">B · Hoàn thiện chỗ còn dở</div><ul>
+  <li>Cộng đồng: thích / bình luận / lưu / chia sẻ trên thẻ bài, trang người dùng, Koa thật thay emoji làm ảnh đại diện.</li>
+  <li>Ghi bữa: gợi ý AI ngay trong màn ghi, nút sao món ăn.</li>
+  <li>Màn ăn mừng kỷ lục có Koa; cửa hàng có Koa mặc thử đồ.</li>
+  <li>Tab Tập luyện: lưới nhóm cơ, đoạn Cơ thể; quyết thẻ xu hướng sẵn sàng.</li>
+  <li>Cài đặt: khoá Face ID, xuất dữ liệu.</li></ul></div>
+ <div class="card"><div class="lbl">C · Sẵn sàng phát hành (không cần $99)</div><ul>
+  <li>Sự kiện đo lường cho vòng Koa (để ngày phát hành đo được ngay).</li>
+  <li>Onboarding: màn Apple Health, Koa ở onboarding.</li>
+  <li>Xoá tài khoản (App Store bắt buộc): <b>đã nối</b>; kiểm lại trên simulator.</li>
+  <li>Cập nhật PARITY_MATRIX (đang lạc hậu từ 17/10).</li></ul></div>
+ <div class="card"><div class="lbl">D · Chất lượng</div><ul>
+  <li>VoiceOver đi trọn các màn chính.</li>
+  <li>Trạng thái rỗng / lỗi / mất mạng ở mọi màn mới làm.</li>
+  <li>Chế độ sáng / tối cho từng màn mới (vừa có lỗi kẹt màu).</li>
+  <li>Hiệu năng: Koa vẽ Canvas ở nhiều chỗ cùng lúc.</li></ul></div>
+</div>
+
+<h2>2 · Ngôi sao Bắc Đẩu</h2>
+<div class="card">
+ <p style="margin:0 0 8px"><b>Số người tập ≥ 2 buổi/tuần, 4 tuần liền</b> ("tuần của Koa"). Đây là hành vi app sinh ra để tạo, và là thứ dự báo người ở lại tốt nhất trong app tập luyện.</p>
+ <table><tr><th>Chỉ số phụ</th><th>Mục tiêu ban đầu</th><th>Vì sao</th></tr>
+ <tr><td>Kích hoạt: buổi tập đầu trong 48 giờ sau khi cài</td><td class="mono">≥ 40%</td><td class="mute">Ai chưa tập buổi nào thì Koa không có gì để lớn lên.</td></tr>
+ <tr><td>Giữ chân D7 / D30 (mở app)</td><td class="mono">≥ 35% / ≥ 18%</td><td class="mute">Mức tốt cho app sức khoẻ; đo từ <span class="mono">app_opened</span>.</td></tr>
+ <tr><td>Quay lại sau mất pump (lỡ ≥ 3 ngày)</td><td class="mono">≥ 50% trong 7 ngày</td><td class="mute">Đo xem cơ chế mất pump kéo người ta lại hay làm họ bỏ.</td></tr>
+ </table></div>
+
+<h2>3 · Lộ trình theo đợt</h2>
+
+<div class="phase"><h3>Đợt 0 — Phát hành để đo được <span class="tag r">CHẶN</span></h3>
+<ol>
+<li><b>Kiệt:</b> đăng ký Apple Developer Program, archive bản đầu lên TestFlight (danh sách việc đã có ở <span class="mono">TESTFLIGHT-CHECKLIST.md</span>).</li>
+<li><b>Mình:</b> thêm sự kiện cho vòng lặp: <span class="mono">gains_earned</span>, <span class="mono">koa_rank_up</span>, <span class="mono">quest_claimed</span>, <span class="mono">pump_lost</span>, <span class="mono">comeback_session</span>, <span class="mono">notification_opened</span>. Không gửi số liệu sức khoẻ, như quy tắc hiện tại.</li>
+<li><b>Mình:</b> dựng bảng PostHog: phễu kích hoạt, giữ chân D1/D7/D30 theo nhóm tuần cài, tỉ lệ quay lại sau mất pump.</li>
+<li>Mời 15–30 người tập thật (bạn bè, nhóm gym), phỏng vấn 5 người sau tuần đầu.</li>
+</ol></div>
+
+<div class="phase"><h3>Đợt 1 — Tập vì Koa <span class="tag o">XONG</span></h3>
+<p class="mute">Vóc dáng Koa theo Gains, buổi tập là nhiệm vụ chính, ngày nghỉ có nhiệm vụ hồi phục, xu tối đa 85/ngày, đồ gym ôm dáng, tên hạng gymbro. Đã có trên server.</p></div>
+
+<div class="phase"><h3>Đợt 2 — Koa sống theo lịch tập <span class="tag k">LÀM TIẾP</span></h3>
+<ul>
+<li><b>Bốn trạng thái của Koa:</b> pump (2 giờ sau buổi tập) · đợi ở phòng tập (qua giờ buổi trong lịch) · mất pump (lỡ 3 ngày) · tụt hạng (7 ngày) kèm câu "muscle memory, quay lại là lên nhanh gấp đôi". Hiện cả ở Hôm nay, widget và phòng linh vật.</li>
+<li><b>Một thông báo mỗi ngày, đúng giờ quen tập</b> (<span class="mono">HabitHours</span> đã học giờ này). Câu của Koa bám lịch, không trách móc, không gửi vào ngày nghỉ đã đặt.</li>
+<li><b>Màn quay lại</b> sau khi lỡ: Koa vui mừng, gợi ý buổi ngắn 15 phút để lấy lại pump.</li>
+</ul></div>
+
+<div class="phase"><h3>Đợt 3 — Kích hoạt trong 48 giờ</h3>
+<ul>
+<li><b>Onboarding kết thúc bằng một lịch tuần</b> (chọn 3/4/5 buổi, app tạo sẵn mẫu) — để nhiệm vụ chính có ngay từ ngày đầu, thay vì "chưa lên lịch".</li>
+<li><b>Buổi đầu tiên có hướng dẫn</b>, ngắn (≤ 20 phút); xong thì Koa từ Newbie có ngay +10 Gains, kèm màn "Pump!" đầu tiên.</li>
+<li><b>Nhắc lần đầu:</b> nếu sau 24 giờ chưa tập, gửi một thông báo "Koa đã khởi động xong".</li>
+</ul></div>
+
+<div class="phase"><h3>Đợt 4 — Thử thách theo sức từng người</h3>
+<ul>
+<li>Tuần của Koa · Vượt chính mình (+5% khối lượng) · Săn PR. Thay vòng 8 thử thách chung.</li>
+<li><b>Koa Classic</b> mỗi tháng: 4 tuần đủ buổi → cúp và áo stringer "Classic" độc quyền (chỉ kiếm được, không mua được).</li>
+</ul></div>
+
+<div class="phase"><h3>Đợt 5 — Kéo người mới (vòng lặp lan truyền)</h3>
+<ul>
+<li><b>Thẻ chia sẻ kiểu gym IG/TikTok</b>: Koa đúng hạng và đúng đồ của mình, kèm số liệu buổi tập/PR, xuất ra Story 9:16 với logo ASCND. Mỗi lần người dùng khoe là một lần quảng cáo.</li>
+<li><b>Bạn tập (gym buddy)</b>: mời bạn bằng link; hai Koa đứng chung phòng; "tuần đôi" khi cả hai đủ buổi thì cả hai được thưởng.</li>
+<li>Bảng xếp hạng bạn bè theo Gains tuần (không xếp hạng toàn cầu, để người mới không nản).</li>
+</ul></div>
+
+<div class="phase"><h3>Đợt 6 — Phòng gym của Koa và doanh thu</h3>
+<ul>
+<li>Đồ phòng (giá tạ, ghế đẩy, xà) mà Koa dùng theo buổi bạn vừa tập; vé nghỉ thay băng chuỗi.</li>
+<li>Gói trả phí xoay quanh AI coach (kế hoạch tuần tự điều chỉnh theo sẵn sàng) — <b>không bán Gains, không bán vóc dáng</b>.</li>
+</ul></div>
+
+<h2>4 · Nguyên tắc giữ chân lành mạnh</h2>
+<div class="grid g2">
+ <div class="card"><div class="lbl">Làm</div><ul><li>Thưởng việc tập thật, theo sức từng người.</li><li>Cho nghỉ có kế hoạch, không phạt ngày nghỉ.</li><li>Mất mát nhỏ và lấy lại được (muscle memory).</li><li>Tối đa một thông báo mỗi ngày.</li></ul></div>
+ <div class="card"><div class="lbl">Không làm</div><ul><li>Không trách móc, không gây cảm giác tội lỗi.</li><li>Không bán tiến bộ (Gains, hạng).</li><li>Không bảng xếp hạng toàn cầu.</li><li>Không gửi số liệu sức khoẻ cho đo lường.</li></ul></div>
+</div>
+
+<h2>5 · Thứ tự đề xuất</h2>
+<table><tr><th>#</th><th>Việc</th><th>Mảng</th></tr>
+<tr><td class="mono">1</td><td>Đợt 2: Koa sống theo lịch + thông báo đúng giờ (mock trước)</td><td>A</td></tr>
+<tr><td class="mono">2</td><td>Sự kiện đo lường vòng Koa (nhỏ, làm kèm đợt 2)</td><td>C</td></tr>
+<tr><td class="mono">3</td><td>Đợt 3: onboarding lịch tuần + buổi đầu có hướng dẫn</td><td>A</td></tr>
+<tr><td class="mono">4</td><td>Cộng đồng: tương tác trên thẻ bài, Koa thật làm ảnh đại diện</td><td>B</td></tr>
+<tr><td class="mono">5</td><td>Đợt 4: thử thách cá nhân + Koa Classic</td><td>A</td></tr>
+<tr><td class="mono">6</td><td>Ăn mừng kỷ lục có Koa, cửa hàng có Koa mặc thử</td><td>B</td></tr>
+<tr><td class="mono">7</td><td>Đợt 5: thẻ chia sẻ Story + bạn tập</td><td>A</td></tr>
+<tr><td class="mono">8</td><td>Phần còn lại của B và D, cập nhật PARITY_MATRIX</td><td>B · D</td></tr>
+</table>
+<p class="mute">Mỗi việc có giao diện mới đều vẽ mock để Kiệt duyệt trước; merge khi CI xanh và báo lên #527.</p>
+</main>

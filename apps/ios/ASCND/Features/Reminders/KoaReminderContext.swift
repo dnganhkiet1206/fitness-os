@@ -7,12 +7,14 @@ import Foundation
 /// - Bữa ăn: mép muộn của thói quen ăn (`HabitHours`) — "giờ này mọi hôm bạn đã ăn".
 /// - Ghi giấc ngủ: như vậy, nhưng CHỈ khi hồ sơ chưa có giờ dậy (có giờ dậy thì
 ///   màn Nhắc nhở đã có gợi ý theo giờ dậy — hai cơ chế cho một lời nhắc là rối).
-/// - Buổi tập: không — đã có gợi ý "Nhắc lúc…" theo giờ tập quen (`ReminderTiming`).
+/// - Buổi tập (đợt 2, 20/10): mép muộn của thói quen tập — "Koa khởi động xong rồi"
+///   đúng lúc người này thường đã vào tập.
 /// Chỉ áp cho lời nhắc còn để giờ mặc định (`ReminderPlan`); giờ người dùng tự chọn giữ nguyên.
 enum KoaReminderHabit {
   static func times(_ habits: HabitHours, userId: String, profile: Profile?) -> [ReminderKey: ReminderClock] {
     var out: [ReminderKey: ReminderClock] = [:]
     if let meal = UserRhythm.lateClock(habits.habit(.meal, userId: userId)) { out[.meal] = meal }
+    if let workout = UserRhythm.lateClock(habits.habit(.workout, userId: userId)) { out[.workout] = workout }
     let known = profile.map { ReminderTiming.Known(profile: $0) } ?? ReminderTiming.Known()
     if ReminderTiming.suggested(.sleepLog, known) == nil,
       let sleep = UserRhythm.lateClock(habits.habit(.sleep, userId: userId))
@@ -37,6 +39,18 @@ extension ReminderContext {
       ctx.loggedToday = streak.value.loggedToday
       ctx.streakRiskTime = ReminderTiming.toClock(KoaToday.riskHour(habits, userId: userId) * 60)
     }
+    return ctx
+  }
+
+  /// Koa đợt 2: ngày lỡ lịch (Gains) + ngày nghỉ đã đặt → câu ngày lỡ thứ 3 / thứ 6.
+  func gains(_ gains: (userId: String, state: KoaGains.State, week: KoaGains.Week)?, userId: String, lang: AppPreferences.Lang)
+    -> ReminderContext
+  {
+    var ctx = self
+    guard let gains, gains.userId == userId else { return ctx }
+    ctx.missedDays = gains.state.missedDays
+    ctx.restDays = gains.week.rest
+    ctx.koaWorkoutCopy = ReminderCopyTable.koaWorkout(lang)
     return ctx
   }
 }

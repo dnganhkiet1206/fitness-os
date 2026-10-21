@@ -45,6 +45,8 @@ struct TodayDayBlock: View {
   var reward: AppServices.KoaReward?
   /// Koa của ngày (nét mặt, câu, việc kế) — cho widget Koa (đợt 2C).
   var onKoa: ((KoaState) -> Void)?
+  /// Tên buổi trong lịch hôm nay (chưa tập) — Koa "đợi ở phòng tập" (đợt 2).
+  var planName: String?
 
   struct KoaState: Equatable {
     let emotion: KoaEmotion.Emotion
@@ -80,9 +82,14 @@ struct TodayDayBlock: View {
     let signals = TodayDay.merging(room.signals, localWaterMl: localWaterMl)
     let tubes = TodayDay.tubes(signals, stepsGoal: room.stepsGoal)
     let line = MascotLine.line(TodayDay.mascotDay(signals, hour: hour))
-    let next = line.gap.map(TodayDay.quest)
-    let mood = KoaToday.read(room: room, localWaterMl: localWaterMl, profile: profile, riskHour: riskHour, hour: hour)
-    let said = KoaToday.line(mood, signals: signals, profile: profile, streak: room.streak.count)
+    let dayNext = line.gap.map(TodayDay.quest)
+    let dayMood = KoaToday.read(room: room, localWaterMl: localWaterMl, profile: profile, riskHour: riskHour, hour: hour)
+    let daySaid = KoaToday.line(dayMood, signals: signals, profile: profile, streak: room.streak.count)
+    // Koa sống theo lịch tập (đợt 2): pump / đợi / mất pump / tụt hạng đè lên Koa của ngày.
+    let sched = schedulePhase(hour: hour)
+    let mood = sched.map { KoaMood.Read(emotion: Self.emotion($0), reason: dayMood.reason) } ?? dayMood
+    let said = sched.map(scheduleLine) ?? daySaid
+    let next = sched.map { $0 == .pump ? nil : MascotRules.Quest.workout } ?? dayNext
     // Premium (20/10, Kiệt duyệt mock `today-koa-card.html` + `today-koa-meters.html`
     // kiểu 2): sáng = giấy ấm (A), tối = titan đen như widget (B); năm ống thay
     // bằng năm thanh ngang; câu Koa to không bong bóng; chân thẻ "x/5 · chuỗi".
@@ -142,6 +149,40 @@ struct TodayDayBlock: View {
       onKoa?(KoaState(emotion: mood.emotion, line: said ?? bubbleText(line, tubes: tubes) ?? "", next: next))
     }
     .onChange(of: reward?.id) { _, _ in celebrate() }
+  }
+
+  // MARK: - Koa theo lịch (đợt 2)
+
+  private func schedulePhase(hour: Int) -> KoaSchedule.Phase? {
+    guard let services, let now = services.koaGainsNow, now.userId == room.userId else { return nil }
+    let habit = UserRhythm.lateClock(services.habitHours.habit(.workout, userId: room.userId))?.hour
+    return KoaSchedule.phase(
+      gains: now.state, lastSessionAt: services.koaLastSessionAt, now: SystemWallClock().nowMillis(),
+      trainedToday: room.questDone(.workout), plannedToday: planName != nil, hour: hour, habitHour: habit)
+  }
+
+  static func emotion(_ p: KoaSchedule.Phase) -> KoaEmotion.Emotion {
+    switch p {
+    case .pump: .proud
+    case .waiting: .warmup
+    case .pumpLost: .sad
+    case .dropped: .deflated
+    }
+  }
+
+  private func scheduleLine(_ p: KoaSchedule.Phase) -> String {
+    switch p {
+    case .pump: return String(localized: "koa.sched.pump")
+    case .waiting:
+      return planName.map { String(localized: "koa.sched.waiting \($0)") } ?? String(localized: "koa.sched.waiting.any")
+    case .pumpLost:
+      let days = services?.koaGainsNow?.state.missedDays ?? KoaGains.pumpLostDays
+      return String(localized: "koa.sched.pumpLost \(days)")
+    case .dropped:
+      let lang = services?.preferences.lang ?? .vi
+      let rank = MascotRules.ranks[min(room.gains.rank, MascotRules.ranks.count - 1)].name(lang)
+      return String(localized: "koa.sched.dropped \(rank)")
+    }
   }
 
   // MARK: - Koa

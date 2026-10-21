@@ -64,4 +64,12 @@ final class ReminderPresenter: NSObject, UNUserNotificationCenterDelegate {
   ) async -> UNNotificationPresentationOptions {
     [.banner, .list, .sound]
   }
+
+  /// Chạm một thông báo (đợt 2): đo `notification_opened` theo khoá (`ascnd-reminder-<i>-<khoá>`).
+  func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
+    let id = response.notification.request.identifier
+    guard id.hasPrefix("ascnd-reminder-") else { return }
+    let key = id.split(separator: "-").last.map(String.init) ?? "unknown"
+    await MainActor.run { Telemetry.capture(.notificationOpened, ["key": key]) }
+  }
 }

@@ -62,6 +62,11 @@ final class AppServices {
     let week: KoaGains.Week
   }
   var koaGainsHistory: GainsHistory?
+  /// Gains hiện tại (đợt 2): trạng thái của Koa và lời nhắc ngày lỡ. Gắn userId để
+  /// phiên khác không dùng nhầm.
+  var koaGainsNow: (userId: String, state: KoaGains.State, week: KoaGains.Week)?
+  /// Giờ buổi tập gần nhất — Koa "pump" 2 giờ sau đó.
+  var koaLastSessionAt: EpochMillis?
   /// Widget Koa (đợt 2C): ảnh + câu của Koa ở Hôm nay ra màn hình chính.
   @ObservationIgnored let koaWidget = KoaWidgetPublisher()
   /// Chuỗi ngày của tài khoản đang mở (phòng Koa của Hôm nay ghi) — cho nhắc chuỗi
@@ -96,6 +101,7 @@ final class AppServices {
   ) {
     koaReward = KoaReward(
       id: (koaReward?.id ?? 0) + 1, userId: userId, amount: amount, seen: seen, quest: quest, allDone: allDone)
+    Telemetry.capture(.questClaimed, ["quest": quest?.rawValue ?? "streak"])
   }
   /// Số lần cân ONLINE đã được server xác nhận trong lần chạy app này — nhịp
   /// để kế hoạch nhắc nhở đọc lại `weight_logs` ngay (`invalidateQueries` của
@@ -471,7 +477,7 @@ final class AppServices {
 
   /// Gains của Koa (#527 đợt 1): lịch sử tập + lịch tuần đã cache → vóc dáng.
   /// `nil` khi chưa có backend hoặc đọc hỏng (giữ Gains cũ).
-  func loadKoaGains(userId: String) async -> (days: [KoaGains.Day], week: KoaGains.Week, state: KoaGains.State)? {
+  func loadKoaGains(userId: String) async -> KoaGainsSync.Loaded? {
     guard let rows else { return nil }
     let plans = await templates.cached(userId: userId)
     return await KoaGainsSync.load(userId: userId, store: rows, plans: plans, now: SystemWallClock().nowMillis(), in: .current)

@@ -243,6 +243,7 @@ private struct SignedInScope<Content: View>: View {
       supplements: nutrition?.supplements?.items)
       .with(reminderToday?.signals ?? .unread)
       .koa(habits: services.habitHours, userId: userId, profile: profile?.profile, streak: services.koaStreak)
+      .gains(services.koaGainsNow, userId: userId, lang: services.preferences.lang)
   }
 
   private var isCurrentSession: Bool {
