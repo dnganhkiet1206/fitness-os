@@ -47,6 +47,10 @@ struct TodayDayBlock: View {
   var onKoa: ((KoaState) -> Void)?
   /// Tên buổi trong lịch hôm nay (chưa tập) — Koa "đợi ở phòng tập" (đợt 2).
   var planName: String?
+  /// Today gọn (GĐ1, mock `daily-plan-today.html`): chỉ Koa nhỏ + dòng "hạng ·
+  /// Gains". Việc chính ở `TodayPlanHero`; năm thanh và chuỗi ngày ghi rời Today
+  /// (Kiệt 21/10 — dữ liệu chuỗi vẫn nguyên). Câu của Koa vẫn ra widget.
+  var compact = false
 
   struct KoaState: Equatable {
     let emotion: KoaEmotion.Emotion
@@ -78,7 +82,7 @@ struct TodayDayBlock: View {
     }
   }
 
-  private func content(hour: Int) -> some View {
+  @ViewBuilder private func content(hour: Int) -> some View {
     let signals = TodayDay.merging(room.signals, localWaterMl: localWaterMl)
     let tubes = TodayDay.tubes(signals, stepsGoal: room.stepsGoal)
     let line = MascotLine.line(TodayDay.mascotDay(signals, hour: hour))
@@ -95,7 +99,13 @@ struct TodayDayBlock: View {
     // bằng năm thanh ngang; câu Koa to không bong bóng; chân thẻ "x/5 · chuỗi".
     let dark = scheme == .dark
     let doneCount = tubes.filter(\.done).count
-    return VStack(alignment: .leading, spacing: 16) {
+    let state = KoaState(emotion: mood.emotion, line: said ?? bubbleText(line, tubes: tubes) ?? "", next: next)
+    if compact {
+      compactRow(emotion: oneShot ?? mood.emotion)
+        .task(id: state) { onKoa?(state) }
+        .onChange(of: reward?.id) { _, _ in celebrate() }
+    } else {
+    VStack(alignment: .leading, spacing: 16) {
       HStack(alignment: .center, spacing: 12) {
         koa(oneShot ?? mood.emotion)
           .frame(width: 104, height: 104)
@@ -149,6 +159,35 @@ struct TodayDayBlock: View {
       onKoa?(KoaState(emotion: mood.emotion, line: said ?? bubbleText(line, tubes: tubes) ?? "", next: next))
     }
     .onChange(of: reward?.id) { _, _ in celebrate() }
+    }
+  }
+
+  /// Today gọn: Koa nhỏ (chạm → phòng) + tên + "hạng · Gains · còn N tới hạng sau".
+  private func compactRow(emotion: KoaEmotion.Emotion) -> some View {
+    let g = room.gains
+    let lang = services?.preferences.lang ?? .vi
+    let ranks = MascotRules.ranks
+    let rank = ranks[min(g.rank, ranks.count - 1)].name(lang)
+    return HStack(spacing: 12) {
+      koa(emotion)
+        .frame(width: 64, height: 64)
+        .background(DS.Color.secondary.swiftUI.opacity(0.6), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+      VStack(alignment: .leading, spacing: 2) {
+        Text("koa.card.name")
+          .font(.system(size: 12, weight: .semibold))
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        Text(String(localized: "dp.gains \(rank) \(g.points)"))
+          .font(DS.TextStyle.headline)
+          .foregroundStyle(DS.Color.foreground.swiftUI)
+        if let to = KoaGains.toNext(g.points), g.rank + 1 < ranks.count {
+          Text(String(localized: "dp.gains.next \(to.need - to.have) \(ranks[g.rank + 1].name(lang))"))
+            .font(DS.TextStyle.footnote)
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        }
+      }
+      Spacer(minLength: 0)
+    }
+    .accessibilityElement(children: .combine)
   }
 
   // MARK: - Koa theo lịch (đợt 2)
@@ -165,8 +204,6 @@ struct TodayDayBlock: View {
     switch p {
     case .pump: .proud
     case .waiting: .warmup
-    case .pumpLost: .sad
-    case .dropped: .deflated
     }
   }
 
@@ -175,13 +212,6 @@ struct TodayDayBlock: View {
     case .pump: return String(localized: "koa.sched.pump")
     case .waiting:
       return planName.map { String(localized: "koa.sched.waiting \($0)") } ?? String(localized: "koa.sched.waiting.any")
-    case .pumpLost:
-      let days = services?.koaGainsNow?.state.missedDays ?? KoaGains.pumpLostDays
-      return String(localized: "koa.sched.pumpLost \(days)")
-    case .dropped:
-      let lang = services?.preferences.lang ?? .vi
-      let rank = MascotRules.ranks[min(room.gains.rank, MascotRules.ranks.count - 1)].name(lang)
-      return String(localized: "koa.sched.dropped \(rank)")
     }
   }
 
@@ -189,8 +219,8 @@ struct TodayDayBlock: View {
 
   private func koa(_ emotion: KoaEmotion.Emotion) -> some View {
     Button(action: onOpenRoom) {
-      MascotFigureView(emotion: emotion, equipped: equipped, size: 76, animated: !reduceMotion)
-        .frame(width: 84, height: 96)
+      MascotFigureView(emotion: emotion, equipped: equipped, size: compact ? 50 : 76, animated: !reduceMotion)
+        .frame(width: compact ? 56 : 84, height: compact ? 64 : 96)
         // Đổi nét mặt: hình cũ mờ sang hình mới (Reduce Motion: đổi ngay).
         .id(emotion)
         .transition(.opacity)

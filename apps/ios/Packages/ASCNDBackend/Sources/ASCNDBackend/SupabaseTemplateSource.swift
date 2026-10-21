@@ -23,8 +23,30 @@ public struct SupabaseTemplateSource: TemplateSource {
       .eq("user_id", value: userId)
       .order("name")
       .execute().value
-    return try await Self.snapshot(days: days, templates: templates, at: SystemWallClock().nowMillis())
+    // Đổi lịch theo ngày (GĐ1). Đọc HẾT, không chỉ tuần này: Gains và ngày lỡ tính
+    // lại từ ngày tập đầu tiên, bỏ hàng cũ là thống kê cũ đổi theo. Bảng chưa có
+    // trên server (migration chưa deploy) thì coi như chưa đổi ngày nào — lịch
+    // mẫu vẫn đọc được.
+    var overrides: [JSONValue] = []
+    var supported = false
+    do {
+      overrides = try await client.from("plan_day_overrides")
+        .select("date, template_id, is_rest, moved_from, moved_to")
+        .eq("user_id", value: userId)
+        .order("date")
+        .limit(Self.overrideLimit)
+        .execute().value
+      supported = true
+    } catch {
+      supported = false
+    }
+    return try await Self.snapshot(
+      days: days, templates: templates, overrides: overrides.compactMap(DayOverride.init(row:)),
+      overridesSupported: supported, at: SystemWallClock().nowMillis())
   }
+
+  /// Trần số hàng đổi lịch — mỗi lần dời là hai hàng; đủ cho nhiều năm.
+  static let overrideLimit = 2000
 
   struct RoutineRow: Decodable, Sendable {
     let day_of_week: Int
@@ -43,7 +65,10 @@ public struct SupabaseTemplateSource: TemplateSource {
 
   /// Ánh xạ hàng → domain. Cột nullable lấy đúng mặc định baseline đọc:
   /// `!!is_rest`, `?? false`; `exercises` không phải mảng → không có bài.
-  static func snapshot(days: [RoutineRow], templates: [TemplateRow], at: EpochMillis) -> TemplateSnapshot {
+  static func snapshot(
+    days: [RoutineRow], templates: [TemplateRow], overrides: [DayOverride] = [], overridesSupported: Bool = false,
+    at: EpochMillis
+  ) -> TemplateSnapshot {
     TemplateSnapshot(
       routine: days.map {
         RoutineDay(dayOfWeek: $0.day_of_week, isRest: $0.is_rest ?? false, isDeload: $0.is_deload ?? false,
@@ -54,6 +79,8 @@ public struct SupabaseTemplateSource: TemplateSource {
           id: $0.id.lowercased(), name: $0.name ?? "", exercisesJSON: $0.exercises, type: $0.type,
           createdAt: $0.created_at.flatMap { EpochMillis(iso8601: $0) })
       },
+      overrides: overrides,
+      overridesSupported: overridesSupported,
       fetchedAt: at)
   }
 }

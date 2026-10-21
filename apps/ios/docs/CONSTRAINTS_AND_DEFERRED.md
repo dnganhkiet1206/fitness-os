@@ -85,10 +85,19 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 ## 4. Hạn chế đã biết (lỗi, chỗ lệch, chỗ chưa kiểm)
 
 **Code đã merge nhưng trái với V1** (chi tiết, kèm file và dòng, ở #527 ngày 21/10):
-- Tụt hạng do nghỉ: `KoaGains`, `KoaSchedule.dropped`, lời nhắc ngày 6, màn quay lại. **Phải bỏ ở GĐ2.**
-- Cấp XP vẫn hiện, và cửa hàng khoá đồ theo Cấp XP. **GĐ2, cần migration, không làm mất xu / đồ.**
-- 8 thử thách tuần chung. **GĐ2: thay bằng Tuần của Koa.**
-- Trạng thái "mất pump" (câu "bắp tay Koa hơi xẹp 🥲"): **chờ Kiệt chốt** có bị coi là trừng phạt không.
+- ~~Tụt hạng do nghỉ: `KoaGains`, `KoaSchedule.dropped`, lời nhắc ngày 6, màn quay lại.~~ Đã bỏ trên nhánh `claude/gd1-daily-plan` (PR GĐ1, nháp, 21/10). **Chỉ hết hiệu lực khi PR ấy merge.**
+- Cấp XP vẫn hiện, và cửa hàng khoá đồ theo Cấp XP. **Không đụng ở GĐ1** (Kiệt 21/10: giữ XP và mọi phụ thuộc cho tới khi kiểm cửa hàng, phần thưởng, lưu trữ, migration). GĐ2, cần migration, không làm mất xu / đồ.
+- 8 thử thách tuần chung. **GĐ2: thay bằng Tuần của Koa** — chỉ đánh dấu hoàn thành khi có buổi tập ghi thật, không dựa vào việc mở màn.
+- ~~"Mất pump" sau 3 ngày: chờ Kiệt chốt.~~ Kiệt chốt 21/10: bỏ; chào mừng quay lại (Daily Plan luật ④). Đã làm trên nhánh GĐ1.
+
+**GĐ1 (Daily Plan + Today gọn) — Kiệt duyệt CÓ ĐIỀU KIỆN 21/10, CHƯA duyệt merge production:**
+- PR GĐ1 để **nháp**. Chỉ merge khi đủ 6 mục nghiệm thu trong `GD1-DAILY-PLAN.md`, **kể cả kiểm trên iPhone thật** (đang bị chặn, mục 1).
+- Migration `20261020140000_plan_day_overrides` (đổi lịch theo ngày) **CHƯA deploy** lên production. Cần lệnh duyệt rõ ràng. App đọc bảng này theo kiểu chịu lỗi: thiếu bảng thì coi như chưa đổi ngày nào.
+- "Tập nhẹ hơn" chỉ bớt một hiệp mỗi bài cho buổi hôm nay. Không sửa mẫu, không giảm tạ, không phải kết luận y tế.
+- Hồi quy mất mạng / lỗi / gửi lại (chỉ thị 21/10 14:26, commit `8d2f9d8b`): R1–R7, W1, D1–D5 **PASS** (test Swift + SQL thật trên Postgres ở máy). **Chặn:**
+  - **A1 dời / nghỉ trên app:** Kiệt 21/10 bỏ phương án Supabase dev bằng Docker trên máy này (không đủ tài nguyên). Chỉ kiểm được trên app khi migration được deploy (cần duyệt), hoặc trên một máy / CI có Supabase dev.
+  - **A2 mất mạng hẳn trên simulator:** không có công tắc mạng riêng; tắt mạng máy Mac là đổi cài đặt hệ thống.
+  - Chi tiết: `GD1-DAILY-PLAN.md`, mục "Hồi quy GĐ1".
 
 **Tìm thấy khi kiểm ngày 21/10** (simulator, tài khoản test):
 - Coach AI bị cắt giữa câu, còn sót dấu `**` thô, không trả lời phần hỏi về lịch. Nghi do `MAX_TOKENS = 1024` trong `supabase/functions/ai-coach/index.ts` cộng với phần nháp suy luận của model. Chưa xác nhận.
@@ -118,3 +127,5 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 ## 5. Lịch sử thay đổi sổ
 
 - 21/10/2026: tạo sổ (Kiệt yêu cầu, #527).
+- 21/10/2026: thêm điều kiện duyệt GĐ1, migration chưa deploy, kết quả "mất pump" / tụt hạng.
+- 21/10/2026: hồi quy GĐ1 (R / W / D PASS; A1, A2 BLOCKED).

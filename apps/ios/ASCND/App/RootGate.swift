@@ -241,7 +241,7 @@ private struct SignedInScope<Content: View>: View {
     return .today(
       today.today, trained: today.trained, routine: today.library?.routine,
       waterTotalMl: nutrition?.water?.totalMl, waterTargetMl: profile?.profile?.waterTargetMl,
-      supplements: nutrition?.supplements?.items)
+      supplements: nutrition?.supplements?.items, library: today.library)
       .with(reminderToday?.signals ?? .unread)
       .koa(habits: services.habitHours, userId: userId, profile: profile?.profile, streak: services.koaStreak)
       .gains(services.koaGainsNow, userId: userId, lang: services.preferences.lang)

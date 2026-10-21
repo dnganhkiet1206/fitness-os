@@ -38,7 +38,7 @@ public enum WidgetSync {
   /// `nil` khi một nguồn bắt buộc đọc hỏng — không ghi gì.
   public static func payloads(
     userId: String, store: any RowStore, copy: HomeWidgets.Copy, now: EpochMillis, in tz: TimeZone,
-    recovery: ((String?) -> Bool)? = nil, plans: TemplateSnapshot? = nil
+    recovery: ((String?) -> Bool)? = nil, plans: TemplateSnapshot? = nil, planStatus: String? = nil
   ) async -> Payloads? {
     let today = LocalDate(now, in: tz)
     let r = queries(userId: userId, today: today, in: tz)
@@ -52,7 +52,7 @@ public enum WidgetSync {
     return Payloads(
       today: HomeWidgets.todayWorkout(
         sessions: sessions, copy: copy, plan: plans?.plan(for: today, today: today),
-        tomorrow: plans?.plan(for: today.adding(days: 1), today: today)),
+        tomorrow: plans?.plan(for: today.adding(days: 1), today: today), planStatus: planStatus),
       streak: HomeWidgets.streakReadiness(
         streak: streak.count, readinessScore: log.first?["readiness_score"],
         hasRecovery: recovery.map { $0(log.first?["readiness_explain"]?.stringValue) } ?? true, copy: copy))

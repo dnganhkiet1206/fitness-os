@@ -67,6 +67,9 @@ final class AppServices {
   var koaGainsNow: (userId: String, state: KoaGains.State, week: KoaGains.Week)?
   /// Giờ buổi tập gần nhất — Koa "pump" 2 giờ sau đó.
   var koaLastSessionAt: EpochMillis?
+  /// Việc chính của hôm nay (Daily Plan, GĐ1) — Today dựng, widget và lời nhắc
+  /// đọc CÙNG kết quả. Gắn người + ngày để phiên / ngày khác không dùng nhầm.
+  var dailyPlan: (userId: String, date: LocalDate, result: DailyPlan.Result)?
   /// Widget Koa (đợt 2C): ảnh + câu của Koa ở Hôm nay ra màn hình chính.
   @ObservationIgnored let koaWidget = KoaWidgetPublisher()
   /// Chuỗi ngày của tài khoản đang mở (phòng Koa của Hôm nay ghi) — cho nhắc chuỗi
@@ -302,6 +305,8 @@ final class AppServices {
     // Đăng ký theo dõi Health ngay khi app chạy — kể cả khi iOS mở app trong nền
     // để giao dữ liệu mới (18/10).
     startHealthObserving()
+    // Widget "Buổi tập hôm nay" nói cùng câu với việc chính của Today (GĐ1).
+    widgets.planStatus = { [weak self] userId in await self?.widgetPlanStatus(userId: userId) }
   }
 
   /// App mở / quay lại tiền cảnh: đọc phiên, thử gửi hàng đợi. Dọn ngày cũ
@@ -481,6 +486,42 @@ final class AppServices {
     guard let rows else { return nil }
     let plans = await templates.cached(userId: userId)
     return await KoaGainsSync.load(userId: userId, store: rows, plans: plans, now: SystemWallClock().nowMillis(), in: .current)
+  }
+
+  /// Câu ngắn của Daily Plan cho widget "Buổi tập hôm nay" (GĐ1); `nil` = câu mặc
+  /// định của widget. Chỉ kết quả của ĐÚNG người + hôm nay.
+  func widgetPlanStatus(userId: String) -> String? {
+    guard let p = dailyPlan, p.userId == userId, p.date == LocalDate(SystemWallClock().nowMillis(), in: .current)
+    else { return nil }
+    switch p.result.action {
+    case .comeback: return String(localized: "dp.eyebrow.welcome")
+    case .resume: return String(localized: "dp.eyebrow.resume")
+    default: return nil
+    }
+  }
+
+  /// Kết quả Daily Plan vừa đổi → widget vẽ lại theo cùng kết quả.
+  func dailyPlanChanged() {
+    Task { [widgets] in await widgets.refresh() }
+  }
+
+  /// Số liệu của Daily Plan (GĐ1) chỉ kho hàng đọc được: phục hồi của hôm nay
+  /// (cùng đầu vào với điểm sẵn sàng) và đạm còn thiếu tới mục tiêu. Đọc hỏng /
+  /// chưa đủ dữ liệu → `nil` — Daily Plan không đoán.
+  func loadDailyPlanData(userId: String, date: LocalDate, profile: Profile?) async -> (
+    recovery: DailyPlan.Recovery?, proteinLeftG: Int?
+  ) {
+    guard let rows else { return (nil, nil) }
+    async let recovery = DailyLog.recovery(
+      userId: userId, date: date, store: rows, now: SystemWallClock().nowMillis(), in: .current)
+    let protein: Int?
+    if let profile, let row = try? await rows.select(NutritionToday.query(userId: userId, today: date)) {
+      let eaten = NutritionToday.totals(row.first).protein
+      protein = max(0, Int((NutritionToday.macroTargets(profile).protein - eaten).rounded()))
+    } else {
+      protein = nil
+    }
+    return (await recovery, protein)
   }
 
   /// Ghi giấc ngủ (#527 `log-sleep`): đọc / ghi `sleep_logs` và dựng lại

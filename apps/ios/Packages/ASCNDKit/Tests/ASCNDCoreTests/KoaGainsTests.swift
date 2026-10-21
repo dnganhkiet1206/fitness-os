@@ -24,7 +24,7 @@ struct KoaGainsTests {
     let s = KoaGains.compute([Self.d(0), Self.d(1, pr: true), Self.d(2)], week: Self.plan, today: Self.monday.adding(days: 2))
     #expect(s.points == 10 + 10 + 25)
     #expect(s.rank == 1)
-    #expect(s.missedDays == 0 && !s.pumpLost)
+    #expect(s.missedDays == 0 && !s.returning)
     // hai buổi một ngày chỉ tính một lần
     let twice = KoaGains.compute([Self.d(0), Self.d(0)], week: Self.plan, today: Self.monday)
     #expect(twice.points == 10)
@@ -39,24 +39,34 @@ struct KoaGainsTests {
     let s = KoaGains.compute([Self.d(4)], week: Self.plan, today: Self.monday.adding(days: 7))
     #expect(s.missedDays == 1)  // chỉ chính thứ Hai
     let three = KoaGains.compute([Self.d(4)], week: Self.plan, today: Self.monday.adding(days: 9))
-    #expect(three.missedDays == 3 && three.pumpLost)
+    #expect(three.missedDays == 3 && three.returning)
   }
 
-  @Test func layoffDropsAtMostOneRank() {
-    // lên Lifter (≥120) rồi nghỉ rất lâu, không lịch nghỉ nào
+  /// Kiệt 21/10 (duyệt GĐ1): nghỉ bao lâu cũng không mất Gains đã kiếm.
+  @Test func timeOffNeverTakesGainsAway() {
     let week = KoaGains.Week(planned: [0, 1, 2, 3, 4, 5, 6], rest: [])
-    let days = (0..<12).map { Self.d($0) }  // 12 ngày liền: 120 + tuần đủ
+    let days = (0..<12).map { Self.d($0) }
     let built = KoaGains.compute(days, week: week, today: Self.monday.adding(days: 11))
     #expect(built.rank == 2)
-    let peak = built.points
-    // 7 ngày nghỉ → −8
-    let week1 = KoaGains.compute(days, week: week, today: Self.monday.adding(days: 18))
-    #expect(week1.points == peak - 8)
-    // 10 tuần nghỉ → không xuống dưới mốc Gym Rat (40)
     let long = KoaGains.compute(days, week: week, today: Self.monday.adding(days: 11 + 70))
-    #expect(long.points == max(40, peak - 80))
-    #expect(long.rank >= 1)
-    #expect(long.peak == peak && long.rebuilding)
+    #expect(long.points == built.points && long.peak == built.peak && !long.rebuilding)
+    #expect(long.missedDays == 70 && long.returning)
+  }
+
+  /// Đổi lịch theo ngày (GĐ1): ngày đổi thành nghỉ không tính là lỡ; buổi dời
+  /// sang ngày trống được tính là buổi TRONG lịch (+10, không phải +6).
+  @Test func dayOverridesCountForPlannedAndRest() {
+    let monday = Self.monday
+    let moved = KoaGains.Week(
+      planned: [0, 2, 4], rest: [5, 6],
+      overrides: [
+        monday: DayOverride(date: monday, templateId: nil, isRest: true, movedTo: monday.adding(days: 1)),
+        monday.adding(days: 1): DayOverride(date: monday.adding(days: 1), templateId: "a", isRest: false, movedFrom: monday),
+      ])
+    let s = KoaGains.compute([Self.d(1)], week: moved, today: monday.adding(days: 1))
+    #expect(s.points == KoaGains.plannedSession, "buổi dời sang thứ Ba vẫn là buổi trong lịch")
+    let rested = KoaGains.compute([Self.d(-3)], week: moved, today: monday)
+    #expect(rested.missedDays == 0, "T6 trước tập, T7–CN nghỉ đặt, T2 đổi thành nghỉ")
   }
 
   @Test func muscleMemoryDoublesBackToThePeak() {

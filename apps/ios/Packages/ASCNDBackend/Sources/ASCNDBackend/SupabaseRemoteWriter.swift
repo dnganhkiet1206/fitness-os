@@ -23,6 +23,8 @@ public struct SupabaseRemoteWriter: RemoteWriter {
     PlanEdit.templateKind: "workout_templates",
     PlanEdit.templateDeleteKind: "workout_templates",
     PlanEdit.routineDayKind: "routine_days",
+    // Đổi lịch của riêng một ngày (GĐ1): upsert theo `(user_id, date)`, ghi đè.
+    PlanEdit.dayOverrideKind: "plan_day_overrides",
     ExerciseEdit.createKind: "exercises",
     ExerciseEdit.deleteKind: "exercises",
     // Một lần uống (#527 Phase 3): upsert theo `id`, bỏ trùng — như
@@ -114,6 +116,11 @@ public struct SupabaseRemoteWriter: RemoteWriter {
         try await sendSleep(entry)
       } else if entry.kind == BiometricLog.kind {
         try await sendBiometrics(entry)
+      } else if entry.kind == PlanEdit.dayOverrideKind {
+        // Một hàng mỗi (người, ngày): gửi lại là ghi đè cùng nội dung.
+        try await client.from(table)
+          .upsert(entry.payload, onConflict: "user_id,date")
+          .execute()
       } else if entry.kind == PlanEdit.routineDayKind {
         // Gán ngày (#401): `upsert … onConflict: 'user_id,day_of_week'` như
         // baseline (`use-library.ts:461`) — một hàng mỗi ngày, gửi lại là ghi
@@ -228,6 +235,13 @@ public struct SupabaseRemoteWriter: RemoteWriter {
     if entry.kind == SleepLog.kind { return SleepLog.isRow(entry) }
     if entry.kind == BiometricLog.kind { return BiometricLog.isRow(entry) }
     if entry.kind == MealLog.kind { return MealLog.isRow(entry) }
+    if entry.kind == PlanEdit.dayOverrideKind {
+      // Hàng xác định bởi (người, ngày); người phải là chủ bản ghi.
+      guard DayOverride(row: entry.payload) != nil,
+        entry.payload["user_id"]?.stringValue?.lowercased() == entry.userId.lowercased()
+      else { return false }
+      return true
+    }
     if entry.kind == PlanEdit.routineDayKind {
       // Không có `id`: hàng xác định bởi (người, ngày). Người phải là chủ bản
       // ghi — không thì upsert ghi vào kế hoạch của ai khác (RLS cũng chặn).

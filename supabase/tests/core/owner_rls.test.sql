@@ -54,7 +54,8 @@ INSERT INTO owned VALUES
   ('ai_credits', 'S', 28, 'hạn mức AI: server ghi'), ('ai_usage', 'S', 29, 'đếm lượt AI: server ghi'),
   ('entitlements', 'S', 30, 'gói trả phí: tự chèn là tự cấp gói — 20260810120000'),
   ('mascot_transactions', 'S', 31, 'sổ xu: server ghi — 20260810120000'),
-  ('streak_freezes', 'S', 32, 'mua bằng RPC có khoá — 20260814120000');
+  ('streak_freezes', 'S', 32, 'mua bằng RPC có khoá — 20260814120000'),
+  ('plan_day_overrides', 'SIUD', 33, 'đổi lịch riêng một ngày (GĐ1) — 20261020140000');
 -- Bảng không có user_id: quyền đi qua dòng cha.
 CREATE TEMP TABLE kids (tbl text PRIMARY KEY, fk text NOT NULL, parent text NOT NULL);
 INSERT INTO kids VALUES

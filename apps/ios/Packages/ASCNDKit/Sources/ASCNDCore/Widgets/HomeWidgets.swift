@@ -79,12 +79,13 @@ public enum HomeWidgets {
   /// nói buổi ấy ("Tập Tay trước · 0/3 · chưa bắt đầu") chứ không nói "Ngày nghỉ";
   /// ngày không có buổi thì kèm buổi ngày mai nếu đã có lịch.
   public static func todayWorkout(
-    sessions: [JSONValue], copy: Copy, plan: TodayPlan? = nil, tomorrow: TodayPlan? = nil
+    sessions: [JSONValue], copy: Copy, plan: TodayPlan? = nil, tomorrow: TodayPlan? = nil, planStatus: String? = nil
   ) -> TodayWorkoutWidgetData {
     guard let latest = sessions.first else {
       if let plan, plan.status == .todo, let t = plan.template, !t.exercises.isEmpty {
         return TodayWorkoutWidgetData(
-          workoutName: t.name.isEmpty ? copy.untitled : t.name, statusText: copy.notStarted,
+          // Câu của Daily Plan (GĐ1) khi có — widget nói cùng điều với Today.
+          workoutName: t.name.isEmpty ? copy.untitled : t.name, statusText: planStatus ?? copy.notStarted,
           nextExerciseName: t.exercises.first?.exerciseName, completedExercises: 0, totalExercises: t.exercises.count,
           plannedMinutes: TemplateDraft.estimatedMinutes(t.exercises.map { ($0.sets, $0.reps, $0.restSeconds) }))
       }

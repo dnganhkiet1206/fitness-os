@@ -25,6 +25,8 @@ struct TodayExtras<Plan: View>: View {
   var planName: String?
   /// "Bắt đầu buổi tập" (sang tab Tập luyện) — màn quay lại của Koa (đợt 2).
   var onStartWorkout: (() -> Void)?
+  /// Mở kế hoạch tuần (Daily Plan: "Lên lịch tuần", "Xem lịch tuần"). `nil` = không có màn ấy.
+  var onChoosePlan: (() -> Void)?
   /// Nhận dòng sẵn sàng để đặt trong thẻ buổi tập.
   @ViewBuilder var plan: (_ readiness: TodayReadinessRow?) -> Plan
 
@@ -99,6 +101,12 @@ struct TodayExtras<Plan: View>: View {
   @State private var waterTaps = 0
   @Environment(ProfileBook.self) private var profile: ProfileBook?
   @State private var built = false
+  /// Việc chính của hôm nay (GĐ1) — `nil` khi không có `WorkoutFlow` (preview).
+  @Environment(WorkoutFlow.self) private var flow: WorkoutFlow?
+  @State private var dailyPlan: DailyPlanSource?
+  /// Đang ghi một phương án của thẻ việc chính (dời / nghỉ / nhẹ hơn).
+  @State private var planBusy = false
+  @State private var planFailed = false
 
   var body: some View {
     VStack(spacing: DS.Spacing.md) {
@@ -116,7 +124,7 @@ struct TodayExtras<Plan: View>: View {
         // trang nhảy khi dữ liệu về, không vẽ một ngày "0 of 5" giả.
         RoundedRectangle(cornerRadius: 30, style: .continuous)
           .fill(DS.Color.foreground.swiftUI.opacity(0.05))
-          .frame(height: 300)
+          .frame(height: dailyPlan != nil ? 72 : 300)
           .accessibilityLabel(Text(String(localized: "today.loading")))
       } else if let mascot, case .failed = mascot.phase {
         // RN `LoadFailed`: nói là không đọc được và cho thử lại.
@@ -138,7 +146,7 @@ struct TodayExtras<Plan: View>: View {
           onAct: act, onOpenRoom: { roomSource = "koa"; showsRoom = true }, zoom: zoom,
           profile: profile?.profile, riskHour: KoaToday.riskHour(services.habitHours, userId: userId),
           equipped: shop?.inventory.filter(\.equipped).map(\.itemKey) ?? [], reward: services.koaReward,
-          onKoa: { state in publishKoa(state, mascot) }, planName: planName)
+          onKoa: { state in publishKoa(state, mascot) }, planName: planName, compact: dailyPlan != nil)
           .todayEntrance(1)
           .preference(key: TodayAccentPreference.self, value: nextSignal(mascot))
           // Rung NGAY lúc chạm nước (RN `Haptics.light()` trong `onPress`).
@@ -150,9 +158,22 @@ struct TodayExtras<Plan: View>: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
       }
-      // Thẻ buổi tập ngay dưới khối ngày, mang dòng sẵn sàng.
-      VStack(alignment: .leading, spacing: DS.Spacing.md) { plan(readinessRow) }
-        .todayEntrance(2)
+      if let dailyPlan, let flow {
+        // GĐ1: MỘT việc chính + lý do + phương án; rồi Tuần của Koa (lịch thật).
+        TodayPlanHero(
+          result: dailyPlan.result, lighterOn: flow.today.lighterToday, busy: planBusy, failed: planFailed,
+          onPrimary: { primary(dailyPlan.result.action) }, onAlternative: { alternative($0, flow) })
+          .todayEntrance(2)
+        TodayWeekStrip(
+          days: TodayWeekStrip.days(today: flow.today.today, library: flow.today.library, trained: flow.today.trained),
+          today: flow.today.today,
+          target: flow.today.library.flatMap { lib in KoaGains.Week(lib).planned.isEmpty ? nil : KoaGains.Week(lib).target })
+          .padding(.horizontal, 2)
+      } else {
+        // Thẻ buổi tập ngay dưới khối ngày, mang dòng sẵn sàng.
+        VStack(alignment: .leading, spacing: DS.Spacing.md) { plan(readinessRow) }
+          .todayEntrance(2)
+      }
       if let mascot, case .ready = mascot.phase {
         // "Hôm nay của bạn" (18/10, mock A): thay danh sách "Ngày của bạn".
         TodayDayCard(
@@ -266,6 +287,12 @@ struct TodayExtras<Plan: View>: View {
       activity = services.makeActivityRings(userId: userId, today: today)
       weight = services.makeWeightLogger(userId: userId)
       todo = services.makeReminderToday(userId: userId)
+      if let flow {
+        // Tính NGAY từ kế hoạch đang có (cache) — không đợi các nguồn khác đọc xong.
+        let source = DailyPlanSource(userId: userId)
+        source.recompute(services: services, flow: flow)
+        dailyPlan = source
+      }
       inbox = services.makeCommunityInbox(userId: userId)
       communityChallenges = services.makeCommunityChallenges(userId: userId)
       seenNotices = NoticeSeen.load(userId: userId)
@@ -277,6 +304,7 @@ struct TodayExtras<Plan: View>: View {
       await loadPlanNext()
       await mascot?.load()
       await loadGains()
+      await reloadDailyPlan()
       dayLoaded = true
       await shop?.load()
       if let nutrition { await nutrition.loadOnce() } else { await ownWater?.load() }
@@ -309,6 +337,9 @@ struct TodayExtras<Plan: View>: View {
     }
     // Koa ló lên ở tab khác mặc đúng đồ đang mặc.
     .onChange(of: planName) { _, _ in syncRestDay() }
+    .onChange(of: planTrigger) { _, _ in
+      if let flow { dailyPlan?.recompute(services: services, flow: flow) }
+    }
     .onChange(of: shop?.inventory, initial: true) { _, rows in
       guard let rows else { return }
       services.koaEquipped = rows.filter(\.equipped).map(\.itemKey)
@@ -504,6 +535,90 @@ struct TodayExtras<Plan: View>: View {
     await biometrics?.load()
     // Buổi vừa ghi đổi phút của vòng Tập luyện.
     await activity?.load(today: Self.today())
+    await reloadDailyPlan()
+  }
+
+  // MARK: - Việc chính (Daily Plan, GĐ1)
+
+  private func reloadDailyPlan() async {
+    guard let dailyPlan, let flow else { return }
+    await dailyPlan.reloadData(services: services, profile: profile?.profile, flow: flow)
+    noteComeback(dailyPlan.result)
+  }
+
+  /// Thứ làm kết quả đổi mà không cần đọc lại server: kế hoạch, buổi, Gains.
+  private var planTrigger: PlanTrigger? {
+    guard let flow else { return nil }
+    return PlanTrigger(
+      library: flow.today.library, trained: flow.today.trained, today: flow.today.today,
+      phase: flow.session?.phase, gains: services.koaGainsNow?.state)
+  }
+
+  struct PlanTrigger: Equatable {
+    let library: TemplateSnapshot?
+    let trained: Set<LocalDate>
+    let today: LocalDate
+    let phase: WorkoutSessionController.Phase?
+    let gains: KoaGains.State?
+  }
+
+  private func primary(_ action: DailyPlan.Action) {
+    switch action {
+    case .loading: break
+    case .resume, .start, .comeback: onStartWorkout?()
+    case .setUpWeek, .nextSession: onChoosePlan?()
+    case .postWorkoutMeal: logging = .meal
+    case .progress, .recovery:
+      roomSource = "koa"
+      showsRoom = true
+    case .logFree: onLogWorkout?()
+    }
+  }
+
+  private func alternative(_ alt: DailyPlan.Alternative, _ flow: WorkoutFlow) {
+    switch alt {
+    case .lighter:
+      Task {
+        planBusy = true
+        defer { planBusy = false }
+        // Chỉ buổi CHƯA chạm mới đổi được; buổi đang dở giữ nguyên.
+        _ = await flow.setLighterToday(true)
+        onStartWorkout?()
+      }
+    case .postpone(let to):
+      runPlanEdit { try await flow.plan?.postpone(date: flow.today.today, to: to) }
+    case .makeRest:
+      runPlanEdit { try await flow.plan?.makeRest(date: flow.today.today) }
+    case .logFree: onLogWorkout?()
+    case .viewSession: onStartWorkout?()
+    case .viewPlan: onChoosePlan?()
+    }
+  }
+
+  private func runPlanEdit(_ edit: @escaping () async throws -> Void) {
+    Task {
+      planBusy = true
+      planFailed = false
+      defer { planBusy = false }
+      do {
+        try await edit()
+      } catch {
+        planFailed = true
+      }
+      if let flow { dailyPlan?.recompute(services: services, flow: flow) }
+    }
+  }
+
+  /// "Quay lại" (luật ④) thay màn quay lại dạng sheet (Kiệt 21/10): đo một lần mỗi
+  /// đợt nghỉ, không hiện thêm màn nào.
+  private func noteComeback(_ result: DailyPlan.Result) {
+    guard case .comeback = result.action, let s = services.koaGainsNow?.state,
+      let key = KoaSchedule.comebackKey(s)
+    else { return }
+    let seen = "ascnd_koa_comeback.\(userId)"
+    guard UserDefaults.standard.string(forKey: seen) != key else { return }
+    UserDefaults.standard.set(key, forKey: seen)
+    Telemetry.capture(.comebackShown, ["days": String(min(s.missedDays, 30))])
   }
 
   // MARK: - Đầu trang
@@ -686,11 +801,11 @@ struct TodayExtras<Plan: View>: View {
 
   /// Đợt 2: mất pump (đo một lần mỗi đợt nghỉ) và màn quay lại (một lần mỗi đợt nghỉ).
   private func noteSchedule(_ s: KoaGains.State) {
-    guard let key = KoaSchedule.comebackKey(s) else { return }
+    // Có Daily Plan (GĐ1): quay lại hiện ngay trên thẻ việc chính (`noteComeback`).
+    guard dailyPlan == nil, let key = KoaSchedule.comebackKey(s) else { return }
     let seen = "ascnd_koa_comeback.\(userId)"
     guard UserDefaults.standard.string(forKey: seen) != key else { return }
     UserDefaults.standard.set(key, forKey: seen)
-    Telemetry.capture(.pumpLost, ["missed": String(min(s.missedDays, 30))])
     let peak = KoaGains.rank(s.peak)
     comeback = KoaComeback(
       id: key, missedDays: s.missedDays, rebuilding: s.rebuilding,

@@ -241,13 +241,13 @@ public struct PendingClaim: Sendable, Hashable {
   }
 }
 
-/// Câu của Koa cho lời nhắc buổi tập khi đã lỡ lịch (đợt 2).
+/// Câu của Koa cho lời nhắc buổi tập khi người dùng đang quay lại sau ≥ 3 ngày
+/// nghỉ. Chào đón, không đếm lỗi, không nói mất mát (Kiệt 21/10, duyệt GĐ1: bỏ
+/// "mất pump" / "tụt hạng").
 public struct KoaWorkoutCopy: Sendable, Hashable {
-  public let pumpLost: ReminderText
-  public let dropSoon: ReminderText
-  public init(pumpLost: ReminderText, dropSoon: ReminderText) {
-    self.pumpLost = pumpLost
-    self.dropSoon = dropSoon
+  public let returning: ReminderText
+  public init(returning: ReminderText) {
+    self.returning = returning
   }
 }
 
@@ -282,8 +282,12 @@ public struct ReminderContext: Sendable, Hashable {
   public var missedDays: Int?
   /// Thứ trong tuần là ngày nghỉ đã đặt (thứ Hai = 0) — không bao giờ tính là lỡ.
   public var restDays: Set<Int> = []
-  /// Câu của Koa cho ngày lỡ thứ 3 (mất pump) và thứ 6 (mai tụt hạng).
+  /// Câu của Koa khi người dùng đang quay lại (≥ 3 ngày nghỉ).
   public var koaWorkoutCopy: KoaWorkoutCopy?
+  /// Lịch đã áp đổi lịch theo ngày (GĐ1): độ lệch ngày từ hôm nay → có buổi hay
+  /// không. Có thì thắng `trainingDays` cho đúng ngày ấy (ngày dời / đổi thành
+  /// nghỉ); `nil` = chỉ có lịch mẫu.
+  public var plannedByOffset: [Int: Bool]?
 
   public init() {}
 
@@ -400,19 +404,18 @@ public enum ReminderPlan {
       if prefs.sleepLog.enabled && !(isToday && ctx.sleepLoggedToday) {
         timed(.sleepLog, day)
       }
-      let trainsToday = ctx.trainingDays.map { $0.contains(weekday) } ?? true
+      let planned = ctx.plannedByOffset?[day] ?? ctx.trainingDays?.contains(weekday)
+      let trainsToday = planned ?? true
       if prefs.workout.enabled && trainsToday && !(isToday && ctx.workedOutToday) {
         timed(.workout, day)
       }
       // Koa đợt 2: chỉ khi lịch và Gains đã đọc, có buổi hôm ấy, và người dùng không tự bật
       // lời nhắc buổi tập (một lời nhắc tập mỗi ngày là đủ).
       if prefs.koaTraining, !prefs.workout.enabled, let missed = ctx.missedDays,
-        ctx.trainingDays?.contains(weekday) == true, !(isToday && ctx.workedOutToday)
+        planned == true, !(isToday && ctx.workedOutToday)
       {
         let m = KoaSchedule.missedOn(dayOffset: day, missedToday: missed, todayWeekday: todayWeekday, rest: ctx.restDays)
-        let text: ReminderText? =
-          ctx.koaWorkoutCopy.map { m == KoaGains.layoffDays - 1 ? $0.dropSoon : m >= KoaGains.pumpLostDays ? $0.pumpLost : nil }
-          ?? nil
+        let text: ReminderText? = m >= KoaGains.comebackDays ? ctx.koaWorkoutCopy?.returning : nil
         let h = ctx.habitTimes[.workout] ?? ReminderClock(hour: KoaSchedule.defaultHabitHour, minute: 0)
         let when = at(now, day, h.hour, h.minute, calendar)
         if when > now {
