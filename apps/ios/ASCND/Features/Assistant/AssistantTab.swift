@@ -5,8 +5,8 @@ import SwiftUI
 /// Đích của tab Tiến bộ (trước là Trợ lý).
 enum AssistantRoute: Hashable {
   case chat, weekly, steps, training, biometrics, sleep, goals, measure, photos, memory, trends, tools
-  /// GĐ3: phòng Koa, huy chương, Cộng đồng (bỏ khỏi thanh tab).
-  case room, awards, community
+  /// GĐ3: huy chương, Cộng đồng (bỏ khỏi thanh tab).
+  case awards, community
 }
 
 /// Tab Tiến bộ — GĐ3 (Kiệt duyệt 21/10, mock `gd3-four-areas.html`): tab Trợ lý
@@ -50,9 +50,7 @@ struct AssistantTab: View {
   @State private var goals: SmartGoalsBook?
   @State private var measure: MeasurementsBook?
   @State private var photos: ProgressPhotosBook?
-  /// GĐ3: Koa (phòng dựng khi mở), tủ đồ (Koa mặc gì), huy chương.
-  @State private var room: MascotRoomController?
-  @State private var shop: MascotShopBook?
+  /// GĐ3: huy chương.
   @State private var awards: AwardsBook?
   @State private var hour = Calendar.current.component(.hour, from: Date())
   @State private var built = false
@@ -71,19 +69,15 @@ struct AssistantTab: View {
         // ô hỏi coach; bảng 7 ngày và đủ công cụ nằm sau một lần chạm.
         VStack(alignment: .leading, spacing: DS.Spacing.md) {
           header
-          // Kiệt 21/10 ("lặp lại nhiều thứ"): thẻ Tuần của Koa đầy đủ đã mở được từ dải ở
-          // Hôm nay — ở đây chỉ một dòng "x/y buổi" trong thẻ Koa.
-          koaCard
+          // Kiệt 21/10 ("lặp với các màn khác"): Tiến bộ chỉ giữ thứ THEO THỜI GIAN —
+          // Koa / Gains ở đầu Hôm nay và phòng Koa; sẵn sàng hôm nay ở thẻ buổi tập
+          // Hôm nay; calo ở Dinh dưỡng; hỏi Koa ở nút Koa của Ghi nhanh.
           sectionTitle("wh.seg.body")
           BodySection(userId: flow.today.userId, today: flow.today.today)
-          sectionTitle("progress.recovery")
-          if let signal {
-            SummaryCard(
-              signal: signal, metrics: metrics, lang: lang, hour: hour, openTrends: { path.append(.trends) },
-              // "Ghi nhanh" có trên mọi máy — không lặp nút ghi (15/10).
-              logSleep: nil)
+          if let metrics {
+            sectionTitle("progress.recovery")
+            TrendHighlight(book: metrics, lang: lang) { path.append(.trends) }
           }
-          highlights
           // Máy chủ chưa bật tính năng → không hiện thẻ lỗi vĩnh viễn (15/10, audit).
           if let nudges, !nudges.isNotDeployed, ai {
             InsightCard(
@@ -92,10 +86,6 @@ struct AssistantTab: View {
               fallback: signal.map { SmartNudges.fallback($0.signal, lang: lang.rawValue, hour: hour) } ?? []
             ) { Task { await loadInsight(force: true) } }
           }
-          if let chat, ai {
-            AskCoachBar(lastAsked: chat.messages.last { $0.role == .user }?.content) { path.append(.chat) }
-          }
-          // "Dành cho bạn" bỏ (lặp Điểm nổi bật / công cụ); Tổng kết tuần ở "Thêm".
           if let awards {
             RecentAwardsCard(book: awards, lang: lang) { path.append(.awards) }
           }
@@ -104,7 +94,7 @@ struct AssistantTab: View {
             if weekly != nil, ai {
               NavigationLink(value: AssistantRoute.weekly) {
                 WorkoutsHomeView.toolRow(
-                  "calendar", String(localized: "assistant.tool.week"), sub: nil, tint: DS.Color.metricBlue.swiftUI)
+                  "calendar", String(localized: "assistant.tool.week"), sub: weekLine, tint: DS.Color.metricBlue.swiftUI)
               }
               .buttonStyle(.plain)
               Divider().padding(.leading, 58).opacity(0.6)
@@ -199,10 +189,6 @@ struct AssistantTab: View {
             }
             .ascndPage()
           }
-        case .room:
-          if let room {
-            MascotRoomView(room: room, awards: awards, sharedShop: shop)
-          }
         case .awards:
           if let awards { AwardsView(book: awards, lang: lang) }
         case .community:
@@ -236,10 +222,8 @@ struct AssistantTab: View {
       goals = services.makeSmartGoals(userId: userId, today: today)
       measure = services.makeMeasurements(userId: userId)
       photos = services.makeProgressPhotos(userId: userId)
-      shop = services.makeMascotShop(userId: userId)
       awards = services.makeAwardsBook(userId: userId)
       built = true
-      Task { await shop?.load() }
       Task { await awards?.load() }
       await signal?.load()
       // Sau tín hiệu: phân tích calo cần mục tiêu calo của hồ sơ.
@@ -289,8 +273,6 @@ struct AssistantTab: View {
       goals?.close()
       measure?.close()
       photos?.close()
-      room?.close()
-      shop?.close()
       awards?.close()
     }
   }
@@ -331,118 +313,15 @@ struct AssistantTab: View {
       .accessibilityAddTraits(.isHeader)
   }
 
-  // MARK: - Koa (GĐ3)
+  // MARK: - Tuần này (GĐ3)
 
-  /// Tuần của Koa theo lịch đã áp — cùng nguồn với Hôm nay và lượt nhận thưởng.
-  private var koaWeek: KoaWeek.State? {
-    KoaWeek.state(today: flow.today.today, library: flow.today.library, trained: flow.today.trained)
-  }
-
-  /// Koa + hạng Gains (cùng dòng với Hôm nay); chạm → phòng Koa.
-  @ViewBuilder private var koaCard: some View {
-    if let now = services.koaGainsNow, now.userId == flow.today.userId {
-      let g = now.state
-      let ranks = MascotRules.ranks
-      Button {
-        if room == nil { room = services.makeMascotRoom(userId: flow.today.userId, today: flow.today.today) }
-        if room != nil { path.append(.room) }
-      } label: {
-        HStack(spacing: 12) {
-          MascotFigureView(
-            emotion: .idle, equipped: shop?.inventory.filter(\.equipped).map(\.itemKey) ?? [], size: 50,
-            animated: false, build: g.rank)
-            .frame(width: 64, height: 64)
-            .background(DS.Color.secondary.swiftUI.opacity(0.6), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-          VStack(alignment: .leading, spacing: 2) {
-            Text("koa.card.name")
-              .font(.system(size: 12, weight: .semibold))
-              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-            Text(String(localized: "dp.gains \(ranks[min(g.rank, ranks.count - 1)].name(lang)) \(g.points)"))
-              .font(DS.TextStyle.headline)
-              .foregroundStyle(DS.Color.foreground.swiftUI)
-            if let to = KoaGains.toNext(g.points), g.rank + 1 < ranks.count {
-              Text(String(localized: "dp.gains.next \(to.need - to.have) \(ranks[g.rank + 1].name(lang))"))
-                .font(DS.TextStyle.footnote)
-                .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-            }
-            if let week = koaWeek {
-              Text(String(localized: "progress.week \(min(week.done, week.target)) \(week.target)"))
-                .font(DS.TextStyle.footnote.weight(.semibold))
-                .foregroundStyle(DS.Color.foreground.swiftUI)
-            }
-          }
-          Spacer(minLength: 0)
-          Image(systemName: "chevron.right")
-            .font(.footnote.weight(.semibold))
-            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-            .accessibilityHidden(true)
-        }
-        .contentShape(Rectangle())
-      }
-      .buttonStyle(TodayPressStyle())
-      .accessibilityElement(children: .combine)
-      .accessibilityHint(Text("progress.room.hint"))
-    }
-  }
-
-  // MARK: - Điểm nổi bật
-
-  @ViewBuilder private var highlights: some View {
-    if let signal {
-      let s = signal.signal
-      let hasTrend: Bool = if case .ready(let a) = metrics?.phase, a.bars.contains(where: { !$0.missing }) { true } else { false }
-      // Tiến bộ (Kiệt 21/10, "lặp lại nhiều thứ"): thẻ Sẵn sàng đã nói xu hướng và
-      // calo hôm nay; giấc ngủ chưa ghi thì thẻ ấy cũng đã nhắc. Calo ở Dinh dưỡng.
-      let order = AssistantSummary.order(
-        sleepMin: s.sleepMin, heartRate: signal.heartRate, kcal: s.kcal, hasTrend: hasTrend)
-        .filter { $0 == .heart || ($0 == .sleep && s.sleepMin > 0) }
-      if !order.isEmpty {
-        VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-          ForEach(order, id: \.self) { area in highlight(area, signal: signal) }
-        }
-      }
-    }
-  }
-
-  @ViewBuilder private func highlight(_ area: AssistantSummary.Area, signal: AssistantSignalBook) -> some View {
-    let s = signal.signal
-    switch area {
-    case .trend:
-      if let metrics { TrendHighlight(book: metrics, lang: lang) { path.append(.trends) } }
-    case .sleep:
-      let sleepMin = Int(s.sleepMin)
-      AreaHighlight(
-        symbol: "moon.fill", title: String(localized: "metric.sleep"), tint: DS.Color.metricPurple.swiftUI,
-        headline: sleepMin > 0
-          ? String(localized: "assistant.sleep.value \(sleepMin / 60) \(sleepMin % 60)")
-          : String(localized: "assistant.sleep.none"),
-        detail: sleepMin > 0
-          ? (sleepMin >= 420 ? String(localized: "metric.note.good") : String(localized: "metric.note.short"))
-          : String(localized: "assistant.sleep.none.hint"))
-      // "Ghi giấc ngủ" nằm ở thẻ Sẵn sàng phía trên — không lặp ở đây.
-    case .heart:
-      if let hr = signal.heartRate {
-        AreaHighlight(
-          symbol: "heart.fill", title: String(localized: "metric.hr"), tint: DS.Color.readinessRed.swiftUI,
-          headline: String(localized: "assistant.hr \(hr)"),
-          detail: hr < 60
-            ? String(localized: "metric.note.low")
-            : hr <= 80 ? String(localized: "metric.note.normal") : String(localized: "metric.note.high"))
-      }
-    case .nutrition:
-      AreaHighlight(
-        symbol: "flame.fill", title: String(localized: "metric.kcal"), tint: DS.Color.metricOrange.swiftUI,
-        headline: String(
-          localized:
-            "assistant.kcal \(Int(s.kcal).formatted(.number.locale(.app))) \(Int(s.kcalTarget).formatted(.number.locale(.app)))"),
-        detail: s.proteinTarget > 0
-          ? String(
-            localized:
-              "assistant.protein \(Int(s.proteinG).formatted(.number.locale(.app))) \(Int(s.proteinTarget).formatted(.number.locale(.app)))")
-          : nil,
-        progress: s.kcalTarget > 0 ? s.kcal / s.kcalTarget : nil,
-        action: nil)
-    }
+  /// "2/6 buổi · +24 Gains" của tuần này — cùng `KoaWeek.summary` với màn Tổng kết tuần.
+  private var weekLine: String? {
+    guard let library = flow.today.library, let history = services.koaGainsHistory else { return nil }
+    let today = flow.today.today
+    let s = KoaWeek.summary(
+      weekStart: WeeklyChallenges.weekStart(today), today: today, library: library, history: history.days)
+    return String(localized: "dp.week.count \(s.done) \(s.target)") + " · " + String(localized: "wr.plan.gains \(s.gains)")
   }
 
   /// Ngày của bảng yếu tố: hôm nay nếu có điểm, không thì ngày gần nhất có điểm.

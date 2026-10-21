@@ -30,6 +30,6 @@ struct ReadinessGauge: View {
 
   /// Dòng phụ cho điểm không phải của hôm nay: "Điểm gần nhất · hôm qua".
   static func staleNote(_ shown: AssistantSummary.Shown?) -> String? {
-    shown?.asOf.map { String(localized: "assistant.latest \(SummaryCard.dayText($0))") }
+    shown?.asOf.map { String(localized: "assistant.latest \(AssistantText.dayText($0))") }
   }
 }
