@@ -2,6 +2,29 @@
  "sourceLanguage": "en",
  "version": "1.0",
  "strings": {
+  "kw.why": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Keeps you training steadily on your own plan: every real session turns a day green. Finish the week and Koa grows (+Gains) and you earn coins for Koa's outfits."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Giúp bạn tập đều theo đúng lịch của mình: mỗi buổi tập thật tô xanh một ngày. Đủ tuần thì Koa lớn thêm (+Gains) và bạn có xu mua đồ cho Koa."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Te ayuda a entrenar con constancia según tu propio plan: cada sesión real pinta un día de verde. Completa la semana y Koa crece (+Gains) y ganas monedas para la ropa de Koa."
+     }
+    }
+   }
+  },
   "kw.legend.done": {
    "extractionState": "manual",
    "localizations": {

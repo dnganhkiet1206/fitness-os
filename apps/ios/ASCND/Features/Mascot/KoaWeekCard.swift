@@ -19,6 +19,11 @@ struct KoaWeekCard: View {
         Text(String(localized: "dp.week.count \(min(state.done, state.target)) \(state.target)"))
           .font(DS.TextStyle.headline.weight(.heavy))
           .foregroundStyle(DS.Color.foreground.swiftUI)
+        // Thẻ này để làm gì (Kiệt 21/10: viết rõ lợi ích, không chỉ luật).
+        Text("kw.why")
+          .font(DS.TextStyle.footnote)
+          .foregroundStyle(DS.Color.foreground.swiftUI.opacity(0.85))
+          .fixedSize(horizontal: false, vertical: true)
         TodayWeekStrip(
           days: state.days.map { .init(date: $0.date, trained: $0.trained, planned: $0.planned, rest: $0.rest) },
           today: TodayPlanHero.today(), target: nil, showsHeader: false)
