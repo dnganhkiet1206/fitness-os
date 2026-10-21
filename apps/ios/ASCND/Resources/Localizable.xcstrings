@@ -25,6 +25,190 @@
     }
    }
   },
+  "progress.week %lld %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "This week: %1$lld/%2$lld sessions"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tuần này: %1$lld/%2$lld buổi"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Esta semana: %1$lld/%2$lld sesiones"
+     }
+    }
+   }
+  },
+  "common.back": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Back"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Quay lại"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Atrás"
+     }
+    }
+   }
+  },
+  "tab.progress": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Progress"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tiến bộ"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Progreso"
+     }
+    }
+   }
+  },
+  "tab.progress.hint": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa, your week, body, recovery and awards"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa, tuần của bạn, cơ thể, hồi phục và huy chương"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa, tu semana, cuerpo, recuperación y logros"
+     }
+    }
+   }
+  },
+  "progress.recovery": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Recovery"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hồi phục"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Recuperación"
+     }
+    }
+   }
+  },
+  "progress.more": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "More"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Thêm"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Más"
+     }
+    }
+   }
+  },
+  "progress.room.hint": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Opens Koa's room"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mở phòng Koa"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Abre la habitación de Koa"
+     }
+    }
+   }
+  },
+  "nc.supplements.today %lld %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$lld/%2$lld taken today"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đã uống %1$lld/%2$lld hôm nay"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$lld/%2$lld tomados hoy"
+     }
+    }
+   }
+  },
   "kw.why": {
    "extractionState": "manual",
    "localizations": {
@@ -1612,29 +1796,6 @@
     }
    }
   },
-  "tab.assistant": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Health assistant"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Trợ lý sức khoẻ"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Asistente de salud"
-     }
-    }
-   }
-  },
   "placeholder.building": {
    "extractionState": "manual",
    "localizations": {
@@ -1884,52 +2045,6 @@
      "stringUnit": {
       "state": "translated",
       "value": "Explorar entrenamientos"
-     }
-    }
-   }
-  },
-  "tab.community.hint": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Community"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Cộng đồng"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Comunidad"
-     }
-    }
-   }
-  },
-  "tab.assistant.hint": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Ask the health assistant"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Hỏi trợ lý sức khoẻ"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Preguntar al asistente"
      }
     }
    }
@@ -16583,29 +16698,6 @@
      "stringUnit": {
       "state": "translated",
       "value": "Eliminar %@"
-     }
-    }
-   }
-  },
-  "coach.unavailable": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Koa Coach isn't available in this build."
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Koa Coach chưa sẵn sàng trên bản này."
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Koa Coach no está disponible en esta versión."
      }
     }
    }
@@ -41173,29 +41265,6 @@
     }
    }
   },
-  "nc.seg.plan": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Meal Plan"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Kế hoạch ăn"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Plan de comidas"
-     }
-    }
-   }
-  },
   "nc.plans %lld": {
    "extractionState": "manual",
    "localizations": {
@@ -49798,29 +49867,6 @@
     }
    }
   },
-  "wh.seg.training": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Training"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Buổi tập"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Entrenamiento"
-     }
-    }
-   }
-  },
   "wh.seg.body": {
    "extractionState": "manual",
    "localizations": {
@@ -54145,29 +54191,6 @@
     }
    }
   },
-  "assistant.summary": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Summary"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Resumen"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Tóm tắt"
-     }
-    }
-   }
-  },
   "assistant.ready.go": {
    "extractionState": "manual",
    "localizations": {
@@ -54325,52 +54348,6 @@
      "stringUnit": {
       "state": "translated",
       "value": "Ghi vài ngày để so với mức thường của bạn"
-     }
-    }
-   }
-  },
-  "assistant.highlights": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Highlights"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Destacados"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Điểm nổi bật"
-     }
-    }
-   }
-  },
-  "assistant.foryou": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "For you"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Para ti"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Dành cho bạn"
      }
     }
    }
@@ -54762,144 +54739,6 @@
      "stringUnit": {
       "state": "translated",
       "value": "Ghi bữa"
-     }
-    }
-   }
-  },
-  "assistant.why.weekEnd": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "The week is wrapping up — see how it went"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "La semana termina: mira cómo fue"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Tuần sắp khép lại — xem tuần của bạn"
-     }
-    }
-   }
-  },
-  "assistant.why.noSleep": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Last night isn't logged yet"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Anoche aún no está registrada"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Đêm qua chưa có dữ liệu ngủ"
-     }
-    }
-   }
-  },
-  "assistant.why.shortSleep": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "You slept under 7 hours"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Dormiste menos de 7 horas"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Đêm qua ngủ chưa đủ 7 tiếng"
-     }
-    }
-   }
-  },
-  "assistant.why.fewSteps": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Few steps so far today"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Pocos pasos hoy"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Hôm nay còn ít bước chân"
-     }
-    }
-   }
-  },
-  "assistant.why.lowReadiness": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Readiness is down — check your body"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Preparación baja: revisa tu cuerpo"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Sẵn sàng chưa cao — xem cơ thể ra sao"
-     }
-    }
-   }
-  },
-  "assistant.why.monthStart": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "New month — a good time to recheck"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Nuevo mes: buen momento para revisar"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Tháng mới — lúc tốt để xem lại"
      }
     }
    }

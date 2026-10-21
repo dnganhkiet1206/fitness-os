@@ -35,6 +35,17 @@ struct AssistantCaption: View {
 }
 
 enum AssistantText {
+  /// "hôm qua" / "Thứ Ba".
+  static func dayText(_ d: LocalDate) -> String {
+    var c = DateComponents()
+    c.year = d.year
+    c.month = d.month
+    c.day = d.day
+    guard let date = Calendar.current.date(from: c) else { return d.description }
+    if Calendar.current.isDateInYesterday(date) { return String(localized: "dm.yesterday").lowercased() }
+    return date.formatted(Date.FormatStyle().weekday(.wide).locale(.app))
+  }
+
   static func label(_ r: AssistantSummary.Readiness?) -> String {
     switch r {
     case .go: String(localized: "assistant.ready.go")
@@ -78,112 +89,6 @@ enum AssistantText {
     case .kcal: String(localized: "metric.kcal")
     case .hr: String(localized: "metric.hr")
     }
-  }
-}
-
-/// Thẻ đầu: vòng sẵn sàng 0–100 (`ReadinessGauge`, chung với Hôm nay) + nhãn chữ + so với mức thường; dưới vạch là gợi
-/// ý hôm nay (các dòng tóm tắt của `AssistantBrief`).
-struct SummaryCard: View {
-  let signal: AssistantSignalBook
-  let metrics: MetricHistoryBook?
-  let lang: AppPreferences.Lang
-  let hour: Int
-  let openTrends: () -> Void
-  /// "Ghi giấc ngủ" — khi đêm qua chưa có (điểm hôm nay cần nó).
-  var logSleep: (() -> Void)?
-
-  var body: some View {
-    let s = signal.signal
-    let bars: [MetricAnalysis.Bar] =
-      if let metrics, metrics.kind == .readiness, case .ready(let a) = metrics.phase { a.bars } else { [] }
-    // Cùng quyết định với Hôm nay (`AssistantSummary.shown`): hôm nay chưa có điểm
-    // → điểm gần nhất, ghi rõ ngày.
-    // Điểm chỉ dựa vào tải tập (17/10): như Hôm nay — "chưa đủ dữ liệu", không số.
-    let provisional = AssistantSummary.provisional(score: s.readiness, hasRecovery: s.hasRecovery)
-    let shown = provisional ? nil : AssistantSummary.shown(
-      today: s.readiness, status: s.status,
-      recent: bars.filter { !$0.missing && !$0.today }.map { ($0.date, Int($0.value.rounded())) })
-    let ready = shown?.level
-    let tint = AssistantText.tint(ready)
-    let note = provisional
-      ? String(localized: "rd.provisional.reason")
-      : ReadinessGauge.staleNote(shown) ?? AssistantText.versus(AssistantSummary.versus(today: s.readiness, bars: bars))
-    let brief = signal.brief(hour: hour)
-    VStack(alignment: .leading, spacing: 12) {
-      Button(action: openTrends) {
-        HStack(spacing: 14) {
-          ReadinessGauge(shown: shown)
-          VStack(alignment: .leading, spacing: 2) {
-            Text("metric.readiness")
-              .font(.system(size: 13))
-              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-            Text(verbatim: provisional ? String(localized: "rd.provisional.title") : AssistantText.label(ready))
-              .font(.system(size: 21, weight: .bold)).tracking(-0.3)
-              .foregroundStyle(ready == nil ? DS.Color.foreground.swiftUI : tint)
-            Text(verbatim: note)
-              .font(.system(size: 13))
-              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-              .fixedSize(horizontal: false, vertical: true)
-          }
-          Spacer(minLength: 0)
-          Image(systemName: "chevron.right")
-            .font(.footnote.weight(.semibold))
-            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-            .accessibilityHidden(true)
-        }
-        .contentShape(Rectangle())
-      }
-      .buttonStyle(TodayPressStyle())
-      .accessibilityElement(children: .combine)
-      if s.sleepMin == 0, let logSleep {
-        AssistantActionPill(title: String(localized: "assistant.action.sleep"), symbol: "moon.fill", action: logSleep)
-      }
-      if !brief.lines.isEmpty {
-        Rectangle().fill(DS.Color.foreground.swiftUI.opacity(0.08)).frame(height: 0.5)
-        VStack(alignment: .leading, spacing: 6) {
-          ForEach(brief.lines) { line in
-            Text(verbatim: line.text(lang))
-              .font(.system(size: 15))
-              .foregroundStyle(DS.Color.foreground.swiftUI)
-              .fixedSize(horizontal: false, vertical: true)
-          }
-        }
-      }
-    }
-    .padding(2)
-    .modifier(AssistantSurface())
-  }
-
-  /// "hôm qua" / "Thứ Ba".
-  static func dayText(_ d: LocalDate) -> String {
-    var c = DateComponents()
-    c.year = d.year
-    c.month = d.month
-    c.day = d.day
-    guard let date = Calendar.current.date(from: c) else { return d.description }
-    if Calendar.current.isDateInYesterday(date) { return String(localized: "dm.yesterday").lowercased() }
-    return date.formatted(Date.FormatStyle().weekday(.wide).locale(.app))
-  }
-}
-
-/// Viên hành động nhỏ trong thẻ (Ghi giấc ngủ / Ghi bữa / Đồng bộ).
-struct AssistantActionPill: View {
-  let title: String
-  let symbol: String
-  let action: () -> Void
-
-  var body: some View {
-    Button(action: action) {
-      Label(title, systemImage: symbol)
-        .font(.system(size: 14, weight: .semibold))
-        .foregroundStyle(DS.Color.background.swiftUI)
-        .padding(.horizontal, 14)
-        .frame(height: 34)
-        .background(DS.Color.foreground.swiftUI, in: Capsule())
-        .frame(minHeight: 44)
-        .contentShape(Capsule())
-    }
-    .buttonStyle(TodayPressStyle())
   }
 }
 
@@ -258,92 +163,6 @@ private struct Sparkline: View {
       .frame(width: 86, height: 40)
       .accessibilityHidden(true)
     }
-  }
-}
-
-/// Một mảng: nhãn + một câu (+ dòng phụ, + thanh tiến độ).
-struct AreaHighlight: View {
-  let symbol: String
-  let title: String
-  let tint: Color
-  let headline: String
-  var detail: String?
-  var progress: Double?
-  /// Hành động khi mảng chưa có dữ liệu (dữ liệu → hành động, như Apple Health).
-  var action: (title: String, symbol: String, run: () -> Void)?
-
-  var body: some View {
-    VStack(alignment: .leading, spacing: 4) {
-      AssistantCaption(symbol: symbol, text: title, tint: tint)
-      Text(verbatim: headline)
-        .font(.system(size: 17, weight: .semibold))
-        .foregroundStyle(DS.Color.foreground.swiftUI)
-      if let detail {
-        Text(verbatim: detail)
-          .font(.system(size: 13))
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-          .fixedSize(horizontal: false, vertical: true)
-      }
-      if let progress {
-        GeometryReader { g in
-          ZStack(alignment: .leading) {
-            Capsule().fill(tint.opacity(0.14))
-            Capsule().fill(tint).frame(width: g.size.width * min(1, max(0, progress)))
-          }
-        }
-        .frame(height: 5)
-        .padding(.top, 6)
-      }
-      if let action {
-        AssistantActionPill(title: action.title, symbol: action.symbol, action: action.run).padding(.top, 4)
-      }
-    }
-    .modifier(AssistantSurface())
-    .accessibilityElement(children: .contain)
-  }
-}
-
-/// Ô "Hỏi coach về hôm nay…" — chạm mở chat; đang có cuộc trò chuyện thì có dòng
-/// "Tiếp tục: …".
-struct AskCoachBar: View {
-  let lastAsked: String?
-  let open: () -> Void
-
-  var body: some View {
-    Button(action: open) {
-      VStack(alignment: .leading, spacing: 6) {
-        // Không ký hiệu ASCND Intelligence ở đây: thẻ Insight ngay trên đã mang nó.
-        HStack(spacing: 10) {
-          Text("assistant.ask")
-            .font(.system(size: 15))
-            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-          Spacer(minLength: 0)
-          Image(systemName: "arrow.up")
-            .font(.system(size: 14, weight: .bold))
-            .foregroundStyle(DS.Color.background.swiftUI)
-            .frame(width: 34, height: 34)
-            .background(DS.Color.foreground.swiftUI, in: Circle())
-        }
-        .padding(.leading, 16)
-        .padding(.trailing, 6)
-        .frame(height: 50)
-        // Cùng viên kính với mọi ô chat của app (19/10, chủ dự án).
-        .glassComposer(radius: 25)
-        if let lastAsked {
-          Label {
-            Text("assistant.coach.continue \(lastAsked)").lineLimit(1)
-          } icon: {
-            Image(systemName: "clock")
-          }
-          .font(.system(size: 13))
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-          .padding(.leading, 16)
-        }
-      }
-      .contentShape(Rectangle())
-    }
-    .buttonStyle(TodayPressStyle())
-    .accessibilityLabel(Text("assistant.coach.open.a11y"))
   }
 }
 

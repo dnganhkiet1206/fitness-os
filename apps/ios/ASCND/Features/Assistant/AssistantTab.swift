@@ -2,19 +2,24 @@ import ASCNDCore
 import ASCNDDesignSystem
 import SwiftUI
 
-/// Đích của tab Trợ lý.
+/// Đích của tab Tiến bộ (trước là Trợ lý).
 enum AssistantRoute: Hashable {
   case chat, weekly, steps, training, biometrics, sleep, goals, measure, photos, memory, trends, tools
+  /// GĐ3: huy chương, Cộng đồng (bỏ khỏi thanh tab).
+  case awards, community
 }
 
-/// Tab Trợ lý (#527 Phase 6) — `(tabs)/assistant.tsx` @ fac9ac2.
+/// Tab Tiến bộ — GĐ3 (Kiệt duyệt 21/10, mock `gd3-four-areas.html`): tab Trợ lý
+/// (#527 Phase 6, `(tabs)/assistant.tsx` @ fac9ac2) gộp thêm Koa / Gains, Tuần của
+/// Koa, Cơ thể (từ Tập luyện), huy chương; Cộng đồng còn một dòng ở cuối. Phần
+/// "Tóm tắt" cũ thành mục Hồi phục. Coach vẫn mở từ nút Koa ở Ghi nhanh.
 ///
 /// Thiết kế v2 (15/10): xem `AssistantSummaryViews.swift`. Tóm tắt dùng các dòng
 /// của `AssistantBrief`; chip hỏi nhanh ở màn chat trống; bốn ô chỉ số + bảng 7
 /// ngày (`MetricPanelView`) ở màn "Xu hướng 7 ngày"; lưới đủ công cụ ở "Tất cả
 /// công cụ".
 ///
-/// "Insight hôm nay" (`ai-smart-nudges`, `InsightCard`).
+/// "Insight hôm nay" (`ai-smart-nudges`) ở Hôm nay (`TodayCoachSection`, GĐ3).
 ///
 /// Chưa có (PARTIAL): thẻ nguồn Health, aura / glass; lưới
 /// công cụ chỉ có những màn đã port (tổng kết tuần, vận động, sinh trắc học,
@@ -36,7 +41,6 @@ struct AssistantTab: View {
   @State private var weekly: WeeklyReviewBook?
   @State private var biometrics: BiometricsBook?
   @State private var metrics: MetricHistoryBook?
-  @State private var nudges: SmartNudgesBook?
   @State private var steps: StepsBook?
   @State private var sleep: SleepInsightsBook?
   /// Thẻ tập luyện đầy đủ (RN `TrainingCard`) — chuyển từ "Xem thêm" của Hôm nay
@@ -45,7 +49,8 @@ struct AssistantTab: View {
   @State private var goals: SmartGoalsBook?
   @State private var measure: MeasurementsBook?
   @State private var photos: ProgressPhotosBook?
-  @State private var hour = Calendar.current.component(.hour, from: Date())
+  /// GĐ3: huy chương.
+  @State private var awards: AwardsBook?
   @State private var built = false
   /// Ghi nhanh từ thẻ (15/10): ngủ / bữa.
   @State private var logging: AssistantLog?
@@ -62,45 +67,42 @@ struct AssistantTab: View {
         // ô hỏi coach; bảng 7 ngày và đủ công cụ nằm sau một lần chạm.
         VStack(alignment: .leading, spacing: DS.Spacing.md) {
           header
-          if let signal {
-            SummaryCard(
-              signal: signal, metrics: metrics, lang: lang, hour: hour, openTrends: { path.append(.trends) },
-              // "Ghi nhanh" có trên mọi máy — Trợ lý để hiểu, không lặp nút ghi (15/10).
-              logSleep: nil)
+          // Kiệt 21/10 ("lặp với các màn khác"): Tiến bộ chỉ giữ thứ THEO THỜI GIAN —
+          // Koa / Gains ở đầu Hôm nay và phòng Koa; sẵn sàng hôm nay ở thẻ buổi tập
+          // Hôm nay; calo ở Dinh dưỡng; hỏi Koa ở nút Koa của Ghi nhanh.
+          sectionTitle("wh.seg.body")
+          BodySection(userId: flow.today.userId, today: flow.today.today)
+          if let metrics {
+            sectionTitle("progress.recovery")
+            TrendHighlight(book: metrics, lang: lang) { path.append(.trends) }
           }
-          // Máy chủ chưa bật tính năng → không hiện thẻ lỗi vĩnh viễn (15/10, audit).
-          if let nudges, !nudges.isNotDeployed, ai {
-            InsightCard(
-              book: nudges,
-              // AI lỗi (quá tải, mạng…): nhắc dựng từ số thật thay cho dòng lỗi.
-              fallback: signal.map { SmartNudges.fallback($0.signal, lang: lang.rawValue, hour: hour) } ?? []
-            ) { Task { await loadInsight(force: true) } }
+          if let awards {
+            RecentAwardsCard(book: awards, lang: lang) { path.append(.awards) }
           }
-          if let chat, ai {
-            AskCoachBar(lastAsked: chat.messages.last { $0.role == .user }?.content) { path.append(.chat) }
-          } else if built, ai {
-            ContentUnavailableView {
-              Label { Text("coach.title") } icon: { IntelligenceMark(size: 28) }
-            } description: {
-              Text("coach.unavailable")
+          sectionTitle("progress.more")
+          VStack(spacing: 0) {
+            if weekly != nil, ai {
+              NavigationLink(value: AssistantRoute.weekly) {
+                WorkoutsHomeView.toolRow(
+                  "calendar", String(localized: "assistant.tool.week"), sub: weekLine, tint: DS.Color.metricBlue.swiftUI)
+              }
+              .buttonStyle(.plain)
+              Divider().padding(.leading, 58).opacity(0.6)
             }
-          }
-          highlights
-          forYou
-          Button {
-            path.append(.tools)
-          } label: {
-            HStack {
-              Text("assistant.alltools").font(.system(size: 15, weight: .medium))
-              Spacer(minLength: 0)
-              Image(systemName: "chevron.right").font(.footnote.weight(.semibold))
+            NavigationLink(value: AssistantRoute.tools) {
+              WorkoutsHomeView.toolRow(
+                "square.grid.2x2", String(localized: "assistant.alltools"), sub: nil, tint: DS.Color.metricBlue.swiftUI)
             }
-            .foregroundStyle(DS.Color.foreground.swiftUI)
-            .frame(minHeight: 44)
-            .padding(.horizontal, 4)
-            .contentShape(Rectangle())
+            .buttonStyle(.plain)
+            Divider().padding(.leading, 58).opacity(0.6)
+            NavigationLink(value: AssistantRoute.community) {
+              WorkoutsHomeView.toolRow(
+                "person.2", String(localized: "tab.community"), sub: nil, tint: DS.Color.metricRose.swiftUI)
+            }
+            .buttonStyle(.plain)
           }
-          .buttonStyle(TodayPressStyle())
+          .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous))
+          .todayCard()
           // Apple Health chỉ ở Cài đặt (15/10, chủ dự án: "chỉ để apple health trong
           // cài đặt các tab khác gỡ").
         }
@@ -123,9 +125,8 @@ struct AssistantTab: View {
       .refreshable {
         await signal?.load()
         await metrics?.load(kcalTarget: kcalTarget)
-        await loadInsight()
       }
-      .navigationTitle(Text("tab.assistant"))
+      .navigationTitle(Text("tab.progress"))
       .ascndPage()
       // Tiêu đề lớn đã nằm trong nội dung — thanh điều hướng ẩn như các tab khác
       // (15/10, audit: tiêu đề nhỏ trôi đè lên thẻ khi cuộn).
@@ -177,6 +178,10 @@ struct AssistantTab: View {
             }
             .ascndPage()
           }
+        case .awards:
+          if let awards { AwardsView(book: awards, lang: lang) }
+        case .community:
+          CommunityScreen(pushed: true)
         case .tools:
           ScrollView {
             VStack(alignment: .leading, spacing: DS.Spacing.md) {
@@ -199,19 +204,18 @@ struct AssistantTab: View {
       weekly = services.makeWeeklyReview(userId: userId, today: today)
       biometrics = services.makeBiometricsBook(userId: userId)
       metrics = services.makeMetricHistory(userId: userId, today: today)
-      nudges = services.makeSmartNudges(userId: userId)
       steps = services.makeStepsBook(userId: userId, today: today)
       sleep = services.makeSleepInsights(userId: userId)
       training = services.makeTrainingCard(userId: userId)
       goals = services.makeSmartGoals(userId: userId, today: today)
       measure = services.makeMeasurements(userId: userId)
       photos = services.makeProgressPhotos(userId: userId)
+      awards = services.makeAwardsBook(userId: userId)
       built = true
+      Task { await awards?.load() }
       await signal?.load()
       // Sau tín hiệu: phân tích calo cần mục tiêu calo của hồ sơ.
       await metrics?.load(kcalTarget: kcalTarget)
-      // Sau tín hiệu: khoá của insight cần dấu "đã ngủ / ăn / tập" hôm nay.
-      await loadInsight()
     }
     // RN học khi app vào nền (`AppState` → `background`): đó mới là lúc cuộc
     // trò chuyện thật sự "xong".
@@ -226,13 +230,11 @@ struct AssistantTab: View {
       // Ra tiền cảnh: số hôm nay có thể đã đổi (ghi bữa / đồng bộ Health), hoặc
       // đã qua nửa đêm — lời chào, tóm tắt và chip đọc lại.
       guard phase == .active else { return }
-      hour = Calendar.current.component(.hour, from: Date())
       let today = Self.today()
       Task {
         await signal?.move(to: today)
         await weekly?.move(to: today)
         await metrics?.move(to: today, kcalTarget: kcalTarget)
-        await loadInsight()
         await steps?.move(to: today)
         await goals?.move(to: today)
       }
@@ -248,13 +250,13 @@ struct AssistantTab: View {
       weekly?.close()
       biometrics?.close()
       metrics?.close()
-      nudges?.close()
       steps?.close()
       sleep?.close()
       training?.close()
       goals?.close()
       measure?.close()
       photos?.close()
+      awards?.close()
     }
   }
 
@@ -263,20 +265,11 @@ struct AssistantTab: View {
   /// `calorieTargetFor(profile)` của tín hiệu hôm nay (mặc định 2200).
   private var kcalTarget: Double { signal?.signal.kcalTarget ?? 2200 }
 
-  /// Insight của hôm nay theo dấu dữ liệu hiện tại (đổi dấu → lượt gọi mới).
-  private func loadInsight(force: Bool = false) async {
-    guard let nudges, let stamp = signal?.nudgeStamp else { return }
-    await nudges.load(
-      date: Self.today(), lang: lang.rawValue, stamp: stamp, tzOffset: Coach.tzOffset(.current, at: Date()),
-      force: force)
-  }
-
   /// Sau một lượt đồng bộ Apple Health (giờ chỉ ở Cài đặt, hoặc tự chạy khi ra
   /// tiền cảnh): tín hiệu, ô chỉ số và insight hôm nay đọc lại.
   private func reloadAfterHealthSync() async {
     await signal?.load()
     await metrics?.load(kcalTarget: kcalTarget)
-    await loadInsight()
   }
 
   private static func today() -> LocalDate { LocalDate(SystemWallClock().nowMillis(), in: .current) }
@@ -288,87 +281,21 @@ struct AssistantTab: View {
   // MARK: - Đầu trang
 
   private var header: some View {
-    HStack(alignment: .bottom) {
-      VStack(alignment: .leading, spacing: 0) {
-        Text(verbatim: Date().formatted(Date.FormatStyle().weekday(.wide).day().month(.wide).locale(.app)))
-          .font(.system(size: 13, weight: .medium))
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-        Text("assistant.summary")
-          .font(.largeTitle.bold())
-          .foregroundStyle(DS.Color.foreground.swiftUI)
-          .accessibilityAddTraits(.isHeader)
-      }
-      Spacer(minLength: 0)
-    }
+    Text("tab.progress")
+      .font(.largeTitle.bold())
+      .foregroundStyle(DS.Color.foreground.swiftUI)
+      .accessibilityAddTraits(.isHeader)
   }
 
-  // MARK: - Điểm nổi bật
+  // MARK: - Tuần này (GĐ3)
 
-  @ViewBuilder private var highlights: some View {
-    if let signal {
-      let s = signal.signal
-      let hasTrend: Bool = if case .ready(let a) = metrics?.phase, a.bars.contains(where: { !$0.missing }) { true } else { false }
-      let order = AssistantSummary.order(
-        sleepMin: s.sleepMin, heartRate: signal.heartRate, kcal: s.kcal, hasTrend: hasTrend)
-      VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-        sectionTitle("assistant.highlights")
-        ForEach(order, id: \.self) { area in highlight(area, signal: signal) }
-      }
-    }
-  }
-
-  @ViewBuilder private func highlight(_ area: AssistantSummary.Area, signal: AssistantSignalBook) -> some View {
-    let s = signal.signal
-    switch area {
-    case .trend:
-      if let metrics { TrendHighlight(book: metrics, lang: lang) { path.append(.trends) } }
-    case .sleep:
-      let sleepMin = Int(s.sleepMin)
-      AreaHighlight(
-        symbol: "moon.fill", title: String(localized: "metric.sleep"), tint: DS.Color.metricPurple.swiftUI,
-        headline: sleepMin > 0
-          ? String(localized: "assistant.sleep.value \(sleepMin / 60) \(sleepMin % 60)")
-          : String(localized: "assistant.sleep.none"),
-        detail: sleepMin > 0
-          ? (sleepMin >= 420 ? String(localized: "metric.note.good") : String(localized: "metric.note.short"))
-          : String(localized: "assistant.sleep.none.hint"))
-      // "Ghi giấc ngủ" nằm ở thẻ Sẵn sàng phía trên — không lặp ở đây.
-    case .heart:
-      if let hr = signal.heartRate {
-        AreaHighlight(
-          symbol: "heart.fill", title: String(localized: "metric.hr"), tint: DS.Color.readinessRed.swiftUI,
-          headline: String(localized: "assistant.hr \(hr)"),
-          detail: hr < 60
-            ? String(localized: "metric.note.low")
-            : hr <= 80 ? String(localized: "metric.note.normal") : String(localized: "metric.note.high"))
-      }
-    case .nutrition:
-      AreaHighlight(
-        symbol: "flame.fill", title: String(localized: "metric.kcal"), tint: DS.Color.metricOrange.swiftUI,
-        headline: String(
-          localized:
-            "assistant.kcal \(Int(s.kcal).formatted(.number.locale(.app))) \(Int(s.kcalTarget).formatted(.number.locale(.app)))"),
-        detail: s.proteinTarget > 0
-          ? String(
-            localized:
-              "assistant.protein \(Int(s.proteinG).formatted(.number.locale(.app))) \(Int(s.proteinTarget).formatted(.number.locale(.app)))")
-          : nil,
-        progress: s.kcalTarget > 0 ? s.kcal / s.kcalTarget : nil,
-        action: nil)
-    }
-  }
-
-  /// Nhãn sẵn sàng đang hiện ở thẻ Tóm tắt (hôm nay, hoặc điểm gần nhất).
-  private var shownReadiness: AssistantSummary.Readiness? {
-    let s = signal?.signal
-    if let s, let r = s.readiness {
-      // Điểm tạm (chỉ tải tập): thẻ Tóm tắt nói "chưa đủ dữ liệu" — nhãn cũng vậy.
-      return s.hasRecovery ? AssistantSummary.readiness(status: s.status, score: r) : nil
-    }
-    guard case .ready(let a) = metrics?.phase, metrics?.kind == .readiness,
-      let latest = AssistantSummary.latest(a.bars)
-    else { return nil }
-    return AssistantSummary.readiness(status: nil, score: latest.value)
+  /// "2/6 buổi · +24 Gains" của tuần này — cùng `KoaWeek.summary` với màn Tổng kết tuần.
+  private var weekLine: String? {
+    guard let library = flow.today.library, let history = services.koaGainsHistory else { return nil }
+    let today = flow.today.today
+    let s = KoaWeek.summary(
+      weekStart: WeeklyChallenges.weekStart(today), today: today, library: library, history: history.days)
+    return String(localized: "dp.week.count \(s.done) \(s.target)") + " · " + String(localized: "wr.plan.gains \(s.gains)")
   }
 
   /// Ngày của bảng yếu tố: hôm nay nếu có điểm, không thì ngày gần nhất có điểm.
@@ -379,84 +306,6 @@ struct AssistantTab: View {
       return latest.date
     }
     return Self.today()
-  }
-
-  // MARK: - Dành cho bạn
-
-  /// Công cụ của tab ↔ loại trong lõi.
-  private static func coreTool(_ r: AssistantRoute) -> AssistantSummary.Tool? {
-    switch r {
-    case .weekly: .weekly
-    case .steps: .steps
-    case .biometrics: .biometrics
-    case .sleep: .sleep
-    case .goals: .goals
-    case .measure: .measure
-    case .photos: .photos
-    case .memory: .memory
-    case .chat, .trends, .tools, .training: nil
-    }
-  }
-
-  private static func reasonText(_ r: AssistantSummary.Reason) -> String {
-    switch r {
-    case .weekEnd: String(localized: "assistant.why.weekEnd")
-    case .noSleep: String(localized: "assistant.why.noSleep")
-    case .shortSleep: String(localized: "assistant.why.shortSleep")
-    case .fewSteps: String(localized: "assistant.why.fewSteps")
-    case .lowReadiness: String(localized: "assistant.why.lowReadiness")
-    case .monthStart: String(localized: "assistant.why.monthStart")
-    }
-  }
-
-  /// "Dành cho bạn" theo ngữ cảnh (15/10): công cụ có lý do (chưa ngủ, sẵn sàng thấp,
-  /// ít bước buổi chiều, cuối tuần, đầu tháng) lên trước, kèm câu lý do.
-  private var forYouPicks: [(tool: Tool, reason: AssistantSummary.Reason?)] {
-    let tools = availableTools
-    let s = signal?.signal
-    let now = Date()
-    let cal = Calendar.current
-    let ctx = AssistantSummary.Context(
-      weekday: cal.component(.weekday, from: now), dayOfMonth: cal.component(.day, from: now), hour: hour,
-      sleepMin: s?.sleepMin ?? 0, steps: s?.steps ?? 0,
-      readiness: shownReadiness)
-    let picks = AssistantSummary.forYou(tools.compactMap { Self.coreTool($0.route) }, context: ctx)
-    return picks.compactMap { p in
-      tools.first { Self.coreTool($0.route) == p.tool }.map { ($0, p.reason) }
-    }
-  }
-
-  @ViewBuilder private var forYou: some View {
-    let list = forYouPicks
-    if !list.isEmpty {
-      VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-        sectionTitle("assistant.foryou")
-        ScrollView(.horizontal, showsIndicators: false) {
-          HStack(spacing: DS.Spacing.sm) {
-            ForEach(list, id: \.tool.id) { item in
-              let t = item.tool
-              NavigationLink(value: t.route) {
-                VStack(alignment: .leading, spacing: 6) {
-                  AssistantCaption(symbol: t.symbol, text: t.label, tint: t.tint)
-                    .lineLimit(1)
-                  Text(verbatim: item.reason.map(Self.reasonText) ?? t.hint)
-                    .font(.system(size: 13, weight: item.reason == nil ? .regular : .medium))
-                    .foregroundStyle(DS.Color.foreground.swiftUI)
-                    .lineLimit(2, reservesSpace: true)
-                    .multilineTextAlignment(.leading)
-                }
-                .frame(width: 150, alignment: .leading)
-                .modifier(AssistantSurface())
-                .contentShape(Rectangle())
-              }
-              .buttonStyle(TodayPressStyle())
-              .accessibilityElement(children: .combine)
-            }
-          }
-        }
-        .scrollClipDisabled()
-      }
-    }
   }
 
   private func sectionTitle(_ key: LocalizedStringKey) -> some View {
@@ -566,119 +415,3 @@ struct AssistantTab: View {
   }
 }
 
-/// "Insight hôm nay": đang đọc / lỗi (chạm thử lại) / không có gì nổi bật /
-/// tối đa vài câu với chấm theo mức ưu tiên; "Cập nhật HH:mm" là lúc kết quả
-/// về (ẩn khi chưa có lần nào).
-private struct InsightCard: View {
-  let book: SmartNudgesBook
-  /// Nhắc từ số thật khi AI không trả lời (`SmartNudges.fallback`).
-  var fallback: [SmartNudges.Nudge] = []
-  let retry: () -> Void
-
-  var body: some View {
-    VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-      HStack {
-        Label { Text("insight.title") } icon: { IntelligenceMark(size: 18) }
-          .font(DS.TextStyle.headline)
-          .foregroundStyle(DS.Color.foreground.swiftUI)
-          .accessibilityAddTraits(.isHeader)
-        Spacer()
-        if case .ready(let entry) = book.phase {
-          Text("insight.updated \(Self.time(entry.at))")
-            .font(DS.TextStyle.caption)
-            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-        }
-      }
-      content
-        .padding(DS.Spacing.md)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.lg))
-    }
-  }
-
-  @ViewBuilder private var content: some View {
-    switch book.phase {
-    case .idle, .loading:
-      HStack(spacing: DS.Spacing.sm) {
-        IntelligenceOrb(size: 24)
-        Text("insight.loading")
-          .font(DS.TextStyle.footnote)
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-      }
-    case .failed where !fallback.isEmpty:
-      // Bản tóm tắt từ số liệu (16/10, chủ dự án): thẻ không trống mỗi lần AI quá
-      // tải. Ghi rõ nguồn; chạm dòng nguồn để thử lại AI.
-      VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-        nudgeList(fallback)
-        Button(action: retry) {
-          Label("insight.fallback", systemImage: "arrow.clockwise")
-            .font(DS.TextStyle.caption)
-            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-            .frame(maxWidth: .infinity, minHeight: 32, alignment: .leading)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-      }
-    case .failed(let failure):
-      Button(action: retry) {
-        Label {
-          VStack(alignment: .leading, spacing: 2) {
-            Text("insight.failed")
-            Text(verbatim: WeeklyReviewView.failureText(failure))
-              .font(DS.TextStyle.caption)
-          }
-        } icon: {
-          Image(systemName: "exclamationmark.triangle")
-        }
-        .font(DS.TextStyle.footnote)
-        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-        .contentShape(Rectangle())
-      }
-      .buttonStyle(.plain)
-    case .ready(let entry) where entry.nudges.isEmpty:
-      Text("insight.empty")
-        .font(DS.TextStyle.footnote)
-        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-    case .ready(let entry):
-      nudgeList(entry.nudges)
-    }
-  }
-
-  private func nudgeList(_ nudges: [SmartNudges.Nudge]) -> some View {
-      VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-        ForEach(Array(nudges.enumerated()), id: \.offset) { _, n in
-          HStack(alignment: .firstTextBaseline, spacing: DS.Spacing.sm) {
-            Circle()
-              .fill(Self.tint(n.priority))
-              .frame(width: 8, height: 8)
-              .accessibilityHidden(true)
-            Text(verbatim: n.message)
-              .font(DS.TextStyle.body)
-              .foregroundStyle(DS.Color.foreground.swiftUI)
-              .fixedSize(horizontal: false, vertical: true)
-          }
-        }
-      }
-  }
-
-  private static func tint(_ p: SmartNudges.Priority) -> Color {
-    switch p {
-    case .high: DS.Color.readinessRed.swiftUI
-    case .medium: DS.Color.readinessYellow.swiftUI
-    case .low: DS.Color.readinessGreen.swiftUI
-    }
-  }
-
-  private static func time(_ at: EpochMillis) -> String {
-    Date(timeIntervalSince1970: TimeInterval(at.millis) / 1000)
-      .formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(.app))
-  }
-}
-
-extension SmartNudgesBook {
-  /// Máy chủ chưa triển khai `ai-smart-nudges`.
-  var isNotDeployed: Bool {
-    if case .failed(.notDeployed) = phase { true } else { false }
-  }
-}

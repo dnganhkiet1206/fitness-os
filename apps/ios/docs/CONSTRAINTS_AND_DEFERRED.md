@@ -72,12 +72,12 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 | Đổi tab Cộng đồng thành "Bạn tập" | Tính năng bạn bè chưa đủ thực chất | Có tính năng bạn tập thật | V1 21/10 |
 | Thẻ chia sẻ Story, bạn tập, xếp hạng bạn bè (đợt 5 cũ) | Cần người dùng | Sau TestFlight + số liệu | V1 21/10 |
 | Mở rộng AI (Coach đọc lịch / Koa, AI lập kế hoạch) | Chỉ dùng AI khi tạo giá trị thật; luồng chính không được phụ thuộc AI | Sau khi vòng lõi chứng minh giá trị (GĐ4) | V1 21/10 |
-| Điều hướng 4 khu vực Today · Train · Fuel · Progress | Là hướng đích; không làm khi parity còn mở | GĐ3 | V1 21/10 |
+| ~~Điều hướng 4 khu vực Today · Train · Fuel · Progress~~ | **Đã làm** (GĐ3, Kiệt duyệt mock 21/10, nhánh `claude/gd3-areas`): Hôm nay · Tập luyện · Dinh dưỡng · Tiến bộ. Cộng đồng bỏ khỏi thanh tab (mở từ Tiến bộ / trang cá nhân / chuông); "Tóm tắt" gộp vào Tiến bộ | — | V1 21/10 |
 | Đồ phòng gym của Koa, gói trả phí AI (đợt 6 cũ) | Chưa có người dùng, chưa có quyết định doanh thu | Sau phát hành | 20/10 |
 | Koa Classic tháng (đợt 4 cũ) | Thay bằng "Tuần của Koa" cá nhân hoá (QĐ 2) | Kiệt quyết lại | V1 21/10 |
 | "Buổi ngắn 15 phút" ở màn quay lại | Hoãn từ đợt 2. Theo QĐ 3, phải thành "đề xuất bước tiếp theo theo lịch sử" | GĐ2 | 20/10 |
 | Khoá Face ID, xuất dữ liệu | Chưa ưu tiên | Trước khi phát hành | 20/10 |
-| Kế hoạch ăn chi tiết, đi chợ, thực phẩm bổ sung | **Không xoá**; chỉ đưa xuống khu vực phụ (QĐ 4) | GĐ3 | V1 21/10 |
+| ~~Kế hoạch ăn chi tiết, đi chợ, thực phẩm bổ sung~~ | **Đã đưa xuống** Dinh dưỡng › "Thêm" (GĐ3, 21/10); bỏ bộ chọn Hôm nay / Kế hoạch ăn; bỏ dòng bổ sung ở Hôm nay. Không xoá màn / dữ liệu | — | V1 21/10 |
 | Kiểm iOS 18–25 | Không có máy / simulator | Có máy | 16/10 |
 
 ---
@@ -106,6 +106,13 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
   - **A1 dời / nghỉ trên app:** Kiệt 21/10 bỏ phương án Supabase dev bằng Docker trên máy này (không đủ tài nguyên). Chỉ kiểm được trên app khi migration được deploy (cần duyệt), hoặc trên một máy / CI có Supabase dev.
   - **A2 mất mạng hẳn trên simulator:** không có công tắc mạng riêng; tắt mạng máy Mac là đổi cài đặt hệ thống.
   - Chi tiết: `GD1-DAILY-PLAN.md`, mục "Hồi quy GĐ1".
+
+**GĐ3 (bốn khu vực) — hạn chế đã biết:**
+- Link `ascnd://community` (và `assistant`) mở tab **Tiến bộ**, chưa mở thẳng màn Cộng đồng.
+- Tab đã lưu của bản cũ: "assistant" → Tiến bộ; "community" → về Hôm nay (không còn tab ấy).
+- Koa ở thẻ đầu Tiến bộ đứng yên (`idle`), không đổi nét mặt theo ngày như ở Hôm nay.
+- Chưa kiểm: VoiceOver của thanh tab mới, iPhone màn hẹp, iOS 18–25 (nút "+" nổi thay thanh Ghi nhanh).
+- `PARITY_MATRIX.md` chưa cập nhật theo 4 khu vực (việc cuối của GĐ3 trong lộ trình).
 
 **Tìm thấy khi kiểm ngày 21/10** (simulator, tài khoản test):
 - ~~Coach AI bị cắt giữa câu, còn sót dấu `**` thô.~~ Sửa 21/10 (nhánh `claude/fix-five-bugs`): app bỏ `**` lẻ, câu bị cắt vì hết hạn mức thì nối "…". Server: `MAX_TOKENS` 1024 → 2048 (model gemini-3-flash tiêu một phần cho suy luận ẩn). **Phần server chỉ có hiệu lực khi deploy `ai-coach` — chưa deploy, cần Kiệt duyệt.**
@@ -139,4 +146,5 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - 21/10/2026: hồi quy GĐ1 (R / W / D PASS; A1, A2 BLOCKED).
 - 21/10/2026: Kiệt lệnh merge: #641 (GĐ1) và #642 (GĐ2) vào `native/ios-rewrite`; nghiệm thu GĐ1 còn thiếu iPhone thật, A1, A2; migration vẫn chưa deploy.
 - 21/10/2026: sửa 5 lỗi tìm thấy 21/10 (phần app xong; phần server `ai-coach` chờ deploy).
+- 21/10/2026: GĐ3 — bốn khu vực, Cộng đồng ra khỏi thanh tab, "Tóm tắt" gộp vào Tiến bộ, kế hoạch ăn / đi chợ / bổ sung xuống "Thêm"; thêm hạn chế GĐ3.
 - 21/10/2026: GĐ2 — XP ẩn khỏi giao diện, khoá đồ theo hạng Gains, Tuần của Koa thay thử thách chung, ẩn thử thách cộng đồng; thêm hạn chế khoá đồ chỉ ở app.

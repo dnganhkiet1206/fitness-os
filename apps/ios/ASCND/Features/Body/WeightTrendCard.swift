@@ -24,6 +24,8 @@ struct WeightTrendCard: View {
   @State private var range: WeightTrend.Range = .all
   @State private var editingGoal = false
   @State private var showsAll = false
+  /// Số lần cân hiện khi thu gọn.
+  static let collapsed = 3
   /// Ngày ngón tay đang chỉ trên biểu đồ (kéo để đọc số, 14/10).
   @State private var scrubDate: Date?
 
@@ -121,7 +123,8 @@ struct WeightTrendCard: View {
   // MARK: - Các lần cân
 
   private func logList(_ entries: [WeightTrend.Entry]) -> some View {
-    let shown = showsAll ? entries : Array(entries.prefix(5))
+    // 3 lần gần nhất cho gọn (Kiệt 21/10, GĐ3); "Xem tất cả" mở đủ.
+    let shown = showsAll ? entries : Array(entries.prefix(Self.collapsed))
     return VStack(alignment: .leading, spacing: DS.Spacing.sm) {
       HStack {
         Text(String(localized: "wt.log.title"))
@@ -139,7 +142,7 @@ struct WeightTrendCard: View {
           if i > 0 { Divider().padding(.leading, 58).opacity(0.6) }
           logRow(e)
         }
-        if entries.count > 5 {
+        if entries.count > Self.collapsed {
           Divider().opacity(0.6)
           Button {
             withAnimation(DSMotion.animation(.snappy, reduceMotion: reduceMotion)) { showsAll.toggle() }
