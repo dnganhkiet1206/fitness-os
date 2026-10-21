@@ -97,6 +97,7 @@ struct TodayExtras<Plan: View>: View {
   @State private var ownWater: WaterBook?
   private var water: WaterBook? { nutrition?.water ?? ownWater }
   @State private var showsSupplements = false
+  @State private var showsKoaWeek = false
   @State private var waterNote: String?
   @State private var waterTaps = 0
   @Environment(ProfileBook.self) private var profile: ProfileBook?
@@ -164,11 +165,18 @@ struct TodayExtras<Plan: View>: View {
           result: dailyPlan.result, lighterOn: flow.today.lighterToday, busy: planBusy, failed: planFailed,
           onPrimary: { primary(dailyPlan.result.action) }, onAlternative: { alternative($0, flow) })
           .todayEntrance(2)
-        TodayWeekStrip(
-          days: TodayWeekStrip.days(today: flow.today.today, library: flow.today.library, trained: flow.today.trained),
-          today: flow.today.today,
-          target: flow.today.library.flatMap { lib in KoaGains.Week(lib).planned.isEmpty ? nil : KoaGains.Week(lib).target })
-          .padding(.horizontal, 2)
+        // Chạm dải → thẻ Tuần của Koa đầy đủ: chú thích, thưởng, luật đếm (Kiệt 21/10).
+        Button { showsKoaWeek = true } label: {
+          TodayWeekStrip(
+            days: TodayWeekStrip.days(today: flow.today.today, library: flow.today.library, trained: flow.today.trained),
+            today: flow.today.today,
+            target: flow.today.library.flatMap { lib in KoaGains.Week(lib).planned.isEmpty ? nil : KoaGains.Week(lib).target })
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityHint(Text("kw.open.hint"))
+        .disabled(koaWeekState == nil)
+        .padding(.horizontal, 2)
       } else {
         // Thẻ buổi tập ngay dưới khối ngày, mang dòng sẵn sàng.
         VStack(alignment: .leading, spacing: DS.Spacing.md) { plan(readinessRow) }
@@ -205,6 +213,16 @@ struct TodayExtras<Plan: View>: View {
         onStartWorkout?()
       }
       .presentationDetents([.medium, .large])
+    }
+    .sheet(isPresented: $showsKoaWeek) {
+      if let state = koaWeekState {
+        ScrollView {
+          KoaWeekCard(state: state, claim: services.koaWeek(userId: userId)?.claim ?? .notYet)
+            .padding(DS.Spacing.md)
+        }
+        .presentationDetents([.medium])
+        .presentationDragIndicator(.visible)
+      }
     }
     .sheet(isPresented: $showsDayLog, onDismiss: { Task { await reloadDay() } }) {
       TellKoaSheet(userId: userId, startListening: tellVoice)
@@ -538,6 +556,12 @@ struct TodayExtras<Plan: View>: View {
     await reloadDailyPlan()
   }
 
+  /// Tuần của Koa theo lịch đã áp — cùng nguồn với dải và với lượt nhận thưởng.
+  private var koaWeekState: KoaWeek.State? {
+    guard let flow else { return nil }
+    return KoaWeek.state(today: flow.today.today, library: flow.today.library, trained: flow.today.trained)
+  }
+
   // MARK: - Việc chính (Daily Plan, GĐ1)
 
   private func reloadDailyPlan() async {
@@ -546,7 +570,7 @@ struct TodayExtras<Plan: View>: View {
     noteComeback(dailyPlan.result)
     // Tuần của Koa (GĐ2): đủ tuần thì nhận +50 xu, một lần mỗi tuần.
     if let week = services.koaWeek(userId: userId) {
-      await week.claimIfComplete(KoaWeek.state(today: flow.today.today, library: flow.today.library, trained: flow.today.trained))
+      await week.claimIfComplete(koaWeekState)
       if case .justClaimed(let coins) = week.claim {
         services.noteKoaReward(userId: userId, amount: coins, seen: dayLoaded, source: KoaWeek.key)
         await mascot?.refreshWallet()

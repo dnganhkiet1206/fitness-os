@@ -243,10 +243,13 @@ struct TodayWeekStrip: View {
     }
   }
 
-  @ViewBuilder private func dot(_ d: Day) -> some View {
-    if d.trained {
+  private func dot(_ d: Day) -> some View { Self.marker(trained: d.trained, planned: d.planned) }
+
+  /// Ký hiệu một ngày — dùng chung cho dải và cho chú thích ở thẻ Tuần của Koa.
+  @ViewBuilder static func marker(trained: Bool, planned: Bool) -> some View {
+    if trained {
       Circle().fill(DS.Color.readinessGreen.swiftUI).frame(width: 8, height: 8)
-    } else if d.planned {
+    } else if planned {
       Circle().stroke(DS.Color.foreground.swiftUI, lineWidth: 1.5).frame(width: 8, height: 8)
     } else {
       Circle().stroke(DS.Color.mutedForeground.swiftUI.opacity(0.5), style: StrokeStyle(lineWidth: 1, dash: [2, 2]))
