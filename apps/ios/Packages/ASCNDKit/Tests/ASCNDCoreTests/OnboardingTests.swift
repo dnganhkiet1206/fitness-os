@@ -73,6 +73,7 @@ private func answerAll(_ c: OnboardingController, branch: OnboardingDraft.Branch
   #expect(c.pickActivity("light"))
   #expect(c.next())
   #expect(c.pickTraining("beginner"))
+  #expect(c.next())  // → schedule (đợt 3)
   #expect(c.next())  // → plan
   #expect(c.next())  // → health / ready
   if c.draft.step == .health { #expect(c.next()) }
@@ -82,7 +83,7 @@ private func answerAll(_ c: OnboardingController, branch: OnboardingDraft.Branch
 struct OnboardingFlowTests {
   @Test func stepsInOrderWithEveryQuestionGated() async {
     let c = await flow(Store())
-    #expect(c.draft.step == .welcome && c.progress.step == 0 && c.progress.total == 12)
+    #expect(c.draft.step == .welcome && c.progress.step == 0 && c.progress.total == 13)
     #expect(!c.canGoBack)
     #expect(c.next())
     #expect(c.draft.step == .intention && !c.canAdvance, "chưa chọn nhánh")
@@ -103,9 +104,19 @@ struct OnboardingFlowTests {
     #expect(c.pickActivity("high") && c.next())
     #expect(c.draft.step == .experience && !c.canAdvance)
     #expect(c.pickTraining("advanced") && c.next())
+    // Đợt 3: lịch tập gợi ý theo kinh nghiệm; 1 hay 6 ngày thì không đi tiếp được.
+    #expect(c.draft.step == .schedule && c.canAdvance)
+    #expect(c.draft.schedule == .init(sessions: 4, days: [0, 1, 3, 4], place: .gym, beginner: false))
+    c.toggleDay(0)
+    c.toggleDay(1)
+    c.toggleDay(3)
+    #expect(c.draft.schedule?.sessions == 1 && !c.canAdvance)
+    c.setSessions(3)
+    c.setPlace(.dumbbell)
+    #expect(c.draft.schedule == .init(sessions: 3, days: [0, 2, 4], place: .dumbbell, beginner: false) && c.next())
     #expect(c.draft.step == .plan && c.next())
     #expect(c.draft.step == .health && c.next())
-    #expect(c.draft.step == .ready && c.progress == (12, 12))
+    #expect(c.draft.step == .ready && c.progress == (13, 13))
     #expect(!c.next(), "màn cuối là Xong, không phải Tiếp")
   }
 
@@ -115,7 +126,7 @@ struct OnboardingFlowTests {
     let c = await flow(Store())
     #expect(c.next())
     c.pickBranch(.maintain)
-    #expect(c.draft.goal == "maintain" && c.progress.total == 11)
+    #expect(c.draft.goal == "maintain" && c.progress.total == 12)
     #expect(c.next() && c.draft.step == .sex)
     #expect(c.back() && c.draft.step == .intention)
     // Đổi ý sang nhánh khác: màn 03 trở lại, mục tiêu cũ bỏ.
@@ -127,7 +138,7 @@ struct OnboardingFlowTests {
   @Test func noHealthKitSkipsHealth() async {
     let c = await flow(Store(), health: false)
     answerAll(c)
-    #expect(c.draft.step == .ready && c.progress.total == 11)
+    #expect(c.draft.step == .ready && c.progress.total == 12)
     #expect(c.back() && c.draft.step == .plan)
   }
 

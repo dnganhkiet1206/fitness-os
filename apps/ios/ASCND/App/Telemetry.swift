@@ -38,6 +38,10 @@ enum Telemetry {
     case comebackShown = "comeback_shown"
     case comebackSession = "comeback_session"
     case notificationOpened = "notification_opened"
+    // Đợt 3 — kích hoạt.
+    case scheduleCreated = "schedule_created"
+    case firstSessionStarted = "first_session_started"
+    case firstSessionCompleted = "first_session_completed"
   }
 
   private static var analytics = false

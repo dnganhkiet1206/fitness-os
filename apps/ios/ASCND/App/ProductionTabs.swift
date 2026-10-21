@@ -142,6 +142,11 @@ struct WorkoutsTab: View {
           let sets = Self.summarySets(session)
           let summary = try await flow.finish()
           Telemetry.capture(.workoutCompleted)
+          // Buổi đầu xong (đợt 3): mẹo tắt, đo kích hoạt.
+          if let uid = services.session.session?.userId, StarterPlan.guideOn(uid) {
+            StarterPlan.setGuide(false, userId: uid)
+            Telemetry.capture(.firstSessionCompleted)
+          }
           services.didLog()
           finished = FinishedWorkout(summary: summary, sets: sets)
         },

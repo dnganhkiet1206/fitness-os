@@ -71,6 +71,7 @@ private struct SignedInScope<Content: View>: View {
   @Environment(AppServices.self) private var services
   @Environment(RestTimerController.self) private var rest
   @Environment(\.scenePhase) private var scenePhase
+  @Environment(DeepLinkInbox.self) private var links: DeepLinkInbox?
   @State private var flow: WorkoutFlow?
   /// Hồ sơ của ĐÚNG tài khoản này — nguồn đơn vị tạ (#527 1.9-A). Dựng lại
   /// cùng phiên (`.id(userId)`), nên không bao giờ mang đơn vị người trước.
@@ -132,6 +133,9 @@ private struct SignedInScope<Content: View>: View {
       // khi phiên đã là của người này.
       async let food: Void = books.loadOnce()
       await f.start()
+      // Lịch tuần chọn ở onboarding (đợt 3): áp khi kế hoạch đã đọc; "Tập buổi đầu
+      // ngay" → mở tab Tập luyện.
+      if await StarterPlan.applyIfPending(userId: userId, flow: f) { links?.receive(.tab(.workouts)) }
       await units
       await food
       // Sau `forgetOtherAccounts`, như hai sổ trên.

@@ -76,6 +76,19 @@ public struct WorkoutView: View {
   /// Luồng tập của phiên — mở màn ghi tay cho bài phát sinh sau khi đã ghi
   /// (`day-plan.tsx:2291`). `nil` (preview) = không có liên kết.
   @Environment(WorkoutFlow.self) private var flow: WorkoutFlow?
+  @Environment(AppServices.self) private var services: AppServices?
+  /// Đã tắt mẹo buổi đầu trong lần mở này.
+  @State private var guideHidden = false
+
+  /// Mẹo của buổi đầu theo tiến độ (đợt 3, mock `koa-wave3-activation.html`).
+  private var firstSessionTip: String? {
+    guard !guideHidden, let uid = services?.session.session?.userId, StarterPlan.guideOn(uid) else { return nil }
+    let total = controller.plan.rows.filter { !$0.warmup }.count
+    let done = controller.progress.done.values.filter { $0 }.count
+    if done == 0 { return String(localized: "guide.first.0") }
+    if total > 0, done * 2 >= total { return String(localized: "guide.first.2") }
+    return String(localized: "guide.first.1")
+  }
   @State private var showsManualLog = false
 
   public init(
@@ -121,6 +134,20 @@ public struct WorkoutView: View {
           // làm được trong Lab.
           workoutContent
         }
+      }
+      // Buổi đầu (đợt 3): Koa hướng dẫn từng bước ở đầu màn.
+      .safeAreaInset(edge: .top) {
+        if !isPreview, !controller.isLogged, controller.phase != .loading, let tip = firstSessionTip {
+          FirstSessionTip(text: tip) {
+            if let uid = services?.session.session?.userId { StarterPlan.setGuide(false, userId: uid) }
+            guideHidden = true
+          }
+          .padding(.horizontal, DS.Spacing.md)
+          .padding(.bottom, DS.Spacing.xs)
+        }
+      }
+      .onChange(of: controller.progress.done.values.filter { $0 }.count) { old, new in
+        if old == 0, new > 0, firstSessionTip != nil { Telemetry.capture(.firstSessionStarted) }
       }
       .navigationTitle(isPreview ? "" : controller.plan.templateName)
       .ascndPage()
@@ -1607,5 +1634,36 @@ struct ExerciseOrderSheet: View {
     }
     .presentationDetents([.medium, .large])
     .sensoryFeedback(.selection, trigger: exercises.map(\.key))
+  }
+}
+
+/// Dải mẹo của Koa ở buổi đầu (đợt 3).
+private struct FirstSessionTip: View {
+  let text: String
+  let onHide: () -> Void
+
+  var body: some View {
+    HStack(alignment: .center, spacing: 10) {
+      MascotFigureView(emotion: .happy, size: 40, animated: false)
+        .frame(width: 44, height: 50)
+        .accessibilityHidden(true)
+      Text(verbatim: text)
+        .font(DS.TextStyle.footnote)
+        .foregroundStyle(DS.Color.foreground.swiftUI)
+        .fixedSize(horizontal: false, vertical: true)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .id(text)
+        .transition(.opacity)
+      Button(action: onHide) {
+        Image(systemName: "xmark").font(.footnote.weight(.semibold))
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          .frame(width: 32, height: 32)
+      }
+      .accessibilityLabel(Text("guide.first.hide"))
+    }
+    .padding(10)
+    .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+    .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(DS.Color.metricOrangeGraphic.swiftUI.opacity(0.35)))
+    .animation(.easeInOut(duration: 0.25), value: text)
   }
 }
