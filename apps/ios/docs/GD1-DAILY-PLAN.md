@@ -151,4 +151,7 @@ LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 PG_BIN=/opt/homebrew/opt/postgresql@16/bin b
   - `app-macos` + `core-linux`: https://github.com/dnganhkiet1206/fitness-os/actions/runs/39569723816
   - `gate`: https://github.com/dnganhkiet1206/fitness-os/actions/runs/39569721998
   - `sql`: https://github.com/dnganhkiet1206/fitness-os/actions/runs/39569722276
-- CI của `8d2f9d8b`: xem PR #641. Kết quả ghi vào báo cáo trên #527.
+- CI của đợt hồi quy (commit `1503f8ef`, gồm test `8d2f9d8b`): **xanh toàn bộ**.
+  - `app-macos` + `core-linux`: https://github.com/dnganhkiet1206/fitness-os/actions/runs/39620542709
+  - `gate`: https://github.com/dnganhkiet1206/fitness-os/actions/runs/39620533252 và https://github.com/dnganhkiet1206/fitness-os/actions/runs/39620542663
+  - `sql` (chạy D1–D5): https://github.com/dnganhkiet1206/fitness-os/actions/runs/39620542706
