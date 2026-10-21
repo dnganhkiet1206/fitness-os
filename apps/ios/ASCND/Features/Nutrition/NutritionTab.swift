@@ -16,6 +16,7 @@ import SwiftUI
 /// Sổ thuộc PHIÊN (`NutritionBooks`, dựng và đóng ở `SignedInScope`): thẻ, màn
 /// và kế hoạch nhắc nhở cùng đọc một bản.
 struct NutritionTab: View {
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   /// Sổ của phiên (`SignedInScope`) — cùng sổ mà kế hoạch nhắc nhở đọc.
   @Environment(NutritionBooks.self) private var books: NutritionBooks?
   @Environment(AppServices.self) private var services: AppServices?
@@ -52,7 +53,7 @@ struct NutritionTab: View {
         }
         .padding(DS.Spacing.md)
         .padding(.bottom, DS.Spacing.lg)
-        .animation(.smooth(duration: 0.3), value: segment)
+        .animation(DSMotion.animation(.smooth(duration: 0.3), reduceMotion: reduceMotion), value: segment)
       }
       // Không kéo để làm mới (chủ dự án, 13/10: chỉ Hôm nay có): tab tự đọc
       // lại mỗi lần hiện và sau mỗi lần ghi; nước / thực phẩm bổ sung đọc lại

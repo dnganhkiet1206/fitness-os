@@ -23,6 +23,7 @@ import Charts
 import SwiftUI
 
 public struct WorkoutHistoryView: View {
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   let book: HistoryBook
   @State private var pendingDelete: HistoryEntry?
   /// Đơn vị tạ của tài khoản (#527 1.9-A) — số lưu vẫn là kg.
@@ -187,7 +188,7 @@ public struct WorkoutHistoryView: View {
 
   private func chip(_ title: String, on: Bool, action: @escaping () -> Void) -> some View {
     Button {
-      withAnimation(.snappy) { action() }
+      withAnimation(DSMotion.animation(.snappy, reduceMotion: reduceMotion)) { action() }
     } label: {
       Text(verbatim: title)
         .font(DS.TextStyle.footnote.weight(.semibold))

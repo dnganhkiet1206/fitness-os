@@ -12,6 +12,7 @@ import SwiftUI
 ///   món) — RN chỉ cho xem;
 /// - đổi bữa thì gợi ý cũ bị bỏ (gợi ý bữa sáng không hợp bữa tối).
 struct MealSuggestCard: View {
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   let logger: MealLogger
 
   @Environment(AppServices.self) private var services
@@ -118,7 +119,7 @@ struct MealSuggestCard: View {
     return VStack(alignment: .leading, spacing: DS.Spacing.xs) {
       HStack(alignment: .top, spacing: DS.Spacing.sm) {
         Button {
-          withAnimation(.snappy) { open = isOpen ? nil : s.id }
+          withAnimation(DSMotion.animation(.snappy, reduceMotion: reduceMotion)) { open = isOpen ? nil : s.id }
         } label: {
           VStack(alignment: .leading, spacing: 3) {
             Text(verbatim: s.name)

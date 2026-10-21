@@ -5,6 +5,7 @@
 public import SwiftUI
 
 public struct DSPillButtonStyle: ButtonStyle {
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   public enum Kind: Sendable { case primary, secondary }
   let kind: Kind
   @Environment(\.isEnabled) private var isEnabled
@@ -28,7 +29,7 @@ public struct DSPillButtonStyle: ButtonStyle {
       .frame(minHeight: 44)
       .opacity(isEnabled ? (configuration.isPressed ? 0.75 : 1) : 0.4)
       .scaleEffect(configuration.isPressed ? 0.97 : 1)
-      .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
+      .animation(DSMotion.animation(.easeOut(duration: 0.12), reduceMotion: reduceMotion), value: configuration.isPressed)
   }
 }
 

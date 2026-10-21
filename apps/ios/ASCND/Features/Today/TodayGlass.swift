@@ -51,6 +51,7 @@ extension View {
 }
 
 private struct StatusBarScrim: ViewModifier {
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
   /// Chiều cao vùng thanh trạng thái, đọc từ nội dung (một `GeometryReader` đã
   /// bỏ qua vùng an toàn thì đọc ra 0).
@@ -65,7 +66,7 @@ private struct StatusBarScrim: ViewModifier {
       .onScrollGeometryChange(for: Bool.self) { g in
         g.contentOffset.y + g.contentInsets.top > 6
       } action: { _, now in
-        withAnimation(.easeOut(duration: 0.18)) { scrolled = now }
+        withAnimation(DSMotion.animation(.easeOut(duration: 0.18), reduceMotion: reduceMotion)) { scrolled = now }
       }
       .background {
         GeometryReader { g in

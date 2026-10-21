@@ -124,6 +124,7 @@ struct CommunityCommentsSheet: View {
 }
 
 struct CommunityPostView: View {
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   let book: CommunityPostBook
   var onCommented: () -> Void = {}
   /// Màn bình luận bật lên từ thẻ (15/10): chỉ luồng bình luận + thanh viết,
@@ -343,7 +344,7 @@ struct CommunityPostView: View {
               .background(canSend ? DS.Color.foreground.swiftUI : DS.Color.secondary.swiftUI, in: Circle())
               .frame(width: 44, height: 44)
               .contentShape(Circle())
-              .animation(.snappy, value: canSend)
+              .animation(DSMotion.animation(.snappy, reduceMotion: reduceMotion), value: canSend)
           }
           .buttonStyle(.plain)
           .disabled(!canSend)

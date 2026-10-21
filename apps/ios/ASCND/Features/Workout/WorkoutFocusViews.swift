@@ -12,6 +12,7 @@ private var accent: Color { WorkoutsHomeView.accent }
 // MARK: - Đầu màn: ngày + thanh tiến độ theo bài
 
 struct SessionProgressHeader: View {
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   let eyebrow: String
   let exercises: [WorkoutFocus.Exercise]
   /// Bài của set kế tiếp — đoạn ấy được tô đậm viền.
@@ -53,7 +54,7 @@ struct SessionProgressHeader: View {
         }
       }
       .frame(height: 6)
-      .animation(.snappy, value: done)
+      .animation(DSMotion.animation(.snappy, reduceMotion: reduceMotion), value: done)
       .accessibilityHidden(true)
     }
     .accessibilityElement(children: .combine)

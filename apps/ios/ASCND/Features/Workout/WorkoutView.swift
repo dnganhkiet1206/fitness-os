@@ -15,6 +15,7 @@ import ASCNDDesignSystem
 import SwiftUI
 
 public struct WorkoutView: View {
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Bindable var controller: WorkoutSessionController
   /// Key của set đang nghỉ sau khi tick — A8 (#272) nối `RestTimerController`
   /// vào đây. Nil thì không set nào hiện "đang nghỉ".
@@ -176,7 +177,7 @@ public struct WorkoutView: View {
             Menu {
               if !controller.isLogged, !controller.plan.rows.isEmpty {
                 Button {
-                  withAnimation(.snappy) { tableLayout.toggle() }
+                  withAnimation(DSMotion.animation(.snappy, reduceMotion: reduceMotion)) { tableLayout.toggle() }
                 } label: {
                   Label(
                     String(localized: tableLayout ? "ws.layout.focus" : "ws.layout.table"),
@@ -283,8 +284,8 @@ public struct WorkoutView: View {
         }
       }
       .padding(DS.Spacing.md)
-      .animation(.snappy, value: editingKey)
-      .animation(.snappy, value: controller.progress.done)
+      .animation(DSMotion.animation(.snappy, reduceMotion: reduceMotion), value: editingKey)
+      .animation(DSMotion.animation(.snappy, reduceMotion: reduceMotion), value: controller.progress.done)
     }
     .scrollDismissesKeyboard(.interactively)
   }
@@ -372,7 +373,7 @@ public struct WorkoutView: View {
 
         if exercises.count > 1 {
           ExerciseQueue(exercises: exercises, current: current) { key in
-            withAnimation(.snappy) { pinned = key }
+            withAnimation(DSMotion.animation(.snappy, reduceMotion: reduceMotion)) { pinned = key }
           }
         }
         addExerciseButton
@@ -386,8 +387,8 @@ public struct WorkoutView: View {
       }
       .padding(DS.Spacing.md)
       .padding(.bottom, DS.Spacing.lg)
-      .animation(.snappy, value: next?.key)
-      .animation(.snappy, value: restTimer == nil)
+      .animation(DSMotion.animation(.snappy, reduceMotion: reduceMotion), value: next?.key)
+      .animation(DSMotion.animation(.snappy, reduceMotion: reduceMotion), value: restTimer == nil)
     }
     .scrollDismissesKeyboard(.interactively)
     .sensoryFeedback(.impact(weight: .medium), trigger: doneCount)
@@ -630,7 +631,7 @@ public struct WorkoutView: View {
           .foregroundStyle(done == work.count ? WorkoutsHomeView.accent : DS.Color.mutedForeground.swiftUI)
         if !holdsNext, !controller.isLogged {
           Button {
-            withAnimation(.snappy) {
+            withAnimation(DSMotion.animation(.snappy, reduceMotion: reduceMotion)) {
               if openGroups.contains(group.key) { openGroups.remove(group.key) } else { openGroups.insert(group.key) }
             }
           } label: {
@@ -728,7 +729,7 @@ public struct WorkoutView: View {
 
       Button {
         guard controller.canEdit(row.key) else { return }
-        withAnimation(.snappy) { editingKey = row.key }
+        withAnimation(DSMotion.animation(.snappy, reduceMotion: reduceMotion)) { editingKey = row.key }
       } label: {
         HStack(spacing: DS.Spacing.sm) {
           Text(verbatim: setText(row))
@@ -774,7 +775,7 @@ public struct WorkoutView: View {
           Button(String(localized: "workout.done")) {
             Task { await flushWrites() }
             focusedField = nil
-            withAnimation(.snappy) { editingKey = nil }
+            withAnimation(DSMotion.animation(.snappy, reduceMotion: reduceMotion)) { editingKey = nil }
           }
           .font(DS.TextStyle.footnote.weight(.semibold))
           .foregroundStyle(WorkoutsHomeView.accent)
@@ -910,7 +911,7 @@ public struct WorkoutView: View {
         Task {
           await flushWrites()
           guard let id = await controller.addExercise() else { return }
-          withAnimation(.snappy) { pinned = "x:\(id)" }
+          withAnimation(DSMotion.animation(.snappy, reduceMotion: reduceMotion)) { pinned = "x:\(id)" }
           try? await Task.sleep(for: .milliseconds(250))
           focusedField = .name(id)
         }
@@ -1639,6 +1640,7 @@ struct ExerciseOrderSheet: View {
 
 /// Dải mẹo của Koa ở buổi đầu (đợt 3).
 private struct FirstSessionTip: View {
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   let text: String
   let onHide: () -> Void
 
@@ -1664,6 +1666,6 @@ private struct FirstSessionTip: View {
     .padding(10)
     .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(DS.Color.metricOrangeGraphic.swiftUI.opacity(0.35)))
-    .animation(.easeInOut(duration: 0.25), value: text)
+    .animation(DSMotion.animation(.easeInOut(duration: 0.25), reduceMotion: reduceMotion), value: text)
   }
 }
