@@ -2,7 +2,7 @@ public import ASCNDCore
 import Foundation
 import Supabase
 
-/// Nhắn tin thật (#527; `20261020130000_direct_messages.sql`). Đọc qua RLS
+/// Nhắn tin thật (#527; `20261020130000_community_direct_messages.sql`). Đọc qua RLS
 /// (chỉ người trong cuộc), ghi CHỈ qua RPC `dm_open` / `dm_send` / `dm_mark_read`
 /// — server kiểm chặn, khoá, "ai được nhắn cho tôi" và giới hạn tốc độ.
 public struct SupabaseDMSource: DMSource {

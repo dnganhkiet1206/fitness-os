@@ -265,7 +265,7 @@ extension CommunityFeed.Author {
   }
 }
 
-// MARK: - Đọc hàng của server (`20261020130000_direct_messages.sql`)
+// MARK: - Đọc hàng của server (`20261020130000_community_direct_messages.sql`)
 
 extension DirectMessages {
   /// Hộp thư từ `dm_inbox()` + hồ sơ người kia (`community_profiles`). Hàng thiếu

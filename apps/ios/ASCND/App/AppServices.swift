@@ -711,7 +711,7 @@ final class AppServices {
     #if DEBUG
       if ProcessInfo.processInfo.environment["ASCND_FAKE_DM"] == "1" { return FakeDMSource.shared }
     #endif
-    // Nhắn tin thật (20/10, `20261020130000_direct_messages.sql`). Lối vào chỉ hiện
+    // Nhắn tin thật (20/10, `20261020130000_community_direct_messages.sql`). Lối vào chỉ hiện
     // khi hộp thư đọc được — trước khi migration lên server thì RPC hỏng, nút ẩn.
     return backend.map { SupabaseDMSource(backend: $0) }
   }
