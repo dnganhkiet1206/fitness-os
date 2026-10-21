@@ -107,16 +107,18 @@ struct MascotShopGoldenTests {
         #expect(p.total == Self.int(w["total"]))
         #expect(p.complete == (w["complete"] == .bool(true)))
       }
-      let level = Self.int(s["level"]) ?? 0, balance = Self.int(s["balance"]) ?? 0
+      // GĐ2 (Kiệt 21/10): khoá theo HẠNG Gains, không theo cấp XP như RN — golden của
+      // RN chỉ còn đối chiếu phần "đủ xu"; món RN khoá theo cấp thì ở đây theo hạng.
+      let balance = Self.int(s["balance"]) ?? 0
       for it in MascotShop.items {
         let want = s["gates"]?[it.key]?.stringValue
-        switch MascotShop.gate(it, level: level, balance: balance) {
-        case .ok: #expect(want == "ok", "\(it.key)")
-        case .poor: #expect(want == "poor", "\(it.key)")
+        switch MascotShop.gate(it, rank: 0, balance: balance) {
+        case .ok: #expect(it.unlockRank == nil && want == "ok", "\(it.key)")
+        case .poor: #expect(it.unlockRank == nil && want == "poor", "\(it.key)")
         case .locked(let need):
           locked += 1
-          #expect(want == "locked", "\(it.key)")
-          #expect(need == it.unlockLevel)
+          #expect(need == it.unlockRank, "\(it.key)")
+          #expect(it.unlockLevel != nil, "chỉ những món RN khoá mới khoá theo hạng")
         }
       }
     }
@@ -228,8 +230,8 @@ struct MascotShopBookTests {
     #expect(await book.buy(MascotShop.item("head_cap")!) == .poor)
     let (rich, _, w2, _) = Self.make(coins: 5000)
     await rich.load()
-    #expect(rich.level == 1)
-    #expect(await rich.buy(MascotShop.item("shoes_wing")!) == .locked(level: 15))
+    #expect(rich.gains.rank == 0)
+    #expect(await rich.buy(MascotShop.item("shoes_wing")!) == .locked(rank: 3), "GĐ2: khoá theo hạng Swole")
     #expect(w.buys == 0)
     #expect(w2.buys == 0)
   }
@@ -312,5 +314,16 @@ struct MascotShopBookTests {
     await book.load()
     #expect(book.phase == .ready)
     #expect(book.balance == 100)
+  }
+
+  /// GĐ2 (Kiệt duyệt 21/10): Cúp vàng → Lifter, Giày có cánh → Swole, Cánh Rồng → Beast;
+  /// đủ hạng thì mở, dù cấp XP bao nhiêu.
+  @Test func unlockFollowsGainsRank() {
+    let ranks = MascotShop.items.compactMap { it in it.unlockRank.map { (it.key, $0) } }
+    #expect(Dictionary(uniqueKeysWithValues: ranks) == ["hand_trophy": 2, "shoes_wing": 3, "back_dragonwing": 4])
+    let wing = MascotShop.item("shoes_wing")!
+    #expect(MascotShop.gate(wing, rank: 2, balance: 5000) == .locked(rank: 3))
+    #expect(MascotShop.gate(wing, rank: 3, balance: 5000) == .ok)
+    #expect(MascotShop.gate(wing, rank: 5, balance: 0) == .poor)
   }
 }
