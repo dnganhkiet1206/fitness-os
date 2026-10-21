@@ -43,15 +43,13 @@ struct KoaScheduleTests {
     #expect(Self.phase(Self.state(), last: EpochMillis(Self.now.millis - Self.hourMs), trained: true, hour: 23) == .pump)
   }
 
-  @Test func pumpLostThenDropped() {
-    #expect(Self.phase(Self.state(missed: 2)) == .waiting)
-    #expect(Self.phase(Self.state(missed: 3)) == .pumpLost(daysLeft: 4))
-    #expect(Self.phase(Self.state(missed: 6)) == .pumpLost(daysLeft: 1))
-    // 7 ngày nhưng chưa tụt hạng (vẫn ≥ mốc) → vẫn "mất pump"
-    #expect(Self.phase(Self.state(points: 142, peak: 150, missed: 7)) == .pumpLost(daysLeft: 7))
-    // tụt khỏi Swole (260) xuống Lifter
-    let dropped = Self.phase(Self.state(points: 252, peak: 270, missed: 7))
-    #expect(dropped == .dropped(toRegain: 8, peakRank: 3))
+  /// Kiệt 21/10 (duyệt GĐ1): không còn "mất pump" / "tụt hạng" — nghỉ bao lâu
+  /// thì ngày có buổi vẫn chỉ là "đợi ở phòng tập".
+  @Test func timeOffIsNeverAPunishment() {
+    #expect(Self.phase(Self.state(missed: 3)) == .waiting)
+    #expect(Self.phase(Self.state(missed: 9)) == .waiting)
+    #expect(Self.phase(Self.state(points: 252, peak: 270, missed: 7)) == .waiting)
+    #expect(Self.phase(Self.state(missed: 9), planned: false) == nil)
   }
 
   @Test func comebackOncePerLayoff() {
@@ -66,7 +64,8 @@ struct KoaScheduleTests {
     #expect(KoaSchedule.missedOn(dayOffset: 6, missedToday: 1, todayWeekday: 0, rest: [5, 6]) == 5)
   }
 
-  /// Lời nhắc buổi tập: ngày lỡ thứ 3 → mất pump, thứ 6 → mai tụt hạng; không trùng lời nhắc chuỗi.
+  /// Lời nhắc buổi tập: từ ngày nghỉ thứ 3 là câu chào quay lại (không đếm lỗi,
+  /// không nói mất mát); không trùng lời nhắc chuỗi.
   @Test func workoutReminderTextFollowsMissedDays() {
     var cal = Calendar(identifier: .gregorian)
     cal.timeZone = TimeZone(identifier: "UTC")!
@@ -84,8 +83,10 @@ struct KoaScheduleTests {
     #expect(workout.count == 7, "bật sẵn, mỗi ngày có buổi một lời nhắc")
     #expect(workout[0].at == ISO8601DateFormatter().date(from: "2026-10-19T18:00:00Z")!, "chưa có giờ quen → 18:00")
     #expect(workout[0].title == nil, "ngày lỡ thứ 1: câu thường")
-    #expect(workout[2].title == "3 ngày rồi đó 🥲")
-    #expect(workout[5].title == "Mai Koa tụt hạng")
+    #expect(workout[1].title == nil)
+    #expect(workout[2].title == "Koa vẫn ở đây 💪")
+    #expect(workout[5].title == "Koa vẫn ở đây 💪")
+    #expect(!workout.contains { ($0.title ?? "").contains("tụt") || ($0.body ?? "").contains("xẹp") })
     #expect(!plan.contains { $0.key == .streak }, "đã có lời nhắc buổi tập hôm nay → không nhắc chuỗi")
     // Gains chưa đọc → không có lời nhắc của Koa (kế hoạch như trước)
     var unread = ctx
@@ -95,5 +96,10 @@ struct KoaScheduleTests {
     var rest = ctx
     rest.trainingDays = [1, 2, 3, 4, 5, 6]
     #expect(ReminderPlan.plan(ReminderPrefs.defaults, rest, now: now, calendar: cal).filter { $0.key == .koaTraining }.count == 6)
+    // Đổi lịch theo ngày (GĐ1) thắng lịch mẫu: hôm nay đổi thành nghỉ, mai nhận buổi dời tới.
+    var moved = ctx
+    moved.plannedByOffset = [0: false]
+    let m = ReminderPlan.plan(ReminderPrefs.defaults, moved, now: now, calendar: cal).filter { $0.key == .koaTraining }
+    #expect(m.count == 6 && m[0].at > now.addingTimeInterval(20 * 3600), "hôm nay đổi thành nghỉ → không nhắc hôm nay")
   }
 }

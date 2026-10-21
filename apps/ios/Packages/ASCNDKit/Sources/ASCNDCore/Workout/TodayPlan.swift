@@ -196,16 +196,32 @@ public struct TodayPlan: Sendable, Hashable {
 public struct TemplateSnapshot: Sendable, Hashable, Codable {
   public let routine: [RoutineDay]
   public let templates: [WorkoutTemplate]
+  /// Đổi lịch theo ngày (`plan_day_overrides`, GĐ1) — thắng `routine` cho đúng ngày.
+  public let overrides: [DayOverride]
   public let fetchedAt: EpochMillis
 
-  public init(routine: [RoutineDay], templates: [WorkoutTemplate], fetchedAt: EpochMillis) {
+  public init(routine: [RoutineDay], templates: [WorkoutTemplate], overrides: [DayOverride] = [], fetchedAt: EpochMillis) {
     self.routine = routine
     self.templates = templates
+    self.overrides = overrides
     self.fetchedAt = fetchedAt
   }
 
+  enum CodingKeys: String, CodingKey { case routine, templates, overrides, fetchedAt }
+
+  /// Cache cũ (trước GĐ1) không có `overrides` — đọc ra rỗng, không hỏng cache.
+  public init(from decoder: any Decoder) throws {
+    let c = try decoder.container(keyedBy: CodingKeys.self)
+    routine = try c.decode([RoutineDay].self, forKey: .routine)
+    templates = try c.decode([WorkoutTemplate].self, forKey: .templates)
+    overrides = try c.decodeIfPresent([DayOverride].self, forKey: .overrides) ?? []
+    fetchedAt = try c.decode(EpochMillis.self, forKey: .fetchedAt)
+  }
+
   public func plan(for date: LocalDate, today: LocalDate, trained: Set<LocalDate> = []) -> TodayPlan {
-    WorkoutPlanning.plan(for: date, today: today, routine: routine, templates: templates, trained: trained)
+    WorkoutPlanning.plan(
+      for: date, today: today, routine: routine, templates: templates, trained: trained,
+      override: override(on: date))
   }
 }
 
@@ -284,11 +300,13 @@ public enum WorkoutPlanning {
   /// đánh dấu nghỉ — `is_rest` thắng `template_id` (`week-plan.tsx:313`).
   public static func plan(
     for date: LocalDate, today: LocalDate, routine: [RoutineDay], templates: [WorkoutTemplate],
-    trained: Set<LocalDate> = []
+    trained: Set<LocalDate> = [], override: DayOverride? = nil
   ) -> TodayPlan {
     let day = routine.first { $0.dayOfWeek == routineIndex(date) }
-    let isRest = day?.isRest ?? false
-    let template = isRest ? nil : day?.templateId.flatMap { id in templates.first { $0.id == id } }
+    // Đổi lịch của riêng ngày này (GĐ1) thắng lịch mẫu.
+    let isRest = override?.isRest ?? day?.isRest ?? false
+    let templateId = override.map(\.templateId) ?? day?.templateId
+    let template = isRest ? nil : templateId.flatMap { id in templates.first { $0.id == id } }
     let status: DayStatus
     if template == nil {
       status = isRest ? .rest : .unplanned

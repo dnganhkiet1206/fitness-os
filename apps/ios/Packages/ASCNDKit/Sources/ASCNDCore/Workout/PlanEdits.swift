@@ -23,7 +23,9 @@ public enum PlanEdit {
   public static let templateDeleteKind = "template-delete"
   /// Gán / đổi / xoá ngày: upsert theo `(user_id, day_of_week)`.
   public static let routineDayKind = "routine-day"
-  public static let kinds: Set<String> = [templateKind, templateDeleteKind, routineDayKind]
+  /// Đổi lịch của riêng một ngày (GĐ1): upsert theo `(user_id, date)`.
+  public static let dayOverrideKind = "day-override"
+  public static let kinds: Set<String> = [templateKind, templateDeleteKind, routineDayKind, dayOverrideKind]
 
   /// `type || 'custom'` (D-26 TW-1a).
   public static let defaultType = "custom"
@@ -49,6 +51,7 @@ extension TemplateSnapshot {
   public func applying(_ entries: [OutboxEntry]) -> TemplateSnapshot {
     var routine = self.routine
     var templates = self.templates
+    var overrides = self.overrides
     for e in entries {
       switch e.kind {
       case PlanEdit.templateKind:
@@ -61,6 +64,7 @@ extension TemplateSnapshot {
         guard let id = e.payload["id"]?.stringValue?.lowercased() else { continue }
         templates.removeAll { $0.id == id }
         routine.removeAll { $0.templateId == id }
+        overrides.removeAll { $0.templateId == id }
       case PlanEdit.routineDayKind:
         guard let day = e.payload["day_of_week"]?.intValue, PlanEdit.days.contains(day) else { continue }
         routine.removeAll { $0.dayOfWeek == day }
@@ -69,11 +73,16 @@ extension TemplateSnapshot {
           isDeload: e.payload["is_deload"]?.boolValue ?? false,
           templateId: e.payload["template_id"]?.stringValue?.lowercased()))
         routine.sort { $0.dayOfWeek < $1.dayOfWeek }
+      case PlanEdit.dayOverrideKind:
+        guard let o = DayOverride(row: e.payload) else { continue }
+        overrides.removeAll { $0.date == o.date }
+        overrides.append(o)
+        overrides.sort { $0.date < $1.date }
       default:
         continue
       }
     }
-    return TemplateSnapshot(routine: routine, templates: templates, fetchedAt: fetchedAt)
+    return TemplateSnapshot(routine: routine, templates: templates, overrides: overrides, fetchedAt: fetchedAt)
   }
 
   /// Hàng của một ngày (0 = Thứ Hai), `nil` khi ngày chưa có hàng.
@@ -124,6 +133,10 @@ public final class PlanEditor {
     /// Template mới phải lấy id mới (`newTemplateId()`). Baseline không có
     /// "sửa template" — chỉ `insert` / `delete` (`use-library.ts:289`, `:328`).
     case deleted
+    /// Dời / đổi một ngày không có buổi nào (GĐ1).
+    case nothingToMove
+    /// Ngày đích đã có buổi: dời vào đó là hai buổi chồng nhau (điều kiện 03).
+    case conflict
     case storage(LocalWriteError)
   }
 
@@ -229,6 +242,37 @@ public final class PlanEditor {
     try await commit([routineDay(
       id: "day\(day)@\(makeId())", day: day, templateId: row?.templateId, isRest: row?.isRest ?? true,
       isDeload: on, at: clock.nowMillis())])
+  }
+
+  /// Dời buổi của `date` sang `to` (GĐ1, điều kiện 03): `date` thành nghỉ và ghi
+  /// lại nơi buổi đi tới; `to` nhận ĐÚNG buổi ấy. Hai hàng, một giao dịch — không
+  /// bao giờ chỉ một nửa. Ngày đích đã có buổi thì từ chối (không chồng buổi);
+  /// lịch mẫu theo thứ và mẫu buổi không đổi.
+  public func postpone(date: LocalDate, to target: LocalDate) async throws(Refusal) {
+    guard target != date, let snapshot = current() else { throw .nothingToMove }
+    guard let template = snapshot.plan(for: date, today: date).template else { throw .nothingToMove }
+    guard snapshot.plan(for: target, today: date).template == nil else { throw .conflict }
+    let now = clock.nowMillis()
+    let op = makeId()
+    try await commit([
+      dayOverride(DayOverride(date: date, templateId: nil, isRest: true, movedTo: target), id: "\(date)@move-\(op)", at: now),
+      dayOverride(
+        DayOverride(date: target, templateId: template.id, isRest: false, movedFrom: date),
+        id: "\(target)@move-\(op)", at: now),
+    ])
+  }
+
+  /// Đổi `date` thành ngày nghỉ (GĐ1): ghi lại quyết định nghỉ cho riêng ngày ấy,
+  /// không xoá buổi khỏi lịch mẫu.
+  public func makeRest(date: LocalDate) async throws(Refusal) {
+    guard let snapshot = current(), snapshot.plan(for: date, today: date).template != nil else { throw .nothingToMove }
+    try await commit([
+      dayOverride(DayOverride(date: date, templateId: nil, isRest: true), id: "\(date)@rest-\(makeId())", at: clock.nowMillis())
+    ])
+  }
+
+  private func dayOverride(_ o: DayOverride, id: String, at: EpochMillis) -> OutboxEntry {
+    OutboxEntry(id: id, userId: userId, kind: PlanEdit.dayOverrideKind, payload: o.row(userId: userId), createdAt: at)
   }
 
   private func routineDay(

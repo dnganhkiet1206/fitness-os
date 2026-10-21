@@ -278,22 +278,19 @@ public final class ReminderCenter {
 /// trước nhiều ngày theo ngôn ngữ của `AppPreferences.lang` (không phải ngôn
 /// ngữ máy), nên bảng nằm ở đây, kiểm được, thay vì trong String Catalog.
 public enum ReminderCopyTable {
-  /// Câu của Koa cho lời nhắc buổi tập ngày lỡ thứ 3 / thứ 6 (đợt 2, mock
-  /// `koa-wave2-schedule.html`). Không trách, không đếm lỗi.
+  /// Câu của Koa khi người dùng quay lại sau ≥ 3 ngày nghỉ (GĐ1, Kiệt 21/10):
+  /// chào đón, thành tích còn nguyên, nhẹ cũng được. Không trách, không đếm lỗi.
   public static func koaWorkout(_ lang: AppPreferences.Lang) -> KoaWorkoutCopy {
     switch lang {
     case .vi:
-      KoaWorkoutCopy(
-        pumpLost: ReminderText(title: "3 ngày rồi đó 🥲", body: "Bắp tay Koa sắp xẹp. 15 phút là lấy lại pump."),
-        dropSoon: ReminderText(title: "Mai Koa tụt hạng", body: "Một buổi ngắn hôm nay là giữ được vóc dáng của Koa 💪"))
+      KoaWorkoutCopy(returning: ReminderText(
+        title: "Koa vẫn ở đây 💪", body: "Thành tích của Koa còn nguyên. Buổi hôm nay nhẹ thôi cũng được."))
     case .en:
-      KoaWorkoutCopy(
-        pumpLost: ReminderText(title: "It's been 3 days 🥲", body: "Koa's arms are deflating. 15 minutes brings the pump back."),
-        dropSoon: ReminderText(title: "Koa drops a rank tomorrow", body: "One short session today keeps Koa's build 💪"))
+      KoaWorkoutCopy(returning: ReminderText(
+        title: "Koa's still here 💪", body: "Everything Koa earned is still there. An easy session today is fine."))
     case .es:
-      KoaWorkoutCopy(
-        pumpLost: ReminderText(title: "Ya son 3 días 🥲", body: "Los brazos de Koa se desinflan. 15 minutos recuperan el pump."),
-        dropSoon: ReminderText(title: "Mañana Koa baja de rango", body: "Una sesión corta hoy mantiene el físico de Koa 💪"))
+      KoaWorkoutCopy(returning: ReminderText(
+        title: "Koa sigue aquí 💪", body: "Todo lo que Koa ganó sigue ahí. Una sesión suave hoy está bien."))
     }
   }
 

@@ -1,20 +1,16 @@
 /// Koa sống theo lịch tập (#527 đợt 2, Kiệt duyệt 20/10
 /// `docs/design/mocks/koa-wave2-schedule.html`).
 ///
-/// Bốn trạng thái đè lên Koa của ngày (thẻ Hôm nay, widget, phòng linh vật):
+/// Hai trạng thái đè lên Koa của ngày (thẻ Hôm nay, widget, phòng linh vật):
 /// - `pump`: tối đa 2 giờ sau buổi tập;
-/// - `waiting`: hôm nay có buổi trong lịch, chưa tập, đã qua giờ quen tập, chưa tới 22:00;
-/// - `pumpLost`: lỡ lịch từ 3 ngày (ngày nghỉ đã đặt không tính);
-/// - `dropped`: 7 ngày không tập và Gains đã tụt dưới hạng cao nhất từng đạt.
-/// Ngoài bốn trạng thái ấy Koa vẫn như cũ (`KoaMood`). Không bao giờ trách móc.
+/// - `waiting`: hôm nay có buổi trong lịch, chưa tập, đã qua giờ quen tập, chưa tới 22:00.
+/// "Mất pump" và "tụt hạng" đã bỏ (Kiệt 21/10, duyệt GĐ1): Koa không phạt việc
+/// nghỉ; người quay lại được chào đón (`DailyPlan` luật ④). Ngoài hai trạng thái
+/// ấy Koa vẫn như cũ (`KoaMood`). Không bao giờ trách móc.
 public enum KoaSchedule {
   public enum Phase: Sendable, Hashable {
     case pump
     case waiting
-    /// Còn bao nhiêu ngày lỡ nữa thì bị trừ Gains lần kế.
-    case pumpLost(daysLeft: Int)
-    /// Gains còn thiếu để về lại hạng cao nhất từng đạt (×2 khi tập lại).
-    case dropped(toRegain: Int, peakRank: Int)
   }
 
   public static let pumpMillis: Double = 2 * 60 * 60 * 1000
@@ -34,23 +30,14 @@ public enum KoaSchedule {
     // không nhắc lỡ lịch lúc nửa đêm (20/10, chủ dự án: "11h27 tối còn đòi tập").
     // Vừa tập xong (`pump`) vẫn được khoe, ở trên.
     if hour >= KoaMood.nightFrom || hour < KoaMood.morningFrom { return nil }
-    let missed = gains.missedDays
-    if missed >= KoaGains.layoffDays, gains.rank < KoaGains.rank(gains.peak) {
-      let peakRank = KoaGains.rank(gains.peak)
-      return .dropped(toRegain: max(0, KoaGains.thresholds[peakRank] - gains.points), peakRank: peakRank)
-    }
-    if missed >= KoaGains.pumpLostDays {
-      let left = KoaGains.layoffDays - missed % KoaGains.layoffDays
-      return .pumpLost(daysLeft: left)
-    }
     if plannedToday, hour >= (habitHour ?? defaultHabitHour) { return .waiting }
     return nil
   }
 
-  /// Màn quay lại: lần đầu mở app sau ≥ 3 ngày lỡ lịch, một lần cho mỗi đợt nghỉ
-  /// (khoá theo ngày tập cuối). `nil` = không hiện.
+  /// Một đợt quay lại (≥ 3 ngày nghỉ), khoá theo ngày tập cuối — để đo một lần
+  /// cho mỗi đợt (`comeback_shown`). `nil` = không phải đang quay lại.
   public static func comebackKey(_ gains: KoaGains.State) -> String? {
-    guard gains.missedDays >= KoaGains.pumpLostDays, let last = gains.lastSession else { return nil }
+    guard gains.missedDays >= KoaGains.comebackDays, let last = gains.lastSession else { return nil }
     return last.description
   }
 

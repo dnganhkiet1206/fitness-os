@@ -12,11 +12,12 @@ public import Foundation
 /// - ngày có buổi: +10 nếu thứ đó trong lịch có buổi, +6 nếu tập ngoài lịch
 ///   (một ngày tính một lần); buổi có kỷ lục cá nhân: +4;
 /// - tuần (T2 → CN) đủ số buổi đã đặt: +15, cộng ngay ngày đạt;
-/// - bỏ tập: đếm các ngày không tập, KHÔNG tính ngày nghỉ đã đặt; cứ đủ 7 ngày
-///   thì −8, nhưng một đợt nghỉ không làm tụt quá MỘT nấc so với hạng lúc bắt
-///   đầu nghỉ (Kiệt: "cho tụt một nấc sau 7 ngày bỏ tập");
-/// - lên lại nhanh gấp đôi ("muscle memory") cho tới mức cao nhất từng đạt;
-/// - lỡ lịch 3 ngày trở lên (cùng cách đếm) thì "mất pump" — chỉ là dáng, không trừ.
+/// - nghỉ KHÔNG bao giờ trừ Gains (Kiệt 21/10, duyệt GĐ1: "bỏ cơ chế tụt hạng /
+///   mất tiến trình vì vắng mặt"); thành tích đã kiếm được giữ nguyên;
+/// - `missedDays` chỉ để Daily Plan biết người dùng đang QUAY LẠI (không tính
+///   ngày nghỉ đã đặt, kể cả ngày đổi thành nghỉ ở `plan_day_overrides`);
+/// - "muscle memory" (×2 tới mức cao nhất) giữ trong mã cho Gains cũ đã tụt
+///   trước 21/10 — từ nay không còn đợt tụt mới nên không phát sinh thêm.
 public enum KoaGains {
   /// Mốc Gains của sáu hạng, cùng thứ tự `MascotRules.ranks`.
   public static let thresholds = [0, 40, 120, 260, 450, 700]
@@ -25,9 +26,8 @@ public enum KoaGains {
   public static let offPlanSession = 6
   public static let personalRecord = 4
   public static let fullWeek = 15
-  public static let layoffDays = 7
-  public static let layoffLoss = 8
-  public static let pumpLostDays = 3
+  /// Ngày nghỉ liền trước để coi là "quay lại" (`DailyPlan.comebackDays`).
+  public static let comebackDays = 3
   /// Không có lịch tuần: đích tuần mặc định.
   public static let defaultWeeklyTarget = 3
 
@@ -45,12 +45,26 @@ public enum KoaGains {
   public struct Week: Sendable, Hashable {
     public let planned: Set<Int>
     public let rest: Set<Int>
-    public init(planned: Set<Int>, rest: Set<Int>) {
+    /// Đổi lịch theo ngày (GĐ1) — thắng `planned` / `rest` cho đúng ngày.
+    public let overrides: [LocalDate: DayOverride]
+    public init(planned: Set<Int>, rest: Set<Int>, overrides: [LocalDate: DayOverride] = [:]) {
       self.planned = planned
       self.rest = rest
+      self.overrides = overrides
     }
     public static let none = Week(planned: [], rest: [])
+    /// Đích tuần theo lịch mẫu. Dời buổi trong tuần không đổi số buổi; dời qua
+    /// tuần khác thì tuần ấy vẫn giữ đích của lịch mẫu (một buổi dư không thưởng thêm).
     public var target: Int { planned.isEmpty ? KoaGains.defaultWeeklyTarget : planned.count }
+
+    public func isPlanned(_ date: LocalDate) -> Bool {
+      if let o = overrides[date] { return !o.isRest && o.templateId != nil }
+      return planned.contains(WorkoutPlanning.routineIndex(date))
+    }
+
+    public func isRest(_ date: LocalDate) -> Bool {
+      overrides[date]?.isRest ?? rest.contains(WorkoutPlanning.routineIndex(date))
+    }
 
     public init(_ snapshot: TemplateSnapshot) {
       var planned: Set<Int> = [], rest: Set<Int> = []
@@ -61,7 +75,13 @@ public enum KoaGains {
           planned.insert(d.dayOfWeek)
         }
       }
-      self.init(planned: planned, rest: rest)
+      // Buổi trỏ vào mẫu đã mất = ngày chưa lên lịch, như lịch mẫu.
+      var byDate: [LocalDate: DayOverride] = [:]
+      for o in snapshot.overrides {
+        let known = o.templateId.map { id in snapshot.templates.contains { $0.id == id } } ?? true
+        byDate[o.date] = known ? o : DayOverride(date: o.date, templateId: nil, isRest: false)
+      }
+      self.init(planned: planned, rest: rest, overrides: byDate)
     }
   }
 
@@ -73,8 +93,9 @@ public enum KoaGains {
     public var rank: Int { KoaGains.rank(points) }
     /// Ngày không tập liên tiếp tính tới hôm nay (bỏ ngày nghỉ đã đặt).
     public var missedDays: Int
-    public var pumpLost: Bool { missedDays >= KoaGains.pumpLostDays }
-    /// Đang lên lại sau một đợt tụt (Gains ×2).
+    /// Đang quay lại sau ≥ 3 ngày nghỉ (không tính ngày nghỉ đã đặt).
+    public var returning: Bool { missedDays >= KoaGains.comebackDays }
+    /// Đang lên lại sau một đợt tụt cũ (Gains ×2).
     public var rebuilding: Bool { points < peak }
     public var lastSession: LocalDate?
 
@@ -100,8 +121,6 @@ public enum KoaGains {
     var s = State.zero
     var weekSessions = 0
     var weekPaid = false
-    // hạng lúc bắt đầu đợt nghỉ hiện tại; sàn của đợt = mốc của hạng ngay dưới
-    var layoffFloor: Int?
     var day = first
     while day <= today {
       let dow = WorkoutPlanning.routineIndex(day)
@@ -110,7 +129,7 @@ public enum KoaGains {
         weekPaid = false
       }
       if let pr = byDate[day] {
-        var gain = week.planned.contains(dow) ? plannedSession : offPlanSession
+        var gain = week.isPlanned(day) ? plannedSession : offPlanSession
         if pr { gain += personalRecord }
         weekSessions += 1
         if !weekPaid, weekSessions >= week.target {
@@ -121,13 +140,9 @@ public enum KoaGains {
         s.peak = max(s.peak, s.points)
         s.missedDays = 0
         s.lastSession = day
-        layoffFloor = nil
-      } else if !week.rest.contains(dow) {
-        if s.missedDays == 0 { layoffFloor = thresholds[max(0, rank(s.points) - 1)] }
+      } else if !week.isRest(day) {
+        // Chỉ đếm — nghỉ không trừ Gains (21/10).
         s.missedDays += 1
-        if s.missedDays % layoffDays == 0 {
-          s.points = max(layoffFloor ?? 0, s.points - layoffLoss)
-        }
       }
       day = day.adding(days: 1)
     }
