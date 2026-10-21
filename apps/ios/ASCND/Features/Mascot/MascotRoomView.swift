@@ -35,6 +35,8 @@ struct MascotRoomView: View {
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Environment(\.locale) private var locale
   @Environment(AppServices.self) private var services
+  /// Lịch tuần + buổi đã ghi cho "Tuần của Koa" (GĐ2); `nil` ở preview.
+  @Environment(WorkoutFlow.self) private var flow: WorkoutFlow?
   @State private var shop: MascotShopBook?
   @State private var burst: Burst?
   @State private var notice: String?
@@ -55,7 +57,9 @@ struct MascotRoomView: View {
       .navigationBarTitleDisplayMode(.inline)
       .task {
         if shop == nil { shop = sharedShop ?? services.makeMascotShop(userId: room.userId) }
+        shop?.gains = room.gains
         await room.load()
+        await services.koaWeek(userId: room.userId)?.claimIfComplete(koaWeekState)
         // tủ đồ cho đồ Koa đang mặc trên sân khấu (`equippedOutfits` của RN)
         if let shop, case .loading = shop.phase { await shop.load() }
       }
@@ -311,51 +315,50 @@ struct MascotRoomView: View {
         levelRow
         Divider().opacity(0.6)
         journeySub
-        RankJourneyView(ranks: MascotRules.ranks, currentKey: room.rank.key, lang: lang)
+        RankJourneyView(ranks: MascotRules.ranks, currentKey: gainsRank.key, lang: lang)
       }
     }
   }
 
+  /// Hạng theo Gains (GĐ2) — CÙNG hạng của vóc dáng Koa; cấp XP rời giao diện.
+  private var gainsRank: MascotRules.Rank {
+    MascotRules.ranks[min(room.gains.rank, MascotRules.ranks.count - 1)]
+  }
+
+  /// Hạng + Gains (GĐ2, mock `gd2-progress-koa-week.html`): tên hạng màu hạng, số
+  /// Gains, thanh tới hạng kế, "còn N Gains tới …". Không còn "Cấp N" / XP.
   private var levelRow: some View {
-    let rankColor = Color(hex: room.rank.colorHex)
-    return Group {
-      HStack(spacing: DS.Spacing.md) {
-        VStack(spacing: 1) {
-          Image(systemName: "star").font(.system(size: 18, weight: .semibold))
-          Text(verbatim: "\(room.level)").font(.system(size: 11, weight: .heavy).monospacedDigit())
-        }
+    let rank = gainsRank
+    let rankColor = Color(hex: rank.colorHex)
+    let pct = KoaGains.toNext(room.gains.points).map { Double($0.have) / Double(max(1, $0.need)) } ?? 1
+    return HStack(spacing: DS.Spacing.md) {
+      Image(systemName: "dumbbell.fill")
+        .font(.system(size: 18, weight: .semibold))
         .foregroundStyle(rankColor)
         .frame(width: 46, height: 46)
         .background(rankColor.opacity(0.13), in: RoundedRectangle(cornerRadius: 14))
         .overlay(RoundedRectangle(cornerRadius: 14).stroke(rankColor.opacity(0.33), lineWidth: 1))
         .accessibilityHidden(true)
-        VStack(alignment: .leading, spacing: 6) {
-          HStack(alignment: .firstTextBaseline) {
-            HStack(alignment: .firstTextBaseline, spacing: DS.Spacing.sm) {
-              Text(verbatim: room.rank.name(lang))
-                .font(DS.TextStyle.headline.weight(.heavy))
-                .foregroundStyle(rankColor)
-              Text(String(localized: "mr.level \(room.level)"))
-                .font(DS.TextStyle.caption.weight(.semibold))
-                .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-            }
-            Spacer(minLength: 0)
-          }
-          GeometryReader { g in
-            let pct = Double(room.intoLevel) / Double(MascotRules.levelXp)
-            ZStack(alignment: .leading) {
-              Capsule().fill(DS.Color.secondary.swiftUI)
-              Capsule().fill(rankColor).frame(width: g.size.width * min(1, max(0, pct)))
-            }
-          }
-          .frame(height: 6)
-          .accessibilityElement()
-          .accessibilityLabel(Text(String(localized: "mr.level \(room.level)")))
-          .accessibilityValue(Text(verbatim: "\(Int((Double(room.intoLevel) / Double(MascotRules.levelXp) * 100).rounded()))%"))
-          Text(String(localized: "mr.levelHint \(MascotRules.levelXp - room.intoLevel)"))
-            .font(DS.TextStyle.caption)
+      VStack(alignment: .leading, spacing: 6) {
+        HStack(alignment: .firstTextBaseline, spacing: DS.Spacing.sm) {
+          Text(verbatim: rank.name(lang))
+            .font(DS.TextStyle.headline.weight(.heavy))
+            .foregroundStyle(rankColor)
+          Text(String(localized: "mr.gains.points \(room.gains.points)"))
+            .font(DS.TextStyle.caption.weight(.semibold))
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          Spacer(minLength: 0)
         }
+        GeometryReader { g in
+          ZStack(alignment: .leading) {
+            Capsule().fill(DS.Color.secondary.swiftUI)
+            Capsule().fill(rankColor).frame(width: g.size.width * min(1, max(0, pct)))
+          }
+        }
+        .frame(height: 6)
+        .accessibilityElement()
+        .accessibilityLabel(Text(verbatim: rank.name(lang)))
+        .accessibilityValue(Text(verbatim: "\(Int((pct * 100).rounded()))%"))
       }
     }
   }
@@ -383,7 +386,7 @@ struct MascotRoomView: View {
         }
         if room.showsStreakBonus {
           rewardRow(
-            title: String(localized: "mr.streak.bonus"), coins: room.streakBonus, xp: MascotRules.streakXp,
+            title: String(localized: "mr.streak.bonus"), coins: room.streakBonus,
             claimed: room.isClaimed(room.streakRefKey), flame: true
           ) {
             Button {
@@ -464,7 +467,10 @@ struct MascotRoomView: View {
   }
 
   private var journeySubtitle: AttributedString {
-    guard let next = room.nextRank else { return AttributedString(String(localized: "mr.maxRank")) }
+    // GĐ2: hạng kế tiếp theo Gains (trước lấy theo cấp XP — lệch với số Gains bên dưới).
+    let ranks = MascotRules.ranks
+    guard room.gains.rank + 1 < ranks.count else { return AttributedString(String(localized: "mr.maxRank")) }
+    let next = ranks[room.gains.rank + 1]
     // Hạng theo Gains (#527 đợt 1): còn bao nhiêu Gains — chỉ tập mới cộng.
     let n = KoaGains.toNext(room.gains.points).map { $0.need - $0.have } ?? 0
     let name = next.name(lang)
@@ -485,7 +491,7 @@ struct MascotRoomView: View {
         ForEach(room.activeQuests, id: \.key) { q in
           let claimed = room.isClaimed(MascotRules.questRefKey(room.today, q.key))
           rewardRow(
-            title: q.name(lang, stepsGoal: room.stepsGoal), coins: q.coins, xp: q.xp, claimed: claimed
+            title: q.name(lang, stepsGoal: room.stepsGoal), coins: q.coins, claimed: claimed
           ) {
             // Không có nút: nhiệm vụ tự nhận ở nơi khác. Vòng rỗng = chưa làm; vòng
             // tô = đã làm, đang chờ nhận (thiết kế lại 15/10, thay "—" / "…").
@@ -501,9 +507,10 @@ struct MascotRoomView: View {
   }
 
   /// Một hàng thưởng (`questRow` của RN): tên (đã nhận thì mờ đi), dưới là
-  /// đồng xu + "+N" vàng + "+N XP" tím; bên phải "✓ Đã nhận" xanh hoặc việc.
+  /// đồng xu + "+N" vàng; bên phải "✓ Đã nhận" xanh hoặc việc. GĐ2: bỏ "+N XP" —
+  /// Gains là thang tiến bộ duy nhất ra giao diện; XP vẫn cộng ở server.
   private func rewardRow<Action: View>(
-    title: String, coins: Int, xp: Int, claimed: Bool, flame: Bool = false, @ViewBuilder action: () -> Action
+    title: String, coins: Int, claimed: Bool, flame: Bool = false, @ViewBuilder action: () -> Action
   ) -> some View {
     HStack(spacing: DS.Spacing.md) {
       VStack(alignment: .leading, spacing: 3) {
@@ -523,9 +530,6 @@ struct MascotRoomView: View {
             .accessibilityHidden(true)
           Text(verbatim: "+\(coins)")
             .foregroundStyle(DS.Color.readinessYellow.swiftUI)
-          Text(verbatim: "+\(xp) XP")
-            .foregroundStyle(DS.Color.metricPurple.swiftUI)
-            .padding(.leading, 4)
         }
         .font(DS.TextStyle.caption.weight(.bold).monospacedDigit())
       }
@@ -547,28 +551,21 @@ struct MascotRoomView: View {
 
   // MARK: - Thử thách tuần (biên nhận)
 
+  /// "Tuần của Koa" (GĐ2) thay thẻ thử thách tuần chung.
   @ViewBuilder private var weeklyCard: some View {
-    let done = room.completedChallenges
-    if !done.isEmpty {
-      DSCard {
-        VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-          Text(String(localized: "mr.weekly")).font(DS.TextStyle.headline)
-          ForEach(done) { ch in
-            let paid = ch.paid
-            rewardRow(title: ChallengeText.title(ch.key, lang: lang) ?? ch.title, coins: paid.coins, xp: paid.xp, claimed: true) {
-              EmptyView()
-            }
-          }
-        }
-      }
+    if let state = koaWeekState {
+      KoaWeekCard(state: state, claim: services.koaWeek(userId: room.userId)?.claim ?? .notYet)
     }
+  }
+
+  private var koaWeekState: KoaWeek.State? {
+    guard let flow else { return nil }
+    return KoaWeek.state(today: flow.today.today, library: flow.today.library, trained: flow.today.trained)
   }
 
   /// Khám phá thêm (thiết kế lại 15/10): ba ô — Tủ đồ, Thử thách, Huy hiệu — mỗi ô
   /// một biểu tượng màu, tên và số; ô nào chưa có sổ thì không bấm được.
   private var shortcuts: some View {
-    let all = room.challenges ?? []
-    let challengeValue = all.isEmpty ? nil : "\(all.filter(\.completed).count)/\(all.count)"
     let awardValue = room.awardCount.flatMap { $0 > 0 ? String($0) : nil }
     return HStack(spacing: DS.Spacing.sm) {
       if let shop {
@@ -576,16 +573,6 @@ struct MascotRoomView: View {
           ShopView(book: shop, lang: lang) { Task { await room.load() } }
         } label: {
           ShortcutTile(symbol: "tshirt.fill", tint: DS.Color.metricPurple.swiftUI, label: String(localized: "shop.title"), value: nil)
-        }
-        .buttonStyle(TodayPressStyle())
-      }
-      if let challenges {
-        NavigationLink {
-          ChallengesView(book: challenges, lang: lang)
-        } label: {
-          ShortcutTile(
-            symbol: "flag.2.crossed.fill", tint: DS.Color.metricOrangeGraphic.swiftUI,
-            label: String(localized: "mr.challenges"), value: challengeValue)
         }
         .buttonStyle(TodayPressStyle())
       }
@@ -608,13 +595,8 @@ struct MascotRoomView: View {
   private func claimStreak() async {
     guard let outcome = await room.claimStreakBonus() else { return }
     show(burst: outcome.amount)
-    if let rank = outcome.newRank {
-      say(String(localized: "mr.rankUp \(rank.name(lang))"))
-    } else if let level = outcome.newLevel {
-      say(String(localized: "mr.levelUp \(level)"))
-    } else {
-      celebrate += 1
-    }
+    // GĐ2: hạng theo Gains (lên hạng mừng ở Hôm nay); cấp XP không còn ra giao diện.
+    celebrate += 1
   }
 
   private func show(burst amount: Int) {

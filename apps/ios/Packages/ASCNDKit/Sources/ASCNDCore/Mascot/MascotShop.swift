@@ -68,10 +68,20 @@ public enum MascotShop {
     public let rarity: Rarity
     public let price: Int
     public let collection: String?
+    /// Cấp XP mở khoá của RN (giữ để đối chiếu golden). App KHÔNG dùng để chặn nữa —
+    /// xem `unlockRank` (GĐ2).
     public let unlockLevel: Int?
     public let name: Text3
     public var id: String { key }
+    /// Hạng Gains mở khoá (GĐ2, Kiệt duyệt 21/10 `gd2-progress-koa-week.html`):
+    /// Gains là thang DUY NHẤT người dùng thấy. Khác RN (RN khoá theo cấp XP).
+    public var unlockRank: Int? { MascotShop.unlockRanks[key] }
   }
+
+  /// Món khoá theo hạng (chỉ số trong `MascotRules.ranks`): Cúp vàng → Lifter,
+  /// Giày có cánh → Swole, Cánh Rồng → Beast. Server không kiểm cấp khi mua
+  /// (`buy_mascot_item` chỉ kiểm giá + số dư), nên đổi cổng không cần migration.
+  public static let unlockRanks: [String: Int] = ["hand_trophy": 2, "shoes_wing": 3, "back_dragonwing": 4]
 
   public struct Collection: Sendable, Hashable, Identifiable {
     public let id: String
@@ -264,15 +274,15 @@ public enum MascotShop {
 
   public enum Gate: Sendable, Hashable {
     case ok
-    /// Chưa đủ cấp (`nRoomLockLevel`).
-    case locked(level: Int)
+    /// Chưa đủ hạng Gains (GĐ2; RN: chưa đủ cấp).
+    case locked(rank: Int)
     /// Không đủ xu (`nRoomNotEnough`).
     case poor
   }
 
   /// Hai lần chặn ở máy trước khi gọi server (`shop.tsx:213-226`).
-  public static func gate(_ item: Item, level: Int, balance: Int) -> Gate {
-    if let need = item.unlockLevel, need > 0, level < need { return .locked(level: need) }
+  public static func gate(_ item: Item, rank: Int, balance: Int) -> Gate {
+    if let need = item.unlockRank, rank < need { return .locked(rank: need) }
     if balance < item.price { return .poor }
     return .ok
   }
@@ -311,7 +321,7 @@ public final class MascotShopBook {
 
   public enum BuyOutcome: Sendable, Hashable {
     case bought
-    case locked(level: Int)
+    case locked(rank: Int)
     case poor
     /// Đang có một lượt mua khác.
     case busy
@@ -360,6 +370,8 @@ public final class MascotShopBook {
 
   public var balance: Int { wallet?.balance ?? 0 }
   public var level: Int { MascotRules.level(xp: wallet?.xp ?? 0) }
+  /// Gains của Koa (GĐ2) — hạng mở khoá đồ. Màn đặt từ `AppServices.koaGainsNow`.
+  public var gains: KoaGains.State = .zero
   public var owned: Set<String> { Set(inventory.map(\.itemKey)) }
   public var equipped: Set<String> { Set(inventory.filter(\.equipped).map(\.itemKey)) }
   public func isClaimed(_ c: MascotShop.Collection) -> Bool { wallet?.claimed.contains(c.refKey) ?? false }
@@ -393,8 +405,8 @@ public final class MascotShopBook {
   /// lượt mua — như RN).
   public func buy(_ item: MascotShop.Item) async -> BuyOutcome {
     guard buying == nil, !closed else { return .busy }
-    switch MascotShop.gate(item, level: level, balance: balance) {
-    case .locked(let need): return .locked(level: need)
+    switch MascotShop.gate(item, rank: gains.rank, balance: balance) {
+    case .locked(let need): return .locked(rank: need)
     case .poor: return .poor
     case .ok: break
     }

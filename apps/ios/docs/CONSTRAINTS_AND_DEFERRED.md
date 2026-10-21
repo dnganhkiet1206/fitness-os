@@ -68,7 +68,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 |---|---|---|---|
 | Mở rộng Cộng đồng (bảng tin, tương tác, trang người dùng) | Chưa có người dùng; QĐ 5 | Có người dùng thật + Kiệt quyết | V1 21/10 |
 | Nhắn tin riêng (DM) | Server chưa có (`MESSAGING-PLAN.md`); Release đang ẩn | Có backend đáng tin + có nhu cầu | 15/10 |
-| Thử thách cộng đồng | Lớp thử thách thứ ba; chưa có người | Đủ người tham gia; **phải ẩn trước** (GĐ3) | V1 21/10 |
+| Thử thách cộng đồng | Lớp thử thách thứ ba; chưa có người. **Đã ẩn** ở Today và tab Cộng đồng trên nhánh GĐ2 (`claude/gd2-progress`, Kiệt duyệt 21/10); code và dữ liệu giữ nguyên | Đủ người tham gia + Kiệt quyết | V1 21/10 |
 | Đổi tab Cộng đồng thành "Bạn tập" | Tính năng bạn bè chưa đủ thực chất | Có tính năng bạn tập thật | V1 21/10 |
 | Thẻ chia sẻ Story, bạn tập, xếp hạng bạn bè (đợt 5 cũ) | Cần người dùng | Sau TestFlight + số liệu | V1 21/10 |
 | Mở rộng AI (Coach đọc lịch / Koa, AI lập kế hoạch) | Chỉ dùng AI khi tạo giá trị thật; luồng chính không được phụ thuộc AI | Sau khi vòng lõi chứng minh giá trị (GĐ4) | V1 21/10 |
@@ -86,8 +86,16 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 
 **Code đã merge nhưng trái với V1** (chi tiết, kèm file và dòng, ở #527 ngày 21/10):
 - ~~Tụt hạng do nghỉ: `KoaGains`, `KoaSchedule.dropped`, lời nhắc ngày 6, màn quay lại.~~ Đã bỏ trên nhánh `claude/gd1-daily-plan` (PR GĐ1, nháp, 21/10). **Chỉ hết hiệu lực khi PR ấy merge.**
-- Cấp XP vẫn hiện, và cửa hàng khoá đồ theo Cấp XP. **Không đụng ở GĐ1** (Kiệt 21/10: giữ XP và mọi phụ thuộc cho tới khi kiểm cửa hàng, phần thưởng, lưu trữ, migration). GĐ2, cần migration, không làm mất xu / đồ.
-- 8 thử thách tuần chung. **GĐ2: thay bằng Tuần của Koa** — chỉ đánh dấu hoàn thành khi có buổi tập ghi thật, không dựa vào việc mở màn.
+- ~~Cấp XP vẫn hiện, và cửa hàng khoá đồ theo Cấp XP.~~ Đã sửa trên nhánh GĐ2 (`claude/gd2-progress`, PR nháp, 21/10). **Chỉ hết hiệu lực khi PR ấy merge.**
+  - XP **ẩn khỏi giao diện** (thẻ hạng phòng Koa, nhiệm vụ, onboarding, widget, màn lên cấp), **không xoá**: server vẫn cộng XP, bảng và cột giữ nguyên.
+  - Cửa hàng khoá theo **hạng Gains** (Kiệt duyệt): Cúp vàng → Lifter, Giày có cánh → Swole, Cánh Rồng → Beast. Không cần migration; không ai mất xu hay đồ đã mua.
+- ~~8 thử thách tuần chung.~~ Thay bằng **Tuần của Koa** trên nhánh GĐ2: đích = số buổi trong lịch của chính người dùng, chỉ đếm ngày có buổi ghi thật. Đủ tuần: +15 Gains, +50 xu, nhận một lần mỗi tuần (khoá `ch:silver:<tuần>:koa_week`, server bỏ trùng). Code thử thách chung còn giữ, chỉ không hiện.
+
+**GĐ2 (tiến bộ một thang + Tuần của Koa) — hạn chế đã biết:**
+- **Khoá đồ theo hạng chỉ ở app.** `buy_mascot_item` trên server chỉ kiểm giá và số dư, không kiểm hạng. Ai gọi thẳng API vẫn mua được. Muốn chặn ở server phải có migration (tính Gains trên server); chưa làm vì Gains hiện chỉ tính ở app.
+- **Nhận thưởng Tuần của Koa cần mạng.** Mất mạng thì để lần mở app sau (thẻ ghi "Chưa nhận được — sẽ thử lại."); không xếp hàng outbox.
+- **Tổng kết tuần của tuần cũ dùng lịch HIỆN TẠI để tính đích** (app không lưu lịch theo từng tuần). Đổi lịch rồi xem lại tuần trước thì đích có thể khác lúc ấy. Đổi ngày (dời / nghỉ) thì vẫn đúng, vì được lưu theo ngày.
+- **Chưa kiểm trên simulator:** widget Koa (số Gains), onboarding bước kế hoạch. Mới có test đơn vị + build. Tổng kết tuần đã kiểm 21/10 (tuần này 2/6, tuần trước 3/6, khớp số buổi ở thẻ Khối lượng).
 - ~~"Mất pump" sau 3 ngày: chờ Kiệt chốt.~~ Kiệt chốt 21/10: bỏ; chào mừng quay lại (Daily Plan luật ④). Đã làm trên nhánh GĐ1.
 
 **GĐ1 (Daily Plan + Today gọn) — Kiệt duyệt CÓ ĐIỀU KIỆN 21/10, CHƯA duyệt merge production:**
@@ -129,3 +137,4 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - 21/10/2026: tạo sổ (Kiệt yêu cầu, #527).
 - 21/10/2026: thêm điều kiện duyệt GĐ1, migration chưa deploy, kết quả "mất pump" / tụt hạng.
 - 21/10/2026: hồi quy GĐ1 (R / W / D PASS; A1, A2 BLOCKED).
+- 21/10/2026: GĐ2 — XP ẩn khỏi giao diện, khoá đồ theo hạng Gains, Tuần của Koa thay thử thách chung, ẩn thử thách cộng đồng; thêm hạn chế khoá đồ chỉ ở app.

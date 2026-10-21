@@ -331,7 +331,7 @@ struct KoaWidgetView: View {
           statDivider
           stat(streakValue, label: String(localized: "widget.koa.stat.streak"))
           statDivider
-          stat(entry.data.map { "\($0.level)" } ?? "–", label: String(localized: "widget.koa.stat.level"))
+          stat(entry.data?.gains.map { "\($0)" } ?? "–", label: String(localized: "widget.koa.stat.gains"))
         }
       }
     }

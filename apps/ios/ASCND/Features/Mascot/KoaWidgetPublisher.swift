@@ -38,6 +38,8 @@ final class KoaWidgetPublisher {
     var level = 1
     /// Hạng vóc dáng (Gains) của Koa trên widget.
     var build = 0
+    /// Gains của Koa (GĐ2: ô số của thẻ thay "Cấp").
+    var gains = 0
   }
 
   func publish(_ s: Snapshot) {
@@ -52,6 +54,7 @@ final class KoaWidgetPublisher {
       nextQuest: s.nextQuest?.rawValue)
     data.short = Self.short(s)
     data.level = s.level
+    data.gains = s.gains
     // App vừa dựng lại Hôm nay: số ly từ widget đã nằm trong số thật.
     guard data != last || (store.koa()?.waterTaps ?? 0) > 0 else { return }
     last = data

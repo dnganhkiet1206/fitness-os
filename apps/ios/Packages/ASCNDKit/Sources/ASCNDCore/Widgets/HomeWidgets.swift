@@ -141,7 +141,7 @@ public enum HomeWidgets {
 /// câu của Koa đã ở ngôn ngữ của app, CÙNG câu với Hôm nay (một Koa, một bộ não).
 public struct KoaWidgetData: Codable, Sendable, Hashable {
   enum CodingKeys: String, CodingKey {
-    case day, line, next, done, total, streak, nightLine, imageVersion, checks, nextQuest, waterTaps, short, level
+    case day, line, next, done, total, streak, nightLine, imageVersion, checks, nextQuest, waterTaps, short, level, gains
   }
 
   public init(from decoder: any Decoder) throws {
@@ -159,6 +159,7 @@ public struct KoaWidgetData: Codable, Sendable, Hashable {
     waterTaps = try c.decodeIfPresent(Int.self, forKey: .waterTaps) ?? 0
     short = try c.decodeIfPresent(String.self, forKey: .short) ?? ""
     level = try c.decodeIfPresent(Int.self, forKey: .level) ?? 1
+    gains = try c.decodeIfPresent(Int.self, forKey: .gains)
   }
 
   /// Ngày địa phương của dữ liệu (`YYYY-MM-DD`). Khác hôm nay → widget không nói
@@ -180,8 +181,10 @@ public struct KoaWidgetData: Codable, Sendable, Hashable {
   public var checks: [String] = []
   /// Nhiệm vụ của việc kế tiếp (`MascotRules.Quest.rawValue`) — màu của nút.
   public var nextQuest: String?
-  /// Cấp của Koa (ô "CẤP" của thẻ).
+  /// Cấp của Koa — dữ liệu cũ; thẻ không còn hiện (GĐ2).
   public var level = 1
+  /// Gains của Koa (GĐ2: ô số của thẻ). `nil` = dữ liệu cũ, thẻ hiện "–".
+  public var gains: Int?
   /// Câu rất ngắn cho cỡ nhỏ (≤ 5 chữ, đã dịch) — nhìn một giây là hiểu.
   public var short = ""
   /// Số ly vừa thêm từ widget từ lần app ghi gần nhất (để widget nói "+1 ly").

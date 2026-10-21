@@ -294,7 +294,8 @@ struct TodayExtras<Plan: View>: View {
         dailyPlan = source
       }
       inbox = services.makeCommunityInbox(userId: userId)
-      communityChallenges = services.makeCommunityChallenges(userId: userId)
+      // GĐ2: thử thách cộng đồng ẩn (QĐ 5) — hộp thông báo không nhắc thử thách.
+      communityChallenges = nil
       seenNotices = NoticeSeen.load(userId: userId)
       Task { paid = await services.isPaid() }
       if nutrition == nil { ownWater = services.makeWaterBook(userId: userId) }
@@ -330,9 +331,7 @@ struct TodayExtras<Plan: View>: View {
     .onChange(of: services.koaReward?.id) { _, _ in
       guard let mascot, services.koaReward?.userId == userId else { return }
       Task {
-        let before = mascot.level
         await mascot.refreshWallet()
-        announceLevel(from: before, mascot)
       }
     }
     // Koa ló lên ở tab khác mặc đúng đồ đang mặc.
@@ -417,7 +416,8 @@ struct TodayExtras<Plan: View>: View {
     if let mascot, case .ready = mascot.phase {
       rows.append(.init(
         id: "room", title: String(localized: "mr.title"),
-        value: String(localized: "today.more.level \(mascot.level)"), action: { roomSource = "room"; showsRoom = true }))
+        value: String(localized: "mr.gains.points \(mascot.gains.points)"),
+        action: { roomSource = "room"; showsRoom = true }))
     }
     return rows
   }
@@ -544,6 +544,14 @@ struct TodayExtras<Plan: View>: View {
     guard let dailyPlan, let flow else { return }
     await dailyPlan.reloadData(services: services, profile: profile?.profile, flow: flow)
     noteComeback(dailyPlan.result)
+    // Tuần của Koa (GĐ2): đủ tuần thì nhận +50 xu, một lần mỗi tuần.
+    if let week = services.koaWeek(userId: userId) {
+      await week.claimIfComplete(KoaWeek.state(today: flow.today.today, library: flow.today.library, trained: flow.today.trained))
+      if case .justClaimed(let coins) = week.claim {
+        services.noteKoaReward(userId: userId, amount: coins, seen: dayLoaded, source: KoaWeek.key)
+        await mascot?.refreshWallet()
+      }
+    }
   }
 
   /// Thứ làm kết quả đổi mà không cần đọc lại server: kế hoạch, buổi, Gains.
@@ -763,18 +771,7 @@ struct TodayExtras<Plan: View>: View {
       equipped: shop?.inventory.filter(\.equipped).map(\.itemKey) ?? [], line: state.line,
       next: state.next.map(TodayDayBlock.action), done: progress.done, total: progress.total,
       streak: room.streak.count, day: room.today, checks: checks, nextQuest: state.next, level: room.level,
-      build: room.gains.rank))
-  }
-
-  /// Lên cấp nhờ xu tự về: màn ăn mừng ở gốc app (cùng đường với huy chương).
-  /// Hạng giờ theo Gains (`announceRank`), không theo cấp.
-  private func announceLevel(from before: Int, _ room: MascotRoomController) {
-    guard room.level > before else { return }
-    let rank = room.rank
-    let lang = services.preferences.lang
-    services.celebrations.enqueue(
-      title: String(localized: "mr.levelUp \(room.level)"),
-      description: rank.name(lang), icon: "trophy", tier: MascotRules.celebrationTier(rank.key))
+      build: room.gains.rank, gains: room.gains.points))
   }
 
   /// Gains (#527 đợt 1): vóc dáng / hạng của Koa từ lịch sử tập, cho mọi Koa của

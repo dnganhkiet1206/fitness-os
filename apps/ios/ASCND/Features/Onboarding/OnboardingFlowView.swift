@@ -524,7 +524,8 @@ private struct OnboardingStepsView: View {
       Text(String(localized: "onboarding.plan.rankName"))
         .font(DS.TextStyle.headline)
         .foregroundStyle(DS.Color.foreground.swiftUI)
-      Text(String(localized: "onboarding.plan.rank \(Self.level)"))
+      // GĐ2: Gains là thang duy nhất — không còn "Level 01".
+      Text("onboarding.plan.gains")
         .font(DS.TextStyle.footnote)
         .foregroundStyle(DS.Color.mutedForeground.swiftUI)
     }
@@ -585,12 +586,10 @@ private struct OnboardingStepsView: View {
   // MARK: - Chữ suy ra
 
   private static let kcal = "kcal"
-  /// `pad2(levelFromXp(0))`.
-  private static let level = "01"
 
   private var readyChips: [String] {
     let kcal = flow.attempt.plan?.targetKcal ?? 0
-    return [goalLabel, "\(kcal.formatted(.number.locale(.app))) \(Self.kcal)", String(localized: "onboarding.ready.level \(Self.level)")]
+    return [goalLabel, "\(kcal.formatted(.number.locale(.app))) \(Self.kcal)", String(localized: "mr.gains.points \(0)")]
       .filter { !$0.isEmpty }
   }
 
