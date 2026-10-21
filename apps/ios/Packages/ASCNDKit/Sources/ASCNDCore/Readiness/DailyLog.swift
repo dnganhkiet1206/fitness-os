@@ -225,9 +225,6 @@ public enum DailyLog {
   ) -> [String: JSONValue] {
     func sum(_ rows: [JSONValue], _ col: String) -> Double { rows.reduce(0) { $0 + JS.number($1[col]) } }
 
-    let measured28d = s.load28d.filter { SessionLoad.load($0) != nil }
-    let trainingDays28d = chronicDaysCovered(measured28d, now: now)
-
     var sleepDuration = 0.0
     var sleepQuality = 0.0
     if let sleep = mainSleep(s.sleeps) {
@@ -242,37 +239,7 @@ public enum DailyLog {
     var recommendation = ""
     var acwr: JSONValue = .null
 
-    let target = JS.present(s.profile?["sleep_target_hours"]) ? JS.number(s.profile?["sleep_target_hours"]) : 8
-    let sleepTargetMin = target * 60
-
-    // Một họ HRV, không bao giờ hai: SDNN hôm nay thì nền cũng chỉ SDNN.
-    let today = s.bio.first
-    let usingSdnn = JS.present(today?["hrv_sdnn_ms"])
-    let hrvToday: Double? =
-      usingSdnn
-      ? JS.number(today?["hrv_sdnn_ms"])
-      : (JS.present(today?["hrv_rmssd_ms"]) ? JS.number(today?["hrv_rmssd_ms"]) : nil)
-    let hrvHistory = s.bioHistory
-      .map { usingSdnn ? $0["hrv_sdnn_ms"] : $0["hrv_rmssd_ms"] }
-      .filter(JS.present)
-      .map(JS.number)
-    let rhrHistory = s.bioHistory.filter { JS.present($0["hr_bpm"]) }.map { JS.number($0["hr_bpm"]) }
-
-    let load7d = SessionLoad.window(s.load7d)
-    let load28d = SessionLoad.window(s.load28d)
-    let debt = sleepDebt(s.sleeps7d, targetMin: sleepTargetMin, in: tz)
-
-    let hasEnoughData = s.bioHistory.count >= 3 || s.sleeps7d.count >= 3 || load28d > 0
-    if hasEnoughData {
-      let hr = JS.number(today?["hr_bpm"])
-      let soreness: Double? = JS.present(today?["soreness_1_10"]) ? JS.number(today?["soreness_1_10"]) : nil
-      let input = ReadinessInput(
-        hrvToday: hrvToday,
-        rhrToday: JS.truthy(hr) ? hr : nil,
-        sleepMinLastNight: sleepDuration, sleepTargetMin: sleepTargetMin, sleepDebt7dMin: debt,
-        trainingLoad7d: load7d, trainingLoad28d: load28d, trainingDays28d: trainingDays28d,
-        sorenessToday: soreness, illness: today?["illness_flag"] == .bool(true), painFlagMax: soreness,
-        hrvHistory28d: hrvHistory, rhrHistory28d: rhrHistory)
+    if let input = readinessInput(sources: s, now: now, in: tz) {
       if let r = ReadinessEngine.compute(input) {
         score = JS.json(r.score)
         status = .string(r.status.rawValue)
@@ -303,6 +270,47 @@ public enum DailyLog {
       "readiness_recommendation": .string(recommendation),
       "acwr": acwr,
     ]
+  }
+
+  /// Đầu vào của điểm sẵn sàng từ các nguồn của ngày — CHUNG cho hàng
+  /// `daily_logs` và tín hiệu phục hồi của Daily Plan (GĐ1), nên hai nơi không
+  /// bao giờ đọc số khác nhau. `nil` khi chưa đủ dữ liệu để chấm.
+  public static func readinessInput(sources s: Sources, now: EpochMillis, in tz: TimeZone) -> ReadinessInput? {
+    let measured28d = s.load28d.filter { SessionLoad.load($0) != nil }
+    let trainingDays28d = chronicDaysCovered(measured28d, now: now)
+    let sleepDuration = mainSleep(s.sleeps).map(asleepMinutes) ?? 0
+
+    let target = JS.present(s.profile?["sleep_target_hours"]) ? JS.number(s.profile?["sleep_target_hours"]) : 8
+    let sleepTargetMin = target * 60
+
+    // Một họ HRV, không bao giờ hai: SDNN hôm nay thì nền cũng chỉ SDNN.
+    let today = s.bio.first
+    let usingSdnn = JS.present(today?["hrv_sdnn_ms"])
+    let hrvToday: Double? =
+      usingSdnn
+      ? JS.number(today?["hrv_sdnn_ms"])
+      : (JS.present(today?["hrv_rmssd_ms"]) ? JS.number(today?["hrv_rmssd_ms"]) : nil)
+    let hrvHistory = s.bioHistory
+      .map { usingSdnn ? $0["hrv_sdnn_ms"] : $0["hrv_rmssd_ms"] }
+      .filter(JS.present)
+      .map(JS.number)
+    let rhrHistory = s.bioHistory.filter { JS.present($0["hr_bpm"]) }.map { JS.number($0["hr_bpm"]) }
+
+    let load7d = SessionLoad.window(s.load7d)
+    let load28d = SessionLoad.window(s.load28d)
+    let debt = sleepDebt(s.sleeps7d, targetMin: sleepTargetMin, in: tz)
+
+    let hasEnoughData = s.bioHistory.count >= 3 || s.sleeps7d.count >= 3 || load28d > 0
+    guard hasEnoughData else { return nil }
+    let hr = JS.number(today?["hr_bpm"])
+    let soreness: Double? = JS.present(today?["soreness_1_10"]) ? JS.number(today?["soreness_1_10"]) : nil
+    return ReadinessInput(
+      hrvToday: hrvToday,
+      rhrToday: JS.truthy(hr) ? hr : nil,
+      sleepMinLastNight: sleepDuration, sleepTargetMin: sleepTargetMin, sleepDebt7dMin: debt,
+      trainingLoad7d: load7d, trainingLoad28d: load28d, trainingDays28d: trainingDays28d,
+      sorenessToday: soreness, illness: today?["illness_flag"] == .bool(true), painFlagMax: soreness,
+      hrvHistory28d: hrvHistory, rhrHistory28d: rhrHistory)
   }
 
   /// `projectionEquals`: hàng đang lưu đã mang đúng các số ta vừa tính chưa.
