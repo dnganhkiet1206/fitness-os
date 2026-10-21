@@ -1206,6 +1206,33 @@ for side in ('left', 'right'):
     grp['kids'][1:1] = shading
     grp['kids'] += sleeves_
 
+# ── TAY SAU THÂN + NÉT BÁM VIỀN (20/10, Kiệt: ở hạng cao nét trên tay lòi ra ngoài người,
+#    tay trên nên nằm sau thân). (a) Mọi nét / vệt bóng / phấn trên cánh tay bị cắt theo
+#    CHÍNH viền cánh tay (cùng nhóm hoạt ảnh + biến đổi hạng) → không bao giờ ra ngoài tay.
+#    (b) Tay đứng vẽ SAU thân và áo: phần tay trên chồng lên thân bị thân che. (c) Thân có
+#    nét viền hai bên (theo đúng biến thể thân của hạng) để tách thân khỏi tay cùng màu lông.
+for side in ('left', 'right'):
+    grp = next(n for n in walk(nodes[3]) if (n.get('anim') or {}).get('k') == ('koaArmL' if side == 'left' else 'koaArmR')
+               and any(k.get('id') == f'arm_{side}_upper' for k in n.get('kids', [])))
+    keep = [k for k in grp['kids'] if k.get('id') == f'arm_{side}_upper' or k.get('if', '').startswith('it_top_')]
+    marks = [k for k in grp['kids'] if not any(k is x for x in keep)]
+    cid = f"armClip{side[0].upper()}"
+    grp['kids'] = [keep[0], {"t": "clipPath", "id": cid, "kids": [P(ARM_D[side])]},
+                   G(marks, a={"clip-path": f"url(#{cid})"})] + keep[1:]
+arms_idle = next(k for k in body['kids'] if k.get('if') == 'armsIdle')
+body['kids'].remove(arms_idle)
+body['kids'].insert(next(i for i, k in enumerate(body['kids']) if k.get('id') == 'TORSO'), arms_idle)
+def torso_sides(t):
+    if t == 0: dd = "M66 182 C 63 200 63 224 67 244"
+    else:
+        sw = 54 + 12 * t; ww = 53 - 7 * t
+        dd = f"M{120 - sw:g} 180 C {120 - sw - 2:g} 200 {120 - ww - 5:g} 224 {120 - ww:g} 244"
+    return [stroke(dd, w=2.2, c=FURD), stroke(mx(dd), w=2.2, c=FURD)]
+for r, v in enumerate(variants):
+    shape = v['kids'][0]['a']['d']
+    cid = f"torsoClip{r}"
+    v['kids'] += [{"t": "clipPath", "id": cid, "kids": [P(shape)]}, G(torso_sides(RANK_T[r]), a={"clip-path": f"url(#{cid})"})]
+
 # Mọi món đã vẽ lại phải xuất hiện đúng một lần trở lên trong cây mới.
 flags_in = {n.get('if') for n in walk({'kids': d['nodes']})}
 missing = sorted(gone - flags_in)
