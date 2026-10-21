@@ -115,10 +115,10 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - `PARITY_MATRIX.md` chưa cập nhật theo 4 khu vực (việc cuối của GĐ3 trong lộ trình).
 
 **Tìm thấy khi kiểm ngày 21/10** (simulator, tài khoản test):
-- ~~Coach AI bị cắt giữa câu, còn sót dấu `**` thô.~~ Sửa 21/10 (nhánh `claude/fix-five-bugs`): app bỏ `**` lẻ, câu bị cắt vì hết hạn mức thì nối "…". Server: `MAX_TOKENS` 1024 → 2048 (model gemini-3-flash tiêu một phần cho suy luận ẩn). **Phần server chỉ có hiệu lực khi deploy `ai-coach` — chưa deploy, cần Kiệt duyệt.**
-- ~~Số buổi lệch: Coach nói 4 (đếm 7 ngày gần nhất), tổng kết tuần nói 2 (tuần lịch).~~ Sửa 21/10: `ai-coach` gửi `this_week` (tuần lịch T2 → hôm nay, đếm ngày có buổi như app) và dặn model dùng nó cho "tuần này". **Chờ deploy `ai-coach`.**
+- ~~Coach AI bị cắt giữa câu, còn sót dấu `**` thô.~~ Sửa 21/10 (nhánh `claude/fix-five-bugs`): app bỏ `**` lẻ, câu bị cắt vì hết hạn mức thì nối "…". Server: `MAX_TOKENS` 1024 → 2048 (model gemini-3-flash tiêu một phần cho suy luận ẩn). **`ai-coach` đã deploy 21/10 (Kiệt duyệt trong chat), bản 24, từ `af3f6427`.** Kiểm trên simulator: câu trả lời chạy trọn, không sót `**`.
+- ~~Số buổi lệch: Coach nói 4 (đếm 7 ngày gần nhất), tổng kết tuần nói 2 (tuần lịch).~~ Sửa 21/10: `ai-coach` gửi `this_week` (tuần lịch T2 → hôm nay, đếm ngày có buổi như app) và dặn model dùng nó cho "tuần này". **Đã deploy 21/10** — Coach trả lời "2 buổi tập trong tuần này từ thứ Hai", khớp app (2/6).
 - ~~Sẵn sàng lệch: tổng kết tuần hiện 92 và khuyên "+2.5kg" dựa trên một điểm duy nhất.~~ Sửa 21/10 (app): cần ít nhất 3 ngày đo được phục hồi (`WeeklyReview.minReadinessDays`) mới có điểm tuần và lời khuyên tăng tải; ít hơn thì "—".
-- ~~Đơn vị lệch: AI viết "2,508", app viết "2.508". Nước oz ở Dinh dưỡng, L ở tổng kết tuần.~~ Sửa 21/10: tổng kết tuần định dạng số theo ngôn ngữ app và nước theo đơn vị người dùng (app). Coach được dặn viết số kiểu app (**chờ deploy `ai-coach`**). `ai-weekly-review` chưa có luật này.
+- ~~Đơn vị lệch: AI viết "2,508", app viết "2.508". Nước oz ở Dinh dưỡng, L ở tổng kết tuần.~~ Sửa 21/10: tổng kết tuần định dạng số theo ngôn ngữ app và nước theo đơn vị người dùng (app). Coach được dặn viết số kiểu app (đã deploy 21/10). `ai-weekly-review` chưa có luật này.
 - ~~Quá nhiều con số: tổng kết tuần AI sinh thêm "Điểm tuần 55".~~ Sửa 21/10 (app): không hiện điểm AI; thẻ là "Koa nhận xét tuần". Server vẫn trả `score` (không đổi để khỏi deploy).
 
 **Chưa kiểm:**
@@ -145,6 +145,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - 21/10/2026: thêm điều kiện duyệt GĐ1, migration chưa deploy, kết quả "mất pump" / tụt hạng.
 - 21/10/2026: hồi quy GĐ1 (R / W / D PASS; A1, A2 BLOCKED).
 - 21/10/2026: Kiệt lệnh merge: #641 (GĐ1) và #642 (GĐ2) vào `native/ios-rewrite`; nghiệm thu GĐ1 còn thiếu iPhone thật, A1, A2; migration vẫn chưa deploy.
+- 21/10/2026: deploy `ai-coach` (bản 24) lên production theo duyệt của Kiệt.
 - 21/10/2026: sửa 5 lỗi tìm thấy 21/10 (phần app xong; phần server `ai-coach` chờ deploy).
 - 21/10/2026: GĐ3 — bốn khu vực, Cộng đồng ra khỏi thanh tab, "Tóm tắt" gộp vào Tiến bộ, kế hoạch ăn / đi chợ / bổ sung xuống "Thêm"; thêm hạn chế GĐ3.
 - 21/10/2026: GĐ2 — XP ẩn khỏi giao diện, khoá đồ theo hạng Gains, Tuần của Koa thay thử thách chung, ẩn thử thách cộng đồng; thêm hạn chế khoá đồ chỉ ở app.
