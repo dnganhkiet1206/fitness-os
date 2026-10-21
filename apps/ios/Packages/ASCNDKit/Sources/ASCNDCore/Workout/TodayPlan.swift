@@ -198,16 +198,24 @@ public struct TemplateSnapshot: Sendable, Hashable, Codable {
   public let templates: [WorkoutTemplate]
   /// Đổi lịch theo ngày (`plan_day_overrides`, GĐ1) — thắng `routine` cho đúng ngày.
   public let overrides: [DayOverride]
+  /// Server có bảng `plan_day_overrides` (đọc được lần gần nhất). Chưa có — migration
+  /// chưa deploy — thì app KHÔNG cho dời / đổi ngày nghỉ: lệnh ghi sẽ bị server từ
+  /// chối và kẹt trong hàng đợi.
+  public let overridesSupported: Bool
   public let fetchedAt: EpochMillis
 
-  public init(routine: [RoutineDay], templates: [WorkoutTemplate], overrides: [DayOverride] = [], fetchedAt: EpochMillis) {
+  public init(
+    routine: [RoutineDay], templates: [WorkoutTemplate], overrides: [DayOverride] = [], overridesSupported: Bool = false,
+    fetchedAt: EpochMillis
+  ) {
     self.routine = routine
     self.templates = templates
     self.overrides = overrides
+    self.overridesSupported = overridesSupported
     self.fetchedAt = fetchedAt
   }
 
-  enum CodingKeys: String, CodingKey { case routine, templates, overrides, fetchedAt }
+  enum CodingKeys: String, CodingKey { case routine, templates, overrides, overridesSupported, fetchedAt }
 
   /// Cache cũ (trước GĐ1) không có `overrides` — đọc ra rỗng, không hỏng cache.
   public init(from decoder: any Decoder) throws {
@@ -215,6 +223,7 @@ public struct TemplateSnapshot: Sendable, Hashable, Codable {
     routine = try c.decode([RoutineDay].self, forKey: .routine)
     templates = try c.decode([WorkoutTemplate].self, forKey: .templates)
     overrides = try c.decodeIfPresent([DayOverride].self, forKey: .overrides) ?? []
+    overridesSupported = try c.decodeIfPresent(Bool.self, forKey: .overridesSupported) ?? false
     fetchedAt = try c.decode(EpochMillis.self, forKey: .fetchedAt)
   }
 

@@ -271,6 +271,23 @@ public final class TodayController {
       bests: bests, onRest: onRest, onEnqueued: onEnqueued)
   }
 
+  /// Mẫu của các buổi đã ghi HÔM NAY (Daily Plan, GĐ1 điều kiện 01); `nil` = buổi
+  /// tự do. Có "đã tập" mà chưa đọc được buổi nào (mất mạng, chỉ máy này biết):
+  /// coi buổi trong lịch là đã tập — như nút của thẻ trước GĐ1.
+  public var templatesDoneToday: [String?] {
+    if let s = serverSessions, s.date == today, !s.rows.isEmpty {
+      return s.rows.map { $0["template_id"]?.stringValue?.lowercased() }
+    }
+    guard trained.contains(today) else { return [] }
+    return [plan?.template?.id]
+  }
+
+  /// Id các buổi trên server của hôm nay — để không đếm hai lần buổi vừa chốt ở máy này.
+  public var sessionIdsToday: Set<String> {
+    guard let s = serverSessions, s.date == today else { return [] }
+    return Set(s.rows.compactMap { $0["id"]?.stringValue?.lowercased() })
+  }
+
   /// Buổi hôm nay là bản nhẹ ("Tập nhẹ hơn", GĐ1) — lựa chọn của người dùng cho
   /// đúng (ngày, mẫu) này.
   public var lighterToday: Bool {

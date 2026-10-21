@@ -82,7 +82,9 @@ extension TemplateSnapshot {
         continue
       }
     }
-    return TemplateSnapshot(routine: routine, templates: templates, overrides: overrides, fetchedAt: fetchedAt)
+    return TemplateSnapshot(
+      routine: routine, templates: templates, overrides: overrides, overridesSupported: overridesSupported,
+      fetchedAt: fetchedAt)
   }
 
   /// Hàng của một ngày (0 = Thứ Hai), `nil` khi ngày chưa có hàng.

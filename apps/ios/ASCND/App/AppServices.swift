@@ -483,6 +483,25 @@ final class AppServices {
     return await KoaGainsSync.load(userId: userId, store: rows, plans: plans, now: SystemWallClock().nowMillis(), in: .current)
   }
 
+  /// Số liệu của Daily Plan (GĐ1) chỉ kho hàng đọc được: phục hồi của hôm nay
+  /// (cùng đầu vào với điểm sẵn sàng) và đạm còn thiếu tới mục tiêu. Đọc hỏng /
+  /// chưa đủ dữ liệu → `nil` — Daily Plan không đoán.
+  func loadDailyPlanData(userId: String, date: LocalDate, profile: Profile?) async -> (
+    recovery: DailyPlan.Recovery?, proteinLeftG: Int?
+  ) {
+    guard let rows else { return (nil, nil) }
+    async let recovery = DailyLog.recovery(
+      userId: userId, date: date, store: rows, now: SystemWallClock().nowMillis(), in: .current)
+    let protein: Int?
+    if let profile, let row = try? await rows.select(NutritionToday.query(userId: userId, today: date)) {
+      let eaten = NutritionToday.totals(row.first).protein
+      protein = max(0, Int((NutritionToday.macroTargets(profile).protein - eaten).rounded()))
+    } else {
+      protein = nil
+    }
+    return (await recovery, protein)
+  }
+
   /// Ghi giấc ngủ (#527 `log-sleep`): đọc / ghi `sleep_logs` và dựng lại
   /// `daily_logs` qua `RowStore`; mất mạng xếp outbox kind `sleep`.
   func makeSleepLogger(userId: String) -> SleepLogger? {

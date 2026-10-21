@@ -27,15 +27,22 @@ public struct SupabaseTemplateSource: TemplateSource {
     // lại từ ngày tập đầu tiên, bỏ hàng cũ là thống kê cũ đổi theo. Bảng chưa có
     // trên server (migration chưa deploy) thì coi như chưa đổi ngày nào — lịch
     // mẫu vẫn đọc được.
-    let overrides = (try? await client.from("plan_day_overrides")
-      .select("date, template_id, is_rest, moved_from, moved_to")
-      .eq("user_id", value: userId)
-      .order("date")
-      .limit(Self.overrideLimit)
-      .execute().value as [JSONValue]) ?? []
+    var overrides: [JSONValue] = []
+    var supported = false
+    do {
+      overrides = try await client.from("plan_day_overrides")
+        .select("date, template_id, is_rest, moved_from, moved_to")
+        .eq("user_id", value: userId)
+        .order("date")
+        .limit(Self.overrideLimit)
+        .execute().value
+      supported = true
+    } catch {
+      supported = false
+    }
     return try await Self.snapshot(
       days: days, templates: templates, overrides: overrides.compactMap(DayOverride.init(row:)),
-      at: SystemWallClock().nowMillis())
+      overridesSupported: supported, at: SystemWallClock().nowMillis())
   }
 
   /// Trần số hàng đổi lịch — mỗi lần dời là hai hàng; đủ cho nhiều năm.
@@ -59,7 +66,8 @@ public struct SupabaseTemplateSource: TemplateSource {
   /// Ánh xạ hàng → domain. Cột nullable lấy đúng mặc định baseline đọc:
   /// `!!is_rest`, `?? false`; `exercises` không phải mảng → không có bài.
   static func snapshot(
-    days: [RoutineRow], templates: [TemplateRow], overrides: [DayOverride] = [], at: EpochMillis
+    days: [RoutineRow], templates: [TemplateRow], overrides: [DayOverride] = [], overridesSupported: Bool = false,
+    at: EpochMillis
   ) -> TemplateSnapshot {
     TemplateSnapshot(
       routine: days.map {
@@ -72,6 +80,7 @@ public struct SupabaseTemplateSource: TemplateSource {
           createdAt: $0.created_at.flatMap { EpochMillis(iso8601: $0) })
       },
       overrides: overrides,
+      overridesSupported: overridesSupported,
       fetchedAt: at)
   }
 }
