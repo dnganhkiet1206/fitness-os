@@ -147,7 +147,11 @@ final class VoiceDictation {
     try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
   }
 
-  static func authorize() async -> Bool {
+  /// `nonisolated` (Sentry APPLE-IOS-8, 19/10): trong lớp `@MainActor`, closure
+  /// trả lời của `SFSpeechRecognizer.requestAuthorization` bị Swift 6 coi là của
+  /// main actor, nhưng hệ thống gọi nó trên hàng đợi TCC nền → crash
+  /// `dispatch_assert_queue` ngay lúc người dùng bấm "Cho phép" lần đầu.
+  nonisolated static func authorize() async -> Bool {
     let speech = await withCheckedContinuation { (c: CheckedContinuation<SFSpeechRecognizerAuthorizationStatus, Never>) in
       SFSpeechRecognizer.requestAuthorization { c.resume(returning: $0) }
     }
