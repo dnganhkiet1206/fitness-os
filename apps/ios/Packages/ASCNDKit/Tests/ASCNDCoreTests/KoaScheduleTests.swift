@@ -30,6 +30,19 @@ struct KoaScheduleTests {
     #expect(Self.phase(Self.state(), planned: false, hour: 20) == nil, "không có buổi trong lịch")
   }
 
+  /// 20/10 (chủ dự án: 23:27 Koa vẫn "đợi bạn buổi Tập Tay trước"): đêm Koa ngủ.
+  @Test func nightNeverAsksForAWorkout() {
+    #expect(Self.phase(Self.state(), hour: 21) == .waiting)
+    #expect(Self.phase(Self.state(), hour: 22) == nil)
+    #expect(Self.phase(Self.state(), hour: 23) == nil)
+    #expect(Self.phase(Self.state(), hour: 2) == nil)
+    #expect(Self.phase(Self.state(), hour: 5, habit: 5) == nil, "giờ quen 5h vẫn là đêm")
+    #expect(Self.phase(Self.state(missed: 4), hour: 23) == nil, "không nhắc lỡ lịch lúc nửa đêm")
+    #expect(Self.phase(Self.state(points: 252, peak: 270, missed: 7), hour: 0) == nil)
+    // Vừa tập 21:30, 23:00 vẫn còn pump.
+    #expect(Self.phase(Self.state(), last: EpochMillis(Self.now.millis - Self.hourMs), trained: true, hour: 23) == .pump)
+  }
+
   @Test func pumpLostThenDropped() {
     #expect(Self.phase(Self.state(missed: 2)) == .waiting)
     #expect(Self.phase(Self.state(missed: 3)) == .pumpLost(daysLeft: 4))

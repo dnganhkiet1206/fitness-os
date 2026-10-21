@@ -3,7 +3,7 @@
 ///
 /// Bốn trạng thái đè lên Koa của ngày (thẻ Hôm nay, widget, phòng linh vật):
 /// - `pump`: tối đa 2 giờ sau buổi tập;
-/// - `waiting`: hôm nay có buổi trong lịch, chưa tập, đã qua giờ quen tập;
+/// - `waiting`: hôm nay có buổi trong lịch, chưa tập, đã qua giờ quen tập, chưa tới 22:00;
 /// - `pumpLost`: lỡ lịch từ 3 ngày (ngày nghỉ đã đặt không tính);
 /// - `dropped`: 7 ngày không tập và Gains đã tụt dưới hạng cao nhất từng đạt.
 /// Ngoài bốn trạng thái ấy Koa vẫn như cũ (`KoaMood`). Không bao giờ trách móc.
@@ -30,6 +30,10 @@ public enum KoaSchedule {
       if gap >= 0, gap <= pumpMillis { return .pump }
     }
     if trainedToday { return nil }
+    // Đêm (22:00–06:00) Koa ngủ như Koa của ngày (`KoaMood.night`) — không đợi tập,
+    // không nhắc lỡ lịch lúc nửa đêm (20/10, chủ dự án: "11h27 tối còn đòi tập").
+    // Vừa tập xong (`pump`) vẫn được khoe, ở trên.
+    if hour >= KoaMood.nightFrom || hour < KoaMood.morningFrom { return nil }
     let missed = gains.missedDays
     if missed >= KoaGains.layoffDays, gains.rank < KoaGains.rank(gains.peak) {
       let peakRank = KoaGains.rank(gains.peak)
