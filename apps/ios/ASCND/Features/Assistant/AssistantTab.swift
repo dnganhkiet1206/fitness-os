@@ -71,10 +71,9 @@ struct AssistantTab: View {
         // ô hỏi coach; bảng 7 ngày và đủ công cụ nằm sau một lần chạm.
         VStack(alignment: .leading, spacing: DS.Spacing.md) {
           header
+          // Kiệt 21/10 ("lặp lại nhiều thứ"): thẻ Tuần của Koa đầy đủ đã mở được từ dải ở
+          // Hôm nay — ở đây chỉ một dòng "x/y buổi" trong thẻ Koa.
           koaCard
-          if let week = koaWeek {
-            KoaWeekCard(state: week, claim: services.koaWeek(userId: flow.today.userId)?.claim ?? .notYet)
-          }
           sectionTitle("wh.seg.body")
           BodySection(userId: flow.today.userId, today: flow.today.today)
           sectionTitle("progress.recovery")
@@ -96,12 +95,20 @@ struct AssistantTab: View {
           if let chat, ai {
             AskCoachBar(lastAsked: chat.messages.last { $0.role == .user }?.content) { path.append(.chat) }
           }
-          forYou
+          // "Dành cho bạn" bỏ (lặp Điểm nổi bật / công cụ); Tổng kết tuần ở "Thêm".
           if let awards {
             RecentAwardsCard(book: awards, lang: lang) { path.append(.awards) }
           }
           sectionTitle("progress.more")
           VStack(spacing: 0) {
+            if weekly != nil, ai {
+              NavigationLink(value: AssistantRoute.weekly) {
+                WorkoutsHomeView.toolRow(
+                  "calendar", String(localized: "assistant.tool.week"), sub: nil, tint: DS.Color.metricBlue.swiftUI)
+              }
+              .buttonStyle(.plain)
+              Divider().padding(.leading, 58).opacity(0.6)
+            }
             NavigationLink(value: AssistantRoute.tools) {
               WorkoutsHomeView.toolRow(
                 "square.grid.2x2", String(localized: "assistant.alltools"), sub: nil, tint: DS.Color.metricBlue.swiftUI)
@@ -358,6 +365,11 @@ struct AssistantTab: View {
                 .font(DS.TextStyle.footnote)
                 .foregroundStyle(DS.Color.mutedForeground.swiftUI)
             }
+            if let week = koaWeek {
+              Text(String(localized: "progress.week \(min(week.done, week.target)) \(week.target)"))
+                .font(DS.TextStyle.footnote.weight(.semibold))
+                .foregroundStyle(DS.Color.foreground.swiftUI)
+            }
           }
           Spacer(minLength: 0)
           Image(systemName: "chevron.right")
@@ -379,11 +391,15 @@ struct AssistantTab: View {
     if let signal {
       let s = signal.signal
       let hasTrend: Bool = if case .ready(let a) = metrics?.phase, a.bars.contains(where: { !$0.missing }) { true } else { false }
+      // Tiến bộ (Kiệt 21/10, "lặp lại nhiều thứ"): thẻ Sẵn sàng đã nói xu hướng và
+      // calo hôm nay; giấc ngủ chưa ghi thì thẻ ấy cũng đã nhắc. Calo ở Dinh dưỡng.
       let order = AssistantSummary.order(
         sleepMin: s.sleepMin, heartRate: signal.heartRate, kcal: s.kcal, hasTrend: hasTrend)
-      VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-        sectionTitle("assistant.highlights")
-        ForEach(order, id: \.self) { area in highlight(area, signal: signal) }
+        .filter { $0 == .heart || ($0 == .sleep && s.sleepMin > 0) }
+      if !order.isEmpty {
+        VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+          ForEach(order, id: \.self) { area in highlight(area, signal: signal) }
+        }
       }
     }
   }
@@ -429,19 +445,6 @@ struct AssistantTab: View {
     }
   }
 
-  /// Nhãn sẵn sàng đang hiện ở thẻ Tóm tắt (hôm nay, hoặc điểm gần nhất).
-  private var shownReadiness: AssistantSummary.Readiness? {
-    let s = signal?.signal
-    if let s, let r = s.readiness {
-      // Điểm tạm (chỉ tải tập): thẻ Tóm tắt nói "chưa đủ dữ liệu" — nhãn cũng vậy.
-      return s.hasRecovery ? AssistantSummary.readiness(status: s.status, score: r) : nil
-    }
-    guard case .ready(let a) = metrics?.phase, metrics?.kind == .readiness,
-      let latest = AssistantSummary.latest(a.bars)
-    else { return nil }
-    return AssistantSummary.readiness(status: nil, score: latest.value)
-  }
-
   /// Ngày của bảng yếu tố: hôm nay nếu có điểm, không thì ngày gần nhất có điểm.
   private var readinessDate: LocalDate {
     if signal?.signal.readiness == nil, case .ready(let a) = metrics?.phase, metrics?.kind == .readiness,
@@ -450,84 +453,6 @@ struct AssistantTab: View {
       return latest.date
     }
     return Self.today()
-  }
-
-  // MARK: - Dành cho bạn
-
-  /// Công cụ của tab ↔ loại trong lõi.
-  private static func coreTool(_ r: AssistantRoute) -> AssistantSummary.Tool? {
-    switch r {
-    case .weekly: .weekly
-    case .steps: .steps
-    case .biometrics: .biometrics
-    case .sleep: .sleep
-    case .goals: .goals
-    case .measure: .measure
-    case .photos: .photos
-    case .memory: .memory
-    case .chat, .trends, .tools, .training, .room, .awards, .community: nil
-    }
-  }
-
-  private static func reasonText(_ r: AssistantSummary.Reason) -> String {
-    switch r {
-    case .weekEnd: String(localized: "assistant.why.weekEnd")
-    case .noSleep: String(localized: "assistant.why.noSleep")
-    case .shortSleep: String(localized: "assistant.why.shortSleep")
-    case .fewSteps: String(localized: "assistant.why.fewSteps")
-    case .lowReadiness: String(localized: "assistant.why.lowReadiness")
-    case .monthStart: String(localized: "assistant.why.monthStart")
-    }
-  }
-
-  /// "Dành cho bạn" theo ngữ cảnh (15/10): công cụ có lý do (chưa ngủ, sẵn sàng thấp,
-  /// ít bước buổi chiều, cuối tuần, đầu tháng) lên trước, kèm câu lý do.
-  private var forYouPicks: [(tool: Tool, reason: AssistantSummary.Reason?)] {
-    let tools = availableTools
-    let s = signal?.signal
-    let now = Date()
-    let cal = Calendar.current
-    let ctx = AssistantSummary.Context(
-      weekday: cal.component(.weekday, from: now), dayOfMonth: cal.component(.day, from: now), hour: hour,
-      sleepMin: s?.sleepMin ?? 0, steps: s?.steps ?? 0,
-      readiness: shownReadiness)
-    let picks = AssistantSummary.forYou(tools.compactMap { Self.coreTool($0.route) }, context: ctx)
-    return picks.compactMap { p in
-      tools.first { Self.coreTool($0.route) == p.tool }.map { ($0, p.reason) }
-    }
-  }
-
-  @ViewBuilder private var forYou: some View {
-    let list = forYouPicks
-    if !list.isEmpty {
-      VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-        sectionTitle("assistant.foryou")
-        ScrollView(.horizontal, showsIndicators: false) {
-          HStack(spacing: DS.Spacing.sm) {
-            ForEach(list, id: \.tool.id) { item in
-              let t = item.tool
-              NavigationLink(value: t.route) {
-                VStack(alignment: .leading, spacing: 6) {
-                  AssistantCaption(symbol: t.symbol, text: t.label, tint: t.tint)
-                    .lineLimit(1)
-                  Text(verbatim: item.reason.map(Self.reasonText) ?? t.hint)
-                    .font(.system(size: 13, weight: item.reason == nil ? .regular : .medium))
-                    .foregroundStyle(DS.Color.foreground.swiftUI)
-                    .lineLimit(2, reservesSpace: true)
-                    .multilineTextAlignment(.leading)
-                }
-                .frame(width: 150, alignment: .leading)
-                .modifier(AssistantSurface())
-                .contentShape(Rectangle())
-              }
-              .buttonStyle(TodayPressStyle())
-              .accessibilityElement(children: .combine)
-            }
-          }
-        }
-        .scrollClipDisabled()
-      }
-    }
   }
 
   private func sectionTitle(_ key: LocalizedStringKey) -> some View {

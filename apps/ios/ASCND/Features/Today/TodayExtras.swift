@@ -195,9 +195,7 @@ struct TodayExtras<Plan: View>: View {
       // đồng bộ tự chạy (mở app + nền), người dùng không phải nghĩ tới nó.
       TodayMore(rows: moreRows, zoom: zoom)
         .todayEntrance(4)
-      if let awards {
-        RecentAwardsCard(book: awards, lang: services.preferences.lang) { showsAwards = true }
-      }
+      // Huy chương gần đây ở tab Tiến bộ (GĐ3, Kiệt 21/10: không lặp giữa hai tab).
     }
     // Bữa / nước / ngủ đi qua outbox: hàng đợi vơi đi (server đã nhận) thì đọc
     // lại ngày — như `invalidateQueries` sau `onSettled` của RN.
