@@ -73,6 +73,7 @@ public struct TodayView: View {
         .background { TodayAmbient(accent: accent) }
         .onPreferenceChange(TodayAccentPreference.self) { accent = $0 }
         .statusBarScrim()
+        .background { RootSwipeGuard() }
         .toolbar(.hidden, for: .navigationBar)
       } else {
         ScrollView {
