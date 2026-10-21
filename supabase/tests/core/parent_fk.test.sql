@@ -2,7 +2,7 @@
 -- dịch rồi ROLLBACK, không để lại gì cho bộ khác.
 --
 -- Postgres kiểm khoá ngoại bằng quyền chủ bảng, không qua RLS. Policy của
--- supplement_intake_logs / workout_sessions / routine_days chỉ hỏi
+-- supplement_intake_logs / workout_sessions / routine_days / plan_day_overrides chỉ hỏi
 -- `auth.uid() = user_id`, và policy của meal_entry_items / meal_plan_items hỏi
 -- chủ của BỮA / KẾ HOẠCH cha, không hỏi thực phẩm được trỏ tới. Nên B tạo được
 -- một dòng CỦA B trỏ vào supplement / template / thực phẩm RIÊNG của A, nếu
@@ -52,6 +52,12 @@ DO $$ DECLARE e text := pg_temp.errcode($q$INSERT INTO workout_sessions (user_id
 DO $$ BEGIN ASSERT pg_temp.errcode($q$INSERT INTO routine_days (user_id, day_of_week, template_id) VALUES ('fb000000-0000-4000-8000-00000000000b', 1, '7b000000-0000-4000-8000-00000000000b')$q$) = 'ok', 'F6 đối chứng: B không xếp được mẫu của mình vào lịch tuần'; END $$;
 DO $$ DECLARE e text := pg_temp.errcode($q$INSERT INTO routine_days (user_id, day_of_week, template_id) VALUES ('fb000000-0000-4000-8000-00000000000b', 2, '7a000000-0000-4000-8000-00000000000a')$q$); BEGIN
   ASSERT e = '42501', format('F7 B xếp được mẫu của A vào lịch tuần của mình — cần 42501, được %s', e); END $$;
+-- ── đổi lịch riêng một ngày trỏ vào mẫu (GĐ1, 20261020140000) ──
+DO $$ BEGIN ASSERT pg_temp.errcode($q$INSERT INTO plan_day_overrides (user_id, date, template_id) VALUES ('fb000000-0000-4000-8000-00000000000b', '2026-10-22', '7b000000-0000-4000-8000-00000000000b')$q$) = 'ok', 'F12 đối chứng: B không dời được buổi của mẫu CỦA MÌNH sang một ngày'; END $$;
+DO $$ DECLARE e text := pg_temp.errcode($q$INSERT INTO plan_day_overrides (user_id, date, template_id) VALUES ('fb000000-0000-4000-8000-00000000000b', '2026-10-23', '7a000000-0000-4000-8000-00000000000a')$q$); BEGIN
+  ASSERT e = '42501', format('F13 B đặt được mẫu của A vào một ngày của mình — cần 42501, được %s', e); END $$;
+DO $$ DECLARE e text := pg_temp.errcode($q$UPDATE plan_day_overrides SET template_id = '7a000000-0000-4000-8000-00000000000a'$q$); BEGIN
+  ASSERT e = '42501', format('F14 B chuyển được ngày của mình sang mẫu của A — cần 42501, được %s', e); END $$;
 -- ── món trong bữa / kế hoạch trỏ vào thực phẩm ──
 DO $$ BEGIN ASSERT pg_temp.errcode($q$INSERT INTO meal_entry_items (meal_entry_id, food_item_id) VALUES ('3b000000-0000-4000-8000-00000000000b', 'fdb00000-0000-4000-8000-00000000000b')$q$) = 'ok'
   AND pg_temp.errcode($q$INSERT INTO meal_entry_items (meal_entry_id, food_item_id) VALUES ('3b000000-0000-4000-8000-00000000000b', 'fdc00000-0000-4000-8000-00000000000c')$q$) = 'ok'
@@ -63,5 +69,5 @@ DO $$ DECLARE e text := pg_temp.errcode($q$INSERT INTO meal_plan_items (meal_pla
   ASSERT e = '42501', format('F11 B thêm được thực phẩm RIÊNG của A vào kế hoạch của mình — cần 42501, được %s', e); END $$;
 RESET ROLE;
 
-\echo 'KHOÁ NGOẠI TỚI DÒNG CHA: F1–F11 xanh'
+\echo 'KHOÁ NGOẠI TỚI DÒNG CHA: F1–F14 xanh'
 ROLLBACK;
