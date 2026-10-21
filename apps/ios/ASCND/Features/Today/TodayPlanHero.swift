@@ -200,9 +200,12 @@ struct TodayWeekStrip: View {
   let today: LocalDate
   /// Đích tuần (`KoaGains.Week.target`); `nil` = chưa có lịch.
   let target: Int?
+  /// Dòng "Tuần của Koa · x/y" phía trên (thẻ ở phòng Koa đã có tiêu đề riêng).
+  var showsHeader = true
 
   var body: some View {
     VStack(alignment: .leading, spacing: 6) {
+      if showsHeader {
       HStack {
         Text("dp.week")
         Spacer()
@@ -216,6 +219,7 @@ struct TodayWeekStrip: View {
       .tracking(0.6)
       .textCase(.uppercase)
       .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+      }
       HStack(spacing: 4) {
         ForEach(days, id: \.self) { d in
           VStack(spacing: 4) {

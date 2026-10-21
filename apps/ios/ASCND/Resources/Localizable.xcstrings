@@ -2,6 +2,305 @@
  "sourceLanguage": "en",
  "version": "1.0",
  "strings": {
+  "mr.gains.points %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld Gains"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld Gains"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld Gains"
+     }
+    }
+   }
+  },
+  "shop.lockedRank %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Unlocks at %@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mở ở %@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Se desbloquea en %@"
+     }
+    }
+   }
+  },
+  "shop.lockedRank.left %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld Gains to go"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "còn %lld Gains"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "faltan %lld Gains"
+     }
+    }
+   }
+  },
+  "onboarding.plan.gains": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "0 Gains · Gains never drop when you rest"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "0 Gains · Gains không bao giờ bị trừ khi bạn nghỉ"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "0 Gains · Los Gains nunca bajan cuando descansas"
+     }
+    }
+   }
+  },
+  "kw.reward %lld %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Full week: +%1$lld Gains · +%2$lld coins"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đủ tuần: +%1$lld Gains · +%2$lld xu"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Semana completa: +%1$lld Gains · +%2$lld monedas"
+     }
+    }
+   }
+  },
+  "kw.rules": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Planned rest days don't count. Missing one keeps the sessions you did. Moved sessions still count."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ngày nghỉ đã đặt không tính. Lỡ một buổi vẫn giữ các buổi đã tập. Dời buổi vẫn tính."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Los días de descanso planificados no cuentan. Saltarte una sesión no borra las que hiciste. Las sesiones movidas cuentan."
+     }
+    }
+   }
+  },
+  "kw.claimed": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Claimed this week"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đã nhận tuần này"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Recibido esta semana"
+     }
+    }
+   }
+  },
+  "kw.just %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "+%lld coins for Koa's week!"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "+%lld xu cho Tuần của Koa!"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "¡+%lld monedas por la semana de Koa!"
+     }
+    }
+   }
+  },
+  "kw.retry": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Couldn't claim yet — will retry."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chưa nhận được — sẽ thử lại."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Aún no se pudo recibir; se reintentará."
+     }
+    }
+   }
+  },
+  "wr.plan.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "This week · on plan"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tuần này · theo lịch"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Esta semana · según el plan"
+     }
+    }
+   }
+  },
+  "wr.plan.moved %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Moved sessions: %lld"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Buổi dời: %lld"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sesiones movidas: %lld"
+     }
+    }
+   }
+  },
+  "wr.plan.rest %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Rest days you chose: %lld"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ngày nghỉ đã chọn: %lld"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Días de descanso elegidos: %lld"
+     }
+    }
+   }
+  },
+  "wr.plan.gains %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Gains this week: +%lld"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Gains tuần này: +%lld"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Gains esta semana: +%lld"
+     }
+    }
+   }
+  },
   "dp.eyebrow.today": {
    "extractionState": "manual",
    "localizations": {

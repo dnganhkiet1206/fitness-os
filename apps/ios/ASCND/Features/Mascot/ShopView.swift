@@ -293,16 +293,20 @@ struct ShopView: View {
       }
       .buttonStyle(DSPillButtonStyle(on ? .secondary : .primary))
       .disabled(busy)
-    } else if let need = it.unlockLevel, book.level < need {
-      Label {
-        Text(verbatim: "Lv.\(need)")
-      } icon: {
-        Image(systemName: "lock.fill")
+    } else if let need = it.unlockRank, book.gains.rank < need {
+      // GĐ2: khoá theo HẠNG Gains — "Mở ở Swole · còn 158 Gains".
+      let name = MascotRules.ranks[min(need, MascotRules.ranks.count - 1)].name(lang)
+      let left = max(0, KoaGains.thresholds[min(need, KoaGains.thresholds.count - 1)] - book.gains.points)
+      VStack(alignment: .trailing, spacing: 2) {
+        Label(String(localized: "shop.lockedRank \(name)"), systemImage: "lock.fill")
+          .font(DS.TextStyle.footnote.weight(.semibold))
+          .foregroundStyle(DS.Color.foreground.swiftUI)
+        Text(String(localized: "shop.lockedRank.left \(left)"))
+          .font(DS.TextStyle.caption)
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
       }
-      .font(DS.TextStyle.footnote.weight(.semibold).monospacedDigit())
-      .foregroundStyle(DS.Color.mutedForeground.swiftUI)
       .frame(minHeight: 44)
-      .accessibilityLabel(Text("shop.locked \(need.formatted(.number.locale(.app)))"))
+      .accessibilityElement(children: .combine)
     } else {
       let poor = book.balance < it.price
       Button {
@@ -347,7 +351,8 @@ struct ShopView: View {
       notice = Notice(text: String(localized: "shop.bought"), good: true)
       onWalletChange()
     case .locked(let need):
-      notice = Notice(text: String(localized: "shop.locked \(need.formatted(.number.locale(.app)))"), good: false)
+      let name = MascotRules.ranks[min(need, MascotRules.ranks.count - 1)].name(lang)
+      notice = Notice(text: String(localized: "shop.lockedRank \(name)"), good: false)
     case .poor, .failed(.insufficientCoins):
       notice = Notice(text: String(localized: "shop.notenough"), good: false)
     case .busy:

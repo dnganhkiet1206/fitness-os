@@ -55,6 +55,34 @@ public enum KoaWeek {
   }
 }
 
+extension KoaWeek {
+  /// Tổng kết một tuần theo lịch (GĐ2, mở đầu màn Tổng kết tuần): buổi đã tập / đích,
+  /// buổi dời, ngày nghỉ người dùng tự chọn, Gains kiếm trong tuần. Cùng lịch đã áp
+  /// và cùng lịch sử với Gains — không có con số thứ hai.
+  public struct Summary: Sendable, Hashable {
+    public let target: Int
+    public let done: Int
+    public let moved: Int
+    public let chosenRest: Int
+    public let gains: Int
+  }
+
+  public static func summary(
+    weekStart: LocalDate, today: LocalDate, library: TemplateSnapshot, history: [KoaGains.Day]
+  ) -> Summary {
+    let end = weekStart.adding(days: 6)
+    let week = KoaGains.Week(library)
+    let inWeek = library.overrides.filter { $0.date >= weekStart && $0.date <= end }
+    let trained = Set(history.map(\.date).filter { $0 >= weekStart && $0 <= min(end, today) })
+    let last = min(end, today)
+    let after = KoaGains.compute(history, week: week, today: last).points
+    let before = KoaGains.compute(history, week: week, today: weekStart.adding(days: -1)).points
+    return Summary(
+      target: week.target, done: trained.count, moved: inWeek.filter { $0.movedFrom != nil }.count,
+      chosenRest: inWeek.filter { $0.isRest && $0.movedTo == nil }.count, gains: max(0, after - before))
+  }
+}
+
 /// Nhận thưởng "Tuần của Koa" của MỘT tài khoản — một lần mỗi tuần, ở mọi máy.
 @MainActor @Observable
 public final class KoaWeekBook {

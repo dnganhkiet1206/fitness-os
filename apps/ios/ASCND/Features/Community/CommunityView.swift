@@ -53,7 +53,10 @@ struct CommunityTab: View {
     .task {
       guard !built else { return }
       book = services.makeCommunityFeed(userId: flow.today.userId)
-      challenges = services.makeCommunityChallenges(userId: flow.today.userId)
+      // GĐ2 (Kiệt 21/10, PRODUCT_DECISION_V1 QĐ 5): thử thách cộng đồng ẩn cho tới khi
+      // đủ người tham gia — không dựng sổ thì bảng tin không có khối / lối vào nào.
+      // Dữ liệu trên server giữ nguyên. Bật lại: dựng lại sổ ở đây.
+      challenges = nil
       built = true
     }
     .onChange(of: services.session.session?.userId) { _, id in

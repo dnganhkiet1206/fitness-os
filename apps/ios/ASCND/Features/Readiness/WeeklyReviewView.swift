@@ -26,11 +26,15 @@ import SwiftUI
 struct WeeklyReviewView: View {
   let book: WeeklyReviewBook
   let lang: AppPreferences.Lang
+  /// Lịch đã áp + lịch sử Gains cho khối "theo lịch" (GĐ2); `nil` ở preview.
+  @Environment(WorkoutFlow.self) private var flow: WorkoutFlow?
+  @Environment(AppServices.self) private var services: AppServices?
 
   var body: some View {
     ScrollView {
       VStack(spacing: DS.Spacing.md) {
         weekNav
+        planBlock
         content
       }
       .padding(DS.Spacing.md)
@@ -45,6 +49,40 @@ struct WeeklyReviewView: View {
       guard case .ready = new else { return false }
       return true
     }
+  }
+
+  // MARK: - Theo lịch (GĐ2)
+
+  /// Mở đầu bằng lịch tập thật (mock `gd2-progress-koa-week.html`): buổi / đích, buổi
+  /// dời, ngày nghỉ đã chọn, Gains tuần. Không thêm điểm số mới.
+  @ViewBuilder private var planBlock: some View {
+    if let flow, let library = flow.today.library, let history = services?.koaGainsHistory {
+      let s = KoaWeek.summary(
+        weekStart: book.weekStart, today: flow.today.today, library: library, history: history.days)
+      DSCard {
+        VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+          Text("wr.plan.title")
+            .font(.system(size: 11, weight: .semibold))
+            .tracking(1.2)
+            .textCase(.uppercase)
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          Text(String(localized: "dp.week.count \(s.done) \(s.target)"))
+            .font(DS.TextStyle.headline.weight(.heavy))
+            .foregroundStyle(DS.Color.foreground.swiftUI)
+          if s.moved > 0 { line(String(localized: "wr.plan.moved \(s.moved)")) }
+          if s.chosenRest > 0 { line(String(localized: "wr.plan.rest \(s.chosenRest)")) }
+          line(String(localized: "wr.plan.gains \(s.gains)"))
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+      }
+      .accessibilityElement(children: .combine)
+    }
+  }
+
+  private func line(_ text: String) -> some View {
+    Text(verbatim: text)
+      .font(DS.TextStyle.footnote)
+      .foregroundStyle(DS.Color.mutedForeground.swiftUI)
   }
 
   // MARK: - Tuần

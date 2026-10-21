@@ -93,4 +93,18 @@ struct KoaWeekTests {
     await book.claimIfComplete(Self.complete())
     #expect(book.claim == .justClaimed(coins: 50) && econ.claims.count == 1, "mất mạng rồi thử lại vẫn một lần")
   }
+
+  @Test func weeklySummaryReadsTheAppliedPlanAndGains() {
+    let wed = Self.mon.adding(days: 2), thu = Self.mon.adding(days: 3), fri = Self.mon.adding(days: 4)
+    let lib = Self.lib([
+      DayOverride(date: wed, templateId: nil, isRest: true, movedTo: thu),
+      DayOverride(date: thu, templateId: "t", isRest: false, movedFrom: wed),
+      DayOverride(date: fri, templateId: nil, isRest: true),
+    ])
+    let history = [Self.mon, thu].map { KoaGains.Day(date: $0, personalRecord: false) }
+      + [KoaGains.Day(date: Self.mon.adding(days: -7), personalRecord: false)]
+    let s = KoaWeek.summary(weekStart: Self.mon, today: Self.mon.adding(days: 6), library: lib, history: history)
+    #expect(s.target == 3 && s.done == 2 && s.moved == 1 && s.chosenRest == 1)
+    #expect(s.gains == 2 * KoaGains.plannedSession, "chỉ Gains của tuần này; buổi dời sang T5 vẫn là buổi trong lịch")
+  }
 }

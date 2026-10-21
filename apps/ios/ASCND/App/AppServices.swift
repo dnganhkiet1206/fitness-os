@@ -100,11 +100,12 @@ final class AppServices {
 
   /// Một lần thưởng tự về (nhiệm vụ hay chuỗi) — mã tăng dần để `onChange` bắt.
   func noteKoaReward(
-    userId: String, amount: Int, seen: Bool, quest: MascotRules.Quest? = nil, allDone: Bool = false
+    userId: String, amount: Int, seen: Bool, quest: MascotRules.Quest? = nil, allDone: Bool = false,
+    source: String = "streak"
   ) {
     koaReward = KoaReward(
       id: (koaReward?.id ?? 0) + 1, userId: userId, amount: amount, seen: seen, quest: quest, allDone: allDone)
-    Telemetry.capture(.questClaimed, ["quest": quest?.rawValue ?? "streak"])
+    Telemetry.capture(.questClaimed, ["quest": quest?.rawValue ?? source])
   }
   /// Số lần cân ONLINE đã được server xác nhận trong lần chạy app này — nhịp
   /// để kế hoạch nhắc nhở đọc lại `weight_logs` ngay (`invalidateQueries` của
@@ -778,6 +779,17 @@ final class AppServices {
     return WeeklyChallengesBook(
       userId: userId, today: today, store: rows, economy: SupabaseMascotEconomy(backend: backend),
       english: { ChallengeText.english($0) })
+  }
+
+  /// "Tuần của Koa" (GĐ2): một sổ mỗi phiên — Hôm nay và phòng Koa nhận thưởng qua
+  /// CÙNG sổ, nên trạng thái "đã nhận" không lệch giữa hai màn.
+  @ObservationIgnored private var koaWeekBook: KoaWeekBook?
+  func koaWeek(userId: String) -> KoaWeekBook? {
+    if let b = koaWeekBook, b.userId == userId { return b }
+    guard let backend else { return nil }
+    let b = KoaWeekBook(userId: userId, economy: SupabaseMascotEconomy(backend: backend))
+    koaWeekBook = b
+    return b
   }
 
   /// Phòng linh vật: server là chủ kinh tế (hai RPC).
