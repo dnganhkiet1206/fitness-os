@@ -47,4 +47,25 @@ struct DailyPlanInputTests {
       recovery: nil, proteinLeftG: nil)
     #expect(DailyPlan.decide(i).action == .resume(DailyPlan.session(Self.chest)))
   }
+
+  /// Lời nhắc đọc CÙNG lịch đã áp (đổi thành nghỉ → không nhắc hôm ấy).
+  @Test func remindersReadTheAppliedPlan() {
+    let lib = TemplateSnapshot(
+      routine: Self.wedChest, templates: [Self.chest],
+      overrides: [DayOverride(date: Self.wed, templateId: nil, isRest: true)], overridesSupported: true,
+      fetchedAt: EpochMillis(1))
+    let ctx = ReminderContext.today(
+      Self.wed, trained: [], routine: lib.routine, waterTotalMl: nil, waterTargetMl: nil, supplements: nil, library: lib)
+    #expect(ctx.trainingDays == [2], "lịch mẫu vẫn có thứ Tư")
+    #expect(ctx.plannedByOffset?[0] == false, "thứ Tư này đổi thành nghỉ")
+    #expect(ctx.plannedByOffset?[6] == false && ctx.plannedByOffset?.count == 7)
+  }
+
+  /// Widget nói câu của Daily Plan khi có, câu mặc định khi không.
+  @Test func widgetUsesTheDailyPlanStatus() {
+    let copy = HomeWidgets.Copy(done: "done", restDay: "rest", noWorkout: "none", untitled: "w", notStarted: "not started")
+    let plan = TodayPlan(date: Self.wed, status: .todo, template: Self.chest, isDeload: false)
+    #expect(HomeWidgets.todayWorkout(sessions: [], copy: copy, plan: plan).statusText == "not started")
+    #expect(HomeWidgets.todayWorkout(sessions: [], copy: copy, plan: plan, planStatus: "Welcome back").statusText == "Welcome back")
+  }
 }

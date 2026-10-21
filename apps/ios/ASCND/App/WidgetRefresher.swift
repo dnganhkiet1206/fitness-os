@@ -15,6 +15,12 @@ final class WidgetRefresher: @unchecked Sendable {
   private let data: WidgetDataStore
   /// Lịch tập đã cache của người dùng (`TodayRepository.cached`), `nil` = không dùng.
   private let plans: (@Sendable (String) async -> TemplateSnapshot?)?
+  /// Câu của Daily Plan cho buổi hôm nay (GĐ1) — `AppServices.widgetPlanStatus`.
+  var planStatus: (@Sendable (String) async -> String?)? {
+    get { lock.withLock { _planStatus } }
+    set { lock.withLock { _planStatus = newValue } }
+  }
+  private var _planStatus: (@Sendable (String) async -> String?)?
 
   init(
     store: (any RowStore)?, data: WidgetDataStore = WidgetDataStore(),
@@ -42,11 +48,12 @@ final class WidgetRefresher: @unchecked Sendable {
   func refresh() async {
     guard let store, let userId = lock.withLock({ user }) else { return }
     let snapshot = await plans?(userId)
+    let status = await planStatus?(userId)
     guard
       let p = await WidgetSync.payloads(
         userId: userId, store: store, copy: Self.copy, now: SystemWallClock().nowMillis(), in: .current,
         recovery: ReadinessCopyStore.copy.map { copy in { ReadinessCard.hasRecoverySignal($0, copy: copy) } },
-        plans: snapshot)
+        plans: snapshot, planStatus: status)
     else { return }
     // Phiên đã đổi trong lúc đọc: bỏ, không ghi số của người khác.
     guard lock.withLock({ user }) == userId else { return }

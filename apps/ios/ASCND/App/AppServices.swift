@@ -305,6 +305,8 @@ final class AppServices {
     // Đăng ký theo dõi Health ngay khi app chạy — kể cả khi iOS mở app trong nền
     // để giao dữ liệu mới (18/10).
     startHealthObserving()
+    // Widget "Buổi tập hôm nay" nói cùng câu với việc chính của Today (GĐ1).
+    widgets.planStatus = { [weak self] userId in await self?.widgetPlanStatus(userId: userId) }
   }
 
   /// App mở / quay lại tiền cảnh: đọc phiên, thử gửi hàng đợi. Dọn ngày cũ
@@ -484,6 +486,23 @@ final class AppServices {
     guard let rows else { return nil }
     let plans = await templates.cached(userId: userId)
     return await KoaGainsSync.load(userId: userId, store: rows, plans: plans, now: SystemWallClock().nowMillis(), in: .current)
+  }
+
+  /// Câu ngắn của Daily Plan cho widget "Buổi tập hôm nay" (GĐ1); `nil` = câu mặc
+  /// định của widget. Chỉ kết quả của ĐÚNG người + hôm nay.
+  func widgetPlanStatus(userId: String) -> String? {
+    guard let p = dailyPlan, p.userId == userId, p.date == LocalDate(SystemWallClock().nowMillis(), in: .current)
+    else { return nil }
+    switch p.result.action {
+    case .comeback: return String(localized: "dp.eyebrow.welcome")
+    case .resume: return String(localized: "dp.eyebrow.resume")
+    default: return nil
+    }
+  }
+
+  /// Kết quả Daily Plan vừa đổi → widget vẽ lại theo cùng kết quả.
+  func dailyPlanChanged() {
+    Task { [widgets] in await widgets.refresh() }
   }
 
   /// Số liệu của Daily Plan (GĐ1) chỉ kho hàng đọc được: phục hồi của hôm nay

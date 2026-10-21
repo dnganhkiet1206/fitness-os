@@ -62,7 +62,9 @@ final class DailyPlanSource {
       recovery: dataDate == date ? recovery : nil, proteinLeftG: dataDate == date ? proteinLeftG : nil)
     self.input = input
     let result = DailyPlan.decide(input)
+    let changed = result != self.result || services.dailyPlan?.date != date
     if result != self.result { self.result = result }
     services.dailyPlan = (userId, date, result)
+    if changed { services.dailyPlanChanged() }
   }
 }
