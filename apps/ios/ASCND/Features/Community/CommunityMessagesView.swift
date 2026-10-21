@@ -62,7 +62,7 @@ struct MessagesInboxView: View {
           .foregroundStyle(DS.Color.foreground.swiftUI)
           .accessibilityAddTraits(.isHeader)
           .padding(.bottom, DS.Spacing.sm)
-        DemoNote()
+        if book.isSample { DemoNote() }
         searchField.padding(.vertical, DS.Spacing.sm)
         switch book.phase {
         case .loading:

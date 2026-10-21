@@ -273,7 +273,8 @@ struct CommunityFeedView: View {
         .minimumScaleFactor(0.7)
         .accessibilityAddTraits(.isHeader)
       Spacer(minLength: 0)
-      if let messages {
+      // Chỉ khi hộp thư đọc được (server có nhắn tin) — không thì một nút dẫn tới màn lỗi.
+      if let messages, messages.phase == .ready {
         NavigationLink { MessagesInboxView(book: messages) } label: {
           roundIcon("paperplane", dot: messages.unreadCount > 0)
         }

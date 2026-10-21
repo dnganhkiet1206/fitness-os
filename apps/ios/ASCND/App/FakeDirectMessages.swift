@@ -6,7 +6,7 @@
   /// `AppServices.makeDirectMessages`). Server chưa có nhắn tin
   /// (`docs/design/community/MESSAGING-PLAN.md`); nguồn này để thử giao diện.
   /// Một kho trong bộ nhớ cho cả phiên — hộp thư và trang cá nhân thấy cùng dữ liệu.
-  actor FakeDMSource: DMSource {
+  actor FakeDMSource: DMSampleSource {
     static let shared = FakeDMSource()
 
     private var threadsById: [String: DirectMessages.Thread] = [:]
