@@ -12223,19 +12223,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "The spacing between resting heartbeats. More variation usually means a recovered nervous system; less means you are still under strain. Needs Apple Health or a manual entry — without it the weight is redistributed across the other three."
+      "value": "The spacing between resting heartbeats. More variation usually means a recovered nervous system; less means you are still under strain. Enter it yourself, or it fills in from Apple Health if you've connected it — without it the weight is redistributed across the other three."
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Khoảng cách giữa các nhịp tim khi nghỉ. Dao động nhiều thường là dấu hiệu hệ thần kinh đã hồi phục; dao động ít là dấu hiệu còn căng. Cần Apple Health hoặc nhập tay — không có thì trọng số được chia lại cho ba phần còn lại."
+      "value": "Khoảng cách giữa các nhịp tim khi nghỉ. Dao động nhiều thường là dấu hiệu hệ thần kinh đã hồi phục; dao động ít là dấu hiệu còn căng. Bạn nhập tay, hoặc tự điền từ Apple Health nếu đã kết nối — không có thì trọng số được chia lại cho ba phần còn lại."
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "El espacio entre latidos en reposo. Más variación suele indicar un sistema nervioso recuperado; menos, que aún estás bajo tensión. Necesita Apple Health o una entrada manual — sin ella, el peso se reparte entre las otras tres."
+      "value": "El espacio entre latidos en reposo. Más variación suele indicar un sistema nervioso recuperado; menos, que aún estás bajo tensión. Introdúcelo tú, o se rellena desde Apple Health si lo conectaste — sin él, el peso se reparte entre las otras tres."
      }
     }
    }
@@ -15926,19 +15926,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "Only training load so far. Log your sleep or connect Apple Health to get a readiness score."
+      "value": "Only training load so far. Log last night's sleep and your score is ready."
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Mới có tải tập. Ghi giấc ngủ hoặc kết nối Apple Health để có điểm sẵn sàng."
+      "value": "Mới có tải tập. Ghi giấc ngủ đêm qua là có điểm sẵn sàng."
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Por ahora solo hay carga de entrenamiento. Registra tu sueño o conecta Apple Health para obtener la puntuación."
+      "value": "Por ahora solo hay carga de entrenamiento. Registra cómo dormiste anoche y tendrás tu puntuación."
      }
     }
    }
@@ -17260,19 +17260,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "No sleep data yet. Sync Apple Health or log your sleep to see the last 7 nights."
+      "value": "No sleep data yet. Log your sleep to see the last 7 nights."
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Chưa có dữ liệu giấc ngủ. Đồng bộ Apple Health hoặc ghi giấc ngủ để thấy 7 đêm gần nhất."
+      "value": "Chưa có dữ liệu giấc ngủ. Ghi giấc ngủ để thấy 7 đêm gần nhất."
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Aún no hay datos de sueño. Sincroniza Apple Health o registra tu sueño para ver las últimas 7 noches."
+      "value": "Aún no hay datos de sueño. Registra tu sueño para ver las últimas 7 noches."
      }
     }
    }
@@ -53139,19 +53139,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "Sync Apple Health or log it so Koa can read it."
+      "value": "Log it so Koa can read it."
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Sincroniza Apple Health o regístralo para que Koa lo lea."
+      "value": "Regístralo para que Koa lo lea."
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Đồng bộ Apple Health hoặc ghi tay để Koa đọc được."
+      "value": "Ghi giấc ngủ để Koa đọc được."
      }
     }
    }
