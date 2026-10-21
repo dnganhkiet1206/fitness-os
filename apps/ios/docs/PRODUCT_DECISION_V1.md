@@ -87,6 +87,18 @@ Quy tắc dùng AI:
 
 **Quy tắc bắt buộc:** thiếu dữ liệu thì nói rõ là chưa đủ thông tin. Không bịa trạng thái phục hồi, mục tiêu calo hay lời khuyên cá nhân. Readiness không tự cắt tải hay đổi kế hoạch khi logic chưa được kiểm chứng; người dùng luôn được chấp nhận hoặc từ chối đề xuất.
 
+## Phát hành đang bị chặn: làm tốt sản phẩm trong lúc chờ
+
+Kiệt, 21/10: vài vấn đề thiết yếu chưa giải quyết được (đầu tư, người dùng thật), nên app **chưa thể publish**. Giai đoạn này tập trung cải thiện sản phẩm, để khi phát hành thì đỡ phải sửa nhiều.
+
+Áp vào lộ trình bên dưới:
+- **GĐ0** tách làm hai phần:
+  - phần **làm được ngay**: kiểm AI, viết kịch bản kiểm máy thật, accessibility, CI;
+  - phần **bị chặn**: Apple Developer, TestFlight, iPhone thật, khoá AI trả phí.
+- Phần bị chặn **không** làm dừng GĐ1–GĐ3.
+
+Danh sách đầy đủ hạn chế và việc hoãn: [`CONSTRAINTS_AND_DEFERRED.md`](CONSTRAINTS_AND_DEFERRED.md). Bắt buộc đọc.
+
 ## Lộ trình
 
 **Giai đoạn 0 — Xác minh nền tảng phát hành (chặn trước khi đo):**
