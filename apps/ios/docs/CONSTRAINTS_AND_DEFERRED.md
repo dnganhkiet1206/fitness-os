@@ -129,6 +129,13 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - ~~VoiceOver của chữ A: cả chữ là một khối, không mở được nhóm nào.~~ 22/10 (nhánh `claude/progress-a-motion`): mỗi mảng là một nút "Nhóm: trạng thái" theo đường leo. **Chưa chạy VoiceOver thật** để nghe.
 - Chuyển động chữ A (Kiệt duyệt mock 22/10): hiện theo đường leo mỗi lần mở tab Tiến bộ, mảng "Cần chú ý" thở 3 nhịp, chạm đúng hình mảng (trước là ô chữ nhật), zoom sang chi tiết. Chưa kiểm khi bật Giảm chuyển động trên máy.
 
+**Onboarding thiết kế lại (Kiệt duyệt mock 22/10, nhánh `claude/onboarding-v2`) — hạn chế đã biết:**
+- 13 màn → 6 (Koa chào → mục tiêu + kinh nghiệm → lịch → Về bạn → Apple Health → kế hoạch + buổi đầu); style màn đăng nhập.
+- Onboarding chỉ còn 4 mục tiêu (lên cơ / giảm mỡ / khoẻ hơn / giữ dáng). "recomp" và "endurance" vẫn chọn được ở Cài đặt → Hồ sơ.
+- "Lấy từ Apple Health" cho số đo ở màn Về bạn (có trong mock) **chưa làm**: số đo vẫn nhập tay; Apple Health vẫn kết nối ở màn kế tiếp.
+- "Bỏ qua, dùng số trung bình" đặt giới tính "Khác" và vận động "Vừa phải" (đúng giá trị dự phòng của cổng số đo).
+- Chưa kiểm: đi trọn luồng tới "Tập buổi đầu" trên tài khoản mới (ghi hồ sơ thật), VoiceOver từng màn, giao diện sáng (màn luôn tối như màn đăng nhập).
+
 **Tìm thấy khi kiểm ngày 21/10** (simulator, tài khoản test):
 - ~~Coach AI bị cắt giữa câu, còn sót dấu `**` thô.~~ Sửa 21/10 (nhánh `claude/fix-five-bugs`): app bỏ `**` lẻ, câu bị cắt vì hết hạn mức thì nối "…". Server: `MAX_TOKENS` 1024 → 2048 (model gemini-3-flash tiêu một phần cho suy luận ẩn). **`ai-coach` đã deploy 21/10 (Kiệt duyệt trong chat), bản 24, từ `af3f6427`.** Kiểm trên simulator: câu trả lời chạy trọn, không sót `**`.
 - ~~Số buổi lệch: Coach nói 4 (đếm 7 ngày gần nhất), tổng kết tuần nói 2 (tuần lịch).~~ Sửa 21/10: `ai-coach` gửi `this_week` (tuần lịch T2 → hôm nay, đếm ngày có buổi như app) và dặn model dùng nó cho "tuần này". **Đã deploy 21/10** — Coach trả lời "2 buổi tập trong tuần này từ thứ Hai", khớp app (2/6).

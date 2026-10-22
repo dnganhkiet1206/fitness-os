@@ -55,20 +55,8 @@ struct AuthView: View {
         .accessibilityHidden(true)
       VStack(alignment: .leading, spacing: 0) {
         // Logo + tên app, nhỏ, ở góc trên trái (16/10, chủ dự án: thay logo lớn giữa màn).
-        HStack(spacing: 8) {
-          Image("BrandMark")
-            .renderingMode(.template)
-            .resizable()
-            .interpolation(.high)
-            .frame(width: 30, height: 30)
-          Text(String(localized: "brand.name"))
-            .font(.system(size: 19, weight: .heavy))
-            .tracking(1.5)
-        }
-        .foregroundStyle(AuthHero.paper)
-        .padding(.top, 8)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(String(localized: "brand.name")))
+        AuthLockup()
+          .padding(.top, 8)
         Spacer(minLength: 0)
         Text("auth.hero.slogan")
           .font(.system(size: 46, weight: .black))
@@ -461,6 +449,28 @@ struct AuthView: View {
 }
 
 /// Bảng màu màn chào: đen ấm, giấy, lửa cam.
+/// Cụm logo + tên app nhỏ ở góc trên trái — màn đăng nhập và onboarding (22/10).
+struct AuthLockup: View {
+  var mark: CGFloat = 30
+  var text: CGFloat = 19
+
+  var body: some View {
+    HStack(spacing: 8) {
+      Image("BrandMark")
+        .renderingMode(.template)
+        .resizable()
+        .interpolation(.high)
+        .frame(width: mark, height: mark)
+      Text(String(localized: "brand.name"))
+        .font(.system(size: text, weight: .heavy))
+        .tracking(1.5)
+    }
+    .foregroundStyle(AuthHero.paper)
+    .accessibilityElement(children: .ignore)
+    .accessibilityLabel(Text(String(localized: "brand.name")))
+  }
+}
+
 enum AuthHero {
   static let ink = Color(red: 0.05, green: 0.047, blue: 0.043)
   static let sheet = Color(red: 0.09, green: 0.085, blue: 0.078)
@@ -486,7 +496,7 @@ private struct AuthFieldStyle: ViewModifier {
 /// Dải sáng lửa cam bầu dục nghiêng thở chậm (logo đã thành cụm nhỏ ở góc trên trái) + bụi sáng trôi nhẹ
 /// (16/10, chủ dự án: bỏ đường nhịp tim — gợi máy đo tim bệnh viện; "cho bụi bay nhẹ
 /// nhưng premium"). Giảm chuyển động: đứng yên, bụi ở vị trí cố định.
-private struct AuthHeroBackdrop: View {
+struct AuthHeroBackdrop: View {
   let reduceMotion: Bool
 
   var body: some View {
