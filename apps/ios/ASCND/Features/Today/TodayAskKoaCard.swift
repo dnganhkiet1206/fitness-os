@@ -2,53 +2,89 @@ import ASCNDCore
 import ASCNDDesignSystem
 import SwiftUI
 
-/// Mục "Hỏi Koa" ở Hôm nay (Kiệt 21/10, thiết kế của Kiệt): lối vào Koa Coach riêng,
+/// Thẻ ảnh "Hỏi Koa" ở Hôm nay (Kiệt 21/10, thiết kế của Kiệt): lối vào Koa Coach riêng,
 /// tách khỏi thẻ Insight. Chạm thẻ (hay nút ›) mở cuộc trò chuyện. Thanh ghi bằng AI
 /// "Kể cho Koa hôm nay…" ở lại thẻ "Hôm nay của bạn" (Kiệt 21/10: tách ra).
 struct TodayAskKoaCard: View {
   let onAsk: () -> Void
 
+  /// Màu bàn tối ở đáy hình — ảnh tan vào màu này, chữ nằm trên đó.
+  private static let ink = Color(red: 0.09, green: 0.10, blue: 0.16)
+
   var body: some View {
     Button(action: onAsk) {
-      VStack(alignment: .leading, spacing: DS.Spacing.md) {
-        HStack(alignment: .top, spacing: DS.Spacing.sm) {
+      // Ảnh phủ hết bề ngang (hơi phóng), tan dần vào nền tối; chữ đặt lên ảnh trên lớp
+      // gradient (Kiệt 21/10: khác Apple Health một chút). Nền luôn tối nên chữ luôn trắng.
+      Self.ink
+        .frame(maxWidth: .infinity)
+        .frame(height: 372)
+        .overlay(alignment: .top) {
+          Image("AskKoaScene")
+            .resizable()
+            .scaledToFill()
+            .frame(height: 290)
+            .frame(maxWidth: .infinity)
+            .clipped()
+            .accessibilityHidden(true)
+        }
+        .overlay {
+          LinearGradient(
+            stops: [
+              .init(color: Self.ink.opacity(0), location: 0.42),
+              .init(color: Self.ink.opacity(0.8), location: 0.62),
+              .init(color: Self.ink, location: 0.74),
+            ],
+            startPoint: .top, endPoint: .bottom)
+        }
+        // Lớp tối thêm sau phần chữ (Kiệt 21/10) cho chữ trắng nổi rõ.
+        .overlay {
+          LinearGradient(
+            stops: [
+              .init(color: .black.opacity(0), location: 0.45),
+              .init(color: .black.opacity(0.55), location: 0.75),
+              .init(color: .black.opacity(0.7), location: 1),
+            ],
+            startPoint: .top, endPoint: .bottom)
+        }
+        .overlay(alignment: .bottomLeading) {
           VStack(alignment: .leading, spacing: 6) {
-            Text("askkoa.kicker")
-              .font(DS.TextStyle.footnote.weight(.semibold))
-              .textCase(.uppercase)
-              .tracking(2)
-              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            HStack(alignment: .center) {
+              Text("askkoa.kicker")
+                .font(DS.TextStyle.footnote.weight(.semibold))
+                .textCase(.uppercase)
+                .tracking(2)
+                .foregroundStyle(.white.opacity(0.7))
+              Spacer(minLength: 0)
+            }
             Text("askkoa.title")
               .font(.title.bold())
               .tracking(-0.4)
-              .foregroundStyle(DS.Color.foreground.swiftUI)
+              .foregroundStyle(.white)
               .fixedSize(horizontal: false, vertical: true)
             Text("askkoa.subtitle")
-              .font(.body)
-              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+              .font(.subheadline)
+              .foregroundStyle(.white.opacity(0.75))
               .fixedSize(horizontal: false, vertical: true)
           }
-          Spacer(minLength: 0)
+          .padding(DS.Spacing.md + 4)
+        }
+        // Nút › nổi trên ảnh, nền tối mờ phía sau để luôn đọc được (Kiệt 21/10).
+        .overlay(alignment: .topTrailing) {
           Image(systemName: "chevron.right")
             .font(.system(size: 16, weight: .semibold))
-            .foregroundStyle(DS.Color.foreground.swiftUI)
+            .foregroundStyle(.white)
             .frame(width: 44, height: 44)
-            .background(DS.Color.foreground.swiftUI.opacity(0.08), in: Circle())
-            .padding(.top, 18)
+            .background(.black.opacity(0.4), in: Circle())
+            .background(.ultraThinMaterial, in: Circle())
+            .environment(\.colorScheme, .dark)
+            .padding(DS.Spacing.md)
         }
-        // Hình của Kiệt (Koa ở bàn, bóng chat) — trang trí, VoiceOver bỏ qua.
-        Image("AskKoaScene")
-          .resizable()
-          .aspectRatio(902 / 568, contentMode: .fit)
-          .frame(maxWidth: .infinity)
-          .clipShape(RoundedRectangle(cornerRadius: DS.Radius.lg, style: .continuous))
-          .accessibilityHidden(true)
-      }
-      // Nằm thẳng trên nền như điểm nhấn của Apple Health — không khung thẻ (Kiệt 21/10).
-      .frame(maxWidth: .infinity, alignment: .leading)
-      .padding(.horizontal, 2)
-      .padding(.top, DS.Spacing.sm)
-      .contentShape(Rectangle())
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous))
+        .overlay {
+          RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous)
+            .strokeBorder(.white.opacity(0.08), lineWidth: 0.75)
+        }
+        .contentShape(Rectangle())
     }
     .buttonStyle(TodayPressStyle())
     .accessibilityElement(children: .combine)
