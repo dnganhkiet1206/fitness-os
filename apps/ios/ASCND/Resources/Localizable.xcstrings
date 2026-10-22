@@ -968,29 +968,6 @@
     }
    }
   },
-  "ps.range %@ %@": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Week %1$@ – %2$@"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Tuần %1$@ – %2$@"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Semana %1$@ – %2$@"
-     }
-    }
-   }
-  },
   "ps.attentionCount %lld": {
    "extractionState": "manual",
    "localizations": {
