@@ -345,7 +345,7 @@ struct ScanFoodView: View {
             }
             Spacer(minLength: DS.Spacing.sm)
             Text(verbatim: "\(DiaryView.whole(r.kcal))")
-              .font(.custom("Menlo", size: 17, relativeTo: .body).weight(.semibold))
+              .font(DS.TextStyle.number(17, .body).weight(.semibold))
             + Text(verbatim: " ") + Text(String(localized: "nc.kcal")).font(DS.TextStyle.caption)
             Image(systemName: "chevron.down")
               .font(.caption.weight(.semibold))

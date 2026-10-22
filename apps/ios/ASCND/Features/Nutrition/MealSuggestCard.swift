@@ -126,7 +126,7 @@ struct MealSuggestCard: View {
               .font(DS.TextStyle.body.weight(.semibold))
               .multilineTextAlignment(.leading)
             HStack(spacing: 6) {
-              (Text(verbatim: DiaryView.whole(s.kcal)).font(.custom("Menlo", size: 14, relativeTo: .footnote).weight(.semibold))
+              (Text(verbatim: DiaryView.whole(s.kcal)).font(DS.TextStyle.number(14, .footnote).weight(.semibold))
                 + Text(verbatim: " ") + Text(String(localized: "nc.kcal")))
               Text(verbatim: "· " + DiaryView.macros(s.protein, s.carbs, s.fat))
               if let m = s.prepMinutes {

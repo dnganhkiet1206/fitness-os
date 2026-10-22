@@ -180,7 +180,7 @@ struct NutritionTab: View {
             .font(DS.TextStyle.caption)
             .foregroundStyle(isToday ? Color.white.opacity(0.85) : DS.Color.mutedForeground.swiftUI)
           Text(verbatim: "\(d.day)")
-            .font(.custom("Menlo", size: 15, relativeTo: .body).weight(.semibold))
+            .font(DS.TextStyle.number(15, .body).weight(.semibold))
             .foregroundStyle(isToday ? Color.white : DS.Color.foreground.swiftUI)
         }
         .frame(maxWidth: .infinity, minHeight: 50)
@@ -415,7 +415,7 @@ struct DayExtrasList: View {
         .foregroundStyle(DS.Color.mutedForeground.swiftUI)
         .lineLimit(1)
       Text(verbatim: value)
-        .font(.custom("Menlo", size: 20, relativeTo: .title3).weight(.bold))
+        .font(DS.TextStyle.number(20, .title3).weight(.bold))
         .foregroundStyle(DS.Color.foreground.swiftUI)
         .lineLimit(1)
         .minimumScaleFactor(0.6)

@@ -140,7 +140,7 @@ struct WeekPlanView: View {
           .lineLimit(1)
           .minimumScaleFactor(0.7)
         Text(verbatim: "\(d.day)")
-          .font(.custom("Menlo", size: 17, relativeTo: .body).weight(.semibold))
+          .font(DS.TextStyle.number(17, .body).weight(.semibold))
           .foregroundStyle(on ? Color.white : DS.Color.foreground.swiftUI)
         mark(status, selected: on)
       }
