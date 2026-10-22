@@ -7,16 +7,21 @@ import SwiftUI
 /// chân trái dưới → trên → đỉnh → chân phải trên → dưới — bằng đường mảnh.
 ///
 /// Mỗi mảng một nhóm, màu của chính nhóm ấy trong app; cách tô theo Health:
-/// Tốt = tô đặc, icon trắng · Cần chú ý = viền màu mảnh, nền thẻ, icon màu ·
-/// Chưa đủ dữ liệu = nền xám, icon sáng. Chạm một mảng → chi tiết nhóm.
+/// Tốt = tô đặc, icon trắng · Cần chú ý = viền màu, nền đen, icon màu ·
+/// Chưa đủ dữ liệu = sắc tối của CHÍNH màu nhóm (như ô nâu đậm của Health), icon màu.
+/// 22/10 (Kiệt): mọi mảng bo tròn và tách nhau bằng khe như cánh hoa của Apple.
+/// Chạm một mảng → chi tiết nhóm.
 struct ProgressHero: View {
   let results: [ProgressStatus.Result]
   var onTap: (ProgressStatus.Group) -> Void = { _ in }
 
   /// Khung vẽ trong toạ độ 222 × 222 của ảnh logo (cắt sát chữ A).
   static let frame = CGRect(x: 2, y: 30, width: 218, height: 166)
-  static let rim: CGFloat = 1.3
+  static let rim: CGFloat = 1.6
   static let hairline: CGFloat = 0.9
+  /// Bán kính bo góc và nửa khe giữa hai mảng (đơn vị khung 222).
+  static let corner: CGFloat = 3.5
+  static let gap: CGFloat = 0.3
 
   var body: some View {
     Canvas { ctx, size in
@@ -33,14 +38,15 @@ struct ProgressHero: View {
           ctx.fill(part, with: .color(tint))
           icon = .white
         case .attention:
-          ctx.fill(part, with: .color(DS.Color.card.swiftUI))
+          ctx.fill(part, with: .color(.black))
           var inner = ctx
           inner.clip(to: part)
-          inner.stroke(part, with: .color(tint), lineWidth: Self.rim * 2)
+          inner.stroke(part, with: .color(tint), style: StrokeStyle(lineWidth: Self.rim * 2, lineJoin: .round))
           icon = tint
         case .insufficient:
-          ctx.fill(part, with: .color(DS.Color.mutedForeground.swiftUI.opacity(0.22)))
-          icon = DS.Color.foreground.swiftUI.opacity(0.78)
+          // Sắc tối của chính màu nhóm, không phải xám chung.
+          ctx.fill(part, with: .color(ProgressStyle.shade(g)))
+          icon = tint.opacity(0.85)
         }
         var symbol = ctx.resolve(Image(systemName: ProgressStyle.symbol(g)))
         symbol.shading = .color(icon)
@@ -130,7 +136,22 @@ struct ProgressHero: View {
     }
   }
 
-  static func part(_ g: ProgressStatus.Group) -> Path { logo.intersection(Path(rect(g))) }
+  /// Mảng đã bo: thu vào `corner + gap` (góc vẫn nhọn), rồi nở ra `corner` với khớp tròn
+  /// — góc lồi thành cung bán kính `corner`, mảng nhỏ đi `gap` mỗi phía nên giữa hai mảng
+  /// có khe. Tính một lần.
+  static func part(_ g: ProgressStatus.Group) -> Path { rounded[g] ?? sharp(g) }
+
+  static func sharp(_ g: ProgressStatus.Group) -> Path { logo.intersection(Path(rect(g))) }
+
+  private static let rounded: [ProgressStatus.Group: Path] = {
+    var out: [ProgressStatus.Group: Path] = [:]
+    for g in ProgressStatus.Group.allCases {
+      let p = sharp(g)
+      let shrink = p.subtracting(p.strokedPath(StrokeStyle(lineWidth: (corner + gap) * 2, lineJoin: .miter)))
+      out[g] = shrink.union(shrink.strokedPath(StrokeStyle(lineWidth: corner * 2, lineCap: .round, lineJoin: .round)))
+    }
+    return out
+  }()
 
   static func iconCenter(_ g: ProgressStatus.Group) -> CGPoint {
     switch g {
@@ -180,6 +201,9 @@ enum ProgressStyle {
     case .body: DS.Color.metricSteel.swiftUI
     }
   }
+
+  /// Sắc tối của màu nhóm cho "Chưa đủ dữ liệu" — cùng màu, chỉ tối đi (Kiệt 22/10).
+  static func shade(_ g: ProgressStatus.Group) -> Color { color(g).mix(with: .black, by: 0.62) }
 
   /// SF Symbols như Apple Health (Kiệt 22/10: "nhìn cách Apple vẽ icon mà học theo"):
   /// người cử tạ qua đầu, người chạy, cà rốt, giường (Ngủ của Health), tim, người dang tay
