@@ -30,6 +30,8 @@ struct TodayDayCard: View {
   var onExtraWorkout: (() -> Void)?
   /// Thanh "Ghi hôm nay" luôn hiện; chạm (hoặc micro) mở màn với chữ / giọng nói.
   var onTell: (_ voice: Bool) -> Void = { _ in }
+  /// `false` khi thanh ấy đã ở thẻ "Hỏi Koa" (Kiệt 21/10) — không hiện hai lần.
+  var showsTell = true
   /// Dòng cân nặng khi đã lâu chưa cân (`TodayDay.showsWeighIn`); `nil` = ẩn.
   var weighIn: (detail: String, done: Bool)?
   let onLogAll: () -> Void
@@ -68,7 +70,7 @@ struct TodayDayCard: View {
         if let weighIn {
           weightRow(weighIn)
         }
-        tellBar
+        if showsTell { tellBar }
       }
       .padding(DS.Spacing.md)
       .todayCard()
