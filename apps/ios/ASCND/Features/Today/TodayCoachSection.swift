@@ -20,6 +20,7 @@ struct TodayCoachSection: View {
 
   @Environment(AppServices.self) private var services
   @Environment(\.scenePhase) private var scenePhase
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var signal: AssistantSignalBook?
   @State private var nudges: SmartNudgesBook?
   @State private var hour = Calendar.current.component(.hour, from: Date())
@@ -52,7 +53,12 @@ struct TodayCoachSection: View {
             lang: lang.rawValue,
             waterUnit: services.preferences.volumeUnit,
             liveWaterMl: waterMl,
-            dismiss: { withAnimation(.easeInOut(duration: 0.25)) { dismissed = dismissKey } }
+            userId: userId,
+            dismiss: {
+              if reduceMotion { dismissed = dismissKey } else {
+                withAnimation(.easeInOut(duration: 0.25)) { dismissed = dismissKey }
+              }
+            }
           ) { Task { await loadInsight(force: true) } }
           .transition(.opacity)
         }
@@ -114,16 +120,55 @@ struct SmartInsightCard: View {
   var waterUnit: Water.Unit = .ml
   /// Nước sống của trang; `nil` → số của `daily_logs`.
   var liveWaterMl: Double?
+  var userId = ""
   var dismiss: (() -> Void)?
   let retry: () -> Void
 
   @Environment(\.openURL) private var openURL
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+  /// Số lúc insight hiện tại về (lưu theo người dùng, một bản) — để biết câu nào đã cũ.
+  private struct Base: Codable {
+    let at: Int64
+    let today: InsightHighlight.Today
+  }
+
+  private var baseKey: String { "ascnd-insight-base.\(userId)" }
+
+  private func base(_ entry: SmartNudges.Entry) -> InsightHighlight.Today? {
+    guard let data = UserDefaults.standard.data(forKey: baseKey),
+      let b = try? JSONDecoder().decode(Base.self, from: data), b.at == entry.at.millis
+    else { return nil }
+    return b.today
+  }
+
+  /// Insight mới về (và số của trang đã đọc xong): ghi lại số lúc ấy.
+  private func rememberBase() {
+    guard case .ready(let entry) = book.phase, signal?.nudgeStamp != nil, liveWaterMl != nil,
+      base(entry) == nil
+    else { return }
+    if let data = try? JSONEncoder().encode(Base(at: entry.at.millis, today: today)) {
+      UserDefaults.standard.set(data, forKey: baseKey)
+    }
+  }
+
+  /// Mọi câu AI đều đã xong hay đã cũ vì người dùng vừa ghi thêm → ẩn cả thẻ cho tới
+  /// insight mới (Kiệt 22/10).
+  private var allOutdated: Bool {
+    guard case .ready(let entry) = book.phase, !entry.nudges.isEmpty else { return false }
+    return InsightHighlight.live(entry.nudges, today, since: base(entry)).isEmpty
+  }
 
   var body: some View {
-    VStack(alignment: .leading, spacing: DS.Spacing.md) {
-      kicker
-      content
+    Group {
+      if !allOutdated {
+        VStack(alignment: .leading, spacing: DS.Spacing.md) {
+          kicker
+          content
+        }
+      }
     }
+    .task(id: "\(signal?.nudgeStamp ?? "-")|\(liveWaterMl != nil)|\(book.phaseKey)") { rememberBase() }
   }
 
   private var kicker: some View {
@@ -168,7 +213,7 @@ struct SmartInsightCard: View {
     case .failed where !fallback.isEmpty:
       // Bản tóm tắt từ số liệu (16/10, chủ dự án): thẻ không trống mỗi lần AI quá
       // tải. Ghi rõ nguồn; chạm dòng nguồn để thử lại AI.
-      highlight(fallback, source: true)
+      highlight(fallback, source: true, since: nil)
     case .failed(let failure):
       Button(action: retry) {
         Label {
@@ -193,15 +238,17 @@ struct SmartInsightCard: View {
         .font(DS.TextStyle.body)
         .foregroundStyle(DS.Color.mutedForeground.swiftUI)
     case .ready(let entry):
-      highlight(entry.nudges, source: false)
+      highlight(entry.nudges, source: false, since: base(entry))
     }
   }
 
   // MARK: - Điểm nhấn
 
-  @ViewBuilder private func highlight(_ nudges: [SmartNudges.Nudge], source: Bool) -> some View {
-    // Bỏ câu người dùng đã làm xong kể từ lúc AI viết (đủ nước, đủ kcal…).
-    if let (lead, rest) = InsightHighlight.lead(InsightHighlight.live(nudges, today)) {
+  @ViewBuilder private func highlight(
+    _ nudges: [SmartNudges.Nudge], source: Bool, since base: InsightHighlight.Today?
+  ) -> some View {
+    // Bỏ câu người dùng đã làm xong, hay đã ghi thêm đúng chủ đề, kể từ lúc AI viết.
+    if let (lead, rest) = InsightHighlight.lead(InsightHighlight.live(nudges, today, since: base)) {
       let topic = InsightHighlight.topic(lead.type)
       VStack(alignment: .leading, spacing: DS.Spacing.md) {
         VStack(alignment: .leading, spacing: DS.Spacing.sm) {
@@ -209,6 +256,9 @@ struct SmartInsightCard: View {
             Text(verbatim: title(topic))
               .font(.title.bold())
               .tracking(-0.4)
+              // Số trong tiêu đề chạy theo việc vừa ghi (Kiệt 22/10).
+              .contentTransition(.numericText())
+              .animation(reduceMotion ? nil : .easeOut(duration: 0.6), value: title(topic))
               .foregroundStyle(DS.Color.foreground.swiftUI)
               .fixedSize(horizontal: false, vertical: true)
               .accessibilityAddTraits(.isHeader)
@@ -305,6 +355,8 @@ struct SmartInsightCard: View {
             Circle().fill(tint).frame(width: 11, height: 11).accessibilityHidden(true)
             Text(verbatim: valueLine(topic))
               .font(.title2.bold().monospacedDigit())
+              .contentTransition(.numericText())
+              .animation(reduceMotion ? nil : .easeOut(duration: 0.6), value: valueLine(topic))
               .foregroundStyle(DS.Color.foreground.swiftUI)
               .lineLimit(1).minimumScaleFactor(0.7)
           }
@@ -482,5 +534,17 @@ extension SmartNudgesBook {
   /// Máy chủ chưa triển khai `ai-smart-nudges`.
   var isNotDeployed: Bool {
     if case .failed(.notDeployed) = phase { true } else { false }
+  }
+}
+
+extension SmartNudgesBook {
+  /// Khoá ngắn của pha (đổi khi kết quả mới về) — cho `.task(id:)`.
+  var phaseKey: String {
+    switch phase {
+    case .idle: "idle"
+    case .loading: "loading"
+    case .failed: "failed"
+    case .ready(let e): "ready-\(e.at.millis)"
+    }
   }
 }

@@ -66,4 +66,19 @@ struct InsightHighlightTests {
     // Không có mục tiêu → không coi là xong.
     #expect(!InsightHighlight.resolved(n("steps", .low), InsightHighlight.Today(steps: 99999)))
   }
+
+  @Test func newLogMakesThatTopicStale() {
+    let nudges = [n("hydration", .high), n("protein", .medium)]
+    let base = InsightHighlight.Today(proteinG: 40, proteinTarget: 121, waterMl: 0, waterTargetMl: 2500)
+    var now = base
+    #expect(InsightHighlight.live(nudges, now, since: base).count == 2)
+    // Uống 237 ml (chưa đủ mục tiêu) — câu "hãy uống nước" vẫn là cũ, ẩn đi.
+    now.waterMl = 237
+    #expect(InsightHighlight.live(nudges, now, since: base).map(\.type) == ["protein"])
+    // Ăn thêm đạm — câu đạm cũng ẩn; không còn gì để hiện.
+    now.proteinG = 70
+    #expect(InsightHighlight.live(nudges, now, since: base).isEmpty)
+    // Không biết số lúc insight về → chỉ bỏ câu đã chạm mục tiêu.
+    #expect(InsightHighlight.live(nudges, now).count == 2)
+  }
 }

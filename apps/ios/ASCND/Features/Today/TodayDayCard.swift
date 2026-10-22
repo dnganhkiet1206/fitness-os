@@ -39,6 +39,8 @@ struct TodayDayCard: View {
   let onTap: (DayCheckIn.Item) -> Void
   var onWeight: () -> Void = {}
 
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
   private var states: [DayCheckIn.Item: DayCheckIn.State] {
     Dictionary(uniqueKeysWithValues: tiles.map { ($0.item, $0.state) })
   }
@@ -55,6 +57,8 @@ struct TodayDayCard: View {
         Spacer()
         Text(verbatim: String(localized: "day.card.progress \("\(progress.done)/\(progress.total)")"))
           .font(.system(size: 13, weight: pending ? .regular : .bold))
+          .contentTransition(.numericText(value: Double(progress.done)))
+          .animation(reduceMotion ? nil : .easeOut(duration: 0.6), value: progress.done)
           .foregroundStyle(pending ? DS.Color.mutedForeground.swiftUI : DS.Color.readinessGreen.swiftUI)
       }
       .padding(.horizontal, 4)
@@ -143,6 +147,9 @@ struct TodayDayCard: View {
               .font(.system(size: 22, weight: .bold).monospacedDigit())
               .foregroundStyle(DS.Color.foreground.swiftUI)
               .lineLimit(1).minimumScaleFactor(0.7)
+              // Số lăn như ở Dinh dưỡng khi vừa ghi ("8 / 65 oz" → "16 / 65 oz") — Kiệt 22/10.
+              .contentTransition(.numericText())
+              .animation(reduceMotion ? nil : .easeOut(duration: 0.6), value: t.detail)
             // Không lặp: số liệu đã là "Chưa ghi" thì bỏ dòng trạng thái.
             if Self.badgeText(t)?.lowercased() != t.detail.lowercased() { status(t) }
             if t.item == .meal, let planNext {
@@ -291,3 +298,4 @@ struct TodayDayCard: View {
     }
   }
 }
+

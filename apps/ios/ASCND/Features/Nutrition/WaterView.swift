@@ -126,12 +126,17 @@ struct WaterView: View {
             .replacingOccurrences(of: unit == .oz ? " oz" : " L", with: ""))
             .font(DS.TextStyle.number(34, .largeTitle).weight(.bold))
             .monospacedDigit()
+            // Số chạy lên khi thêm nước (Kiệt 22/10).
+            .contentTransition(.numericText(value: Double(book.totalMl)))
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.6), value: book.totalMl)
           Text(verbatim: "/ " + Water.shortLabel(ml: target, unit, locale: .app))
             .font(DS.TextStyle.number(15, .body))
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
         }
         Text(verbatim: Water.percentLabel(pct))
           .font(DS.TextStyle.footnote.weight(.semibold).monospacedDigit())
+          .contentTransition(.numericText(value: pct))
+          .animation(reduceMotion ? nil : .easeOut(duration: 0.6), value: pct)
           .foregroundStyle(Self.ink)
           .padding(.horizontal, DS.Spacing.sm)
           .padding(.vertical, 3)

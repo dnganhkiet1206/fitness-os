@@ -87,7 +87,7 @@ public enum InsightHighlight {
   }
 
   /// Số của hôm nay cho thẻ.
-  public struct Today: Sendable, Hashable {
+  public struct Today: Sendable, Hashable, Codable {
     public var kcal: Double
     public var kcalTarget: Double
     public var proteinG: Double
@@ -170,9 +170,26 @@ public enum InsightHighlight {
     }
   }
 
-  /// Các câu còn đúng với số hiện tại (bỏ câu đã giải quyết), giữ thứ tự.
-  public static func live(_ nudges: [SmartNudges.Nudge], _ t: Today) -> [SmartNudges.Nudge] {
-    nudges.filter { !resolved($0, t) }
+  /// Câu đã CŨ: người dùng đã ghi thêm đúng chủ đề ấy kể từ lúc AI viết (số của chủ đề
+  /// tăng so với lúc insight về). Lời khuyên viết trên số cũ — tự ẩn (Kiệt 22/10: "tốt
+  /// nhất là tự ẩn insight cũ nếu người dùng cập nhật dữ liệu mới").
+  public static func stale(_ nudge: SmartNudges.Nudge, since base: Today, now t: Today) -> Bool {
+    guard let topic = topic(nudge.type) else { return false }
+    func grew(_ a: Double, _ b: Double) -> Bool { b > a + 0.5 }
+    switch topic {
+    case .calories: return grew(base.kcal, t.kcal)
+    case .protein: return grew(base.proteinG, t.proteinG)
+    case .water: return grew(base.waterMl, t.waterMl)
+    case .steps: return grew(base.steps, t.steps)
+    case .sleep: return grew(base.sleepMin, t.sleepMin)
+    case .readiness: return (base.readiness ?? -1) != (t.readiness ?? -1)
+    }
+  }
+
+  /// Các câu còn đúng với số hiện tại (bỏ câu đã giải quyết, và — khi biết số lúc
+  /// insight về — câu đã cũ vì người dùng vừa ghi thêm), giữ thứ tự.
+  public static func live(_ nudges: [SmartNudges.Nudge], _ t: Today, since base: Today? = nil) -> [SmartNudges.Nudge] {
+    nudges.filter { n in !resolved(n, t) && !(base.map { stale(n, since: $0, now: t) } ?? false) }
   }
 
   /// Khoá "đã tắt" của một insight: cùng ngày + cùng dấu dữ liệu. Dấu đổi

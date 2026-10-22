@@ -155,7 +155,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - 21/10/2026: hồi quy GĐ1 (R / W / D PASS; A1, A2 BLOCKED).
 - 21/10/2026: Kiệt lệnh merge: #641 (GĐ1) và #642 (GĐ2) vào `native/ios-rewrite`; nghiệm thu GĐ1 còn thiếu iPhone thật, A1, A2; migration vẫn chưa deploy.
 - 22/10/2026: Tiến bộ theo chữ trạng thái (chữ A logo, 6 nhóm); thêm hạn chế.
-- 22/10/2026: Insight sống theo việc ghi — đọc lại sau mỗi lần ghi, nước lấy từ sổ Nước (`daily_logs.water_ml` chưa có ngay lượng vừa ghi), bỏ câu đã giải quyết, vòng chỉ cho kết quả đã chốt (ngủ, sẵn sàng). Hạn chế: TB 7 ngày của nước vẫn đọc từ `daily_logs`; ghi nước không gọi lại AI (chỉ ngủ / ăn / tập đổi dấu dữ liệu).
+- 22/10/2026: Insight sống theo việc ghi — đọc lại sau mỗi lần ghi, nước lấy từ sổ Nước (`daily_logs.water_ml` chưa có ngay lượng vừa ghi), bỏ câu đã giải quyết hay đã cũ (người dùng ghi thêm đúng chủ đề sau khi insight về; hết câu thì ẩn cả thẻ tới insight mới), vòng chỉ cho kết quả đã chốt (ngủ, sẵn sàng). Số lăn như Dinh dưỡng khi vừa ghi. Hạn chế: TB 7 ngày của nước vẫn đọc từ `daily_logs`; ghi nước không gọi lại AI (chỉ ngủ / ăn / tập đổi dấu dữ liệu). Mốc "số lúc insight về" ghi khi thẻ thấy insight lần đầu — insight từ bộ nhớ đệm mở lại sau khi đã ghi thì mốc là số lúc mở.
 - 21/10/2026: thẻ "Hỏi Koa" ở Hôm nay (lối vào Koa Coach; thanh "Kể cho Koa" vẫn ở "Hôm nay của bạn"); đóng mục hoãn "Hỏi Koa".
 - 21/10/2026: Insight hôm nay kiểu Apple Health (tiêu đề lớn, thẻ số liệu, TB 7 ngày, nút X); gỡ lối "Hỏi Koa" khỏi thẻ, ghi vào mục hoãn.
 - 21/10/2026: deploy `ai-coach` (bản 24) lên production theo duyệt của Kiệt.
