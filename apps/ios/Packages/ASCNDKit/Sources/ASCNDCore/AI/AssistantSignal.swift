@@ -84,6 +84,12 @@ public final class AssistantSignalBook {
   /// Hôm nay đã ghi gì — để Koa chỉ gợi ý ghi thứ còn thiếu (`CoachLogPrompt`).
   /// `nil` khi chưa đọc xong.
   public private(set) var logged: CoachLogPrompt.LoggedToday?
+  /// Bảy ngày trước hôm nay cho thẻ Insight (trung bình); `nil` khi chưa đọc / hỏng.
+  public private(set) var week: InsightHighlight.Week?
+  /// Nước hôm nay + mục tiêu ngủ / nước của hồ sơ (8 giờ, 2500 ml khi chưa đặt).
+  public private(set) var waterMl: Double = 0
+  public private(set) var sleepTargetMin: Double = 480
+  public private(set) var waterTargetMl: Double = 2500
 
   @ObservationIgnored private let store: any RowStore
   @ObservationIgnored private let tz: TimeZone
@@ -125,7 +131,7 @@ public final class AssistantSignalBook {
     async let profile = Self.read(
       store,
       RowQuery(
-        table: "profiles", columns: "name, tdee_target_kcal, macro_protein_g", filters: [.eq("user_id", user)],
+        table: "profiles", columns: "name, tdee_target_kcal, macro_protein_g, sleep_target_hours, water_target_ml", filters: [.eq("user_id", user)],
         mode: .maybeSingle))
     async let last = Self.read(
       store,
@@ -149,7 +155,16 @@ public final class AssistantSignalBook {
       RowQuery(
         table: "weight_logs", columns: "date, weight_kg",
         filters: [.eq("user_id", user), .eq("date", .string(day.description))], limit: 1))
+    async let history = Self.readAll(
+      store,
+      RowQuery(
+        table: "daily_logs", columns: InsightHighlight.Week.columns,
+        filters: [
+          .eq("user_id", user), .gte("date", .string(day.adding(days: -7).description)),
+          .lt("date", .string(day.description)),
+        ]))
     let (l, p, w, b) = await (log, profile, last, bio)
+    let past = await history
     let (m, wt) = await (meals, weighed)
     guard !closed, day == today else { return }
     // Đọc bữa hỏng thì không biết hôm nay đã ghi gì — không gợi ý (`logged` nil).
@@ -172,6 +187,12 @@ public final class AssistantSignalBook {
     } else {
       heartRate = nil
     }
+    week = past.map(InsightHighlight.week)
+    waterMl = max(0, JS.number(l?["water_ml"]))
+    let hours = JS.number(p?["sleep_target_hours"])
+    sleepTargetMin = hours.isFinite && hours > 0 ? hours * 60 : 480
+    let water = JS.number(p?["water_target_ml"])
+    waterTargetMl = water.isFinite && water > 0 ? water : 2500
     nudgeStamp = SmartNudges.stamp(l)
     let copy = self.copy
     signal = .from(
