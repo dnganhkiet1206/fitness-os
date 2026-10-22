@@ -47,6 +47,9 @@ struct LogMealView: View {
   @Environment(\.dismiss) private var dismiss
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var logger: MealLogger?
+  /// Đã lưu: hiện "Đã lưu vào Bữa phụ" + chọn bữa khác (không bắt buộc), tự đóng.
+  @State private var savedText: String?
+  @State private var autoClose: Task<Void, Never>?
   @State private var query = ""
   @State private var customOpen = false
   @State private var cName = ""
@@ -117,7 +120,10 @@ struct LogMealView: View {
       guard !Task.isCancelled else { return }
       await logger?.search(query)
     }
-    .onDisappear { logger?.close() }
+    .onDisappear {
+      autoClose?.cancel()
+      logger?.close()
+    }
     .fullScreenCover(isPresented: $scanning) {
       ScanBarcodeView { food in
         logger?.add(food.mealFood(id: UUID().uuidString.lowercased()))
@@ -133,14 +139,86 @@ struct LogMealView: View {
     }
   }
 
-  private func content(_ logger: MealLogger) -> some View {
+  @ViewBuilder private func content(_ logger: MealLogger) -> some View {
+    if let savedText {
+      savedPanel(logger, text: savedText)
+    } else {
+      form(logger)
+    }
+  }
+
+  /// Sau khi lưu: dấu xong, bữa đã vào, sáu nút bữa để đổi nếu muốn. Không chạm gì
+  /// thì tự đóng sau 5 giây — không thêm chạm nào cho người không cần đổi.
+  private func savedPanel(_ logger: MealLogger, text: String) -> some View {
+    let accent = MascotRoomView.signalColor(.meal)
+    return VStack(spacing: DS.Spacing.lg) {
+      Spacer(minLength: 0)
+      Image(systemName: "checkmark.circle.fill")
+        .font(.system(size: 56))
+        .foregroundStyle(.white, DS.Color.readinessGreen.swiftUI)
+        .accessibilityHidden(true)
+      VStack(spacing: 6) {
+        Text(verbatim: text)
+          .font(DS.TextStyle.title2)
+          .foregroundStyle(DS.Color.foreground.swiftUI)
+        Text(String(localized: "logMeal.savedInto \(DiaryView.mealName(logger.mealType))"))
+          .font(DS.TextStyle.body)
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          .contentTransition(.opacity)
+      }
+      .multilineTextAlignment(.center)
+      VStack(spacing: DS.Spacing.sm) {
+        Text("logMeal.changeMeal")
+          .font(DS.TextStyle.caption)
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 104), spacing: 8)], spacing: 8) {
+          ForEach(MealDiary.order, id: \.self) { key in
+            let on = key == logger.mealType
+            Button {
+              autoClose?.cancel()
+              Task {
+                await logger.retype(key)
+                try? await Task.sleep(for: .milliseconds(600))
+                finish()
+              }
+            } label: {
+              Label(DiaryView.mealName(key), systemImage: MealSlotGlyph.symbol(key))
+                .font(DS.TextStyle.footnote.weight(.semibold))
+                .lineLimit(1).minimumScaleFactor(0.8)
+                .foregroundStyle(on ? DS.Color.background.swiftUI : accent)
+                .frame(maxWidth: .infinity, minHeight: 44)
+                .background(on ? accent : accent.opacity(0.12), in: Capsule())
+            }
+            .buttonStyle(TodayPressStyle())
+            .accessibilityAddTraits(on ? .isSelected : [])
+          }
+        }
+      }
+      Spacer(minLength: 0)
+      Button(String(localized: "common.ok")) { finish() }
+        .font(DS.TextStyle.headline)
+        .frame(maxWidth: .infinity, minHeight: 48)
+    }
+    .padding(DS.Spacing.lg)
+    .sensoryFeedback(.selection, trigger: logger.mealType)
+  }
+
+  private func finish() {
+    autoClose?.cancel()
+    onDone()
+    dismiss()
+  }
+
+  private func form(_ logger: MealLogger) -> some View {
     VStack(spacing: 0) {
       ScrollView {
         // Vẽ lại 19/10 (chủ dự án): chọn bữa trước — việc đầu tiên; ô tìm; món
         // đã thêm hiện NGAY dưới ô tìm (trước nằm cuối trang, khuất sau nút
         // Lưu: thêm món mà không thấy gì đổi); rồi ăn lại / thêm nhanh / gợi ý.
+        // 22/10 (Kiệt): KHÔNG hỏi bữa trước — bữa tự theo giờ (hay theo thẻ bữa đã
+        // bấm); muốn thì đổi SAU khi lưu (`savedPanel`). Ghi bữa ≤ 3 chạm: thẻ Bữa →
+        // "+" một món → Lưu.
         VStack(alignment: .leading, spacing: DS.Spacing.md) {
-          mealPicker(logger)
           searchField
           searchResults(logger)
           itemsSection(logger)
@@ -199,46 +277,6 @@ struct LogMealView: View {
     .padding(.top, DS.Spacing.sm)
     .padding(.bottom, DS.Spacing.xs)
     .background(.regularMaterial)
-  }
-
-  // MARK: - Bữa
-
-  /// Bữa: MỘT nút menu thay cho hàng sáu chip (19/10, chủ dự án: "chọn bữa
-  /// phức tạp, thao tác quá nhiều"). Bữa đã đúng theo giờ (`MealLog.mealForHour`)
-  /// hoặc theo thẻ bữa đã bấm — thường không cần chạm; muốn đổi thì một chạm mở
-  /// danh sách.
-  private func mealPicker(_ logger: MealLogger) -> some View {
-    let meal = MascotRoomView.signalColor(.meal)
-    return HStack(spacing: DS.Spacing.sm) {
-      Text(String(localized: "logMeal.for"))
-        .font(DS.TextStyle.footnote)
-        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-      Menu {
-        Picker(selection: Binding(get: { logger.mealType }, set: { logger.mealType = $0 })) {
-          ForEach(MealDiary.order, id: \.self) { key in
-            Label(DiaryView.mealName(key), systemImage: MealSlotGlyph.symbol(key)).tag(key)
-          }
-        } label: {
-          EmptyView()
-        }
-      } label: {
-        HStack(spacing: 6) {
-          Image(systemName: MealSlotGlyph.symbol(logger.mealType)).font(.footnote.weight(.semibold))
-          Text(verbatim: DiaryView.mealName(logger.mealType)).font(DS.TextStyle.footnote.weight(.bold))
-          Image(systemName: "chevron.down").font(.caption2.weight(.bold))
-        }
-        .foregroundStyle(meal)
-        .padding(.horizontal, 14)
-        .frame(minHeight: 36)
-        .background(meal.opacity(0.12), in: Capsule())
-        .frame(minHeight: 44)
-        .contentShape(Rectangle())
-      }
-      .accessibilityLabel(Text(String(localized: "logMeal.for")))
-      .accessibilityValue(Text(verbatim: DiaryView.mealName(logger.mealType)))
-      .sensoryFeedback(.selection, trigger: logger.mealType)
-      Spacer(minLength: 0)
-    }
   }
 
   // MARK: - Tìm
@@ -701,8 +739,18 @@ struct LogMealView: View {
     case .queued(let online):
       let text = online ? String(localized: "logMeal.saved") : String(localized: "logMeal.queued")
       AccessibilityNotification.Announcement(text).post()
-      onDone()
-      dismiss()
+      // Bữa đã chọn sẵn từ thẻ bữa (nhật ký): người dùng đã chọn — đóng luôn.
+      guard mealType == nil else {
+        onDone()
+        dismiss()
+        return
+      }
+      withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.25)) { savedText = text }
+      autoClose = Task {
+        try? await Task.sleep(for: .seconds(5))
+        guard !Task.isCancelled else { return }
+        finish()
+      }
     case .unavailable:
       break
     case .failed:

@@ -270,6 +270,24 @@ struct MealLoggerTests {
     #expect(MealLog.isRow(e))
   }
 
+  /// Chọn bữa SAU khi lưu (Kiệt 22/10): chỉ khi đã lưu; một lệnh riêng xếp sau bữa.
+  @Test func retypeAfterSaveOnly() async throws {
+    let f = FakeFoods(), o = MealOutbox()
+    let l = Self.logger(f, o, meal: "snack")
+    #expect(await l.retype("dinner") == false)
+    await l.search("phở")
+    l.add(try #require(l.results?.first))
+    #expect(await l.save(online: true) == .queued(online: true))
+    #expect(await l.retype("snack") == false)
+    #expect(await l.retype("dinner"))
+    #expect(l.mealType == "dinner")
+    let entries = await o.entries
+    #expect(entries.map(\.kind) == [MealLog.kind, MealLog.retypeKind])
+    #expect(entries[1].payload["id"] == .string(entries[0].id))
+    #expect(entries[1].payload["meal_type"] == .string("dinner"))
+    #expect(MealLog.isRetypeRow(entries[1]))
+  }
+
   /// "Ăn lại": chỉ khi chưa có món; điền loại bữa + món + khẩu phần.
   @Test func repeatFillsAnEmptyMealOnly() async throws {
     let f = FakeFoods()

@@ -628,7 +628,8 @@ final class AppServices {
         sync.kick()
         Telemetry.capture(.mealLogged)
         self?.didLog()
-      })
+      },
+      onChanged: { sync.kick() })
   }
 
   /// Vừa ghi một việc (bữa, buổi tập): lần đầu thì bật nhắc bữa tối và xin quyền

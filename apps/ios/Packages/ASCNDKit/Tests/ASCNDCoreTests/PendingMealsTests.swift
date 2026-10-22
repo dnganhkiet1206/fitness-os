@@ -107,4 +107,19 @@ struct PendingMealsBookTests {
     await b.load()
     #expect(b.isLoggedToday("lunch", day: 0))
   }
+
+  /// Đổi loại bữa sau khi lưu (Kiệt 22/10): lệnh còn chờ áp lên bữa còn chờ; lệnh sau cùng thắng.
+  @Test func pendingRetypeChangesThePendingMeal() {
+    let e = PendingMealsRuleTests.entry("m1", at: "2026-10-09T05:00:00.000Z")
+    let r1 = MealLog.retype(mealId: "m1", userId: "u1", mealType: "dinner", at: EpochMillis(1))
+    let r2 = MealLog.retype(mealId: "m1", userId: "u1", mealType: "snack", at: EpochMillis(2))
+    #expect(MealLog.isRetypeRow(r1))
+    #expect(r1.id == "m1@type-1")
+    #expect(MealLog.pendingMeals([e, r1], userId: "u1", window: PendingMealsRuleTests.day).first?.type == "dinner")
+    #expect(MealLog.pendingMeals([e, r1, r2], userId: "u1", window: PendingMealsRuleTests.day).first?.type == "snack")
+    // Lệnh của người khác không chạm bữa của mình; loại lạ không phải lệnh hợp lệ.
+    let foreign = MealLog.retype(mealId: "m1", userId: "u2", mealType: "dinner", at: EpochMillis(3))
+    #expect(MealLog.pendingMeals([e, foreign], userId: "u1", window: PendingMealsRuleTests.day).first?.type == "lunch")
+    #expect(!MealLog.isRetypeRow(MealLog.retype(mealId: "m1", userId: "u1", mealType: "brunch", at: EpochMillis(4))))
+  }
 }

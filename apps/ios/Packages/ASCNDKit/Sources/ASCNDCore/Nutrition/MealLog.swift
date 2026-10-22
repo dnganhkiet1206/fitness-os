@@ -19,6 +19,9 @@ public import Observation
 public enum MealLog {
   /// `kind` của outbox (`OfflineWrite` `kind: 'meal'`).
   public static let kind = "meal"
+  /// Đổi loại bữa của một bữa ĐÃ lưu (Kiệt 22/10: ghi bữa không hỏi bữa nào trước;
+  /// muốn thì chọn sau, không bắt buộc). Xếp SAU bản ghi bữa nên luôn tới sau nó.
+  public static let retypeKind = "meal_type"
   public static let defaultMeal = "lunch"
   /// `BOUNDS.meal_kcal` / `BOUNDS.macro_g`.
   public static let kcalBounds = 0.0...10_000.0
@@ -373,7 +376,18 @@ public enum MealLog {
   /// `MealDiary.meals`, nên số hiện ra trùng số sau khi gửi. Chỉ đọc hàng đợi.
   public static func pendingMeals(_ entries: [OutboxEntry], userId: String, window: DailyLog.Window) -> [MealDiary.Meal] {
     guard let start = EpochMillis(iso8601: window.start), let end = EpochMillis(iso8601: window.end) else { return [] }
-    let mine = entries.filter { e in
+    // Lệnh đổi loại bữa còn chờ: áp lên bữa còn chờ (lệnh sau cùng thắng).
+    var retyped: [String: String] = [:]
+    for e in entries where isRetypeRow(e) && e.userId == userId {
+      if let id = e.payload["id"]?.stringValue, let type = e.payload["meal_type"]?.stringValue { retyped[id] = type }
+    }
+    let mine = entries.compactMap { e -> OutboxEntry? in
+      guard let type = e.payload["id"]?.stringValue.flatMap({ retyped[$0] }), e.kind == kind,
+        case .object(var o) = e.payload
+      else { return e }
+      o["meal_type"] = .string(type)
+      return OutboxEntry(id: e.id, userId: e.userId, kind: e.kind, payload: .object(o), createdAt: e.createdAt)
+    }.filter { e in
       guard e.kind == kind, e.userId == userId, e.payload["user_id"]?.stringValue == userId,
         let at = e.payload["date_time"]?.stringValue.flatMap({ EpochMillis(iso8601: $0) })
       else { return false }
@@ -407,6 +421,23 @@ public enum MealLog {
 
   /// Hàng outbox `meal` dùng được: của chính chủ, id khớp, loại bữa hợp lệ,
   /// dấu thời gian đọc được, có ít nhất một món và món nào cũng có id.
+  /// Lệnh đổi loại bữa: id `"<bữa>@type-<ms>"`, payload `{id, user_id, meal_type}`.
+  public static func retype(mealId: String, userId: String, mealType: String, at: EpochMillis) -> OutboxEntry {
+    let id = mealId.lowercased()
+    return OutboxEntry(
+      id: "\(id)@type-\(at.millis)", userId: userId, kind: retypeKind,
+      payload: .object(["id": .string(id), "user_id": .string(userId), "meal_type": .string(mealType)]),
+      createdAt: at)
+  }
+
+  public static func isRetypeRow(_ e: OutboxEntry) -> Bool {
+    guard e.kind == retypeKind, let id = e.payload["id"]?.stringValue, !id.isEmpty, e.id.hasPrefix(id + "@"),
+      e.payload["user_id"]?.stringValue?.lowercased() == e.userId.lowercased(),
+      let meal = e.payload["meal_type"]?.stringValue, MealDiary.order.contains(meal)
+    else { return false }
+    return true
+  }
+
   public static func isRow(_ e: OutboxEntry) -> Bool {
     guard e.kind == kind, e.payload["id"]?.stringValue == e.id,
       e.payload["user_id"]?.stringValue?.lowercased() == e.userId.lowercased(),
@@ -468,6 +499,8 @@ public final class MealLogger {
   public var showsRepeat: Bool { items.isEmpty && !recentMeals.isEmpty && !saved }
   public private(set) var saving = false
   public private(set) var saved = false
+  /// Id của bữa vừa lưu — để đổi loại bữa sau khi lưu (`retype`).
+  public private(set) var savedId: String?
 
   public var totals: MealLog.Totals { MealLog.totals(items) }
   public var canSave: Bool { !items.isEmpty && !saving && !saved }
@@ -478,6 +511,7 @@ public final class MealLogger {
   @ObservationIgnored private let timeZone: TimeZone
   @ObservationIgnored private let makeId: @Sendable () -> String
   @ObservationIgnored private let onEnqueued: @MainActor (OutboxEntry) -> Void
+  @ObservationIgnored private let onChanged: @MainActor () -> Void
   @ObservationIgnored private var searchGeneration = 0
   @ObservationIgnored private var closed = false
 
@@ -485,7 +519,8 @@ public final class MealLogger {
     userId: String, source: any MealFoodSource, store: (any PlanWriteStore)?, date: LocalDate? = nil,
     mealType: String? = nil, clock: any WallClock = SystemWallClock(), timeZone: TimeZone = .current,
     makeId: @escaping @Sendable () -> String = { UUID().uuidString.lowercased() },
-    onEnqueued: @escaping @MainActor (OutboxEntry) -> Void = { _ in }
+    onEnqueued: @escaping @MainActor (OutboxEntry) -> Void = { _ in },
+    onChanged: @escaping @MainActor () -> Void = {}
   ) {
     self.userId = userId
     self.source = source
@@ -494,6 +529,7 @@ public final class MealLogger {
     self.timeZone = timeZone
     self.makeId = makeId
     self.onEnqueued = onEnqueued
+    self.onChanged = onChanged
     self.date = MealDiary.startDate(date, today: LocalDate(clock.nowMillis(), in: timeZone))
     var cal = Calendar(identifier: .gregorian)
     cal.timeZone = timeZone
@@ -639,7 +675,24 @@ public final class MealLogger {
       return .failed
     }
     saved = true
+    savedId = entry.id
     onEnqueued(entry)
     return .queued(online: online)
+  }
+
+  /// Đổi loại bữa của bữa VỪA lưu — không bắt buộc (Kiệt 22/10). Một lệnh outbox
+  /// riêng, xếp sau bản ghi bữa. Trả `false` khi chưa lưu / cùng loại / ghi hỏng.
+  @discardableResult
+  public func retype(_ type: String) async -> Bool {
+    guard saved, let savedId, let store, type != mealType, MealDiary.order.contains(type) else { return false }
+    let entry = MealLog.retype(mealId: savedId, userId: userId, mealType: type, at: clock.nowMillis())
+    do {
+      try await store.enqueue([entry])
+    } catch {
+      return false
+    }
+    mealType = type
+    onChanged()
+    return true
   }
 }

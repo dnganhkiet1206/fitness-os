@@ -61665,6 +61665,52 @@
      }
     }
    }
+  },
+  "logMeal.savedInto %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "In %@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "En %@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Vào %@"
+     }
+    }
+   }
+  },
+  "logMeal.changeMeal": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Different meal? Tap to change (optional)"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "¿Otra comida? Toca para cambiar (opcional)"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bữa khác? Chạm để đổi (không bắt buộc)"
+     }
+    }
+   }
   }
  }
 }
