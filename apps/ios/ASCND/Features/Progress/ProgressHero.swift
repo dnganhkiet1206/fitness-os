@@ -14,60 +14,74 @@ import SwiftUI
 struct ProgressHero: View {
   let results: [ProgressStatus.Result]
   var onTap: (ProgressStatus.Group) -> Void = { _ in }
+  /// Nguồn zoom sang chi tiết nhóm (`todayZoom("ps.<nhóm>")`); `nil` = không zoom.
+  var zoom: Namespace.ID?
 
   /// Khung vẽ trong toạ độ 222 × 222 của ảnh logo (cắt sát chữ A).
   static let frame = CGRect(x: 2, y: 30, width: 218, height: 166)
   static let rim: CGFloat = 1.3
-  static let hairline: CGFloat = 0
+
+  /// Chuyển động (Kiệt duyệt mock 22/10): lúc mở màn 6 mảng hiện theo đường leo,
+  /// mảng "Cần chú ý" thở 3 nhịp rồi đứng yên, chạm lún nhẹ, đổi trạng thái thì
+  /// đổi màu tại chỗ và nảy một lần. Reduce Motion: chỉ mờ dần.
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @State private var shown = false
+  @State private var breathe = 0
 
   var body: some View {
-    Canvas { ctx, size in
-      let k = size.width / Self.frame.width
-      ctx.scaleBy(x: k, y: k)
-      ctx.translateBy(x: -Self.frame.minX, y: -Self.frame.minY)
-      // Vẽ từ dưới lên: mảng trên đè mảng dưới, có bóng mờ (theo hình mẫu Kiệt 22/10).
-      for g in Self.drawOrder {
-        let shape = Self.shape(g)
-        let level = results.first { $0.group == g }?.level ?? .insufficient
-        let tint = ProgressStyle.color(g)
-        ctx.drawLayer { layer in
-          // Bóng tối rõ ở chỗ nối: mảng trên tách khỏi mảng dưới như hình mẫu.
-          layer.addFilter(.shadow(color: .black.opacity(0.4), radius: 1.6, x: 0, y: 0.8))
-          switch level {
-          case .good: layer.fill(shape, with: .color(tint))
-          case .attention:
-            layer.fill(shape, with: .color(tint))
-            layer.fill(Self.inner(g), with: .color(.black))
-          case .insufficient: layer.fill(shape, with: .color(Color(white: 0.17)))
+    GeometryReader { geo in
+      let k = geo.size.width / Self.frame.width
+      ZStack(alignment: .topLeading) {
+        ForEach(Self.drawOrder, id: \.self) { g in
+          let level = results.first { $0.group == g }?.level ?? .insufficient
+          let step = Self.climb.firstIndex(of: g) ?? 0
+          Button {
+            tapCount += 1
+            onTap(g)
+          } label: {
+            ProgressSegment(group: g, level: level, scale: k, breathe: breathe, reduceMotion: reduceMotion)
           }
+          .buttonStyle(SegmentPressStyle(anchor: Self.anchor(g), reduceMotion: reduceMotion))
+          .modifier(ZoomSource(id: "ps.\(g.rawValue)", space: zoom))
+          .opacity(shown ? 1 : 0)
+          .scaleEffect(shown || reduceMotion ? 1 : 0.9, anchor: Self.anchor(g))
+          .offset(y: shown || reduceMotion ? 0 : 10 * k)
+          .animation(Self.entrance(step, reduceMotion: reduceMotion), value: shown)
+          .accessibilityLabel(Text(verbatim: "\(ProgressStyle.name(g)): \(ProgressStyle.word(level))"))
+          .accessibilitySortPriority(Double(Self.climb.count - step))
         }
-        let icon: Color = switch level {
-        case .good: .white
-        case .attention: tint
-        case .insufficient: .white.opacity(0.75)
-        }
-        // Icon SF Symbol giữ đúng tỉ lệ gốc của Apple.
-        let symbol = ctx.resolve(
-          Text(Image(systemName: ProgressStyle.symbol(g))).font(.system(size: 11, weight: .semibold)).foregroundStyle(icon))
-        ctx.draw(symbol, at: Self.iconCenter(g), anchor: .center)
       }
+      .frame(width: geo.size.width, height: geo.size.height, alignment: .topLeading)
     }
     .aspectRatio(Self.frame.width / Self.frame.height, contentMode: .fit)
-    .overlay {
-      GeometryReader { geo in
-        let k = geo.size.width / Self.frame.width
-        ForEach(ProgressStatus.Group.allCases, id: \.self) { g in
-          let r = Self.rect(g).intersection(Self.frame)
-          Color.clear
-            .contentShape(Rectangle())
-            .frame(width: r.width * k, height: r.height * k)
-            .position(x: (r.midX - Self.frame.minX) * k, y: (r.midY - Self.frame.minY) * k)
-            .onTapGesture { onTap(g) }
-        }
+    .sensoryFeedback(.impact(weight: .light), trigger: tapCount)
+    .accessibilityElement(children: .contain)
+    .onAppear {
+      shown = true
+      guard !reduceMotion else { return }
+      // Thở sau khi mảng cuối đã hiện.
+      Task {
+        try? await Task.sleep(for: .milliseconds(900))
+        breathe += 1
       }
     }
-    .accessibilityElement(children: .ignore)
-    .accessibilityLabel(Text(Self.spoken(results)))
+    .onDisappear { shown = false }
+  }
+
+  /// Rung nhẹ mỗi lần chạm một mảng (đếm trong `SegmentPressStyle` không được — đếm ở đây).
+  @State private var tapCount = 0
+
+  /// Thứ tự đường leo: chân trái dưới → trên → đỉnh → chân phải trên → dưới.
+  static let climb: [ProgressStatus.Group] = [.training, .steps, .nutrition, .sleep, .recovery, .body]
+
+  static func entrance(_ step: Int, reduceMotion: Bool) -> Animation {
+    reduceMotion ? .easeOut(duration: 0.25) : .spring(duration: 0.42, bounce: 0.2).delay(Double(step) * 0.09)
+  }
+
+  /// Tâm diện tích của mảng, theo tỉ lệ khung — gốc co / nảy của mảng.
+  static func anchor(_ g: ProgressStatus.Group) -> UnitPoint {
+    let c = iconCenter(g)
+    return UnitPoint(x: (c.x - frame.minX) / frame.width, y: (c.y - frame.minY) / frame.height)
   }
 
   /// "Tập luyện: cần chú ý. Vận động: tốt. …"
@@ -172,23 +186,89 @@ struct ProgressHero: View {
     let shrink = p.subtracting(p.strokedPath(StrokeStyle(lineWidth: (r + inset) * 2, lineJoin: .miter)))
     return shrink.union(shrink.strokedPath(StrokeStyle(lineWidth: r * 2, lineCap: .round, lineJoin: .round)))
   }
+}
 
-  /// Ô chữ nhật của mảng; các ô cách nhau `hairline` (đường mảnh giữa các tầng / ở đỉnh).
-  static func rect(_ g: ProgressStatus.Group) -> CGRect {
-    let h = hairline / 2, mid: CGFloat = 110.5, t1: CGFloat = 85.5, t2: CGFloat = 131
-    switch g {
-    case .training: return CGRect(x: -10, y: t2 + h, width: mid - h + 10, height: 80)
-    case .steps: return CGRect(x: -10, y: t1 + h, width: mid - h + 10, height: t2 - t1 - 2 * h)
-    case .nutrition: return CGRect(x: -10, y: 0, width: mid - h + 10, height: t1 - h)
-    case .sleep: return CGRect(x: mid + h, y: 0, width: 130, height: t1 - h)
-    case .recovery: return CGRect(x: mid + h, y: t1 + h, width: 130, height: t2 - t1 - 2 * h)
-    case .body: return CGRect(x: mid + h, y: t2 + h, width: 130, height: 80)
+/// Một mảng của chữ A, vẽ trong toàn khung chữ A (các mảng chồng nhau trong `ZStack`)
+/// — vùng chạm là đúng hình mảng, không phải ô chữ nhật bao quanh.
+/// Cách tô theo Health: Tốt = tô đặc, icon trắng · Cần chú ý = viền màu, lõi đen, icon
+/// màu · Chưa đủ dữ liệu = xám tối, icon trắng mờ.
+struct ProgressSegment: View {
+  let group: ProgressStatus.Group
+  let level: ProgressStatus.Level
+  /// Điểm / đơn vị khung 222.
+  let scale: CGFloat
+  /// Tăng một lần sau khi chữ A hiện: mảng "Cần chú ý" thở 3 nhịp rồi đứng yên.
+  let breathe: Int
+  let reduceMotion: Bool
+
+  var body: some View {
+    let tint = ProgressStyle.color(group)
+    let outline = SegmentShape(path: ProgressHero.shape(group))
+    let c = ProgressHero.iconCenter(group)
+    ZStack(alignment: .topLeading) {
+      outline
+        .fill(level == .insufficient ? Color(white: 0.17) : tint)
+        .keyframeAnimator(initialValue: 1.0, trigger: breathe) { content, o in
+          content.opacity(level == .attention && !reduceMotion ? o : 1)
+        } keyframes: { _ in
+          CubicKeyframe(0.45, duration: 1.1)
+          CubicKeyframe(1, duration: 1.1)
+          CubicKeyframe(0.45, duration: 1.1)
+          CubicKeyframe(1, duration: 1.1)
+          CubicKeyframe(0.45, duration: 1.1)
+          CubicKeyframe(1, duration: 1.1)
+        }
+      SegmentShape(path: ProgressHero.inner(group))
+        .fill(Color.black)
+        .opacity(level == .attention ? 1 : 0)
+      Image(systemName: ProgressStyle.symbol(group))
+        .font(.system(size: 11 * scale, weight: .semibold))
+        .foregroundStyle(icon(tint))
+        .position(x: (c.x - ProgressHero.frame.minX) * scale, y: (c.y - ProgressHero.frame.minY) * scale)
+    }
+    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    // Bóng tối ở chỗ nối: mảng trên tách khỏi mảng dưới như hình mẫu.
+    .compositingGroup()
+    .shadow(color: .black.opacity(0.4), radius: 1.6 * scale, x: 0, y: 0.8 * scale)
+    .contentShape(outline)
+    // Vừa ghi dữ liệu: đổi màu tại chỗ rồi nảy một lần.
+    .animation(reduceMotion ? nil : .smooth(duration: 0.6), value: level)
+    .keyframeAnimator(initialValue: 1.0, trigger: level) { content, s in
+      content.scaleEffect(reduceMotion ? 1 : s, anchor: ProgressHero.anchor(group))
+    } keyframes: { _ in
+      CubicKeyframe(1.06, duration: 0.2)
+      SpringKeyframe(1, duration: 0.35)
     }
   }
 
-  static func sharp(_ g: ProgressStatus.Group) -> Path { logo.intersection(Path(rect(g))) }
+  private func icon(_ tint: Color) -> Color {
+    switch level {
+    case .good: .white
+    case .attention: tint
+    case .insufficient: .white.opacity(0.75)
+    }
+  }
+}
 
+/// Hình trong toạ độ khung 222, co giãn theo khung vẽ.
+private struct SegmentShape: Shape {
+  let path: Path
+  func path(in rect: CGRect) -> Path {
+    let k = rect.width / ProgressHero.frame.width
+    return path.applying(
+      CGAffineTransform(scaleX: k, y: k).translatedBy(x: -ProgressHero.frame.minX, y: -ProgressHero.frame.minY))
+  }
+}
 
+/// Chạm: mảng lún nhẹ quanh tâm của nó.
+private struct SegmentPressStyle: ButtonStyle {
+  let anchor: UnitPoint
+  let reduceMotion: Bool
+  func makeBody(configuration: Configuration) -> some View {
+    configuration.label
+      .scaleEffect(configuration.isPressed && !reduceMotion ? 0.95 : 1, anchor: anchor)
+      .animation(reduceMotion ? nil : .spring(duration: 0.22, bounce: 0.3), value: configuration.isPressed)
+  }
 }
 
 /// Chú thích ba trạng thái dưới hình (như hình mẫu).
