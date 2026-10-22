@@ -7,6 +7,12 @@ import SwiftUI
 /// khoá nút, câu ghi cuối, nháp bền theo người) nằm ở `OnboardingController`;
 /// tệp này chỉ dựng màn.
 ///
+/// Thiết kế lại 22/10 (Kiệt duyệt mock `onboarding_redesign_auth_style`): style màn
+/// đăng nhập; 6 màn — Koa chào → mục tiêu (+ kinh nghiệm) → lịch tập → Về bạn (năm
+/// số đo trong một danh sách) → Apple Health → kế hoạch (chỉ kcal + đạm) + buổi đầu.
+/// Bốn mục tiêu (lên cơ / giảm mỡ / khoẻ hơn / giữ dáng); "recomp" và "endurance"
+/// không còn ở onboarding (đổi được trong Cài đặt).
+///
 /// Khác RN, có chủ đích và ghi ra:
 /// - màn Sức khoẻ (12): bật lại 15/10 (HealthKit đã có) — "Kết nối Apple Health"
 ///   xin quyền + đồng bộ lần đầu rồi đi tiếp, "Để sau" đi tiếp; máy không có
@@ -53,38 +59,35 @@ private struct OnboardingStepsView: View {
   @State private var legalOpen = false
   @State private var failure: OnboardingFailureCopy?
   @State private var connecting = false
+  /// Màn Về bạn: chạm Chiều cao / Cân nặng mở thước trong một tấm.
+  @State private var ruler: RulerPick?
 
   private var step: OnboardingDraft.Step { flow.draft.step }
 
+  /// Thiết kế lại 22/10 (Kiệt duyệt mock): style của màn đăng nhập — nền mực, quầng
+  /// lửa nghiêng, bụi sáng, logo nhỏ góc trái, ô kính mờ; 13 màn còn 6.
   var body: some View {
-    VStack(spacing: 0) {
-      ProgressView(value: Double(flow.progress.step), total: Double(max(flow.progress.total, 1)))
-        .progressViewStyle(.linear)
-        .tint(DS.Color.foreground.swiftUI.opacity(0.26))
-        .padding(.horizontal, DS.Spacing.md)
-        .padding(.top, DS.Spacing.xs)
-
-      navRow
-
-      Group {
-        if step == .height || step == .weight {
-          screen(step).padding(.horizontal, DS.Spacing.lg)
-        } else {
-          ScrollView {
-            screen(step)
-              .padding(.horizontal, DS.Spacing.lg)
-              .padding(.bottom, DS.Spacing.md)
-          }
-          .scrollBounceBehavior(.basedOnSize)
+    ZStack {
+      AuthHero.ink.ignoresSafeArea()
+      AuthHeroBackdrop(reduceMotion: reduceMotion)
+        .ignoresSafeArea()
+        .accessibilityHidden(true)
+      VStack(spacing: 0) {
+        navRow
+        if let chapter { chapterBar(chapter) }
+        ScrollView {
+          screen(step)
+            .padding(.horizontal, DS.Spacing.lg)
+            .padding(.bottom, DS.Spacing.md)
         }
+        .scrollBounceBehavior(.basedOnSize)
+        .id(step)
+        .transition(reduceMotion ? AnyTransition.opacity : AnyTransition.push(from: forward ? .trailing : .leading))
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        footer
       }
-      .id(step)
-      .transition(reduceMotion ? AnyTransition.opacity : AnyTransition.push(from: forward ? .trailing : .leading))
-      .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-
-      footer
     }
-    .background(DS.Color.background.swiftUI)
+    .environment(\.colorScheme, .dark)
     .sensoryFeedback(.selection, trigger: step)
     .sensoryFeedback(.selection, trigger: choiceKey)
     .sensoryFeedback(.success, trigger: flow.finished) { _, done in done }
@@ -97,6 +100,9 @@ private struct OnboardingStepsView: View {
     } message: { copy in
       Text(Self.message(copy))
     }
+    .sheet(item: $ruler) { pick in
+      RulerSheet(flow: flow, quantity: pick.quantity)
+    }
     .sheet(isPresented: $legalOpen) {
       LegalSheet(lang: services.preferences.lang)
     }
@@ -107,29 +113,74 @@ private struct OnboardingStepsView: View {
   /// Nút quay lại: không có ở màn chào, và không có ở màn cuối (RN không truyền
   /// `onBack` cho màn 13).
   private var navRow: some View {
-    HStack {
+    HStack(spacing: DS.Spacing.sm) {
       if step != .welcome, step != .ready {
         Button {
           go(forward: false)
         } label: {
           Image(systemName: "chevron.left")
-            .font(.title3)
-            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-            .frame(width: 44, height: 44, alignment: .leading)
+            .font(.title3.weight(.semibold))
+            .foregroundStyle(AuthHero.paper.opacity(0.7))
+            .frame(width: 32, height: 44, alignment: .leading)
             .contentShape(Rectangle())
         }
         .accessibilityLabel(Text(String(localized: "onboarding.back")))
       }
+      AuthLockup(mark: 24, text: 16)
       Spacer()
     }
     .frame(height: 44)
-    .padding(.horizontal, DS.Spacing.md)
+    .padding(.horizontal, DS.Spacing.lg)
+  }
+
+  /// Ba chặng: mục tiêu · lịch · về bạn.
+  private var chapter: Int? {
+    switch step {
+    case .intention: 1
+    case .schedule: 2
+    case .sex: 3
+    default: nil
+    }
+  }
+
+  private func chapterBar(_ n: Int) -> some View {
+    HStack(spacing: 6) {
+      ForEach(1...3, id: \.self) { i in
+        Capsule()
+          .fill(AuthHero.paper.opacity(i <= n ? 1 : 0.15))
+          .frame(height: 3)
+      }
+    }
+    .padding(.horizontal, DS.Spacing.lg)
+    .padding(.top, DS.Spacing.xs)
+    .padding(.bottom, DS.Spacing.md)
+    .accessibilityElement()
+    .accessibilityLabel(Text(String(localized: "onb2.chapter \(n) \(3)")))
   }
 
   private var footer: some View {
     VStack(spacing: DS.Spacing.sm) {
-      DSButton(ctaTitle, style: .primary) { primary() }
-        .disabled(!flow.canAdvance || flow.finishing || connecting)
+      Button { primary() } label: {
+        Text(ctaTitle)
+          .font(DS.TextStyle.headline)
+          .foregroundStyle(AuthHero.ink)
+          .frame(maxWidth: .infinity, minHeight: 52)
+          .background(Capsule().fill(AuthHero.paper))
+          .opacity(flow.canAdvance && !flow.finishing && !connecting ? 1 : 0.4)
+      }
+      .buttonStyle(TodayPressStyle())
+      .disabled(!flow.canAdvance || flow.finishing || connecting)
+      if step == .sex {
+        Button {
+          flow.useAverages()
+          go(forward: true)
+        } label: {
+          Text(String(localized: "onb2.about.skip"))
+            .font(DS.TextStyle.body.weight(.semibold))
+            .foregroundStyle(AuthHero.paper.opacity(0.6))
+            .frame(maxWidth: .infinity, minHeight: 44)
+        }
+      }
       if step == .health {
         Button {
           go(forward: true)
@@ -175,7 +226,8 @@ private struct OnboardingStepsView: View {
   private var ctaTitle: String {
     switch step {
     case .welcome: String(localized: "onboarding.start")
-    case .ready: firstSession == nil ? String(localized: "onboarding.ready.cta") : String(localized: "onboarding.ready.startNow")
+    case .sex: String(localized: "onb2.about.cta")
+    case .ready: firstSession == nil ? String(localized: "onboarding.ready.cta") : String(localized: "onb2.ready.cta")
     case .health: String(localized: "onboarding.health.connect")
     default: String(localized: "onboarding.next")
     }
@@ -248,78 +300,11 @@ private struct OnboardingStepsView: View {
   private func screen(_ s: OnboardingDraft.Step) -> some View {
     switch s {
     case .welcome: welcome
-    case .intention:
-      VStack(alignment: .leading, spacing: DS.Spacing.lg) {
-        Ask(q: String(localized: "onboarding.intention.q"), why: String(localized: "onboarding.intention.why"))
-        VStack(spacing: DS.Spacing.sm) {
-          ForEach(OnboardingDraft.Branch.allCases, id: \.self) { b in
-            ChoiceCard(label: Self.branchLabel(b), desc: Self.branchDesc(b), selected: flow.draft.branch == b) {
-              flow.pickBranch(b)
-            }
-          }
-        }
-      }
-    case .goal:
-      VStack(alignment: .leading, spacing: DS.Spacing.lg) {
-        VStack(alignment: .leading, spacing: DS.Spacing.xs) {
-          // Nhánh vừa chọn đứng TRÊN câu hỏi, đọc liền thành một đường đi.
-          if let b = flow.draft.branch {
-            Eyebrow(text: Self.branchLabel(b))
-          }
-          Text(String(localized: "onboarding.goal.q"))
-            .font(DS.TextStyle.largeTitle)
-            .foregroundStyle(DS.Color.foreground.swiftUI)
-            .accessibilityAddTraits(.isHeader)
-        }
-        VStack(spacing: DS.Spacing.sm) {
-          ForEach(flow.draft.branch?.goals ?? [], id: \.self) { g in
-            ChoiceCard(label: Self.goalLabel(g), desc: Self.goalDesc(g), selected: flow.draft.goal == g) {
-              _ = flow.pickGoal(g)
-            }
-          }
-        }
-      }
-    case .sex:
-      VStack(alignment: .leading, spacing: DS.Spacing.lg) {
-        Ask(q: String(localized: "onboarding.sex.q"), why: String(localized: "onboarding.sex.why"))
-        VStack(spacing: DS.Spacing.sm) {
-          ForEach(FitnessCalc.Sex.allCases, id: \.self) { sex in
-            ChoiceCard(label: Self.sexLabel(sex), desc: nil, selected: flow.draft.sex == sex) { flow.pickSex(sex) }
-          }
-        }
-      }
-    case .dob: dob
-    case .height: RulerScreen(flow: flow, quantity: .height).id("height-\(flow.heightUnit)")
-    case .weight: RulerScreen(flow: flow, quantity: .weight).id("weight-\(flow.weightUnit)")
-    case .activity:
-      VStack(alignment: .leading, spacing: DS.Spacing.lg) {
-        Ask(q: String(localized: "onboarding.activity.q"), why: String(localized: "onboarding.activity.why"))
-        // Năm hàng trong MỘT mặt: màn duy nhất có năm lựa chọn.
-        VStack(spacing: 0) {
-          ForEach(Array(OnboardingDraft.activityLevels.enumerated()), id: \.element) { i, level in
-            if i > 0 { Divider() }
-            ChoiceRow(
-              label: Self.activityLabel(level), desc: Self.activityDesc(level),
-              selected: flow.draft.activityLevel == level
-            ) { _ = flow.pickActivity(level) }
-          }
-        }
-        .background(DS.Color.card.swiftUI)
-        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.md))
-      }
-    case .experience:
-      VStack(alignment: .leading, spacing: DS.Spacing.lg) {
-        Ask(q: String(localized: "onboarding.exp.q"), why: String(localized: "onboarding.exp.why"))
-        VStack(spacing: DS.Spacing.sm) {
-          ForEach(OnboardingDraft.trainingLevels, id: \.self) { level in
-            ChoiceCard(label: Self.expLabel(level), desc: Self.expDesc(level), selected: flow.draft.trainingLevel == level) {
-              _ = flow.pickTraining(level)
-            }
-          }
-        }
-      }
+    case .intention: intention
+    case .sex: about
+    // Câu hỏi đã gộp vào màn khác (thiết kế lại 22/10) — không còn là một màn.
+    case .goal, .dob, .height, .weight, .activity, .experience, .plan: EmptyView()
     case .schedule: schedule
-    case .plan: plan
     case .health: health
     case .ready: ready
     }
@@ -329,54 +314,144 @@ private struct OnboardingStepsView: View {
 
   private var schedule: some View {
     let c = flow.draft.schedule ?? .suggested(trainingLevel: flow.draft.trainingLevel)
+    let valid = StarterPrograms.sessionCounts.contains(c.days.count)
     return VStack(alignment: .leading, spacing: DS.Spacing.lg) {
-      Ask(q: String(localized: "onboarding.schedule.q"), why: String(localized: "onboarding.schedule.why"))
-      HStack(spacing: DS.Spacing.sm) {
-        ForEach(Array(StarterPrograms.sessionCounts), id: \.self) { n in
-          Pill(text: "\(n)", selected: c.sessions == n) { flow.setSessions(n) }
-            .accessibilityLabel(Text(String(localized: "onboarding.schedule.sessions.a11y \(n)")))
-        }
-      }
+      Ask(q: String(localized: "onb2.week.q"), why: String(localized: "onb2.week.why"))
       VStack(alignment: .leading, spacing: DS.Spacing.xs) {
-        Eyebrow(text: String(localized: "onboarding.schedule.days"))
         HStack(spacing: 6) {
           ForEach(0..<7, id: \.self) { d in
-            Pill(text: Self.dayShort(d), selected: c.days.contains(d), compact: true) { flow.toggleDay(d) }
+            GlassPill(text: Self.dayShort(d), selected: c.days.contains(d), round: true) { flow.toggleDay(d) }
           }
         }
-        Text(String(localized: "onboarding.schedule.rest"))
+        Text(valid ? String(localized: "onb2.week.count \(c.days.count)") : String(localized: "onb2.week.pick"))
           .font(DS.TextStyle.footnote)
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          .foregroundStyle(AuthHero.paper.opacity(valid ? 0.6 : 0.85))
       }
-      VStack(alignment: .leading, spacing: DS.Spacing.xs) {
-        Eyebrow(text: String(localized: "onboarding.schedule.place"))
+      HStack(spacing: DS.Spacing.xs) {
         ForEach(StarterPrograms.Place.allCases, id: \.self) { p in
-          ChoiceCard(label: Self.placeLabel(p), desc: Self.placeDesc(p), selected: c.place == p) { flow.setPlace(p) }
+          GlassPill(text: Self.placeShort(p), selected: c.place == p) { flow.setPlace(p) }
+            .accessibilityHint(Text(Self.placeDesc(p)))
         }
       }
-      if StarterPrograms.sessionCounts.contains(c.days.count) {
-        VStack(alignment: .leading, spacing: 6) {
-          Eyebrow(text: String(localized: "onboarding.schedule.preview"))
-          ForEach(StarterPrograms.schedule(c), id: \.day) { row in
+      if valid {
+        VStack(spacing: 0) {
+          ForEach(Array(StarterPrograms.schedule(c).enumerated()), id: \.element.day) { i, row in
+            if i > 0 { GlassDivider() }
             HStack {
-              Text(verbatim: Self.dayShort(row.day)).font(.body.weight(.bold)).frame(width: 36, alignment: .leading)
-              Text(verbatim: Self.sessionName(row.session))
+              Text(verbatim: "\(Self.dayShort(row.day)) · \(Self.sessionName(row.session))")
               Spacer()
               Text(String(localized: "today.minutes \(StarterPrograms.minutes(row.session, place: c.place, beginner: c.beginner))"))
                 .font(DS.TextStyle.number(13, .footnote))
-                .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+                .foregroundStyle(AuthHero.paper.opacity(0.6))
             }
             .font(DS.TextStyle.body)
-            .foregroundStyle(DS.Color.foreground.swiftUI)
+            .foregroundStyle(AuthHero.paper)
+            .padding(.horizontal, DS.Spacing.md)
+            .frame(minHeight: 44)
           }
-          Text(String(localized: "onboarding.schedule.editLater"))
-            .font(DS.TextStyle.footnote)
-            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
         }
-        .padding(DS.Spacing.md)
-        .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.md))
+        .onbGlass()
+        Text(String(localized: "onboarding.schedule.editLater"))
+          .font(DS.TextStyle.footnote)
+          .foregroundStyle(AuthHero.paper.opacity(0.5))
       }
     }
+  }
+
+  /// Màn mục tiêu (gộp mục tiêu + kinh nghiệm): bốn mục tiêu, ba mức đã tập.
+  private var intention: some View {
+    VStack(alignment: .leading, spacing: DS.Spacing.lg) {
+      Ask(q: String(localized: "onb2.goal.q"), why: String(localized: "onb2.goal.why"))
+      VStack(spacing: DS.Spacing.sm) {
+        ForEach(OnboardingRules.primaryGoals, id: \.self) { g in
+          GlassChoice(
+            icon: Self.goalIcon(g), label: Self.primaryGoalLabel(g), desc: Self.primaryGoalDesc(g),
+            selected: flow.draft.goal == g
+          ) { flow.pickPrimaryGoal(g) }
+        }
+      }
+      VStack(alignment: .leading, spacing: DS.Spacing.xs) {
+        Eyebrow(text: String(localized: "onb2.exp.q"))
+        HStack(spacing: DS.Spacing.xs) {
+          ForEach(OnboardingDraft.trainingLevels, id: \.self) { l in
+            GlassPill(text: Self.expShort(l), selected: flow.draft.trainingLevel == l) { _ = flow.pickTraining(l) }
+              .accessibilityHint(Text(Self.expDesc(l)))
+          }
+        }
+      }
+    }
+  }
+
+  /// Màn Về bạn: năm số đo trong MỘT danh sách kính mờ (thay năm màn). Chiều cao /
+  /// cân nặng mở thước cũ trong một tấm; ngày sinh là bộ chọn gọn của hệ thống.
+  private var about: some View {
+    VStack(alignment: .leading, spacing: DS.Spacing.lg) {
+      Ask(q: String(localized: "onb2.about.q"), why: String(localized: "onb2.about.why"))
+      VStack(spacing: 0) {
+        Menu {
+          ForEach(FitnessCalc.Sex.allCases, id: \.self) { sex in
+            Button(Self.sexLabel(sex)) { flow.pickSex(sex) }
+          }
+        } label: {
+          AboutRow(label: String(localized: "onb2.about.sex"), value: flow.draft.sex.map(Self.sexLabel))
+        }
+        GlassDivider()
+        HStack {
+          Text(String(localized: "onb2.about.dob"))
+            .foregroundStyle(AuthHero.paper)
+          Spacer()
+          DatePicker(
+            String(localized: "onb2.about.dob"),
+            selection: Binding(get: { Self.date(flow.draft.dob) }, set: { flow.setDob(Self.localDate($0)) }),
+            in: ...Date(), displayedComponents: .date
+          )
+          .labelsHidden()
+        }
+        .font(DS.TextStyle.body)
+        .padding(.horizontal, DS.Spacing.md)
+        .frame(minHeight: 52)
+        GlassDivider()
+        Button { ruler = RulerPick(quantity: .height) } label: {
+          AboutRow(label: String(localized: "onb2.about.height"), value: heightText)
+        }
+        .accessibilityLabel(Text(verbatim: "\(String(localized: "onb2.about.height")): \(heightText)"))
+        GlassDivider()
+        Button { ruler = RulerPick(quantity: .weight) } label: {
+          AboutRow(label: String(localized: "onb2.about.weight"), value: weightText)
+        }
+        .accessibilityLabel(Text(verbatim: "\(String(localized: "onb2.about.weight")): \(weightText)"))
+        GlassDivider()
+        Menu {
+          ForEach(OnboardingDraft.activityLevels, id: \.self) { level in
+            Button {
+              _ = flow.pickActivity(level)
+            } label: {
+              Text(Self.activityLabel(level))
+              Text(Self.activityDesc(level))
+            }
+          }
+        } label: {
+          AboutRow(label: String(localized: "onb2.about.activity"), value: flow.draft.activityLevel.map(Self.activityLabel))
+        }
+      }
+      .onbGlass()
+      if flow.dobInvalid {
+        FieldError(text: String(localized: "onboarding.dob.bad"))
+      }
+      if let e = statError {
+        FieldError(text: e)
+      }
+    }
+  }
+
+  private var heightText: String {
+    OnboardingRuler.formatHeight(Double(flow.draft.heightCm) ?? 0, unit: flow.heightUnit)
+  }
+
+  private var weightText: String {
+    let kg = Double(flow.draft.weightKg) ?? 0
+    let v = Units.displayWeight(kg, unit: flow.weightUnit)
+    return "\(OnboardingRuler.fixed1(v, locale: .app)) \(OnboardingRuler.weightLabel(flow.weightUnit))"
   }
 
   static func dayShort(_ d: Int) -> String {
@@ -386,14 +461,6 @@ private struct OnboardingStepsView: View {
       String(localized: "onboarding.day.fri"), String(localized: "onboarding.day.sat"),
       String(localized: "onboarding.day.sun"),
     ][d]
-  }
-
-  static func placeLabel(_ p: StarterPrograms.Place) -> String {
-    switch p {
-    case .gym: String(localized: "onboarding.place.gym")
-    case .dumbbell: String(localized: "onboarding.place.dumbbell")
-    case .bodyweight: String(localized: "onboarding.place.bodyweight")
-    }
   }
 
   static func placeDesc(_ p: StarterPrograms.Place) -> String {
@@ -438,160 +505,100 @@ private struct OnboardingStepsView: View {
     }
   }
 
+  /// Koa chào ngay màn đầu (mock 22/10) — hình Koa có sẵn, không vẽ mới.
   private var welcome: some View {
-    VStack(spacing: DS.Spacing.xl) {
-      Text("ASCND")
-        .font(DS.TextStyle.largeTitle)
-        .tracking(6)
-        .foregroundStyle(DS.Color.foreground.swiftUI)
-        .accessibilityAddTraits(.isHeader)
-      Text(String(localized: "onboarding.brand.tagline"))
-        .font(DS.TextStyle.hero)
-        .foregroundStyle(DS.Color.foreground.swiftUI)
+    VStack(spacing: DS.Spacing.md) {
+      MascotFigureView(emotion: .happy, size: 170, animated: !reduceMotion)
+        .frame(height: 210)
+        .accessibilityHidden(true)
+      Text(String(localized: "onb2.welcome.title"))
+        .font(.system(size: 30, weight: .bold))
+        .foregroundStyle(AuthHero.paper)
         .multilineTextAlignment(.center)
-        .minimumScaleFactor(0.6)
+        .accessibilityAddTraits(.isHeader)
+      Text(String(localized: "onb2.welcome.sub"))
+        .font(DS.TextStyle.body)
+        .foregroundStyle(AuthHero.paper.opacity(0.65))
+        .multilineTextAlignment(.center)
     }
     .frame(maxWidth: .infinity)
     .padding(.top, DS.Spacing.xl * 2)
   }
 
-  private var dob: some View {
-    VStack(alignment: .leading, spacing: DS.Spacing.lg) {
-      Ask(q: String(localized: "onboarding.dob.q"), why: String(localized: "onboarding.dob.why"))
-      // `maximumDate`: ngày tương lai không chọn được ngay ở bánh xe. Câu báo
-      // dưới vẫn giữ — một nháp cũ hay một lần đổi ngưỡng tuổi vẫn tới được đây.
-      DatePicker(
-        String(localized: "onboarding.dob.q"),
-        selection: Binding(get: { Self.date(flow.draft.dob) }, set: { flow.setDob(Self.localDate($0)) }),
-        in: ...Date(),
-        displayedComponents: .date
-      )
-      .datePickerStyle(.wheel)
-      .labelsHidden()
-      .frame(maxWidth: .infinity)
-      if flow.dobInvalid {
-        FieldError(text: String(localized: "onboarding.dob.bad"))
-      }
-    }
-  }
-
-  @ViewBuilder
-  private var plan: some View {
-    if let p = flow.attempt.plan {
-      VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-        Eyebrow(text: String(localized: "onboarding.plan.eyebrow"))
-        HStack(alignment: .firstTextBaseline, spacing: DS.Spacing.xs) {
-          Text(p.targetKcal.formatted(.number.locale(.app)))
-            .font(DS.TextStyle.hero)
-            .monospacedDigit()
-          Text(verbatim: Self.kcal)
-            .font(DS.TextStyle.headline)
-            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-        }
-        .foregroundStyle(DS.Color.foreground.swiftUI)
-        .accessibilityElement(children: .combine)
-        Text(String(localized: "onboarding.plan.for \(goalLabel)"))
-          .font(DS.TextStyle.headline)
-          .foregroundStyle(DS.Color.foreground.swiftUI)
-        Text(String(localized: "onboarding.plan.macros \(p.proteinG) \(p.carbsG) \(p.fatG)"))
-          .font(DS.TextStyle.headline)
-          .foregroundStyle(DS.Color.foreground.swiftUI)
-        Divider().padding(.vertical, DS.Spacing.xs)
-        Text(String(localized: "onboarding.plan.water \(water(p.waterMl))"))
-          .font(DS.TextStyle.footnote)
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-        // Mục tiêu ngủ mặc định 8 giờ (`profiles.sleep_target_hours`), như RN.
-        Text(String(localized: "onboarding.plan.sleep \(8)"))
-          .font(DS.TextStyle.footnote)
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-        rank.padding(.top, DS.Spacing.lg)
-      }
-      .padding(.top, DS.Spacing.xl)
-    }
-  }
-
-  /// Sáu bậc của thang hạng; người mới ở bậc đầu (`levelFromXp(0)` = 1).
-  private var rank: some View {
-    VStack(alignment: .leading, spacing: DS.Spacing.xs) {
-      HStack(spacing: DS.Spacing.xs) {
-        ForEach(1...6, id: \.self) { lvl in
-          Capsule()
-            .fill(lvl == 1 ? DS.Color.foreground.swiftUI : DS.Color.border.swiftUI)
-            .frame(width: 18, height: 4)
-        }
-      }
-      .accessibilityHidden(true)
-      Text(String(localized: "onboarding.plan.rankName"))
-        .font(DS.TextStyle.headline)
-        .foregroundStyle(DS.Color.foreground.swiftUI)
-      // GĐ2: Gains là thang duy nhất — không còn "Level 01".
-      Text("onboarding.plan.gains")
-        .font(DS.TextStyle.footnote)
-        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-    }
-    .accessibilityElement(children: .combine)
-  }
-
+  /// Kế hoạch + buổi đầu (gộp màn kế hoạch và màn sẵn sàng): chỉ kcal và đạm (V1).
   private var ready: some View {
-    VStack(spacing: DS.Spacing.lg) {
-      // Đợt 3: Koa cầm tạ, mời tập buổi đầu.
-      if firstSession != nil {
-        MascotFigureView(emotion: .warmup, size: 130, animated: false)
-          .frame(height: 150)
+    VStack(alignment: .leading, spacing: DS.Spacing.md) {
+      HStack(spacing: DS.Spacing.sm) {
+        MascotFigureView(emotion: .warmup, size: 60, animated: false)
+          .frame(width: 66, height: 76)
           .accessibilityHidden(true)
-      }
-      Eyebrow(text: String(localized: "onboarding.ready.eyebrow"))
-      Text(String(localized: "onboarding.ready.line"))
-        .font(DS.TextStyle.title)
-        .foregroundStyle(DS.Color.foreground.swiftUI)
-        .multilineTextAlignment(.center)
-      HStack(spacing: DS.Spacing.xs) {
-        ForEach(readyChips, id: \.self) { t in
-          Text(verbatim: t)
+        VStack(alignment: .leading, spacing: 2) {
+          Text(String(localized: "onb2.plan.title"))
+            .font(.system(size: 26, weight: .bold))
+            .foregroundStyle(AuthHero.paper)
+            .accessibilityAddTraits(.isHeader)
+          Text(verbatim: planLine)
             .font(DS.TextStyle.footnote)
-            .foregroundStyle(DS.Color.foreground.swiftUI)
-            .padding(.horizontal, DS.Spacing.sm)
-            .padding(.vertical, DS.Spacing.xs)
-            .background(DS.Color.secondary.swiftUI, in: Capsule())
+            .foregroundStyle(AuthHero.paper.opacity(0.6))
         }
       }
-      .accessibilityElement(children: .combine)
+      .padding(.top, DS.Spacing.lg)
+      if let p = flow.attempt.plan {
+        VStack(alignment: .leading, spacing: 4) {
+          Eyebrow(text: String(localized: "onb2.plan.daily"))
+          HStack(alignment: .firstTextBaseline, spacing: DS.Spacing.xs) {
+            Text(p.targetKcal.formatted(.number.locale(.app)))
+              .font(DS.TextStyle.hero)
+              .monospacedDigit()
+            Text(verbatim: Self.kcal)
+              .font(DS.TextStyle.headline)
+              .foregroundStyle(AuthHero.paper.opacity(0.6))
+          }
+          Text(String(localized: "onb2.plan.protein \(p.proteinG)"))
+            .font(DS.TextStyle.headline)
+        }
+        .foregroundStyle(AuthHero.paper)
+        .padding(DS.Spacing.md)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .onbGlass()
+        .accessibilityElement(children: .combine)
+      }
       if let first = firstSession {
-        VStack(spacing: DS.Spacing.xs) {
+        VStack(alignment: .leading, spacing: 4) {
           Text(String(localized: "onboarding.ready.first \(first.name) \(first.minutes)"))
             .font(DS.TextStyle.headline)
-            .foregroundStyle(DS.Color.foreground.swiftUI)
+            .foregroundStyle(AuthHero.paper)
           Text(String(localized: "onboarding.ready.firstWhy"))
             .font(DS.TextStyle.footnote)
-            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .foregroundStyle(AuthHero.paper.opacity(0.6))
         }
-        .multilineTextAlignment(.center)
         .padding(DS.Spacing.md)
-        .frame(maxWidth: .infinity)
-        .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.md))
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .onbGlass()
         .accessibilityElement(children: .combine)
-        .padding(.top, DS.Spacing.sm)
       }
+      // GĐ2: Gains là thang duy nhất — người mới ở hạng đầu.
+      Text("onboarding.plan.gains")
+        .font(DS.TextStyle.footnote)
+        .foregroundStyle(AuthHero.paper.opacity(0.5))
       if flow.finishing {
-        ProgressView()
+        ProgressView().frame(maxWidth: .infinity)
       }
       if let e = statError {
         FieldError(text: e)
       }
     }
-    .frame(maxWidth: .infinity)
-    .padding(.top, DS.Spacing.xl * 2)
+  }
+
+  /// "Lên cơ · T2 · T4 · T6".
+  private var planLine: String {
+    let days = (flow.draft.schedule?.days ?? []).map(Self.dayShort)
+    return ([flow.draft.goal.map(Self.primaryGoalLabel)].compactMap { $0 } + days).joined(separator: " · ")
   }
 
   // MARK: - Chữ suy ra
 
   private static let kcal = "kcal"
-
-  private var readyChips: [String] {
-    let kcal = flow.attempt.plan?.targetKcal ?? 0
-    return [goalLabel, "\(kcal.formatted(.number.locale(.app))) \(Self.kcal)", String(localized: "mr.gains.points \(0)")]
-      .filter { !$0.isEmpty }
-  }
 
   private var goalLabel: String { flow.draft.goal.map(Self.goalLabel) ?? "" }
 
@@ -608,31 +615,9 @@ private struct OnboardingStepsView: View {
     return nil
   }
 
-  private func water(_ ml: Int) -> String {
-    let unit = services.preferences.volumeUnit
-    let v = OnboardingRuler.displayVolume(ml, unit: unit)
-    return unit == .oz ? "\(OnboardingRuler.fixed1(v, locale: .app)) oz" : "\(Int(v).formatted(.number.locale(.app))) ml"
-  }
-
   static func date(_ d: LocalDate) -> Date { d.calendarDate }
 
   static func localDate(_ date: Date) -> LocalDate { LocalDate(calendarDate: date) ?? OnboardingDraft.defaultDob }
-
-  static func branchLabel(_ b: OnboardingDraft.Branch) -> String {
-    switch b {
-    case .body: String(localized: "onboarding.branch.body")
-    case .capacity: String(localized: "onboarding.branch.capacity")
-    case .maintain: String(localized: "onboarding.branch.maintain")
-    }
-  }
-
-  static func branchDesc(_ b: OnboardingDraft.Branch) -> String {
-    switch b {
-    case .body: String(localized: "onboarding.branch.body.desc")
-    case .capacity: String(localized: "onboarding.branch.capacity.desc")
-    case .maintain: String(localized: "onboarding.branch.maintain.desc")
-    }
-  }
 
   /// `GOAL_COPY`: `maintain` mượn chữ của nhánh "Giữ đều".
   static func goalLabel(_ g: String) -> String {
@@ -646,14 +631,47 @@ private struct OnboardingStepsView: View {
     }
   }
 
-  static func goalDesc(_ g: String) -> String {
+  static func primaryGoalLabel(_ g: String) -> String {
     switch g {
-    case "bulk": String(localized: "onboarding.goal.bulk.desc")
-    case "cut": String(localized: "onboarding.goal.cut.desc")
-    case "recomp": String(localized: "onboarding.goal.recomp.desc")
-    case "strength": String(localized: "onboarding.goal.strength.desc")
-    case "endurance": String(localized: "onboarding.goal.endurance.desc")
-    default: String(localized: "onboarding.branch.maintain.desc")
+    case "bulk": String(localized: "onb2.goal.bulk")
+    case "cut": String(localized: "onb2.goal.cut")
+    case "strength": String(localized: "onb2.goal.strength")
+    case "maintain": String(localized: "onb2.goal.maintain")
+    default: goalLabel(g)
+    }
+  }
+
+  static func primaryGoalDesc(_ g: String) -> String {
+    switch g {
+    case "bulk": String(localized: "onb2.goal.bulk.desc")
+    case "cut": String(localized: "onb2.goal.cut.desc")
+    case "strength": String(localized: "onb2.goal.strength.desc")
+    default: String(localized: "onb2.goal.maintain.desc")
+    }
+  }
+
+  static func goalIcon(_ g: String) -> String {
+    switch g {
+    case "bulk": "dumbbell.fill"
+    case "cut": "flame.fill"
+    case "strength": "figure.strengthtraining.traditional"
+    default: "scalemass.fill"
+    }
+  }
+
+  static func expShort(_ l: String) -> String {
+    switch l {
+    case "beginner": String(localized: "onb2.exp.beginner")
+    case "intermediate": String(localized: "onb2.exp.intermediate")
+    default: String(localized: "onb2.exp.advanced")
+    }
+  }
+
+  static func placeShort(_ p: StarterPrograms.Place) -> String {
+    switch p {
+    case .gym: String(localized: "onb2.place.gym")
+    case .dumbbell: String(localized: "onb2.place.dumbbell")
+    case .bodyweight: String(localized: "onb2.place.bodyweight")
     }
   }
 
@@ -682,15 +700,6 @@ private struct OnboardingStepsView: View {
     case "moderate": String(localized: "onboarding.activity.moderate.desc")
     case "high": String(localized: "onboarding.activity.high.desc")
     default: String(localized: "onboarding.activity.athlete.desc")
-    }
-  }
-
-  /// Ba bậc theo cột `training_level` (`LEVELS`).
-  static func expLabel(_ l: String) -> String {
-    switch l {
-    case "beginner": String(localized: "onboarding.exp.beginner")
-    case "intermediate": String(localized: "onboarding.exp.intermediate")
-    default: String(localized: "onboarding.exp.advanced")
     }
   }
 
@@ -907,26 +916,6 @@ struct RulerStrip: View {
 // MARK: - Mảnh dùng chung
 
 /// Câu hỏi + lý do hỏi (`Ask`).
-/// Viên chọn của màn lịch (số buổi, ngày).
-private struct Pill: View {
-  let text: String
-  let selected: Bool
-  var compact = false
-  let action: () -> Void
-
-  var body: some View {
-    Button(action: action) {
-      Text(verbatim: text)
-        .font(.system(size: compact ? 13 : 16, weight: .bold))
-        .foregroundStyle(selected ? DS.Color.primaryForeground.swiftUI : DS.Color.foreground.swiftUI)
-        .frame(minWidth: compact ? 38 : 52, minHeight: 44)
-        .background(selected ? DS.Color.primary.swiftUI : DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: 12))
-    }
-    .buttonStyle(.plain)
-    .accessibilityAddTraits(selected ? .isSelected : [])
-  }
-}
-
 private struct Ask: View {
   let q: String
   let why: String
@@ -968,35 +957,24 @@ private struct FieldError: View {
   }
 }
 
-/// Thẻ chọn một (`ChoiceCard`): VoiceOver đọc "nhãn. mô tả", và đã chọn hay chưa.
-private struct ChoiceCard: View {
-  let label: String
-  let desc: String?
-  let selected: Bool
-  let action: () -> Void
+// MARK: - Mảnh kính mờ (thiết kế lại 22/10, style màn đăng nhập)
 
-  var body: some View {
-    Button(action: action) {
-      ChoiceText(label: label, desc: desc, selected: selected)
-        .padding(DS.Spacing.md)
-        .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
-        .background(DS.Color.card.swiftUI)
-        .overlay(
-          RoundedRectangle(cornerRadius: DS.Radius.md)
-            .stroke(selected ? DS.Color.foreground.swiftUI : DS.Color.border.swiftUI, lineWidth: selected ? 2 : 1)
-        )
-        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.md))
-        .contentShape(RoundedRectangle(cornerRadius: DS.Radius.md))
+private extension View {
+  /// Nền giấy mờ 8 %, viền mảnh, bo 16 — như ô nhập của màn đăng nhập.
+  func onbGlass(selected: Bool = false, radius: CGFloat = 16) -> some View {
+    background(
+      AuthHero.paper.opacity(selected ? 0.14 : 0.08), in: RoundedRectangle(cornerRadius: radius, style: .continuous)
+    )
+    .overlay {
+      RoundedRectangle(cornerRadius: radius, style: .continuous)
+        .strokeBorder(AuthHero.paper.opacity(selected ? 0.9 : 0.12), lineWidth: selected ? 1.2 : 0.75)
     }
-    .buttonStyle(.plain)
-    .accessibilityElement(children: .combine)
-    .accessibilityLabel(Text(verbatim: ChoiceText.spoken(label: label, desc: desc)))
-    .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
   }
 }
 
-/// Hàng của màn vận động: năm hàng trong một mặt, ngăn bằng hairline.
-private struct ChoiceRow: View {
+/// Thẻ chọn một: icon màu lửa, nhãn, mô tả; chọn thì viền sáng + dấu tick.
+private struct GlassChoice: View {
+  let icon: String
   let label: String
   let desc: String
   let selected: Bool
@@ -1004,51 +982,117 @@ private struct ChoiceRow: View {
 
   var body: some View {
     Button(action: action) {
-      ChoiceText(label: label, desc: desc, selected: selected)
-        .padding(.horizontal, DS.Spacing.md)
-        .padding(.vertical, DS.Spacing.sm)
-        .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
-        .background(selected ? DS.Color.secondary.swiftUI : Color.clear)
-        .contentShape(Rectangle())
+      HStack(spacing: DS.Spacing.sm) {
+        Image(systemName: icon)
+          .font(.system(size: 18, weight: .semibold))
+          .foregroundStyle(AuthHero.ember)
+          .frame(width: 28)
+          .accessibilityHidden(true)
+        VStack(alignment: .leading, spacing: 2) {
+          Text(label).font(DS.TextStyle.headline).foregroundStyle(AuthHero.paper)
+          Text(desc).font(DS.TextStyle.footnote).foregroundStyle(AuthHero.paper.opacity(0.6))
+        }
+        Spacer(minLength: 0)
+        if selected {
+          Image(systemName: "checkmark")
+            .font(.headline)
+            .foregroundStyle(AuthHero.paper)
+            .accessibilityHidden(true)
+        }
+      }
+      .padding(.horizontal, DS.Spacing.md)
+      .frame(maxWidth: .infinity, minHeight: 60, alignment: .leading)
+      .onbGlass(selected: selected)
+      .contentShape(RoundedRectangle(cornerRadius: 16))
     }
-    .buttonStyle(.plain)
-    .accessibilityElement(children: .combine)
-    .accessibilityLabel(Text(verbatim: ChoiceText.spoken(label: label, desc: desc)))
+    .buttonStyle(TodayPressStyle())
+    .accessibilityLabel(Text(verbatim: "\(label). \(desc)"))
     .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
   }
 }
 
-private struct ChoiceText: View {
-  let label: String
-  let desc: String?
+/// Viên chọn (ngày tập, nơi tập, mức đã tập): chọn thì nền giấy, chữ mực.
+private struct GlassPill: View {
+  let text: String
   let selected: Bool
-
-  /// "nhãn. mô tả" — câu VoiceOver của thẻ / hàng chọn.
-  static func spoken(label: String, desc: String?) -> String {
-    guard let desc, !desc.isEmpty else { return label }
-    return "\(label). \(desc)"
-  }
+  var round = false
+  let action: () -> Void
 
   var body: some View {
-    HStack(spacing: DS.Spacing.sm) {
-      VStack(alignment: .leading, spacing: 2) {
-        Text(label)
-          .font(DS.TextStyle.headline)
-          .foregroundStyle(DS.Color.foreground.swiftUI)
-        if let desc {
-          Text(desc)
-            .font(DS.TextStyle.footnote)
-            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+    Button(action: action) {
+      Text(verbatim: text)
+        .font(.system(size: round ? 13 : 15, weight: .semibold))
+        .foregroundStyle(selected ? AuthHero.ink : AuthHero.paper)
+        .lineLimit(1)
+        .minimumScaleFactor(0.8)
+        .frame(maxWidth: .infinity, minHeight: 44)
+        .background(selected ? AuthHero.paper : AuthHero.paper.opacity(0.08), in: RoundedRectangle(cornerRadius: round ? 22 : 14))
+        .overlay {
+          RoundedRectangle(cornerRadius: round ? 22 : 14)
+            .strokeBorder(AuthHero.paper.opacity(selected ? 0 : 0.12), lineWidth: 0.75)
         }
-      }
-      Spacer(minLength: 0)
-      if selected {
-        Image(systemName: "checkmark")
-          .font(.headline)
-          .foregroundStyle(DS.Color.foreground.swiftUI)
-          .accessibilityHidden(true)
-      }
     }
-    .multilineTextAlignment(.leading)
+    .buttonStyle(TodayPressStyle())
+    .accessibilityLabel(Text(verbatim: text))
+    .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
   }
 }
+
+private struct GlassDivider: View {
+  var body: some View {
+    Rectangle().fill(AuthHero.paper.opacity(0.1)).frame(height: 0.5).padding(.leading, DS.Spacing.md)
+  }
+}
+
+/// Hàng của màn Về bạn: nhãn trái, giá trị phải ("Chọn" khi chưa có), mũi tên.
+private struct AboutRow: View {
+  let label: String
+  let value: String?
+
+  var body: some View {
+    HStack(spacing: DS.Spacing.xs) {
+      Text(label).foregroundStyle(AuthHero.paper)
+      Spacer()
+      Text(value ?? String(localized: "onb2.about.choose"))
+        .foregroundStyle(value == nil ? AuthHero.ember : AuthHero.paper.opacity(0.75))
+      Image(systemName: "chevron.up.chevron.down")
+        .font(.system(size: 11, weight: .semibold))
+        .foregroundStyle(AuthHero.paper.opacity(0.4))
+        .accessibilityHidden(true)
+    }
+    .font(DS.TextStyle.body)
+    .padding(.horizontal, DS.Spacing.md)
+    .frame(minHeight: 52)
+    .contentShape(Rectangle())
+  }
+}
+
+private struct RulerPick: Identifiable {
+  let quantity: OnboardingRuler.Quantity
+  var id: String { quantity == .height ? "height" : "weight" }
+}
+
+/// Thước chiều cao / cân nặng cũ trong một tấm của màn Về bạn.
+private struct RulerSheet: View {
+  let flow: OnboardingController
+  let quantity: OnboardingRuler.Quantity
+  @Environment(\.dismiss) private var dismiss
+
+  var body: some View {
+    NavigationStack {
+      RulerScreen(flow: flow, quantity: quantity)
+        .id("\(quantity == .height ? flow.heightUnit : flow.weightUnit)")
+        .padding(.horizontal, DS.Spacing.lg)
+        .padding(.top, DS.Spacing.md)
+        .toolbar {
+          ToolbarItem(placement: .confirmationAction) {
+            Button(String(localized: "common.ok")) { dismiss() }
+          }
+        }
+    }
+    .presentationDetents([.medium])
+    .presentationBackground(AuthHero.sheet)
+    .environment(\.colorScheme, .dark)
+  }
+}
+
