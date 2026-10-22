@@ -31,10 +31,12 @@ struct RootTabView: View {
   var body: some View {
     TabView(selection: $selection) {
       Tab("tab.today", systemImage: "house", value: AppTab.today) {
-        TodayTab(onStartWorkout: {
-          selection = .workouts
-          launchWorkout = true
-        })
+        TodayTab(
+          onStartWorkout: {
+            selection = .workouts
+            launchWorkout = true
+          },
+          onLogWorkout: { logWorkoutInTraining() })
       }
       .accessibilityHint(Text(String(localized: "tab.today.hint")))
       Tab("tab.workouts", systemImage: "dumbbell", value: AppTab.workouts) {
@@ -67,7 +69,9 @@ struct RootTabView: View {
           selection = .progress
           openCoach = true
         } : nil
-    ) { linked = $0 })
+    ) { screen in
+      if screen == .logWorkout { logWorkoutInTraining() } else { linked = screen }
+    })
     .environment(quickLog)
     .onChange(of: services.coachRequest) { _, _ in
       guard services.aiDeployed == true else { return }
@@ -91,6 +95,13 @@ struct RootTabView: View {
     ) {
       if let linked { DeepLinkScreen(screen: linked) }
     }
+  }
+
+  /// Ghi buổi tập chỉ trong tab Tập luyện (Kiệt 22/10): chuyển tab, rồi mở màn ghi
+  /// trên tab ấy (cùng đường với link `log-workout`).
+  private func logWorkoutInTraining() {
+    selection = .workouts
+    linked = .logWorkout
   }
 }
 
