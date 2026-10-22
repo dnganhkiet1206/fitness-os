@@ -101,6 +101,8 @@ struct TodayExtras<Plan: View>: View {
   @State private var waterTaps = 0
   /// Tăng sau mỗi lần đọc lại ngày / ghi nhanh — Insight đọc lại theo.
   @State private var dayVersion = 0
+  /// Tấm nhập lượng nước tuỳ chỉnh từ thẻ Nước.
+  @State private var showsWaterAmount = false
   @Environment(ProfileBook.self) private var profile: ProfileBook?
   @State private var built = false
   /// Việc chính của hôm nay (GĐ1) — `nil` khi không có `WorkoutFlow` (preview).
@@ -200,7 +202,8 @@ struct TodayExtras<Plan: View>: View {
           onExtraWorkout: onLogWorkout,
           quickWater: water == nil ? nil : (
             label: SpokenLogDisplay.water(waterStepMl, unit: services.preferences.volumeUnit),
-            add: { act(.water) }),
+            add: { act(.water) },
+            custom: { showsWaterAmount = true }),
           onTell: { voice in tellVoice = voice; showsDayLog = true },
           weighIn: weighInRow, onLogAll: { showsDayLog = true },
           onTap: tapItem, onWeight: { showsWeight = true })
@@ -234,6 +237,12 @@ struct TodayExtras<Plan: View>: View {
         }
         .presentationDetents([.medium])
         .presentationDragIndicator(.visible)
+      }
+    }
+    .sheet(isPresented: $showsWaterAmount) {
+      WaterManualSheet(unit: services.preferences.volumeUnit) { amount in
+        showsWaterAmount = false
+        Task { await addWater(ml: Water.toMl(amount, services.preferences.volumeUnit)) }
       }
     }
     .sheet(isPresented: $showsDayLog, onDismiss: { Task { await reloadDay() } }) {
@@ -525,11 +534,11 @@ struct TodayExtras<Plan: View>: View {
   /// Một chạm thêm mức nhanh đầu tiên của đơn vị (250 ml / 8 oz).
   private var waterStepMl: Int { Water.stepMl(services.preferences.volumeUnit) }
 
-  private func addWater() async {
+  private func addWater(ml: Int? = nil) async {
     guard let water else { return }
     waterNote = nil
     do {
-      _ = try await water.add(amountMl: waterStepMl, online: services.sync.online)
+      _ = try await water.add(amountMl: ml ?? waterStepMl, online: services.sync.online)
       AccessibilityNotification.Announcement(String(localized: "today.water.added")).post()
       dayVersion += 1
     } catch {

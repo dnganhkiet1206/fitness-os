@@ -30,7 +30,8 @@ struct TodayDayCard: View {
   var onExtraWorkout: (() -> Void)?
   /// Nút ghi nhanh trên thẻ Nước, ghi rõ lượng ("+ 8 oz") — chạm thẻ thì mở màn Nước
   /// để chọn lượng (Kiệt 22/10: chạm thẻ tự ghi mà không biết ghi bao nhiêu).
-  var quickWater: (label: String, add: () -> Void)?
+  /// "Lượng khác" bên cạnh: nhập đúng lượng đã uống (Kiệt 22/10).
+  var quickWater: (label: String, add: () -> Void, custom: () -> Void)?
   /// Thanh "Ghi hôm nay" luôn hiện; chạm (hoặc micro) mở màn với chữ / giọng nói.
   var onTell: (_ voice: Bool) -> Void = { _ in }
   /// Dòng cân nặng khi đã lâu chưa cân (`TodayDay.showsWeighIn`); `nil` = ẩn.
@@ -172,11 +173,18 @@ struct TodayDayCard: View {
       .accessibilityValue(Text(verbatim: [Self.badgeText(t), t.detail].compactMap { $0 }.joined(separator: ", ")))
       .accessibilityAddTraits(.isButton)
       if t.item == .water, let quickWater {
-        chip(quickWater.label, color: color, action: quickWater.add)
+        HStack(spacing: 8) {
+          chip(quickWater.label, color: color, action: quickWater.add)
+          chip(String(localized: "water.custom"), systemImage: "pencil", color: color, action: quickWater.custom)
+        }
+        .padding(.horizontal, 16)
+        .padding(.bottom, 8)
       }
       // Đã tập xong: nút riêng ghi buổi phát sinh (19/10, chủ dự án).
       if t.item == .workout, t.state == .done, let onExtraWorkout {
         chip(String(localized: "day.workout.extra"), color: color, action: onExtraWorkout)
+          .padding(.horizontal, 16)
+          .padding(.bottom, 8)
       }
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -192,9 +200,11 @@ struct TodayDayCard: View {
   }
 
   /// Nút phụ trên thẻ: "+ Buổi phát sinh", "+ 8 oz".
-  private func chip(_ text: String, color: Color, action: @escaping () -> Void) -> some View {
+  private func chip(
+    _ text: String, systemImage: String = "plus", color: Color, action: @escaping () -> Void
+  ) -> some View {
     Button(action: action) {
-      Label(text, systemImage: "plus")
+      Label(text, systemImage: systemImage)
         .font(.system(size: 13, weight: .semibold))
         .foregroundStyle(color)
         .padding(.horizontal, 12).frame(minHeight: 30)
@@ -202,8 +212,6 @@ struct TodayDayCard: View {
         .frame(minHeight: 44, alignment: .leading)
     }
     .buttonStyle(TodayPressStyle())
-    .padding(.horizontal, 16)
-    .padding(.bottom, 8)
   }
 
   /// "✓ Đã xong" · "◌ Chưa ghi" · "Nghỉ" · "Apple Health".
