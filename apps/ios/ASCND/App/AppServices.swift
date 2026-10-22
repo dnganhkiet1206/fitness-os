@@ -851,6 +851,11 @@ final class AppServices {
   }
 
   /// Vận động (#527): 14 ngày `daily_logs.steps` + mục tiêu bước theo tài khoản.
+  /// Tiến bộ theo trạng thái (#527, mock bản 10): 7 ngày daily_logs, 4 tuần cân, hồ sơ.
+  func makeProgressStatus(userId: String, today: LocalDate) -> ProgressStatusBook? {
+    rows.map { ProgressStatusBook(userId: userId, today: today, store: $0) }
+  }
+
   func makeStepsBook(userId: String, today: LocalDate) -> StepsBook? {
     rows.map {
       StepsBook(userId: userId, today: today, store: $0, goals: StepsGoalStore(store: UserDefaultsStore(), userId: userId))
