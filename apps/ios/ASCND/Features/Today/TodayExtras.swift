@@ -99,6 +99,8 @@ struct TodayExtras<Plan: View>: View {
   @State private var showsKoaWeek = false
   @State private var waterNote: String?
   @State private var waterTaps = 0
+  /// Tăng sau mỗi lần đọc lại ngày / ghi nhanh — Insight đọc lại theo.
+  @State private var dayVersion = 0
   @Environment(ProfileBook.self) private var profile: ProfileBook?
   @State private var built = false
   /// Việc chính của hôm nay (GĐ1) — `nil` khi không có `WorkoutFlow` (preview).
@@ -166,7 +168,9 @@ struct TodayExtras<Plan: View>: View {
           onPrimary: { primary(dailyPlan.result.action) }, onAlternative: { alternative($0, flow) })
           .todayEntrance(2)
         // Insight hôm nay (Kiệt 21/10, GĐ3) ngay dưới việc chính, kiểu Apple Health.
-        TodayCoachSection(userId: userId, today: flow.today.today)
+        TodayCoachSection(
+          userId: userId, today: flow.today.today, refresh: dayVersion,
+          waterMl: water?.loaded == true ? water.map { Double($0.totalMl) } : nil)
         // Chạm dải → thẻ Tuần của Koa đầy đủ: chú thích, thưởng, luật đếm (Kiệt 21/10).
         Button { showsKoaWeek = true } label: {
           TodayWeekStrip(
@@ -527,6 +531,7 @@ struct TodayExtras<Plan: View>: View {
     do {
       _ = try await water.add(amountMl: waterStepMl, online: services.sync.online)
       AccessibilityNotification.Announcement(String(localized: "today.water.added")).post()
+      dayVersion += 1
     } catch {
       waterNote = String(localized: "async.error.generic")
     }
@@ -560,6 +565,7 @@ struct TodayExtras<Plan: View>: View {
     // Buổi vừa ghi đổi phút của vòng Tập luyện.
     await activity?.load(today: Self.today())
     await reloadDailyPlan()
+    dayVersion += 1
   }
 
   /// Tuần của Koa theo lịch đã áp — cùng nguồn với dải và với lượt nhận thưởng.

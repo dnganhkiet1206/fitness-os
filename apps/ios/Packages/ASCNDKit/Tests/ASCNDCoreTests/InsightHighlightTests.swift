@@ -44,4 +44,26 @@ struct InsightHighlightTests {
     #expect(InsightHighlight.progress(.steps, t) == 0)
     #expect(InsightHighlight.progress(.sleep, t) == 0)
   }
+
+  @Test func onlySleepAndReadinessAreSettled() {
+    #expect(InsightHighlight.isSettled(.sleep))
+    #expect(InsightHighlight.isSettled(.readiness))
+    for t in [InsightHighlight.Topic.calories, .protein, .water, .steps] { #expect(!InsightHighlight.isSettled(t)) }
+  }
+
+  @Test func loggingDropsNudgesItResolves() {
+    let nudges = [n("hydration", .high), n("protein", .medium), n("sleep", .low)]
+    var t = InsightHighlight.Today(proteinG: 40, proteinTarget: 121, waterMl: 600, waterTargetMl: 2500)
+    #expect(InsightHighlight.live(nudges, t).map(\.type) == ["hydration", "protein", "sleep"])
+    // Ghi đủ nước → câu nước cũ biến mất, câu đạm lên làm câu chính.
+    t.waterMl = 2500
+    let live = InsightHighlight.live(nudges, t)
+    #expect(live.map(\.type) == ["protein", "sleep"])
+    #expect(InsightHighlight.lead(live)?.lead.type == "protein")
+    // Đạm gần đủ (≥ 95 %) cũng tính là xong; giấc ngủ không tự hết hạn.
+    t.proteinG = 116
+    #expect(InsightHighlight.live(nudges, t).map(\.type) == ["sleep"])
+    // Không có mục tiêu → không coi là xong.
+    #expect(!InsightHighlight.resolved(n("steps", .low), InsightHighlight.Today(steps: 99999)))
+  }
 }

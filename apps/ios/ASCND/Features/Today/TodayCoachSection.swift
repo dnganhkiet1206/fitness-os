@@ -11,6 +11,12 @@ import SwiftUI
 struct TodayCoachSection: View {
   let userId: String
   let today: LocalDate
+  /// Tăng mỗi lần Hôm nay đọc lại sau một lần ghi (nước, bữa, giấc ngủ, buổi tập) —
+  /// Insight đọc lại số ngay, không giữ số cũ (Kiệt 22/10).
+  var refresh = 0
+  /// Nước hôm nay từ sổ Nước của trang (cùng số với thẻ Nước). `daily_logs.water_ml`
+  /// chưa có ngay lượng vừa ghi — Insight từng báo "0 oz" khi thẻ Nước đã 16 oz.
+  var waterMl: Double?
 
   @Environment(AppServices.self) private var services
   @Environment(\.scenePhase) private var scenePhase
@@ -19,9 +25,11 @@ struct TodayCoachSection: View {
   @State private var hour = Calendar.current.component(.hour, from: Date())
   @AppStorage private var dismissed: String
 
-  init(userId: String, today: LocalDate) {
+  init(userId: String, today: LocalDate, refresh: Int = 0, waterMl: Double? = nil) {
     self.userId = userId
     self.today = today
+    self.refresh = refresh
+    self.waterMl = waterMl
     _dismissed = AppStorage(wrappedValue: "", "ascnd-insight-dismissed.\(userId)")
   }
 
@@ -43,6 +51,7 @@ struct TodayCoachSection: View {
             stepsGoal: Double(StepsGoalStore(store: UserDefaultsStore(), userId: userId).goal),
             lang: lang.rawValue,
             waterUnit: services.preferences.volumeUnit,
+            liveWaterMl: waterMl,
             dismiss: { withAnimation(.easeInOut(duration: 0.25)) { dismissed = dismissKey } }
           ) { Task { await loadInsight(force: true) } }
           .transition(.opacity)
@@ -60,6 +69,14 @@ struct TodayCoachSection: View {
         hour = Calendar.current.component(.hour, from: Date())
         Task {
           await signal?.move(to: Self.today())
+          await loadInsight()
+        }
+      }
+      // Vừa ghi gì đó: số của thẻ (giá trị, TB, tiêu đề) đọc lại; dấu dữ liệu đổi
+      // (ngủ / ăn / tập) thì kéo luôn câu AI mới.
+      .onChange(of: refresh) { _, _ in
+        Task {
+          await signal?.load()
           await loadInsight()
         }
       }
@@ -95,6 +112,8 @@ struct SmartInsightCard: View {
   var lang = "vi"
   /// Nước theo đơn vị người dùng chọn (ml / L hay oz), như ô Nước ở Hôm nay.
   var waterUnit: Water.Unit = .ml
+  /// Nước sống của trang; `nil` → số của `daily_logs`.
+  var liveWaterMl: Double?
   var dismiss: (() -> Void)?
   let retry: () -> Void
 
@@ -181,7 +200,8 @@ struct SmartInsightCard: View {
   // MARK: - Điểm nhấn
 
   @ViewBuilder private func highlight(_ nudges: [SmartNudges.Nudge], source: Bool) -> some View {
-    if let (lead, rest) = InsightHighlight.lead(nudges) {
+    // Bỏ câu người dùng đã làm xong kể từ lúc AI viết (đủ nước, đủ kcal…).
+    if let (lead, rest) = InsightHighlight.lead(InsightHighlight.live(nudges, today)) {
       let topic = InsightHighlight.topic(lead.type)
       VStack(alignment: .leading, spacing: DS.Spacing.md) {
         VStack(alignment: .leading, spacing: DS.Spacing.sm) {
@@ -202,6 +222,11 @@ struct SmartInsightCard: View {
           dataCard(topic, rest: rest, source: source)
         }
       }
+    } else {
+      // Mọi câu đã xong theo số hiện tại.
+      Text("insight.empty")
+        .font(DS.TextStyle.body)
+        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
     }
   }
 
@@ -285,15 +310,19 @@ struct SmartInsightCard: View {
           }
         }
         Spacer(minLength: 0)
-        ZStack {
-          Circle().stroke(tint.opacity(0.22), lineWidth: 14)
+        // Vòng chỉ cho kết quả đã chốt (giấc đêm qua, sẵn sàng) — số còn tăng trong
+        // ngày không vẽ thành vòng (Kiệt 22/10).
+        if InsightHighlight.isSettled(topic) {
+          ZStack {
+            Circle().stroke(tint.opacity(0.22), lineWidth: 14)
           Circle()
             .trim(from: 0, to: InsightHighlight.progress(topic, today))
             .stroke(tint, style: StrokeStyle(lineWidth: 14, lineCap: .round))
             .rotationEffect(.degrees(-90))
+          }
+          .frame(width: 76, height: 76)
+          .accessibilityHidden(true)
         }
-        .frame(width: 76, height: 76)
-        .accessibilityHidden(true)
       }
       .contentShape(Rectangle())
     }
@@ -307,7 +336,7 @@ struct SmartInsightCard: View {
     return InsightHighlight.Today(
       kcal: s.kcal, kcalTarget: s.kcalTarget, proteinG: s.proteinG, proteinTarget: s.proteinTarget,
       sleepMin: s.sleepMin, sleepTargetMin: signal?.sleepTargetMin ?? 480, steps: s.steps, stepsGoal: stepsGoal,
-      waterMl: signal?.waterMl ?? 0, waterTargetMl: signal?.waterTargetMl ?? 2500, readiness: s.scoredReadiness)
+      waterMl: liveWaterMl ?? signal?.waterMl ?? 0, waterTargetMl: signal?.waterTargetMl ?? 2500, readiness: s.scoredReadiness)
   }
 
   private var week: InsightHighlight.Week { signal?.week ?? InsightHighlight.Week() }

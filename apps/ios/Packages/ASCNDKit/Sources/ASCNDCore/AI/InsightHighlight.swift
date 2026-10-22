@@ -144,6 +144,37 @@ public enum InsightHighlight {
     CoachQuickReply.duration(minutes.rounded(), .init(lang))
   }
 
+  /// Kết quả đã CHỐT cho hôm nay — không đổi theo việc ghi trong ngày (giấc đêm qua,
+  /// điểm sẵn sàng). Chỉ chủ đề này mới vẽ vòng; số còn tăng trong ngày (kcal, đạm,
+  /// nước, bước) không vẽ vòng (Kiệt 22/10: vòng chỉ cho kết quả không đổi về sau).
+  public static func isSettled(_ topic: Topic) -> Bool {
+    switch topic {
+    case .sleep, .readiness: true
+    case .calories, .protein, .water, .steps: false
+    }
+  }
+
+  /// Câu đã được giải quyết bằng việc người dùng vừa làm: số của chủ đề đã chạm mục
+  /// tiêu. Câu AI về chủ đề ấy giờ là cũ — bỏ đi (Kiệt 22/10: insight phải đổi theo
+  /// hành vi). Giấc ngủ / sẵn sàng không tự hết hạn ở đây: ghi giấc ngủ đổi dấu dữ liệu
+  /// và kéo lượt AI mới.
+  public static func resolved(_ nudge: SmartNudges.Nudge, _ t: Today) -> Bool {
+    guard let topic = topic(nudge.type) else { return false }
+    func reached(_ v: Double, _ goal: Double) -> Bool { goal > 0 && v >= goal }
+    switch topic {
+    case .calories: return reached(t.kcal, t.kcalTarget * 0.95)
+    case .protein: return reached(t.proteinG, t.proteinTarget * 0.95)
+    case .water: return reached(t.waterMl, t.waterTargetMl)
+    case .steps: return reached(t.steps, t.stepsGoal)
+    case .sleep, .readiness: return false
+    }
+  }
+
+  /// Các câu còn đúng với số hiện tại (bỏ câu đã giải quyết), giữ thứ tự.
+  public static func live(_ nudges: [SmartNudges.Nudge], _ t: Today) -> [SmartNudges.Nudge] {
+    nudges.filter { !resolved($0, t) }
+  }
+
   /// Khoá "đã tắt" của một insight: cùng ngày + cùng dấu dữ liệu. Dấu đổi
   /// (vừa ghi ngủ / ăn / tập) thì insight mới hiện lại.
   public static func dismissKey(date: LocalDate, stamp: String) -> String { "\(date)|\(stamp)" }
