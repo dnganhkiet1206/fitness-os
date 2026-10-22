@@ -20,7 +20,7 @@ struct ProgressHero: View {
   static let rim: CGFloat = 1.6
   static let hairline: CGFloat = 0.9
   /// Bán kính bo góc và nửa khe giữa hai mảng (đơn vị khung 222).
-  static let corner: CGFloat = 3.5
+  static let corner: CGFloat = 6
   static let gap: CGFloat = 0.3
 
   var body: some View {
@@ -48,10 +48,10 @@ struct ProgressHero: View {
           ctx.fill(part, with: .color(ProgressStyle.shade(g)))
           icon = tint.opacity(0.85)
         }
-        var symbol = ctx.resolve(Image(systemName: ProgressStyle.symbol(g)))
-        symbol.shading = .color(icon)
-        let c = Self.iconCenter(g), s: CGFloat = 11
-        ctx.draw(symbol, in: CGRect(x: c.x - s / 2, y: c.y - s / 2, width: s, height: s))
+        // Icon SF Symbol giữ đúng tỉ lệ gốc của Apple (Kiệt 22/10: không bóp vào ô vuông).
+        let symbol = ctx.resolve(
+          Text(Image(systemName: ProgressStyle.symbol(g))).font(.system(size: 11, weight: .semibold)).foregroundStyle(icon))
+        ctx.draw(symbol, at: Self.iconCenter(g), anchor: .center)
       }
     }
     .aspectRatio(Self.frame.width / Self.frame.height, contentMode: .fit)
@@ -81,40 +81,14 @@ struct ProgressHero: View {
 
   /// Đường bao chữ A (dò từ ảnh `BrandMark` 222 × 222, bỏ đầu Koa, giản lược ≤ 0,3).
   static let logo: Path = {
+    // Khung chữ A toàn đoạn thẳng (theo các mép của logo, kéo dài cho gặp nhau): đỉnh
+    // phẳng, đáy chân nằm ngang. Mọi góc chỉ được bo bởi CÙNG một bán kính `corner`
+    // khi tách mảng — các cạnh bo đều nhau (Kiệt 22/10).
     let pts: [(CGFloat, CGFloat)] = [
-(99.69, 36.0),
-    (95.83, 38.0),
-    (91.30, 44.0),
-    (13.71, 180.0),
-    (11.87, 184.0),
-    (11.98, 185.0),
-    (17.33, 185.0),
-    (29.37, 183.0),
-    (31.37, 182.0),
-    (39.07, 180.0),
-    (47.02, 177.0),
-    (50.36, 175.0),
-    (53.84, 172.0),
-    (57.69, 167.0),
-    (104.11, 88.0),
-    (107.05, 84.0),
-    (110.50, 82.4),
-    (113.97, 84.0),
-    (117.00, 88.0),
-    (162.01, 165.0),
-    (167.03, 172.0),
-    (171.96, 176.0),
-    (178.82, 179.0),
-    (190.14, 182.0),
-    (192.23, 183.0),
-    (204.56, 185.0),
-    (209.04, 185.0),
-    (209.18, 184.0),
-    (207.43, 180.0),
-    (129.09, 43.0),
-    (125.16, 38.0),
-    (121.33, 36.0),
-    (110.50, 35.4)
+      (96.2, 35.5), (124.8, 35.5),  // đỉnh phẳng
+      (210.2, 185), (173.7, 185),  // chân phải: mép ngoài, đáy ngang
+      (110.5, 77.1),  // vòm trong (tách đôi ở giữa)
+      (47.3, 185), (10.8, 185),  // chân trái: đáy ngang, mép ngoài
     ]
     var p = Path()
     p.move(to: CGPoint(x: pts[0].0, y: pts[0].1))
