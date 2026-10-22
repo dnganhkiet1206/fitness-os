@@ -4,7 +4,7 @@ import SwiftUI
 
 /// Một việc ghi được từ Today — màn ghi nào mở (`todo-card.tsx` của RN).
 enum TodayTodo: String, CaseIterable, Identifiable {
-  case meal, workout, sleep, bio, weight, water
+  case meal, workout, sleep, bio, weight, water, mealPhoto, mealScan, mealManual
   var id: String { rawValue }
 }
 
@@ -32,6 +32,11 @@ struct TodayDayCard: View {
   /// để chọn lượng (Kiệt 22/10: chạm thẻ tự ghi mà không biết ghi bao nhiêu).
   /// "Lượng khác" bên cạnh: nhập đúng lượng đã uống (Kiệt 22/10).
   var quickWater: (label: String, add: () -> Void, custom: () -> Void)?
+  /// "Ghi 23:00–7:00" trên thẻ Giấc ngủ: ghi đêm qua theo giờ quen, một chạm (Kiệt 22/10).
+  var quickSleep: (label: String, log: () -> Void)?
+  /// Lối nhanh trên thẻ Bữa (Kiệt 22/10): chụp món, quét mã vạch, nhập tay — mở
+  /// thẳng bước ấy của màn ghi bữa.
+  var mealQuick: ((TodayTodo) -> Void)?
   /// Thanh "Ghi hôm nay" luôn hiện; chạm (hoặc micro) mở màn với chữ / giọng nói.
   var onTell: (_ voice: Bool) -> Void = { _ in }
   /// Dòng cân nặng khi đã lâu chưa cân (`TodayDay.showsWeighIn`); `nil` = ẩn.
@@ -161,10 +166,26 @@ struct TodayDayCard: View {
       .accessibilityLabel(Text(verbatim: Self.name(t.item)))
       .accessibilityValue(Text(verbatim: [Self.badgeText(t), t.detail].compactMap { $0 }.joined(separator: ", ")))
       .accessibilityAddTraits(.isButton)
+      // Hàng nút nhanh dính đáy thẻ — thẻ Nước và thẻ Bữa thẳng hàng (Kiệt 22/10).
+      Spacer(minLength: 0)
+      if t.item == .sleep, t.state != .done, let quickSleep {
+        chip(quickSleep.label, systemImage: "moon.zzz.fill", color: color, action: quickSleep.log)
+          .padding(.horizontal, 16)
+          .padding(.bottom, 8)
+      }
       if t.item == .water, let quickWater {
         HStack(spacing: 8) {
           chip(quickWater.label, color: color, action: quickWater.add)
           chip(String(localized: "water.custom"), systemImage: "pencil", color: color, action: quickWater.custom)
+        }
+        .padding(.horizontal, 16)
+        .padding(.bottom, 8)
+      }
+      if t.item == .meal, let mealQuick {
+        HStack(spacing: 8) {
+          chip(String(localized: "day.meal.photo"), systemImage: "camera.fill", color: color) { mealQuick(.mealPhoto) }
+          chip(String(localized: "day.meal.scan"), systemImage: "barcode.viewfinder", color: color) { mealQuick(.mealScan) }
+          chip(String(localized: "day.meal.manual"), systemImage: "square.and.pencil", color: color) { mealQuick(.mealManual) }
         }
         .padding(.horizontal, 16)
         .padding(.bottom, 8)
@@ -185,7 +206,7 @@ struct TodayDayCard: View {
   }
 
   private func hasChip(_ t: Tile) -> Bool {
-    (t.item == .water && quickWater != nil) || (t.item == .workout && t.state == .done && onExtraWorkout != nil)
+    (t.item == .water && quickWater != nil) || (t.item == .meal && mealQuick != nil) || (t.item == .sleep && t.state != .done && quickSleep != nil) || (t.item == .workout && t.state == .done && onExtraWorkout != nil)
   }
 
   /// Nút phụ trên thẻ: "+ Buổi phát sinh", "+ 8 oz".
@@ -196,6 +217,7 @@ struct TodayDayCard: View {
       Label(text, systemImage: systemImage)
         .font(.system(size: 13, weight: .semibold))
         .foregroundStyle(color)
+        .lineLimit(1).minimumScaleFactor(0.8)
         .padding(.horizontal, 12).frame(minHeight: 30)
         .background(color.opacity(0.16), in: Capsule())
         .frame(minHeight: 44, alignment: .leading)

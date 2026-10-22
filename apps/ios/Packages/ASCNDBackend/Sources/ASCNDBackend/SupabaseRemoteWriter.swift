@@ -36,6 +36,9 @@ public struct SupabaseRemoteWriter: RemoteWriter {
     // Một bữa ăn (#527 Phase 3 · 3.2): upsert bữa rồi các món, cả hai theo
     // `id` và bỏ trùng — như `applyOfflineWrite` `case 'meal'`.
     MealLog.kind: "meal_entries",
+    // Đổi loại bữa sau khi lưu (Kiệt 22/10): `update meal_type` theo `id` + `user_id`
+    // — gửi lại là cùng một giá trị, vô hại.
+    MealLog.retypeKind: "meal_entries",
     // Một lần đo (#527 `log-measurement`): upsert theo `(user_id, date)`, GHI
     // ĐÈ — như `applyOfflineWrite` `case 'measurement'`.
     MeasurementLog.kind: "body_measurements",
@@ -107,6 +110,12 @@ public struct SupabaseRemoteWriter: RemoteWriter {
           .execute()
         try await client.from("meal_entry_items")
           .upsert(MealLog.itemRows(entry.payload), onConflict: "id", ignoreDuplicates: true)
+          .execute()
+      } else if entry.kind == MealLog.retypeKind {
+        try await client.from(table)
+          .update(["meal_type": entry.payload["meal_type"]?.stringValue ?? ""])
+          .eq("id", value: entry.payload["id"]?.stringValue ?? "")
+          .eq("user_id", value: entry.userId)
           .execute()
       } else if entry.kind == WeightLog.kind {
         try await SupabaseWeightLog.write(client, row: entry.payload, userId: entry.userId)
@@ -235,6 +244,7 @@ public struct SupabaseRemoteWriter: RemoteWriter {
     if entry.kind == SleepLog.kind { return SleepLog.isRow(entry) }
     if entry.kind == BiometricLog.kind { return BiometricLog.isRow(entry) }
     if entry.kind == MealLog.kind { return MealLog.isRow(entry) }
+    if entry.kind == MealLog.retypeKind { return MealLog.isRetypeRow(entry) }
     if entry.kind == PlanEdit.dayOverrideKind {
       // Hàng xác định bởi (người, ngày); người phải là chủ bản ghi.
       guard DayOverride(row: entry.payload) != nil,

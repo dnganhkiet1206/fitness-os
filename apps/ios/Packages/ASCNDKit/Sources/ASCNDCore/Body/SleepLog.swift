@@ -202,6 +202,42 @@ public enum SleepLog {
     return Clock(hour: c.hour ?? 0, minute: c.minute ?? 0)
   }
 
+  // MARK: - Giờ ngủ quen (Kiệt 22/10: nút ghi nhanh trên thẻ Giấc ngủ)
+
+  /// Các đêm gần đây để đoán giờ quen (14 hàng mới nhất).
+  public static func recentQuery(userId: String) -> RowQuery {
+    RowQuery(
+      table: "sleep_logs", columns: "bedtime, waketime", filters: [.eq("user_id", .string(userId))],
+      order: .init(column: "waketime", ascending: false), limit: 14)
+  }
+
+  /// Giờ ngủ / dậy quen: trung vị theo giờ địa phương của các đêm đã ghi (ít nhất 2
+  /// đêm hợp lệ), làm tròn 15 phút. Giờ ngủ sau nửa đêm tính tiếp qua 24h để
+  /// 23:30 và 0:30 có trung vị 0:00 chứ không phải 12:00. Không đủ → `nil`.
+  public static func usual(_ rows: [JSONValue], in tz: TimeZone) -> (bed: Clock, wake: Clock)? {
+    var beds: [Int] = [], wakes: [Int] = []
+    for r in rows {
+      guard let b = millis(r["bedtime"]), let w = millis(r["waketime"]), w > b,
+        !durationBad(Int((w - b) / 60_000))
+      else { continue }
+      let bc = clock(EpochMillis(b), in: tz), wc = clock(EpochMillis(w), in: tz)
+      var bm = bc.hour * 60 + bc.minute
+      if bm < 12 * 60 { bm += 24 * 60 }
+      beds.append(bm)
+      wakes.append(wc.hour * 60 + wc.minute)
+    }
+    guard beds.count >= 2 else { return nil }
+    func median(_ v: [Int]) -> Int {
+      let s = v.sorted()
+      return s.count % 2 == 1 ? s[s.count / 2] : (s[s.count / 2 - 1] + s[s.count / 2]) / 2
+    }
+    func clockOf(_ m: Int) -> Clock {
+      let r = (Int((Double(m) / 15).rounded()) * 15) % (24 * 60)
+      return Clock(hour: r / 60, minute: r % 60)
+    }
+    return (clockOf(median(beds)), clockOf(median(wakes)))
+  }
+
   /// Ô giai đoạn điền sẵn từ Health (`String(healthStages[f])`), trống khi không có.
   public static func prefill(_ stages: [String: Double]) -> [String] {
     stageColumns.map { f in stages[f].map(Units.text) ?? "" }
@@ -301,6 +337,8 @@ public final class SleepLogger {
   public private(set) var loaded = false
   public private(set) var submitting = false
   public private(set) var done = false
+  /// Giờ ngủ / dậy quen (`loadUsual`); `nil` → chưa đủ đêm, dùng 23:00–7:00.
+  public private(set) var usual: (bed: SleepLog.Clock, wake: SleepLog.Clock)?
 
   @ObservationIgnored private let store: any RowStore
   @ObservationIgnored private let outbox: (any PlanWriteStore)?
@@ -340,6 +378,25 @@ public final class SleepLogger {
     healthNight = SleepLog.fromHealth(main) ? main : nil
     hasNight = main != nil
     loaded = true
+  }
+
+  /// Đọc các đêm gần đây để biết giờ quen. Đọc hỏng: giữ `nil`.
+  public func loadUsual() async {
+    guard !closed else { return }
+    let rows = try? await store.select(SleepLog.recentQuery(userId: userId))
+    guard !closed else { return }
+    usual = rows.flatMap { SleepLog.usual($0, in: timeZone) }
+  }
+
+  /// Giờ quen để ghi nhanh (mặc định 23:00–7:00 khi chưa đủ đêm).
+  public var habit: (bed: SleepLog.Clock, wake: SleepLog.Clock) {
+    usual ?? (SleepLog.Clock.defaultBed, SleepLog.Clock.defaultWake)
+  }
+
+  /// Ghi nhanh giấc đêm qua theo giờ quen — cùng đường với nút Lưu.
+  public func quickLog(online: Bool) async -> Outcome {
+    let h = habit
+    return await submit(span: span(bed: h.bed, wake: h.wake), quality: SleepLog.defaultQuality, stages: [], online: online)
   }
 
   /// Khoảng ngủ của hai ô giờ, tính lúc này.
