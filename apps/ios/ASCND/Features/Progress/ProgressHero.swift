@@ -81,18 +81,22 @@ struct ProgressHero: View {
 
   /// Đường bao chữ A (dò từ ảnh `BrandMark` 222 × 222, bỏ đầu Koa, giản lược ≤ 0,3).
   static let logo: Path = {
-    // Khung chữ A toàn đoạn thẳng (theo các mép của logo, kéo dài cho gặp nhau): đỉnh
-    // phẳng, đáy chân nằm ngang. Mọi góc chỉ được bo bởi CÙNG một bán kính `corner`
-    // khi tách mảng — các cạnh bo đều nhau (Kiệt 22/10).
-    let pts: [(CGFloat, CGFloat)] = [
-      (96.2, 35.5), (124.8, 35.5),  // đỉnh phẳng
-      (210.2, 185), (173.7, 185),  // chân phải: mép ngoài, đáy ngang
-      (110.5, 77.1),  // vòm trong (tách đôi ở giữa)
-      (47.3, 185), (10.8, 185),  // chân trái: đáy ngang, mép ngoài
-    ]
+    // Đỉnh và hai mép trong / ngoài giữ theo logo; hai bàn chân vẽ lại bằng đường cong
+    // liền (đường dò cũ gãy khúc ở đáy — Kiệt 22/10). Bản chân thẳng, đáy ngang bị Kiệt
+    // chê xấu hơn — giữ bản cong này.
     var p = Path()
-    p.move(to: CGPoint(x: pts[0].0, y: pts[0].1))
-    for (x, y) in pts.dropFirst() { p.addLine(to: CGPoint(x: x, y: y)) }
+    p.move(to: CGPoint(x: 110.5, y: 35.4))
+    p.addCurve(to: CGPoint(x: 91.3, y: 44), control1: CGPoint(x: 101, y: 35.6), control2: CGPoint(x: 95, y: 38))
+    p.addLine(to: CGPoint(x: 14.2, y: 179))
+    p.addQuadCurve(to: CGPoint(x: 17.5, y: 185), control: CGPoint(x: 10.8, y: 185))
+    p.addCurve(to: CGPoint(x: 57.7, y: 167), control1: CGPoint(x: 36, y: 184.5), control2: CGPoint(x: 50.5, y: 178))
+    p.addLine(to: CGPoint(x: 104.1, y: 88))
+    p.addQuadCurve(to: CGPoint(x: 117, y: 88), control: CGPoint(x: 110.5, y: 77))
+    p.addLine(to: CGPoint(x: 162, y: 165))
+    p.addCurve(to: CGPoint(x: 203.5, y: 185), control1: CGPoint(x: 169.5, y: 177), control2: CGPoint(x: 185, y: 184.5))
+    p.addQuadCurve(to: CGPoint(x: 206.8, y: 179), control: CGPoint(x: 210.2, y: 185))
+    p.addLine(to: CGPoint(x: 129.1, y: 43))
+    p.addCurve(to: CGPoint(x: 110.5, y: 35.4), control1: CGPoint(x: 126, y: 38), control2: CGPoint(x: 120, y: 35.6))
     p.closeSubpath()
     return p
   }()
