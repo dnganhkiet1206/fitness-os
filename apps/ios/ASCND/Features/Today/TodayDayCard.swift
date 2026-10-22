@@ -86,35 +86,24 @@ struct TodayDayCard: View {
     }
   }
 
-  /// Thanh "Ghi hôm nay" (19/10): luôn hiện, cùng viên kính với mọi ô chat.
+  /// Thanh "Ghi hôm nay" (19/10): luôn hiện, cùng viên kính với mọi ô chat. Không có
+  /// micro ở ngoài (Kiệt 22/10): chạm thanh mở màn "Ghi hôm nay", micro nằm trong đó.
   private var tellBar: some View {
-    HStack(spacing: 6) {
-      Button { onTell(false) } label: {
-        HStack(spacing: 8) {
-          IntelligenceMark(size: 15)
-          Text("day.tell.placeholder")
-            .font(.system(size: 15))
-            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-            .lineLimit(1)
-          Spacer(minLength: 0)
-        }
-        .padding(.leading, 14)
-        .frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
-        .contentShape(Rectangle())
+    Button { onTell(false) } label: {
+      HStack(spacing: 8) {
+        IntelligenceMark(size: 15)
+        Text("day.tell.placeholder")
+          .font(.system(size: 15))
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          .lineLimit(1)
+        Spacer(minLength: 0)
       }
-      .buttonStyle(.plain)
-      .accessibilityLabel(Text("logday.title"))
-      Button { onTell(true) } label: {
-        Image(systemName: "mic.fill")
-          .font(.system(size: 15, weight: .semibold))
-          .foregroundStyle(DS.Color.background.swiftUI)
-          .frame(width: 38, height: 38)
-          .background(DS.Color.foreground.swiftUI, in: Circle())
-      }
-      .buttonStyle(TodayPressStyle())
-      .accessibilityLabel(Text("tellkoa.mic.start"))
+      .padding(.horizontal, 14)
+      .frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
+      .contentShape(Rectangle())
     }
-    .padding(.trailing, 5)
+    .buttonStyle(.plain)
+    .accessibilityLabel(Text("logday.title"))
     .glassComposer(radius: 24)
   }
 
