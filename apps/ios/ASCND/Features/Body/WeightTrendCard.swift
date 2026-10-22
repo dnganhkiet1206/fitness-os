@@ -97,7 +97,7 @@ struct WeightTrendCard: View {
         }
         Spacer(minLength: DS.Spacing.sm)
         Text(verbatim: book.goalKg.map { Self.number(unit.convert($0)) + " " + unit.label } ?? String(localized: "wt.goal.unset"))
-          .font(book.goalKg == nil ? DS.TextStyle.body : .custom("Menlo", size: 15, relativeTo: .body).weight(.semibold))
+          .font(book.goalKg == nil ? DS.TextStyle.body : DS.TextStyle.number(15, .body).weight(.semibold))
           .foregroundStyle(book.goalKg == nil ? DS.Color.mutedForeground.swiftUI : DS.Color.foreground.swiftUI)
         Image(systemName: "chevron.right")
           .font(.footnote.weight(.semibold))
@@ -179,7 +179,7 @@ struct WeightTrendCard: View {
             : WeightTrend.deltaGood(c, goal: profile?.profile?.goal) ? DS.Color.readinessGreen.swiftUI : DS.Color.mutedForeground.swiftUI)
       }
       (Text(verbatim: Self.number(unit.convert(e.kg)))
-        .font(.custom("Menlo", size: 16, relativeTo: .body).weight(.semibold))
+        .font(DS.TextStyle.number(16, .body).weight(.semibold))
         + Text(verbatim: " " + unit.label).font(DS.TextStyle.caption).foregroundColor(DS.Color.mutedForeground.swiftUI))
         .frame(minWidth: 76, alignment: .trailing)
     }
@@ -203,9 +203,9 @@ struct WeightTrendCard: View {
         let all = WeightTrend.filter(book.all, range: range, today: book.today)
         if let p = scrubbed(all) {
           (Text(verbatim: Self.number(unit.convert(p.kg)))
-            .font(.custom("Menlo", size: 32, relativeTo: .largeTitle).weight(.bold))
+            .font(DS.TextStyle.number(32, .largeTitle).weight(.bold))
             + Text(verbatim: " " + unit.label)
-            .font(.custom("Menlo", size: 15, relativeTo: .body))
+            .font(DS.TextStyle.number(15, .body))
             .foregroundColor(DS.Color.mutedForeground.swiftUI))
             .contentTransition(.numericText())
           HStack(spacing: 6) {
@@ -218,9 +218,9 @@ struct WeightTrendCard: View {
           .foregroundStyle(Self.tint)
         } else if let s {
           (Text(verbatim: Self.number(unit.convert(s.currentKg)))
-            .font(.custom("Menlo", size: 32, relativeTo: .largeTitle).weight(.bold))
+            .font(DS.TextStyle.number(32, .largeTitle).weight(.bold))
             + Text(verbatim: " " + unit.label)
-            .font(.custom("Menlo", size: 15, relativeTo: .body))
+            .font(DS.TextStyle.number(15, .body))
             .foregroundColor(DS.Color.mutedForeground.swiftUI))
             .contentTransition(.numericText())
           let d = unit.convert(s.deltaKg)
@@ -335,7 +335,7 @@ struct WeightTrendCard: View {
             .font(DS.TextStyle.caption.weight(.semibold))
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
           Text(verbatim: Self.number(b))
-            .font(.custom("Menlo", size: 15, relativeTo: .body).weight(.semibold))
+            .font(DS.TextStyle.number(15, .body).weight(.semibold))
           Spacer()
           Text(Self.zoneLabel(z))
             .font(DS.TextStyle.caption.weight(.semibold))
@@ -472,12 +472,12 @@ struct WeightGoalSheet: View {
 
       HStack(alignment: .firstTextBaseline, spacing: 6) {
         Text(verbatim: value.formatted(.number.precision(.fractionLength(1)).locale(.app)))
-          .font(.custom("Menlo", size: 48, relativeTo: .largeTitle).weight(.bold))
+          .font(DS.TextStyle.number(48, .largeTitle).weight(.bold))
           .monospacedDigit()
           .contentTransition(.numericText(value: value))
           .animation(DSMotion.animation(.snappy(duration: 0.2), reduceMotion: reduceMotion), value: value)
         Text(verbatim: unit.label)
-          .font(.custom("Menlo", size: 18, relativeTo: .title3))
+          .font(DS.TextStyle.number(18, .title3))
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
       }
       .accessibilityElement(children: .ignore)

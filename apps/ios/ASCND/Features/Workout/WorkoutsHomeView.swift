@@ -311,7 +311,7 @@ struct WorkoutsHomeView: View {
         }
         if !lines.isEmpty {
           Text(String(localized: "wh.meta \(lines.count) \(sets) \(WorkoutHome.minutes(lines))"))
-            .font(.custom("Menlo", size: 13, relativeTo: .footnote))
+            .font(DS.TextStyle.number(13, .footnote))
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
         }
       }
@@ -323,7 +323,7 @@ struct WorkoutsHomeView: View {
               Text(verbatim: l.name).font(DS.TextStyle.body).lineLimit(1)
               Spacer(minLength: DS.Spacing.sm)
               Text(verbatim: "\(l.sets) × \(l.reps)")
-                .font(.custom("Menlo", size: 14, relativeTo: .body))
+                .font(DS.TextStyle.number(14, .body))
                 .foregroundStyle(DS.Color.mutedForeground.swiftUI)
             }
             .frame(minHeight: 36)

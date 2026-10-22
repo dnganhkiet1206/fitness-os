@@ -363,7 +363,7 @@ private struct OnboardingStepsView: View {
               Text(verbatim: Self.sessionName(row.session))
               Spacer()
               Text(String(localized: "today.minutes \(StarterPrograms.minutes(row.session, place: c.place, beginner: c.beginner))"))
-                .font(.custom("Menlo", size: 13, relativeTo: .footnote))
+                .font(DS.TextStyle.number(13, .footnote))
                 .foregroundStyle(DS.Color.mutedForeground.swiftUI)
             }
             .font(DS.TextStyle.body)

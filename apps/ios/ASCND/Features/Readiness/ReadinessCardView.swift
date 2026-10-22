@@ -211,7 +211,7 @@ struct ReadinessCardView: View {
               .rotationEffect(.degrees(-90))
             VStack(spacing: 6) {
               Text(verbatim: provisional ? "—" : "\(score)")
-                .font(.custom("Menlo", size: 60).weight(.bold).monospacedDigit())
+                .font(DS.TextStyle.number(60).weight(.bold).monospacedDigit())
                 .foregroundStyle(provisional ? DS.Color.foreground.swiftUI : color)
                 .dynamicTypeSize(...DynamicTypeSize.xxLarge)
               if provisional {

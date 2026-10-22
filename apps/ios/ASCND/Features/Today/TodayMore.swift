@@ -44,7 +44,7 @@ struct TodayMore: View {
                   .frame(maxWidth: .infinity, alignment: .leading)
                 if let value = row.value {
                   Text(verbatim: value)
-                    .font(.custom("Menlo", size: 15, relativeTo: .body))
+                    .font(DS.TextStyle.number(15, .body))
                     .foregroundStyle(DS.Color.mutedForeground.swiftUI)
                     .lineLimit(1)
                 }

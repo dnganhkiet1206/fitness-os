@@ -94,7 +94,7 @@ struct KoaSheetView: View {
       .buttonStyle(.plain)
       .accessibilityLabel(Text(String(localized: "koa.sheet.cycle")))
       Text(verbatim: "\(KoaFlags.expressionLabel[expression] ?? expression.rawValue.uppercased()) · \(pose.rawValue.uppercased())")
-        .font(DS.TextStyle.caption.monospaced())
+        .font(DS.TextStyle.rounded(.caption2, weight: .medium))
         .tracking(1.6)
         .foregroundStyle(DS.Color.foreground.swiftUI)
       Text(String(localized: "koa.sheet.hint"))
@@ -108,7 +108,7 @@ struct KoaSheetView: View {
     VStack(alignment: .leading, spacing: DS.Spacing.md) {
       VStack(alignment: .leading, spacing: 2) {
         Text(verbatim: title)
-          .font(DS.TextStyle.caption.monospaced())
+          .font(DS.TextStyle.rounded(.caption2, weight: .medium))
           .tracking(2.2)
           .foregroundStyle(DS.Color.primary.swiftUI)
         Text(verbatim: sub)
@@ -137,7 +137,7 @@ struct KoaSheetView: View {
           .frame(width: 104, height: crop ? 88 : 130, alignment: .top)
           .clipped()
         Text(verbatim: label)
-          .font(.system(size: 11, design: .monospaced))
+          .font(.system(size: 11, design: .rounded))
           .tracking(1)
           .foregroundStyle(on ? DS.Color.foreground.swiftUI : DS.Color.mutedForeground.swiftUI)
           .lineLimit(1)
@@ -164,7 +164,7 @@ struct KoaSheetView: View {
       } label: {
         VStack(alignment: .leading, spacing: 2) {
           Text(verbatim: "\(open ? "−" : "+")  \(Self.slotLabel[slot] ?? slot.rawValue)")
-            .font(DS.TextStyle.caption.monospaced())
+            .font(DS.TextStyle.rounded(.caption2, weight: .medium))
             .tracking(2.2)
             .foregroundStyle(DS.Color.primary.swiftUI)
           Text(verbatim: "\(slot.rawValue) · \(items.count) món\(worn[slot].map { " · đang mặc \($0)" } ?? "")")

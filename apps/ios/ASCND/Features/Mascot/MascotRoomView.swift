@@ -181,7 +181,7 @@ struct MascotRoomView: View {
             KoaSheetView()
           } label: {
             Text(verbatim: "spec sheet →")
-              .font(DS.TextStyle.caption.monospaced())
+              .font(DS.TextStyle.rounded(.caption2, weight: .medium))
               .padding(.horizontal, DS.Spacing.sm)
               .padding(.vertical, DS.Spacing.xs)
               .background(DS.Color.secondary.swiftUI, in: Capsule())
@@ -193,7 +193,7 @@ struct MascotRoomView: View {
     private func devChip(_ label: String, on: Bool, action: @escaping () -> Void) -> some View {
       Button(action: action) {
         Text(verbatim: label)
-          .font(DS.TextStyle.caption.monospaced())
+          .font(DS.TextStyle.rounded(.caption2, weight: .medium))
           .foregroundStyle(on ? DS.Color.background.swiftUI : DS.Color.foreground.swiftUI)
           .padding(.horizontal, DS.Spacing.sm)
           .padding(.vertical, DS.Spacing.xs)

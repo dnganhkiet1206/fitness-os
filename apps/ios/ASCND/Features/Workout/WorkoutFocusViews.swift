@@ -85,7 +85,7 @@ struct FocusStepper: View {
         TextField(placeholder, text: $text)
           .keyboardType(keyboard)
           .multilineTextAlignment(.center)
-          .font(.system(size: compact ? 22 : 34, weight: .semibold, design: .monospaced))
+          .font(.system(size: compact ? 22 : 34, weight: .semibold, design: .rounded))
           .minimumScaleFactor(0.6)
           .lineLimit(1)
           .focused(focus, equals: field)
@@ -155,7 +155,7 @@ struct FocusRestCard: View {
             .stroke(warning ? DS.Color.destructive.swiftUI : tint, style: StrokeStyle(lineWidth: 12, lineCap: .round))
             .rotationEffect(.degrees(-90))
           Text(verbatim: RestTimer.label(seconds: left))
-            .font(.system(size: 44, weight: .semibold, design: .monospaced))
+            .font(.system(size: 44, weight: .semibold, design: .rounded))
             .contentTransition(.numericText(countsDown: true))
             .foregroundStyle(DS.Color.foreground.swiftUI)
         }

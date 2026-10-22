@@ -83,7 +83,7 @@ enum RestInk {
   static let paused = KoaWidgetInk.rgb(201, 196, 189)
   static let track = Color.white.opacity(0.13)
   static func accent(_ s: RestActivityContent) -> Color { s.pausedLeft != nil ? paused : rose }
-  static func mono(_ size: CGFloat) -> Font { .custom("Menlo", size: size).weight(.bold) }
+  static func mono(_ size: CGFloat) -> Font { .system(size: size * 1.08, weight: .bold, design: .rounded).monospacedDigit() }
 }
 
 /// Chữ số do hệ thống tick. Khoảng phải không ngược: `now...endsAt` sau khi

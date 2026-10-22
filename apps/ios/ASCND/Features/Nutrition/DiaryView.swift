@@ -129,7 +129,7 @@ struct DiaryView: View {
       let target = NutritionToday.calorieTarget(profile?.profile)
       HStack(alignment: .firstTextBaseline, spacing: 6) {
         Text(verbatim: DiaryView.whole(total.kcal))
-          .font(.custom("Menlo", size: 26, relativeTo: .title).weight(.bold))
+          .font(DS.TextStyle.number(26, .title).weight(.bold))
         Text(verbatim: target > 0 ? "/ \(DiaryView.whole(target)) kcal" : "kcal")
           .font(DS.TextStyle.footnote)
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
@@ -584,7 +584,7 @@ private struct MealGroupCard: View {
             }
             Spacer()
             Text(verbatim: plain ? DiaryView.whole(group.kcal) : "\(DiaryView.whole(group.kcal)) kcal")
-              .font(plain ? .custom("Menlo", size: 15, relativeTo: .body) : DS.TextStyle.headline.monospacedDigit())
+              .font(plain ? DS.TextStyle.number(15, .body) : DS.TextStyle.headline.monospacedDigit())
             Image(systemName: "chevron.down")
               .font(plain ? .caption.weight(.semibold) : .body)
               .rotationEffect(.degrees(open ? 180 : 0))

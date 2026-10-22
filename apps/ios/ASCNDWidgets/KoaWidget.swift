@@ -86,7 +86,7 @@ enum KoaWidgetInk {
     }
   }
   static let glyphs = ["moon.fill", "fork.knife", "drop.fill", "dumbbell.fill"]
-  static func mono(_ size: CGFloat) -> Font { .custom("Menlo", size: size).weight(.bold) }
+  static func mono(_ size: CGFloat) -> Font { .system(size: size * 1.08, weight: .bold, design: .rounded).monospacedDigit() }
 }
 
 /// Titan đen của widget — họ hàng với kim loại thẻ hồ sơ (`PassMaterial`) nhưng
