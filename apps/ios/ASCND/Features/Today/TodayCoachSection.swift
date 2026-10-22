@@ -3,9 +3,10 @@ import ASCNDDesignSystem
 import SwiftUI
 
 /// Koa Coach ở Hôm nay (Kiệt 21/10, GĐ3: "đưa insight và Koa coach lên today vì đây
-/// sẽ là thứ người dùng thấy đầu tiên khi mở app"): "Insight hôm nay" + ô hỏi Koa,
-/// ngay dưới việc chính. Chỉ ở đây — Tiến bộ không lặp. Cuộc trò chuyện vẫn là MỘT
-/// của phiên (tab Tiến bộ giữ nó): ô hỏi mở đúng cuộc ấy, như nút Koa ở Ghi nhanh.
+/// sẽ là thứ người dùng thấy đầu tiên khi mở app"): thẻ "Insight hôm nay" ngay dưới
+/// việc chính, dòng cuối "Hỏi Koa về hôm nay ›" (22/10: gộp ô hỏi vào thẻ). Chỉ ở
+/// đây — Tiến bộ không lặp. Cuộc trò chuyện vẫn là MỘT của phiên (tab Tiến bộ giữ
+/// nó): dòng hỏi mở đúng cuộc ấy, như nút Koa ở Ghi nhanh.
 /// Chỉ khi các function AI có trên máy chủ (`AppServices.aiDeployed`).
 struct TodayCoachSection: View {
   let userId: String
@@ -28,10 +29,10 @@ struct TodayCoachSection: View {
           SmartInsightCard(
             book: nudges,
             // AI lỗi (quá tải, mạng…): nhắc dựng từ số thật thay cho dòng lỗi.
-            fallback: signal.map { SmartNudges.fallback($0.signal, lang: lang.rawValue, hour: hour) } ?? []
+            fallback: signal.map { SmartNudges.fallback($0.signal, lang: lang.rawValue, hour: hour) } ?? [],
+            ask: onAsk
           ) { Task { await loadInsight(force: true) } }
         }
-        AskCoachBar(lastAsked: nil, open: onAsk)
       }
       .task(id: userId) {
         if signal == nil { signal = services.makeAssistantSignal(userId: userId, today: today) }
@@ -68,66 +69,6 @@ struct TodayCoachSection: View {
   private static func today() -> LocalDate { LocalDate(SystemWallClock().nowMillis(), in: .current) }
 }
 
-/// Ô "Hỏi coach về hôm nay…" — chạm mở chat; đang có cuộc trò chuyện thì có dòng
-/// "Tiếp tục: …".
-struct AskCoachBar: View {
-  let lastAsked: String?
-  let open: () -> Void
-  @Environment(\.accessibilityReduceMotion) private var reduceMotion
-  @State private var spin = false
-
-  /// Viền + quầng kiểu Siri / Apple Intelligence (Kiệt 22/10) bằng dải màu của ASCND
-  /// Intelligence (`IntelligenceTones.spectrum`); xoay chậm một vòng / 8 giây. Giảm
-  /// chuyển động: đứng yên.
-  private var tones: AngularGradient {
-    AngularGradient(
-      colors: IntelligenceTones.spectrum + [IntelligenceTones.spectrum[0]],
-      center: .center, angle: .degrees(spin ? 360 : 0))
-  }
-
-  var body: some View {
-    Button(action: open) {
-      VStack(alignment: .leading, spacing: 6) {
-        // Không ký hiệu ASCND Intelligence ở đây: thẻ Insight ngay trên đã mang nó.
-        HStack(spacing: 10) {
-          Text("assistant.ask")
-            .font(.system(size: 15))
-            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-          Spacer(minLength: 0)
-          Image(systemName: "arrow.up")
-            .font(.system(size: 14, weight: .bold))
-            .foregroundStyle(DS.Color.background.swiftUI)
-            .frame(width: 34, height: 34)
-            .background(DS.Color.foreground.swiftUI, in: Circle())
-        }
-        .padding(.leading, 16)
-        .padding(.trailing, 6)
-        .frame(height: 50)
-        .background(DS.Color.card.swiftUI.opacity(0.94), in: Capsule())
-        .overlay(Capsule().strokeBorder(tones, lineWidth: 1.6))
-        .background(Capsule().fill(tones).blur(radius: 12).opacity(0.38).padding(-2))
-        if let lastAsked {
-          Label {
-            Text("assistant.coach.continue \(lastAsked)").lineLimit(1)
-          } icon: {
-            Image(systemName: "clock")
-          }
-          .font(.system(size: 13))
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-          .padding(.leading, 16)
-        }
-      }
-      .contentShape(Rectangle())
-    }
-    .buttonStyle(TodayPressStyle())
-    .accessibilityLabel(Text("assistant.coach.open.a11y"))
-    .onAppear {
-      guard !reduceMotion, !spin else { return }
-      withAnimation(.linear(duration: 8).repeatForever(autoreverses: false)) { spin = true }
-    }
-  }
-}
-
 /// "Insight hôm nay": đang đọc / lỗi (chạm thử lại) / không có gì nổi bật /
 /// tối đa vài câu với chấm theo mức ưu tiên; "Cập nhật HH:mm" là lúc kết quả
 /// về (ẩn khi chưa có lần nào).
@@ -135,6 +76,8 @@ struct SmartInsightCard: View {
   let book: SmartNudgesBook
   /// Nhắc từ số thật khi AI không trả lời (`SmartNudges.fallback`).
   var fallback: [SmartNudges.Nudge] = []
+  /// Dòng "Hỏi Koa về hôm nay ›" ở cuối thẻ (Kiệt 22/10: gộp ô hỏi vào thẻ Insight).
+  var ask: (() -> Void)?
   let retry: () -> Void
 
   var body: some View {
@@ -151,10 +94,29 @@ struct SmartInsightCard: View {
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
         }
       }
-      content
-        .padding(DS.Spacing.md)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.lg))
+      VStack(alignment: .leading, spacing: 0) {
+        content
+          .padding(DS.Spacing.md)
+          .frame(maxWidth: .infinity, alignment: .leading)
+        if let ask {
+          Divider().opacity(0.6).padding(.horizontal, DS.Spacing.md)
+          Button(action: ask) {
+            HStack(spacing: 8) {
+              Text("assistant.ask").font(DS.TextStyle.body.weight(.medium))
+              Spacer(minLength: 0)
+              Image(systemName: "chevron.right").font(.footnote.weight(.semibold))
+                .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            }
+            .foregroundStyle(DS.Color.foreground.swiftUI)
+            .padding(.horizontal, DS.Spacing.md)
+            .frame(minHeight: 48)
+            .contentShape(Rectangle())
+          }
+          .buttonStyle(TodayPressStyle())
+          .accessibilityLabel(Text("assistant.coach.open.a11y"))
+        }
+      }
+      .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.lg))
     }
   }
 

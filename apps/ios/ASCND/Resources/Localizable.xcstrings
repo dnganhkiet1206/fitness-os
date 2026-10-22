@@ -17346,29 +17346,6 @@
     }
    }
   },
-  "assistant.coach.continue %@": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Continue: %@"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Tiếp tục: %@"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Continuar: %@"
-     }
-    }
-   }
-  },
   "assistant.coach.open.a11y": {
    "extractionState": "manual",
    "localizations": {
