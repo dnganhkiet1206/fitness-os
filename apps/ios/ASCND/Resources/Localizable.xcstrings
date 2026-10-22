@@ -61619,6 +61619,75 @@
      }
     }
    }
+  },
+  "askkoa.kicker": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ask Koa"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Pregunta a Koa"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hỏi Koa"
+     }
+    }
+   }
+  },
+  "askkoa.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Talk to Koa about today."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Habla con Koa sobre hoy."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Trò chuyện với Koa về hôm nay."
+     }
+    }
+   }
+  },
+  "askkoa.subtitle": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Get personalized insights about your workouts, nutrition, sleep, and progress."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Recibe consejos personalizados sobre tus entrenos, nutrición, sueño y progreso."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nhận gợi ý riêng cho buổi tập, dinh dưỡng, giấc ngủ và tiến bộ của bạn."
+     }
+    }
+   }
   }
  }
 }

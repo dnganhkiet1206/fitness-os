@@ -184,6 +184,11 @@ struct TodayExtras<Plan: View>: View {
         VStack(alignment: .leading, spacing: DS.Spacing.md) { plan(readinessRow) }
           .todayEntrance(2)
       }
+      // "Hỏi Koa" (Kiệt 21/10): lối vào Koa Coach.
+      if askKoa {
+        TodayAskKoaCard { services.coachRequest += 1 }
+          .todayEntrance(3)
+      }
       if let mascot, case .ready = mascot.phase {
         // "Hôm nay của bạn" (18/10, mock A): thay danh sách "Ngày của bạn".
         TodayDayCard(
@@ -412,6 +417,9 @@ struct TodayExtras<Plan: View>: View {
   /// Sinh trắc học, giấc ngủ, tập luyện, xu hướng, tổng kết tuần — những thứ để
   /// HIỂU — ở tab Tiến bộ. GĐ3 (Kiệt 21/10): thực phẩm bổ sung chỉ còn ở
   /// Dinh dưỡng › Thêm.
+  /// Thẻ "Hỏi Koa" chỉ khi Koa Coach có trên máy chủ.
+  private var askKoa: Bool { services.aiDeployed == true }
+
   private var moreRows: [TodayMore.Row] {
     var rows: [TodayMore.Row] = []
     // Ba vòng (RN `ActivityRingsCard`): số vòng đã đóng hôm nay.
