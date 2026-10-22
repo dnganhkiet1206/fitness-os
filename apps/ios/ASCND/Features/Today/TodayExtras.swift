@@ -99,6 +99,10 @@ struct TodayExtras<Plan: View>: View {
   @State private var showsKoaWeek = false
   @State private var waterNote: String?
   @State private var waterTaps = 0
+  /// Tăng sau mỗi lần đọc lại ngày / ghi nhanh — Insight đọc lại theo.
+  @State private var dayVersion = 0
+  /// Tấm nhập lượng nước tuỳ chỉnh từ thẻ Nước.
+  @State private var showsWaterAmount = false
   @Environment(ProfileBook.self) private var profile: ProfileBook?
   @State private var built = false
   /// Việc chính của hôm nay (GĐ1) — `nil` khi không có `WorkoutFlow` (preview).
@@ -166,7 +170,9 @@ struct TodayExtras<Plan: View>: View {
           onPrimary: { primary(dailyPlan.result.action) }, onAlternative: { alternative($0, flow) })
           .todayEntrance(2)
         // Insight hôm nay (Kiệt 21/10, GĐ3) ngay dưới việc chính, kiểu Apple Health.
-        TodayCoachSection(userId: userId, today: flow.today.today)
+        TodayCoachSection(
+          userId: userId, today: flow.today.today, refresh: dayVersion,
+          waterMl: water?.loaded == true ? water.map { Double($0.totalMl) } : nil)
         // Chạm dải → thẻ Tuần của Koa đầy đủ: chú thích, thưởng, luật đếm (Kiệt 21/10).
         Button { showsKoaWeek = true } label: {
           TodayWeekStrip(
@@ -196,7 +202,8 @@ struct TodayExtras<Plan: View>: View {
           onExtraWorkout: onLogWorkout,
           quickWater: water == nil ? nil : (
             label: SpokenLogDisplay.water(waterStepMl, unit: services.preferences.volumeUnit),
-            add: { act(.water) }),
+            add: { act(.water) },
+            custom: { showsWaterAmount = true }),
           onTell: { voice in tellVoice = voice; showsDayLog = true },
           weighIn: weighInRow, onLogAll: { showsDayLog = true },
           onTap: tapItem, onWeight: { showsWeight = true })
@@ -230,6 +237,12 @@ struct TodayExtras<Plan: View>: View {
         }
         .presentationDetents([.medium])
         .presentationDragIndicator(.visible)
+      }
+    }
+    .sheet(isPresented: $showsWaterAmount) {
+      WaterManualSheet(unit: services.preferences.volumeUnit) { amount in
+        showsWaterAmount = false
+        Task { await addWater(ml: Water.toMl(amount, services.preferences.volumeUnit)) }
       }
     }
     .sheet(isPresented: $showsDayLog, onDismiss: { Task { await reloadDay() } }) {
@@ -521,12 +534,13 @@ struct TodayExtras<Plan: View>: View {
   /// Một chạm thêm mức nhanh đầu tiên của đơn vị (250 ml / 8 oz).
   private var waterStepMl: Int { Water.stepMl(services.preferences.volumeUnit) }
 
-  private func addWater() async {
+  private func addWater(ml: Int? = nil) async {
     guard let water else { return }
     waterNote = nil
     do {
-      _ = try await water.add(amountMl: waterStepMl, online: services.sync.online)
+      _ = try await water.add(amountMl: ml ?? waterStepMl, online: services.sync.online)
       AccessibilityNotification.Announcement(String(localized: "today.water.added")).post()
+      dayVersion += 1
     } catch {
       waterNote = String(localized: "async.error.generic")
     }
@@ -560,6 +574,7 @@ struct TodayExtras<Plan: View>: View {
     // Buổi vừa ghi đổi phút của vòng Tập luyện.
     await activity?.load(today: Self.today())
     await reloadDailyPlan()
+    dayVersion += 1
   }
 
   /// Tuần của Koa theo lịch đã áp — cùng nguồn với dải và với lượt nhận thưởng.

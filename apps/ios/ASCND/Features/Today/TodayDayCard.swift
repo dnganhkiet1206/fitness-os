@@ -30,7 +30,8 @@ struct TodayDayCard: View {
   var onExtraWorkout: (() -> Void)?
   /// Nút ghi nhanh trên thẻ Nước, ghi rõ lượng ("+ 8 oz") — chạm thẻ thì mở màn Nước
   /// để chọn lượng (Kiệt 22/10: chạm thẻ tự ghi mà không biết ghi bao nhiêu).
-  var quickWater: (label: String, add: () -> Void)?
+  /// "Lượng khác" bên cạnh: nhập đúng lượng đã uống (Kiệt 22/10).
+  var quickWater: (label: String, add: () -> Void, custom: () -> Void)?
   /// Thanh "Ghi hôm nay" luôn hiện; chạm (hoặc micro) mở màn với chữ / giọng nói.
   var onTell: (_ voice: Bool) -> Void = { _ in }
   /// Dòng cân nặng khi đã lâu chưa cân (`TodayDay.showsWeighIn`); `nil` = ẩn.
@@ -38,6 +39,8 @@ struct TodayDayCard: View {
   let onLogAll: () -> Void
   let onTap: (DayCheckIn.Item) -> Void
   var onWeight: () -> Void = {}
+
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
   private var states: [DayCheckIn.Item: DayCheckIn.State] {
     Dictionary(uniqueKeysWithValues: tiles.map { ($0.item, $0.state) })
@@ -55,6 +58,8 @@ struct TodayDayCard: View {
         Spacer()
         Text(verbatim: String(localized: "day.card.progress \("\(progress.done)/\(progress.total)")"))
           .font(.system(size: 13, weight: pending ? .regular : .bold))
+          .contentTransition(.numericText(value: Double(progress.done)))
+          .animation(reduceMotion ? nil : .easeOut(duration: 0.6), value: progress.done)
           .foregroundStyle(pending ? DS.Color.mutedForeground.swiftUI : DS.Color.readinessGreen.swiftUI)
       }
       .padding(.horizontal, 4)
@@ -81,35 +86,24 @@ struct TodayDayCard: View {
     }
   }
 
-  /// Thanh "Ghi hôm nay" (19/10): luôn hiện, cùng viên kính với mọi ô chat.
+  /// Thanh "Ghi hôm nay" (19/10): luôn hiện, cùng viên kính với mọi ô chat. Không có
+  /// micro ở ngoài (Kiệt 22/10): chạm thanh mở màn "Ghi hôm nay", micro nằm trong đó.
   private var tellBar: some View {
-    HStack(spacing: 6) {
-      Button { onTell(false) } label: {
-        HStack(spacing: 8) {
-          IntelligenceMark(size: 15)
-          Text("day.tell.placeholder")
-            .font(.system(size: 15))
-            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-            .lineLimit(1)
-          Spacer(minLength: 0)
-        }
-        .padding(.leading, 14)
-        .frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
-        .contentShape(Rectangle())
+    Button { onTell(false) } label: {
+      HStack(spacing: 8) {
+        IntelligenceMark(size: 15)
+        Text("day.tell.placeholder")
+          .font(.system(size: 15))
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          .lineLimit(1)
+        Spacer(minLength: 0)
       }
-      .buttonStyle(.plain)
-      .accessibilityLabel(Text("logday.title"))
-      Button { onTell(true) } label: {
-        Image(systemName: "mic.fill")
-          .font(.system(size: 15, weight: .semibold))
-          .foregroundStyle(DS.Color.background.swiftUI)
-          .frame(width: 38, height: 38)
-          .background(DS.Color.foreground.swiftUI, in: Circle())
-      }
-      .buttonStyle(TodayPressStyle())
-      .accessibilityLabel(Text("tellkoa.mic.start"))
+      .padding(.horizontal, 14)
+      .frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
+      .contentShape(Rectangle())
     }
-    .padding(.trailing, 5)
+    .buttonStyle(.plain)
+    .accessibilityLabel(Text("logday.title"))
     .glassComposer(radius: 24)
   }
 
@@ -143,6 +137,9 @@ struct TodayDayCard: View {
               .font(.system(size: 22, weight: .bold).monospacedDigit())
               .foregroundStyle(DS.Color.foreground.swiftUI)
               .lineLimit(1).minimumScaleFactor(0.7)
+              // Số lăn như ở Dinh dưỡng khi vừa ghi ("8 / 65 oz" → "16 / 65 oz") — Kiệt 22/10.
+              .contentTransition(.numericText())
+              .animation(reduceMotion ? nil : .easeOut(duration: 0.6), value: t.detail)
             // Không lặp: số liệu đã là "Chưa ghi" thì bỏ dòng trạng thái.
             if Self.badgeText(t)?.lowercased() != t.detail.lowercased() { status(t) }
             if t.item == .meal, let planNext {
@@ -165,11 +162,18 @@ struct TodayDayCard: View {
       .accessibilityValue(Text(verbatim: [Self.badgeText(t), t.detail].compactMap { $0 }.joined(separator: ", ")))
       .accessibilityAddTraits(.isButton)
       if t.item == .water, let quickWater {
-        chip(quickWater.label, color: color, action: quickWater.add)
+        HStack(spacing: 8) {
+          chip(quickWater.label, color: color, action: quickWater.add)
+          chip(String(localized: "water.custom"), systemImage: "pencil", color: color, action: quickWater.custom)
+        }
+        .padding(.horizontal, 16)
+        .padding(.bottom, 8)
       }
       // Đã tập xong: nút riêng ghi buổi phát sinh (19/10, chủ dự án).
       if t.item == .workout, t.state == .done, let onExtraWorkout {
         chip(String(localized: "day.workout.extra"), color: color, action: onExtraWorkout)
+          .padding(.horizontal, 16)
+          .padding(.bottom, 8)
       }
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -185,9 +189,11 @@ struct TodayDayCard: View {
   }
 
   /// Nút phụ trên thẻ: "+ Buổi phát sinh", "+ 8 oz".
-  private func chip(_ text: String, color: Color, action: @escaping () -> Void) -> some View {
+  private func chip(
+    _ text: String, systemImage: String = "plus", color: Color, action: @escaping () -> Void
+  ) -> some View {
     Button(action: action) {
-      Label(text, systemImage: "plus")
+      Label(text, systemImage: systemImage)
         .font(.system(size: 13, weight: .semibold))
         .foregroundStyle(color)
         .padding(.horizontal, 12).frame(minHeight: 30)
@@ -195,8 +201,6 @@ struct TodayDayCard: View {
         .frame(minHeight: 44, alignment: .leading)
     }
     .buttonStyle(TodayPressStyle())
-    .padding(.horizontal, 16)
-    .padding(.bottom, 8)
   }
 
   /// "✓ Đã xong" · "◌ Chưa ghi" · "Nghỉ" · "Apple Health".
@@ -291,3 +295,4 @@ struct TodayDayCard: View {
     }
   }
 }
+

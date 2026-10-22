@@ -346,10 +346,8 @@ struct AssistantTab: View {
   // MARK: - Đầu trang
 
   private var header: some View {
+    // Bỏ dòng "Tuần 19 – 25 tháng 10" ở trên tiêu đề (Kiệt 22/10).
     VStack(alignment: .leading, spacing: 0) {
-      Text(verbatim: weekRange)
-        .font(.system(size: 13, weight: .medium))
-        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
       Text("tab.progress")
         .font(.largeTitle.bold())
         .foregroundStyle(DS.Color.foreground.swiftUI)
@@ -371,13 +369,6 @@ struct AssistantTab: View {
   private var progressResults: [ProgressStatus.Result]? {
     let goal = Double(StepsGoalStore(store: UserDefaultsStore(), userId: flow.today.userId).goal)
     return progress?.results(training: ProgressStatus.training(koaWeek, today: flow.today.today), stepsGoal: goal)
-  }
-
-  /// "Tuần 19 – 25 tháng 10" — tuần lịch như Tuần của Koa.
-  private var weekRange: String {
-    let start = WeeklyChallenges.weekStart(flow.today.today)
-    let f = Date.FormatStyle().day().month(.wide).locale(.app)
-    return String(localized: "ps.range \(start.calendarDate.formatted(f)) \(start.adding(days: 6).calendarDate.formatted(f))")
   }
 
   private func attentionLine(_ results: [ProgressStatus.Result]) -> String? {
