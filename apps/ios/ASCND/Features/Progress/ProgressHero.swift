@@ -42,9 +42,6 @@ struct ProgressHero: View {
         let tier = Self.tier(fill)
         if tier > 0 {
           ctx.fill(Self.tierShape(g, tier), with: .color(level == .insufficient ? tint.opacity(0.45) : tint))
-          for t in stride(from: 0.25, to: tier, by: 0.25) {
-            ctx.stroke(Self.tierShape(g, t), with: .color(.white.opacity(0.45)), lineWidth: 0.5)
-          }
         }
         // Cần chú ý: thêm viền mảnh đều quanh mảng.
         if level == .attention {
