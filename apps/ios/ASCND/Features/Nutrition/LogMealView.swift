@@ -64,6 +64,9 @@ struct LogMealView: View {
   @State private var cProtein = ""
   @State private var cCarbs = ""
   @State private var cFat = ""
+  /// Tinh bột / béo là phụ (V1: chỉ theo kcal + đạm) — ẩn tới khi người dùng mở.
+  @State private var cMore = false
+
   @State private var error: String?
   @State private var editingId: String?
   @State private var draft = Draft()
@@ -135,6 +138,9 @@ struct LogMealView: View {
       ScanBarcodeView { food in
         logger?.add(food.mealFood(id: UUID().uuidString.lowercased()))
       }
+    }
+    .sheet(isPresented: $customOpen) {
+      if let logger { customSheet(logger) }
     }
     .fullScreenCover(isPresented: $photographing) {
       ScanFoodView { foods in
@@ -267,7 +273,6 @@ struct LogMealView: View {
           searchField
           // Mở bằng "Nhập" (thẻ Bữa ở Hôm nay): phần tự nhập món lên ngay dưới ô tìm,
           // không nằm khuất cuối trang (Kiệt 22/10).
-          if start == .manual { customCard(logger) }
           searchResults(logger)
           itemsSection(logger)
           let browsing = query.trimmingCharacters(in: .whitespaces).count < MealLog.searchMinLength
@@ -277,7 +282,7 @@ struct LogMealView: View {
           if browsing, services.aiDeployed == true {
             MealSuggestCard(logger: logger)
           }
-          if start != .manual { customCard(logger) }
+          customRow
         }
         .padding(DS.Spacing.md)
       }
@@ -540,69 +545,108 @@ struct LogMealView: View {
 
   // MARK: - Tự nhập
 
-  private func customCard(_ logger: MealLogger) -> some View {
+  /// "Tự nhập món" (vẽ lại 22/10, Kiệt: mở khung ngay trong màn làm màn dài ra, nhìn
+  /// không chuyên nghiệp): một hàng như các thẻ danh sách của màn; chạm mở tấm riêng
+  /// kiểu "Thêm dữ liệu" của Health (`customSheet`).
+  private var customRow: some View {
+    listCard {
+      Button { customOpen = true } label: {
+        HStack(spacing: DS.Spacing.sm) {
+          Image(systemName: "square.and.pencil")
+            .font(.system(size: 17, weight: .semibold))
+            .foregroundStyle(DS.Color.metricOrangeGraphic.swiftUI)
+            .frame(width: 24)
+            .accessibilityHidden(true)
+          Text(String(localized: "logMeal.custom"))
+            .font(DS.TextStyle.body.weight(.semibold))
+            .foregroundStyle(DS.Color.foreground.swiftUI)
+          Spacer()
+          Image(systemName: "chevron.right")
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .accessibilityHidden(true)
+        }
+        .padding(.horizontal, DS.Spacing.md)
+        .frame(minHeight: 52)
+        .contentShape(Rectangle())
+      }
+      .buttonStyle(.plain)
+    }
+  }
+
+  private func addCustom(_ logger: MealLogger) {
+    guard logger.addCustom(name: cName, kcal: cKcal, protein: cProtein, carbs: cCarbs, fat: cFat) else { return }
+    cName = ""
+    cKcal = ""
+    cProtein = ""
+    cCarbs = ""
+    cFat = ""
+    cMore = false
+    customOpen = false
+  }
+
+  /// Tấm "Tự nhập món": danh sách nhóm như Health — tên; kcal, đạm (V1 chỉ theo hai
+  /// số này), tinh bột / béo sau "Thêm tinh bột, béo"; "Thêm vào bữa" ở góc phải.
+  func customSheet(_ logger: MealLogger) -> some View {
     let bad = MealLog.customBad(kcal: cKcal, protein: cProtein, carbs: cCarbs, fat: cFat)
     let ready = MealLog.customItem(id: "_", name: cName, kcal: cKcal, protein: cProtein, carbs: cCarbs, fat: cFat) != nil
-    return DSCard {
-      VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-        Button {
-          withAnimation(reduceMotion ? nil : .easeOut(duration: 0.2)) { customOpen.toggle() }
-        } label: {
-          HStack {
-            Label(String(localized: "logMeal.custom"), systemImage: "square.and.pencil")
-              .font(DS.TextStyle.headline)
-              .foregroundStyle(DS.Color.foreground.swiftUI)
-            Spacer()
-            Image(systemName: "chevron.down")
-              .rotationEffect(.degrees(customOpen ? 180 : 0))
-              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-              .accessibilityHidden(true)
-          }
-          .frame(minHeight: 44)
-          .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityValue(Text(customOpen ? String(localized: "diary.a11y.expanded") : String(localized: "diary.a11y.collapsed")))
-
-        if customOpen {
+    return NavigationStack {
+      Form {
+        Section {
           TextField(text: $cName, prompt: Text(String(localized: "logMeal.custom.namePlaceholder"))) {
             Text(String(localized: "logMeal.custom.name"))
           }
-          .padding(DS.Spacing.sm)
-          .frame(minHeight: 44)
-          .background(DS.Color.input.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.sm))
-          HStack(spacing: DS.Spacing.sm) {
-            numberField("kcal", $cKcal, bounds: MealLog.kcalBounds)
-            numberField(String(localized: "logMeal.protein") + " (g)", $cProtein, bounds: MealLog.macroBounds)
+        }
+        Section {
+          numberRow("kcal", "kcal", $cKcal, bounds: MealLog.kcalBounds)
+          numberRow(String(localized: "logMeal.protein"), "g", $cProtein, bounds: MealLog.macroBounds)
+          if cMore {
+            numberRow(String(localized: "logMeal.carbs"), "g", $cCarbs, bounds: MealLog.macroBounds)
+            numberRow(String(localized: "logMeal.fat"), "g", $cFat, bounds: MealLog.macroBounds)
+          } else {
+            Button(String(localized: "logMeal.custom.more")) {
+              withAnimation(reduceMotion ? nil : .smooth(duration: 0.2)) { cMore = true }
+            }
           }
-          HStack(spacing: DS.Spacing.sm) {
-            numberField(String(localized: "logMeal.carbs") + " (g)", $cCarbs, bounds: MealLog.macroBounds)
-            numberField(String(localized: "logMeal.fat") + " (g)", $cFat, bounds: MealLog.macroBounds)
-          }
+        } footer: {
           if bad {
             Text(String(localized: "logMeal.custom.outOfRange"))
-              .font(DS.TextStyle.footnote)
               .foregroundStyle(DS.Color.destructive.swiftUI)
           }
-          Button {
-            if logger.addCustom(name: cName, kcal: cKcal, protein: cProtein, carbs: cCarbs, fat: cFat) {
-              cName = ""
-              cKcal = ""
-              cProtein = ""
-              cCarbs = ""
-              cFat = ""
-            }
-          } label: {
-            Text(String(localized: "logMeal.custom.add"))
-              .font(DS.TextStyle.footnote.weight(.semibold))
-              .frame(maxWidth: .infinity, minHeight: 44)
-              .background(DS.Color.muted.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.sm))
-          }
-          .buttonStyle(.plain)
-          .disabled(!ready)
-          .opacity(ready ? 1 : 0.5)
         }
       }
+      .navigationTitle(Text(String(localized: "logMeal.custom")))
+      .navigationBarTitleDisplayMode(.inline)
+      .toolbar {
+        ToolbarItem(placement: .cancellationAction) {
+          Button(String(localized: "common.cancel")) { customOpen = false }
+        }
+        ToolbarItem(placement: .confirmationAction) {
+          Button(String(localized: "logMeal.custom.add")) { addCustom(logger) }
+            .disabled(!ready)
+        }
+      }
+    }
+    // Màu bữa như nút "+" của món; nền đặc — màn ghi bữa không lộ qua tấm.
+    .tint(DS.Color.metricOrangeGraphic.swiftUI)
+    .presentationDetents([.medium, .large])
+    .presentationBackground(DS.Color.background.swiftUI)
+  }
+
+  /// Hàng số kiểu Health: nhãn trái, số + đơn vị phải; ngoài dải thì số đỏ.
+  private func numberRow(_ label: String, _ unit: String, _ text: Binding<String>, bounds: ClosedRange<Double>) -> some View {
+    let bad = MealLog.field(text.wrappedValue, bounds) == .bad
+    return HStack {
+      Text(verbatim: label)
+      Spacer()
+      TextField(text: text, prompt: Text(verbatim: "0")) { Text(verbatim: label) }
+        .keyboardType(.decimalPad)
+        .multilineTextAlignment(.trailing)
+        .foregroundStyle(bad ? DS.Color.destructive.swiftUI : DS.Color.foreground.swiftUI)
+        .frame(maxWidth: 120)
+      Text(verbatim: unit)
+        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        .accessibilityHidden(true)
     }
   }
 

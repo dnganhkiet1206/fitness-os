@@ -186,6 +186,29 @@
     }
    }
   },
+  "logMeal.custom.more": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Add carbs and fat"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Thêm tinh bột, béo"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Añadir carbohidratos y grasas"
+     }
+    }
+   }
+  },
   "ps.g.training": {
    "extractionState": "manual",
    "localizations": {
