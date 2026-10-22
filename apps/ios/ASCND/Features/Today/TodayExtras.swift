@@ -184,11 +184,9 @@ struct TodayExtras<Plan: View>: View {
         VStack(alignment: .leading, spacing: DS.Spacing.md) { plan(readinessRow) }
           .todayEntrance(2)
       }
-      // "Hỏi Koa" (Kiệt 21/10): lối vào Koa Coach + thanh "Kể cho Koa" trong một thẻ.
+      // "Hỏi Koa" (Kiệt 21/10): lối vào Koa Coach.
       if askKoa {
-        TodayAskKoaCard(
-          onAsk: { services.coachRequest += 1 },
-          onTell: { voice in tellVoice = voice; showsDayLog = true })
+        TodayAskKoaCard { services.coachRequest += 1 }
           .todayEntrance(3)
       }
       if let mascot, case .ready = mascot.phase {
@@ -197,7 +195,6 @@ struct TodayExtras<Plan: View>: View {
           tiles: dayTiles(mascot), planNext: planNext,
           onExtraWorkout: onLogWorkout,
           onTell: { voice in tellVoice = voice; showsDayLog = true },
-          showsTell: !askKoa,
           weighIn: weighInRow, onLogAll: { showsDayLog = true },
           onTap: tapItem, onWeight: { showsWeight = true })
           .todayEntrance(3)
@@ -420,8 +417,7 @@ struct TodayExtras<Plan: View>: View {
   /// Sinh trắc học, giấc ngủ, tập luyện, xu hướng, tổng kết tuần — những thứ để
   /// HIỂU — ở tab Tiến bộ. GĐ3 (Kiệt 21/10): thực phẩm bổ sung chỉ còn ở
   /// Dinh dưỡng › Thêm.
-  /// Thẻ "Hỏi Koa" chỉ khi Koa Coach có trên máy chủ; không thì thanh "Kể cho Koa"
-  /// ở lại thẻ "Hôm nay của bạn".
+  /// Thẻ "Hỏi Koa" chỉ khi Koa Coach có trên máy chủ.
   private var askKoa: Bool { services.aiDeployed == true }
 
   private var moreRows: [TodayMore.Row] {
