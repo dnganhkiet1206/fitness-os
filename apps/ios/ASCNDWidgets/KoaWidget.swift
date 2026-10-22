@@ -157,10 +157,10 @@ struct KoaWidgetView: View {
   }
 
   private var line: String {
-    guard let d = entry.data else { return String(localized: "widget.koa.stale") }
+    guard let d = entry.data else { return widgetText("widget.koa.stale") }
     switch phase {
-    case .stale: return String(localized: "widget.koa.stale")
-    case .day: return d.line.isEmpty ? String(localized: "widget.koa.stale") : d.line
+    case .stale: return widgetText("widget.koa.stale")
+    case .day: return d.line.isEmpty ? widgetText("widget.koa.stale") : d.line
     case .night: return d.nightLine
     }
   }
@@ -186,7 +186,7 @@ struct KoaWidgetView: View {
         avatar(height: 80)
         VStack(alignment: .leading, spacing: 6) {
           if phase == .day { waterButton(compact: true) }
-          Text(phase == .stale ? String(localized: "widget.koa.stale") : shortLine)
+          Text(phase == .stale ? widgetText("widget.koa.stale") : shortLine)
             .font(.system(size: 14, weight: .bold)).tracking(-0.2)
             .foregroundStyle(.white)
             .lineLimit(2)
@@ -199,9 +199,9 @@ struct KoaWidgetView: View {
       Spacer(minLength: 0)
       dayBar.padding(.bottom, 6)
       HStack(spacing: 0) {
-        stat(todayValue, label: String(localized: "widget.koa.stat.today"), size: 17)
+        stat(todayValue, label: widgetText("widget.koa.stat.today"), size: 17)
         statDivider
-        stat(streakValue, label: String(localized: "widget.koa.stat.streak"), size: 17)
+        stat(streakValue, label: widgetText("widget.koa.stat.streak"), size: 17)
       }
     }
     .padding(12)
@@ -282,8 +282,8 @@ struct KoaWidgetView: View {
 
   private var shortLine: String {
     guard let d = entry.data else { return "" }
-    if phase == .night { return String(localized: "widget.koa.nightShort") }
-    if d.waterTaps > 0 { return String(localized: "widget.koa.waterAdded \(d.waterTaps)") }
+    if phase == .night { return widgetText("widget.koa.nightShort") }
+    if d.waterTaps > 0 { return widgetText("widget.koa.waterAdded \(d.waterTaps)") }
     return d.short.isEmpty ? d.line : d.short
   }
 
@@ -327,11 +327,11 @@ struct KoaWidgetView: View {
         Spacer(minLength: 6)
         dayBar.padding(.bottom, 7)
         HStack(spacing: 0) {
-          stat(todayValue, label: String(localized: "widget.koa.stat.today"))
+          stat(todayValue, label: widgetText("widget.koa.stat.today"))
           statDivider
-          stat(streakValue, label: String(localized: "widget.koa.stat.streak"))
+          stat(streakValue, label: widgetText("widget.koa.stat.streak"))
           statDivider
-          stat(entry.data?.gains.map { "\($0)" } ?? "–", label: String(localized: "widget.koa.stat.gains"))
+          stat(entry.data?.gains.map { "\($0)" } ?? "–", label: widgetText("widget.koa.stat.gains"))
         }
       }
     }

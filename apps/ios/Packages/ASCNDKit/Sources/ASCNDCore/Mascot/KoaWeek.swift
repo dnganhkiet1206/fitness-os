@@ -135,4 +135,22 @@ public final class KoaWeekBook {
       claim = .failed
     }
   }
+
+  /// Nhận bù tuần TRƯỚC (đủ tuần lúc mất mạng, sang tuần mới mới có mạng): không đổi
+  /// `claim` của tuần này. Trả số xu khi vừa nhận ở lượt này.
+  public func claimMissed(_ state: KoaWeek.State?) async -> Int? {
+    guard let state, state.complete else { return nil }
+    let ref = state.refKey
+    guard !defaults.bool(forKey: seenKey(ref)) else { return nil }
+    do {
+      _ = try await economy.claimReward(refKey: ref, reason: "koa week \(state.weekStart)")
+      defaults.set(true, forKey: seenKey(ref))
+      return KoaWeek.rewardCoins
+    } catch let f as MascotFailure where f == .server(code: "23505") {
+      defaults.set(true, forKey: seenKey(ref))
+      return nil
+    } catch {
+      return nil
+    }
+  }
 }

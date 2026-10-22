@@ -94,9 +94,13 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 
 **GĐ2 (tiến bộ một thang + Tuần của Koa) — hạn chế đã biết:**
 - **Khoá đồ theo hạng chỉ ở app.** `buy_mascot_item` trên server chỉ kiểm giá và số dư, không kiểm hạng. Ai gọi thẳng API vẫn mua được. Muốn chặn ở server phải có migration (tính Gains trên server); chưa làm vì Gains hiện chỉ tính ở app.
-- **Nhận thưởng Tuần của Koa cần mạng.** Mất mạng thì để lần mở app sau (thẻ ghi "Chưa nhận được — sẽ thử lại."); không xếp hàng outbox.
+- ~~**Nhận thưởng Tuần của Koa cần mạng.** Mất mạng thì để lần mở app sau; không xếp hàng outbox.~~ Sửa 22/10 (nhánh `claude/koa-week-offline`): nhận hỏng thì **tự thử lại ngay khi có mạng**; đủ tuần lúc mất mạng rồi sang tuần mới mới có mạng thì **nhận bù tuần trước** (trước đây mất luôn). Vẫn không qua outbox (RPC kinh tế, server bỏ trùng theo `ref_key`).
 - **Tổng kết tuần của tuần cũ dùng lịch HIỆN TẠI để tính đích** (app không lưu lịch theo từng tuần). Đổi lịch rồi xem lại tuần trước thì đích có thể khác lúc ấy. Đổi ngày (dời / nghỉ) thì vẫn đúng, vì được lưu theo ngày.
-- **Chưa kiểm trên simulator:** widget Koa (số Gains), onboarding bước kế hoạch. Mới có test đơn vị + build. Tổng kết tuần đã kiểm 21/10 (tuần này 2/6, tuần trước 3/6, khớp số buổi ở thẻ Khối lượng).
+- ~~**Chưa kiểm trên simulator:** widget Koa (số Gains), onboarding bước kế hoạch.~~ Kiểm 22/10 (simulator):
+  - Onboarding bước kế hoạch: đúng — "Newbie · 0 Gains · Gains không giảm khi nghỉ", 6 vạch = 6 hạng.
+  - Widget Koa: chạy. **Lỗi đã sửa:** nhãn widget theo ngôn ngữ MÁY còn nội dung theo ngôn ngữ APP ("3 of 4 done" cạnh "HÔM NAY · CHUỖI") — `widgetText` tra theo ngôn ngữ app.
+  - **Còn mở:** widget nhỏ Koa và hai widget "Phong độ" vẫn lấy **chuỗi ngày** làm số chính (V1: Gains là thang duy nhất, chuỗi đã bỏ khỏi Today; widget nhỏ Koa không có Gains). Cần mock trước khi đổi.
+  - ~~Widget "Phong độ" hiện sẵn sàng 91 khi Today nói "Chưa đủ dữ liệu để chấm".~~ Không phải lỗi (kiểm lại 22/10): câu "chưa đủ dữ liệu" là ảnh lúc nửa đêm, hôm nay chưa có điểm; chiều cùng ngày chi tiết Hồi phục ở Tiến bộ cũng ~91, khớp widget.
 - ~~"Mất pump" sau 3 ngày: chờ Kiệt chốt.~~ Kiệt chốt 21/10: bỏ; chào mừng quay lại (Daily Plan luật ④). Đã làm trên nhánh GĐ1.
 
 **GĐ1 (Daily Plan + Today gọn) — Kiệt duyệt CÓ ĐIỀU KIỆN 21/10:**
@@ -156,6 +160,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - 21/10/2026: thêm điều kiện duyệt GĐ1, migration chưa deploy, kết quả "mất pump" / tụt hạng.
 - 21/10/2026: hồi quy GĐ1 (R / W / D PASS; A1, A2 BLOCKED).
 - 21/10/2026: Kiệt lệnh merge: #641 (GĐ1) và #642 (GĐ2) vào `native/ios-rewrite`; nghiệm thu GĐ1 còn thiếu iPhone thật, A1, A2; migration vẫn chưa deploy.
+- 22/10/2026: Tuần của Koa nhận lại khi có mạng + nhận bù tuần trước; kiểm widget Koa / onboarding (widget theo ngôn ngữ app; còn mở: chuỗi trên widget; điểm 91 kiểm lại là khớp).
 - 22/10/2026: chữ A có chuyển động, vùng chạm đúng hình mảng, VoiceOver từng mảng.
 - 22/10/2026: Tiến bộ theo chữ trạng thái (chữ A logo, 6 nhóm); thêm hạn chế.
 - 22/10/2026: Insight sống theo việc ghi — đọc lại sau mỗi lần ghi, nước lấy từ sổ Nước (`daily_logs.water_ml` chưa có ngay lượng vừa ghi), bỏ câu đã giải quyết hay đã cũ (người dùng ghi thêm đúng chủ đề sau khi insight về; hết câu thì ẩn cả thẻ tới insight mới), vòng chỉ cho kết quả đã chốt (ngủ, sẵn sàng). Số lăn như Dinh dưỡng khi vừa ghi. Hạn chế: TB 7 ngày của nước vẫn đọc từ `daily_logs`; ghi nước không gọi lại AI (chỉ ngủ / ăn / tập đổi dấu dữ liệu). Mốc "số lúc insight về" ghi khi thẻ thấy insight lần đầu — insight từ bộ nhớ đệm mở lại sau khi đã ghi thì mốc là số lúc mở.
