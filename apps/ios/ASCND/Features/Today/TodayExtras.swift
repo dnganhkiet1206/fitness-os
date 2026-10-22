@@ -117,7 +117,8 @@ struct TodayExtras<Plan: View>: View {
         TodayStartCard(
           userId: userId,
           signals: mascot.flatMap { TodayDay.merging($0.signals, localWaterMl: nil) },
-          onMeal: { logging = .meal }, onWorkout: onLogWorkout)
+          // Buổi tập theo lịch (Kiệt 22/10): cùng buổi với Tập luyện, không ghi riêng.
+          onMeal: { logging = .meal }, onWorkout: onStartWorkout)
       }
       if let mascot, case .loading = mascot.phase {
         // Bóng đúng cỡ khối ngày (RN `TodaySkeleton part="hero"`) — không để
@@ -487,12 +488,13 @@ struct TodayExtras<Plan: View>: View {
   }
 
   /// Nút của khối ngày / chạm ống: ngủ, bữa → màn ghi; nước → +250 ml ngay;
-  /// buổi tập → màn ghi buổi tay; bước đến từ Apple Health, không có nút.
+  /// buổi tập → buổi THEO LỊCH hôm nay ở Tập luyện (Kiệt 22/10: ô Buổi tập đồng nhất
+  /// với lịch, không ghi riêng lẻ); bước đến từ Apple Health, không có nút.
   private func act(_ q: MascotRules.Quest) {
     switch q {
     case .sleep: logging = .sleep
     case .meal: logging = .meal
-    case .workout: onLogWorkout?()
+    case .workout: onStartWorkout?()
     case .water:
       waterTaps += 1
       Task { await addWater() }

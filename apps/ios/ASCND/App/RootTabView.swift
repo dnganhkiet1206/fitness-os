@@ -70,7 +70,8 @@ struct RootTabView: View {
           openCoach = true
         } : nil
     ) { screen in
-      if screen == .logWorkout { logWorkoutInTraining() } else { linked = screen }
+      // Ô Buổi tập của Ghi nhanh = buổi theo lịch hôm nay (Kiệt 22/10), như ở Hôm nay.
+      if screen == .logWorkout { openTodaysSession() } else { linked = screen }
     })
     .environment(quickLog)
     .onChange(of: services.coachRequest) { _, _ in
@@ -97,8 +98,14 @@ struct RootTabView: View {
     }
   }
 
-  /// Ghi buổi tập chỉ trong tab Tập luyện (Kiệt 22/10): chuyển tab, rồi mở màn ghi
-  /// trên tab ấy (cùng đường với link `log-workout`).
+  /// Buổi theo lịch hôm nay: sang Tập luyện, mở buổi nếu hôm nay có (không có thì
+  /// chỉ mở tab) — cùng đường với "Bắt đầu" ở Hôm nay.
+  private func openTodaysSession() {
+    selection = .workouts
+    launchWorkout = true
+  }
+
+  /// Buổi phát sinh ngoài lịch: ghi tay, chỉ trong tab Tập luyện (Kiệt 22/10).
   private func logWorkoutInTraining() {
     selection = .workouts
     linked = .logWorkout
