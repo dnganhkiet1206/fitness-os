@@ -112,6 +112,12 @@ enum IntelligenceTones {
   static let violet = Color(red: 0.59, green: 0.43, blue: 0.78)
   static let apricot = Color(red: 0.88, green: 0.59, blue: 0.43)
   static let sheen = Color(red: 0.44, green: 0.42, blue: 0.56)
+  /// Dải màu của ASCND Intelligence (mock `intelligence-logo-v3.html`): xanh #0A94FF →
+  /// tím #C95ADE → hồng đỏ #FF2E54 → cam #FF8F05. Cho viền / quầng kiểu Siri.
+  static let spectrum: [Color] = [
+    Color(red: 0.04, green: 0.58, blue: 1.0), Color(red: 0.79, green: 0.35, blue: 0.87),
+    Color(red: 1.0, green: 0.18, blue: 0.33), Color(red: 1.0, green: 0.56, blue: 0.02),
+  ]
 }
 
 /// Chữ mực có một vệt ánh lướt qua mỗi ~4 giây.

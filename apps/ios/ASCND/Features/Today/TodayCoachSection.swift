@@ -76,12 +76,12 @@ struct AskCoachBar: View {
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var spin = false
 
-  /// Viền + quầng kiểu Siri / Apple Intelligence (Kiệt 22/10) bằng bảng màu dịu của
-  /// ASCND Intelligence; xoay chậm một vòng / 8 giây. Giảm chuyển động: đứng yên.
+  /// Viền + quầng kiểu Siri / Apple Intelligence (Kiệt 22/10) bằng dải màu của ASCND
+  /// Intelligence (`IntelligenceTones.spectrum`); xoay chậm một vòng / 8 giây. Giảm
+  /// chuyển động: đứng yên.
   private var tones: AngularGradient {
     AngularGradient(
-      colors: [IntelligenceTones.rose, IntelligenceTones.violet, IntelligenceTones.navy, IntelligenceTones.apricot,
-               IntelligenceTones.rose],
+      colors: IntelligenceTones.spectrum + [IntelligenceTones.spectrum[0]],
       center: .center, angle: .degrees(spin ? 360 : 0))
   }
 
