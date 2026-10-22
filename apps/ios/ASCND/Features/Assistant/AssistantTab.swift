@@ -77,8 +77,9 @@ struct AssistantTab: View {
           // Mock bản 10 (Kiệt duyệt 22/10): chữ A của logo, 6 nhóm, mỗi nhóm một chữ
           // trạng thái; thẻ cân nặng đầy đủ chuyển vào "Thêm → Cân nặng & số đo".
           if let results = progressResults {
+            // Nhỏ lại một chút (Kiệt 22/10): 300 → 260.
             ProgressHero(results: results) { path.append(.group($0)) }
-              .frame(maxWidth: 300)
+              .frame(maxWidth: 260)
               .frame(maxWidth: .infinity)
               .padding(.top, DS.Spacing.sm)
             ProgressLegend()
