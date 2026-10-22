@@ -137,7 +137,7 @@ struct ProgressHero: View {
   /// Lõi đen của mảng "Cần chú ý": viền đều `rim × 1.6`.
   static func inner(_ g: ProgressStatus.Group) -> Path {
     let p = shape(g)
-    return p.subtracting(p.strokedPath(StrokeStyle(lineWidth: rim * 3.2, lineJoin: .round)))
+    return p.subtracting(p.strokedPath(StrokeStyle(lineWidth: rim * 1.7, lineJoin: .round)))
   }
 
   /// Ô chữ nhật của mảng; các ô cách nhau `hairline` (đường mảnh giữa các tầng / ở đỉnh).
