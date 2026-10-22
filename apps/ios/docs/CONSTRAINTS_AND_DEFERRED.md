@@ -100,7 +100,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
   - Onboarding bước kế hoạch: đúng — "Newbie · 0 Gains · Gains không giảm khi nghỉ", 6 vạch = 6 hạng.
   - Widget Koa: chạy. **Lỗi đã sửa:** nhãn widget theo ngôn ngữ MÁY còn nội dung theo ngôn ngữ APP ("3 of 4 done" cạnh "HÔM NAY · CHUỖI") — `widgetText` tra theo ngôn ngữ app.
   - **Còn mở:** widget nhỏ Koa và hai widget "Phong độ" vẫn lấy **chuỗi ngày** làm số chính (V1: Gains là thang duy nhất, chuỗi đã bỏ khỏi Today; widget nhỏ Koa không có Gains). Cần mock trước khi đổi.
-  - **Còn mở:** widget "Phong độ" hiện sẵn sàng **91** (hàng `daily_logs` hôm nay) khi Today nói "Chưa đủ dữ liệu để chấm" — hai nơi đọc điểm theo hai luật. Chưa tìm ra nguyên nhân (không đọc được server từ máy agent).
+  - ~~Widget "Phong độ" hiện sẵn sàng 91 khi Today nói "Chưa đủ dữ liệu để chấm".~~ Không phải lỗi (kiểm lại 22/10): câu "chưa đủ dữ liệu" là ảnh lúc nửa đêm, hôm nay chưa có điểm; chiều cùng ngày chi tiết Hồi phục ở Tiến bộ cũng ~91, khớp widget.
 - ~~"Mất pump" sau 3 ngày: chờ Kiệt chốt.~~ Kiệt chốt 21/10: bỏ; chào mừng quay lại (Daily Plan luật ④). Đã làm trên nhánh GĐ1.
 
 **GĐ1 (Daily Plan + Today gọn) — Kiệt duyệt CÓ ĐIỀU KIỆN 21/10:**
@@ -160,7 +160,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - 21/10/2026: thêm điều kiện duyệt GĐ1, migration chưa deploy, kết quả "mất pump" / tụt hạng.
 - 21/10/2026: hồi quy GĐ1 (R / W / D PASS; A1, A2 BLOCKED).
 - 21/10/2026: Kiệt lệnh merge: #641 (GĐ1) và #642 (GĐ2) vào `native/ios-rewrite`; nghiệm thu GĐ1 còn thiếu iPhone thật, A1, A2; migration vẫn chưa deploy.
-- 22/10/2026: Tuần của Koa nhận lại khi có mạng + nhận bù tuần trước; kiểm widget Koa / onboarding (widget theo ngôn ngữ app; còn mở: chuỗi trên widget, điểm 91 lệch Today).
+- 22/10/2026: Tuần của Koa nhận lại khi có mạng + nhận bù tuần trước; kiểm widget Koa / onboarding (widget theo ngôn ngữ app; còn mở: chuỗi trên widget; điểm 91 kiểm lại là khớp).
 - 22/10/2026: chữ A có chuyển động, vùng chạm đúng hình mảng, VoiceOver từng mảng.
 - 22/10/2026: Tiến bộ theo chữ trạng thái (chữ A logo, 6 nhóm); thêm hạn chế.
 - 22/10/2026: Insight sống theo việc ghi — đọc lại sau mỗi lần ghi, nước lấy từ sổ Nước (`daily_logs.water_ml` chưa có ngay lượng vừa ghi), bỏ câu đã giải quyết hay đã cũ (người dùng ghi thêm đúng chủ đề sau khi insight về; hết câu thì ẩn cả thẻ tới insight mới), vòng chỉ cho kết quả đã chốt (ngủ, sẵn sàng). Số lăn như Dinh dưỡng khi vừa ghi. Hạn chế: TB 7 ngày của nước vẫn đọc từ `daily_logs`; ghi nước không gọi lại AI (chỉ ngủ / ăn / tập đổi dấu dữ liệu). Mốc "số lúc insight về" ghi khi thẻ thấy insight lần đầu — insight từ bộ nhớ đệm mở lại sau khi đã ghi thì mốc là số lúc mở.
