@@ -50,6 +50,11 @@ struct LogMealView: View {
   /// Đã lưu: hiện "Đã lưu vào Bữa phụ" + chọn bữa khác (không bắt buộc), tự đóng.
   @State private var savedText: String?
   @State private var autoClose: Task<Void, Never>?
+  /// Tấm "đã lưu" đã hiện (cho chuyển động vào) và thanh đếm của nút OK.
+  @State private var panelIn = false
+  @State private var countdown: CGFloat = 1
+  /// Tấm tự đóng sau chừng này nếu không chạm gì (Kiệt 22/10: chờ lâu hơn).
+  static let autoCloseAfter: Double = 8
   @State private var query = ""
   @State private var customOpen = false
   @State private var cName = ""
@@ -142,13 +147,15 @@ struct LogMealView: View {
   @ViewBuilder private func content(_ logger: MealLogger) -> some View {
     if let savedText {
       savedPanel(logger, text: savedText)
+        .transition(.opacity.combined(with: .scale(scale: 0.96)))
     } else {
       form(logger)
     }
   }
 
   /// Sau khi lưu: dấu xong, bữa đã vào, sáu nút bữa để đổi nếu muốn. Không chạm gì
-  /// thì tự đóng sau 5 giây — không thêm chạm nào cho người không cần đổi.
+  /// thì tự đóng sau `autoCloseAfter` giây — nút OK có thanh thời gian chạy ngược
+  /// (Kiệt 22/10). Dấu xong nảy vào, chữ và nút hiện dần.
   private func savedPanel(_ logger: MealLogger, text: String) -> some View {
     let accent = MascotRoomView.signalColor(.meal)
     return VStack(spacing: DS.Spacing.lg) {
@@ -156,6 +163,9 @@ struct LogMealView: View {
       Image(systemName: "checkmark.circle.fill")
         .font(.system(size: 56))
         .foregroundStyle(.white, DS.Color.readinessGreen.swiftUI)
+        .symbolEffect(.bounce, value: panelIn)
+        .scaleEffect(panelIn ? 1 : 0.4)
+        .opacity(panelIn ? 1 : 0)
         .accessibilityHidden(true)
       VStack(spacing: 6) {
         Text(verbatim: text)
@@ -164,9 +174,10 @@ struct LogMealView: View {
         Text(String(localized: "logMeal.savedInto \(DiaryView.mealName(logger.mealType))"))
           .font(DS.TextStyle.body)
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-          .contentTransition(.opacity)
       }
       .multilineTextAlignment(.center)
+      .opacity(panelIn ? 1 : 0)
+      .offset(y: panelIn ? 0 : 12)
       VStack(spacing: DS.Spacing.sm) {
         Text("logMeal.changeMeal")
           .font(DS.TextStyle.caption)
@@ -176,6 +187,7 @@ struct LogMealView: View {
             let on = key == logger.mealType
             Button {
               autoClose?.cancel()
+              withAnimation(reduceMotion ? nil : .easeOut(duration: 0.2)) { countdown = 0 }
               Task {
                 await logger.retype(key)
                 try? await Task.sleep(for: .milliseconds(600))
@@ -194,12 +206,38 @@ struct LogMealView: View {
           }
         }
       }
+      .opacity(panelIn ? 1 : 0)
+      .offset(y: panelIn ? 0 : 20)
       Spacer(minLength: 0)
-      Button(String(localized: "common.ok")) { finish() }
-        .font(DS.TextStyle.headline)
-        .frame(maxWidth: .infinity, minHeight: 48)
+      // OK với thanh thời gian: phần sáng co dần về trái tới lúc tấm tự đóng.
+      Button { finish() } label: {
+        Text(String(localized: "common.ok"))
+          .font(DS.TextStyle.headline)
+          .foregroundStyle(DS.Color.background.swiftUI)
+          .frame(maxWidth: .infinity, minHeight: 52)
+          .background {
+            GeometryReader { g in
+              ZStack(alignment: .leading) {
+                Capsule().fill(DS.Color.foreground.swiftUI.opacity(0.55))
+                Capsule().fill(DS.Color.foreground.swiftUI)
+                  .frame(width: max(52, g.size.width * countdown))
+              }
+            }
+          }
+          .clipShape(Capsule())
+      }
+      .buttonStyle(TodayPressStyle())
+      .opacity(panelIn ? 1 : 0)
     }
     .padding(DS.Spacing.lg)
+    .onAppear {
+      if reduceMotion {
+        panelIn = true
+      } else {
+        withAnimation(.spring(duration: 0.5, bounce: 0.35)) { panelIn = true }
+      }
+      withAnimation(.linear(duration: Self.autoCloseAfter)) { countdown = 0 }
+    }
     .sensoryFeedback(.selection, trigger: logger.mealType)
   }
 
@@ -745,9 +783,9 @@ struct LogMealView: View {
         dismiss()
         return
       }
-      withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.25)) { savedText = text }
+      withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.3)) { savedText = text }
       autoClose = Task {
-        try? await Task.sleep(for: .seconds(5))
+        try? await Task.sleep(for: .seconds(Self.autoCloseAfter))
         guard !Task.isCancelled else { return }
         finish()
       }
