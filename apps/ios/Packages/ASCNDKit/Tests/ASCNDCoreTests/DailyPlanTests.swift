@@ -79,6 +79,19 @@ struct DailyPlanTests {
     #expect(DailyPlan.decide(Self.input(daysOff: 2)).action == .start(Self.chest))
   }
 
+  /// Bước quay lại theo số ngày nghỉ: 3–6 như cũ, 7–27 nhẹ hơn, ≥ 28 buổi ngắn —
+  /// gợi ý nhẹ / ngắn thì phương án là "tập đủ buổi".
+  @Test func comebackStepFollowsDaysOff() {
+    #expect(DailyPlan.comebackStep(daysOff: 3) == .asBefore)
+    #expect(DailyPlan.comebackStep(daysOff: 6) == .asBefore)
+    #expect(DailyPlan.comebackStep(daysOff: 7) == .lighter)
+    #expect(DailyPlan.comebackStep(daysOff: 27) == .lighter)
+    #expect(DailyPlan.comebackStep(daysOff: 28) == .short)
+    #expect(DailyPlan.decide(Self.input(daysOff: 9)).alternatives == [.fullSession, .viewPlan])
+    let long = DailyPlan.decide(Self.input(daysOff: 40))
+    #expect(long.action == .comeback(Self.chest) && long.alternatives == [.fullSession, .viewPlan])
+  }
+
   @Test func comebackDoesNotRepeatOnceTrainedToday() {
     let r = DailyPlan.decide(Self.input(today: .planned([Self.chest, Self.back]), done: ["t-chest"], daysOff: 5))
     #expect(r.action == .start(Self.back))

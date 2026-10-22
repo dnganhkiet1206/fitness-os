@@ -174,7 +174,8 @@ struct TodayExtras<Plan: View>: View {
       if let dailyPlan, let flow {
         // GĐ1: MỘT việc chính + lý do + phương án; rồi Tuần của Koa (lịch thật).
         TodayPlanHero(
-          result: dailyPlan.result, lighterOn: flow.today.lighterToday, busy: planBusy, failed: planFailed,
+          result: dailyPlan.result, lighterOn: flow.today.lighterToday, shortOn: flow.today.shortToday,
+          lastSession: services.koaGainsNow?.state.lastSession, busy: planBusy, failed: planFailed,
           onPrimary: { primary(dailyPlan.result.action) }, onAlternative: { alternative($0, flow) })
           .todayEntrance(2)
         // Insight hôm nay (Kiệt 21/10, GĐ3) ngay dưới việc chính, kiểu Apple Health.
@@ -690,7 +691,23 @@ struct TodayExtras<Plan: View>: View {
   private func primary(_ action: DailyPlan.Action) {
     switch action {
     case .loading: break
-    case .resume, .start, .comeback: onStartWorkout?()
+    case .resume, .start: onStartWorkout?()
+    case .comeback:
+      // Bản gợi ý theo số ngày nghỉ; đã chọn một bản rồi thì giữ bản ấy.
+      guard let flow, case .returning(let days) = dailyPlan?.result.reason,
+        !flow.today.lighterToday, !flow.today.shortToday
+      else { onStartWorkout?(); return }
+      let variant: TodayVariant = switch DailyPlan.comebackStep(daysOff: days) {
+      case .asBefore: .full
+      case .lighter: .lighter
+      case .short: .short
+      }
+      Task {
+        planBusy = true
+        defer { planBusy = false }
+        if variant != .full { _ = await flow.setVariantToday(variant) }
+        onStartWorkout?()
+      }
     case .setUpWeek, .nextSession: onChoosePlan?()
     case .postWorkoutMeal: logging = .meal
     case .progress, .recovery:
@@ -717,6 +734,13 @@ struct TodayExtras<Plan: View>: View {
     case .logFree: onLogWorkout?()
     case .viewSession: onStartWorkout?()
     case .viewPlan: onChoosePlan?()
+    case .fullSession:
+      Task {
+        planBusy = true
+        defer { planBusy = false }
+        _ = await flow.setVariantToday(.full)
+        onStartWorkout?()
+      }
     }
   }
 

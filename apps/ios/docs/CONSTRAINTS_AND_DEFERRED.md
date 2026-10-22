@@ -76,7 +76,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 | ~~Lối "Hỏi Koa về hôm nay" trên Hôm nay~~ | **Đã làm** (Kiệt đưa thiết kế 21/10, nhánh `claude/today-ask-koa`): thẻ "Hỏi Koa" riêng (hình Koa ở bàn của Kiệt) mở Koa Coach. Thanh ghi bằng AI "Kể cho Koa" ở lại thẻ "Hôm nay của bạn" (Kiệt: tách ra) | — | 21/10 |
 | Đồ phòng gym của Koa, gói trả phí AI (đợt 6 cũ) | Chưa có người dùng, chưa có quyết định doanh thu | Sau phát hành | 20/10 |
 | Koa Classic tháng (đợt 4 cũ) | Thay bằng "Tuần của Koa" cá nhân hoá (QĐ 2) | Kiệt quyết lại | V1 21/10 |
-| "Buổi ngắn 15 phút" ở màn quay lại | Hoãn từ đợt 2. Theo QĐ 3, phải thành "đề xuất bước tiếp theo theo lịch sử" | GĐ2 | 20/10 |
+| ~~"Buổi ngắn 15 phút" ở màn quay lại~~ | **Đã làm** 22/10 (Kiệt giao agent tự nghiên cứu và quyết, nhánh `claude/koa-comeback-step`): thẻ quay lại ở Hôm nay gợi ý theo số ngày nghỉ — 3–6 ngày tập như lần trước, 7–27 ngày bớt 1 hiệp mỗi bài, ≥ 28 ngày buổi ngắn (nửa số bài đầu, ≥ 2 bài); luôn có "Tập đủ buổi"; không giảm tạ. Ngưỡng theo nghiên cứu nghỉ tập (sức mạnh giữ gần nguyên dưới 3–4 tuần), chưa kiểm với người dùng thật | — | 20/10 |
 | Khoá Face ID, xuất dữ liệu | Chưa ưu tiên | Trước khi phát hành | 20/10 |
 | ~~Kế hoạch ăn chi tiết, đi chợ, thực phẩm bổ sung~~ | **Đã đưa xuống** Dinh dưỡng › "Thêm" (GĐ3, 21/10); bỏ bộ chọn Hôm nay / Kế hoạch ăn; bỏ dòng bổ sung ở Hôm nay. Không xoá màn / dữ liệu | — | V1 21/10 |
 | Kiểm iOS 18–25 | Không có máy / simulator | Có máy | 16/10 |
@@ -115,7 +115,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 **GĐ3 (bốn khu vực) — hạn chế đã biết:**
 - Link `ascnd://community` (và `assistant`) mở tab **Tiến bộ**, chưa mở thẳng màn Cộng đồng.
 - Tab đã lưu của bản cũ: "assistant" → Tiến bộ; "community" → về Hôm nay (không còn tab ấy).
-- Koa ở thẻ đầu Tiến bộ đứng yên (`idle`), không đổi nét mặt theo ngày như ở Hôm nay.
+- ~~Koa ở thẻ đầu Tiến bộ đứng yên (`idle`), không đổi nét mặt theo ngày như ở Hôm nay.~~ Không còn áp dụng (22/10): thẻ Koa ở đầu Tiến bộ đã được thay bằng chữ A trạng thái (mock bản 10, #658/#659).
 - Chưa kiểm: VoiceOver của thanh tab mới, iPhone màn hẹp, iOS 18–25 (nút "+" nổi thay thanh Ghi nhanh).
 - `PARITY_MATRIX.md` chưa cập nhật theo 4 khu vực (việc cuối của GĐ3 trong lộ trình).
 
@@ -168,6 +168,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - 21/10/2026: hồi quy GĐ1 (R / W / D PASS; A1, A2 BLOCKED).
 - 21/10/2026: Kiệt lệnh merge: #641 (GĐ1) và #642 (GĐ2) vào `native/ios-rewrite`; nghiệm thu GĐ1 còn thiếu iPhone thật, A1, A2; migration vẫn chưa deploy.
 - 22/10/2026: Tuần của Koa nhận lại khi có mạng + nhận bù tuần trước; kiểm widget Koa / onboarding (widget theo ngôn ngữ app; còn mở: chuỗi trên widget; điểm 91 kiểm lại là khớp).
+- 22/10/2026: thẻ quay lại gợi ý theo số ngày nghỉ (nhẹ hơn từ 7 ngày, buổi ngắn từ 28 ngày); gỡ mục "Buổi ngắn 15 phút" và dòng Koa đứng yên ở Tiến bộ.
 - 22/10/2026: chữ A có chuyển động, vùng chạm đúng hình mảng, VoiceOver từng mảng.
 - 22/10/2026: Tiến bộ theo chữ trạng thái (chữ A logo, 6 nhóm); thêm hạn chế.
 - 22/10/2026: Insight sống theo việc ghi — đọc lại sau mỗi lần ghi, nước lấy từ sổ Nước (`daily_logs.water_ml` chưa có ngay lượng vừa ghi), bỏ câu đã giải quyết hay đã cũ (người dùng ghi thêm đúng chủ đề sau khi insight về; hết câu thì ẩn cả thẻ tới insight mới), vòng chỉ cho kết quả đã chốt (ngủ, sẵn sàng). Số lăn như Dinh dưỡng khi vừa ghi. Hạn chế: TB 7 ngày của nước vẫn đọc từ `daily_logs`; ghi nước không gọi lại AI (chỉ ngủ / ăn / tập đổi dấu dữ liệu). Mốc "số lúc insight về" ghi khi thẻ thấy insight lần đầu — insight từ bộ nhớ đệm mở lại sau khi đã ghi thì mốc là số lúc mở.

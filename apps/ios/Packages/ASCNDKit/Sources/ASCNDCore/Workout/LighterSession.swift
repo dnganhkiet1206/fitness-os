@@ -33,12 +33,45 @@ public enum LighterSession {
   }
 }
 
+/// "Buổi ngắn" khi quay lại sau ≥ 4 tuần nghỉ (`DailyPlan.ComebackStep.short`):
+/// giữ nửa số bài ĐẦU của buổi (bài chính thường xếp trước), ít nhất hai bài; số
+/// hiệp, số lần, tạ giữ nguyên. Lựa chọn lưu theo (người, ngày, mẫu) như bản nhẹ.
+public enum ShortSession {
+  public static func exercises(_ list: [TemplateExercise]) -> [TemplateExercise] {
+    guard list.count > 2 else { return list }
+    return Array(list.prefix(max(2, (list.count + 1) / 2)))
+  }
+
+  static func key(userId: String, date: LocalDate, templateId: String) -> String {
+    "ascnd_short.\(userId).\(date).\(templateId)"
+  }
+
+  public static func isOn(userId: String, date: LocalDate, templateId: String, in defaults: UserDefaults = .standard) -> Bool {
+    defaults.bool(forKey: key(userId: userId, date: date, templateId: templateId))
+  }
+
+  public static func set(
+    _ on: Bool, userId: String, date: LocalDate, templateId: String, in defaults: UserDefaults = .standard
+  ) {
+    let k = key(userId: userId, date: date, templateId: templateId)
+    if on { defaults.set(true, forKey: k) } else { defaults.removeObject(forKey: k) }
+  }
+}
+
+/// Bản của buổi hôm nay người dùng đã chọn.
+public enum TodayVariant: Sendable, Hashable {
+  case full, lighter, short
+}
+
 extension TodayPlan {
   /// Kế hoạch buổi, bản nhẹ khi `lighter` (một hiệp ít hơn mỗi bài).
   public func sessionPlan(lighter: Bool) -> WorkoutSessionController.Plan? {
-    guard lighter, let template else { return sessionPlan }
-    return .init(
-      date: date, templateId: template.id, templateName: template.name,
-      rows: WorkoutPlanning.rows(LighterSession.exercises(template.exercises)))
+    sessionPlan(variant: lighter ? .lighter : .full)
+  }
+
+  public func sessionPlan(variant: TodayVariant) -> WorkoutSessionController.Plan? {
+    guard variant != .full, let template else { return sessionPlan }
+    let list = variant == .short ? ShortSession.exercises(template.exercises) : LighterSession.exercises(template.exercises)
+    return .init(date: date, templateId: template.id, templateName: template.name, rows: WorkoutPlanning.rows(list))
   }
 }

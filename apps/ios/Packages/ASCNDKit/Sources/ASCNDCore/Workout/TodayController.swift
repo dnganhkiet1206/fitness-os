@@ -263,7 +263,7 @@ public final class TodayController {
     onRest: @escaping @MainActor (RestEvent, PlannedSet?) -> Void = { _, _ in },
     onEnqueued: @escaping @MainActor (OutboxEntry) -> Void = { _ in }
   ) -> WorkoutSessionController? {
-    guard let sessionPlan = plan?.sessionPlan(lighter: lighterToday) else { return nil }
+    guard let sessionPlan = plan?.sessionPlan(variant: variantToday) else { return nil }
     return WorkoutSessionController(
       plan: sessionPlan, userId: userId, store: workouts, clock: clock, timeZone: timeZone,
       loggedElsewhere: serverTrained.contains(today),
@@ -298,8 +298,26 @@ public final class TodayController {
   /// Chọn / bỏ "Tập nhẹ hơn" cho buổi hôm nay. `false` khi hôm nay không có buổi.
   @discardableResult
   public func setLighterToday(_ on: Bool) -> Bool {
+    setVariantToday(on ? .lighter : .full)
+  }
+
+  /// Buổi hôm nay là "buổi ngắn" (quay lại sau ≥ 4 tuần nghỉ).
+  public var shortToday: Bool {
     guard let id = plan?.template?.id else { return false }
-    LighterSession.set(on, userId: userId, date: today, templateId: id, in: choices)
+    return ShortSession.isOn(userId: userId, date: today, templateId: id, in: choices)
+  }
+
+  /// Bản đang chọn của buổi hôm nay; buổi ngắn đứng trước bản nhẹ.
+  public var variantToday: TodayVariant {
+    shortToday ? .short : lighterToday ? .lighter : .full
+  }
+
+  /// Chọn bản của buổi hôm nay — hai bản loại nhau. `false` khi hôm nay không có buổi.
+  @discardableResult
+  public func setVariantToday(_ v: TodayVariant) -> Bool {
+    guard let id = plan?.template?.id else { return false }
+    LighterSession.set(v == .lighter, userId: userId, date: today, templateId: id, in: choices)
+    ShortSession.set(v == .short, userId: userId, date: today, templateId: id, in: choices)
     return true
   }
 

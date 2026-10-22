@@ -169,7 +169,33 @@ public enum DailyPlan {
     case logFree
     case viewSession
     case viewPlan
+    /// Quay lại: bỏ bản nhẹ / buổi ngắn đã gợi ý, tập đủ buổi như lần trước.
+    case fullSession
   }
+
+  /// Bước gợi ý khi quay lại, theo số ngày nghỉ (#527, Kiệt giao quyết 22/10).
+  /// Nghiên cứu nghỉ tập: sức mạnh gần như giữ nguyên dưới 3–4 tuần (giảm rõ từ
+  /// tuần thứ 4); sau ≥ 4 tuần nghỉ, hướng dẫn quay lại hay dùng khoảng 50 % khối
+  /// lượng cho buổi đầu. Chỉ là GỢI Ý — luôn có nút tập đủ buổi; không giảm tạ
+  /// (điều kiện 02 của Kiệt).
+  public enum ComebackStep: Sendable, Hashable {
+    /// 3–6 ngày: tập như lần trước.
+    case asBefore
+    /// 7–27 ngày: bớt một hiệp mỗi bài (`LighterSession`).
+    case lighter
+    /// ≥ 28 ngày: buổi ngắn — nửa số bài đầu của buổi (`ShortSession`).
+    case short
+  }
+
+  public static let lighterFromDays = 7
+  public static let shortFromDays = 28
+
+  public static func comebackStep(daysOff: Int) -> ComebackStep {
+    if daysOff >= shortFromDays { return .short }
+    if daysOff >= lighterFromDays { return .lighter }
+    return .asBefore
+  }
+
 
   public struct Result: Sendable, Hashable {
     public let action: Action
@@ -202,7 +228,8 @@ public enum DailyPlan {
       let reschedule: [Alternative] =
         i.canReschedule ? [i.postponeTo.map { .postpone(to: $0) }, .makeRest].compactMap { $0 } : []
       if !trained, i.daysOff >= comebackDays {
-        return Result(action: .comeback(s), reason: .returning(daysOff: i.daysOff), alternatives: [.lighter, .viewPlan])
+        let alts: [Alternative] = comebackStep(daysOff: i.daysOff) == .asBefore ? [.lighter, .viewPlan] : [.fullSession, .viewPlan]
+        return Result(action: .comeback(s), reason: .returning(daysOff: i.daysOff), alternatives: alts)
       }
       if let r = i.recovery, r.suggestsLighter(today: i.date) {
         return Result(action: .start(s), reason: .lowRecovery(r.signals), alternatives: [.lighter] + reschedule)
