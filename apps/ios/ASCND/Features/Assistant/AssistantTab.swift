@@ -37,6 +37,8 @@ struct AssistantTab: View {
   @Environment(\.scenePhase) private var scenePhase
   /// "Hỏi Koa Coach" từ Ghi nhanh: mở thẳng màn chat (về `false` khi đã nhận).
   var openCoach: Binding<Bool> = .constant(false)
+  /// Chat vừa đóng (rời màn chat) — RootTabView đưa về tab đã mở chat.
+  var onCoachClosed: () -> Void = {}
   @State private var path: [AssistantRoute] = []
   @State private var chat: CoachChat?
   @State private var signal: AssistantSignalBook?
@@ -278,6 +280,9 @@ struct AssistantTab: View {
     // RN học khi app vào nền (`AppState` → `background`): đó mới là lúc cuộc
     // trò chuyện thật sự "xong".
     // `initial`: lần đầu tab dựng (chưa từng mở) cũng nhận lời mời.
+    .onChange(of: path) { old, new in
+      if old.contains(.chat), !new.contains(.chat) { onCoachClosed() }
+    }
     .onChange(of: openCoach.wrappedValue, initial: true) { _, go in
       guard go else { return }
       openCoach.wrappedValue = false

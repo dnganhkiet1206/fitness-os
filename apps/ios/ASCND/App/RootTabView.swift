@@ -27,6 +27,9 @@ struct RootTabView: View {
   @State private var quickLog = QuickLogVisibility()
   /// "Hỏi Koa Coach" trong Ghi nhanh → tab Tiến bộ mở thẳng màn chat.
   @State private var openCoach = false
+  /// Tab đã mở Koa Coach (Hôm nay, Dinh dưỡng…): đóng chat thì về lại đó, không
+  /// đứng ở Tiến bộ (Kiệt 21/10). `nil` khi chat mở từ chính Tiến bộ.
+  @State private var coachReturn: AppTab?
 
   var body: some View {
     TabView(selection: $selection) {
@@ -54,7 +57,11 @@ struct RootTabView: View {
       .accessibilityHint(Text(String(localized: "tab.nutrition.hint")))
       Tab("tab.progress", systemImage: "chart.line.uptrend.xyaxis", value: AppTab.progress) {
         // Tiến bộ = Trợ lý cũ + Koa / Gains + Cơ thể + huy chương (GĐ3).
-        AssistantTab(openCoach: $openCoach)
+        AssistantTab(openCoach: $openCoach) {
+          guard let back = coachReturn else { return }
+          coachReturn = nil
+          selection = back
+        }
       }
       .accessibilityHint(Text(String(localized: "tab.progress.hint")))
     }
@@ -66,8 +73,7 @@ struct RootTabView: View {
       // Chỉ khi các function AI có trên máy chủ (`probeAI`), như mọi lối vào AI khác.
       askCoach: services.aiDeployed == true
         ? {
-          selection = .progress
-          openCoach = true
+          openCoachFromHere()
         } : nil
     ) { screen in
       // Ô Buổi tập của Ghi nhanh = buổi theo lịch hôm nay (Kiệt 22/10), như ở Hôm nay.
@@ -76,8 +82,11 @@ struct RootTabView: View {
     .environment(quickLog)
     .onChange(of: services.coachRequest) { _, _ in
       guard services.aiDeployed == true else { return }
-      selection = .progress
-      openCoach = true
+      openCoachFromHere()
+    }
+    // Tự đổi tab khi chat đang mở → không còn "về lại" nữa.
+    .onChange(of: selection) { _, tab in
+      if tab != .progress { coachReturn = nil }
     }
     // Ăn mừng huy chương / thử thách (#527, `CelebrationHost` ở layout gốc của
     // RN): trên mọi tab, phủ cả thanh tab.
@@ -106,6 +115,13 @@ struct RootTabView: View {
   }
 
   /// Buổi phát sinh ngoài lịch: ghi tay, chỉ trong tab Tập luyện (Kiệt 22/10).
+  /// Mở Koa Coach (ở tab Tiến bộ) và nhớ tab đang đứng để đóng chat là về lại.
+  private func openCoachFromHere() {
+    coachReturn = selection == .progress ? nil : selection
+    selection = .progress
+    openCoach = true
+  }
+
   private func logWorkoutInTraining() {
     selection = .workouts
     linked = .logWorkout
