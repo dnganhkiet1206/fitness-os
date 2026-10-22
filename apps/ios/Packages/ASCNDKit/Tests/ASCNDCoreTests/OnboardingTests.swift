@@ -52,59 +52,37 @@ private func flow(_ store: Store, _ writer: Writer = Writer(), user: String = "u
   return c
 }
 
-/// Đi hết luồng với các câu trả lời hợp lệ.
+/// Đi hết luồng với các câu trả lời hợp lệ (6 màn, thiết kế lại 22/10).
 @MainActor
-private func answerAll(_ c: OnboardingController, branch: OnboardingDraft.Branch = .body) {
+private func answerAll(_ c: OnboardingController, goal: String = "bulk") {
   #expect(c.next())  // welcome → intention
-  c.pickBranch(branch)
-  #expect(c.next())
-  if branch != .maintain {
-    #expect(c.pickGoal(branch.goals[0]))
-    #expect(c.next())
-  }
-  c.pickSex(.female)
-  #expect(c.next())
-  c.setDob(LocalDate("1995-06-15")!)
-  #expect(c.next())
-  c.setHeightCm("165")
-  #expect(c.next())
-  c.setWeightKg("58")
-  #expect(c.next())
-  #expect(c.pickActivity("light"))
-  #expect(c.next())
+  #expect(c.pickPrimaryGoal(goal))
   #expect(c.pickTraining("beginner"))
-  #expect(c.next())  // → schedule (đợt 3)
-  #expect(c.next())  // → plan
+  #expect(c.next())  // → schedule
+  #expect(c.next())  // → sex (Về bạn)
+  c.pickSex(.female)
+  c.setDob(LocalDate("1995-06-15")!)
+  c.setHeightCm("165")
+  c.setWeightKg("58")
+  #expect(c.pickActivity("light"))
   #expect(c.next())  // → health / ready
   if c.draft.step == .health { #expect(c.next()) }
 }
 
 @MainActor
 struct OnboardingFlowTests {
+  /// Sáu màn: chào → mục tiêu (+ kinh nghiệm) → lịch → về bạn → Apple Health → kế hoạch.
   @Test func stepsInOrderWithEveryQuestionGated() async {
     let c = await flow(Store())
-    #expect(c.draft.step == .welcome && c.progress.step == 0 && c.progress.total == 13)
+    #expect(c.draft.step == .welcome && c.progress.step == 0 && c.progress.total == 6)
     #expect(!c.canGoBack)
     #expect(c.next())
-    #expect(c.draft.step == .intention && !c.canAdvance, "chưa chọn nhánh")
-    #expect(!c.next())
-    c.pickBranch(.body)
-    #expect(c.draft.goal == nil, "nhánh nhiều giá trị: chưa có mục tiêu")
-    #expect(c.next())
-    #expect(c.draft.step == .goal && !c.canAdvance)
-    #expect(!c.pickGoal("endurance"), "mục tiêu ngoài nhánh")
-    #expect(c.pickGoal("cut") && c.next())
-    #expect(c.draft.step == .sex && !c.canAdvance)
-    c.pickSex(.male)
-    #expect(c.next() && c.draft.step == .dob && c.canAdvance, "ngày sinh mặc định hợp lệ")
-    #expect(c.next() && c.draft.step == .height)
-    #expect(c.next() && c.draft.step == .weight)
-    #expect(c.next() && c.draft.step == .activity && !c.canAdvance)
-    #expect(!c.pickActivity("couch"))
-    #expect(c.pickActivity("high") && c.next())
-    #expect(c.draft.step == .experience && !c.canAdvance)
+    #expect(c.draft.step == .intention && !c.canAdvance, "chưa chọn mục tiêu")
+    #expect(!c.pickPrimaryGoal("couch"))
+    #expect(c.pickPrimaryGoal("cut") && c.draft.branch == .body)
+    #expect(!c.canAdvance, "chưa chọn kinh nghiệm")
     #expect(c.pickTraining("advanced") && c.next())
-    // Đợt 3: lịch tập gợi ý theo kinh nghiệm; 1 hay 6 ngày thì không đi tiếp được.
+    // Lịch tập gợi ý theo kinh nghiệm; 1 hay 6 ngày thì không đi tiếp được.
     #expect(c.draft.step == .schedule && c.canAdvance)
     #expect(c.draft.schedule == .init(sessions: 4, days: [0, 1, 3, 4], place: .gym, beginner: false))
     c.toggleDay(0)
@@ -114,60 +92,56 @@ struct OnboardingFlowTests {
     c.setSessions(3)
     c.setPlace(.dumbbell)
     #expect(c.draft.schedule == .init(sessions: 3, days: [0, 2, 4], place: .dumbbell, beginner: false) && c.next())
-    #expect(c.draft.step == .plan && c.next())
-    #expect(c.draft.step == .health && c.next())
-    #expect(c.draft.step == .ready && c.progress == (13, 13))
+    #expect(c.draft.step == .sex && !c.canAdvance, "về bạn: chưa có giới tính / mức vận động")
+    c.pickSex(.male)
+    #expect(!c.canAdvance)
+    #expect(c.pickActivity("high") && c.canAdvance, "ngày sinh / chiều cao / cân nặng có mặc định")
+    #expect(c.next() && c.draft.step == .health && c.next())
+    #expect(c.draft.step == .ready && c.progress == (6, 6))
     #expect(!c.next(), "màn cuối là Xong, không phải Tiếp")
   }
 
-  /// "Giữ đều": chọn nhánh là chọn mục tiêu; màn 03 vắng mặt ở CẢ HAI chiều;
-  /// tiến độ đếm màn thật sự hiện.
-  @Test func maintainSkipsGoalBothWays() async {
+  /// "Bỏ qua, dùng số trung bình": điền giới tính / mức vận động bằng giá trị dự phòng.
+  @Test func averagesFillTheUnansweredAboutYou() async {
     let c = await flow(Store())
-    #expect(c.next())
-    c.pickBranch(.maintain)
-    #expect(c.draft.goal == "maintain" && c.progress.total == 12)
-    #expect(c.next() && c.draft.step == .sex)
-    #expect(c.back() && c.draft.step == .intention)
-    // Đổi ý sang nhánh khác: màn 03 trở lại, mục tiêu cũ bỏ.
-    c.pickBranch(.capacity)
-    #expect(c.draft.goal == nil && c.next() && c.draft.step == .goal)
+    answerAll(c)
+    #expect(c.back() && c.back() && c.draft.step == .sex)
+    let d = await flow(Store())
+    #expect(d.next() && d.pickPrimaryGoal("maintain") && d.pickTraining("beginner") && d.next() && d.next())
+    #expect(d.draft.step == .sex && !d.canAdvance)
+    d.useAverages()
+    #expect(d.draft.sex == .other && d.draft.activityLevel == "moderate" && d.canAdvance)
+    d.pickSex(.female)
+    d.useAverages()
+    #expect(d.draft.sex == .female, "không ghi đè câu đã trả lời")
   }
 
   /// Máy không có HealthKit: không mời điều không nhận lời được.
   @Test func noHealthKitSkipsHealth() async {
     let c = await flow(Store(), health: false)
     answerAll(c)
-    #expect(c.draft.step == .ready && c.progress.total == 12)
-    #expect(c.back() && c.draft.step == .plan)
+    #expect(c.draft.step == .ready && c.progress.total == 5)
+    #expect(c.back() && c.draft.step == .sex)
   }
 
-  /// Ngày sinh tương lai: báo ngay ở màn 06, không đợi tới màn 08.
-  @Test func futureDobBlocksAtTheDobStep() async {
+  /// Ngày sinh tương lai: khoá ngay ở màn Về bạn.
+  @Test func futureDobBlocksAboutYou() async {
     let c = await flow(Store())
-    #expect(c.next())
-    c.pickBranch(.maintain)
-    #expect(c.next())
-    c.pickSex(.other)
-    #expect(c.next() && c.draft.step == .dob)
+    answerAll(c)
+    #expect(c.back() && c.back() && c.draft.step == .sex && c.canAdvance)
     c.setDob(LocalDate("2027-01-01")!)
     #expect(c.dobInvalid && !c.canAdvance)
     c.setDob(LocalDate("2026-10-05")!)
     #expect(!c.dobInvalid && c.canAdvance, "sinh hôm nay: 0 tuổi, hợp lệ")
   }
 
-  /// Màn cân nặng khoá theo cổng số đo; số ngoài cận không qua.
-  @Test func weightStepGatesOnBodyStats() async {
+  /// Màn Về bạn khoá theo cổng số đo; số ngoài cận không qua.
+  @Test func aboutYouGatesOnBodyStats() async {
     let c = await flow(Store())
-    #expect(c.next())
-    c.pickBranch(.maintain)
-    #expect(c.next())
-    c.pickSex(.male)
-    #expect(c.next() && c.next())
+    answerAll(c)
+    #expect(c.back() && c.back() && c.draft.step == .sex)
     c.setHeightCm("17")  // gõ nhầm
-    #expect(c.canAdvance, "màn chiều cao chưa khoá — cổng đứng ở màn cân nặng")
-    #expect(c.next() && c.draft.step == .weight && !c.canAdvance)
-    #expect(c.attempt.missing == [.heightCm])
+    #expect(!c.canAdvance && c.attempt.missing == [.heightCm])
     c.setHeightCm("172")
     c.setWeightKg("401")
     #expect(!c.canAdvance && c.attempt.missing == [.weightKg])
@@ -195,6 +169,7 @@ struct OnboardingFlowTests {
     #expect(row["onboarding_completed"]?.boolValue == true)
     #expect(row["name"] == nil)
     #expect(row["goal"]?.stringValue == "bulk" && row["sex"]?.stringValue == "female")
+    #expect(row["training_level"]?.stringValue == "beginner" && row["activity_level"]?.stringValue == "light")
     #expect(row["dob"]?.stringValue == "1995-06-15")
     #expect(row["height_cm"]?.doubleValue == 165 && row["weight_kg"]?.doubleValue == 58)
     #expect(row["units_height"]?.stringValue == "cm" && row["units_weight"]?.stringValue == "lbs")
@@ -224,13 +199,25 @@ struct OnboardingPersistenceTests {
     let store = Store()
     let c = await flow(store)
     #expect(c.next())
-    c.pickBranch(.body)
-    #expect(c.next())
-    #expect(c.pickGoal("recomp"))
+    #expect(c.pickPrimaryGoal("strength"))
     await c.settled()
     let again = await flow(store)
-    #expect(again.draft.step == .goal && again.draft.goal == "recomp" && again.draft.branch == .body)
-    #expect(again.canAdvance)
+    #expect(again.draft.step == .intention && again.draft.goal == "strength" && again.draft.branch == .capacity)
+    #expect(!again.canAdvance, "kinh nghiệm chưa chọn")
+  }
+
+  /// Nháp của luồng 13 màn cũ: mở lại ở màn đang chứa câu hỏi ấy.
+  @Test func oldDraftStepsMapToTheirScreen() async {
+    for (old, screen): (OnboardingDraft.Step, OnboardingDraft.Step) in [
+      (.goal, .intention), (.experience, .intention), (.dob, .sex), (.height, .sex), (.weight, .sex),
+      (.activity, .sex), (.plan, .ready),
+    ] {
+      let store = Store()
+      var d = OnboardingDraft()
+      d.step = old
+      try? await store.saveDraft(userId: "u1", d)
+      #expect(await flow(store).draft.step == screen, "\(old)")
+    }
   }
 
   /// Màn đã lưu vắng mặt lúc mở lại (HealthKit tắt): lùi về màn hiện gần nhất.
@@ -241,7 +228,7 @@ struct OnboardingPersistenceTests {
     #expect(c.back() && c.draft.step == .health)
     await c.settled()
     let again = await flow(store, health: false)
-    #expect(again.draft.step == .plan)
+    #expect(again.draft.step == .sex)
   }
 
   /// Đổi tài khoản: người sau không thấy nháp của người trước.

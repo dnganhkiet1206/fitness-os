@@ -71,14 +71,39 @@ public struct OnboardingDraft: Sendable, Hashable, Codable {
 
 /// Luật của luồng — thuần, để test đủ mọi hoán vị.
 public enum OnboardingRules {
-  /// `skip`: màn vắng mặt.
+  /// Thiết kế lại 22/10 (Kiệt duyệt mock theo style màn đăng nhập): 13 màn → 6.
+  /// Tên bước cũ giữ nguyên (nháp đã lưu vẫn đọc được); các câu hỏi gộp vào màn chứa:
+  /// - `intention`: mục tiêu (`goal`) + kinh nghiệm (`experience`);
+  /// - `sex` ("Về bạn"): giới tính, ngày sinh, chiều cao, cân nặng, mức vận động
+  ///   (`dob`, `height`, `weight`, `activity`) trong một danh sách;
+  /// - `ready`: kế hoạch (`plan`) + buổi đầu.
+  public static let order: [OnboardingDraft.Step] = [.welcome, .intention, .schedule, .sex, .health, .ready]
+
+  /// Màn chứa câu hỏi của một bước cũ.
+  public static func screen(of step: OnboardingDraft.Step) -> OnboardingDraft.Step {
+    switch step {
+    case .goal, .experience: .intention
+    case .dob, .height, .weight, .activity: .sex
+    case .plan: .ready
+    default: step
+    }
+  }
+
+  /// `skip`: màn vắng mặt — bước đã gộp vào màn khác, hoặc máy không có HealthKit.
   public static func skips(_ step: OnboardingDraft.Step, _ d: OnboardingDraft, healthAvailable: Bool) -> Bool {
-    (step == .goal && d.branch == .maintain) || (step == .health && !healthAvailable)
+    !order.contains(step) || (step == .health && !healthAvailable)
   }
 
   /// Các màn thật sự hiện, theo thứ tự.
   public static func shown(_ d: OnboardingDraft, healthAvailable: Bool) -> [OnboardingDraft.Step] {
-    OnboardingDraft.Step.allCases.filter { !skips($0, d, healthAvailable: healthAvailable) }
+    order.filter { !skips($0, d, healthAvailable: healthAvailable) }
+  }
+
+  /// Bốn mục tiêu của màn "Bạn muốn gì nhất?" (mock 22/10) → nhánh của RN.
+  public static let primaryGoals = ["bulk", "cut", "strength", "maintain"]
+
+  public static func branch(for goal: String) -> OnboardingDraft.Branch? {
+    OnboardingDraft.Branch.allCases.first { $0.goals.contains(goal) }
   }
 
   /// Cổng số đo (`planFromEntry`) với đúng các giá trị dự phòng của RN cho
@@ -93,9 +118,9 @@ public enum OnboardingRules {
   /// `unanswered`: màn này hỏi một điều mà chưa có câu trả lời.
   public static func unanswered(_ d: OnboardingDraft, today: LocalDate) -> Bool {
     switch d.step {
-    case .intention: d.branch == nil
+    case .intention: d.goal == nil || d.trainingLevel == nil
     case .goal: d.goal == nil
-    case .sex: d.sex == nil
+    case .sex: d.sex == nil || d.activityLevel == nil || attempt(d, today: today).missing.contains(.dob)
     case .dob: attempt(d, today: today).missing.contains(.dob)
     case .activity: d.activityLevel == nil
     case .experience: d.trainingLevel == nil
@@ -107,14 +132,14 @@ public enum OnboardingRules {
   /// Nút chính tắt: màn cân nặng / màn cuối khoá theo cổng số đo.
   public static func blocked(_ d: OnboardingDraft, today: LocalDate) -> Bool {
     let statsBad = attempt(d, today: today).plan == nil
-    if d.step == .weight || d.step == .ready, statsBad { return true }
+    if d.step == .sex || d.step == .weight || d.step == .ready, statsBad { return true }
     return unanswered(d, today: today)
   }
 
   /// `hop`: sang màn kế theo chiều `by`, bước qua màn vắng mặt, kẹp ở hai đầu.
   public static func hop(_ d: OnboardingDraft, by: Int, healthAvailable: Bool) -> OnboardingDraft.Step {
-    let all = OnboardingDraft.Step.allCases
-    guard let i = all.firstIndex(of: d.step) else { return d.step }
+    let all = order
+    guard let i = all.firstIndex(of: screen(of: d.step)) else { return d.step }
     var n = i + by
     while n >= 0, n < all.count, skips(all[n], d, healthAvailable: healthAvailable) { n += by }
     return all[max(0, min(all.count - 1, n))]
@@ -244,6 +269,8 @@ public final class OnboardingController {
       draft = saved
       // Màn đã lưu có thể vắng mặt bây giờ (máy đổi, HealthKit tắt): lùi về
       // màn hiện gần nhất.
+      // Nháp của luồng 13 màn: về màn đang chứa câu hỏi ấy.
+      draft.step = OnboardingRules.screen(of: draft.step)
       if OnboardingRules.skips(draft.step, draft, healthAvailable: healthAvailable) {
         draft.step = OnboardingRules.hop(draft, by: -1, healthAvailable: healthAvailable)
       }
@@ -284,6 +311,27 @@ public final class OnboardingController {
     guard let b = draft.branch, b.goals.contains(goal) else { return false }
     edit { $0.goal = goal }
     return true
+  }
+
+  /// Một trong `OnboardingRules.primaryGoals`: chọn luôn nhánh của nó.
+  @discardableResult
+  public func pickPrimaryGoal(_ goal: String) -> Bool {
+    guard let b = OnboardingRules.branch(for: goal) else { return false }
+    edit {
+      $0.branch = b
+      $0.goal = goal
+    }
+    return true
+  }
+
+  /// "Bỏ qua, dùng số trung bình" ở màn Về bạn: điền phần chưa trả lời bằng đúng các
+  /// giá trị dự phòng của cổng số đo (`attempt`); chiều cao / cân nặng / ngày sinh đã
+  /// có mặc định. Sửa lại được trong Cài đặt.
+  public func useAverages() {
+    edit {
+      if $0.sex == nil { $0.sex = .other }
+      if $0.activityLevel == nil { $0.activityLevel = "moderate" }
+    }
   }
 
   public func pickSex(_ s: FitnessCalc.Sex) { edit { $0.sex = s } }
