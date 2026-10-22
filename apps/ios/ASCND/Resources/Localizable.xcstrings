@@ -2,6 +2,1202 @@
  "sourceLanguage": "en",
  "version": "1.0",
  "strings": {
+  "ps.g.training": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Training"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tập luyện"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Entrenamiento"
+     }
+    }
+   }
+  },
+  "ps.g.steps": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Movement"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Vận động"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Movimiento"
+     }
+    }
+   }
+  },
+  "ps.g.nutrition": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nutrition"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ăn uống"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nutrición"
+     }
+    }
+   }
+  },
+  "ps.g.sleep": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sleep"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Giấc ngủ"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sueño"
+     }
+    }
+   }
+  },
+  "ps.g.recovery": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Recovery"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hồi phục"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Recuperación"
+     }
+    }
+   }
+  },
+  "ps.g.body": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Body"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cơ thể"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cuerpo"
+     }
+    }
+   }
+  },
+  "ps.l.good": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Good"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tốt"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bien"
+     }
+    }
+   }
+  },
+  "ps.l.attention": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Needs attention"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cần chú ý"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Requiere atención"
+     }
+    }
+   }
+  },
+  "ps.l.insufficient": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Not enough data"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chưa đủ dữ liệu"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Faltan datos"
+     }
+    }
+   }
+  },
+  "ps.c.noPlan": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "No training plan yet"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chưa có lịch tập"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Aún no hay plan de entrenamiento"
+     }
+    }
+   }
+  },
+  "ps.c.training %lld %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "This week %1$lld / %2$lld sessions"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tuần này %1$lld / %2$lld buổi"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Esta semana %1$lld / %2$lld sesiones"
+     }
+    }
+   }
+  },
+  "ps.c.steps %lld %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$lld / %2$lld days with steps"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$lld / %2$lld ngày có số bước"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$lld / %2$lld días con pasos"
+     }
+    }
+   }
+  },
+  "ps.c.nutrition %lld %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$lld / %2$lld days with meals logged"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$lld / %2$lld ngày có ghi bữa"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$lld / %2$lld días con comidas registradas"
+     }
+    }
+   }
+  },
+  "ps.c.sleep %lld %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$lld / %2$lld nights with data"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$lld / %2$lld đêm có dữ liệu"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$lld / %2$lld noches con datos"
+     }
+    }
+   }
+  },
+  "ps.c.recovery %lld %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$lld / %2$lld days with recovery measured"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$lld / %2$lld ngày đo được phục hồi"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$lld / %2$lld días con recuperación medida"
+     }
+    }
+   }
+  },
+  "ps.c.body %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld weigh-ins · 4 weeks"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld lần cân · 4 tuần"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld pesajes · 4 semanas"
+     }
+    }
+   }
+  },
+  "ps.n.training %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Planned before today: %lld"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Theo lịch tới hôm qua: %lld buổi"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Planificadas antes de hoy: %lld"
+     }
+    }
+   }
+  },
+  "ps.n.today %@ %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Today %1$@ · 7-day avg %2$@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hôm nay %1$@ · TB 7 ngày %2$@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hoy %1$@ · media 7 días %2$@"
+     }
+    }
+   }
+  },
+  "ps.n.protein %@ %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Protein 7-day avg %1$@ / %2$@ g"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đạm TB 7 ngày %1$@ / %2$@ g"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Proteína media 7 días %1$@ / %2$@ g"
+     }
+    }
+   }
+  },
+  "ps.n.sleep %@ %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "7-day avg %1$@ · goal %2$@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "TB 7 ngày %1$@ · mục tiêu %2$@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Media 7 días %1$@ · meta %2$@"
+     }
+    }
+   }
+  },
+  "ps.n.recovery %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Readiness 7-day avg %@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sẵn sàng TB 7 ngày %@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Preparación media 7 días %@"
+     }
+    }
+   }
+  },
+  "ps.a.good": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "On track — keep this rhythm."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đang đúng hướng — giữ nhịp này."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Vas bien: mantén este ritmo."
+     }
+    }
+   }
+  },
+  "ps.a.training": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "One more session gets you back on plan this week."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Thêm một buổi là kịp lịch tuần này."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Una sesión más y vuelves al plan esta semana."
+     }
+    }
+   }
+  },
+  "ps.a.steps": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "A few short walks are enough to lift the average."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Vài lần đi bộ ngắn là đủ kéo TB lên."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Unos paseos cortos bastan para subir la media."
+     }
+    }
+   }
+  },
+  "ps.a.nutrition": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Add a protein-rich food to each meal."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Thêm một món giàu đạm mỗi bữa."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Añade un alimento rico en proteína a cada comida."
+     }
+    }
+   }
+  },
+  "ps.a.sleep": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Go to bed 30 minutes earlier on a few nights."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đi ngủ sớm hơn 30 phút vài tối."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Acuéstate 30 minutos antes algunas noches."
+     }
+    }
+   }
+  },
+  "ps.a.recovery": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Training capacity is lower — a lighter session is an option."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Khả năng tập đang thấp hơn — có thể chọn buổi nhẹ hơn."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "La capacidad de entrenar es menor: puedes elegir una sesión más ligera."
+     }
+    }
+   }
+  },
+  "ps.a.body": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Weight is moving against your goal — check this week's calories."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cân đang đi ngược mục tiêu — xem lại calo trong tuần."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "El peso va en contra de tu meta: revisa las calorías de la semana."
+     }
+    }
+   }
+  },
+  "ps.m.need %@ %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@ · need %2$lld"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@ · cần %2$lld"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@ · faltan %2$lld"
+     }
+    }
+   }
+  },
+  "ps.log": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Log"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ghi"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Registrar"
+     }
+    }
+   }
+  },
+  "ps.log.a11y %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Log %@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ghi %@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Registrar %@"
+     }
+    }
+   }
+  },
+  "ps.open.hint": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Opens details"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mở chi tiết"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Abre los detalles"
+     }
+    }
+   }
+  },
+  "ps.about.short": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Compared with your own goals over the last 7 days. Not medical advice."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "So với mục tiêu của chính bạn trong 7 ngày gần nhất. Không phải lời khuyên y tế."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Comparado con tus propias metas de los últimos 7 días. No es consejo médico."
+     }
+    }
+   }
+  },
+  "ps.m.protein": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Protein"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đạm"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Proteína"
+     }
+    }
+   }
+  },
+  "ps.m.kcal": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Calories"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Calo"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Calorías"
+     }
+    }
+   }
+  },
+  "ps.m.water": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Water"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nước"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Agua"
+     }
+    }
+   }
+  },
+  "ps.m.days": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Days with meals logged"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ngày có ghi bữa"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Días con comidas registradas"
+     }
+    }
+   }
+  },
+  "ps.m.avg %@ %@ %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Avg %1$@ / %2$@ %3$@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "TB %1$@ / %2$@ %3$@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Media %1$@ / %2$@ %3$@"
+     }
+    }
+   }
+  },
+  "ps.results": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Results"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Kết quả"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Resultados"
+     }
+    }
+   }
+  },
+  "ps.missing": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Needs more data"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cần thêm dữ liệu"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Faltan datos"
+     }
+    }
+   }
+  },
+  "ps.failed": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Couldn't load this week's data. Pull to try again."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chưa tải được số liệu tuần này. Kéo xuống để thử lại."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "No se pudieron cargar los datos de la semana. Desliza para reintentar."
+     }
+    }
+   }
+  },
+  "ps.more.body": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Weight & measurements"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cân nặng & số đo"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Peso y medidas"
+     }
+    }
+   }
+  },
+  "ps.range %@ %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Week %1$@ – %2$@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tuần %1$@ – %2$@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Semana %1$@ – %2$@"
+     }
+    }
+   }
+  },
+  "ps.attentionCount %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld need attention"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld cần chú ý"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld requieren atención"
+     }
+    }
+   }
+  },
+  "ps.focus.two %@ %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@ and %2$@ need the most attention."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@ và %2$@ đáng chú ý nhất."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@ y %2$@ requieren más atención."
+     }
+    }
+   }
+  },
+  "ps.focus.one %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ needs the most attention."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ đáng chú ý nhất."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ requiere más atención."
+     }
+    }
+   }
+  },
+  "ps.focus.empty": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Log a few more days so Koa can read your week."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ghi thêm vài ngày để Koa đọc được tuần của bạn."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Registra unos días más para que Koa pueda leer tu semana."
+     }
+    }
+   }
+  },
+  "ps.focus.good": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Everything with data is on track."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mọi nhóm có dữ liệu đều đang đúng hướng."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Todo lo que tiene datos va bien."
+     }
+    }
+   }
+  },
+  "ps.week": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "This week"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tuần này"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Esta semana"
+     }
+    }
+   }
+  },
+  "ps.about.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "About these results"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Về các kết quả này"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sobre estos resultados"
+     }
+    }
+   }
+  },
+  "ps.about.body": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "“Good” and “Needs attention” compare your last 7 days with your own goals. Missing data is shown as missing — Koa doesn't guess."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "“Tốt”, “Cần chú ý” so số 7 ngày gần nhất với mục tiêu của chính bạn. Thiếu dữ liệu thì ghi là thiếu — Koa không đoán."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "“Bien” y “Requiere atención” comparan tus últimos 7 días con tus propias metas. Si faltan datos, se indica: Koa no adivina."
+     }
+    }
+   }
+  },
+  "ps.about.medical": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "ASCND isn't a medical device. For health concerns, talk to a doctor."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "ASCND không phải thiết bị y tế. Có vấn đề sức khoẻ, hãy hỏi bác sĩ."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "ASCND no es un dispositivo médico. Ante dudas de salud, consulta a un médico."
+     }
+    }
+   }
+  },
   "wr.ai.take": {
    "extractionState": "manual",
    "localizations": {
