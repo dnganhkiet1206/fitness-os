@@ -293,8 +293,13 @@ public final class WorkoutFlow {
   /// (trả `false`); mẫu gốc không đổi.
   @discardableResult
   public func setLighterToday(_ on: Bool) async -> Bool {
+    await setVariantToday(on ? .lighter : .full)
+  }
+
+  /// Chọn bản của buổi hôm nay (đủ / nhẹ / ngắn). Buổi đã chạm thì giữ nguyên.
+  public func setVariantToday(_ v: TodayVariant) async -> Bool {
     if let current = session, current.plan.date == today.today, !Self.untouched(current) { return false }
-    guard today.setLighterToday(on) else { return false }
+    guard today.setVariantToday(v) else { return false }
     await install()
     return true
   }

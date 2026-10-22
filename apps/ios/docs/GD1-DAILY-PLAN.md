@@ -58,6 +58,7 @@
 
 - **Chuỗi ngày ghi:** bỏ khỏi Today. Không xoá dữ liệu hay tính năng streak.
 - **Mất pump và tụt hạng:** bỏ. Thay bằng chào mừng quay lại.
+- **Bước quay lại (22/10):** `DailyPlan.comebackStep` — nghỉ 3–6 ngày tập như lần trước (phương án: nhẹ hơn); 7–27 ngày nút chính là "Bắt đầu, nhẹ hơn"; ≥ 28 ngày là "Bắt đầu buổi ngắn" (`ShortSession`: nửa số bài đầu, ≥ 2). Hai trường hợp sau có phương án "Tập đủ buổi". Thẻ hiện ngày tập gần nhất (Gains).
 - **Tập nhẹ hơn:** bớt một hiệp mỗi bài trong buổi hiện tại. Không sửa mẫu, không tự giảm tạ, bỏ qua được.
 
 "Tuần của Koa" dựa trên lịch thật. Chỉ đánh dấu xong khi có buổi tập ghi thật.

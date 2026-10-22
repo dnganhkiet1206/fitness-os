@@ -91,6 +91,10 @@ final class DailyPlanSource {
       case "rest": return .init(action: .recovery, reason: .restDay, alternatives: [.logFree])
       case "comeback":
         return .init(action: .comeback(back), reason: .returning(daysOff: 5), alternatives: [.lighter, .viewPlan])
+      case "comeback-week":
+        return .init(action: .comeback(back), reason: .returning(daysOff: 10), alternatives: [.fullSession, .viewPlan])
+      case "comeback-long":
+        return .init(action: .comeback(back), reason: .returning(daysOff: 30), alternatives: [.fullSession, .viewPlan])
       case "done": return .init(action: .postWorkoutMeal, reason: .proteinLeft(grams: 86), alternatives: [.viewSession])
       case "none": return .init(action: .setUpWeek, reason: .noSchedule, alternatives: [.logFree])
       case "next":

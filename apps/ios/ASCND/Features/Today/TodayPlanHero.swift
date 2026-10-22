@@ -9,6 +9,10 @@ struct TodayPlanHero: View {
   let result: DailyPlan.Result
   /// Buổi hôm nay đang là bản nhẹ (đã chọn "Tập nhẹ hơn").
   var lighterOn = false
+  /// Buổi hôm nay là buổi ngắn (quay lại sau ≥ 4 tuần nghỉ).
+  var shortOn = false
+  /// Ngày tập gần nhất (Gains) — dòng "Lần cuối" của thẻ quay lại.
+  var lastSession: LocalDate?
   /// Đang ghi một phương án (dời / nghỉ) — khoá nút để không bấm hai lần.
   var busy = false
   var failed = false
@@ -34,7 +38,26 @@ struct TodayPlanHero: View {
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
           .fixedSize(horizontal: false, vertical: true)
       }
-      if lighterOn, result.action.session != nil {
+      if case .comeback = result.action, let lastSession {
+        Text(verbatim: String(localized: "dp.comeback.last \(Self.weekday(lastSession)) \(Self.day(lastSession))"))
+          .font(DS.TextStyle.footnote)
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+      }
+      if let tip = comebackTip {
+        Text(verbatim: tip)
+          .font(DS.TextStyle.footnote.weight(.semibold))
+          .foregroundStyle(DS.Color.metricOrangeGraphic.swiftUI)
+          .padding(.horizontal, 10)
+          .padding(.vertical, 8)
+          .frame(maxWidth: .infinity, alignment: .leading)
+          .background(DS.Color.metricOrangeGraphic.swiftUI.opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
+          .fixedSize(horizontal: false, vertical: true)
+      }
+      if shortOn, result.action.session != nil {
+        Label(String(localized: "dp.short.on"), systemImage: "arrow.down.circle")
+          .font(DS.TextStyle.footnote)
+          .foregroundStyle(DS.Color.foreground.swiftUI)
+      } else if lighterOn, result.action.session != nil {
         Label(String(localized: "dp.lighter.on"), systemImage: "arrow.down.circle")
           .font(DS.TextStyle.footnote)
           .foregroundStyle(DS.Color.foreground.swiftUI)
@@ -76,6 +99,22 @@ struct TodayPlanHero: View {
     result.alternatives.filter { !(lighterOn && $0 == .lighter) }
   }
 
+  /// Bước gợi ý khi quay lại (`DailyPlan.comebackStep`).
+  private var comebackStep: DailyPlan.ComebackStep? {
+    guard case .comeback = result.action, case .returning(let days) = result.reason else { return nil }
+    return DailyPlan.comebackStep(daysOff: days)
+  }
+
+  /// Câu gợi ý theo số ngày nghỉ — ẩn khi người dùng đã chọn một bản.
+  private var comebackTip: String? {
+    guard !lighterOn, !shortOn, let step = comebackStep else { return nil }
+    return switch step {
+    case .asBefore: String(localized: "dp.comeback.tip.asBefore")
+    case .lighter: String(localized: "dp.comeback.tip.lighter")
+    case .short: String(localized: "dp.comeback.tip.short")
+    }
+  }
+
   // MARK: - Chữ
 
   private var eyebrow: String {
@@ -112,7 +151,12 @@ struct TodayPlanHero: View {
     case .resume: String(localized: "dp.cta.resume")
     case .start:
       if case .lowRecovery = result.reason { String(localized: "dp.cta.planned") } else { String(localized: "today.start") }
-    case .comeback: String(localized: "today.start")
+    case .comeback:
+      switch lighterOn || shortOn ? .asBefore : comebackStep ?? .asBefore {
+      case .asBefore: String(localized: "today.start")
+      case .lighter: String(localized: "dp.cta.lighter")
+      case .short: String(localized: "dp.cta.short")
+      }
     case .setUpWeek: String(localized: "dp.title.setUpWeek")
     case .postWorkoutMeal: String(localized: "dp.cta.meal")
     case .progress: String(localized: "dp.cta.progress")
@@ -158,6 +202,7 @@ struct TodayPlanHero: View {
     case .logFree: String(localized: "dp.alt.logFree")
     case .viewSession: String(localized: "dp.alt.viewSession")
     case .viewPlan: String(localized: "dp.alt.viewPlan")
+    case .fullSession: String(localized: "dp.alt.fullSession")
     }
   }
 

@@ -2,6 +2,190 @@
  "sourceLanguage": "en",
  "version": "1.0",
  "strings": {
+  "dp.comeback.tip.asBefore": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Short break: train like last time."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nghỉ ngắn: tập như lần trước là được."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Pausa corta: entrena como la última vez."
+     }
+    }
+   }
+  },
+  "dp.comeback.tip.lighter": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Over a week off: we suggest one set fewer per exercise today."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nghỉ hơn một tuần: gợi ý bớt 1 hiệp mỗi bài cho buổi này."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Más de una semana sin entrenar: te sugerimos una serie menos por ejercicio hoy."
+     }
+    }
+   }
+  },
+  "dp.comeback.tip.short": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Four weeks or more off: we suggest a short session, the first half of the exercises, to ease back in."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nghỉ từ 4 tuần: gợi ý buổi ngắn, nửa số bài đầu, để quen lại."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cuatro semanas o más sin entrenar: te sugerimos una sesión corta, la primera mitad de los ejercicios, para retomar."
+     }
+    }
+   }
+  },
+  "dp.cta.lighter": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Start lighter"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bắt đầu, nhẹ hơn"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Empezar más ligero"
+     }
+    }
+   }
+  },
+  "dp.cta.short": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Start the short session"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bắt đầu buổi ngắn"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Empezar la sesión corta"
+     }
+    }
+   }
+  },
+  "dp.alt.fullSession": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Do the full session"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tập đủ buổi như lần trước"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hacer la sesión completa"
+     }
+    }
+   }
+  },
+  "dp.short.on": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Short session today: first half of the exercises"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hôm nay tập buổi ngắn: nửa số bài đầu"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sesión corta hoy: primera mitad de los ejercicios"
+     }
+    }
+   }
+  },
+  "dp.comeback.last %@ %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Last workout: %1$@, %2$@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Lần tập gần nhất: %1$@, %2$@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Último entrenamiento: %1$@, %2$@"
+     }
+    }
+   }
+  },
   "ps.g.training": {
    "extractionState": "manual",
    "localizations": {

@@ -36,4 +36,24 @@ struct LighterSessionTests {
     LighterSession.set(false, userId: "u", date: Self.day, templateId: "t", in: defaults)
     #expect(!LighterSession.isOn(userId: "u", date: Self.day, templateId: "t", in: defaults))
   }
+
+  /// Buổi ngắn: nửa số bài đầu (làm tròn lên), ít nhất hai; hiệp / tạ giữ nguyên.
+  @Test func shortSessionKeepsTheFirstHalfOfTheExercises() {
+    func names(_ n: Int) -> [TemplateExercise] { (0..<n).map { TemplateExercise(exerciseName: "E\($0)", sets: 3, reps: 8, weightKg: 20) } }
+    #expect(ShortSession.exercises(names(1)).count == 1)
+    #expect(ShortSession.exercises(names(2)).count == 2)
+    #expect(ShortSession.exercises(names(3)).count == 2)
+    #expect(ShortSession.exercises(names(5)).map(\.exerciseName) == ["E0", "E1", "E2"])
+    #expect(ShortSession.exercises(names(6)).count == 3)
+    #expect(ShortSession.exercises(names(5)).allSatisfy { $0.sets == 3 }, "không bớt hiệp")
+  }
+
+  @Test func variantsAreExclusive() throws {
+    let defaults = try #require(UserDefaults(suiteName: "variant-\(UUID())"))
+    ShortSession.set(true, userId: "u", date: Self.day, templateId: "t", in: defaults)
+    #expect(ShortSession.isOn(userId: "u", date: Self.day, templateId: "t", in: defaults))
+    #expect(!LighterSession.isOn(userId: "u", date: Self.day, templateId: "t", in: defaults))
+    let short = Self.plan.sessionPlan(variant: .short)!.rows
+    #expect(short == Self.plan.sessionPlan(variant: .full)!.rows, "hai bài → buổi ngắn giữ cả hai")
+  }
 }
