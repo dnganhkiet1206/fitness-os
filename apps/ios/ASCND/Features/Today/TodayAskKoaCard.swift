@@ -2,7 +2,7 @@ import ASCNDCore
 import ASCNDDesignSystem
 import SwiftUI
 
-/// Thẻ "Hỏi Koa" ở Hôm nay (Kiệt 21/10, thiết kế của Kiệt): lối vào Koa Coach riêng,
+/// Mục "Hỏi Koa" ở Hôm nay (Kiệt 21/10, thiết kế của Kiệt): lối vào Koa Coach riêng,
 /// tách khỏi thẻ Insight. Chạm thẻ (hay nút ›) mở cuộc trò chuyện. Thanh ghi bằng AI
 /// "Kể cho Koa hôm nay…" ở lại thẻ "Hôm nay của bạn" (Kiệt 21/10: tách ra).
 struct TodayAskKoaCard: View {
@@ -44,9 +44,10 @@ struct TodayAskKoaCard: View {
           .clipShape(RoundedRectangle(cornerRadius: DS.Radius.lg, style: .continuous))
           .accessibilityHidden(true)
       }
+      // Nằm thẳng trên nền như điểm nhấn của Apple Health — không khung thẻ (Kiệt 21/10).
       .frame(maxWidth: .infinity, alignment: .leading)
-      .padding(DS.Spacing.md)
-      .todayCard()
+      .padding(.horizontal, 2)
+      .padding(.top, DS.Spacing.sm)
       .contentShape(Rectangle())
     }
     .buttonStyle(TodayPressStyle())
