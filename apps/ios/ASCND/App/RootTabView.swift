@@ -7,16 +7,16 @@ import SwiftUI
 /// (`app-tabs.tsx`). Cộng đồng bỏ khỏi thanh tab (mở từ Tiến bộ); vòng "Trợ lý"
 /// (vai `.search`) gộp vào Tiến bộ.
 ///
-/// `progress` giữ giá trị lưu `"assistant"`: tab đã lưu của bản cũ mở đúng chỗ.
-/// Giá trị lưu `"community"` không còn → `@SceneStorage` về mặc định (Hôm nay).
+/// `progress` giữ giá trị `"assistant"` (link / dữ liệu cũ).
 enum AppTab: String, Hashable {
   case today, workouts, nutrition
   case progress = "assistant"
 }
 
 struct RootTabView: View {
-  /// Nhớ tab đang mở qua những lần hệ thống thu hồi scene.
-  @SceneStorage("root.tab") private var selection: AppTab = .today
+  /// Mở app luôn ở Hôm nay (Kiệt 22/10: "app vừa mở tự chạy sang tab Tiến bộ" là lỗi) —
+  /// không còn nhớ tab cuối qua các lần mở (`@SceneStorage`).
+  @State private var selection: AppTab = .today
   @Environment(AppServices.self) private var services
   /// Link `ascnd://` chờ mở (#527 deep link lát 2).
   @Environment(DeepLinkInbox.self) private var links: DeepLinkInbox?
