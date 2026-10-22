@@ -4,7 +4,7 @@ import SwiftUI
 
 /// Một việc ghi được từ Today — màn ghi nào mở (`todo-card.tsx` của RN).
 enum TodayTodo: String, CaseIterable, Identifiable {
-  case meal, workout, sleep, bio, weight
+  case meal, workout, sleep, bio, weight, water
   var id: String { rawValue }
 }
 
@@ -28,6 +28,9 @@ struct TodayDayCard: View {
   var planNext: String?
   /// Đã tập xong mà muốn ghi buổi phát sinh.
   var onExtraWorkout: (() -> Void)?
+  /// Nút ghi nhanh trên thẻ Nước, ghi rõ lượng ("+ 8 oz") — chạm thẻ thì mở màn Nước
+  /// để chọn lượng (Kiệt 22/10: chạm thẻ tự ghi mà không biết ghi bao nhiêu).
+  var quickWater: (label: String, add: () -> Void)?
   /// Thanh "Ghi hôm nay" luôn hiện; chạm (hoặc micro) mở màn với chữ / giọng nói.
   var onTell: (_ voice: Bool) -> Void = { _ in }
   /// Dòng cân nặng khi đã lâu chưa cân (`TodayDay.showsWeighIn`); `nil` = ẩn.
@@ -151,7 +154,7 @@ struct TodayDayCard: View {
           }
           .padding(.horizontal, 16)
           .padding(.top, 12)
-          .padding(.bottom, t.item == .workout && t.state == .done && onExtraWorkout != nil ? 4 : 16)
+          .padding(.bottom, hasChip(t) ? 4 : 16)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
@@ -161,19 +164,12 @@ struct TodayDayCard: View {
       .accessibilityLabel(Text(verbatim: Self.name(t.item)))
       .accessibilityValue(Text(verbatim: [Self.badgeText(t), t.detail].compactMap { $0 }.joined(separator: ", ")))
       .accessibilityAddTraits(.isButton)
+      if t.item == .water, let quickWater {
+        chip(quickWater.label, color: color, action: quickWater.add)
+      }
       // Đã tập xong: nút riêng ghi buổi phát sinh (19/10, chủ dự án).
       if t.item == .workout, t.state == .done, let onExtraWorkout {
-        Button(action: onExtraWorkout) {
-          Label(String(localized: "day.workout.extra"), systemImage: "plus")
-            .font(.system(size: 12, weight: .semibold))
-            .foregroundStyle(color)
-            .padding(.horizontal, 10).frame(minHeight: 28)
-            .background(color.opacity(0.12), in: Capsule())
-            .frame(minHeight: 44, alignment: .leading)
-        }
-        .buttonStyle(TodayPressStyle())
-        .padding(.horizontal, 16)
-        .padding(.bottom, 8)
+        chip(String(localized: "day.workout.extra"), color: color, action: onExtraWorkout)
       }
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -182,6 +178,25 @@ struct TodayDayCard: View {
     .background(DS.Color.card.swiftUI)
     .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous))
     .shadow(color: .black.opacity(0.05), radius: 6, y: 2)
+  }
+
+  private func hasChip(_ t: Tile) -> Bool {
+    (t.item == .water && quickWater != nil) || (t.item == .workout && t.state == .done && onExtraWorkout != nil)
+  }
+
+  /// Nút phụ trên thẻ: "+ Buổi phát sinh", "+ 8 oz".
+  private func chip(_ text: String, color: Color, action: @escaping () -> Void) -> some View {
+    Button(action: action) {
+      Label(text, systemImage: "plus")
+        .font(.system(size: 13, weight: .semibold))
+        .foregroundStyle(color)
+        .padding(.horizontal, 12).frame(minHeight: 30)
+        .background(color.opacity(0.16), in: Capsule())
+        .frame(minHeight: 44, alignment: .leading)
+    }
+    .buttonStyle(TodayPressStyle())
+    .padding(.horizontal, 16)
+    .padding(.bottom, 8)
   }
 
   /// "✓ Đã xong" · "◌ Chưa ghi" · "Nghỉ" · "Apple Health".
@@ -196,7 +211,7 @@ struct TodayDayCard: View {
       case .rest:
         Image(systemName: "moon.zzz.fill").foregroundStyle(DS.Color.mutedForeground.swiftUI)
       }
-      Text(verbatim: Self.badgeText(t) ?? "")
+      Text(verbatim: (Self.badgeText(t) ?? "").prefix(1).uppercased() + (Self.badgeText(t) ?? "").dropFirst())
         .foregroundStyle(t.state == .done ? DS.Color.readinessGreen.swiftUI : DS.Color.mutedForeground.swiftUI)
     }
     .font(.system(size: 14, weight: .semibold))

@@ -194,6 +194,9 @@ struct TodayExtras<Plan: View>: View {
         TodayDayCard(
           tiles: dayTiles(mascot), planNext: planNext,
           onExtraWorkout: onLogWorkout,
+          quickWater: water == nil ? nil : (
+            label: SpokenLogDisplay.water(waterStepMl, unit: services.preferences.volumeUnit),
+            add: { act(.water) }),
           onTell: { voice in tellVoice = voice; showsDayLog = true },
           weighIn: weighInRow, onLogAll: { showsDayLog = true },
           onTap: tapItem, onWeight: { showsWeight = true })
@@ -237,6 +240,11 @@ struct TodayExtras<Plan: View>: View {
       case .meal: LogMealView(userId: userId)
       case .sleep: LogSleepView(makeLogger: { services.makeSleepLogger(userId: userId) })
       case .bio: LogBiometricsView(makeLogger: { services.makeBiometricLogger(userId: userId) })
+      case .water:
+        if let water {
+          NavigationStack { WaterView(book: water) }
+            .presentationDragIndicator(.visible)
+        }
       case .workout, .weight: EmptyView()
       }
     }
@@ -761,7 +769,8 @@ struct TodayExtras<Plan: View>: View {
     switch item {
     case .sleep: act(.sleep)
     case .meal: act(.meal)
-    case .water: act(.water)
+    // Thẻ Nước mở màn Nước (chọn lượng); "+ 8 oz" trên thẻ mới là ghi nhanh.
+    case .water: logging = .water
     case .workout: act(.workout)
     }
   }
