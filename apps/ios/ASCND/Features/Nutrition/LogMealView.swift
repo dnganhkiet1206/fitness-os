@@ -53,6 +53,8 @@ struct LogMealView: View {
   /// Tấm "đã lưu" đã hiện (cho chuyển động vào) và thanh đếm của nút OK.
   @State private var panelIn = false
   @State private var countdown: CGFloat = 1
+  /// Bữa người dùng vừa chạm — CHƯA chốt; chỉ chốt khi bấm OK (Kiệt 22/10).
+  @State private var picked: String?
   /// Tấm tự đóng sau chừng này nếu không chạm gì (Kiệt 22/10: chờ lâu hơn).
   static let autoCloseAfter: Double = 8
   @State private var query = ""
@@ -171,7 +173,7 @@ struct LogMealView: View {
         Text(verbatim: text)
           .font(DS.TextStyle.title2)
           .foregroundStyle(DS.Color.foreground.swiftUI)
-        Text(String(localized: "logMeal.savedInto \(DiaryView.mealName(logger.mealType))"))
+        Text(String(localized: "logMeal.savedInto \(DiaryView.mealName(picked ?? logger.mealType))"))
           .font(DS.TextStyle.body)
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
       }
@@ -184,14 +186,13 @@ struct LogMealView: View {
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
         LazyVGrid(columns: [GridItem(.adaptive(minimum: 104), spacing: 8)], spacing: 8) {
           ForEach(MealDiary.order, id: \.self) { key in
-            let on = key == logger.mealType
+            let on = key == (picked ?? logger.mealType)
             Button {
+              // Chọn thì dừng đếm: tấm chờ người dùng bấm OK để chốt.
               autoClose?.cancel()
-              withAnimation(reduceMotion ? nil : .easeOut(duration: 0.2)) { countdown = 0 }
-              Task {
-                await logger.retype(key)
-                try? await Task.sleep(for: .milliseconds(600))
-                finish()
+              withAnimation(reduceMotion ? nil : .easeOut(duration: 0.2)) {
+                picked = key
+                countdown = 1
               }
             } label: {
               Label(DiaryView.mealName(key), systemImage: MealSlotGlyph.symbol(key))
@@ -210,7 +211,13 @@ struct LogMealView: View {
       .offset(y: panelIn ? 0 : 20)
       Spacer(minLength: 0)
       // OK với thanh thời gian: phần sáng co dần về trái tới lúc tấm tự đóng.
-      Button { finish() } label: {
+      Button {
+        guard let picked, picked != logger.mealType else { return finish() }
+        Task {
+          await logger.retype(picked)
+          finish()
+        }
+      } label: {
         Text(String(localized: "common.ok"))
           .font(DS.TextStyle.headline)
           .foregroundStyle(DS.Color.background.swiftUI)
@@ -238,7 +245,7 @@ struct LogMealView: View {
       }
       withAnimation(.linear(duration: Self.autoCloseAfter)) { countdown = 0 }
     }
-    .sensoryFeedback(.selection, trigger: logger.mealType)
+    .sensoryFeedback(.selection, trigger: picked)
   }
 
   private func finish() {
@@ -258,6 +265,9 @@ struct LogMealView: View {
         // "+" một món → Lưu.
         VStack(alignment: .leading, spacing: DS.Spacing.md) {
           searchField
+          // Mở bằng "Nhập" (thẻ Bữa ở Hôm nay): phần tự nhập món lên ngay dưới ô tìm,
+          // không nằm khuất cuối trang (Kiệt 22/10).
+          if start == .manual { customCard(logger) }
           searchResults(logger)
           itemsSection(logger)
           let browsing = query.trimmingCharacters(in: .whitespaces).count < MealLog.searchMinLength
@@ -267,7 +277,7 @@ struct LogMealView: View {
           if browsing, services.aiDeployed == true {
             MealSuggestCard(logger: logger)
           }
-          customCard(logger)
+          if start != .manual { customCard(logger) }
         }
         .padding(DS.Spacing.md)
       }

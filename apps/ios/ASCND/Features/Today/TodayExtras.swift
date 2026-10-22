@@ -101,6 +101,14 @@ struct TodayExtras<Plan: View>: View {
   @State private var waterTaps = 0
   /// Tăng sau mỗi lần đọc lại ngày / ghi nhanh — Insight đọc lại theo.
   @State private var dayVersion = 0
+  /// Camera món ăn / mã vạch mở thẳng từ thẻ Bữa; món tìm được chờ ở `scannedFoods`
+  /// tới khi camera đóng hẳn, rồi mở màn ghi bữa điền sẵn.
+  /// Giờ ngủ quen cho nút "Ghi 23:00–7:00" trên thẻ Giấc ngủ.
+  @State private var sleepHabit: (bed: SleepLog.Clock, wake: SleepLog.Clock)?
+  @State private var sleepNote: String?
+  @State private var scanningFood = false
+  @State private var scanningBarcode = false
+  @State private var scannedFoods: [MealLog.Food] = []
   /// Tấm nhập lượng nước tuỳ chỉnh từ thẻ Nước.
   @State private var showsWaterAmount = false
   @Environment(ProfileBook.self) private var profile: ProfileBook?
@@ -204,6 +212,19 @@ struct TodayExtras<Plan: View>: View {
             label: SpokenLogDisplay.water(waterStepMl, unit: services.preferences.volumeUnit),
             add: { act(.water) },
             custom: { showsWaterAmount = true }),
+          quickSleep: sleepHabit.map { h in
+            (label: String(localized: "day.sleep.quick \("\(TellKoaSheet.hhmm(h.bed))–\(TellKoaSheet.hhmm(h.wake))")"),
+             log: { Task { await quickSleep() } })
+          },
+          mealQuick: { q in
+            // Chụp / Mã vạch: mở THẲNG camera, không qua màn ghi bữa (Kiệt 22/10);
+            // có món rồi mới mở màn ghi với món điền sẵn.
+            switch q {
+            case .mealPhoto: scanningFood = true
+            case .mealScan: scanningBarcode = true
+            default: logging = q
+            }
+          },
           onTell: { voice in tellVoice = voice; showsDayLog = true },
           weighIn: weighInRow, onLogAll: { showsDayLog = true },
           onTap: tapItem, onWeight: { showsWeight = true })
@@ -239,6 +260,12 @@ struct TodayExtras<Plan: View>: View {
         .presentationDragIndicator(.visible)
       }
     }
+    .fullScreenCover(isPresented: $scanningFood, onDismiss: openScanned) {
+      ScanFoodView { foods in scannedFoods = foods }
+    }
+    .fullScreenCover(isPresented: $scanningBarcode, onDismiss: openScanned) {
+      ScanBarcodeView { food in scannedFoods = [food.mealFood(id: UUID().uuidString.lowercased())] }
+    }
     .sheet(isPresented: $showsWaterAmount) {
       WaterManualSheet(unit: services.preferences.volumeUnit) { amount in
         showsWaterAmount = false
@@ -248,9 +275,15 @@ struct TodayExtras<Plan: View>: View {
     .sheet(isPresented: $showsDayLog, onDismiss: { Task { await reloadDay() } }) {
       TellKoaSheet(userId: userId, startListening: tellVoice)
     }
-    .sheet(item: $logging, onDismiss: { Task { await reloadDay() } }) { item in
+    .sheet(item: $logging, onDismiss: {
+      scannedFoods = []
+      Task { await reloadDay() }
+    }) { item in
       switch item {
-      case .meal: LogMealView(userId: userId)
+      case .meal: LogMealView(userId: userId, prefill: scannedFoods)
+      case .mealPhoto: LogMealView(userId: userId, start: .photo)
+      case .mealScan: LogMealView(userId: userId, start: .scan)
+      case .mealManual: LogMealView(userId: userId, start: .manual)
       case .sleep: LogSleepView(makeLogger: { services.makeSleepLogger(userId: userId) })
       case .bio: LogBiometricsView(makeLogger: { services.makeBiometricLogger(userId: userId) })
       case .water:
@@ -534,6 +567,27 @@ struct TodayExtras<Plan: View>: View {
   /// Một chạm thêm mức nhanh đầu tiên của đơn vị (250 ml / 8 oz).
   private var waterStepMl: Int { Water.stepMl(services.preferences.volumeUnit) }
 
+  /// Ghi nhanh giấc đêm qua theo giờ quen (Kiệt 22/10).
+  private func quickSleep() async {
+    guard let sleep = services.makeSleepLogger(userId: userId) else { return }
+    await sleep.loadUsual()
+    let outcome = await sleep.quickLog(online: services.sync.online)
+    sleep.close()
+    switch outcome {
+    case .saved, .queued:
+      AccessibilityNotification.Announcement(String(localized: "sleepLog.saved")).post()
+      await reloadDay()
+    default:
+      logging = .sleep
+    }
+  }
+
+  /// Camera đã đóng: có món thì mở màn ghi bữa với món ấy (xem rồi Lưu).
+  private func openScanned() {
+    guard !scannedFoods.isEmpty else { return }
+    logging = .meal
+  }
+
   private func addWater(ml: Int? = nil) async {
     guard let water else { return }
     waterNote = nil
@@ -557,7 +611,9 @@ struct TodayExtras<Plan: View>: View {
     // Nguồn của giấc đêm qua cho ô Ngủ (cùng lượt đọc với màn ghi giấc ngủ).
     if let sleep = services.makeSleepLogger(userId: userId) {
       await sleep.load()
+      await sleep.loadUsual()
       sleepFromHealth = sleep.healthNight != nil
+      sleepHabit = sleep.habit
       sleep.close()
     }
   }
