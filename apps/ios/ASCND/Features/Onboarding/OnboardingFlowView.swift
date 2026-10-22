@@ -51,8 +51,11 @@ struct OnboardingFlowView: View {
   }
 }
 
-private struct OnboardingStepsView: View {
+struct OnboardingStepsView: View {
   let flow: OnboardingController
+  /// Luồng debug (`ASCND_DEBUG_FLOW`, chỉ bản Debug): không xin quyền Apple Health,
+  /// không lưu lịch chờ áp, không gửi telemetry — chỉ để xem giao diện.
+  var dryRun = false
   @Environment(AppServices.self) private var services
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var forward = true
@@ -248,12 +251,15 @@ private struct OnboardingStepsView: View {
       let userId = flow.userId
       Task {
         if await flow.finish() {
+          guard !dryRun else { return }
           if let choice { StarterPlan.savePending(.init(choice: choice, startNow: startNow), userId: userId) }
           Telemetry.capture(.onboardingCompleted)
         } else if let f = flow.failure {
           failure = f.copy
         }
       }
+    } else if step == .health, dryRun {
+      go(forward: true)
     } else if step == .health {
       // Xin quyền + đồng bộ lần đầu; từ chối / lỗi vẫn đi tiếp — Cài đặt còn nút Đồng bộ.
       connecting = true

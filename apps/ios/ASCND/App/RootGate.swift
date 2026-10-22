@@ -15,6 +15,18 @@ struct RootGate: View {
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
   var body: some View {
+    #if DEBUG
+      if DebugFlowView.enabled {
+        DebugFlowView()
+      } else {
+        gated
+      }
+    #else
+      gated
+    #endif
+  }
+
+  private var gated: some View {
     Group {
       switch services.session.phase {
       case .loading:
