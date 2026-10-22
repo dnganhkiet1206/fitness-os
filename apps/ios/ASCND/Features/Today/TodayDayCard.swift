@@ -4,7 +4,7 @@ import SwiftUI
 
 /// Một việc ghi được từ Today — màn ghi nào mở (`todo-card.tsx` của RN).
 enum TodayTodo: String, CaseIterable, Identifiable {
-  case meal, workout, sleep, bio, weight
+  case meal, workout, sleep, bio, weight, water
   var id: String { rawValue }
 }
 
@@ -28,6 +28,9 @@ struct TodayDayCard: View {
   var planNext: String?
   /// Đã tập xong mà muốn ghi buổi phát sinh.
   var onExtraWorkout: (() -> Void)?
+  /// Nút ghi nhanh trên thẻ Nước, ghi rõ lượng ("+ 8 oz") — chạm thẻ thì mở màn Nước
+  /// để chọn lượng (Kiệt 22/10: chạm thẻ tự ghi mà không biết ghi bao nhiêu).
+  var quickWater: (label: String, add: () -> Void)?
   /// Thanh "Ghi hôm nay" luôn hiện; chạm (hoặc micro) mở màn với chữ / giọng nói.
   var onTell: (_ voice: Bool) -> Void = { _ in }
   /// Dòng cân nặng khi đã lâu chưa cân (`TodayDay.showsWeighIn`); `nil` = ẩn.
@@ -55,23 +58,26 @@ struct TodayDayCard: View {
           .foregroundStyle(pending ? DS.Color.mutedForeground.swiftUI : DS.Color.readinessGreen.swiftUI)
       }
       .padding(.horizontal, 4)
-      VStack(alignment: .leading, spacing: 12) {
-        // Grid (không LazyVGrid): hai ô một hàng luôn cao bằng nhau.
-        Grid(horizontalSpacing: 10, verticalSpacing: 10) {
-          ForEach(Array(stride(from: 0, to: tiles.count, by: 2)), id: \.self) { i in
-            GridRow {
-              tile(tiles[i])
-              if i + 1 < tiles.count { tile(tiles[i + 1]) } else { Color.clear }
-            }
+      // Dải thẻ vuốt ngang như "Đánh giá" của Apple Health (Kiệt 22/10): mỗi việc một
+      // thẻ lớn, thẻ sau ló ở mép phải; không gộp trong một khung.
+      ScrollView(.horizontal) {
+        // HStack (bốn thẻ) + fixedSize dọc: mọi thẻ cao bằng thẻ cao nhất.
+        HStack(alignment: .top, spacing: 12) {
+          ForEach(tiles) { t in
+            tile(t)
+              .containerRelativeFrame(.horizontal) { w, _ in w * 0.86 }
           }
         }
-        if let weighIn {
-          weightRow(weighIn)
-        }
-        tellBar
+        .fixedSize(horizontal: false, vertical: true)
+        .scrollTargetLayout()
       }
-      .padding(DS.Spacing.md)
-      .todayCard()
+      .scrollTargetBehavior(.viewAligned)
+      .scrollIndicators(.hidden)
+      .scrollClipDisabled()
+      if let weighIn {
+        weightRow(weighIn)
+      }
+      tellBar
     }
   }
 
@@ -107,35 +113,48 @@ struct TodayDayCard: View {
     .glassComposer(radius: 24)
   }
 
+  /// Ô kiểu thẻ đánh giá của Apple Health (Kiệt 22/10): cảnh Koa ở trên, dải màu
+  /// của mục bên dưới — "Giấc ngủ ›", số đã ghi (hay gợi ý), dòng trạng thái.
   private func tile(_ t: Tile) -> some View {
     let color = Self.color(t.item)
     let detail = t.detail.prefix(1).uppercased() + t.detail.dropFirst()
-    return VStack(alignment: .leading, spacing: 6) {
+    return VStack(alignment: .leading, spacing: 0) {
       Button { onTap(t.item) } label: {
-        VStack(alignment: .leading, spacing: 6) {
-          HStack(alignment: .top) {
-            Image(systemName: Self.glyph(t.item))
-              .font(.system(size: 12, weight: .bold))
-              .foregroundStyle(.white)
-              .frame(width: 28, height: 28)
-              .background(color, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
-            Spacer(minLength: 0)
-            badge(t)
-          }
-          Text(verbatim: t.state == .done ? detail : Self.name(t.item))
-            .font(.system(size: 18, weight: .bold).monospacedDigit())
-            .foregroundStyle(DS.Color.foreground.swiftUI)
-            .lineLimit(1).minimumScaleFactor(0.7)
-          Text(verbatim: t.state == .done ? Self.name(t.item) : detail)
-            .font(.system(size: 12))
+        VStack(alignment: .leading, spacing: 0) {
+          // Khung cố định, ảnh `.fill` phủ lên — ảnh không đẩy giãn ô.
+          Color.clear
+            .aspectRatio(638 / 384, contentMode: .fit)
+            .overlay {
+              Image(Self.scene(t.item))
+                .resizable()
+                .scaledToFill()
+                .accessibilityHidden(true)
+            }
+            .clipped()
+          VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 3) {
+              Text(verbatim: Self.name(t.item))
+                .font(.system(size: 15, weight: .semibold))
+              Image(systemName: "chevron.right")
+                .font(.system(size: 12, weight: .bold))
+            }
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-            .lineLimit(2, reservesSpace: true)
-          if t.item == .meal, let planNext {
-            Label(planNext, systemImage: "list.bullet.clipboard")
-              .font(.system(size: 11, weight: .semibold))
-              .foregroundStyle(DS.Color.metricOrangeGraphic.swiftUI)
-              .lineLimit(1)
+            Text(verbatim: detail)
+              .font(.system(size: 22, weight: .bold).monospacedDigit())
+              .foregroundStyle(DS.Color.foreground.swiftUI)
+              .lineLimit(1).minimumScaleFactor(0.7)
+            // Không lặp: số liệu đã là "Chưa ghi" thì bỏ dòng trạng thái.
+            if Self.badgeText(t)?.lowercased() != t.detail.lowercased() { status(t) }
+            if t.item == .meal, let planNext {
+              Label(planNext, systemImage: "list.bullet.clipboard")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(DS.Color.metricOrangeGraphic.swiftUI)
+                .lineLimit(1)
+            }
           }
+          .padding(.horizontal, 16)
+          .padding(.top, 12)
+          .padding(.bottom, hasChip(t) ? 4 : 16)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
@@ -145,47 +164,66 @@ struct TodayDayCard: View {
       .accessibilityLabel(Text(verbatim: Self.name(t.item)))
       .accessibilityValue(Text(verbatim: [Self.badgeText(t), t.detail].compactMap { $0 }.joined(separator: ", ")))
       .accessibilityAddTraits(.isButton)
+      if t.item == .water, let quickWater {
+        chip(quickWater.label, color: color, action: quickWater.add)
+      }
       // Đã tập xong: nút riêng ghi buổi phát sinh (19/10, chủ dự án).
       if t.item == .workout, t.state == .done, let onExtraWorkout {
-        Button(action: onExtraWorkout) {
-          Label(String(localized: "day.workout.extra"), systemImage: "plus")
-            .font(.system(size: 12, weight: .semibold))
-            .foregroundStyle(color)
-            .padding(.horizontal, 10).frame(minHeight: 28)
-            .background(color.opacity(0.12), in: Capsule())
-            .frame(minHeight: 44, alignment: .leading)
-        }
-        .buttonStyle(TodayPressStyle())
+        chip(String(localized: "day.workout.extra"), color: color, action: onExtraWorkout)
       }
     }
-    .padding(12)
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-    .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+    // Dải dưới ngả màu của mục, như dải tím dưới hình của Apple Health.
+    .background(color.opacity(0.14))
+    .background(DS.Color.card.swiftUI)
+    .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous))
     .shadow(color: .black.opacity(0.05), radius: 6, y: 2)
   }
 
-  @ViewBuilder private func badge(_ t: Tile) -> some View {
-    switch t.state {
-    case .done:
-      if t.auto {
-        Text("day.tile.auto")
-          .font(.system(size: 10, weight: .bold))
-          .foregroundStyle(DS.Color.readinessGreen.swiftUI)
-          .padding(.horizontal, 6).padding(.vertical, 2)
-          .background(DS.Color.readinessGreen.swiftUI.opacity(0.12), in: Capsule())
-      } else {
+  private func hasChip(_ t: Tile) -> Bool {
+    (t.item == .water && quickWater != nil) || (t.item == .workout && t.state == .done && onExtraWorkout != nil)
+  }
+
+  /// Nút phụ trên thẻ: "+ Buổi phát sinh", "+ 8 oz".
+  private func chip(_ text: String, color: Color, action: @escaping () -> Void) -> some View {
+    Button(action: action) {
+      Label(text, systemImage: "plus")
+        .font(.system(size: 13, weight: .semibold))
+        .foregroundStyle(color)
+        .padding(.horizontal, 12).frame(minHeight: 30)
+        .background(color.opacity(0.16), in: Capsule())
+        .frame(minHeight: 44, alignment: .leading)
+    }
+    .buttonStyle(TodayPressStyle())
+    .padding(.horizontal, 16)
+    .padding(.bottom, 8)
+  }
+
+  /// "✓ Đã xong" · "◌ Chưa ghi" · "Nghỉ" · "Apple Health".
+  private func status(_ t: Tile) -> some View {
+    HStack(spacing: 5) {
+      switch t.state {
+      case .done:
         Image(systemName: "checkmark.circle.fill")
-          .font(.system(size: 16))
           .foregroundStyle(.white, DS.Color.readinessGreen.swiftUI)
+      case .todo:
+        Image(systemName: "circle.dashed").foregroundStyle(DS.Color.mutedForeground.swiftUI)
+      case .rest:
+        Image(systemName: "moon.zzz.fill").foregroundStyle(DS.Color.mutedForeground.swiftUI)
       }
-    case .todo:
-      EmptyView()
-    case .rest:
-      Text("day.tile.rest")
-        .font(.system(size: 10, weight: .bold))
-        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-        .padding(.horizontal, 6).padding(.vertical, 2)
-        .background(DS.Color.foreground.swiftUI.opacity(0.06), in: Capsule())
+      Text(verbatim: (Self.badgeText(t) ?? "").prefix(1).uppercased() + (Self.badgeText(t) ?? "").dropFirst())
+        .foregroundStyle(t.state == .done ? DS.Color.readinessGreen.swiftUI : DS.Color.mutedForeground.swiftUI)
+    }
+    .font(.system(size: 14, weight: .semibold))
+    .accessibilityHidden(true)
+  }
+
+  static func scene(_ i: DayCheckIn.Item) -> String {
+    switch i {
+    case .sleep: "DaySleepScene"
+    case .meal: "DayMealScene"
+    case .water: "DayWaterScene"
+    case .workout: "DayWorkoutScene"
     }
   }
 
