@@ -17,7 +17,7 @@ struct ProgressHero: View {
 
   /// Khung vẽ trong toạ độ 222 × 222 của ảnh logo (cắt sát chữ A).
   static let frame = CGRect(x: 2, y: 30, width: 218, height: 166)
-  static let rim: CGFloat = 1.6
+  static let rim: CGFloat = 1.3
   static let hairline: CGFloat = 0.9
   /// Bán kính bo góc và nửa khe giữa hai mảng (đơn vị khung 222).
   static let corner: CGFloat = 6
@@ -122,7 +122,7 @@ struct ProgressHero: View {
 
   static func sharp(_ g: ProgressStatus.Group) -> Path { logo.intersection(Path(rect(g))) }
 
-  /// Lõi của mảng "Cần chú ý": như `part` nhưng lùi vào thêm `rim`, vẫn bo `corner`.
+  /// Lõi của mảng "Cần chú ý".
   static func core(_ g: ProgressStatus.Group) -> Path { cores[g] ?? part(g) }
 
   /// Thu `inset + corner` (góc nhọn) rồi nở `corner` khớp tròn.
@@ -134,8 +134,13 @@ struct ProgressHero: View {
   private static let rounded: [ProgressStatus.Group: Path] = Dictionary(
     uniqueKeysWithValues: ProgressStatus.Group.allCases.map { ($0, opened(sharp($0), inset: gap)) })
 
+  /// Lõi = mảng đã bo trừ đi một dải rộng đúng `rim` (khớp tròn) — viền dày ĐỀU ở mọi
+  /// cạnh và góc, góc trong đồng tâm với góc ngoài (Kiệt 22/10: "các nét mỏng đều").
   private static let cores: [ProgressStatus.Group: Path] = Dictionary(
-    uniqueKeysWithValues: ProgressStatus.Group.allCases.map { ($0, opened(sharp($0), inset: gap + rim)) })
+    uniqueKeysWithValues: ProgressStatus.Group.allCases.map { g in
+      let p = part(g)
+      return (g, p.subtracting(p.strokedPath(StrokeStyle(lineWidth: rim * 2, lineJoin: .round))))
+    })
 
   static func iconCenter(_ g: ProgressStatus.Group) -> CGPoint {
     switch g {
