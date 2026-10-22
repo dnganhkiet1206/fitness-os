@@ -32,13 +32,12 @@ struct ProgressHero: View {
         let tint = ProgressStyle.color(g)
         ctx.drawLayer { layer in
           // Bóng tối rõ ở chỗ nối: mảng trên tách khỏi mảng dưới như hình mẫu.
-          layer.addFilter(.shadow(color: .black.opacity(0.4), radius: 1.6, x: 0, y: 0.8))
+          layer.addFilter(.shadow(color: .black.opacity(0.85), radius: 3, x: 0, y: 1.5))
           switch level {
           case .good: layer.fill(shape, with: .color(tint))
           case .attention:
-            // Phần lấp kẽ đen liền, viền chỉ chạy quanh mảng gốc.
-            layer.fill(shape, with: .color(.black))
-            layer.fill(Self.base(g).subtracting(Self.inner(g)), with: .color(tint))
+            layer.fill(shape, with: .color(tint))
+            layer.fill(Self.inner(g), with: .color(.black))
           case .insufficient: layer.fill(shape, with: .color(Color(white: 0.17)))
           }
         }
@@ -49,7 +48,7 @@ struct ProgressHero: View {
         }
         // Icon SF Symbol giữ đúng tỉ lệ gốc của Apple.
         let symbol = ctx.resolve(
-          Text(Image(systemName: ProgressStyle.symbol(g))).font(.system(size: 15, weight: .semibold)).foregroundStyle(icon))
+          Text(Image(systemName: ProgressStyle.symbol(g))).font(.system(size: 13, weight: .semibold)).foregroundStyle(icon))
         ctx.draw(symbol, at: Self.iconCenter(g), anchor: .center)
       }
     }
@@ -106,80 +105,19 @@ struct ProgressHero: View {
   static let drawOrder: [ProgressStatus.Group] = [.training, .body, .steps, .recovery, .nutrition, .sleep]
   /// Hình của mảng — dò từ thiết kế Kiệt dựng (22/10, ảnh Progress 10:39), quy về khung
   /// 222 của chữ A hiện tại.
-  static func shape(_ g: ProgressStatus.Group) -> Path { filled[g] ?? Path() }
+  static func shape(_ g: ProgressStatus.Group) -> Path { shapes[g] ?? Path() }
 
   private static let traced: [ProgressStatus.Group: [(CGFloat, CGFloat)]] = [
-    .nutrition: [(102.16, 85.12), (108.02, 81.19), (110.46, 75.91), (110.46, 43.08), (106.97, 37.80), (99.51, 35.87), (92.96, 38.75), (88.70, 43.08), (71.52, 73.29), (70.61, 78.53), (72.32, 82.50), (76.21, 85.12), (100.85, 85.30)],
-    .sleep: [(144.28, 85.12), (146.79, 84.21), (149.63, 81.19), (149.67, 73.29), (133.65, 44.68), (128.41, 39.26), (121.86, 36.02), (107.41, 35.22), (106.10, 36.49), (111.19, 43.08), (111.19, 75.91), (112.14, 79.84), (115.27, 83.12), (119.20, 85.08), (142.82, 85.30)],
-    .steps: [(75.81, 131.09), (80.40, 128.47), (83.78, 124.21), (98.85, 98.26), (100.53, 91.67), (98.42, 87.74), (95.58, 85.99), (71.95, 85.27), (68.02, 86.18), (63.22, 90.36), (57.61, 99.57), (48.33, 116.46), (46.47, 123.23), (48.33, 128.14), (53.57, 131.75), (74.57, 131.75)],
-    .recovery: [(168.99, 131.09), (172.56, 128.47), (174.13, 125.85), (174.20, 119.26), (157.27, 88.11), (153.34, 82.61), (150.94, 81.19), (148.10, 84.21), (144.17, 85.96), (120.51, 86.03), (118.76, 87.74), (119.05, 91.67), (137.76, 124.54), (141.51, 128.73), (149.41, 132.08), (167.79, 131.75)],
-    .training: [(39.27, 184.96), (46.40, 182.34), (54.70, 174.44), (74.76, 138.99), (74.79, 135.02), (73.26, 132.88), (54.88, 132.48), (48.33, 130.18), (41.78, 132.37), (37.85, 136.15), (21.76, 165.27), (21.43, 173.13), (24.05, 179.72), (29.95, 184.31), (35.23, 185.62), (37.85, 185.04)],
-    .body: [(188.50, 184.96), (194.04, 182.60), (197.97, 178.41), (200.11, 173.13), (200.19, 167.89), (198.59, 162.61), (179.59, 129.93), (175.65, 126.80), (174.13, 127.16), (172.67, 129.78), (167.86, 132.40), (146.79, 132.88), (146.10, 138.99), (167.50, 175.75), (173.03, 181.03), (178.27, 184.24), (187.45, 185.25)],
+    .nutrition: [(102.16, 85.12), (104.79, 84.07), (108.02, 81.19), (109.08, 79.84), (110.46, 75.91), (110.46, 43.08), (109.52, 41.77), (108.72, 39.29), (106.97, 37.80), (106.10, 37.22), (104.79, 37.22), (102.16, 35.87), (99.51, 35.87), (95.58, 37.22), (94.27, 38.49), (92.96, 38.75), (88.70, 43.08), (88.22, 44.39), (86.15, 47.01), (82.47, 53.53), (82.07, 54.91), (73.05, 70.67), (72.68, 71.98), (71.52, 73.29), (70.64, 75.77), (70.61, 78.53), (70.79, 79.84), (72.32, 82.50), (74.57, 84.47), (76.21, 85.12), (95.58, 85.30), (96.89, 85.63), (100.85, 85.30)],
+    .sleep: [(144.28, 85.12), (146.79, 84.21), (149.63, 81.19), (150.07, 78.53), (149.67, 73.29), (133.65, 44.68), (128.41, 39.26), (125.79, 37.58), (121.86, 36.02), (115.30, 35.18), (107.41, 35.22), (106.10, 36.49), (108.93, 39.15), (111.19, 43.08), (111.19, 75.91), (111.56, 78.53), (112.14, 79.84), (115.27, 83.12), (117.89, 84.79), (119.20, 85.08), (142.82, 85.30)],
+    .steps: [(75.81, 131.09), (80.40, 128.47), (83.78, 124.21), (97.18, 100.88), (97.61, 99.57), (98.85, 98.26), (100.42, 94.33), (100.53, 91.67), (99.51, 89.05), (98.42, 87.74), (96.89, 86.43), (95.58, 85.99), (75.88, 85.99), (74.57, 85.27), (71.95, 85.27), (68.02, 86.18), (64.31, 89.05), (63.22, 90.36), (57.61, 99.57), (54.37, 106.12), (48.33, 116.46), (46.62, 120.57), (46.47, 123.23), (48.33, 128.14), (50.95, 130.51), (53.57, 131.75), (54.88, 132.08), (73.26, 132.08), (74.57, 131.75)],
+    .recovery: [(168.99, 131.09), (170.41, 130.37), (172.56, 128.47), (174.13, 125.85), (174.45, 124.54), (174.20, 119.26), (172.41, 115.33), (169.72, 111.40), (169.43, 110.09), (161.39, 95.64), (159.13, 91.67), (157.96, 90.36), (157.27, 88.11), (154.65, 83.85), (153.34, 82.61), (150.94, 81.19), (148.10, 84.21), (145.48, 85.74), (144.17, 85.96), (120.51, 86.03), (118.76, 87.74), (118.58, 90.36), (119.05, 91.67), (124.88, 102.19), (126.12, 103.50), (127.10, 105.98), (132.74, 115.33), (133.18, 116.64), (134.34, 117.95), (134.74, 119.26), (137.76, 124.54), (141.51, 128.73), (142.82, 129.75), (145.48, 130.77), (146.79, 131.68), (149.41, 132.08), (165.13, 132.08), (167.79, 131.75)],
+    .training: [(39.27, 184.96), (43.09, 184.05), (44.40, 182.96), (46.40, 182.34), (50.95, 178.67), (54.70, 174.44), (58.12, 167.89), (63.00, 159.99), (63.40, 158.68), (64.56, 157.37), (64.71, 156.06), (65.87, 154.75), (74.76, 138.99), (74.79, 135.02), (74.39, 133.71), (73.26, 132.88), (71.95, 132.48), (54.88, 132.48), (50.95, 131.49), (49.64, 130.37), (48.33, 130.18), (45.71, 130.47), (41.78, 132.37), (37.85, 136.15), (30.06, 149.47), (26.75, 156.06), (23.47, 161.30), (21.76, 165.27), (21.43, 173.13), (21.87, 175.75), (24.05, 179.72), (27.33, 182.74), (29.95, 184.31), (33.73, 184.96), (35.23, 185.62), (36.54, 185.62), (37.85, 185.04)],
+    .body: [(188.50, 184.96), (191.42, 184.24), (194.04, 182.60), (196.00, 181.03), (197.97, 178.41), (200.11, 173.13), (200.19, 167.89), (198.59, 162.61), (195.96, 158.68), (195.60, 157.37), (192.40, 152.13), (192.00, 150.82), (190.80, 149.47), (185.30, 138.99), (184.10, 137.68), (183.77, 136.37), (179.59, 129.93), (176.96, 127.45), (175.65, 126.80), (174.13, 127.16), (173.69, 128.47), (172.67, 129.78), (170.41, 131.42), (167.86, 132.40), (149.41, 132.48), (146.79, 132.88), (146.13, 133.71), (145.88, 135.02), (146.10, 138.99), (159.46, 162.61), (160.66, 163.92), (162.44, 167.89), (165.72, 173.13), (166.95, 174.44), (167.50, 175.75), (173.03, 181.03), (178.27, 184.24), (183.52, 185.04), (184.83, 185.62), (187.45, 185.25)],
   ]
 
   /// Nối các điểm dò bằng đường cong qua trung điểm — mép mượt, không răng cưa.
-  private static let shapes: [ProgressStatus.Group: Path] = {
-    var out = smoothed
-    // Hai mảng chân: lấy NGUYÊN đường bao logo gốc (bàn chân cong của logo), cắt từ mép
-    // trên của mảng đã dò, bo 10 — không gộp với mảng dò (gộp tạo bướu, Kiệt 22/10).
-    for (g, left) in [(ProgressStatus.Group.training, true), (.body, false)] {
-      let top = (out[g] ?? Path()).boundingRect.minY
-      let box = left ? CGRect(x: -10, y: top, width: 110.5 + 10, height: 80) : CGRect(x: 110.5, y: top, width: 130, height: 80)
-      out[g] = opened(logo.intersection(Path(box)), r: 10, inset: 0)
-    }
-    return out
-  }()
-
-  /// Liền một khối (Kiệt 22/10): mỗi mảng dưới kéo mép trên của nó lên NẰM DƯỚI mảng
-  /// phía trên — tới giữa mảng trên, theo đúng hai cạnh nghiêng của chân. Mảng trên vẽ
-  /// đè lên, nên kẽ hở ở các góc bo được lấp bằng màu mảng dưới, chạy theo đúng nét
-  /// của mảng trên. Đỉnh: Dinh dưỡng kéo sang phải nằm dưới Ngủ.
-  private static let filled: [ProgressStatus.Group: Path] = {
-    var out = shapes
-    let pairs: [(lower: ProgressStatus.Group, upper: ProgressStatus.Group)] = [
-      (.training, .steps), (.steps, .nutrition), (.body, .recovery), (.recovery, .sleep),
-    ]
-    for (lo, up) in pairs {
-      guard let l = shapes[lo], let u = shapes[up] else { continue }
-      // Chỉ tới vùng góc dưới của mảng trên (không lòi ra hai bên mảng trên).
-      let yA = u.boundingRect.maxY - 12, yB = l.boundingRect.minY + 12
-      let yM = u.boundingRect.midY
-      guard let a = extent(u, yA), let m = extent(u, yM), let b = extent(l, yB) else { continue }
-      // Hai cạnh của cầu nối kéo dài đúng hai cạnh nghiêng của mảng trên — không lòi ra
-      // ngoài nét của mảng trên; và không rộng hơn mảng dưới.
-      let k = (yB - yA) / (yA - yM)
-      let left = max(b.0, a.0 + (a.0 - m.0) * k), right = min(b.1, a.1 + (a.1 - m.1) * k)
-      var bridge = Path()
-      bridge.move(to: CGPoint(x: a.0, y: yA))
-      bridge.addLine(to: CGPoint(x: a.1, y: yA))
-      bridge.addLine(to: CGPoint(x: right, y: yB))
-      bridge.addLine(to: CGPoint(x: left, y: yB))
-      bridge.closeSubpath()
-      out[lo] = l.union(bridge)
-    }
-    if let n = shapes[.nutrition], let sl = shapes[.sleep] {
-      let nb = n.boundingRect, sb = sl.boundingRect
-      let top = max(nb.minY, sb.minY) + 2, bottom = min(nb.maxY, sb.maxY) - 2
-      let bridge = Path(CGRect(x: nb.maxX - 12, y: top, width: sb.minX + 12 - (nb.maxX - 12), height: bottom - top))
-      out[.nutrition] = n.union(bridge)
-    }
-    return out
-  }()
-
-  /// Bề ngang (trái, phải) của hình ở độ cao `y`.
-  private static func extent(_ p: Path, _ y: CGFloat) -> (CGFloat, CGFloat)? {
-    let b = p.boundingRect
-    var lo: CGFloat?, hi: CGFloat?
-    var x = b.minX
-    while x <= b.maxX {
-      if p.contains(CGPoint(x: x, y: y)) { if lo == nil { lo = x }; hi = x }
-      x += 0.25
-    }
-    guard let lo, let hi else { return nil }
-    return (lo, hi)
-  }
-
-  private static let smoothed: [ProgressStatus.Group: Path] = traced.mapValues { raw in
+  private static let shapes: [ProgressStatus.Group: Path] = traced.mapValues { raw in
     let q = raw.map { CGPoint(x: $0.0, y: $0.1) }
     let n = q.count
     func mid(_ a: CGPoint, _ b: CGPoint) -> CGPoint { CGPoint(x: (a.x + b.x) / 2, y: (a.y + b.y) / 2) }
@@ -192,22 +130,14 @@ struct ProgressHero: View {
 
   /// Tâm icon = tâm khung bao của mảng đã dò.
   static func iconCenter(_ g: ProgressStatus.Group) -> CGPoint {
-    let b = (shapes[g] ?? Path()).boundingRect
+    let b = shape(g).boundingRect
     return CGPoint(x: b.midX, y: b.midY)
   }
 
   /// Lõi đen của mảng "Cần chú ý": viền đều `rim × 1.6`.
-  static func base(_ g: ProgressStatus.Group) -> Path { shapes[g] ?? Path() }
-
   static func inner(_ g: ProgressStatus.Group) -> Path {
-    let p = base(g)
-    return p.subtracting(p.strokedPath(StrokeStyle(lineWidth: 2.0, lineJoin: .round)))
-  }
-
-  /// Mở hình (bo góc lồi bán kính `r`): thu `r + inset` góc nhọn rồi nở `r` khớp tròn.
-  private static func opened(_ p: Path, r: CGFloat, inset: CGFloat) -> Path {
-    let shrink = p.subtracting(p.strokedPath(StrokeStyle(lineWidth: (r + inset) * 2, lineJoin: .miter)))
-    return shrink.union(shrink.strokedPath(StrokeStyle(lineWidth: r * 2, lineCap: .round, lineJoin: .round)))
+    let p = shape(g)
+    return p.subtracting(p.strokedPath(StrokeStyle(lineWidth: rim * 3.2, lineJoin: .round)))
   }
 
   /// Ô chữ nhật của mảng; các ô cách nhau `hairline` (đường mảnh giữa các tầng / ở đỉnh).
