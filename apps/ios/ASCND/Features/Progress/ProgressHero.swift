@@ -181,12 +181,15 @@ enum ProgressStyle {
     }
   }
 
+  /// SF Symbols như Apple Health (Kiệt 22/10: "nhìn cách Apple vẽ icon mà học theo"):
+  /// người cử tạ qua đầu, người chạy, cà rốt, giường (Ngủ của Health), tim, người dang tay
+  /// (Số đo cơ thể của Health).
   static func symbol(_ g: ProgressStatus.Group) -> String {
     switch g {
-    case .training: "dumbbell.fill"
-    case .steps: "figure.walk"
-    case .nutrition: "fork.knife"
-    case .sleep: "moon.fill"
+    case .training: "figure.strengthtraining.traditional"
+    case .steps: "figure.run"
+    case .nutrition: "carrot.fill"
+    case .sleep: "bed.double.fill"
     case .recovery: "heart.fill"
     case .body: "figure.arms.open"
     }
