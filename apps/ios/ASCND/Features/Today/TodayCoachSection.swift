@@ -2,36 +2,50 @@ import ASCNDCore
 import ASCNDDesignSystem
 import SwiftUI
 
-/// Koa Coach ở Hôm nay (Kiệt 21/10, GĐ3: "đưa insight và Koa coach lên today vì đây
-/// sẽ là thứ người dùng thấy đầu tiên khi mở app"): thẻ "Insight hôm nay" ngay dưới
-/// việc chính, dòng cuối "Hỏi Koa về hôm nay ›" (22/10: gộp ô hỏi vào thẻ). Chỉ ở
-/// đây — Tiến bộ không lặp. Cuộc trò chuyện vẫn là MỘT của phiên (tab Tiến bộ giữ
-/// nó): dòng hỏi mở đúng cuộc ấy, như nút Koa ở Ghi nhanh.
+/// "Insight hôm nay" ở Hôm nay (Kiệt 21/10, GĐ3: "đưa insight lên today vì đây sẽ
+/// là thứ người dùng thấy đầu tiên khi mở app"), dạng điểm nhấn kiểu Apple Health
+/// (mock duyệt 21/10): tiêu đề lớn, lời giải thích, thẻ số liệu của đúng chủ đề.
+/// Có nút X để ẩn insight ấy; ghi thêm (ngủ / ăn / tập) ra insight mới thì hiện lại.
+/// Lối hỏi Koa đã rời thẻ (Kiệt 21/10: sẽ làm riêng).
 /// Chỉ khi các function AI có trên máy chủ (`AppServices.aiDeployed`).
 struct TodayCoachSection: View {
   let userId: String
   let today: LocalDate
-  let onAsk: () -> Void
 
   @Environment(AppServices.self) private var services
   @Environment(\.scenePhase) private var scenePhase
   @State private var signal: AssistantSignalBook?
   @State private var nudges: SmartNudgesBook?
   @State private var hour = Calendar.current.component(.hour, from: Date())
+  @AppStorage private var dismissed: String
+
+  init(userId: String, today: LocalDate) {
+    self.userId = userId
+    self.today = today
+    _dismissed = AppStorage(wrappedValue: "", "ascnd-insight-dismissed.\(userId)")
+  }
 
   private var lang: AppPreferences.Lang { services.preferences.lang }
+  private var dismissKey: String {
+    InsightHighlight.dismissKey(date: signal?.today ?? today, stamp: signal?.nudgeStamp ?? "")
+  }
 
   var body: some View {
     if services.aiDeployed == true {
       VStack(alignment: .leading, spacing: DS.Spacing.md) {
         // Máy chủ chưa bật tính năng → không hiện thẻ lỗi vĩnh viễn (15/10, audit).
-        if let nudges, !nudges.isNotDeployed {
+        if let nudges, !nudges.isNotDeployed, dismissed != dismissKey {
           SmartInsightCard(
             book: nudges,
             // AI lỗi (quá tải, mạng…): nhắc dựng từ số thật thay cho dòng lỗi.
             fallback: signal.map { SmartNudges.fallback($0.signal, lang: lang.rawValue, hour: hour) } ?? [],
-            ask: onAsk
+            signal: signal,
+            stepsGoal: Double(StepsGoalStore(store: UserDefaultsStore(), userId: userId).goal),
+            lang: lang.rawValue,
+            waterUnit: services.preferences.volumeUnit,
+            dismiss: { withAnimation(.easeInOut(duration: 0.25)) { dismissed = dismissKey } }
           ) { Task { await loadInsight(force: true) } }
+          .transition(.opacity)
         }
       }
       .task(id: userId) {
@@ -69,55 +83,55 @@ struct TodayCoachSection: View {
   private static func today() -> LocalDate { LocalDate(SystemWallClock().nowMillis(), in: .current) }
 }
 
-/// "Insight hôm nay": đang đọc / lỗi (chạm thử lại) / không có gì nổi bật /
-/// tối đa vài câu với chấm theo mức ưu tiên; "Cập nhật HH:mm" là lúc kết quả
-/// về (ẩn khi chưa có lần nào).
+/// Thẻ "Insight hôm nay": hàng nhãn (giờ cập nhật + X), rồi đang đọc / lỗi (chạm
+/// thử lại) / không có gì nổi bật / điểm nhấn: câu ưu tiên cao nhất thành tiêu đề
+/// + lời giải thích + thẻ số liệu; các câu còn lại ở chân thẻ.
 struct SmartInsightCard: View {
   let book: SmartNudgesBook
   /// Nhắc từ số thật khi AI không trả lời (`SmartNudges.fallback`).
   var fallback: [SmartNudges.Nudge] = []
-  /// Dòng "Hỏi Koa về hôm nay ›" ở cuối thẻ (Kiệt 22/10: gộp ô hỏi vào thẻ Insight).
-  var ask: (() -> Void)?
+  var signal: AssistantSignalBook?
+  var stepsGoal: Double = Double(DailySignals.defaultStepsGoal)
+  var lang = "vi"
+  /// Nước theo đơn vị người dùng chọn (ml / L hay oz), như ô Nước ở Hôm nay.
+  var waterUnit: Water.Unit = .ml
+  var dismiss: (() -> Void)?
   let retry: () -> Void
 
+  @Environment(\.openURL) private var openURL
+
   var body: some View {
-    VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-      HStack {
-        Label { Text("insight.title") } icon: { IntelligenceMark(size: 18) }
-          .font(DS.TextStyle.headline)
-          .foregroundStyle(DS.Color.foreground.swiftUI)
-          .accessibilityAddTraits(.isHeader)
-        Spacer()
-        if case .ready(let entry) = book.phase {
-          Text("insight.updated \(Self.time(entry.at))")
-            .font(DS.TextStyle.caption)
-            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-        }
-      }
-      VStack(alignment: .leading, spacing: 0) {
-        content
-          .padding(DS.Spacing.md)
-          .frame(maxWidth: .infinity, alignment: .leading)
-        if let ask {
-          Divider().opacity(0.6).padding(.horizontal, DS.Spacing.md)
-          Button(action: ask) {
-            HStack(spacing: 8) {
-              Text("assistant.ask").font(DS.TextStyle.body.weight(.medium))
-              Spacer(minLength: 0)
-              Image(systemName: "chevron.right").font(.footnote.weight(.semibold))
-                .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-            }
-            .foregroundStyle(DS.Color.foreground.swiftUI)
-            .padding(.horizontal, DS.Spacing.md)
-            .frame(minHeight: 48)
-            .contentShape(Rectangle())
-          }
-          .buttonStyle(TodayPressStyle())
-          .accessibilityLabel(Text("assistant.coach.open.a11y"))
-        }
-      }
-      .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.lg))
+    VStack(alignment: .leading, spacing: DS.Spacing.md) {
+      kicker
+      content
     }
+  }
+
+  private var kicker: some View {
+    HStack(spacing: 6) {
+      IntelligenceMark(size: 15)
+      Text("insight.title").textCase(.uppercase).tracking(1.2)
+        .accessibilityAddTraits(.isHeader)
+      if case .ready(let entry) = book.phase {
+        Text(verbatim: "·")
+        Text("insight.updated \(Self.time(entry.at))")
+      }
+      Spacer(minLength: 0)
+      if let dismiss {
+        Button(action: dismiss) {
+          Image(systemName: "xmark").font(.system(size: 12, weight: .bold))
+            .frame(width: 30, height: 30)
+            .background(DS.Color.foreground.swiftUI.opacity(0.08), in: Circle())
+            .frame(width: 44, height: 44)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .padding(.vertical, -7)
+        .accessibilityLabel(Text("insight.dismiss.a11y"))
+      }
+    }
+    .font(DS.TextStyle.footnote.weight(.semibold))
+    .foregroundStyle(DS.Color.mutedForeground.swiftUI)
   }
 
   @ViewBuilder private var content: some View {
@@ -129,20 +143,13 @@ struct SmartInsightCard: View {
           .font(DS.TextStyle.footnote)
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
       }
+      .padding(DS.Spacing.md)
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.lg))
     case .failed where !fallback.isEmpty:
       // Bản tóm tắt từ số liệu (16/10, chủ dự án): thẻ không trống mỗi lần AI quá
       // tải. Ghi rõ nguồn; chạm dòng nguồn để thử lại AI.
-      VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-        nudgeList(fallback)
-        Button(action: retry) {
-          Label("insight.fallback", systemImage: "arrow.clockwise")
-            .font(DS.TextStyle.caption)
-            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-            .frame(maxWidth: .infinity, minHeight: 32, alignment: .leading)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-      }
+      highlight(fallback, source: true)
     case .failed(let failure):
       Button(action: retry) {
         Label {
@@ -156,34 +163,276 @@ struct SmartInsightCard: View {
         }
         .font(DS.TextStyle.footnote)
         .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        .padding(DS.Spacing.md)
         .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+        .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.lg))
         .contentShape(Rectangle())
       }
       .buttonStyle(.plain)
     case .ready(let entry) where entry.nudges.isEmpty:
       Text("insight.empty")
-        .font(DS.TextStyle.footnote)
+        .font(DS.TextStyle.body)
         .foregroundStyle(DS.Color.mutedForeground.swiftUI)
     case .ready(let entry):
-      nudgeList(entry.nudges)
+      highlight(entry.nudges, source: false)
     }
   }
 
-  private func nudgeList(_ nudges: [SmartNudges.Nudge]) -> some View {
-      VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-        ForEach(Array(nudges.enumerated()), id: \.offset) { _, n in
-          HStack(alignment: .firstTextBaseline, spacing: DS.Spacing.sm) {
-            Circle()
-              .fill(Self.tint(n.priority))
-              .frame(width: 8, height: 8)
-              .accessibilityHidden(true)
-            Text(verbatim: n.message)
-              .font(DS.TextStyle.body)
+  // MARK: - Điểm nhấn
+
+  @ViewBuilder private func highlight(_ nudges: [SmartNudges.Nudge], source: Bool) -> some View {
+    if let (lead, rest) = InsightHighlight.lead(nudges) {
+      let topic = InsightHighlight.topic(lead.type)
+      VStack(alignment: .leading, spacing: DS.Spacing.md) {
+        VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+          if let topic {
+            Text(verbatim: title(topic))
+              .font(.title.bold())
+              .tracking(-0.4)
               .foregroundStyle(DS.Color.foreground.swiftUI)
               .fixedSize(horizontal: false, vertical: true)
+              .accessibilityAddTraits(.isHeader)
           }
+          Text(verbatim: lead.message)
+            .font(.title3)
+            .foregroundStyle(topic == nil ? DS.Color.foreground.swiftUI : DS.Color.mutedForeground.swiftUI)
+            .fixedSize(horizontal: false, vertical: true)
+        }
+        if topic != nil || !rest.isEmpty || source {
+          dataCard(topic, rest: rest, source: source)
         }
       }
+    }
+  }
+
+  private func dataCard(_ topic: InsightHighlight.Topic?, rest: [SmartNudges.Nudge], source: Bool) -> some View {
+    VStack(alignment: .leading, spacing: 0) {
+      if let topic {
+        header(topic).padding(DS.Spacing.md)
+        divider
+        HStack(alignment: .top, spacing: DS.Spacing.md) {
+          ForEach(Array(stats(topic).enumerated()), id: \.offset) { _, s in
+            VStack(alignment: .leading, spacing: 3) {
+              Text(verbatim: s.label).font(DS.TextStyle.footnote.weight(.semibold))
+                .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+              Text(verbatim: s.value).font(.title3.bold().monospacedDigit())
+                .foregroundStyle(DS.Color.foreground.swiftUI)
+              Text(verbatim: s.sub).font(DS.TextStyle.footnote)
+                .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .accessibilityElement(children: .combine)
+          }
+        }
+        .padding(DS.Spacing.md)
+      }
+      if !rest.isEmpty {
+        if topic != nil { divider }
+        VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+          ForEach(Array(rest.enumerated()), id: \.offset) { _, n in
+            HStack(alignment: .firstTextBaseline, spacing: DS.Spacing.sm) {
+              Circle()
+                .fill(Self.tint(n.priority))
+                .frame(width: 8, height: 8)
+                .accessibilityHidden(true)
+              Text(verbatim: n.message)
+                .font(DS.TextStyle.body)
+                .foregroundStyle(DS.Color.foreground.swiftUI)
+                .fixedSize(horizontal: false, vertical: true)
+            }
+          }
+        }
+        .padding(DS.Spacing.md)
+      }
+      if source {
+        if topic != nil || !rest.isEmpty { divider }
+        Button(action: retry) {
+          Label("insight.fallback", systemImage: "arrow.clockwise")
+            .font(DS.TextStyle.caption)
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .padding(.horizontal, DS.Spacing.md)
+            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+      }
+    }
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.lg))
+  }
+
+  private var divider: some View { Divider().opacity(0.6).padding(.horizontal, DS.Spacing.md) }
+
+  /// "Dinh dưỡng ›" + "● 1.308/2.508 kcal" + vòng. Chạm mở màn của chủ đề.
+  private func header(_ topic: InsightHighlight.Topic) -> some View {
+    let tint = tint(topic)
+    return Button {
+      if let url = URL(string: Self.link(topic)) { openURL(url) }
+    } label: {
+      HStack(alignment: .top, spacing: DS.Spacing.md) {
+        VStack(alignment: .leading, spacing: 8) {
+          HStack(spacing: 3) {
+            Text(verbatim: section(topic)).font(DS.TextStyle.body.weight(.semibold))
+            Image(systemName: "chevron.right").font(.caption2.weight(.bold))
+          }
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          HStack(spacing: 7) {
+            Circle().fill(tint).frame(width: 11, height: 11).accessibilityHidden(true)
+            Text(verbatim: valueLine(topic))
+              .font(.title2.bold().monospacedDigit())
+              .foregroundStyle(DS.Color.foreground.swiftUI)
+              .lineLimit(1).minimumScaleFactor(0.7)
+          }
+        }
+        Spacer(minLength: 0)
+        ZStack {
+          Circle().stroke(tint.opacity(0.22), lineWidth: 14)
+          Circle()
+            .trim(from: 0, to: InsightHighlight.progress(topic, today))
+            .stroke(tint, style: StrokeStyle(lineWidth: 14, lineCap: .round))
+            .rotationEffect(.degrees(-90))
+        }
+        .frame(width: 76, height: 76)
+        .accessibilityHidden(true)
+      }
+      .contentShape(Rectangle())
+    }
+    .buttonStyle(TodayPressStyle())
+  }
+
+  // MARK: - Số liệu
+
+  private var today: InsightHighlight.Today {
+    let s = signal?.signal ?? AssistantSuggestions.Signal()
+    return InsightHighlight.Today(
+      kcal: s.kcal, kcalTarget: s.kcalTarget, proteinG: s.proteinG, proteinTarget: s.proteinTarget,
+      sleepMin: s.sleepMin, sleepTargetMin: signal?.sleepTargetMin ?? 480, steps: s.steps, stepsGoal: stepsGoal,
+      waterMl: signal?.waterMl ?? 0, waterTargetMl: signal?.waterTargetMl ?? 2500, readiness: s.scoredReadiness)
+  }
+
+  private var week: InsightHighlight.Week { signal?.week ?? InsightHighlight.Week() }
+
+  private func n(_ v: Double) -> String { InsightHighlight.number(v, lang: lang) }
+  private func dur(_ m: Double) -> String { InsightHighlight.duration(m, lang: lang) }
+  private func water(_ ml: Double) -> String { SpokenLogDisplay.water(Int(ml.rounded()), unit: waterUnit) }
+
+  private func title(_ topic: InsightHighlight.Topic) -> String {
+    let t = today
+    switch topic {
+    case .calories:
+      let left = t.kcalTarget - t.kcal
+      return left > 0 && t.kcalTarget > 0
+        ? String(localized: "insight.h.calories.left \(n(left))") : String(localized: "insight.h.calories.done")
+    case .protein:
+      let left = t.proteinTarget - t.proteinG
+      return left > 0 && t.proteinTarget > 0
+        ? String(localized: "insight.h.protein.left \(n(left))") : String(localized: "insight.h.protein.done")
+    case .sleep:
+      return t.sleepMin > 0
+        ? String(localized: "insight.h.sleep \(dur(t.sleepMin))") : String(localized: "insight.h.sleep.none")
+    case .readiness:
+      guard let r = t.readiness else { return String(localized: "insight.h.readiness.none") }
+      return r >= 75
+        ? String(localized: "insight.h.readiness.high")
+        : r >= 50 ? String(localized: "insight.h.readiness.mid") : String(localized: "insight.h.readiness.low")
+    case .steps: return String(localized: "insight.h.steps \(n(t.steps))")
+    case .water: return String(localized: "insight.h.water \(water(t.waterMl))")
+    }
+  }
+
+  private func section(_ topic: InsightHighlight.Topic) -> String {
+    switch topic {
+    case .calories: String(localized: "insight.s.nutrition")
+    case .protein: String(localized: "insight.s.protein")
+    case .sleep: String(localized: "insight.s.sleep")
+    case .readiness: String(localized: "insight.s.readiness")
+    case .steps: String(localized: "insight.s.steps")
+    case .water: String(localized: "insight.s.water")
+    }
+  }
+
+  private func valueLine(_ topic: InsightHighlight.Topic) -> String {
+    let t = today
+    func pair(_ v: Double, _ goal: Double, _ unit: String) -> String {
+      let value = v > 0 ? n(v) : "–"
+      return goal > 0 ? "\(value)/\(n(goal)) \(unit)" : "\(value) \(unit)"
+    }
+    switch topic {
+    case .calories: return pair(t.kcal, t.kcalTarget, "kcal")
+    case .protein: return pair(t.proteinG, t.proteinTarget, "g")
+    case .sleep: return "\(t.sleepMin > 0 ? dur(t.sleepMin) : "–") / \(dur(t.sleepTargetMin))"
+    case .readiness: return "\(t.readiness.map(String.init) ?? "–")/100"
+    case .steps: return pair(t.steps, t.stepsGoal, "").trimmingCharacters(in: .whitespaces)
+    case .water: return Water.progressLabel(ml: t.waterMl, targetMl: t.waterTargetMl, waterUnit, locale: .app)
+    }
+  }
+
+  private struct Stat {
+    let label: String
+    let value: String
+    let sub: String
+  }
+
+  private func stats(_ topic: InsightHighlight.Topic) -> [Stat] {
+    let t = today, w = week
+    let none = String(localized: "insight.sub.noData")
+    func days(_ a: InsightHighlight.Average?) -> String {
+      a.map { String(localized: "insight.sub.days \("\($0.days)/7")") } ?? none
+    }
+    func goal(_ text: String) -> String { String(localized: "insight.sub.goal \(text)") }
+    func avg(_ text: String) -> String { String(localized: "insight.sub.avg \(text)") }
+    let avg7 = String(localized: "insight.l.avg7")
+    let protein = Stat(
+      label: String(localized: "insight.l.protein"), value: "\(n(t.proteinG)) g", sub: goal("\(n(t.proteinTarget)) g"))
+    let energy = Stat(
+      label: String(localized: "insight.l.calories"), value: "\(n(t.kcal)) kcal", sub: goal("\(n(t.kcalTarget)) kcal"))
+    let sleepAvg = Stat(label: avg7, value: w.sleepMin.map { dur($0.value) } ?? "–", sub: days(w.sleepMin))
+    let sleepToday = Stat(
+      label: String(localized: "insight.l.sleep"), value: t.sleepMin > 0 ? dur(t.sleepMin) : "–",
+      sub: w.sleepMin.map { avg(dur($0.value)) } ?? none)
+    switch topic {
+    case .calories:
+      return [protein, Stat(label: avg7, value: w.kcal.map { "\(n($0.value)) kcal" } ?? "–", sub: days(w.kcal))]
+    case .protein:
+      return [energy, Stat(label: avg7, value: w.proteinG.map { "\(n($0.value)) g" } ?? "–", sub: days(w.proteinG))]
+    case .sleep:
+      return [
+        sleepAvg,
+        Stat(
+          label: String(localized: "insight.l.readiness"), value: t.readiness.map { "\($0)/100" } ?? "–",
+          sub: w.readiness.map { avg(n($0.value)) } ?? none),
+      ]
+    case .readiness:
+      return [sleepToday, Stat(label: avg7, value: w.readiness.map { "\(n($0.value))/100" } ?? "–", sub: days(w.readiness))]
+    case .steps:
+      return [Stat(label: avg7, value: w.steps.map { n($0.value) } ?? "–", sub: days(w.steps)), energy]
+    case .water:
+      return [Stat(label: avg7, value: w.waterMl.map { water($0.value) } ?? "–", sub: days(w.waterMl)), sleepToday]
+    }
+  }
+
+  private func tint(_ topic: InsightHighlight.Topic) -> Color {
+    switch topic {
+    case .calories: return DS.Color.metricOrange.swiftUI
+    case .protein: return DS.Color.metricRose.swiftUI
+    case .sleep: return DS.Color.metricPurple.swiftUI
+    case .readiness:
+      guard let r = today.readiness else { return DS.Color.mutedForeground.swiftUI }
+      return r >= 75
+        ? DS.Color.readinessGreen.swiftUI : r >= 50 ? DS.Color.readinessYellow.swiftUI : DS.Color.readinessRed.swiftUI
+    case .steps: return DS.Color.metricCyan.swiftUI
+    case .water: return DS.Color.waterFill.swiftUI
+    }
+  }
+
+  /// Màn của chủ đề (`DeepLink`).
+  static func link(_ topic: InsightHighlight.Topic) -> String {
+    switch topic {
+    case .calories, .protein: "ascnd://nutrition"
+    case .sleep: "ascnd://log-sleep"
+    case .water: "ascnd://water"
+    case .readiness, .steps: "ascnd://assistant"
+    }
   }
 
   private static func tint(_ p: SmartNudges.Priority) -> Color {
