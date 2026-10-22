@@ -227,6 +227,7 @@ struct ProgressGroupView: View {
                                    tint: ProgressStyle.color(.recovery))
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(Text("assistant.trends"))
         .todayCard()
       }
     case .nutrition:

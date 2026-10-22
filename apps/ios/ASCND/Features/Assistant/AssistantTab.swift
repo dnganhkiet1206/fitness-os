@@ -35,6 +35,10 @@ struct AssistantTab: View {
   @Environment(WorkoutFlow.self) private var flow
   @Environment(AppServices.self) private var services
   @Environment(\.scenePhase) private var scenePhase
+  /// Chi tiết nhóm zoom ra từ đúng mảng chữ A vừa chạm (Kiệt duyệt mock 22/10); mở từ
+  /// thẻ kết quả thì chuyển cảnh thường.
+  @Namespace private var heroZoom
+  @State private var zoomGroup: ProgressStatus.Group?
   /// "Hỏi Koa Coach" từ Ghi nhanh: mở thẳng màn chat (về `false` khi đã nhận).
   var openCoach: Binding<Bool> = .constant(false)
   /// Chat vừa đóng (rời màn chat) — RootTabView đưa về tab đã mở chat.
@@ -78,7 +82,10 @@ struct AssistantTab: View {
           // trạng thái; thẻ cân nặng đầy đủ chuyển vào "Thêm → Cân nặng & số đo".
           if let results = progressResults {
             // Nhỏ lại một chút (Kiệt 22/10): 300 → 260.
-            ProgressHero(results: results) { path.append(.group($0)) }
+            ProgressHero(results: results, onTap: { g in
+              zoomGroup = g
+              path.append(.group(g))
+            }, zoom: heroZoom)
               .frame(maxWidth: 260)
               .frame(maxWidth: .infinity)
               .padding(.top, DS.Spacing.sm)
@@ -88,7 +95,10 @@ struct AssistantTab: View {
             if !shown.isEmpty {
               sectionHeader("ps.results", trailing: attentionLine(results))
               ForEach(shown) { r in
-                ProgressResultCard(result: r) { path.append(.group(r.group)) }
+                ProgressResultCard(result: r) {
+                  zoomGroup = nil
+                  path.append(.group(r.group))
+                }
               }
             }
             let missing = results.filter { $0.level == .insufficient }
@@ -179,6 +189,8 @@ struct AssistantTab: View {
       // (15/10, audit: tiêu đề nhỏ trôi đè lên thẻ khi cuộn).
       .toolbar(.hidden, for: .navigationBar)
       .statusBarScrim()
+      // Có zoom từ chữ A: chặn vuốt-về ở trang gốc như Hôm nay (lỗi iOS 26, #636).
+      .background { RootSwipeGuard() }
       .navigationDestination(for: AssistantRoute.self) { route in
         switch route {
         case .chat:
@@ -229,9 +241,14 @@ struct AssistantTab: View {
           if let awards { AwardsView(book: awards, lang: lang) }
         case .group(let g):
           if let r = progressResults?.first(where: { $0.group == g }) {
-            ProgressGroupView(
+            let detail = ProgressGroupView(
               result: r, snapshot: progressSnapshot, week: koaWeek,
               openTrends: metrics == nil ? nil : { path.append(.trends) })
+            if zoomGroup == g {
+              detail.todayZoom("ps.\(g.rawValue)", in: heroZoom)
+            } else {
+              detail
+            }
           }
         case .body:
           ScrollView {
