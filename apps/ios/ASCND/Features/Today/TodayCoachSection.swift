@@ -73,6 +73,17 @@ struct TodayCoachSection: View {
 struct AskCoachBar: View {
   let lastAsked: String?
   let open: () -> Void
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @State private var spin = false
+
+  /// Viền + quầng kiểu Siri / Apple Intelligence (Kiệt 22/10) bằng bảng màu dịu của
+  /// ASCND Intelligence; xoay chậm một vòng / 8 giây. Giảm chuyển động: đứng yên.
+  private var tones: AngularGradient {
+    AngularGradient(
+      colors: [IntelligenceTones.rose, IntelligenceTones.violet, IntelligenceTones.navy, IntelligenceTones.apricot,
+               IntelligenceTones.rose],
+      center: .center, angle: .degrees(spin ? 360 : 0))
+  }
 
   var body: some View {
     Button(action: open) {
@@ -92,8 +103,9 @@ struct AskCoachBar: View {
         .padding(.leading, 16)
         .padding(.trailing, 6)
         .frame(height: 50)
-        // Cùng viên kính với mọi ô chat của app (19/10, chủ dự án).
-        .glassComposer(radius: 25)
+        .background(DS.Color.card.swiftUI.opacity(0.94), in: Capsule())
+        .overlay(Capsule().strokeBorder(tones, lineWidth: 1.6))
+        .background(Capsule().fill(tones).blur(radius: 12).opacity(0.38).padding(-2))
         if let lastAsked {
           Label {
             Text("assistant.coach.continue \(lastAsked)").lineLimit(1)
@@ -109,6 +121,10 @@ struct AskCoachBar: View {
     }
     .buttonStyle(TodayPressStyle())
     .accessibilityLabel(Text("assistant.coach.open.a11y"))
+    .onAppear {
+      guard !reduceMotion, !spin else { return }
+      withAnimation(.linear(duration: 8).repeatForever(autoreverses: false)) { spin = true }
+    }
   }
 }
 
