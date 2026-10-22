@@ -74,8 +74,10 @@ struct TodayAskKoaCard: View {
             .font(.system(size: 16, weight: .semibold))
             .foregroundStyle(.white)
             .frame(width: 44, height: 44)
-            .background(.black.opacity(0.4), in: Circle())
-            .background(.ultraThinMaterial, in: Circle())
+            // Kính mờ (làm nhoè ảnh phía sau) + viền sáng mảnh: › tách rõ khỏi ảnh mà
+            // không tối hơn nền (Kiệt 22/10: quầng tối làm nút khó nhìn hơn).
+            .background(.regularMaterial, in: Circle())
+            .overlay { Circle().strokeBorder(.white.opacity(0.28), lineWidth: 0.75) }
             .environment(\.colorScheme, .dark)
             // Bóng mờ quanh nút để tách khỏi bóng chat phía sau (Kiệt 21/10).
             .shadow(color: .black.opacity(0.45), radius: 12, y: 3)
