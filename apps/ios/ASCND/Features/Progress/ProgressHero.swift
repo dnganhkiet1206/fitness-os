@@ -30,25 +30,28 @@ struct ProgressHero: View {
       ctx.translateBy(x: -Self.frame.minX, y: -Self.frame.minY)
       for g in ProgressStatus.Group.allCases {
         let part = Self.part(g)
-        let level = results.first { $0.group == g }?.level ?? .insufficient
+        let result = results.first { $0.group == g }
+        let level = result?.level ?? .insufficient
+        let fill = result.map(ProgressStatus.fill) ?? 0
         let tint = ProgressStyle.color(g)
-        let icon: Color
-        switch level {
-        case .good:
-          ctx.fill(part, with: .color(tint))
-          icon = .white
-        case .attention:
-          // Viền = mảng tô màu, rồi lõi đen bo CÙNG bán kính — góc trong của viền tròn như
-          // góc ngoài, khung viền mềm như khung tô đặc (Kiệt 22/10: "Vận động" theo cạnh
-          // trên của "Tập luyện").
-          ctx.fill(part, with: .color(tint))
-          ctx.fill(Self.core(g), with: .color(.black))
-          icon = tint
-        case .insufficient:
-          // Sắc tối của chính màu nhóm, không phải xám chung.
-          ctx.fill(part, with: .color(ProgressStyle.shade(g)))
-          icon = tint.opacity(0.85)
+        // Nấc như cánh hoa của Apple Health (Kiệt 22/10): nền = sắc tối của màu nhóm; bên
+        // trong là CÙNG hình mảng thu nhỏ đồng tâm, diện tích theo nấc 25 / 50 / 75 / 100 %
+        // của số thật. Chưa đủ dữ liệu: mảng trong mờ hơn.
+        ctx.fill(part, with: .color(ProgressStyle.shade(g)))
+        let tier = Self.tier(fill)
+        if tier > 0 {
+          let c = CGPoint(x: part.boundingRect.midX, y: part.boundingRect.midY)
+          let k = CGFloat(tier.squareRoot())
+          let inner = part.applying(
+            CGAffineTransform(translationX: c.x, y: c.y).scaledBy(x: k, y: k).translatedBy(x: -c.x, y: -c.y))
+          ctx.fill(inner, with: .color(level == .insufficient ? tint.opacity(0.45) : tint))
         }
+        // Cần chú ý: thêm viền mảnh đều quanh mảng.
+        if level == .attention {
+          ctx.fill(part.subtracting(Self.core(g)), with: .color(tint))
+        }
+        // Icon nằm giữa mảng = trên mảng trong đồng tâm: có nấc thì trắng, không thì màu nhóm.
+        let icon: Color = tier > 0 ? .white : tint
         // Icon SF Symbol giữ đúng tỉ lệ gốc của Apple (Kiệt 22/10: không bóp vào ô vuông).
         let symbol = ctx.resolve(
           Text(Image(systemName: ProgressStyle.symbol(g))).font(.system(size: 11, weight: .semibold)).foregroundStyle(icon))
@@ -73,9 +76,18 @@ struct ProgressHero: View {
     .accessibilityLabel(Text(Self.spoken(results)))
   }
 
-  /// "Tập luyện: cần chú ý. Vận động: tốt. …"
+  /// "Tập luyện: cần chú ý, 50 %. Vận động: tốt, 100 %. …"
   static func spoken(_ results: [ProgressStatus.Result]) -> String {
-    results.map { "\(ProgressStyle.name($0.group)): \(ProgressStyle.word($0.level))" }.joined(separator: ". ")
+    results.map {
+      let pct = Int((ProgressStatus.fill($0) * 100).rounded())
+      return "\(ProgressStyle.name($0.group)): \(ProgressStyle.word($0.level)), \(pct) %"
+    }.joined(separator: ". ")
+  }
+
+  /// Nấc của mảng: 0, ¼, ½, ¾, 1 (làm tròn lên — có chút số là thấy ¼).
+  static func tier(_ fill: Double) -> Double {
+    guard fill > 0 else { return 0 }
+    return min(1, (fill * 4).rounded(.up) / 4)
   }
 
   // MARK: - Hình
@@ -154,25 +166,28 @@ struct ProgressHero: View {
   }
 }
 
-/// Chú thích ba cách tô dưới hình.
+/// Chú thích dưới hình: phần tô = mức đạt mục tiêu 7 ngày; viền = cần chú ý.
 struct ProgressLegend: View {
   var body: some View {
     HStack(spacing: DS.Spacing.md) {
-      item(.good) { RoundedRectangle(cornerRadius: 3).fill(DS.Color.foreground.swiftUI.opacity(0.8)) }
-      item(.attention) { RoundedRectangle(cornerRadius: 3).strokeBorder(DS.Color.foreground.swiftUI.opacity(0.8), lineWidth: 1.3) }
-      item(.insufficient) { RoundedRectangle(cornerRadius: 3).fill(DS.Color.mutedForeground.swiftUI.opacity(0.3)) }
+      HStack(spacing: 5) {
+        ZStack(alignment: .bottom) {
+          RoundedRectangle(cornerRadius: 3).fill(DS.Color.foreground.swiftUI.opacity(0.25))
+          RoundedRectangle(cornerRadius: 3).fill(DS.Color.foreground.swiftUI.opacity(0.85)).frame(height: 6)
+        }
+        .frame(width: 10, height: 10)
+        Text("ps.legend.fill")
+      }
+      HStack(spacing: 5) {
+        RoundedRectangle(cornerRadius: 3).strokeBorder(DS.Color.foreground.swiftUI.opacity(0.85), lineWidth: 1.3)
+          .frame(width: 10, height: 10)
+        Text(verbatim: ProgressStyle.word(.attention))
+      }
     }
     .font(DS.TextStyle.caption)
     .foregroundStyle(DS.Color.mutedForeground.swiftUI)
     .frame(maxWidth: .infinity)
     .accessibilityHidden(true)
-  }
-
-  private func item(_ l: ProgressStatus.Level, @ViewBuilder mark: () -> some View) -> some View {
-    HStack(spacing: 5) {
-      mark().frame(width: 10, height: 10)
-      Text(verbatim: ProgressStyle.word(l))
-    }
   }
 }
 
