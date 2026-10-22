@@ -429,6 +429,11 @@ struct TodayExtras<Plan: View>: View {
       mascot.streakAutoClaimShown()
       services.noteKoaReward(userId: userId, amount: outcome.amount, seen: dayLoaded)
     }
+    .onChange(of: services.sync.online) { _, online in
+      // Có mạng lại: thưởng tuần nhận hỏng lúc mất mạng thì nhận ngay.
+      guard online, services.koaWeek(userId: userId)?.claim == .failed else { return }
+      Task { await claimKoaWeek() }
+    }
     .onChange(of: scenePhase) { _, phase in
       // Ra tiền cảnh: qua nửa đêm thì đổi ngày; không thì đọc lại điểm (đồng
       // bộ Apple Health / ghi buổi ở nơi khác có thể vừa dựng lại hôm nay).
@@ -646,14 +651,25 @@ struct TodayExtras<Plan: View>: View {
     guard let dailyPlan, let flow else { return }
     await dailyPlan.reloadData(services: services, profile: profile?.profile, flow: flow)
     noteComeback(dailyPlan.result)
-    // Tuần của Koa (GĐ2): đủ tuần thì nhận +50 xu, một lần mỗi tuần.
-    if let week = services.koaWeek(userId: userId) {
-      await week.claimIfComplete(koaWeekState)
-      if case .justClaimed(let coins) = week.claim {
-        services.noteKoaReward(userId: userId, amount: coins, seen: dayLoaded, source: KoaWeek.key)
-        await mascot?.refreshWallet()
-      }
+    await claimKoaWeek()
+  }
+
+  /// Tuần của Koa (GĐ2): đủ tuần thì nhận +50 xu, một lần mỗi tuần. Nhận bù tuần
+  /// trước nếu đủ tuần lúc mất mạng; nhận hỏng thì thử lại khi có mạng
+  /// (`onChange(of: services.sync.online)`), không chờ lần mở app sau.
+  private func claimKoaWeek() async {
+    guard let week = services.koaWeek(userId: userId) else { return }
+    var coins = 0
+    if let flow {
+      let lastWeek = KoaWeek.state(
+        today: flow.today.today.adding(days: -7), library: flow.today.library, trained: flow.today.trained)
+      coins += await week.claimMissed(lastWeek) ?? 0
     }
+    await week.claimIfComplete(koaWeekState)
+    if case .justClaimed(let c) = week.claim { coins += c }
+    guard coins > 0 else { return }
+    services.noteKoaReward(userId: userId, amount: coins, seen: dayLoaded, source: KoaWeek.key)
+    await mascot?.refreshWallet()
   }
 
   /// Thứ làm kết quả đổi mà không cần đọc lại server: kế hoạch, buổi, Gains.

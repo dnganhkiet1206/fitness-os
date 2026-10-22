@@ -69,7 +69,7 @@ struct TodayWorkoutView: View {
       if let data {
         if family == .systemMedium { medium(data) } else { small(data) }
       } else {
-        WidgetCard.empty(caption: String(localized: "widget.card.workout"))
+        WidgetCard.empty(caption: widgetText("widget.card.workout"))
       }
     }
     .padding(14)
@@ -77,7 +77,7 @@ struct TodayWorkoutView: View {
 
   private func small(_ d: TodayWorkoutWidgetData) -> some View {
     VStack(alignment: .leading, spacing: 0) {
-      WidgetCard.caption(String(localized: "widget.card.workout"))
+      WidgetCard.caption(widgetText("widget.card.workout"))
       Spacer(minLength: 0)
       Image(systemName: rest ? "leaf.fill" : "dumbbell.fill")
         .font(.system(size: 15, weight: .bold)).foregroundStyle(WidgetCard.rose).padding(.bottom, 4)
@@ -88,10 +88,10 @@ struct TodayWorkoutView: View {
       Spacer(minLength: 0)
       segments(d).padding(.bottom, 6)
       if rest, let tomorrow = d.tomorrow {
-        WidgetCard.stat(tomorrow, label: String(localized: "widget.card.tomorrow"), size: 15)
+        WidgetCard.stat(tomorrow, label: widgetText("widget.card.tomorrow"), size: 15)
       } else {
         WidgetCard.stat(
-          rest ? "–" : "\(d.completedExercises)/\(d.totalExercises)", label: String(localized: "widget.card.exercises"),
+          rest ? "–" : "\(d.completedExercises)/\(d.totalExercises)", label: widgetText("widget.card.exercises"),
           size: 17)
       }
     }
@@ -105,15 +105,15 @@ struct TodayWorkoutView: View {
   private func subline(_ d: TodayWorkoutWidgetData) -> String {
     if planned, let minutes = d.plannedMinutes {
       return d.totalExercises == 1
-        ? String(localized: "widget.card.planned.one \(d.totalExercises) \(minutes)")
-        : String(localized: "widget.card.planned.other \(d.totalExercises) \(minutes)")
+        ? widgetText("widget.card.planned.one \(d.totalExercises) \(minutes)")
+        : widgetText("widget.card.planned.other \(d.totalExercises) \(minutes)")
     }
-    return rest ? String(localized: "widget.card.restLine") : d.statusText
+    return rest ? widgetText("widget.card.restLine") : d.statusText
   }
 
   private func medium(_ d: TodayWorkoutWidgetData) -> some View {
     VStack(alignment: .leading, spacing: 0) {
-      WidgetCard.caption(String(localized: "widget.card.workoutToday"))
+      WidgetCard.caption(widgetText("widget.card.workoutToday"))
       HStack(alignment: .center, spacing: 10) {
         Image(systemName: rest ? "leaf.fill" : "dumbbell.fill")
           .font(.system(size: 18, weight: .bold)).foregroundStyle(WidgetCard.rose)
@@ -139,20 +139,20 @@ struct TodayWorkoutView: View {
         // ở ô trạng thái (20/10, Kiệt).
         if rest, let tomorrow = d.tomorrow {
           // Ngày nghỉ: ô thứ nhất là buổi ngày mai thay cho "–" (20/10, Kiệt).
-          WidgetCard.stat(tomorrow, label: String(localized: "widget.card.tomorrow"))
+          WidgetCard.stat(tomorrow, label: widgetText("widget.card.tomorrow"))
         } else {
           WidgetCard.stat(
-            rest ? "–" : "\(d.completedExercises)/\(d.totalExercises)", label: String(localized: "widget.card.exercises"))
+            rest ? "–" : "\(d.completedExercises)/\(d.totalExercises)", label: widgetText("widget.card.exercises"))
         }
         WidgetCard.hairline
         WidgetCard.stat(
           (rest
-            ? String(localized: "widget.card.state.rest")
+            ? widgetText("widget.card.state.rest")
             : finished
-              ? String(localized: "widget.card.state.done")
-              : planned ? String(localized: "widget.card.state.notStarted") : String(localized: "widget.card.state.going"))
+              ? widgetText("widget.card.state.done")
+              : planned ? widgetText("widget.card.state.notStarted") : widgetText("widget.card.state.going"))
             .uppercased(),
-          label: String(localized: "widget.card.state"), tint: finished ? WidgetCard.green : .white)
+          label: widgetText("widget.card.state"), tint: finished ? WidgetCard.green : .white)
       }
     }
   }
@@ -227,7 +227,7 @@ struct StreakReadinessView: View {
       if let data {
         if family == .systemMedium { medium(data) } else { small(data) }
       } else {
-        WidgetCard.empty(caption: String(localized: "widget.card.form"))
+        WidgetCard.empty(caption: widgetText("widget.card.form"))
       }
     }
     .padding(14)
@@ -235,7 +235,7 @@ struct StreakReadinessView: View {
 
   private func small(_ d: StreakReadinessWidgetData) -> some View {
     VStack(alignment: .leading, spacing: 0) {
-      WidgetCard.caption(String(localized: "widget.card.form"))
+      WidgetCard.caption(widgetText("widget.card.form"))
       Spacer(minLength: 0)
       HStack(alignment: .center) {
         VStack(alignment: .leading, spacing: 0) {
@@ -263,7 +263,7 @@ struct StreakReadinessView: View {
     HStack(spacing: 16) {
       ring(d.readinessScore, size: 116)
       VStack(alignment: .leading, spacing: 0) {
-        WidgetCard.caption(String(localized: "widget.card.form"))
+        WidgetCard.caption(widgetText("widget.card.form"))
         Text(headline(d.readinessScore))
           .font(.system(size: 17, weight: .bold)).tracking(-0.3).foregroundStyle(.white).padding(.top, 8)
           .lineLimit(2).minimumScaleFactor(0.85)
@@ -275,7 +275,7 @@ struct StreakReadinessView: View {
         }
         .padding(.top, 3)
         Spacer(minLength: 0)
-        WidgetCard.stat("\(d.streakDays)", label: String(localized: "widget.card.streakDays"))
+        WidgetCard.stat("\(d.streakDays)", label: widgetText("widget.card.streakDays"))
       }
     }
   }
@@ -283,15 +283,15 @@ struct StreakReadinessView: View {
   /// "Vùng xanh · từ 75 điểm" — ngưỡng của `ReadinessTrend.zone`.
   private func zoneLine(_ s: Int) -> String {
     s >= 75
-      ? String(localized: "widget.card.zoneLine.green")
-      : s >= 50 ? String(localized: "widget.card.zoneLine.yellow") : String(localized: "widget.card.zoneLine.red")
+      ? widgetText("widget.card.zoneLine.green")
+      : s >= 50 ? widgetText("widget.card.zoneLine.yellow") : widgetText("widget.card.zoneLine.red")
   }
 
   private func headline(_ score: Int?) -> String {
-    guard let s = score else { return String(localized: "widget.card.zone.none") }
+    guard let s = score else { return widgetText("widget.card.zone.none") }
     return s >= 75
-      ? String(localized: "widget.card.zone.train")
-      : s >= 50 ? String(localized: "widget.card.zone.moderate") : String(localized: "widget.card.zone.recover")
+      ? widgetText("widget.card.zone.train")
+      : s >= 50 ? widgetText("widget.card.zone.moderate") : widgetText("widget.card.zone.recover")
   }
 
   private func flame(_ days: Int, size: CGFloat) -> some View {

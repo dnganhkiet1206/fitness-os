@@ -94,6 +94,24 @@ struct KoaWeekTests {
     #expect(book.claim == .justClaimed(coins: 50) && econ.claims.count == 1, "mất mạng rồi thử lại vẫn một lần")
   }
 
+  /// Đủ tuần lúc mất mạng, sang tuần mới mới có mạng: nhận bù tuần trước một lần,
+  /// không đụng trạng thái nhận của tuần này.
+  @Test func missedWeekIsClaimedOnceLaterWithoutTouchingThisWeek() async throws {
+    let defaults = try #require(UserDefaults(suiteName: "koaweek-\(UUID())"))
+    let econ = Economy()
+    let book = KoaWeekBook(userId: "u", economy: econ, defaults: defaults)
+    econ.failWith = .offline
+    await book.claimIfComplete(Self.complete())
+    #expect(book.claim == .failed)
+    #expect(await book.claimMissed(Self.complete()) == nil, "vẫn mất mạng")
+    econ.failWith = nil
+    #expect(await book.claimMissed(Self.complete()) == 50)
+    #expect(book.claim == .failed, "tuần trước không ghi đè trạng thái tuần này")
+    #expect(await book.claimMissed(Self.complete()) == nil && econ.claims.count == 1, "một lần")
+    let partial = KoaWeek.state(today: Self.mon, library: Self.lib(), trained: [Self.mon])
+    #expect(await book.claimMissed(partial) == nil, "chưa đủ tuần thì không nhận")
+  }
+
   @Test func weeklySummaryReadsTheAppliedPlanAndGains() {
     let wed = Self.mon.adding(days: 2), thu = Self.mon.adding(days: 3), fri = Self.mon.adding(days: 4)
     let lib = Self.lib([
