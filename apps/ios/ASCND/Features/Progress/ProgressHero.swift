@@ -36,8 +36,9 @@ struct ProgressHero: View {
           switch level {
           case .good: layer.fill(shape, with: .color(tint))
           case .attention:
-            layer.fill(shape, with: .color(tint))
-            layer.fill(Self.inner(g), with: .color(.black))
+            // Phần lấp kẽ đen liền, viền chỉ chạy quanh mảng gốc.
+            layer.fill(shape, with: .color(.black))
+            layer.fill(Self.base(g).subtracting(Self.inner(g)), with: .color(tint))
           case .insufficient: layer.fill(shape, with: .color(Color(white: 0.17)))
           }
         }
@@ -105,7 +106,7 @@ struct ProgressHero: View {
   static let drawOrder: [ProgressStatus.Group] = [.training, .body, .steps, .recovery, .nutrition, .sleep]
   /// Hình của mảng — dò từ thiết kế Kiệt dựng (22/10, ảnh Progress 10:39), quy về khung
   /// 222 của chữ A hiện tại.
-  static func shape(_ g: ProgressStatus.Group) -> Path { shapes[g] ?? Path() }
+  static func shape(_ g: ProgressStatus.Group) -> Path { filled[g] ?? Path() }
 
   private static let traced: [ProgressStatus.Group: [(CGFloat, CGFloat)]] = [
     .nutrition: [(102.16, 85.12), (108.02, 81.19), (110.46, 75.91), (110.46, 43.08), (106.97, 37.80), (99.51, 35.87), (92.96, 38.75), (88.70, 43.08), (71.52, 73.29), (70.61, 78.53), (72.32, 82.50), (76.21, 85.12), (100.85, 85.30)],
@@ -129,6 +130,55 @@ struct ProgressHero: View {
     return out
   }()
 
+  /// Liền một khối (Kiệt 22/10): mỗi mảng dưới kéo mép trên của nó lên NẰM DƯỚI mảng
+  /// phía trên — tới giữa mảng trên, theo đúng hai cạnh nghiêng của chân. Mảng trên vẽ
+  /// đè lên, nên kẽ hở ở các góc bo được lấp bằng màu mảng dưới, chạy theo đúng nét
+  /// của mảng trên. Đỉnh: Dinh dưỡng kéo sang phải nằm dưới Ngủ.
+  private static let filled: [ProgressStatus.Group: Path] = {
+    var out = shapes
+    let pairs: [(lower: ProgressStatus.Group, upper: ProgressStatus.Group)] = [
+      (.training, .steps), (.steps, .nutrition), (.body, .recovery), (.recovery, .sleep),
+    ]
+    for (lo, up) in pairs {
+      guard let l = shapes[lo], let u = shapes[up] else { continue }
+      // Chỉ tới vùng góc dưới của mảng trên (không lòi ra hai bên mảng trên).
+      let yA = u.boundingRect.maxY - 12, yB = l.boundingRect.minY + 12
+      let yM = u.boundingRect.midY
+      guard let a = extent(u, yA), let m = extent(u, yM), let b = extent(l, yB) else { continue }
+      // Hai cạnh của cầu nối kéo dài đúng hai cạnh nghiêng của mảng trên — không lòi ra
+      // ngoài nét của mảng trên; và không rộng hơn mảng dưới.
+      let k = (yB - yA) / (yA - yM)
+      let left = max(b.0, a.0 + (a.0 - m.0) * k), right = min(b.1, a.1 + (a.1 - m.1) * k)
+      var bridge = Path()
+      bridge.move(to: CGPoint(x: a.0, y: yA))
+      bridge.addLine(to: CGPoint(x: a.1, y: yA))
+      bridge.addLine(to: CGPoint(x: right, y: yB))
+      bridge.addLine(to: CGPoint(x: left, y: yB))
+      bridge.closeSubpath()
+      out[lo] = l.union(bridge)
+    }
+    if let n = shapes[.nutrition], let sl = shapes[.sleep] {
+      let nb = n.boundingRect, sb = sl.boundingRect
+      let top = max(nb.minY, sb.minY) + 2, bottom = min(nb.maxY, sb.maxY) - 2
+      let bridge = Path(CGRect(x: nb.maxX - 12, y: top, width: sb.minX + 12 - (nb.maxX - 12), height: bottom - top))
+      out[.nutrition] = n.union(bridge)
+    }
+    return out
+  }()
+
+  /// Bề ngang (trái, phải) của hình ở độ cao `y`.
+  private static func extent(_ p: Path, _ y: CGFloat) -> (CGFloat, CGFloat)? {
+    let b = p.boundingRect
+    var lo: CGFloat?, hi: CGFloat?
+    var x = b.minX
+    while x <= b.maxX {
+      if p.contains(CGPoint(x: x, y: y)) { if lo == nil { lo = x }; hi = x }
+      x += 0.25
+    }
+    guard let lo, let hi else { return nil }
+    return (lo, hi)
+  }
+
   private static let smoothed: [ProgressStatus.Group: Path] = traced.mapValues { raw in
     let q = raw.map { CGPoint(x: $0.0, y: $0.1) }
     let n = q.count
@@ -142,13 +192,15 @@ struct ProgressHero: View {
 
   /// Tâm icon = tâm khung bao của mảng đã dò.
   static func iconCenter(_ g: ProgressStatus.Group) -> CGPoint {
-    let b = shape(g).boundingRect
+    let b = (shapes[g] ?? Path()).boundingRect
     return CGPoint(x: b.midX, y: b.midY)
   }
 
   /// Lõi đen của mảng "Cần chú ý": viền đều `rim × 1.6`.
+  static func base(_ g: ProgressStatus.Group) -> Path { shapes[g] ?? Path() }
+
   static func inner(_ g: ProgressStatus.Group) -> Path {
-    let p = shape(g)
+    let p = base(g)
     return p.subtracting(p.strokedPath(StrokeStyle(lineWidth: 2.0, lineJoin: .round)))
   }
 
