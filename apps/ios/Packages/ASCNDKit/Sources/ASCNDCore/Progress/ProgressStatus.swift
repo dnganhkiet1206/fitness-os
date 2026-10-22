@@ -130,27 +130,6 @@ public enum ProgressStatus {
                   today: last, average: mean(recent), target: change)
   }
 
-  // MARK: - Mức tô của chữ A (Kiệt 22/10: thể hiện dữ liệu thật, không tượng trưng)
-
-  /// Phần mảng được tô, 0…1, từ số thật:
-  /// - Tập luyện: buổi đã tập / buổi theo lịch cả tuần;
-  /// - Vận động, Dinh dưỡng, Giấc ngủ, Hồi phục: TB 7 ngày / mục tiêu;
-  /// - Cơ thể: lần cân trong 4 tuần / số lần cần để đọc xu hướng;
-  /// - Chưa đủ dữ liệu: ngày đã có / ngày cần (đang gom dữ liệu tới đâu).
-  public static func fill(_ r: Result) -> Double {
-    func clamp(_ v: Double) -> Double { v.isFinite ? min(1, max(0, v)) : 0 }
-    if r.level == .insufficient {
-      return r.need > 0 ? clamp(Double(r.have) / Double(r.need)) : 0
-    }
-    switch r.group {
-    case .training: return r.of > 0 ? clamp(Double(r.have) / Double(r.of)) : 0
-    case .body: return r.need > 0 ? clamp(Double(r.have) / Double(r.need)) : 1
-    case .steps, .nutrition, .sleep, .recovery:
-      guard let avg = r.average, let target = r.target, target > 0 else { return 0 }
-      return clamp(avg / target)
-    }
-  }
-
   // MARK: - Thứ tự, câu đầu trang
 
   /// Cần chú ý lên trước, rồi Tốt, Chưa đủ dữ liệu cuối; cùng mức giữ thứ tự nhóm.

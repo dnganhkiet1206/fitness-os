@@ -19,39 +19,36 @@ struct ProgressHero: View {
   static let frame = CGRect(x: 2, y: 30, width: 218, height: 166)
   static let rim: CGFloat = 1.3
   static let hairline: CGFloat = 0
-  /// Bán kính bo góc và nửa khe giữa hai mảng (đơn vị khung 222).
-  static let corner: CGFloat = 6
-  static let gap: CGFloat = -1.4
 
   var body: some View {
     Canvas { ctx, size in
       let k = size.width / Self.frame.width
       ctx.scaleBy(x: k, y: k)
       ctx.translateBy(x: -Self.frame.minX, y: -Self.frame.minY)
-      for g in ProgressStatus.Group.allCases {
-        let part = Self.part(g)
-        let result = results.first { $0.group == g }
-        let level = result?.level ?? .insufficient
-        let fill = result.map(ProgressStatus.fill) ?? 0
+      // Vẽ từ dưới lên: mảng trên đè mảng dưới, có bóng mờ (theo hình mẫu Kiệt 22/10).
+      for g in Self.drawOrder {
+        let shape = Self.shape(g)
+        let level = results.first { $0.group == g }?.level ?? .insufficient
         let tint = ProgressStyle.color(g)
-        // Nấc như cánh hoa của Apple Health (Kiệt 22/10, ảnh Ngủ): nền = sắc tối của màu
-        // nhóm; phần tô là CÙNG hình mảng mọc từ mép trong của chữ A ra ngoài, diện tích
-        // theo nấc ¼ / ½ / ¾ / đầy của số thật; trong phần tô có đường mảnh của các nấc
-        // nhỏ hơn. Chưa đủ dữ liệu: phần tô mờ hơn.
-        ctx.fill(part, with: .color(ProgressStyle.shade(g)))
-        let tier = Self.tier(fill)
-        if tier > 0 {
-          ctx.fill(Self.tierShape(g, tier), with: .color(level == .insufficient ? tint.opacity(0.45) : tint))
+        ctx.drawLayer { layer in
+          // Bóng tối rõ ở chỗ nối: mảng trên tách khỏi mảng dưới như hình mẫu.
+          layer.addFilter(.shadow(color: .black.opacity(0.85), radius: 3, x: 0, y: 1.5))
+          switch level {
+          case .good: layer.fill(shape, with: .color(tint))
+          case .attention:
+            layer.fill(shape, with: .color(tint))
+            layer.fill(Self.inner(g), with: .color(.black))
+          case .insufficient: layer.fill(shape, with: .color(Color(white: 0.17)))
+          }
         }
-        // Cần chú ý: thêm viền mảnh đều quanh mảng.
-        if level == .attention {
-          ctx.fill(part.subtracting(Self.core(g)), with: .color(tint))
+        let icon: Color = switch level {
+        case .good: .white
+        case .attention: tint
+        case .insufficient: .white.opacity(0.75)
         }
-        // Icon nằm giữa mảng = trên mảng trong đồng tâm: có nấc thì trắng, không thì màu nhóm.
-        let icon: Color = tier > 0 ? .white : tint
-        // Icon SF Symbol giữ đúng tỉ lệ gốc của Apple (Kiệt 22/10: không bóp vào ô vuông).
+        // Icon SF Symbol giữ đúng tỉ lệ gốc của Apple.
         let symbol = ctx.resolve(
-          Text(Image(systemName: ProgressStyle.symbol(g))).font(.system(size: 11, weight: .semibold)).foregroundStyle(icon))
+          Text(Image(systemName: ProgressStyle.symbol(g))).font(.system(size: 13, weight: .semibold)).foregroundStyle(icon))
         ctx.draw(symbol, at: Self.iconCenter(g), anchor: .center)
       }
     }
@@ -73,41 +70,9 @@ struct ProgressHero: View {
     .accessibilityLabel(Text(Self.spoken(results)))
   }
 
-  /// "Tập luyện: cần chú ý, 50 %. Vận động: tốt, 100 %. …"
+  /// "Tập luyện: cần chú ý. Vận động: tốt. …"
   static func spoken(_ results: [ProgressStatus.Result]) -> String {
-    results.map {
-      let pct = Int((ProgressStatus.fill($0) * 100).rounded())
-      return "\(ProgressStyle.name($0.group)): \(ProgressStyle.word($0.level)), \(pct) %"
-    }.joined(separator: ". ")
-  }
-
-  /// Mảng thu theo nấc `t`, neo ở mép trong (mép hướng vào lòng chữ A) giữa chiều cao
-  /// mảng — như cánh hoa của Apple mọc từ tâm ra.
-  static func tierShape(_ g: ProgressStatus.Group, _ t: Double) -> Path {
-    let p = part(g)
-    guard t < 1 else { return p }
-    let a = anchor(g), k = CGFloat(t.squareRoot())
-    return p.applying(CGAffineTransform(translationX: a.x, y: a.y).scaledBy(x: k, y: k).translatedBy(x: -a.x, y: -a.y))
-      .intersection(p)
-  }
-
-  /// Điểm trên mép trong của mảng, ngang giữa chiều cao.
-  static func anchor(_ g: ProgressStatus.Group) -> CGPoint {
-    let p = part(g), b = p.boundingRect, y = b.midY
-    let left: Bool = switch g {
-    case .training, .steps, .nutrition: true
-    case .sleep, .recovery, .body: false
-    }
-    var x = left ? b.maxX : b.minX
-    let step: CGFloat = left ? -0.25 : 0.25
-    while !p.contains(CGPoint(x: x, y: y)), x >= b.minX, x <= b.maxX { x += step }
-    return CGPoint(x: x, y: y)
-  }
-
-  /// Nấc của mảng: 0, ¼, ½, ¾, 1 (làm tròn lên — có chút số là thấy ¼).
-  static func tier(_ fill: Double) -> Double {
-    guard fill > 0 else { return 0 }
-    return min(1, (fill * 4).rounded(.up) / 4)
+    results.map { "\(ProgressStyle.name($0.group)): \(ProgressStyle.word($0.level))" }.joined(separator: ". ")
   }
 
   // MARK: - Hình
@@ -134,6 +99,47 @@ struct ProgressHero: View {
     return p
   }()
 
+  // MARK: - Hình theo mẫu (Kiệt 22/10)
+
+  /// Dưới → trên, để mảng trên phủ lên mảng dưới.
+  static let drawOrder: [ProgressStatus.Group] = [.training, .body, .steps, .recovery, .nutrition, .sleep]
+  /// Hình của mảng — dò từ thiết kế Kiệt dựng (22/10, ảnh Progress 10:39), quy về khung
+  /// 222 của chữ A hiện tại.
+  static func shape(_ g: ProgressStatus.Group) -> Path { shapes[g] ?? Path() }
+
+  private static let traced: [ProgressStatus.Group: [(CGFloat, CGFloat)]] = [
+    .nutrition: [(102.16, 85.12), (104.79, 84.07), (108.02, 81.19), (109.08, 79.84), (110.46, 75.91), (110.46, 43.08), (109.52, 41.77), (108.72, 39.29), (106.97, 37.80), (106.10, 37.22), (104.79, 37.22), (102.16, 35.87), (99.51, 35.87), (95.58, 37.22), (94.27, 38.49), (92.96, 38.75), (88.70, 43.08), (88.22, 44.39), (86.15, 47.01), (82.47, 53.53), (82.07, 54.91), (73.05, 70.67), (72.68, 71.98), (71.52, 73.29), (70.64, 75.77), (70.61, 78.53), (70.79, 79.84), (72.32, 82.50), (74.57, 84.47), (76.21, 85.12), (95.58, 85.30), (96.89, 85.63), (100.85, 85.30)],
+    .sleep: [(144.28, 85.12), (146.79, 84.21), (149.63, 81.19), (150.07, 78.53), (149.67, 73.29), (133.65, 44.68), (128.41, 39.26), (125.79, 37.58), (121.86, 36.02), (115.30, 35.18), (107.41, 35.22), (106.10, 36.49), (108.93, 39.15), (111.19, 43.08), (111.19, 75.91), (111.56, 78.53), (112.14, 79.84), (115.27, 83.12), (117.89, 84.79), (119.20, 85.08), (142.82, 85.30)],
+    .steps: [(75.81, 131.09), (80.40, 128.47), (83.78, 124.21), (97.18, 100.88), (97.61, 99.57), (98.85, 98.26), (100.42, 94.33), (100.53, 91.67), (99.51, 89.05), (98.42, 87.74), (96.89, 86.43), (95.58, 85.99), (75.88, 85.99), (74.57, 85.27), (71.95, 85.27), (68.02, 86.18), (64.31, 89.05), (63.22, 90.36), (57.61, 99.57), (54.37, 106.12), (48.33, 116.46), (46.62, 120.57), (46.47, 123.23), (48.33, 128.14), (50.95, 130.51), (53.57, 131.75), (54.88, 132.08), (73.26, 132.08), (74.57, 131.75)],
+    .recovery: [(168.99, 131.09), (170.41, 130.37), (172.56, 128.47), (174.13, 125.85), (174.45, 124.54), (174.20, 119.26), (172.41, 115.33), (169.72, 111.40), (169.43, 110.09), (161.39, 95.64), (159.13, 91.67), (157.96, 90.36), (157.27, 88.11), (154.65, 83.85), (153.34, 82.61), (150.94, 81.19), (148.10, 84.21), (145.48, 85.74), (144.17, 85.96), (120.51, 86.03), (118.76, 87.74), (118.58, 90.36), (119.05, 91.67), (124.88, 102.19), (126.12, 103.50), (127.10, 105.98), (132.74, 115.33), (133.18, 116.64), (134.34, 117.95), (134.74, 119.26), (137.76, 124.54), (141.51, 128.73), (142.82, 129.75), (145.48, 130.77), (146.79, 131.68), (149.41, 132.08), (165.13, 132.08), (167.79, 131.75)],
+    .training: [(39.27, 184.96), (43.09, 184.05), (44.40, 182.96), (46.40, 182.34), (50.95, 178.67), (54.70, 174.44), (58.12, 167.89), (63.00, 159.99), (63.40, 158.68), (64.56, 157.37), (64.71, 156.06), (65.87, 154.75), (74.76, 138.99), (74.79, 135.02), (74.39, 133.71), (73.26, 132.88), (71.95, 132.48), (54.88, 132.48), (50.95, 131.49), (49.64, 130.37), (48.33, 130.18), (45.71, 130.47), (41.78, 132.37), (37.85, 136.15), (30.06, 149.47), (26.75, 156.06), (23.47, 161.30), (21.76, 165.27), (21.43, 173.13), (21.87, 175.75), (24.05, 179.72), (27.33, 182.74), (29.95, 184.31), (33.73, 184.96), (35.23, 185.62), (36.54, 185.62), (37.85, 185.04)],
+    .body: [(188.50, 184.96), (191.42, 184.24), (194.04, 182.60), (196.00, 181.03), (197.97, 178.41), (200.11, 173.13), (200.19, 167.89), (198.59, 162.61), (195.96, 158.68), (195.60, 157.37), (192.40, 152.13), (192.00, 150.82), (190.80, 149.47), (185.30, 138.99), (184.10, 137.68), (183.77, 136.37), (179.59, 129.93), (176.96, 127.45), (175.65, 126.80), (174.13, 127.16), (173.69, 128.47), (172.67, 129.78), (170.41, 131.42), (167.86, 132.40), (149.41, 132.48), (146.79, 132.88), (146.13, 133.71), (145.88, 135.02), (146.10, 138.99), (159.46, 162.61), (160.66, 163.92), (162.44, 167.89), (165.72, 173.13), (166.95, 174.44), (167.50, 175.75), (173.03, 181.03), (178.27, 184.24), (183.52, 185.04), (184.83, 185.62), (187.45, 185.25)],
+  ]
+
+  /// Nối các điểm dò bằng đường cong qua trung điểm — mép mượt, không răng cưa.
+  private static let shapes: [ProgressStatus.Group: Path] = traced.mapValues { raw in
+    let q = raw.map { CGPoint(x: $0.0, y: $0.1) }
+    let n = q.count
+    func mid(_ a: CGPoint, _ b: CGPoint) -> CGPoint { CGPoint(x: (a.x + b.x) / 2, y: (a.y + b.y) / 2) }
+    var p = Path()
+    p.move(to: mid(q[n - 1], q[0]))
+    for i in 0..<n { p.addQuadCurve(to: mid(q[i], q[(i + 1) % n]), control: q[i]) }
+    p.closeSubpath()
+    return p
+  }
+
+  /// Tâm icon = tâm khung bao của mảng đã dò.
+  static func iconCenter(_ g: ProgressStatus.Group) -> CGPoint {
+    let b = shape(g).boundingRect
+    return CGPoint(x: b.midX, y: b.midY)
+  }
+
+  /// Lõi đen của mảng "Cần chú ý": viền đều `rim × 1.6`.
+  static func inner(_ g: ProgressStatus.Group) -> Path {
+    let p = shape(g)
+    return p.subtracting(p.strokedPath(StrokeStyle(lineWidth: rim * 3.2, lineJoin: .round)))
+  }
+
   /// Ô chữ nhật của mảng; các ô cách nhau `hairline` (đường mảnh giữa các tầng / ở đỉnh).
   static func rect(_ g: ProgressStatus.Group) -> CGRect {
     let h = hairline / 2, mid: CGFloat = 110.5, t1: CGFloat = 85.5, t2: CGFloat = 131
@@ -147,67 +153,30 @@ struct ProgressHero: View {
     }
   }
 
-  /// Mảng đã bo: thu vào `corner + gap` (góc vẫn nhọn), rồi nở ra `corner` với khớp tròn
-  /// — góc lồi thành cung bán kính `corner`, mảng nhỏ đi `gap` mỗi phía nên giữa hai mảng
-  /// có khe. Tính một lần.
-  static func part(_ g: ProgressStatus.Group) -> Path { rounded[g] ?? sharp(g) }
-
   static func sharp(_ g: ProgressStatus.Group) -> Path { logo.intersection(Path(rect(g))) }
 
-  /// Lõi của mảng "Cần chú ý".
-  static func core(_ g: ProgressStatus.Group) -> Path { cores[g] ?? part(g) }
 
-  /// Thu `inset + corner` (góc nhọn) rồi nở `corner` khớp tròn.
-  private static func opened(_ p: Path, inset: CGFloat) -> Path {
-    let shrink = p.subtracting(p.strokedPath(StrokeStyle(lineWidth: (corner + inset) * 2, lineJoin: .miter)))
-    return shrink.union(shrink.strokedPath(StrokeStyle(lineWidth: corner * 2, lineCap: .round, lineJoin: .round)))
-  }
-
-  private static let rounded: [ProgressStatus.Group: Path] = Dictionary(
-    uniqueKeysWithValues: ProgressStatus.Group.allCases.map { ($0, opened(sharp($0), inset: gap)) })
-
-  /// Lõi = mảng đã bo trừ đi một dải rộng đúng `rim` (khớp tròn) — viền dày ĐỀU ở mọi
-  /// cạnh và góc, góc trong đồng tâm với góc ngoài (Kiệt 22/10: "các nét mỏng đều").
-  private static let cores: [ProgressStatus.Group: Path] = Dictionary(
-    uniqueKeysWithValues: ProgressStatus.Group.allCases.map { g in
-      let p = part(g)
-      return (g, p.subtracting(p.strokedPath(StrokeStyle(lineWidth: rim * 2, lineJoin: .round))))
-    })
-
-  static func iconCenter(_ g: ProgressStatus.Group) -> CGPoint {
-    switch g {
-    case .training: CGPoint(x: 43, y: 160)
-    case .steps: CGPoint(x: 72, y: 110)
-    case .nutrition: CGPoint(x: 96, y: 62)
-    case .sleep: CGPoint(x: 125, y: 62)
-    case .recovery: CGPoint(x: 149, y: 110)
-    case .body: CGPoint(x: 178, y: 160)
-    }
-  }
 }
 
-/// Chú thích dưới hình: phần tô = mức đạt mục tiêu 7 ngày; viền = cần chú ý.
+/// Chú thích ba trạng thái dưới hình (như hình mẫu).
 struct ProgressLegend: View {
   var body: some View {
     HStack(spacing: DS.Spacing.md) {
-      HStack(spacing: 5) {
-        ZStack(alignment: .bottom) {
-          RoundedRectangle(cornerRadius: 3).fill(DS.Color.foreground.swiftUI.opacity(0.25))
-          RoundedRectangle(cornerRadius: 3).fill(DS.Color.foreground.swiftUI.opacity(0.85)).frame(height: 6)
-        }
-        .frame(width: 10, height: 10)
-        Text("ps.legend.fill")
-      }
-      HStack(spacing: 5) {
-        RoundedRectangle(cornerRadius: 3).strokeBorder(DS.Color.foreground.swiftUI.opacity(0.85), lineWidth: 1.3)
-          .frame(width: 10, height: 10)
-        Text(verbatim: ProgressStyle.word(.attention))
-      }
+      item(.good) { RoundedRectangle(cornerRadius: 3).fill(DS.Color.foreground.swiftUI.opacity(0.8)) }
+      item(.attention) { RoundedRectangle(cornerRadius: 3).strokeBorder(DS.Color.foreground.swiftUI.opacity(0.8), lineWidth: 1.3) }
+      item(.insufficient) { RoundedRectangle(cornerRadius: 3).fill(Color(white: 0.17)) }
     }
     .font(DS.TextStyle.caption)
     .foregroundStyle(DS.Color.mutedForeground.swiftUI)
     .frame(maxWidth: .infinity)
     .accessibilityHidden(true)
+  }
+
+  private func item(_ l: ProgressStatus.Level, @ViewBuilder mark: () -> some View) -> some View {
+    HStack(spacing: 5) {
+      mark().frame(width: 10, height: 10)
+      Text(verbatim: ProgressStyle.word(l))
+    }
   }
 }
 
@@ -225,9 +194,6 @@ enum ProgressStyle {
     case .body: DS.Color.metricSteel.swiftUI
     }
   }
-
-  /// Sắc tối của màu nhóm cho "Chưa đủ dữ liệu" — cùng màu, chỉ tối đi (Kiệt 22/10).
-  static func shade(_ g: ProgressStatus.Group) -> Color { color(g).mix(with: .black, by: 0.62) }
 
   /// SF Symbols như Apple Health (Kiệt 22/10: "nhìn cách Apple vẽ icon mà học theo"):
   /// người cử tạ qua đầu, người chạy, cà rốt, giường (Ngủ của Health), tim, người dang tay

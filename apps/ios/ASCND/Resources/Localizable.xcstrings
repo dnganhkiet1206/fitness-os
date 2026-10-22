@@ -61803,29 +61803,6 @@
      }
     }
    }
-  },
-  "ps.legend.fill": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Filled = % of goal, last 7 days"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Relleno = % del objetivo, 7 días"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Phần tô = % mục tiêu 7 ngày qua"
-     }
-    }
-   }
   }
  }
 }
