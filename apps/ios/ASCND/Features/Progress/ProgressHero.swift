@@ -48,7 +48,7 @@ struct ProgressHero: View {
         }
         // Icon SF Symbol giữ đúng tỉ lệ gốc của Apple.
         let symbol = ctx.resolve(
-          Text(Image(systemName: ProgressStyle.symbol(g))).font(.system(size: 15, weight: .semibold)).foregroundStyle(icon))
+          Text(Image(systemName: ProgressStyle.symbol(g))).font(.system(size: 11, weight: .semibold)).foregroundStyle(icon))
         ctx.draw(symbol, at: Self.iconCenter(g), anchor: .center)
       }
     }
@@ -141,10 +141,25 @@ struct ProgressHero: View {
   }
 
   /// Tâm icon = tâm khung bao của mảng đã dò.
-  static func iconCenter(_ g: ProgressStatus.Group) -> CGPoint {
-    let b = shape(g).boundingRect
-    return CGPoint(x: b.midX, y: b.midY)
-  }
+  /// Tâm icon = trọng tâm (tâm diện tích) của mảng — mảng nghiêng / bàn chân cong có
+  /// tâm khung bao lệch khỏi giữa mảng (Kiệt 22/10: icon lệch). Tính một lần.
+  static func iconCenter(_ g: ProgressStatus.Group) -> CGPoint { centers[g] ?? .zero }
+
+  private static let centers: [ProgressStatus.Group: CGPoint] = Dictionary(
+    uniqueKeysWithValues: ProgressStatus.Group.allCases.map { g in
+      let p = shape(g), b = p.boundingRect
+      var sx: CGFloat = 0, sy: CGFloat = 0, n: CGFloat = 0
+      var y = b.minY
+      while y <= b.maxY {
+        var x = b.minX
+        while x <= b.maxX {
+          if p.contains(CGPoint(x: x, y: y)) { sx += x; sy += y; n += 1 }
+          x += 0.5
+        }
+        y += 0.5
+      }
+      return (g, n > 0 ? CGPoint(x: sx / n, y: sy / n) : CGPoint(x: b.midX, y: b.midY))
+    })
 
   /// Lõi đen của mảng "Cần chú ý": viền đều `rim × 1.6`.
   static func inner(_ g: ProgressStatus.Group) -> Path {
