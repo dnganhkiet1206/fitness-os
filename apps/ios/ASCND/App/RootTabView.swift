@@ -7,16 +7,16 @@ import SwiftUI
 /// (`app-tabs.tsx`). Cộng đồng bỏ khỏi thanh tab (mở từ Tiến bộ); vòng "Trợ lý"
 /// (vai `.search`) gộp vào Tiến bộ.
 ///
-/// `progress` giữ giá trị lưu `"assistant"`: tab đã lưu của bản cũ mở đúng chỗ.
-/// Giá trị lưu `"community"` không còn → `@SceneStorage` về mặc định (Hôm nay).
+/// `progress` giữ giá trị `"assistant"` (link / dữ liệu cũ).
 enum AppTab: String, Hashable {
   case today, workouts, nutrition
   case progress = "assistant"
 }
 
 struct RootTabView: View {
-  /// Nhớ tab đang mở qua những lần hệ thống thu hồi scene.
-  @SceneStorage("root.tab") private var selection: AppTab = .today
+  /// Mở app luôn ở Hôm nay (Kiệt 22/10: "app vừa mở tự chạy sang tab Tiến bộ" là lỗi) —
+  /// không còn nhớ tab cuối qua các lần mở (`@SceneStorage`).
+  @State private var selection: AppTab = .today
   @Environment(AppServices.self) private var services
   /// Link `ascnd://` chờ mở (#527 deep link lát 2).
   @Environment(DeepLinkInbox.self) private var links: DeepLinkInbox?
@@ -31,10 +31,12 @@ struct RootTabView: View {
   var body: some View {
     TabView(selection: $selection) {
       Tab("tab.today", systemImage: "house", value: AppTab.today) {
-        TodayTab(onStartWorkout: {
-          selection = .workouts
-          launchWorkout = true
-        })
+        TodayTab(
+          onStartWorkout: {
+            selection = .workouts
+            launchWorkout = true
+          },
+          onLogWorkout: { logWorkoutInTraining() })
       }
       .accessibilityHint(Text(String(localized: "tab.today.hint")))
       Tab("tab.workouts", systemImage: "dumbbell", value: AppTab.workouts) {
@@ -67,7 +69,10 @@ struct RootTabView: View {
           selection = .progress
           openCoach = true
         } : nil
-    ) { linked = $0 })
+    ) { screen in
+      // Ô Buổi tập của Ghi nhanh = buổi theo lịch hôm nay (Kiệt 22/10), như ở Hôm nay.
+      if screen == .logWorkout { openTodaysSession() } else { linked = screen }
+    })
     .environment(quickLog)
     .onChange(of: services.coachRequest) { _, _ in
       guard services.aiDeployed == true else { return }
@@ -91,6 +96,19 @@ struct RootTabView: View {
     ) {
       if let linked { DeepLinkScreen(screen: linked) }
     }
+  }
+
+  /// Buổi theo lịch hôm nay: sang Tập luyện, mở buổi nếu hôm nay có (không có thì
+  /// chỉ mở tab) — cùng đường với "Bắt đầu" ở Hôm nay.
+  private func openTodaysSession() {
+    selection = .workouts
+    launchWorkout = true
+  }
+
+  /// Buổi phát sinh ngoài lịch: ghi tay, chỉ trong tab Tập luyện (Kiệt 22/10).
+  private func logWorkoutInTraining() {
+    selection = .workouts
+    linked = .logWorkout
   }
 }
 

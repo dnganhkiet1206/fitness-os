@@ -14,9 +14,11 @@ struct TodayTab: View {
   @Environment(WorkoutFlow.self) private var flow
   /// Bấm "Bắt đầu" — đưa người dùng sang tab Tập luyện, nơi màn tập sống.
   var onStartWorkout: () -> Void
+  /// "Ghi buổi tập" — chỉ ghi trong tab Tập luyện (Kiệt 22/10): chuyển tab rồi mở màn
+  /// ghi ở đó, không mở trên Hôm nay.
+  var onLogWorkout: () -> Void = {}
   @State private var showsSettings = false
   @State private var showsPlan = false
-  @State private var showsManualLog = false
 
   var body: some View {
     TodayScreen(
@@ -26,7 +28,7 @@ struct TodayTab: View {
       // của hôm nay (`/workouts/plan?day=today`); "Ghi buổi tập" / "Ghi thêm
       // buổi phát sinh" mở màn ghi tay (`/log-workout`).
       onChoosePlan: flow.plan == nil ? nil : { showsPlan = true },
-      onLogWorkout: { showsManualLog = true },
+      onLogWorkout: onLogWorkout,
       onOpenSettings: { showsSettings = true },
       onRefresh: { await flow.refresh() },
       // Thẻ sẵn sàng / Apple Health / phòng linh vật (#527) — cửa của RN là Today.
@@ -38,7 +40,6 @@ struct TodayTab: View {
       // bảng tập của mọi ngày (#541, #540, #543, #547).
       NavigationStack { WeekPlanView(flow: flow) }
     }
-    .sheet(isPresented: $showsManualLog) { ManualLogView(flow: flow) }
   }
 }
 
