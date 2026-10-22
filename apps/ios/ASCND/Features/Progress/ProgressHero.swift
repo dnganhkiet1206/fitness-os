@@ -18,10 +18,10 @@ struct ProgressHero: View {
   /// Khung vẽ trong toạ độ 222 × 222 của ảnh logo (cắt sát chữ A).
   static let frame = CGRect(x: 2, y: 30, width: 218, height: 166)
   static let rim: CGFloat = 1.3
-  static let hairline: CGFloat = 0.9
+  static let hairline: CGFloat = 0
   /// Bán kính bo góc và nửa khe giữa hai mảng (đơn vị khung 222).
   static let corner: CGFloat = 6
-  static let gap: CGFloat = 0.3
+  static let gap: CGFloat = -1.4
 
   var body: some View {
     Canvas { ctx, size in
@@ -34,17 +34,17 @@ struct ProgressHero: View {
         let level = result?.level ?? .insufficient
         let fill = result.map(ProgressStatus.fill) ?? 0
         let tint = ProgressStyle.color(g)
-        // Nấc như cánh hoa của Apple Health (Kiệt 22/10): nền = sắc tối của màu nhóm; bên
-        // trong là CÙNG hình mảng thu nhỏ đồng tâm, diện tích theo nấc 25 / 50 / 75 / 100 %
-        // của số thật. Chưa đủ dữ liệu: mảng trong mờ hơn.
+        // Nấc như cánh hoa của Apple Health (Kiệt 22/10, ảnh Ngủ): nền = sắc tối của màu
+        // nhóm; phần tô là CÙNG hình mảng mọc từ mép trong của chữ A ra ngoài, diện tích
+        // theo nấc ¼ / ½ / ¾ / đầy của số thật; trong phần tô có đường mảnh của các nấc
+        // nhỏ hơn. Chưa đủ dữ liệu: phần tô mờ hơn.
         ctx.fill(part, with: .color(ProgressStyle.shade(g)))
         let tier = Self.tier(fill)
         if tier > 0 {
-          let c = CGPoint(x: part.boundingRect.midX, y: part.boundingRect.midY)
-          let k = CGFloat(tier.squareRoot())
-          let inner = part.applying(
-            CGAffineTransform(translationX: c.x, y: c.y).scaledBy(x: k, y: k).translatedBy(x: -c.x, y: -c.y))
-          ctx.fill(inner, with: .color(level == .insufficient ? tint.opacity(0.45) : tint))
+          ctx.fill(Self.tierShape(g, tier), with: .color(level == .insufficient ? tint.opacity(0.45) : tint))
+          for t in stride(from: 0.25, to: tier, by: 0.25) {
+            ctx.stroke(Self.tierShape(g, t), with: .color(.white.opacity(0.45)), lineWidth: 0.5)
+          }
         }
         // Cần chú ý: thêm viền mảnh đều quanh mảng.
         if level == .attention {
@@ -82,6 +82,29 @@ struct ProgressHero: View {
       let pct = Int((ProgressStatus.fill($0) * 100).rounded())
       return "\(ProgressStyle.name($0.group)): \(ProgressStyle.word($0.level)), \(pct) %"
     }.joined(separator: ". ")
+  }
+
+  /// Mảng thu theo nấc `t`, neo ở mép trong (mép hướng vào lòng chữ A) giữa chiều cao
+  /// mảng — như cánh hoa của Apple mọc từ tâm ra.
+  static func tierShape(_ g: ProgressStatus.Group, _ t: Double) -> Path {
+    let p = part(g)
+    guard t < 1 else { return p }
+    let a = anchor(g), k = CGFloat(t.squareRoot())
+    return p.applying(CGAffineTransform(translationX: a.x, y: a.y).scaledBy(x: k, y: k).translatedBy(x: -a.x, y: -a.y))
+      .intersection(p)
+  }
+
+  /// Điểm trên mép trong của mảng, ngang giữa chiều cao.
+  static func anchor(_ g: ProgressStatus.Group) -> CGPoint {
+    let p = part(g), b = p.boundingRect, y = b.midY
+    let left: Bool = switch g {
+    case .training, .steps, .nutrition: true
+    case .sleep, .recovery, .body: false
+    }
+    var x = left ? b.maxX : b.minX
+    let step: CGFloat = left ? -0.25 : 0.25
+    while !p.contains(CGPoint(x: x, y: y)), x >= b.minX, x <= b.maxX { x += step }
+    return CGPoint(x: x, y: y)
   }
 
   /// Nấc của mảng: 0, ¼, ½, ¾, 1 (làm tròn lên — có chút số là thấy ¼).
