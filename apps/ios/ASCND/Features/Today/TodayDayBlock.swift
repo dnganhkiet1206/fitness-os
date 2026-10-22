@@ -504,7 +504,7 @@ struct TodayTube: View {
         }
       }
       Text(verbatim: TodayDayBlock.value(tube, unit: unit))
-        .font(.custom("Menlo", size: 11, relativeTo: .caption2).weight(.bold))
+        .font(DS.TextStyle.number(11, .caption2).weight(.bold))
         .foregroundStyle(tube.done || isNext ? color : DS.Color.mutedForeground.swiftUI)
         .lineLimit(1)
         .minimumScaleFactor(0.7)
@@ -616,7 +616,7 @@ struct KoaBar: View {
       }
       .frame(height: 7)
       Text(verbatim: tube.amount > 0 ? TodayDayBlock.value(tube, unit: unit) : "—")
-        .font(.custom("Menlo", size: 12.5, relativeTo: .caption).weight(.bold))
+        .font(DS.TextStyle.number(12.5, .caption).weight(.bold))
         .foregroundStyle(tube.done ? color : KoaCardInk.ink(dark))
         .frame(width: 58, alignment: .trailing)
         .lineLimit(1).minimumScaleFactor(0.7)

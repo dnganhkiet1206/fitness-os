@@ -124,10 +124,10 @@ struct WaterView: View {
         HStack(alignment: .firstTextBaseline, spacing: 4) {
           Text(verbatim: Water.shortLabel(ml: Double(book.totalMl), unit, locale: .app)
             .replacingOccurrences(of: unit == .oz ? " oz" : " L", with: ""))
-            .font(.custom("Menlo", size: 34, relativeTo: .largeTitle).weight(.bold))
+            .font(DS.TextStyle.number(34, .largeTitle).weight(.bold))
             .monospacedDigit()
           Text(verbatim: "/ " + Water.shortLabel(ml: target, unit, locale: .app))
-            .font(.custom("Menlo", size: 15, relativeTo: .body))
+            .font(DS.TextStyle.number(15, .body))
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
         }
         Text(verbatim: Water.percentLabel(pct))
@@ -527,7 +527,7 @@ struct WaterWeekCups: View {
             .font(DS.TextStyle.caption)
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
           Text(verbatim: Water.averageLabel(days, unit, locale: .app))
-            .font(.custom("Menlo", size: 20, relativeTo: .title3).weight(.bold))
+            .font(DS.TextStyle.number(20, .title3).weight(.bold))
         }
         Spacer()
         Text(verbatim: pickedLabel)

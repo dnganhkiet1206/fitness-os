@@ -183,7 +183,7 @@ struct SupplementsView: View {
           .rotationEffect(.degrees(-90))
           .animation(DSMotion.animation(.snappy, reduceMotion: reduceMotion), value: taken)
         Text(verbatim: "\(taken)/\(items.count)")
-          .font(.custom("Menlo", size: 15, relativeTo: .body).weight(.semibold))
+          .font(DS.TextStyle.number(15, .body).weight(.semibold))
           .monospacedDigit()
       }
       .frame(width: 60, height: 60)

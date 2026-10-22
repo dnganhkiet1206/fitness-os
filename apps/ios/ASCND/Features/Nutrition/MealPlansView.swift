@@ -350,7 +350,7 @@ struct MealPlanView: View {
             Text(verbatim: "\(d + 1)")
               .font(.system(size: 15, weight: .semibold).monospacedDigit())
             Text(verbatim: kcal > 0 ? DiaryView.whole(kcal) : "—")
-              .font(.custom("Menlo", size: 10, relativeTo: .caption2))
+              .font(DS.TextStyle.number(10, .caption2))
               .lineLimit(1)
               .minimumScaleFactor(0.6)
               .opacity(on ? 0.75 : 1)
@@ -382,7 +382,7 @@ struct MealPlanView: View {
     return VStack(alignment: .leading, spacing: 8) {
       HStack(alignment: .firstTextBaseline) {
         Text(verbatim: DiaryView.whole(kcal))
-          .font(.custom("Menlo", size: 26, relativeTo: .title).weight(.bold))
+          .font(DS.TextStyle.number(26, .title).weight(.bold))
         Text(String(localized: "nc.kcal")).font(DS.TextStyle.footnote).foregroundStyle(DS.Color.mutedForeground.swiftUI)
         Spacer(minLength: 0)
         if target > 0 {
@@ -455,7 +455,7 @@ struct MealPlanView: View {
             Spacer(minLength: 0)
             if !foods.isEmpty {
               Text(verbatim: DiaryView.whole(foods.reduce(0.0) { $0 + $1.kcal.rounded() }))
-                .font(.custom("Menlo", size: 14, relativeTo: .body))
+                .font(DS.TextStyle.number(14, .body))
                 .foregroundStyle(DS.Color.foreground.swiftUI)
             }
           }
@@ -501,7 +501,7 @@ struct MealPlanView: View {
             Text(verbatim: it.name).font(DS.TextStyle.body).lineLimit(1)
             Spacer()
             Text(verbatim: DiaryView.whole(it.kcal))
-              .font(.custom("Menlo", size: 13, relativeTo: .footnote))
+              .font(DS.TextStyle.number(13, .footnote))
               .foregroundStyle(DS.Color.mutedForeground.swiftUI)
             Button { Task { await deleteItem(it) } } label: {
               Image(systemName: "xmark")

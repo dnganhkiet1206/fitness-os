@@ -143,7 +143,7 @@ struct ActivityRingsView: View {
           .minimumScaleFactor(0.8)
       }
       Text(verbatim: ActivityRings.valueText(r, locale: .app))
-        .font(.custom("Menlo", size: 20, relativeTo: .title3).weight(.semibold))
+        .font(DS.TextStyle.number(20, .title3).weight(.semibold))
         .foregroundStyle(DS.Color.foreground.swiftUI)
         .lineLimit(1)
         .minimumScaleFactor(0.7)

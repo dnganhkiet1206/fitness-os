@@ -550,7 +550,7 @@ struct ChallengeHeroCard: View {
           .stroke(done ? DS.Color.readinessGreen.bright : Self.glow, style: StrokeStyle(lineWidth: 7, lineCap: .round))
           .rotationEffect(.degrees(-90))
         Text(verbatim: "\(min(ch.progress, ch.target))/\(ch.target)")
-          .font(.system(size: 15, weight: .semibold, design: .monospaced))
+          .font(.system(size: 15, weight: .semibold, design: .rounded))
           .foregroundStyle(.white)
           .minimumScaleFactor(0.6)
           .padding(8)

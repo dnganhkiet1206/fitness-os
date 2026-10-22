@@ -132,7 +132,7 @@ struct ReadinessExplainerSheet: View {
     HStack(spacing: DS.Spacing.sm) {
       Circle().fill(color).frame(width: 7, height: 7).accessibilityHidden(true)
       Text(verbatim: range)
-        .font(.caption.monospaced())
+        .font(DS.TextStyle.rounded(.caption))
         .frame(width: 78, alignment: .leading)
       Text(what)
         .font(DS.TextStyle.caption)

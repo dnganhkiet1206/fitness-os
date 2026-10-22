@@ -426,7 +426,7 @@ struct FoodRow<Trailing: View>: View {
       }
       Spacer(minLength: 0)
       Text(verbatim: DiaryView.whole(kcal))
-        .font(.custom("Menlo", size: 14, relativeTo: .body))
+        .font(DS.TextStyle.number(14, .body))
         .accessibilityLabel(Text(verbatim: "\(DiaryView.whole(kcal)) kcal"))
       trailing()
     }
