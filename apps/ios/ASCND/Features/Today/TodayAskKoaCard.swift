@@ -17,12 +17,12 @@ struct TodayAskKoaCard: View {
       // gradient (Kiệt 21/10: khác Apple Health một chút). Nền luôn tối nên chữ luôn trắng.
       Self.ink
         .frame(maxWidth: .infinity)
-        .frame(height: 372)
+        .frame(height: 340)
         .overlay(alignment: .top) {
           Image("AskKoaScene")
             .resizable()
             .scaledToFill()
-            .frame(height: 290)
+            .frame(height: 250)
             .frame(maxWidth: .infinity)
             .clipped()
             .accessibilityHidden(true)
@@ -77,6 +77,8 @@ struct TodayAskKoaCard: View {
             .background(.black.opacity(0.4), in: Circle())
             .background(.ultraThinMaterial, in: Circle())
             .environment(\.colorScheme, .dark)
+            // Bóng mờ quanh nút để tách khỏi bóng chat phía sau (Kiệt 21/10).
+            .shadow(color: .black.opacity(0.45), radius: 12, y: 3)
             .padding(DS.Spacing.md)
         }
         .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous))
