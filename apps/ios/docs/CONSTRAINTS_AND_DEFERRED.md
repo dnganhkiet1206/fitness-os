@@ -114,6 +114,14 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Chưa kiểm: VoiceOver của thanh tab mới, iPhone màn hẹp, iOS 18–25 (nút "+" nổi thay thanh Ghi nhanh).
 - `PARITY_MATRIX.md` chưa cập nhật theo 4 khu vực (việc cuối của GĐ3 trong lộ trình).
 
+**Tiến bộ theo chữ trạng thái (mock bản 10, Kiệt duyệt 22/10) — hạn chế đã biết:**
+- Tập luyện so với buổi theo lịch **tới hết hôm qua**: hôm nay chưa qua thì chưa tính là chậm (không nhắc oan buổi sáng).
+- Ngưỡng (80 % bước / đạm, ngủ ≥ mục tiêu − 30 phút, sẵn sàng 60, ≥ 3 ngày dữ liệu) là đề xuất đã duyệt, chưa kiểm với người dùng thật.
+- Mục tiêu bước nhớ theo máy (`StepsGoalStore`), như màn Vận động — máy khác có thể khác mục tiêu.
+- Hồi phục dùng màu `destructive` (đỏ sáng, Kiệt 22/10) — trùng màu với nút xoá / lỗi.
+- Icon dùng SF Symbols như Apple Health (Kiệt 22/10); mock icon riêng `progress-icons.html` bị thay.
+- Chưa kiểm: giao diện sáng, VoiceOver của chữ A, màn hẹp, chi tiết từng nhóm (mới kiểm Vận động).
+
 **Tìm thấy khi kiểm ngày 21/10** (simulator, tài khoản test):
 - ~~Coach AI bị cắt giữa câu, còn sót dấu `**` thô.~~ Sửa 21/10 (nhánh `claude/fix-five-bugs`): app bỏ `**` lẻ, câu bị cắt vì hết hạn mức thì nối "…". Server: `MAX_TOKENS` 1024 → 2048 (model gemini-3-flash tiêu một phần cho suy luận ẩn). **`ai-coach` đã deploy 21/10 (Kiệt duyệt trong chat), bản 24, từ `af3f6427`.** Kiểm trên simulator: câu trả lời chạy trọn, không sót `**`.
 - ~~Số buổi lệch: Coach nói 4 (đếm 7 ngày gần nhất), tổng kết tuần nói 2 (tuần lịch).~~ Sửa 21/10: `ai-coach` gửi `this_week` (tuần lịch T2 → hôm nay, đếm ngày có buổi như app) và dặn model dùng nó cho "tuần này". **Đã deploy 21/10** — Coach trả lời "2 buổi tập trong tuần này từ thứ Hai", khớp app (2/6).
@@ -145,6 +153,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - 21/10/2026: thêm điều kiện duyệt GĐ1, migration chưa deploy, kết quả "mất pump" / tụt hạng.
 - 21/10/2026: hồi quy GĐ1 (R / W / D PASS; A1, A2 BLOCKED).
 - 21/10/2026: Kiệt lệnh merge: #641 (GĐ1) và #642 (GĐ2) vào `native/ios-rewrite`; nghiệm thu GĐ1 còn thiếu iPhone thật, A1, A2; migration vẫn chưa deploy.
+- 22/10/2026: Tiến bộ theo chữ trạng thái (chữ A logo, 6 nhóm); thêm hạn chế.
 - 21/10/2026: deploy `ai-coach` (bản 24) lên production theo duyệt của Kiệt.
 - 21/10/2026: sửa 5 lỗi tìm thấy 21/10 (phần app xong; phần server `ai-coach` chờ deploy).
 - 21/10/2026: GĐ3 — bốn khu vực, Cộng đồng ra khỏi thanh tab, "Tóm tắt" gộp vào Tiến bộ, kế hoạch ăn / đi chợ / bổ sung xuống "Thêm"; thêm hạn chế GĐ3.

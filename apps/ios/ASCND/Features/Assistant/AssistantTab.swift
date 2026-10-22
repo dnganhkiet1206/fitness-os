@@ -7,6 +7,9 @@ enum AssistantRoute: Hashable {
   case chat, weekly, steps, training, biometrics, sleep, goals, measure, photos, memory, trends, tools
   /// GĐ3: huy chương, Cộng đồng (bỏ khỏi thanh tab).
   case awards, community
+  /// Tiến bộ theo trạng thái (mock bản 10): chi tiết một nhóm; Cân nặng & số đo.
+  case group(ProgressStatus.Group)
+  case body
 }
 
 /// Tab Tiến bộ — GĐ3 (Kiệt duyệt 21/10, mock `gd3-four-areas.html`): tab Trợ lý
@@ -51,11 +54,13 @@ struct AssistantTab: View {
   @State private var photos: ProgressPhotosBook?
   /// GĐ3: huy chương.
   @State private var awards: AwardsBook?
+  /// Tiến bộ theo trạng thái: 7 ngày daily_logs, 4 tuần cân, mục tiêu hồ sơ.
+  @State private var progress: ProgressStatusBook?
   @State private var built = false
   /// Ghi nhanh từ thẻ (15/10): ngủ / bữa.
   @State private var logging: AssistantLog?
   enum AssistantLog: String, Identifiable {
-    case sleep, meal
+    case sleep, meal, weight
     var id: String { rawValue }
   }
 
@@ -67,20 +72,54 @@ struct AssistantTab: View {
         // ô hỏi coach; bảng 7 ngày và đủ công cụ nằm sau một lần chạm.
         VStack(alignment: .leading, spacing: DS.Spacing.md) {
           header
-          // Kiệt 21/10 ("lặp với các màn khác"): Tiến bộ chỉ giữ thứ THEO THỜI GIAN —
-          // Koa / Gains ở đầu Hôm nay và phòng Koa; sẵn sàng hôm nay ở thẻ buổi tập
-          // Hôm nay; calo ở Dinh dưỡng; hỏi Koa ở nút Koa của Ghi nhanh.
-          sectionTitle("wh.seg.body")
-          BodySection(userId: flow.today.userId, today: flow.today.today)
-          if let metrics {
-            sectionTitle("progress.recovery")
-            TrendHighlight(book: metrics, lang: lang) { path.append(.trends) }
-          }
-          if let awards {
-            RecentAwardsCard(book: awards, lang: lang) { path.append(.awards) }
+          // Mock bản 10 (Kiệt duyệt 22/10): chữ A của logo, 6 nhóm, mỗi nhóm một chữ
+          // trạng thái; thẻ cân nặng đầy đủ chuyển vào "Thêm → Cân nặng & số đo".
+          if let results = progressResults {
+            ProgressHero(results: results) { path.append(.group($0)) }
+              .frame(maxWidth: 300)
+              .frame(maxWidth: .infinity)
+              .padding(.top, DS.Spacing.sm)
+            ProgressLegend()
+            focusBlock(results)
+            let shown = ProgressStatus.ordered(results).filter { $0.level != .insufficient }
+            if !shown.isEmpty {
+              sectionHeader("ps.results", trailing: attentionLine(results))
+              ForEach(shown) { r in
+                ProgressResultCard(result: r) { path.append(.group(r.group)) }
+              }
+            }
+            let missing = results.filter { $0.level == .insufficient }
+            if !missing.isEmpty {
+              sectionTitle("ps.missing")
+              ProgressMissingCard(results: missing) { g in
+                switch g {
+                case .nutrition: logging = .meal
+                case .body: logging = .weight
+                default: logging = .sleep
+                }
+              }
+            }
+          } else if case .failed = progress?.phase {
+            Text("ps.failed").font(DS.TextStyle.footnote).foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          } else {
+            ProgressView().frame(maxWidth: .infinity, minHeight: 200)
           }
           sectionTitle("progress.more")
           VStack(spacing: 0) {
+            NavigationLink(value: AssistantRoute.body) {
+              WorkoutsHomeView.toolRow(
+                "scalemass", String(localized: "ps.more.body"), sub: nil, tint: DS.Color.metricSteel.swiftUI)
+            }
+            .buttonStyle(.plain)
+            Divider().padding(.leading, 58).opacity(0.6)
+            if awards != nil {
+              NavigationLink(value: AssistantRoute.awards) {
+                WorkoutsHomeView.toolRow(
+                  "trophy", String(localized: "aw.title"), sub: awardsLine, tint: DS.Color.readinessYellow.swiftUI)
+              }
+              .buttonStyle(.plain)
+              Divider().padding(.leading, 58).opacity(0.6)
+            }
             if weekly != nil, ai {
               NavigationLink(value: AssistantRoute.weekly) {
                 WorkoutsHomeView.toolRow(
@@ -103,6 +142,7 @@ struct AssistantTab: View {
           }
           .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous))
           .todayCard()
+          about
           // Apple Health chỉ ở Cài đặt (15/10, chủ dự án: "chỉ để apple health trong
           // cài đặt các tab khác gỡ").
         }
@@ -115,14 +155,18 @@ struct AssistantTab: View {
         Task {
           await signal?.load()
           await metrics?.load(kcalTarget: kcalTarget)
+          await progress?.load()
         }
       }) { item in
         switch item {
         case .sleep: LogSleepView(makeLogger: { services.makeSleepLogger(userId: flow.today.userId) })
         case .meal: LogMealView(userId: flow.today.userId)
+        case .weight:
+          LogWeightView(makeLogger: { services.makeWeightLogger(userId: flow.today.userId) }) { logging = nil }
         }
       }
       .refreshable {
+        await progress?.load()
         await signal?.load()
         await metrics?.load(kcalTarget: kcalTarget)
       }
@@ -180,6 +224,18 @@ struct AssistantTab: View {
           }
         case .awards:
           if let awards { AwardsView(book: awards, lang: lang) }
+        case .group(let g):
+          if let r = progressResults?.first(where: { $0.group == g }) {
+            ProgressGroupView(
+              result: r, snapshot: progressSnapshot, week: koaWeek,
+              openTrends: metrics == nil ? nil : { path.append(.trends) })
+          }
+        case .body:
+          ScrollView {
+            BodySection(userId: flow.today.userId, today: flow.today.today).padding(DS.Spacing.md)
+          }
+          .navigationTitle(Text("ps.more.body"))
+          .ascndPage()
         case .community:
           CommunityScreen(pushed: true)
         case .tools:
@@ -211,8 +267,10 @@ struct AssistantTab: View {
       measure = services.makeMeasurements(userId: userId)
       photos = services.makeProgressPhotos(userId: userId)
       awards = services.makeAwardsBook(userId: userId)
+      progress = services.makeProgressStatus(userId: userId, today: today)
       built = true
       Task { await awards?.load() }
+      Task { await progress?.load() }
       await signal?.load()
       // Sau tín hiệu: phân tích calo cần mục tiêu calo của hồ sơ.
       await metrics?.load(kcalTarget: kcalTarget)
@@ -234,6 +292,7 @@ struct AssistantTab: View {
       Task {
         await signal?.move(to: today)
         await weekly?.move(to: today)
+        await progress?.move(to: today)
         await metrics?.move(to: today, kcalTarget: kcalTarget)
         await steps?.move(to: today)
         await goals?.move(to: today)
@@ -257,6 +316,7 @@ struct AssistantTab: View {
       measure?.close()
       photos?.close()
       awards?.close()
+      progress?.close()
     }
   }
 
@@ -281,10 +341,92 @@ struct AssistantTab: View {
   // MARK: - Đầu trang
 
   private var header: some View {
-    Text("tab.progress")
-      .font(.largeTitle.bold())
-      .foregroundStyle(DS.Color.foreground.swiftUI)
-      .accessibilityAddTraits(.isHeader)
+    VStack(alignment: .leading, spacing: 0) {
+      Text(verbatim: weekRange)
+        .font(.system(size: 13, weight: .medium))
+        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+      Text("tab.progress")
+        .font(.largeTitle.bold())
+        .foregroundStyle(DS.Color.foreground.swiftUI)
+        .accessibilityAddTraits(.isHeader)
+    }
+  }
+
+  // MARK: - Tiến bộ theo trạng thái (mock bản 10)
+
+  private var koaWeek: KoaWeek.State? {
+    KoaWeek.state(today: flow.today.today, library: flow.today.library, trained: flow.today.trained)
+  }
+
+  private var progressSnapshot: ProgressStatusBook.Snapshot? {
+    if case .ready(let s) = progress?.phase { return s }
+    return nil
+  }
+
+  private var progressResults: [ProgressStatus.Result]? {
+    let goal = Double(StepsGoalStore(store: UserDefaultsStore(), userId: flow.today.userId).goal)
+    return progress?.results(training: ProgressStatus.training(koaWeek, today: flow.today.today), stepsGoal: goal)
+  }
+
+  /// "Tuần 19 – 25 tháng 10" — tuần lịch như Tuần của Koa.
+  private var weekRange: String {
+    let start = WeeklyChallenges.weekStart(flow.today.today)
+    let f = Date.FormatStyle().day().month(.wide).locale(.app)
+    return String(localized: "ps.range \(start.calendarDate.formatted(f)) \(start.adding(days: 6).calendarDate.formatted(f))")
+  }
+
+  private func attentionLine(_ results: [ProgressStatus.Result]) -> String? {
+    let n = results.filter { $0.level == .attention }.count
+    return n > 0 ? String(localized: "ps.attentionCount \(n)") : nil
+  }
+
+  /// "Tuần này": nhóm cần chú ý quan trọng nhất (luật, không AI).
+  @ViewBuilder private func focusBlock(_ results: [ProgressStatus.Result]) -> some View {
+    let focus = ProgressStatus.focus(results)
+    let text: String = if let first = focus.first {
+      focus.count > 1
+        ? String(localized: "ps.focus.two \(ProgressStyle.name(first)) \(ProgressStyle.name(focus[1]).lowercased())")
+        : String(localized: "ps.focus.one \(ProgressStyle.name(first))")
+    } else if results.allSatisfy({ $0.level == .insufficient }) {
+      String(localized: "ps.focus.empty")
+    } else {
+      String(localized: "ps.focus.good")
+    }
+    VStack(alignment: .leading, spacing: 4) {
+      Text("ps.week").font(.system(size: 22, weight: .bold)).tracking(-0.3)
+        .accessibilityAddTraits(.isHeader)
+      Text(verbatim: text)
+        .font(DS.TextStyle.body)
+        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        .fixedSize(horizontal: false, vertical: true)
+    }
+    .padding(.top, DS.Spacing.xs)
+  }
+
+  private var awardsLine: String? {
+    guard case .ready = awards?.phase, let awards else { return nil }
+    return "\(awards.earnedCount)/\(Awards.catalogue.count)"
+  }
+
+  /// "Về các kết quả này" + lời nhắc y tế (như Health).
+  private var about: some View {
+    VStack(alignment: .leading, spacing: 6) {
+      Text("ps.about.title").font(DS.TextStyle.headline)
+      Text("ps.about.body").font(DS.TextStyle.footnote).foregroundStyle(DS.Color.mutedForeground.swiftUI)
+      Text("ps.about.medical").font(DS.TextStyle.footnote).foregroundStyle(DS.Color.mutedForeground.swiftUI)
+    }
+    .fixedSize(horizontal: false, vertical: true)
+    .padding(.top, DS.Spacing.sm)
+  }
+
+  private func sectionHeader(_ key: LocalizedStringKey, trailing: String?) -> some View {
+    HStack(alignment: .firstTextBaseline) {
+      sectionTitle(key)
+      Spacer(minLength: 0)
+      if let trailing {
+        Text(verbatim: trailing).font(DS.TextStyle.caption).foregroundStyle(DS.Color.mutedForeground.swiftUI)
+      }
+    }
   }
 
   // MARK: - Tuần này (GĐ3)
