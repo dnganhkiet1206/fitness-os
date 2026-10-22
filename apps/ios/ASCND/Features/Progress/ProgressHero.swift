@@ -38,10 +38,11 @@ struct ProgressHero: View {
           ctx.fill(part, with: .color(tint))
           icon = .white
         case .attention:
-          ctx.fill(part, with: .color(.black))
-          var inner = ctx
-          inner.clip(to: part)
-          inner.stroke(part, with: .color(tint), style: StrokeStyle(lineWidth: Self.rim * 2, lineJoin: .round))
+          // Viền = mảng tô màu, rồi lõi đen bo CÙNG bán kính — góc trong của viền tròn như
+          // góc ngoài, khung viền mềm như khung tô đặc (Kiệt 22/10: "Vận động" theo cạnh
+          // trên của "Tập luyện").
+          ctx.fill(part, with: .color(tint))
+          ctx.fill(Self.core(g), with: .color(.black))
           icon = tint
         case .insufficient:
           // Sắc tối của chính màu nhóm, không phải xám chung.
@@ -121,15 +122,20 @@ struct ProgressHero: View {
 
   static func sharp(_ g: ProgressStatus.Group) -> Path { logo.intersection(Path(rect(g))) }
 
-  private static let rounded: [ProgressStatus.Group: Path] = {
-    var out: [ProgressStatus.Group: Path] = [:]
-    for g in ProgressStatus.Group.allCases {
-      let p = sharp(g)
-      let shrink = p.subtracting(p.strokedPath(StrokeStyle(lineWidth: (corner + gap) * 2, lineJoin: .miter)))
-      out[g] = shrink.union(shrink.strokedPath(StrokeStyle(lineWidth: corner * 2, lineCap: .round, lineJoin: .round)))
-    }
-    return out
-  }()
+  /// Lõi của mảng "Cần chú ý": như `part` nhưng lùi vào thêm `rim`, vẫn bo `corner`.
+  static func core(_ g: ProgressStatus.Group) -> Path { cores[g] ?? part(g) }
+
+  /// Thu `inset + corner` (góc nhọn) rồi nở `corner` khớp tròn.
+  private static func opened(_ p: Path, inset: CGFloat) -> Path {
+    let shrink = p.subtracting(p.strokedPath(StrokeStyle(lineWidth: (corner + inset) * 2, lineJoin: .miter)))
+    return shrink.union(shrink.strokedPath(StrokeStyle(lineWidth: corner * 2, lineCap: .round, lineJoin: .round)))
+  }
+
+  private static let rounded: [ProgressStatus.Group: Path] = Dictionary(
+    uniqueKeysWithValues: ProgressStatus.Group.allCases.map { ($0, opened(sharp($0), inset: gap)) })
+
+  private static let cores: [ProgressStatus.Group: Path] = Dictionary(
+    uniqueKeysWithValues: ProgressStatus.Group.allCases.map { ($0, opened(sharp($0), inset: gap + rim)) })
 
   static func iconCenter(_ g: ProgressStatus.Group) -> CGPoint {
     switch g {
