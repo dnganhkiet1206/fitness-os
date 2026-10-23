@@ -586,25 +586,26 @@ struct AuthLockup: View {
     .task(id: alternates) { await cycle() }
   }
 
-  /// ASCND 3,5 s → Intelligence 4 s → lặp lại, chừng nào màn còn mở.
+  /// ASCND 5 s → Intelligence 5 s → lặp lại, chừng nào màn còn mở (Kiệt 23/10: chuyển
+  /// chậm hơn).
   private func cycle() async {
     guard alternates, !reduceMotion else { return }
     while !Task.isCancelled {
-      try? await Task.sleep(for: .seconds(3.5))
+      try? await Task.sleep(for: .seconds(5))
       guard !Task.isCancelled else { return }
       await swap(to: true)
-      try? await Task.sleep(for: .seconds(4))
+      try? await Task.sleep(for: .seconds(5))
       guard !Task.isCancelled else { return }
       await swap(to: false)
     }
   }
 
-  /// Mờ hẳn (0,3 s) → đổi nội dung → hiện lại (0,35 s) — như `BrandLockup`.
+  /// Mờ hẳn (0,8 s) → đổi nội dung → hiện lại (0,9 s): cùng kiểu `BrandLockup`, chậm hơn.
   private func swap(to intelligence: Bool) async {
-    withAnimation(reduceMotion ? nil : .easeIn(duration: 0.3)) { visible = false }
-    try? await Task.sleep(for: .milliseconds(320))
+    withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.8)) { visible = false }
+    try? await Task.sleep(for: .milliseconds(850))
     showsIntelligence = intelligence
-    withAnimation(reduceMotion ? nil : .easeOut(duration: 0.35)) { visible = true }
+    withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.9)) { visible = true }
   }
 
   private var brand: some View {
