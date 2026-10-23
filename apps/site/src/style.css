@@ -201,8 +201,8 @@ html:not(.js) .main > .intro + *, html.still .main > .intro + * { margin-top: 0;
 .story__step li { padding-left: 22px; position: relative; }
 .story__step li::before { content: ""; position: absolute; left: 0; top: 0.62em; width: 8px; height: 8px; border-radius: 50%; background: var(--ember); box-shadow: 0 0 12px var(--ember); }
 .story__dots { display: flex; gap: 8px; margin-top: 28px; }
-.story__dots span { width: 8px; height: 8px; border-radius: 99px; background: var(--line); transition: width 0.4s var(--ease), background 0.4s; }
-.story__dots span.is-current { width: 32px; background: var(--ember); }
+.story__dots span { width: 24px; height: 4px; border-radius: 99px; background: var(--line); transition: background 0.4s, box-shadow 0.4s; }
+.story__dots span.is-current { background: var(--ember); box-shadow: 0 0 10px rgb(255 115 25 / 0.6); }
 .story__visual { perspective: 1400px; }
 .story__frame {
   position: relative;
