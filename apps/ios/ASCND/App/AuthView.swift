@@ -110,6 +110,7 @@ struct AuthView: View {
           try await services.session.signInWithGoogle()
         } catch {
           // Người dùng đóng tấm Google: không phải lỗi.
+          if error is CancellationError { return }
           if (error as NSError).domain == "com.apple.AuthenticationServices.WebAuthenticationSession" { return }
           errorMessage = readableError(error)
         }
