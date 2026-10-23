@@ -30,6 +30,8 @@ struct AuthView: View {
   @State private var busy = false
   @State private var errorMessage: String?
   @State private var resetSent = false
+  /// Đăng ký xong mà dự án bắt xác nhận email: địa chỉ vừa gửi link (23/10).
+  @State private var confirmSentTo: String?
   /// Đã chạm submit — hiện lỗi field (#313).
   @State private var attemptedSubmit = false
 
@@ -208,6 +210,21 @@ struct AuthView: View {
           .multilineTextAlignment(.center)
           .accessibilityLabel(Text(errorMessage))
       }
+      if let to = confirmSentTo {
+        VStack(spacing: 4) {
+          Text(String(localized: "auth.confirm.title"))
+            .font(DS.TextStyle.headline)
+            .foregroundStyle(AuthHero.paper)
+          Text(String(localized: "auth.confirm.body \(to)"))
+            .font(DS.TextStyle.footnote)
+            .foregroundStyle(AuthHero.paper.opacity(0.7))
+        }
+        .multilineTextAlignment(.center)
+        .padding(DS.Spacing.md)
+        .frame(maxWidth: .infinity)
+        .background(AuthHero.ember.opacity(0.14), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .accessibilityElement(children: .combine)
+      }
       if resetSent {
         Text(String(localized: "auth.resetSent"))
           .font(DS.TextStyle.footnote)
@@ -358,12 +375,22 @@ struct AuthView: View {
     defer { busy = false }
     errorMessage = nil
     resetSent = false
+    if mode == .signup { confirmSentTo = nil }
     do {
       switch mode {
       case .signin:
         try await services.session.signIn(email: trimmedEmail, password: password)
       case .signup:
-        try await services.session.signUp(email: trimmedEmail, password: password, name: name)
+        let result = try await services.session.signUp(email: trimmedEmail, password: password, name: name)
+        if result == .confirmEmail {
+          // Không có phiên: chờ người dùng mở link xác nhận, rồi đăng nhập bằng
+          // chính email này (đã điền sẵn).
+          confirmSentTo = trimmedEmail
+          mode = .signin
+          password = ""
+          confirmPassword = ""
+          attemptedSubmit = false
+        }
       case .forgot:
         try await services.session.resetPassword(email: trimmedEmail)
         resetSent = true
@@ -386,6 +413,13 @@ struct AuthView: View {
     }
     if desc.contains("already registered") || desc.contains("already exists") {
       return String(localized: "auth.error.alreadyRegistered")
+    }
+    // Supabase giới hạn số email xác nhận mỗi giờ (mặc định 2 khi chưa có SMTP riêng).
+    if desc.contains("rate limit") || desc.contains("over_email_send_rate_limit") {
+      return String(localized: "auth.error.rateLimit")
+    }
+    if desc.contains("email not confirmed") {
+      return String(localized: "auth.error.notConfirmed")
     }
     if desc.contains("network") || desc.contains("offline") || desc.contains("connection") {
       return String(localized: "auth.error.network")

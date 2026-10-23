@@ -136,8 +136,18 @@ public final class SessionStore {
     try await api.signIn(email: email, password: password)
   }
 
-  public func signUp(email: String, password: String, name: String) async throws {
+  /// Kết quả đăng ký: dự án bật xác nhận email thì Supabase tạo tài khoản mà KHÔNG
+  /// mở phiên — màn đăng ký phải nói "kiểm tra email", không im lặng (23/10, Kiệt:
+  /// "phần sign up vẫn chưa hoạt động").
+  public enum SignUpResult: Sendable, Hashable {
+    case signedIn
+    case confirmEmail
+  }
+
+  @discardableResult
+  public func signUp(email: String, password: String, name: String) async throws -> SignUpResult {
     try await api.signUp(email: email, password: password, name: name)
+    return (try? await api.currentSession()) == nil ? .confirmEmail : .signedIn
   }
 
   public func signInWithApple(identityToken: String, rawNonce: String) async throws {
