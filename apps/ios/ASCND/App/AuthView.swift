@@ -564,8 +564,8 @@ struct AuthView: View {
 /// Bảng màu màn chào: đen ấm, giấy, lửa cam.
 /// Cụm logo + tên app nhỏ ở góc trên trái — màn đăng nhập và onboarding (22/10).
 /// `alternates` (màn đăng nhập, Kiệt 23/10): đổi qua lại với "ASCND Intelligence" bằng
-/// cùng hiệu ứng của logo ở Hôm nay (`BrandLockup`): mờ hẳn → đổi → hiện lại, không
-/// chồng lấn; chữ Intelligence sáng lần lượt như AI trong chat. Giảm chuyển động: đứng yên.
+/// cú chuyển của logo ở Hôm nay (`BrandLockup`): mờ hẳn → đổi → hiện lại, không chồng
+/// lấn; chữ đứng yên. Giảm chuyển động: không đổi logo.
 struct AuthLockup: View {
   var mark: CGFloat = 30
   var text: CGFloat = 19
@@ -601,10 +601,10 @@ struct AuthLockup: View {
 
   /// Mờ hẳn (0,3 s) → đổi nội dung → hiện lại (0,35 s) — như `BrandLockup`.
   private func swap(to intelligence: Bool) async {
-    withAnimation(.easeIn(duration: 0.3)) { visible = false }
+    withAnimation(reduceMotion ? nil : .easeIn(duration: 0.3)) { visible = false }
     try? await Task.sleep(for: .milliseconds(320))
     showsIntelligence = intelligence
-    withAnimation(.easeOut(duration: 0.35)) { visible = true }
+    withAnimation(reduceMotion ? nil : .easeOut(duration: 0.35)) { visible = true }
   }
 
   private var brand: some View {
@@ -621,11 +621,15 @@ struct AuthLockup: View {
     .foregroundStyle(AuthHero.paper)
   }
 
-  /// Cùng cỡ với logo gốc (như ở Hôm nay): ký hiệu Intelligence có vệt sáng, chữ sáng lần lượt.
+  /// Cùng cỡ với logo gốc; chữ ĐỨNG YÊN (Kiệt 23/10: "đừng cho hiệu ứng chữ chạy") —
+  /// chỉ có cú chuyển mờ-rồi-hiện giữa hai logo.
   private var intelligence: some View {
     HStack(spacing: 8) {
-      IntelligenceMark(size: mark, glint: true)
-      IntelligenceWaveText(font: .system(size: text, weight: .heavy))
+      IntelligenceMark(size: mark, ink: AuthHero.paper)
+      Text(String(localized: "ai.brand"))
+        .font(.system(size: text, weight: .heavy))
+        .tracking(0.4)
+        .foregroundStyle(AuthHero.paper)
         .lineLimit(1)
         .minimumScaleFactor(0.7)
     }
