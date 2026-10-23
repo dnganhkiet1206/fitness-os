@@ -20,7 +20,7 @@ struct AppPreferencesTests {
   /// Máy mới: theo máy cho ngôn ngữ / theme, đơn vị nước theo vùng, linh vật bật.
   @Test func defaults() {
     let vi = AppPreferences(store: Memory(), deviceLocale: "vi-VN")
-    #expect(vi.langChoice == .system && vi.lang == .vi && vi.volumeUnit == .ml)
+    #expect(vi.lang == .vi && vi.volumeUnit == .ml)
     #expect(vi.mascotEnabled && vi.mascotCompanion && vi.mascotSelected == "koa")
     #expect(AppPreferences(store: Memory(), deviceLocale: "es_MX").lang == .es)
     #expect(AppPreferences(store: Memory(), deviceLocale: "fr-FR").lang == .en)
@@ -44,15 +44,14 @@ struct AppPreferencesTests {
   @Test func persistsWithRNKeys() {
     let store = Memory()
     let p = AppPreferences(store: store, deviceLocale: "vi")
-    p.setLang(.es)
     p.setTheme(.light)
     p.setVolumeUnit(.oz)
     p.setMascotEnabled(false)
     p.selectMascot("blaze")
-    #expect(store.string(forKey: "ascnd_lang") == "es" && store.string(forKey: "ascnd_theme") == "light")
+    #expect(store.string(forKey: "ascnd_theme") == "light")
     #expect(store.string(forKey: "ascnd-volume-unit") == "oz" && store.string(forKey: "ascnd_mascot_enabled") == "0")
     let again = AppPreferences(store: store, deviceLocale: "vi")
-    #expect(again.lang == .es && again.theme == .light && again.volumeUnit == .oz)
+    #expect(again.lang == .vi && again.theme == .light && again.volumeUnit == .oz)
     #expect(!again.mascotEnabled && again.mascotCompanion && again.mascotSelected == "blaze")
   }
 
@@ -63,7 +62,7 @@ struct AppPreferencesTests {
       "ascnd_mascot_enabled": "yes", "ascnd_mascot_selected": "",
     ])
     let p = AppPreferences(store: store, deviceLocale: "vi-VN")
-    #expect(p.langChoice == .system && p.theme == .system && p.volumeUnit == .ml)
+    #expect(p.lang == .vi && p.theme == .system && p.volumeUnit == .ml)
     #expect(!p.mascotEnabled, "khác \"1\" là tắt, như RN (`e === '1'`)")
     #expect(p.mascotSelected == "koa")
   }
@@ -113,7 +112,6 @@ struct AppPreferencesTests {
   @Test func signOutClearsOnlyAccountScoped() {
     let store = Memory(["ascnd_app_lock": "1"])
     let p = AppPreferences(store: store, deviceLocale: "vi")
-    p.setLang(.en)
     p.setTheme(.light)
     p.setVolumeUnit(.oz)
     p.setMascotEnabled(false)
@@ -121,8 +119,8 @@ struct AppPreferencesTests {
     p.selectMascot("blaze")
     p.clearUserScoped()
     #expect(p.mascotEnabled && p.mascotCompanion && p.mascotSelected == "koa")
-    #expect(p.lang == .en && p.theme == .light && p.volumeUnit == .oz)
-    #expect(store.keys == ["ascnd_lang", "ascnd_theme", "ascnd-volume-unit", "ascnd_app_lock"])
+    #expect(p.theme == .light && p.volumeUnit == .oz)
+    #expect(store.keys == ["ascnd_theme", "ascnd-volume-unit", "ascnd_app_lock"])
     #expect(Set(AppPreferences.deviceKeys).isDisjoint(with: AppPreferences.userKeys))
   }
 
@@ -131,7 +129,15 @@ struct AppPreferencesTests {
     let defaults = try #require(UserDefaults(suiteName: suite))
     defer { defaults.removePersistentDomain(forName: suite) }
     let store = UserDefaultsStore(defaults)
-    AppPreferences(store: store, deviceLocale: "vi").setLang(.es)
-    #expect(AppPreferences(store: store, deviceLocale: "vi").lang == .es)
+    AppPreferences(store: store, deviceLocale: "vi").setTheme(.dark)
+    #expect(AppPreferences(store: store, deviceLocale: "vi").theme == .dark)
+  }
+
+  /// Ngôn ngữ theo iPhone (23/10): lựa chọn cũ lưu trong app bị bỏ, không ghi đè máy.
+  @Test func languageFollowsTheIPhone() {
+    let store = Memory(["ascnd_lang": "es"])
+    let p = AppPreferences(store: store, deviceLocale: "vi-VN")
+    #expect(p.lang == .vi && store.string(forKey: "ascnd_lang") == nil)
+    #expect(AppPreferences(store: Memory(), deviceLocale: "en_VN").lang == .en)
   }
 }

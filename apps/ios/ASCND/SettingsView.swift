@@ -21,17 +21,11 @@ public struct AccountSummary: Hashable, Sendable {
 public struct SettingsView: View {
   let account: AccountSummary?
   var onSignOut: () -> Void
-  var onLanguageChange: (String) -> Void
-  /// Ngôn ngữ đang dùng (`vi` / `en` / `es`) — bộ chọn bắt đầu từ đây, không
-  /// từ một giá trị cứng.
+  /// Ngôn ngữ đang dùng (`vi` / `en` / `es`) — hiện bên phải hàng "Ngôn ngữ".
   var language: String
   /// Theme đã chọn: `system` / `light` / `dark` (`ascnd_theme`).
   var theme: String
   var onThemeChange: (String) -> Void
-  /// Hiện bộ chọn ngôn ngữ. Production tắt cho tới khi đổi ngôn ngữ trong app
-  /// đổi được chữ thật (#527 Phase 1): chữ app hiện theo ngôn ngữ máy, một bộ
-  /// chọn không đổi gì là một nút hỏng.
-  var showsLanguage: Bool
   /// Dựng form đổi mật khẩu cho phiên đang mở (`settings.tsx:658`); `nil` khi
   /// không có phiên (preview, đã đăng xuất) — không hiện hàng.
   var makePasswordChange: (@MainActor () -> PasswordChangeController)?
@@ -56,7 +50,6 @@ public struct SettingsView: View {
   @State private var passwordChanged = false
   @State private var deleting = false
   @State private var deleteResult: AccountDeletion?
-  @State private var selectedLanguage: String
   @State private var selectedTheme: String
 
   /// Theme như RN `settings.tsx`: "Theo máy" đứng đầu (mặc định), rồi sáng, tối.
@@ -105,8 +98,6 @@ public struct SettingsView: View {
   public init(
     account: AccountSummary? = nil,
     onSignOut: @escaping () -> Void = {},
-    onLanguageChange: @escaping (String) -> Void = { _ in },
-    showsLanguage: Bool = true,
     language: String = "vi",
     theme: String = "system",
     onThemeChange: @escaping (String) -> Void = { _ in },
@@ -120,8 +111,6 @@ public struct SettingsView: View {
   ) {
     self.account = account
     self.onSignOut = onSignOut
-    self.onLanguageChange = onLanguageChange
-    self.showsLanguage = showsLanguage
     self.language = language
     self.theme = theme
     self.onThemeChange = onThemeChange
@@ -132,7 +121,6 @@ public struct SettingsView: View {
     self.healthConnected = healthConnected
     self.phoneSteps = phoneSteps
     self.deleteAccount = deleteAccount
-    _selectedLanguage = State(initialValue: language)
     _selectedTheme = State(initialValue: theme)
   }
 
@@ -172,27 +160,27 @@ public struct SettingsView: View {
         }
 
         // Language
-        if showsLanguage {
-          Section {
-            // Một chữ "Ngôn ngữ" (15/10, audit: tiêu đề mục và tên dòng lặp nhau) —
-            // dòng có icon như Nhắc nhở / Đổi mật khẩu, mục không còn tiêu đề.
-            Picker(
-              selection: $selectedLanguage
-            ) {
-              // Tên ngôn ngữ viết bằng CHÍNH ngôn ngữ ấy, không dịch — người
-              // không đọc được ngôn ngữ đang chọn vẫn tìm ra ngôn ngữ của mình
-              // (như RN `i18n.ts` LANGUAGES, như Cài đặt iOS). `verbatim`: không
-              // tra xcstrings bằng chính chuỗi hiển thị.
-              ForEach(Self.languages, id: \.code) { lang in
-                Text(verbatim: lang.endonym).tag(lang.code)
-              }
-            } label: {
+        // Ngôn ngữ theo iPhone (Kiệt 23/10): không còn bộ chọn trong app — hàng này mở
+        // Cài đặt của iPhone (ASCND → Ngôn ngữ), bên phải là ngôn ngữ đang dùng.
+        Section {
+          Button {
+            if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
+          } label: {
+            HStack {
               Label(String(localized: "settings.language"), systemImage: "globe")
-            }
-            .onChange(of: selectedLanguage) { _, new in
-              onLanguageChange(new)
+                .foregroundStyle(DS.Color.foreground.swiftUI)
+              Spacer()
+              Text(verbatim: Self.languages.first { $0.code == language }?.endonym ?? language)
+                .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+              Image(systemName: "arrow.up.forward.app")
+                .font(.footnote)
+                .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+                .accessibilityHidden(true)
             }
           }
+          .accessibilityHint(Text(String(localized: "settings.language.hint")))
+        } footer: {
+          Text(String(localized: "settings.language.footer"))
         }
 
         // Apple Health chỉ ở đây (18/10, chủ dự án): chưa kết nối → "Kết nối";

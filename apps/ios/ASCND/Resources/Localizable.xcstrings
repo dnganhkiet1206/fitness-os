@@ -2,6 +2,98 @@
  "sourceLanguage": "en",
  "version": "1.0",
  "strings": {
+  "settings.language.footer": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "ASCND uses your iPhone's language. To change it: Settings → ASCND → Language."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "ASCND dùng ngôn ngữ của iPhone. Muốn đổi: Cài đặt → ASCND → Ngôn ngữ."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "ASCND usa el idioma de tu iPhone. Para cambiarlo: Ajustes → ASCND → Idioma."
+     }
+    }
+   }
+  },
+  "settings.language.hint": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Opens iPhone Settings"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mở Cài đặt của iPhone"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Abre los Ajustes del iPhone"
+     }
+    }
+   }
+  },
+  "auth.continueApple": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Continue with Apple"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tiếp tục với Apple"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Continuar con Apple"
+     }
+    }
+   }
+  },
+  "auth.continueEmail": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Continue with email"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tiếp tục với email"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Continuar con correo"
+     }
+    }
+   }
+  },
   "auth.google": {
    "extractionState": "manual",
    "localizations": {

@@ -23,9 +23,9 @@ struct ASCNDApp: App {
     // Đo lường (15/10): chỉ khởi động khi có khoá — xem Telemetry.swift.
     Telemetry.start()
     let services = AppServices()
-    // Ngôn ngữ đã chọn (hoặc theo máy, như `deviceDefaultLang` của RN) cho
-    // MỌI lần tra chữ, từ khung hình đầu tiên (#527 · 1.7).
-    AppLanguage.shared.set(services.preferences.lang.rawValue)
+    // Ngôn ngữ theo iPhone (Kiệt 23/10): không ghi đè — mọi chữ tra theo ngôn ngữ
+    // iOS chọn cho app (Cài đặt → ASCND → Ngôn ngữ).
+    AppLanguage.shared.set(nil)
     _services = State(initialValue: services)
     // Làm mới nền cho thông báo cộng đồng (16/10) — cần dịch vụ khi không có view.
     CommunityAlerts.services = services

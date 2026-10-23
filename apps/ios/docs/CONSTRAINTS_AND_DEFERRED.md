@@ -167,6 +167,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - 21/10/2026: thêm điều kiện duyệt GĐ1, migration chưa deploy, kết quả "mất pump" / tụt hạng.
 - 21/10/2026: hồi quy GĐ1 (R / W / D PASS; A1, A2 BLOCKED).
 - 21/10/2026: Kiệt lệnh merge: #641 (GĐ1) và #642 (GĐ2) vào `native/ios-rewrite`; nghiệm thu GĐ1 còn thiếu iPhone thật, A1, A2; migration vẫn chưa deploy.
+- 23/10/2026: ngôn ngữ app theo iPhone (bỏ bộ chọn trong app; Cài đặt → ASCND → Ngôn ngữ); nút đăng nhập hướng A (Apple / Google / email — Apple ẩn tới khi có Apple Developer Program).
 - 22/10/2026: Tuần của Koa nhận lại khi có mạng + nhận bù tuần trước; kiểm widget Koa / onboarding (widget theo ngôn ngữ app; còn mở: chuỗi trên widget; điểm 91 kiểm lại là khớp).
 - 22/10/2026: thẻ quay lại gợi ý theo số ngày nghỉ (nhẹ hơn từ 7 ngày, buổi ngắn từ 28 ngày); gỡ mục "Buổi ngắn 15 phút" và dòng Koa đứng yên ở Tiến bộ.
 - 22/10/2026: chữ A có chuyển động, vùng chạm đúng hình mảng, VoiceOver từng mảng.

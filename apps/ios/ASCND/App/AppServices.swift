@@ -244,7 +244,8 @@ final class AppServices {
     preferences = prefs
     // Widget dùng cùng lựa chọn ngôn ngữ ngay từ lần mở app đầu (bản cài từ
     // trước PR này chưa có khoá trong App Group).
-    widgets.setLanguage(Self.widgetLanguage(prefs))
+    // Ngôn ngữ theo iPhone (23/10): widget cũng theo máy — không ghi đè.
+    widgets.setLanguage(nil)
     let reminderCenter = ReminderCenter(
       store: UserDefaultsStore(), scheduler: NotificationReminderScheduler(), copy: ReminderCopyTable.copy(prefs.lang))
     reminders = reminderCenter
@@ -362,19 +363,6 @@ final class AppServices {
 
   /// Ngôn ngữ cho widget / Live Activity (App Group). "Theo máy" thì không
   /// ghi gì — widget tự theo máy, kể cả khi máy đổi ngôn ngữ lúc app tắt.
-  static func widgetLanguage(_ p: AppPreferences) -> String? {
-    p.langChoice == .system ? nil : p.lang.rawValue
-  }
-
-  /// Đổi ngôn ngữ app: chữ của lời nhắc theo cùng (lịch không đặt lại — không
-  /// giờ nào đổi; thông báo đang chờ giữ chữ cũ tới lần đặt kế, như RN).
-  func setLanguage(_ choice: AppPreferences.LangChoice) {
-    preferences.setLang(choice)
-    // Mọi lần tra chữ của app đổi ngay (`AppLanguage`, #527 · 1.7).
-    AppLanguage.shared.set(preferences.lang.rawValue)
-    reminders.copy = ReminderCopyTable.copy(preferences.lang)
-    widgets.setLanguage(Self.widgetLanguage(preferences))
-  }
 
   /// Tầng ứng dụng của màn Today cho người đang đăng nhập (#271).
   func makeToday(userId: String) -> TodayController {
@@ -1044,8 +1032,8 @@ final class AppServices {
     }
   }
 
-  /// Ngôn ngữ chữ của app đang hiện — tên buổi tập từ đồng hồ theo nó. Lựa
-  /// chọn trong app (`AppLanguage`, #533) trước; "Theo máy" thì ngôn ngữ máy.
+  /// Ngôn ngữ chữ của app đang hiện — tên buổi tập từ đồng hồ theo nó. Theo iPhone
+  /// (23/10): ngôn ngữ mà iOS chọn cho app (`preferredLocalizations`).
   static var appLang: String {
     let code = AppLanguage.shared.code ?? Bundle.main.preferredLocalizations.first ?? "en"
     return code.hasPrefix("vi") ? "vi" : code.hasPrefix("es") ? "es" : "en"
