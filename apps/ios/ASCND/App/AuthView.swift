@@ -57,7 +57,7 @@ struct AuthView: View {
         .accessibilityHidden(true)
       VStack(alignment: .leading, spacing: 0) {
         // Logo + tên app, nhỏ, ở góc trên trái (16/10, chủ dự án: thay logo lớn giữa màn).
-        AuthLockup()
+        AuthLockup(alternates: true)
           .padding(.top, 8)
         Spacer(minLength: 0)
         Text("auth.hero.slogan")
@@ -73,20 +73,17 @@ struct AuthView: View {
           .foregroundStyle(AuthHero.paper.opacity(0.65))
           .padding(.top, 12)
           .padding(.bottom, 28)
-        if AppleFeatureGates.signInWithApple(info: Bundle.main.infoDictionary) {
-          SignInWithAppleButton(onRequest: configureAppleRequest, onCompletion: handleAppleCompletion)
-            .signInWithAppleButtonStyle(.white)
-            .frame(height: 52)
-            .clipShape(Capsule())
-            .accessibilityLabel(Text(String(localized: "auth.apple")))
-            .padding(.bottom, 10)
+        // Hướng A (Kiệt duyệt mock 23/10): ba nút "Tiếp tục với…" — Apple, Google, email.
+        // Email gộp đăng nhập + đăng ký (tấm form có lối chuyển); nút nào chưa bật thì ẩn.
+        VStack(spacing: 10) {
+          if AppleFeatureGates.signInWithApple(info: Bundle.main.infoDictionary) {
+            appleButton
+          }
+          if AppleFeatureGates.signInWithGoogle(info: Bundle.main.infoDictionary) {
+            googleButton
+          }
+          emailButton
         }
-        if AppleFeatureGates.signInWithGoogle(info: Bundle.main.infoDictionary) {
-          googleButton.padding(.bottom, 10)
-        }
-        heroButton(String(localized: "auth.hero.email"), filled: true) { open(.signin) }
-        heroButton(String(localized: "auth.hero.create"), filled: false) { open(.signup) }
-          .padding(.top, 10)
         if let errorMessage, !formOpen {
           Text(errorMessage)
             .font(DS.TextStyle.footnote)
@@ -101,7 +98,51 @@ struct AuthView: View {
     .environment(\.colorScheme, .dark)
   }
 
-  /// "Tiếp tục với Google" (23/10, Kiệt): nền trắng như nút Apple, chữ "G" đậm.
+  /// "Tiếp tục với Apple" tự vẽ theo HIG của Apple (logo + chữ, nền đen, viền mảnh):
+  /// nút `SignInWithAppleButton` của hệ thống lấy chữ theo NGÔN NGỮ MÁY, lệch với hai nút
+  /// kia theo ngôn ngữ app (Kiệt 23/10: "lỗi tiếng việt và tiếng anh").
+  private var appleButton: some View {
+    Button {
+      appleSignIn.start(configure: configureAppleRequest, completion: handleAppleCompletion)
+    } label: {
+      HStack(spacing: 8) {
+        Image(systemName: "apple.logo")
+          .font(.system(size: 17, weight: .semibold))
+          .accessibilityHidden(true)
+        Text(String(localized: "auth.continueApple"))
+          .font(.system(size: 16, weight: .semibold))
+      }
+      .foregroundStyle(.white)
+      .frame(maxWidth: .infinity, minHeight: 50)
+      .background(Color.black, in: Capsule())
+      .overlay { Capsule().strokeBorder(AuthHero.paper.opacity(0.3), lineWidth: 0.75) }
+      .contentShape(Capsule())
+    }
+    .buttonStyle(TodayPressStyle())
+    .accessibilityLabel(Text(String(localized: "auth.continueApple")))
+  }
+
+  /// "Tiếp tục với email": viền mảnh, mở tấm form ở chế độ đăng nhập (có lối sang
+  /// "Tạo tài khoản").
+  private var emailButton: some View {
+    Button { open(.signin) } label: {
+      HStack(spacing: 10) {
+        Image(systemName: "envelope.fill")
+          .font(.system(size: 15, weight: .semibold))
+          .accessibilityHidden(true)
+        Text(String(localized: "auth.continueEmail"))
+          .font(.system(size: 16, weight: .semibold))
+      }
+      .foregroundStyle(AuthHero.paper)
+      .frame(maxWidth: .infinity, minHeight: 50)
+      .overlay { Capsule().strokeBorder(AuthHero.paper.opacity(0.28), lineWidth: 1) }
+      .contentShape(Capsule())
+    }
+    .buttonStyle(TodayPressStyle())
+    .accessibilityLabel(Text(String(localized: "auth.continueEmail")))
+  }
+
+  /// "Tiếp tục với Google" (23/10, Kiệt): nền trắng, logo "G" chuẩn của Google.
   private var googleButton: some View {
     Button {
       Task {
@@ -117,15 +158,17 @@ struct AuthView: View {
       }
     } label: {
       HStack(spacing: 10) {
-        Text(verbatim: "G")
-          .font(.system(size: 19, weight: .heavy, design: .rounded))
-          .foregroundStyle(Color(red: 0.26, green: 0.52, blue: 0.96))
+        // Logo "G" bốn màu chuẩn của Google (hướng dẫn thương hiệu Sign in with Google),
+        // vector trong Assets — không tự vẽ chữ G (Kiệt 23/10: "logo google nhìn lạ").
+        Image("GoogleG")
+          .resizable()
+          .frame(width: 18, height: 18)
           .accessibilityHidden(true)
         Text(String(localized: "auth.google"))
           .font(.system(size: 16, weight: .semibold))
           .foregroundStyle(.black)
       }
-      .frame(maxWidth: .infinity, minHeight: 52)
+      .frame(maxWidth: .infinity, minHeight: 50)
       .background(Color.white, in: Capsule())
       .contentShape(Capsule())
     }
@@ -433,6 +476,7 @@ struct AuthView: View {
   /// Nonce theo từng lượt xin quyền (`state` ↔ nonce thô), không dùng chung
   /// một biến: lượt sau không được ghi đè nonce của lượt trước (#523 P1).
   @State private var appleNonces = AppleSignInNonces()
+  @State private var appleSignIn = AppleSignInLauncher()
 
   private func configureAppleRequest(_ request: ASAuthorizationAppleIDRequest) {
     // Nonce ngẫu nhiên + SHA256 bằng CryptoKit (chuẩn Apple). `state` gắn
@@ -519,11 +563,54 @@ struct AuthView: View {
 
 /// Bảng màu màn chào: đen ấm, giấy, lửa cam.
 /// Cụm logo + tên app nhỏ ở góc trên trái — màn đăng nhập và onboarding (22/10).
+/// `alternates` (màn đăng nhập, Kiệt 23/10): đổi qua lại với "ASCND Intelligence" bằng
+/// cú chuyển của logo ở Hôm nay (`BrandLockup`): mờ hẳn → đổi → hiện lại, không chồng
+/// lấn; chữ đứng yên. Giảm chuyển động: không đổi logo.
 struct AuthLockup: View {
   var mark: CGFloat = 30
   var text: CGFloat = 19
+  var alternates = false
+  @State private var showsIntelligence = false
+  @State private var visible = true
+  /// Vệt sáng đã lướt qua logo Intelligence (một lần mỗi lần hiện).
+  @State private var sweep = false
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
   var body: some View {
+    Group {
+      if showsIntelligence { intelligence } else { brand }
+    }
+    .opacity(visible ? 1 : 0)
+    .scaleEffect(visible ? 1 : 0.96, anchor: .leading)
+    .frame(height: mark + 6, alignment: .leading)
+    .accessibilityElement(children: .ignore)
+    .accessibilityLabel(Text(String(localized: "brand.name")))
+    .task(id: alternates) { await cycle() }
+  }
+
+  /// Thưa (Kiệt 23/10: "logo chuyển đổi lâu hơn để nhìn hiếm hơn"): ASCND đứng 12 s, rồi
+  /// Intelligence hiện 4 s, rồi về ASCND — lặp lại chừng nào màn còn mở.
+  private func cycle() async {
+    guard alternates, !reduceMotion else { return }
+    while !Task.isCancelled {
+      try? await Task.sleep(for: .seconds(12))
+      guard !Task.isCancelled else { return }
+      await swap(to: true)
+      try? await Task.sleep(for: .seconds(4))
+      guard !Task.isCancelled else { return }
+      await swap(to: false)
+    }
+  }
+
+  /// Mờ hẳn (0,3 s) → đổi nội dung → hiện lại (0,35 s) — như `BrandLockup`.
+  private func swap(to intelligence: Bool) async {
+    withAnimation(reduceMotion ? nil : .easeIn(duration: 0.3)) { visible = false }
+    try? await Task.sleep(for: .milliseconds(320))
+    showsIntelligence = intelligence
+    withAnimation(reduceMotion ? nil : .easeOut(duration: 0.35)) { visible = true }
+  }
+
+  private var brand: some View {
     HStack(spacing: 8) {
       Image("BrandMark")
         .renderingMode(.template)
@@ -535,8 +622,39 @@ struct AuthLockup: View {
         .tracking(1.5)
     }
     .foregroundStyle(AuthHero.paper)
-    .accessibilityElement(children: .ignore)
-    .accessibilityLabel(Text(String(localized: "brand.name")))
+  }
+
+  /// Cùng cỡ với logo gốc; chữ đứng yên (Kiệt 23/10: "đừng cho hiệu ứng chữ chạy"), có
+  /// MỘT vệt sáng nhẹ lướt qua mỗi lần logo hiện ra — như logo ở Hôm nay trước đây.
+  private var intelligence: some View {
+    let content = HStack(spacing: 8) {
+      IntelligenceMark(size: mark, ink: AuthHero.paper.opacity(0.78), glint: true)
+      Text(String(localized: "ai.brand"))
+        .font(.system(size: text, weight: .heavy))
+        .tracking(0.4)
+        .lineLimit(1)
+        .minimumScaleFactor(0.7)
+    }
+    // Chữ dịu hơn giấy một chút để vệt sáng trắng lướt qua nhìn thấy được.
+    return content
+      .foregroundStyle(AuthHero.paper.opacity(0.78))
+      .overlay {
+        GeometryReader { geo in
+          LinearGradient(
+            colors: [.white.opacity(0), .white, .white.opacity(0)],
+            startPoint: .leading, endPoint: .trailing
+          )
+          .frame(width: geo.size.width * 0.4)
+          .offset(x: sweep ? geo.size.width : -geo.size.width * 0.35)
+        }
+        .mask(content)
+        .allowsHitTesting(false)
+      }
+      .onAppear {
+        sweep = false
+        guard !reduceMotion else { return }
+        withAnimation(.easeInOut(duration: 1.2).delay(0.4)) { sweep = true }
+      }
   }
 }
 
@@ -673,3 +791,41 @@ extension View {
     modifier(FieldErrorModifier(message: message))
   }
 }
+
+/// Chạy luồng Sign in with Apple cho nút tự vẽ (cùng `onRequest` / `onCompletion` như
+/// `SignInWithAppleButton`).
+@MainActor
+final class AppleSignInLauncher: NSObject, ASAuthorizationControllerDelegate,
+  ASAuthorizationControllerPresentationContextProviding
+{
+  private var completion: ((Result<ASAuthorization, Error>) -> Void)?
+
+  func start(
+    configure: (ASAuthorizationAppleIDRequest) -> Void, completion: @escaping (Result<ASAuthorization, Error>) -> Void
+  ) {
+    let request = ASAuthorizationAppleIDProvider().createRequest()
+    configure(request)
+    self.completion = completion
+    let controller = ASAuthorizationController(authorizationRequests: [request])
+    controller.delegate = self
+    controller.presentationContextProvider = self
+    controller.performRequests()
+  }
+
+  nonisolated func authorizationController(
+    controller: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization
+  ) {
+    MainActor.assumeIsolated { completion?(.success(authorization)) }
+  }
+
+  nonisolated func authorizationController(controller: ASAuthorizationController, didCompleteWithError error: Error) {
+    MainActor.assumeIsolated { completion?(.failure(error)) }
+  }
+
+  nonisolated func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
+    MainActor.assumeIsolated {
+      UIApplication.shared.connectedScenes.compactMap { ($0 as? UIWindowScene)?.keyWindow }.first ?? ASPresentationAnchor()
+    }
+  }
+}
+

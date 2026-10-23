@@ -44,7 +44,6 @@ public final class UserDefaultsStore: KeyValueStore, @unchecked Sendable {
 /// trên iOS (Face ID, lúc khoá) chưa được chốt — xem PR.
 @MainActor @Observable
 public final class AppPreferences {
-  public enum LangChoice: String, Sendable, Hashable, CaseIterable { case system, vi, en, es }
   public enum Lang: String, Sendable, Hashable { case vi, en, es }
   public enum Theme: String, Sendable, Hashable, CaseIterable { case system, light, dark }
   public enum VolumeUnit: String, Sendable, Hashable, CaseIterable { case ml, oz }
@@ -66,7 +65,6 @@ public final class AppPreferences {
   /// Khoá theo tài khoản mà cài đặt này giữ: đăng xuất xoá (`USER_KEYS`).
   public static let userKeys = [mascotEnabledKey, mascotCompanionKey, mascotSelectedKey]
 
-  public private(set) var langChoice: LangChoice
   public private(set) var theme: Theme
   public private(set) var volumeUnit: VolumeUnit
   public private(set) var mascotEnabled: Bool
@@ -80,7 +78,9 @@ public final class AppPreferences {
   public init(store: any KeyValueStore, deviceLocale: String = Locale.current.identifier) {
     self.store = store
     self.deviceLocale = deviceLocale
-    langChoice = store.string(forKey: Self.langKey).flatMap(LangChoice.init(rawValue:)) ?? .system
+    // Ngôn ngữ theo iPhone (Kiệt 23/10: bỏ chọn ngôn ngữ trong app — chọn ở Cài đặt →
+    // ASCND → Ngôn ngữ). Lựa chọn cũ lưu trong app bỏ đi.
+    store.remove(Self.langKey)
     theme = store.string(forKey: Self.themeKey).flatMap(Theme.init(rawValue:)) ?? .system
     volumeUnit = store.string(forKey: Self.volumeUnitKey).flatMap(VolumeUnit.init(rawValue:))
       ?? Self.deviceVolumeUnit(deviceLocale)
@@ -107,14 +107,9 @@ public final class AppPreferences {
     return ["US", "LR", "MM"].contains(region) ? .oz : .ml
   }
 
-  public var lang: Lang {
-    switch langChoice {
-    case .system: Self.deviceLang(deviceLocale)
-    case .vi: .vi
-    case .en: .en
-    case .es: .es
-    }
-  }
+  /// Ngôn ngữ app = ngôn ngữ iPhone dành cho app (Cài đặt → ASCND → Ngôn ngữ, hoặc
+  /// ngôn ngữ máy); ngoài vi / es là en.
+  public var lang: Lang { Self.deviceLang(deviceLocale) }
 
   public enum ThemeName: String, Sendable, Hashable { case light, dark }
 
@@ -129,10 +124,6 @@ public final class AppPreferences {
 
   // MARK: - Ghi
 
-  public func setLang(_ l: LangChoice) {
-    langChoice = l
-    store.set(l.rawValue, forKey: Self.langKey)
-  }
 
   public func setTheme(_ t: Theme) {
     theme = t
