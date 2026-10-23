@@ -137,21 +137,10 @@ function rankLadder(gains) {
     .join('')}</ol></div>`;
 }
 
-// Chữ A minh hoạ tab Tiến bộ: sáu mảng tự ghép lần lượt (tập luyện, bước chân, dinh dưỡng,
-// giấc ngủ, hồi phục, cơ thể); tô theo ba trạng thái của app. Chỉ là minh hoạ, không phải số liệu.
-function progressA(legend) {
-  const L = (t) => [150 - 116 * t, 24 + 252 * t];
-  const R = (t) => [150 + 116 * t, 24 + 252 * t];
-  const cuts = [[0.05, 0.36], [0.42, 0.7], [0.76, 1]];
-  const status = ['good', 'good', 'warn', 'good', 'warn', 'none'];
-  const segs = [...cuts.map((c) => [L(c[0]), L(c[1])]), ...cuts.map((c) => [R(c[0]), R(c[1])])];
-  const order = [0, 3, 1, 4, 2, 5];
-  const paths = segs
-    .map(([a, b], j) => `<path class="seg seg--${status[j]}" style="--j:${order.indexOf(j)}" pathLength="100" d="M${a[0].toFixed(1)} ${a[1].toFixed(1)}L${b[0].toFixed(1)} ${b[1].toFixed(1)}"/>`)
-    .join('');
-  return `<div class="a-mark"><svg viewBox="0 0 300 300" role="img"><path class="a-bar" d="M104 186H196"/>${paths}</svg>
-    <ul class="a-legend">${['good', 'warn', 'none'].map((s, i) => `<li><i class="dot dot--${s}"></i>${esc(legend[i])}</li>`).join('')}</ul></div>`;
-}
+// Màn hình thật của app (chụp trên simulator, tài khoản test, đúng ngôn ngữ của trang) trong khung
+// iPhone. Chụp lại: xem apps/site/README.md, mục "Ảnh màn hình app".
+const phone = (l, screen) =>
+  `<div class="phone"><img src="${asset(`img/app/${l}-${screen}.jpg`)}" alt="" width="590" height="1281" loading="lazy"></div>`;
 
 // Văn bản pháp lý trên web là đúng bản trong app (legal-content.json) — nói rõ cho người đọc.
 const sameAsApp = (t) =>
@@ -167,10 +156,10 @@ const render = {
     const h = t.home;
     const soon = `<span class="soon">${icon('phone')}${esc(h.soon)}</span>`;
     const visuals = [
-      `<img class="story__img" src="${asset('img/scene-workout.jpg')}" alt="" width="638" height="384">`,
-      `<img class="story__img" src="${asset('img/scene-meal.jpg')}" alt="" width="638" height="384">`,
+      phone(l, 'today'),
+      phone(l, 'nutrition'),
       rankLadder(h.gains),
-      progressA(t.help.legend),
+      phone(l, 'progress'),
     ];
     return `
       ${intro(h.title, h.lead, t.help.scrollHint, `<div class="intro__actions">${soon}<a class="button button--ghost" href="#how">${esc(h.how)}</a></div>`)}
@@ -185,7 +174,7 @@ const render = {
             <div class="story__dots" aria-hidden="true">${h.steps.map((_, k) => `<span data-dot="${k}"></span>`).join('')}</div>
           </div>
           <div class="story__visual" aria-hidden="true">
-            <div class="story__frame">${visuals.map((v, k) => `<div class="story__layer" data-step="${k}">${v}</div>`).join('')}</div>
+            <div class="story__frame">${visuals.map((v, k) => `<div class="story__layer${v.startsWith('<div class="phone"') ? ' story__layer--phone' : ''}" data-step="${k}">${v}</div>`).join('')}</div>
           </div>
         </div>
       </section>
@@ -208,12 +197,12 @@ const render = {
 
   // Trợ giúp: trang cuộn kiểu trang sản phẩm Apple — mở đầu thu nhỏ dần, cảnh ghim ba bước
   // (chữ + tranh Koa đổi theo cuộn), câu tuyên ngôn sáng dần từng chữ, rồi câu hỏi và liên hệ.
-  help(t) {
+  help(t, l) {
     const h = t.help;
     const visuals = [
-      `<img class="story__img" src="${asset('img/scene-meal.jpg')}" alt="" width="638" height="384">`,
+      phone(l, 'nutrition'),
       `<img class="story__img" src="${asset('img/scene-workout.jpg')}" alt="" width="638" height="384">`,
-      progressA(h.legend),
+      phone(l, 'progress'),
     ];
     return `
       ${intro(h.title, h.lead, h.scrollHint)}
@@ -227,7 +216,7 @@ const render = {
             <div class="story__dots" aria-hidden="true">${h.guides.map((_, k) => `<span data-dot="${k}"></span>`).join('')}</div>
           </div>
           <div class="story__visual" aria-hidden="true">
-            <div class="story__frame">${visuals.map((v, k) => `<div class="story__layer" data-step="${k}">${v}</div>`).join('')}</div>
+            <div class="story__frame">${visuals.map((v, k) => `<div class="story__layer${v.startsWith('<div class="phone"') ? ' story__layer--phone' : ''}" data-step="${k}">${v}</div>`).join('')}</div>
           </div>
         </div>
       </section>

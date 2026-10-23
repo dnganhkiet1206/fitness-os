@@ -92,11 +92,6 @@
     ],
     "statement": "Gains never go down when you take a break. Coming back is always progress, never a reset.",
     "scrollHint": "Scroll",
-    "legend": [
-      "Good",
-      "Needs attention",
-      "Not enough data"
-    ],
     "stepLabel": "Step"
   },
   "privacy": {

@@ -92,11 +92,6 @@
     ],
     "statement": "Los Gains nunca bajan cuando descansas. Volver siempre es avanzar, nunca empezar de cero.",
     "scrollHint": "Desliza",
-    "legend": [
-      "Bien",
-      "Requiere atención",
-      "Sin datos suficientes"
-    ],
     "stepLabel": "Paso"
   },
   "privacy": {

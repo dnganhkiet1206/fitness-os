@@ -68,3 +68,9 @@ Bảo mật trang: không tải gì từ bên thứ ba, CSP chỉ cho nói chuy�
 - [ ] Kiệt duyệt văn bản pháp lý (đây **không** phải tư vấn pháp lý). Luật áp dụng hiện ghi Delaware, Mỹ — kế thừa từ RN, cần Kiệt xác nhận.
 - [ ] `supportEmail` và `operatorName` trong `site.config.json` (đang trống → trang hiện ô "chưa đặt").
 - [ ] `draft: false`.
+
+## Ảnh
+
+- **Màn hình app** (`src/img/app/{vi,en,es}-{today,nutrition,progress}.jpg`): chụp thật trên simulator bằng tài khoản test, mỗi ngôn ngữ một bộ, đặt trong khung iPhone vẽ bằng CSS. Chụp lại khi giao diện app đổi: `apps/site/tools/capture-app-screens.sh`. Chữ viết tắt tên tài khoản ở màn Hôm nay được làm mờ.
+- **Tranh Koa** (`scene-*.jpg`, `koa.png`, `icon.png`): lấy từ app (`Assets.xcassets`, `docs/design/today/mock/koa-idle.png`), không phải ảnh stock. Koa là tranh của Kiệt: không vẽ lại khi chưa có mock được duyệt.
+- **Thang hạng** (landing): vẽ bằng HTML/CSS theo `MascotRules.ranks` (tên, màu) và `KoaGains.thresholds` (mốc Gains). Đổi hạng trong app thì sửa `ranks` trong `build.mjs`.

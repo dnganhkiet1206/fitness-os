@@ -207,7 +207,11 @@ html:not(.js) .main > .intro + *, html.still .main > .intro + * { margin-top: 0;
 .story__visual { perspective: 1400px; }
 .story__frame {
   position: relative;
-  aspect-ratio: 638 / 384;
+  /* Vuông, cao theo màn hình: iPhone trong khung đủ lớn để đọc được. */
+  aspect-ratio: 1;
+  height: min(70vh, 640px);
+  max-width: 100%;
+  margin-inline: auto;
   border-radius: 32px;
   overflow: hidden;
   border: 1px solid var(--line);
@@ -217,23 +221,18 @@ html:not(.js) .main > .intro + *, html.still .main > .intro + * { margin-top: 0;
 }
 .story__layer { position: absolute; inset: 0; opacity: var(--v, 1); }
 .story__img { width: 100%; height: 100%; object-fit: cover; display: block; transform: scale(calc(1.16 - var(--local, 1) * 0.16)); }
-.a-mark { position: absolute; inset: 0; display: grid; place-items: center; align-content: center; gap: 12px; background: radial-gradient(ellipse at 50% 30%, rgb(255 115 25 / 0.16), var(--sheet) 70%); }
-.a-mark svg { width: 46%; height: auto; overflow: visible; }
-.a-bar { stroke: var(--line); stroke-width: 3; stroke-linecap: round; }
-.seg {
-  fill: none; stroke-width: 30; stroke-linecap: round;
-  stroke-dasharray: 100;
-  stroke-dashoffset: calc(100 - clamp(0, (var(--local, 1) * 8 - var(--j) - 0.6) * 100, 100));
+/* Khung iPhone cho ảnh màn hình thật của app: trượt lên và dựng thẳng dần theo cuộn của bước. */
+.story__layer--phone { background: radial-gradient(ellipse at 50% 70%, rgb(255 115 25 / 0.24), var(--sheet) 68%); }
+.phone {
+  position: absolute; top: 3%; left: 50%;
+  height: 94%; width: auto; aspect-ratio: 590 / 1281;
+  padding: 1.6%;
+  border-radius: 13% / 6%;
+  background: linear-gradient(145deg, #2a2724, #0b0a09 40%, #1c1a18);
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.14), inset 0 0 0 1px rgb(0 0 0 / 0.6), 0 40px 70px -24px rgb(0 0 0 / 0.9), 0 0 90px -30px rgb(255 115 25 / 0.7);
+  transform: translateX(-50%) translateY(calc((1 - var(--local, 1)) * 10%)) rotate(calc((1 - var(--local, 1)) * -4deg));
 }
-.seg--good { stroke: var(--ok); filter: drop-shadow(0 0 10px rgb(95 211 138 / 0.5)); }
-.seg--warn { stroke: var(--ember); filter: drop-shadow(0 0 12px rgb(255 115 25 / 0.6)); }
-.seg--none { stroke: rgb(244 239 231 / 0.2); }
-.a-legend { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 16px; font-size: 13px; color: var(--muted); }
-.a-legend li { margin: 0; display: flex; align-items: center; gap: 6px; }
-.dot { width: 9px; height: 9px; border-radius: 50%; }
-.dot--good { background: var(--ok); }
-.dot--warn { background: var(--ember); }
-.dot--none { background: rgb(244 239 231 / 0.25); }
+.phone img { display: block; width: 100%; height: 100%; object-fit: cover; border-radius: 11.6% / 5.4%; }
 
 @media (max-width: 859px) {
   /* Mở đầu trên điện thoại: một nút, để vừa một màn; gợi ý cuộn thay cho "Xem cách hoạt động". */
@@ -241,7 +240,7 @@ html:not(.js) .main > .intro + *, html.still .main > .intro + * { margin-top: 0;
   .story__body { font-size: 16px; }
   .story__stage { grid-template-columns: 1fr; align-content: center; gap: 24px; padding: 112px 0 24px; }
   .story__visual { order: -1; }
-  .story__frame { border-radius: 24px; }
+  .story__frame { border-radius: 24px; height: min(44vh, 92vw); }
   .story__step h2 { font-size: 40px; margin-bottom: 12px; }
   .story__step ul { font-size: 16px; }
   .story__dots { margin-top: 16px; }

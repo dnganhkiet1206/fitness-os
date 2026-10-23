@@ -92,11 +92,6 @@
     ],
     "statement": "Gains không bao giờ giảm khi bạn nghỉ. Quay lại luôn là đi tiếp, không phải làm lại từ đầu.",
     "scrollHint": "Cuộn xuống",
-    "legend": [
-      "Tốt",
-      "Cần chú ý",
-      "Chưa đủ dữ liệu"
-    ],
     "stepLabel": "Bước"
   },
   "privacy": {
