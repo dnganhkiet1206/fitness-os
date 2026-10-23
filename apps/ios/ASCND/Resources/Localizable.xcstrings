@@ -2,6 +2,29 @@
  "sourceLanguage": "en",
  "version": "1.0",
  "strings": {
+  "ps.a11y.goal %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "goal %@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "mục tiêu %@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "meta %@"
+     }
+    }
+   }
+  },
   "settings.language.footer": {
    "extractionState": "manual",
    "localizations": {
