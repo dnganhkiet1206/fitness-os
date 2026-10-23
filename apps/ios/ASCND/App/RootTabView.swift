@@ -80,6 +80,7 @@ struct RootTabView: View {
       if screen == .logWorkout { openTodaysSession() } else { linked = screen }
     })
     .environment(quickLog)
+    .onChange(of: services.sessionRequest) { _, _ in openTodaysSession() }
     .onChange(of: services.coachRequest) { _, _ in
       guard services.aiDeployed == true else { return }
       openCoachFromHere()

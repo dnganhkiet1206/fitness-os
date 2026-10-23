@@ -68,6 +68,9 @@ final class AppServices {
   /// "Hỏi Koa" ở Hôm nay (GĐ3): tăng lên → thanh tab mở Tiến bộ và màn chat của
   /// phiên (một cuộc trò chuyện, như nút Koa ở Ghi nhanh).
   var coachRequest = 0
+  /// Buổi tập theo lịch hôm nay (Kiệt 22/10: mọi nút "ghi buổi tập" đồng nhất với
+  /// lịch): tăng lên → thanh tab sang Tập luyện và mở buổi hôm nay.
+  var sessionRequest = 0
   /// Giờ buổi tập gần nhất — Koa "pump" 2 giờ sau đó.
   var koaLastSessionAt: EpochMillis?
   /// Việc chính của hôm nay (Daily Plan, GĐ1) — Today dựng, widget và lời nhắc

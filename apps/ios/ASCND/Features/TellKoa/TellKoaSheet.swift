@@ -135,11 +135,9 @@ struct TellKoaSheet: View {
 
   enum FollowUp: Identifiable, Hashable {
     case meal(String, [MealLog.Food], query: String)
-    case workout
     var id: String {
       switch self {
       case .meal(let s, _, _): "meal-\(s)"
-      case .workout: "workout"
       }
     }
   }
@@ -210,8 +208,6 @@ struct TellKoaSheet: View {
       switch f {
       case .meal(let slot, let prefill, let query):
         LogMealView(userId: userId, mealType: slot, start: .search, prefill: prefill, initialQuery: query) { onSaved() }
-      case .workout:
-        ManualLogView(flow: flow)
       }
     }
   }
@@ -1356,7 +1352,11 @@ struct TellKoaSheet: View {
         }
       }
       if workoutToPick {
-        followButton(String(localized: "tellkoa.done.logWorkout")) { followUp = .workout }
+        // Buổi theo lịch hôm nay ở Tập luyện, không form ghi riêng (Kiệt 22/10).
+        followButton(String(localized: "tellkoa.done.logWorkout")) {
+          dismiss()
+          services.sessionRequest += 1
+        }
       }
     }
   }

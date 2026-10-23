@@ -561,7 +561,8 @@ struct CoachChatView: View {
     switch d.kind {
     case .sleep: chip(Text("coach.log.sleep \(v)"), primary: true) { logSheet = .sleep(d.value ?? 0) }
     case .weight: chip(Text("coach.log.weight \(v)"), primary: true) { logSheet = .weight(d.value ?? 0) }
-    case .workout: chip(Text("coach.log.workout"), primary: true) { logSheet = .workout }
+    // Buổi theo lịch hôm nay ở Tập luyện, không form ghi riêng (Kiệt 22/10).
+    case .workout: chip(Text("coach.log.workout"), primary: true) { services.sessionRequest += 1 }
     case .meal: chip(Text("coach.log.meal"), primary: true) { logSheet = .meal(d.meal ?? MealLog.defaultMeal) }
     case .water:
       if waterAdded.contains(key) {
@@ -614,8 +615,6 @@ struct CoachChatView: View {
     case .weight(let kg):
       LogWeightView(makeLogger: { services.makeWeightLogger(userId: userId) }, onDone: { logSheet = nil },
                     presetKg: kg)
-    case .workout:
-      ManualLogView(flow: flow)
     case .meal(let meal):
       LogMealView(userId: userId, date: nil, mealType: meal) { logSheet = nil }
     case .water:
@@ -671,12 +670,11 @@ private struct TopEdgeFade: ViewModifier {
 
 /// Màn ghi mở từ một nút trong Koa Coach.
 enum CoachLogTarget: Identifiable, Hashable {
-  case sleep(Double), weight(Double), workout, meal(String), water
+  case sleep(Double), weight(Double), meal(String), water
   var id: String {
     switch self {
     case .sleep(let m): "sleep\(m)"
     case .weight(let k): "weight\(k)"
-    case .workout: "workout"
     case .meal(let m): "meal\(m)"
     case .water: "water"
     }
