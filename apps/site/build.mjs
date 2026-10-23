@@ -72,6 +72,17 @@ function toc(parts, t) {
   return `<details class="toc"><summary>${esc(t.common.contents)}</summary><ol>${items}</ol></details>`;
 }
 
+// Mục lục cạnh bên (máy tính): ghim khi cuộn, sáng mục đang đọc.
+function tocSide(parts, t) {
+  return `<aside class="toc-side" aria-label="${esc(t.common.contents)}"><p>${esc(t.common.contents)}</p><ol>${parts
+    .map((p) => `<li><a href="#${p.id}">${esc(p.title)}</a><ol>${p.blocks.map((b) => `<li><a href="#${p.idPrefix}-${slug(b.title)}">${esc(b.title)}</a></li>`).join('')}</ol></li>`)
+    .join('')}</ol></aside>`;
+}
+const legalBody = (parts, t) =>
+  `<div class="legal-layout">${tocSide(parts, t)}<div class="legal-flow">${toc(parts, t)}${parts
+    .map((x) => `<section class="legal" id="${x.id}"><h2>${esc(x.title)}</h2>${legalBlocks(x.blocks, t, x.idPrefix)}</section>`)
+    .join('')}</div></div>`;
+
 const icons = {
   plus: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>',
   chart: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19 12 5l7 14M8.5 12h7" /></svg>',
@@ -87,27 +98,88 @@ function mailButton(t, subject, label) {
   return `<a class="button" href="mailto:${esc(config.supportEmail)}?subject=${encodeURIComponent(subject)}">${icon('mail')}${esc(label)}</a>`;
 }
 
+// ---- Cảnh cuộn dùng chung (fancy.js đặt --p, style.css biến thành chuyển động) ----
+
+// Mở đầu: Koa + tiêu đề lớn; cuộn thì thu nhỏ, mờ và nhoè dần như trang sản phẩm Apple.
+function intro(title, lead, hint) {
+  return `
+      <section class="intro" data-scene>
+        <div class="sticky intro__stage">
+          <img class="intro__koa" src="${asset('img/koa.png')}" alt="" width="347" height="434">
+          <h1 class="intro__title shine">${esc(title)}</h1>
+          <p class="intro__lead">${esc(lead)}</p>
+          <p class="intro__hint" aria-hidden="true"><span></span>${esc(hint)}</p>
+        </div>
+      </section>`;
+}
+
+// Câu tuyên ngôn sáng dần từng chữ theo cuộn.
+function statement(text) {
+  const words = text.split(/\s+/);
+  return `
+      <section class="statement" data-scene style="--n:${words.length}">
+        <div class="sticky statement__stage"><p class="statement__text">${words
+          .map((w, i) => `<span style="--i:${i}">${esc(w)}</span>`)
+          .join(' ')}</p></div>
+      </section>`;
+}
+
+// Chữ A minh hoạ tab Tiến bộ: sáu mảng tự ghép lần lượt (tập luyện, bước chân, dinh dưỡng,
+// giấc ngủ, hồi phục, cơ thể); tô theo ba trạng thái của app. Chỉ là minh hoạ, không phải số liệu.
+function progressA(legend) {
+  const L = (t) => [150 - 116 * t, 24 + 252 * t];
+  const R = (t) => [150 + 116 * t, 24 + 252 * t];
+  const cuts = [[0.05, 0.36], [0.42, 0.7], [0.76, 1]];
+  const status = ['good', 'good', 'warn', 'good', 'warn', 'none'];
+  const segs = [...cuts.map((c) => [L(c[0]), L(c[1])]), ...cuts.map((c) => [R(c[0]), R(c[1])])];
+  const order = [0, 3, 1, 4, 2, 5];
+  const paths = segs
+    .map(([a, b], j) => `<path class="seg seg--${status[j]}" style="--j:${order.indexOf(j)}" pathLength="100" d="M${a[0].toFixed(1)} ${a[1].toFixed(1)}L${b[0].toFixed(1)} ${b[1].toFixed(1)}"/>`)
+    .join('');
+  return `<div class="a-mark"><svg viewBox="0 0 300 300" role="img"><path class="a-bar" d="M104 186H196"/>${paths}</svg>
+    <ul class="a-legend">${['good', 'warn', 'none'].map((s, i) => `<li><i class="dot dot--${s}"></i>${esc(legend[i])}</li>`).join('')}</ul></div>`;
+}
+
+// Văn bản pháp lý trên web là đúng bản trong app (legal-content.json) — nói rõ cho người đọc.
+const sameAsApp = (t) =>
+  `<p class="source"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></svg>${esc(t.common.sameAsApp)}</p>`;
+
 // ---- Nội dung từng trang ----
 
 const render = {
+  // Trợ giúp: trang cuộn kiểu trang sản phẩm Apple — mở đầu thu nhỏ dần, cảnh ghim ba bước
+  // (chữ + tranh Koa đổi theo cuộn), câu tuyên ngôn sáng dần từng chữ, rồi câu hỏi và liên hệ.
   help(t) {
     const h = t.help;
+    const visuals = [
+      `<img class="story__img" src="${asset('img/scene-meal.jpg')}" alt="" width="638" height="384">`,
+      `<img class="story__img" src="${asset('img/scene-workout.jpg')}" alt="" width="638" height="384">`,
+      progressA(h.legend),
+    ];
     return `
-      <header class="hero">
-        <img class="hero__koa" src="${asset('img/koa.png')}" alt="" width="104" height="130">
-        <div><h1>${esc(h.title)}</h1><p class="lead">${esc(h.lead)}</p></div>
-      </header>
-      <section aria-labelledby="guides"><h2 id="guides">${esc(h.guidesTitle)}</h2>
-        <div class="cards">${h.guides
-          .map((g) => `<article class="card"><div class="card__icon card__icon--${g.icon}">${icon(g.icon)}</div><h3>${esc(g.title)}</h3><ul>${g.steps.map((s) => `<li>${esc(s)}</li>`).join('')}</ul></article>`)
-          .join('')}</div>
+      ${intro(h.title, h.lead, h.scrollHint)}
+      <section class="story" data-scene data-steps="${h.guides.length}" aria-labelledby="guides">
+        <div class="sticky story__stage">
+          <div class="story__text">
+            <p class="eyebrow" id="guides">${esc(h.guidesTitle)}</p>
+            <div class="story__steps">${h.guides
+              .map((g, k) => `<article class="story__step" data-step="${k}"><p class="story__num">${esc(h.stepLabel)} 0${k + 1}</p><h2>${esc(g.title)}</h2><ul>${g.steps.map((s) => `<li>${esc(s)}</li>`).join('')}</ul></article>`)
+              .join('')}</div>
+            <div class="story__dots" aria-hidden="true">${h.guides.map((_, k) => `<span data-dot="${k}"></span>`).join('')}</div>
+          </div>
+          <div class="story__visual" aria-hidden="true">
+            <div class="story__frame">${visuals.map((v, k) => `<div class="story__layer" data-step="${k}">${v}</div>`).join('')}</div>
+          </div>
+        </div>
       </section>
-      <section aria-labelledby="faq"><h2 id="faq">${esc(h.faqTitle)}</h2>
+      ${statement(h.statement)}
+      <section class="after" aria-labelledby="faq"><h2 id="faq">${esc(h.faqTitle)}</h2>
         <div class="faq">${h.faq.map((f) => `<details><summary>${esc(f.q)}</summary><p>${esc(f.a)}</p></details>`).join('')}</div>
       </section>
-      <section class="card card--contact" aria-labelledby="contact">
-        <div><h2 id="contact">${esc(h.contactTitle)}</h2><p>${esc(h.contactBody)}</p></div>
-        ${mailButton(t, 'ASCND', h.contactButton)}
+      <section class="card card--contact card--scene" aria-labelledby="contact">
+        <img class="card__scene" src="${asset('img/scene-askkoa.jpg')}" alt="" width="902" height="568" loading="lazy">
+        <div class="card__body"><h2 id="contact">${esc(h.contactTitle)}</h2><p>${esc(h.contactBody)}</p>
+        ${mailButton(t, 'ASCND', h.contactButton)}</div>
       </section>`;
   },
 
@@ -120,14 +192,13 @@ const render = {
     ];
     const operator = esc(p.operator).replace('{operator}', operatorHTML(t)).replace('{email}', emailHTML(t));
     return `
-      <header class="page-head"><h1>${esc(p.title)}</h1><p class="lead">${esc(p.lead)}</p><p class="meta">${operator}</p></header>
+      <header class="page-head"><h1>${esc(p.title)}</h1><p class="lead">${esc(p.lead)}</p><p class="meta">${operator}</p>${sameAsApp(t)}</header>
       <section class="card glance" aria-labelledby="glance"><h2 id="glance">${esc(p.glanceTitle)}</h2>
         <div class="table-wrap"><table><thead><tr>${p.glanceHead.map((x) => `<th scope="col">${esc(x)}</th>`).join('')}</tr></thead>
         <tbody>${p.glance.map((r) => `<tr><th scope="row">${esc(r[0])}</th><td>${esc(r[1])}</td><td>${esc(r[2])}</td></tr>`).join('')}</tbody></table></div>
         <p class="note">${esc(p.glanceNote)}</p>
       </section>
-      ${toc(parts, t)}
-      ${parts.map((x) => `<section class="legal" id="${x.id}"><h2>${esc(x.title)}</h2>${legalBlocks(x.blocks, t, x.idPrefix)}</section>`).join('')}
+      ${legalBody(parts, t)}
       <p class="note"><a href="${href(l, 'terms')}#health">${esc(p.healthLink)}</a></p>`;
   },
 
@@ -139,9 +210,8 @@ const render = {
       { id: 'health', idPrefix: 'h', title: p.healthPart, blocks: L.health.blocks },
     ];
     return `
-      <header class="page-head"><h1>${esc(p.title)}</h1><p class="lead">${esc(p.lead)}</p></header>
-      ${toc(parts, t)}
-      ${parts.map((x) => `<section class="legal" id="${x.id}"><h2>${esc(x.title)}</h2>${legalBlocks(x.blocks, t, x.idPrefix)}</section>`).join('')}`;
+      <header class="page-head"><h1>${esc(p.title)}</h1><p class="lead">${esc(p.lead)}</p>${sameAsApp(t)}</header>
+      ${legalBody(parts, t)}`;
   },
 
   account(t) {
@@ -166,16 +236,21 @@ const render = {
 
   about(t) {
     const a = t.about;
+    // Giới thiệu: mở đầu → câu tuyên ngôn → tranh Koa tập phóng to dần ra tràn màn hình, chữ
+    // hiện lên trên tranh → ba điều chúng tôi giữ → tình trạng.
     return `
-      <header class="hero">
-        <img class="hero__koa" src="${asset('img/koa.png')}" alt="Koa" width="104" height="130">
-        <div><h1>${esc(a.title)}</h1><p class="lead">${esc(a.lead)}</p></div>
-      </header>
-      <div class="prose">${a.body.map((p) => `<p>${esc(p)}</p>`).join('')}</div>
-      <section aria-labelledby="principles"><h2 id="principles">${esc(a.principlesTitle)}</h2>
-        <div class="cards">${a.principles.map(([h, b]) => `<article class="card"><h3>${esc(h)}</h3><p>${esc(b)}</p></article>`).join('')}</div>
+      ${intro(a.title, a.lead, t.help.scrollHint)}
+      ${statement(a.body[0])}
+      <section class="zoom" data-scene>
+        <div class="sticky zoom__stage">
+          <figure class="zoom__frame"><img src="${asset('img/scene-workout.jpg')}" alt="Koa" width="638" height="384"></figure>
+          <p class="zoom__caption">${esc(a.body[1])}</p>
+        </div>
       </section>
-      <section class="card" aria-labelledby="status"><h2 id="status">${esc(a.statusTitle)}</h2><p>${esc(a.status)}</p></section>`;
+      <section class="after" aria-labelledby="principles"><h2 id="principles">${esc(a.principlesTitle)}</h2>
+        <div class="cards cards--three">${a.principles.map(([h, b], i) => `<article class="card"><p class="story__num">0${i + 1}</p><h3>${esc(h)}</h3><p>${esc(b)}</p></article>`).join('')}</div>
+      </section>
+      <section class="card card--accent" aria-labelledby="status"><h2 id="status">${esc(a.statusTitle)}</h2><p>${esc(a.status)}</p></section>`;
   },
 
   // Đặt lại mật khẩu: HTML có đủ mọi trạng thái, `reset.js` chỉ bật một. Không JS thì hiện
@@ -184,7 +259,7 @@ const render = {
     const r = t.reset;
     const openApp = (state) => `<a class="button" data-open-app="${state}" href="${config.appScheme}:///">${esc(t.common.openApp)}</a>`;
     return `
-      <div class="reset" data-reset data-supabase-url="${esc(supabase.url)}" data-supabase-key="${esc(supabase.key)}" data-scheme="${esc(config.appScheme)}">
+      <div class="reset card card--glass" data-reset data-supabase-url="${esc(supabase.url)}" data-supabase-key="${esc(supabase.key)}" data-scheme="${esc(config.appScheme)}">
         <img class="reset__icon" src="${asset('img/icon.png')}" alt="" width="64" height="64">
         <section data-state="checking" hidden><h1>${esc(r.title)}</h1><p class="lead" role="status">${esc(r.checking)}</p></section>
         <section data-state="form" hidden>
@@ -248,9 +323,13 @@ ${alternates}
 <link rel="apple-touch-icon" href="${asset('img/icon.png')}">
 <link rel="stylesheet" href="${asset('style.css')}">
 <script src="${asset('lang.js')}" data-base="${base}" data-lang="${l}"></script>
+<script src="${asset('fancy.js')}" defer></script>
 ${isReset ? `<script src="${asset('reset.js')}" defer></script>` : ''}
 </head>
 <body class="page-${page.id}">
+<div class="aura" aria-hidden="true"><span></span><span></span></div>
+<canvas class="dust" aria-hidden="true"></canvas>
+${page.id === 'privacy' || page.id === 'terms' ? '<div class="progress" aria-hidden="true"></div>' : ''}
 <a class="skip" href="#main">${esc(t.common.skip)}</a>
 ${config.draft ? `<div class="draft" role="note">${esc(t.common.draft)}</div>` : ''}
 <header class="top">

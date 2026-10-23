@@ -19,7 +19,8 @@
     "openApp": "Abrir en la app ASCND",
     "language": "Idioma",
     "contents": "En esta página",
-    "home": "Ayuda de ASCND"
+    "home": "Ayuda de ASCND",
+    "sameAsApp": "El mismo texto de la app: Ajustes → Políticas y legal"
   },
   "help": {
     "title": "¿En qué te ayudamos?",
@@ -87,23 +88,67 @@
         "q": "¿En qué idiomas está la app?",
         "a": "Inglés, vietnamita y español. La app sigue el idioma de tu iPhone. Para cambiarlo solo en ASCND: Ajustes del iPhone → ASCND → Idioma."
       }
-    ]
+    ],
+    "statement": "Los Gains nunca bajan cuando descansas. Volver siempre es avanzar, nunca empezar de cero.",
+    "scrollHint": "Desliza",
+    "legend": [
+      "Bien",
+      "Requiere atención",
+      "Sin datos suficientes"
+    ],
+    "stepLabel": "Paso"
   },
   "privacy": {
     "title": "Política de privacidad",
     "lead": "Qué recoge ASCND, para qué, quién lo procesa y cómo eliminarlo.",
     "operator": "ASCND es operada por {operator}. Contacto: {email}.",
     "glanceTitle": "Datos que recogemos",
-    "glanceHead": ["Datos", "Ejemplos", "Para qué"],
+    "glanceHead": [
+      "Datos",
+      "Ejemplos",
+      "Para qué"
+    ],
     "glance": [
-      ["Salud", "Datos de Apple Salud que permitas (solo lectura), biométricos que registras", "Funcionamiento de la app"],
-      ["Actividad física", "Entrenamientos, ejercicios, series", "Funcionamiento de la app"],
-      ["Fotos", "Fotos de progreso, fotos de comidas enviadas a la IA", "Funcionamiento de la app"],
-      ["Email y nombre", "Tu cuenta", "Funcionamiento de la app"],
-      ["Tu contenido", "Publicaciones, comentarios, preguntas a Koa", "Funcionamiento de la app"],
-      ["ID de usuario", "Un ID seudónimo", "Funcionamiento de la app, analítica"],
-      ["Datos de fallos y rendimiento", "Informes de fallos de Sentry", "Analítica, corregir errores"],
-      ["Interacción con el producto", "Eventos de uso de PostHog", "Analítica"]
+      [
+        "Salud",
+        "Datos de Apple Salud que permitas (solo lectura), biométricos que registras",
+        "Funcionamiento de la app"
+      ],
+      [
+        "Actividad física",
+        "Entrenamientos, ejercicios, series",
+        "Funcionamiento de la app"
+      ],
+      [
+        "Fotos",
+        "Fotos de progreso, fotos de comidas enviadas a la IA",
+        "Funcionamiento de la app"
+      ],
+      [
+        "Email y nombre",
+        "Tu cuenta",
+        "Funcionamiento de la app"
+      ],
+      [
+        "Tu contenido",
+        "Publicaciones, comentarios, preguntas a Koa",
+        "Funcionamiento de la app"
+      ],
+      [
+        "ID de usuario",
+        "Un ID seudónimo",
+        "Funcionamiento de la app, analítica"
+      ],
+      [
+        "Datos de fallos y rendimiento",
+        "Informes de fallos de Sentry",
+        "Analítica, corregir errores"
+      ],
+      [
+        "Interacción con el producto",
+        "Eventos de uso de PostHog",
+        "Analítica"
+      ]
     ],
     "glanceNote": "Nada de esto se usa para rastrearte en otras apps o webs, y nada se vende.",
     "dataPart": "Datos e IA",
@@ -154,9 +199,18 @@
     ],
     "principlesTitle": "Lo que defendemos",
     "principles": [
-      ["Un plan al día", "Hoy te dice lo que importa ahora: la sesión, las comidas, el sueño."],
-      ["IA solo donde ayuda", "La app funciona sin IA. Koa Coach está ahí cuando tienes una pregunta."],
-      ["Tus datos son tuyos", "Sin anuncios, sin vender datos, sin rastreo. Elimínalo todo desde Ajustes."]
+      [
+        "Un plan al día",
+        "Hoy te dice lo que importa ahora: la sesión, las comidas, el sueño."
+      ],
+      [
+        "IA solo donde ayuda",
+        "La app funciona sin IA. Koa Coach está ahí cuando tienes una pregunta."
+      ],
+      [
+        "Tus datos son tuyos",
+        "Sin anuncios, sin vender datos, sin rastreo. Elimínalo todo desde Ajustes."
+      ]
     ],
     "statusTitle": "Estado",
     "status": "ASCND está en desarrollo y aún no está disponible en el App Store. Funciona en inglés, vietnamita y español."

@@ -19,7 +19,8 @@
     "openApp": "Mở trong app ASCND",
     "language": "Ngôn ngữ",
     "contents": "Trong trang này",
-    "home": "Trợ giúp ASCND"
+    "home": "Trợ giúp ASCND",
+    "sameAsApp": "Cùng nội dung trong app: Cài đặt → Chính sách & Pháp lý"
   },
   "help": {
     "title": "Bạn cần giúp gì?",
@@ -87,23 +88,67 @@
         "q": "App có những ngôn ngữ nào?",
         "a": "Tiếng Anh, tiếng Việt và tiếng Tây Ban Nha. App theo ngôn ngữ của iPhone. Muốn đổi riêng cho ASCND: Cài đặt iPhone → ASCND → Ngôn ngữ."
       }
-    ]
+    ],
+    "statement": "Gains không bao giờ giảm khi bạn nghỉ. Quay lại luôn là đi tiếp, không phải làm lại từ đầu.",
+    "scrollHint": "Cuộn xuống",
+    "legend": [
+      "Tốt",
+      "Cần chú ý",
+      "Chưa đủ dữ liệu"
+    ],
+    "stepLabel": "Bước"
   },
   "privacy": {
     "title": "Chính sách quyền riêng tư",
     "lead": "ASCND thu thập gì, để làm gì, ai xử lý, và cách xoá.",
     "operator": "ASCND do {operator} vận hành. Liên hệ: {email}.",
     "glanceTitle": "Dữ liệu chúng tôi thu thập",
-    "glanceHead": ["Dữ liệu", "Ví dụ", "Dùng để"],
+    "glanceHead": [
+      "Dữ liệu",
+      "Ví dụ",
+      "Dùng để"
+    ],
     "glance": [
-      ["Sức khoẻ", "Dữ liệu Apple Health bạn cho phép (chỉ đọc), chỉ số bạn tự ghi", "Vận hành app"],
-      ["Thể chất", "Buổi tập, bài tập, hiệp", "Vận hành app"],
-      ["Ảnh", "Ảnh tiến trình, ảnh món ăn gửi cho AI", "Vận hành app"],
-      ["Email và tên", "Tài khoản của bạn", "Vận hành app"],
-      ["Nội dung của bạn", "Bài đăng, bình luận, câu hỏi cho Koa", "Vận hành app"],
-      ["Mã người dùng", "Một mã ẩn danh", "Vận hành app, đo lường"],
-      ["Dữ liệu lỗi và hiệu năng", "Báo cáo lỗi Sentry", "Đo lường, sửa lỗi"],
-      ["Tương tác với app", "Sự kiện sử dụng PostHog", "Đo lường"]
+      [
+        "Sức khoẻ",
+        "Dữ liệu Apple Health bạn cho phép (chỉ đọc), chỉ số bạn tự ghi",
+        "Vận hành app"
+      ],
+      [
+        "Thể chất",
+        "Buổi tập, bài tập, hiệp",
+        "Vận hành app"
+      ],
+      [
+        "Ảnh",
+        "Ảnh tiến trình, ảnh món ăn gửi cho AI",
+        "Vận hành app"
+      ],
+      [
+        "Email và tên",
+        "Tài khoản của bạn",
+        "Vận hành app"
+      ],
+      [
+        "Nội dung của bạn",
+        "Bài đăng, bình luận, câu hỏi cho Koa",
+        "Vận hành app"
+      ],
+      [
+        "Mã người dùng",
+        "Một mã ẩn danh",
+        "Vận hành app, đo lường"
+      ],
+      [
+        "Dữ liệu lỗi và hiệu năng",
+        "Báo cáo lỗi Sentry",
+        "Đo lường, sửa lỗi"
+      ],
+      [
+        "Tương tác với app",
+        "Sự kiện sử dụng PostHog",
+        "Đo lường"
+      ]
     ],
     "glanceNote": "Không dữ liệu nào ở trên được dùng để theo dõi bạn qua app hay website khác, và không dữ liệu nào bị bán.",
     "dataPart": "Dữ liệu và AI",
@@ -154,9 +199,18 @@
     ],
     "principlesTitle": "Điều chúng tôi giữ",
     "principles": [
-      ["Mỗi ngày một kế hoạch", "Hôm nay cho bạn biết điều cần làm lúc này: buổi tập, bữa ăn, giấc ngủ."],
-      ["AI chỉ khi có ích", "App chạy được không cần AI. Koa Coach ở đó khi bạn có câu hỏi."],
-      ["Dữ liệu là của bạn", "Không quảng cáo, không bán dữ liệu, không theo dõi. Xoá tất cả từ Cài đặt."]
+      [
+        "Mỗi ngày một kế hoạch",
+        "Hôm nay cho bạn biết điều cần làm lúc này: buổi tập, bữa ăn, giấc ngủ."
+      ],
+      [
+        "AI chỉ khi có ích",
+        "App chạy được không cần AI. Koa Coach ở đó khi bạn có câu hỏi."
+      ],
+      [
+        "Dữ liệu là của bạn",
+        "Không quảng cáo, không bán dữ liệu, không theo dõi. Xoá tất cả từ Cài đặt."
+      ]
     ],
     "statusTitle": "Tình trạng",
     "status": "ASCND đang được phát triển và chưa có trên App Store. App có tiếng Anh, tiếng Việt và tiếng Tây Ban Nha."

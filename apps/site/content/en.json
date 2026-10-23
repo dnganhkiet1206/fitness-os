@@ -19,7 +19,8 @@
     "openApp": "Open in the ASCND app",
     "language": "Language",
     "contents": "On this page",
-    "home": "ASCND Help"
+    "home": "ASCND Help",
+    "sameAsApp": "Same text as in the app: Settings → Policies & Legal"
   },
   "help": {
     "title": "How can we help?",
@@ -87,23 +88,67 @@
         "q": "Which languages does the app support?",
         "a": "English, Vietnamese and Spanish. The app follows your iPhone's language. To change it only for ASCND: iPhone Settings → ASCND → Language."
       }
-    ]
+    ],
+    "statement": "Gains never go down when you take a break. Coming back is always progress, never a reset.",
+    "scrollHint": "Scroll",
+    "legend": [
+      "Good",
+      "Needs attention",
+      "Not enough data"
+    ],
+    "stepLabel": "Step"
   },
   "privacy": {
     "title": "Privacy Policy",
     "lead": "What ASCND collects, why, who processes it, and how to delete it.",
     "operator": "ASCND is operated by {operator}. Contact: {email}.",
     "glanceTitle": "Data we collect",
-    "glanceHead": ["Data", "Examples", "Used for"],
+    "glanceHead": [
+      "Data",
+      "Examples",
+      "Used for"
+    ],
     "glance": [
-      ["Health", "Apple Health data you allow (read-only), biometrics you log", "Running the app"],
-      ["Fitness", "Workouts, exercises, sets", "Running the app"],
-      ["Photos", "Progress photos, meal photos sent to AI", "Running the app"],
-      ["Email and name", "Your account", "Running the app"],
-      ["Your content", "Posts, comments, questions to Koa", "Running the app"],
-      ["User ID", "A pseudonymous ID", "Running the app, analytics"],
-      ["Crash and performance data", "Sentry crash reports", "Analytics, fixing bugs"],
-      ["Product interaction", "PostHog usage events", "Analytics"]
+      [
+        "Health",
+        "Apple Health data you allow (read-only), biometrics you log",
+        "Running the app"
+      ],
+      [
+        "Fitness",
+        "Workouts, exercises, sets",
+        "Running the app"
+      ],
+      [
+        "Photos",
+        "Progress photos, meal photos sent to AI",
+        "Running the app"
+      ],
+      [
+        "Email and name",
+        "Your account",
+        "Running the app"
+      ],
+      [
+        "Your content",
+        "Posts, comments, questions to Koa",
+        "Running the app"
+      ],
+      [
+        "User ID",
+        "A pseudonymous ID",
+        "Running the app, analytics"
+      ],
+      [
+        "Crash and performance data",
+        "Sentry crash reports",
+        "Analytics, fixing bugs"
+      ],
+      [
+        "Product interaction",
+        "PostHog usage events",
+        "Analytics"
+      ]
     ],
     "glanceNote": "None of this is used to track you across other apps or websites, and none of it is sold.",
     "dataPart": "Data and AI",
@@ -154,9 +199,18 @@
     ],
     "principlesTitle": "What we stand for",
     "principles": [
-      ["One plan a day", "Today tells you what matters now: the session, the meals, the sleep."],
-      ["AI only where it helps", "The app works without AI. Koa Coach is there when you have a question."],
-      ["Your data is yours", "No ads, no selling data, no tracking. Delete everything from Settings."]
+      [
+        "One plan a day",
+        "Today tells you what matters now: the session, the meals, the sleep."
+      ],
+      [
+        "AI only where it helps",
+        "The app works without AI. Koa Coach is there when you have a question."
+      ],
+      [
+        "Your data is yours",
+        "No ads, no selling data, no tracking. Delete everything from Settings."
+      ]
     ],
     "statusTitle": "Status",
     "status": "ASCND is in development and not yet available on the App Store. It runs in English, Vietnamese and Spanish."

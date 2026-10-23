@@ -141,6 +141,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Văn bản pháp lý lấy từ `legal-content.json` của app (một nguồn). Là **bản nháp, không phải tư vấn pháp lý**; luật áp dụng Delaware kế thừa từ RN, cần Kiệt xác nhận.
 - **Chưa có:** email hỗ trợ, tên đơn vị vận hành (trang hiện ô "chưa đặt"), hosting. Hosting miễn phí (Cloudflare Pages đề xuất; GitHub Pages thì phải sửa workflow) cần Kiệt tạo tài khoản — agent không tự tạo (mục 1).
 - **Đặt lại mật khẩu trên web cần đổi cấu hình Supabase production** (Redirect URLs + mẫu email Reset Password dùng `token_hash`), cần Kiệt duyệt. Chưa đổi thì link vẫn chỉ mở được trên iPhone có app (trang web hiện nút "Mở trong app").
+- Chuyển động theo cuộn kiểu trang Apple (Kiệt yêu cầu 23/10) ở Trợ giúp và Giới thiệu: cảnh ghim, chữ sáng dần, ảnh phóng to; nền dải sáng + bụi chép từ màn đăng nhập. Bật Giảm chuyển động hoặc tắt JS: trang đứng yên, đọc được hết (đã kiểm). Chưa kiểm trên Safari iPhone thật (ghim `position: sticky`, đơn vị `svh`).
 - Chưa chạy luồng đặt mật khẩu thật với một email thật (cần cấu hình trên). Đã kiểm: build, 6 trang × 3 ngôn ngữ ở 1280 px và 390 px, các trạng thái form / hết hạn / mở trên iPhone, và Supabase trả `403 otp_expired` cho link hỏng (trang hiện "Link đã hết hạn").
 
 **Tìm thấy khi kiểm ngày 21/10** (simulator, tài khoản test):
@@ -170,6 +171,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 
 ## 5. Lịch sử thay đổi sổ
 
+- 23/10/2026: trang hỗ trợ web: chuyển động theo cuộn kiểu Apple; trang Quyền riêng tư / Điều khoản ghi rõ là cùng nội dung trong app.
 - 23/10/2026: trang hỗ trợ web `apps/site` (mock chờ duyệt): sáu trang, ba ngôn ngữ; chờ email hỗ trợ, hosting, cấu hình Supabase cho đặt lại mật khẩu.
 - 21/10/2026: tạo sổ (Kiệt yêu cầu, #527).
 - 21/10/2026: thêm điều kiện duyệt GĐ1, migration chưa deploy, kết quả "mất pump" / tụt hạng.
