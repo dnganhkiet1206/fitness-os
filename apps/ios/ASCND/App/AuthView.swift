@@ -572,6 +572,8 @@ struct AuthLockup: View {
   var alternates = false
   @State private var showsIntelligence = false
   @State private var visible = true
+  /// Vệt sáng đã lướt qua logo Intelligence (một lần mỗi lần hiện).
+  @State private var sweep = false
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
   var body: some View {
@@ -586,26 +588,26 @@ struct AuthLockup: View {
     .task(id: alternates) { await cycle() }
   }
 
-  /// ASCND 5 s → Intelligence 5 s → lặp lại, chừng nào màn còn mở (Kiệt 23/10: chuyển
-  /// chậm hơn).
+  /// Thưa (Kiệt 23/10: "logo chuyển đổi lâu hơn để nhìn hiếm hơn"): ASCND đứng 12 s, rồi
+  /// Intelligence hiện 4 s, rồi về ASCND — lặp lại chừng nào màn còn mở.
   private func cycle() async {
     guard alternates, !reduceMotion else { return }
     while !Task.isCancelled {
-      try? await Task.sleep(for: .seconds(5))
+      try? await Task.sleep(for: .seconds(12))
       guard !Task.isCancelled else { return }
       await swap(to: true)
-      try? await Task.sleep(for: .seconds(5))
+      try? await Task.sleep(for: .seconds(4))
       guard !Task.isCancelled else { return }
       await swap(to: false)
     }
   }
 
-  /// Mờ hẳn (0,8 s) → đổi nội dung → hiện lại (0,9 s): cùng kiểu `BrandLockup`, chậm hơn.
+  /// Mờ hẳn (0,3 s) → đổi nội dung → hiện lại (0,35 s) — như `BrandLockup`.
   private func swap(to intelligence: Bool) async {
-    withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.8)) { visible = false }
-    try? await Task.sleep(for: .milliseconds(850))
+    withAnimation(reduceMotion ? nil : .easeIn(duration: 0.3)) { visible = false }
+    try? await Task.sleep(for: .milliseconds(320))
     showsIntelligence = intelligence
-    withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.9)) { visible = true }
+    withAnimation(reduceMotion ? nil : .easeOut(duration: 0.35)) { visible = true }
   }
 
   private var brand: some View {
@@ -622,18 +624,37 @@ struct AuthLockup: View {
     .foregroundStyle(AuthHero.paper)
   }
 
-  /// Cùng cỡ với logo gốc; chữ ĐỨNG YÊN (Kiệt 23/10: "đừng cho hiệu ứng chữ chạy") —
-  /// chỉ có cú chuyển mờ-rồi-hiện giữa hai logo.
+  /// Cùng cỡ với logo gốc; chữ đứng yên (Kiệt 23/10: "đừng cho hiệu ứng chữ chạy"), có
+  /// MỘT vệt sáng nhẹ lướt qua mỗi lần logo hiện ra — như logo ở Hôm nay trước đây.
   private var intelligence: some View {
-    HStack(spacing: 8) {
-      IntelligenceMark(size: mark, ink: AuthHero.paper)
+    let content = HStack(spacing: 8) {
+      IntelligenceMark(size: mark, ink: AuthHero.paper.opacity(0.78), glint: true)
       Text(String(localized: "ai.brand"))
         .font(.system(size: text, weight: .heavy))
         .tracking(0.4)
-        .foregroundStyle(AuthHero.paper)
         .lineLimit(1)
         .minimumScaleFactor(0.7)
     }
+    // Chữ dịu hơn giấy một chút để vệt sáng trắng lướt qua nhìn thấy được.
+    return content
+      .foregroundStyle(AuthHero.paper.opacity(0.78))
+      .overlay {
+        GeometryReader { geo in
+          LinearGradient(
+            colors: [.white.opacity(0), .white, .white.opacity(0)],
+            startPoint: .leading, endPoint: .trailing
+          )
+          .frame(width: geo.size.width * 0.4)
+          .offset(x: sweep ? geo.size.width : -geo.size.width * 0.35)
+        }
+        .mask(content)
+        .allowsHitTesting(false)
+      }
+      .onAppear {
+        sweep = false
+        guard !reduceMotion else { return }
+        withAnimation(.easeInOut(duration: 1.2).delay(0.4)) { sweep = true }
+      }
   }
 }
 
