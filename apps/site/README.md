@@ -1,12 +1,13 @@
 # Trang hỗ trợ ASCND (tĩnh)
 
-Site tĩnh tối giản cho những gì App Store và luồng tài khoản cần (#527, 23/10/2026). **Không** phải trang marketing: không landing page, không blog, không đo lường.
+Site tĩnh cho những gì App Store và luồng tài khoản cần (#527, 23/10/2026), cộng landing ở trang gốc (Kiệt yêu cầu 23/10). Không blog, không đo lường, không thu email; app chưa phát hành nên landing chỉ ghi "Sắp có trên App Store".
 
 | Trang | Đường dẫn (en · vi · es) | Vì sao |
 |---|---|---|
 | Chính sách quyền riêng tư | `/privacy/` · `/vi/privacy/` · `/es/privacy/` | App Store Connect bắt buộc (`TESTFLIGHT-CHECKLIST.md` bước 3–4) |
 | Điều khoản sử dụng | `/terms/` … | Đi cùng chính sách; gồm miễn trừ sức khoẻ |
-| Trợ giúp (trang gốc) | `/` … | Support URL của App Store |
+| Landing (trang gốc) | `/` · `/vi/` · `/es/` | Giới thiệu sản phẩm, cuộn kiểu trang Apple |
+| Trợ giúp | `/help/` … | Support URL của App Store |
 | Đặt lại mật khẩu | `/reset-password/` … | Link "Quên mật khẩu?" dùng được cả khi không mở trên iPhone có app |
 | Xoá tài khoản | `/delete-account/` … | Apple yêu cầu lối xoá tài khoản xem được từ ngoài app |
 | Giới thiệu | `/about/` … | Ngắn |

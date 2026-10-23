@@ -7,7 +7,8 @@
     "terms": "Điều khoản",
     "account": "Xoá tài khoản",
     "about": "Giới thiệu",
-    "reset": "Đặt lại mật khẩu"
+    "reset": "Đặt lại mật khẩu",
+    "home": "Trang chủ"
   },
   "common": {
     "skip": "Bỏ qua tới nội dung",
@@ -43,7 +44,7 @@
         "icon": "koa",
         "title": "Koa",
         "steps": [
-          "Koa là bạn tập của bạn. Mỗi buổi được ghi lại cho Koa thêm Gains, và Koa leo sáu hạng, từ Newbie tới Beast.",
+          "Koa là bạn tập của bạn. Mỗi buổi được ghi lại cho Koa thêm Gains, và Koa leo sáu hạng, từ Newbie tới Mass Monster.",
           "Gains không bao giờ giảm khi bạn nghỉ. Quay lại thì Koa gợi ý một buổi đầu nhẹ hơn.",
           "“Hỏi Koa” ở Hôm nay mở Koa Coach để hỏi về tập luyện, ăn uống và hồi phục. Koa Coach là AI: có thể sai và không phải lời khuyên y tế."
         ]
@@ -195,7 +196,7 @@
     "lead": "ASCND là app tập luyện cùng Koa, chú gấu koala lớn lên khi bạn tập.",
     "body": [
       "Phần lớn app thể dục bị bỏ sau vài tuần. ASCND muốn việc có mặt là phần dễ nhất: một kế hoạch cho hôm nay, ghi lại thật nhanh, và một người bạn mà tiến bộ của nó là tiến bộ của bạn.",
-      "Mỗi buổi bạn ghi lại cho Koa thêm Gains, đưa Koa từ Newbie lên Beast. Gains không bao giờ giảm khi bạn bận, nên quay lại luôn là đi tiếp, không phải làm lại từ đầu."
+      "Mỗi buổi bạn ghi lại cho Koa thêm Gains, đưa Koa từ Newbie lên Mass Monster. Gains không bao giờ giảm khi bạn bận, nên quay lại luôn là đi tiếp, không phải làm lại từ đầu."
     ],
     "principlesTitle": "Điều chúng tôi giữ",
     "principles": [
@@ -242,5 +243,36 @@
     "errOffline": "Không có mạng. Kiểm tra kết nối rồi thử lại.",
     "errGeneric": "Có lỗi, mật khẩu chưa được đổi. Thử lại, hoặc xin link mới trong app.",
     "signedInNote": "Đang đăng nhập? Bạn cũng có thể đổi mật khẩu trong app: Cài đặt → Đổi mật khẩu."
+  },
+  "home": {
+    "title": "Tập đều. Koa lớn.",
+    "lead": "App tập luyện có một người bạn. Mỗi buổi bạn ghi lại, Koa mạnh thêm, và thói quen dễ giữ hơn.",
+    "soon": "Sắp có trên App Store",
+    "how": "Xem cách hoạt động",
+    "statement": "Không cần hoàn hảo. Chỉ cần có mặt. Phần còn lại để Koa lo.",
+    "storyTitle": "Cách hoạt động",
+    "steps": [
+      [
+        "Một kế hoạch cho hôm nay",
+        "Hôm nay cho bạn biết điều cần làm lúc này: buổi tập, bữa ăn, giấc ngủ. Không có bảng số nào phải giải mã."
+      ],
+      [
+        "Ghi trong vài giây",
+        "Chạm + hoặc kể cho Koa: “trưa ăn phở, uống hai ly nước”. Koa điền giúp, bạn xem lại rồi lưu."
+      ],
+      [
+        "Koa lớn lên sau mỗi buổi",
+        "Mỗi buổi cho Koa thêm Gains. Koa leo sáu hạng, từ Newbie tới Mass Monster, và không bao giờ tụt hạng khi bạn nghỉ."
+      ],
+      [
+        "Tiến bộ trong một cái nhìn",
+        "Chữ “A” của ASCND cho thấy sáu phần của tuần: tập luyện, bước chân, dinh dưỡng, giấc ngủ, hồi phục và cơ thể. Chạm vào để xem lý do."
+      ]
+    ],
+    "zoom": "Hỏi Koa bất cứ điều gì về tập, ăn và hồi phục.",
+    "zoomNote": "Koa Coach là AI, có thể sai. Không phải lời khuyên y tế.",
+    "finalTitle": "Sắp ra mắt.",
+    "finalBody": "ASCND đang được phát triển cho iPhone, có tiếng Việt, tiếng Anh và tiếng Tây Ban Nha.",
+    "gains": "Gains"
   }
 }

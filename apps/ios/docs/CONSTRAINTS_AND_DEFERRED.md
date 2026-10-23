@@ -137,7 +137,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Chưa kiểm: đi trọn luồng tới "Tập buổi đầu" trên tài khoản mới (ghi hồ sơ thật), VoiceOver từng màn, giao diện sáng (màn luôn tối như màn đăng nhập).
 
 **Trang hỗ trợ web (`apps/site`, mock 23/10, chờ Kiệt duyệt) — hạn chế đã biết:**
-- Chỉ những gì App Store và tài khoản cần: Quyền riêng tư, Điều khoản, Trợ giúp, Đặt lại mật khẩu, Xoá tài khoản, Giới thiệu; en / vi / es. **Không** landing page, blog hay đo lường (chưa có người dùng — mục 0.4). Đổi mật khẩu khi đang đăng nhập vẫn ở trong app.
+- ~~Chỉ những gì App Store và tài khoản cần; **không** landing page.~~ 23/10: **Kiệt yêu cầu làm landing** (trang gốc `/`; Trợ giúp chuyển sang `/help/`). Vẫn **không** blog, đo lường hay thu email (chưa có người dùng — mục 0.4); landing ghi "Sắp có trên App Store", không có nút tải. Trang: Landing, Quyền riêng tư, Điều khoản, Trợ giúp, Đặt lại mật khẩu, Xoá tài khoản, Giới thiệu; en / vi / es. Đổi mật khẩu khi đang đăng nhập vẫn ở trong app.
 - Văn bản pháp lý lấy từ `legal-content.json` của app (một nguồn). Là **bản nháp, không phải tư vấn pháp lý**; luật áp dụng Delaware kế thừa từ RN, cần Kiệt xác nhận.
 - **Chưa có:** email hỗ trợ, tên đơn vị vận hành (trang hiện ô "chưa đặt"), hosting. Hosting miễn phí (Cloudflare Pages đề xuất; GitHub Pages thì phải sửa workflow) cần Kiệt tạo tài khoản — agent không tự tạo (mục 1).
 - **Đặt lại mật khẩu trên web cần đổi cấu hình Supabase production** (Redirect URLs + mẫu email Reset Password dùng `token_hash`), cần Kiệt duyệt. Chưa đổi thì link vẫn chỉ mở được trên iPhone có app (trang web hiện nút "Mở trong app").
@@ -171,6 +171,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 
 ## 5. Lịch sử thay đổi sổ
 
+- 23/10/2026: trang hỗ trợ web: thêm landing ở trang gốc (Kiệt yêu cầu); sửa hạng cao nhất "Beast" → "Mass Monster" trong chữ của site.
 - 23/10/2026: trang hỗ trợ web: chuyển động theo cuộn kiểu Apple; trang Quyền riêng tư / Điều khoản ghi rõ là cùng nội dung trong app.
 - 23/10/2026: trang hỗ trợ web `apps/site` (mock chờ duyệt): sáu trang, ba ngôn ngữ; chờ email hỗ trợ, hosting, cấu hình Supabase cho đặt lại mật khẩu.
 - 21/10/2026: tạo sổ (Kiệt yêu cầu, #527).

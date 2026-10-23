@@ -29,9 +29,10 @@ const langs = ['en', 'vi', 'es'];
 const content = Object.fromEntries(langs.map((l) => [l, JSON.parse(readFileSync(join(here, 'content', `${l}.json`), 'utf8'))]));
 const prefix = (l) => (l === 'en' ? '' : `/${l}`);
 
-// Thứ tự trang theo yêu cầu: pháp lý trước, rồi hỗ trợ, đặt lại mật khẩu, xoá tài khoản, giới thiệu.
+// Trang chủ là landing (Kiệt yêu cầu 23/10); các trang còn lại như mock bản 1.
 const pages = [
-  { id: 'help', path: '/', nav: true },
+  { id: 'home', path: '/', nav: false },
+  { id: 'help', path: '/help/', nav: true },
   { id: 'privacy', path: '/privacy/', nav: true },
   { id: 'terms', path: '/terms/', nav: true },
   { id: 'account', path: '/delete-account/', nav: true },
@@ -89,6 +90,7 @@ const icons = {
   koa: () => `<img src="${asset('img/koa.png')}" alt="" width="28" height="35">`,
   check: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>',
   minus: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12" /></svg>',
+  phone: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="2.5" width="10" height="19" rx="2.5" /><path d="M10.5 18.5h3" /></svg>',
   mail: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="13" rx="3" /><path d="m4.5 7 7.5 6 7.5-6" /></svg>',
 };
 const icon = (k) => (typeof icons[k] === 'function' ? icons[k]() : icons[k]);
@@ -101,13 +103,13 @@ function mailButton(t, subject, label) {
 // ---- Cảnh cuộn dùng chung (fancy.js đặt --p, style.css biến thành chuyển động) ----
 
 // Mở đầu: Koa + tiêu đề lớn; cuộn thì thu nhỏ, mờ và nhoè dần như trang sản phẩm Apple.
-function intro(title, lead, hint) {
+function intro(title, lead, hint, extra = '') {
   return `
       <section class="intro" data-scene>
         <div class="sticky intro__stage">
           <img class="intro__koa" src="${asset('img/koa.png')}" alt="" width="347" height="434">
           <h1 class="intro__title shine">${esc(title)}</h1>
-          <p class="intro__lead">${esc(lead)}</p>
+          <p class="intro__lead">${esc(lead)}</p>${extra}
           <p class="intro__hint" aria-hidden="true"><span></span>${esc(hint)}</p>
         </div>
       </section>`;
@@ -122,6 +124,17 @@ function statement(text) {
           .map((w, i) => `<span style="--i:${i}">${esc(w)}</span>`)
           .join(' ')}</p></div>
       </section>`;
+}
+
+// Sáu hạng của Koa (MascotRules.ranks + KoaGains.thresholds): cột mọc dần theo cuộn.
+const ranks = [
+  ['Newbie', 0, '#8b93a4'], ['Gym Rat', 40, '#2bf5a8'], ['Lifter', 120, '#3ba6ff'],
+  ['Swole', 260, '#b07de0'], ['Beast', 450, '#e08a3a'], ['Mass Monster', 700, '#ffd93d'],
+];
+function rankLadder(gains) {
+  return `<div class="ladder"><img class="ladder__koa" src="${asset('img/koa.png')}" alt="" width="347" height="434"><ol>${ranks
+    .map(([name, min, color], j) => `<li style="--j:${j};--c:${color};--h:${18 + j * 16}%"><span class="ladder__bar"></span><b>${esc(name)}</b><small>${min} ${esc(gains)}</small></li>`)
+    .join('')}</ol></div>`;
 }
 
 // Chữ A minh hoạ tab Tiến bộ: sáu mảng tự ghép lần lượt (tập luyện, bước chân, dinh dưỡng,
@@ -147,6 +160,52 @@ const sameAsApp = (t) =>
 // ---- Nội dung từng trang ----
 
 const render = {
+  // Landing (trang chủ): mở đầu có Koa + "Sắp có trên App Store" → câu tuyên ngôn → bốn bước ghim
+  // (kế hoạch, ghi, Koa lớn lên, chữ A) → tranh Hỏi Koa phóng to → điều chúng tôi giữ → sắp ra mắt.
+  // App chưa phát hành: không có nút tải, không thu email, không đo lường.
+  home(t, l) {
+    const h = t.home;
+    const soon = `<span class="soon">${icon('phone')}${esc(h.soon)}</span>`;
+    const visuals = [
+      `<img class="story__img" src="${asset('img/scene-workout.jpg')}" alt="" width="638" height="384">`,
+      `<img class="story__img" src="${asset('img/scene-meal.jpg')}" alt="" width="638" height="384">`,
+      rankLadder(h.gains),
+      progressA(t.help.legend),
+    ];
+    return `
+      ${intro(h.title, h.lead, t.help.scrollHint, `<div class="intro__actions">${soon}<a class="button button--ghost" href="#how">${esc(h.how)}</a></div>`)}
+      ${statement(h.statement)}
+      <section class="story" id="how" data-scene data-steps="${h.steps.length}" style="--n:${h.steps.length}" aria-labelledby="how-title">
+        <div class="sticky story__stage">
+          <div class="story__text">
+            <p class="eyebrow" id="how-title">${esc(h.storyTitle)}</p>
+            <div class="story__steps">${h.steps
+              .map(([title, body], k) => `<article class="story__step" data-step="${k}"><p class="story__num">0${k + 1}</p><h2>${esc(title)}</h2><p class="story__body">${esc(body)}</p></article>`)
+              .join('')}</div>
+            <div class="story__dots" aria-hidden="true">${h.steps.map((_, k) => `<span data-dot="${k}"></span>`).join('')}</div>
+          </div>
+          <div class="story__visual" aria-hidden="true">
+            <div class="story__frame">${visuals.map((v, k) => `<div class="story__layer" data-step="${k}">${v}</div>`).join('')}</div>
+          </div>
+        </div>
+      </section>
+      <section class="zoom" data-scene>
+        <div class="sticky zoom__stage">
+          <figure class="zoom__frame"><img src="${asset('img/scene-askkoa.jpg')}" alt="Koa" width="902" height="568"></figure>
+          <p class="zoom__caption">${esc(h.zoom)}<small>${esc(h.zoomNote)}</small></p>
+        </div>
+      </section>
+      <section class="after" aria-labelledby="principles"><h2 id="principles">${esc(t.about.principlesTitle)}</h2>
+        <div class="cards cards--three">${t.about.principles.map(([a, b], i) => `<article class="card"><p class="story__num">0${i + 1}</p><h3>${esc(a)}</h3><p>${esc(b)}</p></article>`).join('')}</div>
+      </section>
+      <section class="finale" aria-labelledby="finale">
+        <img class="finale__icon" src="${asset('img/icon.png')}" alt="" width="96" height="96">
+        <h2 id="finale" class="finale__title">${esc(h.finalTitle)}</h2>
+        <p class="lead">${esc(h.finalBody)}</p>
+        <div class="intro__actions">${soon}<a class="button button--ghost" href="${href(l, 'help')}">${esc(t.nav.help)}</a></div>
+      </section>`;
+  },
+
   // Trợ giúp: trang cuộn kiểu trang sản phẩm Apple — mở đầu thu nhỏ dần, cảnh ghim ba bước
   // (chữ + tranh Koa đổi theo cuộn), câu tuyên ngôn sáng dần từng chữ, rồi câu hỏi và liên hệ.
   help(t) {
@@ -292,7 +351,7 @@ const render = {
 
 function layout(l, page, body) {
   const t = content[l];
-  const title = page.id === 'help' ? t.common.home : `${page.id === 'reset' ? t.reset.title : t[page.id].title} · ASCND`;
+  const title = page.id === 'home' ? `ASCND · ${t.home.title}` : page.id === 'help' ? t.common.home : `${page.id === 'reset' ? t.reset.title : t[page.id].title} · ASCND`;
   const isReset = page.id === 'reset';
   const navLinks = pages
     .filter((p) => p.nav)
@@ -313,7 +372,7 @@ function layout(l, page, body) {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>${esc(title)}</title>
-<meta name="description" content="${esc(isReset ? t.reset.lead : page.id === 'help' ? t.help.lead : t[page.id].lead)}">
+<meta name="description" content="${esc(isReset ? t.reset.lead : t[page.id].lead)}">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#0d0c0b">
 <meta name="referrer" content="${isReset ? 'no-referrer' : 'strict-origin-when-cross-origin'}">
@@ -333,7 +392,7 @@ ${page.id === 'privacy' || page.id === 'terms' ? '<div class="progress" aria-hid
 <a class="skip" href="#main">${esc(t.common.skip)}</a>
 ${config.draft ? `<div class="draft" role="note">${esc(t.common.draft)}</div>` : ''}
 <header class="top">
-  <a class="brand" href="${href(l, 'help')}"><img src="${asset('img/icon.png')}" alt="" width="32" height="32"><span>ASCND</span></a>
+  <a class="brand" href="${href(l, 'home')}"><img src="${asset('img/icon.png')}" alt="" width="32" height="32"><span>ASCND</span></a>
   <nav class="langs" aria-label="${esc(t.common.language)}">${langLinks}</nav>
   ${isReset ? '' : `<nav class="nav" aria-label="ASCND">${navLinks}</nav>`}
 </header>
@@ -363,7 +422,7 @@ for (const l of langs) {
   }
 }
 // 404: về trang trợ giúp (GitHub Pages / Cloudflare Pages đều đọc 404.html).
-writeFileSync(join(out, '404.html'), layout('en', pages[0], render.help(content.en, 'en')));
+writeFileSync(join(out, '404.html'), layout('en', pages[0], render.home(content.en, 'en')));
 // GitHub Pages: tắt Jekyll để thư mục assets/ được phục vụ nguyên.
 writeFileSync(join(out, '.nojekyll'), '');
 console.log(`ASCND site → ${out} (${langs.length * pages.length} trang, base "${base || '/'}")`);

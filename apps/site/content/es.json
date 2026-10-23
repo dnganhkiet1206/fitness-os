@@ -7,7 +7,8 @@
     "terms": "Términos",
     "account": "Eliminar cuenta",
     "about": "Acerca de",
-    "reset": "Restablecer contraseña"
+    "reset": "Restablecer contraseña",
+    "home": "Inicio"
   },
   "common": {
     "skip": "Saltar al contenido",
@@ -43,7 +44,7 @@
         "icon": "koa",
         "title": "Koa",
         "steps": [
-          "Koa es tu compañero de entrenamiento. Cada sesión registrada le da Gains, y Koa sube seis rangos, de Newbie a Beast.",
+          "Koa es tu compañero de entrenamiento. Cada sesión registrada le da Gains, y Koa sube seis rangos, de Newbie a Mass Monster.",
           "Los Gains nunca bajan cuando descansas. Al volver, Koa te sugiere una primera sesión más suave.",
           "“Pregunta a Koa”, en Hoy, abre Koa Coach para dudas sobre entrenamiento, comida y recuperación. Koa Coach es IA: puede equivocarse y no es consejo médico."
         ]
@@ -195,7 +196,7 @@
     "lead": "ASCND es una app de entrenamiento con Koa, un koala que crece contigo.",
     "body": [
       "La mayoría de las apps de fitness se abandonan en pocas semanas. ASCND quiere que aparecer sea lo fácil: un plan para hoy, registros rápidos y un compañero cuyo progreso es el tuyo.",
-      "Cada sesión que registras le da Gains a Koa, que sube de Newbie a Beast. Los Gains nunca bajan cuando la vida se complica, así que volver siempre es avanzar, no empezar de cero."
+      "Cada sesión que registras le da Gains a Koa, que sube de Newbie a Mass Monster. Los Gains nunca bajan cuando la vida se complica, así que volver siempre es avanzar, no empezar de cero."
     ],
     "principlesTitle": "Lo que defendemos",
     "principles": [
@@ -242,5 +243,36 @@
     "errOffline": "Sin conexión. Revisa tu internet e inténtalo de nuevo.",
     "errGeneric": "Algo salió mal y tu contraseña no cambió. Inténtalo de nuevo o pide un enlace nuevo en la app.",
     "signedInNote": "¿Con la sesión iniciada? También puedes cambiar tu contraseña en la app: Ajustes → Cambiar contraseña."
+  },
+  "home": {
+    "title": "Entrena. Koa crece.",
+    "lead": "Una app de entrenamiento con un compañero. Cada sesión que registras hace a Koa más fuerte, y el hábito, más fácil.",
+    "soon": "Muy pronto en el App Store",
+    "how": "Mira cómo funciona",
+    "statement": "No necesitas ser perfecto. Solo aparecer. Koa hace el resto.",
+    "storyTitle": "Cómo funciona",
+    "steps": [
+      [
+        "Un plan para hoy",
+        "Hoy te muestra lo que importa ahora: la sesión, las comidas, el sueño. Sin paneles que descifrar."
+      ],
+      [
+        "Registra en segundos",
+        "Toca + o cuéntaselo a Koa: “pho para almorzar, dos vasos de agua”. Koa lo rellena; tú revisas y guardas."
+      ],
+      [
+        "Koa crece con cada sesión",
+        "Cada sesión suma Gains. Koa sube seis rangos, de Newbie a Mass Monster, y nunca baja de rango cuando descansas."
+      ],
+      [
+        "Tu progreso de un vistazo",
+        "La “A” de ASCND muestra seis partes de tu semana: entrenamiento, pasos, nutrición, sueño, recuperación y cuerpo. Toca una para ver por qué."
+      ]
+    ],
+    "zoom": "Pregunta a Koa lo que quieras sobre entrenamiento, comida y recuperación.",
+    "zoomNote": "Koa Coach es IA y puede equivocarse. No es consejo médico.",
+    "finalTitle": "Muy pronto.",
+    "finalBody": "ASCND está en desarrollo para iPhone, en español, inglés y vietnamita.",
+    "gains": "Gains"
   }
 }
