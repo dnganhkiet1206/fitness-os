@@ -48,6 +48,12 @@ public struct SupabaseAuthAPI: AuthAPI {
       credentials: OpenIDConnectCredentials(provider: .apple, idToken: identityToken, nonce: rawNonce))
   }
 
+  /// Google qua `ASWebAuthenticationSession`; quay về app bằng `ascnd:///` (phải nằm
+  /// trong danh sách redirect của dự án — `docs/GOOGLE_SIGN_IN.md`).
+  public func signInWithGoogle() async throws {
+    _ = try await client.auth.signInWithOAuth(provider: .google, redirectTo: Self.emailRedirect)
+  }
+
   public func resetPassword(email: String) async throws {
     try await client.auth.resetPasswordForEmail(email, redirectTo: Self.recoveryRedirect)
   }

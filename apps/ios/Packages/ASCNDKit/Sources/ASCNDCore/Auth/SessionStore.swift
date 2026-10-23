@@ -40,6 +40,8 @@ public protocol AuthAPI: Sendable {
 extension AuthAPI {
   /// Mặc định: không hỗ trợ link — bản giả trong test không cần viết.
   public func session(from url: URL) async throws { throw AuthLinkFailure.invalid }
+  /// Mặc định: không có Google (bản giả trong test).
+  public func signInWithGoogle() async throws { throw AuthLinkFailure.invalid }
 }
 
 /// Trạng thái đăng nhập của app — một nguồn, quan sát được.
@@ -140,6 +142,12 @@ public final class SessionStore {
 
   public func signInWithApple(identityToken: String, rawNonce: String) async throws {
     try await api.signInWithApple(identityToken: identityToken, rawNonce: rawNonce)
+  }
+
+  /// Đăng nhập bằng Google (OAuth của Supabase trong tấm web của hệ thống); tài
+  /// khoản mới được tạo ở lần đầu, không cần xác nhận email.
+  public func signInWithGoogle() async throws {
+    try await api.signInWithGoogle()
   }
 
   public func resetPassword(email: String) async throws {

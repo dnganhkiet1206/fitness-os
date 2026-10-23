@@ -15,11 +15,18 @@ public import Foundation
 /// vẫn đủ.
 public enum AppleFeatureGates {
   public static let signInWithAppleKey = "ASCNDSignInWithApple"
+  /// Nút "Tiếp tục với Google" (23/10): bật khi dự án Supabase đã bật nhà cung cấp
+  /// Google — xem `docs/GOOGLE_SIGN_IN.md`.
+  public static let signInWithGoogleKey = "ASCNDSignInWithGoogle"
+
+  public static func signInWithGoogle(info: [String: Any]?) -> Bool { flag(info?[signInWithGoogleKey]) }
 
   /// Chỉ bật khi giá trị rõ ràng là có (`YES` / `true` / `1`, hoặc `Bool`
   /// `true`). Thiếu khoá, rỗng, `NO`, chưa thay biến build (`$(…)`) = tắt.
-  public static func signInWithApple(info: [String: Any]?) -> Bool {
-    switch info?[signInWithAppleKey] {
+  public static func signInWithApple(info: [String: Any]?) -> Bool { flag(info?[signInWithAppleKey]) }
+
+  static func flag(_ value: Any?) -> Bool {
+    switch value {
     case let b as Bool:
       return b
     case let s as String:
