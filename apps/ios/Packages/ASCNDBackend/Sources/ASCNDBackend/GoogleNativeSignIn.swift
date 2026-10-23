@@ -120,8 +120,9 @@ public enum GoogleNativeSignIn {
           }
         }
         session.presentationContextProvider = anchor
-        // Phiên riêng: không có hộp hỏi "… muốn sử dụng … để đăng nhập" của iOS.
-        session.prefersEphemeralWebBrowserSession = true
+        // Dùng chung với Safari (Kiệt 23/10): ai đã đăng nhập Google trong Safari chỉ
+        // cần chạm chọn tài khoản. iOS hỏi "ASCND muốn sử dụng google.com để đăng nhập".
+        session.prefersEphemeralWebBrowserSession = false
         session.start()
       }
     #else
