@@ -51,7 +51,22 @@ extension Locale {
   /// Foundation đọc `Locale.current` (máy): máy tiếng Anh mà app đặt tiếng Việt
   /// sẽ ra "October 2026" giữa chữ tiếng Việt. Không ghi đè (widget, test) thì
   /// như Foundation. Đọc qua `AppLanguage.code` nên được Observation ghi nhận.
-  public static var app: Locale { AppLanguage.shared.locale ?? .autoupdatingCurrent }
+  ///
+  /// Không ghi đè (app theo ngôn ngữ iPhone, #667): lấy ngôn ngữ mà iOS chọn cho
+  /// app (`preferredLocalizations`), không lấy `Locale.current` — máy "vi-US" có
+  /// vùng US nên số ra "2,539" giữa chữ tiếng Việt (23/10). Widget / test không có
+  /// bản dịch riêng thì vẫn như Foundation.
+  public static var app: Locale {
+    if let l = AppLanguage.shared.locale { return l }
+    let device = Locale.autoupdatingCurrent
+    // Chỉ khi chữ app là tiếng Việt / Tây Ban Nha mà vùng máy viết số kiểu khác
+    // (vi-US → "2,539"): định dạng theo đúng ngôn ngữ ấy. Còn lại như Foundation.
+    guard let shown = Bundle.main.preferredLocalizations.first, ["vi", "es"].contains(shown),
+      device.language.languageCode?.identifier == shown,
+      device.decimalSeparator != Locale(identifier: shown).decimalSeparator
+    else { return device }
+    return Locale(identifier: shown)
+  }
 }
 
 #if canImport(Darwin)
