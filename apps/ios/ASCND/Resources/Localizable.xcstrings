@@ -2,6 +2,98 @@
  "sourceLanguage": "en",
  "version": "1.0",
  "strings": {
+  "auth.confirm.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Check your email"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Kiểm tra email"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Revisa tu correo"
+     }
+    }
+   }
+  },
+  "auth.confirm.body %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "We sent a confirmation link to %@. Open it on this iPhone, then sign in below."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mình đã gửi link xác nhận tới %@. Mở link trên iPhone này rồi đăng nhập bên dưới."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Enviamos un enlace de confirmación a %@. Ábrelo en este iPhone y luego inicia sesión abajo."
+     }
+    }
+   }
+  },
+  "auth.error.rateLimit": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Too many confirmation emails right now. Try again in about an hour."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đang gửi quá nhiều email xác nhận. Thử lại sau khoảng một giờ."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Demasiados correos de confirmación ahora mismo. Inténtalo en una hora."
+     }
+    }
+   }
+  },
+  "auth.error.notConfirmed": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Confirm your email first: open the link we sent you."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bạn cần xác nhận email trước: mở link mình đã gửi."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Primero confirma tu correo: abre el enlace que te enviamos."
+     }
+    }
+   }
+  },
   "dp.comeback.tip.asBefore": {
    "extractionState": "manual",
    "localizations": {

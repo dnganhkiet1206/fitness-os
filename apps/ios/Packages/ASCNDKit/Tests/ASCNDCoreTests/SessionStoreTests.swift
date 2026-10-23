@@ -141,4 +141,13 @@ struct SessionStoreTests {
     try await store.resetPassword(email: "b@example.com")
     #expect(api.calls == ["signUp:b@example.com:Bảo", "signIn:b@example.com", "apple:n1", "reset:b@example.com"])
   }
+
+  /// Dự án bắt xác nhận email: đăng ký xong KHÔNG có phiên → màn phải nói "kiểm tra
+  /// email"; tự xác nhận (có phiên ngay) → vào app.
+  @Test func signUpTellsWhetherEmailConfirmationIsNeeded() async throws {
+    let pending = SessionStore(api: FakeAuth(stored: .success(nil)))
+    #expect(try await pending.signUp(email: "b@example.com", password: "pw1234", name: "B") == .confirmEmail)
+    let open = SessionStore(api: FakeAuth(stored: .success(alice)))
+    #expect(try await open.signUp(email: "a@example.com", password: "pw1234", name: "A") == .signedIn)
+  }
 }
