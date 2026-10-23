@@ -59257,19 +59257,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "Rise.\nTrain.\nAscend."
+      "value": "Rise\nTrain\nAscend"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Levántate.\nEntrena.\nAsciende."
+      "value": "Levántate\nEntrena\nAsciende"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Thức dậy.\nTập luyện.\nVươn lên."
+      "value": "Thức dậy\nTập luyện\nVươn lên"
      }
     }
    }
