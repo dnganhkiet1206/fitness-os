@@ -136,6 +136,13 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - "Bỏ qua, dùng số trung bình" đặt giới tính "Khác" và vận động "Vừa phải" (đúng giá trị dự phòng của cổng số đo).
 - Chưa kiểm: đi trọn luồng tới "Tập buổi đầu" trên tài khoản mới (ghi hồ sơ thật), VoiceOver từng màn, giao diện sáng (màn luôn tối như màn đăng nhập).
 
+**Trang hỗ trợ web (`apps/site`, mock 23/10, chờ Kiệt duyệt) — hạn chế đã biết:**
+- Chỉ những gì App Store và tài khoản cần: Quyền riêng tư, Điều khoản, Trợ giúp, Đặt lại mật khẩu, Xoá tài khoản, Giới thiệu; en / vi / es. **Không** landing page, blog hay đo lường (chưa có người dùng — mục 0.4). Đổi mật khẩu khi đang đăng nhập vẫn ở trong app.
+- Văn bản pháp lý lấy từ `legal-content.json` của app (một nguồn). Là **bản nháp, không phải tư vấn pháp lý**; luật áp dụng Delaware kế thừa từ RN, cần Kiệt xác nhận.
+- **Chưa có:** email hỗ trợ, tên đơn vị vận hành (trang hiện ô "chưa đặt"), hosting. Hosting miễn phí (Cloudflare Pages đề xuất; GitHub Pages thì phải sửa workflow) cần Kiệt tạo tài khoản — agent không tự tạo (mục 1).
+- **Đặt lại mật khẩu trên web cần đổi cấu hình Supabase production** (Redirect URLs + mẫu email Reset Password dùng `token_hash`), cần Kiệt duyệt. Chưa đổi thì link vẫn chỉ mở được trên iPhone có app (trang web hiện nút "Mở trong app").
+- Chưa chạy luồng đặt mật khẩu thật với một email thật (cần cấu hình trên). Đã kiểm: build, 6 trang × 3 ngôn ngữ ở 1280 px và 390 px, các trạng thái form / hết hạn / mở trên iPhone, và Supabase trả `403 otp_expired` cho link hỏng (trang hiện "Link đã hết hạn").
+
 **Tìm thấy khi kiểm ngày 21/10** (simulator, tài khoản test):
 - ~~Coach AI bị cắt giữa câu, còn sót dấu `**` thô.~~ Sửa 21/10 (nhánh `claude/fix-five-bugs`): app bỏ `**` lẻ, câu bị cắt vì hết hạn mức thì nối "…". Server: `MAX_TOKENS` 1024 → 2048 (model gemini-3-flash tiêu một phần cho suy luận ẩn). **`ai-coach` đã deploy 21/10 (Kiệt duyệt trong chat), bản 24, từ `af3f6427`.** Kiểm trên simulator: câu trả lời chạy trọn, không sót `**`.
 - ~~Số buổi lệch: Coach nói 4 (đếm 7 ngày gần nhất), tổng kết tuần nói 2 (tuần lịch).~~ Sửa 21/10: `ai-coach` gửi `this_week` (tuần lịch T2 → hôm nay, đếm ngày có buổi như app) và dặn model dùng nó cho "tuần này". **Đã deploy 21/10** — Coach trả lời "2 buổi tập trong tuần này từ thứ Hai", khớp app (2/6).
@@ -163,6 +170,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 
 ## 5. Lịch sử thay đổi sổ
 
+- 23/10/2026: trang hỗ trợ web `apps/site` (mock chờ duyệt): sáu trang, ba ngôn ngữ; chờ email hỗ trợ, hosting, cấu hình Supabase cho đặt lại mật khẩu.
 - 21/10/2026: tạo sổ (Kiệt yêu cầu, #527).
 - 21/10/2026: thêm điều kiện duyệt GĐ1, migration chưa deploy, kết quả "mất pump" / tụt hạng.
 - 21/10/2026: hồi quy GĐ1 (R / W / D PASS; A1, A2 BLOCKED).

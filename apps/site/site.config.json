@@ -1,0 +1,9 @@
+{
+  "//": "Đổi tên miền: chỉ sửa siteUrl ở đây và ASCND_SITE_HOST trong apps/ios/Config/Backend.xcconfig. Supabase (host + key publishable) đọc thẳng từ Backend.xcconfig.",
+  "siteUrl": "https://ascnd.pages.dev",
+  "supportEmail": "",
+  "operatorName": "",
+  "appScheme": "ascnd",
+  "draft": true,
+  "updated": "2026-10-23"
+}
