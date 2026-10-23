@@ -142,7 +142,7 @@ struct AuthView: View {
     .accessibilityLabel(Text(String(localized: "auth.continueEmail")))
   }
 
-  /// "Tiếp tục với Google" (23/10, Kiệt): nền trắng như nút Apple, chữ "G" đậm.
+  /// "Tiếp tục với Google" (23/10, Kiệt): nền trắng, logo "G" chuẩn của Google.
   private var googleButton: some View {
     Button {
       Task {
@@ -158,9 +158,11 @@ struct AuthView: View {
       }
     } label: {
       HStack(spacing: 10) {
-        Text(verbatim: "G")
-          .font(.system(size: 19, weight: .heavy, design: .rounded))
-          .foregroundStyle(Color(red: 0.26, green: 0.52, blue: 0.96))
+        // Logo "G" bốn màu chuẩn của Google (hướng dẫn thương hiệu Sign in with Google),
+        // vector trong Assets — không tự vẽ chữ G (Kiệt 23/10: "logo google nhìn lạ").
+        Image("GoogleG")
+          .resizable()
+          .frame(width: 18, height: 18)
           .accessibilityHidden(true)
         Text(String(localized: "auth.google"))
           .font(.system(size: 16, weight: .semibold))
