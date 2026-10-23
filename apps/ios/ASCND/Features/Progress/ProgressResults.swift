@@ -179,6 +179,7 @@ struct ProgressGroupView: View {
   var openTrends: (() -> Void)?
   @Environment(\.weightUnit) private var unit
   @Environment(WorkoutFlow.self) private var flow
+  @Environment(AppServices.self) private var services
 
   var body: some View {
     ScrollView {
@@ -211,6 +212,10 @@ struct ProgressGroupView: View {
           today: flow.today.today, target: week.target)
           .padding(DS.Spacing.md)
           .todayCard()
+        // Hôm nay còn buổi theo lịch → mở buổi ấy ở Tập luyện (cùng đường với Hôm nay).
+        if let today = week.days.first(where: { $0.date == flow.today.today }), today.planned, !today.trained {
+          DSButton(String(localized: "today.start"), style: .primary) { services.sessionRequest += 1 }
+        }
       }
     case .body:
       BodySection(userId: flow.today.userId, today: flow.today.today)

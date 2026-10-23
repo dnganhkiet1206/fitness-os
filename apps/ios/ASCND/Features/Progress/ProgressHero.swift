@@ -190,8 +190,8 @@ struct ProgressHero: View {
 
 /// Một mảng của chữ A, vẽ trong toàn khung chữ A (các mảng chồng nhau trong `ZStack`)
 /// — vùng chạm là đúng hình mảng, không phải ô chữ nhật bao quanh.
-/// Cách tô theo Health: Tốt = tô đặc, icon trắng · Cần chú ý = viền màu, lõi đen, icon
-/// màu · Chưa đủ dữ liệu = xám tối, icon trắng mờ.
+/// Cách tô theo Health: Tốt = tô đặc, icon trắng · Cần chú ý = khung viền màu, lõi
+/// trong suốt, icon màu · Chưa đủ dữ liệu = xám theo giao diện sáng / tối, icon mờ.
 struct ProgressSegment: View {
   let group: ProgressStatus.Group
   let level: ProgressStatus.Level
@@ -200,6 +200,10 @@ struct ProgressSegment: View {
   /// Tăng một lần sau khi chữ A hiện: mảng "Cần chú ý" thở 3 nhịp rồi đứng yên.
   let breathe: Int
   let reduceMotion: Bool
+  @Environment(\.colorScheme) private var scheme
+
+  /// Mảng "Chưa đủ dữ liệu".
+  private var empty: Color { scheme == .dark ? Color(white: 0.17) : Color(white: 0.86) }
 
   var body: some View {
     let tint = ProgressStyle.color(group)
@@ -207,7 +211,7 @@ struct ProgressSegment: View {
     let c = ProgressHero.iconCenter(group)
     ZStack(alignment: .topLeading) {
       outline
-        .fill(level == .insufficient ? Color(white: 0.17) : tint)
+        .fill(level == .insufficient ? empty : tint)
         .keyframeAnimator(initialValue: 1.0, trigger: breathe) { content, o in
           content.opacity(level == .attention && !reduceMotion ? o : 1)
         } keyframes: { _ in
@@ -218,8 +222,10 @@ struct ProgressSegment: View {
           CubicKeyframe(0.45, duration: 1.1)
           CubicKeyframe(1, duration: 1.1)
         }
+      // Lõi trong suốt (Kiệt 23/10: "Cần chú ý" chỉ là một khung màu bình thường).
       SegmentShape(path: ProgressHero.inner(group))
         .fill(Color.black)
+        .blendMode(.destinationOut)
         .opacity(level == .attention ? 1 : 0)
       Image(systemName: ProgressStyle.symbol(group))
         .font(.system(size: 11 * scale, weight: .semibold))
@@ -229,7 +235,7 @@ struct ProgressSegment: View {
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     // Bóng tối ở chỗ nối: mảng trên tách khỏi mảng dưới như hình mẫu.
     .compositingGroup()
-    .shadow(color: .black.opacity(0.4), radius: 1.6 * scale, x: 0, y: 0.8 * scale)
+    .shadow(color: .black.opacity(scheme == .dark ? 0.4 : 0.18), radius: 1.6 * scale, x: 0, y: 0.8 * scale)
     .contentShape(outline)
     // Vừa ghi dữ liệu: đổi màu tại chỗ rồi nảy một lần.
     .animation(reduceMotion ? nil : .smooth(duration: 0.6), value: level)
@@ -245,7 +251,7 @@ struct ProgressSegment: View {
     switch level {
     case .good: .white
     case .attention: tint
-    case .insufficient: .white.opacity(0.75)
+    case .insufficient: scheme == .dark ? .white.opacity(0.75) : .black.opacity(0.45)
     }
   }
 }
@@ -273,11 +279,15 @@ private struct SegmentPressStyle: ButtonStyle {
 
 /// Chú thích ba trạng thái dưới hình (như hình mẫu).
 struct ProgressLegend: View {
+  @Environment(\.colorScheme) private var scheme
+
   var body: some View {
     HStack(spacing: DS.Spacing.md) {
       item(.good) { RoundedRectangle(cornerRadius: 3).fill(DS.Color.foreground.swiftUI.opacity(0.8)) }
       item(.attention) { RoundedRectangle(cornerRadius: 3).strokeBorder(DS.Color.foreground.swiftUI.opacity(0.8), lineWidth: 1.3) }
-      item(.insufficient) { RoundedRectangle(cornerRadius: 3).fill(Color(white: 0.17)) }
+      item(.insufficient) {
+        RoundedRectangle(cornerRadius: 3).fill(scheme == .dark ? Color(white: 0.17) : Color(white: 0.86))
+      }
     }
     .font(DS.TextStyle.caption)
     .foregroundStyle(DS.Color.mutedForeground.swiftUI)
