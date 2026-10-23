@@ -188,7 +188,6 @@ const render = {
         <div class="cards cards--three">${t.about.principles.map(([a, b], i) => `<article class="card"><p class="story__num">0${i + 1}</p><h3>${esc(a)}</h3><p>${esc(b)}</p></article>`).join('')}</div>
       </section>
       <section class="finale" aria-labelledby="finale">
-        <img class="finale__icon" src="${asset('img/icon.png')}" alt="" width="96" height="96">
         <h2 id="finale" class="finale__title">${esc(h.finalTitle)}</h2>
         <p class="lead">${esc(h.finalBody)}</p>
         <div class="intro__actions">${soon}<a class="button button--ghost" href="${href(l, 'help')}">${esc(t.nav.help)}</a></div>
@@ -308,7 +307,6 @@ const render = {
     const openApp = (state) => `<a class="button" data-open-app="${state}" href="${config.appScheme}:///">${esc(t.common.openApp)}</a>`;
     return `
       <div class="reset card card--glass" data-reset data-supabase-url="${esc(supabase.url)}" data-supabase-key="${esc(supabase.key)}" data-scheme="${esc(config.appScheme)}">
-        <img class="reset__icon" src="${asset('img/icon.png')}" alt="" width="64" height="64">
         <section data-state="checking" hidden><h1>${esc(r.title)}</h1><p class="lead" role="status">${esc(r.checking)}</p></section>
         <section data-state="form" hidden>
           <h1>${esc(r.title)}</h1><p class="lead">${esc(r.lead)}</p>
@@ -381,9 +379,8 @@ ${page.id === 'privacy' || page.id === 'terms' ? '<div class="progress" aria-hid
 <a class="skip" href="#main">${esc(t.common.skip)}</a>
 ${config.draft ? `<div class="draft" role="note">${esc(t.common.draft)}</div>` : ''}
 <header class="top">
-  <a class="brand" href="${href(l, 'home')}"><img src="${asset('img/icon.png')}" alt="" width="32" height="32"><span>ASCND</span></a>
+  <a class="brand" href="${href(l, 'home')}">ASCND</a>
   <nav class="langs" aria-label="${esc(t.common.language)}">${langLinks}</nav>
-  ${isReset ? '' : `<nav class="nav" aria-label="ASCND">${navLinks}</nav>`}
 </header>
 <main id="main" class="main main--${page.id}">
 ${body}

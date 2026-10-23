@@ -101,23 +101,10 @@ li + li { margin-top: 0.45em; }
   backdrop-filter: saturate(160%) blur(20px);
 }
 .brand { display: flex; align-items: center; gap: 10px; color: var(--paper); text-decoration: none; font: 800 18px/1 var(--display); letter-spacing: 0.1em; }
-.brand img { border-radius: 9px; border: 1px solid var(--line); }
-.nav { display: flex; flex-wrap: wrap; gap: 2px; order: 3; width: 100%; }
-.nav a, .langs a { color: var(--muted); text-decoration: none; font-size: 14px; font-weight: 550; padding: 6px 12px; border-radius: 999px; transition: color 0.2s, background 0.2s; }
-.nav a:hover, .langs a:hover { color: var(--paper); background: var(--faint); }
-.nav a[aria-current="page"] { color: var(--paper); background: var(--faint); box-shadow: inset 0 0 0 1px var(--line); }
-.langs { margin-left: auto; order: 1; display: flex; gap: 2px; background: var(--faint); border-radius: 999px; padding: 3px; }
-.langs a { font-size: 12px; padding: 5px 10px; letter-spacing: 0.05em; }
+.langs { margin-left: auto; display: flex; gap: 2px; background: var(--faint); border-radius: 999px; padding: 3px; }
+.langs a { color: var(--muted); text-decoration: none; font-weight: 550; font-size: 12px; padding: 5px 10px; letter-spacing: 0.05em; border-radius: 999px; transition: color 0.2s, background 0.2s; }
+.langs a:hover { color: var(--paper); background: var(--faint); }
 .langs a[aria-current="true"] { background: var(--paper); color: var(--ink); }
-@media (min-width: 860px) {
-  .nav { order: 1; width: auto; margin-left: auto; }
-  .langs { order: 2; margin-left: 0; }
-}
-@media (max-width: 859px) {
-  .nav { overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; margin: 0 -20px; padding: 0 20px; width: calc(100% + 40px); }
-  .nav::-webkit-scrollbar { display: none; }
-  .nav a { white-space: nowrap; }
-}
 
 /* ---- Thân ---- */
 .main { width: 100%; max-width: 1120px; margin: 0 auto; padding: 40px 20px 72px; flex: 1; }
@@ -238,7 +225,7 @@ html:not(.js) .main > .intro + *, html.still .main > .intro + * { margin-top: 0;
   /* Mở đầu trên điện thoại: một nút, để vừa một màn; gợi ý cuộn thay cho "Xem cách hoạt động". */
   .intro .intro__actions .button--ghost { display: none; }
   .story__body { font-size: 16px; }
-  .story__stage { grid-template-columns: 1fr; align-content: center; gap: 24px; padding: 112px 0 24px; }
+  .story__stage { grid-template-columns: 1fr; align-content: center; gap: 24px; padding: 76px 0 24px; }
   .story__visual { order: -1; }
   .story__frame { border-radius: 24px; height: min(44vh, 92vw); }
   .story__step h2 { font-size: 40px; margin-bottom: 12px; }
@@ -273,7 +260,6 @@ html:not(.js) .main > .intro + *, html.still .main > .intro + * { margin-top: 0;
 .ladder__koa { position: absolute; right: 7%; top: 6%; width: 15%; height: auto; filter: drop-shadow(0 10px 20px rgb(255 217 61 / 0.35)); opacity: clamp(0, calc(var(--local, 1) * 6 - 5), 1); transform: translateY(calc((1 - clamp(0, calc(var(--local, 1) * 6 - 5), 1)) * 20px)); }
 .zoom__caption small { display: block; margin-top: 12px; font: 500 14px/1.4 var(--font); letter-spacing: 0; color: var(--muted); }
 .finale { text-align: center; display: grid; justify-items: center; padding: 18vh 0 10vh; }
-.finale__icon { border-radius: 22px; border: 1px solid var(--line); box-shadow: 0 30px 80px -20px rgb(255 115 25 / 0.6); margin-bottom: 28px; }
 .finale__title { font-size: clamp(56px, 10vw, 120px); letter-spacing: -0.045em; line-height: 1; margin-bottom: 16px; }
 .finale .lead { margin: 0 auto 28px; }
 
@@ -462,7 +448,6 @@ td { color: var(--muted); }
 /* ---- Đặt lại mật khẩu ---- */
 .main--reset { max-width: 520px; padding-top: 48px; }
 .reset { padding: 36px; animation: rise 0.9s var(--ease) both; }
-.reset__icon { border-radius: 16px; border: 1px solid var(--line); margin-bottom: 24px; box-shadow: 0 16px 40px -12px rgb(255 115 25 / 0.5); }
 .reset h1 { font-size: 34px; }
 .reset h1:focus { outline: none; }
 .reset .button:not(.button--block) { margin-top: 8px; }
@@ -482,7 +467,6 @@ td { color: var(--muted); }
 .badge svg { width: 30px; height: 30px; fill: none; stroke: var(--ok); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
 @keyframes pop { from { transform: scale(0.4); opacity: 0; } }
 .page-reset .foot nav { display: none; }
-.page-reset .langs { margin-left: auto; }
 
 /* ---- Hiện dần khi cuộn ---- */
 .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.9s var(--ease) var(--delay, 0ms), transform 0.9s var(--ease) var(--delay, 0ms); }
