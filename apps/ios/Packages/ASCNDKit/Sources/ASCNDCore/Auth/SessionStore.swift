@@ -27,6 +27,9 @@ public protocol AuthAPI: Sendable {
   func signUp(email: String, password: String, name: String) async throws
   func signIn(email: String, password: String) async throws
   func signInWithApple(identityToken: String, rawNonce: String) async throws
+  /// Google qua OAuth của Supabase. PHẢI là yêu cầu của giao thức (không chỉ có ở
+  /// `extension`): gọi qua `any AuthAPI` thì bản trong extension luôn thắng bản thật.
+  func signInWithGoogle() async throws
   func resetPassword(email: String) async throws
   /// Đổi mật khẩu của phiên đang mở (`auth.updateUser({ password })`). Nên
   /// ném `PasswordChangeFailure` đã gọi đúng tên.

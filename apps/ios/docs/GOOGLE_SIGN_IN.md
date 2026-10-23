@@ -1,7 +1,16 @@
 # Đăng nhập bằng Google — việc Kiệt cần bật
 
-App đã có nút **Tiếp tục với Google** (23/10). Nút **ẩn** cho tới khi bật đủ 3 bước dưới.
-Agent không tự làm vì cần tạo khoá OAuth và đổi cấu hình Auth của dự án production.
+App có nút **Tiếp tục với Google** (23/10). **Đã bật xong 23/10:**
+- Google Cloud project **ASCND** (`ascnd-512515`), màn đồng ý OAuth (External, chế độ
+  *Testing*), OAuth client Web "ASCND Supabase"; test user: mkchanneldp@gmail.com.
+- Supabase: Google provider bật (Kiệt dán Client ID / Secret), Redirect URLs `ascnd://**`.
+- App: `ASCND_SIGN_IN_WITH_GOOGLE: "YES"`.
+
+**Còn lại:** app đang ở chế độ *Testing* của Google — chỉ test user (tối đa 100) đăng nhập
+được. Mở cho mọi người = Google Auth Platform → Audience → *Publish app* (có thể cần Google
+xét duyệt: trang chủ, chính sách quyền riêng tư, tên miền).
+
+Các bước đã làm (để làm lại cho dự án khác):
 
 1. **Google Cloud Console** → APIs & Services → Credentials → *Create OAuth client ID*
    → loại **Web application**. Ở *Authorized redirect URIs* thêm:

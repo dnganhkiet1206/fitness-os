@@ -127,7 +127,7 @@ targets:
       base:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASCND_SIGN_IN_WITH_APPLE: "NO"
-        ASCND_SIGN_IN_WITH_GOOGLE: "NO"
+        ASCND_SIGN_IN_WITH_GOOGLE: "YES"
       configs:
         # Release trùng bundle của app RN để bản native cập nhật đè app đang
         # có trên App Store. Debug có hậu tố riêng để Kiệt cài cả bản RN lẫn
