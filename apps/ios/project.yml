@@ -109,6 +109,11 @@ targets:
         # `com.apple.developer.applesignin: [Default]` — xem
         # `docs/APPLE_DEVELOPER_PROGRAM.md`.
         ASCNDSignInWithApple: $(ASCND_SIGN_IN_WITH_APPLE)
+        # "Tiếp tục với Google" (23/10): bật khi dự án Supabase đã bật Google —
+        # `docs/GOOGLE_SIGN_IN.md`.
+        ASCNDSignInWithGoogle: $(ASCND_SIGN_IN_WITH_GOOGLE)
+        # Client ID iOS (không phải bí mật) của project Google Cloud "ASCND", theo bundle.
+        ASCNDGoogleIOSClientID: $(ASCND_GOOGLE_IOS_CLIENT_ID)
         # Đo lường (15/10) — trống = tắt. Khoá thật ở Backend.local.xcconfig.
         ASCNDSentryDSN: https://$(ASCND_SENTRY_DSN)
         ASCNDPostHogKey: $(ASCND_POSTHOG_KEY)
@@ -124,6 +129,7 @@ targets:
       base:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASCND_SIGN_IN_WITH_APPLE: "NO"
+        ASCND_SIGN_IN_WITH_GOOGLE: "YES"
       configs:
         # Release trùng bundle của app RN để bản native cập nhật đè app đang
         # có trên App Store. Debug có hậu tố riêng để Kiệt cài cả bản RN lẫn
@@ -131,9 +137,11 @@ targets:
         Debug:
           PRODUCT_BUNDLE_IDENTIFIER: com.ascnd.fitnessos.dev
           APP_DISPLAY_NAME: ASCND Dev
+          ASCND_GOOGLE_IOS_CLIENT_ID: 751814705388-gonm9e313v927p3o8baubu9ibluu27t1.apps.googleusercontent.com
         Release:
           PRODUCT_BUNDLE_IDENTIFIER: com.ascnd.fitnessos
           APP_DISPLAY_NAME: ASCND
+          ASCND_GOOGLE_IOS_CLIENT_ID: 751814705388-ahlo5v7e2qi45ar82luinus59lm73h9g.apps.googleusercontent.com
           # Script upload dSYM đọc thư mục build và `~/.sentryclirc` — ngoài
           # hộp cát của build phase. Chỉ bản Release; Debug giữ hộp cát.
           ENABLE_USER_SCRIPT_SANDBOXING: "NO"

@@ -81,6 +81,9 @@ struct AuthView: View {
             .accessibilityLabel(Text(String(localized: "auth.apple")))
             .padding(.bottom, 10)
         }
+        if AppleFeatureGates.signInWithGoogle(info: Bundle.main.infoDictionary) {
+          googleButton.padding(.bottom, 10)
+        }
         heroButton(String(localized: "auth.hero.email"), filled: true) { open(.signin) }
         heroButton(String(localized: "auth.hero.create"), filled: false) { open(.signup) }
           .padding(.top, 10)
@@ -96,6 +99,38 @@ struct AuthView: View {
       .padding(.bottom, 20)
     }
     .environment(\.colorScheme, .dark)
+  }
+
+  /// "Tiếp tục với Google" (23/10, Kiệt): nền trắng như nút Apple, chữ "G" đậm.
+  private var googleButton: some View {
+    Button {
+      Task {
+        errorMessage = nil
+        do {
+          try await services.session.signInWithGoogle()
+        } catch {
+          // Người dùng đóng tấm Google: không phải lỗi.
+          if error is CancellationError { return }
+          if (error as NSError).domain == "com.apple.AuthenticationServices.WebAuthenticationSession" { return }
+          errorMessage = readableError(error)
+        }
+      }
+    } label: {
+      HStack(spacing: 10) {
+        Text(verbatim: "G")
+          .font(.system(size: 19, weight: .heavy, design: .rounded))
+          .foregroundStyle(Color(red: 0.26, green: 0.52, blue: 0.96))
+          .accessibilityHidden(true)
+        Text(String(localized: "auth.google"))
+          .font(.system(size: 16, weight: .semibold))
+          .foregroundStyle(.black)
+      }
+      .frame(maxWidth: .infinity, minHeight: 52)
+      .background(Color.white, in: Capsule())
+      .contentShape(Capsule())
+    }
+    .buttonStyle(TodayPressStyle())
+    .accessibilityLabel(Text(String(localized: "auth.google")))
   }
 
   private func heroButton(_ title: String, filled: Bool, action: @escaping () -> Void) -> some View {

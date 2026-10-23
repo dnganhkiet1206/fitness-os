@@ -48,6 +48,20 @@ public struct SupabaseAuthAPI: AuthAPI {
       credentials: OpenIDConnectCredentials(provider: .apple, idToken: identityToken, nonce: rawNonce))
   }
 
+  /// Google qua `ASWebAuthenticationSession`; quay về app bằng `ascnd:///` (phải nằm
+  /// trong danh sách redirect của dự án — `docs/GOOGLE_SIGN_IN.md`).
+  public func signInWithGoogle() async throws {
+    // Cách A (23/10): có Client ID iOS thì đi thẳng tới Google — trang Google chỉ hiện
+    // "ASCND". Thiếu thì về luồng web của Supabase (hiện địa chỉ dự án).
+    if let clientId = GoogleNativeSignIn.clientId(info: Bundle.main.infoDictionary) {
+      let (idToken, rawNonce) = try await GoogleNativeSignIn.idToken(clientId: clientId)
+      _ = try await client.auth.signInWithIdToken(
+        credentials: OpenIDConnectCredentials(provider: .google, idToken: idToken, nonce: rawNonce))
+      return
+    }
+    _ = try await client.auth.signInWithOAuth(provider: .google, redirectTo: Self.emailRedirect)
+  }
+
   public func resetPassword(email: String) async throws {
     try await client.auth.resetPasswordForEmail(email, redirectTo: Self.recoveryRedirect)
   }
