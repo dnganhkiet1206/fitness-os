@@ -1,353 +1,146 @@
-import { useEffect, useState, useCallback } from 'react';
-import { Plus, Camera, Settings, Pencil, X, RotateCcw, Check } from 'lucide-react';
-import { useQueryClient } from '@tanstack/react-query';
-import PullToRefresh from '@/components/PullToRefresh';
-import ScanFoodDialog from '@/components/logging/ScanFoodDialog';
-import type { ScannedFoodItem } from '@/components/logging/ScanFoodDialog';
-import { Navigate, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence, Reorder } from 'framer-motion';
-import ReadinessGauge from '@/components/dashboard/ReadinessGauge';
-import DashboardSkeleton from '@/components/dashboard/DashboardSkeleton';
-import { Skeleton } from '@/components/ui/skeleton';
-import BiometricsCard from '@/components/dashboard/BiometricsCard';
-import NutritionCard from '@/components/dashboard/NutritionCard';
-import SleepCard from '@/components/dashboard/SleepCard';
-import TrainingCard from '@/components/dashboard/TrainingCard';
-import NudgesCard from '@/components/dashboard/NudgesCard';
-import AiTipsCard from '@/components/dashboard/AiTipsCard';
-import ReadinessTrend from '@/components/dashboard/ReadinessTrend';
-import ActivityCard from '@/components/dashboard/ActivityCard';
-import EmptyState from '@/components/dashboard/EmptyState';
-import SupplementChecklist from '@/components/dashboard/SupplementChecklist';
-import RecentAwards from '@/components/dashboard/RecentAwards';
-import WeightCheckin from '@/components/dashboard/WeightCheckin';
-import WorkoutStatus from '@/components/dashboard/WorkoutStatus';
-import WaterWidget from '@/components/dashboard/WaterWidget';
-import StepsWidget from '@/components/dashboard/StepsWidget';
-import LogMealDialog from '@/components/logging/LogMealDialog';
-import LogWorkoutDialog from '@/components/logging/LogWorkoutDialog';
-import LogSleepDialog from '@/components/logging/LogSleepDialog';
-import LogBiometricsDialog from '@/components/logging/LogBiometricsDialog';
-import { WidgetGroupSection, AddGroupInline } from '@/components/dashboard/WidgetGroupSection';
-import { useAuth } from '@/hooks/useAuth';
-import { useProfile, useDailyLog, useTodaySleep, useRecentWorkouts, useTodayBiometrics, useReadinessTrend, useNudges, useWearables } from '@/hooks/useTodayData';
-import { useTodaySupplementChecklist, useToggleSupplement, useTodayWeight, useLogWeight } from '@/hooks/useDashboardData';
-import { useCheckAwards } from '@/hooks/useAwards';
-import { useAppSettings } from '@/hooks/useAppSettings';
-import { useWidgetConfig, type WidgetKey } from '@/hooks/useWidgetConfig';
-import { t, getLocale } from '@/lib/i18n';
-import { Button } from '@/components/ui/button';
-import type { ReadinessResult } from '@/lib/types';
+import { useEffect, useRef, useState } from "react";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { ArrowDown, ArrowRight, ChevronLeft, ChevronRight, CirclePlay, Dumbbell, HeartPulse, MoonStar, ShieldCheck, Sparkles, Waves, Zap } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import logoAscnd from "@/assets/logo-ascnd.png";
+import "./Index.css";
 
-const spring = { type: 'spring' as const, stiffness: 260, damping: 30, mass: 0.8 };
+const scenes = [
+  { kicker: "01 — THE SYSTEM", title: ["Your body.", "Understood."], copy: "Training, nutrition, sleep, and recovery — connected in one intelligent system.", label: "A clearer picture of you" },
+  { kicker: "02 — TRAIN WITH INTENT", title: ["Every rep", "has a reason."], copy: "Build consistency with training that fits your goals, not another generic plan.", label: "Training, made personal" },
+  { kicker: "03 — RECOVER SMARTER", title: ["Progress", "is a rhythm."], copy: "Read the signals behind your energy, sleep, and readiness. Know when to push — and when to reset.", label: "Strength meets recovery" },
+  { kicker: "04 — BECOME ASCND", title: ["Small moves.", "Higher standards."], copy: "Make the everyday work visible. Turn better choices into a stronger version of you.", label: "Your next level starts here" },
+];
 
-const container = {
-  hidden: { opacity: 0 },
-  show: { opacity: 1, transition: { staggerChildren: 0.06, delayChildren: 0.1 } },
-};
-const fadeUp = {
-  hidden: { opacity: 0, y: 24, filter: 'blur(8px)' },
-  show: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { ...spring, duration: 0.6 } },
-};
-const scaleReveal = {
-  hidden: { opacity: 0, scale: 0.88, filter: 'blur(12px)' },
-  show: { opacity: 1, scale: 1, filter: 'blur(0px)', transition: { ...spring, duration: 0.7 } },
-};
+const featureList = [
+  { icon: Dumbbell, name: "Training", text: "A plan with purpose", stat: "01" },
+  { icon: Waves, name: "Nutrition", text: "Fuel that adds up", stat: "02" },
+  { icon: MoonStar, name: "Recovery", text: "Rest is part of the work", stat: "03" },
+  { icon: HeartPulse, name: "Readiness", text: "Listen to the signals", stat: "04" },
+];
+
+function OrbitalArt({ scene }: { scene: number }) {
+  return (
+    <div className={`ascnd-orbit-art ascnd-orbit-art--${scene}`} aria-hidden="true">
+      <div className="ascnd-halo ascnd-halo-a" />
+      <div className="ascnd-halo ascnd-halo-b" />
+      <div className="ascnd-orbit ascnd-orbit-outer"><span /><i /></div>
+      <div className="ascnd-orbit ascnd-orbit-inner"><span /><i /></div>
+      <div className="ascnd-core">
+        <div className="ascnd-core-light" />
+        <img src={logoAscnd} alt="" />
+      </div>
+      <div className="ascnd-float ascnd-float-top"><Sparkles size={14} /><span>MOVE WITH INTENT</span></div>
+      <div className="ascnd-float ascnd-float-right"><span className="ascnd-float-dot" />{scene === 2 ? "RECOVERY / READY" : scene === 1 ? "TRAIN / REPEAT" : scene === 3 ? "CONSISTENCY / UP" : "SYSTEM / ACTIVE"}</div>
+      <div className="ascnd-orbit-caption"><span>ASCND®</span><span>PERFORMANCE, CONNECTED</span></div>
+      <div className="ascnd-grid-glow" />
+    </div>
+  );
+}
+
+function MiniAppPreview() {
+  const [tab, setTab] = useState("Today");
+  const [done, setDone] = useState(false);
+  return (
+    <div className="ascnd-app-preview">
+      <div className="ascnd-device-top"><span /><span>ASCND</span><span className="ascnd-live"><i /> LIVE SYSTEM</span></div>
+      <div className="ascnd-preview-greeting"><small>YOUR DAILY PICTURE</small><h3>Build your baseline.</h3><p>One day at a time. One signal at a time.</p></div>
+      <div className="ascnd-score-card">
+        <div><span className="ascnd-eyebrow">READINESS</span><div className="ascnd-score">86<span>/100</span></div><p><i /> Looking good today</p></div>
+        <svg viewBox="0 0 100 100" role="img" aria-label="Illustrative readiness ring"><circle cx="50" cy="50" r="39" /><circle className="ascnd-progress-ring" cx="50" cy="50" r="39" /></svg>
+      </div>
+      <div className="ascnd-preview-label"><span>YOUR PILLARS</span><span>VIEW ALL ↗</span></div>
+      <div className="ascnd-preview-grid">
+        {featureList.slice(0,3).map(({icon:Icon,name,text},i)=><div className="ascnd-preview-tile" key={name}><span className="ascnd-tile-icon"><Icon size={15}/></span><b>{name}</b><small>{text}</small><span className="ascnd-mini-line" style={{"--line":`${64+i*12}%`} as React.CSSProperties}/></div>)}
+      </div>
+      <button className={`ascnd-preview-action ${done?"is-done":""}`} onClick={()=>setDone(v=>!v)}><span>{done ? "TODAY’S INTENTION SET" : "SET TODAY’S INTENTION"}</span>{done ? <ShieldCheck size={16}/> : <ArrowRight size={16}/>}</button>
+      <div className="ascnd-preview-tabs">{["Today","Nutrition","Training","Progress"].map(t=><button key={t} onClick={()=>setTab(t)} className={tab===t?"active":""}>{t}</button>)}</div>
+      <div className="ascnd-preview-tab-note">{tab === "Today" ? "Your day, in context." : tab === "Nutrition" ? "Fuel your next session." : tab === "Training" ? "Make every set count." : "See how far you’ve come."}</div>
+    </div>
+  );
+}
 
 const Index = () => {
-  const { user, loading: authLoading } = useAuth();
-  const { data: profile, isLoading: profileLoading } = useProfile();
-  const { data: dailyLog, isLoading: dailyLogLoading } = useDailyLog();
-  const { data: todaySleep, isLoading: sleepLoading } = useTodaySleep();
-  const { data: recentWorkouts, isLoading: workoutsLoading } = useRecentWorkouts();
-  const { data: todayBio, isLoading: bioLoading } = useTodayBiometrics();
-  const { data: readinessTrend, isLoading: trendLoading } = useReadinessTrend();
-  const { data: nudges } = useNudges();
-  const { data: wearables } = useWearables();
-  const { data: supplementChecklist } = useTodaySupplementChecklist();
-  const toggleSupplement = useToggleSupplement();
-  const { data: todayWeight } = useTodayWeight();
-  const logWeight = useLogWeight();
-  const { checkAndGrant } = useCheckAwards();
-  const [awardsChecked, setAwardsChecked] = useState(false);
-  const { lang } = useAppSettings();
-  const i18n = t(lang);
-  const [lastScan, setLastScan] = useState<ScannedFoodItem[] | null>(null);
-  const queryClient = useQueryClient();
+  const [scene, setScene] = useState(0);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const touchStart = useRef<{x:number;y:number}|null>(null);
   const navigate = useNavigate();
-  const [addingGroup, setAddingGroup] = useState(false);
+  const reduceMotion = useReducedMotion();
 
-  const {
-    config, editMode, setEditMode,
-    reorderGroupWidgets, addGroup, removeGroup, renameGroup, reorderGroups, resetConfig,
-  } = useWidgetConfig();
-
-  const handleRefresh = useCallback(async () => {
-    await queryClient.invalidateQueries();
-  }, [queryClient]);
+  const goToScene = (next:number) => setScene(Math.max(0, Math.min(scenes.length - 1, next)));
 
   useEffect(() => {
-    if (user && !awardsChecked) { checkAndGrant(); setAwardsChecked(true); }
-  }, [user, awardsChecked]);
+    const onKey = (e:KeyboardEvent) => {
+      if (e.key === "ArrowDown" || e.key === "PageDown") { e.preventDefault(); goToScene(scene+1); }
+      if (e.key === "ArrowUp" || e.key === "PageUp") { e.preventDefault(); goToScene(scene-1); }
+      if (e.key === "Home") goToScene(0);
+      if (e.key === "End") goToScene(scenes.length-1);
+      if (e.key === "Escape") setMenuOpen(false);
+    };
+    window.addEventListener("keydown",onKey);
+    return ()=>window.removeEventListener("keydown",onKey);
+  },[scene]);
 
-  if (authLoading || profileLoading) return <DashboardSkeleton />;
-  if (!user) return <Navigate to="/auth" replace />;
-  if (profile && !profile.onboarding_completed) return <Navigate to="/onboarding" replace />;
-
-  const dataLoading = dailyLogLoading || sleepLoading || workoutsLoading || bioLoading || trendLoading;
-
-  const now = new Date();
-  const greeting = now.getHours() < 12 ? i18n.goodMorning : now.getHours() < 18 ? i18n.goodAfternoon : i18n.goodEvening;
-  const dateStr = now.toLocaleDateString(getLocale(lang), { weekday: 'long', month: 'long', day: 'numeric' });
-  const userName = profile?.name || user.email?.split('@')[0] || i18n.authYourName;
-
-  const readinessResult: ReadinessResult | null = dailyLog?.readiness_score != null ? {
-    score: Number(dailyLog.readiness_score),
-    status: (dailyLog.readiness_status as 'green' | 'yellow' | 'red') || 'yellow',
-    explain: dailyLog.readiness_explain || '',
-    recommendation: dailyLog.readiness_recommendation || '',
-    subscores: { rhr: 50, sleep: 50, load: 50 },
-    acwr: Number(dailyLog.acwr) || 0,
-  } : null;
-
-  const dailyLogForCards = dailyLog ? {
-    id: dailyLog.id, userId: dailyLog.user_id, date: dailyLog.date,
-    nutritionSummary: { kcal: Number(dailyLog.kcal), protein_g: Number(dailyLog.protein_g), carbs_g: Number(dailyLog.carbs_g), fat_g: Number(dailyLog.fat_g), fiber_g: Number(dailyLog.fiber_g) },
-    activitySummary: { steps: dailyLog.steps ?? 0, active_minutes: dailyLog.active_minutes ?? 0, active_kcal: Number(dailyLog.active_kcal) || 0 },
-    sleepSummary: { duration_min: dailyLog.sleep_duration_min ?? 0, quality_1_10: Number(dailyLog.sleep_quality) || 0 },
-    readiness: { score_0_100: Number(dailyLog.readiness_score) || 0, status: (dailyLog.readiness_status as 'green' | 'yellow' | 'red') || 'yellow', explain: dailyLog.readiness_explain || '' },
-  } : null;
-
-  const biometricSample = todayBio ? {
-    id: todayBio.id, userId: todayBio.user_id, dateTime: todayBio.date_time,
-    source: todayBio.source as 'wearable' | 'camera_rppg' | 'manual',
-    metrics: { hr_bpm: todayBio.hr_bpm ? Number(todayBio.hr_bpm) : undefined, hrv_rmssd_ms: todayBio.hrv_rmssd_ms ? Number(todayBio.hrv_rmssd_ms) : undefined, spo2_pct: todayBio.spo2_pct ? Number(todayBio.spo2_pct) : undefined, vo2max_mlkgmin: todayBio.vo2max_mlkgmin ? Number(todayBio.vo2max_mlkgmin) : undefined, resp_rate_rpm: todayBio.resp_rate_rpm ? Number(todayBio.resp_rate_rpm) : undefined },
-    confidence_0_1: Number(todayBio.confidence) || 0.7,
-  } : null;
-
-  const sleepForCard = todaySleep ? {
-    id: todaySleep.id, userId: todaySleep.user_id, bedtime: todaySleep.bedtime, waketime: todaySleep.waketime,
-    quality_1_10: todaySleep.quality ?? 5,
-    sleepStages: { light_min: todaySleep.light_min ?? 0, deep_min: todaySleep.deep_min ?? 0, rem_min: todaySleep.rem_min ?? 0 },
-  } : null;
-
-  const workoutsForCard = (recentWorkouts ?? []).map(w => ({
-    id: w.id, userId: w.user_id, dateTime: w.date_time, templateName: w.template_name || undefined,
-    sessionRPE_1_10: w.session_rpe ?? 5, painFlags: Array.isArray(w.pain_flags) ? (w.pain_flags as any[]) : [],
-    sets: Array.isArray(w.sets) ? (w.sets as any[]) : [],
-    computed: { volumeLoad: Number(w.volume_load), prDetected: w.pr_detected ?? false },
-  }));
-
-  const wearablesForCard = (wearables ?? []).map(w => ({ id: w.id, userId: w.user_id, provider: w.provider as any, connected: w.connected ?? false, lastSync: w.last_sync || undefined }));
-  const nudgesForCard = (nudges ?? []).map(n => ({ id: n.id, userId: n.user_id, type: n.type as any, message: n.message, priority: n.priority as any, enabled: n.enabled ?? true, frequencyCapPerDay: n.frequency_cap ?? 3 }));
-
-  const macroTargets = { protein_g: profile?.macro_protein_g ?? 150, carbs_g: profile?.macro_carbs_g ?? 250, fat_g: profile?.macro_fat_g ?? 70 };
-  const calorieTarget = profile?.tdee_target_kcal ?? 2200;
-  const sleepTargetHours = Number(profile?.sleep_target_hours) || 8;
-
-  // Widget renderer
-  const renderWidget = (key: WidgetKey): React.ReactNode => {
-    switch (key) {
-      case 'readiness':
-        return readinessResult ? <ReadinessGauge result={readinessResult} /> : <EmptyState title={i18n.dashReadiness} message={i18n.dashReadinessMsg} />;
-      case 'activity':
-        return dailyLogForCards ? <ActivityCard log={dailyLogForCards} /> : <EmptyState title={i18n.dashActivity} message={i18n.dashActivityMsg} />;
-      case 'readiness-trend':
-        return readinessTrend && readinessTrend.length > 0 ? <ReadinessTrend trend={readinessTrend} /> : <EmptyState title={i18n.dashTrend} message={i18n.dashTrendMsg} />;
-      case 'biometrics':
-        return biometricSample ? <BiometricsCard sample={biometricSample} wearables={wearablesForCard} /> : (
-          <LogBiometricsDialog><div className="cursor-pointer"><EmptyState title={i18n.dashBiometrics} message={i18n.dashBiometricsMsg} actionLabel={i18n.dashEnterBiometrics} /></div></LogBiometricsDialog>
-        );
-      case 'training':
-        return workoutsForCard.length > 0 ? <TrainingCard workouts={workoutsForCard} acwr={readinessResult?.acwr ?? 0} /> : (
-          <LogWorkoutDialog><div className="cursor-pointer"><EmptyState title={i18n.dashTraining} message={i18n.dashTrainingMsg} actionLabel={i18n.dashLogWorkoutAction} /></div></LogWorkoutDialog>
-        );
-      case 'nutrition':
-        return dailyLogForCards && dailyLogForCards.nutritionSummary.kcal > 0 ? <NutritionCard log={dailyLogForCards} targets={macroTargets} calorieTarget={calorieTarget} /> : (
-          <LogMealDialog><div className="cursor-pointer"><EmptyState title={i18n.dashNutrition} message={i18n.dashNutritionMsg} actionLabel={i18n.dashLogMealAction} /></div></LogMealDialog>
-        );
-      case 'sleep':
-        return sleepForCard ? <SleepCard sleep={sleepForCard} targetHours={sleepTargetHours} /> : (
-          <LogSleepDialog><div className="cursor-pointer"><EmptyState title={i18n.dashSleep} message={i18n.dashSleepMsg} actionLabel={i18n.dashLogSleepAction} /></div></LogSleepDialog>
-        );
-      case 'weight':
-        return <WeightCheckin todayWeight={todayWeight?.weight_kg ? Number(todayWeight.weight_kg) : null} profileWeight={profile?.weight_kg ? Number(profile.weight_kg) : null} onLog={(w) => logWeight.mutate({ weight_kg: w })} saving={logWeight.isPending} />;
-      case 'workout-status':
-        return <WorkoutStatus planned={dailyLog?.workout_count ?? 0} done={(recentWorkouts ?? []).filter(w => new Date(w.date_time).toISOString().split('T')[0] === new Date().toISOString().split('T')[0]).length} todayWorkoutNames={(recentWorkouts ?? []).filter(w => new Date(w.date_time).toISOString().split('T')[0] === new Date().toISOString().split('T')[0]).map(w => w.template_name || 'Workout')} />;
-      case 'supplements':
-        return supplementChecklist && supplementChecklist.length > 0 ? <SupplementChecklist items={supplementChecklist} onToggle={(id, taken) => toggleSupplement.mutate({ supplementId: id, taken })} /> : <EmptyState title={i18n.dashSupplements} message={i18n.dashSupplementsMsg} />;
-      case 'ai-tips':
-        return <AiTipsCard />;
-      case 'awards':
-        return <RecentAwards />;
-      case 'nudges':
-        return nudgesForCard.length > 0 ? <NudgesCard nudges={nudgesForCard} /> : null;
-      case 'water':
-        return <WaterWidget />;
-      case 'steps':
-        return <StepsWidget />;
-      default:
-        return null;
-    }
+  const touchBegin = (e:React.TouchEvent) => { touchStart.current={x:e.touches[0].clientX,y:e.touches[0].clientY}; };
+  const touchFinish = (e:React.TouchEvent) => {
+    if(!touchStart.current) return;
+    const dx=e.changedTouches[0].clientX-touchStart.current.x;
+    const dy=e.changedTouches[0].clientY-touchStart.current.y;
+    if(Math.abs(dy)>48 && Math.abs(dy)>Math.abs(dx)*1.05) goToScene(scene+(dy<0?1:-1));
+    touchStart.current=null;
   };
 
   return (
-    <PullToRefresh onRefresh={handleRefresh} className="bg-background">
-      {/* Ambient glow */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full opacity-[0.02]" style={{ background: 'radial-gradient(circle, hsl(var(--muted)), transparent 70%)' }} />
-        <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full opacity-[0.015]" style={{ background: 'radial-gradient(circle, hsl(var(--muted)), transparent 70%)' }} />
-      </div>
+    <div className="ascnd-story" onTouchStart={touchBegin} onTouchEnd={touchFinish}>
+      <div className="ascnd-noise" aria-hidden="true" />
+      <header className="ascnd-nav">
+        <button className="ascnd-wordmark" onClick={()=>goToScene(0)} aria-label="ASCND home"><img src={logoAscnd} alt="" /><span>ASCND<span className="ascnd-reg">®</span></span></button>
+        <nav className={menuOpen?"is-open":""} aria-label="Main navigation">
+          <button onClick={()=>{goToScene(1);setMenuOpen(false)}}>The Method</button><button onClick={()=>{goToScene(2);setMenuOpen(false)}}>Recovery</button><button onClick={()=>{goToScene(3);setMenuOpen(false)}}>The Standard</button>
+        </nav>
+        <button className="ascnd-nav-cta" onClick={()=>navigate("/auth")}>Enter ASCND <ArrowRight size={14}/></button>
+        <button className="ascnd-menu-toggle" aria-label="Toggle menu" aria-expanded={menuOpen} onClick={()=>setMenuOpen(v=>!v)}><span/><span/></button>
+      </header>
 
-      <motion.main variants={container} initial="hidden" animate="show" className="relative max-w-5xl mx-auto px-4 pt-safe py-4 space-y-4">
-        {/* Greeting + Edit */}
-        <motion.div variants={fadeUp} className="flex items-start justify-between">
-          <div>
-            <p className="text-[13px] text-muted-foreground font-medium capitalize">{dateStr}</p>
-            <h2 className="text-[22px] font-bold tracking-tight mt-0.5">{greeting}, <span className="text-gradient-gold">{userName}</span></h2>
-          </div>
-          <div className="flex gap-2">
-            <motion.div whileTap={{ scale: 0.9 }} transition={spring}>
-              <Button
-                variant="outline"
-                size="icon"
-                className={`rounded-2xl w-11 h-11 border-border/30 backdrop-blur-xl shadow-[0_2px_12px_hsl(0_0%_0%_/_0.4)] ${editMode ? 'bg-primary/20 text-primary' : 'bg-secondary/20 hover:bg-secondary/50'}`}
-                onClick={() => { setEditMode(!editMode); setAddingGroup(false); }}
-              >
-                {editMode ? <Check className="w-5 h-5" /> : <Pencil className="w-4 h-4 text-foreground/70" />}
-              </Button>
-            </motion.div>
-            <motion.div whileTap={{ scale: 0.9 }} transition={spring}>
-              <Button variant="outline" size="icon" className="rounded-2xl w-11 h-11 border-border/30 bg-secondary/20 hover:bg-secondary/50 backdrop-blur-xl shadow-[0_2px_12px_hsl(0_0%_0%_/_0.4)]" onClick={() => navigate('/settings')}>
-                <Settings className="w-5 h-5 text-foreground/70" />
-              </Button>
-            </motion.div>
-          </div>
-        </motion.div>
-
-        {/* Edit mode toolbar */}
-        <AnimatePresence>
-          {editMode && (
-            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="flex gap-2 flex-wrap">
-              <Button variant="outline" size="sm" className="rounded-xl" onClick={() => setAddingGroup(true)}>
-                <Plus className="w-3.5 h-3.5 mr-1" />{lang === 'vi' ? 'Thêm nhóm' : 'Add Group'}
-              </Button>
-              <Button variant="outline" size="sm" className="rounded-xl" onClick={resetConfig}>
-                <RotateCcw className="w-3.5 h-3.5 mr-1" />{lang === 'vi' ? 'Đặt lại' : 'Reset'}
-              </Button>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Quick log actions */}
-        {!editMode && (
-          <motion.div variants={fadeUp} className="flex gap-2.5 flex-wrap">
-            {[
-              { label: i18n.dashLogMealAction, Dialog: LogMealDialog },
-              { label: i18n.dashLogWorkoutAction, Dialog: LogWorkoutDialog },
-              { label: i18n.dashLogSleepAction, Dialog: LogSleepDialog },
-              { label: i18n.dashEnterBiometrics, Dialog: LogBiometricsDialog },
-            ].map(({ label, Dialog }) => (
-              <Dialog key={label}>
-                <motion.div whileHover={{ scale: 1.04, y: -2 }} whileTap={{ scale: 0.94 }} transition={spring}>
-                  <Button variant="outline" size="sm" className="rounded-xl border-border/30 bg-secondary/20 hover:bg-secondary/40 backdrop-blur-xl haptic-press shadow-[0_2px_12px_hsl(0_0%_0%_/_0.3)]">
-                    <Plus className="w-3 h-3 mr-1.5 text-foreground/60" />{label}
-                  </Button>
-                </motion.div>
-              </Dialog>
-            ))}
-          </motion.div>
-        )}
-
-        {/* Scan results */}
-        <AnimatePresence>
-          {lastScan && lastScan.length > 0 && (
-            <motion.div initial={{ opacity: 0, y: 20, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -10, scale: 0.95 }} transition={spring} className="glass-card p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold flex items-center gap-2"><Camera className="w-4 h-4 text-primary" />{i18n.scanFoodTitle}</h3>
-                <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setLastScan(null)}>{i18n.close}</Button>
+      <main className="ascnd-story-stage">
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.section key={scene} className={`ascnd-scene ascnd-scene-${scene}`} initial={reduceMotion?{opacity:0}:{opacity:0,y:30,filter:"blur(7px)"}} animate={{opacity:1,y:0,filter:"blur(0px)"}} exit={reduceMotion?{opacity:0}:{opacity:0,y:-22,filter:"blur(5px)"}} transition={{duration:reduceMotion?.15:.62,ease:[.22,1,.36,1]}} aria-label={scenes[scene].label}>
+            <div className="ascnd-copy-column">
+              <motion.div className="ascnd-kicker" initial={{opacity:0,x:-10}} animate={{opacity:1,x:0}} transition={{delay:.12,duration:.45}}><span className="ascnd-kicker-line"/>{scenes[scene].kicker}</motion.div>
+              <h1>{scenes[scene].title[0]}<br/><em>{scenes[scene].title[1]}</em></h1>
+              <p className="ascnd-lede">{scenes[scene].copy}</p>
+              <div className="ascnd-hero-actions">
+                <button className="ascnd-button-primary" onClick={()=>navigate("/auth")}>Discover your system <ArrowRight size={16}/></button>
+                <button className="ascnd-button-quiet" onClick={()=>goToScene((scene+1)%scenes.length)}><CirclePlay size={17}/> Explore the story</button>
               </div>
-              {lastScan.map((item, idx) => (
-                <div key={idx} className="bg-secondary/30 rounded-xl p-3 flex items-center justify-between">
-                  <div><p className="text-sm font-medium">{item.food_name}</p><p className="text-xs text-muted-foreground">{item.serving_g}g</p></div>
-                  <div className="flex gap-3 text-xs font-mono">
-                    <span className="font-bold">{Math.round(item.kcal)} kcal</span>
-                    <span className="text-muted-foreground">P{Math.round(item.protein_g)}</span>
-                    <span className="text-muted-foreground">C{Math.round(item.carbs_g)}</span>
-                    <span className="text-muted-foreground">F{Math.round(item.fat_g)}</span>
-                  </div>
-                </div>
-              ))}
-            </motion.div>
-          )}
+              <div className="ascnd-proof-row"><div className="ascnd-proof-icon"><Zap size={15}/></div><div><b>BUILT AROUND YOU</b><span>Training · Fuel · Recovery · Progress</span></div></div>
+            </div>
+            <div className="ascnd-art-column"><OrbitalArt scene={scene}/></div>
+          </motion.section>
         </AnimatePresence>
-
-        {/* Hero Widgets (top) */}
-        {dataLoading ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <Skeleton className="h-52 rounded-2xl" />
-            <Skeleton className="h-52 rounded-2xl" />
+        <div className="ascnd-scene-bottom">
+          <div className="ascnd-scene-label"><span>SCROLL TO EXPLORE</span><span className="ascnd-label-rule"/></div>
+          <div className="ascnd-scene-controls">
+            <div className="ascnd-scene-count"><span>0{scene+1}</span><span className="ascnd-count-divider"/>0{scenes.length}</div>
+            <div className="ascnd-scene-dots">{scenes.map((s,i)=><button key={s.kicker} className={i===scene?"active":""} onClick={()=>goToScene(i)} aria-label={`Go to scene ${i+1}`} aria-current={i===scene?"step":undefined}/>)}</div>
+            <div className="ascnd-scene-arrows"><button aria-label="Previous scene" disabled={scene===0} onClick={()=>goToScene(scene-1)}><ChevronLeft size={17}/></button><button aria-label="Next scene" disabled={scene===scenes.length-1} onClick={()=>goToScene(scene+1)}><ChevronRight size={17}/></button></div>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {config.heroWidgets.map(key => (
-              <motion.div key={key} variants={scaleReveal}>
-                {renderWidget(key)}
-              </motion.div>
-            ))}
+        </div>
+      </main>
+
+      <aside className="ascnd-edge-note"><span>INTENTION OVER NOISE</span><span className="ascnd-edge-line"/><span>EST. FOR THE LONG GAME</span></aside>
+      <footer className="ascnd-footer"><span>© 2026 ASCND PERFORMANCE SYSTEM</span><span>BUILT FOR YOUR NEXT VERSION <ArrowDown size={12}/></span></footer>
+
+      <AnimatePresence>
+        {scene===3 && <motion.div className="ascnd-feature-overlay" initial={{opacity:0,y:24}} animate={{opacity:1,y:0}} exit={{opacity:0,y:24}} transition={{duration:.4}}>
+          <div className="ascnd-feature-panel">
+            <div className="ascnd-feature-head"><span>THE FOUR PILLARS</span><span>01 — 04</span></div>
+            <div className="ascnd-feature-grid">{featureList.map(({icon:Icon,name,text,stat})=><button key={name} onClick={()=>navigate("/auth")}><span className="ascnd-feature-number">{stat}</span><Icon size={19}/><b>{name}</b><small>{text}</small></button>)}</div>
+            <div className="ascnd-preview-wrap"><MiniAppPreview/><div className="ascnd-preview-aside"><span className="ascnd-kicker-line"/><p className="ascnd-eyebrow">ONE SYSTEM. YOUR WHOLE PICTURE.</p><h2>Less noise.<br/><em>More signal.</em></h2><p>Your habits don’t happen in isolation. ASCND brings the pieces together so your next step feels clearer.</p><button className="ascnd-button-primary" onClick={()=>navigate("/auth")}>Start your journey <ArrowRight size={15}/></button></div></div>
           </div>
-        )}
-
-        {/* Add group inline */}
-        <AnimatePresence>
-          {addingGroup && (
-            <AddGroupInline onAdd={addGroup} onClose={() => setAddingGroup(false)} />
-          )}
-        </AnimatePresence>
-
-        {/* Grouped Widgets */}
-        {!dataLoading && (
-          editMode ? (
-            <Reorder.Group
-              axis="y"
-              values={config.groups}
-              onReorder={reorderGroups}
-              className="space-y-5"
-            >
-              {config.groups.map(group => (
-                <Reorder.Item key={group.id} value={group} className="list-none">
-                  <WidgetGroupSection
-                    group={group}
-                    editMode={editMode}
-                    renderWidget={renderWidget}
-                    onReorder={reorderGroupWidgets}
-                    onRename={renameGroup}
-                    onRemove={removeGroup}
-                  />
-                </Reorder.Item>
-              ))}
-            </Reorder.Group>
-          ) : (
-            <motion.div variants={container} initial="hidden" animate="show" className="space-y-5">
-              {config.groups.map(group => (
-                <motion.div key={group.id} variants={fadeUp}>
-                  <WidgetGroupSection
-                    group={group}
-                    editMode={editMode}
-                    renderWidget={renderWidget}
-                    onReorder={reorderGroupWidgets}
-                    onRename={renameGroup}
-                    onRemove={removeGroup}
-                  />
-                </motion.div>
-              ))}
-            </motion.div>
-          )
-        )}
-
-        <div className="h-8" />
-      </motion.main>
-    </PullToRefresh>
+        </motion.div>}
+      </AnimatePresence>
+    </div>
   );
 };
 
