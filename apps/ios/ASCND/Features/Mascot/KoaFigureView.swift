@@ -134,6 +134,9 @@ struct MascotFigureView: View {
   /// `mascot.id` (`koa`, `blaze`, `swift`, `titan`, `drago`, `nova`).
   var mascotId = CommunityMascots.defaultId
   var emotion: KoaEmotion.Emotion = .idle
+  /// Tư thế ép (Koa đi lại trong phòng: giãn cơ ở góc bóng, đứng khi đang bước) —
+  /// `nil` = tư thế của cảm xúc.
+  var pose: KoaFlags.Pose?
   /// Khoá `mascot_inventory` đang mặc, theo thứ tự hàng.
   var equipped: [String] = []
   var size: CGFloat = 160
@@ -153,7 +156,7 @@ struct MascotFigureView: View {
     if mascotId == "koa" {
       let state = KoaEmotion.state(emotion)
       KoaFigureView(
-        expression: dress ? .happy : state.expression, pose: dress ? .idle : state.pose, dress: dress,
+        expression: dress ? .happy : state.expression, pose: dress ? .idle : (pose ?? state.pose), dress: dress,
         worn: KoaEmotion.worn(equipped).merging(state.outfit) { _, new in new }, size: size, animated: animated,
         paper: paper, build: build ?? services?.koaBuild ?? 0, interactive: interactive, stage: stage,
         greet: greet)

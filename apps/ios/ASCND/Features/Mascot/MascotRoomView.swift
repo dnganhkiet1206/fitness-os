@@ -213,7 +213,9 @@ struct MascotRoomView: View {
         level: room.level, build: room.gains.rank,
         energy: Double(room.energyCount) / Double(MascotRules.energySignals.count),
         streak: room.streak.count, celebrateSignal: celebrate, emotion: devEmotion ?? mood,
-        equipped: shop?.inventory.filter(\.equipped).map(\.itemKey) ?? [])
+        equipped: shop?.inventory.filter(\.equipped).map(\.itemKey) ?? [],
+        // Đi lại trong phòng (24/10, Kiệt) khi cảm xúc tự chọn và Koa không ngủ / mệt / buồn.
+        wander: devEmotion == nil && !MascotStage.restingMoods.contains(mood))
         // Nằm thẳng trên nền, không thẻ, không viền (Kiệt 24/10): tràn ngang màn,
         // mép trên / dưới / hai bên tan vào nền trang.
         .mask {
@@ -882,6 +884,12 @@ struct MascotStage: View {
   /// Ngôn ngữ của chữ vẽ trên tranh trong phòng.
   private var lang: String { String(locale.identifier.prefix(2)) }
 
+  private struct Hop {
+    var lift = 0.0
+    var sx = 1.0
+    var sy = 1.0
+  }
+
   private struct Nod {
     var angle = 0.0
     var scale = 1.0
@@ -908,10 +916,94 @@ struct MascotStage: View {
   /// `HERO_W = round(128 / 0.93)`.
   private static let heroWidth = 138.0
 
+  // MARK: - Đi lại trong phòng (24/10, Kiệt: "vẽ koa di chuyển nhiều hơn")
+
+  /// Koa tự đi giữa ba chỗ trên sàn. Không dùng tư thế xoay 3/4 hay chạy (Kiệt
+  /// không thích). Lạch bạch cả người thì trông như đồ chơi bị kéo (Kiệt 24/10:
+  /// "đi nhìn buồn cười") — mascot tròn chân ngắn di chuyển bằng NHẢY: co lấy đà,
+  /// duỗi khi bay theo cung, bẹp khi đáp rồi bật lại (squash & stretch). Chỉ dời
+  /// chỗ lúc đang bay.
+  var wander = false
+  /// Lúc nghỉ / ngủ / buồn thì đứng yên trên bục.
+  static let restingMoods: Set<KoaEmotion.Emotion> = [.sleep, .tired, .sad, .deflated]
+
+  enum Spot: Int, CaseIterable {
+    /// Giá tạ bên trái — nâng tạ.
+    case rack
+    /// Bục giữa — cảm xúc của ngày.
+    case stage
+    /// Góc bóng tập / cây bên phải — giãn cơ.
+    case corner
+
+    /// Độ dời ngang so với bục, toạ độ cảnh 390.
+    var dx: Double {
+      switch self {
+      case .rack: -88
+      case .stage: 0
+      case .corner: 92
+      }
+    }
+  }
+
+  /// Bục → giá tạ → bục → góc → …
+  static let route: [Spot] = [.stage, .rack, .stage, .corner]
+  static let hopsPerMove = 3
+  static let hopSeconds = 0.7
+  static let staySeconds: [Spot: Double] = [.stage: 6, .rack: 5, .corner: 5]
+
+  @State private var spot = Spot.stage
+  /// Vị trí ngang hiện tại (dx toạ độ cảnh) — dời từng đoạn theo cú nhảy.
+  @State private var x = 0.0
+  @State private var walking = false
+  @State private var hops = 0
+  @Environment(\.scenePhase) private var scenePhase
+
+  private var shownEmotion: KoaEmotion.Emotion {
+    guard wander, !walking else { return emotion }
+    return spot == .rack ? .curl : emotion
+  }
+
+  private var shownPose: KoaFlags.Pose? {
+    guard wander else { return nil }
+    if walking { return .idle }
+    return spot == .corner ? .stretching : nil
+  }
+
+  /// Vòng đi lại; dừng (về bục) khi hết điều kiện.
+  private func wanderLoop() async {
+    guard wander, !reduceMotion, scenePhase == .active else {
+      spot = .stage
+      withAnimation(.easeInOut(duration: 0.6)) { x = 0 }
+      walking = false
+      return
+    }
+    var i = Self.route.firstIndex(of: spot) ?? 0
+    while !Task.isCancelled {
+      try? await Task.sleep(for: .seconds(Self.staySeconds[Self.route[i]] ?? 5))
+      guard !Task.isCancelled else { return }
+      i = (i + 1) % Self.route.count
+      let from = x, to = Self.route[i].dx
+      walking = true
+      for h in 1...Self.hopsPerMove {
+        hops += 1
+        // co lấy đà (0,12 s) → bay + dời một đoạn (0,46 s) → đáp, bật lại
+        try? await Task.sleep(for: .seconds(0.12))
+        withAnimation(.easeInOut(duration: 0.46)) {
+          x = from + (to - from) * Double(h) / Double(Self.hopsPerMove)
+        }
+        try? await Task.sleep(for: .seconds(Self.hopSeconds - 0.12))
+        guard !Task.isCancelled else { return }
+      }
+      spot = Self.route[i]
+      walking = false
+    }
+  }
+
   var body: some View {
     // không có dòng "Cấp N" dưới sân khấu (RN cũng không) — thẻ cấp ngay dưới nói rồi
     StudioBackdrop(options: studio)
       .overlay { GeometryReader { g in hero(g.size.width) } }
+      .task(id: "\(wander)|\(reduceMotion)|\(scenePhase == .active)") { await wanderLoop() }
       .aspectRatio(StudioScene.width / StudioScene.sceneBottom, contentMode: .fit)
       .frame(maxWidth: .infinity)
     .accessibilityElement(children: .ignore)
@@ -922,11 +1014,38 @@ struct MascotStage: View {
   private func hero(_ width: CGFloat) -> some View {
     let k: Double = Double(width) / StudioScene.width
     let size: Double = (Self.heroWidth * k).rounded()
-    let left: Double = StudioScene.stageMark.x * k - size / 2
+    let left: Double = (StudioScene.stageMark.x + x) * k - size / 2
     let top: Double = StudioScene.stageMark.y * k - size * KoaMath.aspect + 6 * k
     let levelScale: Double = min(1 + Double(level - 1) * 0.012, 1.1)
-    return MascotFigureView(emotion: emotion, equipped: equipped, size: size, build: build, interactive: true)
+    return MascotFigureView(
+      emotion: shownEmotion, pose: shownPose, equipped: equipped, size: size, build: build, interactive: true
+    )
       .scaleEffect(levelScale, anchor: .bottom)
+      // Một cú nhảy: co (rộng, thấp) → duỗi khi bay lên → bẹp khi đáp → về dáng cũ.
+      .keyframeAnimator(initialValue: Hop(), trigger: hops) { view, v in
+        view.scaleEffect(x: v.sx, y: v.sy, anchor: .bottom).offset(y: v.lift * k)
+      } keyframes: { _ in
+        KeyframeTrack(\.lift) {
+          LinearKeyframe(0, duration: 0.12)
+          CubicKeyframe(-16, duration: 0.23)
+          CubicKeyframe(0, duration: 0.23)
+          LinearKeyframe(0, duration: 0.12)
+        }
+        KeyframeTrack(\.sx) {
+          CubicKeyframe(1.08, duration: 0.12)
+          CubicKeyframe(0.95, duration: 0.2)
+          CubicKeyframe(0.97, duration: 0.26)
+          CubicKeyframe(1.1, duration: 0.06)
+          SpringKeyframe(1, duration: 0.2, spring: .init(mass: 1, stiffness: 260, damping: 12))
+        }
+        KeyframeTrack(\.sy) {
+          CubicKeyframe(0.9, duration: 0.12)
+          CubicKeyframe(1.07, duration: 0.2)
+          CubicKeyframe(1.04, duration: 0.26)
+          CubicKeyframe(0.88, duration: 0.06)
+          SpringKeyframe(1, duration: 0.2, spring: .init(mass: 1, stiffness: 260, damping: 12))
+        }
+      }
       // reduceMotion: giá trị không đổi thì không gật
       .keyframeAnimator(initialValue: Nod(), trigger: reduceMotion ? 0 : celebrateSignal) { view, v in
         view.rotationEffect(.degrees(v.angle), anchor: .bottom).scaleEffect(v.scale, anchor: .bottom)
