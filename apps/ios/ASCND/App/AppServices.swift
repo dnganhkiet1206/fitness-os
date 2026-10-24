@@ -243,7 +243,7 @@ final class AppServices {
     KoaWidgetResetHook.reset = { [koaWidget] in koaWidget.reset() }
     self.widgets = widgets
     health = HealthSyncCoordinator(store: rows)
-    let prefs = AppPreferences(store: UserDefaultsStore())
+    let prefs = AppPreferences(store: UserDefaultsStore(), shownLanguage: Bundle.main.preferredLocalizations.first)
     preferences = prefs
     // Widget dùng cùng lựa chọn ngôn ngữ ngay từ lần mở app đầu (bản cài từ
     // trước PR này chưa có khoá trong App Group).

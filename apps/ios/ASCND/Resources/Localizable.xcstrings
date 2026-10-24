@@ -2,6 +2,29 @@
  "sourceLanguage": "en",
  "version": "1.0",
  "strings": {
+  "insight.bedtime.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Time to wind down"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đến giờ nghỉ rồi"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hora de descansar"
+     }
+    }
+   }
+  },
   "settings.language.footer": {
    "extractionState": "manual",
    "localizations": {
