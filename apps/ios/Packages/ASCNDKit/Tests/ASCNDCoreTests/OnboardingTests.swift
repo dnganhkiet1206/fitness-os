@@ -383,3 +383,37 @@ struct OnboardingFailureCopyTests {
     #expect(OnboardingFailure.server(code: nil).copy == .unknown)
   }
 }
+
+/// "Lấy từ Apple Health" ở màn Về bạn: điền cái Health có, giữ cái Health không có.
+@MainActor
+struct OnboardingHealthFillTests {
+  @Test func fillsWhatHealthHas() async {
+    let c = await flow(Store())
+    let n = c.fill(from: HealthBodyStats(sex: .female, dob: LocalDate("1995-04-12"), heightCm: 163.4, weightKg: 58.26))
+    #expect(n == 4)
+    #expect(c.draft.sex == .female)
+    #expect(c.draft.dob == LocalDate("1995-04-12"))
+    #expect(c.draft.heightCm == "163")
+    #expect(c.draft.weightKg == "58.3")
+  }
+
+  @Test func keepsWhatHealthLacks() async {
+    let c = await flow(Store())
+    c.pickSex(.male)
+    c.setHeightCm("181")
+    let n = c.fill(from: HealthBodyStats(weightKg: 80))
+    #expect(n == 1)
+    #expect(c.draft.sex == .male)
+    #expect(c.draft.heightCm == "181")
+    #expect(c.draft.weightKg == "80")
+  }
+
+  /// Chiều cao ghi bằng mét, cân nặng bằng gam trong Health: bỏ, không điền số vô lý.
+  @Test func ignoresOutOfRange() async {
+    let c = await flow(Store())
+    let n = c.fill(from: HealthBodyStats(heightCm: 1.75, weightKg: 70_000))
+    #expect(n == 0)
+    #expect(c.draft.heightCm == OnboardingDraft.defaultHeight)
+    #expect(c.draft.weightKg == OnboardingDraft.defaultWeight)
+  }
+}

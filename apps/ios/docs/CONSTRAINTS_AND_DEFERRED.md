@@ -132,7 +132,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 **Onboarding thiết kế lại (Kiệt duyệt mock 22/10, nhánh `claude/onboarding-v2`) — hạn chế đã biết:**
 - 13 màn → 6 (Koa chào → mục tiêu + kinh nghiệm → lịch → Về bạn → Apple Health → kế hoạch + buổi đầu); style màn đăng nhập.
 - Onboarding chỉ còn 4 mục tiêu (lên cơ / giảm mỡ / khoẻ hơn / giữ dáng). "recomp" và "endurance" vẫn chọn được ở Cài đặt → Hồ sơ.
-- "Lấy từ Apple Health" cho số đo ở màn Về bạn (có trong mock) **chưa làm**: số đo vẫn nhập tay; Apple Health vẫn kết nối ở màn kế tiếp.
+- ~~"Lấy từ Apple Health" cho số đo ở màn Về bạn (có trong mock) **chưa làm**: số đo vẫn nhập tay; Apple Health vẫn kết nối ở màn kế tiếp.~~ Làm 23/10 (nhánh `claude/security-pass`): nút "Lấy từ Apple Health" (chỉ hiện khi máy có Health) xin đọc đúng 4 loại — giới tính, ngày sinh, chiều cao, cân nặng — rồi điền cái Health có, giữ cái không có; số ngoài thước (vd. chiều cao ghi bằng mét) bị bỏ. Health trống / không cho đọc thì báo một dòng. Kiểm trên simulator (Health trống: xin quyền đúng 4 loại, báo "chưa có số đo"); nhánh có số liệu thật chỉ có unit test. Thiết bị thật: NOT RUN.
 - "Bỏ qua, dùng số trung bình" đặt giới tính "Khác" và vận động "Vừa phải" (đúng giá trị dự phòng của cổng số đo).
 - Chưa kiểm: đi trọn luồng tới "Tập buổi đầu" trên tài khoản mới (ghi hồ sơ thật), VoiceOver từng màn, giao diện sáng (màn luôn tối như màn đăng nhập).
 
@@ -192,3 +192,4 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - 21/10/2026: sửa 5 lỗi tìm thấy 21/10 (phần app xong; phần server `ai-coach` chờ deploy).
 - 21/10/2026: GĐ3 — bốn khu vực, Cộng đồng ra khỏi thanh tab, "Tóm tắt" gộp vào Tiến bộ, kế hoạch ăn / đi chợ / bổ sung xuống "Thêm"; thêm hạn chế GĐ3.
 - 21/10/2026: GĐ2 — XP ẩn khỏi giao diện, khoá đồ theo hạng Gains, Tuần của Koa thay thử thách chung, ẩn thử thách cộng đồng; thêm hạn chế khoá đồ chỉ ở app.
+- 23/10/2026: onboarding — "Lấy từ Apple Health" ở màn Về bạn đã làm (gạch mục ở §4).

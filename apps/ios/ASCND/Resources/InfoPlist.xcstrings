@@ -77,19 +77,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "ASCND reads your steps, heart rate, HRV, sleep, weight and water to compute your daily readiness score and fill in your day, so you log less by hand."
+      "value": "ASCND reads your steps, heart rate, HRV, sleep, weight and water to compute your daily readiness score and fill in your day, and, when you ask during setup, your height, sex and date of birth, so you log less by hand."
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "ASCND đọc số bước, nhịp tim, HRV, giấc ngủ, cân nặng và nước uống để tính điểm sẵn sàng mỗi ngày và điền sẵn ngày của bạn, để bạn đỡ phải ghi tay."
+      "value": "ASCND đọc số bước, nhịp tim, HRV, giấc ngủ, cân nặng và nước uống để tính điểm sẵn sàng mỗi ngày và điền sẵn ngày của bạn, và khi bạn chọn lúc thiết lập, chiều cao, giới tính và ngày sinh, để bạn đỡ phải ghi tay."
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "ASCND lee tus pasos, frecuencia cardiaca, VFC, sueño, peso y agua para calcular tu preparación diaria y completar tu día, para que registres menos a mano."
+      "value": "ASCND lee tus pasos, frecuencia cardiaca, VFC, sueño, peso y agua para calcular tu preparación diaria y completar tu día y, si lo pides al configurar, tu altura, sexo y fecha de nacimiento, para que registres menos a mano."
      }
     }
    }

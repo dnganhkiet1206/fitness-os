@@ -64,6 +64,9 @@ struct OnboardingStepsView: View {
   @State private var connecting = false
   /// Màn Về bạn: chạm Chiều cao / Cân nặng mở thước trong một tấm.
   @State private var ruler: RulerPick?
+  /// "Lấy từ Apple Health" ở màn Về bạn: đang đọc / Health không có gì.
+  @State private var healthFilling = false
+  @State private var healthEmpty = false
 
   private var step: OnboardingDraft.Step { flow.draft.step }
 
@@ -393,6 +396,30 @@ struct OnboardingStepsView: View {
   private var about: some View {
     VStack(alignment: .leading, spacing: DS.Spacing.lg) {
       Ask(q: String(localized: "onb2.about.q"), why: String(localized: "onb2.about.why"))
+      if flow.healthAvailable {
+        // Mock onboarding 22/10: điền sẵn số đo từ Apple Health (chỉ đọc, chỉ khi bấm).
+        Button(action: fillFromHealth) {
+          HStack(spacing: 8) {
+            Image(systemName: "heart.fill")
+              .foregroundStyle(Color(red: 1, green: 0.27, blue: 0.4))
+              .accessibilityHidden(true)
+            Text(String(localized: "onb2.about.health"))
+            if healthFilling { ProgressView().controlSize(.small).tint(AuthHero.paper) }
+          }
+          .font(DS.TextStyle.body.weight(.semibold))
+          .foregroundStyle(AuthHero.paper)
+          .frame(maxWidth: .infinity, minHeight: 48)
+          .onbGlass()
+        }
+        .buttonStyle(TodayPressStyle())
+        .disabled(healthFilling)
+        if healthEmpty {
+          Text(String(localized: "onb2.about.health.none"))
+            .font(DS.TextStyle.footnote)
+            .foregroundStyle(AuthHero.paper.opacity(0.6))
+            .frame(maxWidth: .infinity)
+        }
+      }
       VStack(spacing: 0) {
         Menu {
           ForEach(FitnessCalc.Sex.allCases, id: \.self) { sex in
@@ -447,6 +474,16 @@ struct OnboardingStepsView: View {
       if let e = statError {
         FieldError(text: e)
       }
+    }
+  }
+
+  private func fillFromHealth() {
+    healthFilling = true
+    healthEmpty = false
+    Task {
+      let stats = await services.health.bodyStats()
+      healthEmpty = flow.fill(from: stats) == 0
+      healthFilling = false
     }
   }
 
