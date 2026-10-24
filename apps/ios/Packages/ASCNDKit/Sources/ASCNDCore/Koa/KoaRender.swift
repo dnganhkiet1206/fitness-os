@@ -113,9 +113,10 @@ public enum KoaRender {
       ])
   }
 
-  static func lash(_ k: Double) -> Element {
+  /// Nét mi trong đúng phép co của mi (`m`).
+  static func lash(_ m: KoaMath.Mat) -> Element {
     Element(
-      "G", ["opacity": .number(k)],
+      "G", matrix: m,
       kids: KoaMath.lashPaths.map {
         Element(
           "Path",
@@ -266,14 +267,13 @@ public enum KoaRender {
     if let p = c.poke, let m = KoaMath.pokeMat(id: n.id, cond: n.cond, p, t: c.t) {
       moved = [Element("G", matrix: m, kids: moved)]
     }
-    // Koa lớn: chớp mắt có nét mi (mi gốc che mắt trơn); nét mi không co theo mi
+    // Koa lớn: chớp mắt có nét mi = mép dưới của mi, co cùng mi
     if c.poke != nil, c.live, let anim, KoaMath.blinkAnims.contains(anim.k), c.t >= anim.delay,
       let track = track?.tf, !track.isEmpty
     {
       let e = c.t - anim.delay
-      let lid = KoaMath.sampleMat(track, e.truncatingRemainder(dividingBy: anim.dur) / anim.dur, anim.ease, 0, 0)[3]
-      let k = KoaMath.lashOpacity(lid)
-      if k > 0 { moved.append(lash(k)) }
+      let m = KoaMath.sampleMat(track, e.truncatingRemainder(dividingBy: anim.dur) / anim.dur, anim.ease, ox, oy)
+      if m[3] > KoaMath.lashMin { moved.append(lash(m)) }
     }
 
     guard let g = c.gaze else { return moved }
