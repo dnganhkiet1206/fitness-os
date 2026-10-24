@@ -104,13 +104,14 @@ extension KoaMath {
   }
 
   /// Nét mi khi chớp (Koa lớn): mi (`koaBlink`, `koaBlink2`) là mảng lông trượt xuống
-  /// che mắt — lúc khép hết mắt biến mất trơn. Hiện một nét mi cong khi mi gần khép.
+  /// che mắt — lúc khép hết mắt biến mất trơn. Nét mi là MÉP DƯỚI của mảng lông ấy (cung
+  /// dưới của elip mi `82,96 · 19×25`) và đi cùng phép co của mi: trên nét là lông, dưới
+  /// là mắt, không bao giờ đè lên con ngươi còn lộ (23/10, Kiệt: nét đứng yên giữa mắt bị lỗi).
   public static let blinkAnims: Set<String> = ["koaBlink", "koaBlink2"]
-  public static let lashPaths = ["M67 104 Q82 113 97 104", "M143 104 Q158 113 173 104"]
+  public static let lashPaths = ["M67 111.35 Q82 130.65 97 111.35", "M143 111.35 Q158 130.65 173 111.35"]
   public static let lashWidth = 3.4
-
-  /// Độ hiện của nét mi theo độ khép của mi (`scaleY`, 0 → 1).
-  public static func lashOpacity(_ lid: Double) -> Double { min(1, max(0, (lid - 0.55) / 0.35)) }
+  /// Mi mở hẳn (co dưới mức này) thì không vẽ nét mi.
+  public static let lashMin = 0.02
 
   /// Lông mày nhướn khi chạm: lên nhanh, xuống chậm, hết trong cú nhảy.
   public static func browLift(_ ms: Double) -> Double {
