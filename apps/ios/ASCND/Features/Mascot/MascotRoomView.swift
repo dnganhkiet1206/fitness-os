@@ -108,17 +108,20 @@ struct MascotRoomView: View {
               .frame(maxWidth: .infinity)
               .dsCard(radius: 22)
           }
+          // Kiểu Apple Health (Kiệt duyệt 24/10): thẻ tóm tắt, chi tiết ở màn con.
           sectionTitle(String(localized: "mr.sec.today"))
-          energyCard
-          sectionTitle(String(localized: "mr.sec.rank"))
-          rankCard
-          sectionTitle(String(localized: "mr.sec.streak"))
-          streakCard
-          sectionTitle(String(localized: "mr.quests"))
-          questsCard
-          weeklyCard
+          energySummary
+          HStack(alignment: .top, spacing: DS.Spacing.sm) {
+            streakSummary
+            questsSummary
+          }
+          .fixedSize(horizontal: false, vertical: true)
+          streakBonusBanner
+          sectionTitle(String(localized: "mr.sec.progress"))
+          rankSummary
+          weekSummary
           sectionTitle(String(localized: "mr.sec.more"))
-          shortcuts
+          moreList
         }
         .padding(DS.Spacing.md)
       }
@@ -211,13 +214,21 @@ struct MascotRoomView: View {
         energy: Double(room.energyCount) / Double(MascotRules.energySignals.count),
         streak: room.streak.count, celebrateSignal: celebrate, emotion: devEmotion ?? mood,
         equipped: shop?.inventory.filter(\.equipped).map(\.itemKey) ?? [])
-        // Thẻ sân khấu bo góc (thay cảnh tràn ngang + mép tan của RN).
-        .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
-        .overlay {
-          RoundedRectangle(cornerRadius: 28, style: .continuous)
-            .strokeBorder(DS.Color.foreground.swiftUI.opacity(0.08), lineWidth: 0.75)
+        // Nằm thẳng trên nền, không thẻ, không viền (Kiệt 24/10): tràn ngang màn,
+        // mép trên / dưới / hai bên tan vào nền trang.
+        .mask {
+          LinearGradient(
+            stops: [.init(color: .clear, location: 0), .init(color: .black, location: 0.1),
+                    .init(color: .black, location: 0.82), .init(color: .clear, location: 1)],
+            startPoint: .top, endPoint: .bottom)
+          .mask {
+            LinearGradient(
+              stops: [.init(color: .clear, location: 0), .init(color: .black, location: 0.06),
+                      .init(color: .black, location: 0.94), .init(color: .clear, location: 1)],
+              startPoint: .leading, endPoint: .trailing)
+          }
         }
-        .shadow(color: .black.opacity(0.08), radius: 18, y: 8)
+        .padding(.horizontal, -DS.Spacing.md)
       if let burst {
         Text(verbatim: "+\(burst.amount)")
           .font(DS.TextStyle.headline.monospacedDigit())
@@ -239,6 +250,156 @@ struct MascotRoomView: View {
       riskHour: KoaToday.riskHour(services.habitHours, userId: room.userId),
       hour: Calendar.current.component(.hour, from: .now)
     ).emotion
+  }
+
+  // MARK: - Thẻ tóm tắt (kiểu Apple Health, 24/10)
+
+  private var energySummary: some View {
+    NavigationLink {
+      RoomDetailPage(title: String(localized: "mr.energy")) { energyCard }
+    } label: {
+      RoomSummaryCard(
+        symbol: "bolt.fill", tint: DS.Color.metricOrangeGraphic.swiftUI, title: String(localized: "mr.card.energy"),
+        corner: String(localized: "mr.now"), value: "\(room.energyCount)",
+        unit: String(localized: "mr.energy.of \(MascotRules.energySignals.count)"),
+        detail: Self.headline(room.energyHeadline)
+      ) {
+        EnergyRing(
+          segments: MascotRules.energySignals.map { (on: room.questDone($0), color: Self.signalColor($0)) },
+          lineWidth: 7, gap: 8
+        )
+        .frame(width: 50, height: 50)
+      }
+    }
+    .buttonStyle(TodayPressStyle())
+  }
+
+  private var streakSummary: some View {
+    NavigationLink {
+      RoomDetailPage(title: String(localized: "mr.sec.streak")) { streakCard }
+    } label: {
+      RoomSummaryCard(
+        symbol: "flame.fill", tint: DS.Color.metricOrangeGraphic.swiftUI, title: String(localized: "mr.card.streak"),
+        value: "\(room.streak.count)",
+        unit: room.streak.count == 1 ? String(localized: "mr.unit.day") : String(localized: "mr.unit.days"),
+        detail: String(localized: "mr.freeze.short \(room.freezesHeld) \(MascotRules.freezeMax)"))
+      .frame(maxHeight: .infinity)
+    }
+    .buttonStyle(TodayPressStyle())
+  }
+
+  private var questsSummary: some View {
+    let quests = room.activeQuests
+    let done = quests.filter { room.questDone($0.key) }.count
+    let left = quests.filter { !room.isClaimed(MascotRules.questRefKey(room.today, $0.key)) }.reduce(0) { $0 + $1.coins }
+    return NavigationLink {
+      RoomDetailPage(title: String(localized: "mr.quests")) { questsCard }
+    } label: {
+      RoomSummaryCard(
+        symbol: "checklist", tint: DS.Color.readinessGreen.swiftUI, title: String(localized: "mr.card.quests"),
+        value: "\(done)", unit: String(localized: "mr.quests.of \(quests.count)"),
+        detail: left > 0 ? String(localized: "mr.quests.coinsLeft \(left)") : String(localized: "mr.claimed"))
+      .frame(maxHeight: .infinity)
+    }
+    .buttonStyle(TodayPressStyle())
+  }
+
+  /// Thưởng chuỗi là nút nhận DUY NHẤT trong phòng — còn nhận được thì hiện ngay
+  /// dưới hai thẻ, không giấu ở màn con.
+  @ViewBuilder private var streakBonusBanner: some View {
+    if room.showsStreakBonus, !room.isClaimed(room.streakRefKey) {
+      rewardRow(title: String(localized: "mr.streak.bonus"), coins: room.streakBonus, claimed: false, flame: true) {
+        Button {
+          Task { await claimStreak() }
+        } label: {
+          Text(String(localized: "mr.claim"))
+            .font(.system(size: 15, weight: .semibold))
+            .foregroundStyle(DS.Color.background.swiftUI)
+            .padding(.horizontal, 18)
+            .frame(minHeight: 40)
+            .background(DS.Color.foreground.swiftUI, in: Capsule())
+        }
+        .buttonStyle(TodayPressStyle())
+        .frame(minHeight: 44)
+        .disabled(room.claiming)
+      }
+      .padding(.horizontal, DS.Spacing.md)
+      .padding(.vertical, DS.Spacing.sm)
+      .dsCard(radius: 22)
+    }
+  }
+
+  private var rankSummary: some View {
+    let rank = gainsRank
+    let tint = Color(hex: rank.colorHex)
+    let pct = KoaGains.toNext(room.gains.points).map { Double($0.have) / Double(max(1, $0.need)) } ?? 1
+    return NavigationLink {
+      RoomDetailPage(title: String(localized: "mr.sec.rank")) { rankCard }
+    } label: {
+      VStack(alignment: .leading, spacing: 0) {
+        RoomSummaryCard(
+          symbol: "dumbbell.fill", tint: tint, title: String(localized: "mr.card.rank \(rank.name(lang))"),
+          corner: String(localized: "mr.details"), value: room.gains.points.formatted(.number.locale(.app)),
+          unit: "Gains", detail: String(journeySubtitle.characters)
+        ) {
+          GeometryReader { g in
+            ZStack(alignment: .leading) {
+              Capsule().fill(DS.Color.foreground.swiftUI.opacity(0.12))
+              Capsule().fill(tint).frame(width: g.size.width * min(1, max(0, pct)))
+            }
+          }
+          .frame(width: 96, height: 8)
+          .padding(.bottom, 6)
+          .accessibilityHidden(true)
+        }
+      }
+    }
+    .buttonStyle(TodayPressStyle())
+  }
+
+  @ViewBuilder private var weekSummary: some View {
+    if let state = koaWeekState {
+      NavigationLink {
+        RoomDetailPage(title: String(localized: "dp.week")) { weeklyCard }
+      } label: {
+        RoomSummaryCard(
+          symbol: "calendar", tint: DS.Color.readinessGreen.swiftUI, title: String(localized: "dp.week"),
+          value: "\(min(state.done, state.target))", unit: String(localized: "mr.week.of \(state.target)"),
+          detail: state.complete
+            ? String(localized: "kw.claimed") : String(localized: "kw.reward \(KoaGains.fullWeek) \(KoaWeek.rewardCoins)")
+        ) {
+          RoomWeekBars(days: state.days, today: TodayPlanHero.today(), tint: DS.Color.readinessGreen.swiftUI)
+        }
+      }
+      .buttonStyle(TodayPressStyle())
+    }
+  }
+
+  /// Khám phá thêm: danh sách kiểu Health (một nhóm, hàng có mũi tên).
+  private var moreList: some View {
+    let awardValue = room.awardCount.flatMap { $0 > 0 ? String($0) : nil }
+    return VStack(spacing: 0) {
+      if let shop {
+        NavigationLink {
+          ShopView(book: shop, lang: lang) { Task { await room.load() } }
+        } label: {
+          RoomLinkRow(symbol: "tshirt.fill", tint: DS.Color.metricPurple.swiftUI, label: String(localized: "shop.title"))
+        }
+        .buttonStyle(TodayPressStyle())
+      }
+      if shop != nil, awards != nil { Divider().padding(.leading, 64) }
+      if let awards {
+        NavigationLink {
+          AwardsView(book: awards, lang: lang)
+        } label: {
+          RoomLinkRow(
+            symbol: "medal.fill", tint: DS.Color.readinessYellowGraphic.swiftUI, label: String(localized: "mr.awards"),
+            value: awardValue)
+        }
+        .buttonStyle(TodayPressStyle())
+      }
+    }
+    .dsCard(radius: 22)
   }
 
   // MARK: - Năng lượng
@@ -563,33 +724,6 @@ struct MascotRoomView: View {
     return KoaWeek.state(today: flow.today.today, library: flow.today.library, trained: flow.today.trained)
   }
 
-  /// Khám phá thêm (thiết kế lại 15/10): ba ô — Tủ đồ, Thử thách, Huy hiệu — mỗi ô
-  /// một biểu tượng màu, tên và số; ô nào chưa có sổ thì không bấm được.
-  private var shortcuts: some View {
-    let awardValue = room.awardCount.flatMap { $0 > 0 ? String($0) : nil }
-    return HStack(spacing: DS.Spacing.sm) {
-      if let shop {
-        NavigationLink {
-          ShopView(book: shop, lang: lang) { Task { await room.load() } }
-        } label: {
-          ShortcutTile(symbol: "tshirt.fill", tint: DS.Color.metricPurple.swiftUI, label: String(localized: "shop.title"), value: nil)
-        }
-        .buttonStyle(TodayPressStyle())
-      }
-      if let awards {
-        NavigationLink {
-          AwardsView(book: awards, lang: lang)
-        } label: {
-          ShortcutTile(
-            symbol: "medal.fill", tint: DS.Color.readinessYellowGraphic.swiftUI, label: String(localized: "mr.awards"),
-            value: awardValue)
-        }
-        .buttonStyle(TodayPressStyle())
-      }
-    }
-    .fixedSize(horizontal: false, vertical: true)
-  }
-
   // MARK: - Việc
 
   private func claimStreak() async {
@@ -862,39 +996,5 @@ extension Color {
     let v = UInt32(s, radix: 16) ?? 0x8b93a4
     self.init(
       red: Double((v >> 16) & 0xff) / 255, green: Double((v >> 8) & 0xff) / 255, blue: Double(v & 0xff) / 255)
-  }
-}
-
-/// Một ô "Khám phá thêm": biểu tượng màu trong vòng tròn, tên, số (nếu có).
-private struct ShortcutTile: View {
-  let symbol: String
-  let tint: Color
-  let label: String
-  let value: String?
-
-  var body: some View {
-    VStack(alignment: .leading, spacing: 8) {
-      Image(systemName: symbol)
-        .font(.system(size: 16, weight: .semibold))
-        .foregroundStyle(tint)
-        .frame(width: 36, height: 36)
-        .background(tint.opacity(0.13), in: Circle())
-      Spacer(minLength: 0)
-      Text(label)
-        .font(.system(size: 14, weight: .semibold))
-        .foregroundStyle(DS.Color.foreground.swiftUI)
-        .lineLimit(2)
-        .minimumScaleFactor(0.85)
-      Text(verbatim: value ?? " ")
-        .font(.system(size: 13).monospacedDigit())
-        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-    }
-    .padding(12)
-    .frame(maxWidth: .infinity, minHeight: 116, alignment: .topLeading)
-    .dsCard(radius: 20)
-    .contentShape(Rectangle())
-    .accessibilityElement(children: .ignore)
-    .accessibilityLabel(Text(verbatim: value.map { "\(label), \($0)" } ?? label))
-    .accessibilityAddTraits(.isButton)
   }
 }
