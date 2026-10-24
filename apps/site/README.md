@@ -22,6 +22,7 @@ SITE_URL=http://localhost:4321 node apps/site/build.mjs && python3 -m http.serve
 Nguồn dữ liệu — **một nguồn duy nhất cho mỗi thứ**:
 - Văn bản pháp lý: `apps/ios/ASCND/Resources/legal-content.json` (đúng bản app hiện ở Cài đặt → Chính sách & Pháp lý). Sửa luật ở RN `legal-content.ts` rồi chạy `apps/ios/tools/legal-content/gen.mjs`; web tự theo.
 - Supabase host + key publishable: `apps/ios/Config/Backend.xcconfig`.
+- Koa 3D (ảnh của Kiệt, 23/10): `src/img/koa3d/` — tách nền bằng Vision của macOS (`VNGenerateForegroundInstanceMaskRequest`), mỗi tư thế cắt từ tấm 12 tư thế. Tấm gốc chỉ 1024 px nên ảnh tư thế ~300 px: chỉ dùng ở cỡ nhỏ.
 - Chữ riêng của site: `content/{en,vi,es}.json`. Tên miền, email hỗ trợ, tên đơn vị vận hành: `site.config.json`.
 
 ## Đổi tên miền

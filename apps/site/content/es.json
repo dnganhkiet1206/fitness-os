@@ -302,6 +302,32 @@
         "Poco sueño, o sin comer a mediodía: Koa se sienta a descansar. Sin culpa."
       ]
     ],
-    "rankCaption": "Gains"
+    "rankCaption": "Gains",
+    "day": {
+      "eyebrow": "Un día con Koa",
+      "title": "Come, entrena, duerme: Koa te acompaña todo el día.",
+      "items": [
+        [
+          "Comer",
+          "Haz una foto, escanea un código o simplemente cuéntalo. Koa calcula calorías y proteína."
+        ],
+        [
+          "Beber",
+          "Un toque por vaso, con recordatorios si los quieres."
+        ],
+        [
+          "Entrenar",
+          "Un plan semanal, cada serie registrada, cada récord celebrado."
+        ],
+        [
+          "Dormir",
+          "El sueño desde Apple Health o anotado a mano. Si descansas, Koa despierta con energía."
+        ],
+        [
+          "Seguir",
+          "La “A” reúne seis partes de tu semana en un vistazo."
+        ]
+      ]
+    }
   }
 }

@@ -302,6 +302,32 @@
         "Ngủ ít, hay quá trưa chưa ăn: Koa ngồi nghỉ. Không trách."
       ]
     ],
-    "rankCaption": "Gains"
+    "rankCaption": "Gains",
+    "day": {
+      "eyebrow": "Một ngày với Koa",
+      "title": "Ăn, tập, ngủ: Koa ở cạnh bạn cả ngày.",
+      "items": [
+        [
+          "Ăn",
+          "Chụp ảnh, quét mã vạch hoặc kể một câu. Koa tính calo và đạm giúp bạn."
+        ],
+        [
+          "Uống nước",
+          "Một chạm cho mỗi ly, có nhắc nhở nếu bạn muốn."
+        ],
+        [
+          "Tập",
+          "Kế hoạch theo tuần, ghi từng hiệp, kỷ lục mới được ăn mừng."
+        ],
+        [
+          "Ngủ",
+          "Giấc ngủ từ Apple Health hoặc ghi tay. Ngủ đủ, Koa tươi tỉnh."
+        ],
+        [
+          "Theo dõi",
+          "Chữ “A” gom sáu phần của tuần vào một cái nhìn."
+        ]
+      ]
+    }
   }
 }

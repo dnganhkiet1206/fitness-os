@@ -302,6 +302,32 @@
         "Short sleep, or no meal by midday: Koa sits and rests. No blame."
       ]
     ],
-    "rankCaption": "Gains"
+    "rankCaption": "Gains",
+    "day": {
+      "eyebrow": "A day with Koa",
+      "title": "Eat, train, sleep. Koa is with you all day.",
+      "items": [
+        [
+          "Eat",
+          "Snap a photo, scan a barcode or just say it. Koa counts the calories and protein."
+        ],
+        [
+          "Drink",
+          "One tap per glass, with reminders if you want them."
+        ],
+        [
+          "Train",
+          "A weekly plan, every set logged, new records celebrated."
+        ],
+        [
+          "Sleep",
+          "Sleep from Apple Health or logged by hand. Rest well, and Koa wakes up fresh."
+        ],
+        [
+          "Track",
+          "The “A” puts six parts of your week in one glance."
+        ]
+      ]
+    }
   }
 }

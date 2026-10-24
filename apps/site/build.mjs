@@ -121,6 +121,38 @@ function intro(title, lead, hint, extra = '') {
       </section>`;
 }
 
+// Mở đầu của trang chủ (23/10, Kiệt đưa ảnh Koa 3D: "làm landing premium hơn"): cảnh phòng gym
+// tràn màn hình, chữ ở vùng tối bên phải; cuộn thì ảnh lùi xa, chữ mờ dần.
+function heroScene(title, lead, hint, extra = '') {
+  return `
+      <section class="hero" data-scene>
+        <div class="sticky hero__stage">
+          <img class="hero__img" src="${asset('img/koa3d/gym.jpg')}" alt="" width="1672" height="941" fetchpriority="high">
+          <div class="hero__text">
+            <h1 class="hero__title shine">${esc(title)}</h1>
+            <p class="hero__lead">${esc(lead)}</p>${extra}
+          </div>
+          <p class="intro__hint" aria-hidden="true"><span></span>${esc(hint)}</p>
+        </div>
+      </section>`;
+}
+
+// Koa 3D (ảnh của Kiệt, tách nền): cạnh điện thoại ở từng bước, và một ngày với Koa.
+const koa3d = (name, cls = '', w = 300, h = 320) =>
+  `<img class="${cls}" src="${asset(`img/koa3d/${name}.webp`)}" alt="" width="${w}" height="${h}" loading="lazy">`;
+
+function daySection(d) {
+  const pics = ['bowl', 'drink', 'lift', 'sleep', 'laptop'];
+  return `
+      <section class="day" aria-labelledby="day-title">
+        <p class="eyebrow">${esc(d.eyebrow)}</p>
+        <h2 id="day-title" class="day__title">${esc(d.title)}</h2>
+        <div class="day__row">${d.items
+          .map(([label, body], k) => `<article class="day__card"><div class="day__pic">${koa3d(pics[k])}</div><h3>${esc(label)}</h3><p>${esc(body)}</p></article>`)
+          .join('')}</div>
+      </section>`;
+}
+
 // Câu tuyên ngôn sáng dần từng chữ theo cuộn.
 function statement(text) {
   const words = text.split(/\s+/);
@@ -179,8 +211,8 @@ function moodSection(h) {
 
 // Màn hình thật của app (chụp trên simulator, tài khoản test, đúng ngôn ngữ của trang) trong khung
 // iPhone. Chụp lại: xem apps/site/README.md, mục "Ảnh màn hình app".
-const phone = (l, screen) =>
-  `<div class="phone"><img src="${asset(`img/app/${l}-${screen}.jpg`)}" alt="" width="590" height="1281" loading="lazy"></div>`;
+const phone = (l, screen, mate) =>
+  `<div class="phone"><img src="${asset(`img/app/${l}-${screen}.jpg`)}" alt="" width="590" height="1281" loading="lazy"></div>${mate ? koa3d(mate, 'phone__mate') : ''}`;
 
 // Văn bản pháp lý trên web là đúng bản trong app (legal-content.json) — nói rõ cho người đọc.
 const sameAsApp = (t) =>
@@ -196,13 +228,13 @@ const render = {
     const h = t.home;
     const soon = `<span class="soon">${icon('phone')}${esc(h.soon)}</span>`;
     const visuals = [
-      phone(l, 'today'),
-      phone(l, 'nutrition'),
+      phone(l, 'today', 'walk'),
+      phone(l, 'nutrition', 'phone'),
       rankMorph(h.gains),
-      phone(l, 'progress'),
+      phone(l, 'progress', 'cheer'),
     ];
     return `
-      ${intro(h.title, h.lead, t.help.scrollHint, `<div class="intro__actions">${soon}<a class="button button--ghost" href="#how">${esc(h.how)}</a></div>`)}
+      ${heroScene(h.title, h.lead, t.help.scrollHint, `<div class="intro__actions">${soon}<a class="button button--ghost" href="#how">${esc(h.how)}</a></div>`)}
       ${koaStatement(h.phrases, ['plead', 'confident', 'delighted'])}
       <section class="story" id="how" data-scene data-steps="${h.steps.length}" style="--n:${h.steps.length}" aria-labelledby="how-title">
         <div class="sticky story__stage">
@@ -219,6 +251,7 @@ const render = {
         </div>
       </section>
       ${moodSection(h)}
+      ${daySection(h.day)}
       <section class="zoom" data-scene>
         <div class="sticky zoom__stage">
           <figure class="zoom__frame"><img src="${asset('img/scene-askkoa.jpg')}" alt="Koa" width="902" height="568"></figure>
@@ -229,7 +262,7 @@ const render = {
         <div class="cards cards--three">${t.about.principles.map(([a, b], i) => `<article class="card"><p class="story__num">0${i + 1}</p><h3>${esc(a)}</h3><p>${esc(b)}</p></article>`).join('')}</div>
       </section>
       <section class="finale" aria-labelledby="finale">
-        ${koaStage(koa({ expression: 'delighted' }), 'koa-stage--finale')}
+        <div class="finale__koa">${koa3d('thumbs', '', 609, 900)}</div>
         <h2 id="finale" class="finale__title">${esc(h.finalTitle)}</h2>
         <p class="lead">${esc(h.finalBody)}</p>
         <div class="intro__actions">${soon}<a class="button button--ghost" href="${href(l, 'help')}">${esc(t.nav.help)}</a></div>
