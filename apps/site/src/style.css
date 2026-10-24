@@ -672,27 +672,35 @@ html:not(.js) .kstate__text span, html.still .kstate__text span { opacity: 1; }
 html:not(.js) .koa-layer[data-step="2"], html.still .koa-layer[data-step="2"], html:not(.js) .morph__layer:last-child, html.still .morph__layer:last-child { opacity: 1; }
 html.still .koa-svg * { animation: none !important; }
 
-/* ---- Koa chạy bộ (tools/koa-run.mjs, 23/10): một bước 0,36 s — gối nâng, tay đánh ngược chân,
-   thân nảy lên giữa hai bước, bóng co lại khi lên cao. Giảm chuyển động: đứng yên (html.still). ---- */
+/* ---- Koa chạy bộ (tools/koa-run.mjs, 23/10): nhìn nghiêng, một sải 0,64 s — đùi quét trước /
+   sau quanh hông, gối gập khi chân vung về trước, tay đánh ngược chân với khuỷu co, thân đổ về
+   trước và nảy hai lần mỗi sải. Giảm chuyển động: đứng yên (html.still). ---- */
 .koa-run g, .koa-run ellipse, .koa-run circle { transform-box: view-box; }
-.koa-run .kr-dust circle { transform-box: fill-box; transform-origin: center; }
-.koa-run .kr-body { animation: krBob 0.36s ease-in-out infinite; }
-.koa-run .kr-shadow { transform-origin: 120px 296px; animation: krShadow 0.36s ease-in-out infinite; }
-.koa-run .kr-legL { animation: krKnee 0.72s ease-in-out infinite; }
-.koa-run .kr-legR { animation: krKnee 0.72s ease-in-out -0.36s infinite; }
-.koa-run .kr-armL { animation: krArm 0.72s ease-in-out infinite; }
-.koa-run .kr-armR { animation: krArm 0.72s ease-in-out -0.36s infinite reverse; }
-.koa-run .kr-head { transform-origin: 120px 160px; animation: krHead 0.72s ease-in-out infinite; }
-.koa-run .kr-lines path { animation: krLine 0.72s linear infinite; }
-.koa-run .kr-dust circle { opacity: 0; animation: krDust 0.72s ease-out infinite; }
-.koa-run .kr-dust circle:nth-child(n+3) { animation-delay: -0.36s; }
-@keyframes krDust { 0% { opacity: 0.55; transform: translate(0, 0) scale(0.6); } 100% { opacity: 0; transform: translate(-10px, -6px) scale(1.3); } }
-.koa-run .kr-lines path:nth-child(2) { animation-delay: -0.24s; }
-.koa-run .kr-lines path:nth-child(3) { animation-delay: -0.48s; }
-@keyframes krBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
-@keyframes krShadow { 0%, 100% { transform: scale(1); opacity: 0.28; } 50% { transform: scale(0.84); opacity: 0.18; } }
-@keyframes krKnee { 0%, 50%, 100% { transform: none; } 25% { transform: translateY(-20px) scaleY(0.62); } }
-@keyframes krArm { 0%, 100% { transform: rotate(22deg); } 50% { transform: rotate(-18deg); } }
-@keyframes krHead { 0%, 100% { transform: rotate(-2deg); } 50% { transform: rotate(2deg); } }
-@keyframes krLine { 0% { transform: translateX(14px); opacity: 0; } 30% { opacity: 0.8; } 100% { transform: translateX(-22px); opacity: 0; } }
+.koa-run .kr-body { transform-origin: 120px 294px; animation: krBob 0.32s ease-in-out infinite; }
+.koa-run .kr-torso { transform-origin: 120px 240px; transform: rotate(8deg); }
+.koa-run .kr-head { transform-origin: 124px 160px; transform: translate(4px, 4px) rotate(3deg); }
+.koa-run .kr-shadow { transform-origin: 124px 297px; animation: krShadow 0.32s ease-in-out infinite; }
+.koa-run .kr-thigh { transform-origin: 118px 236px; }
+.koa-run .kr-shin { transform-origin: 118px 262px; }
+.koa-run .kr-upper { transform-origin: 146px 176px; }
+.koa-run .kr-fore { transform-origin: 146px 204px; transform: rotate(-85deg); }
+.koa-run .kr-thighF { animation: krThigh 0.64s linear infinite; }
+.koa-run .kr-shinF { animation: krShin 0.64s linear infinite; }
+.koa-run .kr-thighB { animation: krThigh 0.64s linear -0.32s infinite; }
+.koa-run .kr-shinB { animation: krShin 0.64s linear -0.32s infinite; }
+.koa-run .kr-upperF { animation: krUpper 0.64s ease-in-out -0.32s infinite; }
+.koa-run .kr-upperB { animation: krUpper 0.64s ease-in-out infinite; }
+.koa-run .kr-lines path { animation: krLine 0.64s linear infinite; }
+.koa-run .kr-lines path:nth-child(2) { animation-delay: -0.21s; }
+.koa-run .kr-lines path:nth-child(3) { animation-delay: -0.42s; }
+.koa-run .kr-dust circle { opacity: 0; transform-box: fill-box; transform-origin: center; animation: krDust 0.32s ease-out infinite; }
+/* đùi: chạm đất phía trước (−32°) → đẩy ra sau (+34°) → vung về trước */
+@keyframes krThigh { 0% { transform: rotate(-38deg); } 50% { transform: rotate(38deg); } 100% { transform: rotate(-38deg); } }
+/* gối: gần thẳng khi đẩy, gập mạnh khi chân vung về trước */
+@keyframes krShin { 0% { transform: rotate(8deg); } 40% { transform: rotate(14deg); } 62% { transform: rotate(95deg); } 85% { transform: rotate(40deg); } 100% { transform: rotate(8deg); } }
+@keyframes krUpper { 0%, 100% { transform: rotate(55deg); } 50% { transform: rotate(-50deg); } }
+@keyframes krBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+@keyframes krShadow { 0%, 100% { transform: scale(1); opacity: 0.3; } 50% { transform: scale(0.86); opacity: 0.2; } }
+@keyframes krLine { 0% { transform: translateX(14px); opacity: 0; } 30% { opacity: 0.8; } 100% { transform: translateX(-24px); opacity: 0; } }
+@keyframes krDust { 0% { opacity: 0.5; transform: translate(0, 0) scale(0.6); } 100% { opacity: 0; transform: translate(-12px, -6px) scale(1.3); } }
 /* ---- hết Koa chạy bộ ---- */
