@@ -140,4 +140,13 @@ struct AppPreferencesTests {
     #expect(p.lang == .vi && store.string(forKey: "ascnd_lang") == nil)
     #expect(AppPreferences(store: Memory(), deviceLocale: "en_VN").lang == .en)
   }
+
+  /// AI viết theo thứ tiếng màn đang hiện, không theo `Locale.current` (24/10):
+  /// máy tiếng Pháp mà app hiện tiếng Việt → vi; vùng vẫn quyết đơn vị nước.
+  @Test func languageFollowsTheShownLocalization() {
+    let p = AppPreferences(store: Memory(), deviceLocale: "fr_US", shownLanguage: "vi")
+    #expect(p.lang == .vi)
+    #expect(p.volumeUnit == .oz)
+    #expect(AppPreferences(store: Memory(), deviceLocale: "vi_VN", shownLanguage: "en").lang == .en)
+  }
 }
