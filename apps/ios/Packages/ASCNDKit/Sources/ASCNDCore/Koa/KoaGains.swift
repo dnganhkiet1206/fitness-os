@@ -20,7 +20,15 @@ public import Foundation
 ///   trước 21/10 — từ nay không còn đợt tụt mới nên không phát sinh thêm.
 public enum KoaGains {
   /// Mốc Gains của sáu hạng, cùng thứ tự `MascotRules.ranks`.
-  public static let thresholds = [0, 40, 120, 260, 450, 700]
+  ///
+  /// Theo THỜI GIAN TẬP ngoài đời (Kiệt 24/10: "giai đoạn đầu thì nhanh nhưng chậm
+  /// dần về sau"). Lịch 3 buổi / tuần tập đủ = 3 × 10 + 15 = 45 Gains / tuần
+  /// (`weeklyReference`): Gym Rat sau ~1 tuần, Lifter ~1 tháng, Swole ~3 tháng,
+  /// Beast ~6 tháng, Mass Monster ~1 năm. Trước đây [0, 40, 120, 260, 450, 700]:
+  /// Mass Monster sau ~4 tháng, và mọi hạng cách nhau gần đều.
+  public static let thresholds = [0, 40, 180, 540, 1150, 2300]
+  /// Gains một tuần tập đủ lịch 3 buổi — thước đo của `thresholds`.
+  public static let weeklyReference = 3 * plannedSession + fullWeek
 
   public static let plannedSession = 10
   public static let offPlanSession = 6
