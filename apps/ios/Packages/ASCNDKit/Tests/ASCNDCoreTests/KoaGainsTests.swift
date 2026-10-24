@@ -14,9 +14,28 @@ struct KoaGainsTests {
   @Test func rankThresholdsMatchTheRankTable() {
     #expect(KoaGains.thresholds.count == MascotRules.ranks.count)
     #expect(KoaGains.rank(0) == 0 && KoaGains.rank(39) == 0 && KoaGains.rank(40) == 1)
-    #expect(KoaGains.rank(700) == 5 && KoaGains.rank(5000) == 5)
-    #expect(KoaGains.toNext(50)! == (10, 80))
-    #expect(KoaGains.toNext(700) == nil)
+    #expect(KoaGains.rank(2300) == 5 && KoaGains.rank(9000) == 5)
+    #expect(KoaGains.toNext(50)! == (10, 140))
+    #expect(KoaGains.toNext(2300) == nil)
+  }
+
+  /// Nhanh lúc đầu, chậm dần (Kiệt 24/10): tập đủ lịch 3 buổi / tuần, không kỷ lục,
+  /// tuần thứ mấy thì lên từng hạng.
+  @Test func ranksFollowRealTrainingTime() {
+    var days: [KoaGains.Day] = []
+    var reached: [Int: Int] = [:]
+    let monday = LocalDate("2026-01-05")!
+    for week in 0..<60 {
+      for dow in [0, 2, 4] { days.append(.init(date: monday.adding(days: week * 7 + dow), personalRecord: false)) }
+      let r = KoaGains.compute(days, week: Self.plan, today: monday.adding(days: week * 7 + 6)).rank
+      if reached[r] == nil { reached[r] = week + 1 }
+    }
+    #expect(KoaGains.weeklyReference == 45)
+    #expect(reached[1] == 1)
+    #expect(reached[2] == 4)
+    #expect(reached[3] == 12)
+    #expect(reached[4] == 26)
+    #expect(reached[5] == 52)
   }
 
   @Test func plannedOffPlanPRAndFullWeek() {
@@ -47,7 +66,7 @@ struct KoaGainsTests {
     let week = KoaGains.Week(planned: [0, 1, 2, 3, 4, 5, 6], rest: [])
     let days = (0..<12).map { Self.d($0) }
     let built = KoaGains.compute(days, week: week, today: Self.monday.adding(days: 11))
-    #expect(built.rank == 2)
+    #expect(built.rank == 1)
     let long = KoaGains.compute(days, week: week, today: Self.monday.adding(days: 11 + 70))
     #expect(long.points == built.points && long.peak == built.peak && !long.rebuilding)
     #expect(long.missedDays == 70 && long.returning)

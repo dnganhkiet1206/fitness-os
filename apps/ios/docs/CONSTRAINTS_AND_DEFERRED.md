@@ -57,6 +57,7 @@ Hệ quả cho người làm:
   - nhắn tin;
   - bạn tập, bảng xếp hạng.
 - **Cần người thật để biết:** cơ chế pump / quay lại có làm người dùng quay lại hay bỏ đi, và người dùng có hiểu Gains / xu / huy chương không.
+- Thang hạng Gains đổi 24/10 (Kiệt: nhanh lúc đầu, chậm dần): [0, 40, 180, 540, 1150, 2300] — lịch 3 buổi / tuần lên Gym Rat ~1 tuần, Lifter ~1 tháng, Swole ~3 tháng, Beast ~6 tháng, Mass Monster ~1 năm (trước: [0, 40, 120, 260, 450, 700], Mass Monster ~4 tháng). Tài khoản test đang ở hạng cao hơn sẽ về hạng thấp hơn một lần (tính lại từ lịch sử, không phải tụt vì nghỉ). Đồ mở theo hạng ở cửa hàng cũng mở chậm hơn. Chưa biết nhịp này giữ chân hay làm nản.
 
 ---
 
