@@ -188,30 +188,37 @@ html:not(.js) .main > .intro + *, html.still .main > .intro + * { margin-top: 0;
 .story__visual { perspective: 1400px; }
 .story__frame {
   position: relative;
-  /* Vuông, cao theo màn hình: iPhone trong khung đủ lớn để đọc được. */
-  aspect-ratio: 1;
-  height: min(70vh, 640px);
+  /* Không còn "khung trong khung" (23/10, Kiệt: ảnh app trong điện thoại chưa ổn): iPhone đứng
+     thẳng, to, không bị cắt; chỉ tranh / Koa theo hạng mới có nền thẻ riêng. */
+  aspect-ratio: 4 / 5;
+  height: min(76vh, 740px);
   max-width: 100%;
   margin-inline: auto;
+}
+.story__layer { position: absolute; inset: 0; opacity: var(--v, 1); }
+.story__layer:not(.story__layer--phone) {
+  inset: 10% 0;
   border-radius: 32px;
   overflow: hidden;
   border: 1px solid var(--line);
   background: var(--sheet);
   box-shadow: 0 40px 120px -20px rgb(255 115 25 / 0.35);
-  transform: rotateY(calc((0.5 - var(--p, 0.5)) * 14deg)) rotateX(calc((var(--p, 0.5) - 0.5) * 6deg)) scale(calc(0.92 + 0.08 * min(1, var(--p, 1) * 6)));
 }
-.story__layer { position: absolute; inset: 0; opacity: var(--v, 1); }
 .story__img { width: 100%; height: 100%; object-fit: cover; display: block; transform: scale(calc(1.16 - var(--local, 1) * 0.16)); }
-/* Khung iPhone cho ảnh màn hình thật của app: trượt lên và dựng thẳng dần theo cuộn của bước. */
-.story__layer--phone { background: radial-gradient(ellipse at 50% 70%, rgb(255 115 25 / 0.24), var(--sheet) 68%); }
+/* iPhone với ảnh màn hình thật của app: quầng đèn dưới chân, trượt lên nhẹ khi tới bước. */
+.story__layer--phone::before {
+  content: ""; position: absolute; left: 50%; bottom: -4%; width: 90%; height: 30%; transform: translateX(-50%);
+  background: radial-gradient(ellipse at center, rgb(255 115 25 / 0.32), rgb(255 115 25 / 0.06) 50%, transparent 72%);
+  pointer-events: none;
+}
 .phone {
-  position: absolute; top: 3%; left: 50%;
-  height: 94%; width: auto; aspect-ratio: 590 / 1281;
-  padding: 1.6%;
+  position: absolute; top: 0; left: 50%;
+  height: 100%; width: auto; aspect-ratio: 590 / 1281;
+  padding: 1.4%;
   border-radius: 13% / 6%;
-  background: linear-gradient(145deg, #2a2724, #0b0a09 40%, #1c1a18);
-  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.14), inset 0 0 0 1px rgb(0 0 0 / 0.6), 0 40px 70px -24px rgb(0 0 0 / 0.9), 0 0 90px -30px rgb(255 115 25 / 0.7);
-  transform: translateX(-50%) translateY(calc((1 - var(--local, 1)) * 10%)) rotate(calc((1 - var(--local, 1)) * -4deg));
+  background: linear-gradient(145deg, #3a3631, #0b0a09 38%, #24211e);
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.16), inset 0 0 0 1px rgb(0 0 0 / 0.6), 0 50px 80px -30px rgb(0 0 0 / 0.95), 0 0 120px -40px rgb(255 115 25 / 0.6);
+  transform: translateX(-50%) translateY(calc((1 - var(--local, 1)) * 5%));
 }
 .phone img { display: block; width: 100%; height: 100%; object-fit: cover; border-radius: 11.6% / 5.4%; }
 
@@ -221,7 +228,8 @@ html:not(.js) .main > .intro + *, html.still .main > .intro + * { margin-top: 0;
   .story__body { font-size: 16px; }
   .story__stage { grid-template-columns: 1fr; align-content: center; gap: 24px; padding: 76px 0 24px; }
   .story__visual { order: -1; }
-  .story__frame { border-radius: 24px; height: min(44vh, 92vw); }
+  .story__frame { height: min(46vh, 100vw); }
+  .story__layer:not(.story__layer--phone) { border-radius: 24px; }
   .story__step h2 { font-size: 40px; margin-bottom: 12px; }
   .story__step ul { font-size: 16px; }
   .story__dots { margin-top: 16px; }
