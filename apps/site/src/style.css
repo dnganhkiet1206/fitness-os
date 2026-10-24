@@ -338,8 +338,14 @@ html:not(.js) .main > .intro + *, html.still .main > .intro + * { margin-top: 0;
 .hero__stage::after {
   content: ""; position: absolute; inset: 0; pointer-events: none;
   background: linear-gradient(90deg, transparent 38%, rgb(13 12 11 / 0.5) 62%, rgb(13 12 11 / 0.82)),
-              linear-gradient(180deg, rgb(13 12 11 / 0.35), transparent 22%, transparent 70%, var(--ink));
+              linear-gradient(180deg, rgb(13 12 11 / 0.35), transparent 22%);
+  /* không lớp nào tối đặc ở đáy: khi cảnh cuộn đi, mép dưới không cắt ngang vầng sáng nền */
+  -webkit-mask-image: linear-gradient(180deg, #000 55%, transparent 92%);
+  mask-image: linear-gradient(180deg, #000 55%, transparent 92%);
 }
+/* Cảnh sau trượt lên đè phần đuôi đã mờ của mở đầu — không có khoảng đen trống. */
+.main > .hero + * { margin-top: -60vh; }
+html:not(.js) .main > .hero + *, html.still .main > .hero + * { margin-top: 0; }
 .hero__text {
   position: relative; z-index: 1; margin-left: auto; width: min(44%, 600px); padding-right: max(4vw, 20px);
   opacity: calc(1 - var(--p, 0) * 1.6); transform: translateY(calc(var(--p, 0) * -48px));
@@ -352,8 +358,10 @@ html:not(.js) .main > .intro + *, html.still .main > .intro + * { margin-top: 0;
 @media (max-width: 859px) {
   .hero { height: 150vh; }
   .hero__stage { align-items: flex-end; }
-  .hero__img { height: 52%; object-position: 24% 40%; }
-  .hero__stage::after { background: linear-gradient(180deg, rgb(13 12 11 / 0.3), transparent 18%, transparent 34%, var(--ink) 52%); }
+  .hero__img { height: 56%; object-position: 24% 40%;
+    -webkit-mask-image: linear-gradient(180deg, #000 55%, transparent 98%); mask-image: linear-gradient(180deg, #000 55%, transparent 98%); }
+  .hero__stage::after { background: linear-gradient(180deg, rgb(13 12 11 / 0.3), transparent 18%); }
+  .main > .hero + * { margin-top: -50vh; }
   .koa-stage--mate { height: 38%; transform: translateX(-108%) translateY(calc((1 - var(--local, 1)) * 18%)); }
   .hero__text { width: 100%; padding: 0 20px 76px; text-align: center; }
   .hero__title { font-size: 46px; margin-bottom: 14px; }
