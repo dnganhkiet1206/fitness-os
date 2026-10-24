@@ -182,24 +182,13 @@ private struct SignedInScope<Content: View>: View {
       }
     }
     .onChange(of: scenePhase) { _, phase in
-      // Ra tiền cảnh: qua nửa đêm thì "hôm nay" đổi; dữ liệu cũ hơn một phút
-      // thì làm mới (`focusManager` của baseline).
-      if phase == .active, let flow { Task { await flow.becameActive() } }
-      // Đổi đơn vị ở máy khác: ra tiền cảnh thì đọc lại hồ sơ.
-      if phase == .active, let profile { Task { await profile.refresh() } }
-      // Qua nửa đêm: sổ dinh dưỡng sang ngày mới, và kế hoạch nhắc nhở của
-      // ngày mới được đặt (cùng ngữ cảnh mà khác "bây giờ").
-      if phase == .active {
-        Task {
-          await nutrition?.becameActive()
-          // Ra tiền cảnh là lúc RN đọc lại các query của Hôm nay
-          // (`refetchOnWindowFocus`): cân / bữa / ngủ / sinh trắc ghi ở nơi
-          // khác (máy khác, Apple Health) tới kế hoạch ở đây.
-          await reminderToday?.refresh()
-          if let ctx = reminderContext { await services.reminders.sync(ctx) }
-          await services.questObserver(userId: userId)?.refresh()
-        }
-      }
+      if phase == .active { foreground() }
+    }
+    // Để app mở qua nửa đêm: cùng lượt như ra tiền cảnh; widget sang ngày
+    // mới cùng app.
+    .onNewDay {
+      foreground()
+      Task { [widgets = services.widgets] in await widgets.refresh() }
     }
     // Màn tập đọc và gõ theo đơn vị của tài khoản (#527 1.9-B): controller đổi
     // chữ trong ô về kg theo đúng đơn vị màn đang hiện. Hồ sơ chưa nạp → kg,
@@ -240,6 +229,25 @@ private struct SignedInScope<Content: View>: View {
   }
 
   private var weightUnit: WeightUnit { WeightUnit(profile: profile?.profile) }
+
+  /// Ra tiền cảnh, hay qua nửa đêm khi app đang mở: "hôm nay" có thể đã đổi.
+  private func foreground() {
+    // Dữ liệu cũ hơn một phút thì làm mới (`focusManager` của baseline).
+    if let flow { Task { await flow.becameActive() } }
+    // Đổi đơn vị ở máy khác: ra tiền cảnh thì đọc lại hồ sơ.
+    if let profile { Task { await profile.refresh() } }
+    // Qua nửa đêm: sổ dinh dưỡng sang ngày mới, và kế hoạch nhắc nhở của
+    // ngày mới được đặt (cùng ngữ cảnh mà khác "bây giờ").
+    Task {
+      await nutrition?.becameActive()
+      // Ra tiền cảnh là lúc RN đọc lại các query của Hôm nay
+      // (`refetchOnWindowFocus`): cân / bữa / ngủ / sinh trắc ghi ở nơi
+      // khác (máy khác, Apple Health) tới kế hoạch ở đây.
+      await reminderToday?.refresh()
+      if let ctx = reminderContext { await services.reminders.sync(ctx) }
+      await services.questObserver(userId: userId)?.refresh()
+    }
+  }
 
   /// Một lượt đọc nhiệm vụ ngày; `after` = ngày vừa đổi ở nơi khác — chỉ hôm nay
   /// mới đổi được nhiệm vụ.
