@@ -2,6 +2,52 @@
  "sourceLanguage": "en",
  "version": "1.0",
  "strings": {
+  "logday.portion.less %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Less %@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bớt %@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Menos %@"
+     }
+    }
+   }
+  },
+  "logday.portion.more %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "More %@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Thêm %@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Más %@"
+     }
+    }
+   }
+  },
   "ai.failure.overloaded": {
    "extractionState": "manual",
    "localizations": {

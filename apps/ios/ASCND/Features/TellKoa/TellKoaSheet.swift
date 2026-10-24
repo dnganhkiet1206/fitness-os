@@ -554,8 +554,10 @@ struct TellKoaSheet: View {
             ? "\(title(part)) · \(String(localized: "logday.kcal.unknown"))"
             : "\(title(part)) · \(Int(kcal.rounded()))\(unknown ? "+" : "") kcal")
             .font(.system(size: 19, weight: .bold).monospacedDigit())
-          FlowRows(spacing: 6, centered: false) {
-            ForEach(m.foods) { f in foodChip(f, slot: slot) }
+          // Mỗi món một hàng: tên (chạm → macro), khẩu phần −/+ ngay trên thẻ, kcal
+          // (24/10, mock "Ghi hôm nay": chỉnh khẩu phần không phải mở sheet).
+          VStack(spacing: 6) {
+            ForEach(m.foods) { f in foodRow(f, slot: slot) }
           }
           doubts(part)
         }
@@ -603,6 +605,65 @@ struct TellKoaSheet: View {
     Text(verbatim: String(localized: "logday.plan.total \(Int(total.rounded()))"))
       .font(.system(size: 13, weight: .semibold))
       .foregroundStyle(DS.Color.foreground.swiftUI)
+  }
+
+  /// Hàng món: tên + kcal (chạm mở sheet macro), bên phải là bước khẩu phần.
+  private func foodRow(_ f: FoodEdit, slot: String) -> some View {
+    HStack(spacing: 8) {
+      foodChip(f, slot: slot)
+      Spacer(minLength: 0)
+      portionStepper(f, slot: slot)
+    }
+  }
+
+  /// −/+ khẩu phần: theo phần (bước 0,5, tối thiểu 0,5) hoặc theo gram (bước 25 g).
+  private func portionStepper(_ f: FoodEdit, slot: String) -> some View {
+    let grams = f.spoken.grams
+    let label: String = grams.map { "\(Int($0.rounded())) g" }
+      ?? [f.spoken.servings.formatted(.number.precision(.fractionLength(0...1)).locale(.app)), f.spoken.unit]
+        .compactMap { $0 }.joined(separator: " ")
+    let canLess = grams.map { $0 > 25 } ?? (f.spoken.servings > 0.5)
+    return HStack(spacing: 0) {
+      stepButton("minus", enabled: canLess, a11y: String(localized: "logday.portion.less \(f.match?.name ?? f.spoken.name)")) {
+        changePortion(f, slot: slot, up: false)
+      }
+      Text(verbatim: label)
+        .font(.system(size: 14, weight: .semibold).monospacedDigit())
+        .lineLimit(1)
+        .frame(minWidth: 44)
+        .contentTransition(.numericText())
+      stepButton("plus", enabled: true, a11y: String(localized: "logday.portion.more \(f.match?.name ?? f.spoken.name)")) {
+        changePortion(f, slot: slot, up: true)
+      }
+    }
+    .background(DS.Color.foreground.swiftUI.opacity(0.06), in: Capsule())
+    .accessibilityElement(children: .contain)
+  }
+
+  private func stepButton(_ symbol: String, enabled: Bool, a11y: String, action: @escaping () -> Void) -> some View {
+    Button(action: action) {
+      Image(systemName: symbol).font(.system(size: 13, weight: .bold))
+        .foregroundStyle(enabled ? DS.Color.foreground.swiftUI : DS.Color.mutedForeground.swiftUI.opacity(0.5))
+        .frame(width: 36, height: 36)
+        .frame(minWidth: 44, minHeight: 44)
+        .contentShape(Rectangle())
+    }
+    .buttonStyle(.plain)
+    .disabled(!enabled)
+    .sensoryFeedback(.selection, trigger: enabled)
+    .accessibilityLabel(Text(verbatim: a11y))
+  }
+
+  private func changePortion(_ f: FoodEdit, slot: String, up: Bool) {
+    guard let i = meals.firstIndex(where: { $0.slot == slot }), let j = meals[i].foods.firstIndex(where: { $0.id == f.id })
+    else { return }
+    withAnimation(reduceMotion ? nil : .smooth(duration: 0.2)) {
+      if let g = meals[i].foods[j].spoken.grams {
+        meals[i].foods[j].spoken.grams = max(25, g + (up ? 25 : -25))
+      } else {
+        meals[i].foods[j].spoken.servings = max(0.5, meals[i].foods[j].spoken.servings + (up ? 0.5 : -0.5))
+      }
+    }
   }
 
   private func foodChip(_ f: FoodEdit, slot: String) -> some View {
