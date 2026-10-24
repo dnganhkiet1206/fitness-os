@@ -1,0 +1,338 @@
+{
+  "lang": "vi",
+  "name": "Tiếng Việt",
+  "nav": {
+    "help": "Trợ giúp",
+    "privacy": "Quyền riêng tư",
+    "terms": "Điều khoản",
+    "account": "Xoá tài khoản",
+    "about": "Giới thiệu",
+    "reset": "Đặt lại mật khẩu",
+    "home": "Trang chủ"
+  },
+  "common": {
+    "skip": "Bỏ qua tới nội dung",
+    "draft": "Bản nháp để duyệt. Văn bản pháp lý chưa chốt và không phải tư vấn pháp lý.",
+    "emailMissing": "[chưa đặt email hỗ trợ]",
+    "operatorMissing": "[chưa đặt tên đơn vị vận hành]",
+    "updated": "Cập nhật lần cuối",
+    "status": "ASCND đang phát triển, chưa có trên App Store.",
+    "openApp": "Mở trong app ASCND",
+    "language": "Ngôn ngữ",
+    "contents": "Trong trang này",
+    "home": "Trợ giúp ASCND",
+    "sameAsApp": "Cùng nội dung trong app: Cài đặt → Chính sách & Pháp lý"
+  },
+  "help": {
+    "title": "Bạn cần giúp gì?",
+    "lead": "Trả lời ngắn về ASCND, Koa và tài khoản của bạn. Không thấy câu trả lời? Viết cho chúng tôi.",
+    "contactTitle": "Liên hệ",
+    "contactBody": "Chúng tôi trả lời bằng tiếng Việt, tiếng Anh và tiếng Tây Ban Nha, thường trong 3 ngày làm việc. Nếu hỏi về tài khoản, hãy gửi từ email bạn dùng để đăng ký.",
+    "contactButton": "Gửi email hỗ trợ",
+    "guidesTitle": "Cơ bản",
+    "guides": [
+      {
+        "icon": "plus",
+        "title": "Ghi lại",
+        "steps": [
+          "Chạm + ở cuối màn hình để ghi bữa ăn, nước, giấc ngủ hay cân nặng.",
+          "Hoặc kể cho Koa bằng lời của bạn ở “Ghi hôm nay” trên Hôm nay, ví dụ “trưa ăn phở, uống hai ly nước”. Xem Koa hiểu đúng chưa rồi lưu.",
+          "Buổi tập bắt đầu từ buổi hôm nay ở Tập luyện. Ghi từng hiệp trong lúc tập."
+        ]
+      },
+      {
+        "icon": "koa",
+        "title": "Koa",
+        "steps": [
+          "Koa là bạn tập của bạn. Mỗi buổi được ghi lại cho Koa thêm Gains, và Koa leo sáu hạng, từ Newbie tới Mass Monster.",
+          "Gains không bao giờ giảm khi bạn nghỉ. Quay lại thì Koa gợi ý một buổi đầu nhẹ hơn.",
+          "“Hỏi Koa” ở Hôm nay mở Koa Coach để hỏi về tập luyện, ăn uống và hồi phục. Koa Coach là AI: có thể sai và không phải lời khuyên y tế."
+        ]
+      },
+      {
+        "icon": "chart",
+        "title": "Tiến bộ",
+        "steps": [
+          "Tab Tiến bộ hiện chữ “A” của ASCND chia sáu phần: tập luyện, bước chân, dinh dưỡng, giấc ngủ, hồi phục và cơ thể.",
+          "Mỗi phần là Tốt, Cần chú ý hoặc Chưa đủ dữ liệu. Chạm vào một phần để xem lý do.",
+          "Tuần của Koa đếm các buổi trong lịch của chính bạn. Đủ tuần thì được thưởng."
+        ]
+      }
+    ],
+    "faqTitle": "Câu hỏi thường gặp",
+    "faq": [
+      {
+        "q": "Tôi quên mật khẩu.",
+        "a": "Ở màn đăng nhập chạm “Quên mật khẩu?” rồi nhập email. Mở link trong email và chọn mật khẩu mới. Link chỉ dùng một lần và hết hạn sau ít phút."
+      },
+      {
+        "q": "Đổi mật khẩu thế nào?",
+        "a": "Trong app: Cài đặt → Đổi mật khẩu. Bạn cần đang đăng nhập."
+      },
+      {
+        "q": "Xoá tài khoản thế nào?",
+        "a": "Trong app: Cài đặt → Xoá tài khoản. Tài khoản và dữ liệu sẽ bị xoá khỏi máy chủ. Không vào được app? Xem trang xoá tài khoản."
+      },
+      {
+        "q": "ASCND đọc gì từ Apple Health?",
+        "a": "Chỉ những gì bạn cho phép, và chỉ đọc: bước chân, năng lượng vận động, phút tập, chỉ số tim, giấc ngủ, buổi tập, cân nặng và nước. ASCND không bao giờ ghi vào Apple Health. Tắt quyền ở Cài đặt iPhone → Sức khoẻ → Truy cập dữ liệu & thiết bị."
+      },
+      {
+        "q": "Koa Coach có phải bác sĩ không?",
+        "a": "Không. Koa Coach là trợ lý AI cho câu hỏi chung về tập luyện và dinh dưỡng, và có thể sai. Hỏi bác sĩ trước khi thay đổi lớn, và đừng dùng app khi cấp cứu."
+      },
+      {
+        "q": "Dữ liệu của tôi đi đâu khi dùng AI?",
+        "a": "Câu hỏi và dữ liệu cần để trả lời được gửi qua máy chủ của ASCND tới nhà cung cấp AI (hiện là Google Gemini). Email và mật khẩu không bao giờ được gửi. Chi tiết ở Chính sách quyền riêng tư."
+      },
+      {
+        "q": "App có những ngôn ngữ nào?",
+        "a": "Tiếng Anh, tiếng Việt và tiếng Tây Ban Nha. App theo ngôn ngữ của iPhone. Muốn đổi riêng cho ASCND: Cài đặt iPhone → ASCND → Ngôn ngữ."
+      }
+    ],
+    "statement": "Gains không bao giờ giảm khi bạn nghỉ. Quay lại luôn là đi tiếp, không phải làm lại từ đầu.",
+    "scrollHint": "Cuộn xuống",
+    "stepLabel": "Bước"
+  },
+  "privacy": {
+    "title": "Chính sách quyền riêng tư",
+    "lead": "ASCND thu thập gì, để làm gì, ai xử lý, và cách xoá.",
+    "operator": "ASCND do {operator} vận hành. Liên hệ: {email}.",
+    "glanceTitle": "Dữ liệu chúng tôi thu thập",
+    "glanceHead": [
+      "Dữ liệu",
+      "Ví dụ",
+      "Dùng để"
+    ],
+    "glance": [
+      [
+        "Sức khoẻ",
+        "Dữ liệu Apple Health bạn cho phép (chỉ đọc), chỉ số bạn tự ghi",
+        "Vận hành app"
+      ],
+      [
+        "Thể chất",
+        "Buổi tập, bài tập, hiệp",
+        "Vận hành app"
+      ],
+      [
+        "Ảnh",
+        "Ảnh tiến trình, ảnh món ăn gửi cho AI",
+        "Vận hành app"
+      ],
+      [
+        "Email và tên",
+        "Tài khoản của bạn",
+        "Vận hành app"
+      ],
+      [
+        "Nội dung của bạn",
+        "Bài đăng, bình luận, câu hỏi cho Koa",
+        "Vận hành app"
+      ],
+      [
+        "Mã người dùng",
+        "Một mã ẩn danh",
+        "Vận hành app, đo lường"
+      ],
+      [
+        "Dữ liệu lỗi và hiệu năng",
+        "Báo cáo lỗi Sentry",
+        "Đo lường, sửa lỗi"
+      ],
+      [
+        "Tương tác với app",
+        "Sự kiện sử dụng PostHog",
+        "Đo lường"
+      ]
+    ],
+    "glanceNote": "Không dữ liệu nào ở trên được dùng để theo dõi bạn qua app hay website khác, và không dữ liệu nào bị bán.",
+    "dataPart": "Dữ liệu và AI",
+    "healthLink": "Tuyên bố miễn trừ về sức khoẻ nằm trong Điều khoản sử dụng."
+  },
+  "terms": {
+    "title": "Điều khoản sử dụng",
+    "lead": "Quy tắc khi dùng ASCND, và những gì ASCND không phải.",
+    "healthPart": "Miễn trừ về sức khoẻ"
+  },
+  "account": {
+    "title": "Xoá tài khoản",
+    "lead": "Bạn có thể xoá tài khoản ASCND và dữ liệu của nó bất kỳ lúc nào.",
+    "inAppTitle": "Trong app (nhanh nhất)",
+    "inAppSteps": [
+      "Mở ASCND, vào Cài đặt.",
+      "Cuộn xuống cuối, chạm “Xoá tài khoản”.",
+      "Xác nhận bằng “Xoá vĩnh viễn”."
+    ],
+    "inAppNote": "Việc xoá diễn ra ngay. Nếu không xong, app nói rõ phần nào đã xoá, phần nào chưa.",
+    "removedTitle": "Những gì bị xoá",
+    "removed": [
+      "Tài khoản và hồ sơ",
+      "Bữa ăn, nước, giấc ngủ, buổi tập, cân nặng và số đo",
+      "Ảnh tiến trình",
+      "Bài đăng, bình luận và tin nhắn trong Cộng đồng",
+      "Hội thoại Koa Coach và những gì Koa nhớ",
+      "Gains, xu, phần thưởng và vật phẩm"
+    ],
+    "keptTitle": "Những gì không bị xoá",
+    "kept": [
+      "Dữ liệu trong Apple Health. Nó ở trên iPhone của bạn; ASCND chưa từng ghi vào đó.",
+      "Gói mua qua Apple. Huỷ ở Cài đặt iPhone → tên bạn → Đăng ký.",
+      "Bản sao lưu tự động của máy chủ, bị ghi đè trong vòng 30 ngày.",
+      "Báo cáo lỗi và sự kiện sử dụng ẩn danh, giữ theo thời hạn của Sentry và PostHog."
+    ],
+    "emailTitle": "Không vào được app?",
+    "emailBody": "Gửi email cho chúng tôi từ địa chỉ bạn đã dùng để đăng ký, đề nghị xoá tài khoản. Chúng tôi xác minh đúng là bạn, xoá tài khoản và dữ liệu trong vòng 30 ngày, rồi báo lại khi xong.",
+    "emailButton": "Gửi yêu cầu xoá qua email",
+    "emailSubject": "Xoá tài khoản ASCND của tôi"
+  },
+  "about": {
+    "title": "Về ASCND",
+    "lead": "ASCND là app tập luyện cùng Koa, chú gấu koala lớn lên khi bạn tập.",
+    "body": [
+      "Phần lớn app thể dục bị bỏ sau vài tuần. ASCND muốn việc có mặt là phần dễ nhất: một kế hoạch cho hôm nay, ghi lại thật nhanh, và một người bạn mà tiến bộ của nó là tiến bộ của bạn.",
+      "Mỗi buổi bạn ghi lại cho Koa thêm Gains, đưa Koa từ Newbie lên Mass Monster. Gains không bao giờ giảm khi bạn bận, nên quay lại luôn là đi tiếp, không phải làm lại từ đầu."
+    ],
+    "principlesTitle": "Điều chúng tôi giữ",
+    "principles": [
+      [
+        "Mỗi ngày một kế hoạch",
+        "Hôm nay cho bạn biết điều cần làm lúc này: buổi tập, bữa ăn, giấc ngủ."
+      ],
+      [
+        "AI chỉ khi có ích",
+        "App chạy được không cần AI. Koa Coach ở đó khi bạn có câu hỏi."
+      ],
+      [
+        "Dữ liệu là của bạn",
+        "Không quảng cáo, không bán dữ liệu, không theo dõi. Xoá tất cả từ Cài đặt."
+      ]
+    ],
+    "statusTitle": "Tình trạng",
+    "status": "ASCND đang được phát triển và chưa có trên App Store. App có tiếng Anh, tiếng Việt và tiếng Tây Ban Nha."
+  },
+  "reset": {
+    "title": "Chọn mật khẩu mới",
+    "lead": "Bạn đã mở link đặt lại mật khẩu của ASCND.",
+    "checking": "Đang kiểm tra link…",
+    "newLabel": "Mật khẩu mới",
+    "confirmLabel": "Nhập lại mật khẩu mới",
+    "show": "Hiện",
+    "hide": "Ẩn",
+    "rule": "Ít nhất 6 ký tự.",
+    "submit": "Lưu mật khẩu mới",
+    "saving": "Đang lưu…",
+    "tooShort": "Dùng ít nhất 6 ký tự.",
+    "mismatch": "Mật khẩu xác nhận không khớp.",
+    "doneTitle": "Đã đổi mật khẩu",
+    "doneBody": "Mở ASCND và đăng nhập bằng mật khẩu mới.",
+    "expiredTitle": "Link đã hết hạn",
+    "expiredBody": "Link đặt lại chỉ dùng một lần và trong thời gian ngắn. Xin link mới trong app: Đăng nhập → “Quên mật khẩu?”.",
+    "deviceTitle": "Mở link này trên iPhone",
+    "deviceBody": "Link này dành cho app ASCND. Mở nó trên chiếc iPhone bạn đã dùng để xin link, app sẽ cho bạn chọn mật khẩu mới.",
+    "noLinkTitle": "Quên mật khẩu?",
+    "noLinkBody": "Mở ASCND, chạm “Quên mật khẩu?” ở màn đăng nhập và nhập email. Chúng tôi sẽ gửi link đưa bạn về trang này.",
+    "errWeak": "Mật khẩu này quá yếu. Thử dài hơn và đa dạng ký tự hơn.",
+    "errSame": "Đây là mật khẩu đang dùng. Hãy chọn mật khẩu khác.",
+    "errRate": "Thử quá nhiều lần. Đợi một lát rồi thử lại.",
+    "errOffline": "Không có mạng. Kiểm tra kết nối rồi thử lại.",
+    "errGeneric": "Có lỗi, mật khẩu chưa được đổi. Thử lại, hoặc xin link mới trong app.",
+    "signedInNote": "Đang đăng nhập? Bạn cũng có thể đổi mật khẩu trong app: Cài đặt → Đổi mật khẩu."
+  },
+  "home": {
+    "title": "Tập đều. Koa lớn.",
+    "lead": "App tập luyện có một người bạn. Mỗi buổi bạn ghi lại, Koa mạnh thêm, và thói quen dễ giữ hơn.",
+    "soon": "Sắp có trên App Store",
+    "how": "Xem cách hoạt động",
+    "storyTitle": "Cách hoạt động",
+    "steps": [
+      [
+        "Một kế hoạch cho hôm nay",
+        "Hôm nay cho bạn biết điều cần làm lúc này: buổi tập, bữa ăn, giấc ngủ. Không có bảng số nào phải giải mã."
+      ],
+      [
+        "Ghi trong vài giây",
+        "Chạm + hoặc kể cho Koa: “trưa ăn phở, uống hai ly nước”. Koa điền giúp, bạn xem lại rồi lưu."
+      ],
+      [
+        "Koa lớn lên sau mỗi buổi",
+        "Mỗi buổi cho Koa thêm Gains. Koa leo sáu hạng, từ Newbie tới Mass Monster, và không bao giờ tụt hạng khi bạn nghỉ."
+      ],
+      [
+        "Tiến bộ trong một cái nhìn",
+        "Chữ “A” của ASCND cho thấy sáu phần của tuần: tập luyện, bước chân, dinh dưỡng, giấc ngủ, hồi phục và cơ thể. Chạm vào để xem lý do."
+      ]
+    ],
+    "zoom": "Hỏi Koa bất cứ điều gì về tập, ăn và hồi phục.",
+    "zoomNote": "Koa Coach là AI, có thể sai. Không phải lời khuyên y tế.",
+    "finalTitle": "Sắp ra mắt.",
+    "finalBody": "ASCND đang được phát triển cho iPhone, có tiếng Việt, tiếng Anh và tiếng Tây Ban Nha.",
+    "gains": "Gains",
+    "phrases": [
+      "Không cần hoàn hảo.",
+      "Chỉ cần có mặt.",
+      "Phần còn lại để Koa lo."
+    ],
+    "moodEyebrow": "Koa hiểu ngày của bạn",
+    "moodTitle": "Nét mặt của Koa là ngày của bạn.",
+    "moodLead": "Ở Hôm nay, Koa đổi nét mặt theo những gì bạn thật sự đã làm. Không bao giờ trách. Chạm để xem.",
+    "moods": [
+      [
+        "Đã ăn",
+        "Bạn đã ghi bữa: Koa cười tít mắt."
+      ],
+      [
+        "Đã tập",
+        "Có buổi tập hôm nay: Koa tự tin."
+      ],
+      [
+        "Đang tập",
+        "Đang ghi buổi tập: Koa cùng cuốn tạ."
+      ],
+      [
+        "Xong hết",
+        "Xong mọi việc hôm nay: Koa mừng rỡ."
+      ],
+      [
+        "Ngủ đủ",
+        "Buổi sáng sau một đêm ngủ đủ: Koa tươi tỉnh, đội mũ len."
+      ],
+      [
+        "Ngủ ít",
+        "Ngủ ít, hay quá trưa chưa ăn: Koa ngồi nghỉ. Không trách."
+      ]
+    ],
+    "rankCaption": "Gains",
+    "day": {
+      "eyebrow": "Một ngày với Koa",
+      "title": "Ăn, tập, ngủ: Koa ở cạnh bạn cả ngày.",
+      "items": [
+        [
+          "Ăn",
+          "Chụp ảnh, quét mã vạch hoặc kể một câu. Koa tính calo và đạm giúp bạn."
+        ],
+        [
+          "Uống nước",
+          "Một chạm cho mỗi ly, có nhắc nhở nếu bạn muốn."
+        ],
+        [
+          "Tập",
+          "Kế hoạch theo tuần, ghi từng hiệp, kỷ lục mới được ăn mừng."
+        ],
+        [
+          "Ngủ",
+          "Giấc ngủ từ Apple Health hoặc ghi tay. Ngủ đủ, Koa tươi tỉnh."
+        ],
+        [
+          "Theo dõi",
+          "Chữ “A” gom sáu phần của tuần vào một cái nhìn."
+        ]
+      ]
+    },
+    "coach": {
+      "label": "Ví dụ một câu hỏi",
+      "q": "Chân mình đau mỏi sau buổi tập chân. Nên làm gì?",
+      "a": "Đau mỏi một hai ngày sau buổi tập mới là bình thường. Đi bộ nhẹ, uống đủ nước, ngủ đủ giấc. Nếu đau nhói hay sưng thì nghỉ và hỏi bác sĩ nhé."
+    }
+  }
+}

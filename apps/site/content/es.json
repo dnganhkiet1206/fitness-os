@@ -1,0 +1,338 @@
+{
+  "lang": "es",
+  "name": "Español",
+  "nav": {
+    "help": "Ayuda",
+    "privacy": "Privacidad",
+    "terms": "Términos",
+    "account": "Eliminar cuenta",
+    "about": "Acerca de",
+    "reset": "Restablecer contraseña",
+    "home": "Inicio"
+  },
+  "common": {
+    "skip": "Saltar al contenido",
+    "draft": "Borrador para revisión. El texto legal no es definitivo y no es asesoría legal.",
+    "emailMissing": "[email de soporte aún sin definir]",
+    "operatorMissing": "[nombre del responsable aún sin definir]",
+    "updated": "Última actualización",
+    "status": "ASCND está en desarrollo y aún no está en el App Store.",
+    "openApp": "Abrir en la app ASCND",
+    "language": "Idioma",
+    "contents": "En esta página",
+    "home": "Ayuda de ASCND",
+    "sameAsApp": "El mismo texto de la app: Ajustes → Políticas y legal"
+  },
+  "help": {
+    "title": "¿En qué te ayudamos?",
+    "lead": "Respuestas cortas sobre ASCND, Koa y tu cuenta. ¿No la encuentras? Escríbenos.",
+    "contactTitle": "Contacto",
+    "contactBody": "Respondemos en español, inglés y vietnamita, normalmente en 3 días hábiles. Si es sobre tu cuenta, escribe desde el email con el que te registraste.",
+    "contactButton": "Escribir a soporte",
+    "guidesTitle": "Lo básico",
+    "guides": [
+      {
+        "icon": "plus",
+        "title": "Registrar",
+        "steps": [
+          "Toca + en la parte inferior para registrar una comida, agua, sueño o peso.",
+          "O cuéntaselo a Koa con tus palabras en “Registrar hoy”, en Hoy: “pho para almorzar, dos vasos de agua”. Revisa lo que entendió Koa y guarda.",
+          "Los entrenamientos empiezan desde la sesión de hoy en Entrenamientos. Registra cada serie sobre la marcha."
+        ]
+      },
+      {
+        "icon": "koa",
+        "title": "Koa",
+        "steps": [
+          "Koa es tu compañero de entrenamiento. Cada sesión registrada le da Gains, y Koa sube seis rangos, de Newbie a Mass Monster.",
+          "Los Gains nunca bajan cuando descansas. Al volver, Koa te sugiere una primera sesión más suave.",
+          "“Pregunta a Koa”, en Hoy, abre Koa Coach para dudas sobre entrenamiento, comida y recuperación. Koa Coach es IA: puede equivocarse y no es consejo médico."
+        ]
+      },
+      {
+        "icon": "chart",
+        "title": "Progreso",
+        "steps": [
+          "La pestaña Progreso muestra la “A” de ASCND en seis partes: entrenamiento, pasos, nutrición, sueño, recuperación y cuerpo.",
+          "Cada parte está Bien, Requiere atención o Sin datos suficientes. Toca una parte para ver por qué.",
+          "La Semana de Koa cuenta las sesiones de tu propio calendario. Completa la semana para ganar un premio."
+        ]
+      }
+    ],
+    "faqTitle": "Preguntas frecuentes",
+    "faq": [
+      {
+        "q": "Olvidé mi contraseña.",
+        "a": "En la pantalla de inicio de sesión toca “¿Olvidaste tu contraseña?” y escribe tu email. Abre el enlace del email y elige una contraseña nueva. El enlace sirve una sola vez y caduca pronto."
+      },
+      {
+        "q": "¿Cómo cambio mi contraseña?",
+        "a": "En la app: Ajustes → Cambiar contraseña. Necesitas haber iniciado sesión."
+      },
+      {
+        "q": "¿Cómo elimino mi cuenta?",
+        "a": "En la app: Ajustes → Eliminar cuenta. Elimina tu cuenta y sus datos de nuestros servidores. ¿Sin acceso a la app? Mira la página de eliminación de cuenta."
+      },
+      {
+        "q": "¿Qué lee ASCND de Apple Salud?",
+        "a": "Solo lo que permitas, y solo lectura: pasos, energía activa, minutos de ejercicio, datos del corazón, sueño, entrenamientos, peso y agua. ASCND nunca escribe en Apple Salud. Puedes quitar el acceso en Ajustes del iPhone → Salud → Acceso a datos y dispositivos."
+      },
+      {
+        "q": "¿Koa Coach es un médico?",
+        "a": "No. Koa Coach es un asistente de IA para dudas generales de entrenamiento y nutrición, y puede equivocarse. Consulta a un médico antes de cambios grandes y nunca uses la app en una emergencia."
+      },
+      {
+        "q": "¿Qué pasa con mis datos cuando uso la IA?",
+        "a": "Tu pregunta y los datos necesarios para responderla se envían, a través del servidor de ASCND, a un proveedor de IA (hoy Google Gemini). Tu email y tu contraseña nunca se envían. Más detalles en la Política de privacidad."
+      },
+      {
+        "q": "¿En qué idiomas está la app?",
+        "a": "Inglés, vietnamita y español. La app sigue el idioma de tu iPhone. Para cambiarlo solo en ASCND: Ajustes del iPhone → ASCND → Idioma."
+      }
+    ],
+    "statement": "Los Gains nunca bajan cuando descansas. Volver siempre es avanzar, nunca empezar de cero.",
+    "scrollHint": "Desliza",
+    "stepLabel": "Paso"
+  },
+  "privacy": {
+    "title": "Política de privacidad",
+    "lead": "Qué recoge ASCND, para qué, quién lo procesa y cómo eliminarlo.",
+    "operator": "ASCND es operada por {operator}. Contacto: {email}.",
+    "glanceTitle": "Datos que recogemos",
+    "glanceHead": [
+      "Datos",
+      "Ejemplos",
+      "Para qué"
+    ],
+    "glance": [
+      [
+        "Salud",
+        "Datos de Apple Salud que permitas (solo lectura), biométricos que registras",
+        "Funcionamiento de la app"
+      ],
+      [
+        "Actividad física",
+        "Entrenamientos, ejercicios, series",
+        "Funcionamiento de la app"
+      ],
+      [
+        "Fotos",
+        "Fotos de progreso, fotos de comidas enviadas a la IA",
+        "Funcionamiento de la app"
+      ],
+      [
+        "Email y nombre",
+        "Tu cuenta",
+        "Funcionamiento de la app"
+      ],
+      [
+        "Tu contenido",
+        "Publicaciones, comentarios, preguntas a Koa",
+        "Funcionamiento de la app"
+      ],
+      [
+        "ID de usuario",
+        "Un ID seudónimo",
+        "Funcionamiento de la app, analítica"
+      ],
+      [
+        "Datos de fallos y rendimiento",
+        "Informes de fallos de Sentry",
+        "Analítica, corregir errores"
+      ],
+      [
+        "Interacción con el producto",
+        "Eventos de uso de PostHog",
+        "Analítica"
+      ]
+    ],
+    "glanceNote": "Nada de esto se usa para rastrearte en otras apps o webs, y nada se vende.",
+    "dataPart": "Datos e IA",
+    "healthLink": "El aviso de salud forma parte de los Términos de uso."
+  },
+  "terms": {
+    "title": "Términos de uso",
+    "lead": "Las reglas para usar ASCND, y lo que ASCND no es.",
+    "healthPart": "Aviso de salud"
+  },
+  "account": {
+    "title": "Eliminar tu cuenta",
+    "lead": "Puedes eliminar tu cuenta de ASCND y sus datos en cualquier momento.",
+    "inAppTitle": "En la app (lo más rápido)",
+    "inAppSteps": [
+      "Abre ASCND y ve a Ajustes.",
+      "Baja hasta el final y toca “Eliminar cuenta”.",
+      "Confirma con “Eliminar para siempre”."
+    ],
+    "inAppNote": "La eliminación es inmediata. Si falla, la app te dice exactamente qué se eliminó y qué no.",
+    "removedTitle": "Qué se elimina",
+    "removed": [
+      "Tu cuenta y tu perfil",
+      "Comidas, agua, sueño, entrenamientos, peso y medidas",
+      "Fotos de progreso",
+      "Publicaciones, comentarios y mensajes de la Comunidad",
+      "Conversaciones con Koa Coach y lo que Koa recuerda",
+      "Gains, monedas, premios y objetos"
+    ],
+    "keptTitle": "Qué no se elimina",
+    "kept": [
+      "Tus datos en Apple Salud. Siguen en tu iPhone; ASCND nunca escribió en ellos.",
+      "Suscripciones compradas con Apple. Cancélalas en Ajustes del iPhone → tu nombre → Suscripciones.",
+      "Copias de seguridad automáticas del servidor, que se sobrescriben en 30 días.",
+      "Informes de fallos y eventos de uso seudónimos, conservados según los plazos de Sentry y PostHog."
+    ],
+    "emailTitle": "¿Sin acceso a la app?",
+    "emailBody": "Escríbenos desde el email con el que te registraste y pídenos eliminar tu cuenta. Confirmaremos que eres tú, eliminaremos la cuenta y sus datos en un plazo de 30 días y te avisaremos al terminar.",
+    "emailButton": "Pedir la eliminación por email",
+    "emailSubject": "Eliminar mi cuenta de ASCND"
+  },
+  "about": {
+    "title": "Acerca de ASCND",
+    "lead": "ASCND es una app de entrenamiento con Koa, un koala que crece contigo.",
+    "body": [
+      "La mayoría de las apps de fitness se abandonan en pocas semanas. ASCND quiere que aparecer sea lo fácil: un plan para hoy, registros rápidos y un compañero cuyo progreso es el tuyo.",
+      "Cada sesión que registras le da Gains a Koa, que sube de Newbie a Mass Monster. Los Gains nunca bajan cuando la vida se complica, así que volver siempre es avanzar, no empezar de cero."
+    ],
+    "principlesTitle": "Lo que defendemos",
+    "principles": [
+      [
+        "Un plan al día",
+        "Hoy te dice lo que importa ahora: la sesión, las comidas, el sueño."
+      ],
+      [
+        "IA solo donde ayuda",
+        "La app funciona sin IA. Koa Coach está ahí cuando tienes una pregunta."
+      ],
+      [
+        "Tus datos son tuyos",
+        "Sin anuncios, sin vender datos, sin rastreo. Elimínalo todo desde Ajustes."
+      ]
+    ],
+    "statusTitle": "Estado",
+    "status": "ASCND está en desarrollo y aún no está disponible en el App Store. Funciona en inglés, vietnamita y español."
+  },
+  "reset": {
+    "title": "Elige una contraseña nueva",
+    "lead": "Abriste un enlace de ASCND para restablecer tu contraseña.",
+    "checking": "Comprobando tu enlace…",
+    "newLabel": "Contraseña nueva",
+    "confirmLabel": "Confirma la contraseña nueva",
+    "show": "Mostrar",
+    "hide": "Ocultar",
+    "rule": "Al menos 6 caracteres.",
+    "submit": "Guardar contraseña",
+    "saving": "Guardando…",
+    "tooShort": "Usa al menos 6 caracteres.",
+    "mismatch": "Las contraseñas no coinciden.",
+    "doneTitle": "Contraseña actualizada",
+    "doneBody": "Abre ASCND e inicia sesión con tu contraseña nueva.",
+    "expiredTitle": "Este enlace caducó",
+    "expiredBody": "Los enlaces de restablecimiento sirven una vez y por poco tiempo. Pide uno nuevo en la app: Iniciar sesión → “¿Olvidaste tu contraseña?”.",
+    "deviceTitle": "Abre este enlace en tu iPhone",
+    "deviceBody": "Este enlace es para la app ASCND. Ábrelo en el iPhone desde el que lo pediste y la app te dejará elegir una contraseña nueva.",
+    "noLinkTitle": "¿Olvidaste tu contraseña?",
+    "noLinkBody": "Abre ASCND, toca “¿Olvidaste tu contraseña?” en la pantalla de inicio de sesión y escribe tu email. Te enviaremos un enlace que te trae de vuelta aquí.",
+    "errWeak": "Esa contraseña es demasiado débil. Prueba una más larga y variada.",
+    "errSame": "Esa ya es tu contraseña. Elige otra.",
+    "errRate": "Demasiados intentos. Espera un momento e inténtalo de nuevo.",
+    "errOffline": "Sin conexión. Revisa tu internet e inténtalo de nuevo.",
+    "errGeneric": "Algo salió mal y tu contraseña no cambió. Inténtalo de nuevo o pide un enlace nuevo en la app.",
+    "signedInNote": "¿Con la sesión iniciada? También puedes cambiar tu contraseña en la app: Ajustes → Cambiar contraseña."
+  },
+  "home": {
+    "title": "Entrena. Koa crece.",
+    "lead": "Una app de entrenamiento con un compañero. Cada sesión que registras hace a Koa más fuerte, y el hábito, más fácil.",
+    "soon": "Muy pronto en el App Store",
+    "how": "Mira cómo funciona",
+    "storyTitle": "Cómo funciona",
+    "steps": [
+      [
+        "Un plan para hoy",
+        "Hoy te muestra lo que importa ahora: la sesión, las comidas, el sueño. Sin paneles que descifrar."
+      ],
+      [
+        "Registra en segundos",
+        "Toca + o cuéntaselo a Koa: “pho para almorzar, dos vasos de agua”. Koa lo rellena; tú revisas y guardas."
+      ],
+      [
+        "Koa crece con cada sesión",
+        "Cada sesión suma Gains. Koa sube seis rangos, de Newbie a Mass Monster, y nunca baja de rango cuando descansas."
+      ],
+      [
+        "Tu progreso de un vistazo",
+        "La “A” de ASCND muestra seis partes de tu semana: entrenamiento, pasos, nutrición, sueño, recuperación y cuerpo. Toca una para ver por qué."
+      ]
+    ],
+    "zoom": "Pregunta a Koa lo que quieras sobre entrenamiento, comida y recuperación.",
+    "zoomNote": "Koa Coach es IA y puede equivocarse. No es consejo médico.",
+    "finalTitle": "Muy pronto.",
+    "finalBody": "ASCND está en desarrollo para iPhone, en español, inglés y vietnamita.",
+    "gains": "Gains",
+    "phrases": [
+      "No necesitas ser perfecto.",
+      "Solo aparecer.",
+      "Koa hace el resto."
+    ],
+    "moodEyebrow": "Koa lee tu día",
+    "moodTitle": "La cara de Koa es tu día.",
+    "moodLead": "En Hoy, la expresión de Koa sigue lo que de verdad hiciste. Nunca regaña. Toca para verlo.",
+    "moods": [
+      [
+        "Comiste",
+        "Registraste una comida: Koa sonríe de oreja a oreja."
+      ],
+      [
+        "Entrenaste",
+        "Entrenaste hoy: Koa está orgulloso."
+      ],
+      [
+        "Entrenando",
+        "Registrando un entrenamiento: Koa levanta contigo."
+      ],
+      [
+        "Todo listo",
+        "Terminaste todo hoy: Koa está feliz."
+      ],
+      [
+        "Dormiste bien",
+        "La mañana tras una noche completa: Koa fresco, con gorro."
+      ],
+      [
+        "Dormiste poco",
+        "Poco sueño, o sin comer a mediodía: Koa se sienta a descansar. Sin culpa."
+      ]
+    ],
+    "rankCaption": "Gains",
+    "day": {
+      "eyebrow": "Un día con Koa",
+      "title": "Come, entrena, duerme: Koa te acompaña todo el día.",
+      "items": [
+        [
+          "Comer",
+          "Haz una foto, escanea un código o simplemente cuéntalo. Koa calcula calorías y proteína."
+        ],
+        [
+          "Beber",
+          "Un toque por vaso, con recordatorios si los quieres."
+        ],
+        [
+          "Entrenar",
+          "Un plan semanal, cada serie registrada, cada récord celebrado."
+        ],
+        [
+          "Dormir",
+          "El sueño desde Apple Health o anotado a mano. Si descansas, Koa despierta con energía."
+        ],
+        [
+          "Seguir",
+          "La “A” reúne seis partes de tu semana en un vistazo."
+        ]
+      ]
+    },
+    "coach": {
+      "label": "Una pregunta de ejemplo",
+      "q": "Me duelen las piernas tras el día de pierna. ¿Qué hago?",
+      "a": "Es normal tener agujetas uno o dos días después de un entreno nuevo. Camina suave, bebe agua y duerme bien. Si hay dolor agudo o hinchazón, descansa y consulta a un médico."
+    }
+  }
+}
