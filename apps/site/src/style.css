@@ -671,3 +671,28 @@ html:not(.js) .kstate, html.still .kstate { height: auto; }
 html:not(.js) .kstate__text span, html.still .kstate__text span { opacity: 1; }
 html:not(.js) .koa-layer[data-step="2"], html.still .koa-layer[data-step="2"], html:not(.js) .morph__layer:last-child, html.still .morph__layer:last-child { opacity: 1; }
 html.still .koa-svg * { animation: none !important; }
+
+/* ---- Koa chạy bộ (tools/koa-run.mjs, 23/10): một bước 0,36 s — gối nâng, tay đánh ngược chân,
+   thân nảy lên giữa hai bước, bóng co lại khi lên cao. Giảm chuyển động: đứng yên (html.still). ---- */
+.koa-run g, .koa-run ellipse, .koa-run circle { transform-box: view-box; }
+.koa-run .kr-dust circle { transform-box: fill-box; transform-origin: center; }
+.koa-run .kr-body { animation: krBob 0.36s ease-in-out infinite; }
+.koa-run .kr-shadow { transform-origin: 120px 296px; animation: krShadow 0.36s ease-in-out infinite; }
+.koa-run .kr-legL { animation: krKnee 0.72s ease-in-out infinite; }
+.koa-run .kr-legR { animation: krKnee 0.72s ease-in-out -0.36s infinite; }
+.koa-run .kr-armL { animation: krArm 0.72s ease-in-out infinite; }
+.koa-run .kr-armR { animation: krArm 0.72s ease-in-out -0.36s infinite reverse; }
+.koa-run .kr-head { transform-origin: 120px 160px; animation: krHead 0.72s ease-in-out infinite; }
+.koa-run .kr-lines path { animation: krLine 0.72s linear infinite; }
+.koa-run .kr-dust circle { opacity: 0; animation: krDust 0.72s ease-out infinite; }
+.koa-run .kr-dust circle:nth-child(n+3) { animation-delay: -0.36s; }
+@keyframes krDust { 0% { opacity: 0.55; transform: translate(0, 0) scale(0.6); } 100% { opacity: 0; transform: translate(-10px, -6px) scale(1.3); } }
+.koa-run .kr-lines path:nth-child(2) { animation-delay: -0.24s; }
+.koa-run .kr-lines path:nth-child(3) { animation-delay: -0.48s; }
+@keyframes krBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+@keyframes krShadow { 0%, 100% { transform: scale(1); opacity: 0.28; } 50% { transform: scale(0.84); opacity: 0.18; } }
+@keyframes krKnee { 0%, 50%, 100% { transform: none; } 25% { transform: translateY(-20px) scaleY(0.62); } }
+@keyframes krArm { 0%, 100% { transform: rotate(22deg); } 50% { transform: rotate(-18deg); } }
+@keyframes krHead { 0%, 100% { transform: rotate(-2deg); } 50% { transform: rotate(2deg); } }
+@keyframes krLine { 0% { transform: translateX(14px); opacity: 0; } 30% { opacity: 0.8; } 100% { transform: translateX(-22px); opacity: 0; } }
+/* ---- hết Koa chạy bộ ---- */
