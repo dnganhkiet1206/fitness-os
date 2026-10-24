@@ -10,7 +10,8 @@ struct EdgeClassifyTests {
     #expect(EdgeFunction.classify(status: 403, message: "") == .unauthorised)
     #expect(EdgeFunction.classify(status: 429, message: "") == .rateLimited)
     #expect(EdgeFunction.classify(status: 500, message: "") == .providerError)
-    #expect(EdgeFunction.classify(status: 503, message: "") == .providerError)
+    // 503 = nhà cung cấp quá tải (24/10) — khác lỗi 5xx thường.
+    #expect(EdgeFunction.classify(status: 503, message: "") == .overloaded)
     #expect(EdgeFunction.classify(status: 400, message: "") == .unknown)
     #expect(EdgeFunction.classify(status: nil, message: "Failed to send a request to the Edge Function") == .offline)
     #expect(EdgeFunction.classify(status: nil, message: "TypeError: Failed to fetch") == .offline)

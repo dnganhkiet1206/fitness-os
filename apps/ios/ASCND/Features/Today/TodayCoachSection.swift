@@ -352,7 +352,7 @@ struct SmartInsightCard: View {
       if source {
         if topic != nil || !rest.isEmpty { divider }
         Button(action: retry) {
-          Label("insight.fallback", systemImage: "arrow.clockwise")
+          Label(fallbackLine, systemImage: "arrow.clockwise")
             .font(DS.TextStyle.caption)
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
             .padding(.horizontal, DS.Spacing.md)
@@ -367,6 +367,14 @@ struct SmartInsightCard: View {
   }
 
   private var divider: some View { Divider().opacity(0.6).padding(.horizontal, DS.Spacing.md) }
+
+  /// Dòng nguồn khi AI hỏng: quá tải / hết lượt thì nói thẳng (24/10).
+  private var fallbackLine: String {
+    if case .failed(let f) = book.phase, f.isBusy {
+      return String(localized: "insight.fallback.busy \(WeeklyReviewView.failureText(f))")
+    }
+    return String(localized: "insight.fallback")
+  }
 
   /// "Dinh dưỡng ›" + "● 1.308/2.508 kcal" + vòng. Chạm mở màn của chủ đề.
   private func header(_ topic: InsightHighlight.Topic) -> some View {

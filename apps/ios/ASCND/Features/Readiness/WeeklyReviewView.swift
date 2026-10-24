@@ -453,8 +453,10 @@ struct WeeklyReviewView: View {
     switch f {
     case .notDeployed: String(localized: "ai.failure.notDeployed")
     case .providerError: String(localized: "ai.failure.providerError")
+    case .overloaded: String(localized: "ai.failure.overloaded")
     case .unauthorised: String(localized: "ai.failure.signedOut")
     case .rateLimited: String(localized: "ai.failure.rateLimited")
+    case .quotaExceeded: String(localized: "ai.failure.quota")
     case .offline: String(localized: "ai.failure.offline")
     case .unknown: String(localized: "ai.failure.unknown")
     }
