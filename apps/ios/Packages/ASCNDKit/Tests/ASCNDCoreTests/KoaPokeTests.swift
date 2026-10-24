@@ -88,3 +88,50 @@ struct KoaPokeTests {
     #expect(b.contains(KoaMath.smilePath))
   }
 }
+
+/// Tai và mi của Koa lớn (23/10, Kiệt: tai cử động được, chớp mắt đẹp như bản web).
+struct KoaEarLashTests {
+  @Test func earsTwitchOneAtATime() {
+    let mid = KoaMath.twitchAt + 0.3 * KoaMath.twitchDur
+    #expect(abs(KoaMath.twitch(left: true, mid) - 9) < 1e-9)
+    #expect(KoaMath.twitch(left: false, mid) == 0)
+    // vòng sau đến tai phải
+    #expect(abs(KoaMath.twitch(left: false, mid + KoaMath.twitchPeriod) - 9) < 1e-9)
+    #expect(KoaMath.twitch(left: true, mid + KoaMath.twitchPeriod) == 0)
+    #expect(KoaMath.twitch(left: true, 0) == 0)
+  }
+
+  @Test func innerEarFollowsOuterIdle() throws {
+    let p = KoaMath.Poke()
+    let t = 0.45 * 3600
+    let inner = try #require(KoaMath.earMat(left: true, inner: true, p, t: t))
+    let track = try #require(KoaScene.keyframes["koaEarL"]?.tf)
+    #expect(inner == KoaMath.sampleMat(track, 0.45, "io", 62, 92))
+    #expect(KoaMath.earMat(left: true, inner: false, p, t: t) == nil)
+  }
+
+  @Test func earsLeanTowardTheLook() throws {
+    let p = KoaMath.Poke(lean: 1)
+    let l = try #require(KoaMath.earMat(left: true, inner: false, p, t: 0))
+    let r = try #require(KoaMath.earMat(left: false, inner: false, p, t: 0))
+    #expect(abs(atan2(l[1], l[0]) * 180 / .pi - KoaMath.earLean) < 1e-9)
+    #expect(abs(atan2(r[1], r[0]) * 180 / .pi - KoaMath.earLean) < 1e-9)
+  }
+
+  @Test func lashShowsOnlyWhenTheLidIsDown() {
+    #expect(KoaMath.lashOpacity(0) == 0)
+    #expect(KoaMath.lashOpacity(1) == 1)
+    var o = KoaRender.Options()
+    o.poke = KoaMath.Poke()
+    // koaBlink khép hẳn ở 93,5–95,5% của 5,2 s
+    o.t = 0.95 * 5200
+    let closed = String(describing: KoaRender.figure(o))
+    #expect(closed.contains(KoaMath.lashPaths[0]))
+    o.t = 0.5 * 5200
+    #expect(!String(describing: KoaRender.figure(o)).contains(KoaMath.lashPaths[0]))
+    // Koa nhỏ (không `poke`) giữ cú chớp gốc
+    o.poke = nil
+    o.t = 0.95 * 5200
+    #expect(!String(describing: KoaRender.figure(o)).contains(KoaMath.lashPaths[0]))
+  }
+}

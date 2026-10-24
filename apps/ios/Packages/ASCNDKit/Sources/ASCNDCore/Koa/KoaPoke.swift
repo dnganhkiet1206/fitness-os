@@ -7,12 +7,18 @@ import Foundation
 extension KoaMath {
   /// Một lần chạm: `ms` đã qua kể từ lúc chạm; `lift` là lông mày đang nhướn
   /// (0 → 1) khi ngón tay còn đặt trên Koa.
+  ///
+  /// Có `Poke` (kể cả rỗng) là Koa lớn đang "sống": tai trong theo tai ngoài, tai
+  /// thỉnh thoảng giật, chớp mắt có nét mi.
   public struct Poke: Sendable, Hashable {
     public var ms: Double?
     public var lift: Double
-    public init(ms: Double? = nil, lift: Double = 0) {
+    /// Hướng nhìn ngang (−1…1, đã nhân độ mạnh): hai tai nghiêng theo.
+    public var lean: Double
+    public init(ms: Double? = nil, lift: Double = 0, lean: Double = 0) {
       self.ms = ms
       self.lift = lift
+      self.lean = lean
     }
   }
 
@@ -25,6 +31,13 @@ extension KoaMath {
   /// Gốc tai: gần chân tai, phía trong đầu.
   static let earPivotL = (78.0, 96.0)
   static let earPivotR = (162.0, 96.0)
+  /// Tai giật một mình: mỗi `twitchPeriod`, lệch `twitchAt`, trong `twitchDur`; trái / phải xen kẽ.
+  public static let twitchPeriod = 6400.0
+  public static let twitchAt = 3000.0
+  public static let twitchDur = 420.0
+  static let twitchFrames: [(Double, Double)] = [(0, 0), (0.3, 9), (0.6, -3), (1, 0)]
+  /// Tai nghiêng theo hướng nhìn, độ.
+  public static let earLean = 5.0
   /// Mọi kiểu lông mày (`browArc`, `browRaised`, …) — nhướn cùng nhau.
   public static let browConds: Set<String> = ["browArc", "browRaised", "browSad", "browAngry", "browStrain"]
   public static let browRise = 3.0
@@ -62,6 +75,43 @@ extension KoaMath {
     return place(deg, cx, cy, 0, 0)
   }
 
+  /// Tai giật lúc rảnh: góc (độ, dương = ra ngoài) của tai này ở `t`, 0 ngoài lúc giật.
+  public static func twitch(left: Bool, _ t: Double) -> Double {
+    let e = t - twitchAt
+    guard e >= 0 else { return 0 }
+    let n = (e / twitchPeriod).rounded(.down)
+    guard (Int(n) % 2 == 0) == left else { return 0 }
+    let r = e - n * twitchPeriod
+    guard r < twitchDur else { return 0 }
+    let (i, j, f) = span(twitchFrames.map(\.0), r / twitchDur, "io")
+    return twitchFrames[i].1 + (twitchFrames[j].1 - twitchFrames[i].1) * f
+  }
+
+  /// Một tai ở `t`: giật khi chạm · nghiêng theo hướng nhìn · giật lúc rảnh, quanh chân tai.
+  /// Tai trong (`inner`) còn theo hoạt ảnh gốc của tai ngoài (`koaEarL/R`) — bản gốc
+  /// chỉ lắc tai ngoài, tai trong đứng yên lệch khỏi nó.
+  public static func earMat(left: Bool, inner: Bool, _ p: Poke, t: Double) -> Mat? {
+    let side = left ? -1.0 : 1.0
+    let deg = side * twitch(left: left, t) + earLean * p.lean
+    var m: Mat? = deg == 0 ? nil : place(deg, left ? earPivotL.0 : earPivotR.0, left ? earPivotL.1 : earPivotR.1, 0, 0)
+    if let f = p.ms.flatMap({ earMat(left: left, $0) }) { m = m.map { mul(f, $0) } ?? f }
+    if inner, let track = KoaScene.keyframes[left ? "koaEarL" : "koaEarR"]?.tf, !track.isEmpty {
+      let o: (Double, Double) = left ? (62, 92) : (178, 92)
+      let idle = sampleMat(track, t.truncatingRemainder(dividingBy: 3600) / 3600, "io", o.0, o.1)
+      if idle != identity { m = m.map { mul($0, idle) } ?? idle }
+    }
+    return m
+  }
+
+  /// Nét mi khi chớp (Koa lớn): mi (`koaBlink`, `koaBlink2`) là mảng lông trượt xuống
+  /// che mắt — lúc khép hết mắt biến mất trơn. Hiện một nét mi cong khi mi gần khép.
+  public static let blinkAnims: Set<String> = ["koaBlink", "koaBlink2"]
+  public static let lashPaths = ["M67 104 Q82 113 97 104", "M143 104 Q158 113 173 104"]
+  public static let lashWidth = 3.4
+
+  /// Độ hiện của nét mi theo độ khép của mi (`scaleY`, 0 → 1).
+  public static func lashOpacity(_ lid: Double) -> Double { min(1, max(0, (lid - 0.55) / 0.35)) }
+
   /// Lông mày nhướn khi chạm: lên nhanh, xuống chậm, hết trong cú nhảy.
   public static func browLift(_ ms: Double) -> Double {
     guard ms >= 0, ms < hopDur else { return 0 }
@@ -70,11 +120,11 @@ extension KoaMath {
   }
 
   /// Ma trận phản ứng của một lớp (theo id, hoặc theo cờ với lông mày), `nil` = không cử động.
-  public static func pokeMat(id: String?, cond: String?, _ p: Poke) -> Mat? {
+  public static func pokeMat(id: String?, cond: String?, _ p: Poke, t: Double = 0) -> Mat? {
     switch id {
     case "POSERIG": return p.ms.flatMap(hopMat)
-    case "ear_left", "ear_left_inner": return p.ms.flatMap { earMat(left: true, $0) }
-    case "ear_right", "ear_right_inner": return p.ms.flatMap { earMat(left: false, $0) }
+    case "ear_left", "ear_left_inner": return earMat(left: true, inner: id == "ear_left_inner", p, t: t)
+    case "ear_right", "ear_right_inner": return earMat(left: false, inner: id == "ear_right_inner", p, t: t)
     case "shadow":
       guard let ms = p.ms else { return nil }
       let k = 1 - 0.22 * hopRise(ms)

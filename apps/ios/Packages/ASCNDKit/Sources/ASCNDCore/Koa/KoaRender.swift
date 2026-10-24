@@ -113,6 +113,19 @@ public enum KoaRender {
       ])
   }
 
+  static func lash(_ k: Double) -> Element {
+    Element(
+      "G", ["opacity": .number(k)],
+      kids: KoaMath.lashPaths.map {
+        Element(
+          "Path",
+          [
+            "d": .string($0), "stroke": .string(KoaMath.smileColour), "strokeWidth": .number(KoaMath.lashWidth),
+            "strokeLinecap": .string("round"), "fill": .string("none"),
+          ])
+      })
+  }
+
   /// `own_tf`: kiểu nội tuyến thắng thuộc tính trình bày mà `bind` đưa xuống.
   static func ownTf(_ n: KoaScene.Node, _ flags: KoaFlags.Flags) -> [KoaMath.Op] {
     if let tf = n.tf { return tf }
@@ -250,7 +263,18 @@ public enum KoaRender {
       moved = [Element("G", matrix: m, kids: leaned)]
     }
 
-    if let p = c.poke, let m = KoaMath.pokeMat(id: n.id, cond: n.cond, p) { moved = [Element("G", matrix: m, kids: moved)] }
+    if let p = c.poke, let m = KoaMath.pokeMat(id: n.id, cond: n.cond, p, t: c.t) {
+      moved = [Element("G", matrix: m, kids: moved)]
+    }
+    // Koa lớn: chớp mắt có nét mi (mi gốc che mắt trơn); nét mi không co theo mi
+    if c.poke != nil, c.live, let anim, KoaMath.blinkAnims.contains(anim.k), c.t >= anim.delay,
+      let track = track?.tf, !track.isEmpty
+    {
+      let e = c.t - anim.delay
+      let lid = KoaMath.sampleMat(track, e.truncatingRemainder(dividingBy: anim.dur) / anim.dur, anim.ease, 0, 0)[3]
+      let k = KoaMath.lashOpacity(lid)
+      if k > 0 { moved.append(lash(k)) }
+    }
 
     guard let g = c.gaze else { return moved }
     if n.id == "HEADRIG" { return [Element("G", matrix: KoaMath.headMat(g), kids: moved)] }
