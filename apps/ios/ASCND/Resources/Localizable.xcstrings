@@ -945,6 +945,52 @@
     }
    }
   },
+  "onb2.about.health": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Fill from Apple Health"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Lấy từ Apple Health"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Rellenar desde Apple Health"
+     }
+    }
+   }
+  },
+  "onb2.about.health.none": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Apple Health has no measurements yet. Enter them below."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Apple Health chưa có số đo nào. Nhập ở dưới nhé."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Apple Health aún no tiene medidas. Escríbelas abajo."
+     }
+    }
+   }
+  },
   "onb2.about.q": {
    "extractionState": "manual",
    "localizations": {

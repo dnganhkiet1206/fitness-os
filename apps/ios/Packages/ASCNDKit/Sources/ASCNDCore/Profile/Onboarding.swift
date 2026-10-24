@@ -334,6 +334,33 @@ public final class OnboardingController {
     }
   }
 
+  /// "Lấy từ Apple Health" ở màn Về bạn (mock onboarding 22/10): điền những gì Health
+  /// có, giữ nguyên những gì Health không có. Số lạ (ngoài thước) thì bỏ. Trả về số ô
+  /// đã điền — 0 nghĩa là Health không có gì (hoặc người dùng không cho đọc).
+  @discardableResult
+  public func fill(from h: HealthBodyStats) -> Int {
+    var n = 0
+    edit {
+      if let sex = h.sex {
+        $0.sex = sex
+        n += 1
+      }
+      if let dob = h.dob {
+        $0.dob = dob
+        n += 1
+      }
+      if let cm = h.heightCm, HealthBodyStats.heightRange.contains(cm) {
+        $0.heightCm = String(Int(cm.rounded()))
+        n += 1
+      }
+      if let kg = h.weightKg, HealthBodyStats.weightRange.contains(kg) {
+        $0.weightKg = HealthBodyStats.oneDecimal(kg)
+        n += 1
+      }
+    }
+    return n
+  }
+
   public func pickSex(_ s: FitnessCalc.Sex) { edit { $0.sex = s } }
   public func setDob(_ d: LocalDate) { edit { $0.dob = d } }
   public func setHeightCm(_ text: String) { edit { $0.heightCm = text } }
@@ -527,4 +554,29 @@ extension OnboardingFailure {
     "22003": .invalid, "22007": .invalid, "22P02": .invalid, "42501": .signedOut, "42703": .server,
     "42P01": .server, "PGRST116": .notFound, "PGRST301": .signedOut,
   ]
+}
+
+/// Số đo đọc từ Apple Health cho màn Về bạn. `nil` = Health không có (hay không cho đọc).
+public struct HealthBodyStats: Sendable, Hashable {
+  public var sex: FitnessCalc.Sex?
+  public var dob: LocalDate?
+  public var heightCm: Double?
+  public var weightKg: Double?
+
+  public init(sex: FitnessCalc.Sex? = nil, dob: LocalDate? = nil, heightCm: Double? = nil, weightKg: Double? = nil) {
+    self.sex = sex
+    self.dob = dob
+    self.heightCm = heightCm
+    self.weightKg = weightKg
+  }
+
+  /// Ngoài khoảng này là số nhập nhầm trong Health (vd. chiều cao ghi bằng mét) — bỏ.
+  public static let heightRange = 100.0...250.0
+  public static let weightRange = 25.0...350.0
+
+  /// "72.5", "70" — dấu chấm, như ô số của nháp.
+  static func oneDecimal(_ v: Double) -> String {
+    let r = (v * 10).rounded() / 10
+    return r == r.rounded() ? String(Int(r)) : String(format: "%.1f", r)
+  }
 }

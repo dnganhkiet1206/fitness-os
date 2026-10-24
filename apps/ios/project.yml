@@ -120,7 +120,7 @@ targets:
         ASCNDPostHogHost: https://$(ASCND_POSTHOG_HOST)
         # Câu chữ của bản RN (`app.json`), nguyên văn.
         NSMotionUsageDescription: ASCND counts your steps with your iPhone's motion sensor when Apple Health isn't connected.
-        NSHealthShareUsageDescription: ASCND reads your steps, heart rate, HRV, sleep, weight and water to compute your daily readiness score and fill in your day, so you log less by hand.
+        NSHealthShareUsageDescription: ASCND reads your steps, heart rate, HRV, sleep, weight and water to compute your daily readiness score and fill in your day, and, when you ask during setup, your height, sex and date of birth, so you log less by hand.
         NSCameraUsageDescription: ASCND uses the camera to take your progress photos, photograph meals for AI logging and scan food barcodes. Photos are stored privately in your account.
         # "Kể cho Koa" (18/10): nói thay gõ. Bản vi / es ở ASCND/Resources/InfoPlist.xcstrings.
         NSMicrophoneUsageDescription: ASCND uses the microphone only while the mic is on in Tell Koa, so you can say what you did instead of typing. Audio is not stored.
