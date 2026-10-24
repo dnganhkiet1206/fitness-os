@@ -2,6 +2,236 @@
  "sourceLanguage": "en",
  "version": "1.0",
  "strings": {
+  "logday.fix.a11y %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Fix %@ by telling Koa"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sửa %@ bằng lời"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Corregir %@ hablando"
+     }
+    }
+   }
+  },
+  "logday.fix.placeholder": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tell Koa what to fix, e.g. “just 1 bowl”"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nói Koa sửa gì, vd. “1 bát thôi”"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Dile a Koa qué cambiar, p. ej. “solo 1 plato”"
+     }
+    }
+   }
+  },
+  "logday.fix.send": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Send"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Gửi"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Enviar"
+     }
+    }
+   }
+  },
+  "logday.fix.none": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa couldn't find that — try saying it more clearly"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa chưa hiểu chỗ cần sửa — thử nói rõ hơn"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa no lo entendió — prueba a decirlo más claro"
+     }
+    }
+   }
+  },
+  "logday.fix.done": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa updated this"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa đã sửa"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa lo corrigió"
+     }
+    }
+   }
+  },
+  "logday.fix.undo": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Undo"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hoàn tác"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Deshacer"
+     }
+    }
+   }
+  },
+  "logday.desc.sleep %@ %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Slept from %1$@ to %2$@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ngủ từ %1$@ đến %2$@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Dormí de %1$@ a %2$@"
+     }
+    }
+   }
+  },
+  "logday.desc.water %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Drank %@ of water"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Uống %@ nước"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bebí %@ de agua"
+     }
+    }
+   }
+  },
+  "logday.desc.weight %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Weighed %@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cân nặng %@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Pesé %@"
+     }
+    }
+   }
+  },
+  "logday.desc.correct": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Correction:"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sửa lại:"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Corrección:"
+     }
+    }
+   }
+  },
   "ps.n.steps %@": {
    "extractionState": "manual",
    "localizations": {
@@ -60085,19 +60315,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "I've filled in %lld things for today. If it's right, tap Save — if not, just tell me."
+      "value": "I picked up %lld things. If something’s off, tap ✦ on that card and tell me."
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Mình điền sẵn %lld việc hôm nay. Đúng thì bấm Lưu nhé — sai chỗ nào cứ nói lại."
+      "value": "Mình hiểu được %lld việc. Sai chỗ nào thì chạm ✦ ở thẻ đó và nói lại."
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Rellené %lld cosas de hoy. Si está bien, toca Guardar; si no, dímelo."
+      "value": "Entendí %lld cosas. Si algo no cuadra, toca ✦ en esa tarjeta y dímelo."
      }
     }
    }
