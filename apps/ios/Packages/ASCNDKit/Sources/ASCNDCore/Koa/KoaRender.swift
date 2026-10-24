@@ -47,6 +47,11 @@ public enum KoaRender {
     public var blend: Double?
     /// Ánh nhìn đã giải (`gazeAt`), khi nhân vật đứng trong phòng.
     public var gaze: KoaMath.Gaze?
+    /// Nhìn theo ngón tay (app, 23/10): đầu và mắt như `gaze`, nhưng không đổi miệng.
+    /// `gaze` thắng khi có cả hai.
+    public var look: KoaMath.Gaze?
+    /// Phản ứng khi chạm (`KoaPoke`): nhảy, tai giật, lông mày nhướn.
+    public var poke: KoaMath.Poke?
     /// Hạng vóc dáng 0…5 (`KoaGains.rank`) → `rankFlags`.
     public var build = 0
 
@@ -90,6 +95,7 @@ public enum KoaRender {
     let blend: Double
     let paper: Bool
     var flat = false
+    var poke: KoaMath.Poke?
   }
 
   static func isEyeGroup(_ n: KoaScene.Node) -> Bool { n.kids?.contains { $0.id == "pupil_left" } ?? false }
@@ -244,6 +250,8 @@ public enum KoaRender {
       moved = [Element("G", matrix: m, kids: leaned)]
     }
 
+    if let p = c.poke, let m = KoaMath.pokeMat(id: n.id, cond: n.cond, p) { moved = [Element("G", matrix: m, kids: moved)] }
+
     guard let g = c.gaze else { return moved }
     if n.id == "HEADRIG" { return [Element("G", matrix: KoaMath.headMat(g), kids: moved)] }
     if isEyeGroup(n) { return [Element("G", matrix: KoaMath.eyeMat(g), kids: moved)] }
@@ -295,11 +303,12 @@ public enum KoaRender {
   /// Cả hình: `Svg` > `Defs` (đèn) + `G` (lùi vào khung) > cây.
   public static func figure(_ o: Options) -> Element {
     let f = flags(o)
-    let swapMouth = KoaMath.swapMouths.contains { f[$0]?.truthy ?? false }
+    // chỉ cái liếc trong phòng đổi miệng; nhìn theo ngón tay thì không
+    let swapMouth = o.gaze != nil && KoaMath.swapMouths.contains { f[$0]?.truthy ?? false }
     let c = Context(
-      flags: f, t: o.t, live: o.live, gaze: o.live ? o.gaze : nil, swapMouth: swapMouth,
+      flags: f, t: o.t, live: o.live, gaze: o.live ? o.gaze ?? o.look : nil, swapMouth: swapMouth,
       rest: KoaMath.restsAt(f) && !o.dress, dress: o.dress, blend: o.blend ?? (o.dress ? 1 : 0), paper: o.paper,
-      flat: o.flat)
+      flat: o.flat, poke: o.live ? o.poke : nil)
     let tree = KoaLight.nodes.flatMap { node($0, c) }
     return Element(
       "Svg",
