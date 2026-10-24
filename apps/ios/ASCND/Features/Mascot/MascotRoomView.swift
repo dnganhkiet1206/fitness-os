@@ -791,7 +791,7 @@ struct MascotStage: View {
     let left: Double = StudioScene.stageMark.x * k - size / 2
     let top: Double = StudioScene.stageMark.y * k - size * KoaMath.aspect + 6 * k
     let levelScale: Double = min(1 + Double(level - 1) * 0.012, 1.1)
-    return MascotFigureView(emotion: emotion, equipped: equipped, size: size, build: build)
+    return MascotFigureView(emotion: emotion, equipped: equipped, size: size, build: build, interactive: true)
       .scaleEffect(levelScale, anchor: .bottom)
       // reduceMotion: giá trị không đổi thì không gật
       .keyframeAnimator(initialValue: Nod(), trigger: reduceMotion ? 0 : celebrateSignal) { view, v in

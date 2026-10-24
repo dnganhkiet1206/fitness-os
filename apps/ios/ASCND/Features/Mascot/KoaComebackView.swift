@@ -27,7 +27,7 @@ struct KoaComebackView: View {
   var body: some View {
     let lang = services?.preferences.lang ?? .vi
     VStack(spacing: DS.Spacing.md) {
-      MascotFigureView(emotion: .happy, size: 150)
+      MascotFigureView(emotion: .happy, size: 150, interactive: true, stage: true)
         .frame(height: 180)
         .accessibilityHidden(true)
       Text("koa.comeback.title")

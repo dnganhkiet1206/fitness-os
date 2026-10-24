@@ -32,6 +32,7 @@ miễn **giữ nguyên ý định** của app và chỉ làm app tốt hơn — 
 
 | Màn / phần | Native làm gì | RN làm gì | Loại | RN/Android | PR | Agent |
 |---|---|---|---|---|---|---|
+| Koa lớn "sống" (23/10, theo trang hỗ trợ Kiệt thích; chờ Kiệt duyệt mock) | Koa lớn (spec sheet, phòng Koa, onboarding chào, màn quay lại, ăn mừng kỷ lục): đầu và mắt nhìn theo ngón tay rồi trở về giữa; chạm thì nhảy (nén, bật, đáp), hai tai giật, lông mày nhướn, rung nhẹ; đổi nét mặt thì nảy nhẹ; tai trong theo tai ngoài, tai thỉnh thoảng giật và nghiêng theo hướng nhìn; chớp mắt có nét mi cong (mi gốc che mắt trơn). Bản tối: sân khấu đèn (chùm đèn, sàn sáng màu hạng, viền ấm, bóng đổ); bản sáng giữ giấy / phẳng. Cử động là ma trận theo id lớp (`KoaPoke`), bản vẽ không đổi; tắt khi Reduce Motion, chùm đèn tắt khi Reduce Transparency. Koa nhỏ giữ nguyên | Koa chỉ chạy hoạt ảnh gốc, không phản ứng chạm | cải tiến | không cần | `claude/koa-live-ios` | Claude |
 | Nước uống — lần đọc đầu hỏng | Nói "không đọc được" / offline; thẻ ở tab Dinh dưỡng ẩn | Màn `/water` hiện `0.00L`, 0% như thể chưa uống gì | sửa lỗi RN | nên làm theo (màn `/water`) | #568 | A |
 | Nước uống — biểu đồ 7 ngày | Cộng cả lần uống còn trong hàng đợi offline | Biểu đồ tuần không có bản vá lạc quan; hôm nay trên biểu đồ lệch số tổng cho tới khi server trả lời | cải tiến | nên làm theo | #568 | A |
 | Nước uống — tiêu đề thẻ ở tab Dinh dưỡng | Chuỗi dịch đủ en/vi/es ("Agua") | `lang === 'vi' ? 'Nước uống' : 'Water'` — bản es hiện "Water" | sửa lỗi RN | nên làm theo | #568 | A |
