@@ -435,22 +435,10 @@ struct TodayExtras<Plan: View>: View {
       Task { await claimKoaWeek() }
     }
     .onChange(of: scenePhase) { _, phase in
-      // Ra tiền cảnh: qua nửa đêm thì đổi ngày; không thì đọc lại điểm (đồng
-      // bộ Apple Health / ghi buổi ở nơi khác có thể vừa dựng lại hôm nay).
-      guard phase == .active, let readiness else { return }
-      Task {
-        let today = Self.today()
-        if today != readiness.date { await readiness.move(to: today) } else { await readiness.load() }
-        await mascot?.load()
-        await loadGains()
-        await todo?.refresh()
-        await focusChecks()
-        await trend?.move(to: today)
-        await activity?.load(today: today)
-        await loadMeals()
-        await loadNotifications()
-      }
+      if phase == .active { foreground() }
     }
+    // Để app mở qua nửa đêm: Hôm nay phải sang ngày mới ngay (24/10).
+    .onNewDay { foreground() }
     // Đóng khi phiên không còn là của người này (đăng xuất / đổi tài khoản) —
     // KHÔNG ở `onDisappear`: nó chạy cả khi đẩy màn con hay đổi tab, và sổ đã
     // đóng thì không mở lại.
@@ -609,6 +597,25 @@ struct TodayExtras<Plan: View>: View {
   /// Sau một lần ghi: đọc lại những gì thẻ việc, năng lượng và điểm sẵn sàng hiện.
   /// Sổ ghi bữa mới cho hôm nay (mỗi sổ chép được một lần; qua ngày thì "hôm
   /// qua" đổi theo).
+  /// Ra tiền cảnh / qua nửa đêm: qua nửa đêm thì đổi ngày; không thì đọc lại
+  /// điểm (đồng bộ Apple Health / ghi buổi ở nơi khác có thể vừa dựng lại hôm nay).
+  private func foreground() {
+    guard let readiness else { return }
+    Task {
+      let today = Self.today()
+      if today != readiness.date { await readiness.move(to: today) } else { await readiness.load() }
+      await ownWater?.clockTick()
+      await mascot?.load()
+      await loadGains()
+      await todo?.refresh()
+      await focusChecks()
+      await trend?.move(to: today)
+      await activity?.load(today: today)
+      await loadMeals()
+      await loadNotifications()
+    }
+  }
+
   private func loadMeals() async {
     meals?.close()
     let l = services.makeMealLogger(userId: userId, date: nil, mealType: nil)

@@ -222,6 +222,31 @@ struct MealDiaryBookTests {
     #expect(b.isToday)
   }
 
+  final class MovingClock: WallClock, @unchecked Sendable {
+    var at: Date
+    init(_ at: Date) { self.at = at }
+    func now() -> Date { at }
+  }
+
+  /// App để mở qua nửa đêm (24/10): đang xem hôm nay thì sang hôm nay mới;
+  /// đang xem ngày khác thì giữ nguyên.
+  @Test func followTodayMovesOnlyWhenViewingToday() async {
+    let s = FakeSource(), store = FakeStore()
+    let clock = MovingClock(Self.noon)
+    let b = MealDiaryBook(userId: "u1", source: s, store: store, clock: clock, timeZone: Self.utc)
+    #expect(b.followToday() == false)
+    clock.at = Self.noon.addingTimeInterval(86_400)
+    #expect(b.followToday() == true)
+    #expect(b.date.description == "2026-10-10")
+    #expect(b.phase == .loading)
+    #expect(b.followToday() == false)
+
+    let past = MealDiaryBook(userId: "u1", source: s, store: store, date: LocalDate("2026-10-07"), clock: clock, timeZone: Self.utc)
+    clock.at = Self.noon.addingTimeInterval(2 * 86_400)
+    #expect(past.followToday() == false)
+    #expect(past.date.description == "2026-10-07")
+  }
+
   /// Xoá: chụp → xoá → tính lại tổng bữa → dựng lại NGÀY ĐANG XEM → mời hoàn tác.
   @Test func deleteResyncsRebuildsAndOffersUndo() async {
     let s = FakeSource(), store = FakeStore()

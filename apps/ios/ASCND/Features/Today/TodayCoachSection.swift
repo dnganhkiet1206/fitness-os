@@ -76,13 +76,9 @@ struct TodayCoachSection: View {
         await loadInsight()
       }
       .onChange(of: scenePhase) { _, phase in
-        guard phase == .active else { return }
-        hour = Calendar.current.component(.hour, from: Date())
-        Task {
-          await signal?.move(to: Self.today())
-          await loadInsight()
-        }
+        if phase == .active { moveToToday() }
       }
+      .onNewDay { moveToToday() }
       // Vừa ghi gì đó: số của thẻ (giá trị, TB, tiêu đề) đọc lại; dấu dữ liệu đổi
       // (ngủ / ăn / tập) thì kéo luôn câu AI mới.
       .onChange(of: refresh) { _, _ in
@@ -111,6 +107,14 @@ struct TodayCoachSection: View {
     await nudges.load(
       date: Self.today(), lang: lang.rawValue, stamp: "\(stamp)|\(part.rawValue)", tzOffset: Coach.tzOffset(.current, at: Date()),
       force: force)
+  }
+
+  private func moveToToday() {
+    hour = Calendar.current.component(.hour, from: Date())
+    Task {
+      await signal?.move(to: Self.today())
+      await loadInsight()
+    }
   }
 
   private static func today() -> LocalDate { LocalDate(SystemWallClock().nowMillis(), in: .current) }

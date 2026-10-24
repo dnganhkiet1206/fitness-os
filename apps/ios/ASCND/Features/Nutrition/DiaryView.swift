@@ -48,6 +48,8 @@ struct DiaryView: View {
     .navigationBarTitleDisplayMode(.inline)
     .refreshable { await book.load() }
     .task(id: book.date) { await book.load() }
+    // Đang xem hôm nay mà để app mở qua nửa đêm: sang hôm nay mới.
+    .onNewDay { book.followToday() }
     .task { await week?.load() }
   }
 
