@@ -13,7 +13,6 @@ import { readFileSync, writeFileSync, mkdirSync, rmSync, cpSync } from 'node:fs'
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadScene, koaSvg, keyframesCss } from './tools/koa-svg.mjs';
-import { koaRunSvg } from './tools/koa-run.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repo = join(here, '..', '..');
@@ -215,7 +214,7 @@ function moodSection(h) {
 // Koa thật của app (vector, sống) đứng cạnh điện thoại — Koa 3D cắt nền dán vào trông như sticker
 // (Kiệt, 23/10).
 const phone = (l, screen, mate) =>
-  `<div class="phone"><img src="${asset(`img/app/${l}-${screen}.jpg`)}" alt="" width="900" height="1954" loading="lazy"></div>${mate ? koaStage(mate.run ? koaRunSvg(koaScene, { uid: `k${koaUid++}` }) : koa(mate), 'koa-stage--mate') : ''}`;
+  `<div class="phone"><img src="${asset(`img/app/${l}-${screen}.jpg`)}" alt="" width="900" height="1954" loading="lazy"></div>${mate ? koaStage(koa(mate), 'koa-stage--mate') : ''}`;
 
 // Văn bản pháp lý trên web là đúng bản trong app (legal-content.json) — nói rõ cho người đọc.
 const sameAsApp = (t) =>
@@ -231,7 +230,7 @@ const render = {
     const h = t.home;
     const soon = `<span class="soon">${icon('phone')}${esc(h.soon)}</span>`;
     const visuals = [
-      phone(l, 'today', { run: true }),
+      phone(l, 'today', { expression: 'happy' }),
       phone(l, 'nutrition', { expression: 'grin' }),
       rankMorph(h.gains),
       phone(l, 'progress', { expression: 'delighted' }),
