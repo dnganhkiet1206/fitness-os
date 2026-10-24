@@ -310,17 +310,9 @@ struct AssistantTab: View {
       if phase == .background { chat?.appBackgrounded() }
       // Ra tiền cảnh: số hôm nay có thể đã đổi (ghi bữa / đồng bộ Health), hoặc
       // đã qua nửa đêm — lời chào, tóm tắt và chip đọc lại.
-      guard phase == .active else { return }
-      let today = Self.today()
-      Task {
-        await signal?.move(to: today)
-        await weekly?.move(to: today)
-        await progress?.move(to: today)
-        await metrics?.move(to: today, kcalTarget: kcalTarget)
-        await steps?.move(to: today)
-        await goals?.move(to: today)
-      }
+      if phase == .active { moveToToday() }
     }
+    .onNewDay { moveToToday() }
     .onReceive(NotificationCenter.default.publisher(for: .healthSynced)) { _ in
       Task { await reloadAfterHealthSync() }
     }
@@ -353,6 +345,18 @@ struct AssistantTab: View {
   private func reloadAfterHealthSync() async {
     await signal?.load()
     await metrics?.load(kcalTarget: kcalTarget)
+  }
+
+  private func moveToToday() {
+    let today = Self.today()
+    Task {
+      await signal?.move(to: today)
+      await weekly?.move(to: today)
+      await progress?.move(to: today)
+      await metrics?.move(to: today, kcalTarget: kcalTarget)
+      await steps?.move(to: today)
+      await goals?.move(to: today)
+    }
   }
 
   private static func today() -> LocalDate { LocalDate(SystemWallClock().nowMillis(), in: .current) }

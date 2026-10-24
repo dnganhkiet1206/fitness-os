@@ -79,6 +79,7 @@ struct WaterView: View {
         guard phase == .active else { return }
         Task { await book.clockTick() }
       }
+      .onNewDay { Task { await book.clockTick() } }
       .sheet(isPresented: $showsManual) {
         WaterManualSheet(unit: unit) { amount in
           showsManual = false

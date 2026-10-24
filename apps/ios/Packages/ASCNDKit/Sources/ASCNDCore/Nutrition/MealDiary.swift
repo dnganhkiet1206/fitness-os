@@ -325,6 +325,8 @@ public final class MealDiaryBook {
   @ObservationIgnored private let timeZone: TimeZone
   @ObservationIgnored private var generation = 0
   @ObservationIgnored private var closed = false
+  /// "Hôm nay" ở lần nhìn đồng hồ trước — để biết đang xem hôm nay khi nửa đêm qua.
+  @ObservationIgnored private var seenToday: LocalDate
 
   public init(
     userId: String, source: any MealDiarySource, store: any RowStore, pending: (any PendingWrites)? = nil,
@@ -338,7 +340,9 @@ public final class MealDiaryBook {
     self.onRebuilt = onRebuilt
     self.clock = clock
     self.timeZone = timeZone
-    self.date = MealDiary.startDate(date, today: LocalDate(clock.nowMillis(), in: timeZone))
+    let today = LocalDate(clock.nowMillis(), in: timeZone)
+    self.seenToday = today
+    self.date = MealDiary.startDate(date, today: today)
   }
 
   /// Đổi tài khoản / đóng màn: lượt đọc về muộn không đổi gì nữa.
@@ -359,6 +363,17 @@ public final class MealDiaryBook {
 
   /// Về hôm nay.
   public func goToday() { show(today) }
+
+  /// Ra tiền cảnh / qua nửa đêm: đang xem hôm nay thì sang hôm nay MỚI (ngày
+  /// đang xem khác thì giữ). `true` = đã đổi ngày, cần `load()`.
+  @discardableResult
+  public func followToday() -> Bool {
+    let now = today
+    defer { seenToday = now }
+    guard !closed, now != seenToday, date == seenToday else { return false }
+    show(now)
+    return true
+  }
 
   private func show(_ day: LocalDate) {
     guard day != date else { return }
