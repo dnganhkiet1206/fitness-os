@@ -17,17 +17,14 @@ struct SmartNudgesDayPartTests {
     #expect(SmartNudges.DayPart(hour: 22) == .night)
   }
 
-  @Test func midnightDropsWaterAndKeepsSleep() {
+  /// 0 giờ: không "chưa ghi giấc ngủ đêm qua", không nước — chỉ nhắc ngủ sớm.
+  @Test func midnightIsOnlyGoToBed() {
     let out = SmartNudges.fitting([Self.water, Self.protein, Self.sleep], hour: 0, lang: "vi")
-    #expect(out == [Self.sleep])
-  }
-
-  @Test func midnightWithoutSleepAddsGoToBed() {
-    let out = SmartNudges.fitting([Self.water], hour: 0, lang: "vi")
     #expect(out.count == 1)
-    #expect(out.first?.type == "sleep")
+    #expect(out.first?.type == SmartNudges.bedtimeType)
     #expect(out.first?.priority == .high)
-    #expect(SmartNudges.fitting([], hour: 0, lang: "vi").isEmpty)
+    #expect(InsightHighlight.topic(SmartNudges.bedtimeType) == nil)
+    #expect(SmartNudges.fitting([], hour: 23, lang: "vi").isEmpty)
   }
 
   @Test func daytimeKeepsEverything() {
