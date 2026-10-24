@@ -14684,19 +14684,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "Not enough data yet. Any ONE of these gives you a score: one workout with sets logged, one night of sleep logged, or 5 resting-HR/HRV readings within 28 days. Meals and calories are not part of this score."
+      "value": "Not enough data yet. Any ONE of these gives you a score: one workout with sets logged, one night of sleep logged, or 7 days with resting-HR/HRV readings within 28 days. Meals and calories are not part of this score."
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Chưa đủ dữ liệu để tính điểm sẵn sàng. Chỉ cần MỘT trong ba: một buổi tập có ghi set, một đêm ngủ được ghi, hoặc 5 lần đo nhịp tim nghỉ/HRV trong 28 ngày. Bữa ăn và calo không được tính vào điểm này."
+      "value": "Chưa đủ dữ liệu để tính điểm sẵn sàng. Chỉ cần MỘT trong ba: một buổi tập có ghi set, một đêm ngủ được ghi, hoặc 7 ngày có đo nhịp tim nghỉ/HRV trong 28 ngày. Bữa ăn và calo không được tính vào điểm này."
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Aún no hay datos suficientes. UNA de estas tres cosas te da una puntuación: un entrenamiento con series registradas, una noche de sueño registrada o 5 lecturas de FC en reposo/HRV en 28 días. Las comidas y las calorías no forman parte de esta puntuación."
+      "value": "Aún no hay datos suficientes. UNA de estas tres cosas te da una puntuación: un entrenamiento con series registradas, una noche de sueño registrada o 7 días con lecturas de FC en reposo/HRV en 28 días. Las comidas y las calorías no forman parte de esta puntuación."
      }
     }
    }
@@ -14776,19 +14776,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "needs 5 readings"
+      "value": "needs 7 days of readings"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "cần 5 lần đo"
+      "value": "cần 7 ngày đo"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "necesita 5 lecturas"
+      "value": "necesita 7 días de lecturas"
      }
     }
    }

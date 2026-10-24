@@ -101,7 +101,7 @@ public enum ReadinessCard {
 
   /// Vì sao một ô còn trống — nói việc sẽ lấp nó (`NEED`).
   public enum Need: String, Sendable, Hashable {
-    /// HRV / RHR: cần 5 lần đo (nền của chính người dùng).
+    /// HRV / RHR: cần 7 ngày đo (nền của chính người dùng).
     case readings
     /// Giấc ngủ: chưa ghi đêm qua.
     case night

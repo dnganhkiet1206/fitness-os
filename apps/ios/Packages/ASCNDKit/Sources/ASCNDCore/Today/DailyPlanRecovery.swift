@@ -53,7 +53,7 @@ extension DailyLog {
   ) async -> DailyPlan.Recovery? {
     let reads = queries(userId: userId, date: date, in: tz)
     guard let s = try? await readSources(reads, store),
-      let input = readinessInput(sources: s, now: now, in: tz),
+      let input = readinessInput(sources: s, date: date, now: now, in: tz),
       let result = ReadinessEngine.compute(input)
     else { return nil }
     return .from(input: input, result: result, date: date)
