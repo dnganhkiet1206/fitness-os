@@ -149,8 +149,19 @@
       var k = Math.min(1, Math.hypot(dx, dy) * 2), a = Math.atan2(dy, dx);
       p.style.setProperty('--lx', (Math.cos(a) * 4 * k).toFixed(2) + 'px');
       p.style.setProperty('--ly', (Math.sin(a) * 3 * k).toFixed(2) + 'px');
+      // Đầu nghiêng nhẹ về phía con trỏ (tối đa 7°), cùng chiều với mắt.
+      if (!reduce) p.style.setProperty('--hr', clamp(dx * 14, -7, 7).toFixed(2) + 'deg');
     });
   }, { passive: true });
+
+  // ---- Koa: chạm / bấm thì nhảy lên, tai giật; mở trang thì Koa đầu tiên nhảy chào ----
+  function hop(stage) {
+    if (reduce || stage.classList.contains('hop')) return;
+    stage.classList.add('hop');
+    setTimeout(function () { stage.classList.remove('hop'); }, 950);
+  }
+  lookers.forEach(function (p) { p.addEventListener('click', function () { hop(p); }); });
+  if (lookers[0]) setTimeout(function () { hop(lookers[0]); }, 1300);
   document.querySelectorAll('[data-morph]').forEach(function (m) { if (m.firstElementChild) m.firstElementChild.classList.add('on'); });
 
   // ---- Koa đọc ngày: chạm để đổi nét mặt; tự đổi khi đang thấy mà chưa chạm ----

@@ -166,8 +166,9 @@ export function koaSvg(scene, { expression = 'happy', pose = 'idle', rank = 0, w
     const own = n.tf ?? (n.bind ? parseOps(String(f[n.bind] ?? '')) : []);
     const base = [...(n.tr ? [['t', n.tr[0], n.tr[1]]] : []), ...(ba?.tr ?? []), ...(drivesTf ? [] : own)];
 
+    // Độ mờ gốc giữ lại làm thuộc tính: trong độ trễ (fill-mode none) nó là giá trị đúng như app
+    // (`ownOpacity`); khi hoạt ảnh chạy, rãnh opacity của CSS thắng thuộc tính.
     const attrs = Object.entries(n.a ?? {})
-      .filter(([k]) => !(drivesOp && k === 'opacity'))
       .map(([k, v]) => `${k}="${esc(k === 'id' ? `${uid}-${v}` : fixRefs(v))}"`)
       .join(' ');
     const cls = n.id ? ` class="k-${n.id}"` : '';
@@ -178,7 +179,9 @@ export function koaSvg(scene, { expression = 'happy', pose = 'idle', rank = 0, w
     if (anim) {
       // Hoạt ảnh gốc: rãnh transform THAY transform của lớp (như app); `translate` CSS vẫn còn.
       const style = `animation:${anim.k} ${anim.dur}ms ${EASE[anim.ease]} ${anim.delay}ms infinite;transform-box:view-box;transform-origin:${fmt(origin[0])}px ${fmt(origin[1])}px`;
-      el = `<g${isShape ? '' : cls}${gAttrs} style="${style}">${el}</g>`;
+      // Trong độ trễ app dùng transform của chính lớp (`over`) quanh gốc; khi chạy, rãnh CSS thay nó.
+      const over = drivesTf && own.length ? ` transform="${[['t', origin[0], origin[1]], ...own, ['t', -origin[0], -origin[1]]].map(opSvg).join(' ')}"` : '';
+      el = `<g${isShape ? '' : cls}${gAttrs}${over} style="${style}">${el}</g>`;
       if (base.length) el = `<g transform="${base.map(opSvg).join(' ')}">${el}</g>`;
     } else if (base.length) {
       const o = origin[0] || origin[1] ? [['t', origin[0], origin[1]], ...base, ['t', -origin[0], -origin[1]]] : base;

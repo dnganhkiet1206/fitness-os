@@ -246,6 +246,21 @@ html:not(.js) .main > .intro + *, html.still .main > .intro + * { margin-top: 0;
   filter: drop-shadow(0 -1px 0 rgb(255 214 180 / 0.5)) drop-shadow(0 0 20px rgb(var(--glow) / 0.26)) drop-shadow(0 24px 26px rgb(0 0 0 / 0.5)); }
 /* Mắt nhìn theo con trỏ (fancy.js đặt --lx / --ly). */
 .koa-stage .k-pupil_left, .koa-stage .k-pupil_right { translate: var(--lx, 0px) var(--ly, 0px); transition: translate 0.25s var(--ease); }
+/* Cử động từng bộ phận, CỘNG vào hoạt ảnh gốc (dùng thuộc tính rotate / translate riêng,
+   không đụng `transform` mà hoạt ảnh của app đang chạy):
+   - đầu nghiêng theo con trỏ (--hr, fancy.js); rê vào thì lông mày nhướn;
+   - chạm / bấm: nhảy lên rồi đáp, hai tai giật nhẹ (.hop, fancy.js). */
+.koa-stage .k-HEADRIG { rotate: var(--hr, 0deg); transition: rotate 0.45s var(--ease); }
+.koa-stage .k-eyebrow_left, .koa-stage .k-eyebrow_right { transition: translate 0.25s var(--ease); }
+.koa-stage:hover .k-eyebrow_left, .koa-stage:hover .k-eyebrow_right { translate: 0 -3px; }
+.koa-stage .koa-svg { cursor: pointer; pointer-events: auto; }
+.koa-stage.hop .k-POSERIG { transform-box: view-box; transform-origin: 120px 294px; animation: koaHop 0.9s var(--ease); }
+.koa-stage.hop .k-ear_left, .koa-stage.hop .k-ear_left_inner { transform-box: fill-box; transform-origin: 80% 90%; animation: earFlickL 0.7s var(--ease) 0.1s; }
+.koa-stage.hop .k-ear_right, .koa-stage.hop .k-ear_right_inner { transform-box: fill-box; transform-origin: 20% 90%; animation: earFlickR 0.7s var(--ease) 0.1s; }
+@keyframes koaHop { 0%, 100% { transform: none; } 18% { transform: scale(1.05, 0.93); } 45% { transform: translateY(-18px) scale(0.97, 1.05); } 72% { transform: scale(1.06, 0.92); } 86% { transform: scale(0.99, 1.01); } }
+@keyframes earFlickL { 0%, 100% { rotate: 0deg; } 35% { rotate: -14deg; } 65% { rotate: 6deg; } }
+@keyframes earFlickR { 0%, 100% { rotate: 0deg; } 35% { rotate: 14deg; } 65% { rotate: -6deg; } }
+
 /* Nhiều nét mặt chồng lên nhau, chỉ hiện một; đổi thì "nảy" nhẹ. */
 .koa-layer { position: absolute; inset: 0; opacity: 0; transition: opacity 0.18s; }
 .koa-layer { transform-origin: 50% 100%; }
