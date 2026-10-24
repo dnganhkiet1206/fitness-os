@@ -328,6 +328,11 @@
           "The “A” puts six parts of your week in one glance."
         ]
       ]
+    },
+    "coach": {
+      "label": "An example question",
+      "q": "My legs are sore after leg day. What should I do?",
+      "a": "Soreness for a day or two after a new workout is normal. Walk lightly, drink enough water and sleep well. If there is sharp pain or swelling, rest and see a doctor."
     }
   }
 }

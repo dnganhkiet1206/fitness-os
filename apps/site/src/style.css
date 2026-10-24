@@ -196,13 +196,11 @@ html:not(.js) .main > .intro + *, html.still .main > .intro + * { margin-top: 0;
   margin-inline: auto;
 }
 .story__layer { position: absolute; inset: 0; opacity: var(--v, 1); }
-.story__layer:not(.story__layer--phone) {
+/* Liền mạch (23/10, Kiệt: "đừng bị cắt bởi viền ảnh"): không khung thẻ; tranh mờ dần vào nền. */
+.story__layer:has(> .story__img) {
   inset: 10% 0;
-  border-radius: 32px;
-  overflow: hidden;
-  border: 1px solid var(--line);
-  background: var(--sheet);
-  box-shadow: 0 40px 120px -20px rgb(255 115 25 / 0.35);
+  -webkit-mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, #000 62%, transparent 100%);
+  mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, #000 62%, transparent 100%);
 }
 .story__img { width: 100%; height: 100%; object-fit: cover; display: block; transform: scale(calc(1.16 - var(--local, 1) * 0.16)); }
 /* iPhone với ảnh màn hình thật của app: quầng đèn dưới chân, trượt lên nhẹ khi tới bước. */
@@ -229,7 +227,6 @@ html:not(.js) .main > .intro + *, html.still .main > .intro + * { margin-top: 0;
   .story__stage { grid-template-columns: 1fr; align-content: center; gap: 24px; padding: 76px 0 24px; }
   .story__visual { order: -1; }
   .story__frame { height: min(46vh, 100vw); }
-  .story__layer:not(.story__layer--phone) { border-radius: 24px; }
   .story__step h2 { font-size: 40px; margin-bottom: 12px; }
   .story__step ul { font-size: 16px; }
   .story__dots { margin-top: 16px; }
@@ -299,7 +296,7 @@ html:not(.js) .main > .intro + *, html.still .main > .intro + * { margin-top: 0;
 }
 
 /* Koa lớn lên: sáu vóc dáng chồng nhau trong khung của bước, đổi theo cuộn. */
-.morph { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 85%, rgb(255 255 255 / 0.04), var(--sheet) 70%); }
+.morph { position: absolute; inset: 0; }
 .morph__layer { position: absolute; inset: 0; opacity: 0; transition: opacity 0.25s; }
 .morph__layer.on { opacity: 1; }
 .morph__layer.on .koa-svg { animation: swap 0.5s var(--ease); transform-origin: 50% 100%; }
@@ -335,6 +332,8 @@ html:not(.js) .main > .intro + *, html.still .main > .intro + * { margin-top: 0;
   position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 26% 50%;
   transform: scale(calc(1.06 - var(--p, 0) * 0.06)); filter: brightness(calc(1 - var(--p, 0) * 0.6));
   animation: heroIn 1.8s var(--ease) both;
+  -webkit-mask-image: linear-gradient(180deg, #000 70%, transparent);
+  mask-image: linear-gradient(180deg, #000 70%, transparent);
 }
 .hero__stage::after {
   content: ""; position: absolute; inset: 0; pointer-events: none;
@@ -355,7 +354,7 @@ html:not(.js) .main > .intro + *, html.still .main > .intro + * { margin-top: 0;
   .hero__stage { align-items: flex-end; }
   .hero__img { height: 52%; object-position: 24% 40%; }
   .hero__stage::after { background: linear-gradient(180deg, rgb(13 12 11 / 0.3), transparent 18%, transparent 34%, var(--ink) 52%); }
-  .phone__mate { height: 40%; transform: translateX(-118%) translateY(calc((1 - var(--local, 1)) * 18%)); }
+  .koa-stage--mate { height: 38%; transform: translateX(-108%) translateY(calc((1 - var(--local, 1)) * 18%)); }
   .hero__text { width: 100%; padding: 0 20px 76px; text-align: center; }
   .hero__title { font-size: 46px; margin-bottom: 14px; }
   .hero__lead { font-size: 17px; margin-bottom: 20px; }
@@ -363,36 +362,48 @@ html:not(.js) .main > .intro + *, html.still .main > .intro + * { margin-top: 0;
   .hero .intro__actions { justify-content: center; }
 }
 
-/* Koa 3D đứng cạnh điện thoại ở từng bước, nhảy lên khi tới bước. */
-.phone__mate {
-  position: absolute; left: 50%; bottom: -3%; height: 44%; width: auto; z-index: 2; pointer-events: none;
-  transform: translateX(-132%) translateY(calc((1 - var(--local, 1)) * 18%));
-  filter: drop-shadow(0 18px 22px rgb(0 0 0 / 0.65));
+/* Koa thật (vector, sống) đứng cạnh điện thoại, trong vầng đèn của chính nó; nhảy lên khi tới bước. */
+.koa-stage--mate {
+  position: absolute; left: 50%; bottom: -2%; height: 42%; aspect-ratio: 4 / 5; z-index: 2;
+  transform: translateX(-118%) translateY(calc((1 - var(--local, 1)) * 18%));
 }
 
 /* Một ngày với Koa: năm thẻ, mỗi thẻ một Koa 3D đứng trong vầng đèn. */
 .day { padding: 14vh 0 4vh; text-align: center; }
 .day__title { font-size: clamp(36px, 5vw, 64px); letter-spacing: -0.035em; max-width: 20ch; margin: 0 auto 48px; }
 .day__row { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; }
-.day__card {
-  border-radius: 28px; padding: 18px 18px 22px; text-align: left;
-  background: linear-gradient(180deg, rgb(244 239 231 / 0.065), rgb(244 239 231 / 0.02));
-  box-shadow: inset 0 0 0 1px var(--line);
-  transition: transform 0.45s var(--ease), box-shadow 0.45s;
-}
-.day__card:hover { transform: translateY(-6px); box-shadow: inset 0 0 0 1px rgb(255 115 25 / 0.45), 0 30px 60px -30px rgb(255 115 25 / 0.55); }
+.day__card { padding: 0 6px; text-align: center; transition: transform 0.45s var(--ease); }
+.day__card:hover { transform: translateY(-6px); }
 .day__pic { position: relative; aspect-ratio: 1; display: grid; place-items: end center; margin-bottom: 14px; }
 .day__pic::before { content: ""; position: absolute; inset: 15% 0 -4%; background: radial-gradient(ellipse at 50% 88%, rgb(255 115 25 / 0.34), transparent 62%); }
 .day__pic img { position: absolute; left: 3%; bottom: 0; width: 94%; height: 100%; object-fit: contain; object-position: 50% 100%; filter: drop-shadow(0 14px 16px rgb(0 0 0 / 0.55)); transition: transform 0.5s var(--ease); }
 .day__card:hover .day__pic img { transform: translateY(-6px) scale(1.04); }
 .day__card h3 { font: 750 20px/1.2 var(--display); letter-spacing: -0.01em; margin: 0 0 6px; }
-.day__card p { color: var(--muted); font-size: 15px; line-height: 1.45; margin: 0; }
+.day__card p { color: var(--muted); font-size: 15px; line-height: 1.45; margin: 0 auto; max-width: 24ch; }
 @media (max-width: 1080px) { .day__row { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 859px) {
   .day { padding-top: 10vh; }
   .day__row { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 12px; margin: 0 -20px; padding: 0 20px 8px; scrollbar-width: none; }
   .day__row::-webkit-scrollbar { display: none; }
   .day__card { flex: 0 0 70%; scroll-snap-align: center; }
+}
+
+/* Koa Coach: Koa thật hỏi đáp, không khung ảnh. Bong bóng hiện dần khi cuộn tới. */
+.coach { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); align-items: center; gap: 48px; padding: 14vh 0 8vh; }
+.koa-stage--coach { width: min(100%, 360px); aspect-ratio: 4 / 5; justify-self: center; }
+.coach__title { font-size: clamp(34px, 4.4vw, 58px); letter-spacing: -0.035em; margin-bottom: 28px; }
+.chat { display: grid; gap: 12px; margin-bottom: 18px; }
+.bubble { margin: 0; max-width: 46ch; padding: 14px 18px; font-size: 17px; line-height: 1.45; border-radius: 22px; }
+.bubble--me { justify-self: end; background: var(--paper); color: var(--ink); border-bottom-right-radius: 6px; }
+.bubble--koa { justify-self: start; background: rgb(244 239 231 / 0.07); box-shadow: inset 0 0 0 1px var(--line); border-bottom-left-radius: 6px; }
+.coach__note { color: var(--muted); font-size: 14px; margin: 0; }
+@supports (animation-timeline: view()) {
+  html:not(.still) .bubble { animation: rise linear both; animation-timeline: view(); animation-range: entry 10% cover 30%; }
+}
+@media (max-width: 859px) {
+  .coach { grid-template-columns: 1fr; gap: 16px; padding: 10vh 0 6vh; }
+  .koa-stage--coach { width: min(56vw, 260px); }
+  .coach__title { text-align: center; }
 }
 
 /* Cuối trang: Koa 3D giơ ngón cái, đứng trên vầng đèn. */

@@ -328,6 +328,11 @@
           "Chữ “A” gom sáu phần của tuần vào một cái nhìn."
         ]
       ]
+    },
+    "coach": {
+      "label": "Ví dụ một câu hỏi",
+      "q": "Chân mình đau mỏi sau buổi tập chân. Nên làm gì?",
+      "a": "Đau mỏi một hai ngày sau buổi tập mới là bình thường. Đi bộ nhẹ, uống đủ nước, ngủ đủ giấc. Nếu đau nhói hay sưng thì nghỉ và hỏi bác sĩ nhé."
     }
   }
 }

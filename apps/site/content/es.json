@@ -328,6 +328,11 @@
           "La “A” reúne seis partes de tu semana en un vistazo."
         ]
       ]
+    },
+    "coach": {
+      "label": "Una pregunta de ejemplo",
+      "q": "Me duelen las piernas tras el día de pierna. ¿Qué hago?",
+      "a": "Es normal tener agujetas uno o dos días después de un entreno nuevo. Camina suave, bebe agua y duerme bien. Si hay dolor agudo o hinchazón, descansa y consulta a un médico."
     }
   }
 }

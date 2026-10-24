@@ -211,8 +211,10 @@ function moodSection(h) {
 
 // Màn hình thật của app (chụp trên simulator, tài khoản test, đúng ngôn ngữ của trang) trong khung
 // iPhone. Chụp lại: xem apps/site/README.md, mục "Ảnh màn hình app".
+// Koa thật của app (vector, sống) đứng cạnh điện thoại — Koa 3D cắt nền dán vào trông như sticker
+// (Kiệt, 23/10).
 const phone = (l, screen, mate) =>
-  `<div class="phone"><img src="${asset(`img/app/${l}-${screen}.jpg`)}" alt="" width="590" height="1281" loading="lazy"></div>${mate ? koa3d(mate, 'phone__mate') : ''}`;
+  `<div class="phone"><img src="${asset(`img/app/${l}-${screen}.jpg`)}" alt="" width="590" height="1281" loading="lazy"></div>${mate ? koaStage(koa(mate), 'koa-stage--mate') : ''}`;
 
 // Văn bản pháp lý trên web là đúng bản trong app (legal-content.json) — nói rõ cho người đọc.
 const sameAsApp = (t) =>
@@ -228,10 +230,10 @@ const render = {
     const h = t.home;
     const soon = `<span class="soon">${icon('phone')}${esc(h.soon)}</span>`;
     const visuals = [
-      phone(l, 'today', 'walk'),
-      phone(l, 'nutrition', 'phone'),
+      phone(l, 'today', { expression: 'happy', pose: 'running' }),
+      phone(l, 'nutrition', { expression: 'grin' }),
       rankMorph(h.gains),
-      phone(l, 'progress', 'cheer'),
+      phone(l, 'progress', { expression: 'delighted' }),
     ];
     return `
       ${heroScene(h.title, h.lead, t.help.scrollHint, `<div class="intro__actions">${soon}<a class="button button--ghost" href="#how">${esc(h.how)}</a></div>`)}
@@ -252,10 +254,16 @@ const render = {
       </section>
       ${moodSection(h)}
       ${daySection(h.day)}
-      <section class="zoom" data-scene>
-        <div class="sticky zoom__stage">
-          <figure class="zoom__frame"><img src="${asset('img/scene-askkoa.jpg')}" alt="Koa" width="902" height="568"></figure>
-          <p class="zoom__caption">${esc(h.zoom)}<small>${esc(h.zoomNote)}</small></p>
+      <section class="coach" aria-labelledby="coach-title">
+        ${koaStage(koa({ expression: 'confident' }), 'koa-stage--coach')}
+        <div class="coach__text">
+          <p class="eyebrow">Koa Coach</p>
+          <h2 id="coach-title" class="coach__title">${esc(h.zoom)}</h2>
+          <div class="chat" aria-label="${esc(h.coach.label)}">
+            <p class="bubble bubble--me">${esc(h.coach.q)}</p>
+            <p class="bubble bubble--koa">${esc(h.coach.a)}</p>
+          </div>
+          <p class="coach__note">${esc(h.zoomNote)}</p>
         </div>
       </section>
       <section class="after" aria-labelledby="principles"><h2 id="principles">${esc(t.about.principlesTitle)}</h2>
