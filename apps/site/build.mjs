@@ -214,7 +214,7 @@ function moodSection(h) {
 // Koa thật của app (vector, sống) đứng cạnh điện thoại — Koa 3D cắt nền dán vào trông như sticker
 // (Kiệt, 23/10).
 const phone = (l, screen, mate) =>
-  `<div class="phone"><img src="${asset(`img/app/${l}-${screen}.jpg`)}" alt="" width="590" height="1281" loading="lazy"></div>${mate ? koaStage(koa(mate), 'koa-stage--mate') : ''}`;
+  `<div class="phone"><img src="${asset(`img/app/${l}-${screen}.jpg`)}" alt="" width="900" height="1954" loading="lazy"></div>${mate ? koaStage(koa(mate), 'koa-stage--mate') : ''}`;
 
 // Văn bản pháp lý trên web là đúng bản trong app (legal-content.json) — nói rõ cho người đọc.
 const sameAsApp = (t) =>

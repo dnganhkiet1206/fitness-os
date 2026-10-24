@@ -211,7 +211,7 @@ html:not(.js) .main > .intro + *, html.still .main > .intro + * { margin-top: 0;
 }
 .phone {
   position: absolute; top: 0; left: 50%;
-  height: 100%; width: auto; aspect-ratio: 590 / 1281;
+  height: 100%; width: auto; aspect-ratio: 900 / 1954;
   padding: 1.4%;
   border-radius: 13% / 6%;
   background: linear-gradient(145deg, #3a3631, #0b0a09 38%, #24211e);
