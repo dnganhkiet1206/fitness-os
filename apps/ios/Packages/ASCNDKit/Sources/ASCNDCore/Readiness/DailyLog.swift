@@ -239,7 +239,7 @@ public enum DailyLog {
     var recommendation = ""
     var acwr: JSONValue = .null
 
-    if let input = readinessInput(sources: s, now: now, in: tz) {
+    if let input = readinessInput(sources: s, date: date, now: now, in: tz) {
       if let r = ReadinessEngine.compute(input) {
         score = JS.json(r.score)
         status = .string(r.status.rawValue)
@@ -275,7 +275,9 @@ public enum DailyLog {
   /// Đầu vào của điểm sẵn sàng từ các nguồn của ngày — CHUNG cho hàng
   /// `daily_logs` và tín hiệu phục hồi của Daily Plan (GĐ1), nên hai nơi không
   /// bao giờ đọc số khác nhau. `nil` khi chưa đủ dữ liệu để chấm.
-  public static func readinessInput(sources s: Sources, now: EpochMillis, in tz: TimeZone) -> ReadinessInput? {
+  public static func readinessInput(
+    sources s: Sources, date: LocalDate, now: EpochMillis, in tz: TimeZone
+  ) -> ReadinessInput? {
     let measured28d = s.load28d.filter { SessionLoad.load($0) != nil }
     let trainingDays28d = chronicDaysCovered(measured28d, now: now)
     let sleepDuration = mainSleep(s.sleeps).map(asleepMinutes) ?? 0
@@ -286,15 +288,19 @@ public enum DailyLog {
     // Một họ HRV, không bao giờ hai: SDNN hôm nay thì nền cũng chỉ SDNN.
     let today = s.bio.first
     let usingSdnn = JS.present(today?["hrv_sdnn_ms"])
+    let hrvColumn = usingSdnn ? "hrv_sdnn_ms" : "hrv_rmssd_ms"
+    // Nền và "hôm nay" theo NGÀY (24/10): đồng hồ ghi nhiều mẫu một ngày (mỗi lần
+    // đồng bộ một mẫu mới nhất) — đếm theo mẫu thì ngày nhiều mẫu lấn nền, và một
+    // lần đo lẻ giữa buổi chiều thành "HRV hôm nay". Mỗi ngày = trung bình các mẫu;
+    // hôm nay không nằm trong nền của chính nó.
+    let key = date.description
+    let hrvDays = dailyMeans(s.bioHistory, hrvColumn, in: tz)
+    let rhrDays = dailyMeans(s.bioHistory, "hr_bpm", in: tz)
+    let hrvHistory = hrvDays.filter { $0.day != key }.map(\.mean)
+    let rhrHistory = rhrDays.filter { $0.day != key }.map(\.mean)
+    let todayHrv = hrvDays.first { $0.day == key }?.mean
     let hrvToday: Double? =
-      usingSdnn
-      ? JS.number(today?["hrv_sdnn_ms"])
-      : (JS.present(today?["hrv_rmssd_ms"]) ? JS.number(today?["hrv_rmssd_ms"]) : nil)
-    let hrvHistory = s.bioHistory
-      .map { usingSdnn ? $0["hrv_sdnn_ms"] : $0["hrv_rmssd_ms"] }
-      .filter(JS.present)
-      .map(JS.number)
-    let rhrHistory = s.bioHistory.filter { JS.present($0["hr_bpm"]) }.map { JS.number($0["hr_bpm"]) }
+      todayHrv ?? (JS.present(today?[hrvColumn]) ? JS.number(today?[hrvColumn]) : nil)
 
     let load7d = SessionLoad.window(s.load7d)
     let load28d = SessionLoad.window(s.load28d)
@@ -302,15 +308,32 @@ public enum DailyLog {
 
     let hasEnoughData = s.bioHistory.count >= 3 || s.sleeps7d.count >= 3 || load28d > 0
     guard hasEnoughData else { return nil }
-    let hr = JS.number(today?["hr_bpm"])
+    let hr = rhrDays.first { $0.day == key }?.mean ?? JS.number(today?["hr_bpm"])
     let soreness: Double? = JS.present(today?["soreness_1_10"]) ? JS.number(today?["soreness_1_10"]) : nil
     return ReadinessInput(
       hrvToday: hrvToday,
       rhrToday: JS.truthy(hr) ? hr : nil,
       sleepMinLastNight: sleepDuration, sleepTargetMin: sleepTargetMin, sleepDebt7dMin: debt,
       trainingLoad7d: load7d, trainingLoad28d: load28d, trainingDays28d: trainingDays28d,
-      sorenessToday: soreness, illness: today?["illness_flag"] == .bool(true), painFlagMax: soreness,
+      // Đau cơ đã trừ vào điểm tải; KHÔNG coi nó là "chấn thương" (trần 45) nữa —
+      // một con số bị trừ hai lần (24/10). App chưa có ô ghi chấn thương riêng.
+      sorenessToday: soreness, illness: today?["illness_flag"] == .bool(true), painFlagMax: nil,
       hrvHistory28d: hrvHistory, rhrHistory28d: rhrHistory)
+  }
+
+  /// Trung bình mỗi ngày địa phương của một cột (bỏ ô trống), theo thứ tự ngày.
+  static func dailyMeans(_ rows: [JSONValue], _ column: String, in tz: TimeZone) -> [(day: String, mean: Double)] {
+    var order: [String] = []
+    var sums: [String: (total: Double, n: Double)] = [:]
+    for r in rows where JS.present(r[column]) {
+      let v = JS.number(r[column])
+      guard v.isFinite, v > 0 else { continue }
+      let d = localDay(r["date_time"], tz)
+      if sums[d] == nil { order.append(d) }
+      sums[d, default: (0, 0)].total += v
+      sums[d, default: (0, 0)].n += 1
+    }
+    return order.map { ($0, sums[$0]!.total / sums[$0]!.n) }
   }
 
   /// `projectionEquals`: hàng đang lưu đã mang đúng các số ta vừa tính chưa.
