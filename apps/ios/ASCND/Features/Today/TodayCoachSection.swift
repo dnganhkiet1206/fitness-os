@@ -272,7 +272,15 @@ struct SmartInsightCard: View {
       let topic = InsightHighlight.topic(lead.type)
       VStack(alignment: .leading, spacing: DS.Spacing.md) {
         VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-          if let topic {
+          if lead.type == SmartNudges.bedtimeType {
+            // Đêm khuya: tiêu đề đậm như mọi điểm nhấn, câu nhắc ở dòng dưới (24/10).
+            Text("insight.bedtime.title")
+              .font(.title.bold())
+              .tracking(-0.4)
+              .foregroundStyle(DS.Color.foreground.swiftUI)
+              .fixedSize(horizontal: false, vertical: true)
+              .accessibilityAddTraits(.isHeader)
+          } else if let topic {
             Text(verbatim: title(topic))
               .font(.title.bold())
               .tracking(-0.4)
@@ -285,7 +293,9 @@ struct SmartInsightCard: View {
           }
           Text(verbatim: lead.message)
             .font(.title3)
-            .foregroundStyle(topic == nil ? DS.Color.foreground.swiftUI : DS.Color.mutedForeground.swiftUI)
+            .foregroundStyle(
+              topic == nil && lead.type != SmartNudges.bedtimeType
+                ? DS.Color.foreground.swiftUI : DS.Color.mutedForeground.swiftUI)
             .fixedSize(horizontal: false, vertical: true)
         }
         if topic != nil || !rest.isEmpty || source {

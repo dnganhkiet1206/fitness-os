@@ -47,9 +47,9 @@ extension SmartNudges {
 
   static func goToBed(_ lang: String) -> Nudge {
     let message = switch CoachQuickReply.Lang(lang) {
-    case .vi: "Đã khuya rồi — đi ngủ sớm để mai cơ thể hồi phục tốt hơn."
-    case .en: "It's late — get to bed early so you recover well for tomorrow."
-    case .es: "Ya es tarde: acuéstate pronto para recuperarte bien mañana."
+    case .vi: "Đi ngủ sớm để mai cơ thể hồi phục tốt hơn."
+    case .en: "Get to bed early so you recover well for tomorrow."
+    case .es: "Acuéstate pronto para recuperarte bien mañana."
     }
     return Nudge(type: bedtimeType, message: message, priority: .high)
   }
