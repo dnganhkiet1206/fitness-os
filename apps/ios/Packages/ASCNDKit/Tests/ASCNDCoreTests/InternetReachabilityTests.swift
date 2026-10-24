@@ -144,3 +144,65 @@ struct InternetReachabilityTests {
     #expect(h.prober.probes.count == 2)
   }
 }
+
+/// Dò song song Google + backend (23/10): một bên có là có.
+@MainActor
+struct FallbackReachabilityTests {
+  typealias Manual = InternetReachabilityTests.ManualProber
+  let backend = ReachabilityConfig(
+    url: "https://example.supabase.co/auth/v1/health", method: "GET", requestTimeoutMillis: 15_000,
+    shortTimeoutMillis: 5_000, longTimeoutMillis: 60_000)
+
+  func run(_ google: Int?, _ back: Int?, backFirst: Bool = false) -> (result: [Int?], g: Manual, b: Manual) {
+    let g = Manual(), b = Manual()
+    let f = FallbackReachabilityProber(primary: g, backup: b, backupConfig: backend)
+    var out: [Int?] = []
+    _ = f.start(.netInfoDefault) { out.append($0) }
+    if backFirst {
+      b.probes[0].finish(back)
+      g.probes[0].finish(google)
+    } else {
+      g.probes[0].finish(google)
+      b.probes[0].finish(back)
+    }
+    return (out, g, b)
+  }
+
+  @Test func googleAloneIsEnough() {
+    let r = run(204, nil)
+    #expect(r.result == [204])
+    #expect(r.b.probes[0].cancelled)
+  }
+
+  /// Mạng chặn Google nhưng backend trả lời: vẫn có internet.
+  @Test func backendAloneIsEnough() {
+    let r = run(nil, 204, backFirst: true)
+    #expect(r.result == [204])
+    #expect(r.g.probes[0].cancelled)
+    #expect(run(nil, 204).result == [204])
+  }
+
+  /// Cả hai không: báo đúng kết quả của Google (cổng đăng nhập trả 200 → không).
+  @Test func bothFailReportsPrimary() {
+    #expect(run(200, nil).result == [200])
+    #expect(run(nil, nil, backFirst: true).result == [nil])
+  }
+
+  @Test func backupUsesItsOwnConfig() {
+    let g = Manual(), b = Manual()
+    var seen: [String] = []
+    final class Spy: ReachabilityProber {
+      var urls: [String] = []
+      let inner = InternetReachabilityTests.ManualProber()
+      func start(_ c: ReachabilityConfig, _ d: @escaping @MainActor (Int?) -> Void) -> any ReachabilityProbe {
+        urls.append(c.url)
+        return inner.start(c, d)
+      }
+    }
+    let spy = Spy()
+    _ = FallbackReachabilityProber(primary: g, backup: spy, backupConfig: backend).start(.netInfoDefault) { _ in }
+    seen = spy.urls
+    #expect(seen == [backend.url])
+    #expect(b.probes.isEmpty)
+  }
+}

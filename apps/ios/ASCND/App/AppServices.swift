@@ -305,7 +305,15 @@ final class AppServices {
       sync.setSignedInUser(next)
     }
     UNUserNotificationCenter.current().delegate = reminderPresenter
-    network = NetworkObserver(prober: URLSessionReachabilityProber(), timers: TaskNetTimers()) {
+    // Dò cả Google lẫn backend của app (23/10): mạng chặn Google không còn báo
+    // "Ngoại tuyến" khi Supabase vẫn chạy. Thiếu cấu hình backend → chỉ Google.
+    let prober: any ReachabilityProber =
+      backend.map {
+        FallbackReachabilityProber(
+          primary: URLSessionReachabilityProber(), backup: BackendReachabilityProber(),
+          backupConfig: BackendReachabilityProber.config(for: $0.config.url))
+      } ?? URLSessionReachabilityProber()
+    network = NetworkObserver(prober: prober, timers: TaskNetTimers()) {
       [weak self] connected, reachable in
       self?.applyNetwork(connected: connected, reachable: reachable)
     }

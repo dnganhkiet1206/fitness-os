@@ -24,6 +24,14 @@ public struct ReachabilityConfig: Sendable, Hashable {
   public var shortTimeoutMillis: Int64
   public var longTimeoutMillis: Int64
 
+  public init(url: String, method: String, requestTimeoutMillis: Int64, shortTimeoutMillis: Int64, longTimeoutMillis: Int64) {
+    self.url = url
+    self.method = method
+    self.requestTimeoutMillis = requestTimeoutMillis
+    self.shortTimeoutMillis = shortTimeoutMillis
+    self.longTimeoutMillis = longTimeoutMillis
+  }
+
   /// `DEFAULT_CONFIGURATION` của NetInfo — app RN không gọi `configure`.
   public static let netInfoDefault = ReachabilityConfig(
     url: "https://clients3.google.com/generate_204", method: "HEAD",
@@ -226,5 +234,62 @@ public final class NetworkObserver {
     guard let path else { return }
     reachability = value
     onState(path.isConnected, value.bool)
+  }
+}
+
+/// Hai phép dò song song (23/10, Kiệt duyệt đề xuất P2): phép dò chuẩn (Google
+/// `generate_204`, như NetInfo) VÀ một phép dò tới backend của chính app. Một bên
+/// xác nhận có internet (204) là đủ; cả hai không thì báo kết quả của phép dò chuẩn.
+///
+/// Vì sao: chỉ hỏi Google thì mạng chặn Google (mạng công ty, một số nước) báo
+/// "Ngoại tuyến" dù Supabase vẫn chạy — người dùng thấy dải vàng và nghĩ dữ liệu
+/// không lưu được. Backend là thứ app thật sự cần; nó trả lời được là app dùng được.
+///
+/// `backup` tự quyết thế nào là "backend trả lời thật" (vd. không bị chuyển hướng
+/// sang cổng đăng nhập Wi-Fi) và gọi `done(204)` khi đúng như vậy.
+@MainActor
+public final class FallbackReachabilityProber: ReachabilityProber {
+  private let primary: any ReachabilityProber
+  private let backup: any ReachabilityProber
+  private let backupConfig: ReachabilityConfig
+
+  public init(primary: any ReachabilityProber, backup: any ReachabilityProber, backupConfig: ReachabilityConfig) {
+    self.primary = primary
+    self.backup = backup
+    self.backupConfig = backupConfig
+  }
+
+  private final class Pair: ReachabilityProbe {
+    var probes: [any ReachabilityProbe] = []
+    func cancel() { probes.forEach { $0.cancel() } }
+  }
+
+  public func start(_ config: ReachabilityConfig, _ done: @escaping @MainActor (Int?) -> Void) -> any ReachabilityProbe {
+    let pair = Pair()
+    var settled = false
+    var primaryResult: Int?? = .none
+    var backupFailed = false
+    func finish(_ status: Int?) {
+      guard !settled else { return }
+      settled = true
+      pair.cancel()
+      done(status)
+    }
+    func maybeFinishNegative() {
+      if case .some(let p) = primaryResult, backupFailed { finish(p) }
+    }
+    pair.probes.append(
+      primary.start(config) { status in
+        if status.map(ReachabilityConfig.isReachable(status:)) == true { return finish(status) }
+        primaryResult = .some(status)
+        maybeFinishNegative()
+      })
+    pair.probes.append(
+      backup.start(backupConfig) { status in
+        if status == 204 { return finish(204) }
+        backupFailed = true
+        maybeFinishNegative()
+      })
+    return pair
   }
 }
