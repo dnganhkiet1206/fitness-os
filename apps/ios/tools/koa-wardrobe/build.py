@@ -922,12 +922,17 @@ faceshift['kids'].insert(bi, G(meditate_eye(82, -1) + meditate_eye(158, 1), **{"
 #    `rk1…rk5` (hạng ≥ n), `rkE0…rkE5` (đúng hạng n), `armRankL/R`, `topRank`, `handRank`.
 RANK_T = [0, .18, .4, .6, .82, 1]
 LINE, SH = "#A3ACB6", "#C8CFD6"
+# Thân "B" (23/10, Kiệt chọn): hẹp ngay dưới đầu rồi phình dần xuống bụng, như bản vẽ
+# mẫu (`native/assets/mascots/koa-construction-manual.png`); thân export cũ rộng ~108 ngay
+# ở vai nên trông thẳng. Hạng cao vẫn nở vai, gọn eo như 20/10, trên dáng mới.
 def rank_torso(t):
-    sw = 54 + 12 * t; ww = 53 - 7 * t
+    sh = 38 + 20 * t; ww = 53 - 7 * t
     L = lambda x: f"{120 - x:g}"; R_ = lambda x: f"{120 + x:g}"
-    return (f"M120 140 C {L(24 + 4 * t)} 140 {L(48 + 10 * t)} 152 {L(sw)} 180 C {L(sw + 2)} 200 {L(ww + 5)} 224 {L(ww)} 244 "
-            f"C {L(ww - 4)} 264 92 279 120 279 C 148 279 {R_(ww - 4)} 264 {R_(ww)} 244 C {R_(ww + 5)} 224 {R_(sw + 2)} 200 {R_(sw)} 180 "
-            f"C {R_(48 + 10 * t)} 152 {R_(24 + 4 * t)} 140 120 140 Z")
+    return (f"M120 140 C {L(19 + 4 * t)} 140 {L(34 + 10 * t)} 150 {L(sh)} 167 C {L(sh + 4)} 184 {L(56 + 8 * t)} 202 {L(55 - 4 * t)} 226 "
+            f"C {L(55 - 4 * t)} 234 {L(54 - 6 * t)} 240 {L(ww)} 244 "
+            f"C {L(ww - 4)} 264 92 279 120 279 C 148 279 {R_(ww - 4)} 264 {R_(ww)} 244 "
+            f"C {R_(54 - 6 * t)} 240 {R_(55 - 4 * t)} 234 {R_(55 - 4 * t)} 226 C {R_(56 + 8 * t)} 202 {R_(sh + 4)} 184 {R_(sh)} 167 "
+            f"C {R_(34 + 10 * t)} 150 {R_(19 + 4 * t)} 140 120 140 Z")
 def stroke(dd, w=2.4, c=LINE, o=1):
     a = dict(stroke=c, stroke_width=w, stroke_linecap="round", fill="none")
     if o != 1: a['opacity'] = o
@@ -950,7 +955,8 @@ tf0 = torso_stand['kids'][ti]
 variants = []
 for r, t in enumerate(RANK_T):
     v = json.loads(json.dumps(tf0))
-    if r: v['a']['d'] = rank_torso(t); v.pop('id', None)
+    v['a']['d'] = rank_torso(t)
+    if r: v.pop('id', None)
     variants.append(G([v], **{"if": f"rkE{r}"}))
 torso_stand['kids'][ti:ti + 1] = variants
 
@@ -1055,7 +1061,7 @@ for n in walk(nodes[3]):
             for key in ('fill', 'stroke'):
                 if a.get(key) in RECOLOR[f]: a[key] = RECOLOR[f][a[key]]
 
-TORSO_D = tf0['a']['d']
+TORSO_D = rank_torso(0)
 RUN_D = next(n for n in walk(nodes[3]) if n.get('id') == 'torso_front_run')['a']['d']
 ARM_D = {s_: next(n for n in walk(nodes[3]) if n.get('id') == f'arm_{s_}_upper')['a']['d'] for s_ in ('left', 'right')}
 LEG_D = {s_: next(n for n in walk(nodes[3]) if n.get('id') == f'leg_{s_}_lower')['a']['d'] for s_ in ('left', 'right')}
@@ -1222,16 +1228,12 @@ for side in ('left', 'right'):
 arms_idle = next(k for k in body['kids'] if k.get('if') == 'armsIdle')
 body['kids'].remove(arms_idle)
 body['kids'].insert(next(i for i, k in enumerate(body['kids']) if k.get('id') == 'TORSO'), arms_idle)
-def torso_sides(t):
-    if t == 0: dd = "M66 182 C 63 200 63 224 67 244"
-    else:
-        sw = 54 + 12 * t; ww = 53 - 7 * t
-        dd = f"M{120 - sw:g} 180 C {120 - sw - 2:g} 200 {120 - ww - 5:g} 224 {120 - ww:g} 244"
-    return [stroke(dd, w=2.2, c=FURD), stroke(mx(dd), w=2.2, c=FURD)]
-for r, v in enumerate(variants):
-    shape = v['kids'][0]['a']['d']
-    cid = f"torsoClip{r}"
-    v['kids'] += [{"t": "clipPath", "id": cid, "kids": [P(shape)]}, G(torso_sides(RANK_T[r]), a={"clip-path": f"url(#{cid})"})]
+# (c) cũ — nét viền hai bên thân — bỏ ngày 23/10 (Kiệt: thân B "bỏ nét cũ đi").
+# Vệt bóng RN trong cánh tay (`M71.5 192 …`) vẽ theo mép thân cũ; thân B hẹp hơn nên nó
+# lộ ra thành một nét thẳng — bỏ luôn.
+for n in walk({'kids': d['nodes']}):
+    if 'kids' in n:
+        n['kids'] = [k for k in n['kids'] if not re.match(r'M(71\.5|168\.5) 192 ', (k.get('a') or {}).get('d', ''))]
 
 # Mọi món đã vẽ lại phải xuất hiện đúng một lần trở lên trong cây mới.
 flags_in = {n.get('if') for n in walk({'kids': d['nodes']})}

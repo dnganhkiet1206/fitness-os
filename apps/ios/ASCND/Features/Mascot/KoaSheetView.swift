@@ -81,18 +81,24 @@ struct KoaSheetView: View {
     .sensoryFeedback(.selection, trigger: taps)
   }
 
+  private func cycle() {
+    taps += 1
+    let all = KoaFlags.Expression.allCases
+    let i = all.firstIndex(of: expression) ?? 0
+    expression = all[(i + 1) % all.count]
+  }
+
   private var hero: some View {
     VStack(spacing: DS.Spacing.xs) {
-      Button {
-        taps += 1
-        let all = KoaFlags.Expression.allCases
-        let i = all.firstIndex(of: expression) ?? 0
-        expression = all[(i + 1) % all.count]
-      } label: {
-        KoaFigureView(expression: expression, pose: pose, worn: worn, size: 200, build: build)
-      }
-      .buttonStyle(.plain)
+      // Koa tự nhận chạm (nhìn theo ngón tay + nhảy), nên không bọc `Button`
+      KoaFigureView(
+        expression: expression, pose: pose, worn: worn, size: 200, build: build, interactive: true, stage: true,
+        onTap: cycle
+      )
+      .accessibilityElement()
       .accessibilityLabel(Text(String(localized: "koa.sheet.cycle")))
+      .accessibilityAddTraits(.isButton)
+      .accessibilityAction(.default, cycle)
       Text(verbatim: "\(KoaFlags.expressionLabel[expression] ?? expression.rawValue.uppercased()) · \(pose.rawValue.uppercased())")
         .font(DS.TextStyle.rounded(.caption2, weight: .medium))
         .tracking(1.6)

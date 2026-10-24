@@ -18,6 +18,8 @@
     @State private var flow: OnboardingController?
 
     static var enabled: Bool { ProcessInfo.processInfo.environment["ASCND_DEBUG_FLOW"] == "1" }
+    /// Spec sheet của Koa (Koa lớn sống, 23/10) mà không cần đăng nhập.
+    static var koaSheet: Bool { ProcessInfo.processInfo.environment["ASCND_DEBUG_KOA"] == "1" }
 
     var body: some View {
       switch stage {
