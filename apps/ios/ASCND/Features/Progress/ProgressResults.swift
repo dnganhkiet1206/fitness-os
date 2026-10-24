@@ -36,8 +36,9 @@ extension ProgressStyle {
       return String(localized: "ps.n.training \(Int(due))")
     case .steps:
       guard let avg = r.average else { return nil }
-      // Hôm nay chưa có số → "—", không phải 0 (thiếu dữ liệu thì nói thiếu).
-      return String(localized: "ps.n.today \(r.today.map { n($0) } ?? "—") \(n(avg))")
+      // Hôm nay chưa có số → chỉ nói trung bình, không "—" lơ lửng (24/10).
+      guard let today = r.today else { return String(localized: "ps.n.steps \(n(avg))") }
+      return String(localized: "ps.n.stepsToday \(n(today)) \(n(avg))")
     case .nutrition:
       guard let avg = r.average, let t = r.target else { return nil }
       return String(localized: "ps.n.protein \(n(avg)) \(n(t))")
@@ -48,8 +49,11 @@ extension ProgressStyle {
       guard let avg = r.average else { return nil }
       return String(localized: "ps.n.recovery \(n(avg))")
     case .body:
-      guard let today = r.today, let avg = r.average else { return nil }
-      return String(localized: "ps.n.today \("\(n(unit.display(today), 1)) \(unit.label)") \("\(n(unit.display(avg), 1)) \(unit.label)")")
+      // Lần cân gần nhất + thay đổi trong 4 tuần (đúng số mà "Tốt / Cần chú ý" xét).
+      guard let last = r.today, let change = r.target else { return nil }
+      let delta = unit.display(abs(change))
+      let sign = change > 0.05 ? "+" : change < -0.05 ? "−" : ""
+      return String(localized: "ps.n.weight \("\(n(unit.display(last), 1)) \(unit.label)") \("\(sign)\(n(delta, 1)) \(unit.label)")")
     }
   }
 
