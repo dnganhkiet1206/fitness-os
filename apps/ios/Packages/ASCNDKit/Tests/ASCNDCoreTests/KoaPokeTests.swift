@@ -118,20 +118,30 @@ struct KoaEarLashTests {
     #expect(abs(atan2(r[1], r[0]) * 180 / .pi - KoaMath.earLean) < 1e-9)
   }
 
-  @Test func lashShowsOnlyWhenTheLidIsDown() {
-    #expect(KoaMath.lashOpacity(0) == 0)
-    #expect(KoaMath.lashOpacity(1) == 1)
+  /// Nét mi đi cùng mi: cùng ma trận co với mảng lông mi, nên luôn nằm ở mép dưới mi.
+  @Test func lashRidesTheLidEdge() throws {
     var o = KoaRender.Options()
     o.poke = KoaMath.Poke()
-    // koaBlink khép hẳn ở 93,5–95,5% của 5,2 s
-    o.t = 0.95 * 5200
-    let closed = String(describing: KoaRender.figure(o))
-    #expect(closed.contains(KoaMath.lashPaths[0]))
+    let track = try #require(KoaScene.keyframes["koaBlink"]?.tf)
+    for f in [0.94, 0.945, 0.95, 0.96] {
+      o.t = f * 5200
+      let tree = KoaRender.figure(o)
+      let lid = KoaMath.sampleMat(track, f, "io", 120, 72)
+      let lash = try #require(Self.find(tree) { $0.kids.first?.props["d"] == .string(KoaMath.lashPaths[0]) })
+      #expect(lash.matrix == lid, "\(f)")
+    }
+    // mi mở: không có nét mi
     o.t = 0.5 * 5200
-    #expect(!String(describing: KoaRender.figure(o)).contains(KoaMath.lashPaths[0]))
+    #expect(Self.find(KoaRender.figure(o)) { $0.kids.first?.props["d"] == .string(KoaMath.lashPaths[0]) } == nil)
     // Koa nhỏ (không `poke`) giữ cú chớp gốc
     o.poke = nil
     o.t = 0.95 * 5200
-    #expect(!String(describing: KoaRender.figure(o)).contains(KoaMath.lashPaths[0]))
+    #expect(Self.find(KoaRender.figure(o)) { $0.kids.first?.props["d"] == .string(KoaMath.lashPaths[0]) } == nil)
+  }
+
+  static func find(_ e: KoaRender.Element, _ pred: (KoaRender.Element) -> Bool) -> KoaRender.Element? {
+    if pred(e) { return e }
+    for k in e.kids { if let r = find(k, pred) { return r } }
+    return nil
   }
 }
