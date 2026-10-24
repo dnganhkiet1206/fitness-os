@@ -42,7 +42,13 @@ public enum KoaLight {
   public static let rimWidth = 1.6
   public static let rimColour = "#FFE9B8"
   public static let rimStops: [(Double, Double)] = [(0, 1), (0.07, 0.45), (0.16, 0), (1, 0)]
-  static let rimIds: Set<String> = [
+  /// KHÔNG có tay (Kiệt 24/10: "phần tay nối với thân bị lộ ra khi tay duỗi"): dải
+  /// viền / sáng tính theo khung bao của TỪNG hình, nên mép trên của tay — đúng chỗ
+  /// nối vai — sáng như đỉnh đầu, thành một vệt cắt ngang vai. Thân ở cùng độ cao
+  /// (19–77 % khung bao thân) gần như không còn viền / sáng, nên bỏ hai dải này
+  /// khỏi tay là tay liền màu với thân. Khác RN (`KoaScene.rn` giữ bản RN cho golden).
+  static var rimIds: Set<String> { KoaScene.rn ? rnRimIds : ["head_front", "ear_left", "ear_right", "torso_front", "torso_front_run"] }
+  static let rnRimIds: Set<String> = [
     "head_front", "ear_left", "ear_right", "torso_front", "torso_front_run", "arm_left_upper", "arm_right_upper",
   ]
 
@@ -62,7 +68,9 @@ public enum KoaLight {
   public static let bodyStops: [(Double, String, Double)] = [
     (0, "#FFFFFF", 0.28), (0.12, "#FFFFFF", 0.12), (0.28, "#FFFFFF", 0.03), (0.45, "#FFFFFF", 0), (1, "#FFFFFF", 0),
   ]
-  static let bodyIds: Set<String> = ["torso_front", "torso_front_run", "arm_left_upper", "arm_right_upper"]
+  static var bodyIds: Set<String> {
+    KoaScene.rn ? ["torso_front", "torso_front_run", "arm_left_upper", "arm_right_upper"] : ["torso_front", "torso_front_run"]
+  }
 
   public static let shadowGradient = "koaShadowSoft"
   public static let shadowSpread: (Double, Double) = (1.15, 0.66)
