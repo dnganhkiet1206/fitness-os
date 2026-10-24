@@ -260,6 +260,16 @@ html:not(.js) .main > .intro + *, html.still .main > .intro + * { margin-top: 0;
 @keyframes koaHop { 0%, 100% { transform: none; } 18% { transform: scale(1.05, 0.93); } 45% { transform: translateY(-18px) scale(0.97, 1.05); } 72% { transform: scale(1.06, 0.92); } 86% { transform: scale(0.99, 1.01); } }
 @keyframes earFlickL { 0%, 100% { rotate: 0deg; } 35% { rotate: -14deg; } 65% { rotate: 6deg; } }
 @keyframes earFlickR { 0%, 100% { rotate: 0deg; } 35% { rotate: 14deg; } 65% { rotate: -6deg; } }
+/* Tai như app (KoaPoke, 23/10): nghiêng theo con trỏ (cùng chiều đầu, ~0,7 góc đầu) và
+   thỉnh thoảng giật một bên — mỗi tai 12,8 s, trái lúc 3 s, phải lúc 9,4 s, giật 0,42 s. */
+.koa-svg .k-ear-lean, .koa-svg .k-ear-twitch { transform-box: view-box; }
+.koa-svg .k-ear-leanL, .koa-svg .k-ear-twitchL { transform-origin: 78px 96px; }
+.koa-svg .k-ear-leanR, .koa-svg .k-ear-twitchR { transform-origin: 162px 96px; }
+.koa-stage .k-ear-lean { rotate: calc(var(--hr, 0deg) * 0.7); transition: rotate 0.45s var(--ease); }
+.koa-svg .k-ear-twitchL { animation: earTwitchL 12.8s ease-in-out 3s infinite; }
+.koa-svg .k-ear-twitchR { animation: earTwitchR 12.8s ease-in-out 9.4s infinite; }
+@keyframes earTwitchL { 0%, 3.28%, 100% { rotate: 0deg; } 0.98% { rotate: -9deg; } 1.97% { rotate: 3deg; } }
+@keyframes earTwitchR { 0%, 3.28%, 100% { rotate: 0deg; } 0.98% { rotate: 9deg; } 1.97% { rotate: -3deg; } }
 
 /* Nhiều nét mặt chồng lên nhau, chỉ hiện một; đổi thì "nảy" nhẹ. */
 .koa-layer { position: absolute; inset: 0; opacity: 0; transition: opacity 0.18s; }
