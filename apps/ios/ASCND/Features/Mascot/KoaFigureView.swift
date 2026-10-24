@@ -22,24 +22,72 @@ struct KoaFigureView: View {
   var paper: Bool?
   /// Hạng vóc dáng 0…5 (Gains).
   var build = 0
+  /// Koa lớn (23/10, theo trang hỗ trợ): nhìn theo ngón tay, chạm thì nhảy / tai giật /
+  /// lông mày nhướn + rung nhẹ, đổi nét mặt thì "nảy". Tắt khi Reduce Motion.
+  var interactive = false
+  /// Sân khấu đèn sau Koa (chỉ bản tối): chùm đèn, sàn sáng màu hạng, viền ấm, bóng đổ.
+  var stage = false
+  /// Nhảy chào một lần khi hiện ra (như Koa đầu trang hỗ trợ), không rung.
+  var greet = false
+  /// Chạm vào Koa (thay cho `Button` bọc ngoài — nút không nhận chạm khi Koa đang
+  /// theo ngón tay). Vẫn gọi khi Reduce Motion.
+  var onTap: (() -> Void)?
 
   @Environment(\.colorScheme) private var scheme
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
   @Environment(\.scenePhase) private var scenePhase
   @State private var clock = KoaClock()
+  @State private var touch = KoaTouch()
+  @State private var pokes = 0
 
   var body: some View {
     let isPaper = paper ?? (scheme == .light)
     let running = animated && !reduceMotion && scenePhase == .active
+    let live = interactive && running
+    let reacts = (interactive || greet) && running
+    let lit = stage && !isPaper
     TimelineView(.animation(minimumInterval: 1.0 / 60, paused: !running)) { timeline in
-      let t = animated ? clock.tick(timeline.date.timeIntervalSinceReferenceDate * 1000, running: running) : 0
-      canvas(t: t, paper: isPaper)
+      let ms = timeline.date.timeIntervalSinceReferenceDate * 1000
+      let t = animated ? clock.tick(ms, running: running) : 0
+      canvas(t: t, paper: isPaper, react: reacts ? touch.frame(ms) : nil)
     }
     .frame(width: size, height: size * KoaMath.aspect)
-    .accessibilityHidden(true)
+    .modifier(KoaPop(on: live, expression: expression))
+    .modifier(KoaStage(on: lit, glow: KoaStage.colour(build), solid: reduceTransparency, size: size))
+    .contentShape(Rectangle())
+    .simultaneousGesture(touchGesture(live: live), including: live || onTap != nil ? .all : .subviews)
+    .sensoryFeedback(.impact(weight: .light), trigger: pokes)
+    .task {
+      guard greet, !reduceMotion, animated else { return }
+      try? await Task.sleep(for: .milliseconds(500))
+      _ = touch.poke(at: Date.now.timeIntervalSinceReferenceDate * 1000)
+    }
+    // có `onTap` thì chỗ gọi tự đặt nhãn / nút trợ năng
+    .accessibilityHidden(onTap == nil)
   }
 
-  private func canvas(t: Double, paper: Bool) -> some View {
+  /// Ngón tay đặt / kê gần Koa: đầu và mắt nhìn theo, lông mày nhướn; nhấc lên nhanh
+  /// mà không kéo xa là một lần chạm.
+  private func touchGesture(live: Bool) -> some Gesture {
+    DragGesture(minimumDistance: 0, coordinateSpace: .local)
+      .onChanged { v in
+        guard live else { return }
+        let w = size, h = size * KoaMath.aspect
+        touch.aim(x: (v.location.x - w / 2) / (w / 2), y: (v.location.y - h * 0.35) / (h / 2))
+      }
+      .onEnded { v in
+        let now = Date.now.timeIntervalSinceReferenceDate * 1000
+        let moved = hypot(v.translation.width, v.translation.height)
+        if moved < 12 {
+          onTap?()
+          if live, touch.poke(at: now) { pokes += 1 }
+        }
+        touch.release()
+      }
+  }
+
+  private func canvas(t: Double, paper: Bool, react: KoaTouch.Frame?) -> some View {
     Canvas { ctx, canvas in
       var o = KoaRender.Options()
       o.expression = expression
@@ -53,6 +101,8 @@ struct KoaFigureView: View {
       // đèn như cũ (15/10, chủ dự án).
       o.flat = paper
       o.t = t
+      o.look = react?.look
+      o.poke = react?.poke
       let plan = KoaPaint.plan(KoaRender.figure(o))
       ctx.drawLayer { layer in
         var c = layer
@@ -92,6 +142,11 @@ struct MascotFigureView: View {
   var paper: Bool?
   /// Hạng vóc dáng của chủ linh vật; `nil` = người đang dùng (`AppServices.koaBuild`).
   var build: Int?
+  /// Koa lớn: nhìn theo ngón tay, chạm thì nhảy (`KoaFigureView.interactive`).
+  var interactive = false
+  /// Sân khấu đèn (bản tối).
+  var stage = false
+  var greet = false
   @Environment(AppServices.self) private var services: AppServices?
 
   var body: some View {
@@ -100,7 +155,8 @@ struct MascotFigureView: View {
       KoaFigureView(
         expression: dress ? .happy : state.expression, pose: dress ? .idle : state.pose, dress: dress,
         worn: KoaEmotion.worn(equipped).merging(state.outfit) { _, new in new }, size: size, animated: animated,
-        paper: paper, build: build ?? services?.koaBuild ?? 0)
+        paper: paper, build: build ?? services?.koaBuild ?? 0, interactive: interactive, stage: stage,
+        greet: greet)
     } else {
       VectorMascotView(id: mascotId, size: size, equipped: Set(equipped))
     }

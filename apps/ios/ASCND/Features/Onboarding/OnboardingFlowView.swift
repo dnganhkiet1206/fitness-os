@@ -514,7 +514,7 @@ struct OnboardingStepsView: View {
   /// Koa chào ngay màn đầu (mock 22/10) — hình Koa có sẵn, không vẽ mới.
   private var welcome: some View {
     VStack(spacing: DS.Spacing.md) {
-      MascotFigureView(emotion: .happy, size: 170, animated: !reduceMotion)
+      MascotFigureView(emotion: .happy, size: 170, animated: !reduceMotion, interactive: true, stage: true, greet: true)
         .frame(height: 210)
         .accessibilityHidden(true)
       Text(String(localized: "onb2.welcome.title"))
