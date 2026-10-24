@@ -128,50 +128,22 @@ const EASE = { lin: 'linear', out: 'ease-out', io: 'ease-in-out' };
 const REST = { BODYRIG: [-1, 120, 279], HEADRIG: [2.5, 120, 115], arm_left_upper: [2.2, 80, 178], arm_right_upper: [0.8, 160, 178], leg_left_lower: [1.5, 104, 254], leg_right_lower: [0.5, 136, 254] };
 
 // ---- Koa lớn như app (KoaPoke, 23/10): nét mi khi chớp, tai trong theo tai ngoài ----
-// Mi gốc là mảng lông trượt xuống che kín mắt; khi mi gần khép thì hiện nét mi cong.
+// Mi gốc là mảng lông trượt xuống che kín mắt. Nét mi là MÉP DƯỚI của mảng lông ấy (cung
+// dưới elip mi 82,96 · 19×25) và chạy CHÍNH hoạt ảnh của mi, nên trên nét là lông, dưới là
+// mắt — không đè lên con ngươi còn lộ (KoaMath.lashPaths, 23/10).
 const BLINKS = new Set(['koaBlink', 'koaBlink2']);
-const LASH = ['M67 104 Q82 113 97 104', 'M143 104 Q158 113 173 104'];
-const lashOpacity = (lid) => Math.min(1, Math.max(0, (lid - 0.55) / 0.35));
-// cubic-bezier(0.42, 0, 0.58, 1) = ease-in-out (KoaMath.ease "io")
-function easeIO(t) {
-  let s = t;
-  for (let i = 0; i < 8; i++) {
-    const x = 3 * 0.42 * s * (1 - s) ** 2 + 3 * 0.58 * s * s * (1 - s) + s ** 3 - t;
-    const d = 3 * 0.42 * (1 - s) ** 2 + 6 * (0.58 - 0.42) * s * (1 - s) + 3 * (1 - 0.58) * s * s;
-    if (Math.abs(d) < 1e-6) break;
-    s -= x / d;
-  }
-  return 3 * s * s * (1 - s) + s ** 3;
-}
-// scaleY của mi ở phân số t của vòng (rãnh `s 1 v`, ease-in-out từng đoạn như CSS)
-function lidAt(track, t) {
-  const f = track.tf;
-  let i = 0;
-  while (i < f.length - 1 && t > f[i + 1].o) i++;
-  const a = f[i], b = f[Math.min(i + 1, f.length - 1)];
-  const va = a.ops[0]?.[2] ?? 1, vb = (a.to ?? a.ops)[0]?.[2] ?? va;
-  const w = b.o - a.o;
-  return w > 0 ? va + (vb - va) * easeIO((t - a.o) / w) : va;
-}
-function lashKeyframes(name, track, dur) {
-  const n = Math.round(dur / 10), pts = [];
-  for (let i = 0; i <= n; i++) pts.push([i / n, lashOpacity(lidAt(track, i / n))]);
-  const keep = pts.filter((p, i) => i === 0 || i === n || p[1] !== pts[i - 1][1] || p[1] !== pts[i + 1][1]);
-  return `@keyframes lash-${name}{${keep.map(([t, o]) => `${fmt(t * 100)}%{opacity:${fmt(o)}}`).join('')}}\n`;
-}
-function lash(anim) {
+const LASH = ['M67 111.35 Q82 130.65 97 111.35', 'M143 111.35 Q158 130.65 173 111.35'];
+function lash(anim, origin) {
   const paths = LASH.map((d) => `<path d="${d}" stroke="#20242A" stroke-width="3.4" stroke-linecap="round" fill="none"/>`).join('');
-  return `<g class="k-lash" opacity="0" style="animation:lash-${anim.k} ${anim.dur}ms linear ${anim.delay}ms infinite">${paths}</g>`;
+  // trong độ trễ: mi ở khung gốc (co về 0) — nét mi cũng ẩn
+  // như mi: trong độ trễ là `scale(1,0)` gốc của lớp (thuộc tính), khi chạy rãnh CSS thay nó
+  return `<g class="k-lash" transform="translate(0 ${fmt(origin[1])}) scale(1 0) translate(0 ${fmt(-origin[1])})" style="animation:${anim.k} ${anim.dur}ms ${EASE[anim.ease]} ${anim.delay}ms infinite;transform-box:view-box;transform-origin:${fmt(origin[0])}px ${fmt(origin[1])}px">${paths}</g>`;
 }
 const EAR_SIDE = { ear_left: 'L', ear_left_inner: 'L', ear_right: 'R', ear_right_inner: 'R' };
 
 /** Mọi @keyframes của cảnh, thành CSS (một lần cho cả trang). */
 export function keyframesCss(scene) {
   let css = '';
-  for (const k of BLINKS) {
-    const n = findAnim(scene.nodes, k);
-    if (n && scene.keyframes[k]) css += lashKeyframes(k, scene.keyframes[k], n.anim.dur);
-  }
   for (const [name, track] of Object.entries(scene.keyframes)) {
     const stops = new Map();
     for (const f of track.tf ?? []) (stops.get(f.o) ?? stops.set(f.o, []).get(f.o)).push(`transform:${f.ops.length ? f.ops.map(opCss).join(' ') : 'none'}`);
@@ -186,15 +158,6 @@ export function keyframesCss(scene) {
  * SVG của Koa. `uid` đặt trước mọi id (nhiều Koa trên cùng trang không đụng gradient / clipPath).
  * Giữ id của các phần (BODYRIG, eye_left…) dưới dạng class `k-<id>` để trang tự điều khiển.
  */
-function findAnim(nodes, k) {
-  for (const n of nodes) {
-    if (n.anim?.k === k) return n;
-    const r = findAnim(n.kids ?? [], k);
-    if (r) return r;
-  }
-  return null;
-}
-
 export function koaSvg(scene, { expression = 'happy', pose = 'idle', rank = 0, worn = {}, uid = 'k' } = {}) {
   const f = flags(expression, pose, rank, worn);
   const rests = !f.poseRun && !f.poseStretch && !f.poseLift;
@@ -241,7 +204,7 @@ export function koaSvg(scene, { expression = 'happy', pose = 'idle', rank = 0, w
       el = `<g${cls}${gAttrs}>${el}</g>`;
     }
     if (rests && n.id && REST[n.id]) el = `<g transform="rotate(${REST[n.id].join(' ')})">${el}</g>`;
-    if (anim && BLINKS.has(anim.k)) el += lash(anim);
+    if (anim && BLINKS.has(anim.k)) el += lash(anim, origin);
     // Tai: tai trong theo hoạt ảnh gốc của tai ngoài (bản gốc chỉ lắc tai ngoài); mỗi tai
     // một lớp giật lúc rảnh, một lớp nghiêng theo con trỏ (style.css, `.k-ear-*`).
     const side = n.id && EAR_SIDE[n.id];
