@@ -244,7 +244,6 @@
     "lead": "Una app de entrenamiento con un compañero. Cada sesión que registras hace a Koa más fuerte, y el hábito, más fácil.",
     "soon": "Muy pronto en el App Store",
     "how": "Mira cómo funciona",
-    "statement": "No necesitas ser perfecto. Solo aparecer. Koa hace el resto.",
     "storyTitle": "Cómo funciona",
     "steps": [
       [
@@ -268,6 +267,41 @@
     "zoomNote": "Koa Coach es IA y puede equivocarse. No es consejo médico.",
     "finalTitle": "Muy pronto.",
     "finalBody": "ASCND está en desarrollo para iPhone, en español, inglés y vietnamita.",
-    "gains": "Gains"
+    "gains": "Gains",
+    "phrases": [
+      "No necesitas ser perfecto.",
+      "Solo aparecer.",
+      "Koa hace el resto."
+    ],
+    "moodEyebrow": "Koa lee tu día",
+    "moodTitle": "La cara de Koa es tu día.",
+    "moodLead": "En Hoy, la expresión de Koa sigue lo que de verdad hiciste. Nunca regaña. Toca para verlo.",
+    "moods": [
+      [
+        "Comiste",
+        "Registraste una comida: Koa sonríe de oreja a oreja."
+      ],
+      [
+        "Entrenaste",
+        "Entrenaste hoy: Koa está orgulloso."
+      ],
+      [
+        "Entrenando",
+        "Registrando un entrenamiento: Koa levanta contigo."
+      ],
+      [
+        "Todo listo",
+        "Terminaste todo hoy: Koa está feliz."
+      ],
+      [
+        "Dormiste bien",
+        "La mañana tras una noche completa: Koa fresco, con gorro."
+      ],
+      [
+        "Dormiste poco",
+        "Poco sueño, o sin comer a mediodía: Koa se sienta a descansar. Sin culpa."
+      ]
+    ],
+    "rankCaption": "Gains"
   }
 }

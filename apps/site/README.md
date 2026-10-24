@@ -72,5 +72,6 @@ Bảo mật trang: không tải gì từ bên thứ ba, CSP chỉ cho nói chuy�
 ## Ảnh
 
 - **Màn hình app** (`src/img/app/{vi,en,es}-{today,nutrition,progress}.jpg`): chụp thật trên simulator bằng tài khoản test, mỗi ngôn ngữ một bộ, đặt trong khung iPhone vẽ bằng CSS. Chụp lại khi giao diện app đổi: `apps/site/tools/capture-app-screens.sh`. Chữ viết tắt tên tài khoản ở màn Hôm nay được làm mờ.
-- **Tranh Koa** (`scene-*.jpg`, `koa.png`, `icon.png`): lấy từ app (`Assets.xcassets`, `docs/design/today/mock/koa-idle.png`), không phải ảnh stock. Koa là tranh của Kiệt: không vẽ lại khi chưa có mock được duyệt.
-- **Thang hạng** (landing): vẽ bằng HTML/CSS theo `MascotRules.ranks` (tên, màu) và `KoaGains.thresholds` (mốc Gains). Đổi hạng trong app thì sửa `ranks` trong `build.mjs`.
+- **Koa sống** (mở đầu mọi trang, câu tuyên ngôn, "Koa lớn lên", "Koa hiểu ngày của bạn", phần kết): SVG dựng lúc build từ **chính cảnh app vẽ** (`KoaWardrobeData.swift`) bằng `tools/koa-svg.mjs`: cờ biểu cảm / tư thế / vóc dáng tính như `KoaFlags` + `KoaRender.rankFlags`, hoạt ảnh gốc (chớp mắt, thở, tai, tim, hơi nóng…) ra `assets/koa.css`. Không vẽ lại: đổi tranh Koa trong app thì build lại là web theo. Nét mặt ở phần "Koa hiểu ngày của bạn" theo đúng `KoaMood` + `KoaEmotion.states`.
+- **Tranh cảnh** (`scene-*.jpg`, `icon.png`): lấy từ app (`Assets.xcassets`), không phải ảnh stock. Koa là tranh của Kiệt: không vẽ lại khi chưa có mock được duyệt.
+- **Sáu hạng** (landing): tên, màu theo `MascotRules.ranks`, mốc theo `KoaGains.thresholds`. Đổi hạng trong app thì sửa `ranks` trong `build.mjs`.

@@ -12,6 +12,7 @@
 import { readFileSync, writeFileSync, mkdirSync, rmSync, cpSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { loadScene, koaSvg, keyframesCss } from './tools/koa-svg.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repo = join(here, '..', '..');
@@ -23,6 +24,12 @@ const base = new URL(siteUrl).pathname.replace(/\/+$/, ''); // '' hoặc '/fitne
 const legal = JSON.parse(readFileSync(join(repo, 'apps/ios/ASCND/Resources/legal-content.json'), 'utf8'));
 const xcconfig = readFileSync(join(repo, 'apps/ios/Config/Backend.xcconfig'), 'utf8');
 const xc = (key) => xcconfig.match(new RegExp(`^${key}\\s*=\\s*(\\S+)`, 'm'))?.[1] ?? '';
+// Koa: cảnh app vẽ (KoaWardrobeData.swift), dựng thành SVG ở build — xem tools/koa-svg.mjs.
+const koaScene = loadScene(repo);
+let koaUid = 0;
+const koa = (o = {}) => koaSvg(koaScene, { ...o, uid: `k${koaUid++}` });
+// Sân khấu: đèn chiếu + sàn sáng; `data-look` = mắt nhìn theo con trỏ (fancy.js).
+const koaStage = (inner, cls = '') => `<div class="koa-stage ${cls}" data-look aria-hidden="true">${inner}</div>`;
 const supabase = { url: `https://${xc('ASCND_SUPABASE_HOST')}`, key: xc('ASCND_SUPABASE_KEY') };
 
 const langs = ['en', 'vi', 'es'];
@@ -87,7 +94,6 @@ const legalBody = (parts, t) =>
 const icons = {
   plus: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>',
   chart: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19 12 5l7 14M8.5 12h7" /></svg>',
-  koa: () => `<img src="${asset('img/koa.png')}" alt="" width="28" height="35">`,
   check: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>',
   minus: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12" /></svg>',
   phone: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="2.5" width="10" height="19" rx="2.5" /><path d="M10.5 18.5h3" /></svg>',
@@ -107,7 +113,7 @@ function intro(title, lead, hint, extra = '') {
   return `
       <section class="intro" data-scene>
         <div class="sticky intro__stage">
-          <img class="intro__koa" src="${asset('img/koa.png')}" alt="" width="347" height="434">
+          ${koaStage(koa({ expression: 'happy' }), 'koa-stage--intro')}
           <h1 class="intro__title shine">${esc(title)}</h1>
           <p class="intro__lead">${esc(lead)}</p>${extra}
           <p class="intro__hint" aria-hidden="true"><span></span>${esc(hint)}</p>
@@ -126,15 +132,49 @@ function statement(text) {
       </section>`;
 }
 
-// Sáu hạng của Koa (MascotRules.ranks + KoaGains.thresholds): cột mọc dần theo cuộn.
+// Sáu hạng của Koa (MascotRules.ranks + KoaGains.thresholds): Koa đổi vóc dáng theo cuộn.
 const ranks = [
-  ['Newbie', 0, '#8b93a4'], ['Gym Rat', 40, '#2bf5a8'], ['Lifter', 120, '#3ba6ff'],
-  ['Swole', 260, '#b07de0'], ['Beast', 450, '#e08a3a'], ['Mass Monster', 700, '#ffd93d'],
+  ['Newbie', 0, '139 147 164'], ['Gym Rat', 40, '43 245 168'], ['Lifter', 120, '59 166 255'],
+  ['Swole', 260, '176 125 224'], ['Beast', 450, '224 138 58'], ['Mass Monster', 700, '255 217 61'],
 ];
-function rankLadder(gains) {
-  return `<div class="ladder"><img class="ladder__koa" src="${asset('img/koa.png')}" alt="" width="347" height="434"><ol>${ranks
-    .map(([name, min, color], j) => `<li style="--j:${j};--c:${color};--h:${18 + j * 16}%"><span class="ladder__bar"></span><b>${esc(name)}</b><small>${min} ${esc(gains)}</small></li>`)
-    .join('')}</ol></div>`;
+// Nét mặt theo hạng: càng lên càng tự tin (chỉ trang web chọn; app đổi nét mặt theo ngày).
+const rankFaces = ['happy', 'happy', 'grin', 'confident', 'confident', 'delighted'];
+function rankMorph(gains) {
+  return `<div class="morph" data-morph>${ranks
+    .map(([name, min, rgb], r) => `<div class="morph__layer" style="--glow:${rgb}">${koaStage(koa({ expression: rankFaces[r], rank: r }), 'koa-stage--frame')}<p class="morph__label"><b>${esc(name)}</b><small>${min} ${esc(gains)}</small></p></div>`)
+    .join('')}</div>`;
+}
+
+// Câu tuyên ngôn từng vế, Koa đổi nét mặt theo vế đang sáng.
+function koaStatement(phrases, faces) {
+  return `
+      <section class="kstate" data-scene data-steps="${phrases.length}">
+        <div class="sticky kstate__stage">
+          ${koaStage(faces.map((e, k) => `<div class="koa-layer" data-step="${k}">${koa({ expression: e })}</div>`).join(''), 'koa-stage--state')}
+          <p class="kstate__text">${phrases.map((p, k) => `<span data-step="${k}">${esc(p)}</span>`).join(' ')}</p>
+        </div>
+      </section>`;
+}
+
+// Koa đọc ngày của bạn (KoaMood + KoaEmotion.states): chạm để đổi; tự đổi khi chưa chạm.
+const moodFaces = [
+  { expression: 'grin' }, { expression: 'confident' }, { expression: 'strain', pose: 'lifting', rank: 2 },
+  { expression: 'delighted' }, { expression: 'happytired', worn: { head: 'beanie' } }, { expression: 'meditate', pose: 'relaxing' },
+];
+function moodSection(h) {
+  return `
+      <section class="mood" aria-labelledby="mood-title" data-mood>
+        ${koaStage(moodFaces.map((o, k) => `<div class="koa-layer${k === 0 ? ' is-current' : ''}" data-mood-face="${k}">${koa(o)}</div>`).join(''), 'koa-stage--mood')}
+        <div class="mood__text">
+          <p class="eyebrow">${esc(h.moodEyebrow)}</p>
+          <h2 id="mood-title" class="mood__title">${esc(h.moodTitle)}</h2>
+          <p class="lead">${esc(h.moodLead)}</p>
+          <div class="mood__chips" role="group" aria-labelledby="mood-title">${h.moods
+            .map(([label], k) => `<button type="button" class="chip" data-mood-pick="${k}" aria-pressed="${k === 0}">${esc(label)}</button>`)
+            .join('')}</div>
+          <p class="mood__why" aria-live="polite">${h.moods.map(([, why], k) => `<span data-mood-why="${k}"${k ? ' hidden' : ''}>${esc(why)}</span>`).join('')}</p>
+        </div>
+      </section>`;
 }
 
 // Màn hình thật của app (chụp trên simulator, tài khoản test, đúng ngôn ngữ của trang) trong khung
@@ -158,12 +198,12 @@ const render = {
     const visuals = [
       phone(l, 'today'),
       phone(l, 'nutrition'),
-      rankLadder(h.gains),
+      rankMorph(h.gains),
       phone(l, 'progress'),
     ];
     return `
       ${intro(h.title, h.lead, t.help.scrollHint, `<div class="intro__actions">${soon}<a class="button button--ghost" href="#how">${esc(h.how)}</a></div>`)}
-      ${statement(h.statement)}
+      ${koaStatement(h.phrases, ['plead', 'confident', 'delighted'])}
       <section class="story" id="how" data-scene data-steps="${h.steps.length}" style="--n:${h.steps.length}" aria-labelledby="how-title">
         <div class="sticky story__stage">
           <div class="story__text">
@@ -178,6 +218,7 @@ const render = {
           </div>
         </div>
       </section>
+      ${moodSection(h)}
       <section class="zoom" data-scene>
         <div class="sticky zoom__stage">
           <figure class="zoom__frame"><img src="${asset('img/scene-askkoa.jpg')}" alt="Koa" width="902" height="568"></figure>
@@ -188,6 +229,7 @@ const render = {
         <div class="cards cards--three">${t.about.principles.map(([a, b], i) => `<article class="card"><p class="story__num">0${i + 1}</p><h3>${esc(a)}</h3><p>${esc(b)}</p></article>`).join('')}</div>
       </section>
       <section class="finale" aria-labelledby="finale">
+        ${koaStage(koa({ expression: 'delighted' }), 'koa-stage--finale')}
         <h2 id="finale" class="finale__title">${esc(h.finalTitle)}</h2>
         <p class="lead">${esc(h.finalBody)}</p>
         <div class="intro__actions">${soon}<a class="button button--ghost" href="${href(l, 'help')}">${esc(t.nav.help)}</a></div>
@@ -368,6 +410,7 @@ ${alternates}
 <link rel="icon" href="${asset('img/favicon.png')}">
 <link rel="apple-touch-icon" href="${asset('img/icon.png')}">
 <link rel="stylesheet" href="${asset('style.css')}">
+<link rel="stylesheet" href="${asset('koa.css')}">
 <script src="${asset('lang.js')}" data-base="${base}" data-lang="${l}"></script>
 <script src="${asset('fancy.js')}" defer></script>
 ${isReset ? `<script src="${asset('reset.js')}" defer></script>` : ''}
@@ -399,6 +442,8 @@ ${body}
 rmSync(out, { recursive: true, force: true });
 mkdirSync(out, { recursive: true });
 cpSync(join(here, 'src'), join(out, 'assets'), { recursive: true });
+// Hoạt ảnh gốc của Koa (chớp mắt, thở, tai, tim…) — một tệp cho mọi trang.
+writeFileSync(join(out, 'assets', 'koa.css'), keyframesCss(koaScene));
 
 for (const l of langs) {
   for (const page of pages) {

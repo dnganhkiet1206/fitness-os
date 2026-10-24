@@ -83,6 +83,12 @@
         st.style.setProperty('--d', clamp(d, -1, 1).toFixed(3));
         st.style.setProperty('--local', clamp(x - k, 0, 1).toFixed(3));
         st.classList.toggle('is-current', Math.abs(d) < 0.5);
+        // Koa lớn lên: sáu vóc dáng chia đều quãng cuộn của bước.
+        var morph = st.querySelector('[data-morph]');
+        if (morph) {
+          var idx = Math.min(morph.children.length - 1, Math.floor(clamp(x - k, 0, 0.999) * morph.children.length));
+          for (var c = 0; c < morph.children.length; c++) morph.children[c].classList.toggle('on', c === idx);
+        }
       });
       var dots = s.el.querySelectorAll('[data-dot]');
       dots.forEach(function (dot, i) { dot.classList.toggle('is-current', Math.floor(clamp(x, 0, s.n - 0.001)) === i); });
@@ -132,6 +138,40 @@
       io.observe(el);
     });
   }
+
+  // ---- Koa: mắt nhìn theo con trỏ (con ngươi dịch tối đa 4 × 3 đơn vị) ----
+  var lookers = document.querySelectorAll('[data-look]');
+  document.addEventListener('pointermove', function (e) {
+    lookers.forEach(function (p) {
+      var b = p.getBoundingClientRect();
+      if (b.bottom < 0 || b.top > H) return;
+      var dx = (e.clientX - (b.left + b.width / 2)) / b.width, dy = (e.clientY - (b.top + b.height * 0.35)) / b.height;
+      var k = Math.min(1, Math.hypot(dx, dy) * 2), a = Math.atan2(dy, dx);
+      p.style.setProperty('--lx', (Math.cos(a) * 4 * k).toFixed(2) + 'px');
+      p.style.setProperty('--ly', (Math.sin(a) * 3 * k).toFixed(2) + 'px');
+    });
+  }, { passive: true });
+  document.querySelectorAll('[data-morph]').forEach(function (m) { if (m.firstElementChild) m.firstElementChild.classList.add('on'); });
+
+  // ---- Koa đọc ngày: chạm để đổi nét mặt; tự đổi khi đang thấy mà chưa chạm ----
+  document.querySelectorAll('[data-mood]').forEach(function (box) {
+    var picks = box.querySelectorAll('[data-mood-pick]'), faces = box.querySelectorAll('[data-mood-face]'), whys = box.querySelectorAll('[data-mood-why]');
+    var cur = 0, touched = false, timer = null;
+    function show(i) {
+      cur = i;
+      picks.forEach(function (b, j) { b.setAttribute('aria-pressed', String(j === i)); });
+      faces.forEach(function (f, j) { f.classList.toggle('is-current', j === i); });
+      whys.forEach(function (w, j) { w.hidden = j !== i; });
+    }
+    picks.forEach(function (b, j) { b.addEventListener('click', function () { touched = true; clearInterval(timer); show(j); }); });
+    if (reduce || !('IntersectionObserver' in window)) return;
+    new IntersectionObserver(function (es) {
+      es.forEach(function (e) {
+        clearInterval(timer);
+        if (e.isIntersecting && !touched) timer = setInterval(function () { show((cur + 1) % picks.length); }, 2600);
+      });
+    }, { threshold: 0.4 }).observe(box);
+  });
 
   // ---- Viền thẻ sáng theo con trỏ ----
   document.addEventListener('pointermove', function (e) {

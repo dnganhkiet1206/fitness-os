@@ -244,7 +244,6 @@
     "lead": "App tập luyện có một người bạn. Mỗi buổi bạn ghi lại, Koa mạnh thêm, và thói quen dễ giữ hơn.",
     "soon": "Sắp có trên App Store",
     "how": "Xem cách hoạt động",
-    "statement": "Không cần hoàn hảo. Chỉ cần có mặt. Phần còn lại để Koa lo.",
     "storyTitle": "Cách hoạt động",
     "steps": [
       [
@@ -268,6 +267,41 @@
     "zoomNote": "Koa Coach là AI, có thể sai. Không phải lời khuyên y tế.",
     "finalTitle": "Sắp ra mắt.",
     "finalBody": "ASCND đang được phát triển cho iPhone, có tiếng Việt, tiếng Anh và tiếng Tây Ban Nha.",
-    "gains": "Gains"
+    "gains": "Gains",
+    "phrases": [
+      "Không cần hoàn hảo.",
+      "Chỉ cần có mặt.",
+      "Phần còn lại để Koa lo."
+    ],
+    "moodEyebrow": "Koa hiểu ngày của bạn",
+    "moodTitle": "Nét mặt của Koa là ngày của bạn.",
+    "moodLead": "Ở Hôm nay, Koa đổi nét mặt theo những gì bạn thật sự đã làm. Không bao giờ trách. Chạm để xem.",
+    "moods": [
+      [
+        "Đã ăn",
+        "Bạn đã ghi bữa: Koa cười tít mắt."
+      ],
+      [
+        "Đã tập",
+        "Có buổi tập hôm nay: Koa tự tin."
+      ],
+      [
+        "Đang tập",
+        "Đang ghi buổi tập: Koa cùng cuốn tạ."
+      ],
+      [
+        "Xong hết",
+        "Xong mọi việc hôm nay: Koa mừng rỡ."
+      ],
+      [
+        "Ngủ đủ",
+        "Buổi sáng sau một đêm ngủ đủ: Koa tươi tỉnh, đội mũ len."
+      ],
+      [
+        "Ngủ ít",
+        "Ngủ ít, hay quá trưa chưa ăn: Koa ngồi nghỉ. Không trách."
+      ]
+    ],
+    "rankCaption": "Gains"
   }
 }
