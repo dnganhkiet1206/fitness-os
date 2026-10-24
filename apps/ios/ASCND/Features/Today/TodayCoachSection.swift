@@ -35,8 +35,10 @@ struct TodayCoachSection: View {
   }
 
   private var lang: AppPreferences.Lang { services.preferences.lang }
+  /// Khung giờ của insight: đổi khung thì AI viết lại cho đúng giờ (24/10).
+  private var part: SmartNudges.DayPart { SmartNudges.DayPart(hour: hour) }
   private var dismissKey: String {
-    InsightHighlight.dismissKey(date: signal?.today ?? today, stamp: signal?.nudgeStamp ?? "")
+    InsightHighlight.dismissKey(date: signal?.today ?? today, stamp: "\(signal?.nudgeStamp ?? "")|\(part.rawValue)")
   }
 
   var body: some View {
@@ -47,7 +49,10 @@ struct TodayCoachSection: View {
           SmartInsightCard(
             book: nudges,
             // AI lỗi (quá tải, mạng…): nhắc dựng từ số thật thay cho dòng lỗi.
-            fallback: signal.map { SmartNudges.fallback($0.signal, lang: lang.rawValue, hour: hour) } ?? [],
+            fallback: signal.map {
+              SmartNudges.fitting(SmartNudges.fallback($0.signal, lang: lang.rawValue, hour: hour), hour: hour, lang: lang.rawValue)
+            } ?? [],
+            hour: hour,
             signal: signal,
             stepsGoal: Double(StepsGoalStore(store: UserDefaultsStore(), userId: userId).goal),
             lang: lang.rawValue,
@@ -86,6 +91,11 @@ struct TodayCoachSection: View {
           await loadInsight()
         }
       }
+      // App để mở qua mốc giờ (vd. 22 giờ): khung đổi thì đọc insight của khung mới.
+      .onReceive(Timer.publish(every: 60, on: .main, in: .common).autoconnect()) { _ in
+        hour = Calendar.current.component(.hour, from: Date())
+      }
+      .onChange(of: part) { _, _ in Task { await loadInsight() } }
       .onReceive(NotificationCenter.default.publisher(for: .healthSynced)) { _ in
         Task {
           await signal?.load()
@@ -99,7 +109,7 @@ struct TodayCoachSection: View {
   private func loadInsight(force: Bool = false) async {
     guard let nudges, let stamp = signal?.nudgeStamp else { return }
     await nudges.load(
-      date: Self.today(), lang: lang.rawValue, stamp: stamp, tzOffset: Coach.tzOffset(.current, at: Date()),
+      date: Self.today(), lang: lang.rawValue, stamp: "\(stamp)|\(part.rawValue)", tzOffset: Coach.tzOffset(.current, at: Date()),
       force: force)
   }
 
@@ -113,6 +123,8 @@ struct SmartInsightCard: View {
   let book: SmartNudgesBook
   /// Nhắc từ số thật khi AI không trả lời (`SmartNudges.fallback`).
   var fallback: [SmartNudges.Nudge] = []
+  /// Giờ hiện tại: câu AI không hợp giờ (0 giờ mà nhắc uống nước) bị bỏ.
+  var hour = Calendar.current.component(.hour, from: Date())
   var signal: AssistantSignalBook?
   var stepsGoal: Double = Double(DailySignals.defaultStepsGoal)
   var lang = "vi"
@@ -155,8 +167,8 @@ struct SmartInsightCard: View {
   /// Mọi câu AI đều đã xong hay đã cũ vì người dùng vừa ghi thêm → ẩn cả thẻ cho tới
   /// insight mới (Kiệt 22/10).
   private var allOutdated: Bool {
-    guard case .ready(let entry) = book.phase, !entry.nudges.isEmpty else { return false }
-    return InsightHighlight.live(entry.nudges, today, since: base(entry)).isEmpty
+    guard case .ready(let entry) = book.phase, !fitting(entry).isEmpty else { return false }
+    return InsightHighlight.live(fitting(entry), today, since: base(entry)).isEmpty
   }
 
   var body: some View {
@@ -233,13 +245,17 @@ struct SmartInsightCard: View {
         .contentShape(Rectangle())
       }
       .buttonStyle(.plain)
-    case .ready(let entry) where entry.nudges.isEmpty:
+    case .ready(let entry) where fitting(entry).isEmpty:
       Text("insight.empty")
         .font(DS.TextStyle.body)
         .foregroundStyle(DS.Color.mutedForeground.swiftUI)
     case .ready(let entry):
-      highlight(entry.nudges, source: false, since: base(entry))
+      highlight(fitting(entry), source: false, since: base(entry))
     }
+  }
+
+  private func fitting(_ entry: SmartNudges.Entry) -> [SmartNudges.Nudge] {
+    SmartNudges.fitting(entry.nudges, hour: hour, lang: lang)
   }
 
   // MARK: - Điểm nhấn

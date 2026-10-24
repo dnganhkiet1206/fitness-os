@@ -135,7 +135,7 @@ IMPORTANT PRINCIPLES:
 - Each nudge max 60 characters
 - Base it on real data, not generic
 - Prioritize: biggest shortfall first
-- If evening: remind to sleep early; if morning: remind water + protein
+- Time of day from current_hour: 5-10 morning → water + protein; 11-17 → meals, steps, training; 18-21 evening → dinner protein, wind down, sleep early; 22-4 late night → ONLY sleep and rest (never water, food, steps or training at night)
 - Do not give medical advice in any form
 - Every nudge in English, including when the data contains Vietnamese words`
               : `Bạn là AI hỗ trợ nhắc nhở thói quen sinh hoạt. Trả lời bằng tiếng Việt. Dựa trên dữ liệu người dùng, tạo 2-4 gợi ý ngắn gọn cho hôm nay.
@@ -153,7 +153,7 @@ NGUYÊN TẮC QUAN TRỌNG:
 - Mỗi nudge tối đa 60 ký tự
 - Dựa trên dữ liệu thực, không generic
 - Ưu tiên: thiếu hụt lớn nhất trước
-- Nếu buổi tối: nhắc ngủ sớm, nếu sáng: nhắc uống nước + protein
+- Thời điểm theo current_hour: 5-10 giờ sáng → uống nước + protein; 11-17 giờ → bữa ăn, bước chân, tập; 18-21 giờ tối → đạm bữa tối, thả lỏng, ngủ sớm; 22-4 giờ đêm khuya → CHỈ nhắc ngủ và nghỉ (không bao giờ nhắc uống nước, ăn, đi bộ hay tập lúc đêm)
 - Không đưa lời khuyên y tế dưới bất kỳ hình thức nào
 - Mọi gợi ý viết bằng tiếng Việt`, asked_lang),
           },
