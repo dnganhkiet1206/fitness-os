@@ -2,6 +2,75 @@
  "sourceLanguage": "en",
  "version": "1.0",
  "strings": {
+  "ps.n.steps %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Steps: %@ a day on average"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bước chân: trung bình %@ mỗi ngày"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Pasos: %@ al día de media"
+     }
+    }
+   }
+  },
+  "ps.n.stepsToday %@ %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Today %1$@ steps · average %2$@ a day"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hôm nay %1$@ bước · trung bình %2$@ mỗi ngày"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hoy %1$@ pasos · media de %2$@ al día"
+     }
+    }
+   }
+  },
+  "ps.n.weight %@ %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Last weigh-in %1$@ · change over 4 weeks %2$@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Lần cân gần nhất %1$@ · thay đổi trong 4 tuần %2$@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Último pesaje %1$@ · cambio en 4 semanas %2$@"
+     }
+    }
+   }
+  },
   "mr.sec.progress": {
    "extractionState": "manual",
    "localizations": {
@@ -1917,19 +1986,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "This week %1$lld / %2$lld sessions"
+      "value": "%1$lld of %2$lld planned sessions done this week"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Tuần này %1$lld / %2$lld buổi"
+      "value": "Đã tập %1$lld / %2$lld buổi theo lịch tuần này"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Esta semana %1$lld / %2$lld sesiones"
+      "value": "%1$lld de %2$lld sesiones del plan hechas esta semana"
      }
     }
    }
@@ -1940,19 +2009,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "%1$lld / %2$lld days with steps"
+      "value": "Steps recorded on %1$lld of the last %2$lld days"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "%1$lld / %2$lld ngày có số bước"
+      "value": "Có số bước %1$lld / %2$lld ngày gần nhất"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "%1$lld / %2$lld días con pasos"
+      "value": "Pasos registrados %1$lld de los últimos %2$lld días"
      }
     }
    }
@@ -1963,19 +2032,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "%1$lld / %2$lld days with meals logged"
+      "value": "Meals logged on %1$lld of the last %2$lld days"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "%1$lld / %2$lld ngày có ghi bữa"
+      "value": "Có ghi bữa %1$lld / %2$lld ngày gần nhất"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "%1$lld / %2$lld días con comidas registradas"
+      "value": "Comidas registradas %1$lld de los últimos %2$lld días"
      }
     }
    }
@@ -1986,19 +2055,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "%1$lld / %2$lld nights with data"
+      "value": "Sleep recorded on %1$lld of the last %2$lld nights"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "%1$lld / %2$lld đêm có dữ liệu"
+      "value": "Có giấc ngủ %1$lld / %2$lld đêm gần nhất"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "%1$lld / %2$lld noches con datos"
+      "value": "Sueño registrado %1$lld de las últimas %2$lld noches"
      }
     }
    }
@@ -2009,19 +2078,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "%1$lld / %2$lld days with recovery measured"
+      "value": "Recovery measured on %1$lld of the last %2$lld days"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "%1$lld / %2$lld ngày đo được phục hồi"
+      "value": "Đo được phục hồi %1$lld / %2$lld ngày gần nhất"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "%1$lld / %2$lld días con recuperación medida"
+      "value": "Recuperación medida %1$lld de los últimos %2$lld días"
      }
     }
    }
@@ -2032,19 +2101,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "%lld weigh-ins · 4 weeks"
+      "value": "%lld weigh-ins in the last 4 weeks"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "%lld lần cân · 4 tuần"
+      "value": "%lld lần cân trong 4 tuần qua"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "%lld pesajes · 4 semanas"
+      "value": "%lld pesajes en las últimas 4 semanas"
      }
     }
    }
@@ -2055,42 +2124,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "Planned before today: %lld"
+      "value": "By yesterday your plan had %lld sessions"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Theo lịch tới hôm qua: %lld buổi"
+      "value": "Theo lịch, tới hôm qua lẽ ra đã có %lld buổi"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Planificadas antes de hoy: %lld"
-     }
-    }
-   }
-  },
-  "ps.n.today %@ %@": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Today %1$@ · 7-day avg %2$@"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Hôm nay %1$@ · TB 7 ngày %2$@"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Hoy %1$@ · media 7 días %2$@"
+      "value": "Hasta ayer tu plan tenía %lld sesiones"
      }
     }
    }
@@ -2101,19 +2147,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "Protein 7-day avg %1$@ / %2$@ g"
+      "value": "Protein: %1$@ g a day on average, goal %2$@ g"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Đạm TB 7 ngày %1$@ / %2$@ g"
+      "value": "Đạm: trung bình %1$@ g mỗi ngày, mục tiêu %2$@ g"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Proteína media 7 días %1$@ / %2$@ g"
+      "value": "Proteína: %1$@ g al día de media, objetivo %2$@ g"
      }
     }
    }
@@ -2124,19 +2170,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "7-day avg %1$@ · goal %2$@"
+      "value": "Sleep: %1$@ a night on average, goal %2$@"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "TB 7 ngày %1$@ · mục tiêu %2$@"
+      "value": "Ngủ: trung bình %1$@ mỗi đêm, mục tiêu %2$@"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Media 7 días %1$@ · meta %2$@"
+      "value": "Sueño: %1$@ por noche de media, objetivo %2$@"
      }
     }
    }
@@ -2147,19 +2193,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "Readiness 7-day avg %@"
+      "value": "Average readiness over 7 days: %@ / 100"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Sẵn sàng TB 7 ngày %@"
+      "value": "Điểm sẵn sàng trung bình 7 ngày: %@ / 100"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Preparación media 7 días %@"
+      "value": "Preparación media en 7 días: %@ / 100"
      }
     }
    }
@@ -2331,19 +2377,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "%1$@ · need %2$lld"
+      "value": "%1$@ · needs at least %2$lld to judge"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "%1$@ · cần %2$lld"
+      "value": "%1$@ · cần ít nhất %2$lld để đánh giá"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "%1$@ · faltan %2$lld"
+      "value": "%1$@ · hacen falta al menos %2$lld para valorar"
      }
     }
    }
@@ -2538,19 +2584,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "Avg %1$@ / %2$@ %3$@"
+      "value": "Average %1$@ / goal %2$@ %3$@"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "TB %1$@ / %2$@ %3$@"
+      "value": "Trung bình %1$@ / mục tiêu %2$@ %3$@"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Media %1$@ / %2$@ %3$@"
+      "value": "Media %1$@ / objetivo %2$@ %3$@"
      }
     }
    }
