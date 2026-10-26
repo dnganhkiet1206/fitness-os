@@ -160,6 +160,8 @@ public final class CoachChat {
   /// Làm sạch câu trả lời trước khi lưu (16/10: đối chiếu khối tổng quan với số
   /// thật — `CoachOverview.sanitize`). App gán; `nil` = lưu nguyên văn.
   @ObservationIgnored public var sanitize: ((String) -> String)?
+  /// Đơn vị nước của người dùng cho câu hỏi lại dựng sẵn ("16 oz" thay "473 ml"). App gán.
+  @ObservationIgnored public var waterUnit: Water.Unit = .ml
   public private(set) var messages: [Coach.Message] = []
   /// Chỗ lệch giữa lời kể và số đã ghi, theo id tin của người dùng — màn chat hiện
   /// nút chọn số đúng dưới câu trả lời ngay sau tin đó.
@@ -239,7 +241,7 @@ public final class CoachChat {
     guard !closed, !answer.isEmpty else { return }
     // Hỏi lại khi lệch: AI chép chỉ dẫn ra thay vì hỏi → câu hỏi dựng sẵn.
     if let c = checks.first, CoachLogPrompt.leaksInstructions(answer) {
-      answer = CoachLogPrompt.question(c, lang: lang)
+      answer = CoachLogPrompt.question(c, lang: lang, unit: waterUnit)
     }
     let final = sanitize?(answer) ?? answer
     if final != answer, let last = messages.last, last.role == .assistant {

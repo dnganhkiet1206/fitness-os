@@ -77,6 +77,26 @@ struct CoachLogPromptTests {
     #expect(CoachLogPrompt.choice("63kg", for: w) == .stated)
   }
 
+  /// Audit vòng 3 (26/10): tài khoản oz nói / thấy oz, không phải "473 ml".
+  @Test func waterFollowsTheUsersUnit() {
+    #expect(CoachLogPrompt.detect("I drank 16 oz of water", hour: 9).first?.kind == .water)
+    #expect(abs((CoachLogPrompt.detect("I drank 16 oz of water", hour: 9).first?.value ?? 0) - 473.18) < 0.1)
+    #expect(CoachLogPrompt.detect("bebí 20 onzas de agua", hour: 9).first?.kind == .water)
+    #expect(CoachLogPrompt.display(.water, 473.176, lang: "en", unit: .oz) == "16 oz")
+    #expect(CoachLogPrompt.display(.water, 473.176, lang: "en") == "473 ml")
+    #expect(CoachLogPrompt.display(.water, 1500, lang: "en") == "1.5 L")
+    let c = CoachLogPrompt.Conflict(kind: .water, logged: 1892.7, stated: 946.4)
+    #expect(CoachLogPrompt.question(c, lang: "en", unit: .oz).contains("32 oz"))
+    #expect(CoachLogPrompt.question(c, lang: "en", unit: .oz).contains("64 oz"))
+    #expect(CoachLogPrompt.choice("32 is right", for: c, unit: .oz) == .stated)
+    #expect(CoachLogPrompt.choice("no, 64", for: c, unit: .oz) == .logged)
+    // Đã ghi 16 oz, nói "32 oz" → gợi ý đúng 16 oz (473 ml), không 15 oz (450 ml).
+    let sixteen = CoachLogPrompt.LoggedToday(waterMl: 473)
+    let left = CoachLogPrompt.suggestions("I drank 32 oz of water", logged: sixteen, hour: 9, unit: .oz)
+    #expect(left.first.map { CoachLogPrompt.display(.water, $0.value ?? 0, lang: "en", unit: .oz) } == "16 oz")
+    #expect(left.first?.value == 473)
+  }
+
   @Test func leakedInstructionsAreReplacedByAPlainQuestion() {
     let c = CoachLogPrompt.Conflict(kind: .sleep, logged: 420, stated: 480)
     #expect(CoachLogPrompt.leaksInstructions("Kiểm tra dữ liệu: Đêm qua người dùng vừa nói 8 giờ"))

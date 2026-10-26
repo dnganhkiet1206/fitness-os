@@ -165,6 +165,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - ~~Nước không dựng lại `daily_logs`: thêm / bỏ nước không cập nhật `daily_logs.water_ml` (RN cũng vậy), nên Tiến bộ › Ăn uống, tổng kết tuần, TB 7 ngày của Insight và câu "bạn đã ghi X nước" của Coach lệch sổ Nước tới lần ghi bữa / ngủ / tập kế tiếp của ngày ấy.~~ Sửa 26/10 (nhánh `claude/audit-r2`): thêm → dựng lại ngày của lần uống sau khi server nhận; "−" thành → dựng lại ngày ấy. Kiểm trên simulator: uống 16 oz lúc 0:04 → Tiến bộ "Nước TB 2,2" thành "1,9 / mục tiêu 2,4 L". Ngày cũ đã lệch chỉ sửa khi ngày ấy được ghi lại.
 - **Còn mở:** Tiến bộ hiện nước bằng **L** khi tài khoản chọn **oz** (Dinh dưỡng, màn Nước hiện oz).
 - **Còn mở:** hai chữ "Trung bình" cho nước khác nhau: màn Nước chia cho đủ 7 ngày (kể cả ngày không uống, 53 oz ≈ 1,6 L); Tiến bộ chia cho ngày có ghi (2,2 L). Cùng tổng, khác mẫu số.
+- ~~Koa Coach: nút / câu hỏi lại về nước luôn ghi ml / L ("Ghi 473 ml") dù tài khoản chọn oz; không hiểu "16 oz" khi người dùng kể; phần nước còn thiếu làm tròn 50 ml ("32 oz" − 16 oz đã ghi → gợi ý 15 oz).~~ Sửa 26/10 (audit vòng 3, nhánh `claude/audit-r3-coach-oz`): `CoachLogPrompt` hiển thị, đọc lựa chọn và làm tròn theo đơn vị người dùng; nhận "oz / fl oz / ounces / onzas". Test: `CoachLogPromptTests.waterFollowsTheUsersUnit`. Chưa kiểm trên simulator (nút chỉ hiện sau một câu trả lời AI thật). **Còn mở:** số gửi cho AI (`checks`) vẫn là ml, nên câu AI tự viết có thể nói ml — sửa ở prompt server (cần deploy).
 **Audit 25/10 (vòng 1):**
 - ~~Ghi giấc ngủ có thể lưu giờ dậy ở TƯƠNG LAI~~ (P1, sửa 25/10): `SleepLog.span` (theo RN) đặt giờ dậy vào hôm nay, nên "23:00–7:00" ghi lúc 1:24 sáng lưu một giấc dậy lúc 7:00 sáng nay. Sửa: `SleepLog.lastNight` (lùi về đêm gần nhất đã xong) cho bộ ghi giấc ngủ, màn Ghi giấc ngủ và "Kể cho Koa"; nút ghi nhanh trên thẻ Giấc ngủ chỉ hiện khi giờ dậy quen đã qua. Lệch RN có chủ đích; test mẫu RN của `span` giữ nguyên.
 
@@ -181,6 +182,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 
 ## 5. Lịch sử thay đổi sổ
 
+- 26/10/2026: audit vòng 3 — Koa Coach hiện và hiểu nước theo đơn vị người dùng (oz).
 - 26/10/2026: audit vòng 2 — nước dựng lại `daily_logs` (gạch hạn chế TB 7 ngày của nước); thêm hai chỗ lệch nước còn mở (đơn vị L / oz ở Tiến bộ, hai cách tính trung bình).
 - 26/10/2026: Kiệt đổi chỉ thị: mọi trang có dữ liệu cần làm mới khi thay đổi đều được kéo để làm mới (bỏ luật 13/10 "chỉ Hôm nay"). Thêm ở tab Dinh dưỡng và chi tiết nhóm Tiến bộ. **Chưa kiểm được cử chỉ trên simulator:** cả kéo tổng hợp lẫn kéo chuột đều không kích hoạt làm mới, kể cả ở tab Tiến bộ vốn đã có — cần thử trên iPhone thật.
 - 26/10/2026: chữ trạng thái Tiến bộ có màu + icon theo ý nghĩa (phương án A, Tốt bạc hà).
