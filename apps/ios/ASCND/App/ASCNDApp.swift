@@ -23,9 +23,11 @@ struct ASCNDApp: App {
     // Đo lường (15/10): chỉ khởi động khi có khoá — xem Telemetry.swift.
     Telemetry.start()
     let services = AppServices()
-    // Ngôn ngữ theo iPhone (Kiệt 23/10): không ghi đè — mọi chữ tra theo ngôn ngữ
-    // iOS chọn cho app (Cài đặt → ASCND → Ngôn ngữ).
-    AppLanguage.shared.set(nil)
+    // Ngôn ngữ theo iPhone (Kiệt 23/10), nhưng MỘT nguồn cho mọi chữ (25/10: thẻ Tuần
+    // của Koa lẫn Việt / Anh trên máy Kiệt): `Text("khoá")` tra theo `\.locale` của app,
+    // `String(localized:)` tra theo bundle — hai nguồn có thể lệch. Ghim cả hai vào cùng
+    // ngôn ngữ iOS đang hiện cho app (`preferences.lang`, cũng là ngôn ngữ của AI).
+    AppLanguage.shared.set(services.preferences.lang.rawValue)
     _services = State(initialValue: services)
     // Làm mới nền cho thông báo cộng đồng (16/10) — cần dịch vụ khi không có view.
     CommunityAlerts.services = services
