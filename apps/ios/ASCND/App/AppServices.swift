@@ -459,9 +459,17 @@ final class AppServices {
   func makeWaterBook(userId: String) -> WaterBook? {
     guard let backend else { return nil }
     let sync = self.sync
+    let rows = self.rows, widgets = self.widgets
     return WaterBook(
       userId: userId, source: SupabaseWaterSource(backend: backend), cache: waterCache, store: outbox,
-      onEnqueued: { _ in sync.kick() })
+      onEnqueued: { _ in sync.kick() },
+      onRemoved: { day in
+        // Như `rebuildAfterWrite`: lỗi dựng lại không làm hỏng lệnh "−" đã thành.
+        guard let rows else { return }
+        let now = SystemWallClock().nowMillis()
+        try? await DailyLog.recompute(userId: userId, date: day, store: rows, now: now, in: .current)
+        await widgets.refresh()
+      })
   }
 
   /// Ghi cân nặng (#527 Phase 4): có mạng ghi thẳng `weight_logs` (+ hồ sơ),

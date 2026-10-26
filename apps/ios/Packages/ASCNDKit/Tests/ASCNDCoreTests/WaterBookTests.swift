@@ -276,6 +276,24 @@ struct WaterBookTests {
     #expect(book.logs.map(\.id) == ["a"] && book.totalMl == 250)
   }
 
+  /// Audit 25/10: "−" thành thì báo ngày để app dựng lại `daily_logs`; không bỏ
+  /// được gì thì không báo.
+  @Test func removeReportsTheDayOnlyWhenSomethingWentAway() async {
+    let h = Harness()
+    let ids = h.ids
+    var removedDays: [LocalDate] = []
+    let book = WaterBook(
+      userId: "u1", source: h.server, cache: h.cache, store: h.outbox, clock: h.clock, timeZone: W.utc,
+      makeId: { ids.next() }, onRemoved: { removedDays.append($0) })
+    await book.load()
+    #expect(await book.removeLast(online: true) == .nothingToRemove)
+    #expect(removedDays.isEmpty)
+    await h.server.put(.init(id: "a", user: "u1", date: W.day, ml: 250, at: W.at("2026-10-08T08:00:00Z"), created: W.at("2026-10-08T08:00:00Z")))
+    await book.refresh()
+    #expect(await book.removeLast(online: true) == .removed)
+    #expect(removedDays == [W.day])
+  }
+
   /// Không có gì để xoá: im (`if (!last) return`). Xoá ra 0 hàng: lỗi
   /// `nCxNothingWrittenWater`, số trả lại như cũ.
   @Test func removeNothingAndNothingWritten() async {
