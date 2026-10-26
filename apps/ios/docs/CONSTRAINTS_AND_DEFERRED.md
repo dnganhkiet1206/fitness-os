@@ -164,6 +164,8 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - ~~Nước không dựng lại `daily_logs`: thêm / bỏ nước không cập nhật `daily_logs.water_ml` (RN cũng vậy), nên Tiến bộ › Ăn uống, tổng kết tuần, TB 7 ngày của Insight và câu "bạn đã ghi X nước" của Coach lệch sổ Nước tới lần ghi bữa / ngủ / tập kế tiếp của ngày ấy.~~ Sửa 26/10 (nhánh `claude/audit-r2`): thêm → dựng lại ngày của lần uống sau khi server nhận; "−" thành → dựng lại ngày ấy. Kiểm trên simulator: uống 16 oz lúc 0:04 → Tiến bộ "Nước TB 2,2" thành "1,9 / mục tiêu 2,4 L". Ngày cũ đã lệch chỉ sửa khi ngày ấy được ghi lại.
 - **Còn mở:** Tiến bộ hiện nước bằng **L** khi tài khoản chọn **oz** (Dinh dưỡng, màn Nước hiện oz).
 - **Còn mở:** hai chữ "Trung bình" cho nước khác nhau: màn Nước chia cho đủ 7 ngày (kể cả ngày không uống, 53 oz ≈ 1,6 L); Tiến bộ chia cho ngày có ghi (2,2 L). Cùng tổng, khác mẫu số.
+**Audit 25/10 (vòng 1):**
+- ~~Ghi giấc ngủ có thể lưu giờ dậy ở TƯƠNG LAI~~ (P1, sửa 25/10): `SleepLog.span` (theo RN) đặt giờ dậy vào hôm nay, nên "23:00–7:00" ghi lúc 1:24 sáng lưu một giấc dậy lúc 7:00 sáng nay. Sửa: `SleepLog.lastNight` (lùi về đêm gần nhất đã xong) cho bộ ghi giấc ngủ, màn Ghi giấc ngủ và "Kể cho Koa"; nút ghi nhanh trên thẻ Giấc ngủ chỉ hiện khi giờ dậy quen đã qua. Lệch RN có chủ đích; test mẫu RN của `span` giữ nguyên.
 
 **Tài liệu và mã:**
 - `PARITY_MATRIX.md` lạc hậu từ 17/10.
@@ -179,6 +181,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 ## 5. Lịch sử thay đổi sổ
 
 - 26/10/2026: audit vòng 2 — nước dựng lại `daily_logs` (gạch hạn chế TB 7 ngày của nước); thêm hai chỗ lệch nước còn mở (đơn vị L / oz ở Tiến bộ, hai cách tính trung bình).
+- 25/10/2026: audit vòng 1 — giấc ngủ không còn lưu giờ dậy ở tương lai.
 - 23/10/2026: trang hỗ trợ web: Koa sống trên mọi trang — SVG dựng từ cảnh app vẽ (`apps/site/tools/koa-svg.mjs`), không vẽ lại; 12 biểu cảm, 6 vóc dáng, hoạt ảnh gốc; landing có câu tuyên ngôn Koa đổi nét mặt, Koa lớn lên theo cuộn, "Koa hiểu ngày của bạn" (theo `KoaMood`). Chưa kiểm Safari iPhone thật.
 - 23/10/2026: trang hỗ trợ web: ảnh màn hình app thật (simulator, tài khoản test, ba ngôn ngữ) trong khung iPhone thay chữ A tự vẽ; script chụp lại `apps/site/tools/capture-app-screens.sh`.
 - 23/10/2026: trang hỗ trợ web: thêm landing ở trang gốc (Kiệt yêu cầu); sửa hạng cao nhất "Beast" → "Mass Monster" trong chữ của site.
