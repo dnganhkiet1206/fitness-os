@@ -249,6 +249,12 @@ public enum Water {
       createdAt: createdAt)
   }
 
+  /// Ngày của lần uống (`date` chọn lúc chạm) — ngày `daily_logs` cần dựng lại.
+  public static func day(_ e: OutboxEntry) -> LocalDate? {
+    guard e.kind == addKind else { return nil }
+    return e.payload["date"]?.stringValue.flatMap { LocalDate($0) }
+  }
+
   /// Lần uống chưa tới server, đọc lại từ hàng outbox.
   public static func pendingLog(_ e: OutboxEntry) -> (log: WaterLog, row: WaterRow)? {
     guard e.kind == addKind, let id = e.payload["id"]?.stringValue?.lowercased(),

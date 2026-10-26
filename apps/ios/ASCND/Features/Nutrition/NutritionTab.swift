@@ -43,9 +43,10 @@ struct NutritionTab: View {
         .padding(DS.Spacing.md)
         .padding(.bottom, DS.Spacing.lg)
       }
-      // Không kéo để làm mới (chủ dự án, 13/10: chỉ Hôm nay có): tab tự đọc
-      // lại mỗi lần hiện và sau mỗi lần ghi; nước / thực phẩm bổ sung đọc lại
-      // theo phiên.
+      // Kéo để làm mới (Kiệt 26/10: mọi trang có dữ liệu đổi được thì được kéo;
+      // trước đây 13/10 chỉ Hôm nay có). Tab vẫn tự đọc lại mỗi lần hiện và sau
+      // mỗi lần ghi.
+      .refreshable { await refreshAll() }
       // Gốc của stack: chạy cả khi quay lại từ Nhật ký / Ghi bữa, không chỉ khi
       // đổi tab — số của hôm nay đổi ở những màn ấy.
       .onAppear { Task { await reload() } }
@@ -234,6 +235,16 @@ struct NutritionTab: View {
   }
 
   private func loadToday() async { await today?.load() }
+
+  /// Kéo để làm mới: mọi thứ tab hiện, kể cả nước / bổ sung / kế hoạch / đi chợ.
+  private func refreshAll() async {
+    async let day: Void = reload()
+    async let water: Void? = books?.water?.refresh()
+    async let supplements: Void? = books?.supplements?.refresh()
+    async let plans: Void? = plans?.load()
+    async let grocery: Void? = grocery?.refresh()
+    _ = await (day, water, supplements, plans, grocery)
+  }
 }
 
 /// Đích điều hướng của thẻ → màn Nước.

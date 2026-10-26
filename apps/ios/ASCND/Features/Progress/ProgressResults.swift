@@ -180,6 +180,8 @@ struct ProgressGroupView: View {
   let snapshot: ProgressStatusBook.Snapshot?
   let week: KoaWeek.State?
   var openTrends: (() -> Void)?
+  /// Kéo để làm mới (Kiệt 26/10) — cùng lượt đọc lại như tab Tiến bộ.
+  var refresh: () async -> Void = {}
   @Environment(\.weightUnit) private var unit
   @Environment(WorkoutFlow.self) private var flow
   @Environment(AppServices.self) private var services
@@ -201,6 +203,7 @@ struct ProgressGroupView: View {
       }
       .padding(DS.Spacing.md)
     }
+    .refreshable { await refresh() }
     .navigationTitle(Text(verbatim: ProgressStyle.name(result.group)))
     .ascndPage()
   }
