@@ -127,7 +127,7 @@ public enum KoaGesture: String, Sendable, Hashable, CaseIterable {
       if bind == "armRankL" {
         // mệt lả / hờn dỗi / tò mò: tay trái nhích lên gần cổ (Kiệt 25/10)
         let lift =
-          self == .flop || self == .pout ? Self.move(3, -7) : self == .curious ? Self.move(2, -3) : KoaMath.identity
+          self == .flop || self == .pout ? Self.move(3, -7) : self == .curious ? Self.move(1, 1) : KoaMath.identity
         let r = KoaMath.mul(lift, Self.rot(arms.left, Self.shoulderL.0, Self.shoulderL.1))
         return flipsArms ? KoaMath.mul(r, Self.flip(left: true)) : r
       }
