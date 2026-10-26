@@ -213,10 +213,7 @@ struct TodayExtras<Plan: View>: View {
             label: SpokenLogDisplay.water(waterStepMl, unit: services.preferences.volumeUnit),
             add: { act(.water) },
             custom: { showsWaterAmount = true }),
-          quickSleep: sleepHabit.map { h in
-            (label: String(localized: "day.sleep.quick \("\(TellKoaSheet.hhmm(h.bed))–\(TellKoaSheet.hhmm(h.wake))")"),
-             log: { Task { await quickSleep() } })
-          },
+          quickSleep: quickSleepChip,
           mealQuick: { q in
             // Chụp / Mã vạch: mở THẲNG camera, không qua màn ghi bữa (Kiệt 22/10);
             // có món rồi mới mở màn ghi với món điền sẵn.
@@ -560,6 +557,16 @@ struct TodayExtras<Plan: View>: View {
 
   /// Một chạm thêm mức nhanh đầu tiên của đơn vị (250 ml / 8 oz).
   private var waterStepMl: Int { Water.stepMl(services.preferences.volumeUnit) }
+
+  /// Nút "Ghi 23:00–7:00" của thẻ Giấc ngủ. Chỉ mời khi giờ dậy quen đã qua — trước đó
+  /// đêm nay chưa xong (audit 25/10).
+  private var quickSleepChip: (label: String, log: () -> Void)? {
+    guard let h = sleepHabit, SleepLog.wakePassed(h.wake, ref: SystemWallClock().nowMillis(), in: .current) else {
+      return nil
+    }
+    let range = "\(TellKoaSheet.hhmm(h.bed))–\(TellKoaSheet.hhmm(h.wake))"
+    return (label: String(localized: "day.sleep.quick \(range)"), log: { Task { await quickSleep() } })
+  }
 
   /// Ghi nhanh giấc đêm qua theo giờ quen (Kiệt 22/10).
   private func quickSleep() async {
