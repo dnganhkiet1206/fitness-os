@@ -125,6 +125,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Ngưỡng (80 % bước / đạm, ngủ ≥ mục tiêu − 30 phút, sẵn sàng 60, ≥ 3 ngày dữ liệu) là đề xuất đã duyệt, chưa kiểm với người dùng thật.
 - Mục tiêu bước nhớ theo máy (`StepsGoalStore`), như màn Vận động — máy khác có thể khác mục tiêu.
 - Hồi phục dùng màu `destructive` (đỏ sáng, Kiệt 22/10) — trùng màu với nút xoá / lỗi.
+- Chữ trạng thái có màu theo ý nghĩa (Kiệt duyệt phương án A 26/10, mock `L1m8tJ5BCzrbkUBCbZHYyb`): Tốt = bạc hà (`statusGood` #63e6be / #0a7b6c) + ✓, Cần chú ý = vàng hổ phách (`statusAttention` #e8b930 / #8a6a00) + ↗, Chưa đủ dữ liệu = xám + vòng nét đứt. Không dùng đỏ / cam. Chú thích dưới chữ A giữ hình đặc / viền / tối vì nó tả các ô của chữ A, không tả chữ.
 - Icon dùng SF Symbols như Apple Health (Kiệt 22/10); mock icon riêng `progress-icons.html` bị thay.
 - Chưa kiểm: giao diện sáng, màn hẹp, chi tiết từng nhóm (mới kiểm Vận động).
 - ~~VoiceOver của chữ A: cả chữ là một khối, không mở được nhóm nào.~~ 22/10 (nhánh `claude/progress-a-motion`): mỗi mảng là một nút "Nhóm: trạng thái" theo đường leo. **Chưa chạy VoiceOver thật** để nghe.
@@ -182,6 +183,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 
 - 26/10/2026: audit vòng 2 — nước dựng lại `daily_logs` (gạch hạn chế TB 7 ngày của nước); thêm hai chỗ lệch nước còn mở (đơn vị L / oz ở Tiến bộ, hai cách tính trung bình).
 - 26/10/2026: Kiệt đổi chỉ thị: mọi trang có dữ liệu cần làm mới khi thay đổi đều được kéo để làm mới (bỏ luật 13/10 "chỉ Hôm nay"). Thêm ở tab Dinh dưỡng và chi tiết nhóm Tiến bộ. **Chưa kiểm được cử chỉ trên simulator:** cả kéo tổng hợp lẫn kéo chuột đều không kích hoạt làm mới, kể cả ở tab Tiến bộ vốn đã có — cần thử trên iPhone thật.
+- 26/10/2026: chữ trạng thái Tiến bộ có màu + icon theo ý nghĩa (phương án A, Tốt bạc hà).
 - 25/10/2026: audit vòng 1 — giấc ngủ không còn lưu giờ dậy ở tương lai.
 - 23/10/2026: trang hỗ trợ web: Koa sống trên mọi trang — SVG dựng từ cảnh app vẽ (`apps/site/tools/koa-svg.mjs`), không vẽ lại; 12 biểu cảm, 6 vóc dáng, hoạt ảnh gốc; landing có câu tuyên ngôn Koa đổi nét mặt, Koa lớn lên theo cuộn, "Koa hiểu ngày của bạn" (theo `KoaMood`). Chưa kiểm Safari iPhone thật.
 - 23/10/2026: trang hỗ trợ web: ảnh màn hình app thật (simulator, tài khoản test, ba ngôn ngữ) trong khung iPhone thay chữ A tự vẽ; script chụp lại `apps/site/tools/capture-app-screens.sh`.

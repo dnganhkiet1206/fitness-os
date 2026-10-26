@@ -62,6 +62,8 @@ enum DSColorTokens {
     ("metricBeige", DS.Color.metricBeige),
     ("metricViolet", DS.Color.metricViolet),
     ("metricSteel", DS.Color.metricSteel),
+    ("statusGood", DS.Color.statusGood),
+    ("statusAttention", DS.Color.statusAttention),
   ]
 }
 
