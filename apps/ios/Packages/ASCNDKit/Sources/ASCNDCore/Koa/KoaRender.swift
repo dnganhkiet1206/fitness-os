@@ -54,6 +54,12 @@ public enum KoaRender {
     public var poke: KoaMath.Poke?
     /// Hạng vóc dáng 0…5 (`KoaGains.rank`) → `rankFlags`.
     public var build = 0
+    /// Dáng biểu cảm mới (24/10) — xoay thêm từng mảng trên tư thế đứng.
+    public var gesture: KoaGesture?
+    /// Lớp tay: cả hình, bỏ tay, hay chỉ tay (dáng giơ tay đè má vẽ tay ở lớp trên).
+    public var arms: ArmsLayer = .all
+
+    public enum ArmsLayer: Sendable, Hashable { case all, without, only }
 
     public init() {}
   }
@@ -96,6 +102,9 @@ public enum KoaRender {
     let paper: Bool
     var flat = false
     var poke: KoaMath.Poke?
+    var gesture: KoaGesture?
+    var arms: Options.ArmsLayer = .all
+    var inArms = false
   }
 
   static func isEyeGroup(_ n: KoaScene.Node) -> Bool { n.kids?.contains { $0.id == "pupil_left" } ?? false }
@@ -127,6 +136,18 @@ public enum KoaRender {
       })
   }
 
+  /// Mảng lấp khe dưới thân: màu đặc đúng sắc thân ở độ cao vai (dải màu `url(#…)` của
+  /// thân không áp được cho hình chèn thêm — mảng thành trong suốt).
+  static func patch(_ d: String, _ raw: [String: KoaScene.Value], _ own: [String: KoaScene.Value], flat: Bool) -> Element {
+    var p = own
+    p["d"] = .string(d)
+    if case .string(let hex)? = raw["fill"], KoaLight.isHex(hex) {
+      p["fill"] = .string(flat ? hex : KoaLight.paint(hex, 165))
+    }
+    p["stroke"] = .string("none")
+    return Element("Path", p)
+  }
+
   /// `own_tf`: kiểu nội tuyến thắng thuộc tính trình bày mà `bind` đưa xuống.
   static func ownTf(_ n: KoaScene.Node, _ flags: KoaFlags.Flags) -> [KoaMath.Op] {
     if let tf = n.tf { return tf }
@@ -142,6 +163,13 @@ public enum KoaRender {
     let n = l.node
     if let cond = n.cond, !(c.flags[cond]?.truthy ?? false) { return [] }
     if armHidden { return [] }
+    // lớp tay của dáng giơ tay: bỏ tay khỏi hình chính, hoặc chỉ vẽ tay
+    var c = c
+    if n.id == "ARMS" {
+      if c.arms == .without { return [] }
+      c.inArms = true
+    }
+    if c.arms == .only, !c.inArms, shapes[n.t] != nil { return [] }
 
     let arms = c.dress && n.id == "ARMS"
     var kids: [Element] = []
@@ -175,7 +203,8 @@ public enum KoaRender {
     if !drivesTf { base += ownTf(n, c.flags) }
     let over = drivesTf ? ownTf(n, c.flags) : []
 
-    let raw = attrs(n.a, dropOpacity: drivesOp)
+    var raw = attrs(n.a, dropOpacity: drivesOp)
+    if let g = c.gesture, case .string(let d)? = raw["d"], let lid = g.lid(d) { raw["d"] = .string(lid) }
     let own = c.flat ? raw : KoaLight.litProps(l, raw)
     let ownOpacity = drivesOp && n.a?["opacity"] != nil ? (n.a?["opacity"]?.number ?? .nan) : 1
     let shape = shapes[n.t]
@@ -185,6 +214,12 @@ public enum KoaRender {
     if let shape {
       // mỗi lượt đèn là chính hình ấy với một lớp sơn khác
       var passes = [Element(shape, own)]
+      // dáng mới nghiêng đầu: vẽ thêm vai / gáy cùng sơn với thân, nằm sau đầu — đầu
+      // nghiêng không lộ khe giữa đầu và thân (Kiệt 25/10)
+      if let g = c.gesture, g.tiltsHead, n.id == "torso_front" {
+        passes.insert(patch(KoaGesture.neckFill, raw, own, flat: c.flat || c.paper), at: 0)
+        if g == .curious { passes.insert(patch(KoaGesture.curiousFill, raw, own, flat: c.flat || c.paper), at: 0) }
+      }
       // `flat` (ban ngày): không lượt nào tô theo từng mảnh — tô từng mảnh làm lộ
       // chỗ các mảnh chồng nhau (15/10, chủ dự án). Khối do một dải nắng phủ cả hình.
       if !c.paper, !c.flat, let glow = l.glow {
@@ -199,6 +234,16 @@ public enum KoaRender {
         p["stroke"] = .string("none")
         passes.append(Element(shape, p))
       }
+      // dáng mới: nét mờ quanh NỬA bàn tay (vai vẫn liền thân)
+      if let g = c.gesture, g.pawOutline, n.id == "arm_left_upper" || n.id == "arm_right_upper" {
+        var p = own
+        p["fill"] = .string("none")
+        p["stroke"] = .string("#A9B2BC")
+        p["strokeWidth"] = .number(1.8)
+        p["strokeOpacity"] = .number(0.55)
+        let clip = n.id == "arm_left_upper" ? "koaPawL" : "koaPawR"
+        passes.append(Element("G", ["clipPath": .string("url(#\(clip))")], kids: [Element(shape, p)]))
+      }
       if !c.paper, !c.flat, n.id.map({ KoaLight.rimIds.contains($0) }) ?? false {
         var p = own
         p["fill"] = .string("none")
@@ -206,7 +251,13 @@ public enum KoaRender {
         p["strokeWidth"] = .number(KoaLight.rimWidth)
         passes.append(Element(shape, p))
       }
-      body = passes
+      // lớp tay trên của dáng giơ tay: CHỈ nửa bàn tay (vai vẫn nằm sau đầu như tư thế gốc)
+      if c.arms == .only, n.id == "arm_left_upper" || n.id == "arm_right_upper" {
+        let clip = n.id == "arm_left_upper" ? "koaPawL" : "koaPawR"
+        body = [Element("G", ["clipPath": .string("url(#\(clip))")], kids: passes)]
+      } else {
+        body = passes
+      }
     } else {
       body = kids
     }
@@ -267,6 +318,18 @@ public enum KoaRender {
     if let p = c.poke, let m = KoaMath.pokeMat(id: n.id, cond: n.cond, p, t: c.t) {
       moved = [Element("G", matrix: m, kids: moved)]
     }
+    var d: String?
+    if case .string(let s)? = n.a?["d"] { d = s }
+    if let g = c.gesture, let m = g.matrix(id: n.id, bind: n.bind, d: d) {
+      moved = [Element("G", matrix: m, kids: moved)]
+    }
+    // Tư thế đứng: nhấc hai tay lên một chút để đỉnh tay chạm cằm — hết khe tối nhỏ giữa
+    // tay và đầu (Kiệt 25/10: "nâng tay lên thay vì vẽ che"). Bản RN giữ nguyên.
+    if c.gesture == nil, !KoaScene.rn, c.flags["armsIdle"]?.truthy ?? false,
+      n.bind == "armRankL" || n.bind == "armRankR"
+    {
+      moved = [Element("G", matrix: KoaGesture.idleArmLift, kids: moved)]
+    }
     // Koa lớn: chớp mắt có nét mi = mép dưới của mi, co cùng mi
     if c.poke != nil, c.live, let anim, KoaMath.blinkAnims.contains(anim.k), c.t >= anim.delay,
       let track = track?.tf, !track.isEmpty
@@ -291,6 +354,10 @@ public enum KoaRender {
     // Tủ đồ vẽ lại: tập tạ thì hai tay đang cầm tạ — đồ cầm tay ẩn (không có ở RN).
     f["handFree"] = .bool(o.pose != .lifting)
     for (k, v) in rankFlags(rank: o.build, pose: o.dress ? .idle : o.pose) { f[k] = v }
+    if let g = o.gesture, !o.dress {
+      for k in f.keys where KoaGesture.facePrefixes.contains(where: { k.hasPrefix($0) }) { f[k] = .bool(false) }
+      for k in g.face { f[k] = .bool(true) }
+    }
     if o.dress {
       f["mouthSmile"] = .bool(false)
       f["mouthGrin"] = .bool(false)
@@ -332,7 +399,7 @@ public enum KoaRender {
     let c = Context(
       flags: f, t: o.t, live: o.live, gaze: o.live ? o.gaze ?? o.look : nil, swapMouth: swapMouth,
       rest: KoaMath.restsAt(f) && !o.dress, dress: o.dress, blend: o.blend ?? (o.dress ? 1 : 0), paper: o.paper,
-      flat: o.flat, poke: o.live ? o.poke : nil)
+      flat: o.flat, poke: o.live ? o.poke : nil, gesture: o.gesture, arms: o.arms)
     let tree = KoaLight.nodes.flatMap { node($0, c) }
     return Element(
       "Svg",
@@ -340,7 +407,7 @@ public enum KoaRender {
         "width": .number(o.size), "height": .number(o.size * KoaMath.aspect), "viewBox": .string("0 0 240 300"),
         "preserveAspectRatio": .string("xMidYMax meet"),
       ],
-      kids: [defs(f, paper: o.paper), Element("G", matrix: KoaMath.insetMat, kids: tree)])
+      kids: [defs(f, paper: o.paper, gesture: o.gesture), Element("G", matrix: KoaMath.insetMat, kids: tree)])
   }
 
   static func stop(_ offset: Double, _ colour: String, _ opacity: Double? = nil) -> Element {
@@ -355,8 +422,14 @@ public enum KoaRender {
 
   /// Đèn: một dải dọc mỗi màu, điểm sáng, khối, bóng, viền — chỉ những gì tư
   /// thế này dùng.
-  static func defs(_ flags: KoaFlags.Flags, paper: Bool) -> Element {
+  static func defs(_ flags: KoaFlags.Flags, paper: Bool, gesture: KoaGesture? = nil) -> Element {
     var kids: [Element] = []
+    if gesture?.pawOutline == true {
+      for (id, left) in [("koaPawL", true), ("koaPawR", false)] {
+        kids.append(
+          Element("ClipPath", ["id": .string(id)], kids: [Element("Path", ["d": .string(KoaGesture.pawClip(left: left))])]))
+      }
+    }
     for r in KoaLight.ramps(flags, paper: paper) {
       kids.append(
         Element(

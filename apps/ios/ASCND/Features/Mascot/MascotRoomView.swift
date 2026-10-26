@@ -213,7 +213,9 @@ struct MascotRoomView: View {
         level: room.level, build: room.gains.rank,
         energy: Double(room.energyCount) / Double(MascotRules.energySignals.count),
         streak: room.streak.count, celebrateSignal: celebrate, emotion: devEmotion ?? mood,
-        equipped: shop?.inventory.filter(\.equipped).map(\.itemKey) ?? [])
+        equipped: shop?.inventory.filter(\.equipped).map(\.itemKey) ?? [],
+        // Dáng theo tình huống thật (25/10); thanh DEBUG ép cảm xúc thì tắt dáng.
+        gesture: devEmotion == nil ? roomGesture : nil)
         // Nằm thẳng trên nền, không thẻ, không viền (Kiệt 24/10): tràn ngang màn,
         // mép trên / dưới / hai bên tan vào nền trang.
         .mask {
@@ -241,6 +243,15 @@ struct MascotRoomView: View {
           .accessibilityHidden(true)
       }
     }
+  }
+
+  /// Dáng trong phòng: đủ tuần → ăn mừng, vừa tập → ta-da, lỡ buổi → hờn dỗi, mệt →
+  /// mệt lả, chưa ghi gì → tò mò. Đêm / ngủ / buồn giữ dáng của cảm xúc.
+  private var roomGesture: KoaGesture? {
+    if [.sleep, .sad, .deflated].contains(mood) { return nil }
+    return KoaGesture.pick(
+      trainedToday: room.gains.lastSession == room.today, weekComplete: koaWeekState?.complete ?? false,
+      missedPlanned: room.gains.missedDays >= 1, tired: mood == .tired, loggedAnything: room.energyCount > 0)
   }
 
   /// Nét mặt của ngày (Koa đợt 1) — CÙNG bộ máy với Koa ở Hôm nay.
@@ -875,6 +886,8 @@ struct MascotStage: View {
   var emotion: KoaEmotion.Emotion = .idle
   /// Khoá đang mặc, theo thứ tự hàng của `mascot_inventory`.
   var equipped: [String] = []
+  /// Dáng biểu cảm mới theo tình huống (25/10).
+  var gesture: KoaGesture?
 
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Environment(\.colorScheme) private var scheme
@@ -925,7 +938,8 @@ struct MascotStage: View {
     let left: Double = StudioScene.stageMark.x * k - size / 2
     let top: Double = StudioScene.stageMark.y * k - size * KoaMath.aspect + 6 * k
     let levelScale: Double = min(1 + Double(level - 1) * 0.012, 1.1)
-    return MascotFigureView(emotion: emotion, equipped: equipped, size: size, build: build, interactive: true)
+    return MascotFigureView(
+      emotion: emotion, equipped: equipped, gesture: gesture, size: size, build: build, interactive: true)
       .scaleEffect(levelScale, anchor: .bottom)
       // reduceMotion: giá trị không đổi thì không gật
       .keyframeAnimator(initialValue: Nod(), trigger: reduceMotion ? 0 : celebrateSignal) { view, v in

@@ -12,6 +12,8 @@ import SwiftUI
 struct KoaFigureView: View {
   var expression: KoaFlags.Expression = .happy
   var pose: KoaFlags.Pose = .idle
+  /// Dáng biểu cảm mới (24/10) — thắng `expression` (mỗi dáng có nét mặt riêng).
+  var gesture: KoaGesture?
   /// Thử đồ — tư thế riêng của app, chồng lên `pose`.
   var dress = false
   var worn: KoaFlags.Worn = [:]
@@ -90,8 +92,9 @@ struct KoaFigureView: View {
   private func canvas(t: Double, paper: Bool, react: KoaTouch.Frame?) -> some View {
     Canvas { ctx, canvas in
       var o = KoaRender.Options()
-      o.expression = expression
-      o.pose = pose
+      o.expression = gesture?.expression ?? expression
+      o.pose = gesture == nil ? pose : .idle
+      o.gesture = gesture
       o.dress = dress
       o.worn = worn
       o.build = build
@@ -103,11 +106,20 @@ struct KoaFigureView: View {
       o.t = t
       o.look = react?.look
       o.poke = react?.poke
-      let plan = KoaPaint.plan(KoaRender.figure(o))
+      // Dáng giơ tay đè má: hình đủ (vai sau đầu), rồi một lớp chỉ nửa bàn tay ở trên.
+      var plans: [[KoaPaint.Op]] = []
+      if gesture?.armsFront == true {
+        o.arms = .all
+        plans.append(KoaPaint.plan(KoaRender.figure(o)))
+        o.arms = .only
+        plans.append(KoaPaint.plan(KoaRender.figure(o)))
+      } else {
+        plans.append(KoaPaint.plan(KoaRender.figure(o)))
+      }
       ctx.drawLayer { layer in
         var c = layer
         c.concatenate(KoaCanvas.affine(KoaPaint.viewport(width: canvas.width, height: canvas.height)))
-        KoaCanvas.draw(plan, in: &c)
+        for plan in plans { KoaCanvas.draw(plan, in: &c) }
         guard paper else { return }
         // Ban ngày: MỘT dải nắng trên cả hình (`sourceAtop` — chỉ dính chỗ đã có Koa),
         // không phủ từng mảnh nên chỗ các mảnh chồng nhau không lộ (15/10, chủ dự án).
@@ -136,6 +148,8 @@ struct MascotFigureView: View {
   var emotion: KoaEmotion.Emotion = .idle
   /// Khoá `mascot_inventory` đang mặc, theo thứ tự hàng.
   var equipped: [String] = []
+  /// Dáng biểu cảm mới (25/10) — thắng tư thế / nét mặt của cảm xúc (không khi thử đồ).
+  var gesture: KoaGesture?
   var size: CGFloat = 160
   var animated = true
   var dress = false
@@ -153,7 +167,8 @@ struct MascotFigureView: View {
     if mascotId == "koa" {
       let state = KoaEmotion.state(emotion)
       KoaFigureView(
-        expression: dress ? .happy : state.expression, pose: dress ? .idle : state.pose, dress: dress,
+        expression: dress ? .happy : state.expression, pose: dress ? .idle : state.pose,
+        gesture: dress ? nil : gesture, dress: dress,
         worn: KoaEmotion.worn(equipped).merging(state.outfit) { _, new in new }, size: size, animated: animated,
         paper: paper, build: build ?? services?.koaBuild ?? 0, interactive: interactive, stage: stage,
         greet: greet)
