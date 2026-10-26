@@ -521,6 +521,10 @@ extension DailyLog {
     if entry.kind == SleepLog.kind { return SleepLog.replayDay(entry, in: tz).map { [$0] } ?? [] }
     // Sinh trắc (#527 `log-biometrics`): ngày của bộ số — `case 'biometrics'`.
     if entry.kind == BiometricLog.kind { return BiometricLog.day(entry, in: tz).map { [$0] } ?? [] }
+    // Nước (audit 25/10): ngày của lần uống. RN không dựng lại sau `case 'water'`,
+    // nên `daily_logs.water_ml` (Tiến bộ, tổng kết tuần, TB 7 ngày của Insight)
+    // lệch sổ Nước tới lần ghi bữa / ngủ / tập kế tiếp của ngày ấy.
+    if entry.kind == Water.addKind { return Water.day(entry).map { [$0] } ?? [] }
     let kinds = [WorkoutSessionRecord.outboxKind, WorkoutSessionRecord.revisionKind, WorkoutSessionRecord.deleteKind]
     guard kinds.contains(entry.kind) else { return [] }
     guard let at = entry.payload["date_time"]?.stringValue.flatMap({ EpochMillis(iso8601: $0) }) else {
