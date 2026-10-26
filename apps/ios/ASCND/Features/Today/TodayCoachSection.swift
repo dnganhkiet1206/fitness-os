@@ -217,15 +217,9 @@ struct SmartInsightCard: View {
   @ViewBuilder private var content: some View {
     switch book.phase {
     case .idle, .loading:
-      HStack(spacing: DS.Spacing.sm) {
-        IntelligenceOrb(size: 24)
-        Text("insight.loading")
-          .font(DS.TextStyle.footnote)
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-      }
-      .padding(DS.Spacing.md)
-      .frame(maxWidth: .infinity, alignment: .leading)
-      .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.lg))
+      // Gọn (Kiệt 26/10): không khung, không lặp tên — hai vạch giữ chỗ đúng cỡ tiêu đề
+      // và câu của insight, nên khi insight về trang không nhảy.
+      InsightLoadingLines()
     case .failed where !fallback.isEmpty:
       // Bản tóm tắt từ số liệu (16/10, chủ dự án): thẻ không trống mỗi lần AI quá
       // tải. Ghi rõ nguồn; chạm dòng nguồn để thử lại AI.
@@ -583,6 +577,28 @@ extension SmartNudgesBook {
     case .loading: "loading"
     case .failed: "failed"
     case .ready(let e): "ready-\(e.at.millis)"
+    }
+  }
+}
+
+/// Giữ chỗ khi insight đang đọc: vạch tiêu đề + vạch câu, mờ nhịp nhẹ.
+private struct InsightLoadingLines: View {
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @State private var dim = false
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 10) {
+      Capsule().frame(width: 190, height: 22)
+      Capsule().frame(maxWidth: .infinity).frame(height: 14)
+      Capsule().frame(width: 220, height: 14)
+    }
+    .foregroundStyle(DS.Color.foreground.swiftUI.opacity(dim ? 0.06 : 0.12))
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .accessibilityElement(children: .ignore)
+    .accessibilityLabel(Text("insight.loading"))
+    .onAppear {
+      guard !reduceMotion else { return }
+      withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true)) { dim = true }
     }
   }
 }
