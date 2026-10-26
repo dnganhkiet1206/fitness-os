@@ -173,6 +173,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 
 ## 5. Lịch sử thay đổi sổ
 
+- 26/10/2026: Kiệt đổi chỉ thị: mọi trang có dữ liệu cần làm mới khi thay đổi đều được kéo để làm mới (bỏ luật 13/10 "chỉ Hôm nay"). Thêm ở tab Dinh dưỡng và chi tiết nhóm Tiến bộ. **Chưa kiểm được cử chỉ trên simulator:** cả kéo tổng hợp lẫn kéo chuột đều không kích hoạt làm mới, kể cả ở tab Tiến bộ vốn đã có — cần thử trên iPhone thật.
 - 23/10/2026: trang hỗ trợ web: Koa sống trên mọi trang — SVG dựng từ cảnh app vẽ (`apps/site/tools/koa-svg.mjs`), không vẽ lại; 12 biểu cảm, 6 vóc dáng, hoạt ảnh gốc; landing có câu tuyên ngôn Koa đổi nét mặt, Koa lớn lên theo cuộn, "Koa hiểu ngày của bạn" (theo `KoaMood`). Chưa kiểm Safari iPhone thật.
 - 23/10/2026: trang hỗ trợ web: ảnh màn hình app thật (simulator, tài khoản test, ba ngôn ngữ) trong khung iPhone thay chữ A tự vẽ; script chụp lại `apps/site/tools/capture-app-screens.sh`.
 - 23/10/2026: trang hỗ trợ web: thêm landing ở trang gốc (Kiệt yêu cầu); sửa hạng cao nhất "Beast" → "Mass Monster" trong chữ của site.
