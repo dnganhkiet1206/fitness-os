@@ -96,9 +96,8 @@ struct ProgressResultCard: View {
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
         }
         .foregroundStyle(ProgressStyle.color(result.group))
-        Text(verbatim: ProgressStyle.word(result.level))
-          .font(.system(size: 24, weight: .bold)).tracking(-0.4)
-          .foregroundStyle(result.level == .insufficient ? DS.Color.mutedForeground.swiftUI : DS.Color.foreground.swiftUI)
+        ProgressStatusWord(level: result.level, font: .system(size: 24, weight: .bold))
+          .tracking(-0.4)
           .padding(.top, 8)
         Text(verbatim: ProgressStyle.count(result))
           .font(DS.TextStyle.caption)
@@ -189,9 +188,8 @@ struct ProgressGroupView: View {
     ScrollView {
       VStack(alignment: .leading, spacing: DS.Spacing.md) {
         VStack(alignment: .leading, spacing: 4) {
-          Text(verbatim: ProgressStyle.word(result.level))
-            .font(.system(size: 26, weight: .bold)).tracking(-0.4)
-            .foregroundStyle(result.level == .insufficient ? DS.Color.mutedForeground.swiftUI : DS.Color.foreground.swiftUI)
+          ProgressStatusWord(level: result.level, font: .system(size: 26, weight: .bold))
+            .tracking(-0.4)
           Text(verbatim: ProgressStyle.advice(result) ?? ProgressStyle.missing(result))
             .font(DS.TextStyle.body)
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
@@ -296,8 +294,7 @@ struct ProgressGroupView: View {
               .foregroundStyle(DS.Color.mutedForeground.swiftUI)
           }
           Spacer()
-          Text(verbatim: ProgressStyle.word(rows[i].1)).font(DS.TextStyle.footnote.weight(.semibold))
-            .foregroundStyle(rows[i].1 == .insufficient ? DS.Color.mutedForeground.swiftUI : DS.Color.foreground.swiftUI)
+          ProgressStatusWord(level: rows[i].1, font: DS.TextStyle.footnote.weight(.semibold))
         }
         .padding(.vertical, 10)
       }
