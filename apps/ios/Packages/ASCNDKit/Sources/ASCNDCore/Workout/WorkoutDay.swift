@@ -242,6 +242,36 @@ public enum WorkoutDay {
     return ticked && secs > 0 ? .start(seconds: secs) : .cancel
   }
 
+  /// Set vừa xong mang tạ và reps sang set kế của CÙNG bài (Kiệt 27/10, mock
+  /// 14/10 "một chạm điền sẵn"): set sau chỉ còn một chạm "Xong set", số vẫn
+  /// hiện và sửa được. Như Strong / Hevy.
+  ///
+  /// - Đích: hàng chưa tích ĐẦU TIÊN sau `row` của cùng bài, cùng loại (khởi
+  ///   động / làm việc) — tạ khởi động không sang set làm việc.
+  /// - Chỉ điền ô người dùng CHƯA gõ (`nil`); ô đã gõ — kể cả xoá trống — giữ.
+  /// - Tạ chỉ mang khi set vừa xong có tạ > 0: bài không tạ để ô tạ trống.
+  /// - Chỉ mang chữ người dùng đã gõ: ô theo kế hoạch thì set kế cũng theo
+  ///   kế hoạch của nó (kế hoạch kim tự tháp không bị san phẳng).
+  public static func carryForward(from row: PlannedSet, in rows: [PlannedSet], _ progress: inout DayProgress) {
+    guard progress.done[row.key] == true, let i = rows.firstIndex(where: { $0.key == row.key }) else { return }
+    let key = WorkoutFocus.exerciseKey(row)
+    let warm = isWarmup(row, progress)
+    guard
+      let target = rows[(i + 1)...].first(where: {
+        WorkoutFocus.exerciseKey($0) == key && isWarmup($0, progress) == warm && progress.done[$0.key] != true
+      })
+    else { return }
+    if progress.weightText[target.key] == nil, let w = progress.weightText[row.key], performed(row, progress).weightKg > 0 {
+      progress.weightText[target.key] = w
+      if let remote = progress.remoteWeight[row.key], remote.text == w {
+        progress.remoteWeight[target.key] = remote
+      }
+    }
+    if progress.repsText[target.key] == nil, let r = progress.repsText[row.key], RepEntry.parse(r).isEntered {
+      progress.repsText[target.key] = r
+    }
+  }
+
   /// Chỉnh thời gian nghỉ của một hàng (RT-16): kẹp [0, 600].
   public static func setRest(_ seconds: Int, for row: PlannedSet, _ progress: inout DayProgress) {
     progress.rest[row.key] = RestTimer.clampPlanned(seconds)

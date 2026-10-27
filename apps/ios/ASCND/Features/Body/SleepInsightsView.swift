@@ -33,10 +33,14 @@ struct SleepInsightsView: View {
             Task { await book.load() }
           }
         case .ready(let nights, let target):
-          if let s = SleepInsights.stats(nights, targetHours: target) {
+          // Trung bình / lời khuyên: bảy ngày TRƯỚC hôm nay (`AverageWindow`, Kiệt 27/10);
+          // đêm dậy sáng nay vẫn ở danh sách.
+          if let s = SleepInsights.stats(book.averaged(nights), targetHours: target) {
             hero(s, nights: nights, target: target)
             let tips = SleepInsights.insights(s, targetHours: target)
             if !tips.isEmpty { insights(tips) }
+            log(nights)
+          } else if !nights.isEmpty {
             log(nights)
           } else {
             DSEmptyState(

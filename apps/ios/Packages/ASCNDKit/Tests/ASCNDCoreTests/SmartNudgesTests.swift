@@ -50,6 +50,20 @@ struct SmartNudgesTests {
     #expect(SmartNudges.parse(nil).isEmpty)
   }
 
+  /// 27/10: app gửi đơn vị nước; mặc định "ml" (như server cũ hiểu). Đổi đơn vị là khoá
+  /// mới — câu cũ viết bằng ml không được dùng lại cho oz.
+  @Test func sendsTheWaterUnit() async {
+    let edge = Edge()
+    let book = SmartNudgesBook(userId: "u", edge: edge, cache: Memory(), clock: { EpochMillis(Int64(1000)) })
+    await book.load(date: Self.today, lang: "vi", stamp: "s--", tzOffset: -420)
+    #expect(edge.calls.last?.1["waterUnit"] == .string("ml"))
+    await book.load(date: Self.today, lang: "vi", stamp: "s--", tzOffset: -420, waterUnit: .oz)
+    #expect(edge.calls.count == 2, "đơn vị khác → gọi lại")
+    #expect(edge.calls.last?.1["waterUnit"] == .string("oz"))
+    #expect(SmartNudges.key(userId: "u", date: Self.today, lang: "vi", stamp: "s")
+      == "smart_nudges|u|2026-10-09|vi|s", "khoá ml giữ như cũ — bộ nhớ đệm cũ còn dùng được")
+  }
+
   @Test func oneCallPerKeyThenTheCache() async {
     let edge = Edge()
     let cache = Memory()

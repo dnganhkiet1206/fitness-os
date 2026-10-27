@@ -309,12 +309,10 @@ struct ProgressLegend: View {
   @Environment(\.colorScheme) private var scheme
 
   var body: some View {
-    HStack(spacing: DS.Spacing.md) {
-      item(.good) { RoundedRectangle(cornerRadius: 3).fill(DS.Color.foreground.swiftUI.opacity(0.8)) }
-      item(.attention) { RoundedRectangle(cornerRadius: 3).strokeBorder(DS.Color.foreground.swiftUI.opacity(0.8), lineWidth: 1.3) }
-      item(.insufficient) {
-        RoundedRectangle(cornerRadius: 3).fill(scheme == .dark ? Color(white: 0.17) : Color(white: 0.86))
-      }
+    // Cỡ chữ lớn: ba mục xếp dọc thay vì tràn ngang (23/10).
+    ViewThatFits(in: .horizontal) {
+      HStack(spacing: DS.Spacing.md) { items }
+      VStack(alignment: .leading, spacing: 4) { items }
     }
     .font(DS.TextStyle.caption)
     .foregroundStyle(DS.Color.mutedForeground.swiftUI)
@@ -322,10 +320,20 @@ struct ProgressLegend: View {
     .accessibilityHidden(true)
   }
 
+  @ViewBuilder private var items: some View {
+    item(.good) { RoundedRectangle(cornerRadius: 3).fill(DS.Color.foreground.swiftUI.opacity(0.8)) }
+    item(.attention) {
+      RoundedRectangle(cornerRadius: 3).strokeBorder(DS.Color.foreground.swiftUI.opacity(0.8), lineWidth: 1.3)
+    }
+    item(.insufficient) {
+      RoundedRectangle(cornerRadius: 3).fill(scheme == .dark ? Color(white: 0.17) : Color(white: 0.86))
+    }
+  }
+
   private func item(_ l: ProgressStatus.Level, @ViewBuilder mark: () -> some View) -> some View {
     HStack(spacing: 5) {
       mark().frame(width: 10, height: 10)
-      Text(verbatim: ProgressStyle.word(l))
+      Text(verbatim: ProgressStyle.word(l)).fixedSize()
     }
   }
 }

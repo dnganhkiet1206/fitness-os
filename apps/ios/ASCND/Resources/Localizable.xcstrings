@@ -2,6 +2,29 @@
  "sourceLanguage": "en",
  "version": "1.0",
  "strings": {
+  "ps.a11y.goal %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "goal %@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "mục tiêu %@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "meta %@"
+     }
+    }
+   }
+  },
   "logday.portion.less %@": {
    "extractionState": "manual",
    "localizations": {
@@ -64123,6 +64146,52 @@
      "stringUnit": {
       "state": "translated",
       "value": "Ghi %@"
+     }
+    }
+   }
+  },
+  "ps.a.body.gainFast %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Gaining about %@ a week — faster than ~1%% of body weight. A slower gain usually keeps more of it as muscle. General guidance, not medical advice."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đang tăng khoảng %@ mỗi tuần — nhanh hơn ~1%% cân nặng. Tăng chậm hơn thường giữ được nhiều cơ hơn. Hướng dẫn chung, không phải lời khuyên y tế."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Subes unos %@ por semana, más del ~1 %% de tu peso. Subir más despacio suele conservar más músculo. Orientación general, no consejo médico."
+     }
+    }
+   }
+  },
+  "ps.a.body.lossFast %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Losing about %@ a week — faster than ~1%% of body weight. A slower loss usually protects muscle and energy. General guidance, not medical advice."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đang giảm khoảng %@ mỗi tuần — nhanh hơn ~1%% cân nặng. Giảm chậm hơn thường giữ được cơ và sức. Hướng dẫn chung, không phải lời khuyên y tế."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bajas unos %@ por semana, más del ~1 %% de tu peso. Bajar más despacio suele proteger músculo y energía. Orientación general, no consejo médico."
      }
     }
    }

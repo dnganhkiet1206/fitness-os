@@ -45,8 +45,20 @@ public enum SmartNudges {
       + (JS.number(log?["workout_count"]) > 0 ? "w" : "-")
   }
 
-  public static func key(userId: String, date: LocalDate, lang: String, stamp: String) -> String {
-    "smart_nudges|\(userId)|\(date)|\(lang)|\(stamp)"
+  /// Đổi đơn vị nước thì câu cũ (viết bằng đơn vị cũ) không còn dùng được — khoá mới.
+  public static func key(userId: String, date: LocalDate, lang: String, stamp: String, waterUnit: Water.Unit = .ml)
+    -> String
+  {
+    let base = "smart_nudges|\(userId)|\(date)|\(lang)|\(stamp)"
+    return waterUnit == .ml ? base : base + "|\(waterUnit.rawValue)"
+  }
+
+  /// Thân POST của `ai-smart-nudges`. `waterUnit` (27/10): server viết nước theo nó.
+  public static func requestBody(date: LocalDate, lang: String, tzOffset: Int, waterUnit: Water.Unit) -> [String: JSONValue] {
+    [
+      "lang": .string(lang), "date": .string(date.description), "tzOffset": .number(Double(tzOffset)),
+      "waterUnit": .string(waterUnit.rawValue),
+    ]
   }
 
   /// `res.data?.nudges ?? []` — phần tử thiếu chữ bị bỏ; `priority` lạ coi
@@ -102,8 +114,10 @@ public final class SmartNudgesBook {
 
   /// Đọc insight cho (ngày · ngôn ngữ · dấu). Đã có trong bộ nhớ đệm thì
   /// không gọi AI (`staleTime: Infinity`); `force` = chạm "thử lại".
-  public func load(date: LocalDate, lang: String, stamp: String, tzOffset: Int, force: Bool = false) async {
-    let key = SmartNudges.key(userId: userId, date: date, lang: lang, stamp: stamp)
+  public func load(
+    date: LocalDate, lang: String, stamp: String, tzOffset: Int, waterUnit: Water.Unit = .ml, force: Bool = false
+  ) async {
+    let key = SmartNudges.key(userId: userId, date: date, lang: lang, stamp: stamp, waterUnit: waterUnit)
     if !force, key == currentKey, case .ready = phase { return }
     if !force, key == currentKey, case .loading = phase { return }
     currentKey = key
@@ -114,9 +128,7 @@ public final class SmartNudgesBook {
     generation += 1
     let mine = generation
     phase = .loading
-    let body: [String: JSONValue] = [
-      "lang": .string(lang), "date": .string(date.description), "tzOffset": .number(Double(tzOffset)),
-    ]
+    let body = SmartNudges.requestBody(date: date, lang: lang, tzOffset: tzOffset, waterUnit: waterUnit)
     var last: EdgeFunction.Failure = .unknown
     // Một lần + một lần thử lại (`retry: 1`).
     for _ in 0..<2 {

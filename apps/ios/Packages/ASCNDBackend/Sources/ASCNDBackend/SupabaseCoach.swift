@@ -25,24 +25,19 @@ public struct SupabaseCoachStream: CoachStream {
   public func stream(messages: [Coach.Message], lang: String, date: LocalDate, tzOffset: Int)
     -> AsyncThrowingStream<String, any Error>
   {
-    stream(messages: messages, lang: lang, date: date, tzOffset: tzOffset, checks: [])
+    stream(messages: messages, lang: lang, date: date, tzOffset: tzOffset, checks: [], waterUnit: .ml)
   }
 
   public func stream(
-    messages: [Coach.Message], lang: String, date: LocalDate, tzOffset: Int, checks: [CoachLogPrompt.Conflict]
+    messages: [Coach.Message], lang: String, date: LocalDate, tzOffset: Int, checks: [CoachLogPrompt.Conflict],
+    waterUnit: Water.Unit
   ) -> AsyncThrowingStream<String, any Error> {
     let client = self.client
     let url = self.url
     let anonKey = self.anonKey
     let session = self.session
-    let body = JSONValue.object([
-      "messages": Coach.wire(messages), "lang": .string(lang), "date": .string(date.description),
-      "tzOffset": .number(Double(tzOffset)),
-      // Số đã ghi vs số vừa nói — server bảo AI hỏi lại cái nào đúng.
-      "checks": .array(checks.map {
-        .object(["kind": .string($0.kind.rawValue), "logged": .number($0.logged), "stated": .number($0.stated)])
-      }),
-    ])
+    let body = Coach.requestBody(
+      messages: messages, lang: lang, date: date, tzOffset: tzOffset, checks: checks, waterUnit: waterUnit)
     return AsyncThrowingStream { continuation in
       let task = Task {
         do {

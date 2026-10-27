@@ -1014,6 +1014,11 @@ const STEPS = [
   ['chế độ UI test chỉ ở bản Debug', 'node', ['../apps/ios/tools/native-uitest-mode.mjs']],
   ['chế độ UI test — fixture từng dạng phải đỏ', 'node', ['../apps/ios/tools/native-uitest-mode.mjs', '--self-test']],
   /*
+    #527 (Kiệt 27/10): câu AI viết nước theo đơn vị người dùng (oz / ml). Chạy
+    `_shared/water.ts` thật (Node bỏ kiểu TS) và kiểm hai hàm + app gửi `waterUnit`.
+  */
+  ['AI viết nước theo đơn vị người dùng', 'node', ['--experimental-strip-types', '../apps/ios/tools/native-ai-water-unit.mjs']],
+  /*
     #527 Phase 1 · 1.11: trạng thái mạng ba nhánh của app iOS native phải đổi
     ở đúng các mốc RN đổi. Golden của `NetStatusGoldenTests` là output của
     CHÍNH `net-status.ts` chạy trên đồng hồ ảo (sàn 600 ms, nhịp dò 250 ms, trần

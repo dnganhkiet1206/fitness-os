@@ -57,7 +57,13 @@ extension ProgressStyle {
     }
   }
 
-  static func advice(_ r: ProgressStatus.Result) -> String? {
+  static func advice(_ r: ProgressStatus.Result, unit: WeightUnit) -> String? {
+    // Cơ thể đổi quá ~1 % cân nặng / tuần (Kiệt 27/10): nói tốc độ, kèm "hướng dẫn chung".
+    if r.level == .attention, let note = r.bodyNote, note != .offTrack, let weekly = r.weeklyKg {
+      let pace = "\(n(unit.display(abs(weekly)), 1)) \(unit.label)"
+      return note == .gainingFast
+        ? String(localized: "ps.a.body.gainFast \(pace)") : String(localized: "ps.a.body.lossFast \(pace)")
+    }
     switch r.level {
     case .good: return String(localized: "ps.a.good")
     case .insufficient: return nil
@@ -103,7 +109,7 @@ struct ProgressResultCard: View {
           .font(DS.TextStyle.caption)
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
           .padding(.top, 1)
-        if let advice = ProgressStyle.advice(result) {
+        if let advice = ProgressStyle.advice(result, unit: unit) {
           Text(verbatim: advice)
             .font(DS.TextStyle.footnote)
             .foregroundStyle(DS.Color.foreground.swiftUI.opacity(0.85))
@@ -192,7 +198,7 @@ struct ProgressGroupView: View {
         VStack(alignment: .leading, spacing: 4) {
           ProgressStatusWord(level: result.level, font: .system(size: 26, weight: .bold))
             .tracking(-0.4)
-          Text(verbatim: ProgressStyle.advice(result) ?? ProgressStyle.missing(result))
+          Text(verbatim: ProgressStyle.advice(result, unit: unit) ?? ProgressStyle.missing(result))
             .font(DS.TextStyle.body)
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
         }
@@ -267,6 +273,8 @@ struct ProgressGroupView: View {
       .chartYAxis { AxisMarks(position: .trailing) }
       .frame(height: 170)
       .accessibilityLabel(Text(verbatim: label))
+      // VoiceOver đọc số từng ngày và mục tiêu, không chỉ tên nhóm (23/10).
+      .accessibilityValue(Text(verbatim: Self.spoken(days, vals, target: target)))
     }
     .padding(DS.Spacing.md)
     .todayCard()
@@ -317,6 +325,16 @@ struct ProgressGroupView: View {
     let avg = have.isEmpty ? nil : have.reduce(0, +) / Double(have.count)
     guard let avg, have.count >= ProgressStatus.minDays, target > 0 else { return (.insufficient, avg) }
     return (avg >= target * low && avg <= target * high ? .good : .attention, avg)
+  }
+
+  /// "Thứ Năm 4.323, Thứ Sáu chưa có, …; mục tiêu 10.000".
+  static func spoken(_ days: [LocalDate], _ values: [Double?], target: Double?) -> String {
+    let none = String(localized: "ps.l.insufficient")
+    var parts = zip(days, values).map { d, v in
+      "\(d.calendarDate.formatted(Date.FormatStyle().weekday(.wide).locale(.app))) \(v.map { ProgressStyle.n($0, 1) } ?? none)"
+    }
+    if let target { parts.append(String(localized: "ps.a11y.goal \(ProgressStyle.n(target, 1))")) }
+    return parts.joined(separator: ", ")
   }
 
   static func weekday(_ d: LocalDate) -> String {

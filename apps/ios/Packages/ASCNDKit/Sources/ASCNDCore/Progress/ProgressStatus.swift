@@ -3,7 +3,8 @@ public import Observation
 
 /// Tiến bộ theo chữ trạng thái (#527, Kiệt duyệt mock `progress-status-words.html` bản 10,
 /// 22/10). Sáu nhóm, mỗi nhóm MỘT chữ — Tốt · Cần chú ý · Chưa đủ dữ liệu — so số 7 ngày
-/// gần nhất với mục tiêu của chính người dùng. Không điểm số, không AI; thiếu dữ liệu thì
+/// TRƯỚC hôm nay (`AverageWindow`, Kiệt 27/10: hôm nay chưa xong) với mục tiêu của chính
+/// người dùng; số hôm nay đi riêng ("Hôm nay"). Không điểm số, không AI; thiếu dữ liệu thì
 /// nói thiếu (PRODUCT_DECISION_V1).
 ///
 /// Ngưỡng (bảng của mock):
@@ -13,7 +14,9 @@ public import Observation
 /// - Giấc ngủ: TB giờ ngủ ≥ mục tiêu − 30 phút.
 /// - Ăn uống: TB đạm ≥ 80 % mục tiêu (cùng ngưỡng lời khuyên "đạm thấp" của Tổng kết tuần).
 /// - Hồi phục: TB sẵn sàng của ngày ĐO ĐƯỢC phục hồi ≥ 60.
-/// - Cơ thể: xu hướng cân 4 tuần theo hướng mục tiêu (giảm / giữ / tăng).
+/// - Cơ thể: xu hướng cân 4 tuần theo hướng mục tiêu (giảm / giữ / tăng); tăng hay giảm
+///   nhanh hơn ~1 % cân nặng mỗi tuần cũng là "Cần chú ý" (Kiệt 27/10) — "Tốt" cho +15 kg
+///   trong 4 tuần khi mục tiêu là tăng là sai.
 /// - Mọi nhóm (trừ Tập luyện): dưới 3 ngày / lần có dữ liệu → chưa đủ dữ liệu.
 public enum ProgressStatus {
   public enum Level: String, Sendable, Hashable, CaseIterable {
@@ -25,7 +28,7 @@ public enum ProgressStatus {
     case training, steps, nutrition, sleep, recovery, body
   }
 
-  public static let windowDays = 7
+  public static let windowDays = AverageWindow.length
   public static let minDays = 3
   public static let stepsRatio = 0.8
   public static let proteinRatio = 0.8
@@ -35,6 +38,31 @@ public enum ProgressStatus {
   /// Cân: "giữ" là không đổi quá chừng này trong 4 tuần; "giảm / tăng" chấp nhận lệch nhẹ.
   public static let maintainBandKg = 1.0
   public static let directionSlackKg = 0.2
+  /// Tăng / giảm quá chừng này % cân nặng mỗi tuần (trung bình trên các lần cân) là quá
+  /// nhanh (Kiệt 27/10). Mốc hướng dẫn chung hay dùng (~0,5–1 %/tuần), không phải y khoa.
+  public static let maxWeeklyChangePercent = 1.0
+  /// Hai lần cân sát nhau không đủ để nói tốc độ (nước, bữa tối muộn): lần đầu và lần
+  /// cuối phải cách nhau ít nhất chừng này ngày thì mới xét tốc độ.
+  public static let minRateDays = 7
+
+  /// Một lần cân (ngày địa phương, kg).
+  public struct Weigh: Sendable, Hashable {
+    public let date: LocalDate
+    public let kg: Double
+
+    public init(date: LocalDate, kg: Double) {
+      self.date = date
+      self.kg = kg
+    }
+  }
+
+  /// Vì sao nhóm Cơ thể "Cần chú ý" — chọn câu khuyên.
+  public enum BodyNote: String, Sendable, Hashable {
+    /// Đi ngược mục tiêu (hay ra ngoài dải "giữ").
+    case offTrack
+    case gainingFast
+    case losingFast
+  }
 
   public struct Result: Sendable, Hashable, Identifiable {
     public let group: Group
@@ -48,6 +76,9 @@ public enum ProgressStatus {
     public let today: Double?
     public let average: Double?
     public let target: Double?
+    /// Cơ thể: thay đổi trung bình mỗi tuần (kg) và lý do "Cần chú ý".
+    public var weeklyKg: Double? = nil
+    public var bodyNote: BodyNote? = nil
     public var id: Group { group }
   }
 
@@ -65,16 +96,16 @@ public enum ProgressStatus {
                   today: Double(dueBeforeToday), average: nil, target: Double(planned))
   }
 
-  /// `days`: 7 ngày, cũ → mới, `nil` = không có số.
-  public static func steps(_ days: [Double?], goal: Double) -> Result {
-    ratioGroup(.steps, days, target: goal, ratio: stepsRatio)
+  /// `days`: 7 ngày của `AverageWindow` (trước hôm nay), cũ → mới, `nil` = không có số.
+  /// `today`: số hôm nay, chỉ để hiện — không vào trung bình.
+  public static func steps(_ days: [Double?], goal: Double, today: Double? = nil) -> Result {
+    ratioGroup(.steps, days, target: goal, ratio: stepsRatio, today: today)
   }
 
   /// Phút ngủ mỗi đêm; mục tiêu tính bằng giờ.
-  public static func sleep(_ minutes: [Double?], targetHours: Double) -> Result {
+  public static func sleep(_ minutes: [Double?], targetHours: Double, today todayValue: Double? = nil) -> Result {
     let have = minutes.compactMap { $0 }
     let target = targetHours * 60
-    let todayValue = minutes.last ?? nil
     guard have.count >= minDays else {
       return Result(group: .sleep, level: .insufficient, have: have.count, of: minutes.count, need: minDays,
                     today: todayValue, average: nil, target: target)
@@ -85,14 +116,13 @@ public enum ProgressStatus {
   }
 
   /// Gam đạm mỗi ngày có ghi bữa.
-  public static func nutrition(_ protein: [Double?], target: Double) -> Result {
-    ratioGroup(.nutrition, protein, target: target, ratio: proteinRatio)
+  public static func nutrition(_ protein: [Double?], target: Double, today: Double? = nil) -> Result {
+    ratioGroup(.nutrition, protein, target: target, ratio: proteinRatio, today: today)
   }
 
   /// Điểm sẵn sàng của ngày ĐO ĐƯỢC phục hồi (ngày chỉ có tải tập = `nil`).
-  public static func recovery(_ scores: [Double?]) -> Result {
+  public static func recovery(_ scores: [Double?], today todayValue: Double? = nil) -> Result {
     let have = scores.compactMap { $0 }
-    let todayValue = scores.last ?? nil
     guard have.count >= minDays else {
       return Result(group: .recovery, level: .insufficient, have: have.count, of: scores.count, need: minDays,
                     today: todayValue, average: nil, target: readinessGood)
@@ -113,21 +143,36 @@ public enum ProgressStatus {
     }
   }
 
-  /// Lần cân trong 4 tuần, cũ → mới (kg).
-  public static func body(_ weights: [Double], goal: WeightGoal) -> Result {
-    guard weights.count >= minDays, let first = weights.first, let last = weights.last else {
-      return Result(group: .body, level: .insufficient, have: weights.count, of: weightDays, need: minDays,
-                    today: weights.last, average: nil, target: nil)
+  /// Thay đổi trung bình mỗi tuần (kg) từ lần cân đầu tới lần cuối. `nil` khi hai lần
+  /// ấy cách nhau dưới `minRateDays` ngày.
+  public static func weeklyChangeKg(_ weights: [Weigh]) -> Double? {
+    guard let first = weights.first, let last = weights.last else { return nil }
+    let days = last.date.daysSinceEpoch - first.date.daysSinceEpoch
+    guard days >= minRateDays else { return nil }
+    return (last.kg - first.kg) / (Double(days) / 7)
+  }
+
+  /// Lần cân trong 4 tuần, cũ → mới.
+  public static func body(_ weights: [Weigh], goal: WeightGoal) -> Result {
+    let kgs = weights.map(\.kg)
+    guard kgs.count >= minDays, let first = kgs.first, let last = kgs.last else {
+      return Result(group: .body, level: .insufficient, have: kgs.count, of: weightDays, need: minDays,
+                    today: kgs.last, average: nil, target: nil)
     }
     let change = last - first
-    let ok: Bool = switch goal {
-    case .lose: change <= directionSlackKg
-    case .gain: change >= -directionSlackKg
-    case .maintain: abs(change) <= maintainBandKg
+    let weekly = weeklyChangeKg(weights)
+    let percent = weekly.map { first > 0 ? $0 / first * 100 : 0 } ?? 0
+    let note: BodyNote? = switch goal {
+    case .lose:
+      change > directionSlackKg ? .offTrack : percent < -maxWeeklyChangePercent ? .losingFast : nil
+    case .gain:
+      change < -directionSlackKg ? .offTrack : percent > maxWeeklyChangePercent ? .gainingFast : nil
+    case .maintain:
+      abs(change) <= maintainBandKg ? nil : .offTrack
     }
-    let recent = Array(weights.suffix(windowDays))
-    return Result(group: .body, level: ok ? .good : .attention, have: weights.count, of: weightDays, need: minDays,
-                  today: last, average: mean(recent), target: change)
+    let recent = Array(kgs.suffix(windowDays))
+    return Result(group: .body, level: note == nil ? .good : .attention, have: kgs.count, of: weightDays,
+                  need: minDays, today: last, average: mean(recent), target: change, weeklyKg: weekly, bodyNote: note)
   }
 
   // MARK: - Thứ tự, câu đầu trang
@@ -150,9 +195,9 @@ public enum ProgressStatus {
 
   // MARK: - Hàng → ngày
 
-  /// 7 ngày kết thúc ở `today` (cũ → mới).
+  /// 7 ngày TRƯỚC `today` (cũ → mới) — `AverageWindow`, chung mọi màn.
   public static func window(_ today: LocalDate) -> [LocalDate] {
-    (0..<windowDays).map { today.adding(days: $0 - (windowDays - 1)) }
+    AverageWindow.days(before: today)
   }
 
   /// Giá trị một cột của `daily_logs` theo 7 ngày; ≤ 0 hay thiếu = `nil`.
@@ -190,9 +235,10 @@ public enum ProgressStatus {
 
   static func mean(_ a: [Double]) -> Double { a.isEmpty ? 0 : a.reduce(0, +) / Double(a.count) }
 
-  private static func ratioGroup(_ g: Group, _ days: [Double?], target: Double, ratio: Double) -> Result {
+  private static func ratioGroup(_ g: Group, _ days: [Double?], target: Double, ratio: Double, today todayValue: Double?)
+    -> Result
+  {
     let have = days.compactMap { $0 }
-    let todayValue = days.last ?? nil
     guard have.count >= minDays, target > 0 else {
       return Result(group: g, level: .insufficient, have: have.count, of: days.count, need: minDays,
                     today: todayValue, average: have.isEmpty ? nil : mean(have), target: target)
@@ -221,12 +267,21 @@ public final class ProgressStatusBook {
     public let kcal: [Double?]
     public let waterMl: [Double?]
     public let readiness: [Double?]
-    public let weights: [Double]
+    public let weights: [ProgressStatus.Weigh]
     public let proteinTarget: Double
     public let kcalTarget: Double
     public let waterTargetMl: Double
     public let sleepTargetHours: Double
     public let weightGoal: ProgressStatus.WeightGoal
+    /// Số của hôm nay (ngoài khung trung bình) — dòng "Hôm nay".
+    public let today: Today
+  }
+
+  public struct Today: Sendable, Hashable {
+    public let steps: Double?
+    public let sleepMinutes: Double?
+    public let protein: Double?
+    public let readiness: Double?
   }
 
   public let userId: String
@@ -254,6 +309,7 @@ public final class ProgressStatusBook {
     let logs = RowQuery(
       table: "daily_logs",
       columns: "date, steps, sleep_duration_min, protein_g, kcal, water_ml, readiness_score, readiness_explain",
+      // Khung trung bình + hôm nay (hiện riêng).
       filters: [me, .gte("date", .string(days[0].description)), .lte("date", .string(today.description))])
     let weights = RowQuery(
       table: "weight_logs", columns: "date, weight_kg",
@@ -284,11 +340,17 @@ public final class ProgressStatusBook {
         readiness: ProgressStatus.measuredReadiness(rows, days: days),
         weights: wRows.compactMap { r in
           let v = JS.number(r["weight_kg"])
-          return v > 0 && v.isFinite ? v : nil
+          guard v > 0, v.isFinite, let d = r["date"]?.stringValue.flatMap(LocalDate.init) else { return nil }
+          return ProgressStatus.Weigh(date: d, kg: v)
         },
         proteinTarget: target("macro_protein_g", 140), kcalTarget: target("tdee_target_kcal", 2200),
         waterTargetMl: target("water_target_ml", 2500), sleepTargetHours: target("sleep_target_hours", 8),
-        weightGoal: ProgressStatus.weightGoal(prof?["goal"]?.stringValue)))
+        weightGoal: ProgressStatus.weightGoal(prof?["goal"]?.stringValue),
+        today: Today(
+          steps: ProgressStatus.column(rows, "steps", days: [today])[0],
+          sleepMinutes: ProgressStatus.column(rows, "sleep_duration_min", days: [today])[0],
+          protein: ProgressStatus.column(rows, "protein_g", days: [today])[0],
+          readiness: ProgressStatus.measuredReadiness(rows, days: [today])[0])))
     } catch {
       guard !closed else { return }
       if case .ready = phase { return }
@@ -301,10 +363,10 @@ public final class ProgressStatusBook {
     guard case .ready(let d) = phase else { return nil }
     return [
       training,
-      ProgressStatus.steps(d.steps, goal: stepsGoal),
-      ProgressStatus.nutrition(d.protein, target: d.proteinTarget),
-      ProgressStatus.sleep(d.sleepMinutes, targetHours: d.sleepTargetHours),
-      ProgressStatus.recovery(d.readiness),
+      ProgressStatus.steps(d.steps, goal: stepsGoal, today: d.today.steps),
+      ProgressStatus.nutrition(d.protein, target: d.proteinTarget, today: d.today.protein),
+      ProgressStatus.sleep(d.sleepMinutes, targetHours: d.sleepTargetHours, today: d.today.sleepMinutes),
+      ProgressStatus.recovery(d.readiness, today: d.today.readiness),
       ProgressStatus.body(d.weights, goal: d.weightGoal),
     ]
   }

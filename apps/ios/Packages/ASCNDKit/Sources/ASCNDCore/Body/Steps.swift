@@ -6,7 +6,8 @@ public import Observation
 ///
 /// Như RN: 14 ngày `daily_logs.steps` (`Number(steps) || 0`); "hôm nay" là
 /// hàng có đúng ngày hôm nay (không phải hàng cuối — hàng cuối là hôm qua khi
-/// hôm nay chưa ghi); trung bình = 7 HÀNG cuối làm tròn; xu thế = 3 hàng cuối
+/// hôm nay chưa ghi); trung bình = 7 HÀNG cuối làm tròn (native: `AverageWindow`, xem
+/// `stats`); xu thế = 3 hàng cuối
 /// so với 3 hàng trước đó (%); thanh tiến độ tối đa 100 %; mục tiêu mặc định
 /// 10 000, đổi từng 500, kẹp 1 000…50 000.
 ///
@@ -58,7 +59,9 @@ public enum Steps {
   public static func stats(_ h: [Day], today: LocalDate) -> Stats {
     let last7 = Array(h.suffix(7))
     let todaySteps = h.first { $0.date == today }?.steps ?? 0
-    let avg = last7.isEmpty ? 0 : JS.round(last7.reduce(0) { $0 + $1.steps } / Double(last7.count))
+    // Khác RN (`7 hàng cuối`, gồm hôm nay còn dở): `AverageWindow` — bảy ngày TRƯỚC hôm
+    // nay, chia cho ngày có bước, như Tiến bộ / Insight (Kiệt 27/10).
+    let avg = JS.round(AverageWindow.average(h.map { ($0.date, $0.steps) }, before: today)?.value ?? 0)
     let recent3 = h.suffix(3).map(\.steps)
     let older3 = Array(h.dropLast(3).suffix(3)).map(\.steps)
     let avgR = recent3.isEmpty ? 0 : recent3.reduce(0, +) / Double(recent3.count)
