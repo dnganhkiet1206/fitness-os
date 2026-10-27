@@ -178,8 +178,8 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - ~~Ô tạ và hàng "Như set trước · 27.2 kg" in dấu chấm ngay dưới "Lần trước 27,2 kg"; gõ dấu phẩy trên bàn phím tiếng Việt thì ô đổi thành dấu chấm.~~ Sửa 26/10 (nhánh `claude/audit-r4-workout`): `NumberInput.display` — ô tạ và gợi ý hiện theo dấu thập phân của ngôn ngữ app; chữ lưu vẫn dấu chấm. Test `NumberInputTests.displayFollowsTheAppsDecimalSeparator`. Kiểm trên simulator: "Như lần trước · 15,9 kg" → ô "15,9" → "+" → set lưu "18,4 kg × 10".
 - ~~Tổng kết buổi in set không tạ là "× 10" (dấu nhân không có vế trước).~~ Sửa 26/10 (cùng nhánh): "10 reps", như dòng "Set vừa xong". Build xanh; **chưa xem lại trên simulator** (cần chốt một buổi mới — hôm nay đã chốt).
 - ~~"Về Hôm nay" ở tổng kết chỉ đóng màn tập, đứng lại ở tab Tập luyện.~~ Sửa 26/10 (cùng nhánh): đổi sang tab Hôm nay. Build xanh; **chưa bấm lại trên simulator** (cùng lý do). Tổng kết của ngày cũ (mở từ Kế hoạch tuần) giữ như cũ: đóng về Kế hoạch tuần.
-- **Còn mở (cần Kiệt quyết, đã duyệt mock 14/10 là "một chạm mới điền"):** mỗi set sau set đầu bắt đầu ở 0 kg — một set có tạ tốn 2 chạm ("Như set trước" + "Xong set"), 3 nếu bỏ qua nghỉ. Đề xuất: set kế của CÙNG bài trong buổi tự mang tạ của set vừa xong (như Strong / Hevy); bài không tạ vẫn trống.
-- **Còn mở:** tổng kết có nút "Chia sẻ lên cộng đồng" khi bảng tin cộng đồng đang hoãn (§3, 0 người dùng). Cần Kiệt quyết ẩn hay giữ.
+- ~~**Còn mở (cần Kiệt quyết, đã duyệt mock 14/10 là "một chạm mới điền"):** mỗi set sau set đầu bắt đầu ở 0 kg — một set có tạ tốn 2 chạm ("Như set trước" + "Xong set"), 3 nếu bỏ qua nghỉ. Đề xuất: set kế của CÙNG bài trong buổi tự mang tạ của set vừa xong (như Strong / Hevy); bài không tạ vẫn trống.~~ Kiệt chốt CÓ 27/10; làm 27/10 (nhánh `claude/set-prefill`): `WorkoutDay.carryForward` — tích một set thì set chưa tích kế tiếp của cùng bài (cùng loại khởi động / làm việc) mang tạ VÀ reps vừa ghi, hiện trong ô, sửa được; chỉ điền ô chưa gõ; bài không tạ để trống tạ; số theo kế hoạch không bị chép. Test `SetCarryForwardTests`, `WorkoutSessionControllerTests.tickCarriesWeightAndRepsToTheNextSet`. Số chạm mỗi set sau set đầu: 2 → 1 (3 → 2 nếu bỏ qua nghỉ).
+- ~~**Còn mở:** tổng kết có nút "Chia sẻ lên cộng đồng" khi bảng tin cộng đồng đang hoãn (§3, 0 người dùng). Cần Kiệt quyết ẩn hay giữ.~~ Kiệt chốt 27/10: **GIỮ** nút, không đổi code (V1 QĐ 5 vẫn giữ chia sẻ buổi tập). Không phải lỗi; đừng ẩn khi chưa có quyết định mới.
 - **Còn mở (nhỏ):** "Lần trước 10 reps × không tạ" (chép golden RN `lastSetText`); hàng Lịch sử tên dài ("Back & Shoulders") ép ngày xuống hai dòng.
 - **Chưa kiểm:** xoá buổi ở Lịch sử (xoá thật trên server — không làm trên dữ liệu test theo luật "không xoá vĩnh viễn"); tổng kết tuần AI sau buổi này.
 
@@ -207,6 +207,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 ## 5. Lịch sử thay đổi sổ
 
 - 27/10/2026: Kiệt chốt — mọi trung bình 7 ngày bỏ hôm nay (`AverageWindow`, một khung cho mọi màn); gạch mục "khung 7 ngày khác nhau".
+- 27/10/2026: Kiệt chốt — set kế điền sẵn tạ + reps của set vừa xong (đã làm); giữ nút "Chia sẻ lên cộng đồng" ở tổng kết (không đổi code).
 - 26/10/2026: audit vòng 4 — buổi tập trực tiếp (dấu thập phân ô tạ, set không tạ ở tổng kết, "Về Hôm nay"); ghi kết quả onboarding / accessibility / giao diện sáng / trạng thái tải và các mục còn mở.
 - 26/10/2026: audit vòng 4 — Hôm nay không còn báo "Offline" trong lúc chờ server mỗi lần mở app.
 - 26/10/2026: audit vòng 3 — Koa Coach hiện và hiểu nước theo đơn vị người dùng (oz).

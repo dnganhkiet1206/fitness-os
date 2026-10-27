@@ -414,6 +414,7 @@ public final class WorkoutSessionController {
     let on = !(progress.done[key] ?? false)
     if on && !WorkoutDay.isReady(row, progress) { return false }
     let event = WorkoutDay.toggle(row, &progress)
+    if on { WorkoutDay.carryForward(from: row, in: rows, &progress) }
     onRest(event, WorkoutDay.next(after: row, in: rows))
     return await persist()
   }
