@@ -29,6 +29,15 @@
     static let userId = "e2e00000-0000-4000-8000-000000000001"
     static let email = "e2e@ui-test.invalid"
 
+    /// Công tắc mất mạng (audit vòng 5, kiểm offline → online): có tệp
+    /// `Documents/uitest-offline` trong container của app thì máy chủ giả trả
+    /// `notConnectedToInternet` và phép dò báo không tới được; xoá tệp là có mạng lại.
+    /// Bật / tắt từ máy Mac: `touch` / `rm` trên `simctl get_app_container … data`.
+    static var offline: Bool {
+      guard let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return false }
+      return FileManager.default.fileExists(atPath: dir.appendingPathComponent("uitest-offline").path)
+    }
+
     /// Client Supabase trỏ vào máy chủ giả. Gọi một lần, khi `isOn`.
     static func makeBackend() -> Backend {
       URLProtocol.registerClass(FakeSupabaseProtocol.self)
@@ -85,7 +94,8 @@
     }
   }
 
-  /// Mạng luôn "có internet" — dải Offline không hiện ngẫu nhiên trong test.
+  /// Mạng "có internet" — dải Offline không hiện ngẫu nhiên trong test — trừ khi bật
+  /// công tắc `UITestMode.offline`.
   @MainActor
   final class UITestReachabilityProber: ReachabilityProber {
     private final class Probe: ReachabilityProbe {
@@ -93,7 +103,7 @@
     }
 
     func start(_ config: ReachabilityConfig, _ done: @escaping @MainActor (Int?) -> Void) -> any ReachabilityProbe {
-      Task { @MainActor in done(204) }
+      Task { @MainActor in done(UITestMode.offline ? nil : 204) }
       return Probe()
     }
   }
