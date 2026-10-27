@@ -180,7 +180,8 @@ struct StreakReadinessEntry: TimelineEntry {
 }
 
 struct StreakReadinessProvider: TimelineProvider {
-  static let sample = StreakReadinessWidgetData(streakDays: 12, readinessScore: 86, statusText: "86/100")
+  static let sample = StreakReadinessWidgetData(
+    streakDays: 0, readinessScore: 86, statusText: "86/100", weekDone: 3, weekTarget: 4)
 
   func placeholder(in context: Context) -> StreakReadinessEntry {
     StreakReadinessEntry(date: .now, data: Self.sample)
@@ -239,8 +240,9 @@ struct StreakReadinessView: View {
       Spacer(minLength: 0)
       HStack(alignment: .center) {
         VStack(alignment: .leading, spacing: 0) {
-          flame(d.streakDays, size: 32)
-          Text("widget.card.streakDays").font(.system(size: 8.5, weight: .bold)).tracking(1.1).textCase(.uppercase)
+          week(d.weekText, size: 30)
+          Text("widget.koa.stat.week").font(.system(size: 8.5, weight: .bold)).tracking(1.1).textCase(.uppercase)
+            .lineLimit(1)
             .foregroundStyle(.white.opacity(0.6))
         }
         Spacer(minLength: 0)
@@ -275,7 +277,7 @@ struct StreakReadinessView: View {
         }
         .padding(.top, 3)
         Spacer(minLength: 0)
-        WidgetCard.stat("\(d.streakDays)", label: widgetText("widget.card.streakDays"))
+        WidgetCard.stat(d.weekText ?? "–", label: widgetText("widget.card.week"))
       }
     }
   }
@@ -294,15 +296,17 @@ struct StreakReadinessView: View {
       : s >= 50 ? widgetText("widget.card.zone.moderate") : widgetText("widget.card.zone.recover")
   }
 
-  private func flame(_ days: Int, size: CGFloat) -> some View {
+  /// Tuần của Koa "3/6" (Kiệt 27/10: thay ngọn lửa chuỗi ngày).
+  private func week(_ text: String?, size: CGFloat) -> some View {
     HStack(alignment: .firstTextBaseline, spacing: 4) {
-      Image(systemName: "flame.fill").font(.system(size: size * 0.55, weight: .bold)).foregroundStyle(KoaWidgetInk.tube(1, true))
-      Text(verbatim: "\(days)").font(.system(size: size, weight: .heavy).monospacedDigit()).fontWidth(.condensed)
+      Image(systemName: "figure.strengthtraining.traditional").font(.system(size: size * 0.5, weight: .bold))
+        .foregroundStyle(KoaWidgetInk.tube(3, true))
+      Text(verbatim: text ?? "–").font(.system(size: size, weight: .heavy, design: .rounded).monospacedDigit())
         .foregroundStyle(.white)
     }
     .accessibilityElement(children: .ignore)
-    .accessibilityLabel(Text(days == 1 ? "widget.streak.day" : "widget.streak.days"))
-    .accessibilityValue(Text(verbatim: "\(days)"))
+    .accessibilityLabel(Text("widget.card.week"))
+    .accessibilityValue(Text(verbatim: text ?? "–"))
   }
 
   /// Vòng điểm sẵn sàng; chưa có điểm → vòng trống, "–".

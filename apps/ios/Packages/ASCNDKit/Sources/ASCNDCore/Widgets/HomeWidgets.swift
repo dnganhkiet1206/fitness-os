@@ -35,15 +35,28 @@ public struct TodayWorkoutWidgetData: Codable, Sendable, Hashable {
 }
 
 public struct StreakReadinessWidgetData: Codable, Sendable, Hashable {
+  /// Dữ liệu cũ; widget không còn hiện chuỗi (Kiệt 27/10 — GĐ1 đã bỏ chuỗi khỏi Hôm nay).
   public var streakDays: Int
   /// 0–100; `nil` khi hôm nay chưa có điểm sẵn sàng.
   public var readinessScore: Int?
   public var statusText: String
+  /// Tuần của Koa: ngày có buổi / buổi theo lịch tuần này. `nil` = chưa có lịch
+  /// (hoặc dữ liệu cũ) — widget hiện "–".
+  public var weekDone: Int?
+  public var weekTarget: Int?
 
-  public init(streakDays: Int, readinessScore: Int?, statusText: String) {
+  public init(streakDays: Int, readinessScore: Int?, statusText: String, weekDone: Int? = nil, weekTarget: Int? = nil) {
     self.streakDays = streakDays
     self.readinessScore = readinessScore
     self.statusText = statusText
+    self.weekDone = weekDone
+    self.weekTarget = weekTarget
+  }
+
+  /// "3/6" của Tuần của Koa, `nil` khi chưa có lịch.
+  public var weekText: String? {
+    guard let weekDone, let weekTarget, weekTarget > 0 else { return nil }
+    return "\(min(weekDone, weekTarget))/\(weekTarget)"
   }
 }
 
@@ -120,17 +133,21 @@ public enum HomeWidgets {
   /// `hasRecovery == false` (điểm chỉ dựa vào tải tập): như mọi màn trong app —
   /// không hiện số (19/10: widget màn hình chính từng hiện "80").
   public static func streakReadiness(
-    streak: Int, readinessScore: JSONValue?, hasRecovery: Bool = true, copy: Copy
+    streak: Int, readinessScore: JSONValue?, hasRecovery: Bool = true, copy: Copy,
+    week: (done: Int, target: Int)? = nil
   ) -> StreakReadinessWidgetData {
     let present = JS.present(readinessScore)
     let score = present ? JS.number(readinessScore) : .nan
     guard present, score.isFinite, hasRecovery else {
       // `readiness !== undefined`: NaN vẫn "có" ở RN, ra "NaN/100" — một hàng
       // hỏng không bao giờ đáng hiện; coi như chưa có điểm.
-      return StreakReadinessWidgetData(streakDays: streak, readinessScore: nil, statusText: copy.noScore)
+      return StreakReadinessWidgetData(
+        streakDays: streak, readinessScore: nil, statusText: copy.noScore, weekDone: week?.done,
+        weekTarget: week?.target)
     }
     let r = Int(JS.round(score))
-    return StreakReadinessWidgetData(streakDays: streak, readinessScore: r, statusText: "\(r)/100")
+    return StreakReadinessWidgetData(
+      streakDays: streak, readinessScore: r, statusText: "\(r)/100", weekDone: week?.done, weekTarget: week?.target)
   }
 }
 
@@ -142,6 +159,7 @@ public enum HomeWidgets {
 public struct KoaWidgetData: Codable, Sendable, Hashable {
   enum CodingKeys: String, CodingKey {
     case day, line, next, done, total, streak, nightLine, imageVersion, checks, nextQuest, waterTaps, short, level, gains
+    case weekDone, weekTarget
   }
 
   public init(from decoder: any Decoder) throws {
@@ -160,6 +178,8 @@ public struct KoaWidgetData: Codable, Sendable, Hashable {
     short = try c.decodeIfPresent(String.self, forKey: .short) ?? ""
     level = try c.decodeIfPresent(Int.self, forKey: .level) ?? 1
     gains = try c.decodeIfPresent(Int.self, forKey: .gains)
+    weekDone = try c.decodeIfPresent(Int.self, forKey: .weekDone)
+    weekTarget = try c.decodeIfPresent(Int.self, forKey: .weekTarget)
   }
 
   /// Ngày địa phương của dữ liệu (`YYYY-MM-DD`). Khác hôm nay → widget không nói
@@ -171,7 +191,17 @@ public struct KoaWidgetData: Codable, Sendable, Hashable {
   /// "Hôm nay của bạn · X/Y xong" — cùng con số với Hôm nay.
   public var done: Int
   public var total: Int
+  /// Dữ liệu cũ; thẻ không còn hiện chuỗi (Kiệt 27/10).
   public var streak: Int
+  /// Tuần của Koa (Kiệt 27/10: thay ô "Chuỗi"): ngày có buổi / buổi theo lịch.
+  public var weekDone: Int?
+  public var weekTarget: Int?
+
+  /// "3/6", `nil` khi chưa có lịch.
+  public var weekText: String? {
+    guard let weekDone, let weekTarget, weekTarget > 0 else { return nil }
+    return "\(min(weekDone, weekTarget))/\(weekTarget)"
+  }
   /// Câu khi Koa đi ngủ (từ `nightHour`), đã dịch.
   public var nightLine: String
   /// Phiên bản ảnh — widget đọc lại ảnh khi số này đổi.
