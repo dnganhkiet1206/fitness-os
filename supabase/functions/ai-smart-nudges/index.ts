@@ -4,6 +4,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { aiGate, aiPayload, corsHeaders, localDate, opaque, quotaExceeded, requireUser, toolArgs } from "../_shared/guard.ts";
 import { recoveryMeasured } from "../_shared/readiness.ts";
 import { asleepMinutes, localHour, SLEEP_COLUMNS } from "../_shared/sleep.ts";
+import { readWaterUnit, waterAmount, waterRule } from "../_shared/water.ts";
 
 /** Output ceiling — the reply is a handful of one-line nudges. */
 const MAX_TOKENS = 700;
@@ -22,7 +23,10 @@ serve(async (req) => {
       not the gateway is reached, so a malformed one used to cost a call for
       nothing — see the same note in `ai-coach`.
     */
-    const { lang: asked_lang = "vi", date, tzOffset } = await req.json().catch(() => ({}));
+    const { lang: asked_lang = "vi", date, tzOffset, waterUnit } = await req.json().catch(() => ({}));
+    /* Đơn vị nước của người dùng (27/10): "oz" → số nước gửi model bằng oz; app cũ
+       không gửi → "ml", payload như trước. */
+    const water_unit = readWaterUnit(waterUnit);
     // es → nhánh tiếng Anh, đổi sang tiếng Tây Ban Nha khi gửi (`forSpanish`).
     const lang = promptLang(asked_lang);
 
@@ -57,7 +61,9 @@ serve(async (req) => {
         tdee: profile.tdee_target_kcal,
         protein_target: profile.macro_protein_g,
         sleep_target_hours: profile.sleep_target_hours,
-        water_target_ml: profile.water_target_ml,
+        ...(water_unit === "oz"
+          ? { water_target_oz: profile.water_target_ml == null ? null : waterAmount(Number(profile.water_target_ml), "oz") }
+          : { water_target_ml: profile.water_target_ml }),
       } : null,
       /*
         ── mapped, because the select now fetches something the model must not see ──
@@ -102,7 +108,7 @@ serve(async (req) => {
         */
         total_min: asleepMinutes(s),
       })),
-      water_today_ml: waterToday,
+      ...(water_unit === "oz" ? { water_today_oz: waterAmount(waterToday, "oz") } : { water_today_ml: waterToday }),
       /*
         `new Date().getHours()` here was the hour in UTC, on a Deno host. The
         prompt below branches on it ("if evening: remind to sleep early; if
@@ -137,7 +143,8 @@ IMPORTANT PRINCIPLES:
 - Prioritize: biggest shortfall first
 - Time of day from current_hour: 5-10 morning → water + protein; 11-17 → meals, steps, training; 18-21 evening → dinner protein, wind down, sleep early; 22-4 late night → ONLY sleep and rest (never water, food, steps or training at night)
 - Do not give medical advice in any form
-- Every nudge in English, including when the data contains Vietnamese words`
+- Every nudge in English, including when the data contains Vietnamese words
+${waterRule(water_unit, "en")}`
               : `Bạn là AI hỗ trợ nhắc nhở thói quen sinh hoạt. Trả lời bằng tiếng Việt. Dựa trên dữ liệu người dùng, tạo 2-4 gợi ý ngắn gọn cho hôm nay.
 
 DỮ LIỆU: ${JSON.stringify(ctx)}
@@ -155,7 +162,8 @@ NGUYÊN TẮC QUAN TRỌNG:
 - Ưu tiên: thiếu hụt lớn nhất trước
 - Thời điểm theo current_hour: 5-10 giờ sáng → uống nước + protein; 11-17 giờ → bữa ăn, bước chân, tập; 18-21 giờ tối → đạm bữa tối, thả lỏng, ngủ sớm; 22-4 giờ đêm khuya → CHỈ nhắc ngủ và nghỉ (không bao giờ nhắc uống nước, ăn, đi bộ hay tập lúc đêm)
 - Không đưa lời khuyên y tế dưới bất kỳ hình thức nào
-- Mọi gợi ý viết bằng tiếng Việt`, asked_lang),
+- Mọi gợi ý viết bằng tiếng Việt
+${waterRule(water_unit, "vi")}`, asked_lang),
           },
         ],
         tools: [

@@ -111,6 +111,42 @@ struct CoachChatTests {
 
   static let today = LocalDate("2026-10-09")!
 
+  /// 27/10: `ai-coach` nhận đơn vị nước của người dùng để viết nước bằng oz / ml.
+  final class UnitStream: CoachStream, @unchecked Sendable {
+    let lock = NSLock()
+    private var units: [Water.Unit] = []
+    var seen: [Water.Unit] { lock.withLock { units } }
+    func stream(messages: [Coach.Message], lang: String, date: LocalDate, tzOffset: Int)
+      -> AsyncThrowingStream<String, any Error>
+    {
+      AsyncThrowingStream { $0.finish() }
+    }
+    func stream(
+      messages: [Coach.Message], lang: String, date: LocalDate, tzOffset: Int, checks: [CoachLogPrompt.Conflict],
+      waterUnit: Water.Unit
+    ) -> AsyncThrowingStream<String, any Error> {
+      lock.withLock { units.append(waterUnit) }
+      return AsyncThrowingStream { c in
+        c.yield("ok")
+        c.finish()
+      }
+    }
+  }
+
+  @Test func sendsTheUsersWaterUnit() async {
+    let stream = UnitStream()
+    let chat = CoachChat(userId: "u", stream: stream, store: Store(), edge: nil)
+    chat.waterUnit = .oz
+    await chat.send("Hôm nay uống đủ nước chưa?", lang: "vi", today: Self.today, tzOffset: -420)
+    #expect(stream.seen == [.oz])
+    let body = Coach.requestBody(
+      messages: [], lang: "vi", date: Self.today, tzOffset: -420, checks: [], waterUnit: .oz)
+    #expect(body["waterUnit"] == .string("oz"))
+    #expect(body["tzOffset"] == .number(-420))
+    #expect(Coach.requestBody(messages: [], lang: "en", date: Self.today, tzOffset: 0, checks: [], waterUnit: .ml)["waterUnit"]
+      == .string("ml"))
+  }
+
   @Test func streamsAnAnswerAndSavesBothSides() async {
     let stream = Stream()
     let store = Store()

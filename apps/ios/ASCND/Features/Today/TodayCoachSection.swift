@@ -92,6 +92,8 @@ struct TodayCoachSection: View {
         hour = Calendar.current.component(.hour, from: Date())
       }
       .onChange(of: part) { _, _ in Task { await loadInsight() } }
+      // Đổi đơn vị nước: câu AI viết bằng đơn vị cũ — đọc câu theo đơn vị mới (27/10).
+      .onChange(of: services.preferences.volumeUnit) { _, _ in Task { await loadInsight() } }
       .onReceive(NotificationCenter.default.publisher(for: .healthSynced)) { _ in
         Task {
           await signal?.load()
@@ -106,7 +108,7 @@ struct TodayCoachSection: View {
     guard let nudges, let stamp = signal?.nudgeStamp else { return }
     await nudges.load(
       date: Self.today(), lang: lang.rawValue, stamp: "\(stamp)|\(part.rawValue)", tzOffset: Coach.tzOffset(.current, at: Date()),
-      force: force)
+      waterUnit: services.preferences.volumeUnit, force: force)
   }
 
   private func moveToToday() {
