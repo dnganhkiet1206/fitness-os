@@ -203,6 +203,13 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Còn: khi Koa trong màn vẫn ~29 % CPU simulator (số simulator, không phải iPhone thật). Dinh dưỡng đứng yên 0 %. Bộ nhớ ~90–117 MB.
 - **NOT RUN:** thời gian mở app (cold start) và cuộn bằng Instruments — `xctrace record` treo ở bước kết thúc trên máy này; cần iPhone thật để có số đáng tin.
 
+**Offline và đồng bộ (audit vòng 5, 27/10, simulator, chế độ máy chủ giả):**
+- Thêm công tắc mất mạng cho chế độ UI test (chỉ Debug, trong `ASCND/App/UITest/`): có tệp `Documents/uitest-offline` trong container của app thì máy chủ giả trả `notConnectedToInternet` và phép dò báo không tới được.
+- Kiểm: bật cờ → ghi "+ 8 oz" hai lần (thẻ Nước 16 / 85 oz ngay, lạc quan) → dải "Offline — showing saved data" hiện sau ~1 phút (nhịp dò) → xoá cờ → dải tắt → màn Nước đọc lại: **16 / 85 oz, đúng 2 dòng**, không trùng.
+- Rà mã: outbox MỘT làn tuần tự, khoá idempotency `id` (`ignoreDuplicates`), bữa còn trong hàng đợi bị khoá sửa / xoá; dải offline giả (#698) không tái phát trong lượt này.
+- Chờ Kiệt quyết (giao diện, cần mock): lúc offline, Hôm nay ghi "Done" và dải chỉ nói "showing saved data" — **không chỗ nào nói có N lần ghi đang chờ gửi** (số đếm hàng đợi chỉ hiện ở màn buổi tập).
+- **NOT RUN:** thứ tự gửi nhiều loại (nước + bữa + cân) lúc mất mạng trên simulator (đã có unit / fuzz test của `SyncWorker`); tắt app khi còn hàng đợi (chế độ test dùng database trong bộ nhớ).
+
 **Tài liệu và mã:**
 - `PARITY_MATRIX.md` lạc hậu từ 17/10. 26/10 (audit vòng 3, nhánh `claude/audit-r3-dead-code`): **đánh dấu LẠC HẬU** ở đầu trang (nói rõ chỗ sai: GĐ1–GĐ3, bốn khu vực, lối vào); rà lại toàn bảng vẫn là việc cuối của GĐ3, chưa làm.
 - ~~`ReadinessTrendCardView` là code chết.~~ Xoá 26/10 (cùng nhánh): view và 8 chuỗi `rt.*`; giữ `ReadinessTrendBook` / `ReadinessTrend` (Hôm nay vẫn dùng). Build simulator xanh, cổng chuỗi xanh (2787 khoá).
@@ -225,6 +232,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 
 ## 5. Lịch sử thay đổi sổ
 
+- 27/10/2026: audit vòng 5 — offline: công tắc mất mạng cho chế độ UI test; ghi offline → online trên simulator không trùng; câu hỏi "đang chờ gửi" cho Kiệt.
 - 27/10/2026: audit vòng 5 — xoá tài khoản: mất phản hồi không còn bị báo "chưa có gì bị xoá"; ghi việc thu hồi token Sign in with Apple còn thiếu (chặn phát hành nếu bật nút Apple).
 - 27/10/2026: audit vòng 5 — hiệu năng: Koa dừng vẽ khi ra khỏi màn (Hôm nay đứng yên 34 % → 0 % CPU simulator khi Koa ngoài màn); ghi phần chưa đo (cold start, cuộn).
 - 27/10/2026: deploy production (Kiệt duyệt trong chat: "Cho phép deploy production hai hàm `ai-smart-nudges` và `ai-coach`") — `ai-smart-nudges` v12, `ai-coach` v25, 16:47 UTC, từ nhánh `claude/ai-water-unit` @ `4fd26d04`: viết nước theo đơn vị người dùng; app cũ không gửi đơn vị vẫn là ml. Không deploy hàm nào khác, không migration.

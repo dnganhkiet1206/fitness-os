@@ -439,6 +439,11 @@
         client.urlProtocol(self, didFailWithError: URLError(.notConnectedToInternet))
         return
       }
+      // Công tắc mất mạng: như radio rớt — request không tới máy chủ giả.
+      if UITestMode.offline {
+        client.urlProtocol(self, didFailWithError: URLError(.notConnectedToInternet))
+        return
+      }
       let reply = FakeSupabaseStore.shared.handle(request, body: Self.body(of: request))
       guard
         let response = HTTPURLResponse(url: url, statusCode: reply.status, httpVersion: "HTTP/1.1", headerFields: reply.headers)
