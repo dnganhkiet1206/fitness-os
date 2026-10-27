@@ -123,6 +123,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 **Tiến bộ theo chữ trạng thái (mock bản 10, Kiệt duyệt 22/10) — hạn chế đã biết:**
 - Tập luyện so với buổi theo lịch **tới hết hôm qua**: hôm nay chưa qua thì chưa tính là chậm (không nhắc oan buổi sáng).
 - Ngưỡng (80 % bước / đạm, ngủ ≥ mục tiêu − 30 phút, sẵn sàng 60, ≥ 3 ngày dữ liệu) là đề xuất đã duyệt, chưa kiểm với người dùng thật.
+- ~~Cơ thể chỉ xét HƯỚNG cân: +15 kg trong 4 tuần với mục tiêu tăng vẫn ra "Tốt" (audit vòng 4, 26/10).~~ Kiệt chốt 27/10; làm 27/10 (nhánh `claude/body-rate-threshold`): tăng (mục tiêu tăng) hay giảm (mục tiêu giảm) nhanh hơn ~1 % cân nặng mỗi tuần — trung bình từ lần cân đầu tới lần cuối trong 4 tuần — là "Cần chú ý", kèm câu khuyên nêu tốc độ ("Đang tăng khoảng 3,8 kg mỗi tuần — nhanh hơn ~1% cân nặng…") và ghi rõ "hướng dẫn chung, không phải lời khuyên y tế". Giữ cân: dải ±1 kg như cũ. Lần cân đầu và cuối cách nhau dưới 7 ngày thì chưa xét tốc độ. Test: `ProgressStatusTests` (tăng nhanh, giảm nhanh, sát ngưỡng, giữ cân, khoảng ngắn). **Hạn chế:** ngưỡng 1 % là mốc hướng dẫn chung, chưa kiểm với người dùng thật; tốc độ lấy theo cân đầu, không làm mượt (một lần cân lệch ở đầu / cuối khung kéo tốc độ).
 - Mục tiêu bước nhớ theo máy (`StepsGoalStore`), như màn Vận động — máy khác có thể khác mục tiêu.
 - Hồi phục dùng màu `destructive` (đỏ sáng, Kiệt 22/10) — trùng màu với nút xoá / lỗi.
 - Chữ trạng thái có màu theo ý nghĩa (Kiệt duyệt phương án A 26/10, mock `L1m8tJ5BCzrbkUBCbZHYyb`): Tốt = bạc hà (`statusGood` #63e6be / #0a7b6c) + ✓, Cần chú ý = vàng hổ phách (`statusAttention` #e8b930 / #8a6a00) + ↗, Chưa đủ dữ liệu = xám + vòng nét đứt. Không dùng đỏ / cam. Chú thích dưới chữ A giữ hình đặc / viền / tối vì nó tả các ô của chữ A, không tả chữ.
@@ -206,6 +207,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 
 ## 5. Lịch sử thay đổi sổ
 
+- 27/10/2026: Kiệt chốt — Tiến bộ › Cơ thể "Cần chú ý" khi tăng / giảm nhanh hơn ~1 % cân nặng mỗi tuần, có câu khuyên (hướng dẫn chung).
 - 26/10/2026: audit vòng 4 — buổi tập trực tiếp (dấu thập phân ô tạ, set không tạ ở tổng kết, "Về Hôm nay"); ghi kết quả onboarding / accessibility / giao diện sáng / trạng thái tải và các mục còn mở.
 - 26/10/2026: audit vòng 4 — Hôm nay không còn báo "Offline" trong lúc chờ server mỗi lần mở app.
 - 26/10/2026: audit vòng 3 — Koa Coach hiện và hiểu nước theo đơn vị người dùng (oz).
