@@ -42,10 +42,15 @@ struct KoaFigureView: View {
   @State private var clock = KoaClock()
   @State private var touch = KoaTouch()
   @State private var pokes = 0
+  /// Koa còn trong khung cuộn không. Ngoài khung thì dừng vẽ (audit vòng 5, 27/10):
+  /// Hôm nay đứng yên tốn ~30 % CPU simulator vì `Canvas` vẽ lại 60 lần/giây kể cả khi
+  /// Koa đã cuộn khỏi màn; Reduce Motion bật thì 0 %. Không nằm trong khung cuộn thì
+  /// không bao giờ đổi — luôn chạy như trước.
+  @State private var onScreen = true
 
   var body: some View {
     let isPaper = paper ?? (scheme == .light)
-    let running = animated && !reduceMotion && scenePhase == .active
+    let running = animated && !reduceMotion && scenePhase == .active && onScreen
     let live = interactive && running
     let reacts = (interactive || greet) && running
     let lit = stage && !isPaper
@@ -55,6 +60,7 @@ struct KoaFigureView: View {
       canvas(t: t, paper: isPaper, react: reacts ? touch.frame(ms) : nil)
     }
     .frame(width: size, height: size * KoaMath.aspect)
+    .onScrollVisibilityChange(threshold: 0.01) { onScreen = $0 }
     .modifier(KoaPop(on: live, expression: expression))
     .modifier(KoaStage(on: lit, glow: KoaStage.colour(build), solid: reduceTransparency, size: size))
     .contentShape(Rectangle())
