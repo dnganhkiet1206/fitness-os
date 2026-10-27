@@ -456,7 +456,7 @@ NGUYÊN TẮC QUAN TRỌNG:
             role: "system",
             // Quy tắc đầu ra + ngôn ngữ (vi / en / es) nối SAU `forSpanish` và ở cuối.
             content: forSpanish(
-              systemPrompt + "\n" + waterRule(water_unit, lang) + scopeRule(lang) + answerFormat(lang) +
+              systemPrompt + scopeRule(lang) + answerFormat(lang) + "\n" + waterRule(water_unit, lang) +
                 checkBlock(readChecks(body?.checks), lang, spanish, water_unit),
               body?.lang,
             ) + markRule(appLang(body?.lang)),
