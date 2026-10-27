@@ -21,10 +21,25 @@ public enum Grocery {
     public let times: Int
     public var id: String { name.lowercased() }
 
-    /// `amountOf`: "400g" khi có gam, không thì "×3".
+    /// `amountOf`: "400g" khi có gam, không thì "×3". Đây là chữ LƯU vào
+    /// `grocery_items.quantity` (không theo ngôn ngữ); hiển thị qua `quantityLabel`.
     public var amount: String {
       grams > 0 ? "\(Int(JS.round(grams)))g" : "×\(times)"
     }
+  }
+
+  /// Số lượng để hiện (26/10, audit vòng 3: "Cơm 21000g", và hàng danh sách thêm "×"
+  /// trước "×3" thành "××3"). Chữ lưu dạng "<số>g" → nhóm chữ số theo `locale`, từ
+  /// 1000 g đổi ra kg (một chữ số lẻ): "400 g", "1,5 kg", "21 kg". Chữ khác (vd. "×3",
+  /// hay số lượng gõ tay) giữ nguyên.
+  public static func quantityLabel(_ stored: String, locale: Locale) -> String {
+    let t = stored.trimmingCharacters(in: .whitespaces)
+    guard t.hasSuffix("g"), let g = Double(t.dropLast().trimmingCharacters(in: .whitespaces)), g.isFinite, g >= 0
+    else { return stored }
+    if g >= 1000 {
+      return "\((JS.round(g / 100) / 10).formatted(.number.precision(.fractionLength(0...1)).locale(locale))) kg"
+    }
+    return "\(Int(JS.round(g)).formatted(.number.locale(locale))) g"
   }
 
   /// `queryFn` của `grocery_meal_plan`: gộp `meal_plan_items` theo tên đã cắt
