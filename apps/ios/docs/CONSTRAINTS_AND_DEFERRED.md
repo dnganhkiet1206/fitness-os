@@ -194,6 +194,10 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 **Audit 25/10 (vòng 1):**
 - ~~Ghi giấc ngủ có thể lưu giờ dậy ở TƯƠNG LAI~~ (P1, sửa 25/10): `SleepLog.span` (theo RN) đặt giờ dậy vào hôm nay, nên "23:00–7:00" ghi lúc 1:24 sáng lưu một giấc dậy lúc 7:00 sáng nay. Sửa: `SleepLog.lastNight` (lùi về đêm gần nhất đã xong) cho bộ ghi giấc ngủ, màn Ghi giấc ngủ và "Kể cho Koa"; nút ghi nhanh trên thẻ Giấc ngủ chỉ hiện khi giờ dậy quen đã qua. Lệch RN có chủ đích; test mẫu RN của `span` giữ nguyên.
 
+**Xoá tài khoản (audit vòng 5, 27/10):**
+- ~~Mất phản hồi của lần xoá (hết giờ, rớt mạng giữa chừng) thì app báo "chưa có gì bị xoá", dù server có thể đã xoá xong.~~ Sửa 27/10 (nhánh `claude/v5-account-delete`): lỗi xảy ra trước khi yêu cầu rời máy (không mạng, không phân giải / nối được máy chủ) mới là "chưa có gì bị xoá"; hết giờ, rớt mạng giữa chừng, huỷ và lỗi lạ thành trạng thái mới "chưa xác nhận được — bấm lại", vì `delete-account` gọi lại an toàn (tài khoản đã mất → 200). 2 unit test mới. **Không bấm xoá thật**: chỉ rà mã và bấm tới hộp xác nhận rồi Huỷ trên simulator.
+- **Chưa có: thu hồi token Sign in with Apple khi xoá tài khoản.** App Store (5.1.1(v)) yêu cầu app có Sign in with Apple gọi REST API thu hồi token của Apple khi xoá tài khoản. `delete-account` chỉ xoá ảnh và người dùng Supabase. Cần khoá Sign in with Apple (gói Apple Developer, mục 1) và deploy hàm, nên chờ Kiệt. **Chặn phát hành** nếu bật nút Apple.
+- Còn hoãn (mục 3, chờ Kiệt): khoá Face ID, xuất dữ liệu.
 **Dinh dưỡng (audit vòng 5, 27/10, simulator, chế độ máy chủ giả):**
 - Ghi bữa từ thẻ Bữa ở Hôm nay: **3 chạm** (thẻ → "Ăn lại bữa này" → Lưu); chọn bữa sau khi lưu là tuỳ chọn, OK tự đóng. Vòng macro ở Dinh dưỡng trừ đúng (720 kcal / P42 / C60 / F18 → còn 1.880 / 108 / 240 / 62).
 - ~~"Nước như hôm qua (68 oz)" trong Ghi hôm nay, trong khi thẻ Nước ghi "Hôm qua 71 oz"~~ — điền sẵn làm tròn nấc 250 ml (2.100 → 2.000 ml). Sửa 27/10 (nhánh `claude/v5-nutrition`): điền đúng lượng hôm qua (chặn 50…5000 ml). Unit test cập nhật.
@@ -215,6 +219,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 
 ## 5. Lịch sử thay đổi sổ
 
+- 27/10/2026: audit vòng 5 — xoá tài khoản: mất phản hồi không còn bị báo "chưa có gì bị xoá"; ghi việc thu hồi token Sign in with Apple còn thiếu (chặn phát hành nếu bật nút Apple).
 - 27/10/2026: audit vòng 5 — dinh dưỡng: "Nước như hôm qua" ghi đúng lượng hôm qua; ghi kết quả ghi bữa 3 chạm, macro, và câu hỏi "Ăn lại" giữ loại bữa gốc.
 - 27/10/2026: deploy production (Kiệt duyệt trong chat: "Cho phép deploy production hai hàm `ai-smart-nudges` và `ai-coach`") — `ai-smart-nudges` v12, `ai-coach` v25, 16:47 UTC, từ nhánh `claude/ai-water-unit` @ `4fd26d04`: viết nước theo đơn vị người dùng; app cũ không gửi đơn vị vẫn là ml. Không deploy hàm nào khác, không migration.
 - 27/10/2026: Kiệt chốt — Tiến bộ › Cơ thể "Cần chú ý" khi tăng / giảm nhanh hơn ~1 % cân nặng mỗi tuần, có câu khuyên (hướng dẫn chung).
