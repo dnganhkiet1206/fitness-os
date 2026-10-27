@@ -1198,7 +1198,7 @@ struct TellKoaSheet: View {
         }
       }
     } else {
-      Stepper(value: Binding(get: { waterMl ?? 250 }, set: { waterMl = min(max($0, 50), DayCheckIn.waterMaxMl) }), in: 50...DayCheckIn.waterMaxMl, step: 250) {
+      Stepper(value: Binding(get: { waterMl ?? 250 }, set: { waterMl = min(max($0, DayCheckIn.waterMinMl), DayCheckIn.waterMaxMl) }), in: DayCheckIn.waterMinMl...DayCheckIn.waterMaxMl, step: 250) {
         Text(verbatim: SpokenLogDisplay.water(waterMl ?? 0, unit: services.preferences.volumeUnit)).font(.system(size: 17, weight: .semibold))
       }
       Text("tellkoa.water.adds").font(DS.TextStyle.caption).foregroundStyle(DS.Color.mutedForeground.swiftUI)

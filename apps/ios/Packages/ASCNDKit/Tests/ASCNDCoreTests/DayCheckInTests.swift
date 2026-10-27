@@ -21,12 +21,14 @@ struct DayCheckInTests {
     #expect(DayCheckIn.progress(doneWorkoutOnRestDay) == (4, 4))
   }
 
-  /// Nước điền sẵn = hôm qua, làm tròn nấc 250 ml, trong 250…5000; không có → 500.
+  /// Nước điền sẵn = ĐÚNG hôm qua (trong 50…5000); không có → 500. Nút ghi nói
+  /// "như hôm qua (71 oz)" phải ghi đúng 71 oz như thẻ Nước — không làm tròn.
   @Test func waterPrefillFollowsYesterday() {
     #expect(DayCheckIn.waterPrefillMl(yesterdayMl: nil) == 500)
     #expect(DayCheckIn.waterPrefillMl(yesterdayMl: 0) == 500)
-    #expect(DayCheckIn.waterPrefillMl(yesterdayMl: 1_980) == 2_000)
-    #expect(DayCheckIn.waterPrefillMl(yesterdayMl: 90) == 250)
+    #expect(DayCheckIn.waterPrefillMl(yesterdayMl: 1_980) == 1_980)
+    #expect(DayCheckIn.waterPrefillMl(yesterdayMl: 2_100) == 2_100)
+    #expect(DayCheckIn.waterPrefillMl(yesterdayMl: 30) == 50)
     #expect(DayCheckIn.waterPrefillMl(yesterdayMl: 9_000) == 5_000)
     let today = LocalDate("2026-10-18")!
     let week = [WaterDay(date: LocalDate("2026-10-17")!, totalMl: 1_750), WaterDay(date: today, totalMl: 250)]

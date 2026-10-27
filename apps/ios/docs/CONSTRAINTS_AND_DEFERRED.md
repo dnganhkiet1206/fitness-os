@@ -181,7 +181,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - ~~"Về Hôm nay" ở tổng kết chỉ đóng màn tập, đứng lại ở tab Tập luyện.~~ Sửa 26/10 (cùng nhánh): đổi sang tab Hôm nay. Build xanh; **chưa bấm lại trên simulator** (cùng lý do). Tổng kết của ngày cũ (mở từ Kế hoạch tuần) giữ như cũ: đóng về Kế hoạch tuần.
 - ~~**Còn mở (cần Kiệt quyết, đã duyệt mock 14/10 là "một chạm mới điền"):** mỗi set sau set đầu bắt đầu ở 0 kg — một set có tạ tốn 2 chạm ("Như set trước" + "Xong set"), 3 nếu bỏ qua nghỉ. Đề xuất: set kế của CÙNG bài trong buổi tự mang tạ của set vừa xong (như Strong / Hevy); bài không tạ vẫn trống.~~ Kiệt chốt CÓ 27/10; làm 27/10 (nhánh `claude/set-prefill`): `WorkoutDay.carryForward` — tích một set thì set chưa tích kế tiếp của cùng bài (cùng loại khởi động / làm việc) mang tạ VÀ reps vừa ghi, hiện trong ô, sửa được; chỉ điền ô chưa gõ; bài không tạ để trống tạ; số theo kế hoạch không bị chép. Test `SetCarryForwardTests`, `WorkoutSessionControllerTests.tickCarriesWeightAndRepsToTheNextSet`. Số chạm mỗi set sau set đầu: 2 → 1 (3 → 2 nếu bỏ qua nghỉ).
 - ~~**Còn mở:** tổng kết có nút "Chia sẻ lên cộng đồng" khi bảng tin cộng đồng đang hoãn (§3, 0 người dùng). Cần Kiệt quyết ẩn hay giữ.~~ Kiệt chốt 27/10: **GIỮ** nút, không đổi code (V1 QĐ 5 vẫn giữ chia sẻ buổi tập). Không phải lỗi; đừng ẩn khi chưa có quyết định mới.
-- **Còn mở (nhỏ):** "Lần trước 10 reps × không tạ" (chép golden RN `lastSetText`); hàng Lịch sử tên dài ("Back & Shoulders") ép ngày xuống hai dòng.
+- ~~**Còn mở (nhỏ):** "Lần trước 10 reps × không tạ" (chép golden RN `lastSetText`); hàng Lịch sử tên dài ("Back & Shoulders") ép ngày xuống hai dòng.~~ Sửa 27/10 (audit vòng 5, nhánh `claude/v5-small`): không tải thì "Lần trước 10 reps" (lệch RN có chủ ý, test golden nới đúng chỗ ấy); tên ở Lịch sử tối đa 2 dòng, ngày 1 dòng. Unit test xanh; **chưa xem trên simulator**.
 - **Chưa kiểm:** xoá buổi ở Lịch sử (xoá thật trên server — không làm trên dữ liệu test theo luật "không xoá vĩnh viễn"); tổng kết tuần AI sau buổi này.
 
 **Audit 26/10 (vòng 4) — onboarding, accessibility, giao diện sáng, trạng thái:**
@@ -190,6 +190,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Chữ lớn (AX5) ở Tiến bộ: chữ thân / chú thích phóng to, tiêu đề "Tuần này" đứng yên cỡ nhỏ (chữ cỡ cố định); thanh tab và Ghi nhanh không phóng (dùng Large Content Viewer của hệ thống — chưa kiểm).
 - Giao diện sáng ở bốn tab: không thấy chữ mất hay màu tối cứng; thẻ Hỏi Koa giữ ảnh nền tối (ảnh Koa, không đổi).
 - Trạng thái tải: dải offline giả (đã sửa ở trên). Còn thấy: thẻ việc chính Hôm nay đổi "Xem tiến bộ" ↔ "Ghi bữa sau tập" giữa hai lần mở app cách nhau vài phút, cùng dữ liệu — chưa tìm ra nguyên nhân.
+  - 27/10 (audit vòng 5, nhánh `claude/v5-small`): **nguyên nhân** — Hôm nay đọc Daily Plan một lần lúc mở; nếu hồ sơ chưa về thì đạm còn thiếu = `nil` → "Xem tiến bộ", hồ sơ về trước → "Ghi bữa sau tập". Sửa: hồ sơ (mục tiêu đạm) đổi / về sau thì đọc lại Daily Plan. **Chưa kiểm trên simulator** (race, khó dựng lại).
 
 **Audit 25/10 (vòng 1):**
 - ~~Ghi giấc ngủ có thể lưu giờ dậy ở TƯƠNG LAI~~ (P1, sửa 25/10): `SleepLog.span` (theo RN) đặt giờ dậy vào hôm nay, nên "23:00–7:00" ghi lúc 1:24 sáng lưu một giấc dậy lúc 7:00 sáng nay. Sửa: `SleepLog.lastNight` (lùi về đêm gần nhất đã xong) cho bộ ghi giấc ngủ, màn Ghi giấc ngủ và "Kể cho Koa"; nút ghi nhanh trên thẻ Giấc ngủ chỉ hiện khi giờ dậy quen đã qua. Lệch RN có chủ đích; test mẫu RN của `span` giữ nguyên.
@@ -202,6 +203,13 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - ~~Hôm nay đứng yên tốn ~30–34 % CPU kể cả khi Koa đã cuộn khỏi màn~~ — `KoaFigureView` vẽ lại `Canvas` 60 lần/giây; bật Reduce Motion thì 0 %. Sửa 27/10 (nhánh `claude/v5-perf`): Koa ngoài khung cuộn thì dừng vẽ (`onScrollVisibilityChange`). Đo lại: Koa ngoài màn **34 % → 0 %**; cuộn lại thì Koa chạy tiếp (~29 %). Chuyển động của Koa giữ nguyên (Kiệt thích, 23/10).
 - Còn: khi Koa trong màn vẫn ~29 % CPU simulator (số simulator, không phải iPhone thật). Dinh dưỡng đứng yên 0 %. Bộ nhớ ~90–117 MB.
 - **NOT RUN:** thời gian mở app (cold start) và cuộn bằng Instruments — `xctrace record` treo ở bước kết thúc trên máy này; cần iPhone thật để có số đáng tin.
+**Dinh dưỡng (audit vòng 5, 27/10, simulator, chế độ máy chủ giả):**
+- Ghi bữa từ thẻ Bữa ở Hôm nay: **3 chạm** (thẻ → "Ăn lại bữa này" → Lưu); chọn bữa sau khi lưu là tuỳ chọn, OK tự đóng. Vòng macro ở Dinh dưỡng trừ đúng (720 kcal / P42 / C60 / F18 → còn 1.880 / 108 / 240 / 62).
+- ~~"Nước như hôm qua (68 oz)" trong Ghi hôm nay, trong khi thẻ Nước ghi "Hôm qua 71 oz"~~ — điền sẵn làm tròn nấc 250 ml (2.100 → 2.000 ml). Sửa 27/10 (nhánh `claude/v5-nutrition`): điền đúng lượng hôm qua (chặn 50…5000 ml). Unit test cập nhật.
+- Chờ Kiệt quyết: "Ăn lại" bữa tối hôm qua lúc 13:57 lưu vào **Bữa tối** (giữ loại bữa gốc, chủ ý trong `MealLogger.repeatMeal`); đổi được bằng một chạm ở màn đã lưu. Không đổi.
+- Dữ liệu mẫu của chế độ test (#700) có macro không khớp kcal (Salmon Bowl P42 / C60 / F18 ≈ 570 kcal nhưng ghi 720) — chỉ là seed test, không ảnh hưởng dữ liệu thật.
+- Món còn trong hàng đợi (chưa lên server) không sửa / xoá được (`MealDiary.pendingSync`) — không có lỗi bữa "sống lại". Rà mã.
+- **NOT RUN:** sửa / xoá món trên simulator (simulator trễ 2–4 s mỗi chạm), QR / mã vạch và ảnh món (simulator không có camera).
 
 **Tài liệu và mã:**
 - `PARITY_MATRIX.md` lạc hậu từ 17/10. 26/10 (audit vòng 3, nhánh `claude/audit-r3-dead-code`): **đánh dấu LẠC HẬU** ở đầu trang (nói rõ chỗ sai: GĐ1–GĐ3, bốn khu vực, lối vào); rà lại toàn bảng vẫn là việc cuối của GĐ3, chưa làm.
@@ -229,6 +237,8 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 
 - 27/10/2026: audit vòng 5 — xoá tài khoản: mất phản hồi không còn bị báo "chưa có gì bị xoá"; ghi việc thu hồi token Sign in with Apple còn thiếu (chặn phát hành nếu bật nút Apple).
 - 27/10/2026: audit vòng 5 — hiệu năng: Koa dừng vẽ khi ra khỏi màn (Hôm nay đứng yên 34 % → 0 % CPU simulator khi Koa ngoài màn); ghi phần chưa đo (cold start, cuộn).
+- 27/10/2026: audit vòng 5 — dinh dưỡng: "Nước như hôm qua" ghi đúng lượng hôm qua; ghi kết quả ghi bữa 3 chạm, macro, và câu hỏi "Ăn lại" giữ loại bữa gốc.
+- 27/10/2026: audit vòng 5 — việc nhỏ §4: "Lần trước 10 reps" (bỏ "× không tạ"), tên dài ở Lịch sử, nguyên nhân thẻ việc chính đổi qua lại (hồ sơ về muộn).
 - 27/10/2026: deploy production (Kiệt duyệt trong chat: "Cho phép deploy production hai hàm `ai-smart-nudges` và `ai-coach`") — `ai-smart-nudges` v12, `ai-coach` v25, 16:47 UTC, từ nhánh `claude/ai-water-unit` @ `4fd26d04`: viết nước theo đơn vị người dùng; app cũ không gửi đơn vị vẫn là ml. Không deploy hàm nào khác, không migration.
 - 27/10/2026: Kiệt chốt — Tiến bộ › Cơ thể "Cần chú ý" khi tăng / giảm nhanh hơn ~1 % cân nặng mỗi tuần, có câu khuyên (hướng dẫn chung).
 - 27/10/2026: Kiệt chốt — mọi trung bình 7 ngày bỏ hôm nay (`AverageWindow`, một khung cho mọi màn); gạch mục "khung 7 ngày khác nhau".

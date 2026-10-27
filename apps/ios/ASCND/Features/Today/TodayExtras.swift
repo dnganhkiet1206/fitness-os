@@ -409,6 +409,13 @@ struct TodayExtras<Plan: View>: View {
     .onChange(of: planTrigger) { _, _ in
       if let flow { dailyPlan?.recompute(services: services, flow: flow) }
     }
+    // Hồ sơ về SAU lượt đọc đầu (audit vòng 5): đạm còn thiếu cần mục tiêu đạm của hồ
+    // sơ — thiếu thì Daily Plan chọn "Xem tiến bộ", có thì "Ghi bữa sau tập". Không
+    // đọc lại thì thẻ việc chính đổi qua lại giữa hai lần mở app tuỳ cái nào về trước.
+    .onChange(of: profile?.profile.map { NutritionToday.macroTargets($0).protein }) { _, _ in
+      guard dayLoaded else { return }
+      Task { await reloadDailyPlan() }
+    }
     .onChange(of: shop?.inventory, initial: true) { _, rows in
       guard let rows else { return }
       services.koaEquipped = rows.filter(\.equipped).map(\.itemKey)

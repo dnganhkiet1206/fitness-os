@@ -122,6 +122,9 @@ struct ExerciseProgressGoldenTests {
   static func reps(_ n: Int) -> String { abs(n) == 1 ? "\(n) rep" : "\(n) reps" }
 
   @Test func lastSetTextMatchesRN() throws {
+    #expect(InsightScreen.lastSetText(
+      Self.performance(.object(["kind": .string("compound"), "bestReps": .number(10)])),
+      load: WeightUnit.kg.load, reps: Self.reps, bodyweight: "bodyweight") == "10 reps")
     let cases = InsightScreenGoldenTests.array(try Self.golden()["performances"])
     #expect(cases.count == 150)
     for (n, c) in cases.enumerated() {
@@ -129,7 +132,9 @@ struct ExerciseProgressGoldenTests {
       for unit in [WeightUnit.kg, .lbs] {
         let key = unit == .kg ? "kg" : "lbs"
         let got = InsightScreen.lastSetText(p, load: unit.load, reps: Self.reps, bodyweight: "bodyweight")
-        #expect(got == c["text"]?[key]?.stringValue, "#\(n) \(key)")
+        // Lệch RN có chủ ý (audit vòng 5): không tải thì chỉ "8 reps", bỏ "× bodyweight".
+        let want = c["text"]?[key]?.stringValue.map { $0.replacingOccurrences(of: " × bodyweight", with: "") }
+        #expect(got == want, "#\(n) \(key)")
       }
     }
   }
