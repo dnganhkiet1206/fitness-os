@@ -515,7 +515,7 @@ struct WaterCup: View {
 
 // MARK: - Bảy cốc của tuần
 
-/// Trung bình 7 ngày + bảy cốc nhỏ (hôm nay đậm chữ); chạm một cốc để đọc số
+/// Trung bình các ngày có ghi (7 ngày) + bảy cốc nhỏ (hôm nay đậm chữ); chạm một cốc để đọc số
 /// của ngày ấy. Số và thang như `WaterChart` của RN (trung bình, mục tiêu).
 struct WaterWeekCups: View {
   let days: [WaterDay]
@@ -532,8 +532,13 @@ struct WaterWeekCups: View {
           Text(String(localized: "water.average"))
             .font(DS.TextStyle.caption)
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-          Text(verbatim: Water.averageLabel(days, unit, locale: .app))
+          // Cùng chữ với Tiến bộ / Dinh dưỡng ("64 oz", "1,9 L"), không phải "64,5 oz" của RN.
+          Text(verbatim: Water.loggedAverage(days).map { Water.shortLabel(ml: $0.ml, unit, locale: .app) } ?? "–")
             .font(DS.TextStyle.number(20, .title3).weight(.bold))
+          // Trung bình chia cho ngày CÓ ghi (`Water.loggedAverage`) — nói rõ mẫu số.
+          Text(String(localized: "insight.sub.days \("\(Water.loggedAverage(days)?.days ?? 0)/\(days.count)")"))
+            .font(DS.TextStyle.caption.monospacedDigit())
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
         }
         Spacer()
         Text(verbatim: pickedLabel)
