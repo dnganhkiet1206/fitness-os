@@ -7,4 +7,7 @@ appId: com.ascnd.fitnessos.dev
     direction: DOWN
     # Đáy thẻ luôn nằm dưới thanh tab kính — 100% (mặc định) không bao giờ đạt.
     visibilityPercentage: 50
-    timeout: 20000
+    # Cảnh Koa chuyển động liên tục nên Hôm nay không bao giờ "đứng yên": Maestro chờ
+    # đứng yên tới ~11 s sau mỗi lần cuộn, 20 s chỉ đủ 2 lần thử (CI lượt 4). Chờ ngắn.
+    waitToSettleTimeoutMs: 1000
+    timeout: 60000

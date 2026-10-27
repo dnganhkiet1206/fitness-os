@@ -4,14 +4,25 @@ name: water chip updates Water card and Insight
 ---
 - runFlow: subflows/launch.yaml
 - runFlow: subflows/day-card.yaml
-# Dải thẻ: Giấc ngủ · Bữa · Nước · Tập, mỗi lần vuốt dừng ở thẻ kế.
+# Dải thẻ: Giấc ngủ · Bữa · Nước · Tập (`viewAligned`). Maestro trên iOS đưa ngón tới
+# điểm cuối ngay rồi GIỮ YÊN tới hết `duration` mới nhấc: thả ra vận tốc 0, nên dải
+# thẻ dừng ở thẻ gần nhất. Vuốt từ tâm thẻ (~135 pt) chưa qua nửa thẻ → bật về chỗ cũ.
+# Vuốt từ nhãn của thẻ KẾ đang ló ở mép phải (~340 pt, hơn một thẻ) → sang đúng một thẻ.
 - swipe:
     from:
-      id: today.tile.sleep
+      text: "Meal"
+      childOf:
+        id: today.tile.meal
     direction: LEFT
+- extendedWaitUntil:
+    visible:
+      id: today.meal.manual
+    timeout: 5000
 - swipe:
     from:
-      id: today.tile.meal
+      text: "Water"
+      childOf:
+        id: today.tile.water
     direction: LEFT
 - extendedWaitUntil:
     visible:
@@ -34,7 +45,8 @@ name: water chip updates Water card and Insight
 - scrollUntilVisible:
     element: "TODAY.S INSIGHT.*"
     direction: UP
-    timeout: 15000
+    waitToSettleTimeoutMs: 1000
+    timeout: 60000
 - extendedWaitUntil:
     visible: ".*8 oz.*"
     timeout: 15000

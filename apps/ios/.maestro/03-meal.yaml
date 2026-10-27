@@ -4,10 +4,15 @@ name: log a meal in 3 taps, pick meal + OK
 ---
 - runFlow: subflows/launch.yaml
 - runFlow: subflows/day-card.yaml
-# Vuốt dải thẻ một lần: thẻ Bữa dừng ở chỗ thẻ Giấc ngủ (cả thẻ trong màn).
+# Dải thẻ: Giấc ngủ · Bữa · Nước · Tập (`viewAligned`). Maestro trên iOS đưa ngón tới
+# điểm cuối ngay rồi GIỮ YÊN tới hết `duration` mới nhấc: thả ra vận tốc 0, nên dải
+# thẻ dừng ở thẻ gần nhất. Vuốt từ tâm thẻ (~135 pt) chưa qua nửa thẻ → bật về chỗ cũ.
+# Vuốt từ nhãn của thẻ KẾ đang ló ở mép phải (~340 pt, hơn một thẻ) → sang đúng một thẻ.
 - swipe:
     from:
-      id: today.tile.sleep
+      text: "Meal"
+      childOf:
+        id: today.tile.meal
     direction: LEFT
 - extendedWaitUntil:
     visible:
