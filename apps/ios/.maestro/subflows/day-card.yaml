@@ -5,5 +5,4 @@ appId: com.ascnd.fitnessos.dev
     element:
       id: today.tile.sleep
     direction: DOWN
-    centerElement: true
     timeout: 20000
