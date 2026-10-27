@@ -214,6 +214,8 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Dữ liệu mẫu tính lùi từ hôm nay của máy: hôm nay có buổi Full Body A chưa tập, chưa nước / bữa / ngủ; 13 ngày trước có đủ. Mọi huy chương đã có sẵn (không bật màn "Huy chương mới" giữa flow). Giờ dậy quen = trước giờ mở app (để chip ghi nhanh giấc ngủ hiện ở mọi giờ).
 - Simulator không có camera, Health, push: flows không chạm chụp món, mã vạch, Apple Health, thông báo. Hàng Ngôn ngữ của Cài đặt mở app Cài đặt của iPhone — không bấm.
 - `schedule` và `workflow_dispatch` của GitHub chỉ đọc workflow ở nhánh **mặc định (main)**: trước khi `ios-e2e.yml` lên main, chỉ chạy được qua nhãn `e2e` trên PR.
+- Hành vi khác của chế độ test (27/10, audit vòng 5): màn "đã lưu bữa" tự đóng sau **60 s** thay vì 8 s — Maestro mất 6–8 s mỗi chạm khi thanh đếm ngược chạy, nên flow không kịp chọn bữa. Bản thường vẫn 8 s; flow không kiểm việc tự đóng.
+- Vì sao flows từng đỏ (CI lượt 4–6): Maestro iOS đưa ngón tới điểm cuối rồi **giữ yên** tới hết `duration` → thả ra vận tốc 0, dải thẻ `viewAligned` bật về nếu vuốt chưa quá nửa thẻ; cảnh Koa động nên Maestro chờ "đứng yên" ~11 s mỗi lần cuộn (`waitToSettleTimeoutMs`); thẻ có tâm dưới thanh tab thì chạm rơi vào thanh tab; insight lỗi thời bị ẩn (không viết lại số).
 - Cài Maestro trên máy Mac này: Homebrew từ chối (Command Line Tools cũ, cần cập nhật hệ thống), bộ cài chính thức bị chặn bởi quyền của phiên agent — flows được kiểm trên runner GitHub, xem #527.
 
 **Giới hạn của môi trường agent:**

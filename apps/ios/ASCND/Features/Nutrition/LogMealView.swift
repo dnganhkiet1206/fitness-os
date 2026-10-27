@@ -56,7 +56,14 @@ struct LogMealView: View {
   /// Bữa người dùng vừa chạm — CHƯA chốt; chỉ chốt khi bấm OK (Kiệt 22/10).
   @State private var picked: String?
   /// Tấm tự đóng sau chừng này nếu không chạm gì (Kiệt 22/10: chờ lâu hơn).
-  static let autoCloseAfter: Double = 8
+  static var autoCloseAfter: Double {
+    #if DEBUG
+      // Chế độ UI test: Maestro mất 6–8 s mỗi chạm khi thanh đếm ngược chạy (chờ giao
+      // diện đứng yên) — 8 s thì màn tự đóng trước khi flow kịp chọn bữa (CI lượt 6).
+      if UITestMode.isOn { return 60 }
+    #endif
+    return 8
+  }
   @State private var query = ""
   @State private var customOpen = false
   @State private var cName = ""
