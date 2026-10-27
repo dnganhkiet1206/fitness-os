@@ -273,6 +273,8 @@ struct ProgressGroupView: View {
       .chartYAxis { AxisMarks(position: .trailing) }
       .frame(height: 170)
       .accessibilityLabel(Text(verbatim: label))
+      // VoiceOver đọc số từng ngày và mục tiêu, không chỉ tên nhóm (23/10).
+      .accessibilityValue(Text(verbatim: Self.spoken(days, vals, target: target)))
     }
     .padding(DS.Spacing.md)
     .todayCard()
@@ -323,6 +325,16 @@ struct ProgressGroupView: View {
     let avg = have.isEmpty ? nil : have.reduce(0, +) / Double(have.count)
     guard let avg, have.count >= ProgressStatus.minDays, target > 0 else { return (.insufficient, avg) }
     return (avg >= target * low && avg <= target * high ? .good : .attention, avg)
+  }
+
+  /// "Thứ Năm 4.323, Thứ Sáu chưa có, …; mục tiêu 10.000".
+  static func spoken(_ days: [LocalDate], _ values: [Double?], target: Double?) -> String {
+    let none = String(localized: "ps.l.insufficient")
+    var parts = zip(days, values).map { d, v in
+      "\(d.calendarDate.formatted(Date.FormatStyle().weekday(.wide).locale(.app))) \(v.map { ProgressStyle.n($0, 1) } ?? none)"
+    }
+    if let target { parts.append(String(localized: "ps.a11y.goal \(ProgressStyle.n(target, 1))")) }
+    return parts.joined(separator: ", ")
   }
 
   static func weekday(_ d: LocalDate) -> String {

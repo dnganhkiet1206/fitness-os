@@ -189,14 +189,26 @@ struct SmartInsightCard: View {
     .task(id: "\(signal?.nudgeStamp ?? "-")|\(liveWaterMl != nil)|\(book.phaseKey)") { rememberBase() }
   }
 
+  @Environment(\.dynamicTypeSize) private var typeSize
+
+  /// Cỡ chữ trợ năng: tiêu đề và giờ cập nhật xếp hai dòng thay vì vỡ thành bốn
+  /// (23/10, kiểm Dynamic Type lớn nhất).
   private var kicker: some View {
-    HStack(spacing: 6) {
+    HStack(alignment: typeSize.isAccessibilitySize ? .top : .center, spacing: 6) {
       IntelligenceMark(size: 15)
-      Text("insight.title").textCase(.uppercase).tracking(1.2)
+      let title = Text("insight.title").textCase(.uppercase).tracking(1.2)
         .accessibilityAddTraits(.isHeader)
-      if case .ready(let entry) = book.phase {
-        Text(verbatim: "·")
-        Text("insight.updated \(Self.time(entry.at))")
+      if typeSize.isAccessibilitySize {
+        VStack(alignment: .leading, spacing: 2) {
+          title
+          if case .ready(let entry) = book.phase { Text("insight.updated \(Self.time(entry.at))") }
+        }
+      } else {
+        title
+        if case .ready(let entry) = book.phase {
+          Text(verbatim: "·")
+          Text("insight.updated \(Self.time(entry.at))")
+        }
       }
       Spacer(minLength: 0)
       if let dismiss {
