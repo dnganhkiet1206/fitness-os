@@ -21,7 +21,7 @@ public struct SupabaseAccountDeleter: AccountDeleter {
     } catch let FunctionsError.httpError(code, data) {
       return AccountDeletion.outcome(status: code, body: data)
     } catch {
-      return NetworkFailure.isOffline(error) ? .offline : .failed(partial: false)
+      return AccountDeletion.outcome(transport: error)
     }
   }
 }

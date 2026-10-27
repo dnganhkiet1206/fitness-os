@@ -195,6 +195,15 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 **Audit 25/10 (vòng 1):**
 - ~~Ghi giấc ngủ có thể lưu giờ dậy ở TƯƠNG LAI~~ (P1, sửa 25/10): `SleepLog.span` (theo RN) đặt giờ dậy vào hôm nay, nên "23:00–7:00" ghi lúc 1:24 sáng lưu một giấc dậy lúc 7:00 sáng nay. Sửa: `SleepLog.lastNight` (lùi về đêm gần nhất đã xong) cho bộ ghi giấc ngủ, màn Ghi giấc ngủ và "Kể cho Koa"; nút ghi nhanh trên thẻ Giấc ngủ chỉ hiện khi giờ dậy quen đã qua. Lệch RN có chủ đích; test mẫu RN của `span` giữ nguyên.
 
+**Xoá tài khoản (audit vòng 5, 27/10):**
+- ~~Mất phản hồi của lần xoá (hết giờ, rớt mạng giữa chừng) thì app báo "chưa có gì bị xoá", dù server có thể đã xoá xong.~~ Sửa 27/10 (nhánh `claude/v5-account-delete`): lỗi xảy ra trước khi yêu cầu rời máy (không mạng, không phân giải / nối được máy chủ) mới là "chưa có gì bị xoá"; hết giờ, rớt mạng giữa chừng, huỷ và lỗi lạ thành trạng thái mới "chưa xác nhận được — bấm lại", vì `delete-account` gọi lại an toàn (tài khoản đã mất → 200). 2 unit test mới. **Không bấm xoá thật**: chỉ rà mã và bấm tới hộp xác nhận rồi Huỷ trên simulator.
+- **Chưa có: thu hồi token Sign in with Apple khi xoá tài khoản.** App Store (5.1.1(v)) yêu cầu app có Sign in with Apple gọi REST API thu hồi token của Apple khi xoá tài khoản. `delete-account` chỉ xoá ảnh và người dùng Supabase. Cần khoá Sign in with Apple (gói Apple Developer, mục 1) và deploy hàm, nên chờ Kiệt. **Chặn phát hành** nếu bật nút Apple.
+- Còn hoãn (mục 3, chờ Kiệt): khoá Face ID, xuất dữ liệu.
+**Hiệu năng (audit vòng 5, 27/10, simulator iPhone Air, chế độ máy chủ giả, đo bằng `top`):**
+- ~~Hôm nay đứng yên tốn ~30–34 % CPU kể cả khi Koa đã cuộn khỏi màn~~ — `KoaFigureView` vẽ lại `Canvas` 60 lần/giây; bật Reduce Motion thì 0 %. Sửa 27/10 (nhánh `claude/v5-perf`): Koa ngoài khung cuộn thì dừng vẽ (`onScrollVisibilityChange`). Đo lại: Koa ngoài màn **34 % → 0 %**; cuộn lại thì Koa chạy tiếp (~29 %). Chuyển động của Koa giữ nguyên (Kiệt thích, 23/10).
+- Còn: khi Koa trong màn vẫn ~29 % CPU simulator (số simulator, không phải iPhone thật). Dinh dưỡng đứng yên 0 %. Bộ nhớ ~90–117 MB.
+- **NOT RUN:** thời gian mở app (cold start) và cuộn bằng Instruments — `xctrace record` treo ở bước kết thúc trên máy này; cần iPhone thật để có số đáng tin.
+
 **Tài liệu và mã:**
 - `PARITY_MATRIX.md` lạc hậu từ 17/10. 26/10 (audit vòng 3, nhánh `claude/audit-r3-dead-code`): **đánh dấu LẠC HẬU** ở đầu trang (nói rõ chỗ sai: GĐ1–GĐ3, bốn khu vực, lối vào); rà lại toàn bảng vẫn là việc cuối của GĐ3, chưa làm.
 - ~~`ReadinessTrendCardView` là code chết.~~ Xoá 26/10 (cùng nhánh): view và 8 chuỗi `rt.*`; giữ `ReadinessTrendBook` / `ReadinessTrend` (Hôm nay vẫn dùng). Build simulator xanh, cổng chuỗi xanh (2787 khoá).
@@ -208,6 +217,8 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 
 ## 5. Lịch sử thay đổi sổ
 
+- 27/10/2026: audit vòng 5 — xoá tài khoản: mất phản hồi không còn bị báo "chưa có gì bị xoá"; ghi việc thu hồi token Sign in with Apple còn thiếu (chặn phát hành nếu bật nút Apple).
+- 27/10/2026: audit vòng 5 — hiệu năng: Koa dừng vẽ khi ra khỏi màn (Hôm nay đứng yên 34 % → 0 % CPU simulator khi Koa ngoài màn); ghi phần chưa đo (cold start, cuộn).
 - 27/10/2026: audit vòng 5 — việc nhỏ §4: "Lần trước 10 reps" (bỏ "× không tạ"), tên dài ở Lịch sử, nguyên nhân thẻ việc chính đổi qua lại (hồ sơ về muộn).
 - 27/10/2026: deploy production (Kiệt duyệt trong chat: "Cho phép deploy production hai hàm `ai-smart-nudges` và `ai-coach`") — `ai-smart-nudges` v12, `ai-coach` v25, 16:47 UTC, từ nhánh `claude/ai-water-unit` @ `4fd26d04`: viết nước theo đơn vị người dùng; app cũ không gửi đơn vị vẫn là ml. Không deploy hàm nào khác, không migration.
 - 27/10/2026: Kiệt chốt — Tiến bộ › Cơ thể "Cần chú ý" khi tăng / giảm nhanh hơn ~1 % cân nặng mỗi tuần, có câu khuyên (hướng dẫn chung).
