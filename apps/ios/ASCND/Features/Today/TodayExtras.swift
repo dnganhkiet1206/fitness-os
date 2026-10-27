@@ -926,8 +926,15 @@ struct TodayExtras<Plan: View>: View {
       userId: userId, mascotId: services.preferences.mascotSelected, emotion: state.emotion,
       equipped: shop?.inventory.filter(\.equipped).map(\.itemKey) ?? [], line: state.line,
       next: state.next.map(TodayDayBlock.action), done: progress.done, total: progress.total,
-      streak: room.streak.count, day: room.today, checks: checks, nextQuest: state.next, level: room.level,
-      build: room.gains.rank, gains: room.gains.points))
+      streak: room.streak.count, day: room.today, weekDone: koaWeekState?.done,
+      weekTarget: koaWeekState?.target, checks: checks,
+      nextQuest: state.next, level: room.level, build: room.gains.rank, gains: room.gains.points))
+    if let w = koaWeekState {
+      let changed = services.koaWeekNow.map { $0.done != w.done || $0.target != w.target || $0.weekStart != w.weekStart } ?? true
+      services.koaWeekNow = (userId, w.weekStart, w.done, w.target)
+      // Widget Phong độ đọc cùng số — vẽ lại khi tuần đổi.
+      if changed { services.dailyPlanChanged() }
+    }
   }
 
   /// Gains (#527 đợt 1): vóc dáng / hạng của Koa từ lịch sử tập, cho mọi Koa của

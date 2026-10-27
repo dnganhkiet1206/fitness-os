@@ -2,6 +2,52 @@
   "sourceLanguage": "en",
   "version": "1.0",
   "strings": {
+    "widget.koa.stat.week": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This week"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tuần này"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esta semana"
+          }
+        }
+      }
+    },
+    "widget.card.week": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sessions this week"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Buổi tuần này"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sesiones esta semana"
+          }
+        }
+      }
+    },
     "widget.koa.stat.gains": {
       "extractionState": "manual",
       "localizations": {
@@ -238,19 +284,19 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Streak + Readiness"
+            "value": "Training week + Readiness"
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chuỗi ngày + Sẵn sàng"
+            "value": "Tuần tập + Sẵn sàng"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Racha + Preparación"
+            "value": "Semana de entreno + Preparación"
           }
         }
       }
@@ -261,19 +307,19 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Your ASCND streak and readiness."
+            "value": "This week's sessions on your plan and your ASCND readiness."
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chuỗi ngày và điểm sẵn sàng ASCND của bạn."
+            "value": "Số buổi tuần này theo lịch và điểm sẵn sàng ASCND của bạn."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu racha y tu preparación en ASCND."
+            "value": "Las sesiones de esta semana según tu plan y tu preparación en ASCND."
           }
         }
       }
@@ -343,52 +389,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Abre ASCND para actualizar."
-          }
-        }
-      }
-    },
-    "widget.streak.day": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "day"
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "ngày"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "día"
-          }
-        }
-      }
-    },
-    "widget.streak.days": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "days"
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "ngày"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "días"
           }
         }
       }
@@ -665,29 +665,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Hoy"
-          }
-        }
-      }
-    },
-    "widget.koa.stat.streak": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Streak"
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Chuỗi"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Racha"
           }
         }
       }
@@ -1010,29 +987,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Forma"
-          }
-        }
-      }
-    },
-    "widget.card.streakDays": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Day streak"
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ngày chuỗi"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Días de racha"
           }
         }
       }
