@@ -125,13 +125,19 @@ public enum Water {
   /// lẻ ("0,8 L"); oz → số nguyên ("27 oz" — "65.3 oz" là độ chính xác giả của
   /// một mục tiêu đổi từ ml).
   public static func shortLabel(ml: Double, _ unit: Unit, locale: Locale) -> String {
+    "\(shortNumber(ml: ml, unit, locale: locale)) \(shortUnit(unit))"
+  }
+
+  /// Phần số của `shortLabel`: "0,8" (lít) / "27" (oz).
+  public static func shortNumber(ml: Double, _ unit: Unit, locale: Locale) -> String {
     switch unit {
-    case .oz:
-      return "\(Int(jsRound(ml / mlPerFloz)).formatted(.number.locale(locale))) oz"
-    case .ml:
-      return "\((jsRound(ml / 100) / 10).formatted(.number.precision(.fractionLength(0...1)).locale(locale))) L"
+    case .oz: Int(jsRound(ml / mlPerFloz)).formatted(.number.locale(locale))
+    case .ml: (jsRound(ml / 100) / 10).formatted(.number.precision(.fractionLength(0...1)).locale(locale))
     }
   }
+
+  /// Đơn vị của `shortLabel`: "L" / "oz".
+  public static func shortUnit(_ unit: Unit) -> String { unit == .oz ? "oz" : "L" }
 
   /// "0,8 / 1,9 L" · "27 / 65 oz": đã uống / mục tiêu, một đơn vị ở cuối.
   public static func progressLabel(ml: Double, targetMl: Double, _ unit: Unit, locale: Locale) -> String {
@@ -163,21 +169,32 @@ public enum Water {
     unit == .oz ? "\(jsNumber(jsRound(displayVolume(ml, .oz)))) oz" : "\(jsToFixed(ml / 1000, 2))L"
   }
 
-  /// Trung bình 7 ngày, kể cả ngày không uống: "1.07L" / "36.2 oz".
-  public static func averageLabel(_ days: [WaterDay], _ unit: Unit) -> String {
-    let avg = days.isEmpty ? 0 : Double(days.reduce(0) { $0 + $1.totalMl }) / Double(days.count)
-    return unit == .oz ? "\(jsNumber(displayVolume(avg, .oz))) oz" : "\(jsToFixed(avg / 1000, 2))L"
+  /// Trung bình nước — MỘT định nghĩa cho mọi màn (26/10, audit vòng 3): tổng chia
+  /// cho số ngày CÓ ghi nước (> 0) trong khung; ngày không ghi không kéo số xuống
+  /// (không biết là không uống hay quên ghi). Như Tiến bộ, Insight, tổng kết tuần.
+  /// Lệch RN có chủ đích: `water-chart.tsx` chia cho đủ 7 ngày (và in "64.5 oz"; native in
+  /// bằng `shortLabel` như mọi màn). `nil` khi chưa ngày nào có.
+  public static func loggedAverage(_ totalsMl: [Double]) -> (ml: Double, days: Int)? {
+    let have = totalsMl.filter { $0.isFinite && $0 > 0 }
+    guard !have.isEmpty else { return nil }
+    return (have.reduce(0, +) / Double(have.count), have.count)
   }
 
-  /// `averageLabel` hiển thị theo ngôn ngữ (15/10, audit: "18.8 oz" ở bản tiếng Việt):
-  /// CÙNG chữ số với golden của RN, chỉ đổi dấu thập phân sang của `locale`.
-  public static func averageLabel(_ days: [WaterDay], _ unit: Unit, locale: Locale) -> String {
-    let sep = locale.decimalSeparator ?? "."
-    return averageLabel(days, unit).replacingOccurrences(of: ".", with: sep)
+  public static func loggedAverage(_ days: [WaterDay]) -> (ml: Double, days: Int)? {
+    loggedAverage(days.map { Double($0.totalMl) })
   }
 
-  /// Ngày đầu của khung 7 ngày (`useWaterWeek`: hôm nay − 6).
-  public static func weekStart(_ today: LocalDate) -> LocalDate { today.adding(days: -6) }
+  /// Ngày đầu cần ĐỌC: bảy cốc (`useWaterWeek`: hôm nay − 6) và khung trung bình
+  /// (`AverageWindow`: hôm nay − 7, Kiệt 27/10) — lấy ngày sớm hơn.
+  public static func weekStart(_ today: LocalDate) -> LocalDate {
+    min(today.adding(days: -6), AverageWindow.first(before: today))
+  }
+
+  /// Trung bình của màn Nước: `AverageWindow` (bảy ngày TRƯỚC hôm nay), chia cho ngày có
+  /// ghi. Hôm nay hiện riêng (cốc lớn, cốc hôm nay).
+  public static func windowAverage(_ rows: [WaterRow], today: LocalDate) -> AverageWindow.Average? {
+    AverageWindow.average(rows.map { ($0.date, Double($0.amountMl)) }, before: today)
+  }
 
   /// `useWaterWeek`: gộp theo ngày, đúng 7 ngày cũ → mới, ngày không có hàng là 0.
   public static func week(_ rows: [WaterRow], today: LocalDate) -> [WaterDay] {
@@ -247,6 +264,12 @@ public enum Water {
         "date": .string(date.description), "logged_at": .string(WorkoutSessionRecord.iso8601(at)),
       ]),
       createdAt: createdAt)
+  }
+
+  /// Ngày của lần uống (`date` chọn lúc chạm) — ngày `daily_logs` cần dựng lại.
+  public static func day(_ e: OutboxEntry) -> LocalDate? {
+    guard e.kind == addKind else { return nil }
+    return e.payload["date"]?.stringValue.flatMap { LocalDate($0) }
   }
 
   /// Lần uống chưa tới server, đọc lại từ hàng outbox.

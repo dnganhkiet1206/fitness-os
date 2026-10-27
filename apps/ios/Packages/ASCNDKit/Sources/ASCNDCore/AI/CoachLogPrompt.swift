@@ -73,7 +73,9 @@ public enum CoachLogPrompt {
   }
 
   /// Lời kể so với hôm nay: chưa ghi → gợi ý; ghi rồi mà khác → lệch; khớp → không gì.
-  public static func analyze(_ text: String, logged: LoggedToday, hour: Int) -> Analysis {
+  /// `unit`: phần nước còn thiếu làm tròn theo đơn vị người dùng — 50 ml, hay 1 oz
+  /// (làm tròn 50 ml biến "32 oz" − 16 oz đã ghi thành 15 oz).
+  public static func analyze(_ text: String, logged: LoggedToday, hour: Int, unit: Water.Unit = .ml) -> Analysis {
     var a = Analysis()
     for d in detect(text, hour: hour) {
       switch d.kind {
@@ -96,7 +98,9 @@ public enum CoachLogPrompt {
         guard let ml = d.value else { continue }
         let left = ml - logged.waterMl
         if left >= 100 {
-          a.suggestions.append(Detected(kind: .water, value: (left / 50).rounded() * 50))
+          let rounded = unit == .oz
+            ? Double(Water.toMl(Water.jsRound(left / Water.mlPerFloz), .oz)) : (left / 50).rounded() * 50
+          a.suggestions.append(Detected(kind: .water, value: rounded))
         } else if left <= -250 {
           a.conflicts.append(Conflict(kind: .water, logged: logged.waterMl, stated: ml))
         }
@@ -110,15 +114,17 @@ public enum CoachLogPrompt {
   }
 
   /// Gợi ý ghi cho `text`, bỏ những gì hôm nay đã có. Nước: chỉ phần còn thiếu.
-  public static func suggestions(_ text: String, logged: LoggedToday, hour: Int) -> [Detected] {
-    analyze(text, logged: logged, hour: hour).suggestions
+  public static func suggestions(_ text: String, logged: LoggedToday, hour: Int, unit: Water.Unit = .ml) -> [Detected] {
+    analyze(text, logged: logged, hour: hour, unit: unit).suggestions
   }
 
-  /// Số để hiện trên nút / hộp thoại: "7 giờ 30 phút", "1.5 L", "60.5 kg".
-  public static func display(_ kind: Kind, _ v: Double, lang: String) -> String {
+  /// Số để hiện trên nút / hộp thoại: "7 giờ 30 phút", "1.5 L", "16 oz", "60.5 kg".
+  /// Nước theo đơn vị người dùng (26/10, audit vòng 3: tài khoản oz thấy "473 ml").
+  public static func display(_ kind: Kind, _ v: Double, lang: String, unit: Water.Unit = .ml) -> String {
     let l = CoachQuickReply.Lang(lang)
     switch kind {
     case .sleep, .workout: return CoachQuickReply.duration(v, l)
+    case .water where unit == .oz: return "\(Int(Water.jsRound(v / Water.mlPerFloz))) oz"
     case .water: return v >= 1000 ? "\(CoachOverview.format((v / 100).rounded() / 10)) L" : "\(Int(v.rounded())) ml"
     case .weight: return "\(CoachOverview.format((v * 10).rounded() / 10)) kg"
     case .meal: return ""
@@ -126,8 +132,9 @@ public enum CoachLogPrompt {
   }
 
   /// Câu hỏi lại dựng sẵn — dùng khi AI làm lộ chỉ dẫn thay vì hỏi (16/10).
-  public static func question(_ c: Conflict, lang: String) -> String {
-    let said = display(c.kind, c.stated, lang: lang), logged = display(c.kind, c.logged, lang: lang)
+  public static func question(_ c: Conflict, lang: String, unit: Water.Unit = .ml) -> String {
+    let said = display(c.kind, c.stated, lang: lang, unit: unit)
+    let logged = display(c.kind, c.logged, lang: lang, unit: unit)
     switch CoachQuickReply.Lang(lang) {
     case .en: return "You said \(said), but the app has \(logged) logged — which one is correct?"
     case .es: return "Dijiste \(said), pero la app tiene registrado \(logged). ¿Cuál es el correcto?"
@@ -146,11 +153,14 @@ public enum CoachLogPrompt {
   /// Người dùng đã chọn số nào trong một câu trả lời tự gõ: số mới / số cũ / chưa rõ.
   public enum Choice: Equatable, Sendable { case stated, logged, unclear }
 
-  public static func choice(_ reply: String, for c: Conflict) -> Choice {
+  public static func choice(_ reply: String, for c: Conflict, unit: Water.Unit = .ml) -> Choice {
     let t = " " + CoachQuickReply.fold(reply).replacingOccurrences(of: ",", with: ".") + " "
     let numbers = (try? NSRegularExpression(pattern: #"\d+(?:\.\d+)?"#))
       .map { r in r.matches(in: t, range: NSRange(t.startIndex..., in: t)).compactMap { Range($0.range, in: t).map { Double(t[$0]) ?? .nan } } } ?? []
-    func display(_ v: Double) -> Double { c.kind == .sleep ? v / 60 : c.kind == .water && v >= 1000 ? v / 1000 : v }
+    func display(_ v: Double) -> Double {
+      if c.kind == .water, unit == .oz { return v / Water.mlPerFloz }
+      return c.kind == .sleep ? v / 60 : c.kind == .water && v >= 1000 ? v / 1000 : v
+    }
     let near = { (v: Double, target: Double) in abs(v - target) < 0.26 || abs(v - target * 60) < 10 }
     let saysStated = numbers.contains { near($0, display(c.stated)) || near($0, c.stated) }
     let saysLogged = numbers.contains { near($0, display(c.logged)) || near($0, c.logged) }
@@ -209,13 +219,14 @@ public enum CoachLogPrompt {
 
   static func waterMl(_ t: String) -> Double? {
     guard has(t, ["uong", "drank", "drink", "bebi", "tome"]) else { return nil }
-    guard let g = first(t, #"(\d+(?:\.\d+)?)\s*(ml|l|lit|liter|litre|liters|litres|litros?|coc|ly|glass|glasses|vasos?)\b"#),
+    guard let g = first(t, #"(\d+(?:\.\d+)?)\s*(ml|l|lit|liter|litre|liters|litres|litros?|coc|ly|glass|glasses|vasos?|oz|fl oz|ounces?|onzas?)\b"#),
       let n = Double(g[1])
     else { return nil }
     let ml: Double
     switch g[2] {
     case "ml": ml = n
     case "coc", "ly", "glass", "glasses", "vaso", "vasos": ml = n * 250
+    case "oz", "fl oz", "ounce", "ounces", "onza", "onzas": ml = n * Water.mlPerFloz
     default: ml = n * 1000
     }
     return (100...6000).contains(ml) ? ml : nil

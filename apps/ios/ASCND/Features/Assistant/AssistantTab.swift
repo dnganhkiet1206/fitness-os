@@ -178,11 +178,7 @@ struct AssistantTab: View {
           LogWeightView(makeLogger: { services.makeWeightLogger(userId: flow.today.userId) }) { logging = nil }
         }
       }
-      .refreshable {
-        await progress?.load()
-        await signal?.load()
-        await metrics?.load(kcalTarget: kcalTarget)
-      }
+      .refreshable { await refreshAll() }
       .navigationTitle(Text("tab.progress"))
       .ascndPage()
       // Tiêu đề lớn đã nằm trong nội dung — thanh điều hướng ẩn như các tab khác
@@ -243,7 +239,7 @@ struct AssistantTab: View {
           if let r = progressResults?.first(where: { $0.group == g }) {
             let detail = ProgressGroupView(
               result: r, snapshot: progressSnapshot, week: koaWeek,
-              openTrends: metrics == nil ? nil : { path.append(.trends) })
+              openTrends: metrics == nil ? nil : { path.append(.trends) }, refresh: refreshAll)
             if zoomGroup == g {
               detail.todayZoom("ps.\(g.rawValue)", in: heroZoom)
             } else {
@@ -310,17 +306,9 @@ struct AssistantTab: View {
       if phase == .background { chat?.appBackgrounded() }
       // Ra tiền cảnh: số hôm nay có thể đã đổi (ghi bữa / đồng bộ Health), hoặc
       // đã qua nửa đêm — lời chào, tóm tắt và chip đọc lại.
-      guard phase == .active else { return }
-      let today = Self.today()
-      Task {
-        await signal?.move(to: today)
-        await weekly?.move(to: today)
-        await progress?.move(to: today)
-        await metrics?.move(to: today, kcalTarget: kcalTarget)
-        await steps?.move(to: today)
-        await goals?.move(to: today)
-      }
+      if phase == .active { moveToToday() }
     }
+    .onNewDay { moveToToday() }
     .onReceive(NotificationCenter.default.publisher(for: .healthSynced)) { _ in
       Task { await reloadAfterHealthSync() }
     }
@@ -350,9 +338,28 @@ struct AssistantTab: View {
 
   /// Sau một lượt đồng bộ Apple Health (giờ chỉ ở Cài đặt, hoặc tự chạy khi ra
   /// tiền cảnh): tín hiệu, ô chỉ số và insight hôm nay đọc lại.
+  /// Kéo để làm mới — tab và trang chi tiết nhóm cùng một lượt.
+  private func refreshAll() async {
+    await progress?.load()
+    await signal?.load()
+    await metrics?.load(kcalTarget: kcalTarget)
+  }
+
   private func reloadAfterHealthSync() async {
     await signal?.load()
     await metrics?.load(kcalTarget: kcalTarget)
+  }
+
+  private func moveToToday() {
+    let today = Self.today()
+    Task {
+      await signal?.move(to: today)
+      await weekly?.move(to: today)
+      await progress?.move(to: today)
+      await metrics?.move(to: today, kcalTarget: kcalTarget)
+      await steps?.move(to: today)
+      await goals?.move(to: today)
+    }
   }
 
   private static func today() -> LocalDate { LocalDate(SystemWallClock().nowMillis(), in: .current) }

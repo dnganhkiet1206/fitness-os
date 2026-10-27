@@ -56,6 +56,38 @@ final class HealthKitSource: @unchecked Sendable {
     return (try? await store.statusForAuthorizationRequest(toShare: shareTypes, read: readTypes)) == .unnecessary
   }
 
+  /// Số đo cho màn Về bạn của onboarding (mock 22/10): giới tính, ngày sinh, chiều
+  /// cao, cân nặng mới nhất. Chỉ xin đọc đúng bốn thứ này, lúc người dùng bấm "Lấy từ
+  /// Apple Health" — không gộp vào bộ loại của đồng bộ. Không cho đọc thì Health trả
+  /// rỗng như không có dữ liệu (HealthKit không nói ai đã từ chối).
+  func bodyStats() async -> HealthBodyStats {
+    guard isAvailable else { return HealthBodyStats() }
+    let types: Set<HKObjectType> = [
+      HKCharacteristicType(.biologicalSex), HKCharacteristicType(.dateOfBirth), HKQuantityType(.height),
+      HKQuantityType(.bodyMass),
+    ]
+    do {
+      try await store.requestAuthorization(toShare: [], read: types)
+    } catch {
+      return HealthBodyStats()
+    }
+    var out = HealthBodyStats()
+    switch (try? store.biologicalSex())?.biologicalSex {
+    case .female: out.sex = .female
+    case .male: out.sex = .male
+    case .other: out.sex = .other
+    default: break
+    }
+    if let c = try? store.dateOfBirthComponents(), let y = c.year, let m = c.month, let d = c.day {
+      out.dob = LocalDate(String(format: "%04d-%02d-%02d", y, m, d))
+    }
+    async let height = latest(.height, .meterUnit(with: .centi), since: EpochMillis(Date(timeIntervalSince1970: 0)))
+    async let weight = latest(.bodyMass, .gramUnit(with: .kilo), since: EpochMillis(Date(timeIntervalSince1970: 0)))
+    out.heightCm = await height?.value
+    out.weightKg = await weight?.value
+    return out
+  }
+
   /// Đồng bộ nền (18/10, chủ dự án: "Apple Health không tự đồng bộ được à"):
   /// Health báo khi có mẫu mới của các loại này — kể cả lúc app đang đóng (iOS
   /// đánh thức app, tối đa mỗi giờ một lần) — để thẻ Hôm nay, widget và nhắc nhở
@@ -221,6 +253,9 @@ final class HealthSyncCoordinator {
   }
 
   var isAvailable: Bool { source.isAvailable }
+
+  /// Số đo cho màn Về bạn (`HealthKitSource.bodyStats`).
+  func bodyStats() async -> HealthBodyStats { await source.bodyStats() }
 
   /// Đã hỏi quyền Apple Health trên máy này chưa (thẻ "Bắt đầu" của Hôm nay).
   func isConnected() async -> Bool { await source.alreadyAsked() }

@@ -77,6 +77,18 @@ struct KoaRenderGoldenTests {
     }
   }
 
+  /// Tay không có viền sáng / dải sáng riêng (Kiệt 24/10: chỗ nối vai lộ ra):
+  /// bản app ít hơn bản RN đúng hai viền (hai tay).
+  @Test func armsCarryNoRimLight() {
+    func rims(_ e: KoaRender.Element) -> Int {
+      (e.props["stroke"] == .string("url(#\(KoaLight.rimGradient))") ? 1 : 0) + e.kids.reduce(0) { $0 + rims($1) }
+    }
+    let native = rims(KoaRender.figure(KoaRender.Options()))
+    let rn = KoaScene.$rn.withValue(true) { rims(KoaRender.figure(KoaRender.Options())) }
+    #expect(native > 0)
+    #expect(rn - native == 2)
+  }
+
   /// `toFixed(3)` của JS — khoá gộp hệ toạ độ của đèn; `%.3f` làm tròn số hoà
   /// về số chẵn nên không dùng được.
   @Test func toFixedIsJSs() {

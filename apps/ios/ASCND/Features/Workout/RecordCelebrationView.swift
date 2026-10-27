@@ -43,7 +43,7 @@ struct RecordCelebrationView: View {
   var body: some View {
     Button(action: leave) {
       VStack(spacing: DS.Spacing.sm) {
-        MascotFigureView(emotion: .proud, size: 150, animated: !reduceMotion)
+        MascotFigureView(emotion: .proud, size: 150, animated: !reduceMotion, stage: true, greet: true)
           .opacity(shown ? 1 : 0)
           .scaleEffect(0.86 + (popped ? 0.14 : 0))
           .accessibilityHidden(true)

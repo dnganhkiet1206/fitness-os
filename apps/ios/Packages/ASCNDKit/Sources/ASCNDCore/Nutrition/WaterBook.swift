@@ -82,6 +82,8 @@ public final class WaterBook {
   public private(set) var logs: [WaterLog] = []
   /// 7 ngày, cũ → mới.
   public private(set) var week: [WaterDay] = []
+  /// Trung bình bảy ngày TRƯỚC hôm nay (`AverageWindow`) — không gồm hôm nay.
+  public private(set) var average: AverageWindow.Average?
   /// Đã có số thật (server hay bản lưu trên máy) — trước đó màn không nói "0".
   public private(set) var loaded = false
   public private(set) var failure: TodayController.RefreshFailure?
@@ -99,6 +101,7 @@ public final class WaterBook {
   @ObservationIgnored private let timeZone: TimeZone
   @ObservationIgnored private let makeId: @Sendable () -> String
   @ObservationIgnored private let onEnqueued: @MainActor (OutboxEntry) -> Void
+  @ObservationIgnored private let onRemoved: @MainActor (LocalDate) async -> Void
   @ObservationIgnored private var serverLogs: [WaterLog] = []
   @ObservationIgnored private var serverRows: [WaterRow] = []
   @ObservationIgnored private var edits: [(seq: Int, entry: OutboxEntry)] = []
@@ -112,11 +115,14 @@ public final class WaterBook {
   /// - Parameters:
   ///   - store: outbox; `nil` = chỉ đọc.
   ///   - onEnqueued: hàng vừa bền — app gọi `sync.kick()`.
+  ///   - onRemoved: server vừa bỏ một lần uống của ngày ấy — app dựng lại
+  ///     `daily_logs` của ngày (thêm thì `rebuildAfterWrite` lo, sau khi gửi).
   public init(
     userId: String, source: any WaterSource, cache: any WaterCache, store: (any PlanWriteStore)? = nil,
     clock: any WallClock = SystemWallClock(), timeZone: TimeZone = .current,
     makeId: @escaping @Sendable () -> String = { UUID().uuidString.lowercased() },
-    onEnqueued: @escaping @MainActor (OutboxEntry) -> Void = { _ in }
+    onEnqueued: @escaping @MainActor (OutboxEntry) -> Void = { _ in },
+    onRemoved: @escaping @MainActor (LocalDate) async -> Void = { _ in }
   ) {
     self.userId = userId
     self.source = source
@@ -126,6 +132,7 @@ public final class WaterBook {
     self.timeZone = timeZone
     self.makeId = makeId
     self.onEnqueued = onEnqueued
+    self.onRemoved = onRemoved
     date = LocalDate(clock.nowMillis(), in: timeZone)
   }
 
@@ -262,6 +269,8 @@ public final class WaterBook {
       // Trả lại bản vá (`rollbackWater`).
       hidden = nil
       publish()
+    } else {
+      await onRemoved(day)
     }
     // `onSettled`: đọc lại ngày + tuần dù thành hay hỏng.
     await refresh()
@@ -299,5 +308,6 @@ public final class WaterBook {
     let rows = serverRows.filter { $0.id != hidden }
       + local.filter { $0.row.date >= start && !serverIds.contains($0.row.id) }.map(\.row)
     week = Water.week(rows, today: date)
+    average = Water.windowAverage(rows, today: date)
   }
 }

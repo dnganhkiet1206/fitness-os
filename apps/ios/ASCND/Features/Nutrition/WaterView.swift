@@ -79,6 +79,7 @@ struct WaterView: View {
         guard phase == .active else { return }
         Task { await book.clockTick() }
       }
+      .onNewDay { Task { await book.clockTick() } }
       .sheet(isPresented: $showsManual) {
         WaterManualSheet(unit: unit) { amount in
           showsManual = false
@@ -102,7 +103,7 @@ struct WaterView: View {
       ScrollView {
         VStack(spacing: DS.Spacing.md) {
           summary
-          WaterWeekCups(days: book.week, today: book.date, target: target, unit: unit)
+          WaterWeekCups(days: book.week, average: book.average, today: book.date, target: target, unit: unit)
             .padding(DS.Spacing.md)
             .todayCard()
           if !book.logs.isEmpty { logSection }
@@ -514,10 +515,12 @@ struct WaterCup: View {
 
 // MARK: - Bảy cốc của tuần
 
-/// Trung bình 7 ngày + bảy cốc nhỏ (hôm nay đậm chữ); chạm một cốc để đọc số
-/// của ngày ấy. Số và thang như `WaterChart` của RN (trung bình, mục tiêu).
+/// Trung bình các ngày có ghi (7 ngày TRƯỚC hôm nay, `AverageWindow`) + bảy cốc nhỏ (hôm nay
+/// đậm chữ); chạm một cốc để đọc số của ngày ấy. Số và thang như `WaterChart` của RN.
 struct WaterWeekCups: View {
   let days: [WaterDay]
+  /// `WaterBook.average` — không gồm hôm nay (Kiệt 27/10); hôm nay là cốc lớn ở trên.
+  let average: AverageWindow.Average?
   let today: LocalDate
   let target: Double
   let unit: Water.Unit
@@ -531,8 +534,13 @@ struct WaterWeekCups: View {
           Text(String(localized: "water.average"))
             .font(DS.TextStyle.caption)
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-          Text(verbatim: Water.averageLabel(days, unit, locale: .app))
+          // Cùng chữ với Tiến bộ / Dinh dưỡng ("64 oz", "1,9 L"), không phải "64,5 oz" của RN.
+          Text(verbatim: average.map { Water.shortLabel(ml: $0.value, unit, locale: .app) } ?? "–")
             .font(DS.TextStyle.number(20, .title3).weight(.bold))
+          // Trung bình chia cho ngày CÓ ghi — nói rõ mẫu số.
+          Text(String(localized: "insight.sub.days \("\(average?.days ?? 0)/\(AverageWindow.length)")"))
+            .font(DS.TextStyle.caption.monospacedDigit())
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
         }
         Spacer()
         Text(verbatim: pickedLabel)

@@ -277,6 +277,32 @@ private struct SegmentPressStyle: ButtonStyle {
   }
 }
 
+/// Chữ trạng thái: icon + chữ, cùng màu theo ý nghĩa (`ProgressStyle.tint`).
+struct ProgressStatusWord: View {
+  let level: ProgressStatus.Level
+  let font: Font
+
+  var body: some View {
+    Label {
+      Text(verbatim: ProgressStyle.word(level))
+    } icon: {
+      Image(systemName: ProgressStyle.statusSymbol(level)).accessibilityHidden(true)
+    }
+    .labelStyle(StatusWordLabelStyle())
+    .font(font)
+    .foregroundStyle(ProgressStyle.tint(level))
+  }
+}
+
+private struct StatusWordLabelStyle: LabelStyle {
+  func makeBody(configuration: Configuration) -> some View {
+    HStack(spacing: 6) {
+      configuration.icon
+      configuration.title
+    }
+  }
+}
+
 /// Chú thích ba trạng thái dưới hình (như hình mẫu).
 struct ProgressLegend: View {
   @Environment(\.colorScheme) private var scheme
@@ -348,6 +374,27 @@ enum ProgressStyle {
     case .sleep: String(localized: "ps.g.sleep")
     case .recovery: String(localized: "ps.g.recovery")
     case .body: String(localized: "ps.g.body")
+    }
+  }
+
+  /// Màu của chữ trạng thái (Kiệt duyệt phương án A, 26/10): theo ý nghĩa, dịu,
+  /// không đỏ / cam (giống Vitals của Apple: không báo động). "Tốt" là bạc hà
+  /// (Kiệt chọn), khác mọi màu nhóm (Vận động đã xanh lá).
+  static func tint(_ l: ProgressStatus.Level) -> Color {
+    switch l {
+    case .good: DS.Color.statusGood.swiftUI
+    case .attention: DS.Color.statusAttention.swiftUI
+    case .insufficient: DS.Color.mutedForeground.swiftUI
+    }
+  }
+
+  /// Icon đi kèm chữ — trạng thái không chỉ nói bằng màu. "Cần chú ý" là mũi tên
+  /// lên: còn chỗ để tiến, không phải cảnh báo.
+  static func statusSymbol(_ l: ProgressStatus.Level) -> String {
+    switch l {
+    case .good: "checkmark.circle.fill"
+    case .attention: "arrow.up.right.circle"
+    case .insufficient: "circle.dashed"
     }
   }
 

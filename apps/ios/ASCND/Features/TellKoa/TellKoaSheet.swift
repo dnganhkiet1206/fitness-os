@@ -148,7 +148,7 @@ struct TellKoaSheet: View {
     NavigationStack {
       ScrollView {
         VStack(alignment: .leading, spacing: DS.Spacing.md) {
-          if done { doneView } else { koaLine; tiles; gapTiles; notes; inputSummary }
+          if done { doneView } else { koaLine; aiNotice; tiles; gapTiles; notes; inputSummary }
         }
         .padding(DS.Spacing.md)
       }
@@ -194,7 +194,7 @@ struct TellKoaSheet: View {
     }
     .onChange(of: dictation.transcript) { _, t in
       guard !t.isEmpty else { return }
-      text = t
+      if correcting != nil { correction = t } else { text = t }
     }
     .task(id: text) {
       // Đọc lại sau khi ngừng gõ / nói một nhịp.
@@ -218,15 +218,59 @@ struct TellKoaSheet: View {
   /// liquid glass có fallback"): cùng viên kính với mọi ô chat của app
   /// (`glassComposer`), ô chữ giãn tới 4 dòng + micro + xoá.
   private var chatBar: some View {
+    VStack(alignment: .leading, spacing: 6) {
+      // Đang sửa một thẻ (24/10, Kiệt: dùng chung thanh chat thay cho ô trong thẻ):
+      // nhãn "Sửa: Nước ✕" trên thanh, chữ gõ / nói đi vào câu sửa của thẻ ấy.
+      if let part = correcting {
+        HStack(spacing: 6) {
+          Image(systemName: "sparkles").foregroundStyle(IntelligenceTones.violet)
+          Text(verbatim: String(localized: "logday.fix.editing \(title(part))"))
+            .font(.system(size: 13, weight: .semibold))
+          Button {
+            withAnimation(reduceMotion ? nil : .smooth(duration: 0.2)) { stopCorrecting() }
+          } label: {
+            Image(systemName: "xmark").font(.system(size: 11, weight: .bold))
+              .frame(width: 32, height: 32)
+          }
+          .buttonStyle(.plain)
+          .accessibilityLabel(Text("logday.fix.cancel"))
+        }
+        .padding(.leading, 12)
+        .padding(.trailing, 4)
+        .background(.thinMaterial, in: Capsule())
+        .transition(.opacity.combined(with: .move(edge: .bottom)))
+      }
+      chatField
+    }
+  }
+
+  private var chatField: some View {
     HStack(alignment: .bottom, spacing: 6) {
-      TextField(String(localized: "logday.type"), text: $text, axis: .vertical)
+      TextField(
+        correcting.map { String(localized: "logday.fix.placeholder.part \(fixExample($0))") } ?? String(localized: "logday.type"),
+        text: correcting == nil ? $text : $correction, axis: .vertical
+      )
         .font(.system(size: 16))
         .lineLimit(1...4)
         .focused($typing)
+        .submitLabel(correcting == nil ? .return : .send)
+        .onSubmit { if let part = correcting { Task { await correct(part) } } }
         .padding(.vertical, 12)
         .padding(.leading, 16)
         .accessibilityLabel(Text("tellkoa.field.a11y"))
-      if !text.isEmpty, !dictation.isListening {
+      if let part = correcting, !correction.trimmingCharacters(in: .whitespaces).isEmpty, !dictation.isListening {
+        Button { Task { await correct(part) } } label: {
+          Image(systemName: "arrow.up").font(.system(size: 15, weight: .bold))
+            .foregroundStyle(DS.Color.background.swiftUI)
+            .frame(width: 38, height: 38)
+            .background(IntelligenceTones.violet, in: Circle())
+            .padding(.bottom, 5)
+        }
+        .buttonStyle(TodayPressStyle())
+        .disabled(fixing != nil)
+        .accessibilityLabel(Text("logday.fix.send"))
+      }
+      if correcting == nil, !text.isEmpty, !dictation.isListening {
         Button { text = "" } label: {
           Image(systemName: "xmark.circle.fill").font(.system(size: 17))
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
@@ -248,6 +292,8 @@ struct TellKoaSheet: View {
     }
     .padding(.trailing, 5)
     .glassComposer(radius: 24)
+    .intelligenceGlow(thinking || correcting != nil, radius: 24)
+    .animation(reduceMotion ? nil : .smooth(duration: 0.3), value: thinking)
   }
 
   private func toggleMic() {
@@ -276,13 +322,19 @@ struct TellKoaSheet: View {
     HStack(alignment: .top, spacing: 10) {
       MascotAvatar(mascotId: nil, size: 36)
       HStack(spacing: 8) {
-        // Đang hiểu câu: cùng quả cầu ASCND Intelligence với Koa Coach (19/10, chủ dự án).
-        if thinking { IntelligenceOrb(size: 22).transition(.scale.combined(with: .opacity)) }
-        Text(verbatim: koaSays)
-          .contentTransition(.opacity)
-          .font(.system(size: 15))
-          .foregroundStyle(DS.Color.foreground.swiftUI)
-          .fixedSize(horizontal: false, vertical: true)
+        // Đang đọc / đang sửa: MỘT kiểu duy nhất — ký hiệu + "Koa đang hiểu…" có ánh
+        // lướt (24/10: trước lúc hiện cả chữ "ASCND Intelligence", lúc không).
+        if busyLine {
+          IntelligenceMark(size: 16)
+          IntelligenceSheenText(text: Text(verbatim: koaSays), font: .system(size: 15))
+            .fixedSize(horizontal: false, vertical: true)
+        } else {
+          Text(verbatim: koaSays)
+            .contentTransition(.opacity)
+            .font(.system(size: 15))
+            .foregroundStyle(DS.Color.foreground.swiftUI)
+            .fixedSize(horizontal: false, vertical: true)
+        }
       }
       .padding(.horizontal, 13)
       .padding(.vertical, 10)
@@ -293,17 +345,69 @@ struct TellKoaSheet: View {
       Spacer(minLength: 0)
     }
     .accessibilityElement(children: .combine)
-    .animation(reduceMotion ? nil : .smooth(duration: 0.3), value: thinking)
+    .animation(reduceMotion ? nil : .smooth(duration: 0.3), value: busyLine)
   }
 
+  private var busyLine: Bool { (thinking && correcting == nil) || fixing != nil }
+
+  /// ASCND Intelligence không trả lời: nói lý do (quá tải…) và rằng thẻ là bản đọc cơ bản.
+  @ViewBuilder private var aiNotice: some View {
+    // Chỉ khi AI THẬT SỰ quá tải / hết lượt — lỗi khác thì lặng lẽ dùng bản đọc trong máy.
+    if let f = aiFailure, f.isBusy, !text.trimmingCharacters(in: .whitespaces).isEmpty {
+      note(String(localized: "logday.ai.fallback \(WeeklyReviewView.failureText(f))"),
+           systemImage: "exclamationmark.triangle", tint: DS.Color.metricOrangeGraphic.swiftUI)
+    }
+  }
+
+  /// Câu của Koa theo việc người dùng đang làm (24/10, Kiệt: chạm thẻ nào thì Koa
+  /// hướng dẫn chỗ khó hiểu của thẻ ấy).
   private var koaSays: String {
     let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+    if let part = fixing { return String(localized: "logday.fix.working \(title(part))") }
+    if let part = fixMissed {
+      if let f = aiFailure, f.isBusy { return WeeklyReviewView.failureText(f) }
+      return String(localized: "logday.fix.none.part \(fixExample(part))")
+    }
+    if let part = correcting {
+      if dictation.isListening, !correction.isEmpty { return correction }
+      return String(localized: "logday.fix.ask \(title(part)) \(fixExample(part))")
+    }
     if dictation.isListening { return trimmed.isEmpty ? String(localized: "logday.koa.listening") : trimmed }
     if thinking { return String(localized: "logday.understanding") }
+    if let open = expanded, let hint = hint(open) { return hint }
     if included.isEmpty {
       return trimmed.isEmpty ? String(localized: "logday.koa.empty") : String(localized: "tellkoa.nothing")
     }
-    return String(localized: "logday.koa.ready \(included.count)")
+    let ready = String(localized: "logday.koa.ready \(included.count)")
+    return meals.isEmpty ? ready : "\(ready) \(String(localized: "logday.hint.foods"))"
+  }
+
+  /// Chỗ khó hiểu của từng thẻ, nói khi người dùng mở thẻ ấy.
+  private func hint(_ p: Part) -> String? {
+    switch p {
+    case .water: String(localized: "logday.hint.water")
+    case .sleep: String(localized: "logday.hint.sleep")
+    case .weight: String(localized: "logday.hint.weight")
+    default: nil
+    }
+  }
+
+  /// Câu sửa mẫu cho từng loại thẻ.
+  private func fixExample(_ p: Part) -> String {
+    switch p {
+    case .water: String(localized: "logday.fix.ex.water")
+    case .sleep: String(localized: "logday.fix.ex.sleep")
+    case .weight: String(localized: "logday.fix.ex.weight")
+    case .workout: String(localized: "logday.fix.ex.workout")
+    default: String(localized: "logday.fix.ex.meal")
+    }
+  }
+
+  private func stopCorrecting() {
+    correcting = nil
+    correction = ""
+    fixMissed = nil
+    if dictation.isListening { dictation.stop() }
   }
 
   /// Ô lớn hai cột cho ngủ / nước / cân / tập; bữa trải hết bề ngang.
@@ -345,6 +449,25 @@ struct TellKoaSheet: View {
           .frame(width: 32, height: 32)
           .background(Self.color(part), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
         Spacer(minLength: 0)
+        if fixable(part) {
+          Button {
+            withAnimation(reduceMotion ? nil : .smooth(duration: 0.2)) {
+              if correcting == part { stopCorrecting() } else {
+                correcting = part
+                correction = ""
+                fixMissed = nil
+                typing = true
+              }
+            }
+          } label: {
+            Image(systemName: "sparkles").font(.system(size: 13, weight: .semibold))
+              .foregroundStyle(correcting == part ? IntelligenceTones.violet : DS.Color.mutedForeground.swiftUI)
+              .frame(width: 28, height: 28)
+              .frame(width: 40, height: 44, alignment: .topTrailing)
+          }
+          .buttonStyle(.plain)
+          .accessibilityLabel(Text(verbatim: String(localized: "logday.fix.a11y \(title(part))")))
+        }
         Button { remove(part) } label: {
           Image(systemName: "xmark").font(.system(size: 11, weight: .bold))
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
@@ -356,6 +479,7 @@ struct TellKoaSheet: View {
       }
       .padding(.bottom, -8)
       content()
+      if let fix = lastFix, fix.part == part { fixSummary(fix) }
       if failed.contains(part) {
         Text("tellkoa.part.failed").font(DS.TextStyle.caption).foregroundStyle(DS.Color.destructive.swiftUI)
       }
@@ -367,6 +491,7 @@ struct TellKoaSheet: View {
       RoundedRectangle(cornerRadius: 20, style: .continuous)
         .strokeBorder(expanded == part ? Self.color(part).opacity(0.6) : .clear, lineWidth: 1.5)
     }
+    .intelligenceGlow(fixing == part || lastFix?.part == part, radius: 20)
     .shadow(color: .black.opacity(0.05), radius: 8, y: 3)
   }
 
@@ -429,8 +554,10 @@ struct TellKoaSheet: View {
             ? "\(title(part)) · \(String(localized: "logday.kcal.unknown"))"
             : "\(title(part)) · \(Int(kcal.rounded()))\(unknown ? "+" : "") kcal")
             .font(.system(size: 19, weight: .bold).monospacedDigit())
-          FlowRows(spacing: 6, centered: false) {
-            ForEach(m.foods) { f in foodChip(f, slot: slot) }
+          // Mỗi món một hàng: tên (chạm → macro), khẩu phần −/+ ngay trên thẻ, kcal
+          // (24/10, mock "Ghi hôm nay": chỉnh khẩu phần không phải mở sheet).
+          VStack(spacing: 6) {
+            ForEach(m.foods) { f in foodRow(f, slot: slot) }
           }
           doubts(part)
         }
@@ -478,6 +605,65 @@ struct TellKoaSheet: View {
     Text(verbatim: String(localized: "logday.plan.total \(Int(total.rounded()))"))
       .font(.system(size: 13, weight: .semibold))
       .foregroundStyle(DS.Color.foreground.swiftUI)
+  }
+
+  /// Hàng món: tên + kcal (chạm mở sheet macro), bên phải là bước khẩu phần.
+  private func foodRow(_ f: FoodEdit, slot: String) -> some View {
+    HStack(spacing: 8) {
+      foodChip(f, slot: slot)
+      Spacer(minLength: 0)
+      portionStepper(f, slot: slot)
+    }
+  }
+
+  /// −/+ khẩu phần: theo phần (bước 0,5, tối thiểu 0,5) hoặc theo gram (bước 25 g).
+  private func portionStepper(_ f: FoodEdit, slot: String) -> some View {
+    let grams = f.spoken.grams
+    let label: String = grams.map { "\(Int($0.rounded())) g" }
+      ?? [f.spoken.servings.formatted(.number.precision(.fractionLength(0...1)).locale(.app)), f.spoken.unit]
+        .compactMap { $0 }.joined(separator: " ")
+    let canLess = grams.map { $0 > 25 } ?? (f.spoken.servings > 0.5)
+    return HStack(spacing: 0) {
+      stepButton("minus", enabled: canLess, a11y: String(localized: "logday.portion.less \(f.match?.name ?? f.spoken.name)")) {
+        changePortion(f, slot: slot, up: false)
+      }
+      Text(verbatim: label)
+        .font(.system(size: 14, weight: .semibold).monospacedDigit())
+        .lineLimit(1)
+        .frame(minWidth: 44)
+        .contentTransition(.numericText())
+      stepButton("plus", enabled: true, a11y: String(localized: "logday.portion.more \(f.match?.name ?? f.spoken.name)")) {
+        changePortion(f, slot: slot, up: true)
+      }
+    }
+    .background(DS.Color.foreground.swiftUI.opacity(0.06), in: Capsule())
+    .accessibilityElement(children: .contain)
+  }
+
+  private func stepButton(_ symbol: String, enabled: Bool, a11y: String, action: @escaping () -> Void) -> some View {
+    Button(action: action) {
+      Image(systemName: symbol).font(.system(size: 13, weight: .bold))
+        .foregroundStyle(enabled ? DS.Color.foreground.swiftUI : DS.Color.mutedForeground.swiftUI.opacity(0.5))
+        .frame(width: 36, height: 36)
+        .frame(minWidth: 44, minHeight: 44)
+        .contentShape(Rectangle())
+    }
+    .buttonStyle(.plain)
+    .disabled(!enabled)
+    .sensoryFeedback(.selection, trigger: enabled)
+    .accessibilityLabel(Text(verbatim: a11y))
+  }
+
+  private func changePortion(_ f: FoodEdit, slot: String, up: Bool) {
+    guard let i = meals.firstIndex(where: { $0.slot == slot }), let j = meals[i].foods.firstIndex(where: { $0.id == f.id })
+    else { return }
+    withAnimation(reduceMotion ? nil : .smooth(duration: 0.2)) {
+      if let g = meals[i].foods[j].spoken.grams {
+        meals[i].foods[j].spoken.grams = max(25, g + (up ? 25 : -25))
+      } else {
+        meals[i].foods[j].spoken.servings = max(0.5, meals[i].foods[j].spoken.servings + (up ? 0.5 : -0.5))
+      }
+    }
   }
 
   private func foodChip(_ f: FoodEdit, slot: String) -> some View {
@@ -944,12 +1130,9 @@ struct TellKoaSheet: View {
           kcal: NutritionToday.calorieTarget(p), protein: NutritionToday.macroTargets(p).protein)
       }
     }
-    // "Mở lên log xong" (19/10, chủ dự án): mọi việc còn thiếu điền sẵn ngay — bấm
-    // Lưu là xong; ✕ để bỏ, nói / gõ để sửa. Bữa: kế hoạch ăn trước, không thì như
-    // hôm qua (không bao giờ cả hai).
-    if text.isEmpty {
-      for a in availableAdds where a != .yesterdayMeals || !availableAdds.contains(.planMeals) { add(a) }
-    }
+    // 24/10 (mock "Ghi hôm nay" Kiệt duyệt): việc còn thiếu chỉ là CHIP gợi ý, không
+    // tự thêm thẻ — trước đây điền sẵn mọi việc (19/10) làm người dùng phải ✕ bớt và
+    // dễ ghi trùng điều vừa kể.
   }
 
   @State private var planBook: MealPlanBook?
@@ -1379,6 +1562,221 @@ struct TellKoaSheet: View {
   /// AI hiểu câu kể (19/10, chủ dự án: "Koa vẫn chưa đủ hiểu"): luật trên máy hiện
   /// ngay; khi người dùng ngừng gõ / nói, `ai-log-parse` đọc lại cả câu và kết quả
   /// của nó thay vào (nếu đọc được). Mất mạng / hết lượt / lỗi: giữ kết quả luật.
+  // MARK: - Sửa một thẻ bằng lời (24/10, mock "Ghi hôm nay")
+
+  /// Thẻ đang mở ô "sửa bằng lời", thẻ AI đang sửa, và lần sửa gần nhất (hoàn tác).
+  @State private var correcting: Part?
+  @State private var correction = ""
+  @State private var fixing: Part?
+  @State private var lastFix: Fix?
+  @State private var fixMissed: Part?
+  /// Lần gọi ASCND Intelligence gần nhất hỏng (quá tải, hết lượt…) — hiện thành dòng
+  /// báo; thẻ khi ấy là bản đọc bằng luật trong máy.
+  @State private var aiFailure: EdgeFunction.Failure?
+
+  /// Ảnh chụp mọi bản sửa — hoàn tác trả về đúng như trước lần sửa.
+  struct Snapshot {
+    var sleep: SleepEdit?
+    var waterMl: Int?
+    var weightText: String
+    var workout: SpokenLog.Workout?
+    var meals: [MealEdit]
+  }
+
+  struct Fix {
+    let part: Part
+    let before: Snapshot
+    /// "786 → 393 kcal", "2 Phở bò → 1 Phở bò, trứng"…
+    let changes: [String]
+  }
+
+  private func snapshot() -> Snapshot {
+    Snapshot(sleep: sleep, waterMl: waterMl, weightText: weightText, workout: workout, meals: meals)
+  }
+
+  private func restore(_ s: Snapshot) {
+    sleep = s.sleep
+    waterMl = s.waterMl
+    weightText = s.weightText
+    workout = s.workout
+    meals = s.meals
+  }
+
+  private func fixable(_ p: Part) -> Bool {
+    switch p {
+    case .sleep, .water, .weight, .workout, .meal: true
+    default: false
+    }
+  }
+
+  /// "✦ Koa đã sửa" / các dòng trước → sau / Hoàn tác — xếp dọc để vừa cả ô hẹp
+  /// hai cột (24/10: chữ bị cắt khi đặt cạnh nhau).
+  private func fixSummary(_ fix: Fix) -> some View {
+    VStack(alignment: .leading, spacing: 4) {
+      Label {
+        Text("logday.fix.done").font(.system(size: 13, weight: .semibold))
+      } icon: {
+        Image(systemName: "sparkles").foregroundStyle(IntelligenceTones.violet)
+      }
+      ForEach(fix.changes, id: \.self) { c in
+        Text(verbatim: c).font(.system(size: 13).monospacedDigit()).foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          .fixedSize(horizontal: false, vertical: true)
+      }
+      Button {
+        withAnimation(reduceMotion ? nil : .smooth(duration: 0.25)) {
+          restore(fix.before)
+          lastFix = nil
+        }
+      } label: {
+        Label(String(localized: "logday.fix.undo"), systemImage: "arrow.uturn.backward")
+          .font(.system(size: 13, weight: .semibold))
+          .foregroundStyle(DS.Color.foreground.swiftUI)
+          .frame(minHeight: 44)
+          .contentShape(Rectangle())
+      }
+      .buttonStyle(.plain)
+    }
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .accessibilityElement(children: .contain)
+  }
+
+  /// Một câu tả thẻ như người dùng nói — ghép với câu sửa rồi đọc lại.
+  private func describe(_ p: Part) -> String {
+    switch p {
+    case .sleep:
+      guard let s = sleep else { return "" }
+      return String(localized: "logday.desc.sleep \(Self.hhmm(s.bed)) \(Self.hhmm(s.wake))")
+    case .water:
+      return String(localized: "logday.desc.water \(SpokenLogDisplay.water(waterMl ?? 0, unit: .ml))")
+    case .weight:
+      return String(localized: "logday.desc.weight \("\(weightText) \(weightUnit == .lbs ? "lb" : "kg")")")
+    case .workout:
+      return workout.map { SpokenLogDisplay.workout($0, lang: lang) } ?? (gaps.workoutPlan ?? "")
+    case .meal(let slot):
+      guard let m = meals.first(where: { $0.slot == slot }) else { return "" }
+      let foods = m.foods.map { SpokenLogDisplay.food($0.spoken, lang: lang) }.joined(separator: ", ")
+      return "\(SpokenLogDisplay.slot(slot, lang: lang)): \(foods)"
+    default:
+      return ""
+    }
+  }
+
+  /// Giá trị so trước / sau của một thẻ ("786 kcal · 2 Phở bò").
+  private func shown(_ p: Part) -> String {
+    switch p {
+    case .meal(let slot):
+      guard let m = meals.first(where: { $0.slot == slot }) else { return "" }
+      return m.foods.map { SpokenLogDisplay.food($0.spoken, lang: lang) }.joined(separator: ", ")
+    default:
+      return bigValue(p).big
+    }
+  }
+
+  /// Ghép câu tả thẻ + câu sửa → đọc lại (AI khi có mạng, luật khi không) → chỉ
+  /// thay ĐÚNG thẻ ấy; ghi lại trước / sau để hiện "Koa đã sửa" và hoàn tác.
+  private func correct(_ part: Part) async {
+    let ask = correction.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !ask.isEmpty, fixing == nil else { return }
+    let before = snapshot()
+    let oldShown = shown(part)
+    let oldKcal = mealKcal(part)
+    fixing = part
+    fixMissed = nil
+    defer { fixing = nil }
+    let hour = Calendar.current.component(.hour, from: Date())
+    let combined = "\(describe(part)). \(String(localized: "logday.desc.correct")) \(ask)"
+    var r: SpokenLog.Result?
+    if services.sync.online, let edge = services.edge {
+      let body: [String: JSONValue] = ["text": .string(combined), "hour": .number(Double(hour)), "context": aiContext]
+      do throws(EdgeFunction.Failure) {
+        if let reply = try await edge.call(.logParse, body: body) { r = SpokenLog.fromAI(reply, hour: hour) }
+        aiFailure = nil
+      } catch {
+        aiFailure = error
+      }
+    }
+    // Không mạng / AI không trả: đọc câu sửa bằng luật, có từ khoá của thẻ đứng
+    // trước ("6 cốc" → "nước 6 cốc") — câu cụt một mình luật không nhận ra.
+    if r == nil || !(r.map { replaces(part, from: $0) } ?? false) {
+      let plain = SpokenLog.parse(ask, hour: hour, weightUnit: weightUnit)
+      r = replaces(part, from: plain) ? plain : SpokenLog.parse("\(keyword(part)) \(ask)", hour: hour, weightUnit: weightUnit)
+    }
+    guard let r, replaces(part, from: r) else {
+      fixMissed = part
+      return
+    }
+    withAnimation(reduceMotion ? nil : .smooth(duration: 0.3)) { applyOnly(part, from: r) }
+    // Món mới khớp xong mới biết kcal — so sau khi khớp, không hiện "→ 0 kcal".
+    await matchFoods()
+    var changes: [String] = []
+    let newShown = shown(part)
+    if newShown != oldShown { changes.append("\(oldShown) → \(newShown)") }
+    if let a = oldKcal, let b = mealKcal(part), b > 0, Int(a.rounded()) != Int(b.rounded()) {
+      changes.append("\(Int(a.rounded())) → \(Int(b.rounded())) kcal")
+    }
+    withAnimation(reduceMotion ? nil : .smooth(duration: 0.3)) {
+      lastFix = Fix(part: part, before: before, changes: changes)
+      correcting = nil
+      correction = ""
+    }
+  }
+
+  private func keyword(_ p: Part) -> String {
+    switch p {
+    case .water: String(localized: "logday.kw.water")
+    case .sleep: String(localized: "logday.kw.sleep")
+    case .weight: String(localized: "logday.kw.weight")
+    case .workout: String(localized: "logday.kw.workout")
+    case .meal(let slot): "\(SpokenLogDisplay.slot(slot, lang: lang)) \(String(localized: "logday.kw.ate"))"
+    default: ""
+    }
+  }
+
+  private func mealKcal(_ p: Part) -> Double? {
+    guard case .meal(let slot) = p, let m = meals.first(where: { $0.slot == slot }) else { return nil }
+    return m.foods.reduce(0.0) { $0 + ($1.shownKcal ?? 0) }
+  }
+
+  /// Kết quả đọc có mục cùng loại với thẻ không.
+  private func replaces(_ p: Part, from r: SpokenLog.Result) -> Bool {
+    r.items.contains { item in
+      switch (item, p) {
+      case (.sleep, .sleep), (.water, .water), (.weight, .weight), (.workout, .workout), (.meal, .meal): true
+      default: false
+      }
+    }
+  }
+
+  /// Chỉ thay thẻ `p` bằng mục cùng loại trong `r` (bữa: giữ đúng bữa đang sửa).
+  private func applyOnly(_ p: Part, from r: SpokenLog.Result) {
+    for item in r.items {
+      switch (item, p) {
+      case (.sleep(let s), .sleep):
+        let wake = s.wake ?? sleep?.wake ?? SleepLog.Clock.defaultWake
+        let bed = s.bed ?? s.minutes.map { Self.clock(wake, minus: $0) } ?? sleep?.bed ?? SleepLog.Clock.defaultBed
+        sleep = SleepEdit(bed: bed, wake: wake, askHoursOrClock: nil, askHalf: false)
+        return
+      case (.water(let ml), .water):
+        waterMl = ml
+        return
+      case (.weight(let kg), .weight):
+        let v = weightUnit == .lbs ? kg / 0.45359237 : kg
+        weightText = v.formatted(.number.precision(.fractionLength(0...1)).locale(Locale(identifier: "en_US_POSIX")))
+        return
+      case (.workout(let w), .workout):
+        workout = w
+        return
+      case (.meal(let m), .meal(let slot)):
+        guard let i = meals.firstIndex(where: { $0.slot == slot }) else { return }
+        let old = meals[i].foods
+        meals[i].foods = m.foods.map { f in old.first { $0.spoken == f } ?? FoodEdit(spoken: f) }
+        return
+      default:
+        continue
+      }
+    }
+  }
+
   private func understand() async {
     let asked = text.trimmingCharacters(in: .whitespacesAndNewlines)
     guard asked.count >= 6, asked != understood, !dictation.isListening, services.sync.online,
@@ -1390,9 +1788,17 @@ struct TellKoaSheet: View {
     defer { thinking = false }
     let hour = Calendar.current.component(.hour, from: Date())
     let body: [String: JSONValue] = ["text": .string(asked), "hour": .number(Double(hour)), "context": aiContext]
-    guard let reply = try? await edge.call(.logParse, body: body), !Task.isCancelled,
-      text.trimmingCharacters(in: .whitespacesAndNewlines) == asked,
-      let r = SpokenLog.fromAI(reply, hour: hour)
+    let reply: JSONValue?
+    do throws(EdgeFunction.Failure) {
+      reply = try await edge.call(.logParse, body: body)
+      aiFailure = nil
+    } catch {
+      // AI quá tải / lỗi: thẻ vẫn là bản đọc bằng luật — nói rõ để người dùng kiểm lại.
+      if !Task.isCancelled { aiFailure = error }
+      return
+    }
+    guard !Task.isCancelled, text.trimmingCharacters(in: .whitespacesAndNewlines) == asked,
+      let reply, let r = SpokenLog.fromAI(reply, hour: hour)
     else { return }
     understood = asked
     // Câu tắt: thêm đúng mục điền sẵn ("ăn như hôm qua" → bữa hôm qua…).
@@ -1438,6 +1844,9 @@ struct TellKoaSheet: View {
   private func apply(_ r: SpokenLog.Result) {
     guard r != result else { return }
     result = r
+    // Câu kể đổi → đọc lại từ đầu: lần sửa bằng lời cũ không còn để hoàn tác.
+    lastFix = nil
+    correcting = nil
     confirmedQuestion = false
     failed = []
     sleep = nil

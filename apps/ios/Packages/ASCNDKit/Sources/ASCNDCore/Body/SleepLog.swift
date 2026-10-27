@@ -93,6 +93,22 @@ public enum SleepLog {
     return Span(bed: bedAt, wake: wakeAt, minutes: minutes)
   }
 
+  /// Giấc GẦN NHẤT đã kết thúc với hai giờ này (native, lệch RN có chủ đích — audit
+  /// 25/10): `span` của RN luôn đặt giờ dậy vào HÔM NAY, nên ghi "23:00–7:00" lúc
+  /// 1:24 sáng lưu một giấc dậy lúc 7:00 sáng nay — thời điểm chưa tới. Giờ dậy còn
+  /// ở tương lai thì lùi cả giấc về hôm trước.
+  public static func lastNight(bed: Clock, wake: Clock, ref: EpochMillis, in tz: TimeZone) -> Span {
+    let s = span(bed: bed, wake: wake, ref: ref, in: tz)
+    guard s.wake.millis > ref.millis else { return s }
+    let dayBefore = EpochMillis(ref.millis - 86_400_000)
+    return span(bed: bed, wake: wake, ref: dayBefore, in: tz)
+  }
+
+  /// Giờ dậy đã qua (theo giờ địa phương) — dùng để chỉ mời ghi nhanh khi đêm đã xong.
+  public static func wakePassed(_ wake: Clock, ref: EpochMillis, in tz: TimeZone) -> Bool {
+    onDay(wake, ref: ref, dayOffset: 0, in: tz).millis <= ref.millis
+  }
+
   // MARK: - Kiểm tra
 
   /// `!plausible('sleep_duration_min', durationMin)`.
@@ -401,7 +417,7 @@ public final class SleepLogger {
 
   /// Khoảng ngủ của hai ô giờ, tính lúc này.
   public func span(bed: SleepLog.Clock, wake: SleepLog.Clock) -> SleepLog.Span {
-    SleepLog.span(bed: bed, wake: wake, ref: now, in: timeZone)
+    SleepLog.lastNight(bed: bed, wake: wake, ref: now, in: timeZone)
   }
 
   /// Bao nhiêu thứ sẽ thay số của Health — > 0 thì màn hỏi lại trước khi lưu.

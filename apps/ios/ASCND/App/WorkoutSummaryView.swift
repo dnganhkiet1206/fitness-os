@@ -267,7 +267,9 @@ public struct WorkoutSummaryView: View {
       // Một chữ số lẻ theo đơn vị (RN `displayWeight`), dấu thập phân của máy.
       return "\(unit.localizedLoad(w) ?? "") × \(s.reps)"
     }
-    return "× \(s.reps)"
+    // Không tạ: "10 reps" như dòng "Set vừa xong" của màn tập — trước đây
+    // là "× 10", dấu nhân không có vế trước (audit vòng 4, 26/10).
+    return s.reps == 1 ? String(localized: "xi.reps.one") : String(localized: "xi.reps.other \(s.reps)")
   }
 }
 

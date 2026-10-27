@@ -213,3 +213,37 @@ struct IntelligenceWaveText: View {
     }
   }
 }
+
+/// Viền ánh ASCND Intelligence (24/10, mock "Ghi hôm nay" — như viền Siri / Apple
+/// Intelligence): khi AI đang đọc hay đang sửa, viền tím-hồng chạy quanh khung.
+/// Giảm chuyển động: viền đứng yên.
+struct IntelligenceGlow: ViewModifier {
+  let active: Bool
+  let radius: CGFloat
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+  func body(content: Content) -> some View {
+    content.overlay {
+      if active {
+        TimelineView(.animation(minimumInterval: 1 / 30, paused: reduceMotion)) { ctx in
+          let turn = reduceMotion ? 0 : ctx.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 3) / 3
+          RoundedRectangle(cornerRadius: radius, style: .continuous)
+            .strokeBorder(
+              AngularGradient(
+                colors: [IntelligenceTones.violet, IntelligenceTones.rose, IntelligenceTones.apricot,
+                         IntelligenceTones.navy, IntelligenceTones.violet],
+                center: .center, angle: .degrees(turn * 360)),
+              lineWidth: 1.8)
+        }
+        .allowsHitTesting(false)
+        .transition(.opacity)
+      }
+    }
+  }
+}
+
+extension View {
+  func intelligenceGlow(_ active: Bool, radius: CGFloat) -> some View {
+    modifier(IntelligenceGlow(active: active, radius: radius))
+  }
+}

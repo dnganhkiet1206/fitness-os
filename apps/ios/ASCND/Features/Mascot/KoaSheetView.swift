@@ -30,6 +30,8 @@ struct KoaSheetView: View {
   /// Một ô tủ đồ mở một lúc — 70 hình cùng lúc là quá nặng.
   @State private var openSlot: KoaFlags.Slot? = .head
   @State private var taps = 0
+  /// Dáng mới đang soi ở hình lớn (`nil` = biểu cảm / tư thế như cũ).
+  @State private var gesture: KoaGesture?
 
   private let columns = Array(repeating: GridItem(.flexible(), spacing: DS.Spacing.sm), count: 3)
 
@@ -48,11 +50,22 @@ struct KoaSheetView: View {
             }
           }
         }
+        // Dáng mới (24/10) — vẽ bằng chính bộ vẽ của app để Kiệt duyệt.
+        card(title: "7. DÁNG MỚI", sub: "gesture · \(KoaGesture.allCases.count) dáng") {
+          LazyVGrid(columns: columns, spacing: DS.Spacing.sm) {
+            ForEach(KoaGesture.allCases, id: \.self) { g in
+              tile(label: g.rawValue, on: gesture == g, crop: false) { gesture = gesture == g ? nil : g } figure: {
+                KoaFigureView(gesture: g, worn: worn, size: 104, animated: false, build: build)
+              }
+            }
+          }
+        }
         card(title: "5. TƯ THẾ", sub: "pose · \(KoaFlags.Pose.allCases.count) trạng thái") {
           LazyVGrid(columns: columns, spacing: DS.Spacing.sm) {
             ForEach(KoaFlags.Pose.allCases, id: \.self) { p in
               tile(label: KoaFlags.poseLabel[p] ?? p.rawValue, on: pose == p, crop: false) {
                 pose = p
+                gesture = nil
                 expression = Self.poseFace[p] ?? .happy
               } figure: {
                 KoaFigureView(expression: Self.poseFace[p] ?? .happy, pose: p, worn: worn, size: 104, animated: false)
@@ -81,18 +94,33 @@ struct KoaSheetView: View {
     .sensoryFeedback(.selection, trigger: taps)
   }
 
+  private func cycle() {
+    taps += 1
+    let all = KoaFlags.Expression.allCases
+    let i = all.firstIndex(of: expression) ?? 0
+    expression = all[(i + 1) % all.count]
+  }
+
   private var hero: some View {
     VStack(spacing: DS.Spacing.xs) {
-      Button {
-        taps += 1
-        let all = KoaFlags.Expression.allCases
-        let i = all.firstIndex(of: expression) ?? 0
-        expression = all[(i + 1) % all.count]
-      } label: {
-        KoaFigureView(expression: expression, pose: pose, worn: worn, size: 200, build: build)
-      }
-      .buttonStyle(.plain)
+      // Koa tự nhận chạm (nhìn theo ngón tay + nhảy), nên không bọc `Button`
+      // Soi dáng mới: hình lớn 320, cạnh hình đứng yên cùng cỡ để đối chiếu nét.
+      if let gesture {
+        HStack(spacing: 0) {
+          KoaFigureView(expression: .happy, pose: .idle, worn: worn, size: 170, animated: false, build: build)
+          KoaFigureView(gesture: gesture, worn: worn, size: 170, animated: false, build: build)
+        }
+        KoaFigureView(gesture: gesture, worn: worn, size: 320, animated: false, build: build)
+      } else {
+      KoaFigureView(
+        expression: expression, pose: pose, worn: worn, size: 200, build: build, interactive: true, stage: true,
+        onTap: cycle
+      )
+      .accessibilityElement()
       .accessibilityLabel(Text(String(localized: "koa.sheet.cycle")))
+      .accessibilityAddTraits(.isButton)
+      .accessibilityAction(.default, cycle)
+      }
       Text(verbatim: "\(KoaFlags.expressionLabel[expression] ?? expression.rawValue.uppercased()) · \(pose.rawValue.uppercased())")
         .font(DS.TextStyle.rounded(.caption2, weight: .medium))
         .tracking(1.6)

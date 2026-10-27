@@ -37,7 +37,8 @@ public struct SupabaseEdgeCaller: EdgeCaller {
     if NetworkFailure.isOffline(error) { return .offline }
     if let e = error as? FunctionsError {
       switch e {
-      case .httpError(let code, _): return EdgeFunction.classify(status: code, message: "")
+      // Thân lỗi phân biệt "hết lượt hôm nay" với "máy chủ quá tải" (cùng 429).
+      case .httpError(let code, let data): return EdgeFunction.classify(status: code, message: String(decoding: data, as: UTF8.self))
       case .relayError: return .unknown
       }
     }

@@ -1,4 +1,8 @@
-/// Điểm sẵn sàng — `lib/readiness-engine.ts` @ fac9ac2, nguyên văn từng nhánh.
+import Foundation
+
+/// Điểm sẵn sàng — gốc `lib/readiness-engine.ts` @ fac9ac2; từ 24/10 KHÁC RN ở nền
+/// HRV / nhịp tim nghỉ (theo ngày, ≥ 7 ngày, mức nền = 75, HRV thang ln) và đau cơ
+/// (không còn là chấn thương). Các nhánh còn lại giữ nguyên.
 ///
 /// Bốn chiều (HRV, nhịp tim nghỉ, giấc ngủ, tải tập), chiều nào không đo được
 /// thì bỏ và chia lại trọng số. Những gì `daily_logs` lưu (điểm, trạng thái,
@@ -75,16 +79,30 @@ public enum ReadinessEngine {
     (x - med) / (1.4826 * JS.max(madVal, floor) + 1e-6)
   }
 
+  /// Số NGÀY nền tối thiểu trước khi HRV / nhịp tim nghỉ được chấm (24/10):
+  /// Apple chờ khoảng bảy đêm, Oura tới hai tuần. Trước đây là 5 MẪU — đồng hồ
+  /// ghi nhiều mẫu một ngày nên nền "đủ" chỉ sau một, hai ngày.
+  public static let baselineDays = 7
+
+  /// Đúng mức nền của chính mình = 75 (ngưỡng xanh), không phải 50 (24/10).
+  /// Với 50, ngày bình thường đủ dữ liệu ra ~71 (vàng) trong khi người không đeo
+  /// đồng hồ cùng ngày ra ~92 — đeo đồng hồ làm điểm thấp đi. Oura: bằng / trên
+  /// mức nền là phục hồi tốt. Lệch 2 độ lệch chuẩn (z = −2) → 50.
+  static let onBaseline = 75.0
+
+  /// HRV theo thang log (ln) — HRV lệch phải, hướng dẫn AIS / Plews dùng ln rMSSD.
+  /// Sàn MAD 0,05 ln ≈ 5 %: nền quá đều không biến một chút dao động thành z lớn.
   static func hrvScore(_ hrv: Double, _ history: [Double]) -> Double? {
-    if history.count < 5 { return nil }
-    let z = JS.clamp(robustZ(hrv, median(history), mad(history), 1), -3, 3)
-    return JS.clamp(50 + 15 * z, 0, 100)
+    let logs = history.filter { $0 > 0 }.map { Foundation.log($0) }
+    guard logs.count >= baselineDays, hrv > 0 else { return nil }
+    let z = JS.clamp(robustZ(Foundation.log(hrv), median(logs), mad(logs), 0.05), -3, 3)
+    return JS.clamp(onBaseline + 12.5 * z, 0, 100)
   }
 
   static func rhrScore(_ rhr: Double, _ history: [Double]) -> Double? {
-    if history.count < 5 { return nil }
+    if history.count < baselineDays { return nil }
     let z = JS.clamp(robustZ(rhr, median(history), mad(history), 1), -3, 3)
-    return JS.clamp(50 - 12 * z, 0, 100)
+    return JS.clamp(onBaseline - 10 * z, 0, 100)
   }
 
   static let overGraceH = 1.0
@@ -143,7 +161,7 @@ public enum ReadinessEngine {
   static let recoveryComponents: Set<String> = ["hrv", "rhr", "sleep"]
 
   public static func compute(_ input: ReadinessInput) -> ReadinessResult? {
-    let hasHRV = (input.hrvToday?.isFinite ?? false) && input.hrvHistory28d.count >= 5
+    let hasHRV = (input.hrvToday?.isFinite ?? false) && input.hrvHistory28d.count >= baselineDays
     let hrv = hasHRV ? hrvScore(input.hrvToday!, input.hrvHistory28d) : nil
     let rhr = input.rhrToday.flatMap { JS.truthy($0) ? rhrScore($0, input.rhrHistory28d) : nil }
     let sleep = sleepScore(input.sleepMinLastNight, input.sleepTargetMin, input.sleepDebt7dMin)

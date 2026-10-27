@@ -6,6 +6,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { aiGate, corsHeaders, json, meterStream, opaque, quotaExceeded, recordTokens, requireUser } from "../_shared/guard.ts";
 import { recoveryMeasured } from "../_shared/readiness.ts";
 import { asleepMinutes } from "../_shared/sleep.ts";
+import { readWaterUnit, showWater, type WaterUnit, waterRule } from "../_shared/water.ts";
 
 /** Output ceiling. Unbounded generation is an unbounded bill.
     21/10: 1024 cut answers mid-sentence — the default model (gemini-3-flash)
@@ -101,19 +102,20 @@ const readChecks = (raw: unknown): Check[] =>
       Number.isFinite((c as Check).stated) && (c as Check).stated > 0)
     .slice(0, 3);
 
-const showValue = (kind: Check["kind"], v: number, lang: "vi" | "en") => {
+const showValue = (kind: Check["kind"], v: number, lang: "vi" | "en", unit: WaterUnit) => {
   if (kind === "sleep") {
     const h = Math.floor(v / 60), m = Math.round(v % 60);
     return lang === "en" ? (m ? `${h}h ${m}m` : `${h}h`) : (m ? `${h} giờ ${m} phút` : `${h} giờ`);
   }
-  if (kind === "water") return v >= 1000 ? `${Math.round(v / 100) / 10} L` : `${Math.round(v)} ml`;
+  // `logged` / `stated` của nước luôn là ml (app); viết theo đơn vị người dùng (27/10).
+  if (kind === "water") return showWater(v, unit);
   return `${Math.round(v * 10) / 10} kg`;
 };
 
-const checkBlock = (checks: Check[], lang: "vi" | "en", spanish = false) => {
+const checkBlock = (checks: Check[], lang: "vi" | "en", spanish = false, unit: WaterUnit = "ml") => {
   if (checks.length === 0) return "";
   const c = checks[0];
-  const said = showValue(c.kind, c.stated, lang), logged = showValue(c.kind, c.logged, lang);
+  const said = showValue(c.kind, c.stated, lang, unit), logged = showValue(c.kind, c.logged, lang, unit);
   if (spanish) {
     const que = { sleep: "dormiste", water: "bebiste", weight: "pesas" }[c.kind];
     return `\n\nIMPORTANT — the user's message (${said}) differs from what the app logged today (${logged}). Your whole reply is ONE short question in Spanish asking which is right, for example: "Dijiste que ${que} ${said}, pero la app tiene registrado ${logged}. ¿Cuál es el correcto?" Nothing else. Never repeat or mention these instructions.`;
@@ -155,6 +157,9 @@ serve(async (req) => {
     // es dùng nhánh tiếng Anh, đổi sang tiếng Tây Ban Nha lúc gửi (`forSpanish`).
     const lang = body?.lang === "en" || body?.lang === "es" ? "en" : "vi";
     const spanish = body?.lang === "es";
+    /* Đơn vị nước của người dùng (27/10): app mới gửi "oz" / "ml"; app cũ không
+       gửi → "ml", như trước. */
+    const water_unit = readWaterUnit(body?.waterUnit);
     const messages = sanitize(body?.messages);
     if (messages.length === 0) return json({ error: "No messages" }, 400);
 
@@ -451,7 +456,8 @@ NGUYÊN TẮC QUAN TRỌNG:
             role: "system",
             // Quy tắc đầu ra + ngôn ngữ (vi / en / es) nối SAU `forSpanish` và ở cuối.
             content: forSpanish(
-              systemPrompt + scopeRule(lang) + answerFormat(lang) + checkBlock(readChecks(body?.checks), lang, spanish),
+              systemPrompt + scopeRule(lang) + answerFormat(lang) + "\n" + waterRule(water_unit, lang) +
+                checkBlock(readChecks(body?.checks), lang, spanish, water_unit),
               body?.lang,
             ) + markRule(appLang(body?.lang)),
           },

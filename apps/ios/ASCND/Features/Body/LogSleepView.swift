@@ -34,7 +34,7 @@ struct LogSleepView: View {
   @State private var prefilled = false
 
   private var span: SleepLog.Span {
-    logger?.span(bed: bed, wake: wake) ?? SleepLog.span(bed: bed, wake: wake, ref: EpochMillis(Date()), in: .current)
+    logger?.span(bed: bed, wake: wake) ?? SleepLog.lastNight(bed: bed, wake: wake, ref: EpochMillis(Date()), in: .current)
   }
 
   private var durationError: String? {

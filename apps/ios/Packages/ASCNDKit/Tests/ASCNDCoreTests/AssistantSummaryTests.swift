@@ -87,13 +87,6 @@ struct AssistantSummaryTests {
     #expect(Units.text(3.3) == "3.3", "ô nhập giữ dạng JS")
   }
 
-  @Test func waterAverageFollowsLocaleSeparator() {
-    let days = [WaterDay(date: LocalDate("2026-10-14")!, totalMl: 556)]
-    let en = Water.averageLabel(days, .oz)
-    #expect(Water.averageLabel(days, .oz, locale: Locale(identifier: "en_US")) == en)
-    #expect(Water.averageLabel(days, .oz, locale: Locale(identifier: "vi_VN")) == en.replacingOccurrences(of: ".", with: ","))
-  }
-
   @Test func fixed1DisplayFollowsLocale() {
     #expect(OnboardingRuler.fixed1(121.7, locale: Locale(identifier: "vi_VN")) == "121,7")
     #expect(OnboardingRuler.fixed1(121.7, locale: Locale(identifier: "en_US")) == "121.7")

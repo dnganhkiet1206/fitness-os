@@ -51,6 +51,8 @@ public extension DS {
     public static let metricBeige = DSColor(light: DSColorRGB(178, 128, 9), dark: DSColorRGB(255, 230, 189)) // #b28009 / #ffe6bd
     public static let metricViolet = DSColor(light: DSColorRGB(124, 82, 227), dark: DSColorRGB(139, 92, 255)) // #7c52e3 / #8b5cff
     public static let metricSteel = DSColor(light: DSColorRGB(93, 114, 143), dark: DSColorRGB(127, 156, 196)) // #5d728f / #7f9cc4
+    public static let statusGood = DSColor(light: DSColorRGB(10, 123, 108), dark: DSColorRGB(99, 230, 190)) // #0a7b6c / #63e6be
+    public static let statusAttention = DSColor(light: DSColorRGB(138, 106, 0), dark: DSColorRGB(232, 185, 48)) // #8a6a00 / #e8b930
   }
 }
 

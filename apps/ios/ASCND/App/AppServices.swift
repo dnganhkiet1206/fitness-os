@@ -243,7 +243,7 @@ final class AppServices {
     KoaWidgetResetHook.reset = { [koaWidget] in koaWidget.reset() }
     self.widgets = widgets
     health = HealthSyncCoordinator(store: rows)
-    let prefs = AppPreferences(store: UserDefaultsStore())
+    let prefs = AppPreferences(store: UserDefaultsStore(), shownLanguage: Bundle.main.preferredLocalizations.first)
     preferences = prefs
     // Widget dùng cùng lựa chọn ngôn ngữ ngay từ lần mở app đầu (bản cài từ
     // trước PR này chưa có khoá trong App Group).
@@ -305,7 +305,15 @@ final class AppServices {
       sync.setSignedInUser(next)
     }
     UNUserNotificationCenter.current().delegate = reminderPresenter
-    network = NetworkObserver(prober: URLSessionReachabilityProber(), timers: TaskNetTimers()) {
+    // Dò cả Google lẫn backend của app (23/10): mạng chặn Google không còn báo
+    // "Ngoại tuyến" khi Supabase vẫn chạy. Thiếu cấu hình backend → chỉ Google.
+    let prober: any ReachabilityProber =
+      backend.map {
+        FallbackReachabilityProber(
+          primary: URLSessionReachabilityProber(), backup: BackendReachabilityProber(),
+          backupConfig: BackendReachabilityProber.config(for: $0.config.url))
+      } ?? URLSessionReachabilityProber()
+    network = NetworkObserver(prober: prober, timers: TaskNetTimers()) {
       [weak self] connected, reachable in
       self?.applyNetwork(connected: connected, reachable: reachable)
     }
@@ -451,9 +459,17 @@ final class AppServices {
   func makeWaterBook(userId: String) -> WaterBook? {
     guard let backend else { return nil }
     let sync = self.sync
+    let rows = self.rows, widgets = self.widgets
     return WaterBook(
       userId: userId, source: SupabaseWaterSource(backend: backend), cache: waterCache, store: outbox,
-      onEnqueued: { _ in sync.kick() })
+      onEnqueued: { _ in sync.kick() },
+      onRemoved: { day in
+        // Như `rebuildAfterWrite`: lỗi dựng lại không làm hỏng lệnh "−" đã thành.
+        guard let rows else { return }
+        let now = SystemWallClock().nowMillis()
+        try? await DailyLog.recompute(userId: userId, date: day, store: rows, now: now, in: .current)
+        await widgets.refresh()
+      })
   }
 
   /// Ghi cân nặng (#527 Phase 4): có mạng ghi thẳng `weight_logs` (+ hồ sơ),

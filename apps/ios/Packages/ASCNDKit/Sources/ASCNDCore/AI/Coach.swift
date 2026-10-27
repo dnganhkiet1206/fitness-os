@@ -103,6 +103,23 @@ public enum Coach {
     convo.count > learnedAt && convo.filter { $0.role == .user }.count >= 2
   }
 
+  /// Thân POST của `ai-coach`. `waterUnit` (27/10): server viết nước theo nó; server
+  /// cũ bỏ qua trường lạ, server mới thiếu trường thì coi là "ml".
+  public static func requestBody(
+    messages: [Message], lang: String, date: LocalDate, tzOffset: Int, checks: [CoachLogPrompt.Conflict],
+    waterUnit: Water.Unit
+  ) -> JSONValue {
+    .object([
+      "messages": wire(messages), "lang": .string(lang), "date": .string(date.description),
+      "tzOffset": .number(Double(tzOffset)),
+      // Số đã ghi vs số vừa nói — server bảo AI hỏi lại cái nào đúng.
+      "checks": .array(checks.map {
+        .object(["kind": .string($0.kind.rawValue), "logged": .number($0.logged), "stated": .number($0.stated)])
+      }),
+      "waterUnit": .string(waterUnit.rawValue),
+    ])
+  }
+
   /// Thân gửi lên (`{id, role, content}` như `Msg` của RN).
   public static func wire(_ messages: [Message]) -> JSONValue {
     .array(
@@ -118,15 +135,18 @@ public protocol CoachStream: Sendable {
   func stream(messages: [Coach.Message], lang: String, date: LocalDate, tzOffset: Int)
     -> AsyncThrowingStream<String, any Error>
   /// Kèm các chỗ lời người dùng khác số đã ghi (`CoachLogPrompt.Conflict`) để AI
-  /// hỏi lại số nào đúng (16/10).
+  /// hỏi lại số nào đúng (16/10), và đơn vị nước của người dùng (27/10: `ai-coach`
+  /// viết nước bằng oz / ml theo nó; số trong `checks` vẫn là ml).
   func stream(
-    messages: [Coach.Message], lang: String, date: LocalDate, tzOffset: Int, checks: [CoachLogPrompt.Conflict]
+    messages: [Coach.Message], lang: String, date: LocalDate, tzOffset: Int, checks: [CoachLogPrompt.Conflict],
+    waterUnit: Water.Unit
   ) -> AsyncThrowingStream<String, any Error>
 }
 
 extension CoachStream {
   public func stream(
-    messages: [Coach.Message], lang: String, date: LocalDate, tzOffset: Int, checks: [CoachLogPrompt.Conflict]
+    messages: [Coach.Message], lang: String, date: LocalDate, tzOffset: Int, checks: [CoachLogPrompt.Conflict],
+    waterUnit: Water.Unit
   ) -> AsyncThrowingStream<String, any Error> {
     stream(messages: messages, lang: lang, date: date, tzOffset: tzOffset)
   }
@@ -160,6 +180,8 @@ public final class CoachChat {
   /// Làm sạch câu trả lời trước khi lưu (16/10: đối chiếu khối tổng quan với số
   /// thật — `CoachOverview.sanitize`). App gán; `nil` = lưu nguyên văn.
   @ObservationIgnored public var sanitize: ((String) -> String)?
+  /// Đơn vị nước của người dùng cho câu hỏi lại dựng sẵn ("16 oz" thay "473 ml"). App gán.
+  @ObservationIgnored public var waterUnit: Water.Unit = .ml
   public private(set) var messages: [Coach.Message] = []
   /// Chỗ lệch giữa lời kể và số đã ghi, theo id tin của người dùng — màn chat hiện
   /// nút chọn số đúng dưới câu trả lời ngay sau tin đó.
@@ -220,7 +242,7 @@ public final class CoachChat {
     do {
       for try await chunk in stream.stream(
         messages: Array(outgoing.suffix(Coach.sendWindow)), lang: lang, date: today, tzOffset: tzOffset,
-        checks: checks)
+        checks: checks, waterUnit: waterUnit)
       {
         guard !closed else { return }
         answer += chunk
@@ -239,7 +261,7 @@ public final class CoachChat {
     guard !closed, !answer.isEmpty else { return }
     // Hỏi lại khi lệch: AI chép chỉ dẫn ra thay vì hỏi → câu hỏi dựng sẵn.
     if let c = checks.first, CoachLogPrompt.leaksInstructions(answer) {
-      answer = CoachLogPrompt.question(c, lang: lang)
+      answer = CoachLogPrompt.question(c, lang: lang, unit: waterUnit)
     }
     let final = sanitize?(answer) ?? answer
     if final != answer, let last = messages.last, last.role == .assistant {

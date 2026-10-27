@@ -25,6 +25,1202 @@
     }
    }
   },
+  "logday.portion.less %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Less %@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bớt %@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Menos %@"
+     }
+    }
+   }
+  },
+  "logday.portion.more %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "More %@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Thêm %@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Más %@"
+     }
+    }
+   }
+  },
+  "ai.failure.overloaded": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "ASCND Intelligence is overloaded right now. Try again in a few minutes."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "ASCND Intelligence đang quá tải. Thử lại sau ít phút nhé."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "ASCND Intelligence está saturado ahora mismo. Inténtalo en unos minutos."
+     }
+    }
+   }
+  },
+  "logday.fix.editing %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Fixing: %@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sửa: %@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Corrigiendo: %@"
+     }
+    }
+   }
+  },
+  "logday.fix.cancel": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Stop fixing"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Thôi sửa"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Dejar de corregir"
+     }
+    }
+   }
+  },
+  "logday.fix.placeholder.part %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "e.g. “%@”"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Vd. “%@”"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "p. ej. “%@”"
+     }
+    }
+   }
+  },
+  "logday.fix.working %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa is fixing %@…"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa đang sửa thẻ %@…"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa está corrigiendo %@…"
+     }
+    }
+   }
+  },
+  "logday.fix.none.part %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "I didn’t catch what to fix. Try something like “%@”."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mình chưa hiểu chỗ cần sửa. Thử nói kiểu “%@” nhé."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "No entendí qué corregir. Prueba algo como “%@”."
+     }
+    }
+   }
+  },
+  "logday.fix.ask %@ %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "What should change in %1$@? Say or type it below — e.g. “%2$@”."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Thẻ %1$@ cần sửa gì? Nói hoặc gõ ở dưới — ví dụ “%2$@”."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "¿Qué cambio en %1$@? Dilo o escríbelo abajo — p. ej. “%2$@”."
+     }
+    }
+   }
+  },
+  "logday.hint.water": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "The water card is ADDED to what you’ve logged today, not a replacement. Use − / + to adjust."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Số ở thẻ nước được CỘNG thêm vào lượng đã ghi hôm nay, không thay thế. Dùng − / + để chỉnh."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "El agua de esta tarjeta se SUMA a lo que ya registraste hoy, no lo reemplaza. Usa − / + para ajustar."
+     }
+    }
+   }
+  },
+  "logday.hint.sleep": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Set when you went to bed and woke up below — the hours work themselves out."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chỉnh giờ đi ngủ và giờ dậy ở dưới — số tiếng tự tính."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ajusta abajo a qué hora te acostaste y te levantaste — las horas se calculan solas."
+     }
+    }
+   }
+  },
+  "logday.hint.weight": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Type your weight in the unit you use."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Gõ số cân theo đơn vị bạn đang dùng."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Escribe tu peso en la unidad que usas."
+     }
+    }
+   }
+  },
+  "logday.hint.foods": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tap a food to change its portion and macros."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chạm vào từng món để chỉnh khẩu phần và macro."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Toca un alimento para cambiar la porción y los macros."
+     }
+    }
+   }
+  },
+  "logday.fix.ex.water": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "6 glasses"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "6 cốc"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "6 vasos"
+     }
+    }
+   }
+  },
+  "logday.fix.ex.sleep": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "slept at 1am"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "ngủ lúc 1h"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "dormí a la 1"
+     }
+    }
+   }
+  },
+  "logday.fix.ex.weight": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "70 kg"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "70 kg"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "70 kg"
+     }
+    }
+   }
+  },
+  "logday.fix.ex.workout": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "ran 30 minutes"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "chạy 30 phút"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "corrí 30 minutos"
+     }
+    }
+   }
+  },
+  "logday.fix.ex.meal": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "just 1 bowl, add an egg"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "1 bát thôi, thêm trứng"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "solo 1 plato, con huevo"
+     }
+    }
+   }
+  },
+  "logday.kw.water": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "water"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "nước"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "agua"
+     }
+    }
+   }
+  },
+  "logday.kw.sleep": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "slept"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "ngủ"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "dormí"
+     }
+    }
+   }
+  },
+  "logday.kw.weight": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "weighed"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "cân"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "peso"
+     }
+    }
+   }
+  },
+  "logday.kw.workout": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "workout"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "tập"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "entrené"
+     }
+    }
+   }
+  },
+  "logday.kw.ate": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "ate"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "ăn"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "comí"
+     }
+    }
+   }
+  },
+  "ai.failure.quota": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "You’ve used all of today’s ASCND Intelligence turns. They reset tomorrow."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bạn đã dùng hết lượt ASCND Intelligence hôm nay. Ngày mai sẽ có lượt mới."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ya usaste todos los turnos de ASCND Intelligence de hoy. Mañana tendrás más."
+     }
+    }
+   }
+  },
+  "logday.ai.fallback %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ Koa split your sentence the basic way — check the cards."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ Koa đã tách câu bằng cách cơ bản — bạn kiểm lại các thẻ nhé."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ Koa separó tu frase de forma básica — revisa las tarjetas."
+     }
+    }
+   }
+  },
+  "insight.fallback.busy %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ This is a summary from your numbers · tap to retry"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ Đây là tóm tắt từ số liệu của bạn · chạm để thử lại"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ Este es un resumen con tus datos · toca para reintentar"
+     }
+    }
+   }
+  },
+  "logday.fix.a11y %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Fix %@ by telling Koa"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sửa %@ bằng lời"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Corregir %@ hablando"
+     }
+    }
+   }
+  },
+  "logday.fix.send": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Send"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Gửi"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Enviar"
+     }
+    }
+   }
+  },
+  "logday.fix.done": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa updated this"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa đã sửa"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa lo corrigió"
+     }
+    }
+   }
+  },
+  "logday.fix.undo": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Undo"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hoàn tác"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Deshacer"
+     }
+    }
+   }
+  },
+  "logday.desc.sleep %@ %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Slept from %1$@ to %2$@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ngủ từ %1$@ đến %2$@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Dormí de %1$@ a %2$@"
+     }
+    }
+   }
+  },
+  "logday.desc.water %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Drank %@ of water"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Uống %@ nước"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bebí %@ de agua"
+     }
+    }
+   }
+  },
+  "logday.desc.weight %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Weighed %@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cân nặng %@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Pesé %@"
+     }
+    }
+   }
+  },
+  "logday.desc.correct": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Correction:"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sửa lại:"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Corrección:"
+     }
+    }
+   }
+  },
+  "ps.n.steps %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Steps: %@ a day on average"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bước chân: trung bình %@ mỗi ngày"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Pasos: %@ al día de media"
+     }
+    }
+   }
+  },
+  "ps.n.stepsToday %@ %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Today %1$@ steps · average %2$@ a day"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hôm nay %1$@ bước · trung bình %2$@ mỗi ngày"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hoy %1$@ pasos · media de %2$@ al día"
+     }
+    }
+   }
+  },
+  "ps.n.weight %@ %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Last weigh-in %1$@ · change over 4 weeks %2$@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Lần cân gần nhất %1$@ · thay đổi trong 4 tuần %2$@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Último pesaje %1$@ · cambio en 4 semanas %2$@"
+     }
+    }
+   }
+  },
+  "mr.sec.progress": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Progress"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tiến độ"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Progreso"
+     }
+    }
+   }
+  },
+  "mr.card.energy": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Energy"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Năng lượng"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Energía"
+     }
+    }
+   }
+  },
+  "mr.now": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Now"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bây giờ"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ahora"
+     }
+    }
+   }
+  },
+  "mr.energy.of %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "/ %lld done"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "/ %lld việc"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "/ %lld hechas"
+     }
+    }
+   }
+  },
+  "mr.card.streak": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Streak"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chuỗi"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Racha"
+     }
+    }
+   }
+  },
+  "mr.unit.day": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "day"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "ngày"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "día"
+     }
+    }
+   }
+  },
+  "mr.unit.days": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "days"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "ngày"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "días"
+     }
+    }
+   }
+  },
+  "mr.freeze.short %lld %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Streak freeze %1$lld/%2$lld"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bảo hiểm %1$lld/%2$lld"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Protección %1$lld/%2$lld"
+     }
+    }
+   }
+  },
+  "mr.card.quests": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Quests"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nhiệm vụ"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Misiones"
+     }
+    }
+   }
+  },
+  "mr.quests.of %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "/ %lld done"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "/ %lld xong"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "/ %lld hechas"
+     }
+    }
+   }
+  },
+  "mr.quests.coinsLeft %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "+%lld coins left"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Còn +%lld xu"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Quedan +%lld monedas"
+     }
+    }
+   }
+  },
+  "mr.card.rank %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Rank · %@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hạng · %@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Rango · %@"
+     }
+    }
+   }
+  },
+  "mr.details": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Details"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chi tiết"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Detalles"
+     }
+    }
+   }
+  },
+  "mr.week.of %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "/ %lld sessions"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "/ %lld buổi"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "/ %lld sesiones"
+     }
+    }
+   }
+  },
+  "insight.bedtime.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Time to wind down"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đến giờ nghỉ rồi"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hora de descansar"
+     }
+    }
+   }
+  },
   "settings.language.footer": {
    "extractionState": "manual",
    "localizations": {
@@ -968,6 +2164,52 @@
     }
    }
   },
+  "onb2.about.health": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Fill from Apple Health"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Lấy từ Apple Health"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Rellenar desde Apple Health"
+     }
+    }
+   }
+  },
+  "onb2.about.health.none": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Apple Health has no measurements yet. Enter them below."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Apple Health chưa có số đo nào. Nhập ở dưới nhé."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Apple Health aún no tiene medidas. Escríbelas abajo."
+     }
+    }
+   }
+  },
   "onb2.about.q": {
    "extractionState": "manual",
    "localizations": {
@@ -1549,19 +2791,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "This week %1$lld / %2$lld sessions"
+      "value": "%1$lld of %2$lld planned sessions done this week"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Tuần này %1$lld / %2$lld buổi"
+      "value": "Đã tập %1$lld / %2$lld buổi theo lịch tuần này"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Esta semana %1$lld / %2$lld sesiones"
+      "value": "%1$lld de %2$lld sesiones del plan hechas esta semana"
      }
     }
    }
@@ -1572,19 +2814,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "%1$lld / %2$lld days with steps"
+      "value": "Steps recorded on %1$lld of the last %2$lld days"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "%1$lld / %2$lld ngày có số bước"
+      "value": "Có số bước %1$lld / %2$lld ngày gần nhất"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "%1$lld / %2$lld días con pasos"
+      "value": "Pasos registrados %1$lld de los últimos %2$lld días"
      }
     }
    }
@@ -1595,19 +2837,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "%1$lld / %2$lld days with meals logged"
+      "value": "Meals logged on %1$lld of the last %2$lld days"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "%1$lld / %2$lld ngày có ghi bữa"
+      "value": "Có ghi bữa %1$lld / %2$lld ngày gần nhất"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "%1$lld / %2$lld días con comidas registradas"
+      "value": "Comidas registradas %1$lld de los últimos %2$lld días"
      }
     }
    }
@@ -1618,19 +2860,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "%1$lld / %2$lld nights with data"
+      "value": "Sleep recorded on %1$lld of the last %2$lld nights"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "%1$lld / %2$lld đêm có dữ liệu"
+      "value": "Có giấc ngủ %1$lld / %2$lld đêm gần nhất"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "%1$lld / %2$lld noches con datos"
+      "value": "Sueño registrado %1$lld de las últimas %2$lld noches"
      }
     }
    }
@@ -1641,19 +2883,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "%1$lld / %2$lld days with recovery measured"
+      "value": "Recovery measured on %1$lld of the last %2$lld days"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "%1$lld / %2$lld ngày đo được phục hồi"
+      "value": "Đo được phục hồi %1$lld / %2$lld ngày gần nhất"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "%1$lld / %2$lld días con recuperación medida"
+      "value": "Recuperación medida %1$lld de los últimos %2$lld días"
      }
     }
    }
@@ -1664,19 +2906,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "%lld weigh-ins · 4 weeks"
+      "value": "%lld weigh-ins in the last 4 weeks"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "%lld lần cân · 4 tuần"
+      "value": "%lld lần cân trong 4 tuần qua"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "%lld pesajes · 4 semanas"
+      "value": "%lld pesajes en las últimas 4 semanas"
      }
     }
    }
@@ -1687,42 +2929,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "Planned before today: %lld"
+      "value": "By yesterday your plan had %lld sessions"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Theo lịch tới hôm qua: %lld buổi"
+      "value": "Theo lịch, tới hôm qua lẽ ra đã có %lld buổi"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Planificadas antes de hoy: %lld"
-     }
-    }
-   }
-  },
-  "ps.n.today %@ %@": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Today %1$@ · 7-day avg %2$@"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Hôm nay %1$@ · TB 7 ngày %2$@"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Hoy %1$@ · media 7 días %2$@"
+      "value": "Hasta ayer tu plan tenía %lld sesiones"
      }
     }
    }
@@ -1733,19 +2952,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "Protein 7-day avg %1$@ / %2$@ g"
+      "value": "Protein: %1$@ g a day on average, goal %2$@ g"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Đạm TB 7 ngày %1$@ / %2$@ g"
+      "value": "Đạm: trung bình %1$@ g mỗi ngày, mục tiêu %2$@ g"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Proteína media 7 días %1$@ / %2$@ g"
+      "value": "Proteína: %1$@ g al día de media, objetivo %2$@ g"
      }
     }
    }
@@ -1756,19 +2975,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "7-day avg %1$@ · goal %2$@"
+      "value": "Sleep: %1$@ a night on average, goal %2$@"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "TB 7 ngày %1$@ · mục tiêu %2$@"
+      "value": "Ngủ: trung bình %1$@ mỗi đêm, mục tiêu %2$@"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Media 7 días %1$@ · meta %2$@"
+      "value": "Sueño: %1$@ por noche de media, objetivo %2$@"
      }
     }
    }
@@ -1779,19 +2998,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "Readiness 7-day avg %@"
+      "value": "Average readiness over 7 days: %@ / 100"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Sẵn sàng TB 7 ngày %@"
+      "value": "Điểm sẵn sàng trung bình 7 ngày: %@ / 100"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Preparación media 7 días %@"
+      "value": "Preparación media en 7 días: %@ / 100"
      }
     }
    }
@@ -1963,19 +3182,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "%1$@ · need %2$lld"
+      "value": "%1$@ · needs at least %2$lld to judge"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "%1$@ · cần %2$lld"
+      "value": "%1$@ · cần ít nhất %2$lld để đánh giá"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "%1$@ · faltan %2$lld"
+      "value": "%1$@ · hacen falta al menos %2$lld para valorar"
      }
     }
    }
@@ -2170,19 +3389,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "Avg %1$@ / %2$@ %3$@"
+      "value": "Average %1$@ / goal %2$@ %3$@"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "TB %1$@ / %2$@ %3$@"
+      "value": "Trung bình %1$@ / mục tiêu %2$@ %3$@"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Media %1$@ / %2$@ %3$@"
+      "value": "Media %1$@ / objetivo %2$@ %3$@"
      }
     }
    }
@@ -14661,19 +15880,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "Not enough data yet. Any ONE of these gives you a score: one workout with sets logged, one night of sleep logged, or 5 resting-HR/HRV readings within 28 days. Meals and calories are not part of this score."
+      "value": "Not enough data yet. Any ONE of these gives you a score: one workout with sets logged, one night of sleep logged, or 7 days with resting-HR/HRV readings within 28 days. Meals and calories are not part of this score."
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Chưa đủ dữ liệu để tính điểm sẵn sàng. Chỉ cần MỘT trong ba: một buổi tập có ghi set, một đêm ngủ được ghi, hoặc 5 lần đo nhịp tim nghỉ/HRV trong 28 ngày. Bữa ăn và calo không được tính vào điểm này."
+      "value": "Chưa đủ dữ liệu để tính điểm sẵn sàng. Chỉ cần MỘT trong ba: một buổi tập có ghi set, một đêm ngủ được ghi, hoặc 7 ngày có đo nhịp tim nghỉ/HRV trong 28 ngày. Bữa ăn và calo không được tính vào điểm này."
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Aún no hay datos suficientes. UNA de estas tres cosas te da una puntuación: un entrenamiento con series registradas, una noche de sueño registrada o 5 lecturas de FC en reposo/HRV en 28 días. Las comidas y las calorías no forman parte de esta puntuación."
+      "value": "Aún no hay datos suficientes. UNA de estas tres cosas te da una puntuación: un entrenamiento con series registradas, una noche de sueño registrada o 7 días con lecturas de FC en reposo/HRV en 28 días. Las comidas y las calorías no forman parte de esta puntuación."
      }
     }
    }
@@ -14753,19 +15972,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "needs 5 readings"
+      "value": "needs 7 days of readings"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "cần 5 lần đo"
+      "value": "cần 7 ngày đo"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "necesita 5 lecturas"
+      "value": "necesita 7 días de lecturas"
      }
     }
    }
@@ -18364,7 +19583,7 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "ASCND Intelligence could not answer. Try again in a moment."
+      "value": "ASCND Intelligence couldn't answer. Try again in a moment."
      }
     },
     "vi": {
@@ -18433,19 +19652,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "You have used up ASCND Intelligence for now. Try again later."
+      "value": "ASCND Intelligence is overloaded right now. Try again in a few minutes."
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Bạn đã dùng hết lượt ASCND Intelligence lúc này. Thử lại sau nhé."
+      "value": "ASCND Intelligence đang quá tải. Thử lại sau ít phút nhé."
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Has agotado ASCND Intelligence por ahora. Inténtalo más tarde."
+      "value": "ASCND Intelligence está saturado ahora mismo. Inténtalo en unos minutos."
      }
     }
    }
@@ -18699,190 +19918,6 @@
      "stringUnit": {
       "state": "translated",
       "value": "Prioridad baja"
-     }
-    }
-   }
-  },
-  "rt.title": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Readiness trend"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Xu hướng sẵn sàng"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Tendencia de preparación"
-     }
-    }
-   }
-  },
-  "rt.hint": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Your training readiness over the past week"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Mức độ sẵn sàng tập luyện của bạn trong tuần qua"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Tu preparación para entrenar durante la última semana"
-     }
-    }
-   }
-  },
-  "rt.avg": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Avg"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "TB"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Prom."
-     }
-    }
-   }
-  },
-  "rt.max": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Max"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Cao nhất"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Máx."
-     }
-    }
-   }
-  },
-  "rt.min": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Min"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Thấp nhất"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Mín."
-     }
-    }
-   }
-  },
-  "rt.zone.train": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "75+ Train"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "75+ Tập luyện"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "75+ Entrenar"
-     }
-    }
-   }
-  },
-  "rt.zone.moderate": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "50–74 Moderate"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "50–74 Vừa phải"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "50–74 Moderado"
-     }
-    }
-   }
-  },
-  "rt.zone.recover": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "<50 Recover"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "<50 Phục hồi"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "<50 Recuperar"
      }
     }
    }
@@ -59671,19 +60706,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "I've filled in %lld things for today. If it's right, tap Save — if not, just tell me."
+      "value": "I picked up %lld things. If something’s off, tap ✦ on that card and tell me."
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Mình điền sẵn %lld việc hôm nay. Đúng thì bấm Lưu nhé — sai chỗ nào cứ nói lại."
+      "value": "Mình hiểu được %lld việc. Sai chỗ nào thì chạm ✦ ở thẻ đó và nói lại."
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Rellené %lld cosas de hoy. Si está bien, toca Guardar; si no, dímelo."
+      "value": "Entendí %lld cosas. Si algo no cuadra, toca ✦ en esa tarjeta y dímelo."
      }
     }
    }
@@ -63111,6 +64146,52 @@
      "stringUnit": {
       "state": "translated",
       "value": "Ghi %@"
+     }
+    }
+   }
+  },
+  "ps.a.body.gainFast %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Gaining about %@ a week — faster than ~1%% of body weight. A slower gain usually keeps more of it as muscle. General guidance, not medical advice."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đang tăng khoảng %@ mỗi tuần — nhanh hơn ~1%% cân nặng. Tăng chậm hơn thường giữ được nhiều cơ hơn. Hướng dẫn chung, không phải lời khuyên y tế."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Subes unos %@ por semana, más del ~1 %% de tu peso. Subir más despacio suele conservar más músculo. Orientación general, no consejo médico."
+     }
+    }
+   }
+  },
+  "ps.a.body.lossFast %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Losing about %@ a week — faster than ~1%% of body weight. A slower loss usually protects muscle and energy. General guidance, not medical advice."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đang giảm khoảng %@ mỗi tuần — nhanh hơn ~1%% cân nặng. Giảm chậm hơn thường giữ được cơ và sức. Hướng dẫn chung, không phải lời khuyên y tế."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bajas unos %@ por semana, más del ~1 %% de tu peso. Bajar más despacio suele proteger músculo y energía. Orientación general, no consejo médico."
      }
     }
    }

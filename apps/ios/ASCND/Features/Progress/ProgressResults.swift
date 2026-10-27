@@ -36,8 +36,9 @@ extension ProgressStyle {
       return String(localized: "ps.n.training \(Int(due))")
     case .steps:
       guard let avg = r.average else { return nil }
-      // Hôm nay chưa có số → "—", không phải 0 (thiếu dữ liệu thì nói thiếu).
-      return String(localized: "ps.n.today \(r.today.map { n($0) } ?? "—") \(n(avg))")
+      // Hôm nay chưa có số → chỉ nói trung bình, không "—" lơ lửng (24/10).
+      guard let today = r.today else { return String(localized: "ps.n.steps \(n(avg))") }
+      return String(localized: "ps.n.stepsToday \(n(today)) \(n(avg))")
     case .nutrition:
       guard let avg = r.average, let t = r.target else { return nil }
       return String(localized: "ps.n.protein \(n(avg)) \(n(t))")
@@ -48,12 +49,21 @@ extension ProgressStyle {
       guard let avg = r.average else { return nil }
       return String(localized: "ps.n.recovery \(n(avg))")
     case .body:
-      guard let today = r.today, let avg = r.average else { return nil }
-      return String(localized: "ps.n.today \("\(n(unit.display(today), 1)) \(unit.label)") \("\(n(unit.display(avg), 1)) \(unit.label)")")
+      // Lần cân gần nhất + thay đổi trong 4 tuần (đúng số mà "Tốt / Cần chú ý" xét).
+      guard let last = r.today, let change = r.target else { return nil }
+      let delta = unit.display(abs(change))
+      let sign = change > 0.05 ? "+" : change < -0.05 ? "−" : ""
+      return String(localized: "ps.n.weight \("\(n(unit.display(last), 1)) \(unit.label)") \("\(sign)\(n(delta, 1)) \(unit.label)")")
     }
   }
 
-  static func advice(_ r: ProgressStatus.Result) -> String? {
+  static func advice(_ r: ProgressStatus.Result, unit: WeightUnit) -> String? {
+    // Cơ thể đổi quá ~1 % cân nặng / tuần (Kiệt 27/10): nói tốc độ, kèm "hướng dẫn chung".
+    if r.level == .attention, let note = r.bodyNote, note != .offTrack, let weekly = r.weeklyKg {
+      let pace = "\(n(unit.display(abs(weekly)), 1)) \(unit.label)"
+      return note == .gainingFast
+        ? String(localized: "ps.a.body.gainFast \(pace)") : String(localized: "ps.a.body.lossFast \(pace)")
+    }
     switch r.level {
     case .good: return String(localized: "ps.a.good")
     case .insufficient: return nil
@@ -92,15 +102,14 @@ struct ProgressResultCard: View {
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
         }
         .foregroundStyle(ProgressStyle.color(result.group))
-        Text(verbatim: ProgressStyle.word(result.level))
-          .font(.system(size: 24, weight: .bold)).tracking(-0.4)
-          .foregroundStyle(result.level == .insufficient ? DS.Color.mutedForeground.swiftUI : DS.Color.foreground.swiftUI)
+        ProgressStatusWord(level: result.level, font: .system(size: 24, weight: .bold))
+          .tracking(-0.4)
           .padding(.top, 8)
         Text(verbatim: ProgressStyle.count(result))
           .font(DS.TextStyle.caption)
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
           .padding(.top, 1)
-        if let advice = ProgressStyle.advice(result) {
+        if let advice = ProgressStyle.advice(result, unit: unit) {
           Text(verbatim: advice)
             .font(DS.TextStyle.footnote)
             .foregroundStyle(DS.Color.foreground.swiftUI.opacity(0.85))
@@ -177,6 +186,8 @@ struct ProgressGroupView: View {
   let snapshot: ProgressStatusBook.Snapshot?
   let week: KoaWeek.State?
   var openTrends: (() -> Void)?
+  /// Kéo để làm mới (Kiệt 26/10) — cùng lượt đọc lại như tab Tiến bộ.
+  var refresh: () async -> Void = {}
   @Environment(\.weightUnit) private var unit
   @Environment(WorkoutFlow.self) private var flow
   @Environment(AppServices.self) private var services
@@ -185,10 +196,9 @@ struct ProgressGroupView: View {
     ScrollView {
       VStack(alignment: .leading, spacing: DS.Spacing.md) {
         VStack(alignment: .leading, spacing: 4) {
-          Text(verbatim: ProgressStyle.word(result.level))
-            .font(.system(size: 26, weight: .bold)).tracking(-0.4)
-            .foregroundStyle(result.level == .insufficient ? DS.Color.mutedForeground.swiftUI : DS.Color.foreground.swiftUI)
-          Text(verbatim: ProgressStyle.advice(result) ?? ProgressStyle.missing(result))
+          ProgressStatusWord(level: result.level, font: .system(size: 26, weight: .bold))
+            .tracking(-0.4)
+          Text(verbatim: ProgressStyle.advice(result, unit: unit) ?? ProgressStyle.missing(result))
             .font(DS.TextStyle.body)
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
         }
@@ -199,6 +209,7 @@ struct ProgressGroupView: View {
       }
       .padding(DS.Spacing.md)
     }
+    .refreshable { await refresh() }
     .navigationTitle(Text(verbatim: ProgressStyle.name(result.group)))
     .ascndPage()
   }
@@ -273,14 +284,17 @@ struct ProgressGroupView: View {
     let protein = ProgressStatus.nutrition(s.protein, target: s.proteinTarget)
     let kcal = ratio(s.kcal, s.kcalTarget, low: 0.85, high: 1.15)
     let water = ratio(s.waterMl, s.waterTargetMl, low: 0.8, high: .infinity)
+    let waterDays = Water.loggedAverage(s.waterMl.map { $0 ?? 0 })?.days ?? 0
+    let unit = services.preferences.volumeUnit
     let logged = s.protein.compactMap { $0 }.count
     let rows: [(String, ProgressStatus.Level, String)] = [
       (String(localized: "ps.m.protein"), protein.level,
-       String(localized: "ps.m.avg \(ProgressStyle.n(protein.average ?? 0)) \(ProgressStyle.n(s.proteinTarget)) \("g")")),
+       String(localized: "ps.m.avg \(protein.average.map { ProgressStyle.n($0) } ?? "–") \(ProgressStyle.n(s.proteinTarget)) \("g")")),
       (String(localized: "ps.m.kcal"), kcal.0,
-       String(localized: "ps.m.avg \(ProgressStyle.n(kcal.1)) \(ProgressStyle.n(s.kcalTarget)) \("kcal")")),
+       String(localized: "ps.m.avg \(kcal.1.map { ProgressStyle.n($0) } ?? "–") \(ProgressStyle.n(s.kcalTarget)) \("kcal")")),
       (String(localized: "ps.m.water"), water.0,
-       String(localized: "ps.m.avg \(ProgressStyle.n(water.1 / 1000, 1)) \(ProgressStyle.n(s.waterTargetMl / 1000, 1)) \("L")")),
+       String(localized: "ps.m.avg \(water.1.map { Water.shortNumber(ml: $0, unit, locale: .app) } ?? "–") \(Water.shortNumber(ml: s.waterTargetMl, unit, locale: .app)) \(Water.shortUnit(unit))")
+         + " · " + String(localized: "insight.sub.days \("\(waterDays)/\(s.days.count)")")),
       (String(localized: "ps.m.days"), logged >= 5 ? .good : logged >= ProgressStatus.minDays ? .attention : .insufficient,
        "\(logged) / \(s.days.count)"),
     ]
@@ -294,8 +308,7 @@ struct ProgressGroupView: View {
               .foregroundStyle(DS.Color.mutedForeground.swiftUI)
           }
           Spacer()
-          Text(verbatim: ProgressStyle.word(rows[i].1)).font(DS.TextStyle.footnote.weight(.semibold))
-            .foregroundStyle(rows[i].1 == .insufficient ? DS.Color.mutedForeground.swiftUI : DS.Color.foreground.swiftUI)
+          ProgressStatusWord(level: rows[i].1, font: DS.TextStyle.footnote.weight(.semibold))
         }
         .padding(.vertical, 10)
       }
@@ -304,11 +317,13 @@ struct ProgressGroupView: View {
     .todayCard()
   }
 
-  /// Chỉ số con: ≥ 3 ngày có số; trong [low, high] × mục tiêu là Tốt.
-  private func ratio(_ v: [Double?], _ target: Double, low: Double, high: Double) -> (ProgressStatus.Level, Double) {
+  /// Chỉ số con: ≥ 3 ngày có số; trong [low, high] × mục tiêu là Tốt. Trung bình
+  /// chia cho ngày có số (như `Water.loggedAverage`); chưa đủ ngày vẫn trả trung bình
+  /// thật (trước 26/10 trả 0 → "Trung bình 0" cạnh "Chưa đủ dữ liệu"), không có ngày nào → nil.
+  private func ratio(_ v: [Double?], _ target: Double, low: Double, high: Double) -> (ProgressStatus.Level, Double?) {
     let have = v.compactMap { $0 }
-    guard have.count >= ProgressStatus.minDays, target > 0 else { return (.insufficient, 0) }
-    let avg = have.reduce(0, +) / Double(have.count)
+    let avg = have.isEmpty ? nil : have.reduce(0, +) / Double(have.count)
+    guard let avg, have.count >= ProgressStatus.minDays, target > 0 else { return (.insufficient, avg) }
     return (avg >= target * low && avg <= target * high ? .good : .attention, avg)
   }
 

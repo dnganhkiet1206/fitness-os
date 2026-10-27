@@ -73,11 +73,18 @@ public final class AppPreferences {
 
   @ObservationIgnored private let store: any KeyValueStore
   @ObservationIgnored private let deviceLocale: String
+  @ObservationIgnored private let shownLanguage: String?
 
-  /// - Parameter deviceLocale: định danh locale của máy (`vi-VN`, `en_US`…).
-  public init(store: any KeyValueStore, deviceLocale: String = Locale.current.identifier) {
+  /// - Parameters:
+  ///   - deviceLocale: định danh locale của máy (`vi-VN`, `en_US`…).
+  ///   - shownLanguage: ngôn ngữ iOS đang hiện chữ của app
+  ///     (`Bundle.main.preferredLocalizations.first`). Có thì `lang` theo nó: AI
+  ///     viết đúng thứ tiếng của màn, kể cả khi `Locale.current` khác (máy tiếng
+  ///     Pháp mà app hiện tiếng Việt, ngôn ngữ riêng cho app — 24/10).
+  public init(store: any KeyValueStore, deviceLocale: String = Locale.current.identifier, shownLanguage: String? = nil) {
     self.store = store
     self.deviceLocale = deviceLocale
+    self.shownLanguage = shownLanguage
     // Ngôn ngữ theo iPhone (Kiệt 23/10: bỏ chọn ngôn ngữ trong app — chọn ở Cài đặt →
     // ASCND → Ngôn ngữ). Lựa chọn cũ lưu trong app bỏ đi.
     store.remove(Self.langKey)
@@ -109,7 +116,7 @@ public final class AppPreferences {
 
   /// Ngôn ngữ app = ngôn ngữ iPhone dành cho app (Cài đặt → ASCND → Ngôn ngữ, hoặc
   /// ngôn ngữ máy); ngoài vi / es là en.
-  public var lang: Lang { Self.deviceLang(deviceLocale) }
+  public var lang: Lang { Self.deviceLang(shownLanguage ?? deviceLocale) }
 
   public enum ThemeName: String, Sendable, Hashable { case light, dark }
 

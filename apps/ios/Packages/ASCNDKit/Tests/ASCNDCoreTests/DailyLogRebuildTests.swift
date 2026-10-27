@@ -156,6 +156,15 @@ struct DailyLogRebuildTests {
     #expect(DailyLog.rebuildDays(after: e, today: Self.today, in: Self.utc) == [Self.today])
   }
 
+  /// Audit 25/10: một lần uống dựng lại ĐÚNG ngày của nó (ngày chọn lúc chạm),
+  /// để `daily_logs.water_ml` khớp sổ Nước — kể cả lần uống của hôm qua gửi muộn.
+  @Test func waterRebuildsTheDayItWasDrunk() {
+    let e = Water.entry(
+      id: "w1", userId: "u", amountMl: 250, date: LocalDate("2026-10-03")!,
+      at: EpochMillis(iso8601: "2026-10-03T22:00:00Z")!, createdAt: EpochMillis(iso8601: "2026-10-03T22:00:00Z")!)
+    #expect(DailyLog.rebuildDays(after: e, today: Self.today, in: Self.utc) == [LocalDate("2026-10-03")!])
+  }
+
   @Test func planEditsDoNotTouchDailyLogs() {
     let e = entry(PlanEdit.templateKind, ["id": .string("t1")])
     #expect(DailyLog.rebuildDays(after: e, today: Self.today, in: Self.utc).isEmpty)

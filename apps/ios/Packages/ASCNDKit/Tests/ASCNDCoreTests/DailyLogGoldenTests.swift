@@ -156,7 +156,12 @@ struct DailyLogGoldenTests {
       #expect(store.writes.count == rnWrites.count, "\(name): số lệnh ghi")
       for (w, rn) in zip(store.writes, rnWrites) {
         #expect(JSONValue.string(w.kind) == rn["kind"], "\(name): insert/update")
-        #expect(JSONValue.object(w.row) == rn["row"], "\(name): hàng\n swift \(w.row)\n rn    \(rn["row"] ?? .null)")
+        // Điểm sẵn sàng CỐ Ý khác RN từ 24/10 (nền theo ngày, mức nền = 75, HRV ln,
+        // đau cơ không còn là chấn thương) — `ReadinessBaselineTests`. Mọi cột khác
+        // vẫn phải khớp RN từng bit.
+        #expect(
+          JSONValue.object(w.row.filter { !Self.nativeReadiness.contains($0.key) }) == Self.withoutReadiness(rn["row"]),
+          "\(name): hàng\n swift \(w.row)\n rn    \(rn["row"] ?? .null)")
         if w.kind == "update" {
           #expect(JSONValue.array(w.filters.map(Self.filterJSON)) == rn["filters"], "\(name): điều kiện update")
         }
@@ -164,6 +169,15 @@ struct DailyLogGoldenTests {
       checked += 1
     }
     #expect(checked == cases.count)
+  }
+
+  static let nativeReadiness: Set<String> = [
+    "readiness_score", "readiness_status", "readiness_explain", "readiness_recommendation",
+  ]
+
+  static func withoutReadiness(_ row: JSONValue?) -> JSONValue? {
+    guard case .object(let o)? = row else { return row }
+    return .object(o.filter { !nativeReadiness.contains($0.key) })
   }
 
   /// Golden phủ đủ các nhánh khuyến nghị tới được (`listen` không tới được:
