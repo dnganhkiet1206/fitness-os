@@ -40,15 +40,7 @@ public enum InsightHighlight {
   }
 
   /// Trung bình trên các ngày CÓ ghi (giá trị > 0) — ngày trống không kéo số xuống.
-  public struct Average: Sendable, Hashable {
-    public let value: Double
-    public let days: Int
-
-    public init(value: Double, days: Int) {
-      self.value = value
-      self.days = days
-    }
-  }
+  public typealias Average = AverageWindow.Average
 
   /// Bảy ngày trước hôm nay (hàng `daily_logs`).
   public struct Week: Sendable, Hashable {
@@ -75,11 +67,12 @@ public enum InsightHighlight {
     public static let columns = "date, kcal, protein_g, sleep_duration_min, steps, water_ml, readiness_score"
   }
 
-  public static func week(_ rows: [JSONValue]) -> Week {
+  /// Trung bình theo `AverageWindow` (bảy ngày TRƯỚC `today`); hàng ngoài khung bị bỏ.
+  public static func week(_ rows: [JSONValue], today: LocalDate) -> Week {
     func avg(_ column: String) -> Average? {
-      let values = rows.map { JS.number($0[column]) }.filter { $0.isFinite && $0 > 0 }
-      guard !values.isEmpty else { return nil }
-      return Average(value: values.reduce(0, +) / Double(values.count), days: values.count)
+      AverageWindow.average(
+        rows.compactMap { r in r["date"]?.stringValue.flatMap(LocalDate.init).map { ($0, JS.number(r[column])) } },
+        before: today)
     }
     return Week(
       kcal: avg("kcal"), proteinG: avg("protein_g"), sleepMin: avg("sleep_duration_min"), steps: avg("steps"),

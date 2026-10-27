@@ -31,11 +31,11 @@ struct NutritionInsightsTests {
     #expect(f.carbs == 194)
   }
 
-  /// Đọc đúng bảy ngày (RN đọc tám).
-  @Test func queryCoversSevenLocalDays() throws {
+  /// Đọc từ hôm nay − 7: khung trung bình (`AverageWindow`) + cột hôm nay của biểu đồ.
+  @Test func queryCoversTheAverageWindowAndToday() throws {
     let q = NutritionInsights.query(userId: "u1", today: try #require(LocalDate("2026-10-09")))
     #expect(q.table == "daily_logs")
-    #expect(q.filters.contains(.gte("date", .string("2026-10-03"))))
+    #expect(q.filters.contains(.gte("date", .string("2026-10-02"))))
     #expect(q.filters.contains(.eq("user_id", .string("u1"))))
   }
 
