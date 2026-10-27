@@ -159,10 +159,7 @@ public final class AssistantSignalBook {
       store,
       RowQuery(
         table: "daily_logs", columns: InsightHighlight.Week.columns,
-        filters: [
-          .eq("user_id", user), .gte("date", .string(day.adding(days: -7).description)),
-          .lt("date", .string(day.description)),
-        ]))
+        filters: [.eq("user_id", user)] + AverageWindow.dateFilters(before: day)))
     let (l, p, w, b) = await (log, profile, last, bio)
     let past = await history
     let (m, wt) = await (meals, weighed)
@@ -187,7 +184,7 @@ public final class AssistantSignalBook {
     } else {
       heartRate = nil
     }
-    week = past.map(InsightHighlight.week)
+    week = past.map { InsightHighlight.week($0, today: day) }
     waterMl = max(0, JS.number(l?["water_ml"]))
     let hours = JS.number(p?["sleep_target_hours"])
     sleepTargetMin = hours.isFinite && hours > 0 ? hours * 60 : 480

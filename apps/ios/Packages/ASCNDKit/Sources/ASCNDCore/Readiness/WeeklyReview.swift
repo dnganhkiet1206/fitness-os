@@ -169,20 +169,29 @@ public enum WeeklyReview {
 
   // MARK: - Tính
 
-  public static func summarize(_ input: Input, weekStart: LocalDate, in tz: TimeZone, copy: ReadinessCard.Copy)
-    -> Summary
-  {
+  /// `today`: tuần đang chạy thì các TRUNG BÌNH (kcal, đạm, nước, ngủ, sẵn sàng) bỏ hôm
+  /// nay — ngày chưa xong (Kiệt 27/10, như `AverageWindow`). Tổng (khối lượng, số buổi) và
+  /// biểu đồ ngày vẫn gồm hôm nay. `nil` = như RN (mọi ngày của tuần).
+  public static func summarize(
+    _ input: Input, weekStart: LocalDate, in tz: TimeZone, copy: ReadinessCard.Copy, today: LocalDate? = nil
+  ) -> Summary {
     let logs = input.dailyLogs
+    let finished = { (day: String?) -> Bool in
+      guard let today, let d = day.flatMap(LocalDate.init) else { return true }
+      return d < today
+    }
+    let averaged = logs.filter { finished($0["date"]?.stringValue) }
+    let averagedSleep = input.sleepLogs.filter { finished(DailyLog.localDay($0["waketime"], tz)) }
     let profile = input.profile
     let kcalTarget = coalesce(profile?["tdee_target_kcal"], 2200)
     let proteinTarget = coalesce(profile?["macro_protein_g"], 140)
     let sleepRaw = JS.number(profile?["sleep_target_hours"])
     let sleepTarget = JS.truthy(sleepRaw) ? sleepRaw : 8
 
-    let kcal = metricMean(logs, "kcal")
-    let protein = metricMean(logs, "protein_g")
-    let water = metricMean(logs, "water_ml")
-    let avgSleepMin = avg(input.sleepLogs.map(DailyLog.asleepMinutes))
+    let kcal = metricMean(averaged, "kcal")
+    let protein = metricMean(averaged, "protein_g")
+    let water = metricMean(averaged, "water_ml")
+    let avgSleepMin = avg(averagedSleep.map(DailyLog.asleepMinutes))
     let avgSleepH = avgSleepMin / 60
     let totalVolume = logs.reduce(0.0) { $0 + orZero(JS.number($1["volume_load"])) }
     let workoutCount = input.workouts.count
@@ -196,7 +205,7 @@ public enum WeeklyReview {
 
     // Trung bình tuần chỉ tính ngày có chiều phục hồi (19/10): ngày chỉ có tải
     // tập là "chưa đủ dữ liệu để chấm" ở mọi màn, không trộn vào trung bình.
-    let scored = logs.filter {
+    let scored = averaged.filter {
       truthy($0["readiness_score"]) && ReadinessCard.hasRecoverySignal($0["readiness_explain"]?.stringValue, copy: copy)
     }
     let readinessDays = scored.count
@@ -555,7 +564,7 @@ public final class WeeklyReviewBook {
         dailyLogs: daily, workouts: workouts, sleepLogs: sleep, prevLogs: prev, volumeHistory: history,
         profile: profile.first)
       guard !closed, mine == generation else { return }
-      phase = .ready(WeeklyReview.summarize(input, weekStart: ws, in: tz, copy: copy))
+      phase = .ready(WeeklyReview.summarize(input, weekStart: ws, in: tz, copy: copy, today: today))
     } catch {
       guard !closed, mine == generation else { return }
       if case .ready = phase { return }

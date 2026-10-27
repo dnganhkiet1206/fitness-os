@@ -82,6 +82,8 @@ public final class WaterBook {
   public private(set) var logs: [WaterLog] = []
   /// 7 ngày, cũ → mới.
   public private(set) var week: [WaterDay] = []
+  /// Trung bình bảy ngày TRƯỚC hôm nay (`AverageWindow`) — không gồm hôm nay.
+  public private(set) var average: AverageWindow.Average?
   /// Đã có số thật (server hay bản lưu trên máy) — trước đó màn không nói "0".
   public private(set) var loaded = false
   public private(set) var failure: TodayController.RefreshFailure?
@@ -306,5 +308,6 @@ public final class WaterBook {
     let rows = serverRows.filter { $0.id != hidden }
       + local.filter { $0.row.date >= start && !serverIds.contains($0.row.id) }.map(\.row)
     week = Water.week(rows, today: date)
+    average = Water.windowAverage(rows, today: date)
   }
 }
