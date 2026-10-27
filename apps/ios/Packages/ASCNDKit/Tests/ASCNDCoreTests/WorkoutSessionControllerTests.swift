@@ -80,6 +80,19 @@ struct WorkoutSessionControllerTests {
     #expect(await store.days[c.key]?.progress.weightText["b1"] == "71.5")
   }
 
+  /// Kiệt 27/10: tích set 1 thì set 2 cùng bài mang tạ và reps vừa làm, và
+  /// điều ấy bền (mở lại app vẫn thấy) — set 2 chỉ còn một chạm.
+  @Test func tickCarriesWeightAndRepsToTheNextSet() async {
+    let store = InMemoryWorkoutStore()
+    let c = await controller(store)
+    await c.setWeightText("62,5", for: "b1")
+    await c.setRepsText("6", for: "b1")
+    #expect(await c.toggle("b1"))
+    #expect(c.performed(bench2) == PerformedSet(weightKg: 62.5, reps: 6, durationSec: nil))
+    #expect(await store.days[c.key]?.progress.weightText["b2"] == "62.5")
+    #expect(c.progress.weightText["p1"] == nil, "bài khác không nhận")
+  }
+
   /// Hàm trả về thì thay đổi đã nằm trong store — không phải "sẽ ghi".
   @Test func editIsDurableWhenItReturns() async {
     let store = InMemoryWorkoutStore()
