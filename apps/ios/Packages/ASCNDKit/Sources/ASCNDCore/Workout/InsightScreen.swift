@@ -124,7 +124,9 @@ public enum InsightScreen {
   /// `lastSetText`: con số của buổi gần nhất — giây cho bài giữ tư thế, `nil`
   /// khi chưa có rep (dải không hiện: mười hai dòng "chưa có gì" trên kế hoạch
   /// đầu tiên là mười hai món đồ đạc nói cùng một điều không gì). Cân nặng cơ
-  /// thể chỉ cộng cho bài không tạ; không có tải thì "8 reps × không tạ".
+  /// thể chỉ cộng cho bài không tạ; không có tải thì chỉ "8 reps" (lệch RN có chủ ý,
+  /// audit vòng 5: "10 reps × không tạ" đọc như phép nhân với không — `bodyweight`
+  /// không còn dùng, giữ tham số cho chỗ gọi).
   /// - Parameters:
   ///   - load: chữ của một mức tải dương ("62.5 kg").
   ///   - reps: "1 rep" / "8 reps" (`nRepsN`).
@@ -135,7 +137,7 @@ public enum InsightScreen {
     if let d = p.bestDurationSec, p.bestReps == nil { return "\(d)s" }
     guard let r = p.bestReps else { return nil }
     let total = (p.bodyweightKg ?? 0) * (p.kind == .bodyweight ? 1 : 0) + (p.bestWeightKg ?? 0)
-    if total <= 0 { return "\(reps(r)) × \(bodyweight)" }
+    if total <= 0 { return reps(r) }
     return "\(load(total)) × \(reps(r))"
   }
 
