@@ -66,8 +66,8 @@ public struct TodayScreen: View {
       } else if let display = todayDisplay {
         // Có dữ liệu (cache hoặc server).
         VStack(spacing: 0) {
-          // Offline: hiện cache + banner.
-          if case .cache = controller.source {
+          // Server hỏng: hiện cache + banner (không hiện trong lúc còn chờ server).
+          if controller.showingStaleCache {
             offlineBanner
           }
           TodayView(

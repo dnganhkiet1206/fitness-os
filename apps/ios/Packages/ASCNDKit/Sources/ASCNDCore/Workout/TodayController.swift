@@ -110,6 +110,14 @@ public final class TodayController {
   /// Chi tiết lỗi thô (mã PostgREST, mô tả URLError). CHỈ cho Lab / log —
   /// không bao giờ hiện cho người dùng.
   public private(set) var failureDetail: String?
+  /// Đang hiện bản cache VÌ lần hỏi server vừa hỏng — chỉ lúc ấy màn mới được
+  /// nói "offline". Cache hiện ra trong lúc CHỜ server (mỗi lần mở app) không
+  /// phải offline: trước đây Hôm nay hiện "Offline — đang hiện kế hoạch đã
+  /// lưu" ở mọi lần mở app dù có mạng (audit vòng 4, 26/10).
+  public var showingStaleCache: Bool {
+    if case .cache = source { return failure != nil }
+    return false
+  }
   public private(set) var trained: Set<LocalDate> = []
   /// Kế hoạch cả tuần + mọi template, đúng như máy này đang thấy: bản server
   /// (hoặc cache) với các lệnh sửa chưa gửi áp lên (#401). Màn Plan, danh
