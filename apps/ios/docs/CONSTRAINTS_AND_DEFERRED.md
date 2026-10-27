@@ -203,6 +203,13 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - ~~Hôm nay đứng yên tốn ~30–34 % CPU kể cả khi Koa đã cuộn khỏi màn~~ — `KoaFigureView` vẽ lại `Canvas` 60 lần/giây; bật Reduce Motion thì 0 %. Sửa 27/10 (nhánh `claude/v5-perf`): Koa ngoài khung cuộn thì dừng vẽ (`onScrollVisibilityChange`). Đo lại: Koa ngoài màn **34 % → 0 %**; cuộn lại thì Koa chạy tiếp (~29 %). Chuyển động của Koa giữ nguyên (Kiệt thích, 23/10).
 - Còn: khi Koa trong màn vẫn ~29 % CPU simulator (số simulator, không phải iPhone thật). Dinh dưỡng đứng yên 0 %. Bộ nhớ ~90–117 MB.
 - **NOT RUN:** thời gian mở app (cold start) và cuộn bằng Instruments — `xctrace record` treo ở bước kết thúc trên máy này; cần iPhone thật để có số đáng tin.
+**Dinh dưỡng (audit vòng 5, 27/10, simulator, chế độ máy chủ giả):**
+- Ghi bữa từ thẻ Bữa ở Hôm nay: **3 chạm** (thẻ → "Ăn lại bữa này" → Lưu); chọn bữa sau khi lưu là tuỳ chọn, OK tự đóng. Vòng macro ở Dinh dưỡng trừ đúng (720 kcal / P42 / C60 / F18 → còn 1.880 / 108 / 240 / 62).
+- ~~"Nước như hôm qua (68 oz)" trong Ghi hôm nay, trong khi thẻ Nước ghi "Hôm qua 71 oz"~~ — điền sẵn làm tròn nấc 250 ml (2.100 → 2.000 ml). Sửa 27/10 (nhánh `claude/v5-nutrition`): điền đúng lượng hôm qua (chặn 50…5000 ml). Unit test cập nhật.
+- Chờ Kiệt quyết: "Ăn lại" bữa tối hôm qua lúc 13:57 lưu vào **Bữa tối** (giữ loại bữa gốc, chủ ý trong `MealLogger.repeatMeal`); đổi được bằng một chạm ở màn đã lưu. Không đổi.
+- Dữ liệu mẫu của chế độ test (#700) có macro không khớp kcal (Salmon Bowl P42 / C60 / F18 ≈ 570 kcal nhưng ghi 720) — chỉ là seed test, không ảnh hưởng dữ liệu thật.
+- Món còn trong hàng đợi (chưa lên server) không sửa / xoá được (`MealDiary.pendingSync`) — không có lỗi bữa "sống lại". Rà mã.
+- **NOT RUN:** sửa / xoá món trên simulator (simulator trễ 2–4 s mỗi chạm), QR / mã vạch và ảnh món (simulator không có camera).
 
 **Tài liệu và mã:**
 - `PARITY_MATRIX.md` lạc hậu từ 17/10. 26/10 (audit vòng 3, nhánh `claude/audit-r3-dead-code`): **đánh dấu LẠC HẬU** ở đầu trang (nói rõ chỗ sai: GĐ1–GĐ3, bốn khu vực, lối vào); rà lại toàn bảng vẫn là việc cuối của GĐ3, chưa làm.
@@ -219,6 +226,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 
 - 27/10/2026: audit vòng 5 — xoá tài khoản: mất phản hồi không còn bị báo "chưa có gì bị xoá"; ghi việc thu hồi token Sign in with Apple còn thiếu (chặn phát hành nếu bật nút Apple).
 - 27/10/2026: audit vòng 5 — hiệu năng: Koa dừng vẽ khi ra khỏi màn (Hôm nay đứng yên 34 % → 0 % CPU simulator khi Koa ngoài màn); ghi phần chưa đo (cold start, cuộn).
+- 27/10/2026: audit vòng 5 — dinh dưỡng: "Nước như hôm qua" ghi đúng lượng hôm qua; ghi kết quả ghi bữa 3 chạm, macro, và câu hỏi "Ăn lại" giữ loại bữa gốc.
 - 27/10/2026: audit vòng 5 — việc nhỏ §4: "Lần trước 10 reps" (bỏ "× không tạ"), tên dài ở Lịch sử, nguyên nhân thẻ việc chính đổi qua lại (hồ sơ về muộn).
 - 27/10/2026: deploy production (Kiệt duyệt trong chat: "Cho phép deploy production hai hàm `ai-smart-nudges` và `ai-coach`") — `ai-smart-nudges` v12, `ai-coach` v25, 16:47 UTC, từ nhánh `claude/ai-water-unit` @ `4fd26d04`: viết nước theo đơn vị người dùng; app cũ không gửi đơn vị vẫn là ml. Không deploy hàm nào khác, không migration.
 - 27/10/2026: Kiệt chốt — Tiến bộ › Cơ thể "Cần chú ý" khi tăng / giảm nhanh hơn ~1 % cân nặng mỗi tuần, có câu khuyên (hướng dẫn chung).
