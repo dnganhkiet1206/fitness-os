@@ -1,0 +1,47 @@
+# Bắt đầu buổi hôm nay (Full Body A: 2 bài × 2 set), xong từng set, chốt buổi,
+# màn tổng kết → về Hôm nay; việc chính của Hôm nay không còn là "Start workout".
+appId: com.ascnd.fitnessos.dev
+name: start and finish a workout session
+---
+- runFlow: subflows/launch.yaml
+- tapOn:
+    id: today.plan.primary
+- extendedWaitUntil:
+    visible:
+      id: workout.doneSet
+    timeout: 15000
+- takeScreenshot: 05-workout-start
+- repeat:
+    times: 6
+    while:
+      visible:
+        id: workout.doneSet
+    commands:
+      - tapOn:
+          id: workout.doneSet
+      - runFlow:
+          when:
+            visible:
+              id: workout.rest.skip
+          commands:
+            - tapOn:
+                id: workout.rest.skip
+- scrollUntilVisible:
+    element:
+      id: workout.finish
+    direction: DOWN
+    timeout: 10000
+- tapOn:
+    id: workout.finish
+- extendedWaitUntil:
+    visible:
+      id: summary.backToToday
+    timeout: 20000
+- takeScreenshot: 05-workout-summary
+- tapOn:
+    id: summary.backToToday
+- extendedWaitUntil:
+    visible:
+      id: today.account
+    timeout: 15000
+- takeScreenshot: 05-workout-today-after

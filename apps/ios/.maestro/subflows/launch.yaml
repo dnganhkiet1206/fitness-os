@@ -1,0 +1,16 @@
+# Mở app sạch ở chế độ UI test: dữ liệu mẫu dựng lại mỗi lần mở (database trong
+# bộ nhớ), tiếng Anh, đã đăng nhập sẵn. Xong khi Hôm nay có nút của việc chính.
+appId: com.ascnd.fitnessos.dev
+---
+- launchApp:
+    stopApp: true
+    arguments:
+      uiTestFakeBackend: true
+      AppleLanguages: "(en)"
+      AppleLocale: en_US
+    permissions:
+      all: deny
+- extendedWaitUntil:
+    visible:
+      id: today.plan.primary
+    timeout: 45000

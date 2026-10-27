@@ -1,0 +1,9 @@
+# Cuộn Hôm nay tới thẻ "Your day" (dải thẻ Giấc ngủ · Bữa · Nước · Tập).
+appId: com.ascnd.fitnessos.dev
+---
+- scrollUntilVisible:
+    element:
+      id: today.tile.sleep
+    direction: DOWN
+    centerElement: true
+    timeout: 20000

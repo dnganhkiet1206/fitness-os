@@ -1,0 +1,24 @@
+# Thẻ "Hỏi Koa" ở Hôm nay mở Koa Coach (tab Tiến bộ); quay lại thì về Hôm nay.
+appId: com.ascnd.fitnessos.dev
+name: Ask Koa opens Coach, back returns to Today
+---
+- runFlow: subflows/launch.yaml
+- scrollUntilVisible:
+    element:
+      id: today.askKoa
+    direction: DOWN
+    centerElement: true
+    timeout: 20000
+- tapOn:
+    id: today.askKoa
+- extendedWaitUntil:
+    notVisible:
+      id: today.askKoa
+    timeout: 10000
+- takeScreenshot: 07-coach
+- runFlow: subflows/back.yaml
+- extendedWaitUntil:
+    visible:
+      id: today.account
+    timeout: 10000
+- takeScreenshot: 07-back-today

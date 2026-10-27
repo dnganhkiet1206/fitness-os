@@ -116,6 +116,7 @@ struct CommunityUserView: View {
               .frame(minWidth: 44, minHeight: 44)
           }
           .accessibilityLabel(Text("settings.title"))
+          .accessibilityIdentifier("profile.settings")
         }
       }
       if book.profile != nil, !book.isMe {

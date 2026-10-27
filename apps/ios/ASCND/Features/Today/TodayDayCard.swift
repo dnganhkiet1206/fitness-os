@@ -166,33 +166,34 @@ struct TodayDayCard: View {
       .accessibilityLabel(Text(verbatim: Self.name(t.item)))
       .accessibilityValue(Text(verbatim: [Self.badgeText(t), t.detail].compactMap { $0 }.joined(separator: ", ")))
       .accessibilityAddTraits(.isButton)
+      .accessibilityIdentifier("today.tile.\(t.item)")
       // Hàng nút nhanh dính đáy thẻ — thẻ Nước và thẻ Bữa thẳng hàng (Kiệt 22/10).
       Spacer(minLength: 0)
       if t.item == .sleep, t.state != .done, let quickSleep {
-        chip(quickSleep.label, systemImage: "moon.zzz.fill", color: color, action: quickSleep.log)
+        chip(quickSleep.label, systemImage: "moon.zzz.fill", color: color, id: "today.sleep.quick", action: quickSleep.log)
           .padding(.horizontal, 16)
           .padding(.bottom, 8)
       }
       if t.item == .water, let quickWater {
         HStack(spacing: 8) {
-          chip(quickWater.label, color: color, action: quickWater.add)
-          chip(String(localized: "water.custom"), systemImage: "pencil", color: color, action: quickWater.custom)
+          chip(quickWater.label, color: color, id: "today.water.add", action: quickWater.add)
+          chip(String(localized: "water.custom"), systemImage: "pencil", color: color, id: "today.water.custom", action: quickWater.custom)
         }
         .padding(.horizontal, 16)
         .padding(.bottom, 8)
       }
       if t.item == .meal, let mealQuick {
         HStack(spacing: 8) {
-          chip(String(localized: "day.meal.photo"), systemImage: "camera.fill", color: color) { mealQuick(.mealPhoto) }
-          chip(String(localized: "day.meal.scan"), systemImage: "barcode.viewfinder", color: color) { mealQuick(.mealScan) }
-          chip(String(localized: "day.meal.manual"), systemImage: "square.and.pencil", color: color) { mealQuick(.mealManual) }
+          chip(String(localized: "day.meal.photo"), systemImage: "camera.fill", color: color, id: "today.meal.photo") { mealQuick(.mealPhoto) }
+          chip(String(localized: "day.meal.scan"), systemImage: "barcode.viewfinder", color: color, id: "today.meal.scan") { mealQuick(.mealScan) }
+          chip(String(localized: "day.meal.manual"), systemImage: "square.and.pencil", color: color, id: "today.meal.manual") { mealQuick(.mealManual) }
         }
         .padding(.horizontal, 16)
         .padding(.bottom, 8)
       }
       // Đã tập xong: nút riêng ghi buổi phát sinh (19/10, chủ dự án).
       if t.item == .workout, t.state == .done, let onExtraWorkout {
-        chip(String(localized: "day.workout.extra"), color: color, action: onExtraWorkout)
+        chip(String(localized: "day.workout.extra"), color: color, id: "today.workout.extra", action: onExtraWorkout)
           .padding(.horizontal, 16)
           .padding(.bottom, 8)
       }
@@ -211,7 +212,7 @@ struct TodayDayCard: View {
 
   /// Nút phụ trên thẻ: "+ Buổi phát sinh", "+ 8 oz".
   private func chip(
-    _ text: String, systemImage: String = "plus", color: Color, action: @escaping () -> Void
+    _ text: String, systemImage: String = "plus", color: Color, id: String, action: @escaping () -> Void
   ) -> some View {
     Button(action: action) {
       Label(text, systemImage: systemImage)
@@ -223,6 +224,7 @@ struct TodayDayCard: View {
         .frame(minHeight: 44, alignment: .leading)
     }
     .buttonStyle(TodayPressStyle())
+    .accessibilityIdentifier(id)
   }
 
   /// "✓ Đã xong" · "◌ Chưa ghi" · "Nghỉ" · "Apple Health".

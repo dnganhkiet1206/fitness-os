@@ -1,0 +1,15 @@
+# Một mảng chữ A (${SEGMENT}) → màn chi tiết → quay lại Tiến bộ.
+appId: com.ascnd.fitnessos.dev
+---
+- tapOn:
+    id: progress.segment.${SEGMENT}
+- extendedWaitUntil:
+    notVisible:
+      id: progress.segment.${SEGMENT}
+    timeout: 10000
+- takeScreenshot: 06-progress-${SEGMENT}
+- runFlow: back.yaml
+- extendedWaitUntil:
+    visible:
+      id: progress.segment.${SEGMENT}
+    timeout: 10000

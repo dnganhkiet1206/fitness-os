@@ -1,0 +1,35 @@
+# Tab Tiến bộ: mỗi mảng của chữ A mở chi tiết của nó, quay lại được.
+appId: com.ascnd.fitnessos.dev
+name: Progress A segments open details
+---
+- runFlow: subflows/launch.yaml
+- tapOn: "Progress"
+- extendedWaitUntil:
+    visible:
+      id: progress.segment.training
+    timeout: 15000
+- takeScreenshot: 06-progress
+- runFlow:
+    file: subflows/progress-segment.yaml
+    env:
+      SEGMENT: training
+- runFlow:
+    file: subflows/progress-segment.yaml
+    env:
+      SEGMENT: steps
+- runFlow:
+    file: subflows/progress-segment.yaml
+    env:
+      SEGMENT: nutrition
+- runFlow:
+    file: subflows/progress-segment.yaml
+    env:
+      SEGMENT: sleep
+- runFlow:
+    file: subflows/progress-segment.yaml
+    env:
+      SEGMENT: recovery
+- runFlow:
+    file: subflows/progress-segment.yaml
+    env:
+      SEGMENT: body

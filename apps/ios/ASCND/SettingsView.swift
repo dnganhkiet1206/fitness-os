@@ -205,6 +205,7 @@ public struct SettingsView: View {
               Image(systemName: "bell")
             }
           }
+          .accessibilityIdentifier("settings.reminders")
         }
 
         // Koa ló lên ở mọi tab (đợt 2A, 19/10): mặc định bật, tắt được ở đây.
@@ -236,6 +237,7 @@ public struct SettingsView: View {
             } label: {
               Label(String(localized: "settings.changePassword"), systemImage: "key")
             }
+            .accessibilityIdentifier("settings.changePassword")
           } footer: {
             if passwordChanged {
               Label(String(localized: "settings.passwordChanged"), systemImage: "checkmark.circle.fill")
@@ -260,6 +262,7 @@ public struct SettingsView: View {
             } label: {
               Label(String(localized: "settings.legal"), systemImage: "checkmark.shield")
             }
+            .accessibilityIdentifier("settings.legal")
           }
         } header: {
           Text(String(localized: "settings.about"))

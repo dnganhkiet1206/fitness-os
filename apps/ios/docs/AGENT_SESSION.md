@@ -97,7 +97,7 @@ Chỗ nào trong `docs/WORKFLOW.md` khác trang này thì **trang này thắng**
 **Cổng nhanh** (chạy từ `native/`):
 
 ```sh
-for t in native-internal-api native-expect-keypath native-xcstrings-contract native-i18n-forensic native-l10n-override native-xcstrings-plural; do node ../apps/ios/tools/$t.mjs >/dev/null 2>&1 && echo "ok $t" || echo "FAIL $t"; done
+for t in native-internal-api native-expect-keypath native-xcstrings-contract native-i18n-forensic native-l10n-override native-xcstrings-plural native-uitest-mode; do node ../apps/ios/tools/$t.mjs >/dev/null 2>&1 && echo "ok $t" || echo "FAIL $t"; done
 ```
 
 Cổng đầy đủ, cũng từ `native/`: `node tools/check.mjs`.

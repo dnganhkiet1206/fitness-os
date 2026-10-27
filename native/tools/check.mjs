@@ -1006,6 +1006,14 @@ const STEPS = [
   ['#expect không truyền key path cho hàm rethrows', 'node', ['../apps/ios/tools/native-expect-keypath.mjs']],
   ['#expect key path — fixture từng dạng phải đỏ', 'node', ['../apps/ios/tools/native-expect-keypath.mjs', '--self-test']],
   /*
+    #527 (Maestro E2E): chế độ UI test (máy chủ Supabase giả + phiên giả,
+    `-uiTestFakeBackend`) chỉ ở bản Debug — mọi tệp `ASCND/App/UITest/` là một
+    khối `#if DEBUG`, mọi chỗ dùng ở ngoài nằm trong `#if DEBUG`. Workflow
+    `ios-e2e.yml` kiểm lần hai trên tệp nhị phân Release.
+  */
+  ['chế độ UI test chỉ ở bản Debug', 'node', ['../apps/ios/tools/native-uitest-mode.mjs']],
+  ['chế độ UI test — fixture từng dạng phải đỏ', 'node', ['../apps/ios/tools/native-uitest-mode.mjs', '--self-test']],
+  /*
     #527 Phase 1 · 1.11: trạng thái mạng ba nhánh của app iOS native phải đổi
     ở đúng các mốc RN đổi. Golden của `NetStatusGoldenTests` là output của
     CHÍNH `net-status.ts` chạy trên đồng hồ ảo (sàn 600 ms, nhịp dò 250 ms, trần

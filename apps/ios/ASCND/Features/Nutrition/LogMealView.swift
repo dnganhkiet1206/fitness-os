@@ -210,6 +210,7 @@ struct LogMealView: View {
             }
             .buttonStyle(TodayPressStyle())
             .accessibilityAddTraits(on ? .isSelected : [])
+            .accessibilityIdentifier("logMeal.pick.\(key)")
           }
         }
       }
@@ -240,6 +241,7 @@ struct LogMealView: View {
           .clipShape(Capsule())
       }
       .buttonStyle(TodayPressStyle())
+      .accessibilityIdentifier("logMeal.ok")
       .opacity(panelIn ? 1 : 0)
     }
     .padding(DS.Spacing.lg)
@@ -325,6 +327,7 @@ struct LogMealView: View {
       .buttonStyle(TodayPressStyle())
       .disabled(!logger.canSave)
       .accessibilityValue(Text(verbatim: logger.items.isEmpty ? "" : "\(DiaryView.whole(t.kcal)) kcal"))
+      .accessibilityIdentifier("logMeal.save")
     }
     .padding(.horizontal, DS.Spacing.md)
     .padding(.top, DS.Spacing.sm)
@@ -477,6 +480,7 @@ struct LogMealView: View {
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(Text(verbatim: "\(DiaryView.mealName(m.mealType)), \(when), \(DiaryView.whole(m.kcal)) kcal"))
             .accessibilityAddTraits(.isButton)
+            .accessibilityIdentifier("logMeal.repeat")
           }
         }
       }

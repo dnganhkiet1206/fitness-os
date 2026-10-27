@@ -191,6 +191,7 @@ struct FocusRestCard: View {
             .contentShape(Capsule())
         }
         .buttonStyle(TodayPressStyle())
+        .accessibilityIdentifier("workout.rest.skip")
       }
       .padding(DS.Spacing.card)
       .frame(maxWidth: .infinity)
@@ -413,6 +414,7 @@ struct RestStrip: View {
                String(localized: paused ? "workout.rest.resume" : "workout.rest.pause")) { onSetPaused(!paused) }
         button(Text(verbatim: "+15"), String(format: String(localized: "workout.rest.adjust"), "+15")) { onAdjust(15) }
         Button(String(localized: "workout.rest.skip"), action: onSkip)
+          .accessibilityIdentifier("workout.rest.skip")
           .font(DS.TextStyle.footnote.weight(.semibold))
           .foregroundStyle(tint)
           .frame(minWidth: 44, minHeight: 44)

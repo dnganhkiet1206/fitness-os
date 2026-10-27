@@ -1,0 +1,38 @@
+# Chip "+ 8 oz" trên thẻ Nước: thẻ Nước đổi từ chưa ghi sang 8 oz, Insight đọc lại số.
+appId: com.ascnd.fitnessos.dev
+name: water chip updates Water card and Insight
+---
+- runFlow: subflows/launch.yaml
+- runFlow: subflows/day-card.yaml
+- repeat:
+    times: 3
+    while:
+      notVisible:
+        id: today.water.add
+    commands:
+      - swipe:
+          from:
+            id: today.tile.sleep
+          direction: LEFT
+- assertVisible:
+    id: today.water.add
+    text: "\\+ ?8 oz"
+- assertVisible:
+    id: today.tile.water
+    text: "Water"
+- takeScreenshot: 02-water-before
+- tapOn:
+    id: today.water.add
+- extendedWaitUntil:
+    visible:
+      id: today.tile.water
+      text: ".*8 / .*oz.*"
+    timeout: 10000
+- scrollUntilVisible:
+    element: "TODAY.S INSIGHT.*"
+    direction: UP
+    timeout: 15000
+- extendedWaitUntil:
+    visible: ".*8 oz.*"
+    timeout: 15000
+- takeScreenshot: 02-water-after

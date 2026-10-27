@@ -1,0 +1,37 @@
+# Ghi bữa trong 3 chạm (thẻ Bữa → "Ăn lại bữa này" → Lưu), rồi chọn bữa (tuỳ chọn) + OK.
+appId: com.ascnd.fitnessos.dev
+name: log a meal in 3 taps, pick meal + OK
+---
+- runFlow: subflows/launch.yaml
+- runFlow: subflows/day-card.yaml
+- repeat:
+    times: 2
+    while:
+      notVisible:
+        id: today.meal.manual
+    commands:
+      - swipe:
+          from:
+            id: today.tile.sleep
+          direction: LEFT
+- tapOn:
+    id: today.tile.meal
+- tapOn:
+    id: logMeal.repeat
+    index: 0
+- tapOn:
+    id: logMeal.save
+- extendedWaitUntil:
+    visible:
+      id: logMeal.ok
+    timeout: 10000
+- takeScreenshot: 03-meal-saved
+- tapOn:
+    id: logMeal.pick.snack
+- tapOn:
+    id: logMeal.ok
+- extendedWaitUntil:
+    visible:
+      id: today.tile.meal
+    timeout: 10000
+- takeScreenshot: 03-meal-after

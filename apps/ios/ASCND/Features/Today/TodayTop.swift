@@ -151,5 +151,6 @@ struct AccountAvatar: View {
     }
     .buttonStyle(.plain)
     .accessibilityLabel(Text(String(localized: "community.user.heading")))
+    .accessibilityIdentifier("today.account")
   }
 }

@@ -1,0 +1,19 @@
+# Chip ghi nhanh giấc ngủ (giờ quen, một chạm) — thẻ Giấc ngủ thành đã ghi, chip biến mất.
+appId: com.ascnd.fitnessos.dev
+name: quick sleep chip
+---
+- runFlow: subflows/launch.yaml
+- runFlow: subflows/day-card.yaml
+- assertVisible:
+    id: today.sleep.quick
+- takeScreenshot: 04-sleep-before
+- tapOn:
+    id: today.sleep.quick
+- extendedWaitUntil:
+    notVisible:
+      id: today.sleep.quick
+    timeout: 10000
+- assertNotVisible:
+    id: today.tile.sleep
+    text: "Not logged"
+- takeScreenshot: 04-sleep-after

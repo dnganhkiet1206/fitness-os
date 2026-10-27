@@ -1,0 +1,11 @@
+# Mở app → Hôm nay: đã đăng nhập (phiên giả), kế hoạch tuần mẫu cho buổi hôm nay.
+appId: com.ascnd.fitnessos.dev
+name: launch → Today
+tags: [smoke]
+---
+- runFlow: subflows/launch.yaml
+- assertVisible: "Full Body A.*"
+- assertVisible:
+    id: today.account
+- assertNotVisible: "Sign in.*"
+- takeScreenshot: 01-today

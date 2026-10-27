@@ -1,0 +1,5 @@
+# Nút quay lại của thanh điều hướng iOS.
+appId: com.ascnd.fitnessos.dev
+---
+- tapOn:
+    id: BackButton
