@@ -28,6 +28,7 @@ struct WaterGoldenTests {
     let scaleTop: [Scale]
     let axisLabel: [Axis]
     let screen: [Screen]
+    /// Trung bình của RN (chia 7) — không còn so: native chia cho ngày có ghi (26/10, `WaterAverageTests`).
     let average: [Average]
   }
 
@@ -78,13 +79,53 @@ struct WaterGoldenTests {
       #expect(Water.entryAmount(c.ml, u) == c.entry, "\(c.ml) \(c.unit)")
     }
   }
+}
 
-  @Test func weeklyAverageMatchesRN() {
-    let start = LocalDate("2026-10-02")!
-    for c in Self.golden.average {
-      let days = c.totals.enumerated().map { WaterDay(date: start.adding(days: $0.offset), totalMl: $0.element) }
-      #expect(Water.averageLabel(days, unit(c.unit)) == c.out, "\(c.totals) \(c.unit)")
-    }
+/// Một định nghĩa "trung bình nước" cho mọi màn (audit vòng 3, 26/10): màn Nước chia cho
+/// đủ 7 ngày (53 oz ≈ 1,6 L) còn Tiến bộ chia cho ngày có ghi (2,2 L) — cùng tổng, khác số.
+struct WaterAverageTests {
+  static func week(_ totals: [Int]) -> [WaterDay] {
+    let start = LocalDate("2026-10-20")!
+    return totals.enumerated().map { WaterDay(date: start.adding(days: $0.offset), totalMl: $0.element) }
+  }
+
+  @Test func dividesByLoggedDaysOnly() {
+    let a = Water.loggedAverage(Self.week([2500, 2000, 1750, 0, 3000, 1250, 500]))
+    #expect(a?.days == 6)
+    #expect(abs((a?.ml ?? 0) - 11000.0 / 6) < 0.001)
+    // RN (`water-chart.tsx`, chia 7) in "1.57L" / "0.04L" cho hai tuần này.
+    let en = Locale(identifier: "en_US")
+    #expect(Water.shortLabel(ml: a?.ml ?? 0, .ml, locale: en) == "1.8 L")
+    #expect(Water.shortLabel(ml: a?.ml ?? 0, .oz, locale: en) == "62 oz")
+    let one = Water.loggedAverage(Self.week([250, 0, 0, 0, 0, 0, 0]))
+    #expect(one?.days == 1 && one?.ml == 250)
+  }
+
+  @Test func noLoggedDayIsNil() {
+    #expect(Water.loggedAverage(Self.week([0, 0, 0, 0, 0, 0, 0])) == nil)
+    #expect(Water.loggedAverage([Double]()) == nil)
+  }
+
+  /// Màn Nước (ngày từ sổ Nước) và Tiến bộ (`daily_logs.water_ml`, ô trống = nil → 0)
+  /// đi chung một hàm, nên cùng tổng cho cùng số.
+  @Test func waterScreenAndProgressAgree() {
+    let totals = [0, 1800, 2200, 0, 2600, 0, 1900]
+    let screen = Water.loggedAverage(Self.week(totals))
+    let progressColumn: [Double?] = totals.map { $0 > 0 ? Double($0) : nil }
+    let progress = Water.loggedAverage(progressColumn.map { $0 ?? 0 })
+    #expect(screen?.ml == progress?.ml)
+    #expect(screen?.days == 4 && progress?.days == 4)
+    #expect(screen?.ml == 2125)
+  }
+
+  /// Tiến bộ theo đơn vị người dùng: "2,1 / 2,5 L" hay "72 / 85 oz", như Dinh dưỡng.
+  @Test func shortPartsFollowUnit() {
+    let vi = Locale(identifier: "vi_VN"), en = Locale(identifier: "en_US")
+    #expect(Water.shortNumber(ml: 2125, .ml, locale: vi) == "2,1")
+    #expect(Water.shortNumber(ml: 2125, .oz, locale: en) == "72")
+    #expect(Water.shortUnit(.ml) == "L" && Water.shortUnit(.oz) == "oz")
+    #expect(Water.shortLabel(ml: 2500, .oz, locale: en) == "85 oz")
+    #expect(Water.shortLabel(ml: 2500, .ml, locale: vi) == "2,5 L")
   }
 }
 
