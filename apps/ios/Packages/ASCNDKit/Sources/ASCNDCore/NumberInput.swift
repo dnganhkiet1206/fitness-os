@@ -44,6 +44,16 @@ public enum NumberInput {
     return String(r)
   }
 
+  /// Chữ HIỆN của một số đã lọc (`decimal`, `plannedLoad` — luôn dấu chấm)
+  /// theo dấu thập phân của ngôn ngữ app: "27.2" → "27,2" cho tiếng Việt /
+  /// Tây Ban Nha. Chỉ để hiện; ô nhập lọc lại qua `decimal` nên gõ dấu nào
+  /// cũng được. Trước đây ô tạ hiện "27.2" ngay dưới "Lần trước 27,2 kg"
+  /// (audit vòng 4, 26/10).
+  public static func display(_ text: String, decimalSeparator: String) -> String {
+    guard decimalSeparator != "." else { return text }
+    return text.replacingOccurrences(of: ".", with: decimalSeparator)
+  }
+
   /// Chữ điền sẵn vào ô reps, đúng `plannedReps` (`day-plan.tsx:1016`):
   /// reps > 0 thì số, không thì chuỗi rỗng.
   public static func plannedReps(_ reps: Int) -> String {

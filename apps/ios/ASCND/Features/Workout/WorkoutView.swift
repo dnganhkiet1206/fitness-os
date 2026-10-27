@@ -441,8 +441,8 @@ public struct WorkoutView: View {
         } label: {
           Label(
             previous != nil
-              ? String(localized: "ws.usePrevious \(hint) \(unit.label)")
-              : String(localized: "ws.useLast \(hint) \(unit.label)"),
+              ? String(localized: "ws.usePrevious \(NumberInput.display(hint, decimalSeparator: decimalSeparator)) \(unit.label)")
+              : String(localized: "ws.useLast \(NumberInput.display(hint, decimalSeparator: decimalSeparator)) \(unit.label)"),
             systemImage: "arrow.uturn.backward")
             .font(DS.TextStyle.footnote.weight(.semibold).monospacedDigit())
             .foregroundStyle(WorkoutsHomeView.accent)
@@ -800,8 +800,8 @@ public struct WorkoutView: View {
         } label: {
           Label(
             previous != nil
-              ? String(localized: "ws.usePrevious \(hint) \(unit.label)")
-              : String(localized: "ws.useLast \(hint) \(unit.label)"),
+              ? String(localized: "ws.usePrevious \(NumberInput.display(hint, decimalSeparator: decimalSeparator)) \(unit.label)")
+              : String(localized: "ws.useLast \(NumberInput.display(hint, decimalSeparator: decimalSeparator)) \(unit.label)"),
             systemImage: "arrow.uturn.backward")
             .font(DS.TextStyle.footnote.weight(.semibold).monospacedDigit())
             .foregroundStyle(WorkoutsHomeView.accent)
@@ -1145,6 +1145,9 @@ public struct WorkoutView: View {
   }
 
   /// Lọc chữ thập phân: chỉ số + một dấu chấm/phẩy (#300).
+  /// Dấu thập phân của ngôn ngữ app ("," cho vi / es) — ô tạ hiện theo nó.
+  private var decimalSeparator: String { locale.decimalSeparator ?? "." }
+
   private func filteredDecimal(_ text: String) -> String {
     var seenSeparator = false
     var result = ""
@@ -1167,8 +1170,9 @@ public struct WorkoutView: View {
   private func weightBinding(for row: PlannedSet) -> Binding<String> {
     Binding(
       get: {
-        weightTexts[row.key] ?? controller.progress.weightText[row.key]
-          ?? unit.seed(row.weightKg)
+        NumberInput.display(
+          weightTexts[row.key] ?? controller.progress.weightText[row.key] ?? unit.seed(row.weightKg),
+          decimalSeparator: decimalSeparator)
       },
       set: { new in
         let clean = filteredDecimal(new)
