@@ -194,6 +194,14 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 **Audit 25/10 (vòng 1):**
 - ~~Ghi giấc ngủ có thể lưu giờ dậy ở TƯƠNG LAI~~ (P1, sửa 25/10): `SleepLog.span` (theo RN) đặt giờ dậy vào hôm nay, nên "23:00–7:00" ghi lúc 1:24 sáng lưu một giấc dậy lúc 7:00 sáng nay. Sửa: `SleepLog.lastNight` (lùi về đêm gần nhất đã xong) cho bộ ghi giấc ngủ, màn Ghi giấc ngủ và "Kể cho Koa"; nút ghi nhanh trên thẻ Giấc ngủ chỉ hiện khi giờ dậy quen đã qua. Lệch RN có chủ đích; test mẫu RN của `span` giữ nguyên.
 
+**Dinh dưỡng (audit vòng 5, 27/10, simulator, chế độ máy chủ giả):**
+- Ghi bữa từ thẻ Bữa ở Hôm nay: **3 chạm** (thẻ → "Ăn lại bữa này" → Lưu); chọn bữa sau khi lưu là tuỳ chọn, OK tự đóng. Vòng macro ở Dinh dưỡng trừ đúng (720 kcal / P42 / C60 / F18 → còn 1.880 / 108 / 240 / 62).
+- ~~"Nước như hôm qua (68 oz)" trong Ghi hôm nay, trong khi thẻ Nước ghi "Hôm qua 71 oz"~~ — điền sẵn làm tròn nấc 250 ml (2.100 → 2.000 ml). Sửa 27/10 (nhánh `claude/v5-nutrition`): điền đúng lượng hôm qua (chặn 50…5000 ml). Unit test cập nhật.
+- Chờ Kiệt quyết: "Ăn lại" bữa tối hôm qua lúc 13:57 lưu vào **Bữa tối** (giữ loại bữa gốc, chủ ý trong `MealLogger.repeatMeal`); đổi được bằng một chạm ở màn đã lưu. Không đổi.
+- Dữ liệu mẫu của chế độ test (#700) có macro không khớp kcal (Salmon Bowl P42 / C60 / F18 ≈ 570 kcal nhưng ghi 720) — chỉ là seed test, không ảnh hưởng dữ liệu thật.
+- Món còn trong hàng đợi (chưa lên server) không sửa / xoá được (`MealDiary.pendingSync`) — không có lỗi bữa "sống lại". Rà mã.
+- **NOT RUN:** sửa / xoá món trên simulator (simulator trễ 2–4 s mỗi chạm), QR / mã vạch và ảnh món (simulator không có camera).
+
 **Tài liệu và mã:**
 - `PARITY_MATRIX.md` lạc hậu từ 17/10. 26/10 (audit vòng 3, nhánh `claude/audit-r3-dead-code`): **đánh dấu LẠC HẬU** ở đầu trang (nói rõ chỗ sai: GĐ1–GĐ3, bốn khu vực, lối vào); rà lại toàn bảng vẫn là việc cuối của GĐ3, chưa làm.
 - ~~`ReadinessTrendCardView` là code chết.~~ Xoá 26/10 (cùng nhánh): view và 8 chuỗi `rt.*`; giữ `ReadinessTrendBook` / `ReadinessTrend` (Hôm nay vẫn dùng). Build simulator xanh, cổng chuỗi xanh (2787 khoá).
@@ -207,6 +215,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 
 ## 5. Lịch sử thay đổi sổ
 
+- 27/10/2026: audit vòng 5 — dinh dưỡng: "Nước như hôm qua" ghi đúng lượng hôm qua; ghi kết quả ghi bữa 3 chạm, macro, và câu hỏi "Ăn lại" giữ loại bữa gốc.
 - 27/10/2026: deploy production (Kiệt duyệt trong chat: "Cho phép deploy production hai hàm `ai-smart-nudges` và `ai-coach`") — `ai-smart-nudges` v12, `ai-coach` v25, 16:47 UTC, từ nhánh `claude/ai-water-unit` @ `4fd26d04`: viết nước theo đơn vị người dùng; app cũ không gửi đơn vị vẫn là ml. Không deploy hàm nào khác, không migration.
 - 27/10/2026: Kiệt chốt — Tiến bộ › Cơ thể "Cần chú ý" khi tăng / giảm nhanh hơn ~1 % cân nặng mỗi tuần, có câu khuyên (hướng dẫn chung).
 - 27/10/2026: Kiệt chốt — mọi trung bình 7 ngày bỏ hôm nay (`AverageWindow`, một khung cho mọi màn); gạch mục "khung 7 ngày khác nhau".
