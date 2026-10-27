@@ -38,6 +38,8 @@ struct CoachChatView: View {
   @Environment(NutritionBooks.self) private var nutrition: NutritionBooks?
   @Environment(AppServices.self) private var services
   @Environment(WorkoutFlow.self) private var flow
+  /// Nước theo đơn vị người dùng trên nút / câu hỏi lại (audit vòng 3, 26/10).
+  private var waterUnit: Water.Unit { services.preferences.volumeUnit }
   @State private var showsHistory = false
   @FocusState private var composing: Bool
   /// Ô chat thu thành viên nhỏ khi người dùng vuốt xuống, như thanh phát của
@@ -178,7 +180,7 @@ struct CoachChatView: View {
       }
       Button(String(localized: "common.cancel"), role: .cancel) {}
     } message: { c in
-      Text("coach.check.update.message \(CoachLogPrompt.display(c.kind, c.logged, lang: lang.rawValue)) \(CoachLogPrompt.display(c.kind, c.stated, lang: lang.rawValue))")
+      Text("coach.check.update.message \(CoachLogPrompt.display(c.kind, c.logged, lang: lang.rawValue, unit: waterUnit)) \(CoachLogPrompt.display(c.kind, c.stated, lang: lang.rawValue, unit: waterUnit))")
     }
     // Câu trả lời lưu vào lịch sử đã được đối chiếu với số thật của hôm nay.
     .onChange(of: signal, initial: true) { _, now in
@@ -490,9 +492,10 @@ struct CoachChatView: View {
   }
 
   private func send(_ text: String) {
+    chat.waterUnit = waterUnit
     // Trả lời một câu hỏi lại "số nào đúng" bằng chữ: đọc số người dùng chọn.
     if let (key, c) = openConflict() {
-      switch CoachLogPrompt.choice(text, for: c) {
+      switch CoachLogPrompt.choice(text, for: c, unit: waterUnit) {
       case .stated:
         resolved.insert(key)
         confirmUpdate = c
@@ -525,18 +528,18 @@ struct CoachChatView: View {
 
   @ViewBuilder private func logActions(for asked: Coach.Message) -> some View {
     let conflicts = (chat.conflicts[asked.id] ?? []).filter { !resolved.contains(asked.id + $0.kind.rawValue) }
-    let suggestions = logged.map { CoachLogPrompt.analyze(asked.content, logged: $0, hour: hour).suggestions } ?? []
+    let suggestions = logged.map { CoachLogPrompt.analyze(asked.content, logged: $0, hour: hour, unit: waterUnit).suggestions } ?? []
     if !conflicts.isEmpty || !suggestions.isEmpty {
       FlowRows(spacing: DS.Spacing.sm, centered: false) {
         ForEach(conflicts, id: \.kind) { c in
-          chip(Text("coach.check.stated \(CoachLogPrompt.display(c.kind, c.stated, lang: lang.rawValue))"), primary: true) {
+          chip(Text("coach.check.stated \(CoachLogPrompt.display(c.kind, c.stated, lang: lang.rawValue, unit: waterUnit))"), primary: true) {
             resolved.insert(asked.id + c.kind.rawValue)
-            send(Self.replyText(c.stated, c.kind, lang: lang))
+            send(Self.replyText(c.stated, c.kind, lang: lang, unit: waterUnit))
             confirmUpdate = c
           }
-          chip(Text("coach.check.logged \(CoachLogPrompt.display(c.kind, c.logged, lang: lang.rawValue))"), primary: false) {
+          chip(Text("coach.check.logged \(CoachLogPrompt.display(c.kind, c.logged, lang: lang.rawValue, unit: waterUnit))"), primary: false) {
             resolved.insert(asked.id + c.kind.rawValue)
-            send(Self.replyText(c.logged, c.kind, lang: lang))
+            send(Self.replyText(c.logged, c.kind, lang: lang, unit: waterUnit))
           }
         }
         // Lời kể nhiều việc / có bữa ăn (18/10, "log bằng chat"): MỘT nút mở màn
@@ -557,7 +560,7 @@ struct CoachChatView: View {
   }
 
   @ViewBuilder private func suggestionChip(_ d: CoachLogPrompt.Detected, key: String) -> some View {
-    let v = d.value.map { CoachLogPrompt.display(d.kind, $0, lang: lang.rawValue) } ?? ""
+    let v = d.value.map { CoachLogPrompt.display(d.kind, $0, lang: lang.rawValue, unit: waterUnit) } ?? ""
     switch d.kind {
     case .sleep: chip(Text("coach.log.sleep \(v)"), primary: true) { logSheet = .sleep(d.value ?? 0) }
     case .weight: chip(Text("coach.log.weight \(v)"), primary: true) { logSheet = .weight(d.value ?? 0) }
@@ -601,8 +604,8 @@ struct CoachChatView: View {
   }
 
   /// Câu gửi đi khi chạm một nút chọn số: "8 giờ mới đúng".
-  static func replyText(_ v: Double, _ kind: CoachLogPrompt.Kind, lang: AppPreferences.Lang) -> String {
-    String(localized: "coach.check.reply \(CoachLogPrompt.display(kind, v, lang: lang.rawValue))")
+  static func replyText(_ v: Double, _ kind: CoachLogPrompt.Kind, lang: AppPreferences.Lang, unit: Water.Unit = .ml) -> String {
+    String(localized: "coach.check.reply \(CoachLogPrompt.display(kind, v, lang: lang.rawValue, unit: unit))")
   }
 
   /// Màn ghi mở từ chat, điền sẵn số người dùng đã nói / đã chọn.
@@ -637,7 +640,7 @@ struct CoachChatView: View {
     let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
     // Lời kể khác số đã ghi → AI hỏi lại số nào đúng (16/10); không trả lời tự động.
     let hour = Calendar.current.component(.hour, from: now)
-    let checks = logged.map { CoachLogPrompt.analyze(text, logged: $0, hour: hour).conflicts } ?? []
+    let checks = logged.map { CoachLogPrompt.analyze(text, logged: $0, hour: hour, unit: chat.waterUnit).conflicts } ?? []
     if !checks.isEmpty {
       Task {
         await chat.send(text, lang: code, today: today, tzOffset: Coach.tzOffset(.current, at: now), checks: checks)

@@ -169,6 +169,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - **Còn mở:** câu AI của Insight viết nước bằng ml cho tài khoản oz ("bạn mới uống 473ml thôi" ngay dưới tiêu đề "16 oz nước hôm nay"). Sửa ở prompt server (cần deploy, cần Kiệt duyệt).
 - Sửa kèm (26/10): Tiến bộ › Ăn uống hiện "Trung bình 0 / mục tiêu …" khi mới có 1–2 ngày ghi calo / nước (hàm con trả 0 khi chưa đủ ngày). Nay hiện trung bình thật, chưa có ngày nào thì "–"; chữ trạng thái vẫn "Chưa đủ dữ liệu".
 - ~~Danh sách đi chợ hiện "Cơm 21000g" (gợi ý từ kế hoạch ăn) và hàng danh sách thêm "×" trước số lượng ("×21000g", "××3").~~ Sửa 26/10 (audit vòng 3, nhánh `claude/audit-r3-grocery`): `Grocery.quantityLabel` — nhóm chữ số theo ngôn ngữ app, từ 1000 g đổi ra kg ("21 kg", "1,3 kg", "400 g"); chữ khác giữ nguyên; chữ LƯU vào `grocery_items.quantity` không đổi. Kiểm trên simulator: gợi ý "Cơm 21 kg", thêm vào danh sách → hàng "Cơm 21 kg". Test: `GroceryTests.quantityLabelGroupsDigitsAndUsesKg`.
+- ~~Koa Coach: nút / câu hỏi lại về nước luôn ghi ml / L ("Ghi 473 ml") dù tài khoản chọn oz; không hiểu "16 oz" khi người dùng kể; phần nước còn thiếu làm tròn 50 ml ("32 oz" − 16 oz đã ghi → gợi ý 15 oz).~~ Sửa 26/10 (audit vòng 3, nhánh `claude/audit-r3-coach-oz`): `CoachLogPrompt` hiển thị, đọc lựa chọn và làm tròn theo đơn vị người dùng; nhận "oz / fl oz / ounces / onzas". Test: `CoachLogPromptTests.waterFollowsTheUsersUnit`. Chưa kiểm trên simulator (nút chỉ hiện sau một câu trả lời AI thật). **Còn mở:** số gửi cho AI (`checks`) vẫn là ml, nên câu AI tự viết có thể nói ml — sửa ở prompt server (cần deploy).
 **Audit 25/10 (vòng 1):**
 - ~~Ghi giấc ngủ có thể lưu giờ dậy ở TƯƠNG LAI~~ (P1, sửa 25/10): `SleepLog.span` (theo RN) đặt giờ dậy vào hôm nay, nên "23:00–7:00" ghi lúc 1:24 sáng lưu một giấc dậy lúc 7:00 sáng nay. Sửa: `SleepLog.lastNight` (lùi về đêm gần nhất đã xong) cho bộ ghi giấc ngủ, màn Ghi giấc ngủ và "Kể cho Koa"; nút ghi nhanh trên thẻ Giấc ngủ chỉ hiện khi giờ dậy quen đã qua. Lệch RN có chủ đích; test mẫu RN của `span` giữ nguyên.
 
@@ -185,6 +186,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 
 ## 5. Lịch sử thay đổi sổ
 
+- 26/10/2026: audit vòng 3 — Koa Coach hiện và hiểu nước theo đơn vị người dùng (oz).
 - 26/10/2026: audit vòng 3 — xoá `ReadinessTrendCardView` (code chết), đánh dấu `PARITY_MATRIX.md` lạc hậu.
 - 26/10/2026: audit vòng 3 — số lượng đi chợ nhóm chữ số / đổi ra kg, bỏ "×" thừa ở hàng danh sách.
 - 26/10/2026: audit vòng 3 — nước ở Tiến bộ theo đơn vị người dùng; một định nghĩa "trung bình nước" (chia cho ngày có ghi) cho màn Nước và Tiến bộ; Tiến bộ không còn hiện "Trung bình 0" khi chưa đủ ngày.
