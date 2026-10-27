@@ -343,7 +343,7 @@
           status: 200,
           body: Self.encode(.object([
             "access_token": .string(UITestMode.accessToken(expiresAt: expires)), "token_type": .string("bearer"),
-            "expires_in": .number(30 * 86_400), "expires_at": .number(expires.rounded()),
+            "expires_in": .number(30 * 86_400.0), "expires_at": .number(expires.rounded()),
             "refresh_token": .string("ui-test-refresh"), "user": user,
           ])))
       }
