@@ -36,6 +36,15 @@ name: water chip updates Water card and Insight
     id: today.tile.water
     text: "Water"
 - takeScreenshot: 02-water-before
+# Chip nằm sát đáy: tâm dưới thanh tab (y ≥ 791) thì chạm rơi vào thanh tab (CI lượt 7).
+# Đưa chip lên giữa màn (hết trang thì dừng ở chỗ cao nhất — vẫn trên thanh tab).
+- scrollUntilVisible:
+    element:
+      id: today.water.add
+    direction: DOWN
+    centerElement: true
+    waitToSettleTimeoutMs: 1000
+    timeout: 30000
 - tapOn:
     id: today.water.add
 - extendedWaitUntil:
