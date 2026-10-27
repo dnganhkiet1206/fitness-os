@@ -1,5 +1,7 @@
 # Parity matrix RN → Native iOS (sống)
 
+> **⚠ LẠC HẬU từ 17/10/2026** (ghi 26/10, audit vòng 3). Bảng chưa rà lại sau GĐ1–GĐ3 (#641, #642, bốn khu vực Hôm nay · Tập luyện · Dinh dưỡng · Tiến bộ; Cộng đồng ra khỏi thanh tab; "Tóm tắt" gộp vào Tiến bộ; kế hoạch ăn / đi chợ / bổ sung xuống Dinh dưỡng › "Thêm") và các audit 25–26/10. Đường dẫn lối vào (`RootTabView`, tab "assistant" / "community") và trạng thái `IMPLEMENTED_NOT_WIRED` của nhiều dòng có thể sai. **Đừng dựa vào bảng này để biết app hiện có gì** — đọc `CONSTRAINTS_AND_DEFERRED.md` và code. Rà lại toàn bảng là việc cuối của GĐ3 (`PRODUCT_DECISION_V1.md`), chưa làm.
+
 Chủ: B (#523). Chi tiết từng hành vi (nguồn RN, dòng): [PORTING_INVENTORY.md](PORTING_INVENTORY.md) (A18).
 Trang này là bảng theo **mảng** và theo **route**. Mỗi ô có evidence kiểm được (PR đã merge, test, tệp). Không ô nào điền theo cảm giác.
 
@@ -60,7 +62,7 @@ Hiện **không dòng nào DONE**: chưa có lần chạy trên iPhone thật.
 |---|---|---|---|---|---|
 | Hôm nay: 5 trạng thái + CTA (#61) | `(tabs)/index.tsx` | `TodayScreen`, `TodayRules` | tab Hôm nay | DEVICE_PENDING | `TodayVectorTests`, #548; [design/today/RN-PARITY.md](design/today/RN-PARITY.md) |
 | Hôm nay: thẻ Readiness / Health / vòng vận động | `today-widgets.tsx` | `ReadinessCardView`, `HealthSyncCard`, `ActivityRingsView`, `TrainingCardView` | Hôm nay, Trợ lý | DEVICE_PENDING | #557, #565, N3/N4. Dữ liệu HealthKit thật: NOT RUN |
-| Thẻ xu hướng sẵn sàng 7 ngày | `today-widgets.tsx:432` | `ReadinessTrendCardView` | — | IMPLEMENTED_NOT_WIRED | Màn không còn ai mở; dữ liệu `ReadinessTrendBook` vẫn dùng cho hàng Readiness (`TodayExtras.swift:411`). Bỏ hẳn hay nối lại: DECISION |
+| Thẻ xu hướng sẵn sàng 7 ngày | `today-widgets.tsx:432` | ~~`ReadinessTrendCardView`~~ (đã xoá 26/10) | — | EXCLUDED | Màn không còn ai mở từ 17/10; **xoá view và 8 chuỗi `rt.*` ngày 26/10** (audit vòng 3, code chết). Dữ liệu `ReadinessTrendBook` / `ReadinessTrend` (Core, có test) vẫn dùng cho hàng Readiness của Hôm nay. Xu hướng sẵn sàng nay xem ở Tiến bộ › Hồi phục |
 | Bắt đầu buổi + màn tập | `day-plan.tsx` | `WorkoutView`, `WorkoutFlow` | Hôm nay "Bắt đầu" → tab Tập luyện | DEVICE_PENDING | vectors WS / AH / RS; redesign 14/10 |
 | Quãng nghỉ + #235 | `day-plan.tsx` | `RestTimerController`, `RestCard` | trong màn tập | DEVICE_PENDING | Live Activity: xem Phase 9 |
 | Xoá buổi + #266 dựng lại `daily_logs` | `sessions.tsx`, `use-fitness-data.ts:210` | `WorkoutHistoryView`, `recomputeDailyLog` | Tập luyện → Lịch sử | DEVICE_PENDING | vectors WH (#414) |

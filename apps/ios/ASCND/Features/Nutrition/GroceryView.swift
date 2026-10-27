@@ -100,7 +100,7 @@ struct GroceryView: View {
         } label: {
           HStack(spacing: 6) {
             Text(verbatim: s.name).font(DS.TextStyle.footnote.weight(.semibold)).lineLimit(1)
-            Text(verbatim: s.amount).font(DS.TextStyle.caption.monospacedDigit())
+            Text(verbatim: Grocery.quantityLabel(s.amount, locale: .app)).font(DS.TextStyle.caption.monospacedDigit())
               .foregroundStyle(DS.Color.mutedForeground.swiftUI)
             Image(systemName: "plus").font(.system(size: 11, weight: .bold))
           }
@@ -111,7 +111,7 @@ struct GroceryView: View {
         }
         .buttonStyle(TodayPressStyle())
         .disabled(book.busy)
-        .accessibilityLabel(Text(verbatim: "\(s.name), \(s.amount)"))
+        .accessibilityLabel(Text(verbatim: "\(s.name), \(Grocery.quantityLabel(s.amount, locale: .app))"))
         }
       }
     }
@@ -142,7 +142,8 @@ struct GroceryView: View {
   private func row(_ item: GroceryItem) -> some View {
     let checked = book.shownChecked(item, writer: services.stateWriter)
     let pending = book.isPending(item, writer: services.stateWriter)
-    let label = [item.quantity.map { "\(item.name), \($0)" } ?? item.name, pending ? String(localized: "state.pending") : nil]
+    let quantity = item.quantity.map { Grocery.quantityLabel($0, locale: .app) }
+    let label = [quantity.map { "\(item.name), \($0)" } ?? item.name, pending ? String(localized: "state.pending") : nil]
       .compactMap { $0 }.joined(separator: ", ")
     return HStack(spacing: DS.Spacing.md) {
       Button {
@@ -161,7 +162,7 @@ struct GroceryView: View {
           .frame(width: 24, height: 24)
           (Text(verbatim: item.name)
             .foregroundStyle(checked ? DS.Color.mutedForeground.swiftUI : DS.Color.foreground.swiftUI)
-            + Text(verbatim: item.quantity.map { "  ×\($0)" } ?? "")
+            + Text(verbatim: quantity.map { "  \($0)" } ?? "")
             .foregroundStyle(DS.Color.mutedForeground.swiftUI))
             .font(DS.TextStyle.body)
             .strikethrough(checked, color: DS.Color.mutedForeground.swiftUI)

@@ -58,6 +58,26 @@ struct GroceryTests {
     #expect(s.first { $0.name == "Oats" }?.times == 2)
   }
 
+  /// Audit vòng 3 (26/10): "Cơm 21000g" → nhóm chữ số, từ 1000 g ra kg; chữ khác giữ nguyên
+  /// (hàng danh sách từng thêm "×" trước "×3" thành "××3").
+  @Test func quantityLabelGroupsDigitsAndUsesKg() {
+    let vi = Locale(identifier: "vi_VN"), en = Locale(identifier: "en_US")
+    #expect(Grocery.quantityLabel("21000g", locale: vi) == "21 kg")
+    #expect(Grocery.quantityLabel("1250g", locale: vi) == "1,3 kg")
+    #expect(Grocery.quantityLabel("1250g", locale: en) == "1.3 kg")
+    #expect(Grocery.quantityLabel("1000g", locale: en) == "1 kg")
+    #expect(Grocery.quantityLabel("12345678g", locale: en) == "12,345.7 kg")
+    #expect(Grocery.quantityLabel("12345678g", locale: vi) == "12.345,7 kg")
+    #expect(Grocery.quantityLabel("400g", locale: vi) == "400 g")
+    #expect(Grocery.quantityLabel("999g", locale: en) == "999 g")
+    #expect(Grocery.quantityLabel("×3", locale: vi) == "×3")
+    #expect(Grocery.quantityLabel("1 L", locale: vi) == "1 L")
+    #expect(Grocery.quantityLabel("big bag", locale: en) == "big bag")
+    // Chữ LƯU không đổi (không theo ngôn ngữ).
+    let s = Grocery.Suggestion(name: "Cơm", grams: 21000, times: 7)
+    #expect(s.amount == "21000g")
+  }
+
   @Test func addIsOnlineOnlyAndTrims() async {
     let server = FakeGroceryServer()
     let book = GroceryBook(userId: "u1", source: server)
