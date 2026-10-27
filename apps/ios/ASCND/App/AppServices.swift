@@ -334,6 +334,7 @@ final class AppServices {
     if !Self.uiTest { startHealthObserving() }
     // Widget "Buổi tập hôm nay" nói cùng câu với việc chính của Today (GĐ1).
     widgets.planStatus = { [weak self] userId in await self?.widgetPlanStatus(userId: userId) }
+    widgets.week = { [weak self] userId in await self?.widgetWeek(userId: userId) }
   }
 
   /// App mở / quay lại tiền cảnh: đọc phiên, thử gửi hàng đợi. Dọn ngày cũ
@@ -514,6 +515,17 @@ final class AppServices {
 
   /// Câu ngắn của Daily Plan cho widget "Buổi tập hôm nay" (GĐ1); `nil` = câu mặc
   /// định của widget. Chỉ kết quả của ĐÚNG người + hôm nay.
+  /// Tuần của Koa mới nhất mà Hôm nay dựng (Kiệt 27/10: widget thay "chuỗi" bằng số
+  /// buổi tuần này) — cùng số với dải tuần.
+  var koaWeekNow: (userId: String, weekStart: LocalDate, done: Int, target: Int)?
+
+  func widgetWeek(userId: String) -> (done: Int, target: Int)? {
+    guard let w = koaWeekNow, w.userId == userId,
+      w.weekStart == WeeklyChallenges.weekStart(LocalDate(SystemWallClock().nowMillis(), in: .current))
+    else { return nil }
+    return (w.done, w.target)
+  }
+
   func widgetPlanStatus(userId: String) -> String? {
     guard let p = dailyPlan, p.userId == userId, p.date == LocalDate(SystemWallClock().nowMillis(), in: .current)
     else { return nil }

@@ -18,7 +18,7 @@ struct KoaEntry: TimelineEntry {
 
 struct KoaProvider: TimelineProvider {
   static let sample = KoaWidgetData(
-    day: "", line: "Ngủ 7 giờ 40 phút — Koa tỉnh như sáo.", next: "Ghi bữa ăn", done: 2, total: 4, streak: 12,
+    day: "", line: "Ngủ 7 giờ 40 phút — Koa tỉnh như sáo.", next: "Ghi bữa ăn", done: 2, total: 4, streak: 0,
     nightLine: "", imageVersion: 0)
 
   func placeholder(in context: Context) -> KoaEntry { KoaEntry(date: .now, data: Self.sample) }
@@ -201,7 +201,7 @@ struct KoaWidgetView: View {
       HStack(spacing: 0) {
         stat(todayValue, label: widgetText("widget.koa.stat.today"), size: 17)
         statDivider
-        stat(streakValue, label: widgetText("widget.koa.stat.streak"), size: 17)
+        stat(weekValue, label: widgetText("widget.koa.stat.week"), size: 17)
       }
     }
     .padding(12)
@@ -211,9 +211,10 @@ struct KoaWidgetView: View {
     guard let d = entry.data, phase != .stale else { return "–" }
     return "\(d.done)/\(d.total)"
   }
-  private var streakValue: String {
+  /// Tuần của Koa "3/6" — thay ô "Chuỗi" (Kiệt 27/10: GĐ1 đã bỏ chuỗi khỏi Hôm nay).
+  private var weekValue: String {
     guard let d = entry.data, phase != .stale else { return "–" }
-    return "\(d.streak)"
+    return d.weekText ?? "–"
   }
 
   /// Đầu thẻ: chỉ dấu ASCND ở góc (20/10, Kiệt: bỏ chữ "ASCND · KOA" — trùng với
@@ -329,7 +330,7 @@ struct KoaWidgetView: View {
         HStack(spacing: 0) {
           stat(todayValue, label: widgetText("widget.koa.stat.today"))
           statDivider
-          stat(streakValue, label: widgetText("widget.koa.stat.streak"))
+          stat(weekValue, label: widgetText("widget.koa.stat.week"))
           statDivider
           stat(entry.data?.gains.map { "\($0)" } ?? "–", label: widgetText("widget.koa.stat.gains"))
         }
@@ -347,9 +348,9 @@ struct KoaWidgetView: View {
         Text(verbatim: "Koa").font(.headline)
         if let d = entry.data, phase != .stale {
           Text(verbatim: "\(d.done)/\(d.total)").font(KoaWidgetInk.mono(12))
-          if d.streak > 0 {
-            Image(systemName: "flame.fill").font(.caption2)
-            Text(verbatim: "\(d.streak)").font(KoaWidgetInk.mono(12))
+          if let week = d.weekText {
+            Image(systemName: "calendar").font(.caption2)
+            Text(verbatim: week).font(KoaWidgetInk.mono(12))
           }
         }
       }

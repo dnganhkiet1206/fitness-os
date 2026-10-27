@@ -86,6 +86,7 @@ public struct SettingsView: View {
     case .failed(partial: true): String(localized: "settings.delete.partial")
     case .failed(partial: false): String(localized: "settings.delete.failed")
     case .offline: String(localized: "settings.delete.offline")
+    case .unconfirmed: String(localized: "settings.delete.unconfirmed")
     case .notSignedIn: String(localized: "settings.delete.failed")
     }
   }

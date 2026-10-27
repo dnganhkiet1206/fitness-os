@@ -32,6 +32,9 @@ final class KoaWidgetPublisher {
     var total: Int
     var streak: Int
     var day: LocalDate
+    /// Tuần của Koa: ngày có buổi / buổi theo lịch (`nil` = chưa có lịch).
+    var weekDone: Int?
+    var weekTarget: Int?
     var checks: [String] = []
     var nextQuest: MascotRules.Quest?
     /// Cấp của Koa (ô "CẤP" của thẻ).
@@ -55,6 +58,8 @@ final class KoaWidgetPublisher {
     data.short = Self.short(s)
     data.level = s.level
     data.gains = s.gains
+    data.weekDone = s.weekDone
+    data.weekTarget = s.weekTarget
     // App vừa dựng lại Hôm nay: số ly từ widget đã nằm trong số thật.
     guard data != last || (store.koa()?.waterTaps ?? 0) > 0 else { return }
     last = data
