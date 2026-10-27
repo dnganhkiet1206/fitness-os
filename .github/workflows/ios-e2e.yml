@@ -101,7 +101,8 @@ jobs:
         env:
           MAESTRO_CLI_NO_ANALYTICS: '1'
           MAESTRO_CLI_ANALYSIS_NOTIFICATION_DISABLED: 'true'
-          MAESTRO_DRIVER_STARTUP_TIMEOUT: '180000'
+          # Lần đầu trên runner, driver XCTest của Maestro cần hơn 3 phút để dựng và mở.
+          MAESTRO_DRIVER_STARTUP_TIMEOUT: '600000'
         run: |
           out="$RUNNER_TEMP/e2e"
           mkdir -p "$out/screens"
@@ -117,8 +118,9 @@ jobs:
           kill -INT "$rec"; wait "$rec" || true
           # Không request nào được lọt tới Supabase thật (FakeSupabaseProtocol ghi log khi chặn).
           xcrun simctl spawn "$SIM" log show --last 60m --style compact \
-            --predicate 'eventMessage CONTAINS "[UITest] BLOCKED"' > "$out/blocked.log" || true
-          if grep -q "BLOCKED" "$out/blocked.log"; then
+            --predicate 'eventMessage CONTAINS "BLOCKED real Supabase"' > "$out/blocked.log" || true
+          # Khớp đúng dòng app ghi (có URL) — dòng của chính lệnh `log show` cũng chứa chữ của predicate.
+          if grep -q "BLOCKED real Supabase request: http" "$out/blocked.log"; then
             echo "::error::Chế độ UI test đã cố gọi Supabase thật"; cat "$out/blocked.log"; status=1
           fi
           exit $status
