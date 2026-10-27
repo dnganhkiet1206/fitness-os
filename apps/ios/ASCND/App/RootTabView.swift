@@ -45,9 +45,9 @@ struct RootTabView: View {
       Tab("tab.workouts", systemImage: "dumbbell", value: AppTab.workouts) {
         #if DEBUG
           // Bản Debug: màn thật + các màn thử (Lab) cho Kiệt kiểm trên máy.
-          DebugWorkoutsTab(launch: $launchWorkout)
+          DebugWorkoutsTab(launch: $launchWorkout) { selection = .today }
         #else
-          WorkoutsTab(launch: $launchWorkout)
+          WorkoutsTab(launch: $launchWorkout) { selection = .today }
         #endif
       }
       .accessibilityHint(Text(String(localized: "tab.workouts.hint")))
@@ -134,13 +134,14 @@ struct RootTabView: View {
   /// chọn qua các lần mở app.
   private struct DebugWorkoutsTab: View {
     @Binding var launch: Bool
+    let onBackToToday: () -> Void
     @AppStorage("lab.showsLab") private var showsLab = false
 
     /// Công tắc App / Lab là một nút nhỏ ở góc (14/10): dải chọn trên cùng che
     /// mất đầu trang của tab khi soát giao diện.
     var body: some View {
       Group {
-        if showsLab { LabsView() } else { WorkoutsTab(launch: $launch) }
+        if showsLab { LabsView() } else { WorkoutsTab(launch: $launch, onBackToToday: onBackToToday) }
       }
       .overlay(alignment: .bottomTrailing) {
         Button {

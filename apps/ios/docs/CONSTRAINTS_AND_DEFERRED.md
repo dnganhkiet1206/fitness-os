@@ -173,6 +173,23 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 **Audit 26/10 (vòng 4) — buổi tập, onboarding, accessibility, giao diện sáng, trạng thái tải:**
 - ~~Hôm nay hiện "Offline — đang hiện kế hoạch đã lưu" ở MỌI lần mở app dù có mạng (cache hiện ra trong lúc chờ server được coi là offline).~~ Sửa 26/10 (nhánh `claude/audit-r4-offline-banner`): `TodayController.showingStaleCache` — chỉ hiện dải khi đang xem cache VÌ lần hỏi server đã hỏng (như Lịch sử vốn làm). Test: `TodayControllerTests.cacheWhileWaitingIsNotStale`. Kiểm trên simulator (iPhone Air, có mạng): trước — dải hiện ~1 giây mỗi lần mở app (2/2 lần); sau — 8 khung hình lúc mở app, không khung nào có dải. **Chưa kiểm** lúc mất mạng thật (simulator không có công tắc mạng riêng, xem A2).
 
+**Audit 26/10 (vòng 4) — buổi tập trực tiếp:**
+- Đi trọn trên simulator (iPhone Air, tài khoản test, tiếng Việt): Hôm nay "Bắt đầu buổi tập" → 3 set Incline (27,2 kg ×2 + 1 set không tạ) → nghỉ / bỏ qua nghỉ → thu nhỏ → **tắt app giữa buổi** → mở lại "Đang tập dở · Tiếp tục" (giữ 3/12) → 1 set Shoulder 18,4 kg → "Kết thúc buổi · 4/12" → tổng kết → ghi thêm 1 set vào buổi đã chốt. Số khớp: tổng kết 728 kg / 4 set / 2 bài; Gains 136 → 150 (+10 buổi, +4 kỷ lục), "còn 30 tới Lifter"; Tuần của Koa 1/7 ở Hôm nay và Tiến bộ › Tập luyện; Lịch sử 728 kg · 5 hiệp · 3 bài sau khi ghi thêm, "Tuần này · 728 kg". Không thấy buổi nhân đôi.
+- ~~Ô tạ và hàng "Như set trước · 27.2 kg" in dấu chấm ngay dưới "Lần trước 27,2 kg"; gõ dấu phẩy trên bàn phím tiếng Việt thì ô đổi thành dấu chấm.~~ Sửa 26/10 (nhánh `claude/audit-r4-workout`): `NumberInput.display` — ô tạ và gợi ý hiện theo dấu thập phân của ngôn ngữ app; chữ lưu vẫn dấu chấm. Test `NumberInputTests.displayFollowsTheAppsDecimalSeparator`. Kiểm trên simulator: "Như lần trước · 15,9 kg" → ô "15,9" → "+" → set lưu "18,4 kg × 10".
+- ~~Tổng kết buổi in set không tạ là "× 10" (dấu nhân không có vế trước).~~ Sửa 26/10 (cùng nhánh): "10 reps", như dòng "Set vừa xong". Build xanh; **chưa xem lại trên simulator** (cần chốt một buổi mới — hôm nay đã chốt).
+- ~~"Về Hôm nay" ở tổng kết chỉ đóng màn tập, đứng lại ở tab Tập luyện.~~ Sửa 26/10 (cùng nhánh): đổi sang tab Hôm nay. Build xanh; **chưa bấm lại trên simulator** (cùng lý do). Tổng kết của ngày cũ (mở từ Kế hoạch tuần) giữ như cũ: đóng về Kế hoạch tuần.
+- **Còn mở (cần Kiệt quyết, đã duyệt mock 14/10 là "một chạm mới điền"):** mỗi set sau set đầu bắt đầu ở 0 kg — một set có tạ tốn 2 chạm ("Như set trước" + "Xong set"), 3 nếu bỏ qua nghỉ. Đề xuất: set kế của CÙNG bài trong buổi tự mang tạ của set vừa xong (như Strong / Hevy); bài không tạ vẫn trống.
+- **Còn mở:** tổng kết có nút "Chia sẻ lên cộng đồng" khi bảng tin cộng đồng đang hoãn (§3, 0 người dùng). Cần Kiệt quyết ẩn hay giữ.
+- **Còn mở (nhỏ):** "Lần trước 10 reps × không tạ" (chép golden RN `lastSetText`); hàng Lịch sử tên dài ("Back & Shoulders") ép ngày xuống hai dòng.
+- **Chưa kiểm:** xoá buổi ở Lịch sử (xoá thật trên server — không làm trên dữ liệu test theo luật "không xoá vĩnh viễn"); tổng kết tuần AI sau buổi này.
+
+**Audit 26/10 (vòng 4) — onboarding, accessibility, giao diện sáng, trạng thái:**
+- Onboarding trên tài khoản mới: **NOT RUN.** Không tạo tài khoản trên Supabase production (§1). Bản Debug có `ASCND_DEBUG_ONBOARDING=1` để xem 6 màn trên tài khoản đã xong, nhưng nút cuối vẫn GHI hồ sơ thật (không phải chạy thử) — chưa chạy vòng này.
+- VoiceOver: **chưa chạy VoiceOver thật**; công cụ simulator của phiên này không đọc được cây accessibility. Rà mã: nút tick set có vùng chạm 44 pt (vòng 30 pt bên trong), nút ± 48 pt, nút ẩn mẹo buổi đầu 32 pt (dưới 44, `FirstSessionTip`).
+- Chữ lớn (AX5) ở Tiến bộ: chữ thân / chú thích phóng to, tiêu đề "Tuần này" đứng yên cỡ nhỏ (chữ cỡ cố định); thanh tab và Ghi nhanh không phóng (dùng Large Content Viewer của hệ thống — chưa kiểm).
+- Giao diện sáng ở bốn tab: không thấy chữ mất hay màu tối cứng; thẻ Hỏi Koa giữ ảnh nền tối (ảnh Koa, không đổi).
+- Trạng thái tải: dải offline giả (đã sửa ở trên). Còn thấy: thẻ việc chính Hôm nay đổi "Xem tiến bộ" ↔ "Ghi bữa sau tập" giữa hai lần mở app cách nhau vài phút, cùng dữ liệu — chưa tìm ra nguyên nhân.
+
 **Audit 25/10 (vòng 1):**
 - ~~Ghi giấc ngủ có thể lưu giờ dậy ở TƯƠNG LAI~~ (P1, sửa 25/10): `SleepLog.span` (theo RN) đặt giờ dậy vào hôm nay, nên "23:00–7:00" ghi lúc 1:24 sáng lưu một giấc dậy lúc 7:00 sáng nay. Sửa: `SleepLog.lastNight` (lùi về đêm gần nhất đã xong) cho bộ ghi giấc ngủ, màn Ghi giấc ngủ và "Kể cho Koa"; nút ghi nhanh trên thẻ Giấc ngủ chỉ hiện khi giờ dậy quen đã qua. Lệch RN có chủ đích; test mẫu RN của `span` giữ nguyên.
 
@@ -189,6 +206,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 
 ## 5. Lịch sử thay đổi sổ
 
+- 26/10/2026: audit vòng 4 — buổi tập trực tiếp (dấu thập phân ô tạ, set không tạ ở tổng kết, "Về Hôm nay"); ghi kết quả onboarding / accessibility / giao diện sáng / trạng thái tải và các mục còn mở.
 - 26/10/2026: audit vòng 4 — Hôm nay không còn báo "Offline" trong lúc chờ server mỗi lần mở app.
 - 26/10/2026: audit vòng 3 — Koa Coach hiện và hiểu nước theo đơn vị người dùng (oz).
 - 26/10/2026: audit vòng 3 — xoá `ReadinessTrendCardView` (code chết), đánh dấu `PARITY_MATRIX.md` lạc hậu.

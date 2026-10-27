@@ -102,4 +102,17 @@ struct NumberInputTests {
     #expect(NumberInput.plannedReps(0) == "")
     #expect(NumberInput.plannedReps(-1) == "")
   }
+
+  /// Ô tạ hiện theo dấu thập phân của ngôn ngữ app, và đi vòng qua `decimal`
+  /// không mất gì (gõ "27," trên bàn phím tiếng Việt vẫn là 27,…).
+  @Test func displayFollowsTheAppsDecimalSeparator() {
+    #expect(NumberInput.display("27.2", decimalSeparator: ",") == "27,2")
+    #expect(NumberInput.display("27.2", decimalSeparator: ".") == "27.2")
+    #expect(NumberInput.display("60", decimalSeparator: ",") == "60")
+    #expect(NumberInput.display("", decimalSeparator: ",") == "")
+    #expect(NumberInput.display("27.", decimalSeparator: ",") == "27,")
+    for raw in ["27.2", "0.5", "100", "27."] {
+      #expect(NumberInput.decimal(NumberInput.display(raw, decimalSeparator: ",")) == raw)
+    }
+  }
 }

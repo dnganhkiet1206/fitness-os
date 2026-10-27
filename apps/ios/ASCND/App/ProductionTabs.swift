@@ -65,8 +65,13 @@ struct WorkoutsTab: View {
   /// "Bắt đầu" ở Hôm nay đã bấm, chờ tab lên màn / buổi dựng xong.
   @State private var pendingLaunch = false
 
-  init(launch: Binding<Bool> = .constant(false)) {
+  /// "Về Hôm nay" ở màn tổng kết: đổi sang tab Hôm nay. Trước đây nút chỉ
+  /// đóng màn tập và đứng lại ở Tập luyện (audit vòng 4, 26/10).
+  var onBackToToday: () -> Void = {}
+
+  init(launch: Binding<Bool> = .constant(false), onBackToToday: @escaping () -> Void = {}) {
     _launch = launch
+    self.onBackToToday = onBackToToday
   }
 
   var body: some View {
@@ -102,6 +107,7 @@ struct WorkoutsTab: View {
               onDone: {
                 finished = nil
                 showsSession = false
+                onBackToToday()
               },
               onShare: { sharing = true })
             .navigationDestination(isPresented: $sharing) {
