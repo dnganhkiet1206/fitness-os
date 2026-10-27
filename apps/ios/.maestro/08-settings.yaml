@@ -1,0 +1,51 @@
+# Cài đặt (avatar → trang Hồ sơ → bánh răng): từng hàng mở màn của nó và quay lại.
+# Hàng Ngôn ngữ mở app Cài đặt của iPhone (ra khỏi app) nên không bấm.
+appId: com.ascnd.fitnessos.dev
+name: Settings rows open
+---
+- runFlow: subflows/launch.yaml
+- tapOn:
+    id: today.account
+- tapOn:
+    id: profile.settings
+- extendedWaitUntil:
+    visible:
+      id: settings.reminders
+    timeout: 10000
+- takeScreenshot: 08-settings
+- tapOn:
+    id: settings.reminders
+- extendedWaitUntil:
+    notVisible:
+      id: settings.reminders
+    timeout: 10000
+- takeScreenshot: 08-settings-reminders
+- runFlow: subflows/back.yaml
+- scrollUntilVisible:
+    element:
+      id: settings.changePassword
+    direction: DOWN
+    timeout: 10000
+- tapOn:
+    id: settings.changePassword
+- extendedWaitUntil:
+    notVisible:
+      id: settings.changePassword
+    timeout: 10000
+- takeScreenshot: 08-settings-password
+- runFlow: subflows/back.yaml
+- scrollUntilVisible:
+    element:
+      id: settings.legal
+    direction: DOWN
+    timeout: 10000
+- tapOn:
+    id: settings.legal
+- extendedWaitUntil:
+    notVisible:
+      id: settings.legal
+    timeout: 10000
+- takeScreenshot: 08-settings-legal
+- runFlow: subflows/back.yaml
+- assertVisible:
+    id: settings.legal

@@ -48,6 +48,7 @@ struct ProgressHero: View {
           .offset(y: shown || reduceMotion ? 0 : 10 * k)
           .animation(Self.entrance(step, reduceMotion: reduceMotion), value: shown)
           .accessibilityLabel(Text(verbatim: "\(ProgressStyle.name(g)): \(ProgressStyle.word(level))"))
+          .accessibilityIdentifier("progress.segment.\(g.rawValue)")
           .accessibilitySortPriority(Double(Self.climb.count - step))
         }
       }

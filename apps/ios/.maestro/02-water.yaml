@@ -1,0 +1,64 @@
+# Chip "+ 8 oz" trên thẻ Nước: thẻ Nước đổi từ chưa ghi sang 8 oz; insight "0 oz" cũ ẩn đi.
+appId: com.ascnd.fitnessos.dev
+name: water chip updates Water card and Insight
+---
+- runFlow: subflows/launch.yaml
+- runFlow: subflows/day-card.yaml
+# Dải thẻ: Giấc ngủ · Bữa · Nước · Tập (`viewAligned`). Maestro trên iOS đưa ngón tới
+# điểm cuối ngay rồi GIỮ YÊN tới hết `duration` mới nhấc: thả ra vận tốc 0, nên dải
+# thẻ dừng ở thẻ gần nhất. Vuốt từ tâm thẻ (~135 pt) chưa qua nửa thẻ → bật về chỗ cũ.
+# Vuốt từ nhãn của thẻ KẾ đang ló ở mép phải (~340 pt, hơn một thẻ) → sang đúng một thẻ.
+- swipe:
+    from:
+      text: "Meal"
+      childOf:
+        id: today.tile.meal
+    direction: LEFT
+- extendedWaitUntil:
+    visible:
+      id: today.meal.manual
+    timeout: 5000
+- swipe:
+    from:
+      text: "Water"
+      childOf:
+        id: today.tile.water
+    direction: LEFT
+- extendedWaitUntil:
+    visible:
+      id: today.water.add
+    timeout: 5000
+# Chip: ảnh "+" riêng, chữ của nút là "8 oz".
+- assertVisible:
+    id: today.water.add
+    text: "8 oz"
+- assertVisible:
+    id: today.tile.water
+    text: "Water"
+- takeScreenshot: 02-water-before
+# Chip nằm sát đáy: tâm dưới thanh tab (y ≥ 791) thì chạm rơi vào thanh tab (CI lượt 7).
+# Đưa chip lên giữa màn (hết trang thì dừng ở chỗ cao nhất — vẫn trên thanh tab).
+- scrollUntilVisible:
+    element:
+      id: today.water.add
+    direction: DOWN
+    centerElement: true
+    waitToSettleTimeoutMs: 1000
+    timeout: 30000
+- tapOn:
+    id: today.water.add
+- extendedWaitUntil:
+    visible:
+      id: today.tile.water
+      text: ".*8 / .*oz.*"
+    timeout: 10000
+# Insight cũ ("0 oz of water today") hết đúng sau lần uống: Hôm nay ẩn nó đi
+# (`allOutdated`) thay vì để câu sai — không viết lại số (CI lượt 6).
+- scrollUntilVisible:
+    element:
+      id: today.plan.primary
+    direction: UP
+    waitToSettleTimeoutMs: 1000
+    timeout: 60000
+- assertNotVisible: ".*0 oz of water today.*"
+- takeScreenshot: 02-water-after

@@ -1,0 +1,196 @@
+# E2E UI test của app iOS native bằng Maestro (#527) — Kiệt chọn phương án B:
+# chế độ UI test chỉ có ở bản Debug (`-uiTestFakeBackend`, apps/ios/ASCND/App/UITest),
+# máy chủ Supabase giả TRONG app. Không tài khoản, không secret, không chạm Supabase.
+#
+# Hai job:
+#   e2e           build Debug cho simulator (không ký, như app-macos của ios.yml), bật
+#                 simulator, cài app, cài Maestro CLI, chạy apps/ios/.maestro/. Ảnh,
+#                 video, báo cáo JUnit và log debug lên artifact.
+#   release-gate  cổng nguồn `native-uitest-mode.mjs`, rồi build Release và kiểm trên
+#                 chính tệp nhị phân: cờ / tên miền / kiểu của chế độ test KHÔNG có.
+#
+# Không phải required check. Chạy: hằng đêm trên native/ios-rewrite, bấm tay
+# (workflow_dispatch), và PR có nhãn `e2e`.
+#
+# Lưu ý của GitHub: `schedule` và `workflow_dispatch` chỉ đọc workflow ở nhánh MẶC
+# ĐỊNH (main). Trước khi tệp này lên main, chạy bằng nhãn `e2e` trên PR.
+name: iOS E2E
+
+on:
+  schedule:
+    # 03:30 UTC hằng đêm (10:30 giờ Việt Nam).
+    - cron: '30 3 * * *'
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Nhánh / SHA để chạy
+        required: false
+        default: native/ios-rewrite
+  pull_request:
+    types: [labeled, opened, synchronize, reopened]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Nightly / bấm tay chạy trên nhánh tích hợp; PR chạy đúng head của PR.
+  E2E_REF: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || inputs.ref || 'native/ios-rewrite' }}
+  MAESTRO_VERSION: 2.12.0
+  BUNDLE_ID: com.ascnd.fitnessos.dev
+
+jobs:
+  e2e:
+    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'e2e')
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.E2E_REF }}
+
+      - name: Chọn Xcode mới nhất
+        run: |
+          latest=$(ls -d /Applications/Xcode_*.app | grep -v beta | sort -V | tail -1)
+          sudo xcode-select -s "$latest"
+          xcodebuild -version
+
+      - name: XcodeGen
+        working-directory: apps/ios
+        run: |
+          brew install xcodegen
+          xcodegen generate
+
+      - name: Build app Debug (iOS Simulator, không ký)
+        working-directory: apps/ios
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project ASCND.xcodeproj -scheme ASCND -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/dd" \
+            CODE_SIGNING_ALLOWED=NO \
+            | tee build.log | grep -E "warning:|error:|BUILD (SUCCEEDED|FAILED)" || true
+          grep -q "BUILD SUCCEEDED" build.log
+          echo "APP=$RUNNER_TEMP/dd/Build/Products/Debug-iphonesimulator/ASCND.app" >> "$GITHUB_ENV"
+
+      - name: Bật simulator
+        run: |
+          # iPhone đầu tiên của runtime iOS mới nhất có trên runner.
+          udid=$(xcrun simctl list devices available -j | python3 -c '
+          import json, re, sys
+          d = json.load(sys.stdin)["devices"]
+          ios = sorted((k for k in d if "iOS" in k), key=lambda k: [int(x) for x in re.findall(r"\d+", k.split("iOS")[-1])])
+          phones = [x for x in d[ios[-1]] if x["name"].startswith("iPhone")]
+          pro = [x for x in phones if "Pro" in x["name"] and "Max" not in x["name"]]
+          print((pro or phones)[0]["udid"])')
+          echo "SIM=$udid" >> "$GITHUB_ENV"
+          xcrun simctl list devices | grep "$udid"
+          xcrun simctl boot "$udid"
+          xcrun simctl bootstatus "$udid" -b
+          xcrun simctl install "$udid" "$APP"
+          # Bật chế độ UI test bằng khoá UserDefaults của app (simctl spawn — ghi thẳng tệp
+          # plist trong container thì cfprefsd không đọc) — không phụ thuộc dạng
+          # launch argument mà phiên bản Maestro truyền.
+          xcrun simctl spawn "$udid" defaults write "$BUNDLE_ID" uiTestFakeBackend -bool YES
+
+      - name: Cài Maestro CLI (bộ cài chính thức, ghim phiên bản)
+        run: |
+          curl -fsSL "https://get.maestro.mobile.dev" -o "$RUNNER_TEMP/maestro-install.sh"
+          MAESTRO_VERSION="$MAESTRO_VERSION" bash "$RUNNER_TEMP/maestro-install.sh"
+          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+
+      - name: Chạy flows Maestro
+        working-directory: apps/ios
+        env:
+          MAESTRO_CLI_NO_ANALYTICS: '1'
+          MAESTRO_CLI_ANALYSIS_NOTIFICATION_DISABLED: 'true'
+          # Lần đầu trên runner, driver XCTest của Maestro cần hơn 3 phút để dựng và mở.
+          MAESTRO_DRIVER_STARTUP_TIMEOUT: '600000'
+        run: |
+          out="$RUNNER_TEMP/e2e"
+          mkdir -p "$out/screens"
+          maestro --version
+          xcrun simctl io "$SIM" recordVideo --codec=h264 --force "$out/run.mp4" &
+          rec=$!
+          set +e
+          maestro --device "$SIM" test .maestro \
+            --format junit --output "$out/report.xml" \
+            --test-output-dir "$out/screens" \
+            --debug-output "$out/debug"
+          status=$?
+          kill -INT "$rec"; wait "$rec" || true
+          # Không request nào được lọt tới Supabase thật: FakeSupabaseProtocol ghi mỗi
+          # request bị chặn vào Documents/uitest-blocked.log trong container của app.
+          data=$(xcrun simctl get_app_container "$SIM" "$BUNDLE_ID" data)
+          if [ -s "$data/Documents/uitest-blocked.log" ]; then
+            cp "$data/Documents/uitest-blocked.log" "$out/"
+            echo "::error::Chế độ UI test đã cố gọi Supabase thật"; cat "$out/uitest-blocked.log"; status=1
+          else
+            echo "Không request nào tới Supabase thật."
+          fi
+          exit $status
+
+      - name: Tóm tắt
+        if: always()
+        run: |
+          python3 - "$RUNNER_TEMP/e2e/report.xml" >> "$GITHUB_STEP_SUMMARY" <<'PY' || true
+          import sys, xml.etree.ElementTree as ET
+          root = ET.parse(sys.argv[1]).getroot()
+          print("| Flow | Kết quả | Thời gian |\n|---|---|---|")
+          for tc in root.iter("testcase"):
+              bad = tc.find("failure") is not None or tc.find("error") is not None
+              print(f"| {tc.get('name')} | {'❌' if bad else '✅'} | {tc.get('time', '')} s |")
+          PY
+
+      - name: Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-e2e-${{ github.run_id }}
+          path: ${{ runner.temp }}/e2e
+          retention-days: 14
+
+  release-gate:
+    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'e2e')
+    runs-on: macos-15
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.E2E_REF }}
+
+      - name: Chọn Xcode mới nhất
+        run: |
+          latest=$(ls -d /Applications/Xcode_*.app | grep -v beta | sort -V | tail -1)
+          sudo xcode-select -s "$latest"
+
+      - name: Cổng nguồn (chế độ UI test chỉ ở #if DEBUG)
+        run: |
+          node apps/ios/tools/native-uitest-mode.mjs
+          node apps/ios/tools/native-uitest-mode.mjs --self-test
+
+      - name: Build Release (iOS Simulator, không ký)
+        working-directory: apps/ios
+        run: |
+          brew install xcodegen
+          xcodegen generate
+          set -o pipefail
+          xcodebuild build \
+            -project ASCND.xcodeproj -scheme ASCND -configuration Release \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/dd" \
+            CODE_SIGNING_ALLOWED=NO \
+            | tee build.log | grep -E "error:|BUILD (SUCCEEDED|FAILED)" || true
+          grep -q "BUILD SUCCEEDED" build.log
+
+      - name: Tệp nhị phân Release không có chế độ UI test
+        run: |
+          bin="$RUNNER_TEMP/dd/Build/Products/Release-iphonesimulator/ASCND.app/ASCND"
+          test -f "$bin"
+          for marker in uiTestFakeBackend ui-test.ascnd.invalid FakeSupabaseProtocol UITestSeed; do
+            if strings -a "$bin" | grep -q "$marker"; then
+              echo "::error::'$marker' có trong bản Release"; exit 1
+            fi
+            echo "ok: không có '$marker' trong Release"
+          done

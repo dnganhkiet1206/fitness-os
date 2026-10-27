@@ -1,3 +1,4 @@
+public import Foundation
 public import Supabase
 
 /// Một client Supabase cho cả app.
@@ -25,4 +26,30 @@ public final class Backend: Sendable {
       )
     )
   }
+
+  /// Client với `URLSession` do người gọi đưa và phiên chỉ trong bộ nhớ — chế độ UI
+  /// test (bản Debug, `UITestMode`) dùng để mọi request đi vào máy chủ giả trong app,
+  /// và phiên giả không chạm Keychain của phiên thật.
+  public init(config: BackendConfig, session: URLSession) {
+    self.config = config
+    self.client = SupabaseClient(
+      supabaseURL: config.url,
+      supabaseKey: config.anonKey,
+      options: SupabaseClientOptions(
+        auth: SupabaseClientOptions.AuthOptions(
+          storage: InMemoryAuthStorage(), autoRefreshToken: false, emitLocalSessionAsInitialSession: true),
+        global: SupabaseClientOptions.GlobalOptions(session: session)
+      )
+    )
+  }
+}
+
+/// Kho phiên trong bộ nhớ (chế độ UI test): mất khi app tắt, không đụng Keychain.
+final class InMemoryAuthStorage: AuthLocalStorage, @unchecked Sendable {
+  private let lock = NSLock()
+  private var values: [String: Data] = [:]
+
+  func store(key: String, value: Data) throws { lock.withLock { values[key] = value } }
+  func retrieve(key: String) throws -> Data? { lock.withLock { values[key] } }
+  func remove(key: String) throws { _ = lock.withLock { values.removeValue(forKey: key) } }
 }

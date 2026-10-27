@@ -383,6 +383,7 @@ public struct WorkoutView: View {
             isFinishing ? String(localized: "workout.finishing") : String(localized: "ws.finishEarly \(doneCount) \(workingTotal)")
           ) { Task { await doFinish() } }
           .disabled(isFinishing)
+          .accessibilityIdentifier("workout.finishEarly")
         }
       }
       .padding(DS.Spacing.md)
@@ -483,6 +484,7 @@ public struct WorkoutView: View {
       .disabled(!ready || !editable)
       .opacity(ready && editable ? 1 : 0.45)
       .accessibilityLabel(Text(tickLabel(row, performed: controller.performed(row), done: false, ready: ready)))
+      .accessibilityIdentifier("workout.doneSet")
     }
     .padding(DS.Spacing.card)
     .todayCard()
@@ -1292,6 +1294,7 @@ public struct WorkoutView: View {
             ? String(localized: "workout.finishError.future")
             : String(localized: "workout.finish")
       ) { Task { await doFinish() } }
+      .accessibilityIdentifier("workout.finish")
       .disabled(!controller.canFinish || isFinishing)
       .opacity(controller.canFinish && !isFinishing ? 1 : 0.5)
     }

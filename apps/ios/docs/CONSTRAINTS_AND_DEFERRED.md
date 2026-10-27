@@ -215,6 +215,17 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - `PARITY_MATRIX.md` lạc hậu từ 17/10. 26/10 (audit vòng 3, nhánh `claude/audit-r3-dead-code`): **đánh dấu LẠC HẬU** ở đầu trang (nói rõ chỗ sai: GĐ1–GĐ3, bốn khu vực, lối vào); rà lại toàn bảng vẫn là việc cuối của GĐ3, chưa làm.
 - ~~`ReadinessTrendCardView` là code chết.~~ Xoá 26/10 (cùng nhánh): view và 8 chuỗi `rt.*`; giữ `ReadinessTrendBook` / `ReadinessTrend` (Hôm nay vẫn dùng). Build simulator xanh, cổng chuỗi xanh (2787 khoá).
 
+**E2E Maestro — chế độ UI test (26/10, Kiệt chọn phương án B, nhánh `claude/ios-e2e-maestro`):**
+- Bật bằng launch argument `-uiTestFakeBackend` (Maestro: `launchApp.arguments`), **chỉ bản Debug**: `ASCND/App/UITest/` là khối `#if DEBUG`, cổng `tools/native-uitest-mode.mjs` giữ điều ấy, và job `release-gate` của `ios-e2e.yml` kiểm tệp nhị phân Release không có cờ / tên miền / kiểu của chế độ test. Không bật cờ thì app chạy y như trước.
+- Khi bật: client Supabase trỏ vào `ui-test.ascnd.invalid` và MỌI request được một `URLProtocol` trong app trả lời từ kho trong bộ nhớ (`FakeSupabase.swift`, dữ liệu `UITestSeed.swift`); phiên đăng nhập giả (không Keychain); database trong bộ nhớ (mỗi lần mở là dữ liệu mẫu sạch); mạng luôn "có"; không dò AI, không Health, không Sentry / PostHog. Request lọt tới `*.supabase.co` bị chặn và ghi log `[UITest] BLOCKED` — workflow đỏ nếu thấy.
+- **Máy chủ giả không phải bản sao server**: không RLS, không trigger, không ràng buộc, không SQL thật của RPC (RPC trả giá trị cố định), edge function trả lời mẫu (Insight, luồng Coach) hoặc 404 "chưa deploy". `daily_logs` không tự dựng lại như trigger server. E2E này kiểm **giao diện và đường ghi của app**, KHÔNG kiểm server, migration hay số liệu server tính. Cần kiểm với server thật thì phương án A (tài khoản test qua GitHub Secrets) — chưa làm.
+- Dữ liệu mẫu tính lùi từ hôm nay của máy: hôm nay có buổi Full Body A chưa tập, chưa nước / bữa / ngủ; 13 ngày trước có đủ. Mọi huy chương đã có sẵn (không bật màn "Huy chương mới" giữa flow). Giờ dậy quen = trước giờ mở app (để chip ghi nhanh giấc ngủ hiện ở mọi giờ).
+- Simulator không có camera, Health, push: flows không chạm chụp món, mã vạch, Apple Health, thông báo. Hàng Ngôn ngữ của Cài đặt mở app Cài đặt của iPhone — không bấm.
+- `schedule` và `workflow_dispatch` của GitHub chỉ đọc workflow ở nhánh **mặc định (main)**: trước khi `ios-e2e.yml` lên main, chỉ chạy được qua nhãn `e2e` trên PR.
+- Hành vi khác của chế độ test (27/10, audit vòng 5): màn "đã lưu bữa" tự đóng sau **60 s** thay vì 8 s — Maestro mất 6–8 s mỗi chạm khi thanh đếm ngược chạy, nên flow không kịp chọn bữa. Bản thường vẫn 8 s; flow không kiểm việc tự đóng.
+- Vì sao flows từng đỏ (CI lượt 4–6): Maestro iOS đưa ngón tới điểm cuối rồi **giữ yên** tới hết `duration` → thả ra vận tốc 0, dải thẻ `viewAligned` bật về nếu vuốt chưa quá nửa thẻ; cảnh Koa động nên Maestro chờ "đứng yên" ~11 s mỗi lần cuộn (`waitToSettleTimeoutMs`); thẻ có tâm dưới thanh tab thì chạm rơi vào thanh tab; insight lỗi thời bị ẩn (không viết lại số).
+- Cài Maestro trên máy Mac này: Homebrew từ chối (Command Line Tools cũ, cần cập nhật hệ thống), bộ cài chính thức bị chặn bởi quyền của phiên agent — flows được kiểm trên runner GitHub, xem #527.
+
 **Giới hạn của môi trường agent:**
 - Simulator không có camera, push APNs, dữ liệu Health thật, hay Live Activity khi khoá màn hình.
 - Công cụ gõ chữ vào simulator làm hỏng dấu tiếng Việt, nên phải kiểm bằng gợi ý có sẵn hoặc tiếng Anh.
@@ -232,6 +243,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - 27/10/2026: Kiệt chốt — Tiến bộ › Cơ thể "Cần chú ý" khi tăng / giảm nhanh hơn ~1 % cân nặng mỗi tuần, có câu khuyên (hướng dẫn chung).
 - 27/10/2026: Kiệt chốt — mọi trung bình 7 ngày bỏ hôm nay (`AverageWindow`, một khung cho mọi màn); gạch mục "khung 7 ngày khác nhau".
 - 27/10/2026: Kiệt chốt — set kế điền sẵn tạ + reps của set vừa xong (đã làm); giữ nút "Chia sẻ lên cộng đồng" ở tổng kết (không đổi code).
+- 26/10/2026: E2E Maestro — chế độ UI test chỉ ở bản Debug (máy chủ giả trong app), giới hạn của nó (§4).
 - 26/10/2026: audit vòng 4 — buổi tập trực tiếp (dấu thập phân ô tạ, set không tạ ở tổng kết, "Về Hôm nay"); ghi kết quả onboarding / accessibility / giao diện sáng / trạng thái tải và các mục còn mở.
 - 26/10/2026: audit vòng 4 — Hôm nay không còn báo "Offline" trong lúc chờ server mỗi lần mở app.
 - 26/10/2026: audit vòng 3 — Koa Coach hiện và hiểu nước theo đơn vị người dùng (oz).

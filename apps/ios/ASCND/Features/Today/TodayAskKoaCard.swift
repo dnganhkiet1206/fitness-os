@@ -92,5 +92,6 @@ struct TodayAskKoaCard: View {
     .accessibilityLabel(Text("askkoa.title"))
     .accessibilityHint(Text("assistant.coach.open.a11y"))
     .accessibilityAddTraits(.isButton)
+    .accessibilityIdentifier("today.askKoa")
   }
 }

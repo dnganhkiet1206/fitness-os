@@ -185,16 +185,27 @@ final class AppServices {
   init() {
     let backend: Backend?
     var problems: [String] = []
-    do {
-      backend = Backend(config: try BackendConfig.fromMainBundle())
-    } catch {
-      backend = nil
-      problems.append("backend: \(error)")
+    // Chế độ UI test (Maestro, chỉ bản Debug — `UITestMode`): máy chủ giả trong app,
+    // database trong bộ nhớ, phiên giả. Không bao giờ nói chuyện với Supabase.
+    #if DEBUG
+      let fake = UITestMode.isOn ? UITestMode.makeBackend() : nil
+    #else
+      let fake: Backend? = nil
+    #endif
+    if let fake {
+      backend = fake
+    } else {
+      do {
+        backend = Backend(config: try BackendConfig.fromMainBundle())
+      } catch {
+        backend = nil
+        problems.append("backend: \(error)")
+      }
     }
 
     let database: ASCNDDatabase
     do {
-      database = try ASCNDDatabase(path: try Self.databasePath())
+      database = fake != nil ? try ASCNDDatabase() : try ASCNDDatabase(path: try Self.databasePath())
     } catch {
       // Không mở được tệp thì vẫn chạy trong bộ nhớ: dữ liệu KHÔNG bền, và
       // `startupError` nói điều đó ra — không bao giờ giả vờ "đã lưu".
@@ -232,7 +243,7 @@ final class AppServices {
     profileCache = GRDBProfileCache(database)
     waterCache = GRDBWaterCache(database)
     supplementCache = GRDBSupplementCache(database)
-    session = SessionStore(api: backend.map { SupabaseAuthAPI(backend: $0) as any AuthAPI } ?? UnconfiguredAuth())
+    session = SessionStore(api: Self.uiTestAuth ?? backend.map { SupabaseAuthAPI(backend: $0) as any AuthAPI } ?? UnconfiguredAuth())
     let rows = backend.map { SupabaseRowStore(backend: $0) }
     self.backend = backend
     self.rows = rows
@@ -308,7 +319,7 @@ final class AppServices {
     // Dò cả Google lẫn backend của app (23/10): mạng chặn Google không còn báo
     // "Ngoại tuyến" khi Supabase vẫn chạy. Thiếu cấu hình backend → chỉ Google.
     let prober: any ReachabilityProber =
-      backend.map {
+      Self.uiTestProber ?? backend.map {
         FallbackReachabilityProber(
           primary: URLSessionReachabilityProber(), backup: BackendReachabilityProber(),
           backupConfig: BackendReachabilityProber.config(for: $0.config.url))
@@ -320,7 +331,7 @@ final class AppServices {
     startNetworkMonitor()
     // Đăng ký theo dõi Health ngay khi app chạy — kể cả khi iOS mở app trong nền
     // để giao dữ liệu mới (18/10).
-    startHealthObserving()
+    if !Self.uiTest { startHealthObserving() }
     // Widget "Buổi tập hôm nay" nói cùng câu với việc chính của Today (GĐ1).
     widgets.planStatus = { [weak self] userId in await self?.widgetPlanStatus(userId: userId) }
     widgets.week = { [weak self] userId in await self?.widgetWeek(userId: userId) }
@@ -346,6 +357,8 @@ final class AppServices {
   /// Một lượt hỏi gateway, không đăng nhập: function có → 401 (chưa chạy gì), không
   /// có → 404. Lỗi mạng: giữ `nil`, thử lại lần ra tiền cảnh sau.
   func probeAI() async {
+    // UI test: máy chủ giả trả lời edge function — lối vào AI hiện như khi đã deploy.
+    if Self.uiTest { aiDeployed = true }
     guard aiDeployed != true, let base = Self.supabaseURL, let key = Self.supabaseKey else { return }
     var req = URLRequest(url: base.appendingPathComponent("functions/v1/ai-coach"))
     req.httpMethod = "POST"
@@ -1045,6 +1058,7 @@ final class AppServices {
   /// `useAutoHealthSync`: về tiền cảnh, đã hỏi quyền, cách lần trước ≥ 15 phút;
   /// xong thì widget đọc số mới.
   func autoSyncHealth() {
+    if Self.uiTest { return }
     let user = session.session?.userId
     Task { [health, widgets] in
       await health.autoSync(userId: user, lang: Self.appLang)
@@ -1072,6 +1086,31 @@ final class AppServices {
 
   /// `Application Support/ascnd.sqlite`. Bảo vệ "tới lần mở khoá đầu tiên":
   /// app ở nền (nút ±15 của Island, vòng sync) vẫn đọc được sau khi máy khoá.
+  /// Chế độ UI test (Maestro, `-uiTestFakeBackend`) — luôn `false` ở bản Release.
+  static var uiTest: Bool {
+    #if DEBUG
+      UITestMode.isOn
+    #else
+      false
+    #endif
+  }
+
+  private static var uiTestAuth: (any AuthAPI)? {
+    #if DEBUG
+      UITestMode.isOn ? UITestAuth() : nil
+    #else
+      nil
+    #endif
+  }
+
+  private static var uiTestProber: (any ReachabilityProber)? {
+    #if DEBUG
+      UITestMode.isOn ? UITestReachabilityProber() : nil
+    #else
+      nil
+    #endif
+  }
+
   private static func databasePath() throws -> String {
     let fm = FileManager.default
     let dir = try fm.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)

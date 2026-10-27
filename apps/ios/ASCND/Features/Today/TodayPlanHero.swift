@@ -64,6 +64,7 @@ struct TodayPlanHero: View {
       }
       if let primary {
         DSButton(primary, style: .primary, action: onPrimary)
+          .accessibilityIdentifier("today.plan.primary")
           .disabled(busy)
           .padding(.top, DS.Spacing.xs)
       }

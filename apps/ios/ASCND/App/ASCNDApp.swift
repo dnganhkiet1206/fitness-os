@@ -21,7 +21,8 @@ struct ASCNDApp: App {
     controller.onRestFinished = { UINotificationFeedbackGenerator().notificationOccurred(.success) }
     _rest = State(initialValue: controller)
     // Đo lường (15/10): chỉ khởi động khi có khoá — xem Telemetry.swift.
-    Telemetry.start()
+    // Chế độ UI test (Debug): không gửi gì lên Sentry / PostHog.
+    if !AppServices.uiTest { Telemetry.start() }
     let services = AppServices()
     // Ngôn ngữ theo iPhone (Kiệt 23/10), nhưng MỘT nguồn cho mọi chữ (25/10: thẻ Tuần
     // của Koa lẫn Việt / Anh trên máy Kiệt): `Text("khoá")` tra theo `\.locale` của app,

@@ -1,0 +1,7 @@
+# Maestro E2E cho app iOS native (#527). Chạy trên bản Debug với máy chủ giả trong
+# app (`-uiTestFakeBackend`, ASCND/App/UITest) — không tài khoản, không Supabase.
+# Chạy: xem README.md trong thư mục này.
+flows:
+  - "*.yaml"
+executionOrder:
+  continueOnFailure: true

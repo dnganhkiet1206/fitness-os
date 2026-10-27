@@ -250,6 +250,7 @@ public struct WorkoutSummaryView: View {
             style: .primary,
             action: onDone
           )
+          .accessibilityIdentifier("summary.backToToday")
           .padding(.top, DS.Spacing.md)
         }
       }

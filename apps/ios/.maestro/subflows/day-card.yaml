@@ -1,0 +1,20 @@
+# Cuộn Hôm nay tới thẻ "Your day" (dải thẻ Giấc ngủ · Bữa · Nước · Tập).
+appId: com.ascnd.fitnessos.dev
+---
+- scrollUntilVisible:
+    element:
+      id: today.tile.sleep
+    direction: DOWN
+    # Đáy thẻ luôn nằm dưới thanh tab kính — 100% (mặc định) không bao giờ đạt.
+    visibilityPercentage: 50
+    # Đưa dải thẻ lên giữa màn: insight tải xong SAU lần cuộn đẩy trang xuống, thẻ ở
+    # sát đáy thì trôi khỏi màn (CI lượt 9). Hết trang thì dừng ở chỗ cao nhất.
+    centerElement: true
+    # Cảnh Koa chuyển động liên tục nên Hôm nay không bao giờ "đứng yên": Maestro chờ
+    # đứng yên tới ~11 s sau mỗi lần cuộn, 20 s chỉ đủ 2 lần thử (CI lượt 4). Chờ ngắn.
+    waitToSettleTimeoutMs: 1000
+    timeout: 60000
+- extendedWaitUntil:
+    visible:
+      id: today.tile.meal
+    timeout: 10000
