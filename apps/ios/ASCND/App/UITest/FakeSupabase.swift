@@ -29,8 +29,20 @@
       lock.withLock { tables[table] ?? [] }
     }
 
-    func noteBlocked() {
+    func noteBlocked(_ url: URL) {
       lock.withLock { blockedRealRequests += 1 }
+      // Dấu vết cho workflow CI (đọc qua `simctl get_app_container … data`): một dòng mỗi
+      // request bị chặn. Tệp có là test đỏ.
+      guard let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
+      let file = dir.appendingPathComponent("uitest-blocked.log")
+      let line = Data((url.absoluteString + "\n").utf8)
+      if let h = try? FileHandle(forWritingTo: file) {
+        h.seekToEndOfFile()
+        h.write(line)
+        try? h.close()
+      } else {
+        try? line.write(to: file)
+      }
     }
 
     // MARK: Trả lời một request
@@ -422,7 +434,7 @@
       guard let url = request.url, let client else { return }
       // Lưới an toàn: chế độ test không bao giờ được nói chuyện với Supabase thật.
       if url.host != UITestMode.host {
-        FakeSupabaseStore.shared.noteBlocked()
+        FakeSupabaseStore.shared.noteBlocked(url)
         NSLog("[UITest] BLOCKED real Supabase request: %@", url.absoluteString)
         client.urlProtocol(self, didFailWithError: URLError(.notConnectedToInternet))
         return

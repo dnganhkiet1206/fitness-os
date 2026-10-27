@@ -89,6 +89,10 @@ jobs:
           xcrun simctl boot "$udid"
           xcrun simctl bootstatus "$udid" -b
           xcrun simctl install "$udid" "$APP"
+          # Bật chế độ UI test bằng khoá UserDefaults của app (simctl spawn — ghi thẳng tệp
+          # plist trong container thì cfprefsd không đọc) — không phụ thuộc dạng
+          # launch argument mà phiên bản Maestro truyền.
+          xcrun simctl spawn "$udid" defaults write "$BUNDLE_ID" uiTestFakeBackend -bool YES
 
       - name: Cài Maestro CLI (bộ cài chính thức, ghim phiên bản)
         run: |
@@ -116,12 +120,14 @@ jobs:
             --debug-output "$out/debug"
           status=$?
           kill -INT "$rec"; wait "$rec" || true
-          # Không request nào được lọt tới Supabase thật (FakeSupabaseProtocol ghi log khi chặn).
-          xcrun simctl spawn "$SIM" log show --last 60m --style compact \
-            --predicate 'eventMessage CONTAINS "BLOCKED real Supabase"' > "$out/blocked.log" || true
-          # Khớp đúng dòng app ghi (có URL) — dòng của chính lệnh `log show` cũng chứa chữ của predicate.
-          if grep -q "BLOCKED real Supabase request: http" "$out/blocked.log"; then
-            echo "::error::Chế độ UI test đã cố gọi Supabase thật"; cat "$out/blocked.log"; status=1
+          # Không request nào được lọt tới Supabase thật: FakeSupabaseProtocol ghi mỗi
+          # request bị chặn vào Documents/uitest-blocked.log trong container của app.
+          data=$(xcrun simctl get_app_container "$SIM" "$BUNDLE_ID" data)
+          if [ -s "$data/Documents/uitest-blocked.log" ]; then
+            cp "$data/Documents/uitest-blocked.log" "$out/"
+            echo "::error::Chế độ UI test đã cố gọi Supabase thật"; cat "$out/uitest-blocked.log"; status=1
+          else
+            echo "Không request nào tới Supabase thật."
           fi
           exit $status
 

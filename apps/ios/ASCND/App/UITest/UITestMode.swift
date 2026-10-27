@@ -13,14 +13,15 @@
   /// - đã đăng nhập sẵn bằng phiên giả (`UITestAuth`), không đụng Keychain;
   /// - dùng database trong bộ nhớ: mỗi lần mở app là dữ liệu mẫu sạch;
   /// - coi mạng luôn dùng được, không dò AI, không đồng bộ Health, không đo lường.
-  /// Request lọt tới `*.supabase.co` bị chặn và đếm (`blockedRealRequests`).
+  /// Request lọt tới `*.supabase.co` bị chặn, đếm và ghi vào `Documents/uitest-blocked.log`.
   enum UITestMode {
     static let isOn: Bool = {
       let info = ProcessInfo.processInfo
-      // `-uiTestFakeBackend` (simctl) hoặc `-uiTestFakeBackend true` (Maestro
-      // `launchApp.arguments`, đọc qua miền đối số của UserDefaults).
-      return info.arguments.contains("-uiTestFakeBackend") || UserDefaults.standard.bool(forKey: "uiTestFakeBackend")
-        || info.environment["ASCND_UI_TEST"] == "1"
+      // `-uiTestFakeBackend` (simctl), `uiTestFakeBackend true` / `-uiTestFakeBackend true`
+      // (Maestro `launchApp.arguments` — dạng tuỳ phiên bản), hoặc khoá UserDefaults của
+      // app (workflow CI ghi bằng `simctl spawn … defaults write`).
+      return info.arguments.contains { $0.trimmingCharacters(in: CharacterSet(charactersIn: "-")) == "uiTestFakeBackend" }
+        || UserDefaults.standard.bool(forKey: "uiTestFakeBackend") || info.environment["ASCND_UI_TEST"] == "1"
     }()
 
     /// Tên miền `.invalid` (RFC 2606): không bao giờ phân giải được ra mạng thật.
