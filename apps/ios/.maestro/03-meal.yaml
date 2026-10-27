@@ -4,18 +4,21 @@ name: log a meal in 3 taps, pick meal + OK
 ---
 - runFlow: subflows/launch.yaml
 - runFlow: subflows/day-card.yaml
-- repeat:
-    times: 2
-    while:
-      notVisible:
-        id: today.meal.manual
-    commands:
-      - swipe:
-          from:
-            id: today.tile.sleep
-          direction: LEFT
+# Vuốt dải thẻ một lần: thẻ Bữa dừng ở chỗ thẻ Giấc ngủ (cả thẻ trong màn).
+- swipe:
+    from:
+      id: today.tile.sleep
+    direction: LEFT
+- extendedWaitUntil:
+    visible:
+      id: today.meal.manual
+    timeout: 5000
 - tapOn:
     id: today.tile.meal
+- extendedWaitUntil:
+    visible:
+      id: logMeal.repeat
+    timeout: 10000
 - tapOn:
     id: logMeal.repeat
     index: 0

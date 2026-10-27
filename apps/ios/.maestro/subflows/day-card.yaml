@@ -5,4 +5,6 @@ appId: com.ascnd.fitnessos.dev
     element:
       id: today.tile.sleep
     direction: DOWN
+    # Đáy thẻ luôn nằm dưới thanh tab kính — 100% (mặc định) không bao giờ đạt.
+    visibilityPercentage: 50
     timeout: 20000

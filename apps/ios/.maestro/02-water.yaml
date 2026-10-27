@@ -4,16 +4,19 @@ name: water chip updates Water card and Insight
 ---
 - runFlow: subflows/launch.yaml
 - runFlow: subflows/day-card.yaml
-- repeat:
-    times: 3
-    while:
-      notVisible:
-        id: today.water.add
-    commands:
-      - swipe:
-          from:
-            id: today.tile.sleep
-          direction: LEFT
+# Dải thẻ: Giấc ngủ · Bữa · Nước · Tập, mỗi lần vuốt dừng ở thẻ kế.
+- swipe:
+    from:
+      id: today.tile.sleep
+    direction: LEFT
+- swipe:
+    from:
+      id: today.tile.meal
+    direction: LEFT
+- extendedWaitUntil:
+    visible:
+      id: today.water.add
+    timeout: 5000
 - assertVisible:
     id: today.water.add
     text: "\\+ ?8 oz"

@@ -7,6 +7,7 @@ name: Ask Koa opens Coach, back returns to Today
     element:
       id: today.askKoa
     direction: DOWN
+    visibilityPercentage: 50
     timeout: 20000
 - tapOn:
     id: today.askKoa
