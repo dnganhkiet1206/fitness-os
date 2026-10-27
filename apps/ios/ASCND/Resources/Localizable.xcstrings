@@ -2,6 +2,29 @@
  "sourceLanguage": "en",
  "version": "1.0",
  "strings": {
+  "settings.delete.unconfirmed": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "We couldn't confirm whether your account was deleted. Check your connection and tap Delete account again to finish — it's safe to retry."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chưa xác nhận được tài khoản đã xoá hay chưa. Kiểm tra mạng rồi bấm Xoá tài khoản lần nữa để hoàn tất — bấm lại không sao."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "No pudimos confirmar si tu cuenta se eliminó. Revisa tu conexión y toca Eliminar cuenta de nuevo para terminar; puedes reintentarlo sin problema."
+     }
+    }
+   }
+  },
   "ps.a11y.goal %@": {
    "extractionState": "manual",
    "localizations": {
