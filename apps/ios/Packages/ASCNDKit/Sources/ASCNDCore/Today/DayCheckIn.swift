@@ -26,6 +26,8 @@ public enum DayCheckIn {
   public static let waterStepMl = 250
   /// Nước điền sẵn khi hôm qua không có số: hai ly.
   public static let waterFallbackMl = 500
+  /// Sàn một lần ghi nước trong form (nấc nhỏ nhất của ô chỉnh).
+  public static let waterMinMl = 50
   /// Trần một lần ghi nước trong form (5 L — như một ly nhập nhầm ở Health).
   public static let waterMaxMl = 5_000
 
@@ -54,12 +56,12 @@ public enum DayCheckIn {
     return (counted.filter { states[$0] == .done }.count, counted.count)
   }
 
-  /// Nước điền sẵn: bằng hôm qua (làm tròn về nấc 250 ml, trong 250…5000);
-  /// hôm qua không ghi thì hai ly.
+  /// Nước điền sẵn: ĐÚNG lượng hôm qua (chỉ chặn trong 50…5000); hôm qua không
+  /// ghi thì hai ly. Không làm tròn (audit vòng 5, 27/10): nút ghi "Nước như hôm qua
+  /// (68 oz)" trong khi thẻ Nước ghi "Hôm qua 71 oz" — 2.100 ml làm tròn nấc 250 ml.
   public static func waterPrefillMl(yesterdayMl: Int?) -> Int {
     guard let y = yesterdayMl, y > 0 else { return waterFallbackMl }
-    let rounded = Int((Double(y) / Double(waterStepMl)).rounded()) * waterStepMl
-    return min(max(rounded, waterStepMl), waterMaxMl)
+    return min(max(y, waterMinMl), waterMaxMl)
   }
 
   /// Tổng nước của hôm qua trong bảng 7 ngày; `nil` khi không có (0 ml cũng là
