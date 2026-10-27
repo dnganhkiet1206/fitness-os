@@ -26,11 +26,13 @@ struct InsightHighlightTests {
 
   @Test func weekAveragesOnlyLoggedDays() {
     let rows: [JSONValue] = [
-      .object(["kcal": .number(2000), "sleep_duration_min": .number(420)]),
-      .object(["kcal": .number(0), "sleep_duration_min": .number(480)]),
-      .object(["kcal": .number(3000), "steps": .null]),
+      .object(["date": .string("2026-10-20"), "kcal": .number(2000), "sleep_duration_min": .number(420)]),
+      .object(["date": .string("2026-10-21"), "kcal": .number(0), "sleep_duration_min": .number(480)]),
+      .object(["date": .string("2026-10-22"), "kcal": .number(3000), "steps": .null]),
+      // Hôm nay chưa xong — không vào trung bình (Kiệt 27/10).
+      .object(["date": .string("2026-10-27"), "kcal": .number(500), "steps": .number(900)]),
     ]
-    let w = InsightHighlight.week(rows)
+    let w = InsightHighlight.week(rows, today: LocalDate("2026-10-27")!)
     #expect(w.kcal == .init(value: 2500, days: 2))
     #expect(w.sleepMin == .init(value: 450, days: 2))
     #expect(w.steps == nil)

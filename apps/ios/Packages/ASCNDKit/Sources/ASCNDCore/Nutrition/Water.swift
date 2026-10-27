@@ -184,8 +184,17 @@ public enum Water {
     loggedAverage(days.map { Double($0.totalMl) })
   }
 
-  /// Ngày đầu của khung 7 ngày (`useWaterWeek`: hôm nay − 6).
-  public static func weekStart(_ today: LocalDate) -> LocalDate { today.adding(days: -6) }
+  /// Ngày đầu cần ĐỌC: bảy cốc (`useWaterWeek`: hôm nay − 6) và khung trung bình
+  /// (`AverageWindow`: hôm nay − 7, Kiệt 27/10) — lấy ngày sớm hơn.
+  public static func weekStart(_ today: LocalDate) -> LocalDate {
+    min(today.adding(days: -6), AverageWindow.first(before: today))
+  }
+
+  /// Trung bình của màn Nước: `AverageWindow` (bảy ngày TRƯỚC hôm nay), chia cho ngày có
+  /// ghi. Hôm nay hiện riêng (cốc lớn, cốc hôm nay).
+  public static func windowAverage(_ rows: [WaterRow], today: LocalDate) -> AverageWindow.Average? {
+    AverageWindow.average(rows.map { ($0.date, Double($0.amountMl)) }, before: today)
+  }
 
   /// `useWaterWeek`: gộp theo ngày, đúng 7 ngày cũ → mới, ngày không có hàng là 0.
   public static func week(_ rows: [WaterRow], today: LocalDate) -> [WaterDay] {

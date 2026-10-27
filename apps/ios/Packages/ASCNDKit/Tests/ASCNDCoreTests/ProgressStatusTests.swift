@@ -65,21 +65,37 @@ struct ProgressStatusTests {
     #expect(P.focus(rs) == [.training, .nutrition])
   }
 
+  /// Kiệt 27/10: khung là 7 ngày TRƯỚC hôm nay (`AverageWindow`); hôm nay đi riêng.
   @Test func rowsToSevenDays() throws {
     let today = try #require(LocalDate("2026-10-21"))
     let days = P.window(today)
-    #expect(days.count == 7 && days.first == LocalDate("2026-10-15") && days.last == today)
+    #expect(days == AverageWindow.days(before: today))
+    #expect(days.count == 7 && days.first == LocalDate("2026-10-14") && days.last == LocalDate("2026-10-20"))
     let rows: [JSONValue] = [
       .object(["date": .string("2026-10-21"), "steps": .number(2632), "readiness_score": .number(70),
                "readiness_explain": .string("load:70")]),
       .object(["date": .string("2026-10-20"), "steps": .number(0), "readiness_score": .number(88),
                "readiness_explain": .string("hrv:30|load:45|rhr:69|sleep:88")]),
+      .object(["date": .string("2026-10-19"), "steps": .number(9100)]),
     ]
-    #expect(P.column(rows, "steps", days: days).last == 2632)
-    #expect(P.column(rows, "steps", days: days)[5] == nil, "0 bước = chưa có số")
+    #expect(!P.column(rows, "steps", days: days).contains(2632), "hôm nay không vào khung")
+    #expect(P.column(rows, "steps", days: [today]) == [2632])
+    #expect(P.column(rows, "steps", days: days)[6] == nil, "0 bước = chưa có số")
+    #expect(P.column(rows, "steps", days: days)[5] == 9100)
     let ready = P.measuredReadiness(rows, days: days)
-    #expect(ready[5] == 88 && ready[6] == nil, "chỉ tải tập → không tính là đo được phục hồi")
+    #expect(ready[6] == 88)
+    #expect(P.measuredReadiness(rows, days: [today]) == [nil], "chỉ tải tập → không tính là đo được phục hồi")
     #expect(P.recoveryMeasured("sleep:47|load:80") && !P.recoveryMeasured("load:80") && !P.recoveryMeasured(nil))
+  }
+
+  /// Số hôm nay chỉ để hiện: không đổi trung bình, không đổi chữ trạng thái.
+  @Test func todayIsShownButNotAveraged() {
+    let week: [Double?] = [8000, 8000, 8000, nil, nil, nil, nil]
+    let morning = P.steps(week, goal: 10_000, today: 400)
+    #expect(morning.today == 400 && morning.average == 8000 && morning.level == .good)
+    #expect(P.sleep([480, 480, 480, nil, nil, nil, nil], targetHours: 8, today: 300).average == 480)
+    #expect(P.nutrition([120, 120, 120, nil, nil, nil, nil], target: 140, today: 10).level == .good)
+    #expect(P.recovery([70, 70, 70, nil, nil, nil, nil], today: 20).average == 70)
   }
 
   @Test @MainActor func trainingFromKoaWeek() throws {

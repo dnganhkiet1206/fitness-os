@@ -42,12 +42,14 @@ public enum SleepInsights {
 
   public static let days = 7
 
-  /// `useSleepHistory(7)`: `waketime >= bây giờ − 7 ngày lịch`, cũ → mới.
+  /// `useSleepHistory(7)`: `waketime >= bây giờ − 7 ngày lịch`, cũ → mới. Native đọc từ
+  /// nửa đêm ngày đầu của `AverageWindow` (hôm nay − 7) để đủ đêm cho trung bình.
   public static func query(userId: String, now: EpochMillis, in tz: TimeZone) -> RowQuery {
     var cal = Calendar(identifier: .gregorian)
     cal.timeZone = tz
     let nowDate = Date(timeIntervalSince1970: TimeInterval(now.millis) / 1000)
-    let from = cal.date(byAdding: .day, value: -days, to: nowDate) ?? nowDate
+    let rolling = EpochMillis(cal.date(byAdding: .day, value: -days, to: nowDate) ?? nowDate)
+    let from = min(rolling.millis, DailyLog.midnight(AverageWindow.first(before: LocalDate(now, in: tz)), tz).millis)
     return RowQuery(
       table: "sleep_logs", columns: "*",
       filters: [.eq("user_id", .string(userId)), .gte("waketime", .string(WorkoutSessionRecord.iso8601(EpochMillis(from))))],
@@ -78,6 +80,13 @@ public enum SleepInsights {
       id: id, bedtime: ms("bedtime"), waketime: ms("waketime"), minutes: DailyLog.asleepMinutes(row),
       deepH: deep / 60, remH: rem / 60, lightH: light / 60, stagesKnown: deep + rem + light > 0,
       quality: JS.number(row["quality"]))
+  }
+
+  /// Đêm của khung trung bình (Kiệt 27/10): ngày THỨC dậy nằm trong `AverageWindow` (bảy
+  /// ngày trước hôm nay) — cùng ngày với `daily_logs.sleep_duration_min` mà Tiến bộ đọc.
+  /// Đêm dậy sáng nay vẫn ở biểu đồ / danh sách, không vào trung bình.
+  public static func inWindow(_ nights: [Night], today: LocalDate, in tz: TimeZone) -> [Night] {
+    nights.filter { n in n.waketime.map { AverageWindow.contains(LocalDate($0, in: tz), before: today) } ?? false }
   }
 
   public static func stats(_ nights: [Night], targetHours: Double) -> Stats? {
@@ -212,6 +221,11 @@ public final class SleepInsightsBook {
   }
 
   public func close() { closed = true }
+
+  /// Đêm vào trung bình: `SleepInsights.inWindow` theo hôm nay của sổ.
+  public func averaged(_ nights: [SleepInsights.Night]) -> [SleepInsights.Night] {
+    SleepInsights.inWindow(nights, today: LocalDate(clock.nowMillis(), in: timeZone), in: timeZone)
+  }
 
   /// Đọc (lại) đêm + mục tiêu. Đọc đêm hỏng → lỗi (RN: `LoadFailed`), không
   /// bao giờ "chưa có dữ liệu"; đọc lại hỏng khi đã có số thì giữ số. Hồ sơ
