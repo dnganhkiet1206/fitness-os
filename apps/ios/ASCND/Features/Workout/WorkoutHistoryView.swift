@@ -267,9 +267,11 @@ public struct WorkoutHistoryView: View {
         HStack(spacing: DS.Spacing.md) {
           VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: DS.Spacing.xs) {
+              // Tên dài (audit vòng 5): tối đa 2 dòng — không đẩy ngày xuống dòng.
               Text(verbatim: e.templateName)
                 .font(DS.TextStyle.headline)
                 .foregroundStyle(DS.Color.foreground.swiftUI)
+                .lineLimit(2)
               if e.prDetected {
                 Image(systemName: "trophy.fill")
                   .font(.caption)
@@ -287,6 +289,8 @@ public struct WorkoutHistoryView: View {
             }
             .font(DS.TextStyle.caption)
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .lineLimit(1)
+            .minimumScaleFactor(0.85)
             // Thanh tỉ lệ với buổi nặng nhất tháng (RN `volumeRatio`).
             if peak > 0 {
               GeometryReader { g in
@@ -306,6 +310,7 @@ public struct WorkoutHistoryView: View {
               .font(DS.TextStyle.caption)
               .foregroundStyle(DS.Color.mutedForeground.swiftUI)
           }
+          .fixedSize()
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(verbatim: rowLabel(e, kcal: kcal)))
