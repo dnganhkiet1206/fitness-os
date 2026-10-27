@@ -169,6 +169,29 @@ struct TodayControllerTests {
     #expect(c.plan?.status == .todo)
   }
 
+  /// Audit vòng 4: cache hiện ra trong lúc chờ server KHÔNG phải offline —
+  /// màn chỉ nói "offline" khi lần hỏi server đã hỏng.
+  @Test func cacheWhileWaitingIsNotStale() async {
+    let source = Counting()
+    let c = TodayController(
+      userId: "u1", repository: TodayRepository(source: source, cache: Cache(["u1": snap(7)])),
+      history: History(result: .success([])), workouts: InMemoryWorkoutStore(), clock: monday2pm, timeZone: saigon)
+    await source.hold()
+    async let loading: Void = c.load()
+    while await source.waiting == 0 { await Task.yield() }
+    #expect(c.source == .cache(EpochMillis(7)))
+    #expect(c.plan?.status == .todo, "cache hiện ngay")
+    #expect(!c.showingStaleCache, "đang chờ server, chưa phải offline")
+    await source.release()
+    await loading
+    #expect(c.source == .server(EpochMillis(1)))
+    #expect(!c.showingStaleCache)
+
+    let off = controller(cache: Cache(["u1": snap(7)]), source: .failure(Down()))
+    await off.load()
+    #expect(off.showingStaleCache, "server hỏng: đang xem bản cũ")
+  }
+
   /// Làm mới thành công thì lỗi cũ biến mất.
   @Test func successClearsFailure() async {
     let source = Flaky()
