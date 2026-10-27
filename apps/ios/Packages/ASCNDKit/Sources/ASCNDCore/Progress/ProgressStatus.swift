@@ -14,7 +14,9 @@ public import Observation
 /// - Giấc ngủ: TB giờ ngủ ≥ mục tiêu − 30 phút.
 /// - Ăn uống: TB đạm ≥ 80 % mục tiêu (cùng ngưỡng lời khuyên "đạm thấp" của Tổng kết tuần).
 /// - Hồi phục: TB sẵn sàng của ngày ĐO ĐƯỢC phục hồi ≥ 60.
-/// - Cơ thể: xu hướng cân 4 tuần theo hướng mục tiêu (giảm / giữ / tăng).
+/// - Cơ thể: xu hướng cân 4 tuần theo hướng mục tiêu (giảm / giữ / tăng); tăng hay giảm
+///   nhanh hơn ~1 % cân nặng mỗi tuần cũng là "Cần chú ý" (Kiệt 27/10) — "Tốt" cho +15 kg
+///   trong 4 tuần khi mục tiêu là tăng là sai.
 /// - Mọi nhóm (trừ Tập luyện): dưới 3 ngày / lần có dữ liệu → chưa đủ dữ liệu.
 public enum ProgressStatus {
   public enum Level: String, Sendable, Hashable, CaseIterable {
@@ -36,6 +38,31 @@ public enum ProgressStatus {
   /// Cân: "giữ" là không đổi quá chừng này trong 4 tuần; "giảm / tăng" chấp nhận lệch nhẹ.
   public static let maintainBandKg = 1.0
   public static let directionSlackKg = 0.2
+  /// Tăng / giảm quá chừng này % cân nặng mỗi tuần (trung bình trên các lần cân) là quá
+  /// nhanh (Kiệt 27/10). Mốc hướng dẫn chung hay dùng (~0,5–1 %/tuần), không phải y khoa.
+  public static let maxWeeklyChangePercent = 1.0
+  /// Hai lần cân sát nhau không đủ để nói tốc độ (nước, bữa tối muộn): lần đầu và lần
+  /// cuối phải cách nhau ít nhất chừng này ngày thì mới xét tốc độ.
+  public static let minRateDays = 7
+
+  /// Một lần cân (ngày địa phương, kg).
+  public struct Weigh: Sendable, Hashable {
+    public let date: LocalDate
+    public let kg: Double
+
+    public init(date: LocalDate, kg: Double) {
+      self.date = date
+      self.kg = kg
+    }
+  }
+
+  /// Vì sao nhóm Cơ thể "Cần chú ý" — chọn câu khuyên.
+  public enum BodyNote: String, Sendable, Hashable {
+    /// Đi ngược mục tiêu (hay ra ngoài dải "giữ").
+    case offTrack
+    case gainingFast
+    case losingFast
+  }
 
   public struct Result: Sendable, Hashable, Identifiable {
     public let group: Group
@@ -49,6 +76,9 @@ public enum ProgressStatus {
     public let today: Double?
     public let average: Double?
     public let target: Double?
+    /// Cơ thể: thay đổi trung bình mỗi tuần (kg) và lý do "Cần chú ý".
+    public var weeklyKg: Double? = nil
+    public var bodyNote: BodyNote? = nil
     public var id: Group { group }
   }
 
@@ -113,21 +143,36 @@ public enum ProgressStatus {
     }
   }
 
-  /// Lần cân trong 4 tuần, cũ → mới (kg).
-  public static func body(_ weights: [Double], goal: WeightGoal) -> Result {
-    guard weights.count >= minDays, let first = weights.first, let last = weights.last else {
-      return Result(group: .body, level: .insufficient, have: weights.count, of: weightDays, need: minDays,
-                    today: weights.last, average: nil, target: nil)
+  /// Thay đổi trung bình mỗi tuần (kg) từ lần cân đầu tới lần cuối. `nil` khi hai lần
+  /// ấy cách nhau dưới `minRateDays` ngày.
+  public static func weeklyChangeKg(_ weights: [Weigh]) -> Double? {
+    guard let first = weights.first, let last = weights.last else { return nil }
+    let days = last.date.daysSinceEpoch - first.date.daysSinceEpoch
+    guard days >= minRateDays else { return nil }
+    return (last.kg - first.kg) / (Double(days) / 7)
+  }
+
+  /// Lần cân trong 4 tuần, cũ → mới.
+  public static func body(_ weights: [Weigh], goal: WeightGoal) -> Result {
+    let kgs = weights.map(\.kg)
+    guard kgs.count >= minDays, let first = kgs.first, let last = kgs.last else {
+      return Result(group: .body, level: .insufficient, have: kgs.count, of: weightDays, need: minDays,
+                    today: kgs.last, average: nil, target: nil)
     }
     let change = last - first
-    let ok: Bool = switch goal {
-    case .lose: change <= directionSlackKg
-    case .gain: change >= -directionSlackKg
-    case .maintain: abs(change) <= maintainBandKg
+    let weekly = weeklyChangeKg(weights)
+    let percent = weekly.map { first > 0 ? $0 / first * 100 : 0 } ?? 0
+    let note: BodyNote? = switch goal {
+    case .lose:
+      change > directionSlackKg ? .offTrack : percent < -maxWeeklyChangePercent ? .losingFast : nil
+    case .gain:
+      change < -directionSlackKg ? .offTrack : percent > maxWeeklyChangePercent ? .gainingFast : nil
+    case .maintain:
+      abs(change) <= maintainBandKg ? nil : .offTrack
     }
-    let recent = Array(weights.suffix(windowDays))
-    return Result(group: .body, level: ok ? .good : .attention, have: weights.count, of: weightDays, need: minDays,
-                  today: last, average: mean(recent), target: change)
+    let recent = Array(kgs.suffix(windowDays))
+    return Result(group: .body, level: note == nil ? .good : .attention, have: kgs.count, of: weightDays,
+                  need: minDays, today: last, average: mean(recent), target: change, weeklyKg: weekly, bodyNote: note)
   }
 
   // MARK: - Thứ tự, câu đầu trang
@@ -222,7 +267,7 @@ public final class ProgressStatusBook {
     public let kcal: [Double?]
     public let waterMl: [Double?]
     public let readiness: [Double?]
-    public let weights: [Double]
+    public let weights: [ProgressStatus.Weigh]
     public let proteinTarget: Double
     public let kcalTarget: Double
     public let waterTargetMl: Double
@@ -295,7 +340,8 @@ public final class ProgressStatusBook {
         readiness: ProgressStatus.measuredReadiness(rows, days: days),
         weights: wRows.compactMap { r in
           let v = JS.number(r["weight_kg"])
-          return v > 0 && v.isFinite ? v : nil
+          guard v > 0, v.isFinite, let d = r["date"]?.stringValue.flatMap(LocalDate.init) else { return nil }
+          return ProgressStatus.Weigh(date: d, kg: v)
         },
         proteinTarget: target("macro_protein_g", 140), kcalTarget: target("tdee_target_kcal", 2200),
         waterTargetMl: target("water_target_ml", 2500), sleepTargetHours: target("sleep_target_hours", 8),

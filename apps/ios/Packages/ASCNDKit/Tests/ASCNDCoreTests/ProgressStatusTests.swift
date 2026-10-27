@@ -44,14 +44,56 @@ struct ProgressStatusTests {
     #expect(P.recovery([59, 59, 59, nil, nil, nil, nil]).level == .attention)
   }
 
+  /// Lần cân cách nhau `every` ngày, bắt đầu 30/09/2026.
+  static func weighs(_ kgs: [Double], every: Int = 7) -> [P.Weigh] {
+    kgs.enumerated().map { P.Weigh(date: LocalDate("2026-09-30")!.adding(days: $0.offset * every), kg: $0.element) }
+  }
+
   @Test func bodyFollowsTheGoalDirection() {
-    #expect(P.body([55.0, 55.4, 55.2], goal: .maintain).level == .good)
-    #expect(P.body([55.0, 55.6, 56.2], goal: .maintain).level == .attention)
-    #expect(P.body([60.0, 59.5, 59.0], goal: .lose).level == .good)
-    #expect(P.body([60.0, 60.2, 60.5], goal: .lose).level == .attention)
-    #expect(P.body([60.0, 60.3, 60.5], goal: .gain).level == .good)
-    #expect(P.body([60.0, 60.1], goal: .gain).level == .insufficient)
+    #expect(P.body(Self.weighs([55.0, 55.4, 55.2]), goal: .maintain).level == .good)
+    #expect(P.body(Self.weighs([55.0, 55.6, 56.2]), goal: .maintain).level == .attention)
+    #expect(P.body(Self.weighs([60.0, 59.5, 59.0]), goal: .lose).level == .good)
+    #expect(P.body(Self.weighs([60.0, 60.2, 60.5]), goal: .lose).bodyNote == .offTrack)
+    #expect(P.body(Self.weighs([60.0, 60.3, 60.5]), goal: .gain).level == .good)
+    #expect(P.body(Self.weighs([60.0, 60.1]), goal: .gain).level == .insufficient)
     #expect(P.weightGoal("cut") == .lose && P.weightGoal("bulk") == .gain && P.weightGoal(nil) == .maintain)
+  }
+
+  /// Kiệt 27/10: tăng / giảm nhanh hơn ~1 % cân nặng mỗi tuần là "Cần chú ý".
+  /// Audit vòng 4: +15 kg trong 4 tuần, mục tiêu tăng, từng ra "Tốt".
+  @Test func gainingFasterThanOnePercentAWeekNeedsAttention() {
+    let r = P.body(Self.weighs([70, 74, 78, 81, 85]), goal: .gain)  // 28 ngày, +3,75 kg/tuần
+    #expect(r.level == .attention && r.bodyNote == .gainingFast)
+    #expect(abs((r.weeklyKg ?? 0) - 3.75) < 1e-9)
+    // 70 kg, +0,6 kg/tuần (0,86 %/tuần) — trong ngưỡng.
+    let ok = P.body(Self.weighs([70, 70.6, 71.2, 71.8, 72.4]), goal: .gain)
+    #expect(ok.level == .good && ok.bodyNote == nil)
+    // Vừa quá 1 %: 70 kg, +0,75 kg/tuần (1,07 %).
+    #expect(P.body(Self.weighs([70, 70.75, 71.5]), goal: .gain).bodyNote == .gainingFast)
+  }
+
+  @Test func losingFasterThanOnePercentAWeekNeedsAttention() {
+    let r = P.body(Self.weighs([80, 78, 76]), goal: .lose)  // −2 kg/tuần = −2,5 %/tuần
+    #expect(r.level == .attention && r.bodyNote == .losingFast)
+    #expect(r.weeklyKg == -2)
+    // 80 kg, −0,5 kg/tuần (0,63 %) — trong ngưỡng.
+    #expect(P.body(Self.weighs([80, 79.5, 79, 78.5]), goal: .lose).level == .good)
+  }
+
+  /// Giữ cân: vẫn dải ±1 kg trong 4 tuần như trước (tốc độ không xét riêng).
+  @Test func maintainKeepsItsBand() {
+    #expect(P.body(Self.weighs([70, 70.4, 70.8]), goal: .maintain).level == .good)
+    let r = P.body(Self.weighs([70, 74, 78, 81, 85]), goal: .maintain)
+    #expect(r.level == .attention && r.bodyNote == .offTrack)
+    // Giảm nhanh khi mục tiêu tăng: đi ngược mục tiêu, không phải "giảm nhanh".
+    #expect(P.body(Self.weighs([70, 68, 66]), goal: .gain).bodyNote == .offTrack)
+  }
+
+  /// Lần cân cách nhau dưới một tuần: chưa nói được tốc độ (nước, bữa muộn) — chỉ xét hướng.
+  @Test func shortSpansDoNotJudgeSpeed() {
+    let r = P.body(Self.weighs([70, 71, 72], every: 1), goal: .gain)
+    #expect(r.weeklyKg == nil && r.level == .good)
+    #expect(P.weeklyChangeKg(Self.weighs([70, 71], every: 7)) == 1)
   }
 
   @Test func orderPutsAttentionFirstAndFocusFollowsPriority() {

@@ -57,7 +57,13 @@ extension ProgressStyle {
     }
   }
 
-  static func advice(_ r: ProgressStatus.Result) -> String? {
+  static func advice(_ r: ProgressStatus.Result, unit: WeightUnit) -> String? {
+    // Cơ thể đổi quá ~1 % cân nặng / tuần (Kiệt 27/10): nói tốc độ, kèm "hướng dẫn chung".
+    if r.level == .attention, let note = r.bodyNote, note != .offTrack, let weekly = r.weeklyKg {
+      let pace = "\(n(unit.display(abs(weekly)), 1)) \(unit.label)"
+      return note == .gainingFast
+        ? String(localized: "ps.a.body.gainFast \(pace)") : String(localized: "ps.a.body.lossFast \(pace)")
+    }
     switch r.level {
     case .good: return String(localized: "ps.a.good")
     case .insufficient: return nil
@@ -103,7 +109,7 @@ struct ProgressResultCard: View {
           .font(DS.TextStyle.caption)
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
           .padding(.top, 1)
-        if let advice = ProgressStyle.advice(result) {
+        if let advice = ProgressStyle.advice(result, unit: unit) {
           Text(verbatim: advice)
             .font(DS.TextStyle.footnote)
             .foregroundStyle(DS.Color.foreground.swiftUI.opacity(0.85))
@@ -192,7 +198,7 @@ struct ProgressGroupView: View {
         VStack(alignment: .leading, spacing: 4) {
           ProgressStatusWord(level: result.level, font: .system(size: 26, weight: .bold))
             .tracking(-0.4)
-          Text(verbatim: ProgressStyle.advice(result) ?? ProgressStyle.missing(result))
+          Text(verbatim: ProgressStyle.advice(result, unit: unit) ?? ProgressStyle.missing(result))
             .font(DS.TextStyle.body)
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
         }
