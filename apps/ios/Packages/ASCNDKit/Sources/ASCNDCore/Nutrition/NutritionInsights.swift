@@ -78,7 +78,8 @@ public enum NutritionInsights {
   public static func query(userId: String, today: LocalDate) -> RowQuery {
     RowQuery(
       table: "daily_logs", columns: "date, kcal, protein_g, carbs_g, fat_g, fiber_g",
-      filters: [.eq("user_id", .string(userId)), .gte("date", .string(today.adding(days: -(days - 1)).description))],
+      // Từ ngày đầu của `AverageWindow` (hôm nay − 7): biểu đồ bảy cột tới hôm nay + khung TB.
+      filters: [.eq("user_id", .string(userId)), .gte("date", .string(AverageWindow.first(before: today).description))],
       order: RowQuery.Order(column: "date", ascending: true))
   }
 
@@ -113,6 +114,12 @@ public enum NutritionInsights {
       out.append(.fiberLow(avg: Int(JS.round(s.avgFiber)), target: Int(JS.round(targets.fiber))))
     }
     return out
+  }
+
+  /// Ngày vào trung bình (đạm, xơ, kcal, lời khuyên): `AverageWindow` — bảy ngày TRƯỚC hôm
+  /// nay (Kiệt 27/10). Biểu đồ (`week`) vẫn có cột hôm nay.
+  public static func averaged(_ days: [Day], today: LocalDate) -> [Day] {
+    days.filter { AverageWindow.contains($0.date, before: today) }
   }
 
   /// kcal trung bình trên các ngày CÓ dữ liệu (cùng mẫu số với đạm); rỗng → nil.

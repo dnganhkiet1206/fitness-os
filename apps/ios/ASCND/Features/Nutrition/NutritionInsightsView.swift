@@ -54,14 +54,16 @@ struct NutritionInsightsView: View {
         message: String(localized: "insights.empty.hint"))
     case .ready(let days):
       let t = targets
-      let stats = NutritionInsights.stats(days, proteinTarget: t.protein)
       let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
+      // Trung bình bỏ hôm nay (`AverageWindow`, Kiệt 27/10); biểu đồ vẫn có cột hôm nay.
+      let averaged = NutritionInsights.averaged(days, today: today)
+      let stats = NutritionInsights.stats(averaged, proteinTarget: t.protein)
       if let stats {
         HStack(spacing: DS.Spacing.sm) {
           tile(String(localized: "insights.avgProtein"), DiaryView.whole(stats.avgProtein),
                unit: " / " + DiaryView.whole(t.protein) + " g")
           tile(String(localized: "insights.avgKcal"),
-               NutritionInsights.avgKcal(days).map(DiaryView.whole) ?? "—", unit: "")
+               NutritionInsights.avgKcal(averaged).map(DiaryView.whole) ?? "—", unit: "")
         }
       }
       VStack(alignment: .leading, spacing: DS.Spacing.md) {

@@ -31,7 +31,7 @@ struct StepsGoldenTests {
       let goal = Int(try #require(Self.num(c["goal"])))
       let s = Steps.stats(h, today: today)
       #expect(s.today == Self.num(c["today"]), "\(c)")
-      #expect(s.avg == Self.num(c["avg"]), "\(c)")
+      // `avg` lệch RN có chủ đích (Kiệt 27/10): `AverageWindow` — xem `StepsAverageTests`.
       #expect(s.last7.map(\.date.description) == Self.array(c["last7"]).compactMap(\.stringValue))
       let trend = try #require(Self.num(c["trend"]))
       #expect(abs(s.trend - trend) < 1e-9, "\(c)")
@@ -108,5 +108,23 @@ struct StepsBookTests {
     let q = Steps.query(userId: "u", today: LocalDate("2026-10-09")!)
     #expect(q.columns == "date, steps")
     #expect(q.filters.contains(.gte("date", .string("2026-09-25"))))
+  }
+}
+
+/// Kiệt 27/10: trung bình bước là bảy ngày TRƯỚC hôm nay, chia cho ngày có bước — cùng
+/// khung với Tiến bộ và Insight.
+struct StepsAverageTests {
+  @Test func averageSkipsTodayAndEmptyDays() throws {
+    let today = try #require(LocalDate("2026-10-27"))
+    let h: [Steps.Day] = [
+      .init(date: LocalDate("2026-10-19")!, steps: 99_999),  // ngoài khung (hôm nay − 8)
+      .init(date: LocalDate("2026-10-20")!, steps: 8000),
+      .init(date: LocalDate("2026-10-22")!, steps: 0),
+      .init(date: LocalDate("2026-10-26")!, steps: 10_000),
+      .init(date: today, steps: 300),  // buổi sáng — không kéo trung bình xuống
+    ]
+    let s = Steps.stats(h, today: today)
+    #expect(s.avg == 9000)
+    #expect(s.today == 300)
   }
 }
