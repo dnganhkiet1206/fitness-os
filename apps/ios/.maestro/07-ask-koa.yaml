@@ -7,16 +7,20 @@ name: Ask Koa opens Coach, back returns to Today
     element:
       id: today.askKoa
     direction: DOWN
-    visibilityPercentage: 50
+    # Cả thẻ trong màn: tâm thẻ ở mép dưới thì chạm rơi vào thanh tab (CI lượt 5).
+    visibilityPercentage: 100
     # Cảnh Koa chuyển động liên tục nên Hôm nay không bao giờ "đứng yên": Maestro chờ
     # đứng yên tới ~11 s sau mỗi lần cuộn, 20 s chỉ đủ 2 lần thử (CI lượt 4). Chờ ngắn.
     waitToSettleTimeoutMs: 1000
     timeout: 60000
 - tapOn:
     id: today.askKoa
+# Thanh điều hướng của Coach (id = tiêu đề) — chữ ".*Koa Coach.*" khớp nhầm nút
+# "Ask Koa Coach" của thanh tab ở Hôm nay.
 - extendedWaitUntil:
-    visible: ".*Koa Coach.*"
-    timeout: 10000
+    visible:
+      id: "Koa Coach"
+    timeout: 15000
 - takeScreenshot: 07-coach
 - runFlow: subflows/back.yaml
 # Về đúng chỗ đã rời Hôm nay (đang cuộn tới thẻ Hỏi Koa).
@@ -24,5 +28,6 @@ name: Ask Koa opens Coach, back returns to Today
     visible:
       id: today.askKoa
     timeout: 10000
-- assertNotVisible: ".*Koa Coach.*"
+- assertNotVisible:
+    id: "Koa Coach"
 - takeScreenshot: 07-back-today

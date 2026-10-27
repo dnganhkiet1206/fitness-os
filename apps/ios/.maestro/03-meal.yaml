@@ -27,15 +27,20 @@ name: log a meal in 3 taps, pick meal + OK
 - tapOn:
     id: logMeal.repeat
     index: 0
+# Màn "đã lưu" tự đóng sau 8 s và thanh đếm ngược chạy suốt nên giao diện không
+# "đứng yên": chờ đứng yên mặc định ăn hết 8 s, cú chạm chọn bữa rơi xuống thẻ Bữa
+# ở Hôm nay và mở lại form (CI lượt 5). Chờ đứng yên ngắn; chọn bữa thì dừng đếm.
 - tapOn:
     id: logMeal.save
+    waitToSettleTimeoutMs: 500
 - extendedWaitUntil:
     visible:
       id: logMeal.ok
-    timeout: 10000
-- takeScreenshot: 03-meal-saved
+    timeout: 5000
 - tapOn:
     id: logMeal.pick.snack
+    waitToSettleTimeoutMs: 500
+- takeScreenshot: 03-meal-saved
 - tapOn:
     id: logMeal.ok
 - extendedWaitUntil:

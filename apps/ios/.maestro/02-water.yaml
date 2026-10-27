@@ -28,9 +28,10 @@ name: water chip updates Water card and Insight
     visible:
       id: today.water.add
     timeout: 5000
+# Chip: ảnh "+" riêng, chữ của nút là "8 oz".
 - assertVisible:
     id: today.water.add
-    text: "\\+ ?8 oz"
+    text: "8 oz"
 - assertVisible:
     id: today.tile.water
     text: "Water"
