@@ -110,6 +110,14 @@ jobs:
       # apt của nó — `playwright-core/lib/server/registry/dependencies.js` dựng
       # `{ command: "sudo", args: ["--", "sh", "-c", …] }` khi nó không phải
       # root. Đọc từ chính gói đang cài, không phải từ tài liệu.
+      # Giữ bản Chromium đã tải giữa các lượt (Kiệt 28/10: tăng tốc CI). Bản
+      # Playwright đổi thì bước dưới tự tải bản mới — cache chỉ bỏ được lượt tải.
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('native/package-lock.json') }}
+          restore-keys: playwright-${{ runner.os }}-
+
       - name: Playwright + Chromium
         run: |
           npm install -g playwright

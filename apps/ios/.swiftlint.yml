@@ -1,0 +1,31 @@
+# SwiftLint cho app iOS (Kiệt 28/10: công cụ tìm lỗi cho mọi agent).
+#
+# CHỈ các luật bắt LỖI, không luật kiểu dáng: mã đã có quy ước riêng (tên ngắn,
+# dòng dài, chú thích tiếng Việt) và một bộ luật kiểu dáng sẽ phun hàng nghìn
+# cảnh báo không ai đọc. Thêm luật vào `only_rules` khi nó bắt được lỗi thật.
+#
+# Chạy: `swiftlint lint --config apps/ios/.swiftlint.yml <tệp…>` từ gốc repo.
+# CI (`ios-analysis.yml`) chạy trên tệp Swift đổi trong PR, không chặn merge.
+only_rules:
+  - force_cast
+  - force_try
+  - duplicate_imports
+  - duplicate_enum_cases
+  - duplicate_conditions
+  - identical_operands
+  - unused_setter_value
+  - discarded_notification_center_observer
+  - unowned_variable_capture
+  - weak_delegate
+  - unhandled_throwing_task
+  - private_swiftui_state
+  - empty_xctest_method
+included:
+  - ASCND
+  - ASCNDWidgets
+  - Packages/ASCNDKit/Sources
+  - Packages/ASCNDBackend/Sources
+  - Packages/ASCNDStore/Sources
+excluded:
+  - Packages/*/.build
+  - build

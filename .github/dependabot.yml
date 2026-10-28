@@ -1,0 +1,27 @@
+# Dependabot (Kiệt 28/10: công cụ hỗ trợ cho mọi agent). Mỗi tuần một PR gom
+# bản cập nhật của GitHub Actions và gói Swift — đọc changelog trước khi merge;
+# PR của Dependabot cũng phải xanh CI như mọi PR khác.
+#
+# Dependabot chỉ đọc tệp này trên NHÁNH MẶC ĐỊNH của repo: nó chỉ chạy sau khi
+# `native/ios-rewrite` được Kiệt gộp vào nhánh mặc định. PR của nó nhắm vào
+# `native/ios-rewrite` (target-branch).
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    target-branch: native/ios-rewrite
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ['*']
+  - package-ecosystem: swift
+    directories:
+      - /apps/ios/Packages/ASCNDBackend
+      - /apps/ios/Packages/ASCNDStore
+    target-branch: native/ios-rewrite
+    schedule:
+      interval: weekly
+    groups:
+      swift:
+        patterns: ['*']
