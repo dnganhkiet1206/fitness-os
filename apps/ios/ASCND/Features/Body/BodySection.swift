@@ -10,6 +10,8 @@ import SwiftUI
 struct BodySection: View {
   let userId: String
   let today: LocalDate
+  /// Trạng thái Cơ thể ở Tiến bộ (nếu mở từ đó) — số thay đổi cân theo màu này.
+  var status: ProgressStatus.Level? = nil
 
   @Environment(AppServices.self) private var services
   @State private var showsWeight = false
@@ -24,7 +26,7 @@ struct BodySection: View {
   var body: some View {
     VStack(alignment: .leading, spacing: DS.Spacing.md) {
       if let weight {
-        WeightTrendCard(book: weight) { showsWeight = true }
+        WeightTrendCard(book: weight, status: status) { showsWeight = true }
       }
       VStack(spacing: 0) {
         if let measure {
