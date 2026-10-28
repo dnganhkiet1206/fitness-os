@@ -190,27 +190,31 @@ public final class MeasurementLogger {
     guard MeasurementLog.canSave(fields, unit: unit) else { return .invalid }
     let day = min(date, today)
     let row = MeasurementLog.row(userId: userId, date: day, fields: fields, unit: unit)
-    if !online {
-      guard let store else { return .unavailable }
-      let entry = OutboxEntry(
-        id: makeId().lowercased(), userId: userId, kind: MeasurementLog.kind, payload: row, createdAt: clock.nowMillis())
-      do {
-        try await store.enqueue([entry])
-      } catch {
-        return .failed
-      }
-      done = true
-      onEnqueued(entry)
-      return .queued
-    }
+    if !online { return await enqueue(row) }
     submitting = true
     defer { if !closed { submitting = false } }
     do {
       try await source.upsert(row)
     } catch {
+      // Chưa hề tới máy chủ (audit 28/10): vào hàng chờ, không mất lần đo.
+      if NetworkFailure.neverSent(error), store != nil { return await enqueue(row) }
       return NetworkFailure.isOffline(error) ? .offline : .failed
     }
     if !closed { done = true }
     return .saved
+  }
+
+  private func enqueue(_ row: JSONValue) async -> Outcome {
+    guard let store else { return .unavailable }
+    let entry = OutboxEntry(
+      id: makeId().lowercased(), userId: userId, kind: MeasurementLog.kind, payload: row, createdAt: clock.nowMillis())
+    do {
+      try await store.enqueue([entry])
+    } catch {
+      return .failed
+    }
+    done = true
+    onEnqueued(entry)
+    return .queued
   }
 }
