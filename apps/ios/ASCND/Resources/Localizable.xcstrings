@@ -12608,6 +12608,606 @@
     }
    }
   },
+  "xp.seconds %lld": {
+   "comment": "Tiến bộ từng bài theo mức tạ (Kiệt duyệt mock 28/10). Số giây của một bài giữ.",
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld s"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld giây"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld s"
+     }
+    }
+   }
+  },
+  "xp.prev %@ %@": {
+   "comment": "Tiến bộ từng bài theo mức tạ (Kiệt duyệt mock 28/10). Dòng nhỏ: set đỉnh buổi trước · ngày.",
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Previous %1$@ · %2$@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Trước %1$@ · %2$@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Anterior %1$@ · %2$@"
+     }
+    }
+   }
+  },
+  "xp.first": {
+   "comment": "Tiến bộ từng bài theo mức tạ (Kiệt duyệt mock 28/10). Bài mới ghi lần đầu.",
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "First time logged"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Lần đầu ghi bài này"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Primera vez registrado"
+     }
+    }
+   }
+  },
+  "xp.chip.first": {
+   "comment": "Tiến bộ từng bài theo mức tạ (Kiệt duyệt mock 28/10). Chip: lần đầu.",
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "First"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Lần đầu"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Primera"
+     }
+    }
+   }
+  },
+  "xp.chip.noWeight": {
+   "comment": "Tiến bộ từng bài: buổi ghi 0 kg của bài có tạ (Kiệt 28/10).",
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "No weight logged"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chưa ghi tạ"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sin peso registrado"
+     }
+    }
+   }
+  },
+  "xp.chip.same": {
+   "comment": "Tiến bộ từng bài theo mức tạ (Kiệt duyệt mock 28/10). Chip: giữ nguyên.",
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Held"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Giữ nguyên"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Igual"
+     }
+    }
+   }
+  },
+  "xp.chip.reps %@": {
+   "comment": "Tiến bộ từng bài theo mức tạ (Kiệt duyệt mock 28/10). Chip: +n reps (đã có dấu).",
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ reps"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ reps"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ reps"
+     }
+    }
+   }
+  },
+  "xp.chip.seconds %@": {
+   "comment": "Tiến bộ từng bài theo mức tạ (Kiệt duyệt mock 28/10). Chip: +n giây (đã có dấu).",
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ s"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ giây"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ s"
+     }
+    }
+   }
+  },
+  "xp.next.hold %@ %lld %lld": {
+   "comment": "Tiến bộ từng bài theo mức tạ (Kiệt duyệt mock 28/10). Gợi ý tăng tiến kép: giữ tạ, nhắm reps.",
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Next time: keep %1$@ and aim for %2$lld–%3$lld reps."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Lần tới: giữ %1$@ và nhắm %2$lld–%3$lld reps."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "La próxima vez: mantén %1$@ y busca %2$lld–%3$lld reps."
+     }
+    }
+   }
+  },
+  "xp.next.add %@": {
+   "comment": "Tiến bộ từng bài theo mức tạ (Kiệt duyệt mock 28/10). Gợi ý: đã đủ reps thì lên tạ.",
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Next time: you hit 12 reps at %@ — try the next weight up."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Lần tới: đã đủ 12 reps ở %@ — thử lên tạ một nấc."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "La próxima vez: llegaste a 12 reps con %@; prueba el siguiente peso."
+     }
+    }
+   }
+  },
+  "xp.next.reps %lld %lld": {
+   "comment": "Tiến bộ từng bài theo mức tạ (Kiệt duyệt mock 28/10). Gợi ý bài không tạ.",
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Next time: aim for %1$lld–%2$lld reps."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Lần tới: nhắm %1$lld–%2$lld reps."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "La próxima vez: busca %1$lld–%2$lld reps."
+     }
+    }
+   }
+  },
+  "xp.meta %lld": {
+   "comment": "Tiến bộ từng bài theo mức tạ (Kiệt duyệt mock 28/10). Số buổi của bài trong cửa sổ phân tích.",
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld sessions in the last 90 days"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld buổi trong 90 ngày qua"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld sesiones en los últimos 90 días"
+     }
+    }
+   }
+  },
+  "xp.more": {
+   "comment": "Tiến bộ từng bài theo mức tạ (Kiệt duyệt mock 28/10). Tiêu đề phần phân tích cũ (xu hướng, kỷ lục, 1RM).",
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "More analysis"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Phân tích thêm"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Más análisis"
+     }
+    }
+   }
+  },
+  "xp.footnote": {
+   "comment": "Tiến bộ từng bài theo mức tạ (Kiệt duyệt mock 28/10). Chú thích cách so.",
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Big number: heaviest set of the latest session. Small line: the session before. Warm-up sets don’t count; bodyweight moves compare reps."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Số lớn: set nặng nhất của buổi gần nhất. Dòng nhỏ: buổi trước đó. Không tính set khởi động; bài không tạ so số reps."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Número grande: la serie más pesada de la última sesión. Línea pequeña: la sesión anterior. No cuentan las series de calentamiento; los ejercicios sin peso comparan repeticiones."
+     }
+    }
+   }
+  },
+  "xp.last %@": {
+   "comment": "Tiến bộ từng bài theo mức tạ (Kiệt duyệt mock 28/10). Nhãn thẻ đầu màn chi tiết.",
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Latest · %@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Lần gần nhất · %@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Última · %@"
+     }
+    }
+   }
+  },
+  "xp.prevDetail %@ %@ %lld": {
+   "comment": "Tiến bộ từng bài theo mức tạ (Kiệt duyệt mock 28/10). Buổi trước: ngày, set đỉnh, số set làm việc.",
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Previous session (%1$@): %2$@ · %3$lld working sets"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Buổi trước (%1$@): %2$@ · %3$lld set làm việc"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sesión anterior (%1$@): %2$@ · %3$lld series de trabajo"
+     }
+    }
+   }
+  },
+  "xp.chart.weight": {
+   "comment": "Tiến bộ từng bài theo mức tạ (Kiệt duyệt mock 28/10). Tiêu đề biểu đồ.",
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Heaviest set each session"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Set nặng nhất mỗi buổi"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Serie más pesada por sesión"
+     }
+    }
+   }
+  },
+  "xp.chart.reps": {
+   "comment": "Tiến bộ từng bài theo mức tạ (Kiệt duyệt mock 28/10). Tiêu đề biểu đồ bài không tạ.",
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Most reps each session"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Reps nhiều nhất mỗi buổi"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Más repeticiones por sesión"
+     }
+    }
+   }
+  },
+  "xp.chart.time": {
+   "comment": "Tiến bộ từng bài theo mức tạ (Kiệt duyệt mock 28/10). Tiêu đề biểu đồ bài giữ.",
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Longest hold each session"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Giữ lâu nhất mỗi buổi"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mayor tiempo por sesión"
+     }
+    }
+   }
+  },
+  "xp.sessions": {
+   "comment": "Tiến bộ từng bài theo mức tạ (Kiệt duyệt mock 28/10). Tiêu đề danh sách buổi.",
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sessions"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Các buổi"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sesiones"
+     }
+    }
+   }
+  },
+  "xp.summary.title": {
+   "comment": "Tiến bộ từng bài theo mức tạ (Kiệt duyệt mock 28/10). Đầu danh sách.",
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Vs. last session"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "So với buổi trước"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Frente a la sesión anterior"
+     }
+    }
+   }
+  },
+  "xp.summary.weightUp %lld": {
+   "comment": "Tiến bộ từng bài theo mức tạ (Kiệt duyệt mock 28/10). Số bài tăng tạ.",
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "▲ %lld heavier"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "▲ %lld tăng tạ"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "▲ %lld más peso"
+     }
+    }
+   }
+  },
+  "xp.summary.repsUp %lld": {
+   "comment": "Tiến bộ từng bài theo mức tạ (Kiệt duyệt mock 28/10). Số bài thêm reps.",
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "▲ %lld more reps"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "▲ %lld thêm reps"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "▲ %lld más reps"
+     }
+    }
+   }
+  },
+  "xp.summary.same %lld": {
+   "comment": "Tiến bộ từng bài theo mức tạ (Kiệt duyệt mock 28/10). Số bài giữ nguyên.",
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "■ %lld held"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "■ %lld giữ"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "■ %lld igual"
+     }
+    }
+   }
+  },
+  "xp.summary.down %lld": {
+   "comment": "Tiến bộ từng bài theo mức tạ (Kiệt duyệt mock 28/10). Số bài giảm.",
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "▼ %lld lower"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "▼ %lld giảm"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "▼ %lld menos"
+     }
+    }
+   }
+  },
   "wp.openBoard": {
    "extractionState": "manual",
    "localizations": {
