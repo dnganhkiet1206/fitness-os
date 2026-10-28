@@ -165,7 +165,7 @@ try {
        if (httpFail) return { ok: false, status: httpFail, json: async () => ({}), text: async () => '{}' };
        return { ok: true, status: 200, json: async () => reply, text: async () => 'ok' };
      };
-     global.Deno = { env: { get: (k) => ({ SUPABASE_URL: 'http://x', SUPABASE_ANON_KEY: 'ANON', LOVABLE_API_KEY: 'GATEWAY_KEY' }[k]) } };
+     global.Deno = { env: { get: (k) => ({ SUPABASE_URL: 'http://x', SUPABASE_ANON_KEY: 'ANON', ASCND_AI_KEY: 'GATEWAY_KEY', ASCND_AI_URL: 'https://ai.provider.test/v1/chat/completions' }[k]) } };
      const tool = (args) => ({ choices: [{ message: { tool_calls: [{ function: { arguments: args } }] } }] });
      const okItem = { food_name: 'x', kcal: 100, protein_g: 1, carbs_g: 1, fat_g: 1, fiber_g: 1, serving_g: 100 };
 
@@ -307,7 +307,7 @@ try {
 
   /* ── A ── */
   want(
-    r.hosts.length === 1 && r.hosts[0] === 'https://ai.gateway.lovable.dev',
+    r.hosts.length === 1 && r.hosts[0] === 'https://ai.provider.test',
     `một đầu vào hình dạng URL làm máy chủ gọi ra ngoài: ${JSON.stringify(r.hosts)}. ` +
       'scan-food KHÔNG có trường URL — mọi chuỗi được dán nguyên vào một data: URL và không bao giờ được ' +
       'tải về. Nếu luật này đỏ nghĩa là ai đó đã thêm một đường tải ảnh từ URL do client cung cấp, và ' +

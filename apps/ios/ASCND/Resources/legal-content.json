@@ -11,7 +11,7 @@
    "blocks": [
     {
      "title": "Hiệu lực",
-     "body": "Cập nhật lần cuối: 18/10/2026."
+     "body": "Cập nhật lần cuối: 28/10/2026."
     },
     {
      "title": "1. Chấp nhận Điều khoản",
@@ -107,7 +107,7 @@
    "blocks": [
     {
      "title": "Tóm tắt",
-     "body": "Cập nhật lần cuối: 18/10/2026. Chúng tôi thu thập dữ liệu để vận hành ASCND, KHÔNG bán dữ liệu, KHÔNG dùng dữ liệu sức khoẻ cho quảng cáo, và bạn có thể xoá tài khoản cùng toàn bộ dữ liệu ngay trong ứng dụng."
+     "body": "Cập nhật lần cuối: 28/10/2026. Chúng tôi thu thập dữ liệu để vận hành ASCND, KHÔNG bán dữ liệu, KHÔNG dùng dữ liệu sức khoẻ cho quảng cáo, và bạn có thể xoá tài khoản cùng toàn bộ dữ liệu ngay trong ứng dụng."
     },
     {
      "title": "1. Dữ liệu bạn cung cấp",
@@ -156,7 +156,7 @@
      "intro": "Chúng tôi chia sẻ dữ liệu với các nhà cung cấp giúp vận hành Dịch vụ, theo điều khoản của họ:",
      "bullets": [
       "Supabase — cơ sở dữ liệu, xác thực, lưu trữ tệp (máy chủ tại Hoa Kỳ).",
-      "Nhà cung cấp AI — hiện là mô hình Gemini của Google, gọi qua cổng AI của Lovable; có thể đổi sang nhà cung cấp tương đương. Xem tab Dữ liệu & AI.",
+      "Nhà cung cấp AI — hiện là mô hình Gemini của Google (Google LLC), gọi trực tiếp từ máy chủ của ASCND; có thể đổi sang nhà cung cấp tương đương. Xem tab Dữ liệu & AI.",
       "Sentry — báo cáo sự cố.",
       "PostHog — thống kê sử dụng.",
       "Apple — Apple Health, thông báo, App Store và thanh toán.",
@@ -323,7 +323,7 @@
    "blocks": [
     {
      "title": "Effective date",
-     "body": "Last updated: October 18, 2026."
+     "body": "Last updated: October 28, 2026."
     },
     {
      "title": "1. Acceptance",
@@ -419,7 +419,7 @@
    "blocks": [
     {
      "title": "Summary",
-     "body": "Last updated: October 18, 2026. We collect data to run ASCND. We do NOT sell your data, we do NOT use health data for advertising, and you can delete your account and all of its data from inside the app."
+     "body": "Last updated: October 28, 2026. We collect data to run ASCND. We do NOT sell your data, we do NOT use health data for advertising, and you can delete your account and all of its data from inside the app."
     },
     {
      "title": "1. Data you provide",
@@ -468,7 +468,7 @@
      "intro": "We share data with providers that help run the Service, under their terms:",
      "bullets": [
       "Supabase — database, authentication and file storage (servers in the United States).",
-      "AI providers — currently Google’s Gemini models, accessed through Lovable’s AI gateway; we may switch to an equivalent provider. See the Data & AI tab.",
+      "AI providers — currently Google’s Gemini models (Google LLC), called directly from ASCND’s servers; we may switch to an equivalent provider. See the Data & AI tab.",
       "Sentry — crash reporting.",
       "PostHog — usage analytics.",
       "Apple — Apple Health, notifications, App Store and payments.",
@@ -635,7 +635,7 @@
    "blocks": [
     {
      "title": "Fecha de vigencia",
-     "body": "Última actualización: 18 de octubre de 2026."
+     "body": "Última actualización: 28 de octubre de 2026."
     },
     {
      "title": "1. Aceptación",
@@ -731,7 +731,7 @@
    "blocks": [
     {
      "title": "Resumen",
-     "body": "Última actualización: 18 de octubre de 2026. Recopilamos datos para que ASCND funcione. NO vendemos tus datos, NO usamos datos de salud para publicidad y puedes eliminar tu cuenta y todos sus datos desde la app."
+     "body": "Última actualización: 28 de octubre de 2026. Recopilamos datos para que ASCND funcione. NO vendemos tus datos, NO usamos datos de salud para publicidad y puedes eliminar tu cuenta y todos sus datos desde la app."
     },
     {
      "title": "1. Datos que proporcionas",
@@ -780,7 +780,7 @@
      "intro": "Compartimos datos con proveedores que ayudan a operar el Servicio, según sus condiciones:",
      "bullets": [
       "Supabase: base de datos, autenticación y almacenamiento de archivos (servidores en Estados Unidos).",
-      "Proveedores de IA: actualmente los modelos Gemini de Google, a través de la pasarela de IA de Lovable; podemos cambiar a un proveedor equivalente. Consulta la pestaña Datos e IA.",
+      "Proveedores de IA: actualmente los modelos Gemini de Google (Google LLC), llamados directamente desde los servidores de ASCND; podemos cambiar a un proveedor equivalente. Consulta la pestaña Datos e IA.",
       "Sentry: informes de errores.",
       "PostHog: analítica de uso.",
       "Apple: Apple Salud, notificaciones, App Store y pagos.",

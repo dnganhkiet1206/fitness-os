@@ -13,7 +13,7 @@
  * verified it, the check passed, and `userId` came out `undefined`. Since
  * nothing returned early between there and the gateway call, anyone holding
  * the anon key — which ships inside the app binary — could spend this
- * project's Lovable credits. `requireUser` asks the two further questions
+ * project's AI credits. `requireUser` asks the two further questions
  * that close it: is there a subject, and is the role `authenticated`.
  *
  * `verify_jwt = false` stays in config.toml: the functions read the header
@@ -28,10 +28,11 @@ import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supa
  *
  * ── vì sao cần ba biến này ──
  *
- * Sáu function AI gọi `ai.gateway.lovable.dev`, và khoá của gateway đó nằm sẵn
- * dưới dạng secret trong project Lovable cũ. Lovable không cho xem lại khoá, nên
- * deploy chúng sang project mới là không làm được: sẽ không có gì để đặt vào
- * LOVABLE_API_KEY.
+ * (Lịch sử) Các function AI từng gọi gateway Lovable bằng khoá chỉ nằm trong
+ * project Lovable cũ, nên từng phải ở lại đó và trỏ sang database mới. Từ
+ * 16/10 chúng chạy trong project của ASCND bằng khoá Gemini (`ASCND_AI_*`), và
+ * 28/10 mặc định Lovable bị gỡ hẳn — ba biến dưới vẫn giữ cho trường hợp một
+ * function chạy ở project khác database.
  *
  * Đường còn lại là để chúng ở project cũ và trỏ vào database MỚI. Nhưng
  * `SUPABASE_URL`, `SUPABASE_ANON_KEY` và `SUPABASE_SERVICE_ROLE_KEY` do nền tảng
