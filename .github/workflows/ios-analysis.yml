@@ -1,0 +1,94 @@
+# Phân tích mã iOS — công cụ TÌM LỖI cho mọi agent (Kiệt 28/10).
+#
+# KHÔNG chặn merge (`continue-on-error`): đây là đèn báo, không phải cổng. Kết
+# quả nằm ở tab Summary của lượt chạy và ở chú thích (annotation) trên PR.
+#
+#   swiftlint   PR chạm Swift: lint ĐÚNG các tệp Swift đổi (Linux, ~1 phút).
+#               Luật chỉ bắt lỗi — xem apps/ios/.swiftlint.yml.
+#   periphery   Mã chết (khai báo không ai dùng). macOS, build cả app nên chậm:
+#               chạy khi có commit mới trên native/ios-rewrite, hằng tuần, hoặc
+#               bấm tay, hoặc PR gắn nhãn `periphery` — KHÔNG chạy trên PR thường.
+#
+# Lịch hằng tuần chỉ chạy khi tệp này đã lên nhánh mặc định (main).
+name: iOS phân tích
+
+on:
+  pull_request:
+    paths: ['apps/ios/**/*.swift', 'apps/ios/.swiftlint.yml', '.github/workflows/ios-analysis.yml']
+  push:
+    branches: ['native/ios-rewrite']
+    paths: ['apps/ios/**/*.swift']
+  schedule:
+    - cron: '0 2 * * 1'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  swiftlint:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    container: swift:6.1-noble
+    timeout-minutes: 10
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Cài SwiftLint 0.65.1
+        run: |
+          apt-get update -qq && apt-get install -y -qq unzip curl >/dev/null
+          curl -sSfL -o /tmp/swiftlint.zip https://github.com/realm/SwiftLint/releases/download/0.65.1/swiftlint_linux_amd64.zip
+          unzip -q /tmp/swiftlint.zip -d /usr/local/bin
+          chmod +x /usr/local/bin/swiftlint
+          swiftlint version
+      - name: Lint tệp Swift đổi
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          base="origin/${{ github.base_ref }}"
+          files=$(git diff --name-only --diff-filter=AM "$base"...HEAD -- 'apps/ios/**/*.swift' | grep -v '/.build/' || true)
+          if [ -z "$files" ]; then echo "Không có tệp Swift đổi."; exit 0; fi
+          echo "$files"
+          cd apps/ios
+          rel=$(echo "$files" | sed 's#^apps/ios/##')
+          set +e
+          swiftlint lint --config .swiftlint.yml --reporter github-actions-logging $rel
+          code=$?
+          {
+            echo "### SwiftLint (tệp đổi trong PR)"
+            echo
+            swiftlint lint --config .swiftlint.yml --reporter markdown $rel 2>/dev/null || true
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit $code
+
+  periphery:
+    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'periphery')
+    runs-on: macos-15
+    timeout-minutes: 45
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Chọn Xcode mới nhất
+        run: |
+          latest=$(ls -d /Applications/Xcode_*.app | grep -v beta | sort -V | tail -1)
+          sudo xcode-select -s "$latest"
+      - name: Cài XcodeGen + Periphery
+        run: brew install xcodegen periphery
+      - name: XcodeGen
+        working-directory: apps/ios
+        run: xcodegen generate
+      - name: Periphery (mã chết)
+        working-directory: apps/ios
+        run: |
+          set -o pipefail
+          periphery scan --project ASCND.xcodeproj --schemes ASCND --retain-public --format github-actions --relative-results \
+            -- -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO | tee periphery.txt
+          {
+            echo "### Periphery — khai báo không ai dùng ($(grep -c '::warning' periphery.txt || true))"
+            echo
+            echo '```'
+            grep '::warning' periphery.txt | sed -E 's/::warning file=([^,]+),line=([0-9]+)[^:]*::/\1:\2 /' | head -300
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

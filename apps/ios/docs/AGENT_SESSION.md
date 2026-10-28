@@ -127,6 +127,43 @@ xcrun simctl io booted screenshot /tmp/ascnd.png   # rồi XEM ảnh
 
 **CI:** chỉ ghi xanh khi đã thấy kết quả trên đúng SHA (`gh pr checks`, hoặc `gh api repos/dnganhkiet1206/fitness-os/commits/<sha>/check-runs`). CI đỏ trên `native/ios-rewrite` mà không do PR của mình gây ra → báo trên #527, ghi rõ commit và lỗi.
 
+## 6b. Đi nhanh: gộp PR, CI, công cụ tìm lỗi (Kiệt 28/10)
+
+**Gộp việc nhỏ.** Nhiều sửa nhỏ trong một đợt → **một PR**, mỗi sửa một commit. Một lượt CI (~15 phút) thay vì N lượt, và chỉ gộp nhánh gốc một lần. Tách PR riêng khi việc lớn, rủi ro, hay cần Kiệt duyệt riêng.
+
+**E2E (Maestro) chỉ khi cần.** Workflow `iOS E2E` chỉ chạy trên PR có nhãn `e2e` (30–45 phút / lượt, chạy lại sau mỗi lần gộp nhánh). Gắn nhãn khi đổi lớn bố cục / điều hướng ở các màn 8 flow đi qua (`apps/ios/.maestro/`). PR nhỏ: không gắn, gộp khi `gate`, `app-macos`, `core-linux`, `release-gate` xanh. E2E đỏ: xem ảnh chụp trong artifact trước khi kết luận — flow từng hỏng vì cuộn chưa tới (không phải lỗi app).
+
+**Sổ hạn chế tự gộp.** `.gitattributes` đặt `merge=union` cho `CONSTRAINTS_AND_DEFERRED.md`: `git merge origin/native/ios-rewrite` trên máy giữ dòng của cả hai phía, không còn xung đột ở §4 / §5. Sau khi gộp, đọc lại `git diff origin/native/ios-rewrite -- apps/ios/docs/CONSTRAINTS_AND_DEFERRED.md`: union có thể giữ cả bản CŨ lẫn bản MỚI của một dòng ai đó vừa sửa (gạch ngang) — xoá bản cũ.
+
+**CI đã tăng tốc:**
+- Cache: `irgaly/xcode-cache` (DerivedData + mtime) và `.build` của ba package cho `app-macos`; `.build` cho `core-linux`; Chromium cho `gate`. Cache hỏng chỉ làm chậm, không làm sai.
+- `iOS` không chạy khi commit chỉ sửa `apps/ios/docs/**` hay `*.md`. `gate` vẫn chạy.
+- Commit mới trong PR huỷ lượt CI cũ (`concurrency`).
+
+**Công cụ tìm lỗi (không chặn merge — đèn báo, không phải cổng):**
+
+| Công cụ | Ở đâu | Khi nào chạy | Đọc kết quả |
+|---|---|---|---|
+| SwiftLint 0.65.1 (chỉ luật bắt lỗi: `force_cast`, `force_try`, `unhandled_throwing_task`, `identical_operands`…) | `apps/ios/.swiftlint.yml`, job `swiftlint` của `ios-analysis.yml` | PR chạm Swift — lint ĐÚNG tệp đổi | chú thích trên PR + Summary |
+| Periphery 3.8.0 (mã chết) | job `periphery` của `ios-analysis.yml` | commit Swift mới trên `native/ios-rewrite`, hằng tuần, bấm tay, PR có nhãn `periphery` | Summary của lượt chạy |
+| CodeQL (Swift, `security-and-quality`) | `.github/workflows/codeql.yml` | commit Swift mới trên `native/ios-rewrite`, hằng tuần, bấm tay | tab Security › Code scanning |
+| Dependabot (Actions + gói Swift) | `.github/dependabot.yml` | hằng tuần — **chỉ sau khi tệp lên `main`** | PR của Dependabot vào `native/ios-rewrite` |
+| Sentry (lỗi khi chạy) | đã có trong app | bản Release | MCP Sentry nếu phiên có |
+
+Chạy trên máy (cần cài `brew install swiftlint periphery`):
+
+```sh
+cd apps/ios
+swiftlint lint --config .swiftlint.yml ASCND/Features/Today/TodayExtras.swift   # một vài tệp
+periphery scan --project ASCND.xcodeproj --schemes ASCND --retain-public        # sau xcodegen generate
+gh workflow run "iOS phân tích" --ref native/ios-rewrite                         # chạy Periphery trên CI
+gh workflow run CodeQL --ref native/ios-rewrite
+```
+
+Lịch hằng tuần (`schedule`) và Dependabot chỉ hoạt động khi tệp workflow nằm trên nhánh mặc định (`main`) — Kiệt gộp. Trước đó, chúng chạy theo commit trên `native/ios-rewrite` hoặc bấm tay.
+
+**Mẹo khác:** chạy CI xong mới gộp nhánh gốc (gộp lại làm CI chạy lại từ đầu); làm việc khác trong lúc chờ CI (`gh pr checks <số> --watch` chạy nền); merge chuỗi PR theo thứ tự, mỗi PR một lần gộp.
+
 ## 7. Báo cáo trên #527
 
 **Khi bắt đầu một việc lớn:** đăng một comment ngắn, gồm việc gì, tệp nào, link PR nếu đã có. Việc nhỏ thì chỉ cần báo cáo khi xong.
@@ -172,3 +209,4 @@ Cách chọn việc:
 | `apps/ios/docs/NATIVE_IMPROVEMENTS.md` | khác biệt có chủ ý so với RN |
 | `apps/ios/docs/design/*/RN-PARITY.md` | quyết định thiết kế từng màn |
 | `native/docs/OFFLINE-POLICY.md` | ba lớp ghi: sự kiện / trạng thái / online-only |
+| `apps/ios/.swiftlint.yml`, `.github/workflows/ios-analysis.yml`, `codeql.yml` | công cụ tìm lỗi — §6b |
