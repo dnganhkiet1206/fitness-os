@@ -125,6 +125,8 @@ xcrun simctl io booted screenshot /tmp/ascnd.png   # rồi XEM ảnh
 - **Phải tự đi qua luồng vừa sửa và xem ảnh chụp.** Build xanh chưa đủ. Có công cụ điều khiển simulator (computer use / Xcode MCP) thì bấm thật. Không có thì nói rõ phần nào chưa bấm thử được.
 - Simulator **không phải** thiết bị thật. Ký và chạy trên iPhone thật là việc của Kiệt.
 
+**Bot kiểm hệ thống** (nhánh, server Supabase, Sentry, PostHog — chỉ đọc): `node .github/scripts/system-check.mjs`, chi tiết ở `SYSTEM_CHECK.md`. Chạy trước khi báo "server ổn".
+
 **CI:** chỉ ghi xanh khi đã thấy kết quả trên đúng SHA (`gh pr checks`, hoặc `gh api repos/dnganhkiet1206/fitness-os/commits/<sha>/check-runs`). CI đỏ trên `native/ios-rewrite` mà không do PR của mình gây ra → báo trên #527, ghi rõ commit và lỗi.
 
 ## 6b. Đi nhanh: gộp PR, CI, công cụ tìm lỗi (Kiệt 28/10)

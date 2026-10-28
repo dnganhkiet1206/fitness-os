@@ -310,4 +310,5 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - 28/10/2026: dải kết nối báo lần ghi bị server từ chối hẳn (có nút tắt).
 - 28/10/2026: gỡ app web Lovable cũ khỏi `native/ios-rewrite` (cấu hình Vite / Tailwind / Capacitor, `ios/` Capacitor, `public/`, `package.json` gốc) — Kiệt duyệt trong chat. Còn trong lịch sử git. AI dùng khoá Gemini của ASCND (`ASCND_AI_KEY`); gateway Lovable trong `_shared/ai.ts` chỉ là mặc định dự phòng. `main` chỉ sạch khi Kiệt gộp nhánh.
 - 28/10/2026: gỡ mặc định gateway Lovable + `LOVABLE_API_KEY` khỏi `_shared/ai.ts` (Kiệt duyệt, deploy lại 7 hàm AI). Kiểm server trước: secret production chỉ có `ASCND_AI_*` (URL = endpoint OpenAI của Gemini, model `gemini-flash-lite-latest`), không có `LOVABLE_API_KEY`. Thiếu `ASCND_AI_URL` hoặc `ASCND_AI_KEY` → AI tắt + log lúc khởi động. Chính sách quyền riêng tư: "gọi trực tiếp từ máy chủ của ASCND" (cập nhật 28/10/2026).
+- 28/10/2026: bot kiểm hệ thống (`SYSTEM_CHECK.md`) — lần đầu thấy: migration `plan_day_overrides` chưa áp; advisors 73 cảnh báo bảo mật + 114 hiệu năng (chưa xử lý).
 - 28/10/2026: thẻ Hôm nay tính giấc ngủ / bữa còn trong hàng chờ (như nước).
