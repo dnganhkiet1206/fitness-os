@@ -47,6 +47,9 @@ public struct TodayScreen: View {
     self.extrasUserId = extrasUserId
   }
 
+  /// Không có trong preview.
+  @Environment(AppServices.self) private var services: AppServices?
+
   public var body: some View {
     Group {
       if controller.plan == nil && controller.failure == nil {
@@ -67,7 +70,8 @@ public struct TodayScreen: View {
         // Có dữ liệu (cache hoặc server).
         VStack(spacing: 0) {
           // Server hỏng: hiện cache + banner (không hiện trong lúc còn chờ server).
-          if controller.showingStaleCache {
+          // Mất mạng thì dải của app đã nói rồi (phương án A, 28/10) — không hai dải.
+          if controller.showingStaleCache, services?.net.status != .offline {
             offlineBanner
           }
           TodayView(
