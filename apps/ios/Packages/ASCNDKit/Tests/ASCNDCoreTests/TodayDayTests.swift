@@ -1,3 +1,4 @@
+import Foundation
 @testable import ASCNDCore
 import Testing
 
@@ -67,6 +68,42 @@ struct TodayDayTests {
     #expect(TodayDay.merging(server, localWaterMl: 250)?.waterMl == 500)
     #expect(TodayDay.merging(server, localWaterMl: nil)?.waterMl == 500)
     #expect(TodayDay.merging(nil, localWaterMl: 250) == nil)
+  }
+
+  /// Giấc / bữa ghi lúc mất mạng (còn trong hàng chờ) là "xong" ngay — audit 28/10:
+  /// thẻ Giấc ngủ vẫn "Chưa ghi" tới khi đồng bộ. Hàng của hôm qua / người khác không tính.
+  @Test func pendingSleepAndMealCountBeforeSync() {
+    let hanoi = TimeZone(identifier: "Asia/Ho_Chi_Minh")!
+    let today = LocalDate("2026-10-28")!
+    func sleep(_ id: String, user: String = "u1", bed: String, wake: String) -> OutboxEntry {
+      SleepLog.entry(
+        id: id, userId: user,
+        row: ["user_id": .string(user), "bedtime": .string(bed), "waketime": .string(wake), "quality": .number(6),
+              "deep_min": .number(0), "rem_min": .number(0), "light_min": .number(0)],
+        createdAt: EpochMillis(0))
+    }
+    let item = MealLog.Item(id: "i", foodItemId: nil, name: "Phở", servings: 1, kcal: 450, protein: 20, carbs: 60, fat: 10, fiber: 2)
+    let entries = [
+      // 23:00 → 07:00 giờ Hà Nội, thức dậy hôm nay: 480 phút.
+      sleep("s1", bed: "2026-10-27T16:00:00.000Z", wake: "2026-10-28T00:00:00.000Z"),
+      // Thức dậy hôm qua: không tính.
+      sleep("s0", bed: "2026-10-26T16:00:00.000Z", wake: "2026-10-27T00:00:00.000Z"),
+      // Của người khác: không tính.
+      sleep("sx", user: "u2", bed: "2026-10-27T15:00:00.000Z", wake: "2026-10-28T01:00:00.000Z"),
+      MealLog.entry(
+        id: "m1", itemIds: ["i1"], userId: "u1", mealType: "lunch", dateTime: "2026-10-28T05:00:00.000Z", items: [item],
+        createdAt: EpochMillis(0)),
+    ]
+    let p = TodayDay.pending(entries, userId: "u1", today: today, in: hanoi)
+    #expect(p.sleepMinutes == 480)
+    #expect(p.mealKcal == 450)
+    let merged = TodayDay.merging(DailySignals(), localWaterMl: nil, pending: p)
+    #expect(merged?.done(.sleep, stepsGoal: 10_000) == true)
+    #expect(merged?.done(.meal, stepsGoal: 10_000) == true)
+    #expect(merged?.sleepMinutes == 480)
+    // Không có gì chờ: giữ nguyên số server.
+    let empty = TodayDay.pending([], userId: "u1", today: today, in: hanoi)
+    #expect(TodayDay.merging(DailySignals(kcal: 300), localWaterMl: nil, pending: empty) == DailySignals(kcal: 300))
   }
 
   /// Cân không còn là việc mỗi ngày: chỉ hỏi khi đã 7 ngày chưa cân, chưa cân

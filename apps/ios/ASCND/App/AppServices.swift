@@ -1248,3 +1248,11 @@ private struct UnconfiguredTemplates: TemplateSource {
 private struct UnconfiguredRemote: RemoteWriter {
   func send(_ entry: OutboxEntry) async throws(WriteFailure) { throw .offline }
 }
+
+extension AppServices {
+  /// Giấc / bữa của hôm nay còn trong hàng chờ — để thẻ Hôm nay tính "xong" ngay
+  /// cả lúc mất mạng (audit 28/10), như nước đã làm.
+  func todayPending(userId: String, today: LocalDate) -> TodayDay.Pending {
+    TodayDay.pending(sync.outbox.pending, userId: userId, today: today, in: .current)
+  }
+}

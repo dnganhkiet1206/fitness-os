@@ -1,3 +1,6 @@
+public import Foundation
+
+
 /// Khối "ngày" của tab Hôm nay (#527, bản thiết kế `docs/design/today`, phương
 /// án C): năm ống ngủ / bữa / nước / buổi tập / bước, và việc Koa chỉ là "kế
 /// tiếp" — đọc từ CÙNG một `DailySignals` mà vòng năng lượng và nhiệm vụ ngày
@@ -51,10 +54,50 @@ public enum TodayDay {
   /// (lần uống còn trong outbox). `localWaterMl` là tổng của sổ nước hôm nay —
   /// gồm cả hàng server lẫn hàng chờ gửi — nên lấy số lớn hơn: chạm "+250 ml"
   /// thì ống đầy lên NGAY, không đợi một vòng đồng bộ.
-  public static func merging(_ s: DailySignals?, localWaterMl: Int?) -> DailySignals? {
+  public static func merging(_ s: DailySignals?, localWaterMl: Int?, pending: Pending? = nil) -> DailySignals? {
     guard var s else { return nil }
     if let local = localWaterMl { s.waterMl = max(s.waterMl, Double(local)) }
+    if let pending {
+      // Giấc / bữa ghi lúc mất mạng (còn trong hàng chờ) đã là "xong" — audit 28/10:
+      // ghi giấc ngủ offline xong thẻ vẫn "Chưa ghi" tới khi đồng bộ.
+      if let m = pending.sleepMinutes {
+        s.hasSleepRow = true
+        s.sleepMinutes = max(s.sleepMinutes ?? 0, m)
+      }
+      if pending.mealKcal > 0 { s.kcal = (s.kcal ?? 0) + pending.mealKcal }
+    }
     return s
+  }
+
+  /// Phần của hôm nay còn nằm trong hàng chờ (chưa vào `daily_logs`).
+  public struct Pending: Sendable, Hashable {
+    /// Giấc dài nhất thức dậy trong hôm nay.
+    public var sleepMinutes: Double?
+    /// Tổng kcal các bữa hôm nay còn chờ gửi.
+    public var mealKcal: Double
+
+    public init(sleepMinutes: Double? = nil, mealKcal: Double = 0) {
+      self.sleepMinutes = sleepMinutes
+      self.mealKcal = mealKcal
+    }
+  }
+
+  /// Đọc hàng chờ của `userId`: giấc thức dậy trong `today` và bữa có giờ trong
+  /// `today` (qua `MealLog.pendingMeals`, cùng đường với sổ ăn).
+  public static func pending(_ entries: [OutboxEntry], userId: String, today: LocalDate, in tz: TimeZone) -> Pending {
+    let window = DailyLog.window(endingOn: today, days: 1, in: tz)
+    var out = Pending()
+    if let start = EpochMillis(iso8601: window.start), let end = EpochMillis(iso8601: window.end) {
+      for e in entries where e.kind == SleepLog.kind && e.userId.lowercased() == userId.lowercased() {
+        guard case .object(let o) = e.payload, let bed = SleepLog.millis(o["bedtime"]), let wake = SleepLog.millis(o["waketime"]),
+          wake >= start.millis, wake < end.millis, wake > bed
+        else { continue }
+        let minutes = Double(wake - bed) / 60_000
+        out.sleepMinutes = max(out.sleepMinutes ?? 0, minutes)
+      }
+    }
+    out.mealKcal = MealLog.pendingMeals(entries, userId: userId, window: window).reduce(0) { $0 + $1.kcal }
+    return out
   }
 
   /// Mục tiêu nước: của hồ sơ, không có thì 2.500 ml (như nhiệm vụ nước).
