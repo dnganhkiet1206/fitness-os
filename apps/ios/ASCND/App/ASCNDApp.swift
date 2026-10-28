@@ -57,9 +57,14 @@ struct ASCNDApp: App {
 
   var body: some Scene {
     WindowGroup {
-      RootGate()
-        // Dải trạng thái kết nối ở trên mọi màn, kể cả Đăng nhập (`_layout.tsx`).
-        .overlay(alignment: .top) { ConnectionBanner() }
+      // Dải trạng thái kết nối ở trên mọi màn, kể cả Đăng nhập (`_layout.tsx`).
+      // Xếp TRÊN app, không phủ (Kiệt duyệt phương án A 28/10): dải đẩy trang xuống
+      // thay vì đè chữ ASCND ở đầu Hôm nay. `safeAreaInset` không đi qua TabView
+      // (UIKit) nên trang dưới tab vẫn bị đè — VStack thì app thật sự nhỏ lại.
+      VStack(spacing: 0) {
+        ConnectionBanner()
+        RootGate()
+      }
         // `Text("key")` của SwiftUI tra theo `\.locale`; ngày giờ / số cũng
         // định dạng theo ngôn ngữ đã chọn.
         .environment(\.locale, Locale(identifier: services.preferences.lang.rawValue))
