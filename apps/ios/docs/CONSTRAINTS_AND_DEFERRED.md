@@ -106,7 +106,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 
 **GĐ1 (Daily Plan + Today gọn) — Kiệt duyệt CÓ ĐIỀU KIỆN 21/10:**
 - ~~PR GĐ1 để nháp, chỉ merge khi đủ 6 mục nghiệm thu.~~ **Kiệt lệnh "merge toàn bộ" 21/10 trong chat**: #641 và #642 đã merge vào `native/ios-rewrite` (nhánh tích hợp, **không phải phát hành**), CI xanh. **Nghiệm thu CHƯA đủ 6/6**: còn iPhone thật, A1, A2 (dưới đây). Các mục này vẫn phải làm trước khi phát hành.
-- Migration `20261020140000_plan_day_overrides` (đổi lịch theo ngày) **CHƯA deploy** lên production. Cần lệnh duyệt rõ ràng. App đọc bảng này theo kiểu chịu lỗi: thiếu bảng thì coi như chưa đổi ngày nào.
+- ~~Migration `20261020140000_plan_day_overrides` (đổi lịch theo ngày) **CHƯA deploy** lên production. Cần lệnh duyệt rõ ràng. App đọc bảng này theo kiểu chịu lỗi: thiếu bảng thì coi như chưa đổi ngày nào.~~ **Đã áp 28/10/2026** (Kiệt duyệt trong chat): `supabase db push` lên `guqmbqtgxqleuwajvwvg`, `migration list` khớp; bảng có RLS + 3 policy; app mở lại trên simulator không còn 404.
 - "Tập nhẹ hơn" chỉ bớt một hiệp mỗi bài cho buổi hôm nay. Không sửa mẫu, không giảm tạ, không phải kết luận y tế.
 - Hồi quy mất mạng / lỗi / gửi lại (chỉ thị 21/10 14:26, commit `8d2f9d8b`): R1–R7, W1, D1–D5 **PASS** (test Swift + SQL thật trên Postgres ở máy). **Chặn:**
   - **A1 dời / nghỉ trên app:** Kiệt 21/10 bỏ phương án Supabase dev bằng Docker trên máy này (không đủ tài nguyên). Chỉ kiểm được trên app khi migration được deploy (cần duyệt), hoặc trên một máy / CI có Supabase dev.

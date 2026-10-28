@@ -2,7 +2,7 @@
 
 - **Mock:** `docs/design/mocks/daily-plan-today.html`.
 - **Duyệt:** Kiệt duyệt **có điều kiện** ngày 21/10/2026 (#527). Duyệt hướng sản phẩm và UX. **Chưa duyệt merge production.**
-- **Nhánh:** `claude/gd1-daily-plan`, PR #641 — **đã merge vào `native/ios-rewrite` 21/10 theo lệnh Kiệt** (`59cb9d92`), khi nghiệm thu chưa đủ 6/6 (còn iPhone thật, A1, A2). Migration `20261020140000` **vẫn chưa deploy**.
+- **Nhánh:** `claude/gd1-daily-plan`, PR #641 — **đã merge vào `native/ios-rewrite` 21/10 theo lệnh Kiệt** (`59cb9d92`), khi nghiệm thu chưa đủ 6/6 (còn iPhone thật, A1, A2). Migration `20261020140000` ~~vẫn chưa deploy~~ **đã áp 28/10/2026** (Kiệt duyệt).
 
 ## Phạm vi
 
@@ -74,7 +74,7 @@
 | Kiểm loading, lỗi, dữ liệu cũ | 🟡 Luật 0 có test. Thẻ tính ngay từ kế hoạch cache (đã thấy trên simulator lúc mạng chậm). Chưa kiểm khi mất mạng hẳn |
 | Parity / CI và kiểm trên iPhone thật | ⏳ iPhone thật đang bị chặn (`CONSTRAINTS_AND_DEFERRED.md` mục 1) |
 
-**Còn chặn:** migration `20261020140000_plan_day_overrides` **chưa deploy**, cần lệnh duyệt rõ ràng.
+~~**Còn chặn:** migration `20261020140000_plan_day_overrides` **chưa deploy**, cần lệnh duyệt rõ ràng.~~ Đã áp 28/10/2026 (Kiệt duyệt).
 
 ## Phần 1: đã xong (Core, dữ liệu)
 
