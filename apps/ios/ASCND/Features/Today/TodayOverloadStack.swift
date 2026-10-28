@@ -13,7 +13,8 @@ struct TodayOverloadStack<Hero: View>: View {
   /// Nút trên dải ấy ("Bắt đầu") — làm luôn việc chính, không cần đổi thẻ.
   let mainAction: String
   let onMainAction: () -> Void
-  @ViewBuilder var hero: () -> Hero
+  /// Thẻ việc chính; `true` = kèm dòng "vuốt để xem" (chỉ để đo khung cũ).
+  @ViewBuilder var hero: (_ withHint: Bool) -> Hero
 
   @State private var showsLoad = false
   @State private var frontHeight: CGFloat = 0
@@ -21,19 +22,27 @@ struct TodayOverloadStack<Hero: View>: View {
   @Environment(\.weightUnit) private var unit
   @Environment(\.locale) private var locale
 
-  static var peek: CGFloat { 54 }
+  /// Dải tối thiểu khi chữ lớn làm thẻ trên cao gần bằng khung.
+  static var minPeek: CGFloat { 28 }
 
+  /// Cả chồng nằm GỌN trong khung cũ của thẻ việc chính (Kiệt 28/10): khung = thẻ
+  /// việc chính kèm dòng "vuốt để xem"; thẻ trên bỏ dòng ấy, dải của thẻ sau nằm đúng
+  /// vào khoảng trống — trang bên dưới không xê dịch.
   var body: some View {
-    ZStack(alignment: .top) {
-      back
-        .frame(height: frontHeight + Self.peek)
-        .padding(.horizontal, DS.Spacing.sm)
-      front
-        .background(
-          RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous).fill(DS.Color.background.swiftUI)
-        )
-        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { frontHeight = $0 }
-    }
+    hero(true)
+      .hidden()
+      .accessibilityHidden(true)
+      .overlay(alignment: .top) {
+        ZStack(alignment: .top) {
+          back
+            .padding(.horizontal, DS.Spacing.sm)
+          front
+            .background(
+              RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous).fill(DS.Color.background.swiftUI)
+            )
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { frontHeight = $0 }
+        }
+      }
     // `DragGesture` bị thanh cuộn dọc của Today nuốt mất — bộ nhận của UIKit chỉ bắt đầu
     // khi vuốt NGANG, nên cuộn dọc và các nút trong thẻ vẫn như cũ.
     .gesture(HorizontalSwipe { swap() })
@@ -51,7 +60,7 @@ struct TodayOverloadStack<Hero: View>: View {
   /// đổi kích thước ban đầu"): việc chính luôn được dựng để giữ chiều cao, thẻ tăng tải
   /// phủ đúng khung ấy và cuộn bên trong khi nhiều bài.
   private var front: some View {
-    hero()
+    hero(false)
       .opacity(showsLoad ? 0 : 1)
       .allowsHitTesting(!showsLoad)
       .accessibilityHidden(showsLoad)
@@ -66,11 +75,11 @@ struct TodayOverloadStack<Hero: View>: View {
   /// Thẻ phía sau: chỉ dải dưới cùng lộ ra.
   private var back: some View {
     VStack(spacing: 0) {
-      Spacer(minLength: 0)
+      Color.clear.frame(height: frontHeight)
       Group {
         if showsLoad { mainStrip } else { loadStrip }
       }
-      .frame(height: Self.peek - 6)
+      .frame(minHeight: Self.minPeek, maxHeight: .infinity)
     }
     .padding(.horizontal, DS.Spacing.md)
     .frame(maxWidth: .infinity)

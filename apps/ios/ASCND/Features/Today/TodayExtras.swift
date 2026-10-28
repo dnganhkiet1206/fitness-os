@@ -182,10 +182,10 @@ struct TodayExtras<Plan: View>: View {
             items: overload, mainPeek: String(localized: "dp.title.session \(session.name) \(session.minutes)"),
             mainAction: String(localized: dailyPlan.result.action == .resume(session) ? "dp.cta.resume" : "today.start"),
             onMainAction: { primary(dailyPlan.result.action) }
-          ) {
+          ) { withHint in
             planHero(
               dailyPlan, flow,
-              hint: ups > 0
+              hint: !withHint ? nil : ups > 0
                 ? (String(localized: "ov.hint.ready \(ups)"), true) : (String(localized: "ov.hint.none"), false))
           }
           .todayEntrance(2)
