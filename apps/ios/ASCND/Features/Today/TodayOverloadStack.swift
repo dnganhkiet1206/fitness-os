@@ -18,6 +18,11 @@ struct TodayOverloadStack<Hero: View>: View {
 
   @State private var showsLoad = false
   @State private var frontHeight: CGFloat = 0
+  @State private var frontWidth: CGFloat = 360
+  /// Thẻ trên đang theo ngón tay (pt).
+  @State private var dragX: CGFloat = 0
+  /// Thẻ vừa từ phía sau tiến lên: bắt đầu nhỏ và thấp như thẻ sau rồi bật về chỗ.
+  @State private var entering = false
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Environment(\.weightUnit) private var unit
   @Environment(\.locale) private var locale
@@ -36,23 +41,63 @@ struct TodayOverloadStack<Hero: View>: View {
         ZStack(alignment: .top) {
           back
             .padding(.horizontal, DS.Spacing.sm)
+            // Kéo thẻ trên ra thì thẻ sau nhô lên theo.
+            .scaleEffect(1 + min(abs(dragX) / max(frontWidth, 1), 1) * 0.03, anchor: .bottom)
           front
             .background(
               RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous).fill(DS.Color.background.swiftUI)
             )
-            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { frontHeight = $0 }
+            .onGeometryChange(for: CGSize.self) { $0.size } action: {
+              frontHeight = $0.height
+              frontWidth = $0.width
+            }
+            .scaleEffect(entering ? 0.94 : 1, anchor: .bottom)
+            .offset(x: dragX, y: entering ? Self.minPeek : 0)
+            .rotationEffect(.degrees(Double(dragX / max(frontWidth, 1)) * 6), anchor: .bottom)
+            .opacity(entering ? 0.6 : 1)
         }
       }
     // `DragGesture` bị thanh cuộn dọc của Today nuốt mất — bộ nhận của UIKit chỉ bắt đầu
     // khi vuốt NGANG, nên cuộn dọc và các nút trong thẻ vẫn như cũ.
-    .gesture(HorizontalSwipe { swap() })
+    .gesture(
+      HorizontalSwipe(
+        onChanged: { dx in if !reduceMotion { dragX = dx } },
+        onEnded: { dx, vx in
+          if abs(dx) > 60 || abs(vx) > 500 { swap(direction: dx < 0 ? -1 : 1) } else { settle() }
+        }))
     .sensoryFeedback(.selection, trigger: showsLoad)
+    // Rời màn giữa lúc kéo / bay: lần sau quay lại thẻ nằm đúng chỗ.
+    .onDisappear {
+      dragX = 0
+      entering = false
+    }
     .accessibilityAction(named: Text(showsLoad ? "ov.a11y.back" : "ov.a11y.show")) { swap() }
   }
 
-  private func swap() {
-    withAnimation(reduceMotion ? .easeInOut(duration: 0.2) : .spring(response: 0.38, dampingFraction: 0.86)) {
-      showsLoad.toggle()
+  /// Kéo chưa đủ xa: thẻ bật về chỗ.
+  private func settle() {
+    withAnimation(reduceMotion ? nil : .spring(response: 0.35, dampingFraction: 0.7)) { dragX = 0 }
+  }
+
+  /// Đổi thẻ như chồng bài: thẻ trên bay ra theo chiều vuốt, thẻ sau tiến lên phía trước
+  /// (từ vị trí thấp, nhỏ của nó). Giảm chuyển động: chỉ mờ chéo.
+  private func swap(direction: CGFloat = -1) {
+    guard !reduceMotion else {
+      dragX = 0
+      withAnimation(.easeInOut(duration: 0.2)) { showsLoad.toggle() }
+      return
+    }
+    withAnimation(.easeIn(duration: 0.18)) {
+      dragX = direction * (frontWidth + 40)
+    } completion: {
+      var t = Transaction()
+      t.disablesAnimations = true
+      withTransaction(t) {
+        showsLoad.toggle()
+        dragX = 0
+        entering = true
+      }
+      withAnimation(reduceMotion ? nil : .spring(response: 0.42, dampingFraction: 0.78)) { entering = false }
     }
   }
 
@@ -65,10 +110,7 @@ struct TodayOverloadStack<Hero: View>: View {
       .allowsHitTesting(!showsLoad)
       .accessibilityHidden(showsLoad)
       .overlay {
-        if showsLoad {
-          TodayOverloadCard(items: items)
-            .transition(.opacity.combined(with: .scale(scale: 0.98)))
-        }
+        if showsLoad { TodayOverloadCard(items: items) }
       }
   }
 
@@ -79,6 +121,7 @@ struct TodayOverloadStack<Hero: View>: View {
       Group {
         if showsLoad { mainStrip } else { loadStrip }
       }
+      .transition(.opacity)
       .frame(minHeight: Self.minPeek, maxHeight: .infinity)
     }
     .padding(.horizontal, DS.Spacing.md)
@@ -106,7 +149,7 @@ struct TodayOverloadStack<Hero: View>: View {
   }
 
   private var loadStrip: some View {
-    Button(action: swap) {
+    Button { swap() } label: {
       HStack(spacing: DS.Spacing.sm) {
         if let top = ups.first {
           Text(verbatim: "↑ \(top.name) \(TodayOverloadCard.target(top.advice, unit: unit, locale: locale) ?? "")")
@@ -135,7 +178,10 @@ struct TodayOverloadStack<Hero: View>: View {
 
 /// Vuốt ngang (≥ 50 pt, ngang hơn dọc): chỉ nhận khi bắt đầu theo chiều ngang.
 private struct HorizontalSwipe: UIGestureRecognizerRepresentable {
-  let onSwipe: () -> Void
+  /// Độ dời ngang trong lúc kéo.
+  let onChanged: (CGFloat) -> Void
+  /// Độ dời và vận tốc ngang lúc thả (huỷ / hỏng: 0, 0).
+  let onEnded: (CGFloat, CGFloat) -> Void
 
   func makeCoordinator(converter: CoordinateSpaceConverter) -> Coordinator { Coordinator() }
 
@@ -146,9 +192,13 @@ private struct HorizontalSwipe: UIGestureRecognizerRepresentable {
   }
 
   func handleUIGestureRecognizerAction(_ pan: UIPanGestureRecognizer, context: Context) {
-    guard pan.state == .ended else { return }
     let t = pan.translation(in: pan.view)
-    if abs(t.x) > 50, abs(t.x) > abs(t.y) * 1.5 { onSwipe() }
+    switch pan.state {
+    case .changed: onChanged(t.x)
+    case .ended: onEnded(t.x, pan.velocity(in: pan.view).x)
+    case .cancelled, .failed: onEnded(0, 0)
+    default: break
+    }
   }
 
   final class Coordinator: NSObject, UIGestureRecognizerDelegate {
