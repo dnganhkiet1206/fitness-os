@@ -91,8 +91,14 @@ struct ASCNDApp: App {
         // gửi hàng của ai; bản ghi của tài khoản khác không bao giờ đi.
         .onChange(of: services.session.session?.userId, initial: true) { _, user in
           services.sync.setSignedInUser(user)
-          services.widgets.setUser(user)
+          // Lúc mở app phiên còn `.loading` (chưa khôi phục): `nil` ở đây KHÔNG phải
+          // đăng xuất — xoá widget lúc này làm mỗi lần mở app widget trống và Koa phải
+          // vẽ lại trên luồng chính (Sentry APPLE-IOS-B, 26/10). Đăng xuất thật: bên dưới.
+          if user != nil { services.widgets.setUser(user) }
           Telemetry.setUser(user)
+        }
+        .onChange(of: services.session.phase == .signedOut, initial: true) { _, signedOut in
+          if signedOut { services.widgets.setUser(nil) }
         }
         // `ascnd://` (#527 deep link): link email auth (xác nhận đăng ký, đặt
         // lại mật khẩu) mở phiên; link khác tới màn của nó (`DeepLink`).

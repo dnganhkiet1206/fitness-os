@@ -86,7 +86,7 @@ final class VoiceDictation {
         return
       }
       input.removeTap(onBus: 0)
-      input.installTap(onBus: 0, bufferSize: 1024, format: format) { buffer, _ in req.append(buffer) }
+      Self.tap(input, format: format, into: req)
       engine.prepare()
       try engine.start()
     } catch {
@@ -96,21 +96,17 @@ final class VoiceDictation {
     }
     request = req
     state = .listening(onDevice: onDevice)
-    task = recognizer.recognitionTask(with: req) { [weak self] result, error in
-      let text = result?.bestTranscription.formattedString
-      let final = result?.isFinal ?? false
-      Task { @MainActor [weak self] in
-        guard let self else { return }
-        if let text, self.isListening || final {
-          self.transcript = text
-          self.armSilenceTimer()
-        }
-        if final || error != nil {
-          // Lỗi sau khi đã có chữ (ví dụ huỷ do im lặng) không phải lỗi với người dùng.
-          let hadText = !self.transcript.isEmpty
-          self.teardown()
-          self.state = error != nil && !hadText ? .failed : .idle
-        }
+    task = Self.recognize(recognizer, req) { [weak self] text, final, failed in
+      guard let self else { return }
+      if let text, self.isListening || final {
+        self.transcript = text
+        self.armSilenceTimer()
+      }
+      if final || failed {
+        // Lỗi sau khi đã có chữ (ví dụ huỷ do im lặng) không phải lỗi với người dùng.
+        let hadText = !self.transcript.isEmpty
+        self.teardown()
+        self.state = failed && !hadText ? .failed : .idle
       }
     }
     limitTimer = Task { [weak self] in
@@ -145,6 +141,26 @@ final class VoiceDictation {
     task = nil
     request = nil
     try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+  }
+
+  /// `nonisolated` (Sentry APPLE-IOS-A, 24/10): closure của `installTap` viết trong
+  /// lớp `@MainActor` bị Swift 6 coi là của main actor, nhưng AVAudioEngine gọi nó
+  /// trên luồng âm thanh thời gian thực → crash `dispatch_assert_queue` khi bấm micro.
+  nonisolated static func tap(_ input: AVAudioInputNode, format: AVAudioFormat, into req: SFSpeechAudioBufferRecognitionRequest) {
+    input.installTap(onBus: 0, bufferSize: 1024, format: format) { buffer, _ in req.append(buffer) }
+  }
+
+  /// Cùng lý do: bộ nhận dạng trả kết quả trên hàng đợi nền — chỉ chuyển chữ về main actor.
+  nonisolated static func recognize(
+    _ recognizer: SFSpeechRecognizer, _ req: SFSpeechAudioBufferRecognitionRequest,
+    update: @escaping @MainActor @Sendable (String?, Bool, Bool) -> Void
+  ) -> SFSpeechRecognitionTask {
+    recognizer.recognitionTask(with: req) { result, error in
+      let text = result?.bestTranscription.formattedString
+      let final = result?.isFinal ?? false
+      let failed = error != nil
+      Task { @MainActor in update(text, final, failed) }
+    }
   }
 
   /// `nonisolated` (Sentry APPLE-IOS-8, 19/10): trong lớp `@MainActor`, closure
