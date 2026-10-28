@@ -597,10 +597,11 @@ public final class MealLogger {
     return .queued(online: online)
   }
 
-  /// "Ăn lại bữa này": loại bữa + đúng các món và khẩu phần đã ăn.
+  /// "Ăn lại bữa này": đúng các món và khẩu phần đã ăn. Loại bữa giữ theo giờ
+  /// hiện tại, không theo bữa gốc (Kiệt 28/10: ăn lại bữa tối hôm qua lúc trưa
+  /// thì là bữa trưa); người dùng vẫn đổi được sau khi ghi.
   public func repeatMeal(_ meal: MealLog.RecentMeal) {
     guard showsRepeat else { return }
-    if MealDiary.order.contains(meal.mealType) { mealType = meal.mealType }
     items = meal.foods.map { f in
       var it = f.food.item(id: makeId())
       it.servings = f.servings

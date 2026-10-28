@@ -16,6 +16,9 @@ import SwiftUI
 struct WeightTrendCard: View {
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   let book: WeightTrendBook
+  /// Trạng thái Cơ thể ở Tiến bộ. "Cần chú ý" thì số thay đổi không tô xanh
+  /// (Kiệt 28/10: "+4.5 kg" xanh lá ngay dưới "Cần chú ý" là mâu thuẫn).
+  var status: ProgressStatus.Level? = nil
   var onLog: () -> Void
 
   @Environment(\.weightUnit) private var unit
@@ -227,7 +230,8 @@ struct WeightTrendCard: View {
           let good = WeightTrend.deltaGood(s.deltaKg, goal: profile?.profile?.goal)
           Text(String(localized: "wt.delta \(Self.signed(d)) \(unit.label)"))
             .font(DS.TextStyle.caption.weight(.semibold).monospacedDigit())
-            .foregroundStyle(good ? DS.Color.readinessGreen.swiftUI : DS.Color.mutedForeground.swiftUI)
+            .foregroundStyle(status == .attention ? ProgressStyle.tint(.attention)
+              : good ? DS.Color.readinessGreen.swiftUI : DS.Color.mutedForeground.swiftUI)
         }
       }
       .accessibilityElement(children: .combine)
