@@ -16,6 +16,8 @@ struct TodayPlanHero: View {
   /// Đang ghi một phương án (dời / nghỉ) — khoá nút để không bấm hai lần.
   var busy = false
   var failed = false
+  /// Dòng mời vuốt sang thẻ "Tăng tải hôm nay" (`TodayOverloadStack`); `up` = có bài nên tăng.
+  var overloadHint: (text: String, up: Bool)?
   let onPrimary: () -> Void
   let onAlternative: (DailyPlan.Alternative) -> Void
 
@@ -61,6 +63,12 @@ struct TodayPlanHero: View {
         Label(String(localized: "dp.lighter.on"), systemImage: "arrow.down.circle")
           .font(DS.TextStyle.footnote)
           .foregroundStyle(DS.Color.foreground.swiftUI)
+      }
+      if let overloadHint {
+        Label(overloadHint.text, systemImage: overloadHint.up ? "arrow.up.right" : "chevron.left.2")
+          .font(DS.TextStyle.footnote.weight(.semibold))
+          .foregroundStyle(overloadHint.up ? DS.Color.readinessGreen.swiftUI : DS.Color.mutedForeground.swiftUI)
+          .fixedSize(horizontal: false, vertical: true)
       }
       if let primary {
         DSButton(primary, style: .primary, action: onPrimary)
