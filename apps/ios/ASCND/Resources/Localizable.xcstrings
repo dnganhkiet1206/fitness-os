@@ -35987,6 +35987,54 @@
     }
    }
   },
+  "net.offline.pending %lld": {
+   "comment": "Dải kết nối, dòng hai: số lần ghi nằm trong hàng chờ trên máy (Kiệt duyệt A 28/10).",
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld entries waiting to send · saved on device"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld lần ghi đang chờ gửi · đã lưu trên máy"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld registros esperando envío · guardados en el dispositivo"
+     }
+    }
+   }
+  },
+  "net.offline.title": {
+   "comment": "Dải kết nối, mất mạng khi có lần ghi đang chờ — dòng đầu (Kiệt duyệt A 28/10).",
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Offline"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ngoại tuyến"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sin conexión"
+     }
+    }
+   }
+  },
   "net.reconnecting": {
    "comment": "Dải kết nối, mạng vừa về (RN nReconnecting).",
    "extractionState": "manual",
@@ -36007,6 +36055,54 @@
      "stringUnit": {
       "state": "translated",
       "value": "Reconectando — poniéndose al día"
+     }
+    }
+   }
+  },
+  "net.sending %lld": {
+   "comment": "Dải kết nối, mạng vừa về và đang gửi hàng chờ.",
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sending %lld saved entries…"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đang gửi %lld lần ghi…"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Enviando %lld registros guardados…"
+     }
+    }
+   }
+  },
+  "net.sent": {
+   "comment": "Dải kết nối, 2 giây sau khi hàng chờ lúc mất mạng gửi xong.",
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "All sent"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đã gửi hết"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Todo enviado"
      }
     }
    }
