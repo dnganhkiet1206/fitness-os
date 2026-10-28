@@ -1,0 +1,5 @@
+# Sổ hạn chế iOS: mọi PR thêm dòng vào §4 / §5, và quy tắc là GIỮ MỌI DÒNG.
+# `union` cho git tự gộp hai phía khi merge trên máy (git merge / pull) thay vì
+# báo xung đột (Kiệt 28/10: bớt vòng gộp + CI lại). Nút merge trên GitHub không
+# dùng driver này — gộp nhánh gốc trên máy trước, như AGENT_SESSION.md §2.5.
+apps/ios/docs/CONSTRAINTS_AND_DEFERRED.md merge=union

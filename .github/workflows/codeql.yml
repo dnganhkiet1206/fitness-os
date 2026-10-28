@@ -1,0 +1,51 @@
+# CodeQL (Swift) — quét lỗi bảo mật / lỗi logic phổ biến (Kiệt 28/10).
+#
+# Kết quả ở tab Security › Code scanning của repo (miễn phí cho repo công khai).
+# Không chạy trên PR thường (build macOS ~15 phút): chạy khi có commit Swift mới
+# trên native/ios-rewrite, hằng tuần, hoặc bấm tay. PR sửa chính tệp này thì
+# chạy để kiểm cấu hình.
+name: CodeQL
+
+on:
+  push:
+    branches: ['native/ios-rewrite']
+    paths: ['apps/ios/**/*.swift']
+  pull_request:
+    paths: ['.github/workflows/codeql.yml']
+  schedule:
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  analyze-swift:
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Chọn Xcode mới nhất
+        run: |
+          latest=$(ls -d /Applications/Xcode_*.app | grep -v beta | sort -V | tail -1)
+          sudo xcode-select -s "$latest"
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: swift
+          build-mode: manual
+          queries: security-and-quality
+      - name: Build app (cho CodeQL)
+        working-directory: apps/ios
+        run: |
+          brew install xcodegen
+          xcodegen generate
+          xcodebuild build -project ASCND.xcodeproj -scheme ASCND -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO -quiet
+      - uses: github/codeql-action/analyze@v3
+        with:
+          category: /language:swift

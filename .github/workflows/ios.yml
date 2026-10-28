@@ -15,9 +15,21 @@ name: iOS
 on:
   push:
     branches: ['native/**', main]
-    paths: ['apps/ios/**', 'spec/vectors/**', '.github/workflows/ios.yml']
+    paths:
+      - 'apps/ios/**'
+      - 'spec/vectors/**'
+      - '.github/workflows/ios.yml'
+      # Chỉ sửa tài liệu (sổ hạn chế, ghi chú) thì không cần build app 15 phút
+      # (Kiệt 28/10: tăng tốc CI). Cổng chất lượng vẫn chạy và vẫn đọc tài liệu.
+      - '!apps/ios/docs/**'
+      - '!apps/ios/**/*.md'
   pull_request:
-    paths: ['apps/ios/**', 'spec/vectors/**', '.github/workflows/ios.yml']
+    paths:
+      - 'apps/ios/**'
+      - 'spec/vectors/**'
+      - '.github/workflows/ios.yml'
+      - '!apps/ios/docs/**'
+      - '!apps/ios/**/*.md'
   workflow_dispatch:
 
 # Mỗi commit một lượt (#527, chỉ thị 6093313700): A và E cùng đẩy lên một
@@ -35,6 +47,16 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+      # Giữ `.build` giữa các lượt (28/10): phụ thuộc và module không đổi không
+      # build lại. Khoá theo nhánh + SHA, lấy lại bản gần nhất của nhánh / của
+      # native/ios-rewrite. Cache hỏng chỉ làm chậm, không làm sai: SwiftPM tự
+      # build lại phần đổi.
+      - uses: actions/cache@v4
+        with:
+          path: apps/ios/Packages/ASCNDKit/.build
+          key: spm-linux-kit-${{ hashFiles('apps/ios/Packages/ASCNDKit/Package.swift') }}-${{ github.sha }}
+          restore-keys: |
+            spm-linux-kit-${{ hashFiles('apps/ios/Packages/ASCNDKit/Package.swift') }}-
       - name: swift test (ASCNDKit)
         working-directory: apps/ios/Packages/ASCNDKit
         run: swift test
@@ -52,6 +74,23 @@ jobs:
           latest=$(ls -d /Applications/Xcode_*.app | grep -v beta | sort -V | tail -1)
           sudo xcode-select -s "$latest"
           xcodebuild -version
+
+      # Cache build giữa các lượt (Kiệt 28/10: tăng tốc CI). `irgaly/xcode-cache`
+      # giữ DerivedData + gói SPM VÀ khôi phục mtime của mã nguồn, nên Xcode build
+      # tăng dần thay vì từ đầu. `.build` của ba package cho `swift test`.
+      - uses: irgaly/xcode-cache@v1
+        with:
+          key: xcode-deriveddata-${{ github.sha }}
+          restore-keys: xcode-deriveddata-
+      - uses: actions/cache@v4
+        with:
+          path: |
+            apps/ios/Packages/ASCNDKit/.build
+            apps/ios/Packages/ASCNDBackend/.build
+            apps/ios/Packages/ASCNDStore/.build
+          key: spm-macos-${{ hashFiles('apps/ios/Packages/*/Package.resolved', 'apps/ios/Packages/*/Package.swift') }}-${{ github.sha }}
+          restore-keys: |
+            spm-macos-${{ hashFiles('apps/ios/Packages/*/Package.resolved', 'apps/ios/Packages/*/Package.swift') }}-
 
       - name: XcodeGen
         working-directory: apps/ios
