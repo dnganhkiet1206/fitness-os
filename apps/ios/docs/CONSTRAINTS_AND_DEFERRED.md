@@ -233,6 +233,12 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Kiểm: build + cổng xanh; hồi quy trên simulator (cờ `uitest-offline` bật → dải hiện; tắt → "Try again" → dải tắt, Hôm nay tải lại). **NOT RUN:** chính nhánh "monitor kẹt" — chưa dựng lại được tình huống NWPathMonitor kẹt (cờ test chỉ giả lập phép dò, không giả lập đường mạng).
 - Ghi để Kiệt xem (giao diện, cần mock): dải Offline đè lên chữ ASCND ở đầu Hôm nay.
 
+**Tiến bộ từng bài (#728) — kiểm còn thiếu (28/10, simulator, chế độ máy chủ giả):**
+- ~~Cỡ chữ trợ năng lớn nhất (AX5) cắt chữ: tên bài "Dead…", "Over…", hàng đếm "0…", "6…", thẻ phân tích "Deadl…", "Plat…", "10…".~~ Sửa 28/10 (nhánh `claude/xp-large-type`): hàng danh sách và thẻ phân tích xếp dọc ở cỡ trợ năng, hàng đếm một hàng → 2×2 → một cột (`ViewThatFits`), danh sách buổi và set mới nhất xuống dòng khi không vừa; đường nhỏ của thẻ phân tích ẩn ở cỡ trợ năng. Simulator AX5: không còn chữ bị cắt.
+- Tài khoản dùng lb: danh sách, chi tiết, biểu đồ, các buổi và gợi ý lần tới đều theo lb (220.5 lb × 5, "keep 220.5 lb and aim for 6–7 reps"). Simulator (đổi tạm `units_weight` của dữ liệu mẫu).
+- Trường hợp 0 kg của bài có tạ: unit test `zeroKgSessionOfWeightedExerciseIsNotADrop` xanh. **NOT RUN** trên simulator (dữ liệu mẫu không có buổi 0 kg ở bài có tạ).
+- **NOT RUN:** VoiceOver thật (hàng dùng `.accessibilityElement(children: .combine)`).
+
 **Tài liệu và mã:**
 - `PARITY_MATRIX.md` lạc hậu từ 17/10. 26/10 (audit vòng 3, nhánh `claude/audit-r3-dead-code`): **đánh dấu LẠC HẬU** ở đầu trang (nói rõ chỗ sai: GĐ1–GĐ3, bốn khu vực, lối vào); rà lại toàn bảng vẫn là việc cuối của GĐ3, chưa làm.
 - ~~`ReadinessTrendCardView` là code chết.~~ Xoá 26/10 (cùng nhánh): view và 8 chuỗi `rt.*`; giữ `ReadinessTrendBook` / `ReadinessTrend` (Hôm nay vẫn dùng). Build simulator xanh, cổng chuỗi xanh (2787 khoá).
@@ -257,6 +263,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 
 ## 5. Lịch sử thay đổi sổ
 
+- 28/10/2026: Tiến bộ từng bài — hết cắt chữ ở cỡ trợ năng; đã kiểm lb trên simulator.
 - 28/10/2026: mạng — "Thử lại" thay NWPathMonitor mới khi đường mạng chưa ổn (hết kẹt "Offline" tới khi mở lại app).
 - 28/10/2026: audit vòng 5 — widget: số khớp app, nút nước; widget dùng ngôn ngữ của app; chế độ test xoá mốc insight mỗi lần mở.
 - 28/10/2026: dữ liệu mẫu chế độ test có bài không tạ + tên buổi dài; "Lần trước 10 reps", tổng kết "10 reps", tên dài ở Lịch sử đã xem trên simulator.
