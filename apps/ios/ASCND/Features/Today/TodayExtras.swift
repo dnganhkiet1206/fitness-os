@@ -128,7 +128,9 @@ struct TodayExtras<Plan: View>: View {
       if isCurrentSession {
         TodayStartCard(
           userId: userId,
-          signals: mascot.flatMap { TodayDay.merging($0.signals, localWaterMl: nil) },
+          signals: mascot.flatMap {
+            TodayDay.merging($0.signals, localWaterMl: nil, pending: services.todayPending(userId: $0.userId, today: $0.today))
+          },
           // Buổi tập theo lịch (Kiệt 22/10): cùng buổi với Tập luyện, không ghi riêng.
           onMeal: { logging = .meal }, onWorkout: onStartWorkout)
       }
@@ -491,7 +493,9 @@ struct TodayExtras<Plan: View>: View {
 
   /// Việc kế tiếp của Koa (cùng `MascotLine` với khối ngày) — màu vầng sáng.
   private func nextSignal(_ room: MascotRoomController) -> MascotRules.Quest? {
-    let s = TodayDay.merging(room.signals, localWaterMl: water?.loaded == true ? water?.totalMl : nil)
+    let s = TodayDay.merging(
+      room.signals, localWaterMl: water?.loaded == true ? water?.totalMl : nil,
+      pending: services.todayPending(userId: room.userId, today: room.today))
     let hour = Calendar.current.component(.hour, from: .now)
     return MascotLine.line(TodayDay.mascotDay(s, hour: hour)).gap.map(TodayDay.quest)
   }
@@ -845,7 +849,9 @@ struct TodayExtras<Plan: View>: View {
   // MARK: - Hôm nay của bạn (18/10)
 
   private func dayStates(_ room: MascotRoomController) -> [DayCheckIn.Item: DayCheckIn.State] {
-    let s = TodayDay.merging(room.signals, localWaterMl: water?.loaded == true ? water?.totalMl : nil)
+    let s = TodayDay.merging(
+      room.signals, localWaterMl: water?.loaded == true ? water?.totalMl : nil,
+      pending: services.todayPending(userId: room.userId, today: room.today))
     let goal = room.stepsGoal
     func done(_ q: MascotRules.Quest) -> Bool { s?.done(q, stepsGoal: goal) ?? false }
     return DayCheckIn.states(
@@ -855,7 +861,9 @@ struct TodayExtras<Plan: View>: View {
 
   private func dayTiles(_ room: MascotRoomController) -> [TodayDayCard.Tile] {
     let states = dayStates(room)
-    let s = TodayDay.merging(room.signals, localWaterMl: water?.loaded == true ? water?.totalMl : nil)
+    let s = TodayDay.merging(
+      room.signals, localWaterMl: water?.loaded == true ? water?.totalMl : nil,
+      pending: services.todayPending(userId: room.userId, today: room.today))
     let num = { (v: Double) in v.formatted(.number.precision(.fractionLength(0)).locale(.app)) }
     let todo = String(localized: "day.tile.todo")
     let sleepMin = Int((s?.sleepMinutes ?? 0).rounded())

@@ -217,6 +217,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Rà mã: outbox MỘT làn tuần tự, khoá idempotency `id` (`ignoreDuplicates`), bữa còn trong hàng đợi bị khoá sửa / xoá; dải offline giả (#698) không tái phát trong lượt này.
 - Kiệt chốt 28/10: CÓ báo "N lần ghi đang chờ gửi" khi offline, và sửa dải Offline đè chữ ASCND — **dựng mock trước**, chưa làm code.
 - Chờ Kiệt quyết (giao diện, cần mock): lúc offline, Hôm nay ghi "Done" và dải chỉ nói "showing saved data" — **không chỗ nào nói có N lần ghi đang chờ gửi** (số đếm hàng đợi chỉ hiện ở màn buổi tập).
+- Audit 28/10 (sửa, nhánh `claude/v5-today-pending`): ghi giấc ngủ (hay bữa) lúc mất mạng xong, thẻ Hôm nay vẫn "Chưa ghi" tới khi đồng bộ — `DailySignals` đọc `daily_logs` của server, chỉ nước cộng phần chờ gửi. Nay `TodayDay.pending` đọc hàng chờ của người đang đăng nhập: giấc thức dậy hôm nay (dài nhất) và kcal các bữa hôm nay (qua `MealLog.pendingMeals`), `TodayDay.merging` cộng vào — thẻ, ống, Koa, việc kế tiếp đều thấy "xong" ngay. Test `pendingSleepAndMealCountBeforeSync`. **Simulator 28/10** (gộp tạm với nhánh hàng chờ khi lời gọi chưa tới máy chủ): mất mạng → Ghi nhanh → Giấc ngủ → Lưu: sheet đóng (vào hàng chờ), thẻ "8 giờ 0 phút · Đã xong", "1/4 xong".
 - **NOT RUN:** thứ tự gửi nhiều loại (nước + bữa + cân) lúc mất mạng trên simulator (đã có unit / fuzz test của `SyncWorker`); tắt app khi còn hàng đợi (chế độ test dùng database trong bộ nhớ).
 
 **Widget (audit vòng 5, 28/10, simulator, chế độ máy chủ giả, widget thật trên màn hình chính):**
@@ -301,3 +302,4 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - 21/10/2026: GĐ2 — XP ẩn khỏi giao diện, khoá đồ theo hạng Gains, Tuần của Koa thay thử thách chung, ẩn thử thách cộng đồng; thêm hạn chế khoá đồ chỉ ở app.
 - 23/10/2026: onboarding — "Lấy từ Apple Health" ở màn Về bạn đã làm (gạch mục ở §4).
 - 28/10/2026: nhận bàn giao sau vòng 5; Kiệt chốt "Ăn lại" theo giờ hiện tại, số thay đổi cân theo trạng thái Cơ thể (đã làm); báo hàng đợi khi offline + dải Offline (chờ mock).
+- 28/10/2026: thẻ Hôm nay tính giấc ngủ / bữa còn trong hàng chờ (như nước).

@@ -83,11 +83,13 @@ struct TodayDayBlock: View {
   }
 
   @ViewBuilder private func content(hour: Int) -> some View {
-    let signals = TodayDay.merging(room.signals, localWaterMl: localWaterMl)
+    let pending = services?.todayPending(userId: room.userId, today: room.today)
+    let signals = TodayDay.merging(room.signals, localWaterMl: localWaterMl, pending: pending)
     let tubes = TodayDay.tubes(signals, stepsGoal: room.stepsGoal)
     let line = MascotLine.line(TodayDay.mascotDay(signals, hour: hour))
     let dayNext = line.gap.map(TodayDay.quest)
-    let dayMood = KoaToday.read(room: room, localWaterMl: localWaterMl, profile: profile, riskHour: riskHour, hour: hour)
+    let dayMood = KoaToday.read(
+      room: room, localWaterMl: localWaterMl, pending: pending, profile: profile, riskHour: riskHour, hour: hour)
     let daySaid = KoaToday.line(dayMood, signals: signals, profile: profile, streak: room.streak.count)
     // Koa sống theo lịch tập (đợt 2): pump / đợi / mất pump / tụt hạng đè lên Koa của ngày.
     let sched = schedulePhase(hour: hour)

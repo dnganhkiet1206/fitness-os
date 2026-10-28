@@ -19,11 +19,12 @@ enum KoaToday {
   /// Nét mặt của Koa lúc này.
   @MainActor
   static func read(
-    room: MascotRoomController, localWaterMl: Int?, profile: Profile?, riskHour: Double, hour: Int
+    room: MascotRoomController, localWaterMl: Int?, pending: TodayDay.Pending? = nil, profile: Profile?, riskHour: Double,
+    hour: Int
   ) -> KoaMood.Read {
     KoaMood.read(
       .init(
-        signals: TodayDay.merging(room.signals, localWaterMl: localWaterMl), stepsGoal: room.stepsGoal, hour: hour,
+        signals: TodayDay.merging(room.signals, localWaterMl: localWaterMl, pending: pending), stepsGoal: room.stepsGoal, hour: hour,
         streak: room.streak.count, loggedToday: room.streak.loggedToday, riskHour: riskHour,
         kcalTarget: profile.map { NutritionToday.calorieTarget($0) },
         isBirthday: isBirthday(profile?.dob, today: room.today)))
