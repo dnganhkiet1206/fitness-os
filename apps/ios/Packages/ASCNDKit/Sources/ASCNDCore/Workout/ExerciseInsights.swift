@@ -33,6 +33,10 @@ public struct ExercisePerformance: Sendable, Hashable, Codable {
   /// Kỷ lục của buổi so với các buổi trước nó trong cửa sổ, tốt nhất trước.
   public let records: [PersonalRecord]
   public let bodyweightKg: Double?
+  /// Reps của CHÍNH set nặng nhất (bằng tạ thì set nhiều reps hơn) — "set đỉnh"
+  /// để so lần này với lần trước (Kiệt 28/10). `bestReps` là số reps nhiều nhất
+  /// của buổi, có thể ở một set nhẹ hơn.
+  public var topSetReps: Int?
 }
 
 extension PerformanceHistory {
@@ -97,12 +101,18 @@ extension PerformanceHistory {
         var bestReps: Int?
         var bestE1rm: Double?
         var bestHold: Int?
+        var topReps: Int?
         for s in sets {
           let reps = max(0, s.reps)
           let w = WorkoutMath.round2(s.weightKg)
           totalReps += reps
           volume += w * Double(reps)
           if reps > 0 {
+            if bestWeight.map({ w > $0 }) ?? true {
+              topReps = reps
+            } else if bestWeight == w, reps > (topReps ?? 0) {
+              topReps = reps
+            }
             if bestWeight.map({ w > $0 }) ?? true { bestWeight = w }
             if bestReps.map({ reps > $0 }) ?? true { bestReps = reps }
             if usesE1rm(kind) {
@@ -116,11 +126,13 @@ extension PerformanceHistory {
           }
           if let d = s.durationSec, d > 0, bestHold.map({ d > $0 }) ?? true { bestHold = d }
         }
-        out.append(ExercisePerformance(
+        var performance = ExercisePerformance(
           exerciseKey: key, exerciseName: lastSet.exerciseName.trimmingCharacters(in: .whitespacesAndNewlines),
           sessionId: row.id, at: row.at, date: date, kind: kind, setCount: sets.count, totalReps: totalReps,
           totalVolumeKg: WorkoutMath.round2(volume), bestWeightKg: bestWeight, bestReps: bestReps,
-          bestE1rmKg: bestE1rm, bestDurationSec: bestHold, records: records, bodyweightKg: bodyweightKg))
+          bestE1rmKg: bestE1rm, bestDurationSec: bestHold, records: records, bodyweightKg: bodyweightKg)
+        performance.topSetReps = topReps
+        out.append(performance)
       }
       for key in order { prior[key, default: []].append(contentsOf: byExercise[key] ?? []) }
     }

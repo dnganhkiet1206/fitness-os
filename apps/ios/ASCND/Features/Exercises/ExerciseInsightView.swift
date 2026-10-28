@@ -43,6 +43,12 @@ struct ExerciseInsightView: View {
       scope, days: today.library?.routine ?? [], templates: today.library?.templates ?? [], today: today.today)
   }
   private var shown: [ExerciseInsight] { InsightScreen.shown(insights.insights, keys: keys, single: single) }
+  /// Mức tạ: buổi gần nhất so với buổi trước (Kiệt duyệt mock 28/10), bài tập gần đây trước.
+  private var items: [ExerciseCompare.Item] {
+    shown.compactMap { ExerciseCompare.item(insights.history(for: $0.exerciseName)) }
+      .sorted { $0.last.date > $1.last.date }
+  }
+  private var text: ExerciseCompareText { ExerciseCompareText(unit: unit, locale: locale) }
 
   var body: some View {
     content
@@ -63,14 +69,16 @@ struct ExerciseInsightView: View {
       DSEmptyState(
         systemImage: "waveform.path.ecg", title: String(localized: "xi.empty"),
         message: String(localized: "xi.empty.hint"))
+    } else if single != nil, let item = items.first {
+      // Mở từ một bài (chip "Lần trước" ở màn tập): vào thẳng màn của bài ấy.
+      ExerciseCompareDetail(item: item, insight: shown.first)
     } else {
       list
     }
   }
 
   private var list: some View {
-    let groups = InsightScreen.grouped(shown)
-    return ScrollView {
+    ScrollView {
       VStack(alignment: .leading, spacing: DS.Spacing.md) {
         if single != nil {
           HStack {
@@ -89,31 +97,31 @@ struct ExerciseInsightView: View {
           }
           .pickerStyle(.segmented)
           .sensoryFeedback(.selection, trigger: scope)
-          Text(verbatim: summary(groups))
-            .font(DS.TextStyle.footnote)
-            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          summaryCard
         }
 
         if shown.isEmpty {
           emptyScope
         }
 
-        ForEach(InsightScreen.Group.allCases, id: \.self) { g in
-          if let list = groups[g], !list.isEmpty {
-            VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-              Text(heading(g))
-                .font(DS.TextStyle.footnote.weight(.semibold))
-                .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-                .textCase(.uppercase)
-                .accessibilityAddTraits(.isHeader)
-              ForEach(list) { i in
-                InsightCard(insight: i, unit: unit, locale: locale)
+        if !items.isEmpty {
+          DSCard {
+            VStack(spacing: 0) {
+              ForEach(Array(items.enumerated()), id: \.element.id) { pair in
+                if pair.offset > 0 { Divider() }
+                NavigationLink {
+                  ExerciseCompareDetail(
+                    item: pair.element, insight: shown.first { $0.exerciseKey == pair.element.key })
+                } label: {
+                  ExerciseCompareRow(item: pair.element, text: text)
+                }
+                .buttonStyle(.plain)
               }
             }
           }
         }
 
-        Text("xi.footnote")
+        Text("xp.footnote")
           .font(DS.TextStyle.caption)
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
         Text(String(localized: "xi.windowNote \(PerformanceHistory.windowDays)"))
@@ -124,10 +132,28 @@ struct ExerciseInsightView: View {
     }
   }
 
-  private func summary(_ groups: [InsightScreen.Group: [ExerciseInsight]]) -> String {
-    let fine = groups[.fine]?.count ?? 0, attention = groups[.attention]?.count ?? 0, thin = groups[.thin]?.count ?? 0
-    if fine == 0, attention == 0, thin > 0 { return String(localized: "xi.summaryThin \(thin)") }
-    return String(localized: "xi.summary \(fine) \(attention)")
+  /// "So với buổi trước": bao nhiêu bài tăng tạ / thêm reps / giữ / giảm.
+  @ViewBuilder private var summaryCard: some View {
+    let s = ExerciseCompare.summary(items)
+    if !items.isEmpty {
+      VStack(alignment: .leading, spacing: 6) {
+        Text("xp.summary.title")
+          .font(DS.TextStyle.caption.weight(.semibold))
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          .textCase(.uppercase)
+        HStack(spacing: DS.Spacing.md) {
+          Text(String(localized: "xp.summary.weightUp \(s.weightUp)")).foregroundStyle(DS.Color.statusGood.swiftUI)
+          Text(String(localized: "xp.summary.repsUp \(s.repsUp)")).foregroundStyle(DS.Color.statusGood.swiftUI.opacity(0.8))
+          Text(String(localized: "xp.summary.same \(s.same)")).foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          Text(String(localized: "xp.summary.down \(s.down)")).foregroundStyle(DS.Color.statusAttention.swiftUI)
+        }
+        .font(DS.TextStyle.footnote.weight(.semibold))
+        .lineLimit(1)
+        .minimumScaleFactor(0.7)
+      }
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .accessibilityElement(children: .combine)
+    }
   }
 
   /// Phạm vi rỗng không phải lịch sử rỗng — và là hai trạng thái.
@@ -153,18 +179,10 @@ struct ExerciseInsightView: View {
   private func emptyHint(planned: Bool) -> LocalizedStringKey {
     planned ? "xi.empty.hint" : "xi.scope.hint"
   }
-
-  private func heading(_ g: InsightScreen.Group) -> LocalizedStringKey {
-    switch g {
-    case .attention: "xi.group.attention"
-    case .fine: "xi.group.fine"
-    case .thin: "xi.group.thin"
-    }
-  }
 }
 
 /// Một thẻ: chạm để mở / đóng phần bằng chứng.
-private struct InsightCard: View {
+struct InsightCard: View {
   let insight: ExerciseInsight
   let unit: WeightUnit
   let locale: Locale
