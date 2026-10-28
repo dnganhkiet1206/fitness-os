@@ -305,4 +305,4 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - 28/10/2026: nhận bàn giao sau vòng 5; Kiệt chốt "Ăn lại" theo giờ hiện tại, số thay đổi cân theo trạng thái Cơ thể (đã làm); báo hàng đợi khi offline + dải Offline (chờ mock).
 - 28/10/2026: dải Offline theo phương án A (Kiệt duyệt mock): xếp trên app, báo số lần ghi chờ gửi, "Đang gửi…", "Đã gửi hết".
 - 28/10/2026: lần ghi giấc ngủ / cân nặng không còn mất khi app tưởng có mạng mà lời gọi chưa tới máy chủ (vào hàng chờ).
-- 28/10/2026: gỡ app web Lovable cũ khỏi `native/ios-rewrite` (cấu hình Vite / Tailwind / Capacitor, `ios/` Capacitor, `public/`, `package.json` gốc) — Kiệt duyệt trong chat. Còn trong lịch sử git. Gateway AI Lovable (`LOVABLE_API_KEY`) vẫn dùng — không xoá dự án Lovable. `main` chỉ sạch khi Kiệt gộp nhánh.
+- 28/10/2026: gỡ app web Lovable cũ khỏi `native/ios-rewrite` (cấu hình Vite / Tailwind / Capacitor, `ios/` Capacitor, `public/`, `package.json` gốc) — Kiệt duyệt trong chat. Còn trong lịch sử git. AI dùng khoá Gemini của ASCND (`ASCND_AI_KEY`); gateway Lovable trong `_shared/ai.ts` chỉ là mặc định dự phòng. `main` chỉ sạch khi Kiệt gộp nhánh.

@@ -13,7 +13,7 @@ ASCND là app fitness của Kiệt, có Koa làm linh vật. App theo dõi buổ
 | `marketing/` | Trang giới thiệu |
 | `docs/` | ADR, quy trình chung |
 
-App web Lovable cũ (React + Vite + Capacitor) đã gỡ khỏi nhánh này ngày 28/10/2026 — còn trong lịch sử git. Các hàm AI vẫn gọi gateway Lovable (`supabase/functions/_shared/ai.ts`), nên **không xoá dự án Lovable**.
+App web Lovable cũ (React + Vite + Capacitor) đã gỡ khỏi nhánh này ngày 28/10/2026 — còn trong lịch sử git. AI gọi thẳng Gemini bằng khoá của ASCND (`ASCND_AI_KEY`, `ASCND_AI_MODEL` — `supabase/functions/_shared/ai.ts`); gateway Lovable trong mã chỉ là mặc định dự phòng khi biến môi trường không được đặt.
 
 ## Bắt đầu ở đâu
 
