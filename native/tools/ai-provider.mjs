@@ -317,15 +317,12 @@ for (const [status, shouldFallback] of [[500, true], [402, true], [429, true], [
     'khác hẳn "model chưa bao giờ trả lời"');
 }
 
-/* ═══ 9. PHASE 8 — Lovable chỉ được xuất hiện ở ĐÚNG MỘT chỗ ═══
+/* ═══ 9. Lovable không còn ở ĐÂU trong mã server ═══
 
-   Hôm nay gateway Lovable vẫn là giá trị MẶC ĐỊNH trong `_shared/ai.ts`, và đó
-   là cố ý: trong lúc chuyển đổi, đặt sai một biến thì mọi thứ vẫn chạy như cũ
-   thay vì tắt hẳn. Cái phải cấm là nó quay lại NGOÀI chỗ ấy — một endpoint gõ
-   thẳng trong một function là đúng thứ mà `_shared/ai.ts` sinh ra để xoá, và
-   nó sẽ lặng lẽ tính tiền vào tài khoản cũ sau khi mọi thứ khác đã chuyển.
-
-   Ngày cắt xong, con số dưới đây về 0 và dòng này thành "không còn chỗ nào". */
+   Ngày cắt đã đến (Kiệt 28/10): production chạy Gemini bằng khoá của ASCND,
+   và mặc định gateway Lovable + `LOVABLE_API_KEY` đã gỡ khỏi `_shared/ai.ts`.
+   Một endpoint hay một khoá Lovable quay lại — ở bất kỳ tệp nào — sẽ lặng lẽ
+   gọi một bên thứ ba không ai cấu hình. Chú thích (lịch sử) thì được phép. */
 {
   const FNS = path.resolve(NATIVE, '..', 'supabase/functions');
   const { readdirSync, statSync } = await import('node:fs');
@@ -340,11 +337,11 @@ for (const [status, shouldFallback] of [[500, true], [402, true], [429, true], [
     }
   };
   walk(FNS);
-  const allowed = ['_shared/ai.ts'];
+  const allowed = [];
   const stray = hits.filter((h) => !allowed.includes(h));
   want(stray.length === 0,
-    `Lovable còn được nhắc ngoài \`_shared/ai.ts\`: ${stray.join(', ')} — một endpoint hay một khoá gõ thẳng ` +
-    'trong một function sẽ tiếp tục tính tiền vào tài khoản cũ sau khi mọi thứ khác đã chuyển, và không có gì báo');
+    `Lovable còn trong mã server: ${stray.join(', ')} — mặc định Lovable đã gỡ 28/10; một endpoint hay một khoá ` +
+    'Lovable quay lại sẽ lặng lẽ gọi một bên thứ ba không ai cấu hình');
 }
 
 /* ═══ 10. một thân KHÔNG PHẢI JSON trên 200 vẫn phải vào sổ ═══
@@ -475,12 +472,11 @@ for (const bad of ['', '20s', '0', '-5', 'null']) {
     'là một TypeError chờ sẵn, và nó nổ TRƯỚC nhánh đếm token');
 }
 
-/* ═══ 14. khoá mới cắm vào endpoint cũ phải NÓI RA ═══
+/* ═══ 14. cấu hình làm dở phải NÓI RA, và không có mặc định ═══
 
-   `aiKey()` và `aiUrl()` rơi về mặc định độc lập với nhau, và sự độc lập ấy
-   phải giữ: hôm nay `LOVABLE_API_KEY` chạy một mình. Nhưng cặp lệch
-   (khoá mới + địa chỉ cũ) chỉ hiện ra ở đầu kia là 401 — mà 401 thì
-   `providerFault` coi là lỗi của bên đó và lặng lẽ tụt xuống bên dự phòng. */
+   Từ 28/10 không còn mặc định: bên thứ nhất cần CẢ `ASCND_AI_KEY` lẫn
+   `ASCND_AI_URL`. Thiếu một trong hai thì bên ấy bị bỏ — và điều đó phải hiện
+   ở log lúc khởi động, không chỉ là "AI chưa sẵn sàng" ở đầu kia. */
 {
   clearEnv();
   ENV.ASCND_AI_KEY = 'k-moi';
@@ -496,10 +492,20 @@ for (const bad of ['', '20s', '0', '-5', 'null']) {
     `đặt đủ cả hai mà vẫn cảnh báo: ${JSON.stringify(du.spoke)} — một cảnh báo kêu cả lúc đúng thì không ai đọc nó nữa`);
 
   clearEnv();
+  ENV.ASCND_AI_URL = A;
+  const thieuKhoa = await spokenBy(async () => load('ai'));
+  want(thieuKhoa.spoke.some((x) => /ASCND_AI_KEY/.test(x)),
+    `đặt ASCND_AI_URL mà không đặt ASCND_AI_KEY: không có cảnh báo nào. Log thấy: ${JSON.stringify(thieuKhoa.spoke)}`);
+
+  clearEnv();
   ENV.LOVABLE_API_KEY = 'k-cu';
-  const cu = await spokenBy(async () => load('ai'));
-  want(!cu.spoke.some((x) => /ASCND_AI_URL/.test(x)),
-    `cấu hình ĐANG CHẠY (chỉ LOVABLE_API_KEY) bị cảnh báo: ${JSON.stringify(cu.spoke)} — bản mặc định phải im lặng`);
+  want(load('ai').providers().length === 0,
+    'chỉ có LOVABLE_API_KEY mà vẫn có bên AI — mặc định Lovable đã gỡ 28/10, khoá cũ không được tự bật lại');
+
+  clearEnv();
+  ENV.ASCND_AI_KEY = 'k-moi';
+  want(load('ai').providers().length === 0,
+    'có ASCND_AI_KEY mà không có ASCND_AI_URL vẫn có bên AI — không còn endpoint mặc định, bên ấy phải bị bỏ');
 }
 
 if (problems.length) {
