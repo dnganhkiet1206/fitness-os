@@ -119,6 +119,7 @@ private final class Rows: RowStore, @unchecked Sendable {
   private var _inserted: [[String: JSONValue]] = []
   private var _updated: [(String, [String: JSONValue])] = []
   var failWrite = false
+  var neverSent = false
   var vanished = false
 
   init(sleeps: [JSONValue] = []) { _sleeps = sleeps }
@@ -132,6 +133,7 @@ private final class Rows: RowStore, @unchecked Sendable {
   func insert(_ table: String, _ row: [String: JSONValue]) async throws(RowStoreError) {
     if table == "sleep_logs" {
       if failWrite { throw RowStoreError(code: "500", message: "boom") }
+      if neverSent { throw RowStoreError(code: nil, message: "offline", neverSent: true) }
       lock.withLock { _inserted.append(row) }
     }
   }
@@ -188,6 +190,26 @@ struct SleepLoggerTests {
         ]
       ])
     #expect(l.done)
+  }
+
+  /// Tưởng có mạng mà yêu cầu chưa hề tới máy chủ (audit 28/10: trước báo "Có lỗi
+  /// xảy ra" và mất lần ghi): vào hàng chờ như lúc offline. Lỗi server thì vẫn báo.
+  @Test func neverSentInsertFallsBackToOutbox() async {
+    let rows = Rows()
+    rows.neverSent = true
+    let queue = Queue()
+    let l = Self.make(rows, queue)
+    #expect(await l.submit(span: Self.night, quality: 6, stages: [], online: true) == .queued)
+    #expect(queue.entries.count == 1)
+    #expect(queue.entries.first?.kind == SleepLog.kind)
+    #expect(rows.inserted.isEmpty)
+    #expect(l.done)
+
+    let rows2 = Rows()
+    rows2.failWrite = true
+    let queue2 = Queue()
+    #expect(await Self.make(rows2, queue2).submit(span: Self.night, quality: 6, stages: [], online: true) == .failed)
+    #expect(queue2.entries.isEmpty)
   }
 
   /// Ghi lại cùng đêm (chồng lấn) là SỬA hàng ấy, không thêm.

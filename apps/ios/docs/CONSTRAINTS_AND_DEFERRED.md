@@ -217,6 +217,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Rà mã: outbox MỘT làn tuần tự, khoá idempotency `id` (`ignoreDuplicates`), bữa còn trong hàng đợi bị khoá sửa / xoá; dải offline giả (#698) không tái phát trong lượt này.
 - Kiệt chốt 28/10: CÓ báo "N lần ghi đang chờ gửi" khi offline, và sửa dải Offline đè chữ ASCND — **dựng mock trước**, chưa làm code.
 - Chờ Kiệt quyết (giao diện, cần mock): lúc offline, Hôm nay ghi "Done" và dải chỉ nói "showing saved data" — **không chỗ nào nói có N lần ghi đang chờ gửi** (số đếm hàng đợi chỉ hiện ở màn buổi tập).
+- Audit 28/10 (sửa, nhánh `claude/v5-sleep-offline-fallback`): app tưởng còn mạng (phép dò chưa báo) mà lời gọi KHÔNG tới được máy chủ thì "Lưu giấc ngủ" báo "Có lỗi xảy ra." và Cân nặng báo "offline" — **mất lần ghi**, phải bấm lại. Nay lỗi chắc chắn chưa gửi đi (`NetworkFailure.neverSent`: không mạng, không tìm / nối được máy chủ, DNS…) thì vào hàng chờ như lúc offline (`.queued`). Hết giờ chờ / mất kết nối giữa chừng (`timedOut`, `networkConnectionLost`) vẫn báo lỗi — yêu cầu có thể đã ghi, đẩy hàng chờ nữa là ghi hai lần. Giấc ngủ chỉ đẩy hàng chờ khi ghi hàng mới (thay một đêm đã có thì vẫn báo). `RowStoreError` có thêm cờ `neverSent`. Test: `neverSentInsertFallsBackToOutbox`, `neverSentWriteFallsBackToOutbox`, `onlySuccessfulOnlineWriteReportsSaved`. **Chưa làm:** cùng lỗi ở các bộ ghi gửi thẳng khác (số đo, sinh trắc…), chưa rà.
 - **NOT RUN:** thứ tự gửi nhiều loại (nước + bữa + cân) lúc mất mạng trên simulator (đã có unit / fuzz test của `SyncWorker`); tắt app khi còn hàng đợi (chế độ test dùng database trong bộ nhớ).
 
 **Widget (audit vòng 5, 28/10, simulator, chế độ máy chủ giả, widget thật trên màn hình chính):**
@@ -301,3 +302,4 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - 21/10/2026: GĐ2 — XP ẩn khỏi giao diện, khoá đồ theo hạng Gains, Tuần của Koa thay thử thách chung, ẩn thử thách cộng đồng; thêm hạn chế khoá đồ chỉ ở app.
 - 23/10/2026: onboarding — "Lấy từ Apple Health" ở màn Về bạn đã làm (gạch mục ở §4).
 - 28/10/2026: nhận bàn giao sau vòng 5; Kiệt chốt "Ăn lại" theo giờ hiện tại, số thay đổi cân theo trạng thái Cơ thể (đã làm); báo hàng đợi khi offline + dải Offline (chờ mock).
+- 28/10/2026: lần ghi giấc ngủ / cân nặng không còn mất khi app tưởng có mạng mà lời gọi chưa tới máy chủ (vào hàng chờ).
