@@ -35963,6 +35963,54 @@
     }
    }
   },
+  "net.dead.sub": {
+   "comment": "Dải kết nối, dòng hai khi có lần ghi bị server từ chối hẳn.",
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "The server refused them. Please log them again."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Máy chủ đã từ chối. Hãy ghi lại nếu cần."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "El servidor los rechazó. Vuelve a registrarlos."
+     }
+    }
+   }
+  },
+  "net.dead.title %lld": {
+   "comment": "Dải kết nối: số lần ghi của người dùng bị server từ chối hẳn (mock A 28/10).",
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld entries couldn't be sent"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld lần ghi không gửi được"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld registros no se pudieron enviar"
+     }
+    }
+   }
+  },
   "net.offline": {
    "comment": "Dải kết nối, mất mạng (RN nOffline).",
    "extractionState": "manual",
