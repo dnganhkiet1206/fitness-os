@@ -94,10 +94,10 @@ const problems = [];
       problems.push(`_shared/ai.ts: thiếu ${fn}()`);
     }
   }
-  /* Mặc định phải là bản đang chạy. Một bản gom lại không được đổi hành vi hôm
-     nay để đổi lấy sự tiện lợi ngày mai. */
-  if (!/ai\.gateway\.lovable\.dev/.test(ai)) {
-    problems.push('_shared/ai.ts: endpoint mặc định không còn là gateway đang dùng — bản gom lại đã đổi hành vi');
+  /* Không còn mặc định Lovable (Kiệt 28/10): production chạy Gemini bằng khoá
+     của ASCND qua `ASCND_AI_URL` / `ASCND_AI_KEY`. */
+  if (/lovable\.dev|LOVABLE_API_KEY/.test(ai)) {
+    problems.push('_shared/ai.ts: còn endpoint / khoá Lovable — mặc định ấy đã gỡ 28/10');
   }
 
   for (const d of readdirSync(DIR)) {

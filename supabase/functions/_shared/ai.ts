@@ -15,31 +15,29 @@
  *
  * ── và vì sao nó là biến môi trường, không phải hằng số ──
  *
- * Lovable là dàn xếp cho giai đoạn PHÁT TRIỂN: khoá của họ nằm sẵn trong project
- * cũ và không xem lại được. Khi publish, khoá là của người dùng tự mua. Hai giai
- * đoạn, cùng một đoạn code — nên thứ phân biệt chúng phải là cấu hình, không
- * phải một commit.
+ * Đổi nhà cung cấp phải là đổi cấu hình, không phải một commit. Endpoint theo
+ * chuẩn `/v1/chat/completions` của OpenAI — Google Gemini (endpoint OpenAI của
+ * nó), OpenAI, Groq, Together… đều nói — nên đổi bên trong đa số trường hợp là
+ * đổi các biến `ASCND_AI_*`, không phải viết lại request.
  *
- * Endpoint mặc định theo chuẩn `/v1/chat/completions` của OpenAI, thứ mà
- * Lovable, OpenAI, Groq, Together và phần lớn gateway đều nói. Đổi nhà cung cấp
- * trong đa số trường hợp là đổi hai biến, không phải viết lại request.
+ * ── không có mặc định (Kiệt 28/10) ──
  *
- * ── mặc định là bản đang chạy ──
- *
- * Không đặt biến nào thì mọi thứ chạy đúng như trước file này. Đó là điều kiện
- * để một bản gom lại như thế này an toàn: nó không được phép đổi hành vi hôm nay
- * để đổi lấy sự tiện lợi ngày mai.
+ * Production chạy Gemini bằng khoá của ASCND: `ASCND_AI_URL` = endpoint OpenAI
+ * của Google, `ASCND_AI_KEY` = khoá Gemini. Mặc định cũ (gateway Lovable +
+ * `LOVABLE_API_KEY`) là dàn xếp của giai đoạn phát triển và đã gỡ: thiếu biến
+ * thì AI TẮT và nói ra ở log lúc khởi động — không lặng lẽ gọi một bên thứ ba
+ * mà không ai cấu hình.
  */
 const env = (name: string, fallback: string) => Deno.env.get(name) ?? fallback;
 
-export const aiUrl = () =>
-  env("ASCND_AI_URL", "https://ai.gateway.lovable.dev/v1/chat/completions");
+/** Endpoint `/v1/chat/completions` của bên AI. Không đặt → không có bên nào. */
+export const aiUrl = () => Deno.env.get("ASCND_AI_URL") ?? "";
 
-/** Khoá gateway. `LOVABLE_API_KEY` là bản đang dùng; `ASCND_AI_KEY` là bản thay. */
-export const aiKey = () => Deno.env.get("ASCND_AI_KEY") ?? Deno.env.get("LOVABLE_API_KEY");
+/** Khoá của bên AI. */
+export const aiKey = () => Deno.env.get("ASCND_AI_KEY");
 
-/** Model cho văn bản — năm function dùng cái này. */
-export const aiModel = () => env("ASCND_AI_MODEL", "google/gemini-3-flash-preview");
+/** Model cho văn bản — các function AI dùng cái này. */
+export const aiModel = () => env("ASCND_AI_MODEL", "gemini-flash-lite-latest");
 
 /**
  * Model cho ảnh — chỉ `scan-food`.
@@ -49,39 +47,28 @@ export const aiModel = () => env("ASCND_AI_MODEL", "google/gemini-3-flash-previe
  * đúng chỗ khó đoán nhất — một request trả về text mô tả sai một bức ảnh nó
  * không thấy.
  */
-export const aiVisionModel = () => env("ASCND_AI_VISION_MODEL", "google/gemini-2.5-flash");
+export const aiVisionModel = () => env("ASCND_AI_VISION_MODEL", "gemini-flash-lite-latest");
 
 /**
  * Mức "suy nghĩ" của model — chỉ gửi khi đặt `ASCND_AI_REASONING_EFFORT`.
  *
- * Gemini 2.5 Flash qua endpoint OpenAI của Google mặc định suy nghĩ trước khi trả
- * lời, và phần ấy ăn vào CHÍNH `max_tokens` (700–1500 ở đây) — câu trả lời cụt
- * hoặc rỗng. `none` tắt nó ở 2.5; dòng 3.x (`gemini-flash-lite-latest`) từ chối
- * `none` bằng 400 "invalid argument" — dùng `low`. Không đặt biến → không gửi tham số, hành vi như cũ
- * (gateway Lovable, OpenAI non-reasoning có thể từ chối tham số lạ).
+ * Gemini qua endpoint OpenAI của Google mặc định suy nghĩ trước khi trả lời, và
+ * phần ấy ăn vào CHÍNH `max_tokens` (700–1500 ở đây) — câu trả lời cụt hoặc
+ * rỗng. `none` tắt nó ở 2.5; dòng 3.x (`gemini-flash-lite-latest`) từ chối
+ * `none` bằng 400 "invalid argument" — dùng `low`. Không đặt biến → không gửi
+ * tham số (bên non-reasoning có thể từ chối tham số lạ).
  */
 export const aiReasoningEffort = () => Deno.env.get("ASCND_AI_REASONING_EFFORT") || undefined;
 
 /*
-  Khoá mới cắm vào endpoint cũ — sai lầm dễ gặp nhất của ngày chuyển đổi.
-
-  `aiKey()` và `aiUrl()` có fallback ĐỘC LẬP: đặt `ASCND_AI_KEY` mà quên
-  `ASCND_AI_URL` thì khoá là của nhà cung cấp mới còn địa chỉ vẫn là gateway cũ.
-  Sự độc lập ấy là cố ý và phải giữ — hôm nay `LOVABLE_API_KEY` chạy một mình,
-  không có `ASCND_AI_URL` nào, và bắt phải có cả hai là tắt bản đang chạy.
-
-  Nhưng "hợp lệ" không có nghĩa là "có chủ ý". Cặp lệch này hiện ra ở đầu kia là
-  một chuỗi 401 — thứ `providerFault` coi là lỗi CỦA BÊN ĐÓ, nên nó lặng lẽ tụt
-  xuống bên dự phòng và tính tiền vào đấy. Không có gì trong log nói rằng bên
-  thứ nhất chưa bao giờ được cấu hình xong.
-
-  Nên: một dòng, ở lúc khởi động, ngay tại chỗ biết được điều đó. Không từ chối
-  — một người cố ý xoay khoá Lovable qua tên mới vẫn phải chạy được.
+  Cấu hình làm dở — một trong hai biến có, biến kia không — là sai lầm dễ gặp
+  nhất của ngày đổi nhà cung cấp, và nó không hiện ra ở đâu khác: bên thứ nhất
+  bị bỏ khỏi `providers()`, request rơi xuống bên dự phòng (nếu có) hoặc trả
+  "AI chưa sẵn sàng". Một dòng ở lúc khởi động, ngay tại chỗ biết được điều đó.
 */
-if (Deno.env.get("ASCND_AI_KEY") && !Deno.env.get("ASCND_AI_URL")) {
+if (!!Deno.env.get("ASCND_AI_KEY") !== !!Deno.env.get("ASCND_AI_URL")) {
   console.error(
-    "ASCND_AI_KEY đã đặt nhưng ASCND_AI_URL thì chưa — request sẽ mang khoá mới tới gateway MẶC ĐỊNH. " +
-    "Nếu đó không phải ý định thì đây là một lần chuyển nhà cung cấp làm dở, và nó chỉ hiện ra là 401.",
+    "ASCND_AI_KEY và ASCND_AI_URL phải đặt CÙNG nhau — đang thiếu một biến, bên AI thứ nhất bị tắt.",
   );
 }
 
@@ -94,7 +81,7 @@ if (Deno.env.get("ASCND_AI_KEY") && !Deno.env.get("ASCND_AI_URL")) {
  * lúc, và thông báo lỗi của `JSON.parse` không nói được biến nào sai.
  *
  * Bên thứ nhất không có hậu tố — nó chính là cấu hình đang chạy, nên thêm dự
- * phòng không đụng gì tới bên đang dùng.
+ * phòng không đụng gì tới bên đang dùng. Mỗi bên cần CẢ khoá lẫn endpoint.
  */
 export interface Provider {
   url: string;
@@ -106,7 +93,8 @@ export interface Provider {
 export function providers(): Provider[] {
   const out: Provider[] = [];
   const key0 = aiKey();
-  if (key0) out.push({ url: aiUrl(), key: key0, model: aiModel(), visionModel: aiVisionModel() });
+  const url0 = aiUrl();
+  if (key0 && url0) out.push({ url: url0, key: key0, model: aiModel(), visionModel: aiVisionModel() });
   for (const n of [2, 3]) {
     const key = Deno.env.get(`ASCND_AI_KEY_${n}`);
     const url = Deno.env.get(`ASCND_AI_URL_${n}`);
@@ -214,7 +202,7 @@ const TIMEOUT_MS = (() => {
  */
 /**
  * Ba function (nudges, gợi ý bữa, review tuần) chỉ gửi một tin `system` có kèm
- * dữ liệu. Gateway Lovable chấp nhận, nhưng endpoint OpenAI của Gemini từ chối
+ * dữ liệu. Vài gateway chấp nhận, nhưng endpoint OpenAI của Gemini từ chối
  * 400 "contents is not specified" — với nó, system là chỉ dẫn, không phải nội
  * dung. Thêm một lượt `user` ngắn khi chưa có lượt nào; prompt đã nói ngôn ngữ.
  */
