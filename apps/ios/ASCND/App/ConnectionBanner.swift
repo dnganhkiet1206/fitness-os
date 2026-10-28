@@ -21,6 +21,16 @@ struct ConnectionBanner: View {
   /// không báo gì.
   @State private var waitedOffline = false
   @State private var showsSent = false
+  /// Số lần ghi bị server từ chối mà người dùng đã thấy và tắt (×). Dòng báo hiện
+  /// lại khi số ấy TĂNG — một lần ghi mới vừa hỏng hẳn.
+  @AppStorage("ascnd-dead-acked") private var ackedDead = 0
+
+  /// Lần ghi CỦA người đang đăng nhập bị từ chối hẳn (không tính hàng của tài khoản
+  /// khác — người này không làm gì được với chúng).
+  private var deadCount: Int {
+    let user = services.sync.signedInUser?.lowercased()
+    return services.sync.outbox.dead.filter { $0.reason != .wrongAccount && $0.entry.userId.lowercased() == user }.count
+  }
 
   var body: some View {
     let pending = services.sync.pendingCount
@@ -29,6 +39,8 @@ struct ConnectionBanner: View {
       case .online:
         if showsSent {
           bar(tone: DS.Color.statusGood, symbol: "checkmark", title: String(localized: "net.sent"), sub: nil, offline: false)
+        } else if deadCount > ackedDead {
+          deadBar(deadCount)
         }
       case .offline:
         if pending > 0 {
@@ -52,9 +64,53 @@ struct ConnectionBanner: View {
       if count > 0, services.net.status != .online { waitedOffline = true }
       if count == 0, waitedOffline { sent() }
     }
+    .onChange(of: deadCount, initial: true) { _, count in
+      // Hàng chết được dọn (đăng xuất): đặt lại để lần hỏng sau vẫn báo.
+      if count < ackedDead { ackedDead = count }
+    }
     .onChange(of: services.net.status) { _, status in
       if status != .online, pending > 0 { waitedOffline = true }
     }
+  }
+
+  /// "N lần ghi không gửi được" (mock A, 28/10): server từ chối hẳn — gửi lại cũng
+  /// không đổi. Chưa có màn danh sách / gửi lại (mock ghi "Xem" nhưng màn buổi tập
+  /// chỉ có dòng chữ), nên chỉ báo và cho tắt.
+  private func deadBar(_ count: Int) -> some View {
+    HStack(spacing: 8) {
+      Image(systemName: "exclamationmark.circle")
+        .font(.caption.weight(.semibold))
+        .accessibilityHidden(true)
+      VStack(alignment: .leading, spacing: 1) {
+        Text(String(localized: "net.dead.title \(count)"))
+          .font(DS.TextStyle.caption.weight(.semibold))
+        Text(String(localized: "net.dead.sub"))
+          .font(DS.TextStyle.caption)
+          .opacity(0.8)
+      }
+      .frame(maxWidth: .infinity, alignment: .leading)
+      Button {
+        ackedDead = count
+      } label: {
+        Image(systemName: "xmark")
+          .font(.caption.weight(.bold))
+          .frame(width: 32, height: 32)
+          .contentShape(Rectangle().inset(by: -6))
+      }
+      .buttonStyle(.plain)
+      .accessibilityLabel(Text(String(localized: "common.close")))
+    }
+    .foregroundStyle(DS.Color.statusAttention.swiftUI)
+    .padding(.horizontal, 14)
+    .padding(.vertical, 4)
+    .frame(maxWidth: .infinity)
+    .background(alignment: .bottom) {
+      DS.Color.statusAttention.swiftUI.opacity(0.35).frame(height: 0.5)
+    }
+    .background(DS.Color.statusAttention.swiftUI.opacity(0.14), ignoresSafeAreaEdges: .top)
+    .background(DS.Color.background.swiftUI, ignoresSafeAreaEdges: .top)
+    .accessibilityElement(children: .contain)
+    .transition(.opacity)
   }
 
   /// "Đã gửi hết" (Kiệt duyệt phương án A 28/10): hiện 2 giây rồi tắt.
