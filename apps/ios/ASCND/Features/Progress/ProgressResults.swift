@@ -229,7 +229,7 @@ struct ProgressGroupView: View {
         }
       }
     case .body:
-      BodySection(userId: flow.today.userId, today: flow.today.today)
+      BodySection(userId: flow.today.userId, today: flow.today.today, status: result.level)
     case .steps:
       chart(values: snapshot?.steps, target: result.target, label: String(localized: "ps.g.steps"))
     case .sleep:

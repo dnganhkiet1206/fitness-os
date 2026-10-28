@@ -296,7 +296,7 @@ struct MealLoggerTests {
       "meal_entry_items": .array([.object(["food_name": .string("Cá kho"), "servings": .number(1.5), "kcal": .number(300)])]),
     ])]
     f.favoriteRows = [.object(["id": .string("fv"), "user_id": .string("u1"), "name": .string("Sữa chua"), "kcal": .number(100)])]
-    let l = Self.logger(f, MealOutbox())
+    let l = Self.logger(f, MealOutbox(), meal: "lunch")
     await l.loadRecents()
     #expect(l.favorites.map(\.name) == ["Sữa chua"])
     #expect(l.quickAdds.first?.favorite == true)
@@ -305,7 +305,9 @@ struct MealLoggerTests {
     let meal = try #require(l.recentMeals.first)
     #expect(l.showsRepeat)
     l.repeatMeal(meal)
-    #expect(l.mealType == "dinner")
+    // Kiệt 28/10: ăn lại bữa tối lúc trưa thì lưu vào bữa trưa.
+    #expect(meal.mealType == "dinner")
+    #expect(l.mealType == "lunch")
     #expect(l.items.count == 1)
     #expect(l.items[0].servings == 1.5)
     #expect(l.items[0].kcal == 200)
