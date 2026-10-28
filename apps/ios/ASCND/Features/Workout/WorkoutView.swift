@@ -1406,10 +1406,12 @@ public struct WorkoutView: View {
     }
   }
 
-  /// Mức tạ cho VoiceOver — cùng phần lẻ với ô nhập, "0" khi không tạ.
+  /// Mức tạ cho VoiceOver, kèm đơn vị của người dùng ("60 kg", "135 lb"); set
+  /// không tạ đọc "không tạ" thay vì "0 kg" (#526, làm lại 28/10 — bản cũ còn
+  /// đọc "kg" cả với tài khoản lb).
   private func a11yLoad(_ kg: Double) -> String {
-    let t = NumberInput.plannedLoad(kg)
-    return t.isEmpty ? "0" : t
+    guard kg > 0 else { return String(localized: "xi.bodyweight").lowercased(with: locale) }
+    return unit.localizedLoad(kg, locale: locale) ?? unit.load(kg)
   }
 }
 
