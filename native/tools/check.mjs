@@ -1019,6 +1019,12 @@ const STEPS = [
   */
   ['AI viết nước theo đơn vị người dùng', 'node', ['--experimental-strip-types', '../apps/ios/tools/native-ai-water-unit.mjs']],
   /*
+    Kiệt 28/10: Coach nói progressive overload theo mức tạ từng bài (buổi gần
+    nhất so với buổi trước), không chỉ tổng khối lượng. Chạy thật
+    `_shared/progress.ts` và kiểm ai-coach gửi + dặn dùng nó.
+  */
+  ['AI trả lời mức tạ từng bài', 'node', ['--experimental-strip-types', '../apps/ios/tools/native-ai-exercise-progress.mjs']],
+  /*
     #527 Phase 1 · 1.11: trạng thái mạng ba nhánh của app iOS native phải đổi
     ở đúng các mốc RN đổi. Golden của `NetStatusGoldenTests` là output của
     CHÍNH `net-status.ts` chạy trên đồng hồ ảo (sàn 600 ms, nhịp dò 250 ms, trần
