@@ -10,9 +10,13 @@ public import Supabase
 public final class Backend: Sendable {
   public let config: BackendConfig
   public let client: SupabaseClient
+  /// `URLSession` riêng của client (nil ở chế độ UI test — người gọi tự lo session).
+  private let session: URLSession?
 
   public init(config: BackendConfig) {
     self.config = config
+    let session = StallRecovery.makeSession()
+    self.session = session
     self.client = SupabaseClient(
       supabaseURL: config.url,
       supabaseKey: config.anonKey,
@@ -22,9 +26,17 @@ public final class Backend: Sendable {
           // đã hết hạn, rồi mới làm mới token ngầm. Tránh cảnh báo `reportIssue`
           // của supabase-swift và là hành vi mặc định ở major kế tiếp.
           emitLocalSessionAsInitialSession: true
-        )
+        ),
+        global: SupabaseClientOptions.GlobalOptions(session: session)
       )
     )
+  }
+
+  /// Bỏ các kết nối đang mở — lượt gọi sau mở kết nối MỚI. Gọi khi app quay lại
+  /// tiền cảnh và khi người dùng bấm "Thử lại" (kết nối HTTP/2 chết sau khi máy
+  /// ngủ / đổi mạng là nguyên nhân của "Offline" giả, audit 28/10).
+  public func resetConnections() {
+    session?.flush {}
   }
 
   /// Client với `URLSession` do người gọi đưa và phiên chỉ trong bộ nhớ — chế độ UI
@@ -32,6 +44,7 @@ public final class Backend: Sendable {
   /// và phiên giả không chạm Keychain của phiên thật.
   public init(config: BackendConfig, session: URLSession) {
     self.config = config
+    self.session = nil
     self.client = SupabaseClient(
       supabaseURL: config.url,
       supabaseKey: config.anonKey,

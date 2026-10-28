@@ -1050,6 +1050,8 @@ final class AppServices {
   }
 
   func didBecomeActive() {
+    // Kết nối cũ có thể đã chết khi app ở nền / máy ngủ — mở kết nối mới (28/10).
+    backend?.resetConnections()
     // Quay lại tiền cảnh: đo lại đường mạng, dò lại internet ngay.
     network.resume(Self.netPath(monitor.currentPath))
     sync.kick()
@@ -1150,6 +1152,7 @@ final class AppServices {
   /// đúng đường cũ, chỉ mở lại app mới hết (mở lại = monitor mới). Nên thay monitor
   /// mới: nó báo đường hiện tại ngay khi chạy, qua `pathChanged` như thường.
   func retryNetwork() {
+    backend?.resetConnections()
     let current = monitor.currentPath
     let s = network.refresh(Self.netPath(current))
     applyNetwork(connected: s.connected, reachable: s.reachable)
