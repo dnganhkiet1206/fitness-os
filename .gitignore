@@ -23,17 +23,6 @@ dist-ssr
 *.sln
 *.sw?
 
-# iOS build artifacts (keep source files, ignore generated)
-ios/App/App/public
-ios/App/App/capacitor.config.json
-ios/App/App/config.xml
-ios/App/build
-ios/App/Pods
-ios/App/output
-ios/DerivedData
-ios/capacitor-cordova-ios-plugins
-ios/**/xcuserdata
-
 # local env — không commit
 .env
 .env.*
