@@ -61,4 +61,5 @@ name: water chip updates Water card and Insight
     waitToSettleTimeoutMs: 1000
     timeout: 60000
 - assertNotVisible: ".*0 oz of water today.*"
+- assertNotVisible: ".*not logged any.*"
 - takeScreenshot: 02-water-after

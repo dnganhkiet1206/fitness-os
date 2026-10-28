@@ -258,8 +258,11 @@ final class AppServices {
     preferences = prefs
     // Widget dùng cùng lựa chọn ngôn ngữ ngay từ lần mở app đầu (bản cài từ
     // trước PR này chưa có khoá trong App Group).
-    // Ngôn ngữ theo iPhone (23/10): widget cũng theo máy — không ghi đè.
-    widgets.setLanguage(nil)
+    // Ngôn ngữ theo iPhone (23/10). Widget dùng ĐÚNG ngôn ngữ app đang chạy: câu của
+    // Koa / trạng thái trong dữ liệu widget do app viết bằng ngôn ngữ ấy, nên nhãn của
+    // widget phải cùng ngôn ngữ (audit vòng 5: đặt ngôn ngữ riêng cho app thì widget
+    // lẫn "TUẦN NÀY" với "Workout time!"). Thường thì đó cũng là ngôn ngữ máy.
+    widgets.setLanguage(Bundle.main.preferredLocalizations.first)
     let reminderCenter = ReminderCenter(
       store: UserDefaultsStore(), scheduler: NotificationReminderScheduler(), copy: ReminderCopyTable.copy(prefs.lang))
     reminders = reminderCenter
