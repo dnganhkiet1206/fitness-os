@@ -389,9 +389,13 @@ public struct RowQuery: Sendable, Hashable {
 public struct RowStoreError: Error, Sendable, Hashable {
   public let code: String?
   public let message: String
-  public init(code: String?, message: String) {
+  /// Yêu cầu chắc chắn chưa tới máy chủ (`NetworkFailure.neverSent`) — bên ghi được
+  /// đẩy lần ghi vào hàng chờ thay vì báo lỗi.
+  public let neverSent: Bool
+  public init(code: String?, message: String, neverSent: Bool = false) {
     self.code = code
     self.message = message
+    self.neverSent = neverSent
   }
 }
 

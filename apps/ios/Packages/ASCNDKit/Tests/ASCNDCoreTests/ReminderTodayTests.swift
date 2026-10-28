@@ -239,13 +239,20 @@ struct ReminderWeightSavedTests {
     #expect(await l.submit(kg: 5, online: true) == .outOfRange)
     await server.set(error: URLError(.badServerResponse))
     #expect(await l.submit(kg: 70, online: true) == .failed)
-    await server.set(error: URLError(.notConnectedToInternet))
+    await server.set(error: URLError(.timedOut))
     #expect(await l.submit(kg: 70, online: true) == .offline)
     #expect(calls.saved.isEmpty, "lỗi / ngoài dải không phải 'đã lưu'")
     await server.set(error: nil)
     #expect(await l.submit(kg: 70.5, online: true) == .saved)
     #expect(calls.saved == [LocalDate("2026-10-09")!])
     #expect(calls.enqueued == 0)
+
+    // Chưa hề tới máy chủ (audit 28/10): vào hàng chờ — vẫn KHÔNG phải "đã lưu".
+    let server2 = Server(), calls2 = Calls()
+    await server2.set(error: URLError(.notConnectedToInternet))
+    #expect(await Self.logger(server2, Queue(), calls2).submit(kg: 70, online: true) == .queued)
+    #expect(calls2.saved.isEmpty)
+    #expect(calls2.enqueued == 1)
   }
 
   /// Mất mạng: xếp hàng, KHÔNG báo "đã lưu" — kế hoạch chờ outbox gửi xong.

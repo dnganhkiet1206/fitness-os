@@ -226,18 +226,7 @@ public final class BiometricLogger {
     let now = clock.nowMillis()
     let id = makeId().lowercased()
     var row = BiometricLog.row(id: id, userId: userId, at: now, texts: texts, soreness: soreness, ill: ill)
-    if !online {
-      guard let outbox else { return .unavailable }
-      let entry = OutboxEntry(id: id, userId: userId, kind: BiometricLog.kind, payload: .object(row), createdAt: now)
-      do {
-        try await outbox.enqueue([entry])
-      } catch {
-        return .failed
-      }
-      done = true
-      onEnqueued(entry)
-      return .queued
-    }
+    if !online { return await enqueue(row, id: id, at: now) }
     submitting = true
     defer { if !closed { submitting = false } }
     let found = try? await store.select(BiometricLog.replaceQuery(userId: userId, at: now, in: timeZone))
@@ -245,10 +234,29 @@ public final class BiometricLogger {
     do throws(RowStoreError) {
       try await store.upsert("biometric_samples", [row], onConflict: "id")
     } catch {
+      // Chưa hề tới máy chủ (audit 28/10): vào hàng chờ (upsert theo id — gửi lại
+      // không nhân đôi), không mất lần đo.
+      if error.neverSent, outbox != nil {
+        submitting = false
+        return await enqueue(row, id: row["id"]?.stringValue ?? id, at: now)
+      }
       return .failed
     }
     try? await DailyLog.recompute(userId: userId, date: LocalDate(now, in: timeZone), store: store, now: now, in: timeZone)
     if !closed { done = true }
     return .saved
+  }
+
+  private func enqueue(_ row: [String: JSONValue], id: String, at now: EpochMillis) async -> Outcome {
+    guard let outbox else { return .unavailable }
+    let entry = OutboxEntry(id: id, userId: userId, kind: BiometricLog.kind, payload: .object(row), createdAt: now)
+    do {
+      try await outbox.enqueue([entry])
+    } catch {
+      return .failed
+    }
+    done = true
+    onEnqueued(entry)
+    return .queued
   }
 }

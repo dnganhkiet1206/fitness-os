@@ -86,6 +86,6 @@ public struct SupabaseRowStore: RowStore {
   static func wrap(_ error: any Error) -> RowStoreError {
     if let e = error as? RowStoreError { return e }
     if let e = error as? PostgrestError { return RowStoreError(code: e.code, message: e.message) }
-    return RowStoreError(code: nil, message: "\(error)")
+    return RowStoreError(code: nil, message: "\(error)", neverSent: NetworkFailure.neverSent(error))
   }
 }

@@ -177,9 +177,14 @@ struct MeasurementLoggerTests {
   /// Lỗi khi gửi: nói đúng loại, không khoá nút (thử lại được).
   @Test func failuresDoNotLock() async throws {
     let day = try #require(LocalDate("2026-10-10"))
-    let offline = Self.logger(Source(fails: URLError(.notConnectedToInternet)), Outbox())
+    let offline = Self.logger(Source(fails: URLError(.timedOut)), Outbox())
     #expect(await offline.submit(fields: [.hips: "95"], unit: .cm, date: day, online: true) == .offline)
     #expect(!offline.done)
+    // Chưa hề tới máy chủ (audit 28/10): vào hàng chờ, không mất lần đo.
+    let queue = Outbox()
+    let neverSent = Self.logger(Source(fails: URLError(.notConnectedToInternet)), queue)
+    #expect(await neverSent.submit(fields: [.hips: "95"], unit: .cm, date: day, online: true) == .queued)
+    #expect(queue.entries.count == 1 && queue.entries.first?.kind == MeasurementLog.kind)
     struct Boom: Error {}
     let failed = Self.logger(Source(fails: Boom()), Outbox())
     #expect(await failed.submit(fields: [.hips: "95"], unit: .cm, date: day, online: true) == .failed)

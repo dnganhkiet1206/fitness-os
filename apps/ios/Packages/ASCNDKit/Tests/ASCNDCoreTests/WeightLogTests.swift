@@ -193,6 +193,22 @@ struct WeightLoggerTests {
     await h.server.setFailWrite(URLError(.badServerResponse))
     #expect(await l.submit(kg: 72.5, online: true) == .failed)
     #expect(!l.pending && l.todayKg == nil)
+    #expect(await h.outbox.entries.isEmpty)
+  }
+
+  /// Tưởng có mạng mà yêu cầu chưa hề tới máy chủ (audit 28/10): vào hàng chờ, không
+  /// mất lần cân. Hết giờ chờ (có thể đã ghi) thì không — tránh ghi hai lần.
+  @Test func neverSentWriteFallsBackToOutbox() async {
+    let h = WeightHarness()
+    let l = h.logger()
+    await h.server.setFailWrite(URLError(.notConnectedToInternet))
+    #expect(await l.submit(kg: 72.5, online: true) == .queued)
+    let queued = await h.outbox.entries
+    #expect(queued.count == 1)
+    #expect(queued.first?.payload["weight_kg"]?.doubleValue == 72.5)
+    #expect(!NetworkFailure.neverSent(URLError(.timedOut)))
+    #expect(!NetworkFailure.neverSent(URLError(.networkConnectionLost)))
+    #expect(NetworkFailure.neverSent(URLError(.cannotConnectToHost)))
   }
 
   /// Đóng màn (đổi tài khoản) lúc đang đọc: lượt về muộn không đổi gì.
