@@ -41,6 +41,6 @@ Kiệt tự thêm ở Settings › Secrets and variables › Actions. Thiếu se
 ## Lần chạy đầu (28/10, trên máy, chưa có token Sentry / PostHog)
 
 - 🟡 Mã đang chạy lệch nhánh ở `_shared/ai.ts` / `guard.ts`: #722 đã deploy nhưng chưa merge.
-- 🟡 Migration `20261020140000` (`plan_day_overrides`) chưa áp.
+- ~~🟡 Migration `20261020140000` (`plan_day_overrides`) chưa áp.~~ Đã áp 28/10 (Kiệt duyệt).
 - 🟡 Advisors: 73 cảnh báo bảo mật (`function_search_path_mutable`, `*_security_definer_function_executable`, `auth_leaked_password_protection`) và 114 cảnh báo hiệu năng (`auth_rls_initplan`, `duplicate_index`). Chưa xử lý; cần một đợt riêng.
 - 🟢 8 hàm chạy, trả lời đúng; secret AI đủ.
