@@ -42,6 +42,12 @@
     static func makeBackend() -> Backend {
       URLProtocol.registerClass(FakeSupabaseProtocol.self)
       FakeSupabaseStore.shared.reset(UITestSeed.tables(now: Date(), calendar: .current))
+      // Dữ liệu mẫu dựng lại mỗi lần mở, nhưng mốc insight / cờ "đã tắt" nằm trong
+      // UserDefaults và insight mẫu ngày nào cũng cùng giờ — mốc của lần chạy trước
+      // (nước đã 16 oz) làm câu "chưa ghi nước" không ẩn sau lần uống (audit vòng 5).
+      for key in ["ascnd-insight-base.\(userId)", "ascnd-insight-dismissed.\(userId)"] {
+        UserDefaults.standard.removeObject(forKey: key)
+      }
       let config = URLSessionConfiguration.ephemeral
       config.protocolClasses = [FakeSupabaseProtocol.self]
       // swiftlint:disable:next force_try

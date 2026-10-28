@@ -218,6 +218,12 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Chờ Kiệt quyết (giao diện, cần mock): lúc offline, Hôm nay ghi "Done" và dải chỉ nói "showing saved data" — **không chỗ nào nói có N lần ghi đang chờ gửi** (số đếm hàng đợi chỉ hiện ở màn buổi tập).
 - **NOT RUN:** thứ tự gửi nhiều loại (nước + bữa + cân) lúc mất mạng trên simulator (đã có unit / fuzz test của `SyncWorker`); tắt app khi còn hàng đợi (chế độ test dùng database trong bộ nhớ).
 
+**Widget (audit vòng 5, 28/10, simulator, chế độ máy chủ giả, widget thật trên màn hình chính):**
+- Số widget khớp app: Hôm nay 0/4 → 1/4 sau nút nước, tuần 1/7 như dải "Tuần của Koa", Koa 70 Gains, sẵn sàng "chưa đủ dữ liệu". Nút nước trên widget: ô Nước của widget sáng ngay ("+1 ly"), mở app thì Nước 8 oz / 1/4 done — không trùng.
+- ~~Widget lẫn hai ngôn ngữ khi app chạy khác ngôn ngữ máy~~ ("TUẦN NÀY", "PHONG ĐỘ" cạnh "Workout time!", "Not enough data yet"): app viết câu của Koa / trạng thái bằng ngôn ngữ của app, widget dịch nhãn theo ngôn ngữ máy. Sửa 28/10 (nhánh `claude/v5-widget-lang`): app ghi ngôn ngữ đang chạy (`Bundle.main.preferredLocalizations.first`) cho widget. Simulator: máy tiếng Việt + app tiếng Anh → widget toàn tiếng Anh.
+- ~~Insight "0 oz of water today — you have not logged any" vẫn hiện sau lần uống ở chế độ UI test~~: mốc insight nằm trong UserDefaults, insight mẫu ngày nào cũng cùng giờ, nên mốc của lần chạy trước (nước 16 oz) che mất việc nước tăng. Chế độ test xoá mốc / cờ "đã tắt" mỗi lần mở; flow 02 kiểm thêm câu "not logged any" không còn.
+- **NOT RUN:** widget trên màn khoá; giờ nhắc nhở thật (simulator không giao thông báo đúng giờ thật; rà mã + `ReminderGoldenTests`).
+
 **Tài liệu và mã:**
 - `PARITY_MATRIX.md` lạc hậu từ 17/10. 26/10 (audit vòng 3, nhánh `claude/audit-r3-dead-code`): **đánh dấu LẠC HẬU** ở đầu trang (nói rõ chỗ sai: GĐ1–GĐ3, bốn khu vực, lối vào); rà lại toàn bảng vẫn là việc cuối của GĐ3, chưa làm.
 - ~~`ReadinessTrendCardView` là code chết.~~ Xoá 26/10 (cùng nhánh): view và 8 chuỗi `rt.*`; giữ `ReadinessTrendBook` / `ReadinessTrend` (Hôm nay vẫn dùng). Build simulator xanh, cổng chuỗi xanh (2787 khoá).
@@ -242,6 +248,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 
 ## 5. Lịch sử thay đổi sổ
 
+- 28/10/2026: audit vòng 5 — widget: số khớp app, nút nước; widget dùng ngôn ngữ của app; chế độ test xoá mốc insight mỗi lần mở.
 - 28/10/2026: dữ liệu mẫu chế độ test có bài không tạ + tên buổi dài; "Lần trước 10 reps", tổng kết "10 reps", tên dài ở Lịch sử đã xem trên simulator.
 - 28/10/2026: cảnh báo tốc độ cân (#704) xem trên simulator; flow E2E 05 kiểm "Về Hôm nay" bằng phần tử chỉ có ở Hôm nay.
 - 27/10/2026: audit vòng 5 — offline: công tắc mất mạng cho chế độ UI test; ghi offline → online trên simulator không trùng; câu hỏi "đang chờ gửi" cho Kiệt.
