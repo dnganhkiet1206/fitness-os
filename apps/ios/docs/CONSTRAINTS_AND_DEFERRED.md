@@ -224,6 +224,11 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - ~~Insight "0 oz of water today — you have not logged any" vẫn hiện sau lần uống ở chế độ UI test~~: mốc insight nằm trong UserDefaults, insight mẫu ngày nào cũng cùng giờ, nên mốc của lần chạy trước (nước 16 oz) che mất việc nước tăng. Chế độ test xoá mốc / cờ "đã tắt" mỗi lần mở; flow 02 kiểm thêm câu "not logged any" không còn.
 - **NOT RUN:** widget trên màn khoá; giờ nhắc nhở thật (simulator không giao thông báo đúng giờ thật; rà mã + `ReminderGoldenTests`).
 
+**Mạng — kẹt "Offline" (audit vòng 5, 28/10):**
+- ~~Sau một lần mạng chập chờn thật, app kẹt "Offline — showing saved data"; "Try again" 2 lần không gỡ, chỉ mở lại app mới hết~~ (simulator, 1 lần). `retryNetwork` chỉ đọc lại `monitor.currentPath` — NWPathMonitor không báo lại "có mạng" thì không có gì đổi. Sửa 28/10 (Kiệt duyệt trong chat, nhánh `claude/v5-net-retry`): "Thử lại" mà đường mạng vẫn chưa ổn thì thay NWPathMonitor mới (như mở lại app); lượt báo muộn của monitor cũ bị bỏ.
+- Kiểm: build + cổng xanh; hồi quy trên simulator (cờ `uitest-offline` bật → dải hiện; tắt → "Try again" → dải tắt, Hôm nay tải lại). **NOT RUN:** chính nhánh "monitor kẹt" — chưa dựng lại được tình huống NWPathMonitor kẹt (cờ test chỉ giả lập phép dò, không giả lập đường mạng).
+- Ghi để Kiệt xem (giao diện, cần mock): dải Offline đè lên chữ ASCND ở đầu Hôm nay.
+
 **Tài liệu và mã:**
 - `PARITY_MATRIX.md` lạc hậu từ 17/10. 26/10 (audit vòng 3, nhánh `claude/audit-r3-dead-code`): **đánh dấu LẠC HẬU** ở đầu trang (nói rõ chỗ sai: GĐ1–GĐ3, bốn khu vực, lối vào); rà lại toàn bảng vẫn là việc cuối của GĐ3, chưa làm.
 - ~~`ReadinessTrendCardView` là code chết.~~ Xoá 26/10 (cùng nhánh): view và 8 chuỗi `rt.*`; giữ `ReadinessTrendBook` / `ReadinessTrend` (Hôm nay vẫn dùng). Build simulator xanh, cổng chuỗi xanh (2787 khoá).
@@ -248,6 +253,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 
 ## 5. Lịch sử thay đổi sổ
 
+- 28/10/2026: mạng — "Thử lại" thay NWPathMonitor mới khi đường mạng chưa ổn (hết kẹt "Offline" tới khi mở lại app).
 - 28/10/2026: audit vòng 5 — widget: số khớp app, nút nước; widget dùng ngôn ngữ của app; chế độ test xoá mốc insight mỗi lần mở.
 - 28/10/2026: dữ liệu mẫu chế độ test có bài không tạ + tên buổi dài; "Lần trước 10 reps", tổng kết "10 reps", tên dài ở Lịch sử đã xem trên simulator.
 - 28/10/2026: cảnh báo tốc độ cân (#704) xem trên simulator; flow E2E 05 kiểm "Về Hôm nay" bằng phần tử chỉ có ở Hôm nay.

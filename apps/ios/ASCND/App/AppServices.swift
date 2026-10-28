@@ -180,7 +180,8 @@ final class AppServices {
   /// Lỗi không mở được database / thiếu cấu hình — app vẫn mở, màn nói thật.
   private(set) var startupError: String?
 
-  @ObservationIgnored private let monitor = NWPathMonitor()
+  /// `var`: "Thử lại" thay monitor mới khi đường mạng kẹt (xem `retryNetwork`).
+  @ObservationIgnored private var monitor = NWPathMonitor()
 
   init() {
     let backend: Backend?
@@ -1143,9 +1144,23 @@ final class AppServices {
 
   /// "Thử lại" của dải báo (`retryNow`): ĐO lại đường mạng và dò lại internet,
   /// không tự tuyên bố đã có mạng.
+  ///
+  /// Đường mạng báo chưa có (audit vòng 5, 28/10): NWPathMonitor có lúc không báo
+  /// lại "có mạng" sau khi mạng chập chờn — app kẹt "Offline", "Thử lại" đọc lại
+  /// đúng đường cũ, chỉ mở lại app mới hết (mở lại = monitor mới). Nên thay monitor
+  /// mới: nó báo đường hiện tại ngay khi chạy, qua `pathChanged` như thường.
   func retryNetwork() {
-    let s = network.refresh(Self.netPath(monitor.currentPath))
+    let current = monitor.currentPath
+    let s = network.refresh(Self.netPath(current))
     applyNetwork(connected: s.connected, reachable: s.reachable)
+    if current.status != .satisfied { restartNetworkMonitor() }
+  }
+
+  private func restartNetworkMonitor() {
+    monitor.pathUpdateHandler = nil
+    monitor.cancel()
+    monitor = NWPathMonitor()
+    startNetworkMonitor()
   }
 
   /// App vào nền: huỷ phép dò đang bay mà không đổi trạng thái (iOS cắt mạng
@@ -1155,11 +1170,16 @@ final class AppServices {
   }
 
   private func startNetworkMonitor() {
-    monitor.pathUpdateHandler = { [weak self] path in
+    let m = monitor
+    m.pathUpdateHandler = { [weak self, weak m] path in
       let next = Self.netPath(path)
-      Task { @MainActor in self?.network.pathChanged(next) }
+      Task { @MainActor in
+        // Monitor cũ đã bị thay (`restartNetworkMonitor`): bỏ lượt báo muộn của nó.
+        guard let self, let m, self.monitor === m else { return }
+        self.network.pathChanged(next)
+      }
     }
-    monitor.start(queue: DispatchQueue(label: "ascnd.network"))
+    m.start(queue: DispatchQueue(label: "ascnd.network"))
   }
 }
 
