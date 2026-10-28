@@ -17,9 +17,15 @@ final class KoaWidgetPublisher {
   static let scale: CGFloat = 3
 
   private let store = WidgetDataStore()
-  private var imageKey: String?
+  /// Koa đã vẽ ra App Group — nhớ qua các lần mở app (Sentry APPLE-IOS-B, 26/10:
+  /// mỗi lần mở app vẽ lại hai ảnh 3x trên luồng chính, treo hơn 2 giây).
+  private var imageKey: String? = UserDefaults.standard.string(forKey: KoaWidgetPublisher.imageKeyDefault)
   private var version = 0
   private var last: KoaWidgetData?
+  private var pending: Snapshot?
+  private var drawing: Task<Void, Never>?
+
+  static let imageKeyDefault = "koaWidget.imageKey"
 
   struct Snapshot: Equatable {
     var userId: String
@@ -45,12 +51,13 @@ final class KoaWidgetPublisher {
     var gains = 0
   }
 
+  static func imageKey(_ s: Snapshot) -> String {
+    "\(s.userId)|\(s.mascotId)|\(s.emotion.rawValue)|\(s.equipped.joined(separator: ","))|\(s.build)"
+  }
+
   func publish(_ s: Snapshot) {
-    let key = "\(s.userId)|\(s.mascotId)|\(s.emotion.rawValue)|\(s.equipped.joined(separator: ","))"
-    if key != imageKey, render(s) {
-      imageKey = key
-      version += 1
-    }
+    // Trạng thái tạm lúc mở app (chưa tải xong ngày) rồi quay về Koa cũ: bỏ bản chờ.
+    if Self.imageKey(s) != imageKey || !imagesExist { scheduleDraw(s) } else { pending = nil }
     var data = KoaWidgetData(
       day: s.day.description, line: s.line, next: s.next, done: s.done, total: s.total, streak: s.streak,
       nightLine: String(localized: "koa.say.night"), imageVersion: version, checks: s.checks,
@@ -81,17 +88,50 @@ final class KoaWidgetPublisher {
 
   /// Phiên kết thúc: lần sau vẽ lại từ đầu (ảnh đã bị `clear` xoá).
   func reset() {
+    drawing?.cancel()
+    drawing = nil
+    pending = nil
     imageKey = nil
+    UserDefaults.standard.removeObject(forKey: Self.imageKeyDefault)
     last = nil
+  }
+
+  private var imagesExist: Bool {
+    guard let dir = store.containerURL else { return false }
+    return [false, true].allSatisfy {
+      FileManager.default.fileExists(atPath: dir.appendingPathComponent(WidgetDataStore.koaImageName(night: $0, dark: true)).path)
+    }
+  }
+
+  /// Vẽ SAU khi màn đầu đã hiện, từng ảnh một, nhường luồng chính giữa hai ảnh — widget
+  /// chờ được vài giây, người dùng thì không. Koa đổi tiếp trong lúc chờ: chỉ vẽ bản mới nhất.
+  private func scheduleDraw(_ s: Snapshot) {
+    pending = s
+    guard drawing == nil else { return }
+    drawing = Task { [weak self] in
+      try? await Task.sleep(for: .seconds(2))
+      while let self, let s = self.pending, !Task.isCancelled {
+        self.pending = nil
+        if Self.imageKey(s) == self.imageKey, self.imagesExist { continue }
+        guard await self.render(s), !Task.isCancelled else { break }
+        let key = Self.imageKey(s)
+        self.imageKey = key
+        UserDefaults.standard.set(key, forKey: Self.imageKeyDefault)
+        self.version += 1
+        if self.pending == nil { self.publish(s) }
+      }
+      self?.drawing = nil
+    }
   }
 
   /// Avatar trên thẻ: Koa đứng tự do, bản đèn (thẻ luôn tối), ngày và đêm.
   static let avatarSize: CGFloat = 150
 
-  private func render(_ s: Snapshot) -> Bool {
+  private func render(_ s: Snapshot) async -> Bool {
     guard let dir = store.containerURL else { return false }
     var ok = true
     for night in [false, true] {
+      await Task.yield()
       let figure = MascotFigureView(
         mascotId: s.mascotId, emotion: night ? .sleep : s.emotion, equipped: s.equipped, size: Self.avatarSize,
         animated: false, paper: false, build: s.build)
