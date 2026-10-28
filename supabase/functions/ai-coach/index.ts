@@ -5,6 +5,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 import { aiGate, corsHeaders, json, meterStream, opaque, quotaExceeded, recordTokens, requireUser } from "../_shared/guard.ts";
 import { recoveryMeasured } from "../_shared/readiness.ts";
+import { exerciseProgress } from "../_shared/progress.ts";
 import { asleepMinutes } from "../_shared/sleep.ts";
 import { readWaterUnit, showWater, type WaterUnit, waterRule } from "../_shared/water.ts";
 
@@ -217,7 +218,10 @@ serve(async (req) => {
        Trước 18/10 hai tên cuối bị đảo: "trí nhớ" của Koa là các lần cân (in ra
        "[undefined] undefined") và trí nhớ thật bị đọc như cân — Koa không bao giờ
        thấy điều người dùng đã kể (chủ dự án: "Koa nhớ gì không có tác dụng"). */
-    const [profileRes, dailyLogsRes, sleepRes, workoutsRes, bioRes, weightRes, memoryRes] = await Promise.all([
+    /* Mức tạ từng bài (Kiệt 28/10): so buổi gần nhất với buổi trước cần nhìn xa hơn
+       7 ngày — một bài tập 1–2 lần / tuần. 8 tuần, tối đa 60 buổi. */
+    const eightWeeksAgo = new Date(Date.now() - 56 * 86_400_000).toISOString();
+    const [profileRes, dailyLogsRes, sleepRes, workoutsRes, bioRes, weightRes, memoryRes, liftsRes] = await Promise.all([
       supabase.from("profiles").select("*").eq("user_id", userId).single(),
       supabase.from("daily_logs").select("*").eq("user_id", userId).gte("date", weekAgo).order("date", { ascending: false }).limit(7),
       supabase.from("sleep_logs").select("*").eq("user_id", userId).gte("waketime", `${weekAgo}T00:00:00Z`).order("waketime", { ascending: false }).limit(7),
@@ -234,6 +238,7 @@ serve(async (req) => {
          above are what the app measured; this is what it was told, and it is
          the half that used to be thrown away when the chat closed. */
       supabase.from("coach_memory").select("kind, fact, last_confirmed").eq("user_id", userId).order("last_confirmed", { ascending: false }).limit(40),
+      supabase.from("workout_sessions").select("date_time, sets").eq("user_id", userId).gte("date_time", eightWeeksAgo).order("date_time", { ascending: false }).limit(60),
     ]);
 
     const profile = profileRes.data;
@@ -332,6 +337,8 @@ serve(async (req) => {
         name: profile.name,
         goal: profile.goal,
         weight_kg: profile.weight_kg,
+        /* Đơn vị cân người dùng chọn — mức tạ trong câu trả lời viết theo nó (28/10). */
+        weight_unit: profile.units_weight === "lb" ? "lb" : "kg",
         height_cm: profile.height_cm,
         activity_level: profile.activity_level,
         training_level: profile.training_level,
@@ -376,6 +383,8 @@ serve(async (req) => {
         volume_load: w.volume_load,
         rpe: w.session_rpe,
       })),
+      /* Mức tạ từng bài, buổi gần nhất so với buổi trước (8 tuần) — xem _shared/progress.ts. */
+      exercise_progress: exerciseProgress(liftsRes.data ?? [], localDay),
       latest_biometrics: biometrics.map(b => ({
         date: localDay(b.date_time),
         resting_hr_bpm: b.hr_bpm,
@@ -411,6 +420,7 @@ READING THE DATA:
 - "today" is the user's date. "Last night" means ONLY a recent_sleep entry whose date is today; an older entry is that older night — name its date, never call it last night. No entry dated today means last night is not recorded.
 - When the user TELLS you a number (I slept 7 hours, I ate 2000 kcal), that is the truth for this answer: use it, never contradict it with an older or different value from the data. If the app has nothing recorded for it, suggest saving it with Quick log (Ghi nhanh) so the app can use it.
 - this_week is the calendar week from Monday to today — the same week the app shows. For "this week" questions use this_week.days_trained (days with a workout); recent_workouts covers the last 7 days and can span two weeks, so never call its count "this week".
+- exercise_progress (last 8 weeks) is each exercise's TOP SET in its latest session ("last") versus the session before ("previous"): kg × reps, change_kg, change_reps; bodyweight exercises compare reps. For progress / progressive overload / "how much did I lift" questions, answer PER EXERCISE from this — e.g. "Bench press: 60 kg × 8 → 62.5 kg × 8 (+2.5 kg)" — and say which went up, held, or dropped. volume_load is secondary context only; a session whose volume_load is 0 was bodyweight or time-based, never "no weight logged". previous = null means the first time logged. Write weights in profile.weight_unit: when it is "lb", convert (kg × 2.2046, round to 0.5 lb).
 - Write numbers the way the app does: 2,508 kcal, 121.7 kg.
 - recovery_measured says whether that day's readiness rested on a recovery reading (HRV, resting heart rate or sleep). When it is false, readiness and readiness_status are null for that day: training load alone is not a readiness score and the app shows "not enough data" — never state a readiness number or state for it.
 
@@ -439,6 +449,7 @@ CÁCH ĐỌC DỮ LIỆU:
 - "today" là ngày hôm nay của người dùng. "Đêm qua / tối qua" CHỈ là mục recent_sleep có date bằng today; mục cũ hơn là đêm của ngày đó — nói rõ ngày, không bao giờ gọi là tối qua. Không có mục nào date bằng today nghĩa là đêm qua chưa được ghi.
 - Khi người dùng NÓI một con số (tôi ngủ 7 tiếng, tôi ăn 2000 kcal), đó là sự thật cho câu trả lời này: dùng nó, không bao giờ cãi lại bằng một số cũ hay số khác trong dữ liệu. Nếu app chưa ghi con số đó, gợi ý lưu bằng Ghi nhanh để app dùng được.
 - this_week là tuần lịch từ thứ Hai tới hôm nay — đúng tuần app đang hiện. Câu hỏi về "tuần này" dùng this_week.days_trained (số ngày có buổi tập); recent_workouts là 7 ngày gần nhất, có thể vắt qua hai tuần, nên không bao giờ gọi số của nó là "tuần này".
+- exercise_progress (8 tuần gần nhất) là SET NẶNG NHẤT của từng bài ở buổi gần nhất ("last") so với buổi trước đó ("previous"): kg × reps, change_kg, change_reps; bài không tạ thì so reps. Câu hỏi về tiến bộ / progressive overload / "nâng được bao nhiêu" thì trả lời THEO TỪNG BÀI từ đây — ví dụ "Bench press: 60 kg × 8 → 62,5 kg × 8 (+2,5 kg)" — và nói bài nào tăng, giữ hay giảm. volume_load chỉ là thông tin phụ; buổi có volume_load bằng 0 là bài không tạ hoặc tính theo thời gian, không bao giờ là "chưa ghi tạ". previous = null nghĩa là lần đầu ghi bài đó. Viết mức tạ theo profile.weight_unit: nếu là "lb" thì đổi (kg × 2,2046, làm tròn 0,5 lb).
 - Viết số theo kiểu app: dấu chấm ngăn hàng nghìn (2.508 kcal), dấu phẩy thập phân (121,7 kg).
 - recovery_measured cho biết điểm hôm đó có dựa trên một phép đo phục hồi (HRV, nhịp tim nghỉ hoặc giấc ngủ) hay không. Khi nó là false, điểm được dựng từ mỗi tải tập: con số vẫn thật, nhưng app chưa đo được gì về việc người dùng phục hồi ra sao.
 
