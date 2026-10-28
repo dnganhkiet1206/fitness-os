@@ -34,6 +34,13 @@ jobs:
         run: |
           latest=$(ls -d /Applications/Xcode_*.app | grep -v beta | sort -V | tail -1)
           sudo xcode-select -s "$latest"
+      # XcodeGen TRƯỚC `codeql init`: sau init, tiến trình con chạy qua bộ dò
+      # của CodeQL và `brew install` bị coi là chạy dưới Rosetta → từ chối.
+      - name: XcodeGen
+        working-directory: apps/ios
+        run: |
+          brew install xcodegen
+          xcodegen generate
       - uses: github/codeql-action/init@v3
         with:
           languages: swift
@@ -42,8 +49,6 @@ jobs:
       - name: Build app (cho CodeQL)
         working-directory: apps/ios
         run: |
-          brew install xcodegen
-          xcodegen generate
           xcodebuild build -project ASCND.xcodeproj -scheme ASCND -configuration Debug \
             -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO -quiet
       - uses: github/codeql-action/analyze@v3

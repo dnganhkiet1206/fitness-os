@@ -83,7 +83,7 @@ jobs:
         working-directory: apps/ios
         run: |
           set -o pipefail
-          periphery scan --project ASCND.xcodeproj --schemes ASCND --retain-public --format github-actions \
+          periphery scan --project ASCND.xcodeproj --schemes ASCND --retain-public --format github-actions --relative-results \
             -- -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO | tee periphery.txt
           {
             echo "### Periphery — khai báo không ai dùng ($(grep -c '::warning' periphery.txt || true))"
