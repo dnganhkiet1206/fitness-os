@@ -49,5 +49,9 @@ name: start and finish a workout session
     notVisible:
       id: summary.backToToday
     timeout: 15000
-- assertVisible: "Today"
+# "Today" là nhãn tab, lúc nào cũng thấy — kiểm phần tử chỉ có ở tab Hôm nay (#699).
+- extendedWaitUntil:
+    visible:
+      id: today.plan.primary
+    timeout: 15000
 - takeScreenshot: 05-workout-today-after
