@@ -166,23 +166,14 @@ public final class WeightLogger {
     guard !closed, !pending else { return .unavailable }
     guard kg > 0, WeightLog.plausible(kg) else { return .outOfRange }
     let day = today()
-    if !online {
-      guard let store else { return .unavailable }
-      let entry = WeightLog.entry(id: makeId(), userId: userId, kg: kg, date: day, createdAt: clock.nowMillis())
-      do {
-        try await store.enqueue([entry])
-      } catch {
-        return .failed
-      }
-      queued = true
-      onEnqueued(entry)
-      return .queued
-    }
+    if !online { return await enqueue(kg: kg, day: day) }
     submitting = true
     defer { if !closed { submitting = false } }
     do {
       try await source.log(userId: userId, kg: kg, date: day)
     } catch {
+      // Yêu cầu chưa hề tới máy chủ (audit 28/10): vào hàng chờ, không mất lần cân.
+      if NetworkFailure.neverSent(error), store != nil { return await enqueue(kg: kg, day: day) }
       return NetworkFailure.isOffline(error) ? .offline : .failed
     }
     if !closed {
@@ -192,5 +183,18 @@ public final class WeightLogger {
     // Server đã nhận dù màn vừa đóng: nơi khác (kế hoạch nhắc nhở) vẫn phải biết.
     onSaved(day)
     return .saved
+  }
+
+  private func enqueue(kg: Double, day: LocalDate) async -> Outcome {
+    guard let store else { return .unavailable }
+    let entry = WeightLog.entry(id: makeId(), userId: userId, kg: kg, date: day, createdAt: clock.nowMillis())
+    do {
+      try await store.enqueue([entry])
+    } catch {
+      return .failed
+    }
+    queued = true
+    onEnqueued(entry)
+    return .queued
   }
 }

@@ -432,18 +432,7 @@ public final class SleepLogger {
       return .invalid
     }
     let row = SleepLog.row(userId: userId, span: span, quality: quality, stages: stages)
-    if !online {
-      guard let outbox else { return .unavailable }
-      let entry = SleepLog.entry(id: makeId(), userId: userId, row: row, createdAt: now)
-      do {
-        try await outbox.enqueue([entry])
-      } catch {
-        return .failed
-      }
-      done = true
-      onEnqueued(entry)
-      return .queued
-    }
+    if !online { return await enqueue(row) }
     submitting = true
     defer { if !closed { submitting = false } }
     // Đọc hỏng → ghi như hàng mới (`if (error || !data) return null`).
@@ -460,6 +449,13 @@ public final class SleepLogger {
         try await store.insert("sleep_logs", row)
       }
     } catch {
+      // Tưởng có mạng mà yêu cầu chưa hề tới máy chủ (audit 28/10: trước đây báo
+      // "Có lỗi xảy ra" và MẤT lần ghi): vào hàng chờ như lúc offline. Chỉ khi ghi
+      // hàng mới — thay một đêm đã có thì hàng chờ không biết thay.
+      if error.neverSent, replaceId == nil, outbox != nil {
+        submitting = false
+        return await enqueue(row)
+      }
       // Lỗi server / mạng giữa chừng: không gì được ghi (RN `toast.fail(e)`).
       return .failed
     }
@@ -467,5 +463,18 @@ public final class SleepLogger {
     try? await DailyLog.recompute(userId: userId, date: today, store: store, now: now, in: timeZone)
     if !closed { done = true }
     return .saved
+  }
+
+  private func enqueue(_ row: [String: JSONValue]) async -> Outcome {
+    guard let outbox else { return .unavailable }
+    let entry = SleepLog.entry(id: makeId(), userId: userId, row: row, createdAt: now)
+    do {
+      try await outbox.enqueue([entry])
+    } catch {
+      return .failed
+    }
+    done = true
+    onEnqueued(entry)
+    return .queued
   }
 }
