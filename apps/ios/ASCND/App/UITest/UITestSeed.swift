@@ -72,8 +72,13 @@
           "restSeconds": 90,
         ] as Row)
       }
+      // Tên dài (audit vòng 5): hàng Lịch sử không được đẩy ngày xuống hai dòng.
+      let bName = "Full Body B — Back & Shoulders Hypertrophy"
+      // Push-up (khai báo bodyweight → "Lần trước" cộng cân nặng) và Band Pull-apart
+      // (isolation, 0 kg → "Lần trước 10 reps", không "× không tạ") — audit vòng 5.
       let a: [JSONValue] = [
         exercise("Squat", 1, sets: 2, reps: 5, weight: 80), exercise("Bench Press", 2, sets: 2, reps: 5, weight: 60),
+        exercise("Push-up", 5, sets: 2, reps: 10, weight: 0), exercise("Band Pull-apart", 6, sets: 2, reps: 10, weight: 0),
       ]
       let b: [JSONValue] = [
         exercise("Deadlift", 3, sets: 2, reps: 5, weight: 100), exercise("Overhead Press", 4, sets: 2, reps: 5, weight: 40),
@@ -81,7 +86,7 @@
       t["workout_templates"] = [
         ["id": JSONValue.string(templateA), "user_id": user, "name": "Full Body A", "type": "custom", "exercises": JSONValue.array(a),
          "created_at": created, "updated_at": created],
-        ["id": JSONValue.string(templateB), "user_id": user, "name": "Full Body B", "type": "custom", "exercises": JSONValue.array(b),
+        ["id": JSONValue.string(templateB), "user_id": user, "name": JSONValue.string(bName), "type": "custom", "exercises": JSONValue.array(b),
          "created_at": created, "updated_at": created],
       ]
       // 0 = Thứ Hai … 6 = Chủ Nhật. Hôm nay luôn là Full Body A.
@@ -95,11 +100,13 @@
       }
       t["exercises"] = [
         ("Squat", "legs", "barbell"), ("Bench Press", "chest", "barbell"), ("Deadlift", "back", "barbell"),
-        ("Overhead Press", "shoulders", "barbell"),
+        ("Overhead Press", "shoulders", "barbell"), ("Push-up", "chest", "bodyweight"),
+        ("Band Pull-apart", "shoulders", "band"),
       ].enumerated().map { i, e -> Row in
-        [
+        let kind = JSONValue.string(e.0 == "Push-up" ? "bodyweight" : e.0 == "Band Pull-apart" ? "isolation" : "strength")
+        return [
           "id": id(2, i + 1), "user_id": JSONValue.null, "name": JSONValue.string(e.0), "name_en": JSONValue.string(e.0),
-          "muscle_group": JSONValue.string(e.1), "equipment": JSONValue.string(e.2), "exercise_kind": "strength",
+          "muscle_group": JSONValue.string(e.1), "equipment": JSONValue.string(e.2), "exercise_kind": kind,
           "created_at": created, "updated_at": created,
         ]
       }
@@ -116,18 +123,18 @@
         let o = -back
         let trained = back % 2 == 1
         if trained {
-          let template = back % 4 == 1 ? (templateB, "Full Body B", b) : (templateA, "Full Body A", a)
+          let template = back % 4 == 1 ? (templateB, bName, b) : (templateA, "Full Body A", a)
           var sets: [JSONValue] = []
           for case JSONValue.object(let ex) in template.2 {
             for s in 1...2 {
               sets.append(json([
                 "exerciseId": ex["exerciseId"]!, "exerciseName": ex["exerciseName"]!,
-                "setIndex": sets.count + 1, "weight": ex["weight"]!, "reps": 5, "rpe": 8,
+                "setIndex": sets.count + 1, "weight": ex["weight"]!, "reps": ex["reps"]!, "rpe": 8,
               ] as Row))
               _ = s
             }
           }
-          let volume = sets.reduce(0.0) { $0 + ($1["weight"]?.doubleValue ?? 0) * 5 }
+          let volume = sets.reduce(0.0) { $0 + ($1["weight"]?.doubleValue ?? 0) * ($1["reps"]?.doubleValue ?? 0) }
           sessions.append([
             "id": id(4, back), "user_id": user, "date_time": iso(at(o, 18)), "template_id": JSONValue.string(template.0),
             "template_name": JSONValue.string(template.1), "session_rpe": 8, "volume_load": JSONValue.number(volume),
