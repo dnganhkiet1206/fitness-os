@@ -89,6 +89,7 @@ private final class BioRows: RowStore, @unchecked Sendable {
   private let existing: [JSONValue]
   private var _upserts: [[String: JSONValue]] = []
   var fail = false
+  var neverSent = false
   init(existing: [JSONValue] = []) { self.existing = existing }
   var upserts: [[String: JSONValue]] { lock.withLock { _upserts } }
   func select(_ q: RowQuery) async throws(RowStoreError) -> [JSONValue] {
@@ -100,6 +101,7 @@ private final class BioRows: RowStore, @unchecked Sendable {
   { 1 }
   func upsert(_ table: String, _ rows: [[String: JSONValue]], onConflict: String) async throws(RowStoreError) {
     if fail { throw RowStoreError(code: "500", message: "boom") }
+    if neverSent { throw RowStoreError(code: nil, message: "offline", neverSent: true) }
     lock.withLock { _upserts += rows }
   }
 }
@@ -189,6 +191,18 @@ struct BiometricLoggerTests {
     let l = Self.make(rows)
     #expect(await l.submit(texts: [.hr: "60"], soreness: nil, ill: false, online: true) == .failed)
     #expect(!l.done)
+  }
+
+  /// Chưa hề tới máy chủ (audit 28/10): vào hàng chờ, không mất lần đo.
+  @Test func neverSentWriteFallsBackToOutbox() async {
+    let rows = BioRows()
+    rows.neverSent = true
+    let queue = BioQueue()
+    let l = Self.make(rows, queue)
+    #expect(await l.submit(texts: [.hr: "60"], soreness: nil, ill: false, online: true) == .queued)
+    #expect(queue.entries.count == 1 && queue.entries.first?.kind == BiometricLog.kind)
+    #expect(rows.upserts.isEmpty)
+    #expect(l.done)
   }
 
   /// Hàng của Health hôm nay: điền sẵn ba ô của Health, không điền HRV / VO₂max.
