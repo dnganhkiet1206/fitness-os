@@ -88,8 +88,6 @@ public enum KoaRender {
     return out
   }
 
-  static let hiddenRe = try! NSRegularExpression(pattern: "opacity:\\s*0")
-
   struct Context {
     let flags: KoaFlags.Flags
     let t: Double
@@ -185,8 +183,7 @@ public enum KoaRender {
 
     // kiểu đưa xuống mang một hoạt ảnh hoặc một `opacity:0`
     let bound = n.animBind.map { c.flags[$0]?.text ?? "" } ?? ""
-    let range = NSRange(location: 0, length: (bound as NSString).length)
-    if hiddenRe.firstMatch(in: bound, range: range) != nil { return [] }
+    if bound.range(of: #"opacity:\s*0"#, options: .regularExpression) != nil { return [] }
     let boundAnim = bound.isEmpty ? nil : KoaMath.parseAnim(bound)
 
     let anim = n.anim ?? boundAnim?.anim
