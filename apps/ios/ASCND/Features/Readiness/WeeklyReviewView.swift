@@ -35,6 +35,7 @@ struct WeeklyReviewView: View {
   @Environment(WorkoutFlow.self) private var flow: WorkoutFlow?
   @Environment(AppServices.self) private var services: AppServices?
   @Environment(\.dynamicTypeSize) private var typeSize
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var chart: ChartKind = .kcal
 
   enum ChartKind: Hashable, CaseIterable {
@@ -64,6 +65,8 @@ struct WeeklyReviewView: View {
   }
 
   private var big: Bool { typeSize.isAccessibilitySize }
+  /// Chuyển động chung của màn; `nil` khi bật Giảm chuyển động.
+  private var motion: Animation? { DSMotion.animation(.snappy(duration: 0.35), reduceMotion: reduceMotion) }
   private var muted: Color { DS.Color.mutedForeground.swiftUI }
   /// Tuần đang chạy (không tiến được nữa): trung bình chưa tính hôm nay.
   private var running: Bool { !book.canGoForward }
@@ -124,6 +127,8 @@ struct WeeklyReviewView: View {
                 .font(DS.TextStyle.headline)
                 .foregroundStyle(muted))
                 .monospacedDigit()
+                .contentTransition(.numericText(value: Double(s.done)))
+                .animation(motion, value: s.done)
             }
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(Text("wr.plan.title"))
@@ -138,7 +143,7 @@ struct WeeklyReviewView: View {
               .padding(.top, big ? 0 : 4)
               .accessibilityLabel(Text(String(localized: "wr.plan.gains \(s.gains)")))
           }
-          dayRing(days, today: today)
+          DayRing(days: days, today: today).id(book.weekStart)
           let notes = [
             s.moved > 0 ? String(localized: "wr.plan.moved \(s.moved)") : nil,
             s.chosenRest > 0 ? String(localized: "wr.plan.rest \(s.chosenRest)") : nil,
@@ -150,37 +155,6 @@ struct WeeklyReviewView: View {
           }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-      }
-    }
-  }
-
-  /// Bảy vòng như vòng ngày của Fitness: đặc = đã tập, viền = có buổi theo lịch, xám = không.
-  private func dayRing(_ days: [KoaWeek.Day], today: LocalDate) -> some View {
-    let tint = DS.Color.metricRose.swiftUI
-    return HStack(spacing: 0) {
-      ForEach(days, id: \.date) { d in
-        VStack(spacing: 4) {
-          ZStack {
-            if d.trained {
-              Circle().fill(tint)
-              Image(systemName: "checkmark")
-                .font(.system(size: 12, weight: .bold))
-                .foregroundStyle(.white)
-            } else {
-              Circle().strokeBorder(
-                d.planned ? tint.opacity(0.6) : DS.Color.border.swiftUI, lineWidth: 1.5)
-            }
-          }
-          .frame(width: 28, height: 28)
-          Text(verbatim: Self.shortWeekday(d.date))
-            .font(DS.TextStyle.caption.weight(d.date == today ? .bold : .medium))
-            .foregroundStyle(d.date == today ? DS.Color.foreground.swiftUI : muted)
-            .lineLimit(1)
-            .minimumScaleFactor(0.5)
-        }
-        .frame(maxWidth: .infinity)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(verbatim: Self.dayLabel(d)))
       }
     }
   }
@@ -205,7 +179,7 @@ struct WeeklyReviewView: View {
       averages(s)
       if s.daysWithData > 0 {
         chartCard(s)
-        if book.canAnalyze { aiSection }
+        if book.canAnalyze { aiSection.animation(motion, value: book.analysis(lang: lang.rawValue)) }
         nextWeek(s.recommendations)
       } else {
         DSCard {
@@ -239,28 +213,30 @@ struct WeeklyReviewView: View {
         metricRow(
           icon: "flame.fill", tint: DS.Color.metricOrange.swiftUI, label: String(localized: "wr.metric.kcal"),
           value: Self.n(s.avgKcal, 0), sub: "/ \(Self.n(s.kcalTarget, 0))", fraction: s.avgKcal / s.kcalTarget,
-          delta: c.kcal.delta)
+          delta: c.kcal.delta, order: 0)
         rule
         metricRow(
           icon: "fork.knife", tint: DS.Color.readinessYellowGraphic.swiftUI,
           label: String(localized: "wr.metric.protein"), value: Self.n(s.avgProtein, 0),
-          sub: "/ \(Self.n(s.proteinTarget, 0)) g", fraction: s.avgProtein / s.proteinTarget, delta: c.protein.delta)
+          sub: "/ \(Self.n(s.proteinTarget, 0)) g", fraction: s.avgProtein / s.proteinTarget, delta: c.protein.delta, order: 1)
         rule
         metricRow(
           icon: "moon.fill", tint: DS.Color.metricPurple.swiftUI, label: String(localized: "wr.metric.sleep"),
           value: Self.n(s.avgSleepHours, 1), sub: "/ \(Self.n(s.sleepTargetHours, 0)) h",
-          fraction: s.avgSleepHours / s.sleepTargetHours, delta: nil)
+          fraction: s.avgSleepHours / s.sleepTargetHours, delta: nil, order: 2)
         rule
         metricRow(
           icon: "drop.fill", tint: DS.Color.metricCyan.swiftUI, label: String(localized: "wr.metric.water"),
-          value: water.0, sub: water.1, fraction: s.avgWaterMl / s.waterTargetMl, delta: nil)
+          value: water.0, sub: water.1, fraction: s.avgWaterMl / s.waterTargetMl, delta: nil, order: 3)
         if let supp = c.supplements {
           rule
           metricRow(
             icon: "pills.fill", tint: DS.Color.metricViolet.swiftUI, label: String(localized: "wr.supplements"),
-            value: supp.value, sub: supp.sub, fraction: s.supplementAdherence.map { Double($0) / 100 }, delta: nil)
+            value: supp.value, sub: supp.sub, fraction: s.supplementAdherence.map { Double($0) / 100 }, delta: nil,
+            order: 4)
         }
       }
+      .id(book.weekStart)
     }
     DSCard {
       let pair = big ? AnyLayout(VStackLayout(alignment: .leading, spacing: DS.Spacing.md)) : AnyLayout(HStackLayout(alignment: .top, spacing: 0))
@@ -288,7 +264,8 @@ struct WeeklyReviewView: View {
 
   /// Một hàng kiểu Sức khoẻ: ô biểu tượng màu, tên + thanh tới mục tiêu, số + mục tiêu.
   private func metricRow(
-    icon: String, tint: Color, label: String, value: String, sub: String, fraction: Double?, delta: Int?
+    icon: String, tint: Color, label: String, value: String, sub: String, fraction: Double?, delta: Int?,
+    order: Int
   ) -> some View {
     let layout = big
       ? AnyLayout(VStackLayout(alignment: .leading, spacing: 6))
@@ -312,9 +289,11 @@ struct WeeklyReviewView: View {
           + Text(verbatim: " \(sub)").font(DS.TextStyle.footnote.monospacedDigit()).foregroundStyle(muted))
           .lineLimit(big ? nil : 1)
           .padding(.leading, big ? 40 : 0)
+          .contentTransition(.numericText())
+          .animation(motion, value: value)
       }
       if let fraction, fraction.isFinite {
-        ProgressLine(fraction: fraction, tint: tint).padding(.leading, 40)
+        ProgressLine(fraction: fraction, tint: tint, order: order).padding(.leading, 40)
       }
     }
     .padding(.vertical, 10)
@@ -326,7 +305,11 @@ struct WeeklyReviewView: View {
   private func figure(label: String, value: String, sub: String, note: String?, noteTint: Color?) -> some View {
     VStack(alignment: .leading, spacing: 3) {
       Text(verbatim: label).font(DS.TextStyle.footnote).foregroundStyle(muted)
-      Text(verbatim: value).font(DS.TextStyle.title2.monospacedDigit()).foregroundStyle(DS.Color.foreground.swiftUI)
+      Text(verbatim: value)
+        .font(DS.TextStyle.title2.monospacedDigit())
+        .foregroundStyle(DS.Color.foreground.swiftUI)
+        .contentTransition(.numericText())
+        .animation(motion, value: value)
       if !sub.isEmpty {
         Text(verbatim: sub).font(DS.TextStyle.footnote.monospacedDigit()).foregroundStyle(muted)
       }
@@ -374,26 +357,32 @@ struct WeeklyReviewView: View {
           Text("wr.tab.readiness").tag(ChartKind.readiness)
         }
         .pickerStyle(.segmented)
-        switch chart {
-        case .kcal:
-          WeekBars(
-            days: s.days, values: s.days.map(\.kcal), tint: DS.Color.metricOrange.swiftUI,
-            target: s.kcalTarget, targetLabel: Self.n(s.kcalTarget, 0), unit: "", partial: partial)
-            .accessibilityLabel(Text(String(localized: "wr.chart.nutrition")))
-        case .sleep:
-          WeekBars(
-            days: s.days, values: s.days.map(\.sleepHours), tint: DS.Color.metricPurple.swiftUI,
-            target: s.sleepTargetHours, targetLabel: "\(Self.n(s.sleepTargetHours, 0))h", unit: "h", partial: partial)
-            .accessibilityLabel(Text(String(localized: "wr.chart.sleep")))
-        case .training:
-          WeekBars(
-            days: s.days, values: s.days.map(\.volume), tint: DS.Color.metricBlue.swiftUI, target: nil,
-            targetLabel: nil, unit: "", partial: partial)
-            .accessibilityLabel(Text(String(localized: "wr.chart.volume")))
-          if s.volumeWeeks.contains(where: { $0.tonnes > 0 }) { volumeTrend(s) }
-        case .readiness:
-          readinessChart(s)
+        .animation(motion, value: chart)
+        Group {
+          switch chart {
+          case .kcal:
+            WeekBars(
+              days: s.days, values: s.days.map(\.kcal), tint: DS.Color.metricOrange.swiftUI,
+              target: s.kcalTarget, targetLabel: Self.n(s.kcalTarget, 0), unit: "", partial: partial)
+              .accessibilityLabel(Text(String(localized: "wr.chart.nutrition")))
+          case .sleep:
+            WeekBars(
+              days: s.days, values: s.days.map(\.sleepHours), tint: DS.Color.metricPurple.swiftUI,
+              target: s.sleepTargetHours, targetLabel: "\(Self.n(s.sleepTargetHours, 0))h", unit: "h", partial: partial)
+              .accessibilityLabel(Text(String(localized: "wr.chart.sleep")))
+          case .training:
+            WeekBars(
+              days: s.days, values: s.days.map(\.volume), tint: DS.Color.metricBlue.swiftUI, target: nil,
+              targetLabel: nil, unit: "", partial: partial)
+              .accessibilityLabel(Text(String(localized: "wr.chart.volume")))
+            if s.volumeWeeks.contains(where: { $0.tonnes > 0 }) { volumeTrend(s) }
+          case .readiness:
+            readinessChart(s)
+          }
         }
+        // Đổi tab hay đổi tuần thì cột mọc lại từ đáy.
+        .id(ChartID(kind: chart, week: book.weekStart))
+        .transition(.opacity)
         if partial != nil, chart != .readiness {
           Text("wr.chart.partial")
             .font(DS.TextStyle.footnote)
@@ -458,6 +447,7 @@ struct WeeklyReviewView: View {
     switch book.analysis(lang: lang.rawValue) {
     case .ready(let a):
       aiResult(a)
+        .transition(.opacity.combined(with: .offset(y: 12)))
     case let state:
       DSCard {
         VStack(alignment: .leading, spacing: DS.Spacing.sm) {
@@ -533,6 +523,7 @@ struct WeeklyReviewView: View {
           }
           .padding(.vertical, 10)
           .accessibilityElement(children: .combine)
+          .modifier(Reveal(order: i))
         }
       }
       .frame(maxWidth: .infinity, alignment: .leading)
@@ -637,6 +628,7 @@ struct WeeklyReviewView: View {
             .accessibilityElement(children: .combine)
             .accessibilityValue(Text(verbatim: it.3))
             .accessibilityHint(Text(verbatim: it.1 ?? ""))
+            .modifier(Reveal(order: i))
           }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -691,20 +683,105 @@ struct WeeklyReviewView: View {
   }
 }
 
-/// Thanh mảnh tới mục tiêu (kẹp 0…1; vượt mục tiêu vẫn đầy).
+/// Khoá của biểu đồ đang xem: đổi tab hay đổi tuần thì dựng lại để cột mọc lại.
+private struct ChartID: Hashable {
+  let kind: WeeklyReviewView.ChartKind
+  let week: LocalDate
+}
+
+/// Thanh mảnh tới mục tiêu (kẹp 0…1; vượt mục tiêu vẫn đầy). Lần đầu hiện thì chạy
+/// từ 0, các hàng nối nhau theo `order`; Giảm chuyển động thì hiện đầy ngay.
 private struct ProgressLine: View {
   let fraction: Double
   let tint: Color
+  var order = 0
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @State private var shown = false
 
   var body: some View {
+    let f = min(max(fraction, 0), 1) * (shown || reduceMotion ? 1 : 0)
     GeometryReader { geo in
       ZStack(alignment: .leading) {
         Capsule().fill(DS.Color.ringTrack.swiftUI)
-        Capsule().fill(tint).frame(width: geo.size.width * min(max(fraction, 0), 1))
+        Capsule().fill(tint).frame(width: geo.size.width * f)
       }
     }
     .frame(height: 4)
+    .animation(DSMotion.animation(.spring(duration: 0.5, bounce: 0.1), reduceMotion: reduceMotion), value: fraction)
+    .onAppear {
+      guard !shown else { return }
+      withAnimation(
+        DSMotion.animation(
+          .spring(duration: 0.8, bounce: 0.1).delay(0.15 + 0.07 * Double(order)), reduceMotion: reduceMotion)
+      ) { shown = true }
+    }
     .accessibilityHidden(true)
+  }
+}
+
+/// Bảy vòng như vòng ngày của Fitness: đặc = đã tập, viền = có buổi theo lịch, xám = không.
+/// Vòng đã tập nảy vào lần lượt; Giảm chuyển động thì hiện ngay.
+private struct DayRing: View {
+  let days: [KoaWeek.Day]
+  let today: LocalDate
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @State private var shown = false
+
+  var body: some View {
+    let tint = DS.Color.metricRose.swiftUI
+    let on = shown || reduceMotion
+    HStack(spacing: 0) {
+      ForEach(Array(days.enumerated()), id: \.element.date) { i, d in
+        VStack(spacing: 4) {
+          ZStack {
+            Circle().strokeBorder(d.planned ? tint.opacity(0.6) : DS.Color.border.swiftUI, lineWidth: 1.5)
+            if d.trained {
+              Circle().fill(tint)
+                .overlay {
+                  Image(systemName: "checkmark")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(.white)
+                }
+                .scaleEffect(on ? 1 : 0.3)
+                .opacity(on ? 1 : 0)
+                .animation(
+                  DSMotion.animation(.spring(duration: 0.45, bounce: 0.45).delay(0.1 + 0.06 * Double(i)), reduceMotion: reduceMotion),
+                  value: on)
+            }
+          }
+          .frame(width: 28, height: 28)
+          Text(verbatim: WeeklyReviewView.shortWeekday(d.date))
+            .font(DS.TextStyle.caption.weight(d.date == today ? .bold : .medium))
+            .foregroundStyle(d.date == today ? DS.Color.foreground.swiftUI : DS.Color.mutedForeground.swiftUI)
+            .lineLimit(1)
+            .minimumScaleFactor(0.5)
+        }
+        .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(verbatim: WeeklyReviewView.dayLabel(d)))
+      }
+    }
+    .onAppear { shown = true }
+  }
+}
+
+/// Hiện dần từ dưới lên, nối nhau theo `order` (hàng nhận xét, hàng "Tuần tới").
+private struct Reveal: ViewModifier {
+  let order: Int
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @State private var shown = false
+
+  func body(content: Content) -> some View {
+    let on = shown || reduceMotion
+    content
+      .opacity(on ? 1 : 0)
+      .offset(y: on ? 0 : 10)
+      .onAppear {
+        guard !shown else { return }
+        withAnimation(
+          DSMotion.animation(.spring(duration: 0.5, bounce: 0.05).delay(0.06 * Double(order)), reduceMotion: reduceMotion)
+        ) { shown = true }
+      }
   }
 }
 
@@ -719,9 +796,12 @@ private struct WeekBars: View {
   let targetLabel: String?
   let unit: String
   let partial: Int?
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @State private var grown = false
 
   var body: some View {
     let maxV = Swift.max(values.max() ?? 0, target ?? 0, 1)
+    let on = grown || reduceMotion
     VStack(spacing: 6) {
       GeometryReader { geo in
         let h = geo.size.height
@@ -729,7 +809,8 @@ private struct WeekBars: View {
           HStack(alignment: .bottom, spacing: 8) {
             ForEach(values.indices, id: \.self) { i in
               let v = values[i]
-              let height = v > 0 ? Swift.max(h * v / maxV, 4) : 3
+              let full = v > 0 ? Swift.max(h * v / maxV, 4) : 3
+              let height = on ? full : 3
               let shape = RoundedRectangle(cornerRadius: 5, style: .continuous)
               Group {
                 if i == partial {
@@ -740,6 +821,10 @@ private struct WeekBars: View {
               }
               .frame(height: height)
               .frame(maxWidth: .infinity)
+              // Cột mọc từ đáy, trái sang phải.
+              .animation(
+                DSMotion.animation(.spring(duration: 0.6, bounce: 0.15).delay(0.04 * Double(i)), reduceMotion: reduceMotion),
+                value: on)
             }
           }
           if let target, target > 0 {
@@ -761,6 +846,7 @@ private struct WeekBars: View {
         .frame(maxHeight: .infinity, alignment: .bottom)
       }
       .frame(height: 120)
+      .onAppear { grown = true }
       HStack(spacing: 8) {
         ForEach(days.indices, id: \.self) { i in
           VStack(spacing: 0) {
