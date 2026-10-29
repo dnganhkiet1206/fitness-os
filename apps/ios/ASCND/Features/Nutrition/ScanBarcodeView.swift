@@ -19,6 +19,8 @@ struct ScanBarcodeView: View {
   let onFound: (BarcodeLookup.Food) -> Void
   @Environment(\.dismiss) private var dismiss
   @Environment(\.openURL) private var openURL
+  /// Nhiệm vụ khám phá "quét mã vạch" (#527 phần 4).
+  @Environment(AppServices.self) private var services: AppServices?
   @State private var permission = AVCaptureDevice.authorizationStatus(for: .video)
   @State private var status: Status = .scanning
   @State private var manual = ""
@@ -190,6 +192,7 @@ struct ScanBarcodeView: View {
       guard !Task.isCancelled else { return }
       if let food {
         onFound(food)
+        services?.exploreDone(.barcode)
         dismiss()
       } else {
         status = .notFound

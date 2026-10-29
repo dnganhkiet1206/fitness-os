@@ -55,6 +55,8 @@ struct WeeklyReviewView: View {
     .navigationTitle(String(localized: "wr.title"))
     .ascndPage()
     .task { if case .loading = book.phase { await book.load() } }
+    // nhiệm vụ khám phá "xem Tổng kết tuần" (#527 phần 4)
+    .onAppear { services?.exploreDone(.review) }
     .refreshable { await book.load() }
     .sensoryFeedback(.selection, trigger: book.weekOffset)
     .sensoryFeedback(.selection, trigger: chart)

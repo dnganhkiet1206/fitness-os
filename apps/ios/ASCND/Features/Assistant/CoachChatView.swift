@@ -493,6 +493,8 @@ struct CoachChatView: View {
 
   private func send(_ text: String) {
     chat.waterUnit = waterUnit
+    // nhiệm vụ khám phá "Hỏi Koa" (#527 phần 4)
+    services.exploreDone(.askkoa)
     // Trả lời một câu hỏi lại "số nào đúng" bằng chữ: đọc số người dùng chọn.
     if let (key, c) = openConflict() {
       switch CoachLogPrompt.choice(text, for: c, unit: waterUnit) {

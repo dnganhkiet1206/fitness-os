@@ -211,7 +211,8 @@ final class AppServices {
       // Không mở được tệp thì vẫn chạy trong bộ nhớ: dữ liệu KHÔNG bền, và
       // `startupError` nói điều đó ra — không bao giờ giả vờ "đã lưu".
       problems.append("database: \(error)")
-      database = try! ASCNDDatabase()  // trong bộ nhớ: không có lý do thất bại ngoài hết RAM
+      // trong bộ nhớ: không có lý do thất bại ngoài hết RAM — như `try!` cũ, nói rõ lỗi
+      do { database = try ASCNDDatabase() } catch { fatalError("in-memory database: \(error)") }
     }
 
     // Chưa ai đăng nhập cho tới khi phiên mở (`forgetOtherAccounts`).
@@ -450,7 +451,51 @@ final class AppServices {
       Telemetry.capture(.workoutLogged, ["source": "manual"])
       self?.didLog()
     }
+    // Nhiệm vụ tăng tải (#527 phần 4): buổi vừa vào phân tích → so với lần trước.
+    flow.onSessionAbsorbed = { [weak self, weak flow] date in
+      guard let self, let insights = flow?.insights else { return }
+      Task { await self.claimOverload(userId: userId, date: date, insights: insights) }
+    }
     return flow
+  }
+
+  // MARK: - Nhiệm vụ Koa phần 4 (29/10)
+
+  /// Khoá đã nhận trên máy này — `claim_quest_reward` trả số xu cả khi khoá đã có (ON
+  /// CONFLICT DO NOTHING), nên máy nhớ để không mừng "+xu" hai lần. Server vẫn chỉ ghi
+  /// một dòng.
+  private func questSeenKey(_ userId: String, _ ref: String) -> String { "ascnd_koa_quest.\(userId).\(ref)" }
+  @ObservationIgnored private var claimingQuests: Set<String> = []
+
+  /// Một khoá nhiệm vụ tự nhận (tăng tải, khám phá): một lượt một lúc, nhớ khi xong;
+  /// hỏng (mất mạng, server chưa có giá) thì lần sau thử lại.
+  private func claimOnce(userId: String, ref: String, reason: String) async -> Int? {
+    guard let backend else { return nil }
+    let seen = questSeenKey(userId, ref)
+    guard !UserDefaults.standard.bool(forKey: seen), !claimingQuests.contains(ref) else { return nil }
+    claimingQuests.insert(ref)
+    defer { claimingQuests.remove(ref) }
+    guard let amount = try? await SupabaseMascotEconomy(backend: backend).claimReward(refKey: ref, reason: reason)
+    else { return nil }
+    UserDefaults.standard.set(true, forKey: seen)
+    return session.session?.userId == userId ? amount : nil
+  }
+
+  /// Làm theo gợi ý tăng tải: +20 xu, và ngày ấy +3 Gains (Gains đọc lại từ sổ xu).
+  func claimOverload(userId: String, date: LocalDate, insights: InsightBook) async {
+    guard OverloadQuest.achieved(on: date, insights.performances) else { return }
+    guard let amount = await claimOnce(userId: userId, ref: OverloadQuest.refKey(date), reason: "overload") else { return }
+    if let h = koaGainsHistory { koaGainsHistory = .init(days: KoaGainsSync.mark(h.days, overload: [date]), week: h.week) }
+    noteKoaReward(userId: userId, amount: amount, seen: true, source: "overload")
+  }
+
+  /// Người dùng vừa dùng một tính năng lần đầu — nhiệm vụ khám phá (một lần trọn đời).
+  func exploreDone(_ q: ExploreQuest) {
+    guard let userId = session.session?.userId else { return }
+    Task { [weak self] in
+      guard let amount = await self?.claimOnce(userId: userId, ref: q.refKey, reason: "explore \(q.rawValue)") else { return }
+      self?.noteKoaReward(userId: userId, amount: amount, seen: true, source: "explore")
+    }
   }
 
   /// Onboarding (#424): cổng sau đăng nhập của người này — `OnboardingGateView`

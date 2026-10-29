@@ -495,45 +495,150 @@ struct MascotRoomView: View {
 
   // MARK: - Nhiệm vụ
 
+  /// Ba loại nhiệm vụ (#527 phần 4, Kiệt duyệt 29/10): Hôm nay (chỉ xu), Tập luyện
+  /// (xu + Gains), Khám phá app (một lần, chỉ xu). Việc xong mờ đi và xuống cuối nhóm;
+  /// việc khám phá xong thì biến mất. Không có nút: mọi nhiệm vụ tự nhận ở nơi khác.
   private var questsCard: some View {
+    VStack(spacing: DS.Spacing.md) {
+      questGroup(String(localized: "mr.q.today"), tag: String(localized: "mr.q.coinsOnly"), rows: todayRows)
+      questGroup(String(localized: "mr.q.training"), tag: String(localized: "mr.q.coinsGains"), rows: trainingRows)
+      let explore = exploreRows
+      if !explore.isEmpty {
+        questGroup(String(localized: "mr.q.explore"), tag: String(localized: "mr.q.once"), rows: explore)
+      }
+    }
+  }
+
+  /// Một hàng nhiệm vụ: đã xong (tô vòng) / đã nhận (mờ, "Đã nhận").
+  struct QuestRow: Identifiable {
+    let id: String
+    let title: String
+    var hint: String?
+    let coins: Int
+    var gains: Int?
+    let done: Bool
+    let claimed: Bool
+  }
+
+  private var todayRows: [QuestRow] {
+    room.activeQuests.filter { $0.key != .workout }.map { q in
+      QuestRow(
+        id: q.key.rawValue, title: q.name(lang, stepsGoal: room.stepsGoal), coins: q.coins, done: room.questDone(q.key),
+        claimed: room.isClaimed(MascotRules.questRefKey(room.today, q.key)))
+    }
+  }
+
+  private var trainingRows: [QuestRow] {
+    var rows: [QuestRow] = []
+    if let w = room.activeQuests.first(where: { $0.key == .workout }) {
+      rows.append(
+        QuestRow(
+          id: "workout", title: w.name(lang, stepsGoal: room.stepsGoal), coins: w.coins, gains: KoaGains.plannedSession,
+          done: room.questDone(.workout), claimed: room.isClaimed(MascotRules.questRefKey(room.today, .workout))))
+    }
+    let overload = room.isClaimed(OverloadQuest.refKey(room.today))
+    rows.append(
+      QuestRow(
+        id: "overload", title: String(localized: "mr.q.overload"), hint: String(localized: "mr.q.overload.hint"),
+        coins: OverloadQuest.coins, gains: OverloadQuest.gains, done: overload, claimed: overload))
+    if let state = koaWeekState {
+      let claim = services.koaWeek(userId: room.userId)?.claim ?? .notYet
+      let claimed = if case .notYet = claim { false } else if case .failed = claim { false } else { true }
+      rows.append(
+        QuestRow(
+          id: "week", title: String(localized: "mr.q.week"),
+          hint: String(localized: "mr.q.week.progress \(min(state.done, state.target)) \(state.target)"),
+          coins: KoaWeek.rewardCoins, gains: KoaGains.fullWeek, done: state.complete, claimed: claimed))
+    }
+    return rows
+  }
+
+  /// Việc khám phá còn lại — xong (đã có trong sổ) thì không hiện nữa.
+  private var exploreRows: [QuestRow] {
+    ExploreQuest.allCases.filter { !room.isClaimed($0.refKey) }.map { q in
+      QuestRow(
+        id: q.rawValue, title: Self.exploreTitle(q), hint: Self.exploreHint(q), coins: q.coins, done: false,
+        claimed: false)
+    }
+  }
+
+  private func questGroup(_ title: String, tag: String, rows: [QuestRow]) -> some View {
     DSCard {
       VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-        Text(String(localized: "mr.quests.hint")).font(DS.TextStyle.footnote).foregroundStyle(DS.Color.mutedForeground.swiftUI)
-        ForEach(room.activeQuests, id: \.key) { q in
-          let claimed = room.isClaimed(MascotRules.questRefKey(room.today, q.key))
-          rewardRow(
-            title: q.name(lang, stepsGoal: room.stepsGoal), coins: q.coins, claimed: claimed
-          ) {
-            // Không có nút: nhiệm vụ tự nhận ở nơi khác. Vòng rỗng = chưa làm; vòng
-            // tô = đã làm, đang chờ nhận (thiết kế lại 15/10, thay "—" / "…").
-            Image(systemName: room.questDone(q.key) ? "circle.inset.filled" : "circle")
+        HStack(alignment: .firstTextBaseline) {
+          Text(verbatim: title).font(DS.TextStyle.headline)
+            .accessibilityAddTraits(.isHeader)
+          Spacer(minLength: DS.Spacing.sm)
+          Text(verbatim: tag)
+            .font(DS.TextStyle.caption.weight(.semibold))
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        }
+        // xong / đã nhận xuống cuối, giữ thứ tự gốc trong mỗi phần
+        ForEach(rows.enumerated().sorted { ($0.element.claimed ? 1 : 0, $0.offset) < ($1.element.claimed ? 1 : 0, $1.offset) }
+          .map(\.element))
+        { r in
+          rewardRow(title: r.title, hint: r.hint, coins: r.coins, gains: r.gains, claimed: r.claimed) {
+            Image(systemName: r.done ? "circle.inset.filled" : "circle")
               .font(.system(size: 20))
               .foregroundStyle(
-                room.questDone(q.key) ? DS.Color.readinessGreen.swiftUI : DS.Color.mutedForeground.swiftUI.opacity(0.5))
-              .accessibilityLabel(Text(Self.questState(done: room.questDone(q.key))))
+                r.done ? DS.Color.readinessGreen.swiftUI : DS.Color.mutedForeground.swiftUI.opacity(0.5))
+              .accessibilityLabel(Text(Self.questState(done: r.done)))
           }
         }
       }
     }
   }
 
-  /// Một hàng thưởng (`questRow` của RN): tên (đã nhận thì mờ đi), dưới là
-  /// đồng xu + "+N" vàng; bên phải "✓ Đã nhận" xanh hoặc việc. GĐ2: bỏ "+N XP" —
+  static func exploreTitle(_ q: ExploreQuest) -> String {
+    switch q {
+    case .photo: String(localized: "mr.x.photo")
+    case .voice: String(localized: "mr.x.voice")
+    case .mealcam: String(localized: "mr.x.mealcam")
+    case .barcode: String(localized: "mr.x.barcode")
+    case .reminder: String(localized: "mr.x.reminder")
+    case .review: String(localized: "mr.x.review")
+    case .askkoa: String(localized: "mr.x.askkoa")
+    }
+  }
+
+  static func exploreHint(_ q: ExploreQuest) -> String {
+    switch q {
+    case .photo: String(localized: "mr.x.photo.hint")
+    case .voice: String(localized: "mr.x.voice.hint")
+    case .mealcam: String(localized: "mr.x.mealcam.hint")
+    case .barcode: String(localized: "mr.x.barcode.hint")
+    case .reminder: String(localized: "mr.x.reminder.hint")
+    case .review: String(localized: "mr.x.review.hint")
+    case .askkoa: String(localized: "mr.x.askkoa.hint")
+    }
+  }
+
+  /// Một hàng thưởng (`questRow` của RN): tên (đã nhận thì mờ đi), gợi ý, dưới là
+  /// đồng xu + "+N" vàng (+ Gains xanh cho việc tập); bên phải "✓ Đã nhận" xanh hoặc việc. GĐ2: bỏ "+N XP" —
   /// Gains là thang tiến bộ duy nhất ra giao diện; XP vẫn cộng ở server.
   private func rewardRow<Action: View>(
-    title: String, coins: Int, claimed: Bool, @ViewBuilder action: () -> Action
+    title: String, hint: String? = nil, coins: Int, gains: Int? = nil, claimed: Bool, @ViewBuilder action: () -> Action
   ) -> some View {
     HStack(spacing: DS.Spacing.md) {
       VStack(alignment: .leading, spacing: 3) {
         Text(verbatim: title)
           .font(DS.TextStyle.body)
           .foregroundStyle(claimed ? DS.Color.mutedForeground.swiftUI : DS.Color.foreground.swiftUI)
+        if let hint {
+          Text(verbatim: hint)
+            .font(DS.TextStyle.caption)
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        }
         HStack(spacing: 4) {
           Image(systemName: "circle.circle.fill").font(.system(size: 11))
             .foregroundStyle(DS.Color.readinessYellowGraphic.swiftUI)
             .accessibilityHidden(true)
           Text(verbatim: "+\(coins)")
             .foregroundStyle(DS.Color.readinessYellow.swiftUI)
+          if let gains {
+            Text(String(localized: "mr.q.gains \(gains)"))
+              .foregroundStyle(DS.Color.readinessGreen.swiftUI)
+          }
         }
         .font(DS.TextStyle.caption.weight(.bold).monospacedDigit())
       }

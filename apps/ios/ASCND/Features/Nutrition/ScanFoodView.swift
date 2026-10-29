@@ -437,6 +437,8 @@ struct ScanFoodView: View {
       if !rows.isEmpty {
         Button {
           onAdd(kept.map { $0.food() })
+          // nhiệm vụ khám phá "ghi bữa bằng camera" (#527 phần 4)
+          services.exploreDone(.mealcam)
           dismiss()
         } label: {
           Text(String(localized: "sf.add \(DiaryView.whole(total))"))
