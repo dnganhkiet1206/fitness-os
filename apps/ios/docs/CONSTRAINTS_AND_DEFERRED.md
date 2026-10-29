@@ -122,7 +122,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Tab đã lưu của bản cũ: "assistant" → Tiến bộ; "community" → về Hôm nay (không còn tab ấy).
 - ~~Koa ở thẻ đầu Tiến bộ đứng yên (`idle`), không đổi nét mặt theo ngày như ở Hôm nay.~~ Không còn áp dụng (22/10): thẻ Koa ở đầu Tiến bộ đã được thay bằng chữ A trạng thái (mock bản 10, #658/#659).
 - Chưa kiểm: VoiceOver của thanh tab mới, iPhone màn hẹp, iOS 18–25 (nút "+" nổi thay thanh Ghi nhanh).
-- `PARITY_MATRIX.md` chưa cập nhật theo 4 khu vực (việc cuối của GĐ3 trong lộ trình).
+- ~~`PARITY_MATRIX.md` chưa cập nhật theo 4 khu vực (việc cuối của GĐ3 trong lộ trình).~~ Mục 0 rà lại 29/10 @ `116a8c3a`: lối vào theo bốn tab (dò tham chiếu khởi tạo màn trong code), đăng xuất / xoá tài khoản / pháp lý đã vào base, Cộng đồng mở từ Tiến bộ + link, nhắn tin đã nối; đếm lại. Mục 1–3 vẫn theo base 07/10 (đã ghi ở đầu trang).
 
 **Tiến bộ theo chữ trạng thái (mock bản 10, Kiệt duyệt 22/10) — hạn chế đã biết:**
 - Tập luyện so với buổi theo lịch **tới hết hôm qua**: hôm nay chưa qua thì chưa tính là chậm (không nhắc oan buổi sáng).
