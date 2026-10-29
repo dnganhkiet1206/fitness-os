@@ -39,6 +39,10 @@ public enum DeepLink {
     case logWorkout
     case reminders
     case templates
+    /// `community-post?id=` — bài kèm bình luận, bật lên trên Cộng đồng.
+    case communityPost(id: String)
+    /// `community-user?id=` — trang một người, bật lên trên Cộng đồng.
+    case communityUser(id: String)
   }
 
   public enum Target: Sendable, Hashable {
@@ -54,6 +58,7 @@ public enum DeepLink {
         case .water, .supplements, .diary, .logMeal, .foods, .nutritionInsights, .mealPlans, .mealPlan: .nutrition
         case .history, .logWorkout, .templates: .workouts
         case .logWeight, .logMeasurement, .logSleep, .logBiometrics, .reminders: .today
+        case .communityPost, .communityUser: .community
         }
       }
     }
@@ -98,6 +103,9 @@ public enum DeepLink {
     case "log-workout": return .screen(.logWorkout)
     case "reminders": return .screen(.reminders)
     case "templates", "workout-builder": return .screen(.templates)
+    // Không có `id` thì chỉ mở Cộng đồng.
+    case "community-post": return q["id"].map { .screen(.communityPost(id: $0)) } ?? .tab(.community)
+    case "community-user": return q["id"].map { .screen(.communityUser(id: $0)) } ?? .tab(.community)
 
     // Chưa có bản native (#161 / camera): tab chứa nó.
     case "grocery", "scan-barcode", "scan-food": return .tab(.nutrition)

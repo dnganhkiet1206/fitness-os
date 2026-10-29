@@ -118,7 +118,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
   - Chi tiết: `GD1-DAILY-PLAN.md`, mục "Hồi quy GĐ1".
 
 **GĐ3 (bốn khu vực) — hạn chế đã biết:**
-- ~~Link `ascnd://community` (và `assistant`) mở tab **Tiến bộ**, chưa mở thẳng màn Cộng đồng.~~ Sửa 29/10: `ascnd://community` (và `community-post` / `community-user`) mở tab Tiến bộ rồi đẩy thẳng màn Cộng đồng (`openCommunity`); `assistant` vẫn mở Tiến bộ. Đã thử trên simulator: link lúc app đang kiểm phiên và lúc đang ở tab Tập luyện đều vào Cộng đồng. Bài / người cụ thể trong link chưa mở thẳng.
+- ~~Link `ascnd://community` (và `assistant`) mở tab **Tiến bộ**, chưa mở thẳng màn Cộng đồng.~~ Sửa 29/10: `ascnd://community` (và `community-post` / `community-user`) mở tab Tiến bộ rồi đẩy thẳng màn Cộng đồng (`openCommunity`); `assistant` vẫn mở Tiến bộ. Đã thử trên simulator: link lúc app đang kiểm phiên và lúc đang ở tab Tập luyện đều vào Cộng đồng. ~~Bài / người cụ thể trong link chưa mở thẳng.~~ Sửa 29/10: `community-post?id=` bật màn bình luận kèm cả bài, `community-user?id=` bật trang người đó (có nút Đóng), cả hai trên Cộng đồng; thiếu `id` thì chỉ mở Cộng đồng. Đã thử trên simulator với bài và hồ sơ test.
 - Tab đã lưu của bản cũ: "assistant" → Tiến bộ; "community" → về Hôm nay (không còn tab ấy).
 - ~~Koa ở thẻ đầu Tiến bộ đứng yên (`idle`), không đổi nét mặt theo ngày như ở Hôm nay.~~ Không còn áp dụng (22/10): thẻ Koa ở đầu Tiến bộ đã được thay bằng chữ A trạng thái (mock bản 10, #658/#659).
 - Chưa kiểm: VoiceOver của thanh tab mới, iPhone màn hẹp, iOS 18–25 (nút "+" nổi thay thanh Ghi nhanh).

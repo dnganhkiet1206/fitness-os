@@ -52,10 +52,19 @@ struct DeepLinkTests {
     }
   }
 
+  /// Bài / người trong Cộng đồng mở thẳng, trên tab Cộng đồng (→ Tiến bộ › Cộng đồng).
+  @Test func communityPostAndUser() {
+    #expect(Self.target("ascnd://community-post?id=abc") == .screen(.communityPost(id: "abc")))
+    #expect(Self.target("ascnd://community-user?id=u") == .screen(.communityUser(id: "u")))
+    #expect(DeepLink.Target.screen(.communityPost(id: "abc")).tab == .community)
+    #expect(DeepLink.Target.screen(.communityUser(id: "u")).tab == .community)
+  }
+
   /// Màn chỉ có trong một tab, hay chưa có bản native → tab chứa nó.
   @Test func fallbacksToTheirTab() {
-    #expect(Self.target("ascnd://community-post?id=abc") == .tab(.community))
-    #expect(Self.target("ascnd://community-user?id=u") == .tab(.community))
+    #expect(Self.target("ascnd://community-post") == .tab(.community))
+    #expect(Self.target("ascnd://community-user?id=") == .tab(.community))
+    #expect(Self.target("ascnd://community-profile") == .tab(.community))
     #expect(Self.target("ascnd://ai-coach?q=hi") == .tab(.assistant))
     #expect(Self.target("ascnd://mascot-room") == .tab(.today))
     #expect(Self.target("ascnd://settings") == .tab(.today))
