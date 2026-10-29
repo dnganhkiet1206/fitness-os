@@ -291,11 +291,12 @@ public struct WorkoutHistoryView: View {
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
             .lineLimit(1)
             .minimumScaleFactor(0.85)
-            // Thanh tỉ lệ với buổi nặng nhất tháng (RN `volumeRatio`).
+            // Thanh tỉ lệ với buổi nặng nhất tháng (RN `volumeRatio`). Màu của Tập như biểu đồ
+            // 8 tuần ngay trên (trước 29/10 xanh — trùng màu Nước).
             if peak > 0 {
               GeometryReader { g in
                 Capsule()
-                  .fill(DS.Color.metricBlue.swiftUI.opacity(0.6))
+                  .fill(DS.Color.metricRose.swiftUI.opacity(0.6))
                   .frame(width: max(4, g.size.width * Double(e.volumeKg) / Double(peak)))
               }
               .frame(height: 3)

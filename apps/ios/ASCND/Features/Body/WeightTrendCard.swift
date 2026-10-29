@@ -176,7 +176,8 @@ struct WeightTrendCard: View {
       Spacer(minLength: DS.Spacing.sm)
       if let c = e.changeKg {
         let d = unit.convert(c)
-        Text(verbatim: Self.signed(d))
+        // Có đơn vị: "−17,3 kg", không phải "−17,3" trơ trọi cạnh "52,9 kg".
+        Text(verbatim: "\(Self.signed(d)) \(unit.label)")
           .font(DS.TextStyle.caption.weight(.semibold).monospacedDigit())
           .foregroundStyle(abs(d) < 0.05 ? DS.Color.mutedForeground.swiftUI
             : WeightTrend.deltaGood(c, goal: profile?.profile?.goal) ? DS.Color.readinessGreen.swiftUI : DS.Color.mutedForeground.swiftUI)
@@ -290,7 +291,8 @@ struct WeightTrendCard: View {
           }
         }
         .chartXAxis {
-          AxisMarks(values: .automatic(desiredCount: 4)) { _ in
+          // `.aligned`: nhãn ngày cuối nằm trong khung (trước 29/10 bị cắt còn "2" ở mép phải).
+          AxisMarks(preset: .aligned, values: .automatic(desiredCount: 4)) { _ in
             AxisValueLabel(format: .dateTime.day().month(.abbreviated))
           }
         }

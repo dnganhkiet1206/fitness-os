@@ -106,7 +106,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 
 **GĐ1 (Daily Plan + Today gọn) — Kiệt duyệt CÓ ĐIỀU KIỆN 21/10:**
 - ~~PR GĐ1 để nháp, chỉ merge khi đủ 6 mục nghiệm thu.~~ **Kiệt lệnh "merge toàn bộ" 21/10 trong chat**: #641 và #642 đã merge vào `native/ios-rewrite` (nhánh tích hợp, **không phải phát hành**), CI xanh. **Nghiệm thu CHƯA đủ 6/6**: còn iPhone thật, A1, A2 (dưới đây). Các mục này vẫn phải làm trước khi phát hành.
-- Migration `20261020140000_plan_day_overrides` (đổi lịch theo ngày) **CHƯA deploy** lên production. Cần lệnh duyệt rõ ràng. App đọc bảng này theo kiểu chịu lỗi: thiếu bảng thì coi như chưa đổi ngày nào.
+- ~~Migration `20261020140000_plan_day_overrides` (đổi lịch theo ngày) **CHƯA deploy** lên production. Cần lệnh duyệt rõ ràng. App đọc bảng này theo kiểu chịu lỗi: thiếu bảng thì coi như chưa đổi ngày nào.~~ **Đã áp 28/10/2026** (Kiệt duyệt trong chat): `supabase db push` lên `guqmbqtgxqleuwajvwvg`, `migration list` khớp; bảng có RLS + 3 policy; app mở lại trên simulator không còn 404.
 - "Tập nhẹ hơn" chỉ bớt một hiệp mỗi bài cho buổi hôm nay. Không sửa mẫu, không giảm tạ, không phải kết luận y tế.
 - Hồi quy mất mạng / lỗi / gửi lại (chỉ thị 21/10 14:26, commit `8d2f9d8b`): R1–R7, W1, D1–D5 **PASS** (test Swift + SQL thật trên Postgres ở máy). **Chặn:**
   - **A1 dời / nghỉ trên app:** Kiệt 21/10 bỏ phương án Supabase dev bằng Docker trên máy này (không đủ tài nguyên). Chỉ kiểm được trên app khi migration được deploy (cần duyệt), hoặc trên một máy / CI có Supabase dev.
@@ -233,6 +233,29 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Kiểm: build + cổng xanh; hồi quy trên simulator (cờ `uitest-offline` bật → dải hiện; tắt → "Try again" → dải tắt, Hôm nay tải lại). **NOT RUN:** chính nhánh "monitor kẹt" — chưa dựng lại được tình huống NWPathMonitor kẹt (cờ test chỉ giả lập phép dò, không giả lập đường mạng).
 - Ghi để Kiệt xem (giao diện, cần mock): dải Offline đè lên chữ ASCND ở đầu Hôm nay.
 
+**Tiến bộ từng bài (#728) — kiểm còn thiếu (28/10, simulator, chế độ máy chủ giả):**
+- ~~Cỡ chữ trợ năng lớn nhất (AX5) cắt chữ: tên bài "Dead…", "Over…", hàng đếm "0…", "6…", thẻ phân tích "Deadl…", "Plat…", "10…".~~ Sửa 28/10 (nhánh `claude/xp-large-type`): hàng danh sách và thẻ phân tích xếp dọc ở cỡ trợ năng, hàng đếm một hàng → 2×2 → một cột (`ViewThatFits`), danh sách buổi và set mới nhất xuống dòng khi không vừa; đường nhỏ của thẻ phân tích ẩn ở cỡ trợ năng. Simulator AX5: không còn chữ bị cắt.
+- Tài khoản dùng lb: danh sách, chi tiết, biểu đồ, các buổi và gợi ý lần tới đều theo lb (220.5 lb × 5, "keep 220.5 lb and aim for 6–7 reps"). Simulator (đổi tạm `units_weight` của dữ liệu mẫu).
+- Trường hợp 0 kg của bài có tạ: unit test `zeroKgSessionOfWeightedExerciseIsNotADrop` xanh. **NOT RUN** trên simulator (dữ liệu mẫu không có buổi 0 kg ở bài có tạ).
+- **NOT RUN:** VoiceOver thật (hàng dùng `.accessibilityElement(children: .combine)`).
+- ~~Tổng kết tuần lệch giữa AI và thẻ: AI nói 479 kcal/ngày, thẻ app 298, vì server tính cả hôm nay (ngày chưa xong) còn app thì bỏ.~~ Sửa 28/10 (Kiệt duyệt deploy, nhánh `claude/weekly-review-today`): app gửi thêm `today`, `ai-weekly-review` bỏ hôm nay khỏi trung bình kcal / đạm khi tuần đang chạy và báo model qua `excludes_today`; các hàng theo ngày và tổng vẫn gồm hôm nay. Bản app cũ không gửi `today` thì giữ cách cũ. **Deploy production 29/10 03:17 UTC: `ai-weekly-review` v12** (trước v11; v11 khớp từng byte với mã gốc trước khi deploy). Kiểm trên simulator (tài khoản test, tuần 26/10): thẻ 298 kcal, AI viết "khoảng 298 kcal/ngày".
+- Tổng kết tuần gọn hơn (29/10, Kiệt duyệt mock v2 "kiểu Apple", nhánh `claude/weekly-review-compact`): từ khoảng 5 màn cuộn còn khoảng 2. Một thẻ lịch tập có vòng 7 ngày (`KoaWeek.days`), một thẻ trung bình (hàng + thanh tới mục tiêu), khối lượng và sẵn sàng chung một thẻ, một biểu đồ có nút chọn (Calo / Ngủ / Tập / Sẵn sàng) thay cho bốn biểu đồ, cột hôm nay viền nét đứt khi tuần đang chạy, Koa nhận xét trong một thẻ, khuyến nghị của app và của AI chung danh sách "Tuần tới". **Đổi có chủ ý:** % so với tuần trước của kcal / đạm không còn hiện, chỉ còn trong VoiceOver (của khối lượng vẫn hiện); lý do (`reason`) của từng việc AI gợi ý chỉ còn trong VoiceOver. Chuyển động (Kiệt yêu cầu "thêm animation"): thanh tới mục tiêu chạy dần theo từng hàng, cột biểu đồ mọc từ đáy mỗi lần đổi tab / đổi tuần, vòng ngày đã tập nảy vào, số lăn khi đổi tuần (`numericText`), nhận xét của Koa và hàng "Tuần tới" hiện dần; tất cả qua `DSMotion`, tắt khi bật Giảm chuyển động. Vùng biểu đồ cao bằng nhau ở bốn tab (tab Tập thu cột thấp lại để chừa chỗ đường 12 tuần, dòng chú thích luôn giữ chỗ) nên đổi tab không làm thẻ co giãn hay trang giật khi đang ở cuối (Kiệt: "kích thước thẻ … khác nhau"); ở cỡ chữ trợ năng thẻ vẫn tự cao lên và co giãn theo lò xo. Dễ hiểu hơn (Kiệt: "mấy thẻ này nhìn khó hiểu"): mỗi tab biểu đồ có tiêu đề kèm đơn vị; khối lượng có đơn vị theo kg / lb (trước "1k" cho 728 kg); "ACWR" đổi thành "tỉ lệ tải" và bốn câu khuyến nghị tải tập viết lại không thuật ngữ, không lẫn "volume" (vi / en / es); thực phẩm bổ sung ghi "trên N ngày có kế hoạch" (trước "/3d"); dòng nét đứt chỉ hiện khi cột hôm nay thật sự có. Xu hướng 12 tuần đổi từ đường sang 12 cột nhỏ và chỉ hiện khi có ít nhất 2 tuần tập. **Lỗi tìm thấy:** cột tuần đang xem của xu hướng luôn bằng 0 vì `volumeHistory` chỉ đọc tới TRƯỚC ngày đầu tuần (RN cũng vậy); sửa ở màn bằng tổng của chính tuần (`totalVolume`), Core giữ nguyên để không lệch golden.
+- **Rà toàn bộ biểu đồ (29/10, Kiệt: "check lại kỹ xem có còn biểu đồ nào gây khó hiểu không", nhánh `claude/chart-clarity`)** — xem từng màn trên simulator, sửa những chỗ sau:
+  - **Bước chân:** biểu đồ 7 ngày gần như vô hình (cột chưa tới mục tiêu dùng `secondary`, trùng nền thẻ) → màu Vận động, có số trên cột và đường mục tiêu. Ô xu hướng ghi "7 ngày qua" nhưng thật ra so 3 ngày gần nhất với 3 ngày trước → đổi nhãn đúng nghĩa.
+  - **Giấc ngủ:** đêm không đo tầng ngủ là khung rỗng (trông như cột chưa tải) → cột đặc. Chú giải "Nông · REM · Deep" hiện cả khi không đêm nào có tầng → chỉ hiện khi có. "Deep" chưa dịch → "Sâu". Chất lượng không nói thang → "thang 10". Số đổi sang dấu phẩy ("8,0h"); có giờ trên cột và dòng "N trong 7 đêm chưa ghi".
+  - **Chi tiết nhóm của tab Tiến bộ** (Vận động / Giấc ngủ / Hồi phục / Ăn uống): tiêu đề có đơn vị ("Điểm sẵn sàng mỗi ngày (0–100)"); đường mục tiêu có chú thích ở đầu thẻ (nhãn treo trên đường thì bị cột che); ngày chưa ghi là vạch xám kèm chú thích (trước là ô trống).
+  - **Dinh dưỡng 7 ngày:** ô kcal có mục tiêu; có số gam trên cột; ngày 0 g là "Chưa ghi" như cách tính trung bình.
+  - **Hiệu chỉnh mục tiêu:** "W3 / W4" → ngày đầu tuần; có số trên từng điểm. Đường xanh lá đọc thành "tốt" ngay trên ô "Lệch mục tiêu" → màu Cân nặng. Số "-12.31" → "−12,31".
+  - **Số đo:** có chấm từng lần đo, ngày ở hai đầu, chênh lệch ghi "so với 13 thg 9".
+  - **Cân nặng:** chênh lệch có đơn vị ("−17,3 kg"); nhãn ngày cuối trục không còn bị cắt.
+  - **Sinh trắc học:** nhịp tim 58 tô đỏ ngay cạnh chấm xanh "bình thường" → số màu chữ thường. Ngày "2026-10-17 18:58" → "17 thg 10, 18:58".
+  - **Tải tập luyện:** "Tuần này nhẹ hơn 42%" trong khi số là 7 ngày qua → "7 ngày qua nhẹ hơn…"; nhãn tải nói rõ "(gắng sức × rep)".
+  - **Buổi tập đã ghi:** thanh dưới mỗi buổi đổi từ màu xanh (trùng Nước) sang màu Tập.
+  - Chung: `ChartGoalKey` / `ChartHeader` (`Design/ChartGoalKey.swift`); nhãn thứ dạng ngắn "T2…CN" để không thành "T…" ở cỡ chữ trợ năng.
+  - Kiểm trên simulator, cỡ mặc định: tất cả các màn trên; AX5: Hồi phục và Dinh dưỡng (không cắt chữ).
+  - ~~**Chưa sửa, cần Kiệt quyết:** hình chữ "A" đầu tab Tiến bộ chỉ có biểu tượng cho sáu nhóm, không có tên (đụng tới art của logo nên cần mock trước).~~ 29/10: đã dựng mock hai phương án (nhãn hai bên / lưới tên bên dưới); Kiệt quyết **giữ nguyên** ("không cần đâu"). Không đề xuất lại.
+  - **NOT RUN:** AX5 cho Bước chân / Giấc ngủ / Số đo / Hiệu chỉnh mục tiêu; en / es trên simulator; chế độ sáng; biểu đồ trong Koa Coach (chỉ có sau một câu trả lời AI thật). Kiểm trên simulator: cỡ chữ mặc định và AX5 (không cắt chữ), chế độ sáng, phân tích AI thật, quay video lúc đổi tab (cột mọc trong ~0,5 giây). **NOT RUN:** VoiceOver thật, Giảm chuyển động bật thật, tiếng Anh / Tây Ban Nha trên simulator.
+
 **Tài liệu và mã:**
 - `PARITY_MATRIX.md` lạc hậu từ 17/10. 26/10 (audit vòng 3, nhánh `claude/audit-r3-dead-code`): **đánh dấu LẠC HẬU** ở đầu trang (nói rõ chỗ sai: GĐ1–GĐ3, bốn khu vực, lối vào); rà lại toàn bảng vẫn là việc cuối của GĐ3, chưa làm.
 - ~~`ReadinessTrendCardView` là code chết.~~ Xoá 26/10 (cùng nhánh): view và 8 chuỗi `rt.*`; giữ `ReadinessTrendBook` / `ReadinessTrend` (Hôm nay vẫn dùng). Build simulator xanh, cổng chuỗi xanh (2787 khoá).
@@ -257,6 +280,11 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 
 ## 5. Lịch sử thay đổi sổ
 
+- 28/10/2026: Tiến bộ từng bài — hết cắt chữ ở cỡ trợ năng; đã kiểm lb trên simulator.
+- 28/10/2026: `ai-weekly-review` bỏ hôm nay khỏi trung bình như thẻ app (app gửi `today`).
+- 29/10/2026: deploy production (Kiệt duyệt trong chat: "Duyệt deploy") — `ai-weekly-review` v12, 03:17 UTC, từ `dd2955f2` (#734). Không deploy hàm nào khác, không migration.
+- 29/10/2026: Tổng kết tuần gọn hơn theo mock v2; % tuần trước của kcal / đạm chỉ còn trong VoiceOver.
+- 29/10/2026: rà mọi biểu đồ cho dễ hiểu (Bước chân, Giấc ngủ, Tiến bộ, Dinh dưỡng, Hiệu chỉnh mục tiêu, Số đo, Cân nặng, Sinh trắc học, Tải tập luyện, Buổi tập).
 - 28/10/2026: mạng — "Thử lại" thay NWPathMonitor mới khi đường mạng chưa ổn (hết kẹt "Offline" tới khi mở lại app).
 - 28/10/2026: audit vòng 5 — widget: số khớp app, nút nước; widget dùng ngôn ngữ của app; chế độ test xoá mốc insight mỗi lần mở.
 - 28/10/2026: dữ liệu mẫu chế độ test có bài không tạ + tên buổi dài; "Lần trước 10 reps", tổng kết "10 reps", tên dài ở Lịch sử đã xem trên simulator.

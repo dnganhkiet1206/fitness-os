@@ -141,15 +141,29 @@ struct ExerciseInsightView: View {
           .font(DS.TextStyle.caption.weight(.semibold))
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
           .textCase(.uppercase)
-        HStack(spacing: DS.Spacing.md) {
+        // Một hàng nếu vừa; không thì 2×2, rồi một cột (AX5 28/10 cắt thành "0…").
+        let counts = Group {
           Text(String(localized: "xp.summary.weightUp \(s.weightUp)")).foregroundStyle(DS.Color.statusGood.swiftUI)
           Text(String(localized: "xp.summary.repsUp \(s.repsUp)")).foregroundStyle(DS.Color.statusGood.swiftUI.opacity(0.8))
           Text(String(localized: "xp.summary.same \(s.same)")).foregroundStyle(DS.Color.mutedForeground.swiftUI)
           Text(String(localized: "xp.summary.down \(s.down)")).foregroundStyle(DS.Color.statusAttention.swiftUI)
         }
+        ViewThatFits(in: .horizontal) {
+          HStack(spacing: DS.Spacing.md) { counts }.lineLimit(1)
+          Grid(alignment: .leading, horizontalSpacing: DS.Spacing.md, verticalSpacing: 4) {
+            GridRow {
+              Text(String(localized: "xp.summary.weightUp \(s.weightUp)")).foregroundStyle(DS.Color.statusGood.swiftUI)
+              Text(String(localized: "xp.summary.repsUp \(s.repsUp)")).foregroundStyle(DS.Color.statusGood.swiftUI.opacity(0.8))
+            }
+            GridRow {
+              Text(String(localized: "xp.summary.same \(s.same)")).foregroundStyle(DS.Color.mutedForeground.swiftUI)
+              Text(String(localized: "xp.summary.down \(s.down)")).foregroundStyle(DS.Color.statusAttention.swiftUI)
+            }
+          }
+          .lineLimit(1)
+          VStack(alignment: .leading, spacing: 4) { counts }
+        }
         .font(DS.TextStyle.footnote.weight(.semibold))
-        .lineLimit(1)
-        .minimumScaleFactor(0.7)
       }
       .frame(maxWidth: .infinity, alignment: .leading)
       .accessibilityElement(children: .combine)
@@ -187,6 +201,9 @@ struct InsightCard: View {
   let unit: WeightUnit
   let locale: Locale
   @State private var open = false
+  /// Cỡ chữ trợ năng (kiểm AX5 28/10): hai cột cắt tên / xu hướng / số thành "Deadl…",
+  /// "Plat…", "10…" — xếp dọc, cho xuống dòng.
+  @Environment(\.dynamicTypeSize) private var typeSize
 
   private var i: ExerciseInsight { insight }
 
@@ -240,15 +257,17 @@ struct InsightCard: View {
   }
 
   private var head: some View {
-    HStack(alignment: .top) {
+    let big = typeSize.isAccessibilitySize
+    let layout = big ? AnyLayout(VStackLayout(alignment: .leading, spacing: DS.Spacing.xs)) : AnyLayout(HStackLayout(alignment: .top))
+    return layout {
       VStack(alignment: .leading, spacing: 2) {
-        Text(verbatim: i.exerciseName).font(DS.TextStyle.headline).lineLimit(1)
+        Text(verbatim: i.exerciseName).font(DS.TextStyle.headline).lineLimit(big ? nil : 1)
         Text(verbatim: meta)
           .font(DS.TextStyle.caption)
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-          .lineLimit(1)
+          .lineLimit(big ? nil : 1)
       }
-      Spacer()
+      if !big { Spacer() }
       Label(Self.trendName(i.trend), systemImage: trendIcon)
         .font(DS.TextStyle.caption)
         .foregroundStyle(tint)
@@ -271,11 +290,13 @@ struct InsightCard: View {
   }
 
   private var figures: some View {
-    HStack(alignment: .center, spacing: DS.Spacing.md) {
-      HStack(alignment: .firstTextBaseline, spacing: DS.Spacing.xs) {
+    let big = typeSize.isAccessibilitySize
+    return HStack(alignment: .center, spacing: DS.Spacing.md) {
+      (big ? AnyLayout(VStackLayout(alignment: .leading, spacing: 2))
+        : AnyLayout(HStackLayout(alignment: .firstTextBaseline, spacing: DS.Spacing.xs))) {
         Text(verbatim: InsightScreen.headline(i, load: load))
           .font(DS.TextStyle.title2.monospacedDigit())
-          .lineLimit(1)
+          .lineLimit(big ? nil : 1)
         if let pct = InsightScreen.changePercent(i) {
           Label {
             Text(verbatim: "\(abs(pct))%")
@@ -288,7 +309,8 @@ struct InsightCard: View {
       }
       Spacer(minLength: 0)
       let spark = InsightScreen.spark(i)
-      if spark.count >= 2 {
+      // Cỡ chữ trợ năng: bỏ đường nhỏ 96 pt — nó lấy chỗ của con số.
+      if spark.count >= 2, !big {
         // Theo ngày thật: ba buổi trong một tuần rồi một buổi sáu tuần sau là một hình dạng.
         Chart(Array(spark.enumerated()), id: \.offset) { item in
           LineMark(x: .value("d", item.element.date.daysSinceEpoch), y: .value("v", item.element.value))

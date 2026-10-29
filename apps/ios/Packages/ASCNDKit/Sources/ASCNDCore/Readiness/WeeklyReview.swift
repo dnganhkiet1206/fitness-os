@@ -142,6 +142,8 @@ public enum WeeklyReview {
     public let totalVolume: Double
     public let workoutCount: Int
     public let supplementAdherence: Int?
+    /// Số ngày có kế hoạch thực phẩm bổ sung (mẫu số của `supplementAdherence`).
+    public let supplementDays: Int
     public let readinessDays: Int
     public let avgReadiness: Double
     public let prevAvgKcal: Double
@@ -296,7 +298,8 @@ public enum WeeklyReview {
     return Summary(
       daysWithData: logs.count, daysLogged: daysLogged, avgKcal: kcal.mean, avgProtein: protein.mean,
       proteinDays: protein.count, avgWaterMl: water.mean, avgSleepHours: avgSleepH, totalVolume: totalVolume,
-      workoutCount: workoutCount, supplementAdherence: supp, readinessDays: readinessDays, avgReadiness: avgReadiness,
+      workoutCount: workoutCount, supplementAdherence: supp,
+      supplementDays: suppDays.count, readinessDays: readinessDays, avgReadiness: avgReadiness,
       prevAvgKcal: prevKcal, prevAvgProtein: prevProtein, prevTotalVolume: prevVolume, acwr: acwr,
       kcalTarget: JS.number(kcalTarget), proteinTarget: JS.number(proteinTarget), sleepTargetHours: sleepTarget,
       waterTargetMl: waterTarget, cards: cards, days: days,
@@ -507,7 +510,7 @@ public final class WeeklyReviewBook {
     return .idle
   }
 
-  /// Hỏi `ai-weekly-review` cho tuần đang xem (`{ week_start, lang }`). Chỉ
+  /// Hỏi `ai-weekly-review` cho tuần đang xem (`{ week_start, lang, today }`). Chỉ
   /// chạy khi người dùng bấm — mở màn không tốn lượt gọi.
   public func analyze(lang: String) async {
     guard let edge, let key = analysisKey(lang: lang), analyses[key] == nil, analysing != key else { return }
@@ -515,7 +518,12 @@ public final class WeeklyReviewBook {
     analysisFailure = nil
     do throws(EdgeFunction.Failure) {
       let json = try await edge.call(
-        .weeklyReview, body: ["week_start": .string(key.weekStart.description), "lang": .string(lang)])
+        .weeklyReview,
+        body: [
+          "week_start": .string(key.weekStart.description), "lang": .string(lang),
+          // Server bỏ hôm nay khỏi trung bình như thẻ (`summarize(today:)`).
+          "today": .string(today.description),
+        ])
       guard !closed else { return }
       if analysing == key { analysing = nil }
       if let result = WeeklyAnalysis(json) { analyses[key] = result }

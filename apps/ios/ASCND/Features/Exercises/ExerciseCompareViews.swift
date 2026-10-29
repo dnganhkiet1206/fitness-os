@@ -107,22 +107,34 @@ struct ExerciseDeltaChip: View {
 struct ExerciseCompareRow: View {
   let item: ExerciseCompare.Item
   let text: ExerciseCompareText
+  @Environment(\.dynamicTypeSize) private var typeSize
 
   var body: some View {
     HStack(spacing: DS.Spacing.sm) {
-      VStack(alignment: .leading, spacing: 3) {
-        Text(verbatim: item.name).font(DS.TextStyle.body.weight(.semibold)).lineLimit(1)
-        Text(verbatim: text.previousLine(item))
-          .font(DS.TextStyle.caption)
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-          .lineLimit(2)
-      }
-      .frame(maxWidth: .infinity, alignment: .leading)
-      VStack(alignment: .trailing, spacing: 4) {
-        Text(verbatim: text.value(item.last, item.metric))
-          .font(DS.TextStyle.body.weight(.bold))
-          .monospacedDigit()
-        ExerciseDeltaChip(delta: item.delta, text: text)
+      // Cỡ chữ trợ năng (kiểm AX5 28/10): hai cột cắt tên thành "Dead…" — xếp dọc,
+      // tên và số đều xuống dòng được.
+      if typeSize.isAccessibilitySize {
+        VStack(alignment: .leading, spacing: 4) {
+          name
+          Text(verbatim: text.value(item.last, item.metric))
+            .font(DS.TextStyle.body.weight(.bold))
+            .monospacedDigit()
+          ExerciseDeltaChip(delta: item.delta, text: text)
+          previous
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+      } else {
+        VStack(alignment: .leading, spacing: 3) {
+          name.lineLimit(1)
+          previous.lineLimit(2)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        VStack(alignment: .trailing, spacing: 4) {
+          Text(verbatim: text.value(item.last, item.metric))
+            .font(DS.TextStyle.body.weight(.bold))
+            .monospacedDigit()
+          ExerciseDeltaChip(delta: item.delta, text: text)
+        }
       }
       Image(systemName: "chevron.right")
         .font(.caption.weight(.semibold))
@@ -133,6 +145,16 @@ struct ExerciseCompareRow: View {
     .frame(minHeight: 44)
     .contentShape(Rectangle())
     .accessibilityElement(children: .combine)
+  }
+
+  private var name: some View {
+    Text(verbatim: item.name).font(DS.TextStyle.body.weight(.semibold))
+  }
+
+  private var previous: some View {
+    Text(verbatim: text.previousLine(item))
+      .font(DS.TextStyle.caption)
+      .foregroundStyle(DS.Color.mutedForeground.swiftUI)
   }
 }
 
@@ -190,13 +212,21 @@ struct ExerciseCompareDetail: View {
           .font(DS.TextStyle.caption.weight(.semibold))
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
           .textCase(.uppercase)
-        HStack(alignment: .firstTextBaseline, spacing: DS.Spacing.sm) {
-          Text(verbatim: text.value(item.last, item.metric))
-            .font(DS.TextStyle.number(34, .largeTitle).weight(.bold))
-            .monospacedDigit()
-            .minimumScaleFactor(0.7)
-            .lineLimit(1)
-          ExerciseDeltaChip(delta: item.delta, text: text)
+        ViewThatFits(in: .horizontal) {
+          HStack(alignment: .firstTextBaseline, spacing: DS.Spacing.sm) {
+            Text(verbatim: text.value(item.last, item.metric))
+              .font(DS.TextStyle.number(34, .largeTitle).weight(.bold))
+              .monospacedDigit()
+              .lineLimit(1)
+            ExerciseDeltaChip(delta: item.delta, text: text)
+          }
+          VStack(alignment: .leading, spacing: DS.Spacing.xs) {
+            Text(verbatim: text.value(item.last, item.metric))
+              .font(DS.TextStyle.number(34, .largeTitle).weight(.bold))
+              .monospacedDigit()
+              .minimumScaleFactor(0.7)
+            ExerciseDeltaChip(delta: item.delta, text: text)
+          }
         }
         if let p = item.previous {
           Text(String(localized: "xp.prevDetail \(text.date(p.date)) \(text.value(p, item.metric)) \(p.sets)"))
@@ -272,11 +302,21 @@ struct ExerciseCompareDetail: View {
           let i = pair.offset
           let t = pair.element
           let prev = i > 0 ? item.sessions[i - 1] : nil
-          HStack {
-            Text(verbatim: text.dayLong(t.date)).font(DS.TextStyle.body)
-            Spacer()
-            Text(verbatim: text.value(t, item.metric)).font(DS.TextStyle.body.weight(.semibold)).monospacedDigit()
-            ExerciseDeltaChip(delta: ExerciseCompare.delta(t, prev, item.metric), text: text)
+          // Cỡ chữ trợ năng: ngày một dòng, số + chip dòng dưới.
+          ViewThatFits(in: .horizontal) {
+            HStack {
+              Text(verbatim: text.dayLong(t.date)).font(DS.TextStyle.body).lineLimit(1)
+              Spacer()
+              Text(verbatim: text.value(t, item.metric)).font(DS.TextStyle.body.weight(.semibold)).monospacedDigit()
+                .lineLimit(1)
+              ExerciseDeltaChip(delta: ExerciseCompare.delta(t, prev, item.metric), text: text)
+            }
+            VStack(alignment: .leading, spacing: 4) {
+              Text(verbatim: text.dayLong(t.date)).font(DS.TextStyle.body)
+              Text(verbatim: text.value(t, item.metric)).font(DS.TextStyle.body.weight(.semibold)).monospacedDigit()
+              ExerciseDeltaChip(delta: ExerciseCompare.delta(t, prev, item.metric), text: text)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
           }
           .padding(.vertical, 10)
           .accessibilityElement(children: .combine)
