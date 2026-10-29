@@ -148,20 +148,53 @@ struct StudioSceneTests {
     #expect(vi.contains("MẠNH HƠN") && vi.contains("CHUỖI") && !vi.contains("STRONGER") && !vi.contains("STREAK"))
   }
 
-  /// Bảng trên tường là hạng Gains (29/10): chữ hạng theo ngôn ngữ, số 1…6, quả tạ
-  /// thay ngọn lửa, sáu chấm sáng tới hạng, chấm thứ bảy ẩn.
-  @Test func gainsBoardReplacesStreak() {
+  /// Bảng trên tường thay chuỗi (29/10): chữ, số, biểu tượng, số chấm theo `Board`.
+  @Test func boardReplacesStreak() {
     var o = StudioScene.Options()
     o.streak = 40
-    o.gainsRank = 2
-    o.lang = "vi"
+    o.board = .init(word: "HẠNG", value: "3", icon: .dumbbell, dots: 6, lit: 3)
     let plan = KoaPaint.plan(KoaRender.Element("Svg", [:], matrix: nil, kids: StudioScene.tree(o)))
     let texts = Self.labels(plan).map(\.text)
-    #expect(texts.contains("HẠNG") && texts.contains("3") && !texts.contains("CHUỖI") && !texts.contains("40"))
+    #expect(texts.contains("HẠNG") && texts.contains("3") && !texts.contains("STREAK") && !texts.contains("40"))
     let tree = String(describing: StudioScene.tree(o))
     #expect(tree.contains(StudioScene.dumbbell) && !tree.contains("M 330 289"))
-    #expect(StudioScene.resolve("$dot2:off:on", o, StudioScene.skins["default"]!) == .string("on"))
-    #expect(StudioScene.resolve("$dot3:off:on", o, StudioScene.skins["default"]!) == .string("off"))
-    #expect(StudioScene.resolve("$dot6:off:on", o, StudioScene.skins["default"]!) == .string("none"))
+    let skin = StudioScene.skins["default"]!
+    #expect(StudioScene.resolve("$dot2:off:on", o, skin) == .string("on"))
+    #expect(StudioScene.resolve("$dot3:off:on", o, skin) == .string("off"))
+    #expect(StudioScene.resolve("$dot6:off:on", o, skin) == .string("none"))
+    o.board = .init(word: "KỶ LỤC · KG", value: "102", icon: .trophy, dots: 0, lit: 0)
+    #expect(StudioScene.resolve("$countSize", o, skin) == .number(19))
+    #expect(StudioScene.resolve("$dot0:off:on", o, skin) == .string("none"))
+    #expect(String(describing: StudioScene.tree(o)).contains(StudioScene.boardIcons[.trophy]!))
+  }
+
+  /// Đồ phòng (29/10): mỗi món của cửa hàng có biến thể; bật món thì phần tử gốc của chỗ
+  /// đó biến mất, biến thể nằm đúng chỗ, mọi `url(#…)` đều trỏ tới một định nghĩa.
+  @Test func decorVariantsReplaceTheirSpot() throws {
+    let base = StudioScene.tree(StudioScene.Options())
+    #expect(Set(StudioScene.decorData.spots.keys) == Set(StudioScene.decorSpots))
+    for it in MascotShop.decor {
+      let spot = try #require(it.slot)
+      let id = try #require(it.koaId)
+      #expect(StudioScene.decorData.variants["\(spot).\(id)"] != nil, "\(it.key)")
+      var o = StudioScene.Options()
+      o.decor = MascotShop.decorChoice(equipped: [it.key])
+      #expect(o.decor == [spot: id])
+      let tree = StudioScene.tree(o)
+      #expect(tree != base, "\(it.key)")
+      let text = String(describing: tree)
+      let ids = Set((StudioScene.json + StudioScene.decorJSON).matches(of: /"id":"([^"]+)"/).map { String($0.1) })
+      let refs = Set(text.matches(of: /url\(#([A-Za-z0-9]+)\)/).map { String($0.1) })
+      #expect(refs.isSubset(of: ids), "\(it.key): \(refs.subtracting(ids))")
+      let plan = KoaPaint.plan(KoaRender.Element("Svg", [:], matrix: nil, kids: tree))
+      #expect(KoaPaintTests.shapes(plan).count > 100)
+    }
+    // ban ngày không có đèn treo, kể cả đèn mua
+    var day = StudioScene.Options()
+    day.lamp = false
+    day.decor = ["lamp": "chandelier"]
+    var dayBase = StudioScene.Options()
+    dayBase.lamp = false
+    #expect(StudioScene.tree(day) == StudioScene.tree(dayBase))
   }
 }

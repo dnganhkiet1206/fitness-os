@@ -66112,6 +66112,282 @@
      }
     }
    }
+  },
+  "mr.board.hint": {
+   "extractionState": "manual",
+   "localizations": {
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chạm để đổi số: hạng, buổi tuần này, kỷ lục"
+     }
+    },
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tap to change: rank, this week, best"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Toca para cambiar: rango, esta semana, récord"
+     }
+    }
+   }
+  },
+  "wd.spot.theme": {
+   "extractionState": "manual",
+   "localizations": {
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chủ đề"
+     }
+    },
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Theme"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tema"
+     }
+    }
+   }
+  },
+  "wd.spot.shelf": {
+   "extractionState": "manual",
+   "localizations": {
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Kệ tạ"
+     }
+    },
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Rack"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Estante"
+     }
+    }
+   }
+  },
+  "wd.spot.board": {
+   "extractionState": "manual",
+   "localizations": {
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bảng số"
+     }
+    },
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Board"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tablero"
+     }
+    }
+   }
+  },
+  "wd.spot.window": {
+   "extractionState": "manual",
+   "localizations": {
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cửa sổ"
+     }
+    },
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Window"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ventana"
+     }
+    }
+   }
+  },
+  "wd.spot.plants": {
+   "extractionState": "manual",
+   "localizations": {
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cây"
+     }
+    },
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Plants"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Plantas"
+     }
+    }
+   }
+  },
+  "wd.spot.lamp": {
+   "extractionState": "manual",
+   "localizations": {
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đèn"
+     }
+    },
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Lamp"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Lámpara"
+     }
+    }
+   }
+  },
+  "wd.spot.podium": {
+   "extractionState": "manual",
+   "localizations": {
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bục"
+     }
+    },
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Podium"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Podio"
+     }
+    }
+   }
+  },
+  "wd.default": {
+   "extractionState": "manual",
+   "localizations": {
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Gốc"
+     }
+    },
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Original"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Original"
+     }
+    }
+   }
+  },
+  "wd.state.free": {
+   "extractionState": "manual",
+   "localizations": {
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Miễn phí"
+     }
+    },
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Free"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Gratis"
+     }
+    }
+   }
+  },
+  "wd.notForSale": {
+   "extractionState": "manual",
+   "localizations": {
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Món này chưa mở bán. Sắp có!"
+     }
+    },
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "This item isn't on sale yet. Coming soon!"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Este artículo aún no está a la venta. ¡Pronto!"
+     }
+    }
+   }
+  },
+  "wd.confirm.buyUse": {
+   "extractionState": "manual",
+   "localizations": {
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mua và dùng"
+     }
+    },
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Buy and use"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Comprar y usar"
+     }
+    }
+   }
   }
  }
 }

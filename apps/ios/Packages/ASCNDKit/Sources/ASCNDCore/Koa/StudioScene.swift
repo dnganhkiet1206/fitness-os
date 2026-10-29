@@ -85,9 +85,11 @@ public enum StudioScene {
     public var energy = 0.5
     /// Ngày của thẻ chuỗi.
     public var streak = 0
-    /// Hạng Gains (0…5) cho bảng trên tường thay cho chuỗi (29/10, Kiệt: bỏ chuỗi khỏi
-    /// phòng — V1 lấy Gains làm thang duy nhất). `nil` = bảng chuỗi của RN (golden).
-    public var gainsRank: Int?
+    /// Bảng số trên tường thay cho chuỗi (29/10, Kiệt: bỏ chuỗi khỏi phòng — V1 lấy Gains
+    /// làm thang duy nhất; người dùng chọn số). `nil` = bảng chuỗi của RN (golden).
+    public var board: Board?
+    /// Đồ phòng đang dùng: chỗ → biến thể (`MascotShop.decorChoice`). Trống = phòng gốc.
+    public var decor: [String: String] = [:]
     /// 0…1 trong chu kỳ trăng (`moonPhase`).
     public var moon = 0.18
     /// Tên in trên mặt trước bục.
@@ -104,6 +106,26 @@ public enum StudioScene {
     public var depth = false
 
     public init() {}
+  }
+
+  /// Bảng số trên tường: chữ đầu bảng, số lớn, biểu tượng, hàng chấm.
+  public struct Board: Sendable, Hashable {
+    public enum Icon: String, Sendable, Hashable { case dumbbell, check, trophy }
+    /// Chữ đầu bảng, đã theo ngôn ngữ.
+    public var word: String
+    public var value: String
+    public var icon: Icon
+    /// Số chấm hiện (0…7) và số chấm sáng.
+    public var dots: Int
+    public var lit: Int
+
+    public init(word: String, value: String, icon: Icon, dots: Int, lit: Int) {
+      self.word = word
+      self.value = value
+      self.icon = icon
+      self.dots = dots
+      self.lit = lit
+    }
   }
 
   // MARK: - Trăng
@@ -130,6 +152,25 @@ public enum StudioScene {
       + "A \(js(rx)) \(js(r)) 0 0 \(term) \(js(cx)) \(js(cy - r)) Z"
   }
 
+  // MARK: - Đồ phòng
+
+  struct DecorPayload: Decodable {
+    let spots: [String: [Int]]
+    let variants: [String: [JSONValue]]
+  }
+
+  /// `StudioDecorData.swift` (`tools/koa-room/build.py`).
+  static let decorData: DecorPayload = {
+    do {
+      return try JSONDecoder().decode(DecorPayload.self, from: Data(decorJSON.utf8))
+    } catch {
+      preconditionFailure("studio-decor: \(error)")
+    }
+  }()
+
+  /// 6 chỗ đổi được, theo thứ tự trên màn.
+  public static let decorSpots = ["shelf", "board", "window", "plants", "lamp", "podium"]
+
   // MARK: - Template
 
   struct Payload: Decodable {
@@ -147,14 +188,28 @@ public enum StudioScene {
   }()
 
   /// Cả căn phòng, theo toạ độ 390 × `sceneBottom` (đi tiếp xuống dưới cũng được).
-  public static func tree(_ o: Options) -> [KoaRender.Element] { build(template, o) }
+  public static func tree(_ o: Options) -> [KoaRender.Element] { build(template, o, decor: true) }
 
   /// Một template (studio, phòng thử đồ) → cây phần tử, token đã giải.
-  static func build(_ template: [JSONValue], _ o: Options) -> [KoaRender.Element] {
+  static func build(_ template: [JSONValue], _ o: Options, decor: Bool = false) -> [KoaRender.Element] {
     let table = o.light ? lightSkins : skins
     let skin = table[o.skin] ?? table["default"]!
     var out: [KoaRender.Element] = []
-    for v in template {
+    // Đồ phòng: bỏ phần tử gốc của chỗ có món, chèn biến thể ở chỗ phần tử đầu tiên.
+    var skip = Set<Int>()
+    var swap: [Int: [JSONValue]] = [:]
+    if decor {
+      for (spot, id) in o.decor {
+        guard let idx = decorData.spots[spot], let first = idx.min(), let v = decorData.variants["\(spot).\(id)"]
+        else { continue }
+        skip.formUnion(idx)
+        // ban ngày không có đèn treo (như đèn gốc)
+        swap[first] = spot == "lamp" && !o.lamp ? [] : v
+      }
+    }
+    for (i, v) in template.enumerated() {
+      if let extra = swap[i] { out += extra.compactMap { element($0, o, skin) } }
+      if skip.contains(i) { continue }
       if !o.lamp, isLamp(v) { continue }
       // ban ngày không có sao ngoài cửa sổ
       if o.light, v["t"]?.stringValue == "Circle", v["p"]?["fill"]?.stringValue == "#FFFFFF",
@@ -180,11 +235,11 @@ public enum StudioScene {
         }
       }
     }
-    if o.gainsRank != nil, tag == "Text", props["text"] == .string("STREAK") {
-      props["text"] = .string(rankWord[o.lang] ?? "RANK")
-    } else if o.gainsRank != nil, tag == "Path", case .string(let d)? = props["d"], d.hasPrefix("M 330 289") {
-      // ngọn lửa của chuỗi → quả tạ
-      props["d"] = .string(dumbbell)
+    if let board = o.board, tag == "Text", props["text"] == .string("STREAK") {
+      props["text"] = .string(board.word)
+    } else if let board = o.board, tag == "Path", case .string(let d)? = props["d"], d.hasPrefix("M 330 289") {
+      // ngọn lửa của chuỗi → biểu tượng của số đang hiện
+      props["d"] = .string(boardIcons[board.icon] ?? dumbbell)
     } else if tag == "Text", case .string(let t)? = props["text"], let swap = signText[o.lang]?[t] {
       props["text"] = .string(swap.text)
       if let x = swap.x { props["x"] = .number(x) }
@@ -220,14 +275,21 @@ public enum StudioScene {
     ],
   ]
 
-  /// Chữ đầu bảng hạng trên tường.
-  static let rankWord = ["vi": "HẠNG", "es": "RANGO", "en": "RANK"]
   /// Quả tạ thay ngọn lửa, cùng chỗ (khung ~322…344 × 270…290).
   /// Hai đĩa mỗi bên (đĩa lớn trong, đĩa nhỏ ngoài) + tay cầm mảnh, bo góc nhẹ.
   static let dumbbell = "M 320 277 L 323 277 L 323 272 Q 323 271 324 271 L 327 271 Q 328 271 328 272 L 328 279 "
     + "L 336 279 L 336 272 Q 336 271 337 271 L 340 271 Q 341 271 341 272 L 341 277 L 344 277 L 344 285 "
     + "L 341 285 L 341 290 Q 341 291 340 291 L 337 291 Q 336 291 336 290 L 336 283 L 328 283 L 328 290 "
     + "Q 328 291 327 291 L 324 291 Q 323 291 323 290 L 323 285 L 320 285 Z"
+  static let boardIcons: [Board.Icon: String] = [
+    .dumbbell: dumbbell,
+    // dấu tích dày
+    .check: "M 321 281 L 325 277 L 330 282 L 340 270 L 344 274 L 330 290 Z",
+    // cúp có hai quai
+    .trophy: "M 324 271 L 342 271 L 342 274 Q 347 274 347 278.5 Q 347 283 341 283.5 Q 339 287 335 288 L 335 290 "
+      + "L 339 290 L 339 292 L 327 292 L 327 290 L 331 290 L 331 288 Q 327 287 325 283.5 Q 319 283 319 278.5 "
+      + "Q 319 274 324 274 Z",
+  ]
 
   /// Phần tử của đèn treo trong template studio.
   static func isLamp(_ v: JSONValue) -> Bool {
@@ -255,14 +317,17 @@ public enum StudioScene {
 
   /// Một token → giá trị (cùng luật với `resolve` của `gen.cjs`).
   static func resolve(_ s: String, _ o: Options, _ skin: Skin) -> KoaScene.Value {
-    // Bảng hạng: số hạng 1…6, sáu chấm (chấm thứ bảy ẩn).
-    let count = o.gainsRank.map { max(0, $0) + 1 } ?? max(0, o.streak)
+    let count = max(0, o.streak)
     switch s {
     case "$wall0": return .string(skin.wall.0)
     case "$wall1": return .string(skin.wall.1)
     case "$glow": return .string(skin.glow)
-    case "$streak": return .string(String(count))
+    case "$streak": return .string(o.board?.value ?? String(count))
     case "$countSize":
+      if let board = o.board {
+        let n = board.value.count
+        return .number(n <= 2 ? 22 : (n == 3 ? 19 : (n == 4 ? 16 : 13)))
+      }
       let size: Double = count >= 100 ? 15 : (count >= 10 ? 19 : 22)
       return .number(size)
     case "$label": return .string(o.label.uppercased())
@@ -281,7 +346,10 @@ public enum StudioScene {
       return .string(moonPath(cx: cx, cy: cy, r: r, phase: o.moon))
     }
     if parts[0].hasPrefix("$dot"), parts.count == 3, let i = Int(parts[0].dropFirst(4)) {
-      if o.gainsRank != nil, i >= 6 { return .string("none") }
+      if let board = o.board {
+        if i >= min(7, board.dots) { return .string("none") }
+        return .string(i < board.lit ? parts[2] : parts[1])
+      }
       return .string(i < min(7, count) ? parts[2] : parts[1])
     }
     return .string(s)

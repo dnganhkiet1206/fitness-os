@@ -16,7 +16,7 @@ public import Observation
 public enum MascotShop {
   public typealias Text3 = AssistantSuggestions.Text3
 
-  public enum Kind: String, Sendable, Hashable { case outfit, stage, consumable }
+  public enum Kind: String, Sendable, Hashable { case outfit, stage, consumable, decor }
 
   public enum Rarity: String, Sendable, Hashable, CaseIterable {
     case common, rare, epic, legendary
@@ -59,7 +59,8 @@ public enum MascotShop {
   public struct Item: Sendable, Hashable, Identifiable {
     public let key: String
     public let kind: Kind
-    /// Ô của trang phục (`head` / `face` / `top` / `bottom` / `shoes` / `back` / `hand`).
+    /// Ô của trang phục (`head` / `face` / `top` / `bottom` / `shoes` / `back` / `hand`), hay
+    /// chỗ của đồ phòng (`StudioScene.decorSpots`).
     public let slot: String?
     public let koaId: String?
     public let category: Category?
@@ -81,7 +82,12 @@ public enum MascotShop {
   /// Món khoá theo hạng (chỉ số trong `MascotRules.ranks`): Cúp vàng → Lifter,
   /// Giày có cánh → Swole, Cánh Rồng → Beast. Server không kiểm cấp khi mua
   /// (`buy_mascot_item` chỉ kiểm giá + số dư), nên đổi cổng không cần migration.
-  public static let unlockRanks: [String: Int] = ["hand_trophy": 2, "shoes_wing": 3, "back_dragonwing": 4]
+  public static let unlockRanks: [String: Int] = [
+    "hand_trophy": 2, "shoes_wing": 3, "back_dragonwing": 4,
+    // đồ phòng (29/10): mỗi chỗ một món theo hạng
+    "decor_plants_bonsai": 1, "decor_window_mountain": 2, "decor_board_gold": 3, "decor_podium_marble": 3,
+    "decor_shelf_olympic": 4, "decor_lamp_chandelier": 5,
+  ]
 
   public struct Collection: Sendable, Hashable, Identifiable {
     public let id: String
@@ -174,6 +180,41 @@ public enum MascotShop {
     stage("stage_champion", .legendary, 800, "Sân khấu Vô địch", "Champion Stage", "Escenario del campeón"),
   ]
 
+  private static func d(_ spot: String, _ id: String, _ rarity: Rarity, _ price: Int, _ vi: String, _ en: String, _ es: String)
+    -> Item
+  {
+    Item(
+      key: "decor_\(spot)_\(id)", kind: .decor, slot: spot, koaId: id, category: nil, special: false, rarity: rarity,
+      price: price, collection: nil, unlockLevel: nil, name: Text3(vi: vi, en: en, es: es))
+  }
+
+  /// Đồ phòng (#527 phần 3, Kiệt duyệt 29/10): 6 chỗ trong phòng, mỗi chỗ món gốc (miễn
+  /// phí, không phải món) + một món mua bằng xu + một món theo hạng Gains. Không có ở RN
+  /// nên nằm ngoài `items` (golden). Giá khớp `shop_prices` (migration `koa_room_decor`).
+  public static let decor: [Item] = [
+    d("shelf", "chrome", .rare, 200, "Kệ Chrome", "Chrome Rack", "Estante cromado"),
+    d("shelf", "olympic", .legendary, 600, "Rack Olympic", "Olympic Rack", "Rack olímpico"),
+    d("board", "neon", .common, 150, "Bảng Neon", "Neon Board", "Tablero neón"),
+    d("board", "gold", .epic, 400, "Bảng Vàng", "Gold Board", "Tablero dorado"),
+    d("window", "ocean", .rare, 250, "Cửa sổ Biển đêm", "Night Sea Window", "Ventana al mar"),
+    d("window", "mountain", .epic, 300, "Cửa sổ Núi tuyết", "Snowy Peaks Window", "Ventana a la montaña"),
+    d("plants", "snake", .common, 120, "Lưỡi hổ & bóng ngọc", "Snake Plant & Teal Ball", "Sansevieria y balón"),
+    d("plants", "bonsai", .rare, 200, "Bonsai & ấm tạ vàng", "Bonsai & Gold Kettlebell", "Bonsái y pesa rusa"),
+    d("lamp", "ring", .rare, 250, "Đèn vòng LED", "LED Ring Light", "Aro de luz LED"),
+    d("lamp", "chandelier", .legendary, 800, "Đèn chùm Vô địch", "Champion Chandelier", "Candelabro campeón"),
+    d("podium", "rubber", .rare, 200, "Bục sàn tạ", "Lifting Platform", "Plataforma de pesas"),
+    d("podium", "marble", .epic, 500, "Bục cẩm thạch", "Marble Podium", "Podio de mármol"),
+  ]
+
+  /// Món đồ phòng đang dùng → chỗ → biến thể (`StudioScene.Options.decor`).
+  public static func decorChoice(equipped: Set<String>) -> [String: String] {
+    var out: [String: String] = [:]
+    for it in decor where equipped.contains(it.key) {
+      if let spot = it.slot, let id = it.koaId { out[spot] = id }
+    }
+    return out
+  }
+
   /// `CONSUMABLES` — tiêu chứ không mặc; giá băng chuỗi ở `MascotRules.freezePrice`.
   public static let consumables: [Item] = [
     Item(
@@ -202,7 +243,7 @@ public enum MascotShop {
       itemKeys: ["head_witch", "top_ghost"], rewardCoins: 120, rewardXp: 60),
   ]
 
-  private static let byKey = Dictionary(uniqueKeysWithValues: items.map { ($0.key, $0) })
+  private static let byKey = Dictionary(uniqueKeysWithValues: (items + decor).map { ($0.key, $0) })
 
   public static func item(_ key: String) -> Item? { byKey[key] }
 
@@ -216,6 +257,7 @@ public enum MascotShop {
     case .outfit:
       guard let slot = it.slot else { return [] }
       return items.filter { $0.kind == .outfit && $0.slot == slot && $0.key != key }.map(\.key)
+    case .decor: return decor.filter { $0.slot == it.slot && $0.key != key }.map(\.key)
     case .consumable: return []
     }
   }
@@ -225,6 +267,7 @@ public enum MascotShop {
     let it = item(key)
     if it?.kind == .stage { return "stage" }
     if it?.kind == .outfit, let slot = it?.slot { return "outfit:\(slot)" }
+    if it?.kind == .decor, let spot = it?.slot { return "decor:\(spot)" }
     return "item:\(key)"
   }
 

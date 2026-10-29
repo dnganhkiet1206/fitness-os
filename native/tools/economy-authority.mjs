@@ -157,10 +157,22 @@ for (const f of walk(path.join(NATIVE, 'src'))) {
   const seeded = new Map(
     [...shopInserts.matchAll(/\('([a-z0-9_]+)',\s*(\d+)\)/g)].map((m) => [m[1], Number(m[2])]),
   );
+  /* Đồ phòng (iOS 29/10, Kiệt duyệt) chỉ có ở app native: `MascotShop.decor` trong
+     `apps/ios/…/MascotShop.swift`, mỗi món một dòng `d("chỗ", "món", .độHiếm, giá, …)`.
+     Đọc đúng dạng ấy; số dòng phải khớp số món đếm được, để một dòng viết khác đi
+     không lặng lẽ rơi khỏi phép kiểm. */
+  const swiftShop = readFileSync(
+    path.join(REPO, 'apps/ios/Packages/ASCNDKit/Sources/ASCNDCore/Mascot/MascotShop.swift'), 'utf8');
+  const decorBlock = swiftShop.match(/public static let decor: \[Item\] = \[([\s\S]*?)\n  \]/)?.[1] ?? '';
+  const DECOR = [...decorBlock.matchAll(/\bd\("([a-z]+)", "([a-z]+)", \.[a-z]+, (\d+),/g)]
+    .map((m) => ({ key: `decor_${m[1]}_${m[2]}`, price: Number(m[3]) }));
+  if (DECOR.length !== (decorBlock.match(/\bd\(/g) ?? []).length) {
+    problems.push('MascotShop.decor: có dòng không đọc được giá — kiểm lại dạng d("chỗ", "món", .hiếm, giá, …)');
+  }
   /* Consumables are a second catalogue for a good reason (they are not worn),
      and they are bought with the same coins from the same price table — so the
      parity check has to see both or a consumable's price could drift unnoticed. */
-  for (const item of [...SHOP_ITEMS, ...CONSUMABLES]) {
+  for (const item of [...SHOP_ITEMS, ...CONSUMABLES, ...DECOR]) {
     const price = seeded.get(item.key);
     if (price === undefined) {
       problems.push(`shop_prices: thiếu "${item.key}" — mua món này sẽ báo lỗi "unknown item"`);
@@ -172,7 +184,7 @@ for (const f of walk(path.join(NATIVE, 'src'))) {
     }
   }
   const extra = [...seeded.keys()].filter(
-    (k) => ![...SHOP_ITEMS, ...CONSUMABLES].some((i) => i.key === k),
+    (k) => ![...SHOP_ITEMS, ...CONSUMABLES, ...DECOR].some((i) => i.key === k),
   );
   if (extra.length) {
     problems.push(`shop_prices: có ${extra.length} khoá không còn trong catalogue (${extra.slice(0, 3).join(', ')}…)`);
