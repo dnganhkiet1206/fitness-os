@@ -88,8 +88,6 @@ public enum KoaRender {
     return out
   }
 
-  static let hiddenRe = try! NSRegularExpression(pattern: "opacity:\\s*0")
-
   struct Context {
     let flags: KoaFlags.Flags
     let t: Double
@@ -185,8 +183,7 @@ public enum KoaRender {
 
     // kiểu đưa xuống mang một hoạt ảnh hoặc một `opacity:0`
     let bound = n.animBind.map { c.flags[$0]?.text ?? "" } ?? ""
-    let range = NSRange(location: 0, length: (bound as NSString).length)
-    if hiddenRe.firstMatch(in: bound, range: range) != nil { return [] }
+    if bound.range(of: #"opacity:\s*0"#, options: .regularExpression) != nil { return [] }
     let boundAnim = bound.isEmpty ? nil : KoaMath.parseAnim(bound)
 
     let anim = n.anim ?? boundAnim?.anim
@@ -387,6 +384,9 @@ public enum KoaRender {
     f["armRankL"] = .text(r == 0 ? "" : armL)
     f["armRankR"] = .text(r == 0 ? "" : armR)
     f["handRank"] = .text(r == 0 || !standing ? "" : armR)
+    // Neo tay của RN (178,236) lọt vào giữa cánh tay → đồ cầm tay trông như dán giữa tay
+    // (29/10): khi đứng dời món ra đúng đầu bàn tay (~190,240), mọi hạng.
+    f["handFit"] = .text(standing ? "translate(12,4)" : "")
     f["topRank"] = .text(r == 0 ? "" : "translate(120,0) scale(\(num(1 + 0.16 * t)),1) translate(-120,0)")
     return f
   }

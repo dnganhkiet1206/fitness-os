@@ -801,10 +801,21 @@ wings("it_back_dragonwing", DRAGON, "#2F7A4C", extra=[
     {"t": "g", "tf": [["t", 240, 0], ["s", -1, 1]], "kids": [
         P("M78 174 L 6 128 M78 180 L 28 176 M78 186 L 54 188", stroke="#E8B23A", stroke_width=2.5, fill="none", stroke_linecap="round")]}])
 
-# áo choàng: phủ sau lưng tới mắt cá, toả rộng, khuy vàng trước cổ
+# áo choàng (29/10, bản cũ là một mảng đỏ dưới thân, trông như váy): từ vai xoè RA NGOÀI
+#    hai cánh tay để thấy được ở hai bên, gấu lượn dừng ở gối, lót sẫm lộ giữa hai chân,
+#    nếp gấp dọc; khuy vàng trước cổ.
+def _flip(dd): return re.sub(r'(-?\d+(?:\.\d+)?) (-?\d+(?:\.\d+)?)', lambda m: f"{240 - float(m.group(1)):g} {m.group(2)}", dd)
+CAPE = ("M80 158 C 56 168 34 196 26 236 C 22 254 22 266 24 274 Q 40 266 56 276 Q 74 266 92 276 L 148 276 "
+        "Q 166 266 184 276 Q 200 266 216 274 C 218 266 218 254 214 236 C 206 196 184 168 160 158 C 146 172 94 172 80 158 Z")
 back_item("it_back_cape", [
-    P("M78 160 C 52 188 40 230 40 284 C 70 296 170 296 200 284 C 200 230 188 188 162 160 C 148 176 92 176 78 160 Z", fill="#B23636"),
-    P("M44 280 C 74 290 166 290 196 280", stroke="#8E2A2A", stroke_width=3, fill="none"),
+    P(CAPE, fill="#B23636"),
+    P("M70 204 C 62 232 60 256 62 274 L 178 274 C 180 256 178 232 170 204 Z", fill="#7E2424", opacity=0.7),
+    P("M40 212 C 33 236 31 254 33 270 M58 196 C 52 222 50 248 52 272", stroke="#8E2A2A", stroke_width=2.6, fill="none",
+      stroke_linecap="round"),
+    P(_flip("M40 212 C 33 236 31 254 33 270 M58 196 C 52 222 50 248 52 272"), stroke="#8E2A2A", stroke_width=2.6, fill="none",
+      stroke_linecap="round"),
+    P("M50 184 C 40 204 34 226 33 248", stroke="#D45A5A", stroke_width=2.2, fill="none", stroke_linecap="round", opacity=0.8),
+    P(_flip("M50 184 C 40 204 34 226 33 248"), stroke="#D45A5A", stroke_width=2.2, fill="none", stroke_linecap="round", opacity=0.8),
 ], [G([P("M86 164 C 96 176 110 180 120 180 C 130 180 144 176 154 164", stroke="#B23636", stroke_width=7, fill="none",
          stroke_linecap="round"),
        C(120, 180, 6, fill="#E8B23A", stroke="#C9952C", stroke_width=1.4)], **{"if": "torsoStand"})])
@@ -1011,7 +1022,7 @@ body['kids'] = [G([k], bind="topRank") if (k.get('if', '').startswith('it_top_')
 # 5. Đồ cầm tay (tư thế đứng): theo cánh tay phải.
 hand_free = next(n for n in walk(nodes[3]) if n.get('if') == 'handFree')
 hp = next((pn, i) for pn in walk(nodes[3]) for i, k in enumerate(pn.get('kids', [])) if k is hand_free)
-hp[0]['kids'][hp[1]] = G([hand_free], bind="handRank")
+hp[0]['kids'][hp[1]] = G([G([hand_free], bind="handFit")], bind="handRank")
 
 # 6. Đai lưng tập tạ (hạng 5): sau quần, trước tay; thở theo thân.
 last_bottom = max(i for i, k in enumerate(body['kids']) if k.get('if', '').startswith('it_bottom_'))
@@ -1163,15 +1174,15 @@ BOTTOMS = {
 }
 SHOES = {
     # món: (từ y, màu, viền, chi tiết chân trái)
-    "sneaker": (282, "#F4F4F2", "#CFCFCB", [ln("M60 289 L 120 289", "#D9D9D6", 4), ln("M84 284 C 92 282 100 282 108 286", "#1D1E21", 2.2)]),
-    "runner": (282, "#3FA9E5", "#2E8FCB", [ln("M60 289 L 120 289", "#F4F6F8", 4), ln("M82 285 L 90 283 M94 285 L 102 283", "#F4F6F8", 2)]),
+    "sneaker": (276, "#F4F4F2", "#CFCFCB", [ln("M60 289 L 120 289", "#D9D9D6", 4), ln("M84 284 C 92 282 100 282 108 286", "#1D1E21", 2.2)]),
+    "runner": (276, "#3FA9E5", "#2E8FCB", [ln("M60 289 L 120 289", "#F4F6F8", 4), ln("M82 285 L 90 283 M94 285 L 102 283", "#F4F6F8", 2)]),
     "boot": (268, "#7A5236", "#5C3D27", [ln("M60 289 L 120 289", "#3E2A1C", 4), ln("M92 272 L 104 272 M92 278 L 104 278", "#E9D8C0", 1.6)]),
     "xmasboot": (268, "#D64545", "#B23636", [R(60, 266, 70, 7, 3, fill="#F4F6F8"), ln("M60 289 L 120 289", "#7A2A2A", 4)]),
-    "hai": (284, "#2B2F36", "#1A1D22", [ln("M84 287 C 92 284 100 284 106 288", "#E8B23A", 2), C(96, 288, 2, fill="#D64545")]),
+    "hai": (279, "#2B2F36", "#1A1D22", [ln("M84 287 C 92 284 100 284 106 288", "#E8B23A", 2), C(96, 288, 2, fill="#D64545")]),
     "sandal": (286, "#8A6A4A", "#6A4E34", [ln("M78 280 L 112 280", "#8A6A4A", 3), ln("M60 291 L 120 291", "#6A4E34", 3)]),
-    "socks": (270, "#F6F6F4", "#D9D9D6", [ln("M60 274 L 120 274", "#1D1E21", 1.4), ln("M60 277 L 120 277", "#1D1E21", 1.4)]),
-    "glow": (282, "#1D1E21", "#0F1012", [ln("M60 290 L 120 290", "#22E3FF", 3), ln("M84 285 L 104 285", "#22E3FF", 1.6, 0.8)]),
-    "ghostshoe": (282, "#F1F2F4", "#C9CED4", [E(92, 287, 2, 2.6, fill="#2B2F36"), E(100, 287, 2, 2.6, fill="#2B2F36")]),
+    "socks": (262, "#F6F6F4", "#D9D9D6", [ln("M60 274 L 120 274", "#1D1E21", 1.4), ln("M60 277 L 120 277", "#1D1E21", 1.4)]),
+    "glow": (276, "#1D1E21", "#0F1012", [ln("M60 290 L 120 290", "#22E3FF", 3), ln("M84 285 L 104 285", "#22E3FF", 1.6, 0.8)]),
+    "ghostshoe": (276, "#F1F2F4", "#C9CED4", [E(92, 287, 2, 2.6, fill="#2B2F36"), E(100, 287, 2, 2.6, fill="#2B2F36")]),
     "wing": (272, "#F4F6F8", "#C9CED4", [P("M76 280 C 80 272 88 270 96 274 C 90 276 86 280 84 284 Z", fill="#E8B23A"), ln("M60 289 L 120 289", "#E8B23A", 3)]),
 }
 
@@ -1198,10 +1209,22 @@ def mirror_node(d_):
     if 'cx' in a_: a_['cx'] = 240 - a_['cx']
     if 'x' in a_: a_['x'] = 240 - a_['x'] - a_.get('width', 0)
     return {**d_, 'a': a_}
+# Đế (29/10, Kiệt: giày quá mỏng): rộng hơn bàn chân một chút và thấp hơn đáy chân, để
+# đọc ra là một chiếc giày chứ không phải dải màu ở đáy chân. Tất / giày ma không có đế.
+SOLE = {"sneaker": "#5B6573", "runner": "#F4F6F8", "boot": "#3E2A1C", "xmasboot": "#7A2A2A", "hai": "#8E2A2A",
+        "sandal": "#6A4E34", "glow": "#22E3FF", "wing": "#C9952C"}
+SOLE_D = ("M68 292 C 68 290 70 289 74 289 L 116 289 C 120 289 121 290 121 292 L 121 294 C 121 297 118 298 114 298 "
+          "L 75 298 C 71 298 68 297 68 294 Z")
 for k, (fromy, c, e, det_l) in SHOES.items():
+    soles = []
+    if k in SOLE:
+        soles = [P(SOLE_D, fill=SOLE[k]), P(mx(SOLE_D), fill=SOLE[k]),
+                 ln("M72 296 L 117 296", "#000000", 1.4, 0.18), ln(mx("M72 296 L 117 296"), "#000000", 1.4, 0.18)]
+        if k == "glow":
+            soles = [E(94, 299, 30, 4, fill="#6DE3FF", opacity=0.35), E(146, 299, 30, 4, fill="#6DE3FF", opacity=0.35)] + soles
     legs_g['kids'].append(G([cloth(LEG_D['left'], below(fromy, 0), c, e, det_l, shade=False),
-                             cloth(LEG_D['right'], below(fromy, 0), c, e, [mirror_node(d_) for d_ in det_l], shade=False)],
-                            **{"if": f"it_shoes_{k}"}))
+                             cloth(LEG_D['right'], below(fromy, 0), c, e, [mirror_node(d_) for d_ in det_l], shade=False)]
+                            + soles, **{"if": f"it_shoes_{k}"}))
 for side in ('left', 'right'):
     grp = next(n for n in walk(nodes[3]) if (n.get('anim') or {}).get('k') == ('koaArmL' if side == 'left' else 'koaArmR')
                and any(k.get('id') == f'arm_{side}_upper' for k in n.get('kids', [])))
