@@ -1,4 +1,5 @@
--- Nhiệm vụ Koa phần 4 (#527, 29/10): khoá khám phá `x:<việc>` một lần trọn đời,
+-- Nhiệm vụ Koa phần 4 (#527, 29/10) — tên tệp xếp SAU rpc_authority để đột biến E2 của
+-- reverse.py đỏ ở đúng nhãn E2 trước Q3. Nội dung: khoá khám phá `x:<việc>` một lần trọn đời,
 -- ngoài trần ngày; `d:<ngày>:overload` có giá. Một giao dịch rồi ROLLBACK.
 \set ON_ERROR_STOP 1
 BEGIN;
@@ -32,9 +33,9 @@ DO $$ BEGIN
 END $$;
 -- ── Q3: khám phá ngoài trần, đúng một lần ──
 DO $$ BEGIN
-  PERFORM public.claim_quest_reward('x:photo', 'thử');
-  PERFORM public.claim_quest_reward('x:photo', 'thử lần hai');
-  PERFORM public.claim_quest_reward('x:review', 'thử');
+  ASSERT pg_temp.errcode($q$SELECT public.claim_quest_reward('x:photo', 'thử')$q$) = 'ok', 'Q3 khám phá bị trần ngày chặn';
+  ASSERT pg_temp.errcode($q$SELECT public.claim_quest_reward('x:photo', 'thử lần hai')$q$) = 'ok', 'Q3 khám phá lần hai báo lỗi';
+  ASSERT pg_temp.errcode($q$SELECT public.claim_quest_reward('x:review', 'thử')$q$) = 'ok', 'Q3 khám phá bị trần ngày chặn';
 END $$;
 RESET ROLE;
 DO $$ BEGIN

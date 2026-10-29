@@ -51,7 +51,7 @@ struct KoaQuestsTests {
     #expect(OverloadQuest.day(of: "d:2026-10-29:overload") == Self.today)
     #expect(OverloadQuest.day(of: "d:2026-10-29:meal") == nil)
     #expect(ExploreQuest.photo.refKey == "x:photo")
-    // khớp migration koa_quests_v2 (Q1 của supabase/tests/core/koa_quests.test.sql)
+    // khớp migration koa_quests_v2 (Q1 của supabase/tests/core/rpc_koa_quests.test.sql)
     #expect(ExploreQuest.allCases.map(\.coins).reduce(0, +) == 195)
   }
 
