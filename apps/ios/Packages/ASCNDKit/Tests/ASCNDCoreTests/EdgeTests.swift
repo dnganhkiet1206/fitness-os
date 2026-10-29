@@ -108,7 +108,8 @@ struct WeeklyAnalysisBookTests {
     #expect(a.score == 70)
     #expect(edge.calls.count == 1)
     #expect(edge.calls[0].0 == .weeklyReview)
-    #expect(edge.calls[0].1 == ["week_start": .string("2026-10-05"), "lang": .string("vi")])
+    #expect(
+      edge.calls[0].1 == ["week_start": .string("2026-10-05"), "lang": .string("vi"), "today": .string("2026-10-08")])
     await book.analyze(lang: "vi")  // đã có: không gọi lại
     #expect(edge.calls.count == 1)
     #expect(book.analysis(lang: "en") == .idle)  // ngôn ngữ khác: khoá khác
