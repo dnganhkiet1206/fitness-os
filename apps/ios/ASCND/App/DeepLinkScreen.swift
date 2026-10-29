@@ -28,7 +28,8 @@ extension AppTab {
     case .today: self = .today
     case .nutrition: self = .nutrition
     case .workouts: self = .workouts
-    // GĐ3: Cộng đồng mở từ Tiến bộ; Trợ lý đã gộp vào Tiến bộ.
+    // GĐ3: Cộng đồng mở từ Tiến bộ (link đẩy thẳng màn Cộng đồng, `openCommunity`);
+    // Trợ lý đã gộp vào Tiến bộ.
     case .community, .assistant: self = .progress
     }
   }

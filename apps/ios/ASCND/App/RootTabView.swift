@@ -27,6 +27,7 @@ struct RootTabView: View {
   @State private var quickLog = QuickLogVisibility()
   /// "Hỏi Koa Coach" trong Ghi nhanh → tab Tiến bộ mở thẳng màn chat.
   @State private var openCoach = false
+  @State private var openCommunity = false
   /// Tab đã mở Koa Coach (Hôm nay, Dinh dưỡng…): đóng chat thì về lại đó, không
   /// đứng ở Tiến bộ (Kiệt 21/10). `nil` khi chat mở từ chính Tiến bộ.
   @State private var coachReturn: AppTab?
@@ -57,7 +58,7 @@ struct RootTabView: View {
       .accessibilityHint(Text(String(localized: "tab.nutrition.hint")))
       Tab("tab.progress", systemImage: "chart.line.uptrend.xyaxis", value: AppTab.progress) {
         // Tiến bộ = Trợ lý cũ + Koa / Gains + Cơ thể + huy chương (GĐ3).
-        AssistantTab(openCoach: $openCoach) {
+        AssistantTab(openCoach: $openCoach, openCommunity: $openCommunity) {
           guard let back = coachReturn else { return }
           coachReturn = nil
           selection = back
@@ -100,6 +101,7 @@ struct RootTabView: View {
       guard let target = links?.take() else { return }
       selection = AppTab(target.tab)
       if case .screen(let screen) = target { linked = screen }
+      if target.tab == .community { openCommunity = true }
     }
     .sheet(
       isPresented: Binding(get: { linked != nil }, set: { if !$0 { linked = nil } })

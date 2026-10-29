@@ -41,6 +41,8 @@ struct AssistantTab: View {
   @State private var zoomGroup: ProgressStatus.Group?
   /// "Hỏi Koa Coach" từ Ghi nhanh: mở thẳng màn chat (về `false` khi đã nhận).
   var openCoach: Binding<Bool> = .constant(false)
+  /// Link `ascnd://community` (và bài / người trong Cộng đồng): mở thẳng Cộng đồng.
+  var openCommunity: Binding<Bool> = .constant(false)
   /// Chat vừa đóng (rời màn chat) — RootTabView đưa về tab đã mở chat.
   var onCoachClosed: () -> Void = {}
   @State private var path: [AssistantRoute] = []
@@ -301,6 +303,11 @@ struct AssistantTab: View {
       guard go else { return }
       openCoach.wrappedValue = false
       if path != [.chat] { path = [.chat] }
+    }
+    .onChange(of: openCommunity.wrappedValue, initial: true) { _, go in
+      guard go else { return }
+      openCommunity.wrappedValue = false
+      if path != [.community] { path = [.community] }
     }
     .onChange(of: scenePhase) { _, phase in
       if phase == .background { chat?.appBackgrounded() }
