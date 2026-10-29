@@ -67,6 +67,8 @@ struct WeeklyReviewView: View {
   private var big: Bool { typeSize.isAccessibilitySize }
   /// Chuyển động chung của màn; `nil` khi bật Giảm chuyển động.
   private var motion: Animation? { DSMotion.animation(.snappy(duration: 0.35), reduceMotion: reduceMotion) }
+  /// Đổi tab biểu đồ: lò xo hơi chậm, gần như không nảy, cho chiều cao thẻ.
+  private var tabMotion: Animation? { DSMotion.animation(.spring(duration: 0.5, bounce: 0.12), reduceMotion: reduceMotion) }
   private var muted: Color { DS.Color.mutedForeground.swiftUI }
   /// Tuần đang chạy (không tiến được nữa): trung bình chưa tính hôm nay.
   private var running: Bool { !book.canGoForward }
@@ -346,19 +348,27 @@ struct WeeklyReviewView: View {
 
   // MARK: - Biểu đồ
 
+  /// Cột của Calo / Ngủ và chiều cao chung của vùng biểu đồ (cột + nhãn ngày, hay cột thấp
+  /// + đường 12 tuần, hay đường sẵn sàng) — để đổi tab không đổi chiều cao thẻ.
+  static let barHeight: CGFloat = 128
+  static let chartArea: CGFloat = 166
+
   private func chartCard(_ s: WeeklyReview.Summary) -> some View {
     let partial = running ? s.days.firstIndex { $0.date == flow?.today.today } : nil
+    let trend = s.volumeWeeks.contains(where: { $0.tonnes > 0 })
     return DSCard {
       VStack(alignment: .leading, spacing: DS.Spacing.md) {
-        Picker(String(localized: "wr.chart.picker"), selection: $chart) {
+        // Đổi tab trong một transaction lò xo. Vùng biểu đồ cao bằng nhau ở mọi tab nên thẻ
+        // không co giãn (trang không giật khi đang ở cuối); ở cỡ chữ trợ năng thì để thẻ tự
+        // cao lên cho chữ khỏi bị cắt, và co giãn theo lò xo.
+        Picker(String(localized: "wr.chart.picker"), selection: $chart.animation(tabMotion)) {
           Text("wr.metric.kcal").tag(ChartKind.kcal)
           Text("wr.metric.sleep").tag(ChartKind.sleep)
           Text("wr.tab.training").tag(ChartKind.training)
           Text("wr.tab.readiness").tag(ChartKind.readiness)
         }
         .pickerStyle(.segmented)
-        .animation(motion, value: chart)
-        Group {
+        VStack(alignment: .leading, spacing: DS.Spacing.sm) {
           switch chart {
           case .kcal:
             WeekBars(
@@ -373,20 +383,27 @@ struct WeeklyReviewView: View {
           case .training:
             WeekBars(
               days: s.days, values: s.days.map(\.volume), tint: DS.Color.metricBlue.swiftUI, target: nil,
-              targetLabel: nil, unit: "", partial: partial)
+              targetLabel: nil, unit: "", partial: partial, barHeight: trend ? 64 : Self.barHeight)
               .accessibilityLabel(Text(String(localized: "wr.chart.volume")))
-            if s.volumeWeeks.contains(where: { $0.tonnes > 0 }) { volumeTrend(s) }
+            if trend { volumeTrend(s) }
           case .readiness:
             readinessChart(s)
           }
         }
+        .frame(height: big ? nil : Self.chartArea, alignment: .top)
         // Đổi tab hay đổi tuần thì cột mọc lại từ đáy.
         .id(ChartID(kind: chart, week: book.weekStart))
-        .transition(.opacity)
-        if partial != nil, chart != .readiness {
+        .transition(.asymmetric(
+          insertion: .opacity.combined(with: .scale(scale: 0.97, anchor: .top)).animation(tabMotion?.delay(0.08)),
+          removal: .opacity.animation(DSMotion.animation(.easeOut(duration: 0.12), reduceMotion: reduceMotion))))
+        // Dòng chú thích luôn giữ chỗ (ẩn bằng độ trong) để thẻ cao bằng nhau ở mọi tab.
+        let caption = partial != nil && chart != .readiness
+        if partial != nil {
           Text("wr.chart.partial")
             .font(DS.TextStyle.footnote)
             .foregroundStyle(muted)
+            .opacity(caption ? 1 : 0)
+            .accessibilityHidden(!caption)
         }
       }
     }
@@ -407,7 +424,7 @@ struct WeeklyReviewView: View {
       }
       .chartXAxis(.hidden)
       .chartYAxis(.hidden)
-      .frame(height: 56)
+      .frame(height: 40)
       .accessibilityElement(children: .ignore)
       .accessibilityLabel(Text(String(localized: "wr.chart.volume12w")))
       .accessibilityValue(Text(verbatim: s.volumeWeeks.map { "\(Self.plain($0.tonnes))t" }.joined(separator: ", ")))
@@ -420,7 +437,7 @@ struct WeeklyReviewView: View {
       Text("wr.chart.noReadiness")
         .font(DS.TextStyle.footnote)
         .foregroundStyle(muted)
-        .frame(maxWidth: .infinity, minHeight: 80, alignment: .center)
+        .frame(maxWidth: .infinity, minHeight: big ? 80 : Self.chartArea, alignment: .center)
     } else {
       Chart(points, id: \.date) { d in
         LineMark(x: .value("d", d.date.daysSinceEpoch), y: .value("r", d.readiness))
@@ -433,7 +450,7 @@ struct WeeklyReviewView: View {
       .chartYScale(domain: 0...100)
       .chartYAxis { AxisMarks(values: [0, 50, 100]) }
       .chartXAxis(.hidden)
-      .frame(height: 120)
+      .frame(height: big ? 120 : Self.chartArea)
       .accessibilityElement(children: .ignore)
       .accessibilityLabel(Text(String(localized: "wr.chart.readiness")))
       .accessibilityValue(
@@ -796,6 +813,7 @@ private struct WeekBars: View {
   let targetLabel: String?
   let unit: String
   let partial: Int?
+  var barHeight: CGFloat = WeeklyReviewView.barHeight
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var grown = false
 
@@ -845,7 +863,7 @@ private struct WeekBars: View {
         }
         .frame(maxHeight: .infinity, alignment: .bottom)
       }
-      .frame(height: 120)
+      .frame(height: barHeight)
       .onAppear { grown = true }
       HStack(spacing: 8) {
         ForEach(days.indices, id: \.self) { i in
