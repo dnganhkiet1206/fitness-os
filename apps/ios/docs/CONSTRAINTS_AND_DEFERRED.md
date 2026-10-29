@@ -253,7 +253,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
   - **Buổi tập đã ghi:** thanh dưới mỗi buổi đổi từ màu xanh (trùng Nước) sang màu Tập.
   - Chung: `ChartGoalKey` / `ChartHeader` (`Design/ChartGoalKey.swift`); nhãn thứ dạng ngắn "T2…CN" để không thành "T…" ở cỡ chữ trợ năng.
   - Kiểm trên simulator, cỡ mặc định: tất cả các màn trên; AX5: Hồi phục và Dinh dưỡng (không cắt chữ).
-  - **Chưa sửa, cần Kiệt quyết:** hình chữ "A" đầu tab Tiến bộ chỉ có biểu tượng cho sáu nhóm, không có tên (đụng tới art của logo nên cần mock trước).
+  - ~~**Chưa sửa, cần Kiệt quyết:** hình chữ "A" đầu tab Tiến bộ chỉ có biểu tượng cho sáu nhóm, không có tên (đụng tới art của logo nên cần mock trước).~~ 29/10: đã dựng mock hai phương án (nhãn hai bên / lưới tên bên dưới); Kiệt quyết **giữ nguyên** ("không cần đâu"). Không đề xuất lại.
   - **NOT RUN:** AX5 cho Bước chân / Giấc ngủ / Số đo / Hiệu chỉnh mục tiêu; en / es trên simulator; chế độ sáng; biểu đồ trong Koa Coach (chỉ có sau một câu trả lời AI thật). Kiểm trên simulator: cỡ chữ mặc định và AX5 (không cắt chữ), chế độ sáng, phân tích AI thật, quay video lúc đổi tab (cột mọc trong ~0,5 giây). **NOT RUN:** VoiceOver thật, Giảm chuyển động bật thật, tiếng Anh / Tây Ban Nha trên simulator.
 
 **Tài liệu và mã:**
