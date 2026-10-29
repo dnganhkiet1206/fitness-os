@@ -18,6 +18,8 @@ struct RootGate: View {
     #if DEBUG
       if DebugFlowView.enabled {
         DebugFlowView()
+      } else if KoaWardrobeDump.enabled {
+        KoaWardrobeDump()
       } else if DebugFlowView.koaSheet {
         // soát Koa lớn không cần đăng nhập (`SIMCTL_CHILD_ASCND_DEBUG_KOA=1`)
         NavigationStack { KoaSheetView() }

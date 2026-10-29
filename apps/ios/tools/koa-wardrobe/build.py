@@ -1071,8 +1071,12 @@ def below(y, c=10): return f"M-10 {y} Q120 {y + c} 250 {y} V330 H-10 Z"
 def band(y1, y2): return f"M-10 {y1} H250 V{y2} H-10 Z"
 def cut(y): return f"M-10 -10 H250 V{y} H-10 Z"
 def ln(dd, c, w=2, o=1): return stroke(dd, w=w, c=c, o=o)
-def cloth(shape, region, fill, edge, details=(), shade=True, opacity=1):
-    """Vải = `shape` (bộ phận của Koa) ∩ `region`; không bao giờ ra ngoài viền."""
+def cloth(shape, region, fill, edge, details=(), shade=True, opacity=1, outline=False):
+    """Vải = `shape` (bộ phận của Koa) ∩ `region`; không bao giờ ra ngoài viền.
+
+    `outline` (tay áo, Kiệt 29/10 "nét áo ở tay trái chưa phủ hết"): vải cắt đúng theo
+    hình cánh tay nằm chồng lên cánh tay cùng hình → răng cưa ở mép để lọt một viền sáng
+    màu lông. Thêm nét viền vải ĐÈ lên mép (chỉ cắt theo gấu), phủ kín viền ấy."""
     _cid[0] += 1
     a_, b_ = f"gymA{_cid[0]}", f"gymB{_cid[0]}"
     inner = [R(-10, -10, 260, 340, 0, fill=fill)]
@@ -1081,6 +1085,8 @@ def cloth(shape, region, fill, edge, details=(), shade=True, opacity=1):
     inner += [P(shape, fill="none", stroke=edge, stroke_width=2.4)] + list(details)
     g = G([{"t": "clipPath", "id": a_, "kids": [P(shape)]}, {"t": "clipPath", "id": b_, "kids": [P(region)]},
            G([G(inner, a={"clip-path": f"url(#{b_})"})], a={"clip-path": f"url(#{a_})"})])
+    if outline:
+        g["kids"].append(G([P(shape, fill="none", stroke=edge, stroke_width=3.2)], a={"clip-path": f"url(#{b_})"}))
     if opacity != 1: g['a'] = {"opacity": opacity}
     return g
 def torso_cloth(region, fill, edge, details=(), opacity=1):
@@ -1124,7 +1130,7 @@ TOPS = {
     "windbreak": (above(256), "#3F9E63", "#2F7A4C",
                   [ln("M120 172 L 120 256", "#2F7A4C", 3), ln("M120 172 L 120 256", "#D9DDE1", 1, 0.7),
                    ln("M100 168 L 120 182 L 140 168", "#2F7A4C", 3), ln("M60 256 Q120 270 180 256", "#2F7A4C", 4)],
-                  232, [ln("M20 229 L 220 229", "#2F7A4C", 4), ln("M52 186 L 34 226", "#F4F6F8", 2.4), ln("M188 186 L 206 226", "#F4F6F8", 2.4)]),
+                  232, [ln("M20 229 L 220 229", "#2F7A4C", 4), ln("M58 190 L 43 222", "#F4F6F8", 2.4), ln("M182 190 L 197 222", "#F4F6F8", 2.4)]),
     "jersey": (above(258), "#7A5BC4", "#5E44A0",
                [ln("M100 168 L 120 186 L 140 168", "#E8B23A", 3.4), ln("M114 210 L 122 202 L 122 240 M114 240 L 130 240", "#F4F6F8", 6),
                 ln("M60 258 Q120 272 180 258", "#E8B23A", 3)], 206, [ln("M20 206 L 220 206", "#E8B23A", 3)]),
@@ -1203,7 +1209,7 @@ for side in ('left', 'right'):
     for k, (_, c, e, _, cuty, det_a) in TOPS.items():
         if cuty is None: continue
         det = det_a if side == 'left' else [mirror_node(d_) for d_ in det_a]
-        sleeves_.append(G([cloth(ARM_D[side], cut(cuty), c, e, det, shade=False)], **{"if": f"it_top_{k}"}))
+        sleeves_.append(G([cloth(ARM_D[side], cut(cuty), c, e, det, shade=False, outline=True)], **{"if": f"it_top_{k}"}))
     # vệt bóng trong tay (RN để đứng yên ngoài nhóm hoạt ảnh) vào cùng nhóm → đi theo tay;
     # thứ tự: tay → vệt bóng → nét cơ → tay áo (áo che nét cơ, như áo thật).
     side_g = next(n for n in walk(nodes[3]) if any(k is grp for k in n.get('kids', [])))
