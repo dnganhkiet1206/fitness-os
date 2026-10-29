@@ -85,6 +85,9 @@ public enum StudioScene {
     public var energy = 0.5
     /// Ngày của thẻ chuỗi.
     public var streak = 0
+    /// Hạng Gains (0…5) cho bảng trên tường thay cho chuỗi (29/10, Kiệt: bỏ chuỗi khỏi
+    /// phòng — V1 lấy Gains làm thang duy nhất). `nil` = bảng chuỗi của RN (golden).
+    public var gainsRank: Int?
     /// 0…1 trong chu kỳ trăng (`moonPhase`).
     public var moon = 0.18
     /// Tên in trên mặt trước bục.
@@ -177,7 +180,12 @@ public enum StudioScene {
         }
       }
     }
-    if tag == "Text", case .string(let t)? = props["text"], let swap = signText[o.lang]?[t] {
+    if o.gainsRank != nil, tag == "Text", props["text"] == .string("STREAK") {
+      props["text"] = .string(rankWord[o.lang] ?? "RANK")
+    } else if o.gainsRank != nil, tag == "Path", case .string(let d)? = props["d"], d.hasPrefix("M 330 289") {
+      // ngọn lửa của chuỗi → quả tạ
+      props["d"] = .string(dumbbell)
+    } else if tag == "Text", case .string(let t)? = props["text"], let swap = signText[o.lang]?[t] {
       props["text"] = .string(swap.text)
       if let x = swap.x { props["x"] = .number(x) }
       if let size = swap.size { props["fontSize"] = .number(size) }
@@ -212,6 +220,15 @@ public enum StudioScene {
     ],
   ]
 
+  /// Chữ đầu bảng hạng trên tường.
+  static let rankWord = ["vi": "HẠNG", "es": "RANGO", "en": "RANK"]
+  /// Quả tạ thay ngọn lửa, cùng chỗ (khung ~322…344 × 270…290).
+  /// Hai đĩa mỗi bên (đĩa lớn trong, đĩa nhỏ ngoài) + tay cầm mảnh, bo góc nhẹ.
+  static let dumbbell = "M 320 277 L 323 277 L 323 272 Q 323 271 324 271 L 327 271 Q 328 271 328 272 L 328 279 "
+    + "L 336 279 L 336 272 Q 336 271 337 271 L 340 271 Q 341 271 341 272 L 341 277 L 344 277 L 344 285 "
+    + "L 341 285 L 341 290 Q 341 291 340 291 L 337 291 Q 336 291 336 290 L 336 283 L 328 283 L 328 290 "
+    + "Q 328 291 327 291 L 324 291 Q 323 291 323 290 L 323 285 L 320 285 Z"
+
   /// Phần tử của đèn treo trong template studio.
   static func isLamp(_ v: JSONValue) -> Bool {
     let p = v["p"]
@@ -238,7 +255,8 @@ public enum StudioScene {
 
   /// Một token → giá trị (cùng luật với `resolve` của `gen.cjs`).
   static func resolve(_ s: String, _ o: Options, _ skin: Skin) -> KoaScene.Value {
-    let count = max(0, o.streak)
+    // Bảng hạng: số hạng 1…6, sáu chấm (chấm thứ bảy ẩn).
+    let count = o.gainsRank.map { max(0, $0) + 1 } ?? max(0, o.streak)
     switch s {
     case "$wall0": return .string(skin.wall.0)
     case "$wall1": return .string(skin.wall.1)
@@ -263,6 +281,7 @@ public enum StudioScene {
       return .string(moonPath(cx: cx, cy: cy, r: r, phase: o.moon))
     }
     if parts[0].hasPrefix("$dot"), parts.count == 3, let i = Int(parts[0].dropFirst(4)) {
+      if o.gainsRank != nil, i >= 6 { return .string("none") }
       return .string(i < min(7, count) ? parts[2] : parts[1])
     }
     return .string(s)
