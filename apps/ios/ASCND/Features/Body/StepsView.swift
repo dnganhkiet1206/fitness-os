@@ -43,6 +43,10 @@ struct StepsView: View {
   }
 
   private static func n(_ v: Double) -> String { Int(JS0.round(v)).formatted(.number.locale(.app)) }
+  /// "6,1k" trên đầu cột — số đủ để so, không chật bảy cột.
+  private static func short(_ v: Double) -> String {
+    v >= 1000 ? (v / 1000).formatted(.number.precision(.fractionLength(0...1)).locale(.app)) + "k" : n(v)
+  }
 
   // MARK: - Hôm nay + mục tiêu
 
@@ -55,7 +59,7 @@ struct StepsView: View {
             Text(verbatim: Self.n(s.today))
               .font(DS.TextStyle.largeTitle.monospacedDigit())
               .foregroundStyle(DS.Color.foreground.swiftUI)
-            Text("steps.goal \(book.goal.formatted(.number.locale(.app)))")
+            Text(verbatim: String(localized: "steps.today") + " · " + String(localized: "steps.goal \(book.goal.formatted(.number.locale(.app)))"))
               .font(DS.TextStyle.footnote)
               .foregroundStyle(DS.Color.mutedForeground.swiftUI)
           }
@@ -120,7 +124,8 @@ struct StepsView: View {
         }
         .foregroundStyle(tint)
       } label: {
-        Text("steps.last7")
+        // Xu thế là 3 ngày gần nhất so với 3 ngày trước (`Steps.trend`), không phải "7 ngày qua".
+        Text("steps.trend")
       }
     }
   }
@@ -145,17 +150,35 @@ struct StepsView: View {
     let top = Steps.maxWeek(s.last7, goal: goal)
     return DSCard {
       VStack(alignment: .leading, spacing: DS.Spacing.md) {
-        Text("steps.last7").font(DS.TextStyle.headline)
-        Chart(s.last7) { d in
-          BarMark(
-            x: .value("day", d.date.description),
-            // Cột thấp nhất vẫn thấy được (`Math.max(3, h)`).
-            y: .value("steps", max(top * 0.03, d.steps))
-          )
-          .foregroundStyle(d.steps >= Double(goal) ? DS.Color.primary.swiftUI : DS.Color.secondary.swiftUI)
-          .cornerRadius(4)
+        VStack(alignment: .leading, spacing: 2) {
+          Text("steps.last7").font(DS.TextStyle.headline)
+          ChartHeader(goal: ChartGoalKey(value: goal.formatted(.number.locale(.app)))) {
+            Text("steps.chart.head").font(DS.TextStyle.caption).foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          }
         }
-        .chartYScale(domain: 0...max(top, 1))
+        // Màu của Vận động; chưa tới mục tiêu thì nhạt hơn. Trước 29/10 cột chưa tới mục tiêu
+        // dùng `secondary` — gần trùng nền thẻ, nên tuần không ngày nào đủ thì biểu đồ trống trơn.
+        let tint = ProgressStyle.color(.steps)
+        Chart {
+          ForEach(s.last7) { d in
+            BarMark(
+              x: .value("day", d.date.description),
+              // Cột thấp nhất vẫn thấy được (`Math.max(3, h)`).
+              y: .value("steps", max(top * 0.03, d.steps))
+            )
+            .foregroundStyle(d.steps >= Double(goal) ? tint : tint.opacity(0.45))
+            .cornerRadius(4)
+            .annotation(position: .top, spacing: 2) {
+              Text(verbatim: Self.short(d.steps))
+                .font(.system(size: 9).monospacedDigit())
+                .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            }
+          }
+          RuleMark(y: .value("goal", Double(goal)))
+            .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 3]))
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        }
+        .chartYScale(domain: 0...max(top * 1.15, 1))
         .chartYAxis(.hidden)
         .chartXAxis {
           AxisMarks(values: s.last7.map { $0.date.description }) { v in

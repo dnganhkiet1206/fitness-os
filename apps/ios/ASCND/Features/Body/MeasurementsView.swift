@@ -66,7 +66,7 @@ struct MeasurementsView: View {
             Text(LocalizedStringKey(s.field.labelKey))
               .font(DS.TextStyle.caption)
               .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-            Text(verbatim: s.lastText)
+            Text(verbatim: "\(Self.n(s.last)) \(s.field.unit)")
               .font(DS.TextStyle.title.monospacedDigit())
               .foregroundStyle(DS.Color.foreground.swiftUI)
           }
@@ -92,13 +92,30 @@ struct MeasurementsView: View {
       case .down: "measure.dir.down \(s.deltaText)"
       case .flat: "measure.dir.flat \(s.deltaText)"
       }
-    return HStack(spacing: 4) {
-      Image(systemName: symbol).font(.footnote.weight(.semibold))
-      Text(verbatim: s.deltaText).font(DS.TextStyle.footnote.monospacedDigit())
+    // Nói rõ so với lúc nào: "−12 cm" trơ trọi không cho biết là từ lần đo nào (29/10).
+    let since = s.points.first?.date.map {
+      String(localized: "measure.since \($0.calendarDate.formatted(.dateTime.day().month(.abbreviated).locale(.app)))")
     }
-    .foregroundStyle(DS.Color.foreground.swiftUI)
+    return VStack(alignment: .trailing, spacing: 2) {
+      HStack(spacing: 4) {
+        Image(systemName: symbol).font(.footnote.weight(.semibold))
+        Text(verbatim: "\(Self.signed(s.delta)) \(s.field.unit)").font(DS.TextStyle.footnote.monospacedDigit())
+      }
+      .foregroundStyle(DS.Color.foreground.swiftUI)
+      if let since {
+        Text(verbatim: since).font(DS.TextStyle.caption).foregroundStyle(DS.Color.mutedForeground.swiftUI)
+      }
+    }
     .accessibilityElement(children: .ignore)
     .accessibilityLabel(Text(word))
+  }
+
+  static func n(_ x: Double) -> String {
+    x.formatted(.number.precision(.fractionLength(0...1)).locale(.app))
+  }
+
+  static func signed(_ x: Double) -> String {
+    (x > 0 ? "+" : x < 0 ? "−" : "±") + n(abs(x))
   }
 
   private struct Spot: Identifiable {
@@ -120,16 +137,33 @@ struct MeasurementsView: View {
     let pad = max((hi - lo) * 0.15, 0.1)
     let x0 = spots.first?.x ?? 0
     let x1 = max(spots.last?.x ?? 1, x0 + 1)
-    return Chart(spots) { p in
-      LineMark(x: .value("x", p.x), y: .value("v", p.value))
-        .foregroundStyle(DS.Color.primary.swiftUI)
-        .interpolationMethod(.monotone)
+    // Mỗi lần đo là một chấm (một đường trơn không cho biết đã đo mấy lần); hai đầu có ngày.
+    let firstDate = s.points.first?.date
+    let lastDate = s.points.last?.date
+    return VStack(spacing: 4) {
+      Chart(spots) { p in
+        LineMark(x: .value("x", p.x), y: .value("v", p.value))
+          .foregroundStyle(DS.Color.primary.swiftUI)
+          .interpolationMethod(.monotone)
+        PointMark(x: .value("x", p.x), y: .value("v", p.value))
+          .foregroundStyle(DS.Color.primary.swiftUI)
+          .symbolSize(30)
+      }
+      .chartXScale(domain: x0...x1)
+      .chartYScale(domain: (lo - pad)...(hi + pad))
+      .chartXAxis(.hidden)
+      .chartYAxis(.hidden)
+      .frame(height: 64)
+      if dated, let firstDate, let lastDate, firstDate != lastDate {
+        HStack {
+          Text(firstDate.calendarDate, format: .dateTime.day().month(.abbreviated).locale(.app))
+          Spacer()
+          Text(lastDate.calendarDate, format: .dateTime.day().month(.abbreviated).locale(.app))
+        }
+        .font(DS.TextStyle.caption)
+        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+      }
     }
-    .chartXScale(domain: x0...x1)
-    .chartYScale(domain: (lo - pad)...(hi + pad))
-    .chartXAxis(.hidden)
-    .chartYAxis(.hidden)
-    .frame(height: 64)
     .accessibilityHidden(true)
   }
 }

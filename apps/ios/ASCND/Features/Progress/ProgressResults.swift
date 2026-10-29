@@ -231,12 +231,12 @@ struct ProgressGroupView: View {
     case .body:
       BodySection(userId: flow.today.userId, today: flow.today.today, status: result.level)
     case .steps:
-      chart(values: snapshot?.steps, target: result.target, label: String(localized: "ps.g.steps"))
+      chart(values: snapshot?.steps, target: result.target, label: String(localized: "ps.chart.steps"))
     case .sleep:
       chart(values: snapshot?.sleepMinutes.map { $0.map { $0 / 60 } }, target: result.target.map { $0 / 60 },
-            label: String(localized: "ps.g.sleep"))
+            label: String(localized: "ps.chart.sleep"), unit: "h")
     case .recovery:
-      chart(values: snapshot?.readiness, target: result.target, label: String(localized: "ps.g.recovery"))
+      chart(values: snapshot?.readiness, target: result.target, label: String(localized: "ps.chart.recovery"))
       if let openTrends {
         Button(action: openTrends) {
           WorkoutsHomeView.toolRow("chart.line.uptrend.xyaxis", String(localized: "assistant.trends"), sub: nil,
@@ -247,21 +247,29 @@ struct ProgressGroupView: View {
         .todayCard()
       }
     case .nutrition:
-      chart(values: snapshot?.protein, target: result.target, label: String(localized: "ps.m.protein"))
+      chart(values: snapshot?.protein, target: result.target, label: String(localized: "ps.chart.protein"), unit: "g")
       if let s = snapshot { nutritionRows(s) }
     }
   }
 
-  private func chart(values: [Double?]?, target: Double?, label: String) -> some View {
+  /// Tiêu đề nói đo gì và đơn vị nào; đường mục tiêu có nhãn; ngày chưa ghi là một vạch
+  /// xám dưới đáy (trước 29/10 để trống, trông như lỗi — Kiệt: "biểu đồ khó hiểu").
+  private func chart(values: [Double?]?, target: Double?, label: String, unit: String = "") -> some View {
     let days = snapshot?.days ?? []
     let vals = values ?? []
+    let tint = ProgressStyle.color(result.group)
+    let top = Swift.max(vals.compactMap { $0 }.max() ?? 0, target ?? 0, 1)
+    let missing = vals.contains { $0 == nil }
     return VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-      Text(verbatim: label).font(DS.TextStyle.footnote.weight(.semibold))
-        .foregroundStyle(ProgressStyle.color(result.group))
+      ChartHeader(goal: target.map { ChartGoalKey(value: ProgressStyle.n($0, unit == "h" ? 1 : 0) + unit) }) {
+        Text(verbatim: label).font(DS.TextStyle.footnote.weight(.semibold))
+          .foregroundStyle(tint)
+      }
       Chart {
         ForEach(Array(zip(days, vals).enumerated()), id: \.offset) { _, pair in
-          BarMark(x: .value("d", Self.weekday(pair.0)), y: .value("v", pair.1 ?? 0))
-            .foregroundStyle(pair.1 == nil ? DS.Color.mutedForeground.swiftUI.opacity(0.3) : ProgressStyle.color(result.group))
+          // Ngày chưa ghi: vạch thấp màu xám (2% đỉnh), không phải cột 0 vô hình.
+          BarMark(x: .value("d", Self.shortWeekday(pair.0)), y: .value("v", pair.1 ?? top * 0.02))
+            .foregroundStyle(pair.1 == nil ? DS.Color.mutedForeground.swiftUI.opacity(0.35) : tint)
             .cornerRadius(5)
         }
         if let target {
@@ -270,11 +278,18 @@ struct ProgressGroupView: View {
             .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 4]))
         }
       }
-      .chartYAxis { AxisMarks(position: .trailing) }
+      .chartYScale(domain: 0...(top * 1.12))
+      // Ba mốc: ở cỡ chữ trợ năng năm mốc chồng lên nhau.
+      .chartYAxis { AxisMarks(position: .trailing, values: .automatic(desiredCount: 3)) }
       .frame(height: 170)
       .accessibilityLabel(Text(verbatim: label))
       // VoiceOver đọc số từng ngày và mục tiêu, không chỉ tên nhóm (23/10).
       .accessibilityValue(Text(verbatim: Self.spoken(days, vals, target: target)))
+      if missing {
+        Text("ps.chart.missing")
+          .font(DS.TextStyle.caption)
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+      }
     }
     .padding(DS.Spacing.md)
     .todayCard()
@@ -339,5 +354,10 @@ struct ProgressGroupView: View {
 
   static func weekday(_ d: LocalDate) -> String {
     d.calendarDate.formatted(Date.FormatStyle().weekday(.abbreviated).locale(.app))
+  }
+
+  /// "T2"…"CN" dưới cột: "Thứ 2" thành "…" ở cỡ chữ trợ năng.
+  static func shortWeekday(_ d: LocalDate) -> String {
+    d.calendarDate.formatted(Date.FormatStyle().weekday(.short).locale(.app))
   }
 }

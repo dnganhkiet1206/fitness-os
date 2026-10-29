@@ -121,9 +121,11 @@ struct BiometricsView: View {
           }
           Spacer()
           HStack(alignment: .firstTextBaseline, spacing: 4) {
+            // Số màu chữ thường: tình trạng do chấm bên trái nói (trước 29/10 nhịp tim 58 tô đỏ
+            // cạnh chấm xanh "bình thường" — trông như báo động). "—" xám, không mang màu chỉ số.
             Text(verbatim: latest.map(Biometrics.display) ?? "—")
               .font(DS.TextStyle.title.monospacedDigit())
-              .foregroundStyle(color)
+              .foregroundStyle(latest == nil ? DS.Color.mutedForeground.swiftUI : DS.Color.foreground.swiftUI)
             Text(verbatim: Self.unit(m))
               .font(DS.TextStyle.footnote)
               .foregroundStyle(DS.Color.mutedForeground.swiftUI)
@@ -153,13 +155,14 @@ struct BiometricsView: View {
     VStack(alignment: .leading, spacing: DS.Spacing.sm) {
       Text(String(localized: "bio.readings"))
         .font(DS.TextStyle.caption)
-        .textCase(.uppercase)
         .foregroundStyle(DS.Color.mutedForeground.swiftUI)
       ForEach(book.newestFirst) { s in
         DSCard {
           HStack(spacing: DS.Spacing.md) {
             VStack(alignment: .leading, spacing: 2) {
-              Text(verbatim: Biometrics.stamp(s.at, in: .current)).font(DS.TextStyle.footnote)
+              // Ngày giờ theo ngôn ngữ của app ("17 thg 10, 18:58"), không phải "2026-10-17 18:58".
+              Text(s.at.date, format: .dateTime.day().month(.abbreviated).hour().minute().locale(.app))
+                .font(DS.TextStyle.footnote)
               Text(Self.summary(s))
                 .font(DS.TextStyle.caption)
                 .foregroundStyle(DS.Color.mutedForeground.swiftUI)
