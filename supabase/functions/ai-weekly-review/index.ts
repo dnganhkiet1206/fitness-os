@@ -23,7 +23,7 @@ serve(async (req) => {
       because the quota was claimed before the body was read. Same shape check
       `ai-coach` already applies to its own `date`.
     */
-    const { week_start, lang: asked_lang = "vi" } = await req.json().catch(() => ({}));
+    const { week_start, lang: asked_lang = "vi", today: asked_today } = await req.json().catch(() => ({}));
     // es → nhánh tiếng Anh, đổi sang tiếng Tây Ban Nha khi gửi (`forSpanish`).
     const lang = promptLang(asked_lang);
     /*
@@ -99,17 +99,31 @@ serve(async (req) => {
       return rows.filter((l) => Number(l[key]) > 0).length;
     };
 
+    /*
+      The running week's averages leave today out, as the app's card does
+      (`WeeklyReview.summarize(today:)`, Kiệt 27/10): an unfinished day is not a
+      day's eating. Measured 28/10 on the simulator: the card said 298 kcal/day
+      and the AI 479 for the same week, because today's half-day sat in the
+      server's mean. The server cannot know the user's day, so the app sends it;
+      without `today` (older builds) every day of the week counts, as before.
+      Totals and the per-day rows still include today.
+    */
+    const today = localDate(asked_today);
+    const averaged = today ? weekLogs.filter((l) => l.date < today) : weekLogs;
+
     const ctx = {
       profile: profile ? { goal: profile.goal, tdee: profile.tdee_target_kcal, protein: profile.macro_protein_g, sleep_target: profile.sleep_target_hours, training_level: profile.training_level } : null,
       week: {
         /* Averages over the days that carry each metric; `null` when there are
            none, because "no nutrition was recorded" is not the number 0. */
         nutrition: {
-          avg_kcal: nutritionMean(weekLogs, "kcal"),
-          kcal_days: nutritionDays(weekLogs, "kcal"),
-          avg_protein_g: nutritionMean(weekLogs, "protein_g"),
-          protein_days: nutritionDays(weekLogs, "protein_g"),
+          avg_kcal: nutritionMean(averaged, "kcal"),
+          kcal_days: nutritionDays(averaged, "kcal"),
+          avg_protein_g: nutritionMean(averaged, "protein_g"),
+          protein_days: nutritionDays(averaged, "protein_g"),
           days_in_week: weekLogs.length,
+          /* The day left out of the averages, when the week is still running. */
+          excludes_today: averaged.length < weekLogs.length ? today : null,
         },
         /*
           `recovery_measured` rather than `readiness_explain`: the row already
@@ -152,6 +166,7 @@ READING THE DATA:
 - readiness is 0-100 and measures TRAINING CAPACITY — HRV, resting heart rate, sleep and training load combined over whichever were actually measured. readiness_status describes that capacity state. Neither is a direct measurement of recovery
 - recovery_measured says only whether a recovery component (HRV, resting heart rate or sleep) was measured that day. It does NOT say recovery was good or bad. On days where it is false, never say or imply from readiness alone that the user was recovered, unrecovered, fatigued or needed recovery — the app has no reading for it. Where it is true, recovery wording is allowed only as far as the readings themselves support
 - On a day where recovery_measured is false, readiness and readiness_status are null: the app could not score that day (training load alone is not a readiness score) and shows "not enough data". Never state a readiness number or state for such a day.
+- week.nutrition.avg_kcal and avg_protein_g are the daily averages the app shows. When excludes_today is a date, that day is not finished and is left out of them: use these numbers, never re-average the rows yourself, and do not judge that day's intake as a full day
 
 IMPORTANT PRINCIPLES:
 - NEVER predict, diagnose or detect any illness or health condition
@@ -168,6 +183,7 @@ CÁCH ĐỌC DỮ LIỆU:
 - readiness thang 0-100, đo KHẢ NĂNG TẬP LUYỆN — ghép HRV, nhịp tim nghỉ, giấc ngủ và tải tập trên những chiều thật sự đo được. readiness_status mô tả trạng thái khả năng đó. Cả hai đều KHÔNG phải phép đo trực tiếp về phục hồi
 - recovery_measured chỉ cho biết hôm đó CÓ đo được một chiều phục hồi (HRV, nhịp tim nghỉ hoặc giấc ngủ) hay không. Nó KHÔNG nói phục hồi tốt hay kém. Với những ngày nó là false, tuyệt đối không dựa vào mỗi readiness để nói hay ám chỉ người dùng đã hồi, chưa hồi, đang mệt hay cần phục hồi — app không có số liệu đó. Với ngày nó là true, chỉ được dùng ngôn ngữ phục hồi trong phạm vi các chỉ số thật sự cho thấy
 - Ngày nào recovery_measured là false thì readiness và readiness_status là null: app không chấm được ngày đó (chỉ có tải tập thì chưa phải điểm sẵn sàng) và hiện "chưa đủ dữ liệu". Không bao giờ nói ra điểm hay trạng thái sẵn sàng cho ngày ấy.
+- week.nutrition.avg_kcal và avg_protein_g là trung bình mỗi ngày mà app hiện. Khi excludes_today là một ngày, ngày đó chưa xong nên không nằm trong trung bình: dùng đúng các số này, không tự tính lại từ các hàng, và không coi lượng ăn của ngày đó là cả ngày
 
 NGUYÊN TẮC QUAN TRỌNG:
 - KHÔNG BAO GIỜ dự đoán, chẩn đoán hay phát hiện bệnh lý hoặc tình trạng sức khoẻ
