@@ -183,6 +183,19 @@ public struct SupabaseMascotEconomy: MascotEconomy {
     }
   }
 
+  struct CleanParams: Encodable, Sendable {
+    let p_day: String
+  }
+
+  /// `clean_koa_room(p_day)` (#527 phần 5): trừ 30 xu, mỗi ngày một lần → số dư sau đó.
+  public func cleanKoaRoom(day: String) async throws -> Int {
+    do {
+      return try await client.rpc("clean_koa_room", params: CleanParams(p_day: day)).execute().value
+    } catch {
+      throw Self.failure(error)
+    }
+  }
+
   public func buyStreakFreeze(requestId: UUID) async throws -> Int {
     do {
       return try await client.rpc(

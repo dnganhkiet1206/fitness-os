@@ -62,6 +62,8 @@ final class AppServices {
     let week: KoaGains.Week
   }
   var koaGainsHistory: GainsHistory?
+  /// Bụi phòng Koa (#527 phần 5) — gắn userId để phiên khác không dùng nhầm.
+  var koaDust: (userId: String, state: KoaDust.State)?
   /// Gains hiện tại (đợt 2): trạng thái của Koa và lời nhắc ngày lỡ. Gắn userId để
   /// phiên khác không dùng nhầm.
   var koaGainsNow: (userId: String, state: KoaGains.State, week: KoaGains.Week)?
@@ -457,6 +459,34 @@ final class AppServices {
       Task { await self.claimOverload(userId: userId, date: date, insights: insights) }
     }
     return flow
+  }
+
+  // MARK: - Bụi phòng Koa (phần 5, 29/10)
+
+  /// Đọc lại mức bụi từ lịch sử tập đã có + việc ghi + ngày đã dọn bằng xu.
+  func loadKoaDust(userId: String) async {
+    guard let rows, let h = koaGainsHistory else { return }
+    let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
+    guard
+      let s = await KoaDustSync.load(userId: userId, store: rows, sessions: h.days, week: h.week, today: today),
+      session.session?.userId == userId
+    else { return }
+    koaDust = (userId, s)
+  }
+
+  /// Dọn phòng bằng xu (30, mỗi ngày một lần — server trừ). `nil` = đã dọn.
+  func cleanKoaRoom(userId: String) async -> MascotFailure? {
+    guard let backend else { return .offline }
+    let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
+    do {
+      _ = try await SupabaseMascotEconomy(backend: backend).cleanKoaRoom(day: today.description)
+      if session.session?.userId == userId { koaDust = (userId, .clean) }
+      return nil
+    } catch let f as MascotFailure {
+      return f
+    } catch {
+      return .server(code: nil)
+    }
   }
 
   // MARK: - Nhiệm vụ Koa phần 4 (29/10)

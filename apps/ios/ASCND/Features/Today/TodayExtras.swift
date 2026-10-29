@@ -1007,6 +1007,7 @@ struct TodayExtras<Plan: View>: View {
     noteSchedule(r.state)
     services.koaGainsHistory = .init(days: r.days, week: r.week)
     announceRank(r.state.rank)
+    await services.loadKoaDust(userId: userId)
   }
 
   /// Không có buổi trong lịch hôm nay → nhiệm vụ chính là hồi phục (#527 đợt 1).

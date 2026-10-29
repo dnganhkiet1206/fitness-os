@@ -90,6 +90,8 @@ public enum StudioScene {
     public var board: Board?
     /// Đồ phòng đang dùng: chỗ → biến thể (`MascotShop.decorChoice`). Trống = phòng gốc.
     public var decor: [String: String] = [:]
+    /// Mức bụi 0…3 (`KoaDust`) — lớp phủ trên đồ đạc, không đổi màu phòng (phần 5).
+    public var dust = 0
     /// 0…1 trong chu kỳ trăng (`moonPhase`).
     public var moon = 0.18
     /// Tên in trên mặt trước bục.
@@ -157,6 +159,9 @@ public enum StudioScene {
   struct DecorPayload: Decodable {
     let spots: [String: [Int]]
     let variants: [String: [JSONValue]]
+    /// Lớp bụi theo mức ("1"…"3", cộng dồn) và phần tử mà bụi nằm ngay sau.
+    let dust: [String: [JSONValue]]
+    let dustAfter: Int
   }
 
   /// `StudioDecorData.swift` (`tools/koa-room/build.py`).
@@ -218,6 +223,10 @@ public enum StudioScene {
       if let e = element(v, o, skin) { out.append(e) }
       // lớp chiều sâu ngay sau mép sàn, trước đồ đạc
       if o.depth, isFloorEdge(v) { out += depthLayer.compactMap { element($0, o, skin) } }
+      // bụi trên đồ đạc, dưới vignette / đèn / bục
+      if decor, o.dust > 0, i == decorData.dustAfter {
+        for k in 1...min(3, o.dust) { out += (decorData.dust["\(k)"] ?? []).compactMap { element($0, o, skin) } }
+      }
     }
     return out
   }

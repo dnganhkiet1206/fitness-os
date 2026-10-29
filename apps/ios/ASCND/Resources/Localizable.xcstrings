@@ -67009,6 +67009,121 @@
      }
     }
    }
+  },
+  "koa.dust.nudge": {
+   "extractionState": "manual",
+   "localizations": {
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Phòng Koa bám bụi. Tập một buổi để dọn"
+     }
+    },
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa's room is gathering dust. Train once to clean it"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "La sala de Koa acumula polvo. Entrena una vez para limpiarla"
+     }
+    }
+   }
+  },
+  "mr.dust.title %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Phòng bám bụi · %lld ngày vắng"
+     }
+    },
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Dusty room · %lld days away"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sala con polvo · %lld días fuera"
+     }
+    }
+   }
+  },
+  "mr.dust.how": {
+   "extractionState": "manual",
+   "localizations": {
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tập một buổi để dọn sạch, hoặc ghi 2 việc hôm nay (bữa, nước, giấc ngủ, cân) để bớt một lớp."
+     }
+    },
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Train once to clean it all, or log 2 things today (meal, water, sleep, weight) to clear a layer."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Entrena una vez para limpiarlo todo, o registra 2 cosas hoy (comida, agua, sueño, peso) para quitar una capa."
+     }
+    }
+   }
+  },
+  "mr.dust.clean %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Dọn ngay · %lld xu"
+     }
+    },
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Clean now · %lld coins"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Limpiar ya · %lld monedas"
+     }
+    }
+   }
+  },
+  "mr.dust.cleaned": {
+   "extractionState": "manual",
+   "localizations": {
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Phòng sạch rồi!"
+     }
+    },
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "All clean!"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "¡Todo limpio!"
+     }
+    }
+   }
   }
  }
 }
