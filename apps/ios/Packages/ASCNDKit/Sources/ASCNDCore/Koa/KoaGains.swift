@@ -13,6 +13,11 @@ public import Foundation
 ///   (một ngày tính một lần); buổi có kỷ lục cá nhân: +4; làm theo gợi ý tăng
 ///   tải: +3 (29/10, `OverloadQuest` — ngày đọc từ sổ xu `d:<ngày>:overload`);
 /// - tuần (T2 → CN) đủ số buổi đã đặt: +15, cộng ngay ngày đạt;
+/// - NGHỈ là một phần của tập (29/10, Kiệt): ngày tập nặng / cardio thứ 7 liền trở đi
+///   được 0 Gains (không tính vào đủ tuần) tới khi có một ngày nghỉ; đi bộ là phục hồi
+///   (+3, không phá ngày nghỉ); ngày nghỉ có kế hoạch không tập nặng / cardio: +3, tối đa
+///   2 ngày mỗi tuần và chỉ khi tuần ấy có buổi tập. Chạy / đạp xe / bơi…: +6 như buổi
+///   ngoài lịch;
 /// - nghỉ KHÔNG bao giờ trừ Gains (Kiệt 21/10, duyệt GĐ1: "bỏ cơ chế tụt hạng /
 ///   mất tiến trình vì vắng mặt"); thành tích đã kiếm được giữ nguyên;
 /// - `missedDays` chỉ để Daily Plan biết người dùng đang QUAY LẠI (không tính
@@ -24,12 +29,13 @@ public enum KoaGains {
   ///
   /// Theo THỜI GIAN TẬP ngoài đời (Kiệt 24/10: "giai đoạn đầu thì nhanh nhưng chậm
   /// dần về sau"). Lịch 3 buổi / tuần tập đủ = 3 × 10 + 15 = 45 Gains / tuần
-  /// (`weeklyReference`): Gym Rat sau ~1 tuần, Lifter ~1 tháng, Swole ~3 tháng,
-  /// Beast ~6 tháng, Mass Monster ~1 năm. Trước đây [0, 40, 120, 260, 450, 700]:
+  /// (`weeklyReference`): Gym Rat sau ~1 tuần, Lifter ~1 tháng, Swole ~11 tuần,
+  /// Beast ~5 tháng, Mass Monster ~11 tháng (29/10, có Gains ngày nghỉ). Trước đây [0, 40, 120, 260, 450, 700]:
   /// Mass Monster sau ~4 tháng, và mọi hạng cách nhau gần đều.
   public static let thresholds = [0, 40, 180, 540, 1150, 2300]
-  /// Gains một tuần tập đủ lịch 3 buổi — thước đo của `thresholds`.
-  public static let weeklyReference = 3 * plannedSession + fullWeek
+  /// Gains một tuần tập đủ lịch 3 buổi, nghỉ đúng lịch — thước đo của `thresholds`. Từ
+  /// 29/10 có +3 cho tối đa 2 ngày nghỉ (45 → 51): mọi hạng tới sớm hơn ~12% (Kiệt chọn).
+  public static let weeklyReference = 3 * plannedSession + fullWeek + restPerWeek * plannedRest
 
   public static let plannedSession = 10
   public static let offPlanSession = 6
@@ -37,10 +43,44 @@ public enum KoaGains {
   public static let fullWeek = 15
   /// Làm theo gợi ý tăng tải (`OverloadQuest.gains`).
   public static let overload = OverloadQuest.gains
+  /// Số ngày tập (nặng / cardio) liền còn được Gains; ngày thứ 7 liền → 0 (29/10, Kiệt).
+  public static let maxActiveStreak = 6
+  /// Buổi cardio (chạy, đạp xe, bơi…) — như buổi ngoài lịch.
+  public static let cardioSession = offPlanSession
+  /// Buổi đi bộ — phục hồi chủ động.
+  public static let walkSession = 3
+  /// Ngày nghỉ có kế hoạch mà không tập nặng / cardio.
+  public static let plannedRest = 3
+  /// Ngày nghỉ được Gains tối đa trong một tuần.
+  public static let restPerWeek = 2
   /// Ngày nghỉ liền trước để coi là "quay lại" (`DailyPlan.comebackDays`).
   public static let comebackDays = 3
   /// Không có lịch tuần: đích tuần mặc định.
   public static let defaultWeeklyTarget = 3
+
+  /// Loại buổi, nhẹ tới nặng — một ngày lấy buổi nặng nhất.
+  public enum Kind: Int, Sendable, Hashable, Comparable {
+    /// Đi bộ / đi bộ đường dài: phục hồi, không phá ngày nghỉ.
+    case walk
+    /// Chạy, đạp xe, bơi, chèo, leo cầu thang… (và buổi Health không rõ loại).
+    case cardio
+    /// Buổi tạ ghi trong app, hay Tập tạ / Tập chức năng / Core / HIIT từ Health.
+    case heavy
+
+    public static func < (a: Kind, b: Kind) -> Bool { a.rawValue < b.rawValue }
+
+    /// Từ mã hoạt động HealthKit.
+    public static func health(_ type: Int?) -> Kind {
+      switch type {
+      case 50, 20, 59, 63: .heavy
+      case 52, 24: .walk
+      default: .cardio
+      }
+    }
+
+    /// Phá chuỗi ngày nghỉ (nặng / cardio).
+    var active: Bool { self != .walk }
+  }
 
   /// Một ngày có tập.
   public struct Day: Sendable, Hashable {
@@ -48,10 +88,12 @@ public enum KoaGains {
     public let personalRecord: Bool
     /// Hôm ấy đã tăng tải theo gợi ý (nhận thưởng `d:<ngày>:overload`).
     public let overload: Bool
-    public init(date: LocalDate, personalRecord: Bool, overload: Bool = false) {
+    public let kind: Kind
+    public init(date: LocalDate, personalRecord: Bool, overload: Bool = false, kind: Kind = .heavy) {
       self.date = date
       self.personalRecord = personalRecord
       self.overload = overload
+      self.kind = kind
     }
   }
 
@@ -127,36 +169,62 @@ public enum KoaGains {
 
   /// Tính lại từ đầu, từ ngày tập đầu tiên tới `today`.
   public static func compute(_ days: [Day], week: Week, today: LocalDate) -> State {
-    var byDate: [LocalDate: Bool] = [:]
+    var pr: [LocalDate: Bool] = [:]
+    var kinds: [LocalDate: Kind] = [:]
     var overloaded: Set<LocalDate> = []
     for d in days where d.date <= today {
-      byDate[d.date] = (byDate[d.date] ?? false) || d.personalRecord
+      pr[d.date] = (pr[d.date] ?? false) || d.personalRecord
+      kinds[d.date] = max(kinds[d.date] ?? d.kind, d.kind)
       if d.overload { overloaded.insert(d.date) }
     }
-    guard let first = byDate.keys.min() else {
+    guard let first = kinds.keys.min() else {
       return State(points: 0, peak: 0, missedDays: 0, lastSession: nil)
     }
+    // Tuần (theo ngày T2) có buổi nặng / cardio — ngày nghỉ của tuần ấy mới được Gains.
+    let trainedWeeks = Set(kinds.filter { $0.value.active }.keys.map(monday))
     var s = State.zero
     var weekSessions = 0
     var weekPaid = false
+    var weekRests = 0
+    var streak = 0
     var day = first
     while day <= today {
-      let dow = WorkoutPlanning.routineIndex(day)
-      if dow == 0 {
+      if WorkoutPlanning.routineIndex(day) == 0 {
         weekSessions = 0
         weekPaid = false
+        weekRests = 0
       }
-      if let pr = byDate[day] {
-        var gain = week.isPlanned(day) ? plannedSession : offPlanSession
-        if pr { gain += personalRecord }
-        if overloaded.contains(day) { gain += overload }
-        weekSessions += 1
-        if !weekPaid, weekSessions >= week.target {
-          gain += fullWeek
-          weekPaid = true
+      let kind = kinds[day]
+      var gain = 0
+      if let kind, kind.active {
+        streak += 1
+        if streak <= maxActiveStreak {
+          if kind == .heavy {
+            gain = week.isPlanned(day) ? plannedSession : offPlanSession
+            if pr[day] == true { gain += personalRecord }
+            if overloaded.contains(day) { gain += overload }
+          } else {
+            gain = cardioSession
+          }
+          weekSessions += 1
+          if !weekPaid, weekSessions >= week.target {
+            gain += fullWeek
+            weekPaid = true
+          }
         }
+      } else {
+        streak = 0
+        if kind == .walk { gain += walkSession }
+        if week.isRest(day), weekRests < restPerWeek, trainedWeeks.contains(monday(day)) {
+          gain += plannedRest
+          weekRests += 1
+        }
+      }
+      if gain > 0 {
         s.points = add(gain, to: s.points, peak: s.peak)
         s.peak = max(s.peak, s.points)
+      }
+      if kind != nil {
         s.missedDays = 0
         s.lastSession = day
       } else if !week.isRest(day) {
@@ -166,6 +234,21 @@ public enum KoaGains {
       day = day.adding(days: 1)
     }
     return s
+  }
+
+  static func monday(_ d: LocalDate) -> LocalDate { d.adding(days: -WorkoutPlanning.routineIndex(d)) }
+
+  /// Ngày tập nặng / cardio liền tính tới `day` (gồm `day`) — từ `maxActiveStreak + 1` thì
+  /// buổi hôm ấy không có Gains (màn tổng kết buổi tập nói ra).
+  public static func activeStreak(_ days: [Day], through day: LocalDate) -> Int {
+    let active = Set(days.filter { $0.kind.active && $0.date <= day }.map(\.date))
+    var n = 0
+    var d = day
+    while active.contains(d) {
+      n += 1
+      d = d.adding(days: -1)
+    }
+    return n
   }
 
   /// Cộng `gain`; dưới mức cao nhất từng đạt thì gấp đôi cho tới mức ấy.
@@ -195,7 +278,7 @@ public enum KoaGainsSync {
 
   public static func query(userId: String) -> RowQuery {
     RowQuery(
-      table: "workout_sessions", columns: "date_time, pr_detected",
+      table: "workout_sessions", columns: "date_time, pr_detected, source, template_name",
       filters: [.eq("user_id", .string(userId))], order: .init(column: "date_time", ascending: false), limit: limit)
   }
 
@@ -203,8 +286,15 @@ public enum KoaGainsSync {
   public static func days(_ rows: [JSONValue], in tz: TimeZone) -> [KoaGains.Day] {
     rows.compactMap { row in
       guard let at = row["date_time"]?.stringValue.flatMap({ EpochMillis(iso8601: $0) }) else { return nil }
-      return KoaGains.Day(date: LocalDate(at, in: tz), personalRecord: row["pr_detected"]?.boolValue == true)
+      return KoaGains.Day(
+        date: LocalDate(at, in: tz), personalRecord: row["pr_detected"]?.boolValue == true, kind: kind(row))
     }
+  }
+
+  /// Buổi ghi trong app = tập nặng; buổi Apple Health theo tên hoạt động đã lưu.
+  public static func kind(_ row: JSONValue) -> KoaGains.Kind {
+    guard row["source"]?.stringValue == HealthData.appleSource else { return .heavy }
+    return .health(row["template_name"]?.stringValue.flatMap(HealthData.activityType(fromTitle:)))
   }
 
   /// Ngày đã nhận thưởng tăng tải (`d:<ngày>:overload`) trong sổ xu. Giá trị trong
@@ -222,7 +312,9 @@ public enum KoaGainsSync {
   /// Gắn cờ tăng tải lên các ngày có tập.
   public static func mark(_ days: [KoaGains.Day], overload: Set<LocalDate>) -> [KoaGains.Day] {
     guard !overload.isEmpty else { return days }
-    return days.map { .init(date: $0.date, personalRecord: $0.personalRecord, overload: $0.overload || overload.contains($0.date)) }
+    return days.map {
+      .init(date: $0.date, personalRecord: $0.personalRecord, overload: $0.overload || overload.contains($0.date), kind: $0.kind)
+    }
   }
 
   /// `nil` khi đọc hỏng — giữ Gains cũ. Sổ tăng tải hỏng thì tính như chưa có ngày nào

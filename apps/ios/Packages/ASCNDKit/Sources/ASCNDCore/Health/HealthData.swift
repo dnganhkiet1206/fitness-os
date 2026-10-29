@@ -162,28 +162,37 @@ public enum HealthData {
   }
 
   /// Tên hoạt động theo ngôn ngữ (`ACTIVITY_NAMES`); mã lạ → "Buổi tập".
+  /// Tên hoạt động theo mã HealthKit (`HKWorkoutActivityType.rawValue`), ba ngôn ngữ.
+  static let activityNames: [Int: (vi: String, en: String, es: String)] = [
+    13: ("Đạp xe", "Cycling", "Ciclismo"),
+    16: ("Máy elliptical", "Elliptical", "Elíptica"),
+    20: ("Tập chức năng", "Functional strength", "Fuerza funcional"),
+    24: ("Đi bộ đường dài", "Hiking", "Senderismo"),
+    35: ("Chèo thuyền", "Rowing", "Remo"),
+    37: ("Chạy bộ", "Running", "Carrera"),
+    44: ("Leo cầu thang", "Stair climbing", "Subir escaleras"),
+    46: ("Bơi", "Swimming", "Natación"),
+    50: ("Tập tạ", "Strength training", "Entrenamiento de fuerza"),
+    52: ("Đi bộ", "Walking", "Caminata"),
+    59: ("Tập core", "Core training", "Entrenamiento de core"),
+    63: ("HIIT", "HIIT", "HIIT"),
+    3000: ("Buổi tập", "Workout", "Entrenamiento"),
+  ]
+
   public static func activityName(_ type: Int, lang: String) -> String {
-    let names: [Int: (vi: String, en: String, es: String)] = [
-      13: ("Đạp xe", "Cycling", "Ciclismo"),
-      16: ("Máy elliptical", "Elliptical", "Elíptica"),
-      20: ("Tập chức năng", "Functional strength", "Fuerza funcional"),
-      24: ("Đi bộ đường dài", "Hiking", "Senderismo"),
-      35: ("Chèo thuyền", "Rowing", "Remo"),
-      37: ("Chạy bộ", "Running", "Carrera"),
-      44: ("Leo cầu thang", "Stair climbing", "Subir escaleras"),
-      46: ("Bơi", "Swimming", "Natación"),
-      50: ("Tập tạ", "Strength training", "Entrenamiento de fuerza"),
-      52: ("Đi bộ", "Walking", "Caminata"),
-      59: ("Tập core", "Core training", "Entrenamiento de core"),
-      63: ("HIIT", "HIIT", "HIIT"),
-      3000: ("Buổi tập", "Workout", "Entrenamiento"),
-    ]
-    let hit = names[type] ?? names[3000]!
+    let hit = activityNames[type] ?? activityNames[3000]!
     switch lang {
     case "vi": return hit.vi
     case "es": return hit.es
     default: return hit.en
     }
+  }
+
+  /// Mã hoạt động từ tên buổi Health đã lưu (`HealthSync.workoutTitle`: "<tên> · <phút>′…"),
+  /// tên ở bất kỳ ngôn ngữ nào; tên lạ → `nil`.
+  public static func activityType(fromTitle title: String) -> Int? {
+    let head = title.components(separatedBy: " · ").first?.trimmingCharacters(in: .whitespaces) ?? ""
+    return activityNames.first { [$0.value.vi, $0.value.en, $0.value.es].contains(head) }?.key
   }
 
   // MARK: - Tổng hôm nay, bước theo ngày, ngày bị chạm

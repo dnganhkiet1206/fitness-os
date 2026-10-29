@@ -66963,6 +66963,52 @@
      }
     }
    }
+  },
+  "koa.gains.restNeeded %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ngày thứ %lld tập liền"
+     }
+    },
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Day %lld in a row"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Día %lld seguido"
+     }
+    }
+   }
+  },
+  "koa.gains.restWhy": {
+   "extractionState": "manual",
+   "localizations": {
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cơ lớn lên lúc nghỉ. Buổi này chưa có Gains, nghỉ một ngày để Gains tính lại."
+     }
+    },
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Muscle grows while you rest. No Gains for this one; take a day off and Gains count again."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "El músculo crece en el descanso. Esta sesión no suma Gains; descansa un día y vuelven a contar."
+     }
+    }
+   }
   }
  }
 }

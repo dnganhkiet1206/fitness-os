@@ -123,7 +123,10 @@ struct KoaWeekTests {
       + [KoaGains.Day(date: Self.mon.adding(days: -7), personalRecord: false)]
     let s = KoaWeek.summary(weekStart: Self.mon, today: Self.mon.adding(days: 6), library: lib, history: history)
     #expect(s.target == 3 && s.done == 2 && s.moved == 1 && s.chosenRest == 1)
-    #expect(s.gains == 2 * KoaGains.plannedSession, "chỉ Gains của tuần này; buổi dời sang T5 vẫn là buổi trong lịch")
+    // + hai ngày nghỉ có kế hoạch (T4 đổi thành nghỉ, T6 nghỉ) — 29/10, tối đa 2 / tuần
+    #expect(
+      s.gains == 2 * KoaGains.plannedSession + KoaGains.restPerWeek * KoaGains.plannedRest,
+      "chỉ Gains của tuần này; buổi dời sang T5 vẫn là buổi trong lịch")
   }
 
   /// Vòng ngày của màn Tổng kết tuần: một tuần đã qua vẫn đọc đúng lịch và buổi đã tập.
