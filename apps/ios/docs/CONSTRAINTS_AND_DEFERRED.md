@@ -238,7 +238,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Tài khoản dùng lb: danh sách, chi tiết, biểu đồ, các buổi và gợi ý lần tới đều theo lb (220.5 lb × 5, "keep 220.5 lb and aim for 6–7 reps"). Simulator (đổi tạm `units_weight` của dữ liệu mẫu).
 - Trường hợp 0 kg của bài có tạ: unit test `zeroKgSessionOfWeightedExerciseIsNotADrop` xanh. **NOT RUN** trên simulator (dữ liệu mẫu không có buổi 0 kg ở bài có tạ).
 - **NOT RUN:** VoiceOver thật (hàng dùng `.accessibilityElement(children: .combine)`).
-- ~~Tổng kết tuần lệch giữa AI và thẻ: AI nói 479 kcal/ngày, thẻ app 298, vì server tính cả hôm nay (ngày chưa xong) còn app thì bỏ.~~ Sửa 28/10 (Kiệt duyệt deploy, nhánh `claude/weekly-review-today`): app gửi thêm `today`, `ai-weekly-review` bỏ hôm nay khỏi trung bình kcal / đạm khi tuần đang chạy và báo model qua `excludes_today`; các hàng theo ngày và tổng vẫn gồm hôm nay. Bản app cũ không gửi `today` thì giữ cách cũ.
+- ~~Tổng kết tuần lệch giữa AI và thẻ: AI nói 479 kcal/ngày, thẻ app 298, vì server tính cả hôm nay (ngày chưa xong) còn app thì bỏ.~~ Sửa 28/10 (Kiệt duyệt deploy, nhánh `claude/weekly-review-today`): app gửi thêm `today`, `ai-weekly-review` bỏ hôm nay khỏi trung bình kcal / đạm khi tuần đang chạy và báo model qua `excludes_today`; các hàng theo ngày và tổng vẫn gồm hôm nay. Bản app cũ không gửi `today` thì giữ cách cũ. **Deploy production 29/10 03:17 UTC: `ai-weekly-review` v12** (trước v11; v11 khớp từng byte với mã gốc trước khi deploy). Kiểm trên simulator (tài khoản test, tuần 26/10): thẻ 298 kcal, AI viết "khoảng 298 kcal/ngày".
 
 **Tài liệu và mã:**
 - `PARITY_MATRIX.md` lạc hậu từ 17/10. 26/10 (audit vòng 3, nhánh `claude/audit-r3-dead-code`): **đánh dấu LẠC HẬU** ở đầu trang (nói rõ chỗ sai: GĐ1–GĐ3, bốn khu vực, lối vào); rà lại toàn bảng vẫn là việc cuối của GĐ3, chưa làm.
@@ -266,6 +266,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 
 - 28/10/2026: Tiến bộ từng bài — hết cắt chữ ở cỡ trợ năng; đã kiểm lb trên simulator.
 - 28/10/2026: `ai-weekly-review` bỏ hôm nay khỏi trung bình như thẻ app (app gửi `today`).
+- 29/10/2026: deploy production (Kiệt duyệt trong chat: "Duyệt deploy") — `ai-weekly-review` v12, 03:17 UTC, từ `dd2955f2` (#734). Không deploy hàm nào khác, không migration.
 - 28/10/2026: mạng — "Thử lại" thay NWPathMonitor mới khi đường mạng chưa ổn (hết kẹt "Offline" tới khi mở lại app).
 - 28/10/2026: audit vòng 5 — widget: số khớp app, nút nước; widget dùng ngôn ngữ của app; chế độ test xoá mốc insight mỗi lần mở.
 - 28/10/2026: dữ liệu mẫu chế độ test có bài không tạ + tên buổi dài; "Lần trước 10 reps", tổng kết "10 reps", tên dài ở Lịch sử đã xem trên simulator.
