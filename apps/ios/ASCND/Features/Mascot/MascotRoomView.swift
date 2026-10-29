@@ -42,7 +42,8 @@ struct MascotRoomView: View {
   /// Số trên bảng tường (29/10, Kiệt: người dùng chọn) — lưu trên máy.
   @AppStorage("koa.roomBoard") private var boardStat = RoomBoard.Stat.rank.rawValue
   @Environment(\.weightUnit) private var unit
-  /// Thanh DEV: ép mức bụi để soát hình (phần 5), chỉ bản Debug.
+  /// Thanh DEV: ép mức bụi (hình và thẻ dọn) để soát phần 5, chỉ bản Debug. Nút "Dọn
+  /// ngay" vẫn gọi `clean_koa_room` thật.
   @State private var devDust: Int?
   /// Thanh DEV: ép một cảm xúc để soát hình (`setDevEmotion`), chỉ bản Debug.
   @State private var devEmotion: KoaEmotion.Emotion?
@@ -244,6 +245,9 @@ struct MascotRoomView: View {
   @State private var cleaning = false
 
   private var dust: KoaDust.State? {
+    #if DEBUG
+      if let n = devDust { return KoaDust.State(level: n, idle: n == 0 ? 0 : KoaDust.thresholds[n - 1]) }
+    #endif
     guard let d = services.koaDust, d.userId == room.userId else { return nil }
     return d.state
   }
@@ -271,6 +275,7 @@ struct MascotRoomView: View {
           .buttonStyle(.dsPillSecondary)
           .disabled(cleaning || room.balance < KoaDust.cleanCoins)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
       }
     }
   }
@@ -283,6 +288,7 @@ struct MascotRoomView: View {
       say(f == .insufficientCoins ? String(localized: "shop.notenough") : Self.message(f))
     } else {
       say(String(localized: "mr.dust.cleaned"))
+      devDust = nil
       await room.load()
     }
   }
