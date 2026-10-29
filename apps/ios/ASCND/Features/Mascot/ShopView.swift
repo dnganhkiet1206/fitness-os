@@ -184,7 +184,7 @@ struct ShopView: View {
 
   /// Căn phòng thật của Koa với đồ đang thử, phủ kín bề ngang khung (Kiệt 29/10: bản
   /// thu theo chiều cao thành một dải hẹp giữa hai mép mờ "nhìn kỳ"). Khung chỉ cao 260
-  /// nên máy quay trượt dọc tới chỗ đang chọn; chỗ ấy có viền vàng. Chạm vào đồ vật
+  /// nên máy quay trượt dọc tới chỗ đang chọn (kệ / đèn / bục có viền vàng). Chạm vào đồ vật
   /// trong phòng để chọn chỗ của nó.
   private var roomPreview: some View {
     let eq = wornWithTheme
@@ -194,7 +194,8 @@ struct ShopView: View {
       ZStack(alignment: .topLeading) {
         MascotStage(level: 1, build: book.gains.rank, energy: 0.8, celebrateSignal: 0, equipped: eq)
           .frame(width: g.size.width, height: StudioScene.sceneBottom * k)
-        if let r = RoomThumb.outlines[spot] {
+        // khung vàng chỉ ở kệ / đèn / bục — cây, bảng số, cửa sổ đã có khung riêng (Kiệt 29/10)
+        if !Self.unframed.contains(spot), let r = RoomThumb.outlines[spot] {
           RoundedRectangle(cornerRadius: 10 * k, style: .continuous)
             .strokeBorder(Color(hex: "#FFC24D").opacity(0.85), lineWidth: 2)
             .frame(width: r.width * k, height: r.height * k)
@@ -216,6 +217,9 @@ struct ShopView: View {
         .strokeBorder(DS.Color.foreground.swiftUI.opacity(0.08), lineWidth: 0.75)
     }
   }
+
+  /// Chỗ không vẽ khung vàng khi chọn (Kiệt 29/10: bỏ khung ở cây, bảng số, cửa sổ).
+  static let unframed: Set<String> = ["plants", "board", "window"]
 
   /// Đỉnh của khung nhìn (toạ độ phòng): giữa chỗ đang chọn, kẹp trong phòng. Chủ đề
   /// nhìn phần dưới — Koa, bục, kệ và bảng, nơi màu phòng đổi rõ nhất.
