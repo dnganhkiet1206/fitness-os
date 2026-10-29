@@ -10,7 +10,8 @@ public import Foundation
 ///
 /// Luật (theo từng ngày, từ ngày tập đầu tiên tới hôm nay):
 /// - ngày có buổi: +10 nếu thứ đó trong lịch có buổi, +6 nếu tập ngoài lịch
-///   (một ngày tính một lần); buổi có kỷ lục cá nhân: +4;
+///   (một ngày tính một lần); buổi có kỷ lục cá nhân: +4; làm theo gợi ý tăng
+///   tải: +3 (29/10, `OverloadQuest` — ngày đọc từ sổ xu `d:<ngày>:overload`);
 /// - tuần (T2 → CN) đủ số buổi đã đặt: +15, cộng ngay ngày đạt;
 /// - nghỉ KHÔNG bao giờ trừ Gains (Kiệt 21/10, duyệt GĐ1: "bỏ cơ chế tụt hạng /
 ///   mất tiến trình vì vắng mặt"); thành tích đã kiếm được giữ nguyên;
@@ -34,6 +35,8 @@ public enum KoaGains {
   public static let offPlanSession = 6
   public static let personalRecord = 4
   public static let fullWeek = 15
+  /// Làm theo gợi ý tăng tải (`OverloadQuest.gains`).
+  public static let overload = OverloadQuest.gains
   /// Ngày nghỉ liền trước để coi là "quay lại" (`DailyPlan.comebackDays`).
   public static let comebackDays = 3
   /// Không có lịch tuần: đích tuần mặc định.
@@ -43,9 +46,12 @@ public enum KoaGains {
   public struct Day: Sendable, Hashable {
     public let date: LocalDate
     public let personalRecord: Bool
-    public init(date: LocalDate, personalRecord: Bool) {
+    /// Hôm ấy đã tăng tải theo gợi ý (nhận thưởng `d:<ngày>:overload`).
+    public let overload: Bool
+    public init(date: LocalDate, personalRecord: Bool, overload: Bool = false) {
       self.date = date
       self.personalRecord = personalRecord
+      self.overload = overload
     }
   }
 
@@ -122,7 +128,11 @@ public enum KoaGains {
   /// Tính lại từ đầu, từ ngày tập đầu tiên tới `today`.
   public static func compute(_ days: [Day], week: Week, today: LocalDate) -> State {
     var byDate: [LocalDate: Bool] = [:]
-    for d in days where d.date <= today { byDate[d.date] = (byDate[d.date] ?? false) || d.personalRecord }
+    var overloaded: Set<LocalDate> = []
+    for d in days where d.date <= today {
+      byDate[d.date] = (byDate[d.date] ?? false) || d.personalRecord
+      if d.overload { overloaded.insert(d.date) }
+    }
     guard let first = byDate.keys.min() else {
       return State(points: 0, peak: 0, missedDays: 0, lastSession: nil)
     }
@@ -139,6 +149,7 @@ public enum KoaGains {
       if let pr = byDate[day] {
         var gain = week.isPlanned(day) ? plannedSession : offPlanSession
         if pr { gain += personalRecord }
+        if overloaded.contains(day) { gain += overload }
         weekSessions += 1
         if !weekPaid, weekSessions >= week.target {
           gain += fullWeek
@@ -196,12 +207,32 @@ public enum KoaGainsSync {
     }
   }
 
-  /// `nil` khi đọc hỏng — giữ Gains cũ.
+  /// Ngày đã nhận thưởng tăng tải (`d:<ngày>:overload`) trong sổ xu. Giá trị trong
+  /// `or=` có `:` (ký tự dành riêng của PostgREST) nên bọc ngoặc kép.
+  public static func overloadQuery(userId: String) -> RowQuery {
+    RowQuery(
+      table: "mascot_transactions", columns: "ref_key",
+      filters: [.eq("user_id", .string(userId)), .or("ref_key.like.\"*\(OverloadQuest.suffix)\"")], limit: limit)
+  }
+
+  public static func overloadDays(_ rows: [JSONValue]) -> Set<LocalDate> {
+    Set(rows.compactMap { $0["ref_key"]?.stringValue.flatMap(OverloadQuest.day(of:)) })
+  }
+
+  /// Gắn cờ tăng tải lên các ngày có tập.
+  public static func mark(_ days: [KoaGains.Day], overload: Set<LocalDate>) -> [KoaGains.Day] {
+    guard !overload.isEmpty else { return days }
+    return days.map { .init(date: $0.date, personalRecord: $0.personalRecord, overload: $0.overload || overload.contains($0.date)) }
+  }
+
+  /// `nil` khi đọc hỏng — giữ Gains cũ. Sổ tăng tải hỏng thì tính như chưa có ngày nào
+  /// (Gains có thể thấp hơn một chút tới lần đọc sau, không bao giờ cao hơn).
   public static func load(
     userId: String, store: any RowStore, plans: TemplateSnapshot?, now: EpochMillis, in tz: TimeZone
   ) async -> Loaded? {
     guard let rows = try? await store.select(query(userId: userId)) else { return nil }
-    let days = days(rows, in: tz)
+    let overload = (try? await store.select(overloadQuery(userId: userId))).map(overloadDays) ?? []
+    let days = mark(days(rows, in: tz), overload: overload)
     let week = plans.map(KoaGains.Week.init) ?? .none
     return Loaded(
       days: days, week: week, state: KoaGains.compute(days, week: week, today: LocalDate(now, in: tz)),

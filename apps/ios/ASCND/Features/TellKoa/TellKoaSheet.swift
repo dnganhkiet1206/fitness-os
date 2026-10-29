@@ -195,6 +195,8 @@ struct TellKoaSheet: View {
     .onChange(of: dictation.transcript) { _, t in
       guard !t.isEmpty else { return }
       if correcting != nil { correction = t } else { text = t }
+      // nhiệm vụ khám phá "kể cho Koa bằng giọng nói" (#527 phần 4)
+      services.exploreDone(.voice)
     }
     .task(id: text) {
       // Đọc lại sau khi ngừng gõ / nói một nhịp.

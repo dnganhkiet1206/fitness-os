@@ -49,6 +49,8 @@ public struct WorkoutSummaryView: View {
   @Environment(\.weightUnit) private var unit
   /// Gains của Koa (#527 đợt 1): lịch sử tập đã đọc ở Hôm nay.
   @Environment(AppServices.self) private var services: AppServices?
+  /// Phân tích bài tập — buổi này có tăng tải so với lần trước không (#527 phần 4).
+  @Environment(WorkoutFlow.self) private var flow: WorkoutFlow?
   @Environment(\.locale) private var locale
 
   public init(
@@ -70,11 +72,12 @@ public struct WorkoutSummaryView: View {
     let after: KoaGains.State
     let planned: Bool
     let pr: Bool
+    let overload: Bool
     let fullWeek: Bool
     var delta: Int { after.points - before.points }
     var raw: Int {
       (planned ? KoaGains.plannedSession : KoaGains.offPlanSession) + (pr ? KoaGains.personalRecord : 0)
-        + (fullWeek ? KoaGains.fullWeek : 0)
+        + (overload ? KoaGains.overload : 0) + (fullWeek ? KoaGains.fullWeek : 0)
     }
   }
 
@@ -83,14 +86,17 @@ public struct WorkoutSummaryView: View {
     let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
     let past = h.days.filter { $0.date != today }
     let todayPR = summary.prDetected || h.days.contains { $0.date == today && $0.personalRecord }
+    let todayOverload = h.days.contains { $0.date == today && $0.overload }
+      || (flow?.insights).map { OverloadQuest.achieved(on: today, $0.performances) } ?? false
     let before = KoaGains.compute(past, week: h.week, today: today)
-    let after = KoaGains.compute(past + [.init(date: today, personalRecord: todayPR)], week: h.week, today: today)
+    let after = KoaGains.compute(
+      past + [.init(date: today, personalRecord: todayPR, overload: todayOverload)], week: h.week, today: today)
     // tuần đủ buổi đạt đúng hôm nay?
     let monday = today.adding(days: -WorkoutPlanning.routineIndex(today))
     let thisWeek = Set(past.map(\.date).filter { $0 >= monday && $0 < today })
     return GainsGain(
       before: before, after: after, planned: h.week.planned.contains(WorkoutPlanning.routineIndex(today)), pr: todayPR,
-      fullWeek: thisWeek.count < h.week.target && thisWeek.count + 1 >= h.week.target)
+      overload: todayOverload, fullWeek: thisWeek.count < h.week.target && thisWeek.count + 1 >= h.week.target)
   }
 
   private func gainsCard(_ g: GainsGain) -> some View {
@@ -103,6 +109,7 @@ public struct WorkoutSummaryView: View {
         : String(localized: "koa.gains.part.offPlan \(KoaGains.offPlanSession)"),
     ]
     if g.pr { parts.append(String(localized: "koa.gains.part.pr \(KoaGains.personalRecord)")) }
+    if g.overload { parts.append(String(localized: "koa.gains.part.overload \(KoaGains.overload)")) }
     if g.fullWeek { parts.append(String(localized: "koa.gains.part.week \(KoaGains.fullWeek)")) }
     if g.delta > g.raw { parts.append(String(localized: "koa.gains.part.memory")) }
     let next = KoaGains.toNext(g.after.points)

@@ -18,6 +18,8 @@ import UIKit
 /// camera; cân trên tấm so sánh theo đơn vị của tài khoản; quyền camera do hệ
 /// thống hỏi (bị từ chối thì báo + mở Cài đặt).
 struct ProgressPhotosView: View {
+  /// Nhiệm vụ khám phá "ảnh tiến bộ đầu tiên" (#527 phần 4).
+  @Environment(AppServices.self) private var services: AppServices?
   let book: ProgressPhotosBook
 
   @Environment(\.weightUnit) private var unit
@@ -199,7 +201,10 @@ struct ProgressPhotosView: View {
 
   private func upload(_ jpeg: Data, _ pose: ProgressPhotos.Pose) async {
     switch await book.upload(jpeg: jpeg, pose: pose) {
-    case .done, .busy: notice = nil
+    case .done:
+      notice = nil
+      services?.exploreDone(.photo)
+    case .busy: notice = nil
     case .nothingWritten: notice = String(localized: "photos.error.generic")
     case .failed(let f): notice = Self.message(f)
     }

@@ -166,7 +166,11 @@ struct RemindersView: View {
   // MARK: - Dữ liệu
 
   private func binding(_ key: ReminderKey) -> Binding<Bool> {
-    Binding(get: { center.prefs.isEnabled(key) }, set: { on in Task { await center.setEnabled(key, on) } })
+    Binding(get: { center.prefs.isEnabled(key) }, set: { on in
+      Task { await center.setEnabled(key, on) }
+      // nhiệm vụ khám phá "bật lời nhắc" (#527 phần 4)
+      if on { services.exploreDone(.reminder) }
+    })
   }
 
   /// Quyền đọc lại mỗi lần mở màn; hồ sơ: bản nhớ rồi server. Giờ suy từ hồ sơ

@@ -15508,29 +15508,6 @@
     }
    }
   },
-  "mr.quests.hint": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Train, eat, hydrate — earn coins for your buddy"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Tập, ăn, uống nước — kiếm xu cho bạn đồng hành"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Entrena, come, hidrátate — gana monedas para tu compañero"
-     }
-    }
-   }
-  },
   "mr.quest.collecting": {
    "extractionState": "manual",
    "localizations": {
@@ -66385,6 +66362,604 @@
      "stringUnit": {
       "state": "translated",
       "value": "Comprar y usar"
+     }
+    }
+   }
+  },
+  "mr.q.today": {
+   "extractionState": "manual",
+   "localizations": {
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hôm nay"
+     }
+    },
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Today"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hoy"
+     }
+    }
+   }
+  },
+  "mr.q.training": {
+   "extractionState": "manual",
+   "localizations": {
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tập luyện"
+     }
+    },
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Training"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Entrenamiento"
+     }
+    }
+   }
+  },
+  "mr.q.explore": {
+   "extractionState": "manual",
+   "localizations": {
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Khám phá app"
+     }
+    },
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Explore the app"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Explora la app"
+     }
+    }
+   }
+  },
+  "mr.q.coinsOnly": {
+   "extractionState": "manual",
+   "localizations": {
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "chỉ xu"
+     }
+    },
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "coins"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "monedas"
+     }
+    }
+   }
+  },
+  "mr.q.coinsGains": {
+   "extractionState": "manual",
+   "localizations": {
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "xu + Gains"
+     }
+    },
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "coins + Gains"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "monedas + Gains"
+     }
+    }
+   }
+  },
+  "mr.q.once": {
+   "extractionState": "manual",
+   "localizations": {
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "một lần"
+     }
+    },
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "one time"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "una vez"
+     }
+    }
+   }
+  },
+  "mr.q.gains %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "+%lld Gains"
+     }
+    },
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "+%lld Gains"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "+%lld Gains"
+     }
+    }
+   }
+  },
+  "mr.q.overload": {
+   "extractionState": "manual",
+   "localizations": {
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tăng tải 1 bài theo gợi ý"
+     }
+    },
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Progress one lift as suggested"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Progresa un ejercicio según la sugerencia"
+     }
+    }
+   }
+  },
+  "mr.q.overload.hint": {
+   "extractionState": "manual",
+   "localizations": {
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nặng hơn hoặc thêm rep so với lần trước"
+     }
+    },
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Heavier or more reps than last time"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Más peso o más repeticiones que la última vez"
+     }
+    }
+   }
+  },
+  "mr.q.week": {
+   "extractionState": "manual",
+   "localizations": {
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đủ Tuần của Koa"
+     }
+    },
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Complete Koa's Week"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Completa la semana de Koa"
+     }
+    }
+   }
+  },
+  "mr.q.week.progress %lld %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld / %lld buổi"
+     }
+    },
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld / %lld sessions"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld / %lld sesiones"
+     }
+    }
+   }
+  },
+  "mr.x.photo": {
+   "extractionState": "manual",
+   "localizations": {
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chụp ảnh tiến bộ đầu tiên"
+     }
+    },
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Take your first progress photo"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Haz tu primera foto de progreso"
+     }
+    }
+   }
+  },
+  "mr.x.photo.hint": {
+   "extractionState": "manual",
+   "localizations": {
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "So dáng mình theo thời gian"
+     }
+    },
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "See your shape change over time"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ve cómo cambia tu físico"
+     }
+    }
+   }
+  },
+  "mr.x.voice": {
+   "extractionState": "manual",
+   "localizations": {
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Kể cho Koa bằng giọng nói"
+     }
+    },
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tell Koa by voice"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cuéntale a Koa con la voz"
+     }
+    }
+   }
+  },
+  "mr.x.voice.hint": {
+   "extractionState": "manual",
+   "localizations": {
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nói thay vì gõ"
+     }
+    },
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Talk instead of typing"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Habla en vez de escribir"
+     }
+    }
+   }
+  },
+  "mr.x.mealcam": {
+   "extractionState": "manual",
+   "localizations": {
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ghi bữa bằng camera"
+     }
+    },
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Log a meal with the camera"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Registra una comida con la cámara"
+     }
+    }
+   }
+  },
+  "mr.x.mealcam.hint": {
+   "extractionState": "manual",
+   "localizations": {
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chụp đĩa ăn, Koa nhận ra món"
+     }
+    },
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Snap your plate, Koa finds the foods"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Fotografía tu plato y Koa reconoce los alimentos"
+     }
+    }
+   }
+  },
+  "mr.x.barcode": {
+   "extractionState": "manual",
+   "localizations": {
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Quét mã vạch một món"
+     }
+    },
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Scan a barcode"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Escanea un código de barras"
+     }
+    }
+   }
+  },
+  "mr.x.barcode.hint": {
+   "extractionState": "manual",
+   "localizations": {
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Món đóng gói, quét là có số"
+     }
+    },
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Packaged food, numbers in one scan"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Comida envasada, datos en un escaneo"
+     }
+    }
+   }
+  },
+  "mr.x.reminder": {
+   "extractionState": "manual",
+   "localizations": {
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bật một lời nhắc"
+     }
+    },
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Turn on a reminder"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Activa un recordatorio"
+     }
+    }
+   }
+  },
+  "mr.x.reminder.hint": {
+   "extractionState": "manual",
+   "localizations": {
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa nhắc đúng giờ"
+     }
+    },
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa nudges you on time"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa te avisa a tiempo"
+     }
+    }
+   }
+  },
+  "mr.x.review": {
+   "extractionState": "manual",
+   "localizations": {
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Xem Tổng kết tuần"
+     }
+    },
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Open your Weekly Review"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Abre tu resumen semanal"
+     }
+    }
+   }
+  },
+  "mr.x.review.hint": {
+   "extractionState": "manual",
+   "localizations": {
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Một tuần nhìn lại"
+     }
+    },
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Your week at a glance"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tu semana de un vistazo"
+     }
+    }
+   }
+  },
+  "mr.x.askkoa": {
+   "extractionState": "manual",
+   "localizations": {
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hỏi Koa một câu"
+     }
+    },
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ask Koa a question"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hazle una pregunta a Koa"
+     }
+    }
+   }
+  },
+  "mr.x.askkoa.hint": {
+   "extractionState": "manual",
+   "localizations": {
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Về buổi tập, bữa ăn hay giấc ngủ"
+     }
+    },
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "About training, meals or sleep"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sobre entrenamiento, comidas o sueño"
+     }
+    }
+   }
+  },
+  "koa.gains.part.overload %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "+%lld tăng tải"
+     }
+    },
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Progressed a lift +%lld"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Progresión +%lld"
      }
     }
    }

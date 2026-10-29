@@ -53,6 +53,9 @@ public final class WorkoutFlow {
   /// Buổi GHI TAY vừa bền (không phải buổi theo kế hoạch) — app ghi ngược nó
   /// vào Apple Health như `useLogWorkout` của RN.
   @ObservationIgnored public var onManualLogged: (@MainActor (OutboxEntry) -> Void)?
+  /// Buổi của ngày này vừa vào phân tích bài tập (đã so được với lần trước) — nhiệm vụ
+  /// tăng tải (#527 phần 4) đọc ở đây.
+  @ObservationIgnored public var onSessionAbsorbed: (@MainActor (LocalDate) -> Void)?
   @ObservationIgnored private var absorbing: Task<Void, Never>?
   /// Lượt làm mới đang chạy — gọi chồng (kéo làm mới đúng lúc ra tiền cảnh)
   /// chờ chung một lượt, không bắn hai lượt truy vấn.
@@ -427,6 +430,7 @@ public final class WorkoutFlow {
         await self.records.absorb(row: entry.payload)
         await self.performance.absorb(row: entry.payload)
         await self.insights?.absorb(row: entry.payload)
+        self.onSessionAbsorbed?(date)
       }
     }
   }
