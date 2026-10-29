@@ -211,7 +211,8 @@ final class AppServices {
       // Không mở được tệp thì vẫn chạy trong bộ nhớ: dữ liệu KHÔNG bền, và
       // `startupError` nói điều đó ra — không bao giờ giả vờ "đã lưu".
       problems.append("database: \(error)")
-      database = try! ASCNDDatabase()  // trong bộ nhớ: không có lý do thất bại ngoài hết RAM
+      // trong bộ nhớ: không có lý do thất bại ngoài hết RAM — như `try!` cũ, nói rõ lỗi
+      do { database = try ASCNDDatabase() } catch { fatalError("in-memory database: \(error)") }
     }
 
     // Chưa ai đăng nhập cho tới khi phiên mở (`forgetOtherAccounts`).
