@@ -3,14 +3,13 @@ import ASCNDDesignSystem
 import SwiftUI
 
 /// Phòng linh vật (#527 Phase 7) — `app/mascot-room.tsx` @ fac9ac2, trên
-/// `MascotRoomController`. Kinh tế do server quyết (`claim_quest_reward`,
-/// `buy_streak_freeze`); màn chỉ đọc sổ và gọi hai RPC ấy.
+/// `MascotRoomController`. Kinh tế do server quyết; màn chỉ đọc sổ.
 ///
-/// Như RN, từ trên xuống: sân khấu của Koa + xu bay lên khi nhận; vòng năng
-/// lượng năm tín hiệu; cấp / hạng / thanh XP / chuỗi; băng chuỗi (giữ 0–2, mua
-/// 150 xu); hành trình hạng; nhiệm vụ hôm nay (CHỈ hiện đã nhận hay chưa — RN
-/// tự nhận ở nơi khác) + dòng thưởng chuỗi (nút nhận duy nhất); thưởng thử thách
-/// tuần (biên nhận, không nút); số thử thách / huy hiệu.
+/// Từ trên xuống: sân khấu của Koa (bảng trên tường là hạng Gains); thẻ Hôm nay —
+/// năng lượng và nhiệm vụ gộp một (29/10, Kiệt), mỗi nhiệm vụ một đoạn vòng, CHỈ hiện
+/// đã nhận hay chưa (tự nhận ở nơi khác); hạng; Tuần của Koa; tủ đồ / huy hiệu.
+/// Chuỗi ngày, thưởng chuỗi và băng chuỗi bỏ khỏi phòng (29/10, Kiệt; V1: Gains là
+/// thang duy nhất) — sổ chuỗi ở `MascotRoomController` giữ nguyên.
 ///
 /// Chưa có (ghi ở #527, không giả vờ):
 /// - phần studio của `MascotScene` (cây, côn trùng, cái liếc) và cảm xúc do
@@ -38,16 +37,10 @@ struct MascotRoomView: View {
   /// Lịch tuần + buổi đã ghi cho "Tuần của Koa" (GĐ2); `nil` ở preview.
   @Environment(WorkoutFlow.self) private var flow: WorkoutFlow?
   @State private var shop: MascotShopBook?
-  @State private var burst: Burst?
   @State private var notice: String?
   @State private var celebrate = 0
   /// Thanh DEV: ép một cảm xúc để soát hình (`setDevEmotion`), chỉ bản Debug.
   @State private var devEmotion: KoaEmotion.Emotion?
-
-  struct Burst: Equatable {
-    let id: Int
-    let amount: Int
-  }
 
   var body: some View {
     content
@@ -109,14 +102,9 @@ struct MascotRoomView: View {
               .dsCard(radius: 22)
           }
           // Kiểu Apple Health (Kiệt duyệt 24/10): thẻ tóm tắt, chi tiết ở màn con.
+          // Năng lượng + nhiệm vụ gộp một thẻ, chuỗi bỏ khỏi phòng (29/10, Kiệt).
           sectionTitle(String(localized: "mr.sec.today"))
-          energySummary
-          HStack(alignment: .top, spacing: DS.Spacing.sm) {
-            streakSummary
-            questsSummary
-          }
-          .fixedSize(horizontal: false, vertical: true)
-          streakBonusBanner
+          todaySummary
           sectionTitle(String(localized: "mr.sec.progress"))
           rankSummary
           weekSummary
@@ -212,7 +200,7 @@ struct MascotRoomView: View {
       MascotStage(
         level: room.level, build: room.gains.rank,
         energy: Double(room.energyCount) / Double(MascotRules.energySignals.count),
-        streak: room.streak.count, celebrateSignal: celebrate, emotion: devEmotion ?? mood,
+        celebrateSignal: celebrate, emotion: devEmotion ?? mood,
         equipped: shop?.inventory.filter(\.equipped).map(\.itemKey) ?? [],
         // Dáng theo tình huống thật (25/10); thanh DEBUG ép cảm xúc thì tắt dáng.
         gesture: devEmotion == nil ? roomGesture : nil)
@@ -231,17 +219,6 @@ struct MascotRoomView: View {
           }
         }
         .padding(.horizontal, -DS.Spacing.md)
-      if let burst {
-        Text(verbatim: "+\(burst.amount)")
-          .font(DS.TextStyle.headline.monospacedDigit())
-          .padding(.horizontal, DS.Spacing.sm)
-          .padding(.vertical, DS.Spacing.xs)
-          .dsCard(radius: 16)
-          .padding(.top, DS.Spacing.sm)
-          .transition(reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity))
-          .id(burst.id)
-          .accessibilityHidden(true)
-      }
     }
   }
 
@@ -265,79 +242,35 @@ struct MascotRoomView: View {
 
   // MARK: - Thẻ tóm tắt (kiểu Apple Health, 24/10)
 
-  private var energySummary: some View {
-    NavigationLink {
-      RoomDetailPage(title: String(localized: "mr.energy")) { energyCard }
-    } label: {
-      RoomSummaryCard(
-        symbol: "bolt.fill", tint: DS.Color.metricOrangeGraphic.swiftUI, title: String(localized: "mr.card.energy"),
-        corner: String(localized: "mr.now"), value: "\(room.energyCount)",
-        unit: String(localized: "mr.energy.of \(MascotRules.energySignals.count)"),
-        detail: Self.headline(room.energyHeadline)
-      ) {
-        EnergyRing(
-          segments: MascotRules.energySignals.map { (on: room.questDone($0), color: Self.signalColor($0)) },
-          lineWidth: 7, gap: 8
-        )
-        .frame(width: 50, height: 50)
-      }
-    }
-    .buttonStyle(TodayPressStyle())
-  }
-
-  private var streakSummary: some View {
-    NavigationLink {
-      RoomDetailPage(title: String(localized: "mr.sec.streak")) { streakCard }
-    } label: {
-      RoomSummaryCard(
-        symbol: "flame.fill", tint: DS.Color.metricOrangeGraphic.swiftUI, title: String(localized: "mr.card.streak"),
-        value: "\(room.streak.count)",
-        unit: room.streak.count == 1 ? String(localized: "mr.unit.day") : String(localized: "mr.unit.days"),
-        detail: String(localized: "mr.freeze.short \(room.freezesHeld) \(MascotRules.freezeMax)"))
-      .frame(maxHeight: .infinity)
-    }
-    .buttonStyle(TodayPressStyle())
-  }
-
-  private var questsSummary: some View {
+  /// Hôm nay: vòng mỗi đoạn một nhiệm vụ đang tính + số xu còn nhận được; chi tiết là
+  /// vòng năng lượng lớn và danh sách nhiệm vụ trong một màn.
+  private var todaySummary: some View {
     let quests = room.activeQuests
     let done = quests.filter { room.questDone($0.key) }.count
     let left = quests.filter { !room.isClaimed(MascotRules.questRefKey(room.today, $0.key)) }.reduce(0) { $0 + $1.coins }
     return NavigationLink {
-      RoomDetailPage(title: String(localized: "mr.quests")) { questsCard }
+      RoomDetailPage(title: String(localized: "mr.quests")) {
+        VStack(spacing: DS.Spacing.md) {
+          energyCard
+          questsCard
+        }
+      }
     } label: {
       RoomSummaryCard(
         symbol: "checklist", tint: DS.Color.readinessGreen.swiftUI, title: String(localized: "mr.card.quests"),
-        value: "\(done)", unit: String(localized: "mr.quests.of \(quests.count)"),
-        detail: left > 0 ? String(localized: "mr.quests.coinsLeft \(left)") : String(localized: "mr.claimed"))
-      .frame(maxHeight: .infinity)
+        corner: String(localized: "mr.now"), value: "\(done)", unit: String(localized: "mr.quests.of \(quests.count)"),
+        detail: left > 0 ? String(localized: "mr.quests.coinsLeft \(left)") : String(localized: "mr.claimed")
+      ) {
+        EnergyRing(segments: questSegments, lineWidth: 7, gap: 8)
+          .frame(width: 50, height: 50)
+      }
     }
     .buttonStyle(TodayPressStyle())
   }
 
-  /// Thưởng chuỗi là nút nhận DUY NHẤT trong phòng — còn nhận được thì hiện ngay
-  /// dưới hai thẻ, không giấu ở màn con.
-  @ViewBuilder private var streakBonusBanner: some View {
-    if room.showsStreakBonus, !room.isClaimed(room.streakRefKey) {
-      rewardRow(title: String(localized: "mr.streak.bonus"), coins: room.streakBonus, claimed: false, flame: true) {
-        Button {
-          Task { await claimStreak() }
-        } label: {
-          Text(String(localized: "mr.claim"))
-            .font(.system(size: 15, weight: .semibold))
-            .foregroundStyle(DS.Color.background.swiftUI)
-            .padding(.horizontal, 18)
-            .frame(minHeight: 40)
-            .background(DS.Color.foreground.swiftUI, in: Capsule())
-        }
-        .buttonStyle(TodayPressStyle())
-        .frame(minHeight: 44)
-        .disabled(room.claiming)
-      }
-      .padding(.horizontal, DS.Spacing.md)
-      .padding(.vertical, DS.Spacing.sm)
-      .dsCard(radius: 22)
-    }
+  /// Mỗi nhiệm vụ đang tính là một đoạn vòng, tô màu khi đã làm.
+  private var questSegments: [(on: Bool, color: Color)] {
+    room.activeQuests.map { (on: room.questDone($0.key), color: Self.signalColor($0.key)) }
   }
 
   private var rankSummary: some View {
@@ -415,20 +348,22 @@ struct MascotRoomView: View {
 
   // MARK: - Năng lượng
 
-  /// `energyCard` của RN: vòng 104 (nét 10) mỗi đoạn một tín hiệu, giữa là
-  /// "3/5" + "HÔM NAY"; dưới là năm ô — nền xám, xong thì tô màu tín hiệu.
+  /// `energyCard` của RN: vòng 104 (nét 10) mỗi đoạn một nhiệm vụ, giữa là "3/5" +
+  /// "HÔM NAY". Hàng ô tín hiệu bên dưới bỏ 29/10 — trùng danh sách nhiệm vụ ngay sau.
+  private var questsDone: Int { room.activeQuests.filter { room.questDone($0.key) }.count }
+
   private var energyCard: some View {
     DSCard {
       VStack(alignment: .leading, spacing: DS.Spacing.md) {
         HStack(spacing: DS.Spacing.md) {
-          EnergyRing(segments: MascotRules.energySignals.map { (on: room.questDone($0), color: Self.signalColor($0)) })
+          EnergyRing(segments: questSegments)
             .frame(width: 104, height: 104)
             .overlay {
               VStack(spacing: 3) {
-                (Text(verbatim: "\(room.energyCount)")
+                (Text(verbatim: "\(questsDone)")
                   .font(.system(size: 26, weight: .heavy).monospacedDigit())
                   .foregroundStyle(DS.Color.foreground.swiftUI)
-                  + Text(verbatim: "/\(MascotRules.energySignals.count)")
+                  + Text(verbatim: "/\(room.activeQuests.count)")
                   .font(DS.TextStyle.footnote.weight(.bold))
                   .foregroundStyle(DS.Color.mutedForeground.swiftUI))
                 Text(String(localized: "mr.today"))
@@ -440,35 +375,12 @@ struct MascotRoomView: View {
             }
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(
-              Text(String(localized: "mr.energy.a11y \(room.energyCount) \(MascotRules.energySignals.count)")))
+              Text(String(localized: "mr.energy.a11y \(questsDone) \(room.activeQuests.count)")))
           VStack(alignment: .leading, spacing: 4) {
             Text(String(localized: "mr.energy")).font(DS.TextStyle.headline)
             Text(Self.headline(room.energyHeadline))
               .font(DS.TextStyle.footnote)
               .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-          }
-        }
-        HStack(spacing: 6) {
-          ForEach(MascotRules.energySignals, id: \.self) { q in
-            let on = room.questDone(q)
-            let color = Self.signalColor(q)
-            VStack(spacing: 4) {
-              Image(systemName: Self.signalSymbol(q))
-                .font(.system(size: 15))
-                .foregroundStyle(on ? color : DS.Color.mutedForeground.swiftUI)
-              Text(Self.signalName(q))
-                .font(DS.TextStyle.caption.weight(.semibold))
-                .foregroundStyle(on ? DS.Color.foreground.swiftUI : DS.Color.mutedForeground.swiftUI)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
-            }
-            .padding(.vertical, DS.Spacing.sm)
-            .frame(maxWidth: .infinity, minHeight: 44)
-            .background(
-              on ? color.opacity(0.14) : DS.Color.foreground.swiftUI.opacity(0.05),
-              in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .accessibilityElement(children: .combine)
-            .accessibilityValue(Text(Self.signalState(on)))
           }
         }
       }
@@ -537,99 +449,6 @@ struct MascotRoomView: View {
 
   // MARK: - Băng chuỗi
 
-  /// Chuỗi (thiết kế lại 15/10): số ngày lớn + thưởng chuỗi (nút nhận duy nhất) +
-  /// băng chuỗi — mọi thứ về chuỗi ở một thẻ (trước rải ở thẻ cấp, nhiệm vụ, băng).
-  private var streakCard: some View {
-    DSCard {
-      VStack(alignment: .leading, spacing: DS.Spacing.md) {
-        HStack(spacing: DS.Spacing.md) {
-          Image(systemName: "flame.fill")
-            .font(.system(size: 26, weight: .semibold))
-            .foregroundStyle(DS.Color.metricOrangeGraphic.swiftUI)
-            .frame(width: 52, height: 52)
-            .background(DS.Color.metricOrange.swiftUI.opacity(0.13), in: Circle())
-            .accessibilityHidden(true)
-          VStack(alignment: .leading, spacing: 2) {
-            Text(verbatim: streakText(room.streak.count))
-              .font(.system(size: 22, weight: .bold))
-              .foregroundStyle(DS.Color.foreground.swiftUI)
-          }
-          Spacer(minLength: 0)
-        }
-        if room.showsStreakBonus {
-          rewardRow(
-            title: String(localized: "mr.streak.bonus"), coins: room.streakBonus,
-            claimed: room.isClaimed(room.streakRefKey), flame: true
-          ) {
-            Button {
-              Task { await claimStreak() }
-            } label: {
-              Text(String(localized: "mr.claim"))
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(DS.Color.background.swiftUI)
-                .padding(.horizontal, 18)
-                .frame(minHeight: 40)
-                .background(DS.Color.foreground.swiftUI, in: Capsule())
-            }
-            .buttonStyle(TodayPressStyle())
-            .frame(minHeight: 44)
-            .disabled(room.claiming)
-          }
-        }
-        Divider().opacity(0.6)
-        HStack(spacing: DS.Spacing.sm) {
-          Image(systemName: "snowflake")
-            .font(.system(size: 15, weight: .semibold))
-            .foregroundStyle(DS.Color.metricBlue.swiftUI)
-            .frame(width: 32, height: 32)
-            .background(DS.Color.metricBlue.swiftUI.opacity(0.12), in: Circle())
-            .accessibilityHidden(true)
-          VStack(alignment: .leading, spacing: 1) {
-            Text(String(localized: "mr.freeze.title")).font(DS.TextStyle.headline)
-            Text(String(localized: "mr.freeze.held \(room.freezesHeld) \(MascotRules.freezeMax)"))
-              .font(DS.TextStyle.caption.weight(.semibold))
-              .foregroundStyle(DS.Color.metricBlue.swiftUI)
-            Text(String(localized: "mr.freeze.hint"))
-              .font(DS.TextStyle.caption)
-              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-              .fixedSize(horizontal: false, vertical: true)
-          }
-          Spacer(minLength: DS.Spacing.sm)
-          Button {
-            Task { await room.buyFreeze() }
-          } label: {
-            Group {
-              if room.buyingFreeze {
-                ProgressView()
-              } else if room.freezeFull {
-                Text(String(localized: "mr.freeze.full"))
-              } else {
-                Text(String(localized: "mr.freeze.buy \(MascotRules.freezePrice)"))
-              }
-            }
-            .font(.system(size: 14, weight: .semibold))
-            .foregroundStyle(DS.Color.foreground.swiftUI)
-            .padding(.horizontal, 14)
-            .frame(minHeight: 36)
-            .overlay(Capsule().strokeBorder(DS.Color.foreground.swiftUI.opacity(0.18), lineWidth: 1))
-          }
-          .buttonStyle(TodayPressStyle())
-          .opacity(room.canBuyFreeze || room.buyingFreeze ? 1 : 0.45)
-          .frame(minHeight: 44)
-          .disabled(!room.canBuyFreeze)
-        }
-        if room.freezesUsed > 0 {
-          Text(
-            room.freezesUsed == 1
-              ? String(localized: "mr.freeze.saved.one") : String(localized: "mr.freeze.saved.other \(room.freezesUsed)")
-          )
-          .font(DS.TextStyle.caption.weight(.semibold))
-          .foregroundStyle(DS.Color.metricBlue.swiftUI)
-        }
-      }
-    }
-  }
-
   // MARK: - Hành trình hạng
 
   private var journeySub: some View {
@@ -682,20 +501,13 @@ struct MascotRoomView: View {
   /// đồng xu + "+N" vàng; bên phải "✓ Đã nhận" xanh hoặc việc. GĐ2: bỏ "+N XP" —
   /// Gains là thang tiến bộ duy nhất ra giao diện; XP vẫn cộng ở server.
   private func rewardRow<Action: View>(
-    title: String, coins: Int, claimed: Bool, flame: Bool = false, @ViewBuilder action: () -> Action
+    title: String, coins: Int, claimed: Bool, @ViewBuilder action: () -> Action
   ) -> some View {
     HStack(spacing: DS.Spacing.md) {
       VStack(alignment: .leading, spacing: 3) {
-        HStack(spacing: 6) {
-          if flame {
-            Image(systemName: "flame.fill").font(.footnote)
-              .foregroundStyle(DS.Color.metricOrangeGraphic.swiftUI)
-              .accessibilityHidden(true)
-          }
-          Text(verbatim: title)
-            .font(DS.TextStyle.body)
-            .foregroundStyle(claimed ? DS.Color.mutedForeground.swiftUI : DS.Color.foreground.swiftUI)
-        }
+        Text(verbatim: title)
+          .font(DS.TextStyle.body)
+          .foregroundStyle(claimed ? DS.Color.mutedForeground.swiftUI : DS.Color.foreground.swiftUI)
         HStack(spacing: 4) {
           Image(systemName: "circle.circle.fill").font(.system(size: 11))
             .foregroundStyle(DS.Color.readinessYellowGraphic.swiftUI)
@@ -737,25 +549,6 @@ struct MascotRoomView: View {
 
   // MARK: - Việc
 
-  private func claimStreak() async {
-    guard let outcome = await room.claimStreakBonus() else { return }
-    show(burst: outcome.amount)
-    // GĐ2: hạng theo Gains (lên hạng mừng ở Hôm nay); cấp XP không còn ra giao diện.
-    celebrate += 1
-  }
-
-  private func show(burst amount: Int) {
-    let next = Burst(id: (burst?.id ?? 0) + 1, amount: amount)
-    withAnimation(DSMotion.animation(.easeOut(duration: 0.3), reduceMotion: reduceMotion)) { burst = next }
-    Task {
-      try? await Task.sleep(for: .seconds(1.1))
-      if burst == next {
-        // reduceMotion: `DSMotion.animation` trả nil — biến mất ngay.
-        withAnimation(DSMotion.animation(.easeIn(duration: 0.3), reduceMotion: reduceMotion)) { burst = nil }
-      }
-    }
-  }
-
   /// Thay toast của RN: một dòng dưới sân khấu + VoiceOver, tự ẩn.
   private func say(_ text: String) {
     notice = text
@@ -770,12 +563,6 @@ struct MascotRoomView: View {
     AppPreferences.Lang(rawValue: String(locale.identifier.prefix(2))) ?? .en
   }
 
-  private func streakText(_ n: Int) -> String {
-    n == 1 ? String(localized: "mr.streak.one") : String(localized: "mr.streak.other \(n)")
-  }
-
-  // MARK: - Chữ, màu
-
   static func headline(_ h: MascotRules.EnergyHeadline) -> String {
     switch h {
     case .empty: String(localized: "mr.energy.empty")
@@ -785,35 +572,9 @@ struct MascotRoomView: View {
     }
   }
 
-  static func signalState(_ on: Bool) -> String {
-    on ? String(localized: "mr.signal.done") : String(localized: "mr.signal.notDone")
-  }
-
   /// Xong mà chưa nhận ("…") hay chưa xong ("—").
   static func questState(done: Bool) -> String {
     done ? String(localized: "mr.quest.collecting") : String(localized: "mr.quest.notDone")
-  }
-
-  static func signalName(_ q: MascotRules.Quest) -> String {
-    switch q {
-    case .meal: String(localized: "mr.signal.meal")
-    case .workout: String(localized: "mr.signal.workout")
-    case .water: String(localized: "mr.signal.water")
-    case .sleep: String(localized: "mr.signal.sleep")
-    case .steps: String(localized: "mr.signal.steps")
-    case .recovery: String(localized: "mr.signal.recovery")
-    }
-  }
-
-  static func signalSymbol(_ q: MascotRules.Quest) -> String {
-    switch q {
-    case .meal: "fork.knife"
-    case .workout: "dumbbell.fill"
-    case .water: "drop.fill"
-    case .sleep: "moon.fill"
-    case .steps: "figure.walk"
-    case .recovery: "bed.double.fill"
-    }
   }
 
   /// Cùng token với RN (`SIGNAL_META`).
@@ -871,7 +632,7 @@ struct EnergyRing: View {
 /// (`StudioBackdrop`, VẼ LẠI theo bản RN, Kiệt đồng ý) phủ ngang cả màn, Koa
 /// đứng ở chỗ đứng trên bục (`STAGE_MARK`) với đúng cỡ / độ dời của RN, mép
 /// tan vào nền trang (`stageFadeV` / `stageFadeH`). Skin theo sân khấu đang
-/// mặc, sàn + bục sáng theo năng lượng, thẻ chuỗi, trăng theo ngày. Gật đầu
+/// mặc, sàn + bục sáng theo năng lượng, bảng hạng Gains, trăng theo ngày. Gật đầu
 /// khi vừa nhận thưởng (`acknowledge`: nghiêng 6° rồi lò xo về, phóng 1,03).
 /// CHƯA có: cây / bụi sáng chuyển động (`PlantsCanvas`, `Motes` — ở đây đứng
 /// yên), côn trùng, cái liếc, cảm xúc tự chọn của engine (`useMascotEmotion`).
@@ -881,7 +642,6 @@ struct MascotStage: View {
   var build = 0
   /// 0…1 — số tín hiệu đã xong / năm.
   let energy: Double
-  let streak: Int
   let celebrateSignal: Int
   var emotion: KoaEmotion.Emotion = .idle
   /// Khoá đang mặc, theo thứ tự hàng của `mascot_inventory`.
@@ -904,7 +664,7 @@ struct MascotStage: View {
     var o = StudioScene.Options()
     o.skin = StudioScene.skinKey(equipped: Set(equipped))
     o.energy = energy
-    o.streak = streak
+    o.gainsRank = build
     o.moon = StudioScene.moonPhase(.now)
     o.label = "Koa"
     // Phòng ban ngày ở giao diện sáng (15/10 — trước đây chỉ có cảnh đêm).

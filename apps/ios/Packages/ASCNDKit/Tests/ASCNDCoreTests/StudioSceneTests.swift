@@ -147,4 +147,21 @@ struct StudioSceneTests {
     let vi = String(describing: StudioScene.tree(o))
     #expect(vi.contains("MẠNH HƠN") && vi.contains("CHUỖI") && !vi.contains("STRONGER") && !vi.contains("STREAK"))
   }
+
+  /// Bảng trên tường là hạng Gains (29/10): chữ hạng theo ngôn ngữ, số 1…6, quả tạ
+  /// thay ngọn lửa, sáu chấm sáng tới hạng, chấm thứ bảy ẩn.
+  @Test func gainsBoardReplacesStreak() {
+    var o = StudioScene.Options()
+    o.streak = 40
+    o.gainsRank = 2
+    o.lang = "vi"
+    let plan = KoaPaint.plan(KoaRender.Element("Svg", [:], matrix: nil, kids: StudioScene.tree(o)))
+    let texts = Self.labels(plan).map(\.text)
+    #expect(texts.contains("HẠNG") && texts.contains("3") && !texts.contains("CHUỖI") && !texts.contains("40"))
+    let tree = String(describing: StudioScene.tree(o))
+    #expect(tree.contains(StudioScene.dumbbell) && !tree.contains("M 330 289"))
+    #expect(StudioScene.resolve("$dot2:off:on", o, StudioScene.skins["default"]!) == .string("on"))
+    #expect(StudioScene.resolve("$dot3:off:on", o, StudioScene.skins["default"]!) == .string("off"))
+    #expect(StudioScene.resolve("$dot6:off:on", o, StudioScene.skins["default"]!) == .string("none"))
+  }
 }

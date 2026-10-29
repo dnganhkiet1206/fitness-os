@@ -91,6 +91,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - ~~Cấp XP vẫn hiện, và cửa hàng khoá đồ theo Cấp XP.~~ Đã sửa ở GĐ2 — **merge vào `native/ios-rewrite` 21/10 (#642, `cad8f015`)**.
   - XP **ẩn khỏi giao diện** (thẻ hạng phòng Koa, nhiệm vụ, onboarding, widget, màn lên cấp), **không xoá**: server vẫn cộng XP, bảng và cột giữ nguyên.
   - Cửa hàng khoá theo **hạng Gains** (Kiệt duyệt): Cúp vàng → Lifter, Giày có cánh → Swole, Cánh Rồng → Beast. Không cần migration; không ai mất xu hay đồ đã mua.
+- ~~Phòng Koa còn hệ chuỗi ngày (thẻ Chuỗi, banner thưởng chuỗi, mua băng chuỗi, bảng "CHUỖI" trên tường) và hai thẻ đếm trùng (Năng lượng / Nhiệm vụ).~~ Sửa 29/10 (nhánh `claude/koa-room-cleanup`, Kiệt chọn): chuỗi bỏ khỏi **giao diện phòng**, bảng trên tường hiện **hạng Gains**; Năng lượng + Nhiệm vụ gộp **một thẻ**. Sổ chuỗi (`MascotRoomController`, RPC `buy_streak_freeze`, thưởng chuỗi) và tâm trạng "chuỗi sắp đứt" của Koa **giữ nguyên trong code**, không đổi server. Còn mở: widget vẫn lấy chuỗi làm số chính (mục widget bên dưới).
 - ~~8 thử thách tuần chung.~~ Thay bằng **Tuần của Koa** (GĐ2, đã merge #642): đích = số buổi trong lịch của chính người dùng, chỉ đếm ngày có buổi ghi thật. Đủ tuần: +15 Gains, +50 xu, nhận một lần mỗi tuần (khoá `ch:silver:<tuần>:koa_week`, server bỏ trùng). Code thử thách chung còn giữ, chỉ không hiện.
 
 **GĐ2 (tiến bộ một thang + Tuần của Koa) — hạn chế đã biết:**
