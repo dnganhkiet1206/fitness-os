@@ -18,6 +18,7 @@ import SwiftUI
 struct NutritionInsightsView: View {
   let book: NutritionInsightsBook
   @Environment(ProfileBook.self) private var profile: ProfileBook?
+  @Environment(\.dynamicTypeSize) private var typeSize
 
   private var targets: MacroTargets.Grams {
     let p = profile?.profile
@@ -59,21 +60,31 @@ struct NutritionInsightsView: View {
       let averaged = NutritionInsights.averaged(days, today: today)
       let stats = NutritionInsights.stats(averaged, proteinTarget: t.protein)
       if let stats {
-        HStack(spacing: DS.Spacing.sm) {
+        // Cỡ chữ trợ năng: hai ô chồng lên nhau ("782 / 2.550 kcal" không vừa nửa màn).
+        let pair = typeSize.isAccessibilitySize
+          ? AnyLayout(VStackLayout(spacing: DS.Spacing.sm)) : AnyLayout(HStackLayout(spacing: DS.Spacing.sm))
+        pair {
           tile(String(localized: "insights.avgProtein"), DiaryView.whole(stats.avgProtein),
                unit: " / " + DiaryView.whole(t.protein) + " g")
+          // Có mục tiêu đi kèm như ô đạm bên cạnh (trước 29/10 chỉ "782" trơ trọi).
           tile(String(localized: "insights.avgKcal"),
-               NutritionInsights.avgKcal(averaged).map(DiaryView.whole) ?? "—", unit: "")
+               NutritionInsights.avgKcal(averaged).map(DiaryView.whole) ?? "—",
+               unit: " / " + DiaryView.whole(NutritionToday.calorieTarget(profile?.profile)) + " kcal")
         }
       }
       VStack(alignment: .leading, spacing: DS.Spacing.md) {
-        Text(String(localized: "insights.proteinTitle"))
-          .font(DS.TextStyle.headline)
-          .accessibilityAddTraits(.isHeader)
+        ChartHeader(goal: ChartGoalKey(value: DiaryView.whole(t.protein) + " g", tint: MascotRoomView.signalColor(.meal).opacity(0.7))) {
+          Text(String(localized: "insights.proteinTitle"))
+            .font(DS.TextStyle.headline)
+            .accessibilityAddTraits(.isHeader)
+        }
         chart(NutritionInsights.week(days, today: today), target: t.protein, top: NutritionInsights.maxProtein(days, target: t.protein))
-        HStack(spacing: DS.Spacing.md) {
+        let keys = typeSize.isAccessibilitySize
+          ? AnyLayout(VStackLayout(alignment: .leading, spacing: DS.Spacing.xs)) : AnyLayout(HStackLayout(spacing: DS.Spacing.md))
+        keys {
           legend(MascotRoomView.signalColor(.meal), String(localized: "insights.legend.hit"))
           legend(MascotRoomView.signalColor(.meal).opacity(0.35), String(localized: "insights.legend.miss"))
+          legend(DS.Color.mutedForeground.swiftUI.opacity(0.35), String(localized: "chart.notLogged"))
         }
         .font(DS.TextStyle.caption)
         .foregroundStyle(DS.Color.mutedForeground.swiftUI)
@@ -113,7 +124,7 @@ struct NutritionInsightsView: View {
       (Text(verbatim: value).font(DS.TextStyle.number(24, .title2).weight(.semibold))
         + Text(verbatim: unit).font(DS.TextStyle.number(13, .footnote))
         .foregroundColor(DS.Color.mutedForeground.swiftUI))
-        .lineLimit(1)
+        .lineLimit(typeSize.isAccessibilitySize ? nil : 1)
         .minimumScaleFactor(0.7)
     }
     .frame(maxWidth: .infinity, alignment: .leading)
@@ -129,17 +140,28 @@ struct NutritionInsightsView: View {
     }
   }
 
-  /// Đủ bảy cột (ngày trống là khoảng trống thật); đạt mục tiêu tô cam đậm.
+  /// Đủ bảy cột; đạt mục tiêu tô cam đậm; số gam trên đầu cột; ngày chưa ghi là vạch xám
+  /// (trước 29/10 để trống — trông như lỗi), đường mục tiêu có nhãn.
   private func chart(_ week: [(date: LocalDate, day: NutritionInsights.Day?)], target: Double, top: Double) -> some View {
     let accent = MascotRoomView.signalColor(.meal)
     return Chart {
       ForEach(week, id: \.date) { slot in
+        // 0 g là "chưa ghi", như trung bình (`nutritionMean` lọc > 0): hàng ngày ấy có thể chỉ do
+        // đồng bộ bước chân tạo ra, không phải một ngày ăn 0 g đạm.
+        let g = slot.day.map(\.protein).flatMap { $0 > 0 ? $0 : nil }
         BarMark(
           x: .value("day", Self.weekday(slot.date)),
-          y: .value("protein", slot.day?.protein ?? 0)
+          y: .value("protein", g ?? top * 0.02)
         )
-        .foregroundStyle((slot.day?.protein ?? 0) >= target ? accent : accent.opacity(0.35))
+        .foregroundStyle(
+          g == nil ? DS.Color.mutedForeground.swiftUI.opacity(0.35)
+            : (g ?? 0) >= target ? accent : accent.opacity(0.35))
         .cornerRadius(5)
+        .annotation(position: .top, spacing: 2) {
+          Text(verbatim: g.map { DiaryView.whole($0) + "g" } ?? "—")
+            .font(.system(size: 9).monospacedDigit())
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        }
         .accessibilityLabel(Text(verbatim: Self.weekday(slot.date)))
         .accessibilityValue(Text(Self.a11y(slot.day, target: target)))
       }
@@ -149,7 +171,17 @@ struct NutritionInsightsView: View {
         .accessibilityHidden(true)
     }
     .chartXScale(domain: week.map { Self.weekday($0.date) })
-    .chartYScale(domain: 0...top)
+    .chartXAxis {
+      AxisMarks { v in
+        AxisValueLabel {
+          if let d = v.as(String.self) {
+            // Co chữ thay vì "…" khi hai chữ ("CN") rộng hơn cột ở cỡ chữ trợ năng.
+            Text(verbatim: d).lineLimit(1).minimumScaleFactor(0.5)
+          }
+        }
+      }
+    }
+    .chartYScale(domain: 0...(top * 1.15))
     .chartYAxis(.hidden)
     .frame(height: 170)
   }
@@ -161,8 +193,9 @@ struct NutritionInsightsView: View {
       : String(localized: "insights.a11y.miss \(DiaryView.whole(d.protein))")
   }
 
+  /// "T2"…"CN": "Thứ 5" thành "T…" ở cỡ chữ trợ năng.
   static func weekday(_ d: LocalDate) -> String {
-    d.calendarDate.formatted(Date.FormatStyle().weekday(.abbreviated).locale(.app))
+    d.calendarDate.formatted(Date.FormatStyle().weekday(.short).locale(.app))
   }
 
   static func text(_ n: NutritionInsights.Insight) -> String {

@@ -86,18 +86,38 @@ struct SmartGoalsView: View {
     }
   }
 
+  /// "W3" → Thứ Hai của tuần ấy ("20 thg 10"): `W4` là tuần này, `W1` ba tuần trước.
+  private func weekLabel(_ label: String) -> String {
+    guard let n = Int(label.dropFirst()) else { return label }
+    let monday = SmartGoals.weekStart(book.today).adding(days: -7 * (4 - n))
+    return monday.calendarDate.formatted(.dateTime.day().month(.abbreviated).locale(.app))
+  }
+
+  /// Số theo ngôn ngữ của app, hai số lẻ tối đa, dấu "−" thật ("−12,31", không phải "-12.31").
+  private static func signed(_ value: Double, unit: WeightUnit) -> String {
+    let v = unit.convert(value)
+    return (v > 0 ? "+" : v < 0 ? "−" : "") + abs(v).formatted(.number.precision(.fractionLength(0...2)).locale(.app))
+  }
+
   private func chart(_ a: SmartGoals.Analysis, unit: WeightUnit) -> some View {
-    let green = DS.Color.readinessGreen.swiftUI
+    // Màu của Cân nặng, không phải xanh lá: xanh lá đọc thành "tốt" trong khi ô dưới có thể
+    // đang báo lệch mục tiêu (29/10).
+    let tint = DS.Color.metricSteel.swiftUI
     let values = a.weeks.map { unit.display($0.kg) }
     let lo = values.min() ?? 0
     let hi = values.max() ?? 0
     let pad = max((hi - lo) * 0.2, 0.5)
     return Chart(a.weeks, id: \.label) { w in
-      LineMark(x: .value("week", w.label), y: .value(unit.label, unit.display(w.kg)))
-        .foregroundStyle(green)
+      LineMark(x: .value("week", weekLabel(w.label)), y: .value(unit.label, unit.display(w.kg)))
+        .foregroundStyle(tint)
         .interpolationMethod(.monotone)
-      PointMark(x: .value("week", w.label), y: .value(unit.label, unit.display(w.kg)))
-        .foregroundStyle(green)
+      PointMark(x: .value("week", weekLabel(w.label)), y: .value(unit.label, unit.display(w.kg)))
+        .foregroundStyle(tint)
+        .annotation(position: .top, spacing: 4) {
+          Text(verbatim: unit.display(w.kg).formatted(.number.precision(.fractionLength(0...1)).locale(.app)))
+            .font(DS.TextStyle.caption.monospacedDigit())
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        }
     }
     .chartYScale(domain: (lo - pad)...(hi + pad))
     .chartYAxis {
@@ -114,18 +134,18 @@ struct SmartGoalsView: View {
     .accessibilityElement(children: .ignore)
     .accessibilityLabel(Text("smartgoals.weighttrend"))
     .accessibilityValue(
-      Text(verbatim: zip(a.weeks, values).map { "\($0.label) \($1.formatted(.number.locale(.app))) \(unit.label)" }.joined(separator: ", "))
+      Text(verbatim: zip(a.weeks, values).map { "\(weekLabel($0.label)) \($1.formatted(.number.locale(.app))) \(unit.label)" }.joined(separator: ", "))
     )
   }
 
   private func callout(_ a: SmartGoals.Analysis, unit: WeightUnit) -> some View {
     let tint = a.onTrack ? DS.Color.readinessGreen.swiftUI : DS.Color.readinessRed.swiftUI
     return VStack(alignment: .leading, spacing: 3) {
-      Text("smartgoals.perweek \(SmartGoals.signed(a.weeklyChange, unit: unit)) \(unit.label)")
+      Text("smartgoals.perweek \(Self.signed(a.weeklyChange, unit: unit)) \(unit.label)")
         .font(DS.TextStyle.headline.monospacedDigit())
         .foregroundStyle(DS.Color.foreground.swiftUI)
       Text(
-        "smartgoals.targetrange \(SmartGoals.signed(a.targetMin, unit: unit)) \(SmartGoals.signed(a.targetMax, unit: unit)) \(unit.label)"
+        "smartgoals.targetrange \(Self.signed(a.targetMin, unit: unit)) \(Self.signed(a.targetMax, unit: unit)) \(unit.label)"
       )
       .font(DS.TextStyle.caption.monospacedDigit())
       .foregroundStyle(DS.Color.mutedForeground.swiftUI)
@@ -195,7 +215,6 @@ struct SmartGoalsView: View {
           VStack(alignment: .leading, spacing: DS.Spacing.xs) {
             Text("smartgoals.proteinsplit")
               .font(DS.TextStyle.caption.weight(.semibold))
-              .textCase(.uppercase)
               .foregroundStyle(DS.Color.mutedForeground.swiftUI)
             ForEach(Self.meals, id: \.self) { meal in
               HStack {

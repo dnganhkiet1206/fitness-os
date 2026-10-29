@@ -17222,7 +17222,7 @@
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Sinh Trắc Học"
+      "value": "Sinh trắc học"
      }
     },
     "es": {
@@ -22138,13 +22138,13 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "Sleep — 7 Days"
+      "value": "Sleep — 7 days"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Giấc Ngủ — 7 Ngày"
+      "value": "Giấc ngủ — 7 ngày"
      }
     },
     "es": {
@@ -22621,19 +22621,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "Avg Quality"
+      "value": "Avg quality (out of 10)"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "TB Chất lượng"
+      "value": "Chất lượng TB (thang 10)"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Calidad prom."
+      "value": "Calidad media (de 10)"
      }
     }
    }
@@ -22644,19 +22644,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "Avg Deep"
+      "value": "Avg deep sleep"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "TB Deep"
+      "value": "Ngủ sâu TB"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Profundo prom."
+      "value": "Sueño profundo medio"
      }
     }
    }
@@ -22667,7 +22667,7 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "Sleep Debt"
+      "value": "Sleep debt"
      }
     },
     "vi": {
@@ -22742,7 +22742,7 @@
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Deep"
+      "value": "Sâu"
      }
     },
     "es": {
@@ -22765,13 +22765,13 @@
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Nhận Xét"
+      "value": "Nhận xét"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Datos"
+      "value": "Observaciones"
      }
     }
    }
@@ -23104,19 +23104,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "Weight Trend (4 Weeks)"
+      "value": "Average weight per week (4 weeks)"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Xu Hướng Cân Nặng (4 Tuần)"
+      "value": "Cân nặng trung bình mỗi tuần (4 tuần)"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Tendencia de peso (4 semanas)"
+      "value": "Peso medio por semana (4 semanas)"
      }
     }
    }
@@ -23173,13 +23173,13 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "Calorie Suggestion"
+      "value": "Calorie suggestion"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Gợi ý chỉnh Calories"
+      "value": "Gợi ý chỉnh calo"
      }
     },
     "es": {
@@ -23265,7 +23265,7 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "Protein Distribution Coach"
+      "value": "Protein through the day"
      }
     },
     "vi": {
@@ -23334,19 +23334,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "low days/14 days"
+      "value": "low-protein days / 14"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "ngày thấp/14 ngày"
+      "value": "ngày thiếu đạm / 14 ngày"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "días bajos/14 días"
+      "value": "días bajos en proteína / 14"
      }
     }
    }
@@ -23357,19 +23357,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "Protein split suggestion"
+      "value": "Suggested protein per meal"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Gợi ý chia protein"
+      "value": "Gợi ý chia đạm theo bữa"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Sugerencia de reparto de proteína"
+      "value": "Proteína sugerida por comida"
      }
     }
    }
@@ -50088,19 +50088,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "This week matches your habit exactly"
+      "value": "The last 7 days matched your habit"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Tuần này đúng bằng thói quen của bạn"
+      "value": "7 ngày qua đúng bằng thói quen của bạn"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Esta semana coincide exactamente con tu hábito"
+      "value": "Los últimos 7 días coinciden con tu hábito"
      }
     }
    }
@@ -50111,19 +50111,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "This week is %lld%% heavier than your habit"
+      "value": "The last 7 days were %lld%% heavier than your habit"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Tuần này nặng hơn %lld%% so với thói quen"
+      "value": "7 ngày qua nặng hơn %lld%% so với thói quen"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Esta semana es un %lld%% más pesada que tu hábito"
+      "value": "Los últimos 7 días fueron un %lld%% más pesados que tu hábito"
      }
     }
    }
@@ -50134,19 +50134,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "This week is %lld%% lighter than your habit"
+      "value": "The last 7 days were %lld%% lighter than your habit"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Tuần này nhẹ hơn %lld%% so với thói quen"
+      "value": "7 ngày qua nhẹ hơn %lld%% so với thói quen"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Esta semana es un %lld%% más ligera que tu hábito"
+      "value": "Los últimos 7 días fueron un %lld%% más ligeros que tu hábito"
      }
     }
    }
@@ -59173,19 +59173,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "Load · last 7 days"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Carga · últimos 7 días"
+      "value": "Load (effort × reps) · last 7 days"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Tải · 7 ngày qua"
+      "value": "Tải (gắng sức × rep) · 7 ngày qua"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Carga (esfuerzo × reps) · últimos 7 días"
      }
     }
    }
@@ -65534,6 +65534,328 @@
      "stringUnit": {
       "state": "translated",
       "value": "de %lld días planificados"
+     }
+    }
+   }
+  },
+  "sleep.chart.head": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hours asleep per night"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Giờ ngủ mỗi đêm"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Horas de sueño por noche"
+     }
+    }
+   }
+  },
+  "sleep.chart.unstaged": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Plain bars: nights without sleep-stage data."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cột một màu: đêm không đo tầng ngủ."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Barras lisas: noches sin datos de fases."
+     }
+    }
+   }
+  },
+  "sleep.chart.missing %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld of the last 7 nights not logged."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld trong 7 đêm gần nhất chưa ghi."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld de las últimas 7 noches sin registrar."
+     }
+    }
+   }
+  },
+  "steps.trend": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Last 3 days vs the 3 before"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "3 ngày gần nhất so với 3 ngày trước"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Últimos 3 días vs. los 3 anteriores"
+     }
+    }
+   }
+  },
+  "steps.chart.head": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Steps per day"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bước chân mỗi ngày"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Pasos por día"
+     }
+    }
+   }
+  },
+  "steps.today": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Steps today"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bước chân hôm nay"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Pasos de hoy"
+     }
+    }
+   }
+  },
+  "chart.goal %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Goal %@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mục tiêu %@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Meta %@"
+     }
+    }
+   }
+  },
+  "chart.notLogged": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Not logged"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chưa ghi"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sin registro"
+     }
+    }
+   }
+  },
+  "ps.chart.steps": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Steps per day"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bước chân mỗi ngày"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Pasos por día"
+     }
+    }
+   }
+  },
+  "ps.chart.sleep": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hours asleep per night"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Giờ ngủ mỗi đêm"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Horas de sueño por noche"
+     }
+    }
+   }
+  },
+  "ps.chart.recovery": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Readiness score per day (0–100)"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Điểm sẵn sàng mỗi ngày (0–100)"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Preparación por día (0–100)"
+     }
+    }
+   }
+  },
+  "ps.chart.protein": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Protein per day (g)"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đạm mỗi ngày (g)"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Proteína por día (g)"
+     }
+    }
+   }
+  },
+  "ps.chart.missing": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Grey mark: day not logged."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Vạch xám: ngày chưa ghi."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Marca gris: día sin registro."
+     }
+    }
+   }
+  },
+  "measure.since %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "since %@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "so với %@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "desde %@"
      }
     }
    }

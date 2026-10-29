@@ -78,14 +78,16 @@ struct SleepInsightsView: View {
   // MARK: - Thẻ chủ
 
   private func hero(_ s: SleepInsights.Stats, nights: [SleepInsights.Night], target: Double) -> some View {
-    let m = SleepInsights.metrics(s)
+    // Số theo ngôn ngữ của app ("8,0h"), như mọi màn khác; chất lượng là thang 10.
+    let m = (
+      quality: Self.n(s.avgQuality, 1), deep: s.avgDeep.map { "\(Self.n($0, 1))h" } ?? "—", debt: "\(Self.n(s.debt, 1))h")
     return DSCard {
       VStack(alignment: .leading, spacing: DS.Spacing.md) {
         Label("sleep.last7", systemImage: "moon.fill")
           .font(DS.TextStyle.headline)
           .foregroundStyle(DS.Color.foreground.swiftUI)
         VStack(alignment: .leading, spacing: 2) {
-          Text(verbatim: SleepInsights.hoursText(s.avgTotal))
+          Text(verbatim: "\(Self.n(s.avgTotal, 1))h")
             .font(DS.TextStyle.hero.monospacedDigit())
             .foregroundStyle(DS.Color.foreground.swiftUI)
           Text(verbatim: SleepInsights.caption(s, targetHours: target)(lang))
@@ -99,8 +101,23 @@ struct SleepInsightsView: View {
           column("sleep.avgDeep", m.deep, tint: s.avgDeep == nil ? nil : DS.Color.metricPurple.swiftUI)
           column("sleep.debt", m.debt, tint: nil)
         }
-        legend
-        chart(nights, target: target)
+        VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+          ChartHeader(goal: ChartGoalKey(value: "\(Self.n(target, 0))h")) {
+            Text("sleep.chart.head").font(DS.TextStyle.caption).foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          }
+          // Chú giải tầng chỉ khi có ít nhất một đêm đo tầng — trước 29/10 luôn hiện, nên
+          // tuần không đo tầng thấy "Nông · REM · Sâu" mà biểu đồ không có màu nào trong ba.
+          if nights.contains(where: \.stagesKnown) { legend }
+          chart(nights, target: target)
+          let notes = [
+            nights.contains(where: \.stagesKnown) && nights.contains(where: { !$0.stagesKnown })
+              ? String(localized: "sleep.chart.unstaged") : nil,
+            nights.count < 7 ? String(localized: "sleep.chart.missing \(7 - nights.count)") : nil,
+          ].compactMap { $0 }
+          ForEach(notes, id: \.self) { t in
+            Text(verbatim: t).font(DS.TextStyle.caption).foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          }
+        }
       }
     }
   }
@@ -118,7 +135,13 @@ struct SleepInsightsView: View {
     .accessibilityElement(children: .combine)
   }
 
-  private static let light = DS.Color.secondary.swiftUI
+  static func n(_ x: Double, _ digits: Int) -> String {
+    x.formatted(.number.precision(.fractionLength(digits...digits)).locale(.app))
+  }
+
+  /// Nông: tím nhạt của Giấc ngủ (trước là `secondary`, gần trùng nền thẻ — chấm chú giải vô hình).
+  private static let light = DS.Color.metricPurple.swiftUI.opacity(0.4)
+  private static let whole = DS.Color.metricPurple.swiftUI
   private static let rem = DS.Color.metricBlue.swiftUI
   private static let deep = DS.Color.metricPurple.swiftUI
 
@@ -166,20 +189,28 @@ struct SleepInsightsView: View {
         BarMark(x: .value("night", seg.night), y: .value("h", seg.hours))
           .foregroundStyle(seg.stage == 0 ? Self.deep : seg.stage == 1 ? Self.rem : Self.light)
       }
-      // Đêm không ai đo tầng: rỗng ruột, một nét viền — khác HẠNG, không khác màu.
+      // Đêm không ai đo tầng: một cột một màu (tím của Giấc ngủ). Trước 29/10 là khung rỗng
+      // — trông như cột chưa tải xong (Kiệt: "biểu đồ khó hiểu").
       ForEach(unstaged) { n in
-        RectangleMark(x: .value("night", n.id), yStart: .value("h", 0), yEnd: .value("h", n.totalH), width: .ratio(0.6))
-          .foregroundStyle(.clear)
-          .annotation(position: .overlay) {
-            RoundedRectangle(cornerRadius: 3)
-              .strokeBorder(DS.Color.mutedForeground.swiftUI, lineWidth: 1.5)
+        BarMark(x: .value("night", n.id), y: .value("h", n.totalH), width: .ratio(0.6))
+          .foregroundStyle(Self.whole)
+          .cornerRadius(4)
+      }
+      // Số giờ trên đầu mỗi cột.
+      ForEach(nights) { n in
+        PointMark(x: .value("night", n.id), y: .value("h", n.totalH))
+          .opacity(0)
+          .annotation(position: .top, spacing: 2) {
+            Text(verbatim: SleepInsights.duration(n.minutes))
+              .font(.system(size: 9).monospacedDigit())
+              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
           }
       }
       RuleMark(y: .value("target", target))
         .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 3]))
         .foregroundStyle(DS.Color.mutedForeground.swiftUI)
     }
-    .chartYScale(domain: 0...max(top, 1))
+    .chartYScale(domain: 0...max(top * 1.1, 1))
     .chartYAxis(.hidden)
     .chartXAxis {
       AxisMarks(values: nights.map(\.id)) { v in
@@ -190,7 +221,7 @@ struct SleepInsightsView: View {
         }
       }
     }
-    .frame(height: 140)
+    .frame(height: 150)
     .accessibilityElement(children: .ignore)
     .accessibilityLabel(Text("sleep.last7"))
     .accessibilityValue(Text(verbatim: nights.map { SleepInsights.duration($0.minutes) }.joined(separator: ", ")))
