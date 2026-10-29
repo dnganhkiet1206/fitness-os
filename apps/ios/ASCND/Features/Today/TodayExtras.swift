@@ -175,11 +175,24 @@ struct TodayExtras<Plan: View>: View {
       }
       if let dailyPlan, let flow {
         // GĐ1: MỘT việc chính + lý do + phương án; rồi Tuần của Koa (lịch thật).
-        TodayPlanHero(
-          result: dailyPlan.result, lighterOn: flow.today.lighterToday, shortOn: flow.today.shortToday,
-          lastSession: services.koaGainsNow?.state.lastSession, busy: planBusy, failed: planFailed,
-          onPrimary: { primary(dailyPlan.result.action) }, onAlternative: { alternative($0, flow) })
+        // Thẻ "Tăng tải hôm nay" nằm sau việc chính, vuốt sang (Kiệt duyệt mock 28/10).
+        if let overload = overloadItems(dailyPlan.result, flow), let session = dailyPlan.result.action.session {
+          let ups = overload.filter(\.advice.isUp).count
+          TodayOverloadStack(
+            items: overload, mainPeek: String(localized: "dp.title.session \(session.name) \(session.minutes)"),
+            mainAction: String(localized: dailyPlan.result.action == .resume(session) ? "dp.cta.resume" : "today.start"),
+            onMainAction: { primary(dailyPlan.result.action) }
+          ) { withHint in
+            planHero(
+              dailyPlan, flow,
+              hint: !withHint ? nil : ups > 0
+                ? (String(localized: "ov.hint.ready \(ups)"), true) : (String(localized: "ov.hint.none"), false))
+          }
           .todayEntrance(2)
+        } else {
+          planHero(dailyPlan, flow, hint: nil)
+            .todayEntrance(2)
+        }
         // Insight hôm nay (Kiệt 21/10, GĐ3) ngay dưới việc chính, kiểu Apple Health.
         TodayCoachSection(
           userId: userId, today: flow.today.today, refresh: dayVersion,
@@ -923,6 +936,35 @@ struct TodayExtras<Plan: View>: View {
     }
     let foods = p.planned(meal).map(\.name).joined(separator: ", ")
     planNext = String(localized: "day.plan.next \(DiaryView.mealName(meal)) \(foods)")
+  }
+
+  private func planHero(
+    _ dailyPlan: DailyPlanSource, _ flow: WorkoutFlow, hint: (text: String, up: Bool)?
+  ) -> TodayPlanHero {
+    TodayPlanHero(
+      result: dailyPlan.result, lighterOn: flow.today.lighterToday, shortOn: flow.today.shortToday,
+      lastSession: services.koaGainsNow?.state.lastSession, busy: planBusy, failed: planFailed,
+      overloadHint: hint, onPrimary: { primary(dailyPlan.result.action) }, onAlternative: { alternative($0, flow) })
+  }
+
+  /// Bài của buổi hôm nay + tăng tải (`OverloadPlan`). `nil` (chỉ còn thẻ việc chính):
+  /// không phải ngày tập theo lịch / đang tập dở, buổi tập nhẹ / ngắn, phân tích chưa
+  /// tải, hay chưa bài nào từng được ghi.
+  private func overloadItems(_ r: DailyPlan.Result, _ flow: WorkoutFlow) -> [OverloadPlan.Item]? {
+    let session: DailyPlan.Session
+    switch r.action {
+    case .start(let s), .resume(let s): session = s
+    default: return nil
+    }
+    guard !flow.today.lighterToday, !flow.today.shortToday, let insights = flow.insights, insights.loaded,
+      let template = flow.today.library?.templates.first(where: { $0.id == session.templateId })
+    else { return nil }
+    var low = false
+    if case .lowRecovery = r.reason { low = true }
+    let items = OverloadPlan.items(
+      template: template, insight: { insights.insight(for: $0) }, last: { insights.history(for: $0).last },
+      stepKg: OverloadPlan.stepKg(unit), lowRecovery: low)
+    return items.contains { $0.advice != .notEnough(sessions: 0) } ? items : nil
   }
 
   /// Widget Koa (đợt 2C): CÙNG Koa, câu và con số "xong hôm nay" như trang này.
