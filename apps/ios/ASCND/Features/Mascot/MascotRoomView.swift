@@ -39,6 +39,9 @@ struct MascotRoomView: View {
   @State private var shop: MascotShopBook?
   @State private var notice: String?
   @State private var celebrate = 0
+  /// Số trên bảng tường (29/10, Kiệt: người dùng chọn) — lưu trên máy.
+  @AppStorage("koa.roomBoard") private var boardStat = RoomBoard.Stat.rank.rawValue
+  @Environment(\.weightUnit) private var unit
   /// Thanh DEV: ép một cảm xúc để soát hình (`setDevEmotion`), chỉ bản Debug.
   @State private var devEmotion: KoaEmotion.Emotion?
 
@@ -203,7 +206,12 @@ struct MascotRoomView: View {
         celebrateSignal: celebrate, emotion: devEmotion ?? mood,
         equipped: shop?.inventory.filter(\.equipped).map(\.itemKey) ?? [],
         // Dáng theo tình huống thật (25/10); thanh DEBUG ép cảm xúc thì tắt dáng.
-        gesture: devEmotion == nil ? roomGesture : nil)
+        gesture: devEmotion == nil ? roomGesture : nil,
+        board: board,
+        onBoard: {
+          boardStat = (RoomBoard.Stat(rawValue: boardStat) ?? .rank).next.rawValue
+        })
+        .sensoryFeedback(.selection, trigger: boardStat)
         // Nằm thẳng trên nền, không thẻ, không viền (Kiệt 24/10): tràn ngang màn,
         // mép trên / dưới / hai bên tan vào nền trang.
         .mask {
@@ -219,6 +227,18 @@ struct MascotRoomView: View {
           }
         }
         .padding(.horizontal, -DS.Spacing.md)
+    }
+  }
+
+  /// Bảng tường theo lựa chọn: hạng Gains, buổi tuần này, kỷ lục gần nhất.
+  private var board: StudioScene.Board {
+    let l = String(locale.identifier.prefix(2))
+    switch RoomBoard.Stat(rawValue: boardStat) ?? .rank {
+    case .rank: return RoomBoard.rank(room.gains.rank, of: MascotRules.ranks.count, lang: l)
+    case .week:
+      return RoomBoard.week(done: koaWeekState?.done ?? 0, target: koaWeekState?.target ?? 0, lang: l)
+    case .record:
+      return RoomBoard.record(RoomBoard.latestRecord(flow?.insights?.performances ?? []), unit: unit, lang: l)
     }
   }
 
@@ -648,6 +668,10 @@ struct MascotStage: View {
   var equipped: [String] = []
   /// Dáng biểu cảm mới theo tình huống (25/10).
   var gesture: KoaGesture?
+  /// Bảng số trên tường (29/10); `nil` = bảng hạng.
+  var board: StudioScene.Board?
+  /// Chạm bảng để đổi số hiện; `nil` = bảng chỉ để xem.
+  var onBoard: (() -> Void)?
 
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Environment(\.colorScheme) private var scheme
@@ -664,7 +688,8 @@ struct MascotStage: View {
     var o = StudioScene.Options()
     o.skin = StudioScene.skinKey(equipped: Set(equipped))
     o.energy = energy
-    o.gainsRank = build
+    o.board = board ?? RoomBoard.rank(build, of: MascotRules.ranks.count, lang: lang)
+    o.decor = MascotShop.decorChoice(equipped: Set(equipped))
     o.moon = StudioScene.moonPhase(.now)
     o.label = "Koa"
     // Phòng ban ngày ở giao diện sáng (15/10 — trước đây chỉ có cảnh đêm).
@@ -689,6 +714,26 @@ struct MascotStage: View {
       .frame(maxWidth: .infinity)
     .accessibilityElement(children: .ignore)
     .accessibilityLabel(Text(String(localized: "mr.stage.a11y \(level)")))
+    .overlay {
+      if let onBoard {
+        GeometryReader { g in boardButton(g.size.width, action: onBoard) }
+      }
+    }
+  }
+
+  /// Vùng chạm đúng khung bảng số (`270, 245`, 102 × 62 trong toạ độ phòng).
+  private func boardButton(_ width: CGFloat, action: @escaping () -> Void) -> some View {
+    let k = width / StudioScene.width
+    let b = studio.board
+    return Button(action: action) {
+      Color.clear.contentShape(Rectangle())
+    }
+    .buttonStyle(.plain)
+    .frame(width: 102 * k, height: max(62 * k, 44))
+    .offset(x: 270 * k, y: 245 * k)
+    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    .accessibilityLabel(Text(verbatim: "\(b?.word ?? "") \(b?.value ?? "")"))
+    .accessibilityHint(Text("mr.board.hint"))
   }
 
   /// Koa đứng trên bục: `size = round(HERO_W·k)`, đỉnh ở `412k − 1,25·size + 6k`.
