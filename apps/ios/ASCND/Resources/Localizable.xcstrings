@@ -19792,19 +19792,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "ACWR high (%@). Cut volume 15-20%% next week to avoid injury."
+      "value": "You trained much harder than usual this week (load ratio %@). Cut next week's volume 15–20%% to avoid injury."
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "ACWR cao (%@). Giảm 15-20%% volume tuần tới để tránh chấn thương."
+      "value": "Tuần này tập nặng hơn hẳn mức quen (tỉ lệ tải %@). Tuần tới giảm khối lượng 15–20%% để tránh chấn thương."
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "ACWR alto (%@). Reduce el volumen un 15-20%% la próxima semana para evitar lesiones."
+      "value": "Esta semana entrenaste mucho más de lo habitual (ratio de carga %@). Reduce el volumen un 15–20%% la próxima semana para evitar lesiones."
      }
     }
    }
@@ -19815,19 +19815,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "ACWR slightly high (%@). Cut 5-10%% volume or drop 1-2 sets per exercise."
+      "value": "A bit harder than usual this week (load ratio %@). Cut volume 5–10%% or drop 1–2 sets per exercise."
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "ACWR hơi cao (%@). Giảm 5-10%% volume hoặc bớt 1-2 sets/bài tập."
+      "value": "Tuần này tập nặng hơn mức quen một chút (tỉ lệ tải %@). Giảm khối lượng 5–10%% hoặc bớt 1–2 hiệp mỗi bài."
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "ACWR algo alto (%@). Reduce un 5-10%% el volumen o quita 1-2 series por ejercicio."
+      "value": "Un poco más duro de lo habitual (ratio de carga %@). Reduce el volumen un 5–10%% o quita 1–2 series por ejercicio."
      }
     }
    }
@@ -19838,19 +19838,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "ACWR low (%@). You can add 10-15%% volume gradually."
+      "value": "Lighter than usual this week (load ratio %@). You can add 10–15%% volume, gradually."
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "ACWR thấp (%@). Có thể tăng 10-15%% volume dần dần."
+      "value": "Tuần này tập nhẹ hơn mức quen (tỉ lệ tải %@). Có thể tăng khối lượng 10–15%%, từ từ."
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "ACWR bajo (%@). Puedes subir el volumen un 10-15%% poco a poco."
+      "value": "Más suave de lo habitual esta semana (ratio de carga %@). Puedes subir el volumen un 10–15%% poco a poco."
      }
     }
    }
@@ -19861,19 +19861,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "ACWR optimal (%@). Hold steady or bump volume ~5%%."
+      "value": "Training load matches your usual (load ratio %@). Hold steady or add about 5%% volume."
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "ACWR tối ưu (%@). Giữ nguyên hoặc tăng nhẹ 5%% volume."
+      "value": "Tải tập vừa với mức quen (tỉ lệ tải %@). Giữ nguyên hoặc tăng nhẹ khoảng 5%% khối lượng."
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "ACWR óptimo (%@). Mantén o sube el volumen ~5%%."
+      "value": "Carga en línea con lo habitual (ratio de carga %@). Mantén o sube el volumen ~5%%."
      }
     }
    }
@@ -20005,7 +20005,7 @@
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Volume tăng %@%% so với tuần trước. Theo dõi phục hồi."
+      "value": "Khối lượng tăng %@%% so với tuần trước. Để ý phục hồi."
      }
     },
     "es": {
@@ -65373,6 +65373,167 @@
      "stringUnit": {
       "state": "translated",
       "value": "Próxima semana"
+     }
+    }
+   }
+  },
+  "wr.chart.head.kcal": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Calories per day (kcal)"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Calo theo ngày (kcal)"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Calorías por día (kcal)"
+     }
+    }
+   }
+  },
+  "wr.chart.head.sleep": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sleep per night (hours)"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Giờ ngủ theo đêm"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sueño por noche (horas)"
+     }
+    }
+   }
+  },
+  "wr.chart.head.training %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Weight lifted per day (%@)"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Khối lượng nâng theo ngày (%@)"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Peso levantado por día (%@)"
+     }
+    }
+   }
+  },
+  "wr.chart.head.readiness": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Readiness per day (0–100)"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Điểm sẵn sàng theo ngày (0–100)"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Preparación por día (0–100)"
+     }
+    }
+   }
+  },
+  "wr.chart.trend12w": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Weekly total, last 12 weeks"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tổng mỗi tuần, 12 tuần gần nhất"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Total semanal, últimas 12 semanas"
+     }
+    }
+   }
+  },
+  "wr.loadRatio %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Load ratio %@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tỉ lệ tải %@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ratio de carga %@"
+     }
+    }
+   }
+  },
+  "wr.supp.days %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "of %lld planned days"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "trên %lld ngày có kế hoạch"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "de %lld días planificados"
      }
     }
    }

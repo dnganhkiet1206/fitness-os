@@ -36,6 +36,7 @@ struct WeeklyReviewView: View {
   @Environment(AppServices.self) private var services: AppServices?
   @Environment(\.dynamicTypeSize) private var typeSize
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @Environment(\.weightUnit) private var weightUnit
   @State private var chart: ChartKind = .kcal
 
   enum ChartKind: Hashable, CaseIterable {
@@ -234,7 +235,7 @@ struct WeeklyReviewView: View {
           rule
           metricRow(
             icon: "pills.fill", tint: DS.Color.metricViolet.swiftUI, label: String(localized: "wr.supplements"),
-            value: supp.value, sub: supp.sub, fraction: s.supplementAdherence.map { Double($0) / 100 }, delta: nil,
+            value: supp.value, sub: String(localized: "wr.supp.days \(s.supplementDays)"), fraction: s.supplementAdherence.map { Double($0) / 100 }, delta: nil,
             order: 4)
         }
       }
@@ -244,14 +245,15 @@ struct WeeklyReviewView: View {
       let pair = big ? AnyLayout(VStackLayout(alignment: .leading, spacing: DS.Spacing.md)) : AnyLayout(HStackLayout(alignment: .top, spacing: 0))
       pair {
         figure(
-          label: String(localized: "wr.volume"), value: c.volume.value, sub: Self.sessions(c.sessions),
+          label: String(localized: "wr.volume"),
+          value: "\(Self.n(Double(weightUnit.volume(s.totalVolume)), 0)) \(weightUnit.label)", sub: Self.sessions(c.sessions),
           note: c.volume.delta.map(Self.vsLast), noteTint: c.volume.delta.map(Self.deltaTint))
         if !big {
           Rectangle().fill(DS.Color.border.swiftUI).frame(width: 0.5).padding(.horizontal, DS.Spacing.md)
         }
         let need = s.readinessDays < WeeklyReview.minReadinessDays
           ? String(localized: "wr.readiness.needDays \(WeeklyReview.minReadinessDays)") : nil
-        let acwr = s.acwr.map { "ACWR \(Self.n($0, 2))" }
+        let acwr = s.acwr.map { String(localized: "wr.loadRatio \(Self.n($0, 2))") }
         figure(
           label: String(localized: "wr.readiness"), value: c.readiness.value,
           sub: [need, acwr].compactMap { $0 }.joined(separator: " · "), note: nil, noteTint: nil)
@@ -351,11 +353,28 @@ struct WeeklyReviewView: View {
   /// Cột của Calo / Ngủ và chiều cao chung của vùng biểu đồ (cột + nhãn ngày, hay cột thấp
   /// + đường 12 tuần, hay đường sẵn sàng) — để đổi tab không đổi chiều cao thẻ.
   static let barHeight: CGFloat = 128
-  static let chartArea: CGFloat = 166
+  static let chartArea: CGFloat = 190
 
   private func chartCard(_ s: WeeklyReview.Summary) -> some View {
     let partial = running ? s.days.firstIndex { $0.date == flow?.today.today } : nil
-    let trend = s.volumeWeeks.contains(where: { $0.tonnes > 0 })
+    // Đường 12 tuần chỉ có nghĩa khi có ít nhất hai tuần tập (một tuần thì chỉ là một vạch).
+    let trend = (s.volumeWeeks.dropLast().filter { $0.tonnes > 0 }.count + (s.totalVolume > 0 ? 1 : 0)) >= 2
+    let volumes = s.days.map { $0.volume > 0 ? Double(weightUnit.volume($0.volume)) : 0 }
+    let title: String = switch chart {
+    case .kcal: String(localized: "wr.chart.head.kcal")
+    case .sleep: String(localized: "wr.chart.head.sleep")
+    case .training: String(localized: "wr.chart.head.training \(weightUnit.label)")
+    case .readiness: String(localized: "wr.chart.head.readiness")
+    }
+    // Chú thích nét đứt chỉ khi cột hôm nay thật sự có (không có thì không có nét đứt nào để nói).
+    let todayValue: Double = partial.map { i in
+      switch chart {
+      case .kcal: s.days[i].kcal
+      case .sleep: s.days[i].sleepHours
+      case .training: s.days[i].volume
+      case .readiness: 0
+      }
+    } ?? 0
     return DSCard {
       VStack(alignment: .leading, spacing: DS.Spacing.md) {
         // Đổi tab trong một transaction lò xo. Vùng biểu đồ cao bằng nhau ở mọi tab nên thẻ
@@ -369,6 +388,10 @@ struct WeeklyReviewView: View {
         }
         .pickerStyle(.segmented)
         VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+          Text(verbatim: title)
+            .font(DS.TextStyle.footnote)
+            .foregroundStyle(muted)
+            .accessibilityHidden(true)
           switch chart {
           case .kcal:
             WeekBars(
@@ -382,7 +405,7 @@ struct WeeklyReviewView: View {
               .accessibilityLabel(Text(String(localized: "wr.chart.sleep")))
           case .training:
             WeekBars(
-              days: s.days, values: s.days.map(\.volume), tint: DS.Color.metricRose.swiftUI, target: nil,
+              days: s.days, values: volumes, tint: DS.Color.metricRose.swiftUI, target: nil,
               targetLabel: nil, unit: "", partial: partial, barHeight: trend ? 64 : Self.barHeight)
               .accessibilityLabel(Text(String(localized: "wr.chart.volume")))
             if trend { volumeTrend(s) }
@@ -397,7 +420,7 @@ struct WeeklyReviewView: View {
           insertion: .opacity.combined(with: .scale(scale: 0.97, anchor: .top)).animation(tabMotion?.delay(0.08)),
           removal: .opacity.animation(DSMotion.animation(.easeOut(duration: 0.12), reduceMotion: reduceMotion))))
         // Dòng chú thích luôn giữ chỗ (ẩn bằng độ trong) để thẻ cao bằng nhau ở mọi tab.
-        let caption = partial != nil && chart != .readiness
+        let caption = todayValue > 0
         if partial != nil {
           Text("wr.chart.partial")
             .font(DS.TextStyle.footnote)
@@ -411,23 +434,29 @@ struct WeeklyReviewView: View {
 
   private func volumeTrend(_ s: WeeklyReview.Summary) -> some View {
     VStack(alignment: .leading, spacing: DS.Spacing.xs) {
-      Text(String(localized: "wr.chart.volume12w"))
+      Text("wr.chart.trend12w")
         .font(DS.TextStyle.footnote)
         .foregroundStyle(muted)
-      Chart(s.volumeWeeks, id: \.weekStart) { w in
-        AreaMark(x: .value("w", w.weekStart.daysSinceEpoch), y: .value("t", w.tonnes))
-          .foregroundStyle(DS.Color.metricRose.swiftUI.opacity(0.15))
-          .interpolationMethod(.monotone)
-        LineMark(x: .value("w", w.weekStart.daysSinceEpoch), y: .value("t", w.tonnes))
-          .foregroundStyle(DS.Color.metricRose.swiftUI)
-          .interpolationMethod(.monotone)
+      // Mười hai cột nhỏ, không phải đường: tuần trống là vạch nền thay vì kéo đường xuống 0,
+      // nên một hai tuần có tập không thành một vạch dựng đứng ở mép phải.
+      // Cột cuối là tuần đang xem: lịch sử `volumeHistory` dừng TRƯỚC ngày đầu tuần (như RN),
+      // nên Core luôn cho tuần này 0 — lấy tổng của chính tuần (`totalVolume`) thay vào.
+      let weeks = s.volumeWeeks.map(\.tonnes).dropLast() + [s.totalVolume / 1000]
+      let maxT = Swift.max(weeks.max() ?? 0, 0.001)
+      HStack(alignment: .bottom, spacing: 4) {
+        ForEach(weeks.indices, id: \.self) { i in
+          let t = weeks[i]
+          let last = i == weeks.count - 1
+          RoundedRectangle(cornerRadius: 2, style: .continuous)
+            .fill(t > 0 ? DS.Color.metricRose.swiftUI.opacity(last ? 1 : 0.45) : DS.Color.ringTrack.swiftUI)
+            .frame(height: t > 0 ? Swift.max(36 * t / maxT, 4) : 3)
+            .frame(maxWidth: .infinity)
+        }
       }
-      .chartXAxis(.hidden)
-      .chartYAxis(.hidden)
-      .frame(height: 40)
+      .frame(height: 36, alignment: .bottom)
       .accessibilityElement(children: .ignore)
       .accessibilityLabel(Text(String(localized: "wr.chart.volume12w")))
-      .accessibilityValue(Text(verbatim: s.volumeWeeks.map { "\(Self.plain($0.tonnes))t" }.joined(separator: ", ")))
+      .accessibilityValue(Text(verbatim: weeks.map { "\(Self.plain($0))t" }.joined(separator: ", ")))
     }
   }
 
@@ -663,7 +692,9 @@ struct WeeklyReviewView: View {
 
   /// Câu của một khuyến nghị theo `id`, chữ chèn sẵn từ Core.
   static func text(_ r: WeeklyReview.Recommendation) -> String {
-    let a = r.args + ["", ""]
+    var a = r.args + ["", ""]
+    // Tỉ lệ tải theo ngôn ngữ của app ("0,58"), như mọi số khác trên màn.
+    if r.id.hasPrefix("acwr"), let x = Double(a[0]) { a[0] = n(x, 2) }
     switch r.id {
     case "acwrHigh": return String(localized: "wr.rec.acwrHigh \(a[0])")
     case "acwrSlightlyHigh": return String(localized: "wr.rec.acwrSlightlyHigh \(a[0])")
