@@ -57,6 +57,7 @@ Hệ quả cho người làm:
   - nhắn tin;
   - bạn tập, bảng xếp hạng.
 - **Cần người thật để biết:** cơ chế pump / quay lại có làm người dùng quay lại hay bỏ đi, và người dùng có hiểu Gains / xu / huy chương không.
+- Gains có nghỉ (29/10, Kiệt; nhánh `claude/koa-gains-rest`): ngày tập nặng / cardio thứ 7 liền trở đi được 0 Gains (màn tổng kết buổi nói vì sao); đi bộ = phục hồi (+3, không phá chuỗi nghỉ); ngày nghỉ có kế hoạch +3, tối đa 2 / tuần, chỉ tuần có buổi tập; chạy / đạp xe / bơi +6. Loại buổi Health đọc từ tên hoạt động đã lưu (`template_name`), buổi trong app = tập nặng. Tính lại từ đầu như lần 24/10: tài khoản test tập nhiều ngày liền có thể tụt một lần (không phải tụt vì nghỉ). Mọi hạng tới sớm hơn ~12% (tuần đủ 3 buổi 45 → 51 Gains). Chưa biết tên hoạt động lạ / đổi ngôn ngữ giữa chừng có làm lệch loại buổi cũ không (lạ → cardio).
 - Thang hạng Gains đổi 24/10 (Kiệt: nhanh lúc đầu, chậm dần): [0, 40, 180, 540, 1150, 2300] — lịch 3 buổi / tuần lên Gym Rat ~1 tuần, Lifter ~1 tháng, Swole ~3 tháng, Beast ~6 tháng, Mass Monster ~1 năm (trước: [0, 40, 120, 260, 450, 700], Mass Monster ~4 tháng). Tài khoản test đang ở hạng cao hơn sẽ về hạng thấp hơn một lần (tính lại từ lịch sử, không phải tụt vì nghỉ). Đồ mở theo hạng ở cửa hàng cũng mở chậm hơn. Chưa biết nhịp này giữ chân hay làm nản.
 
 ---

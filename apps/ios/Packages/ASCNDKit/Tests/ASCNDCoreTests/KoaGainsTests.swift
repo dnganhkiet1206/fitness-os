@@ -30,12 +30,13 @@ struct KoaGainsTests {
       let r = KoaGains.compute(days, week: Self.plan, today: monday.adding(days: week * 7 + 6)).rank
       if reached[r] == nil { reached[r] = week + 1 }
     }
-    #expect(KoaGains.weeklyReference == 45)
+    // 29/10: hai ngày nghỉ có kế hoạch +3 mỗi tuần (45 → 51) — trước: 12 / 26 / 52 tuần.
+    #expect(KoaGains.weeklyReference == 51)
     #expect(reached[1] == 1)
     #expect(reached[2] == 4)
-    #expect(reached[3] == 12)
-    #expect(reached[4] == 26)
-    #expect(reached[5] == 52)
+    #expect(reached[3] == 11)
+    #expect(reached[4] == 23)
+    #expect(reached[5] == 46)
   }
 
   @Test func plannedOffPlanPRAndFullWeek() {
@@ -109,5 +110,62 @@ struct KoaGainsTests {
     let w = KoaGains.Week(snap)
     #expect(w.planned == [0] && w.rest == [1] && w.target == 1)
     #expect(KoaGains.Week.none.target == KoaGains.defaultWeeklyTarget)
+  }
+
+  // MARK: - Nghỉ là một phần của tập (29/10, Kiệt)
+
+  static let noPlan = KoaGains.Week(planned: [], rest: [])
+
+  @Test func seventhHeavyDayInARowEarnsNothing() {
+    let days = (0..<8).map { Self.d($0) }
+    let six = KoaGains.compute(Array(days.prefix(6)), week: Self.noPlan, today: Self.monday.adding(days: 5))
+    let seven = KoaGains.compute(Array(days.prefix(7)), week: Self.noPlan, today: Self.monday.adding(days: 6))
+    let eight = KoaGains.compute(days, week: Self.noPlan, today: Self.monday.adding(days: 7))
+    #expect(seven.points == six.points && eight.points == six.points)
+    #expect(KoaGains.activeStreak(days, through: Self.monday.adding(days: 6)) == 7)
+    // một ngày nghỉ rồi tập lại: có Gains trở lại
+    let rested = Array(days.prefix(6)) + [Self.d(7)]
+    #expect(KoaGains.compute(rested, week: Self.noPlan, today: Self.monday.adding(days: 7)).points > six.points)
+  }
+
+  @Test func walkingIsRecoveryAndCardioIsAnOffPlanSession() {
+    let walk = KoaGains.Day(date: Self.monday, personalRecord: false, kind: .walk)
+    #expect(KoaGains.compute([walk], week: Self.noPlan, today: Self.monday).points == KoaGains.walkSession)
+    let run = KoaGains.Day(date: Self.monday, personalRecord: true, kind: .cardio)
+    #expect(KoaGains.compute([run], week: Self.plan, today: Self.monday).points == KoaGains.cardioSession)
+    // đi bộ không nối chuỗi: 6 ngày nặng, đi bộ, rồi nặng — ngày thứ 8 vẫn có Gains
+    var days = (0..<6).map { Self.d($0) }
+    days.append(.init(date: Self.monday.adding(days: 6), personalRecord: false, kind: .walk))
+    #expect(KoaGains.activeStreak(days + [Self.d(7)], through: Self.monday.adding(days: 7)) == 1)
+  }
+
+  @Test func plannedRestEarnsUpToTwoDaysInATrainingWeek() {
+    // lịch T2/T4/T6, nghỉ T7/CN; tập T2 → T7 và CN đều +3
+    let s = KoaGains.compute([Self.d(0)], week: Self.plan, today: Self.monday.adding(days: 6))
+    #expect(s.points == KoaGains.plannedSession + 2 * KoaGains.plannedRest)
+    // nghỉ ba ngày trong lịch: chỉ hai ngày có Gains (lịch một buổi: T2 đã đủ tuần)
+    let three = KoaGains.Week(planned: [0], rest: [4, 5, 6])
+    #expect(
+      KoaGains.compute([Self.d(0)], week: three, today: Self.monday.adding(days: 6)).points
+        == KoaGains.plannedSession + KoaGains.fullWeek + KoaGains.restPerWeek * KoaGains.plannedRest)
+    // tuần không có buổi nào: ngày nghỉ không có Gains
+    let nextWeek = KoaGains.compute([Self.d(0)], week: Self.plan, today: Self.monday.adding(days: 13))
+    #expect(nextWeek.points == s.points)
+    // tập vào ngày nghỉ: không +3 cho hôm ấy (thành buổi ngoài lịch)
+    let trainedRest = KoaGains.compute([Self.d(0), Self.d(5)], week: Self.plan, today: Self.monday.adding(days: 5))
+    #expect(trainedRest.points == KoaGains.plannedSession + KoaGains.offPlanSession)
+  }
+
+  @Test func healthSessionsAreClassifiedByActivity() {
+    func row(_ name: String) -> JSONValue {
+      .object(["source": .string(HealthData.appleSource), "template_name": .string("\(name) · 30′ · 120 kcal")])
+    }
+    #expect(KoaGainsSync.kind(row("Đi bộ")) == .walk)
+    #expect(KoaGainsSync.kind(row("Hiking")) == .walk)
+    #expect(KoaGainsSync.kind(row("Chạy bộ")) == .cardio)
+    #expect(KoaGainsSync.kind(row("Strength training")) == .heavy)
+    #expect(KoaGainsSync.kind(row("HIIT")) == .heavy)
+    #expect(KoaGainsSync.kind(row("Một thứ lạ")) == .cardio)
+    #expect(KoaGainsSync.kind(.object(["source": .string("manual"), "template_name": .string("Đi bộ")])) == .heavy)
   }
 }

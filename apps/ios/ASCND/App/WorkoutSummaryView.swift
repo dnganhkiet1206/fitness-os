@@ -74,6 +74,9 @@ public struct WorkoutSummaryView: View {
     let pr: Bool
     let overload: Bool
     let fullWeek: Bool
+    /// Ngày tập liền thứ mấy (gồm hôm nay); quá `maxActiveStreak` thì buổi không có Gains.
+    let streak: Int
+    var overtrained: Bool { streak > KoaGains.maxActiveStreak }
     var delta: Int { after.points - before.points }
     var raw: Int {
       (planned ? KoaGains.plannedSession : KoaGains.offPlanSession) + (pr ? KoaGains.personalRecord : 0)
@@ -88,15 +91,16 @@ public struct WorkoutSummaryView: View {
     let todayPR = summary.prDetected || h.days.contains { $0.date == today && $0.personalRecord }
     let todayOverload = h.days.contains { $0.date == today && $0.overload }
       || (flow?.insights).map { OverloadQuest.achieved(on: today, $0.performances) } ?? false
+    let todayDay = KoaGains.Day(date: today, personalRecord: todayPR, overload: todayOverload)
     let before = KoaGains.compute(past, week: h.week, today: today)
-    let after = KoaGains.compute(
-      past + [.init(date: today, personalRecord: todayPR, overload: todayOverload)], week: h.week, today: today)
+    let after = KoaGains.compute(past + [todayDay], week: h.week, today: today)
     // tuần đủ buổi đạt đúng hôm nay?
     let monday = today.adding(days: -WorkoutPlanning.routineIndex(today))
     let thisWeek = Set(past.map(\.date).filter { $0 >= monday && $0 < today })
     return GainsGain(
       before: before, after: after, planned: h.week.planned.contains(WorkoutPlanning.routineIndex(today)), pr: todayPR,
-      overload: todayOverload, fullWeek: thisWeek.count < h.week.target && thisWeek.count + 1 >= h.week.target)
+      overload: todayOverload, fullWeek: thisWeek.count < h.week.target && thisWeek.count + 1 >= h.week.target,
+      streak: KoaGains.activeStreak(past + [todayDay], through: today))
   }
 
   private func gainsCard(_ g: GainsGain) -> some View {
@@ -119,13 +123,16 @@ public struct WorkoutSummaryView: View {
           .frame(height: 150)
           .accessibilityHidden(true)
         Text(
-          rankUp
-            ? String(localized: "koa.gains.newRank \(rank.name(lang))")
-            : String(localized: "koa.gains.pump \(g.delta)")
+          g.overtrained
+            ? String(localized: "koa.gains.restNeeded \(g.streak)")
+            : rankUp
+              ? String(localized: "koa.gains.newRank \(rank.name(lang))")
+              : String(localized: "koa.gains.pump \(g.delta)")
         )
         .font(.system(size: 22, weight: .heavy))
         .foregroundStyle(DS.Color.foreground.swiftUI)
-        Text(verbatim: parts.joined(separator: " · "))
+        // Quá ngày tập liền (29/10, Kiệt): nói vì sao không có Gains thay cho bảng cộng.
+        Text(verbatim: g.overtrained ? String(localized: "koa.gains.restWhy") : parts.joined(separator: " · "))
           .font(DS.TextStyle.footnote)
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
           .multilineTextAlignment(.center)
