@@ -25,6 +25,10 @@ public enum KoaDust {
     /// Ngày bụi đã tích.
     public let idle: Int
     public static let clean = State(level: 0, idle: 0)
+    public init(level: Int, idle: Int) {
+      self.level = level
+      self.idle = idle
+    }
   }
 
   public static func refKey(_ day: LocalDate) -> String { "clean:\(day)" }
