@@ -69,3 +69,22 @@ struct ShopSceneTests {
     #expect(KoaPaintTests.groups(plan).contains { $0.1 != nil })
   }
 }
+
+/// Khung thấp của tủ đồ (29/10): Koa trọn người, không ra ngoài căn phòng.
+struct ShopSceneBannerTests {
+  @Test func stageBannerKeepsTheWholeFigureInside() {
+    for aspect in [1.2, 1.38, 1.6] {
+      let s = ShopScene.banner(.stage, aspect: aspect)
+      let box = ShopScene.figureBox
+      #expect(s.y <= box.y && s.y + s.h >= box.y + box.h, "aspect \(aspect)")
+      #expect(s.x >= 0 && s.x + s.w <= ShopScene.width + 0.001)
+      #expect(abs(s.w / s.h - aspect) < 0.001)
+    }
+  }
+
+  @Test func overviewBannerSpansTheRoomWidth() {
+    let s = ShopScene.banner(.overview, aspect: 1.38)
+    #expect(abs(s.w - ShopScene.width) < 0.001)
+    #expect(s.y >= 0 && s.y + s.h <= ShopScene.height + 0.001)
+  }
+}

@@ -58,6 +58,21 @@ public enum ShopScene {
     return Shot(x: stageX - w / 2, y: StudioScene.stageMark.y + 6 - h, w: w, h: h)
   }()
 
+  /// Khung THẤP và rộng (tủ đồ ghim sân khấu, 29/10): `aspect` = rộng / cao của khung
+  /// trên màn. Toàn cảnh: hết bề ngang căn phòng, đáy theo sàn. Còn lại: Koa trọn người
+  /// (cao 1,45 lần hình), sàn chừa 12 % ở dưới — các khung `SHOTS` vẽ cho khung cao nên
+  /// lấp đầy một dải thấp thì cắt mất chân.
+  public static func banner(_ name: ShotName, aspect: Double) -> Shot {
+    let box = figureBox
+    let floor = box.y + box.h
+    let wanted = name == .overview ? width / aspect : box.h * 1.45
+    let w = min(width, wanted * aspect)
+    let h = w / aspect
+    let x = max(0, min(width - w, box.x + box.w / 2 - w / 2))
+    let y = max(0, min(height - h, floor + h * 0.12 - h))
+    return Shot(x: x, y: y, w: w, h: h)
+  }
+
   /// `cameraAt`: ma trận phủ `shot` lên khung `vw × vh` — lấp đầy, canh giữa.
   public static func camera(_ shot: Shot, width vw: Double, height vh: Double) -> KoaMath.Mat {
     let s = max(vw / shot.w, vh / shot.h)

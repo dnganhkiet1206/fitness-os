@@ -23,6 +23,9 @@ struct ShopSceneView: View {
   var energy = 0.5
   /// Đang chơi phản ứng mặc đồ.
   var dress = false
+  /// Chiều cao cố định (tủ đồ ghim sân khấu, 29/10): máy quay lấp đầy khung này thay
+  /// cho tỉ lệ của cả căn phòng.
+  var height: CGFloat?
 
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Environment(\.colorScheme) private var scheme
@@ -34,7 +37,8 @@ struct ShopSceneView: View {
     GeometryReader { g in
       let w = Double(g.size.width)
       let h = Double(g.size.height)
-      let m = ShopScene.camera(ShopScene.shot(shot), width: w, height: h)
+      let frame = height == nil ? ShopScene.shot(shot) : ShopScene.banner(shot, aspect: w / max(h, 1))
+      let m = ShopScene.camera(frame, width: w, height: h)
       let box = ShopScene.figureBox
       let ss = Self.ss
       ZStack(alignment: .topLeading) {
@@ -47,7 +51,7 @@ struct ShopSceneView: View {
       .offset(x: m[4], y: m[5])
       .animation(reduceMotion ? nil : .interpolatingSpring(mass: 1, stiffness: 120, damping: 26), value: shot)
     }
-    .aspectRatio(ShopScene.width / ShopScene.height, contentMode: .fit)
+    .modifier(SceneFrame(height: height))
     // Thẻ bo góc như sân khấu phòng Koa (15/10, thay mép tan của RN).
     .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
     .overlay {
@@ -74,5 +78,18 @@ private struct ShopRoomCanvas: View {
       KoaCanvas.draw(plan, in: &c)
     }
     .frame(width: ShopScene.width * scale, height: ShopScene.height * scale)
+  }
+}
+
+/// Tỉ lệ cả căn phòng, hay một khung cao cố định phủ hết bề ngang (tủ đồ).
+private struct SceneFrame: ViewModifier {
+  let height: CGFloat?
+
+  func body(content: Content) -> some View {
+    if let height {
+      content.frame(maxWidth: .infinity).frame(height: height)
+    } else {
+      content.aspectRatio(ShopScene.width / ShopScene.height, contentMode: .fit)
+    }
   }
 }
