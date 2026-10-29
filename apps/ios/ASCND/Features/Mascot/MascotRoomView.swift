@@ -42,6 +42,8 @@ struct MascotRoomView: View {
   /// Số trên bảng tường (29/10, Kiệt: người dùng chọn) — lưu trên máy.
   @AppStorage("koa.roomBoard") private var boardStat = RoomBoard.Stat.rank.rawValue
   @Environment(\.weightUnit) private var unit
+  /// Thanh DEV: ép mức bụi để soát hình (phần 5), chỉ bản Debug.
+  @State private var devDust: Int?
   /// Thanh DEV: ép một cảm xúc để soát hình (`setDevEmotion`), chỉ bản Debug.
   @State private var devEmotion: KoaEmotion.Emotion?
 
@@ -58,10 +60,12 @@ struct MascotRoomView: View {
         await services.koaWeek(userId: room.userId)?.claimIfComplete(koaWeekState)
         // tủ đồ cho đồ Koa đang mặc trên sân khấu (`equippedOutfits` của RN)
         if let shop, case .loading = shop.phase { await shop.load() }
+        await services.loadKoaDust(userId: room.userId)
       }
       .refreshable {
         await room.load()
         await shop?.load()
+        await services.loadKoaDust(userId: room.userId)
       }
       .onChange(of: room.welcomeGranted) { _, amount in
         guard let amount else { return }
@@ -105,6 +109,7 @@ struct MascotRoomView: View {
               .dsCard(radius: 22)
           }
           // Kiểu Apple Health (Kiệt duyệt 24/10): thẻ tóm tắt, chi tiết ở màn con.
+          dustCard
           // Năng lượng + nhiệm vụ gộp một thẻ, chuỗi bỏ khỏi phòng (29/10, Kiệt).
           sectionTitle(String(localized: "mr.sec.today"))
           todaySummary
@@ -167,6 +172,9 @@ struct MascotRoomView: View {
     private var devBar: some View {
       ScrollView(.horizontal, showsIndicators: false) {
         HStack(spacing: DS.Spacing.xs) {
+          ForEach(0..<4, id: \.self) { n in
+            devChip("dust \(n)", on: devDust == n) { devDust = devDust == n ? nil : n }
+          }
           devChip("auto", on: devEmotion == nil) { devEmotion = nil }
           ForEach(KoaEmotion.devEmotions, id: \.self) { e in
             devChip(e.rawValue, on: devEmotion == e) { devEmotion = e }
@@ -210,7 +218,8 @@ struct MascotRoomView: View {
         board: board,
         onBoard: {
           boardStat = (RoomBoard.Stat(rawValue: boardStat) ?? .rank).next.rawValue
-        })
+        },
+        dust: devDust ?? dust?.level ?? 0)
         .sensoryFeedback(.selection, trigger: boardStat)
         // Nằm thẳng trên nền, không thẻ, không viền (Kiệt 24/10): tràn ngang màn,
         // mép trên / dưới / hai bên tan vào nền trang.
@@ -227,6 +236,54 @@ struct MascotRoomView: View {
           }
         }
         .padding(.horizontal, -DS.Spacing.md)
+    }
+  }
+
+  // MARK: - Bụi (phần 5)
+
+  @State private var cleaning = false
+
+  private var dust: KoaDust.State? {
+    guard let d = services.koaDust, d.userId == room.userId else { return nil }
+    return d.state
+  }
+
+  /// Phòng bám bụi: vì sao, dọn miễn phí thế nào, hay dọn ngay bằng 30 xu.
+  @ViewBuilder private var dustCard: some View {
+    if let d = dust, d.level > 0 {
+      DSCard {
+        VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+          Label(String(localized: "mr.dust.title \(d.idle)"), systemImage: "sparkles")
+            .font(DS.TextStyle.headline)
+            .foregroundStyle(DS.Color.foreground.swiftUI)
+          Text("mr.dust.how")
+            .font(DS.TextStyle.footnote)
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .fixedSize(horizontal: false, vertical: true)
+          Button {
+            Task { await clean() }
+          } label: {
+            HStack(spacing: 6) {
+              if cleaning { ProgressView().controlSize(.small) }
+              Text(String(localized: "mr.dust.clean \(KoaDust.cleanCoins)"))
+            }
+          }
+          .buttonStyle(.dsPillSecondary)
+          .disabled(cleaning || room.balance < KoaDust.cleanCoins)
+        }
+      }
+    }
+  }
+
+  private func clean() async {
+    guard !cleaning else { return }
+    cleaning = true
+    defer { cleaning = false }
+    if let f = await services.cleanKoaRoom(userId: room.userId) {
+      say(f == .insufficientCoins ? String(localized: "shop.notenough") : Self.message(f))
+    } else {
+      say(String(localized: "mr.dust.cleaned"))
+      await room.load()
     }
   }
 
@@ -777,6 +834,8 @@ struct MascotStage: View {
   var board: StudioScene.Board?
   /// Chạm bảng để đổi số hiện; `nil` = bảng chỉ để xem.
   var onBoard: (() -> Void)?
+  /// Mức bụi 0…3 (phần 5).
+  var dust = 0
 
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Environment(\.colorScheme) private var scheme
@@ -795,6 +854,7 @@ struct MascotStage: View {
     o.energy = energy
     o.board = board ?? RoomBoard.rank(build, of: MascotRules.ranks.count, lang: lang)
     o.decor = MascotShop.decorChoice(equipped: Set(equipped))
+    o.dust = dust
     o.moon = StudioScene.moonPhase(.now)
     o.label = "Koa"
     // Phòng ban ngày ở giao diện sáng (15/10 — trước đây chỉ có cảnh đêm).

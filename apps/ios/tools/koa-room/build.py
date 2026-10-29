@@ -390,10 +390,182 @@ def _():
     return out[:i45] + band + out[i45:i45 + 1] + vein + out[i45 + 1:]
 
 
+# ══ BỤI VÀ MẠNG NHỆN (#527 phần 5 — Kiệt duyệt mock bản 3, 29/10) ═══════════════
+# Lớp phủ trên phòng, KHÔNG đổi màu phòng (Kiệt 29/10): chỉ nét xám / trắng mờ chồng
+# lên đồ vật. Ba mức cộng dồn: 1 = bụi nhẹ, 2 = thêm mạng nhện góc, 3 = bụi dày + nhện.
+DUSTC, WEBC = "#C9CED8", "#E4E9F5"
+
+
+def cobweb(cx, cy, a0, a1, r, rings=4, seed=0, o=0.62):
+    """Mạng nhện cách điệu ở một góc (29/10, Kiệt: "đừng ngay ngắn quá"): sợi toả lệch
+    nhau, dài ngắn khác nhau, hơi cong; vòng tơ võng XUỐNG theo trọng lực, sâu ở khoảng
+    rộng; vài đoạn rách; nét đậm ở chỗ bám, nhạt dần ra ngoài; một sợi đứt rủ xuống."""
+    import random
+    rnd = random.Random(seed)
+    n = 5 + rnd.randint(0, 1)
+    # góc lệch không đều
+    cuts = sorted(rnd.random() for _ in range(n - 2))
+    angs = [math.radians(a0 + (a1 - a0) * t) for t in [0.0] + cuts + [1.0]]
+    lens = [r * (0.65 + 0.45 * rnd.random()) for _ in angs]
+    out = []
+    for t, l in zip(angs, lens):
+        ex, ey = cx + l * math.cos(t), cy + l * math.sin(t)
+        mx_, my_ = (cx + ex) / 2, (cy + ey) / 2 + l * 0.05
+        out.append(P(f"M {cx} {cy} Q {mx_:.1f} {my_:.1f} {ex:.1f} {ey:.1f}", stroke=WEBC, strokeWidth=1.1, fill="none",
+                     opacity=o, strokeLinecap="round"))
+    for k in range(1, rings + 1):
+        f = (k / (rings + 0.4)) * (0.92 + 0.12 * rnd.random())
+        pts = [(cx + l * f * math.cos(t), cy + l * f * math.sin(t)) for t, l in zip(angs, lens)]
+        for (x0, y0), (x1, y1) in zip(pts, pts[1:]):
+            if rnd.random() < 0.14:  # rách
+                continue
+            seg = math.hypot(x1 - x0, y1 - y0)
+            sag = seg * (0.18 + 0.14 * rnd.random())
+            qx, qy = (x0 + x1) / 2 + (rnd.random() - 0.5) * 3, max(y0, y1) + sag
+            w = 0.95 - 0.35 * k / rings
+            out.append(P(f"M {x0:.1f} {y0:.1f} Q {qx:.1f} {qy:.1f} {x1:.1f} {y1:.1f}", stroke=WEBC, strokeWidth=round(w, 2),
+                         fill="none", opacity=round(o * (1 - 0.35 * k / rings), 2), strokeLinecap="round"))
+    # một sợi đứt rủ xuống từ vòng ngoài
+    t, l = angs[len(angs) // 2], lens[len(lens) // 2]
+    hx, hy = cx + l * 0.8 * math.cos(t), cy + l * 0.8 * math.sin(t)
+    drop = 10 + 12 * rnd.random()
+    out += [P(f"M {hx:.1f} {hy:.1f} q 3 {drop / 2:.1f} -1 {drop:.1f}", stroke=WEBC, strokeWidth=0.7, fill="none", opacity=o * 0.8,
+              strokeLinecap="round"),
+            C(hx - 1, hy + drop + 1.2, 1.4, fill=WEBC, opacity=o * 0.7)]
+    return out
+
+
+DUSTD = "#9AA2B4"  # bóng dưới của bụi — vẫn là xám, không nhuộm phòng
+
+
+def dust_line(x, y, w, o=0.8):
+    """Lớp bụi trên mặt kệ / bậu: một dải xù, mép trên gợn, gồ thành vài đụn, có
+    vệt sáng trên đỉnh và vài hạt rơi ở mép trước."""
+    import random
+    rnd = random.Random(int(x * 7 + y))
+    top, steps = [], max(6, int(w / 5))
+    for i in range(steps + 1):
+        px = x + w * i / steps
+        top.append((px, y - 1.2 - 1.6 * rnd.random() - (2.2 if rnd.random() < 0.18 else 0)))
+    d = f"M {x:.1f} {y:.1f} L {top[0][0]:.1f} {top[0][1]:.1f}"
+    for (x0, y0), (x1, y1) in zip(top, top[1:]):
+        d += f" Q {(x0 + x1) / 2:.1f} {min(y0, y1) - 1:.1f} {x1:.1f} {y1:.1f}"
+    d += f" L {x + w:.1f} {y:.1f} Z"
+    out = [P(d, fill=DUSTC, opacity=o), P(d, fill="none", stroke=WEBC, strokeWidth=0.6, opacity=o * 0.6)]
+    for _ in range(int(w / 14)):
+        out.append(C(x + rnd.random() * w, y + 1 + rnd.random() * 2.5, 0.6 + rnd.random() * 0.6, fill=DUSTC, opacity=o * 0.7))
+    return out
+
+
+def hammock(ax, ay, bx, by, n=5, seed=0, o=0.6):
+    """Tấm tơ võng căng giữa hai điểm bám (trần ↔ tường): các sợi chạy gần song song,
+    mỗi sợi võng một độ sâu khác, vài sợi ngang nối lệch — không có tâm, không đối xứng."""
+    import random
+    rnd = random.Random(seed)
+    out = []
+    prev = None
+    for k in range(n):
+        f = k / (n - 1)
+        # điểm bám trượt dần dọc trần / tường, lệch ngẫu nhiên
+        x0, y0 = ax - 14 * f + rnd.uniform(-2, 2), ay + 2 * f
+        x1, y1 = bx + rnd.uniform(-1, 1), by + 16 * f + rnd.uniform(-2, 2)
+        sag = 8 + 10 * f + 6 * rnd.random()
+        qx, qy = (x0 + x1) / 2 - 4, max(y0, y1) + sag
+        out.append(P(f"M {x0:.1f} {y0:.1f} Q {qx:.1f} {qy:.1f} {x1:.1f} {y1:.1f}", stroke=WEBC,
+                     strokeWidth=round(1.0 - 0.4 * f, 2), fill="none", opacity=round(o * (1 - 0.3 * f), 2), strokeLinecap="round"))
+        if prev and rnd.random() < 0.7:
+            t = 0.25 + 0.5 * rnd.random()
+            def at(c, t):
+                (sx, sy), (cx_, cy_), (ex, ey) = c
+                return ((1 - t) ** 2 * sx + 2 * (1 - t) * t * cx_ + t * t * ex, (1 - t) ** 2 * sy + 2 * (1 - t) * t * cy_ + t * t * ey)
+            p0, p1 = at(prev, t), at(((x0, y0), (qx, qy), (x1, y1)), t + rnd.uniform(-0.08, 0.08))
+            out.append(L(f"M {p0[0]:.1f} {p0[1]:.1f} L {p1[0]:.1f} {p1[1]:.1f}", WEBC, 0.5, o * 0.7))
+        prev = ((x0, y0), (qx, qy), (x1, y1))
+    return out
+
+
+def tangle(cx, cy, r, n=6, seed=0, o=0.55):
+    """Vài sợi rối bắt chéo nhau quanh một điểm (dây đèn, chân kệ), một nhúm tơ ở giữa."""
+    import random
+    rnd = random.Random(seed)
+    out = []
+    for _ in range(n):
+        a = rnd.uniform(0, math.tau)
+        b = a + math.pi + rnd.uniform(-0.6, 0.6)
+        r0, r1 = r * rnd.uniform(0.5, 1), r * rnd.uniform(0.5, 1)
+        x0, y0 = cx + r0 * math.cos(a), cy + r0 * math.sin(a)
+        x1, y1 = cx + r1 * math.cos(b), cy + r1 * math.sin(b)
+        out.append(P(f"M {x0:.1f} {y0:.1f} Q {cx + rnd.uniform(-3, 3):.1f} {cy + rnd.uniform(1, 5):.1f} {x1:.1f} {y1:.1f}",
+                     stroke=WEBC, strokeWidth=0.55, fill="none", opacity=o, strokeLinecap="round"))
+    out.append(E(cx, cy + 1, 2.4, 1.6, fill=WEBC, opacity=o * 0.6))
+    return out
+
+
+def fluff(x, y, w, seed=0, o=0.7):
+    """Bụi xơ dẹt trên sàn: một vệt thấp mờ + nhiều sợi lông bụi ngắn, cong, nằm ngang."""
+    import random
+    rnd = random.Random(seed + int(x))
+    out = [E(x, y, w / 2, w / 9, fill=DUSTC, opacity=o * 0.45)]
+    for _ in range(int(w * 0.9)):
+        px = x + rnd.uniform(-w / 2, w / 2) * 0.9
+        py = y + rnd.uniform(-w / 10, w / 14)
+        dx = rnd.uniform(2, 5) * (1 if rnd.random() < 0.5 else -1)
+        out.append(P(f"M {px:.1f} {py:.1f} q {dx / 2:.1f} {rnd.uniform(-1.6, 0.4):.1f} {dx:.1f} {rnd.uniform(-0.6, 0.6):.1f}",
+                     stroke=rnd.choice([WEBC, DUSTC]), strokeWidth=0.55, fill="none", opacity=round(o * rnd.uniform(0.5, 1), 2),
+                     strokeLinecap="round"))
+    return out
+
+
+def baseboard(x0, x1, seed=0, o=0.6):
+    """Bụi dồn ở chân tường (mép sàn y 358): vài đụn ngắn mép gợn, dài ngắn và cách nhau
+    không đều, có lông xơ — không thành một hàng nét đứt."""
+    import random
+    rnd = random.Random(seed)
+    out = []
+    x = x0 + rnd.uniform(0, 20)
+    while x < x1 - 8:
+        w = rnd.uniform(10, 34)
+        out += dust_line(x, 359.5, w, o=round(o * rnd.uniform(0.55, 0.9), 2))
+        out += fluff(x + w * rnd.uniform(0.3, 0.7), 360.5, rnd.uniform(6, 10), seed=int(x), o=o * 0.7)
+        x += w + rnd.uniform(18, 60)
+    return out
+
+
+def motes(n, seed=0):
+    """Hạt bụi lơ lửng trong vệt đèn."""
+    import random
+    rnd = random.Random(seed)
+    return [C(150 + rnd.random() * 90, 110 + rnd.random() * 220, 0.6 + rnd.random() * 0.8, fill=WEBC, opacity=0.25 + rnd.random() * 0.3)
+            for _ in range(n)]
+
+
+DUST = {
+    1: (dust_line(28, 250, 88) + dust_line(20, 300, 104) + dust_line(267, 209, 105, 0.7)
+        + baseboard(0, 140, seed=1) + fluff(22, 430, 22, seed=1) + motes(10, 1)),
+    # mỗi chỗ một kiểu tơ (29/10, Kiệt: "đừng đối xứng"): quạt lệch lớn ở góc trái,
+    # tấm võng nhỏ góc phải, vài sợi rối ở chân kệ
+    2: (cobweb(26, 0, 4, 70, 86, rings=5, seed=21) + hammock(352, 0, 364, 40, n=4, seed=22)
+        + tangle(118, 262, 10, seed=23) + dust_line(12, 350, 120) + dust_line(270, 245, 102, 0.65)
+        + baseboard(250, 390, seed=2) + fluff(366, 446, 26, seed=2) + motes(10, 2)),
+    3: (tangle(195, 34, 12, n=7, seed=24, o=0.5) + cobweb(361, 101, 100, 168, 26, rings=2, seed=25, o=0.5)
+        + dust_line(24, 130, 84, 0.75) + dust_line(28, 250, 88, 0.95) + dust_line(20, 300, 104, 0.95)
+        + baseboard(140, 250, seed=3, o=0.5) + fluff(150, 372, 18, seed=3) + fluff(12, 466, 20, seed=4) + motes(14, 3)
+        # nhện nhỏ thả tơ từ mạng góc trái
+        + [P("M 60 30 Q 62 56 59 80", stroke=WEBC, strokeWidth=0.6, fill="none", opacity=0.7),
+           E(59, 84, 2.8, 3.4, fill="#3A4566"), C(59, 80.2, 1.8, fill="#3A4566"),
+           L("M 56.5 82.5 l -3.2 -2.4 M 56.4 85 l -3.4 1.2 M 61.5 82.5 l 3.2 -2.4 M 61.6 85 l 3.4 1.2", "#3A4566", 0.7)]),
+}
+
+
+def dust_layer(level):
+    return [n for k in sorted(DUST) if k <= level for n in DUST[k]]
+
+
 # ── Ghi file
 def write():
     check()
-    data = {"spots": SPOTS, "variants": VARIANTS}
+    # bụi: các lớp theo mức (cộng dồn ở app) + chỉ số phần tử mà bụi nằm ngay sau
+    data = {"spots": SPOTS, "variants": VARIANTS, "dust": {str(k): v for k, v in DUST.items()}, "dustAfter": F(1)}
     out = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
     if '"##' in out: raise SystemExit("chuỗi thô của Swift sẽ gãy")
     DST.write_text(f"""// SINH TỰ ĐỘNG — đừng sửa tay.
@@ -444,7 +616,7 @@ def svg(n):
     return f"<{t} {attrs}>{inner}</{t}>"
 
 
-def room(spot=None, key=None):
+def room(spot=None, key=None, dust=0):
     skip = set(SPOTS[spot]) if spot else set()
     els = []
     for i, n in enumerate(TEMPLATE):
@@ -452,6 +624,8 @@ def room(spot=None, key=None):
             if i == min(skip): els += VARIANTS[key]
             continue
         els.append(n)
+        # bụi nằm trên đồ đạc, dưới đèn / vignette của lớp trước
+        if dust and i == F(1): els += dust_layer(dust)
     body = "".join(svg(n) for n in els)
     return f'<svg xmlns="http://www.w3.org/2000/svg" width="780" height="952" viewBox="0 0 390 476">{body}</svg>'
 
@@ -459,10 +633,11 @@ def room(spot=None, key=None):
 def preview(dir_):
     d_ = Path(dir_); d_.mkdir(parents=True, exist_ok=True)
     chrome = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
-    shots = [("base", None, None)] + [(k.replace(".", "_"), k.split(".")[0], k) for k in VARIANTS]
-    for name, spot, key in shots:
+    shots = [("base", None, None, 0)] + [(k.replace(".", "_"), k.split(".")[0], k, 0) for k in VARIANTS]
+    shots += [(f"dust{n}", None, None, n) for n in (1, 2, 3)]
+    for name, spot, key, dust in shots:
         f = d_ / f"{name}.svg"
-        f.write_text(room(spot, key))
+        f.write_text(room(spot, key, dust))
         subprocess.run([chrome, "--headless=new", "--disable-gpu", "--hide-scrollbars", f"--screenshot={d_ / (name + '.png')}",
                         "--window-size=780,952", "--default-background-color=00000000", f.as_uri()],
                        check=True, capture_output=True)

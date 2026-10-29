@@ -186,6 +186,12 @@ struct TodayDayBlock: View {
             .font(DS.TextStyle.footnote)
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
         }
+        // phòng bám bụi (phần 5): nhắc nhẹ, không phạt
+        if let dust = services?.koaDust, dust.userId == room.userId, dust.state.level > 0 {
+          Label(String(localized: "koa.dust.nudge"), systemImage: "sparkles")
+            .font(DS.TextStyle.footnote)
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        }
       }
       Spacer(minLength: 0)
     }

@@ -56,5 +56,32 @@ DO $$ BEGIN
   ASSERT (SELECT count(*) FROM mascot_transactions WHERE user_id = 'ec000000-0000-4000-8000-00000000000c' AND ref_key = 'd:' || current_date || ':overload') = 1,
     'Q4 70 xu khám phá hôm nay bị tính vào trần (770 + 20 ≤ 800 phải nhận được)';
 END $$;
-\echo 'NHIỆM VỤ KOA (tăng tải, khám phá ngoài trần): Q1–Q4 xanh'
+-- ── C1–C3: dọn phòng bằng xu (phần 5) ──
+DO $$ BEGIN
+  ASSERT NOT has_function_privilege('anon', 'public.clean_koa_room(date)', 'EXECUTE'), 'C1 anon gọi được clean_koa_room';
+  ASSERT has_function_privilege('authenticated', 'public.clean_koa_room(date)', 'EXECUTE'), 'C1 người đã đăng nhập không gọi được clean_koa_room';
+END $$;
+SELECT pg_temp.who('ec000000-0000-4000-8000-00000000000c'); SET ROLE authenticated;
+DO $$ DECLARE b1 int; b2 int; BEGIN
+  b1 := public.clean_koa_room(current_date);
+  b2 := public.clean_koa_room(current_date);
+  ASSERT b1 = b2, format('C2 dọn lần hai cùng ngày trả số dư khác (%s → %s)', b1, b2);
+  ASSERT pg_temp.errcode($q$SELECT public.clean_koa_room(current_date - 9)$q$) <> 'ok', 'C3 dọn được cho một ngày xa';
+END $$;
+RESET ROLE;
+DO $$ BEGIN
+  ASSERT (SELECT count(*) FROM mascot_transactions WHERE user_id = 'ec000000-0000-4000-8000-00000000000c' AND ref_key = 'clean:' || current_date) = 1,
+    'C2 dọn hai lần trong một ngày bị trừ hai lần';
+  ASSERT (SELECT amount FROM mascot_transactions WHERE user_id = 'ec000000-0000-4000-8000-00000000000c' AND ref_key = 'clean:' || current_date) = -30,
+    'C2 dọn phòng không trừ đúng 30 xu';
+END $$;
+-- thiếu xu: một người không có xu
+\set D '''ed000000-0000-4000-8000-00000000000d'''
+INSERT INTO auth.users (id) VALUES (:D);
+SELECT pg_temp.who('ed000000-0000-4000-8000-00000000000d'); SET ROLE authenticated;
+DO $$ BEGIN
+  ASSERT pg_temp.errcode($q$SELECT public.clean_koa_room(current_date)$q$) <> 'ok', 'C3 dọn được khi không có xu';
+END $$;
+RESET ROLE;
+\echo 'NHIỆM VỤ KOA (tăng tải, khám phá ngoài trần): Q1–Q4 xanh · DỌN PHÒNG: C1–C3 xanh'
 ROLLBACK;
