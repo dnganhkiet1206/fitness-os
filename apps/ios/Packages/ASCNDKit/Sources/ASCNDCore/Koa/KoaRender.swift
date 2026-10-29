@@ -387,6 +387,9 @@ public enum KoaRender {
     f["armRankL"] = .text(r == 0 ? "" : armL)
     f["armRankR"] = .text(r == 0 ? "" : armR)
     f["handRank"] = .text(r == 0 || !standing ? "" : armR)
+    // Neo tay của RN (178,236) lọt vào giữa cánh tay → đồ cầm tay trông như dán giữa tay
+    // (29/10): khi đứng dời món ra đúng đầu bàn tay (~190,240), mọi hạng.
+    f["handFit"] = .text(standing ? "translate(12,4)" : "")
     f["topRank"] = .text(r == 0 ? "" : "translate(120,0) scale(\(num(1 + 0.16 * t)),1) translate(-120,0)")
     return f
   }
