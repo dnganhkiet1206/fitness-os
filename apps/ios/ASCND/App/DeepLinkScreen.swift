@@ -61,6 +61,9 @@ struct DeepLinkScreen: View {
       LogBiometricsView(makeLogger: { services.makeBiometricLogger(userId: userId) }) { dismiss() }
     case .logWorkout:
       ManualLogView(flow: flow)
+    // Như chạm thẻ ở Cộng đồng: màn bình luận bật lên, kèm cả bài.
+    case .communityPost(let id):
+      CommunityCommentsSheet(postId: id, showsPost: true)
     default:
       NavigationStack {
         content
@@ -95,7 +98,9 @@ struct DeepLinkScreen: View {
       RemindersView()
     case .templates:
       TemplateListView(flow: flow)
-    case .logMeal, .logWeight, .logMeasurement, .logSleep, .logBiometrics, .logWorkout:
+    case .communityUser(let id):
+      CommunityUserScreen(targetId: id)
+    case .logMeal, .logWeight, .logMeasurement, .logSleep, .logBiometrics, .logWorkout, .communityPost:
       EmptyView()
     }
   }
