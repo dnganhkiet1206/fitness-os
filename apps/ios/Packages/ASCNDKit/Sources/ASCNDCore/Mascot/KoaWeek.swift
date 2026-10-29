@@ -45,17 +45,25 @@ public enum KoaWeek {
     let week = KoaGains.Week(library)
     guard !week.planned.isEmpty || !library.overrides.isEmpty else { return nil }
     let start = WeeklyChallenges.weekStart(today)
-    let days = (0..<7).map { o -> Day in
-      let d = start.adding(days: o)
-      let p = library.plan(for: d, today: today)
-      return Day(date: d, planned: p.template != nil, rest: p.status == .rest, trained: trained.contains(d))
-    }
+    let days = days(weekStart: start, today: today, library: library, trained: trained)
     guard week.target > 0, days.contains(where: \.planned) || days.contains(where: \.trained) else { return nil }
     return State(weekStart: start, days: days, target: week.target, done: days.filter(\.trained).count)
   }
 }
 
 extension KoaWeek {
+  /// Bảy ngày Thứ Hai → Chủ nhật của một tuần bất kỳ theo lịch đã áp (vòng ngày ở
+  /// màn Tổng kết tuần). Cùng `plan(for:)` với `state` nên tuần này hai nơi giống nhau.
+  public static func days(
+    weekStart: LocalDate, today: LocalDate, library: TemplateSnapshot, trained: Set<LocalDate>
+  ) -> [Day] {
+    (0..<7).map { o -> Day in
+      let d = weekStart.adding(days: o)
+      let p = library.plan(for: d, today: today)
+      return Day(date: d, planned: p.template != nil, rest: p.status == .rest, trained: trained.contains(d))
+    }
+  }
+
   /// Tổng kết một tuần theo lịch (GĐ2, mở đầu màn Tổng kết tuần): buổi đã tập / đích,
   /// buổi dời, ngày nghỉ người dùng tự chọn, Gains kiếm trong tuần. Cùng lịch đã áp
   /// và cùng lịch sử với Gains — không có con số thứ hai.

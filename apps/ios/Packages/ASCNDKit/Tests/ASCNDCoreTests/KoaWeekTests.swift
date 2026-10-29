@@ -125,4 +125,15 @@ struct KoaWeekTests {
     #expect(s.target == 3 && s.done == 2 && s.moved == 1 && s.chosenRest == 1)
     #expect(s.gains == 2 * KoaGains.plannedSession, "chỉ Gains của tuần này; buổi dời sang T5 vẫn là buổi trong lịch")
   }
+
+  /// Vòng ngày của màn Tổng kết tuần: một tuần đã qua vẫn đọc đúng lịch và buổi đã tập.
+  @Test func daysOfAPastWeekFollowThePlan() {
+    let prev = Self.mon.adding(days: -7)
+    let d = KoaWeek.days(
+      weekStart: prev, today: Self.mon.adding(days: 3), library: Self.lib(), trained: [prev.adding(days: 2), Self.mon])
+    #expect(d.map(\.date) == (0..<7).map { prev.adding(days: $0) })
+    #expect(d.map(\.planned) == [true, false, true, false, true, false, false])
+    #expect(d.map(\.rest) == [false, false, false, false, false, true, true])
+    #expect(d.map(\.trained) == [false, false, true, false, false, false, false], "buổi tuần khác không lọt vào")
+  }
 }

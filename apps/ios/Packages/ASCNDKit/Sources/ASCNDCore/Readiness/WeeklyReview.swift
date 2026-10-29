@@ -142,6 +142,8 @@ public enum WeeklyReview {
     public let totalVolume: Double
     public let workoutCount: Int
     public let supplementAdherence: Int?
+    /// Số ngày có kế hoạch thực phẩm bổ sung (mẫu số của `supplementAdherence`).
+    public let supplementDays: Int
     public let readinessDays: Int
     public let avgReadiness: Double
     public let prevAvgKcal: Double
@@ -296,7 +298,8 @@ public enum WeeklyReview {
     return Summary(
       daysWithData: logs.count, daysLogged: daysLogged, avgKcal: kcal.mean, avgProtein: protein.mean,
       proteinDays: protein.count, avgWaterMl: water.mean, avgSleepHours: avgSleepH, totalVolume: totalVolume,
-      workoutCount: workoutCount, supplementAdherence: supp, readinessDays: readinessDays, avgReadiness: avgReadiness,
+      workoutCount: workoutCount, supplementAdherence: supp,
+      supplementDays: suppDays.count, readinessDays: readinessDays, avgReadiness: avgReadiness,
       prevAvgKcal: prevKcal, prevAvgProtein: prevProtein, prevTotalVolume: prevVolume, acwr: acwr,
       kcalTarget: JS.number(kcalTarget), proteinTarget: JS.number(proteinTarget), sleepTargetHours: sleepTarget,
       waterTargetMl: waterTarget, cards: cards, days: days,
