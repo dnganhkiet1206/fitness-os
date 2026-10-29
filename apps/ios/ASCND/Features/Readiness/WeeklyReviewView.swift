@@ -382,7 +382,7 @@ struct WeeklyReviewView: View {
               .accessibilityLabel(Text(String(localized: "wr.chart.sleep")))
           case .training:
             WeekBars(
-              days: s.days, values: s.days.map(\.volume), tint: DS.Color.metricBlue.swiftUI, target: nil,
+              days: s.days, values: s.days.map(\.volume), tint: DS.Color.metricRose.swiftUI, target: nil,
               targetLabel: nil, unit: "", partial: partial, barHeight: trend ? 64 : Self.barHeight)
               .accessibilityLabel(Text(String(localized: "wr.chart.volume")))
             if trend { volumeTrend(s) }
@@ -416,10 +416,10 @@ struct WeeklyReviewView: View {
         .foregroundStyle(muted)
       Chart(s.volumeWeeks, id: \.weekStart) { w in
         AreaMark(x: .value("w", w.weekStart.daysSinceEpoch), y: .value("t", w.tonnes))
-          .foregroundStyle(DS.Color.metricBlue.swiftUI.opacity(0.15))
+          .foregroundStyle(DS.Color.metricRose.swiftUI.opacity(0.15))
           .interpolationMethod(.monotone)
         LineMark(x: .value("w", w.weekStart.daysSinceEpoch), y: .value("t", w.tonnes))
-          .foregroundStyle(DS.Color.metricBlue.swiftUI)
+          .foregroundStyle(DS.Color.metricRose.swiftUI)
           .interpolationMethod(.monotone)
       }
       .chartXAxis(.hidden)
