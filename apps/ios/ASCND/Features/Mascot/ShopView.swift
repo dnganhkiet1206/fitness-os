@@ -8,7 +8,8 @@ import SwiftUI
 /// - Sân khấu GHIM ở trên, lưới đồ cuộn bên dưới: đổi món nào cũng thấy trên Koa
 ///   (bản cũ: chọn đồ là Koa cuộn mất khỏi màn).
 /// - Hai tab thay bốn: Trang phục (7 ô của bộ vẽ) và Đồ phòng — chủ đề phòng (sân khấu
-///   cũ) + 6 chỗ đổi được (phần 3, 29/10); xem trước trên chính căn phòng của Koa. "Tủ đồ"
+///   cũ) + 6 chỗ đổi được (phần 3, 29/10); xem trước trên chính căn phòng của Koa, máy
+///   quay trượt tới chỗ đang chọn. "Tủ đồ"
 ///   cũ thành bộ lọc "Của tôi".
 /// - Thẻ có hình (Koa mặc đúng món ấy, cắt theo ô) thay danh sách chữ.
 /// - Thử nhiều món một lúc (mỗi ô một món), rồi một nút: Mặc (đồ đã có) hay Mua · tổng
@@ -181,27 +182,32 @@ struct ShopView: View {
     return on
   }
 
-  /// Căn phòng thật của Koa với đồ đang thử, vừa khung theo chiều cao; hai bên là chính
-  /// căn phòng phóng to làm mờ. Huy hiệu số trên từng chỗ: chạm để chọn chỗ.
+  /// Căn phòng thật của Koa với đồ đang thử, phủ kín bề ngang khung (Kiệt 29/10: bản
+  /// thu theo chiều cao thành một dải hẹp giữa hai mép mờ "nhìn kỳ"). Khung chỉ cao 260
+  /// nên máy quay trượt dọc tới chỗ đang chọn; chỗ ấy có viền vàng. Chạm vào đồ vật
+  /// trong phòng để chọn chỗ của nó.
   private var roomPreview: some View {
     let eq = wornWithTheme
     return GeometryReader { g in
-      let h = g.size.height
-      let w = h * StudioScene.width / StudioScene.sceneBottom
-      ZStack {
-        RoomThumb(equipped: eq, crop: nil)
-          .frame(width: max(g.size.width, w) * 1.4, height: h * 1.4)
-          .blur(radius: 18)
-          .opacity(0.55)
-        ZStack(alignment: .topLeading) {
-          MascotStage(level: 1, build: book.gains.rank, energy: 0.8, celebrateSignal: 0, equipped: eq)
-          ForEach(Array(StudioScene.decorSpots.enumerated()), id: \.element) { i, s in
-            spotBadge(i + 1, s, at: RoomThumb.badge[s] ?? .zero, k: w / StudioScene.width)
-          }
+      let k = g.size.width / StudioScene.width
+      let top = Self.roomTop(spot: spot, visible: g.size.height / k)
+      ZStack(alignment: .topLeading) {
+        MascotStage(level: 1, build: book.gains.rank, energy: 0.8, celebrateSignal: 0, equipped: eq)
+          .frame(width: g.size.width, height: StudioScene.sceneBottom * k)
+        if let r = RoomThumb.outlines[spot] {
+          RoundedRectangle(cornerRadius: 10 * k, style: .continuous)
+            .strokeBorder(Color(hex: "#FFC24D").opacity(0.85), lineWidth: 2)
+            .frame(width: r.width * k, height: r.height * k)
+            .offset(x: r.minX * k, y: r.minY * k)
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
         }
-        .frame(width: w, height: h)
+        ForEach(StudioScene.decorSpots, id: \.self) { s in
+          if let r = RoomThumb.outlines[s] { spotHit(s, r, k: k) }
+        }
       }
-      .frame(width: g.size.width, height: h)
+      .offset(y: -top * k)
+      .animation(reduceMotion ? nil : .smooth(duration: 0.45), value: spot)
     }
     .frame(height: Self.stageHeight)
     .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
@@ -211,24 +217,26 @@ struct ShopView: View {
     }
   }
 
-  private func spotBadge(_ n: Int, _ s: String, at p: CGPoint, k: CGFloat) -> some View {
-    let on = spot == s
-    return Button {
+  /// Đỉnh của khung nhìn (toạ độ phòng): giữa chỗ đang chọn, kẹp trong phòng. Chủ đề
+  /// nhìn phần dưới — Koa, bục, kệ và bảng, nơi màu phòng đổi rõ nhất.
+  static func roomTop(spot: String, visible: CGFloat) -> CGFloat {
+    let bottom = CGFloat(StudioScene.sceneBottom)
+    let focus = RoomThumb.outlines[spot]?.midY ?? bottom
+    return min(max(focus - visible / 2, 0), max(0, bottom - visible))
+  }
+
+  /// Vùng chạm vô hình trên một chỗ của phòng.
+  private func spotHit(_ s: String, _ r: CGRect, k: CGFloat) -> some View {
+    Button {
       withAnimation(reduceMotion ? nil : .snappy) { spot = s }
     } label: {
-      Text(verbatim: "\(n)")
-        .font(.system(size: 11, weight: .bold).monospacedDigit())
-        .foregroundStyle(on ? Color.black : Color.white)
-        .frame(width: 20, height: 20)
-        .background(on ? Color(hex: "#FFC24D") : Color.black.opacity(0.55), in: Circle())
-        .overlay(Circle().strokeBorder(Color.white.opacity(on ? 0 : 0.5), lineWidth: 1))
-        .frame(width: 44, height: 44)
-        .contentShape(Circle())
+      Color.clear.contentShape(Rectangle())
     }
     .buttonStyle(.plain)
-    .position(x: p.x * k, y: p.y * k)
+    .frame(width: r.width * k, height: max(r.height * k, 44))
+    .offset(x: r.minX * k, y: r.minY * k)
     .accessibilityLabel(Text(verbatim: Self.spotName(s)))
-    .accessibilityAddTraits(on ? .isSelected : [])
+    .accessibilityAddTraits(spot == s ? .isSelected : [])
   }
 
   /// Món đổi so với đang mặc: (nhóm, món mới hay `nil` = cởi).
@@ -884,10 +892,14 @@ struct RoomThumb: View {
     "podium": CGRect(x: 40, y: 360, width: 310, height: 116),
   ]
 
-  /// Chỗ đặt huy hiệu số trên phòng xem trước.
-  static let badge: [String: CGPoint] = [
-    "shelf": CGPoint(x: 72, y: 236), "board": CGPoint(x: 372, y: 250), "window": CGPoint(x: 372, y: 104),
-    "plants": CGPoint(x: 374, y: 330), "lamp": CGPoint(x: 236, y: 60), "podium": CGPoint(x: 340, y: 404),
+  /// Khung ôm sát đồ vật của từng chỗ (viền chọn + vùng chạm trên phòng xem trước).
+  static let outlines: [String: CGRect] = [
+    "shelf": CGRect(x: 4, y: 232, width: 136, height: 166),
+    "board": CGRect(x: 264, y: 240, width: 114, height: 74),
+    "window": CGRect(x: 264, y: 90, width: 110, height: 130),
+    "plants": CGRect(x: 278, y: 322, width: 106, height: 114),
+    "lamp": CGRect(x: 150, y: 30, width: 90, height: 64),
+    "podium": CGRect(x: 54, y: 380, width: 282, height: 66),
   ]
 
   private var options: StudioScene.Options {

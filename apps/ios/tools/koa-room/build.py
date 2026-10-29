@@ -234,9 +234,9 @@ def _():
     """Biển đêm (mua): trời tím, trăng và vệt trăng trên sóng, ngọn hải đăng xa."""
     sky = Defs(Lin("decorSeaSky", [(0, INK, 1), (0.5, VIO, 0.3), (0.62, "#FF9A7A", 0.35), (0.64, "#1B2B5A", 1), (1, "#0D1838", 1)]))
     waves = [L(f"M {278 + (i * 13) % 70} {178 + i * 4} l 10 0", LAV, 1, 0.35) for i in range(7)]
-    glint = [R(321 - w / 2, 172 + i * 4.2, w, 1.4, 0.7, fill=GOLD, opacity=0.75 - i * 0.08) for i, w in enumerate((14, 10, 12, 7, 9, 5, 6))]
-    inner = (stars([(290, 112, 0.9), (348, 116, 1.1), (303, 133, 0.8), (355, 140, 0.9), (335, 110, 0.7)])
-             + [C(321, 128, 12, fill=LAV, opacity=0.12), P("$moon:321:128:9", fill="#FFE7A3"),
+    glint = [R(343 - w / 2, 172 + i * 4.2, w, 1.4, 0.7, fill=GOLD, opacity=0.75 - i * 0.08) for i, w in enumerate((14, 10, 12, 7, 9, 5, 6))]
+    inner = (stars([(290, 112, 0.9), (330, 110, 1.1), (303, 133, 0.8), (355, 142, 0.9), (310, 118, 0.7)])
+             + [C(343, 124, 12, fill=LAV, opacity=0.12), P("$moon:343:124:8", fill="#FFE7A3"),
                 P("M 278 168 Q 300 165 320 168 T 361 168 L 361 206 L 278 206 Z", fill="#1B2B5A")]
              + glint + waves
              + [P("M 278 168 Q 290 156 304 168 Z", fill=NAVY),
