@@ -282,7 +282,11 @@ public enum KoaRender {
       let baseM = KoaMath.opsMat(base, 0, 0)
       var props = gProps
       let matrix: KoaMath.Mat
-      if c.t < anim.delay {
+      if let b = c.blink, KoaMath.blinkAnims.contains(anim.k) {
+        // chớp mắt do bên ngoài: thay hẳn nhịp gốc, kể cả trong độ trễ
+        matrix = KoaMath.mul(baseM, KoaMath.opsMat([KoaScene.Op("s", [1, b])], ox, oy))
+        if drivesOp { props["opacity"] = .number(KoaMath.sampleOp(track?.op ?? [], 0, anim.ease)) }
+      } else if c.t < anim.delay {
         matrix = KoaMath.mul(baseM, KoaMath.opsMat(over, ox, oy))
         if drivesOp { props["opacity"] = .number(ownOpacity) }
       } else {
@@ -290,11 +294,7 @@ public enum KoaRender {
         let r = elapsed.truncatingRemainder(dividingBy: anim.dur)
         // đúng ranh giới một vòng là cuối vòng vừa xong, không phải đầu vòng sau
         let t = r == 0 && elapsed > 0 ? 1 : r / anim.dur
-        var m = drivesTf ? KoaMath.sampleMat(track?.tf ?? [], t, anim.ease, ox, oy) : KoaMath.identity
-        // chớp mắt do bên ngoài: mi khép đúng độ được đưa vào
-        if let b = c.blink, KoaMath.blinkAnims.contains(anim.k) {
-          m = KoaMath.opsMat([KoaScene.Op("s", [1, b])], ox, oy)
-        }
+        let m = drivesTf ? KoaMath.sampleMat(track?.tf ?? [], t, anim.ease, ox, oy) : KoaMath.identity
         matrix = base.isEmpty ? m : KoaMath.mul(baseM, m)
         if drivesOp { props["opacity"] = .number(KoaMath.sampleOp(track?.op ?? [], t, anim.ease)) }
       }
@@ -350,10 +350,16 @@ public enum KoaRender {
       moved = [Element("G", matrix: KoaGesture.idleArmLift, kids: moved)]
     }
     if let w = c.walk, let m = walkMat(n, w) { moved = [Element("G", matrix: m, kids: moved)] }
-    // Koa lớn: chớp mắt có nét mi = mép dưới của mi, co cùng mi
-    if c.poke != nil, c.live, let anim, KoaMath.blinkAnims.contains(anim.k), c.t >= anim.delay,
+    // Chớp mắt do bên ngoài (phòng, 29/10): nét mi theo ĐÚNG độ khép mi đưa vào — không theo
+    // nhịp gốc của bản vẽ (lỗi Kiệt thấy: mắt khép mất nét mi, nét mi hiện lúc mắt mở). Hai
+    // nhóm chớp (`koaBlink`, `koaBlink2`) cùng khép một lúc → chỉ vẽ nét mi một lần.
+    if let b = c.blink, c.live, let anim, KoaMath.blinkAnims.contains(anim.k) {
+      let m = KoaMath.opsMat([KoaScene.Op("s", [1, b])], ox, oy)
+      if anim.k == "koaBlink", m[3] > KoaMath.lashMin { moved.append(lash(m)) }
+    } else if c.poke != nil, c.live, let anim, KoaMath.blinkAnims.contains(anim.k), c.t >= anim.delay,
       let track = track?.tf, !track.isEmpty
     {
+      // Koa lớn: chớp mắt có nét mi = mép dưới của mi, co cùng mi
       let e = c.t - anim.delay
       let m = KoaMath.sampleMat(track, e.truncatingRemainder(dividingBy: anim.dur) / anim.dur, anim.ease, ox, oy)
       if m[3] > KoaMath.lashMin { moved.append(lash(m)) }

@@ -301,7 +301,7 @@ public enum KoaDirector {
         sway = 4.5 * sin(2 * Double.pi * 2.1 * t) * exp(-t * 1.6)
         if t > 3 { plantKick = nil }
       }
-      if plane == .floor, hypot(walker.x - 300, walker.y - 392) < 34, walker.speed > 4, plantKick == nil {
+      if plane == .floor, hypot(walker.x - 300, walker.y - 378) < 34, walker.speed > 4, plantKick == nil {
         plantKick = clock
       }
       let p = walker.pose

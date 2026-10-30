@@ -304,8 +304,14 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Hiệu năng (simulator iPhone Air, `top`, 60 giây trong phòng): TB 49 % CPU, đỉnh 120 % lúc vào phòng; bộ nhớ 102–106 MB, không tăng. Phần 1: 31–41 %. Tăng vì đồng hồ của đạo diễn chạy cả khi đứng (ánh nhìn, chớp mắt) — đứng yên 30 khung/giây, đi 60. Chưa đo iPhone thật.
 - Giảm chuyển động: không đạo diễn, không đi; chạm sàn → đứng ngay ở chỗ đó (như phần 1). **Lỗi tìm thấy khi kiểm và đã sửa:** đồng hồ dừng nên Koa không hiện ở chỗ mới — nay đọc chỗ đặt (`placed`). Simulator: chạm sau cây → Koa đứng ngay sau cây, lá che, ~0 % CPU. Giao diện sáng: lá / bục che Koa đúng màu ban ngày.
 
+**Koa trong phòng — ba lỗi Kiệt thấy (30/10, nhánh `claude/koa-room-fixes`):**
+- ~~Chớp mắt lỗi: mắt khép thành mảng lông không nét mi, nét mi hiện lúc mắt đang mở.~~ Sửa: nét mi đi theo đúng độ khép mi của bộ chớp mắt mới (không theo nhịp gốc), vẽ một lần cho hai nhóm chớp, áp cả trong độ trễ của nhóm chớp thứ hai. Còn nguyên như bản vẽ gốc: mắt "ngạc nhiên" (to tròn) không chớp.
+- ~~Một số động tác bị ngược khi đi lùi (đi vào trong phòng).~~ Sửa: bàn chân nhấc GÓT trước, đặt xuống thì hếch mũi (trước ngược dấu); người ngả theo hướng mặt, không theo hướng ngang (trước có lúc mặt một bên, người ngả về sau); lấy đà ngả ngược hướng mặt sắp quay; nhảy thẳng lên / xuống bục giữ hướng cũ. Test `heelLiftsFirst`, `leanFollowsFacing`.
+- ~~Bậc sân khấu chèn qua người Koa.~~ Sửa: sàn đi được dời ra sau mép bục (độ sâu 367–380, trước 368–401) — chân luôn cao hơn mép sau mặt bục trên màn; bỏ lớp che của bục. Test `floorStaysBehindTheStageRim` quét cả vùng sàn. Đổi theo: chỗ ghé kệ / cây / cửa sổ và hai bậc lên bục dời theo dải sàn mới. Dải sàn hẹp hơn (13 đơn vị sâu): Koa đi sau bục gần như theo một hàng ngang.
+
 ## 5. Lịch sử thay đổi sổ
 
+- 30/10/2026: sửa ba lỗi Koa trong phòng (chớp mắt, động tác ngược khi đi vào trong, bục cắt ngang người).
 - 29/10/2026: Koa có ý định trong phòng (bản đồ phòng, đạo diễn hành vi, 6 kiểu đi, ánh nhìn, che theo độ sâu, lá cây rung, lớp debug); gạch hai dòng phần 1 (sàn chữ nhật, tự đi dạo ngẫu nhiên).
 - 29/10/2026: Koa biết đi trong phòng (chạm sàn để gọi, tự đi dạo, Giảm chuyển động thì đứng ngay chỗ mới); ghi hạn chế: không có hình quay lưng / nghiêng hẳn, chỉ đi khi đứng, vùng sàn chữ nhật.
 - 28/10/2026: Tiến bộ từng bài — hết cắt chữ ở cỡ trợ năng; đã kiểm lb trên simulator.
