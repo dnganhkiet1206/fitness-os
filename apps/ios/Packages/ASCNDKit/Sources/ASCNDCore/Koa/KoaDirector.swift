@@ -82,6 +82,12 @@ public enum KoaDirector {
     public var expression: KoaFlags.Expression?
     public var gesture: KoaGesture?
     public var gestureAmount: Double
+    /// Độ hiện của dáng của ngày (`gesture` truyền từ phòng, vd. hờn dỗi), 0…1: nhường dần
+    /// khi đi hay khi hành vi có mặt / dáng riêng, rồi hiện lại dần — không bật tắt.
+    public var dayAmount: Double
+    /// Đang di chuyển thật (đi, nhảy, đang quay). `walk` có thể khác `nil` cả khi đứng yên
+    /// mà người còn quay một bên.
+    public var moving: Bool
     /// Lá cây rung (độ) — khi Koa lại gần / ngửi.
     public var plantSway: Double
     // debug
@@ -128,6 +134,7 @@ public enum KoaDirector {
     var gesture: KoaGesture?
     var gestureAmount = 0.0
     var gestureWant = 0.0
+    var dayAmount = 1.0
     var plantKick: Double?
     var proudDone = false
 
@@ -289,7 +296,12 @@ public enum KoaDirector {
 
       walker.step(dt)
       // gesture hiện dần / tắt dần
-      gestureAmount += (gestureWant - gestureAmount) * min(1, 5 * dt)
+      // dáng của ngày tắt hẳn rồi dáng của hành vi mới hiện — hai dáng không chồng nhau
+      let acting = expression != nil || gesture != nil
+      let dayWant = acting ? 0 : 1 - walker.weight * 0.85
+      dayAmount += (dayWant - dayAmount) * min(1, 8 * dt)
+      let want = dayAmount < 0.05 ? gestureWant : min(gestureWant, gestureAmount)
+      gestureAmount += (want - gestureAmount) * min(1, 5 * dt)
       if gestureAmount < 0.01, gestureWant == 0 { gesture = nil }
 
       let head = (walker.x, walker.y - walker.elevation)
@@ -313,9 +325,11 @@ public enum KoaDirector {
         }
       }
       return Frame(
-        walk: walker.isMoving ? p : nil, x: walker.x, screenY: walker.y - walker.elevation, depth: walker.y,
+        // còn quay một bên thì vẫn đưa dáng xuống: bỏ dáng ngay lúc dừng quay làm mặt / tai /
+        // bụng bật về giữa một khung, rồi bật lại khi quay về (Kiệt 30/10: "bị giật")
+        walk: walker.isMoving || abs(p.turn) > 0.002 ? p : nil, x: walker.x, screenY: walker.y - walker.elevation, depth: walker.y,
         plane: plane, scale: walker.scale, gaze: g, expression: expression, gesture: gesture,
-        gestureAmount: gestureAmount, plantSway: sway, behavior: running?.b.kind.rawValue ?? "-",
+        gestureAmount: gestureAmount, dayAmount: dayAmount, moving: walker.isMoving, plantSway: sway, behavior: running?.b.kind.rawValue ?? "-",
         why: running?.b.why ?? "", style: walker.tuning.style.name, target: running?.b.target, path: path)
     }
 

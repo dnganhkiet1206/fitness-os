@@ -46,6 +46,11 @@ struct KoaFigureView: View {
   var eyes: KoaMath.Gaze?
   var blink: Double?
   var gestureAmount = 1.0
+  /// Đồng hồ ngoài (phòng, 30/10): khung do `TimelineView` của sân khấu đưa vào — hình
+  /// KHÔNG chạy đồng hồ riêng (trước có hai đồng hồ cùng vẽ Koa: vẽ lại gấp đôi).
+  var date: Date?
+  /// Ngón tay chạm / kê lên Koa (sân khấu tăng nhịp khung cho phản ứng mượt).
+  var onTouch: (() -> Void)?
 
   @Environment(\.colorScheme) private var scheme
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -66,13 +71,14 @@ struct KoaFigureView: View {
     let live = interactive && running
     let reacts = (interactive || greet) && running
     let lit = stage && !isPaper
-    TimelineView(.animation(minimumInterval: 1.0 / 60, paused: !running)) { timeline in
-      let ms = timeline.date.timeIntervalSinceReferenceDate * 1000
-      let t = animated ? clock.tick(ms, running: running) : 0
-      canvas(t: t, paper: isPaper, react: reacts ? touch.frame(ms) : nil, running: running)
-        // vẽ rộng hơn khung hai bên (hình vẫn đúng chỗ, đúng cỡ — `viewport` theo chiều cao):
-        // đầu quay / nghiêng khi đi không bị cắt tai ở mép khung
-        .frame(width: size * (bleeds ? Self.bleed : 1), height: size * KoaMath.aspect)
+    Group {
+      if let date {
+        frame(date, paper: isPaper, reacts: reacts, running: running)
+      } else {
+        TimelineView(.animation(minimumInterval: 1.0 / 60, paused: !running)) { timeline in
+          frame(timeline.date, paper: isPaper, reacts: reacts, running: running)
+        }
+      }
     }
     .frame(width: size, height: size * KoaMath.aspect)
     .onScrollVisibilityChange(threshold: 0.01) { onScreen = $0 }
@@ -90,12 +96,22 @@ struct KoaFigureView: View {
     .accessibilityHidden(onTap == nil)
   }
 
+  private func frame(_ date: Date, paper: Bool, reacts: Bool, running: Bool) -> some View {
+    let ms = date.timeIntervalSinceReferenceDate * 1000
+    let t = animated ? clock.tick(ms, running: running) : 0
+    return canvas(t: t, paper: paper, react: reacts ? touch.frame(ms) : nil, running: running)
+      // vẽ rộng hơn khung hai bên (hình vẫn đúng chỗ, đúng cỡ — `viewport` theo chiều cao):
+      // đầu quay / nghiêng khi đi không bị cắt tai ở mép khung
+      .frame(width: size * (bleeds ? Self.bleed : 1), height: size * KoaMath.aspect)
+  }
+
   /// Ngón tay đặt / kê gần Koa: đầu và mắt nhìn theo, lông mày nhướn; nhấc lên nhanh
   /// mà không kéo xa là một lần chạm.
   private func touchGesture(live: Bool) -> some Gesture {
     DragGesture(minimumDistance: 0, coordinateSpace: .local)
       .onChanged { v in
         guard live else { return }
+        onTouch?()
         let w = size, h = size * KoaMath.aspect
         touch.aim(x: (v.location.x - w / 2) / (w / 2), y: (v.location.y - h * 0.35) / (h / 2))
       }
@@ -131,6 +147,8 @@ struct KoaFigureView: View {
       o.gestureAmount = gestureAmount
       o.poke = react?.poke
       o.walk = running ? walk : nil
+      let sp = KoaSignpost.poster.beginInterval("figure")
+      defer { KoaSignpost.poster.endInterval("figure", sp) }
       // Dáng giơ tay đè má: hình đủ (vai sau đầu), rồi một lớp chỉ nửa bàn tay ở trên.
       var plans: [[KoaPaint.Op]] = []
       if gesture?.armsFront == true {
@@ -195,25 +213,28 @@ struct MascotFigureView: View {
   /// Khung của đạo diễn (phòng): ánh nhìn, chớp mắt, mặt / dáng của hành vi.
   var direct: KoaDirector.Frame?
   var onTap: (() -> Void)?
+  /// Đồng hồ ngoài của sân khấu (xem `KoaFigureView.date`).
+  var date: Date?
+  var onTouch: (() -> Void)?
   @Environment(AppServices.self) private var services: AppServices?
 
   var body: some View {
     if mascotId == "koa" {
       let state = KoaEmotion.state(emotion)
-      // hành vi đang làm có mặt / dáng riêng → thay cảm xúc của ngày; không thì như cũ
-      let acting = direct.map { $0.expression != nil || $0.gesture != nil } ?? false
-      let face = acting ? direct?.expression ?? state.expression : state.expression
-      let pose = acting ? direct?.gesture : gesture
-      // dáng của ngày nhường dần cho dáng đi
-      let amount = acting ? direct?.gestureAmount ?? 1 : 1 - (direct?.walk?.weight ?? 0) * 0.85
+      // hành vi có mặt riêng → thay nét mặt của ngày; dáng: của hành vi khi nó đang hiện, không
+      // thì dáng của ngày, cả hai hiện / tắt dần theo đạo diễn (không bật tắt một khung)
+      let face = direct?.expression ?? state.expression
+      let own = direct.flatMap { d in d.gesture.map { ($0, d.gestureAmount) } }
+      let (pose, amount): (KoaGesture?, Double) =
+        if let own, own.1 > 0.01 { own } else { (gesture, direct?.dayAmount ?? 1) }
       KoaFigureView(
         expression: dress ? .happy : face, pose: dress ? .idle : state.pose,
-        gesture: dress ? nil : pose, dress: dress,
+        gesture: dress || amount < 0.02 ? nil : pose, dress: dress,
         worn: KoaEmotion.worn(equipped).merging(state.outfit) { _, new in new }, size: size, animated: animated,
         paper: paper, build: build ?? services?.koaBuild ?? 0, interactive: interactive, stage: stage,
         greet: greet, onTap: onTap, walk: dress ? nil : walk ?? direct?.walk, bleeds: walks,
         headLook: direct?.gaze.head, eyes: direct?.gaze.eyes, blink: direct?.gaze.blink,
-        gestureAmount: dress ? 1 : amount)
+        gestureAmount: dress ? 1 : amount, date: date, onTouch: onTouch)
     } else {
       VectorMascotView(id: mascotId, size: size, equipped: Set(equipped))
     }

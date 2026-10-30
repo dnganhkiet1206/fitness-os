@@ -49,6 +49,10 @@ struct MascotRoomView: View {
   @State private var devEmotion: KoaEmotion.Emotion?
   #if DEBUG
     @AppStorage("koa.debug.map") private var debugMap = false
+    /// Đo hiệu năng (`-koaBench`): Koa luôn đứng, để số đo không phụ thuộc giờ trong ngày.
+    private var benchEmotion: KoaEmotion.Emotion? { KoaDirectorDriver.bench == nil ? nil : .idle }
+  #else
+    private var benchEmotion: KoaEmotion.Emotion? { nil }
   #endif
 
   var body: some View {
@@ -216,7 +220,7 @@ struct MascotRoomView: View {
       MascotStage(
         level: room.level, build: room.gains.rank,
         energy: Double(room.energyCount) / Double(MascotRules.energySignals.count),
-        celebrateSignal: celebrate, emotion: devEmotion ?? mood,
+        celebrateSignal: celebrate, emotion: devEmotion ?? benchEmotion ?? mood,
         equipped: shop?.inventory.filter(\.equipped).map(\.itemKey) ?? [],
         // Dáng theo tình huống thật (25/10); thanh DEBUG ép cảm xúc thì tắt dáng.
         gesture: devEmotion == nil ? roomGesture : nil,
@@ -858,6 +862,11 @@ struct MascotStage: View {
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Environment(\.scenePhase) private var scenePhase
   @State private var director = KoaDirectorDriver()
+  #if DEBUG
+    private var benchMode: Bool { KoaDirectorDriver.bench != nil }
+  #else
+    private var benchMode: Bool { false }
+  #endif
   /// Ngày đã ăn mừng buổi tập (một lần mỗi ngày, không spam).
   @AppStorage("koa.proud.done") private var proudDone = ""
   #if DEBUG
@@ -896,6 +905,13 @@ struct MascotStage: View {
     return o
   }
 
+  /// Phòng vẽ sẵn: lúc lá cây rung thì bỏ phần từ chậu cây trở lên (lớp trên vẽ phần ấy).
+  private var backdrop: StudioScene.Options {
+    var o = studio
+    if director.swaying { o.omit = StudioScene.fromPlant }
+    return o
+  }
+
   /// `HERO_W = round(128 / 0.93)`.
   private static let heroWidth = 138.0
 
@@ -906,7 +922,7 @@ struct MascotStage: View {
 
   var body: some View {
     // không có dòng "Cấp N" dưới sân khấu (RN cũng không) — thẻ cấp ngay dưới nói rồi
-    StudioBackdrop(options: studio)
+    StudioBackdrop(options: backdrop)
       .overlay {
         GeometryReader { g in
           ZStack(alignment: .topLeading) {
@@ -926,7 +942,7 @@ struct MascotStage: View {
     .onScrollVisibilityChange(threshold: 0.2) { onScreen = $0 }
     .onAppear {
       // (a) mở phòng: Koa nhìn người xem trước, rồi lại gần
-      if walks, !reduceMotion { director.request(.greet) }
+      if walks, !reduceMotion, !benchMode { director.request(.greet) }
     }
     .overlay {
       if let onBoard {
@@ -979,11 +995,13 @@ struct MascotStage: View {
       // đồng hồ dừng và Koa vừa được đặt chỗ mới (Giảm chuyển động): đứng ở đó
       let still = running ? nil : director.placed
       ZStack(alignment: .topLeading) {
-        // lá cây đang rung: vẽ lại cả phòng với lá nghiêng (chỉ trong lúc rung, ~3 giây)
-        if let f, f.plantSway != 0 {
+        // lá cây đang rung (~3 giây): chỉ vẽ lại CHẬU CÂY ở lớp trên; phòng dưới bỏ chậu cây
+        // (xem `body`) — không vẽ lại cả phòng mỗi khung
+        // chỉ khi phòng dưới ĐÃ bỏ phần ấy (`swaying`) — không bao giờ vẽ hai lần một khung
+        if director.swaying {
           var o = studio
-          let _ = (o.plantSway = f.plantSway)
-          StudioBackdrop(options: o)
+          let _ = (o.plantSway = f?.plantSway ?? 0)
+          StudioObjects(options: o, indices: StudioScene.fromPlant)
             .frame(width: width, height: width / StudioScene.width * StudioScene.sceneBottom)
             .allowsHitTesting(false)
         }
@@ -991,7 +1009,7 @@ struct MascotStage: View {
           width, x: still?.x ?? f?.x ?? KoaRoomMap.stageMark.x,
           y: still.map(KoaRoomMap.screenY) ?? f?.screenY ?? StudioScene.stageMark.y,
           scale: still.map { KoaRoomMap.scale($0.d) } ?? f?.scale ?? 1,
-          direct: running ? f : nil)
+          direct: running ? f : nil, date: tl.date)
         occlusion(
           width, still ?? f.map { KoaRoomMap.Spot($0.plane, $0.x, $0.depth) },
           scale: still.map { KoaRoomMap.scale($0.d) } ?? f?.scale ?? 1, plantSway: f?.plantSway ?? 0)
@@ -1025,8 +1043,8 @@ struct MascotStage: View {
       if !objects.isEmpty {
         var o = studio
         let _ = (o.plantSway = plantSway)
-        StudioBackdrop(options: o)
-          .mask { StudioObjects(options: o, indices: Set(objects.flatMap(\.elements))) }
+        // vẽ thẳng đồ vật (đúng nét, đúng màu của phòng) đè lên Koa
+        StudioObjects(options: o, indices: Set(objects.flatMap(\.elements)))
           .frame(width: width, height: width / StudioScene.width * StudioScene.sceneBottom)
           .allowsHitTesting(false)
       }
@@ -1037,7 +1055,7 @@ struct MascotStage: View {
   /// phòng: chân ở `(x, y)` của phòng, to / nhỏ theo chiều sâu (`scale`, neo ở chân).
   private func hero(
     _ width: CGFloat, x: Double = StudioScene.stageMark.x, y: Double = StudioScene.stageMark.y, scale: Double = 1,
-    direct: KoaDirector.Frame? = nil
+    direct: KoaDirector.Frame? = nil, date: Date? = nil
   ) -> some View {
     let k: Double = Double(width) / StudioScene.width
     let size: Double = (Self.heroWidth * k).rounded()
@@ -1047,7 +1065,13 @@ struct MascotStage: View {
       emotion: emotion, equipped: equipped, gesture: gesture, size: size, build: build, interactive: true,
       walks: walks, direct: direct,
       // chạm Koa: Koa vẫn nhảy lên như cũ, rồi quay sang chào người xem
-      onTap: walks && !reduceMotion ? { director.request(.greet) } : nil)
+      onTap: walks && !reduceMotion
+        ? {
+          director.boost()
+          director.request(.greet)
+        } : nil,
+      // phòng: Koa theo đồng hồ của sân khấu (một đồng hồ, không vẽ hai lần)
+      date: walks ? date : nil, onTouch: walks ? { director.boost() } : nil)
       .scaleEffect(levelScale * scale, anchor: .bottom)
       // reduceMotion: giá trị không đổi thì không gật
       .keyframeAnimator(initialValue: Nod(), trigger: reduceMotion ? 0 : celebrateSignal) { view, v in
@@ -1073,7 +1097,7 @@ struct StudioBackdrop: View {
   let options: StudioScene.Options
 
   var body: some View {
-    let plan = KoaPaint.plan(KoaRender.Element("Svg", kids: StudioScene.tree(options)))
+    let plan = StudioPlans.room(options)
     Canvas { ctx, canvas in
       var c = ctx
       let k = canvas.width / StudioScene.width
@@ -1084,13 +1108,43 @@ struct StudioBackdrop: View {
   }
 }
 
-/// Vài đồ vật của căn phòng (`StudioScene.objects`) — làm mặt nạ cho lớp che Koa.
+/// Kế hoạch vẽ của căn phòng, lưu sẵn theo `Options` (30/10, hiệu năng): phòng tĩnh — dựng
+/// cây + giải kiểu một lần cho mỗi bộ tuỳ chọn, không dựng lại mỗi lần sân khấu cập nhật.
+@MainActor
+enum StudioPlans {
+  private struct Key: Hashable {
+    let options: StudioScene.Options
+    let only: Set<Int>?
+  }
+  private static var cache: [Key: [KoaPaint.Op]] = [:]
+  private static var order: [Key] = []
+
+  static func room(_ o: StudioScene.Options) -> [KoaPaint.Op] {
+    plan(Key(options: o, only: nil)) { StudioScene.tree(o) }
+  }
+
+  static func objects(_ o: StudioScene.Options, _ indices: Set<Int>) -> [KoaPaint.Op] {
+    plan(Key(options: o, only: indices)) { StudioScene.objects(o, indices) }
+  }
+
+  private static func plan(_ k: Key, _ build: () -> [KoaRender.Element]) -> [KoaPaint.Op] {
+    if let p = cache[k] { return p }
+    let p = KoaPaint.plan(KoaRender.Element("Svg", kids: build()))
+    cache[k] = p
+    order.append(k)
+    // lá rung tạo một bộ tuỳ chọn mỗi khung: chỉ giữ vài bản gần nhất
+    if order.count > 12 { cache[order.removeFirst()] = nil }
+    return p
+  }
+}
+
+/// Vài đồ vật của căn phòng (`StudioScene.objects`) — lớp che Koa, chậu cây đang rung.
 struct StudioObjects: View {
   let options: StudioScene.Options
   let indices: Set<Int>
 
   var body: some View {
-    let plan = KoaPaint.plan(KoaRender.Element("Svg", kids: StudioScene.objects(options, indices)))
+    let plan = StudioPlans.objects(options, indices)
     Canvas { ctx, canvas in
       var c = ctx
       let k = canvas.width / StudioScene.width

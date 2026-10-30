@@ -78,6 +78,8 @@ public enum KoaRoomMap {
   /// (theo `decorData.spots`) và độ sâu chân đồ. Koa ở sàn có `d` nhỏ hơn → vẽ đồ đè lên.
   public struct Occluder: Sendable, Hashable {
     public let name: String
+    /// Phần tử của đồ vật (KHÔNG gồm bóng tiếp xúc trên sàn — vẽ lại bóng mờ đè lên Koa sẽ
+    /// làm tối gấp đôi; 30/10 lớp che vẽ thẳng đồ vật thay vì cả phòng có mặt nạ).
     public let elements: [Int]
     public let minX: Double
     public let maxX: Double
@@ -86,9 +88,9 @@ public enum KoaRoomMap {
   }
 
   public static let occluders = [
-    Occluder(name: "shelf", elements: Array(77...89) + [91], minX: 4, maxX: 140, baseD: 396),
-    Occluder(name: "plant", elements: [90, 92], minX: 262, maxX: 368, baseD: 400),
-    Occluder(name: "ball", elements: [93, 94], minX: 322, maxX: 382, baseD: 402),
+    Occluder(name: "shelf", elements: Array(80...89) + [91], minX: 4, maxX: 140, baseD: 396),
+    Occluder(name: "plant", elements: [92], minX: 262, maxX: 368, baseD: 400),
+    Occluder(name: "ball", elements: [94], minX: 322, maxX: 382, baseD: 402),
     // Bục KHÔNG che: sàn đi được nằm hẳn sau mép bục trên màn (xem `floorArea`).
   ]
 

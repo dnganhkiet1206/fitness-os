@@ -80,6 +80,31 @@ public enum KoaRender {
     "radialGradient": "RadialGradient", "stop": "Stop",
   ]
 
+  /// Kiểu đưa xuống có `opacity:` + khoảng trắng + `0` (đúng như regex `opacity:\s*0` cũ —
+  /// cả `opacity:0.5` cũng khớp, giữ nguyên nghĩa). Trước đây biên dịch regex mỗi lần gọi,
+  /// mỗi nút mỗi khung (30/10, hiệu năng).
+  static func hidesByOpacity(_ s: String) -> Bool {
+    guard !s.isEmpty else { return false }
+    var rest = Substring(s)
+    while let r = rest.range(of: "opacity:") {
+      var i = r.upperBound
+      while i < rest.endIndex, rest[i].isWhitespace { i = rest.index(after: i) }
+      if i < rest.endIndex, rest[i] == "0" { return true }
+      rest = rest[r.upperBound...]
+    }
+    return false
+  }
+
+  /// `defs` chỉ phụ thuộc cờ nào đang bật (đồ đang mặc, nét mặt…), bản giấy và dáng — lưu
+  /// theo những thứ ấy, không dựng lại mỗi khung.
+  struct DefsKey: Hashable, Sendable {
+    let on: [String]
+    let paper: Bool
+    let paw: Bool
+    let rn: Bool
+  }
+  static let defsMemo = KoaMemo<DefsKey, Element>(capacity: 64)
+
   /// `ATTR` của `svg-shapes.ts`: kebab-case → camelCase của react-native-svg.
   static let attrNames: [String: String] = [
     "stroke-width": "strokeWidth", "stroke-linecap": "strokeLinecap", "stroke-linejoin": "strokeLinejoin",
@@ -199,7 +224,7 @@ public enum KoaRender {
 
     // kiểu đưa xuống mang một hoạt ảnh hoặc một `opacity:0`
     let bound = n.animBind.map { c.flags[$0]?.text ?? "" } ?? ""
-    if bound.range(of: #"opacity:\s*0"#, options: .regularExpression) != nil { return [] }
+    if hidesByOpacity(bound) { return [] }
     let boundAnim = bound.isEmpty ? nil : KoaMath.parseAnim(bound)
 
     let anim = n.anim ?? boundAnim?.anim
@@ -487,7 +512,14 @@ public enum KoaRender {
         "width": .number(o.size), "height": .number(o.size * KoaMath.aspect), "viewBox": .string("0 0 240 300"),
         "preserveAspectRatio": .string("xMidYMax meet"),
       ],
-      kids: [defs(f, paper: o.paper, gesture: o.gesture), Element("G", matrix: KoaMath.insetMat, kids: tree)])
+      kids: [cachedDefs(f, paper: o.paper, gesture: o.gesture), Element("G", matrix: KoaMath.insetMat, kids: tree)])
+  }
+
+  static func cachedDefs(_ flags: KoaFlags.Flags, paper: Bool, gesture: KoaGesture?) -> Element {
+    let key = DefsKey(
+      on: flags.compactMap { $0.value.truthy ? $0.key : nil }.sorted(), paper: paper,
+      paw: gesture?.pawOutline == true, rn: KoaScene.rn)
+    return defsMemo.value(key) { defs(flags, paper: paper, gesture: gesture) }
   }
 
   static func stop(_ offset: Double, _ colour: String, _ opacity: Double? = nil) -> Element {

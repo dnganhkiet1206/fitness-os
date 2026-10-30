@@ -108,6 +108,9 @@ public enum StudioScene {
     public var depth = false
     /// Lá chậu cây bên phải rung (độ) — Koa đi sát / ngửi lá (29/10). 0 = đứng yên như cũ.
     public var plantSway = 0.0
+    /// Bỏ các phần tử này của `template` (30/10: phòng vẽ sẵn không có chậu cây khi chậu
+    /// cây được vẽ riêng ở lớp trên để rung — khỏi vẽ lại cả phòng mỗi khung).
+    public var omit: Set<Int> = []
 
     public init() {}
   }
@@ -204,7 +207,11 @@ public enum StudioScene {
   }
 
   /// Chậu cây bên phải (phần tử 92): lá là các nhóm con 1…8, gốc lá ở (0, −12) của chậu.
-  static let plantIndex = 92
+  public static let plantIndex = 92
+
+  /// Từ chậu cây tới hết phòng (đèn, viền tối, bục… nằm TRÊN chậu cây): lớp vẽ lại khi lá
+  /// rung, để thứ tự lớp giữ y như phòng gốc.
+  public static var fromPlant: Set<Int> { Set(plantIndex..<template.count) }
 
   /// Một template (studio, phòng thử đồ) → cây phần tử, token đã giải.
   static func build(_ template: [JSONValue], _ o: Options, decor: Bool = false, only: Set<Int>? = nil)
@@ -227,6 +234,7 @@ public enum StudioScene {
     }
     for (i, v) in template.enumerated() {
       if let only, !only.contains(i), v["t"]?.stringValue != "Defs" { continue }
+      if o.omit.contains(i) { continue }
       if let extra = swap[i] { out += extra.compactMap { element($0, o, skin) } }
       if skip.contains(i) { continue }
       if i == plantIndex, o.plantSway != 0, var e = element(v, o, skin) {
