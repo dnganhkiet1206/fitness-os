@@ -434,7 +434,7 @@ public enum KoaRender {
     func foot(_ f: KoaWalk.Foot, cx: Double) -> String {
       // bù đúng phần thân nhún / nghiêng (`bodyMat`, ở POSERIG) để chân đang chạm sàn
       // đứng yên trên sàn: nghịch đảo của t(0,−bob)·r(θ) là r(−θ)·t(0,bob)
-      "rotate(\(num(-(w.sway + w.lean))) 120 293) translate(\(num(f.x)),\(num(f.y - f.lift + w.bob))) "
+      "rotate(\(num(-(w.sway + w.lean))) 120 293) translate(\(num(f.x - w.shift)),\(num(f.y - f.lift + w.bob))) "
         + "rotate(\(num(f.tilt)) \(num(cx)) 292)"
     }
     let u = w.turn
@@ -455,11 +455,14 @@ public enum KoaRender {
 
   /// Thân nhún lên + nghiêng (lắc sang chân đỡ, nghiêng tới theo hướng đi), quanh giữa hai bàn chân.
   static func bodyMat(_ w: KoaWalk.Pose) -> KoaMath.Mat {
-    KoaMath.mul(KoaMath.opMat(KoaScene.Op("t", [0, -w.bob])), KoaMath.opMat(KoaScene.Op("r", [w.sway + w.lean, 120, 293])))
+    KoaMath.mul(KoaMath.opMat(KoaScene.Op("t", [w.shift, -w.bob])), KoaMath.opMat(KoaScene.Op("r", [w.sway + w.lean, 120, 293])))
   }
 
   static func walkMat(_ n: KoaScene.Node, _ w: KoaWalk.Pose) -> KoaMath.Mat? {
     if n.id == "POSERIG" { return bodyMat(w) }
+    if n.id == "HEADRIG", w.headLag != 0 { return KoaGesture.rot(w.headLag, 120, 166) }
+    if n.id == "ear_left", w.earLag != 0 { return KoaGesture.rot(w.earLag, 62, 92) }
+    if n.id == "ear_right", w.earLag != 0 { return KoaGesture.rot(w.earLag, 178, 92) }
     if n.bind == "armRankL" { return KoaGesture.rot(w.armLeft, KoaGesture.shoulderL.0, KoaGesture.shoulderL.1) }
     // tay phải và đồ cầm trên tay phải đánh cùng nhau
     if n.bind == "armRankR" || n.animBind == "handAnim" {

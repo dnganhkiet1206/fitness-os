@@ -18,6 +18,8 @@ public enum KoaGaze {
     public var eyes: KoaMath.Gaze
     public var head: KoaMath.Gaze
     public var blink: Double
+    /// Mắt đang chuyển một cú lớn (app giữ 60 khung / giây cho mượt).
+    public var settling: Bool
   }
 
   /// Bộ sinh số ngẫu nhiên có hạt — test lặp lại được.
@@ -33,7 +35,7 @@ public enum KoaGaze {
 
   public struct State: Sendable {
     public var target: Target = .user
-    var eyeX = 0.0, eyeY = 0.0
+    var eyeX = 0.0, eyeY = 0.0, eyeVX = 0.0, eyeVY = 0.0
     var headX = 0.0, headY = 0.0, headVX = 0.0, headVY = 0.0
     var saccade = (x: 0.0, y: 0.0)
     var nextSaccade = 0.8
@@ -44,6 +46,9 @@ public enum KoaGaze {
     var rng: Random
     /// Đầu theo chậm hơn mắt bao nhiêu (rad/giây của lò xo).
     public var headRate = 6.0
+    /// Mắt: lò xo tắt dần tới hạn, nhanh hơn đầu nhiều (tới đích ~0,15 giây) — theo thời gian
+    /// thật nên không phụ thuộc nhịp khung (Kiệt 30/10: mắt nhảy trong một khung ở 30 khung/giây).
+    public var eyeRate = 26.0
 
     public init(seed: UInt64 = 1) { rng = Random(seed: seed) }
 
@@ -95,9 +100,14 @@ public enum KoaGaze {
       }
       // mắt: gần như tức thì (nhanh, theo saccade); đầu: lò xo chậm, chỉ theo đích chính
       let ex = want.x + saccade.x, ey = want.y + saccade.y
-      let k = min(1, 28 * dt)
-      eyeX += (ex - eyeX) * k
-      eyeY += (ey - eyeY) * k
+      // bước nhỏ cho ổn định lò xo nhanh khi khung dài (30 khung / giây)
+      let steps = max(1, Int((dt * 240).rounded(.up))), h = dt / Double(steps)
+      for _ in 0..<steps {
+        eyeVX += (eyeRate * eyeRate * (ex - eyeX) - 2 * eyeRate * eyeVX) * h
+        eyeVY += (eyeRate * eyeRate * (ey - eyeY) - 2 * eyeRate * eyeVY) * h
+        eyeX += eyeVX * h
+        eyeY += eyeVY * h
+      }
       let w = headRate
       headVX += (w * w * (want.x - headX) - 2 * w * headVX) * dt
       headVY += (w * w * (want.y - headY) - 2 * w * headVY) * dt
@@ -117,11 +127,12 @@ public enum KoaGaze {
           nextBlink = rng.next() < 0.18 ? 0.28 : rng.range(2, 7)
         }
       }
-      // mắt chạy trước đầu: phần lệch giữa mắt và đầu là chỗ mắt nhìn trong hốc
+      // mắt chạy trước, đầu theo sau. Không trừ phần quay đầu: trừ thì đổi đích nhìn làm mắt vọt
+      // NGƯỢC hướng đầu một lúc — với đầu chỉ quay vài độ, đọc ra là giật
       return Output(
-        eyes: KoaMath.Gaze(x: max(-1, min(1, eyeX - headX * 0.4)), y: max(-1, min(1, eyeY - headY * 0.4)), k: 1),
+        eyes: KoaMath.Gaze(x: max(-1, min(1, eyeX * 0.75)), y: max(-1, min(1, eyeY * 0.75)), k: 1),
         head: KoaMath.Gaze(x: max(-1, min(1, headX)), y: max(-1, min(1, headY)), k: 1),
-        blink: lid)
+        blink: lid, settling: abs(ex - eyeX) + abs(ey - eyeY) > 0.25)
     }
   }
 }

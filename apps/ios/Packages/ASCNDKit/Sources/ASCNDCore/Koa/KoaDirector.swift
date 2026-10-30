@@ -325,6 +325,8 @@ public enum KoaDirector {
       if running == nil, let b = pick(ctx: ctx, after: nil) { start(b) }
       if var r = running { advance(&r, dt, ctx: ctx) }
 
+      // đứng yên: trọng tâm dịch rất chậm, hai nhịp lệch nhau để không đều như máy
+      walker.idleShift = 0.9 * sin(clock * 0.53) * (0.6 + 0.4 * sin(clock * 0.19 + 1.3)) * (1 - min(1, walker.weight * 2))
       walker.step(dt)
       // gesture hiện dần / tắt dần
       // dáng của ngày tắt hẳn rồi dáng của hành vi mới hiện — hai dáng không chồng nhau
@@ -358,7 +360,7 @@ public enum KoaDirector {
       return Frame(
         // còn quay một bên thì vẫn đưa dáng xuống: bỏ dáng ngay lúc dừng quay làm mặt / tai /
         // bụng bật về giữa một khung, rồi bật lại khi quay về (Kiệt 30/10: "bị giật")
-        walk: walker.isMoving || abs(p.turn) > 0.002 ? p : nil, x: walker.x, screenY: walker.y - walker.elevation, depth: walker.y,
+        walk: p, x: walker.x, screenY: walker.y - walker.elevation, depth: walker.y,
         plane: plane, scale: walker.scale, gaze: g, expression: expression, gesture: gesture,
         gestureAmount: gestureAmount, dayAmount: dayAmount, moving: walker.isMoving, plantSway: sway, behavior: running?.b.kind.rawValue ?? "-",
         why: running?.b.why ?? "", style: walker.tuning.style.name, target: running?.b.target, path: path)

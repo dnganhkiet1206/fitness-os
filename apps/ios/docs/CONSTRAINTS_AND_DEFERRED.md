@@ -322,8 +322,15 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Đánh giá công cụ (số liệu GitHub 30/10): swift-snapshot-testing (MIT, còn bảo trì) **chưa tích hợp** — đầu ra renderer đã có test golden từng phần tử; ảnh lệch theo máy, thêm phụ thuộc. rive-ios (MIT), lottie-ios (Apache-2.0) **không dùng**: cần vẽ lại art. swift-format (Apache-2.0, có trong toolchain) **không bật**: đổi định dạng hàng loạt, không lợi cho Koa. SwiftLint (MIT) giữ nguyên.
 - **Periphery đã archived trên GitHub.** CI đang dùng 3.8.0 (job `periphery`, không chặn merge); vẫn chạy được nhưng sẽ không theo kịp Swift mới. Cần chọn thay thế khi nó hỏng; chưa đổi.
 
+**Koa — giật còn lại + chuyển động phụ (30/10, nhánh `claude/koa-secondary`):**
+- Lỗi giật Kiệt báo **chưa hết sau #754** (báo "đã hết" lúc đó là thiếu): video của Kiệt 10:54, tại 1,943 giây con ngươi nhảy −0,54 → +0,32 trong một khung lúc đổi việc, đầu vẫn quay trái. Hai nguyên nhân: mắt đuổi đích theo hệ số mỗi khung (ở 30 khung/giây gần như tức thì — do tối ưu của #754 lộ ra), và công thức trừ phần quay đầu làm mắt vọt ngược hướng đầu. Sửa: lò xo mắt theo thời gian thật, bỏ phần trừ, giữ 60 khung/giây khi mắt có cú chuyển lớn. Test `eyesNeverSnap` (30 và 60 khung/giây). Simulator 90 giây dáng hờn dỗi: độ đổi hình lớn nhất giữa hai khung 1,10 (video của Kiệt 2,93), thay đổi trải qua nhiều khung; đã xem frame.
+- Chuyển động phụ, không đổi art: trọng tâm dịch sang chân đỡ (chân chạm sàn được bù), đầu và tai trễ theo quán tính khi khởi hành / dừng / tiếp đất rồi lắng (đầu ≤ 3°, tai ≤ 6°), đứng yên đung đưa rất chậm (≤ 0,9 đơn vị). Test `earsAndHeadFollowThrough`, `weightShiftsToSupportFoot`, `rendererCompensatesBodyShift`.
+- Nét mặt vẫn đổi theo bậc (bản vẽ không có khung trung gian); mắt "ngạc nhiên" không chớp như bản gốc.
+- Chưa đo lại CPU sau PR này: mắt chuyển lớn giữ 60 khung/giây lâu hơn một chút, dáng đi luôn được đưa xuống hình khi đứng.
+
 ## 5. Lịch sử thay đổi sổ
 
+- 30/10/2026: sửa nốt lỗi giật (mắt nhảy một khung, #754 chưa hết); thêm chuyển trọng tâm, follow-through đầu / tai, đung đưa khi đứng.
 - 30/10/2026: Koa theo ngữ cảnh (không chào lại, im khi khuất, trầm ban đêm, ở yên chỗ người xem đặt); ghi đánh giá công cụ OSS, Periphery đã archived.
 - 30/10/2026: Koa — sửa lỗi giật khi quay, một đồng hồ trong phòng, bộ nhớ đệm dựng hình (−52 % / khung), 10 kịch bản tự động; ghi số đo và giới hạn của simulator.
 - 30/10/2026: sửa ba lỗi Koa trong phòng (chớp mắt, động tác ngược khi đi vào trong, bục cắt ngang người).

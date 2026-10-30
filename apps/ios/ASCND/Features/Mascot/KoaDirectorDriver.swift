@@ -39,8 +39,8 @@ final class KoaDirectorDriver {
 
   /// Khung này có chuyển động thấy được không.
   static func lively(_ f: KoaDirector.Frame, prev: KoaGaze.Output?) -> Bool {
-    if f.moving || f.gaze.blink > 0 || f.plantSway != 0 { return true }
-    if f.dayAmount > 0.02 && f.dayAmount < 0.98 && f.walk == nil { return true }
+    if f.moving || f.gaze.blink > 0 || f.gaze.settling || f.plantSway != 0 { return true }
+    if f.dayAmount > 0.02 && f.dayAmount < 0.98 { return true }
     if f.gestureAmount > 0.01 && f.gestureAmount < 0.99 { return true }
     guard let p = prev else { return true }
     let d =
