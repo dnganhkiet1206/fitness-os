@@ -45,15 +45,19 @@ public enum KoaRoomMap {
   }
 
   public static let steps = [
-    Step(floor: Spot(.floor, 150, 397), stage: Spot(.stage, 150, 418)),
-    Step(floor: Spot(.floor, 244, 397), stage: Spot(.stage, 244, 418)),
+    Step(floor: Spot(.floor, 150, 377), stage: Spot(.stage, 150, 418)),
+    Step(floor: Spot(.floor, 244, 377), stage: Spot(.stage, 244, 418)),
   ]
 
-  /// Sàn đi được (độ sâu, toạ độ sàn): dải sau bục giữa kệ và chậu cây. Sàn hai bên bục
-  /// hẹp và ra sát mép màn (khung mờ hai bên) — không đi.
+  /// Sàn đi được (độ sâu, toạ độ sàn): dải sau bục giữa kệ và chậu cây, chân luôn CAO HƠN
+  /// mép sau của mặt bục trên màn (mép ở y ≈ 381 giữa, thấp dần ra hai bên) — bục không bao
+  /// giờ cắt ngang người Koa (29/10, Kiệt: "bậc sân khấu chèn qua người"; trước là d 368–401).
+  /// Sàn hai bên bục hẹp và ra sát mép màn (khung mờ hai bên) — không đi.
   public static let floorArea: [(x: Double, d: Double)] = [
-    (146, 368), (292, 368), (296, 392), (272, 400), (240, 400), (195, 401), (150, 400), (142, 392),
+    (146, 367), (292, 367), (294, 380), (146, 380),
   ]
+  /// Giữa vùng sàn (đường vòng, kéo điểm về trong).
+  static let floorMid = (x: 219.0, d: 374.0)
 
   /// Vùng chặn trên sàn (chân đồ đạc), để đường đi không đâm vào: kệ, chậu cây, bóng, bục.
   public struct Block: Sendable, Hashable {
@@ -85,8 +89,7 @@ public enum KoaRoomMap {
     Occluder(name: "shelf", elements: Array(77...89) + [91], minX: 4, maxX: 140, baseD: 396),
     Occluder(name: "plant", elements: [90, 92], minX: 262, maxX: 368, baseD: 400),
     Occluder(name: "ball", elements: [93, 94], minX: 322, maxX: 382, baseD: 402),
-    // bục (mặt trước, mặt trên, viền, vệt sáng) — không gồm bóng đổ rộng của nó (132, 135)
-    Occluder(name: "stage", elements: Array(136...147), minX: 58, maxX: 332, baseD: 405),
+    // Bục KHÔNG che: sàn đi được nằm hẳn sau mép bục trên màn (xem `floorArea`).
   ]
 
   /// Một đồ vật có sẵn trong tranh mà Koa ghé được.
@@ -119,13 +122,13 @@ public enum KoaRoomMap {
 
   public static let anchors = [
     Anchor(
-      name: "shelf", stand: Spot(.floor, 168, 384), look: (84, 322), distance: 34, action: .inspect,
+      name: "shelf", stand: Spot(.floor, 168, 375), look: (84, 322), distance: 34, action: .inspect,
       expression: .surprised),
     Anchor(
-      name: "plant", stand: Spot(.floor, 270, 388), look: (318, 340), distance: 26, action: .sniff,
+      name: "plant", stand: Spot(.floor, 270, 376), look: (318, 340), distance: 26, action: .sniff,
       expression: .happy),
     Anchor(
-      name: "window", stand: Spot(.floor, 262, 372), look: (326, 214), distance: 60, action: .gaze,
+      name: "window", stand: Spot(.floor, 258, 370), look: (326, 214), distance: 60, action: .gaze,
       expression: .happytired),
     Anchor(
       name: "board", stand: Spot(.stage, 262, 424), look: (321, 276), distance: 50, action: .read,
@@ -192,7 +195,7 @@ public enum KoaRoomMap {
         let t = max(0, min(1, ((s.x - a.x) * vx + (s.d - a.d) * vd) / (vx * vx + vd * vd)))
         // lùi vào trong một chút
         let p = (x: a.x + vx * t, d: a.d + vd * t)
-        let c = (x: (p.x * 0.97 + 219 * 0.03), d: (p.d * 0.97 + 386 * 0.03))
+        let c = (x: p.x * 0.97 + floorMid.x * 0.03, d: p.d * 0.97 + floorMid.d * 0.03)
         let dist = hypot(c.x - s.x, c.d - s.d)
         if dist < bestD, valid(Spot(.floor, c.x, c.d)) {
           bestD = dist
@@ -259,7 +262,7 @@ public enum KoaRoomMap {
       return true
     }
     if clear(a, b) { return [b] }
-    let mid = a.plane == .floor ? Spot(.floor, 219, 386) : Spot(.stage, stageCenter.x, stageCenter.d)
+    let mid = a.plane == .floor ? Spot(.floor, floorMid.x, floorMid.d) : Spot(.stage, stageCenter.x, stageCenter.d)
     return [mid, b]
   }
 }

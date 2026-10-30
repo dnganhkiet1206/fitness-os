@@ -320,10 +320,10 @@ public enum KoaWalk {
         let q = 1 - max(0, windup) / max(windupTotal, 0.001)
         crouch = sin(Double.pi * q) * 1.6
         if let g = target {
-          let dir = g.x - x > 0 ? 1.0 : -1.0
-          leanVel += (64 * (-1.2 * dir * st.lean - lean) - 16 * leanVel) * dt
+          if abs(g.x - x) > 6 { lastSide = g.x - x > 0 ? 1 : -1 }
+          // lấy đà: ngả NGƯỢC hướng mặt sắp quay tới (không theo hướng ngang khi đi vào trong)
+          leanVel += (64 * (-1.2 * lastSide * st.lean - lean) - 16 * leanVel) * dt
           lean += leanVel * dt
-          if abs(g.x - x) > 6 { lastSide = dir }
         }
         advanceTurn(dt, moving: true)
         return
@@ -417,8 +417,10 @@ public enum KoaWalk {
       let moving = s > 1 || stepping
       let wantW = moving ? min(1, 0.35 + s / (0.5 * max(t.maxSpeed, 20))) : 0
       weight += (wantW - weight) * min(1, 5 * dt)
-      // nghiêng tới theo tốc độ; lò xo tắt dần dưới hạn → dừng thì người ngả tới rồi lắng về
-      let leanWant = 3.2 * vx / 44 * st.lean
+      // nghiêng tới theo tốc độ, VỀ PHÍA MẶT ĐANG QUAY (29/10, Kiệt: đi vào trong phòng mà ngả
+      // theo hướng ngang thì có lúc mặt một bên, người ngả về sau). Lò xo tắt dần dưới hạn →
+      // dừng thì người ngả tới rồi lắng về.
+      let leanWant = 3.2 * min(1, s / 44) * max(-1, min(1, turn)) * st.lean
       let w = 8.0
       leanVel += (w * w * (leanWant - lean) - 2 * st.settle * w * leanVel) * dt
       lean += leanVel * dt
@@ -444,7 +446,7 @@ public enum KoaWalk {
       guard var h = hop else { return }
       h.t += dt
       let c = Hop.crouch, a = Hop.air
-      lastSide = h.toX - h.fromX >= 0 ? 1 : -1
+      if abs(h.toX - h.fromX) > 4 { lastSide = h.toX - h.fromX > 0 ? 1 : -1 }
       if h.t < c {
         // lấy đà: khuỵu, chân ghim
         crouch = sin(Double.pi / 2 * h.t / c) * 4
@@ -492,9 +494,11 @@ public enum KoaWalk {
         f.x = offsets[i].x
         f.y = offsets[i].y
         f.lift = lifts[i]
-        // nhấc gót lúc rời sàn, hếch mũi lúc sắp đặt — theo hướng đi
+        // nhấc GÓT lúc rời sàn, hếch MŨI lúc sắp đặt — theo hướng mặt. Quay phải: gót bên trái
+        // lên = xoay thuận chiều kim đồng hồ (dương). (Trước 29/10 ngược dấu: mũi hếch lúc nhấc.)
         let q = swingU[i]
-        f.tilt = lifts[i] > 0.05 ? (turn >= 0 ? 1 : -1) * -7 * sin(Double.pi * 2 * q) * min(1, lifts[i] / 3) : 0
+        let side = abs(turn) > 0.15 ? (turn > 0 ? 1.0 : -1.0) : 0
+        f.tilt = lifts[i] > 0.05 ? side * 7 * sin(Double.pi * 2 * q) * min(1, lifts[i] / 3) : 0
         return f
       }
       p.left = foot(0)

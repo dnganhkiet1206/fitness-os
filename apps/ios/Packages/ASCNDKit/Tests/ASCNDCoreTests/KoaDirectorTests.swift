@@ -48,18 +48,66 @@ struct KoaDirectorTests {
     #expect(KoaRoomMap.spot(screenX: 140, y: 440).plane == .stage)
     #expect(KoaRoomMap.spot(screenX: 195, y: 458).plane == .stage)
     #expect(KoaRoomMap.spot(screenX: 260, y: 372).plane == .floor)
+    // chạm sau bục nhưng thấp hơn dải sàn → vẫn là sàn, kéo lên sau mép bục
+    #expect(KoaRoomMap.spot(screenX: 160, y: 379).plane == .floor)
     // tường / ngoài cảnh → điểm hợp lệ gần nhất
     #expect(KoaRoomMap.valid(KoaRoomMap.spot(screenX: 20, y: 300)))
   }
 
-  /// Đứng sau chậu cây trên sàn → cây vẽ đè lên Koa; trên bục → không có gì che.
+  /// Đứng sau chậu cây trên sàn → cây vẽ đè lên Koa; bục không bao giờ che (chân luôn cao
+  /// hơn mép sau mặt bục); trên bục → không có gì che.
   @Test func occlusionByDepth() {
-    let behindPlant = KoaRoomMap.Spot(.floor, 280, 388)
+    let behindPlant = KoaRoomMap.Spot(.floor, 280, 376)
     #expect(KoaRoomMap.occluding(behindPlant, halfWidth: 50).map(\.name).contains("plant"))
-    #expect(KoaRoomMap.occluding(behindPlant, halfWidth: 50).map(\.name).contains("stage"))
+    #expect(!KoaRoomMap.occluders.contains { $0.name == "stage" })
     #expect(KoaRoomMap.occluding(KoaRoomMap.stageMark, halfWidth: 50).isEmpty)
     // xa thì nhỏ, gần thì to
     #expect(KoaRoomMap.scale(380) < 1 && KoaRoomMap.scale(450) > 1)
+  }
+
+  /// Chân trên sàn luôn cao hơn mép sau mặt bục trên màn — bục không cắt ngang người Koa.
+  @Test func floorStaysBehindTheStageRim() {
+    let c = KoaRoomMap.stageCenter, r = KoaRoomMap.stageRadius
+    for x in stride(from: 140.0, through: 300, by: 2) {
+      for d in stride(from: 360.0, through: 410, by: 1) {
+        let s = KoaRoomMap.Spot(.floor, x, d)
+        guard KoaRoomMap.valid(s) else { continue }
+        let ex = (x - c.x) / r.x
+        guard abs(ex) < 1 else { continue }
+        let rim = c.d - KoaRoomMap.stageHeight - r.d * (1 - ex * ex).squareRoot()
+        #expect(KoaRoomMap.screenY(s) <= rim, "x \(x) d \(d) rim \(rim)")
+      }
+    }
+  }
+
+  /// Bước chân: lúc rời sàn gót nhấc trước (quay phải → xoay thuận, dương), lúc đặt thì mũi hếch.
+  @Test func heelLiftsFirst() {
+    var w = KoaWalk.Walker(x: 160, y: 374)
+    w.walk(to: 290, 374)
+    var early: [Double] = [], late: [Double] = []
+    for _ in 0..<(60 * 3) {
+      w.step(1.0 / 60)
+      for i in 0..<2 where w.lifts[i] > 1 {
+        let tilt = (i == 0 ? w.pose.left : w.pose.right).tilt
+        if w.swingU[i] < 0.4 { early.append(tilt) } else if w.swingU[i] > 0.6 { late.append(tilt) }
+      }
+    }
+    #expect(!early.isEmpty && early.allSatisfy { $0 >= 0 })
+    #expect(!late.isEmpty && late.allSatisfy { $0 <= 0 })
+  }
+
+  /// Đi vào trong phòng, mặt quay một bên: người không ngả ngược phía mặt.
+  @Test func leanFollowsFacing() {
+    var w = KoaWalk.Walker(x: 200, y: 450)
+    w.walk(to: 120, 450)
+    for _ in 0..<90 { w.step(1.0 / 60) }
+    // giờ đi thẳng vào trong, lệch phải một chút; mặt vẫn quay trái (bên cũ)
+    w.walk(to: 205, 370)
+    for _ in 0..<(60 * 2) {
+      w.step(1.0 / 60)
+      let p = w.pose
+      if abs(p.turn) > 0.3, abs(p.lean) > 0.5 { #expect(p.lean * p.turn > 0, "lean \(p.lean) turn \(p.turn)") }
+    }
   }
 
   // MARK: Đạo diễn
