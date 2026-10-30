@@ -124,36 +124,53 @@ public enum KoaGesture: String, Sendable, Hashable, CaseIterable {
   /// `armRankL` / `armRankR`: xoay cả tay lẫn nếp vai), hay bóng cằm (lớp không tên).
   /// `ground` < 1 (Koa đang đi): phần rời sàn của dáng (bật nhảy, chân co) nhường dần
   /// cho dáng đi — chân phải chạm sàn.
-  public func matrix(id: String?, bind: String?, d: String?, ground: Double = 1) -> KoaMath.Mat? {
+  ///
+  /// `amount` < 1: dáng hiện dần (Koa có ý định, 29/10) — mọi góc / độ dời nhân với `amount`,
+  /// nên dáng chuyển mượt chứ không bật tắt. Tay lật (ta-da, ăn mừng) chỉ lật khi đã quá nửa.
+  public func matrix(id: String?, bind: String?, d: String?, ground: Double = 1, amount: Double = 1) -> KoaMath.Mat? {
+    let a = max(0, min(1, amount))
     if let arms {
       if bind == "armRankL" {
         // mệt lả / hờn dỗi / tò mò: tay trái nhích lên gần cổ (Kiệt 25/10)
         let lift =
-          self == .flop || self == .pout ? Self.move(3, -7) : self == .curious ? Self.move(1, 1) : KoaMath.identity
-        let r = KoaMath.mul(lift, Self.rot(arms.left, Self.shoulderL.0, Self.shoulderL.1))
-        return flipsArms ? KoaMath.mul(r, Self.flip(left: true)) : r
+          self == .flop || self == .pout ? Self.move(3 * a, -7 * a) : self == .curious ? Self.move(a, a) : KoaMath.identity
+        let r = KoaMath.mul(lift, Self.rot(arms.left * a, Self.shoulderL.0, Self.shoulderL.1))
+        return flipsArms && a >= 0.5 ? KoaMath.mul(r, Self.flip(left: true)) : r
       }
       if bind == "armRankR" {
-        let r = Self.rot(arms.right, Self.shoulderR.0, Self.shoulderR.1)
-        return flipsArms ? KoaMath.mul(r, Self.flip(left: false)) : r
+        let r = Self.rot(arms.right * a, Self.shoulderR.0, Self.shoulderR.1)
+        return flipsArms && a >= 0.5 ? KoaMath.mul(r, Self.flip(left: false)) : r
       }
     }
     switch id {
-    case "HEADRIG": return head
+    case "HEADRIG": return headMat(a)
     case "FACE":
       switch self {
-      case .curious: return Self.move(-5, 0)
-      case .pout: return Self.move(7, 0)
+      case .curious: return Self.move(-5 * a, 0)
+      case .pout: return Self.move(7 * a, 0)
       default: return nil
       }
-    case "POSERIG": return self == .cheer ? Self.move(0, -26 * ground) : nil
-    case "leg_left_lower": return self == .cheer ? Self.rot(14 * ground, 104, 256) : nil
-    case "leg_right_lower": return self == .cheer ? Self.rot(-14 * ground, 136, 256) : nil
+    case "POSERIG": return self == .cheer ? Self.move(0, -26 * ground * a) : nil
+    case "leg_left_lower": return self == .cheer ? Self.rot(14 * ground * a, 104, 256) : nil
+    case "leg_right_lower": return self == .cheer ? Self.rot(-14 * ground * a, 136, 256) : nil
     default: break
     }
     // bóng cằm trên thân đi theo đầu — nghiêng đầu không lộ "cổ"
-    if let head, d?.hasPrefix("M85 174") == true { return head }
+    if head != nil, d?.hasPrefix("M85 174") == true { return headMat(a) }
     return nil
+  }
+
+  /// Đầu ở độ hiện `a` (a = 1 đúng `head`).
+  func headMat(_ a: Double) -> KoaMath.Mat? {
+    guard head != nil else { return nil }
+    if a >= 1 { return head }
+    switch self {
+    case .taDa: return Self.rot(-4 * a, Self.neck.0, Self.neck.1)
+    case .curious: return Self.rot(-9 * a, Self.neck.0, Self.neck.1)
+    case .flop: return KoaMath.mul(Self.rot(9 * a, Self.neck.0, Self.neck.1), Self.move(2 * a, 5 * a))
+    case .pout: return Self.rot(5 * a, Self.neck.0, Self.neck.1)
+    case .cheer: return nil
+    }
   }
 
   /// Vùng nửa bàn tay (phía ngoài khuỷu) trong toạ độ của chính tay — nét mờ chỉ ở đây,
