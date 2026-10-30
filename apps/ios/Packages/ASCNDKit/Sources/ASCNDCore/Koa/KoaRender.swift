@@ -58,6 +58,9 @@ public enum KoaRender {
     public var gesture: KoaGesture?
     /// Lớp tay: cả hình, bỏ tay, hay chỉ tay (dáng giơ tay đè má vẽ tay ở lớp trên).
     public var arms: ArmsLayer = .all
+    /// Đang đi trong phòng (29/10, `KoaWalk`): bàn chân, nhún, đánh tay, quay mặt.
+    /// Chỉ cho tư thế đứng (`idle`).
+    public var walk: KoaWalk.Pose?
 
     public enum ArmsLayer: Sendable, Hashable { case all, without, only }
 
@@ -103,6 +106,7 @@ public enum KoaRender {
     var gesture: KoaGesture?
     var arms: Options.ArmsLayer = .all
     var inArms = false
+    var walk: KoaWalk.Pose?
   }
 
   static func isEyeGroup(_ n: KoaScene.Node) -> Bool { n.kids?.contains { $0.id == "pupil_left" } ?? false }
@@ -171,7 +175,9 @@ public enum KoaRender {
 
     let arms = c.dress && n.id == "ARMS"
     var kids: [Element] = []
-    for (i, k) in l.kids.enumerated() {
+    // đi: bàn chân gần người xem vẽ sau (đè lên chân kia)
+    let order = n.id == "LEGS" && c.walk?.leftNear == true ? Array(l.kids.enumerated().reversed()) : Array(l.kids.enumerated())
+    for (i, k) in order {
       kids += node(
         k, c, armPart: arms ? KoaMath.dressArmAt[i] : nil, armHidden: arms && KoaMath.dressArmHide.contains(i))
     }
@@ -317,7 +323,7 @@ public enum KoaRender {
     }
     var d: String?
     if case .string(let s)? = n.a?["d"] { d = s }
-    if let g = c.gesture, let m = g.matrix(id: n.id, bind: n.bind, d: d) {
+    if let g = c.gesture, let m = g.matrix(id: n.id, bind: n.bind, d: d, ground: 1 - (c.walk?.weight ?? 0)) {
       moved = [Element("G", matrix: m, kids: moved)]
     }
     // Tư thế đứng: nhấc hai tay lên một chút để đỉnh tay chạm cằm — hết khe tối nhỏ giữa
@@ -327,6 +333,7 @@ public enum KoaRender {
     {
       moved = [Element("G", matrix: KoaGesture.idleArmLift, kids: moved)]
     }
+    if let w = c.walk, let m = walkMat(n, w) { moved = [Element("G", matrix: m, kids: moved)] }
     // Koa lớn: chớp mắt có nét mi = mép dưới của mi, co cùng mi
     if c.poke != nil, c.live, let anim, KoaMath.blinkAnims.contains(anim.k), c.t >= anim.delay,
       let track = track?.tf, !track.isEmpty
@@ -355,6 +362,9 @@ public enum KoaRender {
       for k in f.keys where KoaGesture.facePrefixes.contains(where: { k.hasPrefix($0) }) { f[k] = .bool(false) }
       for k in g.face { f[k] = .bool(true) }
     }
+    if walking(o), let w = o.walk {
+      for (k, v) in walkFlags(w) { f[k] = v }
+    }
     if o.dress {
       f["mouthSmile"] = .bool(false)
       f["mouthGrin"] = .bool(false)
@@ -362,6 +372,52 @@ public enum KoaRender {
       f["showHearts"] = .bool(true)
     }
     return f
+  }
+
+  // MARK: - Đi trong phòng (29/10)
+
+  static func walking(_ o: Options) -> Bool { o.walk != nil && o.pose == .idle && !o.dress }
+
+  /// Bàn chân (cảnh tủ đồ: nhóm `FOOT_L` / `FOOT_R`, `bind` `footL` / `footR`) và quay mặt.
+  /// Quay mặt = dời mặt / tai / bụng theo hướng (như `turn34`, nhưng liên tục từ −1 tới 1
+  /// nên không đổi hình đột ngột; thân không co, không méo).
+  static func walkFlags(_ w: KoaWalk.Pose) -> KoaFlags.Flags {
+    func num(_ v: Double) -> String { String(format: "%.3f", v) }
+    func foot(_ f: KoaWalk.Foot, cx: Double) -> String {
+      // bù đúng phần thân nhún / nghiêng (`bodyMat`, ở POSERIG) để chân đang chạm sàn
+      // đứng yên trên sàn: nghịch đảo của t(0,−bob)·r(θ) là r(−θ)·t(0,bob)
+      "rotate(\(num(-(w.sway + w.lean))) 120 293) translate(\(num(f.x)),\(num(f.y - f.lift + w.bob))) "
+        + "rotate(\(num(f.tilt)) \(num(cx)) 292)"
+    }
+    let u = w.turn
+    var f: KoaFlags.Flags = [:]
+    f["footL"] = .text(foot(w.left, cx: 95))
+    f["footR"] = .text(foot(w.right, cx: 145))
+    f["faceShift"] = .text(u == 0 ? "" : "translate(\(num(14 * u)),0)")
+    f["earShift"] = .text(u == 0 ? "" : "translate(\(num(5 * u)),0)")
+    f["bellyTurn"] = .text(u == 0 ? "" : "translate(\(num(8 * u)),0)")
+    return f
+  }
+
+  /// Đầu và mắt nhìn theo hướng đi (khi không có ngón tay).
+  static func walkLook(_ o: Options) -> KoaMath.Gaze? {
+    guard walking(o), let w = o.walk, abs(w.turn) > 0.001 else { return nil }
+    return KoaMath.Gaze(x: 0.9 * w.turn, y: 0.15 * abs(w.turn), k: 1)
+  }
+
+  /// Thân nhún lên + nghiêng (lắc sang chân đỡ, nghiêng tới theo hướng đi), quanh giữa hai bàn chân.
+  static func bodyMat(_ w: KoaWalk.Pose) -> KoaMath.Mat {
+    KoaMath.mul(KoaMath.opMat(KoaScene.Op("t", [0, -w.bob])), KoaMath.opMat(KoaScene.Op("r", [w.sway + w.lean, 120, 293])))
+  }
+
+  static func walkMat(_ n: KoaScene.Node, _ w: KoaWalk.Pose) -> KoaMath.Mat? {
+    if n.id == "POSERIG" { return bodyMat(w) }
+    if n.bind == "armRankL" { return KoaGesture.rot(w.armLeft, KoaGesture.shoulderL.0, KoaGesture.shoulderL.1) }
+    // tay phải và đồ cầm trên tay phải đánh cùng nhau
+    if n.bind == "armRankR" || n.animBind == "handAnim" {
+      return KoaGesture.rot(w.armRight, KoaGesture.shoulderR.0, KoaGesture.shoulderR.1)
+    }
+    return nil
   }
 
   /// Mức vóc dáng của từng hạng, 0 → 1 (20/10, Kiệt duyệt `koa-rank-evolution.html`).
@@ -397,9 +453,9 @@ public enum KoaRender {
     // chỉ cái liếc trong phòng đổi miệng; nhìn theo ngón tay thì không
     let swapMouth = o.gaze != nil && KoaMath.swapMouths.contains { f[$0]?.truthy ?? false }
     let c = Context(
-      flags: f, t: o.t, live: o.live, gaze: o.live ? o.gaze ?? o.look : nil, swapMouth: swapMouth,
+      flags: f, t: o.t, live: o.live, gaze: o.live ? o.gaze ?? o.look ?? walkLook(o) : nil, swapMouth: swapMouth,
       rest: KoaMath.restsAt(f) && !o.dress, dress: o.dress, blend: o.blend ?? (o.dress ? 1 : 0), paper: o.paper,
-      flat: o.flat, poke: o.live ? o.poke : nil, gesture: o.gesture, arms: o.arms)
+      flat: o.flat, poke: o.live ? o.poke : nil, gesture: o.gesture, arms: o.arms, walk: walking(o) ? o.walk : nil)
     let tree = KoaLight.nodes.flatMap { node($0, c) }
     return Element(
       "Svg",

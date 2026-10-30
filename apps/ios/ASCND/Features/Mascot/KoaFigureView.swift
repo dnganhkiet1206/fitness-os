@@ -31,9 +31,15 @@ struct KoaFigureView: View {
   var stage = false
   /// Nhảy chào một lần khi hiện ra (như Koa đầu trang hỗ trợ), không rung.
   var greet = false
+  /// Canvas rộng hơn khung bao nhiêu lần khi `bleeds` (tai không bị cắt khi đầu quay).
+  static let bleed = 1.3
   /// Chạm vào Koa (thay cho `Button` bọc ngoài — nút không nhận chạm khi Koa đang
   /// theo ngón tay). Vẫn gọi khi Reduce Motion.
   var onTap: (() -> Void)?
+  /// Đang đi trong phòng (`KoaWalk`, 29/10): bàn chân, nhún, đánh tay, quay mặt.
+  var walk: KoaWalk.Pose?
+  /// Cho hình vẽ tràn ra hai bên khung (phòng: Koa đi, quay đầu). Chỗ khác giữ khung cắt như cũ.
+  var bleeds = false
 
   @Environment(\.colorScheme) private var scheme
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -57,7 +63,10 @@ struct KoaFigureView: View {
     TimelineView(.animation(minimumInterval: 1.0 / 60, paused: !running)) { timeline in
       let ms = timeline.date.timeIntervalSinceReferenceDate * 1000
       let t = animated ? clock.tick(ms, running: running) : 0
-      canvas(t: t, paper: isPaper, react: reacts ? touch.frame(ms) : nil)
+      canvas(t: t, paper: isPaper, react: reacts ? touch.frame(ms) : nil, running: running)
+        // vẽ rộng hơn khung hai bên (hình vẫn đúng chỗ, đúng cỡ — `viewport` theo chiều cao):
+        // đầu quay / nghiêng khi đi không bị cắt tai ở mép khung
+        .frame(width: size * (bleeds ? Self.bleed : 1), height: size * KoaMath.aspect)
     }
     .frame(width: size, height: size * KoaMath.aspect)
     .onScrollVisibilityChange(threshold: 0.01) { onScreen = $0 }
@@ -95,7 +104,7 @@ struct KoaFigureView: View {
       }
   }
 
-  private func canvas(t: Double, paper: Bool, react: KoaTouch.Frame?) -> some View {
+  private func canvas(t: Double, paper: Bool, react: KoaTouch.Frame?, running: Bool) -> some View {
     Canvas { ctx, canvas in
       var o = KoaRender.Options()
       o.expression = gesture?.expression ?? expression
@@ -112,6 +121,7 @@ struct KoaFigureView: View {
       o.t = t
       o.look = react?.look
       o.poke = react?.poke
+      o.walk = running ? walk : nil
       // Dáng giơ tay đè má: hình đủ (vai sau đầu), rồi một lớp chỉ nửa bàn tay ở trên.
       var plans: [[KoaPaint.Op]] = []
       if gesture?.armsFront == true {
@@ -130,6 +140,8 @@ struct KoaFigureView: View {
         // Ban ngày: MỘT dải nắng trên cả hình (`sourceAtop` — chỉ dính chỗ đã có Koa),
         // không phủ từng mảnh nên chỗ các mảnh chồng nhau không lộ (15/10, chủ dự án).
         layer.blendMode = .sourceAtop
+        // dải nắng theo khung của hình (không theo phần vẽ tràn `bleed`) — như trước
+        let w = canvas.height / KoaMath.aspect, x0 = (canvas.width - w) / 2
         layer.fill(
           Path(CGRect(origin: .zero, size: canvas)),
           with: .linearGradient(
@@ -138,7 +150,7 @@ struct KoaFigureView: View {
               .init(color: .clear, location: 0.38),
               .init(color: .clear, location: 0.55),
               .init(color: Color(red: 0.29, green: 0.23, blue: 0.17).opacity(0.2), location: 1),
-            ]), startPoint: CGPoint(x: canvas.width, y: 0), endPoint: CGPoint(x: 0, y: canvas.height)))
+            ]), startPoint: CGPoint(x: x0 + w, y: 0), endPoint: CGPoint(x: x0, y: canvas.height)))
       }
     }
   }
@@ -167,6 +179,10 @@ struct MascotFigureView: View {
   /// Sân khấu đèn (bản tối).
   var stage = false
   var greet = false
+  /// Dáng đi trong phòng (chỉ Koa).
+  var walk: KoaWalk.Pose?
+  /// Sân khấu cho Koa đi (hình được vẽ tràn khung).
+  var walks = false
   @Environment(AppServices.self) private var services: AppServices?
 
   var body: some View {
@@ -177,7 +193,7 @@ struct MascotFigureView: View {
         gesture: dress ? nil : gesture, dress: dress,
         worn: KoaEmotion.worn(equipped).merging(state.outfit) { _, new in new }, size: size, animated: animated,
         paper: paper, build: build ?? services?.koaBuild ?? 0, interactive: interactive, stage: stage,
-        greet: greet)
+        greet: greet, walk: dress ? nil : walk, bleeds: walks)
     } else {
       VectorMascotView(id: mascotId, size: size, equipped: Set(equipped))
     }

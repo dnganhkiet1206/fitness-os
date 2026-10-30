@@ -15738,6 +15738,29 @@
     }
    }
   },
+  "mr.walk.a11y": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Walk Koa around"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cho Koa đi dạo"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Pasear a Koa"
+     }
+    }
+   }
+  },
   "mr.error.title": {
    "extractionState": "manual",
    "localizations": {

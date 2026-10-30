@@ -282,8 +282,20 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 
 ---
 
+**Koa đi trong phòng (29/10, nhánh `claude/koa-walk-room`) — hạn chế đã biết:**
+- Cách làm: vẫn là Koa vector của app (không PNG, không vẽ lại), chuyển động theo bộ phận. `tools/koa-wardrobe` tách nhóm chân thành `FOOT_L` / `FOOT_R` (không đổi nét nào. So ảnh cũ / mới của 20 món giày + quần, có / không đèn, đứng và "ăn mừng": 61 / 80 ảnh khớp tuyệt đối; 19 ảnh lệch tối đa 4 / 255 mỗi kênh ở vài trăm điểm ảnh — làm tròn do đổi thứ tự tô, mắt không thấy). `KoaWalk` (Core) ghim bàn chân đang chạm sàn vào một điểm trên sàn → không trượt (test `plantedFeetNeverSlide`: 0 đơn vị); nhịp bước theo tốc độ thật; tăng / giảm tốc; dừng thì khép chân rồi về đứng yên; quay mặt bằng lò xo (dời mặt / tai / bụng + đầu, mắt nhìn theo), không đổi hình đột ngột, không co méo thân.
+- **Không có hình quay lưng:** đi vào trong phòng (lên trên màn) Koa vẫn nghiêng 3/4 về bên cũ, không quay lưng. Đi thẳng về phía người xem thì nhìn thẳng.
+- **Không có hình nghiêng hẳn (profile):** quay mặt là dời các mảng trên hình đứng thẳng, như tư thế `turn34` sẵn có; thân không xoay.
+- Chỉ đi khi Koa đang đứng (`idle`). Ngồi thiền (mệt / ngủ) và cầm tạ thì ở yên; chạm sàn không làm gì.
+- Dáng biểu cảm (ta-da, hờn dỗi, tò mò…) giữ tay / đầu khi đi; riêng "ăn mừng" hạ người và chân xuống sàn trong lúc đi rồi bật lại khi dừng.
+- Vùng sàn đi được là hình chữ nhật trong toạ độ phòng (x 74–316, y 403–452), trước chân kệ và quả bóng; Koa luôn vẽ TRƯỚC đồ đạc (không đi ra sau). Đứng chỗ đè lên bảng số thì chạm vào đầu Koa ở đó là chạm bảng (nút bảng nằm trên).
+- Koa tự đi dạo 7–14 giây một lần khi phòng đang hiện (không ngay sau khi người dùng vừa chạm, không khi Giảm chuyển động). Rời phòng rồi vào lại thì Koa đứng lại trên bục.
+- Giảm chuyển động: chạm sàn → Koa đứng ngay ở chỗ đó, không đi, không tự đi dạo (simulator: hai ảnh cách 20 giây giống hệt, 0 % CPU). VoiceOver: hành động "Cho Koa đi dạo" trên sân khấu.
+- Hiệu năng (simulator iPhone Air, `top`): đứng trong phòng 31–40 % CPU (hoạt ảnh Koa 60 khung/giây có từ trước), đang đi 32–41 %; bộ nhớ 104 MB, không tăng sau nhiều lượt đi. Số simulator, chưa đo iPhone thật.
+
 ## 5. Lịch sử thay đổi sổ
 
+- 29/10/2026: Koa biết đi trong phòng (chạm sàn để gọi, tự đi dạo, Giảm chuyển động thì đứng ngay chỗ mới); ghi hạn chế: không có hình quay lưng / nghiêng hẳn, chỉ đi khi đứng, vùng sàn chữ nhật.
 - 28/10/2026: Tiến bộ từng bài — hết cắt chữ ở cỡ trợ năng; đã kiểm lb trên simulator.
 - 28/10/2026: `ai-weekly-review` bỏ hôm nay khỏi trung bình như thẻ app (app gửi `today`).
 - 29/10/2026: deploy production (Kiệt duyệt trong chat: "Duyệt deploy") — `ai-weekly-review` v12, 03:17 UTC, từ `dd2955f2` (#734). Không deploy hàm nào khác, không migration.

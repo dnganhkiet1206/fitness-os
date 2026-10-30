@@ -1264,6 +1264,34 @@ for n in walk({'kids': d['nodes']}):
     if 'kids' in n:
         n['kids'] = [k for k in n['kids'] if not re.match(r'M(71\.5|168\.5) 192 ', (k.get('a') or {}).get('d', ''))]
 
+# ── HAI BÀN CHÂN RIÊNG (29/10, Koa biết đi trong phòng): `LEGS` tách thành `FOOT_L` /
+#    `FOOT_R`, mỗi bên một nhóm có `bind` (`footL` / `footR`) để app dời, nhấc, nghiêng
+#    từng bàn chân. Không đổi nét vẽ nào: chỉ gom lại theo bên. Đồ mặc ở chân (quần, giày,
+#    đế) tách làm hai nhóm cùng `if`. Bên = toạ độ x đầu tiên của mảnh (< 120 là trái).
+def first_x(n):
+    for m in walk(n):
+        a = m.get('a') or {}
+        if m.get('t') == 'clipPath': continue
+        if 'd' in a and m.get('t') == 'path':
+            return float(re.match(r'\s*M\s*(-?[\d.]+)', a['d']).group(1))
+        if 'cx' in a: return float(a['cx'])
+        if 'x' in a and 'width' in a and float(a['width']) < 200: return float(a['x']) + float(a['width']) / 2
+    raise SystemExit(f"không biết bên của mảnh chân: {json.dumps(n)[:120]}")
+def leg_side(n):
+    """Mảnh (hay nhóm cloth) thuộc bên nào; nhóm đồ có `if` thì tách theo con."""
+    return 'L' if first_x(n) < 120 else 'R'
+feet = {'L': [], 'R': []}
+for k in legs_g['kids']:
+    if (k.get('if') or '').startswith('it_'):
+        parts = {'L': [], 'R': []}
+        for x in k['kids']: parts[leg_side(x)].append(x)
+        for s_ in 'LR':
+            assert parts[s_], f"{k['if']} thiếu bên {s_}"
+            feet[s_].append({**{a: v for a, v in k.items() if a != 'kids'}, 'kids': parts[s_]})
+    else:
+        feet[leg_side(k)].append(k)
+legs_g['kids'] = [G(feet['L'], id='FOOT_L', bind='footL'), G(feet['R'], id='FOOT_R', bind='footR')]
+
 # Mọi món đã vẽ lại phải xuất hiện đúng một lần trở lên trong cây mới.
 flags_in = {n.get('if') for n in walk({'kids': d['nodes']})}
 missing = sorted(gone - flags_in)
