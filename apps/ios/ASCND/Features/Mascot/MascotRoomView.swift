@@ -220,7 +220,7 @@ struct MascotRoomView: View {
         onBoard: {
           boardStat = (RoomBoard.Stat(rawValue: boardStat) ?? .rank).next.rawValue
         },
-        dust: devDust ?? dust?.level ?? 0)
+        dust: devDust ?? dust?.level ?? 0, walks: true)
         .sensoryFeedback(.selection, trigger: boardStat)
         // Nằm thẳng trên nền, không thẻ, không viền (Kiệt 24/10): tràn ngang màn,
         // mép trên / dưới / hai bên tan vào nền trang.
@@ -842,8 +842,15 @@ struct MascotStage: View {
   var onBoard: (() -> Void)?
   /// Mức bụi 0…3 (phần 5).
   var dust = 0
+  /// Koa đi trong phòng (29/10): chạm sàn thì đi tới đó, đứng lâu thì tự đi dạo. Chỉ
+  /// phòng linh vật; cửa hàng giữ Koa đứng trên bục.
+  var walks = false
 
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @Environment(\.scenePhase) private var scenePhase
+  @State private var walker = KoaWalkDriver()
+  /// Sân khấu còn trong khung cuộn (như `KoaFigureView`): ngoài khung thì không đi dạo.
+  @State private var onScreen = true
   @Environment(\.colorScheme) private var scheme
   @Environment(\.locale) private var locale
   /// Ngôn ngữ của chữ vẽ trên tranh trong phòng.
@@ -877,14 +884,43 @@ struct MascotStage: View {
   /// `HERO_W = round(128 / 0.93)`.
   private static let heroWidth = 138.0
 
+  /// Chỉ đi được khi Koa đang đứng (ngồi thiền / cầm tạ thì ở yên).
+  private var canWalk: Bool {
+    walks && KoaEmotion.state(emotion).pose == .idle
+  }
+
   var body: some View {
     // không có dòng "Cấp N" dưới sân khấu (RN cũng không) — thẻ cấp ngay dưới nói rồi
     StudioBackdrop(options: studio)
-      .overlay { GeometryReader { g in hero(g.size.width) } }
+      .overlay {
+        GeometryReader { g in
+          ZStack(alignment: .topLeading) {
+            if canWalk { floorTaps(g.size.width) }
+            walkingHero(g.size.width)
+          }
+        }
+      }
       .aspectRatio(StudioScene.width / StudioScene.sceneBottom, contentMode: .fit)
       .frame(maxWidth: .infinity)
     .accessibilityElement(children: .ignore)
     .accessibilityLabel(Text(String(localized: "mr.stage.a11y \(level)")))
+    .accessibilityAction(named: Text("mr.walk.a11y")) {
+      guard canWalk else { return }
+      walker.wander()
+      if reduceMotion { walker.halt() }
+    }
+    .onScrollVisibilityChange(threshold: 0.2) { onScreen = $0 }
+    .onChange(of: reduceMotion) { _, on in if on { walker.halt() } }
+    .onChange(of: canWalk) { _, on in if !on { walker.halt() } }
+    .task(id: canWalk && !reduceMotion && onScreen && scenePhase == .active) {
+      // đứng lâu thì tự đi dạo: 7–14 giây một lần, không ngay sau khi người dùng vừa chạm
+      guard canWalk, !reduceMotion, onScreen, scenePhase == .active else { return }
+      while !Task.isCancelled {
+        try? await Task.sleep(for: .seconds(Double.random(in: 7...14)))
+        guard !Task.isCancelled else { return }
+        if !walker.walker.isMoving, Date.now.timeIntervalSince(walker.touchedAt) > 10 { walker.wander() }
+      }
+    }
     .overlay {
       if let onBoard {
         GeometryReader { g in boardButton(g.size.width, action: onBoard) }
@@ -907,16 +943,46 @@ struct MascotStage: View {
     .accessibilityHint(Text("mr.board.hint"))
   }
 
-  /// Koa đứng trên bục: `size = round(HERO_W·k)`, đỉnh ở `412k − 1,25·size + 6k`.
-  private func hero(_ width: CGFloat) -> some View {
+  /// Vùng sàn nhận chạm (dưới Koa — chạm Koa vẫn là chọc Koa): chạm đâu Koa đi tới đó
+  /// (ngoài vùng sàn hợp lệ thì tới điểm gần nhất).
+  private func floorTaps(_ width: CGFloat) -> some View {
+    let k = Double(width) / StudioScene.width
+    let top = 380.0, bottom = StudioScene.sceneBottom
+    return Color.clear
+      .contentShape(Rectangle())
+      .frame(width: width, height: (bottom - top) * k)
+      .offset(y: top * k)
+      .onTapGesture(coordinateSpace: .local) { p in
+        walker.go(to: p.x / k, p.y / k + top, reduceMotion: reduceMotion)
+      }
+      .accessibilityHidden(true)
+  }
+
+  /// Koa lớn dần theo cấp (neo ở chân).
+  private var levelScale: Double { min(1 + Double(level - 1) * 0.012, 1.1) }
+
+  /// Koa trên sân khấu, theo `KoaWalkDriver`: đồng hồ chỉ chạy khi đang đi.
+  private func walkingHero(_ width: CGFloat) -> some View {
+    TimelineView(.animation(minimumInterval: 1.0 / 60, paused: !walker.active)) { tl in
+      let pose = walker.active ? walker.frame(tl.date, heroWidth: Self.heroWidth * levelScale) : nil
+      hero(width, x: walker.walker.x, y: walker.walker.y, scale: walker.walker.scale, walk: pose)
+    }
+  }
+
+  /// Koa đứng trên bục: `size = round(HERO_W·k)`, đỉnh ở `412k − 1,25·size + 6k`. Đi trong
+  /// phòng: chân ở `(x, y)` của phòng, to / nhỏ theo chiều sâu (`scale`, neo ở chân).
+  private func hero(
+    _ width: CGFloat, x: Double = StudioScene.stageMark.x, y: Double = StudioScene.stageMark.y, scale: Double = 1,
+    walk: KoaWalk.Pose? = nil
+  ) -> some View {
     let k: Double = Double(width) / StudioScene.width
     let size: Double = (Self.heroWidth * k).rounded()
-    let left: Double = StudioScene.stageMark.x * k - size / 2
-    let top: Double = StudioScene.stageMark.y * k - size * KoaMath.aspect + 6 * k
-    let levelScale: Double = min(1 + Double(level - 1) * 0.012, 1.1)
+    let left: Double = x * k - size / 2
+    let top: Double = y * k - size * KoaMath.aspect + 6 * k
     return MascotFigureView(
-      emotion: emotion, equipped: equipped, gesture: gesture, size: size, build: build, interactive: true)
-      .scaleEffect(levelScale, anchor: .bottom)
+      emotion: emotion, equipped: equipped, gesture: gesture, size: size, build: build, interactive: true,
+      walk: walk, walks: walks)
+      .scaleEffect(levelScale * scale, anchor: .bottom)
       // reduceMotion: giá trị không đổi thì không gật
       .keyframeAnimator(initialValue: Nod(), trigger: reduceMotion ? 0 : celebrateSignal) { view, v in
         view.rotationEffect(.degrees(v.angle), anchor: .bottom).scaleEffect(v.scale, anchor: .bottom)

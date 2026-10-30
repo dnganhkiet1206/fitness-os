@@ -122,7 +122,9 @@ public enum KoaGesture: String, Sendable, Hashable, CaseIterable {
 
   /// Ma trận thêm cho một lớp — theo `id`, theo tên `bind` (tay của tủ đồ là nhóm
   /// `armRankL` / `armRankR`: xoay cả tay lẫn nếp vai), hay bóng cằm (lớp không tên).
-  public func matrix(id: String?, bind: String?, d: String?) -> KoaMath.Mat? {
+  /// `ground` < 1 (Koa đang đi): phần rời sàn của dáng (bật nhảy, chân co) nhường dần
+  /// cho dáng đi — chân phải chạm sàn.
+  public func matrix(id: String?, bind: String?, d: String?, ground: Double = 1) -> KoaMath.Mat? {
     if let arms {
       if bind == "armRankL" {
         // mệt lả / hờn dỗi / tò mò: tay trái nhích lên gần cổ (Kiệt 25/10)
@@ -144,9 +146,9 @@ public enum KoaGesture: String, Sendable, Hashable, CaseIterable {
       case .pout: return Self.move(7, 0)
       default: return nil
       }
-    case "POSERIG": return self == .cheer ? Self.move(0, -26) : nil
-    case "leg_left_lower": return self == .cheer ? Self.rot(14, 104, 256) : nil
-    case "leg_right_lower": return self == .cheer ? Self.rot(-14, 136, 256) : nil
+    case "POSERIG": return self == .cheer ? Self.move(0, -26 * ground) : nil
+    case "leg_left_lower": return self == .cheer ? Self.rot(14 * ground, 104, 256) : nil
+    case "leg_right_lower": return self == .cheer ? Self.rot(-14 * ground, 136, 256) : nil
     default: break
     }
     // bóng cằm trên thân đi theo đầu — nghiêng đầu không lộ "cổ"
