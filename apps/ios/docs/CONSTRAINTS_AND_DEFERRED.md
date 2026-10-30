@@ -288,13 +288,25 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - **Không có hình nghiêng hẳn (profile):** quay mặt là dời các mảng trên hình đứng thẳng, như tư thế `turn34` sẵn có; thân không xoay.
 - Chỉ đi khi Koa đang đứng (`idle`). Ngồi thiền (mệt / ngủ) và cầm tạ thì ở yên; chạm sàn không làm gì.
 - Dáng biểu cảm (ta-da, hờn dỗi, tò mò…) giữ tay / đầu khi đi; riêng "ăn mừng" hạ người và chân xuống sàn trong lúc đi rồi bật lại khi dừng.
-- Vùng sàn đi được là hình chữ nhật trong toạ độ phòng (x 74–316, y 403–452), trước chân kệ và quả bóng; Koa luôn vẽ TRƯỚC đồ đạc (không đi ra sau). Đứng chỗ đè lên bảng số thì chạm vào đầu Koa ở đó là chạm bảng (nút bảng nằm trên).
-- Koa tự đi dạo 7–14 giây một lần khi phòng đang hiện (không ngay sau khi người dùng vừa chạm, không khi Giảm chuyển động). Rời phòng rồi vào lại thì Koa đứng lại trên bục.
+- ~~Vùng sàn đi được là hình chữ nhật trong toạ độ phòng (x 74–316, y 403–452), trước chân kệ và quả bóng; Koa luôn vẽ TRƯỚC đồ đạc (không đi ra sau).~~ Thay 29/10 (phần 2, dưới đây): bản đồ phòng có sân khấu + sàn sau bục + vùng chặn + che theo độ sâu. Đứng chỗ đè lên bảng số thì chạm vào đầu Koa ở đó là chạm bảng (nút bảng nằm trên).
+- ~~Koa tự đi dạo 7–14 giây một lần khi phòng đang hiện (không ngay sau khi người dùng vừa chạm, không khi Giảm chuyển động).~~ Thay 29/10 (phần 2): đạo diễn hành vi có ý định. Rời phòng rồi vào lại thì Koa đứng lại trên bục.
 - Giảm chuyển động: chạm sàn → Koa đứng ngay ở chỗ đó, không đi, không tự đi dạo (simulator: hai ảnh cách 20 giây giống hệt, 0 % CPU). VoiceOver: hành động "Cho Koa đi dạo" trên sân khấu.
 - Hiệu năng (simulator iPhone Air, `top`): đứng trong phòng 31–40 % CPU (hoạt ảnh Koa 60 khung/giây có từ trước), đang đi 32–41 %; bộ nhớ 104 MB, không tăng sau nhiều lượt đi. Số simulator, chưa đo iPhone thật.
 
+**Koa có ý định trong phòng (29/10, phần 2, nhánh `claude/koa-room-intent`, Kiệt cho làm thẳng) — hạn chế đã biết:**
+- Cách làm: không đổi art, không thêm đồ / đạo cụ, không pose mới. `KoaRoomMap` dựng từ khung bao của chính các phần tử phòng (`StudioScene`): sân khấu = mặt bục (cao 24), sàn = dải sau bục giữa kệ và chậu cây, vùng chặn = chân kệ / cây / bóng, hai bậc lên bục ở phía sau, 4 chỗ ghé (kệ: ngắm từng tầng; cây: ngửi, lá rung; cửa sổ: ngước nhìn; bảng: đọc), chỗ gần người xem ở mép trước bục. `KoaDirector`: mỗi hành vi có lý do / đích / ánh nhìn / biểu cảm (hệ có sẵn: `KoaFlags.Expression`, `KoaGesture`) / kiểu đi / hành động / thời lượng / việc tiếp; lập lịch có ưu tiên, cooldown, phạt lặp lại; chỉ đổi việc ở điểm an toàn (hai chân chạm sàn, không giữa cú nhảy); mắt → mặt → đầu → thân → chân. `KoaGaze`: mắt tới trước đầu, saccade, liếc, chớp mắt không đều. 6 kiểu đi (`KoaWalk.Style`: thong thả / tò mò / có việc / lại gần / bước chỉnh / thư thả) khác nhau ở nhịp, độ nhấc chân, nhún, lắc, tay, nghiêng, lấy đà, độ lắng khi dừng; quay người tại chỗ có bước nhỏ.
+- **Ba kịch bản:** (a) mở phòng / chạm Koa → nhìn người xem → đi tới mép trước bục → vui → ở lại 6–10 giây; (b) khám phá một đồ vật (không ghé cùng món hai lần liền); (c) tự hào (ta-da) CHỈ khi `gains.lastSession == hôm nay` (buổi tập đã ghi thật), một lần mỗi ngày mỗi tài khoản (`@AppStorage koa.proud.done`). Simulator 29/10: ghi 1 set thật → mở phòng → ta-da → mở lại → không ta-da nữa.
+- **Không có hình quay lưng / nghiêng hẳn** (như phần 1). Lên / xuống bục là cú nhảy nhỏ (khuỵu → bay → tiếp đất), không có dáng leo.
+- **Tự hào chỉ khi Koa đứng.** Sau 22 giờ (ngủ) hay khi mệt Koa ngồi thiền: không đi, không ta-da (giữ tới lần mở sau khi đứng). Không bù sau nửa đêm.
+- **Che theo độ sâu**: Koa ở sàn sau kệ / cây / bóng / bục thì phần ảnh đồ ấy được vẽ lại đè lên Koa (mặt nạ từ chính phần tử phòng). Bóng tiếp xúc của Koa vẫn là bóng của bản vẽ (đi theo Koa), không đổi theo ánh đèn.
+- Lá cây rung: vẽ lại cả phòng ~3 giây mỗi lần (chỉ khi rung). Chậu cây nhỏ trên kệ không rung.
+- **Lớp debug** (chỉ bản Debug, chip "map"): sân khấu, sàn, vùng chặn, bậc, chỗ ghé + hướng nhìn, chỗ gần người xem, đích, đường đi, hành vi / lý do / kiểu đi / biểu cảm / ánh nhìn / độ sâu.
+- Hiệu năng (simulator iPhone Air, `top`, 60 giây trong phòng): TB 49 % CPU, đỉnh 120 % lúc vào phòng; bộ nhớ 102–106 MB, không tăng. Phần 1: 31–41 %. Tăng vì đồng hồ của đạo diễn chạy cả khi đứng (ánh nhìn, chớp mắt) — đứng yên 30 khung/giây, đi 60. Chưa đo iPhone thật.
+- Giảm chuyển động: không đạo diễn, không đi; chạm sàn → đứng ngay ở chỗ đó (như phần 1).
+
 ## 5. Lịch sử thay đổi sổ
 
+- 29/10/2026: Koa có ý định trong phòng (bản đồ phòng, đạo diễn hành vi, 6 kiểu đi, ánh nhìn, che theo độ sâu, lá cây rung, lớp debug); gạch hai dòng phần 1 (sàn chữ nhật, tự đi dạo ngẫu nhiên).
 - 29/10/2026: Koa biết đi trong phòng (chạm sàn để gọi, tự đi dạo, Giảm chuyển động thì đứng ngay chỗ mới); ghi hạn chế: không có hình quay lưng / nghiêng hẳn, chỉ đi khi đứng, vùng sàn chữ nhật.
 - 28/10/2026: Tiến bộ từng bài — hết cắt chữ ở cỡ trợ năng; đã kiểm lb trên simulator.
 - 28/10/2026: `ai-weekly-review` bỏ hôm nay khỏi trung bình như thẻ app (app gửi `today`).

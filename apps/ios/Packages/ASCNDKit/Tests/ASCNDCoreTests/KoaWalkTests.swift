@@ -15,8 +15,8 @@ struct KoaWalkTests {
 
   /// Đi qua nhiều điểm, đổi đích giữa chừng: bàn chân đang chạm sàn không bao giờ dời chỗ.
   @Test func plantedFeetNeverSlide() {
-    var w = KoaWalk.Walker(x: 195, y: 412)
-    let route: [(at: Int, x: Double, y: Double)] = [(0, 300, 420), (200, 90, 445), (420, 230, 405), (440, 120, 405)]
+    var w = KoaWalk.Walker(x: 195, y: 436)
+    let route: [(at: Int, x: Double, y: Double)] = [(0, 300, 440), (200, 90, 450), (420, 230, 380), (440, 120, 400)]
     var prev = [Self.foot(w, 0), Self.foot(w, 1)]
     var worst = 0.0
     for frame in 0..<900 {
@@ -116,7 +116,7 @@ struct KoaWalkTests {
         #expect(f.contains(w.x, w.y))
       }
     }
-    #expect(abs(w.x - f.maxX) < 0.5 && abs(w.y - f.minY) < 0.5)
+    #expect(abs(w.x - f.maxX) < 0.5 && abs(w.y - 380) < 0.5)
   }
 
   /// Giảm chuyển động: đứng ngay ở chỗ mới, không có dáng đi.

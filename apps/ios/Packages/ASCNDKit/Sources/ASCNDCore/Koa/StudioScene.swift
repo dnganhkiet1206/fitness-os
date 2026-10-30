@@ -106,6 +106,8 @@ public enum StudioScene {
     /// Lớp chiều sâu: tường tối về góc, chân tường, ván sàn hội tụ (15/10, chủ dự án:
     /// "phòng cũng chưa có chiều sâu"). Mặc định tắt — cảnh RN giữ nguyên golden.
     public var depth = false
+    /// Lá chậu cây bên phải rung (độ) — Koa đi sát / ngửi lá (29/10). 0 = đứng yên như cũ.
+    public var plantSway = 0.0
 
     public init() {}
   }
@@ -195,8 +197,19 @@ public enum StudioScene {
   /// Cả căn phòng, theo toạ độ 390 × `sceneBottom` (đi tiếp xuống dưới cũng được).
   public static func tree(_ o: Options) -> [KoaRender.Element] { build(template, o, decor: true) }
 
+  /// Chỉ vài đồ vật của căn phòng (chỉ số trong `template`, như `KoaRoomMap.Occluder`) cùng
+  /// mọi `Defs` — làm mặt nạ để vẽ lại đúng đồ ấy đè lên Koa khi Koa đứng sau nó.
+  public static func objects(_ o: Options, _ indices: Set<Int>) -> [KoaRender.Element] {
+    build(template, o, decor: true, only: indices)
+  }
+
+  /// Chậu cây bên phải (phần tử 92): lá là các nhóm con 1…8, gốc lá ở (0, −12) của chậu.
+  static let plantIndex = 92
+
   /// Một template (studio, phòng thử đồ) → cây phần tử, token đã giải.
-  static func build(_ template: [JSONValue], _ o: Options, decor: Bool = false) -> [KoaRender.Element] {
+  static func build(_ template: [JSONValue], _ o: Options, decor: Bool = false, only: Set<Int>? = nil)
+    -> [KoaRender.Element]
+  {
     let table = o.light ? lightSkins : skins
     let skin = table[o.skin] ?? table["default"]!
     var out: [KoaRender.Element] = []
@@ -213,8 +226,15 @@ public enum StudioScene {
       }
     }
     for (i, v) in template.enumerated() {
+      if let only, !only.contains(i), v["t"]?.stringValue != "Defs" { continue }
       if let extra = swap[i] { out += extra.compactMap { element($0, o, skin) } }
       if skip.contains(i) { continue }
+      if i == plantIndex, o.plantSway != 0, var e = element(v, o, skin) {
+        let m = KoaMath.opMat(KoaScene.Op("r", [o.plantSway, 0, -12]))
+        e.kids = e.kids.enumerated().map { j, k in (1...8).contains(j) ? KoaRender.Element("G", matrix: m, kids: [k]) : k }
+        out.append(e)
+        continue
+      }
       if !o.lamp, isLamp(v) { continue }
       // ban ngày không có sao ngoài cửa sổ
       if o.light, v["t"]?.stringValue == "Circle", v["p"]?["fill"]?.stringValue == "#FFFFFF",

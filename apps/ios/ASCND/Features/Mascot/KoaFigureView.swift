@@ -40,6 +40,12 @@ struct KoaFigureView: View {
   var walk: KoaWalk.Pose?
   /// Cho hình vẽ tràn ra hai bên khung (phòng: Koa đi, quay đầu). Chỗ khác giữ khung cắt như cũ.
   var bleeds = false
+  /// Phòng (Koa có ý định, 29/10): đầu / mắt nhìn đích của đạo diễn, chớp mắt không đều,
+  /// dáng biểu cảm hiện dần. Ngón tay đang kê thì đầu theo ngón tay như cũ.
+  var headLook: KoaMath.Gaze?
+  var eyes: KoaMath.Gaze?
+  var blink: Double?
+  var gestureAmount = 1.0
 
   @Environment(\.colorScheme) private var scheme
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -119,7 +125,10 @@ struct KoaFigureView: View {
       // đèn như cũ (15/10, chủ dự án).
       o.flat = paper
       o.t = t
-      o.look = react?.look
+      o.look = react?.look ?? (running ? headLook : nil)
+      o.eyes = react?.look == nil && running ? eyes : nil
+      o.blink = running ? blink : nil
+      o.gestureAmount = gestureAmount
       o.poke = react?.poke
       o.walk = running ? walk : nil
       // Dáng giơ tay đè má: hình đủ (vai sau đầu), rồi một lớp chỉ nửa bàn tay ở trên.
@@ -183,17 +192,28 @@ struct MascotFigureView: View {
   var walk: KoaWalk.Pose?
   /// Sân khấu cho Koa đi (hình được vẽ tràn khung).
   var walks = false
+  /// Khung của đạo diễn (phòng): ánh nhìn, chớp mắt, mặt / dáng của hành vi.
+  var direct: KoaDirector.Frame?
+  var onTap: (() -> Void)?
   @Environment(AppServices.self) private var services: AppServices?
 
   var body: some View {
     if mascotId == "koa" {
       let state = KoaEmotion.state(emotion)
+      // hành vi đang làm có mặt / dáng riêng → thay cảm xúc của ngày; không thì như cũ
+      let acting = direct.map { $0.expression != nil || $0.gesture != nil } ?? false
+      let face = acting ? direct?.expression ?? state.expression : state.expression
+      let pose = acting ? direct?.gesture : gesture
+      // dáng của ngày nhường dần cho dáng đi
+      let amount = acting ? direct?.gestureAmount ?? 1 : 1 - (direct?.walk?.weight ?? 0) * 0.85
       KoaFigureView(
-        expression: dress ? .happy : state.expression, pose: dress ? .idle : state.pose,
-        gesture: dress ? nil : gesture, dress: dress,
+        expression: dress ? .happy : face, pose: dress ? .idle : state.pose,
+        gesture: dress ? nil : pose, dress: dress,
         worn: KoaEmotion.worn(equipped).merging(state.outfit) { _, new in new }, size: size, animated: animated,
         paper: paper, build: build ?? services?.koaBuild ?? 0, interactive: interactive, stage: stage,
-        greet: greet, walk: dress ? nil : walk, bleeds: walks)
+        greet: greet, onTap: onTap, walk: dress ? nil : walk ?? direct?.walk, bleeds: walks,
+        headLook: direct?.gaze.head, eyes: direct?.gaze.eyes, blink: direct?.gaze.blink,
+        gestureAmount: dress ? 1 : amount)
     } else {
       VectorMascotView(id: mascotId, size: size, equipped: Set(equipped))
     }
