@@ -328,8 +328,15 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Nét mặt vẫn đổi theo bậc (bản vẽ không có khung trung gian); mắt "ngạc nhiên" không chớp như bản gốc.
 - Chưa đo lại CPU sau PR này: mắt chuyển lớn giữ 60 khung/giây lâu hơn một chút, dáng đi luôn được đưa xuống hình khi đứng.
 
+**Koa — số đo sau #756 và giới hạn công cụ đo (30/10, nhánh `claude/koa-measure`):**
+- CPU simulator sau #756 (`-koaBench`, 3 lượt, `ASCNDCore` bật `-O`, tầng view Debug, lớp debug tắt): đứng yên 15,2 %, đi 18,8 %, bộ nhớ 103–106 MB, không tăng — không hồi quy so với sau #754 (15,3 % / 18,4 %). Lớp debug "map" tốn thêm ~4–7 điểm % (chỉ bản Debug); chế độ đo nay luôn bỏ qua nó (từng làm sai số vì chip vẫn bật).
+- Trạng thái app, đo trên simulator: sân khấu cuộn khuất hẳn 0–1 % CPU, cuộn lại Koa chạy tiếp; ra nền 0 %, quay lại cùng tiến trình, Koa còn đúng chỗ. Khuất một phần (`quiet`, > 40 % sân khấu khuất) chỉ có test tầng Core.
+- **Instruments trên simulator không dùng được cho việc này:** template SwiftUI báo "not supported on the Simulator", Hitches "not supported on this platform"; template Logging và Time Profiler treo vì `xctrace` chờ widget extension của app khởi động. SwiftUI invalidation, frame hitches, allocations, năng lượng chỉ đo được trên iPhone thật (cần Kiệt). Signpost `Koa` đã có sẵn để đo lúc đó.
+- Chưa có test tự động tầng app (`scenePhase`, TimelineView): kiểm tay như trên.
+
 ## 5. Lịch sử thay đổi sổ
 
+- 30/10/2026: Koa — đo lại CPU sau #756 (không hồi quy), kiểm khuất / nền trên simulator, ghi giới hạn Instruments trên simulator.
 - 30/10/2026: sửa nốt lỗi giật (mắt nhảy một khung, #754 chưa hết); thêm chuyển trọng tâm, follow-through đầu / tai, đung đưa khi đứng.
 - 30/10/2026: Koa theo ngữ cảnh (không chào lại, im khi khuất, trầm ban đêm, ở yên chỗ người xem đặt); ghi đánh giá công cụ OSS, Periphery đã archived.
 - 30/10/2026: Koa — sửa lỗi giật khi quay, một đồng hồ trong phòng, bộ nhớ đệm dựng hình (−52 % / khung), 10 kịch bản tự động; ghi số đo và giới hạn của simulator.

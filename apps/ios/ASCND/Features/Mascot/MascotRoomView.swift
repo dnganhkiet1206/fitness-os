@@ -1028,7 +1028,8 @@ struct MascotStage: View {
           width, still ?? f.map { KoaRoomMap.Spot($0.plane, $0.x, $0.depth) },
           scale: still.map { KoaRoomMap.scale($0.d) } ?? f?.scale ?? 1, plantSway: f?.plantSway ?? 0)
         #if DEBUG
-          if debugMap { KoaMapOverlay(frame: f).frame(width: width, height: width / StudioScene.width * StudioScene.sceneBottom) }
+          // chế độ đo luôn bỏ qua lớp debug (nó chiếm ~5–7 điểm % CPU, làm sai số đo)
+          if debugMap, !benchMode { KoaMapOverlay(frame: f).frame(width: width, height: width / StudioScene.width * StudioScene.sceneBottom) }
         #endif
       }
     }
