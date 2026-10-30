@@ -182,8 +182,9 @@ struct KoaScenarioTests {
       }
       return out
     }
-    #expect(trace(7) == trace(7))
-    #expect(trace(7) != trace(8))
+    let first = trace(7), again = trace(7), other = trace(8)
+    #expect(first == again)
+    #expect(first != other)
   }
 
   // Quay người rồi đứng yên, rồi quay về: hướng người liên tục, không bật về giữa một khung

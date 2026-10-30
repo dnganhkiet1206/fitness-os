@@ -137,7 +137,11 @@ public enum KoaMath {
 
   private static func regex(_ p: String) -> NSRegularExpression {
     // Mẫu cố định trong mã — hỏng là lỗi lập trình.
-    try! NSRegularExpression(pattern: p)
+    do {
+      return try NSRegularExpression(pattern: p)
+    } catch {
+      preconditionFailure("regex \(p): \(error)")
+    }
   }
 
   private static let opsRe = regex(#"(rotate|translate|translateX|translateY|scale|scaleX|scaleY)\(([^)]*)\)"#)
