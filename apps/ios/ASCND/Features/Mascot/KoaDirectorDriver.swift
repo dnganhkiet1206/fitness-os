@@ -15,6 +15,8 @@ final class KoaDirectorDriver {
   /// Koa đang di chuyển (đi, nhảy, quay người): đồng hồ 60 khung / giây; đứng yên thì 30
   /// là đủ cho ánh nhìn / chớp mắt (đỡ CPU). Chỉ đổi khi trạng thái đổi.
   private(set) var moving = false
+  /// Chỗ đứng khi đồng hồ dừng (Giảm chuyển động): view đọc chỗ này, vì không có khung mới.
+  private(set) var placed: KoaRoomMap.Spot?
 
   /// Một khung: tiến đồng hồ tới `date`.
   func step(_ date: Date, heroWidth: Double) -> KoaDirector.Frame {
@@ -42,5 +44,6 @@ final class KoaDirectorDriver {
   func place(_ s: KoaRoomMap.Spot) {
     director.place(s)
     frame = nil
+    placed = KoaRoomMap.clamp(s)
   }
 }

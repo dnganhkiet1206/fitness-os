@@ -976,6 +976,8 @@ struct MascotStage: View {
     let running = !reduceMotion && onScreen && scenePhase == .active
     return TimelineView(.animation(minimumInterval: director.moving ? 1.0 / 60 : 1.0 / 30, paused: !running)) { tl in
       let f = running ? step(tl.date) : director.frame
+      // đồng hồ dừng và Koa vừa được đặt chỗ mới (Giảm chuyển động): đứng ở đó
+      let still = running ? nil : director.placed
       ZStack(alignment: .topLeading) {
         // lá cây đang rung: vẽ lại cả phòng với lá nghiêng (chỉ trong lúc rung, ~3 giây)
         if let f, f.plantSway != 0 {
@@ -986,9 +988,13 @@ struct MascotStage: View {
             .allowsHitTesting(false)
         }
         hero(
-          width, x: f?.x ?? KoaRoomMap.stageMark.x, y: f?.screenY ?? StudioScene.stageMark.y, scale: f?.scale ?? 1,
+          width, x: still?.x ?? f?.x ?? KoaRoomMap.stageMark.x,
+          y: still.map(KoaRoomMap.screenY) ?? f?.screenY ?? StudioScene.stageMark.y,
+          scale: still.map { KoaRoomMap.scale($0.d) } ?? f?.scale ?? 1,
           direct: running ? f : nil)
-        occlusion(width, f)
+        occlusion(
+          width, still ?? f.map { KoaRoomMap.Spot($0.plane, $0.x, $0.depth) },
+          scale: still.map { KoaRoomMap.scale($0.d) } ?? f?.scale ?? 1, plantSway: f?.plantSway ?? 0)
         #if DEBUG
           if debugMap { KoaMapOverlay(frame: f).frame(width: width, height: width / StudioScene.width * StudioScene.sceneBottom) }
         #endif
@@ -1012,13 +1018,13 @@ struct MascotStage: View {
   /// Đồ vật đứng TRƯỚC Koa (Koa ở sàn, sau chân đồ): vẽ lại đúng phần ảnh của căn phòng
   /// trong hình đồ vật, đè lên Koa — đồ không đổi màu, không thêm gì.
   @ViewBuilder
-  private func occlusion(_ width: CGFloat, _ f: KoaDirector.Frame?) -> some View {
-    if let f {
-      let half = Self.heroWidth * f.scale * 0.42
-      let objects = KoaRoomMap.occluding(KoaRoomMap.Spot(f.plane, f.x, f.depth), halfWidth: half)
+  private func occlusion(_ width: CGFloat, _ spot: KoaRoomMap.Spot?, scale: Double, plantSway: Double) -> some View {
+    if let spot {
+      let half = Self.heroWidth * scale * 0.42
+      let objects = KoaRoomMap.occluding(spot, halfWidth: half)
       if !objects.isEmpty {
         var o = studio
-        let _ = (o.plantSway = f.plantSway)
+        let _ = (o.plantSway = plantSway)
         StudioBackdrop(options: o)
           .mask { StudioObjects(options: o, indices: Set(objects.flatMap(\.elements))) }
           .frame(width: width, height: width / StudioScene.width * StudioScene.sceneBottom)

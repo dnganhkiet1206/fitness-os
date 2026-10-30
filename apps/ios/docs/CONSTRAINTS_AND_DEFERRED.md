@@ -302,7 +302,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Lá cây rung: vẽ lại cả phòng ~3 giây mỗi lần (chỉ khi rung). Chậu cây nhỏ trên kệ không rung.
 - **Lớp debug** (chỉ bản Debug, chip "map"): sân khấu, sàn, vùng chặn, bậc, chỗ ghé + hướng nhìn, chỗ gần người xem, đích, đường đi, hành vi / lý do / kiểu đi / biểu cảm / ánh nhìn / độ sâu.
 - Hiệu năng (simulator iPhone Air, `top`, 60 giây trong phòng): TB 49 % CPU, đỉnh 120 % lúc vào phòng; bộ nhớ 102–106 MB, không tăng. Phần 1: 31–41 %. Tăng vì đồng hồ của đạo diễn chạy cả khi đứng (ánh nhìn, chớp mắt) — đứng yên 30 khung/giây, đi 60. Chưa đo iPhone thật.
-- Giảm chuyển động: không đạo diễn, không đi; chạm sàn → đứng ngay ở chỗ đó (như phần 1).
+- Giảm chuyển động: không đạo diễn, không đi; chạm sàn → đứng ngay ở chỗ đó (như phần 1). **Lỗi tìm thấy khi kiểm và đã sửa:** đồng hồ dừng nên Koa không hiện ở chỗ mới — nay đọc chỗ đặt (`placed`). Simulator: chạm sau cây → Koa đứng ngay sau cây, lá che, ~0 % CPU. Giao diện sáng: lá / bục che Koa đúng màu ban ngày.
 
 ## 5. Lịch sử thay đổi sổ
 
