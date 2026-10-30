@@ -112,7 +112,11 @@ public enum KoaPaint {
   ]
 
   /// `#rgb` / `#rrggbb` / vài tên màu.
-  public static func colour(_ s: String) -> RGBA? {
+  public static func colour(_ s: String) -> RGBA? { colourMemo.value(s) { colourUncached(s) } }
+
+  static let colourMemo = KoaMemo<String, RGBA?>(capacity: 512)
+
+  static func colourUncached(_ s: String) -> RGBA? {
     let t = s.trimmingCharacters(in: .whitespaces)
     if let n = named[t.lowercased()] { return n }
     guard t.first == "#" else { return nil }

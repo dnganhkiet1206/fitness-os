@@ -137,7 +137,11 @@ public enum KoaMath {
 
   private static func regex(_ p: String) -> NSRegularExpression {
     // Mẫu cố định trong mã — hỏng là lỗi lập trình.
-    try! NSRegularExpression(pattern: p)
+    do {
+      return try NSRegularExpression(pattern: p)
+    } catch {
+      preconditionFailure("regex \(p): \(error)")
+    }
   }
 
   private static let opsRe = regex(#"(rotate|translate|translateX|translateY|scale|scaleX|scaleY)\(([^)]*)\)"#)
@@ -162,8 +166,16 @@ public enum KoaMath {
   /// `Math.round`.
   static func roundJS(_ x: Double) -> Double { (x + 0.5).rounded(.down) }
 
-  /// `parseOps`.
+  /// `parseOps` — lưu theo chuỗi (cùng chuỗi mỗi khung, xem `KoaMemo`).
   public static func parseOps(_ css: String) -> [Op] {
+    if css.isEmpty { return [] }
+    return opsMemo.value(css) { parseOpsUncached(css) }
+  }
+
+  static let opsMemo = KoaMemo<String, [Op]>(capacity: 512)
+  static let animMemo = KoaMemo<String, BoundAnim?>(capacity: 256)
+
+  static func parseOpsUncached(_ css: String) -> [Op] {
     let ns = css as NSString
     var ops: [Op] = []
     for m in opsRe.matches(in: css, range: NSRange(location: 0, length: ns.length)) {
@@ -193,8 +205,12 @@ public enum KoaMath {
     public let tr: [Op]?
   }
 
-  /// `parseAnim`: một hoạt ảnh đưa xuống theo tên (`handAnim`, `runBob`, …).
+  /// `parseAnim`: một hoạt ảnh đưa xuống theo tên (`handAnim`, `runBob`, …). Lưu theo chuỗi.
   public static func parseAnim(_ css: String) -> BoundAnim? {
+    animMemo.value(css) { parseAnimUncached(css) }
+  }
+
+  static func parseAnimUncached(_ css: String) -> BoundAnim? {
     let range = NSRange(location: 0, length: (css as NSString).length)
     guard let m = animRe.firstMatch(in: css, range: range) else { return nil }
     let o = originRe.firstMatch(in: css, range: range)

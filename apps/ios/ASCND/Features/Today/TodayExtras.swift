@@ -70,6 +70,19 @@ struct TodayExtras<Plan: View>: View {
   @State private var showsWeight = false
   @State private var showsBiometrics = false
   @State private var showsRoom = false
+
+  #if DEBUG
+    private var benchRoomReady: Bool {
+      guard KoaDirectorDriver.bench != nil, let mascot, case .ready = mascot.phase else { return false }
+      return true
+    }
+
+    private func openRoomForBench() {
+      guard benchRoomReady, !showsRoom else { return }
+      roomSource = "room"
+      showsRoom = true
+    }
+  #endif
   /// Mục Thông báo (16/10): hộp cộng đồng + thử thách cộng đồng chưa nhận.
   @State private var inbox: CommunityInboxBook?
   @State private var communityChallenges: CommunityChallengesBook?
@@ -313,6 +326,10 @@ struct TodayExtras<Plan: View>: View {
     .navigationDestination(isPresented: $showsAwards) {
       if let awards { AwardsView(book: awards, lang: services.preferences.lang) }
     }
+    #if DEBUG
+      // đo hiệu năng Koa (`-koaBench`): tự mở phòng khi dữ liệu Koa đã sẵn sàng
+      .task(id: benchRoomReady) { openRoomForBench() }
+    #endif
     .navigationDestination(isPresented: $showsRoom) {
       if let mascot {
         MascotRoomView(room: mascot, awards: awards, challenges: challenges, sharedShop: shop)
