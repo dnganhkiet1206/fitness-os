@@ -317,8 +317,14 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Nhiễu máy rất lớn (cùng binary 22 % → 45 % tuỳ lúc, tuỳ nhiệt): chỉ tin số so xen kẽ trong cùng phiên.
 - Kiểm thử: 10 kịch bản tự động ở tầng Core trên 8 hạt (`KoaScenarioTests`: mở phòng, chào, đi, khám phá, tương tác, buổi tập, phản ứng, nền / trở lại, Giảm chuyển động, chạy dài 2 giờ mô phỏng), tất định. Phần app (`scenePhase`, TimelineView) chưa có test tự động, chỉ kiểm tay trên simulator. Chưa có snapshot test.
 
+**Koa theo ngữ cảnh + đánh giá công cụ (30/10, nhánh `claude/koa-context`):**
+- Koa chào đầy đủ chỉ khi người xem đi vắng ≥ 5 phút (`@AppStorage koa.room.seen`); mở lại ngay hoặc chạm lại trong 45 giây → chỉ nhìn (`notice`), không đi. Sân khấu khuất quá nửa → không đi lại. 22–6 giờ → nghỉ gấp đôi, ít đi lại. Người xem đặt Koa ở đâu → ở yên ít nhất 25 giây. Ngưỡng là thiết kế, chưa kiểm với người dùng thật.
+- Đánh giá công cụ (số liệu GitHub 30/10): swift-snapshot-testing (MIT, còn bảo trì) **chưa tích hợp** — đầu ra renderer đã có test golden từng phần tử; ảnh lệch theo máy, thêm phụ thuộc. rive-ios (MIT), lottie-ios (Apache-2.0) **không dùng**: cần vẽ lại art. swift-format (Apache-2.0, có trong toolchain) **không bật**: đổi định dạng hàng loạt, không lợi cho Koa. SwiftLint (MIT) giữ nguyên.
+- **Periphery đã archived trên GitHub.** CI đang dùng 3.8.0 (job `periphery`, không chặn merge); vẫn chạy được nhưng sẽ không theo kịp Swift mới. Cần chọn thay thế khi nó hỏng; chưa đổi.
+
 ## 5. Lịch sử thay đổi sổ
 
+- 30/10/2026: Koa theo ngữ cảnh (không chào lại, im khi khuất, trầm ban đêm, ở yên chỗ người xem đặt); ghi đánh giá công cụ OSS, Periphery đã archived.
 - 30/10/2026: Koa — sửa lỗi giật khi quay, một đồng hồ trong phòng, bộ nhớ đệm dựng hình (−52 % / khung), 10 kịch bản tự động; ghi số đo và giới hạn của simulator.
 - 30/10/2026: sửa ba lỗi Koa trong phòng (chớp mắt, động tác ngược khi đi vào trong, bục cắt ngang người).
 - 29/10/2026: Koa có ý định trong phòng (bản đồ phòng, đạo diễn hành vi, 6 kiểu đi, ánh nhìn, che theo độ sâu, lá cây rung, lớp debug); gạch hai dòng phần 1 (sàn chữ nhật, tự đi dạo ngẫu nhiên).

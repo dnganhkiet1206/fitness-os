@@ -215,6 +215,64 @@ struct KoaScenarioTests {
     #expect(worst < 0.2)
   }
 
+  // Ngữ cảnh: chạm lại ngay sau khi chào → chỉ nhìn, không chào lại, không đi.
+  @Test func doesNotGreetTwice() {
+    var d = KoaDirector.Director(seed: 3)
+    d.request(.greet)
+    Self.run(&d, 14)
+    #expect(d.current != .greet)
+    let x = d.walker.x, y = d.walker.y
+    d.request(.greet)
+    _ = d.step(Self.dt, ctx: .init())
+    #expect(d.current == .notice)
+    Self.run(&d, 1)
+    #expect(d.walker.x == x && d.walker.y == y)
+  }
+
+  // Sân khấu khuất: Koa không đi đâu, dù 10 phút; hiện lại thì sống tiếp.
+  @Test(arguments: seeds) func staysPutWhenQuiet(seed: UInt64) {
+    var d = KoaDirector.Director(seed: seed)
+    var ctx = KoaDirector.Context()
+    ctx.quiet = true
+    let x = d.walker.x, y = d.walker.y
+    Self.run(&d, 600, ctx: ctx)
+    #expect(d.walker.x == x && d.walker.y == y)
+    var moved = false
+    Self.run(&d, 300) { f in if hypot(f.x - x, f.depth - y) > 5 { moved = true } }
+    #expect(moved)
+  }
+
+  // Người xem đặt Koa ở đâu thì Koa ở yên đó một lúc.
+  @Test(arguments: seeds) func staysWhereTheUserPutIt(seed: UInt64) {
+    var d = KoaDirector.Director(seed: seed)
+    let s = KoaRoomMap.Spot(.stage, 130, 440)
+    d.request(.walkTo(s))
+    Self.run(&d, 8)
+    #expect(hypot(d.walker.x - s.x, d.walker.y - s.d) < 1.5)
+    Self.run(&d, KoaDirector.settleAfterUser - 9)
+    #expect(hypot(d.walker.x - s.x, d.walker.y - s.d) < 1.5)
+  }
+
+  // Khuya: đi lại ít hơn hẳn ban ngày.
+  @Test func quieterAtNight() {
+    func trips(_ night: Bool) -> Int {
+      var n = 0
+      for seed in Self.seeds {
+        var d = KoaDirector.Director(seed: seed)
+        var ctx = KoaDirector.Context()
+        ctx.night = night
+        var last = ""
+        Self.run(&d, 900, ctx: ctx) { f in
+          if f.behavior != last, f.behavior == "explore" || f.behavior == "home" { n += 1 }
+          last = f.behavior
+        }
+      }
+      return n
+    }
+    let day = trips(false), night = trips(true)
+    #expect(Double(night) < Double(day) * 0.75, "ngày \(day), đêm \(night)")
+  }
+
   // Dáng biểu cảm hiện và tắt dần, không bật tắt trong một khung.
   @Test func gestureFadesInAndOut() {
     var d = KoaDirector.Director(seed: 2)

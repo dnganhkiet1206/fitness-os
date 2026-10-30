@@ -867,6 +867,8 @@ struct MascotStage: View {
   #else
     private var benchMode: Bool { false }
   #endif
+  /// Lần cuối người xem ở phòng (giây epoch) — quyết định chào hay chỉ nhìn.
+  @AppStorage("koa.room.seen") private var seenAt = 0.0
   /// Ngày đã ăn mừng buổi tập (một lần mỗi ngày, không spam).
   @AppStorage("koa.proud.done") private var proudDone = ""
   #if DEBUG
@@ -915,6 +917,15 @@ struct MascotStage: View {
   /// `HERO_W = round(128 / 0.93)`.
   private static let heroWidth = 138.0
 
+  /// (a) Người xem tới phòng: đi vắng từ 5 phút thì Koa chào đầy đủ (nhìn trước, lại gần);
+  /// mới rời đi thì chỉ nhìn — không chào đi chào lại mỗi lần mở.
+  private func arrive() {
+    guard walks, !reduceMotion, !benchMode else { return }
+    let away = Date.now.timeIntervalSince1970 - seenAt
+    seenAt = Date.now.timeIntervalSince1970
+    director.request(away >= 300 ? .greet : .notice)
+  }
+
   /// Chỉ đi được khi Koa đang đứng (ngồi thiền / cầm tạ thì ở yên).
   private var canWalk: Bool {
     walks && KoaEmotion.state(emotion).pose == .idle
@@ -940,9 +951,12 @@ struct MascotStage: View {
       if reduceMotion { director.place(KoaRoomMap.user) } else { director.request(.greet) }
     }
     .onScrollVisibilityChange(threshold: 0.2) { onScreen = $0 }
-    .onAppear {
-      // (a) mở phòng: Koa nhìn người xem trước, rồi lại gần
-      if walks, !reduceMotion, !benchMode { director.request(.greet) }
+    // cuộn xuống đọc thẻ (sân khấu khuất quá nửa): Koa không đi lại, không kéo mắt khỏi nội dung
+    .onScrollVisibilityChange(threshold: 0.6) { director.context.quiet = !$0 }
+    .onAppear { arrive() }
+    .onDisappear { seenAt = Date.now.timeIntervalSince1970 }
+    .onChange(of: scenePhase) { _, phase in
+      if phase == .active { arrive() } else { seenAt = Date.now.timeIntervalSince1970 }
     }
     .overlay {
       if let onBoard {
@@ -1024,6 +1038,8 @@ struct MascotStage: View {
   private func step(_ date: Date) -> KoaDirector.Frame {
     let today = proudKey ?? ""
     director.context.canWalk = canWalk
+    let hour = Calendar.current.component(.hour, from: date)
+    director.context.night = hour >= 22 || hour < 6
     director.context.workoutToday = proudKey != nil && proudDone != today
     let f = director.step(date, heroWidth: Self.heroWidth * levelScale)
     if f.behavior == KoaDirector.Kind.proud.rawValue, let key = proudKey, proudDone != key {
