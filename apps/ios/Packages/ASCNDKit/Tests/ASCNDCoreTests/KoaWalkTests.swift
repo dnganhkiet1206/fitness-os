@@ -119,6 +119,57 @@ struct KoaWalkTests {
     #expect(abs(w.x - f.maxX) < 0.5 && abs(w.y - 380) < 0.5)
   }
 
+  /// Follow-through: dừng lại thì tai lắc qua rồi lắng; có chặn biên độ, không phóng đại.
+  @Test func earsAndHeadFollowThrough() {
+    var w = KoaWalk.Walker(x: 120, y: 436)
+    w.walk(to: 300, 436)
+    var peakEar = 0.0, peakHead = 0.0
+    var signs = Set<Bool>()
+    for _ in 0..<(60 * 7) {
+      w.step(1.0 / 60)
+      let p = w.pose
+      peakEar = max(peakEar, abs(p.earLag))
+      peakHead = max(peakHead, abs(p.headLag))
+      if abs(p.earLag) > 0.3 { signs.insert(p.earLag > 0) }
+    }
+    #expect(peakEar > 0.5 && peakEar <= 6)
+    #expect(peakHead > 0.2 && peakHead <= 3)
+    #expect(signs.count == 2, "tai phải lắc qua hai phía")
+    for _ in 0..<120 { w.step(1.0 / 60) }
+    #expect(abs(w.pose.earLag) < 0.05 && abs(w.pose.headLag) < 0.05)
+    #expect(!w.isMoving)
+  }
+
+  /// Chuyển trọng tâm: bước chân trái → thân sang phải; ổn định theo mức nhấc chân.
+  @Test func weightShiftsToSupportFoot() {
+    var w = KoaWalk.Walker(x: 120, y: 436)
+    w.walk(to: 300, 436)
+    var checked = 0
+    for _ in 0..<(60 * 4) {
+      w.step(1.0 / 60)
+      let p = w.pose
+      if p.left.lift > 2, p.right.lift == 0 {
+        #expect(p.shift > 0)
+        checked += 1
+      }
+      if p.right.lift > 2, p.left.lift == 0 {
+        #expect(p.shift < 0)
+        checked += 1
+      }
+      #expect(abs(p.shift) < 3)
+    }
+    #expect(checked > 20)
+  }
+
+  /// Dịch trọng tâm được bù ở bàn chân: chân chạm sàn không rời chỗ trong hình.
+  @Test func rendererCompensatesBodyShift() {
+    var p = KoaWalk.Pose()
+    p.shift = 2
+    p.bob = 1
+    let f = KoaRender.walkFlags(p)
+    #expect(f["footL"]?.text.contains("translate(-2.000,1.000)") == true)
+  }
+
   /// Giảm chuyển động: đứng ngay ở chỗ mới, không có dáng đi.
   @Test func placeJumpsWithoutWalking() {
     var w = KoaWalk.Walker(x: 195, y: 412)

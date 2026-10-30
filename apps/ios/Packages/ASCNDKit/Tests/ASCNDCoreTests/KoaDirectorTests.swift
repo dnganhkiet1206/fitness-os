@@ -223,6 +223,28 @@ struct KoaDirectorTests {
 
   // MARK: Ánh nhìn
 
+  /// Đổi đích nhìn (kể cả cú quay ngược lớn): mắt không nhảy trong một khung, không vọt ngược
+  /// hướng đầu — ở cả 30 và 60 khung / giây (Kiệt 30/10, video: −0,54 → +0,32 trong một khung).
+  @Test(arguments: [1.0 / 30, 1.0 / 60]) func eyesNeverSnap(dt: Double) {
+    var g = KoaGaze.State(seed: 11)
+    let koa = (x: 195.0, y: 412.0)
+    g.look(.point(x: 40, y: 300), from: koa, turn: 0)
+    for _ in 0..<Int(2 / dt) { _ = g.step(dt, koa: koa, turn: 0) }
+    let before = g.step(dt, koa: koa, turn: 0)
+    #expect(before.eyes.x < -0.3)
+    g.look(.user, from: koa, turn: 0)
+    var last = before, worst = 0.0, opposite = false
+    for _ in 0..<Int(0.6 / dt) {
+      let o = g.step(dt, koa: koa, turn: 0)
+      worst = max(worst, abs(o.eyes.x - last.eyes.x))
+      // mắt không vượt sang phía bên kia giữa lúc đầu còn quay trái
+      if o.head.x < -0.3, o.eyes.x > 0.25 { opposite = true }
+      last = o
+    }
+    #expect(worst < dt * 9, "mắt nhảy \(worst) trong một khung")
+    #expect(!opposite)
+  }
+
   /// Mắt tới đích trước đầu; chớp mắt không đều.
   @Test func eyesLeadHeadAndBlinksAreIrregular() {
     var g = KoaGaze.State(seed: 4)
@@ -232,7 +254,7 @@ struct KoaDirectorTests {
     var out = g.step(0.06, koa: koa, turn: 0)
     for _ in 0..<3 { out = g.step(1.0 / 60, koa: koa, turn: 0) }
     // mắt (phần trong hốc + đầu) đã quay về trái nhiều hơn đầu
-    #expect(out.eyes.x + out.head.x * 0.4 < out.head.x - 0.2)
+    #expect(out.eyes.x < out.head.x - 0.1)
     var blinks: [Double] = []
     var t = 0.0, closed = false
     for _ in 0..<(60 * 60) {

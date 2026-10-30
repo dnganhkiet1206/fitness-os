@@ -51,6 +51,12 @@ public enum KoaWalk {
     public var weight = 0.0
     /// Bàn chân trái của hình ở gần người xem hơn (vẽ sau, đè lên chân kia).
     public var leftNear = false
+    /// Trọng tâm dịch ngang sang chân đang đỡ (đơn vị hình; chân chạm sàn được bù, không trượt).
+    public var shift = 0.0
+    /// Đầu trễ theo quán tính (độ): lò xo, lắng lại sau khi tăng tốc / dừng.
+    public var headLag = 0.0
+    /// Tai trễ theo quán tính (độ): lò xo mềm hơn đầu, đung đưa nhẹ rồi tắt.
+    public var earLag = 0.0
     public init() {}
   }
 
@@ -210,6 +216,12 @@ public enum KoaWalk {
     var lean = 0.0
     var leanVel = 0.0
     var crouch = 0.0
+    /// Quán tính phụ: đầu, tai (lò xo tắt dần), vận tốc trước để biết gia tốc.
+    var headLag = 0.0, headLagVel = 0.0
+    var earLag = 0.0, earLagVel = 0.0
+    var prevVx = 0.0, prevCrouch = 0.0
+    /// Đung đưa khi đứng (đơn vị hình), đạo diễn đưa vào — rất chậm.
+    public var idleShift = 0.0
 
     public init(x: Double, y: Double, elevation: Double = 0, floor: Floor = .studio, tuning: Tuning = Tuning()) {
       self.tuning = tuning
@@ -234,7 +246,7 @@ public enum KoaWalk {
     public var isMoving: Bool {
       target != nil || hop != nil || stepping || windup > 0 || shuffle > 0
         || abs(turn - (faceTurn ?? 0)) > 0.01 || abs(turnVel) > 0.01 || weight > 0.01 || abs(lean) > 0.05
-        || crouch > 0.05
+        || crouch > 0.05 || abs(earLag) > 0.05 || abs(headLag) > 0.05
     }
 
     /// Điểm an toàn để đổi việc: không giữa cú nhảy, và cả hai chân đang chạm sàn.
@@ -293,6 +305,12 @@ public enum KoaWalk {
       lean = 0
       leanVel = 0
       crouch = 0
+      headLag = 0
+      headLagVel = 0
+      earLag = 0
+      earLagVel = 0
+      prevVx = 0
+      prevCrouch = 0
     }
 
     /// Một bước thời gian (giây). Bước dài thì chia nhỏ, để khung bị trễ không làm
@@ -307,7 +325,29 @@ public enum KoaWalk {
       }
     }
 
+    /// Lò xo tắt dần: tần số `w` (rad/giây), độ tắt `z` (< 1: lắc nhẹ rồi lắng).
+    static func spring(_ x: inout Double, _ v: inout Double, to want: Double, w: Double, z: Double, dt: Double) {
+      v += (w * w * (want - x) - 2 * z * w * v) * dt
+      x += v * dt
+    }
+
+    /// Chuyển động phụ: đầu và tai đi sau thân. Dựa trên gia tốc thật nên dừng / khởi hành /
+    /// tiếp đất đều tự có follow-through, không cần hoạt ảnh riêng. Biên độ nhỏ, có chặn.
+    mutating func advanceSecondary(_ dt: Double) {
+      let ax = (vx - prevVx) / dt
+      prevVx = vx
+      let drop = (crouch - prevCrouch) / dt
+      prevCrouch = crouch
+      let side = max(-1, min(1, ax / 80))
+      // tăng tốc sang phải: đầu, tai ngả về trái (đi sau thân)
+      Self.spring(&headLag, &headLagVel, to: -2.0 * side, w: 11, z: 0.62, dt: dt)
+      Self.spring(&earLag, &earLagVel, to: -4.0 * side + max(-1, min(1, drop / 40)) * 2.5, w: 13, z: 0.32, dt: dt)
+      headLag = max(-3, min(3, headLag))
+      earLag = max(-6, min(6, earLag))
+    }
+
     mutating func advance(_ dt: Double) {
+      defer { advanceSecondary(dt) }
       if hop != nil {
         advanceHop(dt)
         return
@@ -521,6 +561,13 @@ public enum KoaWalk {
         p.armLeft = 10 * sin(Double.pi * q)
         p.armRight = -10 * sin(Double.pi * q)
       }
+      // chân trái đang bước → trọng tâm sang chân phải (dương), và ngược lại; đứng yên: đung đưa
+      p.shift = idleShift
+      if hop == nil {
+        p.shift += 1.8 * st.sway * (min(1, lifts[0] / tuning.liftMax) - min(1, lifts[1] / tuning.liftMax))
+      }
+      p.headLag = headLag
+      p.earLag = earLag
       p.turn = max(-1, min(1, turn))
       p.weight = weight
       if abs(turn) > 0.3 {
