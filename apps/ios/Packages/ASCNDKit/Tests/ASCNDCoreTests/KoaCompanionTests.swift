@@ -400,7 +400,7 @@ import Testing
 
   @Test func coverBottomInsideScene() {
     #expect(KoaBedroom.coverBottom < StudioScene.sceneBottom)
-    #expect(KoaBedroom.head.x > 22 && KoaBedroom.head.x < 140)
+    #expect(KoaBedroom.sleeper.x > 22 && KoaBedroom.sleeper.x < 140)
   }
 }
 
