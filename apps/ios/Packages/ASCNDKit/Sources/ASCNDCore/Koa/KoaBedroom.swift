@@ -144,7 +144,7 @@ public enum KoaBedroom {
         glow("bedBulb", "#FFC978", c.bulbGlow), glow("bedSconce", "#FFB95E", c.sconceGlow),
         Element("ClipPath", ["id": .string("bedArch")], kids: [path("M212 214V118A54 54 0 0 1 320 118V214Z", "#000000")]),
       ])
-    return [defs] + window(c, t) + vase(c, t) + lights(c, t) + sconce(t, on: lamp) + (lamp ? wings(light, t) : []) + motes(c, t) + (zzz ? snore(c, t) : [])
+    return [defs] + window(c, t) + vase(c, t) + lights(c, t, on: lamp) + sconce(t, on: lamp) + (lamp ? wings(light, t) : []) + motes(c, t) + (zzz ? snore(c, t) : [])
   }
 
   static func window(_ c: Palette, _ t: Double) -> [Element] {
@@ -207,14 +207,18 @@ public enum KoaBedroom {
     return out
   }
 
-  /// Dây đèn lắc rất khẽ, mỗi bóng nhấp nháy một nhịp riêng.
-  static func lights(_ c: Palette, _ t: Double) -> [Element] {
+  /// Dây đèn lắc rất khẽ, mỗi bóng nhấp nháy một nhịp riêng; tắt đèn thì chỉ còn bóng tối trên dây.
+  static func lights(_ c: Palette, _ t: Double, on lit: Bool) -> [Element] {
     let drift = 1.5 * sin(t * 0.6)
     var out = [line("M30 124Q130 \(176 + drift * 2) 228 118", c.beam, width: 1.2)]
     for i in 0...6 {
       let u = Double(i) / 6
       let x = 34 + u * 190, y = 128 + sin(u * .pi) * (26 + drift) - u * 18
       let on = 0.68 + 0.32 * sin(t * (1.3 + Double(i) * 0.23) + Double(i) * 2.1)
+      guard lit else {
+        out.append(ellipse(x, y + 2, 2.6, 2.6, c.beam))
+        continue
+      }
       out += [ellipse(x, y, 11, 11, "url(#bedBulb)", opacity: on), ellipse(x, y + 2, 2.6, 2.6, c.bulb, opacity: 0.6 + 0.4 * on)]
     }
     return out
