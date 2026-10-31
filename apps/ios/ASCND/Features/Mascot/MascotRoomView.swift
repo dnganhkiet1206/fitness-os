@@ -41,6 +41,8 @@ struct MascotRoomView: View {
   @State private var celebrate = 0
   /// Giờ hiện tại, đổi mỗi phút: tới giờ ngủ khi đang mở phòng thì Koa đi ngủ ngay.
   @State private var clock = Date.now
+  /// Đã cuộn hết phòng: tiêu đề hiện trên thanh điều hướng.
+  @State private var pastStage = false
   /// Số trên bảng tường (29/10, Kiệt: người dùng chọn) — lưu trên máy.
   @AppStorage("koa.roomBoard") private var boardStat = RoomBoard.Stat.rank.rawValue
   @Environment(\.weightUnit) private var unit
@@ -59,10 +61,13 @@ struct MascotRoomView: View {
 
   var body: some View {
     content
-      // Thiết kế lại 15/10 (chủ dự án: "redesign toàn bộ, bản cũ chỉ là đối chiếu"):
-      // tiêu đề lớn trong nội dung như mọi tab, thanh điều hướng chỉ còn nút lùi.
-      .navigationTitle(Text(verbatim: ""))
+      // Bố cục tràn viền (Kiệt 31/10): phòng phủ tới mép màn, không có tiêu đề; tiêu đề chỉ
+      // hiện trên thanh điều hướng khi đã cuộn hết phòng.
+      .navigationTitle(Text(verbatim: pastStage ? String(localized: "mr.title") : ""))
       .navigationBarTitleDisplayMode(.inline)
+      .toolbar {
+        ToolbarItem(placement: .topBarTrailing) { coinPill.padding(.horizontal, 6) }
+      }
       .task {
         if shop == nil { shop = sharedShop ?? services.makeMascotShop(userId: room.userId) }
         shop?.gains = room.gains
@@ -105,9 +110,25 @@ struct MascotRoomView: View {
       }
     case .ready:
       ScrollView {
-        VStack(alignment: .leading, spacing: DS.Spacing.md) {
-          header
+        VStack(spacing: 0) {
           stage
+          sheet
+        }
+      }
+      .ignoresSafeArea(edges: .top)
+      .modifier(KoaTopEdge(hidden: !pastStage))
+      .onScrollGeometryChange(for: Bool.self) { g in
+        g.contentOffset.y + g.contentInsets.top > g.containerSize.width * StudioScene.sceneBottom / StudioScene.width - 90
+      } action: { _, past in
+        pastStage = past
+      }
+      .background(DS.Color.background.swiftUI)
+    }
+  }
+
+  /// Nội dung dưới phòng: thẻ bo góc phủ lên mép sàn, thay cho viền mờ.
+  private var sheet: some View {
+        VStack(alignment: .leading, spacing: DS.Spacing.md) {
           #if DEBUG
             devBar
           #endif
@@ -131,27 +152,10 @@ struct MascotRoomView: View {
           moreList
         }
         .padding(DS.Spacing.md)
-      }
-      .background { TodayAmbient(accent: nil) }
-      .statusBarScrim()
-    }
-  }
-
-  // MARK: - Đầu màn
-
-  /// Tiêu đề lớn + số xu (viên kính) bên phải.
-  private var header: some View {
-    HStack(alignment: .center) {
-      Text(String(localized: "mr.title"))
-        .font(.largeTitle.bold())
-        .foregroundStyle(DS.Color.foreground.swiftUI)
-        .accessibilityAddTraits(.isHeader)
-      Spacer(minLength: DS.Spacing.sm)
-      coinPill
-        .padding(.horizontal, 14)
-        .frame(height: 40)
-        .dsCard(radius: 20)
-    }
+        .padding(.top, DS.Spacing.sm)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(DS.Color.background.swiftUI, in: UnevenRoundedRectangle(topLeadingRadius: 28, topTrailingRadius: 28))
+        .padding(.top, -KoaBedroom.tail)
   }
 
   private func sectionTitle(_ t: String) -> some View {
@@ -219,7 +223,6 @@ struct MascotRoomView: View {
   #endif
 
   private var stage: some View {
-    ZStack(alignment: .top) {
       MascotStage(
         level: room.level, build: room.gains.rank,
         energy: Double(room.energyCount) / Double(MascotRules.energySignals.count),
@@ -237,22 +240,6 @@ struct MascotRoomView: View {
           ? nil : KoaCompanion.Facts(gains: room.gains, today: room.today, mood: moodRead.reason),
         userId: room.userId, sleep: KoaMood.SleepWindow(profile: profile?.profile))
         .sensoryFeedback(.selection, trigger: boardStat)
-        // Nằm thẳng trên nền, không thẻ, không viền (Kiệt 24/10): tràn ngang màn,
-        // mép trên / dưới / hai bên tan vào nền trang.
-        .mask {
-          LinearGradient(
-            stops: [.init(color: .clear, location: 0), .init(color: .black, location: 0.1),
-                    .init(color: .black, location: 0.82), .init(color: .clear, location: 1)],
-            startPoint: .top, endPoint: .bottom)
-          .mask {
-            LinearGradient(
-              stops: [.init(color: .clear, location: 0), .init(color: .black, location: 0.06),
-                      .init(color: .black, location: 0.94), .init(color: .clear, location: 1)],
-              startPoint: .leading, endPoint: .trailing)
-          }
-        }
-        .padding(.horizontal, -DS.Spacing.md)
-    }
   }
 
   // MARK: - Bụi (phần 5)
@@ -941,6 +928,9 @@ struct MascotStage: View {
     walks && KoaEmotion.state(emotion).pose == .idle
   }
 
+  /// Đang ngủ và đã tới cửa: sang phòng ngủ gác mái, sân khấu nghỉ hẳn.
+  private var inBedroom: Bool { walks && emotion == .sleep && director.settled }
+
   /// Cảm xúc là dáng ngồi mà Koa chưa về tới bục: vẫn đứng và đi về, tới nơi mới ngồi.
   private var shownEmotion: KoaEmotion.Emotion {
     walks && !canWalk && !director.settled ? .idle : emotion
@@ -948,17 +938,34 @@ struct MascotStage: View {
 
   var body: some View {
     // không có dòng "Cấp N" dưới sân khấu (RN cũng không) — thẻ cấp ngay dưới nói rồi
-    StudioBackdrop(options: backdrop)
-      .overlay {
-        GeometryReader { g in
-          ZStack(alignment: .topLeading) {
-            if walks { floorTaps(g.size.width) }
-            if walks { livingHero(g.size.width) } else { hero(g.size.width) }
+    let tail = walks ? KoaBedroom.tail : 0
+    let asleep = inBedroom
+    ZStack {
+      StudioBackdrop(options: backdrop)
+        .overlay {
+          GeometryReader { g in
+            ZStack(alignment: .topLeading) {
+              if walks {
+                KoaBedroomLayer(plan: Self.doorPlan(open: director.doorOpen, light: scheme == .light)).equatable()
+                  .frame(width: g.size.width, height: g.size.width / StudioScene.width * StudioScene.sceneBottom)
+                  .allowsHitTesting(false)
+                floorTaps(g.size.width)
+                livingHero(g.size.width)
+              } else {
+                hero(g.size.width)
+              }
+            }
           }
         }
-      }
-      .aspectRatio(StudioScene.width / StudioScene.sceneBottom, contentMode: .fit)
-      .frame(maxWidth: .infinity)
+        .background(walks ? Self.floorEdge(light: scheme == .light) : .clear)
+        // lia ngang: phòng ngủ ở bên kia cánh cửa
+        .visualEffect { content, proxy in content.offset(x: asleep ? proxy.size.width : 0) }
+      if asleep { KoaBedroomView(equipped: equipped, build: build).transition(.move(edge: .leading)) }
+    }
+    .clipped()
+    .animation(reduceMotion ? nil : .easeInOut(duration: 1.1), value: asleep)
+    .aspectRatio(StudioScene.width / (StudioScene.sceneBottom + tail), contentMode: .fit)
+    .frame(maxWidth: .infinity)
     .accessibilityElement(children: .ignore)
     .accessibilityLabel(Text(String(localized: "mr.stage.a11y \(level)")))
     .accessibilityAction(named: Text("mr.walk.a11y")) {
@@ -991,7 +998,7 @@ struct MascotStage: View {
       if new < old, !reduceMotion { director.request(.look("shelf")) }
     }
     .overlay {
-      if let onBoard {
+      if let onBoard, !inBedroom {
         GeometryReader { g in boardButton(g.size.width, action: onBoard) }
       }
     }
@@ -1001,7 +1008,19 @@ struct MascotStage: View {
   private func settle() {
     guard walks else { return }
     director.context.settle = !canWalk
-    if !canWalk, reduceMotion, !director.settled { director.place(KoaRoomMap.stageMark) }
+    director.context.bedtime = emotion == .sleep
+    if !canWalk, reduceMotion, !director.settled {
+      director.place(emotion == .sleep ? KoaRoomMap.door : KoaRoomMap.stageMark)
+    }
+  }
+
+  /// Màu nền dưới mép sàn của phòng chính, phần nằm dưới thẻ nội dung.
+  private static func floorEdge(light: Bool) -> Color {
+    light ? Color(red: 0.86, green: 0.8, blue: 0.72) : Color(red: 0.03, green: 0.04, blue: 0.11)
+  }
+
+  private static func doorPlan(open: Bool, light: Bool) -> [KoaPaint.Op] {
+    KoaPaint.plan(KoaRender.Element("Svg", kids: KoaBedroom.door(open: open, light: light)))
   }
 
   /// Vùng chạm đúng khung bảng số (`270, 245`, 102 × 62 trong toạ độ phòng).
@@ -1046,7 +1065,7 @@ struct MascotStage: View {
   /// Koa sống trong phòng theo `KoaDirectorDriver`. Giảm chuyển động / rời màn / app ra
   /// nền: đồng hồ dừng, Koa đứng nguyên chỗ (như trước khi có đạo diễn).
   private func livingHero(_ width: CGFloat) -> some View {
-    let running = !reduceMotion && onScreen && scenePhase == .active
+    let running = !reduceMotion && onScreen && scenePhase == .active && !inBedroom
     return TimelineView(.animation(minimumInterval: director.moving ? 1.0 / 60 : 1.0 / 30, paused: !running)) { tl in
       let f = running ? step(tl.date) : director.frame
       // đồng hồ dừng và Koa vừa được đặt chỗ mới (Giảm chuyển động): đứng ở đó
@@ -1141,6 +1160,19 @@ struct MascotStage: View {
       }
       .offset(x: left, y: top)
       .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+  }
+}
+
+/// Tắt lớp nhoè ở mép trên của iOS 26 khi phòng đang tràn tới đỉnh màn.
+private struct KoaTopEdge: ViewModifier {
+  let hidden: Bool
+
+  func body(content: Content) -> some View {
+    if #available(iOS 26, *) {
+      content.scrollEdgeEffectHidden(hidden, for: .top)
+    } else {
+      content
+    }
   }
 }
 

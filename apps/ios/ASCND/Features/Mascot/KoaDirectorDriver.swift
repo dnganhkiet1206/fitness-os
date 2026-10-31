@@ -27,6 +27,8 @@ final class KoaDirectorDriver {
   private(set) var moving = false
   /// Koa đang ở chỗ gốc trên bục, dáng ngồi của cảm xúc được hiện (đọc trong `body`).
   private(set) var settled = true
+  /// Cửa phòng ngủ đang mở (Koa ở gần lúc đi ngủ).
+  private(set) var doorOpen = false
   /// Lá cây đang rung (phòng vẽ sẵn bỏ phần từ chậu cây trở lên, lớp trên vẽ phần ấy).
   private(set) var swaying = false
   @ObservationIgnored private var lively = 0.0
@@ -180,12 +182,13 @@ final class KoaDirectorDriver {
     prevGaze = f.gaze
     let fast = now < lively || now < boostUntil
     let sway = f.plantSway != 0
-    if fast != moving || sway != swaying || f.settled != settled {
+    if fast != moving || sway != swaying || f.settled != settled || f.doorOpen != doorOpen {
       // không đổi trạng thái quan sát giữa lúc SwiftUI đang dựng view
       Task { @MainActor in
         self.moving = fast
         self.swaying = sway
         self.settled = f.settled
+        self.doorOpen = f.doorOpen
       }
     }
     return f
@@ -201,6 +204,6 @@ final class KoaDirectorDriver {
     director.place(s)
     frame = nil
     placed = KoaRoomMap.clamp(s)
-    settled = s == KoaRoomMap.stageMark
+    settled = s == KoaRoomMap.stageMark || s == KoaRoomMap.door
   }
 }
