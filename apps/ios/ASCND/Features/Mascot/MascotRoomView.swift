@@ -39,6 +39,8 @@ struct MascotRoomView: View {
   @State private var shop: MascotShopBook?
   @State private var notice: String?
   @State private var celebrate = 0
+  /// Giờ hiện tại, đổi mỗi phút: tới giờ ngủ khi đang mở phòng thì Koa đi ngủ ngay.
+  @State private var clock = Date.now
   /// Số trên bảng tường (29/10, Kiệt: người dùng chọn) — lưu trên máy.
   @AppStorage("koa.roomBoard") private var boardStat = RoomBoard.Stat.rank.rawValue
   @Environment(\.weightUnit) private var unit
@@ -75,6 +77,7 @@ struct MascotRoomView: View {
         await shop?.load()
         await services.loadKoaDust(userId: room.userId)
       }
+      .onReceive(Timer.publish(every: 30, on: .main, in: .common).autoconnect()) { clock = $0 }
       .onChange(of: room.welcomeGranted) { _, amount in
         guard let amount else { return }
         say(amount == 1 ? String(localized: "mr.welcome.one") : String(localized: "mr.welcome.other \(amount)"))
@@ -232,7 +235,7 @@ struct MascotRoomView: View {
         // sự kiện thật cho ký ức của Koa; Gains chưa tải xong thì chưa có gì để nói
         companion: room.gains == .zero
           ? nil : KoaCompanion.Facts(gains: room.gains, today: room.today, mood: moodRead.reason),
-        userId: room.userId)
+        userId: room.userId, sleep: KoaMood.SleepWindow(profile: profile?.profile))
         .sensoryFeedback(.selection, trigger: boardStat)
         // Nằm thẳng trên nền, không thẻ, không viền (Kiệt 24/10): tràn ngang màn,
         // mép trên / dưới / hai bên tan vào nền trang.
@@ -333,7 +336,8 @@ struct MascotRoomView: View {
     KoaToday.read(
       room: room, localWaterMl: nil, profile: profile?.profile,
       riskHour: KoaToday.riskHour(services.habitHours, userId: room.userId),
-      hour: Calendar.current.component(.hour, from: .now))
+      hour: Calendar.current.component(.hour, from: clock),
+      minute: Calendar.current.component(.minute, from: clock))
   }
 
   // MARK: - Thẻ tóm tắt (kiểu Apple Health, 24/10)
@@ -863,6 +867,8 @@ struct MascotStage: View {
   var companion: KoaCompanion.Facts?
   /// Chủ của ký ức.
   var userId = ""
+  /// Giờ ngủ của người này: Koa trầm dần trước giờ ngủ.
+  var sleep = KoaMood.SleepWindow.standard
 
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Environment(\.scenePhase) private var scenePhase
@@ -1074,7 +1080,7 @@ struct MascotStage: View {
   private func step(_ date: Date) -> KoaDirector.Frame {
     director.context.canWalk = canWalk
     let hour = Calendar.current.component(.hour, from: date)
-    director.context.night = hour >= 22 || hour < 6
+    director.context.night = sleep.winding(hour: hour, minute: Calendar.current.component(.minute, from: date))
     return director.step(date, heroWidth: Self.heroWidth * levelScale)
   }
 

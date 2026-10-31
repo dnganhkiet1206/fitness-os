@@ -49,6 +49,8 @@ final class KoaWidgetPublisher {
     var build = 0
     /// Gains của Koa (GĐ2: ô số của thẻ thay "Cấp").
     var gains = 0
+    /// Giờ ngủ của người dùng: widget chuyển Koa đi ngủ đúng giờ ấy.
+    var sleep = KoaMood.SleepWindow.standard
   }
 
   static func imageKey(_ s: Snapshot) -> String {
@@ -63,6 +65,7 @@ final class KoaWidgetPublisher {
       nightLine: String(localized: "koa.say.night"), imageVersion: version, checks: s.checks,
       nextQuest: s.nextQuest?.rawValue)
     data.short = Self.short(s)
+    data.sleep = s.sleep
     data.level = s.level
     data.gains = s.gains
     data.weekDone = s.weekDone

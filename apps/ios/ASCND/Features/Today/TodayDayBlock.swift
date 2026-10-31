@@ -78,21 +78,24 @@ struct TodayDayBlock: View {
 
   var body: some View {
     TimelineView(.periodic(from: .now, by: 60)) { context in
-      content(hour: Calendar.current.component(.hour, from: context.date))
+      content(
+        hour: Calendar.current.component(.hour, from: context.date),
+        minute: Calendar.current.component(.minute, from: context.date))
     }
   }
 
-  @ViewBuilder private func content(hour: Int) -> some View {
+  @ViewBuilder private func content(hour: Int, minute: Int) -> some View {
     let pending = services?.todayPending(userId: room.userId, today: room.today)
     let signals = TodayDay.merging(room.signals, localWaterMl: localWaterMl, pending: pending)
     let tubes = TodayDay.tubes(signals, stepsGoal: room.stepsGoal)
     let line = MascotLine.line(TodayDay.mascotDay(signals, hour: hour))
     let dayNext = line.gap.map(TodayDay.quest)
     let dayMood = KoaToday.read(
-      room: room, localWaterMl: localWaterMl, pending: pending, profile: profile, riskHour: riskHour, hour: hour)
+      room: room, localWaterMl: localWaterMl, pending: pending, profile: profile, riskHour: riskHour, hour: hour,
+      minute: minute)
     let daySaid = KoaToday.line(dayMood, signals: signals, profile: profile, streak: room.streak.count)
     // Koa sống theo lịch tập (đợt 2): pump / đợi / mất pump / tụt hạng đè lên Koa của ngày.
-    let sched = schedulePhase(hour: hour)
+    let sched = schedulePhase(hour: hour, minute: minute)
     let mood = sched.map { KoaMood.Read(emotion: Self.emotion($0), reason: dayMood.reason) } ?? dayMood
     let said = sched.map(scheduleLine) ?? daySaid
     let next = sched.map { $0 == .pump ? nil : MascotRules.Quest.workout } ?? dayNext
@@ -200,12 +203,13 @@ struct TodayDayBlock: View {
 
   // MARK: - Koa theo lịch (đợt 2)
 
-  private func schedulePhase(hour: Int) -> KoaSchedule.Phase? {
+  private func schedulePhase(hour: Int, minute: Int) -> KoaSchedule.Phase? {
     guard let services, let now = services.koaGainsNow, now.userId == room.userId else { return nil }
     let habit = UserRhythm.lateClock(services.habitHours.habit(.workout, userId: room.userId))?.hour
     return KoaSchedule.phase(
       gains: now.state, lastSessionAt: services.koaLastSessionAt, now: SystemWallClock().nowMillis(),
-      trainedToday: room.questDone(.workout), plannedToday: planName != nil, hour: hour, habitHour: habit)
+      trainedToday: room.questDone(.workout), plannedToday: planName != nil, hour: hour, habitHour: habit,
+      minute: minute, sleep: KoaMood.SleepWindow(profile: profile))
   }
 
   static func emotion(_ p: KoaSchedule.Phase) -> KoaEmotion.Emotion {

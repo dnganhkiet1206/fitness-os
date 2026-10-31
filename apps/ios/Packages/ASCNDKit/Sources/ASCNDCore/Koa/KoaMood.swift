@@ -21,7 +21,7 @@ public enum KoaMood {
   public static let riskMinStreak = 3
   /// `RISK_SPAN`: khung lo dài bao nhiêu giờ kể từ giờ muộn của người này.
   public static let riskSpan = 6.0
-  /// Đêm: từ 22:00 tới trước 06:00 Koa ngủ.
+  /// Giờ ngủ khi người dùng chưa đặt: từ 22:00 tới trước 06:00.
   public static let nightFrom = 22
   public static let morningFrom = 6
   /// Buổi sáng (giờ < 11) mới nói về giấc ngủ đêm qua.
@@ -29,6 +29,55 @@ public enum KoaMood {
   /// Ngủ đủ / ngủ ít (phút).
   public static let restedMinutes = 7 * 60.0
   public static let shortSleepMinutes = 6 * 60.0
+
+  /// Khoảng Koa ngủ trong ngày, phút kể từ 0 giờ, vắt qua nửa đêm được. Koa ngủ theo giờ người
+  /// dùng đặt trong hồ sơ; chưa đặt thì `standard`.
+  public struct SleepWindow: Sendable, Hashable, Codable {
+    public let bed: Int
+    public let wake: Int
+
+    public static let standard = SleepWindow(uncheckedBed: nightFrom * 60, wake: morningFrom * 60)
+
+    init(uncheckedBed bed: Int, wake: Int) {
+      self.bed = bed
+      self.wake = wake
+    }
+
+    /// Giờ dạng "HH:mm" hay "HH:mm:ss". `nil` khi không đọc được, hay hai giờ trùng nhau.
+    public init?(bed: String, wake: String) {
+      func minutes(_ s: String) -> Int? {
+        let p = s.split(separator: ":")
+        guard p.count >= 2, let h = Int(p[0]), let m = Int(p[1]), (0..<24).contains(h), (0..<60).contains(m) else { return nil }
+        return h * 60 + m
+      }
+      guard let b = minutes(bed), let w = minutes(wake), b != w else { return nil }
+      self.init(uncheckedBed: b, wake: w)
+    }
+
+    /// Giờ người dùng TỰ đặt (`sleep_target_*_set`, như màn Nhắc nhở): cột giờ có mặc định trong
+    /// DB, không có cờ thì không phải giờ của họ. Thiếu một trong hai giờ thì dùng `standard`.
+    public init(profile: Profile?) {
+      if let p = profile, p.sleepTargetBedtimeSet == true, p.sleepTargetWaketimeSet == true,
+        let b = p.sleepTargetBedtime, let w = p.sleepTargetWaketime, let s = SleepWindow(bed: b, wake: w)
+      {
+        self = s
+      } else {
+        self = .standard
+      }
+    }
+
+    public func contains(minute m: Int) -> Bool {
+      let m = ((m % 1440) + 1440) % 1440
+      return bed < wake ? m >= bed && m < wake : m >= bed || m < wake
+    }
+
+    public func contains(hour: Int, minute: Int = 0) -> Bool { contains(minute: hour * 60 + minute) }
+
+    /// Sắp tới giờ ngủ (trong `lead` phút) hoặc đang ngủ: Koa trầm dần.
+    public func winding(hour: Int, minute: Int = 0, lead: Int = 60) -> Bool {
+      contains(minute: hour * 60 + minute + lead) || contains(hour: hour, minute: minute)
+    }
+  }
 
   /// Vì sao Koa có nét mặt này — câu của Koa đọc từ đây.
   public enum Reason: String, Sendable, Hashable, CaseIterable {
@@ -50,6 +99,10 @@ public enum KoaMood {
     public var stepsGoal: Int
     /// Giờ địa phương 0…23.
     public var hour: Int
+    /// Phút địa phương 0…59 (giờ ngủ không tròn giờ).
+    public var minute: Int
+    /// Giờ ngủ của người này.
+    public var sleep: SleepWindow
     public var streak: Int
     /// Hôm nay đã nằm trong chuỗi (`Streak.Value.loggedToday`).
     public var loggedToday: Bool
@@ -62,11 +115,13 @@ public enum KoaMood {
     public init(
       signals: DailySignals?, stepsGoal: Int = DailySignals.defaultStepsGoal, hour: Int, streak: Int = 0,
       loggedToday: Bool = false, riskHour: Double = KoaMood.riskHour, kcalTarget: Double? = nil,
-      isBirthday: Bool = false
+      isBirthday: Bool = false, minute: Int = 0, sleep: SleepWindow = .standard
     ) {
       self.signals = signals
       self.stepsGoal = stepsGoal
       self.hour = hour
+      self.minute = minute
+      self.sleep = sleep
       self.streak = streak
       self.loggedToday = loggedToday
       self.riskHour = riskHour
@@ -86,7 +141,7 @@ public enum KoaMood {
   public static func read(_ i: Input) -> Read {
     guard let s = i.signals else { return Read(emotion: .idle, reason: .unread) }
     if i.isBirthday { return Read(emotion: .hat, reason: .birthday) }
-    if i.hour >= nightFrom || i.hour < morningFrom { return Read(emotion: .sleep, reason: .night) }
+    if i.sleep.contains(hour: i.hour, minute: i.minute) { return Read(emotion: .sleep, reason: .night) }
     if streakInDanger(streak: i.streak, emptyToday: !i.loggedToday, hour: i.hour, riskHour: i.riskHour) {
       return Read(emotion: .worry, reason: .worry)
     }
