@@ -881,6 +881,7 @@ struct MascotStage: View {
   @State private var wakeClock: KoaSceneClock?
   /// Phòng ngủ đang hiện. Tách khỏi `inBedroom`: dậy rồi phòng ngủ còn ở lại tới khi Koa xuống giường.
   @State private var bedShown = false
+  @AppStorage(KoaBedroomView.lampKey) private var lampOff = false
   @State private var seenBed = false
   @Environment(\.colorScheme) private var scheme
   @Environment(\.locale) private var locale
@@ -1034,6 +1035,9 @@ struct MascotStage: View {
     .accessibilityAction(named: Text("mr.walk.a11y")) {
       guard canWalk else { return }
       if reduceMotion { director.place(KoaRoomMap.user) } else { director.request(.greet) }
+    }
+    .accessibilityAction(named: Text(lampOff ? "mr.lamp.on.a11y" : "mr.lamp.off.a11y")) {
+      if bedShown { lampOff.toggle() }
     }
     .onScrollVisibilityChange(threshold: 0.2) { onScreen = $0 }
     // cuộn xuống đọc thẻ (sân khấu khuất quá nửa): Koa không đi lại, không kéo mắt khỏi nội dung

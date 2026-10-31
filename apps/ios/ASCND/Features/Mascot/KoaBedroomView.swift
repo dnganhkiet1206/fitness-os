@@ -16,6 +16,10 @@ struct KoaBedroomView: View {
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Environment(\.scenePhase) private var scenePhase
   @State private var onScreen = true
+  /// Đèn ngủ đầu giường: chạm để tắt / bật, nhớ giữa các lần mở.
+  @AppStorage(KoaBedroomView.lampKey) private var lampOff = false
+
+  static let lampKey = "koa.bedroom.lampOff"
 
   /// Một nhịp thở khi ngủ (giây).
   private static let breath = 5.2
@@ -41,7 +45,7 @@ struct KoaBedroomView: View {
         let s = reduceMotion ? 0 : sin(phase) * sigh * cover01
         ZStack(alignment: .topLeading) {
           back.equatable()
-          KoaBedroomLayer(plan: Self.plan(KoaBedroom.live(t: reduceMotion ? 0 : now, light: light, zzz: !reduceMotion && t >= KoaBedtime.end && up == nil)))
+          KoaBedroomLayer(plan: Self.plan(KoaBedroom.live(t: reduceMotion ? 0 : now, light: light, zzz: !reduceMotion && t >= KoaBedtime.end && up == nil, lamp: !lampOff)))
           if t >= KoaBedtime.land, (up ?? 0) < KoaWakeUp.blanket {
             sleeper(light: light, ms: reduceMotion ? 0 : now * 1000, breath: s, standing: cover01 < 0.85)
           }
@@ -53,9 +57,20 @@ struct KoaBedroomView: View {
           cover.equatable()
           moon.equatable().blur(radius: 3.5 * k).opacity(cover01)
           shade.equatable()
+          Color.black.opacity(lampOff ? KoaBedroom.lampOffDim(light: light) : 0)
+            .allowsHitTesting(false)
         }
       }
+      // vùng chạm ở ngoài `TimelineView`, không dựng lại theo nhịp thở
+      Color.clear
+        .contentShape(Circle())
+        .frame(width: 56, height: 56)
+        .position(x: KoaBedroom.lamp.x * k, y: KoaBedroom.lamp.y * k)
+        .onTapGesture { lampOff.toggle() }
+        .accessibilityHidden(true)
     }
+    .animation(reduceMotion ? nil : .easeInOut(duration: 0.25), value: lampOff)
+    .sensoryFeedback(.selection, trigger: lampOff)
     .onScrollVisibilityChange(threshold: 0.2) { onScreen = $0 }
     .accessibilityHidden(true)
   }

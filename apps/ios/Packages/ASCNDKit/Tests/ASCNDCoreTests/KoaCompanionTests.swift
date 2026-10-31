@@ -454,6 +454,15 @@ import Testing
     #expect(KoaBedroom.live(t: 1, light: light, zzz: false) != KoaBedroom.live(t: 2.5, light: light, zzz: false))
   }
 
+  /// Tắt đèn: hết quầng sáng và bướm đêm, chao đèn vẫn còn, phòng vẽ khác đi.
+  @Test(arguments: [false, true]) func lampSwitchesOff(light: Bool) {
+    let on = KoaBedroom.live(t: 2, light: light, zzz: false, lamp: true)
+    let off = KoaBedroom.live(t: 2, light: light, zzz: false, lamp: false)
+    #expect(on.count == off.count + 3)
+    #expect(!KoaPaint.plan(KoaRender.Element("Svg", kids: off)).isEmpty)
+    #expect(KoaBedroom.lampOffDim(light: light) > 0)
+  }
+
   /// Sao băng (đêm) chỉ thoáng qua, không sáng mãi.
   @Test func shootingStarIsBrief() {
     #expect(KoaBedroom.flyby(KoaBedroom.night, 0.4).count == 1)
