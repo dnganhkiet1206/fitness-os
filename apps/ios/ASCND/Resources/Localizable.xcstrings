@@ -15761,6 +15761,52 @@
     }
    }
   },
+  "mr.sound.off.a11y": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Turn off Koa sounds"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tắt âm thanh của Koa"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Desactivar sonidos de Koa"
+     }
+    }
+   }
+  },
+  "mr.sound.on.a11y": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Turn on Koa sounds"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bật âm thanh của Koa"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Activar sonidos de Koa"
+     }
+    }
+   }
+  },
   "mr.stage.a11y %lld": {
    "extractionState": "manual",
    "localizations": {

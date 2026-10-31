@@ -39,6 +39,7 @@ struct MascotRoomView: View {
   @State private var shop: MascotShopBook?
   @State private var notice: String?
   @State private var celebrate = 0
+  @AppStorage(KoaSound.offKey) private var soundOff = false
   /// Giờ hiện tại, đổi mỗi phút: tới giờ ngủ khi đang mở phòng thì Koa đi ngủ ngay.
   @State private var clock = Date.now
   /// Đã cuộn hết phòng: tiêu đề hiện trên thanh điều hướng.
@@ -66,6 +67,14 @@ struct MascotRoomView: View {
       .navigationTitle(Text(verbatim: pastStage ? String(localized: "mr.title") : ""))
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
+        ToolbarItem(placement: .topBarTrailing) {
+          Button {
+            soundOff.toggle()
+          } label: {
+            Image(systemName: soundOff ? "speaker.slash" : "speaker.wave.2")
+          }
+          .accessibilityLabel(Text(soundOff ? "mr.sound.on.a11y" : "mr.sound.off.a11y"))
+        }
         ToolbarItem(placement: .topBarTrailing) { coinPill.padding(.horizontal, 6) }
       }
       .task {
@@ -914,12 +923,8 @@ struct MascotStage: View {
     return o
   }
 
-  /// Phòng vẽ sẵn: lúc lá cây rung thì bỏ phần từ chậu cây trở lên (lớp trên vẽ phần ấy).
-  private var backdrop: StudioScene.Options {
-    var o = studio
-    if director.swaying { o.omit = StudioScene.fromPlant }
-    return o
-  }
+  /// Phòng vẽ sẵn, luôn đủ mọi lớp.
+  private var backdrop: StudioScene.Options { studio }
 
   /// `HERO_W = round(128 / 0.93)`.
   private static let heroWidth = 138.0
@@ -1009,6 +1014,7 @@ struct MascotStage: View {
         }
         wakeClock = KoaSceneClock(waking: true)
         wakeScene = .now
+        KoaSound.play(.yawn)
       }
     }
     .task(id: wakeScene) {
@@ -1027,6 +1033,7 @@ struct MascotStage: View {
       try? await Task.sleep(for: .seconds(KoaBedtime.land))
       guard !Task.isCancelled else { return }
       bedClock = nil
+      KoaSound.play(.land)
     }
     .aspectRatio(StudioScene.width / (StudioScene.sceneBottom + tail), contentMode: .fit)
     .frame(maxWidth: .infinity)
@@ -1142,13 +1149,13 @@ struct MascotStage: View {
       // đồng hồ dừng và Koa vừa được đặt chỗ mới (Giảm chuyển động): đứng ở đó
       let still = running ? nil : director.placed
       ZStack(alignment: .topLeading) {
-        // lá cây đang rung (~3 giây): chỉ vẽ lại CHẬU CÂY ở lớp trên; phòng dưới bỏ chậu cây
-        // (xem `body`) — không vẽ lại cả phòng mỗi khung
-        // chỉ khi phòng dưới ĐÃ bỏ phần ấy (`swaying`) — không bao giờ vẽ hai lần một khung
+        // lá cây đang rung (~3 giây): vẽ cả căn phòng đè lên phòng tĩnh, có cây đang lay. Trước đây
+        // tách phần từ chậu cây trở lên sang lớp riêng: đèn và viền tối vẽ hai lớp nên độ sáng
+        // nhảy lúc bật / tắt (Kiệt 31/10). Bậc 0,25° nên `StudioPlans` dùng lại được.
         if director.swaying {
           var o = studio
           let _ = (o.plantSway = f?.plantSway ?? 0)
-          StudioObjects(options: o, indices: StudioScene.fromPlant)
+          StudioBackdrop(options: o)
             .frame(width: width, height: width / StudioScene.width * StudioScene.sceneBottom)
             .allowsHitTesting(false)
         }
@@ -1184,7 +1191,7 @@ struct MascotStage: View {
       if !objects.isEmpty {
         var o = studio
         let _ = (o.plantSway = director.swaying ? plantSway : 0)
-        StudioFront(options: o, indices: Set(objects.flatMap(\.elements)), swaying: director.swaying)
+        StudioFront(options: o, indices: Set(objects.flatMap(\.elements)))
           .equatable()
           .frame(width: width, height: width / StudioScene.width * StudioScene.sceneBottom)
           .allowsHitTesting(false)
@@ -1211,6 +1218,7 @@ struct MascotStage: View {
           director.boost()
           director.touched()
           director.request(.greet)
+          KoaSound.boop()
         } : nil,
       // phòng: Koa theo đồng hồ của sân khấu (một đồng hồ, không vẽ hai lần)
       date: walks ? date : nil, onTouch: walks ? { director.boost() } : nil,
@@ -1300,18 +1308,10 @@ enum StudioPlans {
 struct StudioFront: View, Equatable {
   let options: StudioScene.Options
   let indices: Set<Int>
-  /// Đúng như phòng bên dưới lúc lá rung (`backdrop` + lớp chậu cây).
-  let swaying: Bool
 
   var body: some View {
-    var back = options
-    let _ = (back.plantSway = 0)
-    let _ = (back.omit = swaying ? StudioScene.fromPlant : [])
-    ZStack {
-      StudioBackdrop(options: back)
-      if swaying { StudioObjects(options: options, indices: StudioScene.fromPlant) }
-    }
-    .mask { StudioObjects(options: options, indices: indices) }
+    StudioBackdrop(options: options)
+      .mask { StudioObjects(options: options, indices: indices) }
   }
 }
 

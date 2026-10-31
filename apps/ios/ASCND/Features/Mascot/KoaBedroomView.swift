@@ -66,7 +66,10 @@ struct KoaBedroomView: View {
         .contentShape(Circle())
         .frame(width: 56, height: 56)
         .position(x: KoaBedroom.lamp.x * k, y: KoaBedroom.lamp.y * k)
-        .onTapGesture { lampOff.toggle() }
+        .onTapGesture {
+          lampOff.toggle()
+          KoaSound.play(.click)
+        }
         .accessibilityHidden(true)
     }
     .animation(reduceMotion ? nil : .easeInOut(duration: 0.25), value: lampOff)
