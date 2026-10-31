@@ -461,8 +461,8 @@ public enum KoaRender {
   static func walkMat(_ n: KoaScene.Node, _ w: KoaWalk.Pose) -> KoaMath.Mat? {
     if n.id == "POSERIG" { return bodyMat(w) }
     if n.id == "HEADRIG", w.headLag != 0 { return KoaGesture.rot(w.headLag, 120, 166) }
-    if n.id == "ear_left", w.earLag != 0 { return KoaGesture.rot(w.earLag, 62, 92) }
-    if n.id == "ear_right", w.earLag != 0 { return KoaGesture.rot(w.earLag, 178, 92) }
+    if n.id == "ear_left", w.earLag != 0 || w.earLeft != 0 { return KoaGesture.rot(w.earLag - w.earLeft, 62, 92) }
+    if n.id == "ear_right", w.earLag != 0 || w.earRight != 0 { return KoaGesture.rot(w.earLag + w.earRight, 178, 92) }
     if n.bind == "armRankL" { return KoaGesture.rot(w.armLeft, KoaGesture.shoulderL.0, KoaGesture.shoulderL.1) }
     // tay phải và đồ cầm trên tay phải đánh cùng nhau
     if n.bind == "armRankR" || n.animBind == "handAnim" {

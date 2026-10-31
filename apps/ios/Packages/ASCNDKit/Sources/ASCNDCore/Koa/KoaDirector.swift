@@ -6,8 +6,9 @@ public import Foundation
 /// CẢM XÚC nào của hệ có sẵn (`expression` / `gesture`), ĐI kiểu gì (`style`), LÀM gì khi
 /// tới (`action`), BAO LÂU (`duration`), XONG khi nào, và việc TIẾP THEO (`next`).
 ///
-/// Bộ lập lịch: ưu tiên, điều kiện ngữ cảnh, cooldown riêng từng hành vi, khoảng nghỉ tối
-/// thiểu giữa hai việc tự phát, phạt lặp lại. Đứng yên lâu là bình thường (`rest`). Yêu
+/// Bộ lập lịch: chấm điểm từng việc có thể làm theo khí sắc (`KoaCompanion.Affect`), khoảng
+/// cách, độ mới và giờ giấc, cộng cooldown riêng và phạt lặp lại. Đứng yên lâu là bình thường
+/// (`rest`), nhất là khi ít năng lượng. Yêu
 /// cầu từ người dùng / sự kiện thật chỉ ngắt việc đang làm ở ĐIỂM AN TOÀN (hai chân chạm
 /// sàn, không giữa cú nhảy) — không có hai việc giành điều khiển.
 ///
@@ -30,6 +31,8 @@ public enum KoaDirector {
     case lookAround
     /// Người xem vừa ghé lại / chạm lần nữa: chỉ nhìn, không đi, không làm trò.
     case notice
+    /// Người dùng quay lại sau nhiều ngày không tập: mừng, không trách (`Moment.comeback`).
+    case welcome
   }
 
   public enum Action: Sendable, Hashable {
@@ -60,8 +63,13 @@ public enum KoaDirector {
   public struct Context: Sendable, Hashable {
     /// Koa đang đứng (ngồi thiền / cầm tạ thì không đi).
     public var canWalk = true
-    /// Đã có buổi tập hoàn thành thật hôm nay và CHƯA ăn mừng (app giữ một lần mỗi ngày).
-    public var workoutToday = false
+    /// Cảm xúc hiện tại là dáng ngồi (ngủ, thiền, cầm tạ): Koa phải về bục rồi mới ngồi, không
+    /// ngồi ngay giữa sàn sau đồ đạc. `Frame.settled` báo đã về tới nơi.
+    public var settle = false
+    /// Khoảnh khắc thật chưa phản ứng (`KoaCompanion.Memory.moment`), một lần theo khoá.
+    public var moment: KoaCompanion.Moment?
+    /// Khí sắc hiện tại, tính từ ký ức.
+    public var affect = KoaCompanion.Affect()
     /// Người xem đang không nhìn sân khấu (cuộn xuống đọc thẻ): Koa không đi lại, không kéo
     /// mắt khỏi nội dung — chỉ đứng, thở, chớp mắt.
     public var quiet = false
@@ -77,7 +85,8 @@ public enum KoaDirector {
     /// Mở lại ngay sau khi rời phòng: chỉ nhìn.
     case notice
     case walkTo(KoaRoomMap.Spot)
-    case proud
+    /// Có gì đổi ở đồ vật này (đổi số trên bảng, vừa dọn kệ): Koa ngoái nhìn.
+    case look(String)
   }
 
   /// Một khung cho app vẽ.
@@ -101,6 +110,12 @@ public enum KoaDirector {
     public var moving: Bool
     /// Lá cây rung (độ) — khi Koa lại gần / ngửi.
     public var plantSway: Double
+    /// Koa đang đứng yên ở chỗ gốc trên bục, được phép ngồi xuống.
+    public var settled: Bool
+    /// Khung Koa bắt đầu phản ứng với khoảnh khắc này (app ghi vào ký ức).
+    public var reacted: KoaCompanion.Moment?
+    /// Đồng hồ của các nhịp nghỉ (thở, lắc tai gốc), ms: nhanh lên sau khi đi, không đều nhẹ.
+    public var idleClock: Double
     // debug
     public var behavior: String
     public var why: String
@@ -130,9 +145,21 @@ public enum KoaDirector {
   /// Sau khi người xem đặt Koa ở đâu: ở yên đó ít nhất chừng này giây.
   static let settleAfterUser = 25.0
 
-  /// Hệ số chọn hành vi tự phát (càng lớn càng hay) và cooldown riêng (giây).
-  static let weights: [Kind: Double] = [.explore: 1.0, .rest: 1.3, .lookAround: 0.6, .home: 0.5]
-  static let cooldowns: [Kind: Double] = [.explore: 14, .lookAround: 18, .home: 20, .greet: 40, .rest: 0]
+  /// Vừa được chạm: chừng này giây Koa chú ý người xem, không tự đi.
+  static let attentive = 12.0
+
+  /// Cooldown riêng (giây).
+  static let cooldowns: [Kind: Double] = [.explore: 8, .lookAround: 18, .home: 20, .greet: 40, .rest: 0]
+
+  /// Một cú giật tai: bật ra rồi rung nhẹ về chỗ (độ theo giây).
+  enum KoaFlick {
+    static let length = 0.42
+    static func angle(_ t: Double) -> Double {
+      let u = t / length
+      guard u < 1 else { return 0 }
+      return 8 * sin(Double.pi * 2 * u * 1.5) * exp(-3.5 * u)
+    }
+  }
 
   public struct Director: Sendable {
     public var walker: KoaWalk.Walker
@@ -147,13 +174,26 @@ public enum KoaDirector {
     /// Lịch sử gần (để phạt lặp lại): hành vi, và đồ vật đã ghé.
     public private(set) var history: [Kind] = []
     public private(set) var visited: [String] = []
+    /// Lần cuối xem từng đồ vật (đồng hồ đạo diễn).
+    var seenAt: [String: Double] = [:]
     var expression: KoaFlags.Expression?
     var gesture: KoaGesture?
     var gestureAmount = 0.0
     var gestureWant = 0.0
     var dayAmount = 1.0
     var plantKick: Double?
-    var proudDone = false
+    /// Khoảnh khắc đã phản ứng trong lần chạy này (app ghi ký ức sau một khung).
+    var reacted: Set<KoaCompanion.Moment> = []
+    var fresh: KoaCompanion.Moment?
+    var lastTouch = -1000.0
+    /// Đã ngồi xuống (`Context.settle`): giữ tới khi hết dáng ngồi, không đứng lên ngồi xuống
+    /// mỗi lần người nhích nhẹ.
+    var seated = false
+    /// Sau khi đi / nhảy, 0…1: thở nhanh rồi lắng dần.
+    public private(set) var exertion = 0.0
+    var idleClock = 0.0
+    var nextFlick = 5.0
+    var flick: (left: Bool, t: Double)?
 
     public init(seed: UInt64 = 7) {
       walker = KoaWalk.Walker(
@@ -168,6 +208,7 @@ public enum KoaDirector {
     public mutating func request(_ r: Request) {
       // chạm liên tục khi đang chào: không chồng thêm
       if r == .greet || r == .notice, running?.b.kind == .greet { return }
+      if r == .greet || r == .notice { lastTouch = clock }
       if r == .greet, let t = lastRun[.greet], clock - t < greetCooldown {
         pending = .notice
         return
@@ -175,7 +216,16 @@ public enum KoaDirector {
       pending = r
     }
 
-    /// Đứng ngay ở một chỗ (Giảm chuyển động).
+    /// Người xem đang chạm / kê tay lên Koa: chú ý tới họ, không tự đi chỗ khác.
+    public mutating func interacted() { lastTouch = clock }
+
+    /// Nhớ lại đồ vật đã ghé trước khi rời phòng.
+    public mutating func recall(visited v: [String]) {
+      visited = v
+      for name in v { seenAt[name] = clock - 60 }
+    }
+
+    /// Đứng ngay ở một chỗ (Giảm chuyển động, trở lại phòng).
     public mutating func place(_ s: KoaRoomMap.Spot) {
       let p = KoaRoomMap.clamp(s)
       plane = p.plane
@@ -186,13 +236,20 @@ public enum KoaDirector {
 
     // MARK: Lập lịch
 
-    func spot() -> KoaRoomMap.Spot { KoaRoomMap.Spot(plane, walker.x, walker.y) }
+    public func spot() -> KoaRoomMap.Spot { KoaRoomMap.Spot(plane, walker.x, walker.y) }
 
-    /// Phạt lặp lại: vừa làm → rất ít; trong vài lần gần → ít.
-    static func penalty<T: Equatable>(_ x: T, in list: [T], recent: Int) -> Double {
-      if list.last == x { return 0.12 }
-      if list.suffix(recent).contains(x) { return 0.4 }
-      return 1
+    /// Phạt lặp lại nhẹ: phạt nặng theo danh sách gần đây làm chuỗi việc thành một vòng cố định
+    /// (30/10: 6 bước lặp mãi, xoay đúng thứ tự đồ vật).
+    static func penalty(_ x: Kind, in list: [Kind]) -> Double {
+      if list.last == x { return 0.35 }
+      return list.suffix(3).contains(x) ? 0.75 : 1
+    }
+
+    /// Độ mới của một đồ vật theo thời gian thật: vừa xem thì nhạt, sau ~4 phút mới như lần đầu.
+    func novelty(_ a: KoaRoomMap.Anchor) -> Double {
+      if visited.last == a.name { return 0.1 }
+      guard let t = seenAt[a.name] else { return 1 }
+      return min(1, 0.15 + (clock - t) / 240)
     }
 
     func onCooldown(_ k: Kind) -> Bool {
@@ -200,7 +257,45 @@ public enum KoaDirector {
       return clock - t < (cooldowns[k] ?? 0)
     }
 
-    mutating func make(_ k: Kind, ctx: Context) -> Behavior? {
+    /// Chỗ nghỉ hợp lúc này: mệt / ngày nghỉ thì cạnh cửa sổ; đang gần gũi thì gần người xem.
+    func restSpot(_ ctx: Context) -> KoaRoomMap.Spot {
+      if ctx.settle { return KoaRoomMap.stageMark }
+      if ctx.affect.warmth > 0.6 { return KoaRoomMap.user }
+      if ctx.affect.energy < 0.5 || ctx.affect.calm, let w = KoaRoomMap.anchor("window") { return w.stand }
+      return KoaRoomMap.stageMark
+    }
+
+    /// Đang đứng ở chỗ gốc trên bục.
+    var atMark: Bool {
+      plane == .stage && hypot(walker.x - KoaRoomMap.stageMark.x, walker.y - KoaRoomMap.stageMark.d) <= 12
+    }
+
+    /// Đồ vật này hấp dẫn cỡ nào lúc này: khí sắc trung tính thì như nhau, mỗi món được ưu tiên
+    /// theo một khí sắc riêng.
+    func interest(_ a: KoaRoomMap.Anchor, _ ctx: Context) -> Double {
+      let e = ctx.affect
+      switch a.action {
+      case .inspect: return (0.8 + 0.8 * e.pride + (e.energy > 0.7 ? 0.3 : 0)) * (e.calm ? 0.5 : 1)
+      case .read: return 0.8 + 1.2 * e.pride
+      case .gaze: return 0.8 + max(0, 0.6 - e.energy) + (e.calm ? 0.6 : 0) + (ctx.night ? 0.4 : 0)
+      case .sniff: return 0.8 + (e.calm ? 0.3 : 0)
+      }
+    }
+
+    /// Điểm của một đồ vật cho việc đi tới (`walking`) hay chỉ nhìn: độ mới, đi xa tốn sức.
+    func score(_ a: KoaRoomMap.Anchor, walking: Bool, _ ctx: Context) -> Double {
+      var v = interest(a, ctx) * novelty(a)
+      guard walking else { return v }
+      // đang đứng ngay đó thì không "đi khám phá" nó nữa
+      let here = spot()
+      if a.stand.plane == plane, hypot(a.stand.x - here.x, a.stand.d - here.d) < 20 { return 0 }
+      let far = (a.stand.plane == plane ? hypot(a.stand.x - here.x, a.stand.d - here.d) : 120) / 200
+      v *= 1 - min(0.7, far * (1.2 - ctx.affect.energy))
+      // đang đứng gần thì tiện ghé luôn, khỏi về rồi lại đi
+      return far < 0.3 ? v * 1.5 : v
+    }
+
+    mutating func make(_ k: Kind, ctx: Context, anchor: KoaRoomMap.Anchor? = nil) -> Behavior? {
       let here = spot()
       switch k {
       case .greet:
@@ -213,39 +308,48 @@ public enum KoaDirector {
           kind: .notice, why: "người xem ghé lại", target: nil, anchor: nil, gaze: .user, expression: nil,
           gesture: nil, style: .adjust, action: .none, duration: rng.range(2.5, 4), next: [.rest])
       case .proud:
+        // kỷ lục: rạng rỡ hơn buổi tập thường. Lên hạng mới bật nhảy (`cheer` là dáng giữa không
+        // trung, giữ lâu thành lơ lửng nên chỉ vài giây)
+        let up = ctx.moment == .rankUp, big = up || ctx.moment == .record
         return Behavior(
-          kind: .proud, why: "có buổi tập hoàn thành thật hôm nay", target: KoaRoomMap.stageMark, anchor: nil,
-          gaze: .user, expression: .confident, gesture: .taDa, style: .purposeful, action: .proudPose,
-          duration: rng.range(4, 6), next: [.rest])
+          kind: .proud, why: big ? "kỷ lục / lên hạng thật" : "có buổi tập hoàn thành thật hôm nay",
+          target: KoaRoomMap.stageMark, anchor: nil, gaze: .user, expression: big ? .delighted : .confident,
+          gesture: up ? .cheer : .taDa, style: .purposeful, action: .proudPose,
+          duration: up ? rng.range(0.8, 1.4) : rng.range(4, 6), next: [.rest])
+      case .welcome:
+        return Behavior(
+          kind: .welcome, why: "người dùng quay lại sau mấy ngày", target: KoaRoomMap.user, anchor: nil, gaze: .user,
+          expression: .happy, gesture: nil, style: .friendly, action: .friendly, duration: rng.range(5, 8),
+          next: [.rest])
       case .explore:
-        // đồ vật: bỏ cái vừa xem, ưu tiên cái lâu chưa ghé
-        var best: (KoaRoomMap.Anchor, Double)?
-        for a in KoaRoomMap.anchors {
-          // đang đứng ngay đó thì không "đi khám phá" nó nữa
-          if a.stand.plane == plane, hypot(a.stand.x - here.x, a.stand.d - here.d) < 20 { continue }
-          let w = Self.penalty(a.name, in: visited, recent: 3) * rng.range(0.6, 1.4)
-          if best == nil || w > best!.1 { best = (a, w) }
-        }
-        guard let a = best?.0 else { return nil }
+        guard let a = anchor else { return nil }
+        let e = ctx.affect
         return Behavior(
           kind: .explore, why: "tò mò về \(a.name)", target: a.stand, anchor: a, gaze: .point(x: a.look.x, y: a.look.y),
-          expression: .surprised, gesture: a.action == .inspect ? .curious : nil, style: .curious,
-          action: .object(a.action), duration: rng.range(2.5, 4.5), next: [.rest, .home, .lookAround])
+          expression: a.action == .inspect ? .surprised : nil, gesture: a.action == .inspect ? .curious : nil,
+          style: e.energy < 0.5 || e.calm ? .relaxed : e.pride > 0.5 ? .purposeful : .curious,
+          action: .object(a.action), duration: rng.range(2.5, 4.5), next: [.rest, .home, .lookAround, .explore])
       case .home:
-        guard hypot(here.x - KoaRoomMap.stageMark.x, here.d - KoaRoomMap.stageMark.d) > 12 || plane != .stage else {
-          return nil
-        }
+        let t = restSpot(ctx)
+        guard hypot(here.x - t.x, here.d - t.d) > 12 || plane != t.plane else { return nil }
         return Behavior(
-          kind: .home, why: "về chỗ đứng trên bục", target: KoaRoomMap.stageMark, anchor: nil, gaze: .ahead,
-          expression: nil, gesture: nil, style: .relaxed, action: .none, duration: rng.range(1, 2), next: [.rest])
+          kind: .home, why: ctx.settle ? "tới giờ ngồi, về bục" : "về chỗ nghỉ", target: t, anchor: nil, gaze: .ahead,
+          // đi về ngủ: lim dim, không nhắm mắt mà đi
+          expression: ctx.settle ? .happytired : nil, gesture: nil, style: .relaxed, action: .none, duration: rng.range(1, 2), next: [.rest])
       case .rest:
+        // đứng cạnh cửa sổ thì nhìn ra ngoài; vừa được chạm thì nhìn người xem
+        let window = KoaRoomMap.anchor("window")
+        let byWindow = window.map { plane == $0.stand.plane && hypot(here.x - $0.stand.x, here.d - $0.stand.d) < 30 } ?? false
+        let social = clock - lastTouch < attentive || rng.next() < 0.45 + 0.45 * ctx.affect.warmth
+        let g: KoaGaze.Target =
+          byWindow && !social ? .point(x: window!.look.x, y: window!.look.y) : social ? .user : .ahead
+        let calmer = 1 + (ctx.night ? 1 : 0) + max(0, 0.6 - ctx.affect.energy) * 2
         return Behavior(
-          kind: .rest, why: "đứng nghỉ", target: nil, anchor: nil, gaze: rng.next() < 0.6 ? .user : .ahead,
-          expression: nil, gesture: nil, style: .casual, action: .none,
-          duration: rng.range(8, 22) * (ctx.night ? 2 : 1),
-          next: [.explore, .lookAround, .home])
+          kind: .rest, why: "đứng nghỉ", target: nil, anchor: nil, gaze: g,
+          expression: nil, gesture: nil, style: .casual, action: .none, duration: rng.range(8, 22) * calmer,
+          next: [.rest, .explore, .lookAround, .home])
       case .lookAround:
-        let a = KoaRoomMap.anchors[Int(rng.range(0, Double(KoaRoomMap.anchors.count) - 0.001))]
+        guard let a = anchor else { return nil }
         return Behavior(
           kind: .lookAround, why: "nhìn quanh: \(a.name)", target: nil, anchor: a, gaze: .point(x: a.look.x, y: a.look.y),
           expression: nil, gesture: nil, style: .adjust, action: .none, duration: rng.range(2, 3.5), next: [.rest])
@@ -255,19 +359,40 @@ public enum KoaDirector {
     }
 
     mutating func pick(ctx: Context, after: Behavior?) -> Behavior? {
-      if ctx.workoutToday, !proudDone, ctx.canWalk { return make(.proud, ctx: ctx) }
-      var options = (after?.next ?? [.rest, .explore]).filter { !onCooldown($0) }
-      if !ctx.canWalk || ctx.quiet { options = options.filter { $0 == .rest || $0 == .lookAround } }
-      // sân khấu khuất / vừa được người xem đặt chỗ: ở yên, không tự đi
-      if ctx.quiet || clock - lastUser < settleAfterUser { options = [.rest] }
-      if options.isEmpty { options = [.rest] }
-      var best: (Kind, Double)?
-      for k in options {
-        let calm = ctx.night && k != .rest ? 0.4 : 1
-        let w = (weights[k] ?? 0.5) * calm * Self.penalty(k, in: history, recent: 3) * rng.range(0.5, 1.5)
-        if best == nil || w > best!.1 { best = (k, w) }
+      var kinds = (after?.next ?? [.rest, .explore]).filter { !onCooldown($0) }
+      if !ctx.canWalk || ctx.quiet { kinds = kinds.filter { $0 == .rest || $0 == .lookAround } }
+      // sân khấu khuất / vừa được đặt chỗ / vừa được chạm: ở yên, không tự đi
+      if ctx.quiet || clock - lastUser < settleAfterUser || clock - lastTouch < attentive { kinds = [.rest] }
+      if kinds.isEmpty { kinds = [.rest] }
+      let e = ctx.affect
+      let night = ctx.night ? 0.4 : 1.0
+      var best: (Kind, KoaRoomMap.Anchor?, Double)?
+      func consider(_ k: Kind, _ a: KoaRoomMap.Anchor?, _ v: Double, _ noise: Double) {
+        let w = v * Self.penalty(k, in: history) * noise
+        if w > (best?.2 ?? 0) { best = (k, a, w) }
       }
-      return best.flatMap { make($0.0, ctx: ctx) } ?? make(.rest, ctx: ctx)
+      for k in kinds {
+        switch k {
+        case .rest:
+          // nghỉ nối nghỉ được, nhưng lâu quá thì cũng muốn nhúc nhích (trừ khi rất ít sức)
+          let long = history.suffix(2) == [.rest, .rest] && e.energy > 0.4 ? 0.3 : 1
+          consider(k, nil, (1.0 + 1.2 * (1 - e.energy) + (e.calm ? 0.4 : 0)) * long, rng.range(0.55, 1.45))
+        case .explore:
+          for a in KoaRoomMap.anchors {
+            consider(k, a, score(a, walking: true, ctx) * (0.35 + e.energy) * night, rng.range(0.55, 1.45))
+          }
+        case .lookAround:
+          for a in KoaRoomMap.anchors {
+            consider(k, a, score(a, walking: false, ctx) * 0.5 * night, rng.range(0.55, 1.45))
+          }
+        case .home:
+          let t = restSpot(ctx), here = spot()
+          let away = hypot(here.x - t.x, here.d - t.d) > 12 || plane != t.plane
+          if away { consider(k, nil, 0.7 + 0.8 * (1 - e.energy), rng.range(0.55, 1.45)) }
+        default: break
+        }
+      }
+      return best.flatMap { make($0.0, ctx: ctx, anchor: $0.1) } ?? make(.rest, ctx: ctx)
     }
 
     mutating func start(_ b: Behavior) {
@@ -287,10 +412,12 @@ public enum KoaDirector {
       history.append(b.kind)
       if history.count > 8 { history.removeFirst(history.count - 8) }
       if let a = b.anchor {
-        visited.append(a.name)
-        if visited.count > 6 { visited.removeFirst(visited.count - 6) }
+        seenAt[a.name] = clock
+        if b.kind == .explore {
+          visited.append(a.name)
+          if visited.count > 6 { visited.removeFirst(visited.count - 6) }
+        }
       }
-      if b.kind == .proud { proudDone = true }
       walker.tuning.apply(b.style)
       // mắt trước tiên
       gaze.look(b.gaze, from: (walker.x, walker.y - walker.elevation), turn: walker.pose.turn)
@@ -301,15 +428,32 @@ public enum KoaDirector {
 
     public mutating func step(_ dt: Double, ctx: Context) -> Frame {
       clock += dt
-      // buổi tập thật vừa xong: xin ngắt (vẫn chỉ ở điểm an toàn), một lần
-      if ctx.workoutToday, !proudDone, ctx.canWalk, pending == nil, running?.b.kind != .proud { pending = .proud }
+      fresh = nil
+      if ctx.moment == nil { reacted = [] }
+      // chuyện thật vừa xảy ra: ngắt việc đang làm ở điểm an toàn, một lần. Sân khấu khuất thì
+      // đợi người xem quay lại, ăn mừng cho không ai xem là vô nghĩa
+      if let m = ctx.moment, !reacted.contains(m), ctx.canWalk, !ctx.quiet, walker.atSafePoint {
+        if let b = make(m == .comeback ? .welcome : .proud, ctx: ctx) {
+          pending = nil
+          reacted.insert(m)
+          fresh = m
+          start(b)
+        }
+      }
+      // tới giờ ngồi: đi về bục trước, không ngồi tại chỗ (Kiệt 30/10). Khuất thì đợi
+      seated = ctx.settle && (seated || (atMark && !walker.isMoving))
+      if ctx.settle, !atMark, !ctx.quiet, walker.atSafePoint, running?.b.kind != .home, let b = make(.home, ctx: ctx) {
+        pending = nil
+        start(b)
+      }
       // yêu cầu: chỉ nhận ở điểm an toàn
       if let r = pending, walker.atSafePoint {
         pending = nil
         switch r {
         case .greet: if let b = make(.greet, ctx: ctx), ctx.canWalk { start(b) } else { gaze.look(.user, from: (walker.x, walker.y), turn: 0) }
         case .notice: if let b = make(.notice, ctx: ctx) { start(b) }
-        case .proud: if let b = make(.proud, ctx: ctx) { start(b) }
+        case .look(let name):
+          if let a = KoaRoomMap.anchor(name), let b = make(.lookAround, ctx: ctx, anchor: a) { start(b) }
         case .walkTo(let s):
           if ctx.canWalk {
             lastUser = clock
@@ -328,6 +472,11 @@ public enum KoaDirector {
       // đứng yên: trọng tâm dịch rất chậm, hai nhịp lệch nhau để không đều như máy
       walker.idleShift = 0.9 * sin(clock * 0.53) * (0.6 + 0.4 * sin(clock * 0.19 + 1.3)) * (1 - min(1, walker.weight * 2))
       walker.step(dt)
+      exertion = max(0, min(1, exertion + dt * (walker.isHopping ? 0.5 : walker.speed > 4 ? 0.14 : -0.05)))
+      // nhịp nghỉ: thở nhanh sau khi đi rồi lắng, chậm khi ít năng lượng, và không đều nhẹ để
+      // vòng lặp của bản vẽ không lộ
+      let drift = 0.08 * sin(clock * 0.37) * sin(clock * 0.11 + 0.7)
+      idleClock += dt * 1000 * (0.9 + 0.2 * ctx.affect.energy + 0.5 * exertion + drift)
       // gesture hiện dần / tắt dần
       // dáng của ngày tắt hẳn rồi dáng của hành vi mới hiện — hai dáng không chồng nhau
       let acting = expression != nil || gesture != nil
@@ -343,13 +492,29 @@ public enum KoaDirector {
       var sway = 0.0
       if let k = plantKick {
         let t = clock - k
-        sway = 4.5 * sin(2 * Double.pi * 2.1 * t) * exp(-t * 1.6)
+        // bậc 0,25°: ít giá trị khác nhau thì bộ nhớ đệm kế hoạch vẽ của phòng dùng lại được
+        sway = (18 * sin(2 * Double.pi * 2.1 * t) * exp(-t * 1.6)).rounded() / 4
         if t > 3 { plantKick = nil }
       }
       if plane == .floor, hypot(walker.x - 300, walker.y - 378) < 34, walker.speed > 4, plantKick == nil {
         plantKick = clock
       }
-      let p = walker.pose
+      var p = walker.pose
+      // tai: dựng khi tự hào, hơi cụp khi ít năng lượng; thỉnh thoảng giật một bên, không đều
+      let ears = 3 * max(0, 0.6 - ctx.affect.energy) - 2.5 * ctx.affect.pride
+      p.earLeft = ears
+      p.earRight = ears
+      nextFlick -= dt
+      if nextFlick <= 0, flick == nil, walker.speed < 1 {
+        flick = (rng.next() < 0.5, 0)
+        nextFlick = rng.range(4, 16)
+      }
+      if var f = flick {
+        f.t += dt
+        let a = KoaFlick.angle(f.t)
+        if f.left { p.earLeft += a } else { p.earRight += a }
+        flick = f.t < KoaFlick.length ? f : nil
+      }
       var path: [KoaRoomMap.Spot] = []
       for leg in running?.legs ?? [] {
         switch leg {
@@ -361,8 +526,9 @@ public enum KoaDirector {
         // còn quay một bên thì vẫn đưa dáng xuống: bỏ dáng ngay lúc dừng quay làm mặt / tai /
         // bụng bật về giữa một khung, rồi bật lại khi quay về (Kiệt 30/10: "bị giật")
         walk: p, x: walker.x, screenY: walker.y - walker.elevation, depth: walker.y,
-        plane: plane, scale: walker.scale, gaze: g, expression: expression, gesture: gesture,
-        gestureAmount: gestureAmount, dayAmount: dayAmount, moving: walker.isMoving, plantSway: sway, behavior: running?.b.kind.rawValue ?? "-",
+        plane: plane, scale: walker.scale, gaze: g, expression: seated ? nil : expression, gesture: gesture,
+        gestureAmount: gestureAmount, dayAmount: dayAmount, moving: walker.isMoving, plantSway: sway,
+        settled: seated || (!ctx.settle && atMark), reacted: fresh, idleClock: idleClock, behavior: running?.b.kind.rawValue ?? "-",
         why: running?.b.why ?? "", style: walker.tuning.style.name, target: running?.b.target, path: path)
     }
 
@@ -453,12 +619,13 @@ public enum KoaDirector {
           walker.faceTurn = 0
           gaze.look(.user, from: koa, turn: turn)
         }
-        if at(0.4) { expression = .delighted }
+        // đón người quay lại thì ấm áp, giữ nét vui, không mắt sao như ăn mừng
+        if at(0.4), b.kind == .greet { expression = .delighted }
       case .proudPose:
         if at(0) {
           walker.faceTurn = 0
           gaze.look(.user, from: koa, turn: turn)
-          gesture = .taDa
+          gesture = b.gesture
           gestureWant = 1
         }
         // liếc bảng hạng rồi về người xem

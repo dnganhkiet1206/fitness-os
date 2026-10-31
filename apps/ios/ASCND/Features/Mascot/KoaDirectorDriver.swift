@@ -25,16 +25,72 @@ final class KoaDirectorDriver {
   /// mười điểm ảnh mỗi khung) 30 là đủ, không thấy khác. Giữ 60 thêm 0,25 giây sau chuyển
   /// động cuối để không nhấp nháy giữa hai nhịp. Chỉ đổi khi trạng thái đổi.
   private(set) var moving = false
+  /// Koa đang ở chỗ gốc trên bục, dáng ngồi của cảm xúc được hiện (đọc trong `body`).
+  private(set) var settled = true
   /// Lá cây đang rung (phòng vẽ sẵn bỏ phần từ chậu cây trở lên, lớp trên vẽ phần ấy).
   private(set) var swaying = false
   @ObservationIgnored private var lively = 0.0
   @ObservationIgnored private var boostUntil = 0.0
   @ObservationIgnored private var prevGaze: KoaGaze.Output?
 
-  /// Người dùng chạm / kê lên Koa: phản ứng (nhảy, nhìn theo ngón tay) chạy 60 khung / giây.
+  /// Người dùng chạm / kê lên Koa: phản ứng (nhảy, nhìn theo ngón tay) chạy 60 khung / giây,
+  /// và Koa chú ý tới họ thay vì tự đi chỗ khác.
   func boost() {
     boostUntil = Date.now.timeIntervalSinceReferenceDate + 1.5
     if !moving { moving = true }
+    director.interacted()
+  }
+
+  // MARK: Ký ức
+
+  @ObservationIgnored private var memory = KoaCompanion.Memory()
+  @ObservationIgnored private var facts: KoaCompanion.Facts?
+  @ObservationIgnored private var owner: String?
+  @ObservationIgnored private var affectAt = 0.0
+
+  private static func key(_ userId: String) -> String { "koa.companion.\(userId)" }
+
+  /// Sự thật mới của ngày. Lần đầu theo tài khoản: đọc ký ức, Koa đứng lại chỗ cũ nếu vừa rời đi.
+  func sync(_ f: KoaCompanion.Facts?, userId: String) {
+    guard let f, !userId.isEmpty else { return }
+    let now = Date.now.timeIntervalSince1970
+    if owner != userId {
+      owner = userId
+      memory =
+        UserDefaults.standard.data(forKey: Self.key(userId))
+        .flatMap { try? JSONDecoder().decode(KoaCompanion.Memory.self, from: $0) } ?? .init()
+      if let s = memory.resumeSpot(at: now) { place(s) }
+      director.recall(visited: memory.visited)
+    }
+    memory.observe(f)
+    facts = f
+    feel(now)
+  }
+
+  /// Khí sắc phai theo giờ thật: tính lại từ ký ức, không giữ trong trạng thái view.
+  private func feel(_ now: Double) {
+    affectAt = now
+    guard let facts else { return }
+    context.affect = memory.affect(facts, at: now)
+    context.moment = memory.moment(facts)
+    #if DEBUG
+      if let forcedMoment { context.moment = forcedMoment }
+    #endif
+  }
+
+  /// Được chạm: gần gũi hơn một chút.
+  func touched() {
+    guard let facts else { return }
+    let now = Date.now.timeIntervalSince1970
+    memory.touched(facts, at: now)
+    feel(now)
+  }
+
+  /// Ghi ký ức, gồm chỗ đứng hiện tại (rời phòng, ra nền, sau mỗi khoảnh khắc).
+  func save() {
+    guard let owner else { return }
+    memory.remember(director.spot(), visited: director.visited, at: Date.now.timeIntervalSince1970)
+    if let data = try? JSONEncoder().encode(memory) { UserDefaults.standard.set(data, forKey: Self.key(owner)) }
   }
 
   /// Khung này có chuyển động thấy được không.
@@ -55,12 +111,20 @@ final class KoaDirectorDriver {
   #if DEBUG
     /// Kịch bản đo hiệu năng cố định (chỉ bản Debug, cờ chạy `-koaBench rest|walk|floor`):
     /// `rest` đứng yên (không đi), `walk` đi qua lại giữa hai điểm trên bục mãi, `floor` như
-    /// thế trên sàn (lớp che đồ vật bật). Hạt cố định.
-    enum Bench: String { case rest, walk, floor }
+    /// thế trên sàn (lớp che đồ vật bật). Hạt cố định. `live` chỉ mở thẳng phòng, Koa chạy như
+    /// thật (ký ức, khí sắc) — để soát tay và quay video.
+    enum Bench: String { case rest, walk, floor, live }
     static let bench: Bench? = {
       let a = ProcessInfo.processInfo.arguments
       guard let i = a.firstIndex(of: "-koaBench"), i + 1 < a.count else { return nil }
       return Bench(rawValue: a[i + 1])
+    }()
+    /// Soát hình khoảnh khắc khi không có sự kiện thật hôm nay (`-koaMoment record`), chỉ bản
+    /// Debug. Không ghi vào ký ức.
+    @ObservationIgnored private var forcedMoment: KoaCompanion.Moment? = {
+      let a = ProcessInfo.processInfo.arguments
+      guard let i = a.firstIndex(of: "-koaMoment"), i + 1 < a.count else { return nil }
+      return KoaCompanion.Moment(rawValue: a[i + 1])
     }()
     @ObservationIgnored private var benchLeg = false
     @ObservationIgnored private var benchAsked = false
@@ -69,16 +133,16 @@ final class KoaDirectorDriver {
 
   init() {
     #if DEBUG
-      if Self.bench != nil { director = KoaDirector.Director(seed: 42) }
+      if Self.bench != nil, Self.bench != .live { director = KoaDirector.Director(seed: 42) }
     #endif
   }
 
   /// Một khung: tiến đồng hồ tới `date`.
   func step(_ date: Date, heroWidth: Double) -> KoaDirector.Frame {
     #if DEBUG
-      if let b = Self.bench {
+      if let b = Self.bench, b != .live {
         context.canWalk = b != .rest
-        context.workoutToday = false
+        context.moment = nil
         // hỏi lại khi việc đang làm đổi mà chưa phải đi (lời chào lúc mở phòng có thể đè yêu cầu)
         if director.current == .walkTo || director.current != benchAskedDuring { benchAsked = false }
         if b != .rest, director.current != .walkTo, !benchAsked {
@@ -101,15 +165,27 @@ final class KoaDirectorDriver {
     let f = director.step(dt, ctx: context)
     KoaSignpost.poster.endInterval("director", sp)
     frame = f
+    let wall = Date.now.timeIntervalSince1970
+    #if DEBUG
+      if f.reacted != nil, forcedMoment != nil { return f }
+    #endif
+    if let m = f.reacted, let facts {
+      memory.react(m, facts, at: wall)
+      feel(wall)
+      save()
+    } else if wall - affectAt > 30 {
+      feel(wall)
+    }
     if Self.lively(f, prev: prevGaze) { lively = now + 0.25 }
     prevGaze = f.gaze
     let fast = now < lively || now < boostUntil
     let sway = f.plantSway != 0
-    if fast != moving || sway != swaying {
+    if fast != moving || sway != swaying || f.settled != settled {
       // không đổi trạng thái quan sát giữa lúc SwiftUI đang dựng view
       Task { @MainActor in
         self.moving = fast
         self.swaying = sway
+        self.settled = f.settled
       }
     }
     return f
@@ -125,5 +201,6 @@ final class KoaDirectorDriver {
     director.place(s)
     frame = nil
     placed = KoaRoomMap.clamp(s)
+    settled = s == KoaRoomMap.stageMark
   }
 }

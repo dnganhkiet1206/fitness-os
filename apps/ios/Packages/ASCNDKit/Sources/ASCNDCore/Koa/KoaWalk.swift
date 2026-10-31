@@ -57,6 +57,9 @@ public enum KoaWalk {
     public var headLag = 0.0
     /// Tai trễ theo quán tính (độ): lò xo mềm hơn đầu, đung đưa nhẹ rồi tắt.
     public var earLag = 0.0
+    /// Tai trái / phải thêm (độ, dương = ra ngoài, tức cụp xuống): khí sắc và giật tai.
+    public var earLeft = 0.0
+    public var earRight = 0.0
     public init() {}
   }
 

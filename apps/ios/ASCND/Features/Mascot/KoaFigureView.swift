@@ -51,6 +51,9 @@ struct KoaFigureView: View {
   var date: Date?
   /// Ngón tay chạm / kê lên Koa (sân khấu tăng nhịp khung cho phản ứng mượt).
   var onTouch: (() -> Void)?
+  /// Đồng hồ của các nhịp nghỉ do đạo diễn đưa vào (ms): thở theo gắng sức, không đều nhẹ.
+  /// Giữ nguyên khi đồng hồ dừng, nên nhịp thở không nhảy lúc chạy lại.
+  var idleClock: Double?
 
   @Environment(\.colorScheme) private var scheme
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -98,7 +101,7 @@ struct KoaFigureView: View {
 
   private func frame(_ date: Date, paper: Bool, reacts: Bool, running: Bool) -> some View {
     let ms = date.timeIntervalSinceReferenceDate * 1000
-    let t = animated ? clock.tick(ms, running: running) : 0
+    let t = animated ? idleClock ?? clock.tick(ms, running: running) : 0
     return canvas(t: t, paper: paper, react: reacts ? touch.frame(ms) : nil, running: running)
       // vẽ rộng hơn khung hai bên (hình vẫn đúng chỗ, đúng cỡ — `viewport` theo chiều cao):
       // đầu quay / nghiêng khi đi không bị cắt tai ở mép khung
@@ -146,6 +149,8 @@ struct KoaFigureView: View {
       o.blink = running ? blink : nil
       o.gestureAmount = gestureAmount
       o.poke = react?.poke
+      // phòng: đạo diễn giật tai vào lúc không đều, thay cho chu kỳ cố định
+      if idleClock != nil { o.poke?.twitches = false }
       o.walk = running ? walk : nil
       let sp = KoaSignpost.poster.beginInterval("figure")
       defer { KoaSignpost.poster.endInterval("figure", sp) }
@@ -216,6 +221,7 @@ struct MascotFigureView: View {
   /// Đồng hồ ngoài của sân khấu (xem `KoaFigureView.date`).
   var date: Date?
   var onTouch: (() -> Void)?
+  var idleClock: Double?
   @Environment(AppServices.self) private var services: AppServices?
 
   var body: some View {
@@ -234,7 +240,7 @@ struct MascotFigureView: View {
         paper: paper, build: build ?? services?.koaBuild ?? 0, interactive: interactive, stage: stage,
         greet: greet, onTap: onTap, walk: dress ? nil : walk ?? direct?.walk, bleeds: walks,
         headLook: direct?.gaze.head, eyes: direct?.gaze.eyes, blink: direct?.gaze.blink,
-        gestureAmount: dress ? 1 : amount, date: date, onTouch: onTouch)
+        gestureAmount: dress ? 1 : amount, date: date, onTouch: onTouch, idleClock: idleClock)
     } else {
       VectorMascotView(id: mascotId, size: size, equipped: Set(equipped))
     }

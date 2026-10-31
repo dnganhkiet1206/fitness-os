@@ -93,7 +93,7 @@ struct KoaScenarioTests {
     for _ in 0..<Int(120 / Self.dt) { tally(d.step(Self.dt, ctx: .init())) }
     #expect(count == 0)
     var ctx = KoaDirector.Context()
-    ctx.workoutToday = true
+    ctx.moment = .workout
     for _ in 0..<Int(200 / Self.dt) { tally(d.step(Self.dt, ctx: ctx)) }
     #expect(count == 1)
   }
@@ -102,7 +102,7 @@ struct KoaScenarioTests {
   @Test func proudWaitsWhenSeated() {
     var d = KoaDirector.Director(seed: 4)
     var ctx = KoaDirector.Context()
-    ctx.workoutToday = true
+    ctx.moment = .workout
     ctx.canWalk = false
     Self.run(&d, 60, ctx: ctx) { f in #expect(f.behavior != "proud") }
   }
@@ -277,7 +277,7 @@ struct KoaScenarioTests {
   @Test func gestureFadesInAndOut() {
     var d = KoaDirector.Director(seed: 2)
     var ctx = KoaDirector.Context()
-    ctx.workoutToday = true
+    ctx.moment = .workout
     var worst = 0.0, top = 0.0
     var last: Double?
     Self.run(&d, 40, ctx: ctx) { f in
