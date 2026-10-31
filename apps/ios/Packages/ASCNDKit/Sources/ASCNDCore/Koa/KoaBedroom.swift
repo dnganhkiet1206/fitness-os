@@ -6,7 +6,7 @@ public import Foundation
 /// Cùng toạ độ với phòng chính (390 × `StudioScene.sceneBottom`). Tách lớp để app cho Koa thở:
 /// `back` (phòng, giường, gối) · Koa · `cover` (chăn, kệ, giày) · `moonlight` · `shade`.
 /// Không thêm hình của Koa: cả người là hình thật (`KoaRender.figure`), dáng ngồi xoay nằm
-/// cuộn tròn trên gối (Kiệt chọn mock 31/10), chăn đắp chân.
+/// cuộn tròn trên gối (Kiệt chọn mock 31/10), chăn đắp tới cổ, nổi hình thân bên dưới.
 public enum KoaBedroom {
   typealias Element = KoaRender.Element
 
@@ -213,15 +213,15 @@ public enum KoaBedroom {
   /// Chăn, kệ sách, tạ, giày: nằm trên đầu Koa.
   public static func cover(light: Bool) -> [KoaRender.Element] {
     let c = light ? day : night
-    let top = "M176 378C186 354 214 346 244 350C274 354 298 360 304 374"
-    let duvet = top + "C308 386 306 404 304 412C304 420 298 424 288 424H164C156 424 152 418 152 408V400C152 392 168 388 176 378Z"
+    let top = "M130 384C136 352 146 322 172 316C198 310 216 334 244 344C274 352 298 358 304 374"
+    let duvet = top + "C308 386 306 404 304 412C304 420 298 424 288 424H128C120 424 116 418 116 408V400C116 392 126 392 130 384Z"
     var out: [Element] = [Element("Defs", kids: [linear("bedDuvet", [(0, c.duvetTop), (1, c.duvetBottom)])]), path(duvet, "url(#bedDuvet)")]
-    for x in stride(from: 198.0, to: 304, by: 18) {
+    for x in stride(from: 160.0, to: 304, by: 18) {
       out.append(line("M\(x) 372Q\(x + 4) 398 \(x - 2) 422", "#FFFFFF", width: 5, opacity: 0.07))
     }
     out += [
       line(top, "#FFFFFF", width: 2, opacity: 0.2),
-      path("M152 402C154 392 168 388 176 378C182 374 188 378 188 386L180 424H164C156 424 152 418 152 410Z", c.fold),
+      path("M116 402C118 392 126 392 130 384C136 378 146 380 146 390L138 424H128C120 424 116 418 116 410Z", c.fold),
       // kệ thấp
       ellipse(352, 424, 34, 4, "#000000", opacity: 0.34), rect(322, 318, 60, 104, c.wood, r: 3),
       rect(327, 324, 50, 46, "#000000", opacity: 0.24), rect(327, 374, 50, 42, "#000000", opacity: 0.24),
