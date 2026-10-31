@@ -385,3 +385,54 @@ import Testing
     #expect(ok)
   }
 }
+
+/// Phòng ngủ gác mái dựng được ở cả hai giao diện, không tham chiếu dải màu thiếu.
+@Suite struct KoaBedroomTests {
+  @Test(arguments: [false, true]) func layersPlan(light: Bool) {
+    for (kids, least) in [
+      (KoaBedroom.back(light: light), 40), (KoaBedroom.cover(light: light), 15), (KoaBedroom.moonlight(light: light), 2),
+      (KoaBedroom.shade(light: light), 1),
+    ] {
+      let plan = KoaPaint.plan(KoaRender.Element("Svg", kids: kids))
+      #expect(plan.count >= least)
+    }
+  }
+
+  @Test func coverBottomInsideScene() {
+    #expect(KoaBedroom.coverBottom < StudioScene.sceneBottom)
+    #expect(KoaBedroom.head.x > 22 && KoaBedroom.head.x < 140)
+  }
+}
+
+/// Tới giờ ngủ Koa đi tới cửa phòng ngủ, cửa mở khi tới gần.
+@Suite struct KoaBedtimeTests {
+  @Test(arguments: [UInt64(1), 2, 3, 5]) func walksToTheDoor(seed: UInt64) {
+    var d = KoaDirector.Director(seed: seed)
+    var ctx = KoaDirector.Context()
+    ctx.canWalk = false
+    ctx.settle = true
+    ctx.bedtime = true
+    var opened = false, arrived = false
+    for _ in 0..<(60 * 40) {
+      let f = d.step(1.0 / 60, ctx: ctx)
+      if f.doorOpen { opened = true }
+      if f.settled {
+        arrived = true
+        break
+      }
+    }
+    #expect(arrived && opened)
+    #expect(d.plane == .floor)
+    #expect(hypot(d.walker.x - KoaRoomMap.door.x, d.walker.y - KoaRoomMap.door.d) <= 12)
+  }
+
+  @Test func doorSpotIsWalkable() {
+    #expect(KoaRoomMap.valid(KoaRoomMap.door))
+  }
+
+  @Test(arguments: [false, true]) func doorPlans(light: Bool) {
+    for open in [false, true] {
+      #expect(!KoaPaint.plan(KoaRender.Element("Svg", kids: KoaBedroom.door(open: open, light: light))).isEmpty)
+    }
+  }
+}

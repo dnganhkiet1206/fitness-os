@@ -66,6 +66,8 @@ public enum KoaDirector {
     /// Cảm xúc hiện tại là dáng ngồi (ngủ, thiền, cầm tạ): Koa phải về bục rồi mới ngồi, không
     /// ngồi ngay giữa sàn sau đồ đạc. `Frame.settled` báo đã về tới nơi.
     public var settle = false
+    /// Giờ ngủ: chỗ về là cửa phòng ngủ thay vì bục.
+    public var bedtime = false
     /// Khoảnh khắc thật chưa phản ứng (`KoaCompanion.Memory.moment`), một lần theo khoá.
     public var moment: KoaCompanion.Moment?
     /// Khí sắc hiện tại, tính từ ký ức.
@@ -110,8 +112,10 @@ public enum KoaDirector {
     public var moving: Bool
     /// Lá cây rung (độ) — khi Koa lại gần / ngửi.
     public var plantSway: Double
-    /// Koa đang đứng yên ở chỗ gốc trên bục, được phép ngồi xuống.
+    /// Koa đã tới chỗ cần tới (bục, hay cửa phòng ngủ) và đứng yên: dáng ngồi được hiện.
     public var settled: Bool
+    /// Koa ở gần cửa lúc đi ngủ: cửa mở, hắt ánh vàng.
+    public var doorOpen: Bool
     /// Khung Koa bắt đầu phản ứng với khoảnh khắc này (app ghi vào ký ức).
     public var reacted: KoaCompanion.Moment?
     /// Đồng hồ của các nhịp nghỉ (thở, lắc tai gốc), ms: nhanh lên sau khi đi, không đều nhẹ.
@@ -259,15 +263,15 @@ public enum KoaDirector {
 
     /// Chỗ nghỉ hợp lúc này: mệt / ngày nghỉ thì cạnh cửa sổ; đang gần gũi thì gần người xem.
     func restSpot(_ ctx: Context) -> KoaRoomMap.Spot {
-      if ctx.settle { return KoaRoomMap.stageMark }
+      if ctx.settle { return ctx.bedtime ? KoaRoomMap.door : KoaRoomMap.stageMark }
       if ctx.affect.warmth > 0.6 { return KoaRoomMap.user }
       if ctx.affect.energy < 0.5 || ctx.affect.calm, let w = KoaRoomMap.anchor("window") { return w.stand }
       return KoaRoomMap.stageMark
     }
 
-    /// Đang đứng ở chỗ gốc trên bục.
-    var atMark: Bool {
-      plane == .stage && hypot(walker.x - KoaRoomMap.stageMark.x, walker.y - KoaRoomMap.stageMark.d) <= 12
+    /// Đang đứng ở chỗ cần về lúc tới giờ ngồi.
+    func atSpot(_ s: KoaRoomMap.Spot) -> Bool {
+      plane == s.plane && hypot(walker.x - s.x, walker.y - s.d) <= 12
     }
 
     /// Đồ vật này hấp dẫn cỡ nào lúc này: khí sắc trung tính thì như nhau, mỗi món được ưu tiên
@@ -441,8 +445,9 @@ public enum KoaDirector {
         }
       }
       // tới giờ ngồi: đi về bục trước, không ngồi tại chỗ (Kiệt 30/10). Khuất thì đợi
-      seated = ctx.settle && (seated || (atMark && !walker.isMoving))
-      if ctx.settle, !atMark, !ctx.quiet, walker.atSafePoint, running?.b.kind != .home, let b = make(.home, ctx: ctx) {
+      let rest = restSpot(ctx)
+      seated = ctx.settle && (seated || (atSpot(rest) && !walker.isMoving))
+      if ctx.settle, !atSpot(rest), !ctx.quiet, walker.atSafePoint, running?.b.kind != .home, let b = make(.home, ctx: ctx) {
         pending = nil
         start(b)
       }
@@ -528,7 +533,9 @@ public enum KoaDirector {
         walk: p, x: walker.x, screenY: walker.y - walker.elevation, depth: walker.y,
         plane: plane, scale: walker.scale, gaze: g, expression: seated ? nil : expression, gesture: gesture,
         gestureAmount: gestureAmount, dayAmount: dayAmount, moving: walker.isMoving, plantSway: sway,
-        settled: seated || (!ctx.settle && atMark), reacted: fresh, idleClock: idleClock, behavior: running?.b.kind.rawValue ?? "-",
+        settled: seated || (!ctx.settle && atSpot(KoaRoomMap.stageMark)),
+        doorOpen: ctx.bedtime && plane == .floor && hypot(walker.x - KoaRoomMap.door.x, walker.y - KoaRoomMap.door.d) < 70,
+        reacted: fresh, idleClock: idleClock, behavior: running?.b.kind.rawValue ?? "-",
         why: running?.b.why ?? "", style: walker.tuning.style.name, target: running?.b.target, path: path)
     }
 
