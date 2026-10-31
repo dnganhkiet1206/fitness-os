@@ -1,15 +1,26 @@
 import AVFoundation
 
 /// Tiếng của phòng Koa (31/10, Kiệt): vài tiếng nhỏ cho Koa sống động hơn, chỉ khi người dùng chạm
-/// hoặc ở khoảnh khắc lớn. Không phải giọng Koa. `.ambient`: im theo công tắc im lặng, không ngắt
+/// hoặc ở khoảnh khắc lớn. Giọng Koa kiểu hoạt hình tự tổng hợp, công tắc là tiếng CC0 của Kenney
+/// (`tools/koa-sound`). `.ambient`: im theo công tắc im lặng, không ngắt
 /// nhạc đang nghe. Tắt được bằng nút loa trên thanh của phòng.
 @MainActor
 enum KoaSound {
   enum Cue: String {
-    case boop = "koa-boop"
+    case boop1 = "koa-boop-1"
+    case boop2 = "koa-boop-2"
+    case boop3 = "koa-boop-3"
     case click = "koa-click"
     case land = "koa-land"
-    case chime = "koa-chime"
+    case yawn = "koa-yawn"
+    case cheer = "koa-cheer"
+  }
+
+  /// Chạm Koa: đổi tiếng, không lặp liền một tiếng.
+  private static var lastBoop = Cue.boop3
+  static func boop() {
+    lastBoop = [Cue.boop1, .boop2, .boop3].filter { $0 != lastBoop }.randomElement() ?? .boop1
+    play(lastBoop)
   }
 
   nonisolated static let offKey = "koa.sound.off"
