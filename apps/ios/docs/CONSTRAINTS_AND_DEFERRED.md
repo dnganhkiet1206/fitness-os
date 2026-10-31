@@ -371,12 +371,14 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Cảnh đi ngủ kiểu hoạt hình (31/10, nhánh `claude/koa-bedtime-scene`, `KoaBedtime`): Koa đi tới chỗ, đi từ trái sang phải, phòng trôi ngược lại, mảng tường lướt qua phía trước rồi sang gác mái; Koa khuỵu, nhảy lên giường, chăn kéo lên. Bỏ cánh cửa trên tường sân khấu. ~~Dậy thì lia ngược 1,1 giây, chưa có cảnh Koa xuống giường.~~ 31/10: có cảnh dậy (`KoaWakeUp`): chăn gập, Koa nhảy xuống, đi từ phải sang trái về đúng chỗ đứng. Mở phòng giữa giờ ngủ thì Koa đã nằm sẵn, không chạy lại cảnh. Giảm chuyển động: không có cảnh.
 - Đồ động trong phòng ngủ (`KoaBedroom.live`): sao, mây, sao băng (ngày là chim), rèm, lá, dây đèn, đèn tường, bướm đêm, bụi, chữ z. Đổi lại phòng ngủ tốn hơn: ~15–18 % CPU trên simulator bản Debug, trước đó 5,4 %. Đây là `top` trên Debug, chưa đo Release hay máy thật.
 - Chạm đèn ngủ đầu giường để tắt / bật (31/10): phòng tối đi, dây đèn tắt theo, hết quầng sáng và bướm đêm; nhớ theo máy, không theo tài khoản. VoiceOver dùng hành động trên sân khấu.
+- Âm thanh của phòng Koa (31/10, `KoaSound`, tiếng tự tổng hợp ở `tools/koa-sound/build.py`): chạm Koa, công tắc đèn, Koa đáp xuống giường, lên hạng / kỷ lục. Không phải giọng Koa; giọng cần mock Kiệt duyệt. `.ambient`: im theo công tắc im lặng, không ngắt nhạc. Nút loa trên thanh của phòng để tắt, nhớ theo máy. Giảm chuyển động: chạm Koa không có tiếng vì chạm Koa bị tắt phản ứng.
 - Trong lúc lia, Koa đi tại chỗ nên chân có thể hơi trượt so với sàn đang trôi; mảng tường chỉ che một phần lúc đổi cỡ Koa.
 - CPU simulator (bản Debug): phòng ngủ 5,4 %, sân khấu ~31–37 %, bộ nhớ 108 MB.
 - **NOT RUN:** thiết bị thật; GPU (lớp `blur` ánh trăng, `scaleEffect` chăn); Reduce Motion chạy tay; VoiceOver với bố cục mới; hình cửa ở giao diện sáng.
 
 ## 5. Lịch sử thay đổi sổ
 
+- 31/10/2026: thêm âm thanh nhỏ cho phòng Koa, có nút tắt.
 - 31/10/2026: chạm đèn ngủ để tắt / bật.
 - 31/10/2026: cảnh Koa dậy, đi từ phòng ngủ về sân khấu.
 - 31/10/2026: cảnh đi ngủ kiểu hoạt hình, nhảy lên giường, đồ động trong phòng ngủ; bỏ cánh cửa.

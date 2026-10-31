@@ -39,6 +39,7 @@ struct MascotRoomView: View {
   @State private var shop: MascotShopBook?
   @State private var notice: String?
   @State private var celebrate = 0
+  @AppStorage(KoaSound.offKey) private var soundOff = false
   /// Giờ hiện tại, đổi mỗi phút: tới giờ ngủ khi đang mở phòng thì Koa đi ngủ ngay.
   @State private var clock = Date.now
   /// Đã cuộn hết phòng: tiêu đề hiện trên thanh điều hướng.
@@ -66,6 +67,14 @@ struct MascotRoomView: View {
       .navigationTitle(Text(verbatim: pastStage ? String(localized: "mr.title") : ""))
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
+        ToolbarItem(placement: .topBarTrailing) {
+          Button {
+            soundOff.toggle()
+          } label: {
+            Image(systemName: soundOff ? "speaker.slash" : "speaker.wave.2")
+          }
+          .accessibilityLabel(Text(soundOff ? "mr.sound.on.a11y" : "mr.sound.off.a11y"))
+        }
         ToolbarItem(placement: .topBarTrailing) { coinPill.padding(.horizontal, 6) }
       }
       .task {
@@ -1027,6 +1036,7 @@ struct MascotStage: View {
       try? await Task.sleep(for: .seconds(KoaBedtime.land))
       guard !Task.isCancelled else { return }
       bedClock = nil
+      KoaSound.play(.land)
     }
     .aspectRatio(StudioScene.width / (StudioScene.sceneBottom + tail), contentMode: .fit)
     .frame(maxWidth: .infinity)
@@ -1211,6 +1221,7 @@ struct MascotStage: View {
           director.boost()
           director.touched()
           director.request(.greet)
+          KoaSound.play(.boop)
         } : nil,
       // phòng: Koa theo đồng hồ của sân khấu (một đồng hồ, không vẽ hai lần)
       date: walks ? date : nil, onTouch: walks ? { director.boost() } : nil,

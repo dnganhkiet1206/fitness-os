@@ -172,6 +172,7 @@ final class KoaDirectorDriver {
       if f.reacted != nil, forcedMoment != nil { return f }
     #endif
     if let m = f.reacted, let facts {
+      if m == .rankUp || m == .record { KoaSound.play(.chime) }
       memory.react(m, facts, at: wall)
       feel(wall)
       save()
