@@ -154,6 +154,10 @@ public enum KoaGains {
     /// Đang lên lại sau một đợt tụt cũ (Gains ×2).
     public var rebuilding: Bool { points < peak }
     public var lastSession: LocalDate?
+    /// Ngày của `lastSession` có kỷ lục cá nhân.
+    public var lastRecord = false
+    /// Hôm nay là ngày nghỉ đã đặt.
+    public var restToday = false
 
     public static let zero = State(points: 0, peak: 0, missedDays: 0, lastSession: nil)
   }
@@ -178,7 +182,7 @@ public enum KoaGains {
       if d.overload { overloaded.insert(d.date) }
     }
     guard let first = kinds.keys.min() else {
-      return State(points: 0, peak: 0, missedDays: 0, lastSession: nil)
+      return State(points: 0, peak: 0, missedDays: 0, lastSession: nil, restToday: week.isRest(today))
     }
     // Tuần (theo ngày T2) có buổi nặng / cardio — ngày nghỉ của tuần ấy mới được Gains.
     let trainedWeeks = Set(kinds.filter { $0.value.active }.keys.map(monday))
@@ -227,12 +231,14 @@ public enum KoaGains {
       if kind != nil {
         s.missedDays = 0
         s.lastSession = day
+        s.lastRecord = pr[day] == true
       } else if !week.isRest(day) {
         // Chỉ đếm — nghỉ không trừ Gains (21/10).
         s.missedDays += 1
       }
       day = day.adding(days: 1)
     }
+    s.restToday = week.isRest(today)
     return s
   }
 

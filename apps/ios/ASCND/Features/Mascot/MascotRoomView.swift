@@ -50,7 +50,7 @@ struct MascotRoomView: View {
   #if DEBUG
     @AppStorage("koa.debug.map") private var debugMap = false
     /// Đo hiệu năng (`-koaBench`): Koa luôn đứng, để số đo không phụ thuộc giờ trong ngày.
-    private var benchEmotion: KoaEmotion.Emotion? { KoaDirectorDriver.bench == nil ? nil : .idle }
+    private var benchEmotion: KoaEmotion.Emotion? { [nil, .live].contains(KoaDirectorDriver.bench) ? nil : .idle }
   #else
     private var benchEmotion: KoaEmotion.Emotion? { nil }
   #endif
@@ -229,8 +229,10 @@ struct MascotRoomView: View {
           boardStat = (RoomBoard.Stat(rawValue: boardStat) ?? .rank).next.rawValue
         },
         dust: devDust ?? dust?.level ?? 0, walks: true,
-        // (c) tự hào: chỉ khi buổi tập hôm nay đã ghi thật (Gains đọc từ lịch sử tập)
-        proudKey: room.gains.lastSession == room.today ? "\(room.userId)|\(room.today)" : nil)
+        // sự kiện thật cho ký ức của Koa; Gains chưa tải xong thì chưa có gì để nói
+        companion: room.gains == .zero
+          ? nil : KoaCompanion.Facts(gains: room.gains, today: room.today, mood: moodRead.reason),
+        userId: room.userId)
         .sensoryFeedback(.selection, trigger: boardStat)
         // Nằm thẳng trên nền, không thẻ, không viền (Kiệt 24/10): tràn ngang màn,
         // mép trên / dưới / hai bên tan vào nền trang.
@@ -325,12 +327,13 @@ struct MascotRoomView: View {
   }
 
   /// Nét mặt của ngày (Koa đợt 1) — CÙNG bộ máy với Koa ở Hôm nay.
-  private var mood: KoaEmotion.Emotion {
+  private var mood: KoaEmotion.Emotion { moodRead.emotion }
+
+  private var moodRead: KoaMood.Read {
     KoaToday.read(
       room: room, localWaterMl: nil, profile: profile?.profile,
       riskHour: KoaToday.riskHour(services.habitHours, userId: room.userId),
-      hour: Calendar.current.component(.hour, from: .now)
-    ).emotion
+      hour: Calendar.current.component(.hour, from: .now))
   }
 
   // MARK: - Thẻ tóm tắt (kiểu Apple Health, 24/10)
@@ -856,21 +859,21 @@ struct MascotStage: View {
   /// đồ vật, tự hào khi có buổi tập thật; chạm sàn thì đi tới đó. Chỉ phòng linh vật; cửa
   /// hàng giữ Koa đứng trên bục.
   var walks = false
-  /// Có buổi tập hoàn thành thật hôm nay và chưa ăn mừng (`nil` = không có / đã ăn mừng).
-  var proudKey: String?
+  /// Sự thật của ngày cho ký ức của Koa (`nil` = chưa có dữ liệu).
+  var companion: KoaCompanion.Facts?
+  /// Chủ của ký ức.
+  var userId = ""
 
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Environment(\.scenePhase) private var scenePhase
   @State private var director = KoaDirectorDriver()
   #if DEBUG
-    private var benchMode: Bool { KoaDirectorDriver.bench != nil }
+    private var benchMode: Bool { ![nil, .live].contains(KoaDirectorDriver.bench) }
   #else
     private var benchMode: Bool { false }
   #endif
   /// Lần cuối người xem ở phòng (giây epoch) — quyết định chào hay chỉ nhìn.
   @AppStorage("koa.room.seen") private var seenAt = 0.0
-  /// Ngày đã ăn mừng buổi tập (một lần mỗi ngày, không spam).
-  @AppStorage("koa.proud.done") private var proudDone = ""
   #if DEBUG
     /// Lớp debug: sân khấu, sàn, vùng chặn, chỗ ghé, đích, đường đi, hành vi (chỉ bản Debug).
     @AppStorage("koa.debug.map") private var debugMap = false
@@ -932,6 +935,11 @@ struct MascotStage: View {
     walks && KoaEmotion.state(emotion).pose == .idle
   }
 
+  /// Cảm xúc là dáng ngồi mà Koa chưa về tới bục: vẫn đứng và đi về, tới nơi mới ngồi.
+  private var shownEmotion: KoaEmotion.Emotion {
+    walks && !canWalk && !director.settled ? .idle : emotion
+  }
+
   var body: some View {
     // không có dòng "Cấp N" dưới sân khấu (RN cũng không) — thẻ cấp ngay dưới nói rồi
     StudioBackdrop(options: backdrop)
@@ -954,10 +962,27 @@ struct MascotStage: View {
     .onScrollVisibilityChange(threshold: 0.2) { onScreen = $0 }
     // cuộn xuống đọc thẻ (sân khấu khuất quá nửa): Koa không đi lại, không kéo mắt khỏi nội dung
     .onScrollVisibilityChange(threshold: 0.6) { director.context.quiet = !$0 }
+    .onChange(of: companion, initial: true) { _, facts in
+      if walks, !benchMode { director.sync(facts, userId: userId) }
+      settle()
+    }
+    .onChange(of: canWalk) { settle() }
     .onAppear { arrive() }
-    .onDisappear { seenAt = Date.now.timeIntervalSince1970 }
+    .onDisappear {
+      seenAt = Date.now.timeIntervalSince1970
+      director.save()
+    }
     .onChange(of: scenePhase) { _, phase in
-      if phase == .active { arrive() } else { seenAt = Date.now.timeIntervalSince1970 }
+      if phase == .active {
+        arrive()
+      } else {
+        seenAt = Date.now.timeIntervalSince1970
+        director.save()
+      }
+    }
+    // vừa dọn phòng: Koa ngoái nhìn kệ
+    .onChange(of: dust) { old, new in
+      if new < old, !reduceMotion { director.request(.look("shelf")) }
     }
     .overlay {
       if let onBoard {
@@ -966,11 +991,22 @@ struct MascotStage: View {
     }
   }
 
+  /// Tới giờ ngồi: Koa tự đi về bục. Giảm chuyển động thì đứng ngay ở đó, không đi.
+  private func settle() {
+    guard walks else { return }
+    director.context.settle = !canWalk
+    if !canWalk, reduceMotion, !director.settled { director.place(KoaRoomMap.stageMark) }
+  }
+
   /// Vùng chạm đúng khung bảng số (`270, 245`, 102 × 62 trong toạ độ phòng).
   private func boardButton(_ width: CGFloat, action: @escaping () -> Void) -> some View {
     let k = width / StudioScene.width
     let b = studio.board
-    return Button(action: action) {
+    return Button {
+      action()
+      // số trên bảng vừa đổi: Koa ngoái nhìn
+      if !reduceMotion { director.request(.look("board")) }
+    } label: {
       Color.clear.contentShape(Rectangle())
     }
     .buttonStyle(.plain)
@@ -1036,17 +1072,10 @@ struct MascotStage: View {
   }
 
   private func step(_ date: Date) -> KoaDirector.Frame {
-    let today = proudKey ?? ""
     director.context.canWalk = canWalk
     let hour = Calendar.current.component(.hour, from: date)
     director.context.night = hour >= 22 || hour < 6
-    director.context.workoutToday = proudKey != nil && proudDone != today
-    let f = director.step(date, heroWidth: Self.heroWidth * levelScale)
-    if f.behavior == KoaDirector.Kind.proud.rawValue, let key = proudKey, proudDone != key {
-      // ghi ngay khi bắt đầu ăn mừng — mở lại phòng hôm nay không ăn mừng lần nữa
-      Task { @MainActor in proudDone = key }
-    }
-    return f
+    return director.step(date, heroWidth: Self.heroWidth * levelScale)
   }
 
   /// Đồ vật đứng TRƯỚC Koa (Koa ở sàn, sau chân đồ): vẽ lại đúng phần ảnh của căn phòng
@@ -1078,16 +1107,18 @@ struct MascotStage: View {
     let left: Double = x * k - size / 2
     let top: Double = y * k - size * KoaMath.aspect + 6 * k
     return MascotFigureView(
-      emotion: emotion, equipped: equipped, gesture: gesture, size: size, build: build, interactive: true,
+      emotion: shownEmotion, equipped: equipped, gesture: gesture, size: size, build: build, interactive: true,
       walks: walks, direct: direct,
       // chạm Koa: Koa vẫn nhảy lên như cũ, rồi quay sang chào người xem
       onTap: walks && !reduceMotion
         ? {
           director.boost()
+          director.touched()
           director.request(.greet)
         } : nil,
       // phòng: Koa theo đồng hồ của sân khấu (một đồng hồ, không vẽ hai lần)
-      date: walks ? date : nil, onTouch: walks ? { director.boost() } : nil)
+      date: walks ? date : nil, onTouch: walks ? { director.boost() } : nil,
+      idleClock: walks ? director.frame?.idleClock : nil)
       .scaleEffect(levelScale * scale, anchor: .bottom)
       // reduceMotion: giá trị không đổi thì không gật
       .keyframeAnimator(initialValue: Nod(), trigger: reduceMotion ? 0 : celebrateSignal) { view, v in
@@ -1148,8 +1179,8 @@ enum StudioPlans {
     let p = KoaPaint.plan(KoaRender.Element("Svg", kids: build()))
     cache[k] = p
     order.append(k)
-    // lá rung tạo một bộ tuỳ chọn mỗi khung: chỉ giữ vài bản gần nhất
-    if order.count > 12 { cache[order.removeFirst()] = nil }
+    // lá rung tạo vài chục bộ tuỳ chọn (bậc 0,25°): giữ đủ để một đợt rung dùng lại, có chặn
+    if order.count > 64 { cache[order.removeFirst()] = nil }
     return p
   }
 }

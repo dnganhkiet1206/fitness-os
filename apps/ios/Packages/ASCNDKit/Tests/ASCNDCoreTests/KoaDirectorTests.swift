@@ -168,7 +168,7 @@ struct KoaDirectorTests {
     }
     #expect(proud == 0)
     var ctx = KoaDirector.Context()
-    ctx.workoutToday = true
+    ctx.moment = .workout
     Self.run(&d, 120, ctx: ctx) { f, _ in
       if f.behavior == "proud", last != "proud" { proud += 1 }
       last = f.behavior

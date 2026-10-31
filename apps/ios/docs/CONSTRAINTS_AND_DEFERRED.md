@@ -342,8 +342,22 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - CPU simulator (bản Debug, `ASCNDCore` chưa `-O`, không so được với số 15–19 % ở trên): đi trên sàn với lớp che 35,1 % (2 lượt), đi trên bục 38,3 % (1 lượt); thêm kịch bản đo `-koaBench floor`. GPU NOT RUN (simulator không đo được). Thiết bị thật: NOT RUN.
 - `KoaPerfTests.figureFrameBudget` hết chập chờn khi chạy song song. `SignOutTimeoutTests` đỏ một lần khi máy bận (81 giây, ngưỡng 60), chạy riêng xanh; test đo thời gian thật, không liên quan Koa, chưa sửa.
 
+**Koa — ký ức, khí sắc, đạo diễn chấm điểm (30/10, nhánh `claude/koa-evolution`, nhiệm vụ "Koa Evolution" của Kiệt):**
+- `KoaCompanion` (mới): `Facts` chỉ đọc sự thật có sẵn (Gains, `KoaSchedule.comebackKey`, `KoaMood`, ngày nghỉ); `Memory` lưu theo tài khoản (`koa.companion.<userId>`, thay `koa.proud.done`); `Affect` (năng lượng, tự hào, gần gũi) tính ra theo giờ thật nên không reset khi đổi màn. Không có trục nào giảm vì nghỉ tập. Khoảnh khắc: quay lại, lên hạng, kỷ lục, buổi tập; mỗi cái một lần theo khoá, một buổi chỉ ăn mừng một lần, sân khấu khuất thì đợi.
+- Đạo diễn chấm điểm (Utility AI, viết trong `ASCNDCore`): sức, tự hào, ngày nghỉ, giờ, khoảng cách, độ mới theo thời gian. **Sửa lỗi:** chuỗi hành vi trước đây là vòng 6 bước lặp mãi, xoay đúng thứ tự đồ vật; có test `noMechanicalLoop` 8 hạt.
+- Nhận thức phòng: mệt / ngày nghỉ thì nghỉ cạnh cửa sổ và nhìn ra ngoài; đổi số trên bảng thì ngoái nhìn bảng, dọn phòng thì nhìn kệ; vừa được chạm thì ở yên 12 giây; chỗ đứng còn nhớ 30 phút.
+- **Kiệt báo: Koa ngồi thiền ngay sau chân kệ.** Do ký ức chỗ đứng. Tới giờ ngủ / thiền Koa giờ đi về bục với mặt lim dim, tới nơi mới ngồi (`Context.settle`). Sân khấu khuất thì đợi; Giảm chuyển động thì đứng ngay ở bục. **Phòng ngủ riêng chưa làm:** tranh mới, cần mock Kiệt duyệt.
+- Cơ thể: đồng hồ nhịp nghỉ co giãn (thở nhanh sau khi đi, chậm khi ít sức, không đều nhẹ); giật tai vào lúc không đều, bỏ chu kỳ 6,4 giây trong phòng; tai dựng / cụp theo khí sắc. Không thêm hình.
+- `cheer` là dáng giữa không trung: chỉ dùng khi lên hạng và rút còn ~1 giây; kỷ lục dùng `taDa`.
+- Lá rung: độ lệch theo bậc 0,25°, bộ đệm kế hoạch vẽ 12 → 64 bản. Không đo được riêng phần này trên simulator.
+- CPU simulator (bản Debug, cùng cách đo với mục trên): sàn 31,1 %, bục 37,0 %, bộ nhớ 104 MB; trước đợt này 35,1 %, 38,3 %. Không thấy hồi quy, chênh lệch nằm trong nhiễu máy. `director.step` 0,048 ms ở Debug.
+- Cờ Debug: `-koaBench live` mở thẳng phòng, Koa chạy như thật; `-koaMoment record|rankUp|workout|comeback` xem khoảnh khắc, không ghi ký ức.
+- **Đánh giá mã nguồn mở (số liệu GitHub 30/10), không thêm dependency nào:** Rive (MIT) và Lottie (Apache-2.0) cần vẽ lại Koa thành rig / JSON, đụng art của Kiệt và bỏ pipeline vector theo trang phục. Thư viện Utility AI / Behavior Tree cho Swift: không có gì đáng dùng (0 sao, ngừng từ 2024); GameplayKit không build trên Linux nên không vào `ASCNDCore` được. IK: chân Koa đã ghim bằng foot planting, không cần thêm. swift-snapshot-testing (MIT): vẫn chưa tích hợp, lỗi kiểu #754 cần so tầng SwiftUI trong app, chưa có hạ tầng test tầng app. package-benchmark (Apache-2.0): phụ thuộc jemalloc, chưa cần. SVGKit, SVGView: đã có `KoaPaint` nhanh hơn cho đúng việc này.
+- **NOT RUN:** thiết bị thật; GPU; Reduce Motion chạy tay với chỗ đứng cũ; khoảnh khắc từ dữ liệu thật trên simulator (đã xem `record`, `rankUp`, `comeback` qua cờ `-koaMoment`, luồng dữ liệu thật chỉ có test); Koa về bục khi đổi từ ngày sang đêm lúc đang mở phòng (mới xem lúc mở phòng); test tự động tầng app; bản release (`swift test -c release` kẹt ở trình biên dịch như đã ghi).
+
 ## 5. Lịch sử thay đổi sổ
 
+- 30/10/2026: Koa có ký ức và khí sắc từ sự kiện thật, đạo diễn chấm điểm, hết vòng lặp 6 bước; tới giờ ngồi Koa về bục; đánh giá công cụ mã nguồn mở, không thêm dependency.
 - 30/10/2026: sửa lỗi đồ vật hiện lên khi Koa tới gần (lỗi do #754); lớp che trùng điểm ảnh với phòng, dời hai bậc lên bục.
 - 30/10/2026: Koa — đo lại CPU sau #756 (không hồi quy), kiểm khuất / nền trên simulator, ghi giới hạn Instruments trên simulator.
 - 30/10/2026: sửa nốt lỗi giật (mắt nhảy một khung, #754 chưa hết); thêm chuyển trọng tâm, follow-through đầu / tai, đung đưa khi đứng.

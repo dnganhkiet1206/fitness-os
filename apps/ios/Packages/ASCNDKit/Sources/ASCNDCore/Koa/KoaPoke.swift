@@ -15,10 +15,13 @@ extension KoaMath {
     public var lift: Double
     /// Hướng nhìn ngang (−1…1, đã nhân độ mạnh): hai tai nghiêng theo.
     public var lean: Double
-    public init(ms: Double? = nil, lift: Double = 0, lean: Double = 0) {
+    /// Tai giật lúc rảnh theo chu kỳ cố định. Phòng tắt đi: đạo diễn giật tai vào lúc không đều.
+    public var twitches: Bool
+    public init(ms: Double? = nil, lift: Double = 0, lean: Double = 0, twitches: Bool = true) {
       self.ms = ms
       self.lift = lift
       self.lean = lean
+      self.twitches = twitches
     }
   }
 
@@ -92,7 +95,7 @@ extension KoaMath {
   /// chỉ lắc tai ngoài, tai trong đứng yên lệch khỏi nó.
   public static func earMat(left: Bool, inner: Bool, _ p: Poke, t: Double) -> Mat? {
     let side = left ? -1.0 : 1.0
-    let deg = side * twitch(left: left, t) + earLean * p.lean
+    let deg = side * (p.twitches ? twitch(left: left, t) : 0) + earLean * p.lean
     var m: Mat? = deg == 0 ? nil : place(deg, left ? earPivotL.0 : earPivotR.0, left ? earPivotL.1 : earPivotR.1, 0, 0)
     if let f = p.ms.flatMap({ earMat(left: left, $0) }) { m = m.map { mul(f, $0) } ?? f }
     if inner, let track = KoaScene.keyframes[left ? "koaEarL" : "koaEarR"]?.tf, !track.isEmpty {
