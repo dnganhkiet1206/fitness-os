@@ -364,7 +364,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 
 **Phòng ngủ gác mái, bố cục tràn viền (31/10, nhánh `claude/koa-bedroom`, Kiệt duyệt mock `https://claude.ai/artifact/1Pbb3vPivNwQCzVpDGcque`):**
 - `KoaBedroom`: cảnh riêng dựng bằng vector, hai giao diện, tách lớp (phòng · đầu Koa · chăn · ánh trăng · viền tối). `KoaBedroomView`: tranh vẽ một lần; đầu Koa là hình sống (tai lay, tự giật), chăn phồng theo nhịp thở trôi nhẹ, ~23 giây một hơi sâu.
-- ~~Thân Koa nằm dưới chăn: chưa có hình thân nằm, chỉ dùng đầu thật. Muốn thấy thân cần vẽ tư thế mới.~~ 31/10: Kiệt báo Koa chỉ còn cái đầu. Đã thay bằng cả người thật (dáng ngồi xoay nằm cuộn tròn, Kiệt chọn mock C), chăn chỉ đắp chân, thân thở cùng chăn.
+- ~~Thân Koa nằm dưới chăn: chưa có hình thân nằm, chỉ dùng đầu thật. Muốn thấy thân cần vẽ tư thế mới.~~ 31/10: Kiệt báo Koa chỉ còn cái đầu. Đã thay bằng cả người thật (dáng ngồi xoay nằm cuộn tròn, Kiệt chọn mock C), thân thở cùng chăn. Cùng ngày Kiệt muốn chăn che người: chăn đắp tới cổ, nổi hình thân.
 - Tới giờ ngủ Koa đi tới cửa (`KoaRoomMap.door`), cửa mở hắt ánh vàng, khung hình lia ngang 1,1 giây sang gác mái. Dậy thì lia ngược lại, Koa đứng ở cửa. Giảm chuyển động: đặt ngay, không lia.
 - Cửa là hình mới trên tường phòng chính, cạnh kệ, theo storyboard. Chưa có cảnh đèn dịu dần như khung 1 của storyboard.
 - Bố cục mép A (Kiệt chọn): bỏ viền mờ, phòng tràn tới đỉnh màn, thẻ nội dung bo góc phủ lên sàn; bỏ tiêu đề lớn, tiêu đề chỉ hiện trên thanh điều hướng khi cuộn hết phòng; số xu lên thanh công cụ. Thay quyết định 24/10 "tan vào nền trang". Cửa hàng giữ nguyên `MascotStage` cũ.
@@ -373,6 +373,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 
 ## 5. Lịch sử thay đổi sổ
 
+- 31/10/2026: chăn đắp tới cổ Koa, nổi hình thân bên dưới.
 - 31/10/2026: Koa ngủ có đủ thân (dáng cuộn tròn trên giường), bỏ dáng chỉ có đầu; xoá NOT RUN "cuộn hiện tiêu đề" vì đã xem ở #761.
 - 31/10/2026: phòng ngủ gác mái, chuyển cảnh qua cửa, bố cục tràn viền thay viền mờ.
 - 30/10/2026: Koa ngủ theo giờ người dùng đặt trong hồ sơ (Hôm nay, phòng, widget); mock phòng ngủ gác mái chờ duyệt.
