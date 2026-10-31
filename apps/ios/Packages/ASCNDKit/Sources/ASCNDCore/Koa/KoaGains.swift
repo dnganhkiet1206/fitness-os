@@ -159,6 +159,11 @@ public enum KoaGains {
     /// Hôm nay là ngày nghỉ đã đặt.
     public var restToday = false
 
+    /// `missedDays` không tính hôm nay: buổi hôm nay chưa tập chưa phải là đã lỡ.
+    public func missedBefore(_ today: LocalDate) -> Int {
+      max(0, missedDays - (lastSession != today && !restToday ? 1 : 0))
+    }
+
     public static let zero = State(points: 0, peak: 0, missedDays: 0, lastSession: nil)
   }
 

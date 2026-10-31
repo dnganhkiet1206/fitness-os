@@ -30,7 +30,9 @@ struct KoaEmotionGoldenTests {
       let s = KoaEmotion.state(e)
       // Khác RN có chủ đích (20/10, Kiệt): `tired` / `sleep` ngồi thiền, mắt khép
       // (`meditate`) thay cho mắt mệt của RN. Dáng và đồ vẫn như RN.
-      let want = e == "tired" || e == "sleep" ? "meditate" : c["s"]?["expression"]?.stringValue
+      // 31/10: `worry` / `proud` / `oops` đổi mặt, không van nài, không trông chán, không trách.
+      let changed = ["tired": "meditate", "sleep": "meditate", "worry": "surprised", "proud": "grin", "oops": "happytired"]
+      let want = changed[e] ?? c["s"]?["expression"]?.stringValue
       #expect(s.expression.rawValue == want, "\(e)")
       #expect(s.pose.rawValue == c["s"]?["pose"]?.stringValue, "\(e)")
       #expect(s.outfit == Self.worn(c["s"]?["outfit"]), "\(e)")
