@@ -38,8 +38,9 @@ public enum KoaRoomMap {
   /// Chỗ đứng gần người xem: giữa, mép trước bục, không sát mép màn (dải mờ dưới cảnh).
   public static let user = Spot(.stage, 195, 450)
 
-  /// Tới giờ ngủ Koa đi tới đây rồi bắt đầu cảnh đi ngủ (`KoaBedtime`) sang phải.
-  public static let door = Spot(.floor, 170, 368)
+  /// Tới giờ ngủ Koa đi tới đây rồi bắt đầu cảnh đi ngủ (`KoaBedtime`) sang phải. Ở bên phải bục
+  /// để Koa đi một chiều, không vòng sang trái trước (Kiệt 31/10).
+  public static let door = Spot(.floor, 222, 368)
 
   /// Hai bậc lên / xuống bục ở phía sau, hai bên: điểm trên sàn ↔ điểm trên bục. Đặt đủ xa
   /// chân kệ và lá cây: Koa đổi lớp với đồ vật giữa cú nhảy, lúc ấy người không chồng lên đồ.

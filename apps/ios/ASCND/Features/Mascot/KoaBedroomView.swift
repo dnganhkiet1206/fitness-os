@@ -9,6 +9,8 @@ struct KoaBedroomView: View {
   var build = 0
   /// Mốc bắt đầu cảnh đi ngủ (`KoaBedtime`): chăn chờ Koa nhảy lên rồi mới kéo. `nil` = Koa ngủ sẵn.
   var scene: Date?
+  /// Mốc bắt đầu cảnh Koa dậy (`KoaWakeUp`): chăn gập lại, Koa rời giường.
+  var wake: Date?
 
   @Environment(\.colorScheme) private var scheme
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -31,15 +33,16 @@ struct KoaBedroomView: View {
       TimelineView(.animation(minimumInterval: 1.0 / 24, paused: reduceMotion || !onScreen || scenePhase != .active)) { tl in
         let now = tl.date.timeIntervalSinceReferenceDate
         let t = scene.map { tl.date.timeIntervalSince($0) } ?? .infinity
-        let cover01 = KoaBedtime.cover(at: t)
+        let up = wake.map { tl.date.timeIntervalSince($0) }
+        let cover01 = up.map(KoaWakeUp.cover(at:)) ?? KoaBedtime.cover(at: t)
         // thở: nhịp hơi trôi cho khỏi đều; mỗi ~23 giây một hơi sâu
         let phase = now * 2 * .pi / Self.breath + 0.4 * sin(now * 0.13)
         let sigh = 1 + 0.9 * pow(max(0, sin(now * 2 * .pi / 23)), 24)
         let s = reduceMotion ? 0 : sin(phase) * sigh * cover01
         ZStack(alignment: .topLeading) {
           back.equatable()
-          KoaBedroomLayer(plan: Self.plan(KoaBedroom.live(t: reduceMotion ? 0 : now, light: light, zzz: !reduceMotion && t >= KoaBedtime.end)))
-          if t >= KoaBedtime.land {
+          KoaBedroomLayer(plan: Self.plan(KoaBedroom.live(t: reduceMotion ? 0 : now, light: light, zzz: !reduceMotion && t >= KoaBedtime.end && up == nil)))
+          if t >= KoaBedtime.land, (up ?? 0) < KoaWakeUp.blanket {
             sleeper(light: light, ms: reduceMotion ? 0 : now * 1000, breath: s, standing: cover01 < 0.85)
           }
           // chăn gập ở chân giường, Koa nằm xuống thì kéo lên
@@ -103,11 +106,11 @@ private struct KoaBedroomSleeper: View {
   }
 }
 
-/// Koa trong cảnh đi ngủ (`KoaBedtime`), từ lúc rời sàn sân khấu tới lúc chạm giường. Vẽ cùng một
-/// đường với lúc ngủ, nên hình không đổi khi sang tay `KoaBedroomView`.
+/// Koa trong cảnh đi ngủ / cảnh dậy, lúc không nằm dưới chăn. Vẽ cùng một đường với lúc ngủ, nên hình
+/// không đổi khi sang tay `KoaBedroomView`.
 struct KoaBedtimeActor: View {
   let start: Date
-  let clock: KoaBedtimeClock
+  let clock: KoaSceneClock
   var equipped: [String] = []
   var build = 0
 
@@ -116,8 +119,9 @@ struct KoaBedtimeActor: View {
   var body: some View {
     let light = scheme == .light
     TimelineView(.animation(minimumInterval: 1.0 / 60)) { tl in
-      let shot = clock.shot(at: tl.date.timeIntervalSince(start))
+      let current = clock.shot(at: tl.date.timeIntervalSince(start))
       Canvas { ctx, canvas in
+        guard let shot = current else { return }
         var c = ctx
         let k = canvas.width / StudioScene.width
         c.concatenate(CGAffineTransform(scaleX: k, y: k))
@@ -141,11 +145,18 @@ struct KoaBedtimeActor: View {
   }
 }
 
-/// Ô nhớ của `KoaBedtime` giữa các khung (như `KoaDirectorDriver`, không phải trạng thái của view).
+/// Ô nhớ của cảnh giữa các khung (như `KoaDirectorDriver`, không phải trạng thái của view).
 @MainActor
-final class KoaBedtimeClock {
-  private var scene = KoaBedtime()
-  func shot(at t: Double) -> KoaBedtime.Shot { scene.shot(at: t) }
+final class KoaSceneClock {
+  private var bedtime = KoaBedtime()
+  private var waking: KoaWakeUp?
+
+  init(waking: Bool = false) { self.waking = waking ? KoaWakeUp() : nil }
+
+  func shot(at t: Double) -> KoaBedtime.Shot? {
+    if waking != nil { return waking?.shot(at: t) }
+    return bedtime.shot(at: t)
+  }
 }
 
 /// Một lớp tranh, `Equatable`: đồng hồ nhịp thở chạy mà tranh không đổi thì không vẽ lại.

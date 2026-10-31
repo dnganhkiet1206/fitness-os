@@ -497,6 +497,59 @@ import Testing
     #expect(abs(after - 138 * 0.87 / 240) < 0.001)
   }
 
+  private func wake() -> [KoaBedtime.Shot] {
+    var w = KoaWakeUp()
+    let times = Array(stride(from: KoaWakeUp.blanket, to: KoaWakeUp.end, by: 1.0 / 60)) + [KoaWakeUp.end]
+    return times.compactMap { w.shot(at: $0) }
+  }
+
+  /// Dậy khớp với đi ngủ: rời giường từ đúng chỗ nằm, về đúng chỗ Koa đứng trên sân khấu.
+  @Test func wakeStartsInBedAndEndsAtTheStageSpot() {
+    var w = KoaWakeUp()
+    #expect(w.shot(at: 0.1) == nil)
+    let shots = wake(), bed = KoaBedroom.sleeper
+    #expect(abs(shots[0].x - bed.x) < 1 && abs(shots[0].y - bed.y) < 2 && abs(shots[0].angle - bed.angle) < 1)
+    var b = KoaBedtime()
+    let start = b.shot(at: 0), end = shots[shots.count - 1]
+    #expect(abs(end.x - start.x) < 1 && abs(end.y - start.y) < 1 && abs(end.scale - start.scale) < 0.001)
+    #expect(end.angle == 0)
+  }
+
+  /// Đi về: từ phải sang trái, ngược chiều lúc đi ngủ, không nhảy cóc.
+  @Test func wakeWalksRightToLeft() {
+    let shots = wake()
+    let air = Int(0.75 * 60)
+    #expect(zip(shots[air...], shots[(air + 1)...]).allSatisfy { $1.x <= $0.x })
+    #expect(shots.contains { ($0.walk?.weight ?? 0) > 0.5 })
+    for (a, b) in zip(shots, shots.dropFirst()) {
+      #expect(hypot(b.x - a.x, b.y - a.y) < 14)
+      #expect(abs(b.angle - a.angle) < 6)
+    }
+  }
+
+  /// Từ bục đi tới chỗ bắt đầu cảnh: không vòng sang trái, và bước đầu của cảnh đã nhìn sang phải.
+  @Test(arguments: [UInt64(1), 2, 3, 5]) func bedtimeGoesOneWay(seed: UInt64) {
+    var d = KoaDirector.Director(seed: seed)
+    var ctx = KoaDirector.Context()
+    ctx.canWalk = false
+    ctx.settle = true
+    ctx.bedtime = true
+    var left = KoaRoomMap.stageMark.x
+    for _ in 0..<(60 * 40) {
+      let f = d.step(1.0 / 60, ctx: ctx)
+      left = min(left, f.x)
+      if f.settled { break }
+    }
+    #expect(left >= KoaRoomMap.stageMark.x - 2)
+    var b = KoaBedtime()
+    #expect((b.shot(at: 0).walk?.turn ?? 0) > 0.9)
+  }
+
+  @Test func blanketFoldsBackOnWaking() {
+    #expect(KoaWakeUp.cover(at: 0) == 1)
+    #expect(KoaWakeUp.cover(at: KoaWakeUp.blanket) == 0)
+  }
+
   @Test func blanketComesUpAfterLanding() {
     #expect(KoaBedtime.cover(at: KoaBedtime.land) == 0)
     #expect(KoaBedtime.cover(at: KoaBedtime.end) == 1)
