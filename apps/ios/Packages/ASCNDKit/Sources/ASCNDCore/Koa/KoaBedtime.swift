@@ -52,7 +52,9 @@ public struct KoaBedtime: Sendable {
     t.apply(Self.hurry)
     walker = KoaWalk.Walker(
       x: 0, y: KoaRoomMap.stageMark.d, floor: KoaWalk.Floor(minX: -1e5, maxX: 1e5, minY: -1e5, maxY: 1e5), tuning: t)
+    // `place` đặt người quay sẵn sang phải: bước đầu không ngoảnh từ giữa
     walker.faceTurn = 1
+    walker.place(at: 0, KoaRoomMap.stageMark.d)
     // đi tại chỗ: `walker` chỉ cho dáng chân, chỗ đứng trên màn tính theo thời gian
     walker.walk(to: Self.hurry.maxSpeed * (Self.arrive - 0.55), KoaRoomMap.stageMark.d)
   }
@@ -94,5 +96,64 @@ public struct KoaBedtime: Sendable {
       x: head.x + (bed.x - head.x) * e,
       y: head.y + 9 * (1 - e) + (bed.y - head.y) * e - 92 * 4 * u * (1 - u),
       scale: s + (bed.scale - s) * e, angle: bed.angle * Self.smooth((u - 0.25) / 0.75), walk: walker.pose, eyesClosed: u > 0.35)
+  }
+}
+
+/// Cảnh Koa dậy, ngược chiều `KoaBedtime`: chăn gập về chân giường, Koa nhảy xuống, đi từ phải sang
+/// trái, phòng trôi ngược lại, mảng tường lướt qua, về đúng chỗ đứng trên sân khấu.
+public struct KoaWakeUp: Sendable {
+  /// Chăn gập xong: từ đây Koa do cảnh vẽ, phòng ngủ không vẽ nữa.
+  public static let blanket = 0.42
+  static let air = 0.6
+  /// Koa chạm sàn, đứng một nhịp rồi khung hình mới lia.
+  public static var lead: Double { blanket + air + 0.14 }
+  public static var end: Double { lead + KoaBedtime.pan }
+
+  var walker: KoaWalk.Walker
+  var last = 0.0
+  var walking = false
+
+  public init() {
+    var t = KoaWalk.Tuning()
+    t.heroWidth = KoaBedtime.heroWidth
+    t.apply(KoaBedtime.hurry)
+    walker = KoaWalk.Walker(
+      x: 0, y: KoaRoomMap.stageMark.d, floor: KoaWalk.Floor(minX: -1e5, maxX: 1e5, minY: -1e5, maxY: 1e5), tuning: t)
+    walker.faceTurn = -1
+    walker.place(at: 0, KoaRoomMap.stageMark.d)
+  }
+
+  /// Chăn: 1 đắp … 0 gập ở chân giường.
+  public static func cover(at t: Double) -> Double { 1 - KoaBedtime.smooth(t / blanket) }
+
+  /// `nil` khi Koa còn nằm dưới chăn (phòng ngủ tự vẽ).
+  public mutating func shot(at t: Double) -> KoaBedtime.Shot? {
+    guard t >= Self.blanket else { return nil }
+    if t >= Self.blanket + Self.air, !walking {
+      walking = true
+      // đi tại chỗ, chỗ đứng trên màn tính theo thời gian (như `KoaBedtime`)
+      walker.walk(to: -KoaBedtime.hurry.maxSpeed * (KoaBedtime.pan - 0.45), KoaRoomMap.stageMark.d)
+    }
+    if t > last {
+      walker.step(t - last)
+      last = t
+    }
+    if t > Self.end - 0.3 { walker.faceTurn = 0 }
+    let b = KoaBedtime.self
+    let p = (t - Self.lead) / b.pan
+    let m = 1 - b.smooth((p - 0.42) / 0.16)
+    let door = KoaRoomMap.screenY(b.from)
+    let feet = door + (b.bedroomY - door) * m
+    let depth = KoaRoomMap.scale(b.from.d) + (b.bedroomScale - KoaRoomMap.scale(b.from.d)) * m
+    let s = b.heroWidth * depth / 240
+    let x = b.toX + (b.from.x - b.toX) * b.smooth(p)
+    let head = (x: x, y: feet - b.headToFeet * s)
+    let u = min(1, (t - Self.blanket) / Self.air)
+    guard u < 1 else { return .init(x: head.x, y: head.y, scale: s, angle: 0, walk: walker.pose, eyesClosed: false) }
+    let bed = KoaBedroom.sleeper
+    let e = b.smooth(u)
+    return .init(
+      x: bed.x + (head.x - bed.x) * e, y: bed.y + (head.y - bed.y) * e - 70 * 4 * u * (1 - u),
+      scale: bed.scale + (s - bed.scale) * e, angle: bed.angle * (1 - b.smooth(u / 0.75)), walk: walker.pose, eyesClosed: u < 0.3)
   }
 }

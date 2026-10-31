@@ -875,7 +875,13 @@ struct MascotStage: View {
   @State private var onScreen = true
   /// Cảnh đi ngủ đang chạy (`KoaBedtime`): mốc bắt đầu, và Koa của cảnh cho tới lúc chạm giường.
   @State private var bedScene: Date?
-  @State private var bedClock: KoaBedtimeClock?
+  @State private var bedClock: KoaSceneClock?
+  /// Cảnh Koa dậy đang chạy (`KoaWakeUp`).
+  @State private var wakeScene: Date?
+  @State private var wakeClock: KoaSceneClock?
+  /// Phòng ngủ đang hiện. Tách khỏi `inBedroom`: dậy rồi phòng ngủ còn ở lại tới khi Koa xuống giường.
+  @State private var bedShown = false
+  @AppStorage(KoaBedroomView.lampKey) private var lampOff = false
   @State private var seenBed = false
   @Environment(\.colorScheme) private var scheme
   @Environment(\.locale) private var locale
@@ -943,7 +949,8 @@ struct MascotStage: View {
   var body: some View {
     // không có dòng "Cấp N" dưới sân khấu (RN cũng không) — thẻ cấp ngay dưới nói rồi
     let tail = walks ? KoaBedroom.tail : 0
-    let asleep = inBedroom
+    let asleep = bedShown
+    let koaAway = bedShown || wakeScene != nil
     ZStack {
       StudioBackdrop(options: backdrop)
         .overlay {
@@ -952,7 +959,7 @@ struct MascotStage: View {
               if walks {
                 floorTaps(g.size.width)
                 // Koa của sân khấu nhường chỗ ngay cho Koa của cảnh đi ngủ, không trôi theo phòng
-                livingHero(g.size.width).opacity(asleep ? 0 : 1).animation(nil, value: asleep)
+                livingHero(g.size.width).opacity(koaAway ? 0 : 1).animation(nil, value: koaAway)
               } else {
                 hero(g.size.width)
               }
@@ -962,9 +969,13 @@ struct MascotStage: View {
         .background(walks ? Self.floorEdge(light: scheme == .light) : .clear)
         // lia ngang: Koa đi sang phải, phòng trôi sang trái
         .visualEffect { content, proxy in content.offset(x: asleep ? -proxy.size.width : 0) }
-      if asleep { KoaBedroomView(equipped: equipped, build: build, scene: bedScene).transition(.move(edge: .trailing)) }
+      if asleep { KoaBedroomView(equipped: equipped, build: build, scene: bedScene, wake: wakeScene).transition(.move(edge: .trailing)) }
       if let bedScene, let bedClock {
         KoaBedtimeActor(start: bedScene, clock: bedClock, equipped: equipped, build: build)
+          .transition(.identity)
+      }
+      if let wakeScene, let wakeClock {
+        KoaBedtimeActor(start: wakeScene, clock: wakeClock, equipped: equipped, build: build)
           .transition(.identity)
       }
       // mảng tường ở tiền cảnh, trôi nhanh hơn phòng và che chỗ đổi phòng
@@ -979,15 +990,37 @@ struct MascotStage: View {
       }
     }
     .clipped()
-    .animation(reduceMotion ? nil : asleep ? .timingCurve(0.42, 0, 0.58, 1, duration: KoaBedtime.pan) : .easeInOut(duration: 1.1), value: asleep)
-    .onChange(of: asleep) { _, now in
-      // chỉ lúc Koa vừa tự đi tới; mở phòng giữa giờ ngủ thì Koa đã nằm sẵn
-      guard now, !reduceMotion else {
+    .animation(reduceMotion ? nil : .timingCurve(0.42, 0, 0.58, 1, duration: KoaBedtime.pan), value: asleep)
+    .onChange(of: inBedroom, initial: true) { old, now in
+      if now {
+        wakeScene = nil
+        wakeClock = nil
+        bedShown = true
+        // chỉ lúc Koa vừa tự đi tới; mở phòng giữa giờ ngủ thì Koa đã nằm sẵn
+        guard old != now, !reduceMotion else { return }
+        bedClock = KoaSceneClock()
+        bedScene = .now
+      } else if bedShown {
         bedScene = nil
-        return
+        bedClock = nil
+        guard !reduceMotion else {
+          bedShown = false
+          return
+        }
+        wakeClock = KoaSceneClock(waking: true)
+        wakeScene = .now
       }
-      bedClock = KoaBedtimeClock()
-      bedScene = .now
+    }
+    .task(id: wakeScene) {
+      guard wakeScene != nil else { return }
+      // Koa xuống giường xong khung hình mới lia về, Koa đi cùng
+      try? await Task.sleep(for: .seconds(KoaWakeUp.lead))
+      guard !Task.isCancelled else { return }
+      bedShown = false
+      try? await Task.sleep(for: .seconds(KoaBedtime.pan))
+      guard !Task.isCancelled else { return }
+      wakeScene = nil
+      wakeClock = nil
     }
     .task(id: bedScene) {
       guard bedScene != nil else { return }
@@ -1002,6 +1035,9 @@ struct MascotStage: View {
     .accessibilityAction(named: Text("mr.walk.a11y")) {
       guard canWalk else { return }
       if reduceMotion { director.place(KoaRoomMap.user) } else { director.request(.greet) }
+    }
+    .accessibilityAction(named: Text(lampOff ? "mr.lamp.on.a11y" : "mr.lamp.off.a11y")) {
+      if bedShown { lampOff.toggle() }
     }
     .onScrollVisibilityChange(threshold: 0.2) { onScreen = $0 }
     // cuộn xuống đọc thẻ (sân khấu khuất quá nửa): Koa không đi lại, không kéo mắt khỏi nội dung
@@ -1100,7 +1136,7 @@ struct MascotStage: View {
   /// Koa sống trong phòng theo `KoaDirectorDriver`. Giảm chuyển động / rời màn / app ra
   /// nền: đồng hồ dừng, Koa đứng nguyên chỗ (như trước khi có đạo diễn).
   private func livingHero(_ width: CGFloat) -> some View {
-    let running = !reduceMotion && onScreen && scenePhase == .active && !inBedroom
+    let running = !reduceMotion && onScreen && scenePhase == .active && !inBedroom && !bedShown && wakeScene == nil
     return TimelineView(.animation(minimumInterval: director.moving ? 1.0 / 60 : 1.0 / 30, paused: !running)) { tl in
       let f = running ? step(tl.date) : director.frame
       // đồng hồ dừng và Koa vừa được đặt chỗ mới (Giảm chuyển động): đứng ở đó

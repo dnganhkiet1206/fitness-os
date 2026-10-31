@@ -368,14 +368,17 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Tới giờ ngủ Koa đi tới cửa (`KoaRoomMap.door`), cửa mở hắt ánh vàng, khung hình lia ngang 1,1 giây sang gác mái. Dậy thì lia ngược lại, Koa đứng ở cửa. Giảm chuyển động: đặt ngay, không lia.
 - Cửa là hình mới trên tường phòng chính, cạnh kệ, theo storyboard. Chưa có cảnh đèn dịu dần như khung 1 của storyboard.
 - Bố cục mép A (Kiệt chọn): bỏ viền mờ, phòng tràn tới đỉnh màn, thẻ nội dung bo góc phủ lên sàn; bỏ tiêu đề lớn, tiêu đề chỉ hiện trên thanh điều hướng khi cuộn hết phòng; số xu lên thanh công cụ. Thay quyết định 24/10 "tan vào nền trang". Cửa hàng giữ nguyên `MascotStage` cũ.
-- Cảnh đi ngủ kiểu hoạt hình (31/10, nhánh `claude/koa-bedtime-scene`, `KoaBedtime`): Koa đi tới chỗ, đi từ trái sang phải, phòng trôi ngược lại, mảng tường lướt qua phía trước rồi sang gác mái; Koa khuỵu, nhảy lên giường, chăn kéo lên. Bỏ cánh cửa trên tường sân khấu. Dậy thì lia ngược 1,1 giây, chưa có cảnh Koa xuống giường. Mở phòng giữa giờ ngủ thì Koa đã nằm sẵn, không chạy lại cảnh. Giảm chuyển động: không có cảnh.
+- Cảnh đi ngủ kiểu hoạt hình (31/10, nhánh `claude/koa-bedtime-scene`, `KoaBedtime`): Koa đi tới chỗ, đi từ trái sang phải, phòng trôi ngược lại, mảng tường lướt qua phía trước rồi sang gác mái; Koa khuỵu, nhảy lên giường, chăn kéo lên. Bỏ cánh cửa trên tường sân khấu. ~~Dậy thì lia ngược 1,1 giây, chưa có cảnh Koa xuống giường.~~ 31/10: có cảnh dậy (`KoaWakeUp`): chăn gập, Koa nhảy xuống, đi từ phải sang trái về đúng chỗ đứng. Mở phòng giữa giờ ngủ thì Koa đã nằm sẵn, không chạy lại cảnh. Giảm chuyển động: không có cảnh.
 - Đồ động trong phòng ngủ (`KoaBedroom.live`): sao, mây, sao băng (ngày là chim), rèm, lá, dây đèn, đèn tường, bướm đêm, bụi, chữ z. Đổi lại phòng ngủ tốn hơn: ~15–18 % CPU trên simulator bản Debug, trước đó 5,4 %. Đây là `top` trên Debug, chưa đo Release hay máy thật.
+- Chạm đèn ngủ đầu giường để tắt / bật (31/10): phòng tối đi, dây đèn tắt theo, hết quầng sáng và bướm đêm; nhớ theo máy, không theo tài khoản. VoiceOver dùng hành động trên sân khấu.
 - Trong lúc lia, Koa đi tại chỗ nên chân có thể hơi trượt so với sàn đang trôi; mảng tường chỉ che một phần lúc đổi cỡ Koa.
 - CPU simulator (bản Debug): phòng ngủ 5,4 %, sân khấu ~31–37 %, bộ nhớ 108 MB.
 - **NOT RUN:** thiết bị thật; GPU (lớp `blur` ánh trăng, `scaleEffect` chăn); Reduce Motion chạy tay; VoiceOver với bố cục mới; hình cửa ở giao diện sáng.
 
 ## 5. Lịch sử thay đổi sổ
 
+- 31/10/2026: chạm đèn ngủ để tắt / bật.
+- 31/10/2026: cảnh Koa dậy, đi từ phòng ngủ về sân khấu.
 - 31/10/2026: cảnh đi ngủ kiểu hoạt hình, nhảy lên giường, đồ động trong phòng ngủ; bỏ cánh cửa.
 - 31/10/2026: chăn đắp tới cổ Koa, nổi hình thân bên dưới.
 - 31/10/2026: Koa ngủ có đủ thân (dáng cuộn tròn trên giường), bỏ dáng chỉ có đầu; xoá NOT RUN "cuộn hiện tiêu đề" vì đã xem ở #761.

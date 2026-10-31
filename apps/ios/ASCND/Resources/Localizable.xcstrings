@@ -15301,6 +15301,52 @@
     }
    }
   },
+  "mr.lamp.off.a11y": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Turn off the lamp"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tắt đèn ngủ"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Apagar la lámpara"
+     }
+    }
+   }
+  },
+  "mr.lamp.on.a11y": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Turn on the lamp"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bật đèn ngủ"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Encender la lámpara"
+     }
+    }
+   }
+  },
   "mr.level %lld": {
    "extractionState": "manual",
    "localizations": {
