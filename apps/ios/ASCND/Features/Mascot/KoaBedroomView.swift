@@ -1,9 +1,9 @@
 import ASCNDCore
 import SwiftUI
 
-/// Phòng ngủ gác mái (`KoaBedroom`): Koa thật đang ngủ. Tranh tĩnh vẽ một lần; đầu Koa là hình sống
-/// (tai lay, thỉnh thoảng giật), chăn phồng xẹp theo nhịp thở, lâu lâu thở dài. Giảm chuyển động
-/// thì đứng yên.
+/// Phòng ngủ gác mái (`KoaBedroom`): Koa thật đang ngủ. Tranh tĩnh vẽ một lần; Koa là hình sống
+/// (tai lay, thỉnh thoảng giật), thân và chăn phồng xẹp theo nhịp thở, lâu lâu thở dài. Giảm
+/// chuyển động thì đứng yên.
 struct KoaBedroomView: View {
   var equipped: [String] = []
   var build = 0
@@ -33,7 +33,7 @@ struct KoaBedroomView: View {
         let s = reduceMotion ? 0 : sin(phase) * sigh
         ZStack(alignment: .topLeading) {
           back.equatable()
-          head(light: light, ms: reduceMotion ? 0 : now * 1000).offset(x: 0.5 * s * k, y: -0.5 * s * k)
+          sleeper(light: light, ms: reduceMotion ? 0 : now * 1000, breath: s)
           cover.equatable()
             .scaleEffect(y: 1 + 0.006 * s, anchor: UnitPoint(x: 0.5, y: KoaBedroom.coverBottom / KoaBedroom.height))
           moon.equatable().blur(radius: 3.5 * k)
@@ -49,8 +49,8 @@ struct KoaBedroomView: View {
     KoaPaint.plan(KoaRender.Element("Svg", kids: kids))
   }
 
-  /// Đầu thật của Koa (dáng nhắm mắt).
-  private func head(light: Bool, ms: Double) -> KoaBedroomHead {
+  /// Koa thật, dáng ngồi nhắm mắt xoay nằm.
+  private func sleeper(light: Bool, ms: Double, breath: Double) -> KoaBedroomSleeper {
     var o = KoaRender.Options()
     o.expression = .meditate
     o.pose = .relaxing
@@ -66,33 +66,25 @@ struct KoaBedroomView: View {
     o.flat = light
     o.build = build
     o.worn = KoaEmotion.worn(equipped)
-    return KoaBedroomHead(plan: KoaPaint.plan(KoaRender.figure(o)))
+    return KoaBedroomSleeper(plan: KoaPaint.plan(KoaRender.figure(o)), breath: breath)
   }
 }
 
-/// Đầu Koa cắt ngang cổ, nghiêng trên gối.
-private struct KoaBedroomHead: View {
+/// Koa nằm cuộn trên gối; thở thì ngực nở theo chiều ngang của hình (đang xoay nằm nên thành lên xuống).
+private struct KoaBedroomSleeper: View {
   let plan: [KoaPaint.Op]
+  var breath = 0.0
 
   var body: some View {
     Canvas { ctx, canvas in
       var c = ctx
-      let h = KoaBedroom.head
+      let h = KoaBedroom.sleeper
       let k = canvas.width / StudioScene.width
       c.concatenate(CGAffineTransform(scaleX: k, y: k))
       c.translateBy(x: h.x, y: h.y)
       c.rotate(by: .degrees(h.angle))
-      c.scaleBy(x: h.scale, y: h.scale)
+      c.scaleBy(x: h.scale * (1 + 0.012 * breath), y: h.scale)
       c.translateBy(x: -h.anchorX, y: -h.anchorY)
-      var top = Path()
-      top.move(to: CGPoint(x: -10, y: -10))
-      top.addLine(to: CGPoint(x: 250, y: -10))
-      top.addLine(to: CGPoint(x: 250, y: KoaBedroom.headTop))
-      top.addCurve(
-        to: CGPoint(x: -10, y: KoaBedroom.headTop), control1: CGPoint(x: 200, y: KoaBedroom.headChin),
-        control2: CGPoint(x: 40, y: KoaBedroom.headChin))
-      top.closeSubpath()
-      c.clip(to: top)
       KoaCanvas.draw(plan, in: &c)
     }
   }
