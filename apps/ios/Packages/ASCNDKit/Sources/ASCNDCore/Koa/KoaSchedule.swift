@@ -19,17 +19,17 @@ public enum KoaSchedule {
 
   public static func phase(
     gains: KoaGains.State, lastSessionAt: EpochMillis?, now: EpochMillis, trainedToday: Bool,
-    plannedToday: Bool, hour: Int, habitHour: Int?
+    plannedToday: Bool, hour: Int, habitHour: Int?, minute: Int = 0, sleep: KoaMood.SleepWindow = .standard
   ) -> Phase? {
     if let last = lastSessionAt {
       let gap = Double(now.millis - last.millis)
       if gap >= 0, gap <= pumpMillis { return .pump }
     }
     if trainedToday { return nil }
-    // Đêm (22:00–06:00) Koa ngủ như Koa của ngày (`KoaMood.night`) — không đợi tập,
+    // Giờ ngủ của người này Koa ngủ như Koa của ngày (`KoaMood.night`) — không đợi tập,
     // không nhắc lỡ lịch lúc nửa đêm (20/10, chủ dự án: "11h27 tối còn đòi tập").
     // Vừa tập xong (`pump`) vẫn được khoe, ở trên.
-    if hour >= KoaMood.nightFrom || hour < KoaMood.morningFrom { return nil }
+    if sleep.contains(hour: hour, minute: minute) { return nil }
     if plannedToday, hour >= (habitHour ?? defaultHabitHour) { return .waiting }
     return nil
   }

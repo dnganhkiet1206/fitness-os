@@ -20,14 +20,15 @@ enum KoaToday {
   @MainActor
   static func read(
     room: MascotRoomController, localWaterMl: Int?, pending: TodayDay.Pending? = nil, profile: Profile?, riskHour: Double,
-    hour: Int
+    hour: Int, minute: Int = 0
   ) -> KoaMood.Read {
     KoaMood.read(
       .init(
         signals: TodayDay.merging(room.signals, localWaterMl: localWaterMl, pending: pending), stepsGoal: room.stepsGoal, hour: hour,
         streak: room.streak.count, loggedToday: room.streak.loggedToday, riskHour: riskHour,
         kcalTarget: profile.map { NutritionToday.calorieTarget($0) },
-        isBirthday: isBirthday(profile?.dob, today: room.today)))
+        isBirthday: isBirthday(profile?.dob, today: room.today), minute: minute,
+        sleep: KoaMood.SleepWindow(profile: profile)))
   }
 
   /// Câu riêng của Koa cho nét mặt này, có số thật; `nil` → câu "việc kế tiếp"

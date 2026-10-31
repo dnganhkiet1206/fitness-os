@@ -353,10 +353,18 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - CPU simulator (bản Debug, cùng cách đo với mục trên): sàn 31,1 %, bục 37,0 %, bộ nhớ 104 MB; trước đợt này 35,1 %, 38,3 %. Không thấy hồi quy, chênh lệch nằm trong nhiễu máy. `director.step` 0,048 ms ở Debug.
 - Cờ Debug: `-koaBench live` mở thẳng phòng, Koa chạy như thật; `-koaMoment record|rankUp|workout|comeback` xem khoảnh khắc, không ghi ký ức.
 - **Đánh giá mã nguồn mở (số liệu GitHub 30/10), không thêm dependency nào:** Rive (MIT) và Lottie (Apache-2.0) cần vẽ lại Koa thành rig / JSON, đụng art của Kiệt và bỏ pipeline vector theo trang phục. Thư viện Utility AI / Behavior Tree cho Swift: không có gì đáng dùng (0 sao, ngừng từ 2024); GameplayKit không build trên Linux nên không vào `ASCNDCore` được. IK: chân Koa đã ghim bằng foot planting, không cần thêm. swift-snapshot-testing (MIT): vẫn chưa tích hợp, lỗi kiểu #754 cần so tầng SwiftUI trong app, chưa có hạ tầng test tầng app. package-benchmark (Apache-2.0): phụ thuộc jemalloc, chưa cần. SVGKit, SVGView: đã có `KoaPaint` nhanh hơn cho đúng việc này.
-- **NOT RUN:** thiết bị thật; GPU; Reduce Motion chạy tay với chỗ đứng cũ; khoảnh khắc từ dữ liệu thật trên simulator (đã xem `record`, `rankUp`, `comeback` qua cờ `-koaMoment`, luồng dữ liệu thật chỉ có test); Koa về bục khi đổi từ ngày sang đêm lúc đang mở phòng (mới xem lúc mở phòng); test tự động tầng app; bản release (`swift test -c release` kẹt ở trình biên dịch như đã ghi).
+- **NOT RUN:** thiết bị thật; GPU; Reduce Motion chạy tay với chỗ đứng cũ; khoảnh khắc từ dữ liệu thật trên simulator (đã xem `record`, `rankUp`, `comeback` qua cờ `-koaMoment`, luồng dữ liệu thật chỉ có test); test tự động tầng app; bản release (`swift test -c release` kẹt ở trình biên dịch như đã ghi).
+
+**Koa ngủ theo giờ người dùng đặt (30/10, nhánh `claude/koa-sleep-schedule`, Kiệt yêu cầu):**
+- `KoaMood.SleepWindow` đọc `sleep_target_bedtime` / `sleep_target_waketime` của hồ sơ, chỉ khi có cờ `_set` (như màn Nhắc nhở: cột có mặc định trong DB, không có cờ thì không phải giờ của người dùng). Chưa đặt thì giữ 22:00–06:00. Không có cột mới, không migration.
+- Một khoảng ngủ dùng chung cho Koa ở Hôm nay, phòng linh vật, trạng thái theo lịch tập và widget (widget tự đổi lúc đi ngủ và lúc dậy khi app không mở). Tính theo phút, vắt qua nửa đêm được, ca đêm ngủ ban ngày cũng đúng. Koa trầm dần 60 phút trước giờ ngủ.
+- Phòng đang mở thì đồng hồ đọc lại mỗi 30 giây: tới giờ ngủ Koa tự đi về bục rồi ngồi.
+- `KoaMood.morningUntil` (11 giờ) và các giờ khác của câu nói vẫn cố định, chưa theo giờ dậy của người dùng.
+- **Phòng ngủ gác mái:** mock chờ Kiệt duyệt (`https://claude.ai/artifact/1Pbb3vPivNwQCzVpDGcque`), chưa vào app.
 
 ## 5. Lịch sử thay đổi sổ
 
+- 30/10/2026: Koa ngủ theo giờ người dùng đặt trong hồ sơ (Hôm nay, phòng, widget); mock phòng ngủ gác mái chờ duyệt.
 - 30/10/2026: Koa có ký ức và khí sắc từ sự kiện thật, đạo diễn chấm điểm, hết vòng lặp 6 bước; tới giờ ngồi Koa về bục; đánh giá công cụ mã nguồn mở, không thêm dependency.
 - 30/10/2026: sửa lỗi đồ vật hiện lên khi Koa tới gần (lỗi do #754); lớp che trùng điểm ảnh với phòng, dời hai bậc lên bục.
 - 30/10/2026: Koa — đo lại CPU sau #756 (không hồi quy), kiểm khuất / nền trên simulator, ghi giới hạn Instruments trên simulator.

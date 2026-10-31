@@ -159,7 +159,7 @@ public enum HomeWidgets {
 public struct KoaWidgetData: Codable, Sendable, Hashable {
   enum CodingKeys: String, CodingKey {
     case day, line, next, done, total, streak, nightLine, imageVersion, checks, nextQuest, waterTaps, short, level, gains
-    case weekDone, weekTarget
+    case weekDone, weekTarget, sleep
   }
 
   public init(from decoder: any Decoder) throws {
@@ -178,6 +178,7 @@ public struct KoaWidgetData: Codable, Sendable, Hashable {
     short = try c.decodeIfPresent(String.self, forKey: .short) ?? ""
     level = try c.decodeIfPresent(Int.self, forKey: .level) ?? 1
     gains = try c.decodeIfPresent(Int.self, forKey: .gains)
+    sleep = try c.decodeIfPresent(KoaMood.SleepWindow.self, forKey: .sleep)
     weekDone = try c.decodeIfPresent(Int.self, forKey: .weekDone)
     weekTarget = try c.decodeIfPresent(Int.self, forKey: .weekTarget)
   }
@@ -202,7 +203,7 @@ public struct KoaWidgetData: Codable, Sendable, Hashable {
     guard let weekDone, let weekTarget, weekTarget > 0 else { return nil }
     return "\(min(weekDone, weekTarget))/\(weekTarget)"
   }
-  /// Câu khi Koa đi ngủ (từ `nightHour`), đã dịch.
+  /// Câu khi Koa đi ngủ, đã dịch.
   public var nightLine: String
   /// Phiên bản ảnh — widget đọc lại ảnh khi số này đổi.
   public var imageVersion: Int
@@ -219,6 +220,8 @@ public struct KoaWidgetData: Codable, Sendable, Hashable {
   public var short = ""
   /// Số ly vừa thêm từ widget từ lần app ghi gần nhất (để widget nói "+1 ly").
   public var waterTaps = 0
+  /// Giờ ngủ của người dùng. Dữ liệu cũ không có → giờ mặc định.
+  public var sleep: KoaMood.SleepWindow?
 
   public init(
     day: String, line: String, next: String?, done: Int, total: Int, streak: Int, nightLine: String, imageVersion: Int,
@@ -236,19 +239,15 @@ public struct KoaWidgetData: Codable, Sendable, Hashable {
     self.imageVersion = imageVersion
   }
 
-  /// Koa đi ngủ lúc 22:00 (như `KoaMood.nightFrom`).
-  public static let nightHour = KoaMood.nightFrom
-
-  /// Widget nên hiện gì lúc `now`: dữ liệu cũ hơn hôm nay → `.stale`; từ 22 giờ
-  /// (hoặc trước 6 giờ) → `.night`; còn lại `.day`.
+  /// Widget nên hiện gì lúc `now`: dữ liệu cũ hơn hôm nay → `.stale`; trong giờ ngủ → `.night`;
+  /// còn lại `.day`.
   public enum Phase: Sendable, Hashable { case stale, day, night }
 
   public func phase(now: Date, calendar: Calendar) -> Phase {
-    let c = calendar.dateComponents([.year, .month, .day, .hour], from: now)
+    let c = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: now)
     let today = String(format: "%04d-%02d-%02d", c.year!, c.month!, c.day!)
     guard today == day else { return .stale }
-    let h = c.hour!
-    return h >= Self.nightHour || h < KoaMood.morningFrom ? .night : .day
+    return (sleep ?? .standard).contains(hour: c.hour!, minute: c.minute ?? 0) ? .night : .day
   }
 }
 

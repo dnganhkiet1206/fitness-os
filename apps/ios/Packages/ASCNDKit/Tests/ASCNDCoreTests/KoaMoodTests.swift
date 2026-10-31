@@ -250,3 +250,75 @@ struct KoaWidgetWaterTests {
     #expect(d.checks.isEmpty && d.waterTaps == 0 && d.short.isEmpty && d.nextQuest == nil)
   }
 }
+
+/// Koa ngủ theo giờ người dùng đặt trong hồ sơ (Kiệt 30/10).
+@Suite struct KoaSleepWindowTests {
+  typealias Window = KoaMood.SleepWindow
+
+  @Test func acrossMidnight() {
+    let w = Window(bed: "23:30", wake: "07:15")!
+    #expect(!w.contains(hour: 23, minute: 29))
+    #expect(w.contains(hour: 23, minute: 30))
+    #expect(w.contains(hour: 3))
+    #expect(w.contains(hour: 7, minute: 14))
+    #expect(!w.contains(hour: 7, minute: 15))
+    #expect(!w.contains(hour: 12))
+  }
+
+  /// Người làm ca đêm ngủ ban ngày: Koa cũng ngủ ban ngày.
+  @Test func daySleeper() {
+    let w = Window(bed: "08:00:00", wake: "15:00:00")!
+    #expect(w.contains(hour: 10))
+    #expect(!w.contains(hour: 22))
+    let r = KoaMood.read(.init(signals: DailySignals(), hour: 10, sleep: w))
+    #expect(r.emotion == .sleep)
+    #expect(KoaMood.read(.init(signals: DailySignals(), hour: 23, sleep: w)).reason != .night)
+  }
+
+  @Test func badTimesAreRejected() {
+    #expect(Window(bed: "25:00", wake: "07:00") == nil)
+    #expect(Window(bed: "abc", wake: "07:00") == nil)
+    #expect(Window(bed: "07:00", wake: "07:00") == nil)
+  }
+
+  /// Giờ không có cờ `_set` là mặc định của DB, không phải giờ của người dùng.
+  @Test func onlyTimesTheUserSet() throws {
+    let row: JSONValue = .object([
+      "user_id": .string("u"), "sleep_target_bedtime": .string("01:00:00"), "sleep_target_waketime": .string("09:00:00"),
+      "sleep_target_bedtime_set": .bool(true), "sleep_target_waketime_set": .bool(true),
+    ])
+    var p = try #require(Profile(row: row))
+    #expect(Window(profile: p) == Window(bed: "01:00", wake: "09:00"))
+    p.sleepTargetWaketimeSet = false
+    #expect(Window(profile: p) == .standard)
+    #expect(Window(profile: nil) == .standard)
+  }
+
+  @Test func windsDownBeforeBed() {
+    let w = Window(bed: "23:00", wake: "07:00")!
+    #expect(w.winding(hour: 22, minute: 10))
+    #expect(!w.winding(hour: 21, minute: 50))
+    #expect(w.winding(hour: 2))
+  }
+
+  @Test func scheduleWaitsOutTheUsersNight() {
+    let w = Window(bed: "20:00", wake: "05:00")!
+    let phase = KoaSchedule.phase(
+      gains: .zero, lastSessionAt: nil, now: EpochMillis(0), trainedToday: false, plannedToday: true, hour: 21,
+      habitHour: 18, sleep: w)
+    #expect(phase == nil)
+  }
+
+  @Test func widgetFollowsTheWindowAndReadsOldData() throws {
+    var cal = Calendar(identifier: .gregorian)
+    cal.timeZone = TimeZone(identifier: "UTC")!
+    let at = cal.date(from: DateComponents(year: 2026, month: 10, day: 30, hour: 23))!
+    var data = KoaWidgetData(
+      day: "2026-10-30", line: "", next: nil, done: 0, total: 4, streak: 0, nightLine: "", imageVersion: 1)
+    #expect(data.phase(now: at, calendar: cal) == .night)
+    data.sleep = Window(bed: "23:30", wake: "07:00")
+    #expect(data.phase(now: at, calendar: cal) == .day)
+    let back = try JSONDecoder().decode(KoaWidgetData.self, from: JSONEncoder().encode(data))
+    #expect(back.sleep == data.sleep)
+  }
+}

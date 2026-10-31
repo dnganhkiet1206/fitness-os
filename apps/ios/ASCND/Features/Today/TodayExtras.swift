@@ -1002,7 +1002,8 @@ struct TodayExtras<Plan: View>: View {
       next: state.next.map(TodayDayBlock.action), done: progress.done, total: progress.total,
       streak: room.streak.count, day: room.today, weekDone: koaWeekState?.done,
       weekTarget: koaWeekState?.target, checks: checks,
-      nextQuest: state.next, level: room.level, build: room.gains.rank, gains: room.gains.points))
+      nextQuest: state.next, level: room.level, build: room.gains.rank, gains: room.gains.points,
+      sleep: KoaMood.SleepWindow(profile: profile?.profile)))
     if let w = koaWeekState {
       let changed = services.koaWeekNow.map { $0.done != w.done || $0.target != w.target || $0.weekStart != w.weekStart } ?? true
       services.koaWeekNow = (userId, w.weekStart, w.done, w.target)

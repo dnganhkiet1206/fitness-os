@@ -30,11 +30,15 @@ struct KoaProvider: TimelineProvider {
   func getTimeline(in context: Context, completion: @escaping (Timeline<KoaEntry>) -> Void) {
     let data = WidgetDataStore().koa()
     var entries = [KoaEntry(date: .now, data: data)]
-    // Koa đi ngủ đúng 22:00 dù app không mở.
+    // Koa đi ngủ và thức dậy đúng giờ người dùng đặt, dù app không mở.
     let cal = Calendar.current
-    if let night = cal.date(bySettingHour: KoaWidgetData.nightHour, minute: 0, second: 0, of: .now), night > .now {
-      entries.append(KoaEntry(date: night, data: data))
+    let sleep = data?.sleep ?? .standard
+    for minute in [sleep.bed, sleep.wake] {
+      if let at = cal.date(bySettingHour: minute / 60, minute: minute % 60, second: 0, of: .now), at > .now {
+        entries.append(KoaEntry(date: at, data: data))
+      }
     }
+    entries.sort { $0.date < $1.date }
     completion(Timeline(entries: entries, policy: .after(.now.addingTimeInterval(30 * 60))))
   }
 }
