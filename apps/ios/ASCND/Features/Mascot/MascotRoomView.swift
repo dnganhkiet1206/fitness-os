@@ -322,7 +322,7 @@ struct MascotRoomView: View {
     if [.sleep, .sad, .deflated].contains(mood) { return nil }
     return KoaGesture.pick(
       trainedToday: room.gains.lastSession == room.today, weekComplete: koaWeekState?.complete ?? false,
-      missedPlanned: room.gains.missedDays >= 1, tired: mood == .tired, loggedAnything: room.energyCount > 0)
+      missedPlanned: room.gains.missedBefore(room.today) >= 1, tired: mood == .tired, loggedAnything: room.energyCount > 0, mood: mood)
   }
 
   /// Nét mặt của ngày (Koa đợt 1) — CÙNG bộ máy với Koa ở Hôm nay.

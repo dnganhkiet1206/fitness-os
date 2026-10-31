@@ -316,7 +316,7 @@ public enum KoaDirector {
         let up = ctx.moment == .rankUp, big = up || ctx.moment == .record
         return Behavior(
           kind: .proud, why: big ? "kỷ lục / lên hạng thật" : "có buổi tập hoàn thành thật hôm nay",
-          target: KoaRoomMap.stageMark, anchor: nil, gaze: .user, expression: big ? .delighted : .confident,
+          target: KoaRoomMap.stageMark, anchor: nil, gaze: .user, expression: big ? .delighted : .grin,
           gesture: up ? .cheer : .taDa, style: .purposeful, action: .proudPose,
           duration: up ? rng.range(0.8, 1.4) : rng.range(4, 6), next: [.rest])
       case .welcome:

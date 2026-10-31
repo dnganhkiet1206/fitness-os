@@ -40,9 +40,12 @@ public enum KoaEmotion {
     .celebrate: State(.delighted, .idle),
     // ghi buổi tập → cùng cuốn tạ
     .curl: State(.strain, .lifting),
-    .worry: State(.plead, .idle),
-    .proud: State(.confident, .idle),
-    .oops: State(.surprised, .idle),
+    // nhắc nhẹ, không van nài cũng không làm người dùng thấy có lỗi (31/10)
+    .worry: State(.surprised, .idle),
+    // mí nửa khép của `.confident` đọc ra "chán", không phải tự hào
+    .proud: State(.grin, .idle),
+    // ăn quá: no căng, không phải giật mình trách móc
+    .oops: State(.happytired, .idle),
     .rested: State(.happytired, .idle, [.head: "beanie"]),
     .hat: State(.happy, .idle, [.head: "santa"]),
     // Cầm tạ thì mặt GỒNG SỨC như bản thiết kế (`KoaSheetView.poseFace[.lifting]`);

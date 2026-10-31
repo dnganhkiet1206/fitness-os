@@ -20,7 +20,7 @@ public enum KoaGesture: String, Sendable, Hashable, CaseIterable {
     case .cheer: .delighted
     case .curious: .surprised
     case .flop: .tired
-    case .pout: .angry
+    case .pout: .sad
     }
   }
 
@@ -33,7 +33,8 @@ public enum KoaGesture: String, Sendable, Hashable, CaseIterable {
     case .curious: ["eyesWide", "browRaised", "mouthO"]
     // miệng "thở" của bản vẽ chỉ hiện theo nhịp hoạt ảnh — ảnh tĩnh mất miệng; dùng miệng thẳng của "mệt"
     case .flop: ["eyesOpen", "lidsHeavy", "browSad", "mouthFlat"]
-    case .pout: ["eyesOpen", "lidsHalf", "browAngry", "mouthFrown"]
+    // hờn, không giận: quay đầu đi, mày chùng (Kiệt 31/10; bản mày giận đọc ra trách người dùng)
+    case .pout: ["eyesOpen", "lidsHalf", "browSad", "mouthFrown"]
     }
   }
 
@@ -194,12 +195,18 @@ extension KoaGesture {
   /// Dáng của Koa trong phòng theo tình huống thật (Kiệt duyệt 25/10): đủ tuần → ăn mừng,
   /// vừa tập hôm nay → ta-da, lỡ buổi theo lịch → hờn dỗi, mệt → mệt lả, hôm nay chưa ghi
   /// gì → tò mò; không gì đặc biệt → `nil` (dáng của cảm xúc như cũ).
+  ///
+  /// Cảm xúc của ngày thắng dáng (31/10): xong hết việc, lo chuỗi, mới ngủ dậy… có nét mặt riêng,
+  /// dáng hờn không được đè lên. `missedPlanned` chỉ tính những ngày TRƯỚC hôm nay: buổi hôm nay
+  /// chưa tập không phải là đã lỡ.
   public static func pick(
-    trainedToday: Bool, weekComplete: Bool, missedPlanned: Bool, tired: Bool, loggedAnything: Bool
+    trainedToday: Bool, weekComplete: Bool, missedPlanned: Bool, tired: Bool, loggedAnything: Bool,
+    mood: KoaEmotion.Emotion = .idle
   ) -> KoaGesture? {
     if weekComplete && trainedToday { return .cheer }
     if trainedToday { return .taDa }
-    if missedPlanned { return .pout }
+    guard [.idle, .tired, .happy].contains(mood) else { return nil }
+    if missedPlanned, mood == .idle { return .pout }
     if tired { return .flop }
     if !loggedAnything { return .curious }
     return nil

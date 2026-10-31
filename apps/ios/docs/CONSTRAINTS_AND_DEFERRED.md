@@ -373,12 +373,14 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Chạm đèn ngủ đầu giường để tắt / bật (31/10): phòng tối đi, dây đèn tắt theo, hết quầng sáng và bướm đêm; nhớ theo máy, không theo tài khoản. VoiceOver dùng hành động trên sân khấu.
 - Âm thanh của phòng Koa (31/10, `KoaSound`, ~~tiếng tự tổng hợp~~ Kiệt nghe trên máy thấy kỳ, thay bằng giọng Koa kiểu hoạt hình tự tổng hợp và tiếng công tắc CC0 của Kenney, nguồn ở `tools/koa-sound/README.md`): chạm Koa, công tắc đèn, Koa đáp xuống giường, ngáp khi dậy, lên hạng / kỷ lục. Giọng do Kiệt yêu cầu, đánh giá bằng tai trên máy. `.ambient`: im theo công tắc im lặng, không ngắt nhạc. Nút loa trên thanh của phòng để tắt, nhớ theo máy. Giảm chuyển động: chạm Koa không có tiếng vì chạm Koa bị tắt phản ứng.
 - Ánh đèn sân khấu giật khi Koa đi (Kiệt 31/10, iPhone thật): lúc lá cây rung, phòng tách phần từ chậu cây trở lên sang lớp riêng, đèn và viền tối đổi lớp nên độ sáng nhảy. Giờ vẽ đè cả phòng. Số đo xem báo cáo #527.
+- Rà biểu cảm Koa (31/10): dáng hờn đè lên mọi cảm xúc của ngày, kể cả lúc xong hết việc; `missedDays` đếm cả hôm nay nên sáng chưa tập Koa đã cau có. Sửa: cảm xúc của ngày thắng dáng, chỉ tính ngày trước hôm nay, hờn không còn mày giận. `worry` thôi van nài, `proud` thôi mí nửa khép, `oops` thôi giật mình. Hoãn, cần mock: mí mắt `tired` có viền trắng lạ; `tired` và `sleep` cùng một hình. `deflated` (tụt hạng) không còn dùng vì V1 không tụt hạng, chưa gỡ.
 - Trong lúc lia, Koa đi tại chỗ nên chân có thể hơi trượt so với sàn đang trôi; mảng tường chỉ che một phần lúc đổi cỡ Koa.
 - CPU simulator (bản Debug): phòng ngủ 5,4 %, sân khấu ~31–37 %, bộ nhớ 108 MB.
 - **NOT RUN:** thiết bị thật; GPU (lớp `blur` ánh trăng, `scaleEffect` chăn); Reduce Motion chạy tay; VoiceOver với bố cục mới; hình cửa ở giao diện sáng.
 
 ## 5. Lịch sử thay đổi sổ
 
+- 31/10/2026: rà và sửa biểu cảm Koa; ghi các điểm hoãn cần mock.
 - 31/10/2026: thêm âm thanh nhỏ cho phòng Koa, có nút tắt.
 - 31/10/2026: chạm đèn ngủ để tắt / bật.
 - 31/10/2026: cảnh Koa dậy, đi từ phòng ngủ về sân khấu.
