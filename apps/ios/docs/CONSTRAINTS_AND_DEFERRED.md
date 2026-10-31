@@ -334,8 +334,17 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - **Instruments trên simulator không dùng được cho việc này:** template SwiftUI báo "not supported on the Simulator", Hitches "not supported on this platform"; template Logging và Time Profiler treo vì `xctrace` chờ widget extension của app khởi động. SwiftUI invalidation, frame hitches, allocations, năng lượng chỉ đo được trên iPhone thật (cần Kiệt). Signpost `Koa` đã có sẵn để đo lúc đó.
 - Chưa có test tự động tầng app (`scenePhase`, TimelineView): kiểm tay như trên.
 
+**Koa — đồ vật không còn "hiện lên" (30/10, nhánh `claude/koa-occlusion`, Kiệt báo: cây và kệ đột nhiên hiện khi Koa tới gần):**
+- Nguyên nhân do #754: để giảm CPU, lớp che vẽ thẳng đồ vật đè lên Koa, thiếu các lớp nằm trên đồ trong phòng (viền tối, vệt đèn, bục) nên đồ sáng bừng lên và chân kệ đè viền bục. Video bản cũ: độ sáng quả bóng 52→71, quả tạ trên kệ 54→76 trong một khung. Bản mới, cùng thao tác: bóng tối đa 52,1, tạ tối đa 54,6, không còn bước nhảy.
+- Lớp che (`StudioFront`) giờ là chính căn phòng, chỉ lộ trong hình đồ vật: trùng từng điểm ảnh với phòng bên dưới, chỗ không có Koa thì không thấy gì. Vì vậy bỏ phép đoán bề ngang Koa; lớp che chỉ theo độ sâu `d`.
+- Đổi lớp giữa cú nhảy (`d` qua chân đồ) thay vì đầu cú nhảy. Hai bậc lên / xuống bục dời từ x 150 / 244 vào x 176 / 214 để lúc ấy Koa không chồng lên đồ; đường về bục vì thế ngắn hơn.
+- Trăng trong phòng tính theo ngày thay vì `.now`: `.now` đổi ở mọi khung, làm bộ nhớ đệm của phòng trượt suốt lúc lớp che bật.
+- CPU simulator (bản Debug, `ASCNDCore` chưa `-O`, không so được với số 15–19 % ở trên): đi trên sàn với lớp che 35,1 % (2 lượt), đi trên bục 38,3 % (1 lượt); thêm kịch bản đo `-koaBench floor`. GPU NOT RUN (simulator không đo được). Thiết bị thật: NOT RUN.
+- `KoaPerfTests.figureFrameBudget` hết chập chờn khi chạy song song. `SignOutTimeoutTests` đỏ một lần khi máy bận (81 giây, ngưỡng 60), chạy riêng xanh; test đo thời gian thật, không liên quan Koa, chưa sửa.
+
 ## 5. Lịch sử thay đổi sổ
 
+- 30/10/2026: sửa lỗi đồ vật hiện lên khi Koa tới gần (lỗi do #754); lớp che trùng điểm ảnh với phòng, dời hai bậc lên bục.
 - 30/10/2026: Koa — đo lại CPU sau #756 (không hồi quy), kiểm khuất / nền trên simulator, ghi giới hạn Instruments trên simulator.
 - 30/10/2026: sửa nốt lỗi giật (mắt nhảy một khung, #754 chưa hết); thêm chuyển trọng tâm, follow-through đầu / tai, đung đưa khi đứng.
 - 30/10/2026: Koa theo ngữ cảnh (không chào lại, im khi khuất, trầm ban đêm, ở yên chỗ người xem đặt); ghi đánh giá công cụ OSS, Periphery đã archived.

@@ -43,17 +43,23 @@ struct KoaPerfTests {
     print("[koa-perf] figure+plan \(String(format: "%.3f", ms)) ms")
     // bộ nhớ đệm: thêm 30 khung đi bộ chỉ thêm vài chuỗi transform mới mỗi khung (bàn chân,
     // quay mặt), không phân tích lại cả cây
-    let before = KoaMath.opsMemo.count, defsBefore = KoaRender.defsMemo.count
-    for _ in 0..<30 {
-      let g = d.step(1.0 / 60, ctx: .init())
-      o.walk = g.walk
-      _ = KoaPaint.plan(KoaRender.figure(o))
+    let before = KoaMath.opsMemo.count
+    var defsGrew = Int.max
+    // (bộ nhớ đệm dùng chung với test khác chạy song song, chúng cũng thêm defs: lấy lượt ít
+    // nhất trong vài lượt; đầy thì tự xoá — khi ấy bỏ qua)
+    for _ in 0..<4 {
+      let defsBefore = KoaRender.defsMemo.count
+      for _ in 0..<30 {
+        let g = d.step(1.0 / 60, ctx: .init())
+        o.walk = g.walk
+        _ = KoaPaint.plan(KoaRender.figure(o))
+      }
+      let n = KoaRender.defsMemo.count - defsBefore
+      if n >= 0 { defsGrew = min(defsGrew, n) }
     }
-    // (bộ nhớ đệm dùng chung với test khác chạy song song; đầy thì tự xoá — khi ấy bỏ qua)
     let grew = KoaMath.opsMemo.count - before
-    if grew >= 0 { #expect(grew <= 30 * 6, "transform mới mỗi khung: \(Double(grew) / 30)") }
-    let defsGrew = KoaRender.defsMemo.count - defsBefore
-    if defsGrew >= 0 { #expect(defsGrew <= 2, "defs dựng lại theo khung: \(defsGrew)") }
+    if grew >= 0 { #expect(grew <= 4 * 30 * 6, "transform mới mỗi khung: \(Double(grew) / 120)") }
+    if defsGrew != .max { #expect(defsGrew <= 2, "defs dựng lại theo khung: \(defsGrew)") }
   }
 
   /// Căn phòng: dựng một lần (app lưu sẵn theo tuỳ chọn) — đo để biết vì sao phải lưu.

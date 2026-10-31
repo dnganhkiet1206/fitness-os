@@ -38,15 +38,16 @@ public enum KoaRoomMap {
   /// Chỗ đứng gần người xem: giữa, mép trước bục, không sát mép màn (dải mờ dưới cảnh).
   public static let user = Spot(.stage, 195, 450)
 
-  /// Hai bậc lên / xuống bục ở phía sau, hai bên: điểm trên sàn ↔ điểm trên bục.
+  /// Hai bậc lên / xuống bục ở phía sau, hai bên: điểm trên sàn ↔ điểm trên bục. Đặt đủ xa
+  /// chân kệ và lá cây: Koa đổi lớp với đồ vật giữa cú nhảy, lúc ấy người không chồng lên đồ.
   public struct Step: Sendable, Hashable {
     public let floor: Spot
     public let stage: Spot
   }
 
   public static let steps = [
-    Step(floor: Spot(.floor, 150, 377), stage: Spot(.stage, 150, 418)),
-    Step(floor: Spot(.floor, 244, 377), stage: Spot(.stage, 244, 418)),
+    Step(floor: Spot(.floor, 176, 377), stage: Spot(.stage, 176, 418)),
+    Step(floor: Spot(.floor, 214, 377), stage: Spot(.stage, 214, 418)),
   ]
 
   /// Sàn đi được (độ sâu, toạ độ sàn): dải sau bục giữa kệ và chậu cây, chân luôn CAO HƠN
@@ -78,8 +79,8 @@ public enum KoaRoomMap {
   /// (theo `decorData.spots`) và độ sâu chân đồ. Koa ở sàn có `d` nhỏ hơn → vẽ đồ đè lên.
   public struct Occluder: Sendable, Hashable {
     public let name: String
-    /// Phần tử của đồ vật (KHÔNG gồm bóng tiếp xúc trên sàn — vẽ lại bóng mờ đè lên Koa sẽ
-    /// làm tối gấp đôi; 30/10 lớp che vẽ thẳng đồ vật thay vì cả phòng có mặt nạ).
+    /// Phần tử của đồ vật, làm mặt nạ cho lớp che (KHÔNG gồm bóng tiếp xúc trên sàn: bóng nằm
+    /// dưới chân đồ, không che Koa).
     public let elements: [Int]
     public let minX: Double
     public let maxX: Double
@@ -147,13 +148,10 @@ public enum KoaRoomMap {
   /// Chân trên màn (toạ độ phòng).
   public static func screenY(_ s: Spot) -> Double { s.d - (s.plane == .stage ? stageHeight : 0) }
 
-  /// Đồ vật đang che Koa (Koa ở sàn, sau chân đồ, chồng ngang với đồ).
-  public static func occluding(_ s: Spot, halfWidth: Double) -> [Occluder] {
-    guard s.plane == .floor else { return [] }
-    return occluders.filter { o in
-      s.d < o.baseD && s.x + halfWidth > o.minX && s.x - halfWidth < o.maxX
-    }
-  }
+  /// Đồ vật đứng trước Koa (Koa sau chân đồ). Chỉ theo độ sâu, không theo mặt phẳng: mặt phẳng
+  /// đổi ở đầu cú nhảy, còn `d` đi qua chân đồ giữa không trung. Không xét bề ngang: Koa chưa
+  /// chạm đồ thì lớp che không thấy gì, còn đoán bề ngang sai là đồ bật lên đè người Koa.
+  public static func occluding(_ s: Spot) -> [Occluder] { occluders.filter { s.d < $0.baseD } }
 
   // MARK: - Hợp lệ
 

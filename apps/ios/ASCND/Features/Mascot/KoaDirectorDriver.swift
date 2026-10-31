@@ -53,9 +53,10 @@ final class KoaDirectorDriver {
   private(set) var placed: KoaRoomMap.Spot?
 
   #if DEBUG
-    /// Kịch bản đo hiệu năng cố định (chỉ bản Debug, cờ chạy `-koaBench rest|walk`): `rest`
-    /// đứng yên (không đi), `walk` đi qua lại giữa hai điểm trên bục mãi. Hạt cố định.
-    enum Bench: String { case rest, walk }
+    /// Kịch bản đo hiệu năng cố định (chỉ bản Debug, cờ chạy `-koaBench rest|walk|floor`):
+    /// `rest` đứng yên (không đi), `walk` đi qua lại giữa hai điểm trên bục mãi, `floor` như
+    /// thế trên sàn (lớp che đồ vật bật). Hạt cố định.
+    enum Bench: String { case rest, walk, floor }
     static let bench: Bench? = {
       let a = ProcessInfo.processInfo.arguments
       guard let i = a.firstIndex(of: "-koaBench"), i + 1 < a.count else { return nil }
@@ -76,15 +77,18 @@ final class KoaDirectorDriver {
   func step(_ date: Date, heroWidth: Double) -> KoaDirector.Frame {
     #if DEBUG
       if let b = Self.bench {
-        context.canWalk = b == .walk
+        context.canWalk = b != .rest
         context.workoutToday = false
         // hỏi lại khi việc đang làm đổi mà chưa phải đi (lời chào lúc mở phòng có thể đè yêu cầu)
         if director.current == .walkTo || director.current != benchAskedDuring { benchAsked = false }
-        if b == .walk, director.current != .walkTo, !benchAsked {
+        if b != .rest, director.current != .walkTo, !benchAsked {
           benchLeg.toggle()
           benchAsked = true
           benchAskedDuring = director.current
-          director.request(.walkTo(KoaRoomMap.Spot(.stage, benchLeg ? 120 : 270, 440)))
+          let spot =
+            b == .walk
+            ? KoaRoomMap.Spot(.stage, benchLeg ? 120 : 270, 440) : KoaRoomMap.Spot(.floor, benchLeg ? 160 : 285, 372)
+          director.request(.walkTo(spot))
         }
       }
     #endif

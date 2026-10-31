@@ -894,7 +894,8 @@ struct MascotStage: View {
     o.board = board ?? RoomBoard.rank(build, of: MascotRules.ranks.count, lang: lang)
     o.decor = MascotShop.decorChoice(equipped: Set(equipped))
     o.dust = dust
-    o.moon = StudioScene.moonPhase(.now)
+    // theo ngày: `.now` đổi mỗi lần tính, làm bộ nhớ đệm của phòng trượt ở mọi khung
+    o.moon = StudioScene.moonPhase(Calendar.current.startOfDay(for: .now))
     o.label = "Koa"
     // Phòng ban ngày ở giao diện sáng (15/10 — trước đây chỉ có cảnh đêm).
     o.light = scheme == .light
@@ -1024,9 +1025,7 @@ struct MascotStage: View {
           y: still.map(KoaRoomMap.screenY) ?? f?.screenY ?? StudioScene.stageMark.y,
           scale: still.map { KoaRoomMap.scale($0.d) } ?? f?.scale ?? 1,
           direct: running ? f : nil, date: tl.date)
-        occlusion(
-          width, still ?? f.map { KoaRoomMap.Spot($0.plane, $0.x, $0.depth) },
-          scale: still.map { KoaRoomMap.scale($0.d) } ?? f?.scale ?? 1, plantSway: f?.plantSway ?? 0)
+        occlusion(width, still ?? f.map { KoaRoomMap.Spot($0.plane, $0.x, $0.depth) }, plantSway: f?.plantSway ?? 0)
         #if DEBUG
           // chế độ đo luôn bỏ qua lớp debug (nó chiếm ~5–7 điểm % CPU, làm sai số đo)
           if debugMap, !benchMode { KoaMapOverlay(frame: f).frame(width: width, height: width / StudioScene.width * StudioScene.sceneBottom) }
@@ -1051,17 +1050,17 @@ struct MascotStage: View {
   }
 
   /// Đồ vật đứng TRƯỚC Koa (Koa ở sàn, sau chân đồ): vẽ lại đúng phần ảnh của căn phòng
-  /// trong hình đồ vật, đè lên Koa — đồ không đổi màu, không thêm gì.
+  /// trong hình đồ vật, đè lên Koa. Lớp này trùng từng điểm ảnh với phòng bên dưới nên không
+  /// thấy được ở chỗ không có Koa — đồ vật không "hiện lên" (Kiệt 30/10).
   @ViewBuilder
-  private func occlusion(_ width: CGFloat, _ spot: KoaRoomMap.Spot?, scale: Double, plantSway: Double) -> some View {
+  private func occlusion(_ width: CGFloat, _ spot: KoaRoomMap.Spot?, plantSway: Double) -> some View {
     if let spot {
-      let half = Self.heroWidth * scale * 0.42
-      let objects = KoaRoomMap.occluding(spot, halfWidth: half)
+      let objects = KoaRoomMap.occluding(spot)
       if !objects.isEmpty {
         var o = studio
-        let _ = (o.plantSway = plantSway)
-        // vẽ thẳng đồ vật (đúng nét, đúng màu của phòng) đè lên Koa
-        StudioObjects(options: o, indices: Set(objects.flatMap(\.elements)))
+        let _ = (o.plantSway = director.swaying ? plantSway : 0)
+        StudioFront(options: o, indices: Set(objects.flatMap(\.elements)), swaying: director.swaying)
+          .equatable()
           .frame(width: width, height: width / StudioScene.width * StudioScene.sceneBottom)
           .allowsHitTesting(false)
       }
@@ -1155,7 +1154,28 @@ enum StudioPlans {
   }
 }
 
-/// Vài đồ vật của căn phòng (`StudioScene.objects`) — lớp che Koa, chậu cây đang rung.
+/// Phần phòng che Koa: căn phòng hoàn chỉnh (cả viền tối, vệt đèn, bục nằm trên đồ vật), chỉ
+/// lộ trong hình đồ vật. Vẽ riêng đồ vật thì thiếu các lớp ấy nên đồ sáng bừng lên khi bật.
+/// `Equatable`: đồng hồ sân khấu chạy mà phòng không đổi thì không vẽ lại.
+struct StudioFront: View, Equatable {
+  let options: StudioScene.Options
+  let indices: Set<Int>
+  /// Đúng như phòng bên dưới lúc lá rung (`backdrop` + lớp chậu cây).
+  let swaying: Bool
+
+  var body: some View {
+    var back = options
+    let _ = (back.plantSway = 0)
+    let _ = (back.omit = swaying ? StudioScene.fromPlant : [])
+    ZStack {
+      StudioBackdrop(options: back)
+      if swaying { StudioObjects(options: options, indices: StudioScene.fromPlant) }
+    }
+    .mask { StudioObjects(options: options, indices: indices) }
+  }
+}
+
+/// Vài đồ vật của căn phòng (`StudioScene.objects`) — hình mặt nạ của lớp che Koa, chậu cây đang rung.
 struct StudioObjects: View {
   let options: StudioScene.Options
   let indices: Set<Int>
