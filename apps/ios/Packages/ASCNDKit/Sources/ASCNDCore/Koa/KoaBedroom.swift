@@ -4,7 +4,7 @@ public import Foundation
 /// trong giờ ngủ của người dùng (`KoaMood.SleepWindow`).
 ///
 /// Cùng toạ độ với phòng chính (390 × `StudioScene.sceneBottom`). Tách lớp để app cho Koa thở:
-/// `back` (phòng, giường, gối) · Koa · `cover` (chăn, kệ, giày) · `moonlight` · `shade`.
+/// `back` (phòng, giường, gối) · `live` (đồ động) · Koa · `duvet` · `cover` (kệ, giày) · `moonlight` · `shade`.
 /// Không thêm hình của Koa: cả người là hình thật (`KoaRender.figure`), dáng ngồi xoay nằm
 /// cuộn tròn trên gối (Kiệt chọn mock 31/10), chăn đắp tới cổ, nổi hình thân bên dưới.
 public enum KoaBedroom {
@@ -111,10 +111,6 @@ public enum KoaBedroom {
       "Defs",
       kids: [
         linear("bedWall", [(0, c.wallTop), (1, c.wallBottom)]), linear("bedFloor", [(0, c.floorTop), (1, c.floorBottom)]),
-        linear("bedSky", [(0, c.skyTop), (1, c.skyBottom)]),
-        linear("bedCurtain", [(0, c.curtainEdge), (0.5, c.curtainMid), (1, c.curtainEdge)], horizontal: true),
-        glow("bedBulb", "#FFC978", c.bulbGlow), glow("bedSconce", "#FFB95E", c.sconceGlow),
-        Element("ClipPath", ["id": .string("bedArch")], kids: [path("M212 214V118A54 54 0 0 1 320 118V214Z", "#000000")]),
       ])
     var out: [Element] = [defs, rect(0, 0, 390, height, "url(#bedWall)"), rect(0, 300, 390, 66, c.panel)]
     for x in stride(from: 10.0, to: 390, by: 64) { out.append(rect(x, 310, 52, 44, "#000000", r: 3, opacity: 0.1)) }
@@ -132,50 +128,127 @@ public enum KoaBedroom {
     for x in stride(from: -160.0, to: 560, by: 62) {
       out.append(line("M\(195 + (x - 195) * 0.62) 366L\(195 + (x - 195) * 1.26) \(height)", "#000000", width: 1, opacity: 0.16))
     }
-    out += window(c) + vase(c) + lights(c) + pictures(c) + rug(c) + bed(c)
+    out += pictures(c) + rug(c) + bed(c)
     return out
   }
 
-  static func window(_ c: Palette) -> [Element] {
+  /// Những thứ động của phòng ở giây `t`: sao, mây, sao băng (hoặc chim ban ngày), rèm, lá,
+  /// dây đèn, đèn tường, bướm đêm, bụi trong ánh trăng. Vẽ lại mỗi nhịp, nên giữ ít mảnh.
+  public static func live(t: Double, light: Bool, zzz: Bool) -> [KoaRender.Element] {
+    let c = light ? day : night
+    let defs = Element(
+      "Defs",
+      kids: [
+        linear("bedSky", [(0, c.skyTop), (1, c.skyBottom)]),
+        linear("bedCurtain", [(0, c.curtainEdge), (0.5, c.curtainMid), (1, c.curtainEdge)], horizontal: true),
+        glow("bedBulb", "#FFC978", c.bulbGlow), glow("bedSconce", "#FFB95E", c.sconceGlow),
+        Element("ClipPath", ["id": .string("bedArch")], kids: [path("M212 214V118A54 54 0 0 1 320 118V214Z", "#000000")]),
+      ])
+    return [defs] + window(c, t) + vase(c, t) + lights(c, t) + sconce(t) + wings(light, t) + motes(c, t) + (zzz ? snore(c, t) : [])
+  }
+
+  static func window(_ c: Palette, _ t: Double) -> [Element] {
     var sky: [Element] = [rect(200, 50, 130, 170, "url(#bedSky)")]
-    for (x, y, r) in [(232.0, 92.0, 1.0), (300, 84, 1.3), (246, 140, 0.9), (296, 132, 0.8), (222, 120, 0.8), (310, 160, 0.9), (268, 84, 0.7)]
+    for (i, s) in [(232.0, 92.0, 1.0), (300, 84, 1.3), (246, 140, 0.9), (296, 132, 0.8), (222, 120, 0.8), (310, 160, 0.9), (268, 84, 0.7)].enumerated()
     where c.star > 0 {
-      sky.append(ellipse(x, y, r, r, "#FFFFFF", opacity: c.star))
+      let twinkle = 0.6 + 0.4 * sin(t * (1.1 + Double(i) * 0.31) + Double(i) * 1.7)
+      sky.append(ellipse(s.0, s.1, s.2, s.2, "#FFFFFF", opacity: c.star * twinkle))
     }
-    sky += [
-      path("M292 96A18 18 0 1 0 299 124A14.5 14.5 0 1 1 292 96Z", c.moon),
-      path("M200 214Q226 186 252 200Q280 178 330 206V222H200Z", c.hill),
-    ]
+    sky.append(path("M292 96A18 18 0 1 0 299 124A14.5 14.5 0 1 1 292 96Z", c.moon))
+    // mây trôi ngang qua khung cửa
+    for (speed, y, r) in [(5.0, 118.0, 1.0), (3.2, 164.0, 0.72)] {
+      let x = 180 + (t * speed).truncatingRemainder(dividingBy: 190)
+      sky.append(
+        path(
+          "M\(x) \(y)q\(9 * r) \(-13 * r) \(22 * r) \(-6 * r)q\(13 * r) \(-9 * r) \(24 * r) \(2 * r)q\(13 * r) \(-1 * r) \(13 * r) \(6 * r)H\(x)Z",
+          c.star > 0 ? "#8C8FC4" : "#FFFFFF", opacity: c.star > 0 ? 0.3 : 0.8))
+    }
+    sky.append(contentsOf: flyby(c, t))
+    sky.append(path("M200 214Q226 186 252 200Q280 178 330 206V222H200Z", c.hill))
+    let sway = 3 * sin(t * 0.47), lag = 3 * sin(t * 0.47 - 0.8)
     return [
       path("M204 222V118A62 62 0 0 1 328 118V222Z", c.beam),
       Element("G", ["clipPath": .string("url(#bedArch)")], kids: sky),
       line("M266 58V214M212 142H320", c.beam, width: 4), rect(196, 218, 140, 8, c.beam, r: 3),
       line("M188 56H344", c.beam, width: 3),
-      path("M192 56H226C228 110 226 160 204 186C210 220 204 262 196 286H182C176 200 182 110 192 56Z", "url(#bedCurtain)"),
-      path("M340 56H306C304 110 306 160 328 186C322 220 328 262 336 286H350C356 200 350 110 340 56Z", "url(#bedCurtain)"),
+      path(
+        "M192 56H226C228 110 226 160 204 186C\(210 + sway / 2) 220 \(204 + sway) 262 \(196 + sway) 286H\(182 + sway)C\(176 + sway / 2) 200 182 110 192 56Z",
+        "url(#bedCurtain)"),
+      path(
+        "M340 56H306C304 110 306 160 328 186C\(322 + lag / 2) 220 \(328 + lag) 262 \(336 + lag) 286H\(350 + lag)C\(356 + lag / 2) 200 350 110 340 56Z",
+        "url(#bedCurtain)"),
       place(202, 184, degrees: 14, [rect(-8, -2, 16, 4, c.beam, r: 2)]),
       place(330, 184, degrees: -14, [rect(-8, -2, 16, 4, c.beam, r: 2)]),
     ]
   }
 
-  /// Cành bạch đàn trên bệ cửa sổ.
-  static func vase(_ c: Palette) -> [Element] {
+  /// Đêm: sao băng mỗi ~23 giây. Ngày: chim bay ngang.
+  static func flyby(_ c: Palette, _ t: Double) -> [Element] {
+    if c.star > 0 {
+      let u = t.truncatingRemainder(dividingBy: 23) / 0.9
+      guard u < 1 else { return [] }
+      let x = 318 - 70 * u, y = 66 + 34 * u
+      return [line("M\(x) \(y)L\(x + 22) \(y - 11)", "#FFFFFF", width: 1.2, opacity: sin(u * .pi) * 0.9)]
+    }
+    let u = t.truncatingRemainder(dividingBy: 17) / 8
+    guard u < 1 else { return [] }
+    let x = 196 + 150 * u, y = 110 - 14 * sin(u * 3), flap = 3 * sin(t * 13)
+    return [line("M\(x - 6) \(y - flap)Q\(x - 2) \(y - 2) \(x) \(y)Q\(x + 2) \(y - 2) \(x + 6) \(y - flap)", "#5A6878", width: 1.3)]
+  }
+
+  /// Cành bạch đàn trên bệ cửa sổ, lá lay theo gió nhẹ.
+  static func vase(_ c: Palette, _ t: Double) -> [Element] {
     var out = [line("M262 218L260 170M262 200L246 176M262 196L280 172", c.stem, width: 1.3)]
     for (i, v) in [(-120.0, 20.0), (-70, 22), (-150, 18), (-40, 20), (-100, 24), (-20, 16), (-165, 15)].enumerated() {
-      out.append(leaf(258 + Double(i) * 1.5, 196 - Double(i) * 6, v.0, v.1, i % 2 == 1 ? c.leafA : c.leafB))
+      let lay = 4 * sin(t * 0.8 + Double(i) * 1.3)
+      out.append(leaf(258 + Double(i) * 1.5, 196 - Double(i) * 6, v.0 + lay, v.1, i % 2 == 1 ? c.leafA : c.leafB))
     }
     out.append(path("M252 196H270L267 218H255Z", c.vase))
     return out
   }
 
-  static func lights(_ c: Palette) -> [Element] {
-    var out = [line("M30 124Q130 176 228 118", c.beam, width: 1.2)]
+  /// Dây đèn lắc rất khẽ, mỗi bóng nhấp nháy một nhịp riêng.
+  static func lights(_ c: Palette, _ t: Double) -> [Element] {
+    let drift = 1.5 * sin(t * 0.6)
+    var out = [line("M30 124Q130 \(176 + drift * 2) 228 118", c.beam, width: 1.2)]
     for i in 0...6 {
-      let t = Double(i) / 6
-      let x = 34 + t * 190, y = 128 + sin(t * .pi) * 26 - t * 18
-      out += [ellipse(x, y, 11, 11, "url(#bedBulb)"), ellipse(x, y + 2, 2.6, 2.6, c.bulb)]
+      let u = Double(i) / 6
+      let x = 34 + u * 190, y = 128 + sin(u * .pi) * (26 + drift) - u * 18
+      let on = 0.68 + 0.32 * sin(t * (1.3 + Double(i) * 0.23) + Double(i) * 2.1)
+      out += [ellipse(x, y, 11, 11, "url(#bedBulb)", opacity: on), ellipse(x, y + 2, 2.6, 2.6, c.bulb, opacity: 0.6 + 0.4 * on)]
     }
     return out
+  }
+
+  /// Đèn tường cháy thở nhẹ.
+  static func sconce(_ t: Double) -> [Element] {
+    let r = 58 + 2.5 * sin(t * 1.9) + 1.2 * sin(t * 5.3)
+    return [ellipse(52, 262, r, r, "url(#bedSconce)")]
+  }
+
+  /// Bướm đêm lượn quanh đèn tường (ban ngày là bướm tím).
+  static func wings(_ light: Bool, _ t: Double) -> [Element] {
+    let x = 52 + 26 * cos(t * 1.3) + 8 * cos(t * 3.1), y = 248 + 18 * sin(t * 1.7), w = 1.2 + 1.8 * abs(sin(t * 15))
+    let colour = light ? "#9C7BB0" : "#E6DAC4"
+    return [ellipse(x - w, y, w, 2.6, colour, opacity: 0.9), ellipse(x + w, y, w, 2.6, colour, opacity: 0.9)]
+  }
+
+  /// Bụi lơ lửng trong ánh sáng từ cửa sổ.
+  static func motes(_ c: Palette, _ t: Double) -> [Element] {
+    (0..<6).map { i in
+      let n = Double(i)
+      let u = (t * 0.05 + n * 0.17).truncatingRemainder(dividingBy: 1)
+      return ellipse(216 + n * 17 + 7 * sin(t * 0.3 + n), 330 - 90 * u, 0.9, 0.9, c.moonlight, opacity: sin(u * .pi) * 0.7)
+    }
+  }
+
+  /// Chữ z bay lên từ đầu Koa khi ngủ.
+  static func snore(_ c: Palette, _ t: Double) -> [Element] {
+    (0..<3).map { i in
+      let u = (t / 4.5 + Double(i) / 3).truncatingRemainder(dividingBy: 1)
+      let x = 138 + 34 * u + 4 * sin(u * 7), y = 300 - 62 * u, s = 4 + 5 * u
+      return line("M\(x) \(y)H\(x + s)L\(x) \(y + s)H\(x + s)", c.star > 0 ? "#FFFFFF" : c.woodDark, width: 1.5, opacity: sin(u * .pi) * 0.75)
+    }
   }
 
   static func pictures(_ c: Palette) -> [Element] {
@@ -206,12 +279,12 @@ public enum KoaBedroom {
       rect(46, 360, 256, 30, c.mattress, r: 10),
       path("M50 352C50 338 62 332 82 332H112C130 332 140 340 140 354C140 366 130 370 112 370H78C60 370 50 366 50 352Z", c.pillow),
       // đèn tường
-      ellipse(52, 262, 58, 58, "url(#bedSconce)"), path("M40 272L46 254H60L66 272Z", "#FFCB7A"), rect(51, 272, 4, 12, c.beam),
+      path("M40 272L46 254H60L66 272Z", "#FFCB7A"), rect(51, 272, 4, 12, c.beam),
     ]
   }
 
-  /// Chăn, kệ sách, tạ, giày: nằm trên đầu Koa.
-  public static func cover(light: Bool) -> [KoaRender.Element] {
+  /// Chăn: nằm trên Koa, tách lớp để kéo lên lúc Koa vừa nằm xuống.
+  public static func duvet(light: Bool) -> [KoaRender.Element] {
     let c = light ? day : night
     let top = "M130 384C136 352 146 322 172 316C198 310 216 334 244 344C274 352 298 358 304 374"
     let duvet = top + "C308 386 306 404 304 412C304 420 298 424 288 424H128C120 424 116 418 116 408V400C116 392 126 392 130 384Z"
@@ -222,6 +295,14 @@ public enum KoaBedroom {
     out += [
       line(top, "#FFFFFF", width: 2, opacity: 0.2),
       path("M116 402C118 392 126 392 130 384C136 378 146 380 146 390L138 424H128C120 424 116 418 116 410Z", c.fold),
+    ]
+    return out
+  }
+
+  /// Kệ sách, tạ, giày.
+  public static func cover(light: Bool) -> [KoaRender.Element] {
+    let c = light ? day : night
+    var out: [Element] = [
       // kệ thấp
       ellipse(352, 424, 34, 4, "#000000", opacity: 0.34), rect(322, 318, 60, 104, c.wood, r: 3),
       rect(327, 324, 50, 46, "#000000", opacity: 0.24), rect(327, 374, 50, 42, "#000000", opacity: 0.24),
@@ -260,22 +341,10 @@ public enum KoaBedroom {
     return [Element("Defs", kids: [vig]), rect(0, 0, 390, height, "url(#bedVig)")]
   }
 
-  /// Cửa sang phòng ngủ trên tường phòng chính, cạnh kệ (nằm dưới Koa). Mở thì hắt ánh vàng.
-  public static func door(open: Bool, light: Bool) -> [KoaRender.Element] {
-    let frame = light ? "#B58D66" : "#212B4E", leaf = light ? "#C9A67E" : "#3A2B3F", panel = light ? "#B58D66" : "#2C2230"
-    var out: [Element] = [path("M145 368V312A25 25 0 0 1 195 312V368Z", frame)]
-    if open {
-      out = [Element("Defs", kids: [glow("bedDoor", "#FFC978", 0.55)])] + out
-      out += [
-        path("M150 366V312A20 20 0 0 1 190 312V366Z", "#FFD48F"), path("M150 366V312A20 20 0 0 0 138 300V378Z", leaf),
-        ellipse(170, 340, 70, 60, "url(#bedDoor)"),
-      ]
-    } else {
-      out += [
-        path("M150 366V312A20 20 0 0 1 190 312V366Z", leaf), path("M156 366V314A14 14 0 0 1 184 314V366Z", panel),
-        ellipse(182, 340, 1.6, 1.6, "#FFC24D"),
-      ]
-    }
-    return out
+  /// Mảng tường giữa hai phòng, lướt qua phía trước lúc đổi phòng (dựng theo `height`).
+  public static func wall(light: Bool) -> [KoaRender.Element] {
+    let body = light ? "#B58D66" : "#1B1420", edge = light ? "#8F6440" : "#2C2230"
+    let w = KoaBedtime.wall
+    return [rect(0, 0, w, height, body), rect(0, 0, 7, height, edge), rect(w - 7, 0, 7, height, edge)]
   }
 }

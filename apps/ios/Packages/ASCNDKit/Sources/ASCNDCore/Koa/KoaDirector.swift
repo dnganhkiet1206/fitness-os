@@ -114,8 +114,6 @@ public enum KoaDirector {
     public var plantSway: Double
     /// Koa đã tới chỗ cần tới (bục, hay cửa phòng ngủ) và đứng yên: dáng ngồi được hiện.
     public var settled: Bool
-    /// Koa ở gần cửa lúc đi ngủ: cửa mở, hắt ánh vàng.
-    public var doorOpen: Bool
     /// Khung Koa bắt đầu phản ứng với khoảnh khắc này (app ghi vào ký ức).
     public var reacted: KoaCompanion.Moment?
     /// Đồng hồ của các nhịp nghỉ (thở, lắc tai gốc), ms: nhanh lên sau khi đi, không đều nhẹ.
@@ -193,6 +191,7 @@ public enum KoaDirector {
     /// Đã ngồi xuống (`Context.settle`): giữ tới khi hết dáng ngồi, không đứng lên ngồi xuống
     /// mỗi lần người nhích nhẹ.
     var seated = false
+    var seatedForBed = false
     /// Sau khi đi / nhảy, 0…1: thở nhanh rồi lắng dần.
     public private(set) var exertion = 0.0
     var idleClock = 0.0
@@ -446,6 +445,9 @@ public enum KoaDirector {
       }
       // tới giờ ngồi: đi về bục trước, không ngồi tại chỗ (Kiệt 30/10). Khuất thì đợi
       let rest = restSpot(ctx)
+      // đang ngồi trên bục mà tới giờ ngủ: chỗ nghỉ đã đổi, phải đứng dậy đi tới đó
+      if ctx.bedtime != seatedForBed { seated = false }
+      seatedForBed = ctx.bedtime
       seated = ctx.settle && (seated || (atSpot(rest) && !walker.isMoving))
       if ctx.settle, !atSpot(rest), !ctx.quiet, walker.atSafePoint, running?.b.kind != .home, let b = make(.home, ctx: ctx) {
         pending = nil
@@ -534,7 +536,6 @@ public enum KoaDirector {
         plane: plane, scale: walker.scale, gaze: g, expression: seated ? nil : expression, gesture: gesture,
         gestureAmount: gestureAmount, dayAmount: dayAmount, moving: walker.isMoving, plantSway: sway,
         settled: seated || (!ctx.settle && atSpot(KoaRoomMap.stageMark)),
-        doorOpen: ctx.bedtime && plane == .floor && hypot(walker.x - KoaRoomMap.door.x, walker.y - KoaRoomMap.door.d) < 70,
         reacted: fresh, idleClock: idleClock, behavior: running?.b.kind.rawValue ?? "-",
         why: running?.b.why ?? "", style: walker.tuning.style.name, target: running?.b.target, path: path)
     }

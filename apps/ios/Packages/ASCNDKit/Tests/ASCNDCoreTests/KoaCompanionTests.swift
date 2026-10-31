@@ -412,27 +412,94 @@ import Testing
     ctx.canWalk = false
     ctx.settle = true
     ctx.bedtime = true
-    var opened = false, arrived = false
+    var arrived = false
     for _ in 0..<(60 * 40) {
       let f = d.step(1.0 / 60, ctx: ctx)
-      if f.doorOpen { opened = true }
       if f.settled {
         arrived = true
         break
       }
     }
-    #expect(arrived && opened)
+    #expect(arrived)
     #expect(d.plane == .floor)
     #expect(hypot(d.walker.x - KoaRoomMap.door.x, d.walker.y - KoaRoomMap.door.d) <= 12)
+  }
+
+  /// Đang ngồi trên bục (dáng khác) rồi tới giờ ngủ: vẫn phải đi tới chỗ, không tính là đã tới.
+  @Test func seatedOnStageStillWalksAtBedtime() {
+    var d = KoaDirector.Director(seed: 1)
+    var ctx = KoaDirector.Context()
+    ctx.canWalk = false
+    ctx.settle = true
+    for _ in 0..<120 { _ = d.step(1.0 / 60, ctx: ctx) }
+    #expect(d.step(1.0 / 60, ctx: ctx).settled)
+    ctx.bedtime = true
+    #expect(!d.step(1.0 / 60, ctx: ctx).settled)
   }
 
   @Test func doorSpotIsWalkable() {
     #expect(KoaRoomMap.valid(KoaRoomMap.door))
   }
 
-  @Test(arguments: [false, true]) func doorPlans(light: Bool) {
-    for open in [false, true] {
-      #expect(!KoaPaint.plan(KoaRender.Element("Svg", kids: KoaBedroom.door(open: open, light: light))).isEmpty)
+  @Test(arguments: [false, true]) func layersPlan(light: Bool) {
+    for kids in [
+      KoaBedroom.live(t: 3, light: light, zzz: true), KoaBedroom.duvet(light: light), KoaBedroom.wall(light: light),
+    ] {
+      #expect(!KoaPaint.plan(KoaRender.Element("Svg", kids: kids)).isEmpty)
     }
+  }
+
+  /// Đồ trong phòng thật sự động: hai thời điểm cho hai bản vẽ khác nhau.
+  @Test(arguments: [false, true]) func roomMoves(light: Bool) {
+    #expect(KoaBedroom.live(t: 1, light: light, zzz: false) != KoaBedroom.live(t: 2.5, light: light, zzz: false))
+  }
+
+  /// Sao băng (đêm) chỉ thoáng qua, không sáng mãi.
+  @Test func shootingStarIsBrief() {
+    #expect(KoaBedroom.flyby(KoaBedroom.night, 0.4).count == 1)
+    #expect(KoaBedroom.flyby(KoaBedroom.night, 5).isEmpty)
+  }
+}
+
+@Suite struct KoaBedtimeSceneTests {
+  private func play(_ last: Double = KoaBedtime.land) -> [KoaBedtime.Shot] {
+    var b = KoaBedtime()
+    return (Array(stride(from: 0.0, to: last, by: 1.0 / 60)) + [last]).map { b.shot(at: $0) }
+  }
+
+  @Test func walksLeftToRightThenJumpsLeftOntoTheBed() {
+    let shots = play()
+    let walk = shots.prefix(Int(KoaBedtime.arrive * 60))
+    #expect(zip(walk, walk.dropFirst()).allSatisfy { $1.x >= $0.x })
+    #expect(walk.contains { ($0.walk?.weight ?? 0) > 0.5 })
+    let end = shots[shots.count - 1], bed = KoaBedroom.sleeper
+    #expect(abs(end.x - bed.x) < 1 && abs(end.y - bed.y) < 2 && abs(end.scale - bed.scale) < 0.01)
+    #expect(abs(end.angle - bed.angle) < 1)
+    #expect(end.eyesClosed)
+  }
+
+  /// Không giật: giữa hai khung Koa không nhảy cóc.
+  @Test func noJumpCuts() {
+    let shots = play()
+    for (a, b) in zip(shots, shots.dropFirst()) {
+      #expect(hypot(b.x - a.x, b.y - a.y) < 14)
+      #expect(abs(b.angle - a.angle) < 6)
+    }
+  }
+
+  /// Đổi độ sâu nằm gọn trong lúc mảng tường che.
+  @Test func depthChangesBehindTheWall() {
+    var b = KoaBedtime()
+    let first = b.shot(at: 0).scale
+    let before = b.shot(at: KoaBedtime.pan * 0.41).scale
+    #expect(abs(before - first) < 0.001)
+    let after = b.shot(at: KoaBedtime.pan * 0.6).scale
+    #expect(abs(after - 138 * 0.87 / 240) < 0.001)
+  }
+
+  @Test func blanketComesUpAfterLanding() {
+    #expect(KoaBedtime.cover(at: KoaBedtime.land) == 0)
+    #expect(KoaBedtime.cover(at: KoaBedtime.end) == 1)
+    #expect(KoaBedtime.cover(at: .infinity) == 1)
   }
 }

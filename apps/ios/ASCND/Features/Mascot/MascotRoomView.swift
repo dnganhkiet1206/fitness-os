@@ -873,6 +873,10 @@ struct MascotStage: View {
   #endif
   /// Sân khấu còn trong khung cuộn (như `KoaFigureView`): ngoài khung thì không đi dạo.
   @State private var onScreen = true
+  /// Cảnh đi ngủ đang chạy (`KoaBedtime`): mốc bắt đầu, và Koa của cảnh cho tới lúc chạm giường.
+  @State private var bedScene: Date?
+  @State private var bedClock: KoaBedtimeClock?
+  @State private var seenBed = false
   @Environment(\.colorScheme) private var scheme
   @Environment(\.locale) private var locale
   /// Ngôn ngữ của chữ vẽ trên tranh trong phòng.
@@ -928,8 +932,8 @@ struct MascotStage: View {
     walks && KoaEmotion.state(emotion).pose == .idle
   }
 
-  /// Đang ngủ và đã tới cửa: sang phòng ngủ gác mái, sân khấu nghỉ hẳn.
-  private var inBedroom: Bool { walks && emotion == .sleep && director.settled }
+  /// Đang ngủ và đã tới chỗ: sang phòng ngủ gác mái, sân khấu nghỉ hẳn.
+  private var inBedroom: Bool { walks && emotion == .sleep && director.inBed }
 
   /// Cảm xúc là dáng ngồi mà Koa chưa về tới bục: vẫn đứng và đi về, tới nơi mới ngồi.
   private var shownEmotion: KoaEmotion.Emotion {
@@ -946,11 +950,9 @@ struct MascotStage: View {
           GeometryReader { g in
             ZStack(alignment: .topLeading) {
               if walks {
-                KoaBedroomLayer(plan: Self.doorPlan(open: director.doorOpen, light: scheme == .light)).equatable()
-                  .frame(width: g.size.width, height: g.size.width / StudioScene.width * StudioScene.sceneBottom)
-                  .allowsHitTesting(false)
                 floorTaps(g.size.width)
-                livingHero(g.size.width)
+                // Koa của sân khấu nhường chỗ ngay cho Koa của cảnh đi ngủ, không trôi theo phòng
+                livingHero(g.size.width).opacity(asleep ? 0 : 1).animation(nil, value: asleep)
               } else {
                 hero(g.size.width)
               }
@@ -958,12 +960,41 @@ struct MascotStage: View {
           }
         }
         .background(walks ? Self.floorEdge(light: scheme == .light) : .clear)
-        // lia ngang: phòng ngủ ở bên kia cánh cửa
-        .visualEffect { content, proxy in content.offset(x: asleep ? proxy.size.width : 0) }
-      if asleep { KoaBedroomView(equipped: equipped, build: build).transition(.move(edge: .leading)) }
+        // lia ngang: Koa đi sang phải, phòng trôi sang trái
+        .visualEffect { content, proxy in content.offset(x: asleep ? -proxy.size.width : 0) }
+      if asleep { KoaBedroomView(equipped: equipped, build: build, scene: bedScene).transition(.move(edge: .trailing)) }
+      if let bedScene, let bedClock {
+        KoaBedtimeActor(start: bedScene, clock: bedClock, equipped: equipped, build: build)
+          .transition(.identity)
+      }
+      // mảng tường ở tiền cảnh, trôi nhanh hơn phòng và che chỗ đổi phòng
+      if walks, !reduceMotion {
+        GeometryReader { g in
+          let k = g.size.width / StudioScene.width
+          KoaBedroomLayer(plan: Self.wallPlan(light: scheme == .light)).equatable()
+            .frame(width: g.size.width, height: g.size.height)
+            .offset(x: asleep ? -(KoaBedtime.wall + 8) * k : g.size.width + 8 * k)
+        }
+        .allowsHitTesting(false)
+      }
     }
     .clipped()
-    .animation(reduceMotion ? nil : .easeInOut(duration: 1.1), value: asleep)
+    .animation(reduceMotion ? nil : asleep ? .timingCurve(0.42, 0, 0.58, 1, duration: KoaBedtime.pan) : .easeInOut(duration: 1.1), value: asleep)
+    .onChange(of: asleep) { _, now in
+      // chỉ lúc Koa vừa tự đi tới; mở phòng giữa giờ ngủ thì Koa đã nằm sẵn
+      guard now, !reduceMotion else {
+        bedScene = nil
+        return
+      }
+      bedClock = KoaBedtimeClock()
+      bedScene = .now
+    }
+    .task(id: bedScene) {
+      guard bedScene != nil else { return }
+      try? await Task.sleep(for: .seconds(KoaBedtime.land))
+      guard !Task.isCancelled else { return }
+      bedClock = nil
+    }
     .aspectRatio(StudioScene.width / (StudioScene.sceneBottom + tail), contentMode: .fit)
     .frame(maxWidth: .infinity)
     .accessibilityElement(children: .ignore)
@@ -977,9 +1008,13 @@ struct MascotStage: View {
     .onScrollVisibilityChange(threshold: 0.6) { director.context.quiet = !$0 }
     .onChange(of: companion, initial: true) { _, facts in
       if walks, !benchMode { director.sync(facts, userId: userId) }
+      // mở phòng giữa giờ ngủ: Koa đã nằm sẵn, không đi lại từ đầu
+      if walks, !seenBed, emotion == .sleep { director.place(KoaRoomMap.door) }
+      seenBed = true
       settle()
     }
-    .onChange(of: canWalk) { settle() }
+    // theo cảm xúc, không theo `canWalk`: từ dáng ngồi khác sang ngủ thì `canWalk` không đổi
+    .onChange(of: emotion) { settle() }
     .onAppear { arrive() }
     .onDisappear {
       seenAt = Date.now.timeIntervalSince1970
@@ -1009,7 +1044,7 @@ struct MascotStage: View {
     guard walks else { return }
     director.context.settle = !canWalk
     director.context.bedtime = emotion == .sleep
-    if !canWalk, reduceMotion, !director.settled {
+    if !canWalk, reduceMotion, emotion == .sleep ? !director.inBed : !director.settled {
       director.place(emotion == .sleep ? KoaRoomMap.door : KoaRoomMap.stageMark)
     }
   }
@@ -1019,8 +1054,8 @@ struct MascotStage: View {
     light ? Color(red: 0.86, green: 0.8, blue: 0.72) : Color(red: 0.03, green: 0.04, blue: 0.11)
   }
 
-  private static func doorPlan(open: Bool, light: Bool) -> [KoaPaint.Op] {
-    KoaPaint.plan(KoaRender.Element("Svg", kids: KoaBedroom.door(open: open, light: light)))
+  private static func wallPlan(light: Bool) -> [KoaPaint.Op] {
+    KoaPaint.plan(KoaRender.Element("Svg", kids: KoaBedroom.wall(light: light)))
   }
 
   /// Vùng chạm đúng khung bảng số (`270, 245`, 102 × 62 trong toạ độ phòng).
