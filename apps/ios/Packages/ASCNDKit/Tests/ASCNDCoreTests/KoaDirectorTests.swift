@@ -58,9 +58,19 @@ struct KoaDirectorTests {
   /// hơn mép sau mặt bục); trên bục → không có gì che.
   @Test func occlusionByDepth() {
     let behindPlant = KoaRoomMap.Spot(.floor, 280, 376)
-    #expect(KoaRoomMap.occluding(behindPlant, halfWidth: 50).map(\.name).contains("plant"))
+    #expect(KoaRoomMap.occluding(behindPlant).map(\.name).contains("plant"))
     #expect(!KoaRoomMap.occluders.contains { $0.name == "stage" })
-    #expect(KoaRoomMap.occluding(KoaRoomMap.stageMark, halfWidth: 50).isEmpty)
+    #expect(KoaRoomMap.occluding(KoaRoomMap.stageMark).isEmpty)
+    // cả dải sàn ở sau mọi đồ vật: thứ tự lớp không đổi giữa đường, đồ không bật lên
+    for d in stride(from: 367.0, through: 380, by: 1) {
+      #expect(KoaRoomMap.occluding(KoaRoomMap.Spot(.floor, 150, d)).count == KoaRoomMap.occluders.count)
+    }
+    // lúc đổi lớp (giữa cú nhảy ở bậc) Koa không chồng lên đồ: chân kệ tới x 132, lá cây từ
+    // x 262, nửa bề ngang Koa ở sàn tới ~47 (tính cả tai)
+    for s in KoaRoomMap.steps {
+      #expect(s.floor.x - 47 > 125 && s.floor.x + 47 < 262)
+      #expect(KoaRoomMap.valid(s.floor) && KoaRoomMap.valid(s.stage))
+    }
     // xa thì nhỏ, gần thì to
     #expect(KoaRoomMap.scale(380) < 1 && KoaRoomMap.scale(450) > 1)
   }
@@ -130,15 +140,19 @@ struct KoaDirectorTests {
     d.place(KoaRoomMap.anchor("shelf")!.stand)
     d.request(.greet)
     var faceAt: Double?, moveAt: Double?, eyesAt: Double?
+    var arrivedGreeting = false
     let start = (x: d.walker.x, y: d.walker.y)
     Self.run(&d, 14) { f, t in
+      if f.behavior == "greet", f.plane == .stage, hypot(f.x - KoaRoomMap.user.x, f.depth - KoaRoomMap.user.d) < 1 {
+        arrivedGreeting = true
+      }
       if eyesAt == nil, abs(f.gaze.eyes.y - 0.15) < 0.2, abs(f.gaze.eyes.x) < 0.3 { eyesAt = t }
       if faceAt == nil, f.expression != nil { faceAt = t }
       if moveAt == nil, hypot(f.x - start.x, f.depth - start.y) > 0.5 { moveAt = t }
     }
     #expect(eyesAt != nil && faceAt != nil && moveAt != nil)
     #expect(eyesAt! <= faceAt! && faceAt! < moveAt!)
-    #expect(d.current == .greet)
+    #expect(arrivedGreeting)
     #expect(d.plane == .stage)
     #expect(hypot(d.walker.x - KoaRoomMap.user.x, d.walker.y - KoaRoomMap.user.d) < 1)
   }
