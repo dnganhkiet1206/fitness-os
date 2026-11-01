@@ -33,6 +33,7 @@ struct NotificationReminderScheduler: ReminderScheduler {
       let content = UNMutableNotificationContent()
       content.title = item.text.title
       content.body = item.text.body
+      if item.key == .meal { content.categoryIdentifier = MealNotification.category }
       let when = calendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: item.at)
       let request = UNNotificationRequest(
         identifier: "ascnd-reminder-\(i)-\(item.key.rawValue)", content: content,
@@ -56,9 +57,46 @@ struct NotificationReminderScheduler: ReminderScheduler {
   }
 }
 
+/// Nút trên thông báo nhắc bữa (Kiệt 01/11): nhấn giữ thông báo → "Ghi như mọi khi"
+/// (ghi bữa quen theo giờ, không mở app) hay "Ghi món khác" (mở màn ghi bữa).
+enum MealNotification {
+  static let category = "ascnd-meal"
+  static let usual = "ascnd-meal-usual"
+  static let other = "ascnd-meal-other"
+  static let confirm = "ascnd-meal-logged"
+
+  /// Gọi một lần khi app chạy (trước khi thông báo nào được bấm).
+  static func register() {
+    let usual = UNNotificationAction(
+      identifier: usual, title: String(localized: "notify.meal.usual"), options: [],
+      icon: UNNotificationActionIcon(systemImageName: "checkmark.circle"))
+    let other = UNNotificationAction(
+      identifier: other, title: String(localized: "notify.meal.other"), options: [.foreground],
+      icon: UNNotificationActionIcon(systemImageName: "fork.knife"))
+    let cat = UNNotificationCategory(identifier: category, actions: [usual, other], intentIdentifiers: [])
+    UNUserNotificationCenter.current().setNotificationCategories([cat])
+  }
+
+  /// Báo lại đã ghi gì (hay vì sao chưa) — thông báo ngay, không âm thanh.
+  static func confirm(title: String, body: String) async {
+    let c = UNMutableNotificationContent()
+    c.title = title
+    c.body = body
+    c.interruptionLevel = .passive
+    try? await UNUserNotificationCenter.current().add(
+      UNNotificationRequest(identifier: confirm, content: c, trigger: nil))
+  }
+}
+
 /// Hiện lời nhắc cả khi app đang mở (`setNotificationHandler` của RN: banner +
 /// danh sách + âm thanh, không badge).
 final class ReminderPresenter: NSObject, UNUserNotificationCenterDelegate {
+  /// "Ghi như mọi khi" — AppServices gắn; trả tên món + kcal đã ghi, `nil` nếu không ghi được.
+  /// Gắn một lần lúc app dựng dịch vụ, trước khi thông báo nào được bấm.
+  nonisolated(unsafe) var logUsualMeal: (@Sendable () async -> (names: String, kcal: Int)?)?
+  /// "Ghi món khác" — mở màn ghi bữa (link `ascnd://log-meal`).
+  nonisolated(unsafe) var openMealLog: (@Sendable () async -> Void)?
+
   func userNotificationCenter(
     _ center: UNUserNotificationCenter, willPresent notification: UNNotification
   ) async -> UNNotificationPresentationOptions {
@@ -68,6 +106,24 @@ final class ReminderPresenter: NSObject, UNUserNotificationCenterDelegate {
   /// Chạm một thông báo (đợt 2): đo `notification_opened` theo khoá (`ascnd-reminder-<i>-<khoá>`).
   func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
     let id = response.notification.request.identifier
+    switch response.actionIdentifier {
+    case MealNotification.usual:
+      let done = await logUsualMeal?()
+      await MainActor.run { Telemetry.capture(.notificationOpened, ["key": "meal-usual", "logged": done != nil ? "1" : "0"]) }
+      if let done {
+        await MealNotification.confirm(
+          title: String(localized: "notify.meal.logged"), body: String(localized: "notify.meal.logged.body \(done.names) \(done.kcal)"))
+      } else {
+        await MealNotification.confirm(
+          title: String(localized: "notify.meal.none"), body: String(localized: "notify.meal.none.body"))
+      }
+      return
+    case MealNotification.other:
+      await openMealLog?()
+      return
+    default:
+      break
+    }
     guard id.hasPrefix("ascnd-reminder-") else { return }
     let key = id.split(separator: "-").last.map(String.init) ?? "unknown"
     await MainActor.run { Telemetry.capture(.notificationOpened, ["key": key]) }

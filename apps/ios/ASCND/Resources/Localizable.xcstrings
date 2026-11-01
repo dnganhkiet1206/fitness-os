@@ -67124,6 +67124,144 @@
      }
     }
    }
+  },
+  "notify.meal.usual": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Log my usual"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ghi như mọi khi"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Registrar lo de siempre"
+     }
+    }
+   }
+  },
+  "notify.meal.other": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Log something else"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ghi món khác"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Registrar otra cosa"
+     }
+    }
+   }
+  },
+  "notify.meal.logged": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Meal logged"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đã ghi bữa"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Comida registrada"
+     }
+    }
+   }
+  },
+  "notify.meal.logged.body %@ %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ · %lld kcal. Open ASCND to change it."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ · %lld kcal. Mở ASCND nếu muốn sửa."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ · %lld kcal. Abre ASCND para cambiarlo."
+     }
+    }
+   }
+  },
+  "notify.meal.none": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nothing logged yet"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chưa ghi được"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Aún no se registró"
+     }
+    }
+   }
+  },
+  "notify.meal.none.body": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "No usual meal for this time yet. Open ASCND to log it."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chưa có bữa quen cho giờ này. Mở ASCND để ghi nhé."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Aún no hay una comida habitual para esta hora. Abre ASCND para registrarla."
+     }
+    }
+   }
   }
- }
+}
 }

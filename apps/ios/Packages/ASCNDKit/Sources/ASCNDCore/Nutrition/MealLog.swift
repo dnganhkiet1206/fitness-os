@@ -221,6 +221,24 @@ public enum MealLog {
 
   /// `foldRecentMeals`: mới → cũ, bỏ bữa không còn món, bỏ bữa trùng chữ ký
   /// (giữ lần gần nhất), tối đa `limit`.
+  /// Bữa quen của một loại bữa (Kiệt 01/11, nút "Ghi như mọi khi" trên thông báo nhắc
+  /// bữa): cùng món ăn nhiều lần nhất trong các bữa đã đọc; hoà thì bữa gần nhất.
+  /// `entries` xếp mới trước (như `recentMeals`). Chưa từng ghi loại bữa ấy: `nil`.
+  public static func usualMeal(_ entries: [JSONValue], mealType: String) -> RecentMeal? {
+    let same = entries.filter { $0["meal_type"]?.stringValue == mealType }
+    var count: [String: Int] = [:]
+    var first: [String: Int] = [:]
+    for (i, e) in same.enumerated() {
+      guard case .array(let rows)? = e["meal_entry_items"], !rows.isEmpty else { continue }
+      let sig = mealSignature(mealType, rows.map { $0["food_name"]?.stringValue })
+      count[sig, default: 0] += 1
+      if first[sig] == nil { first[sig] = i }
+    }
+    guard let best = count.keys.max(by: { (count[$0]!, -first[$0]!) < (count[$1]!, -first[$1]!) }), let i = first[best]
+    else { return nil }
+    return recentMeals([same[i]], limit: 1).first
+  }
+
   public static func recentMeals(_ entries: [JSONValue], limit: Int = recentMealsKeep) -> [RecentMeal] {
     var seen = Set<String>()
     var out: [RecentMeal] = []
@@ -595,6 +613,36 @@ public final class MealLogger {
     yesterdayMeals = []
     for e in entries { onEnqueued(e) }
     return .queued(online: online)
+  }
+
+  /// "Ghi như mọi khi" từ thông báo nhắc bữa (Kiệt 01/11): bữa quen của loại bữa theo
+  /// giờ hiện tại (`MealLog.usualMeal`) vào hàng đợi, không mở màn. Trả bữa đã ghi;
+  /// `nil` khi chưa có bữa quen / đọc hỏng / ghi hỏng.
+  public func logUsual() async -> MealLog.RecentMeal? {
+    guard !closed, !saving, !saved, let store,
+      let rows = try? await source.recentMeals(userId: userId, limit: MealLog.recentMealsRead),
+      let meal = MealLog.usualMeal(rows, mealType: mealType)
+    else { return nil }
+    saving = true
+    defer { if !closed { saving = false } }
+    let now = clock.nowMillis()
+    let items = meal.foods.map { f -> MealLog.Item in
+      var it = f.food.item(id: makeId())
+      it.servings = f.servings
+      return it
+    }
+    let entry = MealLog.entry(
+      id: makeId(), itemIds: items.map { _ in makeId() }, userId: userId, mealType: mealType,
+      dateTime: MealLog.stamp(date, now: now, in: timeZone), items: items, createdAt: now)
+    do {
+      try await store.enqueue([entry])
+    } catch {
+      return nil
+    }
+    saved = true
+    savedId = entry.id
+    onEnqueued(entry)
+    return meal
   }
 
   /// "Ăn lại bữa này": đúng các món và khẩu phần đã ăn. Loại bữa giữ theo giờ
