@@ -247,6 +247,15 @@ final class HealthSyncCoordinator {
   private let store: (any RowStore)?
   private var running = false
   private static let lastSyncKey = "health:lastAutoSync"
+  /// Người dùng tắt Apple Health trong Cài đặt (Kiệt 01/11): ngừng đồng bộ, giữ quyền
+  /// (app không thu hồi được quyền HealthKit — chỉ Cài đặt của iPhone làm được).
+  static let pausedKey = "health:paused"
+
+  var paused: Bool { UserDefaults.standard.bool(forKey: Self.pausedKey) }
+
+  func setPaused(_ on: Bool) {
+    UserDefaults.standard.set(on, forKey: Self.pausedKey)
+  }
 
   init(store: (any RowStore)?) {
     self.store = store
@@ -268,6 +277,7 @@ final class HealthSyncCoordinator {
   /// Nút "Đồng bộ" (`useHealthSync`): xin quyền nếu cần, rồi chạy.
   func syncNow(userId: String, lang: String) async throws(HealthSync.Failure) {
     guard await source.requestPermission() else { throw .write("Health access was not granted") }
+    setPaused(false)
     try await run(userId: userId, lang: lang)
     UserDefaults.standard.set(Double(SystemWallClock().nowMillis().millis), forKey: Self.lastSyncKey)
     Telemetry.capture(.healthConnected)
@@ -277,6 +287,7 @@ final class HealthSyncCoordinator {
   /// phút. Im lặng — lỗi không hiện cho người dùng.
   func autoSync(userId: String?, lang: String) async {
     guard let userId, !running else { return }
+    if paused { return }
     // Không kết nối Health: bước chân từ iPhone, nếu người dùng đã bật (18/10).
     guard source.isAvailable, await source.alreadyAsked() else {
       await syncPhoneSteps(userId: userId)
@@ -335,7 +346,7 @@ final class HealthSyncCoordinator {
   /// Một lượt do Health báo: không bao giờ xin quyền (app có thể đang ở nền),
   /// cùng nhịp 15 phút với lượt tự đồng bộ — nhiều loại báo cùng lúc chỉ chạy một.
   private func backgroundSync(userId: String?, lang: String, onSynced: @MainActor () async -> Void) async {
-    guard let userId, !running else { return }
+    guard let userId, !running, !paused else { return }
     let now = SystemWallClock().nowMillis()
     let last = (UserDefaults.standard.object(forKey: Self.lastSyncKey) as? Double).map { EpochMillis(Int64($0)) }
     guard HealthSync.shouldAutoSync(asked: true, lastSync: last, now: now) else { return }

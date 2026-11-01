@@ -171,11 +171,13 @@ struct CommunityUserView: View {
       }
     }
     .task { if book.phase == .loading { await book.load() } }
+    // Kéo để làm mới TRƯỚC mọi sheet / màn con (01/11): sheet khai báo bên trong
+    // `.refreshable` thừa hưởng nó — Cài đặt kéo được và tải lại trang Hồ sơ.
+    .refreshable { await book.load() }
     .sheet(isPresented: $showsSettings) { SettingsSheet() }
     .sheet(isPresented: $editingGoals) {
       if let fitness { EditProfileView(book: fitness) }
     }
-    .refreshable { await book.load() }
     .communityPostSheet(Binding(get: { openPost.map { CommunityPostSheetRoute(id: $0) } }, set: { openPost = $0?.id }))
     .navigationDestination(isPresented: $showsAwards) {
       if let awards { AwardsView(book: awards, lang: services.preferences.lang) }
