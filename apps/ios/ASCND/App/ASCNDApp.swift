@@ -10,6 +10,9 @@ struct ASCNDApp: App {
   @State private var services: AppServices
   /// Link `ascnd://` tới một màn, chờ phiên mở (#527 deep link lát 2).
   @State private var links = DeepLinkInbox()
+  /// Khoá Face ID (#527 mục 7) — cửa sổ riêng trên mọi sheet.
+  @State private var lock = AppLockController()
+  @State private var lockWindow = AppLockWindow()
 
   init() {
     let store = RestTimerStore()
@@ -41,6 +44,12 @@ struct ASCNDApp: App {
     RestIntentRouter.setPaused = { paused in controller.setPaused(paused) }
     // Nút "+1 ly" trên widget Koa (đợt 2C).
     KoaIntentRouter.addWater = { await services.addWaterFromWidget() }
+  }
+
+  /// Hiện / ẩn cửa sổ khoá theo trạng thái; cùng ngôn ngữ và sáng / tối với app.
+  private func showLock() {
+    lockWindow.update(lock: lock, lang: services.preferences.lang.rawValue)
+    Self.applyTheme(services.preferences.theme)
   }
 
   static func applyTheme(_ theme: AppPreferences.Theme) {
@@ -77,6 +86,10 @@ struct ASCNDApp: App {
         .onAppear { Self.applyTheme(services.preferences.theme) }
         .environment(rest)
         .environment(services)
+        .environment(lock)
+        .onChange(of: lock.locked) { _, _ in showLock() }
+        .onChange(of: lock.covered) { _, _ in showLock() }
+        .onChange(of: lock.enabled) { _, _ in showLock() }
         .environment(links)
         // Phiên trước, Island sau (#252): mở app khi phiên đã mất lúc app
         // không chạy thì quãng nghỉ đã lưu là của người trước — không phát lại.
@@ -108,6 +121,10 @@ struct ASCNDApp: App {
             if let target = DeepLink.target(url) { links.receive(target) }
           }
         }
+    }
+    .onChange(of: scenePhase, initial: true) { _, phase in
+      lock.scenePhaseChanged(phase)
+      showLock()
     }
     .onChange(of: scenePhase) { _, phase in
       // Quay lại foreground: tính lại từ `endsAt` ngay, đóng quãng nghỉ đã hết

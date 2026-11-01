@@ -177,7 +177,7 @@
      "bullets": [
       "Truy cập và chỉnh sửa: xem và sửa hầu hết dữ liệu ngay trong ứng dụng.",
       "Xoá: xoá từng mục, xoá trí nhớ của Koa, hoặc xoá toàn bộ tài khoản trong Cài đặt.",
-      "Nhận bản sao dữ liệu (di chuyển dữ liệu): gửi yêu cầu tới [email hỗ trợ]; chúng tôi trả lời trong thời hạn pháp luật yêu cầu.",
+      "Nhận bản sao dữ liệu (di chuyển dữ liệu): tự tải toàn bộ dữ liệu trong Cài đặt › Riêng tư › Tải dữ liệu của bạn (tệp zip gồm JSON và CSV, tạo ngay trên máy), hoặc gửi yêu cầu tới [email hỗ trợ]; chúng tôi trả lời trong thời hạn pháp luật yêu cầu.",
       "Phản đối hoặc hạn chế xử lý, rút lại đồng ý (ví dụ thu hồi quyền Apple Health, tắt thông báo).",
       "Khiếu nại với cơ quan bảo vệ dữ liệu nơi bạn cư trú.",
       "Cư dân California (CCPA/CPRA): chúng tôi không bán hay \"chia sẻ\" thông tin cá nhân cho quảng cáo theo hành vi; bạn có quyền biết, xoá, sửa và không bị phân biệt đối xử khi thực hiện quyền."
@@ -489,7 +489,7 @@
      "bullets": [
       "Access and correction: view and edit most of your data directly in the app.",
       "Deletion: delete individual entries, Koa’s memory, or your whole account in Settings.",
-      "A copy of your data (portability): email [email hỗ trợ]; we respond within the time the law requires.",
+      "A copy of your data (portability): download all of it yourself in Settings › Privacy › Download your data (a zip with JSON and CSV, made on your phone), or email [email hỗ trợ]; we respond within the time the law requires.",
       "Object to or restrict processing, or withdraw consent (for example revoke Apple Health access or turn off notifications).",
       "Complain to the data protection authority where you live.",
       "California residents (CCPA/CPRA): we do not sell or \"share\" personal information for cross-context behavioral advertising; you have the right to know, delete and correct, and not to be discriminated against for exercising your rights."
@@ -801,7 +801,7 @@
      "bullets": [
       "Acceso y rectificación: consulta y edita la mayoría de tus datos en la app.",
       "Supresión: elimina entradas, la memoria de Koa o toda tu cuenta en Ajustes.",
-      "Copia de tus datos (portabilidad): escribe a [email hỗ trợ]; respondemos en el plazo que exige la ley.",
+      "Copia de tus datos (portabilidad): descárgalos tú mismo en Ajustes › Privacidad › Descargar tus datos (un zip con JSON y CSV, creado en tu teléfono), o escribe a [email hỗ trợ]; respondemos en el plazo que exige la ley.",
       "Oposición o limitación del tratamiento y retirada del consentimiento (por ejemplo, retirar el acceso a Apple Salud o desactivar notificaciones).",
       "Presentar una reclamación ante la autoridad de protección de datos de tu país.",
       "Residentes de California (CCPA/CPRA): no vendemos ni \"compartimos\" información personal para publicidad conductual; tienes derecho a saber, eliminar y corregir, y a no ser discriminado por ejercer tus derechos."
