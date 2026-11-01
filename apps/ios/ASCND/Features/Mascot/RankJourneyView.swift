@@ -60,7 +60,7 @@ struct RankJourneyView: View {
     let n = ranks.count
     let current = max(0, ranks.firstIndex { $0.key == currentKey } ?? 0)
     let cur = ranks[current]
-    let curColor = Color(hex: cur.colorHex)
+    let curColor = Color.rank(cur)
     let padX = 18.0
     let y = 40.0
     let step = (Self.vw - padX * 2) / Double(max(1, n - 1))
@@ -99,7 +99,7 @@ struct RankJourneyView: View {
     for (i, rk) in ranks.enumerated() {
       let reached = i <= current
       let cx = x(i)
-      let color = Color(hex: rk.colorHex)
+      let color = Color.rank(rk)
       if i == current {
         ctx.stroke(circle(cx, 14), with: .color(color.opacity(0.35)), lineWidth: 2 * k)
         ctx.fill(circle(cx, 9), with: .color(color))

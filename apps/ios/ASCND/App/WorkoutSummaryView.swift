@@ -138,7 +138,7 @@ public struct WorkoutSummaryView: View {
           .multilineTextAlignment(.center)
         if let next {
           ProgressView(value: Double(next.have), total: Double(next.need))
-            .tint(Color(hex: rank.colorHex))
+            .tint(Color.rank(rank))
             .accessibilityHidden(true)
           let nextRank = MascotRules.ranks[min(g.after.rank + 1, MascotRules.ranks.count - 1)]
           Text(String(localized: "koa.gains.toRank \(next.need - next.have) \(nextRank.name(lang))"))
