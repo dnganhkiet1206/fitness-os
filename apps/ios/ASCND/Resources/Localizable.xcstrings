@@ -26732,29 +26732,6 @@
     }
    }
   },
-  "community.post.title": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Post"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Bài đăng"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Publicación"
-     }
-    }
-   }
-  },
   "community.post.gone": {
    "extractionState": "manual",
    "localizations": {
@@ -43500,98 +43477,6 @@
      "stringUnit": {
       "state": "translated",
       "value": "p. ej. Meal Prep Semana 1"
-     }
-    }
-   }
-  },
-  "plans.name.hint": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "A name you will recognise in the list."
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Một cái tên bạn nhận ra trong danh sách."
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Un nombre que reconozcas en la lista."
-     }
-    }
-   }
-  },
-  "plans.mealsPerDayLabel": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Meals per day"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Số bữa/ngày"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Comidas al día"
-     }
-    }
-   }
-  },
-  "plans.preview": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "What you will get"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Sẽ tạo ra"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Lo que obtendrás"
-     }
-    }
-   }
-  },
-  "plans.previewSum %lld %lld %lld": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "%1$lld days · %2$lld meals a day · %3$lld meals in total"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "%1$lld ngày · %2$lld bữa mỗi ngày · tổng %3$lld bữa"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "%1$lld días · %2$lld comidas al día · %3$lld comidas en total"
      }
     }
    }

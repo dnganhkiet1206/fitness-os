@@ -599,18 +599,3 @@ struct PlanShortcuts: View {
   }
 }
 
-/// Nhãn chữ + biểu tượng, hoặc chỉ biểu tượng (nút mang nhãn VoiceOver riêng).
-private struct AdaptiveLabelStyle: LabelStyle {
-  let iconOnly: Bool
-
-  func makeBody(configuration: Configuration) -> some View {
-    if iconOnly {
-      configuration.icon
-    } else {
-      HStack(spacing: 6) {
-        configuration.icon
-        configuration.title
-      }
-    }
-  }
-}

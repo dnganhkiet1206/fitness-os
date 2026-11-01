@@ -2,53 +2,6 @@ import ASCNDCore
 import ASCNDDesignSystem
 import SwiftUI
 
-/// Một bài + bình luận (#527, lát 3) — `app/community-post.tsx` @ fac9ac2 trên
-/// `CommunityPostBook`.
-///
-/// Như RN: thẻ đầy đủ (mọi bài tập / nguyên liệu); bình luận cũ → mới, luồng
-/// một tầng (trả lời lùi vào dưới gốc); "Xem bình luận cũ hơn" ở đầu luồng, bấm
-/// mới tải, hỏng thì nói ra và giữ những gì đã có; `@handle` chỉ tô khi server đã
-/// xác nhận; "Trả lời" điền sẵn `@handle `; thanh viết ở đáy: tác giả tắt bình
-/// luận → nói ra, đang bị hạn chế → nói đến bao giờ, chưa có hồ sơ → mời tạo;
-/// gửi cần mạng, lỗi trần mỗi giờ (54000) / tạm khoá (CR001) có câu riêng.
-///
-/// Lát 4: nhấn giữ (hay hành động trợ năng "Thêm") một bình luận ra menu —
-/// người viết / chủ bài "Xoá bình luận", người khác "Báo cáo"; bình luận của
-/// mình đang bị ẩn có ghi chú vì sao + "Yêu cầu xem lại".
-///
-/// Lát 5: avatar của bình luận và `@handle` đã xác nhận mở trang người dùng.
-struct CommunityPostScreen: View {
-  let postId: String
-  var onCommented: () -> Void = {}
-  @Environment(WorkoutFlow.self) private var flow
-  @Environment(AppServices.self) private var services
-  @State private var book: CommunityPostBook?
-  @State private var built = false
-
-  var body: some View {
-    Group {
-      if let book {
-        CommunityPostView(book: book, onCommented: onCommented)
-      } else if built {
-        ContentUnavailableView {
-          Label("community.post.title", systemImage: "bubble.left.and.bubble.right")
-        } description: {
-          Text("placeholder.building")
-        }
-      } else {
-        DSLoadingView()
-      }
-    }
-    .navigationTitle(Text("community.post.title"))
-    .navigationBarTitleDisplayMode(.inline)
-    .task {
-      guard !built else { return }
-      book = services.makeCommunityPost(userId: flow.today.userId, postId: postId)
-      built = true
-    }
-  }
-}
-
 /// Bài mở bằng màn bật lên (15/10 — thay màn "Bài đăng" đẩy sang ở mọi nơi).
 struct CommunityPostSheetRoute: Identifiable, Hashable {
   let id: String
