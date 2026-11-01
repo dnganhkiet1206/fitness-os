@@ -195,6 +195,10 @@ private struct QuickLogBar: ViewModifier {
   /// "Kể cho Koa" (18/10): nút ASCND Intelligence của thanh mở màn ghi bằng lời.
   @State private var telling = false
   @Environment(AppServices.self) private var services
+  /// Sáng / tối của app, đọc NGOÀI thanh phụ: kính iOS 26 đổi môi trường bên trong
+  /// thanh theo nội dung phía sau (ảnh tối → "tối") trong khi kính vẫn vẽ sáng — chữ
+  /// trắng trên kính sáng ở giao diện sáng (soát 01/11). Ép lại đúng chế độ của app.
+  @Environment(\.colorScheme) private var appScheme
   /// Màn chọn trong bảng — mở sau khi bảng đóng hẳn (hai sheet không chồng nhau).
   @State private var chosen: DeepLink.Screen?
 
@@ -204,9 +208,9 @@ private struct QuickLogBar: ViewModifier {
       // thì mất vị trí điều hướng của các tab); 26.0 giữ thanh như cũ.
       Group {
         if #available(iOS 26.1, *) {
-          content.tabViewBottomAccessory(isEnabled: !hidden) { QuickLogAccessory(tell: askCoach ?? { telling = true }, coach: askCoach != nil) { picking = true } }
+          content.tabViewBottomAccessory(isEnabled: !hidden) { QuickLogAccessory(tell: askCoach ?? { telling = true }, coach: askCoach != nil) { picking = true }.environment(\.colorScheme, appScheme) }
         } else {
-          content.tabViewBottomAccessory { QuickLogAccessory(tell: askCoach ?? { telling = true }, coach: askCoach != nil) { picking = true } }
+          content.tabViewBottomAccessory { QuickLogAccessory(tell: askCoach ?? { telling = true }, coach: askCoach != nil) { picking = true }.environment(\.colorScheme, appScheme) }
         }
       }
       .tabBarMinimizeBehavior(.onScrollDown)

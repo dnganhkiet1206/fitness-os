@@ -371,7 +371,7 @@ struct MascotRoomView: View {
 
   private var rankSummary: some View {
     let rank = gainsRank
-    let tint = Color(hex: rank.colorHex)
+    let tint = Color.rank(rank)
     let pct = KoaGains.toNext(room.gains.points).map { Double($0.have) / Double(max(1, $0.need)) } ?? 1
     return NavigationLink {
       RoomDetailPage(title: String(localized: "mr.sec.rank")) { rankCard }
@@ -509,7 +509,7 @@ struct MascotRoomView: View {
   /// Gains, thanh tới hạng kế, "còn N Gains tới …". Không còn "Cấp N" / XP.
   private var levelRow: some View {
     let rank = gainsRank
-    let rankColor = Color(hex: rank.colorHex)
+    let rankColor = Color.rank(rank)
     let pct = KoaGains.toNext(room.gains.points).map { Double($0.have) / Double(max(1, $0.need)) } ?? 1
     return HStack(spacing: DS.Spacing.md) {
       Image(systemName: "dumbbell.fill")
@@ -563,7 +563,7 @@ struct MascotRoomView: View {
     let name = next.name(lang)
     var a = AttributedString(String(localized: "koa.gains.toRank \(n) \(name)"))
     if let r = a.range(of: name, options: .backwards) {
-      a[r].foregroundColor = Color(hex: next.colorHex)
+      a[r].foregroundColor = Color.rank(next)
       a[r].font = DS.TextStyle.footnote.weight(.bold)
     }
     return a

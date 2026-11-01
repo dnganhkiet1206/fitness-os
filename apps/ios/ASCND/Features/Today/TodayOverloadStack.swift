@@ -26,6 +26,7 @@ struct TodayOverloadStack<Hero: View>: View {
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Environment(\.weightUnit) private var unit
   @Environment(\.locale) private var locale
+  @Environment(\.dynamicTypeSize) private var typeSize
 
   /// Dải tối thiểu khi chữ lớn làm thẻ trên cao gần bằng khung.
   static var minPeek: CGFloat { 28 }
@@ -34,6 +35,28 @@ struct TodayOverloadStack<Hero: View>: View {
   /// việc chính kèm dòng "vuốt để xem"; thẻ trên bỏ dòng ấy, dải của thẻ sau nằm đúng
   /// vào khoảng trống — trang bên dưới không xê dịch.
   var body: some View {
+    if typeSize.isAccessibilitySize { accessibleBody } else { stackedBody }
+  }
+
+  /// Chữ trợ năng (soát 01/11): chồng bài ép cả hai thẻ vào khung của việc chính, chữ
+  /// lớn bị cắt ("Tập Ngực ·…", "Xem c…"). Ở cỡ này hai thẻ xếp dọc, cao theo chữ;
+  /// thẻ trên vẫn đổi việc chính ↔ tăng tải, dải dưới là nút đổi.
+  private var accessibleBody: some View {
+    VStack(spacing: DS.Spacing.sm) {
+      front
+      Group {
+        if showsLoad { mainStrip } else { loadStrip }
+      }
+      .padding(.vertical, DS.Spacing.sm)
+      .padding(.horizontal, DS.Spacing.md)
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .todayCard()
+    }
+    .sensoryFeedback(.selection, trigger: showsLoad)
+    .accessibilityAction(named: Text(showsLoad ? "ov.a11y.back" : "ov.a11y.show")) { swap() }
+  }
+
+  private var stackedBody: some View {
     hero(true)
       .hidden()
       .accessibilityHidden(true)
@@ -131,16 +154,16 @@ struct TodayOverloadStack<Hero: View>: View {
 
   private var mainStrip: some View {
     Button(action: onMainAction) {
-      HStack(spacing: DS.Spacing.sm) {
+      stripLayout {
         Text(verbatim: mainPeek)
           .font(DS.TextStyle.footnote.weight(.semibold))
           .foregroundStyle(DS.Color.foreground.swiftUI)
-          .lineLimit(1)
-        Spacer(minLength: 4)
+          .lineLimit(typeSize.isAccessibilitySize ? nil : 1)
+        if !typeSize.isAccessibilitySize { Spacer(minLength: 4) }
         Text(verbatim: "\(mainAction) ›")
           .font(DS.TextStyle.footnote.weight(.semibold))
           .foregroundStyle(DS.Color.primary.swiftUI)
-          .lineLimit(1)
+          .lineLimit(typeSize.isAccessibilitySize ? nil : 1)
       }
       .frame(maxHeight: .infinity)
       .contentShape(Rectangle())
@@ -150,22 +173,22 @@ struct TodayOverloadStack<Hero: View>: View {
 
   private var loadStrip: some View {
     Button { swap() } label: {
-      HStack(spacing: DS.Spacing.sm) {
+      stripLayout {
         if let top = ups.first {
           Text(verbatim: "↑ \(top.name) \(TodayOverloadCard.target(top.advice, unit: unit, locale: locale) ?? "")")
             .font(DS.TextStyle.footnote.weight(.semibold))
             .foregroundStyle(DS.Color.readinessGreen.swiftUI)
-            .lineLimit(1)
+            .lineLimit(typeSize.isAccessibilitySize ? nil : 1)
         } else {
           Text("ov.eyebrow")
             .font(DS.TextStyle.footnote.weight(.semibold))
             .foregroundStyle(DS.Color.foreground.swiftUI)
         }
-        Spacer(minLength: 4)
+        if !typeSize.isAccessibilitySize { Spacer(minLength: 4) }
         Text(verbatim: "\(ups.count > 1 ? String(localized: "ov.peek.more \(ups.count - 1)") : String(localized: "ov.peek.open")) ›")
           .font(DS.TextStyle.footnote)
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-          .lineLimit(1)
+          .lineLimit(typeSize.isAccessibilitySize ? nil : 1)
       }
       .frame(maxHeight: .infinity)
       .contentShape(Rectangle())
@@ -174,6 +197,15 @@ struct TodayOverloadStack<Hero: View>: View {
   }
 
   private var ups: [OverloadPlan.Item] { items.filter(\.advice.isUp) }
+
+  /// Dải: ngang; chữ trợ năng thì dọc (chữ ở trên, nút ở dưới).
+  @ViewBuilder private func stripLayout<C: View>(@ViewBuilder _ content: () -> C) -> some View {
+    if typeSize.isAccessibilitySize {
+      VStack(alignment: .leading, spacing: 4) { content() }
+    } else {
+      HStack(spacing: DS.Spacing.sm) { content() }
+    }
+  }
 }
 
 /// Vuốt ngang (≥ 50 pt, ngang hơn dọc): chỉ nhận khi bắt đầu theo chiều ngang.
