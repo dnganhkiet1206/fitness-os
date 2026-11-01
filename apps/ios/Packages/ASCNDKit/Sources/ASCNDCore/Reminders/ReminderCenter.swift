@@ -142,6 +142,7 @@ public final class ReminderCenter {
     guard prefs.mealExtra.count < ReminderPrefs.maxMealTimes - 1 else { return }
     var next = prefs
     next.mealExtra.append(ReminderPrefs.nextMealSlot(after: [prefs.meal.clock] + prefs.mealExtra))
+    next.mealExtra.sort { $0.minutes < $1.minutes }
     await apply(next)
   }
 
@@ -149,6 +150,7 @@ public final class ReminderCenter {
     guard prefs.mealExtra.indices.contains(index), (0...23).contains(hour), (0...59).contains(minute) else { return }
     var next = prefs
     next.mealExtra[index] = ReminderClock(hour: hour, minute: minute)
+    next.mealExtra.sort { $0.minutes < $1.minutes }
     await apply(next)
   }
 
