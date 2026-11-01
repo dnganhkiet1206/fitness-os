@@ -116,6 +116,29 @@
      }
     }
    }
+  },
+  "NSFaceIDUsageDescription": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "ASCND uses Face ID only to unlock the app when you turn on App Lock in Settings."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "ASCND chỉ dùng Face ID để mở khoá app khi bạn bật Khoá bằng Face ID trong Cài đặt."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "ASCND usa Face ID solo para desbloquear la app cuando activas el bloqueo en Ajustes."
+     }
+    }
+   }
   }
  }
 }

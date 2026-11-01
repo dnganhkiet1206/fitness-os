@@ -47,6 +47,8 @@ public struct SettingsView: View {
   /// app chưa có toast nên báo ngay dưới hàng, tới khi rời Cài đặt.
   /// Có trong app thật; preview không có thì ẩn mục Koa.
   @Environment(AppServices.self) private var services: AppServices?
+  /// Khoá Face ID (#527 mục 7) — có trong app thật; preview không có thì ẩn.
+  @Environment(AppLockController.self) private var lock: AppLockController?
   @State private var passwordChanged = false
   @State private var deleting = false
   @State private var deleteResult: AccountDeletion?
@@ -189,6 +191,8 @@ public struct SettingsView: View {
         if let healthSync, healthAvailable {
           HealthSettingsSection(sync: healthSync, isConnected: healthConnected ?? { false }, phoneSteps: phoneSteps)
         }
+
+        privacySection
 
         // Nhắc nhở — thông báo cục bộ (`settings.tsx:604`, `nav.push('/reminders')`).
         Section {
@@ -342,6 +346,64 @@ public struct PhoneSteps {
   public init(isOn: @escaping @MainActor () -> Bool, enable: @escaping @MainActor () async -> Bool) {
     self.isOn = isOn
     self.enable = enable
+  }
+}
+
+extension SettingsView {
+  /// Riêng tư (#527 mục 7, Kiệt duyệt mock v2 01/11): khoá Face ID, lúc khoá lại,
+  /// tải dữ liệu. Câu đầu nói rõ dữ liệu là của người dùng.
+  @ViewBuilder var privacySection: some View {
+    if lock != nil || account != nil {
+      Section {
+        if let lock {
+          let available = AppLockController.biometricsAvailable
+          Toggle(isOn: Binding(get: { lock.enabled }, set: { on in Task { await lock.setEnabled(on) } })) {
+            Label {
+              VStack(alignment: .leading, spacing: 2) {
+                Text(verbatim: String(localized: "lock.setting \(AppLockController.biometryName)"))
+                Text(available ? "lock.setting.desc" : "lock.setting.unavailable")
+                  .font(DS.TextStyle.caption)
+                  .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+              }
+            } icon: {
+              Image(systemName: AppLockController.biometryName == "Touch ID" ? "touchid" : "faceid")
+            }
+          }
+          .disabled(!available)
+          .accessibilityIdentifier("settings.appLock")
+          if lock.enabled {
+            Picker(selection: Binding(get: { lock.relock }, set: { lock.setRelock($0) })) {
+              Text("lock.relock.now").tag(AppLock.Relock.immediately)
+              Text("lock.relock.1m").tag(AppLock.Relock.oneMinute)
+              Text("lock.relock.5m").tag(AppLock.Relock.fiveMinutes)
+            } label: {
+              Text("lock.relock")
+            }
+          }
+        }
+        if account != nil, let userId = services?.session.session?.userId {
+          NavigationLink {
+            DataExportView(userId: userId)
+          } label: {
+            Label {
+              VStack(alignment: .leading, spacing: 2) {
+                Text("export.row")
+                Text("export.row.desc")
+                  .font(DS.TextStyle.caption)
+                  .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+              }
+            } icon: {
+              Image(systemName: "square.and.arrow.down.on.square")
+            }
+          }
+          .accessibilityIdentifier("settings.export")
+        }
+      } header: {
+        Text("privacy.header")
+      } footer: {
+        Text("privacy.footer")
+      }
+    }
   }
 }
 

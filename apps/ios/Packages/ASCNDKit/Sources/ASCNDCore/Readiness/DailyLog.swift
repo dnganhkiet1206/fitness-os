@@ -371,16 +371,20 @@ public struct RowQuery: Sendable, Hashable {
   public let filters: [Filter]
   public let order: Order?
   public let limit: Int?
+  /// Bỏ qua chừng này hàng đầu (`.range(offset, offset + limit - 1)`) — đọc theo trang.
+  public let offset: Int?
   public let mode: Mode
 
   public init(
-    table: String, columns: String, filters: [Filter], order: Order? = nil, limit: Int? = nil, mode: Mode = .many
+    table: String, columns: String, filters: [Filter], order: Order? = nil, limit: Int? = nil, offset: Int? = nil,
+    mode: Mode = .many
   ) {
     self.table = table
     self.columns = columns
     self.filters = filters
     self.order = order
     self.limit = limit
+    self.offset = offset
     self.mode = mode
   }
 }

@@ -18,7 +18,11 @@ public struct SupabaseRowStore: RowStore {
       for f in q.filters { filtered = Self.apply(f, filtered) }
       var t: PostgrestTransformBuilder = filtered
       if let o = q.order { t = t.order(o.column, ascending: o.ascending) }
-      if let l = q.limit { t = t.limit(l) }
+      if let o = q.offset, let l = q.limit {
+        t = t.range(from: o, to: o + l - 1)
+      } else if let l = q.limit {
+        t = t.limit(l)
+      }
       let rows: [JSONValue] = try await t.execute().value
       switch q.mode {
       case .many: return rows

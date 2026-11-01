@@ -629,6 +629,13 @@ final class AppServices {
     return BiometricLogger(userId: userId, store: rows, outbox: outbox, onEnqueued: { _ in sync.kick() })
   }
 
+  /// "Tải dữ liệu của bạn" (#527 mục 7): đọc hết mọi bảng của người này. `nil` khi
+  /// chưa có backend; lỗi đọc thì ném — không bao giờ trả gói thiếu.
+  func loadExport(userId: String) async throws(RowStoreError) -> DataExport.Bundle? {
+    guard let rows else { return nil }
+    return try await DataExport.load(userId: userId, store: rows)
+  }
+
   /// Gains của Koa (#527 đợt 1): lịch sử tập + lịch tuần đã cache → vóc dáng.
   /// `nil` khi chưa có backend hoặc đọc hỏng (giữ Gains cũ).
   func loadKoaGains(userId: String) async -> KoaGainsSync.Loaded? {
