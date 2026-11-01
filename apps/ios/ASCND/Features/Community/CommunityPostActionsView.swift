@@ -47,14 +47,12 @@ private struct CommunityPostActionsModifier: ViewModifier {
   @State private var actions: CommunityPostActions?
   @State private var tryBook: CommunityTryBook?
   @State private var tried = 0
-  /// Bài của menu đang mở.
-  @State private var menuFor: CommunityFeed.Post?
-  @State private var reasonFor: CommunityFeed.Post?
-  @State private var deleteFor: CommunityFeed.Post?
-  @State private var blockFor: CommunityFeed.Author?
-  /// Sau báo cáo: mời tắt tiếng / chặn người ấy.
-  @State private var afterReport: CommunityFeed.Author?
-  @State private var message: String?
+  /// Gán một câu là hiện ngay hộp báo UIKit (`ConfirmAlert`, 31/10): trong sheet
+  /// chồng sheet, state đặt sau khi chờ server không làm `.alert` hiện.
+  private var message: String? {
+    get { nil }
+    nonmutating set { if let newValue { ConfirmAlert.ok(newValue) } }
+  }
   @State private var taps = 0
   /// "Đã lưu" đang hiện (mỗi lần lưu một số mới, để băng hiện lại đủ giờ).
   @State private var savedNotice: Int?
@@ -93,52 +91,6 @@ private struct CommunityPostActionsModifier: ViewModifier {
       }
       .sensoryFeedback(.selection, trigger: taps)
       .sensoryFeedback(.success, trigger: tried)
-      .alert(
-        Text(verbatim: menuTitle), isPresented: present($menuFor), presenting: menuFor
-      ) { post in
-        menuButtons(post)
-      }
-      .alert(
-        Text("community.menu.reportwhy"), isPresented: present($reasonFor),
-        presenting: reasonFor
-      ) { post in
-        ForEach([CommunityReportReason.spam, .harassment, .inappropriate, .misleading], id: \.self) { r in
-          Button(HiddenNoticeView.reasonText(r)) { Task { await report(post, reason: r) } }
-        }
-        Button(String(localized: "common.cancel"), role: .cancel) {}
-      }
-      .alert(
-        Text("community.menu.deletepost"), isPresented: present($deleteFor), presenting: deleteFor
-      ) { post in
-        Button(String(localized: "common.cancel"), role: .cancel) {}
-        Button(String(localized: "community.menu.delete"), role: .destructive) { Task { await delete(post) } }
-      } message: { _ in
-        Text("community.menu.deletepostbody")
-      }
-      .alert(
-        Text(verbatim: String(localized: "community.user.blockconfirm \(blockFor?.handle ?? "")")),
-        isPresented: present($blockFor), presenting: blockFor
-      ) { a in
-        Button(String(localized: "common.cancel"), role: .cancel) {}
-        Button(String(localized: "community.user.block \(a.handle)"), role: .destructive) { Task { await block(a) } }
-      } message: { _ in
-        Text("community.user.blockbody")
-      }
-      .alert(
-        Text("community.menu.reportednext"), isPresented: present($afterReport), presenting: afterReport
-      ) { a in
-        Button(String(localized: "community.user.mute \(a.handle)")) { Task { await mute(a) } }
-        Button(String(localized: "community.user.block \(a.handle)"), role: .destructive) { blockFor = a }
-        Button(String(localized: "community.menu.reportedok"), role: .cancel) {}
-      } message: { a in
-        Text("community.menu.reportednextbody \(a.handle)")
-      }
-      .alert(
-        Text(verbatim: message ?? ""),
-        isPresented: Binding(get: { message != nil }, set: { if !$0 { message = nil } })
-      ) {
-        Button(String(localized: "common.ok"), role: .cancel) {}
-      }
   }
 
   /// Ngữ cảnh cho thẻ — dựng từng bước (một biểu thức gộp làm trình biên dịch
@@ -147,7 +99,9 @@ private struct CommunityPostActionsModifier: ViewModifier {
     guard let actions else { return nil }
     let open: @MainActor (CommunityFeed.Post) -> Void = { post in
       taps += 1
-      menuFor = post
+      // Đọc lại từ sổ: thẻ trong sheet có thể chưa vẽ lại sau lệnh trước.
+      let now = host.post(id: post.id) ?? post
+      ConfirmAlert.choose(title: menuTitle(now), choices: menuChoices(now))
     }
     var c = CommunityPostActionsContext(actions: actions, host: host, openMenu: open)
     c.saved = {
@@ -168,34 +122,78 @@ private struct CommunityPostActionsModifier: ViewModifier {
     return c
   }
 
-  private func present<T>(_ b: Binding<T?>) -> Binding<Bool> {
-    Binding(get: { b.wrappedValue != nil }, set: { if !$0 { b.wrappedValue = nil } })
-  }
-
-  private var menuTitle: String {
-    guard let p = menuFor else { return "" }
-    return p.mine ? String(localized: "community.menu.mine") : (p.author?.displayName ?? "")
+  private func menuTitle(_ p: CommunityFeed.Post) -> String {
+    p.mine ? String(localized: "community.menu.mine") : (p.author?.displayName ?? "")
   }
 
   /// Của mình: bật / tắt bình luận, Xoá. Của người khác: nhẹ trước, nặng sau —
   /// Ẩn, Tắt tiếng 30 ngày, Báo cáo, Chặn.
-  @ViewBuilder private func menuButtons(_ post: CommunityFeed.Post) -> some View {
+  private func menuChoices(_ post: CommunityFeed.Post) -> [AlertChoice] {
+    var out: [AlertChoice] = []
     if post.mine {
-      Button(post.commentsOff ? String(localized: "community.menu.commentson") : String(localized: "community.menu.commentsoff")) {
-        Task { await setCommentsOff(!post.commentsOff, post) }
-      }
-      Button(String(localized: "community.menu.deletepost"), role: .destructive) { deleteFor = post }
+      out.append(AlertChoice(
+        title: post.commentsOff
+          ? String(localized: "community.menu.commentson") : String(localized: "community.menu.commentsoff")
+      ) { Task { await setCommentsOff(!post.commentsOff, post) } })
+      out.append(AlertChoice(title: String(localized: "community.menu.deletepost"), role: .destructive) {
+        confirmDelete(post)
+      })
     } else {
-      Button(String(localized: "community.menu.hide")) { Task { await hide(post) } }
+      out.append(AlertChoice(title: String(localized: "community.menu.hide")) { Task { await hide(post) } })
       if let a = post.author {
-        Button(String(localized: "community.user.mute \(a.handle)")) { Task { await mute(a) } }
+        out.append(AlertChoice(title: String(localized: "community.user.mute \(a.handle)")) { Task { await mute(a) } })
       }
-      Button(String(localized: "community.post.report")) { reasonFor = post }
+      out.append(AlertChoice(title: String(localized: "community.post.report")) { askReason(post) })
       if let a = post.author {
-        Button(String(localized: "community.user.block \(a.handle)"), role: .destructive) { blockFor = a }
+        out.append(AlertChoice(title: String(localized: "community.user.block \(a.handle)"), role: .destructive) {
+          confirmBlock(a)
+        })
       }
     }
-    Button(String(localized: "common.cancel"), role: .cancel) {}
+    return out + [.cancel()]
+  }
+
+  private func askReason(_ post: CommunityFeed.Post) {
+    ConfirmAlert.choose(
+      title: String(localized: "community.menu.reportwhy"),
+      choices: [CommunityReportReason.spam, .harassment, .inappropriate, .misleading].map { r in
+        AlertChoice(title: HiddenNoticeView.reasonText(r)) { Task { await report(post, reason: r) } }
+      } + [.cancel()])
+  }
+
+  private func confirmDelete(_ post: CommunityFeed.Post) {
+    ConfirmAlert.choose(
+      title: String(localized: "community.menu.deletepost"), message: String(localized: "community.menu.deletepostbody"),
+      choices: [
+        .cancel(),
+        AlertChoice(title: String(localized: "community.menu.delete"), role: .destructive) { Task { await delete(post) } },
+      ])
+  }
+
+  private func confirmBlock(_ a: CommunityFeed.Author) {
+    ConfirmAlert.choose(
+      title: String(localized: "community.user.blockconfirm \(a.handle)"),
+      message: String(localized: "community.user.blockbody"),
+      choices: [
+        .cancel(),
+        AlertChoice(title: String(localized: "community.user.block \(a.handle)"), role: .destructive) {
+          Task { await block(a) }
+        },
+      ])
+  }
+
+  /// Sau báo cáo: mời tắt tiếng / chặn người ấy.
+  private func offerAfterReport(_ a: CommunityFeed.Author) {
+    ConfirmAlert.choose(
+      title: String(localized: "community.menu.reportednext"),
+      message: String(localized: "community.menu.reportednextbody \(a.handle)"),
+      choices: [
+        AlertChoice(title: String(localized: "community.user.mute \(a.handle)")) { Task { await mute(a) } },
+        AlertChoice(title: String(localized: "community.user.block \(a.handle)"), role: .destructive) {
+          confirmBlock(a)
+        },
+        AlertChoice(title: String(localized: "community.menu.reportedok"), role: .cancel),
+      ])
   }
 
   // MARK: - Lệnh
@@ -259,7 +257,7 @@ private struct CommunityPostActionsModifier: ViewModifier {
     let out = await actions.report(postId: post.id, reason: reason, host: host)
     if out == .done, let author {
       // Bước người ta thường cần tiếp theo: không thấy NGƯỜI ấy nữa.
-      afterReport = author
+      offerAfterReport(author)
     } else {
       say(out, done: String(localized: "community.post.reported"))
     }
@@ -364,7 +362,11 @@ struct PostActionsRow: View {
   var commentCount: Int?
   @Environment(\.weightUnit) private var unit
   @State private var taps = 0
-  @State private var message: String?
+  /// Hộp báo UIKit, hiện ngay khi gán (xem `ConfirmAlert`).
+  private var message: String? {
+    get { nil }
+    nonmutating set { if let newValue { ConfirmAlert.ok(newValue) } }
+  }
 
   var body: some View {
     HStack(spacing: 0) {
@@ -405,12 +407,6 @@ struct PostActionsRow: View {
     }
     .padding(.horizontal, -DS.Spacing.sm)
     .sensoryFeedback(.selection, trigger: taps)
-    .alert(
-      Text(verbatim: message ?? ""),
-      isPresented: Binding(get: { message != nil }, set: { if !$0 { message = nil } })
-    ) {
-      Button(String(localized: "common.ok"), role: .cancel) {}
-    }
   }
 
   private func toggle(

@@ -85,9 +85,47 @@ struct CommunityUserView: View {
   @State private var dm: DMInboxBook?
   @State private var dmThread: DirectMessages.Thread?
   @Environment(\.dismiss) private var dismiss
-  @State private var menuOpen = false
-  @State private var confirmBlock = false
-  @State private var message: String?
+  /// Menu / xác nhận chặn hiện bằng UIKit ngay khi gán `true`: trang người thường mở
+  /// trong sheet (avatar, link), nơi `.alert` không chạy nút (`ConfirmAlert`, 31/10).
+  private var menuOpen: Bool {
+    get { false }
+    nonmutating set { if newValue { showMenu() } }
+  }
+  private var confirmBlock: Bool {
+    get { false }
+    nonmutating set { if newValue { showBlockConfirm() } }
+  }
+
+  private func showMenu() {
+    guard let p = book.profile else { return }
+    ConfirmAlert.choose(
+      title: p.displayName,
+      choices: [
+        book.mutedUntil != nil
+          ? AlertChoice(title: String(localized: "community.user.unmute")) { Task { await unmute() } }
+          : AlertChoice(title: String(localized: "community.user.mute \(p.handle)")) { Task { await mute(p.handle) } },
+        AlertChoice(title: String(localized: "community.post.report")) { Task { await report() } },
+        AlertChoice(title: String(localized: "community.user.block \(p.handle)"), role: .destructive) {
+          showBlockConfirm()
+        },
+        .cancel(),
+      ])
+  }
+
+  private func showBlockConfirm() {
+    let handle = book.profile?.handle ?? ""
+    ConfirmAlert.choose(
+      title: String(localized: "community.user.blockconfirm \(handle)"), message: String(localized: "community.user.blockbody"),
+      choices: [
+        .cancel(),
+        AlertChoice(title: String(localized: "community.user.block \(handle)"), role: .destructive) { Task { await block() } },
+      ])
+  }
+  /// Hộp báo UIKit, hiện ngay khi gán (xem `ConfirmAlert`, 31/10).
+  private var message: String? {
+    get { nil }
+    nonmutating set { if let newValue { ConfirmAlert.ok(newValue) } }
+  }
   @State private var taps = 0
   @State private var openPost: String?
   /// Một trang Hồ sơ (15/10, chủ dự án chọn "Một trang Hồ sơ"): hồ sơ của mình
@@ -157,37 +195,6 @@ struct CommunityUserView: View {
     .sensoryFeedback(.selection, trigger: taps)
     .communityUserLinks()
     .communityPostActions(userId: book.userId, host: book)
-    .alert(
-      Text(verbatim: book.profile?.displayName ?? ""), isPresented: $menuOpen
-    ) {
-      if let p = book.profile {
-        if book.mutedUntil != nil {
-          Button(String(localized: "community.user.unmute")) { Task { await unmute() } }
-        } else {
-          Button(String(localized: "community.user.mute \(p.handle)")) { Task { await mute(p.handle) } }
-        }
-        Button(String(localized: "community.post.report")) { Task { await report() } }
-        Button(String(localized: "community.user.block \(p.handle)"), role: .destructive) { confirmBlock = true }
-      }
-      Button(String(localized: "common.cancel"), role: .cancel) {}
-    }
-    .alert(
-      Text(verbatim: String(localized: "community.user.blockconfirm \(book.profile?.handle ?? "")")),
-      isPresented: $confirmBlock
-    ) {
-      Button(String(localized: "common.cancel"), role: .cancel) {}
-      Button(String(localized: "community.user.block \(book.profile?.handle ?? "")"), role: .destructive) {
-        Task { await block() }
-      }
-    } message: {
-      Text("community.user.blockbody")
-    }
-    .alert(
-      Text(verbatim: message ?? ""),
-      isPresented: Binding(get: { message != nil }, set: { if !$0 { message = nil } })
-    ) {
-      Button(String(localized: "common.ok"), role: .cancel) {}
-    }
   }
 
   @ViewBuilder private var content: some View {

@@ -1259,7 +1259,11 @@ private struct FollowSuggestionsCard: View {
   @Environment(\.openCommunityUser) private var openUser
   @State private var book: CommunitySearchBook?
   @State private var followed: Set<String> = []
-  @State private var message: String?
+  /// Hộp báo UIKit, hiện ngay khi gán (xem `ConfirmAlert`, 31/10).
+  private var message: String? {
+    get { nil }
+    nonmutating set { if let newValue { ConfirmAlert.ok(newValue) } }
+  }
 
   var body: some View {
     VStack(alignment: .leading, spacing: DS.Spacing.md) {
@@ -1304,12 +1308,6 @@ private struct FollowSuggestionsCard: View {
     .task {
       if book == nil { book = services.makeCommunitySearch(userId: userId, mode: .people) }
       await book?.loadSuggestions()
-    }
-    .alert(
-      Text(verbatim: message ?? ""),
-      isPresented: Binding(get: { message != nil }, set: { if !$0 { message = nil } })
-    ) {
-      Button(String(localized: "common.ok"), role: .cancel) {}
     }
   }
 
