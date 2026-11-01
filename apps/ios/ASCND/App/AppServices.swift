@@ -323,6 +323,9 @@ final class AppServices {
       sync.setSignedInUser(next)
     }
     UNUserNotificationCenter.current().delegate = reminderPresenter
+    MealNotification.register()
+    reminderPresenter.logUsualMeal = { [weak self] in await self?.logUsualMeal() }
+    reminderPresenter.openMealLog = { [weak self] in await self?.requestMealLog() }
     // Dò cả Google lẫn backend của app (23/10): mạng chặn Google không còn báo
     // "Ngoại tuyến" khi Supabase vẫn chạy. Thiếu cấu hình backend → chỉ Google.
     let prober: any ReachabilityProber =
@@ -628,6 +631,20 @@ final class AppServices {
     let sync = self.sync
     return BiometricLogger(userId: userId, store: rows, outbox: outbox, onEnqueued: { _ in sync.kick() })
   }
+
+  /// Nút "Ghi như mọi khi" của thông báo nhắc bữa (Kiệt 01/11): bữa quen theo giờ vào
+  /// hàng đợi, như ghi trong app (mất mạng vẫn lưu, gửi khi có mạng).
+  func logUsualMeal() async -> (names: String, kcal: Int)? {
+    guard let userId = session.session?.userId, let logger = makeMealLogger(userId: userId, date: nil, mealType: nil),
+      let meal = await logger.logUsual()
+    else { return nil }
+    let names = meal.foods.map(\.food.name).joined(separator: ", ")
+    return (names, Int(meal.kcal.rounded()))
+  }
+
+  /// "Ghi món khác" từ thông báo: mỗi lần tăng một — `RootTabView` mở màn ghi bữa.
+  var mealLogRequest = 0
+  func requestMealLog() { mealLogRequest += 1 }
 
   /// Gains của Koa (#527 đợt 1): lịch sử tập + lịch tuần đã cache → vóc dáng.
   /// `nil` khi chưa có backend hoặc đọc hỏng (giữ Gains cũ).
