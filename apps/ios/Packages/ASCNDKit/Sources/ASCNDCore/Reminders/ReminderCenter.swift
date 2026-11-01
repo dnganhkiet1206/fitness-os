@@ -137,6 +137,30 @@ public final class ReminderCenter {
     await apply(next)
   }
 
+  /// Giờ nhắc bữa thêm (Kiệt 01/11): thêm (tới `maxMealTimes`), đổi, xoá theo vị trí.
+  public func addMealTime() async {
+    guard prefs.mealExtra.count < ReminderPrefs.maxMealTimes - 1 else { return }
+    var next = prefs
+    next.mealExtra.append(ReminderPrefs.nextMealSlot(after: [prefs.meal.clock] + prefs.mealExtra))
+    next.mealExtra.sort { $0.minutes < $1.minutes }
+    await apply(next)
+  }
+
+  public func setMealTime(at index: Int, hour: Int, minute: Int) async {
+    guard prefs.mealExtra.indices.contains(index), (0...23).contains(hour), (0...59).contains(minute) else { return }
+    var next = prefs
+    next.mealExtra[index] = ReminderClock(hour: hour, minute: minute)
+    next.mealExtra.sort { $0.minutes < $1.minutes }
+    await apply(next)
+  }
+
+  public func removeMealTime(at index: Int) async {
+    guard prefs.mealExtra.indices.contains(index) else { return }
+    var next = prefs
+    next.mealExtra.remove(at: index)
+    await apply(next)
+  }
+
   public func setWaterInterval(_ everyHours: Double) async {
     guard everyHours.isFinite, everyHours > 0 else { return }
     var next = prefs

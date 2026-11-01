@@ -74,6 +74,12 @@ public struct ReminderPrefs: Sendable, Hashable {
   public var streak: Bool
   /// Koa nhắc buổi tập (đợt 2) — mặc định bật.
   public var koaTraining: Bool
+  /// Giờ nhắc bữa thêm ngoài `meal` (Kiệt 01/11: một ngày có nhiều bữa). Bật / tắt
+  /// theo `meal.enabled`; mỗi giờ bắn mỗi ngày — khác giờ chính, không bỏ khi hôm
+  /// ấy đã ghi một bữa (đó là bữa khác). Không có ở RN; RN đọc bỏ qua khoá này.
+  public var mealExtra: [ReminderClock] = []
+  /// Tổng số giờ nhắc bữa tối đa mỗi ngày (giờ chính + giờ thêm).
+  public static let maxMealTimes = 5
 
   /// `DEFAULT_REMINDERS`. Giờ mặc định đến từ LÚC việc ấy làm được: bữa ăn
   /// 20:00 (cuối ngày, khi "chưa ghi bữa nào" còn sửa được), ghi giấc ngủ
@@ -91,9 +97,11 @@ public struct ReminderPrefs: Sendable, Hashable {
 
   public init(
     water: Water, supplements: Timed, bedtime: Timed, weighIn: Timed, workout: Timed, meal: Timed, biometrics: Timed,
-    sleepLog: Timed, challengeClaim: Bool, streak: Bool = true, koaTraining: Bool = true
+    sleepLog: Timed, challengeClaim: Bool, streak: Bool = true, koaTraining: Bool = true,
+    mealExtra: [ReminderClock] = []
   ) {
     self.koaTraining = koaTraining
+    self.mealExtra = mealExtra
     self.water = water
     self.supplements = supplements
     self.bedtime = bedtime
@@ -194,11 +202,19 @@ extension ReminderPrefs {
     if case .object(let s)? = o[ReminderKey.koaTraining.rawValue] { koa = s["enabled"]?.boolValue ?? koa }
     var claim = d.challengeClaim
     if case .object(let s)? = o[ReminderKey.challengeClaim.rawValue] { claim = s["enabled"]?.boolValue ?? claim }
+    var extra: [ReminderClock] = []
+    if case .array(let list)? = o["mealExtra"] {
+      for case .object(let c) in list {
+        guard let h = c["hour"]?.intValue, (0...23).contains(h), let m = c["minute"]?.intValue, (0...59).contains(m)
+        else { continue }
+        extra.append(ReminderClock(hour: h, minute: m))
+      }
+    }
     return ReminderPrefs(
       water: water, supplements: timed(.supplements, d.supplements), bedtime: timed(.bedtime, d.bedtime),
       weighIn: timed(.weighIn, d.weighIn), workout: timed(.workout, d.workout), meal: timed(.meal, d.meal),
       biometrics: timed(.biometrics, d.biometrics), sleepLog: timed(.sleepLog, d.sleepLog), challengeClaim: claim,
-      streak: streak, koaTraining: koa)
+      streak: streak, koaTraining: koa, mealExtra: Array(extra.prefix(maxMealTimes - 1)))
   }
 
   /// Cùng hình dạng RN ghi (`JSON.stringify(prefs)`), khoá sắp xếp — cùng một
@@ -214,6 +230,9 @@ extension ReminderPrefs {
       "challengeClaim": .object(["enabled": .bool(challengeClaim)]),
       "streak": .object(["enabled": .bool(streak)]),
       "koaTraining": .object(["enabled": .bool(koaTraining)]),
+      "mealExtra": .array(mealExtra.map {
+        .object(["hour": .number(Double($0.hour)), "minute": .number(Double($0.minute))])
+      }),
     ])
     let encoder = JSONEncoder()
     encoder.outputFormatting = [.sortedKeys]
@@ -397,6 +416,10 @@ public enum ReminderPlan {
       if prefs.meal.enabled && !(isToday && ctx.mealLoggedToday) {
         timed(.meal, day)
       }
+      // Giờ bữa thêm: mỗi giờ một bữa — đã ghi bữa sáng không làm câm nhắc bữa trưa.
+      if prefs.meal.enabled {
+        for c in prefs.mealExtra { push(.meal, at(now, day, c.hour, c.minute, calendar)) }
+      }
       if prefs.biometrics.enabled && !(isToday && ctx.bioLoggedToday) {
         push(.biometrics, at(now, day, prefs.biometrics.hour, prefs.biometrics.minute, calendar))
       }
@@ -490,5 +513,17 @@ public enum ReminderPlan {
       return nil
     }
     return (y, m, d)
+  }
+}
+
+extension ReminderPrefs {
+  /// Giờ gợi ý cho một giờ bữa mới: bữa thường gặp chưa có (sáng 7:30, trưa 12:00,
+  /// phụ 15:30, tối 19:00) gần nhất sau giờ muộn nhất đã có; hết thì 21:00.
+  static func nextMealSlot(after taken: [ReminderClock]) -> ReminderClock {
+    let usual = [ReminderClock(hour: 7, minute: 30), ReminderClock(hour: 12, minute: 0),
+                 ReminderClock(hour: 15, minute: 30), ReminderClock(hour: 19, minute: 0)]
+    let free = usual.filter { u in !taken.contains { abs($0.minutes - u.minutes) < 90 } }
+    let latest = taken.map(\.minutes).max() ?? 0
+    return free.first { $0.minutes > latest } ?? free.first ?? ReminderClock(hour: 21, minute: 0)
   }
 }
