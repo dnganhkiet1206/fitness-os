@@ -935,12 +935,27 @@ struct MascotStage: View {
     guard walks, !reduceMotion, !benchMode else { return }
     let away = Date.now.timeIntervalSince1970 - seenAt
     seenAt = Date.now.timeIntervalSince1970
+    if away >= 300 { director.pushIn() }
     director.request(away >= 300 ? .greet : .notice)
   }
 
   /// Chỉ đi được khi Koa đang đứng (ngồi thiền / cầm tạ thì ở yên).
   private var canWalk: Bool {
     walks && KoaEmotion.state(emotion).pose == .idle
+  }
+
+  /// Phòng nhiều lớp theo máy quay (01/11). Giảm chuyển động: phòng một lớp như cũ.
+  private var layered: Bool {
+    #if DEBUG
+      // đo so sánh: `-koaFlat` chạy phòng một lớp
+      if ProcessInfo.processInfo.arguments.contains("-koaFlat") { return false }
+    #endif
+    return walks && !reduceMotion
+  }
+
+  /// Phòng nhiều lớp vẽ trong đồng hồ của sân khấu (`livingHero`), đây chỉ giữ khung.
+  @ViewBuilder private var roomBase: some View {
+    if layered { Color.clear } else { StudioBackdrop(options: backdrop) }
   }
 
   /// Đang ngủ và đã tới chỗ: sang phòng ngủ gác mái, sân khấu nghỉ hẳn.
@@ -957,14 +972,13 @@ struct MascotStage: View {
     let asleep = bedShown
     let koaAway = bedShown || wakeScene != nil
     ZStack {
-      StudioBackdrop(options: backdrop)
+      roomBase
         .overlay {
           GeometryReader { g in
             ZStack(alignment: .topLeading) {
               if walks {
                 floorTaps(g.size.width)
-                // Koa của sân khấu nhường chỗ ngay cho Koa của cảnh đi ngủ, không trôi theo phòng
-                livingHero(g.size.width).opacity(koaAway ? 0 : 1).animation(nil, value: koaAway)
+                livingHero(g.size.width, away: koaAway)
               } else {
                 hero(g.size.width)
               }
@@ -1131,7 +1145,10 @@ struct MascotStage: View {
       .offset(y: top * k)
       .onTapGesture(coordinateSpace: .local) { p in
         guard canWalk else { return }
-        let s = KoaRoomMap.spot(screenX: p.x / k, y: p.y / k + top)
+        // phòng đang phóng sẵn: quy chỗ chạm về toạ độ phòng
+        let zoom = layered ? director.shot.zoom : 1
+        let cx = StudioScene.width / 2, cy = KoaParallax.anchorY
+        let s = KoaRoomMap.spot(screenX: cx + (p.x / k - cx) / zoom, y: cy + (p.y / k + top - cy) / zoom)
         if reduceMotion { director.place(s) } else { director.request(.walkTo(s)) }
       }
       .accessibilityHidden(true)
@@ -1142,17 +1159,28 @@ struct MascotStage: View {
 
   /// Koa sống trong phòng theo `KoaDirectorDriver`. Giảm chuyển động / rời màn / app ra
   /// nền: đồng hồ dừng, Koa đứng nguyên chỗ (như trước khi có đạo diễn).
-  private func livingHero(_ width: CGFloat) -> some View {
+  /// `away`: Koa của sân khấu nhường chỗ ngay cho Koa của cảnh đi ngủ, không trôi theo phòng.
+  private func livingHero(_ width: CGFloat, away: Bool) -> some View {
     let running = !reduceMotion && onScreen && scenePhase == .active && !inBedroom && !bedShown && wakeScene == nil
+    let height = width / StudioScene.width * (StudioScene.sceneBottom + KoaBedroom.tail)
+    let anchor = UnitPoint(x: 0.5, y: KoaParallax.anchorY / (StudioScene.sceneBottom + KoaBedroom.tail))
     return TimelineView(.animation(minimumInterval: director.moving ? 1.0 / 60 : 1.0 / 30, paused: !running)) { tl in
       let f = running ? step(tl.date) : director.frame
       // đồng hồ dừng và Koa vừa được đặt chỗ mới (Giảm chuyển động): đứng ở đó
       let still = running ? nil : director.placed
+      let shot = layered ? director.shot : KoaParallax.Shot(framing: 0)
+      let x = still?.x ?? f?.x ?? KoaRoomMap.stageMark.x
+      let y = still.map(KoaRoomMap.screenY) ?? f?.screenY ?? StudioScene.stageMark.y
+      let koaAmp = KoaParallax.amp(koa: still?.plane ?? f?.plane ?? .stage, y: y)
       ZStack(alignment: .topLeading) {
-        // lá cây đang rung (~3 giây): vẽ cả căn phòng đè lên phòng tĩnh, có cây đang lay. Trước đây
-        // tách phần từ chậu cây trở lên sang lớp riêng: đèn và viền tối vẽ hai lớp nên độ sáng
-        // nhảy lúc bật / tắt (Kiệt 31/10). Bậc 0,25° nên `StudioPlans` dùng lại được.
-        if director.swaying {
+        if layered {
+          StudioLayers(
+            options: backdrop, plantSway: director.swaying ? f?.plantSway ?? 0 : 0, shot: shot,
+            size: CGSize(width: width, height: height), light: scheme == .light)
+        } else if director.swaying {
+          // lá cây đang rung (~3 giây): vẽ cả căn phòng đè lên phòng tĩnh, có cây đang lay. Trước đây
+          // tách phần từ chậu cây trở lên sang lớp riêng: đèn và viền tối vẽ hai lớp nên độ sáng
+          // nhảy lúc bật / tắt (Kiệt 31/10). Bậc 0,25° nên `StudioPlans` dùng lại được.
           var o = studio
           let _ = (o.plantSway = f?.plantSway ?? 0)
           StudioBackdrop(options: o)
@@ -1160,24 +1188,37 @@ struct MascotStage: View {
             .allowsHitTesting(false)
         }
         hero(
-          width, x: still?.x ?? f?.x ?? KoaRoomMap.stageMark.x,
-          y: still.map(KoaRoomMap.screenY) ?? f?.screenY ?? StudioScene.stageMark.y,
+          width, x: x + shot.shift(koaAmp), y: y,
           scale: still.map { KoaRoomMap.scale($0.d) } ?? f?.scale ?? 1,
-          direct: running ? f : nil, date: tl.date)
-        occlusion(width, still ?? f.map { KoaRoomMap.Spot($0.plane, $0.x, $0.depth) }, plantSway: f?.plantSway ?? 0)
+          direct: running ? f : nil, date: tl.date
+        )
+        .scaleEffect(shot.scale(koaAmp), anchor: anchor)
+        .opacity(away ? 0 : 1)
+        .animation(nil, value: away)
+        if !away {
+          occlusion(width, still ?? f.map { KoaRoomMap.Spot($0.plane, $0.x, $0.depth) }, plantSway: f?.plantSway ?? 0)
+            .parallax(.props, shot, k: Double(width) / StudioScene.width, anchor: anchor)
+        }
         #if DEBUG
           // chế độ đo luôn bỏ qua lớp debug (nó chiếm ~5–7 điểm % CPU, làm sai số đo)
           if debugMap, !benchMode { KoaMapOverlay(frame: f).frame(width: width, height: width / StudioScene.width * StudioScene.sceneBottom) }
         #endif
       }
+      .scaleEffect(shot.zoom, anchor: anchor)
     }
-    .onChange(of: running) { _, on in if !on { director.pause() } }
+    .onChange(of: running) { _, on in
+      if !on {
+        director.pause()
+        if inBedroom || bedShown { director.restCamera() }
+      }
+    }
   }
 
   private func step(_ date: Date) -> KoaDirector.Frame {
     director.context.canWalk = canWalk
     let hour = Calendar.current.component(.hour, from: date)
     director.context.night = sleep.winding(hour: hour, minute: Calendar.current.component(.minute, from: date))
+    director.framed = !(emotion == .sleep)
     return director.step(date, heroWidth: Self.heroWidth * levelScale)
   }
 
@@ -1279,6 +1320,7 @@ enum StudioPlans {
   private struct Key: Hashable {
     let options: StudioScene.Options
     let only: Set<Int>?
+    var layer: String?
   }
   private static var cache: [Key: [KoaPaint.Op]] = [:]
   private static var order: [Key] = []
@@ -1291,13 +1333,19 @@ enum StudioPlans {
     plan(Key(options: o, only: indices)) { StudioScene.objects(o, indices) }
   }
 
+  static func layer(_ o: StudioScene.Options, _ id: String) -> [KoaPaint.Op] {
+    plan(Key(options: o, only: nil, layer: id)) {
+      StudioScene.layers.first { $0.id == id }.map { StudioScene.tree(o, layer: $0) } ?? []
+    }
+  }
+
   private static func plan(_ k: Key, _ build: () -> [KoaRender.Element]) -> [KoaPaint.Op] {
     if let p = cache[k] { return p }
     let p = KoaPaint.plan(KoaRender.Element("Svg", kids: build()))
     cache[k] = p
     order.append(k)
     // lá rung tạo vài chục bộ tuỳ chọn (bậc 0,25°): giữ đủ để một đợt rung dùng lại, có chặn
-    if order.count > 64 { cache[order.removeFirst()] = nil }
+    if order.count > 96 { cache[order.removeFirst()] = nil }
     return p
   }
 }

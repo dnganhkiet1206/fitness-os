@@ -95,6 +95,22 @@ final class KoaDirectorDriver {
     if let data = try? JSONEncoder().encode(memory) { UserDefaults.standard.set(data, forKey: Self.key(owner)) }
   }
 
+  // MARK: Máy quay
+
+  @ObservationIgnored private var camera = KoaParallax.Camera()
+  @ObservationIgnored private let tiltSensor = KoaTiltSensor()
+  @ObservationIgnored private var tilt = 0.0
+  /// Máy quay giữ khung phòng; Koa đi ngủ thì lui về khung gốc để khớp cảnh ngủ.
+  @ObservationIgnored var framed = true
+  /// Khung máy quay hiện tại (`view` đọc mỗi khung, không phải trạng thái quan sát).
+  var shot: KoaParallax.Shot { camera.shot(tilt: tilt) }
+
+  /// Khoảnh khắc thật: máy đẩy vào rồi lui ra.
+  func pushIn() { camera.push() }
+
+  /// Koa đã sang phòng ngủ: phòng về khung gốc.
+  func restCamera() { camera.rest() }
+
   /// Khung này có chuyển động thấy được không.
   static func lively(_ f: KoaDirector.Frame, prev: KoaGaze.Output?) -> Bool {
     if f.moving || f.gaze.blink > 0 || f.gaze.settling || f.plantSway != 0 { return true }
@@ -167,19 +183,22 @@ final class KoaDirectorDriver {
     let f = director.step(dt, ctx: context)
     KoaSignpost.poster.endInterval("director", sp)
     frame = f
+    camera.step(dt, koaX: f.x, framed: framed)
+    tilt = tiltSensor.read(dt, at: now)
     let wall = Date.now.timeIntervalSince1970
     #if DEBUG
       if f.reacted != nil, forcedMoment != nil { return f }
     #endif
     if let m = f.reacted, let facts {
       if m == .rankUp || m == .record { KoaSound.play(.cheer) }
+      camera.push()
       memory.react(m, facts, at: wall)
       feel(wall)
       save()
     } else if wall - affectAt > 30 {
       feel(wall)
     }
-    if Self.lively(f, prev: prevGaze) { lively = now + 0.25 }
+    if Self.lively(f, prev: prevGaze) || camera.settling { lively = now + 0.25 }
     prevGaze = f.gaze
     let fast = now < lively || now < boostUntil
     let sway = f.plantSway != 0
@@ -197,7 +216,11 @@ final class KoaDirectorDriver {
   }
 
   /// Đồng hồ dừng (Giảm chuyển động, rời màn): lần chạy sau bắt đầu lại từ mốc mới.
-  func pause() { last = nil }
+  func pause() {
+    last = nil
+    tiltSensor.stop()
+    tilt = 0
+  }
 
   func request(_ r: KoaDirector.Request) { director.request(r) }
 

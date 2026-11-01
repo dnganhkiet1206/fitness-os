@@ -382,8 +382,18 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - CPU simulator (bản Debug): phòng ngủ 5,4 %, sân khấu ~31–37 %, bộ nhớ 108 MB.
 - **NOT RUN:** thiết bị thật; GPU (lớp `blur` ánh trăng, `scaleEffect` chăn); Reduce Motion chạy tay; VoiceOver với bố cục mới; hình cửa ở giao diện sáng.
 
+**Phòng Koa nhiều lớp (01/11, Kiệt duyệt mock, thêm sương xa):**
+- Phòng tách 14 lớp theo đúng thứ tự vẽ (`StudioScene.layers`), trôi theo Koa đi, nghiêng máy và cuộn trang (`KoaParallax`). Có sàn nghiêng theo hàng, đẩy máy vào khi vừa vào phòng và khi Koa phản ứng với khoảnh khắc thật, sương xa trên tường. Giảm chuyển động: phòng một lớp như cũ.
+- Phòng phóng sẵn 4 % để có chỗ cho các lớp trượt, mép ngoài mất khoảng 8 điểm mỗi bên. Koa đi ngủ thì máy lui về khung gốc để khớp cảnh ngủ.
+- Kệ, chậu cây, quả bóng chung một tầng, để lớp bụi và lớp che Koa đi cùng đồ. Hàng sàn dưới quả bóng lệch nhiều hơn quả bóng khoảng 1 điểm ở mép máy quay.
+- Đồ phòng thay cửa sổ (biển, núi): phần ngoài trời không trôi riêng trong khung, vì biến thể là một khối.
+- Vạch chạm bảng số không trễ theo tường khi cuộn: lệch tối đa 16 % quãng cuộn, thẻ nội dung che trước khi lệch hết bảng.
+- CPU simulator, bản Debug, nhiều lớp so với một lớp (`-koaFlat`): đứng yên 18,4 / 23,8 %, đi trên bục 26,3 / 29,6 %, đi trên sàn 27,1 / 27,5 %. Không tăng, nhưng khác biệt nằm trong độ nhiễu của phép đo.
+- **NOT RUN:** nghiêng điện thoại thật (simulator không có con quay; đã soát hướng lệch bằng `-koaSwing`, chưa biết độ nhạy tay thật); thiết bị thật, GPU và pin; Giảm chuyển động bật thật (chỉ chạy đường một lớp bằng `-koaFlat`); cảnh Koa dậy với máy quay; đồ phòng khác ngoài bộ gốc trên simulator; khổ màn hình khác iPhone Air.
+
 ## 5. Lịch sử thay đổi sổ
 
+- 01/11/2026: phòng Koa nhiều lớp (parallax, sàn nghiêng, đẩy máy, sương xa); ghi hạn chế và NOT RUN.
 - 31/10/2026: rà và sửa biểu cảm Koa; ghi các điểm hoãn cần mock.
 - 31/10/2026: thêm âm thanh nhỏ cho phòng Koa, có nút tắt.
 - 31/10/2026: chạm đèn ngủ để tắt / bật.
