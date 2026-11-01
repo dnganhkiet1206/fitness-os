@@ -93,6 +93,7 @@ struct RemindersView: View {
       ForEach(Self.timed, id: \.self) { key in
         Section {
           timedRow(key)
+          if key == .meal, center.prefs.meal.enabled { mealTimes }
           if let habit = koaHabit(key) {
             Text(String(localized: "reminders.koa.habit \(ReminderTiming.format(habit))"))
               .font(DS.TextStyle.caption)
@@ -142,6 +143,51 @@ struct RemindersView: View {
       }
       Toggle(Self.title(key), isOn: binding(key))
         .labelsHidden()
+    }
+  }
+
+  /// Giờ bữa thêm (Kiệt 01/11: một ngày có nhiều bữa): mỗi giờ một hàng, xoá bằng nút
+  /// trừ hay vuốt; "Thêm giờ nhắc" tới tối đa `maxMealTimes` giờ mỗi ngày.
+  @ViewBuilder private var mealTimes: some View {
+    ForEach(Array(center.prefs.mealExtra.enumerated()), id: \.offset) { i, c in
+      HStack(spacing: DS.Spacing.sm) {
+        Button {
+          Task { await center.removeMealTime(at: i) }
+        } label: {
+          Image(systemName: "minus.circle.fill")
+            .font(.system(size: 20))
+            .foregroundStyle(DS.Color.destructive.swiftUI)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text(String(localized: "reminders.meal.remove \(ReminderTiming.format(c))")))
+        Text(String(localized: "reminders.meal.slot \(i + 2)"))
+        Spacer(minLength: DS.Spacing.xs)
+        DatePicker(
+          String(localized: "reminders.meal.slot \(i + 2)"),
+          selection: Binding(
+            get: { Self.date(hour: c.hour, minute: c.minute) },
+            set: { d in
+              let x = Calendar.current.dateComponents([.hour, .minute], from: d)
+              Task { await center.setMealTime(at: i, hour: x.hour ?? c.hour, minute: x.minute ?? c.minute) }
+            }),
+          displayedComponents: .hourAndMinute
+        )
+        .labelsHidden()
+      }
+      .frame(minHeight: 44)
+    }
+    .onDelete { set in
+      if let i = set.first { Task { await center.removeMealTime(at: i) } }
+    }
+    if center.prefs.mealExtra.count < ReminderPrefs.maxMealTimes - 1 {
+      Button {
+        Task { await center.addMealTime() }
+      } label: {
+        Label(String(localized: "reminders.meal.add"), systemImage: "plus.circle.fill")
+          .foregroundStyle(DS.Color.metricOrangeGraphic.swiftUI)
+      }
+      .frame(minHeight: 44)
+      .accessibilityIdentifier("reminders.meal.add")
     }
   }
 
