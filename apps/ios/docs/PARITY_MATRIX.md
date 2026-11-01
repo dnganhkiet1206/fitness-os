@@ -1,11 +1,11 @@
 # Parity matrix RN → Native iOS (sống)
 
-> **⚠ LẠC HẬU từ 17/10/2026** (ghi 26/10, audit vòng 3). Bảng chưa rà lại sau GĐ1–GĐ3 (#641, #642, bốn khu vực Hôm nay · Tập luyện · Dinh dưỡng · Tiến bộ; Cộng đồng ra khỏi thanh tab; "Tóm tắt" gộp vào Tiến bộ; kế hoạch ăn / đi chợ / bổ sung xuống Dinh dưỡng › "Thêm") và các audit 25–26/10. Đường dẫn lối vào (`RootTabView`, tab "assistant" / "community") và trạng thái `IMPLEMENTED_NOT_WIRED` của nhiều dòng có thể sai. **Đừng dựa vào bảng này để biết app hiện có gì** — đọc `CONSTRAINTS_AND_DEFERRED.md` và code. Rà lại toàn bảng là việc cuối của GĐ3 (`PRODUCT_DECISION_V1.md`), chưa làm.
+> ~~**⚠ LẠC HẬU từ 17/10/2026** (ghi 26/10, audit vòng 3).~~ **Mục 0 rà lại 29/10/2026 @ `116a8c3a`** theo bốn khu vực GĐ3 (Hôm nay · Tập luyện · Dinh dưỡng · Tiến bộ; Cộng đồng mở từ Tiến bộ / hồ sơ / chuông / link; "Trợ lý" là tab Tiến bộ). Cột "Lối vào Release" dò lại bằng tham chiếu khởi tạo màn trong code; trạng thái chỉ đổi khi có bằng chứng mới. **Mục 1–3 bên dưới vẫn theo base 07/10** — chỗ nào khác mục 0 thì mục 0 đúng.
 
 Chủ: B (#523). Chi tiết từng hành vi (nguồn RN, dòng): [PORTING_INVENTORY.md](PORTING_INVENTORY.md) (A18).
 Trang này là bảng theo **mảng** và theo **route**. Mỗi ô có evidence kiểm được (PR đã merge, test, tệp). Không ô nào điền theo cảm giác.
 
-- **Base đối chiếu:** mục 0 @ `8ba9af07` (17/10/2026). Mục 1–3: `82a89b05` (07/10/2026), cập nhật rải rác sau đó.
+- **Base đối chiếu:** mục 0 @ `116a8c3a` (29/10/2026; lần trước `8ba9af07`, 17/10). Mục 1–3: `82a89b05` (07/10/2026), cập nhật rải rác sau đó.
 - **RN:** `native/src/app/**` có **75 route**. RN tiếp tục là bản Android; iOS là native. Hai bản dùng chung backend và dữ liệu.
 
 ## 0. Ma trận năng lực theo #527 (Phase 0, rà lại @ `8ba9af07`, 17/10/2026)
@@ -37,22 +37,22 @@ Hiện **không dòng nào DONE**: chưa có lần chạy trên iPhone thật.
 
 | Năng lực | RN | Swift | Lối vào Release | Trạng thái | Còn thiếu / evidence |
 |---|---|---|---|---|---|
-| Đăng nhập email, quên MK, link email | `_layout.tsx`, auth | `AuthView`, `AuthLinkSheet`, `SessionStore` | `RootGate` | DEVICE_PENDING | Thiết kế lại 17/10 (`a821f568`…`d67368d9`) nằm trên nhánh `claude/b-steps-awards` (6 commit, chưa vào base); 3 ngôn ngữ đã xem trên simulator |
+| Đăng nhập email, quên MK, link email | `_layout.tsx`, auth | `AuthView`, `AuthLinkSheet`, `SessionStore` | `RootGate` | DEVICE_PENDING | Thiết kế lại 17/10 đã vào base; 3 ngôn ngữ đã xem trên simulator. Đặt lại MK trên web chờ đổi cấu hình Supabase (sổ hạn chế) |
 | Đăng nhập Apple | `_layout.tsx` | `AuthView` (nút sau cổng) | chỉ khi bật cổng | DECISION | Cần Apple Developer Program + entitlement ([APPLE_DEVELOPER_PROGRAM.md](APPLE_DEVELOPER_PROGRAM.md)) |
 | Đăng nhập OTP qua SĐT | — | — | — | EXCLUDED | Chỉ có trên app web Lovable (`main` `234f6b80`), không có trong RN |
 | Gate phiên, đổi tài khoản | `_layout.tsx` | `RootGate`, `SignedInScope` | có | DEVICE_PENDING | `AccountIsolationTests`, D-22 #390 |
-| Đăng xuất | `settings.tsx` | `SettingsView` | Hồ sơ → Cài đặt | PARTIAL | Trên base: nút xác nhận trong sheet lồng không chạy action. Bản sửa `e34873c1` + `d19b41b8` (`ConfirmAlert`, `SignOutTimeoutTests`, đã chạy đầu-cuối trên simulator) nằm trên nhánh `claude/b-steps-awards` (6 commit, chưa vào base) |
-| Xoá tài khoản | `settings.tsx:265` | `AccountDeleter`, `SupabaseAccountDeleter` | — trên base | IMPLEMENTED_NOT_WIRED | Code `e34873c1` nằm trên nhánh `claude/b-steps-awards` (6 commit, chưa vào base); function `delete-account` đã deploy. Chưa xoá thật tài khoản nào |
-| Onboarding | `_layout.tsx` + onboarding | `OnboardingGateView` / `OnboardingFlowView` | `RootGate` | PARITY_PENDING | #531; golden `plan-golden.json`. Mục 1 còn ghi IN QUEUE — đã cũ |
-| Năm tab | `(tabs)/_layout.tsx` | `RootTabView` | có | DEVICE_PENDING | Cả năm tab là màn thật (không còn placeholder). Thêm dải Ghi nhanh (khác RN, ghi ở NATIVE_IMPROVEMENTS) |
+| Đăng xuất | `settings.tsx` | `SettingsView` | Hồ sơ → bánh răng → Cài đặt | DEVICE_PENDING | `ConfirmAlert` (`SettingsView.swift:276`) đã vào base; `SignOutTimeoutTests`; đã chạy đầu-cuối trên simulator (17/10) |
+| Xoá tài khoản | `settings.tsx:265` | `AccountDeleter`, `SupabaseAccountDeleter` | Hồ sơ → Cài đặt (`ProductionTabs.swift:250`) | PARITY_PENDING | Đã nối dây; function `delete-account` đã deploy. Chưa xoá thật tài khoản nào (xoá vĩnh viễn — agent không tự chạy) |
+| Onboarding | `_layout.tsx` + onboarding | `OnboardingGateView` / `OnboardingFlowView` | `RootGate` | PARITY_PENDING | Onboarding v2 (#663): 13 màn → 6, 4 mục tiêu (khác RN có chủ ý, sổ hạn chế). Chưa đi trọn trên tài khoản mới |
+| Thanh tab | `(tabs)/_layout.tsx` (5 tab) | `RootTabView` | có | DEVICE_PENDING | **Bốn tab** (GĐ3, Kiệt 21/10): Hôm nay · Tập luyện · Dinh dưỡng · Tiến bộ. Cộng đồng ra khỏi thanh tab, Trợ lý thành Tiến bộ (khác RN có chủ ý). Dải Ghi nhanh (NATIVE_IMPROVEMENTS). Chưa kiểm VoiceOver thanh tab mới |
 | Cài đặt: giao diện, ngôn ngữ | `settings.tsx` | `SettingsView` | Hồ sơ → Cài đặt | PARITY_PENDING | Theme theo sheet đang mở đã sửa (`83ad47e4`) |
 | Cài đặt: khoá app Face ID | `settings.tsx:633`, `lib/biometric-lock.ts`, `app-lock-gate.tsx` | — | — | NOT_STARTED | RN: `expo-local-authentication`, cho phép mã máy dự phòng |
 | Cài đặt: xuất dữ liệu | `settings.tsx:222` | — | — | NOT_STARTED | Văn bản pháp lý mới (`e34873c1`) đã gỡ câu hứa xuất JSON/CSV; port xong thì thêm lại |
-| Cài đặt: chọn linh vật | `settings.tsx:385` | `MascotRoomView` (tủ đồ) | Hôm nay → phòng Koa | PARITY_PENDING | Native chọn trong phòng Koa, không ở Cài đặt |
+| Cài đặt: chọn linh vật | `settings.tsx:385` | `ShopView` (Phòng thay đồ) | Hôm nay → phòng Koa → Phòng thay đồ | PARITY_PENDING | Native chọn trong Phòng thay đồ, không ở Cài đặt |
 | Đơn vị kg / lb | `lib/units.ts` | `WeightUnit` | theo hồ sơ | DEVICE_PENDING | golden `weight-golden.json`; chuỗi 1.9-A…D |
 | i18n en / vi / es | `i18n` | `Localizable.xcstrings` | có | PARITY_PENDING | Cổng `native-xcstrings-*` |
 | Nhắc nhở cục bộ | `reminders.tsx`, `expo-notifications` | `RemindersView`, `NotificationReminderScheduler` | Cài đặt → Nhắc nhở | DEVICE_PENDING | `df6bc753`. Nhận thông báo thật: NOT RUN |
-| Hộp thông báo | `community-inbox.tsx` | `CommunityInboxView` | Hôm nay | DEVICE_PENDING | `3c5d26da` gộp nhắc nhở + cộng đồng |
+| Hộp thông báo | `community-inbox.tsx` | `CommunityInboxView` | Hôm nay (chuông) | DEVICE_PENDING | `3c5d26da` gộp nhắc nhở + cộng đồng |
 | Lỗi / offline / đang tải | nhiều | `ConnectionBanner`, `DSErrorView`, outbox | có | PARTIAL | Mỗi màn có ba trạng thái riêng; chưa có vòng rà offline toàn app (Phase 11) |
 | Đo lường (Sentry, PostHog) | Sentry | `Telemetry` | khi có key | DEVICE_PENDING | `8121f212`, `4433caf2` |
 
@@ -61,7 +61,7 @@ Hiện **không dòng nào DONE**: chưa có lần chạy trên iPhone thật.
 | Năng lực | RN | Swift | Lối vào Release | Trạng thái | Còn thiếu / evidence |
 |---|---|---|---|---|---|
 | Hôm nay: 5 trạng thái + CTA (#61) | `(tabs)/index.tsx` | `TodayScreen`, `TodayRules` | tab Hôm nay | DEVICE_PENDING | `TodayVectorTests`, #548; [design/today/RN-PARITY.md](design/today/RN-PARITY.md) |
-| Hôm nay: thẻ Readiness / Health / vòng vận động | `today-widgets.tsx` | `ReadinessCardView`, `HealthSyncCard`, `ActivityRingsView`, `TrainingCardView` | Hôm nay, Trợ lý | DEVICE_PENDING | #557, #565, N3/N4. Dữ liệu HealthKit thật: NOT RUN |
+| Hôm nay: thẻ Readiness / Health / vòng vận động | `today-widgets.tsx` | `ReadinessCardView`, `ActivityRingsView`, `TrainingCardView` | Hôm nay ("Hoạt động"), Tiến bộ | DEVICE_PENDING | #557, #565, N3/N4. `HealthSyncCard` không còn ai mở (29/10). Dữ liệu HealthKit thật: NOT RUN |
 | Thẻ xu hướng sẵn sàng 7 ngày | `today-widgets.tsx:432` | ~~`ReadinessTrendCardView`~~ (đã xoá 26/10) | — | EXCLUDED | Màn không còn ai mở từ 17/10; **xoá view và 8 chuỗi `rt.*` ngày 26/10** (audit vòng 3, code chết). Dữ liệu `ReadinessTrendBook` / `ReadinessTrend` (Core, có test) vẫn dùng cho hàng Readiness của Hôm nay. Xu hướng sẵn sàng nay xem ở Tiến bộ › Hồi phục |
 | Bắt đầu buổi + màn tập | `day-plan.tsx` | `WorkoutView`, `WorkoutFlow` | Hôm nay "Bắt đầu" → tab Tập luyện | DEVICE_PENDING | vectors WS / AH / RS; redesign 14/10 |
 | Quãng nghỉ + #235 | `day-plan.tsx` | `RestTimerController`, `RestCard` | trong màn tập | DEVICE_PENDING | Live Activity: xem Phase 9 |
@@ -79,13 +79,13 @@ Hiện **không dòng nào DONE**: chưa có lần chạy trên iPhone thật.
 | Tab Dinh dưỡng | `(tabs)/nutrition.tsx` | `NutritionTab` | tab | DEVICE_PENDING | redesign 13–15/10; [design/nutrition/RN-PARITY.md](design/nutrition/RN-PARITY.md) |
 | Ghi / sửa bữa | `log-meal.tsx` | `LogMealView` | Dinh dưỡng, Hôm nay, Ghi nhanh, Coach | DEVICE_PENDING | |
 | Thực phẩm của tôi | `food-list.tsx`, `food-editor.tsx` | `FoodListView`, `FoodEditorView` | Dinh dưỡng | DEVICE_PENDING | golden `food-editor` |
-| Kế hoạch ăn | `meal-plans.tsx`, `meal-plan.tsx` | `MealPlansView`, `MealPlanView`, `PlanWizardView` | Dinh dưỡng | DEVICE_PENDING | `CreatePlanSheet` cũ không còn ai mở (thay bằng `PlanWizardView`) — mã chết |
-| Đi chợ | `grocery.tsx` | `GroceryView` | Dinh dưỡng | DEVICE_PENDING | N1 |
+| Kế hoạch ăn | `meal-plans.tsx`, `meal-plan.tsx` | `MealPlansView`, `MealPlanView`, `PlanWizardView` | Dinh dưỡng › Thêm | DEVICE_PENDING | `CreatePlanSheet` cũ không còn ai mở (thay bằng `PlanWizardView`) — mã chết |
+| Đi chợ | `grocery.tsx` | `GroceryView` | Dinh dưỡng › Thêm | DEVICE_PENDING | N1 |
 | Xu hướng dinh dưỡng | `nutrition-insights.tsx` | `NutritionInsightsView` | Dinh dưỡng | DEVICE_PENDING | |
 | Gợi ý bữa AI | `(tabs)/nutrition.tsx` | `MealSuggestCard` | khi `aiDeployed` | DEVICE_PENDING | `95565105` |
 | Quét ảnh / mã vạch | `scan-food.tsx`, `scan-barcode.tsx` | `ScanFoodView`, `ScanBarcodeView` | Ghi bữa | DEVICE_PENDING | Camera thật: NOT RUN |
 | Nước | `water.tsx` | `WaterView` | Dinh dưỡng, Ghi nhanh | DEVICE_PENDING | |
-| Thực phẩm bổ sung | `supplements.tsx` | `SupplementsView` | Dinh dưỡng, Hôm nay | DEVICE_PENDING | #570 |
+| Thực phẩm bổ sung | `supplements.tsx` | `SupplementsView` | Dinh dưỡng › Thêm | DEVICE_PENDING | #570; bỏ khỏi Hôm nay (GĐ3) |
 | Nhật ký bữa | `diary.tsx` | `DiaryView` | Dinh dưỡng | DEVICE_PENDING | |
 
 ### Phase 4 — Sức khoẻ / cơ thể
@@ -94,57 +94,57 @@ Hiện **không dòng nào DONE**: chưa có lần chạy trên iPhone thật.
 |---|---|---|---|---|---|
 | Đọc / đồng bộ HealthKit | `use-health-sync.ts` | `HealthKitSource`, `HealthSyncCoordinator` | Hôm nay, onboarding | DEVICE_PENDING | Cảm biến thật: NOT RUN |
 | Ghi ngược HealthKit (cân, giấc, buổi tập) | `health-sync-write.ts` | — | — | DECISION | #527 liệt kê ở Phase 4, nhưng ràng buộc của Kiệt (AGENT_SESSION §3): "Không ghi ngược vào HealthKit". Cần Kiệt chốt bên nào thắng |
-| Readiness / ACWR | `readiness*` | `ReadinessEngine`, `ReadinessExplainerSheet` | Hôm nay, Trợ lý | DEVICE_PENDING | |
+| Readiness / ACWR | `readiness*` | `ReadinessEngine`, `ReadinessExplainerSheet` | Hôm nay, Tiến bộ › Hồi phục | DEVICE_PENDING | |
 | Ghi cân | `log-weight.tsx` | `LogWeightView` | Hôm nay, Ghi nhanh, Tập luyện | DEVICE_PENDING | #576 |
-| Ghi giấc + insight | `log-sleep.tsx`, `sleep-insights.tsx` | `LogSleepView`, `SleepInsightsView` | Hôm nay, Ghi nhanh, Trợ lý | DEVICE_PENDING | |
-| Số đo: xem xu hướng | `measurements-trend.tsx` | `MeasurementsView` | Trợ lý, Tập luyện | DEVICE_PENDING | |
+| Ghi giấc + insight | `log-sleep.tsx`, `sleep-insights.tsx` | `LogSleepView`, `SleepInsightsView` | Hôm nay, Ghi nhanh, Tiến bộ | DEVICE_PENDING | |
+| Số đo: xem xu hướng | `measurements-trend.tsx` | `MeasurementsView` (trong `BodySection`) | Tiến bộ › "Cân nặng & số đo", Tiến bộ › nhóm Cơ thể, Tập luyện | DEVICE_PENDING | |
 | Số đo: ghi | `log-measurement.tsx` (RN mở từ `body-panel.tsx:952`, `:1016`) | `LogMeasurementView` | Số đo cơ thể: "+" và nút ở trạng thái trống; link `ascnd://log-measurement` | DEVICE_PENDING | #579 (`5d11bdef`). Simulator 17/10: cả hai nút mở sheet; nhập 7878 bị chặn (10–300 cm); lưu 78 cm → thẻ Eo hiện ngay |
-| Sinh trắc: xem / xoá | `biometrics.tsx` | `BiometricsView` | Hôm nay, Trợ lý | DEVICE_PENDING | #562 |
+| Sinh trắc: xem / xoá | `biometrics.tsx` | `BiometricsView` | Hôm nay, Tiến bộ | DEVICE_PENDING | #562 |
 | Sinh trắc: ghi tay | `log-biometrics.tsx` (RN mở từ `biometrics.tsx:135`, `:152`) | `LogBiometricsView` | Sinh trắc: "+" và "Nhập thủ công" ở trạng thái trống; thẻ việc trên Hôm nay | DEVICE_PENDING | #579 + nút trạng thái trống đặt ngay dưới chữ. Simulator 17/10: nút mở sheet; lưu nhịp tim nghỉ 58 → màn đọc lại ngay |
-| Bước chân | `steps.tsx` | `StepsView` | Hôm nay, Trợ lý | DEVICE_PENDING | |
-| Mục tiêu thông minh | `smart-goals.tsx` | `SmartGoalsView` | Trợ lý, Tập luyện | DEVICE_PENDING | |
-| Tổng kết tuần | `weekly-review.tsx` | `WeeklyReviewView` | Trợ lý | DEVICE_PENDING | #569 |
-| Ảnh tiến trình | `progress-photos.tsx` | `ProgressPhotosView` | Trợ lý, Tập luyện | DEVICE_PENDING | Camera thật: NOT RUN |
+| Bước chân | `steps.tsx` | `StepsView` | Hôm nay ("Hoạt động"), Tiến bộ, onboarding | DEVICE_PENDING | |
+| Mục tiêu thông minh | `smart-goals.tsx` | `SmartGoalsView` (trong `BodySection`) | Tiến bộ, Tập luyện | DEVICE_PENDING | |
+| Tổng kết tuần | `weekly-review.tsx` | `WeeklyReviewView` | Tiến bộ › Thêm (khi có AI) | DEVICE_PENDING | #569; gọn lại kiểu Apple (#736) |
+| Ảnh tiến trình | `progress-photos.tsx` | `ProgressPhotosView` (trong `BodySection`) | Tiến bộ, Tập luyện | DEVICE_PENDING | Camera thật: NOT RUN |
 
 ### Phase 5 — Cộng đồng
 
 | Năng lực | RN | Swift | Lối vào Release | Trạng thái | Còn thiếu / evidence |
 |---|---|---|---|---|---|
-| Feed | `(tabs)/community.tsx` | `CommunityFeedView` | tab | DEVICE_PENDING | redesign 14–15/10 (khác RN có chủ ý) |
-| Bài / bình luận | `community-post.tsx` | `CommunityPostView`, `CommunityCommentsSheet` | feed (sheet bình luận), hộp thông báo | DEVICE_PENDING | Feed không còn mở màn bài riêng (`c13d16b1`); `CommunityPostScreen` không còn ai gọi |
-| Hồ sơ của tôi / người khác | `community-profile.tsx`, `community-user.tsx` | `CommunityProfileView`, `CommunityUserView` | Hôm nay (nút hồ sơ), feed | PARTIAL | Alert chặn / tắt tiếng / xoá trong sheet lồng có thể không chạy action (cùng lỗi với đăng xuất) — chưa kiểm |
+| Feed | `(tabs)/community.tsx` | `CommunityScreen` / `CommunityFeedView` | Tiến bộ › Cộng đồng; link `ascnd://community` (#748) | DEVICE_PENDING | redesign 14–15/10 (khác RN có chủ ý); không còn là tab (GĐ3) |
+| Bài / bình luận | `community-post.tsx` | `CommunityPostView`, `CommunityCommentsSheet` | feed (sheet bình luận), hộp thông báo, link `community-post?id=` (#749) | DEVICE_PENDING | Feed không còn mở màn bài riêng (`c13d16b1`) |
+| Hồ sơ của tôi / người khác | `community-profile.tsx`, `community-user.tsx` | `CommunityProfileView`, `CommunityUserView` | Hôm nay (avatar), feed, link `community-user?id=` (#749) | PARTIAL | Alert chặn / tắt tiếng / xoá trong sheet lồng có thể không chạy action (cùng lỗi với đăng xuất trước đây) — chưa kiểm |
 | Tìm / đã lưu / riêng tư | `community-search.tsx`, `community-saved.tsx`, `community-privacy.tsx` | `CommunitySearchView`, `CommunitySavedView`, `CommunityPrivacyView` | feed, hồ sơ | DEVICE_PENDING | |
-| Thử thách cộng đồng | `community-challenges.tsx`, `community-challenge.tsx` | `CommunityChallengesView`, `CommunityChallengeView` | feed | DEVICE_PENDING | |
+| Thử thách cộng đồng | `community-challenges.tsx`, `community-challenge.tsx` | `CommunityChallengesView`, `CommunityChallengeView` | feed | DEVICE_PENDING | Sổ hạn chế: tính năng cần người dùng thật — giữ, không mở rộng |
 | Chia sẻ buổi / tiến trình / công thức | `community-share*.tsx` | `CommunityShare*View` | feed, sau buổi tập, nhật ký bữa | DEVICE_PENDING | |
-| Nhắn tin riêng | — (RN không có) | `MessagesInboxView`, `ConversationView` | ẩn tới khi có server | IMPLEMENTED_NOT_WIRED | Chức năng mới của native; chờ backend (`ccbee1ed`) |
+| Nhắn tin riêng | — (RN không có) | `MessagesInboxView`, `ConversationView` | Cộng đồng (nút giấy bay, chỉ khi hộp thư đọc được) | DEVICE_PENDING | Backend `20261020130000_community_direct_messages.sql`; nút hiện trên simulator 29/10. Sổ hạn chế: không mở rộng khi chưa có người dùng |
 
 ### Phase 6 — Trợ lý
 
 | Năng lực | RN | Swift | Lối vào Release | Trạng thái | Còn thiếu / evidence |
 |---|---|---|---|---|---|
-| Tab Trợ lý | `(tabs)/assistant.tsx` | `AssistantTab`, `MetricPanelView` | tab | DEVICE_PENDING | v2 15/10 |
-| Koa Coach chat | `ai-coach.tsx` | `CoachChatView` | Trợ lý, Ghi nhanh | DEVICE_PENDING | Chỉ khi `aiDeployed`; đã chạy với AI thật (`95565105`) |
-| Trí nhớ coach | `coach-memory.tsx` | `CoachMemoryView` | Trợ lý | DEVICE_PENDING | |
-| Insight / gợi ý theo ngữ cảnh | `assistant.tsx` | `AssistantSummaryViews` | Trợ lý | PARITY_PENDING | |
+| Tab Tiến bộ (trước: Trợ lý) | `(tabs)/assistant.tsx` | `AssistantTab`, `ProgressHero`, `ProgressResultCard` | tab | DEVICE_PENDING | Chữ A trạng thái 6 nhóm (mock bản 10, #658/#659); khác RN có chủ ý |
+| Koa Coach chat | `ai-coach.tsx` | `CoachChatView` | Tiến bộ, Ghi nhanh (nút Koa) | DEVICE_PENDING | Chỉ khi `aiDeployed`; đã chạy với AI thật (`95565105`); `ai-coach` v28 (28/10) |
+| Trí nhớ coach | `coach-memory.tsx` | `CoachMemoryView` | Tiến bộ | DEVICE_PENDING | |
+| Insight / gợi ý theo ngữ cảnh | `assistant.tsx` | `AssistantSummaryViews`, `TodayCoachSection` | Hôm nay ("Insight hôm nay"), Tiến bộ | PARITY_PENDING | |
 
 ### Phase 7 — Koa / kinh tế
 
 | Năng lực | RN | Swift | Lối vào Release | Trạng thái | Còn thiếu / evidence |
 |---|---|---|---|---|---|
-| Phòng Koa + cảm xúc | `mascot-room.tsx` | `MascotRoomView`, `MascotFigureView` | Hôm nay | DEVICE_PENDING | Tranh Koa là của Kiệt, không vẽ lại |
-| Huy chương | `awards.tsx` | `AwardsView` | Hôm nay, phòng Koa, hồ sơ | DEVICE_PENDING | #563 |
-| Thử thách tuần | `challenges.tsx` | `ChallengesView` | phòng Koa | DEVICE_PENDING | #566 |
-| Quest / hành trình hạng | `mascot-room.tsx` | `QuestWatch`, `RankJourneyView` | phòng Koa | PARITY_PENDING | |
-| Cửa hàng | `shop.tsx` | `ShopView`, `ShopSceneView` | phòng Koa | DEVICE_PENDING | Luật xu không đổi khi chưa có Kiệt duyệt |
+| Phòng Koa + cảm xúc | `mascot-room.tsx` | `MascotRoomView`, `KoaFigureView` | Hôm nay ("Phòng linh vật", thẻ Koa) | DEVICE_PENDING | Tranh Koa là của Kiệt. Thiết kế lại 29/10 (#739–#745): tủ đồ mới, bỏ chuỗi khỏi phòng, đồ phòng 6 chỗ, bụi khi vắng (dọn 30 xu, đã thử thật) — khác RN có chủ ý |
+| Huy chương | `awards.tsx` | `AwardsView` | Hôm nay, phòng Koa, Tiến bộ, hồ sơ | DEVICE_PENDING | #563 |
+| Thử thách tuần | `challenges.tsx` | `ChallengesView` | Cộng đồng | DEVICE_PENDING | #566; không còn mở từ phòng Koa (29/10) |
+| Quest / hành trình hạng | `mascot-room.tsx` | `QuestWatch`, `KoaQuests`, `RankJourneyView` | phòng Koa | PARITY_PENDING | Nhiệm vụ 3 nhóm + tăng tải + khám phá (#743), Gains cần ngày nghỉ (#744) — khác RN có chủ ý; migration đã deploy |
+| Cửa hàng | `shop.tsx` | `ShopView` (Phòng thay đồ) | phòng Koa | DEVICE_PENDING | Trang phục + Đồ phòng (#739, #742); mua thật trên simulator (Bảng Neon). Khoá theo hạng chỉ ở app (sổ hạn chế) |
 | Bảng thiết kế Koa / debug | `koa-sheet.tsx`, `koa-debug.tsx` (RN chỉ `__DEV__`) | `KoaSheetView` (chỉ Debug) | — | EXCLUDED | công cụ dev |
 
 ### Phase 8 — Route phụ
 
 | Năng lực | RN | Swift | Lối vào Release | Trạng thái | Còn thiếu / evidence |
 |---|---|---|---|---|---|
-| Sửa hồ sơ | `edit-profile.tsx` | `EditProfileView` | Hồ sơ | PARITY_PENDING | #555 |
+| Sửa hồ sơ | `edit-profile.tsx` | `EditProfileView` | Hồ sơ (`CommunityUserView`) | PARITY_PENDING | #555 |
 | Đổi mật khẩu | `change-password.tsx` | `ChangePasswordView` | Cài đặt, link email | PARITY_PENDING | #549 |
-| Pháp lý | `legal.tsx` | `LegalView` | Cài đặt, onboarding | PARTIAL | Văn bản đầy đủ vi/en/es (`e34873c1`) nằm trên nhánh `claude/b-steps-awards` (6 commit, chưa vào base); địa chỉ liên hệ còn là chỗ trống — chờ Kiệt |
+| Pháp lý | `legal.tsx` | `LegalView` | Cài đặt, hồ sơ cộng đồng | PARTIAL | Văn bản vi/en/es đã vào base (bản nháp, không phải tư vấn pháp lý); email hỗ trợ / tên đơn vị vận hành còn trống — chờ Kiệt |
 | Quản trị `admin/*` (9 tệp) | `admin/*` | — | — | EXCLUDED | #527: công cụ nội bộ |
 
 ### Phase 9 — Năng lực iOS
@@ -155,22 +155,22 @@ Hiện **không dòng nào DONE**: chưa có lần chạy trên iPhone thật.
 | Widget màn hình chính | `HomeScreenWidgets.swift`, `WidgetSync` | DEVICE_PENDING | |
 | Ký / entitlement | `ASCND.entitlements`, `project.yml` | DECISION | Apple Developer Program |
 
-### Đếm (17/10, @ `8ba9af07`)
+### Đếm (29/10, @ `116a8c3a`)
 
 | Trạng thái | Số dòng |
 |---|---|
 | DONE | 0 |
-| DEVICE_PENDING | 51 |
-| PARITY_PENDING | 11 |
-| PARTIAL | 4 |
-| IMPLEMENTED_NOT_WIRED | 3 |
+| DEVICE_PENDING | 53 |
+| PARITY_PENDING | 12 |
+| PARTIAL | 3 |
+| IMPLEMENTED_NOT_WIRED | 0 |
 | NOT_STARTED | 2 |
 | DECISION | 3 |
-| EXCLUDED | 3 |
+| EXCLUDED | 4 |
 
 **Gap theo ưu tiên:**
 - ~~**P1** — ghi số đo không có lối vào; sinh trắc thiếu "Nhập tay".~~ Đã xong ở #579 (17/10).
-- **P1** — 6 commit của `claude/b-steps-awards` (đăng xuất, xoá tài khoản, pháp lý, đăng nhập mới) đang chạy CI ở phiên khác, sẽ được gộp khi xanh. Sau khi gộp: chuyển các dòng Đăng xuất / Xoá tài khoản / Pháp lý / Đăng nhập theo báo cáo gộp.
+- ~~**P1** — 6 commit của `claude/b-steps-awards` (đăng xuất, xoá tài khoản, pháp lý, đăng nhập mới) chưa vào base.~~ Đã vào base; các dòng đã chuyển (29/10).
 - **P1** — kiểm các alert trong sheet lồng (chặn / tắt tiếng / xoá bài).
 - **P2** — khoá app Face ID; xuất dữ liệu.
 - **DECISION (Kiệt)** — ghi ngược HealthKit; thẻ xu hướng 7 ngày; email liên hệ trong văn bản pháp lý; Apple Sign In / ký.
