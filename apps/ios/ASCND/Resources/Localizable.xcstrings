@@ -1106,29 +1106,6 @@
     }
    }
   },
-  "settings.language.footer": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "ASCND uses your iPhone's language. To change it: Settings → ASCND → Language."
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "ASCND dùng ngôn ngữ của iPhone. Muốn đổi: Cài đặt → ASCND → Ngôn ngữ."
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "ASCND usa el idioma de tu iPhone. Para cambiarlo: Ajustes → ASCND → Idioma."
-     }
-    }
-   }
-  },
   "settings.language.hint": {
    "extractionState": "manual",
    "localizations": {
@@ -16681,52 +16658,6 @@
     }
    }
   },
-  "hs.connected": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Connected"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Đã kết nối"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Conectado"
-     }
-    }
-   }
-  },
-  "hs.auto": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Sleep, steps, workouts, weight and water sync on their own — even while the app is closed."
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Giấc ngủ, bước, buổi tập, cân, nước tự đồng bộ — kể cả khi app đang đóng."
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Sueño, pasos, entrenos, peso y agua se sincronizan solos, incluso con la app cerrada."
-     }
-    }
-   }
-  },
   "steps.phone": {
    "extractionState": "manual",
    "localizations": {
@@ -16746,52 +16677,6 @@
      "stringUnit": {
       "state": "translated",
       "value": "Pasos del iPhone"
-     }
-    }
-   }
-  },
-  "steps.phone.on": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "On"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Đang bật"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Activado"
-     }
-    }
-   }
-  },
-  "steps.phone.enable": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Turn on"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Bật"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Activar"
      }
     }
    }
@@ -47640,29 +47525,6 @@
      "stringUnit": {
       "state": "translated",
       "value": "Rellena sueño, pasos, entrenos, peso y agua: escribes menos"
-     }
-    }
-   }
-  },
-  "hcard.connect": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Connect"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Kết nối"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Conectar"
      }
     }
    }

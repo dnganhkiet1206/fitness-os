@@ -253,7 +253,9 @@ struct SettingsSheet: View {
           if result == .deleted { await signOut() }
           return result
         }
-      }
+      },
+      healthPause: HealthPause(
+        isPaused: { services.health.paused }, setPaused: { services.health.setPaused($0) })
     )
     .presentationDragIndicator(.visible)
   }

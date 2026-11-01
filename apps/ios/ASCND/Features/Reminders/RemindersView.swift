@@ -107,8 +107,8 @@ struct RemindersView: View {
     .navigationTitle(Text(String(localized: "reminders.title")))
     .ascndPage()
     .sensoryFeedback(.selection, trigger: center.prefs)
+    // Không kéo để làm mới (Kiệt 01/11): cài đặt nhắc nằm trên máy, không có gì để tải lại.
     .task { await load() }
-    .refreshable { await load() }
   }
 
   /// Koa đang nhắc khoá này theo giờ quen (đợt 2B): bật, còn giờ mặc định, có thói quen.
