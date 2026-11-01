@@ -69,3 +69,35 @@ public enum ExploreQuest: String, Sendable, Hashable, CaseIterable {
     }
   }
 }
+
+/// Thưởng tự nhận (tăng tải, khám phá) mà lời gọi hỏng vì mạng — giữ lại để nhận bù
+/// khi có mạng / lần mở Hôm nay sau (31/10, rà mất mạng). Trước đây mất mạng đúng lúc
+/// ấy là mất: khám phá chỉ thử lại khi dùng lại tính năng, tăng tải không thử lại
+/// (mất cả +3 Gains của ngày). Gửi lại an toàn: server bỏ trùng theo `ref_key`.
+public enum QuestRetry {
+  public struct Pending: Codable, Sendable, Hashable {
+    public let ref: String
+    public let reason: String
+    public init(ref: String, reason: String) {
+      self.ref = ref
+      self.reason = reason
+    }
+  }
+
+  /// Giữ tối đa chừng này khoá (mới nhất) — chặn hàng lớn mãi nếu server luôn từ chối.
+  public static let limit = 20
+
+  /// Lỗi nào đáng thử lại: chưa tới server (mất mạng) hay không rõ đã tới chưa.
+  /// Server đã trả lời có tên (trần ngày, khoá lạ, chưa đăng nhập…) thì thôi.
+  public static func shouldRetry(_ f: MascotFailure) -> Bool {
+    switch f {
+    case .offline, .server(code: nil): true
+    default: false
+    }
+  }
+
+  /// Thêm một khoá (không trùng), giữ `limit` khoá mới nhất.
+  public static func adding(_ p: Pending, to list: [Pending]) -> [Pending] {
+    Array((list.filter { $0.ref != p.ref } + [p]).suffix(limit))
+  }
+}

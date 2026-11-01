@@ -465,6 +465,7 @@ final class AppServices {
 
   /// Đọc lại mức bụi từ lịch sử tập đã có + việc ghi + ngày đã dọn bằng xu.
   func loadKoaDust(userId: String) async {
+    await retryPendingQuests(userId: userId)
     guard let rows, let h = koaGainsHistory else { return }
     let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
     guard
@@ -505,11 +506,55 @@ final class AppServices {
     guard !UserDefaults.standard.bool(forKey: seen), !claimingQuests.contains(ref) else { return nil }
     claimingQuests.insert(ref)
     defer { claimingQuests.remove(ref) }
-    guard let amount = try? await SupabaseMascotEconomy(backend: backend).claimReward(refKey: ref, reason: reason)
-    else { return nil }
-    UserDefaults.standard.set(true, forKey: seen)
-    return session.session?.userId == userId ? amount : nil
+    do {
+      let amount = try await SupabaseMascotEconomy(backend: backend).claimReward(refKey: ref, reason: reason)
+      UserDefaults.standard.set(true, forKey: seen)
+      setPendingQuests(userId, pendingQuests(userId).filter { $0.ref != ref })
+      return session.session?.userId == userId ? amount : nil
+    } catch {
+      // Mất mạng / không rõ đã tới server: giữ lại để nhận bù (`retryPendingQuests`).
+      if let f = error as? MascotFailure, QuestRetry.shouldRetry(f) {
+        setPendingQuests(userId, QuestRetry.adding(.init(ref: ref, reason: reason), to: pendingQuests(userId)))
+      } else {
+        setPendingQuests(userId, pendingQuests(userId).filter { $0.ref != ref })
+      }
+      return nil
+    }
   }
+
+  /// Khoá thưởng tự nhận chưa tới server, của từng người (lưu trên máy).
+  private func pendingQuestsKey(_ userId: String) -> String { "ascnd_koa_quest_pending.\(userId)" }
+
+  private func pendingQuests(_ userId: String) -> [QuestRetry.Pending] {
+    guard let data = UserDefaults.standard.data(forKey: pendingQuestsKey(userId)) else { return [] }
+    return (try? JSONDecoder().decode([QuestRetry.Pending].self, from: data)) ?? []
+  }
+
+  private func setPendingQuests(_ userId: String, _ list: [QuestRetry.Pending]) {
+    if list.isEmpty {
+      UserDefaults.standard.removeObject(forKey: pendingQuestsKey(userId))
+    } else if let data = try? JSONEncoder().encode(list) {
+      UserDefaults.standard.set(data, forKey: pendingQuestsKey(userId))
+    }
+  }
+
+  /// Nhận bù thưởng tự nhận đã hỏng vì mạng — khi có mạng lại và mỗi lần Hôm nay đọc
+  /// Gains. Một lượt một lúc.
+  func retryPendingQuests(userId: String) async {
+    guard sync.online, !retryingQuests else { return }
+    let list = pendingQuests(userId)
+    guard !list.isEmpty else { return }
+    retryingQuests = true
+    defer { retryingQuests = false }
+    for p in list {
+      guard let amount = await claimOnce(userId: userId, ref: p.ref, reason: p.reason) else { continue }
+      if let day = OverloadQuest.day(of: p.ref), let h = koaGainsHistory {
+        koaGainsHistory = .init(days: KoaGainsSync.mark(h.days, overload: [day]), week: h.week)
+      }
+      noteKoaReward(userId: userId, amount: amount, seen: true, source: OverloadQuest.day(of: p.ref) != nil ? "overload" : "explore")
+    }
+  }
+  @ObservationIgnored private var retryingQuests = false
 
   /// Làm theo gợi ý tăng tải: +20 xu, và ngày ấy +3 Gains (Gains đọc lại từ sổ xu).
   func claimOverload(userId: String, date: LocalDate, insights: InsightBook) async {
@@ -1204,7 +1249,11 @@ final class AppServices {
   /// phép dò internet của NetInfo (`NetworkObserver`, #530).
   private func applyNetwork(connected: Bool?, reachable: Bool?) {
     let usable = NetReachability.isUsable(connected: connected, internetReachable: reachable)
+    let cameBack = usable && !sync.online
     sync.setOnline(usable)
+    if cameBack, let userId = session.session?.userId {
+      Task { await retryPendingQuests(userId: userId) }
+    }
     net.apply(connected: connected, internetReachable: reachable)
   }
 

@@ -75,4 +75,25 @@ struct KoaQuestsTests {
     let q = KoaGainsSync.overloadQuery(userId: "u")
     #expect(q.table == "mascot_transactions" && q.filters.contains(.or("ref_key.like.\"*:overload\"")))
   }
+
+  /// Mất mạng lúc nhận thưởng tự động: giữ khoá để nhận bù; server đã trả lời có tên thì thôi.
+  @Test func retryOnlyWhenNotDelivered() {
+    #expect(QuestRetry.shouldRetry(.offline))
+    #expect(QuestRetry.shouldRetry(.server(code: nil)))
+    #expect(!QuestRetry.shouldRetry(.server(code: "P0001")))
+    #expect(!QuestRetry.shouldRetry(.dailyCeiling))
+    #expect(!QuestRetry.shouldRetry(.unknownReward))
+    #expect(!QuestRetry.shouldRetry(.notSignedIn))
+  }
+
+  @Test func retryListDedupesAndCaps() {
+    let a = QuestRetry.Pending(ref: "x:photo", reason: "explore photo")
+    var list = QuestRetry.adding(a, to: [])
+    list = QuestRetry.adding(a, to: list)
+    #expect(list == [a])
+    for i in 0..<30 { list = QuestRetry.adding(.init(ref: "d:2026-10-\(i):overload", reason: "overload"), to: list) }
+    #expect(list.count == QuestRetry.limit)
+    #expect(list.last?.ref == "d:2026-10-29:overload")
+    #expect(!list.contains(a))
+  }
 }
