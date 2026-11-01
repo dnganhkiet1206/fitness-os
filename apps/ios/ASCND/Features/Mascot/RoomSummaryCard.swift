@@ -15,39 +15,42 @@ struct RoomSummaryCard<Trailing: View>: View {
   var unit: String?
   var detail: String?
   @ViewBuilder var trailing: () -> Trailing
+  @Environment(\.dynamicTypeSize) private var typeSize
+  /// Số lớn phóng theo cỡ chữ như đơn vị cạnh nó — cỡ cố định 30 làm "160" nhỏ hơn
+  /// chữ "Gains" ở cỡ trợ năng (soát 01/11).
+  @ScaledMetric(relativeTo: .largeTitle) private var valueSize: CGFloat = 30
 
   var body: some View {
     VStack(alignment: .leading, spacing: 8) {
-      HStack(spacing: 6) {
-        Label {
-          Text(verbatim: title).lineLimit(1)
-        } icon: {
-          Image(systemName: symbol)
+      // Chữ trợ năng (soát 01/11): tiêu đề và chữ góc chung một hàng thì tiêu đề còn
+      // "N…" — xếp dọc, tiêu đề xuống dòng được.
+      if typeSize.isAccessibilitySize {
+        VStack(alignment: .leading, spacing: 4) {
+          titleLabel
+          cornerRow
         }
-        .font(Font.subheadline.weight(.semibold))
-        .foregroundStyle(tint)
-        Spacer(minLength: 4)
-        if let corner {
-          Text(verbatim: corner)
-            .font(Font.subheadline)
-            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-            .lineLimit(1)
+      } else {
+        HStack(spacing: 6) {
+          titleLabel.lineLimit(1)
+          Spacer(minLength: 4)
+          cornerRow
         }
-        Image(systemName: "chevron.right")
-          .font(.system(size: 13, weight: .semibold))
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI.opacity(0.7))
-          .accessibilityHidden(true)
       }
-      HStack(alignment: .bottom, spacing: DS.Spacing.sm) {
+      // Chữ trợ năng: hình nhỏ xuống dưới, chữ phụ dùng hết bề ngang.
+      AnyLayout(
+        typeSize.isAccessibilitySize
+          ? AnyLayout(VStackLayout(alignment: .leading, spacing: DS.Spacing.sm))
+          : AnyLayout(HStackLayout(alignment: .bottom, spacing: DS.Spacing.sm))
+      ) {
         VStack(alignment: .leading, spacing: 2) {
           (Text(verbatim: value)
-            .font(.system(size: 30, weight: .bold, design: .rounded).monospacedDigit())
+            .font(.system(size: valueSize, weight: .bold, design: .rounded).monospacedDigit())
             .foregroundStyle(DS.Color.foreground.swiftUI)
             + Text(verbatim: unit.map { " \($0)" } ?? "")
             .font(Font.subheadline.weight(.semibold))
             .foregroundStyle(DS.Color.mutedForeground.swiftUI))
-            .lineLimit(1)
-            .minimumScaleFactor(0.7)
+            .lineLimit(typeSize.isAccessibilitySize ? nil : 1)
+            .minimumScaleFactor(typeSize.isAccessibilitySize ? 1 : 0.7)
           if let detail {
             Text(verbatim: detail)
               .font(DS.TextStyle.footnote)
@@ -55,7 +58,7 @@ struct RoomSummaryCard<Trailing: View>: View {
               .fixedSize(horizontal: false, vertical: true)
           }
         }
-        Spacer(minLength: 0)
+        if !typeSize.isAccessibilitySize { Spacer(minLength: 0) }
         trailing()
       }
     }
@@ -65,6 +68,33 @@ struct RoomSummaryCard<Trailing: View>: View {
     .contentShape(Rectangle())
     .accessibilityElement(children: .combine)
     .accessibilityAddTraits(.isButton)
+  }
+}
+
+extension RoomSummaryCard {
+  fileprivate var titleLabel: some View {
+    Label {
+      Text(verbatim: title)
+    } icon: {
+      Image(systemName: symbol)
+    }
+    .font(Font.subheadline.weight(.semibold))
+    .foregroundStyle(tint)
+  }
+
+  fileprivate var cornerRow: some View {
+    HStack(spacing: 6) {
+      if let corner {
+        Text(verbatim: corner)
+          .font(Font.subheadline)
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          .lineLimit(1)
+      }
+      Image(systemName: "chevron.right")
+        .font(.system(size: 13, weight: .semibold))
+        .foregroundStyle(DS.Color.mutedForeground.swiftUI.opacity(0.7))
+        .accessibilityHidden(true)
+    }
   }
 }
 
