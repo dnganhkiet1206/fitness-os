@@ -79,7 +79,7 @@ Hiện **không dòng nào DONE**: chưa có lần chạy trên iPhone thật.
 | Tab Dinh dưỡng | `(tabs)/nutrition.tsx` | `NutritionTab` | tab | DEVICE_PENDING | redesign 13–15/10; [design/nutrition/RN-PARITY.md](design/nutrition/RN-PARITY.md) |
 | Ghi / sửa bữa | `log-meal.tsx` | `LogMealView` | Dinh dưỡng, Hôm nay, Ghi nhanh, Coach | DEVICE_PENDING | |
 | Thực phẩm của tôi | `food-list.tsx`, `food-editor.tsx` | `FoodListView`, `FoodEditorView` | Dinh dưỡng | DEVICE_PENDING | golden `food-editor` |
-| Kế hoạch ăn | `meal-plans.tsx`, `meal-plan.tsx` | `MealPlansView`, `MealPlanView`, `PlanWizardView` | Dinh dưỡng › Thêm | DEVICE_PENDING | `CreatePlanSheet` cũ không còn ai mở (thay bằng `PlanWizardView`) — mã chết |
+| Kế hoạch ăn | `meal-plans.tsx`, `meal-plan.tsx` | `MealPlansView`, `MealPlanView`, `PlanWizardView` | Dinh dưỡng › Thêm | DEVICE_PENDING | `CreatePlanSheet` cũ (thay bằng `PlanWizardView`) đã xoá 01/11 |
 | Đi chợ | `grocery.tsx` | `GroceryView` | Dinh dưỡng › Thêm | DEVICE_PENDING | N1 |
 | Xu hướng dinh dưỡng | `nutrition-insights.tsx` | `NutritionInsightsView` | Dinh dưỡng | DEVICE_PENDING | |
 | Gợi ý bữa AI | `(tabs)/nutrition.tsx` | `MealSuggestCard` | khi `aiDeployed` | DEVICE_PENDING | `95565105` |

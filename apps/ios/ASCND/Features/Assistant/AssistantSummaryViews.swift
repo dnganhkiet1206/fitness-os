@@ -92,49 +92,6 @@ enum AssistantText {
   }
 }
 
-/// Thẻ xu hướng 7 ngày (loại đang chọn) — một câu + đường nhỏ; chạm mở bảng đầy đủ.
-struct TrendHighlight: View {
-  let book: MetricHistoryBook
-  let lang: AppPreferences.Lang
-  let open: () -> Void
-
-  var body: some View {
-    Button(action: open) {
-      HStack(alignment: .center, spacing: 12) {
-        VStack(alignment: .leading, spacing: 4) {
-          AssistantCaption(
-            symbol: "chart.line.uptrend.xyaxis", text: String(localized: "assistant.trend \(AssistantText.kind(book.kind))"),
-            tint: DS.Color.metricRose.swiftUI)
-          switch book.phase {
-          case .ready(let a):
-            Text(verbatim: AssistantText.trend(AssistantSummary.trend(a.bars)))
-              .font(.system(size: 17, weight: .semibold))
-              .foregroundStyle(DS.Color.foreground.swiftUI)
-            Text(verbatim: a.headline(lang))
-              .font(.system(size: 13))
-              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-              .lineLimit(2)
-          default:
-            Text(verbatim: AssistantText.trend(nil))
-              .font(.system(size: 17, weight: .semibold))
-              .foregroundStyle(DS.Color.foreground.swiftUI)
-          }
-        }
-        Spacer(minLength: 0)
-        // Chưa đọc được xu hướng → không vẽ đường (19/10: thẻ nói "Chưa đủ dữ
-        // liệu" mà vẫn vẽ một đường dốc xuống — người xem đọc nó như xu hướng).
-        if case .ready(let a) = book.phase, AssistantSummary.trend(a.bars) != nil {
-          Sparkline(values: a.bars.filter { !$0.missing }.map(\.value))
-        }
-      }
-      .modifier(AssistantSurface())
-      .contentShape(Rectangle())
-    }
-    .buttonStyle(TodayPressStyle())
-    .accessibilityElement(children: .combine)
-  }
-}
-
 /// Đường nhỏ, điểm cuối tô đậm.
 private struct Sparkline: View {
   let values: [Double]

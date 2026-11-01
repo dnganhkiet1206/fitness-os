@@ -3,35 +3,6 @@ import ASCNDDesignSystem
 import Charts
 import SwiftUI
 
-/// Tab Cộng đồng (#527, lát 1: feed chỉ đọc) — `(tabs)/community.tsx`,
-/// `post-card.tsx` + ba thẻ bài, `post-parts.tsx` (đầu thẻ, ảnh), `feed-more.tsx`,
-/// `useful-this-week.tsx` @ fac9ac2 trên `CommunityFeedBook`.
-///
-/// Như RN: hai tab (mặc định Khám phá); nhãn tạm khoá đăng hoặc lời mời tạo hồ
-/// sơ (đang đọc / đọc hồ sơ hỏng thì không nói gì); "Hữu ích tuần này" chỉ ở
-/// Khám phá, rỗng thì không vẽ; đọc hỏng là thẻ lỗi có thử lại (≠ trống); trống
-/// theo tab; trang kế tải khi tới gần đáy, hỏng thì đuôi feed nói ra và thử lại
-/// được; thẻ Workout / Tiến trình / Công thức như RN, ba dòng đầu.
-///
-/// Lát 3: chạm thẻ (hoặc hàng Hữu ích) mở `CommunityPostScreen`.
-///
-/// Lát 6: thích / lưu / menu "⋯" trên thẻ. Lát 8: kính lúp mở tìm kiếm.
-/// Lát 9: chuông mở hộp thông báo (chấm khi có dòng chưa đọc). Lát 11: thẻ
-/// soạn bài đầu feed (có hồ sơ, không bị khoá đăng) → chia sẻ buổi tập; lát
-/// 12: tiến trình; lát 13: công thức.
-///
-/// Lát 14: thẻ thử thách nổi bật ở đầu Khám phá + "Tất cả thử thách".
-///
-/// Lát 17: bài mới về khi đang đọc giữa feed thì bị giữ sau viên "N bài mới"
-/// (`CommunityFeedHold`), chạm thì lên đầu và thấy chúng.
-///
-/// Chưa có (các lát sau, #527): Thêm vào bữa. Ảnh đại diện là hình linh vật thật (`MascotAvatar`).
-struct CommunityTab: View {
-  var body: some View {
-    NavigationStack { CommunityScreen() }
-  }
-}
-
 /// Nội dung Cộng đồng, không kèm NavigationStack — GĐ3 (Kiệt duyệt 21/10): bỏ khỏi
 /// thanh tab, mở từ dòng "Cộng đồng" cuối tab Tiến bộ (đẩy vào ngăn của Tiến bộ).
 struct CommunityScreen: View {

@@ -704,55 +704,6 @@ enum QuickReplyMemory {
   }
 }
 
-/// Chip gợi ý: glyph theo `SuggestionGlyph`, chữ theo ngôn ngữ của app.
-struct FlowChips: View {
-  let suggestions: [AssistantSuggestions.Suggestion]
-  let lang: AppPreferences.Lang
-  let disabled: Bool
-  /// `false`: hàng bám mép trái (thẻ AI Coach); `true`: căn giữa (chat trống).
-  var centered = true
-  let onPick: (String) -> Void
-
-  var body: some View {
-    // Viên xuống dòng tự do (15/10, audit: trước là cột dọc, mỗi viên một dòng,
-    // mép phải lởm chởm).
-    FlowRows(spacing: DS.Spacing.sm, centered: centered) {
-      ForEach(suggestions) { s in
-        Button {
-          onPick(s.question(lang))
-        } label: {
-          Label(s.label(lang), systemImage: Self.symbol(s.glyph))
-            .font(DS.TextStyle.footnote.weight(.medium))
-            .foregroundStyle(DS.Color.foreground.swiftUI)
-            .lineLimit(1)
-            .padding(.horizontal, 14)
-            .frame(minHeight: 40)
-            .background(DS.Color.card.swiftUI, in: Capsule())
-            .overlay { Capsule().strokeBorder(DS.Color.foreground.swiftUI.opacity(0.10), lineWidth: 0.75) }
-            .frame(minHeight: 44)
-        }
-        .buttonStyle(.plain)
-        .disabled(disabled)
-        .opacity(disabled ? 0.5 : 1)
-        // Đọc cả câu sẽ gửi, như `accessibilityLabel={s.question[lang]}` của RN.
-        .accessibilityLabel(Text(verbatim: s.question(lang)))
-      }
-    }
-  }
-
-  static func symbol(_ g: AssistantSuggestions.Glyph) -> String {
-    switch g {
-    case .gauge: "gauge.with.dots.needle.50percent"
-    case .pulse: "waveform.path.ecg"
-    case .moon: "moon.fill"
-    case .flame: "flame.fill"
-    case .leaf: "leaf.fill"
-    case .bolt: "bolt.fill"
-    case .heart: "heart.fill"
-    }
-  }
-}
-
 /// Một tin. Coach: khối tổng quan (nếu có) + chữ trải ngang + nút chép khi xong.
 /// Người dùng: viên xám bên phải.
 private struct CoachMessageRow: View {

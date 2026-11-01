@@ -69,35 +69,3 @@ extension View {
   }
 }
 
-/// "Đang gõ…" kiểu iMessage: ba chấm nhấp nhô lần lượt trong bong bóng xám.
-struct TypingBubble: View {
-  @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-  var body: some View {
-    TimelineView(.animation(paused: reduceMotion)) { ctx in
-      let t = ctx.date.timeIntervalSinceReferenceDate
-      HStack(spacing: 5) {
-        ForEach(0..<3, id: \.self) { i in
-          let phase = reduceMotion ? 0.5 : Self.phase(at: t, dot: i)
-          Circle()
-            .fill(Color.secondary)
-            .frame(width: 8, height: 8)
-            .opacity(0.35 + 0.65 * phase)
-            .offset(y: -2.5 * phase)
-        }
-      }
-      .padding(.vertical, 13)
-      .padding(.leading, 14 + MessageBubbleStyle.tailWidth)
-      .padding(.trailing, 14)
-      .background(MessageBubbleStyle.theirs, in: MessageBubbleShape(mine: false, tail: true))
-    }
-    .accessibilityElement(children: .ignore)
-  }
-
-  /// 0…1 cho chấm thứ `dot` tại thời điểm `t` — chu kỳ 1,2 s, các chấm lệch pha.
-  /// Tách riêng: viết liền trong view, trình biên dịch của CI không kịp suy kiểu.
-  static func phase(at t: TimeInterval, dot: Int) -> Double {
-    let angle: Double = t * 2 * Double.pi / 1.2 - Double(dot) * 0.9
-    return (sin(angle) + 1) / 2
-  }
-}
