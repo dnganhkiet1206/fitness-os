@@ -1142,7 +1142,7 @@ struct MascotStage: View {
     return Color.clear
       .contentShape(Rectangle())
       .frame(width: width, height: (bottom - top) * k)
-      .offset(y: top * k)
+      // chạm tính từ đỉnh vùng sàn: `.offset` phải nằm ngoài cử chỉ, không thì `p.y` đã gồm `top`
       .onTapGesture(coordinateSpace: .local) { p in
         guard canWalk else { return }
         // phòng đang phóng sẵn: quy chỗ chạm về toạ độ phòng
@@ -1151,6 +1151,7 @@ struct MascotStage: View {
         let s = KoaRoomMap.spot(screenX: cx + (p.x / k - cx) / zoom, y: cy + (p.y / k + top - cy) / zoom)
         if reduceMotion { director.place(s) } else { director.request(.walkTo(s)) }
       }
+      .offset(y: top * k)
       .accessibilityHidden(true)
   }
 

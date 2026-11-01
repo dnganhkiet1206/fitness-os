@@ -391,8 +391,11 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - CPU simulator, bản Debug, nhiều lớp so với một lớp (`-koaFlat`): đứng yên 18,4 / 23,8 %, đi trên bục 26,3 / 29,6 %, đi trên sàn 27,1 / 27,5 %. Không tăng, nhưng khác biệt nằm trong độ nhiễu của phép đo.
 - **NOT RUN:** nghiêng điện thoại thật (simulator không có con quay; đã soát hướng lệch bằng `-koaSwing`, chưa biết độ nhạy tay thật); thiết bị thật, GPU và pin; Giảm chuyển động bật thật (chỉ chạy đường một lớp bằng `-koaFlat`); cảnh Koa dậy với máy quay; đồ phòng khác ngoài bộ gốc trên simulator; khổ màn hình khác iPhone Air.
 
+- ~~Chạm bục không đưa Koa lên bục: vùng chạm cộng phần dời hai lần nên mọi chạm rơi về mép sàn.~~ Sửa 01/11, kiểm trên simulator: Koa từ sàn chạm mặt trước bục thì lên bục (`stage d 450`). **NOT RUN:** thiết bị thật.
+
 ## 5. Lịch sử thay đổi sổ
 
+- 01/11/2026: sửa lỗi chạm bục không đưa Koa lên bục.
 - 01/11/2026: phòng Koa nhiều lớp (parallax, sàn nghiêng, đẩy máy, sương xa); ghi hạn chế và NOT RUN.
 - 31/10/2026: rà và sửa biểu cảm Koa; ghi các điểm hoãn cần mock.
 - 31/10/2026: thêm âm thanh nhỏ cho phòng Koa, có nút tắt.
