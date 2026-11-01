@@ -40,10 +40,55 @@ struct CommunityPrivacyScreen: View {
 
 struct CommunityPrivacyView: View {
   let book: CommunityPrivacyBook
-  @State private var message: String?
-  @State private var unblockFor: CommunityPrivacy.Person?
-  @State private var wipeAsk = false
-  @State private var wipeSure = false
+  /// Hộp báo UIKit, hiện ngay khi gán (xem `ConfirmAlert`, 31/10).
+  private var message: String? {
+    get { nil }
+    nonmutating set { if let newValue { ConfirmAlert.ok(newValue) } }
+  }
+  /// Các hộp hiện bằng UIKit ngay khi gán: Quyền riêng tư mở từ trang Hồ sơ, thường
+  /// là sheet, nơi `.alert` không chạy nút (`ConfirmAlert`, 31/10).
+  private var unblockFor: CommunityPrivacy.Person? {
+    get { nil }
+    nonmutating set {
+      guard let p = newValue else { return }
+      ConfirmAlert.choose(
+        title: String(localized: "community.privacy.unblocktitle \(Self.name(p))"),
+        message: String(localized: "community.privacy.unblockbody"),
+        choices: [
+          .cancel(),
+          AlertChoice(title: String(localized: "community.privacy.unblock")) {
+            Task { say(await book.unblock(p.userId), done: nil) }
+          },
+        ])
+    }
+  }
+  private var wipeAsk: Bool {
+    get { false }
+    nonmutating set {
+      guard newValue else { return }
+      ConfirmAlert.choose(
+        title: String(localized: "community.privacy.deletealltitle"), message: String(localized: "community.privacy.deleteallbody"),
+        choices: [
+          .cancel(),
+          AlertChoice(title: String(localized: "community.privacy.continue"), role: .destructive) { wipeSure = true },
+        ])
+    }
+  }
+  private var wipeSure: Bool {
+    get { false }
+    nonmutating set {
+      guard newValue else { return }
+      ConfirmAlert.choose(
+        title: String(localized: "community.privacy.deleteallsure"),
+        message: String(localized: "community.privacy.deleteallsurebody"),
+        choices: [
+          .cancel(),
+          AlertChoice(title: String(localized: "community.privacy.deleteforgood"), role: .destructive) {
+            Task { await wipe() }
+          },
+        ])
+    }
+  }
   @State private var taps = 0
 
   var body: some View {
@@ -67,36 +112,6 @@ struct CommunityPrivacyView: View {
     .task { await book.load() }
     .refreshable { await book.load() }
     .sensoryFeedback(.selection, trigger: taps)
-    .alert(
-      Text(verbatim: String(localized: "community.privacy.unblocktitle \(Self.name(unblockFor))")),
-      isPresented: Binding(get: { unblockFor != nil }, set: { if !$0 { unblockFor = nil } }),
-      presenting: unblockFor
-    ) { p in
-      Button(String(localized: "common.cancel"), role: .cancel) {}
-      Button(String(localized: "community.privacy.unblock")) {
-        Task { say(await book.unblock(p.userId), done: nil) }
-      }
-    } message: { _ in
-      Text("community.privacy.unblockbody")
-    }
-    .alert(Text("community.privacy.deletealltitle"), isPresented: $wipeAsk) {
-      Button(String(localized: "common.cancel"), role: .cancel) {}
-      Button(String(localized: "community.privacy.continue"), role: .destructive) { wipeSure = true }
-    } message: {
-      Text("community.privacy.deleteallbody")
-    }
-    .alert(Text("community.privacy.deleteallsure"), isPresented: $wipeSure) {
-      Button(String(localized: "common.cancel"), role: .cancel) {}
-      Button(String(localized: "community.privacy.deleteforgood"), role: .destructive) { Task { await wipe() } }
-    } message: {
-      Text("community.privacy.deleteallsurebody")
-    }
-    .alert(
-      Text(verbatim: message ?? ""),
-      isPresented: Binding(get: { message != nil }, set: { if !$0 { message = nil } })
-    ) {
-      Button(String(localized: "common.ok"), role: .cancel) {}
-    }
   }
 
   // MARK: - Mục

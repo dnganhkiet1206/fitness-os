@@ -56,7 +56,17 @@ struct CommunityProfileView: View {
   @State private var pick: String?
   @State private var taken = false
   @State private var filled = false
-  @State private var error: CommunityProfileFailure?
+  /// Lỗi lưu, báo bằng UIKit ngay khi gán: Sửa hồ sơ thường nằm trong sheet chồng
+  /// sheet, nơi `.alert` đặt sau khi chờ server không hiện (`ConfirmAlert`, 31/10).
+  private var error: CommunityProfileFailure? {
+    get { nil }
+    nonmutating set {
+      guard let e = newValue else { return }
+      ConfirmAlert.ok(
+        String(localized: "community.profile.savefailed"),
+        message: e == .offline ? String(localized: "community.profile.offline") : String(localized: "community.profile.tryagain"))
+    }
+  }
 
   var body: some View {
     content
@@ -65,13 +75,6 @@ struct CommunityProfileView: View {
       .navigationBarTitleDisplayMode(.inline)
       .task { if book.phase == .loading { await book.load() } }
       .onChange(of: book.phase, initial: true) { _, phase in fill(phase) }
-      .alert(
-        Text("community.profile.savefailed"), isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })
-      ) {
-        Button(String(localized: "common.ok"), role: .cancel) {}
-      } message: {
-        error == .offline ? Text("community.profile.offline") : Text("community.profile.tryagain")
-      }
   }
 
   @ViewBuilder private var content: some View {

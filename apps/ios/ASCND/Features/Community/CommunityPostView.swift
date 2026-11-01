@@ -135,8 +135,13 @@ struct CommunityPostView: View {
   @Environment(\.weightUnit) private var unit
   @State private var draft = ""
   @State private var replyTo: CommunityComment?
-  @State private var message: Message?
-  @State private var menuFor: CommunityComment?
+  /// Hộp báo / menu hiện bằng UIKit ngay khi gán: màn này hay nằm trong sheet chồng
+  /// sheet, nơi state đặt sau khi chờ server không làm `.alert` hiện (`ConfirmAlert`, 31/10).
+  private var message: Message? {
+    get { nil }
+    nonmutating set { if let m = newValue { ConfirmAlert.ok(m.title, message: m.body) } }
+  }
+  @State private var menuTaps = 0
   @FocusState private var composing: Bool
 
   var body: some View {
@@ -151,30 +156,23 @@ struct CommunityPostView: View {
     .safeAreaInset(edge: .bottom) { if book.post != nil { composer } }
     .task { if book.phase == .loading { await book.load() } }
     .refreshable { await book.load() }
-    .alert(
-      Text(verbatim: message?.title ?? ""),
-      isPresented: Binding(get: { message != nil }, set: { if !$0 { message = nil } }),
-      presenting: message
-    ) { _ in
-      Button(String(localized: "common.ok"), role: .cancel) {}
-    } message: { m in
-      if let body = m.body { Text(verbatim: body) }
-    }
-    .alert(
-      Text(verbatim: menuFor?.author?.displayName ?? String(localized: "community.post.comment.menu")),
-      isPresented: Binding(get: { menuFor != nil }, set: { if !$0 { menuFor = nil } }),
-      presenting: menuFor
-    ) { c in
-      if book.canDelete(c) {
-        Button(String(localized: "community.post.delete"), role: .destructive) { Task { await delete(c) } }
-      } else {
-        Button(String(localized: "community.post.report")) { Task { await report(c) } }
-      }
-      Button(String(localized: "common.cancel"), role: .cancel) {}
-    }
-    .sensoryFeedback(.selection, trigger: menuFor?.id) { _, new in new != nil }
+    .sensoryFeedback(.selection, trigger: menuTaps)
     .communityUserLinks()
     .communityPostActions(userId: book.userId, host: book)
+  }
+
+  private func openMenu(_ c: CommunityComment) {
+    menuTaps += 1
+    ConfirmAlert.choose(
+      title: c.author?.displayName ?? String(localized: "community.post.comment.menu"),
+      choices: [
+        book.canDelete(c)
+          ? AlertChoice(title: String(localized: "community.post.delete"), role: .destructive) {
+            Task { await delete(c) }
+          }
+          : AlertChoice(title: String(localized: "community.post.report")) { Task { await report(c) } },
+        .cancel(),
+      ])
   }
 
   /// Một hộp thoại cho mọi kết quả cần nói ra (app chưa có toast).
@@ -264,7 +262,7 @@ struct CommunityPostView: View {
 
   private func row(_ c: CommunityComment, reply: Bool) -> some View {
     CommentRow(
-      comment: c, reply: reply, onReply: replyAction, onMenu: { menuFor = $0 }, busy: book.working.contains(c.id)
+      comment: c, reply: reply, onReply: replyAction, onMenu: { openMenu($0) }, busy: book.working.contains(c.id)
     ) {
       if c.hidden && c.mine {
         HiddenNoticeView(step: book.hiddenStep(c), why: book.hiddenWhy(c), busy: book.working.contains(c.id)) {

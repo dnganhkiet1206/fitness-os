@@ -45,7 +45,11 @@ struct CommunitySearchView: View {
   @Environment(\.weightUnit) private var unit
   @Environment(\.openCommunityUser) private var openUser
   @State private var q = ""
-  @State private var message: String?
+  /// Hộp báo UIKit, hiện ngay khi gán (xem `ConfirmAlert`, 31/10).
+  private var message: String? {
+    get { nil }
+    nonmutating set { if let newValue { ConfirmAlert.ok(newValue) } }
+  }
   @State private var taps = 0
   @State private var sheetPost: CommunityPostSheetRoute?
   @FocusState private var focused: Bool
@@ -90,12 +94,6 @@ struct CommunitySearchView: View {
     .sensoryFeedback(.selection, trigger: taps)
     .communityUserLinks()
     .communityPostActions(userId: book.userId, host: book)
-    .alert(
-      Text(verbatim: message ?? ""),
-      isPresented: Binding(get: { message != nil }, set: { if !$0 { message = nil } })
-    ) {
-      Button(String(localized: "common.ok"), role: .cancel) {}
-    }
   }
 
   private var title: String {

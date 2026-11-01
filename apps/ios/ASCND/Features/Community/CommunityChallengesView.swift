@@ -239,8 +239,26 @@ struct CommunityChallengeView: View {
   let id: String
   var fromAll = false
   @Environment(AppServices.self) private var services
-  @State private var askLeave = false
-  @State private var message: String?
+  /// Xác nhận rời, hiện bằng UIKit ngay khi gán `true` (`ConfirmAlert`, 31/10).
+  private var askLeave: Bool {
+    get { false }
+    nonmutating set {
+      guard newValue else { return }
+      ConfirmAlert.choose(
+        title: String(localized: "community.challenge.leave"), message: String(localized: "community.challenge.leavebody"),
+        choices: [
+          .cancel(),
+          AlertChoice(title: String(localized: "community.challenge.leave"), role: .destructive) {
+            Task { await setJoined(false) }
+          },
+        ])
+    }
+  }
+  /// Hộp báo UIKit, hiện ngay khi gán (xem `ConfirmAlert`, 31/10).
+  private var message: String? {
+    get { nil }
+    nonmutating set { if let newValue { ConfirmAlert.ok(newValue) } }
+  }
   @State private var taps = 0
   @State private var claimed = false
   @State private var openAll = false
@@ -269,20 +287,6 @@ struct CommunityChallengeView: View {
     .sensoryFeedback(.selection, trigger: taps)
     .sensoryFeedback(.success, trigger: claimed)
     .navigationDestination(isPresented: $openAll) { CommunityChallengesView(book: book) }
-    .alert(Text("community.challenge.leave"), isPresented: $askLeave) {
-      Button(String(localized: "common.cancel"), role: .cancel) {}
-      Button(String(localized: "community.challenge.leave"), role: .destructive) {
-        Task { await setJoined(false) }
-      }
-    } message: {
-      Text("community.challenge.leavebody")
-    }
-    .alert(
-      Text(verbatim: message ?? ""),
-      isPresented: Binding(get: { message != nil }, set: { if !$0 { message = nil } })
-    ) {
-      Button(String(localized: "common.ok"), role: .cancel) {}
-    }
   }
 
   @ViewBuilder private var content: some View {
@@ -475,7 +479,11 @@ struct ChallengeHeroCard: View {
   let open: (ChallengeRoute) -> Void
   let openAll: () -> Void
   @Environment(AppServices.self) private var services
-  @State private var message: String?
+  /// Hộp báo UIKit, hiện ngay khi gán (xem `ConfirmAlert`, 31/10).
+  private var message: String? {
+    get { nil }
+    nonmutating set { if let newValue { ConfirmAlert.ok(newValue) } }
+  }
   @State private var taps = 0
   @State private var claimed = false
 
@@ -529,12 +537,6 @@ struct ChallengeHeroCard: View {
     }
     .sensoryFeedback(.selection, trigger: taps)
     .sensoryFeedback(.success, trigger: claimed)
-    .alert(
-      Text(verbatim: message ?? ""),
-      isPresented: Binding(get: { message != nil }, set: { if !$0 { message = nil } })
-    ) {
-      Button(String(localized: "common.ok"), role: .cancel) {}
-    }
   }
 
   /// Hồng sáng của Tập luyện trên mặt tối.

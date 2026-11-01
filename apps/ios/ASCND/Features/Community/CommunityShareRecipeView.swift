@@ -44,7 +44,11 @@ struct CommunityShareRecipeView: View {
   var onPosted: () -> Void
   @Environment(\.weightUnit) private var unit
   @Environment(\.dismiss) private var dismiss
-  @State private var message: String?
+  /// Hộp báo UIKit, hiện ngay khi gán (xem `ConfirmAlert`, 31/10).
+  private var message: String? {
+    get { nil }
+    nonmutating set { if let newValue { ConfirmAlert.ok(newValue) } }
+  }
   @State private var posted = false
   @State private var openProfile = false
 
@@ -63,12 +67,6 @@ struct CommunityShareRecipeView: View {
     .sensoryFeedback(.success, trigger: posted)
     .navigationDestination(isPresented: $openProfile) {
       CommunityProfileScreen(userId: book.userId) { Task { await book.load() } }
-    }
-    .alert(
-      Text(verbatim: message ?? ""),
-      isPresented: Binding(get: { message != nil }, set: { if !$0 { message = nil } })
-    ) {
-      Button(String(localized: "common.ok"), role: .cancel) {}
     }
   }
 
