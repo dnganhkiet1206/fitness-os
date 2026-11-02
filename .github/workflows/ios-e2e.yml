@@ -3,9 +3,9 @@
 # máy chủ Supabase giả TRONG app. Không tài khoản, không secret, không chạm Supabase.
 #
 # Hai job:
-#   e2e           build Debug cho simulator (không ký, như app-macos của ios.yml), bật
-#                 simulator, cài app, cài Maestro CLI, chạy apps/ios/.maestro/. Ảnh,
-#                 video, báo cáo JUnit và log debug lên artifact.
+#   e2e           build Debug + target test một lần (không ký), bật simulator, cài app,
+#                 chạy ASCNDTests trên bản đã build, cài Maestro CLI, chạy
+#                 apps/ios/.maestro/. Ảnh, video, báo cáo JUnit và log debug lên artifact.
 #   release-gate  cổng nguồn `native-uitest-mode.mjs`, rồi build Release và kiểm trên
 #                 chính tệp nhị phân: cờ / tên miền / kiểu của chế độ test KHÔNG có.
 #
@@ -43,7 +43,9 @@ jobs:
   e2e:
     if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'e2e')
     runs-on: macos-15
-    timeout-minutes: 45
+    # Máy CI chậm gấp ~3 lần máy thật: build ~12 phút, bật simulator ~4, ASCNDTests ~3,
+    # Maestro ~20, artifact ~2. Dành dư để lượt chậm không bị huỷ giữa chừng.
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
         with:
@@ -61,20 +63,7 @@ jobs:
           brew install xcodegen
           xcodegen generate
 
-      - name: Build app Debug (iOS Simulator, không ký)
-        working-directory: apps/ios
-        run: |
-          set -o pipefail
-          xcodebuild build \
-            -project ASCND.xcodeproj -scheme ASCND -configuration Debug \
-            -destination 'generic/platform=iOS Simulator' \
-            -derivedDataPath "$RUNNER_TEMP/dd" \
-            CODE_SIGNING_ALLOWED=NO \
-            | tee build.log | grep -E "warning:|error:|BUILD (SUCCEEDED|FAILED)" || true
-          grep -q "BUILD SUCCEEDED" build.log
-          echo "APP=$RUNNER_TEMP/dd/Build/Products/Debug-iphonesimulator/ASCND.app" >> "$GITHUB_ENV"
-
-      - name: Bật simulator
+      - name: Chọn simulator
         run: |
           # iPhone đầu tiên của runtime iOS mới nhất có trên runner.
           udid=$(xcrun simctl list devices available -j | python3 -c '
@@ -86,24 +75,42 @@ jobs:
           print((pro or phones)[0]["udid"])')
           echo "SIM=$udid" >> "$GITHUB_ENV"
           xcrun simctl list devices | grep "$udid"
-          xcrun simctl boot "$udid"
-          xcrun simctl bootstatus "$udid" -b
-          xcrun simctl install "$udid" "$APP"
+
+      # Một lần build cho cả app lẫn target test, đúng simulator (một kiến trúc). Trước đây
+      # `build` generic rồi `test` với DerivedData riêng biên dịch lại từ đầu, mất ~9 phút.
+      - name: Build app Debug + test (iOS Simulator, không ký)
+        working-directory: apps/ios
+        run: |
+          set -o pipefail
+          xcodebuild build-for-testing \
+            -project ASCND.xcodeproj -scheme ASCND -configuration Debug \
+            -destination "id=$SIM" \
+            -derivedDataPath "$RUNNER_TEMP/dd" \
+            CODE_SIGNING_ALLOWED=NO \
+            | tee build.log | grep -E "warning:|error:|BUILD (SUCCEEDED|FAILED)" || true
+          grep -q "BUILD SUCCEEDED" build.log
+          echo "APP=$RUNNER_TEMP/dd/Build/Products/Debug-iphonesimulator/ASCND.app" >> "$GITHUB_ENV"
+
+      - name: Bật simulator
+        run: |
+          xcrun simctl boot "$SIM"
+          xcrun simctl bootstatus "$SIM" -b
+          xcrun simctl install "$SIM" "$APP"
           # Bật chế độ UI test bằng khoá UserDefaults của app (simctl spawn — ghi thẳng tệp
           # plist trong container thì cfprefsd không đọc) — không phụ thuộc dạng
           # launch argument mà phiên bản Maestro truyền.
-          xcrun simctl spawn "$udid" defaults write "$BUNDLE_ID" uiTestFakeBackend -bool YES
+          xcrun simctl spawn "$SIM" defaults write "$BUNDLE_ID" uiTestFakeBackend -bool YES
 
       - name: Test SwiftUI trong app (ASCNDTests)
         working-directory: apps/ios
         run: |
           set -o pipefail
-          xcodebuild test \
+          xcodebuild test-without-building \
             -project ASCND.xcodeproj -scheme ASCND -configuration Debug \
             -destination "id=$SIM" \
-            -derivedDataPath "$RUNNER_TEMP/dd-test" \
+            -derivedDataPath "$RUNNER_TEMP/dd" \
             CODE_SIGNING_ALLOWED=NO \
-            | grep -E " error:|Test run with|✘|TEST (SUCCEEDED|FAILED)"
+            | grep -E " error:|Test run with|✘|TEST (EXECUTE )?(SUCCEEDED|FAILED)"
 
       - name: Cài Maestro CLI (bộ cài chính thức, ghim phiên bản)
         run: |
@@ -111,7 +118,9 @@ jobs:
           MAESTRO_VERSION="$MAESTRO_VERSION" bash "$RUNNER_TEMP/maestro-install.sh"
           echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
 
+      # Giới hạn riêng: hết giờ thì step đỏ, các step `if: always()` vẫn có chỗ chạy.
       - name: Chạy flows Maestro
+        timeout-minutes: 35
         working-directory: apps/ios
         env:
           MAESTRO_CLI_NO_ANALYTICS: '1'
@@ -128,8 +137,9 @@ jobs:
           maestro --device "$SIM" test .maestro \
             --format junit --output "$out/report.xml" \
             --test-output-dir "$out/screens" \
-            --debug-output "$out/debug"
-          status=$?
+            --debug-output "$out/debug" \
+            2>&1 | tee "$out/maestro.out"
+          status=${PIPESTATUS[0]}
           kill -INT "$rec"; wait "$rec" || true
           # Không request nào được lọt tới Supabase thật: FakeSupabaseProtocol ghi mỗi
           # request bị chặn vào Documents/uitest-blocked.log trong container của app.
@@ -145,13 +155,21 @@ jobs:
       - name: Tóm tắt
         if: always()
         run: |
-          python3 - "$RUNNER_TEMP/e2e/report.xml" >> "$GITHUB_STEP_SUMMARY" <<'PY' || true
-          import sys, xml.etree.ElementTree as ET
-          root = ET.parse(sys.argv[1]).getroot()
+          python3 - "$RUNNER_TEMP/e2e" >> "$GITHUB_STEP_SUMMARY" <<'PY' || true
+          import os, re, sys, xml.etree.ElementTree as ET
+          out = sys.argv[1]
           print("| Flow | Kết quả | Thời gian |\n|---|---|---|")
-          for tc in root.iter("testcase"):
-              bad = tc.find("failure") is not None or tc.find("error") is not None
-              print(f"| {tc.get('name')} | {'❌' if bad else '✅'} | {tc.get('time', '')} s |")
+          if os.path.exists(f"{out}/report.xml"):
+              for tc in ET.parse(f"{out}/report.xml").getroot().iter("testcase"):
+                  bad = tc.find("failure") is not None or tc.find("error") is not None
+                  print(f"| {tc.get('name')} | {'❌' if bad else '✅'} | {tc.get('time', '')} s |")
+          else:
+              # Maestro chỉ ghi JUnit khi chạy xong; bị dừng giữa chừng thì lấy từ stdout.
+              for line in open(f"{out}/maestro.out", errors="replace"):
+                  m = re.search(r"\[(Passed|Failed)\] (.+?) \((\d+[ms][^)]*)\)(.*)", line)
+                  if m:
+                      print(f"| {m[2]} | {'✅' if m[1] == 'Passed' else '❌'} {m[4].strip()} | {m[3]} |")
+              print("\n**Maestro bị dừng giữa chừng: không có report.xml, các flow không có trong bảng là chưa chạy.**")
           PY
 
       - name: Artifact

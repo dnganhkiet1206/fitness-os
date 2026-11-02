@@ -21,11 +21,17 @@ name: Settings rows open
     timeout: 10000
 - takeScreenshot: 08-settings-reminders
 - runFlow: subflows/back.yaml
+# Chờ hiệu ứng quay lại xong: trên CI một lần vuốt lúc còn chuyển màn đã mất 9 giây,
+# hết `timeout` dù hàng đã nằm trên màn hình.
+- extendedWaitUntil:
+    visible:
+      id: settings.reminders
+    timeout: 20000
 - scrollUntilVisible:
     element:
       id: settings.changePassword
     direction: DOWN
-    timeout: 10000
+    timeout: 30000
 - tapOn:
     id: settings.changePassword
 - extendedWaitUntil:
@@ -34,11 +40,15 @@ name: Settings rows open
     timeout: 10000
 - takeScreenshot: 08-settings-password
 - runFlow: subflows/back.yaml
+- extendedWaitUntil:
+    visible:
+      id: settings.changePassword
+    timeout: 20000
 - scrollUntilVisible:
     element:
       id: settings.legal
     direction: DOWN
-    timeout: 10000
+    timeout: 30000
 - tapOn:
     id: settings.legal
 - extendedWaitUntil:
