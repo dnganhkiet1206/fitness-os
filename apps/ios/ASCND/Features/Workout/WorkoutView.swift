@@ -25,6 +25,9 @@ public struct WorkoutView: View {
   var onAdjustRest: (Int) -> Void
   var onSkipRest: () -> Void
   var onSetRestPaused: (Bool) -> Void
+  /// Dòng kỷ lục của set vừa xong trên thẻ nghỉ.
+  var restRecordNote: String?
+  var onRestRecord: (String?) -> Void
   /// Trạng thái outbox — A8 nối `SyncWorker`. Mặc định `.ok` (không hiện).
   var outboxStatus: OutboxStatus
   /// Chốt / nối thêm qua tầng ứng dụng (`WorkoutFlow.finish` / `.append`):
@@ -99,6 +102,8 @@ public struct WorkoutView: View {
     onAdjustRest: @escaping (Int) -> Void = { _ in },
     onSkipRest: @escaping () -> Void = {},
     onSetRestPaused: @escaping (Bool) -> Void = { _ in },
+    restRecordNote: String? = nil,
+    onRestRecord: @escaping (String?) -> Void = { _ in },
     outboxStatus: OutboxStatus = .ok,
     onFinish: (@MainActor () async throws -> Void)? = nil,
     onAppend: (@MainActor () async throws -> Void)? = nil,
@@ -112,6 +117,8 @@ public struct WorkoutView: View {
     self.onAdjustRest = onAdjustRest
     self.onSkipRest = onSkipRest
     self.onSetRestPaused = onSetRestPaused
+    self.restRecordNote = restRecordNote
+    self.onRestRecord = onRestRecord
     self.outboxStatus = outboxStatus
     self.onFinish = onFinish
     self.onAppend = onAppend
@@ -135,6 +142,10 @@ public struct WorkoutView: View {
           // làm được trong Lab.
           workoutContent
         }
+      }
+      // kỷ lục ngay lúc tick: lên thẻ nghỉ và màn khoá
+      .onChange(of: controller.liveRecord) { _, record in
+        onRestRecord(record.map(RecordCelebrationView.line(unit: controller.weightUnit)))
       }
       // Buổi đầu (đợt 3): Koa hướng dẫn từng bước ở đầu màn.
       .safeAreaInset(edge: .top) {
@@ -357,7 +368,7 @@ public struct WorkoutView: View {
 
         if let timer = restTimer {
           FocusRestCard(
-            timer: timer, next: next.map { nextLine($0) },
+            timer: timer, next: next.map { nextLine($0) }, record: restRecordNote,
             onAdjust: onAdjustRest, onSkip: onSkipRest, onSetPaused: onSetRestPaused)
           .transition(.blurReplace)
           if let last = WorkoutFocus.lastDone(rows, controller.progress, before: next) {

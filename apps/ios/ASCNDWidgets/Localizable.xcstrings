@@ -393,6 +393,29 @@
         }
       }
     },
+    "rest.title.record": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New record"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kỷ lục mới"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nuevo récord"
+          }
+        }
+      }
+    },
     "rest.title.paused": {
       "extractionState": "manual",
       "localizations": {

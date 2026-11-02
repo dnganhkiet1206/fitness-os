@@ -142,6 +142,8 @@ struct WorkoutsTab: View {
         onAdjustRest: { rest.adjust(by: $0) },
         onSkipRest: { rest.handle(.cancel) },
         onSetRestPaused: { rest.setPaused($0) },
+        restRecordNote: rest.recordNote,
+        onRestRecord: { rest.noteRecord($0) },
         outboxStatus: outboxStatus,
         onFinish: {
           // Set dựng TRƯỚC khi chốt, từ đúng đầu vào `finish()` dùng: sau khi
