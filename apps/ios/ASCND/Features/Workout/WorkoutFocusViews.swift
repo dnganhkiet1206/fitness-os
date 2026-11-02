@@ -139,7 +139,8 @@ struct FocusRestCard: View {
   @Environment(AppServices.self) private var services: AppServices?
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-  private var tint: Color { DS.Color.metricBlue.swiftUI }
+  /// Màu Tập, cùng màu với thanh tiến độ và nút "Xong set" của màn này.
+  private var tint: Color { DS.Color.metricRose.swiftUI }
 
   /// Koa nghỉ cùng người dùng, cùng dáng với Live Activity.
   @ViewBuilder private var koa: some View {
@@ -147,9 +148,9 @@ struct FocusRestCard: View {
       let state: RestKoa = timer.isPaused ? .waiting : record == nil ? .resting : .record
       MascotFigureView(
         mascotId: services.preferences.mascotSelected, emotion: state.emotion, equipped: services.koaEquipped,
-        size: 84, animated: !reduceMotion
+        size: 88, animated: !reduceMotion
       )
-      .frame(width: 92, height: 96, alignment: .bottom)
+      .frame(width: 96, height: 98, alignment: .bottom)
       .accessibilityHidden(true)
     }
   }
@@ -161,30 +162,38 @@ struct FocusRestCard: View {
       let paused = timer.isPaused
       let warning = RestTimer.warns(left: left, paused: paused)
       VStack(spacing: DS.Spacing.md) {
-        koa
         if let record {
           Text(verbatim: record)
             .font(DS.TextStyle.footnote.weight(.semibold))
             .multilineTextAlignment(.center)
             .foregroundStyle(DS.Color.readinessYellow.swiftUI)
         }
-        Text(paused ? String(localized: "workout.rest.title.paused") : String(localized: "workout.rest.title"))
-          .font(DS.TextStyle.caption.weight(.semibold))
-          .textCase(.uppercase)
-          .tracking(0.6)
-          .foregroundStyle(tint)
+        // Koa nằm trong vòng: một khối duy nhất, số giây là thứ đọc đầu tiên sau Koa.
         ZStack {
-          Circle().stroke(tint.opacity(0.14), lineWidth: 12)
+          Circle().stroke(DS.Color.foreground.swiftUI.opacity(0.08), lineWidth: 8)
           Circle()
             .trim(from: 0, to: timer.ringFraction(at: now))
-            .stroke(warning ? DS.Color.destructive.swiftUI : tint, style: StrokeStyle(lineWidth: 12, lineCap: .round))
+            .stroke(
+              warning ? DS.Color.readinessYellow.swiftUI : tint,
+              style: StrokeStyle(lineWidth: 8, lineCap: .round)
+            )
             .rotationEffect(.degrees(-90))
-          Text(verbatim: RestTimer.label(seconds: left))
-            .font(.system(size: 44, weight: .semibold, design: .rounded))
-            .contentTransition(.numericText(countsDown: true))
-            .foregroundStyle(DS.Color.foreground.swiftUI)
+          VStack(spacing: 2) {
+            koa
+            Text(verbatim: RestTimer.label(seconds: left))
+              .font(.system(size: 42, weight: .semibold, design: .rounded))
+              .contentTransition(.numericText(countsDown: true))
+              .foregroundStyle(DS.Color.foreground.swiftUI)
+              .lineLimit(1)
+              .minimumScaleFactor(0.7)
+            Text(paused ? String(localized: "workout.rest.title.paused") : String(localized: "workout.rest.title"))
+              .font(DS.TextStyle.caption)
+              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+              .lineLimit(1)
+          }
+          .dynamicTypeSize(...DynamicTypeSize.xxLarge)
         }
-        .frame(width: 180, height: 180)
+        .frame(width: 236, height: 236)
         .accessibilityElement()
         .accessibilityLabel(Text(String(format: String(localized: "workout.rest.left"), left)))
 
@@ -228,10 +237,10 @@ struct FocusRestCard: View {
     Button(action: action) {
       label
         .font(DS.TextStyle.footnote.weight(.semibold).monospacedDigit())
-        .foregroundStyle(tint)
+        .foregroundStyle(DS.Color.foreground.swiftUI)
         .padding(.horizontal, DS.Spacing.md)
-        .frame(minWidth: 56, minHeight: 44)
-        .background(tint.opacity(0.12), in: Capsule())
+        .frame(minWidth: 64, minHeight: 44)
+        .background(DS.Color.foreground.swiftUI.opacity(0.08), in: Capsule())
     }
     .buttonStyle(TodayPressStyle())
     .accessibilityLabel(Text(verbatim: a11y))
