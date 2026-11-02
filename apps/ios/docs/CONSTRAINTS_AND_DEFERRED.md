@@ -417,7 +417,9 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Đợt 2 sửa: huy chương "Centurion" trong tiếng Việt thành "100 Buổi Tập"; số trên biểu đồ tổng kết tuần có dấu phân cách ("1.750"); "Protein" ở tổng kết thành "Đạm" như Dinh dưỡng; nhãn "Carbohidratos" không còn bị cắt.
 - Sửa: câu khuyên Tập luyện nói "thêm một buổi là kịp" cả khi thiếu nhiều buổi (nay nói đúng số buổi thiếu); "Huy Chương" → "Huy chương", và "Thành tích" trong phòng Koa cũng đổi thành "Huy chương" (es "Logros") vì cùng một màn; Cài đặt thôi nhắc "chuỗi"; dải tuần Tập luyện dùng T2…CN như Dinh dưỡng; dòng kỷ lục dùng dấu thập phân của ngôn ngữ.
 - Cần Kiệt quyết, chưa đổi: bốn thẻ "Cần chú ý" cùng cỡ vàng ở Tiến bộ làm mất thứ bậc; Hồ sơ còn ô "Chuỗi ngày" dù V1 bỏ chuỗi khỏi Hôm nay; tên huy chương viết hoa từng từ ("Bảy Đêm"); hai nút Đăng xuất và Xoá tài khoản cùng cỡ, cùng màu đỏ.
-- **NOT RUN:** đăng nhập (dữ liệu test luôn đăng nhập sẵn); mất mạng và trạng thái lỗi (máy chủ giả không tạo được); AX5 ngoài Hôm nay; trò chuyện Koa Coach; thêm bữa bằng camera; dòng kỷ lục dấu phẩy chưa xem trên màn hình (chỉ build); iPhone thật.
+- Onboarding: đi trọn 6 bước bằng dữ liệu tạm không commit (`onboarding_completed: false`). Bố cục tốt; chỉ đổi biểu tượng "Nhịp tim và HRV" (`waveform.path.ecg`). Cần Kiệt xem: Koa ở màn "Kế hoạch của bạn" nhíu mày, chào người mới có thể thấy dữ; màn Apple Health mất thanh bước và biểu tượng sát đầu trang.
+- Dòng kỷ lục "82,5 kg" đã xem bằng Maestro trên bản gộp cùng #780.
+- **NOT RUN:** đăng nhập (dữ liệu test luôn đăng nhập sẵn); mất mạng và trạng thái lỗi (máy chủ giả không tạo được); AX5 ngoài Hôm nay; trò chuyện Koa Coach; thêm bữa bằng camera; iPhone thật.
 
 ## 5. Lịch sử thay đổi sổ
 

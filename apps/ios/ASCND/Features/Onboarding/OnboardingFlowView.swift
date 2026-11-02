@@ -529,7 +529,7 @@ struct OnboardingStepsView: View {
       VStack(alignment: .leading, spacing: DS.Spacing.sm) {
         healthRow("moon.fill", String(localized: "onboarding.health.sleep"))
         healthRow("figure.walk", String(localized: "onboarding.health.steps"))
-        healthRow("heart.text.square", String(localized: "onboarding.health.heart"))
+        healthRow("waveform.path.ecg", String(localized: "onboarding.health.heart"))
         healthRow("dumbbell.fill", String(localized: "onboarding.health.workouts"))
       }
       Text(String(localized: "onboarding.health.privacy"))
