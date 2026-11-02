@@ -428,8 +428,16 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Giảm chuyển động: đồng hồ dừng nên Koa không nói, tiền cảnh đứng yên.
 - **NOT RUN:** iPhone thật; VoiceOver đọc bóng thoại; `en` / `es` trong bóng thoại; đồ mặc khác; cảnh đi ngủ và dậy với phóng 9 %; CPU sau thay đổi; cỡ màn khác iPhone Air.
 
+**Koa kéo thẻ nhiệm vụ, khung dọc của phòng (01/11, Kiệt):**
+- Bấm "Nhiệm vụ": Koa nhún lấy đà, chạy về phía máy, to dần, thụp khỏi màn, thò đầu lên mép thẻ rồi kéo hai nhịp, thẻ nảy qua đích rồi lắng (`KoaPull`, thuần theo thời gian). Mặt `tease` vẽ thêm: miệng nhếch thè lưỡi. Câu khích theo số việc thật. Bảng là view tự vẽ, không còn sheet hệ thống, để Koa nằm sau mép bảng.
+- Đóng bảng: kéo tay nắm xuống, hoặc chạm phòng sau khi cảnh diễn xong. Đóng xong Koa hiện lại trên sân khấu, chưa có cảnh quay về.
+- Giảm chuyển động: không có Koa chạy, bảng hiện ngay.
+- Khung dọc theo mock đã duyệt: bục ở 3/4 màn, tường cao theo màu theme, sàn liền với tranh. Mới là bước một: đồ vật vẫn là tranh cũ để giữ đồ phòng đã mua, lớp che và bản đồ đi lại. Vẽ lại từng món theo mock là bước hai, chưa làm. Nút `mr.panel` và mép bảng dùng chung cho mọi cỡ màn, chưa chỉnh riêng.
+- **NOT RUN:** phòng ngủ trong khung dọc (cảnh đi ngủ, tường cao đổi màu); xem từng khung cảnh chạy (mới xem kết quả cuối, chưa có video tốt); mặt `tease` nháy mắt chưa hiện, hai mắt vẫn mở; iPhone thật; VoiceOver với bảng tự vẽ; cỡ màn khác; CPU.
+
 ## 5. Lịch sử thay đổi sổ
 
+- 01/11/2026: Koa chạy tới kéo thẻ nhiệm vụ; bảng tự vẽ; khung dọc của phòng theo mock.
 - 01/11/2026: Koa trò chuyện theo việc thật, vẽ thêm nét mặt, phòng full màn, thẻ mở bằng nút, parallax rõ hơn.
 - 01/11/2026: làm lại thẻ nghỉ trong buổi tập (Koa nằm trong vòng, bỏ xanh dương); chuông và avatar ở Hôm nay chung một viên kính, thay quyết định 16/10 "hai nút tròn cùng vật liệu".
 - 01/11/2026: Koa trong buổi tập (màn khoá, Island, thẻ nghỉ, kỷ lục ngay lúc tick); ghi chỗ lệch mock và NOT RUN.
