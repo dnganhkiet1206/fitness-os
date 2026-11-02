@@ -27,6 +27,8 @@ final class KoaDirectorDriver {
   private(set) var moving = false
   /// Koa đang ở chỗ gốc trên bục, dáng ngồi của cảm xúc được hiện (đọc trong `body`).
   private(set) var settled = true
+  /// Koa đang ở bục hay sàn: gắn vào định danh sân khấu cho test giao diện.
+  private(set) var plane = KoaRoomMap.Plane.stage
   /// Đã tới chỗ đi ngủ. Tách khỏi `settled`: Koa đứng ở bục cũng là `settled`, nhưng phải đi tới đã.
   private(set) var inBed = false
   /// Lá cây đang rung (phòng vẽ sẵn bỏ phần từ chậu cây trở lên, lớp trên vẽ phần ấy).
@@ -183,6 +185,7 @@ final class KoaDirectorDriver {
     let f = director.step(dt, ctx: context)
     KoaSignpost.poster.endInterval("director", sp)
     frame = f
+    if plane != f.plane { plane = f.plane }
     camera.step(dt, koaX: f.x, framed: framed)
     tilt = tiltSensor.read(dt, at: now)
     let wall = Date.now.timeIntervalSince1970

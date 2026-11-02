@@ -299,6 +299,7 @@ struct MascotRoomView: View {
       say(f == .insufficientCoins ? String(localized: "shop.notenough") : Self.message(f))
     } else {
       say(String(localized: "mr.dust.cleaned"))
+      Telemetry.capture(.koaRoomCleaned)
       devDust = nil
       await room.load()
     }
@@ -319,7 +320,7 @@ struct MascotRoomView: View {
   /// Dáng trong phòng: đủ tuần → ăn mừng, vừa tập → ta-da, lỡ buổi → hờn dỗi, mệt →
   /// mệt lả, chưa ghi gì → tò mò. Đêm / ngủ / buồn giữ dáng của cảm xúc.
   private var roomGesture: KoaGesture? {
-    if [.sleep, .sad, .deflated].contains(mood) { return nil }
+    if [.sleep, .sad].contains(mood) { return nil }
     return KoaGesture.pick(
       trainedToday: room.gains.lastSession == room.today, weekComplete: koaWeekState?.complete ?? false,
       missedPlanned: room.gains.missedBefore(room.today) >= 1, tired: mood == .tired, loggedAnything: room.energyCount > 0, mood: mood)
@@ -876,6 +877,8 @@ struct MascotStage: View {
   #endif
   /// Lần cuối người xem ở phòng (giây epoch) — quyết định chào hay chỉ nhìn.
   @AppStorage("koa.room.seen") private var seenAt = 0.0
+  /// Lượt ở phòng cho đo lường.
+  @State private var visit = KoaRoomVisit()
   #if DEBUG
     /// Lớp debug: sân khấu, sàn, vùng chặn, chỗ ghé, đích, đường đi, hành vi (chỉ bản Debug).
     @AppStorage("koa.debug.map") private var debugMap = false
@@ -937,6 +940,16 @@ struct MascotStage: View {
     seenAt = Date.now.timeIntervalSince1970
     if away >= 300 { director.pushIn() }
     director.request(away >= 300 ? .greet : .notice)
+  }
+
+  private func openVisit() {
+    guard walks, visit.open(at: Date.now.timeIntervalSince1970) else { return }
+    Telemetry.capture(.koaRoomOpened)
+  }
+
+  private func closeVisit() {
+    guard let props = visit.close(at: Date.now.timeIntervalSince1970) else { return }
+    Telemetry.capture(.koaRoomLeft, props)
   }
 
   /// Chỉ đi được khi Koa đang đứng (ngồi thiền / cầm tạ thì ở yên).
@@ -1053,6 +1066,7 @@ struct MascotStage: View {
     .frame(maxWidth: .infinity)
     .accessibilityElement(children: .ignore)
     .accessibilityLabel(Text(String(localized: "mr.stage.a11y \(level)")))
+    .accessibilityIdentifier("koa.stage.\(director.plane)")
     .accessibilityAction(named: Text("mr.walk.a11y")) {
       guard canWalk else { return }
       if reduceMotion { director.place(KoaRoomMap.user) } else { director.request(.greet) }
@@ -1072,17 +1086,23 @@ struct MascotStage: View {
     }
     // theo cảm xúc, không theo `canWalk`: từ dáng ngồi khác sang ngủ thì `canWalk` không đổi
     .onChange(of: emotion) { settle() }
-    .onAppear { arrive() }
+    .onAppear {
+      openVisit()
+      arrive()
+    }
     .onDisappear {
       seenAt = Date.now.timeIntervalSince1970
       director.save()
+      closeVisit()
     }
     .onChange(of: scenePhase) { _, phase in
       if phase == .active {
+        openVisit()
         arrive()
       } else {
         seenAt = Date.now.timeIntervalSince1970
         director.save()
+        closeVisit()
       }
     }
     // vừa dọn phòng: Koa ngoái nhìn kệ
@@ -1145,10 +1165,8 @@ struct MascotStage: View {
       // chạm tính từ đỉnh vùng sàn: `.offset` phải nằm ngoài cử chỉ, không thì `p.y` đã gồm `top`
       .onTapGesture(coordinateSpace: .local) { p in
         guard canWalk else { return }
-        // phòng đang phóng sẵn: quy chỗ chạm về toạ độ phòng
-        let zoom = layered ? director.shot.zoom : 1
-        let cx = StudioScene.width / 2, cy = KoaParallax.anchorY
-        let s = KoaRoomMap.spot(screenX: cx + (p.x / k - cx) / zoom, y: cy + (p.y / k + top - cy) / zoom)
+        let s = KoaParallax.floorTap(x: p.x, y: p.y, scale: k, top: top, zoom: layered ? director.shot.zoom : 1)
+        visit.walked()
         if reduceMotion { director.place(s) } else { director.request(.walkTo(s)) }
       }
       .offset(y: top * k)
@@ -1261,6 +1279,7 @@ struct MascotStage: View {
           director.touched()
           director.request(.greet)
           KoaSound.boop()
+          visit.poked()
         } : nil,
       // phòng: Koa theo đồng hồ của sân khấu (một đồng hồ, không vẽ hai lần)
       date: walks ? date : nil, onTouch: walks ? { director.boost() } : nil,

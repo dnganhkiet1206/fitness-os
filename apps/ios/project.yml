@@ -206,6 +206,19 @@ targets:
         inputFiles:
           - "${SRCROOT}/tools/set-build-number.sh"
 
+  # Test cần SwiftUI thật (hosted trong app, simulator). Test logic thuần nằm ở các package.
+  ASCNDTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: ASCNDTests
+    dependencies:
+      - target: ASCND
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.ascnd.fitnessos.dev.tests
+        GENERATE_INFOPLIST_FILE: YES
+
 schemes:
   ASCND:
     build:
@@ -213,5 +226,11 @@ schemes:
         ASCND: all
     run:
       config: Debug
+    test:
+      config: Debug
+      targets:
+        - ASCNDTests
+      commandLineArguments:
+        "-uiTestFakeBackend": true
     archive:
       config: Release
