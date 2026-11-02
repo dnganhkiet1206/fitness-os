@@ -400,8 +400,15 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Test chỉ dựng `StudioLayers`, không dựng cả `MascotRoomView`: lỗi phòng biến mất lúc đi ngủ của #777 nằm ở view cha nên vẫn chưa có test tự động.
 - Đánh giá lại công cụ: swift-snapshot-testing **không thêm**, so hai bản dựng trong cùng lần chạy bắt được cùng lỗi mà không cần ảnh mẫu lệch theo máy. AccessibilitySnapshot **chưa thêm**: cần dựng được `MascotRoomView` trong test; VoiceOver vẫn NOT RUN.
 
+**Soát app trên simulator (01/11, nhiệm vụ "Simulator-first" của Kiệt, nhánh `claude/app-polish`):**
+- Đã đi: bốn tab, cuộn hết; Hồ sơ, Cài đặt; phòng Koa, nhiệm vụ; Ghi nhanh; 9 luồng Maestro. iPhone Air, tiếng Việt, dữ liệu mẫu, giao diện tối.
+- Sửa: câu khuyên Tập luyện nói "thêm một buổi là kịp" cả khi thiếu nhiều buổi (nay nói đúng số buổi thiếu); "Huy Chương" → "Huy chương", và "Thành tích" trong phòng Koa cũng đổi thành "Huy chương" (es "Logros") vì cùng một màn; Cài đặt thôi nhắc "chuỗi"; dải tuần Tập luyện dùng T2…CN như Dinh dưỡng; dòng kỷ lục dùng dấu thập phân của ngôn ngữ.
+- Cần Kiệt quyết, chưa đổi: bốn thẻ "Cần chú ý" cùng cỡ vàng ở Tiến bộ làm mất thứ bậc; Hồ sơ còn ô "Chuỗi ngày" dù V1 bỏ chuỗi khỏi Hôm nay; tên huy chương viết hoa từng từ ("Bảy Đêm"); hai nút Đăng xuất và Xoá tài khoản cùng cỡ, cùng màu đỏ.
+- **NOT RUN:** đăng nhập, onboarding (dữ liệu test luôn đăng nhập sẵn); giao diện sáng; mất mạng; trạng thái lỗi; AX5; cửa hàng và phòng thay đồ; trò chuyện Koa Coach; thêm bữa bằng camera; `en` / `es`; dòng kỷ lục dấu phẩy chưa xem trên màn hình (chỉ build); iPhone thật.
+
 ## 5. Lịch sử thay đổi sổ
 
+- 01/11/2026: soát app trên simulator, sửa câu khuyên Tập luyện và các chỗ chữ không nhất quán; ghi việc chờ quyết và NOT RUN.
 - 01/11/2026: đo phòng Koa, luồng Maestro chạm trong phòng, target `ASCNDTests`; buổi sáng của Koa theo giờ dậy; gỡ `deflated`; gạch hai dòng migration đã deploy 29/10.
 - 01/11/2026: sửa lỗi chạm bục không đưa Koa lên bục.
 - 01/11/2026: phòng Koa nhiều lớp (parallax, sàn nghiêng, đẩy máy, sương xa); ghi hạn chế và NOT RUN.

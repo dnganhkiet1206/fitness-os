@@ -629,7 +629,7 @@ struct WorkoutsHomeView: View {
   // MARK: - Chữ
 
   static func weekday(_ d: LocalDate) -> String {
-    d.calendarDate.formatted(Date.FormatStyle().weekday(.abbreviated).locale(.app))
+    d.calendarDate.formatted(Date.FormatStyle().weekday(.short).locale(.app))
   }
 
   static func longWeekday(_ d: LocalDate) -> String {

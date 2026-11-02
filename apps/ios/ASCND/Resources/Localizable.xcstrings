@@ -2946,6 +2946,29 @@
     }
    }
   },
+  "ps.a.training.behind %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld sessions behind plan this week. Every session you fit in counts."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tuần này thiếu %lld buổi so với lịch. Tập được buổi nào, tính buổi đó."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld sesiones por detrás del plan esta semana. Cada sesión cuenta."
+     }
+    }
+   }
+  },
   "ps.a.steps": {
    "extractionState": "manual",
    "localizations": {
@@ -15704,13 +15727,13 @@
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Thành tích"
+      "value": "Huy chương"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Premios"
+      "value": "Logros"
      }
     }
    }
@@ -18303,7 +18326,7 @@
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Huy Chương"
+      "value": "Huy chương"
      }
     },
     "es": {
@@ -36603,19 +36626,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "Daily nudges to keep your streak"
+      "value": "Daily nudges to keep your rhythm"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Nhắc mỗi ngày để giữ chuỗi thói quen"
+      "value": "Nhắc mỗi ngày để giữ nhịp tập"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Avisos diarios para mantener tu racha"
+      "value": "Avisos diarios para mantener tu ritmo"
      }
     }
    }

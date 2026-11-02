@@ -103,10 +103,19 @@ struct RecordCelebrationView: View {
     onDone()
   }
 
+  /// Số trong dòng kỷ lục theo dấu thập phân của ngôn ngữ app ("82,5 kg").
+  private static func decimals(_ p: RecordLine.Parts) -> RecordLine.Parts {
+    let mark = Locale(identifier: AppLanguage.shared.code ?? "en").decimalSeparator ?? "."
+    func fix(_ s: String) -> String { s.replacingOccurrences(of: ".", with: mark) }
+    return RecordLine.Parts(
+      form: p.form, exercise: p.exercise, value: fix(p.value), previous: fix(p.previous),
+      atWeight: fix(p.atWeight), count: p.count)
+  }
+
   /// `recordLine` trên bảng dịch.
   static func line(unit: WeightUnit) -> (PersonalRecord) -> String {
     { r in
-      let p = RecordLine.parts(r, unit: unit)
+      let p = decimals(RecordLine.parts(r, unit: unit))
       switch p.form {
       case .weight:
         return String(localized: "pr.weight \(p.exercise) \(p.value) \(unit.label) \(p.previous)")

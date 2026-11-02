@@ -69,7 +69,10 @@ extension ProgressStyle {
     case .insufficient: return nil
     case .attention:
       switch r.group {
-      case .training: return String(localized: "ps.a.training")
+      case .training:
+        // "Thêm một buổi là kịp" chỉ đúng khi thiếu đúng một buổi.
+        let behind = Int(r.today ?? 0) - r.have
+        return behind > 1 ? String(localized: "ps.a.training.behind \(behind)") : String(localized: "ps.a.training")
       case .steps: return String(localized: "ps.a.steps")
       case .nutrition: return String(localized: "ps.a.nutrition")
       case .sleep: return String(localized: "ps.a.sleep")
