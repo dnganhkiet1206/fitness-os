@@ -433,6 +433,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Đóng bảng: kéo tay nắm xuống, hoặc chạm phòng sau khi cảnh diễn xong. Đóng xong Koa hiện lại trên sân khấu, chưa có cảnh quay về.
 - Giảm chuyển động, hay Koa đang ngủ: không có Koa chạy, bảng trượt lên (Kiệt báo hai Koa cùng hiện lúc Koa ngủ, đã sửa).
 - Đi ngủ và dậy: tường cao, sàn, gác mái lia cùng sân khấu (Kiệt báo lỗi chuyển cảnh, đã sửa).
+- Phòng ngủ và bụi (Kiệt 02/11): bỏ đèn trần, nâng mái để rèm không đè lên xà, viền tối phủ suốt chiều cao nên hết ô vuông quanh tranh cũ, rương đồ dời lên khỏi thanh Nhiệm vụ. Bụi, mây, đèn nhà và quầng neon trước đây đứng yên vì view con không nhận giờ mới; nay nhận giờ từ `TimelineView`.
 - Koa ở sân khấu lâu hơn (Kiệt 02/11): sân khấu là chỗ về duy nhất, đứng 16–34 giây một lượt, đi xem đồ cách nhau ít nhất 75 giây và xem xong về thẳng. Ngồi cạnh cửa sổ khi mệt không còn.
 - Koa nói kiểu Duolingo (Kiệt 02/11): miệng theo đúng chữ trong câu (`KoaTalk.visemes`, ba khẩu hình và khép môi), người gần như yên. Câu dài nói lâu hơn. Mặt mệt, mặt lo không mấp máy. Không có âm thanh giọng nói, chỉ khớp theo chữ.
 - Mở phòng, Koa nhảy liên hồi (Kiệt 02/11): `KoaPop` nảy mỗi lần đổi nét mặt, miệng lúc nói đổi ~8 lần / giây. Trong phòng đã tắt. Phòng bẩn có thêm bụi xám lơ lửng theo mức bụi (24 hạt mỗi mức), ngoài lớp bụi bám trên đồ.

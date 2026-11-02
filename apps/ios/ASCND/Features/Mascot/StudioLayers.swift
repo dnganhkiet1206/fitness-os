@@ -171,6 +171,7 @@ struct StudioTallRoom: View {
   let lens: KoaLens
   @Environment(\.colorScheme) private var scheme
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @AppStorage(KoaBedroomView.lampKey) private var lampOff = false
 
   var body: some View {
     GeometryReader { g in
@@ -180,6 +181,11 @@ struct StudioTallRoom: View {
         studio(g.size, paused: reduceMotion || asleep)
           .offset(x: asleep ? -width : 0)
         StudioAttic(light: scheme == .light, drop: Double(drop)).equatable()
+          // tắt đèn tối cả phần gác mái: chỉ tranh tối thì lộ vệt ngang ở hai mép tranh
+          .overlay {
+            Color.black.opacity(lampOff ? KoaBedroom.lampOffDim(light: scheme == .light) : 0)
+              .animation(reduceMotion ? nil : .easeInOut(duration: 0.25), value: lampOff)
+          }
           .offset(x: asleep ? 0 : width)
         // mảng tường tiền cảnh của cảnh đi ngủ: sân khấu tự vẽ phần của nó, đây là phần trên và dưới
         Color(hex: KoaBedroom.wallColor(light: scheme == .light))
@@ -198,8 +204,10 @@ struct StudioTallRoom: View {
   private func studio(_ size: CGSize, paused: Bool) -> some View {
     let k = Double(size.width) / StudioScene.width
     let options = lens.options
-    return TimelineView(.animation(minimumInterval: 1.0 / 30, paused: paused)) { _ in
+    return TimelineView(.animation(minimumInterval: 1.0 / 30, paused: paused)) { timeline in
       let shot = lens.shot
+      // truyền giờ vào: view con đọc đồng hồ tự nó thì SwiftUI thấy tham số không đổi, không vẽ lại
+      let t = timeline.date.timeIntervalSinceReferenceDate
       ZStack(alignment: .topLeading) {
         ForEach(StudioTall.layers) { layer in
           StudioTallImage(options: options, layer: layer.id, drop: Double(drop)).equatable()
@@ -208,12 +216,12 @@ struct StudioTallRoom: View {
           // đồ động chen đúng tầng: mây sau thành phố, đèn nhà trên thành phố, bụi trong chùm đèn
           if !reduceMotion, ["sky", "city", "lamp"].contains(layer.id) {
             StudioLive(
-              layer: layer.id, night: !options.light, drop: Double(drop), k: k, lamp: options.lamp, dust: options.dust)
+              t: t, layer: layer.id, night: !options.light, drop: Double(drop), k: k, lamp: options.lamp, dust: options.dust)
               .frame(width: size.width, height: size.height)
               .offset(x: shot.shift(layer.plane.amp) * k)
           }
           if !reduceMotion, layer.id == "wall", !options.light {
-            StudioNeon(drop: Double(drop), k: k)
+            StudioNeon(t: t, drop: Double(drop), k: k)
               .frame(width: size.width, height: size.height)
               .offset(x: shot.shift(layer.plane.amp) * k)
           }
@@ -227,6 +235,7 @@ struct StudioTallRoom: View {
 /// Những thứ nhỏ làm phòng sống: mây trôi ngoài cửa sổ, đèn nhà bật tắt, bụi bay trong chùm đèn.
 /// Vẽ thẳng bằng Canvas, không qua bộ dựng cảnh, nên nhẹ dù chạy mỗi khung.
 private struct StudioLive: View {
+  let t: Double
   let layer: String
   let night: Bool
   let drop: Double
@@ -236,7 +245,6 @@ private struct StudioLive: View {
   var dust = 0
 
   var body: some View {
-    let t = Date.timeIntervalSinceReferenceDate
     Canvas { ctx, _ in
       var c = ctx
       c.translateBy(x: 0, y: drop)
@@ -264,11 +272,13 @@ private struct StudioLive: View {
         // bụi của phòng bẩn: trôi chậm, thành đám, cả ngoài chùm đèn
         for i in 0..<(dust * 24) {
           let seed = Double(i) * 7.31 + 1.7
-          let life = (t * (0.012 + 0.012 * abs(sin(seed)))).truncatingRemainder(dividingBy: 1)
-          let y = 470 - fmod(abs(sin(seed * 2.3)) + life, 1) * 620
-          let x = 195 + sin(seed * 3.7) * 190 + sin(t * 0.3 + seed) * 12
+          let life = (t * (0.01 + 0.012 * abs(sin(seed)))).truncatingRemainder(dividingBy: 1)
+          let rise = fmod(abs(sin(seed * 2.3)) + life, 1)
+          let y = 470 - rise * 620
+          let x = 195 + sin(seed * 3.7) * 190 + sin(t * 0.3 + seed) * 18 + sin(t * 0.83 + seed * 2) * 6
           let r = 1.3 + abs(sin(seed * 1.3)) * 2.1
-          c.opacity = (night ? 0.22 : 0.3) + 0.2 * abs(sin(t * 0.5 + seed))
+          // hiện dần từ sàn, mờ dần ở trên, không bật tắt khi quay vòng
+          c.opacity = ((night ? 0.22 : 0.3) + 0.2 * abs(sin(t * 0.5 + seed))) * min(1, sin(rise * .pi) * 4)
           c.fill(
             Path(ellipseIn: CGRect(x: x - r, y: y - r, width: r * 2, height: r * 2)),
             with: .color(night ? Color(red: 0.8, green: 0.76, blue: 0.7) : Color(red: 0.55, green: 0.47, blue: 0.38)))
@@ -291,11 +301,11 @@ private struct StudioLive: View {
 
 /// Quầng sáng sau bảng neon, chập chờn như đèn thật: thở chậm, thỉnh thoảng sụt một nhịp.
 private struct StudioNeon: View {
+  let t: Double
   let drop: Double
   let k: Double
 
   var body: some View {
-    let t = Date.timeIntervalSinceReferenceDate
     let s = StudioTall.sign
     let dip = sin(t * 0.73) * sin(t * 2.9) > 0.86
     let glow = (0.3 + 0.08 * sin(t * 1.4)) * (dip ? 0.35 : 1)
