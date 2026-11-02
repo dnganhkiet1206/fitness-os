@@ -221,6 +221,7 @@ public enum KoaDirector {
 
     /// Người xem đang chạm / kê tay lên Koa: chú ý tới họ, không tự đi chỗ khác.
     public mutating func interacted() { lastTouch = clock }
+    public mutating func blink() { gaze.blinkNow() }
 
     /// Nhớ lại đồ vật đã ghé trước khi rời phòng.
     public mutating func recall(visited v: [String]) {

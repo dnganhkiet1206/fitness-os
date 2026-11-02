@@ -68,7 +68,7 @@ struct KoaParallaxTests {
 
   @Test func floorFollowsTheWallAtTheBackAndTheFrontMost() {
     #expect(KoaParallax.floorAmp(360) == KoaParallax.Plane.wall.amp)
-    #expect(KoaParallax.floorAmp(476) == 7.5)
+    #expect(KoaParallax.floorAmp(476) == 16.5)
     #expect(KoaParallax.amp(koa: .floor, y: 400) == KoaParallax.floorAmp(400))
     #expect(KoaParallax.amp(koa: .stage, y: 430) == KoaParallax.Plane.stage.amp)
   }

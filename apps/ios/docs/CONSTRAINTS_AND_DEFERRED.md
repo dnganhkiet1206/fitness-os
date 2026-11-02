@@ -421,8 +421,19 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Dòng kỷ lục "82,5 kg" đã xem bằng Maestro trên bản gộp cùng #780.
 - **NOT RUN:** đăng nhập (dữ liệu test luôn đăng nhập sẵn); mất mạng và trạng thái lỗi (máy chủ giả không tạo được); AX5 ngoài Hôm nay; trò chuyện Koa Coach; thêm bữa bằng camera; iPhone thật.
 
+**Koa trò chuyện, phòng full màn, parallax rõ hơn (01/11, Kiệt yêu cầu, cho vẽ thêm; không thêm thư viện):**
+- `KoaTalk`: mỗi chủ đề là một việc thật (tập, kỷ lục, quay lại, ngủ, ăn…) và luôn đi với đúng một nét mặt. Mỗi chuyện nói một lần mỗi ngày, tối đa 3 câu một lượt, thiếu số thì Koa im. Chọc Koa có câu đáp ngắn. Không dùng AI.
+- Vẽ thêm 4 miệng (mỉm nhẹ, 3 khẩu hình nói) và 8 nét mặt ghép (`content`, `warm`, `sheepish`, `sleepy`, `thinking`, `say1…3`) trong `tools/koa-wardrobe/build.py`. Nét mặt cũ và đồ mặc không đổi.
+- Lý do Koa như sticker: cảm xúc vui dùng `grin` (cười híp mắt) và giữ suốt. Nay `KoaTalk.Rest`: đỉnh 1,6 giây rồi lắng về `content`, 8–15 giây mỉm một nhịp, đổi mặt kèm chớp mắt để giấu bước nhảy. Cảm xúc lo (`surprised`) cũng về mặt nghỉ, câu nói thay cho mặt.
+- Phòng full màn, thanh tab và Ghi nhanh ẩn trong phòng; mọi thẻ cũ nằm trong bảng mở bằng nút "Nhiệm vụ 0/5", không bỏ thẻ nào. Kéo để tải lại chuyển vào bảng. Thay bố cục mép A của 31/10.
+- Parallax: biên độ tăng 2,2 lần, phóng sẵn 9 % (mất ~18 điểm mỗi bên), lia vào lúc mở phòng, tiền cảnh mờ. Koa đứng yên thì máy đứng yên (Kiệt bỏ kiểu máy tự lắc). Hoạt hình: co giãn khi nhảy và tiếp đất (`KoaSquash`), đầu gật khi nói.
+- Chưa đạt: nửa dưới màn là sàn kéo dài tạm, còn đường nối và tiền cảnh thô. Kiệt đã duyệt mock vẽ lại hai phòng `https://claude.ai/artifact/FQ31MadePEtWGxpfDVKwqz`, làm ở PR sau.
+- Giảm chuyển động: đồng hồ dừng nên Koa không nói, tiền cảnh đứng yên.
+- **NOT RUN:** iPhone thật; VoiceOver đọc bóng thoại; `en` / `es` trong bóng thoại; đồ mặc khác; cảnh đi ngủ và dậy với phóng 9 %; CPU sau thay đổi; cỡ màn khác iPhone Air.
+
 ## 5. Lịch sử thay đổi sổ
 
+- 01/11/2026: Koa trò chuyện theo việc thật, vẽ thêm nét mặt, phòng full màn, thẻ mở bằng nút, parallax rõ hơn.
 - 01/11/2026: soát app trên simulator, sửa câu khuyên Tập luyện và các chỗ chữ không nhất quán; ghi việc chờ quyết và NOT RUN.
 - 01/11/2026: đo phòng Koa, luồng Maestro chạm trong phòng, target `ASCNDTests`; buổi sáng của Koa theo giờ dậy; gỡ `deflated`; gạch hai dòng migration đã deploy 29/10.
 - 01/11/2026: sửa lỗi chạm bục không đưa Koa lên bục.

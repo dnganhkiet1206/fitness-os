@@ -29,6 +29,19 @@ final class KoaDirectorDriver {
   private(set) var settled = true
   /// Koa đang ở bục hay sàn: gắn vào định danh sân khấu cho test giao diện.
   private(set) var plane = KoaRoomMap.Plane.stage
+  /// Câu Koa đang nói; bóng thoại đọc chỗ này.
+  private(set) var speech: KoaTalk.Beat?
+  /// Co giãn khi nhảy và tiếp đất.
+  @ObservationIgnored private(set) var squash = KoaSquash()
+  /// Mặt của ngày: chỗ dựa khi Koa không làm gì.
+  @ObservationIgnored var dayFace = KoaFlags.Expression.happy
+  /// Câu chữ của một nhịp, có số thật; `nil` = không nói được câu này.
+  @ObservationIgnored var lineOf: ((KoaTalk.Beat) -> String?)?
+  @ObservationIgnored private var rest = KoaTalk.Rest()
+  @ObservationIgnored private var talkStart = 0.0
+  @ObservationIgnored private var talkPlan: KoaTalk.Schedule?
+  @ObservationIgnored private var talkGreeting = false
+  @ObservationIgnored private var talkLog = KoaTalk.Log(day: "")
   /// Đã tới chỗ đi ngủ. Tách khỏi `settled`: Koa đứng ở bục cũng là `settled`, nhưng phải đi tới đã.
   private(set) var inBed = false
   /// Lá cây đang rung (phòng vẽ sẵn bỏ phần từ chậu cây trở lên, lớp trên vẽ phần ấy).
@@ -182,8 +195,9 @@ final class KoaDirectorDriver {
     let dt = last.map { min(0.1, max(0, now - $0)) } ?? 0
     last = now
     let sp = KoaSignpost.poster.beginInterval("director")
-    let f = director.step(dt, ctx: context)
+    var f = director.step(dt, ctx: context)
     KoaSignpost.poster.endInterval("director", sp)
+    alive(&f, dt: dt, at: now)
     frame = f
     if plane != f.plane { plane = f.plane }
     camera.step(dt, koaX: f.x, framed: framed)
@@ -226,6 +240,78 @@ final class KoaDirectorDriver {
   }
 
   func request(_ r: KoaDirector.Request) { director.request(r) }
+
+  /// Một lượt ở phòng bắt đầu: Koa có thể nói vài câu.
+  func openTalk(greeting: Bool, userId: String, day: String) {
+    let now = Date.timeIntervalSinceReferenceDate
+    talkPlan = KoaTalk.Schedule(openedAt: now)
+    talkGreeting = greeting
+    let saved = UserDefaults.standard.data(forKey: Self.talkKey(userId))
+      .flatMap { try? JSONDecoder().decode(KoaTalk.Log.self, from: $0) }
+    talkLog = (saved ?? KoaTalk.Log(day: day, userId: userId)).today(day)
+    talkLog.userId = userId
+    camera.reveal()
+  }
+
+  /// Người xem chọc Koa: đáp ngay, không tính vào lịch nói.
+  func poked() {
+    guard speech == nil else { return }
+    speak(KoaTalk.Beat(topic: .poke, variant: Int.random(in: 0..<KoaTalk.variants(.poke))))
+  }
+
+  private static func talkKey(_ userId: String) -> String { "koa.talk.\(userId)" }
+
+  private func speak(_ beat: KoaTalk.Beat) {
+    talkStart = Date.timeIntervalSinceReferenceDate
+    director.blink()
+    Task { @MainActor in self.speech = beat }
+  }
+
+  /// Phần sống của mỗi khung: nói, mặt có nhịp, co giãn. Đạo diễn lo đi đâu, đây lo mặt và thân.
+  private func alive(_ f: inout KoaDirector.Frame, dt: Double, at now: Double) {
+    let hop = f.depth - f.screenY - (f.plane == .stage ? KoaRoomMap.stageHeight : 0)
+    squash.step(dt, hop: hop)
+    #if DEBUG
+      if let b = Self.bench, b != .live { return }
+    #endif
+    if let beat = speech {
+      let t = now - talkStart
+      if t >= beat.seconds {
+        Task { @MainActor in self.speech = nil }
+      } else {
+        f.expression = beat.expression(at: t)
+        // đầu gật nhẹ theo câu, tai và thân theo sau
+        if KoaTalk.face(beat.topic).flaps { f.gaze.head.y += 0.04 * sin(t * 11) }
+        return
+      }
+    }
+    if let plan = talkPlan, plan.due(at: now), !f.moving, !context.settle, !context.bedtime, let facts {
+      nextLine(plan, facts: facts, at: now)
+    }
+    let face = rest.step(dt, raw: f.expression, day: dayFace) { Double.random(in: 8...15) }
+    f.expression = face
+    if rest.blinkDue { director.blink() }
+  }
+
+  private func nextLine(_ plan: KoaTalk.Schedule, facts: KoaCompanion.Facts, at now: Double) {
+    var plan = plan
+    talkLog = talkLog.today(facts.day)
+    guard let topic = KoaTalk.pick(facts, log: talkLog, greeting: talkGreeting) else {
+      plan.spoke(at: now, seconds: 0)
+      talkPlan = plan
+      return
+    }
+    talkGreeting = false
+    talkLog.said.append(topic)
+    if !talkLog.userId.isEmpty, let data = try? JSONEncoder().encode(talkLog) {
+      UserDefaults.standard.set(data, forKey: Self.talkKey(talkLog.userId))
+    }
+    let beat = KoaTalk.Beat(topic: topic, variant: Int.random(in: 0..<KoaTalk.variants(topic)))
+    guard lineOf?(beat) != nil else { return }
+    plan.spoke(at: now, seconds: beat.seconds)
+    talkPlan = plan
+    speak(beat)
+  }
 
   /// Giảm chuyển động: đứng ngay ở chỗ chạm, không đi.
   func place(_ s: KoaRoomMap.Spot) {
