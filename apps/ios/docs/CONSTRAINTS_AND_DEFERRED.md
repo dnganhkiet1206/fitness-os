@@ -402,9 +402,6 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Dòng kỷ lục dùng dấu chấm thập phân ("82.5 kg") của `RecordLine`, lệch với "82,5 kg" trong app tiếng Việt. Có từ trước, chưa sửa vì `RecordLine` dùng chung với màn ăn mừng và có test chuẩn.
 - **NOT RUN:** iPhone thật; Dynamic Island mở rộng (simulator không có cách bấm giữ chắc chắn, chỉ build); màn khoá dáng nghỉ và tạm dừng; Giảm chuyển động; AX5 với thẻ nghỉ cao hơn; màn hình nhỏ; `en` / `es` trên màn khoá.
 
-## 5. Lịch sử thay đổi sổ
-
-- 01/11/2026: Koa trong buổi tập (màn khoá, Island, thẻ nghỉ, kỷ lục ngay lúc tick); ghi chỗ lệch mock và NOT RUN.
 **Đo phòng Koa và test tầng app (01/11, Kiệt chọn gói 1 và 2):**
 - Thêm `koa_room_opened`, `koa_room_left` (thời lượng, số lần chạm, số lần gọi đi, đều theo khoảng), `koa_item_bought`, `koa_room_cleaned`. Sang cửa hàng rồi quay lại tính là hai lượt. Giảm chuyển động không chạm được Koa nên `pokes` luôn `0`. Gỡ `pump_lost`, không nơi nào gửi. Khoá PostHog chưa bật trong bản test nên chưa thấy sự kiện lên server; NOT RUN.
 - `.maestro/09-koa-room.yaml`: chạm sàn rồi chạm bục, đọc chỗ đứng qua định danh `koa.stage.floor` / `koa.stage.stage`. Đưa lại lỗi `.offset` của #778 thì luồng đỏ đúng ở bước về bục. Điểm chạm theo % màn, mới chạy trên iPhone Air và iPhone của runner CI.
@@ -423,6 +420,8 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 
 ## 5. Lịch sử thay đổi sổ
 
+- 01/11/2026: làm lại thẻ nghỉ trong buổi tập (Koa nằm trong vòng, bỏ xanh dương); chuông và avatar ở Hôm nay chung một viên kính, thay quyết định 16/10 "hai nút tròn cùng vật liệu".
+- 01/11/2026: Koa trong buổi tập (màn khoá, Island, thẻ nghỉ, kỷ lục ngay lúc tick); ghi chỗ lệch mock và NOT RUN.
 - 01/11/2026: soát app trên simulator, sửa câu khuyên Tập luyện và các chỗ chữ không nhất quán; ghi việc chờ quyết và NOT RUN.
 - 01/11/2026: đo phòng Koa, luồng Maestro chạm trong phòng, target `ASCNDTests`; buổi sáng của Koa theo giờ dậy; gỡ `deflated`; gạch hai dòng migration đã deploy 29/10.
 - 01/11/2026: sửa lỗi chạm bục không đưa Koa lên bục.
