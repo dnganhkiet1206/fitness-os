@@ -15,7 +15,7 @@ public enum StudioTall {
 
   public static let layers = [
     Layer(id: "sky", plane: .sky), Layer(id: "city", plane: .city), Layer(id: "wall", plane: .wall),
-    Layer(id: "floor", plane: .wall), Layer(id: "lamp", plane: .lamp),
+    Layer(id: "floor", plane: .wall), Layer(id: "sides", plane: .props), Layer(id: "lamp", plane: .lamp),
   ]
 
   /// Phần tử tranh gốc được thay. `Defs` luôn giữ vì phần còn lại vẫn trỏ tới.
@@ -52,6 +52,7 @@ public enum StudioTall {
     case "city": return city(c)
     case "wall": return wall(o, c)
     case "floor": return floor(c)
+    case "sides": return sides(o)
     case "lamp": return lamp(o, c)
     default: return []
     }
@@ -101,11 +102,31 @@ public enum StudioTall {
     for x in stride(from: -40.0, to: 440, by: 62) {
       out.append(KoaBedroom.rect(x, 310, 50, 42, c.rail, r: 3, opacity: 0.16))
     }
-    // bảng hiệu lớn: đúng bảng của phòng, chữ theo ngôn ngữ của app
-    let s = 1.38
-    out.append(Element("G", matrix: [s, 0, 0, s, 18 - 24 * s, -56 - 130 * s], kids: StudioScene.poster(o)))
+    out += sign(o, skin, c)
     return out
   }
+
+  /// Bảng hiệu vẽ lại: tấm neon treo hai dây, viền sáng đôi, chữ của tranh gốc theo ngôn ngữ app.
+  static func sign(_ o: StudioScene.Options, _ skin: StudioScene.Skin, _ c: Ink) -> [Element] {
+    let plate = o.light ? "#3A2C3F" : "#141238"
+    let edge = o.light ? "#E8A23D" : "#8F83FF"
+    let s = 1.5
+    return [
+      KoaBedroom.line("M46 -360V\(sign.y)M134 -360V\(sign.y)", c.rail, width: 2.4),
+      KoaBedroom.rect(sign.x - 2, sign.y + 5, sign.w + 4, sign.h, "#000000", r: 18, opacity: 0.28),
+      KoaBedroom.rect(sign.x, sign.y, sign.w, sign.h, plate, r: 16),
+      Element(
+        "Rect",
+        [
+          "x": .number(sign.x + 5), "y": .number(sign.y + 5), "width": .number(sign.w - 10), "height": .number(sign.h - 10),
+          "rx": .number(12), "fill": .string("none"), "stroke": .string(edge), "strokeWidth": .number(2.5),
+        ]),
+      Element("G", matrix: [s, 0, 0, s, sign.x + sign.w / 2 - 66 * s, sign.y + sign.h / 2 - 167 * s], kids: StudioScene.poster(o)),
+    ]
+  }
+
+  /// Chỗ treo bảng: dưới nút quay lại, trên cây trên kệ.
+  public static let sign = (x: 20.0, y: -60.0, w: 140.0, h: 112.0)
 
   static func floor(_ c: Ink) -> [Element] {
     var out: [Element] = [
@@ -122,11 +143,27 @@ public enum StudioTall {
       let spread = (x - 195) * 0.34
       out.append(KoaBedroom.line("M\(195 + spread) 362L\(x) 780", c.plank, width: 1.4, opacity: 0.09))
     }
+    // tối dần ở chân tường: tường và sàn tách nhau; đồ có bóng đổ nên đứng hẳn trên sàn
     out += [
+      Element("Defs", kids: [KoaBedroom.linear("tallFoot", [(0, "#00000066"), (1, "#00000000")])]),
+      KoaBedroom.rect(-60, 362, 510, 30, "url(#tallFoot)"),
+      KoaBedroom.ellipse(74, 398, 82, 11, "#000000", opacity: 0.32),
+      KoaBedroom.ellipse(314, 402, 34, 8, "#000000", opacity: 0.32),
+      KoaBedroom.ellipse(354, 405, 40, 9, "#000000", opacity: 0.32),
       KoaBedroom.ellipse(195, 444, 196, 62, c.rug, opacity: 0.5),
       KoaBedroom.ellipse(195, 440, 240, 104, "url(#tallPool)"),
     ]
     return out
+  }
+
+  /// Hai tường bên hội tụ về tường sau: phòng là một cái hộp thật, không phải một mặt phẳng.
+  static func sides(_ o: StudioScene.Options) -> [Element] {
+    let shade = o.light ? "#8A6A4C" : "#05061A"
+    return [
+      KoaBedroom.path("M-90 -420L8 -170V362L-90 640Z", shade, opacity: o.light ? 0.3 : 0.62),
+      KoaBedroom.path("M480 -420L382 -170V362L480 640Z", shade, opacity: o.light ? 0.3 : 0.62),
+      KoaBedroom.path("M-90 -420L8 -170H382L480 -420Z", shade, opacity: o.light ? 0.2 : 0.45),
+    ]
   }
 
   static func lamp(_ o: StudioScene.Options, _ c: Ink) -> [Element] {

@@ -88,6 +88,14 @@ struct MascotRoomView: View {
         if let shop, case .loading = shop.phase { await shop.load() }
         await services.loadKoaDust(userId: room.userId)
       }
+      #if DEBUG
+        // soát cảnh kéo thẻ từng khung: tự bấm nút sau vài giây
+        .task {
+          guard ProcessInfo.processInfo.arguments.contains("-koaAutoPull") else { return }
+          try? await Task.sleep(for: .seconds(9))
+          withAnimation(.easeOut(duration: 0.15)) { pullStart = .now }
+        }
+      #endif
       .onReceive(Timer.publish(every: 30, on: .main, in: .common).autoconnect()) { clock = $0 }
       .onChange(of: room.welcomeGranted) { _, amount in
         guard let amount else { return }
@@ -1001,8 +1009,7 @@ struct MascotStage: View {
   /// Phòng vẽ sẵn, luôn đủ mọi lớp.
   private var backdrop: StudioScene.Options { studio }
 
-  /// `HERO_W = round(128 / 0.93)`.
-  private static let heroWidth = 138.0
+  private static var heroWidth: Double { KoaRoomMap.heroWidth }
 
   /// (a) Người xem tới phòng: đi vắng từ 5 phút thì Koa chào đầy đủ (nhìn trước, lại gần);
   /// mới rời đi thì chỉ nhìn — không chào đi chào lại mỗi lần mở.

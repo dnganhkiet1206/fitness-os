@@ -190,6 +190,17 @@ struct StudioTallRoom: View {
               StudioTallImage(options: options, layer: layer.id, drop: Double(drop)).equatable()
                 .frame(width: g.size.width, height: g.size.height)
                 .offset(x: shot.shift(layer.plane.amp) * k)
+              // đồ động chen đúng tầng: mây sau thành phố, đèn nhà trên thành phố, bụi trong chùm đèn
+              if !reduceMotion, ["sky", "city", "lamp"].contains(layer.id) {
+                StudioLive(layer: layer.id, night: !options.light, drop: Double(drop), k: k, lamp: options.lamp)
+                  .frame(width: g.size.width, height: g.size.height)
+                  .offset(x: shot.shift(layer.plane.amp) * k)
+              }
+              if !reduceMotion, layer.id == "wall", !options.light {
+                StudioNeon(drop: Double(drop), k: k)
+                  .frame(width: g.size.width, height: g.size.height)
+                  .offset(x: shot.shift(layer.plane.amp) * k)
+              }
             }
           }
           .scaleEffect(shot.zoom, anchor: UnitPoint(x: 0.5, y: (KoaParallax.anchorY * k + Double(drop)) / Double(g.size.height)))
@@ -198,6 +209,81 @@ struct StudioTallRoom: View {
     }
     .allowsHitTesting(false)
     .accessibilityHidden(true)
+  }
+}
+
+/// Những thứ nhỏ làm phòng sống: mây trôi ngoài cửa sổ, đèn nhà bật tắt, bụi bay trong chùm đèn.
+/// Vẽ thẳng bằng Canvas, không qua bộ dựng cảnh, nên nhẹ dù chạy mỗi khung.
+private struct StudioLive: View {
+  let layer: String
+  let night: Bool
+  let drop: Double
+  let k: Double
+  let lamp: Bool
+
+  var body: some View {
+    let t = Date.timeIntervalSinceReferenceDate
+    Canvas { ctx, _ in
+      var c = ctx
+      c.translateBy(x: 0, y: drop)
+      c.scaleBy(x: k, y: k)
+      switch layer {
+      case "sky":
+        for (speed, y, r) in [(4.0, -40.0, 1.0), (2.6, 30.0, 0.7)] {
+          let x = 150 + (t * speed).truncatingRemainder(dividingBy: 280)
+          c.opacity = night ? 0.2 : 0.8
+          for (dx, dy, w) in [(0.0, 0.0, 44.0), (26.0, -9.0, 38.0), (52.0, 0.0, 40.0)] {
+            c.fill(
+              Path(ellipseIn: CGRect(x: x + dx * r, y: y + dy * r, width: w * r, height: 18 * r)),
+              with: .color(night ? Color(red: 0.6, green: 0.56, blue: 0.85) : .white))
+          }
+        }
+      case "city":
+        guard night else { return }
+        // từng ô đèn tắt bật theo nhịp riêng, không đồng loạt
+        for (i, w) in [(236.0, 70.0), (292, 30), (298, 74), (330, 100), (358, 60), (204, 110)].enumerated() {
+          let on = sin(t * (0.21 + Double(i) * 0.07) + Double(i) * 1.9) > -0.2
+          c.opacity = on ? 0.95 : 0
+          c.fill(Path(CGRect(x: w.0, y: w.1, width: 5, height: 7)), with: .color(Color(red: 1, green: 0.8, blue: 0.45)))
+        }
+      default:
+        guard lamp else { return }
+        for i in 0..<26 {
+          let seed = Double(i) * 12.9898
+          let life = (t * (0.03 + 0.02 * abs(sin(seed)))).truncatingRemainder(dividingBy: 1)
+          let y = -30 + (fmod(abs(sin(seed * 3.1)) + life, 1)) * 420
+          let spread = 34 + (y + 54) * 0.2
+          let x = 195 + sin(seed * 1.7) * spread + sin(t * 0.4 + seed) * 7
+          let r = 0.9 + abs(sin(seed)) * 1.5
+          c.opacity = 0.14 + 0.32 * abs(sin(t * 0.6 + seed))
+          c.fill(Path(ellipseIn: CGRect(x: x - r, y: y - r, width: r * 2, height: r * 2)), with: .color(Color(red: 1, green: 0.9, blue: 0.72)))
+        }
+      }
+    }
+  }
+}
+
+/// Quầng sáng sau bảng neon, chập chờn như đèn thật: thở chậm, thỉnh thoảng sụt một nhịp.
+private struct StudioNeon: View {
+  let drop: Double
+  let k: Double
+
+  var body: some View {
+    let t = Date.timeIntervalSinceReferenceDate
+    let s = StudioTall.sign
+    let dip = sin(t * 0.73) * sin(t * 2.9) > 0.86
+    let glow = (0.3 + 0.08 * sin(t * 1.4)) * (dip ? 0.35 : 1)
+    Canvas { ctx, _ in
+      var c = ctx
+      c.translateBy(x: 0, y: drop)
+      c.scaleBy(x: k, y: k)
+      c.opacity = glow
+      c.fill(
+        Path(ellipseIn: CGRect(x: s.x - 30, y: s.y - 26, width: s.w + 60, height: s.h + 52)),
+        with: .radialGradient(
+          Gradient(colors: [Color(red: 0.56, green: 0.51, blue: 1), .clear]),
+          center: CGPoint(x: s.x + s.w / 2, y: s.y + s.h / 2), startRadius: 20, endRadius: (s.w + 60) / 2))
+    }
   }
 }
 

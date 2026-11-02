@@ -5,9 +5,13 @@ public import Foundation
 /// theo đường cong về phía máy, thụp xuống, thò đầu lên TRƯỚC khi thẻ nhúc nhích, kéo hai nhịp
 /// (nhịp sau mạnh hơn) và nảy qua đích một chút rồi lắng.
 public enum KoaPull {
-  public static let anticipate = 0.22
-  public static let run = 0.6
-  public static let duck = 0.14
+  public static let anticipate = 0.34
+  public static let hopOff = 0.3
+  public static let strideOne = 0.2
+  public static let strideTwo = 0.18
+  public static let dive = 0.14
+  public static var run: Double { hopOff + strideOne + strideTwo + dive }
+  public static let duck = 0.1
   public static let peek = 0.24
   public static let tugOne = 0.3
   public static let breath = 0.1
@@ -54,6 +58,9 @@ public enum KoaPull {
     return 1 + 0.05 * (1 - ease((t - tugTwoEnd) / settle))
   }
 
+  /// Giây các lần chân chạm sàn, để app tung bụi.
+  public static var landings: [Double] { [anticipate + hopOff, anticipate + hopOff + strideOne, runEnd - dive] }
+
   /// - Parameters:
   ///   - start: tâm đầu Koa trên sân khấu, cỡ hình lúc ấy.
   ///   - width, height: cỡ màn.
@@ -63,21 +70,41 @@ public enum KoaPull {
   ) -> Shot {
     let edge = height - panelHeight * panel(at: t)
     if t < anticipate {
-      // nhún xuống lấy đà, hơi ngả ngược hướng sắp chạy
-      let c = sin(min(1, t / anticipate) * .pi)
+      // liếc người xem, ngả ra sau, nén người như lò xo; nén sâu rồi mới bung
+      let c = ease(t / anticipate)
       return Shot(
-        x: start.x, y: start.y + 8 * c, scale: start.scale, angle: -4 * c, stretchX: 1 + 0.12 * c, stretchY: 1 - 0.14 * c,
-        running: false, panel: 0, hands: false)
+        x: start.x - 7 * c, y: start.y + 14 * c, scale: start.scale, angle: -9 * c, stretchX: 1 + 0.16 * c,
+        stretchY: 1 - 0.2 * c, running: false, panel: 0, hands: false)
     }
     if t < duckEnd {
-      let p = min(1, (t - anticipate) / run)
-      // nhanh dần về phía máy quay: to lên, đi theo đường cong qua giữa màn
-      let e = p * p
-      let c = sin(p * .pi)
-      let y = start.y + (height + 170 - start.y) * e - 70 * c
-      return Shot(
-        x: start.x + (width / 2 - start.x) * ease(p), y: y, scale: start.scale * (1 + 1.6 * e), angle: 6 * c,
-        stretchX: 1 - 0.1 * c, stretchY: 1 + 0.16 * c, running: true, panel: 0, hands: false)
+      // từng cú phóng về phía máy: cỡ tăng theo cấp số, mỗi cú to hơn cú trước; phóng đều trông như
+      // chậm lại nên khoảng cách cũng dài dần
+      let s = start.scale, cx = width / 2
+      let keys: [(x: Double, y: Double, scale: Double, arc: Double, length: Double)] = [
+        (start.x, start.y, s, 0, 0),
+        (start.x + (cx - start.x) * 0.5, height * 0.66, s * 1.3, 96, hopOff),
+        (cx, height * 0.74, s * 1.8, 62, strideOne),
+        (cx, height * 0.88, s * 2.6, 44, strideTwo),
+        (cx, height + 260, s * 4.4, 0, dive),
+      ]
+      var at = anticipate
+      for k in 1..<keys.count {
+        let a = keys[k - 1], b = keys[k]
+        if t < at + b.length || k == keys.count - 1 {
+          let p = min(1, (t - at) / b.length)
+          let grow = pow(p, 1.5)
+          let c = sin(p * .pi)
+          // chạm đất: bẹp xuống trong vài khung đầu của cú sau, rồi bung dài khi lên cao
+          let contact = k > 1 ? max(0, 1 - (t - at) / 0.07) : 0
+          let dive = k == keys.count - 1
+          let stretch = dive ? 0.55 * p : 0.2 * c
+          return Shot(
+            x: a.x + (b.x - a.x) * p, y: a.y + (b.y - a.y) * grow - b.arc * c, scale: a.scale + (b.scale - a.scale) * grow,
+            angle: (k % 2 == 0 ? -1 : 1) * 7 * c, stretchX: 1 - stretch * 0.6 + 0.2 * contact,
+            stretchY: 1 + stretch - 0.24 * contact, running: true, panel: 0, hands: false)
+        }
+        at += b.length
+      }
     }
     // thò đầu lên mép bảng, chưa kéo; kéo thì đầu nhúi theo từng nhịp
     let up = ease((t - duckEnd) / peek)

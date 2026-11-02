@@ -20,7 +20,7 @@ struct KoaPullScene<Content: View>: View {
   /// Rung theo từng nhịp kéo.
   @State private var tugs = 0
 
-  private static var heroScale: Double { 138.0 / 240 }
+  private static var heroScale: Double { KoaRoomMap.heroWidth / 240 }
 
   var body: some View {
     GeometryReader { g in
@@ -35,6 +35,7 @@ struct KoaPullScene<Content: View>: View {
             .contentShape(Rectangle())
             .onTapGesture { if t >= KoaPull.end { close() } }
           if !reduceMotion {
+            StudioDust(t: t, start: head(w), width: w, height: h)
             figure(shot, width: w, height: h, t: tl.date.timeIntervalSinceReferenceDate)
               .offset(y: drag)
           }
@@ -145,6 +146,34 @@ struct KoaPullScene<Content: View>: View {
       .shadow(color: .black.opacity(0.25), radius: 8, y: 3)
       .allowsHitTesting(false)
       .accessibilityLabel(Text(verbatim: taunt))
+  }
+}
+
+/// Cụm bụi ở chỗ chân chạm sàn, và cụm khói ở lại sau khi Koa lao khỏi màn.
+private struct StudioDust: View {
+  let t: Double
+  let start: (x: Double, y: Double, scale: Double)
+  let width: Double
+  let height: Double
+
+  var body: some View {
+    Canvas { ctx, _ in
+      let spots = [
+        (x: width * 0.5, y: height * 0.74), (x: width * 0.5, y: height * 0.82), (x: width * 0.5, y: height * 0.95),
+      ]
+      for (at, spot) in zip(KoaPull.landings, spots) {
+        let age = (t - at) / 0.5
+        guard age > 0, age < 1 else { continue }
+        for i in 0..<5 {
+          let a = Double(i) * 1.26 + at * 7
+          let r = (10 + 12 * age) * (1 + Double(i % 2) * 0.4)
+          let p = CGPoint(x: spot.x + cos(a) * 58 * age, y: spot.y + sin(a) * 14 * age - 12 * age)
+          ctx.opacity = (1 - age) * 0.5
+          ctx.fill(Path(ellipseIn: CGRect(x: p.x - r, y: p.y - r * 0.7, width: r * 2, height: r * 1.4)), with: .color(.white))
+        }
+      }
+    }
+    .allowsHitTesting(false)
   }
 }
 

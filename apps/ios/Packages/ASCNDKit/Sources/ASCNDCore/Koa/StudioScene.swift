@@ -210,7 +210,7 @@ public enum StudioScene {
   static func poster(_ o: Options) -> [KoaRender.Element] {
     var flat = o
     flat.omit = []
-    return build(template, flat, decor: false, only: Set(99...107))
+    return build(template, flat, decor: false, only: Set(103...107))
   }
 
   /// Chậu cây bên phải (phần tử 92): lá là các nhóm con 1…8, gốc lá ở (0, −12) của chậu.

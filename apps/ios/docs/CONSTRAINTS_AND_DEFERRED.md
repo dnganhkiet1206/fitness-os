@@ -435,6 +435,8 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Phòng tập vẽ lại theo mock đã duyệt (`StudioTall`): tường, cửa sổ vòm, trời, thành phố, đèn thả, sàn, bảng hiệu lớn là tranh mới, mỗi thứ một tầng máy quay. Bục ở 3/4 màn. Kệ, cây, bóng, bục, bảng số giữ tranh cũ để đồ phòng đã mua, lớp che và bản đồ đi lại không đổi; chưa vẽ lại các món này. Ai mua cửa sổ biển / núi hay đèn khác thì món ấy vẫn nằm đúng chỗ cũ, nhỏ hơn cửa sổ mới, trông lệch với tranh mới.
 - Kiệt bỏ hai bóng tiền cảnh mờ (01/11): đã xoá, parallax còn tầng tường, cửa sổ, thành phố, đèn, đồ, bục. Ghi chú "tiền cảnh mờ" ở mục trên không còn đúng.
 - Phòng ngủ chưa vẽ khung dọc: phần trên và dưới tranh ngủ là nền phẳng cùng màu.
+- Đợt chỉnh theo góp ý Kiệt 02/11: đoạn chạy làm lại (lấy đà, nhảy khỏi bục, hai cú phóng to dần, lao khỏi màn có khung giãn, bụi ở chỗ chạm sàn); đoạn cầm thẻ giữ nguyên vì Kiệt đã duyệt. Bảng hiệu vẽ lại, treo dưới nút quay lại. Phòng có tường bên và trần hội tụ, bóng đổ dưới đồ vật, chân tường tối dần, mây trôi, đèn nhà bật tắt, bụi trong chùm đèn, neon chập chờn. Koa to thêm 10 % (152 điểm) cho khớp tỉ lệ phòng mới; đồ mặc vẽ chung nên to theo. Kệ, cây, bóng giữ cỡ cũ.
+- Cảnh Koa đi ngủ dùng cỡ riêng (`KoaBedtime`), chưa chỉnh theo 152 điểm: có thể thấy Koa nhỏ đi một chút khi sang cảnh ngủ.
 - **NOT RUN:** phòng ngủ trong khung dọc (cảnh đi ngủ, tường cao đổi màu); xem từng khung cảnh chạy (mới xem kết quả cuối, chưa có video tốt); mặt `tease` nháy mắt chưa hiện, hai mắt vẫn mở; đồ phòng đã mua trong tranh mới; iPhone thật; VoiceOver với bảng tự vẽ; cỡ màn khác; CPU.
 
 ## 5. Lịch sử thay đổi sổ
