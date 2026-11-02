@@ -112,6 +112,12 @@ extension PersonalRecords {
       .map(\.element)
   }
 
+  /// Kỷ lục của đúng set vừa xong (01/11, Koa trong buổi tập): so với lịch sử và các set trước đó
+  /// của buổi này. Set sau cùng tạ, ít reps hơn thì không tính lại.
+  public static func newRecord(_ set: RecordSet, earlier: [RecordSet], bests: Bests) -> PersonalRecord? {
+    findRecords([set], bests: Self.bests(from: earlier, into: bests)).first
+  }
+
   static func better(_ next: PersonalRecord, than held: PersonalRecord) -> Bool {
     if next.kind != held.kind { return next.kind == .weight }
     return next.value > held.value
