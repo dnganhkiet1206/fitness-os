@@ -159,3 +159,95 @@ final class KoaTiltSensor {
     tilt.reset()
   }
 }
+
+/// Sàn kéo dài tới đáy màn (01/11, phòng full màn): nối mép sàn của tranh, thêm vệt ván hội tụ về
+/// sau phòng và vũng sáng của đèn. Vẽ một lần.
+struct StudioFloorRun: View {
+  @Environment(\.colorScheme) private var scheme
+
+  var body: some View {
+    GeometryReader { g in
+      let light = scheme == .light
+      let k = g.size.width / StudioScene.width
+      let top = StudioScene.sceneBottom * k - 2
+      // đúng màu mép dưới của tranh, để không lộ đường nối
+      let edge = light ? Color(red: 0.86, green: 0.8, blue: 0.72) : Color(red: 15 / 255, green: 16 / 255, blue: 38 / 255)
+      let far = light ? Color(red: 0.76, green: 0.69, blue: 0.6) : Color(red: 0.03, green: 0.035, blue: 0.08)
+      ZStack(alignment: .top) {
+        LinearGradient(colors: [edge, far], startPoint: .top, endPoint: .bottom)
+          .frame(height: max(0, g.size.height - top))
+          .offset(y: top)
+        Canvas { ctx, size in
+          // ván sàn hội tụ về điểm tụ giữa tường
+          let vanish = CGPoint(x: size.width / 2, y: 360 * k)
+          for i in -7...7 {
+            var p = Path()
+            let x = size.width / 2 + CGFloat(i) * size.width * 0.34
+            let t = (top - vanish.y) / (size.height - vanish.y)
+            p.move(to: CGPoint(x: vanish.x + (x - vanish.x) * t, y: top))
+            p.addLine(to: CGPoint(x: x, y: size.height))
+            ctx.stroke(p, with: .color((light ? Color.black : Color.white).opacity(light ? 0.05 : 0.035)), lineWidth: 1)
+          }
+        }
+        // ánh đèn đổ tiếp xuống sàn, tắt dần về phía người xem
+        Circle()
+          .fill(
+            RadialGradient(
+              colors: [Color(red: 1, green: 0.8, blue: 0.5).opacity(light ? 0.2 : 0.09), .clear],
+              center: .center, startRadius: 0, endRadius: g.size.width * 0.62)
+          )
+          .frame(width: g.size.width * 1.24, height: g.size.width * 1.24)
+          .offset(y: top - g.size.width * 0.5)
+      }
+      .frame(width: g.size.width, height: g.size.height, alignment: .top)
+    }
+    .allowsHitTesting(false)
+    .accessibilityHidden(true)
+  }
+}
+
+/// Tiền cảnh mờ sát ống kính, kiểu máy quay nhiều tầng của Disney: tạ và khăn nhoè ở hai góc dưới,
+/// nằm rất gần người xem nên trôi mạnh nhất, ngược với tường. Thấy lớp này trôi là thấy chiều sâu.
+struct StudioForeground: View {
+  let lens: KoaLens
+  @Environment(\.colorScheme) private var scheme
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+  var body: some View {
+    TimelineView(.animation(minimumInterval: 1.0 / 30, paused: reduceMotion)) { _ in
+      shapes.offset(x: lens.shot.shift(KoaParallax.Plane.foreground.amp))
+    }
+    .ignoresSafeArea()
+    .allowsHitTesting(false)
+    .accessibilityHidden(true)
+  }
+
+  private var shapes: some View {
+    GeometryReader { g in
+      // sáng hơn sàn một chút: đồ sát ống kính bắt ánh đèn phòng, tối quá thì chìm mất
+      let tone = scheme == .light ? Color(red: 0.42, green: 0.33, blue: 0.26) : Color(red: 0.2, green: 0.19, blue: 0.36)
+      ZStack(alignment: .bottom) {
+        // tạ đơn nằm trên sàn, góc trái, phía trên nút mở bảng
+        HStack(spacing: 0) {
+          RoundedRectangle(cornerRadius: 14).frame(width: 52, height: 108)
+          Rectangle().frame(width: 74, height: 26)
+          RoundedRectangle(cornerRadius: 14).frame(width: 52, height: 108)
+        }
+        .rotationEffect(.degrees(-16))
+        .offset(x: -g.size.width * 0.42, y: -g.size.height * 0.2)
+        // khăn vắt thành đống, góc phải
+        Ellipse().frame(width: 200, height: 104).offset(x: g.size.width * 0.5, y: -g.size.height * 0.15)
+        Ellipse().frame(width: 130, height: 64).offset(x: g.size.width * 0.44, y: -g.size.height * 0.21)
+      }
+      .foregroundStyle(tone)
+      .blur(radius: 7)
+      .frame(width: g.size.width, height: g.size.height, alignment: .bottom)
+    }
+  }
+}
+
+/// Khung máy quay cho lớp tiền cảnh: lớp này nằm ngoài sân khấu nên đọc qua ô nhớ, không qua view.
+@MainActor
+final class KoaLens {
+  var shot = KoaParallax.Shot()
+}

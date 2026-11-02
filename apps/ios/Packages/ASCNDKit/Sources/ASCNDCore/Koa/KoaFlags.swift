@@ -6,6 +6,9 @@ public import Foundation
 public enum KoaFlags {
   public enum Expression: String, Sendable, Hashable, CaseIterable {
     case happy, surprised, grin, confident, sad, tired, angry, delighted, happytired, strain, plead, meditate
+    /// Vẽ thêm (01/11): `content` là mặt nghỉ, `warm` cười khép mắt nhẹ, `sheepish` ái ngại,
+    /// `sleepy` buồn ngủ, `thinking` nghĩ, `say1…3` ba khẩu hình lúc nói.
+    case content, warm, sheepish, sleepy, thinking, say1, say2, say3
   }
 
   public enum Pose: String, Sendable, Hashable, CaseIterable {
@@ -32,7 +35,8 @@ public enum KoaFlags {
   public static let expressionLabel: [Expression: String] = [
     .happy: "VUI VẺ", .surprised: "NGẠC NHIÊN", .grin: "CƯỜI TÍT MẮT", .confident: "TỰ TIN", .sad: "BUỒN",
     .tired: "MỆT MỎI", .angry: "TỨC GIẬN", .delighted: "THÍCH THÚ", .happytired: "VUI MÀ MỆT", .strain: "GỒNG SỨC",
-    .plead: "VAN NÀI", .meditate: "THIỀN",
+    .plead: "VAN NÀI", .meditate: "THIỀN", .content: "THƯ THÁI", .warm: "MỈM CƯỜI", .sheepish: "ÁI NGẠI",
+    .sleepy: "BUỒN NGỦ", .thinking: "SUY NGHĨ", .say1: "NÓI 1", .say2: "NÓI 2", .say3: "NÓI 3",
   ]
   public static let poseLabel: [Pose: String] = [
     .idle: "ĐỨNG YÊN", .turn34: "TURNAROUND 3/4", .running: "CHẠY BỘ", .lifting: "TẬP TẠ", .stretching: "GIÃN CƠ",
@@ -65,7 +69,10 @@ public enum KoaFlags {
 
   public typealias Flags = [String: Value]
 
-  static let openEyes: Set<Expression> = [.happy, .confident, .sad, .tired, .angry, .happytired, .strain, .plead]
+  static let openEyes: Set<Expression> = [
+    .happy, .confident, .sad, .tired, .angry, .happytired, .strain, .plead, .content, .sheepish, .sleepy, .thinking,
+    .say1, .say2, .say3,
+  ]
 
   static let handAnchor: [Pose: String] = [
     .idle: "translate(178,236)", .turn34: "translate(178,236)", .running: "translate(184,232)",
@@ -101,16 +108,19 @@ public enum KoaFlags {
       run ? "animation:koaRunLegB18 18s linear infinite;transform-origin:136px 252px;transform-box:view-box" : "")
     f["eyesOpen"] = b(openEyes.contains(e))
     f["eyesWide"] = b(e == .surprised || e == .plead)
-    f["eyesArc"] = b(e == .grin)
+    f["eyesArc"] = b(e == .grin || e == .warm)
     f["eyesStar"] = b(e == .delighted)
-    f["lidsHalf"] = b(e == .confident || e == .strain)
+    f["lidsHalf"] = b(e == .confident || e == .strain || e == .thinking)
     f["lidsWink"] = b(e == .happytired)
     f["blinkGate"] = s(e == .happytired ? "animation:koaWinkOff 9s ease-in-out infinite" : "")
-    f["lidsHeavy"] = b(e == .tired)
+    f["lidsHeavy"] = b(e == .tired || e == .sleepy)
     f["lidsSad"] = b(e == .sad)
-    f["browArc"] = b(e == .happy || e == .grin || e == .delighted || e == .happytired)
-    f["browRaised"] = b(e == .surprised)
-    f["browSad"] = b(e == .sad || e == .plead)
+    let speaking = e == .say1 || e == .say2 || e == .say3
+    f["browArc"] = b(
+      e == .happy || e == .grin || e == .delighted || e == .happytired || e == .content || e == .warm || e == .sleepy
+        || speaking)
+    f["browRaised"] = b(e == .surprised || e == .thinking)
+    f["browSad"] = b(e == .sad || e == .plead || e == .sheepish)
     f["browAngry"] = b(e == .angry)
     f["browStrain"] = b(e == .strain)
     f["mouthGrit"] = b(e == .strain)
@@ -130,6 +140,11 @@ public enum KoaFlags {
     // khi Koa ngồi thiền. Cờ chỉ có mặt khi bật, để bộ cờ của các biểu cảm RN
     // giữ nguyên golden.
     if e == .meditate { f["eyesMeditate"] = b(true) }
+    // Vẽ thêm 01/11: cờ cũng chỉ có mặt khi bật.
+    if e == .content || e == .warm || e == .sheepish || e == .sleepy || e == .thinking { f["mouthSoft"] = b(true) }
+    if e == .say1 { f["mouthSay1"] = b(true) }
+    if e == .say2 { f["mouthSay2"] = b(true) }
+    if e == .say3 { f["mouthSay3"] = b(true) }
     f["armsIdle"] = b(p == .idle || turn)
     f["poseRun"] = b(run)
     f["turnedView"] = b(run || turn)

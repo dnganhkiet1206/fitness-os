@@ -23,26 +23,28 @@ public enum KoaParallax {
     /// Phần trễ khi cuộn trang: 0 = cuộn cùng trang, 0,16 = chậm hơn trang 16 %.
     public let lag: Double
 
-    public static let sky = Plane(amp: 1, lag: 0.2)
-    public static let city = Plane(amp: 1.8, lag: 0.18)
-    public static let wall = Plane(amp: 3, lag: 0.16)
-    public static let lamp = Plane(amp: 4.6, lag: 0.08)
+    public static let sky = Plane(amp: 2.2, lag: 0.2)
+    public static let city = Plane(amp: 4, lag: 0.18)
+    public static let wall = Plane(amp: 6.6, lag: 0.16)
+    public static let lamp = Plane(amp: 10, lag: 0.08)
     /// Đồ đặt trên sàn: kệ, chậu cây, quả bóng. Một tầng, để lớp bụi và lớp che Koa đi cùng đồ.
-    public static let props = Plane(amp: 4.8, lag: 0)
+    public static let props = Plane(amp: 10.5, lag: 0)
     /// Bục và vũng sáng: bằng sàn ở `y` 412, mặt bục.
     public static let stage = Plane(amp: floorAmp(412), lag: 0)
+    /// Tiền cảnh mờ sát ống kính: trôi nhiều nhất, ngược hẳn tường. Đây là thứ làm chiều sâu lộ rõ.
+    public static let foreground = Plane(amp: 34, lag: 0)
     /// Viền tối của ống kính: đứng yên với màn.
     public static let lens = Plane(amp: 0, lag: 0)
   }
 
   /// Phóng sẵn cả cảnh, chừa khoảng 8 điểm mỗi bên cho các lớp trượt.
-  public static let overscan = 1.04
+  public static let overscan = 1.09
   /// Tâm phóng trong toạ độ phòng.
   public static let anchorY = 300.0
 
   /// Sàn nghiêng theo hàng: mép sát tường đi cùng tường, mép gần người xem lệch nhiều nhất.
-  public static let floorBack = (y: 360.0, amp: 3.0)
-  public static let floorFront = (y: 476.0, amp: 7.5)
+  public static let floorBack = (y: 360.0, amp: 6.6)
+  public static let floorFront = (y: 476.0, amp: 16.5)
   public static func floorAmp(_ y: Double) -> Double {
     floorBack.amp + (y - floorBack.y) * floorSlope
   }
@@ -90,8 +92,13 @@ public enum KoaParallax {
     private var framing = 1.0
     private var pushAge: Double?
     private var koaX: Double?
+    /// Lia vào lúc mới mở phòng, tắt dần. Koa đứng yên thì máy đứng yên (Kiệt 01/11).
+    private var entry = 0.0
 
     public init() {}
+
+    /// Vừa vào phòng: máy lia từ một bên về giữa, như cảnh mở đầu của phim hoạt hình.
+    public mutating func reveal() { entry = -1 }
 
     /// Khoảnh khắc thật (vừa vào phòng, phản ứng buổi tập): đẩy máy vào rồi lui ra.
     public mutating func push() { pushAge = 0 }
@@ -115,6 +122,7 @@ public enum KoaParallax {
       velocity += (-2 * w * velocity - w * w * (x - target)) * dt
       x += velocity * dt
       framing += ((framed ? 1 : 0) - framing) * min(1, dt * 3)
+      entry *= exp(-1.5 * dt)
       if let age = pushAge {
         let next = age + dt
         pushAge = next < 2 * Self.pushIn + Self.pushHold ? next : nil
@@ -130,7 +138,7 @@ public enum KoaParallax {
 
     /// Khung để vẽ, cộng độ nghiêng máy.
     public func shot(tilt: Double = 0) -> Shot {
-      Shot(pan: max(-1, min(1, x * 0.75 + tilt * 0.5)), push: pushAmount, framing: framing)
+      Shot(pan: max(-1, min(1, x * 0.75 + tilt * 0.5 + entry * framing)), push: pushAmount, framing: framing)
     }
 
     var pushAmount: Double {
