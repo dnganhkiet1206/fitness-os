@@ -130,11 +130,29 @@ struct FocusRestCard: View {
   let timer: RestTimer
   /// "Curl · Set 3/3 · 15 kg × 10" — `nil` khi đã hết set.
   let next: String?
+  /// Set vừa xong là kỷ lục (`nil` = không).
+  var record: String?
   var onAdjust: (Int) -> Void
   var onSkip: () -> Void
   var onSetPaused: (Bool) -> Void
 
+  @Environment(AppServices.self) private var services: AppServices?
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
   private var tint: Color { DS.Color.metricBlue.swiftUI }
+
+  /// Koa nghỉ cùng người dùng, cùng dáng với Live Activity.
+  @ViewBuilder private var koa: some View {
+    if let services {
+      let state: RestKoa = timer.isPaused ? .waiting : record == nil ? .resting : .record
+      MascotFigureView(
+        mascotId: services.preferences.mascotSelected, emotion: state.emotion, equipped: services.koaEquipped,
+        size: 84, animated: !reduceMotion
+      )
+      .frame(width: 92, height: 96, alignment: .bottom)
+      .accessibilityHidden(true)
+    }
+  }
 
   var body: some View {
     TimelineView(.periodic(from: .now, by: 0.25)) { context in
@@ -143,6 +161,13 @@ struct FocusRestCard: View {
       let paused = timer.isPaused
       let warning = RestTimer.warns(left: left, paused: paused)
       VStack(spacing: DS.Spacing.md) {
+        koa
+        if let record {
+          Text(verbatim: record)
+            .font(DS.TextStyle.footnote.weight(.semibold))
+            .multilineTextAlignment(.center)
+            .foregroundStyle(DS.Color.readinessYellow.swiftUI)
+        }
         Text(paused ? String(localized: "workout.rest.title.paused") : String(localized: "workout.rest.title"))
           .font(DS.TextStyle.caption.weight(.semibold))
           .textCase(.uppercase)

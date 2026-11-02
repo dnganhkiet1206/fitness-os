@@ -403,6 +403,8 @@ public final class WorkoutSessionController {
 
   /// Hàng do một buổi CŨ hơn trên server chứng minh — tích, khoá.
   public private(set) var olderProven: Set<String> = []
+  /// Kỷ lục của lần tick gần nhất; bỏ tick hay set thường thì về `nil`.
+  public private(set) var liveRecord: PersonalRecord?
 
   // MARK: - ghi
 
@@ -416,7 +418,20 @@ public final class WorkoutSessionController {
     let event = WorkoutDay.toggle(row, &progress)
     if on { WorkoutDay.carryForward(from: row, in: rows, &progress) }
     onRest(event, WorkoutDay.next(after: row, in: rows))
+    liveRecord = on ? record(of: row) : nil
     return await persist()
+  }
+
+  /// Kỷ lục của set vừa tick, so với lịch sử và các set đã xong trước nó trong buổi.
+  private func record(of row: PlannedSet) -> PersonalRecord? {
+    guard let bests = bests() else { return nil }
+    func set(_ r: PlannedSet) -> RecordSet {
+      let p = performed(r)
+      return RecordSet(
+        exerciseName: r.exerciseName, weightKg: p.weightKg, reps: p.reps, warmup: r.warmup, durationSec: p.durationSec)
+    }
+    let earlier = rows.prefix { $0.key != row.key }.filter { progress.done[$0.key] == true }.map(set)
+    return PersonalRecords.newRecord(set(row), earlier: earlier, bests: bests)
   }
 
   /// Ô tạ lọc qua `decText` như `day-plan.tsx:1979`: máy tiếng Việt gõ `71,5`,

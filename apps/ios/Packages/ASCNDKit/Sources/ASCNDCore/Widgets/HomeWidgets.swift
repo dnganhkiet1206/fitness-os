@@ -268,6 +268,9 @@ public struct WidgetDataStore: Sendable {
     "koa-widget-\(night ? "night" : "day")-\(dark ? "dark" : "light").png"
   }
 
+  /// Ảnh Koa của Live Activity quãng nghỉ.
+  public static func restImageName(_ koa: RestKoa) -> String { "koa-rest-\(koa.rawValue).png" }
+
   private let suite: String
 
   public init(suite: String = WidgetDataStore.appGroup) {
@@ -338,6 +341,9 @@ public struct WidgetDataStore: Sendable {
         for dark in [false, true] {
           try? FileManager.default.removeItem(at: dir.appendingPathComponent(Self.koaImageName(night: night, dark: dark)))
         }
+      }
+      for koa in RestKoa.allCases {
+        try? FileManager.default.removeItem(at: dir.appendingPathComponent(Self.restImageName(koa)))
       }
     }
   }
