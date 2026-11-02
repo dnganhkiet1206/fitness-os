@@ -49,7 +49,7 @@ Hệ quả cho người làm:
 ## 2. Người dùng thật: 0
 
 - **Chưa có ai ngoài đội dùng app.** Dữ liệu trong app là dữ liệu test (agent được sửa khi kiểm thử; không xoá vĩnh viễn).
-- **Đo lường đã cài, nhưng chưa có dữ liệu thật:** sự kiện PostHog của vòng Koa, onboarding, buổi đầu. Mọi "chỉ số" trong tài liệu là mục tiêu thiết kế, chưa phải số đo.
+- **Đo lường đã cài, nhưng chưa có dữ liệu thật:** sự kiện PostHog của vòng Koa, phòng Koa (01/11), onboarding, buổi đầu. Mọi "chỉ số" trong tài liệu là mục tiêu thiết kế, chưa phải số đo.
 - **Mục tiêu bằng số** (D7 / D28, kích hoạt…) chỉ chốt sau khi có baseline từ nhóm TestFlight đầu tiên.
 - **Tính năng cần người dùng thì ẩn hoặc hoãn**, không mặc định hiện ra trống:
   - bảng tin cộng đồng;
@@ -77,7 +77,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 | Mở rộng AI (Coach đọc lịch / Koa, AI lập kế hoạch) | Chỉ dùng AI khi tạo giá trị thật; luồng chính không được phụ thuộc AI | Sau khi vòng lõi chứng minh giá trị (GĐ4) | V1 21/10 |
 | ~~Điều hướng 4 khu vực Today · Train · Fuel · Progress~~ | **Đã làm** (GĐ3, Kiệt duyệt mock 21/10, nhánh `claude/gd3-areas`): Hôm nay · Tập luyện · Dinh dưỡng · Tiến bộ. Cộng đồng bỏ khỏi thanh tab (mở từ Tiến bộ / trang cá nhân / chuông); "Tóm tắt" gộp vào Tiến bộ | — | V1 21/10 |
 | ~~Lối "Hỏi Koa về hôm nay" trên Hôm nay~~ | **Đã làm** (Kiệt đưa thiết kế 21/10, nhánh `claude/today-ask-koa`): thẻ "Hỏi Koa" riêng (hình Koa ở bàn của Kiệt) mở Koa Coach. Thanh ghi bằng AI "Kể cho Koa" ở lại thẻ "Hôm nay của bạn" (Kiệt: tách ra) | — | 21/10 |
-| ~~Đồ phòng gym của Koa~~, gói trả phí AI (đợt 6 cũ) | **Đồ phòng: Kiệt mở 29/10, đã làm** (nhánh `claude/koa-room-decor`): 6 chỗ × (gốc miễn phí + 1 món xu + 1 món theo hạng), chủ đề phòng = 3 sân khấu cũ, bảng số người dùng chọn (hạng / tuần này / kỷ lục). Giá ở migration `20261029120000_koa_room_decor.sql` — **chưa deploy, chờ Kiệt duyệt**; trước khi deploy, nút mua báo "chưa mở bán". Khoá hạng chỉ ở app (như Cúp vàng). Gói trả phí AI vẫn hoãn | Gói AI: sau phát hành | 20/10 |
+| ~~Đồ phòng gym của Koa~~, gói trả phí AI (đợt 6 cũ) | **Đồ phòng: Kiệt mở 29/10, đã làm** (nhánh `claude/koa-room-decor`): 6 chỗ × (gốc miễn phí + 1 món xu + 1 món theo hạng), chủ đề phòng = 3 sân khấu cũ, bảng số người dùng chọn (hạng / tuần này / kỷ lục). Giá ở migration `20261029120000_koa_room_decor.sql` — ~~**chưa deploy, chờ Kiệt duyệt**; trước khi deploy, nút mua báo "chưa mở bán".~~ **Đã deploy 29/10** (báo cáo #742 trên #527). Khoá hạng chỉ ở app (như Cúp vàng). Gói trả phí AI vẫn hoãn | Gói AI: sau phát hành | 20/10 |
 | Koa Classic tháng (đợt 4 cũ) | Thay bằng "Tuần của Koa" cá nhân hoá (QĐ 2) | Kiệt quyết lại | V1 21/10 |
 | ~~"Buổi ngắn 15 phút" ở màn quay lại~~ | **Đã làm** 22/10 (Kiệt giao agent tự nghiên cứu và quyết, nhánh `claude/koa-comeback-step`): thẻ quay lại ở Hôm nay gợi ý theo số ngày nghỉ — 3–6 ngày tập như lần trước, 7–27 ngày bớt 1 hiệp mỗi bài, ≥ 28 ngày buổi ngắn (nửa số bài đầu, ≥ 2 bài); luôn có "Tập đủ buổi"; không giảm tạ. Ngưỡng theo nghiên cứu nghỉ tập (sức mạnh giữ gần nguyên dưới 3–4 tuần), chưa kiểm với người dùng thật | — | 20/10 |
 | Khoá Face ID, xuất dữ liệu | Chưa ưu tiên | Trước khi phát hành | 20/10 |
@@ -97,7 +97,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - ~~8 thử thách tuần chung.~~ Thay bằng **Tuần của Koa** (GĐ2, đã merge #642): đích = số buổi trong lịch của chính người dùng, chỉ đếm ngày có buổi ghi thật. Đủ tuần: +15 Gains, +50 xu, nhận một lần mỗi tuần (khoá `ch:silver:<tuần>:koa_week`, server bỏ trùng). Code thử thách chung còn giữ, chỉ không hiện.
 
 **GĐ2 (tiến bộ một thang + Tuần của Koa) — hạn chế đã biết:**
-- **Nhiệm vụ Koa phần 4 (29/10, nhánh `claude/koa-quests`): server không xác minh việc đã làm** — như mọi nhiệm vụ ngày hiện có. Tăng tải (`d:<ngày>:overload`, +20 xu, +3 Gains) do app so buổi hôm nay với lần trước của chính bài; khám phá (`x:<việc>`, 7 việc, tổng 195 xu, một lần trọn đời, ngoài trần ngày) do app báo khi người dùng dùng tính năng. Gains của tăng tải đọc lại từ sổ xu, nên chỉ có sau khi server nhận khoá. Migration `20261029130000_koa_quests_v2.sql` (giá + `reward_amount_for` nhận `x:` + `claim_quest_reward` bỏ `x:` khỏi trần) **chưa deploy, chờ Kiệt**; trước khi deploy, các khoá mới bị từ chối và app thử lại lần sau.
+- **Nhiệm vụ Koa phần 4 (29/10, nhánh `claude/koa-quests`): server không xác minh việc đã làm** — như mọi nhiệm vụ ngày hiện có. Tăng tải (`d:<ngày>:overload`, +20 xu, +3 Gains) do app so buổi hôm nay với lần trước của chính bài; khám phá (`x:<việc>`, 7 việc, tổng 195 xu, một lần trọn đời, ngoài trần ngày) do app báo khi người dùng dùng tính năng. Gains của tăng tải đọc lại từ sổ xu, nên chỉ có sau khi server nhận khoá. Migration `20261029130000_koa_quests_v2.sql` (giá + `reward_amount_for` nhận `x:` + `claim_quest_reward` bỏ `x:` khỏi trần) ~~**chưa deploy, chờ Kiệt**; trước khi deploy, các khoá mới bị từ chối và app thử lại lần sau.~~ **Đã deploy 29/10** (báo cáo #743 trên #527).
 - **Khoá đồ theo hạng chỉ ở app.** `buy_mascot_item` trên server chỉ kiểm giá và số dư, không kiểm hạng. Ai gọi thẳng API vẫn mua được. Muốn chặn ở server phải có migration (tính Gains trên server); chưa làm vì Gains hiện chỉ tính ở app.
 - ~~**Nhận thưởng Tuần của Koa cần mạng.** Mất mạng thì để lần mở app sau; không xếp hàng outbox.~~ Sửa 22/10 (nhánh `claude/koa-week-offline`): nhận hỏng thì **tự thử lại ngay khi có mạng**; đủ tuần lúc mất mạng rồi sang tuần mới mới có mạng thì **nhận bù tuần trước** (trước đây mất luôn). Vẫn không qua outbox (RPC kinh tế, server bỏ trùng theo `ref_key`).
 - **Tổng kết tuần của tuần cũ dùng lịch HIỆN TẠI để tính đích** (app không lưu lịch theo từng tuần). Đổi lịch rồi xem lại tuần trước thì đích có thể khác lúc ấy. Đổi ngày (dời / nghỉ) thì vẫn đúng, vì được lưu theo ngày.
@@ -363,7 +363,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - `KoaMood.SleepWindow` đọc `sleep_target_bedtime` / `sleep_target_waketime` của hồ sơ, chỉ khi có cờ `_set` (như màn Nhắc nhở: cột có mặc định trong DB, không có cờ thì không phải giờ của người dùng). Chưa đặt thì giữ 22:00–06:00. Không có cột mới, không migration.
 - Một khoảng ngủ dùng chung cho Koa ở Hôm nay, phòng linh vật, trạng thái theo lịch tập và widget (widget tự đổi lúc đi ngủ và lúc dậy khi app không mở). Tính theo phút, vắt qua nửa đêm được, ca đêm ngủ ban ngày cũng đúng. Koa trầm dần 60 phút trước giờ ngủ.
 - Phòng đang mở thì đồng hồ đọc lại mỗi 30 giây: tới giờ ngủ Koa tự đi về bục rồi ngồi.
-- `KoaMood.morningUntil` (11 giờ) và các giờ khác của câu nói vẫn cố định, chưa theo giờ dậy của người dùng.
+- ~~`KoaMood.morningUntil` (11 giờ) và các giờ khác của câu nói vẫn cố định, chưa theo giờ dậy của người dùng.~~ Sửa 01/11: buổi sáng là 5 giờ đầu sau giờ dậy, "chưa ăn chưa tập" chỉ tính sau 6 giờ thức. Chưa đặt giờ thì như cũ (trước 11 giờ, từ 12 giờ). Các ngưỡng tính theo giờ khác (lo cho chuỗi, thói quen tập) giữ nguyên.
 - ~~Phòng ngủ gác mái: mock chờ Kiệt duyệt, chưa vào app.~~ Đã duyệt và làm, xem mục dưới.
 
 **Phòng ngủ gác mái, bố cục tràn viền (31/10, nhánh `claude/koa-bedroom`, Kiệt duyệt mock `https://claude.ai/artifact/1Pbb3vPivNwQCzVpDGcque`):**
@@ -377,7 +377,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Chạm đèn ngủ đầu giường để tắt / bật (31/10): phòng tối đi, dây đèn tắt theo, hết quầng sáng và bướm đêm; nhớ theo máy, không theo tài khoản. VoiceOver dùng hành động trên sân khấu.
 - Âm thanh của phòng Koa (31/10, `KoaSound`, ~~tiếng tự tổng hợp~~ Kiệt nghe trên máy thấy kỳ, thay bằng giọng Koa kiểu hoạt hình tự tổng hợp và tiếng công tắc CC0 của Kenney, nguồn ở `tools/koa-sound/README.md`): chạm Koa, công tắc đèn, Koa đáp xuống giường, ngáp khi dậy, lên hạng / kỷ lục. Giọng do Kiệt yêu cầu, đánh giá bằng tai trên máy. `.ambient`: im theo công tắc im lặng, không ngắt nhạc. Nút loa trên thanh của phòng để tắt, nhớ theo máy. Giảm chuyển động: chạm Koa không có tiếng vì chạm Koa bị tắt phản ứng.
 - Ánh đèn sân khấu giật khi Koa đi (Kiệt 31/10, iPhone thật): lúc lá cây rung, phòng tách phần từ chậu cây trở lên sang lớp riêng, đèn và viền tối đổi lớp nên độ sáng nhảy. Giờ vẽ đè cả phòng. Số đo xem báo cáo #527.
-- Rà biểu cảm Koa (31/10): dáng hờn đè lên mọi cảm xúc của ngày, kể cả lúc xong hết việc; `missedDays` đếm cả hôm nay nên sáng chưa tập Koa đã cau có. Sửa: cảm xúc của ngày thắng dáng, chỉ tính ngày trước hôm nay, hờn không còn mày giận. `worry` thôi van nài, `proud` thôi mí nửa khép, `oops` thôi giật mình. Hoãn, cần mock: mí mắt `tired` có viền trắng lạ; `tired` và `sleep` cùng một hình. `deflated` (tụt hạng) không còn dùng vì V1 không tụt hạng, chưa gỡ.
+- Rà biểu cảm Koa (31/10): dáng hờn đè lên mọi cảm xúc của ngày, kể cả lúc xong hết việc; `missedDays` đếm cả hôm nay nên sáng chưa tập Koa đã cau có. Sửa: cảm xúc của ngày thắng dáng, chỉ tính ngày trước hôm nay, hờn không còn mày giận. `worry` thôi van nài, `proud` thôi mí nửa khép, `oops` thôi giật mình. Hoãn, cần mock: mí mắt `tired` có viền trắng lạ; `tired` và `sleep` cùng một hình. ~~`deflated` (tụt hạng) không còn dùng vì V1 không tụt hạng, chưa gỡ.~~ Đã gỡ 01/11.
 - Trong lúc lia, Koa đi tại chỗ nên chân có thể hơi trượt so với sàn đang trôi; mảng tường chỉ che một phần lúc đổi cỡ Koa.
 - CPU simulator (bản Debug): phòng ngủ 5,4 %, sân khấu ~31–37 %, bộ nhớ 108 MB.
 - **NOT RUN:** thiết bị thật; GPU (lớp `blur` ánh trăng, `scaleEffect` chăn); Reduce Motion chạy tay; VoiceOver với bố cục mới; hình cửa ở giao diện sáng.
@@ -393,8 +393,16 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 
 - ~~Chạm bục không đưa Koa lên bục: vùng chạm cộng phần dời hai lần nên mọi chạm rơi về mép sàn.~~ Sửa 01/11, kiểm trên simulator: Koa từ sàn chạm mặt trước bục thì lên bục (`stage d 450`). **NOT RUN:** thiết bị thật.
 
+**Đo phòng Koa và test tầng app (01/11, Kiệt chọn gói 1 và 2):**
+- Thêm `koa_room_opened`, `koa_room_left` (thời lượng, số lần chạm, số lần gọi đi, đều theo khoảng), `koa_item_bought`, `koa_room_cleaned`. Sang cửa hàng rồi quay lại tính là hai lượt. Giảm chuyển động không chạm được Koa nên `pokes` luôn `0`. Gỡ `pump_lost`, không nơi nào gửi. Khoá PostHog chưa bật trong bản test nên chưa thấy sự kiện lên server; NOT RUN.
+- `.maestro/09-koa-room.yaml`: chạm sàn rồi chạm bục, đọc chỗ đứng qua định danh `koa.stage.floor` / `koa.stage.stage`. Đưa lại lỗi `.offset` của #778 thì luồng đỏ đúng ở bước về bục. Điểm chạm theo % màn, mới chạy trên iPhone Air và iPhone của runner CI.
+- Target mới `ASCNDTests` (test trong app, simulator; không phụ thuộc mới): phòng nhiều lớp lúc máy quay đứng giữa phải khớp phòng một lớp, lia thì phòng phải đổi. Bỏ một lớp thì test đỏ. Chạy cùng E2E (hằng đêm, nhãn `e2e`), không chặn merge.
+- Test chỉ dựng `StudioLayers`, không dựng cả `MascotRoomView`: lỗi phòng biến mất lúc đi ngủ của #777 nằm ở view cha nên vẫn chưa có test tự động.
+- Đánh giá lại công cụ: swift-snapshot-testing **không thêm**, so hai bản dựng trong cùng lần chạy bắt được cùng lỗi mà không cần ảnh mẫu lệch theo máy. AccessibilitySnapshot **chưa thêm**: cần dựng được `MascotRoomView` trong test; VoiceOver vẫn NOT RUN.
+
 ## 5. Lịch sử thay đổi sổ
 
+- 01/11/2026: đo phòng Koa, luồng Maestro chạm trong phòng, target `ASCNDTests`; buổi sáng của Koa theo giờ dậy; gỡ `deflated`; gạch hai dòng migration đã deploy 29/10.
 - 01/11/2026: sửa lỗi chạm bục không đưa Koa lên bục.
 - 01/11/2026: phòng Koa nhiều lớp (parallax, sàn nghiêng, đẩy máy, sương xa); ghi hạn chế và NOT RUN.
 - 31/10/2026: rà và sửa biểu cảm Koa; ghi các điểm hoãn cần mock.

@@ -6,6 +6,16 @@ public import Foundation
 /// Thứ tự lớp giữ đúng thứ tự vẽ của `StudioScene.template`: máy quay ở giữa thì hình như
 /// phòng một lớp, chỉ phóng to `overscan` để có chỗ cho các lớp trượt.
 public enum KoaParallax {
+  /// Chạm trên vùng sàn của phòng → chỗ đứng. `x`, `y` tính bằng điểm từ góc trên trái vùng
+  /// sàn, `top` là đỉnh vùng sàn trong toạ độ phòng, `scale` là điểm trên một đơn vị phòng.
+  /// `zoom`: phòng đang phóng sẵn thì quy chỗ chạm về toạ độ gốc.
+  public static func floorTap(x: Double, y: Double, scale: Double, top: Double, zoom: Double) -> KoaRoomMap.Spot {
+    let cx = StudioScene.width / 2
+    return KoaRoomMap.spot(
+      screenX: cx + (x / scale - cx) / zoom,
+      y: anchorY + (y / scale + top - anchorY) / zoom)
+  }
+
   /// Một tầng của máy quay.
   public struct Plane: Sendable, Hashable {
     /// Lệch ngang tối đa (điểm) khi máy quay ở mép.

@@ -255,6 +255,24 @@ struct KoaWidgetWaterTests {
 @Suite struct KoaSleepWindowTests {
   typealias Window = KoaMood.SleepWindow
 
+  @Test func dayFollowsTheWakeTime() {
+    let night = Window(bed: "06:00", wake: "14:00")!
+    func read(_ s: DailySignals, _ hour: Int, _ w: Window) -> KoaMood.Reason {
+      KoaMood.read(.init(signals: s, hour: hour, sleep: w)).reason
+    }
+    let short = KoaMoodTests.day(sleepMin: 300), empty = KoaMoodTests.day()
+    // chưa đặt giờ: như cũ
+    #expect(read(short, 10, .standard) == .shortSleep)
+    #expect(read(short, 11, .standard) != .shortSleep)
+    #expect(read(empty, 11, .standard) == .calm)
+    #expect(read(empty, 12, .standard) == .emptyLate)
+    // ca đêm dậy 14 giờ: 15 giờ còn là buổi sáng, chưa ăn chưa phải là mệt
+    #expect(read(short, 15, night) == .shortSleep)
+    #expect(read(short, 19, night) != .shortSleep)
+    #expect(read(empty, 15, night) == .calm)
+    #expect(read(empty, 20, night) == .emptyLate)
+  }
+
   @Test func acrossMidnight() {
     let w = Window(bed: "23:30", wake: "07:15")!
     #expect(!w.contains(hour: 23, minute: 29))

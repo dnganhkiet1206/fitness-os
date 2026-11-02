@@ -34,10 +34,14 @@ enum Telemetry {
     case gainsEarned = "gains_earned"
     case koaRankUp = "koa_rank_up"
     case questClaimed = "quest_claimed"
-    case pumpLost = "pump_lost"
     case comebackShown = "comeback_shown"
     case comebackSession = "comeback_session"
     case notificationOpened = "notification_opened"
+    // Phòng Koa (01/11): có ai ghé phòng không. Lượt ở phòng gửi theo khoảng, xem `KoaRoomVisit`.
+    case koaRoomOpened = "koa_room_opened"
+    case koaRoomLeft = "koa_room_left"
+    case koaItemBought = "koa_item_bought"
+    case koaRoomCleaned = "koa_room_cleaned"
     // Đợt 3 — kích hoạt.
     case scheduleCreated = "schedule_created"
     case firstSessionStarted = "first_session_started"
