@@ -39,7 +39,7 @@ import Testing
   }
 
   @Test func speechPeaksThenTalksThenSettles() {
-    let beat = KoaTalk.Beat(topic: .trained, variant: 0)
+    let beat = KoaTalk.Beat(topic: .trained, variant: 0, line: "Hôm nay tập tốt lắm, mai tiếp nhé")
     #expect(beat.expression(at: 0.2) == .grin)
     let mid = Set(stride(from: 0.8, to: 2.6, by: 0.05).map(beat.expression(at:)))
     #expect(mid.contains(.say1) && mid.contains(.say2) && mid.contains(.say3) && mid.contains(.content))
@@ -71,10 +71,41 @@ import Testing
     #expect(seen == [.content, .warm], "có mỉm, nhưng không giữ mặt cười")
   }
 
+  @Test func closedEyesAreNeverForcedToBlink() {
+    var r = KoaTalk.Rest(firstSmile: 1)
+    var blinks = 0
+    for _ in 0..<(30 * 40) {
+      _ = r.step(1.0 / 30, raw: nil, day: .happy) { 5 }
+      if r.blinkDue { blinks += 1 }
+    }
+    #expect(blinks == 0, "mỉm nhắm mắt rồi về mặt nghỉ: không ép chớp")
+    var s = KoaTalk.Rest(firstSmile: 1000)
+    _ = s.step(0.1, raw: .surprised, day: .happy) { 9 }
+    _ = s.step(KoaTalk.Rest.minHold + 0.1, raw: .confident, day: .happy) { 9 }
+    #expect(s.blinkDue, "hai mặt mở mắt thì vẫn chớp để giấu bước đổi")
+  }
+
   @Test func tiredFaceOfTheDayStaysItsOwn() {
     var r = KoaTalk.Rest()
     #expect(r.step(0.1, raw: nil, day: .meditate) { 9 } == nil)
-    #expect(r.step(0.1, raw: nil, day: .surprised) { 9 } == .content)
+    #expect(r.step(KoaTalk.Rest.minHold + 0.1, raw: nil, day: .surprised) { 9 } == .content)
+  }
+
+  /// Hành vi đổi mặt dồn dập thì mặt đang hiện vẫn ở lại đủ lâu để đọc.
+  @Test func facesStayLongEnoughToRead() {
+    var r = KoaTalk.Rest(firstSmile: 1000)
+    #expect(r.step(0.1, raw: .surprised, day: .happy) { 9 } == .surprised)
+    #expect(r.step(0.5, raw: .confident, day: .happy) { 9 } == .surprised)
+    #expect(r.step(0.5, raw: .happy, day: .happy) { 9 } == .surprised)
+    #expect(r.step(1, raw: .happy, day: .happy) { 9 } == .happy)
+  }
+
+  /// Nói xong không quay lại mặt đỉnh cũ: đồng hồ vẫn chạy trong lúc nói.
+  @Test func oldPeakDoesNotReturnAfterSpeech() {
+    var r = KoaTalk.Rest(firstSmile: 1000)
+    _ = r.step(0.1, raw: .delighted, day: .happy) { 9 }
+    r.speaking(KoaTalk.Rest.softHold, raw: .delighted, face: .content)
+    #expect(r.step(0.1, raw: .delighted, day: .happy) { 9 } == .content)
   }
 
   @Test func newFacesChangeOnlyWhatTheyShould() {
@@ -82,6 +113,68 @@ import Testing
     #expect(f["mouthSay2"]?.truthy == true && f["mouthSmile"]?.truthy == false)
     #expect(KoaFlags.flags(.happy, .idle)["mouthSoft"] == nil, "bộ cờ của nét mặt cũ giữ nguyên")
     #expect(KoaPaint.plan(KoaRender.figure(.init())).count > 0)
+  }
+}
+
+@Suite struct KoaMotesTests {
+  /// Bụi không có hướng chung: như tuyết là lỗi 02/11.
+  @Test func dustDriftsEveryWay() {
+    var quadrants = Set<Int>(), meanY = 0.0, n = 0.0
+    var field = KoaMotes(count: 48, x: 0...390, y: -160...470)
+    for f in 0..<600 {
+      let t = Double(f) / 30
+      let before = field.motes
+      field.step(1.0 / 30, t: t)
+      for (a, b) in zip(before, field.motes) where abs(b.x - a.x) < 2 && abs(b.y - a.y) < 2 {
+        quadrants.insert((b.x > a.x ? 1 : 0) + (b.y > a.y ? 2 : 0))
+        meanY += b.y - a.y
+        n += 1
+      }
+      #expect(field.motes.allSatisfy { (0...390).contains($0.x) })
+    }
+    #expect(quadrants.count == 4, "đủ bốn hướng")
+    #expect(abs(meanY / n) * 30 < 3, "trung bình không trôi một chiều")
+  }
+
+  @Test func dustFadesInAndOut() {
+    var field = KoaMotes(count: 8, x: 0...390, y: 0...400)
+    for _ in 0..<3000 { field.step(1.0 / 30, t: 0) }
+    #expect(field.motes.count == 8 && field.motes.allSatisfy { (0...1).contains($0.fade) })
+    field.resize(0)
+    #expect(field.motes.isEmpty)
+  }
+
+  @Test func roomFollowsTheClock() {
+    #expect(KoaDaylight.isDay(hour: 6) && KoaDaylight.isDay(hour: 17))
+    #expect(!KoaDaylight.isDay(hour: 18) && !KoaDaylight.isDay(hour: 5))
+  }
+}
+
+@Suite struct FirstSessionGainsTests {
+  private let day = LocalDate("2026-11-02")!
+
+  @Test func secondSessionRecordEarnsNothing() {
+    let morning = KoaGains.Day(date: day, personalRecord: false, at: EpochMillis(1000))
+    let evening = KoaGains.Day(date: day, personalRecord: true, at: EpochMillis(9000))
+    let days = KoaGains.firstSessionBonus([evening, morning])
+    #expect(days.allSatisfy { !$0.personalRecord })
+    let one = KoaGains.compute([morning], week: .none, today: day)
+    let two = KoaGains.compute(days, week: .none, today: day)
+    #expect(two.points == one.points)
+  }
+
+  @Test func firstSessionKeepsItsRecord() {
+    let morning = KoaGains.Day(date: day, personalRecord: true, at: EpochMillis(1000))
+    let evening = KoaGains.Day(date: day, personalRecord: false, at: EpochMillis(9000))
+    #expect(KoaGains.firstSessionBonus([evening, morning]).contains { $0.personalRecord })
+  }
+
+  @Test func morningWalkDoesNotTakeTheLiftersSlot() {
+    let walk = KoaGains.Day(date: day, personalRecord: false, kind: .walk, at: EpochMillis(1000))
+    let lift = KoaGains.Day(date: day, personalRecord: true, at: EpochMillis(9000))
+    #expect(KoaGains.firstSessionBonus([walk, lift]).contains { $0.personalRecord })
+    #expect(!KoaGains.hasEarlierSession([walk, lift], on: day, before: EpochMillis(9000)))
+    #expect(KoaGains.hasEarlierSession([walk, lift], on: day, before: EpochMillis(9001)))
   }
 }
 

@@ -963,6 +963,10 @@ def arm_marks(left):
 # Cùng màu, cùng nét với miệng gốc; chỉ hiện khi cờ bật nên các nét mặt cũ không đổi.
 INK, TONGUE = "#20242A", "#E8657B"
 face_over("mouthSoft", [P("M108 133 Q120 144 132 133", stroke=INK, stroke_width=4.5, stroke_linecap="round", fill="none")])
+# Nhếch mép thè lưỡi: mặt thách đểu lúc Koa kéo thẻ lên.
+face_over("mouthTease", [
+    P("M107 131 Q122 146 137 128 Q124 136 107 131 Z", fill=INK),
+    E(128, 140, 5.5, 5, fill=TONGUE)])
 face_over("mouthSay1", [
     P("M111 131 Q120 135 129 131 Q128 141 120 143 Q112 141 111 131 Z", fill=INK),
     E(120, 139.5, 5.5, 2.8, fill=TONGUE)])

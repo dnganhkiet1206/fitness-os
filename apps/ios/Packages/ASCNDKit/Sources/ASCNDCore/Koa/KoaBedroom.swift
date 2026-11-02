@@ -26,6 +26,56 @@ public enum KoaBedroom {
     var star, bulbGlow, sconceGlow, vignette, moonlightAlpha: Double
   }
 
+  /// Màu mảng tường lướt qua khi chuyển phòng.
+  public static func wallColor(light: Bool) -> String { (light ? day : night).wallTop }
+
+  /// Phần gác mái khung dọc (02/11, theo mock đã duyệt): hai mái dốc của tranh gốc đi tiếp lên tới
+  /// nóc nhà; sàn gỗ đi tiếp xuống đáy màn, có rương đồ.
+  /// Cùng toạ độ với `back`: y âm là phần trên tranh, y lớn hơn `height` là phần dưới tranh.
+  public static func tall(light: Bool) -> [KoaRender.Element] {
+    let c = light ? day : night
+    let apex = (x: 195.0, y: -129.0)
+    var out: [Element] = [
+      Element(
+        "Defs",
+        kids: [
+          linear("tallBedFloor", [(0, c.floorBottom), (1, c.floorTop)]),
+          Element(
+            "LinearGradient", ["id": .string("tallBedEdge"), "x1": .number(0), "y1": .number(0), "x2": .number(1), "y2": .number(0)],
+            kids: [
+              Element("Stop", ["offset": .number(0), "stopColor": .string("#000000"), "stopOpacity": .number(c.vignette)]),
+              Element("Stop", ["offset": .number(0.5), "stopColor": .string("#000000"), "stopOpacity": .number(0)]),
+              Element("Stop", ["offset": .number(1), "stopColor": .string("#000000"), "stopOpacity": .number(c.vignette)]),
+            ]),
+        ]),
+      // nóc nhà: tường gable ở giữa, hai mái dốc hai bên
+      path("M-60 -420H450V360H-60Z", c.wallTop),
+      path("M-60 -420H450V151L\(apex.x) \(apex.y)L-60 151Z", c.roof),
+      line("M-60 151L\(apex.x) \(apex.y)L450 151", c.beam, width: 10),
+    ]
+    // rầm mái toả ra từ nóc, gần máy thì dày hơn
+    for (x, w) in [(-30.0, 7.0), (60, 5.0), (140, 4.0), (250, 4.0), (330, 5.0), (420, 7.0)] {
+      out.append(line("M\(apex.x) -260L\(x) -440", c.beam, width: w, opacity: 0.5))
+    }
+    out.append(line("M\(apex.x) -440V\(apex.y)", c.beam, width: 9))
+    // sàn đi tiếp từ đúng màu cuối của sàn tranh, ván hội tụ cùng điểm với tranh
+    out += [rect(-60, 360, 510, height - 359, c.floorBottom), rect(-60, height, 510, 444, "url(#tallBedFloor)")]
+    for x in stride(from: -420.0, to: 820, by: 62) {
+      let top = 195 + (x - 195) * 1.26
+      out.append(line("M\(top) \(height - 2)L\(195 + (x - 195) * 1.9) 900", "#000000", width: 1.2, opacity: 0.16))
+    }
+    out += [
+      // rương đồ ở góc phải
+      ellipse(354, height + 54, 58, 7, "#000000", opacity: 0.25),
+      rect(306, height + 12, 96, 40, c.wood, r: 7),
+      rect(300, height + 3, 108, 16, c.woodDark, r: 6),
+      rect(346, height + 15, 16, 10, c.bulb, r: 2),
+      // tối dần ra hai mép đúng như `shade`, để phần mới liền với tranh
+      rect(0, -420, 390, height + 864, "url(#tallBedEdge)"),
+    ]
+    return out
+  }
+
   static let night = Palette(
     wallTop: "#3A2B3F", wallBottom: "#2C2230", panel: "#33252C", beam: "#5A3E2E", roof: "#4A3227", floorTop: "#4C3326",
     floorBottom: "#33221B", skyTop: "#17224E", skyBottom: "#3B3A73", moon: "#F2E3B3", hill: "#141A38",
@@ -116,13 +166,11 @@ public enum KoaBedroom {
     for x in stride(from: 10.0, to: 390, by: 64) { out.append(rect(x, 310, 52, 44, "#000000", r: 3, opacity: 0.1)) }
     out.append(rect(0, 298, 390, 4, c.beam))
     // trần dốc
-    out += [path("M0 0H136L0 150Z", c.roof), path("M390 0H254L390 150Z", c.roof)]
-    for (a, b, h) in [(46.0, 0.0, 62.0), (92, 0, 126), (344, 390, 62), (298, 390, 126)] {
+    out += [path("M0 0H78L0 86Z", c.roof), path("M390 0H312L390 86Z", c.roof)]
+    for (a, b, h) in [(26.0, 0.0, 29.0), (52, 0, 57), (364, 390, 29), (338, 390, 57)] {
       out.append(line("M\(a) 0L\(b) \(h)", "#000000", width: 1.2, opacity: 0.18))
     }
-    out += [
-      line("M0 150L136 0", c.beam, width: 10), line("M390 150L254 0", c.beam, width: 10), rect(0, 0, 390, 7, c.beam),
-    ]
+    out += [line("M0 86L78 0", c.beam, width: 10), line("M390 86L312 0", c.beam, width: 10)]
     // sàn gỗ hội tụ
     out += [rect(0, 364, 390, height - 364, "url(#bedFloor)"), rect(0, 362, 390, 5, c.beam)]
     for x in stride(from: -160.0, to: 560, by: 62) {
@@ -343,10 +391,12 @@ public enum KoaBedroom {
   /// Viền tối của cả cảnh, nằm trên cùng.
   public static func shade(light: Bool) -> [KoaRender.Element] {
     let c = light ? day : night
+    // chỉ tối hai bên: tối trên dưới thì thành vệt ngang chỗ giáp phần gác mái và phần sàn của `tall`
     let vig = Element(
-      "RadialGradient", ["id": .string("bedVig"), "cx": .number(0.5), "cy": .number(0.46), "r": .number(0.74)],
+      "LinearGradient", ["id": .string("bedVig"), "x1": .number(0), "y1": .number(0), "x2": .number(1), "y2": .number(0)],
       kids: [
-        Element("Stop", ["offset": .number(0.55), "stopColor": .string("#000000"), "stopOpacity": .number(0)]),
+        Element("Stop", ["offset": .number(0), "stopColor": .string("#000000"), "stopOpacity": .number(c.vignette)]),
+        Element("Stop", ["offset": .number(0.5), "stopColor": .string("#000000"), "stopOpacity": .number(0)]),
         Element("Stop", ["offset": .number(1), "stopColor": .string("#000000"), "stopOpacity": .number(c.vignette)]),
       ])
     return [Element("Defs", kids: [vig]), rect(0, 0, 390, height, "url(#bedVig)")]

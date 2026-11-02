@@ -45,24 +45,56 @@ public enum KoaTalk {
     public let variant: Int
     /// Giây bóng thoại ở lại.
     public let seconds: Double
+    /// Khẩu hình theo đúng câu nói (`visemes`), mỗi hình một nhịp `mouthStep`.
+    public let mouth: [KoaFlags.Expression]
 
-    public init(topic: Topic, variant: Int, seconds: Double? = nil) {
+    public init(topic: Topic, variant: Int, line: String = "") {
       self.topic = topic
       self.variant = variant
-      self.seconds = seconds ?? (topic == .poke ? 1.8 : 3.6)
+      mouth = KoaTalk.face(topic).flaps ? KoaTalk.visemes(line) : []
+      // đủ lâu để đọc: phần miệng nói xong rồi còn nán lại một nhịp
+      seconds = max(topic == .poke ? 1.8 : 2.8, KoaTalk.mouthStart + Double(mouth.count) * KoaTalk.mouthStep + 1.2)
     }
 
     /// Nét mặt ở giây `t` của câu: đỉnh, mấp máy theo nhịp không đều, rồi lắng.
     public func expression(at t: Double) -> KoaFlags.Expression {
       let f = KoaTalk.face(topic)
-      if t < 0.7 { return f.peak }
-      guard f.flaps, t < seconds - 0.9 else { return f.settle }
-      return KoaTalk.mouths[Int(t * 8) % KoaTalk.mouths.count]
+      if t < KoaTalk.mouthStart { return f.peak }
+      let i = Int((t - KoaTalk.mouthStart) / KoaTalk.mouthStep)
+      return i < mouth.count ? mouth[i] : f.settle
     }
   }
 
-  /// Nhịp miệng: lẫn lúc khép để không thành vòng lặp đều.
-  static let mouths: [KoaFlags.Expression] = [.say2, .say1, .say3, .content, .say1, .say2, .content, .say3, .say1, .content]
+  /// Miệng bắt đầu nói sau khi mặt lên đỉnh, mỗi khẩu hình giữ một nhịp.
+  static let mouthStart = 0.7
+  static let mouthStep = 0.12
+
+  /// Khẩu hình theo chữ, như cách Duolingo cho nhân vật nói (viseme): "a" há to, "o", "u" tròn môi,
+  /// "e", "i" kéo ngang, "m", "b", "p" khép lại, dấu câu ngừng hơi. Ký tự dấu tiếng Việt quy về chữ
+  /// gốc. Phụ âm khác giữ nguyên hình trước để miệng không giật theo từng chữ.
+  public static func visemes(_ text: String) -> [KoaFlags.Expression] {
+    let plain = text.folding(options: .diacriticInsensitive, locale: .init(identifier: "vi")).lowercased()
+    var out: [KoaFlags.Expression] = []
+    var last = KoaFlags.Expression.content
+    for ch in plain {
+      switch ch {
+      case "a": last = .say2
+      case "o", "u", "w": last = .say1
+      case "e", "i", "y": last = .say3
+      case "m", "b", "p", "f", "v": last = .content
+      case " ": continue
+      case ",", ".", "!", "?", ":", ";":
+        out += [.content, .content]
+        last = .content
+        continue
+      default:
+        if !ch.isLetter && !ch.isNumber { continue }
+      }
+      if out.last != last || out.count % 3 == 0 { out.append(last) }
+    }
+    out.append(.content)
+    return out
+  }
 
   /// Sổ các chủ đề đã nói hôm nay, theo tài khoản: một chuyện chỉ kể một lần mỗi ngày.
   public struct Log: Sendable, Hashable, Codable {
@@ -124,17 +156,22 @@ public enum KoaTalk {
   }
 
   /// Nét mặt lúc không nói. Mặt cười lớn là ĐỈNH, giữ mãi thành sticker: lên đỉnh rồi lắng về
-  /// mặt nghỉ, thỉnh thoảng mỉm một nhịp ngắn. Đổi mặt kèm chớp mắt (`blinkDue`) để giấu bước
-  /// nhảy, vì bản vẽ không có khung trung gian.
+  /// mặt nghỉ, thỉnh thoảng mỉm một nhịp ngắn. Đổi giữa hai mặt mở mắt thì kèm chớp mắt (`blinkDue`)
+  /// để giấu bước nhảy, vì bản vẽ không có khung trung gian.
   public struct Rest: Sendable, Hashable {
-    public static let peakHold = 1.6
-    public static let softHold = 3.4
+    public static let peakHold = 2.6
+    public static let softHold = 5.6
+    public static let smileHold = 2.4
+    /// Mặt vừa đổi ở lại ít nhất ngần này giây: đổi dồn dập thì người xem chưa đọc kịp mặt cũ.
+    public static let minHold = 1.8
 
     private var held: KoaFlags.Expression?
     private var heldFor = 0.0
     private var clock = 0.0
     private var smileAt: Double
     private var shown: KoaFlags.Expression?
+    private var shownAt = 0.0
+    private var started = false
     /// Khung này mặt vừa đổi.
     public private(set) var blinkDue = false
 
@@ -144,6 +181,28 @@ public enum KoaTalk {
     public mutating func step(
       _ dt: Double, raw: KoaFlags.Expression?, day: KoaFlags.Expression, gap: () -> Double
     ) -> KoaFlags.Expression? {
+      advance(dt, raw: raw)
+      var out = resolve(raw, day: day, gap: gap)
+      if started, out != shown {
+        if clock - shownAt < Self.minHold { out = shown } else { shownAt = clock }
+      }
+      // mắt đang nhắm hay sắp nhắm thì không chớp: chớp chỉ để giấu bước đổi giữa hai mặt mở mắt
+      blinkDue = started && out != shown && !KoaFlags.eyesClosed(out) && !KoaFlags.eyesClosed(shown)
+      started = true
+      shown = out
+      return out
+    }
+
+    /// Koa đang nói, mặt do câu nói quyết: đồng hồ vẫn chạy, nếu không thì nói xong mặt cũ quay lại.
+    public mutating func speaking(_ dt: Double, raw: KoaFlags.Expression?, face: KoaFlags.Expression) {
+      advance(dt, raw: raw)
+      blinkDue = false
+      started = true
+      if face != shown { shownAt = clock }
+      shown = face
+    }
+
+    private mutating func advance(_ dt: Double, raw: KoaFlags.Expression?) {
       clock += dt
       if raw != held {
         held = raw
@@ -151,10 +210,6 @@ public enum KoaTalk {
       } else {
         heldFor += dt
       }
-      let out = resolve(raw, day: day, gap: gap)
-      blinkDue = out != shown
-      shown = out
-      return out
     }
 
     private mutating func resolve(
@@ -168,7 +223,7 @@ public enum KoaTalk {
       // tròn mắt suốt ngày cũng thành sticker; lo thì để câu nói lo, mặt vẫn thư thái
       guard [.happy, .grin, .delighted, .surprised].contains(day) else { return nil }
       if clock >= smileAt {
-        if clock >= smileAt + 1.3 { smileAt = clock + gap() } else { return .warm }
+        if clock >= smileAt + Self.smileHold { smileAt = clock + gap() } else { return .warm }
       }
       return .content
     }

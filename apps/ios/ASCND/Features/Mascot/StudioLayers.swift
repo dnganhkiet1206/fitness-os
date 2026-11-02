@@ -11,13 +11,15 @@ struct StudioLayers: View {
   let shot: KoaParallax.Shot
   let size: CGSize
   let light: Bool
+  /// Sương xa của tranh gốc; khung dọc tự vẽ tường nên không cần.
+  var showsHaze = true
 
   private var k: Double { Double(size.width) / StudioScene.width }
 
   var body: some View {
     ZStack(alignment: .topLeading) {
       ForEach(StudioScene.layers) { layer in
-        if layer.id == StudioScene.hazeBefore { haze }
+        if showsHaze, layer.id == StudioScene.hazeBefore { haze }
         canvas(layer)
       }
     }
@@ -160,94 +162,222 @@ final class KoaTiltSensor {
   }
 }
 
-/// Sàn kéo dài tới đáy màn (01/11, phòng full màn): nối mép sàn của tranh, thêm vệt ván hội tụ về
-/// sau phòng và vũng sáng của đèn. Vẽ một lần.
-struct StudioFloorRun: View {
-  @Environment(\.colorScheme) private var scheme
-
-  var body: some View {
-    GeometryReader { g in
-      let light = scheme == .light
-      let k = g.size.width / StudioScene.width
-      let top = StudioScene.sceneBottom * k - 2
-      // đúng màu mép dưới của tranh, để không lộ đường nối
-      let edge = light ? Color(red: 0.86, green: 0.8, blue: 0.72) : Color(red: 15 / 255, green: 16 / 255, blue: 38 / 255)
-      let far = light ? Color(red: 0.76, green: 0.69, blue: 0.6) : Color(red: 0.03, green: 0.035, blue: 0.08)
-      ZStack(alignment: .top) {
-        LinearGradient(colors: [edge, far], startPoint: .top, endPoint: .bottom)
-          .frame(height: max(0, g.size.height - top))
-          .offset(y: top)
-        Canvas { ctx, size in
-          // ván sàn hội tụ về điểm tụ giữa tường
-          let vanish = CGPoint(x: size.width / 2, y: 360 * k)
-          for i in -7...7 {
-            var p = Path()
-            let x = size.width / 2 + CGFloat(i) * size.width * 0.34
-            let t = (top - vanish.y) / (size.height - vanish.y)
-            p.move(to: CGPoint(x: vanish.x + (x - vanish.x) * t, y: top))
-            p.addLine(to: CGPoint(x: x, y: size.height))
-            ctx.stroke(p, with: .color((light ? Color.black : Color.white).opacity(light ? 0.05 : 0.035)), lineWidth: 1)
-          }
-        }
-        // ánh đèn đổ tiếp xuống sàn, tắt dần về phía người xem
-        Circle()
-          .fill(
-            RadialGradient(
-              colors: [Color(red: 1, green: 0.8, blue: 0.5).opacity(light ? 0.2 : 0.09), .clear],
-              center: .center, startRadius: 0, endRadius: g.size.width * 0.62)
-          )
-          .frame(width: g.size.width * 1.24, height: g.size.width * 1.24)
-          .offset(y: top - g.size.width * 0.5)
-      }
-      .frame(width: g.size.width, height: g.size.height, alignment: .top)
-    }
-    .allowsHitTesting(false)
-    .accessibilityHidden(true)
-  }
-}
-
-/// Tiền cảnh mờ sát ống kính, kiểu máy quay nhiều tầng của Disney: tạ và khăn nhoè ở hai góc dưới,
-/// nằm rất gần người xem nên trôi mạnh nhất, ngược với tường. Thấy lớp này trôi là thấy chiều sâu.
-struct StudioForeground: View {
+/// Phòng khung dọc theo mock đã duyệt (`StudioTall`): vẽ mới tường, cửa sổ, trời, thành phố, sàn và
+/// đèn, mỗi thứ một tầng máy quay. Kệ, cây, bục, bảng số do `MascotStage` vẽ đè lên, nên đồ phòng đã
+/// mua và đường đi của Koa giữ nguyên. Gác mái nằm bên phải; đi ngủ thì cả hai lia ngang cùng sân khấu.
+struct StudioTallRoom: View {
+  /// Tranh gốc hạ xuống bao nhiêu điểm.
+  let drop: CGFloat
   let lens: KoaLens
   @Environment(\.colorScheme) private var scheme
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @AppStorage(KoaBedroomView.lampKey) private var lampOff = false
+  @State private var motes = StudioMotes()
 
   var body: some View {
-    TimelineView(.animation(minimumInterval: 1.0 / 30, paused: reduceMotion)) { _ in
-      shapes.offset(x: lens.shot.shift(KoaParallax.Plane.foreground.amp))
+    GeometryReader { g in
+      let width = g.size.width
+      let asleep = lens.bedroom
+      ZStack(alignment: .topLeading) {
+        studio(g.size, paused: reduceMotion || asleep)
+          .offset(x: asleep ? -width : 0)
+        StudioAttic(light: scheme == .light, drop: Double(drop)).equatable()
+          // tắt đèn tối cả phần gác mái: chỉ tranh tối thì lộ vệt ngang ở hai mép tranh
+          .overlay {
+            Color.black.opacity(lampOff ? KoaBedroom.lampOffDim(light: scheme == .light) : 0)
+              .animation(reduceMotion ? nil : .easeInOut(duration: 0.25), value: lampOff)
+          }
+          .offset(x: asleep ? 0 : width)
+        // mảng tường tiền cảnh của cảnh đi ngủ: sân khấu tự vẽ phần của nó, đây là phần trên và dưới
+        Color(hex: KoaBedroom.wallColor(light: scheme == .light))
+          .frame(width: KoaBedtime.wall * width / StudioScene.width, height: g.size.height)
+          .offset(x: asleep ? -(KoaBedtime.wall + 8) * width / StudioScene.width : width + 8)
+      }
+      .frame(width: width, height: g.size.height, alignment: .topLeading)
+      .clipped()
+      // cùng đường cong với sân khấu, để cả màn lia như một khung hình
+      .animation(reduceMotion ? nil : .timingCurve(0.42, 0, 0.58, 1, duration: KoaBedtime.pan), value: asleep)
     }
-    .ignoresSafeArea()
     .allowsHitTesting(false)
     .accessibilityHidden(true)
   }
 
-  private var shapes: some View {
-    GeometryReader { g in
-      // sáng hơn sàn một chút: đồ sát ống kính bắt ánh đèn phòng, tối quá thì chìm mất
-      let tone = scheme == .light ? Color(red: 0.42, green: 0.33, blue: 0.26) : Color(red: 0.2, green: 0.19, blue: 0.36)
-      ZStack(alignment: .bottom) {
-        // tạ đơn nằm trên sàn, góc trái, phía trên nút mở bảng
-        HStack(spacing: 0) {
-          RoundedRectangle(cornerRadius: 14).frame(width: 52, height: 108)
-          Rectangle().frame(width: 74, height: 26)
-          RoundedRectangle(cornerRadius: 14).frame(width: 52, height: 108)
+  private func studio(_ size: CGSize, paused: Bool) -> some View {
+    let k = Double(size.width) / StudioScene.width
+    let options = lens.options
+    return TimelineView(.animation(minimumInterval: 1.0 / 30, paused: paused)) { timeline in
+      let shot = lens.shot
+      // truyền giờ vào: view con đọc đồng hồ tự nó thì SwiftUI thấy tham số không đổi, không vẽ lại
+      let t = timeline.date.timeIntervalSinceReferenceDate
+      ZStack(alignment: .topLeading) {
+        ForEach(StudioTall.layers) { layer in
+          StudioTallImage(options: options, layer: layer.id, drop: Double(drop)).equatable()
+            .frame(width: size.width, height: size.height)
+            .offset(x: shot.shift(layer.plane.amp) * k)
+          // đồ động chen đúng tầng: mây sau thành phố, đèn nhà trên thành phố, bụi trong chùm đèn
+          if !reduceMotion, ["sky", "city", "lamp"].contains(layer.id) {
+            StudioLive(
+              t: t, layer: layer.id, night: !options.light, drop: Double(drop), k: k, lamp: options.lamp, dust: options.dust, box: motes)
+              .frame(width: size.width, height: size.height)
+              .offset(x: shot.shift(layer.plane.amp) * k)
+          }
+          if !reduceMotion, layer.id == "wall", !options.light {
+            StudioNeon(t: t, drop: Double(drop), k: k)
+              .frame(width: size.width, height: size.height)
+              .offset(x: shot.shift(layer.plane.amp) * k)
+          }
         }
-        .rotationEffect(.degrees(-16))
-        .offset(x: -g.size.width * 0.42, y: -g.size.height * 0.2)
-        // khăn vắt thành đống, góc phải
-        Ellipse().frame(width: 200, height: 104).offset(x: g.size.width * 0.5, y: -g.size.height * 0.15)
-        Ellipse().frame(width: 130, height: 64).offset(x: g.size.width * 0.44, y: -g.size.height * 0.21)
       }
-      .foregroundStyle(tone)
-      .blur(radius: 7)
-      .frame(width: g.size.width, height: g.size.height, alignment: .bottom)
+      .scaleEffect(shot.zoom, anchor: UnitPoint(x: 0.5, y: (KoaParallax.anchorY * k + Double(drop)) / Double(size.height)))
     }
   }
 }
 
-/// Khung máy quay cho lớp tiền cảnh: lớp này nằm ngoài sân khấu nên đọc qua ô nhớ, không qua view.
+/// Những thứ nhỏ làm phòng sống: mây trôi ngoài cửa sổ, đèn nhà bật tắt, bụi bay trong chùm đèn.
+/// Vẽ thẳng bằng Canvas, không qua bộ dựng cảnh, nên nhẹ dù chạy mỗi khung.
+private struct StudioLive: View {
+  let t: Double
+  let layer: String
+  let night: Bool
+  let drop: Double
+  let k: Double
+  let lamp: Bool
+  /// Mức bụi của phòng 0…3: bụi xám lơ lửng khắp phòng, bẩn càng nhiều.
+  var dust = 0
+  let box: StudioMotes
+
+  var body: some View {
+    let motes = layer == "lamp" ? box.advance(t: t, dust: dust, lamp: lamp) : []
+    Canvas { ctx, _ in
+      var c = ctx
+      c.translateBy(x: 0, y: drop)
+      c.scaleBy(x: k, y: k)
+      switch layer {
+      case "sky":
+        for (speed, y, r) in [(4.0, -40.0, 1.0), (2.6, 30.0, 0.7)] {
+          let x = 150 + (t * speed).truncatingRemainder(dividingBy: 280)
+          c.opacity = night ? 0.2 : 0.8
+          for (dx, dy, w) in [(0.0, 0.0, 44.0), (26.0, -9.0, 38.0), (52.0, 0.0, 40.0)] {
+            c.fill(
+              Path(ellipseIn: CGRect(x: x + dx * r, y: y + dy * r, width: w * r, height: 18 * r)),
+              with: .color(night ? Color(red: 0.6, green: 0.56, blue: 0.85) : .white))
+          }
+        }
+      case "city":
+        guard night else { return }
+        // từng ô đèn tắt bật theo nhịp riêng, không đồng loạt
+        for (i, w) in [(236.0, 70.0), (292, 30), (298, 74), (330, 100), (358, 60), (204, 110)].enumerated() {
+          let on = sin(t * (0.21 + Double(i) * 0.07) + Double(i) * 1.9) > -0.2
+          c.opacity = on ? 0.95 : 0
+          c.fill(Path(CGRect(x: w.0, y: w.1, width: 5, height: 7)), with: .color(Color(red: 1, green: 0.8, blue: 0.45)))
+        }
+      default:
+        // trong chùm đèn hạt bắt sáng nên rõ, ngoài chùm chỉ thoáng thấy
+        for m in motes {
+          let spread = 30 + (m.y + 54) * 0.2
+          let lit = lamp ? min(1, max(0, (spread - abs(m.x - 195)) / 22)) : 0
+          let r = 0.5 + m.size * 0.9
+          c.opacity = (lit * 0.55 + (1 - lit) * (night ? 0.1 : 0.18)) * m.fade
+          c.fill(
+            Path(ellipseIn: CGRect(x: m.x - r, y: m.y - r, width: r * 2, height: r * 2)),
+            with: .color(
+              lit > 0.4 ? Color(red: 1, green: 0.9, blue: 0.72)
+                : night ? Color(red: 0.8, green: 0.76, blue: 0.7) : Color(red: 0.55, green: 0.47, blue: 0.38)))
+        }
+      }
+    }
+  }
+}
+
+/// Bụi của phòng và bụi trong chùm đèn, sống qua các khung. Vẽ lại mỗi khung nên chỉ giữ ít hạt.
 @MainActor
+final class StudioMotes {
+  private var room = KoaMotes(count: 0, x: -10...400, y: -160...470, seed: 3)
+  private var beam = KoaMotes(count: 14, x: 150...240, y: -40...300, seed: 7)
+  private var last: Double?
+
+  func advance(t: Double, dust: Int, lamp: Bool) -> [KoaMotes.Mote] {
+    let dt = min(0.1, max(0, t - (last ?? t)))
+    last = t
+    room.resize(dust * 16)
+    room.step(dt, t: t)
+    guard lamp else { return room.motes }
+    beam.step(dt, t: t)
+    return room.motes + beam.motes
+  }
+}
+
+/// Quầng sáng sau bảng neon, chập chờn như đèn thật: thở chậm, thỉnh thoảng sụt một nhịp.
+private struct StudioNeon: View {
+  let t: Double
+  let drop: Double
+  let k: Double
+
+  var body: some View {
+    let s = StudioTall.sign
+    let dip = sin(t * 0.73) * sin(t * 2.9) > 0.86
+    let glow = (0.3 + 0.08 * sin(t * 1.4)) * (dip ? 0.35 : 1)
+    Canvas { ctx, _ in
+      var c = ctx
+      c.translateBy(x: 0, y: drop)
+      c.scaleBy(x: k, y: k)
+      c.opacity = glow
+      c.fill(
+        Path(ellipseIn: CGRect(x: s.x - 30, y: s.y - 26, width: s.w + 60, height: s.h + 52)),
+        with: .radialGradient(
+          Gradient(colors: [Color(red: 0.56, green: 0.51, blue: 1), .clear]),
+          center: CGPoint(x: s.x + s.w / 2, y: s.y + s.h / 2), startRadius: 20, endRadius: (s.w + 60) / 2))
+    }
+  }
+}
+
+/// Gác mái khung dọc, vẽ một lần.
+private struct StudioAttic: View, Equatable {
+  let light: Bool
+  let drop: Double
+
+  var body: some View {
+    let plan = StudioPlans.attic(light: light)
+    Canvas { ctx, canvas in
+      var c = ctx
+      let k = canvas.width / StudioScene.width
+      c.translateBy(x: 0, y: drop)
+      c.concatenate(CGAffineTransform(scaleX: k, y: k))
+      KoaCanvas.draw(plan, in: &c)
+    }
+  }
+}
+
+/// Ảnh tĩnh của một lớp phần vẽ mới.
+private struct StudioTallImage: View, Equatable {
+  let options: StudioScene.Options
+  let layer: String
+  let drop: Double
+
+  var body: some View {
+    let plan = StudioPlans.tall(options, layer)
+    Canvas { ctx, canvas in
+      var c = ctx
+      let k = canvas.width / StudioScene.width
+      if layer == "cone" { c.addFilter(.blur(radius: StudioTall.coneBlur * k)) }
+      c.translateBy(x: 0, y: drop)
+      c.concatenate(CGAffineTransform(scaleX: k, y: k))
+      KoaCanvas.draw(plan, in: &c)
+    }
+  }
+}
+
+/// Khung máy quay cho phần vẽ mới, nằm ngoài sân khấu nên đọc qua ô nhớ. `bedroom` và `options` được
+/// theo dõi, phần còn lại đổi mỗi khung.
+@MainActor @Observable
 final class KoaLens {
-  var shot = KoaParallax.Shot()
+  /// Koa đang ở phòng ngủ: tường cao và sàn đổi theo.
+  var bedroom = false
+  /// Tuỳ chọn của phòng đang hiện, để phần vẽ mới cùng theme và đồ phòng.
+  var options = StudioScene.Options()
+  @ObservationIgnored var shot = KoaParallax.Shot()
+  /// Chân Koa trên sân khấu (toạ độ phòng): cảnh kéo thẻ bắt đầu từ đây.
+  @ObservationIgnored var koa = (x: StudioScene.stageMark.x, y: StudioScene.stageMark.y)
+  /// Tranh hạ xuống bao nhiêu điểm trong khung dọc.
+  @ObservationIgnored var drop: CGFloat = 0
 }
