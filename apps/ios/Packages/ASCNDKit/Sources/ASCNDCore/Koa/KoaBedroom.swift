@@ -26,6 +26,12 @@ public enum KoaBedroom {
     var star, bulbGlow, sconceGlow, vignette, moonlightAlpha: Double
   }
 
+  /// Màu tường trên cùng và mép sàn dưới cùng, để khung dọc nối liền với phòng ngủ.
+  public static func tallColors(light: Bool) -> (wall: String, floor: String) {
+    let p = light ? day : night
+    return (p.wallTop, p.floorBottom)
+  }
+
   static let night = Palette(
     wallTop: "#3A2B3F", wallBottom: "#2C2230", panel: "#33252C", beam: "#5A3E2E", roof: "#4A3227", floorTop: "#4C3326",
     floorBottom: "#33221B", skyTop: "#17224E", skyBottom: "#3B3A73", moon: "#F2E3B3", hill: "#141A38",

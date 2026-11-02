@@ -43,7 +43,9 @@ struct MascotRoomView: View {
   /// Giờ hiện tại, đổi mỗi phút: tới giờ ngủ khi đang mở phòng thì Koa đi ngủ ngay.
   @State private var clock = Date.now
   /// Bảng nội dung của phòng đang mở (01/11, Kiệt: phòng full màn, thẻ mở bằng nút).
-  @State private var showsPanel = false
+  /// Lúc Koa bắt đầu chạy tới kéo bảng; `nil` = bảng đang đóng.
+  @State private var pullStart: Date?
+  @Environment(\.colorScheme) private var scheme
   @State private var lens = KoaLens()
   /// Số trên bảng tường (29/10, Kiệt: người dùng chọn) — lưu trên máy.
   @AppStorage("koa.roomBoard") private var boardStat = RoomBoard.Stat.rank.rawValue
@@ -115,26 +117,67 @@ struct MascotRoomView: View {
         DSErrorView(message: String(localized: "async.error.generic")) { Task { await room.load() } }
       }
     case .ready:
-      ZStack(alignment: .top) {
-        StudioFloorRun()
-        stage
-        StudioForeground(lens: lens)
+      GeometryReader { g in
+        let height = g.size.height + g.safeAreaInsets.top + g.safeAreaInsets.bottom
+        let k = g.size.width / StudioScene.width
+        // bục (y 436 của tranh) nằm ở 3/4 màn như mock
+        let drop = max(0, height * 0.75 - 436 * k)
+        let _ = (lens.drop = drop)
+        ZStack(alignment: .top) {
+          StudioFloorRun(drop: drop, wall: roomWall, lens: lens)
+          stage
+            // hai mép tranh tan vào tường cao và sàn, không lộ đường nối
+            .mask {
+              VStack(spacing: 0) {
+                LinearGradient(colors: [.clear, .black], startPoint: .top, endPoint: .bottom).frame(height: 70)
+                Color.black
+                LinearGradient(colors: [.black, .clear], startPoint: .top, endPoint: .bottom).frame(height: 28)
+              }
+            }
+            .offset(y: drop)
+          StudioForeground(lens: lens)
+        }
+        .ignoresSafeArea()
       }
       .ignoresSafeArea()
-      .overlay(alignment: .bottom) { roomBar }
-      .sheet(isPresented: $showsPanel) {
-        NavigationStack {
-          ScrollView { sheet }
-            .refreshable {
-              await room.load()
-              await shop?.load()
-              await services.loadKoaDust(userId: room.userId)
-            }
+      .overlay(alignment: .bottom) {
+        if pullStart == nil { roomBar.transition(.opacity) }
+      }
+      .overlay {
+        if let pullStart {
+          KoaPullScene(
+            start: pullStart, lens: lens, equipped: shop?.inventory.filter(\.equipped).map(\.itemKey) ?? [],
+            build: room.gains.rank, taunt: pullTaunt, close: closePanel
+          ) {
+            ScrollView { sheet }
+              .refreshable {
+                await room.load()
+                await shop?.load()
+                await services.loadKoaDust(userId: room.userId)
+              }
+          }
         }
-        .presentationDetents([.medium, .large])
-        .presentationDragIndicator(.visible)
       }
     }
+  }
+
+  /// Màu tường của theme đang dùng, để tường cao liền với tranh.
+  private var roomWall: (String, String) {
+    let table = scheme == .light ? StudioScene.lightSkins : StudioScene.skins
+    let key = StudioScene.skinKey(equipped: Set(shop?.inventory.filter(\.equipped).map(\.itemKey) ?? []))
+    return (table[key] ?? table["default"]!).wall
+  }
+
+  /// Câu khích của Koa lúc kéo thẻ, theo số việc thật.
+  private var pullTaunt: String {
+    let total = room.activeQuests.count
+    if total > 0, questsDone >= total { return String(localized: "koa.pull.done") }
+    if questsDone == 0 { return String(localized: "koa.pull.none \(total)") }
+    return String(localized: "koa.pull.some \(total - questsDone)")
+  }
+
+  private func closePanel() {
+    withAnimation(.easeOut(duration: 0.25)) { pullStart = nil }
   }
 
   /// Nút mở bảng: nhiệm vụ còn lại nằm ngay trên nút, khỏi phải mở mới biết.
@@ -149,7 +192,7 @@ struct MascotRoomView: View {
           .transition(.opacity)
       }
       Button {
-        showsPanel = true
+        withAnimation(.easeOut(duration: 0.15)) { pullStart = .now }
       } label: {
         HStack(spacing: DS.Spacing.sm) {
           EnergyRing(segments: questSegments, lineWidth: 4, gap: 8)
@@ -277,7 +320,8 @@ struct MascotRoomView: View {
         companion: room.gains == .zero
           ? nil : KoaCompanion.Facts(gains: room.gains, today: room.today, mood: moodRead.reason),
         userId: room.userId, sleep: KoaMood.SleepWindow(profile: profile?.profile),
-        talkLine: { KoaTalkLine.text($0, signals: room.signals, profile: profile?.profile) }, lens: lens)
+        talkLine: { KoaTalkLine.text($0, signals: room.signals, profile: profile?.profile) }, lens: lens,
+        offStage: pullStart != nil)
         .sensoryFeedback(.selection, trigger: boardStat)
   }
 
@@ -900,6 +944,8 @@ struct MascotStage: View {
   var talkLine: ((KoaTalk.Beat) -> String?)?
   /// Khung máy quay cho tiền cảnh.
   var lens: KoaLens?
+  /// Koa đang chạy đi kéo bảng: sân khấu nhường chỗ cho Koa của cảnh diễn.
+  var offStage = false
 
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Environment(\.scenePhase) private var scenePhase
@@ -1018,7 +1064,7 @@ struct MascotStage: View {
     // không có dòng "Cấp N" dưới sân khấu (RN cũng không) — thẻ cấp ngay dưới nói rồi
     let tail = walks ? KoaBedroom.tail : 0
     let asleep = bedShown
-    let koaAway = bedShown || wakeScene != nil
+    let koaAway = bedShown || wakeScene != nil || offStage
     ZStack {
       roomBase
         .overlay {
@@ -1058,6 +1104,7 @@ struct MascotStage: View {
     }
     .clipped()
     .animation(reduceMotion ? nil : .timingCurve(0.42, 0, 0.58, 1, duration: KoaBedtime.pan), value: asleep)
+    .onChange(of: bedShown, initial: true) { _, shown in lens?.bedroom = shown }
     .onChange(of: inBedroom, initial: true) { old, now in
       if now {
         wakeScene = nil
@@ -1226,6 +1273,7 @@ struct MascotStage: View {
       let _ = (lens?.shot = shot)
       let x = still?.x ?? f?.x ?? KoaRoomMap.stageMark.x
       let y = still.map(KoaRoomMap.screenY) ?? f?.screenY ?? StudioScene.stageMark.y
+      let _ = (lens?.koa = (x: x, y: y))
       let koaAmp = KoaParallax.amp(koa: still?.plane ?? f?.plane ?? .stage, y: y)
       ZStack(alignment: .topLeading) {
         if layered {

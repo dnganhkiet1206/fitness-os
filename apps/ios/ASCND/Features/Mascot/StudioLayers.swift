@@ -160,20 +160,36 @@ final class KoaTiltSensor {
   }
 }
 
-/// Sàn kéo dài tới đáy màn (01/11, phòng full màn): nối mép sàn của tranh, thêm vệt ván hội tụ về
-/// sau phòng và vũng sáng của đèn. Vẽ một lần.
+/// Khung dọc của phòng (01/11, Kiệt duyệt mock): tranh gốc hạ xuống `drop` điểm nên bục nằm ở 3/4
+/// màn. Phía trên là tường cao cùng màu theme và dây đèn, phía dưới là sàn liền với mép tranh.
+/// Đồ vật và đồ phòng đã mua giữ nguyên chỗ so với bục.
 struct StudioFloorRun: View {
+  /// Tranh hạ xuống bao nhiêu điểm.
+  let drop: CGFloat
+  /// Hai màu tường của theme đang dùng.
+  let wall: (String, String)
+  let lens: KoaLens
   @Environment(\.colorScheme) private var scheme
 
   var body: some View {
     GeometryReader { g in
       let light = scheme == .light
       let k = g.size.width / StudioScene.width
-      let top = StudioScene.sceneBottom * k - 2
+      let top = StudioScene.sceneBottom * k - 2 + drop
       // đúng màu mép dưới của tranh, để không lộ đường nối
-      let edge = light ? Color(red: 0.86, green: 0.8, blue: 0.72) : Color(red: 15 / 255, green: 16 / 255, blue: 38 / 255)
+      let bed = lens.bedroom ? KoaBedroom.tallColors(light: light) : nil
+      let edge = bed.map { Color(hex: $0.floor) }
+        ?? (light ? Color(red: 0.86, green: 0.8, blue: 0.72) : Color(red: 15 / 255, green: 16 / 255, blue: 38 / 255))
       let far = light ? Color(red: 0.76, green: 0.69, blue: 0.6) : Color(red: 0.03, green: 0.035, blue: 0.08)
+      let upper = Color(hex: bed?.wall ?? wall.0)
       ZStack(alignment: .top) {
+        // tường cao: sáng dần xuống, tới mép trên của tranh thì đúng màu tường
+        upper.frame(height: drop + 80)
+        if bed == nil {
+          Rectangle()
+            .fill(Color(hex: wall.1))
+            .frame(width: 4 * k, height: drop + 80)
+        }
         LinearGradient(colors: [edge, far], startPoint: .top, endPoint: .bottom)
           .frame(height: max(0, g.size.height - top))
           .offset(y: top)
@@ -234,20 +250,27 @@ struct StudioForeground: View {
           RoundedRectangle(cornerRadius: 14).frame(width: 52, height: 108)
         }
         .rotationEffect(.degrees(-16))
-        .offset(x: -g.size.width * 0.42, y: -g.size.height * 0.2)
+        .offset(x: -g.size.width * 0.44, y: -g.size.height * 0.1)
         // khăn vắt thành đống, góc phải
-        Ellipse().frame(width: 200, height: 104).offset(x: g.size.width * 0.5, y: -g.size.height * 0.15)
-        Ellipse().frame(width: 130, height: 64).offset(x: g.size.width * 0.44, y: -g.size.height * 0.21)
+        Ellipse().frame(width: 190, height: 96).offset(x: g.size.width * 0.52, y: -g.size.height * 0.06)
+        Ellipse().frame(width: 120, height: 58).offset(x: g.size.width * 0.46, y: -g.size.height * 0.115)
       }
-      .foregroundStyle(tone)
+      .foregroundStyle(tone.opacity(scheme == .light ? 0.55 : 1))
       .blur(radius: 7)
       .frame(width: g.size.width, height: g.size.height, alignment: .bottom)
     }
   }
 }
 
-/// Khung máy quay cho lớp tiền cảnh: lớp này nằm ngoài sân khấu nên đọc qua ô nhớ, không qua view.
-@MainActor
+/// Khung máy quay cho lớp tiền cảnh: lớp này nằm ngoài sân khấu nên đọc qua ô nhớ. Chỉ `bedroom`
+/// được theo dõi, phần còn lại đổi mỗi khung.
+@MainActor @Observable
 final class KoaLens {
-  var shot = KoaParallax.Shot()
+  /// Koa đang ở phòng ngủ: tường cao và sàn đổi theo.
+  var bedroom = false
+  @ObservationIgnored var shot = KoaParallax.Shot()
+  /// Chân Koa trên sân khấu (toạ độ phòng): cảnh kéo thẻ bắt đầu từ đây.
+  @ObservationIgnored var koa = (x: StudioScene.stageMark.x, y: StudioScene.stageMark.y)
+  /// Tranh hạ xuống bao nhiêu điểm trong khung dọc.
+  @ObservationIgnored var drop: CGFloat = 0
 }

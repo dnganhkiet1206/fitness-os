@@ -20,7 +20,7 @@ name: Tapping the room floor and the podium moves Koa
 # Toạ độ theo % màn: phòng tràn viền, co theo bề ngang nên hai điểm này giữ đúng chỗ trên iPhone.
 # Điểm sàn nằm bên phải Koa: chạm trúng người Koa là chọc Koa, không phải gọi đi.
 - tapOn:
-    point: 80%,45%
+    point: 80%,68%
     waitToSettleTimeoutMs: 500
 - extendedWaitUntil:
     visible:
@@ -28,7 +28,7 @@ name: Tapping the room floor and the podium moves Koa
     timeout: 15000
 - takeScreenshot: 09-floor
 - tapOn:
-    point: 50%,52%
+    point: 50%,75%
     waitToSettleTimeoutMs: 500
 - extendedWaitUntil:
     visible:

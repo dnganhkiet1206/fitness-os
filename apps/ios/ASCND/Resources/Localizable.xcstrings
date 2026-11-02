@@ -63422,6 +63422,75 @@
     }
    }
   },
+  "koa.pull.none %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld quests untouched. Dare you?"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Còn nguyên %lld việc. Dám không?"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld misiones intactas. ¿Te atreves?"
+     }
+    }
+   }
+  },
+  "koa.pull.some %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Only %lld left. Can you?"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Còn %lld việc thôi. Làm nổi không?"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Quedan %lld. ¿Puedes?"
+     }
+    }
+   }
+  },
+  "koa.pull.done": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "All done? Not bad."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Xong hết rồi à? Cũng được đó."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "¿Todo hecho? Nada mal."
+     }
+    }
+   }
+  },
   "koa.say.night": {
    "extractionState": "manual",
    "localizations": {
