@@ -66,8 +66,8 @@ public enum KoaTalk {
   }
 
   /// Miệng bắt đầu nói sau khi mặt lên đỉnh, mỗi khẩu hình giữ một nhịp.
-  static let mouthStart = 0.4
-  static let mouthStep = 0.085
+  static let mouthStart = 0.7
+  static let mouthStep = 0.12
 
   /// Khẩu hình theo chữ, như cách Duolingo cho nhân vật nói (viseme): "a" há to, "o", "u" tròn môi,
   /// "e", "i" kéo ngang, "m", "b", "p" khép lại, dấu câu ngừng hơi. Ký tự dấu tiếng Việt quy về chữ
@@ -159,14 +159,18 @@ public enum KoaTalk {
   /// mặt nghỉ, thỉnh thoảng mỉm một nhịp ngắn. Đổi giữa hai mặt mở mắt thì kèm chớp mắt (`blinkDue`)
   /// để giấu bước nhảy, vì bản vẽ không có khung trung gian.
   public struct Rest: Sendable, Hashable {
-    public static let peakHold = 1.6
-    public static let softHold = 3.4
+    public static let peakHold = 2.6
+    public static let softHold = 5.6
+    public static let smileHold = 2.4
+    /// Mặt vừa đổi ở lại ít nhất ngần này giây: đổi dồn dập thì người xem chưa đọc kịp mặt cũ.
+    public static let minHold = 1.8
 
     private var held: KoaFlags.Expression?
     private var heldFor = 0.0
     private var clock = 0.0
     private var smileAt: Double
     private var shown: KoaFlags.Expression?
+    private var shownAt = 0.0
     private var started = false
     /// Khung này mặt vừa đổi.
     public private(set) var blinkDue = false
@@ -177,6 +181,28 @@ public enum KoaTalk {
     public mutating func step(
       _ dt: Double, raw: KoaFlags.Expression?, day: KoaFlags.Expression, gap: () -> Double
     ) -> KoaFlags.Expression? {
+      advance(dt, raw: raw)
+      var out = resolve(raw, day: day, gap: gap)
+      if started, out != shown {
+        if clock - shownAt < Self.minHold { out = shown } else { shownAt = clock }
+      }
+      // mắt đang nhắm hay sắp nhắm thì không chớp: chớp chỉ để giấu bước đổi giữa hai mặt mở mắt
+      blinkDue = started && out != shown && !KoaFlags.eyesClosed(out) && !KoaFlags.eyesClosed(shown)
+      started = true
+      shown = out
+      return out
+    }
+
+    /// Koa đang nói, mặt do câu nói quyết: đồng hồ vẫn chạy, nếu không thì nói xong mặt cũ quay lại.
+    public mutating func speaking(_ dt: Double, raw: KoaFlags.Expression?, face: KoaFlags.Expression) {
+      advance(dt, raw: raw)
+      blinkDue = false
+      started = true
+      if face != shown { shownAt = clock }
+      shown = face
+    }
+
+    private mutating func advance(_ dt: Double, raw: KoaFlags.Expression?) {
       clock += dt
       if raw != held {
         held = raw
@@ -184,12 +210,6 @@ public enum KoaTalk {
       } else {
         heldFor += dt
       }
-      let out = resolve(raw, day: day, gap: gap)
-      // mắt đang nhắm hay sắp nhắm thì không chớp: chớp chỉ để giấu bước đổi giữa hai mặt mở mắt
-      blinkDue = started && out != shown && !KoaFlags.eyesClosed(out) && !KoaFlags.eyesClosed(shown)
-      started = true
-      shown = out
-      return out
     }
 
     private mutating func resolve(
@@ -203,7 +223,7 @@ public enum KoaTalk {
       // tròn mắt suốt ngày cũng thành sticker; lo thì để câu nói lo, mặt vẫn thư thái
       guard [.happy, .grin, .delighted, .surprised].contains(day) else { return nil }
       if clock >= smileAt {
-        if clock >= smileAt + 1.3 { smileAt = clock + gap() } else { return .warm }
+        if clock >= smileAt + Self.smileHold { smileAt = clock + gap() } else { return .warm }
       }
       return .content
     }

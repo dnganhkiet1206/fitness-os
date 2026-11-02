@@ -147,7 +147,16 @@ public enum StudioTall {
     }
     // tối dần ở chân tường: tường và sàn tách nhau; đồ có bóng đổ nên đứng hẳn trên sàn
     out += [
-      Element("Defs", kids: [KoaBedroom.linear("tallFoot", [(0, "#00000066"), (1, "#00000000")])]),
+      Element(
+        "Defs",
+        kids: [
+          Element(
+            "LinearGradient", ["id": .string("tallFoot"), "x1": .number(0), "y1": .number(0), "x2": .number(0), "y2": .number(1)],
+            kids: [
+              Element("Stop", ["offset": .number(0), "stopColor": .string("#000000"), "stopOpacity": .number(0.4)]),
+              Element("Stop", ["offset": .number(1), "stopColor": .string("#000000"), "stopOpacity": .number(0)]),
+            ])
+        ]),
       KoaBedroom.rect(-60, 362, 510, 30, "url(#tallFoot)"),
       KoaBedroom.ellipse(74, 398, 82, 11, "#000000", opacity: 0.32),
       KoaBedroom.ellipse(314, 402, 34, 8, "#000000", opacity: 0.32),

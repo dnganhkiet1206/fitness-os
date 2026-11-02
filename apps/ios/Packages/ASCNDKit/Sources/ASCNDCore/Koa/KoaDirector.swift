@@ -626,8 +626,6 @@ public enum KoaDirector {
           walker.faceTurn = 0
           gaze.look(.user, from: koa, turn: turn)
         }
-        // đón người quay lại thì ấm áp, giữ nét vui, không mắt sao như ăn mừng
-        if at(0.4), b.kind == .greet { expression = .delighted }
       case .proudPose:
         if at(0) {
           walker.faceTurn = 0

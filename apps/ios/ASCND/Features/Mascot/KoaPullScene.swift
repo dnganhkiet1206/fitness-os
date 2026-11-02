@@ -13,11 +13,12 @@ struct KoaPullScene<Content: View>: View {
   var build = 0
   /// Koa đang ở phòng ngủ.
   var asleep = false
+  /// Phòng đang ban ngày, theo giờ máy.
+  var daytime = false
   let taunt: String
   let close: () -> Void
   @ViewBuilder var content: Content
 
-  @Environment(\.colorScheme) private var scheme
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var drag = 0.0
   /// Koa đang ngủ thì không có cảnh chạy tới: thẻ tự trượt lên, Koa ngủ tiếp.
@@ -80,7 +81,7 @@ struct KoaPullScene<Content: View>: View {
   }
 
   private func figure(_ s: KoaPull.Shot, width: Double, height: Double, t: Double) -> some View {
-    let light = scheme == .light
+    let light = daytime
     return Canvas { ctx, _ in
       var c = ctx
       c.translateBy(x: s.x, y: s.y)
@@ -88,9 +89,9 @@ struct KoaPullScene<Content: View>: View {
       c.scaleBy(x: s.scale * s.stretchX, y: s.scale * s.stretchY)
       c.translateBy(x: -120, y: -110)
       var o = KoaRender.Options()
-      o.expression = .tease
+      o.expression = s.expression
       o.pose = s.running ? .running : .idle
-      o.t = t * 1000 * (s.running ? 3 : 1)
+      o.t = t * 1000 * (s.running ? 2 : 1)
       o.size = 240
       o.paper = light
       o.flat = light

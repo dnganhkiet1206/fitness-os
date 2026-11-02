@@ -146,6 +146,8 @@ struct MascotRoomView: View {
             }
             .offset(y: drop)
         }
+        // phòng sáng tối theo giờ trên máy, thanh và bảng vẫn theo giao diện của app
+        .environment(\.colorScheme, daytime ? .light : .dark)
         .ignoresSafeArea()
       }
       .ignoresSafeArea()
@@ -156,7 +158,7 @@ struct MascotRoomView: View {
         if let pullStart {
           KoaPullScene(
             start: pullStart, lens: lens, equipped: shop?.inventory.filter(\.equipped).map(\.itemKey) ?? [],
-            build: room.gains.rank, asleep: lens.bedroom, taunt: pullTaunt, close: closePanel
+            build: room.gains.rank, asleep: lens.bedroom, daytime: daytime, taunt: pullTaunt, close: closePanel
           ) {
             ScrollView { sheet }
               .refreshable {
@@ -169,6 +171,16 @@ struct MascotRoomView: View {
         }
       }
     }
+  }
+
+  private var daytime: Bool {
+    #if DEBUG
+      let args = ProcessInfo.processInfo.arguments
+      if let i = args.firstIndex(of: "-koaHour"), i + 1 < args.count, let hour = Int(args[i + 1]) {
+        return KoaDaylight.isDay(hour: hour)
+      }
+    #endif
+    return KoaDaylight.isDay(at: clock)
   }
 
   /// Câu khích của Koa lúc kéo thẻ, theo số việc thật.

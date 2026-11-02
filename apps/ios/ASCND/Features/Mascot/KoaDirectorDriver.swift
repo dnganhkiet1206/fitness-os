@@ -280,7 +280,9 @@ final class KoaDirectorDriver {
       if t >= beat.seconds {
         Task { @MainActor in self.speech = nil }
       } else {
+        let raw = f.expression
         f.expression = beat.expression(at: t)
+        rest.speaking(dt, raw: raw, face: beat.expression(at: t))
         // nói là miệng nói: người gần như yên, đầu chỉ gật rất nhẹ theo câu
         if KoaTalk.face(beat.topic).flaps { f.gaze.head.y += 0.012 * sin(t * 3.4) }
         return
@@ -289,7 +291,7 @@ final class KoaDirectorDriver {
     if let plan = talkPlan, plan.due(at: now), !f.moving, !context.settle, !context.bedtime, let facts {
       nextLine(plan, facts: facts, at: now)
     }
-    let face = rest.step(dt, raw: f.expression, day: dayFace) { Double.random(in: 8...15) }
+    let face = rest.step(dt, raw: f.expression, day: dayFace) { Double.random(in: 14...24) }
     f.expression = face
     if rest.blinkDue { director.blink() }
   }

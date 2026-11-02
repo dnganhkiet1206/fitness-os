@@ -172,6 +172,7 @@ struct StudioTallRoom: View {
   @Environment(\.colorScheme) private var scheme
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @AppStorage(KoaBedroomView.lampKey) private var lampOff = false
+  @State private var motes = StudioMotes()
 
   var body: some View {
     GeometryReader { g in
@@ -216,7 +217,7 @@ struct StudioTallRoom: View {
           // đồ động chen đúng tầng: mây sau thành phố, đèn nhà trên thành phố, bụi trong chùm đèn
           if !reduceMotion, ["sky", "city", "lamp"].contains(layer.id) {
             StudioLive(
-              t: t, layer: layer.id, night: !options.light, drop: Double(drop), k: k, lamp: options.lamp, dust: options.dust)
+              t: t, layer: layer.id, night: !options.light, drop: Double(drop), k: k, lamp: options.lamp, dust: options.dust, box: motes)
               .frame(width: size.width, height: size.height)
               .offset(x: shot.shift(layer.plane.amp) * k)
           }
@@ -243,8 +244,10 @@ private struct StudioLive: View {
   let lamp: Bool
   /// Mức bụi của phòng 0…3: bụi xám lơ lửng khắp phòng, bẩn càng nhiều.
   var dust = 0
+  let box: StudioMotes
 
   var body: some View {
+    let motes = layer == "lamp" ? box.advance(t: t, dust: dust, lamp: lamp) : []
     Canvas { ctx, _ in
       var c = ctx
       c.translateBy(x: 0, y: drop)
@@ -269,33 +272,38 @@ private struct StudioLive: View {
           c.fill(Path(CGRect(x: w.0, y: w.1, width: 5, height: 7)), with: .color(Color(red: 1, green: 0.8, blue: 0.45)))
         }
       default:
-        // bụi của phòng bẩn: trôi chậm, thành đám, cả ngoài chùm đèn
-        for i in 0..<(dust * 24) {
-          let seed = Double(i) * 7.31 + 1.7
-          let life = (t * (0.01 + 0.012 * abs(sin(seed)))).truncatingRemainder(dividingBy: 1)
-          let rise = fmod(abs(sin(seed * 2.3)) + life, 1)
-          let y = 470 - rise * 620
-          let x = 195 + sin(seed * 3.7) * 190 + sin(t * 0.3 + seed) * 18 + sin(t * 0.83 + seed * 2) * 6
-          let r = 1.3 + abs(sin(seed * 1.3)) * 2.1
-          // hiện dần từ sàn, mờ dần ở trên, không bật tắt khi quay vòng
-          c.opacity = ((night ? 0.22 : 0.3) + 0.2 * abs(sin(t * 0.5 + seed))) * min(1, sin(rise * .pi) * 4)
+        // trong chùm đèn hạt bắt sáng nên rõ, ngoài chùm chỉ thoáng thấy
+        for m in motes {
+          let spread = 30 + (m.y + 54) * 0.2
+          let lit = lamp ? min(1, max(0, (spread - abs(m.x - 195)) / 22)) : 0
+          let r = 0.5 + m.size * 0.9
+          c.opacity = (lit * 0.55 + (1 - lit) * (night ? 0.1 : 0.18)) * m.fade
           c.fill(
-            Path(ellipseIn: CGRect(x: x - r, y: y - r, width: r * 2, height: r * 2)),
-            with: .color(night ? Color(red: 0.8, green: 0.76, blue: 0.7) : Color(red: 0.55, green: 0.47, blue: 0.38)))
-        }
-        guard lamp else { return }
-        for i in 0..<26 {
-          let seed = Double(i) * 12.9898
-          let life = (t * (0.03 + 0.02 * abs(sin(seed)))).truncatingRemainder(dividingBy: 1)
-          let y = -30 + (fmod(abs(sin(seed * 3.1)) + life, 1)) * 420
-          let spread = 34 + (y + 54) * 0.2
-          let x = 195 + sin(seed * 1.7) * spread + sin(t * 0.4 + seed) * 7
-          let r = 0.9 + abs(sin(seed)) * 1.5
-          c.opacity = 0.14 + 0.32 * abs(sin(t * 0.6 + seed))
-          c.fill(Path(ellipseIn: CGRect(x: x - r, y: y - r, width: r * 2, height: r * 2)), with: .color(Color(red: 1, green: 0.9, blue: 0.72)))
+            Path(ellipseIn: CGRect(x: m.x - r, y: m.y - r, width: r * 2, height: r * 2)),
+            with: .color(
+              lit > 0.4 ? Color(red: 1, green: 0.9, blue: 0.72)
+                : night ? Color(red: 0.8, green: 0.76, blue: 0.7) : Color(red: 0.55, green: 0.47, blue: 0.38)))
         }
       }
     }
+  }
+}
+
+/// Bụi của phòng và bụi trong chùm đèn, sống qua các khung. Vẽ lại mỗi khung nên chỉ giữ ít hạt.
+@MainActor
+final class StudioMotes {
+  private var room = KoaMotes(count: 0, x: -10...400, y: -160...470, seed: 3)
+  private var beam = KoaMotes(count: 14, x: 150...240, y: -40...300, seed: 7)
+  private var last: Double?
+
+  func advance(t: Double, dust: Int, lamp: Bool) -> [KoaMotes.Mote] {
+    let dt = min(0.1, max(0, t - (last ?? t)))
+    last = t
+    room.resize(dust * 16)
+    room.step(dt, t: t)
+    guard lamp else { return room.motes }
+    beam.step(dt, t: t)
+    return room.motes + beam.motes
   }
 }
 

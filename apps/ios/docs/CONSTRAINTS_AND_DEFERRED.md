@@ -433,6 +433,8 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Đóng bảng: kéo tay nắm xuống, hoặc chạm phòng sau khi cảnh diễn xong. Đóng xong Koa hiện lại trên sân khấu, chưa có cảnh quay về.
 - Giảm chuyển động, hay Koa đang ngủ: không có Koa chạy, bảng trượt lên (Kiệt báo hai Koa cùng hiện lúc Koa ngủ, đã sửa).
 - Đi ngủ và dậy: tường cao, sàn, gác mái lia cùng sân khấu (Kiệt báo lỗi chuyển cảnh, đã sửa).
+- Phòng theo giờ máy (Kiệt 02/11): 6–18 giờ là ngày, không theo giao diện app; chưa tính giờ mặt trời theo nơi ở. Cảnh kéo thẻ không còn lao vào máy: cỡ Koa tăng tối đa 22 %, chạy chậm hơn, mặt vui, mặt thách đểu chỉ khi thò đầu.
+- Nhịp biểu cảm (Kiệt 02/11): mỗi mặt ở lại ít nhất 1,8 giây, mặt đỉnh 2,6 giây, nụ cười 2,4 giây, bỏ mắt sao lúc chào, miệng 0,12 giây một hình. Bụi trôi theo dòng khí xoáy (`KoaMotes`), nhiều hướng, không còn bay một chiều như tuyết.
 - Chùm đèn sân khấu (Kiệt 02/11): mép chùm sáng nhoè 10 điểm, chùm tách thành lớp `cone`, vẽ một lần.
 - Phòng ngủ và bụi (Kiệt 02/11): bỏ đèn trần, nâng mái để rèm không đè lên xà, viền tối phủ suốt chiều cao nên hết ô vuông quanh tranh cũ, rương đồ dời lên khỏi thanh Nhiệm vụ. Bụi, mây, đèn nhà và quầng neon trước đây đứng yên vì view con không nhận giờ mới; nay nhận giờ từ `TimelineView`.
 - Koa ở sân khấu lâu hơn (Kiệt 02/11): sân khấu là chỗ về duy nhất, đứng 16–34 giây một lượt, đi xem đồ cách nhau ít nhất 75 giây và xem xong về thẳng. Ngồi cạnh cửa sổ khi mệt không còn.

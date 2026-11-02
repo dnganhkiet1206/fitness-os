@@ -21,13 +21,14 @@ import Testing
     #expect(abs(KoaPull.panel(at: KoaPull.end) - 1) < 0.001)
   }
 
-  @Test func koaCrouchesThenRunsTowardTheCameraAndLeavesTheFrame() {
+  @Test func koaCrouchesThenTrotsDownWithoutLoomingAtTheViewer() {
     let crouch = at(KoaPull.anticipate / 2)
     #expect(crouch.stretchY < 1 && crouch.stretchX > 1, "lấy đà")
     let running = at(KoaPull.anticipate + KoaPull.hopOff * 0.5)
     #expect(running.running && running.stretchY > 1, "giãn dài khi phóng lên")
     let near = at(KoaPull.runEnd)
-    #expect(near.scale > 2, "to dần về phía máy")
+    #expect(near.scale < 0.6 * 1.3, "không lao vào máy: vật to dần về phía mắt làm giật mình")
+    #expect(running.expression != .tease && at(KoaPull.peekEnd).expression == .tease, "mặt thách đểu để dành lúc thò đầu")
     #expect(near.y > 912, "khuất dưới mép màn trước khi thò đầu lên")
   }
 
@@ -37,12 +38,11 @@ import Testing
     #expect(contact.stretchY < 1 && contact.stretchX > 1, "bẹp xuống lúc chạm đất")
     let scales = [a, a + KoaPull.strideOne, a + KoaPull.strideOne + KoaPull.strideTwo].map { at($0 + 0.001).scale }
     #expect(scales[0] < scales[1] && scales[1] < scales[2])
-    let gaps = [scales[1] - scales[0], scales[2] - scales[1]]
-    #expect(gaps[1] > gaps[0], "càng gần máy càng to nhanh")
   }
 
-  @Test func diveSmearsLong() {
-    #expect(at(KoaPull.runEnd - 0.01).stretchY > 1.4)
+  @Test func runStaysGentle() {
+    #expect(at(KoaPull.runEnd - 0.01).stretchY < 1.1)
+    #expect(KoaPull.runEnd > 1.5, "không vụt qua trong nháy mắt")
   }
 
   @Test func headFollowsTheCardEdge() {

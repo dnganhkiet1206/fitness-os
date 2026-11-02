@@ -5,11 +5,13 @@ public import Foundation
 /// theo đường cong về phía máy, thụp xuống, thò đầu lên TRƯỚC khi thẻ nhúc nhích, kéo hai nhịp
 /// (nhịp sau mạnh hơn) và nảy qua đích một chút rồi lắng.
 public enum KoaPull {
-  public static let anticipate = 0.34
-  public static let hopOff = 0.3
-  public static let strideOne = 0.2
-  public static let strideTwo = 0.18
-  public static let dive = 0.14
+  // Koa tung tăng tới mép dưới, không lao vào máy (Kiệt 02/11): vật to dần về phía mắt làm người
+  // ta giật mình, nên cỡ gần như giữ nguyên, nhịp chậm, mặt vui; mặt thách đểu để dành lúc thò đầu.
+  public static let anticipate = 0.45
+  public static let hopOff = 0.42
+  public static let strideOne = 0.32
+  public static let strideTwo = 0.3
+  public static let dive = 0.28
   public static var run: Double { hopOff + strideOne + strideTwo + dive }
   public static let duck = 0.1
   public static let peek = 0.24
@@ -42,6 +44,7 @@ public enum KoaPull {
     public var panel: Double
     /// Tay đã bám mép bảng.
     public var hands: Bool
+    public var expression: KoaFlags.Expression
   }
 
   static func ease(_ t: Double) -> Double {
@@ -70,22 +73,20 @@ public enum KoaPull {
   ) -> Shot {
     let edge = height - panelHeight * panel(at: t)
     if t < anticipate {
-      // liếc người xem, ngả ra sau, nén người như lò xo; nén sâu rồi mới bung
+      // liếc người xem, nhún nhẹ lấy đà
       let c = ease(t / anticipate)
       return Shot(
-        x: start.x - 7 * c, y: start.y + 14 * c, scale: start.scale, angle: -9 * c, stretchX: 1 + 0.16 * c,
-        stretchY: 1 - 0.2 * c, running: false, panel: 0, hands: false)
+        x: start.x - 4 * c, y: start.y + 7 * c, scale: start.scale, angle: -4 * c, stretchX: 1 + 0.07 * c,
+        stretchY: 1 - 0.09 * c, running: false, panel: 0, hands: false, expression: .happy)
     }
     if t < duckEnd {
-      // từng cú phóng về phía máy: cỡ tăng theo cấp số, mỗi cú to hơn cú trước; phóng đều trông như
-      // chậm lại nên khoảng cách cũng dài dần
       let s = start.scale, cx = width / 2
       let keys: [(x: Double, y: Double, scale: Double, arc: Double, length: Double)] = [
         (start.x, start.y, s, 0, 0),
-        (start.x + (cx - start.x) * 0.5, height * 0.66, s * 1.3, 96, hopOff),
-        (cx, height * 0.74, s * 1.8, 62, strideOne),
-        (cx, height * 0.88, s * 2.6, 44, strideTwo),
-        (cx, height + 260, s * 4.4, 0, dive),
+        (start.x + (cx - start.x) * 0.5, height * 0.62, s * 1.04, 40, hopOff),
+        (cx, height * 0.7, s * 1.1, 30, strideOne),
+        (cx, height * 0.8, s * 1.16, 24, strideTwo),
+        (cx, height + 200, s * 1.22, 0, dive),
       ]
       var at = anticipate
       for k in 1..<keys.count {
@@ -97,11 +98,11 @@ public enum KoaPull {
           // chạm đất: bẹp xuống trong vài khung đầu của cú sau, rồi bung dài khi lên cao
           let contact = k > 1 ? max(0, 1 - (t - at) / 0.07) : 0
           let dive = k == keys.count - 1
-          let stretch = dive ? 0.55 * p : 0.2 * c
+          let stretch = dive ? 0.06 * p : 0.1 * c
           return Shot(
             x: a.x + (b.x - a.x) * p, y: a.y + (b.y - a.y) * grow - b.arc * c, scale: a.scale + (b.scale - a.scale) * grow,
-            angle: (k % 2 == 0 ? -1 : 1) * 7 * c, stretchX: 1 - stretch * 0.6 + 0.2 * contact,
-            stretchY: 1 + stretch - 0.24 * contact, running: true, panel: 0, hands: false)
+            angle: (k % 2 == 0 ? -1 : 1) * 4 * c, stretchX: 1 - stretch * 0.6 + 0.1 * contact,
+            stretchY: 1 + stretch - 0.12 * contact, running: true, panel: 0, hands: false, expression: .happy)
         }
         at += b.length
       }
@@ -119,6 +120,6 @@ public enum KoaPull {
     angle += 7 * hop
     return Shot(
       x: width / 2, y: y, scale: scale, angle: angle, stretchX: 1 + 0.05 * hop, stretchY: 1 - 0.06 * hop, running: false,
-      panel: panel(at: t), hands: t >= duckEnd + peek * 0.5)
+      panel: panel(at: t), hands: t >= duckEnd + peek * 0.5, expression: .tease)
   }
 }
