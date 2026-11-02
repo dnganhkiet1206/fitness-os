@@ -94,6 +94,17 @@ jobs:
           # launch argument mà phiên bản Maestro truyền.
           xcrun simctl spawn "$udid" defaults write "$BUNDLE_ID" uiTestFakeBackend -bool YES
 
+      - name: Test SwiftUI trong app (ASCNDTests)
+        working-directory: apps/ios
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project ASCND.xcodeproj -scheme ASCND -configuration Debug \
+            -destination "id=$SIM" \
+            -derivedDataPath "$RUNNER_TEMP/dd-test" \
+            CODE_SIGNING_ALLOWED=NO \
+            | grep -E " error:|Test run with|✘|TEST (SUCCEEDED|FAILED)"
+
       - name: Cài Maestro CLI (bộ cài chính thức, ghim phiên bản)
         run: |
           curl -fsSL "https://get.maestro.mobile.dev" -o "$RUNNER_TEMP/maestro-install.sh"

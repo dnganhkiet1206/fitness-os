@@ -1,0 +1,37 @@
+# Chạm trong phòng Koa: chạm sàn sau bục thì Koa xuống sàn, chạm bục thì Koa về bục. Lỗi vùng
+# chạm (#778) không test tầng Core nào thấy được vì nằm ở thứ tự `.offset` của SwiftUI.
+appId: com.ascnd.fitnessos.dev
+name: Tapping the room floor and the podium moves Koa
+---
+- launchApp:
+    stopApp: true
+    arguments:
+      uiTestFakeBackend: true
+      koaBench: live
+      AppleLanguages: "(en)"
+      AppleLocale: en_US
+    permissions:
+      all: deny
+# `koaBench live` tự mở phòng. Koa luôn chuyển động nên không chờ màn đứng yên.
+- extendedWaitUntil:
+    visible:
+      id: koa.stage.stage
+    timeout: 45000
+# Toạ độ theo % màn: phòng tràn viền, co theo bề ngang nên hai điểm này giữ đúng chỗ trên iPhone.
+# Điểm sàn nằm bên phải Koa: chạm trúng người Koa là chọc Koa, không phải gọi đi.
+- tapOn:
+    point: 70%,45%
+    waitToSettleTimeoutMs: 500
+- extendedWaitUntil:
+    visible:
+      id: koa.stage.floor
+    timeout: 15000
+- takeScreenshot: 09-floor
+- tapOn:
+    point: 50%,52%
+    waitToSettleTimeoutMs: 500
+- extendedWaitUntil:
+    visible:
+      id: koa.stage.stage
+    timeout: 15000
+- takeScreenshot: 09-stage

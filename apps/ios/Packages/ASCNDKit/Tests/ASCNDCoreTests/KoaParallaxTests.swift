@@ -140,6 +140,28 @@ struct KoaParallaxTests {
     #expect(abs(c.shot().zoom - KoaParallax.overscan) < 0.001)
   }
 
+  /// Điểm chạm trên vùng sàn của một chỗ trong phòng, đúng như người xem thấy khi phòng phóng sẵn.
+  private func tap(_ x: Double, _ y: Double, zoom: Double, k: Double = 1.077, top: Double = 360) -> KoaRoomMap.Spot {
+    let cx = StudioScene.width / 2, cy = KoaParallax.anchorY
+    let shownX = cx + (x - cx) * zoom, shownY = cy + (y - cy) * zoom
+    return KoaParallax.floorTap(x: shownX * k, y: (shownY - top) * k, scale: k, top: top, zoom: zoom)
+  }
+
+  @Test(arguments: [1, KoaParallax.overscan])
+  func tappingThePodiumReachesTheStage(zoom: Double) {
+    for (x, y) in [(195.0, 412.0), (195.0, 460.0), (120.0, 440.0), (270.0, 440.0)] {
+      #expect(tap(x, y, zoom: zoom).plane == .stage, "\(x), \(y)")
+    }
+  }
+
+  @Test(arguments: [1, KoaParallax.overscan])
+  func tappingBehindThePodiumStaysOnTheFloor(zoom: Double) {
+    let s = tap(222, 372, zoom: zoom)
+    #expect(s.plane == .floor)
+    #expect(abs(s.x - 222) < 1)
+    #expect(abs(s.d - 372) < 1)
+  }
+
   @Test func tiltForgetsTheWayThePhoneIsHeld() {
     var t = KoaParallax.Tilt()
     t.step(1.0 / 30, roll: 0.5)
