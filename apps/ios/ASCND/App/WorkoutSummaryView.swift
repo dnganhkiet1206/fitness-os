@@ -76,6 +76,8 @@ public struct WorkoutSummaryView: View {
     let fullWeek: Bool
     /// Ngày tập liền thứ mấy (gồm hôm nay); quá `maxActiveStreak` thì buổi không có Gains.
     let streak: Int
+    /// Hôm nay đã có buổi trước: buổi này không có thưởng.
+    var repeatSession = false
     var overtrained: Bool { streak > KoaGains.maxActiveStreak }
     var delta: Int { after.points - before.points }
     var raw: Int {
@@ -87,6 +89,12 @@ public struct WorkoutSummaryView: View {
   private var gains: GainsGain? {
     guard let h = services?.koaGainsHistory else { return nil }
     let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
+    if KoaGains.hasEarlierSession(h.days, on: today, before: summary.dateTime) {
+      let state = KoaGains.compute(h.days, week: h.week, today: today)
+      return GainsGain(
+        before: state, after: state, planned: false, pr: false, overload: false, fullWeek: false, streak: 0,
+        repeatSession: true)
+    }
     let past = h.days.filter { $0.date != today }
     let todayPR = summary.prDetected || h.days.contains { $0.date == today && $0.personalRecord }
     let todayOverload = h.days.contains { $0.date == today && $0.overload }
@@ -123,7 +131,9 @@ public struct WorkoutSummaryView: View {
           .frame(height: 150)
           .accessibilityHidden(true)
         Text(
-          g.overtrained
+          g.repeatSession
+            ? String(localized: "koa.gains.second")
+            : g.overtrained
             ? String(localized: "koa.gains.restNeeded \(g.streak)")
             : rankUp
               ? String(localized: "koa.gains.newRank \(rank.name(lang))")
@@ -132,7 +142,10 @@ public struct WorkoutSummaryView: View {
         .font(.system(size: 22, weight: .heavy))
         .foregroundStyle(DS.Color.foreground.swiftUI)
         // Quá ngày tập liền (29/10, Kiệt): nói vì sao không có Gains thay cho bảng cộng.
-        Text(verbatim: g.overtrained ? String(localized: "koa.gains.restWhy") : parts.joined(separator: " · "))
+        Text(
+          verbatim: g.repeatSession
+            ? String(localized: "koa.gains.secondWhy")
+            : g.overtrained ? String(localized: "koa.gains.restWhy") : parts.joined(separator: " · "))
           .font(DS.TextStyle.footnote)
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
           .multilineTextAlignment(.center)

@@ -89,6 +89,10 @@ struct MascotRoomView: View {
         await services.loadKoaDust(userId: room.userId)
       }
       #if DEBUG
+        // soát phòng ngủ: ép giờ ngủ mà không chờ tới đêm
+        .task {
+          if ProcessInfo.processInfo.arguments.contains("-koaForceSleep") { devEmotion = .sleep }
+        }
         // soát cảnh kéo thẻ từng khung: tự bấm nút sau vài giây
         .task {
           guard ProcessInfo.processInfo.arguments.contains("-koaAutoPull") else { return }
@@ -152,7 +156,7 @@ struct MascotRoomView: View {
         if let pullStart {
           KoaPullScene(
             start: pullStart, lens: lens, equipped: shop?.inventory.filter(\.equipped).map(\.itemKey) ?? [],
-            build: room.gains.rank, taunt: pullTaunt, close: closePanel
+            build: room.gains.rank, asleep: lens.bedroom, taunt: pullTaunt, close: closePanel
           ) {
             ScrollView { sheet }
               .refreshable {
@@ -161,6 +165,7 @@ struct MascotRoomView: View {
                 await services.loadKoaDust(userId: room.userId)
               }
           }
+          .transition(lens.bedroom ? .move(edge: .bottom) : .opacity)
         }
       }
     }
@@ -319,7 +324,7 @@ struct MascotRoomView: View {
           ? nil : KoaCompanion.Facts(gains: room.gains, today: room.today, mood: moodRead.reason),
         userId: room.userId, sleep: KoaMood.SleepWindow(profile: profile?.profile),
         talkLine: { KoaTalkLine.text($0, signals: room.signals, profile: profile?.profile) }, lens: lens,
-        offStage: pullStart != nil)
+        offStage: pullStart != nil && !lens.bedroom)
         .sensoryFeedback(.selection, trigger: boardStat)
   }
 
@@ -1426,6 +1431,12 @@ enum StudioPlans {
 
   static func objects(_ o: StudioScene.Options, _ indices: Set<Int>) -> [KoaPaint.Op] {
     plan(Key(options: o, only: indices)) { StudioScene.objects(o, indices) }
+  }
+
+  static func attic(light: Bool) -> [KoaPaint.Op] {
+    var o = StudioScene.Options()
+    o.light = light
+    return plan(Key(options: o, only: nil, layer: "attic")) { KoaBedroom.tall(light: light) }
   }
 
   static func tall(_ o: StudioScene.Options, _ id: String) -> [KoaPaint.Op] {

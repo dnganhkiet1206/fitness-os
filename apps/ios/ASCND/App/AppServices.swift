@@ -559,6 +559,9 @@ final class AppServices {
   /// Làm theo gợi ý tăng tải: +20 xu, và ngày ấy +3 Gains (Gains đọc lại từ sổ xu).
   func claimOverload(userId: String, date: LocalDate, insights: InsightBook) async {
     guard OverloadQuest.achieved(on: date, insights.performances) else { return }
+    // chỉ buổi đầu trong ngày có thưởng; 30 giây để không tính nhầm chính buổi vừa xong
+    let cutoff = EpochMillis(Date()) - 30_000
+    if let h = koaGainsHistory, KoaGains.hasEarlierSession(h.days, on: date, before: cutoff) { return }
     guard let amount = await claimOnce(userId: userId, ref: OverloadQuest.refKey(date), reason: "overload") else { return }
     if let h = koaGainsHistory { koaGainsHistory = .init(days: KoaGainsSync.mark(h.days, overload: [date]), week: h.week) }
     noteKoaReward(userId: userId, amount: amount, seen: true, source: "overload")

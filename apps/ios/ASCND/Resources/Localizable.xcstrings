@@ -63491,6 +63491,52 @@
     }
    }
   },
+  "koa.gains.second": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Second session today"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Buổi thứ hai hôm nay"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Segunda sesión de hoy"
+     }
+    }
+   }
+  },
+  "koa.gains.secondWhy": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Gains count for your first session each day. Koa still saw the effort."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Gains chỉ cộng cho buổi đầu mỗi ngày. Koa vẫn thấy bạn chăm lắm."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Los Gains cuentan solo la primera sesión del día. Koa vio tu esfuerzo."
+     }
+    }
+   }
+  },
   "koa.say.night": {
    "extractionState": "manual",
    "localizations": {

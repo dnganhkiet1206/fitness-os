@@ -256,14 +256,15 @@ final class KoaDirectorDriver {
   /// Người xem chọc Koa: đáp ngay, không tính vào lịch nói.
   func poked() {
     guard speech == nil else { return }
-    speak(KoaTalk.Beat(topic: .poke, variant: Int.random(in: 0..<KoaTalk.variants(.poke))))
+    let probe = KoaTalk.Beat(topic: .poke, variant: Int.random(in: 0..<KoaTalk.variants(.poke)))
+    speak(KoaTalk.Beat(topic: .poke, variant: probe.variant, line: lineOf?(probe) ?? ""))
   }
 
   private static func talkKey(_ userId: String) -> String { "koa.talk.\(userId)" }
 
   private func speak(_ beat: KoaTalk.Beat) {
     talkStart = Date.timeIntervalSinceReferenceDate
-    director.blink()
+    if !KoaFlags.eyesClosed(KoaTalk.face(beat.topic).peak) { director.blink() }
     Task { @MainActor in self.speech = beat }
   }
 
@@ -280,8 +281,8 @@ final class KoaDirectorDriver {
         Task { @MainActor in self.speech = nil }
       } else {
         f.expression = beat.expression(at: t)
-        // đầu gật nhẹ theo câu, tai và thân theo sau
-        if KoaTalk.face(beat.topic).flaps { f.gaze.head.y += 0.04 * sin(t * 11) }
+        // nói là miệng nói: người gần như yên, đầu chỉ gật rất nhẹ theo câu
+        if KoaTalk.face(beat.topic).flaps { f.gaze.head.y += 0.012 * sin(t * 3.4) }
         return
       }
     }
@@ -306,8 +307,9 @@ final class KoaDirectorDriver {
     if !talkLog.userId.isEmpty, let data = try? JSONEncoder().encode(talkLog) {
       UserDefaults.standard.set(data, forKey: Self.talkKey(talkLog.userId))
     }
-    let beat = KoaTalk.Beat(topic: topic, variant: Int.random(in: 0..<KoaTalk.variants(topic)))
-    guard lineOf?(beat) != nil else { return }
+    let probe = KoaTalk.Beat(topic: topic, variant: Int.random(in: 0..<KoaTalk.variants(topic)))
+    guard let line = lineOf?(probe) else { return }
+    let beat = KoaTalk.Beat(topic: topic, variant: probe.variant, line: line)
     plan.spoke(at: now, seconds: beat.seconds)
     talkPlan = plan
     speak(beat)

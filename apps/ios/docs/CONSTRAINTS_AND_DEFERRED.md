@@ -431,13 +431,18 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 **Koa kéo thẻ nhiệm vụ, khung dọc của phòng (01/11, Kiệt):**
 - Bấm "Nhiệm vụ": Koa nhún lấy đà, chạy về phía máy, to dần, thụp khỏi màn, thò đầu lên mép thẻ rồi kéo hai nhịp, thẻ nảy qua đích rồi lắng (`KoaPull`, thuần theo thời gian). Mặt `tease` vẽ thêm: miệng nhếch thè lưỡi. Câu khích theo số việc thật. Bảng là view tự vẽ, không còn sheet hệ thống, để Koa nằm sau mép bảng.
 - Đóng bảng: kéo tay nắm xuống, hoặc chạm phòng sau khi cảnh diễn xong. Đóng xong Koa hiện lại trên sân khấu, chưa có cảnh quay về.
-- Giảm chuyển động: không có Koa chạy, bảng hiện ngay.
+- Giảm chuyển động, hay Koa đang ngủ: không có Koa chạy, bảng trượt lên (Kiệt báo hai Koa cùng hiện lúc Koa ngủ, đã sửa).
+- Đi ngủ và dậy: tường cao, sàn, gác mái lia cùng sân khấu (Kiệt báo lỗi chuyển cảnh, đã sửa).
+- Koa ở sân khấu lâu hơn (Kiệt 02/11): sân khấu là chỗ về duy nhất, đứng 16–34 giây một lượt, đi xem đồ cách nhau ít nhất 75 giây và xem xong về thẳng. Ngồi cạnh cửa sổ khi mệt không còn.
+- Koa nói kiểu Duolingo (Kiệt 02/11): miệng theo đúng chữ trong câu (`KoaTalk.visemes`, ba khẩu hình và khép môi), người gần như yên. Câu dài nói lâu hơn. Mặt mệt, mặt lo không mấp máy. Không có âm thanh giọng nói, chỉ khớp theo chữ.
+- Mở phòng, Koa nhảy liên hồi (Kiệt 02/11): `KoaPop` nảy mỗi lần đổi nét mặt, miệng lúc nói đổi ~8 lần / giây. Trong phòng đã tắt. Phòng bẩn có thêm bụi xám lơ lửng theo mức bụi (24 hạt mỗi mức), ngoài lớp bụi bám trên đồ.
+- Chống gian lận Gains (Kiệt 02/11): chỉ buổi tạ đầu trong ngày có thưởng. Điểm buổi vốn tính một ngày một lần; nay bỏ cả +4 kỷ lục và +3 Gains, +20 xu tăng tải của buổi sau, màn tổng kết nói rõ không cộng. Đi bộ / cardio từ Health đến trước không chiếm suất buổi tạ. Tính lại từ đầu nên tài khoản test có thể mất ít Gains kỷ lục cũ, chỉ một lần. Thưởng nằm ở app như mọi Gains: server chưa chặn. Buổi ghi tay cũng tính chung.
 - Phòng tập vẽ lại theo mock đã duyệt (`StudioTall`): tường, cửa sổ vòm, trời, thành phố, đèn thả, sàn, bảng hiệu lớn là tranh mới, mỗi thứ một tầng máy quay. Bục ở 3/4 màn. Kệ, cây, bóng, bục, bảng số giữ tranh cũ để đồ phòng đã mua, lớp che và bản đồ đi lại không đổi; chưa vẽ lại các món này. Ai mua cửa sổ biển / núi hay đèn khác thì món ấy vẫn nằm đúng chỗ cũ, nhỏ hơn cửa sổ mới, trông lệch với tranh mới.
 - Kiệt bỏ hai bóng tiền cảnh mờ (01/11): đã xoá, parallax còn tầng tường, cửa sổ, thành phố, đèn, đồ, bục. Ghi chú "tiền cảnh mờ" ở mục trên không còn đúng.
-- Phòng ngủ chưa vẽ khung dọc: phần trên và dưới tranh ngủ là nền phẳng cùng màu.
+- ~~Phòng ngủ chưa vẽ khung dọc: phần trên và dưới tranh ngủ là nền phẳng cùng màu.~~ 02/11: gác mái khung dọc (`KoaBedroom.tall`): mái dốc lên tới nóc, rầm mái, đèn lồng, sàn tới đáy màn, rương đồ. Tranh giường, Koa ngủ, cửa sổ, đồ động giữ nguyên.
 - Đợt chỉnh theo góp ý Kiệt 02/11: đoạn chạy làm lại (lấy đà, nhảy khỏi bục, hai cú phóng to dần, lao khỏi màn có khung giãn, bụi ở chỗ chạm sàn); đoạn cầm thẻ giữ nguyên vì Kiệt đã duyệt. Bảng hiệu vẽ lại, treo dưới nút quay lại. Phòng có tường bên và trần hội tụ, bóng đổ dưới đồ vật, chân tường tối dần, mây trôi, đèn nhà bật tắt, bụi trong chùm đèn, neon chập chờn. Koa to thêm 10 % (152 điểm) cho khớp tỉ lệ phòng mới; đồ mặc vẽ chung nên to theo. Kệ, cây, bóng giữ cỡ cũ.
 - Cảnh Koa đi ngủ dùng cỡ riêng (`KoaBedtime`), chưa chỉnh theo 152 điểm: có thể thấy Koa nhỏ đi một chút khi sang cảnh ngủ.
-- **NOT RUN:** phòng ngủ trong khung dọc (cảnh đi ngủ, tường cao đổi màu); xem từng khung cảnh chạy (mới xem kết quả cuối, chưa có video tốt); mặt `tease` nháy mắt chưa hiện, hai mắt vẫn mở; đồ phòng đã mua trong tranh mới; iPhone thật; VoiceOver với bảng tự vẽ; cỡ màn khác; CPU.
+- **NOT RUN:** phòng ngủ trong khung dọc (cảnh đi ngủ, tường cao đổi màu); xem từng khung cảnh chạy (mới xem kết quả cuối, chưa có video tốt); đồ phòng đã mua trong tranh mới; iPhone thật; VoiceOver với bảng tự vẽ; cỡ màn khác; CPU.
 
 ## 5. Lịch sử thay đổi sổ
 

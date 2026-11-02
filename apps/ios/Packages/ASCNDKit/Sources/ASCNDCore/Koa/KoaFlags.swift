@@ -9,7 +9,7 @@ public enum KoaFlags {
     /// Vẽ thêm (01/11): `content` là mặt nghỉ, `warm` cười khép mắt nhẹ, `sheepish` ái ngại,
     /// `sleepy` buồn ngủ, `thinking` nghĩ, `say1…3` ba khẩu hình lúc nói.
     case content, warm, sheepish, sleepy, thinking, say1, say2, say3
-    /// Nháy mắt nhếch mép thè lưỡi: lúc Koa kéo thẻ nhiệm vụ lên.
+    /// Nhướn mày nhếch mép thè lưỡi: lúc Koa kéo thẻ nhiệm vụ lên.
     case tease
   }
 
@@ -91,6 +91,9 @@ public enum KoaFlags {
     .relaxing: "animation:koaSitBreath 3.6s ease-in-out infinite;transform-box:view-box",
   ]
 
+  /// Nét mặt nhắm mắt: không có gì để chớp, không được ép chớp.
+  public static func eyesClosed(_ e: Expression?) -> Bool { e == .grin || e == .warm || e == .meditate }
+
   /// `koaFlags`.
   public static func flags(_ e: Expression, _ p: Pose, worn: Worn = [:]) -> Flags {
     var f: Flags = [:]
@@ -113,7 +116,7 @@ public enum KoaFlags {
     f["eyesArc"] = b(e == .grin || e == .warm)
     f["eyesStar"] = b(e == .delighted)
     f["lidsHalf"] = b(e == .confident || e == .strain || e == .thinking)
-    f["lidsWink"] = b(e == .happytired || e == .tease)
+    f["lidsWink"] = b(e == .happytired)
     f["blinkGate"] = s(e == .happytired ? "animation:koaWinkOff 9s ease-in-out infinite" : "")
     f["lidsHeavy"] = b(e == .tired || e == .sleepy)
     f["lidsSad"] = b(e == .sad)

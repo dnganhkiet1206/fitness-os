@@ -4,12 +4,15 @@ import SwiftUI
 
 /// Cảnh Koa chạy tới kéo thẻ nhiệm vụ lên (`KoaPull`) và bảng nội dung đi theo. Koa của cảnh nằm
 /// SAU bảng nên chỉ thò đầu lên khỏi mép, hai tay vẽ TRƯỚC bảng để bám được vào mép.
-/// Giảm chuyển động: không có Koa chạy, bảng hiện ngay. Kéo bảng xuống hoặc chạm phòng để đóng.
+/// Giảm chuyển động, hay Koa đang ngủ: không có Koa chạy, bảng trượt lên. Kéo bảng xuống hoặc chạm
+/// phòng để đóng.
 struct KoaPullScene<Content: View>: View {
   let start: Date
   let lens: KoaLens
   var equipped: [String] = []
   var build = 0
+  /// Koa đang ở phòng ngủ.
+  var asleep = false
   let taunt: String
   let close: () -> Void
   @ViewBuilder var content: Content
@@ -17,6 +20,8 @@ struct KoaPullScene<Content: View>: View {
   @Environment(\.colorScheme) private var scheme
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var drag = 0.0
+  /// Koa đang ngủ thì không có cảnh chạy tới: thẻ tự trượt lên, Koa ngủ tiếp.
+  private var quiet: Bool { reduceMotion || asleep }
   /// Rung theo từng nhịp kéo.
   @State private var tugs = 0
 
@@ -26,24 +31,24 @@ struct KoaPullScene<Content: View>: View {
     GeometryReader { g in
       let w = Double(g.size.width), h = Double(g.size.height + g.safeAreaInsets.top + g.safeAreaInsets.bottom)
       let panelHeight = h * 0.66
-      TimelineView(.animation(paused: reduceMotion)) { tl in
-        let t = reduceMotion ? KoaPull.end : tl.date.timeIntervalSince(start)
+      TimelineView(.animation(paused: quiet)) { tl in
+        let t = quiet ? KoaPull.end : tl.date.timeIntervalSince(start)
         let shot = KoaPull.shot(at: t, start: head(w), width: w, height: h, panelHeight: panelHeight)
         let top = h - panelHeight * shot.panel + drag
         ZStack(alignment: .topLeading) {
           Color.black.opacity(0.35 * min(1, max(0, shot.panel)))
             .contentShape(Rectangle())
             .onTapGesture { if t >= KoaPull.end { close() } }
-          if !reduceMotion {
+          if !quiet {
             StudioDust(t: t, start: head(w), width: w, height: h)
             figure(shot, width: w, height: h, t: tl.date.timeIntervalSinceReferenceDate)
               .offset(y: drag)
           }
           panel(height: panelHeight, top: top)
-          if !reduceMotion, shot.hands {
+          if !quiet, shot.hands {
             hands(w, top: top, grip: shot.stretchY)
           }
-          if t >= KoaPull.tugTwoEnd, !reduceMotion {
+          if t >= KoaPull.tugTwoEnd, !quiet {
             bubble.position(x: w / 2 + 92, y: top - 118)
               .transition(.scale(scale: 0.6, anchor: .bottom).combined(with: .opacity))
           }
@@ -54,7 +59,7 @@ struct KoaPullScene<Content: View>: View {
     .ignoresSafeArea()
     .sensoryFeedback(.impact(weight: .medium), trigger: tugs)
     .task {
-      guard !reduceMotion else { return }
+      guard !quiet else { return }
       try? await Task.sleep(for: .seconds(KoaPull.peekEnd))
       tugs += 1
       KoaSound.boop()

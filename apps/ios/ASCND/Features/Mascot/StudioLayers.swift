@@ -164,7 +164,7 @@ final class KoaTiltSensor {
 
 /// Phòng khung dọc theo mock đã duyệt (`StudioTall`): vẽ mới tường, cửa sổ, trời, thành phố, sàn và
 /// đèn, mỗi thứ một tầng máy quay. Kệ, cây, bục, bảng số do `MascotStage` vẽ đè lên, nên đồ phòng đã
-/// mua và đường đi của Koa giữ nguyên. Phòng ngủ chưa vẽ khung dọc: dùng nền phẳng cùng màu.
+/// mua và đường đi của Koa giữ nguyên. Gác mái nằm bên phải; đi ngủ thì cả hai lia ngang cùng sân khấu.
 struct StudioTallRoom: View {
   /// Tranh gốc hạ xuống bao nhiêu điểm.
   let drop: CGFloat
@@ -174,41 +174,53 @@ struct StudioTallRoom: View {
 
   var body: some View {
     GeometryReader { g in
-      let k = Double(g.size.width) / StudioScene.width
-      if lens.bedroom {
-        let c = KoaBedroom.tallColors(light: scheme == .light)
-        VStack(spacing: 0) {
-          Color(hex: c.wall).frame(height: drop + 60)
-          Color(hex: c.floor)
-        }
-      } else {
-        let options = lens.options
-        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: reduceMotion)) { _ in
-          let shot = lens.shot
-          ZStack(alignment: .topLeading) {
-            ForEach(StudioTall.layers) { layer in
-              StudioTallImage(options: options, layer: layer.id, drop: Double(drop)).equatable()
-                .frame(width: g.size.width, height: g.size.height)
-                .offset(x: shot.shift(layer.plane.amp) * k)
-              // đồ động chen đúng tầng: mây sau thành phố, đèn nhà trên thành phố, bụi trong chùm đèn
-              if !reduceMotion, ["sky", "city", "lamp"].contains(layer.id) {
-                StudioLive(layer: layer.id, night: !options.light, drop: Double(drop), k: k, lamp: options.lamp)
-                  .frame(width: g.size.width, height: g.size.height)
-                  .offset(x: shot.shift(layer.plane.amp) * k)
-              }
-              if !reduceMotion, layer.id == "wall", !options.light {
-                StudioNeon(drop: Double(drop), k: k)
-                  .frame(width: g.size.width, height: g.size.height)
-                  .offset(x: shot.shift(layer.plane.amp) * k)
-              }
-            }
-          }
-          .scaleEffect(shot.zoom, anchor: UnitPoint(x: 0.5, y: (KoaParallax.anchorY * k + Double(drop)) / Double(g.size.height)))
-        }
+      let width = g.size.width
+      let asleep = lens.bedroom
+      ZStack(alignment: .topLeading) {
+        studio(g.size, paused: reduceMotion || asleep)
+          .offset(x: asleep ? -width : 0)
+        StudioAttic(light: scheme == .light, drop: Double(drop)).equatable()
+          .offset(x: asleep ? 0 : width)
+        // mảng tường tiền cảnh của cảnh đi ngủ: sân khấu tự vẽ phần của nó, đây là phần trên và dưới
+        Color(hex: KoaBedroom.wallColor(light: scheme == .light))
+          .frame(width: KoaBedtime.wall * width / StudioScene.width, height: g.size.height)
+          .offset(x: asleep ? -(KoaBedtime.wall + 8) * width / StudioScene.width : width + 8)
       }
+      .frame(width: width, height: g.size.height, alignment: .topLeading)
+      .clipped()
+      // cùng đường cong với sân khấu, để cả màn lia như một khung hình
+      .animation(reduceMotion ? nil : .timingCurve(0.42, 0, 0.58, 1, duration: KoaBedtime.pan), value: asleep)
     }
     .allowsHitTesting(false)
     .accessibilityHidden(true)
+  }
+
+  private func studio(_ size: CGSize, paused: Bool) -> some View {
+    let k = Double(size.width) / StudioScene.width
+    let options = lens.options
+    return TimelineView(.animation(minimumInterval: 1.0 / 30, paused: paused)) { _ in
+      let shot = lens.shot
+      ZStack(alignment: .topLeading) {
+        ForEach(StudioTall.layers) { layer in
+          StudioTallImage(options: options, layer: layer.id, drop: Double(drop)).equatable()
+            .frame(width: size.width, height: size.height)
+            .offset(x: shot.shift(layer.plane.amp) * k)
+          // đồ động chen đúng tầng: mây sau thành phố, đèn nhà trên thành phố, bụi trong chùm đèn
+          if !reduceMotion, ["sky", "city", "lamp"].contains(layer.id) {
+            StudioLive(
+              layer: layer.id, night: !options.light, drop: Double(drop), k: k, lamp: options.lamp, dust: options.dust)
+              .frame(width: size.width, height: size.height)
+              .offset(x: shot.shift(layer.plane.amp) * k)
+          }
+          if !reduceMotion, layer.id == "wall", !options.light {
+            StudioNeon(drop: Double(drop), k: k)
+              .frame(width: size.width, height: size.height)
+              .offset(x: shot.shift(layer.plane.amp) * k)
+          }
+        }
+      }
+      .scaleEffect(shot.zoom, anchor: UnitPoint(x: 0.5, y: (KoaParallax.anchorY * k + Double(drop)) / Double(size.height)))
+    }
   }
 }
 
@@ -220,6 +232,8 @@ private struct StudioLive: View {
   let drop: Double
   let k: Double
   let lamp: Bool
+  /// Mức bụi của phòng 0…3: bụi xám lơ lửng khắp phòng, bẩn càng nhiều.
+  var dust = 0
 
   var body: some View {
     let t = Date.timeIntervalSinceReferenceDate
@@ -247,6 +261,18 @@ private struct StudioLive: View {
           c.fill(Path(CGRect(x: w.0, y: w.1, width: 5, height: 7)), with: .color(Color(red: 1, green: 0.8, blue: 0.45)))
         }
       default:
+        // bụi của phòng bẩn: trôi chậm, thành đám, cả ngoài chùm đèn
+        for i in 0..<(dust * 24) {
+          let seed = Double(i) * 7.31 + 1.7
+          let life = (t * (0.012 + 0.012 * abs(sin(seed)))).truncatingRemainder(dividingBy: 1)
+          let y = 470 - fmod(abs(sin(seed * 2.3)) + life, 1) * 620
+          let x = 195 + sin(seed * 3.7) * 190 + sin(t * 0.3 + seed) * 12
+          let r = 1.3 + abs(sin(seed * 1.3)) * 2.1
+          c.opacity = (night ? 0.22 : 0.3) + 0.2 * abs(sin(t * 0.5 + seed))
+          c.fill(
+            Path(ellipseIn: CGRect(x: x - r, y: y - r, width: r * 2, height: r * 2)),
+            with: .color(night ? Color(red: 0.8, green: 0.76, blue: 0.7) : Color(red: 0.55, green: 0.47, blue: 0.38)))
+        }
         guard lamp else { return }
         for i in 0..<26 {
           let seed = Double(i) * 12.9898
@@ -283,6 +309,23 @@ private struct StudioNeon: View {
         with: .radialGradient(
           Gradient(colors: [Color(red: 0.56, green: 0.51, blue: 1), .clear]),
           center: CGPoint(x: s.x + s.w / 2, y: s.y + s.h / 2), startRadius: 20, endRadius: (s.w + 60) / 2))
+    }
+  }
+}
+
+/// Gác mái khung dọc, vẽ một lần.
+private struct StudioAttic: View, Equatable {
+  let light: Bool
+  let drop: Double
+
+  var body: some View {
+    let plan = StudioPlans.attic(light: light)
+    Canvas { ctx, canvas in
+      var c = ctx
+      let k = canvas.width / StudioScene.width
+      c.translateBy(x: 0, y: drop)
+      c.concatenate(CGAffineTransform(scaleX: k, y: k))
+      KoaCanvas.draw(plan, in: &c)
     }
   }
 }

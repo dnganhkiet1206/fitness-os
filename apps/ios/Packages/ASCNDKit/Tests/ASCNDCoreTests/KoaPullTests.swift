@@ -52,8 +52,9 @@ import Testing
     }
   }
 
-  @Test func teasingFaceWinks() {
+  @Test func teasingFaceKeepsItsEyesOpen() {
     let f = KoaFlags.flags(.tease, .idle)
-    #expect(f["mouthTease"]?.truthy == true && f["lidsWink"]?.truthy == true)
+    #expect(f["mouthTease"]?.truthy == true && f["eyesOpen"]?.truthy == true)
+    #expect(f["lidsWink"]?.truthy == false, "nháy mắt làm mắt đóng mở liên tục")
   }
 }
