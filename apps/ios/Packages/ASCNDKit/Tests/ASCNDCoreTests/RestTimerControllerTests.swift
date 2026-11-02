@@ -388,7 +388,7 @@ struct RestTimerControllerTests {
 @Suite struct RestRecordNoteTests {
   @Test func noteFollowsTheRestAndPickingKoa() async {
     let driver = FakeDriver()
-    let c = RestTimerController(driver: driver)
+    let c = RestTimerController(driver: driver, clock: TestClock(0))
     c.noteRecord("không có quãng nghỉ")
     #expect(c.recordNote == nil)
     c.handle(.start(seconds: 90), target: squat)
