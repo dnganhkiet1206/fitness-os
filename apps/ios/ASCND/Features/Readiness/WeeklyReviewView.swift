@@ -906,7 +906,7 @@ private struct WeekBars: View {
               .foregroundStyle(i == partial ? DS.Color.foreground.swiftUI : DS.Color.mutedForeground.swiftUI)
               .lineLimit(1)
               .minimumScaleFactor(0.5)
-            Text(verbatim: values[i] > 0 ? "\(WeeklyReviewView.plain(values[i]))\(unit)" : "·")
+            Text(verbatim: values[i] > 0 ? "\(WeeklyReviewView.n(values[i], 1))\(unit)" : "·")
               .font(.system(size: 9).monospacedDigit())
               .foregroundStyle(DS.Color.mutedForeground.swiftUI)
               .lineLimit(1)
