@@ -42,10 +42,8 @@ struct MascotRoomView: View {
   @AppStorage(KoaSound.offKey) private var soundOff = false
   /// Giờ hiện tại, đổi mỗi phút: tới giờ ngủ khi đang mở phòng thì Koa đi ngủ ngay.
   @State private var clock = Date.now
-  /// Bảng nội dung của phòng đang mở (01/11, Kiệt: phòng full màn, thẻ mở bằng nút).
   /// Lúc Koa bắt đầu chạy tới kéo bảng; `nil` = bảng đang đóng.
   @State private var pullStart: Date?
-  @Environment(\.colorScheme) private var scheme
   @State private var lens = KoaLens()
   /// Số trên bảng tường (29/10, Kiệt: người dùng chọn) — lưu trên máy.
   @AppStorage("koa.roomBoard") private var boardStat = RoomBoard.Stat.rank.rawValue
@@ -124,7 +122,7 @@ struct MascotRoomView: View {
         let drop = max(0, height * 0.75 - 436 * k)
         let _ = (lens.drop = drop)
         ZStack(alignment: .top) {
-          StudioFloorRun(drop: drop, wall: roomWall, lens: lens)
+          StudioTallRoom(drop: drop, lens: lens)
           stage
             // hai mép tranh tan vào tường cao và sàn, không lộ đường nối
             .mask {
@@ -135,7 +133,6 @@ struct MascotRoomView: View {
               }
             }
             .offset(y: drop)
-          StudioForeground(lens: lens)
         }
         .ignoresSafeArea()
       }
@@ -159,13 +156,6 @@ struct MascotRoomView: View {
         }
       }
     }
-  }
-
-  /// Màu tường của theme đang dùng, để tường cao liền với tranh.
-  private var roomWall: (String, String) {
-    let table = scheme == .light ? StudioScene.lightSkins : StudioScene.skins
-    let key = StudioScene.skinKey(equipped: Set(shop?.inventory.filter(\.equipped).map(\.itemKey) ?? []))
-    return (table[key] ?? table["default"]!).wall
   }
 
   /// Câu khích của Koa lúc kéo thẻ, theo số việc thật.
@@ -1001,8 +991,10 @@ struct MascotStage: View {
     // và koa bản cũ phải giữ y nguyên ở bản tối, bản buổi sáng mới là tắt đèn").
     // Cả hai bản có lớp chiều sâu.
     o.lamp = scheme == .dark
-    o.depth = true
+    o.depth = !walks
     o.lang = lang
+    // phòng chính: tường, cửa sổ, đèn, sàn đã vẽ mới ở `StudioTallRoom`
+    if walks { o.omit = StudioTall.omit(o) }
     return o
   }
 
@@ -1079,7 +1071,6 @@ struct MascotStage: View {
             }
           }
         }
-        .background(walks ? Self.floorEdge(light: scheme == .light) : .clear)
         // lia ngang: Koa đi sang phải, phòng trôi sang trái
         .visualEffect { content, proxy in content.offset(x: asleep ? -proxy.size.width : 0) }
       if asleep { KoaBedroomView(equipped: equipped, build: build, scene: bedScene, wake: wakeScene).transition(.move(edge: .trailing)) }
@@ -1105,6 +1096,7 @@ struct MascotStage: View {
     .clipped()
     .animation(reduceMotion ? nil : .timingCurve(0.42, 0, 0.58, 1, duration: KoaBedtime.pan), value: asleep)
     .onChange(of: bedShown, initial: true) { _, shown in lens?.bedroom = shown }
+    .onChange(of: studio, initial: true) { _, o in lens?.options = o }
     .onChange(of: inBedroom, initial: true) { old, now in
       if now {
         wakeScene = nil
@@ -1208,11 +1200,6 @@ struct MascotStage: View {
     }
   }
 
-  /// Màu nền dưới mép sàn của phòng chính, phần nằm dưới thẻ nội dung.
-  private static func floorEdge(light: Bool) -> Color {
-    light ? Color(red: 0.86, green: 0.8, blue: 0.72) : Color(red: 0.03, green: 0.04, blue: 0.11)
-  }
-
   private static func wallPlan(light: Bool) -> [KoaPaint.Op] {
     KoaPaint.plan(KoaRender.Element("Svg", kids: KoaBedroom.wall(light: light)))
   }
@@ -1279,7 +1266,7 @@ struct MascotStage: View {
         if layered {
           StudioLayers(
             options: backdrop, plantSway: director.swaying ? f?.plantSway ?? 0 : 0, shot: shot,
-            size: CGSize(width: width, height: height), light: scheme == .light)
+            size: CGSize(width: width, height: height), light: scheme == .light, showsHaze: false)
         } else if director.swaying {
           // lá cây đang rung (~3 giây): vẽ cả căn phòng đè lên phòng tĩnh, có cây đang lay. Trước đây
           // tách phần từ chậu cây trở lên sang lớp riêng: đèn và viền tối vẽ hai lớp nên độ sáng
@@ -1432,6 +1419,10 @@ enum StudioPlans {
 
   static func objects(_ o: StudioScene.Options, _ indices: Set<Int>) -> [KoaPaint.Op] {
     plan(Key(options: o, only: indices)) { StudioScene.objects(o, indices) }
+  }
+
+  static func tall(_ o: StudioScene.Options, _ id: String) -> [KoaPaint.Op] {
+    plan(Key(options: o, only: nil, layer: "tall." + id)) { StudioTall.tree(o, layer: id) }
   }
 
   static func layer(_ o: StudioScene.Options, _ id: String) -> [KoaPaint.Op] {

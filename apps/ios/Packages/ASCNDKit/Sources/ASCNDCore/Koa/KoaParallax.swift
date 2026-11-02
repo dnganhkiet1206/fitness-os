@@ -31,8 +31,6 @@ public enum KoaParallax {
     public static let props = Plane(amp: 10.5, lag: 0)
     /// Bục và vũng sáng: bằng sàn ở `y` 412, mặt bục.
     public static let stage = Plane(amp: floorAmp(412), lag: 0)
-    /// Tiền cảnh mờ sát ống kính: trôi nhiều nhất, ngược hẳn tường. Đây là thứ làm chiều sâu lộ rõ.
-    public static let foreground = Plane(amp: 34, lag: 0)
     /// Viền tối của ống kính: đứng yên với màn.
     public static let lens = Plane(amp: 0, lag: 0)
   }
