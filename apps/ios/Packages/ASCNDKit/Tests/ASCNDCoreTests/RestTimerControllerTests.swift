@@ -383,3 +383,44 @@ struct RestTimerControllerTests {
     #expect(c.timer == nil)
   }
 }
+
+@MainActor
+@Suite struct RestRecordNoteTests {
+  @Test func noteFollowsTheRestAndPickingKoa() async {
+    let driver = FakeDriver()
+    let c = RestTimerController(driver: driver)
+    c.noteRecord("không có quãng nghỉ")
+    #expect(c.recordNote == nil)
+    c.handle(.start(seconds: 90), target: squat)
+    await c.flush()
+    #expect(c.timer?.activityContent(target: squat).koa == .resting)
+    c.noteRecord("Squat 120 kg")
+    await c.flush()
+    #expect(driver.showing?.recordNote == "Squat 120 kg")
+    #expect(driver.showing?.koa == .record)
+    c.setPaused(true)
+    await c.flush()
+    #expect(driver.showing?.koa == .waiting)
+    c.handle(.start(seconds: 90), target: squat)
+    #expect(c.recordNote == nil, "set sau không mang kỷ lục của set trước")
+    c.handle(.cancel)
+    #expect(c.recordNote == nil)
+  }
+}
+
+@Suite struct RestKoaTests {
+  @Test func usesOnlyDrawnPoses() {
+    #expect(RestKoa.resting.emotion == .tired)
+    #expect(RestKoa.record.emotion == .celebrate)
+    #expect(RestKoa.waiting.emotion == .idle)
+  }
+
+  @Test func oldActivityStateStillDecodes() throws {
+    let old = RestActivityContent(endsAt: EpochMillis(1000), ringStart: EpochMillis(100), totalSeconds: 90, target: nil)
+    var json = try #require(try JSONSerialization.jsonObject(with: JSONEncoder().encode(old)) as? [String: Any])
+    json["recordNote"] = nil
+    let c = try JSONDecoder().decode(RestActivityContent.self, from: JSONSerialization.data(withJSONObject: json))
+    #expect(c.recordNote == nil)
+    #expect(c.koa == .resting)
+  }
+}

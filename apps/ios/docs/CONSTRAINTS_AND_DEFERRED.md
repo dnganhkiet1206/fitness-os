@@ -393,8 +393,18 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 
 - ~~Chạm bục không đưa Koa lên bục: vùng chạm cộng phần dời hai lần nên mọi chạm rơi về mép sàn.~~ Sửa 01/11, kiểm trên simulator: Koa từ sàn chạm mặt trước bục thì lên bục (`stage d 450`). **NOT RUN:** thiết bị thật.
 
+**Koa trong buổi tập (01/11, Kiệt duyệt mock A `https://claude.ai/artifact/QZ2hFxEFHiPqJGwpEm7Ez4`):**
+- Màn khoá: Koa thay vòng, tên bài và vạch set giữ nguyên, số bên phải, thêm thanh thời gian. Island mở rộng có Koa, dạng thu gọn không đổi. Thẻ nghỉ trong app có Koa sống.
+- `RestKoa` chọn dáng: nghỉ, kỷ lục, tạm dừng. Ảnh vẽ sẵn vào App Group cùng lần vẽ widget (3 ảnh 110 điểm, 2x), nên đổi đồ thì Koa màn khoá đổi theo lần vẽ widget sau. Lần vẽ widget dài thêm, chưa đo trên máy thật.
+- Kỷ lục tính ngay lúc tick (`PersonalRecords.newRecord`): so với lịch sử và các set trước của buổi. Một buổi có thể hiện nhiều lần nếu mỗi set đều vượt set trước. Bài chưa có lịch sử không tính. Set cuối của buổi không có quãng nghỉ thì không có Koa mừng.
+- Lệch mock: dáng nghỉ là Koa ngồi thiền nhắm mắt (`.tired`, dáng có sẵn), tạm dừng là Koa đứng vui (`.idle`), vì mock dùng tổ hợp mặt và dáng app không có. Kỷ lục hiện ngay trên thẻ nghỉ, không dùng Koa ló lên: thẻ nghỉ chiếm chỗ ấy ngay sau khi tick. Dòng "Hít sâu, hiệp sau…" của mock không làm, màn khoá giữ tên bài và số hiệp sẵn có.
+- `Text(timerInterval:)` hiện `1:--` trên màn khoá simulator; đây là chữ số hệ thống tự chạy, chưa thay đổi. Chưa biết máy thật có hiện vậy không.
+- Dòng kỷ lục dùng dấu chấm thập phân ("82.5 kg") của `RecordLine`, lệch với "82,5 kg" trong app tiếng Việt. Có từ trước, chưa sửa vì `RecordLine` dùng chung với màn ăn mừng và có test chuẩn.
+- **NOT RUN:** iPhone thật; Dynamic Island mở rộng (simulator không có cách bấm giữ chắc chắn, chỉ build); màn khoá dáng nghỉ và tạm dừng; Giảm chuyển động; AX5 với thẻ nghỉ cao hơn; màn hình nhỏ; `en` / `es` trên màn khoá.
+
 ## 5. Lịch sử thay đổi sổ
 
+- 01/11/2026: Koa trong buổi tập (màn khoá, Island, thẻ nghỉ, kỷ lục ngay lúc tick); ghi chỗ lệch mock và NOT RUN.
 - 01/11/2026: sửa lỗi chạm bục không đưa Koa lên bục.
 - 01/11/2026: phòng Koa nhiều lớp (parallax, sàn nghiêng, đẩy máy, sương xa); ghi hạn chế và NOT RUN.
 - 31/10/2026: rà và sửa biểu cảm Koa; ghi các điểm hoãn cần mock.
