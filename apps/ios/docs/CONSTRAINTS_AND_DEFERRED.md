@@ -412,8 +412,18 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Test chỉ dựng `StudioLayers`, không dựng cả `MascotRoomView`: lỗi phòng biến mất lúc đi ngủ của #777 nằm ở view cha nên vẫn chưa có test tự động.
 - Đánh giá lại công cụ: swift-snapshot-testing **không thêm**, so hai bản dựng trong cùng lần chạy bắt được cùng lỗi mà không cần ảnh mẫu lệch theo máy. AccessibilitySnapshot **chưa thêm**: cần dựng được `MascotRoomView` trong test; VoiceOver vẫn NOT RUN.
 
+**Soát app trên simulator (01/11, nhiệm vụ "Simulator-first" của Kiệt, nhánh `claude/app-polish`):**
+- Đã đi: bốn tab, cuộn hết; Hồ sơ, Cài đặt; phòng Koa, nhiệm vụ; Ghi nhanh; 9 luồng Maestro. iPhone Air, tiếng Việt, dữ liệu mẫu, giao diện tối. Đợt 2: giao diện sáng (bốn tab, phòng, cửa hàng, huy chương, tổng kết tuần, công cụ), `en`, `es`, một ảnh AX5 ở Hôm nay.
+- Đợt 2 sửa: huy chương "Centurion" trong tiếng Việt thành "100 Buổi Tập"; số trên biểu đồ tổng kết tuần có dấu phân cách ("1.750"); "Protein" ở tổng kết thành "Đạm" như Dinh dưỡng; nhãn "Carbohidratos" không còn bị cắt.
+- Sửa: câu khuyên Tập luyện nói "thêm một buổi là kịp" cả khi thiếu nhiều buổi (nay nói đúng số buổi thiếu); "Huy Chương" → "Huy chương", và "Thành tích" trong phòng Koa cũng đổi thành "Huy chương" (es "Logros") vì cùng một màn; Cài đặt thôi nhắc "chuỗi"; dải tuần Tập luyện dùng T2…CN như Dinh dưỡng; dòng kỷ lục dùng dấu thập phân của ngôn ngữ.
+- Cần Kiệt quyết, chưa đổi: bốn thẻ "Cần chú ý" cùng cỡ vàng ở Tiến bộ làm mất thứ bậc; Hồ sơ còn ô "Chuỗi ngày" dù V1 bỏ chuỗi khỏi Hôm nay; tên huy chương viết hoa từng từ ("Bảy Đêm"); hai nút Đăng xuất và Xoá tài khoản cùng cỡ, cùng màu đỏ.
+- Onboarding: đi trọn 6 bước bằng dữ liệu tạm không commit (`onboarding_completed: false`). Bố cục tốt; chỉ đổi biểu tượng "Nhịp tim và HRV" (`waveform.path.ecg`). Cần Kiệt xem: Koa ở màn "Kế hoạch của bạn" nhíu mày, chào người mới có thể thấy dữ; màn Apple Health mất thanh bước và biểu tượng sát đầu trang.
+- Dòng kỷ lục "82,5 kg" đã xem bằng Maestro trên bản gộp cùng #780.
+- **NOT RUN:** đăng nhập (dữ liệu test luôn đăng nhập sẵn); mất mạng và trạng thái lỗi (máy chủ giả không tạo được); AX5 ngoài Hôm nay; trò chuyện Koa Coach; thêm bữa bằng camera; iPhone thật.
+
 ## 5. Lịch sử thay đổi sổ
 
+- 01/11/2026: soát app trên simulator, sửa câu khuyên Tập luyện và các chỗ chữ không nhất quán; ghi việc chờ quyết và NOT RUN.
 - 01/11/2026: đo phòng Koa, luồng Maestro chạm trong phòng, target `ASCNDTests`; buổi sáng của Koa theo giờ dậy; gỡ `deflated`; gạch hai dòng migration đã deploy 29/10.
 - 01/11/2026: sửa lỗi chạm bục không đưa Koa lên bục.
 - 01/11/2026: phòng Koa nhiều lớp (parallax, sàn nghiêng, đẩy máy, sương xa); ghi hạn chế và NOT RUN.
