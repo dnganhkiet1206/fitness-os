@@ -19,6 +19,15 @@ public enum RecordLine {
     public let atWeight: String
     /// Số lần — để chọn số ít / số nhiều (`{value:rep|reps}`).
     public let count: Int
+
+    public init(form: Form, exercise: String, value: String, previous: String, atWeight: String, count: Int) {
+      self.form = form
+      self.exercise = exercise
+      self.value = value
+      self.previous = previous
+      self.atWeight = atWeight
+      self.count = count
+    }
   }
 
   public static func form(_ r: PersonalRecord) -> Form {
