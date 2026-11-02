@@ -83,6 +83,7 @@ struct TodayExtras<Plan: View>: View {
       showsRoom = true
     }
   #endif
+  @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
   /// Mục Thông báo (16/10): hộp cộng đồng + thử thách cộng đồng chưa nhận.
   @State private var inbox: CommunityInboxBook?
   @State private var communityChallenges: CommunityChallengesBook?
@@ -834,6 +835,13 @@ struct TodayExtras<Plan: View>: View {
     HStack(alignment: .center, spacing: DS.Spacing.sm) {
       BrandLockup(paid: paid)
       Spacer(minLength: 0)
+      headerActions
+    }
+  }
+
+  /// Chuông và avatar chung một viên kính, như nhóm nút trên thanh công cụ của hệ thống.
+  private var headerActions: some View {
+    HStack(spacing: 0) {
       // Chuông thay viên chuỗi ngày (16/10, chủ dự án); chuỗi vẫn ở phòng Koa, và
       // chuỗi sắp đứt thành một tin nhắc việc trong Thông báo.
       if let inbox {
@@ -862,6 +870,7 @@ struct TodayExtras<Plan: View>: View {
           action: onOpenSettings)
       }
     }
+    .todayGlass(cornerRadius: 22, solid: reduceTransparency)
   }
 
   /// Chấm trên chuông: thông báo cộng đồng + thử thách đạt mà chưa nhận.
