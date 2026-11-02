@@ -15,7 +15,8 @@ public enum StudioTall {
 
   public static let layers = [
     Layer(id: "sky", plane: .sky), Layer(id: "city", plane: .city), Layer(id: "wall", plane: .wall),
-    Layer(id: "floor", plane: .wall), Layer(id: "sides", plane: .props), Layer(id: "lamp", plane: .lamp),
+    Layer(id: "floor", plane: .wall), Layer(id: "sides", plane: .props), Layer(id: "cone", plane: .lamp),
+    Layer(id: "lamp", plane: .lamp),
   ]
 
   /// Phần tử tranh gốc được thay. `Defs` luôn giữ vì phần còn lại vẫn trỏ tới.
@@ -53,6 +54,7 @@ public enum StudioTall {
     case "wall": return wall(o, c)
     case "floor": return floor(c)
     case "sides": return sides(o)
+    case "cone": return cone(o, c)
     case "lamp": return lamp(o, c)
     default: return []
     }
@@ -166,8 +168,12 @@ public enum StudioTall {
     ]
   }
 
-  static func lamp(_ o: StudioScene.Options, _ c: Ink) -> [Element] {
-    var out: [Element] = [
+  /// Chùm sáng tách lớp riêng để app làm nhoè mép (`coneBlur`), chao đèn phía trên vẫn nét.
+  public static let coneBlur = 10.0
+
+  static func cone(_ o: StudioScene.Options, _ c: Ink) -> [Element] {
+    guard o.lamp, o.decor["lamp"] == nil else { return [] }
+    return [
       Element(
         "Defs",
         kids: [
@@ -176,19 +182,20 @@ public enum StudioTall {
             kids: [
               Element("Stop", ["offset": .number(0), "stopColor": .string(c.cone), "stopOpacity": .number(0.55)]),
               Element("Stop", ["offset": .number(1), "stopColor": .string(c.cone), "stopOpacity": .number(0)]),
-            ]),
-          KoaBedroom.glow("tallHalo", c.glow, 0.6),
-        ])
+            ])
+        ]),
+      KoaBedroom.path("M158 -54L58 430H332L232 -54Z", "url(#tallCone)"),
     ]
+  }
+
+  static func lamp(_ o: StudioScene.Options, _ c: Ink) -> [Element] {
+    var out: [Element] = [Element("Defs", kids: [KoaBedroom.glow("tallHalo", c.glow, 0.6)])]
     guard o.decor["lamp"] == nil else {
       return out + [KoaBedroom.line("M195 -360V30", c.rail, width: 3.5)]
     }
     // ban ngày đèn tắt (quyết định 15/10): vẫn có chao đèn, không có chùm sáng
     if o.lamp {
-      out += [
-        KoaBedroom.ellipse(195, -36, 120, 90, "url(#tallHalo)"),
-        KoaBedroom.path("M158 -54L58 430H332L232 -54Z", "url(#tallCone)"),
-      ]
+      out.append(KoaBedroom.ellipse(195, -36, 120, 90, "url(#tallHalo)"))
     }
     out += [
       KoaBedroom.line("M195 -360V-106", c.rail, width: 3.5),

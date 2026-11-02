@@ -351,6 +351,7 @@ private struct StudioTallImage: View, Equatable {
     Canvas { ctx, canvas in
       var c = ctx
       let k = canvas.width / StudioScene.width
+      if layer == "cone" { c.addFilter(.blur(radius: StudioTall.coneBlur * k)) }
       c.translateBy(x: 0, y: drop)
       c.concatenate(CGAffineTransform(scaleX: k, y: k))
       KoaCanvas.draw(plan, in: &c)
