@@ -26,8 +26,12 @@ public enum KoaBedroom {
     var star, bulbGlow, sconceGlow, vignette, moonlightAlpha: Double
   }
 
-  /// Màu mảng tường lướt qua khi chuyển phòng.
-  public static func wallColor(light: Bool) -> String { (light ? day : night).wallTop }
+  /// Màu mảng tường lướt qua khi chuyển phòng, thân và hai viền. Phần cao hơn tranh dùng đúng màu
+  /// này để liền với `wall`.
+  public static func wallColor(light: Bool) -> (body: String, edge: String) {
+    light ? ("#B58D66", "#8F6440") : ("#1B1420", "#2C2230")
+  }
+  public static let wallEdge = 7.0
 
   /// Phần gác mái khung dọc (02/11, theo mock đã duyệt): hai mái dốc của tranh gốc đi tiếp lên tới
   /// nóc nhà; sàn gỗ đi tiếp xuống đáy màn, có rương đồ.
@@ -404,8 +408,8 @@ public enum KoaBedroom {
 
   /// Mảng tường giữa hai phòng, lướt qua phía trước lúc đổi phòng (dựng theo `height`).
   public static func wall(light: Bool) -> [KoaRender.Element] {
-    let body = light ? "#B58D66" : "#1B1420", edge = light ? "#8F6440" : "#2C2230"
+    let (body, edge) = wallColor(light: light)
     let w = KoaBedtime.wall
-    return [rect(0, 0, w, height, body), rect(0, 0, 7, height, edge), rect(w - 7, 0, 7, height, edge)]
+    return [rect(0, 0, w, height, body), rect(0, 0, wallEdge, height, edge), rect(w - wallEdge, 0, wallEdge, height, edge)]
   }
 }
