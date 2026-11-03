@@ -480,6 +480,12 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Chưa có: `performAccessibilityAudit()` trong UI test (đợt 2 của #795, cần target UI test, sẽ chạy ở E2E).
 - **NOT RUN:** xem ảnh trên máy thật; VoiceOver.
 
+**Dải "Tuần của Koa" lớn theo Dynamic Type (03/11, #795 đợt 2b, nhánh `claude/week-strip-type`):**
+- Lượt kiểm accessibility đầu (PR #812, màn Tiến bộ › Tập luyện) báo "Dynamic Type font sizes are unsupported" cho "KOA'S WEEK", "1/7 SESSIONS" và tên bảy thứ: `TodayWeekStrip` (Hôm nay, Tiến bộ, phòng Koa) dùng cỡ cố định 11 / 10,5 pt.
+- Nay `@ScaledMetric(relativeTo: .caption2)` (cỡ mặc định giữ nguyên); hàng tiêu đề xếp dọc khi không vừa; tên thứ trong bảy cột chia đều thu nhỏ vừa ô (`minimumScaleFactor(0.6)`) thay vì cắt. VoiceOver vẫn đọc nhãn đầy đủ của từng ngày.
+- Không sửa: "Good" trong lượt kiểm là giá trị đọc của mảng hình logo ở Tiến bộ — biểu tượng theo cỡ hình, không phải chữ. Các mục "partially unsupported" và độ tương phản của chữ màu nhạt chờ xem bảng đầy đủ (độ tương phản đụng màu token chung → cần Kiệt duyệt).
+- **NOT RUN:** xem dải ở cỡ chữ trợ năng trên simulator / iPhone.
+
 ## 5. Lịch sử thay đổi sổ
 
 - 01/11/2026: Koa chạy tới kéo thẻ nhiệm vụ; bảng tự vẽ; vẽ lại phòng tập khung dọc theo mock, bỏ tiền cảnh mờ.
@@ -576,3 +582,4 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - 03/11/2026: #800 thông báo: câu nhắc buổi tập xoay vòng, bị bỏ qua 3 lần liền thì 2 ngày một lần, xin quyền khi có lịch tập đầu tiên; xem mục 4.
 - 03/11/2026: đo lường Koa Ecosystem (#793): năm sự kiện mốc / hành trình / Nhịp / tạm nghỉ, gửi một lần mỗi lần xảy ra (`Telemetry.once`); xem mục 4.
 - 03/11/2026: #795 đợt 1: snapshot test các màn Koa (sáng / tối / chữ lớn) chạy trong `app-macos`; xem mục 4.
+- 03/11/2026: dải Tuần của Koa lớn theo Dynamic Type (kiểm accessibility báo cỡ cố định); xem mục 4.
