@@ -45,3 +45,28 @@ extension ReminderContext {
     return ctx
   }
 }
+
+/// Bảng `koa_pauses` (migration `20261103120000`, deploy 03/11 khi Kiệt duyệt): mỗi người một
+/// dòng, ghi đè. Không xoá: kết thúc sớm là ghi một đợt đã qua.
+public enum KoaPauseSync {
+  public static let table = "koa_pauses"
+
+  public static func query(userId: String) -> RowQuery {
+    RowQuery(table: table, columns: "starts_on,ends_on", filters: [.eq("user_id", .string(userId))], limit: 1)
+  }
+
+  public static func decode(_ row: JSONValue?) -> KoaPause? {
+    guard let s = row?["starts_on"]?.stringValue.flatMap(LocalDate.init),
+      let e = row?["ends_on"]?.stringValue.flatMap(LocalDate.init)
+    else { return nil }
+    return KoaPause(start: s, last: e)
+  }
+
+  /// `nil` = không nghỉ: ghi một ngày đã qua để dòng cũ hết hiệu lực.
+  public static func row(_ pause: KoaPause?, userId: String, today: LocalDate) -> [String: JSONValue] {
+    let p = pause ?? KoaPause(start: today.adding(days: -1), last: today.adding(days: -1))
+    return [
+      "user_id": .string(userId), "starts_on": .string(p.start.description), "ends_on": .string(p.last.description),
+    ]
+  }
+}

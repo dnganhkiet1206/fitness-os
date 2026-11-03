@@ -658,6 +658,14 @@ final class AppServices {
   }
 
   func setKoaPause(_ pause: KoaPause?, userId: String) {
+    storeKoaPause(pause, userId: userId)
+    guard !Self.uiTest else { return }
+    // lưu trên máy trước; đẩy lên server sau, mất mạng thì để cờ chờ lần đọc sau
+    UserDefaults.standard.set(true, forKey: "koa.pause.pending.\(userId)")
+    Task { await pushKoaPause(pause, userId: userId) }
+  }
+
+  private func storeKoaPause(_ pause: KoaPause?, userId: String) {
     let key = "koa.pause.\(userId)"
     if Self.uiTest {
       uiTestPauses[userId] = pause.flatMap { try? JSONEncoder().encode($0) }
@@ -667,6 +675,36 @@ final class AppServices {
       UserDefaults.standard.removeObject(forKey: key)
     }
     koaPauseRevision += 1
+  }
+
+  private func pushKoaPause(_ pause: KoaPause?, userId: String) async {
+    guard let rows else { return }
+    let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
+    do {
+      try await rows.upsert(
+        KoaPauseSync.table, [KoaPauseSync.row(pause, userId: userId, today: today)], onConflict: "user_id")
+      UserDefaults.standard.removeObject(forKey: "koa.pause.pending.\(userId)")
+    } catch {}
+  }
+
+  /// Đồng bộ tạm nghỉ với server: còn thay đổi chưa gửi thì gửi; không thì lấy bản trên server
+  /// (đổi máy, cài lại vẫn giữ đợt nghỉ). Đọc hỏng thì giữ bản trên máy.
+  /// `true` khi đợt nghỉ trên máy vừa đổi theo server (bên gọi dựng lại việc chính).
+  @discardableResult
+  func syncKoaPause(userId: String) async -> Bool {
+    guard !Self.uiTest, let rows else { return false }
+    let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
+    if UserDefaults.standard.bool(forKey: "koa.pause.pending.\(userId)") {
+      await pushKoaPause(koaPause(userId: userId, today: today), userId: userId)
+      return false
+    }
+    guard let found = try? await rows.select(KoaPauseSync.query(userId: userId)),
+      session.session?.userId == userId
+    else { return false }
+    let server = KoaPauseSync.decode(found.first).flatMap { $0.active(on: today) ? $0 : nil }
+    guard server != koaPause(userId: userId, today: today) else { return false }
+    storeKoaPause(server, userId: userId)
+    return true
   }
 
   /// Màn tổng kết mở khi Hôm nay chưa đọc Gains (vào thẳng buổi tập): tự đọc, để thẻ Gains của
