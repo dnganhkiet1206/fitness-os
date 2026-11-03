@@ -190,6 +190,7 @@ struct TodayExtras<Plan: View>: View {
       }
       if let flow, let pause = services.koaPause(userId: userId, today: flow.today.today) {
         KoaPauseCard(pause: pause, today: flow.today.today, build: services.koaBuild) {
+          Telemetry.capture(.pauseEndedEarly, KoaAnalytics.pauseEndedEarlyProps(pause, today: flow.today.today))
           services.setKoaPause(pause.ended(on: flow.today.today), userId: userId)
           dailyPlan?.recompute(services: services, flow: flow)
         }
@@ -288,6 +289,7 @@ struct TodayExtras<Plan: View>: View {
     .sheet(isPresented: $showsPause) {
       if let flow {
         KoaPauseSheet(today: flow.today.today) { days in
+          Telemetry.capture(.pauseStarted, KoaAnalytics.pauseStartedProps(days: days))
           services.setKoaPause(KoaPause(from: flow.today.today, days: days), userId: userId)
           dailyPlan?.recompute(services: services, flow: flow)
         }
