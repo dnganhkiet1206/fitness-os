@@ -472,6 +472,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Chữ cỡ trợ năng: hàng nút nhanh (Bữa: chụp / quét / nhập tay; Nước: thêm / lượng khác) xếp dọc thay vì cắt chữ; dòng kế hoạch ăn và thanh "Ghi hôm nay" được hai dòng. Cỡ thường không đổi bố cục.
 - Snapshot mới: `todayDayCardMeal`, `todayDayCardWater` (sáng / tối / chữ lớn) trong `KoaSnapshotTests`. Lượt CI đầu ĐỎ có chủ ý (chưa có ảnh chuẩn): tải artifact, xem từng ảnh rồi mới commit ảnh chuẩn.
 - Còn lại: thẻ Koa đầy đủ (`TodayDayBlock` khi chưa có Daily Plan, hiếm gặp) vẫn cỡ cố định ở câu nói, số đếm, nút; Hôm nay thường dùng dạng gọn.
+- Lỗi cũ thấy qua ảnh (cỡ chữ MẶC ĐỊNH, tiếng Anh, màn rộng 390): ba nút nhanh của thẻ Bữa không vừa một hàng nên "Barcode" bị cắt thành "Barco…" (tiếng Việt "Chụp / Mã vạch / Nhập" vừa). Sửa cần đổi khoảng cách hay bỏ biểu tượng của nút trong bản thiết kế đã duyệt → chờ Kiệt chọn, chưa đổi.
 - **NOT RUN:** xem trên simulator / iPhone ở cỡ chữ trợ năng; bộ kiểm a11y chạy lại (khi #812 vào base).
 
 **Ổn định bộ kiểm (03/11, #801, nhánh `claude/stable-checks`):**

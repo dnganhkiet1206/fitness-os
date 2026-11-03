@@ -161,6 +161,9 @@ struct TodayDayCard: View {
                 .font(.system(size: pt11, weight: .semibold))
                 .foregroundStyle(DS.Color.metricOrangeGraphic.swiftUI)
                 .lineLimit(typeSize.isAccessibilitySize ? 2 : 1)
+                // Trong dải cuộn ngang, nhãn được đo hai dòng nhưng vẽ một dòng rồi cắt (ảnh
+                // `todayDayCardMeal.largeType` lượt đầu): cố định chiều dọc để chữ xuống dòng thật.
+                .fixedSize(horizontal: false, vertical: true)
             }
           }
           .padding(.horizontal, 16)
