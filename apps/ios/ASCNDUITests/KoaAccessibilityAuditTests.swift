@@ -81,14 +81,26 @@ final class KoaAccessibilityAuditTests: XCTestCase {
 
   @MainActor private func audit(_ app: XCUIApplication, _ screen: String) throws {
     var lines: [String] = []
-    try app.performAccessibilityAudit { issue in
-      let el = issue.element
-      let who = [el?.identifier, el?.label].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " / ")
-      lines.append(
-        ["A11Y", screen, Self.name(issue.auditType), Self.clean(issue.compactDescription), Self.clean(who)]
-          .joined(separator: "|"))
-      // Đợt 2a: ghi lại, không làm test đỏ.
-      return true
+    // Đợt 2a: mỗi vấn đề ghi một dòng, handler trả `true` nên test không đỏ vì vấn đề.
+    do {
+      try app.performAccessibilityAudit(for: .all) { issue in
+        lines.append(Self.line(screen, issue))
+        return true
+      }
+    } catch {
+      // Màn lớn (Hôm nay, 03/11: "Audit failed to complete in time"): kiểm từng loại một, loại nào
+      // vẫn không xong thì ghi một dòng — đợt 2a cần đủ dữ liệu, không cần test đỏ.
+      lines.removeAll()
+      for (type, name) in Self.types {
+        do {
+          try app.performAccessibilityAudit(for: type) { issue in
+            lines.append(Self.line(screen, issue))
+            return true
+          }
+        } catch {
+          lines.append("A11Y|\(screen)|\(name)|không kiểm xong: \(Self.clean(error.localizedDescription))|")
+        }
+      }
     }
     if lines.isEmpty { lines.append("A11Y|\(screen)|-|không có vấn đề|") }
     for line in lines { print(line) }
@@ -98,13 +110,21 @@ final class KoaAccessibilityAuditTests: XCTestCase {
     add(attachment)
   }
 
+  /// Một dòng `A11Y|màn|loại|mô tả|phần tử` cho bảng của job.
+  @MainActor private static func line(_ screen: String, _ issue: XCUIAccessibilityAuditIssue) -> String {
+    let el = issue.element
+    let who = [el?.identifier, el?.label].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " / ")
+    return ["A11Y", screen, name(issue.auditType), clean(issue.compactDescription), clean(who)].joined(separator: "|")
+  }
+
+  private static let types: [(XCUIAccessibilityAuditType, String)] = [
+    (.contrast, "contrast"), (.elementDetection, "elementDetection"), (.hitRegion, "hitRegion"),
+    (.sufficientElementDescription, "description"), (.dynamicType, "dynamicType"),
+    (.textClipped, "textClipped"), (.trait, "trait"),
+  ]
+
   private static func name(_ t: XCUIAccessibilityAuditType) -> String {
-    let named: [(XCUIAccessibilityAuditType, String)] = [
-      (.contrast, "contrast"), (.elementDetection, "elementDetection"), (.hitRegion, "hitRegion"),
-      (.sufficientElementDescription, "description"), (.dynamicType, "dynamicType"),
-      (.textClipped, "textClipped"), (.trait, "trait"),
-    ]
-    let hit = named.filter { t.contains($0.0) }.map(\.1)
+    let hit = types.filter { t.contains($0.0) }.map(\.1)
     return hit.isEmpty ? "other(\(t.rawValue))" : hit.joined(separator: "+")
   }
 

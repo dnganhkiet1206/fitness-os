@@ -181,7 +181,7 @@ Lịch hằng tuần (`schedule`) và Dependabot chỉ hoạt động khi tệp 
 `apps/ios/ASCNDUITests/KoaAccessibilityAuditTests.swift` mở app ở chế độ UI test (máy chủ giả, đã đăng nhập, tiếng Anh), đi tới Hôm nay / sheet Tạm nghỉ / Tiến bộ › Tập luyện (Nhịp) / Hành trình bằng cùng định danh với các flow Maestro, rồi gọi `performAccessibilityAudit()` (độ tương phản, vùng chạm, nhãn VoiceOver, Dynamic Type, chữ bị cắt, trait).
 
 - Chạy ở `.github/workflows/ios-a11y.yml` bằng scheme `ASCNDA11y` (hằng đêm, bấm tay, PR có nhãn `e2e` hoặc `a11y`). Không chạy trong `app-macos` hay E2E: E2E đã chạm trần thời gian.
-- **Đợt 2a (hiện tại): thu thập.** Mỗi vấn đề một dòng `A11Y|màn|loại|mô tả|phần tử` trong log; trang lượt chạy có bảng đếm theo màn × loại; artifact `ios-a11y-<run>` có log và `.xcresult`. Test chỉ đỏ khi không mở được màn.
+- **Đợt 2a (hiện tại): thu thập.** Mỗi vấn đề một dòng `A11Y|màn|loại|mô tả|phần tử` trong log; trang lượt chạy có bảng đếm theo màn × loại; artifact `ios-a11y-<run>` có log và `.xcresult`. Test chỉ đỏ khi không mở được màn. Màn lớn (Hôm nay) mà kiểm một lần không xong ("Audit failed to complete in time") thì kiểm lại từng loại một; loại nào vẫn không xong được ghi thành một dòng `không kiểm xong`.
 - **Đợt 2b:** sửa vấn đề thật theo bảng; loại nào đã sạch trên một màn thì cho handler trả `false` (test đỏ khi tái phát). Vấn đề chấp nhận được (ví dụ Koa vẽ bằng Canvas) thì bỏ qua có lý do trong code, không tắt cả loại.
 - Thêm màn: thêm một hàm `test…` đi tới màn ấy bằng định danh có sẵn rồi `try audit("tên-màn")`.
 
