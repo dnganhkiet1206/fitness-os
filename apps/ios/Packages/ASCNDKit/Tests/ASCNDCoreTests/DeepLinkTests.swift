@@ -70,7 +70,7 @@ struct DeepLinkTests {
     #expect(Self.target("ascnd://settings") == .tab(.today))
     #expect(Self.target("ascnd://exercises?group=chest") == .tab(.workouts))
     #expect(Self.target("ascnd://grocery") == .tab(.nutrition))
-    #expect(Self.target("ascnd://scan-food") == .tab(.nutrition))
+    #expect(Self.target("ascnd://scan-food") == .screen(.photoMeal))
   }
 
   /// Quản trị, gỡ lỗi, route lạ, scheme khác: không có đích — chỉ mở app.
