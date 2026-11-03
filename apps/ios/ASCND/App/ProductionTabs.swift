@@ -225,7 +225,7 @@ struct SettingsSheet: View {
   var body: some View {
     SettingsView(
       account: account,
-      onSignOut: { Task { await signOut() } },
+      onSignOut: { Task { await Self.signOut(services) } },
       language: services.preferences.lang.rawValue,
       theme: services.preferences.theme.rawValue,
       onThemeChange: { code in
@@ -250,9 +250,12 @@ struct SettingsSheet: View {
         : nil,
       // Xoá xong thì đăng xuất (đóng mọi bảng, dọn máy) — tài khoản không còn.
       deleteAccount: services.accountDeleter.map { deleter in
-        { @MainActor in
+        // Ghi rõ `@Sendable`: closure đi qua `Optional.map` (kiểu generic) nên Swift không tự coi nó là
+        // `@Sendable` như closure viết thẳng vào tham số `@MainActor`. Chỉ bắt `deleter` và `services`,
+        // cả hai đều `Sendable`.
+        { @Sendable @MainActor [services] in
           let result = await deleter.deleteAccount()
-          if result == .deleted { await signOut() }
+          if result == .deleted { await Self.signOut(services) }
           return result
         }
       },
@@ -265,7 +268,7 @@ struct SettingsSheet: View {
   /// Đóng mọi bảng đang mở (Hồ sơ → Cài đặt chồng nhau) rồi đăng xuất — để màn
   /// Đăng nhập hiện ra ngay, không bị bảng cũ che (16/10, chủ dự án: "không đăng
   /// xuất được").
-  private func signOut() async {
+  private static func signOut(_ services: AppServices) async {
     for case let scene as UIWindowScene in UIApplication.shared.connectedScenes {
       for window in scene.windows { window.rootViewController?.dismiss(animated: true) }
     }
