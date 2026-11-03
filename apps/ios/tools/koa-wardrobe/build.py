@@ -959,6 +959,24 @@ def arm_marks(left):
     out.append(G([C(x if left else 240 - x, y, r, fill="#FFFFFF", opacity=o) for x, y, r, o in chalk], **{"if": "rk4"}))
     return out
 
+# ---- Nét mặt vẽ thêm (01/11, Kiệt: "bạn đc phép vẽ thêm"): miệng nghỉ và ba khẩu hình nói.
+# Cùng màu, cùng nét với miệng gốc; chỉ hiện khi cờ bật nên các nét mặt cũ không đổi.
+INK, TONGUE = "#20242A", "#E8657B"
+face_over("mouthSoft", [P("M108 133 Q120 144 132 133", stroke=INK, stroke_width=4.5, stroke_linecap="round", fill="none")])
+# Nhếch mép thè lưỡi: mặt thách đểu lúc Koa kéo thẻ lên.
+face_over("mouthTease", [
+    P("M107 131 Q122 146 137 128 Q124 136 107 131 Z", fill=INK),
+    E(128, 140, 5.5, 5, fill=TONGUE)])
+face_over("mouthSay1", [
+    P("M111 131 Q120 135 129 131 Q128 141 120 143 Q112 141 111 131 Z", fill=INK),
+    E(120, 139.5, 5.5, 2.8, fill=TONGUE)])
+face_over("mouthSay2", [
+    P("M109 130 Q120 134 131 130 Q131 146 120 149 Q109 146 109 130 Z", fill=INK),
+    E(120, 144, 7, 3.6, fill=TONGUE)])
+face_over("mouthSay3", [
+    P("M106 132 Q120 137 134 132 Q131 140 120 141 Q109 140 106 132 Z", fill=INK),
+    E(120, 138.5, 7, 1.8, fill=TONGUE)])
+
 # 1. Thân: torso_front đứng → 6 biến thể theo hạng (hạng 0 = nguyên bản).
 torso_stand = next(n for n in walk(nodes[3]) if n.get('if') == 'torsoStand' and any(k.get('id') == 'torso_front' for k in n.get('kids', [])))
 ti = next(i for i, k in enumerate(torso_stand['kids']) if k.get('id') == 'torso_front')

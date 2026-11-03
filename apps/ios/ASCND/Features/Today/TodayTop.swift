@@ -94,8 +94,8 @@ struct BrandLockup: View {
 }
 
 /// Chuông Thông báo (16/10, chủ dự án: thay viên chuỗi ngày trên đầu trang Hôm
-/// nay — một chuông cho cả app). Nút 44 cùng cỡ avatar; chấm đỏ khi có tin chưa
-/// đọc hoặc việc cần làm.
+/// nay — một chuông cho cả app). Nút 44, nằm chung một viên kính với avatar
+/// (01/11, Kiệt khoanh hai nút cũ); chấm đỏ khi có tin chưa đọc hoặc việc cần làm.
 struct NotificationBell: View {
   let dot: Bool
 
@@ -104,15 +104,13 @@ struct NotificationBell: View {
       .font(.system(size: 17, weight: .semibold))
       .foregroundStyle(DS.Color.foreground.swiftUI)
       .frame(width: 44, height: 44)
-      .background(Circle().fill(.thinMaterial))
-      .overlay(Circle().strokeBorder(DS.Color.foreground.swiftUI.opacity(0.12), lineWidth: 0.75))
       .overlay(alignment: .topTrailing) {
         if dot {
           Circle()
             .fill(DS.Color.destructive.swiftUI)
-            .frame(width: 10, height: 10)
-            .overlay(Circle().stroke(DS.Color.background.swiftUI, lineWidth: 2))
-            .offset(x: -6, y: 6)
+            .frame(width: 9, height: 9)
+            .overlay(Circle().stroke(DS.Color.background.swiftUI, lineWidth: 1.5))
+            .offset(x: -11, y: 11)
         }
       }
       .contentShape(Circle())
@@ -120,30 +118,28 @@ struct NotificationBell: View {
   }
 }
 
-/// Avatar tài khoản (`account-avatar.tsx`): nút 44, kính mờ + viền mảnh như
-/// chuông Thông báo (16/10), chữ cái đầu (`AccountInitials`); không có gì thì hình người. Lối
-/// duy nhất vào Cài đặt.
+/// Avatar tài khoản (`account-avatar.tsx`): vùng chạm 44, đĩa đặc màu mực như nút chính
+/// của trang, chữ cái đầu (`AccountInitials`); không có gì thì hình người. Lối duy nhất
+/// vào Cài đặt.
 struct AccountAvatar: View {
   let initials: String?
   let action: () -> Void
 
   var body: some View {
     Button(action: action) {
-      // Cùng vật liệu với chuông bên cạnh (16/10, chủ dự án chọn mock "B · Giống
-      // chuông"): kính mờ, viền mực mảnh, chữ mực — hai nút thành một cặp.
       ZStack {
-        Circle().fill(.thinMaterial)
-        Circle().strokeBorder(DS.Color.foreground.swiftUI.opacity(0.12), lineWidth: 0.75)
+        Circle().fill(DS.Color.foreground.swiftUI).frame(width: 34, height: 34)
         if let initials {
           Text(verbatim: initials)
-            .font(.system(size: 15, weight: .semibold))
-            .tracking(0.3)
-            .foregroundStyle(DS.Color.foreground.swiftUI)
-            .dynamicTypeSize(...DynamicTypeSize.xxLarge)
+            .font(.system(size: 13, weight: .bold))
+            .foregroundStyle(DS.Color.background.swiftUI)
+            .minimumScaleFactor(0.7)
+            .frame(width: 30)
+            .dynamicTypeSize(...DynamicTypeSize.large)
         } else {
-          Image(systemName: "person")
-            .font(.system(size: 18))
-            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          Image(systemName: "person.fill")
+            .font(.system(size: 15))
+            .foregroundStyle(DS.Color.background.swiftUI)
         }
       }
       .frame(width: 44, height: 44)

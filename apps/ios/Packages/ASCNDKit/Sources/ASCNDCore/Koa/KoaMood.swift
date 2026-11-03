@@ -24,8 +24,10 @@ public enum KoaMood {
   /// Giờ ngủ khi người dùng chưa đặt: từ 22:00 tới trước 06:00.
   public static let nightFrom = 22
   public static let morningFrom = 6
-  /// Buổi sáng (giờ < 11) mới nói về giấc ngủ đêm qua.
+  /// Buổi sáng (5 giờ đầu sau giờ dậy, chưa đặt giờ thì trước 11 giờ) mới nói về giấc ngủ đêm qua.
   public static let morningUntil = 11
+  /// Dậy đủ lâu (6 giờ, chưa đặt giờ thì từ 12 giờ trưa) mà chưa ăn, chưa tập thì Koa mới mệt.
+  public static let emptyAfterMinutes = 6 * 60
   /// Ngủ đủ / ngủ ít (phút).
   public static let restedMinutes = 7 * 60.0
   public static let shortSleepMinutes = 6 * 60.0
@@ -72,6 +74,15 @@ public enum KoaMood {
     }
 
     public func contains(hour: Int, minute: Int = 0) -> Bool { contains(minute: hour * 60 + minute) }
+
+    /// Số phút từ giờ dậy gần nhất, ca đêm dậy buổi chiều cũng đúng.
+    public func minutesAwake(hour: Int, minute: Int = 0) -> Int {
+      ((hour * 60 + minute - wake) % 1440 + 1440) % 1440
+    }
+
+    public func isMorning(hour: Int, minute: Int = 0) -> Bool {
+      minutesAwake(hour: hour, minute: minute) < (morningUntil - morningFrom) * 60
+    }
 
     /// Sắp tới giờ ngủ (trong `lead` phút) hoặc đang ngủ: Koa trầm dần.
     public func winding(hour: Int, minute: Int = 0, lead: Int = 60) -> Bool {
@@ -142,9 +153,7 @@ public enum KoaMood {
     guard let s = i.signals else { return Read(emotion: .idle, reason: .unread) }
     if i.isBirthday { return Read(emotion: .hat, reason: .birthday) }
     if i.sleep.contains(hour: i.hour, minute: i.minute) { return Read(emotion: .sleep, reason: .night) }
-    if streakInDanger(streak: i.streak, emptyToday: !i.loggedToday, hour: i.hour, riskHour: i.riskHour) {
-      return Read(emotion: .worry, reason: .worry)
-    }
+    // Koa không lo vì chuỗi ngày nữa (Koa Ecosystem V2, 02/11): ngày trống chỉ là ngày trống.
     func done(_ q: MascotRules.Quest) -> Bool { s.done(q, stepsGoal: i.stepsGoal) }
     // `activeDefs`: nhiệm vụ bước không tính khi chưa từng có số bước.
     // Hồi phục chỉ thay buổi tập vào ngày nghỉ — không là điều kiện của "xong hết".
@@ -155,7 +164,7 @@ public enum KoaMood {
     {
       return Read(emotion: .oops, reason: .overate)
     }
-    if i.hour < morningUntil, let min = s.sleepMinutes, min > 0 {
+    if i.sleep.isMorning(hour: i.hour, minute: i.minute), let min = s.sleepMinutes, min > 0 {
       if min >= restedMinutes { return Read(emotion: .rested, reason: .rested) }
       if min < shortSleepMinutes { return Read(emotion: .tired, reason: .shortSleep) }
     }
@@ -163,7 +172,9 @@ public enum KoaMood {
     if done(.meal) { return Read(emotion: .happy, reason: .fed) }
     // `moodFrom` → 'tired': quá trưa mà chưa ăn, chưa tập. Khác RN: đã ăn mà tối
     // chưa tập vẫn là vui (`fed`) — ngày nghỉ hay tập muộn không phải lỗi.
-    if i.hour >= 12 { return Read(emotion: .tired, reason: .emptyLate) }
+    if i.sleep.minutesAwake(hour: i.hour, minute: i.minute) >= emptyAfterMinutes {
+      return Read(emotion: .tired, reason: .emptyLate)
+    }
     return Read(emotion: .idle, reason: .calm)
   }
 

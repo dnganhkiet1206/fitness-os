@@ -69,7 +69,10 @@ extension ProgressStyle {
     case .insufficient: return nil
     case .attention:
       switch r.group {
-      case .training: return String(localized: "ps.a.training")
+      case .training:
+        // "Thêm một buổi là kịp" chỉ đúng khi thiếu đúng một buổi.
+        let behind = Int(r.today ?? 0) - r.have
+        return behind > 1 ? String(localized: "ps.a.training.behind \(behind)") : String(localized: "ps.a.training")
       case .steps: return String(localized: "ps.a.steps")
       case .nutrition: return String(localized: "ps.a.nutrition")
       case .sleep: return String(localized: "ps.a.sleep")
@@ -210,6 +213,7 @@ struct ProgressGroupView: View {
       .padding(DS.Spacing.md)
     }
     .refreshable { await refresh() }
+    .task { if result.group == .training { await services.ensureKoaGainsHistory() } }
     .navigationTitle(Text(verbatim: ProgressStyle.name(result.group)))
     .ascndPage()
   }
@@ -228,6 +232,26 @@ struct ProgressGroupView: View {
           DSButton(String(localized: "today.start"), style: .primary) { services.sessionRequest += 1 }
         }
       }
+      if let h = services.koaGainsHistory {
+        let pause = services.koaPause(userId: flow.today.userId, today: flow.today.today)
+        let rhythm = KoaRhythm.state(h.days, week: h.week, paused: { pause?.contains($0) == true }, today: flow.today.today)
+        KoaRhythmCard(state: rhythm)
+          // Xem Nhịp: một sự kiện mỗi ngày (#793), cuộn qua lại không đếm thêm.
+          .onAppear {
+            Telemetry.once(
+              .rhythmViewed, key: KoaAnalytics.rhythmKey(today: flow.today.today), userId: flow.today.userId,
+              KoaAnalytics.rhythmProps(rhythm))
+          }
+      }
+      NavigationLink {
+        KoaJourneyView()
+      } label: {
+        WorkoutsHomeView.toolRow("point.topleft.down.to.point.bottomright.curvepath", String(localized: "journey.title"),
+                                 sub: String(localized: "journey.row.sub"), tint: ProgressStyle.color(.training))
+      }
+      .buttonStyle(.plain)
+      .accessibilityIdentifier("progress.journey")
+      .todayCard()
     case .body:
       BodySection(userId: flow.today.userId, today: flow.today.today, status: result.level)
     case .steps:

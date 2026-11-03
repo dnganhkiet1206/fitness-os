@@ -151,7 +151,7 @@ public enum KoaDirector {
   static let attentive = 12.0
 
   /// Cooldown riêng (giây).
-  static let cooldowns: [Kind: Double] = [.explore: 8, .lookAround: 18, .home: 20, .greet: 40, .rest: 0]
+  static let cooldowns: [Kind: Double] = [.explore: 75, .lookAround: 18, .home: 20, .greet: 40, .rest: 0]
 
   /// Một cú giật tai: bật ra rồi rung nhẹ về chỗ (độ theo giây).
   enum KoaFlick {
@@ -221,6 +221,7 @@ public enum KoaDirector {
 
     /// Người xem đang chạm / kê tay lên Koa: chú ý tới họ, không tự đi chỗ khác.
     public mutating func interacted() { lastTouch = clock }
+    public mutating func blink() { gaze.blinkNow() }
 
     /// Nhớ lại đồ vật đã ghé trước khi rời phòng.
     public mutating func recall(visited v: [String]) {
@@ -260,11 +261,9 @@ public enum KoaDirector {
       return clock - t < (cooldowns[k] ?? 0)
     }
 
-    /// Chỗ nghỉ hợp lúc này: mệt / ngày nghỉ thì cạnh cửa sổ; đang gần gũi thì gần người xem.
+    /// Chỗ nghỉ của Koa: sân khấu, trừ lúc tới giờ đi ngủ.
     func restSpot(_ ctx: Context) -> KoaRoomMap.Spot {
       if ctx.settle { return ctx.bedtime ? KoaRoomMap.door : KoaRoomMap.stageMark }
-      if ctx.affect.warmth > 0.6 { return KoaRoomMap.user }
-      if ctx.affect.energy < 0.5 || ctx.affect.calm, let w = KoaRoomMap.anchor("window") { return w.stand }
       return KoaRoomMap.stageMark
     }
 
@@ -331,7 +330,7 @@ public enum KoaDirector {
           kind: .explore, why: "tò mò về \(a.name)", target: a.stand, anchor: a, gaze: .point(x: a.look.x, y: a.look.y),
           expression: a.action == .inspect ? .surprised : nil, gesture: a.action == .inspect ? .curious : nil,
           style: e.energy < 0.5 || e.calm ? .relaxed : e.pride > 0.5 ? .purposeful : .curious,
-          action: .object(a.action), duration: rng.range(2.5, 4.5), next: [.rest, .home, .lookAround, .explore])
+          action: .object(a.action), duration: rng.range(2.5, 4.5), next: [.home])
       case .home:
         let t = restSpot(ctx)
         guard hypot(here.x - t.x, here.d - t.d) > 12 || plane != t.plane else { return nil }
@@ -349,7 +348,7 @@ public enum KoaDirector {
         let calmer = 1 + (ctx.night ? 1 : 0) + max(0, 0.6 - ctx.affect.energy) * 2
         return Behavior(
           kind: .rest, why: "đứng nghỉ", target: nil, anchor: nil, gaze: g,
-          expression: nil, gesture: nil, style: .casual, action: .none, duration: rng.range(8, 22) * calmer,
+          expression: nil, gesture: nil, style: .casual, action: .none, duration: rng.range(16, 34) * calmer,
           next: [.rest, .explore, .lookAround, .home])
       case .lookAround:
         guard let a = anchor else { return nil }
@@ -378,7 +377,7 @@ public enum KoaDirector {
         switch k {
         case .rest:
           // nghỉ nối nghỉ được, nhưng lâu quá thì cũng muốn nhúc nhích (trừ khi rất ít sức)
-          let long = history.suffix(2) == [.rest, .rest] && e.energy > 0.4 ? 0.3 : 1
+          let long = history.suffix(3) == [.rest, .rest, .rest] && e.energy > 0.4 ? 0.5 : 1
           consider(k, nil, (1.0 + 1.2 * (1 - e.energy) + (e.calm ? 0.4 : 0)) * long, rng.range(0.55, 1.45))
         case .explore:
           for a in KoaRoomMap.anchors {
@@ -627,8 +626,6 @@ public enum KoaDirector {
           walker.faceTurn = 0
           gaze.look(.user, from: koa, turn: turn)
         }
-        // đón người quay lại thì ấm áp, giữ nét vui, không mắt sao như ăn mừng
-        if at(0.4), b.kind == .greet { expression = .delighted }
       case .proudPose:
         if at(0) {
           walker.faceTurn = 0

@@ -26,21 +26,46 @@ public struct RestActivityContent: Sendable, Hashable, Codable {
   /// này thay vì để hệ thống tick (RN `isPaused` + `pausedRemaining`).
   /// Tuỳ chọn: activity của bản trước không có trường này, đọc ra `nil`.
   public let pausedLeft: Int?
+  /// Set vừa xong là kỷ lục: dòng chữ cho màn khoá, app dịch sẵn. `nil` = không có kỷ lục.
+  public let recordNote: String?
 
   public init(
-    endsAt: EpochMillis, ringStart: EpochMillis, totalSeconds: Int, target: RestTarget?, pausedLeft: Int? = nil
+    endsAt: EpochMillis, ringStart: EpochMillis, totalSeconds: Int, target: RestTarget?, pausedLeft: Int? = nil,
+    recordNote: String? = nil
   ) {
     self.endsAt = endsAt
     self.ringStart = ringStart
     self.totalSeconds = totalSeconds
     self.target = target
     self.pausedLeft = pausedLeft
+    self.recordNote = recordNote
+  }
+
+  /// Koa trên màn khoá. Không đổi theo đồng hồ: Live Activity chỉ vẽ lại khi app cập nhật.
+  public var koa: RestKoa {
+    if pausedLeft != nil { return .waiting }
+    return recordNote == nil ? .resting : .record
+  }
+}
+
+/// Hình Koa của quãng nghỉ, chỉ dùng dáng đã vẽ.
+public enum RestKoa: String, Sendable, Hashable, CaseIterable {
+  case resting, record, waiting
+
+  public var emotion: KoaEmotion.Emotion {
+    switch self {
+    case .resting: .tired
+    case .record: .celebrate
+    case .waiting: .idle
+    }
   }
 }
 
 extension RestTimer {
-  public func activityContent(target: RestTarget?) -> RestActivityContent {
-    RestActivityContent(endsAt: endsAt, ringStart: ringStart, totalSeconds: total, target: target, pausedLeft: pausedLeft)
+  public func activityContent(target: RestTarget?, recordNote: String? = nil) -> RestActivityContent {
+    RestActivityContent(
+      endsAt: endsAt, ringStart: ringStart, totalSeconds: total, target: target, pausedLeft: pausedLeft,
+      recordNote: recordNote)
   }
 }
 
@@ -76,6 +101,8 @@ public protocol RestActivityDriver: Sendable {
 public final class RestTimerController {
   public private(set) var timer: RestTimer?
   public private(set) var target: RestTarget?
+  /// Dòng kỷ lục của set vừa xong, sống cùng quãng nghỉ. Không lưu: mở lại app thì Koa về dáng nghỉ.
+  public private(set) var recordNote: String?
 
   @ObservationIgnored private let driver: any RestActivityDriver
   @ObservationIgnored private let clock: any WallClock
@@ -116,8 +143,19 @@ public final class RestTimerController {
   /// Tick xong / bỏ tick một set (`WorkoutDay.toggle`) hoặc Skip.
   public func handle(_ event: RestEvent, target: RestTarget? = nil) {
     let next = RestTimer.reduce(timer, event, at: clock.nowMillis())
-    if case .start = event { self.target = target }
+    if case .start = event {
+      self.target = target
+      recordNote = nil
+    }
     set(next)
+  }
+
+  /// Set vừa tick là kỷ lục: gọi sau `handle(.start)`, lúc app đã có dòng chữ theo đơn vị người dùng.
+  public func noteRecord(_ note: String?) {
+    let next = timer == nil ? nil : note
+    guard recordNote != next else { return }
+    recordNote = next
+    scheduleSync()
   }
 
   /// ±15 — từ nút trong app HAY từ Island; cùng một đường.
@@ -177,12 +215,15 @@ public final class RestTimerController {
 
   private func set(_ next: RestTimer?) {
     timer = next
-    if next == nil { target = nil }
+    if next == nil {
+      target = nil
+      recordNote = nil
+    }
     persist(timer, target)
     scheduleSync()
   }
 
-  private var desired: RestActivityContent? { timer?.activityContent(target: target) }
+  private var desired: RestActivityContent? { timer?.activityContent(target: target, recordNote: recordNote) }
 
   private func scheduleSync() {
     guard syncing == nil else { return }  // vòng đang chạy sẽ thấy trạng thái mới

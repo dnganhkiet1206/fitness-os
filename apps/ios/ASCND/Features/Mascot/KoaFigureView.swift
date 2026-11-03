@@ -85,7 +85,8 @@ struct KoaFigureView: View {
     }
     .frame(width: size, height: size * KoaMath.aspect)
     .onScrollVisibilityChange(threshold: 0.01) { onScreen = $0 }
-    .modifier(KoaPop(on: live, expression: expression))
+    // trong phòng đạo diễn tự lo mặt: miệng đổi liên tục lúc nói, nảy theo là Koa nhảy không ngừng
+    .modifier(KoaPop(on: live && !bleeds, expression: expression))
     .modifier(KoaStage(on: lit, glow: KoaStage.colour(build), solid: reduceTransparency, size: size))
     .contentShape(Rectangle())
     .simultaneousGesture(touchGesture(live: live), including: live || onTap != nil ? .all : .subviews)

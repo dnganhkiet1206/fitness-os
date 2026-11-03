@@ -65,6 +65,9 @@ public struct WorkoutSummaryView: View {
     self.onShare = onShare
   }
 
+  /// Buổi đã gửi `gains_earned` trong lần mở app này.
+  @MainActor private static var reported: Set<Int64> = []
+
   /// Phần Gains của buổi hôm nay: lịch sử KHÔNG có hôm nay → có hôm nay (không
   /// đếm trùng dù Hôm nay đã đọc lại lịch sử gồm buổi này).
   struct GainsGain {
@@ -76,6 +79,8 @@ public struct WorkoutSummaryView: View {
     let fullWeek: Bool
     /// Ngày tập liền thứ mấy (gồm hôm nay); quá `maxActiveStreak` thì buổi không có Gains.
     let streak: Int
+    /// Hôm nay đã có buổi trước: buổi này không có thưởng.
+    var repeatSession = false
     var overtrained: Bool { streak > KoaGains.maxActiveStreak }
     var delta: Int { after.points - before.points }
     var raw: Int {
@@ -87,6 +92,12 @@ public struct WorkoutSummaryView: View {
   private var gains: GainsGain? {
     guard let h = services?.koaGainsHistory else { return nil }
     let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
+    if KoaGains.hasEarlierSession(h.days, on: today, before: summary.dateTime) {
+      let state = KoaGains.compute(h.days, week: h.week, today: today)
+      return GainsGain(
+        before: state, after: state, planned: false, pr: false, overload: false, fullWeek: false, streak: 0,
+        repeatSession: true)
+    }
     let past = h.days.filter { $0.date != today }
     let todayPR = summary.prDetected || h.days.contains { $0.date == today && $0.personalRecord }
     let todayOverload = h.days.contains { $0.date == today && $0.overload }
@@ -94,13 +105,11 @@ public struct WorkoutSummaryView: View {
     let todayDay = KoaGains.Day(date: today, personalRecord: todayPR, overload: todayOverload)
     let before = KoaGains.compute(past, week: h.week, today: today)
     let after = KoaGains.compute(past + [todayDay], week: h.week, today: today)
-    // tuần đủ buổi đạt đúng hôm nay?
-    let monday = today.adding(days: -WorkoutPlanning.routineIndex(today))
-    let thisWeek = Set(past.map(\.date).filter { $0 >= monday && $0 < today })
+    // từng phần đọc từ chính phép tính Gains: tính cả ngày đổi lịch và loại buổi
+    let b = KoaGains.breakdown(past + [todayDay], week: h.week, on: today) ?? .init()
     return GainsGain(
-      before: before, after: after, planned: h.week.planned.contains(WorkoutPlanning.routineIndex(today)), pr: todayPR,
-      overload: todayOverload, fullWeek: thisWeek.count < h.week.target && thisWeek.count + 1 >= h.week.target,
-      streak: KoaGains.activeStreak(past + [todayDay], through: today))
+      before: before, after: after, planned: b.planned, pr: b.personalRecord, overload: b.overload,
+      fullWeek: b.fullWeek, streak: b.streak)
   }
 
   private func gainsCard(_ g: GainsGain) -> some View {
@@ -123,7 +132,9 @@ public struct WorkoutSummaryView: View {
           .frame(height: 150)
           .accessibilityHidden(true)
         Text(
-          g.overtrained
+          g.repeatSession
+            ? String(localized: "koa.gains.second")
+            : g.overtrained
             ? String(localized: "koa.gains.restNeeded \(g.streak)")
             : rankUp
               ? String(localized: "koa.gains.newRank \(rank.name(lang))")
@@ -132,7 +143,10 @@ public struct WorkoutSummaryView: View {
         .font(.system(size: 22, weight: .heavy))
         .foregroundStyle(DS.Color.foreground.swiftUI)
         // Quá ngày tập liền (29/10, Kiệt): nói vì sao không có Gains thay cho bảng cộng.
-        Text(verbatim: g.overtrained ? String(localized: "koa.gains.restWhy") : parts.joined(separator: " · "))
+        Text(
+          verbatim: g.repeatSession
+            ? String(localized: "koa.gains.secondWhy")
+            : g.overtrained ? String(localized: "koa.gains.restWhy") : parts.joined(separator: " · "))
           .font(DS.TextStyle.footnote)
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
           .multilineTextAlignment(.center)
@@ -154,6 +168,8 @@ public struct WorkoutSummaryView: View {
     }
     .accessibilityElement(children: .combine)
     .onAppear {
+      // một lần mỗi buổi: thẻ hiện lại khi cuộn hay quay về thì không đếm thêm
+      guard Self.reported.insert(summary.dateTime.millis).inserted else { return }
       Telemetry.capture(
         .gainsEarned,
         ["delta": String(g.delta), "planned": String(g.planned), "pr": String(g.pr), "rank_up": String(rankUp)])
@@ -272,6 +288,7 @@ public struct WorkoutSummaryView: View {
     }
     .navigationTitle(Text(summary.templateName))
     .ascndPage()
+    .task { await services?.ensureKoaGainsHistory() }
   }
 
   private func setLabel(_ s: SummarySet) -> String {

@@ -206,6 +206,13 @@ public enum StudioScene {
     build(template, o, decor: true, only: indices)
   }
 
+  /// Bảng hiệu trên tường của tranh gốc, để khung dọc đặt lại cỡ lớn.
+  static func poster(_ o: Options) -> [KoaRender.Element] {
+    var flat = o
+    flat.omit = []
+    return build(template, flat, decor: false, only: Set(103...107))
+  }
+
   /// Chậu cây bên phải (phần tử 92): lá là các nhóm con 1…8, gốc lá ở (0, −12) của chậu.
   public static let plantIndex = 92
 
