@@ -157,25 +157,18 @@ public struct WorkoutSummaryView: View {
           .accessibilityLabel(Text(String(localized: "summary.pr")))
         }
 
-        DSCard {
-          HStack(spacing: DS.Spacing.md) {
-            DSStatTile(
-              label: String(localized: "summary.volume"),
-              // `Math.round(displayWeight(volume)).toLocaleString()` (`day-plan.tsx:1653`).
-              value: unit.volume(Double(summary.volumeKg)).formatted(.number.locale(.app)),
-              unit: unit.label
-            )
-            DSStatTile(
-              label: String(localized: "summary.sets"),
-              value: "\(summary.completedSets)"
-            )
-            DSStatTile(
-              label: String(localized: "summary.exercises"),
-              value: "\(summary.exerciseCount)"
-            )
-          }
-        }
-        .accessibilityElement(children: .combine)
+        // Kiệt 03/11: điều người tập muốn thấy là mức tạ của TỪNG bài so với lần trước;
+        // tổng khối lượng cộng lại thành số rất lớn, dễ nhầm, nên chỉ là dòng phụ.
+        if let compare { compareCard(compare) }
+        Text(
+          String(
+            format: String(localized: "summary.stats.line"),
+            unit.volume(Double(summary.volumeKg)).formatted(.number.locale(.app)), unit.label, summary.completedSets,
+            summary.exerciseCount)
+        )
+        .font(DS.TextStyle.footnote)
+        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityLabel(
           Text(
             String(
@@ -239,6 +232,79 @@ public struct WorkoutSummaryView: View {
     .navigationTitle(Text(summary.templateName))
     .ascndPage()
     .task { await services?.ensureKoaGainsHistory() }
+  }
+
+  /// Mỗi bài của buổi so với các buổi trước (`ExerciseCompare.session`); `nil` khi phân tích
+  /// bài tập chưa tải.
+  private var compare: [ExerciseCompare.Item]? {
+    guard let insights = flow?.insights, insights.loaded else { return nil }
+    let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
+    let items = exerciseGroups.compactMap { g in
+      ExerciseCompare.session(
+        name: g.name,
+        sets: g.rows.filter { !$0.warmup }.map { .init(kg: $0.weightKg ?? 0, reps: $0.reps, seconds: $0.durationSec) },
+        date: today, previous: insights.history(for: g.name), since: summary.dateTime)
+    }
+    return items.isEmpty ? nil : items
+  }
+
+  private func compareCard(_ items: [ExerciseCompare.Item]) -> some View {
+    let text = ExerciseCompareText(unit: unit, locale: locale)
+    return VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+      HStack(alignment: .top, spacing: DS.Spacing.sm) {
+        MascotFigureView(emotion: ExerciseCompare.headline(items) == nil ? .idle : .proud, size: 44, animated: false,
+                         build: services?.koaBuild ?? 0)
+          .accessibilityHidden(true)
+        Text(verbatim: koaLine(items, text))
+          .font(DS.TextStyle.body.weight(.semibold))
+          .foregroundStyle(DS.Color.foreground.swiftUI)
+          .fixedSize(horizontal: false, vertical: true)
+      }
+      Text("summary.compare.title")
+        .font(DS.TextStyle.caption.weight(.semibold))
+        .textCase(.uppercase)
+        .tracking(0.8)
+        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+      ForEach(items) { item in
+        HStack(alignment: .firstTextBaseline, spacing: DS.Spacing.sm) {
+          VStack(alignment: .leading, spacing: 2) {
+            Text(verbatim: item.name).font(DS.TextStyle.body.weight(.semibold))
+            Text(verbatim: text.previousLine(item))
+              .font(DS.TextStyle.caption)
+              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          }
+          Spacer(minLength: DS.Spacing.sm)
+          VStack(alignment: .trailing, spacing: 4) {
+            Text(verbatim: text.value(item.last, item.metric))
+              .font(DS.TextStyle.body.weight(.bold))
+              .monospacedDigit()
+            ExerciseDeltaChip(delta: item.delta, text: text)
+          }
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("summary.compare.\(item.key)")
+      }
+    }
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .padding(DS.Spacing.md)
+    .todayCard()
+    .accessibilityIdentifier("summary.compare")
+  }
+
+  /// Câu của Koa: điều đáng nói nhất của buổi, bằng chính con số của bài ấy.
+  private func koaLine(_ items: [ExerciseCompare.Item], _ text: ExerciseCompareText) -> String {
+    if let top = ExerciseCompare.headline(items) {
+      switch top.delta {
+      case .weight: return String(localized: "summary.koa.weight \(top.name) \(text.chip(top.delta))")
+      case .reps(let n): return String(localized: "summary.koa.reps \(top.name) \(n)")
+      default: return String(localized: "summary.koa.time \(top.name)")
+      }
+    }
+    if items.allSatisfy({ $0.delta == .first }) { return String(localized: "summary.koa.first") }
+    if let held = items.first(where: { $0.delta == .same }), let next = ExerciseCompare.next(held) {
+      return String(localized: "summary.koa.held \(held.name) \(text.next(next))")
+    }
+    return String(localized: "summary.koa.steady")
   }
 
   private func setLabel(_ s: SummarySet) -> String {
