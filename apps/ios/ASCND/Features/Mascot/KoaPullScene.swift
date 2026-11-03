@@ -23,6 +23,8 @@ struct KoaPullScene<Content: View>: View {
   @State private var drag = 0.0
   /// Koa đang ngủ thì không có cảnh chạy tới: thẻ tự trượt lên, Koa ngủ tiếp.
   private var quiet: Bool { reduceMotion || asleep }
+  /// Lúc cảnh thật sự chạy. Dựng bảng làm khựng vài khung, tính từ lúc bấm thì mất nhịp lấy đà.
+  @State private var began: Date?
   /// Rung theo từng nhịp kéo.
   @State private var tugs = 0
 
@@ -33,7 +35,7 @@ struct KoaPullScene<Content: View>: View {
       let w = Double(g.size.width), h = Double(g.size.height + g.safeAreaInsets.top + g.safeAreaInsets.bottom)
       let panelHeight = h * 0.66
       TimelineView(.animation(paused: quiet)) { tl in
-        let t = quiet ? KoaPull.end : tl.date.timeIntervalSince(start)
+        let t = quiet ? KoaPull.end : began.map { tl.date.timeIntervalSince($0) } ?? 0
         let shot = KoaPull.shot(at: t, start: head(w), width: w, height: h, panelHeight: panelHeight)
         let top = h - panelHeight * shot.panel + drag
         ZStack(alignment: .topLeading) {
@@ -61,6 +63,8 @@ struct KoaPullScene<Content: View>: View {
     .sensoryFeedback(.impact(weight: .medium), trigger: tugs)
     .task {
       guard !quiet else { return }
+      try? await Task.sleep(for: .milliseconds(60))
+      began = .now
       try? await Task.sleep(for: .seconds(KoaPull.peekEnd))
       tugs += 1
       KoaSound.boop()
@@ -76,7 +80,7 @@ struct KoaPullScene<Content: View>: View {
     let cx = StudioScene.width / 2, cy = KoaParallax.anchorY
     let feet = cy + (lens.koa.y - cy) * zoom + lens.drop / k
     let x = cx + (lens.koa.x - cx) * zoom
-    let scale = Self.heroScale * k * zoom
+    let scale = Self.heroScale * k * zoom * lens.koa.scale
     return (x * k, feet * k - 184 * scale, scale)
   }
 
@@ -90,8 +94,8 @@ struct KoaPullScene<Content: View>: View {
       c.translateBy(x: -120, y: -110)
       var o = KoaRender.Options()
       o.expression = s.expression
-      o.pose = s.running ? .running : .idle
-      o.t = t * 1000 * (s.running ? 2 : 1)
+      o.walk = s.walk
+      o.t = t * 1000
       o.size = 240
       o.paper = light
       o.flat = light

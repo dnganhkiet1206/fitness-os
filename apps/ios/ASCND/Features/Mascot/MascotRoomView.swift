@@ -167,7 +167,8 @@ struct MascotRoomView: View {
                 await services.loadKoaDust(userId: room.userId)
               }
           }
-          .transition(lens.bedroom ? .move(edge: .bottom) : .opacity)
+          // Koa của cảnh diễn phải có ngay khung đầu: mờ dần thì sân khấu trống một nhịp
+          .transition(.asymmetric(insertion: lens.bedroom ? .move(edge: .bottom) : .identity, removal: .opacity))
         }
       }
     }
@@ -1284,7 +1285,7 @@ struct MascotStage: View {
       let _ = (lens?.shot = shot)
       let x = still?.x ?? f?.x ?? KoaRoomMap.stageMark.x
       let y = still.map(KoaRoomMap.screenY) ?? f?.screenY ?? StudioScene.stageMark.y
-      let _ = (lens?.koa = (x: x, y: y))
+      let _ = (lens?.koa = (x: x, y: y, scale: still.map { KoaRoomMap.scale($0.d) } ?? f?.scale ?? 1))
       let koaAmp = KoaParallax.amp(koa: still?.plane ?? f?.plane ?? .stage, y: y)
       ZStack(alignment: .topLeading) {
         if layered {

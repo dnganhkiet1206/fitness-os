@@ -189,7 +189,11 @@ struct StudioTallRoom: View {
           }
           .offset(x: asleep ? 0 : width)
         // mảng tường tiền cảnh của cảnh đi ngủ: sân khấu tự vẽ phần của nó, đây là phần trên và dưới
-        Color(hex: KoaBedroom.wallColor(light: scheme == .light))
+        let wall = KoaBedroom.wallColor(light: scheme == .light)
+        let edge = KoaBedroom.wallEdge * width / StudioScene.width
+        Color(hex: wall.body)
+          .overlay(alignment: .leading) { Color(hex: wall.edge).frame(width: edge) }
+          .overlay(alignment: .trailing) { Color(hex: wall.edge).frame(width: edge) }
           .frame(width: KoaBedtime.wall * width / StudioScene.width, height: g.size.height)
           .offset(x: asleep ? -(KoaBedtime.wall + 8) * width / StudioScene.width : width + 8)
       }
@@ -376,8 +380,8 @@ final class KoaLens {
   /// Tuỳ chọn của phòng đang hiện, để phần vẽ mới cùng theme và đồ phòng.
   var options = StudioScene.Options()
   @ObservationIgnored var shot = KoaParallax.Shot()
-  /// Chân Koa trên sân khấu (toạ độ phòng): cảnh kéo thẻ bắt đầu từ đây.
-  @ObservationIgnored var koa = (x: StudioScene.stageMark.x, y: StudioScene.stageMark.y)
+  /// Chân Koa (toạ độ phòng) và cỡ theo độ sâu: cảnh kéo thẻ bắt đầu đúng từ đây.
+  @ObservationIgnored var koa = (x: StudioScene.stageMark.x, y: StudioScene.stageMark.y, scale: 1.0)
   /// Tranh hạ xuống bao nhiêu điểm trong khung dọc.
   @ObservationIgnored var drop: CGFloat = 0
 }
