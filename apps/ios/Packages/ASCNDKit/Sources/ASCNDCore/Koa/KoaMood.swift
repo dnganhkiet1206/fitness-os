@@ -153,9 +153,7 @@ public enum KoaMood {
     guard let s = i.signals else { return Read(emotion: .idle, reason: .unread) }
     if i.isBirthday { return Read(emotion: .hat, reason: .birthday) }
     if i.sleep.contains(hour: i.hour, minute: i.minute) { return Read(emotion: .sleep, reason: .night) }
-    if streakInDanger(streak: i.streak, emptyToday: !i.loggedToday, hour: i.hour, riskHour: i.riskHour) {
-      return Read(emotion: .worry, reason: .worry)
-    }
+    // Koa không lo vì chuỗi ngày nữa (Koa Ecosystem V2, 02/11): ngày trống chỉ là ngày trống.
     func done(_ q: MascotRules.Quest) -> Bool { s.done(q, stepsGoal: i.stepsGoal) }
     // `activeDefs`: nhiệm vụ bước không tính khi chưa từng có số bước.
     // Hồi phục chỉ thay buổi tập vào ngày nghỉ — không là điều kiện của "xong hết".
