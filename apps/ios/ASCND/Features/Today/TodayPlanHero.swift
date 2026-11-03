@@ -275,29 +275,39 @@ struct TodayWeekStrip: View {
   let target: Int?
   /// Dòng "Tuần của Koa · x/y" phía trên (thẻ ở phòng Koa đã có tiêu đề riêng).
   var showsHeader = true
+  /// Cỡ chữ lớn theo Dynamic Type, ở cỡ mặc định đúng như cũ (11 / 10,5 pt). Kiểm accessibility
+  /// 03/11 (#795 đợt 2b): "Dynamic Type font sizes are unsupported" cho "KOA'S WEEK" và tên thứ.
+  @ScaledMetric(relativeTo: .caption2) private var headerSize: CGFloat = 11
+  @ScaledMetric(relativeTo: .caption2) private var daySize: CGFloat = 10.5
 
   var body: some View {
     VStack(alignment: .leading, spacing: 6) {
       if showsHeader {
-      HStack {
-        Text("dp.week")
-        Spacer()
-        if let target {
-          Text(String(localized: "dp.week.count \(days.filter(\.trained).count) \(target)"))
-        } else {
-          Text("dp.week.none")
+        // Chữ lớn: tiêu đề và số buổi không vừa một hàng thì xếp dọc, không cắt chữ.
+        ViewThatFits(in: .horizontal) {
+          HStack {
+            Text("dp.week")
+            Spacer()
+            count
+          }
+          VStack(alignment: .leading, spacing: 2) {
+            Text("dp.week")
+            count
+          }
         }
-      }
-      .font(.system(size: 11, weight: .semibold))
-      .tracking(0.6)
-      .textCase(.uppercase)
-      .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        .font(.system(size: headerSize, weight: .semibold))
+        .tracking(0.6)
+        .textCase(.uppercase)
+        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
       }
       HStack(spacing: 4) {
         ForEach(days, id: \.self) { d in
           VStack(spacing: 4) {
+            // Bảy cột chia đều bề ngang: chữ lớn thì thu nhỏ vừa ô thay vì cắt "We…".
             Text(verbatim: TodayPlanHero.weekday(d.date))
-              .font(.system(size: 10.5, weight: .semibold))
+              .font(.system(size: daySize, weight: .semibold))
+              .lineLimit(1)
+              .minimumScaleFactor(0.6)
               .foregroundStyle(DS.Color.foreground.swiftUI)
             dot(d)
           }
@@ -313,6 +323,14 @@ struct TodayWeekStrip: View {
           .accessibilityValue(Text(verbatim: state(d)))
         }
       }
+    }
+  }
+
+  @ViewBuilder private var count: some View {
+    if let target {
+      Text(String(localized: "dp.week.count \(days.filter(\.trained).count) \(target)"))
+    } else {
+      Text("dp.week.none")
     }
   }
 
