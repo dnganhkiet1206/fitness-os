@@ -200,18 +200,6 @@ struct TodayExtras<Plan: View>: View {
         }
         .todayEntrance(2)
       }
-      if let flow, let coach = weekCoach(flow) {
-        KoaWeekCoachCard(
-          kind: coach.kind, lastWeek: coach.lastWeek, highlight: coach.highlight, targets: coach.targets,
-          cue: services.trainingCue(userId: userId), build: services.koaBuild,
-          accept: {
-            if case .light = coach.kind { flow.today.setLighterWeek(through: coach.monday.adding(days: 6)) }
-            answerWeekCoach(coach.monday)
-            dailyPlan?.recompute(services: services, flow: flow)
-          },
-          keep: { answerWeekCoach(coach.monday) })
-        .todayEntrance(2)
-      }
       if let dailyPlan, let flow {
         // GĐ1: MỘT việc chính + lý do + phương án; rồi Tuần của Koa (lịch thật).
         // Thẻ "Tăng tải hôm nay" nằm sau việc chính, vuốt sang (Kiệt duyệt mock 28/10).
@@ -233,6 +221,7 @@ struct TodayExtras<Plan: View>: View {
           planHero(dailyPlan, flow, hint: nil)
             .todayEntrance(2)
         }
+        weekCoachCard(flow)
         // Insight hôm nay (Kiệt 21/10, GĐ3) ngay dưới việc chính, kiểu Apple Health.
         TodayCoachSection(
           userId: userId, today: flow.today.today, refresh: dayVersion,
@@ -754,8 +743,27 @@ struct TodayExtras<Plan: View>: View {
   private func weekCoachKey(_ monday: LocalDate) -> String { "koa.weekcoach.\(userId).\(monday)" }
 
   private func answerWeekCoach(_ monday: LocalDate) {
-    UserDefaults.standard.set(true, forKey: weekCoachKey(monday))
+    if AppServices.uiTest {
+      WeekCoachUITest.answers.insert(weekCoachKey(monday))
+    } else {
+      UserDefaults.standard.set(true, forKey: weekCoachKey(monday))
+    }
     weekCoachAnswers += 1
+  }
+
+  @ViewBuilder private func weekCoachCard(_ flow: WorkoutFlow) -> some View {
+    if let coach = weekCoach(flow) {
+      KoaWeekCoachCard(
+        kind: coach.kind, lastWeek: coach.lastWeek, highlight: coach.highlight, targets: coach.targets,
+        cue: services.trainingCue(userId: userId), build: services.koaBuild,
+        accept: {
+          if case .light = coach.kind { flow.today.setLighterWeek(through: coach.monday.adding(days: 6)) }
+          answerWeekCoach(coach.monday)
+          dailyPlan?.recompute(services: services, flow: flow)
+        },
+        keep: { answerWeekCoach(coach.monday) })
+      .todayEntrance(3)
+    }
   }
 
   private func weekCoach(_ flow: WorkoutFlow) -> WeekCoach? {
@@ -765,7 +773,8 @@ struct TodayExtras<Plan: View>: View {
     let monday = WeeklyChallenges.weekStart(today)
     let last = KoaWeek.state(today: today.adding(days: -7), library: library, trained: flow.today.trained)
     let lastWeek = KoaWeekCoach.LastWeek(planned: last?.target ?? 0, done: last?.done ?? 0)
-    let answered = UserDefaults.standard.bool(forKey: weekCoachKey(monday))
+    let answered = AppServices.uiTest
+      ? WeekCoachUITest.answers.contains(weekCoachKey(monday)) : UserDefaults.standard.bool(forKey: weekCoachKey(monday))
     guard KoaWeekCoach.shows(today: today, lastWeek: lastWeek, answered: answered),
       let insights = flow.insights, insights.loaded
     else { return nil }
@@ -1279,4 +1288,10 @@ struct RecentAwardsCard: View {
     case .platinum: String(localized: "aw.tier.platinum")
     }
   }
+}
+
+/// UI test: câu trả lời cho thẻ đầu tuần chỉ sống trong một lần mở app, để flow chạy lại được.
+@MainActor
+private enum WeekCoachUITest {
+  static var answers: Set<String> = []
 }
