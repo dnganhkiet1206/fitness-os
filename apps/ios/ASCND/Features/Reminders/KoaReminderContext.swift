@@ -42,6 +42,14 @@ extension ReminderContext {
     return ctx
   }
 
+  /// "Mình tập sau khi…" (03/11): giờ và câu của lời nhắc tập của Koa.
+  func cue(_ cue: TrainingCue?, lang: AppPreferences.Lang) -> ReminderContext {
+    var ctx = self
+    ctx.trainingCue = cue
+    ctx.cueLang = lang
+    return ctx
+  }
+
   /// Koa đợt 2: ngày lỡ lịch (Gains) + ngày nghỉ đã đặt → câu ngày lỡ thứ 3 / thứ 6.
   func gains(_ gains: (userId: String, state: KoaGains.State, week: KoaGains.Week)?, userId: String, lang: AppPreferences.Lang)
     -> ReminderContext

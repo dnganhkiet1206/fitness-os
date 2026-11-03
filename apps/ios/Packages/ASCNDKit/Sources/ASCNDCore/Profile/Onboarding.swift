@@ -65,6 +65,8 @@ public struct OnboardingDraft: Sendable, Hashable, Codable {
   /// Lịch tập chọn ở màn `schedule` (đợt 3); `nil` = chưa tới màn ấy (mặc định
   /// theo kinh nghiệm khi tới).
   public var schedule: StarterPrograms.Choice?
+  /// "Mình sẽ tập sau khi…" ở màn `schedule` (03/11); `nil` = bỏ qua, nhắc theo giờ quen.
+  public var trainingCue: TrainingCue?
 
   public init() {}
 }
@@ -428,6 +430,28 @@ public final class OnboardingController {
       c.days.sort()
       c.sessions = c.days.count
       $0.schedule = c
+    }
+  }
+
+  /// Chọn lại cùng mốc thì bỏ chọn (bỏ qua câu "nếu… thì…").
+  public func setTrainingCue(_ anchor: TrainingCue.Anchor) {
+    edit {
+      if $0.trainingCue?.anchor == anchor {
+        $0.trainingCue = nil
+      } else {
+        $0.trainingCue = TrainingCue(anchor: anchor, busy: $0.trainingCue?.busy)
+      }
+    }
+  }
+
+  public func setCueClock(_ clock: ReminderClock) {
+    edit { $0.trainingCue?.clock = clock }
+  }
+
+  public func setBusy(_ busy: TrainingCue.Busy) {
+    edit { d in
+      let now = d.trainingCue?.busy
+      d.trainingCue?.busy = now == busy ? nil : busy
     }
   }
 
