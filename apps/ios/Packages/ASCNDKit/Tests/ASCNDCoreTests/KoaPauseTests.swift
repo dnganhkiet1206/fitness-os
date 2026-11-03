@@ -56,4 +56,55 @@ import Testing
     #expect(none?.active(on: today) == false, "kết thúc sớm: dòng cũ hết hiệu lực")
     #expect(KoaPauseSync.decode(nil) == nil)
   }
+
+  @Test func pastSpellsStayInTheLog() {
+    let log = KoaPauseLog().setting(KoaPause(from: d("2026-11-01"), days: 3), today: d("2026-11-01"))
+    // hết hẹn: đợt đã qua vẫn là ngày nghỉ (trước đây vừa quay lại là phòng bám bụi những ngày ấy)
+    #expect(log.contains(d("2026-11-02")) && !log.contains(d("2026-11-05")))
+    let again = log.setting(KoaPause(from: d("2026-11-10"), days: 2), today: d("2026-11-10"))
+    #expect(again.spells.count == 2 && again.contains(d("2026-11-03")) && again.contains(d("2026-11-11")))
+  }
+
+  @Test func endingEarlyOrReplacingStopsTheCurrentSpellYesterday() {
+    let log = KoaPauseLog().setting(KoaPause(from: d("2026-11-01"), days: 7), today: d("2026-11-01"))
+    let ended = log.setting(nil, today: d("2026-11-04"))
+    #expect(ended.spells == [KoaPause(start: d("2026-11-01"), last: d("2026-11-03"))])
+    let replaced = log.setting(KoaPause(from: d("2026-11-04"), days: 2), today: d("2026-11-04"))
+    #expect(replaced.spells.map(\.last) == [d("2026-11-03"), d("2026-11-05")])
+    #expect(log.setting(nil, today: d("2026-11-01")).spells.isEmpty, "huỷ ngay hôm đầu thì như chưa nghỉ")
+  }
+
+  @Test func oldSpellsArePruned() {
+    let log = KoaPauseLog([KoaPause(from: d("2026-08-01"), days: 3), KoaPause(from: d("2026-10-20"), days: 3)])
+    #expect(log.pruned(today: d("2026-11-04")).spells.map(\.start) == [d("2026-10-20")])
+  }
+
+  @Test func currentPauseFromAnotherDeviceJoinsTheLog() {
+    let past = KoaPauseLog([KoaPause(from: d("2026-10-20"), days: 3)])
+    let current = KoaPause(from: d("2026-11-03"), days: 4)
+    let log = past.including(current, today: d("2026-11-04"))
+    #expect(log.spells.count == 2 && log.contains(d("2026-11-05")))
+    #expect(log.including(current, today: d("2026-11-04")) == log)
+  }
+
+  @Test func logRowsWriteChangesAndCancelWithoutDeleting() {
+    let today = d("2026-11-04")
+    let old = KoaPauseLog([KoaPause(from: d("2026-10-20"), days: 3), KoaPause(from: today, days: 5)])
+    let new = old.setting(nil, today: today)
+    let rows = KoaPauseLogSync.rows(from: old, to: new, userId: "u")
+    #expect(rows.count == 1, "đợt cũ không đổi thì không gửi lại")
+    #expect(rows.first?["ends_on"] == .string("2026-11-03"), "huỷ = ngày cuối trước ngày đầu")
+    let back = KoaPauseLogSync.decode(rows.map { .object($0) }, today: today)
+    #expect(back.spells.isEmpty, "dòng đã huỷ bị bỏ qua khi đọc")
+    let all = KoaPauseLogSync.decode(KoaPauseLogSync.rows(old, userId: "u").map { .object($0) }, today: today)
+    #expect(all == old)
+  }
+
+  @Test func dustCountsPastPauseDays() {
+    let past = KoaPauseLog([KoaPause(from: d("2026-11-02"), days: 10)])
+    let today = d("2026-11-13")
+    let dust = KoaDust.compute(
+      sessions: [d("2026-11-01")], logs: [:], cleaned: [], isRest: past.contains, today: today)
+    #expect(dust.level == 0, "đợt nghỉ đã hết hẹn vẫn không để lại bụi")
+  }
 }

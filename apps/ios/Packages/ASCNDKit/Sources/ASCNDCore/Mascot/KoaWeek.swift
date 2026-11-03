@@ -40,16 +40,17 @@ public enum KoaWeek {
   }
 
   /// `nil` khi chưa đọc được lịch hay lịch không có buổi nào (chưa có tuần để đếm).
-  /// Ngày tạm nghỉ (`KoaPause`) không tính vào đích: tuần có nghỉ thì đích nhỏ lại theo.
+  /// Ngày tạm nghỉ (`KoaPauseLog`, cả đợt đã qua) không tính vào đích: tuần có nghỉ thì đích nhỏ lại theo.
   public static func state(
-    today: LocalDate, library: TemplateSnapshot?, trained: Set<LocalDate>, pause: KoaPause? = nil
+    today: LocalDate, library: TemplateSnapshot?, trained: Set<LocalDate>,
+    paused: (LocalDate) -> Bool = { _ in false }
   ) -> State? {
     guard let library else { return nil }
     let week = KoaGains.Week(library)
     guard !week.planned.isEmpty || !library.overrides.isEmpty else { return nil }
     let start = WeeklyChallenges.weekStart(today)
     let days = days(weekStart: start, today: today, library: library, trained: trained)
-    let pausedPlanned = days.filter { $0.planned && !$0.trained && pause?.contains($0.date) == true }.count
+    let pausedPlanned = days.filter { $0.planned && !$0.trained && paused($0.date) }.count
     let target = max(0, week.target - pausedPlanned)
     guard target > 0, days.contains(where: \.planned) || days.contains(where: \.trained) else { return nil }
     return State(weekStart: start, days: days, target: target, done: days.filter(\.trained).count)
