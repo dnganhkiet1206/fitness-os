@@ -358,6 +358,9 @@ public enum ReminderPlan {
       ?? calendar.date(from: c)!
   }
 
+  /// Nhắc thưởng thử thách đã gỡ; giữ đoạn dựng để đọc lịch sử, không bao giờ chạy.
+  static let retiredKeysEnabled = false
+
   /// `planReminders`: mọi lời nhắc đáng bắn từ `now` tới hết tầm, theo giờ.
   public static func plan(
     _ prefs: ReminderPrefs, _ ctx: ReminderContext, now: Date, calendar: Calendar
@@ -426,15 +429,10 @@ public enum ReminderPlan {
       }
     }
 
-    // Koa: chuỗi ≥ 3 ngày, hôm nay ĐÃ ĐỌC là chưa ghi gì → một lời nhắc hôm nay.
-    // Tối đa MỘT lời nhắc của Koa mỗi ngày (đợt 2): hôm nay đã có lời nhắc buổi tập của
-    // Koa thì không nhắc chuỗi — buổi tập cũng giữ được chuỗi.
-    let koaToday = out.contains { $0.key == .koaTraining && calendar.isDate($0.at, inSameDayAs: now) }
-    if prefs.streak, !koaToday, ctx.loggedToday == false, ctx.streak >= KoaMood.riskMinStreak, let t = ctx.streakRiskTime {
-      push(.streak, at(now, 0, t.hour, t.minute, calendar))
-    }
-
-    if prefs.challengeClaim {
+    // Không còn nhắc "giữ chuỗi" và "thưởng sắp hết hạn" (Koa Ecosystem V2, Kiệt duyệt 02/11):
+    // lời nhắc dựa trên sợ mất làm người dùng nản khi lỡ, và thử thách tuần cũ đã không còn màn.
+    // Khoá vẫn giữ trong `ReminderKey` để đọc được cài đặt cũ.
+    if retiredKeysEnabled {
       let today = calendar.dateComponents([.year, .month, .day], from: now)
       let pad = { (n: Int) in n < 10 ? "0\(n)" : "\(n)" }
       let todayText = "\(today.year!)-\(pad(today.month!))-\(pad(today.day!))"

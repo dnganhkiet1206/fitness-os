@@ -29,15 +29,9 @@ struct KoaMoodTests {
     #expect(bday.emotion == .hat)
   }
 
-  @Test func worryOnlyForARealStreakInTheirEvening() {
-    let empty = Self.day()
-    #expect(Self.read(empty, hour: 19, streak: 5, logged: false).reason == .worry)
-    #expect(Self.read(empty, hour: 10, streak: 5, logged: false).reason != .worry, "không lo buổi sáng")
-    #expect(Self.read(empty, hour: 19, streak: 2, logged: false).reason != .worry, "chuỗi < 3 ngày")
-    #expect(Self.read(empty, hour: 19, streak: 5, logged: true).reason != .worry)
-    // Giờ muộn của người này là 21h → 19h chưa lo.
-    let late = KoaMood.read(.init(signals: empty, hour: 19, streak: 5, loggedToday: false, riskHour: 21))
-    #expect(late.reason != .worry)
+  /// Koa Ecosystem V2 (02/11): Koa không lo vì chuỗi ngày, kể cả buổi tối còn trống.
+  @Test func koaNeverWorriesAboutAStreak() {
+    #expect(Self.read(Self.day(), hour: 19, streak: 5, logged: false).reason != .worry)
   }
 
   @Test func allDoneCelebratesAndStepsCountOnlyWithASource() {
