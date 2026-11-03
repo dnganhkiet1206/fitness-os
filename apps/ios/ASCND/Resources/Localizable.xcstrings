@@ -64388,6 +64388,282 @@
     }
    }
   },
+  "cue.after.custom": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "a time I pick"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "una hora que elijo"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "tự đặt giờ"
+     }
+    }
+   }
+  },
+  "cue.after.dinner": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "dinner"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "la cena"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "ăn tối"
+     }
+    }
+   }
+  },
+  "cue.after.lunch": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "lunch"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "el almuerzo"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "nghỉ trưa"
+     }
+    }
+   }
+  },
+  "cue.after.q": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "I'll train after…"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Entrenaré después de…"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mình sẽ tập sau khi…"
+     }
+    }
+   }
+  },
+  "cue.after.wake": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "I wake up"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "despertarme"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "thức dậy"
+     }
+    }
+   }
+  },
+  "cue.after.work": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "work"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "el trabajo"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "tan làm"
+     }
+    }
+   }
+  },
+  "cue.busy.q": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "If I'm busy that day…"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Si ese día estoy ocupado…"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nếu hôm đó bận thì…"
+     }
+    }
+   }
+  },
+  "cue.busy.short": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "do the 15-minute version"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "hago la versión de 15 minutos"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "tập bản 15 phút"
+     }
+    }
+   }
+  },
+  "cue.busy.tomorrow": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "move it to tomorrow"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "lo paso a mañana"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "dời sang mai"
+     }
+    }
+   }
+  },
+  "cue.desc": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa reminds you once on training days, at the moment you chose."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa te avisa una vez los días de entreno, en el momento que elegiste."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa nhắc một lần vào ngày có buổi, đúng mốc bạn chọn."
+     }
+    }
+   }
+  },
+  "cue.none": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "None"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ninguno"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Không chọn"
+     }
+    }
+   }
+  },
+  "cue.time": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Reminder time"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hora del recordatorio"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Giờ nhắc"
+     }
+    }
+   }
+  },
   "swap.nudge.line": {
    "extractionState": "manual",
    "localizations": {

@@ -69,7 +69,7 @@ struct KoaPauseSheet: View {
       .accessibilityIdentifier("pause.start")
     }
     .padding(DS.Spacing.lg)
-    .presentationDetents([.medium])
+    .mediumSheet()
     .presentationDragIndicator(.visible)
   }
 

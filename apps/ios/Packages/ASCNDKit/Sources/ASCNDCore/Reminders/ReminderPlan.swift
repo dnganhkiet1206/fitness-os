@@ -287,6 +287,10 @@ public struct ReminderContext: Sendable, Hashable {
   /// Các câu thường của lời nhắc buổi tập, xoay vòng theo ngày (#800); trống = câu chung
   /// của `ReminderCopy` như trước.
   public var koaTrainingLines: [ReminderText] = []
+  /// "Mình tập sau khi…" (`TrainingCue`): giờ và câu của lời nhắc tập của Koa.
+  public var trainingCue: TrainingCue?
+  /// Ngôn ngữ cho câu của `trainingCue`.
+  public var cueLang: AppPreferences.Lang = .vi
   /// Lời nhắc buổi tập cách nhau ít nhất ngần này ngày (#800: bị bỏ qua 3 lần liền → 2).
   public var koaTrainingEvery = 1
   /// Ngày (độ lệch từ hôm nay, ≤ 0) lời nhắc buổi tập gần nhất đã bắn; `nil` = chưa biết.
@@ -428,13 +432,16 @@ public enum ReminderPlan {
         KoaNudge.due(day: day, lastOffset: lastKoaTraining, every: ctx.koaTrainingEvery)
       {
         let m = KoaSchedule.missedOn(dayOffset: day, missedToday: missed, todayWeekday: todayWeekday, rest: ctx.restDays)
-        let habit = ctx.habitTimes[.workout] != nil
-        let h = ctx.habitTimes[.workout] ?? ReminderClock(hour: KoaSchedule.defaultHabitHour, minute: 0)
+        let habit = ctx.trainingCue == nil && ctx.habitTimes[.workout] != nil
+        // câu "nếu… thì…" của người dùng thắng giờ quen đoán từ lịch sử
+        let h = ctx.trainingCue?.clock ?? ctx.habitTimes[.workout]
+          ?? ReminderClock(hour: KoaSchedule.defaultHabitHour, minute: 0)
         let when = at(now, day, h.hour, h.minute, calendar)
         let text: ReminderText? =
           m >= KoaGains.comebackDays
           ? ctx.koaWorkoutCopy?.returning
-          : KoaNudge.line(ctx.koaTrainingLines, on: when, calendar: calendar, after: lastLine).map {
+          : ctx.trainingCue.map { $0.text(ctx.cueLang) }
+            ?? KoaNudge.line(ctx.koaTrainingLines, on: when, calendar: calendar, after: lastLine).map {
             lastLine = $0.index
             return ReminderText(title: $0.text.title, body: habit ? $0.text.habitBody ?? $0.text.body : $0.text.body)
           }
