@@ -1,0 +1,29 @@
+# Tiến bộ › Tập luyện có Nhịp 30 ngày và lối vào Hành trình cùng Koa (Koa Ecosystem V2, 02/11);
+# Hành trình mở được và quay lại được.
+appId: com.ascnd.fitnessos.dev
+name: Progress shows the 30-day rhythm and opens the journey
+---
+- runFlow: subflows/launch.yaml
+- tapOn: "Progress"
+- extendedWaitUntil:
+    visible:
+      id: progress.segment.training
+    timeout: 15000
+- tapOn:
+    id: progress.segment.training
+- scrollUntilVisible:
+    element:
+      id: progress.journey
+    direction: DOWN
+    timeout: 15000
+- assertVisible: "30-day rhythm"
+- takeScreenshot: 10-rhythm
+- tapOn:
+    id: progress.journey
+- extendedWaitUntil:
+    visible: "Your journey with Koa"
+    timeout: 15000
+- takeScreenshot: 10-journey
+- runFlow: subflows/back.yaml
+- assertVisible:
+    id: progress.journey
