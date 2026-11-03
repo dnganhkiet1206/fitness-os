@@ -90,9 +90,12 @@ jobs:
             apps/ios/Packages/ASCNDKit/.build
             apps/ios/Packages/ASCNDBackend/.build
             apps/ios/Packages/ASCNDStore/.build
-          key: spm-macos-${{ hashFiles('apps/ios/Packages/*/Package.resolved', 'apps/ios/Packages/*/Package.swift') }}-${{ github.sha }}
+          # Khoá có mã nguồn ASCNDKit: đổi Core thì build lại từ đầu. Trước đó (03/11, #816)
+          # một trường mới trong `OnboardingDraft` không làm module test của ASCNDStore build
+          # lại; test chạy với bố cục struct cũ, sai kết quả và crash signal 11.
+          key: spm-macos-${{ hashFiles('apps/ios/Packages/*/Package.resolved', 'apps/ios/Packages/*/Package.swift') }}-${{ hashFiles('apps/ios/Packages/ASCNDKit/Sources/**') }}-${{ github.sha }}
           restore-keys: |
-            spm-macos-${{ hashFiles('apps/ios/Packages/*/Package.resolved', 'apps/ios/Packages/*/Package.swift') }}-
+            spm-macos-${{ hashFiles('apps/ios/Packages/*/Package.resolved', 'apps/ios/Packages/*/Package.swift') }}-${{ hashFiles('apps/ios/Packages/ASCNDKit/Sources/**') }}-
 
       - name: XcodeGen
         working-directory: apps/ios
