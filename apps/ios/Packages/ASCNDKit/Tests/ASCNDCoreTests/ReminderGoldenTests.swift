@@ -52,10 +52,12 @@ struct ReminderGoldenTests {
 
   static let golden: Golden = {
     let url = Bundle.module.url(forResource: "reminder-golden", withExtension: "json", subdirectory: "Fixtures")!
+    // swiftlint:disable:next force_try - tệp golden đi kèm test; đọc hỏng là lỗi của chính bộ test
     return try! JSONDecoder().decode(Golden.self, from: Data(contentsOf: url))
   }()
 
   static func prefs(_ v: JSONValue) -> ReminderPrefs {
+    // swiftlint:disable:next force_try - JSONValue luôn mã hoá được
     let data = try! JSONEncoder().encode(v)
     return ReminderPrefs.decode(String(data: data, encoding: .utf8))
   }
