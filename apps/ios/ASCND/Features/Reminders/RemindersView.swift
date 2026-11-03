@@ -69,6 +69,51 @@ struct RemindersView: View {
         }
       }
 
+      if let userId = services.session.session?.userId {
+        Section {
+          Picker(selection: Binding(
+            get: { services.trainingCue(userId: userId)?.anchor },
+            set: { a in
+              services.setTrainingCue(a.map { TrainingCue(anchor: $0, busy: services.trainingCue(userId: userId)?.busy) }, userId: userId)
+            })
+          ) {
+            Text("cue.none").tag(TrainingCue.Anchor?.none)
+            ForEach(TrainingCue.Anchor.allCases, id: \.self) { a in
+              Text(verbatim: a.label).tag(Optional(a))
+            }
+          } label: {
+            RowTitle(
+              title: String(localized: "cue.after.q"), subtitle: String(localized: "cue.desc"),
+              systemImage: "figure.strengthtraining.traditional", color: DS.Color.metricRose)
+          }
+          .accessibilityIdentifier("reminders.cue")
+          if var cue = services.trainingCue(userId: userId) {
+            DatePicker(
+              String(localized: "cue.time"),
+              selection: Binding(
+                get: { Calendar.current.date(from: DateComponents(hour: cue.clock.hour, minute: cue.clock.minute)) ?? .now },
+                set: { d in
+                  let c = Calendar.current.dateComponents([.hour, .minute], from: d)
+                  cue.clock = ReminderClock(hour: c.hour ?? 18, minute: c.minute ?? 0)
+                  services.setTrainingCue(cue, userId: userId)
+                }),
+              displayedComponents: .hourAndMinute)
+            Picker(String(localized: "cue.busy.q"), selection: Binding(
+              get: { cue.busy },
+              set: { b in
+                cue.busy = b
+                services.setTrainingCue(cue, userId: userId)
+              })
+            ) {
+              Text("cue.none").tag(TrainingCue.Busy?.none)
+              ForEach(TrainingCue.Busy.allCases, id: \.self) { b in
+                Text(verbatim: b.label).tag(Optional(b))
+              }
+            }
+          }
+        }
+      }
+
       Section {
         // Bỏ nhắc "giữ chuỗi" và "thưởng sắp hết hạn" (Koa Ecosystem V2, 02/11): không nhắc bằng sợ mất.
         // Koa đợt 2: một lời nhắc mỗi ngày có buổi trong lịch, đúng giờ quen tập.

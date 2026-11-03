@@ -744,6 +744,26 @@ final class AppServices {
     return await KoaGainsSync.load(userId: userId, store: rows, plans: plans, now: SystemWallClock().nowMillis(), in: .current)
   }
 
+  /// Đổi mỗi lần câu "nếu… thì…" đổi.
+  var trainingCueRevision = 0
+
+  /// "Mình tập sau khi…" của tài khoản (`TrainingCue`, 03/11). Lưu trên máy.
+  func trainingCue(userId: String) -> TrainingCue? {
+    _ = trainingCueRevision
+    guard let data = UserDefaults.standard.data(forKey: "koa.cue.\(userId)") else { return nil }
+    return try? JSONDecoder().decode(TrainingCue.self, from: data)
+  }
+
+  func setTrainingCue(_ cue: TrainingCue?, userId: String) {
+    let key = "koa.cue.\(userId)"
+    if let cue, let data = try? JSONEncoder().encode(cue) {
+      UserDefaults.standard.set(data, forKey: key)
+    } else {
+      UserDefaults.standard.removeObject(forKey: key)
+    }
+    trainingCueRevision += 1
+  }
+
   /// Đổi mỗi lần tạm nghỉ đổi, để các màn đọc `koaPause` vẽ lại.
   var koaPauseRevision = 0
   /// UI test: tạm nghỉ chỉ sống trong một lần mở app, để flow này không làm hỏng flow sau.
