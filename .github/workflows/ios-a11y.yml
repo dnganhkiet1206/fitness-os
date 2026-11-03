@@ -1,0 +1,117 @@
+# Kiểm accessibility tự động các màn Koa (#795 đợt 2): XCUITest `performAccessibilityAudit()`
+# (Xcode) trên app ở chế độ UI test — máy chủ Supabase giả trong app, đã đăng nhập sẵn, dữ liệu
+# mẫu. Không tài khoản, không secret, không chạm Supabase.
+#
+# Tách khỏi `ios-e2e.yml`: job E2E đã chạm trần thời gian với các flow Maestro, thêm UI test vào
+# đó làm flow bị huỷ giữa chừng.
+#
+# Đợt 2a: THU THẬP — mỗi vấn đề một dòng `A11Y|màn|loại|mô tả|phần tử`, tóm tắt thành bảng ở
+# trang lượt chạy; job chỉ đỏ khi không build được hoặc không mở được màn. Không phải required
+# check. Chạy: hằng đêm, bấm tay (workflow_dispatch), PR có nhãn `e2e` hoặc `a11y`.
+#
+# Lưu ý của GitHub: `schedule` và `workflow_dispatch` chỉ đọc workflow ở nhánh MẶC ĐỊNH (main).
+name: iOS A11y audit
+
+on:
+  schedule:
+    # 04:15 UTC hằng đêm, sau E2E (03:30).
+    - cron: '15 4 * * *'
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Nhánh / SHA để chạy
+        required: false
+        default: native/ios-rewrite
+  pull_request:
+    types: [labeled, opened, synchronize, reopened]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  A11Y_REF: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || inputs.ref || 'native/ios-rewrite' }}
+
+jobs:
+  a11y:
+    if: >-
+      github.event_name != 'pull_request'
+      || contains(github.event.pull_request.labels.*.name, 'e2e')
+      || contains(github.event.pull_request.labels.*.name, 'a11y')
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.A11Y_REF }}
+
+      - name: Chọn Xcode mới nhất
+        run: |
+          latest=$(ls -d /Applications/Xcode_*.app | grep -v beta | sort -V | tail -1)
+          sudo xcode-select -s "$latest"
+          xcodebuild -version
+
+      - name: XcodeGen
+        working-directory: apps/ios
+        run: |
+          brew install xcodegen
+          xcodegen generate
+
+      - name: Bật simulator
+        run: |
+          # iPhone Pro đầu tiên của runtime iOS mới nhất (cùng cách chọn với E2E / app-macos).
+          udid=$(xcrun simctl list devices available -j | python3 -c '
+          import json, re, sys
+          d = json.load(sys.stdin)["devices"]
+          ios = sorted((k for k in d if "iOS" in k), key=lambda k: [int(x) for x in re.findall(r"\d+", k.split("iOS")[-1])])
+          phones = [x for x in d[ios[-1]] if x["name"].startswith("iPhone")]
+          pro = [x for x in phones if "Pro" in x["name"] and "Max" not in x["name"]]
+          print((pro or phones)[0]["udid"])')
+          echo "SIM=$udid" >> "$GITHUB_ENV"
+          xcrun simctl list devices | grep "$udid"
+          xcrun simctl boot "$udid"
+          xcrun simctl bootstatus "$udid" -b
+
+      - name: Kiểm accessibility (ASCNDUITests)
+        working-directory: apps/ios
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project ASCND.xcodeproj -scheme ASCNDA11y -configuration Debug \
+            -destination "id=$SIM" \
+            -derivedDataPath "$RUNNER_TEMP/dd" \
+            -resultBundlePath "$RUNNER_TEMP/a11y.xcresult" \
+            CODE_SIGNING_ALLOWED=NO \
+            | tee a11y.log | grep -E " error:|Test Case|A11Y\||TEST (SUCCEEDED|FAILED)"
+
+      - name: Tóm tắt
+        if: always()
+        working-directory: apps/ios
+        run: |
+          python3 - a11y.log >> "$GITHUB_STEP_SUMMARY" <<'PY' || true
+          import collections, sys
+          rows = [l.strip().split("|")[1:] for l in open(sys.argv[1], errors="replace") if l.startswith("A11Y|")]
+          print("## Kiểm accessibility (đợt 2a: thu thập)\n")
+          if not rows:
+              print("Không có dòng `A11Y|` nào: test không chạy tới bước kiểm (xem log)."); sys.exit()
+          count = collections.Counter((r[0], r[1]) for r in rows if len(r) > 1 and r[1] != "-")
+          print("| Màn | Loại | Số vấn đề |\n|---|---|---|")
+          for (screen, kind), n in sorted(count.items()):
+              print(f"| {screen} | {kind} | {n} |")
+          print("\n<details><summary>Từng vấn đề</summary>\n\n| Màn | Loại | Mô tả | Phần tử |\n|---|---|---|---|")
+          for r in rows:
+              r = (r + ["", "", "", ""])[:4]
+              print("| " + " | ".join(x.replace("|", "/") for x in r) + " |")
+          print("\n</details>")
+          PY
+
+      - name: Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-a11y-${{ github.run_id }}
+          path: |
+            apps/ios/a11y.log
+            ${{ runner.temp }}/a11y.xcresult
+          retention-days: 14
+          if-no-files-found: ignore
