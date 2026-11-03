@@ -480,6 +480,12 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Chưa có: `performAccessibilityAudit()` trong UI test (đợt 2 của #795, cần target UI test, sẽ chạy ở E2E).
 - **NOT RUN:** xem ảnh trên máy thật; VoiceOver.
 
+**Sheet nửa màn không cắt nút ở chữ cỡ trợ năng (03/11, #795 đợt 2b, nhánh `claude/sheet-large-type`):**
+- Sheet chỉ có `.presentationDetents([.medium])` và không cuộn: ở chữ cỡ trợ năng, nội dung cao hơn nửa màn nên bị cắt và **nút chính nằm ngoài màn, không chạm được**. Bằng chứng: ảnh chuẩn `pauseSheet.largeType` cao ~700 điểm, detent medium trên iPhone 17 Pro ~440; lượt kiểm accessibility đầu (PR #812) báo chữ của sheet Tạm nghỉ bị cắt.
+- Sửa bằng `mediumSheet()` (`ASCND/Design/MediumSheet.swift`): cỡ chữ thường vẫn `.medium`, bố cục không đổi; cỡ trợ năng mở `.large`; nội dung vẫn cao hơn màn thì cuộn được (`ViewThatFits`). Áp cho sheet Tạm nghỉ, xác nhận mua ở Cửa hàng, chọn khẩu phần ở Nhật ký ăn. Trạng thái của sheet nằm ngoài `ViewThatFits`.
+- Không đổi: sheet thước đo ở onboarding (nút OK trên thanh điều hướng, luôn chạm được); sheet Tuần của Koa (đã có ScrollView).
+- **NOT RUN:** mở ba sheet ở cỡ chữ trợ năng trên simulator / iPhone; VoiceOver.
+
 ## 5. Lịch sử thay đổi sổ
 
 - 01/11/2026: Koa chạy tới kéo thẻ nhiệm vụ; bảng tự vẽ; vẽ lại phòng tập khung dọc theo mock, bỏ tiền cảnh mờ.
@@ -576,3 +582,4 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - 03/11/2026: #800 thông báo: câu nhắc buổi tập xoay vòng, bị bỏ qua 3 lần liền thì 2 ngày một lần, xin quyền khi có lịch tập đầu tiên; xem mục 4.
 - 03/11/2026: đo lường Koa Ecosystem (#793): năm sự kiện mốc / hành trình / Nhịp / tạm nghỉ, gửi một lần mỗi lần xảy ra (`Telemetry.once`); xem mục 4.
 - 03/11/2026: #795 đợt 1: snapshot test các màn Koa (sáng / tối / chữ lớn) chạy trong `app-macos`; xem mục 4.
+- 03/11/2026: sheet nửa màn (Tạm nghỉ, mua đồ, khẩu phần) mở cả màn và cuộn được ở chữ cỡ trợ năng, không còn cắt mất nút; xem mục 4.

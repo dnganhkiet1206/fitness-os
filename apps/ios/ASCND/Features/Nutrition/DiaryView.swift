@@ -287,7 +287,6 @@ struct DayMealsSection: View {
       ServingsSheet(item: item, busy: book.busy) { servings in
         Task { await save(item, servings) }
       }
-      .presentationDetents([.medium])
       // Nền đặc màu trang (16/10, chủ dự án: thẻ trên bảng kính khó nhìn — như Ghi nhanh).
       .presentationBackground(DS.Color.background.swiftUI)
     }
@@ -741,6 +740,8 @@ private struct ServingsSheet: View {
       }
     }
     .padding(DS.Spacing.lg)
+    // Trong `body` (không ở chỗ mở sheet): `servings` nằm ngoài `ViewThatFits` của `mediumSheet`.
+    .mediumSheet()
   }
 
   private func stepButton(_ icon: String, label: String, by dir: Int) -> some View {
