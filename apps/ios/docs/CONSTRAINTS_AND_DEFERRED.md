@@ -458,8 +458,9 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 
 **Ổn định bộ kiểm (03/11, #801, nhánh `claude/stable-checks`):**
 - Hôm nay không còn hiệu ứng trượt vào ở chế độ UI test (`TodayEntrance`): thẻ trượt 14 điểm trong ~0,75 s đầu, Maestro chạm lúc ấy có thể trúng nút khác. Người dùng thật không đổi.
-- `08-settings`: sau khi quay lại từ Nhắc nhở, đợi Cài đặt hiện hẳn rồi mới cuộn tìm "Đổi mật khẩu". **Chưa xác nhận nguyên nhân** (không chạy được Maestro trong phiên này); nếu còn đỏ thì xem ảnh chụp trong artifact.
-- `SignOutTimeoutTests` đo giờ thật: đã có PR #776 của agent khác, không làm trùng.
+- `08-settings`: sau khi quay lại từ Nhắc nhở, đợi Cài đặt hiện hẳn rồi mới cuộn tìm "Đổi mật khẩu". ~~**Chưa xác nhận nguyên nhân** (không chạy được Maestro trong phiên này); nếu còn đỏ thì xem ảnh chụp trong artifact.~~
+  03/11 (E2E của PR #808, run 41594824456, artifact `ios-e2e-41594824456`): đã xác nhận. Ảnh lúc đỏ cho thấy hàng "Đổi mật khẩu" đã hiện đủ sau MỘT lần vuốt; `maestro.log`: một lượt `isScreenStatic` → vuốt → `isScreenStatic` mất ~12 s trên simulator của CI, quá `timeout: 10000`, và Maestro không nhìn lại sau khi hết hạn. Sửa: mọi `scrollUntilVisible` dưới 30 s (05, 08, 10, 11) nâng lên 30 000 ms như `02-water` đã làm; timeout chỉ tốn khi chưa thấy phần tử, lượt xanh không chậm hơn.
+- `SignOutTimeoutTests` đo giờ thật: ~~đã có PR #776 của agent khác, không làm trùng.~~ 03/11: test này làm `core-linux` của PR #805 / #808 đỏ (65,8 s và 78,6 s > trần 60 s) → port nguyên thay đổi của #776 (xanh trên head của nó): kiểm lời gọi server bị huỷ thay vì đo giờ, trần 5 phút. Khi #776 vào base thì không còn khác biệt.
 - `native/tools/check.mjs` thiếu lệnh `timeout` trên macOS: ở `9d71f814` không còn chỗ nào gọi lệnh `timeout` của shell trong `native/tools` / `apps/ios/tools` → coi như đã hết; cần ai chạy `node tools/check.mjs` trên Mac để xác nhận.
 - Simulator dùng chung giữa nhiều phiên agent: ngoài code, giữ nguyên.
 - `KoaPerfTests.figureFrameBudget` đỏ ngẫu nhiên trên `app-macos` ("defs dựng lại theo khung: 13", PR #807 lượt `de277981`): test đếm bộ nhớ đệm `KoaRender.defsMemo` dùng chung với các suite chạy song song. Nay đếm khoá defs mà chính 120 khung đi bộ của test cần (`KoaRender.defsKey`, thuần) — không còn phụ thuộc test khác; vẫn bắt được lỗi dựng lại defs theo khung (khi ấy ~120 khoá).
