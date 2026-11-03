@@ -122,14 +122,29 @@ struct KoaRhythmCard: View {
 /// Hành trình cùng Koa: tổng kết tháng và các mốc thật, mới nhất ở trên.
 struct KoaJourneyView: View {
   @Environment(AppServices.self) private var services
+
+  var body: some View {
+    KoaJourneyContent(history: services.koaGainsHistory, today: LocalDate(SystemWallClock().nowMillis(), in: .current))
+      .navigationTitle(Text("journey.title"))
+      .ascndPage()
+      .task { await services.ensureKoaGainsHistory() }
+      // Mỗi lần mở màn hành trình (màn này không đẩy màn con, nên xuất hiện = mở).
+      .onAppear { Telemetry.capture(.journeyOpened) }
+  }
+}
+
+/// Nội dung màn hành trình, không cần `AppServices`: snapshot test dựng thẳng với một lịch sử
+/// cố định (#795).
+struct KoaJourneyContent: View {
+  let history: AppServices.GainsHistory?
+  let today: LocalDate
   @Environment(\.locale) private var locale
 
   var body: some View {
-    let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
     let lang = AppPreferences.Lang(rawValue: String(locale.identifier.prefix(2))) ?? .vi
     ScrollView {
       VStack(alignment: .leading, spacing: DS.Spacing.md) {
-        if let h = services.koaGainsHistory {
+        if let h = history {
           let moments = KoaJourney.moments(h.days, week: h.week, today: today)
           header(rank: KoaGains.compute(h.days, week: h.week, today: today).rank)
           month(moments, days: h.days, today: today)
@@ -150,11 +165,6 @@ struct KoaJourneyView: View {
       }
       .padding(DS.Spacing.md)
     }
-    .navigationTitle(Text("journey.title"))
-    .ascndPage()
-    .task { await services.ensureKoaGainsHistory() }
-    // Mỗi lần mở màn hành trình (màn này không đẩy màn con, nên xuất hiện = mở).
-    .onAppear { Telemetry.capture(.journeyOpened) }
   }
 
   private func header(rank: Int) -> some View {
