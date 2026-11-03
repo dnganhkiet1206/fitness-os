@@ -474,6 +474,8 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Để dựng được không cần `AppServices`: `KoaJourneyView` tách phần thân thành `KoaJourneyContent`, thẻ Gains của `WorkoutSummaryView` thành `KoaGainsCard`. Hành vi không đổi (đo lường `journey_opened` / `gains_earned` ở lại chỗ cũ).
 - `app-macos` nay build bằng `build-for-testing` cho đúng một simulator (thay `generic/platform=iOS Simulator`) rồi `test-without-building -only-testing:ASCNDTests`. Lượt đầu sau khi đổi là build lại từ đầu (cache DerivedData của đích cũ không dùng được).
 - Ảnh chuẩn là ảnh của CI (runner đổi Xcode / runtime có thể làm lệch hàng loạt → ghi lại cả bộ, ghi lý do ở đây). Cách cập nhật: `docs/AGENT_SESSION.md` §6c.
+- Lượt ghi ảnh đầu (03/11) bắt được lỗi Dynamic Type thật, đã sửa trước khi lấy ảnh chuẩn: số buổi (26 pt) và tiêu đề Gains (22 pt) cỡ cố định, không lớn theo chữ → `@ScaledMetric` (cùng cỡ ở mặc định); ba chú thích của thẻ nhịp 30 ngày bị cắt ("plann…") ở chữ lớn → `ViewThatFits` xếp dọc; mẫu "tạm nghỉ" ở chú thích là chấm đặc trong khi lưới vẽ vòng nét đứt → chú thích vẽ đúng dấu của lưới.
+- Cách chụp thẻ: `.sizeThatFits` của thư viện đề nghị cao 0, nên chữ không có `fixedSize` bị ép một dòng ("DAYS L…") — app không như vậy (thẻ nằm trong ScrollView). Test chụp thẻ với `fixedSize(vertical:)` cho giống app.
 - Chưa có: `performAccessibilityAudit()` trong UI test (đợt 2 của #795, cần target UI test, sẽ chạy ở E2E).
 - **NOT RUN:** xem ảnh trên máy thật; VoiceOver.
 

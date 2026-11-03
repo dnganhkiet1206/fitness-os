@@ -347,6 +347,8 @@ extension WorkoutSummaryView {
 struct KoaGainsCard: View {
   let g: WorkoutSummaryView.GainsGain
   @Environment(\.locale) private var locale
+  /// 22 pt ở cỡ chữ mặc định, lớn theo Dynamic Type (#795: ảnh chữ lớn cho thấy tiêu đề đứng yên).
+  @ScaledMetric(relativeTo: .title2) private var titleSize: CGFloat = 22
 
   var body: some View {
     let lang = AppPreferences.Lang(rawValue: String(locale.identifier.prefix(2))) ?? .vi
@@ -367,8 +369,9 @@ struct KoaGainsCard: View {
               ? String(localized: "koa.gains.newRank \(rank.name(lang))")
               : String(localized: "koa.gains.pump \(g.delta)")
         )
-        .font(.system(size: 22, weight: .heavy))
+        .font(.system(size: titleSize, weight: .heavy))
         .foregroundStyle(DS.Color.foreground.swiftUI)
+        .multilineTextAlignment(.center)
         // Quá ngày tập liền (29/10, Kiệt): nói vì sao không có Gains thay cho bảng cộng.
         Text(
           verbatim: g.repeatSession

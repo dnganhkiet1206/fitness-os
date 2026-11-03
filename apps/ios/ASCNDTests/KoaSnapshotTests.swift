@@ -55,6 +55,9 @@ import UIKit
     for look in Look.allCases {
       let framed = view
         .padding(padded ? DS.Spacing.md : 0)
+        // Thẻ: cao vừa nội dung như khi nằm trong ScrollView của app. `.sizeThatFits` của thư viện
+        // đề nghị cao 0, nên chữ không có `fixedSize` bị ép một dòng và cắt "…" — ảnh sai so với app.
+        .fixedSize(horizontal: false, vertical: height == nil)
         .frame(width: width, height: height, alignment: .top)
         .background(DS.Color.background.swiftUI)
         .environment(\.colorScheme, look.scheme)
