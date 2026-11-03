@@ -1,0 +1,39 @@
+# Tạm nghỉ (Koa Ecosystem V2, 02/11): mở từ việc chính ở Hôm nay, thẻ "đang tạm nghỉ" thay cho
+# buổi tập; "Quay lại sớm" trả Hôm nay về như cũ.
+appId: com.ascnd.fitnessos.dev
+name: Taking a break and coming back early
+---
+- runFlow: subflows/launch.yaml
+- extendedWaitUntil:
+    visible: "NOPE-never"
+    timeout: 2500
+    optional: true
+- scrollUntilVisible:
+    element:
+      id: today.pause.open
+    direction: DOWN
+    timeout: 30000
+- tapOn:
+    id: today.pause.open
+- extendedWaitUntil:
+    visible:
+      id: pause.start
+    timeout: 10000
+- takeScreenshot: 11-pause-sheet
+- tapOn:
+    id: pause.start
+- scrollUntilVisible:
+    element:
+      id: today.pause.end
+    direction: UP
+    timeout: 30000
+- assertVisible: "On a break.*"
+- takeScreenshot: 11-pause-card
+- tapOn:
+    id: today.pause.end
+- extendedWaitUntil:
+    notVisible:
+      id: today.pause.end
+    timeout: 10000
+- assertVisible:
+    id: today.plan.primary

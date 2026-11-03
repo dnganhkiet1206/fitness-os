@@ -32,6 +32,7 @@ struct TodayExtras<Plan: View>: View {
 
   /// Màn quay lại sau ≥ 3 ngày lỡ lịch (đợt 2).
   @State private var comeback: KoaComeback?
+  @State private var showsPause = false
   @Environment(AppServices.self) private var services
   @Environment(\.scenePhase) private var scenePhase
   @Environment(\.weightUnit) private var unit
@@ -111,6 +112,8 @@ struct TodayExtras<Plan: View>: View {
   @State private var ownWater: WaterBook?
   private var water: WaterBook? { nutrition?.water ?? ownWater }
   @State private var showsKoaWeek = false
+  /// Thẻ tăng tải → Tiến bộ từng bài (Kiệt 01/11).
+  @State private var showsOverload = false
   @State private var waterNote: String?
   @State private var waterTaps = 0
   /// Tăng sau mỗi lần đọc lại ngày / ghi nhanh — Insight đọc lại theo.
@@ -187,6 +190,14 @@ struct TodayExtras<Plan: View>: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
       }
+      if let flow, let pause = services.koaPause(userId: userId, today: flow.today.today) {
+        KoaPauseCard(pause: pause, today: flow.today.today, build: services.koaBuild) {
+          Telemetry.capture(.pauseEndedEarly, KoaAnalytics.pauseEndedEarlyProps(pause, today: flow.today.today))
+          services.setKoaPause(pause.ended(on: flow.today.today), userId: userId)
+          dailyPlan?.recompute(services: services, flow: flow)
+        }
+        .todayEntrance(2)
+      }
       if let dailyPlan, let flow {
         // GĐ1: MỘT việc chính + lý do + phương án; rồi Tuần của Koa (lịch thật).
         // Thẻ "Tăng tải hôm nay" nằm sau việc chính, vuốt sang (Kiệt duyệt mock 28/10).
@@ -195,7 +206,8 @@ struct TodayExtras<Plan: View>: View {
           TodayOverloadStack(
             items: overload, mainPeek: String(localized: "dp.title.session \(session.name) \(session.minutes)"),
             mainAction: String(localized: dailyPlan.result.action == .resume(session) ? "dp.cta.resume" : "today.start"),
-            onMainAction: { primary(dailyPlan.result.action) }
+            onMainAction: { primary(dailyPlan.result.action) },
+            onOpenLoad: flow.insights == nil ? nil : { showsOverload = true }
           ) { withHint in
             planHero(
               dailyPlan, flow,
@@ -277,6 +289,15 @@ struct TodayExtras<Plan: View>: View {
       }
       .presentationDetents([.medium, .large])
     }
+    .sheet(isPresented: $showsPause) {
+      if let flow {
+        KoaPauseSheet(today: flow.today.today) { days in
+          Telemetry.capture(.pauseStarted, KoaAnalytics.pauseStartedProps(days: days))
+          services.setKoaPause(KoaPause(from: flow.today.today, days: days), userId: userId)
+          dailyPlan?.recompute(services: services, flow: flow)
+        }
+      }
+    }
     .sheet(isPresented: $showsKoaWeek) {
       if let state = koaWeekState {
         ScrollView {
@@ -320,6 +341,9 @@ struct TodayExtras<Plan: View>: View {
         }
       case .workout, .weight: EmptyView()
       }
+    }
+    .navigationDestination(isPresented: $showsOverload) {
+      if let flow, let insights = flow.insights { ExerciseInsightView(insights: insights, today: flow.today) }
     }
     .navigationDestination(isPresented: $showsSteps) {
       if let steps = services.makeStepsBook(userId: userId, today: Self.today()) { StepsView(book: steps) }
@@ -698,7 +722,9 @@ struct TodayExtras<Plan: View>: View {
   /// Tuần của Koa theo lịch đã áp — cùng nguồn với dải và với lượt nhận thưởng.
   private var koaWeekState: KoaWeek.State? {
     guard let flow else { return nil }
-    return KoaWeek.state(today: flow.today.today, library: flow.today.library, trained: flow.today.trained)
+    return KoaWeek.state(
+      today: flow.today.today, library: flow.today.library, trained: flow.today.trained,
+      pause: services.koaPause(userId: flow.today.userId, today: flow.today.today))
   }
 
   // MARK: - Việc chính (Daily Plan, GĐ1)
@@ -970,7 +996,8 @@ struct TodayExtras<Plan: View>: View {
     TodayPlanHero(
       result: dailyPlan.result, lighterOn: flow.today.lighterToday, shortOn: flow.today.shortToday,
       lastSession: services.koaGainsNow?.state.lastSession, busy: planBusy, failed: planFailed,
-      overloadHint: hint, onPrimary: { primary(dailyPlan.result.action) }, onAlternative: { alternative($0, flow) })
+      overloadHint: hint, onPrimary: { primary(dailyPlan.result.action) }, onAlternative: { alternative($0, flow) },
+      onPause: dailyPlan.result.action.session == nil ? nil : { showsPause = true })
   }
 
   /// Bài của buổi hôm nay + tăng tải (`OverloadPlan`). `nil` (chỉ còn thẻ việc chính):
@@ -1034,6 +1061,9 @@ struct TodayExtras<Plan: View>: View {
     noteSchedule(r.state)
     services.koaGainsHistory = .init(days: r.days, week: r.week)
     announceRank(r.state.rank)
+    if await services.syncKoaPause(userId: userId), let dailyPlan, let flow {
+      dailyPlan.recompute(services: services, flow: flow)
+    }
     await services.loadKoaDust(userId: userId)
   }
 

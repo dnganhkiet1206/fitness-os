@@ -166,6 +166,16 @@ Lịch hằng tuần (`schedule`) và Dependabot chỉ hoạt động khi tệp 
 
 **Mẹo khác:** chạy CI xong mới gộp nhánh gốc (gộp lại làm CI chạy lại từ đầu); làm việc khác trong lúc chờ CI (`gh pr checks <số> --watch` chạy nền); merge chuỗi PR theo thứ tự, mỗi PR một lần gộp.
 
+## 6c. Snapshot test (ảnh chuẩn các màn Koa, #795)
+
+`apps/ios/ASCNDTests/KoaSnapshotTests.swift` chụp mỗi màn ở ba kiểu (sáng, tối, chữ lớn) bằng [swift-snapshot-testing](https://github.com/pointfreeco/swift-snapshot-testing) (MIT, ghim 1.19.7 trong `project.yml`, chỉ target test). Ảnh chuẩn: `apps/ios/ASCNDTests/__Snapshots__/KoaSnapshotTests/<test>.<kiểu>.png`. Chạy trong job `app-macos` (bước "Test SwiftUI trong app") và trong E2E.
+
+- **Thẻ chụp ở cao vừa nội dung** (`fixedSize(vertical:)`, như trong ScrollView của app); màn có khung cao cố định (`height:`) thì chụp nguyên khung. Đừng bỏ `fixedSize`: `.sizeThatFits` đề nghị cao 0 nên chữ bị cắt "…" mà app không cắt.
+- **Ảnh chuẩn = ảnh của CI**, không phải của máy riêng: simulator iPhone Pro của runtime iOS mới nhất trên runner, tỉ lệ cố định 2x. So bằng `ASCNDTests/KoaImageDiff.swift` (CPU): điểm ảnh lệch quá 16/255 ở một kênh mới tính, đỏ khi quá 0,01% ảnh — không dùng phép so "cảm nhận" bằng Metal của thư viện (sai trên máy ảo CI). Ảnh chụp trên Mac khác (Xcode / runtime khác) có thể lệch vài điểm ảnh; đừng commit ảnh chụp trên máy riêng.
+- **Thêm màn / đổi giao diện có chủ ý:** xoá ảnh cũ của màn ấy (hoặc thêm test mới) rồi push. Thiếu ảnh chuẩn thì thư viện ghi ảnh mới và test đỏ (đúng thiết kế); bước "Ảnh snapshot mới / lệch" tải lên artifact `snapshots-<sha>`. Tải artifact (`gh run download <run> -n snapshots-<sha>`), **xem từng ảnh**, chép vào `__Snapshots__/KoaSnapshotTests/`, commit, push → lượt sau xanh.
+- **Test đỏ vì lệch mà không đổi giao diện:** ảnh vừa chụp nằm trong `snapshot-artifacts/` của cùng artifact — so với ảnh chuẩn. Lệch thật (lỗi giao diện) thì sửa code; runner đổi bản Xcode / runtime làm lệch hàng loạt thì ghi lại cả bộ như trên và ghi lý do vào sổ hạn chế.
+- Ghi lại hết trên máy có Xcode: `SNAPSHOT_TESTING_RECORD=all` trong scheme (hoặc `TEST_RUNNER_SNAPSHOT_TESTING_RECORD=all xcodebuild test …`) — chỉ để xem, ảnh để commit vẫn lấy từ CI.
+
 ## 7. Báo cáo trên #527
 
 **Khi bắt đầu một việc lớn:** đăng một comment ngắn, gồm việc gì, tệp nào, link PR nếu đã có. Việc nhỏ thì chỉ cần báo cáo khi xong.

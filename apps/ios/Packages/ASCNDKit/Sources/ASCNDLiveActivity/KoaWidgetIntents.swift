@@ -11,6 +11,10 @@ import Foundation
 public enum KoaIntentRouter {
   /// Ghi một ly (mức nhanh đầu tiên của đơn vị). `true` = đã vào sổ.
   public static var addWater: (@MainActor () async -> Bool)?
+  /// Ghi bữa quen của loại bữa ấy (widget "Bữa quen"). `true` = đã vào sổ.
+  public static var logUsualMeal: (@MainActor (String) async -> Bool)?
+  /// Bỏ bữa widget vừa ghi (mã bữa). `true` = đã bỏ.
+  public static var undoMeal: (@MainActor (String) async -> Bool)?
 }
 
 /// "+1 ly" trên widget Koa.
@@ -24,6 +28,43 @@ public struct AddWaterIntent: LiveActivityIntent {
   @MainActor
   public func perform() async throws -> some IntentResult {
     _ = await KoaIntentRouter.addWater?()
+    return .result()
+  }
+}
+
+/// "Ghi như mọi khi" trên widget "Bữa quen" (Kiệt 01/11). Loại bữa là bữa widget
+/// đang hiện, không tính lại theo giờ lúc chạm (chạm 14:59 vẫn là bữa trưa).
+public struct LogUsualMealIntent: LiveActivityIntent {
+  public static let title: LocalizedStringResource = "Log your usual meal"
+  public static let isDiscoverable = false
+  public static let openAppWhenRun = false
+
+  @Parameter(title: "Meal") public var mealType: String
+
+  public init() {}
+  public init(mealType: String) { self.mealType = mealType }
+
+  @MainActor
+  public func perform() async throws -> some IntentResult {
+    _ = await KoaIntentRouter.logUsualMeal?(mealType)
+    return .result()
+  }
+}
+
+/// "Hoàn tác" ngay sau khi widget ghi bữa.
+public struct UndoMealIntent: LiveActivityIntent {
+  public static let title: LocalizedStringResource = "Undo the logged meal"
+  public static let isDiscoverable = false
+  public static let openAppWhenRun = false
+
+  @Parameter(title: "Entry") public var entryId: String
+
+  public init() {}
+  public init(entryId: String) { self.entryId = entryId }
+
+  @MainActor
+  public func perform() async throws -> some IntentResult {
+    _ = await KoaIntentRouter.undoMeal?(entryId)
     return .result()
   }
 }

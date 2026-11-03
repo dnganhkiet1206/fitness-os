@@ -134,6 +134,19 @@ struct DailyPlanTests {
     #expect(r.action == .progress && r.reason == .trainedToday)
   }
 
+  /// Luật 5 (#796): tạm nghỉ thắng ngày nghỉ đặt sẵn, nhưng buổi đang dở và buổi đã tập vẫn đi trước.
+  @Test func pauseIsNamedButAResumedOrDoneSessionStillWins() {
+    let back = Self.today.adding(days: 4)
+    let r = DailyPlan.decide(.init(date: Self.today, loaded: true, hasSchedule: true, today: .rest, pausedUntil: back))
+    #expect(r.action == .recovery && r.reason == .paused(until: back) && r.alternatives == [.logFree])
+    let resumed = DailyPlan.decide(
+      .init(date: Self.today, loaded: true, inProgress: Self.chest, hasSchedule: true, today: .rest, pausedUntil: back))
+    #expect(resumed.action == .resume(Self.chest))
+    let trained = DailyPlan.decide(
+      .init(date: Self.today, loaded: true, hasSchedule: true, today: .rest, doneToday: [nil], pausedUntil: back))
+    #expect(trained.action == .progress)
+  }
+
   @Test func restDayIsRecovery() {
     let r = DailyPlan.decide(Self.input(today: .rest, daysOff: 4))
     #expect(r.action == .recovery && r.reason == .restDay && r.alternatives == [.logFree])

@@ -167,7 +167,8 @@ struct MascotRoomView: View {
                 await services.loadKoaDust(userId: room.userId)
               }
           }
-          .transition(lens.bedroom ? .move(edge: .bottom) : .opacity)
+          // Koa của cảnh diễn phải có ngay khung đầu: mờ dần thì sân khấu trống một nhịp
+          .transition(.asymmetric(insertion: lens.bedroom ? .move(edge: .bottom) : .identity, removal: .opacity))
         }
       }
     }
@@ -181,6 +182,14 @@ struct MascotRoomView: View {
       }
     #endif
     return KoaDaylight.isDay(at: clock)
+  }
+
+  private var roomMoment: KoaJourney.Moment? { KoaMomentsStore.next(services, userId: room.userId, today: room.today) }
+
+  private var companionFacts: KoaCompanion.Facts {
+    var f = KoaCompanion.Facts(gains: room.gains, today: room.today, mood: moodRead.reason)
+    f.milestone = roomMoment != nil
+    return f
   }
 
   /// Câu khích của Koa lúc kéo thẻ, theo số việc thật.
@@ -332,10 +341,19 @@ struct MascotRoomView: View {
         },
         dust: devDust ?? dust?.level ?? 0, walks: true,
         // sự kiện thật cho ký ức của Koa; Gains chưa tải xong thì chưa có gì để nói
-        companion: room.gains == .zero
-          ? nil : KoaCompanion.Facts(gains: room.gains, today: room.today, mood: moodRead.reason),
+        companion: room.gains == .zero ? nil : companionFacts,
         userId: room.userId, sleep: KoaMood.SleepWindow(profile: profile?.profile),
-        talkLine: { KoaTalkLine.text($0, signals: room.signals, profile: profile?.profile) }, lens: lens,
+        talkLine: { beat in
+          // mốc hành trình: cùng nguồn với Hôm nay, nói rồi thì nơi nào cũng không nhắc lại
+          if beat.topic == .milestone, let m = roomMoment {
+            KoaMomentsStore.markSeen(m.id, userId: room.userId)
+            Telemetry.once(
+              .koaMomentShown, key: KoaAnalytics.momentKey(m, place: .room), userId: room.userId,
+              KoaAnalytics.momentProps(m, place: .room))
+            return KoaMomentsStore.line(m, lang: AppPreferences.Lang(rawValue: String(Locale.current.identifier.prefix(2))) ?? .vi)
+          }
+          return KoaTalkLine.text(beat, signals: room.signals, profile: profile?.profile)
+        }, lens: lens,
         offStage: pullStart != nil && !lens.bedroom)
         .sensoryFeedback(.selection, trigger: boardStat)
   }
@@ -835,7 +853,9 @@ struct MascotRoomView: View {
 
   private var koaWeekState: KoaWeek.State? {
     guard let flow else { return nil }
-    return KoaWeek.state(today: flow.today.today, library: flow.today.library, trained: flow.today.trained)
+    return KoaWeek.state(
+      today: flow.today.today, library: flow.today.library, trained: flow.today.trained,
+      pause: services.koaPause(userId: flow.today.userId, today: flow.today.today))
   }
 
   // MARK: - Việc
@@ -1284,7 +1304,7 @@ struct MascotStage: View {
       let _ = (lens?.shot = shot)
       let x = still?.x ?? f?.x ?? KoaRoomMap.stageMark.x
       let y = still.map(KoaRoomMap.screenY) ?? f?.screenY ?? StudioScene.stageMark.y
-      let _ = (lens?.koa = (x: x, y: y))
+      let _ = (lens?.koa = (x: x, y: y, scale: still.map { KoaRoomMap.scale($0.d) } ?? f?.scale ?? 1))
       let koaAmp = KoaParallax.amp(koa: still?.plane ?? f?.plane ?? .stage, y: y)
       ZStack(alignment: .topLeading) {
         if layered {

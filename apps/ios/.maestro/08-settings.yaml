@@ -21,12 +21,13 @@ name: Settings rows open
     timeout: 10000
 - takeScreenshot: 08-settings-reminders
 - runFlow: subflows/back.yaml
-# Chờ hiệu ứng quay lại xong: trên CI một lần vuốt lúc còn chuyển màn đã mất 9 giây,
-# hết `timeout` dù hàng đã nằm trên màn hình.
+# Đợi Cài đặt về hẳn (hết hiệu ứng quay lại) rồi mới cuộn (#801: từng đỏ ngắt quãng ở đây).
 - extendedWaitUntil:
     visible:
       id: settings.reminders
     timeout: 20000
+# Cuộn: trên simulator của CI một lượt "đợi đứng yên → vuốt → đợi lại" mất ~12 s (03/11: hàng
+# đã hiện đủ sau một lần vuốt nhưng timeout 10 s hết trước khi Maestro kịp nhìn lại → đỏ oan).
 - scrollUntilVisible:
     element:
       id: settings.changePassword

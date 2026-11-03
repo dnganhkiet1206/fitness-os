@@ -41,6 +41,9 @@ struct ASCNDApp: App {
     RestIntentRouter.setPaused = { paused in controller.setPaused(paused) }
     // Nút "+1 ly" trên widget Koa (đợt 2C).
     KoaIntentRouter.addWater = { await services.addWaterFromWidget() }
+    // Widget "Bữa quen" (Kiệt 01/11): chạm là ghi, hoàn tác ngay sau đó.
+    KoaIntentRouter.logUsualMeal = { type in await services.logUsualMealFromWidget(type) }
+    KoaIntentRouter.undoMeal = { id in await services.undoWidgetMeal(id) }
   }
 
   static func applyTheme(_ theme: AppPreferences.Theme) {

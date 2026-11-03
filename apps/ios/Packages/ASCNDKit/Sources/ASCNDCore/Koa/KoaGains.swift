@@ -201,8 +201,43 @@ public enum KoaGains {
     return (points - thresholds[r], thresholds[r + 1] - thresholds[r])
   }
 
+  /// Phần Gains của một ngày, đúng như `compute` đã cộng: màn tổng kết đọc ở đây thay vì tự đoán,
+  /// nên dòng "+10 buổi trong lịch · tuần đủ buổi" luôn khớp số Gains thật.
+  public struct Breakdown: Sendable, Hashable {
+    public var planned = false
+    public var personalRecord = false
+    public var overload = false
+    public var fullWeek = false
+    /// Ngày tập liền thứ mấy; quá `maxActiveStreak` thì buổi không có Gains.
+    public var streak = 0
+    public var points = 0
+    /// Tổng Gains sau ngày này.
+    public var total = 0
+    public init() {}
+  }
+
+  /// Mọi ngày có buổi, theo thứ tự, kèm phần Gains của ngày ấy: nguồn cho hành trình (`KoaJourney`).
+  public static func ledger(_ days: [Day], week: Week, today: LocalDate) -> [(LocalDate, Breakdown)] {
+    var out: [(LocalDate, Breakdown)] = []
+    _ = walk(days, week: week, today: today) { out.append(($0, $1)) }
+    return out
+  }
+
+  /// Phần Gains của `day` khi tính lại từ đầu; `nil` = ngày ấy không có buổi nào.
+  public static func breakdown(_ days: [Day], week: Week, on day: LocalDate) -> Breakdown? {
+    var out: Breakdown?
+    _ = walk(days, week: week, today: day) { d, b in if d == day { out = b } }
+    return out
+  }
+
   /// Tính lại từ đầu, từ ngày tập đầu tiên tới `today`.
   public static func compute(_ days: [Day], week: Week, today: LocalDate) -> State {
+    walk(days, week: week, today: today) { _, _ in }
+  }
+
+  private static func walk(
+    _ days: [Day], week: Week, today: LocalDate, inspect: (LocalDate, Breakdown) -> Void
+  ) -> State {
     var pr: [LocalDate: Bool] = [:]
     var kinds: [LocalDate: Kind] = [:]
     var overloaded: Set<LocalDate> = []
@@ -230,13 +265,18 @@ public enum KoaGains {
       }
       let kind = kinds[day]
       var gain = 0
+      var b = Breakdown()
       if let kind, kind.active {
         streak += 1
+        b.streak = streak
         if streak <= maxActiveStreak {
           if kind == .heavy {
-            gain = week.isPlanned(day) ? plannedSession : offPlanSession
-            if pr[day] == true { gain += personalRecord }
-            if overloaded.contains(day) { gain += overload }
+            b.planned = week.isPlanned(day)
+            b.personalRecord = pr[day] == true
+            b.overload = overloaded.contains(day)
+            gain = b.planned ? plannedSession : offPlanSession
+            if b.personalRecord { gain += personalRecord }
+            if b.overload { gain += overload }
           } else {
             gain = cardioSession
           }
@@ -244,6 +284,7 @@ public enum KoaGains {
           if !weekPaid, weekSessions >= week.target {
             gain += fullWeek
             weekPaid = true
+            b.fullWeek = true
           }
         }
       } else {
@@ -255,9 +296,13 @@ public enum KoaGains {
         }
       }
       if gain > 0 {
+        let before = s.points
         s.points = add(gain, to: s.points, peak: s.peak)
         s.peak = max(s.peak, s.points)
+        b.points = s.points - before
       }
+      b.total = s.points
+      if kind != nil { inspect(day, b) }
       if kind != nil {
         s.missedDays = 0
         s.lastSession = day

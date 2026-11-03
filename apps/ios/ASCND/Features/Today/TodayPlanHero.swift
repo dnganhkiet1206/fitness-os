@@ -20,6 +20,8 @@ struct TodayPlanHero: View {
   var overloadHint: (text: String, up: Bool)?
   let onPrimary: () -> Void
   let onAlternative: (DailyPlan.Alternative) -> Void
+  /// Mở sheet tạm nghỉ; `nil` = không có lối (đang tạm nghỉ, hay chưa có lịch).
+  var onPause: (() -> Void)?
 
   var body: some View {
     VStack(alignment: .leading, spacing: DS.Spacing.sm) {
@@ -90,6 +92,16 @@ struct TodayPlanHero: View {
           }
         }
       }
+      if let onPause {
+        Button(action: onPause) {
+          Text("pause.entry")
+            .font(DS.TextStyle.footnote)
+            .frame(maxWidth: .infinity, minHeight: 32)
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        .accessibilityIdentifier("today.pause.open")
+      }
       if failed {
         Text("dp.failed")
           .font(DS.TextStyle.footnote)
@@ -134,7 +146,8 @@ struct TodayPlanHero: View {
     case .start: String(localized: "dp.eyebrow.today")
     case .comeback: String(localized: "dp.eyebrow.welcome")
     case .postWorkoutMeal, .progress: String(localized: "dp.eyebrow.done")
-    case .recovery: String(localized: "dp.eyebrow.rest")
+    case .recovery:
+      if case .paused = result.reason { String(localized: "dp.eyebrow.paused") } else { String(localized: "dp.eyebrow.rest") }
     case .nextSession, .logFree: String(localized: "dp.eyebrow.next")
     }
   }
@@ -188,6 +201,7 @@ struct TodayPlanHero: View {
     case .proteinLeft(let g): return String(localized: "dp.why.protein \(g)")
     case .trainedToday: return String(localized: "dp.why.trained")
     case .restDay: return String(localized: "dp.why.rest")
+    case .paused(let back): return String(localized: "dp.why.paused \(weekday(back)) \(day(back))")
     case .noSchedule: return String(localized: "dp.why.noSchedule")
     case .nextOn(let date): return String(localized: "dp.why.next \(weekday(date)) \(day(date))")
     }

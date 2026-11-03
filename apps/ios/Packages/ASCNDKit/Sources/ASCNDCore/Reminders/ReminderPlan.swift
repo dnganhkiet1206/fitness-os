@@ -284,6 +284,13 @@ public struct ReminderContext: Sendable, Hashable {
   public var restDays: Set<Int> = []
   /// Câu của Koa khi người dùng đang quay lại (≥ 3 ngày nghỉ).
   public var koaWorkoutCopy: KoaWorkoutCopy?
+  /// Các câu thường của lời nhắc buổi tập, xoay vòng theo ngày (#800); trống = câu chung
+  /// của `ReminderCopy` như trước.
+  public var koaTrainingLines: [ReminderText] = []
+  /// Lời nhắc buổi tập cách nhau ít nhất ngần này ngày (#800: bị bỏ qua 3 lần liền → 2).
+  public var koaTrainingEvery = 1
+  /// Ngày (độ lệch từ hôm nay, ≤ 0) lời nhắc buổi tập gần nhất đã bắn; `nil` = chưa biết.
+  public var lastKoaTrainingOffset: Int?
   /// Lịch đã áp đổi lịch theo ngày (GĐ1): độ lệch ngày từ hôm nay → có buổi hay
   /// không. Có thì thắng `trainingDays` cho đúng ngày ấy (ngày dời / đổi thành
   /// nghỉ); `nil` = chỉ có lịch mẫu.
@@ -358,6 +365,9 @@ public enum ReminderPlan {
       ?? calendar.date(from: c)!
   }
 
+  /// Nhắc thưởng thử thách đã gỡ; giữ đoạn dựng để đọc lịch sử, không bao giờ chạy.
+  static let retiredKeysEnabled = false
+
   /// `planReminders`: mọi lời nhắc đáng bắn từ `now` tới hết tầm, theo giờ.
   public static func plan(
     _ prefs: ReminderPrefs, _ ctx: ReminderContext, now: Date, calendar: Calendar
@@ -378,6 +388,8 @@ public enum ReminderPlan {
       }
     }
     let todayWeekday = routineIndex(at(now, 0, 12, 0, calendar), calendar: calendar)
+    var lastKoaTraining = ctx.lastKoaTrainingOffset
+    var lastLine: Int?
     for day in 0..<horizonDays {
       let isToday = day == 0
       let weekday = routineIndex(at(now, day, 12, 0, calendar), calendar: calendar)
@@ -412,29 +424,33 @@ public enum ReminderPlan {
       // Koa đợt 2: chỉ khi lịch và Gains đã đọc, có buổi hôm ấy, và người dùng không tự bật
       // lời nhắc buổi tập (một lời nhắc tập mỗi ngày là đủ).
       if prefs.koaTraining, !prefs.workout.enabled, let missed = ctx.missedDays,
-        planned == true, !(isToday && ctx.workedOutToday)
+        planned == true, !(isToday && ctx.workedOutToday),
+        KoaNudge.due(day: day, lastOffset: lastKoaTraining, every: ctx.koaTrainingEvery)
       {
         let m = KoaSchedule.missedOn(dayOffset: day, missedToday: missed, todayWeekday: todayWeekday, rest: ctx.restDays)
-        let text: ReminderText? = m >= KoaGains.comebackDays ? ctx.koaWorkoutCopy?.returning : nil
+        let habit = ctx.habitTimes[.workout] != nil
         let h = ctx.habitTimes[.workout] ?? ReminderClock(hour: KoaSchedule.defaultHabitHour, minute: 0)
         let when = at(now, day, h.hour, h.minute, calendar)
+        let text: ReminderText? =
+          m >= KoaGains.comebackDays
+          ? ctx.koaWorkoutCopy?.returning
+          : KoaNudge.line(ctx.koaTrainingLines, on: when, calendar: calendar, after: lastLine).map {
+            lastLine = $0.index
+            return ReminderText(title: $0.text.title, body: habit ? $0.text.habitBody ?? $0.text.body : $0.text.body)
+          }
         if when > now {
+          lastKoaTraining = day
           out.append(PlannedReminder(
             key: .koaTraining, at: when, title: text?.title, body: text?.body,
-            token: stamp(.koaTraining, when) + (text.map { "#\($0.title)" } ?? ""), habit: ctx.habitTimes[.workout] != nil))
+            token: stamp(.koaTraining, when) + (text.map { "#\($0.title)" } ?? ""), habit: habit))
         }
       }
     }
 
-    // Koa: chuỗi ≥ 3 ngày, hôm nay ĐÃ ĐỌC là chưa ghi gì → một lời nhắc hôm nay.
-    // Tối đa MỘT lời nhắc của Koa mỗi ngày (đợt 2): hôm nay đã có lời nhắc buổi tập của
-    // Koa thì không nhắc chuỗi — buổi tập cũng giữ được chuỗi.
-    let koaToday = out.contains { $0.key == .koaTraining && calendar.isDate($0.at, inSameDayAs: now) }
-    if prefs.streak, !koaToday, ctx.loggedToday == false, ctx.streak >= KoaMood.riskMinStreak, let t = ctx.streakRiskTime {
-      push(.streak, at(now, 0, t.hour, t.minute, calendar))
-    }
-
-    if prefs.challengeClaim {
+    // Không còn nhắc "giữ chuỗi" và "thưởng sắp hết hạn" (Koa Ecosystem V2, Kiệt duyệt 02/11):
+    // lời nhắc dựa trên sợ mất làm người dùng nản khi lỡ, và thử thách tuần cũ đã không còn màn.
+    // Khoá vẫn giữ trong `ReminderKey` để đọc được cài đặt cũ.
+    if retiredKeysEnabled {
       let today = calendar.dateComponents([.year, .month, .day], from: now)
       let pad = { (n: Int) in n < 10 ? "0\(n)" : "\(n)" }
       let todayText = "\(today.year!)-\(pad(today.month!))-\(pad(today.day!))"

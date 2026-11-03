@@ -45,6 +45,29 @@ import Testing
     #expect(KoaPull.runEnd > 1.5, "không vụt qua trong nháy mắt")
   }
 
+  @Test func runHasFourKeyPosesEachStep() {
+    #expect(KoaRun.bob(0.25) < KoaRun.bob(0) && KoaRun.bob(0) < KoaRun.bob(0.75), "khuỵu thấp nhất, bay cao nhất")
+    let peak = KoaRun.pose(phase: 0.75, turn: 0.5)
+    #expect(peak.left.lift > 0 && peak.right.lift > 0, "có quãng cả hai chân rời đất")
+    let down = KoaRun.pose(phase: 0.1, turn: 0.5), next = KoaRun.pose(phase: 1.1, turn: 0.5)
+    #expect(down.left.lift == 0 && next.right.lift == 0, "hai chân thay nhau chạm đất")
+    #expect(down.armLeft * next.armLeft < 0, "tay đổi chiều theo từng bước")
+  }
+
+  @Test func earsAndHeadFollowTheBody() {
+    let u = 0.75
+    #expect(KoaRun.pose(phase: u, turn: 0).earLag != 0)
+    #expect(abs(KoaRun.pose(phase: 0.35, turn: 0).earLag) < 0.01, "tai đi sau thân một nhịp")
+  }
+
+  @Test func runFollowsACurveNotAStraightLine() {
+    let a = at(KoaPull.anticipate + KoaPull.hopOff + 0.01)
+    let b = at(KoaPull.anticipate + KoaPull.hopOff + 0.5)
+    #expect(b.x > 210 && a.x > 210, "lượn sang bên rồi mới vòng về giữa")
+    #expect(at(KoaPull.runEnd).x == 210)
+    #expect(a.walk != nil && at(KoaPull.peekEnd).walk == nil)
+  }
+
   @Test func headFollowsTheCardEdge() {
     for t in stride(from: KoaPull.peekEnd, through: KoaPull.end, by: 0.02) {
       let edge = 912 - 560 * KoaPull.panel(at: t)
