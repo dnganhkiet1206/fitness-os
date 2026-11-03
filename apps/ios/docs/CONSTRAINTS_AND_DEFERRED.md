@@ -492,6 +492,16 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Chưa có: `performAccessibilityAudit()` trong UI test (đợt 2 của #795, cần target UI test, sẽ chạy ở E2E).
 - **NOT RUN:** xem ảnh trên máy thật; VoiceOver.
 
+**#795 đợt 2b (03/11, nhánh `claude/a11y-round-2b`), theo dữ liệu bộ kiểm accessibility của PR #812 (run 41685936332, sau khi chờ màn đứng yên):**
+- Sửa: thẻ "Get started with ASCND" ở Hôm nay — tiêu đề (20) và tên ba việc (16) lớn theo Dynamic Type (`@ScaledMetric`, cỡ mặc định như cũ). Thẻ việc chính — dòng đầu (11) lớn theo chữ; nút phương án ("Make it a rest day"…) và "Take a few days off…" cao tối thiểu 44 điểm theo Apple (trước 36 và 32), nên thẻ cao thêm 8–12 điểm mỗi nút.
+- Đã có PR riêng: dải "Tuần của Koa" (#815); sheet nửa màn ở cỡ chữ trợ năng (#814). #814 cũng là lý do cả bốn dòng của sheet Tạm nghỉ bị báo "Text clipped" và "partially unsupported": bộ kiểm phóng chữ, sheet `.medium` cắt nội dung.
+- Còn lại, chưa sửa:
+  - Độ tương phản chữ phụ (`mutedForeground`) trên nền thẻ: khoảng 20 dòng ở Hôm nay, Nhịp, sheet Tạm nghỉ, Hành trình. Đổi màu token của Design System là đổi thiết kế, chờ Kiệt duyệt mock.
+  - Chữ cỡ cố định trong thẻ Koa và thẻ việc trong ngày ở Hôm nay (`TodayDayBlock`, `TodayDayCard`: khoảng 30 chỗ `.system(size:)`). Bộ kiểm chỉ báo "Koa" vì nó chỉ kiểm phần đang hiện trên màn. Cần một lượt riêng có ảnh snapshot: bố cục thẻ Koa chặt, chữ lớn dễ vỡ.
+  - Chữ logo "ASCND" giữ cỡ cố định (logo; Kiệt chốt cỡ tương đương bản mặc định).
+  - "Partially unsupported" ở chữ dùng kiểu chữ hệ thống (Nhịp, Hành trình, chú thích Tiến bộ) và "Hit area is too small" ở hai dòng chữ tĩnh của thẻ việc chính ("TODAY'S MAIN THING", "From your weekly plan."): chưa rõ nguyên nhân. Kỹ sư Apple xác nhận bộ kiểm có thể báo nhầm với font hệ thống. Xem lại khi #812, #814, #815 đã vào base (job `a11y` chạy hằng đêm).
+- **NOT RUN:** bộ kiểm trên head này (job `a11y` chỉ có ở #812, chưa vào base); xem trên simulator / iPhone.
+
 ## 5. Lịch sử thay đổi sổ
 
 - 01/11/2026: Koa chạy tới kéo thẻ nhiệm vụ; bảng tự vẽ; vẽ lại phòng tập khung dọc theo mock, bỏ tiền cảnh mờ.
@@ -589,3 +599,4 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - 03/11/2026: #800 thông báo: câu nhắc buổi tập xoay vòng, bị bỏ qua 3 lần liền thì 2 ngày một lần, xin quyền khi có lịch tập đầu tiên; xem mục 4.
 - 03/11/2026: đo lường Koa Ecosystem (#793): năm sự kiện mốc / hành trình / Nhịp / tạm nghỉ, gửi một lần mỗi lần xảy ra (`Telemetry.once`); xem mục 4.
 - 03/11/2026: #795 đợt 1: snapshot test các màn Koa (sáng / tối / chữ lớn) chạy trong `app-macos`; xem mục 4.
+- 03/11/2026: #795 đợt 2b: chữ thẻ "Get started" và dòng đầu thẻ việc chính lớn theo Dynamic Type, vùng chạm 44 điểm cho nút phương án và "Tạm nghỉ"; xem mục 4.
