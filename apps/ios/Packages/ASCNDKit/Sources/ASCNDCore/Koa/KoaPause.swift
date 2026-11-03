@@ -107,9 +107,9 @@ public struct KoaPauseLog: Sendable, Hashable, Codable {
   }
 }
 
-/// Bảng `koa_pause_log` (migration `20261104120000`, **chưa deploy, chờ Kiệt duyệt**): một dòng
-/// mỗi đợt, khoá (người, ngày bắt đầu). Không xoá: đợt bị huỷ ngay hôm đầu ghi `ends_on` trước
-/// `starts_on` và bị bỏ qua khi đọc. Chưa có bảng thì sổ chỉ nằm trên máy.
+/// Bảng `koa_pause_log` (migration `20261104120000`, deploy 04/11 khi Kiệt duyệt): một dòng mỗi
+/// đợt, khoá (người, ngày bắt đầu). Không xoá: đợt bị huỷ ngay hôm đầu ghi `ends_on` trước
+/// `starts_on` và bị bỏ qua khi đọc. Đọc/ghi hỏng thì sổ nằm trên máy, gửi bù sau.
 public enum KoaPauseLogSync {
   public static let table = "koa_pause_log"
   public static let conflict = "user_id,starts_on"
