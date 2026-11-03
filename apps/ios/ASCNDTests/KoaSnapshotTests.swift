@@ -95,6 +95,23 @@ import UIKit
     #expect(KoaImageDiff.differentPixels(base, changed) == 1)
   }
 
+  /// Ảnh so với chính bản đã lưu (PNG) của nó thì không lệch, kể cả khi ảnh vẽ ở dải màu mở rộng như
+  /// ảnh chụp của simulator (03/11: bộ so từng báo lệch cho ảnh giống hệt ảnh chuẩn).
+  @Test func imageDiffComparesTheImageAsSaved() throws {
+    let format = UIGraphicsImageRendererFormat()
+    format.scale = 2
+    format.preferredRange = .extended
+    let image = UIGraphicsImageRenderer(size: CGSize(width: 40, height: 20), format: format).image { ctx in
+      UIColor(displayP3Red: 0.92, green: 0.31, blue: 0.18, alpha: 1).setFill()
+      ctx.fill(CGRect(x: 0, y: 0, width: 40, height: 20))
+      UIColor(white: 0.1, alpha: 0.6).setFill()
+      ctx.fill(CGRect(x: 4, y: 4, width: 20, height: 8))
+    }
+    let data = try #require(image.pngData())
+    let saved = try #require(UIImage(data: data, scale: 2))
+    #expect(KoaImageDiff.message(saved, image) == nil)
+  }
+
   @Test func rhythmCard() {
     let h = Self.history
     let pause = KoaPause(from: Self.today.adding(days: -4), days: 3)
