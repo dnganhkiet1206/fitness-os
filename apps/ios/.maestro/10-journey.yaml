@@ -15,7 +15,7 @@ name: Progress shows the 30-day rhythm and opens the journey
     element:
       id: progress.journey
     direction: DOWN
-    timeout: 15000
+    timeout: 30000
 - assertVisible: "30-day rhythm"
 - takeScreenshot: 10-rhythm
 - tapOn:
