@@ -42,12 +42,15 @@ public struct SettingsView: View {
   /// Xoá tài khoản (App Store 5.1.1(v); 16/10, chủ dự án: "không có tuỳ chọn xoá
   /// tài khoản"). `nil` → không hiện hàng.
   var deleteAccount: (@MainActor () async -> AccountDeletion)?
+  /// Tắt / bật lại đồng bộ Apple Health (Kiệt 01/11: công tắc ở Cài đặt).
+  var healthPause: HealthPause?
 
   /// Vừa đổi mật khẩu xong — RN `toast.success(settingsPasswordChanged)`;
   /// app chưa có toast nên báo ngay dưới hàng, tới khi rời Cài đặt.
   /// Có trong app thật; preview không có thì ẩn mục Koa.
   @Environment(AppServices.self) private var services: AppServices?
   @State private var passwordChanged = false
+  @Environment(\.dismiss) private var dismiss
   @State private var deleting = false
   @State private var deleteResult: AccountDeletion?
   @State private var selectedTheme: String
@@ -108,7 +111,8 @@ public struct SettingsView: View {
     healthSync: (@MainActor () async throws(HealthSync.Failure) -> Void)? = nil,
     healthConnected: (@MainActor () async -> Bool)? = nil,
     phoneSteps: PhoneSteps? = nil,
-    deleteAccount: (@MainActor () async -> AccountDeletion)? = nil
+    deleteAccount: (@MainActor () async -> AccountDeletion)? = nil,
+    healthPause: HealthPause? = nil
   ) {
     self.account = account
     self.onSignOut = onSignOut
@@ -122,6 +126,7 @@ public struct SettingsView: View {
     self.healthConnected = healthConnected
     self.phoneSteps = phoneSteps
     self.deleteAccount = deleteAccount
+    self.healthPause = healthPause
     _selectedTheme = State(initialValue: theme)
   }
 
@@ -180,14 +185,13 @@ public struct SettingsView: View {
             }
           }
           .accessibilityHint(Text(String(localized: "settings.language.hint")))
-        } footer: {
-          Text(String(localized: "settings.language.footer"))
         }
 
         // Apple Health chỉ ở đây (18/10, chủ dự án): chưa kết nối → "Kết nối";
         // đã kết nối → "Đã kết nối". Đồng bộ tự chạy (mở app + nền), không có nút.
         if let healthSync, healthAvailable {
-          HealthSettingsSection(sync: healthSync, isConnected: healthConnected ?? { false }, phoneSteps: phoneSteps)
+          HealthSettingsSection(
+            sync: healthSync, isConnected: healthConnected ?? { false }, phoneSteps: phoneSteps, pause: healthPause)
         }
 
         // Nhắc nhở — thông báo cục bộ (`settings.tsx:604`, `nav.push('/reminders')`).
@@ -315,6 +319,13 @@ public struct SettingsView: View {
         }
       }
       .navigationTitle(Text("settings.title"))
+      // Nút Đóng (Kiệt 01/11) — như trang Hồ sơ phía dưới.
+      .toolbar {
+        ToolbarItem(placement: .topBarLeading) {
+          Button(String(localized: "common.close")) { dismiss() }
+            .accessibilityIdentifier("settings.close")
+        }
+      }
       .ascndPage()
     }
   }
@@ -345,81 +356,91 @@ public struct PhoneSteps {
   }
 }
 
+/// Tạm dừng đồng bộ Apple Health (Kiệt 01/11).
+public struct HealthPause {
+  let isPaused: @MainActor () -> Bool
+  let setPaused: @MainActor (Bool) -> Void
+
+  public init(isPaused: @escaping @MainActor () -> Bool, setPaused: @escaping @MainActor (Bool) -> Void) {
+    self.isPaused = isPaused
+    self.setPaused = setPaused
+  }
+}
+
 private struct HealthSettingsSection: View {
   let sync: @MainActor () async throws(HealthSync.Failure) -> Void
   let isConnected: @MainActor () async -> Bool
   var phoneSteps: PhoneSteps?
+  var pause: HealthPause?
   @State private var stepsOn = false
 
   @State private var connected: Bool?
+  @State private var paused = false
   @State private var running = false
   @State private var failure: HealthSync.Failure?
 
+  /// Gọn (Kiệt 01/11): một hàng có công tắc, không chú thích. Bật = kết nối / đồng bộ
+  /// lại; tắt = ngừng đồng bộ (quyền vẫn giữ — chỉ Cài đặt của iPhone thu hồi được).
   var body: some View {
     Section {
-      HStack(spacing: 12) {
-        Image(systemName: "heart.fill")
-          .font(.system(size: 14, weight: .semibold))
-          .foregroundStyle(.white)
-          .frame(width: 28, height: 28)
-          .background(DS.Color.destructive.swiftUI, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
-          .accessibilityHidden(true)
-        Text(String(localized: "hs.title"))
-        Spacer(minLength: 0)
-        if connected == true {
-          Label(String(localized: "hs.connected"), systemImage: "checkmark.circle.fill")
-            .font(DS.TextStyle.footnote.weight(.semibold))
-            .foregroundStyle(DS.Color.readinessGreen.swiftUI)
-        } else if running {
-          ProgressView()
-        } else if connected == false {
-          Button(String(localized: "hcard.connect")) { Task { await connect() } }
-            .font(DS.TextStyle.footnote.weight(.semibold))
-            .buttonStyle(.bordered)
-            .tint(DS.Color.foreground.swiftUI)
-        }
-      }
-      .frame(minHeight: 44)
-      // `.contain`, không `.combine`: gộp sẽ nuốt nút "Kết nối" — VoiceOver không bấm được.
-      .accessibilityElement(children: .contain)
-      // Không dùng Health: vẫn có bước chân tự động từ iPhone.
-      if connected == false, let phoneSteps {
+      Toggle(isOn: Binding(
+        get: { connected == true && !paused },
+        set: { on in Task { await set(on) } })
+      ) {
         HStack(spacing: 12) {
-          Image(systemName: "figure.walk")
+          Image(systemName: "heart.fill")
             .font(.system(size: 14, weight: .semibold))
             .foregroundStyle(.white)
             .frame(width: 28, height: 28)
-            .background(DS.Color.readinessGreen.swiftUI, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+            .background(DS.Color.destructive.swiftUI, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
             .accessibilityHidden(true)
-          Text(String(localized: "steps.phone"))
-          Spacer(minLength: 0)
-          if stepsOn {
-            Label(String(localized: "steps.phone.on"), systemImage: "checkmark.circle.fill")
-              .font(DS.TextStyle.footnote.weight(.semibold))
-              .foregroundStyle(DS.Color.readinessGreen.swiftUI)
-          } else {
-            Button(String(localized: "steps.phone.enable")) {
-              Task { stepsOn = await phoneSteps.enable() }
-            }
-            .font(DS.TextStyle.footnote.weight(.semibold))
-            .buttonStyle(.bordered)
-            .tint(DS.Color.foreground.swiftUI)
+          Text(String(localized: "hs.title"))
+          if running { ProgressView() }
+        }
+      }
+      .disabled(running || connected == nil)
+      .frame(minHeight: 44)
+      .accessibilityIdentifier("settings.health")
+      // Không dùng Health: vẫn có bước chân tự động từ iPhone.
+      if connected == false || paused, let phoneSteps {
+        Toggle(isOn: Binding(
+          get: { stepsOn },
+          set: { on in if on { Task { stepsOn = await phoneSteps.enable() } } })
+        ) {
+          HStack(spacing: 12) {
+            Image(systemName: "figure.walk")
+              .font(.system(size: 14, weight: .semibold))
+              .foregroundStyle(.white)
+              .frame(width: 28, height: 28)
+              .background(DS.Color.readinessGreen.swiftUI, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+              .accessibilityHidden(true)
+            Text(String(localized: "steps.phone"))
           }
         }
+        // Đã bật thì tắt ở Cài đặt của iPhone (quyền Chuyển động) — không tắt được ở đây.
+        .disabled(stepsOn)
         .frame(minHeight: 44)
-        .accessibilityElement(children: .contain)
       }
       if let failure {
         Text(HealthSyncCard.message(.failed(failure)))
           .font(DS.TextStyle.caption)
           .foregroundStyle(DS.Color.destructive.swiftUI)
       }
-    } footer: {
-      Text(String(localized: connected == true ? "hs.auto" : "hs.brings"))
     }
     .task {
       connected = await isConnected()
+      paused = pause?.isPaused() ?? false
       stepsOn = phoneSteps?.isOn() ?? false
+    }
+  }
+
+  private func set(_ on: Bool) async {
+    if on {
+      await connect()
+      paused = pause?.isPaused() ?? false
+    } else {
+      pause?.setPaused(true)
+      paused = true
     }
   }
 
