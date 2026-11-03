@@ -45,4 +45,15 @@ import Testing
     let s = KoaRhythm.state([], week: week, paused: pause.contains, today: d("2026-11-03"))
     #expect(s.days.suffix(3).allSatisfy { $0 == .paused })
   }
+
+  @Test func serverRowRoundTripsAndEndingWritesAPastDay() {
+    let today = d("2026-11-03")
+    let p = KoaPause(from: today, days: 4)
+    let row = KoaPauseSync.row(p, userId: "u", today: today)
+    let back = KoaPauseSync.decode(.object(row))
+    #expect(back == p)
+    let none = KoaPauseSync.decode(.object(KoaPauseSync.row(nil, userId: "u", today: today)))
+    #expect(none?.active(on: today) == false, "kết thúc sớm: dòng cũ hết hiệu lực")
+    #expect(KoaPauseSync.decode(nil) == nil)
+  }
 }
