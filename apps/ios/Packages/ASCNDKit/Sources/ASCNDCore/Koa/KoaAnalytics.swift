@@ -1,5 +1,3 @@
-public import Foundation
-
 /// Thuộc tính sự kiện đo lường của Koa Ecosystem (#793, `docs/KOA_ECOSYSTEM.md` §5): mốc hành trình,
 /// mở hành trình, xem Nhịp, tạm nghỉ. Như `KoaRoomVisit`: số đếm gửi theo khoảng, không gửi số đo
 /// sức khoẻ, cân nặng, calo — sự kiện chỉ nói "đã làm gì".

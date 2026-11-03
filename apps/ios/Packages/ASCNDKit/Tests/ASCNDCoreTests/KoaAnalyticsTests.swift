@@ -47,9 +47,12 @@ import Testing
 
   @Test func ledgerSendsEachKeyOnce() {
     var l = TelemetryLedger()
-    #expect(l.insert("first@today"))
-    #expect(!l.insert("first@today"))
-    #expect(l.insert("first@room"))
+    let first = l.insert("first@today")
+    let again = l.insert("first@today")
+    let otherPlace = l.insert("first@room")
+    #expect(first)
+    #expect(!again)
+    #expect(otherPlace)
   }
 
   @Test func ledgerKeepsTheNewestKeys() {
@@ -57,6 +60,7 @@ import Testing
     for i in 0..<(TelemetryLedger.capacity + 5) { _ = l.insert("k\(i)") }
     #expect(l.keys.count == TelemetryLedger.capacity)
     #expect(l.keys.first == "k5")
-    #expect(!l.insert("k\(TelemetryLedger.capacity + 4)"), "khoá mới nhất vẫn nhớ")
+    let newest = l.insert("k\(TelemetryLedger.capacity + 4)")
+    #expect(!newest, "khoá mới nhất vẫn nhớ")
   }
 }
