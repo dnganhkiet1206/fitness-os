@@ -65,12 +65,34 @@ import UIKit
         .environment(\.locale, Locale(identifier: "en_US"))
       let layout: SwiftUISnapshotLayout = height.map { .fixed(width: width, height: $0) } ?? .sizeThatFits
       assertSnapshot(
-        of: framed,
-        as: .image(
-          drawHierarchyInKeyWindow: true, precision: 0.99, perceptualPrecision: 0.98, layout: layout,
-          traits: look.traits),
+        of: framed, as: Self.strategy(for: framed, layout: layout, traits: look.traits),
         named: look.rawValue, fileID: fileID, file: filePath, testName: testName, line: line, column: column)
     }
+  }
+
+  /// Chụp như `.image` của thư viện, nhưng so bằng `KoaImageDiff` (CPU) thay cho phép so "cảm nhận"
+  /// của thư viện: phép ấy chạy bằng Metal, và trên máy ảo CI nó báo lệch cả khi ảnh chỉ khác 1/255 ở
+  /// 37 điểm ảnh (PR #810, run 41680003917, `rhythmCard.light`). Chính thư viện ghi chú máy ảo không
+  /// có GPU có thể lỗi âm thầm.
+  private static func strategy<V: View>(
+    for _: V, layout: SwiftUISnapshotLayout, traits: UITraitCollection
+  ) -> Snapshotting<V, UIImage> {
+    var s = Snapshotting<V, UIImage>.image(drawHierarchyInKeyWindow: true, layout: layout, traits: traits)
+    s.diffing = KoaImageDiff.diffing(scale: traits.displayScale)
+    return s
+  }
+
+  /// Bộ so ảnh: nhiễu 1/255 không tính, một kênh lệch nhiều thì tính (#795).
+  @Test func imageDiffIgnoresRenderNoiseButCatchesChanges() {
+    let base = [UInt8](repeating: 128, count: 100 * 4)
+    var noise = base
+    noise[0] = 129
+    noise[6] = 127
+    var changed = base
+    changed[8] = 200
+    #expect(KoaImageDiff.differentPixels(base, base) == 0)
+    #expect(KoaImageDiff.differentPixels(base, noise) == 0, "lệch 1/255 là nhiễu của bộ dựng hình")
+    #expect(KoaImageDiff.differentPixels(base, changed) == 1)
   }
 
   @Test func rhythmCard() {
