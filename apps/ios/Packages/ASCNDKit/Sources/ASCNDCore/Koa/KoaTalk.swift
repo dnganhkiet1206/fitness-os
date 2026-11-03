@@ -5,6 +5,8 @@ public enum KoaTalk {
   public enum Topic: String, Sendable, Hashable, CaseIterable, Codable {
     case greet, trained, record, comeback, restDay, allDone, rested, shortSleep, overate
     case emptyLate, fed, nudge, birthday, calm, poke
+    /// Mốc mới của hành trình (`KoaMomentFeed`): câu do app lấy từ mốc, không theo bảng dịch.
+    case milestone
   }
 
   /// Nét mặt của một câu: lên đỉnh, lắng lại. `flaps`: có mấp máy miệng khi nói. Mặt mệt, mặt
@@ -28,6 +30,7 @@ public enum KoaTalk {
     case .emptyLate: Face(peak: .plead, settle: .sheepish, flaps: false)
     case .calm: Face(peak: .happy, settle: .thinking, flaps: true)
     case .poke: Face(peak: .surprised, settle: .grin, flaps: false)
+    case .milestone: Face(peak: .grin, settle: .happy, flaps: true)
     }
   }
 
@@ -35,7 +38,7 @@ public enum KoaTalk {
   public static func variants(_ t: Topic) -> Int {
     switch t {
     case .poke: 4
-    case .rested, .shortSleep, .overate, .birthday, .nudge: 1
+    case .rested, .shortSleep, .overate, .birthday, .nudge, .milestone: 1
     default: 2
     }
   }
@@ -130,6 +133,8 @@ public enum KoaTalk {
     default: break
     }
     if facts.restDay { order.append(.restDay) }
+    // mốc mới đi trước mọi chuyện của ngày; lời chào vẫn mở đầu
+    if facts.milestone { order.insert(.milestone, at: 0) }
     if greeting { order.insert(.greet, at: 0) }
     order.append(.calm)
     return order.first { !log.said.contains($0) }

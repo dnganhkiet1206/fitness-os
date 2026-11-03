@@ -63537,6 +63537,581 @@
     }
    }
   },
+  "journey.empty": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Your first session will be the first milestone."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tu primera sesión será el primer hito."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Buổi tập đầu tiên sẽ là mốc đầu tiên."
+     }
+    }
+   }
+  },
+  "journey.lede": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Every milestone here comes from your real sessions."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cada hito sale de tus sesiones reales."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mọi mốc dưới đây tính từ buổi tập thật của bạn."
+     }
+    }
+   }
+  },
+  "journey.line.comeback %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Back after %lld days. Every session counts."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "De vuelta tras %lld días. Cada sesión cuenta."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Quay lại sau %lld ngày. Buổi nào cũng tính."
+     }
+    }
+   }
+  },
+  "journey.line.first": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Your first session. This is where it starts."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tu primera sesión. Aquí empieza todo."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Buổi đầu tiên. Hành trình bắt đầu từ đây."
+     }
+    }
+   }
+  },
+  "journey.line.firstWeek": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Your first full week. This plan suits you."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tu primera semana completa. Este plan te va bien."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tuần đủ buổi đầu tiên. Lịch này hợp với bạn."
+     }
+    }
+   }
+  },
+  "journey.line.rank %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Up to %@. Koa grew with you."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Subiste a %@. Koa creció contigo."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Lên hạng %@. Koa cũng lớn theo."
+     }
+    }
+   }
+  },
+  "journey.line.record": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "A new record. Koa saw that."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nuevo récord. Koa lo vio."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Kỷ lục mới. Koa thấy hết đó."
+     }
+    }
+   }
+  },
+  "journey.line.sessions %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Session number %lld. Nice and steady."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sesión número %lld. Muy constante."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Buổi thứ %lld. Đều tay thật đấy."
+     }
+    }
+   }
+  },
+  "journey.line.week": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Another full week."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Otra semana completa."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Thêm một tuần đủ buổi."
+     }
+    }
+   }
+  },
+  "journey.month %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Your %@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tu %@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ của bạn"
+     }
+    }
+   }
+  },
+  "journey.month.body %lld %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld records · %lld full weeks"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld récords · %lld semanas completas"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld kỷ lục · %lld tuần đủ buổi"
+     }
+    }
+   }
+  },
+  "journey.month.quiet": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Every session counts, records or not."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cada sesión cuenta, con récord o sin él."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Buổi nào cũng được tính, có kỷ lục hay không."
+     }
+    }
+   }
+  },
+  "journey.month.sessions %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sessions: %lld"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld sesiones"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld buổi"
+     }
+    }
+   }
+  },
+  "journey.row.sub": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Real milestones since your first session"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hitos reales desde tu primera sesión"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Các mốc thật, từ buổi đầu tiên"
+     }
+    }
+   }
+  },
+  "journey.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Your journey with Koa"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tu camino con Koa"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hành trình cùng Koa"
+     }
+    }
+   }
+  },
+  "rhythm.less %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld in the 30 days before. Take it at your pace."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld en los 30 días anteriores. A tu ritmo."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "30 ngày trước là %lld buổi. Cứ từ từ."
+     }
+    }
+   }
+  },
+  "rhythm.more %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld more than the 30 days before."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld más que los 30 días anteriores."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hơn 30 ngày trước %lld buổi."
+     }
+    }
+   }
+  },
+  "rhythm.paused": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "paused"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "en pausa"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "tạm nghỉ"
+     }
+    }
+   }
+  },
+  "rhythm.rest": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "planned rest"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "descanso previsto"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "nghỉ đã hẹn"
+     }
+    }
+   }
+  },
+  "rhythm.same": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Same rhythm as the 30 days before."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mismo ritmo que los 30 días anteriores."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Giữ nhịp như 30 ngày trước."
+     }
+    }
+   }
+  },
+  "rhythm.sessions %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sessions: %lld"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld sesiones"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld buổi"
+     }
+    }
+   }
+  },
+  "rhythm.short %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld in 30 days"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld en 30 días"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld buổi / 30 ngày"
+     }
+    }
+   }
+  },
+  "rhythm.start": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Each session is a dot. There is no streak to break."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cada sesión es un punto. No hay racha que romper."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mỗi buổi là một chấm. Không có chuỗi nào để gãy."
+     }
+    }
+   }
+  },
+  "rhythm.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "30-day rhythm"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ritmo de 30 días"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nhịp 30 ngày"
+     }
+    }
+   }
+  },
+  "rhythm.trained": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "trained"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "entreno"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "tập"
+     }
+    }
+   }
+  },
   "koa.say.night": {
    "extractionState": "manual",
    "localizations": {

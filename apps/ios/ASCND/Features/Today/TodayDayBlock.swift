@@ -25,6 +25,7 @@ import SwiftUI
 /// Kính thật của iOS 26 (`glassEffect`); máy cũ hơn dùng material hệ thống;
 /// Reduce Transparency → nền đặc. Reduce Motion → không quầng sáng động.
 struct TodayDayBlock: View {
+  @Environment(\.locale) private var locale
   let room: MascotRoomController
   /// Tổng nước hôm nay của sổ nước (gồm lần còn chờ gửi) — như `useTodayWater`
   /// mà Koa của RN đọc: chạm "+250 ml" là ống và câu đổi ngay. `nil` khi sổ
@@ -84,6 +85,13 @@ struct TodayDayBlock: View {
     }
   }
 
+  private var rhythm: KoaRhythm.State? {
+    guard let h = services?.koaGainsHistory else { return nil }
+    return KoaRhythm.state(h.days, week: h.week, today: room.today)
+  }
+
+  private var lang: AppPreferences.Lang { AppPreferences.Lang(rawValue: String(locale.identifier.prefix(2))) ?? .vi }
+
   @ViewBuilder private func content(hour: Int, minute: Int) -> some View {
     let pending = services?.todayPending(userId: room.userId, today: room.today)
     let signals = TodayDay.merging(room.signals, localWaterMl: localWaterMl, pending: pending)
@@ -97,7 +105,9 @@ struct TodayDayBlock: View {
     // Koa sống theo lịch tập (đợt 2): pump / đợi / mất pump / tụt hạng đè lên Koa của ngày.
     let sched = schedulePhase(hour: hour, minute: minute)
     let mood = sched.map { KoaMood.Read(emotion: Self.emotion($0), reason: dayMood.reason) } ?? dayMood
-    let said = sched.map(scheduleLine) ?? daySaid
+    // mốc mới của hành trình (lên hạng, tuần đủ buổi, kỷ lục…) đi trước mọi câu khác, mỗi mốc một lần
+    let moment = KoaMomentsStore.next(services, userId: room.userId, today: room.today)
+    let said = moment.map { KoaMomentsStore.line($0, lang: lang) } ?? sched.map(scheduleLine) ?? daySaid
     let next = sched.map { $0 == .pump ? nil : MascotRules.Quest.workout } ?? dayNext
     // Premium (20/10, Kiệt duyệt mock `today-koa-card.html` + `today-koa-meters.html`
     // kiểu 2): sáng = giấy ấm (A), tối = titan đen như widget (B); năm ống thay
@@ -146,8 +156,9 @@ struct TodayDayBlock: View {
           .foregroundStyle(KoaCardInk.ink(dark))
           + Text(verbatim: " ") + Text("koa.card.doneToday").font(.system(size: 12)).foregroundStyle(KoaCardInk.muted(dark))
         Spacer()
-        if room.streak.count > 0 {
-          Label(String(localized: "koa.card.streak \(room.streak.count)"), systemImage: "flame.fill")
+        // Nhịp 30 ngày thay chuỗi ngày (Kiệt duyệt 02/11): không có số liên tiếp để gãy
+        if let rhythm, rhythm.sessions > 0 {
+          Label(String(localized: "rhythm.short \(rhythm.sessions)"), systemImage: "circle.grid.3x3.fill")
             .font(.system(size: 12, weight: .bold))
             .foregroundStyle(MascotRoomView.signalColor(.meal))
         }
