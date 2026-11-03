@@ -27,6 +27,7 @@ struct DMAvatar: View {
   }
 }
 
+@MainActor
 enum DMText {
   static func ago(_ t: EpochMillis) -> String {
     PostHeaderView.agoText(ISO8601DateFormatter().string(from: t.date))

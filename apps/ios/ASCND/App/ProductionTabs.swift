@@ -250,7 +250,7 @@ struct SettingsSheet: View {
         : nil,
       // Xoá xong thì đăng xuất (đóng mọi bảng, dọn máy) — tài khoản không còn.
       deleteAccount: services.accountDeleter.map { deleter in
-        {
+        { @MainActor in
           let result = await deleter.deleteAccount()
           if result == .deleted { await signOut() }
           return result

@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 
 /// Tăng tải cho các bài của buổi hôm nay (Kiệt duyệt mock 28/10: thẻ "Tăng tải hôm
 /// nay" nằm sau thẻ việc chính của Today, vuốt sang để xem).

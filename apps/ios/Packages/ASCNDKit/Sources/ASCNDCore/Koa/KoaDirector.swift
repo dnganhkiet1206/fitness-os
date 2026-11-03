@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 
 /// Đạo diễn hành vi của Koa trong phòng (29/10, phần 2) — thay cho đi dạo ngẫu nhiên.
 ///

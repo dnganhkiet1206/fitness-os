@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 
 /// Giờ một người hay làm một việc — `lib/user-rhythm.ts` @ fac9ac2, port
 /// nguyên văn (#527 A-NEXT-7 · S1). Golden THẬT: `UserRhythmGoldenTests`.

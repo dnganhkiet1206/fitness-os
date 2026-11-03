@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 
 /// Phòng Koa bám bụi khi người dùng vắng (#527 phần 5, Kiệt duyệt mock bản 3 ngày 29/10).
 ///

@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 public import Observation
 
 /// Thích / lưu / menu "⋯" của một bài (#527, lát 6) — `PostActions` +

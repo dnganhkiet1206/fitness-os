@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 public import Observation
 
 /// Tiến bộ theo chữ trạng thái (#527, Kiệt duyệt mock `progress-status-words.html` bản 10,

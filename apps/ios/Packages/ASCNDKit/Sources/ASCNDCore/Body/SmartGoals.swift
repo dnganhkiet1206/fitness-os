@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 public import Observation
 
 /// Cơ thể người này thật sự tiêu bao nhiêu (#527) — `lib/adaptive-tdee.ts` @ fac9ac2.

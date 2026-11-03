@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 
 /// Màn tập "từng set một" (#527, thiết kế lại 14/10 — chủ dự án duyệt mock v2).
 ///

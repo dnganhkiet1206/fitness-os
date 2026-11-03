@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 
 /// "Koa để ý: bạn thường ghi buổi tập quanh 18:00" (#527 A-NEXT-7 · S3, E) —
 /// `SOURCE.workout` của `app/reminders.tsx:76-77` @ fac9ac2:

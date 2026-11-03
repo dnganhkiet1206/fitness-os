@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 
 /// Phần `hours` của mô hình cá nhân trên máy (`lib/personal-model.ts` @ fac9ac2,
 /// #527 A-NEXT-7 · S1): giờ một người THẬT SỰ làm từng nhiệm vụ ngày.

@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 
 extension ReminderContext {
   /// "Hôm nay đã biết gì" cho kế hoạch nhắc nhở — các vị từ của `useReminders`

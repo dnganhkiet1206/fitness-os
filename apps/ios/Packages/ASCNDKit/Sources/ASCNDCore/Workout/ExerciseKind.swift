@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 
 /// Loại bài — quyết định "tiến bộ" nghĩa là gì với nó (`exercise-kind.ts` @
 /// fac9ac2). Ở đây dùng cho "lần trước" (#417): bài bodyweight được tải bởi

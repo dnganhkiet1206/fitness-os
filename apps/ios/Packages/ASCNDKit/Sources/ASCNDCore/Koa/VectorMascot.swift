@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 
 /// Linh vật vector (#527, V1) — `VectorMascot` (`components/ascnd/vector-mascot.tsx`)
 /// @ fac9ac2: Blaze / Swift / Titan / Drago / Nova (và bản Koa cũ), vẽ bằng mã —
@@ -329,7 +329,7 @@ public enum VectorMascot {
       for ex in [100.0, 140.0] {
         let y = 88 + headTy - 11
         let cy = y + 10
-        var p: [String: KoaScene.Value] = [
+        let p: [String: KoaScene.Value] = [
           "x": n(ex - 9), "y": n(y), "width": n(18), "height": n(20), "rx": n(8), "fill": s(a.body),
         ]
         k.append(Element("Rect", p, matrix: [1, 0, 0, lid, 0, cy * (1 - lid)]))

@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 
 /// Đọc lại những hàng outbox chưa tới server (`ASCNDStore.OutboxStore`).
 public protocol PendingWrites: Sendable {

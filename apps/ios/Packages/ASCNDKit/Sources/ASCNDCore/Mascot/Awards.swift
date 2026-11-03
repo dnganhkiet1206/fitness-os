@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 public import Observation
 
 /// Huy chương (#527) — `lib/award-grant.ts` + `readAwardSources` /

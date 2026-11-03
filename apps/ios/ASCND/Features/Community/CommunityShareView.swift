@@ -217,7 +217,7 @@ struct ShareStylePicker: View {
         Text("community.share.artstyle")
           .font(DS.TextStyle.footnote.weight(.semibold))
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-        Picker(selection: Binding(get: { current }, set: onPick)) {
+        Picker(selection: Binding(get: { current }, set: { onPick($0) })) {
           ForEach(styles, id: \.self) { s in
             Text(verbatim: Self.styleText(s)).tag(s)
           }

@@ -110,17 +110,17 @@ private final class UntintedBlurView: UIVisualEffectView {
   init() {
     super.init(effect: UIBlurEffect(style: .systemUltraThinMaterial))
     isUserInteractionEnabled = false
+    // Đổi sáng / tối / tương phản: UIKit dựng lại lớp tô, ẩn lại (thay `traitCollectionDidChange`,
+    // khai tử từ iOS 17).
+    registerForTraitChanges(UITraitCollection.systemTraitsAffectingColorAppearance) { (view: UntintedBlurView, _) in
+      view.stripTint()
+    }
   }
 
   required init?(coder: NSCoder) { nil }
 
   override func layoutSubviews() {
     super.layoutSubviews()
-    stripTint()
-  }
-
-  override func traitCollectionDidChange(_ previous: UITraitCollection?) {
-    super.traitCollectionDidChange(previous)
     stripTint()
   }
 

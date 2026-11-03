@@ -492,6 +492,12 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Chưa có: `performAccessibilityAudit()` trong UI test (đợt 2 của #795, cần target UI test, sẽ chạy ở E2E).
 - **NOT RUN:** xem ảnh trên máy thật; VoiceOver.
 
+**Dọn cảnh báo trình biên dịch (03/11, audit 5 giờ, nhánh `claude/warnings-cleanup`):**
+- Nguồn: log `app-macos` (PR #808, #811) và `core-linux` (PR #808) ngày 03/11. `app-macos` build tăng dần (cache DerivedData) nên log chỉ có cảnh báo của tệp vừa biên dịch lại: danh sách đã sửa là mọi cảnh báo đã thấy, chưa chắc là tất cả.
+- App: gọi hàm `@MainActor` từ chỗ không cô lập → `DMText`, `PostHeadline`, `PostShareText` thành `@MainActor` (mọi chỗ gọi nằm trong View), `accent` của màn tập `@MainActor`, `ProgressHero.frame` thành `nonisolated`, điểm neo nảy của mảng tính trước `keyframeAnimator`. Closure không `Sendable` → `Binding` của chọn kiểu ảnh chia sẻ viết thành closure, xoá tài khoản `{ @MainActor in … }`, hàm `map` của truy vấn HealthKit giữ bằng `nonisolated(unsafe)` (chỉ chạy một lần trong callback), `@preconcurrency import AVFoundation` cho phiên camera bật / tắt trên hàng nền. API khai tử → `PostHogConfig(projectToken:host:)`; `registerForTraitChanges` thay `traitCollectionDidChange` cho nhoè không lớp tô (`layoutSubviews` vẫn ẩn lớp tô như cũ).
+- ASCNDKit: 68 tệp `public import Foundation` không dùng trong khai báo public → `import Foundation`, đúng danh sách `core-linux` báo. Danh sách đáng tin: tệp có dùng (ví dụ `SessionStore` với `URL`) thì Linux không báo; không tệp nào có `#if` theo nền tảng. Test: `any Error`, `try await` đúng thứ tự, bỏ `await` thừa, `_ =` cho `FileManager.createFile` (trên Linux không `@discardableResult`), `FakeNetwork` thay biến `var online` bị closure `@MainActor` bắt rồi đổi.
+- Không đổi hành vi. **NOT RUN:** build sạch (không cache) để thấy hết cảnh báo còn lại; iPhone thật.
+
 ## 5. Lịch sử thay đổi sổ
 
 - 01/11/2026: Koa chạy tới kéo thẻ nhiệm vụ; bảng tự vẽ; vẽ lại phòng tập khung dọc theo mock, bỏ tiền cảnh mờ.
@@ -589,3 +595,4 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - 03/11/2026: #800 thông báo: câu nhắc buổi tập xoay vòng, bị bỏ qua 3 lần liền thì 2 ngày một lần, xin quyền khi có lịch tập đầu tiên; xem mục 4.
 - 03/11/2026: đo lường Koa Ecosystem (#793): năm sự kiện mốc / hành trình / Nhịp / tạm nghỉ, gửi một lần mỗi lần xảy ra (`Telemetry.once`); xem mục 4.
 - 03/11/2026: #795 đợt 1: snapshot test các màn Koa (sáng / tối / chữ lớn) chạy trong `app-macos`; xem mục 4.
+- 03/11/2026: dọn cảnh báo trình biên dịch (app + ASCNDKit, không đổi hành vi); xem mục 4.

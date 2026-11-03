@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 public import Observation
 
 /// Thẻ sẵn sàng (#527 Phase 4/9) — phần trình bày của `readiness-gauge.tsx`,

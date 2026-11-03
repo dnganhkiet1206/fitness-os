@@ -114,8 +114,8 @@ struct GroceryTests {
     await server.put(GroceryItem(id: "a", name: "Milk", quantity: nil, checked: false))
     let book = GroceryBook(userId: "u1", source: server)
     await book.refresh()
-    var online = false
-    let w = StateWriter(environment: .init(online: { online }, isOffline: { NetworkFailure.isOffline($0) }))
+    let net = FakeNetwork(online: false)
+    let w = StateWriter(environment: .init(online: { net.online }, isOffline: { NetworkFailure.isOffline($0) }))
     let item = book.items[0]
     #expect(book.setChecked(item, checked: true, writer: w) == .queued)
     #expect(book.setChecked(item, checked: false, writer: w) == .unchanged)
@@ -123,7 +123,7 @@ struct GroceryTests {
     #expect(book.shownChecked(item, writer: w))
     #expect(book.isPending(item, writer: w))
     #expect(book.remaining(writer: w) == 0)
-    online = true
+    net.online = true
     w.flush()
     await drain()
     #expect(await server.writes == [true])

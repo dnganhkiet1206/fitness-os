@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 public import Observation
 
 /// Đổi mật khẩu (#423) — màn `app/change-password.tsx` @ fac9ac2.
