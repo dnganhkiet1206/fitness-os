@@ -117,11 +117,7 @@ public final class QuestObserver {
 
   /// Nhiệm vụ đang tính: bước cần đã từng có số bước; hồi phục chỉ ở ngày nghỉ.
   func counts(_ q: MascotRules.Quest, _ signals: DailySignals) -> Bool {
-    switch q {
-    case .steps: signals.stepsEverRecorded
-    case .recovery: restDay && signals.stepsEverRecorded
-    default: true
-    }
+    MascotRules.counts(q, restDay: restDay, stepsEverRecorded: signals.stepsEverRecorded)
   }
 
   public func observe(token: Int, day: LocalDate, signals: DailySignals, claimed: Set<String>) {

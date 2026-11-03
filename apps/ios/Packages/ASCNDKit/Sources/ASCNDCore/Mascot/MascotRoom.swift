@@ -315,11 +315,7 @@ public final class MascotRoomController {
   /// nhiệm vụ hồi phục chỉ ở ngày nghỉ (và cần số bước).
   public var activeQuests: [MascotRules.QuestDef] {
     MascotRules.dailyQuests.filter {
-      switch $0.key {
-      case .steps: signals?.stepsEverRecorded != false
-      case .recovery: restDay && signals?.stepsEverRecorded != false
-      default: true
-      }
+      MascotRules.counts($0.key, restDay: restDay, stepsEverRecorded: signals?.stepsEverRecorded != false)
     }
   }
 

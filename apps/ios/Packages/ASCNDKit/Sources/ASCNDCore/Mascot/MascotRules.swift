@@ -164,3 +164,17 @@ public enum MascotRules {
       rankKey] ?? "gold"
   }
 }
+
+extension MascotRules {
+  /// Nhiệm vụ nào tính hôm nay. Ngày nghỉ (theo lịch, hay vừa đổi thành nghỉ): hồi phục THAY buổi
+  /// tập, không cộng thêm (03/11, Kiệt: đổi sang ngày nghỉ mà nhiệm vụ Koa không đổi). Bước và hồi
+  /// phục cần đã từng có số bước. Một luật cho cả phòng Koa và bộ tự nhận thưởng.
+  public static func counts(_ q: Quest, restDay: Bool, stepsEverRecorded: Bool) -> Bool {
+    switch q {
+    case .workout: !restDay
+    case .recovery: restDay && stepsEverRecorded
+    case .steps: stepsEverRecorded
+    default: true
+    }
+  }
+}
