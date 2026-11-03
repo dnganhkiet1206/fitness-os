@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 
 /// Bộ dựng cảnh của Koa (#527, K2) — `RenderNode` + phần cây của `KoaFigure`
 /// trong `koa-figure.tsx` @ fac9ac2, thành một hàm thuần.

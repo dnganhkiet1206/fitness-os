@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 
 /// Koa đi trong phòng (29/10): mô hình đi bộ thuần — vị trí trên sàn, vận tốc có tăng /
 /// giảm tốc, nhịp bước, hai bàn chân, hướng mặt, nhảy lên / xuống bục. App chỉ việc gọi

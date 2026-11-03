@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 
 /// Lời nhắc "bấm `?` nếu chưa rõ" (#527, chỉ thị 6103829484) — `lib/help-nudge.ts`
 /// + `useHelpTopic` (`components/ascnd/help-button.tsx`) @ fac9ac2.

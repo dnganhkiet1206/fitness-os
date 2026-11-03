@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 
 /// Ánh nhìn của Koa trong phòng (29/10, phần 2): mắt tới đích trước, đầu theo sau (lò xo
 /// chậm hơn); trong lúc nhìn có những cú liếc nhỏ (saccade), thỉnh thoảng liếc sang chỗ

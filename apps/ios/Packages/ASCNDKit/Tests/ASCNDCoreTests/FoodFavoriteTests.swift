@@ -92,14 +92,14 @@ struct FoodFavoriteTests {
     await s.put("f1", owner: "u1", name: "Oats")
     let book = FoodLibraryBook(userId: "u1", source: s, favorites: s)
     await book.load()
-    var online = false
-    let w = StateWriter(environment: .init(online: { online }, isOffline: { NetworkFailure.isOffline($0) }))
+    let net = FakeNetwork(online: false)
+    let w = StateWriter(environment: .init(online: { net.online }, isOffline: { NetworkFailure.isOffline($0) }))
     let f = book.mine[0]
     #expect(book.setFavorite(f, value: true, writer: w) == .queued)
     #expect(book.shownFavorite(f, writer: w))
     #expect(book.favoritePending(f, writer: w))
     #expect(book.setFavorite(f, value: false, writer: w) == .unchanged)
-    online = true
+    net.online = true
     w.flush()
     await drain()
     #expect(await s.log.isEmpty)

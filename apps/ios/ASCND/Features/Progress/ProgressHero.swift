@@ -18,7 +18,7 @@ struct ProgressHero: View {
   var zoom: Namespace.ID?
 
   /// Khung vẽ trong toạ độ 222 × 222 của ảnh logo (cắt sát chữ A).
-  static let frame = CGRect(x: 2, y: 30, width: 218, height: 166)
+  nonisolated static let frame = CGRect(x: 2, y: 30, width: 218, height: 166)
   static let rim: CGFloat = 1.3
 
   /// Chuyển động (Kiệt duyệt mock 22/10): lúc mở màn 6 mảng hiện theo đường leo,
@@ -210,6 +210,8 @@ struct ProgressSegment: View {
     let tint = ProgressStyle.color(group)
     let outline = SegmentShape(path: ProgressHero.shape(group))
     let c = ProgressHero.iconCenter(group)
+    // Tính ở đây: closure của `keyframeAnimator` không chạy trên MainActor.
+    let bounce = ProgressHero.anchor(group)
     ZStack(alignment: .topLeading) {
       outline
         .fill(level == .insufficient ? empty : tint)
@@ -241,7 +243,7 @@ struct ProgressSegment: View {
     // Vừa ghi dữ liệu: đổi màu tại chỗ rồi nảy một lần.
     .animation(reduceMotion ? nil : .smooth(duration: 0.6), value: level)
     .keyframeAnimator(initialValue: 1.0, trigger: level) { content, s in
-      content.scaleEffect(reduceMotion ? 1 : s, anchor: ProgressHero.anchor(group))
+      content.scaleEffect(reduceMotion ? 1 : s, anchor: bounce)
     } keyframes: { _ in
       CubicKeyframe(1.06, duration: 0.2)
       SpringKeyframe(1, duration: 0.35)

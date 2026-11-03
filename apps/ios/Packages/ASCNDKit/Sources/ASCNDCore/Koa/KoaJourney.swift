@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 
 /// Hành trình của người dùng cùng Koa (02/11, Kiệt duyệt Koa Ecosystem V2). Mọi cột mốc TÍNH LẠI
 /// từ dữ liệu đã lưu (buổi tập, kỷ lục, lịch tuần) qua đúng phép tính Gains, nên:

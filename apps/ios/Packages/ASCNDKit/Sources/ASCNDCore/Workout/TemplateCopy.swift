@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 
 /// Một dòng bài của buổi tập được chia sẻ (`WorkoutExerciseLine`,
 /// `use-community.ts:53` @ fac9ac2) — đã qua `readWorkoutPayload`.

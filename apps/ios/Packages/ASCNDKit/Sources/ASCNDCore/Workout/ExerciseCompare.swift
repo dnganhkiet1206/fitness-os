@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 
 /// "Tiến bộ từng bài" theo MỨC TẠ: set đỉnh của buổi gần nhất so với buổi trước
 /// (Kiệt duyệt mock 28/10 — điều người tập quan tâm nhất, không phải tổng khối

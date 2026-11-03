@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 public import Observation
 
 /// "Thử workout" trên thẻ bài (#527, Cộng đồng lát 15) — `tryIt` của

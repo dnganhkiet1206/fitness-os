@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 
 /// Phòng tập khung dọc (01/11, Kiệt duyệt mock `https://claude.ai/artifact/FQ31MadePEtWGxpfDVKwqz`).
 /// Vẽ mới phần lớn của căn phòng: tường, cửa sổ vòm, trời, thành phố, đèn thả, sàn, bảng hiệu lớn.

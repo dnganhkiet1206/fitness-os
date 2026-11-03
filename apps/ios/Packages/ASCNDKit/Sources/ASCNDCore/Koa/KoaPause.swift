@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 
 /// Tạm nghỉ có hẹn ngày quay lại (Koa Ecosystem V2, Kiệt duyệt 02/11): ốm, đi xa, cần hồi phục.
 /// Trong lúc nghỉ: không nhắc tập, phòng Koa không bám bụi, Daily Plan chỉ gợi việc nhẹ, Tuần của

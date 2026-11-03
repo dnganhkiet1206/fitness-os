@@ -228,6 +228,21 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.ascnd.fitnessos.dev.tests
         GENERATE_INFOPLIST_FILE: YES
 
+  # Kiểm accessibility tự động (#795 đợt 2): XCUITest `performAccessibilityAudit()`, chạy ở
+  # `.github/workflows/ios-a11y.yml` bằng scheme `ASCNDA11y` — không chạy trong `app-macos` hay E2E.
+  ASCNDUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: ASCNDUITests
+    dependencies:
+      - target: ASCND
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.ascnd.fitnessos.dev.uitests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: ASCND
+
 schemes:
   ASCND:
     build:
@@ -243,3 +258,12 @@ schemes:
         "-uiTestFakeBackend": true
     archive:
       config: Release
+  ASCNDA11y:
+    build:
+      targets:
+        ASCND: all
+        ASCNDUITests: [test]
+    test:
+      config: Debug
+      targets:
+        - ASCNDUITests

@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 
 /// Tên theo ngôn ngữ của app cho hàng `food_items` / `exercises` có tên 3 thứ tiếng
 /// (`name_vi` / `name_en` / `name_es`, migration `20261018120000_food_exercise_library`).

@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 
 /// Chip gợi ý của Trợ lý / AI Coach (#527) — `lib/assistant-suggestions.ts` +
 /// `hooks/use-assistant-signal.ts` @ fac9ac2.

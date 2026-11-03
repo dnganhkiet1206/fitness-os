@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 public import Observation
 
 /// Xu hướng sẵn sàng 7 ngày (#527) — `ReadinessTrendCard` của

@@ -7,7 +7,7 @@ import SwiftUI
 // `WorkoutSessionController` trong `WorkoutView`. Logic thuần ở
 // `WorkoutFocus` (ASCNDCore).
 
-private var accent: Color { WorkoutsHomeView.accent }
+@MainActor private var accent: Color { WorkoutsHomeView.accent }
 
 // MARK: - Đầu màn: ngày + thanh tiến độ theo bài
 

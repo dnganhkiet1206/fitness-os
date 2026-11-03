@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 
 /// "Insight hôm nay" dạng điểm nhấn kiểu Apple Health (Kiệt duyệt mock 21/10):
 /// MỘT câu chính thành tiêu đề lớn + lời giải thích, kèm thẻ số liệu của đúng
