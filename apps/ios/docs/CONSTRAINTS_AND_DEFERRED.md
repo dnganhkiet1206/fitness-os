@@ -426,7 +426,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Phòng full màn, thanh tab và Ghi nhanh ẩn trong phòng; mọi thẻ cũ nằm trong bảng mở bằng nút "Nhiệm vụ 0/5", không bỏ thẻ nào. Kéo để tải lại chuyển vào bảng. Thay bố cục mép A của 31/10.
 - Parallax: biên độ tăng 2,2 lần, phóng sẵn 9 % (mất ~18 điểm mỗi bên), lia vào lúc mở phòng, tiền cảnh mờ. Koa đứng yên thì máy đứng yên (Kiệt bỏ kiểu máy tự lắc). Hoạt hình: co giãn khi nhảy và tiếp đất (`KoaSquash`), đầu gật khi nói.
 - Chưa đạt: nửa dưới màn là sàn kéo dài tạm, còn đường nối và tiền cảnh thô. Kiệt đã duyệt mock vẽ lại hai phòng `https://claude.ai/artifact/FQ31MadePEtWGxpfDVKwqz`, làm ở PR sau.
-- Giảm chuyển động: đồng hồ dừng nên Koa không nói, tiền cảnh đứng yên.
+- ~~Giảm chuyển động: đồng hồ dừng nên Koa không nói, tiền cảnh đứng yên.~~ 03/11 (#799): Koa nói lại khi Giảm chuyển động (`KoaDirectorDriver.quietTick` mỗi giây; bong bóng hiện bằng độ mờ, không phóng). Tiền cảnh vẫn đứng yên.
 - **NOT RUN:** iPhone thật; VoiceOver đọc bóng thoại; `en` / `es` trong bóng thoại; đồ mặc khác; cảnh đi ngủ và dậy với phóng 9 %; CPU sau thay đổi; cỡ màn khác iPhone Air.
 
 **Koa kéo thẻ nhiệm vụ, khung dọc của phòng (01/11, Kiệt):**
@@ -460,6 +460,11 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Hôm nay ở dạng thu gọn (`compact`) vẫn tính `koa_moment_shown` khi câu mốc là câu của Koa, dù câu ấy hiện ở chỗ khác của thẻ.
 - Xoá dữ liệu app hoặc đổi máy thì mốc đã gửi có thể gửi lại một lần (sổ khoá chỉ nằm trên máy).
 - **NOT RUN:** khoá PostHog chưa bật trong bản test nên chưa thấy sự kiện lên server; chưa soi log PostHog debug; iPhone thật.
+
+**Koa nói khi Giảm chuyển động (03/11, #799, nhánh `claude/koa-quiet-talk`):**
+- Nguyên nhân: lịch nói (`alive` → `nextLine`) chỉ chạy trong `step` của đồng hồ dựng hình, mà Giảm chuyển động dừng đồng hồ; `arrive()` còn chặn `openTalk` khi Giảm chuyển động. Sửa: `arrive()` vẫn mở lịch nói (bỏ phần lại gần / đẩy máy quay), phòng gọi `quietTick` mỗi giây khi Giảm chuyển động, chỉ chạy phần lời nói (tới lượt thì nói, hết câu thì tắt; giờ ngủ / đang về chỗ thì không nói). Miệng không mấp máy (mặt đứng yên theo Giảm chuyển động).
+- Test `KoaQuietTalkTests` (ASCNDTests, chạy ở `app-macos` sau khi #809 gộp, và ở E2E).
+- **NOT RUN:** bật Giảm chuyển động trên simulator / iPhone và xem bong bóng; VoiceOver đọc câu.
 
 ## 5. Lịch sử thay đổi sổ
 
@@ -554,3 +559,4 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - 28/10/2026: Koa Coach trả lời progressive overload theo MỨC TẠ TỪNG BÀI (Kiệt: điều người tập quan tâm nhất). Trước: `ai-coach` chỉ gửi `volume_load` 7 ngày → "khối lượng 728 kg", buổi không tạ thành "volume 0". Nay `_shared/progress.ts`: set đỉnh (bỏ khởi động) buổi gần nhất so với buổi trước, 8 tuần, làm tròn 0,1 kg; bài không tạ so reps; viết theo đơn vị cân. Deploy `ai-coach` v28 (Kiệt duyệt). Simulator: "Dumbbell Shoulder Press: 18,4 kg × 10 (tăng 2,5 kg) so với 15,9 kg × 9". Màn tiến bộ theo bài trong app: chờ mock.
 - 28/10/2026: VoiceOver hàng set ở màn tập — làm lại #526 (đóng vì xung đột): set không tạ đọc "không tạ" thay vì "0 kg"; mức tạ đọc theo đơn vị người dùng (trước luôn "kg", cả tài khoản lb). Đóng #670 (landing web Lovable, nhắm `main`) và #5 (PRODUCT.md của app RN, nhắm `main`) — không còn dùng; nhánh giữ lại.
 - 03/11/2026: đo lường Koa Ecosystem (#793): năm sự kiện mốc / hành trình / Nhịp / tạm nghỉ, gửi một lần mỗi lần xảy ra (`Telemetry.once`); xem mục 4.
+- 03/11/2026: #799 (phần không phải art): Koa nói khi Giảm chuyển động; xem mục 4.
