@@ -640,6 +640,15 @@ final class AppServices {
     return await KoaGainsSync.load(userId: userId, store: rows, plans: plans, now: SystemWallClock().nowMillis(), in: .current)
   }
 
+  /// Màn tổng kết mở khi Hôm nay chưa đọc Gains (vào thẳng buổi tập): tự đọc, để thẻ Gains của
+  /// buổi không biến mất đúng lúc đáng thấy nhất.
+  func ensureKoaGainsHistory() async {
+    guard koaGainsHistory == nil, let userId = session.session?.userId,
+      let r = await loadKoaGains(userId: userId), session.session?.userId == userId
+    else { return }
+    koaGainsHistory = .init(days: r.days, week: r.week)
+  }
+
   /// Câu ngắn của Daily Plan cho widget "Buổi tập hôm nay" (GĐ1); `nil` = câu mặc
   /// định của widget. Chỉ kết quả của ĐÚNG người + hôm nay.
   /// Tuần của Koa mới nhất mà Hôm nay dựng (Kiệt 27/10: widget thay "chuỗi" bằng số

@@ -65,6 +65,9 @@ public struct WorkoutSummaryView: View {
     self.onShare = onShare
   }
 
+  /// Buổi đã gửi `gains_earned` trong lần mở app này.
+  @MainActor private static var reported: Set<Int64> = []
+
   /// Phần Gains của buổi hôm nay: lịch sử KHÔNG có hôm nay → có hôm nay (không
   /// đếm trùng dù Hôm nay đã đọc lại lịch sử gồm buổi này).
   struct GainsGain {
@@ -102,13 +105,11 @@ public struct WorkoutSummaryView: View {
     let todayDay = KoaGains.Day(date: today, personalRecord: todayPR, overload: todayOverload)
     let before = KoaGains.compute(past, week: h.week, today: today)
     let after = KoaGains.compute(past + [todayDay], week: h.week, today: today)
-    // tuần đủ buổi đạt đúng hôm nay?
-    let monday = today.adding(days: -WorkoutPlanning.routineIndex(today))
-    let thisWeek = Set(past.map(\.date).filter { $0 >= monday && $0 < today })
+    // từng phần đọc từ chính phép tính Gains: tính cả ngày đổi lịch và loại buổi
+    let b = KoaGains.breakdown(past + [todayDay], week: h.week, on: today) ?? .init()
     return GainsGain(
-      before: before, after: after, planned: h.week.planned.contains(WorkoutPlanning.routineIndex(today)), pr: todayPR,
-      overload: todayOverload, fullWeek: thisWeek.count < h.week.target && thisWeek.count + 1 >= h.week.target,
-      streak: KoaGains.activeStreak(past + [todayDay], through: today))
+      before: before, after: after, planned: b.planned, pr: b.personalRecord, overload: b.overload,
+      fullWeek: b.fullWeek, streak: b.streak)
   }
 
   private func gainsCard(_ g: GainsGain) -> some View {
@@ -167,6 +168,8 @@ public struct WorkoutSummaryView: View {
     }
     .accessibilityElement(children: .combine)
     .onAppear {
+      // một lần mỗi buổi: thẻ hiện lại khi cuộn hay quay về thì không đếm thêm
+      guard Self.reported.insert(summary.dateTime.millis).inserted else { return }
       Telemetry.capture(
         .gainsEarned,
         ["delta": String(g.delta), "planned": String(g.planned), "pr": String(g.pr), "rank_up": String(rankUp)])
@@ -285,6 +288,7 @@ public struct WorkoutSummaryView: View {
     }
     .navigationTitle(Text(summary.templateName))
     .ascndPage()
+    .task { await services?.ensureKoaGainsHistory() }
   }
 
   private func setLabel(_ s: SummarySet) -> String {
