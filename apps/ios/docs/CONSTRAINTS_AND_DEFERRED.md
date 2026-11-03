@@ -531,7 +531,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Lượt ghi ảnh đầu (03/11) bắt được lỗi Dynamic Type thật, đã sửa trước khi lấy ảnh chuẩn: số buổi (26 pt) và tiêu đề Gains (22 pt) cỡ cố định, không lớn theo chữ → `@ScaledMetric` (cùng cỡ ở mặc định); ba chú thích của thẻ nhịp 30 ngày bị cắt ("plann…") ở chữ lớn → `ViewThatFits` xếp dọc; mẫu "tạm nghỉ" ở chú thích là chấm đặc trong khi lưới vẽ vòng nét đứt → chú thích vẽ đúng dấu của lưới.
 - Cách chụp thẻ: `.sizeThatFits` của thư viện đề nghị cao 0, nên chữ không có `fixedSize` bị ép một dòng ("DAYS L…") — app không như vậy (thẻ nằm trong ScrollView). Test chụp thẻ với `fixedSize(vertical:)` cho giống app.
 - Ảnh chuẩn (18) lấy từ lượt ghi của CI run 41669221380 (head `94c4928c`), đã xem từng ảnh. Hai lượt ghi liên tiếp cho ra đúng từng điểm ảnh ở mọi màn không đổi code (10/18), nên cách chụp ổn định trên runner.
-- Chưa có: `performAccessibilityAudit()` trong UI test (đợt 2 của #795, cần target UI test, sẽ chạy ở E2E).
+- ~~Chưa có: `performAccessibilityAudit()` trong UI test (đợt 2 của #795, cần target UI test, sẽ chạy ở E2E).~~ 03/11 (nhánh `claude/koa-a11y-audit`): target `ASCNDUITests` + scheme `ASCNDA11y`, chạy ở workflow riêng `ios-a11y.yml` (không ở E2E: E2E đã chạm trần 45 phút, PR #785 của agent khác đang nâng trần). Đợt 2a chỉ THU THẬP (bảng vấn đề ở trang lượt chạy, test không đỏ vì vấn đề); đợt 2b sửa và chặn tái phát. Xem `docs/AGENT_SESSION.md` §6d.
 - **NOT RUN:** xem ảnh trên máy thật; VoiceOver.
 
 ## 5. Lịch sử thay đổi sổ
@@ -636,4 +636,5 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - 03/11/2026: đo lường Koa Ecosystem (#793): năm sự kiện mốc / hành trình / Nhịp / tạm nghỉ, gửi một lần mỗi lần xảy ra (`Telemetry.once`); xem mục 4.
 - 03/11/2026: #799 (phần không phải art): Koa nói khi Giảm chuyển động; xem mục 4.
 - 03/11/2026: đăng xuất xoá "Insight hôm nay" lưu trên máy (như `clearPersistedCache` của RN) và quên Koa của người trước trong bộ nhớ (người sau từng thấy Nhịp 30 ngày / Hành trình của người trước); xem mục 4.
+- 03/11/2026: #795 đợt 2a: kiểm accessibility tự động (`performAccessibilityAudit()`) các màn Koa ở workflow `ios-a11y.yml`, đang thu thập; xem mục 4.
 - 03/11/2026: #795 đợt 1: snapshot test các màn Koa (sáng / tối / chữ lớn) chạy trong `app-macos`; xem mục 4.
