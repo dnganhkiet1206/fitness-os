@@ -33,6 +33,8 @@ struct TodayExtras<Plan: View>: View {
   /// Màn quay lại sau ≥ 3 ngày lỡ lịch (đợt 2).
   @State private var comeback: KoaComeback?
   @State private var showsPause = false
+  /// Đổi khi người dùng bỏ qua lời gợi ý Tạm nghỉ, để thẻ ẩn ngay.
+  @State private var swapNudgeAnswers = 0
   @Environment(AppServices.self) private var services
   @Environment(\.scenePhase) private var scenePhase
   @Environment(\.weightUnit) private var unit
@@ -198,6 +200,7 @@ struct TodayExtras<Plan: View>: View {
         }
         .todayEntrance(2)
       }
+      if let flow { swapNudge(flow) }
       if let dailyPlan, let flow {
         // GĐ1: MỘT việc chính + lý do + phương án; rồi Tuần của Koa (lịch thật).
         // Thẻ "Tăng tải hôm nay" nằm sau việc chính, vuốt sang (Kiệt duyệt mock 28/10).
@@ -727,6 +730,28 @@ struct TodayExtras<Plan: View>: View {
       pause: services.koaPause(userId: flow.today.userId, today: flow.today.today))
   }
 
+  // MARK: - Gợi ý Tạm nghỉ khi đổi buổi lần thứ hai (03/11)
+
+  private func swapNudgeKey(_ today: LocalDate) -> String {
+    "koa.swapnudge.\(userId).\(WeeklyChallenges.weekStart(today))"
+  }
+
+  @ViewBuilder private func swapNudge(_ flow: WorkoutFlow) -> some View {
+    let today = flow.today.today
+    let _ = swapNudgeAnswers
+    if mascot?.questDay == .extraSwap, services.koaPause(userId: userId, today: today) == nil,
+      !UserDefaults.standard.bool(forKey: swapNudgeKey(today))
+    {
+      KoaSwapNudge(
+        build: services.koaBuild, pause: { showsPause = true },
+        dismiss: {
+          UserDefaults.standard.set(true, forKey: swapNudgeKey(today))
+          swapNudgeAnswers += 1
+        })
+      .todayEntrance(2)
+    }
+  }
+
   // MARK: - Việc chính (Daily Plan, GĐ1)
 
   private func reloadDailyPlan() async {
@@ -1070,8 +1095,13 @@ struct TodayExtras<Plan: View>: View {
   /// Không có buổi trong lịch hôm nay → nhiệm vụ chính là hồi phục (#527 đợt 1).
   private func syncRestDay() {
     let rest = planName == nil
+    let day = QuestDay.of(
+      library: flow?.today.library, date: flow?.today.today ?? LocalDate(SystemWallClock().nowMillis(), in: .current),
+      trainedToday: (mascot?.signals?.workoutCount ?? 0) > 0 || (flow.map { $0.today.trained.contains($0.today.today) } ?? false))
     mascot?.restDay = rest
+    mascot?.questDay = day
     services.questObserver(userId: userId)?.restDay = rest
+    services.questObserver(userId: userId)?.questDay = day
   }
 
   /// Đợt 2: mất pump (đo một lần mỗi đợt nghỉ) và màn quay lại (một lần mỗi đợt nghỉ).

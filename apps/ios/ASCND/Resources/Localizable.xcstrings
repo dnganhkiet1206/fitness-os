@@ -64664,6 +64664,98 @@
     }
    }
   },
+  "swap.nudge.line": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "You've swapped two sessions for rest this week. Busy or tired? Take a few days off?"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Esta semana cambiaste dos sesiones por descanso. ¿Ocupado o cansado? ¿Te tomas unos días?"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tuần này đã đổi 2 buổi sang nghỉ. Có vẻ bận hay mệt. Tạm nghỉ vài ngày nhé?"
+     }
+    }
+   }
+  },
+  "swap.nudge.no": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "No, I'm still training this week"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "No, esta semana sigo entrenando"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Không, tuần này mình vẫn tập"
+     }
+    }
+   }
+  },
+  "swap.nudge.pause": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Take a few days off"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tomarme unos días"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tạm nghỉ vài ngày"
+     }
+    }
+   }
+  },
+  "swap.nudge.why": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "A break turns off workout reminders, keeps Koa's room clean and skips this week. You lose nothing."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Una pausa apaga los recordatorios, mantiene limpia la sala de Koa y no cuenta esta semana. No pierdes nada."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tạm nghỉ thì không nhắc tập, phòng Koa không bám bụi, tuần này không tính. Không mất gì cả."
+     }
+    }
+   }
+  },
   "koa.say.night": {
    "extractionState": "manual",
    "localizations": {

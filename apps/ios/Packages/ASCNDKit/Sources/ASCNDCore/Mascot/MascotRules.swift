@@ -164,3 +164,55 @@ public enum MascotRules {
       rankKey] ?? "gold"
   }
 }
+
+/// Hôm nay là loại ngày nào cho nhiệm vụ của Koa (Kiệt duyệt 03/11).
+public enum QuestDay: Sendable, Hashable {
+  /// Có buổi trong lịch, hay hôm nay đã tập (kể cả buổi tự do, bài tự tạo ngoài lịch).
+  case training
+  /// Ngày nghỉ theo lịch, hay lần đổi buổi sang nghỉ được tính như ngày nghỉ trong tuần.
+  case rest
+  /// Từ lần đổi buổi sang nghỉ thứ hai trong tuần: không có nhiệm vụ tập lẫn hồi phục.
+  case extraSwap
+  /// Chưa lên lịch (tập tự do): không có ngày nghỉ hay đổi buổi; giữ nhiệm vụ tập mỗi ngày.
+  case unscheduled
+
+  /// Số lần mỗi tuần được đổi buổi sang nghỉ mà vẫn như ngày nghỉ thường. WHO 2020 / ACSM: tập
+  /// sức mạnh ít nhất 2 ngày mỗi tuần, nên đổi nhiều hơn là bỏ lịch chứ không còn là nghỉ.
+  public static let swapsPerWeek = 1
+
+  /// Các ngày trong tuần của `date` có buổi trong lịch mẫu nhưng bị đổi thành nghỉ (không phải dời).
+  public static func swaps(in library: TemplateSnapshot, weekOf date: LocalDate) -> [LocalDate] {
+    let monday = WeeklyChallenges.weekStart(date)
+    let scheduled = Set(library.routine.filter { !$0.isRest && !($0.templateId ?? "").isEmpty }.map(\.dayOfWeek))
+    return library.overrides
+      .filter { o in
+        o.isRest && o.movedTo == nil && o.date >= monday && o.date < monday.adding(days: 7)
+          && scheduled.contains(WorkoutPlanning.routineIndex(o.date))
+      }
+      .map(\.date).sorted()
+  }
+
+  public static func of(library: TemplateSnapshot?, date: LocalDate, trainedToday: Bool) -> QuestDay {
+    guard let library else { return .unscheduled }
+    let hasSchedule = library.routine.contains { !$0.isRest && !($0.templateId ?? "").isEmpty }
+    guard hasSchedule else { return .unscheduled }
+    if trainedToday || library.plan(for: date, today: date).template != nil { return .training }
+    let swaps = swaps(in: library, weekOf: date)
+    if let i = swaps.firstIndex(of: date), i >= swapsPerWeek { return .extraSwap }
+    return .rest
+  }
+}
+
+extension MascotRules {
+  /// Nhiệm vụ nào tính hôm nay. Ngày nghỉ (theo lịch, hay vừa đổi thành nghỉ): hồi phục THAY buổi
+  /// tập, không cộng thêm (03/11, Kiệt: đổi sang ngày nghỉ mà nhiệm vụ Koa không đổi). Bước và hồi
+  /// phục cần đã từng có số bước. Một luật cho cả phòng Koa và bộ tự nhận thưởng.
+  public static func counts(_ q: Quest, day: QuestDay, stepsEverRecorded: Bool) -> Bool {
+    switch q {
+    case .workout: day == .training || day == .unscheduled
+    case .recovery: day == .rest && stepsEverRecorded
+    case .steps: stepsEverRecorded
+    default: true
+    }
+  }
+}
