@@ -87,7 +87,8 @@ struct TodayDayBlock: View {
 
   private var rhythm: KoaRhythm.State? {
     guard let h = services?.koaGainsHistory else { return nil }
-    return KoaRhythm.state(h.days, week: h.week, today: room.today)
+    let pause = services?.koaPause(userId: room.userId, today: room.today)
+    return KoaRhythm.state(h.days, week: h.week, paused: { pause?.contains($0) == true }, today: room.today)
   }
 
   private var lang: AppPreferences.Lang { AppPreferences.Lang(rawValue: String(locale.identifier.prefix(2))) ?? .vi }

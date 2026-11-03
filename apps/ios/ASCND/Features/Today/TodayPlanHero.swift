@@ -20,6 +20,8 @@ struct TodayPlanHero: View {
   var overloadHint: (text: String, up: Bool)?
   let onPrimary: () -> Void
   let onAlternative: (DailyPlan.Alternative) -> Void
+  /// Mở sheet tạm nghỉ; `nil` = không có lối (đang tạm nghỉ, hay chưa có lịch).
+  var onPause: (() -> Void)?
 
   var body: some View {
     VStack(alignment: .leading, spacing: DS.Spacing.sm) {
@@ -89,6 +91,16 @@ struct TodayPlanHero: View {
             .disabled(busy)
           }
         }
+      }
+      if let onPause {
+        Button(action: onPause) {
+          Text("pause.entry")
+            .font(DS.TextStyle.footnote)
+            .frame(maxWidth: .infinity, minHeight: 32)
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        .accessibilityIdentifier("today.pause.open")
       }
       if failed {
         Text("dp.failed")
