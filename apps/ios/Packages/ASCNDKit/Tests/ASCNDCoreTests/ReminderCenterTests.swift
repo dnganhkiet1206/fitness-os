@@ -457,3 +457,54 @@ struct ReminderCopyTableTests {
     #expect(ReminderCopyTable.copy(.vi)[.meal]?.body.contains("Koa") == true)
   }
 }
+
+/// Xin quyền đúng lúc và sổ lời nhắc bị bỏ qua (#800).
+@MainActor
+struct ReminderNudgeCenterTests {
+  /// Có lịch tập đầu tiên → hỏi quyền MỘT lần; mở app không hỏi.
+  @Test func asksOnceAfterTheFirstSchedule() async {
+    let store = MemoryStore()
+    let os = FakeCenter()
+    let c = center(store, os)
+    await c.refreshPermission()
+    #expect(await os.requests == 0, "mở app không xin quyền")
+    await c.askAfterSchedule()
+    #expect(await os.requests == 1)
+    #expect(c.permission)
+    await c.askAfterSchedule()
+    #expect(await os.requests == 1, "chỉ một lần mỗi máy")
+  }
+
+  @Test func doesNotAskWhenWorkoutRemindersAreOffOrAlreadyGranted() async {
+    let store = MemoryStore()
+    let os = FakeCenter()
+    let c = center(store, os)
+    await c.setEnabled(.koaTraining, false)
+    let before = await os.requests
+    await c.askAfterSchedule()
+    #expect(await os.requests == before, "tắt cả hai lời nhắc buổi tập → không hỏi")
+
+    let granted = FakeCenter(granted: true)
+    let g = center(MemoryStore(), granted)
+    await g.askAfterSchedule()
+    #expect(await granted.requests == 0, "đã có quyền → không hỏi")
+  }
+
+  /// Sổ lời nhắc theo tài khoản: đăng xuất thì xoá.
+  @Test func nudgeLedgerIsUserScoped() async {
+    let store = MemoryStore()
+    let c = center(store, FakeCenter(granted: true))
+    await c.refreshPermission()
+    c.noteOpened(.koaTraining)
+    #expect(store.string(forKey: ReminderCenter.nudgeKey) != nil)
+    await c.clearUserScoped()
+    #expect(store.string(forKey: ReminderCenter.nudgeKey) == nil)
+  }
+
+  @Test func onlyTheWorkoutReminderIsTracked() async {
+    let store = MemoryStore()
+    let c = center(store, FakeCenter(granted: true))
+    c.noteOpened(.meal)
+    #expect(store.string(forKey: ReminderCenter.nudgeKey) == nil)
+  }
+}

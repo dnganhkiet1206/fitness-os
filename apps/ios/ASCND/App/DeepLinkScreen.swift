@@ -51,6 +51,8 @@ struct DeepLinkScreen: View {
     // Sáu màn ghi tự có `NavigationStack` và nút đóng của chúng.
     case .logMeal(let date, let meal):
       LogMealView(userId: userId, date: date, mealType: meal) { dismiss() }
+    case .photoMeal:
+      LogMealView(userId: userId, start: .photo) { dismiss() }
     case .logWeight:
       LogWeightView(makeLogger: { services.makeWeightLogger(userId: userId) }) { dismiss() }
     case .logMeasurement:
@@ -100,7 +102,7 @@ struct DeepLinkScreen: View {
       TemplateListView(flow: flow)
     case .communityUser(let id):
       CommunityUserScreen(targetId: id)
-    case .logMeal, .logWeight, .logMeasurement, .logSleep, .logBiometrics, .logWorkout, .communityPost:
+    case .logMeal, .photoMeal, .logWeight, .logMeasurement, .logSleep, .logBiometrics, .logWorkout, .communityPost:
       EmptyView()
     }
   }
