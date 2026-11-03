@@ -1051,12 +1051,21 @@ struct MascotStage: View {
   /// (a) Người xem tới phòng: đi vắng từ 5 phút thì Koa chào đầy đủ (nhìn trước, lại gần);
   /// mới rời đi thì chỉ nhìn — không chào đi chào lại mỗi lần mở.
   private func arrive() {
-    guard walks, !reduceMotion, !benchMode else { return }
+    guard walks, !benchMode else { return }
     let away = Date.now.timeIntervalSince1970 - seenAt
     seenAt = Date.now.timeIntervalSince1970
-    if away >= 300 { director.pushIn() }
-    director.request(away >= 300 ? .greet : .notice)
+    // Giảm chuyển động (#799): không lại gần, máy quay không đẩy vào — nhưng Koa vẫn nói.
+    if !reduceMotion {
+      if away >= 300 { director.pushIn() }
+      director.request(away >= 300 ? .greet : .notice)
+    }
     director.openTalk(greeting: away >= 300, userId: userId, day: companion?.day ?? "")
+  }
+
+  /// Giảm chuyển động mà phòng đang hiện: lời nói chạy bằng `quietTick` thay cho đồng hồ dựng hình.
+  private var quietTalk: Bool {
+    walks && !benchMode && reduceMotion && onScreen && scenePhase == .active && !inBedroom && !bedShown
+      && wakeScene == nil
   }
 
   private func openVisit() {
@@ -1160,6 +1169,14 @@ struct MascotStage: View {
         wakeClock = KoaSceneClock(waking: true)
         wakeScene = .now
         KoaSound.play(.yawn)
+      }
+    }
+    // Giảm chuyển động (#799): đồng hồ dựng hình dừng, Koa vẫn nói theo lịch (mỗi giây xem tới lượt chưa).
+    .task(id: quietTalk) {
+      guard quietTalk else { return }
+      while !Task.isCancelled {
+        director.quietTick(.now)
+        try? await Task.sleep(for: .seconds(1))
       }
     }
     .task(id: wakeScene) {
@@ -1333,7 +1350,7 @@ struct MascotStage: View {
           KoaBubble(
             line: line, width: width, x: x, headY: y - Self.heroWidth * KoaMath.aspect * levelScale * (f?.scale ?? 1)
           )
-          .transition(.scale(scale: 0.6, anchor: .bottom).combined(with: .opacity))
+          .transition(reduceMotion ? .opacity : .scale(scale: 0.6, anchor: .bottom).combined(with: .opacity))
         }
         if !away {
           occlusion(width, still ?? f.map { KoaRoomMap.Spot($0.plane, $0.x, $0.depth) }, plantSway: f?.plantSway ?? 0)

@@ -293,8 +293,11 @@ final class AppServices {
     // chạy tuần tự, để thứ tự không phụ thuộc thứ tự đăng ký.
     let lifecycle = self.lifecycle
     session.onSignedOut {
-      [sync = self.sync, weak session = self.session, celebrations = self.celebrations, habitHours = self.habitHours,
-       stateWriter = self.stateWriter] in
+      [weak self, sync = self.sync, weak session = self.session, celebrations = self.celebrations,
+       habitHours = self.habitHours, stateWriter = self.stateWriter] in
+      // Koa trong bộ nhớ của người vừa rời đi — TRƯỚC mọi `await`, để không xoá nhầm lượt đọc
+      // của người mới khi đổi thẳng tài khoản.
+      self?.forgetKoaSession()
       // Pháo hoa của người vừa rời đi không hiện cho người sau (`onUserScopedReset`).
       celebrations.clear()
       // Ý "đã uống" chưa gửi thuộc về người vừa rời đi (`onUserScopedReset`).
@@ -313,6 +316,8 @@ final class AppServices {
       widgets.setUser(next)
       // Cài đặt theo tài khoản (linh vật); theo máy thì giữ (`DEVICE_KEYS`).
       prefs.clearUserScoped()
+      // "Insight hôm nay" của người vừa rời đi (`clearPersistedCache` của RN).
+      SmartNudgesDefaultsCache.clear()
       // Nhắc nhở: huỷ thông báo đang chờ của người vừa rời đi, xoá cài đặt /
       // chữ ký lịch / chốt giờ thông minh (`forgetPreviousAccount`).
       await reminderCenter.clearUserScoped()
@@ -827,6 +832,19 @@ final class AppServices {
     guard server != koaPause(userId: userId, today: today) else { return false }
     storeKoaPause(server, userId: userId)
     return true
+  }
+
+  /// Phiên kết thúc: quên Koa trong bộ nhớ của người vừa rời đi (audit 03/11). Lịch sử Gains,
+  /// đồ đang mặc, vóc dáng, giờ buổi gần nhất không gắn người: trước đây người đăng nhập sau thấy
+  /// Nhịp 30 ngày / Hành trình / Gains của người trước cho tới khi Hôm nay đọc xong lượt của họ
+  /// (`loadGains` chạy sau năm lượt đọc, có lượt qua mạng), và `ensureKoaGainsHistory` thấy
+  /// lịch sử cũ nên không đọc lại. Các trạng thái có gắn `userId` (bụi, Gains hiện tại, Daily
+  /// Plan, tuần, chuỗi) đã tự loại người khác nên giữ nguyên.
+  func forgetKoaSession() {
+    koaGainsHistory = nil
+    koaEquipped = []
+    koaBuild = 0
+    koaLastSessionAt = nil
   }
 
   /// Màn tổng kết mở khi Hôm nay chưa đọc Gains (vào thẳng buổi tập): tự đọc, để thẻ Gains của

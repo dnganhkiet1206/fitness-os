@@ -428,7 +428,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Phòng full màn, thanh tab và Ghi nhanh ẩn trong phòng; mọi thẻ cũ nằm trong bảng mở bằng nút "Nhiệm vụ 0/5", không bỏ thẻ nào. Kéo để tải lại chuyển vào bảng. Thay bố cục mép A của 31/10.
 - Parallax: biên độ tăng 2,2 lần, phóng sẵn 9 % (mất ~18 điểm mỗi bên), lia vào lúc mở phòng, tiền cảnh mờ. Koa đứng yên thì máy đứng yên (Kiệt bỏ kiểu máy tự lắc). Hoạt hình: co giãn khi nhảy và tiếp đất (`KoaSquash`), đầu gật khi nói.
 - Chưa đạt: nửa dưới màn là sàn kéo dài tạm, còn đường nối và tiền cảnh thô. Kiệt đã duyệt mock vẽ lại hai phòng `https://claude.ai/artifact/FQ31MadePEtWGxpfDVKwqz`, làm ở PR sau.
-- Giảm chuyển động: đồng hồ dừng nên Koa không nói, tiền cảnh đứng yên.
+- ~~Giảm chuyển động: đồng hồ dừng nên Koa không nói, tiền cảnh đứng yên.~~ 03/11 (#799): Koa nói lại khi Giảm chuyển động (`KoaDirectorDriver.quietTick` mỗi giây; bong bóng hiện bằng độ mờ, không phóng). Tiền cảnh vẫn đứng yên.
 - **NOT RUN:** iPhone thật; VoiceOver đọc bóng thoại; `en` / `es` trong bóng thoại; đồ mặc khác; cảnh đi ngủ và dậy với phóng 9 %; CPU sau thay đổi; cỡ màn khác iPhone Air.
 
 **Koa kéo thẻ nhiệm vụ, khung dọc của phòng (01/11, Kiệt):**
@@ -460,6 +460,16 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Cảnh Koa đi ngủ dùng cỡ riêng (`KoaBedtime`), chưa chỉnh theo 152 điểm: có thể thấy Koa nhỏ đi một chút khi sang cảnh ngủ.
 - **NOT RUN:** phòng ngủ trong khung dọc (cảnh đi ngủ, tường cao đổi màu); xem từng khung cảnh chạy (mới xem kết quả cuối, chưa có video tốt); đồ phòng đã mua trong tranh mới; iPhone thật; VoiceOver với bảng tự vẽ; cỡ màn khác; CPU.
 
+**#795 đợt 2b (03/11, nhánh `claude/a11y-round-2b`), theo dữ liệu bộ kiểm accessibility của PR #812 (run 41685936332, sau khi chờ màn đứng yên):**
+- Sửa: thẻ "Get started with ASCND" ở Hôm nay — tiêu đề (20) và tên ba việc (16) lớn theo Dynamic Type (`@ScaledMetric`, cỡ mặc định như cũ). Thẻ việc chính — dòng đầu (11) lớn theo chữ; nút phương án ("Make it a rest day"…) và "Take a few days off…" cao tối thiểu 44 điểm theo Apple (trước 36 và 32), nên thẻ cao thêm 8–12 điểm mỗi nút.
+- Đã có PR riêng: dải "Tuần của Koa" (#815); sheet nửa màn ở cỡ chữ trợ năng (#814). #814 cũng là lý do cả bốn dòng của sheet Tạm nghỉ bị báo "Text clipped" và "partially unsupported": bộ kiểm phóng chữ, sheet `.medium` cắt nội dung.
+- Còn lại, chưa sửa:
+  - Độ tương phản chữ phụ (`mutedForeground`) trên nền thẻ: khoảng 20 dòng ở Hôm nay, Nhịp, sheet Tạm nghỉ, Hành trình. Đổi màu token của Design System là đổi thiết kế, chờ Kiệt duyệt mock.
+  - Chữ cỡ cố định trong thẻ Koa và thẻ việc trong ngày ở Hôm nay (`TodayDayBlock`, `TodayDayCard`: khoảng 30 chỗ `.system(size:)`). Bộ kiểm chỉ báo "Koa" vì nó chỉ kiểm phần đang hiện trên màn. Cần một lượt riêng có ảnh snapshot: bố cục thẻ Koa chặt, chữ lớn dễ vỡ.
+  - Chữ logo "ASCND" giữ cỡ cố định (logo; Kiệt chốt cỡ tương đương bản mặc định).
+  - "Partially unsupported" ở chữ dùng kiểu chữ hệ thống (Nhịp, Hành trình, chú thích Tiến bộ) và "Hit area is too small" ở hai dòng chữ tĩnh của thẻ việc chính ("TODAY'S MAIN THING", "From your weekly plan."): chưa rõ nguyên nhân. Kỹ sư Apple xác nhận bộ kiểm có thể báo nhầm với font hệ thống. Xem lại khi #812, #814, #815 đã vào base (job `a11y` chạy hằng đêm).
+- **NOT RUN:** bộ kiểm trên head này (job `a11y` chỉ có ở #812, chưa vào base); xem trên simulator / iPhone.
+
 **Ổn định bộ kiểm (03/11, #801, nhánh `claude/stable-checks`):**
 - Hôm nay không còn hiệu ứng trượt vào ở chế độ UI test (`TodayEntrance`): thẻ trượt 14 điểm trong ~0,75 s đầu, Maestro chạm lúc ấy có thể trúng nút khác. Người dùng thật không đổi.
 - `08-settings`: sau khi quay lại từ Nhắc nhở, đợi Cài đặt hiện hẳn rồi mới cuộn tìm "Đổi mật khẩu". ~~**Chưa xác nhận nguyên nhân** (không chạy được Maestro trong phiên này); nếu còn đỏ thì xem ảnh chụp trong artifact.~~
@@ -470,12 +480,26 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - `KoaPerfTests.figureFrameBudget` đỏ ngẫu nhiên trên `app-macos` ("defs dựng lại theo khung: 13", PR #807 lượt `de277981`): test đếm bộ nhớ đệm `KoaRender.defsMemo` dùng chung với các suite chạy song song. Nay đếm khoá defs mà chính 120 khung đi bộ của test cần (`KoaRender.defsKey`, thuần) — không còn phụ thuộc test khác; vẫn bắt được lỗi dựng lại defs theo khung (khi ấy ~120 khoá).
 - Maestro E2E chạy trên PR #808 (nhãn `e2e`): ở `0407ab5d` (run 41669727129) **11/11 flow qua** trong 23 phút 16 giây, `Settings rows open` 2 phút 24 giây, không request nào tới Supabase thật. **NOT RUN:** `node tools/check.mjs` trên Mac.
 - Trùng với PR #785 (agent khác, 02/11, đang đỏ `release-gate`): #785 có cùng cách sửa `08-settings` (đợi Cài đặt sau khi quay lại, cuộn 30 s), thấy sau khi đã sửa ở đây. Giá trị như nhau; khi #785 gộp, xung đột ở `08-settings.yaml` / `05-workout.yaml` chỉ là chọn một bản. Phần còn lại của #785 (build một lần, trần 60 phút, `waitToSettleTimeoutMs` cho buổi tập) không có ở đây.
+
+**Sheet nửa màn không cắt nút ở chữ cỡ trợ năng (03/11, #795 đợt 2b, nhánh `claude/sheet-large-type`):**
+- Sheet chỉ có `.presentationDetents([.medium])` và không cuộn: ở chữ cỡ trợ năng, nội dung cao hơn nửa màn nên bị cắt và **nút chính nằm ngoài màn, không chạm được**. Bằng chứng: ảnh chuẩn `pauseSheet.largeType` cao ~700 điểm, detent medium trên iPhone 17 Pro ~440; lượt kiểm accessibility đầu (PR #812) báo chữ của sheet Tạm nghỉ bị cắt.
+- Sửa bằng `mediumSheet()` (`ASCND/Design/MediumSheet.swift`): cỡ chữ thường vẫn `.medium`, bố cục không đổi; cỡ trợ năng mở `.large`; nội dung vẫn cao hơn màn thì cuộn được (`ViewThatFits`). Áp cho sheet Tạm nghỉ, xác nhận mua ở Cửa hàng, chọn khẩu phần ở Nhật ký ăn. Trạng thái của sheet nằm ngoài `ViewThatFits`.
+- Không đổi: sheet thước đo ở onboarding (nút OK trên thanh điều hướng, luôn chạm được); sheet Tuần của Koa (đã có ScrollView).
+- **NOT RUN:** mở ba sheet ở cỡ chữ trợ năng trên simulator / iPhone; VoiceOver.
+
 **Thông báo không lặp, không làm phiền (03/11, #800, nhánh `claude/notify-rotate`):**
 - Lời nhắc buổi tập của Koa có 5 câu mỗi ngôn ngữ (`ReminderCopyTable.koaTraining`), chọn theo ngày, hai lần nhắc liền nhau trong cùng một kế hoạch không trùng câu. Cùng ngày luôn ra cùng câu nên đặt lại lịch không đổi chữ. Kế hoạch mới bắt đầu từ một ngày khác có thể chọn lại câu của lần nhắc cuối kế hoạch trước (hiếm: 1/5).
 - Bị bỏ qua 3 lần liền (bắn mà không chạm) → 2 ngày một lần; chạm một lần là về mỗi ngày (`KoaNudge.Ledger`, theo tài khoản, xoá khi đăng xuất). Mở app thẳng (không chạm thông báo) vẫn tính là bỏ qua; tập mà không chạm thông báo cũng tính. Lời nhắc chỉ được tính khi app tính lại kế hoạch (mở app / có tin mới), nên mấy ngày không mở app là mấy lần bỏ qua.
 - Xin quyền thông báo ngay khi lịch có buổi tập đầu tiên (onboarding hay tự đặt ở Kế hoạch tuần), một lần mỗi máy; không xin lúc mở app (vốn đã không xin). Lời nhắc bữa sau lần ghi đầu (`firstLogNudge`) giữ nguyên.
 - Golden nhắc nhở của RN không đổi: câu xoay vòng chỉ áp cho `koaTraining` (không có ở RN).
 - **NOT RUN:** thông báo thật trên simulator / iPhone (người test chạy sau); hộp xin quyền lúc tạo lịch ở onboarding.
+
+**Dải "Tuần của Koa" lớn theo Dynamic Type (03/11, #795 đợt 2b, nhánh `claude/week-strip-type`):**
+- Lượt kiểm accessibility đầu (PR #812, màn Tiến bộ › Tập luyện) báo "Dynamic Type font sizes are unsupported" cho "KOA'S WEEK", "1/7 SESSIONS" và tên bảy thứ: `TodayWeekStrip` (Hôm nay, Tiến bộ, phòng Koa) dùng cỡ cố định 11 / 10,5 pt.
+- Nay `@ScaledMetric(relativeTo: .caption2)` (cỡ mặc định giữ nguyên); hàng tiêu đề xếp dọc khi không vừa; tên thứ trong bảy cột chia đều thu nhỏ vừa ô (`minimumScaleFactor(0.6)`) thay vì cắt. VoiceOver vẫn đọc nhãn đầy đủ của từng ngày.
+- Không sửa: "Good" trong lượt kiểm là giá trị đọc của mảng hình logo ở Tiến bộ — biểu tượng theo cỡ hình, không phải chữ. Các mục "partially unsupported" và độ tương phản của chữ màu nhạt chờ xem bảng đầy đủ (độ tương phản đụng màu token chung → cần Kiệt duyệt).
+- **NOT RUN:** xem dải ở cỡ chữ trợ năng trên simulator / iPhone.
+
 **Đo lường Koa Ecosystem (03/11, #793, nhánh `claude/koa-analytics`):**
 - Thêm `koa_moment_shown` (`kind`, `place` today/room, `major`), `journey_opened`, `rhythm_viewed` (`sessions` theo khoảng, `paused`), `pause_started` (`days`), `pause_ended_early` (`days_used`, `days_left`). Không gửi `value` của mốc (hạng, số buổi, số ngày nghỉ) và không số đo sức khoẻ.
 - "Một lần mỗi lần xảy ra": mốc một lần mỗi nơi, Nhịp một lần mỗi ngày, nhớ qua các lần mở app (`Telemetry.once`, 200 khoá mới nhất mỗi tài khoản trong UserDefaults). Mở Hành trình và hai nút tạm nghỉ gửi mỗi lần bấm / mở.
@@ -483,6 +507,16 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Xoá dữ liệu app hoặc đổi máy thì mốc đã gửi có thể gửi lại một lần (sổ khoá chỉ nằm trên máy).
 - **NOT RUN:** khoá PostHog chưa bật trong bản test nên chưa thấy sự kiện lên server; chưa soi log PostHog debug; iPhone thật.
 
+**Koa nói khi Giảm chuyển động (03/11, #799, nhánh `claude/koa-quiet-talk`):**
+- Nguyên nhân: lịch nói (`alive` → `nextLine`) chỉ chạy trong `step` của đồng hồ dựng hình, mà Giảm chuyển động dừng đồng hồ; `arrive()` còn chặn `openTalk` khi Giảm chuyển động. Sửa: `arrive()` vẫn mở lịch nói (bỏ phần lại gần / đẩy máy quay), phòng gọi `quietTick` mỗi giây khi Giảm chuyển động, chỉ chạy phần lời nói (tới lượt thì nói, hết câu thì tắt; giờ ngủ / đang về chỗ thì không nói). Miệng không mấp máy (mặt đứng yên theo Giảm chuyển động).
+- Test `KoaQuietTalkTests` (ASCNDTests, chạy ở `app-macos` sau khi #809 gộp, và ở E2E).
+- **NOT RUN:** bật Giảm chuyển động trên simulator / iPhone và xem bong bóng; VoiceOver đọc câu.
+
+**Đăng xuất xoá "Insight hôm nay" trên máy và Koa của người trước trong bộ nhớ (03/11, audit lượt 5 giờ, nhánh `claude/insight-signout`):**
+- `AppServices.koaGainsHistory` / `koaEquipped` / `koaBuild` / `koaLastSessionAt` không gắn người và không được dọn khi đăng xuất. Tái hiện: A dùng app (Hôm nay đọc Gains) → đăng xuất → B đăng nhập → trong lúc Hôm nay của B còn chạy năm lượt đọc trước `loadGains` (có `mascot.load()` qua mạng), B mở Tiến bộ thấy Nhịp 30 ngày của A (`ProgressResults`), mở Hành trình thấy mốc của A (`ensureKoaGainsHistory` thấy lịch sử cũ nên không đọc lại); Tổng kết tuần, thẻ Gains sau buổi tập, câu Koa của Hôm nay cũng đọc lịch sử ấy; Koa ló lên ở tab khác mặc đồ và vóc dáng của A. Nay lượt dọn đăng xuất gọi `forgetKoaSession()` đầu tiên, trước mọi `await` (đổi thẳng tài khoản: không xoá nhầm lượt đọc của người mới). Trạng thái có gắn `userId` giữ nguyên.
+- `SmartNudgesDefaultsCache` (thay persister React Query của RN) giữ MỘT ô insight. Khoá có người dùng nên người sau không thấy được, nhưng sau đăng xuất chữ insight của người trước (viết từ giấc ngủ, ăn uống, buổi tập) vẫn nằm trong UserDefaults tới khi bị ghi đè. RN xoá cache này trong `forgetPreviousAccount` (`clearPersistedCache`, `native/src/hooks/use-auth.tsx:55`). Nay lượt dọn đăng xuất của `AppServices` gọi `SmartNudgesDefaultsCache.clear()`.
+- Đã soát cùng lượt, không phải lỗi: `coach.quickReplyMemory` chỉ lưu số thứ tự mẫu câu; `health:lastAutoSync` là nhịp 15 phút của cả máy (người sau có thể chờ tối đa 15 phút cho lần tự đồng bộ đầu); `health:paused` theo máy như quyền HealthKit.
+- **NOT RUN:** đăng xuất / đăng nhập tài khoản khác trên simulator.
 **Snapshot test (03/11, #795, nhánh `claude/koa-snapshots`):**
 - swift-snapshot-testing 1.19.7 (MIT, ghim `exactVersion`) chỉ trong target `ASCNDTests`. Sáu test, mỗi test ba ảnh (sáng / tối / chữ `accessibility3`): `KoaRhythmCard`, `KoaJourneyContent` (có dữ liệu + trống), `KoaPauseCard`, `KoaPauseSheet`, `KoaGainsCard`. Dữ liệu mẫu cố định (03/11/2026, lịch T2/T4/T6, một đợt nghỉ, hai kỷ lục).
 - Để dựng được không cần `AppServices`: `KoaJourneyView` tách phần thân thành `KoaJourneyContent`, thẻ Gains của `WorkoutSummaryView` thành `KoaGainsCard`. Hành vi không đổi (đo lường `journey_opened` / `gains_earned` ở lại chỗ cũ).
@@ -587,8 +621,13 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - 28/10/2026: màn "Tiến bộ từng bài" theo MỨC TẠ (Kiệt duyệt mock `EjRrEXE1gxpyKAx22R6PU2`): mỗi bài so set nặng nhất buổi gần nhất với buổi trước ("18,4 kg × 10 · +2,5 kg", "+5 reps", "Giữ nguyên", "Lần đầu"); đầu trang đếm tăng tạ / thêm reps / giữ / giảm; chạm mở chi tiết (biểu đồ set đỉnh mỗi buổi, các buổi, gợi ý lần tới theo tăng tiến kép 12 reps, phân tích cũ ở cuối). Mở từ dòng "Lần trước" ở màn tập → vào thẳng chi tiết. Buổi 0 kg của bài có tạ: "Chưa ghi tạ", không tính giảm. Thay 3 nhóm "Đáng để ý / Đang ổn / Cần thêm buổi" và con số "tốt nhất 90 ngày". `ExercisePerformance.topSetReps`: reps của chính set nặng nhất.
 - 28/10/2026: Koa Coach trả lời progressive overload theo MỨC TẠ TỪNG BÀI (Kiệt: điều người tập quan tâm nhất). Trước: `ai-coach` chỉ gửi `volume_load` 7 ngày → "khối lượng 728 kg", buổi không tạ thành "volume 0". Nay `_shared/progress.ts`: set đỉnh (bỏ khởi động) buổi gần nhất so với buổi trước, 8 tuần, làm tròn 0,1 kg; bài không tạ so reps; viết theo đơn vị cân. Deploy `ai-coach` v28 (Kiệt duyệt). Simulator: "Dumbbell Shoulder Press: 18,4 kg × 10 (tăng 2,5 kg) so với 15,9 kg × 9". Màn tiến bộ theo bài trong app: chờ mock.
 - 28/10/2026: VoiceOver hàng set ở màn tập — làm lại #526 (đóng vì xung đột): set không tạ đọc "không tạ" thay vì "0 kg"; mức tạ đọc theo đơn vị người dùng (trước luôn "kg", cả tài khoản lb). Đóng #670 (landing web Lovable, nhắm `main`) và #5 (PRODUCT.md của app RN, nhắm `main`) — không còn dùng; nhánh giữ lại.
+- 03/11/2026: #795 đợt 2b: chữ thẻ "Get started" và dòng đầu thẻ việc chính lớn theo Dynamic Type, vùng chạm 44 điểm cho nút phương án và "Tạm nghỉ"; xem mục 4.
 - 03/11/2026: #801: tắt hiệu ứng trượt vào của Hôm nay ở chế độ UI test, `08-settings` đợi Cài đặt ổn định trước khi cuộn; xem mục 4.
 - 03/11/2026: #796 phần 1: Daily Plan có lý do `paused(until:)`; thẻ việc chính ghi "Đang tạm nghỉ · tập lại từ …". Lịch sử đợt nghỉ chờ Kiệt quyết (migration hay trên máy).
+- 03/11/2026: dải Tuần của Koa lớn theo Dynamic Type (kiểm accessibility báo cỡ cố định); xem mục 4.
 - 03/11/2026: #800 thông báo: câu nhắc buổi tập xoay vòng, bị bỏ qua 3 lần liền thì 2 ngày một lần, xin quyền khi có lịch tập đầu tiên; xem mục 4.
+- 03/11/2026: sheet nửa màn (Tạm nghỉ, mua đồ, khẩu phần) mở cả màn và cuộn được ở chữ cỡ trợ năng, không còn cắt mất nút; xem mục 4.
 - 03/11/2026: đo lường Koa Ecosystem (#793): năm sự kiện mốc / hành trình / Nhịp / tạm nghỉ, gửi một lần mỗi lần xảy ra (`Telemetry.once`); xem mục 4.
+- 03/11/2026: #799 (phần không phải art): Koa nói khi Giảm chuyển động; xem mục 4.
+- 03/11/2026: đăng xuất xoá "Insight hôm nay" lưu trên máy (như `clearPersistedCache` của RN) và quên Koa của người trước trong bộ nhớ (người sau từng thấy Nhịp 30 ngày / Hành trình của người trước); xem mục 4.
 - 03/11/2026: #795 đợt 1: snapshot test các màn Koa (sáng / tối / chữ lớn) chạy trong `app-macos`; xem mục 4.
