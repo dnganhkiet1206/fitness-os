@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 
 /// "Hôm nay của bạn" — ghi cả ngày một lần (18/10, chủ dự án duyệt mock A
 /// `today-one-log.html`): Ngủ · Bữa · Nước · Tập trong MỘT thẻ; một nút mở MỘT

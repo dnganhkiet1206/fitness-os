@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 
 /// Đèn của studio trên Koa (#527, K2) — `koa-light.ts` @ fac9ac2.
 ///

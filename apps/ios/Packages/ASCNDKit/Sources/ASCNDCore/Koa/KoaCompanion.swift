@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 
 /// Koa nhớ và có khí sắc (30/10): nối đạo diễn hành vi với đời thật của người dùng.
 ///

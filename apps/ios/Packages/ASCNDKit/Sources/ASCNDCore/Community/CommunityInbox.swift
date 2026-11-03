@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 public import Observation
 
 /// Hộp thông báo Cộng đồng (#527, lát 9) — `app/community-inbox.tsx` +

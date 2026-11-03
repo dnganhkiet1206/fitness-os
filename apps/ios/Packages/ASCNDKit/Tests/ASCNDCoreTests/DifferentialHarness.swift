@@ -47,6 +47,6 @@ struct DifferentialHarness {
       return Out(id: f.id, records: recs.map { Out.R(exercise: $0.exercise, kind: "\($0.kind)", value: $0.value, previous: $0.previous) })
     }
     let data = try JSONEncoder().encode(outs)
-    fm.createFile(atPath: outPath, contents: data)
+    _ = fm.createFile(atPath: outPath, contents: data)
   }
 }

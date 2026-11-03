@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 public import Observation
 
 /// Cửa hàng của Koa (#527) — catalog + luật của `lib/mascot-room.ts` và phần

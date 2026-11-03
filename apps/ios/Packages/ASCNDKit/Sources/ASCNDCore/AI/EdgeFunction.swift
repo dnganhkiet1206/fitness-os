@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 
 /// Gọi edge function của Supabase (#527) — `lib/edge.ts` + `lib/edge-failure.ts`
 /// + `EDGE_FUNCTIONS` của `lib/backend.ts` @ fac9ac2.

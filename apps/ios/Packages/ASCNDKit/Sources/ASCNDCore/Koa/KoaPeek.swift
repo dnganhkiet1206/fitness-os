@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 
 /// Koa ló lên ở mọi tab (#527, Koa đợt 2A — chiến lược Kiệt duyệt 19/10): khi một
 /// nhiệm vụ app THẤY vừa xong được nhận thưởng, Koa trồi lên ở mép màn của tab

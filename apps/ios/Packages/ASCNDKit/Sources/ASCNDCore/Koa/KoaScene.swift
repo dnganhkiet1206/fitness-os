@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 
 /// Cảnh của Koa (#527, K1) — kiểu dữ liệu của `koa-scene.ts` @ fac9ac2: cây
 /// SVG của bản export thiết kế, mỗi lớp kèm cờ điều kiện, transform và hoạt

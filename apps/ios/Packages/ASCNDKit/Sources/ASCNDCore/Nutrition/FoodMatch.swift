@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 
 /// Khớp tên món người dùng KỂ ("phở bò", "2 eggs") với món có thật trong thư
 /// viện / món gần đây (18/10, "Kể cho Koa"). Chỉ nhận khi chắc: thà để người

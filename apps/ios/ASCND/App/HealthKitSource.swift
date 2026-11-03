@@ -155,7 +155,9 @@ final class HealthKitSource: @unchecked Sendable {
     _ type: HKSampleType, predicate: NSPredicate, limit: Int, ascending: Bool,
     map: @escaping (HKSample) -> T?
   ) async -> [T] {
-    await withCheckedContinuation { cont in
+    // `map` chỉ chạy một lần trong callback của truy vấn, chỉ đọc mẫu được trao.
+    nonisolated(unsafe) let map = map
+    return await withCheckedContinuation { cont in
       let q = HKSampleQuery(
         sampleType: type, predicate: predicate, limit: limit,
         sortDescriptors: [NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: ascending)]

@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 
 /// Luật của phòng linh vật (#527 Phase 7) — `native/src/lib/mascot-room.ts`
 /// @ fac9ac2, chép từng con số. Golden: `mascot-golden.json`

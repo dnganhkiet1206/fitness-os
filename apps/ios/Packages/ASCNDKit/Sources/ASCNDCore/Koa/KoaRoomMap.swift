@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 
 /// Bản đồ không gian của phòng studio (29/10, Koa có ý định): dựng từ CHÍNH hình của
 /// phòng (`StudioScene`, đo bằng khung bao từng phần tử) — không thêm đồ, không đổi phòng.

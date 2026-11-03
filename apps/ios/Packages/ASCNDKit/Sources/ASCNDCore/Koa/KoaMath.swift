@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 
 /// Toán thuần của bộ dựng hình Koa (#527, K1) — chép nguyên văn từ
 /// `koa-figure.tsx` (ma trận, đường cong CSS, lấy mẫu keyframe, `parseOps` /

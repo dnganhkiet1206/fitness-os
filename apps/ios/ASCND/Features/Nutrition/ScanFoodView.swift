@@ -1,6 +1,7 @@
 import ASCNDCore
 import ASCNDDesignSystem
-import AVFoundation
+// AVCaptureSession chưa `Sendable` trong SDK; bật / tắt trên hàng nền là cách Apple khuyên.
+@preconcurrency import AVFoundation
 import PhotosUI
 import SwiftUI
 

@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 public import Observation
 
 /// Hồ sơ cộng đồng của tôi (#527, lát 2) — `app/community-profile.tsx`,

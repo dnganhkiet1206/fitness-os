@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 
 /// Cảnh đi ngủ kiểu phim hoạt hình (Kiệt 31/10): Koa đi từ trái sang phải, phòng trôi ngược lại,
 /// mảng tường lướt qua phía trước che chỗ đổi phòng; sang gác mái Koa khuỵu, nhảy lên giường,

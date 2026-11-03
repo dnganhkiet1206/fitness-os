@@ -515,6 +515,13 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - `SmartNudgesDefaultsCache` (thay persister React Query của RN) giữ MỘT ô insight. Khoá có người dùng nên người sau không thấy được, nhưng sau đăng xuất chữ insight của người trước (viết từ giấc ngủ, ăn uống, buổi tập) vẫn nằm trong UserDefaults tới khi bị ghi đè. RN xoá cache này trong `forgetPreviousAccount` (`clearPersistedCache`, `native/src/hooks/use-auth.tsx:55`). Nay lượt dọn đăng xuất của `AppServices` gọi `SmartNudgesDefaultsCache.clear()`.
 - Đã soát cùng lượt, không phải lỗi: `coach.quickReplyMemory` chỉ lưu số thứ tự mẫu câu; `health:lastAutoSync` là nhịp 15 phút của cả máy (người sau có thể chờ tối đa 15 phút cho lần tự đồng bộ đầu); `health:paused` theo máy như quyền HealthKit.
 - **NOT RUN:** đăng xuất / đăng nhập tài khoản khác trên simulator.
+
+**Dọn cảnh báo trình biên dịch (03/11, audit 5 giờ, nhánh `claude/warnings-cleanup`):**
+- Nguồn: log `app-macos` (PR #808, #811) và `core-linux` (PR #808) ngày 03/11. `app-macos` build tăng dần (cache DerivedData) nên log chỉ có cảnh báo của tệp vừa biên dịch lại: danh sách đã sửa là mọi cảnh báo đã thấy, chưa chắc là tất cả.
+- App: gọi hàm `@MainActor` từ chỗ không cô lập → `DMText`, `PostHeadline`, `PostShareText` thành `@MainActor` (mọi chỗ gọi nằm trong View), `accent` của màn tập `@MainActor`, `ProgressHero.frame` thành `nonisolated`, điểm neo nảy của mảng tính trước `keyframeAnimator`. Closure không `Sendable` → `Binding` của chọn kiểu ảnh chia sẻ viết thành closure, xoá tài khoản `{ @MainActor in … }`, hàm `map` của truy vấn HealthKit giữ bằng `nonisolated(unsafe)` (chỉ chạy một lần trong callback), `@preconcurrency import AVFoundation` cho phiên camera bật / tắt trên hàng nền. API khai tử → `PostHogConfig(projectToken:host:)`; `registerForTraitChanges` thay `traitCollectionDidChange` cho nhoè không lớp tô (`layoutSubviews` vẫn ẩn lớp tô như cũ).
+- ASCNDKit: 68 tệp `public import Foundation` không dùng trong khai báo public → `import Foundation`, đúng danh sách `core-linux` báo. Danh sách đáng tin: tệp có dùng (ví dụ `SessionStore` với `URL`) thì Linux không báo; không tệp nào có `#if` theo nền tảng. Test: `any Error`, `try await` đúng thứ tự, bỏ `await` thừa, `_ =` cho `FileManager.createFile` (trên Linux không `@discardableResult`), `FakeNetwork` thay biến `var online` bị closure `@MainActor` bắt rồi đổi.
+- Không đổi hành vi. **NOT RUN:** build sạch (không cache) để thấy hết cảnh báo còn lại; iPhone thật.
+
 **Snapshot test (03/11, #795, nhánh `claude/koa-snapshots`):**
 - swift-snapshot-testing 1.19.7 (MIT, ghim `exactVersion`) chỉ trong target `ASCNDTests`. Sáu test, mỗi test ba ảnh (sáng / tối / chữ `accessibility3`): `KoaRhythmCard`, `KoaJourneyContent` (có dữ liệu + trống), `KoaPauseCard`, `KoaPauseSheet`, `KoaGainsCard`. Dữ liệu mẫu cố định (03/11/2026, lịch T2/T4/T6, một đợt nghỉ, hai kỷ lục).
 - Để dựng được không cần `AppServices`: `KoaJourneyView` tách phần thân thành `KoaJourneyContent`, thẻ Gains của `WorkoutSummaryView` thành `KoaGainsCard`. Hành vi không đổi (đo lường `journey_opened` / `gains_earned` ở lại chỗ cũ).
@@ -621,6 +628,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - 28/10/2026: VoiceOver hàng set ở màn tập — làm lại #526 (đóng vì xung đột): set không tạ đọc "không tạ" thay vì "0 kg"; mức tạ đọc theo đơn vị người dùng (trước luôn "kg", cả tài khoản lb). Đóng #670 (landing web Lovable, nhắm `main`) và #5 (PRODUCT.md của app RN, nhắm `main`) — không còn dùng; nhánh giữ lại.
 - 03/11/2026: #795 đợt 2b: chữ thẻ "Get started" và dòng đầu thẻ việc chính lớn theo Dynamic Type, vùng chạm 44 điểm cho nút phương án và "Tạm nghỉ"; xem mục 4.
 - 03/11/2026: #801: tắt hiệu ứng trượt vào của Hôm nay ở chế độ UI test, `08-settings` đợi Cài đặt ổn định trước khi cuộn; xem mục 4.
+- 03/11/2026: dọn cảnh báo trình biên dịch (app + ASCNDKit, không đổi hành vi); xem mục 4.
 - 03/11/2026: #796 phần 1: Daily Plan có lý do `paused(until:)`; thẻ việc chính ghi "Đang tạm nghỉ · tập lại từ …". Lịch sử đợt nghỉ chờ Kiệt quyết (migration hay trên máy).
 - 03/11/2026: dải Tuần của Koa lớn theo Dynamic Type (kiểm accessibility báo cỡ cố định); xem mục 4.
 - 03/11/2026: #800 thông báo: câu nhắc buổi tập xoay vòng, bị bỏ qua 3 lần liền thì 2 ngày một lần, xin quyền khi có lịch tập đầu tiên; xem mục 4.

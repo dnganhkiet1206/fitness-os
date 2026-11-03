@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 
 /// Tính năng cần Apple Developer Program trả phí (#527, chỉ thị 6093754296).
 ///

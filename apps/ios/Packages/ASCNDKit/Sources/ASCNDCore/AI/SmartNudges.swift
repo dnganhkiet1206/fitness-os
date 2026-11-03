@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 public import Observation
 
 /// "Insight hôm nay" của tab Trợ lý (#527) — `hooks/use-smart-nudges.ts` +

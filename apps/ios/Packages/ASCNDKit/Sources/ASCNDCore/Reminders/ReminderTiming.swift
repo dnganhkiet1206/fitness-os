@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 
 /// Giờ nhắc suy từ điều app đã biết — `lib/reminder-timing.ts` @ fac9ac2.
 ///

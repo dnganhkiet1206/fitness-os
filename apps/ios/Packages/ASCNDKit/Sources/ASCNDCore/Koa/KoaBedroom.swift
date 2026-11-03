@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 
 /// Phòng ngủ gác mái của Koa (Kiệt duyệt mock 30/10): cảnh riêng, khác hẳn sân khấu. Koa ở đây
 /// trong giờ ngủ của người dùng (`KoaMood.SleepWindow`).

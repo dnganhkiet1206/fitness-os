@@ -84,7 +84,7 @@ enum Telemetry {
       #endif
     }
     if let key = configured(info["ASCNDPostHogKey"]), let host = configured(info["ASCNDPostHogHost"]) {
-      let config = PostHogConfig(apiKey: key, host: host)
+      let config = PostHogConfig(projectToken: key, host: host)
       config.captureScreenViews = false
       config.captureApplicationLifecycleEvents = false
       config.sessionReplay = false

@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 public import Observation
 
 /// Thư viện thực phẩm (#527 Phase 3 · 3.3) — `app/food-list.tsx` +
