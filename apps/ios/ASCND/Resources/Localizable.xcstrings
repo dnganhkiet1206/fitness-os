@@ -64204,6 +64204,190 @@
     }
    }
   },
+  "summary.compare.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Compared with last time"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Comparado con la vez anterior"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "So với lần trước"
+     }
+    }
+   }
+  },
+  "summary.koa.first": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "First time Koa has seen these. Next time Koa will compare."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Primera vez que Koa ve estos ejercicios. La próxima vez los compara."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Lần đầu Koa thấy các bài này. Buổi sau Koa so cho bạn."
+     }
+    }
+   }
+  },
+  "summary.koa.held %@ %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Held your level on %1$@. %2$@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mantuviste el nivel en %1$@. %2$@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Giữ được mức cũ ở %1$@. %2$@"
+     }
+    }
+   }
+  },
+  "summary.koa.reps %@ %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@: %2$lld more reps at the same weight."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@: %2$lld repeticiones más con el mismo peso."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@ thêm %2$lld reps với cùng mức tạ."
+     }
+    }
+   }
+  },
+  "summary.koa.steady": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Every session counts. Next time we inch up."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cada sesión cuenta. La próxima, un poco más."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Buổi nào cũng tính. Lần sau mình nhích dần."
+     }
+    }
+   }
+  },
+  "summary.koa.time %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ held longer than last time."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ aguantado más que la última vez."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ giữ lâu hơn lần trước."
+     }
+    }
+   }
+  },
+  "summary.koa.weight %@ %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@ is heavier than last time: %2$@."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@ más pesado que la última vez: %2$@."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@ nặng hơn lần trước: %2$@."
+     }
+    }
+   }
+  },
+  "summary.stats.line": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Total volume %1$@ %2$@ · %3$lld sets · %4$lld exercises"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Volumen total %1$@ %2$@ · %3$lld series · %4$lld ejercicios"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tổng khối lượng %1$@ %2$@ · %3$lld set · %4$lld bài"
+     }
+    }
+   }
+  },
   "swap.nudge.line": {
    "extractionState": "manual",
    "localizations": {
