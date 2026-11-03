@@ -467,6 +467,13 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - `KoaPerfTests.figureFrameBudget` đỏ ngẫu nhiên trên `app-macos` ("defs dựng lại theo khung: 13", PR #807 lượt `de277981`): test đếm bộ nhớ đệm `KoaRender.defsMemo` dùng chung với các suite chạy song song. Nay đếm khoá defs mà chính 120 khung đi bộ của test cần (`KoaRender.defsKey`, thuần) — không còn phụ thuộc test khác; vẫn bắt được lỗi dựng lại defs theo khung (khi ấy ~120 khoá).
 - Maestro E2E chạy trên PR #808 (nhãn `e2e`): ở `0407ab5d` (run 41669727129) **11/11 flow qua** trong 23 phút 16 giây, `Settings rows open` 2 phút 24 giây, không request nào tới Supabase thật. **NOT RUN:** `node tools/check.mjs` trên Mac.
 - Trùng với PR #785 (agent khác, 02/11, đang đỏ `release-gate`): #785 có cùng cách sửa `08-settings` (đợi Cài đặt sau khi quay lại, cuộn 30 s), thấy sau khi đã sửa ở đây. Giá trị như nhau; khi #785 gộp, xung đột ở `08-settings.yaml` / `05-workout.yaml` chỉ là chọn một bản. Phần còn lại của #785 (build một lần, trần 60 phút, `waitToSettleTimeoutMs` cho buổi tập) không có ở đây.
+
+**Sheet nửa màn không cắt nút ở chữ cỡ trợ năng (03/11, #795 đợt 2b, nhánh `claude/sheet-large-type`):**
+- Sheet chỉ có `.presentationDetents([.medium])` và không cuộn: ở chữ cỡ trợ năng, nội dung cao hơn nửa màn nên bị cắt và **nút chính nằm ngoài màn, không chạm được**. Bằng chứng: ảnh chuẩn `pauseSheet.largeType` cao ~700 điểm, detent medium trên iPhone 17 Pro ~440; lượt kiểm accessibility đầu (PR #812) báo chữ của sheet Tạm nghỉ bị cắt.
+- Sửa bằng `mediumSheet()` (`ASCND/Design/MediumSheet.swift`): cỡ chữ thường vẫn `.medium`, bố cục không đổi; cỡ trợ năng mở `.large`; nội dung vẫn cao hơn màn thì cuộn được (`ViewThatFits`). Áp cho sheet Tạm nghỉ, xác nhận mua ở Cửa hàng, chọn khẩu phần ở Nhật ký ăn. Trạng thái của sheet nằm ngoài `ViewThatFits`.
+- Không đổi: sheet thước đo ở onboarding (nút OK trên thanh điều hướng, luôn chạm được); sheet Tuần của Koa (đã có ScrollView).
+- **NOT RUN:** mở ba sheet ở cỡ chữ trợ năng trên simulator / iPhone; VoiceOver.
+
 **Thông báo không lặp, không làm phiền (03/11, #800, nhánh `claude/notify-rotate`):**
 - Lời nhắc buổi tập của Koa có 5 câu mỗi ngôn ngữ (`ReminderCopyTable.koaTraining`), chọn theo ngày, hai lần nhắc liền nhau trong cùng một kế hoạch không trùng câu. Cùng ngày luôn ra cùng câu nên đặt lại lịch không đổi chữ. Kế hoạch mới bắt đầu từ một ngày khác có thể chọn lại câu của lần nhắc cuối kế hoạch trước (hiếm: 1/5).
 - Bị bỏ qua 3 lần liền (bắn mà không chạm) → 2 ngày một lần; chạm một lần là về mỗi ngày (`KoaNudge.Ledger`, theo tài khoản, xoá khi đăng xuất). Mở app thẳng (không chạm thông báo) vẫn tính là bỏ qua; tập mà không chạm thông báo cũng tính. Lời nhắc chỉ được tính khi app tính lại kế hoạch (mở app / có tin mới), nên mấy ngày không mở app là mấy lần bỏ qua.
@@ -597,6 +604,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - 03/11/2026: #801: tắt hiệu ứng trượt vào của Hôm nay ở chế độ UI test, `08-settings` đợi Cài đặt ổn định trước khi cuộn; xem mục 4.
 - 03/11/2026: #796 phần 1: Daily Plan có lý do `paused(until:)`; thẻ việc chính ghi "Đang tạm nghỉ · tập lại từ …". Lịch sử đợt nghỉ chờ Kiệt quyết (migration hay trên máy).
 - 03/11/2026: #800 thông báo: câu nhắc buổi tập xoay vòng, bị bỏ qua 3 lần liền thì 2 ngày một lần, xin quyền khi có lịch tập đầu tiên; xem mục 4.
+- 03/11/2026: sheet nửa màn (Tạm nghỉ, mua đồ, khẩu phần) mở cả màn và cuộn được ở chữ cỡ trợ năng, không còn cắt mất nút; xem mục 4.
 - 03/11/2026: đo lường Koa Ecosystem (#793): năm sự kiện mốc / hành trình / Nhịp / tạm nghỉ, gửi một lần mỗi lần xảy ra (`Telemetry.once`); xem mục 4.
 - 03/11/2026: #799 (phần không phải art): Koa nói khi Giảm chuyển động; xem mục 4.
 - 03/11/2026: đăng xuất xoá "Insight hôm nay" lưu trên máy (như `clearPersistedCache` của RN) và quên Koa của người trước trong bộ nhớ (người sau từng thấy Nhịp 30 ngày / Hành trình của người trước); xem mục 4.
