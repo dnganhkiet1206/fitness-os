@@ -347,6 +347,9 @@ struct MascotRoomView: View {
           // mốc hành trình: cùng nguồn với Hôm nay, nói rồi thì nơi nào cũng không nhắc lại
           if beat.topic == .milestone, let m = roomMoment {
             KoaMomentsStore.markSeen(m.id, userId: room.userId)
+            Telemetry.once(
+              .koaMomentShown, key: KoaAnalytics.momentKey(m, place: .room), userId: room.userId,
+              KoaAnalytics.momentProps(m, place: .room))
             return KoaMomentsStore.line(m, lang: AppPreferences.Lang(rawValue: String(Locale.current.identifier.prefix(2))) ?? .vi)
           }
           return KoaTalkLine.text(beat, signals: room.signals, profile: profile?.profile)

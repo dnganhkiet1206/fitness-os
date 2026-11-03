@@ -461,6 +461,12 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - `native/tools/check.mjs` thiếu lệnh `timeout` trên macOS: ở `9d71f814` không còn chỗ nào gọi lệnh `timeout` của shell trong `native/tools` / `apps/ios/tools` → coi như đã hết; cần ai chạy `node tools/check.mjs` trên Mac để xác nhận.
 - Simulator dùng chung giữa nhiều phiên agent: ngoài code, giữ nguyên.
 - **NOT RUN:** Maestro E2E (PR không gắn nhãn `e2e`; chạy hằng đêm).
+**Đo lường Koa Ecosystem (03/11, #793, nhánh `claude/koa-analytics`):**
+- Thêm `koa_moment_shown` (`kind`, `place` today/room, `major`), `journey_opened`, `rhythm_viewed` (`sessions` theo khoảng, `paused`), `pause_started` (`days`), `pause_ended_early` (`days_used`, `days_left`). Không gửi `value` của mốc (hạng, số buổi, số ngày nghỉ) và không số đo sức khoẻ.
+- "Một lần mỗi lần xảy ra": mốc một lần mỗi nơi, Nhịp một lần mỗi ngày, nhớ qua các lần mở app (`Telemetry.once`, 200 khoá mới nhất mỗi tài khoản trong UserDefaults). Mở Hành trình và hai nút tạm nghỉ gửi mỗi lần bấm / mở.
+- Hôm nay ở dạng thu gọn (`compact`) vẫn tính `koa_moment_shown` khi câu mốc là câu của Koa, dù câu ấy hiện ở chỗ khác của thẻ.
+- Xoá dữ liệu app hoặc đổi máy thì mốc đã gửi có thể gửi lại một lần (sổ khoá chỉ nằm trên máy).
+- **NOT RUN:** khoá PostHog chưa bật trong bản test nên chưa thấy sự kiện lên server; chưa soi log PostHog debug; iPhone thật.
 
 ## 5. Lịch sử thay đổi sổ
 
@@ -555,3 +561,4 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - 28/10/2026: Koa Coach trả lời progressive overload theo MỨC TẠ TỪNG BÀI (Kiệt: điều người tập quan tâm nhất). Trước: `ai-coach` chỉ gửi `volume_load` 7 ngày → "khối lượng 728 kg", buổi không tạ thành "volume 0". Nay `_shared/progress.ts`: set đỉnh (bỏ khởi động) buổi gần nhất so với buổi trước, 8 tuần, làm tròn 0,1 kg; bài không tạ so reps; viết theo đơn vị cân. Deploy `ai-coach` v28 (Kiệt duyệt). Simulator: "Dumbbell Shoulder Press: 18,4 kg × 10 (tăng 2,5 kg) so với 15,9 kg × 9". Màn tiến bộ theo bài trong app: chờ mock.
 - 28/10/2026: VoiceOver hàng set ở màn tập — làm lại #526 (đóng vì xung đột): set không tạ đọc "không tạ" thay vì "0 kg"; mức tạ đọc theo đơn vị người dùng (trước luôn "kg", cả tài khoản lb). Đóng #670 (landing web Lovable, nhắm `main`) và #5 (PRODUCT.md của app RN, nhắm `main`) — không còn dùng; nhánh giữ lại.
 - 03/11/2026: #801: tắt hiệu ứng trượt vào của Hôm nay ở chế độ UI test, `08-settings` đợi Cài đặt ổn định trước khi cuộn; xem mục 4.
+- 03/11/2026: đo lường Koa Ecosystem (#793): năm sự kiện mốc / hành trình / Nhịp / tạm nghỉ, gửi một lần mỗi lần xảy ra (`Telemetry.once`); xem mục 4.

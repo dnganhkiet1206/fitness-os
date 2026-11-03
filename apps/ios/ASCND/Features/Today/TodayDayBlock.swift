@@ -83,6 +83,17 @@ struct TodayDayBlock: View {
         hour: Calendar.current.component(.hour, from: context.date),
         minute: Calendar.current.component(.minute, from: context.date))
     }
+    // Koa nói mốc ở Hôm nay (câu mốc đi trước mọi câu khác): một sự kiện mỗi mốc (#793).
+    .task(id: shownMoment?.id) {
+      guard let m = shownMoment else { return }
+      Telemetry.once(
+        .koaMomentShown, key: KoaAnalytics.momentKey(m, place: .today), userId: room.userId,
+        KoaAnalytics.momentProps(m, place: .today))
+    }
+  }
+
+  private var shownMoment: KoaJourney.Moment? {
+    KoaMomentsStore.next(services, userId: room.userId, today: room.today)
   }
 
   private var rhythm: KoaRhythm.State? {
