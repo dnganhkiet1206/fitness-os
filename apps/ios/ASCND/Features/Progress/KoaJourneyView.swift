@@ -60,6 +60,9 @@ enum KoaMomentsStore {
 /// Nhịp 30 ngày: số buổi trong cửa sổ cuốn chiếu và một chấm cho mỗi ngày.
 struct KoaRhythmCard: View {
   let state: KoaRhythm.State
+  /// 26 pt ở cỡ chữ mặc định, lớn theo Dynamic Type như chữ quanh nó (#795: ảnh chữ lớn cho
+  /// thấy số buổi đứng yên 26 pt trong khi nhãn trên nó to gấp đôi).
+  @ScaledMetric(relativeTo: .title) private var sessionsSize: CGFloat = 26
 
   var body: some View {
     VStack(alignment: .leading, spacing: DS.Spacing.sm) {
@@ -69,16 +72,16 @@ struct KoaRhythmCard: View {
         .tracking(0.8)
         .foregroundStyle(DS.Color.mutedForeground.swiftUI)
       Text(String(localized: "rhythm.sessions \(state.sessions)"))
-        .font(.system(size: 26, weight: .bold).monospacedDigit())
+        .font(.system(size: sessionsSize, weight: .bold).monospacedDigit())
         .foregroundStyle(DS.Color.foreground.swiftUI)
       LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 5), count: 15), spacing: 5) {
         ForEach(Array(state.days.enumerated()), id: \.offset) { _, d in dot(d) }
       }
       .accessibilityHidden(true)
-      HStack(spacing: DS.Spacing.sm) {
-        legend(Self.trained, "rhythm.trained")
-        legend(Self.rest, "rhythm.rest")
-        if state.days.contains(.paused) { legend(Self.paused, "rhythm.paused") }
+      // Chữ lớn: ba chú thích không vừa một hàng thì xếp dọc, không cắt chữ (#795).
+      ViewThatFits(in: .horizontal) {
+        HStack(spacing: DS.Spacing.sm) { legends }
+        VStack(alignment: .leading, spacing: 4) { legends }
       }
       Text(verbatim: compare)
         .font(DS.TextStyle.footnote)
@@ -111,9 +114,16 @@ struct KoaRhythmCard: View {
     }
   }
 
-  private func legend(_ c: Color, _ key: LocalizedStringKey) -> some View {
+  @ViewBuilder private var legends: some View {
+    legend(.trained, "rhythm.trained")
+    legend(.rest, "rhythm.rest")
+    if state.days.contains(.paused) { legend(.paused, "rhythm.paused") }
+  }
+
+  /// Mẫu màu vẽ đúng dấu trong lưới: ngày tạm nghỉ là vòng nét đứt, không phải chấm đặc (#795).
+  private func legend(_ day: KoaRhythm.Day, _ key: LocalizedStringKey) -> some View {
     HStack(spacing: 4) {
-      Circle().fill(c).frame(width: 7, height: 7)
+      dot(day).frame(width: 8, height: 8)
       Text(key).font(DS.TextStyle.caption).foregroundStyle(DS.Color.mutedForeground.swiftUI)
     }
   }
@@ -122,14 +132,30 @@ struct KoaRhythmCard: View {
 /// Hành trình cùng Koa: tổng kết tháng và các mốc thật, mới nhất ở trên.
 struct KoaJourneyView: View {
   @Environment(AppServices.self) private var services
-  @Environment(\.locale) private var locale
 
   var body: some View {
-    let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
+    KoaJourneyContent(history: services.koaGainsHistory, today: LocalDate(SystemWallClock().nowMillis(), in: .current))
+      .navigationTitle(Text("journey.title"))
+      .ascndPage()
+      .task { await services.ensureKoaGainsHistory() }
+      // Mỗi lần mở màn hành trình (màn này không đẩy màn con, nên xuất hiện = mở).
+      .onAppear { Telemetry.capture(.journeyOpened) }
+  }
+}
+
+/// Nội dung màn hành trình, không cần `AppServices`: snapshot test dựng thẳng với một lịch sử
+/// cố định (#795).
+struct KoaJourneyContent: View {
+  let history: AppServices.GainsHistory?
+  let today: LocalDate
+  @Environment(\.locale) private var locale
+  @ScaledMetric(relativeTo: .title) private var sessionsSize: CGFloat = 26
+
+  var body: some View {
     let lang = AppPreferences.Lang(rawValue: String(locale.identifier.prefix(2))) ?? .vi
     ScrollView {
       VStack(alignment: .leading, spacing: DS.Spacing.md) {
-        if let h = services.koaGainsHistory {
+        if let h = history {
           let moments = KoaJourney.moments(h.days, week: h.week, today: today)
           header(rank: KoaGains.compute(h.days, week: h.week, today: today).rank)
           month(moments, days: h.days, today: today)
@@ -150,11 +176,6 @@ struct KoaJourneyView: View {
       }
       .padding(DS.Spacing.md)
     }
-    .navigationTitle(Text("journey.title"))
-    .ascndPage()
-    .task { await services.ensureKoaGainsHistory() }
-    // Mỗi lần mở màn hành trình (màn này không đẩy màn con, nên xuất hiện = mở).
-    .onAppear { Telemetry.capture(.journeyOpened) }
   }
 
   private func header(rank: Int) -> some View {
@@ -180,7 +201,7 @@ struct KoaJourneyView: View {
           .tracking(0.8)
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
         Text(String(localized: "journey.month.sessions \(shown.sessions)"))
-          .font(.system(size: 26, weight: .bold).monospacedDigit())
+          .font(.system(size: sessionsSize, weight: .bold).monospacedDigit())
         Text(
           shown.records + shown.fullWeeks == 0
             ? String(localized: "journey.month.quiet")

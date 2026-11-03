@@ -146,7 +146,8 @@ struct TodayPlanHero: View {
     case .start: String(localized: "dp.eyebrow.today")
     case .comeback: String(localized: "dp.eyebrow.welcome")
     case .postWorkoutMeal, .progress: String(localized: "dp.eyebrow.done")
-    case .recovery: String(localized: "dp.eyebrow.rest")
+    case .recovery:
+      if case .paused = result.reason { String(localized: "dp.eyebrow.paused") } else { String(localized: "dp.eyebrow.rest") }
     case .nextSession, .logFree: String(localized: "dp.eyebrow.next")
     }
   }
@@ -200,6 +201,7 @@ struct TodayPlanHero: View {
     case .proteinLeft(let g): return String(localized: "dp.why.protein \(g)")
     case .trainedToday: return String(localized: "dp.why.trained")
     case .restDay: return String(localized: "dp.why.rest")
+    case .paused(let back): return String(localized: "dp.why.paused \(weekday(back)) \(day(back))")
     case .noSchedule: return String(localized: "dp.why.noSchedule")
     case .nextOn(let date): return String(localized: "dp.why.next \(weekday(date)) \(day(date))")
     }

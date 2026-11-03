@@ -113,67 +113,17 @@ public struct WorkoutSummaryView: View {
   }
 
   private func gainsCard(_ g: GainsGain) -> some View {
-    let lang = AppPreferences.Lang(rawValue: String(locale.identifier.prefix(2))) ?? .vi
-    let rankUp = g.after.rank > g.before.rank
-    let rank = MascotRules.ranks[min(g.after.rank, MascotRules.ranks.count - 1)]
-    var parts: [String] = [
-      g.planned
-        ? String(localized: "koa.gains.part.planned \(KoaGains.plannedSession)")
-        : String(localized: "koa.gains.part.offPlan \(KoaGains.offPlanSession)"),
-    ]
-    if g.pr { parts.append(String(localized: "koa.gains.part.pr \(KoaGains.personalRecord)")) }
-    if g.overload { parts.append(String(localized: "koa.gains.part.overload \(KoaGains.overload)")) }
-    if g.fullWeek { parts.append(String(localized: "koa.gains.part.week \(KoaGains.fullWeek)")) }
-    if g.delta > g.raw { parts.append(String(localized: "koa.gains.part.memory")) }
-    let next = KoaGains.toNext(g.after.points)
-    return DSCard {
-      VStack(spacing: DS.Spacing.sm) {
-        MascotFigureView(emotion: .proud, size: 132, animated: false, build: g.after.rank)
-          .frame(height: 150)
-          .accessibilityHidden(true)
-        Text(
-          g.repeatSession
-            ? String(localized: "koa.gains.second")
-            : g.overtrained
-            ? String(localized: "koa.gains.restNeeded \(g.streak)")
-            : rankUp
-              ? String(localized: "koa.gains.newRank \(rank.name(lang))")
-              : String(localized: "koa.gains.pump \(g.delta)")
-        )
-        .font(.system(size: 22, weight: .heavy))
-        .foregroundStyle(DS.Color.foreground.swiftUI)
-        // Quá ngày tập liền (29/10, Kiệt): nói vì sao không có Gains thay cho bảng cộng.
-        Text(
-          verbatim: g.repeatSession
-            ? String(localized: "koa.gains.secondWhy")
-            : g.overtrained ? String(localized: "koa.gains.restWhy") : parts.joined(separator: " · "))
-          .font(DS.TextStyle.footnote)
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-          .multilineTextAlignment(.center)
-        if let next {
-          ProgressView(value: Double(next.have), total: Double(next.need))
-            .tint(Color.rank(rank))
-            .accessibilityHidden(true)
-          let nextRank = MascotRules.ranks[min(g.after.rank + 1, MascotRules.ranks.count - 1)]
-          Text(String(localized: "koa.gains.toRank \(next.need - next.have) \(nextRank.name(lang))"))
-            .font(DS.TextStyle.caption)
-            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-        } else {
-          Text(String(localized: "koa.gains.max"))
-            .font(DS.TextStyle.caption)
-            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-        }
+    KoaGainsCard(g: g)
+      .onAppear {
+        // một lần mỗi buổi: thẻ hiện lại khi cuộn hay quay về thì không đếm thêm
+        guard Self.reported.insert(summary.dateTime.millis).inserted else { return }
+        Telemetry.capture(
+          .gainsEarned,
+          [
+            "delta": String(g.delta), "planned": String(g.planned), "pr": String(g.pr),
+            "rank_up": String(g.after.rank > g.before.rank),
+          ])
       }
-      .frame(maxWidth: .infinity)
-    }
-    .accessibilityElement(children: .combine)
-    .onAppear {
-      // một lần mỗi buổi: thẻ hiện lại khi cuộn hay quay về thì không đếm thêm
-      guard Self.reported.insert(summary.dateTime.millis).inserted else { return }
-      Telemetry.capture(
-        .gainsEarned,
-        ["delta": String(g.delta), "planned": String(g.planned), "pr": String(g.pr), "rank_up": String(rankUp)])
-    }
   }
 
   private var exerciseGroups: [(name: String, rows: [SummarySet])] {
@@ -392,4 +342,76 @@ extension WorkoutSummaryView {
   }
   .dynamicTypeSize(.accessibility3)
 }
+/// Thẻ Gains của màn tổng kết buổi tập (#527 đợt 1), tách khỏi `WorkoutSummaryView` để snapshot
+/// test dựng thẳng (#795). Đo lường `gains_earned` ở lại màn tổng kết.
+struct KoaGainsCard: View {
+  let g: WorkoutSummaryView.GainsGain
+  @Environment(\.locale) private var locale
+  /// 22 pt ở cỡ chữ mặc định, lớn theo Dynamic Type (#795: ảnh chữ lớn cho thấy tiêu đề đứng yên).
+  @ScaledMetric(relativeTo: .title2) private var titleSize: CGFloat = 22
+
+  var body: some View {
+    let lang = AppPreferences.Lang(rawValue: String(locale.identifier.prefix(2))) ?? .vi
+    let rankUp = g.after.rank > g.before.rank
+    let rank = MascotRules.ranks[min(g.after.rank, MascotRules.ranks.count - 1)]
+    let next = KoaGains.toNext(g.after.points)
+    DSCard {
+      VStack(spacing: DS.Spacing.sm) {
+        MascotFigureView(emotion: .proud, size: 132, animated: false, build: g.after.rank)
+          .frame(height: 150)
+          .accessibilityHidden(true)
+        Text(
+          g.repeatSession
+            ? String(localized: "koa.gains.second")
+            : g.overtrained
+            ? String(localized: "koa.gains.restNeeded \(g.streak)")
+            : rankUp
+              ? String(localized: "koa.gains.newRank \(rank.name(lang))")
+              : String(localized: "koa.gains.pump \(g.delta)")
+        )
+        .font(.system(size: titleSize, weight: .heavy))
+        .foregroundStyle(DS.Color.foreground.swiftUI)
+        .multilineTextAlignment(.center)
+        // Quá ngày tập liền (29/10, Kiệt): nói vì sao không có Gains thay cho bảng cộng.
+        Text(
+          verbatim: g.repeatSession
+            ? String(localized: "koa.gains.secondWhy")
+            : g.overtrained ? String(localized: "koa.gains.restWhy") : parts.joined(separator: " · "))
+          .font(DS.TextStyle.footnote)
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          .multilineTextAlignment(.center)
+        if let next {
+          ProgressView(value: Double(next.have), total: Double(next.need))
+            .tint(Color.rank(rank))
+            .accessibilityHidden(true)
+          let nextRank = MascotRules.ranks[min(g.after.rank + 1, MascotRules.ranks.count - 1)]
+          Text(String(localized: "koa.gains.toRank \(next.need - next.have) \(nextRank.name(lang))"))
+            .font(DS.TextStyle.caption)
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        } else {
+          Text(String(localized: "koa.gains.max"))
+            .font(DS.TextStyle.caption)
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        }
+      }
+      .frame(maxWidth: .infinity)
+    }
+    .accessibilityElement(children: .combine)
+  }
+
+  /// Bảng cộng của buổi: "+10 buổi trong lịch · kỷ lục +4 · …".
+  private var parts: [String] {
+    var parts: [String] = [
+      g.planned
+        ? String(localized: "koa.gains.part.planned \(KoaGains.plannedSession)")
+        : String(localized: "koa.gains.part.offPlan \(KoaGains.offPlanSession)"),
+    ]
+    if g.pr { parts.append(String(localized: "koa.gains.part.pr \(KoaGains.personalRecord)")) }
+    if g.overload { parts.append(String(localized: "koa.gains.part.overload \(KoaGains.overload)")) }
+    if g.fullWeek { parts.append(String(localized: "koa.gains.part.week \(KoaGains.fullWeek)")) }
+    if g.delta > g.raw { parts.append(String(localized: "koa.gains.part.memory")) }
+    return parts
+  }
+}
+
 #endif

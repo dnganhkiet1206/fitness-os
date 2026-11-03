@@ -39,6 +39,10 @@ packages:
   PostHog:
     url: https://github.com/PostHog/posthog-ios
     from: 3.13.0
+  # Snapshot test (#795, MIT): CHỈ cho target ASCNDTests, không vào app.
+  SnapshotTesting:
+    url: https://github.com/pointfreeco/swift-snapshot-testing
+    exactVersion: 1.19.7
 
 targets:
   ASCND:
@@ -212,8 +216,13 @@ targets:
     platform: iOS
     sources:
       - path: ASCNDTests
+        # Ảnh chuẩn của snapshot nằm cạnh test, không phải tài nguyên của bundle.
+        excludes:
+          - "**/__Snapshots__/**"
     dependencies:
       - target: ASCND
+      - package: SnapshotTesting
+        product: SnapshotTesting
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.ascnd.fitnessos.dev.tests
