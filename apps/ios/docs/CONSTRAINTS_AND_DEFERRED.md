@@ -326,7 +326,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 
 **Koa theo ngữ cảnh + đánh giá công cụ (30/10, nhánh `claude/koa-context`):**
 - Koa chào đầy đủ chỉ khi người xem đi vắng ≥ 5 phút (`@AppStorage koa.room.seen`); mở lại ngay hoặc chạm lại trong 45 giây → chỉ nhìn (`notice`), không đi. Sân khấu khuất quá nửa → không đi lại. 22–6 giờ → nghỉ gấp đôi, ít đi lại. Người xem đặt Koa ở đâu → ở yên ít nhất 25 giây. Ngưỡng là thiết kế, chưa kiểm với người dùng thật.
-- Đánh giá công cụ (số liệu GitHub 30/10): swift-snapshot-testing (MIT, còn bảo trì) **chưa tích hợp** — đầu ra renderer đã có test golden từng phần tử; ảnh lệch theo máy, thêm phụ thuộc. rive-ios (MIT), lottie-ios (Apache-2.0) **không dùng**: cần vẽ lại art. swift-format (Apache-2.0, có trong toolchain) **không bật**: đổi định dạng hàng loạt, không lợi cho Koa. SwiftLint (MIT) giữ nguyên.
+- Đánh giá công cụ (số liệu GitHub 30/10): ~~swift-snapshot-testing (MIT, còn bảo trì) **chưa tích hợp** — đầu ra renderer đã có test golden từng phần tử; ảnh lệch theo máy, thêm phụ thuộc.~~ 03/11: đã thêm cho target test theo #795 (xem mục "Snapshot test" dưới). rive-ios (MIT), lottie-ios (Apache-2.0) **không dùng**: cần vẽ lại art. swift-format (Apache-2.0, có trong toolchain) **không bật**: đổi định dạng hàng loạt, không lợi cho Koa. SwiftLint (MIT) giữ nguyên.
 - **Periphery đã archived trên GitHub.** CI đang dùng 3.8.0 (job `periphery`, không chặn merge); vẫn chạy được nhưng sẽ không theo kịp Swift mới. Cần chọn thay thế khi nó hỏng; chưa đổi.
 
 **Koa — giật còn lại + chuyển động phụ (30/10, nhánh `claude/koa-secondary`):**
@@ -408,9 +408,9 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 **Đo phòng Koa và test tầng app (01/11, Kiệt chọn gói 1 và 2):**
 - Thêm `koa_room_opened`, `koa_room_left` (thời lượng, số lần chạm, số lần gọi đi, đều theo khoảng), `koa_item_bought`, `koa_room_cleaned`. Sang cửa hàng rồi quay lại tính là hai lượt. Giảm chuyển động không chạm được Koa nên `pokes` luôn `0`. Gỡ `pump_lost`, không nơi nào gửi. Khoá PostHog chưa bật trong bản test nên chưa thấy sự kiện lên server; NOT RUN.
 - `.maestro/09-koa-room.yaml`: chạm sàn rồi chạm bục, đọc chỗ đứng qua định danh `koa.stage.floor` / `koa.stage.stage`. Đưa lại lỗi `.offset` của #778 thì luồng đỏ đúng ở bước về bục. Điểm chạm theo % màn, mới chạy trên iPhone Air và iPhone của runner CI.
-- Target mới `ASCNDTests` (test trong app, simulator; không phụ thuộc mới): phòng nhiều lớp lúc máy quay đứng giữa phải khớp phòng một lớp, lia thì phòng phải đổi. Bỏ một lớp thì test đỏ. Chạy cùng E2E (hằng đêm, nhãn `e2e`), không chặn merge.
+- Target mới `ASCNDTests` (test trong app, simulator; không phụ thuộc mới): phòng nhiều lớp lúc máy quay đứng giữa phải khớp phòng một lớp, lia thì phòng phải đổi. Bỏ một lớp thì test đỏ. Chạy cùng E2E (hằng đêm, nhãn `e2e`), ~~không chặn merge~~ (03/11, #795: chạy cả trong `app-macos`, nên nay chặn merge).
 - Test chỉ dựng `StudioLayers`, không dựng cả `MascotRoomView`: lỗi phòng biến mất lúc đi ngủ của #777 nằm ở view cha nên vẫn chưa có test tự động.
-- Đánh giá lại công cụ: swift-snapshot-testing **không thêm**, so hai bản dựng trong cùng lần chạy bắt được cùng lỗi mà không cần ảnh mẫu lệch theo máy. AccessibilitySnapshot **chưa thêm**: cần dựng được `MascotRoomView` trong test; VoiceOver vẫn NOT RUN.
+- Đánh giá lại công cụ: ~~swift-snapshot-testing **không thêm**, so hai bản dựng trong cùng lần chạy bắt được cùng lỗi mà không cần ảnh mẫu lệch theo máy.~~ 03/11: Kiệt giao #795 (nghiên cứu `ENGAGEMENT_RESEARCH.md` §6 chọn nó) → đã thêm; test so-hai-bản-dựng của phòng vẫn giữ. AccessibilitySnapshot **chưa thêm**: cần dựng được `MascotRoomView` trong test; VoiceOver vẫn NOT RUN.
 
 **Soát app trên simulator (01/11, nhiệm vụ "Simulator-first" của Kiệt, nhánh `claude/app-polish`):**
 - Đã đi: bốn tab, cuộn hết; Hồ sơ, Cài đặt; phòng Koa, nhiệm vụ; Ghi nhanh; 9 luồng Maestro. iPhone Air, tiếng Việt, dữ liệu mẫu, giao diện tối. Đợt 2: giao diện sáng (bốn tab, phòng, cửa hàng, huy chương, tổng kết tuần, công cụ), `en`, `es`, một ảnh AX5 ở Hôm nay.
@@ -468,6 +468,17 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Hôm nay ở dạng thu gọn (`compact`) vẫn tính `koa_moment_shown` khi câu mốc là câu của Koa, dù câu ấy hiện ở chỗ khác của thẻ.
 - Xoá dữ liệu app hoặc đổi máy thì mốc đã gửi có thể gửi lại một lần (sổ khoá chỉ nằm trên máy).
 - **NOT RUN:** khoá PostHog chưa bật trong bản test nên chưa thấy sự kiện lên server; chưa soi log PostHog debug; iPhone thật.
+
+**Snapshot test (03/11, #795, nhánh `claude/koa-snapshots`):**
+- swift-snapshot-testing 1.19.7 (MIT, ghim `exactVersion`) chỉ trong target `ASCNDTests`. Sáu test, mỗi test ba ảnh (sáng / tối / chữ `accessibility3`): `KoaRhythmCard`, `KoaJourneyContent` (có dữ liệu + trống), `KoaPauseCard`, `KoaPauseSheet`, `KoaGainsCard`. Dữ liệu mẫu cố định (03/11/2026, lịch T2/T4/T6, một đợt nghỉ, hai kỷ lục).
+- Để dựng được không cần `AppServices`: `KoaJourneyView` tách phần thân thành `KoaJourneyContent`, thẻ Gains của `WorkoutSummaryView` thành `KoaGainsCard`. Hành vi không đổi (đo lường `journey_opened` / `gains_earned` ở lại chỗ cũ).
+- `app-macos` nay build bằng `build-for-testing` cho đúng một simulator (thay `generic/platform=iOS Simulator`) rồi `test-without-building -only-testing:ASCNDTests`. Lượt đầu sau khi đổi là build lại từ đầu (cache DerivedData của đích cũ không dùng được).
+- Ảnh chuẩn là ảnh của CI (runner đổi Xcode / runtime có thể làm lệch hàng loạt → ghi lại cả bộ, ghi lý do ở đây). Cách cập nhật: `docs/AGENT_SESSION.md` §6c.
+- Lượt ghi ảnh đầu (03/11) bắt được lỗi Dynamic Type thật, đã sửa trước khi lấy ảnh chuẩn: số buổi (26 pt) và tiêu đề Gains (22 pt) cỡ cố định, không lớn theo chữ → `@ScaledMetric` (cùng cỡ ở mặc định); ba chú thích của thẻ nhịp 30 ngày bị cắt ("plann…") ở chữ lớn → `ViewThatFits` xếp dọc; mẫu "tạm nghỉ" ở chú thích là chấm đặc trong khi lưới vẽ vòng nét đứt → chú thích vẽ đúng dấu của lưới.
+- Cách chụp thẻ: `.sizeThatFits` của thư viện đề nghị cao 0, nên chữ không có `fixedSize` bị ép một dòng ("DAYS L…") — app không như vậy (thẻ nằm trong ScrollView). Test chụp thẻ với `fixedSize(vertical:)` cho giống app.
+- Ảnh chuẩn (18) lấy từ lượt ghi của CI run 41669221380 (head `94c4928c`), đã xem từng ảnh. Hai lượt ghi liên tiếp cho ra đúng từng điểm ảnh ở mọi màn không đổi code (10/18), nên cách chụp ổn định trên runner.
+- Chưa có: `performAccessibilityAudit()` trong UI test (đợt 2 của #795, cần target UI test, sẽ chạy ở E2E).
+- **NOT RUN:** xem ảnh trên máy thật; VoiceOver.
 
 ## 5. Lịch sử thay đổi sổ
 
@@ -564,3 +575,4 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - 03/11/2026: #796 phần 1: Daily Plan có lý do `paused(until:)`; thẻ việc chính ghi "Đang tạm nghỉ · tập lại từ …". Lịch sử đợt nghỉ chờ Kiệt quyết (migration hay trên máy).
 - 03/11/2026: #800 thông báo: câu nhắc buổi tập xoay vòng, bị bỏ qua 3 lần liền thì 2 ngày một lần, xin quyền khi có lịch tập đầu tiên; xem mục 4.
 - 03/11/2026: đo lường Koa Ecosystem (#793): năm sự kiện mốc / hành trình / Nhịp / tạm nghỉ, gửi một lần mỗi lần xảy ra (`Telemetry.once`); xem mục 4.
+- 03/11/2026: #795 đợt 1: snapshot test các màn Koa (sáng / tối / chữ lớn) chạy trong `app-macos`; xem mục 4.

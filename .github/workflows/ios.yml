@@ -5,8 +5,10 @@
 #               ai đưa UIKit/SwiftUI vào Core, job này đỏ — ranh giới giữ bằng
 #               máy, không bằng lời dặn. Chạy nhanh, không tốn runner macOS.
 #   app-macos   XcodeGen sinh project từ project.yml, app build cho simulator,
-#               test của package chạy trên macOS. Không ký: ký là việc của máy
-#               Kiệt (Xcode) hoặc TestFlight (#226).
+#               test của package chạy trên macOS, test SwiftUI trong app
+#               (ASCNDTests: dựng phòng, snapshot màn Koa — #795) chạy trên
+#               simulator. Không ký: ký là việc của máy Kiệt (Xcode) hoặc
+#               TestFlight (#226).
 #
 # Lọc theo path: PR không chạm iOS thì không tốn mười phút macOS. Vì thế job
 # này KHÔNG đặt làm required check (ADR-0002) — PR không chạm path sẽ treo.
@@ -110,13 +112,58 @@ jobs:
         working-directory: apps/ios/Packages/ASCNDStore
         run: swift test
 
-      - name: Build app (iOS Simulator, không ký)
+      # Test SwiftUI trong app chạy ở đây từ #795 (trước chỉ ở E2E). iPhone Pro (không Max) của
+      # runtime iOS mới nhất, cùng cách chọn với E2E để ảnh snapshot giống nhau. Bật máy trước,
+      # trong lúc build.
+      - name: Bật simulator
+        run: |
+          udid=$(xcrun simctl list devices available -j | python3 -c '
+          import json, re, sys
+          d = json.load(sys.stdin)["devices"]
+          ios = sorted((k for k in d if "iOS" in k), key=lambda k: [int(x) for x in re.findall(r"\d+", k.split("iOS")[-1])])
+          phones = [x for x in d[ios[-1]] if x["name"].startswith("iPhone")]
+          pro = [x for x in phones if "Pro" in x["name"] and "Max" not in x["name"]]
+          print((pro or phones)[0]["udid"])')
+          echo "SIM=$udid" >> "$GITHUB_ENV"
+          xcrun simctl list devices | grep "$udid"
+          xcrun simctl boot "$udid"
+
+      # Build MỘT lần cho đúng simulator ấy, gồm cả bundle test, rồi test không build lại.
+      - name: Build app + bundle test (iOS Simulator, không ký)
         working-directory: apps/ios
         run: |
           set -o pipefail
-          xcodebuild build \
+          xcodebuild build-for-testing \
             -project ASCND.xcodeproj -scheme ASCND -configuration Debug \
-            -destination 'generic/platform=iOS Simulator' \
+            -destination "id=$SIM" \
             CODE_SIGNING_ALLOWED=NO \
             | tee build.log | grep -E "warning:|error:|BUILD (SUCCEEDED|FAILED)" || true
           grep -q "BUILD SUCCEEDED" build.log
+
+      # Dựng phòng nhiều lớp + ảnh chuẩn các màn Koa (#795). Thiếu ảnh chuẩn thì thư viện ghi
+      # ảnh mới và test đỏ; ảnh lệch thì ảnh mới nằm ở `snapshot-artifacts`. Cả hai được tải
+      # lên artifact `snapshots-<sha>` — cách cập nhật: `apps/ios/docs/AGENT_SESSION.md` §6c.
+      - name: Test SwiftUI trong app (ASCNDTests)
+        working-directory: apps/ios
+        env:
+          # Biến TEST_RUNNER_* đi vào tiến trình test (bỏ tiền tố).
+          TEST_RUNNER_SNAPSHOT_ARTIFACTS: ${{ github.workspace }}/snapshot-artifacts
+        run: |
+          set -o pipefail
+          xcrun simctl bootstatus "$SIM" -b
+          xcodebuild test-without-building \
+            -project ASCND.xcodeproj -scheme ASCND -configuration Debug \
+            -destination "id=$SIM" -only-testing:ASCNDTests \
+            CODE_SIGNING_ALLOWED=NO \
+            | tee test.log | grep -E " error:|Test run with|✘|recorded|TEST( EXECUTE)? (SUCCEEDED|FAILED)"
+
+      - name: Ảnh snapshot mới / lệch
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: snapshots-${{ github.sha }}
+          path: |
+            apps/ios/ASCNDTests/__Snapshots__
+            snapshot-artifacts
+          if-no-files-found: ignore
+          retention-days: 7
