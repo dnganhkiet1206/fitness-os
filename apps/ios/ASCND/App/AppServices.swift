@@ -487,7 +487,7 @@ final class AppServices {
     let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
     guard
       let s = await KoaDustSync.load(
-        userId: userId, store: rows, sessions: h.days, week: h.week, pause: koaPause(userId: userId, today: today),
+        userId: userId, store: rows, sessions: h.days, week: h.week, paused: koaPausedDay(userId: userId, today: today),
         today: today),
       session.session?.userId == userId
     else { return }
@@ -774,8 +774,8 @@ final class AppServices {
   /// UI test: tạm nghỉ chỉ sống trong một lần mở app, để flow này không làm hỏng flow sau.
   @ObservationIgnored private var uiTestPauses: [String: Data] = [:]
 
-  /// Tạm nghỉ đang có hiệu lực của tài khoản (Koa Ecosystem V2). Lưu trên máy: bảng
-  /// `koa_pauses` có migration nhưng chưa deploy (chờ Kiệt duyệt).
+  /// Tạm nghỉ đang có hiệu lực của tài khoản (Koa Ecosystem V2). Lưu trên máy trước, rồi
+  /// đồng bộ với bảng `koa_pauses`.
   func koaPause(userId: String, today: LocalDate) -> KoaPause? {
     _ = koaPauseRevision
     guard let data = Self.uiTest ? uiTestPauses[userId] : UserDefaults.standard.data(forKey: "koa.pause.\(userId)"),
@@ -784,12 +784,85 @@ final class AppServices {
     return p
   }
 
+  /// Ngày `d` có nằm trong một đợt tạm nghỉ nào không, kể cả đợt đã qua (`KoaPauseLog`).
+  func koaPausedDay(userId: String, today: LocalDate) -> @Sendable (LocalDate) -> Bool {
+    let log = koaPauseLog(userId: userId, today: today)
+    let current = koaPause(userId: userId, today: today)
+    return { d in log.contains(d) || current?.contains(d) == true }
+  }
+
+  func koaPauseLog(userId: String, today: LocalDate) -> KoaPauseLog {
+    _ = koaPauseRevision
+    return loadPauseLog("koa.pauselog.\(userId)", userId: userId).pruned(today: today)
+  }
+
   func setKoaPause(_ pause: KoaPause?, userId: String) {
     storeKoaPause(pause, userId: userId)
+    let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
+    storePauseLog(koaPauseLog(userId: userId, today: today).setting(pause, today: today), "koa.pauselog.\(userId)", userId: userId)
     guard !Self.uiTest else { return }
     // lưu trên máy trước; đẩy lên server sau, mất mạng thì để cờ chờ lần đọc sau
     UserDefaults.standard.set(true, forKey: "koa.pause.pending.\(userId)")
-    Task { await pushKoaPause(pause, userId: userId) }
+    Task {
+      await pushKoaPause(pause, userId: userId)
+      await pushKoaPauseLog(userId: userId)
+    }
+  }
+
+  @ObservationIgnored private var uiTestPauseLogs: [String: KoaPauseLog] = [:]
+
+  private func loadPauseLog(_ key: String, userId: String) -> KoaPauseLog {
+    if Self.uiTest { return uiTestPauseLogs[key] ?? KoaPauseLog() }
+    guard let data = UserDefaults.standard.data(forKey: key),
+      let log = try? JSONDecoder().decode(KoaPauseLog.self, from: data)
+    else { return KoaPauseLog() }
+    return log
+  }
+
+  private func storePauseLog(_ log: KoaPauseLog, _ key: String, userId: String) {
+    if Self.uiTest {
+      uiTestPauseLogs[key] = log
+    } else if let data = try? JSONEncoder().encode(log) {
+      UserDefaults.standard.set(data, forKey: key)
+    }
+    koaPauseRevision += 1
+  }
+
+  /// Gửi phần sổ server chưa có: so với bản đã gửi được lần cuối (`koa.pauselog.synced`), nên
+  /// mất mạng hay bảng chưa deploy thì lần sau gửi bù, kể cả đợt đã huỷ.
+  private func pushKoaPauseLog(userId: String) async {
+    guard !Self.uiTest, let rows else { return }
+    let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
+    let local = koaPauseLog(userId: userId, today: today)
+    let synced = loadPauseLog("koa.pauselog.synced.\(userId)", userId: userId)
+    let changes = KoaPauseLogSync.rows(from: synced, to: local, userId: userId)
+    guard !changes.isEmpty else { return }
+    do {
+      try await rows.upsert(KoaPauseLogSync.table, changes, onConflict: KoaPauseLogSync.conflict)
+      storePauseLog(local, "koa.pauselog.synced.\(userId)", userId: userId)
+    } catch {}
+  }
+
+  /// Sổ tạm nghỉ: còn phần chưa gửi thì gửi trước; sau đó lấy bản trên server, ghép đợt đang có
+  /// từ `koa_pauses`. Đọc hỏng (mất mạng, bảng chưa deploy) thì giữ sổ trên máy.
+  /// `true` khi sổ trên máy vừa đổi theo server.
+  @discardableResult
+  func syncKoaPauseLog(userId: String) async -> Bool {
+    guard !Self.uiTest, let rows else { return false }
+    let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
+    await pushKoaPauseLog(userId: userId)
+    let local = koaPauseLog(userId: userId, today: today)
+    guard local == loadPauseLog("koa.pauselog.synced.\(userId)", userId: userId).pruned(today: today),
+      let found = try? await rows.select(KoaPauseLogSync.query(userId: userId, today: today)),
+      session.session?.userId == userId
+    else { return false }
+    let server = KoaPauseLogSync.decode(found, today: today)
+    storePauseLog(server, "koa.pauselog.synced.\(userId)", userId: userId)
+    // đợt đang có đặt trước khi có sổ (hay ở máy chưa có bảng) vào sổ, lần gửi sau đưa lên
+    let merged = server.including(koaPause(userId: userId, today: today), today: today)
+    guard merged != local else { return false }
+    storePauseLog(merged, "koa.pauselog.\(userId)", userId: userId)
+    return true
   }
 
   private func storeKoaPause(_ pause: KoaPause?, userId: String) {

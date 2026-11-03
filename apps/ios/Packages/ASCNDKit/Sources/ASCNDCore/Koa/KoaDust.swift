@@ -101,8 +101,8 @@ public enum KoaDustSync {
 
   /// `nil` khi đọc hỏng — giữ bụi cũ (không bao giờ đổ bụi vì mất mạng).
   public static func load(
-    userId: String, store: any RowStore, sessions: [KoaGains.Day], week: KoaGains.Week, pause: KoaPause? = nil,
-    today: LocalDate
+    userId: String, store: any RowStore, sessions: [KoaGains.Day], week: KoaGains.Week,
+    paused: @Sendable (LocalDate) -> Bool = { _ in false }, today: LocalDate
   ) async -> KoaDust.State? {
     let from = today.adding(days: -KoaDust.window)
     guard let daily = try? await store.select(dailyQuery(userId: userId, from: from)),
@@ -112,6 +112,6 @@ public enum KoaDustSync {
     return KoaDust.compute(
       sessions: Set(sessions.map(\.date)), logs: logCounts(daily: daily, weights: weights),
       cleaned: Set(cleans.compactMap { $0["ref_key"]?.stringValue.flatMap(KoaDust.day(ofClean:)) }),
-      isRest: { week.isRest($0) || pause?.contains($0) == true }, today: today)
+      isRest: { week.isRest($0) || paused($0) }, today: today)
   }
 }
