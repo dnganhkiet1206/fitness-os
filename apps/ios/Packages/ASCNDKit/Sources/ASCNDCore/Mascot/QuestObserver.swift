@@ -114,10 +114,12 @@ public final class QuestObserver {
   /// Hôm nay không có buổi trong lịch — chỉ khi ấy nhiệm vụ hồi phục được tính
   /// (#527 đợt 1). Hôm nay đặt.
   public var restDay = false
+  /// Loại ngày cho nhiệm vụ (`QuestDay`); Hôm nay đặt.
+  public var questDay: QuestDay = .unscheduled
 
   /// Nhiệm vụ đang tính: bước cần đã từng có số bước; hồi phục chỉ ở ngày nghỉ.
   func counts(_ q: MascotRules.Quest, _ signals: DailySignals) -> Bool {
-    MascotRules.counts(q, restDay: restDay, stepsEverRecorded: signals.stepsEverRecorded)
+    MascotRules.counts(q, day: questDay, stepsEverRecorded: signals.stepsEverRecorded)
   }
 
   public func observe(token: Int, day: LocalDate, signals: DailySignals, claimed: Set<String>) {

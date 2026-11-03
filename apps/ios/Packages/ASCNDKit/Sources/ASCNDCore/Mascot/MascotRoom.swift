@@ -310,12 +310,14 @@ public final class MascotRoomController {
 
   /// Hôm nay không có buổi trong lịch (ngày nghỉ / chưa lên lịch) — Hôm nay đặt.
   public var restDay = false
+  /// Loại ngày cho nhiệm vụ (`QuestDay`, 03/11); Hôm nay đặt.
+  public var questDay: QuestDay = .unscheduled
 
   /// Nhiệm vụ đang tính cho tài khoản này: bỏ `steps` khi chưa từng có số bước;
   /// nhiệm vụ hồi phục chỉ ở ngày nghỉ (và cần số bước).
   public var activeQuests: [MascotRules.QuestDef] {
     MascotRules.dailyQuests.filter {
-      MascotRules.counts($0.key, restDay: restDay, stepsEverRecorded: signals?.stepsEverRecorded != false)
+      MascotRules.counts($0.key, day: questDay, stepsEverRecorded: signals?.stepsEverRecorded != false)
     }
   }
 

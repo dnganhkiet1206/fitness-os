@@ -79,3 +79,38 @@ struct KoaPauseSheet: View {
     return date.formatted(.dateTime.weekday(.wide).day().month(.abbreviated).locale(locale))
   }
 }
+
+/// Từ lần đổi buổi sang nghỉ thứ hai trong tuần (Kiệt duyệt 03/11): Koa gợi ý Tạm nghỉ, trạng thái
+/// trung thực cho tuần bận hay mệt. Không trách, không trừ gì; bỏ qua được.
+struct KoaSwapNudge: View {
+  let build: Int
+  let pause: () -> Void
+  let dismiss: () -> Void
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+      HStack(alignment: .top, spacing: DS.Spacing.sm) {
+        MascotFigureView(emotion: .idle, size: 48, animated: false, build: build)
+          .accessibilityHidden(true)
+        Text("swap.nudge.line")
+          .font(DS.TextStyle.body.weight(.semibold))
+          .foregroundStyle(DS.Color.foreground.swiftUI)
+          .fixedSize(horizontal: false, vertical: true)
+      }
+      Text("swap.nudge.why")
+        .font(DS.TextStyle.footnote)
+        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        .fixedSize(horizontal: false, vertical: true)
+      DSButton(String(localized: "swap.nudge.pause"), style: .secondary, action: pause)
+        .accessibilityIdentifier("today.swap.pause")
+      Button(action: dismiss) {
+        Text("swap.nudge.no").font(DS.TextStyle.footnote.weight(.semibold)).frame(maxWidth: .infinity, minHeight: 36)
+      }
+      .buttonStyle(.plain)
+      .foregroundStyle(DS.Color.primary.swiftUI)
+    }
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .padding(DS.Spacing.md)
+    .todayCard()
+  }
+}
