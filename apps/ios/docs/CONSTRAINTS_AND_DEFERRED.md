@@ -476,6 +476,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Ảnh chuẩn là ảnh của CI (runner đổi Xcode / runtime có thể làm lệch hàng loạt → ghi lại cả bộ, ghi lý do ở đây). Cách cập nhật: `docs/AGENT_SESSION.md` §6c.
 - Lượt ghi ảnh đầu (03/11) bắt được lỗi Dynamic Type thật, đã sửa trước khi lấy ảnh chuẩn: số buổi (26 pt) và tiêu đề Gains (22 pt) cỡ cố định, không lớn theo chữ → `@ScaledMetric` (cùng cỡ ở mặc định); ba chú thích của thẻ nhịp 30 ngày bị cắt ("plann…") ở chữ lớn → `ViewThatFits` xếp dọc; mẫu "tạm nghỉ" ở chú thích là chấm đặc trong khi lưới vẽ vòng nét đứt → chú thích vẽ đúng dấu của lưới.
 - Cách chụp thẻ: `.sizeThatFits` của thư viện đề nghị cao 0, nên chữ không có `fixedSize` bị ép một dòng ("DAYS L…") — app không như vậy (thẻ nằm trong ScrollView). Test chụp thẻ với `fixedSize(vertical:)` cho giống app.
+- Ảnh chuẩn (18) lấy từ lượt ghi của CI run 41669221380 (head `94c4928c`), đã xem từng ảnh. Hai lượt ghi liên tiếp cho ra đúng từng điểm ảnh ở mọi màn không đổi code (10/18), nên cách chụp ổn định trên runner.
 - Chưa có: `performAccessibilityAudit()` trong UI test (đợt 2 của #795, cần target UI test, sẽ chạy ở E2E).
 - **NOT RUN:** xem ảnh trên máy thật; VoiceOver.
 
