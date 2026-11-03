@@ -428,7 +428,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Phòng full màn, thanh tab và Ghi nhanh ẩn trong phòng; mọi thẻ cũ nằm trong bảng mở bằng nút "Nhiệm vụ 0/5", không bỏ thẻ nào. Kéo để tải lại chuyển vào bảng. Thay bố cục mép A của 31/10.
 - Parallax: biên độ tăng 2,2 lần, phóng sẵn 9 % (mất ~18 điểm mỗi bên), lia vào lúc mở phòng, tiền cảnh mờ. Koa đứng yên thì máy đứng yên (Kiệt bỏ kiểu máy tự lắc). Hoạt hình: co giãn khi nhảy và tiếp đất (`KoaSquash`), đầu gật khi nói.
 - Chưa đạt: nửa dưới màn là sàn kéo dài tạm, còn đường nối và tiền cảnh thô. Kiệt đã duyệt mock vẽ lại hai phòng `https://claude.ai/artifact/FQ31MadePEtWGxpfDVKwqz`, làm ở PR sau.
-- Giảm chuyển động: đồng hồ dừng nên Koa không nói, tiền cảnh đứng yên.
+- ~~Giảm chuyển động: đồng hồ dừng nên Koa không nói, tiền cảnh đứng yên.~~ 03/11 (#799): Koa nói lại khi Giảm chuyển động (`KoaDirectorDriver.quietTick` mỗi giây; bong bóng hiện bằng độ mờ, không phóng). Tiền cảnh vẫn đứng yên.
 - **NOT RUN:** iPhone thật; VoiceOver đọc bóng thoại; `en` / `es` trong bóng thoại; đồ mặc khác; cảnh đi ngủ và dậy với phóng 9 %; CPU sau thay đổi; cỡ màn khác iPhone Air.
 
 **Koa kéo thẻ nhiệm vụ, khung dọc của phòng (01/11, Kiệt):**
@@ -479,6 +479,11 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Hôm nay ở dạng thu gọn (`compact`) vẫn tính `koa_moment_shown` khi câu mốc là câu của Koa, dù câu ấy hiện ở chỗ khác của thẻ.
 - Xoá dữ liệu app hoặc đổi máy thì mốc đã gửi có thể gửi lại một lần (sổ khoá chỉ nằm trên máy).
 - **NOT RUN:** khoá PostHog chưa bật trong bản test nên chưa thấy sự kiện lên server; chưa soi log PostHog debug; iPhone thật.
+
+**Koa nói khi Giảm chuyển động (03/11, #799, nhánh `claude/koa-quiet-talk`):**
+- Nguyên nhân: lịch nói (`alive` → `nextLine`) chỉ chạy trong `step` của đồng hồ dựng hình, mà Giảm chuyển động dừng đồng hồ; `arrive()` còn chặn `openTalk` khi Giảm chuyển động. Sửa: `arrive()` vẫn mở lịch nói (bỏ phần lại gần / đẩy máy quay), phòng gọi `quietTick` mỗi giây khi Giảm chuyển động, chỉ chạy phần lời nói (tới lượt thì nói, hết câu thì tắt; giờ ngủ / đang về chỗ thì không nói). Miệng không mấp máy (mặt đứng yên theo Giảm chuyển động).
+- Test `KoaQuietTalkTests` (ASCNDTests, chạy ở `app-macos` sau khi #809 gộp, và ở E2E).
+- **NOT RUN:** bật Giảm chuyển động trên simulator / iPhone và xem bong bóng; VoiceOver đọc câu.
 
 **Đăng xuất xoá "Insight hôm nay" trên máy và Koa của người trước trong bộ nhớ (03/11, audit lượt 5 giờ, nhánh `claude/insight-signout`):**
 - `AppServices.koaGainsHistory` / `koaEquipped` / `koaBuild` / `koaLastSessionAt` không gắn người và không được dọn khi đăng xuất. Tái hiện: A dùng app (Hôm nay đọc Gains) → đăng xuất → B đăng nhập → trong lúc Hôm nay của B còn chạy năm lượt đọc trước `loadGains` (có `mascot.load()` qua mạng), B mở Tiến bộ thấy Nhịp 30 ngày của A (`ProgressResults`), mở Hành trình thấy mốc của A (`ensureKoaGainsHistory` thấy lịch sử cũ nên không đọc lại); Tổng kết tuần, thẻ Gains sau buổi tập, câu Koa của Hôm nay cũng đọc lịch sử ấy; Koa ló lên ở tab khác mặc đồ và vóc dáng của A. Nay lượt dọn đăng xuất gọi `forgetKoaSession()` đầu tiên, trước mọi `await` (đổi thẳng tài khoản: không xoá nhầm lượt đọc của người mới). Trạng thái có gắn `userId` giữ nguyên.
@@ -593,5 +598,6 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - 03/11/2026: #796 phần 1: Daily Plan có lý do `paused(until:)`; thẻ việc chính ghi "Đang tạm nghỉ · tập lại từ …". Lịch sử đợt nghỉ chờ Kiệt quyết (migration hay trên máy).
 - 03/11/2026: #800 thông báo: câu nhắc buổi tập xoay vòng, bị bỏ qua 3 lần liền thì 2 ngày một lần, xin quyền khi có lịch tập đầu tiên; xem mục 4.
 - 03/11/2026: đo lường Koa Ecosystem (#793): năm sự kiện mốc / hành trình / Nhịp / tạm nghỉ, gửi một lần mỗi lần xảy ra (`Telemetry.once`); xem mục 4.
+- 03/11/2026: #799 (phần không phải art): Koa nói khi Giảm chuyển động; xem mục 4.
 - 03/11/2026: đăng xuất xoá "Insight hôm nay" lưu trên máy (như `clearPersistedCache` của RN) và quên Koa của người trước trong bộ nhớ (người sau từng thấy Nhịp 30 ngày / Hành trình của người trước); xem mục 4.
 - 03/11/2026: #795 đợt 1: snapshot test các màn Koa (sáng / tối / chữ lớn) chạy trong `app-macos`; xem mục 4.

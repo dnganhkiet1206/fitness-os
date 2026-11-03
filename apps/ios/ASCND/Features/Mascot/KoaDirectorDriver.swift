@@ -317,6 +317,20 @@ final class KoaDirectorDriver {
     speak(beat)
   }
 
+  /// Giảm chuyển động (#799): đồng hồ dựng hình dừng (`step` không chạy) nhưng Koa vẫn nói theo
+  /// lịch của lượt ở phòng — chỉ phần lời nói: tới lượt thì nói, hết câu thì thôi. Không đi, mặt
+  /// không nhịp. Phòng gọi mỗi giây khi Giảm chuyển động bật.
+  func quietTick(_ date: Date) {
+    let now = date.timeIntervalSinceReferenceDate
+    if let beat = speech {
+      if now - talkStart >= beat.seconds { speech = nil }
+      return
+    }
+    if let plan = talkPlan, plan.due(at: now), !context.settle, !context.bedtime, let facts {
+      nextLine(plan, facts: facts, at: now)
+    }
+  }
+
   /// Giảm chuyển động: đứng ngay ở chỗ chạm, không đi.
   func place(_ s: KoaRoomMap.Spot) {
     director.place(s)
