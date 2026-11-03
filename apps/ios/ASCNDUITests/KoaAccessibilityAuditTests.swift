@@ -79,7 +79,15 @@ final class KoaAccessibilityAuditTests: XCTestCase {
 
   // MARK: - Kiểm
 
+  /// Chờ màn đứng yên (sheet trượt lên xong, cuộn dừng): kiểm lúc còn chuyển động thì chữ nằm
+  /// một phần ngoài màn hình và bị báo "Text clipped" oan (lượt đầu 03/11: mọi dòng của sheet Tạm
+  /// nghỉ). Chờ cố định: đọc khung từng phần tử để dò "đứng yên" trên màn lớn chậm hơn nhiều.
+  @MainActor private func settle(_ app: XCUIApplication) {
+    RunLoop.current.run(until: Date().addingTimeInterval(1.5))
+  }
+
   @MainActor private func audit(_ app: XCUIApplication, _ screen: String) throws {
+    settle(app)
     var lines: [String] = []
     // Đợt 2a: mỗi vấn đề ghi một dòng, handler trả `true` nên test không đỏ vì vấn đề.
     do {
