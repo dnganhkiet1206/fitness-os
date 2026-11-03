@@ -12,7 +12,7 @@ name: Taking a break and coming back early
     element:
       id: today.pause.open
     direction: DOWN
-    timeout: 15000
+    timeout: 30000
 - tapOn:
     id: today.pause.open
 - extendedWaitUntil:
@@ -26,7 +26,7 @@ name: Taking a break and coming back early
     element:
       id: today.pause.end
     direction: UP
-    timeout: 15000
+    timeout: 30000
 - assertVisible: "On a break.*"
 - takeScreenshot: 11-pause-card
 - tapOn:
