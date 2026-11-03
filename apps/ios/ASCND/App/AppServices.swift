@@ -313,6 +313,8 @@ final class AppServices {
       widgets.setUser(next)
       // Cài đặt theo tài khoản (linh vật); theo máy thì giữ (`DEVICE_KEYS`).
       prefs.clearUserScoped()
+      // "Insight hôm nay" của người vừa rời đi (`clearPersistedCache` của RN).
+      SmartNudgesDefaultsCache.clear()
       // Nhắc nhở: huỷ thông báo đang chờ của người vừa rời đi, xoá cài đặt /
       // chữ ký lịch / chốt giờ thông minh (`forgetPreviousAccount`).
       await reminderCenter.clearUserScoped()

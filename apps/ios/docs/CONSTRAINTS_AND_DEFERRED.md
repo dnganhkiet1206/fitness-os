@@ -469,6 +469,11 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Xoá dữ liệu app hoặc đổi máy thì mốc đã gửi có thể gửi lại một lần (sổ khoá chỉ nằm trên máy).
 - **NOT RUN:** khoá PostHog chưa bật trong bản test nên chưa thấy sự kiện lên server; chưa soi log PostHog debug; iPhone thật.
 
+**Đăng xuất xoá "Insight hôm nay" trên máy (03/11, audit lượt 5 giờ, nhánh `claude/insight-signout`):**
+- `SmartNudgesDefaultsCache` (thay persister React Query của RN) giữ MỘT ô insight. Khoá có người dùng nên người sau không thấy được, nhưng sau đăng xuất chữ insight của người trước (viết từ giấc ngủ, ăn uống, buổi tập) vẫn nằm trong UserDefaults tới khi bị ghi đè. RN xoá cache này trong `forgetPreviousAccount` (`clearPersistedCache`, `native/src/hooks/use-auth.tsx:55`). Nay lượt dọn đăng xuất của `AppServices` gọi `SmartNudgesDefaultsCache.clear()`.
+- Đã soát cùng lượt, không phải lỗi: `coach.quickReplyMemory` chỉ lưu số thứ tự mẫu câu; `health:lastAutoSync` là nhịp 15 phút của cả máy (người sau có thể chờ tối đa 15 phút cho lần tự đồng bộ đầu); `health:paused` theo máy như quyền HealthKit.
+- **NOT RUN:** đăng xuất / đăng nhập tài khoản khác trên simulator.
+
 ## 5. Lịch sử thay đổi sổ
 
 - 01/11/2026: Koa chạy tới kéo thẻ nhiệm vụ; bảng tự vẽ; vẽ lại phòng tập khung dọc theo mock, bỏ tiền cảnh mờ.
@@ -564,3 +569,4 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - 03/11/2026: #796 phần 1: Daily Plan có lý do `paused(until:)`; thẻ việc chính ghi "Đang tạm nghỉ · tập lại từ …". Lịch sử đợt nghỉ chờ Kiệt quyết (migration hay trên máy).
 - 03/11/2026: #800 thông báo: câu nhắc buổi tập xoay vòng, bị bỏ qua 3 lần liền thì 2 ngày một lần, xin quyền khi có lịch tập đầu tiên; xem mục 4.
 - 03/11/2026: đo lường Koa Ecosystem (#793): năm sự kiện mốc / hành trình / Nhịp / tạm nghỉ, gửi một lần mỗi lần xảy ra (`Telemetry.once`); xem mục 4.
+- 03/11/2026: đăng xuất xoá "Insight hôm nay" lưu trên máy (như `clearPersistedCache` của RN); xem mục 4.
