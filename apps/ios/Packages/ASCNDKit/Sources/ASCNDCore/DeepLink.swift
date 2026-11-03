@@ -25,6 +25,8 @@ public enum DeepLink {
     case diary(date: LocalDate?)
     /// `log-meal?date=&meal=`.
     case logMeal(date: LocalDate?, meal: String?)
+    /// `scan-food`: màn ghi bữa mở thẳng camera chụp món (nút camera của widget "Bữa quen").
+    case photoMeal
     case foods
     case nutritionInsights
     case mealPlans
@@ -55,7 +57,7 @@ public enum DeepLink {
       case .tab(let t): t
       case .screen(let s):
         switch s {
-        case .water, .supplements, .diary, .logMeal, .foods, .nutritionInsights, .mealPlans, .mealPlan: .nutrition
+        case .water, .supplements, .diary, .logMeal, .photoMeal, .foods, .nutritionInsights, .mealPlans, .mealPlan: .nutrition
         case .history, .logWorkout, .templates: .workouts
         case .logWeight, .logMeasurement, .logSleep, .logBiometrics, .reminders: .today
         case .communityPost, .communityUser: .community
@@ -108,7 +110,8 @@ public enum DeepLink {
     case "community-user": return q["id"].map { .screen(.communityUser(id: $0)) } ?? .tab(.community)
 
     // Chưa có bản native (#161 / camera): tab chứa nó.
-    case "grocery", "scan-barcode", "scan-food": return .tab(.nutrition)
+    case "scan-food": return .screen(.photoMeal)
+    case "grocery", "scan-barcode": return .tab(.nutrition)
     case "exercises", "exercise-guide", "exercise-insight", "media-viewer": return .tab(.workouts)
     case "ai-coach", "coach-memory": return .tab(.assistant)
     case "mascot-room", "koa-sheet", "shop", "awards", "challenges", "biometrics", "weekly-review",

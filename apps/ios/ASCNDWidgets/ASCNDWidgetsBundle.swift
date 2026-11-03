@@ -5,6 +5,7 @@ import WidgetKit
 struct ASCNDWidgetsBundle: WidgetBundle {
   var body: some Widget {
     KoaWidget()
+    MealQuickWidget()
     TodayWorkoutWidget()
     StreakReadinessWidget()
     RestLiveActivity()
