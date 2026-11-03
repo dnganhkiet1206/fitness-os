@@ -850,7 +850,9 @@ struct MascotRoomView: View {
 
   private var koaWeekState: KoaWeek.State? {
     guard let flow else { return nil }
-    return KoaWeek.state(today: flow.today.today, library: flow.today.library, trained: flow.today.trained)
+    return KoaWeek.state(
+      today: flow.today.today, library: flow.today.library, trained: flow.today.trained,
+      pause: services.koaPause(userId: flow.today.userId, today: flow.today.today))
   }
 
   // MARK: - Việc

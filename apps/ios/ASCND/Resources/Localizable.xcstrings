@@ -64112,6 +64112,236 @@
     }
    }
   },
+  "pause.card.end": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Come back early"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Volver antes"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Quay lại sớm"
+     }
+    }
+   }
+  },
+  "pause.card.eyebrow %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "On a break · days left: %lld"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "En pausa · días restantes: %lld"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đang tạm nghỉ · còn %lld ngày"
+     }
+    }
+   }
+  },
+  "pause.card.line": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Rest up properly. Koa is keeping your spot on the stage."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Descansa bien. Koa te guarda el sitio en el escenario."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nghỉ cho khoẻ hẳn nhé. Koa giữ chỗ trên bục cho bạn."
+     }
+    }
+   }
+  },
+  "pause.card.what": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "No workout reminders, no dust in the room, and these days don't count this week."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sin recordatorios de entreno, sin polvo en la sala, y estos días no cuentan esta semana."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Không nhắc tập, phòng không bám bụi, tuần này không tính những ngày nghỉ."
+     }
+    }
+   }
+  },
+  "pause.entry": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Take a few days off…"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tomarte unos días…"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tạm nghỉ vài ngày…"
+     }
+    }
+   }
+  },
+  "pause.sheet.back %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Back on %@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Vuelves el %@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tập lại từ %@"
+     }
+    }
+   }
+  },
+  "pause.sheet.body": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sick, travelling or recovering, any reason is fine. While you rest: no workout reminders, Koa's room stays clean, and Koa's week skips these days. You lose nothing."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Enfermedad, viaje o recuperación: cualquier motivo vale. Mientras descansas: sin recordatorios de entreno, la sala de Koa no acumula polvo y la semana de Koa no cuenta estos días. No pierdes nada."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ốm, đi xa hay cần hồi phục đều được. Trong lúc nghỉ: không nhắc tập, phòng Koa không bám bụi, Tuần của Koa không tính những ngày này. Không mất gì cả."
+     }
+    }
+   }
+  },
+  "pause.sheet.days %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Days off: %lld"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Días de descanso: %lld"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nghỉ %lld ngày"
+     }
+    }
+   }
+  },
+  "pause.sheet.start": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Start the break"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Empezar el descanso"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bắt đầu nghỉ"
+     }
+    }
+   }
+  },
+  "pause.sheet.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Take a break"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tomar un descanso"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tạm nghỉ"
+     }
+    }
+   }
+  },
   "koa.say.night": {
    "extractionState": "manual",
    "localizations": {

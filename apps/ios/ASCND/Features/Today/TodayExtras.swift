@@ -32,6 +32,7 @@ struct TodayExtras<Plan: View>: View {
 
   /// Màn quay lại sau ≥ 3 ngày lỡ lịch (đợt 2).
   @State private var comeback: KoaComeback?
+  @State private var showsPause = false
   @Environment(AppServices.self) private var services
   @Environment(\.scenePhase) private var scenePhase
   @Environment(\.weightUnit) private var unit
@@ -187,6 +188,13 @@ struct TodayExtras<Plan: View>: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
       }
+      if let flow, let pause = services.koaPause(userId: userId, today: flow.today.today) {
+        KoaPauseCard(pause: pause, today: flow.today.today, build: services.koaBuild) {
+          services.setKoaPause(pause.ended(on: flow.today.today), userId: userId)
+          dailyPlan?.recompute(services: services, flow: flow)
+        }
+        .todayEntrance(2)
+      }
       if let dailyPlan, let flow {
         // GĐ1: MỘT việc chính + lý do + phương án; rồi Tuần của Koa (lịch thật).
         // Thẻ "Tăng tải hôm nay" nằm sau việc chính, vuốt sang (Kiệt duyệt mock 28/10).
@@ -276,6 +284,14 @@ struct TodayExtras<Plan: View>: View {
         onStartWorkout?()
       }
       .presentationDetents([.medium, .large])
+    }
+    .sheet(isPresented: $showsPause) {
+      if let flow {
+        KoaPauseSheet(today: flow.today.today) { days in
+          services.setKoaPause(KoaPause(from: flow.today.today, days: days), userId: userId)
+          dailyPlan?.recompute(services: services, flow: flow)
+        }
+      }
     }
     .sheet(isPresented: $showsKoaWeek) {
       if let state = koaWeekState {
@@ -698,7 +714,9 @@ struct TodayExtras<Plan: View>: View {
   /// Tuần của Koa theo lịch đã áp — cùng nguồn với dải và với lượt nhận thưởng.
   private var koaWeekState: KoaWeek.State? {
     guard let flow else { return nil }
-    return KoaWeek.state(today: flow.today.today, library: flow.today.library, trained: flow.today.trained)
+    return KoaWeek.state(
+      today: flow.today.today, library: flow.today.library, trained: flow.today.trained,
+      pause: services.koaPause(userId: flow.today.userId, today: flow.today.today))
   }
 
   // MARK: - Việc chính (Daily Plan, GĐ1)
@@ -970,7 +988,8 @@ struct TodayExtras<Plan: View>: View {
     TodayPlanHero(
       result: dailyPlan.result, lighterOn: flow.today.lighterToday, shortOn: flow.today.shortToday,
       lastSession: services.koaGainsNow?.state.lastSession, busy: planBusy, failed: planFailed,
-      overloadHint: hint, onPrimary: { primary(dailyPlan.result.action) }, onAlternative: { alternative($0, flow) })
+      overloadHint: hint, onPrimary: { primary(dailyPlan.result.action) }, onAlternative: { alternative($0, flow) },
+      onPause: dailyPlan.result.action.session == nil ? nil : { showsPause = true })
   }
 
   /// Bài của buổi hôm nay + tăng tải (`OverloadPlan`). `nil` (chỉ còn thẻ việc chính):

@@ -469,7 +469,9 @@ final class AppServices {
     guard let rows, let h = koaGainsHistory else { return }
     let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
     guard
-      let s = await KoaDustSync.load(userId: userId, store: rows, sessions: h.days, week: h.week, today: today),
+      let s = await KoaDustSync.load(
+        userId: userId, store: rows, sessions: h.days, week: h.week, pause: koaPause(userId: userId, today: today),
+        today: today),
       session.session?.userId == userId
     else { return }
     koaDust = (userId, s)
@@ -638,6 +640,33 @@ final class AppServices {
     guard let rows else { return nil }
     let plans = await templates.cached(userId: userId)
     return await KoaGainsSync.load(userId: userId, store: rows, plans: plans, now: SystemWallClock().nowMillis(), in: .current)
+  }
+
+  /// Đổi mỗi lần tạm nghỉ đổi, để các màn đọc `koaPause` vẽ lại.
+  var koaPauseRevision = 0
+  /// UI test: tạm nghỉ chỉ sống trong một lần mở app, để flow này không làm hỏng flow sau.
+  @ObservationIgnored private var uiTestPauses: [String: Data] = [:]
+
+  /// Tạm nghỉ đang có hiệu lực của tài khoản (Koa Ecosystem V2). Lưu trên máy: bảng
+  /// `koa_pauses` có migration nhưng chưa deploy (chờ Kiệt duyệt).
+  func koaPause(userId: String, today: LocalDate) -> KoaPause? {
+    _ = koaPauseRevision
+    guard let data = Self.uiTest ? uiTestPauses[userId] : UserDefaults.standard.data(forKey: "koa.pause.\(userId)"),
+      let p = try? JSONDecoder().decode(KoaPause.self, from: data), p.active(on: today)
+    else { return nil }
+    return p
+  }
+
+  func setKoaPause(_ pause: KoaPause?, userId: String) {
+    let key = "koa.pause.\(userId)"
+    if Self.uiTest {
+      uiTestPauses[userId] = pause.flatMap { try? JSONEncoder().encode($0) }
+    } else if let pause, let data = try? JSONEncoder().encode(pause) {
+      UserDefaults.standard.set(data, forKey: key)
+    } else {
+      UserDefaults.standard.removeObject(forKey: key)
+    }
+    koaPauseRevision += 1
   }
 
   /// Màn tổng kết mở khi Hôm nay chưa đọc Gains (vào thẳng buổi tập): tự đọc, để thẻ Gains của

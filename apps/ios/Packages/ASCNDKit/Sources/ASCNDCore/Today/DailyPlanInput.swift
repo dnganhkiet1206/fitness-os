@@ -17,21 +17,22 @@ extension DailyPlan {
   ///   - daysOff: `KoaGains.State.missedDays`; `nil` = chưa đọc (coi 0, không đoán quay lại).
   public static func input(
     date: LocalDate, library: TemplateSnapshot?, active: WorkoutTemplate?, doneToday: [String?], daysOff: Int?,
-    recovery: Recovery?, proteinLeftG: Int?
+    recovery: Recovery?, proteinLeftG: Int?, paused: Bool = false
   ) -> Input {
     guard let library else {
       return Input(date: date, loaded: false, hasSchedule: false, today: .empty)
     }
     let plan = library.plan(for: date, today: date)
+    // tạm nghỉ: hôm nay là ngày nghỉ, không gợi buổi tập
     let today: Day =
-      if let t = plan.template { .planned([session(t)]) } else if plan.status == .rest { .rest } else { .empty }
+      if paused { .rest } else if let t = plan.template { .planned([session(t)]) } else if plan.status == .rest { .rest } else { .empty }
     let ahead = (1...lookAhead).map { date.adding(days: $0) }
     let next = ahead.lazy.compactMap { d in library.plan(for: d, today: date).template.map { Upcoming(date: d, session: session($0)) } }
       .first
     return Input(
       date: date, loaded: true, inProgress: active.map(session),
       hasSchedule: !KoaGains.Week(library).planned.isEmpty || next != nil || plan.template != nil,
-      today: today, doneToday: doneToday, daysOff: daysOff ?? 0, recovery: recovery, proteinLeftG: proteinLeftG,
+      today: today, doneToday: doneToday, daysOff: paused ? 0 : daysOff ?? 0, recovery: recovery, proteinLeftG: proteinLeftG,
       next: next, canReschedule: library.overridesSupported,
       postponeTo: library.overridesSupported ? Reschedule.target(from: date, in: library) : nil)
   }

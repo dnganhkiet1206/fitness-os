@@ -390,7 +390,9 @@ struct AssistantTab: View {
   // MARK: - Tiến bộ theo trạng thái (mock bản 10)
 
   private var koaWeek: KoaWeek.State? {
-    KoaWeek.state(today: flow.today.today, library: flow.today.library, trained: flow.today.trained)
+    KoaWeek.state(
+      today: flow.today.today, library: flow.today.library, trained: flow.today.trained,
+      pause: services.koaPause(userId: flow.today.userId, today: flow.today.today))
   }
 
   private var progressSnapshot: ProgressStatusBook.Snapshot? {

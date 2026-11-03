@@ -233,7 +233,9 @@ struct ProgressGroupView: View {
         }
       }
       if let h = services.koaGainsHistory {
-        KoaRhythmCard(state: KoaRhythm.state(h.days, week: h.week, today: flow.today.today))
+        let pause = services.koaPause(userId: flow.today.userId, today: flow.today.today)
+        KoaRhythmCard(
+          state: KoaRhythm.state(h.days, week: h.week, paused: { pause?.contains($0) == true }, today: flow.today.today))
       }
       NavigationLink {
         KoaJourneyView()
