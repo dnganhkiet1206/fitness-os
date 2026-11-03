@@ -46,6 +46,15 @@ struct TodayDayCard: View {
   var onWeight: () -> Void = {}
 
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @Environment(\.dynamicTypeSize) private var typeSize
+  // Chữ của thẻ lớn theo Dynamic Type (#795 đợt 2c: bộ kiểm accessibility báo cỡ cố định). Tên theo
+  // cỡ ở mức chữ mặc định, đúng bản thiết kế đã duyệt: ở mặc định thẻ không đổi.
+  @ScaledMetric(relativeTo: .caption2) private var pt11: CGFloat = 11
+  @ScaledMetric(relativeTo: .caption) private var pt12: CGFloat = 12
+  @ScaledMetric(relativeTo: .footnote) private var pt13: CGFloat = 13
+  @ScaledMetric(relativeTo: .subheadline) private var pt14: CGFloat = 14
+  @ScaledMetric(relativeTo: .subheadline) private var pt15: CGFloat = 15
+  @ScaledMetric(relativeTo: .title2) private var pt22: CGFloat = 22
 
   private var states: [DayCheckIn.Item: DayCheckIn.State] {
     Dictionary(uniqueKeysWithValues: tiles.map { ($0.item, $0.state) })
@@ -62,7 +71,7 @@ struct TodayDayCard: View {
           .accessibilityAddTraits(.isHeader)
         Spacer()
         Text(verbatim: String(localized: "day.card.progress \("\(progress.done)/\(progress.total)")"))
-          .font(.system(size: 13, weight: pending ? .regular : .bold))
+          .font(.system(size: pt13, weight: pending ? .regular : .bold))
           .contentTransition(.numericText(value: Double(progress.done)))
           .animation(reduceMotion ? nil : .easeOut(duration: 0.6), value: progress.done)
           .foregroundStyle(pending ? DS.Color.mutedForeground.swiftUI : DS.Color.readinessGreen.swiftUI)
@@ -98,9 +107,9 @@ struct TodayDayCard: View {
       HStack(spacing: 8) {
         IntelligenceMark(size: 15)
         Text("day.tell.placeholder")
-          .font(.system(size: 15))
+          .font(.system(size: pt15))
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-          .lineLimit(1)
+          .lineLimit(typeSize.isAccessibilitySize ? 2 : 1)
         Spacer(minLength: 0)
       }
       .padding(.horizontal, 14)
@@ -133,13 +142,13 @@ struct TodayDayCard: View {
           VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 3) {
               Text(verbatim: Self.name(t.item))
-                .font(.system(size: 15, weight: .semibold))
+                .font(.system(size: pt15, weight: .semibold))
               Image(systemName: "chevron.right")
-                .font(.system(size: 12, weight: .bold))
+                .font(.system(size: pt12, weight: .bold))
             }
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
             Text(verbatim: detail)
-              .font(.system(size: 22, weight: .bold).monospacedDigit())
+              .font(.system(size: pt22, weight: .bold).monospacedDigit())
               .foregroundStyle(DS.Color.foreground.swiftUI)
               .lineLimit(1).minimumScaleFactor(0.7)
               // Số lăn như ở Dinh dưỡng khi vừa ghi ("8 / 65 oz" → "16 / 65 oz") — Kiệt 22/10.
@@ -149,9 +158,9 @@ struct TodayDayCard: View {
             if Self.badgeText(t)?.lowercased() != t.detail.lowercased() { status(t) }
             if t.item == .meal, let planNext {
               Label(planNext, systemImage: "list.bullet.clipboard")
-                .font(.system(size: 11, weight: .semibold))
+                .font(.system(size: pt11, weight: .semibold))
                 .foregroundStyle(DS.Color.metricOrangeGraphic.swiftUI)
-                .lineLimit(1)
+                .lineLimit(typeSize.isAccessibilitySize ? 2 : 1)
             }
           }
           .padding(.horizontal, 16)
@@ -175,7 +184,7 @@ struct TodayDayCard: View {
           .padding(.bottom, 8)
       }
       if t.item == .water, let quickWater {
-        HStack(spacing: 8) {
+        chipRow {
           chip(quickWater.label, color: color, id: "today.water.add", action: quickWater.add)
           chip(String(localized: "water.custom"), systemImage: "pencil", color: color, id: "today.water.custom", action: quickWater.custom)
         }
@@ -183,7 +192,7 @@ struct TodayDayCard: View {
         .padding(.bottom, 8)
       }
       if t.item == .meal, let mealQuick {
-        HStack(spacing: 8) {
+        chipRow {
           chip(String(localized: "day.meal.photo"), systemImage: "camera.fill", color: color, id: "today.meal.photo") { mealQuick(.mealPhoto) }
           chip(String(localized: "day.meal.scan"), systemImage: "barcode.viewfinder", color: color, id: "today.meal.scan") { mealQuick(.mealScan) }
           chip(String(localized: "day.meal.manual"), systemImage: "square.and.pencil", color: color, id: "today.meal.manual") { mealQuick(.mealManual) }
@@ -210,13 +219,22 @@ struct TodayDayCard: View {
     (t.item == .water && quickWater != nil) || (t.item == .meal && mealQuick != nil) || (t.item == .sleep && t.state != .done && quickSleep != nil) || (t.item == .workout && t.state == .done && onExtraWorkout != nil)
   }
 
+  /// Hàng nút nhanh của thẻ: một hàng như thiết kế; chữ cỡ trợ năng thì xếp dọc, không cắt chữ.
+  @ViewBuilder private func chipRow<Chips: View>(@ViewBuilder _ chips: () -> Chips) -> some View {
+    if typeSize.isAccessibilitySize {
+      VStack(alignment: .leading, spacing: 0) { chips() }
+    } else {
+      HStack(spacing: 8) { chips() }
+    }
+  }
+
   /// Nút phụ trên thẻ: "+ Buổi phát sinh", "+ 8 oz".
   private func chip(
     _ text: String, systemImage: String = "plus", color: Color, id: String, action: @escaping () -> Void
   ) -> some View {
     Button(action: action) {
       Label(text, systemImage: systemImage)
-        .font(.system(size: 13, weight: .semibold))
+        .font(.system(size: pt13, weight: .semibold))
         .foregroundStyle(color)
         .lineLimit(1).minimumScaleFactor(0.8)
         .padding(.horizontal, 12).frame(minHeight: 30)
@@ -242,7 +260,7 @@ struct TodayDayCard: View {
       Text(verbatim: (Self.badgeText(t) ?? "").prefix(1).uppercased() + (Self.badgeText(t) ?? "").dropFirst())
         .foregroundStyle(t.state == .done ? DS.Color.readinessGreen.swiftUI : DS.Color.mutedForeground.swiftUI)
     }
-    .font(.system(size: 14, weight: .semibold))
+    .font(.system(size: pt14, weight: .semibold))
     .accessibilityHidden(true)
   }
 
@@ -259,12 +277,12 @@ struct TodayDayCard: View {
     Button(action: onWeight) {
       HStack(spacing: 10) {
         Image(systemName: "scalemass.fill")
-          .font(.system(size: 12, weight: .semibold))
+          .font(.system(size: pt12, weight: .semibold))
           .foregroundStyle(DS.Color.foreground.swiftUI)
           .frame(width: 26, height: 26)
           .background(DS.Color.foreground.swiftUI.opacity(0.08), in: Circle())
-        Text("today.todo.weight").font(.system(size: 14, weight: .semibold))
-        Text(verbatim: w.detail).font(.system(size: 13)).foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        Text("today.todo.weight").font(.system(size: pt14, weight: .semibold))
+        Text(verbatim: w.detail).font(.system(size: pt13)).foregroundStyle(DS.Color.mutedForeground.swiftUI)
         Spacer(minLength: 0)
         if w.done {
           Image(systemName: "checkmark.circle.fill").foregroundStyle(.white, DS.Color.readinessGreen.swiftUI)

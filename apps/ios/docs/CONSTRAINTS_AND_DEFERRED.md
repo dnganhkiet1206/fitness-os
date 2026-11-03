@@ -467,6 +467,13 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
   - "Partially unsupported" ở chữ dùng kiểu chữ hệ thống (Nhịp, Hành trình, chú thích Tiến bộ) và "Hit area is too small" ở hai dòng chữ tĩnh của thẻ việc chính ("TODAY'S MAIN THING", "From your weekly plan."): chưa rõ nguyên nhân. Kỹ sư Apple xác nhận bộ kiểm có thể báo nhầm với font hệ thống. Xem lại khi #812, #814, #815 đã vào base (job `a11y` chạy hằng đêm).
 - **NOT RUN:** bộ kiểm trên head này (job `a11y` chỉ có ở #812, chưa vào base); xem trên simulator / iPhone.
 
+**#795 đợt 2c (03/11, nhánh `claude/today-day-card-type`): chữ "Hôm nay của bạn" và nhãn Koa lớn theo Dynamic Type:**
+- Bộ kiểm accessibility (PR #812) báo chữ cỡ cố định ở Hôm nay. Thẻ "Hôm nay của bạn" (`TodayDayCard`) có 12 chỗ `.system(size:)` (11–22 điểm): nay `@ScaledMetric`, cỡ mặc định giữ đúng bản thiết kế. Nhãn "Koa" của dòng Koa (12 điểm) cũng vậy.
+- Chữ cỡ trợ năng: hàng nút nhanh (Bữa: chụp / quét / nhập tay; Nước: thêm / lượng khác) xếp dọc thay vì cắt chữ; dòng kế hoạch ăn và thanh "Ghi hôm nay" được hai dòng. Cỡ thường không đổi bố cục.
+- Snapshot mới: `todayDayCardMeal`, `todayDayCardWater` (sáng / tối / chữ lớn) trong `KoaSnapshotTests`. Lượt CI đầu ĐỎ có chủ ý (chưa có ảnh chuẩn): tải artifact, xem từng ảnh rồi mới commit ảnh chuẩn.
+- Còn lại: thẻ Koa đầy đủ (`TodayDayBlock` khi chưa có Daily Plan, hiếm gặp) vẫn cỡ cố định ở câu nói, số đếm, nút; Hôm nay thường dùng dạng gọn.
+- **NOT RUN:** xem trên simulator / iPhone ở cỡ chữ trợ năng; bộ kiểm a11y chạy lại (khi #812 vào base).
+
 **Ổn định bộ kiểm (03/11, #801, nhánh `claude/stable-checks`):**
 - Hôm nay không còn hiệu ứng trượt vào ở chế độ UI test (`TodayEntrance`): thẻ trượt 14 điểm trong ~0,75 s đầu, Maestro chạm lúc ấy có thể trúng nút khác. Người dùng thật không đổi.
 - `08-settings`: sau khi quay lại từ Nhắc nhở, đợi Cài đặt hiện hẳn rồi mới cuộn tìm "Đổi mật khẩu". ~~**Chưa xác nhận nguyên nhân** (không chạy được Maestro trong phiên này); nếu còn đỏ thì xem ảnh chụp trong artifact.~~
@@ -622,6 +629,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - 03/11/2026: #801: tắt hiệu ứng trượt vào của Hôm nay ở chế độ UI test, `08-settings` đợi Cài đặt ổn định trước khi cuộn; xem mục 4.
 - 03/11/2026: #796 phần 1: Daily Plan có lý do `paused(until:)`; thẻ việc chính ghi "Đang tạm nghỉ · tập lại từ …". Lịch sử đợt nghỉ chờ Kiệt quyết (migration hay trên máy).
 - 03/11/2026: dải Tuần của Koa lớn theo Dynamic Type (kiểm accessibility báo cỡ cố định); xem mục 4.
+- 03/11/2026: #795 đợt 2c: chữ thẻ "Hôm nay của bạn" và nhãn Koa lớn theo Dynamic Type, hàng nút nhanh xếp dọc ở cỡ trợ năng; xem mục 4.
 - 03/11/2026: #800 thông báo: câu nhắc buổi tập xoay vòng, bị bỏ qua 3 lần liền thì 2 ngày một lần, xin quyền khi có lịch tập đầu tiên; xem mục 4.
 - 03/11/2026: sheet nửa màn (Tạm nghỉ, mua đồ, khẩu phần) mở cả màn và cuộn được ở chữ cỡ trợ năng, không còn cắt mất nút; xem mục 4.
 - 03/11/2026: đo lường Koa Ecosystem (#793): năm sự kiện mốc / hành trình / Nhịp / tạm nghỉ, gửi một lần mỗi lần xảy ra (`Telemetry.once`); xem mục 4.
