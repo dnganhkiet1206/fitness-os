@@ -454,6 +454,13 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Cảnh Koa đi ngủ dùng cỡ riêng (`KoaBedtime`), chưa chỉnh theo 152 điểm: có thể thấy Koa nhỏ đi một chút khi sang cảnh ngủ.
 - **NOT RUN:** phòng ngủ trong khung dọc (cảnh đi ngủ, tường cao đổi màu); xem từng khung cảnh chạy (mới xem kết quả cuối, chưa có video tốt); đồ phòng đã mua trong tranh mới; iPhone thật; VoiceOver với bảng tự vẽ; cỡ màn khác; CPU.
 
+**Đo lường Koa Ecosystem (03/11, #793, nhánh `claude/koa-analytics`):**
+- Thêm `koa_moment_shown` (`kind`, `place` today/room, `major`), `journey_opened`, `rhythm_viewed` (`sessions` theo khoảng, `paused`), `pause_started` (`days`), `pause_ended_early` (`days_used`, `days_left`). Không gửi `value` của mốc (hạng, số buổi, số ngày nghỉ) và không số đo sức khoẻ.
+- "Một lần mỗi lần xảy ra": mốc một lần mỗi nơi, Nhịp một lần mỗi ngày, nhớ qua các lần mở app (`Telemetry.once`, 200 khoá mới nhất mỗi tài khoản trong UserDefaults). Mở Hành trình và hai nút tạm nghỉ gửi mỗi lần bấm / mở.
+- Hôm nay ở dạng thu gọn (`compact`) vẫn tính `koa_moment_shown` khi câu mốc là câu của Koa, dù câu ấy hiện ở chỗ khác của thẻ.
+- Xoá dữ liệu app hoặc đổi máy thì mốc đã gửi có thể gửi lại một lần (sổ khoá chỉ nằm trên máy).
+- **NOT RUN:** khoá PostHog chưa bật trong bản test nên chưa thấy sự kiện lên server; chưa soi log PostHog debug; iPhone thật.
+
 ## 5. Lịch sử thay đổi sổ
 
 - 01/11/2026: Koa chạy tới kéo thẻ nhiệm vụ; bảng tự vẽ; vẽ lại phòng tập khung dọc theo mock, bỏ tiền cảnh mờ.
@@ -546,3 +553,4 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - 28/10/2026: màn "Tiến bộ từng bài" theo MỨC TẠ (Kiệt duyệt mock `EjRrEXE1gxpyKAx22R6PU2`): mỗi bài so set nặng nhất buổi gần nhất với buổi trước ("18,4 kg × 10 · +2,5 kg", "+5 reps", "Giữ nguyên", "Lần đầu"); đầu trang đếm tăng tạ / thêm reps / giữ / giảm; chạm mở chi tiết (biểu đồ set đỉnh mỗi buổi, các buổi, gợi ý lần tới theo tăng tiến kép 12 reps, phân tích cũ ở cuối). Mở từ dòng "Lần trước" ở màn tập → vào thẳng chi tiết. Buổi 0 kg của bài có tạ: "Chưa ghi tạ", không tính giảm. Thay 3 nhóm "Đáng để ý / Đang ổn / Cần thêm buổi" và con số "tốt nhất 90 ngày". `ExercisePerformance.topSetReps`: reps của chính set nặng nhất.
 - 28/10/2026: Koa Coach trả lời progressive overload theo MỨC TẠ TỪNG BÀI (Kiệt: điều người tập quan tâm nhất). Trước: `ai-coach` chỉ gửi `volume_load` 7 ngày → "khối lượng 728 kg", buổi không tạ thành "volume 0". Nay `_shared/progress.ts`: set đỉnh (bỏ khởi động) buổi gần nhất so với buổi trước, 8 tuần, làm tròn 0,1 kg; bài không tạ so reps; viết theo đơn vị cân. Deploy `ai-coach` v28 (Kiệt duyệt). Simulator: "Dumbbell Shoulder Press: 18,4 kg × 10 (tăng 2,5 kg) so với 15,9 kg × 9". Màn tiến bộ theo bài trong app: chờ mock.
 - 28/10/2026: VoiceOver hàng set ở màn tập — làm lại #526 (đóng vì xung đột): set không tạ đọc "không tạ" thay vì "0 kg"; mức tạ đọc theo đơn vị người dùng (trước luôn "kg", cả tài khoản lb). Đóng #670 (landing web Lovable, nhắm `main`) và #5 (PRODUCT.md của app RN, nhắm `main`) — không còn dùng; nhánh giữ lại.
+- 03/11/2026: đo lường Koa Ecosystem (#793): năm sự kiện mốc / hành trình / Nhịp / tạm nghỉ, gửi một lần mỗi lần xảy ra (`Telemetry.once`); xem mục 4.

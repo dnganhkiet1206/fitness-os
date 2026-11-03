@@ -153,6 +153,8 @@ struct KoaJourneyView: View {
     .navigationTitle(Text("journey.title"))
     .ascndPage()
     .task { await services.ensureKoaGainsHistory() }
+    // Mỗi lần mở màn hành trình (màn này không đẩy màn con, nên xuất hiện = mở).
+    .onAppear { Telemetry.capture(.journeyOpened) }
   }
 
   private func header(rank: Int) -> some View {
