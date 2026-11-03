@@ -7,7 +7,7 @@ struct OverloadPlanTests {
   static func perf(_ name: String, _ kind: ExerciseKind, weight: Double?, reps: Int?) -> ExercisePerformance {
     ExercisePerformance(
       exerciseKey: PersonalRecords.exerciseKey(name), exerciseName: name, sessionId: "s", at: EpochMillis(0),
-      date: LocalDate("2026-10-27")!, kind: kind, setCount: 3, totalReps: 24, totalVolumeKg: 0,
+      date: LocalDate("2026-10-27")!, kind: kind, setCount: 3, totalReps: (reps ?? 8) * 3, totalVolumeKg: 0,
       bestWeightKg: weight, bestReps: reps, bestE1rmKg: nil, bestDurationSec: nil, records: [], bodyweightKg: nil,
       topSetReps: reps)
   }
@@ -24,7 +24,7 @@ struct OverloadPlanTests {
 
   static func plan(
     _ rows: [(String, ExerciseKind, Double?, Int?, Int, ExerciseTrend.Readiness)], targetReps: Int = 8,
-    lowRecovery: Bool = false, unit: WeightUnit = .kg
+    lowRecovery: Bool = false, unit: WeightUnit = .kg, twoSessions: Bool = true
   ) -> [OverloadPlan.Item] {
     let template = WorkoutTemplate(
       id: "t", name: "Chest day",
@@ -33,17 +33,35 @@ struct OverloadPlanTests {
     let insights = Dictionary(
       uniqueKeysWithValues: rows.map { ($0.0, insight($0.0, $0.1, sessions: $0.4, readiness: $0.5)) })
     return OverloadPlan.items(
-      template: template, insight: { insights[$0] }, last: { perfs[$0] }, stepKg: OverloadPlan.stepKg(unit),
-      lowRecovery: lowRecovery)
+      template: template, insight: { insights[$0] }, last: { perfs[$0] }, previous: { twoSessions ? perfs[$0] : nil },
+      stepKg: OverloadPlan.stepKg(unit), lowRecovery: lowRecovery)
   }
 
+  /// ACSM 2009: vượt đích (8) ít nhất 1 rep ở hai buổi liền → +5% làm tròn xuống theo bậc.
   @Test func compoundReadyAddsOneWeightStep() {
-    let items = Self.plan([("Bench press", .compound, 60, 8, 6, .readyToProgress)])
+    let items = Self.plan([("Bench press", .compound, 60, 9, 6, .readyToProgress)])
     #expect(items.map(\.advice) == [.addWeight(fromKg: 60, toKg: 62.5, reps: 8)])
+    let heavy = Self.plan([("Squat", .compound, 100, 9, 6, .readyToProgress)])
+    #expect(heavy.map(\.advice) == [.addWeight(fromKg: 100, toKg: 105, reps: 8)], "5% của 100 kg = 2 bậc")
+  }
+
+  @Test func oneGoodSessionOrJustOnTargetAddsARepNotWeight() {
+    #expect(
+      Self.plan([("Bench press", .compound, 60, 9, 6, .readyToProgress)], twoSessions: false).first?.advice
+        == .addRep(weightKg: 60, from: 9, to: 10), "mới một buổi")
+    #expect(
+      Self.plan([("Bench press", .compound, 60, 8, 6, .readyToProgress)]).first?.advice
+        == .addRep(weightKg: 60, from: 8, to: 9), "đúng đích, chưa vượt")
+  }
+
+  @Test func neverMoreThanTenPercentOnACompound() {
+    #expect(
+      Self.plan([("Overhead press", .compound, 20, 9, 6, .readyToProgress)]).first?.advice
+        == .addRep(weightKg: 20, from: 9, to: 10), "2,5 kg trên 20 kg là 12,5%")
   }
 
   @Test func poundAccountsStepFivePounds() {
-    let items = Self.plan([("Bench press", .compound, 135 / Units.lbPerKg, 8, 6, .readyToProgress)], unit: .lbs)
+    let items = Self.plan([("Bench press", .compound, 135 / Units.lbPerKg, 9, 6, .readyToProgress)], unit: .lbs)
     guard case .addWeight(_, let to, _) = items.first?.advice else {
       Issue.record("không tăng tạ")
       return

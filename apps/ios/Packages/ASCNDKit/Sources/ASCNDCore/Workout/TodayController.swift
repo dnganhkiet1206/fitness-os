@@ -309,6 +309,23 @@ public final class TodayController {
     setVariantToday(on ? .lighter : .full)
   }
 
+  /// Tuần nhẹ (`KoaWeekCoach`, 03/11): bật bản nhẹ cho mọi buổi trong lịch từ hôm nay tới hết
+  /// tuần. Trả số buổi đã bật.
+  @discardableResult
+  public func setLighterWeek(through last: LocalDate) -> Int {
+    guard let library else { return 0 }
+    var n = 0
+    var d = today
+    while d <= last {
+      if let id = library.plan(for: d, today: today).template?.id {
+        LighterSession.set(true, userId: userId, date: d, templateId: id, in: choices)
+        n += 1
+      }
+      d = d.adding(days: 1)
+    }
+    return n
+  }
+
   /// Buổi hôm nay là "buổi ngắn" (quay lại sau ≥ 4 tuần nghỉ).
   public var shortToday: Bool {
     guard let id = plan?.template?.id else { return false }
