@@ -22,8 +22,13 @@ enum KoaImageDiff {
   }
 
   /// `nil` khi hai ảnh coi là giống; còn lại là câu báo lỗi.
+  ///
+  /// Ảnh mới được so ở dạng ĐÃ LƯU (PNG rồi đọc lại), như ảnh chuẩn đọc từ đĩa: ảnh vừa chụp trong
+  /// bộ nhớ có định dạng màu khác (03/11, PR #811 run 41684688503: sáu ảnh "lệch" mà PNG lưu ra giống
+  /// hệt ảnh chuẩn từng điểm ảnh). Thư viện cũng đọc lại PNG trước khi so vì cùng lý do.
   static func message(_ old: UIImage, _ new: UIImage) -> String? {
-    guard let a = pixels(old), let b = pixels(new) else { return "Không đọc được ảnh chuẩn hoặc ảnh mới." }
+    let saved = new.pngData().flatMap { UIImage(data: $0, scale: new.scale) } ?? new
+    guard let a = pixels(old), let b = pixels(saved) else { return "Không đọc được ảnh chuẩn hoặc ảnh mới." }
     guard a.width == b.width, a.height == b.height else {
       return "Kích thước khác: ảnh chuẩn \(a.width)×\(a.height), ảnh mới \(b.width)×\(b.height)."
     }
