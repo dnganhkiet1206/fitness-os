@@ -70,6 +70,7 @@ struct WorkoutsHomeView: View {
     ) { t in
       Button(String(localized: "common.cancel"), role: .cancel) {}
       Button(String(localized: "wb.delete.title"), role: .destructive) {
+        // swiftlint:disable:next unhandled_throwing_task - templateAction tự bắt lỗi
         Task { await templateAction { try await $0.delete(templateId: t.id) } }
       }
     } message: { t in
@@ -538,11 +539,13 @@ struct WorkoutsHomeView: View {
   @ViewBuilder private func templateMenu(_ t: WorkoutTemplate) -> some View {
     let day = WorkoutPlanning.routineIndex(flow.today.today)
     Button {
+      // swiftlint:disable:next unhandled_throwing_task - templateAction tự bắt lỗi
       Task { await templateAction { try await $0.assign(day: day, templateId: t.id) } }
     } label: {
       Label(String(localized: "wh.tpl.assignToday \(Self.longWeekday(flow.today.today))"), systemImage: "calendar.badge.plus")
     }
     Button {
+      // swiftlint:disable:next unhandled_throwing_task - templateAction tự bắt lỗi
       Task {
         await templateAction { editor in
           try await editor.create(
@@ -629,7 +632,7 @@ struct WorkoutsHomeView: View {
   // MARK: - Chữ
 
   static func weekday(_ d: LocalDate) -> String {
-    d.calendarDate.formatted(Date.FormatStyle().weekday(.abbreviated).locale(.app))
+    d.calendarDate.formatted(Date.FormatStyle().weekday(.short).locale(.app))
   }
 
   static func longWeekday(_ d: LocalDate) -> String {

@@ -32,13 +32,8 @@ enum AppNotice: Hashable, Identifiable {
   @MainActor
   static func of(_ room: MascotRoomController?, now: Date = Date(), calendar: Calendar = .current) -> [AppNotice] {
     guard let room, case .ready = room.phase else { return [] }
-    var out: [AppNotice] = []
-    if room.streak.count >= 1, !room.streak.loggedToday,
-      calendar.component(.hour, from: now) >= streakEveningHour
-    {
-      out.append(.streakRisk(days: room.streak.count))
-    }
-    return out
+    // Không còn báo "sắp mất chuỗi" (Koa Ecosystem V2, 02/11): Nhịp 30 ngày không có gì để mất.
+    return []
   }
 }
 

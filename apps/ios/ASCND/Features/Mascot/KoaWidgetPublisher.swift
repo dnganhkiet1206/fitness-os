@@ -54,7 +54,7 @@ final class KoaWidgetPublisher {
   }
 
   static func imageKey(_ s: Snapshot) -> String {
-    "\(s.userId)|\(s.mascotId)|\(s.emotion.rawValue)|\(s.equipped.joined(separator: ","))|\(s.build)"
+    "\(s.userId)|\(s.mascotId)|\(s.emotion.rawValue)|\(s.equipped.joined(separator: ","))|\(s.build)|rest"
   }
 
   func publish(_ s: Snapshot) {
@@ -129,6 +129,8 @@ final class KoaWidgetPublisher {
 
   /// Avatar trên thẻ: Koa đứng tự do, bản đèn (thẻ luôn tối), ngày và đêm.
   static let avatarSize: CGFloat = 150
+  /// Koa của Live Activity quãng nghỉ: nhỏ hơn avatar, vẽ 2x để không kéo dài lần vẽ.
+  static let restSize: CGFloat = 110
 
   private func render(_ s: Snapshot) async -> Bool {
     guard let dir = store.containerURL else { return false }
@@ -145,6 +147,20 @@ final class KoaWidgetPublisher {
         continue
       }
       let url = dir.appendingPathComponent(WidgetDataStore.koaImageName(night: night, dark: true))
+      do { try png.write(to: url, options: .atomic) } catch { ok = false }
+    }
+    for koa in RestKoa.allCases {
+      await Task.yield()
+      let figure = MascotFigureView(
+        mascotId: s.mascotId, emotion: koa.emotion, equipped: s.equipped, size: Self.restSize,
+        animated: false, paper: false, build: s.build)
+      let r = ImageRenderer(content: figure)
+      r.scale = 2
+      guard let png = r.uiImage?.pngData() else {
+        ok = false
+        continue
+      }
+      let url = dir.appendingPathComponent(WidgetDataStore.restImageName(koa))
       do { try png.write(to: url, options: .atomic) } catch { ok = false }
     }
     return ok

@@ -33,6 +33,8 @@ public enum KoaCompanion {
     public var rank: Int
     /// Vì sao Koa có nét mặt hôm nay.
     public var mood: KoaMood.Reason
+    /// Có mốc hành trình chưa nhắc (`KoaMomentFeed`).
+    public var milestone = false
 
     public init(
       day: String, trainedToday: Bool = false, recordToday: Bool = false, restDay: Bool = false,

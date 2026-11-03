@@ -145,10 +145,13 @@ import Testing
   }
 
   @Test func proudKoaReadsTheBoardMore() {
-    func board(_ a: Affect) -> Int {
-      Self.seeds.reduce(0) { $0 + Self.tally(a, seed: $1).visits.filter { $0.contains("board") }.count }
-    }
-    #expect(board(Affect(energy: 0.7, pride: 0.9)) > board(Affect(energy: 0.7)))
+    // đi xem đồ thưa rồi (02/11) nên đếm lượt không còn đủ mẫu: so độ hấp dẫn của bảng
+    let d = KoaDirector.Director(seed: 1)
+    let board = KoaRoomMap.anchors.first { $0.action == .read }!
+    var calm = KoaDirector.Context(), proud = calm
+    calm.affect = Affect(energy: 0.7)
+    proud.affect = Affect(energy: 0.7, pride: 0.9)
+    #expect(d.interest(board, proud) > d.interest(board, calm))
   }
 
   /// Ngày nghỉ: phần lớn thời gian Koa ở phía cửa sổ, ít ra kệ tạ.
@@ -188,15 +191,16 @@ import Testing
     }
   }
 
-  @Test func tiredKoaRestsByTheWindow() {
+  /// Sân khấu là nhà của Koa (Kiệt 02/11), mệt hay vui cũng về đây.
+  @Test func koaAlwaysRestsOnStage() {
     var d = KoaDirector.Director(seed: 3)
     var ctx = KoaDirector.Context()
     ctx.affect = Affect(energy: 0.3)
-    #expect(d.restSpot(ctx) == KoaRoomMap.anchor("window")!.stand)
+    #expect(d.restSpot(ctx) == KoaRoomMap.stageMark)
     ctx.affect = Affect(energy: 0.7)
     #expect(d.restSpot(ctx) == KoaRoomMap.stageMark)
     ctx.affect = Affect(energy: 0.7, warmth: 0.8)
-    #expect(d.restSpot(ctx) == KoaRoomMap.user)
+    #expect(d.restSpot(ctx) == KoaRoomMap.stageMark)
     _ = d.step(0.1, ctx: ctx)
   }
 

@@ -34,6 +34,8 @@ struct TemplateListView: View {
           .padding(DS.Spacing.md)
           .background(.bar)
       }
+      // Trước mọi sheet / màn con (01/11): màn mở ra không thừa hưởng kéo để làm mới.
+      .refreshable { await flow.refresh() }
       .sheet(isPresented: $showsBuilder) {
         TemplateFormView(flow: flow)
       }
@@ -50,7 +52,6 @@ struct TemplateListView: View {
       .alert(String(localized: "workout.finishError.generic"), isPresented: $deleteFailed) {
         Button(String(localized: "workout.ok")) {}
       }
-      .refreshable { await flow.refresh() }
   }
 
   @ViewBuilder private var content: some View {

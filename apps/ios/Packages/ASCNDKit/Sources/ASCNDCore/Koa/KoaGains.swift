@@ -8,6 +8,10 @@ public import Foundation
 /// không có sổ riêng trên server, nên không thể "mua" hay ghi sai: hai máy cùng
 /// lịch sử ra cùng một số.
 ///
+/// Chống gian lận (02/11, Kiệt): chỉ buổi tạ ĐẦU TIÊN trong ngày có thưởng. Điểm buổi vốn tính một
+/// lần mỗi ngày; kỷ lục và tăng tải của buổi sau cũng không cộng (`firstSessionBonus`). Buổi đi bộ
+/// Health đến trước không chiếm suất của buổi tạ.
+///
 /// Luật (theo từng ngày, từ ngày tập đầu tiên tới hôm nay):
 /// - ngày có buổi: +10 nếu thứ đó trong lịch có buổi, +6 nếu tập ngoài lịch
 ///   (một ngày tính một lần); buổi có kỷ lục cá nhân: +4; làm theo gợi ý tăng
@@ -89,11 +93,32 @@ public enum KoaGains {
     /// Hôm ấy đã tăng tải theo gợi ý (nhận thưởng `d:<ngày>:overload`).
     public let overload: Bool
     public let kind: Kind
-    public init(date: LocalDate, personalRecord: Bool, overload: Bool = false, kind: Kind = .heavy) {
+    /// Giờ của buổi: biết buổi nào đến trước trong ngày.
+    public let at: EpochMillis?
+    public init(date: LocalDate, personalRecord: Bool, overload: Bool = false, kind: Kind = .heavy, at: EpochMillis? = nil) {
       self.date = date
       self.personalRecord = personalRecord
       self.overload = overload
       self.kind = kind
+      self.at = at
+    }
+  }
+
+  /// Trước giờ `at`, ngày ấy đã có buổi tạ chưa. Có thì buổi này không có thưởng.
+  public static func hasEarlierSession(_ days: [Day], on date: LocalDate, before at: EpochMillis) -> Bool {
+    days.contains { $0.date == date && $0.kind == .heavy && ($0.at.map { $0 < at } ?? false) }
+  }
+
+  /// Bỏ cờ kỷ lục của các buổi tạ sau buổi đầu trong ngày.
+  public static func firstSessionBonus(_ days: [Day]) -> [Day] {
+    var first: [LocalDate: EpochMillis] = [:]
+    for d in days where d.kind == .heavy {
+      guard let at = d.at else { continue }
+      if first[d.date].map({ at < $0 }) ?? true { first[d.date] = at }
+    }
+    return days.map { d in
+      guard d.kind == .heavy, let at = d.at, let f = first[d.date], at != f, d.personalRecord else { return d }
+      return Day(date: d.date, personalRecord: false, overload: d.overload, kind: d.kind, at: d.at)
     }
   }
 
@@ -176,8 +201,43 @@ public enum KoaGains {
     return (points - thresholds[r], thresholds[r + 1] - thresholds[r])
   }
 
+  /// Phần Gains của một ngày, đúng như `compute` đã cộng: màn tổng kết đọc ở đây thay vì tự đoán,
+  /// nên dòng "+10 buổi trong lịch · tuần đủ buổi" luôn khớp số Gains thật.
+  public struct Breakdown: Sendable, Hashable {
+    public var planned = false
+    public var personalRecord = false
+    public var overload = false
+    public var fullWeek = false
+    /// Ngày tập liền thứ mấy; quá `maxActiveStreak` thì buổi không có Gains.
+    public var streak = 0
+    public var points = 0
+    /// Tổng Gains sau ngày này.
+    public var total = 0
+    public init() {}
+  }
+
+  /// Mọi ngày có buổi, theo thứ tự, kèm phần Gains của ngày ấy: nguồn cho hành trình (`KoaJourney`).
+  public static func ledger(_ days: [Day], week: Week, today: LocalDate) -> [(LocalDate, Breakdown)] {
+    var out: [(LocalDate, Breakdown)] = []
+    _ = walk(days, week: week, today: today) { out.append(($0, $1)) }
+    return out
+  }
+
+  /// Phần Gains của `day` khi tính lại từ đầu; `nil` = ngày ấy không có buổi nào.
+  public static func breakdown(_ days: [Day], week: Week, on day: LocalDate) -> Breakdown? {
+    var out: Breakdown?
+    _ = walk(days, week: week, today: day) { d, b in if d == day { out = b } }
+    return out
+  }
+
   /// Tính lại từ đầu, từ ngày tập đầu tiên tới `today`.
   public static func compute(_ days: [Day], week: Week, today: LocalDate) -> State {
+    walk(days, week: week, today: today) { _, _ in }
+  }
+
+  private static func walk(
+    _ days: [Day], week: Week, today: LocalDate, inspect: (LocalDate, Breakdown) -> Void
+  ) -> State {
     var pr: [LocalDate: Bool] = [:]
     var kinds: [LocalDate: Kind] = [:]
     var overloaded: Set<LocalDate> = []
@@ -205,13 +265,18 @@ public enum KoaGains {
       }
       let kind = kinds[day]
       var gain = 0
+      var b = Breakdown()
       if let kind, kind.active {
         streak += 1
+        b.streak = streak
         if streak <= maxActiveStreak {
           if kind == .heavy {
-            gain = week.isPlanned(day) ? plannedSession : offPlanSession
-            if pr[day] == true { gain += personalRecord }
-            if overloaded.contains(day) { gain += overload }
+            b.planned = week.isPlanned(day)
+            b.personalRecord = pr[day] == true
+            b.overload = overloaded.contains(day)
+            gain = b.planned ? plannedSession : offPlanSession
+            if b.personalRecord { gain += personalRecord }
+            if b.overload { gain += overload }
           } else {
             gain = cardioSession
           }
@@ -219,6 +284,7 @@ public enum KoaGains {
           if !weekPaid, weekSessions >= week.target {
             gain += fullWeek
             weekPaid = true
+            b.fullWeek = true
           }
         }
       } else {
@@ -230,9 +296,13 @@ public enum KoaGains {
         }
       }
       if gain > 0 {
+        let before = s.points
         s.points = add(gain, to: s.points, peak: s.peak)
         s.peak = max(s.peak, s.points)
+        b.points = s.points - before
       }
+      b.total = s.points
+      if kind != nil { inspect(day, b) }
       if kind != nil {
         s.missedDays = 0
         s.lastSession = day
@@ -295,11 +365,12 @@ public enum KoaGainsSync {
 
   /// Hàng `workout_sessions` → ngày tập theo giờ địa phương.
   public static func days(_ rows: [JSONValue], in tz: TimeZone) -> [KoaGains.Day] {
-    rows.compactMap { row in
-      guard let at = row["date_time"]?.stringValue.flatMap({ EpochMillis(iso8601: $0) }) else { return nil }
-      return KoaGains.Day(
-        date: LocalDate(at, in: tz), personalRecord: row["pr_detected"]?.boolValue == true, kind: kind(row))
-    }
+    KoaGains.firstSessionBonus(
+      rows.compactMap { row in
+        guard let at = row["date_time"]?.stringValue.flatMap({ EpochMillis(iso8601: $0) }) else { return nil }
+        return KoaGains.Day(
+          date: LocalDate(at, in: tz), personalRecord: row["pr_detected"]?.boolValue == true, kind: kind(row), at: at)
+      })
   }
 
   /// Buổi ghi trong app = tập nặng; buổi Apple Health theo tên hoạt động đã lưu.
@@ -324,7 +395,9 @@ public enum KoaGainsSync {
   public static func mark(_ days: [KoaGains.Day], overload: Set<LocalDate>) -> [KoaGains.Day] {
     guard !overload.isEmpty else { return days }
     return days.map {
-      .init(date: $0.date, personalRecord: $0.personalRecord, overload: $0.overload || overload.contains($0.date), kind: $0.kind)
+      .init(
+        date: $0.date, personalRecord: $0.personalRecord, overload: $0.overload || overload.contains($0.date), kind: $0.kind,
+        at: $0.at)
     }
   }
 

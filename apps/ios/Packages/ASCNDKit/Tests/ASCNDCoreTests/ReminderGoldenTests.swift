@@ -52,10 +52,12 @@ struct ReminderGoldenTests {
 
   static let golden: Golden = {
     let url = Bundle.module.url(forResource: "reminder-golden", withExtension: "json", subdirectory: "Fixtures")!
+    // swiftlint:disable:next force_try - tệp golden đi kèm test; đọc hỏng là lỗi của chính bộ test
     return try! JSONDecoder().decode(Golden.self, from: Data(contentsOf: url))
   }()
 
   static func prefs(_ v: JSONValue) -> ReminderPrefs {
+    // swiftlint:disable:next force_try - JSONValue luôn mã hoá được
     let data = try! JSONEncoder().encode(v)
     return ReminderPrefs.decode(String(data: data, encoding: .utf8))
   }
@@ -80,30 +82,29 @@ struct ReminderGoldenTests {
     return c
   }
 
+  /// Golden của RN, bỏ hai lời nhắc đã gỡ (Koa Ecosystem V2, 02/11: "giữ chuỗi", "thưởng sắp hết
+  /// hạn"). Phần còn lại phải giữ nguyên thứ tự và giờ; ca nào RN có lời nhắc đã gỡ thì kế hoạch mới
+  /// chỉ được thêm lời nhắc muộn hơn vào cuối (chỗ trống do giới hạn số lời nhắc).
   @Test func plansMatchRN() {
     let g = Self.golden
     #expect(g.plans.count == 288)
-    var soonCases = 0
+    let retired = ["streak@", "challengeClaim@"]
     for c in g.plans {
       var cal = Calendar(identifier: .gregorian)
       cal.timeZone = TimeZone(identifier: c.tz)!
       let now = Date(timeIntervalSince1970: c.now / 1000)
       let plan = ReminderPlan.plan(Self.prefs(g.prefs[c.prefs]!), Self.context(c.ctx), now: now, calendar: cal)
       let got = plan.map { "\($0.key.rawValue)@\(Int64(($0.at.timeIntervalSince1970 * 1000).rounded()))" }
-      #expect(got == c.plan, "\(c.name)")
-      #expect(plan.compactMap { p in p.title.map { [$0, p.body ?? ""] } } == c.text, "\(c.name)")
-      // Chữ ký giống RN, trừ lời nhắc nhận thưởng "nửa tiếng nữa" (xem RN BUG
-      // trong `ReminderPlan.plan`): phần của nó là danh tính, không phải giờ.
-      let soon = c.now + 30 * 60 * 1000
-      let lateIds = plan.filter { $0.key == .challengeClaim && $0.at.timeIntervalSince1970 * 1000 == soon }
-      if lateIds.isEmpty {
+      #expect(!got.contains { g in retired.contains { g.hasPrefix($0) } }, "\(c.name)")
+      let kept = c.plan.filter { p in !retired.contains { p.hasPrefix($0) } }
+      if kept.count == c.plan.count {
+        #expect(got == c.plan, "\(c.name)")
+        #expect(plan.compactMap { p in p.title.map { [$0, p.body ?? ""] } } == c.text, "\(c.name)")
         #expect(ReminderPlan.signature(plan) == c.signature, "\(c.name)")
       } else {
-        soonCases += 1
-        #expect(ReminderPlan.signature(plan).contains("challengeClaim@soon:a"), "\(c.name)")
+        #expect(Array(got.prefix(kept.count)) == kept, "\(c.name)")
       }
     }
-    #expect(soonCases > 0, "golden phải phủ nhánh nửa-tiếng-nữa")
   }
 
   @Test func timingMatchesRN() {

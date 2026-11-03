@@ -42,27 +42,15 @@ struct KoaReminderTests {
     #expect(meals.allSatisfy { Self.hm($0.at) == "19:00" && !$0.habit })
   }
 
-  @Test func streakNudgeOnlyForARealStreakOnAnEmptyKnownDay() {
+  /// Koa Ecosystem V2 (02/11): không nhắc "giữ chuỗi", kể cả chuỗi dài và ngày trống.
+  @Test func noStreakNudgeEvenForALongStreak() {
     var p = ReminderPrefs.defaults
-    p.challengeClaim = false
+    p.streak = true
     var ctx = ReminderContext()
-    ctx.streak = 5
+    ctx.streak = 30
     ctx.loggedToday = false
     ctx.streakRiskTime = ReminderClock(hour: 19, minute: 0)
-    let plan = ReminderPlan.plan(p, ctx, now: Self.morning, calendar: Self.hcm)
-    #expect(plan.map(\.key) == [.streak])
-    #expect(plan.first.map { Self.hm($0.at) } == "19:00")
-    var short = ctx
-    short.streak = 2
-    #expect(ReminderPlan.plan(p, short, now: Self.morning, calendar: Self.hcm).isEmpty, "chuỗi < 3")
-    var logged = ctx
-    logged.loggedToday = true
-    #expect(ReminderPlan.plan(p, logged, now: Self.morning, calendar: Self.hcm).isEmpty, "đã ghi")
-    var unread = ctx
-    unread.loggedToday = nil
-    #expect(ReminderPlan.plan(p, unread, now: Self.morning, calendar: Self.hcm).isEmpty, "chưa đọc ≠ trống")
-    p.streak = false
-    #expect(ReminderPlan.plan(p, ctx, now: Self.morning, calendar: Self.hcm).isEmpty, "đã tắt")
+    #expect(!ReminderPlan.plan(p, ctx, now: Self.morning, calendar: Self.hcm).contains { $0.key == .streak })
   }
 
   @Test func emptyKoaContextKeepsTheRNPlan() {
@@ -111,7 +99,7 @@ struct KoaReminderTextTests {
   }
   struct Clock: WallClock { func now() -> Date { KoaReminderTests.morning } }
 
-  @Test func scheduledTextUsesHabitLineAndStreakCount() async {
+  @Test func scheduledTextUsesHabitLine() async {
     let os = Capture()
     let store = Store()
     store.set(KoaReminderTests.mealOn.encoded(), forKey: ReminderCenter.prefsKey)
@@ -120,16 +108,10 @@ struct KoaReminderTextTests {
     await c.refreshPermission()
     var ctx = ReminderContext()
     ctx.habitTimes = [.meal: ReminderClock(hour: 13, minute: 30)]
-    ctx.streak = 12
-    ctx.loggedToday = false
-    ctx.streakRiskTime = ReminderClock(hour: 19, minute: 0)
-    await c.setEnabled(.streak, true)
     await c.sync(ctx)
     let items = await os.items
     let meal = items.first { $0.key == .meal }
     #expect(meal?.text.body.hasPrefix("Giờ này mọi hôm") == true)
-    let streak = items.first { $0.key == .streak }
-    #expect(streak?.text.title == "Chuỗi 12 ngày đang chờ")
-    #expect(streak?.text.body.contains("12 ngày") == true)
+    #expect(!items.contains { $0.key == .streak })
   }
 }
