@@ -284,6 +284,13 @@ public struct ReminderContext: Sendable, Hashable {
   public var restDays: Set<Int> = []
   /// Câu của Koa khi người dùng đang quay lại (≥ 3 ngày nghỉ).
   public var koaWorkoutCopy: KoaWorkoutCopy?
+  /// Các câu thường của lời nhắc buổi tập, xoay vòng theo ngày (#800); trống = câu chung
+  /// của `ReminderCopy` như trước.
+  public var koaTrainingLines: [ReminderText] = []
+  /// Lời nhắc buổi tập cách nhau ít nhất ngần này ngày (#800: bị bỏ qua 3 lần liền → 2).
+  public var koaTrainingEvery = 1
+  /// Ngày (độ lệch từ hôm nay, ≤ 0) lời nhắc buổi tập gần nhất đã bắn; `nil` = chưa biết.
+  public var lastKoaTrainingOffset: Int?
   /// Lịch đã áp đổi lịch theo ngày (GĐ1): độ lệch ngày từ hôm nay → có buổi hay
   /// không. Có thì thắng `trainingDays` cho đúng ngày ấy (ngày dời / đổi thành
   /// nghỉ); `nil` = chỉ có lịch mẫu.
@@ -381,6 +388,8 @@ public enum ReminderPlan {
       }
     }
     let todayWeekday = routineIndex(at(now, 0, 12, 0, calendar), calendar: calendar)
+    var lastKoaTraining = ctx.lastKoaTrainingOffset
+    var lastLine: Int?
     for day in 0..<horizonDays {
       let isToday = day == 0
       let weekday = routineIndex(at(now, day, 12, 0, calendar), calendar: calendar)
@@ -415,16 +424,25 @@ public enum ReminderPlan {
       // Koa đợt 2: chỉ khi lịch và Gains đã đọc, có buổi hôm ấy, và người dùng không tự bật
       // lời nhắc buổi tập (một lời nhắc tập mỗi ngày là đủ).
       if prefs.koaTraining, !prefs.workout.enabled, let missed = ctx.missedDays,
-        planned == true, !(isToday && ctx.workedOutToday)
+        planned == true, !(isToday && ctx.workedOutToday),
+        KoaNudge.due(day: day, lastOffset: lastKoaTraining, every: ctx.koaTrainingEvery)
       {
         let m = KoaSchedule.missedOn(dayOffset: day, missedToday: missed, todayWeekday: todayWeekday, rest: ctx.restDays)
-        let text: ReminderText? = m >= KoaGains.comebackDays ? ctx.koaWorkoutCopy?.returning : nil
+        let habit = ctx.habitTimes[.workout] != nil
         let h = ctx.habitTimes[.workout] ?? ReminderClock(hour: KoaSchedule.defaultHabitHour, minute: 0)
         let when = at(now, day, h.hour, h.minute, calendar)
+        let text: ReminderText? =
+          m >= KoaGains.comebackDays
+          ? ctx.koaWorkoutCopy?.returning
+          : KoaNudge.line(ctx.koaTrainingLines, on: when, calendar: calendar, after: lastLine).map {
+            lastLine = $0.index
+            return ReminderText(title: $0.text.title, body: habit ? $0.text.habitBody ?? $0.text.body : $0.text.body)
+          }
         if when > now {
+          lastKoaTraining = day
           out.append(PlannedReminder(
             key: .koaTraining, at: when, title: text?.title, body: text?.body,
-            token: stamp(.koaTraining, when) + (text.map { "#\($0.title)" } ?? ""), habit: ctx.habitTimes[.workout] != nil))
+            token: stamp(.koaTraining, when) + (text.map { "#\($0.title)" } ?? ""), habit: habit))
         }
       }
     }

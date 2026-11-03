@@ -51,6 +51,7 @@ extension ReminderContext {
     ctx.missedDays = gains.state.missedDays
     ctx.restDays = gains.week.rest
     ctx.koaWorkoutCopy = ReminderCopyTable.koaWorkout(lang)
+    ctx.koaTrainingLines = ReminderCopyTable.koaTraining(lang)
     return ctx
   }
 }
