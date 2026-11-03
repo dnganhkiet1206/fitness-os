@@ -14,11 +14,21 @@ name: The Monday week card can be kept as is
         id: today.coach.keep
     commands:
       - takeScreenshot: 12-week-coach
+      # nút nằm dưới thanh Ghi nhanh khi Hôm nay có nhiều thẻ: kéo lên giữa màn rồi mới bấm
+      - scrollUntilVisible:
+          element:
+            id: today.coach.keep
+          direction: DOWN
+          centerElement: true
       - tapOn:
           id: today.coach.keep
       - extendedWaitUntil:
           notVisible:
             id: today.coach.keep
           timeout: 10000
+- scrollUntilVisible:
+    element:
+      id: today.plan.primary
+    direction: UP
 - assertVisible:
     id: today.plan.primary
