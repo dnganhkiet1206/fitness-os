@@ -21,6 +21,11 @@ name: Settings rows open
     timeout: 10000
 - takeScreenshot: 08-settings-reminders
 - runFlow: subflows/back.yaml
+# Đợi Cài đặt về hẳn (hết hiệu ứng quay lại) rồi mới cuộn (#801: từng đỏ ngắt quãng ở đây).
+- extendedWaitUntil:
+    visible:
+      id: settings.reminders
+    timeout: 10000
 - scrollUntilVisible:
     element:
       id: settings.changePassword
