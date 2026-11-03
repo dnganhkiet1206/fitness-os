@@ -150,6 +150,29 @@ import Testing
   }
 }
 
+@Suite struct GainsBreakdownTests {
+  private func d(_ t: String) -> LocalDate { LocalDate(t)! }
+
+  /// Màn tổng kết đọc phần cộng từ chính phép tính: ngày đổi lịch được tính là buổi trong lịch.
+  @Test func breakdownMatchesComputeAndHonoursOverrides() {
+    let mon = d("2026-11-02")
+    let override = DayOverride(date: mon, templateId: "t", isRest: false)
+    let week = KoaGains.Week(planned: [], rest: [], overrides: [mon: override])
+    let days = [KoaGains.Day(date: mon, personalRecord: true)]
+    let b = KoaGains.breakdown(days, week: week, on: mon)
+    #expect(b?.planned == true && b?.personalRecord == true)
+    #expect(b?.points == KoaGains.compute(days, week: week, today: mon).points)
+    #expect(KoaGains.breakdown(days, week: week, on: d("2026-11-03")) == nil)
+  }
+
+  @Test func fullWeekBonusIsReportedOnTheDayItLands() {
+    let week = KoaGains.Week(planned: [0, 2, 4], rest: [])
+    let days = ["2026-11-02", "2026-11-04", "2026-11-06"].map { KoaGains.Day(date: d($0), personalRecord: false) }
+    #expect(KoaGains.breakdown(days, week: week, on: d("2026-11-04"))?.fullWeek == false)
+    #expect(KoaGains.breakdown(days, week: week, on: d("2026-11-06"))?.fullWeek == true)
+  }
+}
+
 @Suite struct FirstSessionGainsTests {
   private let day = LocalDate("2026-11-02")!
 
