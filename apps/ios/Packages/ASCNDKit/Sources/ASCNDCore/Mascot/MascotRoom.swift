@@ -269,7 +269,7 @@ public final class MascotRoomController {
     }
     if wallet != nil { phase = .ready }
     await grantWelcomeIfNeeded()
-    await autoClaimStreak()
+    // Không còn 15 xu chuỗi mỗi ngày (Koa Ecosystem V2, 02/11): xu đến từ nhiệm vụ và Tuần của Koa.
   }
 
   /// Đọc lại sổ xu — sau khi bộ quan sát tự nhận một nhiệm vụ ở nơi khác.

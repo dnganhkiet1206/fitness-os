@@ -170,7 +170,7 @@ struct NutritionTodayCard: View {
     return VStack(alignment: .leading, spacing: 3) {
       // Icon cùng màu nhấn trước tên (19/10: "thêm icon cho macro").
       Label {
-        Text(verbatim: m.label)
+        Text(verbatim: m.label).lineLimit(1).minimumScaleFactor(0.75)
       } icon: {
         Text(verbatim: m.food)
       }

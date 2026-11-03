@@ -70,17 +70,7 @@ struct RemindersView: View {
       }
 
       Section {
-        Toggle(isOn: binding(.challengeClaim)) {
-          RowTitle(
-            title: String(localized: "reminders.claim.title"), subtitle: String(localized: "reminders.claim.desc"),
-            systemImage: "trophy", color: DS.Color.metricOrangeGraphic)
-        }
-        // Koa đợt 2B: chuỗi ≥ 3 ngày mà hôm nay chưa ghi gì → một lời nhắc, giờ muộn của bạn.
-        Toggle(isOn: binding(.streak)) {
-          RowTitle(
-            title: String(localized: "reminders.streak.title"), subtitle: String(localized: "reminders.streak.desc"),
-            systemImage: "flame.fill", color: DS.Color.metricOrangeGraphic)
-        }
+        // Bỏ nhắc "giữ chuỗi" và "thưởng sắp hết hạn" (Koa Ecosystem V2, 02/11): không nhắc bằng sợ mất.
         // Koa đợt 2: một lời nhắc mỗi ngày có buổi trong lịch, đúng giờ quen tập.
         Toggle(isOn: binding(.koaTraining)) {
           RowTitle(
@@ -108,8 +98,8 @@ struct RemindersView: View {
     .navigationTitle(Text(String(localized: "reminders.title")))
     .ascndPage()
     .sensoryFeedback(.selection, trigger: center.prefs)
+    // Không kéo để làm mới (Kiệt 01/11): cài đặt nhắc nằm trên máy, không có gì để tải lại.
     .task { await load() }
-    .refreshable { await load() }
   }
 
   /// Koa đang nhắc khoá này theo giờ quen (đợt 2B): bật, còn giờ mặc định, có thói quen.

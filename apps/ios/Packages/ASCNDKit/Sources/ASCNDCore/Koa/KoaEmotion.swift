@@ -6,8 +6,6 @@ public enum KoaEmotion {
     case idle, happy, sad, tired, sleep, celebrate, curl, worry, proud, rested, oops, hat, coat
     /// Đợt 2 (sống theo lịch, 20/10): đợi ở phòng tập — cầm tạ khởi động, mặt gồng sức.
     case warmup
-    /// Đợt 2: tụt hạng sau 7 ngày không tập — mắt mệt, đứng (không phải ngồi thiền).
-    case deflated
   }
 
   /// `DEV_EMOTIONS`: các cảm xúc thanh DEV của phòng linh vật cho ép, đúng thứ tự.
@@ -51,7 +49,6 @@ public enum KoaEmotion {
     // Cầm tạ thì mặt GỒNG SỨC như bản thiết kế (`KoaSheetView.poseFace[.lifting]`);
     // mặt vui vẻ thường trên tư thế tạ đọc ra "không có biểu cảm" (20/10, chủ dự án).
     .warmup: State(.strain, .lifting),
-    .deflated: State(.tired, .idle),
     .coat: State(.happy, .idle),
   ]
 

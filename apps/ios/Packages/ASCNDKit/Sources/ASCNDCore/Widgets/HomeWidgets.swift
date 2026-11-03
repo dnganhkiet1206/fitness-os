@@ -268,14 +268,17 @@ public struct WidgetDataStore: Sendable {
     "koa-widget-\(night ? "night" : "day")-\(dark ? "dark" : "light").png"
   }
 
-  private let suite: String
+  /// Ảnh Koa của Live Activity quãng nghỉ.
+  public static func restImageName(_ koa: RestKoa) -> String { "koa-rest-\(koa.rawValue).png" }
+
+  let suite: String
 
   public init(suite: String = WidgetDataStore.appGroup) {
     self.suite = suite
   }
 
   /// `nil` khi App Group chưa được cấp (máy dev chưa ký): mọi thao tác là no-op.
-  private var defaults: UserDefaults? { UserDefaults(suiteName: suite) }
+  var defaults: UserDefaults? { UserDefaults(suiteName: suite) }
 
   public func write(_ today: TodayWorkoutWidgetData, _ streak: StreakReadinessWidgetData) {
     guard let d = defaults else { return }
@@ -333,11 +336,15 @@ public struct WidgetDataStore: Sendable {
     defaults?.removeObject(forKey: Self.todayWorkoutKey)
     defaults?.removeObject(forKey: Self.streakReadinessKey)
     defaults?.removeObject(forKey: Self.koaKey)
+    defaults?.removeObject(forKey: Self.mealKey)
     if let dir = containerURL {
       for night in [false, true] {
         for dark in [false, true] {
           try? FileManager.default.removeItem(at: dir.appendingPathComponent(Self.koaImageName(night: night, dark: dark)))
         }
+      }
+      for koa in RestKoa.allCases {
+        try? FileManager.default.removeItem(at: dir.appendingPathComponent(Self.restImageName(koa)))
       }
     }
   }

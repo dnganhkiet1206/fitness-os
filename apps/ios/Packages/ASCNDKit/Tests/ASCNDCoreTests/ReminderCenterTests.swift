@@ -263,25 +263,17 @@ struct ReminderCenterTests {
     #expect(store.string(forKey: ReminderCenter.planKey)?.split(separator: "|").count == 64)
   }
 
-  /// RN BUG (xem `ReminderPlan.plan`): lời nhắc nhận thưởng "nửa tiếng nữa"
-  /// đổi chữ ký ở mỗi lần dựng → huỷ-đặt lại liên tục và đẩy lùi giờ bắn.
-  /// Native: đặt một lần, các lần đồng bộ sau (phút sau) không ghi lại.
-  @Test func lateClaimNudgeIsLaidDownOnce() async {
+  /// Koa Ecosystem V2 (02/11): không còn nhắc "thưởng sắp hết hạn".
+  @Test func claimNudgesAreRetired() async {
     let store = MemoryStore()
     let os = FakeCenter(granted: true)
     let noon = hcm.date(from: DateComponents(year: 2026, month: 10, day: 5, hour: 12))!
     var ctx = ReminderContext()
     ctx.pendingClaims = [PendingClaim(id: "c1", title: "Thử thách", claimBy: "2026-10-05", rewardCoins: 100, body: "Nhận 100 xu")]
-    let first = center(store, os, at: noon)
-    await first.refreshPermission()
-    await first.sync(ctx)
-    let laid = await os.pending
-    #expect(laid.count == 1 && laid[0].at == noon.addingTimeInterval(1800) && laid[0].text.title == "Thử thách")
-    let later = center(store, os, at: noon.addingTimeInterval(60))
-    await later.refreshPermission()
-    await later.sync(ctx)
-    #expect(await os.writes == 1)
-    #expect(await os.pending.first?.at == noon.addingTimeInterval(1800), "không bị đẩy lùi")
+    let c = center(store, os, at: noon)
+    await c.refreshPermission()
+    await c.sync(ctx)
+    #expect(await !os.pending.contains { $0.key == .challengeClaim })
   }
 
   /// Giờ thông minh: áp MỘT LẦN, chỉ lên giờ mặc định gõ tay, chỉ khi người
@@ -463,5 +455,56 @@ struct ReminderCopyTableTests {
     // Giọng Koa (đợt 2B) thay chữ RN.
     #expect(ReminderCopyTable.copy(.vi)[.bedtime]?.title == "Sắp tới giờ ngủ")
     #expect(ReminderCopyTable.copy(.vi)[.meal]?.body.contains("Koa") == true)
+  }
+}
+
+/// Xin quyền đúng lúc và sổ lời nhắc bị bỏ qua (#800).
+@MainActor
+struct ReminderNudgeCenterTests {
+  /// Có lịch tập đầu tiên → hỏi quyền MỘT lần; mở app không hỏi.
+  @Test func asksOnceAfterTheFirstSchedule() async {
+    let store = MemoryStore()
+    let os = FakeCenter()
+    let c = center(store, os)
+    await c.refreshPermission()
+    #expect(await os.requests == 0, "mở app không xin quyền")
+    await c.askAfterSchedule()
+    #expect(await os.requests == 1)
+    #expect(c.permission)
+    await c.askAfterSchedule()
+    #expect(await os.requests == 1, "chỉ một lần mỗi máy")
+  }
+
+  @Test func doesNotAskWhenWorkoutRemindersAreOffOrAlreadyGranted() async {
+    let store = MemoryStore()
+    let os = FakeCenter()
+    let c = center(store, os)
+    await c.setEnabled(.koaTraining, false)
+    let before = await os.requests
+    await c.askAfterSchedule()
+    #expect(await os.requests == before, "tắt cả hai lời nhắc buổi tập → không hỏi")
+
+    let granted = FakeCenter(granted: true)
+    let g = center(MemoryStore(), granted)
+    await g.askAfterSchedule()
+    #expect(await granted.requests == 0, "đã có quyền → không hỏi")
+  }
+
+  /// Sổ lời nhắc theo tài khoản: đăng xuất thì xoá.
+  @Test func nudgeLedgerIsUserScoped() async {
+    let store = MemoryStore()
+    let c = center(store, FakeCenter(granted: true))
+    await c.refreshPermission()
+    c.noteOpened(.koaTraining)
+    #expect(store.string(forKey: ReminderCenter.nudgeKey) != nil)
+    await c.clearUserScoped()
+    #expect(store.string(forKey: ReminderCenter.nudgeKey) == nil)
+  }
+
+  @Test func onlyTheWorkoutReminderIsTracked() async {
+    let store = MemoryStore()
+    let c = center(store, FakeCenter(granted: true))
+    c.noteOpened(.meal)
+    #expect(store.string(forKey: ReminderCenter.nudgeKey) == nil)
   }
 }

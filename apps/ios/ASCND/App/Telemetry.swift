@@ -1,3 +1,4 @@
+import ASCNDCore
 import Foundation
 import PostHog
 import Sentry
@@ -34,14 +35,24 @@ enum Telemetry {
     case gainsEarned = "gains_earned"
     case koaRankUp = "koa_rank_up"
     case questClaimed = "quest_claimed"
-    case pumpLost = "pump_lost"
     case comebackShown = "comeback_shown"
     case comebackSession = "comeback_session"
     case notificationOpened = "notification_opened"
+    // Phòng Koa (01/11): có ai ghé phòng không. Lượt ở phòng gửi theo khoảng, xem `KoaRoomVisit`.
+    case koaRoomOpened = "koa_room_opened"
+    case koaRoomLeft = "koa_room_left"
+    case koaItemBought = "koa_item_bought"
+    case koaRoomCleaned = "koa_room_cleaned"
     // Đợt 3 — kích hoạt.
     case scheduleCreated = "schedule_created"
     case firstSessionStarted = "first_session_started"
     case firstSessionCompleted = "first_session_completed"
+    // Koa Ecosystem (#793): tương tác Koa có ý nghĩa (`docs/KOA_ECOSYSTEM.md` §5), thuộc tính ở `KoaAnalytics`.
+    case koaMomentShown = "koa_moment_shown"
+    case journeyOpened = "journey_opened"
+    case rhythmViewed = "rhythm_viewed"
+    case pauseStarted = "pause_started"
+    case pauseEndedEarly = "pause_ended_early"
   }
 
   private static var analytics = false
@@ -106,6 +117,19 @@ enum Telemetry {
   static func capture(_ event: Event, _ props: [String: String] = [:]) {
     guard analytics else { return }
     PostHogSDK.shared.capture(event.rawValue, properties: props)
+  }
+
+  /// Gửi một lần cho mỗi `key` của tài khoản, cả qua nhiều lần mở app (`TelemetryLedger` trong
+  /// UserDefaults). Tắt đo lường thì không gửi và không ghi gì.
+  static func once(_ event: Event, key: String, userId: String, _ props: [String: String] = [:]) {
+    guard analytics else { return }
+    let storeKey = "telemetry.once.\(userId)"
+    let d = UserDefaults.standard
+    var ledger = d.data(forKey: storeKey).flatMap { try? JSONDecoder().decode(TelemetryLedger.self, from: $0) }
+      ?? TelemetryLedger()
+    guard ledger.insert("\(event.rawValue):\(key)") else { return }
+    if let data = try? JSONEncoder().encode(ledger) { d.set(data, forKey: storeKey) }
+    capture(event, props)
   }
 
   /// Mỗi lần app ra tiền cảnh: kèm số ngày kể từ lần mở đầu tiên (ngày 1 / ngày 7…).

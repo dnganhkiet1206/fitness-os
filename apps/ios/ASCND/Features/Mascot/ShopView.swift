@@ -750,10 +750,7 @@ struct ShopView: View {
         return stop(got, of: buying.count, Self.message(f))
       }
     }
-    if got > 0 {
-      bought += 1
-      onWalletChange()
-    }
+    noteBought(got)
     for change in changes {
       let result: MascotShopBook.WearOutcome
       if let key = change.key {
@@ -775,11 +772,15 @@ struct ShopView: View {
     if notice == nil, got > 0 { notice = Notice(text: String(localized: "shop.bought"), good: true) }
   }
 
+  private func noteBought(_ got: Int) {
+    guard got > 0 else { return }
+    bought += 1
+    onWalletChange()
+    Telemetry.capture(.koaItemBought, ["items": String(got)])
+  }
+
   private func stop(_ got: Int, of total: Int, _ why: String) {
-    if got > 0 {
-      bought += 1
-      onWalletChange()
-    }
+    noteBought(got)
     notice = Notice(
       text: got > 0 ? String(localized: "wd.partial \(got) \(total) \(why)") : why, good: false)
   }

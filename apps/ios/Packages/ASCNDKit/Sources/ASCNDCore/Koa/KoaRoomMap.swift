@@ -28,6 +28,8 @@ public enum KoaRoomMap {
 
   /// Bục cao bao nhiêu (mặt trên y 381–442, mặt trước xuống tới 466).
   public static let stageHeight = 24.0
+  /// Bề ngang Koa trong phòng, theo tỉ lệ tranh khung dọc. Đồ mặc vẽ chung với Koa nên to theo.
+  public static let heroWidth = 152.0
   /// Mặt bục trên sàn (chân bục): elip tâm (195, 435,5), bán trục 137 × 30,5.
   public static let stageCenter = (x: 195.0, d: 435.5)
   public static let stageRadius = (x: 137.0, d: 30.5)

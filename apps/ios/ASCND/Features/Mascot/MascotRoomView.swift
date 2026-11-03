@@ -42,8 +42,9 @@ struct MascotRoomView: View {
   @AppStorage(KoaSound.offKey) private var soundOff = false
   /// Giờ hiện tại, đổi mỗi phút: tới giờ ngủ khi đang mở phòng thì Koa đi ngủ ngay.
   @State private var clock = Date.now
-  /// Đã cuộn hết phòng: tiêu đề hiện trên thanh điều hướng.
-  @State private var pastStage = false
+  /// Lúc Koa bắt đầu chạy tới kéo bảng; `nil` = bảng đang đóng.
+  @State private var pullStart: Date?
+  @State private var lens = KoaLens()
   /// Số trên bảng tường (29/10, Kiệt: người dùng chọn) — lưu trên máy.
   @AppStorage("koa.roomBoard") private var boardStat = RoomBoard.Stat.rank.rawValue
   @Environment(\.weightUnit) private var unit
@@ -62,10 +63,11 @@ struct MascotRoomView: View {
 
   var body: some View {
     content
-      // Bố cục tràn viền (Kiệt 31/10): phòng phủ tới mép màn, không có tiêu đề; tiêu đề chỉ
-      // hiện trên thanh điều hướng khi đã cuộn hết phòng.
-      .navigationTitle(Text(verbatim: pastStage ? String(localized: "mr.title") : ""))
+      // Phòng chiếm cả màn (01/11, Kiệt), thanh tab nhường chỗ.
+      .navigationTitle(Text(verbatim: ""))
       .navigationBarTitleDisplayMode(.inline)
+      .toolbar(.hidden, for: .tabBar)
+      .hidesQuickLog()
       .toolbar {
         ToolbarItem(placement: .topBarTrailing) {
           Button {
@@ -86,11 +88,18 @@ struct MascotRoomView: View {
         if let shop, case .loading = shop.phase { await shop.load() }
         await services.loadKoaDust(userId: room.userId)
       }
-      .refreshable {
-        await room.load()
-        await shop?.load()
-        await services.loadKoaDust(userId: room.userId)
-      }
+      #if DEBUG
+        // soát phòng ngủ: ép giờ ngủ mà không chờ tới đêm
+        .task {
+          if ProcessInfo.processInfo.arguments.contains("-koaForceSleep") { devEmotion = .sleep }
+        }
+        // soát cảnh kéo thẻ từng khung: tự bấm nút sau vài giây
+        .task {
+          guard ProcessInfo.processInfo.arguments.contains("-koaAutoPull") else { return }
+          try? await Task.sleep(for: .seconds(9))
+          withAnimation(.easeOut(duration: 0.15)) { pullStart = .now }
+        }
+      #endif
       .onReceive(Timer.publish(every: 30, on: .main, in: .common).autoconnect()) { clock = $0 }
       .onChange(of: room.welcomeGranted) { _, amount in
         guard let amount else { return }
@@ -118,21 +127,118 @@ struct MascotRoomView: View {
         DSErrorView(message: String(localized: "async.error.generic")) { Task { await room.load() } }
       }
     case .ready:
-      ScrollView {
-        VStack(spacing: 0) {
+      GeometryReader { g in
+        let height = g.size.height + g.safeAreaInsets.top + g.safeAreaInsets.bottom
+        let k = g.size.width / StudioScene.width
+        // bục (y 436 của tranh) nằm ở 3/4 màn như mock
+        let drop = max(0, height * 0.75 - 436 * k)
+        let _ = (lens.drop = drop)
+        ZStack(alignment: .top) {
+          StudioTallRoom(drop: drop, lens: lens)
           stage
-          sheet
+            // hai mép tranh tan vào tường cao và sàn, không lộ đường nối
+            .mask {
+              VStack(spacing: 0) {
+                LinearGradient(colors: [.clear, .black], startPoint: .top, endPoint: .bottom).frame(height: 70)
+                Color.black
+                LinearGradient(colors: [.black, .clear], startPoint: .top, endPoint: .bottom).frame(height: 28)
+              }
+            }
+            .offset(y: drop)
+        }
+        // phòng sáng tối theo giờ trên máy, thanh và bảng vẫn theo giao diện của app
+        .environment(\.colorScheme, daytime ? .light : .dark)
+        .ignoresSafeArea()
+      }
+      .ignoresSafeArea()
+      .overlay(alignment: .bottom) {
+        if pullStart == nil { roomBar.transition(.opacity) }
+      }
+      .overlay {
+        if let pullStart {
+          KoaPullScene(
+            start: pullStart, lens: lens, equipped: shop?.inventory.filter(\.equipped).map(\.itemKey) ?? [],
+            build: room.gains.rank, asleep: lens.bedroom, daytime: daytime, taunt: pullTaunt, close: closePanel
+          ) {
+            ScrollView { sheet }
+              .refreshable {
+                await room.load()
+                await shop?.load()
+                await services.loadKoaDust(userId: room.userId)
+              }
+          }
+          // Koa của cảnh diễn phải có ngay khung đầu: mờ dần thì sân khấu trống một nhịp
+          .transition(.asymmetric(insertion: lens.bedroom ? .move(edge: .bottom) : .identity, removal: .opacity))
         }
       }
-      .ignoresSafeArea(edges: .top)
-      .modifier(KoaTopEdge(hidden: !pastStage))
-      .onScrollGeometryChange(for: Bool.self) { g in
-        g.contentOffset.y + g.contentInsets.top > g.containerSize.width * StudioScene.sceneBottom / StudioScene.width - 90
-      } action: { _, past in
-        pastStage = past
-      }
-      .background(DS.Color.background.swiftUI)
     }
+  }
+
+  private var daytime: Bool {
+    #if DEBUG
+      let args = ProcessInfo.processInfo.arguments
+      if let i = args.firstIndex(of: "-koaHour"), i + 1 < args.count, let hour = Int(args[i + 1]) {
+        return KoaDaylight.isDay(hour: hour)
+      }
+    #endif
+    return KoaDaylight.isDay(at: clock)
+  }
+
+  private var roomMoment: KoaJourney.Moment? { KoaMomentsStore.next(services, userId: room.userId, today: room.today) }
+
+  private var companionFacts: KoaCompanion.Facts {
+    var f = KoaCompanion.Facts(gains: room.gains, today: room.today, mood: moodRead.reason)
+    f.milestone = roomMoment != nil
+    return f
+  }
+
+  /// Câu khích của Koa lúc kéo thẻ, theo số việc thật.
+  private var pullTaunt: String {
+    let total = room.activeQuests.count
+    if total > 0, questsDone >= total { return String(localized: "koa.pull.done") }
+    if questsDone == 0 { return String(localized: "koa.pull.none \(total)") }
+    return String(localized: "koa.pull.some \(total - questsDone)")
+  }
+
+  private func closePanel() {
+    withAnimation(.easeOut(duration: 0.25)) { pullStart = nil }
+  }
+
+  /// Nút mở bảng: nhiệm vụ còn lại nằm ngay trên nút, khỏi phải mở mới biết.
+  private var roomBar: some View {
+    VStack(spacing: DS.Spacing.sm) {
+      if let notice {
+        Text(notice)
+          .font(DS.TextStyle.footnote.weight(.semibold))
+          .padding(.horizontal, DS.Spacing.md)
+          .padding(.vertical, DS.Spacing.sm)
+          .todayGlass(cornerRadius: 18, solid: false)
+          .transition(.opacity)
+      }
+      Button {
+        withAnimation(.easeOut(duration: 0.15)) { pullStart = .now }
+      } label: {
+        HStack(spacing: DS.Spacing.sm) {
+          EnergyRing(segments: questSegments, lineWidth: 4, gap: 8)
+            .frame(width: 30, height: 30)
+          Text(String(localized: "mr.panel.open \(questsDone) \(room.activeQuests.count)"))
+            .font(DS.TextStyle.headline)
+            .foregroundStyle(DS.Color.foreground.swiftUI)
+          Spacer(minLength: 0)
+          Image(systemName: "chevron.up")
+            .font(.system(size: 14, weight: .semibold))
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        }
+        .padding(.horizontal, DS.Spacing.md)
+        .frame(minHeight: 56)
+        .contentShape(Rectangle())
+      }
+      .buttonStyle(TodayPressStyle())
+      .todayGlass(cornerRadius: 28, solid: false)
+      .accessibilityIdentifier("koa.room.panel")
+    }
+    .padding(.horizontal, DS.Spacing.md)
+    .padding(.bottom, DS.Spacing.sm)
   }
 
   /// Nội dung dưới phòng: thẻ bo góc phủ lên mép sàn, thay cho viền mờ.
@@ -141,14 +247,6 @@ struct MascotRoomView: View {
           #if DEBUG
             devBar
           #endif
-          if let notice {
-            Text(notice)
-              .font(DS.TextStyle.footnote.weight(.semibold))
-              .padding(.horizontal, DS.Spacing.md)
-              .padding(.vertical, DS.Spacing.sm)
-              .frame(maxWidth: .infinity)
-              .dsCard(radius: 22)
-          }
           // Kiểu Apple Health (Kiệt duyệt 24/10): thẻ tóm tắt, chi tiết ở màn con.
           dustCard
           // Năng lượng + nhiệm vụ gộp một thẻ, chuỗi bỏ khỏi phòng (29/10, Kiệt).
@@ -163,8 +261,6 @@ struct MascotRoomView: View {
         .padding(DS.Spacing.md)
         .padding(.top, DS.Spacing.sm)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(DS.Color.background.swiftUI, in: UnevenRoundedRectangle(topLeadingRadius: 28, topTrailingRadius: 28))
-        .padding(.top, -KoaBedroom.tail)
   }
 
   private func sectionTitle(_ t: String) -> some View {
@@ -245,9 +341,20 @@ struct MascotRoomView: View {
         },
         dust: devDust ?? dust?.level ?? 0, walks: true,
         // sự kiện thật cho ký ức của Koa; Gains chưa tải xong thì chưa có gì để nói
-        companion: room.gains == .zero
-          ? nil : KoaCompanion.Facts(gains: room.gains, today: room.today, mood: moodRead.reason),
-        userId: room.userId, sleep: KoaMood.SleepWindow(profile: profile?.profile))
+        companion: room.gains == .zero ? nil : companionFacts,
+        userId: room.userId, sleep: KoaMood.SleepWindow(profile: profile?.profile),
+        talkLine: { beat in
+          // mốc hành trình: cùng nguồn với Hôm nay, nói rồi thì nơi nào cũng không nhắc lại
+          if beat.topic == .milestone, let m = roomMoment {
+            KoaMomentsStore.markSeen(m.id, userId: room.userId)
+            Telemetry.once(
+              .koaMomentShown, key: KoaAnalytics.momentKey(m, place: .room), userId: room.userId,
+              KoaAnalytics.momentProps(m, place: .room))
+            return KoaMomentsStore.line(m, lang: AppPreferences.Lang(rawValue: String(Locale.current.identifier.prefix(2))) ?? .vi)
+          }
+          return KoaTalkLine.text(beat, signals: room.signals, profile: profile?.profile)
+        }, lens: lens,
+        offStage: pullStart != nil && !lens.bedroom)
         .sensoryFeedback(.selection, trigger: boardStat)
   }
 
@@ -299,6 +406,7 @@ struct MascotRoomView: View {
       say(f == .insufficientCoins ? String(localized: "shop.notenough") : Self.message(f))
     } else {
       say(String(localized: "mr.dust.cleaned"))
+      Telemetry.capture(.koaRoomCleaned)
       devDust = nil
       await room.load()
     }
@@ -319,7 +427,7 @@ struct MascotRoomView: View {
   /// Dáng trong phòng: đủ tuần → ăn mừng, vừa tập → ta-da, lỡ buổi → hờn dỗi, mệt →
   /// mệt lả, chưa ghi gì → tò mò. Đêm / ngủ / buồn giữ dáng của cảm xúc.
   private var roomGesture: KoaGesture? {
-    if [.sleep, .sad, .deflated].contains(mood) { return nil }
+    if [.sleep, .sad].contains(mood) { return nil }
     return KoaGesture.pick(
       trainedToday: room.gains.lastSession == room.today, weekComplete: koaWeekState?.complete ?? false,
       missedPlanned: room.gains.missedBefore(room.today) >= 1, tired: mood == .tired, loggedAnything: room.energyCount > 0, mood: mood)
@@ -745,7 +853,9 @@ struct MascotRoomView: View {
 
   private var koaWeekState: KoaWeek.State? {
     guard let flow else { return nil }
-    return KoaWeek.state(today: flow.today.today, library: flow.today.library, trained: flow.today.trained)
+    return KoaWeek.state(
+      today: flow.today.today, library: flow.today.library, trained: flow.today.trained,
+      pause: services.koaPause(userId: flow.today.userId, today: flow.today.today))
   }
 
   // MARK: - Việc
@@ -865,6 +975,12 @@ struct MascotStage: View {
   var userId = ""
   /// Giờ ngủ của người này: Koa trầm dần trước giờ ngủ.
   var sleep = KoaMood.SleepWindow.standard
+  /// Câu chữ của một nhịp trò chuyện.
+  var talkLine: ((KoaTalk.Beat) -> String?)?
+  /// Khung máy quay cho tiền cảnh.
+  var lens: KoaLens?
+  /// Koa đang chạy đi kéo bảng: sân khấu nhường chỗ cho Koa của cảnh diễn.
+  var offStage = false
 
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Environment(\.scenePhase) private var scenePhase
@@ -876,6 +992,8 @@ struct MascotStage: View {
   #endif
   /// Lần cuối người xem ở phòng (giây epoch) — quyết định chào hay chỉ nhìn.
   @AppStorage("koa.room.seen") private var seenAt = 0.0
+  /// Lượt ở phòng cho đo lường.
+  @State private var visit = KoaRoomVisit()
   #if DEBUG
     /// Lớp debug: sân khấu, sàn, vùng chặn, chỗ ghé, đích, đường đi, hành vi (chỉ bản Debug).
     @AppStorage("koa.debug.map") private var debugMap = false
@@ -918,16 +1036,17 @@ struct MascotStage: View {
     // và koa bản cũ phải giữ y nguyên ở bản tối, bản buổi sáng mới là tắt đèn").
     // Cả hai bản có lớp chiều sâu.
     o.lamp = scheme == .dark
-    o.depth = true
+    o.depth = !walks
     o.lang = lang
+    // phòng chính: tường, cửa sổ, đèn, sàn đã vẽ mới ở `StudioTallRoom`
+    if walks { o.omit = StudioTall.omit(o) }
     return o
   }
 
   /// Phòng vẽ sẵn, luôn đủ mọi lớp.
   private var backdrop: StudioScene.Options { studio }
 
-  /// `HERO_W = round(128 / 0.93)`.
-  private static let heroWidth = 138.0
+  private static var heroWidth: Double { KoaRoomMap.heroWidth }
 
   /// (a) Người xem tới phòng: đi vắng từ 5 phút thì Koa chào đầy đủ (nhìn trước, lại gần);
   /// mới rời đi thì chỉ nhìn — không chào đi chào lại mỗi lần mở.
@@ -935,12 +1054,38 @@ struct MascotStage: View {
     guard walks, !reduceMotion, !benchMode else { return }
     let away = Date.now.timeIntervalSince1970 - seenAt
     seenAt = Date.now.timeIntervalSince1970
+    if away >= 300 { director.pushIn() }
     director.request(away >= 300 ? .greet : .notice)
+    director.openTalk(greeting: away >= 300, userId: userId, day: companion?.day ?? "")
+  }
+
+  private func openVisit() {
+    guard walks, visit.open(at: Date.now.timeIntervalSince1970) else { return }
+    Telemetry.capture(.koaRoomOpened)
+  }
+
+  private func closeVisit() {
+    guard let props = visit.close(at: Date.now.timeIntervalSince1970) else { return }
+    Telemetry.capture(.koaRoomLeft, props)
   }
 
   /// Chỉ đi được khi Koa đang đứng (ngồi thiền / cầm tạ thì ở yên).
   private var canWalk: Bool {
     walks && KoaEmotion.state(emotion).pose == .idle
+  }
+
+  /// Phòng nhiều lớp theo máy quay (01/11). Giảm chuyển động: phòng một lớp như cũ.
+  private var layered: Bool {
+    #if DEBUG
+      // đo so sánh: `-koaFlat` chạy phòng một lớp
+      if ProcessInfo.processInfo.arguments.contains("-koaFlat") { return false }
+    #endif
+    return walks && !reduceMotion
+  }
+
+  /// Phòng nhiều lớp vẽ trong đồng hồ của sân khấu (`livingHero`), đây chỉ giữ khung.
+  @ViewBuilder private var roomBase: some View {
+    if layered { Color.clear } else { StudioBackdrop(options: backdrop) }
   }
 
   /// Đang ngủ và đã tới chỗ: sang phòng ngủ gác mái, sân khấu nghỉ hẳn.
@@ -955,23 +1100,21 @@ struct MascotStage: View {
     // không có dòng "Cấp N" dưới sân khấu (RN cũng không) — thẻ cấp ngay dưới nói rồi
     let tail = walks ? KoaBedroom.tail : 0
     let asleep = bedShown
-    let koaAway = bedShown || wakeScene != nil
+    let koaAway = bedShown || wakeScene != nil || offStage
     ZStack {
-      StudioBackdrop(options: backdrop)
+      roomBase
         .overlay {
           GeometryReader { g in
             ZStack(alignment: .topLeading) {
               if walks {
                 floorTaps(g.size.width)
-                // Koa của sân khấu nhường chỗ ngay cho Koa của cảnh đi ngủ, không trôi theo phòng
-                livingHero(g.size.width).opacity(koaAway ? 0 : 1).animation(nil, value: koaAway)
+                livingHero(g.size.width, away: koaAway)
               } else {
                 hero(g.size.width)
               }
             }
           }
         }
-        .background(walks ? Self.floorEdge(light: scheme == .light) : .clear)
         // lia ngang: Koa đi sang phải, phòng trôi sang trái
         .visualEffect { content, proxy in content.offset(x: asleep ? -proxy.size.width : 0) }
       if asleep { KoaBedroomView(equipped: equipped, build: build, scene: bedScene, wake: wakeScene).transition(.move(edge: .trailing)) }
@@ -996,6 +1139,8 @@ struct MascotStage: View {
     }
     .clipped()
     .animation(reduceMotion ? nil : .timingCurve(0.42, 0, 0.58, 1, duration: KoaBedtime.pan), value: asleep)
+    .onChange(of: bedShown, initial: true) { _, shown in lens?.bedroom = shown }
+    .onChange(of: studio, initial: true) { _, o in lens?.options = o }
     .onChange(of: inBedroom, initial: true) { old, now in
       if now {
         wakeScene = nil
@@ -1039,6 +1184,7 @@ struct MascotStage: View {
     .frame(maxWidth: .infinity)
     .accessibilityElement(children: .ignore)
     .accessibilityLabel(Text(String(localized: "mr.stage.a11y \(level)")))
+    .accessibilityIdentifier("koa.stage.\(director.plane)")
     .accessibilityAction(named: Text("mr.walk.a11y")) {
       guard canWalk else { return }
       if reduceMotion { director.place(KoaRoomMap.user) } else { director.request(.greet) }
@@ -1058,17 +1204,23 @@ struct MascotStage: View {
     }
     // theo cảm xúc, không theo `canWalk`: từ dáng ngồi khác sang ngủ thì `canWalk` không đổi
     .onChange(of: emotion) { settle() }
-    .onAppear { arrive() }
+    .onAppear {
+      openVisit()
+      arrive()
+    }
     .onDisappear {
       seenAt = Date.now.timeIntervalSince1970
       director.save()
+      closeVisit()
     }
     .onChange(of: scenePhase) { _, phase in
       if phase == .active {
+        openVisit()
         arrive()
       } else {
         seenAt = Date.now.timeIntervalSince1970
         director.save()
+        closeVisit()
       }
     }
     // vừa dọn phòng: Koa ngoái nhìn kệ
@@ -1090,11 +1242,6 @@ struct MascotStage: View {
     if !canWalk, reduceMotion, emotion == .sleep ? !director.inBed : !director.settled {
       director.place(emotion == .sleep ? KoaRoomMap.door : KoaRoomMap.stageMark)
     }
-  }
-
-  /// Màu nền dưới mép sàn của phòng chính, phần nằm dưới thẻ nội dung.
-  private static func floorEdge(light: Bool) -> Color {
-    light ? Color(red: 0.86, green: 0.8, blue: 0.72) : Color(red: 0.03, green: 0.04, blue: 0.11)
   }
 
   private static func wallPlan(light: Bool) -> [KoaPaint.Op] {
@@ -1128,12 +1275,14 @@ struct MascotStage: View {
     return Color.clear
       .contentShape(Rectangle())
       .frame(width: width, height: (bottom - top) * k)
-      .offset(y: top * k)
+      // chạm tính từ đỉnh vùng sàn: `.offset` phải nằm ngoài cử chỉ, không thì `p.y` đã gồm `top`
       .onTapGesture(coordinateSpace: .local) { p in
         guard canWalk else { return }
-        let s = KoaRoomMap.spot(screenX: p.x / k, y: p.y / k + top)
+        let s = KoaParallax.floorTap(x: p.x, y: p.y, scale: k, top: top, zoom: layered ? director.shot.zoom : 1)
+        visit.walked()
         if reduceMotion { director.place(s) } else { director.request(.walkTo(s)) }
       }
+      .offset(y: top * k)
       .accessibilityHidden(true)
   }
 
@@ -1142,17 +1291,30 @@ struct MascotStage: View {
 
   /// Koa sống trong phòng theo `KoaDirectorDriver`. Giảm chuyển động / rời màn / app ra
   /// nền: đồng hồ dừng, Koa đứng nguyên chỗ (như trước khi có đạo diễn).
-  private func livingHero(_ width: CGFloat) -> some View {
+  /// `away`: Koa của sân khấu nhường chỗ ngay cho Koa của cảnh đi ngủ, không trôi theo phòng.
+  private func livingHero(_ width: CGFloat, away: Bool) -> some View {
     let running = !reduceMotion && onScreen && scenePhase == .active && !inBedroom && !bedShown && wakeScene == nil
+    let height = width / StudioScene.width * (StudioScene.sceneBottom + KoaBedroom.tail)
+    let anchor = UnitPoint(x: 0.5, y: KoaParallax.anchorY / (StudioScene.sceneBottom + KoaBedroom.tail))
     return TimelineView(.animation(minimumInterval: director.moving ? 1.0 / 60 : 1.0 / 30, paused: !running)) { tl in
       let f = running ? step(tl.date) : director.frame
       // đồng hồ dừng và Koa vừa được đặt chỗ mới (Giảm chuyển động): đứng ở đó
       let still = running ? nil : director.placed
+      let shot = layered ? director.shot : KoaParallax.Shot(framing: 0)
+      let _ = (lens?.shot = shot)
+      let x = still?.x ?? f?.x ?? KoaRoomMap.stageMark.x
+      let y = still.map(KoaRoomMap.screenY) ?? f?.screenY ?? StudioScene.stageMark.y
+      let _ = (lens?.koa = (x: x, y: y, scale: still.map { KoaRoomMap.scale($0.d) } ?? f?.scale ?? 1))
+      let koaAmp = KoaParallax.amp(koa: still?.plane ?? f?.plane ?? .stage, y: y)
       ZStack(alignment: .topLeading) {
-        // lá cây đang rung (~3 giây): vẽ cả căn phòng đè lên phòng tĩnh, có cây đang lay. Trước đây
-        // tách phần từ chậu cây trở lên sang lớp riêng: đèn và viền tối vẽ hai lớp nên độ sáng
-        // nhảy lúc bật / tắt (Kiệt 31/10). Bậc 0,25° nên `StudioPlans` dùng lại được.
-        if director.swaying {
+        if layered {
+          StudioLayers(
+            options: backdrop, plantSway: director.swaying ? f?.plantSway ?? 0 : 0, shot: shot,
+            size: CGSize(width: width, height: height), light: scheme == .light, showsHaze: false)
+        } else if director.swaying {
+          // lá cây đang rung (~3 giây): vẽ cả căn phòng đè lên phòng tĩnh, có cây đang lay. Trước đây
+          // tách phần từ chậu cây trở lên sang lớp riêng: đèn và viền tối vẽ hai lớp nên độ sáng
+          // nhảy lúc bật / tắt (Kiệt 31/10). Bậc 0,25° nên `StudioPlans` dùng lại được.
           var o = studio
           let _ = (o.plantSway = f?.plantSway ?? 0)
           StudioBackdrop(options: o)
@@ -1160,24 +1322,45 @@ struct MascotStage: View {
             .allowsHitTesting(false)
         }
         hero(
-          width, x: still?.x ?? f?.x ?? KoaRoomMap.stageMark.x,
-          y: still.map(KoaRoomMap.screenY) ?? f?.screenY ?? StudioScene.stageMark.y,
+          width, x: x + shot.shift(koaAmp), y: y,
           scale: still.map { KoaRoomMap.scale($0.d) } ?? f?.scale ?? 1,
-          direct: running ? f : nil, date: tl.date)
-        occlusion(width, still ?? f.map { KoaRoomMap.Spot($0.plane, $0.x, $0.depth) }, plantSway: f?.plantSway ?? 0)
+          direct: running ? f : nil, date: tl.date
+        )
+        .scaleEffect(shot.scale(koaAmp), anchor: anchor)
+        .opacity(away ? 0 : 1)
+        .animation(nil, value: away)
+        if !away, let beat = director.speech, let line = talkLine?(beat) {
+          KoaBubble(
+            line: line, width: width, x: x, headY: y - Self.heroWidth * KoaMath.aspect * levelScale * (f?.scale ?? 1)
+          )
+          .transition(.scale(scale: 0.6, anchor: .bottom).combined(with: .opacity))
+        }
+        if !away {
+          occlusion(width, still ?? f.map { KoaRoomMap.Spot($0.plane, $0.x, $0.depth) }, plantSway: f?.plantSway ?? 0)
+            .parallax(.props, shot, k: Double(width) / StudioScene.width, anchor: anchor)
+        }
         #if DEBUG
           // chế độ đo luôn bỏ qua lớp debug (nó chiếm ~5–7 điểm % CPU, làm sai số đo)
           if debugMap, !benchMode { KoaMapOverlay(frame: f).frame(width: width, height: width / StudioScene.width * StudioScene.sceneBottom) }
         #endif
       }
+      .scaleEffect(shot.zoom, anchor: anchor)
     }
-    .onChange(of: running) { _, on in if !on { director.pause() } }
+    .onChange(of: running) { _, on in
+      if !on {
+        director.pause()
+        if inBedroom || bedShown { director.restCamera() }
+      }
+    }
   }
 
   private func step(_ date: Date) -> KoaDirector.Frame {
     director.context.canWalk = canWalk
     let hour = Calendar.current.component(.hour, from: date)
     director.context.night = sleep.winding(hour: hour, minute: Calendar.current.component(.minute, from: date))
+    director.framed = !(emotion == .sleep)
+    director.dayFace = KoaEmotion.state(emotion).expression
+    director.lineOf = talkLine
     return director.step(date, heroWidth: Self.heroWidth * levelScale)
   }
 
@@ -1218,12 +1401,15 @@ struct MascotStage: View {
           director.boost()
           director.touched()
           director.request(.greet)
+          director.poked()
           KoaSound.boop()
+          visit.poked()
         } : nil,
       // phòng: Koa theo đồng hồ của sân khấu (một đồng hồ, không vẽ hai lần)
       date: walks ? date : nil, onTouch: walks ? { director.boost() } : nil,
       idleClock: walks ? director.frame?.idleClock : nil)
       .scaleEffect(levelScale * scale, anchor: .bottom)
+      .scaleEffect(x: walks ? director.squash.x : 1, y: walks ? director.squash.y : 1, anchor: .bottom)
       // reduceMotion: giá trị không đổi thì không gật
       .keyframeAnimator(initialValue: Nod(), trigger: reduceMotion ? 0 : celebrateSignal) { view, v in
         view.rotationEffect(.degrees(v.angle), anchor: .bottom).scaleEffect(v.scale, anchor: .bottom)
@@ -1239,19 +1425,6 @@ struct MascotStage: View {
       }
       .offset(x: left, y: top)
       .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-  }
-}
-
-/// Tắt lớp nhoè ở mép trên của iOS 26 khi phòng đang tràn tới đỉnh màn.
-private struct KoaTopEdge: ViewModifier {
-  let hidden: Bool
-
-  func body(content: Content) -> some View {
-    if #available(iOS 26, *) {
-      content.scrollEdgeEffectHidden(hidden, for: .top)
-    } else {
-      content
-    }
   }
 }
 
@@ -1279,6 +1452,7 @@ enum StudioPlans {
   private struct Key: Hashable {
     let options: StudioScene.Options
     let only: Set<Int>?
+    var layer: String?
   }
   private static var cache: [Key: [KoaPaint.Op]] = [:]
   private static var order: [Key] = []
@@ -1291,13 +1465,29 @@ enum StudioPlans {
     plan(Key(options: o, only: indices)) { StudioScene.objects(o, indices) }
   }
 
+  static func attic(light: Bool) -> [KoaPaint.Op] {
+    var o = StudioScene.Options()
+    o.light = light
+    return plan(Key(options: o, only: nil, layer: "attic")) { KoaBedroom.tall(light: light) }
+  }
+
+  static func tall(_ o: StudioScene.Options, _ id: String) -> [KoaPaint.Op] {
+    plan(Key(options: o, only: nil, layer: "tall." + id)) { StudioTall.tree(o, layer: id) }
+  }
+
+  static func layer(_ o: StudioScene.Options, _ id: String) -> [KoaPaint.Op] {
+    plan(Key(options: o, only: nil, layer: id)) {
+      StudioScene.layers.first { $0.id == id }.map { StudioScene.tree(o, layer: $0) } ?? []
+    }
+  }
+
   private static func plan(_ k: Key, _ build: () -> [KoaRender.Element]) -> [KoaPaint.Op] {
     if let p = cache[k] { return p }
     let p = KoaPaint.plan(KoaRender.Element("Svg", kids: build()))
     cache[k] = p
     order.append(k)
     // lá rung tạo vài chục bộ tuỳ chọn (bậc 0,25°): giữ đủ để một đợt rung dùng lại, có chặn
-    if order.count > 64 { cache[order.removeFirst()] = nil }
+    if order.count > 96 { cache[order.removeFirst()] = nil }
     return p
   }
 }

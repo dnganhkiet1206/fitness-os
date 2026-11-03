@@ -166,6 +166,8 @@ struct AssistantTab: View {
       // Nền như các tab khác (15/10, chủ dự án: "lớp aura phía sau làm xấu quá") —
       // thay bốn quầng màu trôi.
       .background { TodayAmbient(accent: nil) }
+      // Trước mọi sheet / màn con (01/11): màn mở ra không thừa hưởng kéo để làm mới.
+      .refreshable { await refreshAll() }
       .sheet(item: $logging, onDismiss: {
         Task {
           await signal?.load()
@@ -180,7 +182,6 @@ struct AssistantTab: View {
           LogWeightView(makeLogger: { services.makeWeightLogger(userId: flow.today.userId) }) { logging = nil }
         }
       }
-      .refreshable { await refreshAll() }
       .navigationTitle(Text("tab.progress"))
       .ascndPage()
       // Tiêu đề lớn đã nằm trong nội dung — thanh điều hướng ẩn như các tab khác
@@ -390,7 +391,9 @@ struct AssistantTab: View {
   // MARK: - Tiến bộ theo trạng thái (mock bản 10)
 
   private var koaWeek: KoaWeek.State? {
-    KoaWeek.state(today: flow.today.today, library: flow.today.library, trained: flow.today.trained)
+    KoaWeek.state(
+      today: flow.today.today, library: flow.today.library, trained: flow.today.trained,
+      pause: services.koaPause(userId: flow.today.userId, today: flow.today.today))
   }
 
   private var progressSnapshot: ProgressStatusBook.Snapshot? {

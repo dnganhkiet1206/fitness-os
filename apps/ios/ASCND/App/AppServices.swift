@@ -323,6 +323,12 @@ final class AppServices {
       sync.setSignedInUser(next)
     }
     UNUserNotificationCenter.current().delegate = reminderPresenter
+    ReminderPresenter.onOpened = { [weak reminderCenter] key in reminderCenter?.noteOpened(key) }
+    MealNotification.register()
+    reminderPresenter.logUsualMeal = { [weak self] in
+      await self?.logUsualMeal().map { (names: $0.names, kcal: $0.kcal) }
+    }
+    reminderPresenter.openMealLog = { [weak self] in await self?.requestMealLog() }
     // Dò cả Google lẫn backend của app (23/10): mạng chặn Google không còn báo
     // "Ngoại tuyến" khi Supabase vẫn chạy. Thiếu cấu hình backend → chỉ Google.
     let prober: any ReachabilityProber =
@@ -446,7 +452,13 @@ final class AppServices {
       store: workouts,
       planStore: outbox,
       onRest: { event, target in rest.handle(event, target: target) },
-      onEnqueued: { _ in sync.kick() })
+      onEnqueued: { [weak self] entry in
+        sync.kick()
+        // Lịch có buổi tập đầu tiên (onboarding hay tự đặt): lúc xin quyền thông báo (#800).
+        if entry.kind == PlanEdit.routineDayKind, entry.payload["template_id"]?.stringValue != nil {
+          Task { await self?.reminders.askAfterSchedule() }
+        }
+      })
     // Không ghi buổi ghi tay vào Apple Health nữa (17/10, "Không ghi ngược vào
     // HealthKit").
     flow.onManualLogged = { [weak self] _ in
@@ -469,7 +481,9 @@ final class AppServices {
     guard let rows, let h = koaGainsHistory else { return }
     let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
     guard
-      let s = await KoaDustSync.load(userId: userId, store: rows, sessions: h.days, week: h.week, today: today),
+      let s = await KoaDustSync.load(
+        userId: userId, store: rows, sessions: h.days, week: h.week, pause: koaPause(userId: userId, today: today),
+        today: today),
       session.session?.userId == userId
     else { return }
     koaDust = (userId, s)
@@ -559,6 +573,9 @@ final class AppServices {
   /// Làm theo gợi ý tăng tải: +20 xu, và ngày ấy +3 Gains (Gains đọc lại từ sổ xu).
   func claimOverload(userId: String, date: LocalDate, insights: InsightBook) async {
     guard OverloadQuest.achieved(on: date, insights.performances) else { return }
+    // chỉ buổi đầu trong ngày có thưởng; 30 giây để không tính nhầm chính buổi vừa xong
+    let cutoff = EpochMillis(Date()) - 30_000
+    if let h = koaGainsHistory, KoaGains.hasEarlierSession(h.days, on: date, before: cutoff) { return }
     guard let amount = await claimOnce(userId: userId, ref: OverloadQuest.refKey(date), reason: "overload") else { return }
     if let h = koaGainsHistory { koaGainsHistory = .init(days: KoaGainsSync.mark(h.days, overload: [date]), week: h.week) }
     noteKoaReward(userId: userId, amount: amount, seen: true, source: "overload")
@@ -629,12 +646,176 @@ final class AppServices {
     return BiometricLogger(userId: userId, store: rows, outbox: outbox, onEnqueued: { _ in sync.kick() })
   }
 
+  /// Nút "Ghi như mọi khi" của thông báo nhắc bữa và widget "Bữa quen" (Kiệt 01/11):
+  /// bữa quen vào hàng đợi, như ghi trong app (mất mạng vẫn lưu, gửi khi có mạng).
+  /// `mealType` `nil` = theo giờ.
+  func logUsualMeal(mealType: String? = nil) async -> MealWidgetData.Logged? {
+    guard let userId = session.session?.userId,
+      let logger = makeMealLogger(userId: userId, date: nil, mealType: mealType),
+      let meal = await logger.logUsual(), let id = logger.savedId
+    else { return nil }
+    return MealWidgetData.Logged(
+      entryId: id, mealType: logger.mealType, names: meal.foods.map(\.food.name).joined(separator: ", "),
+      kcal: meal.kcal.isFinite ? Int(meal.kcal.rounded()) : 0, at: Date().timeIntervalSince1970)
+  }
+
+  /// Chạm bữa quen trên widget: ghi, hiện "Đã ghi · Hoàn tác" ngay (lạc quan), rồi đọc
+  /// lại bữa quen khi hàng đợi đã gửi.
+  func logUsualMealFromWidget(_ mealType: String) async -> Bool {
+    if case .loading = session.phase { await session.start() }
+    guard let logged = await logUsualMeal(mealType: mealType) else { return false }
+    let store = WidgetDataStore()
+    if var d = store.meal() {
+      d.logged = logged
+      store.writeMeal(d)
+    }
+    WidgetCenter.shared.reloadTimelines(ofKind: MealWidget.kind)
+    if let userId = session.session?.userId {
+      Task {
+        await sync.settle()
+        await publishMealWidget(userId: userId)
+      }
+    }
+    return true
+  }
+
+  /// "Hoàn tác" của widget: chờ hàng đợi gửi xong rồi xoá bữa ấy như xoá trong nhật
+  /// ký (chỉ khi có mạng). Không được thì widget mời mở nhật ký.
+  func undoWidgetMeal(_ entryId: String) async -> Bool {
+    if case .loading = session.phase { await session.start() }
+    let store = WidgetDataStore()
+    defer { WidgetCenter.shared.reloadTimelines(ofKind: MealWidget.kind) }
+    var undone = false
+    if let userId = session.session?.userId, let diary = makeMealDiary(userId: userId) {
+      defer { diary.close() }
+      sync.kick()
+      await sync.settle()
+      await diary.load()
+      if case .ready(let meals) = diary.phase {
+        let items = meals.flatMap(\.items).filter { $0.entryId.lowercased() == entryId.lowercased() }
+        if case .done = await diary.delete(items, online: sync.online) { undone = true }
+      }
+    }
+    guard var d = store.meal(), let l = d.logged, l.entryId == entryId else { return undone }
+    if undone {
+      d.logged = nil
+      d.loggedTypes.removeAll { $0 == l.mealType }
+    } else {
+      d.logged?.undoFailed = true
+    }
+    store.writeMeal(d)
+    return undone
+  }
+
+  /// Bữa quen của bốn loại bữa + bữa đã ghi hôm nay → App Group cho widget "Bữa quen".
+  /// Đọc hỏng: giữ dữ liệu cũ.
+  func publishMealWidget(userId: String) async {
+    guard let backend,
+      let rows = try? await SupabaseMealLog(backend: backend).recentMeals(userId: userId, limit: MealLog.recentMealsRead),
+      session.session?.userId == userId
+    else { return }
+    let store = WidgetDataStore()
+    let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
+    var d = MealWidgetData(
+      day: today.description, usual: MealWidget.usuals(rows),
+      loggedTypes: MealWidget.loggedTypes(rows, today: today, in: .current))
+    // Bữa widget vừa ghi còn trong hàng đợi (mất mạng), server chưa thấy: vẫn là đã ghi.
+    let old = store.meal()
+    d.logged = old?.logged
+    if let l = old?.logged, old?.day == d.day, !rows.contains(where: { $0["id"]?.stringValue?.lowercased() == l.entryId.lowercased() }),
+      !d.loggedTypes.contains(l.mealType)
+    {
+      d.loggedTypes.append(l.mealType)
+    }
+    guard d != old else { return }
+    store.writeMeal(d)
+    WidgetCenter.shared.reloadTimelines(ofKind: MealWidget.kind)
+  }
+
+  /// "Ghi món khác" từ thông báo: mỗi lần tăng một — `RootTabView` mở màn ghi bữa.
+  var mealLogRequest = 0
+  func requestMealLog() { mealLogRequest += 1 }
+
   /// Gains của Koa (#527 đợt 1): lịch sử tập + lịch tuần đã cache → vóc dáng.
   /// `nil` khi chưa có backend hoặc đọc hỏng (giữ Gains cũ).
   func loadKoaGains(userId: String) async -> KoaGainsSync.Loaded? {
     guard let rows else { return nil }
     let plans = await templates.cached(userId: userId)
     return await KoaGainsSync.load(userId: userId, store: rows, plans: plans, now: SystemWallClock().nowMillis(), in: .current)
+  }
+
+  /// Đổi mỗi lần tạm nghỉ đổi, để các màn đọc `koaPause` vẽ lại.
+  var koaPauseRevision = 0
+  /// UI test: tạm nghỉ chỉ sống trong một lần mở app, để flow này không làm hỏng flow sau.
+  @ObservationIgnored private var uiTestPauses: [String: Data] = [:]
+
+  /// Tạm nghỉ đang có hiệu lực của tài khoản (Koa Ecosystem V2). Lưu trên máy: bảng
+  /// `koa_pauses` có migration nhưng chưa deploy (chờ Kiệt duyệt).
+  func koaPause(userId: String, today: LocalDate) -> KoaPause? {
+    _ = koaPauseRevision
+    guard let data = Self.uiTest ? uiTestPauses[userId] : UserDefaults.standard.data(forKey: "koa.pause.\(userId)"),
+      let p = try? JSONDecoder().decode(KoaPause.self, from: data), p.active(on: today)
+    else { return nil }
+    return p
+  }
+
+  func setKoaPause(_ pause: KoaPause?, userId: String) {
+    storeKoaPause(pause, userId: userId)
+    guard !Self.uiTest else { return }
+    // lưu trên máy trước; đẩy lên server sau, mất mạng thì để cờ chờ lần đọc sau
+    UserDefaults.standard.set(true, forKey: "koa.pause.pending.\(userId)")
+    Task { await pushKoaPause(pause, userId: userId) }
+  }
+
+  private func storeKoaPause(_ pause: KoaPause?, userId: String) {
+    let key = "koa.pause.\(userId)"
+    if Self.uiTest {
+      uiTestPauses[userId] = pause.flatMap { try? JSONEncoder().encode($0) }
+    } else if let pause, let data = try? JSONEncoder().encode(pause) {
+      UserDefaults.standard.set(data, forKey: key)
+    } else {
+      UserDefaults.standard.removeObject(forKey: key)
+    }
+    koaPauseRevision += 1
+  }
+
+  private func pushKoaPause(_ pause: KoaPause?, userId: String) async {
+    guard let rows else { return }
+    let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
+    do {
+      try await rows.upsert(
+        KoaPauseSync.table, [KoaPauseSync.row(pause, userId: userId, today: today)], onConflict: "user_id")
+      UserDefaults.standard.removeObject(forKey: "koa.pause.pending.\(userId)")
+    } catch {}
+  }
+
+  /// Đồng bộ tạm nghỉ với server: còn thay đổi chưa gửi thì gửi; không thì lấy bản trên server
+  /// (đổi máy, cài lại vẫn giữ đợt nghỉ). Đọc hỏng thì giữ bản trên máy.
+  /// `true` khi đợt nghỉ trên máy vừa đổi theo server (bên gọi dựng lại việc chính).
+  @discardableResult
+  func syncKoaPause(userId: String) async -> Bool {
+    guard !Self.uiTest, let rows else { return false }
+    let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
+    if UserDefaults.standard.bool(forKey: "koa.pause.pending.\(userId)") {
+      await pushKoaPause(koaPause(userId: userId, today: today), userId: userId)
+      return false
+    }
+    guard let found = try? await rows.select(KoaPauseSync.query(userId: userId)),
+      session.session?.userId == userId
+    else { return false }
+    let server = KoaPauseSync.decode(found.first).flatMap { $0.active(on: today) ? $0 : nil }
+    guard server != koaPause(userId: userId, today: today) else { return false }
+    storeKoaPause(server, userId: userId)
+    return true
+  }
+
+  /// Màn tổng kết mở khi Hôm nay chưa đọc Gains (vào thẳng buổi tập): tự đọc, để thẻ Gains của
+  /// buổi không biến mất đúng lúc đáng thấy nhất.
+  func ensureKoaGainsHistory() async {
+    guard koaGainsHistory == nil, let userId = session.session?.userId,
+      let r = await loadKoaGains(userId: userId), session.session?.userId == userId
+    else { return }
+    koaGainsHistory = .init(days: r.days, week: r.week)
   }
 
   /// Câu ngắn của Daily Plan cho widget "Buổi tập hôm nay" (GĐ1); `nil` = câu mặc
@@ -780,9 +961,17 @@ final class AppServices {
     let sync = self.sync
     return MealLogger(
       userId: userId, source: SupabaseMealLog(backend: backend), store: outbox, date: date, mealType: mealType,
-      onEnqueued: { [weak self] _ in
+      onEnqueued: { [weak self] entry in
         sync.kick()
         Telemetry.capture(.mealLogged)
+        // Widget "Bữa quen" thôi mời bữa vừa ghi (cả khi ghi trong app).
+        let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
+        if let type = entry.payload["meal_type"]?.stringValue,
+          entry.payload["date_time"]?.stringValue.flatMap({ EpochMillis(iso8601: $0) }).map({ LocalDate($0, in: .current) }) == today
+        {
+          WidgetDataStore().markMealLogged(type, today: today)
+          WidgetCenter.shared.reloadTimelines(ofKind: MealWidget.kind)
+        }
         self?.didLog()
       },
       onChanged: { sync.kick() })
@@ -1176,6 +1365,7 @@ final class AppServices {
     network.resume(Self.netPath(monitor.currentPath))
     sync.kick()
     Task { [widgets] in await widgets.refresh() }
+    if let userId = session.session?.userId { Task { await publishMealWidget(userId: userId) } }
     autoSyncHealth()
     // Lần dò AI lúc mở app có thể đã hỏng vì mạng — dò lại (bỏ qua nếu đã có).
     Task { await probeAI() }
