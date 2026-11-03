@@ -460,6 +460,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - `SignOutTimeoutTests` đo giờ thật: đã có PR #776 của agent khác, không làm trùng.
 - `native/tools/check.mjs` thiếu lệnh `timeout` trên macOS: ở `9d71f814` không còn chỗ nào gọi lệnh `timeout` của shell trong `native/tools` / `apps/ios/tools` → coi như đã hết; cần ai chạy `node tools/check.mjs` trên Mac để xác nhận.
 - Simulator dùng chung giữa nhiều phiên agent: ngoài code, giữ nguyên.
+- `KoaPerfTests.figureFrameBudget` đỏ ngẫu nhiên trên `app-macos` ("defs dựng lại theo khung: 13", PR #807 lượt `de277981`): test đếm bộ nhớ đệm `KoaRender.defsMemo` dùng chung với các suite chạy song song. Nay đếm khoá defs mà chính 120 khung đi bộ của test cần (`KoaRender.defsKey`, thuần) — không còn phụ thuộc test khác; vẫn bắt được lỗi dựng lại defs theo khung (khi ấy ~120 khoá).
 - Maestro E2E chạy trên PR #808 (nhãn `e2e`); kết quả ghi trên #527. **NOT RUN:** `node tools/check.mjs` trên Mac.
 **Đo lường Koa Ecosystem (03/11, #793, nhánh `claude/koa-analytics`):**
 - Thêm `koa_moment_shown` (`kind`, `place` today/room, `major`), `journey_opened`, `rhythm_viewed` (`sessions` theo khoảng, `paused`), `pause_started` (`days`), `pause_ended_early` (`days_used`, `days_left`). Không gửi `value` của mốc (hạng, số buổi, số ngày nghỉ) và không số đo sức khoẻ.
