@@ -323,6 +323,7 @@ final class AppServices {
       sync.setSignedInUser(next)
     }
     UNUserNotificationCenter.current().delegate = reminderPresenter
+    ReminderPresenter.onOpened = { [weak reminderCenter] key in reminderCenter?.noteOpened(key) }
     MealNotification.register()
     reminderPresenter.logUsualMeal = { [weak self] in
       await self?.logUsualMeal().map { (names: $0.names, kcal: $0.kcal) }
@@ -451,7 +452,13 @@ final class AppServices {
       store: workouts,
       planStore: outbox,
       onRest: { event, target in rest.handle(event, target: target) },
-      onEnqueued: { _ in sync.kick() })
+      onEnqueued: { [weak self] entry in
+        sync.kick()
+        // Lịch có buổi tập đầu tiên (onboarding hay tự đặt): lúc xin quyền thông báo (#800).
+        if entry.kind == PlanEdit.routineDayKind, entry.payload["template_id"]?.stringValue != nil {
+          Task { await self?.reminders.askAfterSchedule() }
+        }
+      })
     // Không ghi buổi ghi tay vào Apple Health nữa (17/10, "Không ghi ngược vào
     // HealthKit").
     flow.onManualLogged = { [weak self] _ in

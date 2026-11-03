@@ -91,6 +91,9 @@ enum MealNotification {
 /// Hiện lời nhắc cả khi app đang mở (`setNotificationHandler` của RN: banner +
 /// danh sách + âm thanh, không badge).
 final class ReminderPresenter: NSObject, UNUserNotificationCenterDelegate {
+  /// Lời nhắc được chạm (khoá) — `ReminderCenter.noteOpened` (#800).
+  /// Tĩnh: hàm đại biểu không bắt `self` (không Sendable) vào `MainActor.run`.
+  @MainActor static var onOpened: ((ReminderKey) -> Void)?
   /// "Ghi như mọi khi" — AppServices gắn; trả tên món + kcal đã ghi, `nil` nếu không ghi được.
   /// Gắn một lần lúc app dựng dịch vụ, trước khi thông báo nào được bấm.
   nonisolated(unsafe) var logUsualMeal: (@Sendable () async -> (names: String, kcal: Int)?)?
@@ -126,6 +129,9 @@ final class ReminderPresenter: NSObject, UNUserNotificationCenterDelegate {
     }
     guard id.hasPrefix("ascnd-reminder-") else { return }
     let key = id.split(separator: "-").last.map(String.init) ?? "unknown"
-    await MainActor.run { Telemetry.capture(.notificationOpened, ["key": key]) }
+    await MainActor.run {
+      Telemetry.capture(.notificationOpened, ["key": key])
+      if let k = ReminderKey(rawValue: key) { Self.onOpened?(k) }
+    }
   }
 }
