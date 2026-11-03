@@ -144,6 +144,12 @@ private struct TodayEntrance: ViewModifier {
       .offset(y: shown || reduceMotion ? 0 : 14)
       .onAppear {
         guard !shown else { return }
+        // UI test (Maestro, #801): không trượt vào — chạm lúc thẻ còn trượt 14 điểm từng
+        // trúng nút khác và làm flow đỏ ngẫu nhiên.
+        if AppServices.uiTest {
+          shown = true
+          return
+        }
         withAnimation(.smooth(duration: 0.55).delay(Double(min(order, 4)) * 0.05)) { shown = true }
       }
   }

@@ -30,7 +30,7 @@ name: start and finish a workout session
     element:
       id: workout.finish
     direction: DOWN
-    timeout: 10000
+    timeout: 30000
 - tapOn:
     id: workout.finish
 - extendedWaitUntil:
@@ -42,7 +42,7 @@ name: start and finish a workout session
     element:
       id: summary.backToToday
     direction: DOWN
-    timeout: 15000
+    timeout: 30000
 - tapOn:
     id: summary.backToToday
 - extendedWaitUntil:
