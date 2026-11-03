@@ -13,6 +13,8 @@ struct TodayOverloadStack<Hero: View>: View {
   /// Nút trên dải ấy ("Bắt đầu") — làm luôn việc chính, không cần đổi thẻ.
   let mainAction: String
   let onMainAction: () -> Void
+  /// Chạm thẻ tăng tải → trang Tiến bộ từng bài (Kiệt 01/11). `nil` = thẻ chỉ để xem.
+  var onOpenLoad: (() -> Void)? = nil
   /// Thẻ việc chính; `true` = kèm dòng "vuốt để xem" (chỉ để đo khung cũ).
   @ViewBuilder var hero: (_ withHint: Bool) -> Hero
 
@@ -133,7 +135,7 @@ struct TodayOverloadStack<Hero: View>: View {
       .allowsHitTesting(!showsLoad)
       .accessibilityHidden(showsLoad)
       .overlay {
-        if showsLoad { TodayOverloadCard(items: items) }
+        if showsLoad { TodayOverloadCard(items: items, onOpen: onOpenLoad) }
       }
   }
 
@@ -249,6 +251,8 @@ private struct HorizontalSwipe: UIGestureRecognizerRepresentable {
 /// Thẻ "Tăng tải hôm nay": mỗi bài của buổi một dòng — lần trước → hôm nay, và nhãn.
 struct TodayOverloadCard: View {
   let items: [OverloadPlan.Item]
+  /// Mở trang Tiến bộ từng bài (Kiệt 01/11: chạm thẻ là vào thẳng).
+  var onOpen: (() -> Void)? = nil
 
   @Environment(\.weightUnit) private var unit
   @Environment(\.locale) private var locale
@@ -266,6 +270,12 @@ struct TodayOverloadCard: View {
         Text("ov.vsLast")
           .font(DS.TextStyle.caption)
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        if onOpen != nil {
+          Image(systemName: "chevron.right")
+            .font(.system(size: 12, weight: .semibold))
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI.opacity(0.7))
+            .accessibilityHidden(true)
+        }
       }
       ScrollView {
         VStack(spacing: 0) {
@@ -281,7 +291,10 @@ struct TodayOverloadCard: View {
     .padding(DS.Spacing.card)
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     .todayCard()
+    .contentShape(Rectangle())
+    .onTapGesture { onOpen?() }
     .accessibilityElement(children: .contain)
+    .accessibilityAction(named: Text("workoutshome.insight")) { onOpen?() }
   }
 
   private func row(_ item: OverloadPlan.Item) -> some View {

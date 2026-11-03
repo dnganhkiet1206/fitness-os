@@ -234,8 +234,14 @@ struct ProgressGroupView: View {
       }
       if let h = services.koaGainsHistory {
         let pause = services.koaPause(userId: flow.today.userId, today: flow.today.today)
-        KoaRhythmCard(
-          state: KoaRhythm.state(h.days, week: h.week, paused: { pause?.contains($0) == true }, today: flow.today.today))
+        let rhythm = KoaRhythm.state(h.days, week: h.week, paused: { pause?.contains($0) == true }, today: flow.today.today)
+        KoaRhythmCard(state: rhythm)
+          // Xem Nhịp: một sự kiện mỗi ngày (#793), cuộn qua lại không đếm thêm.
+          .onAppear {
+            Telemetry.once(
+              .rhythmViewed, key: KoaAnalytics.rhythmKey(today: flow.today.today), userId: flow.today.userId,
+              KoaAnalytics.rhythmProps(rhythm))
+          }
       }
       NavigationLink {
         KoaJourneyView()

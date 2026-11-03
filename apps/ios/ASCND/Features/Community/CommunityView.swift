@@ -142,6 +142,11 @@ struct CommunityFeedView: View {
     .background { TodayAmbient(accent: nil) }
     .communityUserLinks()
     .communityPostActions(userId: book.userId, host: book)
+    // Trước mọi sheet / màn con (01/11): màn mở ra không thừa hưởng kéo để làm mới.
+    .refreshable {
+      await book.load()
+      await loadChallenges()
+    }
     .navigationDestination(isPresented: $findPeople) { CommunitySearchScreen() }
     .environment(\.openCommunityComments) { commentsFor = OpenPost(id: $0.id) }
     .sheet(item: $commentsFor) { p in
@@ -170,10 +175,6 @@ struct CommunityFeedView: View {
     }
     .navigationDestination(isPresented: $openAllChallenges) {
       if let challenges { CommunityChallengesView(book: challenges) }
-    }
-    .refreshable {
-      await book.load()
-      await loadChallenges()
     }
   }
 
