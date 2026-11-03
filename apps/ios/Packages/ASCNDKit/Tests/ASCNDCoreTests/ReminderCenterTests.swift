@@ -263,25 +263,17 @@ struct ReminderCenterTests {
     #expect(store.string(forKey: ReminderCenter.planKey)?.split(separator: "|").count == 64)
   }
 
-  /// RN BUG (xem `ReminderPlan.plan`): lời nhắc nhận thưởng "nửa tiếng nữa"
-  /// đổi chữ ký ở mỗi lần dựng → huỷ-đặt lại liên tục và đẩy lùi giờ bắn.
-  /// Native: đặt một lần, các lần đồng bộ sau (phút sau) không ghi lại.
-  @Test func lateClaimNudgeIsLaidDownOnce() async {
+  /// Koa Ecosystem V2 (02/11): không còn nhắc "thưởng sắp hết hạn".
+  @Test func claimNudgesAreRetired() async {
     let store = MemoryStore()
     let os = FakeCenter(granted: true)
     let noon = hcm.date(from: DateComponents(year: 2026, month: 10, day: 5, hour: 12))!
     var ctx = ReminderContext()
     ctx.pendingClaims = [PendingClaim(id: "c1", title: "Thử thách", claimBy: "2026-10-05", rewardCoins: 100, body: "Nhận 100 xu")]
-    let first = center(store, os, at: noon)
-    await first.refreshPermission()
-    await first.sync(ctx)
-    let laid = await os.pending
-    #expect(laid.count == 1 && laid[0].at == noon.addingTimeInterval(1800) && laid[0].text.title == "Thử thách")
-    let later = center(store, os, at: noon.addingTimeInterval(60))
-    await later.refreshPermission()
-    await later.sync(ctx)
-    #expect(await os.writes == 1)
-    #expect(await os.pending.first?.at == noon.addingTimeInterval(1800), "không bị đẩy lùi")
+    let c = center(store, os, at: noon)
+    await c.refreshPermission()
+    await c.sync(ctx)
+    #expect(await !os.pending.contains { $0.key == .challengeClaim })
   }
 
   /// Giờ thông minh: áp MỘT LẦN, chỉ lên giờ mặc định gõ tay, chỉ khi người

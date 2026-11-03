@@ -55,7 +55,22 @@ Bản Debug (simulator) không upload — sự kiện từ bản Debug vẫn kh�
 | `quick_log_pick` | chọn một ô trong Ghi nhanh | `target` (meal/water/sleep/weight/workout) |
 | `eat_again_used` | "Ăn lại" ghi xong một bữa | — |
 | `start_card_action` | bấm thẻ "Bắt đầu" | `item` (health/meal/workout/hide) |
+| `eat_like_yesterday` | ăn như hôm qua | — |
+| `day_logged` | Kể cho Koa ghi cả ngày | `items`, `source` |
 | `coach_quick_reply` | Koa Coach trả lời bằng câu mẫu, không gọi AI (`CoachQuickReply`) | — |
+| `gains_earned` | màn tổng kết buổi tập | `delta`, `planned`, `pr`, `rank_up`… |
+| `koa_rank_up` | Koa lên hạng | `rank` |
+| `quest_claimed` | nhận thưởng nhiệm vụ | `quest` |
+| `comeback_shown` | hiện thẻ quay lại | `days` (tối đa 30, có chỗ không gửi) |
+| `comeback_session` | bắt đầu buổi từ thẻ quay lại | — |
+| `notification_opened` | mở từ thông báo | `key` |
+| `koa_room_opened` | đầu một lượt ở phòng Koa (mở phòng, app trở lại tiền cảnh) | — |
+| `koa_room_left` | hết lượt ở phòng (rời phòng, sang màn khác, app ra nền) | `duration` (`under_10s` / `10_30s` / `30_120s` / `over_120s`), `pokes`, `walks` (`0` / `1_3` / `4_plus`) |
+| `koa_item_bought` | mua xong đồ ở cửa hàng Koa | `items` |
+| `koa_room_cleaned` | dọn phòng bằng xu thành công | — |
+| `schedule_created` | tạo lịch tập ở onboarding | `sessions`, `place` |
+| `first_session_started` | set đầu của buổi đầu | — |
+| `first_session_completed` | xong buổi đầu | — |
 
 ## Không gửi
 

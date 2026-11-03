@@ -2,6 +2,7 @@ import ActivityKit
 import ASCNDCore
 import ASCNDLiveActivity
 import SwiftUI
+import UIKit
 import WidgetKit
 
 /// Live Activity / Dynamic Island của quãng nghỉ (#227).
@@ -31,9 +32,12 @@ struct RestLiveActivity: Widget {
     } dynamicIsland: { context in
       DynamicIsland {
         DynamicIslandExpandedRegion(.leading) {
-          RestLabel(state: context.state, compact: true)
-            .environment(\.locale, WidgetDataStore().locale)
-            .padding(.leading, 4)
+          HStack(spacing: 6) {
+            RestKoaImage(koa: context.state.koa).frame(width: 46, height: 52)
+            RestLabel(state: context.state, compact: true)
+              .environment(\.locale, WidgetDataStore().locale)
+          }
+          .padding(.leading, 4)
         }
         DynamicIslandExpandedRegion(.trailing) {
           RestDigits(state: context.state)
@@ -81,6 +85,7 @@ enum RestInk {
   static let ink = KoaWidgetInk.ink(true)
   static let muted = KoaWidgetInk.muted(true)
   static let paused = KoaWidgetInk.rgb(201, 196, 189)
+  static let gold = KoaWidgetInk.rgb(255, 197, 61)
   static let track = Color.white.opacity(0.13)
   static func accent(_ s: RestActivityContent) -> Color { s.pausedLeft != nil ? paused : rose }
   static func mono(_ size: CGFloat) -> Font { .system(size: size * 1.08, weight: .bold, design: .rounded).monospacedDigit() }
@@ -171,7 +176,13 @@ struct RestLabel: View {
       HStack(spacing: 6) {
         Circle().fill(RestInk.accent(state)).frame(width: 7, height: 7)
         Group {
-          if state.pausedLeft != nil { Text("rest.compact.paused") } else { Text("rest.title.between") }
+          if state.pausedLeft != nil {
+            Text("rest.compact.paused")
+          } else if state.recordNote != nil {
+            Text("rest.title.record")
+          } else {
+            Text("rest.title.between")
+          }
         }
         .font(.system(size: 12, weight: .medium))
         .lineLimit(1)
@@ -249,10 +260,25 @@ struct AdjustButtons: View {
   }
 }
 
-/// Màn khoá: đúng bố cục mock đã duyệt (20/10) — dòng "ASCND · NGHỈ GIỮA SET",
-/// tên bài + "Tiếp theo" + vạch set bên trái, vòng lớn có số bên phải, ba nút.
-/// Tính cho vừa trần 160pt của Apple (vượt là bị cắt — lý do bản đầu dính mép):
-/// 13 + 11 + 8 + 66 + 10 + 36 + 13 ≈ 157pt.
+/// Koa của quãng nghỉ: ảnh app vẽ sẵn vào App Group (`KoaWidgetPublisher`). Chưa có ảnh thì dùng
+/// hình chân Koa như widget.
+struct RestKoaImage: View {
+  let koa: RestKoa
+  var body: some View {
+    if let dir = WidgetDataStore().containerURL,
+      let image = UIImage(contentsOfFile: dir.appendingPathComponent(WidgetDataStore.restImageName(koa)).path)
+    {
+      Image(uiImage: image).resizable().scaledToFit()
+    } else {
+      Image(systemName: "pawprint.fill").resizable().scaledToFit().foregroundStyle(RestInk.muted).padding(14)
+    }
+  }
+}
+
+/// Màn khoá (01/11, Kiệt duyệt mock A "Koa trong buổi tập"): dòng "ASCND · NGHỈ GIỮA SET",
+/// Koa + tên bài + "Tiếp theo" + vạch set, số bên phải, thanh thời gian, ba nút.
+/// Tính cho vừa trần 160pt của Apple (vượt là bị cắt):
+/// 13 + 11 + 4 + 60 + 8 + 4 + 8 + 36 + 13 ≈ 157pt.
 struct RestLockScreen: View {
   let state: RestActivityContent
   var body: some View {
@@ -262,7 +288,13 @@ struct RestLockScreen: View {
         Text(verbatim: "ASCND")
         Text(verbatim: "·")
         Group {
-          if state.pausedLeft != nil { Text("rest.title.paused") } else { Text("rest.title.between") }
+          if state.pausedLeft != nil {
+            Text("rest.title.paused")
+          } else if state.recordNote != nil {
+            Text("rest.title.record")
+          } else {
+            Text("rest.title.between")
+          }
         }
         .textCase(.uppercase)
         .lineLimit(1)
@@ -270,8 +302,12 @@ struct RestLockScreen: View {
       .font(.system(size: 11, weight: .heavy)).tracking(0.8)
       .foregroundStyle(RestInk.muted)
       .frame(height: 11)
-      HStack(alignment: .center, spacing: 14) {
-        if let t = state.target {
+      HStack(alignment: .center, spacing: 12) {
+        RestKoaImage(koa: state.koa).frame(width: 56, height: 60)
+        if let note = state.recordNote {
+          Text(verbatim: note).font(.system(size: 15, weight: .semibold)).foregroundStyle(RestInk.ink)
+            .lineLimit(3).minimumScaleFactor(0.8)
+        } else if let t = state.target {
           VStack(alignment: .leading, spacing: 3) {
             Text(t.exerciseName).font(.system(size: 21, weight: .bold)).foregroundStyle(RestInk.ink)
               .lineLimit(1).minimumScaleFactor(0.75)
@@ -282,16 +318,14 @@ struct RestLockScreen: View {
           Text("rest.title").font(.system(size: 21, weight: .bold)).foregroundStyle(RestInk.ink)
         }
         Spacer(minLength: 0)
-        ZStack {
-          RestRing(state: state, size: 66, lineWidth: 6)
-          RestDigits(state: state, alignment: .center).font(RestInk.mono(16))
-            .foregroundStyle(state.pausedLeft != nil ? RestInk.paused : RestInk.ink)
-            .frame(width: 54)
-        }
+        RestDigits(state: state).font(RestInk.mono(30))
+          .foregroundStyle(state.pausedLeft != nil ? RestInk.paused : state.recordNote != nil ? RestInk.gold : RestInk.ink)
+          .frame(maxWidth: 84, alignment: .trailing)
       }
-      .padding(.top, 8)
+      .padding(.top, 4)
+      RestBar(state: state).padding(.top, 8)
       AdjustButtons(paused: state.pausedLeft != nil, height: 36)
-        .padding(.top, 10)
+        .padding(.top, 8)
     }
     .padding(.horizontal, 16)
     .padding(.vertical, 13)

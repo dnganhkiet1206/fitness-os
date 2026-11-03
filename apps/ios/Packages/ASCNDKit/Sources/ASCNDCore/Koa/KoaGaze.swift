@@ -52,6 +52,11 @@ public enum KoaGaze {
 
     public init(seed: UInt64 = 1) { rng = Random(seed: seed) }
 
+    /// Chớp mắt ngay: đổi nét mặt đúng lúc mắt khép để giấu bước nhảy giữa hai hình.
+    public mutating func blinkNow() {
+      if blinkT == nil { blinkT = 0 }
+    }
+
     /// Đổi đích nhìn. Đổi xa thì chớp mắt (mắt người hay chớp khi quay nhìn chỗ khác).
     public mutating func look(_ t: Target, from koa: (x: Double, y: Double), turn: Double) {
       let before = aim(target, koa, turn: turn)

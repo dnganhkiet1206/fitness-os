@@ -474,7 +474,9 @@ final class AppServices {
     guard let rows, let h = koaGainsHistory else { return }
     let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
     guard
-      let s = await KoaDustSync.load(userId: userId, store: rows, sessions: h.days, week: h.week, today: today),
+      let s = await KoaDustSync.load(
+        userId: userId, store: rows, sessions: h.days, week: h.week, pause: koaPause(userId: userId, today: today),
+        today: today),
       session.session?.userId == userId
     else { return }
     koaDust = (userId, s)
@@ -564,6 +566,9 @@ final class AppServices {
   /// Làm theo gợi ý tăng tải: +20 xu, và ngày ấy +3 Gains (Gains đọc lại từ sổ xu).
   func claimOverload(userId: String, date: LocalDate, insights: InsightBook) async {
     guard OverloadQuest.achieved(on: date, insights.performances) else { return }
+    // chỉ buổi đầu trong ngày có thưởng; 30 giây để không tính nhầm chính buổi vừa xong
+    let cutoff = EpochMillis(Date()) - 30_000
+    if let h = koaGainsHistory, KoaGains.hasEarlierSession(h.days, on: date, before: cutoff) { return }
     guard let amount = await claimOnce(userId: userId, ref: OverloadQuest.refKey(date), reason: "overload") else { return }
     if let h = koaGainsHistory { koaGainsHistory = .init(days: KoaGainsSync.mark(h.days, overload: [date]), week: h.week) }
     noteKoaReward(userId: userId, amount: amount, seen: true, source: "overload")
@@ -730,6 +735,80 @@ final class AppServices {
     guard let rows else { return nil }
     let plans = await templates.cached(userId: userId)
     return await KoaGainsSync.load(userId: userId, store: rows, plans: plans, now: SystemWallClock().nowMillis(), in: .current)
+  }
+
+  /// Đổi mỗi lần tạm nghỉ đổi, để các màn đọc `koaPause` vẽ lại.
+  var koaPauseRevision = 0
+  /// UI test: tạm nghỉ chỉ sống trong một lần mở app, để flow này không làm hỏng flow sau.
+  @ObservationIgnored private var uiTestPauses: [String: Data] = [:]
+
+  /// Tạm nghỉ đang có hiệu lực của tài khoản (Koa Ecosystem V2). Lưu trên máy: bảng
+  /// `koa_pauses` có migration nhưng chưa deploy (chờ Kiệt duyệt).
+  func koaPause(userId: String, today: LocalDate) -> KoaPause? {
+    _ = koaPauseRevision
+    guard let data = Self.uiTest ? uiTestPauses[userId] : UserDefaults.standard.data(forKey: "koa.pause.\(userId)"),
+      let p = try? JSONDecoder().decode(KoaPause.self, from: data), p.active(on: today)
+    else { return nil }
+    return p
+  }
+
+  func setKoaPause(_ pause: KoaPause?, userId: String) {
+    storeKoaPause(pause, userId: userId)
+    guard !Self.uiTest else { return }
+    // lưu trên máy trước; đẩy lên server sau, mất mạng thì để cờ chờ lần đọc sau
+    UserDefaults.standard.set(true, forKey: "koa.pause.pending.\(userId)")
+    Task { await pushKoaPause(pause, userId: userId) }
+  }
+
+  private func storeKoaPause(_ pause: KoaPause?, userId: String) {
+    let key = "koa.pause.\(userId)"
+    if Self.uiTest {
+      uiTestPauses[userId] = pause.flatMap { try? JSONEncoder().encode($0) }
+    } else if let pause, let data = try? JSONEncoder().encode(pause) {
+      UserDefaults.standard.set(data, forKey: key)
+    } else {
+      UserDefaults.standard.removeObject(forKey: key)
+    }
+    koaPauseRevision += 1
+  }
+
+  private func pushKoaPause(_ pause: KoaPause?, userId: String) async {
+    guard let rows else { return }
+    let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
+    do {
+      try await rows.upsert(
+        KoaPauseSync.table, [KoaPauseSync.row(pause, userId: userId, today: today)], onConflict: "user_id")
+      UserDefaults.standard.removeObject(forKey: "koa.pause.pending.\(userId)")
+    } catch {}
+  }
+
+  /// Đồng bộ tạm nghỉ với server: còn thay đổi chưa gửi thì gửi; không thì lấy bản trên server
+  /// (đổi máy, cài lại vẫn giữ đợt nghỉ). Đọc hỏng thì giữ bản trên máy.
+  /// `true` khi đợt nghỉ trên máy vừa đổi theo server (bên gọi dựng lại việc chính).
+  @discardableResult
+  func syncKoaPause(userId: String) async -> Bool {
+    guard !Self.uiTest, let rows else { return false }
+    let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
+    if UserDefaults.standard.bool(forKey: "koa.pause.pending.\(userId)") {
+      await pushKoaPause(koaPause(userId: userId, today: today), userId: userId)
+      return false
+    }
+    guard let found = try? await rows.select(KoaPauseSync.query(userId: userId)),
+      session.session?.userId == userId
+    else { return false }
+    let server = KoaPauseSync.decode(found.first).flatMap { $0.active(on: today) ? $0 : nil }
+    guard server != koaPause(userId: userId, today: today) else { return false }
+    storeKoaPause(server, userId: userId)
+    return true
+  }
+
+  /// Màn tổng kết mở khi Hôm nay chưa đọc Gains (vào thẳng buổi tập): tự đọc, để thẻ Gains của
+  /// buổi không biến mất đúng lúc đáng thấy nhất.
+  func ensureKoaGainsHistory() async {
+    guard koaGainsHistory == nil, let userId = session.session?.userId,
+      let r = await loadKoaGains(userId: userId), session.session?.userId == userId
+    else { return }
+    koaGainsHistory = .init(days: r.days, week: r.week)
   }
 
   /// Câu ngắn của Daily Plan cho widget "Buổi tập hôm nay" (GĐ1); `nil` = câu mặc
