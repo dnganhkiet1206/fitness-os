@@ -22,11 +22,16 @@ struct TodayPlanHero: View {
   let onAlternative: (DailyPlan.Alternative) -> Void
   /// Mở sheet tạm nghỉ; `nil` = không có lối (đang tạm nghỉ, hay chưa có lịch).
   var onPause: (() -> Void)?
+  /// Dòng đầu thẻ lớn theo Dynamic Type (#795 đợt 2b); cỡ mặc định như cũ.
+  @ScaledMetric(relativeTo: .caption2) private var eyebrowSize: CGFloat = 11
+  /// Vùng chạm tối thiểu của Apple (44 điểm). Bộ kiểm accessibility 03/11 báo "Hit area is too
+  /// small" cho "Make it a rest day" (36) và "Take a few days off…" (32).
+  private static let minTap: CGFloat = 44
 
   var body: some View {
     VStack(alignment: .leading, spacing: DS.Spacing.sm) {
       Text(verbatim: eyebrow)
-        .font(.system(size: 11, weight: .semibold))
+        .font(.system(size: eyebrowSize, weight: .semibold))
         .tracking(1.2)
         .textCase(.uppercase)
         .foregroundStyle(DS.Color.mutedForeground.swiftUI)
@@ -84,7 +89,7 @@ struct TodayPlanHero: View {
             Button { onAlternative(alt) } label: {
               Text(verbatim: Self.label(alt))
                 .font(DS.TextStyle.footnote.weight(.semibold))
-                .frame(maxWidth: .infinity, minHeight: 36)
+                .frame(maxWidth: .infinity, minHeight: Self.minTap)
             }
             .buttonStyle(.plain)
             .foregroundStyle(DS.Color.primary.swiftUI)
@@ -96,7 +101,7 @@ struct TodayPlanHero: View {
         Button(action: onPause) {
           Text("pause.entry")
             .font(DS.TextStyle.footnote)
-            .frame(maxWidth: .infinity, minHeight: 32)
+            .frame(maxWidth: .infinity, minHeight: Self.minTap)
         }
         .buttonStyle(.plain)
         .foregroundStyle(DS.Color.mutedForeground.swiftUI)

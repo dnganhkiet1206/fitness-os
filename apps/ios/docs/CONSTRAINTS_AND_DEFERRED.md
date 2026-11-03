@@ -457,6 +457,16 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Cảnh Koa đi ngủ dùng cỡ riêng (`KoaBedtime`), chưa chỉnh theo 152 điểm: có thể thấy Koa nhỏ đi một chút khi sang cảnh ngủ.
 - **NOT RUN:** phòng ngủ trong khung dọc (cảnh đi ngủ, tường cao đổi màu); xem từng khung cảnh chạy (mới xem kết quả cuối, chưa có video tốt); đồ phòng đã mua trong tranh mới; iPhone thật; VoiceOver với bảng tự vẽ; cỡ màn khác; CPU.
 
+**#795 đợt 2b (03/11, nhánh `claude/a11y-round-2b`), theo dữ liệu bộ kiểm accessibility của PR #812 (run 41685936332, sau khi chờ màn đứng yên):**
+- Sửa: thẻ "Get started with ASCND" ở Hôm nay — tiêu đề (20) và tên ba việc (16) lớn theo Dynamic Type (`@ScaledMetric`, cỡ mặc định như cũ). Thẻ việc chính — dòng đầu (11) lớn theo chữ; nút phương án ("Make it a rest day"…) và "Take a few days off…" cao tối thiểu 44 điểm theo Apple (trước 36 và 32), nên thẻ cao thêm 8–12 điểm mỗi nút.
+- Đã có PR riêng: dải "Tuần của Koa" (#815); sheet nửa màn ở cỡ chữ trợ năng (#814). #814 cũng là lý do cả bốn dòng của sheet Tạm nghỉ bị báo "Text clipped" và "partially unsupported": bộ kiểm phóng chữ, sheet `.medium` cắt nội dung.
+- Còn lại, chưa sửa:
+  - Độ tương phản chữ phụ (`mutedForeground`) trên nền thẻ: khoảng 20 dòng ở Hôm nay, Nhịp, sheet Tạm nghỉ, Hành trình. Đổi màu token của Design System là đổi thiết kế, chờ Kiệt duyệt mock.
+  - Chữ cỡ cố định trong thẻ Koa và thẻ việc trong ngày ở Hôm nay (`TodayDayBlock`, `TodayDayCard`: khoảng 30 chỗ `.system(size:)`). Bộ kiểm chỉ báo "Koa" vì nó chỉ kiểm phần đang hiện trên màn. Cần một lượt riêng có ảnh snapshot: bố cục thẻ Koa chặt, chữ lớn dễ vỡ.
+  - Chữ logo "ASCND" giữ cỡ cố định (logo; Kiệt chốt cỡ tương đương bản mặc định).
+  - "Partially unsupported" ở chữ dùng kiểu chữ hệ thống (Nhịp, Hành trình, chú thích Tiến bộ) và "Hit area is too small" ở hai dòng chữ tĩnh của thẻ việc chính ("TODAY'S MAIN THING", "From your weekly plan."): chưa rõ nguyên nhân. Kỹ sư Apple xác nhận bộ kiểm có thể báo nhầm với font hệ thống. Xem lại khi #812, #814, #815 đã vào base (job `a11y` chạy hằng đêm).
+- **NOT RUN:** bộ kiểm trên head này (job `a11y` chỉ có ở #812, chưa vào base); xem trên simulator / iPhone.
+
 **Ổn định bộ kiểm (03/11, #801, nhánh `claude/stable-checks`):**
 - Hôm nay không còn hiệu ứng trượt vào ở chế độ UI test (`TodayEntrance`): thẻ trượt 14 điểm trong ~0,75 s đầu, Maestro chạm lúc ấy có thể trúng nút khác. Người dùng thật không đổi.
 - `08-settings`: sau khi quay lại từ Nhắc nhở, đợi Cài đặt hiện hẳn rồi mới cuộn tìm "Đổi mật khẩu". ~~**Chưa xác nhận nguyên nhân** (không chạy được Maestro trong phiên này); nếu còn đỏ thì xem ảnh chụp trong artifact.~~
@@ -601,6 +611,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - 28/10/2026: màn "Tiến bộ từng bài" theo MỨC TẠ (Kiệt duyệt mock `EjRrEXE1gxpyKAx22R6PU2`): mỗi bài so set nặng nhất buổi gần nhất với buổi trước ("18,4 kg × 10 · +2,5 kg", "+5 reps", "Giữ nguyên", "Lần đầu"); đầu trang đếm tăng tạ / thêm reps / giữ / giảm; chạm mở chi tiết (biểu đồ set đỉnh mỗi buổi, các buổi, gợi ý lần tới theo tăng tiến kép 12 reps, phân tích cũ ở cuối). Mở từ dòng "Lần trước" ở màn tập → vào thẳng chi tiết. Buổi 0 kg của bài có tạ: "Chưa ghi tạ", không tính giảm. Thay 3 nhóm "Đáng để ý / Đang ổn / Cần thêm buổi" và con số "tốt nhất 90 ngày". `ExercisePerformance.topSetReps`: reps của chính set nặng nhất.
 - 28/10/2026: Koa Coach trả lời progressive overload theo MỨC TẠ TỪNG BÀI (Kiệt: điều người tập quan tâm nhất). Trước: `ai-coach` chỉ gửi `volume_load` 7 ngày → "khối lượng 728 kg", buổi không tạ thành "volume 0". Nay `_shared/progress.ts`: set đỉnh (bỏ khởi động) buổi gần nhất so với buổi trước, 8 tuần, làm tròn 0,1 kg; bài không tạ so reps; viết theo đơn vị cân. Deploy `ai-coach` v28 (Kiệt duyệt). Simulator: "Dumbbell Shoulder Press: 18,4 kg × 10 (tăng 2,5 kg) so với 15,9 kg × 9". Màn tiến bộ theo bài trong app: chờ mock.
 - 28/10/2026: VoiceOver hàng set ở màn tập — làm lại #526 (đóng vì xung đột): set không tạ đọc "không tạ" thay vì "0 kg"; mức tạ đọc theo đơn vị người dùng (trước luôn "kg", cả tài khoản lb). Đóng #670 (landing web Lovable, nhắm `main`) và #5 (PRODUCT.md của app RN, nhắm `main`) — không còn dùng; nhánh giữ lại.
+- 03/11/2026: #795 đợt 2b: chữ thẻ "Get started" và dòng đầu thẻ việc chính lớn theo Dynamic Type, vùng chạm 44 điểm cho nút phương án và "Tạm nghỉ"; xem mục 4.
 - 03/11/2026: #801: tắt hiệu ứng trượt vào của Hôm nay ở chế độ UI test, `08-settings` đợi Cài đặt ổn định trước khi cuộn; xem mục 4.
 - 03/11/2026: #796 phần 1: Daily Plan có lý do `paused(until:)`; thẻ việc chính ghi "Đang tạm nghỉ · tập lại từ …". Lịch sử đợt nghỉ chờ Kiệt quyết (migration hay trên máy).
 - 03/11/2026: #800 thông báo: câu nhắc buổi tập xoay vòng, bị bỏ qua 3 lần liền thì 2 ngày một lần, xin quyền khi có lịch tập đầu tiên; xem mục 4.
