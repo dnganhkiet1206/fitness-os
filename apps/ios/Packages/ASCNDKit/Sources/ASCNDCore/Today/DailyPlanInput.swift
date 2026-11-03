@@ -17,12 +17,13 @@ extension DailyPlan {
   ///   - daysOff: `KoaGains.State.missedDays`; `nil` = chưa đọc (coi 0, không đoán quay lại).
   public static func input(
     date: LocalDate, library: TemplateSnapshot?, active: WorkoutTemplate?, doneToday: [String?], daysOff: Int?,
-    recovery: Recovery?, proteinLeftG: Int?, paused: Bool = false
+    recovery: Recovery?, proteinLeftG: Int?, pause: KoaPause? = nil
   ) -> Input {
     guard let library else {
       return Input(date: date, loaded: false, hasSchedule: false, today: .empty)
     }
     let plan = library.plan(for: date, today: date)
+    let paused = pause?.contains(date) == true
     // tạm nghỉ: hôm nay là ngày nghỉ, không gợi buổi tập
     let today: Day =
       if paused { .rest } else if let t = plan.template { .planned([session(t)]) } else if plan.status == .rest { .rest } else { .empty }
@@ -34,6 +35,7 @@ extension DailyPlan {
       hasSchedule: !KoaGains.Week(library).planned.isEmpty || next != nil || plan.template != nil,
       today: today, doneToday: doneToday, daysOff: paused ? 0 : daysOff ?? 0, recovery: recovery, proteinLeftG: proteinLeftG,
       next: next, canReschedule: library.overridesSupported,
-      postponeTo: library.overridesSupported ? Reschedule.target(from: date, in: library) : nil)
+      postponeTo: library.overridesSupported ? Reschedule.target(from: date, in: library) : nil,
+      pausedUntil: paused ? pause?.returnDay : nil)
   }
 }

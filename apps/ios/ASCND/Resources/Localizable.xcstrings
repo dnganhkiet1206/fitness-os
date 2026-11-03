@@ -68711,6 +68711,52 @@
      }
     }
    }
+  },
+  "dp.eyebrow.paused": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "On a break"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đang tạm nghỉ"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "En pausa"
+     }
+    }
+   }
+  },
+  "dp.why.paused %@ %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa is holding your spot. Rest, no workout reminders. Back on %1$@, %2$@."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa giữ chỗ cho bạn. Cứ nghỉ, không có nhắc tập. Tập lại từ %1$@, %2$@."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa te guarda el sitio. Descansa, sin recordatorios de entrenamiento. Vuelves el %1$@, %2$@."
+     }
+    }
+   }
   }
  }
 }
