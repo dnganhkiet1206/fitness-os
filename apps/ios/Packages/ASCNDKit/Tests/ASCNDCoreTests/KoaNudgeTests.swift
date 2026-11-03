@@ -27,6 +27,12 @@ import Testing
     ReminderPlan.plan(ReminderPrefs.defaults, c, now: Self.monday, calendar: Self.utc).filter { $0.key == .koaTraining }
   }
 
+  /// Lời nhắc dùng câu thường (ngày lỡ thứ 0–2). Từ ngày lỡ thứ 3 kế hoạch dùng câu chào quay lại
+  /// (`koaWorkoutCopy.returning`) — có từ trước, không xoay.
+  private func regular(_ w: [PlannedReminder]) -> [PlannedReminder] {
+    w.filter { r in Self.lines.contains { $0.title == r.title } }
+  }
+
   @Test func everyLanguageHasFiveDistinctLines() {
     for lang: AppPreferences.Lang in [.vi, .en, .es] {
       let l = ReminderCopyTable.koaTraining(lang)
@@ -38,11 +44,24 @@ import Testing
   }
 
   @Test func linesRotateAndNeverRepeatTheOneJustUsed() {
-    let w = plan(ctx())
-    #expect(w.count == 7)
+    let all = plan(ctx())
+    #expect(all.count == 7)
+    // hôm nay, mai, ngày kia: lỡ 0–2 ngày → câu thường; sau đó là câu chào quay lại
+    let w = regular(all)
+    #expect(w.count == 3 && w.map(\.at) == Array(all.prefix(3)).map(\.at))
     for (a, b) in zip(w, w.dropFirst()) { #expect(a.title != b.title, "hai lần nhắc liền nhau khác câu") }
-    #expect(Set(w.compactMap(\.title)).count >= 3)
-    #expect(plan(ctx()).map(\.title) == w.map(\.title), "cùng ngày ra cùng câu: đặt lại lịch không đổi chữ")
+    #expect(all.dropFirst(3).allSatisfy { $0.title == "Koa vẫn ở đây 💪" }, "ngày lỡ thứ 3 trở đi: câu chào quay lại như cũ")
+    #expect(plan(ctx()).map(\.title) == all.map(\.title), "cùng ngày ra cùng câu: đặt lại lịch không đổi chữ")
+  }
+
+  @Test func sevenDaysInARowNeverRepeatALine() {
+    var prev: Int?
+    for day in 0..<7 {
+      let at = Self.monday.addingTimeInterval(Double(day) * 86_400)
+      let picked = KoaNudge.line(Self.lines, on: at, calendar: Self.utc, after: prev)
+      #expect(picked != nil && picked?.index != prev, "ngày \(day)")
+      prev = picked?.index
+    }
   }
 
   @Test func returningUserStillGetsTheWelcomeLine() {
@@ -56,13 +75,14 @@ import Testing
     c.habitTimes[.workout] = ReminderClock(hour: 19, minute: 0)
     let w = plan(c)
     #expect(w.allSatisfy { $0.habit })
-    #expect(w.allSatisfy { r in Self.lines.contains { $0.habitBody == r.body } })
+    let regular = w.prefix(3)
+    #expect(regular.allSatisfy { r in Self.lines.contains { $0.title == r.title && $0.habitBody == r.body } })
   }
 
   @Test func noLinesKeepsTheOldPlan() {
     var c = ctx()
     c.koaTrainingLines = []
-    #expect(plan(c).allSatisfy { $0.title == nil && $0.body == nil })
+    #expect(plan(c).prefix(3).allSatisfy { $0.title == nil && $0.body == nil }, "không có câu → câu chung như trước")
   }
 
   @Test func spacedOutAfterBeingIgnored() {
