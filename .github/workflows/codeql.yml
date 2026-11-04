@@ -1,24 +1,24 @@
 # CodeQL (Swift) — quét lỗi bảo mật / lỗi logic phổ biến (Kiệt 28/10).
 #
 # Kết quả ở tab Security › Code scanning của repo (miễn phí cho repo công khai).
-# Không chạy trên PR thường (build macOS ~15 phút): chạy khi có commit Swift mới
-# trên native/ios-rewrite, hằng tuần, hoặc bấm tay. PR sửa chính tệp này thì
-# chạy để kiểm cấu hình.
+# Build dưới bộ dò của CodeQL chậm (38–54 phút khi còn build hai kiến trúc), nên:
+# - chạy mỗi đêm và khi bấm tay, không chạy theo từng commit: trước 04/11, mỗi lần
+#   gộp lại huỷ lượt đang chạy (56/60 lượt bị huỷ) và giữ một máy macOS cả giờ;
+# - không huỷ lượt đang chạy; lượt mới chờ đến lượt;
+# - chỉ build arm64, tắt index.
+# PR sửa chính tệp này thì chạy để kiểm cấu hình.
 name: CodeQL
 
 on:
-  push:
-    branches: ['native/ios-rewrite']
-    paths: ['apps/ios/**/*.swift']
   pull_request:
     paths: ['.github/workflows/codeql.yml']
   schedule:
-    - cron: '0 3 * * 1'
+    - cron: '0 19 * * *' # 02:00 giờ Việt Nam
   workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -27,7 +27,7 @@ permissions:
 jobs:
   analyze-swift:
     runs-on: macos-15
-    timeout-minutes: 60
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
       - name: Chọn Xcode mới nhất
@@ -50,7 +50,8 @@ jobs:
         working-directory: apps/ios
         run: |
           xcodebuild build -project ASCND.xcodeproj -scheme ASCND -configuration Debug \
-            -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO -quiet
+            -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO \
+            ARCHS=arm64 ONLY_ACTIVE_ARCH=YES COMPILER_INDEX_STORE_ENABLE=NO -quiet
       - uses: github/codeql-action/analyze@v3
         with:
           category: /language:swift

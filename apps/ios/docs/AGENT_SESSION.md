@@ -148,7 +148,7 @@ xcrun simctl io booted screenshot /tmp/ascnd.png   # rồi XEM ảnh
 |---|---|---|---|
 | SwiftLint 0.65.1 (chỉ luật bắt lỗi: `force_cast`, `force_try`, `unhandled_throwing_task`, `identical_operands`…) | `apps/ios/.swiftlint.yml`, job `swiftlint` của `ios-analysis.yml` | PR chạm Swift — lint ĐÚNG tệp đổi | chú thích trên PR + Summary |
 | Periphery 3.8.0 (mã chết) | job `periphery` của `ios-analysis.yml` | commit Swift mới trên `native/ios-rewrite`, hằng tuần, bấm tay, PR có nhãn `periphery` | Summary của lượt chạy |
-| CodeQL (Swift, `security-and-quality`) | `.github/workflows/codeql.yml` | commit Swift mới trên `native/ios-rewrite`, hằng tuần, bấm tay | tab Security › Code scanning |
+| CodeQL (Swift, `security-and-quality`) | `.github/workflows/codeql.yml` | mỗi đêm (02:00 giờ VN), bấm tay; không huỷ lượt đang chạy | tab Security › Code scanning |
 | Dependabot (Actions + gói Swift) | `.github/dependabot.yml` | hằng tuần — **chỉ sau khi tệp lên `main`** | PR của Dependabot vào `native/ios-rewrite` |
 | Sentry (lỗi khi chạy) | đã có trong app | bản Release | MCP Sentry nếu phiên có |
 
