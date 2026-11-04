@@ -133,10 +133,13 @@ struct KoaBedtimeActor: View {
   var build = 0
 
   @Environment(\.colorScheme) private var scheme
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
   var body: some View {
     let light = scheme == .light
-    TimelineView(.animation(minimumInterval: 1.0 / 60)) { tl in
+    // Phòng không dựng cảnh này khi bật Giảm chuyển động (`MascotStage`, `inBedroom`); bật giữa cảnh thì
+    // Koa đứng yên tới khi cảnh hết giờ, không đi tiếp.
+    TimelineView(.animation(minimumInterval: 1.0 / 60, paused: reduceMotion)) { tl in
       let current = clock.shot(at: tl.date.timeIntervalSince(start))
       Canvas { ctx, canvas in
         guard let shot = current else { return }

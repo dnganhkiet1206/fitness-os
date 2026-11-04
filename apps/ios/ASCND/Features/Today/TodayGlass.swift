@@ -150,6 +150,7 @@ private struct TodayEntrance: ViewModifier {
           shown = true
           return
         }
+        // reduce-motion: chỉ còn mờ dần — offset và blur ở trên đã tắt
         withAnimation(.smooth(duration: 0.55).delay(Double(min(order, 4)) * 0.05)) { shown = true }
       }
   }
