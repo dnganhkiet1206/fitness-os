@@ -43,6 +43,7 @@ struct KoaPauseSheet: View {
   let start: (Int) -> Void
   @Environment(\.dismiss) private var dismiss
   @Environment(\.locale) private var locale
+  @Environment(\.dynamicTypeSize) private var typeSize
   @State private var days = 3
 
   var body: some View {
@@ -53,11 +54,7 @@ struct KoaPauseSheet: View {
         .font(DS.TextStyle.body)
         .foregroundStyle(DS.Color.mutedForeground.swiftUI)
         .fixedSize(horizontal: false, vertical: true)
-      Stepper(value: $days, in: 1...KoaPause.maxDays) {
-        Text(String(localized: "pause.sheet.days \(days)"))
-          .font(DS.TextStyle.headline.monospacedDigit())
-      }
-      .accessibilityIdentifier("pause.days")
+      daysPicker
       Text(String(localized: "pause.sheet.back \(returnDay)"))
         .font(DS.TextStyle.footnote)
         .foregroundStyle(DS.Color.mutedForeground.swiftUI)
@@ -71,6 +68,26 @@ struct KoaPauseSheet: View {
     .padding(DS.Spacing.lg)
     .mediumSheet()
     .presentationDragIndicator(.visible)
+  }
+
+  /// Số ngày nghỉ. Chữ cỡ trợ năng: nhãn một dòng riêng, nút −/+ ở dòng dưới. Chung một hàng thì
+  /// "Days off: 3" bị nút ép hẹp và cắt chữ (bộ kiểm a11y 04/11: "Text clipped", khung 82×19 ở cỡ
+  /// thường). VoiceOver đọc nhãn ở nút −/+ như cũ, dòng chữ riêng không đọc lần hai.
+  @ViewBuilder private var daysPicker: some View {
+    let label = Text(String(localized: "pause.sheet.days \(days)")).font(DS.TextStyle.headline.monospacedDigit())
+    if typeSize.isAccessibilitySize {
+      VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+        label
+          .fixedSize(horizontal: false, vertical: true)
+          .accessibilityHidden(true)
+        Stepper(value: $days, in: 1...KoaPause.maxDays) { label }
+          .labelsHidden()
+          .accessibilityIdentifier("pause.days")
+      }
+    } else {
+      Stepper(value: $days, in: 1...KoaPause.maxDays) { label }
+        .accessibilityIdentifier("pause.days")
+    }
   }
 
   private var returnDay: String {
