@@ -101,6 +101,7 @@ function resolve(tree, v) {
     if (x === '$label') return v.label.toUpperCase();
     let m;
     if ((m = /^\$e:(.+):(.+)$/.exec(x))) return +m[1] + (+m[2] - +m[1]) * Math.max(0, Math.min(1, v.energy));
+    if ((m = /^\$day:(.+):(.+)$/.exec(x))) return +m[1]; // golden chỉ có phòng đêm
     if ((m = /^\$moon:(.+):(.+):(.+)$/.exec(x))) return moonPath(+m[1], +m[2], +m[3], v.moon);
     if ((m = /^\$dot(\d+):(.+):(.+)$/.exec(x))) return +m[1] < Math.max(0, Math.min(7, v.streak)) ? m[3] : m[2];
     throw new Error('token lạ ' + x);

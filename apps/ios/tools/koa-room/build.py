@@ -44,9 +44,22 @@ SPOTS = {
 def p(i): return TEMPLATE[i].get("p", {})
 
 
+# Đồ RN gốc mà biến thể đồ mua dùng lại (bình nước + chậu cây nhỏ của kệ chrome, bóng tiếp xúc và
+# quả bóng của chậu lưỡi hổ / bonsai). 04/11 (#799, Kiệt duyệt mock): kệ, cây lớn, bóng của phòng
+# gốc đã vẽ lại; đồ đã mua giữ nguyên như Kiệt duyệt 29/10, nên đọc bản RN đóng băng (`rn-kept.json`,
+# chép từ phòng trước khi vẽ lại) thay vì phần tử hiện tại của phòng.
+RN_KEPT = json.loads((Path(__file__).parent / "rn-kept.json").read_text())
+
+
+def kept(i): return json.loads(json.dumps(RN_KEPT[str(i)]))
+
+
 def check():
-    assert p(80)["d"] == "M 12 392 L 26 250" and p(84)["width"] == 120, "kệ tạ đã đổi"
+    # 04/11 (#799): thân kệ vẽ lại gom vào 80 (con đầu là cột trái), 79 và 81…89 để trống
+    assert TEMPLATE[80]["t"] == "G" and TEMPLATE[80]["k"][0]["p"]["d"] == "M 12 392 L 26 250", "kệ tạ đã đổi"
+    assert all(TEMPLATE[i] == {"t": "G", "p": {}} for i in [79, *range(81, 90)]), "chỗ trống của kệ đã đổi"
     assert TEMPLATE[91]["m"][4:] == [41, 250], "chậu cây trên kệ đã đổi"
+    assert TEMPLATE[90]["m"][4:] == [316, 397] and p(F(0))["cx"] == 352, "bóng của cây / bóng tập đã đổi"
     assert p(66)["width"] == 102 and p(67).get("text") == "STREAK", "bảng số đã đổi"
     assert p(26)["width"] == 95 and p(35)["d"].startswith("$moon"), "cửa sổ đã đổi"
     assert p(64)["width"] == 99, "bậu cửa sổ đã đổi"
@@ -118,7 +131,7 @@ def _():
     for x, y, w in ((28, 250, 88), (20, 300, 104), (12, 350, 120)):
         out += [R(x, y, w, 6, 3, fill="#3A4566"), R(x + 2, y, w - 4, 1.6, 0.8, fill="#E4E9F5", opacity=0.5)]
     # bình nước trên kệ (giữ như gốc) + chậu cây nhỏ (giữ như gốc)
-    out += [TEMPLATE[85], TEMPLATE[91]]
+    out += [kept(85), kept(91)]
     out += [dumbbell(46, 291, "url(#decorChrome)", "#8E9BBB", WHITE), dumbbell(98, 291, "url(#decorChrome)", "#8E9BBB", WHITE)]
     # ấm tạ crôm
     out.append(G([L("M-7 -20 C -7 -30 7 -30 7 -20", "url(#decorChrome)", 4),
@@ -287,10 +300,10 @@ def _():
                    P(f"M {x - 4} 0 Q {x - 5 + lean} {-h * 0.6} {x + lean} {-h}", stroke="#E3C55A", strokeWidth=1, fill="none", opacity=0.8),
                    L(f"M {x - 1} {-h * 0.2} L {x + lean * 0.6} {-h * 0.7}", "#4FA36B", 1, 0.6)]
     pot = [R(-17, 0, 34, 30, 6, fill="#E9E2D6"), R(-17, 0, 34, 5, 3, fill="#C9BFAE"), R(-15, 7, 3, 20, 1.5, fill=WHITE, opacity=0.4)]
-    ball = json.loads(json.dumps(TEMPLATE[F(1)]))
+    ball = kept(F(1))
     ball["k"][1]["p"]["fill"] = "#2BB5A8"
-    return [TEMPLATE[90], contact(313, 397, 20, 3.6, 0.5), G(leaves + pot, T(0, 0, 0)[:4] + [313, 367]),
-            TEMPLATE[F(0)], ball]
+    return [kept(90), contact(313, 397, 20, 3.6, 0.5), G(leaves + pot, T(0, 0, 0)[:4] + [313, 367]),
+            kept(F(0)), ball]
 
 
 @variant("plants.bonsai")
@@ -307,7 +320,7 @@ def _():
             R(-9, -16, 18, 7, 2, fill="#B9852A", opacity=0.5)]
     return [Defs(Rad("decorBell", [(0, "#FFE7A3", 1), (0.6, GOLD, 1), (1, "#B9852A", 1)], cx="35%", cy="30%", r="75%")),
             contact(312, 398, 30, 4, 0.5), G(bonsai, [1.3, 0, 0, 1.3, 312, 382]),
-            TEMPLATE[F(0)], G(bell, [1.15, 0, 0, 1.15, 352, 399])]
+            kept(F(0)), G(bell, [1.15, 0, 0, 1.15, 352, 399])]
 
 
 # ══ 5. ĐÈN ═════════════════════════════════════════════════════════════════════
@@ -596,6 +609,7 @@ def resolve(v, rank=2):
     if v == "$label": return "KOA"
     parts = v.split(":")
     if parts[0] == "$e": return float(parts[1]) + (float(parts[2]) - float(parts[1])) * 0.6
+    if parts[0] == "$day": return float(parts[1])  # xem trước là phòng đêm
     if parts[0] == "$moon":
         cx, cy, r_ = map(float, parts[1:])
         return f"M {cx} {cy - r_} A {r_} {r_} 0 0 1 {cx} {cy + r_} A {r_ * 0.55} {r_} 0 0 0 {cx} {cy - r_} Z"

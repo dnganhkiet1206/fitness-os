@@ -129,8 +129,8 @@ public enum KoaShelf {
 
   /// Giữa đáy của từng cúp trên kệ đang dùng, chỗ đầu cho cúp mới nhất. Chỉ là chỗ trống sẵn có,
   /// không dời đồ của kệ:
-  /// - kệ gốc và kệ chrome (cùng hình): tầng trên, bên phải bình nước (92…116) và giữa chậu cây với
-  ///   bình nước (55…76); tầng dưới, giữa ấm tạ với con lăn (52…78);
+  /// - kệ gốc và kệ chrome (đồ ở cùng chỗ, cả sau khi kệ gốc vẽ lại 04/11, #799): tầng trên, bên phải
+  ///   bình nước (92…116) và giữa chậu cây với bình nước (55…76); tầng dưới, giữa ấm tạ với con lăn (53…78);
   /// - giá olympic không có tầng: ba cúp đứng trên xà ngang trên cùng (y 232).
   public static func cupSpots(shelf variant: String?) -> [Spot] {
     switch variant {

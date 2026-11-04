@@ -109,10 +109,16 @@ import Testing
   // MARK: - Chỗ đặt
 
   /// Cúp đứng trên mặt kệ, trong mép tấm ván, không chạm đồ sẵn có của kệ và không chạm nhau.
-  /// Đồ sẵn có (template, đã nhân `m`): chậu cây 91 ở 26,6…55,4 và bình nước 85 ở 76,1…91,9 (tầng
-  /// y 250, ván 28…116); ấm tạ 88 ở 27,9…52,1 và con lăn 89 ở 78…117,6 (tầng y 350, ván 12…132).
+  /// Đồ sẵn có (đã nhân `m`, không tính bóng tiếp xúc), tầng y 250 (ván 28…116) và y 350 (ván 12…132):
+  /// - kệ gốc vẽ lại (04/11, #799, `tools/studio/redraw799.cjs`): chậu cây 91 ở 28,3…52,9 và bình
+  ///   nước ở 76,1…91,9; ấm tạ ở 27,3…52,7 và con lăn ở 78…117,6 (bình, ấm tạ, con lăn trong nhóm 80);
+  /// - kệ chrome (giữ tranh 29/10): chậu cây và bình nước RN ở 26,6…55,4 và 76,1…91,9; ấm tạ ở
+  ///   27,9…52,1 và con lăn ở 78…117,6.
   @Test func cupsSitInTheShelfsEmptySpots() {
-    let things: [Double: [ClosedRange<Double>]] = [250: [26.6...55.4, 76.1...91.9], 350: [27.9...52.1, 78...117.6]]
+    let things: [String?: [Double: [ClosedRange<Double>]]] = [
+      nil: [250: [28.2...52.9, 76...92], 350: [27.3...52.7, 78...117.6]],
+      "chrome": [250: [26.6...55.4, 76.1...91.9], 350: [27.9...52.1, 78...117.6]],
+    ]
     let boards: [Double: ClosedRange<Double>] = [250: 28...116, 350: 12...132]
     for variant in [nil, "chrome"] as [String?] {
       let rects = (0..<KoaShelf.maxCups).compactMap { KoaShelf.cupRect($0, shelf: variant) }
@@ -121,7 +127,7 @@ import Testing
         let span = r.x...(r.x + r.width)
         let base = r.y + r.height
         #expect(boards[base].map { $0.contains(span.lowerBound) && $0.contains(span.upperBound) } == true, "\(r)")
-        #expect(things[base]?.allSatisfy { !$0.overlaps(span) } == true, "\(r)")
+        #expect(things[variant]?[base]?.allSatisfy { !$0.overlaps(span) } == true, "\(r)")
       }
       for (i, a) in rects.enumerated() {
         for b in rects.dropFirst(i + 1) where a.y == b.y {
@@ -138,12 +144,13 @@ import Testing
     #expect(outside.map { _ in false } ?? true, "quá số chỗ thì không có cúp")
   }
 
-  /// Khung treo ở dải tường trống giữa bảng hiệu (khung dọc, đáy y 52) và đồ cao nhất của kệ (y 217),
-  /// trong tường sau (tường bên bắt đầu ở x 8), không chồng nhau.
+  /// Khung treo ở dải tường trống giữa bảng hiệu (khung dọc, đáy y 52) và đồ cao nhất của kệ (nắp bình
+  /// nước: y 216,9 ở kệ gốc vẽ lại, y 217 ở kệ chrome), trong tường sau (tường bên bắt đầu ở x 8), không
+  /// chồng nhau.
   @Test func framesHangOnTheEmptyWall() {
     let rects = KoaShelf.FrameKind.allCases.map(KoaShelf.frameRect)
     for r in rects {
-      #expect(r.y >= StudioTall.sign.y + StudioTall.sign.h && r.y + r.height < 217 && r.x >= 8, "\(r)")
+      #expect(r.y >= StudioTall.sign.y + StudioTall.sign.h && r.y + r.height < 216 && r.x >= 8, "\(r)")
     }
     for (i, a) in rects.enumerated() {
       for b in rects.dropFirst(i + 1) { #expect(a.x + a.width <= b.x || b.x + b.width <= a.x) }

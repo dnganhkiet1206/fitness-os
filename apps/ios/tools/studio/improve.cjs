@@ -1,11 +1,13 @@
 // Phần VẼ LẠI của native (Kiệt đồng ý, #527): giữ đồ đạc của RN, thêm thứ
 // làm căn phòng có chiều sâu — sàn và chân tường, bóng tiếp xúc, vũng sáng
 // của đèn trên sàn, quầng đèn, bậu + vệt kính cửa sổ, viền sáng mép bục.
+// 04/11 (#799, Kiệt duyệt mock): kệ, cây lớn, bóng tập của RN vẽ lại hẳn
+// (`redraw799.cjs`) — cùng chỗ, cùng cỡ, cùng số phần tử.
+const redraw = require('./redraw799.cjs');
 const C = {
   soft: '#8F83FF', secondary: '#212B4E', primary: '#151A33', edge: '#0B0F22', white: '#FFFFFF', shadow: '#000000',
 };
 const E = (t, p, k, m) => ({ t, p, ...(k ? { k } : {}), ...(m ? { m } : {}) });
-const shadow = (cx, cy, rx, ry, o) => E('Ellipse', { cx, cy, rx, ry, fill: 'url(#nsContact)', opacity: o });
 
 const FLOOR = 360;
 const BOTTOM = 476;
@@ -42,6 +44,7 @@ function floor() {
         E('Stop', { offset: 0, stopColor: C.white, stopOpacity: 0.1 }),
         E('Stop', { offset: 1, stopColor: C.white, stopOpacity: 0 }),
       ]),
+      ...redraw.defs(),
     ]),
     // chân tường: một gờ tối + một sợi sáng — tường dừng ở đây, sàn bắt đầu
     E('Rect', { x: 0, y: FLOOR - 1, width: 390, height: 4, fill: C.edge, opacity: 0.55 }),
@@ -63,6 +66,9 @@ function window() {
 }
 
 module.exports = ({ back, front }) => {
+  // Kệ (10 phần tử), cây (chậu nhỏ + cây lớn), bóng (1) của RN thay bằng bản vẽ lại cùng số phần tử:
+  // chỉ số 77…94 có chỗ trỏ tới (mặt nạ che Koa, chỗ đồ mua, cúp, lá rung, lớp parallax).
+  if (back.shelf.length !== 10 || back.plants.length !== 2 || front.ball.length !== 1) throw new Error('đồ RN đã đổi số phần tử');
   const b = [
     ...back.bg,
     ...back.floor,
@@ -70,17 +76,15 @@ module.exports = ({ back, front }) => {
     ...back.window,
     ...window(),
     ...back.streak,
-    // bóng tiếp xúc: chân kệ, chậu cây — đồ đứng TRÊN sàn chứ không lơ lửng
-    shadow(14, 393, 12, 2.6, 0.55),
-    shadow(130, 393, 12, 2.6, 0.55),
-    shadow(72, 394, 56, 3.4, 0.25),
-    ...back.shelf,
-    shadow(311, 397, 22, 4, 0.5),
-    ...back.plants,
+    ...redraw.shelfBehind(), // 77…79: bóng của kệ — đồ đứng TRÊN sàn, ván in bóng lên tường
+    ...redraw.shelfBody(), // 80…89
+    redraw.plantContact(), // 90
+    redraw.smallPlant(), // 91
+    redraw.bigPlant(), // 92
   ];
   const f = [
-    shadow(352, 431, 27, 4.6, 0.55),
-    ...front.ball,
+    redraw.ballContact(),
+    redraw.ball(),
     ...front.stageShadow,
     ...front.vignette,
     // vũng sáng của đèn trên sàn — SAU vignette (nó là ánh sáng), theo năng lượng như ánh của bục

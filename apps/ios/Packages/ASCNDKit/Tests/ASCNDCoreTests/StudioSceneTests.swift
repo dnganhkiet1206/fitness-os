@@ -127,6 +127,39 @@ struct StudioSceneTests {
     #expect(String(describing: night).contains("#151A33"))
   }
 
+  /// Kệ, cây lớn, bóng vẽ lại (04/11, #799, theo mock Kiệt duyệt cả bản ngày): bóng ván mờ 0.35 ban
+  /// đêm, 0.25 ban ngày (`$day:<đêm>:<ngày>`); bóng tiếp xúc của tranh mới giữ đen ('black') ban ngày,
+  /// màu riêng của tranh mới đều có bản ngày.
+  @Test func redrawnShelfFollowsTheApprovedDayMock() {
+    var o = StudioScene.Options()
+    #expect(StudioScene.resolve("$day:0.35:0.25", o, StudioScene.skins["default"]!) == .number(0.35))
+    let night = String(describing: StudioScene.tree(o))
+    o.light = true
+    #expect(StudioScene.resolve("$day:0.35:0.25", o, StudioScene.lightSkins["default"]!) == .number(0.25))
+    let day = String(describing: StudioScene.tree(o))
+    #expect(!day.contains("$day") && !night.contains("$day"))
+    #expect(day.contains("\"black\"") && night.contains("\"black\""))
+    // gỗ, gang, lá, chậu, bóng tập của đêm không còn ở bản ngày
+    for c in ["#7A5A86", "#4C3763", "#2A2D45", "#3D8254", "#5A3F7A", "#6D5BD0", "#1C2140"] {
+      #expect(night.contains(c) && !day.contains(c), "\(c)")
+    }
+  }
+
+  /// Lá cây lớn (vẽ lại #799) rung quanh ngọn thân (0, −28) nơi tám lá mọc ra: điểm ấy đứng yên, thân
+  /// và chậu không rung.
+  @Test func plantLeavesSwayAroundTheStemTop() throws {
+    var o = StudioScene.Options()
+    o.plantSway = 6
+    let plant = try #require(StudioScene.objects(o, [StudioScene.plantIndex]).first { $0.tag == "G" })
+    #expect(plant.kids.count == 13)
+    for leaf in plant.kids[1...8] {
+      let m = try #require(leaf.matrix)
+      #expect(abs(m[2] * -28 + m[4]) < 1e-9 && abs(m[3] * -28 + m[5] + 28) < 1e-9)
+      #expect(abs(m[1]) > 0.05, "lá có xoay")
+    }
+    #expect(plant.kids[0].matrix == nil && plant.kids[9].matrix == nil)
+  }
+
   /// Tắt đèn: bỏ vệt sáng, chao, dây; bật chiều sâu: thêm lớp ván sàn / chân tường.
   @Test func lampAndDepthToggles() {
     var o = StudioScene.Options()
