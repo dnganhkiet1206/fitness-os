@@ -89,20 +89,24 @@ final class KoaAccessibilityAuditTests: XCTestCase {
   @MainActor private func audit(_ app: XCUIApplication, _ screen: String) throws {
     settle(app)
     var lines: [String] = []
+    var details: [String] = []
     // Đợt 2a: mỗi vấn đề ghi một dòng, handler trả `true` nên test không đỏ vì vấn đề.
     do {
       try app.performAccessibilityAudit(for: .all) { issue in
         lines.append(Self.line(screen, issue))
+        if let d = Self.detail(screen, issue) { details.append(d) }
         return true
       }
     } catch {
       // Màn lớn (Hôm nay, 03/11: "Audit failed to complete in time"): kiểm từng loại một, loại nào
       // vẫn không xong thì ghi một dòng — đợt 2a cần đủ dữ liệu, không cần test đỏ.
       lines.removeAll()
+      details.removeAll()
       for (type, name) in Self.types {
         do {
           try app.performAccessibilityAudit(for: type) { issue in
             lines.append(Self.line(screen, issue))
+            if let d = Self.detail(screen, issue) { details.append(d) }
             return true
           }
         } catch {
@@ -111,6 +115,10 @@ final class KoaAccessibilityAuditTests: XCTestCase {
       }
     }
     if lines.isEmpty { lines.append("A11Y|\(screen)|-|không có vấn đề|") }
+    // Mô tả chi tiết của bộ kiểm (ví dụ tỉ lệ tương phản đo được) ở dòng `A11YD|` riêng: bảng tóm tắt
+    // chỉ đếm dòng `A11Y|` nên không đổi. Cần để biết vì sao bộ kiểm báo "Contrast failed" trong
+    // khi ảnh snapshot đo được 5,1–7,0:1 (03/11).
+    lines += details
     for line in lines { print(line) }
     let attachment = XCTAttachment(string: lines.joined(separator: "\n"))
     attachment.name = "a11y-\(screen)"
@@ -120,9 +128,20 @@ final class KoaAccessibilityAuditTests: XCTestCase {
 
   /// Một dòng `A11Y|màn|loại|mô tả|phần tử` cho bảng của job.
   @MainActor private static func line(_ screen: String, _ issue: XCUIAccessibilityAuditIssue) -> String {
+    ["A11Y", screen, name(issue.auditType), clean(issue.compactDescription), clean(who(issue))].joined(separator: "|")
+  }
+
+  /// Một dòng `A11YD|màn|loại|phần tử|mô tả chi tiết`, chỉ khi bản chi tiết nói thêm điều gì.
+  @MainActor private static func detail(_ screen: String, _ issue: XCUIAccessibilityAuditIssue) -> String? {
+    let full = clean(issue.detailedDescription)
+    guard !full.isEmpty, full != clean(issue.compactDescription) else { return nil }
+    return ["A11YD", screen, name(issue.auditType), clean(who(issue)), full].joined(separator: "|")
+  }
+
+  /// Định danh / nhãn của phần tử bị báo.
+  @MainActor private static func who(_ issue: XCUIAccessibilityAuditIssue) -> String {
     let el = issue.element
-    let who = [el?.identifier, el?.label].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " / ")
-    return ["A11Y", screen, name(issue.auditType), clean(issue.compactDescription), clean(who)].joined(separator: "|")
+    return [el?.identifier, el?.label].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " / ")
   }
 
   private static let types: [(XCUIAccessibilityAuditType, String)] = [

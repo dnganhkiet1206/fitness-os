@@ -227,11 +227,19 @@
     static func edgeReply(_ name: String, body: JSONValue?) -> JSONValue? {
       switch name {
       case EdgeFunction.Name.smartNudges.rawValue:
+        // Như server: câu theo `lang` của yêu cầu. Lượt soát trên simulator tiếng Việt từng thấy câu
+        // mẫu tiếng Anh và tưởng là lỗi của app (#802).
+        let message =
+          switch body?["lang"]?.stringValue ?? "en" {
+          case "vi": "Uống chút nước trước buổi tập nhé — hôm nay bạn chưa ghi ly nào."
+          case "es": "Bebe un poco de agua antes de entrenar: hoy aún no has registrado nada."
+          default: "Sip some water before your workout — you have not logged any today."
+          }
         return json([
           "nudges": [
             [
               "type": "hydration", "priority": "medium",
-              "message": "Sip some water before your workout — you have not logged any today.",
+              "message": message,
             ] as Row
           ]
         ] as Row)
