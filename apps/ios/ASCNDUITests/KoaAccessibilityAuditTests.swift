@@ -135,8 +135,26 @@ final class KoaAccessibilityAuditTests: XCTestCase {
   @MainActor private static func detail(_ screen: String, _ issue: XCUIAccessibilityAuditIssue) -> String? {
     let full = clean(issue.detailedDescription)
     guard !full.isEmpty, full != clean(issue.compactDescription) else { return nil }
-    return ["A11YD", screen, name(issue.auditType), clean(who(issue)), full].joined(separator: "|")
+    let wantsShape = issue.auditType == .hitRegion || issue.auditType == .textClipped
+    return ["A11YD", screen, name(issue.auditType), clean(who(issue)), full + (wantsShape ? shape(issue) : "")]
+      .joined(separator: "|")
   }
+
+  /// Loại, khung (điểm) và "chạm được không" của phần tử bị báo, ví dụ ` [staticText 32,410 140×13]`.
+  /// 04/11: "Hit area is too small" còn báo cả chữ tĩnh và nút đã cao 44 — cần biết bộ kiểm thấy
+  /// phần tử ra sao chứ không đoán.
+  @MainActor private static func shape(_ issue: XCUIAccessibilityAuditIssue) -> String {
+    guard let el = issue.element, el.exists else { return "" }
+    let f = el.frame
+    let kind = kinds[el.elementType] ?? "type\(el.elementType.rawValue)"
+    let hit = el.isHittable ? "" : " không chạm được"
+    return " [\(kind) \(Int(f.minX)),\(Int(f.minY)) \(Int(f.width))×\(Int(f.height))\(hit)]"
+  }
+
+  private static let kinds: [XCUIElement.ElementType: String] = [
+    .button: "button", .staticText: "staticText", .other: "other", .image: "image", .link: "link",
+    .cell: "cell", .scrollView: "scrollView",
+  ]
 
   /// Định danh / nhãn của phần tử bị báo.
   @MainActor private static func who(_ issue: XCUIAccessibilityAuditIssue) -> String {

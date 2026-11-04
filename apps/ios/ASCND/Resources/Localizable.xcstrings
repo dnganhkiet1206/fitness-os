@@ -69654,6 +69654,167 @@
      }
     }
    }
+  },
+  "weekday.narrow.mon": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "M"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "L"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "T2"
+     }
+    }
+   }
+  },
+  "weekday.narrow.tue": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "T"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "M"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "T3"
+     }
+    }
+   }
+  },
+  "weekday.narrow.wed": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "W"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "X"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "T4"
+     }
+    }
+   }
+  },
+  "weekday.narrow.thu": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "T"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "J"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "T5"
+     }
+    }
+   }
+  },
+  "weekday.narrow.fri": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "F"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "V"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "T6"
+     }
+    }
+   }
+  },
+  "weekday.narrow.sat": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "S"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "S"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "T7"
+     }
+    }
+   }
+  },
+  "weekday.narrow.sun": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "S"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "D"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "CN"
+     }
+    }
+   }
   }
  }
 }
