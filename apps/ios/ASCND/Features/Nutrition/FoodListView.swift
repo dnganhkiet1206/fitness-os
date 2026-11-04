@@ -287,6 +287,7 @@ struct FoodEditorView: View {
                 Text(String(localized: "foods.delete"))
                   .font(DS.TextStyle.footnote.weight(.semibold))
                   .frame(maxWidth: .infinity, minHeight: 44)
+                  .contentShape(Rectangle())
               }
               .buttonStyle(.plain)
               .foregroundStyle(DS.Color.destructive.swiftUI)

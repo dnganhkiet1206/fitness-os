@@ -436,6 +436,7 @@ struct MealPlanView: View {
             .font(DS.TextStyle.footnote.weight(.semibold))
             .foregroundStyle(MascotRoomView.signalColor(.meal))
             .frame(minHeight: 44)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .padding(.leading, 58)

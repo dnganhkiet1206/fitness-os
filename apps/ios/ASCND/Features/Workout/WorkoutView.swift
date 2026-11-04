@@ -459,6 +459,7 @@ public struct WorkoutView: View {
             .font(DS.TextStyle.footnote.weight(.semibold).monospacedDigit())
             .foregroundStyle(WorkoutsHomeView.accent)
             .frame(maxWidth: .infinity, minHeight: 36)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .padding(.top, -DS.Spacing.sm)
@@ -819,6 +820,7 @@ public struct WorkoutView: View {
             .font(DS.TextStyle.footnote.weight(.semibold).monospacedDigit())
             .foregroundStyle(WorkoutsHomeView.accent)
             .frame(maxWidth: .infinity, minHeight: 36)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
       }
@@ -951,6 +953,7 @@ public struct WorkoutView: View {
           .font(DS.TextStyle.footnote.weight(.semibold))
           .foregroundStyle(WorkoutsHomeView.accent)
           .frame(minHeight: 44)
+          .contentShape(Rectangle())
       }
       .buttonStyle(.plain)
     }
