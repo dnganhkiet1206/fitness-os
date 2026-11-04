@@ -268,8 +268,11 @@ final class KoaDirectorDriver {
 
   private static func talkKey(_ userId: String) -> String { "koa.talk.\(userId)" }
 
-  private func speak(_ beat: KoaTalk.Beat) {
-    talkStart = Date.timeIntervalSinceReferenceDate
+  /// `now` là đồng hồ của nhịp gọi tới (`step` / `quietTick`), cùng đồng hồ mà nhịp sau dùng để
+  /// tắt bóng thoại. Lấy giờ thật ở đây thì hai đồng hồ lệch nhau: test truyền giờ giả bị đỏ trên
+  /// máy CI chậm (#840).
+  private func speak(_ beat: KoaTalk.Beat, at now: Double = Date.timeIntervalSinceReferenceDate) {
+    talkStart = now
     if !KoaFlags.eyesClosed(KoaTalk.face(beat.topic).peak) { director.blink() }
     Task { @MainActor in self.speech = beat }
   }
@@ -320,7 +323,7 @@ final class KoaDirectorDriver {
     let beat = KoaTalk.Beat(topic: topic, variant: probe.variant, line: line)
     plan.spoke(at: now, seconds: beat.seconds)
     talkPlan = plan
-    speak(beat)
+    speak(beat, at: now)
   }
 
   /// Giảm chuyển động (#799): đồng hồ dựng hình dừng (`step` không chạy) nhưng Koa vẫn nói theo

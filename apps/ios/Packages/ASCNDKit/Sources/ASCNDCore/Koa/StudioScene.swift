@@ -179,6 +179,9 @@ public enum StudioScene {
     /// Lớp bụi theo mức ("1"…"3", cộng dồn) và phần tử mà bụi nằm ngay sau.
     let dust: [String: [JSONValue]]
     let dustAfter: Int
+    /// Đồ mua không có mặt đỡ của đồ gốc (giá olympic không có ván): bụi nằm trên đồ gốc của chỗ ấy
+    /// không vẽ. Phần tử của biến thể / bụi mang `at`: phần tử của phòng mà nó thay / nằm trên.
+    let bare: [String]
   }
 
   /// `StudioDecorData.swift` (`tools/koa-room/build.py`).
@@ -213,9 +216,11 @@ public enum StudioScene {
   public static func tree(_ o: Options) -> [KoaRender.Element] { build(template, o, decor: true) }
 
   /// Chỉ vài đồ vật của căn phòng (chỉ số trong `template`, như `KoaRoomMap.Occluder`) cùng
-  /// mọi `Defs` — làm mặt nạ để vẽ lại đúng đồ ấy đè lên Koa khi Koa đứng sau nó.
+  /// mọi `Defs` — làm mặt nạ để vẽ lại đúng đồ ấy đè lên Koa khi Koa đứng sau nó. Đồ mua và bụi đi
+  /// theo phần tử mà chúng thay / nằm trên (`at`): kệ mua vào mặt nạ của kệ, bụi trên ván kệ cũng
+  /// vậy; bóng tiếp xúc trên sàn, bụi trên tường / sàn, hạt lơ lửng không vào mặt nạ nào.
   public static func objects(_ o: Options, _ indices: Set<Int>) -> [KoaRender.Element] {
-    build(template, o, decor: true, only: indices)
+    build(template, o, decor: true, only: indices, mask: true)
   }
 
   /// Bảng hiệu trên tường của tranh gốc, để khung dọc đặt lại cỡ lớn.
@@ -235,34 +240,56 @@ public enum StudioScene {
   /// rung, để thứ tự lớp giữ y như phòng gốc.
   public static var fromPlant: Set<Int> { Set(plantIndex..<template.count) }
 
-  /// Một template (studio, phòng thử đồ) → cây phần tử, token đã giải.
-  static func build(_ template: [JSONValue], _ o: Options, decor: Bool = false, only: Set<Int>? = nil)
-    -> [KoaRender.Element]
-  {
+  /// Một template (studio, phòng thử đồ) → cây phần tử, token đã giải. `mask`: dựng mặt nạ che Koa
+  /// (`objects`) — đồ mua và bụi lấy theo `at` thay vì theo chỗ chèn, thứ tự không quan trọng.
+  static func build(
+    _ template: [JSONValue], _ o: Options, decor: Bool = false, only: Set<Int>? = nil, mask: Bool = false
+  ) -> [KoaRender.Element] {
     let table = o.light ? lightSkins : skins
     let skin = table[o.skin] ?? table["default"]!
     var out: [KoaRender.Element] = []
     // Đồ phòng: bỏ phần tử gốc của chỗ có món, chèn biến thể ở chỗ phần tử đầu tiên.
     var skip = Set<Int>()
     var swap: [Int: [JSONValue]] = [:]
+    // Phần tử không vẽ mà bụi nằm trên thì bụi cũng không vẽ: khung dọc bỏ cửa sổ / bảng neon cũ
+    // (`omit`), đồ mua không có mặt đỡ của đồ gốc (`bare`).
+    var gone = o.omit
     if decor {
       for (spot, id) in o.decor {
         guard let idx = decorData.spots[spot], let first = idx.min(), let v = decorData.variants["\(spot).\(id)"]
         else { continue }
         skip.formUnion(idx)
+        if decorData.bare.contains("\(spot).\(id)") { gone.formUnion(idx) }
         // ban ngày không có đèn treo (như đèn gốc)
         swap[first] = spot == "lamp" && !o.lamp ? [] : v
       }
     }
+    var dust: [JSONValue] = []
+    if decor, o.dust > 0 {
+      for k in 1...min(3, o.dust) { dust += decorData.dust["\(k)"] ?? [] }
+      dust = dust.filter { n in n["at"]?.intValue.map { !gone.contains($0) } ?? true }
+    }
+    // mặt nạ: đồ mua / bụi vào khi thứ nó thay / nằm trên thuộc mặt nạ; `Defs` của đồ mua luôn có
+    func masked(_ n: JSONValue) -> Bool {
+      guard mask, let only else { return true }
+      return n["t"]?.stringValue == "Defs" || n["at"]?.intValue.map { only.contains($0) } == true
+    }
     for (i, v) in template.enumerated() {
+      if mask, !o.omit.contains(i), let extra = swap[i] {
+        out += extra.filter(masked).compactMap { element($0, o, skin) }
+      }
       if let only, !only.contains(i), v["t"]?.stringValue != "Defs" { continue }
       if o.omit.contains(i) { continue }
-      if let extra = swap[i] { out += extra.compactMap { element($0, o, skin) } }
+      if !mask, let extra = swap[i] { out += extra.compactMap { element($0, o, skin) } }
       // cúp và khung mốc (#792): vẽ cạnh món cuối của kệ / của tường nên theo đúng lớp của chúng,
       // và vẫn có khi kệ / bảng là đồ đã mua (phần tử gốc khi ấy bị bỏ qua ngay dưới)
       if decor, i == KoaShelf.cupsAt { out += KoaShelf.cupTree(o) }
       if decor, i == KoaShelf.framesAt { out += KoaShelf.frameTree(o) }
-      if skip.contains(i) { continue }
+      if skip.contains(i) {
+        // bụi vẫn nằm sau chỗ này khi nó là đồ mua (cây mua thay cả quả bóng; trước đây mất hết bụi)
+        if !mask, i == decorData.dustAfter { out += dust.compactMap { element($0, o, skin) } }
+        continue
+      }
       if i == plantIndex, o.plantSway != 0, var e = element(v, o, skin) {
         let m = KoaMath.opMat(KoaScene.Op("r", [o.plantSway, plantPivot.x, plantPivot.y]))
         e.kids = e.kids.enumerated().map { j, k in (1...8).contains(j) ? KoaRender.Element("G", matrix: m, kids: [k]) : k }
@@ -278,10 +305,9 @@ public enum StudioScene {
       // lớp chiều sâu ngay sau mép sàn, trước đồ đạc
       if o.depth, isFloorEdge(v) { out += depthLayer.compactMap { element($0, o, skin) } }
       // bụi trên đồ đạc, dưới vignette / đèn / bục
-      if decor, o.dust > 0, i == decorData.dustAfter {
-        for k in 1...min(3, o.dust) { out += (decorData.dust["\(k)"] ?? []).compactMap { element($0, o, skin) } }
-      }
+      if !mask, i == decorData.dustAfter { out += dust.compactMap { element($0, o, skin) } }
     }
+    if mask { out += dust.filter(masked).compactMap { element($0, o, skin) } }
     return out
   }
 
