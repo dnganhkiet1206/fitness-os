@@ -18,6 +18,8 @@ struct RestLabView: View {
     NavigationStack {
       ScrollView {
         VStack(spacing: 28) {
+          // Vòng đếm ngược là thông tin (cùng công thức vòng trên Island), không phải hiệu ứng.
+          // reduce-motion: vòng đếm ngược, màn chỉ ở Debug
           TimelineView(.animation) { context in
             let now = EpochMillis(context.date)
             let fraction = rest.timer?.ringFraction(at: now) ?? 0

@@ -1014,6 +1014,15 @@ const STEPS = [
   ['chế độ UI test chỉ ở bản Debug', 'node', ['../apps/ios/tools/native-uitest-mode.mjs']],
   ['chế độ UI test — fixture từng dạng phải đỏ', 'node', ['../apps/ios/tools/native-uitest-mode.mjs', '--self-test']],
   /*
+    #386 (04/11/2026): Giảm chuyển động ở app iOS. Mọi `.animation`, `withAnimation`,
+    `TimelineView(.animation)` tính tới `reduceMotion` (tại chỗ, hay qua một tên
+    tính từ nó), hay mang dấu `// reduce-motion: <lý do>` cho chỗ chỉ còn mờ dần.
+    Bản đầu nằm ngoài cổng vì đỏ sẵn: 15/19 chỗ nó báo là oan, nên 4 chỗ thật
+    không ai thấy. Vùng mù ghi trong đầu tệp.
+  */
+  ['Giảm chuyển động ở app iOS', 'node', ['../apps/ios/tools/native-motion-audit.mjs']],
+  ['Giảm chuyển động — fixture từng dạng phải đỏ', 'node', ['../apps/ios/tools/native-motion-audit.mjs', '--self-test']],
+  /*
     #527 (Kiệt 27/10): câu AI viết nước theo đơn vị người dùng (oz / ml). Chạy
     `_shared/water.ts` thật (Node bỏ kiểu TS) và kiểm hai hàm + app gửi `waterUnit`.
   */
