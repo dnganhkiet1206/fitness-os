@@ -46,16 +46,13 @@ struct TodayOverloadStack<Hero: View>: View {
   private var accessibleBody: some View {
     VStack(spacing: DS.Spacing.sm) {
       front
-      Group {
-        if showsLoad { mainStrip } else { loadStrip }
-      }
+      strip
       .padding(.vertical, DS.Spacing.sm)
       .padding(.horizontal, DS.Spacing.md)
       .frame(maxWidth: .infinity, alignment: .leading)
       .todayCard()
     }
     .sensoryFeedback(.selection, trigger: showsLoad)
-    .accessibilityAction(named: Text(showsLoad ? "ov.a11y.back" : "ov.a11y.show")) { swap() }
   }
 
   private var stackedBody: some View {
@@ -96,7 +93,6 @@ struct TodayOverloadStack<Hero: View>: View {
       dragX = 0
       entering = false
     }
-    .accessibilityAction(named: Text(showsLoad ? "ov.a11y.back" : "ov.a11y.show")) { swap() }
   }
 
   /// Kéo chưa đủ xa: thẻ bật về chỗ.
@@ -143,15 +139,27 @@ struct TodayOverloadStack<Hero: View>: View {
   private var back: some View {
     VStack(spacing: 0) {
       Color.clear.frame(height: frontHeight)
-      Group {
-        if showsLoad { mainStrip } else { loadStrip }
-      }
+      strip
       .transition(.opacity)
       .frame(minHeight: Self.minPeek, maxHeight: .infinity)
     }
     .padding(.horizontal, DS.Spacing.md)
     .frame(maxWidth: .infinity)
     .todayCard()
+  }
+
+  /// Dải của thẻ phía sau — nút đổi thẻ, và là chỗ của hành động có tên cho VoiceOver.
+  ///
+  /// 04/11: hành động "Xem tăng tải / Về việc chính" trước gắn vào CẢ chồng thẻ. Bộ kiểm
+  /// accessibility báo "Hit area is too small" cho cả chữ TĨNH của thẻ việc chính ("TODAY'S MAIN
+  /// THING", "From your weekly plan.", cao 13–20 điểm) — nghi là hành động ấy rơi xuống từng phần
+  /// tử nên chúng thành phần tử bấm được. Gắn ở dải: VoiceOver nghe "có hành động" ở đúng một chỗ,
+  /// cạnh nút đổi thẻ; dải "Chest day · Bắt đầu ›" vẫn bấm là bắt đầu, hành động có tên là quay về.
+  private var strip: some View {
+    Group {
+      if showsLoad { mainStrip } else { loadStrip }
+    }
+    .accessibilityAction(named: Text(showsLoad ? "ov.a11y.back" : "ov.a11y.show")) { swap() }
   }
 
   private var mainStrip: some View {
