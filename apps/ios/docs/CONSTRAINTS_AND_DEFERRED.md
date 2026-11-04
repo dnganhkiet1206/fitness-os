@@ -511,6 +511,14 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Không sửa: "Good" trong lượt kiểm là giá trị đọc của mảng hình logo ở Tiến bộ — biểu tượng theo cỡ hình, không phải chữ. Các mục "partially unsupported" và độ tương phản của chữ màu nhạt chờ xem bảng đầy đủ (độ tương phản đụng màu token chung → cần Kiệt duyệt).
 - **NOT RUN:** xem dải ở cỡ chữ trợ năng trên simulator / iPhone.
 
+**#802: các điểm soát giao diện (04/11, Kiệt giao E quyết, nhánh `claude/ui-decisions-802`):**
+- Xoá tài khoản: nút chữ nhỏ màu đỏ ở chân mục Đăng xuất, không còn cùng cỡ với Đăng xuất. Vẫn hỏi lại trước khi xoá, vẫn có chữ báo kết quả và dòng giải thích.
+- Tên huy chương tiếng Việt / Tây Ban Nha viết hoa chữ đầu câu ("Bữa đầu tiên", "Primer plato"); tiếng Anh giữ Title Case như RN. Biến đổi ở `apps/ios/tools/award-text/gen.mjs` khi sinh, RN vẫn là nguồn. Ngoại lệ có ghi trong gen.mjs: `workouts_100` vi "100 buổi tập" (trước đây sửa tay trong JSON nên `--check` đỏ mà không ai biết), `steps_10k` vi "10K bước" (RN để tiếng Anh). Bước `--check` nay chạy trong `native/tools/check.mjs`.
+- Koa không cau có: bước "Kế hoạch của bạn" ở onboarding dùng mặt vui (thay mặt gồng sức khởi động); Koa nhỏ ở đầu Hôm nay (dạng gọn) đổi nét buồn / mệt / lo / ngượng / gồng sức thành nét bình thường (`TodayDayBlock.compactEmotion`, test `TodayCompactKoaTests`). Câu Koa nói và widget vẫn theo tâm trạng thật.
+- Onboarding: bước Apple Health hiện thanh ba chặng (thuộc chặng 3 "về bạn"); trước đây tới bước này thì thanh biến mất.
+- Giữ nguyên: bốn thẻ "Cần chú ý" cùng cỡ. Ô "Chuỗi ngày" ở hồ sơ: PR riêng (#828). Câu Insight tiếng Anh: dữ liệu mẫu UI test (#826).
+- **NOT RUN:** xem trên simulator / iPhone.
+
 **Đo lường Koa Ecosystem (03/11, #793, nhánh `claude/koa-analytics`):**
 - Thêm `koa_moment_shown` (`kind`, `place` today/room, `major`), `journey_opened`, `rhythm_viewed` (`sessions` theo khoảng, `paused`), `pause_started` (`days`), `pause_ended_early` (`days_used`, `days_left`). Không gửi `value` của mốc (hạng, số buổi, số ngày nghỉ) và không số đo sức khoẻ.
 - "Một lần mỗi lần xảy ra": mốc một lần mỗi nơi, Nhịp một lần mỗi ngày, nhớ qua các lần mở app (`Telemetry.once`, 200 khoá mới nhất mỗi tài khoản trong UserDefaults). Mở Hành trình và hai nút tạm nghỉ gửi mỗi lần bấm / mở.
@@ -647,6 +655,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - 03/11/2026: #796 phần 1: Daily Plan có lý do `paused(until:)`; thẻ việc chính ghi "Đang tạm nghỉ · tập lại từ …". Lịch sử đợt nghỉ chờ Kiệt quyết (migration hay trên máy).
 - 03/11/2026: dải Tuần của Koa lớn theo Dynamic Type (kiểm accessibility báo cỡ cố định); xem mục 4.
 - 03/11/2026: #795 đợt 2c: chữ thẻ "Hôm nay của bạn" và nhãn Koa lớn theo Dynamic Type, hàng nút nhanh xếp dọc ở cỡ trợ năng; xem mục 4.
+- 04/11/2026: #802: Xoá tài khoản thành nút chữ nhỏ; tên huy chương vi/es viết hoa chữ đầu câu (gen.mjs, `--check` vào cổng); Koa không cau có ở onboarding và Hôm nay; thanh tiến trình ở bước Apple Health; xem mục 4.
 - 03/11/2026: #800 thông báo: câu nhắc buổi tập xoay vòng, bị bỏ qua 3 lần liền thì 2 ngày một lần, xin quyền khi có lịch tập đầu tiên; xem mục 4.
 - 03/11/2026: sheet nửa màn (Tạm nghỉ, mua đồ, khẩu phần) mở cả màn và cuộn được ở chữ cỡ trợ năng, không còn cắt mất nút; xem mục 4.
 - 03/11/2026: đo lường Koa Ecosystem (#793): năm sự kiện mốc / hành trình / Nhịp / tạm nghỉ, gửi một lần mỗi lần xảy ra (`Telemetry.once`); xem mục 4.

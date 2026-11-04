@@ -1,11 +1,11 @@
 {
- "source": "native/src/lib/gamification-i18n.ts AWARD_TEXT — sinh bằng apps/ios/tools/award-text/gen.mjs, đừng sửa tay",
+ "source": "native/src/lib/gamification-i18n.ts AWARD_TEXT — sinh bằng apps/ios/tools/award-text/gen.mjs (tên vi/es viết hoa chữ đầu câu, ngoại lệ ghi trong gen.mjs), đừng sửa tay",
  "awards": {
   "first_meal": {
    "title": {
-    "vi": "Bữa Đầu Tiên",
+    "vi": "Bữa đầu tiên",
     "en": "First Plate",
-    "es": "Primer Plato"
+    "es": "Primer plato"
    },
    "desc": {
     "vi": "Ghi bữa ăn đầu tiên",
@@ -15,9 +15,9 @@
   },
   "first_pr": {
    "title": {
-    "vi": "Kỷ Lục Mới!",
+    "vi": "Kỷ lục mới!",
     "en": "New Record!",
-    "es": "¡Nuevo Récord!"
+    "es": "¡Nuevo récord!"
    },
    "desc": {
     "vi": "Đạt PR đầu tiên",
@@ -27,9 +27,9 @@
   },
   "first_workout": {
    "title": {
-    "vi": "Bước Đầu",
+    "vi": "Bước đầu",
     "en": "First Step",
-    "es": "Primer Paso"
+    "es": "Primer paso"
    },
    "desc": {
     "vi": "Hoàn thành buổi tập đầu tiên",
@@ -39,9 +39,9 @@
   },
   "meals_250": {
    "title": {
-    "vi": "Khách Quen Của Bếp",
+    "vi": "Khách quen của bếp",
     "en": "Kitchen Regular",
-    "es": "Habitual de la Cocina"
+    "es": "Habitual de la cocina"
    },
    "desc": {
     "vi": "Ghi 250 bữa ăn",
@@ -51,9 +51,9 @@
   },
   "meals_50": {
    "title": {
-    "vi": "Năm Mươi Bữa",
+    "vi": "Năm mươi bữa",
     "en": "Fifty Plates",
-    "es": "Cincuenta Platos"
+    "es": "Cincuenta platos"
    },
    "desc": {
     "vi": "Ghi 50 bữa ăn",
@@ -75,9 +75,9 @@
   },
   "sleep_100": {
    "title": {
-    "vi": "Trăm Đêm",
+    "vi": "Trăm đêm",
     "en": "Hundred Nights",
-    "es": "Cien Noches"
+    "es": "Cien noches"
    },
    "desc": {
     "vi": "Ghi 100 đêm ngủ",
@@ -87,9 +87,9 @@
   },
   "sleep_30": {
    "title": {
-    "vi": "Tháng Yên Giấc",
+    "vi": "Tháng yên giấc",
     "en": "Month of Rest",
-    "es": "Mes de Descanso"
+    "es": "Mes de descanso"
    },
    "desc": {
     "vi": "Ghi 30 đêm ngủ",
@@ -99,9 +99,9 @@
   },
   "sleep_7": {
    "title": {
-    "vi": "Bảy Đêm",
+    "vi": "Bảy đêm",
     "en": "Seven Nights",
-    "es": "Siete Noches"
+    "es": "Siete noches"
    },
    "desc": {
     "vi": "Ghi 7 đêm ngủ",
@@ -111,9 +111,9 @@
   },
   "steps_10k": {
    "title": {
-    "vi": "10K Steps",
+    "vi": "10K bước",
     "en": "10K Steps",
-    "es": "10K Pasos"
+    "es": "10K pasos"
    },
    "desc": {
     "vi": "Đạt 10,000 bước trong 1 ngày",
@@ -123,9 +123,9 @@
   },
   "steps_15k": {
    "title": {
-    "vi": "Đường Dài",
+    "vi": "Đường dài",
     "en": "Long Way",
-    "es": "Largo Camino"
+    "es": "Largo camino"
    },
    "desc": {
     "vi": "Đạt 15.000 bước trong 1 ngày",
@@ -135,9 +135,9 @@
   },
   "steps_20k": {
    "title": {
-    "vi": "Hai Vạn Bước",
+    "vi": "Hai vạn bước",
     "en": "Twenty Thousand",
-    "es": "Veinte Mil"
+    "es": "Veinte mil"
    },
    "desc": {
     "vi": "Đạt 20.000 bước trong 1 ngày",
@@ -147,9 +147,9 @@
   },
   "streak_100": {
    "title": {
-    "vi": "Trăm Ngày",
+    "vi": "Trăm ngày",
     "en": "Hundred Days",
-    "es": "Cien Días"
+    "es": "Cien días"
    },
    "desc": {
     "vi": "Ghi log 100 ngày liên tiếp",
@@ -159,7 +159,7 @@
   },
   "streak_14": {
    "title": {
-    "vi": "Kiên Trì",
+    "vi": "Kiên trì",
     "en": "Persistent",
     "es": "Persistente"
    },
@@ -171,9 +171,9 @@
   },
   "streak_180": {
    "title": {
-    "vi": "Nửa Năm",
+    "vi": "Nửa năm",
     "en": "Half a Year",
-    "es": "Medio Año"
+    "es": "Medio año"
    },
    "desc": {
     "vi": "Ghi log 180 ngày liên tiếp",
@@ -183,9 +183,9 @@
   },
   "streak_3": {
    "title": {
-    "vi": "Khởi Đầu",
+    "vi": "Khởi đầu",
     "en": "First Spark",
-    "es": "Primera Chispa"
+    "es": "Primera chispa"
    },
    "desc": {
     "vi": "Ghi log 3 ngày liên tiếp",
@@ -195,9 +195,9 @@
   },
   "streak_30": {
    "title": {
-    "vi": "Thép Đã Tôi",
+    "vi": "Thép đã tôi",
     "en": "Forged in Steel",
-    "es": "Forjado en Acero"
+    "es": "Forjado en acero"
    },
    "desc": {
     "vi": "Ghi log 30 ngày liên tiếp",
@@ -207,9 +207,9 @@
   },
   "streak_365": {
    "title": {
-    "vi": "Trọn Một Năm",
+    "vi": "Trọn một năm",
     "en": "A Full Year",
-    "es": "Un Año Completo"
+    "es": "Un año completo"
    },
    "desc": {
     "vi": "Ghi log 365 ngày liên tiếp",
@@ -219,9 +219,9 @@
   },
   "streak_60": {
    "title": {
-    "vi": "Hai Tháng Ròng",
+    "vi": "Hai tháng ròng",
     "en": "Two Months Deep",
-    "es": "Dos Meses Seguidos"
+    "es": "Dos meses seguidos"
    },
    "desc": {
     "vi": "Ghi log 60 ngày liên tiếp",
@@ -231,9 +231,9 @@
   },
   "streak_7": {
    "title": {
-    "vi": "Tuần Vàng",
+    "vi": "Tuần vàng",
     "en": "Golden Week",
-    "es": "Semana Dorada"
+    "es": "Semana dorada"
    },
    "desc": {
     "vi": "Ghi log 7 ngày liên tiếp",
@@ -243,9 +243,9 @@
   },
   "water_100": {
    "title": {
-    "vi": "Trăm Ngày Nước",
+    "vi": "Trăm ngày nước",
     "en": "Water Century",
-    "es": "Siglo del Agua"
+    "es": "Siglo del agua"
    },
    "desc": {
     "vi": "Ghi nước uống trong 100 ngày",
@@ -255,9 +255,9 @@
   },
   "water_30": {
    "title": {
-    "vi": "Dòng Chảy Đều",
+    "vi": "Dòng chảy đều",
     "en": "Steady Current",
-    "es": "Corriente Constante"
+    "es": "Corriente constante"
    },
    "desc": {
     "vi": "Ghi nước uống trong 30 ngày",
@@ -267,9 +267,9 @@
   },
   "water_7": {
    "title": {
-    "vi": "Bảy Ngày Nước",
+    "vi": "Bảy ngày nước",
     "en": "Seven Springs",
-    "es": "Siete Manantiales"
+    "es": "Siete manantiales"
    },
    "desc": {
     "vi": "Ghi nước uống trong 7 ngày",
@@ -279,9 +279,9 @@
   },
   "weigh_10": {
    "title": {
-    "vi": "Mười Lần Cân",
+    "vi": "Mười lần cân",
     "en": "Ten Readings",
-    "es": "Diez Mediciones"
+    "es": "Diez mediciones"
    },
    "desc": {
     "vi": "Ghi 10 lần cân",
@@ -291,9 +291,9 @@
   },
   "weigh_200": {
    "title": {
-    "vi": "Hai Trăm Vạch",
+    "vi": "Hai trăm vạch",
     "en": "Two Hundred Marks",
-    "es": "Doscientas Marcas"
+    "es": "Doscientas marcas"
    },
    "desc": {
     "vi": "Ghi 200 lần cân",
@@ -303,9 +303,9 @@
   },
   "weigh_50": {
    "title": {
-    "vi": "Tay Đều",
+    "vi": "Tay đều",
     "en": "Steady Hand",
-    "es": "Mano Firme"
+    "es": "Mano firme"
    },
    "desc": {
     "vi": "Ghi 50 lần cân",
@@ -315,9 +315,9 @@
   },
   "workouts_10": {
    "title": {
-    "vi": "10 Buổi Tập",
+    "vi": "10 buổi tập",
     "en": "10 Workouts",
-    "es": "10 Entrenamientos"
+    "es": "10 entrenamientos"
    },
    "desc": {
     "vi": "Hoàn thành 10 buổi tập",
@@ -327,7 +327,7 @@
   },
   "workouts_100": {
    "title": {
-    "vi": "100 Buổi Tập",
+    "vi": "100 buổi tập",
     "en": "Centurion",
     "es": "Centurión"
    },
@@ -339,9 +339,9 @@
   },
   "workouts_50": {
    "title": {
-    "vi": "50 Buổi Tập",
+    "vi": "50 buổi tập",
     "en": "50 Workouts",
-    "es": "50 Entrenamientos"
+    "es": "50 entrenamientos"
    },
    "desc": {
     "vi": "Hoàn thành 50 buổi tập",

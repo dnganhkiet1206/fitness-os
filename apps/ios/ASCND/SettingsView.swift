@@ -82,6 +82,39 @@ public struct SettingsView: View {
     }
   }
 
+  /// Xoá tài khoản: nút chữ nhỏ màu đỏ ở chân mục Đăng xuất, không cùng cỡ với Đăng xuất (04/11, #802,
+  /// Kiệt giao E quyết). Thao tác phá huỷ không đứng ngang hàng thao tác thường; vẫn hỏi lại như cũ.
+  @ViewBuilder private var deleteFooter: some View {
+    VStack(alignment: .leading, spacing: 4) {
+      Button(role: .destructive) {
+        ConfirmAlert.present(
+          title: String(localized: "settings.delete.title"),
+          message: String(localized: "settings.delete.message"),
+          confirm: String(localized: "settings.delete.confirm"),
+          cancel: String(localized: "settings.cancel"),
+          action: runDelete)
+      } label: {
+        HStack(spacing: 6) {
+          if deleting { ProgressView().controlSize(.small) }
+          Text(deleting ? String(localized: "settings.delete.progress") : String(localized: "settings.delete"))
+            .font(DS.TextStyle.footnote.weight(.semibold))
+        }
+        .frame(minHeight: 44)
+        .contentShape(Rectangle())
+      }
+      .buttonStyle(.plain)
+      .foregroundStyle(DS.Color.destructive.swiftUI)
+      .disabled(deleting)
+      if let deleteResult, let text = Self.deleteText(deleteResult) {
+        Text(text)
+          .font(DS.TextStyle.footnote)
+          .foregroundStyle(DS.Color.destructive.swiftUI)
+      }
+      Text(String(localized: "settings.delete.footer"))
+    }
+    .padding(.top, 4)
+  }
+
   /// Chữ báo sau khi xoá không xong (xoá xong thì app đã đăng xuất).
   static func deleteText(_ r: AccountDeletion) -> String? {
     switch r {
@@ -288,33 +321,8 @@ public struct SettingsView: View {
                 .frame(maxWidth: .infinity)
                 .frame(minHeight: 44)
             }
-          }
-          if deleteAccount != nil {
-            Section {
-              Button(role: .destructive) {
-                ConfirmAlert.present(
-                  title: String(localized: "settings.delete.title"),
-                  message: String(localized: "settings.delete.message"),
-                  confirm: String(localized: "settings.delete.confirm"),
-                  cancel: String(localized: "settings.cancel"),
-                  action: runDelete)
-              } label: {
-                HStack(spacing: 8) {
-                  if deleting { ProgressView() }
-                  Text(deleting ? String(localized: "settings.delete.progress") : String(localized: "settings.delete"))
-                }
-                .frame(maxWidth: .infinity)
-                .frame(minHeight: 44)
-              }
-              .disabled(deleting)
-              if let deleteResult, let text = Self.deleteText(deleteResult) {
-                Text(text)
-                  .font(DS.TextStyle.footnote)
-                  .foregroundStyle(DS.Color.destructive.swiftUI)
-              }
-            } footer: {
-              Text(String(localized: "settings.delete.footer"))
-            }
+          } footer: {
+            if deleteAccount != nil { deleteFooter }
           }
         }
       }

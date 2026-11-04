@@ -1025,6 +1025,12 @@ const STEPS = [
   */
   ['AI trả lời mức tạ từng bài', 'node', ['--experimental-strip-types', '../apps/ios/tools/native-ai-exercise-progress.mjs']],
   /*
+    #802 (04/11): tên + mô tả huy chương của app chép máy từ `AWARD_TEXT` của RN
+    (`apps/ios/tools/award-text/gen.mjs`). Bước kiểm này trước đây không chạy ở đâu nên tệp
+    lệch RN mà không ai biết (tên sửa tay). Chỗ cố ý khác RN nay nằm trong bảng ngoại lệ của gen.mjs.
+  */
+  ['tên huy chương khớp RN (trừ ngoại lệ có ghi)', 'node', ['--experimental-strip-types', '../apps/ios/tools/award-text/gen.mjs', '--check']],
+  /*
     #527 Phase 1 · 1.11: trạng thái mạng ba nhánh của app iOS native phải đổi
     ở đúng các mốc RN đổi. Golden của `NetStatusGoldenTests` là output của
     CHÍNH `net-status.ts` chạy trên đồng hồ ảo (sàn 600 ms, nhịp dò 250 ms, trần
