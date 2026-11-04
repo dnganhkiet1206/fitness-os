@@ -46,8 +46,8 @@ Hiện **không dòng nào DONE**: chưa có lần chạy trên iPhone thật.
 | Onboarding | `_layout.tsx` + onboarding | `OnboardingGateView` / `OnboardingFlowView` | `RootGate` | PARITY_PENDING | Onboarding v2 (#663): 13 màn → 6, 4 mục tiêu (khác RN có chủ ý, sổ hạn chế). Chưa đi trọn trên tài khoản mới |
 | Thanh tab | `(tabs)/_layout.tsx` (5 tab) | `RootTabView` | có | DEVICE_PENDING | **Bốn tab** (GĐ3, Kiệt 21/10): Hôm nay · Tập luyện · Dinh dưỡng · Tiến bộ. Cộng đồng ra khỏi thanh tab, Trợ lý thành Tiến bộ (khác RN có chủ ý). Dải Ghi nhanh (NATIVE_IMPROVEMENTS). Chưa kiểm VoiceOver thanh tab mới |
 | Cài đặt: giao diện, ngôn ngữ | `settings.tsx` | `SettingsView` | Hồ sơ → Cài đặt | PARITY_PENDING | Theme theo sheet đang mở đã sửa (`83ad47e4`) |
-| Cài đặt: khoá app Face ID | `settings.tsx:633`, `lib/biometric-lock.ts`, `app-lock-gate.tsx` | — | — | NOT_STARTED | RN: `expo-local-authentication`, cho phép mã máy dự phòng |
-| Cài đặt: xuất dữ liệu | `settings.tsx:222` | — | — | NOT_STARTED | Văn bản pháp lý mới (`e34873c1`) đã gỡ câu hứa xuất JSON/CSV; port xong thì thêm lại |
+| Cài đặt: khoá app Face ID | `settings.tsx:633`, `lib/biometric-lock.ts`, `app-lock-gate.tsx` | `AppLockController`, `AppLockScreen`, `AppLock` (Core) | Hồ sơ → Cài đặt › Riêng tư | DEVICE_PENDING | 01/11 (Kiệt duyệt mock v2): khoá lại Ngay / 1 phút / 5 phút (RN cố định 20 giây — app không đọc được cài đặt khoá của máy); cửa sổ riêng che cả sheet; che màn chuyển app. Simulator (Face ID giả lập): bật, khớp / không khớp, mở lại từ nền, tắt hẳn app rồi mở. Máy thật: NOT RUN |
+| Cài đặt: xuất dữ liệu | `settings.tsx:222` | `DataExport` (Core), `DataExportView` | Hồ sơ → Cài đặt › Riêng tư › Tải dữ liệu | DEVICE_PENDING | 01/11: 16 bảng + món theo id bữa, đọc theo trang như RN; đóng gói zip như Apple Health (`README.txt`, `ascnd.json`, `csv/`). Simulator: 383 bản ghi, 17 bảng khớp đúng số hàng trên server; bảng chia sẻ mở được. Câu "tự tải dữ liệu" đã thêm lại vào văn bản pháp lý |
 | Cài đặt: chọn linh vật | `settings.tsx:385` | `ShopView` (Phòng thay đồ) | Hôm nay → phòng Koa → Phòng thay đồ | PARITY_PENDING | Native chọn trong Phòng thay đồ, không ở Cài đặt |
 | Đơn vị kg / lb | `lib/units.ts` | `WeightUnit` | theo hồ sơ | DEVICE_PENDING | golden `weight-golden.json`; chuỗi 1.9-A…D |
 | i18n en / vi / es | `i18n` | `Localizable.xcstrings` | có | PARITY_PENDING | Cổng `native-xcstrings-*` |
@@ -160,11 +160,11 @@ Hiện **không dòng nào DONE**: chưa có lần chạy trên iPhone thật.
 | Trạng thái | Số dòng |
 |---|---|
 | DONE | 0 |
-| DEVICE_PENDING | 53 |
+| DEVICE_PENDING | 55 |
 | PARITY_PENDING | 12 |
 | PARTIAL | 3 |
 | IMPLEMENTED_NOT_WIRED | 0 |
-| NOT_STARTED | 2 |
+| NOT_STARTED | 0 |
 | DECISION | 3 |
 | EXCLUDED | 4 |
 
@@ -172,7 +172,7 @@ Hiện **không dòng nào DONE**: chưa có lần chạy trên iPhone thật.
 - ~~**P1** — ghi số đo không có lối vào; sinh trắc thiếu "Nhập tay".~~ Đã xong ở #579 (17/10).
 - ~~**P1** — 6 commit của `claude/b-steps-awards` (đăng xuất, xoá tài khoản, pháp lý, đăng nhập mới) chưa vào base.~~ Đã vào base; các dòng đã chuyển (29/10).
 - **P1** — kiểm các alert trong sheet lồng (chặn / tắt tiếng / xoá bài).
-- **P2** — khoá app Face ID; xuất dữ liệu.
+- ~~**P2** — khoá app Face ID; xuất dữ liệu.~~ Đã làm 01/11.
 - **DECISION (Kiệt)** — ghi ngược HealthKit; thẻ xu hướng 7 ngày; email liên hệ trong văn bản pháp lý; Apple Sign In / ký.
 - **Phase 11–12** — chưa bắt đầu: red-team offline / race / a11y toàn app; chạy trên iPhone thật.
 
