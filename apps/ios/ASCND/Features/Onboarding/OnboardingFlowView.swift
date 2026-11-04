@@ -139,12 +139,13 @@ struct OnboardingStepsView: View {
     .padding(.horizontal, DS.Spacing.lg)
   }
 
-  /// Ba chặng: mục tiêu · lịch · về bạn.
+  /// Ba chặng: mục tiêu · lịch · về bạn. Bước Apple Health thuộc chặng "về bạn" (dữ liệu của bạn): trước
+  /// đây tới bước này thì thanh biến mất (#802, 04/11, Kiệt giao E quyết).
   private var chapter: Int? {
     switch step {
     case .intention: 1
     case .schedule: 2
-    case .sex: 3
+    case .sex, .health: 3
     default: nil
     }
   }
@@ -604,7 +605,8 @@ struct OnboardingStepsView: View {
   private var ready: some View {
     VStack(alignment: .leading, spacing: DS.Spacing.md) {
       HStack(spacing: DS.Spacing.sm) {
-        MascotFigureView(emotion: .warmup, size: 60, animated: false)
+        // Vui (#802, 04/11): mặt "gồng sức khởi động" ở cỡ 60 điểm trông như cau mày.
+        MascotFigureView(emotion: .happy, size: 60, animated: false)
           .frame(width: 66, height: 76)
           .accessibilityHidden(true)
         VStack(alignment: .leading, spacing: 2) {
