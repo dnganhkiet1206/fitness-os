@@ -467,9 +467,10 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Sửa: thẻ "Get started with ASCND" ở Hôm nay — tiêu đề (20) và tên ba việc (16) lớn theo Dynamic Type (`@ScaledMetric`, cỡ mặc định như cũ). Thẻ việc chính — dòng đầu (11) lớn theo chữ; nút phương án ("Make it a rest day"…) và "Take a few days off…" cao tối thiểu 44 điểm theo Apple (trước 36 và 32), nên thẻ cao thêm 8–12 điểm mỗi nút.
 - Đã có PR riêng: dải "Tuần của Koa" (#815); sheet nửa màn ở cỡ chữ trợ năng (#814). #814 cũng là lý do cả bốn dòng của sheet Tạm nghỉ bị báo "Text clipped" và "partially unsupported": bộ kiểm phóng chữ, sheet `.medium` cắt nội dung.
 - Còn lại, chưa sửa:
-  - Độ tương phản chữ phụ (`mutedForeground`) trên nền thẻ: khoảng 20 dòng ở Hôm nay, Nhịp, sheet Tạm nghỉ, Hành trình. Đổi màu token của Design System là đổi thiết kế, chờ Kiệt duyệt mock.
+  - ~~Độ tương phản chữ phụ (`mutedForeground`) trên nền thẻ: khoảng 20 dòng ở Hôm nay, Nhịp, sheet Tạm nghỉ, Hành trình. Đổi màu token của Design System là đổi thiết kế, chờ Kiệt duyệt mock.~~ 04/11 (Kiệt giao E quyết): đo trên ảnh snapshot, chữ phụ trên thẻ kính đạt 6,2–7,0:1 (sáng) và 5,1–6,3:1 (tối), đều ≥ 4,5:1 (WCAG AA) → **không đổi token**. Bộ kiểm a11y nay ghi thêm dòng `A11YD|` (mô tả chi tiết, vd. tỉ lệ đo được) và bảng "Mô tả chi tiết" trên trang lượt chạy, để biết vì sao nó báo "Contrast failed" (nền màu sau kính trong app thật, hay báo nhầm).
   - Chữ cỡ cố định trong thẻ Koa và thẻ việc trong ngày ở Hôm nay (`TodayDayBlock`, `TodayDayCard`: khoảng 30 chỗ `.system(size:)`). Bộ kiểm chỉ báo "Koa" vì nó chỉ kiểm phần đang hiện trên màn. Cần một lượt riêng có ảnh snapshot: bố cục thẻ Koa chặt, chữ lớn dễ vỡ.
   - Chữ logo "ASCND" giữ cỡ cố định (logo; Kiệt chốt cỡ tương đương bản mặc định).
+  - 04/11 (#802): câu Insight tiếng Anh khi app tiếng Việt là **dữ liệu mẫu của chế độ UI test** (`UITestSeed`), không phải lỗi app: app thật gửi `lang` cho `ai-smart-nudges`. Câu mẫu nay theo `lang` như server (vi / en / es).
   - "Partially unsupported" ở chữ dùng kiểu chữ hệ thống (Nhịp, Hành trình, chú thích Tiến bộ) và "Hit area is too small" ở hai dòng chữ tĩnh của thẻ việc chính ("TODAY'S MAIN THING", "From your weekly plan."): chưa rõ nguyên nhân. Kỹ sư Apple xác nhận bộ kiểm có thể báo nhầm với font hệ thống. Xem lại khi #812, #814, #815 đã vào base (job `a11y` chạy hằng đêm).
 - **NOT RUN:** bộ kiểm trên head này (job `a11y` chỉ có ở #812, chưa vào base); xem trên simulator / iPhone.
 
@@ -654,4 +655,5 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - 03/11/2026: #799 (phần không phải art): Koa nói khi Giảm chuyển động; xem mục 4.
 - 03/11/2026: đăng xuất xoá "Insight hôm nay" lưu trên máy (như `clearPersistedCache` của RN) và quên Koa của người trước trong bộ nhớ (người sau từng thấy Nhịp 30 ngày / Hành trình của người trước); xem mục 4.
 - 03/11/2026: #795 đợt 2a: kiểm accessibility tự động (`performAccessibilityAudit()`) các màn Koa ở workflow `ios-a11y.yml`, đang thu thập; xem mục 4.
+- 04/11/2026: Kiệt giao E quyết các việc chờ (#527). Độ tương phản chữ phụ đo được ≥ 5,1:1 → giữ token; bộ kiểm a11y ghi mô tả chi tiết; câu Insight mẫu của chế độ UI test theo ngôn ngữ; bỏ cảnh báo `public import` của `TrainingCue`; xem mục 4.
 - 03/11/2026: #795 đợt 1: snapshot test các màn Koa (sáng / tối / chữ lớn) chạy trong `app-macos`; xem mục 4.
