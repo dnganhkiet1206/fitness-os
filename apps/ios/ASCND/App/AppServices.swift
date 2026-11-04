@@ -654,6 +654,13 @@ final class AppServices {
     return BiometricLogger(userId: userId, store: rows, outbox: outbox, onEnqueued: { _ in sync.kick() })
   }
 
+  /// "Tải dữ liệu của bạn" (#527 mục 7): đọc hết mọi bảng của người này. `nil` khi
+  /// chưa có backend; lỗi đọc thì ném — không bao giờ trả gói thiếu.
+  func loadExport(userId: String) async throws(RowStoreError) -> DataExport.Bundle? {
+    guard let rows else { return nil }
+    return try await DataExport.load(userId: userId, store: rows)
+  }
+
   /// Nút "Ghi như mọi khi" của thông báo nhắc bữa và widget "Bữa quen" (Kiệt 01/11):
   /// bữa quen vào hàng đợi, như ghi trong app (mất mạng vẫn lưu, gửi khi có mạng).
   /// `mealType` `nil` = theo giờ.
