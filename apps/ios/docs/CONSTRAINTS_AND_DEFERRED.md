@@ -688,6 +688,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - 04/11/2026: #792: kệ cúp (tối đa 3 ngày kỷ lục mới nhất) và khung mốc trên tường trong phòng Koa; chạm thì Koa kể, có ngày và số thật; xem mục 4.
 - 04/11/2026: #799: cảnh Koa đi ngủ / thức dậy nhận và trả Koa đúng cỡ sân khấu (hết co lại ~9 % lúc chuyển cảnh); xem mục 4.
 - 04/11/2026: #799: soát Koa mặc đồ khi chạy kéo thẻ bằng ảnh chuẩn `pullRunOutfits` (đồ theo người, không lệch); xem mục 4.
+- 04/11/2026: test cho ba phần Core chưa có test trực tiếp: `AssistantSignalBook` (bảy lượt đọc của tín hiệu Trợ lý / Insight, gồm kiểm mọi lượt đọc lọc theo `user_id`), `SessionLoad` (tải RPE × rep của ACWR), `KoaMemo`. Không đổi code.
 - 03/11/2026: sheet nửa màn (Tạm nghỉ, mua đồ, khẩu phần) mở cả màn và cuộn được ở chữ cỡ trợ năng, không còn cắt mất nút; xem mục 4.
 - 04/11/2026: hồ sơ của mình: ô "Chuỗi ngày" thay bằng Nhịp 30 ngày, bỏ `MascotRoomController` thứ hai (#802, #797); xem mục 4.
 - 03/11/2026: đo lường Koa Ecosystem (#793): năm sự kiện mốc / hành trình / Nhịp / tạm nghỉ, gửi một lần mỗi lần xảy ra (`Telemetry.once`); xem mục 4.
