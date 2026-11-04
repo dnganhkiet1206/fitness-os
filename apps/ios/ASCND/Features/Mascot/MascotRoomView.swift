@@ -97,7 +97,7 @@ struct MascotRoomView: View {
         .task {
           guard ProcessInfo.processInfo.arguments.contains("-koaAutoPull") else { return }
           try? await Task.sleep(for: .seconds(9))
-          withAnimation(.easeOut(duration: 0.15)) { pullStart = .now }
+          openPanel()
         }
       #endif
       .onReceive(Timer.publish(every: 30, on: .main, in: .common).autoconnect()) { clock = $0 }
@@ -167,8 +167,7 @@ struct MascotRoomView: View {
                 await services.loadKoaDust(userId: room.userId)
               }
           }
-          // Koa của cảnh diễn phải có ngay khung đầu: mờ dần thì sân khấu trống một nhịp
-          .transition(.asymmetric(insertion: lens.bedroom ? .move(edge: .bottom) : .identity, removal: .opacity))
+          .transition(.asymmetric(insertion: panelInsertion, removal: .opacity))
         }
       }
     }
@@ -200,7 +199,22 @@ struct MascotRoomView: View {
     return String(localized: "koa.pull.some \(total - questsDone)")
   }
 
+  /// Koa của cảnh diễn phải có ngay khung đầu: mờ dần thì sân khấu trống một nhịp. Ở phòng ngủ không có
+  /// cảnh diễn, thẻ trượt lên từ đáy; bật Giảm chuyển động thì mờ dần.
+  private var panelInsertion: AnyTransition {
+    guard lens.bedroom else { return .identity }
+    return reduceMotion ? .opacity : .move(edge: .bottom)
+  }
+
+  /// Mở / đóng thẻ. Bật Giảm chuyển động thì những gì đổi theo `pullStart` chỉ còn mờ dần: thanh dưới và
+  /// thẻ (`.opacity`), Koa của sân khấu (`.animation(nil, value: away)`); cảnh kéo thẻ đứng yên ở khung cuối.
+  private func openPanel() {
+    // reduce-motion: chỉ còn mờ dần (xem trên)
+    withAnimation(.easeOut(duration: 0.15)) { pullStart = .now }
+  }
+
   private func closePanel() {
+    // reduce-motion: chỉ còn mờ dần (xem trên)
     withAnimation(.easeOut(duration: 0.25)) { pullStart = nil }
   }
 
@@ -216,7 +230,7 @@ struct MascotRoomView: View {
           .transition(.opacity)
       }
       Button {
-        withAnimation(.easeOut(duration: 0.15)) { pullStart = .now }
+        openPanel()
       } label: {
         HStack(spacing: DS.Spacing.sm) {
           EnergyRing(segments: questSegments, lineWidth: 4, gap: 8)

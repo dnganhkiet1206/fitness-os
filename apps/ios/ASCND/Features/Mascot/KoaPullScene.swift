@@ -119,7 +119,7 @@ struct KoaPullScene<Content: View>: View {
           DragGesture()
             .onChanged { drag = max(0, $0.translation.height) }
             .onEnded { v in
-              if v.translation.height > 90 { close() } else { withAnimation(.snappy) { drag = 0 } }
+              if v.translation.height > 90 { close() } else { withAnimation(reduceMotion ? nil : .snappy) { drag = 0 } }
             }
         )
       content
