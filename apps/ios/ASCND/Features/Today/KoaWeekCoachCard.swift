@@ -5,6 +5,10 @@ import SwiftUI
 /// Thẻ đầu tuần (Kiệt duyệt mock 03/11): Koa nói điều thật của tuần trước, đề xuất kiểu tuần
 /// này theo `KoaWeekCoach`, và nhắc lại câu "nếu… thì…" của người dùng. Nhận hay giữ như cũ;
 /// không bấm gì thì không đổi gì.
+///
+/// 04/11 (Kiệt: "gộp lại như thẻ progressive overload, nằm sau thẻ quay lại"): thẻ nằm sau việc
+/// chính trong `TodayOverloadStack`, nên phủ đúng khung của việc chính; khung thấp thì chữ cuộn
+/// bên trong, hai nút vẫn ở đáy thẻ.
 struct KoaWeekCoachCard: View {
   let kind: KoaWeekCoach.Kind
   let lastWeek: KoaWeekCoach.LastWeek
@@ -19,7 +23,29 @@ struct KoaWeekCoachCard: View {
   @Environment(\.locale) private var locale
 
   var body: some View {
-    let text = ExerciseCompareText(unit: unit, locale: locale)
+    // Vừa khung: nút đi liền sau chữ. Khung thấp (việc chính ngắn): chữ cuộn, nút ở đáy.
+    ViewThatFits(in: .vertical) {
+      VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+        info
+        actions
+      }
+      VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+        ScrollView {
+          info.frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .scrollBounceBehavior(.basedOnSize)
+        .scrollIndicators(.hidden)
+        actions
+      }
+    }
+    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    .padding(DS.Spacing.card)
+    .todayCard()
+  }
+
+  private var text: ExerciseCompareText { ExerciseCompareText(unit: unit, locale: locale) }
+
+  private var info: some View {
     VStack(alignment: .leading, spacing: DS.Spacing.sm) {
       Text("coach.eyebrow")
         .font(DS.TextStyle.caption.weight(.semibold))
@@ -59,27 +85,27 @@ struct KoaWeekCoachCard: View {
           .font(DS.TextStyle.footnote)
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
       }
-      if case .steady = kind {
-        DSButton(String(localized: "coach.ok"), style: .secondary, action: keep)
-          .accessibilityIdentifier("today.coach.keep")
-      } else {
-        DSButton(String(localized: "coach.accept"), style: .primary, action: accept)
-          .accessibilityIdentifier("today.coach.accept")
-        Button(action: keep) {
-          // cả dải 44 điểm nhận chạm, không chỉ phần chữ (nút `.plain`, xem `TodayPlanHero.minTap`)
-          Text("coach.keep")
-            .font(DS.TextStyle.footnote.weight(.semibold))
-            .frame(maxWidth: .infinity, minHeight: 44)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .foregroundStyle(DS.Color.primary.swiftUI)
-        .accessibilityIdentifier("today.coach.keep")
-      }
     }
-    .frame(maxWidth: .infinity, alignment: .leading)
-    .padding(DS.Spacing.md)
-    .todayCard()
+  }
+
+  @ViewBuilder private var actions: some View {
+    if case .steady = kind {
+      DSButton(String(localized: "coach.ok"), style: .secondary, action: keep)
+        .accessibilityIdentifier("today.coach.keep")
+    } else {
+      DSButton(String(localized: "coach.accept"), style: .primary, action: accept)
+        .accessibilityIdentifier("today.coach.accept")
+      Button(action: keep) {
+        // cả dải 44 điểm nhận chạm, không chỉ phần chữ (nút `.plain`, xem `TodayPlanHero.minTap`)
+        Text("coach.keep")
+          .font(DS.TextStyle.footnote.weight(.semibold))
+          .frame(maxWidth: .infinity, minHeight: 44)
+          .contentShape(Rectangle())
+      }
+      .buttonStyle(.plain)
+      .foregroundStyle(DS.Color.primary.swiftUI)
+      .accessibilityIdentifier("today.coach.keep")
+    }
   }
 
   private func recap(_ text: ExerciseCompareText) -> String {
@@ -88,7 +114,8 @@ struct KoaWeekCoachCard: View {
     return sessions + " " + String(localized: "coach.recap.best \(h.name) \(text.chip(h.delta))")
   }
 
-  private var title: String {
+  /// "Tuần này: tuần nhẹ" — cũng là chữ của dải khi thẻ nằm sau (`TodayOverloadStack`).
+  var title: String {
     switch kind {
     case .light: String(localized: "coach.light.title")
     case .progress: String(localized: "coach.progress.title")
