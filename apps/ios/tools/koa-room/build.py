@@ -8,6 +8,12 @@ chỉ số, có kiểm tra phần tử đúng là thứ mình nghĩ), vẽ 2 bi�
 dạng `{"t","p","k","m"}` với phòng gốc. `StudioScene.build` bỏ phần tử gốc của chỗ có món
 đang dùng và chèn biến thể vào đúng vị trí của phần tử đầu tiên — thứ tự vẽ giữ nguyên.
 
+Mỗi phần tử cấp đầu của biến thể và của lớp bụi có thể mang `"at"`: chỉ số phần tử của phòng mà
+nó THAY (đồ mua) hay NẰM TRÊN (bụi). App dùng để (1) dựng mặt nạ che Koa (`StudioScene.objects`):
+mặt nạ của kệ / cây / bóng lấy đúng phần đồ mua thay chúng và bụi nằm trên chúng; (2) bỏ bụi khi
+thứ nó nằm trên không được vẽ (khung dọc bỏ cửa sổ / bảng neon cũ; đồ mua trong `bare` không có
+mặt đỡ của đồ gốc, như giá olympic không có ván).
+
 Biến thể vẽ theo bảng màu của phòng đêm (tím than #151A33 / #212B4E, tím #7B61FF /
 #8F83FF, vàng #FFC24D); bản ngày đổi màu qua `dayColors` như phòng gốc.
 
@@ -68,6 +74,15 @@ def check():
     assert p(F(43))["d"].startswith("M 58 412") and p(F(55)).get("text") == "$label", "bục đã đổi"
     for spot, idx in SPOTS.items():
         assert all(TEMPLATE[i]["t"] != "Defs" for i in idx), spot
+    # `at`: phần tử thật của phòng; đồ mua chỉ trỏ trong chỗ của nó; bụi trên đúng mặt đỡ đã định
+    for key, els in VARIANTS.items():
+        for n in els:
+            if "at" in n: assert n["at"] in SPOTS[key.split(".")[0]], key
+    for level, els in DUST.items():
+        for n in els:
+            if "at" in n: assert n["at"] in (80, 62, 66, 100) and TEMPLATE[n["at"]]["t"] != "Defs", level
+    assert p(62)["y"] == 209 and p(66)["y"] == 245 and p(100)["y"] == 130, "mặt đỡ của bụi đã đổi"
+    assert set(BARE) <= set(VARIANTS), BARE
 
 
 # ── Dựng hình (tên ngắn như tools/koa-wardrobe)
@@ -94,6 +109,12 @@ def Rad(id_, stops, **a):
     return N("RadialGradient", [N("Stop", offset=o, stopColor=c, stopOpacity=a_) for o, c, a_ in stops], id=id_, **a)
 def Defs(*g): return N("Defs", list(g))
 def contact(cx, cy, rx, ry, o): return E(cx, cy, rx, ry, fill="url(#nsContact)", opacity=o)
+
+
+def on(i, nodes):
+    """Đặt `at` (xem đầu tệp) cho các phần tử cấp đầu."""
+    for n in nodes: n["at"] = i
+    return nodes
 
 
 NAVY, NAVY2, INK = "#151A33", "#212B4E", "#0F142E"
@@ -178,6 +199,15 @@ def _():
     out.append(G([L("M-7 -20 C -7 -30 7 -30 7 -20", GOLD, 4), C(0, -11, 11, fill=GOLD),
                   C(-4, -15, 3, fill=WHITE, opacity=0.55)], S(1.0, 108, 392)))
     return out
+
+
+# Kệ mua thay thân kệ (80, trong mặt nạ che Koa của kệ); bóng tiếp xúc trên sàn thay bóng kệ (77, ngoài
+# mặt nạ: bóng không che Koa).
+for _key in ("shelf.chrome", "shelf.olympic"):
+    for _n in VARIANTS[_key]:
+        if _n["t"] != "Defs": _n["at"] = 77 if _n["p"].get("fill") == "url(#nsContact)" else 80
+# Đồ mua không có mặt đỡ của đồ gốc: bụi nằm trên đồ gốc của chỗ ấy không vẽ (giá olympic không có ván).
+BARE = ["shelf.olympic"]
 
 
 # ══ 2. BẢNG SỐ ═════════════════════════════════════════════════════════════════
@@ -302,8 +332,8 @@ def _():
     pot = [R(-17, 0, 34, 30, 6, fill="#E9E2D6"), R(-17, 0, 34, 5, 3, fill="#C9BFAE"), R(-15, 7, 3, 20, 1.5, fill=WHITE, opacity=0.4)]
     ball = kept(F(1))
     ball["k"][1]["p"]["fill"] = "#2BB5A8"
-    return [kept(90), contact(313, 397, 20, 3.6, 0.5), G(leaves + pot, T(0, 0, 0)[:4] + [313, 367]),
-            kept(F(0)), ball]
+    return (on(90, [kept(90), contact(313, 397, 20, 3.6, 0.5)]) + on(92, [G(leaves + pot, T(0, 0, 0)[:4] + [313, 367])])
+            + on(F(0), [kept(F(0))]) + on(F(1), [ball]))
 
 
 @variant("plants.bonsai")
@@ -319,8 +349,8 @@ def _():
             C(0, -18, 20, fill="url(#decorBell)"), E(-7, -25, 5, 6, fill=WHITE, opacity=0.45),
             R(-9, -16, 18, 7, 2, fill="#B9852A", opacity=0.5)]
     return [Defs(Rad("decorBell", [(0, "#FFE7A3", 1), (0.6, GOLD, 1), (1, "#B9852A", 1)], cx="35%", cy="30%", r="75%")),
-            contact(312, 398, 30, 4, 0.5), G(bonsai, [1.3, 0, 0, 1.3, 312, 382]),
-            kept(F(0)), G(bell, [1.15, 0, 0, 1.15, 352, 399])]
+            *on(90, [contact(312, 398, 30, 4, 0.5)]), *on(92, [G(bonsai, [1.3, 0, 0, 1.3, 312, 382])]),
+            *on(F(0), [kept(F(0))]), *on(F(1), [G(bell, [1.15, 0, 0, 1.15, 352, 399])])]
 
 
 # ══ 5. ĐÈN ═════════════════════════════════════════════════════════════════════
@@ -553,15 +583,17 @@ def motes(n, seed=0):
 
 
 DUST = {
-    1: (dust_line(28, 250, 88) + dust_line(20, 300, 104) + dust_line(267, 209, 105, 0.7)
+    # `at` (đầu tệp): ván kệ 80, bậu cửa sổ 62, bảng số 66, bảng neon cũ 100 (khung dọc bỏ bậu và bảng
+    # neon cũ nên bụi trên chúng không vẽ). Bụi chân tường, sàn, hạt lơ lửng, tơ ở góc: không gắn.
+    1: (on(80, dust_line(28, 250, 88) + dust_line(20, 300, 104)) + on(62, dust_line(267, 209, 105, 0.7))
         + baseboard(0, 140, seed=1) + fluff(22, 430, 22, seed=1) + motes(10, 1)),
     # mỗi chỗ một kiểu tơ (29/10, Kiệt: "đừng đối xứng"): quạt lệch lớn ở góc trái,
     # tấm võng nhỏ góc phải, vài sợi rối ở chân kệ
     2: (cobweb(26, 0, 4, 70, 86, rings=5, seed=21) + hammock(352, 0, 364, 40, n=4, seed=22)
-        + tangle(118, 262, 10, seed=23) + dust_line(12, 350, 120) + dust_line(270, 245, 102, 0.65)
+        + on(80, tangle(118, 262, 10, seed=23) + dust_line(12, 350, 120)) + on(66, dust_line(270, 245, 102, 0.65))
         + baseboard(250, 390, seed=2) + fluff(366, 446, 26, seed=2) + motes(10, 2)),
     3: (tangle(195, 34, 12, n=7, seed=24, o=0.5) + cobweb(361, 101, 100, 168, 26, rings=2, seed=25, o=0.5)
-        + dust_line(24, 130, 84, 0.75) + dust_line(28, 250, 88, 0.95) + dust_line(20, 300, 104, 0.95)
+        + on(100, dust_line(24, 130, 84, 0.75)) + on(80, dust_line(28, 250, 88, 0.95) + dust_line(20, 300, 104, 0.95))
         + baseboard(140, 250, seed=3, o=0.5) + fluff(150, 372, 18, seed=3) + fluff(12, 466, 20, seed=4) + motes(14, 3)
         # nhện nhỏ thả tơ từ mạng góc trái
         + [P("M 60 30 Q 62 56 59 80", stroke=WEBC, strokeWidth=0.6, fill="none", opacity=0.7),
@@ -570,15 +602,17 @@ DUST = {
 }
 
 
-def dust_layer(level):
-    return [n for k in sorted(DUST) if k <= level for n in DUST[k]]
+def dust_layer(level, gone=()):
+    """Như app: bụi nằm trên phần tử không vẽ (`gone`) thì bỏ."""
+    return [n for k in sorted(DUST) if k <= level for n in DUST[k] if n.get("at") not in gone]
 
 
 # ── Ghi file
 def write():
     check()
     # bụi: các lớp theo mức (cộng dồn ở app) + chỉ số phần tử mà bụi nằm ngay sau
-    data = {"spots": SPOTS, "variants": VARIANTS, "dust": {str(k): v for k, v in DUST.items()}, "dustAfter": F(1)}
+    data = {"spots": SPOTS, "variants": VARIANTS, "dust": {str(k): v for k, v in DUST.items()}, "dustAfter": F(1),
+            "bare": BARE}
     out = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
     if '"##' in out: raise SystemExit("chuỗi thô của Swift sẽ gãy")
     DST.write_text(f"""// SINH TỰ ĐỘNG — đừng sửa tay.
@@ -632,14 +666,15 @@ def svg(n):
 
 def room(spot=None, key=None, dust=0):
     skip = set(SPOTS[spot]) if spot else set()
+    gone = skip if key in BARE else set()
     els = []
     for i, n in enumerate(TEMPLATE):
         if i in skip:
             if i == min(skip): els += VARIANTS[key]
-            continue
-        els.append(n)
-        # bụi nằm trên đồ đạc, dưới đèn / vignette của lớp trước
-        if dust and i == F(1): els += dust_layer(dust)
+        else:
+            els.append(n)
+        # bụi nằm trên đồ đạc, dưới đèn / vignette của lớp trước (cả khi F(1) là đồ mua)
+        if dust and i == F(1): els += dust_layer(dust, gone)
     body = "".join(svg(n) for n in els)
     return f'<svg xmlns="http://www.w3.org/2000/svg" width="780" height="952" viewBox="0 0 390 476">{body}</svg>'
 
