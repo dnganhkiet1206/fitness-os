@@ -59,6 +59,15 @@ public enum StudioScene {
     // ấm hợp phòng ban ngày (15/10, chủ dự án: "đồ vật màu tím nên đổi màu ở bản sáng")
     "#7B61FF": "#D9774F",
     "#8F83FF": "#E39A6B",
+    // kệ gỗ, cây lớn, bóng tập vẽ lại (04/11, #799, Kiệt duyệt mock cả bản ngày): màu riêng của tranh
+    // mới, không trùng màu nào khác của phòng hay đồ mua (lá #3D8254, không phải #3D8253 của cây mua)
+    "#7A5A86": "#E3C49E", "#4C3763": "#C49A6C", "#2B1F3D": "#9C7550", "#A88BC0": "#F3DDBF",  // gỗ
+    "#2A2D45": "#5E6274", "#55597E": "#9AA0B5", "#15172A": "#3E4152",  // gang
+    "#A99BFF": "#F0A47E", "#B9BEDA": "#B7BCCB", "#6A6F8E": "#7E8496",  // nhấn, tay cầm
+    "#3D8254": "#4E9A62", "#63A877": "#7CC08A", "#245437": "#2F6B43",  // lá
+    "#5A3F7A": "#C9744F", "#8A6AB0": "#E39A6B", "#36254D": "#9C5536",  // chậu
+    "#6D5BD0": "#E39A6B", "#B7AAFF": "#F7C6A6", "#3A2E8F": "#B8653F", "#C9C0FF": "#FFFFFF",  // bóng
+    "#1C2140": "#3A3F5C", "#343B6A": "#5A608A",  // bình nước
   ]
 
   /// Trời ngoài cửa sổ ban ngày (thay `studioSky` đêm).
@@ -216,8 +225,11 @@ public enum StudioScene {
     return build(template, flat, decor: false, only: Set(103...107))
   }
 
-  /// Chậu cây bên phải (phần tử 92): lá là các nhóm con 1…8, gốc lá ở (0, −12) của chậu.
+  /// Chậu cây bên phải (phần tử 92): lá là các nhóm con 1…8, toả từ ngọn thân (0, −28) của chậu
+  /// (vẽ lại 04/11, #799; cây RN cũ có gốc lá ở (0, −12)).
   public static let plantIndex = 92
+  /// Lá rung quanh ngọn thân, nơi cả tám lá mọc ra.
+  static let plantPivot = (x: 0.0, y: -28.0)
 
   /// Từ chậu cây tới hết phòng (đèn, viền tối, bục… nằm TRÊN chậu cây): lớp vẽ lại khi lá
   /// rung, để thứ tự lớp giữ y như phòng gốc.
@@ -252,7 +264,7 @@ public enum StudioScene {
       if decor, i == KoaShelf.framesAt { out += KoaShelf.frameTree(o) }
       if skip.contains(i) { continue }
       if i == plantIndex, o.plantSway != 0, var e = element(v, o, skin) {
-        let m = KoaMath.opMat(KoaScene.Op("r", [o.plantSway, 0, -12]))
+        let m = KoaMath.opMat(KoaScene.Op("r", [o.plantSway, plantPivot.x, plantPivot.y]))
         e.kids = e.kids.enumerated().map { j, k in (1...8).contains(j) ? KoaRender.Element("G", matrix: m, kids: [k]) : k }
         out.append(e)
         continue
@@ -388,6 +400,10 @@ public enum StudioScene {
     if parts[0] == "$e", parts.count == 3, let a = Double(parts[1]), let b = Double(parts[2]) {
       let e = max(0, min(1, o.energy))
       return .number(a + (b - a) * e)
+    }
+    // `$day:<đêm>:<ngày>`: số khác giữa phòng đêm và phòng ngày (độ mờ bóng ván của kệ vẽ lại, #799)
+    if parts[0] == "$day", parts.count == 3, let a = Double(parts[1]), let b = Double(parts[2]) {
+      return .number(o.light ? b : a)
     }
     if parts[0] == "$moon", parts.count == 4, let cx = Double(parts[1]), let cy = Double(parts[2]),
       let r = Double(parts[3])
