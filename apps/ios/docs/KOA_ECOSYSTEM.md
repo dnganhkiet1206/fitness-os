@@ -59,7 +59,7 @@ Huy chương và mốc hành trình trùng nhau một phần (buổi đầu, s�
 ### Tiến trình của Koa (không phải thú ảo)
 
 - **Vóc dáng theo hạng**: đã có, `KoaGains.rank` → `build`.
-- **Phòng lớn theo hành trình** (làm tiếp): kệ cúp hiện kỷ lục thật, khung ảnh mốc lớn. Dữ liệu tính từ hành trình, không mua được. Người dùng nghỉ thì không mất gì: phòng chỉ có thể thêm đồ.
+- **Phòng lớn theo hành trình** (#792, 04/11, `KoaShelf`): kệ có tối đa 3 cúp cho các ngày kỷ lục mới nhất (hai chỗ trống ở tầng trên, một ở tầng dưới; giá olympic thì đứng trên xà ngang). Tường có ba khung mốc nhỏ: buổi đầu, tuần đủ buổi đầu tiên, lần lên hạng cao nhất. Chạm cúp hay khung thì Koa kể, có ngày và số thật (`ShelfItem`); VoiceOver dùng hành động có tên. Dữ liệu tính từ hành trình và từ set đã lưu, không mua được. Người dùng nghỉ thì không mất gì: phòng chỉ có thể thêm đồ. Kỷ lục rời kệ vẫn ở màn Hành trình.
 - **Không có nhu cầu sống còn**: Koa không đói, không ốm, không buồn vì người dùng vắng. Bụi phòng chỉ là lớp phủ, tự sạch khi tập lại, và không bám khi đang tạm nghỉ.
 
 ### Tính cách và trạng thái
@@ -99,6 +99,6 @@ Không tối ưu số lần mở app. Không gửi số đo sức khoẻ (cân, 
 1. Gỡ chuỗi ngày ở widget, hồ sơ cộng đồng, nhắc "sắp mất chuỗi", 15 xu chuỗi (chụp ảnh trước khi gỡ).
 2. Tạm nghỉ: bảng `koa_pauses` + RLS (migration viết sẵn, deploy khi Kiệt duyệt); trong lúc chờ lưu trên máy.
 3. Luật nhắc mới: tối đa 1 nhắc tập mỗi ngày, im lặng ngày nghỉ và lúc tạm nghỉ, xoay vòng câu, giãn ra khi bị bỏ qua.
-4. Phòng lớn theo hành trình: kệ cúp kỷ lục, khung mốc lớn.
+4. ~~Phòng lớn theo hành trình: kệ cúp kỷ lục, khung mốc lớn.~~ 04/11: kệ cúp và khung mốc (#792, mock A); xem mục 3.
 5. Sự kiện `koa_moment_shown`, `journey_opened`; "đã thấy" lưu trên server.
 6. Bộ snapshot cho Koa, Hành trình và Nhịp (sáng/tối, Dynamic Type).

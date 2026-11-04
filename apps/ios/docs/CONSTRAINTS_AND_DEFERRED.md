@@ -520,6 +520,16 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Giữ nguyên: bốn thẻ "Cần chú ý" cùng cỡ. Ô "Chuỗi ngày" ở hồ sơ: PR riêng (#828). Câu Insight tiếng Anh: dữ liệu mẫu UI test (#826).
 - **NOT RUN:** xem trên simulator / iPhone.
 
+**Kệ cúp và khung mốc trong phòng Koa (04/11, #792, nhánh `claude/koa-shelf-trophies`), theo mock A (Kiệt giao E quyết, #527):**
+- Cúp: tối đa 3, cho ba ngày kỷ lục mới nhất của hành trình (`KoaShelf.cups`). Kệ gốc và kệ chrome chỉ có hai chỗ trống ở tầng trên (mock cũng chỉ vẽ hai cúp), nên E quyết đặt cúp thứ ba vào chỗ trống ở tầng dưới, giữa ấm tạ và con lăn. Giá olympic không có tầng: ba cúp đứng trên xà ngang trên cùng. Không dời đồ nào của kệ.
+- Khung mốc nhỏ trên tường trái, giữa bảng hiệu và kệ: buổi đầu, tuần đủ buổi đầu tiên, lần lên hạng cao nhất. Mỗi loại một chỗ cố định nên khung mới không đẩy khung cũ. Bỏ dòng chữ dưới khung của mock: ở cỡ phòng thật (1 điểm phòng ≈ 1 pt) chữ chỉ cao khoảng 4 pt, không đọc được; chạm khung thì Koa kể.
+- Chạm cúp / khung: Koa nhìn về kệ và kể bằng bóng thoại, có ngày và số thật (vd. "Ngày 29 thg 10: Squat — 80 kg, trước là 75 kg"). Số tính lại từ set đã lưu bằng đúng luật lúc chốt buổi (`KoaShelf.records`, 400 buổi gần nhất như `PersonalRecords.historyLimit`). Không tính lại được (set đã sửa, buổi quá cũ) thì Koa chỉ nói đó là ngày kỷ lục, không đoán số. VoiceOver: mỗi món một hành động có tên trên sân khấu, đọc to câu của Koa.
+- Đồ chỉ thêm: tính lại từ hành trình nên không mất khi nghỉ hay tạm nghỉ, không mua được bằng xu. Cúp nằm trong mặt nạ che Koa của kệ: Koa đứng sau kệ thì cúp che Koa như kệ.
+- Dữ liệu: `AppServices.koaShelfRecords` gắn userId, xoá khi đăng xuất (`forgetKoaSession`), đọc lại khi số ngày tập của lịch sử Gains đổi: một lượt đọc `workout_sessions` (`date_time, sets`, tối đa 400 hàng) mỗi lần như vậy.
+- Snapshot mới `shelfRoom`, `shelfRoomOlympic` (sáng / tối / chữ lớn; phòng vẽ tĩnh nên ảnh chữ lớn giống ảnh sáng). Lượt CI đầu ĐỎ có chủ ý (chưa có ảnh chuẩn).
+- Chưa làm: hiệu ứng lúc cúp mới xuất hiện (cúp hiện ngay ở lần mở phòng sau buổi kỷ lục).
+- **NOT RUN:** xem trong phòng thật trên simulator / iPhone (khung dọc, máy quay, chạm cúp khi Koa đi lại); VoiceOver thật; giá olympic trong phòng thật.
+
 **Đo lường Koa Ecosystem (03/11, #793, nhánh `claude/koa-analytics`):**
 - Thêm `koa_moment_shown` (`kind`, `place` today/room, `major`), `journey_opened`, `rhythm_viewed` (`sessions` theo khoảng, `paused`), `pause_started` (`days`), `pause_ended_early` (`days_used`, `days_left`). Không gửi `value` của mốc (hạng, số buổi, số ngày nghỉ) và không số đo sức khoẻ.
 - "Một lần mỗi lần xảy ra": mốc một lần mỗi nơi, Nhịp một lần mỗi ngày, nhớ qua các lần mở app (`Telemetry.once`, 200 khoá mới nhất mỗi tài khoản trong UserDefaults). Mở Hành trình và hai nút tạm nghỉ gửi mỗi lần bấm / mở.
@@ -658,6 +668,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - 03/11/2026: #795 đợt 2c: chữ thẻ "Hôm nay của bạn" và nhãn Koa lớn theo Dynamic Type, hàng nút nhanh xếp dọc ở cỡ trợ năng; xem mục 4.
 - 04/11/2026: #802: Xoá tài khoản thành nút chữ nhỏ; tên huy chương vi/es viết hoa chữ đầu câu (gen.mjs, `--check` vào cổng); Koa không cau có ở onboarding và Hôm nay; thanh tiến trình ở bước Apple Health; xem mục 4.
 - 03/11/2026: #800 thông báo: câu nhắc buổi tập xoay vòng, bị bỏ qua 3 lần liền thì 2 ngày một lần, xin quyền khi có lịch tập đầu tiên; xem mục 4.
+- 04/11/2026: #792: kệ cúp (tối đa 3 ngày kỷ lục mới nhất) và khung mốc trên tường trong phòng Koa; chạm thì Koa kể, có ngày và số thật; xem mục 4.
 - 03/11/2026: sheet nửa màn (Tạm nghỉ, mua đồ, khẩu phần) mở cả màn và cuộn được ở chữ cỡ trợ năng, không còn cắt mất nút; xem mục 4.
 - 04/11/2026: hồ sơ của mình: ô "Chuỗi ngày" thay bằng Nhịp 30 ngày, bỏ `MascotRoomController` thứ hai (#802, #797); xem mục 4.
 - 03/11/2026: đo lường Koa Ecosystem (#793): năm sự kiện mốc / hành trình / Nhịp / tạm nghỉ, gửi một lần mỗi lần xảy ra (`Telemetry.once`); xem mục 4.

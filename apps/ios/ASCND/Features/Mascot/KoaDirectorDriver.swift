@@ -260,6 +260,12 @@ final class KoaDirectorDriver {
     speak(KoaTalk.Beat(topic: .poke, variant: probe.variant, line: lineOf?(probe) ?? ""))
   }
 
+  /// Người xem chạm cúp / khung mốc trong phòng (#792): Koa kể ngay, thay câu đang nói (người xem
+  /// vừa hỏi). Không tính vào lịch nói. Câu hiện trong bóng thoại là của phòng (`shelfLine`).
+  func tell(_ line: String) {
+    speak(KoaTalk.Beat(topic: .shelf, variant: 0, line: line))
+  }
+
   private static func talkKey(_ userId: String) -> String { "koa.talk.\(userId)" }
 
   private func speak(_ beat: KoaTalk.Beat) {
