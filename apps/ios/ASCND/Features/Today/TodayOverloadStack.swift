@@ -152,8 +152,9 @@ struct TodayOverloadStack<Hero: View>: View {
   ///
   /// 04/11: hành động "Xem tăng tải / Về việc chính" trước gắn vào CẢ chồng thẻ. Bộ kiểm
   /// accessibility báo "Hit area is too small" cho cả chữ TĨNH của thẻ việc chính ("TODAY'S MAIN
-  /// THING", "From your weekly plan.", cao 13–20 điểm) — nghi là hành động ấy rơi xuống từng phần
-  /// tử nên chúng thành phần tử bấm được. Gắn ở dải: VoiceOver nghe "có hành động" ở đúng một chỗ,
+  /// THING", "From your weekly plan.", cao 13–20 điểm): hành động ấy rơi xuống từng phần tử nên
+  /// chúng thành phần tử bấm được (lượt kiểm của #831 xác nhận: chuyển về dải thì hết báo). Gắn ở
+  /// dải: VoiceOver nghe "có hành động" ở đúng một chỗ,
   /// cạnh nút đổi thẻ; dải "Chest day · Bắt đầu ›" vẫn bấm là bắt đầu, hành động có tên là quay về.
   private var strip: some View {
     Group {

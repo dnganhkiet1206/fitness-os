@@ -255,6 +255,16 @@ struct TodayPlanHero: View {
     ][WorkoutPlanning.routineIndex(d)]
   }
 
+  /// Tên thứ một chữ ("M", "W"; tiếng Việt vẫn "T2"), cho cột hẹp ở chữ cỡ trợ năng.
+  static func narrowWeekday(_ d: LocalDate) -> String {
+    [
+      String(localized: "weekday.narrow.mon"), String(localized: "weekday.narrow.tue"),
+      String(localized: "weekday.narrow.wed"), String(localized: "weekday.narrow.thu"),
+      String(localized: "weekday.narrow.fri"), String(localized: "weekday.narrow.sat"),
+      String(localized: "weekday.narrow.sun"),
+    ][WorkoutPlanning.routineIndex(d)]
+  }
+
   static func day(_ d: LocalDate) -> String {
     // Nửa đêm UTC của ngày ấy, định dạng theo UTC — không lệch ngày theo múi giờ máy.
     let utc = Date(timeIntervalSince1970: TimeInterval(d.daysSinceEpoch) * 86_400)
@@ -286,6 +296,7 @@ struct TodayWeekStrip: View {
   /// 03/11 (#795 đợt 2b): "Dynamic Type font sizes are unsupported" cho "KOA'S WEEK" và tên thứ.
   @ScaledMetric(relativeTo: .caption2) private var headerSize: CGFloat = 11
   @ScaledMetric(relativeTo: .caption2) private var daySize: CGFloat = 10.5
+  @Environment(\.dynamicTypeSize) private var typeSize
 
   var body: some View {
     VStack(alignment: .leading, spacing: 6) {
@@ -310,8 +321,10 @@ struct TodayWeekStrip: View {
       HStack(spacing: 4) {
         ForEach(days, id: \.self) { d in
           VStack(spacing: 4) {
-            // Bảy cột chia đều bề ngang: chữ lớn thì thu nhỏ vừa ô thay vì cắt "We…".
-            Text(verbatim: TodayPlanHero.weekday(d.date))
+            // Bảy cột chia đều bề ngang: chữ lớn thì thu nhỏ vừa ô thay vì cắt "We…". Chữ cỡ trợ
+            // năng thì tên thứ một chữ: ở thẻ Tiến bộ (cột ~43 pt) "Mon" / "Wed" thu 60% vẫn không
+            // vừa, bộ kiểm a11y báo "Text clipped" (04/11). VoiceOver vẫn đọc tên đủ.
+            Text(verbatim: typeSize.isAccessibilitySize ? TodayPlanHero.narrowWeekday(d.date) : TodayPlanHero.weekday(d.date))
               .font(.system(size: daySize, weight: .semibold))
               .lineLimit(1)
               .minimumScaleFactor(0.6)
