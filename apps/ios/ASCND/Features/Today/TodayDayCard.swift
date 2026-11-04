@@ -223,11 +223,18 @@ struct TodayDayCard: View {
   }
 
   /// Hàng nút nhanh của thẻ: một hàng như thiết kế; chữ cỡ trợ năng thì xếp dọc, không cắt chữ.
+  ///
+  /// Ba nút của thẻ Bữa không vừa một hàng ở màn 390 điểm bằng tiếng Anh: "Barcode" bị cắt thành
+  /// "Barco…" (ảnh `todayDayCardMeal.light`, 03/11). Chật thì khoảng cách giữa nút còn 4 và chữ thu
+  /// nhỏ (tối đa 80%, như cũ) cho vừa. Tiếng Việt ("Chụp / Mã vạch / Nhập") vừa sẵn: y như thiết kế.
   @ViewBuilder private func chipRow<Chips: View>(@ViewBuilder _ chips: () -> Chips) -> some View {
     if typeSize.isAccessibilitySize {
       VStack(alignment: .leading, spacing: 0) { chips() }
     } else {
-      HStack(spacing: 8) { chips() }
+      ViewThatFits(in: .horizontal) {
+        HStack(spacing: 8) { chips() }
+        HStack(spacing: 4) { chips() }
+      }
     }
   }
 
