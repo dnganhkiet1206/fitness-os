@@ -63537,6 +63537,121 @@
     }
    }
   },
+  "koa.shelf.when %@ %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@: %2$@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "El %1$@: %2$@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ngày %1$@: %2$@"
+     }
+    }
+   }
+  },
+  "koa.shelf.cup.a11y %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Record cup from %@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Copa de récord del %@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cúp kỷ lục ngày %@"
+     }
+    }
+   }
+  },
+  "koa.shelf.frame.first": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "First session frame"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cuadro de la primera sesión"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Khung buổi tập đầu tiên"
+     }
+    }
+   }
+  },
+  "koa.shelf.frame.week": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "First full week frame"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cuadro de la primera semana completa"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Khung tuần đủ buổi đầu tiên"
+     }
+    }
+   }
+  },
+  "koa.shelf.frame.rank": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Rank-up frame"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cuadro de subida de rango"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Khung lên hạng"
+     }
+    }
+   }
+  },
   "journey.line.record": {
    "extractionState": "manual",
    "localizations": {
@@ -69651,121 +69766,6 @@
      "stringUnit": {
       "state": "translated",
       "value": "Koa te guarda el sitio. Descansa, sin recordatorios de entrenamiento. Vuelves el %1$@, %2$@."
-     }
-    }
-   }
-  },
-  "koa.shelf.when %@ %@": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "%1$@: %2$@"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "El %1$@: %2$@"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Ngày %1$@: %2$@"
-     }
-    }
-   }
-  },
-  "koa.shelf.cup.a11y %@": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Record cup from %@"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Copa de récord del %@"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Cúp kỷ lục ngày %@"
-     }
-    }
-   }
-  },
-  "koa.shelf.frame.first": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "First session frame"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Cuadro de la primera sesión"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Khung buổi tập đầu tiên"
-     }
-    }
-   }
-  },
-  "koa.shelf.frame.week": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "First full week frame"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Cuadro de la primera semana completa"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Khung tuần đủ buổi đầu tiên"
-     }
-    }
-   }
-  },
-  "koa.shelf.frame.rank": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Rank-up frame"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Cuadro de subida de rango"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Khung lên hạng"
      }
     }
    }
