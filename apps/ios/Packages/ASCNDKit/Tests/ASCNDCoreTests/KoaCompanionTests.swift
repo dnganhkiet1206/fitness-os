@@ -510,6 +510,17 @@ import Testing
     #expect(abs(after - 138 * 0.87 / 240) < 0.001)
   }
 
+  /// Cảnh nhận Koa đúng cỡ trên sân khấu và trả về đúng cỡ ấy (#799): sân khấu lên 152 ngày 02/11 mà cảnh vẫn vẽ
+  /// 138 từ khung đầu, Koa co lại ~9 % lúc chuyển cảnh. Hạng cao thì sân khấu lớn hơn (tới ×1,1), cảnh theo.
+  @Test(arguments: [KoaRoomMap.heroWidth, KoaRoomMap.heroWidth * 1.1])
+  func startsAndEndsAtTheStageSize(stage: Double) {
+    let atDoor = stage * KoaRoomMap.scale(KoaRoomMap.door.d) / 240
+    var b = KoaBedtime(stageWidth: stage)
+    #expect(abs(b.shot(at: 0).scale - atDoor) < 1e-9)
+    var w = KoaWakeUp(stageWidth: stage)
+    #expect(abs((w.shot(at: KoaWakeUp.end)?.scale ?? 0) - atDoor) < 1e-9)
+  }
+
   private func wake() -> [KoaBedtime.Shot] {
     var w = KoaWakeUp()
     let times = Array(stride(from: KoaWakeUp.blanket, to: KoaWakeUp.end, by: 1.0 / 60)) + [KoaWakeUp.end]

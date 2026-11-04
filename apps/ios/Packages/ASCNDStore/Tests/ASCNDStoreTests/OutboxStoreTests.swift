@@ -161,6 +161,6 @@ struct OutboxStoreTests {
     try store.enqueue([create, assign])
     try store.enqueue([create, assign])
     #expect(try store.load().pending.map(\.id) == ["other", "tpl", "tpl@day0"])
-    #expect(try await store.pending(userId: "u1").map(\.id) == ["tpl", "tpl@day0"])
+    #expect(try store.pending(userId: "u1").map(\.id) == ["tpl", "tpl@day0"])
   }
 }
