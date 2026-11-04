@@ -174,6 +174,12 @@ import UIKit
     check(ShelfRoomPreview(shelf: "olympic"), height: CGFloat(StudioScene.sceneBottom), padded: false)
   }
 
+  /// Koa chạy tới kéo thẻ mà đang mặc đồ (#799: "Koa mặc đồ khi chạy kéo thẻ chưa soi"). Hai bộ đồ đủ bảy chỗ,
+  /// bốn dáng của `KoaPull`: lấy đà, bay khỏi bục, chạm đất, bay giữa hai bước. Vẽ đúng như `KoaPullScene.figure`.
+  @Test func pullRunOutfits() {
+    check(PullRunOutfitsPreview(), height: 300, padded: false)
+  }
+
   @Test func gainsCard() {
     let h = Self.history
     let past = h.days.filter { $0.date != Self.today }
@@ -200,5 +206,58 @@ private struct ShelfRoomPreview: View {
     if let shelf { o.decor = ["shelf": shelf] }
     o.shelf = KoaShelf.Display(cups: KoaShelf.maxCups, frames: Set(KoaShelf.FrameKind.allCases))
     return StudioBackdrop(options: o).frame(width: 390, height: CGFloat(StudioScene.sceneBottom))
+  }
+}
+
+/// Dáng chạy của cảnh kéo thẻ với đồ mặc (#799): mỗi hàng một bộ đồ, mỗi cột một khung của `KoaPull`.
+private struct PullRunOutfitsPreview: View {
+  @Environment(\.colorScheme) private var scheme
+
+  static let outfits: [[String]] = [
+    ["head_cap", "face_shades", "top_hoodie", "bottom_jogger", "shoes_sneaker", "back_backpack", "hand_bottle"],
+    ["head_santa", "face_goggles", "top_jersey", "bottom_camo", "shoes_wing", "back_cape", "hand_dumbbell"],
+  ]
+
+  /// Lấy đà (gần hết), đỉnh cú bay khỏi bục, vừa chạm đất, giữa không trung của bước đầu.
+  static let times: [Double] = {
+    let landed = KoaPull.anticipate + KoaPull.hopOff
+    return [KoaPull.anticipate * 0.9, KoaPull.anticipate + KoaPull.hopOff * 0.5, landed + KoaRun.step * 0.1, landed + KoaRun.step * 0.75]
+  }()
+
+  var body: some View {
+    let light = scheme == .light
+    VStack(spacing: 0) {
+      ForEach(Self.outfits.indices, id: \.self) { row in
+        HStack(spacing: 0) {
+          ForEach(Self.times.indices, id: \.self) { col in
+            cell(
+              KoaPull.shot(
+                at: Self.times[col], start: (x: 195, y: 300, scale: 0.6), width: 390, height: 844, panelHeight: 557),
+              worn: KoaEmotion.worn(Self.outfits[row]), light: light)
+          }
+        }
+      }
+    }
+    .frame(width: 390, height: 300)
+  }
+
+  private func cell(_ s: KoaPull.Shot, worn: KoaFlags.Worn, light: Bool) -> some View {
+    Canvas { ctx, size in
+      var c = ctx
+      let k = size.width / 240
+      c.translateBy(x: size.width / 2, y: size.height * 0.4)
+      c.rotate(by: .degrees(s.angle))
+      c.scaleBy(x: k * s.stretchX, y: k * s.stretchY)
+      c.translateBy(x: -120, y: -110)
+      var o = KoaRender.Options()
+      o.expression = s.expression
+      o.walk = s.walk
+      o.size = 240
+      o.paper = light
+      o.flat = light
+      o.worn = worn
+      KoaCanvas.draw(KoaPaint.plan(KoaRender.figure(o)), in: &c)
+    }
+    .frame(width: 97.5, height: 150)
   }
 }
