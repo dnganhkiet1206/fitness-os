@@ -64756,6 +64756,351 @@
     }
    }
   },
+  "coach.accept": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Accept"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Aceptar"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nhận đề xuất"
+     }
+    }
+   }
+  },
+  "coach.cue %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Your plan: train after %@."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tu plan: entrenar después de %@."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Kế hoạch của bạn: tập sau khi %@."
+     }
+    }
+   }
+  },
+  "coach.cue.busy %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "If busy: %@."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Si estás ocupado: %@."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bận thì %@."
+     }
+    }
+   }
+  },
+  "coach.eyebrow": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Your week with Koa"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tu semana con Koa"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đầu tuần cùng Koa"
+     }
+    }
+   }
+  },
+  "coach.keep": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Keep my plan"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mantener mi plan"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Giữ lịch như cũ"
+     }
+    }
+   }
+  },
+  "coach.light.detail": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "One fewer set per exercise, same weight. Your strength is still there; this week is for getting back into rhythm."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Una serie menos por ejercicio, mismo peso. Tu fuerza sigue ahí; esta semana es para recuperar el ritmo."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mỗi bài bớt 1 set, giữ mức tạ. Sức mạnh vẫn còn, tuần này để cơ thể vào nhịp lại."
+     }
+    }
+   }
+  },
+  "coach.light.load %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "One fewer set per exercise, and about %lld%% less weight after a long break. Build back up from next week."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Una serie menos por ejercicio y un %lld%% menos de peso tras un descanso largo. Vuelve a subir desde la próxima semana."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mỗi bài bớt 1 set, và giảm khoảng %lld%% tạ vì nghỉ khá lâu. Tăng lại dần từ tuần sau."
+     }
+    }
+   }
+  },
+  "coach.light.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "This week: a lighter week"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Esta semana: semana ligera"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tuần này: tuần nhẹ"
+     }
+    }
+   }
+  },
+  "coach.ok": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Got it"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Entendido"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đã hiểu"
+     }
+    }
+   }
+  },
+  "coach.progress.detail": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "These lifts beat their target two sessions in a row. The new numbers show on the daily overload card."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Estos ejercicios superaron su objetivo dos sesiones seguidas. Los nuevos números aparecen en la tarjeta diaria."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Các bài dưới đã vượt đích ở hai buổi liền. Mức mới hiện ở thẻ Tăng tải mỗi ngày."
+     }
+    }
+   }
+  },
+  "coach.progress.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "This week: add weight"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Esta semana: subir peso"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tuần này: tuần lên tạ"
+     }
+    }
+   }
+  },
+  "coach.recap.best %@ %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@ moved most: %2$@."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@ fue lo que más avanzó: %2$@."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@ tiến nhiều nhất: %2$@."
+     }
+    }
+   }
+  },
+  "coach.recap.sessions %lld %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Last week: %1$lld of %2$lld planned sessions."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "La semana pasada: %1$lld de %2$lld sesiones planeadas."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tuần trước: %1$lld/%2$lld buổi theo lịch."
+     }
+    }
+   }
+  },
+  "coach.steady.detail": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Same plan. Beat a target two sessions in a row and Koa will suggest more weight."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mismo plan. Supera un objetivo dos sesiones seguidas y Koa te sugerirá más peso."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Lịch như cũ. Đạt đích hai buổi liền thì Koa gợi ý lên tạ."
+     }
+    }
+   }
+  },
+  "coach.steady.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "This week: keep the rhythm"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Esta semana: mantén el ritmo"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tuần này: giữ nhịp"
+     }
+    }
+   }
+  },
   "koa.say.night": {
    "extractionState": "manual",
    "localizations": {

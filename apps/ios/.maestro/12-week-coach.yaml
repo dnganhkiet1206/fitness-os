@@ -1,0 +1,34 @@
+# Thẻ đầu tuần (Kiệt duyệt mock 03/11): hiện thứ Hai tới thứ Tư dưới việc chính; "Giữ lịch như
+# cũ" ẩn thẻ mà không đổi lịch. Ngoài ba ngày đầu tuần thì thẻ không hiện, flow chỉ kiểm khi có thẻ.
+appId: com.ascnd.fitnessos.dev
+name: The Monday week card can be kept as is
+---
+- runFlow: subflows/launch.yaml
+- extendedWaitUntil:
+    visible: "NOPE-never"
+    timeout: 2500
+    optional: true
+- runFlow:
+    when:
+      visible:
+        id: today.coach.keep
+    commands:
+      - takeScreenshot: 12-week-coach
+      # nút nằm dưới thanh Ghi nhanh khi Hôm nay có nhiều thẻ: kéo lên giữa màn rồi mới bấm
+      - scrollUntilVisible:
+          element:
+            id: today.coach.keep
+          direction: DOWN
+          centerElement: true
+      - tapOn:
+          id: today.coach.keep
+      - extendedWaitUntil:
+          notVisible:
+            id: today.coach.keep
+          timeout: 10000
+- scrollUntilVisible:
+    element:
+      id: today.plan.primary
+    direction: UP
+- assertVisible:
+    id: today.plan.primary
