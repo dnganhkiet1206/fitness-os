@@ -62,6 +62,9 @@ final class AppServices {
     let week: KoaGains.Week
   }
   var koaGainsHistory: GainsHistory?
+  /// Kỷ lục từng ngày cho kệ cúp phòng Koa (#792), tính lại từ set đã lưu. Gắn userId; `basis` là
+  /// số ngày tập của lịch sử Gains lúc đọc: lịch sử đổi (buổi mới, buổi bị xoá) thì đọc lại.
+  var koaShelfRecords: (userId: String, basis: Int, records: [LocalDate: PersonalRecord])?
   /// Bụi phòng Koa (#527 phần 5) — gắn userId để phiên khác không dùng nhầm.
   var koaDust: (userId: String, state: KoaDust.State)?
   /// Gains hiện tại (đợt 2): trạng thái của Koa và lời nhắc ngày lỡ. Gắn userId để
@@ -915,6 +918,7 @@ final class AppServices {
   /// Plan, tuần, chuỗi) đã tự loại người khác nên giữ nguyên.
   func forgetKoaSession() {
     koaGainsHistory = nil
+    koaShelfRecords = nil
     koaEquipped = []
     koaBuild = 0
     koaLastSessionAt = nil
@@ -927,6 +931,17 @@ final class AppServices {
       let r = await loadKoaGains(userId: userId), session.session?.userId == userId
     else { return }
     koaGainsHistory = .init(days: r.days, week: r.week)
+  }
+
+  /// Phòng Koa mở (#792): tính lại kỷ lục cho kệ cúp khi chưa có hay lịch sử tập đã đổi. Đọc hỏng
+  /// thì giữ kệ đang có; chưa có số thì cúp vẫn ở đó, Koa chỉ không nói số.
+  func ensureKoaShelf() async {
+    guard let userId = session.session?.userId, let rows, let h = koaGainsHistory else { return }
+    if let r = koaShelfRecords, r.userId == userId, r.basis == h.days.count { return }
+    guard let records = await KoaShelfSync.load(userId: userId, store: rows, in: .current),
+      session.session?.userId == userId
+    else { return }
+    koaShelfRecords = (userId, h.days.count, records)
   }
 
   /// Câu ngắn của Daily Plan cho widget "Buổi tập hôm nay" (GĐ1); `nil` = câu mặc

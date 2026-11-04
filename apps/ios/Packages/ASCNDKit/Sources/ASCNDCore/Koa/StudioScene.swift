@@ -111,6 +111,9 @@ public enum StudioScene {
     /// Bỏ các phần tử này của `template` (30/10: phòng vẽ sẵn không có chậu cây khi chậu
     /// cây được vẽ riêng ở lớp trên để rung — khỏi vẽ lại cả phòng mỗi khung).
     public var omit: Set<Int> = []
+    /// Cúp trên kệ và khung mốc trên tường (#792). Chỉ phòng của người dùng truyền vào; trống thì
+    /// phòng y như tranh gốc (golden không đổi).
+    public var shelf = KoaShelf.Display()
 
     public init() {}
   }
@@ -243,6 +246,10 @@ public enum StudioScene {
       if let only, !only.contains(i), v["t"]?.stringValue != "Defs" { continue }
       if o.omit.contains(i) { continue }
       if let extra = swap[i] { out += extra.compactMap { element($0, o, skin) } }
+      // cúp và khung mốc (#792): vẽ cạnh món cuối của kệ / của tường nên theo đúng lớp của chúng,
+      // và vẫn có khi kệ / bảng là đồ đã mua (phần tử gốc khi ấy bị bỏ qua ngay dưới)
+      if decor, i == KoaShelf.cupsAt { out += KoaShelf.cupTree(o) }
+      if decor, i == KoaShelf.framesAt { out += KoaShelf.frameTree(o) }
       if skip.contains(i) { continue }
       if i == plantIndex, o.plantSway != 0, var e = element(v, o, skin) {
         let m = KoaMath.opMat(KoaScene.Op("r", [o.plantSway, 0, -12]))
