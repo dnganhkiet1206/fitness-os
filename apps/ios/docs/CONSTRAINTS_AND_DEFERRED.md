@@ -545,6 +545,12 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Không đổi hành vi. **NOT RUN:** build sạch (không cache) để thấy hết cảnh báo còn lại; iPhone thật.
 - 03/11 lượt 2 (nhánh `claude/warnings-cleanup-2`): sau #820, `core-linux` 0 cảnh báo, `app-macos` còn 5 (gói build lại khi ASCNDKit đổi nên lộ thêm cảnh báo cũ). `ProductionTabs.swift:252`: `{ @MainActor in }` của #820 không đủ, vì closure đi qua `Optional.map` (kiểu generic) nên Swift không tự coi nó là `@Sendable` → ghi rõ `@Sendable @MainActor`, chỉ bắt `deleter` và `services` (đều `Sendable`), `signOut` thành hàm tĩnh. `DSPreview.swift`, `ReadCacheTable.swift`: `public import` không dùng trong khai báo public → import thường / `internal import`. `OutboxStoreTests.swift:161-162`: `enqueue` không async, bỏ `await`. **NOT RUN:** build sạch không cache của app.
 
+**Nút chữ kiểu `.plain`: cả khung nhận chạm (04/11, audit 5 giờ, nhánh `claude/plain-tap-areas`):**
+- Cùng gốc với lỗi vùng chạm ở Hôm nay (#831). Nút `.plain` chỉ nhận chạm ở chỗ có nét vẽ (chữ, biểu tượng); phần trống của `.frame(maxWidth: .infinity, minHeight: 44)` trong suốt với cú chạm. Ngoài đời, chạm cạnh chữ là trượt. Nặng nhất là nút "×" bỏ trả lời ở Cộng đồng: khung 44×44 nhưng chỉ ký hiệu khoảng 12 pt nhận chạm.
+- Quét cả app (Button có `.buttonStyle(.plain)` mà nhãn có khung lớn hơn chữ, không có `contentShape` hay nền): 21 chỗ. Hai chỗ nhãn là `DSCard` (có nền, đã nhận chạm cả thẻ) nên không sửa. 19 chỗ còn lại thêm `.contentShape(Rectangle())`: Nhật ký ăn (thêm bữa, thêm / xoá / chia sẻ món), kế hoạch ăn, xoá thực phẩm, Cân nặng (xem tất cả), Cộng đồng (tải thêm bình luận, "×", trả lời, tìm thêm), thư viện bài tập (tất cả nhóm cơ), buổi tập (dùng mức tạ trước ×2, thêm set), xoá trí nhớ Coach, hỏi Koa ở bảng chỉ số, Tuần của Koa (giữ lịch), gợi ý Tạm nghỉ (không).
+- Hai nút chữ phụ trong thẻ ("giữ lịch" của Tuần của Koa, "không" của gợi ý Tạm nghỉ) tăng từ 36 lên 44 điểm, như nút phương án ở #821; thẻ cao thêm 8 điểm mỗi nút. Hai nút "dùng mức tạ trước" trong buổi tập giữ 36 điểm (màn ghi set dày), chỉ cho cả dải 36 nhận chạm.
+- **NOT RUN:** chạm thử trên simulator / iPhone; bộ kiểm a11y chỉ phủ các màn Koa nên không thấy các màn này.
+
 **Snapshot test (03/11, #795, nhánh `claude/koa-snapshots`):**
 - swift-snapshot-testing 1.19.7 (MIT, ghim `exactVersion`) chỉ trong target `ASCNDTests`. Sáu test, mỗi test ba ảnh (sáng / tối / chữ `accessibility3`): `KoaRhythmCard`, `KoaJourneyContent` (có dữ liệu + trống), `KoaPauseCard`, `KoaPauseSheet`, `KoaGainsCard`. Dữ liệu mẫu cố định (03/11/2026, lịch T2/T4/T6, một đợt nghỉ, hai kỷ lục).
 - Để dựng được không cần `AppServices`: `KoaJourneyView` tách phần thân thành `KoaJourneyContent`, thẻ Gains của `WorkoutSummaryView` thành `KoaGainsCard`. Hành vi không đổi (đo lường `journey_opened` / `gains_earned` ở lại chỗ cũ).
@@ -653,6 +659,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - 03/11/2026: #801: tắt hiệu ứng trượt vào của Hôm nay ở chế độ UI test, `08-settings` đợi Cài đặt ổn định trước khi cuộn; xem mục 4.
 - 03/11/2026: dọn cảnh báo trình biên dịch (app + ASCNDKit, không đổi hành vi); xem mục 4.
 - 03/11/2026: dọn cảnh báo lượt 2 (5 cảnh báo `app-macos` còn lại sau #820); xem mục 4.
+- 04/11/2026: 19 nút chữ kiểu `.plain` cho cả khung nhận chạm (trước chỉ phần chữ), hai nút phụ 36 → 44 điểm; xem mục 4.
 - 03/11/2026: #796 phần 1: Daily Plan có lý do `paused(until:)`; thẻ việc chính ghi "Đang tạm nghỉ · tập lại từ …". Lịch sử đợt nghỉ chờ Kiệt quyết (migration hay trên máy).
 - 03/11/2026: dải Tuần của Koa lớn theo Dynamic Type (kiểm accessibility báo cỡ cố định); xem mục 4.
 - 03/11/2026: #795 đợt 2c: chữ thẻ "Hôm nay của bạn" và nhãn Koa lớn theo Dynamic Type, hàng nút nhanh xếp dọc ở cỡ trợ năng; xem mục 4.

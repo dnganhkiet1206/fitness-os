@@ -66,7 +66,11 @@ struct KoaWeekCoachCard: View {
         DSButton(String(localized: "coach.accept"), style: .primary, action: accept)
           .accessibilityIdentifier("today.coach.accept")
         Button(action: keep) {
-          Text("coach.keep").font(DS.TextStyle.footnote.weight(.semibold)).frame(maxWidth: .infinity, minHeight: 36)
+          // cả dải 44 điểm nhận chạm, không chỉ phần chữ (nút `.plain`, xem `TodayPlanHero.minTap`)
+          Text("coach.keep")
+            .font(DS.TextStyle.footnote.weight(.semibold))
+            .frame(maxWidth: .infinity, minHeight: 44)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .foregroundStyle(DS.Color.primary.swiftUI)
