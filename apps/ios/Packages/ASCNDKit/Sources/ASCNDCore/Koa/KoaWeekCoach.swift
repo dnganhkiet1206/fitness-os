@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 
 /// Đầu tuần, Koa tóm tắt tuần trước và đề xuất kiểu tuần này (Kiệt duyệt mock 03/11). Người dùng
 /// nhận hoặc giữ lịch như cũ; không nhận thì không đổi gì. Luật đối chiếu nghiên cứu gốc

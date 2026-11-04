@@ -102,6 +102,7 @@ struct CoachMemoryView: View {
           .font(DS.TextStyle.footnote)
           .foregroundStyle(DS.Color.destructive.swiftUI)
           .frame(maxWidth: .infinity, minHeight: 44)
+          .contentShape(Rectangle())
       }
       .buttonStyle(.plain)
       .disabled(book.isForgetting)

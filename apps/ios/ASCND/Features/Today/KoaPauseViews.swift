@@ -121,7 +121,11 @@ struct KoaSwapNudge: View {
       DSButton(String(localized: "swap.nudge.pause"), style: .secondary, action: pause)
         .accessibilityIdentifier("today.swap.pause")
       Button(action: dismiss) {
-        Text("swap.nudge.no").font(DS.TextStyle.footnote.weight(.semibold)).frame(maxWidth: .infinity, minHeight: 36)
+        // cả dải 44 điểm nhận chạm, không chỉ phần chữ (nút `.plain`, xem `TodayPlanHero.minTap`)
+        Text("swap.nudge.no")
+          .font(DS.TextStyle.footnote.weight(.semibold))
+          .frame(maxWidth: .infinity, minHeight: 44)
+          .contentShape(Rectangle())
       }
       .buttonStyle(.plain)
       .foregroundStyle(DS.Color.primary.swiftUI)

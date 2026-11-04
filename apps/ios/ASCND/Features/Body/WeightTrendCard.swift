@@ -154,6 +154,7 @@ struct WeightTrendCard: View {
               .font(DS.TextStyle.footnote.weight(.semibold))
               .foregroundStyle(Self.tint)
               .frame(maxWidth: .infinity, minHeight: 48)
+              .contentShape(Rectangle())
           }
           .buttonStyle(.plain)
         }

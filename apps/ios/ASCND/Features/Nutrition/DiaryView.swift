@@ -380,6 +380,7 @@ struct DayMealsSection: View {
             .foregroundStyle(DS.Color.primary.swiftUI)
             .frame(maxWidth: .infinity, minHeight: 44)
             .overlay(RoundedRectangle(cornerRadius: DS.Radius.sm).stroke(DS.Color.border.swiftUI, lineWidth: 1))
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
       }
@@ -611,6 +612,7 @@ private struct MealGroupCard: View {
             Label(String(localized: "diary.meal.addAction"), systemImage: "plus")
               .font(DS.TextStyle.footnote.weight(.semibold))
               .frame(maxWidth: .infinity, minHeight: 44)
+              .contentShape(Rectangle())
           }
           .buttonStyle(.plain)
           .foregroundStyle(DS.Color.primary.swiftUI)
@@ -618,6 +620,7 @@ private struct MealGroupCard: View {
             Label(String(localized: "diary.meal.deleteAction"), systemImage: "trash")
               .font(DS.TextStyle.footnote.weight(.semibold))
               .frame(maxWidth: .infinity, minHeight: 44)
+              .contentShape(Rectangle())
           }
           .buttonStyle(.plain)
           .foregroundStyle(DS.Color.destructive.swiftUI)
@@ -628,6 +631,7 @@ private struct MealGroupCard: View {
               Label(String(localized: "diary.meal.share"), systemImage: "square.and.arrow.up")
                 .font(DS.TextStyle.footnote.weight(.semibold))
                 .frame(maxWidth: .infinity, minHeight: 44)
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .foregroundStyle(DS.Color.primary.swiftUI)

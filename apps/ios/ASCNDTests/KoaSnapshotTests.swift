@@ -164,6 +164,16 @@ import UIKit
     }
   }
 
+  /// Kệ cúp và khung mốc trong phòng Koa (#792): kệ gốc đủ ba cúp, ba khung trên tường.
+  @Test func shelfRoom() {
+    check(ShelfRoomPreview(shelf: nil), height: CGFloat(StudioScene.sceneBottom), padded: false)
+  }
+
+  /// Giá olympic (đồ phòng mua bằng xu) không có tầng: ba cúp đứng trên xà ngang trên cùng.
+  @Test func shelfRoomOlympic() {
+    check(ShelfRoomPreview(shelf: "olympic"), height: CGFloat(StudioScene.sceneBottom), padded: false)
+  }
+
   @Test func gainsCard() {
     let h = Self.history
     let past = h.days.filter { $0.date != Self.today }
@@ -174,5 +184,21 @@ import UIKit
       after: KoaGains.compute(past + [todayDay], week: h.week, today: Self.today),
       planned: b.planned, pr: b.personalRecord, overload: b.overload, fullWeek: b.fullWeek, streak: b.streak)
     check(KoaGainsCard(g: g))
+  }
+}
+
+/// Căn phòng tĩnh có kệ đầy (#792): ba cúp, ba khung; ngày / đêm theo giao diện như phòng thật.
+private struct ShelfRoomPreview: View {
+  let shelf: String?
+  @Environment(\.colorScheme) private var scheme
+
+  var body: some View {
+    var o = StudioScene.Options()
+    o.light = scheme == .light
+    o.lamp = scheme == .dark
+    o.label = "Koa"
+    if let shelf { o.decor = ["shelf": shelf] }
+    o.shelf = KoaShelf.Display(cups: KoaShelf.maxCups, frames: Set(KoaShelf.FrameKind.allCases))
+    return StudioBackdrop(options: o).frame(width: 390, height: CGFloat(StudioScene.sceneBottom))
   }
 }

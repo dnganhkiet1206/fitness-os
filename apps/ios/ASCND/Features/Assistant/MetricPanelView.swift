@@ -176,6 +176,7 @@ struct MetricPanelView: View {
             }
               .font(DS.TextStyle.footnote.weight(.semibold))
               .frame(minHeight: 44)
+              .contentShape(Rectangle())
           }
           .buttonStyle(.plain)
           .foregroundStyle(DS.Color.foreground.swiftUI)

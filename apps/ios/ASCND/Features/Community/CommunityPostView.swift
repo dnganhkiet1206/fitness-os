@@ -208,6 +208,7 @@ struct CommunityPostView: View {
           .font(DS.TextStyle.footnote.weight(.semibold))
           .foregroundStyle(DS.Color.metricBlue.swiftUI)
           .frame(minHeight: 44)
+          .contentShape(Rectangle())
       }
       .buttonStyle(.plain)
     }
@@ -252,7 +253,7 @@ struct CommunityPostView: View {
             if draft == CommentThread.replyPrefix(replyTo.author?.handle) { draft = "" }
             self.replyTo = nil
           } label: {
-            Image(systemName: "xmark").font(.footnote).frame(minWidth: 44, minHeight: 44)
+            Image(systemName: "xmark").font(.footnote).frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
           }
           .buttonStyle(.plain)
           .accessibilityLabel(Text("community.post.replycancel"))
@@ -444,6 +445,7 @@ struct CommentRow<Notice: View>: View {
               .font(DS.TextStyle.footnote.weight(.semibold))
               .foregroundStyle(DS.Color.mutedForeground.swiftUI)
               .frame(minHeight: 44, alignment: .leading)
+              .contentShape(Rectangle())
           }
           .buttonStyle(.plain)
           .accessibilityLabel(Text("community.post.replyto \(comment.author?.displayName ?? "—")"))

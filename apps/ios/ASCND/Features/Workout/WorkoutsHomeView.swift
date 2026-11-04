@@ -760,6 +760,7 @@ struct MuscleGrid: View {
           .font(DS.TextStyle.footnote.weight(.semibold))
           .foregroundStyle(WorkoutsHomeView.accent)
           .frame(maxWidth: .infinity, minHeight: 44)
+          .contentShape(Rectangle())
       }
       .buttonStyle(.plain)
     }
