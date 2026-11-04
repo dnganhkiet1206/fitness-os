@@ -82,7 +82,7 @@ jobs:
             -derivedDataPath "$RUNNER_TEMP/dd" \
             -resultBundlePath "$RUNNER_TEMP/a11y.xcresult" \
             CODE_SIGNING_ALLOWED=NO \
-            | tee a11y.log | grep -E " error:|Test Case|A11Y\||TEST (SUCCEEDED|FAILED)"
+            | tee a11y.log | grep -E " error:|Test Case|A11YD?\||TEST (SUCCEEDED|FAILED)"
 
       - name: Tóm tắt
         if: always()
@@ -103,6 +103,14 @@ jobs:
               r = (r + ["", "", "", ""])[:4]
               print("| " + " | ".join(x.replace("|", "/") for x in r) + " |")
           print("\n</details>")
+          # Dòng `A11YD|`: mô tả chi tiết của bộ kiểm (vd. tỉ lệ tương phản đo được), không tính vào bảng đếm.
+          details = [l.strip().split("|")[1:] for l in open(sys.argv[1], errors="replace") if l.startswith("A11YD|")]
+          if details:
+              print("\n<details><summary>Mô tả chi tiết của bộ kiểm</summary>\n\n| Màn | Loại | Phần tử | Chi tiết |\n|---|---|---|---|")
+              for r in details:
+                  r = (r + ["", "", "", ""])[:4]
+                  print("| " + " | ".join(x.replace("|", "/") for x in r) + " |")
+              print("\n</details>")
           PY
 
       - name: Artifact

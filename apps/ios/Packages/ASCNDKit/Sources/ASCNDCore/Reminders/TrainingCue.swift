@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 
 /// Kế hoạch "nếu… thì…" cho buổi tập (Kiệt duyệt 03/11): "Mình sẽ tập sau khi tan làm", và tuỳ
 /// chọn "Nếu hôm đó bận thì tập bản 15 phút". Gắn buổi tập vào một việc sẵn có trong ngày.
