@@ -479,7 +479,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Chữ cỡ trợ năng: hàng nút nhanh (Bữa: chụp / quét / nhập tay; Nước: thêm / lượng khác) xếp dọc thay vì cắt chữ; dòng kế hoạch ăn và thanh "Ghi hôm nay" được hai dòng. Cỡ thường không đổi bố cục.
 - Snapshot mới: `todayDayCardMeal`, `todayDayCardWater` (sáng / tối / chữ lớn) trong `KoaSnapshotTests`. Lượt CI đầu ĐỎ có chủ ý (chưa có ảnh chuẩn): tải artifact, xem từng ảnh rồi mới commit ảnh chuẩn. 03/11: ảnh chuẩn lấy từ run 41730563591 (5 ảnh) và run 41734113917 (`todayDayCardMeal.largeType`, sau khi sửa dòng kế hoạch ăn bị cắt), đã xem từng ảnh. Ở chữ lớn, số liệu của ô ("Not logged yet") thu nhỏ còn ~80% nhờ `minimumScaleFactor(0.7)` vốn có, vẫn đọc đủ.
 - Còn lại: thẻ Koa đầy đủ (`TodayDayBlock` khi chưa có Daily Plan, hiếm gặp) vẫn cỡ cố định ở câu nói, số đếm, nút; Hôm nay thường dùng dạng gọn.
-- Lỗi cũ thấy qua ảnh (cỡ chữ MẶC ĐỊNH, tiếng Anh, màn rộng 390): ba nút nhanh của thẻ Bữa không vừa một hàng nên "Barcode" bị cắt thành "Barco…" (tiếng Việt "Chụp / Mã vạch / Nhập" vừa). Sửa cần đổi khoảng cách hay bỏ biểu tượng của nút trong bản thiết kế đã duyệt → chờ Kiệt chọn, chưa đổi.
+- ~~Lỗi cũ thấy qua ảnh (cỡ chữ MẶC ĐỊNH, tiếng Anh, màn rộng 390): ba nút nhanh của thẻ Bữa không vừa một hàng nên "Barcode" bị cắt thành "Barco…" (tiếng Việt "Chụp / Mã vạch / Nhập" vừa). Sửa cần đổi khoảng cách hay bỏ biểu tượng của nút trong bản thiết kế đã duyệt → chờ Kiệt chọn, chưa đổi.~~ 04/11 (Kiệt giao E quyết, nhánh `claude/meal-chips-fit`): hàng nút không vừa thì khoảng cách giữa nút còn 4 (thay 8), chữ thu nhỏ tối đa 80% như cũ (`ViewThatFits`); tiếng Việt vừa sẵn nên y như thiết kế. Ảnh chuẩn `todayDayCardMeal.light` / `.dark` ghi lại từ run 41748970155 (#827); đã xem từng ảnh: "Photo · Barcode · Enter" đủ chữ cả nền sáng lẫn tối, ảnh `largeType` không đổi.
 - **NOT RUN:** xem trên simulator / iPhone ở cỡ chữ trợ năng; bộ kiểm a11y chạy lại (khi #812 vào base).
 
 **Ổn định bộ kiểm (03/11, #801, nhánh `claude/stable-checks`):**
@@ -662,6 +662,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - 04/11/2026: hồ sơ của mình: ô "Chuỗi ngày" thay bằng Nhịp 30 ngày, bỏ `MascotRoomController` thứ hai (#802, #797); xem mục 4.
 - 03/11/2026: đo lường Koa Ecosystem (#793): năm sự kiện mốc / hành trình / Nhịp / tạm nghỉ, gửi một lần mỗi lần xảy ra (`Telemetry.once`); xem mục 4.
 - 03/11/2026: #799 (phần không phải art): Koa nói khi Giảm chuyển động; xem mục 4.
+- 04/11/2026: thẻ Bữa ở Hôm nay: ba nút nhanh không còn bị cắt chữ ("Barco…") ở màn 390 bằng tiếng Anh; tiếng Việt không đổi; xem mục 4.
 - 03/11/2026: đăng xuất xoá "Insight hôm nay" lưu trên máy (như `clearPersistedCache` của RN) và quên Koa của người trước trong bộ nhớ (người sau từng thấy Nhịp 30 ngày / Hành trình của người trước); xem mục 4.
 - 03/11/2026: #795 đợt 2a: kiểm accessibility tự động (`performAccessibilityAudit()`) các màn Koa ở workflow `ios-a11y.yml`, đang thu thập; xem mục 4.
 - 04/11/2026: Kiệt giao E quyết các việc chờ (#527). Độ tương phản chữ phụ đo được ≥ 5,1:1 → giữ token; bộ kiểm a11y ghi mô tả chi tiết; câu Insight mẫu của chế độ UI test theo ngôn ngữ; bỏ cảnh báo `public import` của `TrainingCue`; xem mục 4.
