@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 
 /// Cờ của Koa (#527, K1) — `koa-flags.ts` @ fac9ac2, tức `renderVals()` của
 /// bản export: biểu cảm + tư thế + đồ đang mặc → cờ bật / tắt từng lớp và các

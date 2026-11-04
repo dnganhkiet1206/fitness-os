@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 
 /// Bình luận Cộng đồng (#527, lát 3) — `lib/comment-thread.ts` + phần đọc của
 /// `useComments` (`hooks/use-community.ts`) @ fac9ac2.

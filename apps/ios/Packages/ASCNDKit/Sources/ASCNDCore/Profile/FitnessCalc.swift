@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 
 /// Kế hoạch dinh dưỡng từ số đo cơ thể — `lib/fitness-calc.ts` @ fac9ac2, port
 /// nguyên công thức (Mifflin-St Jeor, hệ số vận động, sàn calo theo giới, đạm

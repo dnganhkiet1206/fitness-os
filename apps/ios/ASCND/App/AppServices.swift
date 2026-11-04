@@ -62,6 +62,9 @@ final class AppServices {
     let week: KoaGains.Week
   }
   var koaGainsHistory: GainsHistory?
+  /// Kỷ lục từng ngày cho kệ cúp phòng Koa (#792), tính lại từ set đã lưu. Gắn userId; `basis` là
+  /// số ngày tập của lịch sử Gains lúc đọc: lịch sử đổi (buổi mới, buổi bị xoá) thì đọc lại.
+  var koaShelfRecords: (userId: String, basis: Int, records: [LocalDate: PersonalRecord])?
   /// Bụi phòng Koa (#527 phần 5) — gắn userId để phiên khác không dùng nhầm.
   var koaDust: (userId: String, state: KoaDust.State)?
   /// Gains hiện tại (đợt 2): trạng thái của Koa và lời nhắc ngày lỡ. Gắn userId để
@@ -293,8 +296,11 @@ final class AppServices {
     // chạy tuần tự, để thứ tự không phụ thuộc thứ tự đăng ký.
     let lifecycle = self.lifecycle
     session.onSignedOut {
-      [sync = self.sync, weak session = self.session, celebrations = self.celebrations, habitHours = self.habitHours,
-       stateWriter = self.stateWriter] in
+      [weak self, sync = self.sync, weak session = self.session, celebrations = self.celebrations,
+       habitHours = self.habitHours, stateWriter = self.stateWriter] in
+      // Koa trong bộ nhớ của người vừa rời đi — TRƯỚC mọi `await`, để không xoá nhầm lượt đọc
+      // của người mới khi đổi thẳng tài khoản.
+      self?.forgetKoaSession()
       // Pháo hoa của người vừa rời đi không hiện cho người sau (`onUserScopedReset`).
       celebrations.clear()
       // Ý "đã uống" chưa gửi thuộc về người vừa rời đi (`onUserScopedReset`).
@@ -313,6 +319,8 @@ final class AppServices {
       widgets.setUser(next)
       // Cài đặt theo tài khoản (linh vật); theo máy thì giữ (`DEVICE_KEYS`).
       prefs.clearUserScoped()
+      // "Insight hôm nay" của người vừa rời đi (`clearPersistedCache` của RN).
+      SmartNudgesDefaultsCache.clear()
       // Nhắc nhở: huỷ thông báo đang chờ của người vừa rời đi, xoá cài đặt /
       // chữ ký lịch / chốt giờ thông minh (`forgetPreviousAccount`).
       await reminderCenter.clearUserScoped()
@@ -323,6 +331,7 @@ final class AppServices {
       sync.setSignedInUser(next)
     }
     UNUserNotificationCenter.current().delegate = reminderPresenter
+    ReminderPresenter.onOpened = { [weak reminderCenter] key in reminderCenter?.noteOpened(key) }
     MealNotification.register()
     reminderPresenter.logUsualMeal = { [weak self] in
       await self?.logUsualMeal().map { (names: $0.names, kcal: $0.kcal) }
@@ -451,7 +460,13 @@ final class AppServices {
       store: workouts,
       planStore: outbox,
       onRest: { event, target in rest.handle(event, target: target) },
-      onEnqueued: { _ in sync.kick() })
+      onEnqueued: { [weak self] entry in
+        sync.kick()
+        // Lịch có buổi tập đầu tiên (onboarding hay tự đặt): lúc xin quyền thông báo (#800).
+        if entry.kind == PlanEdit.routineDayKind, entry.payload["template_id"]?.stringValue != nil {
+          Task { await self?.reminders.askAfterSchedule() }
+        }
+      })
     // Không ghi buổi ghi tay vào Apple Health nữa (17/10, "Không ghi ngược vào
     // HealthKit").
     flow.onManualLogged = { [weak self] _ in
@@ -475,7 +490,7 @@ final class AppServices {
     let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
     guard
       let s = await KoaDustSync.load(
-        userId: userId, store: rows, sessions: h.days, week: h.week, pause: koaPause(userId: userId, today: today),
+        userId: userId, store: rows, sessions: h.days, week: h.week, paused: koaPausedDay(userId: userId, today: today),
         today: today),
       session.session?.userId == userId
     else { return }
@@ -744,13 +759,33 @@ final class AppServices {
     return await KoaGainsSync.load(userId: userId, store: rows, plans: plans, now: SystemWallClock().nowMillis(), in: .current)
   }
 
+  /// Đổi mỗi lần câu "nếu… thì…" đổi.
+  var trainingCueRevision = 0
+
+  /// "Mình tập sau khi…" của tài khoản (`TrainingCue`, 03/11). Lưu trên máy.
+  func trainingCue(userId: String) -> TrainingCue? {
+    _ = trainingCueRevision
+    guard let data = UserDefaults.standard.data(forKey: "koa.cue.\(userId)") else { return nil }
+    return try? JSONDecoder().decode(TrainingCue.self, from: data)
+  }
+
+  func setTrainingCue(_ cue: TrainingCue?, userId: String) {
+    let key = "koa.cue.\(userId)"
+    if let cue, let data = try? JSONEncoder().encode(cue) {
+      UserDefaults.standard.set(data, forKey: key)
+    } else {
+      UserDefaults.standard.removeObject(forKey: key)
+    }
+    trainingCueRevision += 1
+  }
+
   /// Đổi mỗi lần tạm nghỉ đổi, để các màn đọc `koaPause` vẽ lại.
   var koaPauseRevision = 0
   /// UI test: tạm nghỉ chỉ sống trong một lần mở app, để flow này không làm hỏng flow sau.
   @ObservationIgnored private var uiTestPauses: [String: Data] = [:]
 
-  /// Tạm nghỉ đang có hiệu lực của tài khoản (Koa Ecosystem V2). Lưu trên máy: bảng
-  /// `koa_pauses` có migration nhưng chưa deploy (chờ Kiệt duyệt).
+  /// Tạm nghỉ đang có hiệu lực của tài khoản (Koa Ecosystem V2). Lưu trên máy trước, rồi
+  /// đồng bộ với bảng `koa_pauses`.
   func koaPause(userId: String, today: LocalDate) -> KoaPause? {
     _ = koaPauseRevision
     guard let data = Self.uiTest ? uiTestPauses[userId] : UserDefaults.standard.data(forKey: "koa.pause.\(userId)"),
@@ -759,12 +794,85 @@ final class AppServices {
     return p
   }
 
+  /// Ngày `d` có nằm trong một đợt tạm nghỉ nào không, kể cả đợt đã qua (`KoaPauseLog`).
+  func koaPausedDay(userId: String, today: LocalDate) -> @Sendable (LocalDate) -> Bool {
+    let log = koaPauseLog(userId: userId, today: today)
+    let current = koaPause(userId: userId, today: today)
+    return { d in log.contains(d) || current?.contains(d) == true }
+  }
+
+  func koaPauseLog(userId: String, today: LocalDate) -> KoaPauseLog {
+    _ = koaPauseRevision
+    return loadPauseLog("koa.pauselog.\(userId)", userId: userId).pruned(today: today)
+  }
+
   func setKoaPause(_ pause: KoaPause?, userId: String) {
     storeKoaPause(pause, userId: userId)
+    let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
+    storePauseLog(koaPauseLog(userId: userId, today: today).setting(pause, today: today), "koa.pauselog.\(userId)", userId: userId)
     guard !Self.uiTest else { return }
     // lưu trên máy trước; đẩy lên server sau, mất mạng thì để cờ chờ lần đọc sau
     UserDefaults.standard.set(true, forKey: "koa.pause.pending.\(userId)")
-    Task { await pushKoaPause(pause, userId: userId) }
+    Task {
+      await pushKoaPause(pause, userId: userId)
+      await pushKoaPauseLog(userId: userId)
+    }
+  }
+
+  @ObservationIgnored private var uiTestPauseLogs: [String: KoaPauseLog] = [:]
+
+  private func loadPauseLog(_ key: String, userId: String) -> KoaPauseLog {
+    if Self.uiTest { return uiTestPauseLogs[key] ?? KoaPauseLog() }
+    guard let data = UserDefaults.standard.data(forKey: key),
+      let log = try? JSONDecoder().decode(KoaPauseLog.self, from: data)
+    else { return KoaPauseLog() }
+    return log
+  }
+
+  private func storePauseLog(_ log: KoaPauseLog, _ key: String, userId: String) {
+    if Self.uiTest {
+      uiTestPauseLogs[key] = log
+    } else if let data = try? JSONEncoder().encode(log) {
+      UserDefaults.standard.set(data, forKey: key)
+    }
+    koaPauseRevision += 1
+  }
+
+  /// Gửi phần sổ server chưa có: so với bản đã gửi được lần cuối (`koa.pauselog.synced`), nên
+  /// mất mạng hay bảng chưa deploy thì lần sau gửi bù, kể cả đợt đã huỷ.
+  private func pushKoaPauseLog(userId: String) async {
+    guard !Self.uiTest, let rows else { return }
+    let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
+    let local = koaPauseLog(userId: userId, today: today)
+    let synced = loadPauseLog("koa.pauselog.synced.\(userId)", userId: userId)
+    let changes = KoaPauseLogSync.rows(from: synced, to: local, userId: userId)
+    guard !changes.isEmpty else { return }
+    do {
+      try await rows.upsert(KoaPauseLogSync.table, changes, onConflict: KoaPauseLogSync.conflict)
+      storePauseLog(local, "koa.pauselog.synced.\(userId)", userId: userId)
+    } catch {}
+  }
+
+  /// Sổ tạm nghỉ: còn phần chưa gửi thì gửi trước; sau đó lấy bản trên server, ghép đợt đang có
+  /// từ `koa_pauses`. Đọc hỏng (mất mạng, bảng chưa deploy) thì giữ sổ trên máy.
+  /// `true` khi sổ trên máy vừa đổi theo server.
+  @discardableResult
+  func syncKoaPauseLog(userId: String) async -> Bool {
+    guard !Self.uiTest, let rows else { return false }
+    let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
+    await pushKoaPauseLog(userId: userId)
+    let local = koaPauseLog(userId: userId, today: today)
+    guard local == loadPauseLog("koa.pauselog.synced.\(userId)", userId: userId).pruned(today: today),
+      let found = try? await rows.select(KoaPauseLogSync.query(userId: userId, today: today)),
+      session.session?.userId == userId
+    else { return false }
+    let server = KoaPauseLogSync.decode(found, today: today)
+    storePauseLog(server, "koa.pauselog.synced.\(userId)", userId: userId)
+    // đợt đang có đặt trước khi có sổ (hay ở máy chưa có bảng) vào sổ, lần gửi sau đưa lên
+    let merged = server.including(koaPause(userId: userId, today: today), today: today)
+    guard merged != local else { return false }
+    storePauseLog(merged, "koa.pauselog.\(userId)", userId: userId)
+    return true
   }
 
   private func storeKoaPause(_ pause: KoaPause?, userId: String) {
@@ -809,6 +917,20 @@ final class AppServices {
     return true
   }
 
+  /// Phiên kết thúc: quên Koa trong bộ nhớ của người vừa rời đi (audit 03/11). Lịch sử Gains,
+  /// đồ đang mặc, vóc dáng, giờ buổi gần nhất không gắn người: trước đây người đăng nhập sau thấy
+  /// Nhịp 30 ngày / Hành trình / Gains của người trước cho tới khi Hôm nay đọc xong lượt của họ
+  /// (`loadGains` chạy sau năm lượt đọc, có lượt qua mạng), và `ensureKoaGainsHistory` thấy
+  /// lịch sử cũ nên không đọc lại. Các trạng thái có gắn `userId` (bụi, Gains hiện tại, Daily
+  /// Plan, tuần, chuỗi) đã tự loại người khác nên giữ nguyên.
+  func forgetKoaSession() {
+    koaGainsHistory = nil
+    koaShelfRecords = nil
+    koaEquipped = []
+    koaBuild = 0
+    koaLastSessionAt = nil
+  }
+
   /// Màn tổng kết mở khi Hôm nay chưa đọc Gains (vào thẳng buổi tập): tự đọc, để thẻ Gains của
   /// buổi không biến mất đúng lúc đáng thấy nhất.
   func ensureKoaGainsHistory() async {
@@ -816,6 +938,17 @@ final class AppServices {
       let r = await loadKoaGains(userId: userId), session.session?.userId == userId
     else { return }
     koaGainsHistory = .init(days: r.days, week: r.week)
+  }
+
+  /// Phòng Koa mở (#792): tính lại kỷ lục cho kệ cúp khi chưa có hay lịch sử tập đã đổi. Đọc hỏng
+  /// thì giữ kệ đang có; chưa có số thì cúp vẫn ở đó, Koa chỉ không nói số.
+  func ensureKoaShelf() async {
+    guard let userId = session.session?.userId, let rows, let h = koaGainsHistory else { return }
+    if let r = koaShelfRecords, r.userId == userId, r.basis == h.days.count { return }
+    guard let records = await KoaShelfSync.load(userId: userId, store: rows, in: .current),
+      session.session?.userId == userId
+    else { return }
+    koaShelfRecords = (userId, h.days.count, records)
   }
 
   /// Câu ngắn của Daily Plan cho widget "Buổi tập hôm nay" (GĐ1); `nil` = câu mặc

@@ -110,17 +110,17 @@ private final class UntintedBlurView: UIVisualEffectView {
   init() {
     super.init(effect: UIBlurEffect(style: .systemUltraThinMaterial))
     isUserInteractionEnabled = false
+    // Đổi sáng / tối / tương phản: UIKit dựng lại lớp tô, ẩn lại (thay `traitCollectionDidChange`,
+    // khai tử từ iOS 17).
+    registerForTraitChanges(UITraitCollection.systemTraitsAffectingColorAppearance) { (view: UntintedBlurView, _) in
+      view.stripTint()
+    }
   }
 
   required init?(coder: NSCoder) { nil }
 
   override func layoutSubviews() {
     super.layoutSubviews()
-    stripTint()
-  }
-
-  override func traitCollectionDidChange(_ previous: UITraitCollection?) {
-    super.traitCollectionDidChange(previous)
     stripTint()
   }
 
@@ -144,6 +144,13 @@ private struct TodayEntrance: ViewModifier {
       .offset(y: shown || reduceMotion ? 0 : 14)
       .onAppear {
         guard !shown else { return }
+        // UI test (Maestro, #801): không trượt vào — chạm lúc thẻ còn trượt 14 điểm từng
+        // trúng nút khác và làm flow đỏ ngẫu nhiên.
+        if AppServices.uiTest {
+          shown = true
+          return
+        }
+        // reduce-motion: chỉ còn mờ dần — offset và blur ở trên đã tắt
         withAnimation(.smooth(duration: 0.55).delay(Double(min(order, 4)) * 0.05)) { shown = true }
       }
   }

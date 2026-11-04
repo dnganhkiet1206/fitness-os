@@ -7,6 +7,9 @@ public enum KoaTalk {
     case emptyLate, fed, nudge, birthday, calm, poke
     /// Mốc mới của hành trình (`KoaMomentFeed`): câu do app lấy từ mốc, không theo bảng dịch.
     case milestone
+    /// Người xem chạm cúp / khung mốc trong phòng (#792): Koa kể lại kỷ lục hay mốc ấy. Câu do app
+    /// dựng từ số thật; không bao giờ tự chọn theo lịch nói.
+    case shelf
   }
 
   /// Nét mặt của một câu: lên đỉnh, lắng lại. `flaps`: có mấp máy miệng khi nói. Mặt mệt, mặt
@@ -31,6 +34,7 @@ public enum KoaTalk {
     case .calm: Face(peak: .happy, settle: .thinking, flaps: true)
     case .poke: Face(peak: .surprised, settle: .grin, flaps: false)
     case .milestone: Face(peak: .grin, settle: .happy, flaps: true)
+    case .shelf: Face(peak: .delighted, settle: .happy, flaps: true)
     }
   }
 
@@ -38,7 +42,7 @@ public enum KoaTalk {
   public static func variants(_ t: Topic) -> Int {
     switch t {
     case .poke: 4
-    case .rested, .shortSleep, .overate, .birthday, .nudge, .milestone: 1
+    case .rested, .shortSleep, .overate, .birthday, .nudge, .milestone, .shelf: 1
     default: 2
     }
   }

@@ -33,6 +33,10 @@ struct TodayExtras<Plan: View>: View {
   /// Màn quay lại sau ≥ 3 ngày lỡ lịch (đợt 2).
   @State private var comeback: KoaComeback?
   @State private var showsPause = false
+  /// Đổi khi người dùng trả lời thẻ đầu tuần, để thẻ ẩn ngay.
+  @State private var weekCoachAnswers = 0
+  /// Đổi khi người dùng bỏ qua lời gợi ý Tạm nghỉ, để thẻ ẩn ngay.
+  @State private var swapNudgeAnswers = 0
   @Environment(AppServices.self) private var services
   @Environment(\.scenePhase) private var scenePhase
   @Environment(\.weightUnit) private var unit
@@ -198,6 +202,7 @@ struct TodayExtras<Plan: View>: View {
         }
         .todayEntrance(2)
       }
+      if let flow { swapNudge(flow) }
       if let dailyPlan, let flow {
         // GĐ1: MỘT việc chính + lý do + phương án; rồi Tuần của Koa (lịch thật).
         // Thẻ "Tăng tải hôm nay" nằm sau việc chính, vuốt sang (Kiệt duyệt mock 28/10).
@@ -219,6 +224,7 @@ struct TodayExtras<Plan: View>: View {
           planHero(dailyPlan, flow, hint: nil)
             .todayEntrance(2)
         }
+        weekCoachCard(flow)
         // Insight hôm nay (Kiệt 21/10, GĐ3) ngay dưới việc chính, kiểu Apple Health.
         TodayCoachSection(
           userId: userId, today: flow.today.today, refresh: dayVersion,
@@ -724,7 +730,100 @@ struct TodayExtras<Plan: View>: View {
     guard let flow else { return nil }
     return KoaWeek.state(
       today: flow.today.today, library: flow.today.library, trained: flow.today.trained,
-      pause: services.koaPause(userId: flow.today.userId, today: flow.today.today))
+      paused: services.koaPausedDay(userId: flow.today.userId, today: flow.today.today))
+  }
+
+  // MARK: - Thẻ đầu tuần (KoaWeekCoach, 03/11)
+
+  private struct WeekCoach {
+    let monday: LocalDate
+    let kind: KoaWeekCoach.Kind
+    let lastWeek: KoaWeekCoach.LastWeek
+    let highlight: ExerciseCompare.Item?
+    let targets: [OverloadPlan.Item]
+  }
+
+  private func weekCoachKey(_ monday: LocalDate) -> String { "koa.weekcoach.\(userId).\(monday)" }
+
+  private func answerWeekCoach(_ monday: LocalDate) {
+    if AppServices.uiTest {
+      WeekCoachUITest.answers.insert(weekCoachKey(monday))
+    } else {
+      UserDefaults.standard.set(true, forKey: weekCoachKey(monday))
+    }
+    weekCoachAnswers += 1
+  }
+
+  @ViewBuilder private func weekCoachCard(_ flow: WorkoutFlow) -> some View {
+    if let coach = weekCoach(flow) {
+      KoaWeekCoachCard(
+        kind: coach.kind, lastWeek: coach.lastWeek, highlight: coach.highlight, targets: coach.targets,
+        cue: services.trainingCue(userId: userId), build: services.koaBuild,
+        accept: {
+          if case .light = coach.kind { flow.today.setLighterWeek(through: coach.monday.adding(days: 6)) }
+          answerWeekCoach(coach.monday)
+          dailyPlan?.recompute(services: services, flow: flow)
+        },
+        keep: { answerWeekCoach(coach.monday) })
+      .todayEntrance(3)
+    }
+  }
+
+  private func weekCoach(_ flow: WorkoutFlow) -> WeekCoach? {
+    _ = weekCoachAnswers
+    let today = flow.today.today
+    guard let library = flow.today.library, services.koaPause(userId: userId, today: today) == nil else { return nil }
+    let monday = WeeklyChallenges.weekStart(today)
+    let last = KoaWeek.state(today: today.adding(days: -7), library: library, trained: flow.today.trained)
+    let lastWeek = KoaWeekCoach.LastWeek(planned: last?.target ?? 0, done: last?.done ?? 0)
+    let answered = AppServices.uiTest
+      ? WeekCoachUITest.answers.contains(weekCoachKey(monday)) : UserDefaults.standard.bool(forKey: weekCoachKey(monday))
+    guard KoaWeekCoach.shows(today: today, lastWeek: lastWeek, answered: answered),
+      let insights = flow.insights, insights.loaded
+    else { return nil }
+    var seen = Set<String>()
+    var templates: [WorkoutTemplate] = []
+    for i in 0..<7 {
+      let d = monday.adding(days: i)
+      if d >= today, let t = library.plan(for: d, today: today).template, seen.insert(t.id).inserted { templates.append(t) }
+    }
+    var names = Set<String>()
+    let targets = templates.flatMap { t in
+      OverloadPlan.items(
+        template: t, insight: { insights.insight(for: $0) }, last: { insights.history(for: $0).last },
+        previous: { insights.history(for: $0).dropLast().last }, stepKg: OverloadPlan.stepKg(unit))
+    }.filter { names.insert($0.name).inserted }
+    let lastMonday = monday.adding(days: -7)
+    let compared = targets.compactMap { ExerciseCompare.item(insights.history(for: $0.name)) }
+      .filter { $0.last.date >= lastMonday && $0.last.date < monday }
+    let daysOff = services.koaGainsNow.flatMap { $0.userId == userId ? $0.state.lastSession : nil }
+      .map { max(0, today.daysSinceEpoch - $0.daysSinceEpoch - 1) } ?? 0
+    return WeekCoach(
+      monday: monday, kind: KoaWeekCoach.decide(lastWeek: lastWeek, daysOff: daysOff, targets: targets),
+      lastWeek: lastWeek, highlight: ExerciseCompare.headline(compared),
+      targets: KoaWeekCoach.shownTargets(targets))
+  }
+
+  // MARK: - Gợi ý Tạm nghỉ khi đổi buổi lần thứ hai (03/11)
+
+  private func swapNudgeKey(_ today: LocalDate) -> String {
+    "koa.swapnudge.\(userId).\(WeeklyChallenges.weekStart(today))"
+  }
+
+  @ViewBuilder private func swapNudge(_ flow: WorkoutFlow) -> some View {
+    let today = flow.today.today
+    let _ = swapNudgeAnswers
+    if mascot?.questDay == .extraSwap, services.koaPause(userId: userId, today: today) == nil,
+      !UserDefaults.standard.bool(forKey: swapNudgeKey(today))
+    {
+      KoaSwapNudge(
+        build: services.koaBuild, pause: { showsPause = true },
+        dismiss: {
+          UserDefaults.standard.set(true, forKey: swapNudgeKey(today))
+          swapNudgeAnswers += 1
+        })
+      .todayEntrance(2)
+    }
   }
 
   // MARK: - Việc chính (Daily Plan, GĐ1)
@@ -744,7 +843,8 @@ struct TodayExtras<Plan: View>: View {
     var coins = 0
     if let flow {
       let lastWeek = KoaWeek.state(
-        today: flow.today.today.adding(days: -7), library: flow.today.library, trained: flow.today.trained)
+        today: flow.today.today.adding(days: -7), library: flow.today.library, trained: flow.today.trained,
+        paused: services.koaPausedDay(userId: flow.today.userId, today: flow.today.today))
       coins += await week.claimMissed(lastWeek) ?? 0
     }
     await week.claimIfComplete(koaWeekState)
@@ -1016,7 +1116,7 @@ struct TodayExtras<Plan: View>: View {
     if case .lowRecovery = r.reason { low = true }
     let items = OverloadPlan.items(
       template: template, insight: { insights.insight(for: $0) }, last: { insights.history(for: $0).last },
-      stepKg: OverloadPlan.stepKg(unit), lowRecovery: low)
+      previous: { insights.history(for: $0).dropLast().last }, stepKg: OverloadPlan.stepKg(unit), lowRecovery: low)
     return items.contains { $0.advice != .notEnough(sessions: 0) } ? items : nil
   }
 
@@ -1064,14 +1164,20 @@ struct TodayExtras<Plan: View>: View {
     if await services.syncKoaPause(userId: userId), let dailyPlan, let flow {
       dailyPlan.recompute(services: services, flow: flow)
     }
+    await services.syncKoaPauseLog(userId: userId)
     await services.loadKoaDust(userId: userId)
   }
 
   /// Không có buổi trong lịch hôm nay → nhiệm vụ chính là hồi phục (#527 đợt 1).
   private func syncRestDay() {
     let rest = planName == nil
+    let day = QuestDay.of(
+      library: flow?.today.library, date: flow?.today.today ?? LocalDate(SystemWallClock().nowMillis(), in: .current),
+      trainedToday: (mascot?.signals?.workoutCount ?? 0) > 0 || (flow.map { $0.today.trained.contains($0.today.today) } ?? false))
     mascot?.restDay = rest
+    mascot?.questDay = day
     services.questObserver(userId: userId)?.restDay = rest
+    services.questObserver(userId: userId)?.questDay = day
   }
 
   /// Đợt 2: mất pump (đo một lần mỗi đợt nghỉ) và màn quay lại (một lần mỗi đợt nghỉ).
@@ -1214,4 +1320,10 @@ struct RecentAwardsCard: View {
     case .platinum: String(localized: "aw.tier.platinum")
     }
   }
+}
+
+/// UI test: câu trả lời cho thẻ đầu tuần chỉ sống trong một lần mở app, để flow chạy lại được.
+@MainActor
+private enum WeekCoachUITest {
+  static var answers: Set<String> = []
 }

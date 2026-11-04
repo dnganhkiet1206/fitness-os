@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 
 /// Cảnh đi ngủ kiểu phim hoạt hình (Kiệt 31/10): Koa đi từ trái sang phải, phòng trôi ngược lại,
 /// mảng tường lướt qua phía trước che chỗ đổi phòng; sang gác mái Koa khuỵu, nhảy lên giường,
@@ -29,7 +29,8 @@ public struct KoaBedtime: Sendable {
   /// Bề ngang mảng tường lướt qua phía trước.
   public static let wall = 120.0
 
-  /// Cỡ hình ở vạch đứng, đơn vị phòng, và khoảng từ tâm đầu tới chân trên hình 240 × 300.
+  /// Cỡ hình ở gác mái (quy về vạch đứng, đơn vị phòng), và khoảng từ tâm đầu tới chân trên hình 240 × 300.
+  /// Bên phòng tập cảnh dùng cỡ của sân khấu (`stageWidth`); đổi cỡ nằm trong lúc mảng tường che.
   static let heroWidth = 138.0
   static let headToFeet = 175.0
   static let from = KoaRoomMap.door
@@ -45,8 +46,13 @@ public struct KoaBedtime: Sendable {
 
   var walker: KoaWalk.Walker
   var last = 0.0
+  /// Bề ngang Koa trên sân khấu lúc cảnh bắt đầu (`KoaRoomMap.heroWidth` nhân hệ số hạng của sân khấu). Khung đầu
+  /// đúng cỡ ấy, như Koa vừa đứng ở cửa (#799): sân khấu lên 152 ngày 02/11 mà cảnh vẫn vẽ 138 từ khung đầu,
+  /// nên Koa co lại ~9 % đúng lúc chuyển cảnh.
+  let stageWidth: Double
 
-  public init() {
+  public init(stageWidth: Double = KoaRoomMap.heroWidth) {
+    self.stageWidth = stageWidth
     var t = KoaWalk.Tuning()
     t.heroWidth = Self.heroWidth
     t.apply(Self.hurry)
@@ -76,7 +82,7 @@ public struct KoaBedtime: Sendable {
     let m = Self.smooth((t / Self.pan - 0.42) / 0.16)
     let feet = KoaRoomMap.screenY(Self.from) + (Self.bedroomY - KoaRoomMap.screenY(Self.from)) * m
     let depth = KoaRoomMap.scale(Self.from.d) + (Self.bedroomScale - KoaRoomMap.scale(Self.from.d)) * m
-    let s = Self.heroWidth * depth / 240
+    let s = (stageWidth + (Self.heroWidth - stageWidth) * m) * depth / 240
     let x = Self.from.x + (Self.toX - Self.from.x) * Self.smooth(t / Self.arrive)
     let head = (x: x, y: feet - Self.headToFeet * s)
     if t < Self.arrive {
@@ -112,8 +118,11 @@ public struct KoaWakeUp: Sendable {
   var walker: KoaWalk.Walker
   var last = 0.0
   var walking = false
+  /// Như `KoaBedtime.stageWidth`: về tới sân khấu đúng cỡ Koa đứng ở đó.
+  let stageWidth: Double
 
-  public init() {
+  public init(stageWidth: Double = KoaRoomMap.heroWidth) {
+    self.stageWidth = stageWidth
     var t = KoaWalk.Tuning()
     t.heroWidth = KoaBedtime.heroWidth
     t.apply(KoaBedtime.hurry)
@@ -145,7 +154,7 @@ public struct KoaWakeUp: Sendable {
     let door = KoaRoomMap.screenY(b.from)
     let feet = door + (b.bedroomY - door) * m
     let depth = KoaRoomMap.scale(b.from.d) + (b.bedroomScale - KoaRoomMap.scale(b.from.d)) * m
-    let s = b.heroWidth * depth / 240
+    let s = (stageWidth + (b.heroWidth - stageWidth) * m) * depth / 240
     let x = b.toX + (b.from.x - b.toX) * b.smooth(p)
     let head = (x: x, y: feet - b.headToFeet * s)
     let u = min(1, (t - Self.blanket) / Self.air)

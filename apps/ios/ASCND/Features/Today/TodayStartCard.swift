@@ -24,6 +24,10 @@ struct TodayStartCard: View {
   @AppStorage private var hidden: Bool
   @AppStorage private var mealDone: Bool
   @AppStorage private var workoutDone: Bool
+  /// Tiêu đề và tên việc lớn theo Dynamic Type (#795 đợt 2b: bộ kiểm accessibility báo "Dynamic
+  /// Type unsupported"); cỡ mặc định như cũ.
+  @ScaledMetric(relativeTo: .title3) private var titleSize: CGFloat = 20
+  @ScaledMetric(relativeTo: .body) private var rowTitleSize: CGFloat = 16
 
   static let days = 7.0
 
@@ -65,7 +69,7 @@ struct TodayStartCard: View {
       HStack(alignment: .firstTextBaseline) {
         VStack(alignment: .leading, spacing: 2) {
           Text("today.start.title")
-            .font(.system(size: 20, weight: .bold))
+            .font(.system(size: titleSize, weight: .bold))
             .foregroundStyle(DS.Color.foreground.swiftUI)
             .accessibilityAddTraits(.isHeader)
           Text("today.start.sub")
@@ -133,7 +137,7 @@ struct TodayStartCard: View {
           .background(done ? DS.Color.readinessGreen.swiftUI : tint.opacity(0.14), in: Circle())
         VStack(alignment: .leading, spacing: 1) {
           Text(title)
-            .font(.system(size: 16, weight: .semibold))
+            .font(.system(size: rowTitleSize, weight: .semibold))
             .foregroundStyle(done ? DS.Color.mutedForeground.swiftUI : DS.Color.foreground.swiftUI)
             .strikethrough(done)
           Text(sub)

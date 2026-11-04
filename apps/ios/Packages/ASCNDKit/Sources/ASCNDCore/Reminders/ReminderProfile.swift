@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 
 /// Điều màn Nhắc nhở biết từ hồ sơ (`app/reminders.tsx`, `use-reminders.ts:278`
 /// @ fac9ac2): giờ ngủ / dậy chỉ tính khi người dùng TỰ lưu (`sleep_target_*_set`).

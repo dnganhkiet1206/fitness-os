@@ -338,14 +338,14 @@ struct SupplementTakenTests {
     await h.server.put(.init(id: "a", user: "u1", name: "Creatine", timing: "morning"))
     let book = h.book()
     await book.load()
-    var online = false
-    let w = StateWriter(environment: .init(online: { online }, isOffline: { NetworkFailure.isOffline($0) }))
+    let net = FakeNetwork(online: false)
+    let w = StateWriter(environment: .init(online: { net.online }, isOffline: { NetworkFailure.isOffline($0) }))
     let item = book.items[0]
     #expect(book.setTaken(item, taken: true, writer: w) == .queued)
     #expect(book.setTaken(item, taken: false, writer: w) == .unchanged)
     #expect(book.setTaken(item, taken: true, writer: w) == .queued)
     #expect(book.shownTakenCount(writer: w) == 1)
-    online = true
+    net.online = true
     w.flush()
     await drain()
     #expect(await h.server.intakes.count == 1)

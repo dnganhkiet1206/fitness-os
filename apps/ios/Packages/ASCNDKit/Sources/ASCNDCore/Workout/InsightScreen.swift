@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 
 /// Phần thuần của màn "Tiến bộ từng bài" (`app/exercise-insight.tsx` @
 /// fac9ac2) và `lib/plan-exercises.ts` — màn chỉ còn việc vẽ.

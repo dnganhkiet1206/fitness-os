@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 
 /// Kiểm duyệt bình luận phía người dùng (#527, lát 4) — menu nhấn giữ của
 /// `app/community-post.tsx:229-253`, `useDeleteComment` / `useReport` /

@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 public import Observation
 
 /// Ô tìm thực phẩm trên tab Dinh dưỡng (#527, `(tabs)/nutrition.tsx:411-427`).

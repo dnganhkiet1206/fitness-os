@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 
 /// Cảnh Koa chạy tới kéo thẻ nhiệm vụ (01/11, Kiệt). Thuần theo thời gian như `KoaBedtime`: app đưa
 /// giây đã trôi, nhận về khung diễn. Dùng đủ bộ của phim hoạt hình: lấy đà, co giãn khi chạy, chạy

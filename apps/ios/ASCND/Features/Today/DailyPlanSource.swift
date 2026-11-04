@@ -60,7 +60,7 @@ final class DailyPlanSource {
     let input = DailyPlan.input(
       date: date, library: library, active: active, doneToday: done, daysOff: daysOff,
       recovery: dataDate == date ? recovery : nil, proteinLeftG: dataDate == date ? proteinLeftG : nil,
-      paused: services.koaPause(userId: flow.today.userId, today: date) != nil)
+      pause: services.koaPause(userId: flow.today.userId, today: date))
     self.input = input
     var result = DailyPlan.decide(input)
     #if DEBUG

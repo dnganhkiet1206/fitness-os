@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 public import Observation
 
 /// Quyền riêng tư Cộng đồng (#527, lát 10) — `app/community-privacy.tsx` +

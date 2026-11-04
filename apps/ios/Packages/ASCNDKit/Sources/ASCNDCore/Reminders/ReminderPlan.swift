@@ -74,6 +74,12 @@ public struct ReminderPrefs: Sendable, Hashable {
   public var streak: Bool
   /// Koa nhắc buổi tập (đợt 2) — mặc định bật.
   public var koaTraining: Bool
+  /// Giờ nhắc bữa thêm ngoài `meal` (Kiệt 01/11: một ngày có nhiều bữa). Bật / tắt
+  /// theo `meal.enabled`; mỗi giờ bắn mỗi ngày — khác giờ chính, không bỏ khi hôm
+  /// ấy đã ghi một bữa (đó là bữa khác). Không có ở RN; RN đọc bỏ qua khoá này.
+  public var mealExtra: [ReminderClock] = []
+  /// Tổng số giờ nhắc bữa tối đa mỗi ngày (giờ chính + giờ thêm).
+  public static let maxMealTimes = 5
 
   /// `DEFAULT_REMINDERS`. Giờ mặc định đến từ LÚC việc ấy làm được: bữa ăn
   /// 20:00 (cuối ngày, khi "chưa ghi bữa nào" còn sửa được), ghi giấc ngủ
@@ -91,9 +97,11 @@ public struct ReminderPrefs: Sendable, Hashable {
 
   public init(
     water: Water, supplements: Timed, bedtime: Timed, weighIn: Timed, workout: Timed, meal: Timed, biometrics: Timed,
-    sleepLog: Timed, challengeClaim: Bool, streak: Bool = true, koaTraining: Bool = true
+    sleepLog: Timed, challengeClaim: Bool, streak: Bool = true, koaTraining: Bool = true,
+    mealExtra: [ReminderClock] = []
   ) {
     self.koaTraining = koaTraining
+    self.mealExtra = mealExtra
     self.water = water
     self.supplements = supplements
     self.bedtime = bedtime
@@ -194,11 +202,19 @@ extension ReminderPrefs {
     if case .object(let s)? = o[ReminderKey.koaTraining.rawValue] { koa = s["enabled"]?.boolValue ?? koa }
     var claim = d.challengeClaim
     if case .object(let s)? = o[ReminderKey.challengeClaim.rawValue] { claim = s["enabled"]?.boolValue ?? claim }
+    var extra: [ReminderClock] = []
+    if case .array(let list)? = o["mealExtra"] {
+      for case .object(let c) in list {
+        guard let h = c["hour"]?.intValue, (0...23).contains(h), let m = c["minute"]?.intValue, (0...59).contains(m)
+        else { continue }
+        extra.append(ReminderClock(hour: h, minute: m))
+      }
+    }
     return ReminderPrefs(
       water: water, supplements: timed(.supplements, d.supplements), bedtime: timed(.bedtime, d.bedtime),
       weighIn: timed(.weighIn, d.weighIn), workout: timed(.workout, d.workout), meal: timed(.meal, d.meal),
       biometrics: timed(.biometrics, d.biometrics), sleepLog: timed(.sleepLog, d.sleepLog), challengeClaim: claim,
-      streak: streak, koaTraining: koa)
+      streak: streak, koaTraining: koa, mealExtra: Array(extra.prefix(maxMealTimes - 1)))
   }
 
   /// Cùng hình dạng RN ghi (`JSON.stringify(prefs)`), khoá sắp xếp — cùng một
@@ -214,6 +230,9 @@ extension ReminderPrefs {
       "challengeClaim": .object(["enabled": .bool(challengeClaim)]),
       "streak": .object(["enabled": .bool(streak)]),
       "koaTraining": .object(["enabled": .bool(koaTraining)]),
+      "mealExtra": .array(mealExtra.map {
+        .object(["hour": .number(Double($0.hour)), "minute": .number(Double($0.minute))])
+      }),
     ])
     let encoder = JSONEncoder()
     encoder.outputFormatting = [.sortedKeys]
@@ -284,6 +303,17 @@ public struct ReminderContext: Sendable, Hashable {
   public var restDays: Set<Int> = []
   /// Câu của Koa khi người dùng đang quay lại (≥ 3 ngày nghỉ).
   public var koaWorkoutCopy: KoaWorkoutCopy?
+  /// Các câu thường của lời nhắc buổi tập, xoay vòng theo ngày (#800); trống = câu chung
+  /// của `ReminderCopy` như trước.
+  public var koaTrainingLines: [ReminderText] = []
+  /// "Mình tập sau khi…" (`TrainingCue`): giờ và câu của lời nhắc tập của Koa.
+  public var trainingCue: TrainingCue?
+  /// Ngôn ngữ cho câu của `trainingCue`.
+  public var cueLang: AppPreferences.Lang = .vi
+  /// Lời nhắc buổi tập cách nhau ít nhất ngần này ngày (#800: bị bỏ qua 3 lần liền → 2).
+  public var koaTrainingEvery = 1
+  /// Ngày (độ lệch từ hôm nay, ≤ 0) lời nhắc buổi tập gần nhất đã bắn; `nil` = chưa biết.
+  public var lastKoaTrainingOffset: Int?
   /// Lịch đã áp đổi lịch theo ngày (GĐ1): độ lệch ngày từ hôm nay → có buổi hay
   /// không. Có thì thắng `trainingDays` cho đúng ngày ấy (ngày dời / đổi thành
   /// nghỉ); `nil` = chỉ có lịch mẫu.
@@ -381,6 +411,8 @@ public enum ReminderPlan {
       }
     }
     let todayWeekday = routineIndex(at(now, 0, 12, 0, calendar), calendar: calendar)
+    var lastKoaTraining = ctx.lastKoaTrainingOffset
+    var lastLine: Int?
     for day in 0..<horizonDays {
       let isToday = day == 0
       let weekday = routineIndex(at(now, day, 12, 0, calendar), calendar: calendar)
@@ -400,6 +432,10 @@ public enum ReminderPlan {
       if prefs.meal.enabled && !(isToday && ctx.mealLoggedToday) {
         timed(.meal, day)
       }
+      // Giờ bữa thêm: mỗi giờ một bữa — đã ghi bữa sáng không làm câm nhắc bữa trưa.
+      if prefs.meal.enabled {
+        for c in prefs.mealExtra { push(.meal, at(now, day, c.hour, c.minute, calendar)) }
+      }
       if prefs.biometrics.enabled && !(isToday && ctx.bioLoggedToday) {
         push(.biometrics, at(now, day, prefs.biometrics.hour, prefs.biometrics.minute, calendar))
       }
@@ -415,16 +451,28 @@ public enum ReminderPlan {
       // Koa đợt 2: chỉ khi lịch và Gains đã đọc, có buổi hôm ấy, và người dùng không tự bật
       // lời nhắc buổi tập (một lời nhắc tập mỗi ngày là đủ).
       if prefs.koaTraining, !prefs.workout.enabled, let missed = ctx.missedDays,
-        planned == true, !(isToday && ctx.workedOutToday)
+        planned == true, !(isToday && ctx.workedOutToday),
+        KoaNudge.due(day: day, lastOffset: lastKoaTraining, every: ctx.koaTrainingEvery)
       {
         let m = KoaSchedule.missedOn(dayOffset: day, missedToday: missed, todayWeekday: todayWeekday, rest: ctx.restDays)
-        let text: ReminderText? = m >= KoaGains.comebackDays ? ctx.koaWorkoutCopy?.returning : nil
-        let h = ctx.habitTimes[.workout] ?? ReminderClock(hour: KoaSchedule.defaultHabitHour, minute: 0)
+        let habit = ctx.trainingCue == nil && ctx.habitTimes[.workout] != nil
+        // câu "nếu… thì…" của người dùng thắng giờ quen đoán từ lịch sử
+        let h = ctx.trainingCue?.clock ?? ctx.habitTimes[.workout]
+          ?? ReminderClock(hour: KoaSchedule.defaultHabitHour, minute: 0)
         let when = at(now, day, h.hour, h.minute, calendar)
+        let text: ReminderText? =
+          m >= KoaGains.comebackDays
+          ? ctx.koaWorkoutCopy?.returning
+          : ctx.trainingCue.map { $0.text(ctx.cueLang) }
+            ?? KoaNudge.line(ctx.koaTrainingLines, on: when, calendar: calendar, after: lastLine).map {
+            lastLine = $0.index
+            return ReminderText(title: $0.text.title, body: habit ? $0.text.habitBody ?? $0.text.body : $0.text.body)
+          }
         if when > now {
+          lastKoaTraining = day
           out.append(PlannedReminder(
             key: .koaTraining, at: when, title: text?.title, body: text?.body,
-            token: stamp(.koaTraining, when) + (text.map { "#\($0.title)" } ?? ""), habit: ctx.habitTimes[.workout] != nil))
+            token: stamp(.koaTraining, when) + (text.map { "#\($0.title)" } ?? ""), habit: habit))
         }
       }
     }
@@ -488,5 +536,17 @@ public enum ReminderPlan {
       return nil
     }
     return (y, m, d)
+  }
+}
+
+extension ReminderPrefs {
+  /// Giờ gợi ý cho một giờ bữa mới: bữa thường gặp chưa có (sáng 7:30, trưa 12:00,
+  /// phụ 15:30, tối 19:00) gần nhất sau giờ muộn nhất đã có; hết thì 21:00.
+  static func nextMealSlot(after taken: [ReminderClock]) -> ReminderClock {
+    let usual = [ReminderClock(hour: 7, minute: 30), ReminderClock(hour: 12, minute: 0),
+                 ReminderClock(hour: 15, minute: 30), ReminderClock(hour: 19, minute: 0)]
+    let free = usual.filter { u in !taken.contains { abs($0.minutes - u.minutes) < 90 } }
+    let latest = taken.map(\.minutes).max() ?? 0
+    return free.first { $0.minutes > latest } ?? free.first ?? ReminderClock(hour: 21, minute: 0)
   }
 }

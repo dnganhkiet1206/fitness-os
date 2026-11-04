@@ -1014,6 +1014,15 @@ const STEPS = [
   ['chế độ UI test chỉ ở bản Debug', 'node', ['../apps/ios/tools/native-uitest-mode.mjs']],
   ['chế độ UI test — fixture từng dạng phải đỏ', 'node', ['../apps/ios/tools/native-uitest-mode.mjs', '--self-test']],
   /*
+    #386 (04/11/2026): Giảm chuyển động ở app iOS. Mọi `.animation`, `withAnimation`,
+    `TimelineView(.animation)` tính tới `reduceMotion` (tại chỗ, hay qua một tên
+    tính từ nó), hay mang dấu `// reduce-motion: <lý do>` cho chỗ chỉ còn mờ dần.
+    Bản đầu nằm ngoài cổng vì đỏ sẵn: 15/19 chỗ nó báo là oan, nên 4 chỗ thật
+    không ai thấy. Vùng mù ghi trong đầu tệp.
+  */
+  ['Giảm chuyển động ở app iOS', 'node', ['../apps/ios/tools/native-motion-audit.mjs']],
+  ['Giảm chuyển động — fixture từng dạng phải đỏ', 'node', ['../apps/ios/tools/native-motion-audit.mjs', '--self-test']],
+  /*
     #527 (Kiệt 27/10): câu AI viết nước theo đơn vị người dùng (oz / ml). Chạy
     `_shared/water.ts` thật (Node bỏ kiểu TS) và kiểm hai hàm + app gửi `waterUnit`.
   */
@@ -1024,6 +1033,12 @@ const STEPS = [
     `_shared/progress.ts` và kiểm ai-coach gửi + dặn dùng nó.
   */
   ['AI trả lời mức tạ từng bài', 'node', ['--experimental-strip-types', '../apps/ios/tools/native-ai-exercise-progress.mjs']],
+  /*
+    #802 (04/11): tên + mô tả huy chương của app chép máy từ `AWARD_TEXT` của RN
+    (`apps/ios/tools/award-text/gen.mjs`). Bước kiểm này trước đây không chạy ở đâu nên tệp
+    lệch RN mà không ai biết (tên sửa tay). Chỗ cố ý khác RN nay nằm trong bảng ngoại lệ của gen.mjs.
+  */
+  ['tên huy chương khớp RN (trừ ngoại lệ có ghi)', 'node', ['--experimental-strip-types', '../apps/ios/tools/award-text/gen.mjs', '--check']],
   /*
     #527 Phase 1 · 1.11: trạng thái mạng ba nhánh của app iOS native phải đổi
     ở đúng các mốc RN đổi. Golden của `NetStatusGoldenTests` là output của

@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 
 /// Phòng Koa nhiều lớp (01/11, Kiệt duyệt mock): như máy quay nhiều tầng của phim hoạt hình,
 /// lớp gần trôi nhiều, lớp xa gần như đứng yên. Mọi độ lệch tính theo toạ độ phòng 390.

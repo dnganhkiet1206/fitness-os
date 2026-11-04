@@ -2,807 +2,71 @@
  "sourceLanguage": "en",
  "version": "1.0",
  "strings": {
-  "lock.passcode": {
+  "reminders.meal.add": {
    "extractionState": "manual",
    "localizations": {
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "Use passcode"
+      "value": "Add a meal time"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Dùng mật mã"
+      "value": "Thêm giờ nhắc bữa"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Usar código"
+      "value": "Añadir otra hora"
      }
     }
    }
   },
-  "lock.reason": {
+  "reminders.meal.slot %lld": {
    "extractionState": "manual",
    "localizations": {
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "Unlock ASCND"
+      "value": "Meal %lld"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Mở khoá ASCND"
+      "value": "Bữa %lld"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Desbloquear ASCND"
+      "value": "Comida %lld"
      }
     }
    }
   },
-  "lock.welcome": {
+  "reminders.meal.remove %@": {
    "extractionState": "manual",
    "localizations": {
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "Welcome back"
+      "value": "Remove the %@ reminder"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Chào mừng trở lại"
+      "value": "Bỏ giờ nhắc %@"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Bienvenido de nuevo"
-     }
-    }
-   }
-  },
-  "lock.hint %@": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Use %@ to unlock"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Dùng %@ để mở khoá"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Usa %@ para desbloquear"
-     }
-    }
-   }
-  },
-  "lock.unlock": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Unlock"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Mở khoá"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Desbloquear"
-     }
-    }
-   }
-  },
-  "lock.passcode.note": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "If it doesn't recognize you, you can enter your iPhone passcode."
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Nếu không nhận ra bạn, bạn có thể nhập mật mã iPhone."
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Si no te reconoce, puedes introducir el código del iPhone."
-     }
-    }
-   }
-  },
-  "lock.setting %@": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Lock with %@"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Khoá bằng %@"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Bloquear con %@"
-     }
-    }
-   }
-  },
-  "lock.setting.desc": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Ask before opening ASCND"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Hỏi trước khi mở ASCND"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Pedir antes de abrir ASCND"
-     }
-    }
-   }
-  },
-  "lock.setting.unavailable": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Set up Face ID or Touch ID in iPhone Settings first"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Hãy cài Face ID hoặc Touch ID trong Cài đặt của iPhone trước"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Configura primero Face ID o Touch ID en los Ajustes del iPhone"
-     }
-    }
-   }
-  },
-  "lock.relock": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Lock again"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Khoá lại"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Volver a bloquear"
-     }
-    }
-   }
-  },
-  "lock.relock.now": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Right away"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Ngay khi rời app"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Al salir"
-     }
-    }
-   }
-  },
-  "lock.relock.1m": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "After 1 minute"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Sau 1 phút"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Tras 1 minuto"
-     }
-    }
-   }
-  },
-  "lock.relock.5m": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "After 5 minutes"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Sau 5 phút"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Tras 5 minutos"
-     }
-    }
-   }
-  },
-  "privacy.header": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Privacy"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Riêng tư"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Privacidad"
-     }
-    }
-   }
-  },
-  "privacy.footer": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Your training data is yours. Lock the app, and take everything with you any time."
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Dữ liệu tập luyện của bạn là của bạn. Khoá app, và mang toàn bộ dữ liệu đi bất cứ lúc nào."
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Tus datos de entrenamiento son tuyos. Bloquea la app y llévate todo cuando quieras."
-     }
-    }
-   }
-  },
-  "export.row": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Download your data"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Tải dữ liệu của bạn"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Descargar tus datos"
-     }
-    }
-   }
-  },
-  "export.row.desc": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Everything, as JSON and CSV"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Toàn bộ, dạng JSON và CSV"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Todo, en JSON y CSV"
-     }
-    }
-   }
-  },
-  "export.eyebrow": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "YOUR DATA"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "DỮ LIỆU CỦA BẠN"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "TUS DATOS"
-     }
-    }
-   }
-  },
-  "export.title": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Take everything with you"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Mang theo mọi thứ"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Llévate todo"
-     }
-    }
-   }
-  },
-  "export.ready.eyebrow": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "READY"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "ĐÃ SẴN SÀNG"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "LISTO"
-     }
-    }
-   }
-  },
-  "export.ready.title": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Your file"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Tệp của bạn"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Tu archivo"
-     }
-    }
-   }
-  },
-  "export.total %@": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "%@ records"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "%@ bản ghi"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "%@ registros"
-     }
-    }
-   }
-  },
-  "export.reading": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Reading all your data…"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Đang đọc toàn bộ dữ liệu…"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Leyendo todos tus datos…"
-     }
-    }
-   }
-  },
-  "export.offline": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Downloading your data needs a connection. Try again when you're online."
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Tải dữ liệu cần có mạng. Hãy thử lại khi có mạng."
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Descargar tus datos necesita conexión. Inténtalo cuando estés en línea."
-     }
-    }
-   }
-  },
-  "export.failed": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Couldn't read all of your data, so no file was made. Try again."
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Chưa đọc được hết dữ liệu nên chưa tạo tệp. Hãy thử lại."
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "No se pudieron leer todos tus datos, así que no se creó el archivo. Inténtalo de nuevo."
-     }
-    }
-   }
-  },
-  "export.local": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Made on this iPhone, not sent anywhere"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Tạo trên máy, không gửi đi đâu"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Se crea en este iPhone y no se envía a ningún sitio"
-     }
-    }
-   }
-  },
-  "export.saved": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Saved to Files"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Đã lưu vào Tệp"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Guardado en Archivos"
-     }
-    }
-   }
-  },
-  "export.file.meta %lld %@": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "%lld tables · %@"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "%lld bảng · %@"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "%lld tablas · %@"
-     }
-    }
-   }
-  },
-  "export.make": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Make file"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Tạo tệp"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Crear archivo"
-     }
-    }
-   }
-  },
-  "export.share": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Share"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Chia sẻ"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Compartir"
-     }
-    }
-   }
-  },
-  "export.saveFiles": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Save to Files"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Lưu vào Tệp"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Guardar en Archivos"
-     }
-    }
-   }
-  },
-  "export.group.meals": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Meals and foods"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Bữa ăn và món"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Comidas y alimentos"
-     }
-    }
-   }
-  },
-  "export.group.workouts": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Workouts"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Buổi tập"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Entrenamientos"
-     }
-    }
-   }
-  },
-  "export.group.body": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Sleep, weight, water…"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Ngủ, cân, nước…"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Sueño, peso, agua…"
-     }
-    }
-   }
-  },
-  "export.group.koa": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Koa and coins"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Koa và sổ xu"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Koa y monedas"
+      "value": "Quitar el aviso de las %@"
      }
     }
    }
@@ -64342,6 +63606,121 @@
     }
    }
   },
+  "koa.shelf.when %@ %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@: %2$@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "El %1$@: %2$@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ngày %1$@: %2$@"
+     }
+    }
+   }
+  },
+  "koa.shelf.cup.a11y %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Record cup from %@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Copa de récord del %@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cúp kỷ lục ngày %@"
+     }
+    }
+   }
+  },
+  "koa.shelf.frame.first": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "First session frame"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cuadro de la primera sesión"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Khung buổi tập đầu tiên"
+     }
+    }
+   }
+  },
+  "koa.shelf.frame.week": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "First full week frame"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cuadro de la primera semana completa"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Khung tuần đủ buổi đầu tiên"
+     }
+    }
+   }
+  },
+  "koa.shelf.frame.rank": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Rank-up frame"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cuadro de subida de rango"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Khung lên hạng"
+     }
+    }
+   }
+  },
   "journey.line.record": {
    "extractionState": "manual",
    "localizations": {
@@ -65005,6 +64384,903 @@
      "stringUnit": {
       "state": "translated",
       "value": "Tạm nghỉ"
+     }
+    }
+   }
+  },
+  "summary.compare.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Compared with last time"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Comparado con la vez anterior"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "So với lần trước"
+     }
+    }
+   }
+  },
+  "summary.koa.first": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "First time Koa has seen these. Next time Koa will compare."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Primera vez que Koa ve estos ejercicios. La próxima vez los compara."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Lần đầu Koa thấy các bài này. Buổi sau Koa so cho bạn."
+     }
+    }
+   }
+  },
+  "summary.koa.held %@ %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Held your level on %1$@. %2$@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mantuviste el nivel en %1$@. %2$@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Giữ được mức cũ ở %1$@. %2$@"
+     }
+    }
+   }
+  },
+  "summary.koa.reps %@ %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@: %2$lld more reps at the same weight."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@: %2$lld repeticiones más con el mismo peso."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@ thêm %2$lld reps với cùng mức tạ."
+     }
+    }
+   }
+  },
+  "summary.koa.steady": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Every session counts. Next time we inch up."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cada sesión cuenta. La próxima, un poco más."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Buổi nào cũng tính. Lần sau mình nhích dần."
+     }
+    }
+   }
+  },
+  "summary.koa.time %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ held longer than last time."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ aguantado más que la última vez."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ giữ lâu hơn lần trước."
+     }
+    }
+   }
+  },
+  "summary.koa.weight %@ %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@ is heavier than last time: %2$@."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@ más pesado que la última vez: %2$@."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@ nặng hơn lần trước: %2$@."
+     }
+    }
+   }
+  },
+  "summary.stats.line": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Total volume %1$@ %2$@ · %3$lld sets · %4$lld exercises"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Volumen total %1$@ %2$@ · %3$lld series · %4$lld ejercicios"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tổng khối lượng %1$@ %2$@ · %3$lld set · %4$lld bài"
+     }
+    }
+   }
+  },
+  "cue.after.custom": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "a time I pick"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "una hora que elijo"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "tự đặt giờ"
+     }
+    }
+   }
+  },
+  "cue.after.dinner": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "dinner"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "la cena"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "ăn tối"
+     }
+    }
+   }
+  },
+  "cue.after.lunch": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "lunch"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "el almuerzo"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "nghỉ trưa"
+     }
+    }
+   }
+  },
+  "cue.after.q": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "I'll train after…"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Entrenaré después de…"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mình sẽ tập sau khi…"
+     }
+    }
+   }
+  },
+  "cue.after.wake": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "I wake up"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "despertarme"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "thức dậy"
+     }
+    }
+   }
+  },
+  "cue.after.work": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "work"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "el trabajo"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "tan làm"
+     }
+    }
+   }
+  },
+  "cue.busy.q": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "If I'm busy that day…"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Si ese día estoy ocupado…"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nếu hôm đó bận thì…"
+     }
+    }
+   }
+  },
+  "cue.busy.short": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "do the 15-minute version"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "hago la versión de 15 minutos"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "tập bản 15 phút"
+     }
+    }
+   }
+  },
+  "cue.busy.tomorrow": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "move it to tomorrow"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "lo paso a mañana"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "dời sang mai"
+     }
+    }
+   }
+  },
+  "cue.desc": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa reminds you once on training days, at the moment you chose."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa te avisa una vez los días de entreno, en el momento que elegiste."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa nhắc một lần vào ngày có buổi, đúng mốc bạn chọn."
+     }
+    }
+   }
+  },
+  "cue.none": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "None"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ninguno"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Không chọn"
+     }
+    }
+   }
+  },
+  "cue.time": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Reminder time"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hora del recordatorio"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Giờ nhắc"
+     }
+    }
+   }
+  },
+  "swap.nudge.line": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "You've swapped two sessions for rest this week. Busy or tired? Take a few days off?"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Esta semana cambiaste dos sesiones por descanso. ¿Ocupado o cansado? ¿Te tomas unos días?"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tuần này đã đổi 2 buổi sang nghỉ. Có vẻ bận hay mệt. Tạm nghỉ vài ngày nhé?"
+     }
+    }
+   }
+  },
+  "swap.nudge.no": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "No, I'm still training this week"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "No, esta semana sigo entrenando"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Không, tuần này mình vẫn tập"
+     }
+    }
+   }
+  },
+  "swap.nudge.pause": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Take a few days off"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tomarme unos días"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tạm nghỉ vài ngày"
+     }
+    }
+   }
+  },
+  "swap.nudge.why": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "A break turns off workout reminders, keeps Koa's room clean and skips this week. You lose nothing."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Una pausa apaga los recordatorios, mantiene limpia la sala de Koa y no cuenta esta semana. No pierdes nada."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tạm nghỉ thì không nhắc tập, phòng Koa không bám bụi, tuần này không tính. Không mất gì cả."
+     }
+    }
+   }
+  },
+  "coach.accept": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Accept"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Aceptar"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nhận đề xuất"
+     }
+    }
+   }
+  },
+  "coach.cue %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Your plan: train after %@."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tu plan: entrenar después de %@."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Kế hoạch của bạn: tập sau khi %@."
+     }
+    }
+   }
+  },
+  "coach.cue.busy %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "If busy: %@."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Si estás ocupado: %@."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bận thì %@."
+     }
+    }
+   }
+  },
+  "coach.eyebrow": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Your week with Koa"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tu semana con Koa"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đầu tuần cùng Koa"
+     }
+    }
+   }
+  },
+  "coach.keep": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Keep my plan"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mantener mi plan"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Giữ lịch như cũ"
+     }
+    }
+   }
+  },
+  "coach.light.detail": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "One fewer set per exercise, same weight. Your strength is still there; this week is for getting back into rhythm."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Una serie menos por ejercicio, mismo peso. Tu fuerza sigue ahí; esta semana es para recuperar el ritmo."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mỗi bài bớt 1 set, giữ mức tạ. Sức mạnh vẫn còn, tuần này để cơ thể vào nhịp lại."
+     }
+    }
+   }
+  },
+  "coach.light.load %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "One fewer set per exercise, and about %lld%% less weight after a long break. Build back up from next week."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Una serie menos por ejercicio y un %lld%% menos de peso tras un descanso largo. Vuelve a subir desde la próxima semana."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mỗi bài bớt 1 set, và giảm khoảng %lld%% tạ vì nghỉ khá lâu. Tăng lại dần từ tuần sau."
+     }
+    }
+   }
+  },
+  "coach.light.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "This week: a lighter week"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Esta semana: semana ligera"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tuần này: tuần nhẹ"
+     }
+    }
+   }
+  },
+  "coach.ok": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Got it"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Entendido"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đã hiểu"
+     }
+    }
+   }
+  },
+  "coach.progress.detail": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "These lifts beat their target two sessions in a row. The new numbers show on the daily overload card."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Estos ejercicios superaron su objetivo dos sesiones seguidas. Los nuevos números aparecen en la tarjeta diaria."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Các bài dưới đã vượt đích ở hai buổi liền. Mức mới hiện ở thẻ Tăng tải mỗi ngày."
+     }
+    }
+   }
+  },
+  "coach.progress.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "This week: add weight"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Esta semana: subir peso"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tuần này: tuần lên tạ"
+     }
+    }
+   }
+  },
+  "coach.recap.best %@ %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@ moved most: %2$@."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@ fue lo que más avanzó: %2$@."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%1$@ tiến nhiều nhất: %2$@."
+     }
+    }
+   }
+  },
+  "coach.recap.sessions %lld %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Last week: %1$lld of %2$lld planned sessions."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "La semana pasada: %1$lld de %2$lld sesiones planeadas."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tuần trước: %1$lld/%2$lld buổi theo lịch."
+     }
+    }
+   }
+  },
+  "coach.steady.detail": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Same plan. Beat a target two sessions in a row and Koa will suggest more weight."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mismo plan. Supera un objetivo dos sesiones seguidas y Koa te sugerirá más peso."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Lịch như cũ. Đạt đích hai buổi liền thì Koa gợi ý lên tạ."
+     }
+    }
+   }
+  },
+  "coach.steady.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "This week: keep the rhythm"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Esta semana: mantén el ritmo"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tuần này: giữ nhịp"
      }
     }
    }
@@ -69516,6 +69792,1018 @@
      }
     }
    }
+  },
+  "dp.eyebrow.paused": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "On a break"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đang tạm nghỉ"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "En pausa"
+     }
+    }
+   }
+  },
+  "dp.why.paused %@ %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa is holding your spot. Rest, no workout reminders. Back on %1$@, %2$@."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa giữ chỗ cho bạn. Cứ nghỉ, không có nhắc tập. Tập lại từ %1$@, %2$@."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa te guarda el sitio. Descansa, sin recordatorios de entrenamiento. Vuelves el %1$@, %2$@."
+     }
+    }
+   }
+  },
+  "weekday.narrow.mon": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "M"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "L"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "T2"
+     }
+    }
+   }
+  },
+  "weekday.narrow.tue": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "T"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "M"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "T3"
+     }
+    }
+   }
+  },
+  "weekday.narrow.wed": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "W"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "X"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "T4"
+     }
+    }
+   }
+  },
+  "weekday.narrow.thu": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "T"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "J"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "T5"
+     }
+    }
+   }
+  },
+  "weekday.narrow.fri": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "F"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "V"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "T6"
+     }
+    }
+   }
+  },
+  "weekday.narrow.sat": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "S"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "S"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "T7"
+     }
+    }
+   }
+  },
+  "weekday.narrow.sun": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "S"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "D"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "CN"
+     }
+    }
+   }
+  },
+  "lock.passcode": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Use passcode"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Dùng mật mã"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Usar código"
+     }
+    }
+   }
+  },
+  "lock.reason": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Unlock ASCND"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mở khoá ASCND"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Desbloquear ASCND"
+     }
+    }
+   }
+  },
+  "lock.welcome": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Welcome back"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chào mừng trở lại"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bienvenido de nuevo"
+     }
+    }
+   }
+  },
+  "lock.hint %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Use %@ to unlock"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Dùng %@ để mở khoá"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Usa %@ para desbloquear"
+     }
+    }
+   }
+  },
+  "lock.unlock": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Unlock"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mở khoá"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Desbloquear"
+     }
+    }
+   }
+  },
+  "lock.passcode.note": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "If it doesn't recognize you, you can enter your iPhone passcode."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nếu không nhận ra bạn, bạn có thể nhập mật mã iPhone."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Si no te reconoce, puedes introducir el código del iPhone."
+     }
+    }
+   }
+  },
+  "lock.setting %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Lock with %@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Khoá bằng %@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bloquear con %@"
+     }
+    }
+   }
+  },
+  "lock.setting.desc": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ask before opening ASCND"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hỏi trước khi mở ASCND"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Pedir antes de abrir ASCND"
+     }
+    }
+   }
+  },
+  "lock.setting.unavailable": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Set up Face ID or Touch ID in iPhone Settings first"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hãy cài Face ID hoặc Touch ID trong Cài đặt của iPhone trước"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Configura primero Face ID o Touch ID en los Ajustes del iPhone"
+     }
+    }
+   }
+  },
+  "lock.relock": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Lock again"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Khoá lại"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Volver a bloquear"
+     }
+    }
+   }
+  },
+  "lock.relock.now": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Right away"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ngay khi rời app"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Al salir"
+     }
+    }
+   }
+  },
+  "lock.relock.1m": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "After 1 minute"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sau 1 phút"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tras 1 minuto"
+     }
+    }
+   }
+  },
+  "lock.relock.5m": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "After 5 minutes"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sau 5 phút"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tras 5 minutos"
+     }
+    }
+   }
+  },
+  "privacy.header": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Privacy"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Riêng tư"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Privacidad"
+     }
+    }
+   }
+  },
+  "privacy.footer": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Your training data is yours. Lock the app, and take everything with you any time."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Dữ liệu tập luyện của bạn là của bạn. Khoá app, và mang toàn bộ dữ liệu đi bất cứ lúc nào."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tus datos de entrenamiento son tuyos. Bloquea la app y llévate todo cuando quieras."
+     }
+    }
+   }
+  },
+  "export.row": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Download your data"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tải dữ liệu của bạn"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Descargar tus datos"
+     }
+    }
+   }
+  },
+  "export.row.desc": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Everything, as JSON and CSV"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Toàn bộ, dạng JSON và CSV"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Todo, en JSON y CSV"
+     }
+    }
+   }
+  },
+  "export.eyebrow": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "YOUR DATA"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "DỮ LIỆU CỦA BẠN"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "TUS DATOS"
+     }
+    }
+   }
+  },
+  "export.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Take everything with you"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mang theo mọi thứ"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Llévate todo"
+     }
+    }
+   }
+  },
+  "export.ready.eyebrow": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "READY"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "ĐÃ SẴN SÀNG"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "LISTO"
+     }
+    }
+   }
+  },
+  "export.ready.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Your file"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tệp của bạn"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tu archivo"
+     }
+    }
+   }
+  },
+  "export.total %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ records"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ bản ghi"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%@ registros"
+     }
+    }
+   }
+  },
+  "export.reading": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Reading all your data…"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đang đọc toàn bộ dữ liệu…"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Leyendo todos tus datos…"
+     }
+    }
+   }
+  },
+  "export.offline": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Downloading your data needs a connection. Try again when you're online."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tải dữ liệu cần có mạng. Hãy thử lại khi có mạng."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Descargar tus datos necesita conexión. Inténtalo cuando estés en línea."
+     }
+    }
+   }
+  },
+  "export.failed": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Couldn't read all of your data, so no file was made. Try again."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chưa đọc được hết dữ liệu nên chưa tạo tệp. Hãy thử lại."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "No se pudieron leer todos tus datos, así que no se creó el archivo. Inténtalo de nuevo."
+     }
+    }
+   }
+  },
+  "export.local": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Made on this iPhone, not sent anywhere"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tạo trên máy, không gửi đi đâu"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Se crea en este iPhone y no se envía a ningún sitio"
+     }
+    }
+   }
+  },
+  "export.saved": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Saved to Files"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đã lưu vào Tệp"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Guardado en Archivos"
+     }
+    }
+   }
+  },
+  "export.file.meta %lld %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld tables · %@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld bảng · %@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "%lld tablas · %@"
+     }
+    }
+   }
+  },
+  "export.make": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Make file"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tạo tệp"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Crear archivo"
+     }
+    }
+   }
+  },
+  "export.share": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Share"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chia sẻ"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Compartir"
+     }
+    }
+   }
+  },
+  "export.saveFiles": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Save to Files"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Lưu vào Tệp"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Guardar en Archivos"
+     }
+    }
+   }
+  },
+  "export.group.meals": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Meals and foods"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bữa ăn và món"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Comidas y alimentos"
+     }
+    }
+   }
+  },
+  "export.group.workouts": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Workouts"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Buổi tập"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Entrenamientos"
+     }
+    }
+   }
+  },
+  "export.group.body": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sleep, weight, water…"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ngủ, cân, nước…"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sueño, peso, agua…"
+     }
+    }
+   }
+  },
+  "export.group.koa": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa and coins"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa và sổ xu"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa y monedas"
+     }
+    }
+   }
   }
-}
+ }
 }

@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 
 /// Chi tiết một buổi đã tập (#428) — chỉ đọc, dựng từ hàng `workout_sessions`
 /// đã có trong `HistoryBook`.

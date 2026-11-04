@@ -59,6 +59,7 @@ struct CategoryGlyph: View {
 }
 
 /// Tiêu đề của thẻ: lời người đăng; không có thì tên buổi / món / "Tiến bộ N tuần".
+@MainActor
 enum PostHeadline {
   static func text(_ p: CommunityFeed.Post) -> String {
     let caption = p.caption.trimmingCharacters(in: .whitespacesAndNewlines)

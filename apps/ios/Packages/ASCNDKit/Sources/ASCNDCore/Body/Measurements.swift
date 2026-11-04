@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 public import Observation
 
 /// Số đo cơ thể (#527) — `app/measurements-trend.tsx` +

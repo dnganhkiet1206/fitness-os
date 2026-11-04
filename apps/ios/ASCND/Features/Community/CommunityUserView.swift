@@ -79,7 +79,6 @@ struct CommunityUserView: View {
   @Environment(WorkoutFlow.self) private var flow
   @Environment(AppServices.self) private var services
   @State private var awards: AwardsBook?
-  @State private var streak: Int?
   @State private var showsAwards = false
   /// Nhắn tin (15/10) — chỉ khi có nguồn; mở hội thoại với người này.
   @State private var dm: DMInboxBook?
@@ -326,16 +325,19 @@ struct CommunityUserView: View {
 
   // MARK: - Tập luyện của chính mình
 
-  /// Chuỗi ngày (như viên 🔥 ở Hôm nay) · buổi tháng này · buổi có kỷ lục; nhịp tập
-  /// 28 ngày; huy chương. Chỉ trên hồ sơ của mình — số của người khác cần server.
+  /// Nhịp 30 ngày (như thẻ Koa ở Hôm nay) · buổi tháng này · buổi có kỷ lục; nhịp tập 28 ngày;
+  /// huy chương. Chỉ trên hồ sơ của mình — số của người khác cần server.
+  ///
+  /// 04/11 (#802, #797, Kiệt giao E quyết): ô "Chuỗi ngày" thay bằng Nhịp 30 ngày, như Hôm nay đã
+  /// đổi (Kiệt duyệt gỡ chuỗi 02/11).
   @ViewBuilder private var training: some View {
     let s = ProfileTraining.summary(flow.history?.entries ?? [], now: EpochMillis(Date()), timeZone: .current)
     VStack(alignment: .leading, spacing: DS.Spacing.sm) {
       sectionTitle(String(localized: "community.pass.training"))
       HStack(spacing: DS.Spacing.sm) {
         trainingTile(
-          streak.map { "\($0)" } ?? "—", label: String(localized: "community.pass.streak"), symbol: "flame.fill",
-          tint: DS.Color.metricOrange.swiftUI)
+          rhythmSessions.map { "\($0)" } ?? "—", label: String(localized: "rhythm.title"),
+          symbol: "circle.grid.3x3.fill", tint: DS.Color.metricOrange.swiftUI)
         trainingTile(
           "\(s.sessionsThisMonth)", label: String(localized: "community.pass.month"), symbol: "dumbbell.fill",
           tint: DS.Color.metricRose.swiftUI)
@@ -377,15 +379,23 @@ struct CommunityUserView: View {
     try? await fitness.saveName(shown)
   }
 
-  /// Nạp chuỗi ngày + huy chương (chỉ hồ sơ của mình).
+  /// Nạp lịch sử Gains (cho Nhịp 30 ngày) + huy chương (chỉ hồ sơ của mình). Không dựng
+  /// `MascotRoomController` thứ hai: trước đây mỗi lần mở hồ sơ nó chạy lại `grantWelcomeIfNeeded` và
+  /// `questObserver` chỉ để lấy số chuỗi (#797).
   private func loadMine() async {
     guard book.isMe, awards == nil else { return }
     awards = services.makeAwardsBook(userId: book.userId)
-    let room = services.makeMascotRoom(userId: book.userId, today: LocalDate(EpochMillis(Date()), in: .current))
     async let a: Void = awards?.load() ?? ()
-    async let r: Void = room?.load() ?? ()
-    _ = await (a, r)
-    if let room { streak = room.streak.count }
+    async let h: Void = services.ensureKoaGainsHistory()
+    _ = await (a, h)
+  }
+
+  /// Số buổi trong Nhịp 30 ngày, cùng phép tính với thẻ Koa ở Hôm nay; `nil` khi lịch sử chưa tải.
+  private var rhythmSessions: Int? {
+    guard book.isMe, let h = services.koaGainsHistory else { return nil }
+    let today = LocalDate(EpochMillis(Date()), in: .current)
+    let pause = services.koaPause(userId: book.userId, today: today)
+    return KoaRhythm.state(h.days, week: h.week, paused: { pause?.contains($0) == true }, today: today).sessions
   }
 
   /// Dưới thẻ: huy hiệu (tiểu sử / đang theo dõi đã vào thẻ).

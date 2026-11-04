@@ -61,6 +61,8 @@ struct TodayDayBlock: View {
 
   @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  /// Nhãn "Koa" lớn theo Dynamic Type (#795 đợt 2c: bộ kiểm accessibility báo cỡ cố định); mặc định 12.
+  @ScaledMetric(relativeTo: .caption) private var nameSize: CGFloat = 12
   @Environment(\.colorScheme) private var scheme
   @Environment(AppServices.self) private var services: AppServices?
   /// Được khen hôm nay chưa (khen một lần mỗi ngày, `allowPraise`).
@@ -98,8 +100,8 @@ struct TodayDayBlock: View {
 
   private var rhythm: KoaRhythm.State? {
     guard let h = services?.koaGainsHistory else { return nil }
-    let pause = services?.koaPause(userId: room.userId, today: room.today)
-    return KoaRhythm.state(h.days, week: h.week, paused: { pause?.contains($0) == true }, today: room.today)
+    let paused: (LocalDate) -> Bool = services?.koaPausedDay(userId: room.userId, today: room.today) ?? { _ in false }
+    return KoaRhythm.state(h.days, week: h.week, paused: paused, today: room.today)
   }
 
   private var lang: AppPreferences.Lang { AppPreferences.Lang(rawValue: String(locale.identifier.prefix(2))) ?? .vi }
@@ -128,7 +130,7 @@ struct TodayDayBlock: View {
     let doneCount = tubes.filter(\.done).count
     let state = KoaState(emotion: mood.emotion, line: said ?? bubbleText(line, tubes: tubes) ?? "", next: next)
     if compact {
-      compactRow(emotion: oneShot ?? mood.emotion)
+      compactRow(emotion: Self.compactEmotion(oneShot ?? mood.emotion))
         .task(id: state) { onKoa?(state) }
         .onChange(of: reward?.id) { _, _ in celebrate() }
     } else {
@@ -143,7 +145,7 @@ struct TodayDayBlock: View {
             in: RoundedRectangle(cornerRadius: 28, style: .continuous))
         VStack(alignment: .leading, spacing: 6) {
           Text("koa.card.name")
-            .font(.system(size: 12, weight: .semibold))
+            .font(.system(size: nameSize, weight: .semibold))
             .foregroundStyle(KoaCardInk.muted(dark))
           if let text = said ?? bubbleText(line, tubes: tubes) {
             Text(verbatim: text)
@@ -190,6 +192,15 @@ struct TodayDayBlock: View {
     }
   }
 
+  /// Nét mặt của Koa nhỏ ở dạng gọn: buồn / mệt / lo / ngượng / gồng sức ở cỡ 64 điểm trông như cau có
+  /// (#802, 04/11, Kiệt giao E quyết) → nét bình thường. Câu Koa nói và widget vẫn theo tâm trạng thật.
+  static func compactEmotion(_ e: KoaEmotion.Emotion) -> KoaEmotion.Emotion {
+    switch e {
+    case .sad, .tired, .worry, .oops, .warmup: .idle
+    default: e
+    }
+  }
+
   /// Today gọn: Koa nhỏ (chạm → phòng) + tên + "hạng · Gains · còn N tới hạng sau".
   private func compactRow(emotion: KoaEmotion.Emotion) -> some View {
     let g = room.gains
@@ -202,7 +213,7 @@ struct TodayDayBlock: View {
         .background(DS.Color.secondary.swiftUI.opacity(0.6), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
       VStack(alignment: .leading, spacing: 2) {
         Text("koa.card.name")
-          .font(.system(size: 12, weight: .semibold))
+          .font(.system(size: nameSize, weight: .semibold))
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
         Text(String(localized: "dp.gains \(rank) \(g.points)"))
           .font(DS.TextStyle.headline)

@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 
 /// Kế hoạch vẽ của Koa (#527, K3): cây phần tử của `KoaRender` → danh sách
 /// lệnh vẽ đã giải hết những gì react-native-svg làm ngầm — kế thừa thuộc tính

@@ -310,6 +310,7 @@ private struct SavedNoticeView: View {
 
 /// Chữ của nút "Chia sẻ" (`shareText` của ba thẻ RN): dòng đầu dịch ở đây,
 /// phần thân là `CommunityShareText`.
+@MainActor
 enum PostShareText {
   /// Tiêu đề ngắn cho khung xem trước của bảng chia sẻ.
   static func title(_ post: CommunityFeed.Post) -> String {

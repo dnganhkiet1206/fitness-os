@@ -81,8 +81,13 @@ public final class ReminderCenter {
   public static let prefsKey = "ascnd_reminders"
   public static let planKey = "ascnd_reminder_plan"
   public static let smartTimeKey = "ascnd_reminder_smart_time_v1"
+  /// Sổ lời nhắc buổi tập của Koa đã bắn / đã mở (#800, `KoaNudge.Ledger`).
+  public static let nudgeKey = "ascnd_koa_nudge_v1"
+  /// Đã xin quyền thông báo sau khi có lịch tập (#800). Quyền là của máy, nên khoá này
+  /// không theo tài khoản.
+  public static let askedAfterScheduleKey = "ascnd_reminder_asked_after_schedule"
   /// Khoá theo tài khoản (`USER_KEYS`).
-  public static let userKeys = [planKey, prefsKey, smartTimeKey]
+  public static let userKeys = [planKey, prefsKey, smartTimeKey, nudgeKey]
 
   public private(set) var prefs: ReminderPrefs
   /// Đã được cấp quyền thông báo.
@@ -113,6 +118,27 @@ public final class ReminderCenter {
 
   public var isAvailable: Bool { scheduler.isAvailable }
 
+  /// Xin quyền thông báo ngay sau khi người dùng có lịch tập đầu tiên (#800), không xin lúc
+  /// mới mở app: lời nhắc buổi tập của Koa bật sẵn nên đây là lúc nó có ích. Chỉ một lần mỗi máy;
+  /// đã có quyền, hay tắt cả hai lời nhắc buổi tập, thì không hỏi.
+  public func askAfterSchedule() async {
+    guard isAvailable, store.string(forKey: Self.askedAfterScheduleKey) == nil else { return }
+    if !permission { permission = await scheduler.hasPermission() }
+    guard !permission, prefs.koaTraining || prefs.workout.enabled else { return }
+    store.set("1", forKey: Self.askedAfterScheduleKey)
+    permission = await scheduler.requestPermission()
+    guard permission else { return }
+    await commit(currentPlan(context))
+  }
+
+  /// Người dùng chạm một lời nhắc: lời nhắc buổi tập được mở thì hết "bị bỏ qua" (#800).
+  public func noteOpened(_ key: ReminderKey) {
+    guard key == .koaTraining else { return }
+    var ledger = nudge
+    ledger.opened(at: clock.now())
+    saveNudge(ledger)
+  }
+
   /// Gợi ý bật quyền: máy có thông báo, chưa có quyền, mà có cái đang bật.
   public var needsPermissionHint: Bool { isAvailable && !permission && prefs.anyEnabled }
 
@@ -134,6 +160,30 @@ public final class ReminderCenter {
     var next = prefs
     next[timed: key].hour = hour
     next[timed: key].minute = minute
+    await apply(next)
+  }
+
+  /// Giờ nhắc bữa thêm (Kiệt 01/11): thêm (tới `maxMealTimes`), đổi, xoá theo vị trí.
+  public func addMealTime() async {
+    guard prefs.mealExtra.count < ReminderPrefs.maxMealTimes - 1 else { return }
+    var next = prefs
+    next.mealExtra.append(ReminderPrefs.nextMealSlot(after: [prefs.meal.clock] + prefs.mealExtra))
+    next.mealExtra.sort { $0.minutes < $1.minutes }
+    await apply(next)
+  }
+
+  public func setMealTime(at index: Int, hour: Int, minute: Int) async {
+    guard prefs.mealExtra.indices.contains(index), (0...23).contains(hour), (0...59).contains(minute) else { return }
+    var next = prefs
+    next.mealExtra[index] = ReminderClock(hour: hour, minute: minute)
+    next.mealExtra.sort { $0.minutes < $1.minutes }
+    await apply(next)
+  }
+
+  public func removeMealTime(at index: Int) async {
+    guard prefs.mealExtra.indices.contains(index) else { return }
+    var next = prefs
+    next.mealExtra.remove(at: index)
     await apply(next)
   }
 
@@ -167,7 +217,7 @@ public final class ReminderCenter {
     write(next)
     if next.anyEnabled && !permission { permission = await scheduler.requestPermission() }
     guard permission else { return }
-    await commit(ReminderPlan.plan(prefs, context, now: clock.now(), calendar: calendar))
+    await commit(currentPlan(context))
   }
 
   private func write(_ next: ReminderPrefs) {
@@ -183,9 +233,32 @@ public final class ReminderCenter {
   public func sync(_ ctx: ReminderContext) async {
     context = ctx
     guard permission else { return }
-    let plan = ReminderPlan.plan(prefs, ctx, now: clock.now(), calendar: calendar)
+    let plan = currentPlan(ctx)
     if store.string(forKey: Self.planKey) == ReminderPlan.signature(plan) { return }
     await commit(plan)
+  }
+
+  /// Kế hoạch từ cài đặt hiện tại, sau khi tính các lời nhắc buổi tập đã bắn từ lần trước
+  /// (bị bỏ qua 3 lần liền → 2 ngày một lần, #800).
+  private func currentPlan(_ ctx: ReminderContext) -> [PlannedReminder] {
+    let now = clock.now()
+    var ledger = nudge
+    ledger.settle(now: now)
+    if ledger != nudge { saveNudge(ledger) }
+    var ctx = ctx
+    ctx.koaTrainingEvery = ledger.every
+    ctx.lastKoaTrainingOffset = ledger.lastFiredOffset(now: now, calendar: calendar)
+    return ReminderPlan.plan(prefs, ctx, now: now, calendar: calendar)
+  }
+
+  private var nudge: KoaNudge.Ledger {
+    store.string(forKey: Self.nudgeKey).flatMap { try? JSONDecoder().decode(KoaNudge.Ledger.self, from: Data($0.utf8)) }
+      ?? KoaNudge.Ledger()
+  }
+
+  private func saveNudge(_ ledger: KoaNudge.Ledger) {
+    guard let data = try? JSONEncoder().encode(ledger), let text = String(data: data, encoding: .utf8) else { return }
+    store.set(text, forKey: Self.nudgeKey)
   }
 
   /// Đặt kế hoạch, và CHỈ SAU ĐÓ ghi rằng nó đã được đặt.
@@ -205,6 +278,9 @@ public final class ReminderCenter {
     // Đặt hụt không phải kế hoạch: để chữ ký cũ, lần sau thử lại.
     guard outcome.supported, outcome.scheduled == outcome.requested else { return }
     store.set(ReminderPlan.signature(plan), forKey: Self.planKey)
+    var ledger = nudge
+    ledger.record(plan.filter { $0.key == .koaTraining }.map(\.at))
+    saveNudge(ledger)
   }
 
   /// Một bên ghi lịch tại một thời điểm: việc sau đợi việc trước xong hẳn.
@@ -292,6 +368,50 @@ public enum ReminderCopyTable {
       KoaWorkoutCopy(returning: ReminderText(
         title: "Koa sigue aquí 💪", body: "Todo lo que Koa ganó sigue ahí. Una sesión suave hoy está bien."))
     }
+  }
+
+  /// Các câu của lời nhắc buổi tập, xoay vòng theo ngày (#800). Câu đầu là câu chung của
+  /// `copy`; giọng Koa, không trách, không nói mất mát. Cột thứ ba: câu khi bắn theo giờ quen.
+  public static func koaTraining(_ lang: AppPreferences.Lang) -> [ReminderText] {
+    let rows: [(String, String, String)] = switch lang {
+    case .vi: [
+        ("Koa khởi động xong rồi 🏋️", "Buổi tập hôm nay đang đợi bạn.",
+          "Giờ này mọi hôm bạn đã vào tập. Koa khởi động xong rồi 🏋️"),
+        ("Koa trải thảm sẵn rồi 🧘", "Hôm nay có buổi tập trong lịch. Vào lúc nào cũng được.",
+          "Giờ này mọi hôm bạn đã tập. Thảm trải sẵn rồi nè 🧘"),
+        ("Koa đang đếm bước 👟", "Một buổi ngắn hôm nay cũng tính. Koa đi cùng bạn.",
+          "Giờ này mọi hôm bạn đã vào tập. Một buổi ngắn cũng được 👟"),
+        ("Tạ ở đây, Koa ở đây 🏋️", "Buổi trong lịch hôm nay chờ bạn ghé qua.",
+          "Đúng giờ quen của bạn rồi. Koa ở đây khi bạn sẵn sàng 🏋️"),
+        ("Koa uống nước xong rồi 💧", "Mình vào buổi hôm nay nhé? Nhẹ thôi cũng được.",
+          "Giờ này mọi hôm bạn đã tập. Nhẹ thôi cũng được 💧"),
+      ]
+    case .en: [
+        ("Koa is warmed up 🏋️", "Today's session is waiting for you.",
+          "You usually train by now. Koa is warmed up 🏋️"),
+        ("Koa rolled out the mat 🧘", "There's a session on your plan today. Whenever suits you.",
+          "You usually train by now. The mat is ready 🧘"),
+        ("Koa is counting steps 👟", "A short session today still counts. Koa's coming along.",
+          "You usually train by now. A short one is fine 👟"),
+        ("The weights are here, so is Koa 🏋️", "Today's planned session is ready when you are.",
+          "It's your usual time. Koa is here when you're ready 🏋️"),
+        ("Koa just had some water 💧", "Shall we do today's session? Easy is fine.",
+          "You usually train by now. Easy is fine 💧"),
+      ]
+    case .es: [
+        ("Koa ya calentó 🏋️", "Tu sesión de hoy te está esperando.",
+          "A esta hora sueles entrenar. Koa ya calentó 🏋️"),
+        ("Koa extendió la esterilla 🧘", "Hoy hay una sesión en tu plan. Cuando te venga bien.",
+          "A esta hora sueles entrenar. La esterilla está lista 🧘"),
+        ("Koa está contando pasos 👟", "Una sesión corta hoy también cuenta. Koa te acompaña.",
+          "A esta hora sueles entrenar. Una corta está bien 👟"),
+        ("Las pesas están aquí, y Koa también 🏋️", "La sesión de hoy está lista cuando tú lo estés.",
+          "Es tu hora de siempre. Koa está aquí cuando estés listo 🏋️"),
+        ("Koa acaba de tomar agua 💧", "¿Hacemos la sesión de hoy? Suave está bien.",
+          "A esta hora sueles entrenar. Suave está bien 💧"),
+      ]
+    }
+    return rows.map { ReminderText(title: $0.0, body: $0.1, habitBody: $0.2) }
   }
 
   public static func copy(_ lang: AppPreferences.Lang) -> ReminderCopy {

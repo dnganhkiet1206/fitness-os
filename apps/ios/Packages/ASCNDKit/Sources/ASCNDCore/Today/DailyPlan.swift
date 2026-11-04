@@ -12,7 +12,8 @@
 ///    điều kiện 01): quay lại sau ≥ 3 ngày nghỉ (④, không nhắc mất mát) hoặc
 ///    bắt đầu buổi; "tập nhẹ hơn" chỉ khi phục hồi thấp ĐỦ chắc (điều kiện 02);
 /// 4. đã tập hôm nay → ghi bữa sau tập nếu còn thiếu đạm, không thì xem tiến bộ;
-/// 5. ngày nghỉ đã đặt → hồi phục;
+/// 5. đang tạm nghỉ → hồi phục, nói rõ là tạm nghỉ và ngày tập lại (#796); ngày nghỉ đã
+///    đặt → hồi phục;
 /// 6. ngày trống → buổi kế tiếp trong lịch, không thì ghi tự do.
 public enum DailyPlan {
   /// Một buổi trong lịch.
@@ -99,12 +100,14 @@ public enum DailyPlan {
     public var canReschedule: Bool
     /// Ngày đích nếu dời buổi hôm nay (`Reschedule.target`); `nil` = không có ngày trống.
     public var postponeTo: LocalDate?
+    /// Đang tạm nghỉ (`KoaPause`): ngày tập lại; `nil` = không nghỉ.
+    public var pausedUntil: LocalDate?
     public var date: LocalDate
 
     public init(
       date: LocalDate, loaded: Bool, inProgress: Session? = nil, hasSchedule: Bool, today: Day,
       doneToday: [String?] = [], daysOff: Int = 0, recovery: Recovery? = nil, proteinLeftG: Int? = nil,
-      next: Upcoming? = nil, canReschedule: Bool = false, postponeTo: LocalDate? = nil
+      next: Upcoming? = nil, canReschedule: Bool = false, postponeTo: LocalDate? = nil, pausedUntil: LocalDate? = nil
     ) {
       self.date = date
       self.loaded = loaded
@@ -118,6 +121,7 @@ public enum DailyPlan {
       self.next = next
       self.canReschedule = canReschedule
       self.postponeTo = postponeTo
+      self.pausedUntil = pausedUntil
     }
   }
 
@@ -155,6 +159,8 @@ public enum DailyPlan {
     case proteinLeft(grams: Int)
     case trainedToday
     case restDay
+    /// Đang tạm nghỉ; `until` là ngày tập lại (`KoaPause.returnDay`).
+    case paused(until: LocalDate)
     case noSchedule
     case nextOn(LocalDate)
   }
@@ -244,6 +250,9 @@ public enum DailyPlan {
       return Result(action: .progress, reason: .trainedToday, alternatives: [.logFree])
     }
     // 5
+    if let back = i.pausedUntil {
+      return Result(action: .recovery, reason: .paused(until: back), alternatives: [.logFree])
+    }
     if case .rest = i.today { return Result(action: .recovery, reason: .restDay, alternatives: [.logFree]) }
     // 6
     if let n = i.next {

@@ -287,7 +287,6 @@ struct DayMealsSection: View {
       ServingsSheet(item: item, busy: book.busy) { servings in
         Task { await save(item, servings) }
       }
-      .presentationDetents([.medium])
       // Nền đặc màu trang (16/10, chủ dự án: thẻ trên bảng kính khó nhìn — như Ghi nhanh).
       .presentationBackground(DS.Color.background.swiftUI)
     }
@@ -381,6 +380,7 @@ struct DayMealsSection: View {
             .foregroundStyle(DS.Color.primary.swiftUI)
             .frame(maxWidth: .infinity, minHeight: 44)
             .overlay(RoundedRectangle(cornerRadius: DS.Radius.sm).stroke(DS.Color.border.swiftUI, lineWidth: 1))
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
       }
@@ -612,6 +612,7 @@ private struct MealGroupCard: View {
             Label(String(localized: "diary.meal.addAction"), systemImage: "plus")
               .font(DS.TextStyle.footnote.weight(.semibold))
               .frame(maxWidth: .infinity, minHeight: 44)
+              .contentShape(Rectangle())
           }
           .buttonStyle(.plain)
           .foregroundStyle(DS.Color.primary.swiftUI)
@@ -619,6 +620,7 @@ private struct MealGroupCard: View {
             Label(String(localized: "diary.meal.deleteAction"), systemImage: "trash")
               .font(DS.TextStyle.footnote.weight(.semibold))
               .frame(maxWidth: .infinity, minHeight: 44)
+              .contentShape(Rectangle())
           }
           .buttonStyle(.plain)
           .foregroundStyle(DS.Color.destructive.swiftUI)
@@ -629,6 +631,7 @@ private struct MealGroupCard: View {
               Label(String(localized: "diary.meal.share"), systemImage: "square.and.arrow.up")
                 .font(DS.TextStyle.footnote.weight(.semibold))
                 .frame(maxWidth: .infinity, minHeight: 44)
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .foregroundStyle(DS.Color.primary.swiftUI)
@@ -741,6 +744,8 @@ private struct ServingsSheet: View {
       }
     }
     .padding(DS.Spacing.lg)
+    // Trong `body` (không ở chỗ mở sheet): `servings` nằm ngoài `ViewThatFits` của `mediumSheet`.
+    .mediumSheet()
   }
 
   private func stepButton(_ icon: String, label: String, by dir: Int) -> some View {

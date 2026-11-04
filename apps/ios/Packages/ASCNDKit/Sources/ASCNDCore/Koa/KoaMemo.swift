@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 
 /// Bộ nhớ đệm nhỏ cho bộ dựng hình Koa (30/10, hiệu năng): mỗi khung Koa dựng lại cả cây
 /// hình, và trước đây phân tích lại cùng những chuỗi (transform, hoạt ảnh, mã màu) và dựng

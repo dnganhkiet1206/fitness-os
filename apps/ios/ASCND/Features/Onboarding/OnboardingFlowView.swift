@@ -139,12 +139,13 @@ struct OnboardingStepsView: View {
     .padding(.horizontal, DS.Spacing.lg)
   }
 
-  /// Ba chặng: mục tiêu · lịch · về bạn.
+  /// Ba chặng: mục tiêu · lịch · về bạn. Bước Apple Health thuộc chặng "về bạn" (dữ liệu của bạn): trước
+  /// đây tới bước này thì thanh biến mất (#802, 04/11, Kiệt giao E quyết).
   private var chapter: Int? {
     switch step {
     case .intention: 1
     case .schedule: 2
-    case .sex: 3
+    case .sex, .health: 3
     default: nil
     }
   }
@@ -251,11 +252,13 @@ struct OnboardingStepsView: View {
     if step == .ready {
       // Nháp bị xoá khi xong — giữ lịch lại trước để phiên app áp nó (`StarterPlan`).
       let choice = flow.draft.schedule
+      let cue = flow.draft.trainingCue
       let userId = flow.userId
       Task {
         if await flow.finish() {
           guard !dryRun else { return }
           if let choice { StarterPlan.savePending(.init(choice: choice, startNow: startNow), userId: userId) }
+          if let cue { services.setTrainingCue(cue, userId: userId) }
           Telemetry.capture(.onboardingCompleted)
         } else if let f = flow.failure {
           failure = f.copy
@@ -360,11 +363,41 @@ struct OnboardingStepsView: View {
           }
         }
         .onbGlass()
+        cueChoices
         Text(String(localized: "onboarding.schedule.editLater"))
           .font(DS.TextStyle.footnote)
           .foregroundStyle(AuthHero.paper.opacity(0.5))
       }
     }
+  }
+
+  /// "Mình sẽ tập sau khi…" và "Nếu hôm đó bận thì…" (Kiệt duyệt mock 03/11): kế hoạch
+  /// "nếu… thì…", bỏ qua được. Không thêm màn: nằm ngay dưới lịch tuần.
+  private var cueChoices: some View {
+    VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+      Eyebrow(text: String(localized: "cue.after.q"))
+      FlowPills(items: TrainingCue.Anchor.allCases, label: \.label,
+                selected: { flow.draft.trainingCue?.anchor == $0 }) { flow.setTrainingCue($0) }
+      if let cue = flow.draft.trainingCue {
+        if cue.anchor == .custom {
+          DatePicker(
+            String(localized: "cue.time"),
+            selection: Binding(
+              get: { Calendar.current.date(from: DateComponents(hour: cue.clock.hour, minute: cue.clock.minute)) ?? .now },
+              set: { d in
+                let c = Calendar.current.dateComponents([.hour, .minute], from: d)
+                flow.setCueClock(ReminderClock(hour: c.hour ?? 18, minute: c.minute ?? 0))
+              }),
+            displayedComponents: .hourAndMinute)
+          .foregroundStyle(AuthHero.paper)
+        }
+        Eyebrow(text: String(localized: "cue.busy.q"))
+        FlowPills(items: TrainingCue.Busy.allCases, label: \.label,
+                  selected: { flow.draft.trainingCue?.busy == $0 }) { flow.setBusy($0) }
+      }
+    }
+    .accessibilityElement(children: .contain)
+    .accessibilityIdentifier("onboarding.cue")
   }
 
   /// Màn mục tiêu (gộp mục tiêu + kinh nghiệm): bốn mục tiêu, ba mức đã tập.
@@ -572,7 +605,8 @@ struct OnboardingStepsView: View {
   private var ready: some View {
     VStack(alignment: .leading, spacing: DS.Spacing.md) {
       HStack(spacing: DS.Spacing.sm) {
-        MascotFigureView(emotion: .warmup, size: 60, animated: false)
+        // Vui (#802, 04/11): mặt "gồng sức khởi động" ở cỡ 60 điểm trông như cau mày.
+        MascotFigureView(emotion: .happy, size: 60, animated: false)
           .frame(width: 66, height: 76)
           .accessibilityHidden(true)
         VStack(alignment: .leading, spacing: 2) {
@@ -974,6 +1008,27 @@ private struct Ask: View {
         .foregroundStyle(DS.Color.mutedForeground.swiftUI)
     }
     .frame(maxWidth: .infinity, alignment: .leading)
+  }
+}
+
+/// Hàng nút chọn tự xuống dòng (câu "nếu… thì…" dài hơn tên ngày).
+private struct FlowPills<Item: Hashable>: View {
+  let items: [Item]
+  let label: (Item) -> String
+  let selected: (Item) -> Bool
+  let pick: (Item) -> Void
+
+  var body: some View {
+    ViewThatFits(in: .horizontal) {
+      HStack(spacing: DS.Spacing.xs) { pills }
+      VStack(alignment: .leading, spacing: DS.Spacing.xs) { pills }
+    }
+  }
+
+  @ViewBuilder private var pills: some View {
+    ForEach(items, id: \.self) { i in
+      GlassPill(text: label(i), selected: selected(i)) { pick(i) }
+    }
   }
 }
 

@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 
 /// Phòng thử đồ của cửa hàng (#527, S2) — `ShopScene` / `ShopRoom` /
 /// `shop-camera.ts` của RN @ fac9ac2.

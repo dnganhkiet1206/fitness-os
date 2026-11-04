@@ -1,7 +1,7 @@
 // Preview bảng màu — C sở hữu (#229, #246).
 // Mở trong Xcode để xem token ở cả hai theme.
 #if canImport(SwiftUI)
-public import SwiftUI
+import SwiftUI
 
 struct DSColorPreview: View {
   var body: some View {

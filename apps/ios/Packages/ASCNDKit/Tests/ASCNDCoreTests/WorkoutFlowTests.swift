@@ -133,7 +133,7 @@ struct WorkoutFlowTests {
   @Test func tickStartsRestForNextSet() async throws {
     let h = Harness()
     await h.flow.start()
-    await try #require(h.flow.session).toggle("0-0")
+    try await #require(h.flow.session).toggle("0-0")
     let (event, target) = try #require(h.rests.last)
     #expect(event == .start(seconds: WorkoutPlanning.defaultRest))
     #expect(target == RestTarget(exerciseName: "Bench", setNumber: 2, totalSets: 2))
@@ -254,11 +254,11 @@ struct WorkoutFlowTests {
   @Test func alreadyLoggedElsewhereOnDeviceMarksTrained() async throws {
     let h = Harness()
     await h.flow.start()
-    await try #require(h.flow.session).toggle("0-0")
+    try await #require(h.flow.session).toggle("0-0")
 
     let other = h.make()
     await other.start()
-    await try #require(other.session).toggle("0-1")
+    try await #require(other.session).toggle("0-1")
     _ = try await other.finish()
 
     #expect(h.flow.today.plan?.status == .todo)

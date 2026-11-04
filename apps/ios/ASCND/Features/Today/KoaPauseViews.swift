@@ -43,6 +43,7 @@ struct KoaPauseSheet: View {
   let start: (Int) -> Void
   @Environment(\.dismiss) private var dismiss
   @Environment(\.locale) private var locale
+  @Environment(\.dynamicTypeSize) private var typeSize
   @State private var days = 3
 
   var body: some View {
@@ -53,11 +54,7 @@ struct KoaPauseSheet: View {
         .font(DS.TextStyle.body)
         .foregroundStyle(DS.Color.mutedForeground.swiftUI)
         .fixedSize(horizontal: false, vertical: true)
-      Stepper(value: $days, in: 1...KoaPause.maxDays) {
-        Text(String(localized: "pause.sheet.days \(days)"))
-          .font(DS.TextStyle.headline.monospacedDigit())
-      }
-      .accessibilityIdentifier("pause.days")
+      daysPicker
       Text(String(localized: "pause.sheet.back \(returnDay)"))
         .font(DS.TextStyle.footnote)
         .foregroundStyle(DS.Color.mutedForeground.swiftUI)
@@ -69,13 +66,72 @@ struct KoaPauseSheet: View {
       .accessibilityIdentifier("pause.start")
     }
     .padding(DS.Spacing.lg)
-    .presentationDetents([.medium])
+    .mediumSheet()
     .presentationDragIndicator(.visible)
+  }
+
+  /// Số ngày nghỉ. Chữ cỡ trợ năng: nhãn một dòng riêng, nút −/+ ở dòng dưới. Chung một hàng thì
+  /// "Days off: 3" bị nút ép hẹp và cắt chữ (bộ kiểm a11y 04/11: "Text clipped", khung 82×19 ở cỡ
+  /// thường). VoiceOver đọc nhãn ở nút −/+ như cũ, dòng chữ riêng không đọc lần hai.
+  @ViewBuilder private var daysPicker: some View {
+    let label = Text(String(localized: "pause.sheet.days \(days)")).font(DS.TextStyle.headline.monospacedDigit())
+    if typeSize.isAccessibilitySize {
+      VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+        label
+          .fixedSize(horizontal: false, vertical: true)
+          .accessibilityHidden(true)
+        Stepper(value: $days, in: 1...KoaPause.maxDays) { label }
+          .labelsHidden()
+          .accessibilityIdentifier("pause.days")
+      }
+    } else {
+      Stepper(value: $days, in: 1...KoaPause.maxDays) { label }
+        .accessibilityIdentifier("pause.days")
+    }
   }
 
   private var returnDay: String {
     let d = KoaPause(from: today, days: days).returnDay
     let date = Calendar.current.date(from: DateComponents(year: d.year, month: d.month, day: d.day)) ?? .now
     return date.formatted(.dateTime.weekday(.wide).day().month(.abbreviated).locale(locale))
+  }
+}
+
+/// Từ lần đổi buổi sang nghỉ thứ hai trong tuần (Kiệt duyệt 03/11): Koa gợi ý Tạm nghỉ, trạng thái
+/// trung thực cho tuần bận hay mệt. Không trách, không trừ gì; bỏ qua được.
+struct KoaSwapNudge: View {
+  let build: Int
+  let pause: () -> Void
+  let dismiss: () -> Void
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+      HStack(alignment: .top, spacing: DS.Spacing.sm) {
+        MascotFigureView(emotion: .idle, size: 48, animated: false, build: build)
+          .accessibilityHidden(true)
+        Text("swap.nudge.line")
+          .font(DS.TextStyle.body.weight(.semibold))
+          .foregroundStyle(DS.Color.foreground.swiftUI)
+          .fixedSize(horizontal: false, vertical: true)
+      }
+      Text("swap.nudge.why")
+        .font(DS.TextStyle.footnote)
+        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        .fixedSize(horizontal: false, vertical: true)
+      DSButton(String(localized: "swap.nudge.pause"), style: .secondary, action: pause)
+        .accessibilityIdentifier("today.swap.pause")
+      Button(action: dismiss) {
+        // cả dải 44 điểm nhận chạm, không chỉ phần chữ (nút `.plain`, xem `TodayPlanHero.minTap`)
+        Text("swap.nudge.no")
+          .font(DS.TextStyle.footnote.weight(.semibold))
+          .frame(maxWidth: .infinity, minHeight: 44)
+          .contentShape(Rectangle())
+      }
+      .buttonStyle(.plain)
+      .foregroundStyle(DS.Color.primary.swiftUI)
+    }
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .padding(DS.Spacing.md)
+    .todayCard()
   }
 }

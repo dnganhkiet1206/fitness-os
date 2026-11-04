@@ -721,7 +721,7 @@ struct ShopView: View {
       .disabled(book.balance < total || applying)
     }
     .padding(DS.Spacing.lg)
-    .presentationDetents([.medium])
+    .mediumSheet()
     .presentationBackground(DS.Color.background.swiftUI)
   }
 

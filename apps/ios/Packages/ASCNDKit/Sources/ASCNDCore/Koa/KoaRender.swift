@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 
 /// Bộ dựng cảnh của Koa (#527, K2) — `RenderNode` + phần cây của `KoaFigure`
 /// trong `koa-figure.tsx` @ fac9ac2, thành một hàm thuần.
@@ -519,10 +519,14 @@ public enum KoaRender {
   }
 
   static func cachedDefs(_ flags: KoaFlags.Flags, paper: Bool, gesture: KoaGesture?) -> Element {
-    let key = DefsKey(
+    defsMemo.value(defsKey(flags, paper: paper, gesture: gesture)) { defs(flags, paper: paper, gesture: gesture) }
+  }
+
+  /// Khoá của `defs` cho một khung — tách ra để test đếm được mà không đọc bộ nhớ đệm dùng chung.
+  static func defsKey(_ flags: KoaFlags.Flags, paper: Bool, gesture: KoaGesture?) -> DefsKey {
+    DefsKey(
       on: flags.compactMap { $0.value.truthy ? $0.key : nil }.sorted(), paper: paper,
       paw: gesture?.pawOutline == true, rn: KoaScene.rn)
-    return defsMemo.value(key) { defs(flags, paper: paper, gesture: gesture) }
   }
 
   static func stop(_ offset: Double, _ colour: String, _ opacity: Double? = nil) -> Element {

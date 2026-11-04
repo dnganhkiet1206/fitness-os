@@ -139,7 +139,7 @@ struct MealPlansBookTests {
     var failPlans = false
     var failFill = false
     var failToday = false
-    var writeError: Error?
+    var writeError: (any Error)?
     var touched = 1
     func log(_ s: String) { lock.withLock { calls.append(s) } }
 

@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 
 /// Tạm nghỉ có hẹn ngày quay lại (Koa Ecosystem V2, Kiệt duyệt 02/11): ốm, đi xa, cần hồi phục.
 /// Trong lúc nghỉ: không nhắc tập, phòng Koa không bám bụi, Daily Plan chỉ gợi việc nhẹ, Tuần của
@@ -68,5 +68,84 @@ public enum KoaPauseSync {
     return [
       "user_id": .string(userId), "starts_on": .string(p.start.description), "ends_on": .string(p.last.description),
     ]
+  }
+}
+
+/// Các đợt tạm nghỉ trong `keepDays` ngày gần nhất, cả đợt đang có (03/11). Đợt đã qua vẫn là
+/// ngày nghỉ: Nhịp 30 ngày ghi "tạm nghỉ", phòng Koa không tính bụi cho những ngày ấy, Tuần của
+/// Koa không tính chúng vào đích. Trước đây chỉ nhớ đợt đang có, nên vừa quay lại là phòng bám
+/// bụi cho đúng những ngày đã nghỉ.
+public struct KoaPauseLog: Sendable, Hashable, Codable {
+  /// Đủ cho Nhịp 30 ngày và bụi phòng (đọc 30 ngày), dư một tháng.
+  public static let keepDays = 60
+
+  /// Theo ngày bắt đầu, không chồng nhau.
+  public private(set) var spells: [KoaPause]
+
+  public init(_ spells: [KoaPause] = []) {
+    self.spells = spells.sorted { $0.start < $1.start }
+  }
+
+  public func contains(_ day: LocalDate) -> Bool { spells.contains { $0.contains(day) } }
+
+  /// Đặt đợt nghỉ mới từ `today`, hoặc kết thúc sớm (`nil`). Đợt đang có hay sắp tới dừng ở hôm qua;
+  /// đợt đã qua giữ nguyên.
+  public func setting(_ pause: KoaPause?, today: LocalDate) -> KoaPauseLog {
+    var out = spells.compactMap { $0.last < today ? $0 : $0.ended(on: today) }
+    if let pause { out.append(pause) }
+    return KoaPauseLog(out).pruned(today: today)
+  }
+
+  /// Ghép đợt đang có đọc từ `koa_pauses` (đặt ở máy khác) nếu sổ chưa có.
+  public func including(_ current: KoaPause?, today: LocalDate) -> KoaPauseLog {
+    guard let current, !spells.contains(current) else { return self }
+    return setting(current, today: current.start).pruned(today: today)
+  }
+
+  public func pruned(today: LocalDate) -> KoaPauseLog {
+    KoaPauseLog(spells.filter { $0.last >= today.adding(days: -Self.keepDays) })
+  }
+}
+
+/// Bảng `koa_pause_log` (migration `20261104120000`, deploy 04/11 khi Kiệt duyệt): một dòng mỗi
+/// đợt, khoá (người, ngày bắt đầu). Không xoá: đợt bị huỷ ngay hôm đầu ghi `ends_on` trước
+/// `starts_on` và bị bỏ qua khi đọc. Đọc/ghi hỏng thì sổ nằm trên máy, gửi bù sau.
+public enum KoaPauseLogSync {
+  public static let table = "koa_pause_log"
+  public static let conflict = "user_id,starts_on"
+
+  public static func query(userId: String, today: LocalDate) -> RowQuery {
+    RowQuery(
+      table: table, columns: "starts_on,ends_on",
+      filters: [
+        .eq("user_id", .string(userId)),
+        .gte("ends_on", .string(today.adding(days: -KoaPauseLog.keepDays).description)),
+      ], limit: 100)
+  }
+
+  public static func decode(_ rows: [JSONValue], today: LocalDate) -> KoaPauseLog {
+    let spells = rows.compactMap { r -> KoaPause? in
+      guard let s = r["starts_on"]?.stringValue.flatMap(LocalDate.init),
+        let e = r["ends_on"]?.stringValue.flatMap(LocalDate.init), e >= s
+      else { return nil }
+      return KoaPause(start: s, last: e)
+    }
+    return KoaPauseLog(spells).pruned(today: today)
+  }
+
+  /// Dòng cần ghi để server đi từ `old` tới `new`: đợt mới hay đổi ngày cuối, và đợt đã bị huỷ.
+  public static func rows(from old: KoaPauseLog, to new: KoaPauseLog, userId: String) -> [[String: JSONValue]] {
+    func row(_ start: LocalDate, _ last: LocalDate) -> [String: JSONValue] {
+      ["user_id": .string(userId), "starts_on": .string(start.description), "ends_on": .string(last.description)]
+    }
+    let kept = Set(new.spells.map(\.start))
+    let changed = new.spells.filter { !old.spells.contains($0) }.map { row($0.start, $0.last) }
+    let cancelled = old.spells.filter { !kept.contains($0.start) }.map { row($0.start, $0.start.adding(days: -1)) }
+    return changed + cancelled
+  }
+
+  /// Toàn bộ sổ, để gửi lại khi lần trước chưa gửi được (ghi đè theo khoá, gửi lại không sao).
+  public static func rows(_ log: KoaPauseLog, userId: String) -> [[String: JSONValue]] {
+    rows(from: KoaPauseLog(), to: log, userId: userId)
   }
 }

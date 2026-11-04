@@ -97,7 +97,7 @@ struct MascotRoomView: View {
         .task {
           guard ProcessInfo.processInfo.arguments.contains("-koaAutoPull") else { return }
           try? await Task.sleep(for: .seconds(9))
-          withAnimation(.easeOut(duration: 0.15)) { pullStart = .now }
+          openPanel()
         }
       #endif
       .onReceive(Timer.publish(every: 30, on: .main, in: .common).autoconnect()) { clock = $0 }
@@ -167,8 +167,7 @@ struct MascotRoomView: View {
                 await services.loadKoaDust(userId: room.userId)
               }
           }
-          // Koa của cảnh diễn phải có ngay khung đầu: mờ dần thì sân khấu trống một nhịp
-          .transition(.asymmetric(insertion: lens.bedroom ? .move(edge: .bottom) : .identity, removal: .opacity))
+          .transition(.asymmetric(insertion: panelInsertion, removal: .opacity))
         }
       }
     }
@@ -200,7 +199,22 @@ struct MascotRoomView: View {
     return String(localized: "koa.pull.some \(total - questsDone)")
   }
 
+  /// Koa của cảnh diễn phải có ngay khung đầu: mờ dần thì sân khấu trống một nhịp. Ở phòng ngủ không có
+  /// cảnh diễn, thẻ trượt lên từ đáy; bật Giảm chuyển động thì mờ dần.
+  private var panelInsertion: AnyTransition {
+    guard lens.bedroom else { return .identity }
+    return reduceMotion ? .opacity : .move(edge: .bottom)
+  }
+
+  /// Mở / đóng thẻ. Bật Giảm chuyển động thì những gì đổi theo `pullStart` chỉ còn mờ dần: thanh dưới và
+  /// thẻ (`.opacity`), Koa của sân khấu (`.animation(nil, value: away)`); cảnh kéo thẻ đứng yên ở khung cuối.
+  private func openPanel() {
+    // reduce-motion: chỉ còn mờ dần (xem trên)
+    withAnimation(.easeOut(duration: 0.15)) { pullStart = .now }
+  }
+
   private func closePanel() {
+    // reduce-motion: chỉ còn mờ dần (xem trên)
     withAnimation(.easeOut(duration: 0.25)) { pullStart = nil }
   }
 
@@ -216,7 +230,7 @@ struct MascotRoomView: View {
           .transition(.opacity)
       }
       Button {
-        withAnimation(.easeOut(duration: 0.15)) { pullStart = .now }
+        openPanel()
       } label: {
         HStack(spacing: DS.Spacing.sm) {
           EnergyRing(segments: questSegments, lineWidth: 4, gap: 8)
@@ -354,8 +368,19 @@ struct MascotRoomView: View {
           }
           return KoaTalkLine.text(beat, signals: room.signals, profile: profile?.profile)
         }, lens: lens,
-        offStage: pullStart != nil && !lens.bedroom)
+        offStage: pullStart != nil && !lens.bedroom, shelf: shelfItems)
         .sensoryFeedback(.selection, trigger: boardStat)
+        // kệ cúp (#792): tính lại kỷ lục khi lịch sử tập đổi (buổi mới, buổi bị xoá)
+        .task(id: services.koaGainsHistory?.days.count) { await services.ensureKoaShelf() }
+  }
+
+  /// Cúp và khung mốc của phòng (#792): hành trình của chính người này và số của kỷ lục đã tính lại.
+  private var shelfItems: [ShelfItem] {
+    guard let h = services.koaGainsHistory else { return [] }
+    let records = services.koaShelfRecords.flatMap { $0.userId == room.userId ? $0.records : nil } ?? [:]
+    return ShelfItem.items(
+      moments: KoaJourney.moments(h.days, week: h.week, today: room.today), records: records, unit: unit, lang: lang,
+      locale: locale)
   }
 
   // MARK: - Bụi (phần 5)
@@ -855,7 +880,7 @@ struct MascotRoomView: View {
     guard let flow else { return nil }
     return KoaWeek.state(
       today: flow.today.today, library: flow.today.library, trained: flow.today.trained,
-      pause: services.koaPause(userId: flow.today.userId, today: flow.today.today))
+      paused: services.koaPausedDay(userId: flow.today.userId, today: flow.today.today))
   }
 
   // MARK: - Việc
@@ -981,10 +1006,14 @@ struct MascotStage: View {
   var lens: KoaLens?
   /// Koa đang chạy đi kéo bảng: sân khấu nhường chỗ cho Koa của cảnh diễn.
   var offStage = false
+  /// Cúp trên kệ và khung mốc trên tường (#792): chạm thì Koa kể. Trống = phòng như cũ.
+  var shelf: [ShelfItem] = []
 
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Environment(\.scenePhase) private var scenePhase
   @State private var director = KoaDirectorDriver()
+  /// Câu Koa đang kể về một món trên kệ (#792): bóng thoại của chủ đề `.shelf` đọc ở đây.
+  @State private var shelfLine: String?
   #if DEBUG
     private var benchMode: Bool { ![nil, .live].contains(KoaDirectorDriver.bench) }
   #else
@@ -1027,6 +1056,7 @@ struct MascotStage: View {
     o.board = board ?? RoomBoard.rank(build, of: MascotRules.ranks.count, lang: lang)
     o.decor = MascotShop.decorChoice(equipped: Set(equipped))
     o.dust = dust
+    o.shelf = ShelfItem.display(shelf)
     // theo ngày: `.now` đổi mỗi lần tính, làm bộ nhớ đệm của phòng trượt ở mọi khung
     o.moon = StudioScene.moonPhase(Calendar.current.startOfDay(for: .now))
     o.label = "Koa"
@@ -1051,12 +1081,21 @@ struct MascotStage: View {
   /// (a) Người xem tới phòng: đi vắng từ 5 phút thì Koa chào đầy đủ (nhìn trước, lại gần);
   /// mới rời đi thì chỉ nhìn — không chào đi chào lại mỗi lần mở.
   private func arrive() {
-    guard walks, !reduceMotion, !benchMode else { return }
+    guard walks, !benchMode else { return }
     let away = Date.now.timeIntervalSince1970 - seenAt
     seenAt = Date.now.timeIntervalSince1970
-    if away >= 300 { director.pushIn() }
-    director.request(away >= 300 ? .greet : .notice)
+    // Giảm chuyển động (#799): không lại gần, máy quay không đẩy vào — nhưng Koa vẫn nói.
+    if !reduceMotion {
+      if away >= 300 { director.pushIn() }
+      director.request(away >= 300 ? .greet : .notice)
+    }
     director.openTalk(greeting: away >= 300, userId: userId, day: companion?.day ?? "")
+  }
+
+  /// Giảm chuyển động mà phòng đang hiện: lời nói chạy bằng `quietTick` thay cho đồng hồ dựng hình.
+  private var quietTalk: Bool {
+    walks && !benchMode && reduceMotion && onScreen && scenePhase == .active && !inBedroom && !bedShown
+      && wakeScene == nil
   }
 
   private func openVisit() {
@@ -1148,7 +1187,7 @@ struct MascotStage: View {
         bedShown = true
         // chỉ lúc Koa vừa tự đi tới; mở phòng giữa giờ ngủ thì Koa đã nằm sẵn
         guard old != now, !reduceMotion else { return }
-        bedClock = KoaSceneClock()
+        bedClock = KoaSceneClock(stageWidth: Self.heroWidth * levelScale)
         bedScene = .now
       } else if bedShown {
         bedScene = nil
@@ -1157,9 +1196,17 @@ struct MascotStage: View {
           bedShown = false
           return
         }
-        wakeClock = KoaSceneClock(waking: true)
+        wakeClock = KoaSceneClock(waking: true, stageWidth: Self.heroWidth * levelScale)
         wakeScene = .now
         KoaSound.play(.yawn)
+      }
+    }
+    // Giảm chuyển động (#799): đồng hồ dựng hình dừng, Koa vẫn nói theo lịch (mỗi giây xem tới lượt chưa).
+    .task(id: quietTalk) {
+      guard quietTalk else { return }
+      while !Task.isCancelled {
+        director.quietTick(.now)
+        try? await Task.sleep(for: .seconds(1))
       }
     }
     .task(id: wakeScene) {
@@ -1191,6 +1238,12 @@ struct MascotStage: View {
     }
     .accessibilityAction(named: Text(lampOff ? "mr.lamp.on.a11y" : "mr.lamp.off.a11y")) {
       if bedShown { lampOff.toggle() }
+    }
+    // cúp / khung mốc (#792): mỗi món một hành động, Koa kể và VoiceOver đọc câu ấy
+    .accessibilityActions {
+      ForEach(shelf) { item in
+        Button(item.label) { tell(item, announce: true) }
+      }
     }
     .onScrollVisibilityChange(threshold: 0.2) { onScreen = $0 }
     // cuộn xuống đọc thẻ (sân khấu khuất quá nửa): Koa không đi lại, không kéo mắt khỏi nội dung
@@ -1267,6 +1320,56 @@ struct MascotStage: View {
     .accessibilityHint(Text("mr.board.hint"))
   }
 
+  /// Vùng chạm cúp và khung mốc (#792), theo đúng tầng máy quay của kệ (`props`) và của tường để
+  /// ngón tay trúng món đang thấy. Nằm dưới Koa: Koa đứng trước kệ thì chạm vẫn là chọc Koa.
+  @ViewBuilder
+  private func shelfTaps(_ width: CGFloat, height: CGFloat, shot: KoaParallax.Shot, anchor: UnitPoint) -> some View {
+    let k = Double(width) / StudioScene.width
+    let variant = studio.decor["shelf"]
+    ZStack(alignment: .topLeading) {
+      ForEach(shelf) { item in
+        if case .cup(let i) = item.place, let r = KoaShelf.cupRect(i, shelf: variant) {
+          // ba cúp cách nhau ~38 điểm: vùng chạm không lấn sang cúp bên cạnh
+          shelfButton(item, r, k: k, minWidth: 38)
+        }
+      }
+    }
+    .frame(width: width, height: height, alignment: .topLeading)
+    .parallax(.props, shot, k: k, anchor: anchor)
+    ZStack(alignment: .topLeading) {
+      ForEach(shelf) { item in
+        if case .frame(let kind) = item.place { shelfButton(item, KoaShelf.frameRect(kind), k: k, minWidth: 32) }
+      }
+    }
+    .frame(width: width, height: height, alignment: .topLeading)
+    .parallax(.wall, shot, k: k, anchor: anchor)
+  }
+
+  /// Một vùng chạm trong suốt, giữa đúng món, cao ít nhất 44 điểm.
+  private func shelfButton(
+    _ item: ShelfItem, _ r: (x: Double, y: Double, width: Double, height: Double), k: Double, minWidth: Double
+  ) -> some View {
+    let w = max(r.width * k, minWidth)
+    let h = max(r.height * k, 44)
+    return Button { tell(item) } label: {
+      Color.clear.contentShape(Rectangle())
+    }
+    .buttonStyle(.plain)
+    .frame(width: w, height: h)
+    .offset(x: (r.x + r.width / 2) * k - w / 2, y: (r.y + r.height / 2) * k - h / 2)
+    // VoiceOver đi qua hành động có tên của sân khấu
+    .accessibilityHidden(true)
+  }
+
+  /// Chạm cúp / khung (#792): Koa nhìn về kệ rồi kể, có ngày và số thật. VoiceOver không đọc bóng
+  /// thoại vẽ trên tranh, nên lúc gọi bằng hành động thì đọc to câu của Koa.
+  private func tell(_ item: ShelfItem, announce: Bool = false) {
+    shelfLine = item.line
+    director.tell(item.line)
+    if !reduceMotion { director.request(.look("shelf")) }
+    if announce { AccessibilityNotification.Announcement(item.line).post() }
+  }
+
   /// Vùng sàn nhận chạm (dưới Koa — chạm Koa vẫn là chọc Koa): chạm đâu Koa đi tới đó
   /// (ngoài vùng sàn hợp lệ thì tới điểm gần nhất).
   private func floorTaps(_ width: CGFloat) -> some View {
@@ -1321,6 +1424,7 @@ struct MascotStage: View {
             .frame(width: width, height: width / StudioScene.width * StudioScene.sceneBottom)
             .allowsHitTesting(false)
         }
+        if !shelf.isEmpty, !away { shelfTaps(width, height: height, shot: shot, anchor: anchor) }
         hero(
           width, x: x + shot.shift(koaAmp), y: y,
           scale: still.map { KoaRoomMap.scale($0.d) } ?? f?.scale ?? 1,
@@ -1329,11 +1433,11 @@ struct MascotStage: View {
         .scaleEffect(shot.scale(koaAmp), anchor: anchor)
         .opacity(away ? 0 : 1)
         .animation(nil, value: away)
-        if !away, let beat = director.speech, let line = talkLine?(beat) {
+        if !away, let beat = director.speech, let line = beat.topic == .shelf ? shelfLine : talkLine?(beat) {
           KoaBubble(
             line: line, width: width, x: x, headY: y - Self.heroWidth * KoaMath.aspect * levelScale * (f?.scale ?? 1)
           )
-          .transition(.scale(scale: 0.6, anchor: .bottom).combined(with: .opacity))
+          .transition(reduceMotion ? .opacity : .scale(scale: 0.6, anchor: .bottom).combined(with: .opacity))
         }
         if !away {
           occlusion(width, still ?? f.map { KoaRoomMap.Spot($0.plane, $0.x, $0.depth) }, plantSway: f?.plantSway ?? 0)

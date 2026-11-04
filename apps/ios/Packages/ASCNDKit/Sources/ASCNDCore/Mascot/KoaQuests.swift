@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 
 /// Nhiệm vụ tập luyện mới (#527 phần 4, Kiệt duyệt 29/10): làm theo gợi ý tăng tải —
 /// trong buổi hôm nay, ít nhất một bài nặng hơn hay nhiều rep hơn lần trước của chính

@@ -26,7 +26,8 @@ enum KoaTalkLine {
     case .overate:
       guard let kcal = signals?.kcal, let profile else { return nil }
       return String(localized: "koa.talk.overate \(KoaMood.kcalPercent(kcal: kcal, target: NutritionToday.calorieTarget(profile)))")
-    case .milestone: return nil
+    // câu của mốc / của kệ cúp do phòng dựng từ số thật (`MascotRoomView.talkLine`)
+    case .milestone, .shelf: return nil
     case .poke:
       switch v {
       case 0: return String(localized: "koa.talk.poke.0")

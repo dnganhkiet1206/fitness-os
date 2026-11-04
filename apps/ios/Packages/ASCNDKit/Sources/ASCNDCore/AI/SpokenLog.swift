@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 
 /// "Kể cho Koa" (18/10, chủ dự án: ghi bằng lời trong chat và ở Hôm nay, có nói
 /// thay gõ, "phải log chính xác, tránh bug nhiều nhất có thể"). Một câu kể —

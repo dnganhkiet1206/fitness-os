@@ -133,7 +133,7 @@ xcrun simctl io booted screenshot /tmp/ascnd.png   # rồi XEM ảnh
 
 **Gộp việc nhỏ.** Nhiều sửa nhỏ trong một đợt → **một PR**, mỗi sửa một commit. Một lượt CI (~15 phút) thay vì N lượt, và chỉ gộp nhánh gốc một lần. Tách PR riêng khi việc lớn, rủi ro, hay cần Kiệt duyệt riêng.
 
-**E2E (Maestro) chỉ khi cần.** Workflow `iOS E2E` chỉ chạy trên PR có nhãn `e2e` (30–45 phút / lượt, chạy lại sau mỗi lần gộp nhánh). Gắn nhãn khi đổi lớn bố cục / điều hướng ở các màn 8 flow đi qua (`apps/ios/.maestro/`). PR nhỏ: không gắn, gộp khi `gate`, `app-macos`, `core-linux`, `release-gate` xanh. E2E đỏ: xem ảnh chụp trong artifact trước khi kết luận — flow từng hỏng vì cuộn chưa tới (không phải lỗi app).
+**E2E (Maestro) chỉ khi cần.** Workflow `iOS E2E` chỉ chạy trên PR có nhãn `e2e` (35–45 phút / lượt, giới hạn job 60 phút, chạy lại sau mỗi lần gộp nhánh). Gắn nhãn khi đổi lớn bố cục / điều hướng ở các màn 8 flow đi qua (`apps/ios/.maestro/`). PR nhỏ: không gắn, gộp khi `gate`, `app-macos`, `core-linux`, `release-gate` xanh. E2E đỏ: xem ảnh chụp trong artifact trước khi kết luận — flow từng hỏng vì cuộn chưa tới (không phải lỗi app).
 
 **Sổ hạn chế tự gộp.** `.gitattributes` đặt `merge=union` cho `CONSTRAINTS_AND_DEFERRED.md`: `git merge origin/native/ios-rewrite` trên máy giữ dòng của cả hai phía, không còn xung đột ở §4 / §5. Sau khi gộp, đọc lại `git diff origin/native/ios-rewrite -- apps/ios/docs/CONSTRAINTS_AND_DEFERRED.md`: union có thể giữ cả bản CŨ lẫn bản MỚI của một dòng ai đó vừa sửa (gạch ngang) — xoá bản cũ.
 
@@ -148,9 +148,10 @@ xcrun simctl io booted screenshot /tmp/ascnd.png   # rồi XEM ảnh
 |---|---|---|---|
 | SwiftLint 0.65.1 (chỉ luật bắt lỗi: `force_cast`, `force_try`, `unhandled_throwing_task`, `identical_operands`…) | `apps/ios/.swiftlint.yml`, job `swiftlint` của `ios-analysis.yml` | PR chạm Swift — lint ĐÚNG tệp đổi | chú thích trên PR + Summary |
 | Periphery 3.8.0 (mã chết) | job `periphery` của `ios-analysis.yml` | commit Swift mới trên `native/ios-rewrite`, hằng tuần, bấm tay, PR có nhãn `periphery` | Summary của lượt chạy |
-| CodeQL (Swift, `security-and-quality`) | `.github/workflows/codeql.yml` | commit Swift mới trên `native/ios-rewrite`, hằng tuần, bấm tay | tab Security › Code scanning |
 | Dependabot (Actions + gói Swift) | `.github/dependabot.yml` | hằng tuần — **chỉ sau khi tệp lên `main`** | PR của Dependabot vào `native/ios-rewrite` |
 | Sentry (lỗi khi chạy) | đã có trong app | bản Release | MCP Sentry nếu phiên có |
+
+CodeQL đã bỏ ngày 04/11/2026 (Kiệt chốt): ba lượt quét đầy đủ không tìm ra lỗi nào, mỗi lượt giữ một máy macOS gần một tiếng, và 56/60 lượt bị huỷ giữa chừng. Kiểm hành vi dựa vào test, Maestro trên simulator và SwiftLint.
 
 Chạy trên máy (cần cài `brew install swiftlint periphery`):
 
@@ -159,12 +160,30 @@ cd apps/ios
 swiftlint lint --config .swiftlint.yml ASCND/Features/Today/TodayExtras.swift   # một vài tệp
 periphery scan --project ASCND.xcodeproj --schemes ASCND --retain-public        # sau xcodegen generate
 gh workflow run "iOS phân tích" --ref native/ios-rewrite                         # chạy Periphery trên CI
-gh workflow run CodeQL --ref native/ios-rewrite
 ```
 
 Lịch hằng tuần (`schedule`) và Dependabot chỉ hoạt động khi tệp workflow nằm trên nhánh mặc định (`main`) — Kiệt gộp. Trước đó, chúng chạy theo commit trên `native/ios-rewrite` hoặc bấm tay.
 
 **Mẹo khác:** chạy CI xong mới gộp nhánh gốc (gộp lại làm CI chạy lại từ đầu); làm việc khác trong lúc chờ CI (`gh pr checks <số> --watch` chạy nền); merge chuỗi PR theo thứ tự, mỗi PR một lần gộp.
+
+## 6c. Snapshot test (ảnh chuẩn các màn Koa, #795)
+
+`apps/ios/ASCNDTests/KoaSnapshotTests.swift` chụp mỗi màn ở ba kiểu (sáng, tối, chữ lớn) bằng [swift-snapshot-testing](https://github.com/pointfreeco/swift-snapshot-testing) (MIT, ghim 1.19.7 trong `project.yml`, chỉ target test). Ảnh chuẩn: `apps/ios/ASCNDTests/__Snapshots__/KoaSnapshotTests/<test>.<kiểu>.png`. Chạy trong job `app-macos` (bước "Test SwiftUI trong app") và trong E2E.
+
+- **Thẻ chụp ở cao vừa nội dung** (`fixedSize(vertical:)`, như trong ScrollView của app); màn có khung cao cố định (`height:`) thì chụp nguyên khung. Đừng bỏ `fixedSize`: `.sizeThatFits` đề nghị cao 0 nên chữ bị cắt "…" mà app không cắt.
+- **Ảnh chuẩn = ảnh của CI**, không phải của máy riêng: simulator iPhone Pro của runtime iOS mới nhất trên runner, tỉ lệ cố định 2x. So bằng `ASCNDTests/KoaImageDiff.swift` (CPU): điểm ảnh lệch quá 16/255 ở một kênh mới tính, đỏ khi quá 0,01% ảnh — không dùng phép so "cảm nhận" bằng Metal của thư viện (sai trên máy ảo CI). Ảnh chụp trên Mac khác (Xcode / runtime khác) có thể lệch vài điểm ảnh; đừng commit ảnh chụp trên máy riêng.
+- **Thêm màn / đổi giao diện có chủ ý:** xoá ảnh cũ của màn ấy (hoặc thêm test mới) rồi push. Thiếu ảnh chuẩn thì thư viện ghi ảnh mới và test đỏ (đúng thiết kế); bước "Ảnh snapshot mới / lệch" tải lên artifact `snapshots-<sha>`. Tải artifact (`gh run download <run> -n snapshots-<sha>`), **xem từng ảnh**, chép vào `__Snapshots__/KoaSnapshotTests/`, commit, push → lượt sau xanh.
+- **Test đỏ vì lệch mà không đổi giao diện:** ảnh vừa chụp nằm trong `snapshot-artifacts/` của cùng artifact — so với ảnh chuẩn. Lệch thật (lỗi giao diện) thì sửa code; runner đổi bản Xcode / runtime làm lệch hàng loạt thì ghi lại cả bộ như trên và ghi lý do vào sổ hạn chế.
+- Ghi lại hết trên máy có Xcode: `SNAPSHOT_TESTING_RECORD=all` trong scheme (hoặc `TEST_RUNNER_SNAPSHOT_TESTING_RECORD=all xcodebuild test …`) — chỉ để xem, ảnh để commit vẫn lấy từ CI.
+
+## 6d. Kiểm accessibility tự động (#795 đợt 2)
+
+`apps/ios/ASCNDUITests/KoaAccessibilityAuditTests.swift` mở app ở chế độ UI test (máy chủ giả, đã đăng nhập, tiếng Anh), đi tới Hôm nay / sheet Tạm nghỉ / Tiến bộ › Tập luyện (Nhịp) / Hành trình bằng cùng định danh với các flow Maestro, rồi gọi `performAccessibilityAudit()` (độ tương phản, vùng chạm, nhãn VoiceOver, Dynamic Type, chữ bị cắt, trait).
+
+- Chạy ở `.github/workflows/ios-a11y.yml` bằng scheme `ASCNDA11y` (hằng đêm, bấm tay, PR có nhãn `e2e` hoặc `a11y`). Không chạy trong `app-macos` hay E2E: E2E đã chạm trần thời gian.
+- **Đợt 2a (hiện tại): thu thập.** Mỗi vấn đề một dòng `A11Y|màn|loại|mô tả|phần tử` trong log; trang lượt chạy có bảng đếm theo màn × loại; artifact `ios-a11y-<run>` có log và `.xcresult`. Test chỉ đỏ khi không mở được màn. Màn lớn (Hôm nay) mà kiểm một lần không xong ("Audit failed to complete in time") thì kiểm lại từng loại một; loại nào vẫn không xong được ghi thành một dòng `không kiểm xong`.
+- **Đợt 2b:** sửa vấn đề thật theo bảng; loại nào đã sạch trên một màn thì cho handler trả `false` (test đỏ khi tái phát). Vấn đề chấp nhận được (ví dụ Koa vẽ bằng Canvas) thì bỏ qua có lý do trong code, không tắt cả loại.
+- Thêm màn: thêm một hàm `test…` đi tới màn ấy bằng định danh có sẵn rồi `try audit("tên-màn")`.
 
 ## 7. Báo cáo trên #527
 
@@ -211,4 +230,4 @@ Cách chọn việc:
 | `apps/ios/docs/NATIVE_IMPROVEMENTS.md` | khác biệt có chủ ý so với RN |
 | `apps/ios/docs/design/*/RN-PARITY.md` | quyết định thiết kế từng màn |
 | `native/docs/OFFLINE-POLICY.md` | ba lớp ghi: sự kiện / trạng thái / online-only |
-| `apps/ios/.swiftlint.yml`, `.github/workflows/ios-analysis.yml`, `codeql.yml` | công cụ tìm lỗi — §6b |
+| `apps/ios/.swiftlint.yml`, `.github/workflows/ios-analysis.yml` | công cụ tìm lỗi — §6b |

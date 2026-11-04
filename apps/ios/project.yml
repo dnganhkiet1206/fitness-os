@@ -39,6 +39,10 @@ packages:
   PostHog:
     url: https://github.com/PostHog/posthog-ios
     from: 3.13.0
+  # Snapshot test (#795, MIT): CHỈ cho target ASCNDTests, không vào app.
+  SnapshotTesting:
+    url: https://github.com/pointfreeco/swift-snapshot-testing
+    exactVersion: 1.19.7
 
 targets:
   ASCND:
@@ -214,12 +218,32 @@ targets:
     platform: iOS
     sources:
       - path: ASCNDTests
+        # Ảnh chuẩn của snapshot nằm cạnh test, không phải tài nguyên của bundle.
+        excludes:
+          - "**/__Snapshots__/**"
     dependencies:
       - target: ASCND
+      - package: SnapshotTesting
+        product: SnapshotTesting
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.ascnd.fitnessos.dev.tests
         GENERATE_INFOPLIST_FILE: YES
+
+  # Kiểm accessibility tự động (#795 đợt 2): XCUITest `performAccessibilityAudit()`, chạy ở
+  # `.github/workflows/ios-a11y.yml` bằng scheme `ASCNDA11y` — không chạy trong `app-macos` hay E2E.
+  ASCNDUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: ASCNDUITests
+    dependencies:
+      - target: ASCND
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.ascnd.fitnessos.dev.uitests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: ASCND
 
 schemes:
   ASCND:
@@ -236,3 +260,12 @@ schemes:
         "-uiTestFakeBackend": true
     archive:
       config: Release
+  ASCNDA11y:
+    build:
+      targets:
+        ASCND: all
+        ASCNDUITests: [test]
+    test:
+      config: Debug
+      targets:
+        - ASCNDUITests

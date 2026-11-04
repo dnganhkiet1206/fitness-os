@@ -41,6 +41,30 @@ struct DailyPlanInputTests {
     #expect(!none.hasSchedule && DailyPlan.decide(none).action == .setUpWeek)
   }
 
+  /// Tạm nghỉ (#796): việc chính nói rõ là đang tạm nghỉ và ngày tập lại, không gợi buổi trong lịch.
+  @Test func pauseSaysPausedAndWhenYouAreBack() {
+    let pause = KoaPause(from: Self.wed, days: 3)
+    let i = DailyPlan.input(
+      date: Self.wed, library: Self.library(Self.wedChest), active: nil, doneToday: [], daysOff: 9, recovery: nil,
+      proteinLeftG: nil, pause: pause)
+    #expect(i.today == .rest && i.daysOff == 0 && i.pausedUntil == Self.wed.adding(days: 3))
+    let r = DailyPlan.decide(i)
+    #expect(r.action == .recovery && r.reason == .paused(until: Self.wed.adding(days: 3)) && r.alternatives == [.logFree])
+  }
+
+  @Test func aPauseThatHasNotStartedOrIsOverDoesNothing() {
+    let later = KoaPause(from: Self.wed.adding(days: 1), days: 2)
+    let i = DailyPlan.input(
+      date: Self.wed, library: Self.library(Self.wedChest), active: nil, doneToday: [], daysOff: 0, recovery: nil,
+      proteinLeftG: nil, pause: later)
+    #expect(i.pausedUntil == nil && i.today == .planned([DailyPlan.session(Self.chest)]))
+    let over = KoaPause(from: Self.wed.adding(days: -3), days: 2)
+    let j = DailyPlan.input(
+      date: Self.wed, library: Self.library(Self.wedChest), active: nil, doneToday: [], daysOff: 0, recovery: nil,
+      proteinLeftG: nil, pause: over)
+    #expect(j.pausedUntil == nil)
+  }
+
   @Test func activeSessionIsResumed() {
     let i = DailyPlan.input(
       date: Self.wed, library: Self.library(Self.wedChest), active: Self.chest, doneToday: [], daysOff: 0,

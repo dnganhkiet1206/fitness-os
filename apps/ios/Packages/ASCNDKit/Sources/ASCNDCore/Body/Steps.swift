@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 public import Observation
 
 /// Vận động (#527) — `app/steps.tsx`, `hooks/use-steps-goal.ts`,

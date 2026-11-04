@@ -1,5 +1,7 @@
 # Bắt đầu buổi hôm nay (Full Body A: 4 bài × 2 set), xong từng set, chốt buổi,
 # màn tổng kết (Gains cộng thêm) → "Back to Today" về Hôm nay.
+# Bộ đếm nghỉ đổi số mỗi giây nên màn hình không bao giờ đứng yên: không đặt
+# waitToSettleTimeoutMs thì mỗi lần chạm trên CI chờ hết 15–25 giây.
 appId: com.ascnd.fitnessos.dev
 name: start and finish a workout session
 ---
@@ -19,6 +21,7 @@ name: start and finish a workout session
     commands:
       - tapOn:
           id: workout.doneSet
+          waitToSettleTimeoutMs: 3000
       - runFlow:
           when:
             visible:
@@ -26,11 +29,12 @@ name: start and finish a workout session
           commands:
             - tapOn:
                 id: workout.rest.skip
+                waitToSettleTimeoutMs: 1000
 - scrollUntilVisible:
     element:
       id: workout.finish
     direction: DOWN
-    timeout: 10000
+    timeout: 30000
 - tapOn:
     id: workout.finish
 - extendedWaitUntil:
@@ -42,7 +46,7 @@ name: start and finish a workout session
     element:
       id: summary.backToToday
     direction: DOWN
-    timeout: 15000
+    timeout: 30000
 - tapOn:
     id: summary.backToToday
 - extendedWaitUntil:

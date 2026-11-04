@@ -202,8 +202,9 @@ struct MascotRoomControllerTests {
     #expect(c.energyCount == 3)
     #expect(c.energyHeadline == .mid)
     #expect(c.activeQuests.map(\.key) == [.workout, .meal, .water, .sleep, .steps])
-    c.restDay = true
-    #expect(c.activeQuests.map(\.key) == [.workout, .recovery, .meal, .water, .sleep, .steps])
+    c.questDay = .rest
+    // ngày nghỉ: hồi phục THAY buổi tập (lỗi 03/11: trước đây cộng thêm, 5 → 6)
+    #expect(c.activeQuests.map(\.key) == [.recovery, .meal, .water, .sleep, .steps])
   }
 
   /// Chưa từng có số bước: nhiệm vụ bước rời danh sách (không ai thắng được nó).

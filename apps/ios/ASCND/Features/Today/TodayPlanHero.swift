@@ -22,11 +22,21 @@ struct TodayPlanHero: View {
   let onAlternative: (DailyPlan.Alternative) -> Void
   /// Mở sheet tạm nghỉ; `nil` = không có lối (đang tạm nghỉ, hay chưa có lịch).
   var onPause: (() -> Void)?
+  /// Dòng đầu thẻ lớn theo Dynamic Type (#795 đợt 2b); cỡ mặc định như cũ.
+  @ScaledMetric(relativeTo: .caption2) private var eyebrowSize: CGFloat = 11
+  /// Vùng chạm tối thiểu của Apple (44 điểm). Bộ kiểm accessibility 03/11 báo "Hit area is too
+  /// small" cho "Make it a rest day" (36) và "Take a few days off…" (32).
+  ///
+  /// Khung 44 thôi CHƯA đủ (04/11, bộ kiểm vẫn báo sau #821): nút kiểu `.plain` chỉ nhận chạm ở
+  /// chỗ có nét vẽ — chữ — phần trống của khung trong suốt với cú chạm. Phải kèm
+  /// `.contentShape(Rectangle())` thì cả dải 44 điểm mới bấm được, như thanh dải ở
+  /// `TodayOverloadStack`.
+  private static let minTap: CGFloat = 44
 
   var body: some View {
     VStack(alignment: .leading, spacing: DS.Spacing.sm) {
       Text(verbatim: eyebrow)
-        .font(.system(size: 11, weight: .semibold))
+        .font(.system(size: eyebrowSize, weight: .semibold))
         .tracking(1.2)
         .textCase(.uppercase)
         .foregroundStyle(DS.Color.mutedForeground.swiftUI)
@@ -84,7 +94,8 @@ struct TodayPlanHero: View {
             Button { onAlternative(alt) } label: {
               Text(verbatim: Self.label(alt))
                 .font(DS.TextStyle.footnote.weight(.semibold))
-                .frame(maxWidth: .infinity, minHeight: 36)
+                .frame(maxWidth: .infinity, minHeight: Self.minTap)
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .foregroundStyle(DS.Color.primary.swiftUI)
@@ -96,7 +107,8 @@ struct TodayPlanHero: View {
         Button(action: onPause) {
           Text("pause.entry")
             .font(DS.TextStyle.footnote)
-            .frame(maxWidth: .infinity, minHeight: 32)
+            .frame(maxWidth: .infinity, minHeight: Self.minTap)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .foregroundStyle(DS.Color.mutedForeground.swiftUI)
@@ -146,7 +158,8 @@ struct TodayPlanHero: View {
     case .start: String(localized: "dp.eyebrow.today")
     case .comeback: String(localized: "dp.eyebrow.welcome")
     case .postWorkoutMeal, .progress: String(localized: "dp.eyebrow.done")
-    case .recovery: String(localized: "dp.eyebrow.rest")
+    case .recovery:
+      if case .paused = result.reason { String(localized: "dp.eyebrow.paused") } else { String(localized: "dp.eyebrow.rest") }
     case .nextSession, .logFree: String(localized: "dp.eyebrow.next")
     }
   }
@@ -200,6 +213,7 @@ struct TodayPlanHero: View {
     case .proteinLeft(let g): return String(localized: "dp.why.protein \(g)")
     case .trainedToday: return String(localized: "dp.why.trained")
     case .restDay: return String(localized: "dp.why.rest")
+    case .paused(let back): return String(localized: "dp.why.paused \(weekday(back)) \(day(back))")
     case .noSchedule: return String(localized: "dp.why.noSchedule")
     case .nextOn(let date): return String(localized: "dp.why.next \(weekday(date)) \(day(date))")
     }
@@ -241,6 +255,16 @@ struct TodayPlanHero: View {
     ][WorkoutPlanning.routineIndex(d)]
   }
 
+  /// Tên thứ một chữ ("M", "W"; tiếng Việt vẫn "T2"), cho cột hẹp ở chữ cỡ trợ năng.
+  static func narrowWeekday(_ d: LocalDate) -> String {
+    [
+      String(localized: "weekday.narrow.mon"), String(localized: "weekday.narrow.tue"),
+      String(localized: "weekday.narrow.wed"), String(localized: "weekday.narrow.thu"),
+      String(localized: "weekday.narrow.fri"), String(localized: "weekday.narrow.sat"),
+      String(localized: "weekday.narrow.sun"),
+    ][WorkoutPlanning.routineIndex(d)]
+  }
+
   static func day(_ d: LocalDate) -> String {
     // Nửa đêm UTC của ngày ấy, định dạng theo UTC — không lệch ngày theo múi giờ máy.
     let utc = Date(timeIntervalSince1970: TimeInterval(d.daysSinceEpoch) * 86_400)
@@ -268,29 +292,42 @@ struct TodayWeekStrip: View {
   let target: Int?
   /// Dòng "Tuần của Koa · x/y" phía trên (thẻ ở phòng Koa đã có tiêu đề riêng).
   var showsHeader = true
+  /// Cỡ chữ lớn theo Dynamic Type, ở cỡ mặc định đúng như cũ (11 / 10,5 pt). Kiểm accessibility
+  /// 03/11 (#795 đợt 2b): "Dynamic Type font sizes are unsupported" cho "KOA'S WEEK" và tên thứ.
+  @ScaledMetric(relativeTo: .caption2) private var headerSize: CGFloat = 11
+  @ScaledMetric(relativeTo: .caption2) private var daySize: CGFloat = 10.5
+  @Environment(\.dynamicTypeSize) private var typeSize
 
   var body: some View {
     VStack(alignment: .leading, spacing: 6) {
       if showsHeader {
-      HStack {
-        Text("dp.week")
-        Spacer()
-        if let target {
-          Text(String(localized: "dp.week.count \(days.filter(\.trained).count) \(target)"))
-        } else {
-          Text("dp.week.none")
+        // Chữ lớn: tiêu đề và số buổi không vừa một hàng thì xếp dọc, không cắt chữ.
+        ViewThatFits(in: .horizontal) {
+          HStack {
+            Text("dp.week")
+            Spacer()
+            count
+          }
+          VStack(alignment: .leading, spacing: 2) {
+            Text("dp.week")
+            count
+          }
         }
-      }
-      .font(.system(size: 11, weight: .semibold))
-      .tracking(0.6)
-      .textCase(.uppercase)
-      .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        .font(.system(size: headerSize, weight: .semibold))
+        .tracking(0.6)
+        .textCase(.uppercase)
+        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
       }
       HStack(spacing: 4) {
         ForEach(days, id: \.self) { d in
           VStack(spacing: 4) {
-            Text(verbatim: TodayPlanHero.weekday(d.date))
-              .font(.system(size: 10.5, weight: .semibold))
+            // Bảy cột chia đều bề ngang: chữ lớn thì thu nhỏ vừa ô thay vì cắt "We…". Chữ cỡ trợ
+            // năng thì tên thứ một chữ: ở thẻ Tiến bộ (cột ~43 pt) "Mon" / "Wed" thu 60% vẫn không
+            // vừa, bộ kiểm a11y báo "Text clipped" (04/11). VoiceOver vẫn đọc tên đủ.
+            Text(verbatim: typeSize.isAccessibilitySize ? TodayPlanHero.narrowWeekday(d.date) : TodayPlanHero.weekday(d.date))
+              .font(.system(size: daySize, weight: .semibold))
+              .lineLimit(1)
+              .minimumScaleFactor(0.6)
               .foregroundStyle(DS.Color.foreground.swiftUI)
             dot(d)
           }
@@ -306,6 +343,14 @@ struct TodayWeekStrip: View {
           .accessibilityValue(Text(verbatim: state(d)))
         }
       }
+    }
+  }
+
+  @ViewBuilder private var count: some View {
+    if let target {
+      Text(String(localized: "dp.week.count \(days.filter(\.trained).count) \(target)"))
+    } else {
+      Text("dp.week.none")
     }
   }
 

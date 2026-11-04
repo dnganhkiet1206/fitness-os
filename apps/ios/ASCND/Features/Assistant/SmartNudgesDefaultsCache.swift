@@ -25,4 +25,11 @@ struct SmartNudgesDefaultsCache: SmartNudgesCache {
     guard let data = try? JSONEncoder().encode(Slot(key: key, entry: entry)) else { return }
     UserDefaults.standard.set(data, forKey: Self.defaultsKey)
   }
+
+  /// Đăng xuất: insight của người vừa rời đi không ở lại trên máy (RN: `clearPersistedCache`
+  /// trong `forgetPreviousAccount`). Khoá có người dùng nên người sau không thấy được, nhưng chữ
+  /// insight — viết từ giấc ngủ, ăn uống, buổi tập của họ — vẫn nằm trên máy tới khi bị ghi đè.
+  static func clear() {
+    UserDefaults.standard.removeObject(forKey: defaultsKey)
+  }
 }

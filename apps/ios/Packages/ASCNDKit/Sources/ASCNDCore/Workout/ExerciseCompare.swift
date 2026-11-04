@@ -1,4 +1,4 @@
-public import Foundation
+import Foundation
 
 /// "Tiến bộ từng bài" theo MỨC TẠ: set đỉnh của buổi gần nhất so với buổi trước
 /// (Kiệt duyệt mock 28/10 — điều người tập quan tâm nhất, không phải tổng khối
@@ -153,4 +153,61 @@ public enum ExerciseCompare {
       return nil
     }
   }
+
+  /// Một set vừa tập, ở dạng so được (set khởi động đã bỏ).
+  public struct DoneSet: Sendable, Hashable {
+    public let kg: Double
+    public let reps: Int
+    public let seconds: Int?
+    public init(kg: Double, reps: Int, seconds: Int? = nil) {
+      self.kg = kg
+      self.reps = reps
+      self.seconds = seconds
+    }
+  }
+
+  /// Set đỉnh của buổi vừa xong: tạ nặng nhất, bằng tạ thì set nhiều reps hơn (cùng luật với
+  /// `ExercisePerformance.topSetReps`); bài giữ thì số giây lâu nhất.
+  public static func top(of sets: [DoneSet], on date: LocalDate) -> Top? {
+    guard !sets.isEmpty else { return nil }
+    let best = sets.max { a, b in a.kg != b.kg ? a.kg < b.kg : a.reps < b.reps }!
+    let seconds = sets.compactMap(\.seconds).max()
+    if best.reps <= 0, (seconds ?? 0) <= 0 { return nil }
+    return Top(date: date, kg: best.kg, reps: best.reps, seconds: seconds, sets: sets.count)
+  }
+
+  /// Bài của buổi vừa xong so với các buổi TRƯỚC nó (Kiệt 03/11: điều người tập muốn thấy là
+  /// "Bench Press +5 lb so với lần trước", tổng khối lượng chỉ là số phụ).
+  /// - Parameters:
+  ///   - previous: lịch sử của bài (cũ → mới), có thể đã gồm buổi này: buổi nào từ `since` trở
+  ///     đi thì bỏ.
+  public static func session(
+    name: String, sets: [DoneSet], date: LocalDate, previous: [ExercisePerformance], since: EpochMillis
+  ) -> Item? {
+    guard let now = top(of: sets, on: date) else { return nil }
+    let before = previous.filter { $0.at < since }
+    let tops = before.compactMap(top) + [now]
+    let bodyweight = before.last?.kind == .bodyweight
+    let metric: Metric =
+      if before.last?.kind == .timed || tops.allSatisfy({ $0.reps == 0 }) { .time }
+      else if bodyweight || tops.allSatisfy({ $0.kg == 0 }) { .reps }
+      else { .weight }
+    return Item(
+      key: PersonalRecords.exerciseKey(name), name: before.last?.exerciseName ?? name, metric: metric, sessions: tops)
+  }
+
+  /// Điều đáng nói nhất của buổi cho Koa: tăng tạ nhiều nhất (theo phần trăm, để bài nhẹ không
+  /// thua bài nặng), rồi tới thêm reps / giây; `nil` khi không bài nào tiến.
+  public static func headline(_ items: [Item]) -> Item? {
+    func gain(_ i: Item) -> Double {
+      switch i.delta {
+      case .weight(let d) where d > 0: 1000 + d / max(1, i.previous?.kg ?? 1)
+      case .reps(let n) where n > 0: Double(n)
+      case .seconds(let n) where n > 0: Double(n) / 10
+      default: -1
+      }
+    }
+    return items.filter { gain($0) > 0 }.max { gain($0) < gain($1) }
+  }
 }
+

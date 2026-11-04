@@ -48,7 +48,7 @@ private func entry(_ id: String, user: String) -> OutboxEntry {
 private func wiredSession(outbox: LockedOutbox) -> (SessionStore, FakeAuth) {
   let api = FakeAuth()
   let store = SessionStore(api: api)
-  store.onSignedOut { await outbox.dropAll() }
+  store.onSignedOut { outbox.dropAll() }
   return (store, api)
 }
 
