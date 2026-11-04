@@ -166,10 +166,14 @@ struct KoaBedtimeActor: View {
 /// Ô nhớ của cảnh giữa các khung (như `KoaDirectorDriver`, không phải trạng thái của view).
 @MainActor
 final class KoaSceneClock {
-  private var bedtime = KoaBedtime()
+  private var bedtime: KoaBedtime
   private var waking: KoaWakeUp?
 
-  init(waking: Bool = false) { self.waking = waking ? KoaWakeUp() : nil }
+  /// `stageWidth`: bề ngang Koa trên sân khấu lúc chuyển cảnh, để cảnh nhận Koa đúng cỡ (#799).
+  init(waking: Bool = false, stageWidth: Double = KoaRoomMap.heroWidth) {
+    bedtime = KoaBedtime(stageWidth: stageWidth)
+    self.waking = waking ? KoaWakeUp(stageWidth: stageWidth) : nil
+  }
 
   func shot(at t: Double) -> KoaBedtime.Shot? {
     if waking != nil { return waking?.shot(at: t) }

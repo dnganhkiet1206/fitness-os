@@ -1173,7 +1173,7 @@ struct MascotStage: View {
         bedShown = true
         // chỉ lúc Koa vừa tự đi tới; mở phòng giữa giờ ngủ thì Koa đã nằm sẵn
         guard old != now, !reduceMotion else { return }
-        bedClock = KoaSceneClock()
+        bedClock = KoaSceneClock(stageWidth: Self.heroWidth * levelScale)
         bedScene = .now
       } else if bedShown {
         bedScene = nil
@@ -1182,7 +1182,7 @@ struct MascotStage: View {
           bedShown = false
           return
         }
-        wakeClock = KoaSceneClock(waking: true)
+        wakeClock = KoaSceneClock(waking: true, stageWidth: Self.heroWidth * levelScale)
         wakeScene = .now
         KoaSound.play(.yawn)
       }
