@@ -730,7 +730,7 @@ struct TodayExtras<Plan: View>: View {
     guard let flow else { return nil }
     return KoaWeek.state(
       today: flow.today.today, library: flow.today.library, trained: flow.today.trained,
-      pause: services.koaPause(userId: flow.today.userId, today: flow.today.today))
+      paused: services.koaPausedDay(userId: flow.today.userId, today: flow.today.today))
   }
 
   // MARK: - Thẻ đầu tuần (KoaWeekCoach, 03/11)
@@ -843,7 +843,8 @@ struct TodayExtras<Plan: View>: View {
     var coins = 0
     if let flow {
       let lastWeek = KoaWeek.state(
-        today: flow.today.today.adding(days: -7), library: flow.today.library, trained: flow.today.trained)
+        today: flow.today.today.adding(days: -7), library: flow.today.library, trained: flow.today.trained,
+        paused: services.koaPausedDay(userId: flow.today.userId, today: flow.today.today))
       coins += await week.claimMissed(lastWeek) ?? 0
     }
     await week.claimIfComplete(koaWeekState)
@@ -1163,6 +1164,7 @@ struct TodayExtras<Plan: View>: View {
     if await services.syncKoaPause(userId: userId), let dailyPlan, let flow {
       dailyPlan.recompute(services: services, flow: flow)
     }
+    await services.syncKoaPauseLog(userId: userId)
     await services.loadKoaDust(userId: userId)
   }
 

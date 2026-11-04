@@ -7,7 +7,8 @@ import UIKit
 
 @testable import ASCND
 
-/// Ảnh chuẩn các màn Koa Ecosystem (#795): mỗi màn ở ba kiểu — sáng, tối, chữ lớn (Dynamic Type).
+/// Ảnh chuẩn các màn Koa Ecosystem và thẻ "Hôm nay của bạn" (#795): mỗi màn ở ba kiểu — sáng, tối,
+/// chữ lớn (Dynamic Type).
 /// Ảnh nằm ở `__Snapshots__/KoaSnapshotTests/`. Đổi giao diện có chủ ý thì ghi lại ảnh: xem
 /// `docs/AGENT_SESSION.md` §6c. Dữ liệu mẫu cố định (ngày, lịch, buổi tập) nên ảnh không đổi theo
 /// ngày chạy.
@@ -133,6 +134,34 @@ import UIKit
 
   @Test func pauseSheet() {
     check(KoaPauseSheet(today: Self.today) { _ in }, padded: false)
+  }
+
+  /// "Hôm nay của bạn" (#795 đợt 2c): thẻ Bữa đứng đầu để thấy ba nút nhanh và dòng kế hoạch ăn.
+  @Test func todayDayCardMeal() {
+    check(
+      TodayDayCard(
+        tiles: Self.dayTiles([.meal, .water, .sleep, .workout]), planNext: "Next: Dinner · Rice, salmon",
+        quickWater: (label: "+ 8 oz", add: {}, custom: {}), mealQuick: { _ in }, onLogAll: {}, onTap: { _ in }))
+  }
+
+  /// Thẻ Nước đứng đầu (hai nút nhanh) và dòng cân nặng.
+  @Test func todayDayCardWater() {
+    check(
+      TodayDayCard(
+        tiles: Self.dayTiles([.water, .meal, .sleep, .workout]), quickWater: (label: "+ 8 oz", add: {}, custom: {}),
+        weighIn: (detail: "Last weigh-in 3 weeks ago", done: false), onLogAll: {}, onTap: { _ in }))
+  }
+
+  /// Bốn ô mẫu của "Hôm nay của bạn", theo thứ tự cho trước.
+  static func dayTiles(_ order: [DayCheckIn.Item]) -> [TodayDayCard.Tile] {
+    order.map { item in
+      switch item {
+      case .sleep: TodayDayCard.Tile(item: .sleep, state: .done, detail: "7 h 20 min", auto: true)
+      case .meal: TodayDayCard.Tile(item: .meal, state: .todo, detail: "Not logged yet")
+      case .water: TodayDayCard.Tile(item: .water, state: .todo, detail: "8 / 65 oz")
+      case .workout: TodayDayCard.Tile(item: .workout, state: .rest, detail: "Rest day")
+      }
+    }
   }
 
   @Test func gainsCard() {

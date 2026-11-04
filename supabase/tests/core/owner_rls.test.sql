@@ -56,7 +56,8 @@ INSERT INTO owned VALUES
   ('mascot_transactions', 'S', 31, 'sổ xu: server ghi — 20260810120000'),
   ('streak_freezes', 'S', 32, 'mua bằng RPC có khoá — 20260814120000'),
   ('plan_day_overrides', 'SIUD', 33, 'đổi lịch riêng một ngày (GĐ1) — 20261020140000'),
-  ('koa_pauses', 'SIUD', 34, 'tạm nghỉ của Koa, một dòng mỗi người — 20261103120000');
+  ('koa_pauses', 'SIUD', 34, 'tạm nghỉ của Koa, một dòng mỗi người — 20261103120000'),
+  ('koa_pause_log', 'SIU', 35, 'sổ các đợt tạm nghỉ: không xoá, huỷ là ghi ngày cuối trước ngày đầu — 20261104120000');
 -- Bảng không có user_id: quyền đi qua dòng cha.
 CREATE TEMP TABLE kids (tbl text PRIMARY KEY, fk text NOT NULL, parent text NOT NULL);
 INSERT INTO kids VALUES
