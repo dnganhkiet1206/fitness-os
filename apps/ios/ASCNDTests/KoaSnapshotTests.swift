@@ -244,8 +244,9 @@ private struct PullRunOutfitsPreview: View {
   private func cell(_ s: KoaPull.Shot, worn: KoaFlags.Worn, light: Bool) -> some View {
     Canvas { ctx, size in
       var c = ctx
-      let k = size.width / 240
-      c.translateBy(x: size.width / 2, y: size.height * 0.4)
+      // hình rộng đúng 240 thì tai và tay vung chạm mép ô (lượt ghi đầu cắt tai ở cột 3, 4): chừa lề
+      let k = size.width / 240 * 0.78
+      c.translateBy(x: size.width / 2, y: size.height * 0.42)
       c.rotate(by: .degrees(s.angle))
       c.scaleBy(x: k * s.stretchX, y: k * s.stretchY)
       c.translateBy(x: -120, y: -110)
