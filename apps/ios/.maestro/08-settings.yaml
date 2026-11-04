@@ -25,7 +25,7 @@ name: Settings rows open
 - extendedWaitUntil:
     visible:
       id: settings.reminders
-    timeout: 10000
+    timeout: 20000
 # Cuộn: trên simulator của CI một lượt "đợi đứng yên → vuốt → đợi lại" mất ~12 s (03/11: hàng
 # đã hiện đủ sau một lần vuốt nhưng timeout 10 s hết trước khi Maestro kịp nhìn lại → đỏ oan).
 - scrollUntilVisible:
@@ -41,6 +41,10 @@ name: Settings rows open
     timeout: 10000
 - takeScreenshot: 08-settings-password
 - runFlow: subflows/back.yaml
+- extendedWaitUntil:
+    visible:
+      id: settings.changePassword
+    timeout: 20000
 - scrollUntilVisible:
     element:
       id: settings.legal

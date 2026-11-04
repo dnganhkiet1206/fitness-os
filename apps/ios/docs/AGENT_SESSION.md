@@ -133,7 +133,7 @@ xcrun simctl io booted screenshot /tmp/ascnd.png   # rồi XEM ảnh
 
 **Gộp việc nhỏ.** Nhiều sửa nhỏ trong một đợt → **một PR**, mỗi sửa một commit. Một lượt CI (~15 phút) thay vì N lượt, và chỉ gộp nhánh gốc một lần. Tách PR riêng khi việc lớn, rủi ro, hay cần Kiệt duyệt riêng.
 
-**E2E (Maestro) chỉ khi cần.** Workflow `iOS E2E` chỉ chạy trên PR có nhãn `e2e` (30–45 phút / lượt, chạy lại sau mỗi lần gộp nhánh). Gắn nhãn khi đổi lớn bố cục / điều hướng ở các màn 8 flow đi qua (`apps/ios/.maestro/`). PR nhỏ: không gắn, gộp khi `gate`, `app-macos`, `core-linux`, `release-gate` xanh. E2E đỏ: xem ảnh chụp trong artifact trước khi kết luận — flow từng hỏng vì cuộn chưa tới (không phải lỗi app).
+**E2E (Maestro) chỉ khi cần.** Workflow `iOS E2E` chỉ chạy trên PR có nhãn `e2e` (35–45 phút / lượt, giới hạn job 60 phút, chạy lại sau mỗi lần gộp nhánh). Gắn nhãn khi đổi lớn bố cục / điều hướng ở các màn 8 flow đi qua (`apps/ios/.maestro/`). PR nhỏ: không gắn, gộp khi `gate`, `app-macos`, `core-linux`, `release-gate` xanh. E2E đỏ: xem ảnh chụp trong artifact trước khi kết luận — flow từng hỏng vì cuộn chưa tới (không phải lỗi app).
 
 **Sổ hạn chế tự gộp.** `.gitattributes` đặt `merge=union` cho `CONSTRAINTS_AND_DEFERRED.md`: `git merge origin/native/ios-rewrite` trên máy giữ dòng của cả hai phía, không còn xung đột ở §4 / §5. Sau khi gộp, đọc lại `git diff origin/native/ios-rewrite -- apps/ios/docs/CONSTRAINTS_AND_DEFERRED.md`: union có thể giữ cả bản CŨ lẫn bản MỚI của một dòng ai đó vừa sửa (gạch ngang) — xoá bản cũ.
 

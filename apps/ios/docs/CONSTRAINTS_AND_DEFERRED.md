@@ -582,6 +582,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 
 ## 5. Lịch sử thay đổi sổ
 
+- 02/11/2026: E2E hết giờ không phải do flow treo: 45 phút bị build, bật simulator và biên dịch lại ASCNDTests ăn 27 phút, Maestro cần ~20. Nay một lần `build-for-testing`, job 60 phút, step Maestro 35 phút, bị dừng giữa chừng vẫn có bảng flow trong tóm tắt; flow 05 đặt `waitToSettleTimeoutMs`, flow 08 chờ hết hiệu ứng quay lại.
 - 01/11/2026: Koa chạy tới kéo thẻ nhiệm vụ; bảng tự vẽ; vẽ lại phòng tập khung dọc theo mock, bỏ tiền cảnh mờ.
 - 01/11/2026: Koa trò chuyện theo việc thật, vẽ thêm nét mặt, phòng full màn, thẻ mở bằng nút, parallax rõ hơn.
 - 01/11/2026: làm lại thẻ nghỉ trong buổi tập (Koa nằm trong vòng, bỏ xanh dương); chuông và avatar ở Hôm nay chung một viên kính, thay quyết định 16/10 "hai nút tròn cùng vật liệu".
