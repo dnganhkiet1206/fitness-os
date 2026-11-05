@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Tiếng của căn phòng Koa (Kiệt 04/11): bước chân nhẹ, nhạc nền thư giãn rất nhỏ, tiếng nền ngày / đêm
-và nhiều tiếng lẻ cho phòng sống động. Tự tổng hợp như `voice.py` — không bản ghi, không giấy phép.
+"""Tiếng của căn phòng Koa (Kiệt 04/11): bước chân nhẹ, tiếng nền ngày / đêm, tiếng ngủ và nhiều tiếng
+lẻ cho phòng sống động. Không có nhạc nền (Kiệt 04/11: nghe ảm đạm). Tự tổng hợp như `voice.py` — không bản ghi, không giấy phép.
 
 Chạy: python3 tools/koa-sound/room.py (cần numpy). Ghi ASCND/Resources/Sounds/koa-*.wav.
-Vòng lặp (nhạc, tiếng nền) dựng TUẦN HOÀN theo độ dài file — nhiễu tạo trong miền tần số, mọi nốt / tiếng
+Vòng lặp (tiếng nền, tiếng ngủ) dựng TUẦN HOÀN theo độ dài file — nhiễu tạo trong miền tần số, mọi nốt / tiếng
 chim / dế quấn vòng — nên lặp không có chỗ nối.
 """
 import pathlib
@@ -78,38 +78,24 @@ def step(seed, wood=False):
     return lowpass(out, RATE, 2400)
 
 
-# ── Nhạc nền: bốn hợp âm mềm (Cmaj7 – Am7 – Fmaj7 – G6), mỗi hợp âm 12 giây, đệm êm + vài nốt
-# kalimba thưa. Rất nhỏ, chỉ để phòng có không khí.
-def music():
-    rate, bar = LOOP_RATE, 12.0
-    chords = [[48, 55, 59, 64, 67], [45, 52, 55, 60, 64], [41, 48, 52, 57, 64], [43, 50, 55, 59, 64]]
-    n = int(bar * len(chords) * rate)
+# ── Ngủ (Kiệt 04/11: "hiệu ứng âm thanh ngái ngủ"): hít vào khẽ, thở ra có rung nhẹ trong cổ như
+# ngáy rất nhỏ. Bốn giây một nhịp thở, hai đầu im nên lặp liền.
+def snore():
+    rate = LOOP_RATE
+    n = int(4.0 * rate)
+    t = np.arange(n) / rate
     buf = np.zeros(n)
-    t_bar = np.arange(int((bar + 6) * rate)) / rate
-
-    def hz(m): return 440 * 2 ** ((m - 69) / 12)
-
-    for i, ch in enumerate(chords):
-        # đệm: vào 2,5 s, ra 6 s (đè sang hợp âm sau), lắc nhẹ cao độ hai lớp lệch nhau
-        e = np.minimum(1, t_bar / 2.5) * np.clip((bar + 6 - t_bar) / 6, 0, 1)
-        pad = np.zeros(t_bar.size)
-        for m in ch:
-            for det in (-0.12, 0.12):
-                f = hz(m) * 2 ** (det / 12)
-                pad += np.sin(2 * np.pi * f * t_bar + 0.3 * np.sin(2 * np.pi * 0.2 * t_bar)) / len(ch)
-        place(buf, pad * e * 0.5, int(i * bar * rate))
-        # kalimba: 5 nốt của hợp âm, lệch nhịp nhẹ, lên một quãng tám
-        r = np.random.default_rng(100 + i)
-        for k, at in enumerate([0.8, 3.1, 5.4, 7.9, 10.2]):
-            m = ch[(k * 2 + i) % len(ch)] + 12 + (12 if k == 3 else 0)
-            nt = int(2.4 * rate)
-            tt = np.arange(nt) / rate
-            f = hz(m)
-            note = (np.sin(2 * np.pi * f * tt) + 0.25 * np.sin(2 * np.pi * 2 * f * tt)) * env(nt, rate, 0.004, 0.6)
-            place(buf, note * 0.32 * r.uniform(0.7, 1), int((i * bar + at + r.uniform(-0.08, 0.08)) * rate))
-    # chút gió hơi (tuần hoàn) cho ấm
-    buf += shaped_noise(n, rate, 120, 900, tilt=1.2, seed=7) * 0.025
-    return lowpass(buf, rate, 3200), rate
+    i0, i1 = int(0.2 * rate), int(1.6 * rate)
+    inh = shaped_noise(i1 - i0, rate, 300, 1800, tilt=0.8, seed=91) * np.sin(np.pi * np.linspace(0, 1, i1 - i0)) ** 2
+    buf[i0:i1] += inh * 0.35
+    e0, e1 = int(1.9 * rate), int(3.7 * rate)
+    tt = t[e0:e1] - t[e0]
+    shape = np.sin(np.pi * np.linspace(0, 1, e1 - e0)) ** 1.5
+    flutter = 0.6 + 0.4 * np.sin(2 * np.pi * 26 * tt)  # rung mềm của ngáy
+    exh = lowpass(shaped_noise(e1 - e0, rate, 80, 700, tilt=1.0, seed=92), rate, 600) * flutter
+    exh += np.sin(2 * np.pi * (92 - 6 * tt) * tt) * 0.25 * flutter
+    buf[e0:e1] += exh * shape * 0.6
+    return buf, rate
 
 
 # ── Tiếng nền đêm: dế xa, thành phố ù rất trầm.
@@ -233,8 +219,8 @@ if __name__ == "__main__":
         write(f"koa-step-{i + 1}", step(10 + i), peak=0.45)
     for i in range(2):
         write(f"koa-step-wood-{i + 1}", step(20 + i, wood=True), peak=0.45)
-    x, r = music()
-    write("koa-music", x, r, peak=0.5)
+    x, r = snore()
+    write("koa-snore", x, r, peak=0.35)
     x, r = night()
     write("koa-amb-night", x, r, peak=0.4)
     x, r = day()

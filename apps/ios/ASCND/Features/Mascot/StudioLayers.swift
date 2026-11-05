@@ -314,14 +314,17 @@ final class StudioMotes {
 }
 
 /// Quầng sáng sau bảng neon, chập chờn như đèn thật: thở chậm, thỉnh thoảng sụt một nhịp.
-private struct StudioNeon: View {
+struct StudioNeon: View {
   let t: Double
   let drop: Double
   let k: Double
 
+  /// Đèn đang sụt một nhịp (cùng đồng hồ `timeIntervalSinceReferenceDate`) — tiếng rè theo đây.
+  static func dips(at t: Double) -> Bool { sin(t * 0.73) * sin(t * 2.9) > 0.86 }
+
   var body: some View {
     let s = StudioTall.sign
-    let dip = sin(t * 0.73) * sin(t * 2.9) > 0.86
+    let dip = Self.dips(at: t)
     let glow = (0.3 + 0.08 * sin(t * 1.4)) * (dip ? 0.35 : 1)
     Canvas { ctx, _ in
       var c = ctx

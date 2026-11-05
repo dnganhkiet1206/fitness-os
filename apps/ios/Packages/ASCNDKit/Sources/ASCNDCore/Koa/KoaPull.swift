@@ -63,6 +63,12 @@ public enum KoaPull {
     return 1 + 0.05 * (1 - ease((t - tugTwoEnd) / settle))
   }
 
+  /// Giây các bước chạy, để app phát tiếng chân (04/11, Kiệt: "hiệu ứng chạy của Koa"): đáp sau
+  /// cú nhảy khỏi bục, rồi mỗi bước cho tới lúc thụp xuống sau mép bảng.
+  public static var runSteps: [Double] {
+    Array(stride(from: anticipate + hopOff, to: runEnd, by: KoaRun.step))
+  }
+
   /// Giây các lần chân chạm sàn, để app tung bụi.
   public static var landings: [Double] {
     let start = anticipate + hopOff
@@ -125,6 +131,56 @@ public enum KoaPull {
     return Shot(
       x: width / 2, y: y, scale: scale, angle: angle, stretchX: 1 + 0.05 * hop, stretchY: 1 - 0.06 * hop, running: false,
       panel: panel(at: t), hands: t >= duckEnd + peek * 0.5, expression: .tease)
+  }
+}
+
+extension KoaPull {
+  // MARK: - Đóng thẻ (04/11, Kiệt: "đỡ cảm giác có 2 Koa cùng xuất hiện")
+  //
+  // Koa buông mép bảng, thụp xuống lấy đà, nhảy vòng về đúng chỗ của mình trên bục rồi đáp xuống;
+  // bảng trượt xuống cùng lúc. Đúng lúc đáp, app đưa Koa của phòng ra thay ở cùng chỗ, cùng cỡ —
+  // trên màn chỉ có một Koa.
+  public static let letGo = 0.14
+  public static let leapBack = 0.5
+  public static let touchDown = 0.16
+  public static var leaveEnd: Double { letGo + leapBack + touchDown }
+  /// Không có Koa (Giảm chuyển động / Koa đang ngủ): bảng chỉ trượt xuống.
+  public static let quietLeave = 0.3
+
+  /// Phần bảng còn lên khi đang đóng: bắt đầu trượt khi Koa vừa buông tay.
+  public static func panelLeaving(at t: Double, quiet: Bool = false) -> Double {
+    quiet ? 1 - ease(t / quietLeave) : 1 - ease((t - letGo * 0.5) / 0.42)
+  }
+
+  /// Khung của cảnh đóng ở giây `t` (tính từ lúc đóng). `start`: tâm đầu và cỡ Koa trên bục.
+  public static func leave(
+    at t: Double, start: (x: Double, y: Double, scale: Double), width: Double, height: Double, panelHeight: Double
+  ) -> Shot {
+    let panel = panelLeaving(at: t)
+    let from = (x: width / 2, y: height - panelHeight - 44, scale: 0.8)
+    let turn = start.x < from.x ? -0.5 : 0.5
+    if t < letGo {
+      // buông tay, thụp xuống mép bảng lấy đà
+      let c = ease(t / letGo)
+      return Shot(
+        x: from.x, y: from.y + 12 * c, scale: from.scale, angle: -3 * c, stretchX: 1 + 0.08 * c, stretchY: 1 - 0.1 * c,
+        running: false, panel: panel, hands: false, expression: .happy, walk: KoaRun.crouch(c))
+    }
+    if t < letGo + leapBack {
+      // bật lên theo đường cung về bục, nhỏ dần về đúng cỡ trên bục, rướn dài giữa không trung
+      let p = (t - letGo) / leapBack, c = sin(p * .pi)
+      let stretch = 0.1 * sin(min(1, p * 1.4) * .pi)
+      return Shot(
+        x: from.x + (start.x - from.x) * ease(p), y: from.y + 12 + (start.y - from.y - 12) * p - 110 * c,
+        scale: from.scale + (start.scale - from.scale) * ease(p), angle: 6 * c * (turn < 0 ? -1 : 1),
+        stretchX: 1 - stretch * 0.6, stretchY: 1 + stretch, running: true, panel: panel, hands: false,
+        expression: .happy, walk: KoaRun.leap(p, turn: turn))
+    }
+    // chạm bục: lún xuống rồi đứng lại, đúng chỗ Koa của phòng sẽ đứng
+    let q = min(1, (t - letGo - leapBack) / touchDown), c = sin(q * .pi)
+    return Shot(
+      x: start.x, y: start.y + 6 * c, scale: start.scale, angle: 0, stretchX: 1 + 0.08 * c, stretchY: 1 - 0.1 * c,
+      running: false, panel: panel, hands: false, expression: .happy, walk: KoaRun.crouch(0.6 * c))
   }
 }
 

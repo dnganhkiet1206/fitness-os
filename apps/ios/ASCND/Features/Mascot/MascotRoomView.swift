@@ -1191,7 +1191,10 @@ struct MascotStage: View {
     }
     .clipped()
     .animation(reduceMotion ? nil : .timingCurve(0.42, 0, 0.58, 1, duration: KoaBedtime.pan), value: asleep)
-    .onChange(of: bedShown, initial: true) { _, shown in lens?.bedroom = shown }
+    .onChange(of: bedShown, initial: true) { _, shown in
+      lens?.bedroom = shown
+      KoaSound.setAsleep(shown, day: scheme == .light)
+    }
     .onChange(of: studio, initial: true) { _, o in lens?.options = o }
     .onChange(of: inBedroom, initial: true) { old, now in
       if now {

@@ -5,8 +5,9 @@ import AVFoundation
 /// (`tools/koa-sound`). `.ambient`: im theo công tắc im lặng, không ngắt
 /// nhạc đang nghe. Tắt được bằng nút loa trên thanh của phòng.
 ///
-/// 04/11 (Kiệt): bước chân nhẹ, nhạc nền thư giãn rất nhỏ, tiếng nền ngày / đêm và tiếng lẻ thỉnh
-/// thoảng (xe xa, ván kêu, đồng hồ, chim…) — tự tổng hợp bằng `tools/koa-sound/room.py`.
+/// 04/11 (Kiệt): bước chân nhẹ (cả lúc chạy), tiếng nền ngày / đêm, tiếng lẻ thỉnh thoảng (xe xa, ván
+/// kêu, đồng hồ, chim…), neon rè theo nhịp chớp, tiếng ngủ ở phòng ngủ; không có nhạc nền — tự tổng
+/// hợp bằng `tools/koa-sound/room.py`.
 @MainActor
 enum KoaSound {
   enum Cue: String, CaseIterable {
@@ -52,11 +53,11 @@ enum KoaSound {
 
   /// Bàn chân Koa chạm sàn (hay mặt bục gỗ): đổi bản, độ to lệch chút cho tự nhiên.
   private static var lastStep: Cue?
-  static func step(wood: Bool) {
+  static func step(wood: Bool, gain: Float = 1) {
     let pool: [Cue] = wood ? [.stepWood1, .stepWood2] : [.step1, .step2, .step3]
     let cue = pool.filter { $0 != lastStep }.randomElement() ?? pool[0]
     lastStep = cue
-    play(cue, gain: Float.random(in: 0.8...1))
+    play(cue, gain: gain * Float.random(in: 0.8...1))
   }
 
   nonisolated static let offKey = "koa.sound.off"
@@ -97,39 +98,30 @@ enum KoaSound {
 
   // MARK: - Nền của phòng
 
-  /// Nhạc nền và tiếng nền chỉ là không khí: rất nhỏ, vào / ra từ từ.
-  static let musicVolume: Float = 0.1
+  /// Tiếng nền chỉ là không khí: rất nhỏ, vào / ra từ từ. Không có nhạc nền (Kiệt 04/11: nghe ảm
+  /// đạm) — chỉ tiếng của căn phòng.
   static let ambienceVolume: Float = 0.22
+  static let snoreVolume: Float = 0.2
 
-  private static var music: AVAudioPlayer?
+  private static var roomOn = false
+  private static var asleep = false
   private static var ambience: (day: Bool, player: AVAudioPlayer)?
+  private static var snore: AVAudioPlayer?
   private static var oddments: Task<Void, Never>?
+  private static var neon: Task<Void, Never>?
 
   /// Mở phòng / bật loa / đổi ngày đêm: chạy nền (nếu loa đang bật). Gọi lại nhiều lần không sao.
   static func startRoom(day: Bool) {
     guard !off else { return stopRoom() }
+    roomOn = true
     activate()
-    if music == nil, let p = load("koa-music") {
-      p.numberOfLoops = -1
-      p.volume = 0
-      p.play()
-      p.setVolume(musicVolume, fadeDuration: 2.5)
-      music = p
+    if asleep {
+      startSnore()
+      return
     }
     if ambience?.day != day {
-      ambience?.player.setVolume(0, fadeDuration: 1.5)
-      let old = ambience?.player
-      Task {
-        try? await Task.sleep(for: .seconds(1.6))
-        old?.stop()
-      }
-      if let p = load(day ? "koa-amb-day" : "koa-amb-night") {
-        p.numberOfLoops = -1
-        p.volume = 0
-        p.play()
-        p.setVolume(ambienceVolume, fadeDuration: 2)
-        ambience = (day, p)
-      }
+      fadeOut(ambience?.player, over: 1.5)
+      ambience = loop(day ? "koa-amb-day" : "koa-amb-night", volume: ambienceVolume, fadeIn: 2).map { (day, $0) }
     }
     if oddments == nil {
       oddments = Task {
@@ -137,25 +129,85 @@ enum KoaSound {
           try? await Task.sleep(for: .seconds(Double.random(in: 9...22)))
           guard !Task.isCancelled else { return }
           let night = !(ambience?.day ?? false)
-          let pool: [Cue] = night ? [.car, .creak, .tick, .buzz, .car] : [.bird, .bird, .creak, .tick]
+          let pool: [Cue] = night ? [.car, .creak, .tick, .car] : [.bird, .bird, .creak, .tick]
           if let cue = pool.randomElement() { play(cue, gain: Float.random(in: 0.6...1)) }
+        }
+      }
+    }
+    // bảng neon (chỉ đêm) rè đúng lúc đèn sụt (`StudioNeon.dips`, cùng đồng hồ với hình)
+    if neon == nil {
+      neon = Task {
+        var was = false
+        while !Task.isCancelled {
+          try? await Task.sleep(for: .milliseconds(40))
+          let dip = StudioNeon.dips(at: Date.timeIntervalSinceReferenceDate)
+          if dip, !was, ambience?.day == false { play(.buzz, gain: Float.random(in: 0.7...1)) }
+          was = dip
         }
       }
     }
   }
 
+  /// Koa sang phòng ngủ: tiếng nền nhỏ dần rồi tắt, ngáp một cái, rồi tiếng thở khò khò rất nhỏ.
+  /// Thức dậy: tắt tiếng ngủ, tiếng nền vào lại.
+  static func setAsleep(_ on: Bool, day: Bool) {
+    guard on != asleep else { return }
+    asleep = on
+    guard roomOn, !off else { return }
+    if on {
+      stopAmbience(over: 3)
+      Task {
+        try? await Task.sleep(for: .seconds(2.2))
+        guard asleep, roomOn else { return }
+        play(.yawn, gain: 0.7)
+        try? await Task.sleep(for: .seconds(2))
+        guard asleep, roomOn else { return }
+        startSnore()
+      }
+    } else {
+      fadeOut(snore, over: 1)
+      snore = nil
+      startRoom(day: day)
+    }
+  }
+
   /// Rời phòng / tắt loa / app ra nền: tắt dần nền, dừng tiếng lẻ.
   static func stopRoom() {
+    roomOn = false
+    stopAmbience(over: 0.6)
+    fadeOut(snore, over: 0.6)
+    snore = nil
+  }
+
+  private static func stopAmbience(over seconds: Double) {
     oddments?.cancel()
     oddments = nil
-    for p in [music, ambience?.player].compactMap({ $0 }) {
-      p.setVolume(0, fadeDuration: 0.6)
-      Task {
-        try? await Task.sleep(for: .seconds(0.7))
-        p.stop()
-      }
-    }
-    music = nil
+    neon?.cancel()
+    neon = nil
+    fadeOut(ambience?.player, over: seconds)
     ambience = nil
+  }
+
+  private static func startSnore() {
+    guard snore == nil else { return }
+    snore = loop("koa-snore", volume: snoreVolume, fadeIn: 2.5)
+  }
+
+  private static func loop(_ name: String, volume: Float, fadeIn: Double) -> AVAudioPlayer? {
+    guard let p = load(name) else { return nil }
+    p.numberOfLoops = -1
+    p.volume = 0
+    p.play()
+    p.setVolume(volume, fadeDuration: fadeIn)
+    return p
+  }
+
+  private static func fadeOut(_ p: AVAudioPlayer?, over seconds: Double) {
+    guard let p else { return }
+    p.setVolume(0, fadeDuration: seconds)
+    Task {
+      try? await Task.sleep(for: .seconds(seconds + 0.1))
+      p.stop()
+    }
   }
 }
