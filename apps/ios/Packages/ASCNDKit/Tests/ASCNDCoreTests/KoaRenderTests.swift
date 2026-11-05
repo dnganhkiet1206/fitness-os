@@ -200,3 +200,44 @@ struct KoaLidBlinkTests {
     #expect(Self.lidScale(KoaRender.figure(o)) == nil, "mắt mở to vẫn nháy kiểu cũ")
   }
 }
+
+/// Chạm đúng chỗ ở mọi tư thế (Kiệt 04/11): vùng theo mốc THẬT của dáng đang vẽ.
+struct KoaTapPoseTests {
+  static func check(_ o: KoaRender.Options, _ label: String) {
+    let a = KoaRender.anchors(o)
+    for (id, zone) in [("nose", KoaTap.Zone.nose), ("ear_right", .ear), ("head_top_fur", .head), ("belly", .belly)] {
+      guard let p = a[id] else {
+        Issue.record("thiếu mốc \(id) ở \(label)")
+        continue
+      }
+      #expect(KoaTap.zone(x: p.x, y: p.y, anchors: a) == zone, "\(label): chạm \(id)")
+    }
+  }
+
+  @Test func everyPoseMapsTouchesToTheRightPart() {
+    for pose in KoaFlags.Pose.allCases {
+      var o = KoaRender.Options()
+      o.pose = pose
+      Self.check(o, "\(pose)")
+    }
+    var tilted = KoaRender.Options()
+    tilted.gaze = KoaMath.Gaze(x: 0.8, y: -0.5, k: 1)
+    Self.check(tilted, "nghiêng đầu")
+    for g in [KoaGesture.flop, .pout, .taDa, .curious] {
+      var o = KoaRender.Options()
+      o.gesture = g
+      Self.check(o, "dáng \(g)")
+    }
+  }
+
+  /// Vươn vai (người nghiêng), quay người: mũi dời khỏi chỗ của dáng đứng — mốc đi theo dáng thật.
+  @Test func anchorsFollowThePose() {
+    let stand = KoaRender.anchors(KoaRender.Options())["nose"]!
+    for pose in [KoaFlags.Pose.stretching, .turn34] {
+      var o = KoaRender.Options()
+      o.pose = pose
+      let moved = KoaRender.anchors(o)["nose"]!
+      #expect(hypot(moved.x - stand.x, moved.y - stand.y) > 3, "\(pose)")
+    }
+  }
+}

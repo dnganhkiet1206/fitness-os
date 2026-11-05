@@ -145,6 +145,8 @@ public enum KoaRender {
     var eyes: KoaMath.Gaze?
     var blink: Double?
     var gestureAmount = 1.0
+    /// Dò chỗ chạm (`anchors`): thêm điểm mốc vô hình vào vài bộ phận.
+    var probe = false
   }
 
   static func isEyeGroup(_ n: KoaScene.Node) -> Bool { n.kids?.contains { $0.id == "pupil_left" } ?? false }
@@ -254,7 +256,7 @@ public enum KoaRender {
     let shape = shapes[n.t]
     let gProps = shape == nil ? own : [:]
 
-    let body: [Element]
+    var body: [Element]
     if let shape {
       // mỗi lượt đèn là chính hình ấy với một lớp sơn khác
       var passes = [Element(shape, own)]
@@ -306,6 +308,11 @@ public enum KoaRender {
       body = kids
     }
 
+    // dò: điểm mốc ở toạ độ riêng của bộ phận, đi qua đúng mọi biến hình của nó (dáng, đầu nghiêng,
+    // quay người, đi, nhìn theo)
+    if c.probe, let id = n.id, let p = probePoints[id] {
+      body.append(Element("Probe", ["id": .string(id), "cx": .number(p.x), "cy": .number(p.y)]))
+    }
     let ox = origin?[0] ?? 0, oy = origin?[1] ?? 0
     let el: [Element]
     if let anim, c.live {
@@ -521,6 +528,46 @@ public enum KoaRender {
   }
 
   /// Cả hình: `Svg` > `Defs` (đèn) + `G` (lùi vào khung) > cây.
+  /// Điểm mốc để dò chỗ chạm (toạ độ riêng của bộ phận, theo `KoaScene`): mũi, tâm và đỉnh đầu, hai
+  /// tai, bụng, bàn chân.
+  static let probePoints: [String: (x: Double, y: Double)] = [
+    "nose": (120, 105), "head_front": (120, 108), "head_top_fur": (120, 48), "ear_right": (190, 58),
+    "belly": (120, 228), "LEGS": (120, 284),
+  ]
+
+  /// Vị trí THẬT của các mốc trong khung 240 × 300 (như `viewBox`) ở đúng dáng / khung `o` — để biết
+  /// người dùng chạm vào đâu ở mọi tư thế (Kiệt 04/11). Tai trái là `ear_left` (cùng id với lớp tai
+  /// trong nên đặt mốc theo tai phải và đối xứng qua mũi).
+  public static func anchors(_ o: Options) -> [String: (x: Double, y: Double)] {
+    var probing = o
+    probing.size = 240
+    let f = flags(probing)
+    var c = context(probing, f)
+    c.probe = true
+    let tree = KoaLight.nodes.flatMap { node($0, c) }
+    var out: [String: (x: Double, y: Double)] = [:]
+    func walk(_ e: Element, _ m: KoaMath.Mat) {
+      let here = e.matrix.map { KoaMath.mul(m, $0) } ?? m
+      if e.tag == "Probe", case .string(let id)? = e.props["id"], out[id] == nil,
+        case .number(let x)? = e.props["cx"], case .number(let y)? = e.props["cy"]
+      {
+        out[id] = (here[0] * x + here[2] * y + here[4], here[1] * x + here[3] * y + here[5])
+      }
+      for k in e.kids { walk(k, here) }
+    }
+    for e in tree { walk(e, KoaMath.insetMat) }
+    return out
+  }
+
+  static func context(_ o: Options, _ f: KoaFlags.Flags) -> Context {
+    let swapMouth = o.gaze != nil && KoaMath.swapMouths.contains { f[$0]?.truthy ?? false }
+    return Context(
+      flags: f, t: o.t, live: o.live, gaze: o.live ? o.gaze ?? o.look ?? walkLook(o) : nil, swapMouth: swapMouth,
+      rest: KoaMath.restsAt(f) && !o.dress, dress: o.dress, blend: o.blend ?? (o.dress ? 1 : 0), paper: o.paper,
+      flat: o.flat, poke: o.live ? o.poke : nil, gesture: o.gesture, arms: o.arms, walk: walking(o) ? o.walk : nil,
+      eyes: o.live ? o.eyes : nil, blink: o.live ? o.blink : nil, gestureAmount: o.gestureAmount)
+  }
+
   public static func figure(_ o: Options) -> Element {
     let f = flags(o)
     // chỉ cái liếc trong phòng đổi miệng; nhìn theo ngón tay thì không

@@ -67,6 +67,8 @@ struct KoaFigureView: View {
   @State private var clock = KoaClock()
   @State private var touch = KoaTouch()
   @State private var pokes = 0
+  /// Khung vừa vẽ — chạm thì dò chỗ theo đúng dáng ấy (`KoaRender.anchors`).
+  @State private var drawn = KoaDrawn()
   /// Koa còn trong khung cuộn không. Ngoài khung thì dừng vẽ (audit vòng 5, 27/10):
   /// Hôm nay đứng yên tốn ~30 % CPU simulator vì `Canvas` vẽ lại 60 lần/giây kể cả khi
   /// Koa đã cuộn khỏi màn; Reduce Motion bật thì 0 %. Không nằm trong khung cuộn thì
@@ -129,7 +131,10 @@ struct KoaFigureView: View {
         let moved = hypot(v.translation.width, v.translation.height)
         if moved < 12 {
           onTap?()
-          onTapZone?(KoaTap.zone(at: (Double(v.location.x), Double(v.location.y)), width: Double(size)))
+          if let onTapZone {
+            let x = Double(v.location.x) / Double(size) * 240, y = Double(v.location.y) / (Double(size) * KoaMath.aspect) * 300
+            onTapZone(drawn.options.map { KoaTap.zone(x: x, y: y, anchors: KoaRender.anchors($0)) } ?? KoaTap.zone(x: x, y: y))
+          }
           if live, touch.poke(at: now) { pokes += 1 }
         }
         touch.release()
@@ -161,6 +166,7 @@ struct KoaFigureView: View {
       // phòng: đạo diễn giật tai vào lúc không đều, thay cho chu kỳ cố định
       if idleClock != nil { o.poke?.twitches = false }
       o.walk = running ? walk : nil
+      if onTapZone != nil { drawn.options = o }
       let sp = KoaSignpost.poster.beginInterval("figure")
       defer { KoaSignpost.poster.endInterval("figure", sp) }
       // Dáng giơ tay đè má: hình đủ (vai sau đầu), rồi một lớp chỉ nửa bàn tay ở trên.
@@ -487,4 +493,9 @@ enum KoaCanvas {
       }
     }
   }
+}
+
+/// Tuỳ chọn của khung Koa vừa vẽ (ô nhớ, không phải trạng thái của view: đổi nó không vẽ lại).
+final class KoaDrawn {
+  var options: KoaRender.Options?
 }
