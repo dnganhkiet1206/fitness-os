@@ -16,7 +16,7 @@ struct TodayPlanHero: View {
   /// Đang ghi một phương án (dời / nghỉ) — khoá nút để không bấm hai lần.
   var busy = false
   var failed = false
-  /// Dòng mời vuốt sang thẻ "Tăng tải hôm nay" (`TodayOverloadStack`); `up` = có bài nên tăng.
+  /// Dòng mời vuốt sang thẻ nằm sau (`TodayOverloadStack`); `up` = có bài nên tăng.
   var overloadHint: (text: String, up: Bool)?
   let onPrimary: () -> Void
   let onAlternative: (DailyPlan.Alternative) -> Void
@@ -164,7 +164,8 @@ struct TodayPlanHero: View {
     }
   }
 
-  private var title: String? {
+  /// Cũng là chữ của dải khi thẻ khác nằm trên (`TodayOverloadStack`).
+  var title: String? {
     switch result.action {
     case .loading: nil
     case .resume(let s), .start(let s), .comeback(let s), .nextSession(_, let s):
@@ -179,7 +180,8 @@ struct TodayPlanHero: View {
 
   private var why: String? { Self.reason(result.reason) }
 
-  private var primary: String? {
+  /// Cũng là nút trên dải ấy.
+  var primary: String? {
     switch result.action {
     case .loading: nil
     case .resume: String(localized: "dp.cta.resume")

@@ -205,26 +205,23 @@ struct TodayExtras<Plan: View>: View {
       if let flow { swapNudge(flow) }
       if let dailyPlan, let flow {
         // GĐ1: MỘT việc chính + lý do + phương án; rồi Tuần của Koa (lịch thật).
-        // Thẻ "Tăng tải hôm nay" nằm sau việc chính, vuốt sang (Kiệt duyệt mock 28/10).
-        if let overload = overloadItems(dailyPlan.result, flow), let session = dailyPlan.result.action.session {
-          let ups = overload.filter(\.advice.isUp).count
+        // Các thẻ khác nằm sau việc chính, vuốt sang (Kiệt duyệt mock 28/10): thẻ đầu tuần
+        // (04/11, Kiệt: "gộp lại như thẻ progressive overload"), rồi "Tăng tải hôm nay".
+        let backs = stackBacks(dailyPlan, flow)
+        if backs.isEmpty {
+          planHero(dailyPlan, flow, hint: nil)
+            .todayEntrance(2)
+        } else {
+          let hero = planHero(dailyPlan, flow, hint: nil)
           TodayOverloadStack(
-            items: overload, mainPeek: String(localized: "dp.title.session \(session.name) \(session.minutes)"),
-            mainAction: String(localized: dailyPlan.result.action == .resume(session) ? "dp.cta.resume" : "today.start"),
+            backs: backs, mainPeek: hero.title ?? "", mainAction: hero.primary ?? "",
             onMainAction: { primary(dailyPlan.result.action) },
             onOpenLoad: flow.insights == nil ? nil : { showsOverload = true }
           ) { withHint in
-            planHero(
-              dailyPlan, flow,
-              hint: !withHint ? nil : ups > 0
-                ? (String(localized: "ov.hint.ready \(ups)"), true) : (String(localized: "ov.hint.none"), false))
+            planHero(dailyPlan, flow, hint: withHint ? stackHint(backs) : nil)
           }
           .todayEntrance(2)
-        } else {
-          planHero(dailyPlan, flow, hint: nil)
-            .todayEntrance(2)
         }
-        weekCoachCard(flow)
         // Insight hôm nay (Kiệt 21/10, GĐ3) ngay dưới việc chính, kiểu Apple Health.
         TodayCoachSection(
           userId: userId, today: flow.today.today, refresh: dayVersion,
@@ -754,19 +751,37 @@ struct TodayExtras<Plan: View>: View {
     weekCoachAnswers += 1
   }
 
-  @ViewBuilder private func weekCoachCard(_ flow: WorkoutFlow) -> some View {
-    if let coach = weekCoach(flow) {
-      KoaWeekCoachCard(
-        kind: coach.kind, lastWeek: coach.lastWeek, highlight: coach.highlight, targets: coach.targets,
-        cue: services.trainingCue(userId: userId), build: services.koaBuild,
-        accept: {
-          if case .light = coach.kind { flow.today.setLighterWeek(through: coach.monday.adding(days: 6)) }
-          answerWeekCoach(coach.monday)
-          dailyPlan?.recompute(services: services, flow: flow)
-        },
-        keep: { answerWeekCoach(coach.monday) })
-      .todayEntrance(3)
+  /// Thẻ đầu tuần, nằm sau việc chính (`stackBacks`).
+  private func weekCoachCard(_ flow: WorkoutFlow) -> KoaWeekCoachCard? {
+    guard let coach = weekCoach(flow) else { return nil }
+    return KoaWeekCoachCard(
+      kind: coach.kind, lastWeek: coach.lastWeek, highlight: coach.highlight, targets: coach.targets,
+      cue: services.trainingCue(userId: userId), build: services.koaBuild,
+      accept: {
+        if case .light = coach.kind { flow.today.setLighterWeek(through: coach.monday.adding(days: 6)) }
+        answerWeekCoach(coach.monday)
+        dailyPlan?.recompute(services: services, flow: flow)
+      },
+      keep: { answerWeekCoach(coach.monday) })
+  }
+
+  /// Thẻ nằm sau việc chính, theo thứ tự (04/11): thẻ đầu tuần — sống vài ngày, chờ một câu
+  /// trả lời — rồi "Tăng tải hôm nay". Việc chính đang tải: chưa chồng gì.
+  private func stackBacks(_ dailyPlan: DailyPlanSource, _ flow: WorkoutFlow) -> [TodayOverloadStack<TodayPlanHero>.Back] {
+    guard dailyPlan.result.action != .loading else { return [] }
+    var backs: [TodayOverloadStack<TodayPlanHero>.Back] = []
+    if let coach = weekCoachCard(flow) { backs.append(.coach(coach)) }
+    if let overload = overloadItems(dailyPlan.result, flow) { backs.append(.load(overload)) }
+    return backs
+  }
+
+  /// Dòng "vuốt để xem" của bản đo khung — thẻ trên không vẽ nó, dải của thẻ sau nằm vào chỗ ấy.
+  private func stackHint(_ backs: [TodayOverloadStack<TodayPlanHero>.Back]) -> (text: String, up: Bool) {
+    for case .load(let items) in backs {
+      let ups = items.filter(\.advice.isUp).count
+      if ups > 0 { return (String(localized: "ov.hint.ready \(ups)"), true) }
     }
+    return (String(localized: "ov.hint.none"), false)
   }
 
   private func weekCoach(_ flow: WorkoutFlow) -> WeekCoach? {
