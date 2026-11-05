@@ -132,16 +132,20 @@ struct ProgressPhotosView: View {
     let when = p.date.map { $0.calendarDate.formatted(.dateTime.day().month(.abbreviated).locale(.app)) } ?? ""
     return VStack(alignment: .leading, spacing: 0) {
       ZStack(alignment: .topTrailing) {
-        AsyncImage(url: book.url(p)) { phase in
-          if let image = phase.image {
-            image.resizable().scaledToFill()
-          } else {
-            DS.Color.secondary.swiftUI
-              .overlay { Image(systemName: "photo").foregroundStyle(DS.Color.mutedForeground.swiftUI) }
+        // khung 4:5 cố định, ảnh lấp đầy và cắt theo khung (05/11: ảnh ngang tràn ra ngoài ô)
+        Color.clear
+          .aspectRatio(0.8, contentMode: .fit)
+          .overlay {
+            AsyncImage(url: book.url(p)) { phase in
+              if let image = phase.image {
+                image.resizable().scaledToFill()
+              } else {
+                DS.Color.secondary.swiftUI
+                  .overlay { Image(systemName: "photo").foregroundStyle(DS.Color.mutedForeground.swiftUI) }
+              }
+            }
           }
-        }
-        .aspectRatio(0.8, contentMode: .fit)
-        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.md))
+          .clipShape(RoundedRectangle(cornerRadius: DS.Radius.md))
         if !comparing { bodyBadge(p) }
         if comparing {
           Image(systemName: isOn ? "checkmark.circle.fill" : "circle")
