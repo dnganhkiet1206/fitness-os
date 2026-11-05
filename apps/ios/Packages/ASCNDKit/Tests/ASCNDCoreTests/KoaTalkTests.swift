@@ -33,9 +33,13 @@ import Testing
       #expect(KoaTalk.variants(t) >= 1)
       // không chủ đề nào khép lại bằng mặt cười lớn đứng yên, trừ lúc bị chọc (rất ngắn)
       if t != .poke { #expect(f.settle != .grin && f.settle != .delighted, "\(t)") }
+      #expect(KoaTalk.Beat(topic: t, variant: 0, line: "Xin chào").mouth.count > 1, "có câu là miệng cử động: \(t)")
     }
     #expect(![.sad, .angry].contains(KoaTalk.face(.emptyLate).peak), "không trách người dùng")
-    #expect(!KoaTalk.face(.shortSleep).flaps)
+    // mặt ngái ngủ: miệng vẫn nói, mắt vẫn lim dim (miệng tách khỏi mặt — `mouth(at:)`)
+    let sleepy = KoaTalk.Beat(topic: .shortSleep, variant: 0, line: "Ngủ thêm chút nha")
+    #expect(sleepy.face(at: KoaTalk.mouthStart + 0.2) == .sleepy)
+    #expect(sleepy.mouth(at: KoaTalk.mouthStart + 0.01) != nil)
   }
 
   @Test func speechPeaksThenTalksThenSettles() {

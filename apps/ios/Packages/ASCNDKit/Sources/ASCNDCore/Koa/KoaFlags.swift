@@ -11,6 +11,9 @@ public enum KoaFlags {
     case content, warm, sheepish, sleepy, thinking, say1, say2, say3
     /// Nhướn mày nhếch mép thè lưỡi: lúc Koa kéo thẻ nhiệm vụ lên.
     case tease
+    /// "No no no" khi bị bấm mũi (Kiệt 04/11): chau mày + mếu, ghép từ mảnh có sẵn, không có hơi
+    /// nóng của `angry` — dỗi yêu chứ không giận.
+    case nope
   }
 
   public enum Pose: String, Sendable, Hashable, CaseIterable {
@@ -73,7 +76,7 @@ public enum KoaFlags {
 
   static let openEyes: Set<Expression> = [
     .happy, .confident, .sad, .tired, .angry, .happytired, .strain, .plead, .content, .sheepish, .sleepy, .thinking,
-    .say1, .say2, .say3, .tease,
+    .say1, .say2, .say3, .tease, .nope,
   ]
 
   static let handAnchor: [Pose: String] = [
@@ -126,7 +129,7 @@ public enum KoaFlags {
         || speaking)
     f["browRaised"] = b(e == .surprised || e == .thinking || e == .tease)
     f["browSad"] = b(e == .sad || e == .plead || e == .sheepish)
-    f["browAngry"] = b(e == .angry)
+    f["browAngry"] = b(e == .angry || e == .nope)
     f["browStrain"] = b(e == .strain)
     f["mouthGrit"] = b(e == .strain)
     f["showStrain"] = b(e == .strain)
@@ -136,7 +139,7 @@ public enum KoaFlags {
     f["grinCycle"] = s(e == .happytired ? "animation:koaBreathGrin 18s linear infinite" : "")
     f["mouthO"] = b(e == .surprised)
     f["mouthSmirk"] = b(e == .confident)
-    f["mouthFrown"] = b(e == .sad || e == .plead)
+    f["mouthFrown"] = b(e == .sad || e == .plead || e == .nope)
     f["mouthFlat"] = b(e == .tired || e == .meditate)
     f["mouthShout"] = b(e == .angry)
     f["showSteam"] = b(e == .angry)

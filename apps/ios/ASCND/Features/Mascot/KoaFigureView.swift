@@ -36,6 +36,11 @@ struct KoaFigureView: View {
   /// Chạm vào Koa (thay cho `Button` bọc ngoài — nút không nhận chạm khi Koa đang
   /// theo ngón tay). Vẫn gọi khi Reduce Motion.
   var onTap: (() -> Void)?
+  /// Chạm theo chỗ (`KoaTap`, Kiệt 04/11): phòng đưa vào để Koa có cảm xúc theo chỗ chạm, và chọc
+  /// thì giật mình tại chỗ thay vì nhảy (`KoaMath.Poke.jumps`).
+  var onTapZone: ((KoaTap.Zone) -> Void)?
+  /// Khẩu hình lúc nói (chỉ miệng, `KoaRender.Options.mouth`).
+  var mouth: KoaFlags.Expression?
   /// Đang đi trong phòng (`KoaWalk`, 29/10): bàn chân, nhún, đánh tay, quay mặt.
   var walk: KoaWalk.Pose?
   /// Cho hình vẽ tràn ra hai bên khung (phòng: Koa đi, quay đầu). Chỗ khác giữ khung cắt như cũ.
@@ -124,6 +129,7 @@ struct KoaFigureView: View {
         let moved = hypot(v.translation.width, v.translation.height)
         if moved < 12 {
           onTap?()
+          onTapZone?(KoaTap.zone(at: (Double(v.location.x), Double(v.location.y)), width: Double(size)))
           if live, touch.poke(at: now) { pokes += 1 }
         }
         touch.release()
@@ -150,6 +156,8 @@ struct KoaFigureView: View {
       o.blink = running ? blink : nil
       o.gestureAmount = gestureAmount
       o.poke = react?.poke
+      if onTapZone != nil { o.poke?.jumps = false }
+      o.mouth = mouth
       // phòng: đạo diễn giật tai vào lúc không đều, thay cho chu kỳ cố định
       if idleClock != nil { o.poke?.twitches = false }
       o.walk = running ? walk : nil
@@ -219,6 +227,7 @@ struct MascotFigureView: View {
   /// Khung của đạo diễn (phòng): ánh nhìn, chớp mắt, mặt / dáng của hành vi.
   var direct: KoaDirector.Frame?
   var onTap: (() -> Void)?
+  var onTapZone: ((KoaTap.Zone) -> Void)?
   /// Đồng hồ ngoài của sân khấu (xem `KoaFigureView.date`).
   var date: Date?
   var onTouch: (() -> Void)?
@@ -239,7 +248,8 @@ struct MascotFigureView: View {
         gesture: dress || amount < 0.02 ? nil : pose, dress: dress,
         worn: KoaEmotion.worn(equipped).merging(state.outfit) { _, new in new }, size: size, animated: animated,
         paper: paper, build: build ?? services?.koaBuild ?? 0, interactive: interactive, stage: stage,
-        greet: greet, onTap: onTap, walk: dress ? nil : walk ?? direct?.walk, bleeds: walks,
+        greet: greet, onTap: onTap, onTapZone: onTapZone, mouth: dress ? nil : direct?.mouth,
+        walk: dress ? nil : walk ?? direct?.walk, bleeds: walks,
         headLook: direct?.gaze.head, eyes: direct?.gaze.eyes, blink: direct?.gaze.blink,
         gestureAmount: dress ? 1 : amount, date: date, onTouch: onTouch, idleClock: idleClock)
     } else {

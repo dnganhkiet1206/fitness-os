@@ -27,6 +27,9 @@ public enum KoaRender {
 
   public struct Options: Sendable, Hashable {
     public var expression: KoaFlags.Expression = .happy
+    /// Khẩu hình khi đang nói (`KoaTalk.visemes`: `say1`/`say2`/`say3`/`content`) — chỉ thay MIỆNG,
+    /// mắt và lông mày giữ theo `expression` (Kiệt 04/11: có bóng thoại là miệng phải cử động).
+    public var mouth: KoaFlags.Expression?
     public var pose: KoaFlags.Pose = .idle
     /// Thử đồ — tư thế riêng của app, chồng lên `pose`.
     public var dress = false
@@ -412,6 +415,15 @@ public enum KoaRender {
     if let g = o.gesture, !o.dress {
       for k in f.keys where KoaGesture.facePrefixes.contains(where: { k.hasPrefix($0) }) { f[k] = .bool(false) }
       for k in g.face { f[k] = .bool(true) }
+    }
+    if let m = o.mouth, !o.dress {
+      for k in f.keys where k.hasPrefix("mouth") || k == "grinCycle" { f[k] = k == "grinCycle" ? .text("") : .bool(false) }
+      switch m {
+      case .say1: f["mouthSay1"] = .bool(true)
+      case .say2: f["mouthSay2"] = .bool(true)
+      case .say3: f["mouthSay3"] = .bool(true)
+      default: f["mouthSoft"] = .bool(true)
+      }
     }
     if walking(o), let w = o.walk {
       for (k, v) in walkFlags(w) { f[k] = v }

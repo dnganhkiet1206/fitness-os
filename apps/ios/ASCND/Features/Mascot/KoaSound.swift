@@ -1,3 +1,4 @@
+import ASCNDCore
 import AVFoundation
 
 /// Tiếng của phòng Koa (31/10, Kiệt): vài tiếng nhỏ cho Koa sống động hơn, chỉ khi người dùng chạm
@@ -94,6 +95,65 @@ enum KoaSound {
     else { return nil }
     p.prepareToPlay()
     return p
+  }
+
+  // MARK: - Giọng Koa (Kiệt 04/11: tiếng koala nhân hoá thành lời, như mèo Tom)
+
+  private static var voices: [String: AVAudioPlayer] = [:]
+  private static var talking: Task<Void, Never>?
+
+  /// Tiếng phản ứng khi bị chạm (`koa-v-<name>`: "no no no", "hì hì", "ưm~"…), sau `delay` giây
+  /// (để cú giật mình đi trước).
+  static func react(_ name: String, delay: Double = 0) {
+    Task {
+      if delay > 0 { try? await Task.sleep(for: .seconds(delay)) }
+      voice("koa-v-\(name)", volume: 0.42)
+    }
+  }
+
+  /// Koa nói (kiểu Animalese): mỗi khẩu hình mở miệng là một âm tiết giọng koala, đúng nhịp miệng
+  /// (`KoaTalk.mouthStart`, `mouthStep`); câu hỏi thì âm cuối lên giọng. Câu mới thay câu cũ.
+  static func talk(_ beat: KoaTalk.Beat) {
+    talking?.cancel()
+    guard !off, !beat.mouth.isEmpty else { return }
+    let mouth = beat.mouth
+    talking = Task {
+      try? await Task.sleep(for: .seconds(KoaTalk.mouthStart))
+      var previous = 0
+      for (i, m) in mouth.enumerated() {
+        guard !Task.isCancelled else { return }
+        // miệng khép (m, b, p, dấu câu) thì không có tiếng; âm mở mới "nói"
+        if m != .content {
+          var n = Int.random(in: 1...10)
+          if n == previous { n = n % 10 + 1 }
+          previous = n
+          let last = i >= mouth.count - 3
+          voice("koa-talk-\(n)", volume: 0.26, rate: last ? 1.08 : Float.random(in: 0.94...1.06))
+        }
+        try? await Task.sleep(for: .seconds(KoaTalk.mouthStep))
+      }
+    }
+  }
+
+  private static func voice(_ name: String, volume: Float, rate: Float = 1) {
+    guard !off else { return }
+    activate()
+    let p: AVAudioPlayer
+    if let cached = voices[name] {
+      p = cached
+    } else {
+      guard let url = Bundle.main.url(forResource: name, withExtension: "wav"),
+        let made = try? AVAudioPlayer(contentsOf: url)
+      else { return }
+      made.enableRate = true
+      made.prepareToPlay()
+      voices[name] = made
+      p = made
+    }
+    p.volume = volume
+    p.rate = rate
+    p.currentTime = 0
+    p.play()
   }
 
   // MARK: - Nền của phòng

@@ -238,6 +238,25 @@ public enum StudioScene {
   public static let plantIndex = 92
   /// Lá rung quanh ngọn thân, nơi cả tám lá mọc ra.
   static let plantPivot = (x: 0.0, y: -28.0)
+  /// Lá lắng hẳn sau chừng này giây.
+  public static let leafSettle = 3.2
+
+  /// Góc (độ) của lá thứ `j` (1…8, trái sang phải) sau `t` giây kể từ lúc bị chạm, `side` = 1 khi chạm
+  /// từ bên trái (04/11, Kiệt: "sửa hiệu ứng chạm vào lá cây cho chuẩn hơn"). Mỗi lá là một lò xo
+  /// tắt dần: ngả ra xa chỗ chạm trước, lá phía chạm động trước rồi lan sang (trễ), lá ngoài dài
+  /// hơn nên lắc chậm và rộng hơn lá giữa, mỗi lá một nhịp nên khóm lá không lắc đồng loạt.
+  public static func leafAngle(_ j: Int, t: Double, side: Double) -> Double {
+    let x = Double(j) - 4.5  // −3,5 … 3,5
+    let outer = abs(x) / 3.5
+    let near = side > 0 ? Double(8 - j) / 7 : Double(j - 1) / 7  // 1 = lá gần chỗ chạm nhất
+    let lag = 0.1 * (1 - near)
+    let u = t - lag
+    guard u > 0 else { return 0 }
+    let amp = 4.5 + 3.5 * outer
+    let freq = 1.9 - 0.5 * outer + 0.07 * Double(j % 3)
+    let decay = 1.5 + 0.2 * Double(j % 2)
+    return side * amp * sin(2 * .pi * freq * u) * exp(-decay * u)
+  }
 
   /// Từ chậu cây tới hết phòng (đèn, viền tối, bục… nằm TRÊN chậu cây): lớp vẽ lại khi lá
   /// rung, để thứ tự lớp giữ y như phòng gốc.
@@ -294,8 +313,13 @@ public enum StudioScene {
         continue
       }
       if i == plantIndex, o.plantSway != 0, var e = element(v, o, skin) {
-        let m = KoaMath.opMat(KoaScene.Op("r", [o.plantSway, plantPivot.x, plantPivot.y]))
-        e.kids = e.kids.enumerated().map { j, k in (1...8).contains(j) ? KoaRender.Element("G", matrix: m, kids: [k]) : k }
+        // từng lá một góc riêng quanh gốc lá; chậu đứng yên
+        let t = abs(o.plantSway), side: Double = o.plantSway > 0 ? 1 : -1
+        e.kids = e.kids.enumerated().map { j, k in
+          guard (1...8).contains(j) else { return k }
+          let m = KoaMath.opMat(KoaScene.Op("r", [Self.leafAngle(j, t: t, side: side), plantPivot.x, plantPivot.y]))
+          return KoaRender.Element("G", matrix: m, kids: [k])
+        }
         out.append(e)
         continue
       }

@@ -1361,6 +1361,22 @@ struct MascotStage: View {
     .parallax(.wall, shot, k: k, anchor: anchor)
   }
 
+  /// Chạm vào khóm lá (04/11, Kiệt): lá ngả ra xa ngón tay rồi lắc tắt dần, tiếng lá sột soạt.
+  private func plantTap(_ width: CGFloat, height: CGFloat, shot: KoaParallax.Shot, anchor: UnitPoint) -> some View {
+    let k = Double(width) / StudioScene.width
+    let leaves = (x: 268.0, y: 300.0, width: 96.0, height: 70.0)  // khóm lá trên chậu cây (gốc lá ~ x 316)
+    return Color.clear
+      .contentShape(Rectangle())
+      .frame(width: leaves.width * k, height: leaves.height * k)
+      .onTapGesture(coordinateSpace: .local) { p in
+        director.touchPlant(fromLeft: Double(p.x) / k < leaves.width / 2)
+      }
+      .offset(x: leaves.x * k, y: leaves.y * k)
+      .frame(width: width, height: height, alignment: .topLeading)
+      .parallax(.props, shot, k: k, anchor: anchor)
+      .accessibilityHidden(true)
+  }
+
   /// Một vùng chạm trong suốt, giữa đúng món, cao ít nhất 44 điểm.
   private func shelfButton(
     _ item: ShelfItem, _ r: (x: Double, y: Double, width: Double, height: Double), k: Double, minWidth: Double
@@ -1443,6 +1459,7 @@ struct MascotStage: View {
             .allowsHitTesting(false)
         }
         if !shelf.isEmpty, !away { shelfTaps(width, height: height, shot: shot, anchor: anchor) }
+        if !away { plantTap(width, height: height, shot: shot, anchor: anchor) }
         hero(
           width, x: x + shot.shift(koaAmp), y: y,
           scale: still.map { KoaRoomMap.scale($0.d) } ?? f?.scale ?? 1,
@@ -1518,16 +1535,15 @@ struct MascotStage: View {
     return MascotFigureView(
       emotion: shownEmotion, equipped: equipped, gesture: gesture, size: size, build: build, interactive: true,
       walks: walks, direct: direct,
-      // chạm Koa: Koa vẫn nhảy lên như cũ, rồi quay sang chào người xem
+      // chạm Koa (Kiệt 04/11): không nhảy nữa — giật mình tại chỗ, rồi cảm xúc và câu nói theo
+      // chỗ chạm (`KoaTap`); giọng koala kiểu mèo Tom thay tiếng "boop"
       onTap: walks && !reduceMotion
         ? {
           director.boost()
           director.touched()
-          director.request(.greet)
-          director.poked()
-          KoaSound.boop()
           visit.poked()
         } : nil,
+      onTapZone: walks && !reduceMotion ? { zone in director.tapped(zone) } : nil,
       // phòng: Koa theo đồng hồ của sân khấu (một đồng hồ, không vẽ hai lần)
       date: walks ? date : nil, onTouch: walks ? { director.boost() } : nil,
       idleClock: walks ? director.frame?.idleClock : nil)

@@ -137,3 +137,34 @@ struct KoaLazyEyesTests {
     }
   }
 }
+
+/// Chạm theo chỗ (Kiệt 04/11) và miệng nói tách khỏi nét mặt.
+struct KoaTapTests {
+  @Test func zonesFollowTheFigure() {
+    #expect(KoaTap.zone(x: 120, y: 40) == .head)
+    #expect(KoaTap.zone(x: 50, y: 90) == .ear && KoaTap.zone(x: 190, y: 90) == .ear)
+    #expect(KoaTap.zone(x: 121, y: 134) == .nose, "đo trên máy")
+    #expect(KoaTap.zone(x: 85, y: 150) == .face)
+    #expect(KoaTap.zone(x: 120, y: 215) == .belly)
+    #expect(KoaTap.zone(x: 120, y: 285) == .feet)
+    #expect(KoaTap.zone(x: 30, y: 210) == .body)
+    // mỗi chỗ một câu và một tiếng riêng
+    #expect(Set(KoaTap.Zone.allCases.map(\.topic)).count == KoaTap.Zone.allCases.count)
+    #expect(Set(KoaTap.Zone.allCases.map(\.voice)).count == KoaTap.Zone.allCases.count)
+  }
+
+  @Test func noseIsANoNoNoNotAnger() {
+    let f = KoaFlags.flags(.nope, .idle)
+    #expect(f["browAngry"]?.truthy == true && f["mouthFrown"]?.truthy == true)
+    #expect(f["showSteam"]?.truthy == false, "dỗi yêu, không bốc hơi giận")
+  }
+
+  @Test func talkingMovesOnlyTheMouth() {
+    var o = KoaRender.Options()
+    o.expression = .sleepy
+    o.mouth = .say2
+    let f = KoaRender.flags(o)
+    #expect(f["lidsHeavy"]?.truthy == true, "mắt giữ lim dim")
+    #expect(f["mouthSay2"]?.truthy == true && f["mouthSoft"]?.truthy != true)
+  }
+}

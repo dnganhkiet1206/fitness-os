@@ -58,6 +58,13 @@ final class KoaDirectorDriver {
     director.interacted()
   }
 
+  /// Người xem chạm vào khóm lá: lá rung (đồng hồ 60 khung để lá lắc mượt).
+  func touchPlant(fromLeft: Bool) {
+    director.touchPlant(fromLeft: fromLeft)
+    boostUntil = Date.now.timeIntervalSinceReferenceDate + StudioScene.leafSettle
+    if !moving { moving = true }
+  }
+
   // MARK: Ký ức
 
   @ObservationIgnored private var memory = KoaCompanion.Memory()
@@ -261,6 +268,19 @@ final class KoaDirectorDriver {
     speak(KoaTalk.Beat(topic: .poke, variant: probe.variant, line: lineOf?(probe) ?? ""))
   }
 
+  /// Chạm vào một chỗ trên người Koa (Kiệt 04/11): chọc xong (giật mình tại chỗ) là nét mặt của
+  /// chỗ ấy kèm tiếng koala kiểu mèo Tom, rồi câu nói. Chạm lại khi đang nói: thay câu.
+  func tapped(_ zone: KoaTap.Zone) {
+    let topic = zone.topic
+    let probe = KoaTalk.Beat(topic: topic, variant: Int.random(in: 0..<KoaTalk.variants(topic)))
+    let beat = KoaTalk.Beat(topic: topic, variant: probe.variant, line: lineOf?(probe) ?? "")
+    let now = Date.timeIntervalSinceReferenceDate
+    talkStart = now
+    Task { @MainActor in self.speech = beat }
+    KoaSound.react(zone.voice, delay: 0.18)
+    KoaSound.talk(beat)
+  }
+
   /// Người xem chạm cúp / khung mốc trong phòng (#792): Koa kể ngay, thay câu đang nói (người xem
   /// vừa hỏi). Không tính vào lịch nói. Câu hiện trong bóng thoại là của phòng (`shelfLine`).
   func tell(_ line: String) {
@@ -293,6 +313,7 @@ final class KoaDirectorDriver {
     talkStart = now
     if !KoaFlags.eyesClosed(KoaTalk.face(beat.topic).peak) { director.blink() }
     Task { @MainActor in self.speech = beat }
+    KoaSound.talk(beat)
   }
 
   /// Phần sống của mỗi khung: nói, mặt có nhịp, co giãn. Đạo diễn lo đi đâu, đây lo mặt và thân.
@@ -308,10 +329,17 @@ final class KoaDirectorDriver {
         Task { @MainActor in self.speech = nil }
       } else {
         let raw = f.expression
-        f.expression = beat.expression(at: t)
-        rest.speaking(dt, raw: raw, face: beat.expression(at: t))
+        // mặt giữ nét của câu, miệng mấp máy theo chữ (Kiệt 04/11: có bóng thoại là miệng cử động)
+        f.expression = beat.face(at: t)
+        f.mouth = beat.mouth(at: t)
+        // phản ứng khi bị chạm: nét mặt của chỗ chạm thắng dáng của ngày (dáng mệt đè mắt, miệng)
+        if KoaTap.Zone.allCases.contains(where: { $0.topic == beat.topic }) {
+          f.dayAmount = 0
+          f.gestureAmount = 0
+        }
+        rest.speaking(dt, raw: raw, face: f.expression ?? .content)
         // nói là miệng nói: người gần như yên, đầu chỉ gật rất nhẹ theo câu
-        if KoaTalk.face(beat.topic).flaps { f.gaze.head.y += 0.012 * sin(t * 3.4) }
+        if f.mouth != nil { f.gaze.head.y += 0.012 * sin(t * 3.4) }
         return
       }
     }
