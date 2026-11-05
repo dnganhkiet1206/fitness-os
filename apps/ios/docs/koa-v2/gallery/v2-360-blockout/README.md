@@ -2,7 +2,7 @@
 
 Kiệt chọn "xoay 360°" (audit mục 8.1). Đây là **mock để duyệt**, không đưa vào app.
 
-- Dựng trong Blender 5.2 (chạy nền) bằng `../../blender/koa_blockout.py`, toạ độ lấy thẳng từ `KoaSceneData` (canvas 240 × 300, 1 đơn vị = 1 cm).
+- Dựng trong Blender 5.2 (chạy nền) bằng bản đầu của `../../blender/koa_blockout.py` (script đã được chỉnh tiếp ở `v3-vector-turnaround/`, nên chạy lại sẽ ra hình khác), toạ độ lấy thẳng từ `KoaSceneData` (canvas 240 × 300, 1 đơn vị = 1 cm).
 - Chỉ có khối: đầu, tai, mắt, mũi, má, miệng, thân, bụng, tay, chân. Không có lông tơ, không có rig, không có đồ mặc.
 - Render bằng Workbench, máy quay trực giao. Có hai kiểu ánh sáng: `FLAT` (màu phẳng, gần nét 2D) và `STUDIO` (thấy khối).
 
