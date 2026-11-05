@@ -2,12 +2,30 @@ import ASCNDCore
 import ASCNDDesignSystem
 import SwiftUI
 
-/// Việc chính + "Tăng tải hôm nay" chồng lên nhau (Kiệt duyệt mock 28/10): thẻ trên
-/// che thẻ dưới nhưng chừa một dải `peek` có thông tin dùng được — bài nên tăng
-/// nhất, hay "Chest day · Bắt đầu ›" khi đã vuốt sang. Vuốt ngang (hoặc chạm dải)
-/// để đổi; VoiceOver đổi bằng hành động có tên.
+/// Việc chính + các thẻ nằm sau nó, chồng như bộ bài (Kiệt duyệt mock 28/10): thẻ trên che
+/// thẻ dưới nhưng chừa một dải `peek` có thông tin dùng được — bài nên tăng nhất, "Tuần này:
+/// tuần nhẹ", hay "Chest day · Bắt đầu ›" khi đã vuốt sang. Vuốt ngang (hoặc chạm dải) để đổi;
+/// VoiceOver đổi bằng hành động có tên.
+///
+/// Thẻ sau (04/11, Kiệt: thẻ đầu tuần "gộp lại như thẻ progressive overload, nằm sau thẻ quay
+/// lại"): thẻ đầu tuần, khi có, nằm ngay sau việc chính — nó chỉ sống vài ngày và chờ một câu
+/// trả lời —, rồi tới "Tăng tải hôm nay". Vuốt trái sang thẻ kế, vuốt phải lùi lại; hết vòng thì
+/// về việc chính. Dải luôn là của thẻ kế.
 struct TodayOverloadStack<Hero: View>: View {
-  let items: [OverloadPlan.Item]
+  /// Một thẻ nằm sau việc chính.
+  enum Back: Identifiable {
+    case coach(KoaWeekCoachCard)
+    case load([OverloadPlan.Item])
+
+    var id: String {
+      switch self {
+      case .coach: "coach"
+      case .load: "load"
+      }
+    }
+  }
+
+  let backs: [Back]
   /// Dải của việc chính khi nó nằm dưới: "Chest day · ~12 phút".
   let mainPeek: String
   /// Nút trên dải ấy ("Bắt đầu") — làm luôn việc chính, không cần đổi thẻ.
@@ -18,7 +36,8 @@ struct TodayOverloadStack<Hero: View>: View {
   /// Thẻ việc chính; `true` = kèm dòng "vuốt để xem" (chỉ để đo khung cũ).
   @ViewBuilder var hero: (_ withHint: Bool) -> Hero
 
-  @State private var showsLoad = false
+  /// Thẻ đang ở trên: 0 = việc chính, i ≥ 1 = `backs[i - 1]`.
+  @State private var top = 0
   @State private var frontHeight: CGFloat = 0
   @State private var frontWidth: CGFloat = 360
   /// Thẻ trên đang theo ngón tay (pt).
@@ -33,16 +52,25 @@ struct TodayOverloadStack<Hero: View>: View {
   /// Dải tối thiểu khi chữ lớn làm thẻ trên cao gần bằng khung.
   static var minPeek: CGFloat { 28 }
 
+  /// Thẻ đang ở trên, kẹp lại khi một thẻ sau vừa biến mất (đã trả lời thẻ đầu tuần).
+  private var shown: Int { top <= backs.count ? top : 0 }
+  /// Thẻ kế — thẻ có dải lộ ra.
+  private var next: Int { (shown + 1) % (backs.count + 1) }
+
   /// Cả chồng nằm GỌN trong khung cũ của thẻ việc chính (Kiệt 28/10): khung = thẻ
   /// việc chính kèm dòng "vuốt để xem"; thẻ trên bỏ dòng ấy, dải của thẻ sau nằm đúng
   /// vào khoảng trống — trang bên dưới không xê dịch.
   var body: some View {
-    if typeSize.isAccessibilitySize { accessibleBody } else { stackedBody }
+    Group {
+      if typeSize.isAccessibilitySize { accessibleBody } else { stackedBody }
+    }
+    // Trả lời thẻ đầu tuần thì nó rời chồng: về việc chính (thường vừa đổi theo câu trả lời).
+    .onChange(of: backs.map(\.id)) { _, _ in top = 0 }
   }
 
   /// Chữ trợ năng (soát 01/11): chồng bài ép cả hai thẻ vào khung của việc chính, chữ
-  /// lớn bị cắt ("Tập Ngực ·…", "Xem c…"). Ở cỡ này hai thẻ xếp dọc, cao theo chữ;
-  /// thẻ trên vẫn đổi việc chính ↔ tăng tải, dải dưới là nút đổi.
+  /// lớn bị cắt ("Tập Ngực ·…", "Xem c…"). Ở cỡ này các thẻ xếp dọc, cao theo chữ;
+  /// thẻ trên vẫn đổi qua các thẻ, dải dưới là nút đổi.
   private var accessibleBody: some View {
     VStack(spacing: DS.Spacing.sm) {
       front
@@ -52,7 +80,7 @@ struct TodayOverloadStack<Hero: View>: View {
       .frame(maxWidth: .infinity, alignment: .leading)
       .todayCard()
     }
-    .sensoryFeedback(.selection, trigger: showsLoad)
+    .sensoryFeedback(.selection, trigger: top)
   }
 
   private var stackedBody: some View {
@@ -87,7 +115,7 @@ struct TodayOverloadStack<Hero: View>: View {
         onEnded: { dx, vx in
           if abs(dx) > 60 || abs(vx) > 500 { swap(direction: dx < 0 ? -1 : 1) } else { settle() }
         }))
-    .sensoryFeedback(.selection, trigger: showsLoad)
+    .sensoryFeedback(.selection, trigger: top)
     // Rời màn giữa lúc kéo / bay: lần sau quay lại thẻ nằm đúng chỗ.
     .onDisappear {
       dragX = 0
@@ -100,12 +128,15 @@ struct TodayOverloadStack<Hero: View>: View {
     withAnimation(reduceMotion ? nil : .spring(response: 0.35, dampingFraction: 0.7)) { dragX = 0 }
   }
 
-  /// Đổi thẻ như chồng bài: thẻ trên bay ra theo chiều vuốt, thẻ sau tiến lên phía trước
-  /// (từ vị trí thấp, nhỏ của nó). Giảm chuyển động: chỉ mờ chéo.
+  /// Đổi thẻ như chồng bài: thẻ trên bay ra theo chiều vuốt, thẻ kế tiến lên phía trước
+  /// (từ vị trí thấp, nhỏ của nó). Vuốt trái (`-1`) tới thẻ kế, vuốt phải lùi một thẻ.
+  /// Giảm chuyển động: chỉ mờ chéo.
   private func swap(direction: CGFloat = -1) {
+    let count = backs.count + 1
+    let target = direction < 0 ? next : (shown + count - 1) % count
     guard !reduceMotion else {
       dragX = 0
-      withAnimation(.easeInOut(duration: 0.2)) { showsLoad.toggle() }
+      withAnimation(.easeInOut(duration: 0.2)) { top = target }
       return
     }
     withAnimation(.easeIn(duration: 0.18)) {
@@ -114,7 +145,7 @@ struct TodayOverloadStack<Hero: View>: View {
       var t = Transaction()
       t.disablesAnimations = true
       withTransaction(t) {
-        showsLoad.toggle()
+        top = target
         dragX = 0
         entering = true
       }
@@ -122,16 +153,21 @@ struct TodayOverloadStack<Hero: View>: View {
     }
   }
 
-  /// Hai thẻ CÙNG một khung (Kiệt 28/10: "thẻ phải cùng kích thước và không làm thay
-  /// đổi kích thước ban đầu"): việc chính luôn được dựng để giữ chiều cao, thẻ tăng tải
-  /// phủ đúng khung ấy và cuộn bên trong khi nhiều bài.
+  /// Mọi thẻ CÙNG một khung (Kiệt 28/10: "thẻ phải cùng kích thước và không làm thay
+  /// đổi kích thước ban đầu"): việc chính luôn được dựng để giữ chiều cao, thẻ sau phủ
+  /// đúng khung ấy và cuộn bên trong khi dài.
   private var front: some View {
     hero(false)
-      .opacity(showsLoad ? 0 : 1)
-      .allowsHitTesting(!showsLoad)
-      .accessibilityHidden(showsLoad)
+      .opacity(shown == 0 ? 1 : 0)
+      .allowsHitTesting(shown == 0)
+      .accessibilityHidden(shown != 0)
       .overlay {
-        if showsLoad { TodayOverloadCard(items: items, onOpen: onOpenLoad) }
+        if shown > 0 {
+          switch backs[shown - 1] {
+          case .coach(let card): card
+          case .load(let items): TodayOverloadCard(items: items, onOpen: onOpenLoad)
+          }
+        }
       }
   }
 
@@ -148,7 +184,7 @@ struct TodayOverloadStack<Hero: View>: View {
     .todayCard()
   }
 
-  /// Dải của thẻ phía sau — nút đổi thẻ, và là chỗ của hành động có tên cho VoiceOver.
+  /// Dải của thẻ kế — nút đổi thẻ, và là chỗ của hành động có tên cho VoiceOver.
   ///
   /// 04/11: hành động "Xem tăng tải / Về việc chính" trước gắn vào CẢ chồng thẻ. Bộ kiểm
   /// accessibility báo "Hit area is too small" cho cả chữ TĨNH của thẻ việc chính ("TODAY'S MAIN
@@ -158,9 +194,24 @@ struct TodayOverloadStack<Hero: View>: View {
   /// cạnh nút đổi thẻ; dải "Chest day · Bắt đầu ›" vẫn bấm là bắt đầu, hành động có tên là quay về.
   private var strip: some View {
     Group {
-      if showsLoad { mainStrip } else { loadStrip }
+      if next == 0 {
+        mainStrip
+      } else {
+        switch backs[next - 1] {
+        case .coach(let card): coachStrip(card)
+        case .load(let items): loadStrip(items)
+        }
+      }
     }
-    .accessibilityAction(named: Text(showsLoad ? "ov.a11y.back" : "ov.a11y.show")) { swap() }
+    .accessibilityAction(named: Text(nextActionName)) { swap() }
+  }
+
+  private var nextActionName: LocalizedStringKey {
+    guard next > 0 else { return "ov.a11y.back" }
+    switch backs[next - 1] {
+    case .coach: return "coach.a11y.show"
+    case .load: return "ov.a11y.show"
+    }
   }
 
   private var mainStrip: some View {
@@ -171,10 +222,12 @@ struct TodayOverloadStack<Hero: View>: View {
           .foregroundStyle(DS.Color.foreground.swiftUI)
           .lineLimit(typeSize.isAccessibilitySize ? nil : 1)
         if !typeSize.isAccessibilitySize { Spacer(minLength: 4) }
-        Text(verbatim: "\(mainAction) ›")
-          .font(DS.TextStyle.footnote.weight(.semibold))
-          .foregroundStyle(DS.Color.primary.swiftUI)
-          .lineLimit(typeSize.isAccessibilitySize ? nil : 1)
+        if !mainAction.isEmpty {
+          Text(verbatim: "\(mainAction) ›")
+            .font(DS.TextStyle.footnote.weight(.semibold))
+            .foregroundStyle(DS.Color.primary.swiftUI)
+            .lineLimit(typeSize.isAccessibilitySize ? nil : 1)
+        }
       }
       .frame(maxHeight: .infinity)
       .contentShape(Rectangle())
@@ -182,11 +235,33 @@ struct TodayOverloadStack<Hero: View>: View {
     .buttonStyle(.plain)
   }
 
-  private var loadStrip: some View {
+  /// Dải của thẻ đầu tuần: "Tuần này: tuần nhẹ · Koa gợi ý ›".
+  private func coachStrip(_ card: KoaWeekCoachCard) -> some View {
     Button { swap() } label: {
       stripLayout {
-        if let top = ups.first {
-          Text(verbatim: "↑ \(top.name) \(TodayOverloadCard.target(top.advice, unit: unit, locale: locale) ?? "")")
+        Label(card.title, systemImage: "calendar")
+          .font(DS.TextStyle.footnote.weight(.semibold))
+          .foregroundStyle(DS.Color.foreground.swiftUI)
+          .lineLimit(typeSize.isAccessibilitySize ? nil : 1)
+        if !typeSize.isAccessibilitySize { Spacer(minLength: 4) }
+        Text(verbatim: "\(String(localized: "coach.peek")) ›")
+          .font(DS.TextStyle.footnote)
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          .lineLimit(typeSize.isAccessibilitySize ? nil : 1)
+      }
+      .frame(maxHeight: .infinity)
+      .contentShape(Rectangle())
+    }
+    .buttonStyle(.plain)
+    .accessibilityIdentifier("today.coach.peek")
+  }
+
+  private func loadStrip(_ items: [OverloadPlan.Item]) -> some View {
+    let ups = items.filter(\.advice.isUp)
+    return Button { swap() } label: {
+      stripLayout {
+        if let first = ups.first {
+          Text(verbatim: "↑ \(first.name) \(TodayOverloadCard.target(first.advice, unit: unit, locale: locale) ?? "")")
             .font(DS.TextStyle.footnote.weight(.semibold))
             .foregroundStyle(DS.Color.readinessGreen.swiftUI)
             .lineLimit(typeSize.isAccessibilitySize ? nil : 1)
@@ -206,8 +281,6 @@ struct TodayOverloadStack<Hero: View>: View {
     }
     .buttonStyle(.plain)
   }
-
-  private var ups: [OverloadPlan.Item] { items.filter(\.advice.isUp) }
 
   /// Dải: ngang; chữ trợ năng thì dọc (chữ ở trên, nút ở dưới).
   @ViewBuilder private func stripLayout<C: View>(@ViewBuilder _ content: () -> C) -> some View {
@@ -251,9 +324,15 @@ private struct HorizontalSwipe: UIGestureRecognizerRepresentable {
       return abs(v.x) >= abs(v.y)
     }
 
+    /// Chỉ cùng lúc với thanh cuộn của trang. Nút trong thẻ (04/11: vuốt ngang bắt đầu và thả
+    /// trên "Nhận đề xuất" đã bấm luôn nút ấy) phải chờ vuốt hỏng mới được nhận chạm.
     func gestureRecognizer(
       _ g: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer
-    ) -> Bool { true }
+    ) -> Bool { other.view is UIScrollView }
+
+    func gestureRecognizer(
+      _ g: UIGestureRecognizer, shouldBeRequiredToFailBy other: UIGestureRecognizer
+    ) -> Bool { !(other.view is UIScrollView) }
   }
 }
 

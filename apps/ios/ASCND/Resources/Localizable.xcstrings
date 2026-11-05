@@ -65262,6 +65262,52 @@
     }
    }
   },
+  "coach.a11y.show": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Show Koa's suggestion for this week"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ver la sugerencia de Koa para esta semana"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Xem gợi ý tuần này của Koa"
+     }
+    }
+   }
+  },
+  "coach.peek": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa's take"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Idea de Koa"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Koa gợi ý"
+     }
+    }
+   }
+  },
   "coach.accept": {
    "extractionState": "manual",
    "localizations": {
