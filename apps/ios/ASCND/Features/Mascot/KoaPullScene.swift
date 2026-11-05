@@ -5,7 +5,7 @@ import SwiftUI
 /// Cảnh Koa chạy tới kéo thẻ nhiệm vụ lên (`KoaPull`) và bảng nội dung đi theo. Koa của cảnh nằm
 /// SAU bảng nên chỉ thò đầu lên khỏi mép, hai tay vẽ TRƯỚC bảng để bám được vào mép.
 /// Giảm chuyển động, hay Koa đang ngủ: không có Koa chạy, bảng trượt lên. Kéo bảng xuống hoặc chạm
-/// phòng để đóng.
+/// phòng để đóng: Koa buông tay, nhảy về bục rồi mới trả chỗ cho Koa của phòng (`KoaPull.leave`).
 struct KoaPullScene<Content: View>: View {
   let start: Date
   let lens: KoaLens
@@ -27,6 +27,8 @@ struct KoaPullScene<Content: View>: View {
   @State private var began: Date?
   /// Rung theo từng nhịp kéo.
   @State private var tugs = 0
+  /// Lúc bắt đầu đóng; `nil` = bảng đang mở.
+  @State private var leaving: Date?
 
   private static var heroScale: Double { KoaRoomMap.heroWidth / 240 }
 
@@ -34,24 +36,29 @@ struct KoaPullScene<Content: View>: View {
     GeometryReader { g in
       let w = Double(g.size.width), h = Double(g.size.height + g.safeAreaInsets.top + g.safeAreaInsets.bottom)
       let panelHeight = h * 0.66
-      TimelineView(.animation(paused: quiet)) { tl in
+      TimelineView(.animation(paused: quiet && leaving == nil)) { tl in
         let t = quiet ? KoaPull.end : began.map { tl.date.timeIntervalSince($0) } ?? 0
-        let shot = KoaPull.shot(at: t, start: head(w), width: w, height: h, panelHeight: panelHeight)
+        let gone = leaving.map { tl.date.timeIntervalSince($0) }
+        let shot = gone.map { g in
+          var s = KoaPull.leave(at: g, start: head(w), width: w, height: h, panelHeight: panelHeight)
+          if quiet { s.panel = KoaPull.panelLeaving(at: g, quiet: true) }
+          return s
+        } ?? KoaPull.shot(at: t, start: head(w), width: w, height: h, panelHeight: panelHeight)
         let top = h - panelHeight * shot.panel + drag
         ZStack(alignment: .topLeading) {
           Color.black.opacity(0.35 * min(1, max(0, shot.panel)))
             .contentShape(Rectangle())
-            .onTapGesture { if t >= KoaPull.end { close() } }
+            .onTapGesture { if t >= KoaPull.end { leave() } }
           if !quiet {
             StudioDust(t: t, start: head(w), width: w, height: h)
             figure(shot, width: w, height: h, t: tl.date.timeIntervalSinceReferenceDate)
               .offset(y: drag)
           }
-          panel(height: panelHeight, top: top)
+          panel(height: panelHeight, top: top, bottomInset: max(Double(g.safeAreaInsets.bottom), 34))
           if !quiet, shot.hands {
             hands(w, top: top, grip: shot.stretchY)
           }
-          if t >= KoaPull.tugTwoEnd, !quiet {
+          if t >= KoaPull.tugTwoEnd, !quiet, leaving == nil {
             bubble.position(x: w / 2 + 92, y: top - 118)
               .transition(.scale(scale: 0.6, anchor: .bottom).combined(with: .opacity))
           }
@@ -65,11 +72,34 @@ struct KoaPullScene<Content: View>: View {
       guard !quiet else { return }
       try? await Task.sleep(for: .milliseconds(60))
       began = .now
+      // tiếng chạy: bật khỏi bục gỗ, rồi từng bước chạy theo đúng nhịp của hình
+      Task {
+        try? await Task.sleep(for: .seconds(KoaPull.anticipate))
+        KoaSound.step(wood: true, gain: 1.2)
+        var at = KoaPull.anticipate
+        for step in KoaPull.runSteps {
+          try? await Task.sleep(for: .seconds(step - at))
+          at = step
+          KoaSound.step(wood: false, gain: 1.4)
+        }
+      }
       try? await Task.sleep(for: .seconds(KoaPull.peekEnd))
       tugs += 1
       KoaSound.boop()
       try? await Task.sleep(for: .seconds(KoaPull.tugTwoStart - KoaPull.peekEnd))
       tugs += 1
+    }
+  }
+
+  /// Đóng: chạy cảnh Koa nhảy về bục (hay chỉ trượt bảng xuống), xong mới gỡ cảnh khỏi phòng.
+  private func leave() {
+    guard leaving == nil else { return }
+    leaving = .now
+    if !quiet { KoaSound.play(.hop) }
+    Task {
+      try? await Task.sleep(for: .seconds(quiet ? KoaPull.quietLeave : KoaPull.leaveEnd))
+      if !quiet { KoaSound.play(.land) }
+      close()
     }
   }
 
@@ -107,7 +137,9 @@ struct KoaPullScene<Content: View>: View {
     .allowsHitTesting(false)
   }
 
-  private func panel(height: Double, top: Double) -> some View {
+  /// Khung bảng cao đúng phần thấy trên màn (04/11: trước dư 60 điểm dưới mép màn nên cuối nội dung
+  /// không cuộn tới được); nền kéo dài xuống để che lúc bảng nảy quá.
+  private func panel(height: Double, top: Double, bottomInset: Double) -> some View {
     VStack(spacing: 0) {
       Capsule()
         .fill(DS.Color.mutedForeground.swiftUI.opacity(0.4))
@@ -119,16 +151,18 @@ struct KoaPullScene<Content: View>: View {
           DragGesture()
             .onChanged { drag = max(0, $0.translation.height) }
             .onEnded { v in
-              if v.translation.height > 90 { close() } else { withAnimation(reduceMotion ? nil : .snappy) { drag = 0 } }
+              if v.translation.height > 90 { leave() } else { withAnimation(reduceMotion ? nil : .snappy) { drag = 0 } }
             }
         )
       content
+        .contentMargins(.bottom, bottomInset + 16, for: .scrollContent)
     }
-    .frame(height: height + 60, alignment: .top)
-    .background(
-      DS.Color.background.swiftUI,
-      in: UnevenRoundedRectangle(topLeadingRadius: 30, topTrailingRadius: 30)
-    )
+    .frame(height: height, alignment: .top)
+    .background(alignment: .top) {
+      UnevenRoundedRectangle(topLeadingRadius: 30, topTrailingRadius: 30)
+        .fill(DS.Color.background.swiftUI)
+        .frame(height: height + 80)
+    }
     .offset(y: top)
     .accessibilityAddTraits(.isModal)
   }

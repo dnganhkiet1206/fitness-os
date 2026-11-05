@@ -13,3 +13,9 @@ nguồn. Kiệt yêu cầu ngày 31/10; đổi tính cách giọng thì sửa `C
 
 Nguồn: https://kenney.nl/assets/interface-sounds, https://kenney.nl/assets/ui-audio; bản trên GitHub
 `Calinou/kenney-interface-sounds`, `Calinou/kenney-ui-audio`.
+
+**Tiếng của căn phòng** (Kiệt 04/11: bước chân nhẹ, nhiều tiếng cho phòng sống động; nhạc nền đã bỏ vì
+nghe ảm đạm) tự tổng hợp bằng `room.py`: `koa-step-*` (bục: `koa-step-wood-*`), `koa-snore` (4 giây lặp, phòng ngủ),
+`koa-amb-day` / `koa-amb-night` (30 giây lặp, tuần hoàn nên không có chỗ nối), và tiếng lẻ `koa-rustle`,
+`koa-coin`, `koa-sweep`, `koa-hop`, `koa-car`, `koa-creak`, `koa-buzz`, `koa-tick`, `koa-bird`. Không bản ghi,
+không giấy phép. Chạy: `python3 tools/koa-sound/room.py`; độ to trong app ở `KoaSound.Cue.volume`.

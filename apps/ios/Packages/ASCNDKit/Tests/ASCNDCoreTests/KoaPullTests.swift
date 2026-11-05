@@ -81,3 +81,25 @@ import Testing
     #expect(f["lidsWink"]?.truthy == false, "nháy mắt làm mắt đóng mở liên tục")
   }
 }
+
+/// Đóng thẻ (Kiệt 04/11): Koa nhảy về bục rồi Koa của phòng thay đúng chỗ — không có hai Koa.
+struct KoaPullLeaveTests {
+  static let start = (x: 190.0, y: 520.0, scale: 0.55)
+
+  @Test func landsExactlyWhereTheRoomKoaStands() {
+    let s = KoaPull.leave(at: KoaPull.leaveEnd, start: Self.start, width: 420, height: 912, panelHeight: 600)
+    #expect(s.x == Self.start.x && s.y == Self.start.y && s.scale == Self.start.scale)
+    #expect(s.stretchX == 1 && s.stretchY == 1)
+    #expect(s.panel == 0)
+    #expect(!s.hands)
+  }
+
+  @Test func letsGoAtTheEdgeThenArcsUpAndAway() {
+    let first = KoaPull.leave(at: 0, start: Self.start, width: 420, height: 912, panelHeight: 600)
+    #expect(first.x == 210 && first.scale == 0.8 && first.panel == 1)
+    // bục nằm thấp hơn mép bảng: Koa bật lên trên chỗ buông trước khi rơi về bục
+    let peak = (0...20).map { KoaPull.leave(at: KoaPull.letGo + KoaPull.leapBack * Double($0) / 20, start: Self.start, width: 420, height: 912, panelHeight: 600).y }.min()!
+    #expect(peak < first.y)
+    #expect(KoaPull.panelLeaving(at: KoaPull.quietLeave, quiet: true) == 0)
+  }
+}

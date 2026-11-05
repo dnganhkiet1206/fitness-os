@@ -17,11 +17,15 @@ extension KoaMath {
     public var lean: Double
     /// Tai giật lúc rảnh theo chu kỳ cố định. Phòng tắt đi: đạo diễn giật tai vào lúc không đều.
     public var twitches: Bool
-    public init(ms: Double? = nil, lift: Double = 0, lean: Double = 0, twitches: Bool = true) {
+    /// `false` (phòng, Kiệt 04/11): chọc thì giật mình nhẹ tại chỗ (`flinchMat`) thay vì nhảy lên —
+    /// cảm xúc theo chỗ chạm đi ngay sau (`KoaTap`).
+    public var jumps: Bool
+    public init(ms: Double? = nil, lift: Double = 0, lean: Double = 0, twitches: Bool = true, jumps: Bool = true) {
       self.ms = ms
       self.lift = lift
       self.lean = lean
       self.twitches = twitches
+      self.jumps = jumps
     }
   }
 
@@ -60,6 +64,19 @@ extension KoaMath {
     let ty = a.1 + (b.1 - a.1) * f, sx = a.2 + (b.2 - a.2) * f, sy = a.3 + (b.3 - a.3) * f
     let (ox, oy) = floor
     return [sx, 0, 0, sy, ox - sx * ox, oy - sy * oy + ty]
+  }
+
+  /// Giật mình tại chỗ: lún nhanh, bật lại, lắng — không rời chân.
+  public static let flinchDur = 420.0
+  static let flinchFrames: [(Double, Double, Double)] = [(0, 1, 1), (0.22, 1.06, 0.93), (0.55, 0.98, 1.03), (1, 1, 1)]
+
+  public static func flinchMat(_ ms: Double) -> Mat? {
+    guard ms >= 0, ms < flinchDur else { return nil }
+    let (i, j, f) = span(flinchFrames.map(\.0), ms / flinchDur, "io")
+    let a = flinchFrames[i], b = flinchFrames[j]
+    let sx = a.1 + (b.1 - a.1) * f, sy = a.2 + (b.2 - a.2) * f
+    let (ox, oy) = floor
+    return [sx, 0, 0, sy, ox - sx * ox, oy - sy * oy]
   }
 
   /// Độ cao của cú nhảy, 0 → 1 (bóng đổ thu lại khi Koa lên cao).
@@ -111,6 +128,13 @@ extension KoaMath {
   /// dưới của elip mi `82,96 · 19×25`) và đi cùng phép co của mi: trên nét là lông, dưới
   /// là mắt, không bao giờ đè lên con ngươi còn lộ (23/10, Kiệt: nét đứng yên giữa mắt bị lỗi).
   public static let blinkAnims: Set<String> = ["koaBlink", "koaBlink2"]
+  /// Mí đang khép một phần — mắt lờ đờ thì không nháy (`KoaRender.node`).
+  static let lidFlags = ["lidsHalf", "lidsHeavy", "lidsSad", "lidsWink"]
+  static func lidded(_ f: KoaFlags.Flags) -> Bool { lidFlags.contains { f[$0]?.truthy ?? false } }
+  /// Mép trên của mắt; mí lờ đờ nhắm bằng cách giãn xuống từ đây.
+  static let eyeTop = 72.5
+  /// Mí giãn bao nhiêu lần thì phủ hết mắt (đáy mắt y 119,5): mí nửa che tới y 96, mí nặng tới 104.
+  static let lidDrop: [String: Double] = ["lidsHalf": 2.0, "lidsHeavy": 1.5, "lidsSad": 2.0]
   public static let lashPaths = ["M67 111.35 Q82 130.65 97 111.35", "M143 111.35 Q158 130.65 173 111.35"]
   public static let lashWidth = 3.4
   /// Mi mở hẳn (co dưới mức này) thì không vẽ nét mi.
@@ -126,11 +150,11 @@ extension KoaMath {
   /// Ma trận phản ứng của một lớp (theo id, hoặc theo cờ với lông mày), `nil` = không cử động.
   public static func pokeMat(id: String?, cond: String?, _ p: Poke, t: Double = 0) -> Mat? {
     switch id {
-    case "POSERIG": return p.ms.flatMap(hopMat)
+    case "POSERIG": return p.ms.flatMap(p.jumps ? hopMat : flinchMat)
     case "ear_left", "ear_left_inner": return earMat(left: true, inner: id == "ear_left_inner", p, t: t)
     case "ear_right", "ear_right_inner": return earMat(left: false, inner: id == "ear_right_inner", p, t: t)
     case "shadow":
-      guard let ms = p.ms else { return nil }
+      guard let ms = p.ms, p.jumps else { return nil }
       let k = 1 - 0.22 * hopRise(ms)
       if k >= 1 { return nil }
       return [k, 0, 0, k, floor.0 * (1 - k), floor.1 * (1 - k)]

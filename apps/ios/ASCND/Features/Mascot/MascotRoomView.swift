@@ -40,6 +40,7 @@ struct MascotRoomView: View {
   @State private var notice: String?
   @State private var celebrate = 0
   @AppStorage(KoaSound.offKey) private var soundOff = false
+  @Environment(\.scenePhase) private var roomPhase
   /// Giờ hiện tại, đổi mỗi phút: tới giờ ngủ khi đang mở phòng thì Koa đi ngủ ngay.
   @State private var clock = Date.now
   /// Lúc Koa bắt đầu chạy tới kéo bảng; `nil` = bảng đang đóng.
@@ -101,6 +102,16 @@ struct MascotRoomView: View {
         }
       #endif
       .onReceive(Timer.publish(every: 30, on: .main, in: .common).autoconnect()) { clock = $0 }
+      // nhạc nền và tiếng nền của phòng (04/11): chỉ khi phòng đang mở, app ở tiền cảnh, loa bật
+      .onAppear { KoaSound.startRoom(day: daytime) }
+      .onDisappear { KoaSound.stopRoom() }
+      .onChange(of: soundOff) { _, off in if off { KoaSound.stopRoom() } else { KoaSound.startRoom(day: daytime) } }
+      .onChange(of: daytime) { _, day in KoaSound.startRoom(day: day) }
+      .onChange(of: roomPhase) { _, phase in
+        if phase == .active { KoaSound.startRoom(day: daytime) } else if phase == .background { KoaSound.stopRoom() }
+      }
+      // xu về ví (nhận nhiệm vụ, thưởng tuần): tiếng xu nhỏ
+      .onChange(of: room.balance) { old, new in if new > old { KoaSound.play(.coin) } }
       .onChange(of: room.welcomeGranted) { _, amount in
         guard let amount else { return }
         say(amount == 1 ? String(localized: "mr.welcome.one") : String(localized: "mr.welcome.other \(amount)"))
@@ -135,6 +146,7 @@ struct MascotRoomView: View {
         let _ = (lens.drop = drop)
         ZStack(alignment: .top) {
           StudioTallRoom(drop: drop, lens: lens)
+            .koaDustFilm(devDust ?? dust?.level ?? 0)
           stage
             // hai mép tranh tan vào tường cao và sàn, không lộ đường nối
             .mask {
@@ -188,6 +200,7 @@ struct MascotRoomView: View {
   private var companionFacts: KoaCompanion.Facts {
     var f = KoaCompanion.Facts(gains: room.gains, today: room.today, mood: moodRead.reason)
     f.milestone = roomMoment != nil
+    f.dust = devDust ?? dust?.level ?? 0
     return f
   }
 
@@ -430,6 +443,7 @@ struct MascotRoomView: View {
     if let f = await services.cleanKoaRoom(userId: room.userId) {
       say(f == .insufficientCoins ? String(localized: "shop.notenough") : Self.message(f))
     } else {
+      KoaSound.play(.sweep)
       say(String(localized: "mr.dust.cleaned"))
       Telemetry.capture(.koaRoomCleaned)
       devDust = nil
@@ -1124,7 +1138,7 @@ struct MascotStage: View {
 
   /// Phòng nhiều lớp vẽ trong đồng hồ của sân khấu (`livingHero`), đây chỉ giữ khung.
   @ViewBuilder private var roomBase: some View {
-    if layered { Color.clear } else { StudioBackdrop(options: backdrop) }
+    if layered { Color.clear } else { StudioBackdrop(options: backdrop).koaDustFilm(dust) }
   }
 
   /// Đang ngủ và đã tới chỗ: sang phòng ngủ gác mái, sân khấu nghỉ hẳn.
@@ -1178,7 +1192,10 @@ struct MascotStage: View {
     }
     .clipped()
     .animation(reduceMotion ? nil : .timingCurve(0.42, 0, 0.58, 1, duration: KoaBedtime.pan), value: asleep)
-    .onChange(of: bedShown, initial: true) { _, shown in lens?.bedroom = shown }
+    .onChange(of: bedShown, initial: true) { _, shown in
+      lens?.bedroom = shown
+      KoaSound.setAsleep(shown, day: scheme == .light)
+    }
     .onChange(of: studio, initial: true) { _, o in lens?.options = o }
     .onChange(of: inBedroom, initial: true) { old, now in
       if now {
@@ -1345,6 +1362,22 @@ struct MascotStage: View {
     .parallax(.wall, shot, k: k, anchor: anchor)
   }
 
+  /// Chạm vào khóm lá (04/11, Kiệt): lá ngả ra xa ngón tay rồi lắc tắt dần, tiếng lá sột soạt.
+  private func plantTap(_ width: CGFloat, height: CGFloat, shot: KoaParallax.Shot, anchor: UnitPoint) -> some View {
+    let k = Double(width) / StudioScene.width
+    let leaves = (x: 268.0, y: 300.0, width: 96.0, height: 70.0)  // khóm lá trên chậu cây (gốc lá ~ x 316)
+    return Color.clear
+      .contentShape(Rectangle())
+      .frame(width: leaves.width * k, height: leaves.height * k)
+      .onTapGesture(coordinateSpace: .local) { p in
+        director.touchPlant(fromLeft: Double(p.x) / k < leaves.width / 2)
+      }
+      .offset(x: leaves.x * k, y: leaves.y * k)
+      .frame(width: width, height: height, alignment: .topLeading)
+      .parallax(.props, shot, k: k, anchor: anchor)
+      .accessibilityHidden(true)
+  }
+
   /// Một vùng chạm trong suốt, giữa đúng món, cao ít nhất 44 điểm.
   private func shelfButton(
     _ item: ShelfItem, _ r: (x: Double, y: Double, width: Double, height: Double), k: Double, minWidth: Double
@@ -1414,6 +1447,7 @@ struct MascotStage: View {
           StudioLayers(
             options: backdrop, plantSway: director.swaying ? f?.plantSway ?? 0 : 0, shot: shot,
             size: CGSize(width: width, height: height), light: scheme == .light, showsHaze: false)
+          .koaDustFilm(dust)
         } else if director.swaying {
           // lá cây đang rung (~3 giây): vẽ cả căn phòng đè lên phòng tĩnh, có cây đang lay. Trước đây
           // tách phần từ chậu cây trở lên sang lớp riêng: đèn và viền tối vẽ hai lớp nên độ sáng
@@ -1421,10 +1455,12 @@ struct MascotStage: View {
           var o = studio
           let _ = (o.plantSway = f?.plantSway ?? 0)
           StudioBackdrop(options: o)
+            .koaDustFilm(dust)
             .frame(width: width, height: width / StudioScene.width * StudioScene.sceneBottom)
             .allowsHitTesting(false)
         }
         if !shelf.isEmpty, !away { shelfTaps(width, height: height, shot: shot, anchor: anchor) }
+        if !away { plantTap(width, height: height, shot: shot, anchor: anchor) }
         hero(
           width, x: x + shot.shift(koaAmp), y: y,
           scale: still.map { KoaRoomMap.scale($0.d) } ?? f?.scale ?? 1,
@@ -1480,6 +1516,7 @@ struct MascotStage: View {
         let _ = (o.plantSway = director.swaying ? plantSway : 0)
         StudioFront(options: o, indices: Set(objects.flatMap(\.elements)))
           .equatable()
+          .koaDustFilm(dust)
           .frame(width: width, height: width / StudioScene.width * StudioScene.sceneBottom)
           .allowsHitTesting(false)
       }
@@ -1499,16 +1536,15 @@ struct MascotStage: View {
     return MascotFigureView(
       emotion: shownEmotion, equipped: equipped, gesture: gesture, size: size, build: build, interactive: true,
       walks: walks, direct: direct,
-      // chạm Koa: Koa vẫn nhảy lên như cũ, rồi quay sang chào người xem
+      // chạm Koa (Kiệt 04/11): không nhảy nữa — giật mình tại chỗ, rồi cảm xúc và câu nói theo
+      // chỗ chạm (`KoaTap`); giọng koala kiểu mèo Tom thay tiếng "boop"
       onTap: walks && !reduceMotion
         ? {
           director.boost()
           director.touched()
-          director.request(.greet)
-          director.poked()
-          KoaSound.boop()
           visit.poked()
         } : nil,
+      onTapZone: walks && !reduceMotion ? { zone in director.tapped(zone) } : nil,
       // phòng: Koa theo đồng hồ của sân khấu (một đồng hồ, không vẽ hai lần)
       date: walks ? date : nil, onTouch: walks ? { director.boost() } : nil,
       idleClock: walks ? director.frame?.idleClock : nil)

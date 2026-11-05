@@ -149,7 +149,7 @@ struct StudioSceneTests {
   /// và chậu không rung.
   @Test func plantLeavesSwayAroundTheStemTop() throws {
     var o = StudioScene.Options()
-    o.plantSway = 6
+    o.plantSway = 0.2  // 0,2 giây sau khi bị chạm từ bên trái
     let plant = try #require(StudioScene.objects(o, [StudioScene.plantIndex]).first { $0.tag == "G" })
     #expect(plant.kids.count == 13)
     for leaf in plant.kids[1...8] {
@@ -158,6 +158,17 @@ struct StudioSceneTests {
       #expect(abs(m[1]) > 0.05, "lá có xoay")
     }
     #expect(plant.kids[0].matrix == nil && plant.kids[9].matrix == nil)
+  }
+
+  /// Chạm cây (Kiệt 04/11): lá ngả ra XA chỗ chạm trước, mỗi lá một góc (không lắc đồng loạt), lá
+  /// phía chạm động trước, rồi lắng hẳn.
+  @Test func leavesBendAwayFromTheTouchOneByOne() {
+    let early = (1...8).map { StudioScene.leafAngle($0, t: 0.12, side: 1) }
+    #expect(early.allSatisfy { $0 >= 0 }, "chạm từ trái: lá ngả sang phải (góc dương)")
+    #expect(early[0] > early[7], "lá bên trái (gần chỗ chạm) đi trước")
+    #expect(Set(early.map { ($0 * 100).rounded() }).count > 4, "mỗi lá một góc")
+    #expect((1...8).allSatisfy { StudioScene.leafAngle($0, t: 0.12, side: -1) <= 0 })
+    #expect((1...8).allSatisfy { abs(StudioScene.leafAngle($0, t: StudioScene.leafSettle, side: 1)) < 0.1 })
   }
 
   /// Tắt đèn: bỏ vệt sáng, chao, dây; bật chiều sâu: thêm lớp ván sàn / chân tường.

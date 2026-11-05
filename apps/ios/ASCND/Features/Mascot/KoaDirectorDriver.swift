@@ -58,6 +58,13 @@ final class KoaDirectorDriver {
     director.interacted()
   }
 
+  /// Người xem chạm vào khóm lá: lá rung (đồng hồ 60 khung để lá lắc mượt).
+  func touchPlant(fromLeft: Bool) {
+    director.touchPlant(fromLeft: fromLeft)
+    boostUntil = Date.now.timeIntervalSinceReferenceDate + StudioScene.leafSettle
+    if !moving { moving = true }
+  }
+
   // MARK: Ký ức
 
   @ObservationIgnored private var memory = KoaCompanion.Memory()
@@ -198,6 +205,7 @@ final class KoaDirectorDriver {
     var f = director.step(dt, ctx: context)
     KoaSignpost.poster.endInterval("director", sp)
     alive(&f, dt: dt, at: now)
+    sound(f)
     frame = f
     if plane != f.plane { plane = f.plane }
     camera.step(dt, koaX: f.x, framed: framed)
@@ -207,7 +215,7 @@ final class KoaDirectorDriver {
       if f.reacted != nil, forcedMoment != nil { return f }
     #endif
     if let m = f.reacted, let facts {
-      if m == .rankUp || m == .record { KoaSound.play(.cheer) }
+      if m == .rankUp || m == .record { KoaSound.react("yay") }
       camera.push()
       memory.react(m, facts, at: wall)
       feel(wall)
@@ -260,6 +268,30 @@ final class KoaDirectorDriver {
     speak(KoaTalk.Beat(topic: .poke, variant: probe.variant, line: lineOf?(probe) ?? ""))
   }
 
+  /// Chạm vào một chỗ trên người Koa (Kiệt 04/11): chọc xong (giật mình tại chỗ) là nét mặt của
+  /// chỗ ấy kèm tiếng koala kiểu mèo Tom, rồi câu nói. Chạm lại khi đang nói: thay câu.
+  func tapped(_ zone: KoaTap.Zone) {
+    let now = Date.timeIntervalSinceReferenceDate
+    tapStreak = now - lastTap < 12 ? tapStreak + 1 : 0
+    lastTap = now
+    let (topic, voice) = KoaTap.reaction(zone, streak: tapStreak)
+    let probe = KoaTalk.Beat(topic: topic, variant: Int.random(in: 0..<KoaTalk.variants(topic)))
+    let beat = KoaTalk.Beat(topic: topic, variant: probe.variant, line: lineOf?(probe) ?? "")
+    // chuyển mặt tự nhiên: giật mình nhẹ, chớp mắt, đổi nét mặt lúc mắt đang khép (kỹ thuật chớp của
+    // phim hoạt hình), rồi mới có tiếng và lời
+    director.blink()
+    KoaSound.react(voice, delay: 0.2)
+    Task { @MainActor in
+      try? await Task.sleep(for: .milliseconds(110))
+      self.talkStart = Date.timeIntervalSinceReferenceDate
+      self.speech = beat
+      KoaSound.talk(beat)
+    }
+  }
+
+  @ObservationIgnored private var tapStreak = 0
+  @ObservationIgnored private var lastTap = 0.0
+
   /// Người xem chạm cúp / khung mốc trong phòng (#792): Koa kể ngay, thay câu đang nói (người xem
   /// vừa hỏi). Không tính vào lịch nói. Câu hiện trong bóng thoại là của phòng (`shelfLine`).
   func tell(_ line: String) {
@@ -268,6 +300,23 @@ final class KoaDirectorDriver {
 
   private static func talkKey(_ userId: String) -> String { "koa.talk.\(userId)" }
 
+  /// Bàn chân nào đang ở trên không (đã nhấc rõ, chưa chạm lại), và lá cây có đang rung không.
+  @ObservationIgnored private var airborne = (left: false, right: false)
+  @ObservationIgnored private var lastSway = false
+
+  /// Tiếng của khung (04/11, Kiệt): bàn chân chạm sàn là một bước nhẹ (bục là ván gỗ), nhảy
+  /// lên / xuống bục có tiếng gió nhẹ, lá cây bắt đầu rung thì sột soạt.
+  private func sound(_ f: KoaDirector.Frame) {
+    let left = f.walk?.left.lift ?? 0, right = f.walk?.right.lift ?? 0
+    let landed = (left < 0.05 && airborne.left) || (right < 0.05 && airborne.right)
+    airborne = (left > 1.5 || (airborne.left && left >= 0.05), right > 1.5 || (airborne.right && right >= 0.05))
+    if landed { KoaSound.step(wood: f.plane == .stage) }
+    if f.plane != plane { KoaSound.play(.hop) }
+    let swaying = f.plantSway != 0
+    if swaying, !lastSway { KoaSound.play(.rustle) }
+    lastSway = swaying
+  }
+
   /// `now` là đồng hồ của nhịp gọi tới (`step` / `quietTick`), cùng đồng hồ mà nhịp sau dùng để
   /// tắt bóng thoại. Lấy giờ thật ở đây thì hai đồng hồ lệch nhau: test truyền giờ giả bị đỏ trên
   /// máy CI chậm (#840).
@@ -275,6 +324,7 @@ final class KoaDirectorDriver {
     talkStart = now
     if !KoaFlags.eyesClosed(KoaTalk.face(beat.topic).peak) { director.blink() }
     Task { @MainActor in self.speech = beat }
+    KoaSound.talk(beat)
   }
 
   /// Phần sống của mỗi khung: nói, mặt có nhịp, co giãn. Đạo diễn lo đi đâu, đây lo mặt và thân.
@@ -287,13 +337,22 @@ final class KoaDirectorDriver {
     if let beat = speech {
       let t = now - talkStart
       if t >= beat.seconds {
+        // về mặt thường cũng qua một cái chớp, không bật mặt
+        if KoaTap.Zone.allCases.contains(where: { $0.topic == beat.topic }) || beat.topic == .pokeNose { director.blink() }
         Task { @MainActor in self.speech = nil }
       } else {
         let raw = f.expression
-        f.expression = beat.expression(at: t)
-        rest.speaking(dt, raw: raw, face: beat.expression(at: t))
+        // mặt giữ nét của câu, miệng mấp máy theo chữ (Kiệt 04/11: có bóng thoại là miệng cử động)
+        f.expression = beat.face(at: t)
+        f.mouth = beat.mouth(at: t)
+        // phản ứng khi bị chạm: nét mặt của chỗ chạm thắng dáng của ngày (dáng mệt đè mắt, miệng)
+        if KoaTap.Zone.allCases.contains(where: { $0.topic == beat.topic }) || beat.topic == .pokeNose {
+          f.dayAmount = 0
+          f.gestureAmount = 0
+        }
+        rest.speaking(dt, raw: raw, face: f.expression ?? .content)
         // nói là miệng nói: người gần như yên, đầu chỉ gật rất nhẹ theo câu
-        if KoaTalk.face(beat.topic).flaps { f.gaze.head.y += 0.012 * sin(t * 3.4) }
+        if f.mouth != nil { f.gaze.head.y += 0.012 * sin(t * 3.4) }
         return
       }
     }

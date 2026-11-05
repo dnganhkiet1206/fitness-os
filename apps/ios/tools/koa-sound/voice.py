@@ -16,7 +16,8 @@ OUT = HERE.parents[1] / "ASCND/Resources/Sounds"
 rng = np.random.default_rng(12)
 
 # formant (F1, F2, F3) nâng 1,2 lần cho giọng nhỏ người; "m" là âm mũi, nghe như ngậm miệng
-VOWEL = {"m": (300, 1200, 2700), "u": (420, 960, 2900), "o": (600, 1080, 3000), "a": (960, 1560, 3100), "e": (640, 2100, 3100)}
+VOWEL = {"m": (300, 1200, 2700), "n": (300, 1600, 2700), "u": (420, 960, 2900), "o": (600, 1080, 3000), "a": (960, 1560, 3100),
+         "e": (640, 2100, 3100), "i": (380, 2500, 3300)}
 
 
 def track(points, n):
@@ -104,14 +105,19 @@ def read(path):
         return np.frombuffer(w.readframes(w.getnframes()), dtype=np.int16) / 32768
 
 
-for name, make in CUES.items():
-    write(name, make())
+def main():
+    for name, make in CUES.items():
+        write(name, make())
 
-# đáp giường: "ụm" nén xuống, chồng lên tiếng bịch Kenney (CC0)
-grunt = voice(0.24, [(0, 300), (1, 170)], ["u", "m"], [(0, 0), (0.08, 1), (0.5, 0.6), (1, 0)], growl=0.45)
-grunt = grunt / np.max(np.abs(grunt))
-thud = read(HERE / "thud.wav")
-mix = np.zeros(max(grunt.size, thud.size))
-mix[: grunt.size] += 0.8 * grunt
-mix[: thud.size] += 0.9 * thud / np.max(np.abs(thud))
-write("koa-land", mix)
+    # đáp giường: "ụm" nén xuống, chồng lên tiếng bịch Kenney (CC0)
+    grunt = voice(0.24, [(0, 300), (1, 170)], ["u", "m"], [(0, 0), (0.08, 1), (0.5, 0.6), (1, 0)], growl=0.45)
+    grunt = grunt / np.max(np.abs(grunt))
+    thud = read(HERE / "thud.wav")
+    mix = np.zeros(max(grunt.size, thud.size))
+    mix[: grunt.size] += 0.8 * grunt
+    mix[: thud.size] += 0.9 * thud / np.max(np.abs(thud))
+    write("koa-land", mix)
+
+
+if __name__ == "__main__":
+    main()

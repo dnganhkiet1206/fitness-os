@@ -5,6 +5,10 @@ public enum KoaTalk {
   public enum Topic: String, Sendable, Hashable, CaseIterable, Codable {
     case greet, trained, record, comeback, restDay, allDone, rested, shortSleep, overate
     case emptyLate, fed, nudge, birthday, calm, poke
+    /// Chạm vào một chỗ trên người Koa (Kiệt 04/11, `KoaTap`): mỗi chỗ một cảm xúc, một câu.
+    case pokeHead, pokeEar, pokeNose, pokeBelly, pokeFeet, pokeFace
+    /// Phòng có bụi: Koa ngượng ngùng nhờ người dùng giúp dọn (Kiệt 04/11), không trách.
+    case dusty
     /// Mốc mới của hành trình (`KoaMomentFeed`): câu do app lấy từ mốc, không theo bảng dịch.
     case milestone
     /// Người xem chạm cúp / khung mốc trong phòng (#792): Koa kể lại kỷ lục hay mốc ấy. Câu do app
@@ -33,6 +37,16 @@ public enum KoaTalk {
     case .emptyLate: Face(peak: .plead, settle: .sheepish, flaps: false)
     case .calm: Face(peak: .happy, settle: .thinking, flaps: true)
     case .poke: Face(peak: .surprised, settle: .grin, flaps: false)
+    // chạm theo chỗ (04/11): gần gũi, không thái quá (Kiệt: không tức giận ngay từ lần chạm đầu) —
+    // xoa đầu lim dim, tai và chân ngượng ngùng, bụng cười khúc khích, má vui; "no no no" phụng phịu
+    // chỉ khi bị bấm mũi nhiều lần (`KoaTap.topic`)
+    case .pokeHead: Face(peak: .warm, settle: .content, flaps: true)
+    case .pokeEar: Face(peak: .happy, settle: .warm, flaps: true)
+    case .pokeNose: Face(peak: .nope, settle: .sheepish, flaps: true)
+    case .pokeBelly: Face(peak: .grin, settle: .happy, flaps: true)
+    case .pokeFeet: Face(peak: .sheepish, settle: .content, flaps: true)
+    case .pokeFace: Face(peak: .happy, settle: .content, flaps: true)
+    case .dusty: Face(peak: .sheepish, settle: .warm, flaps: true)
     case .milestone: Face(peak: .grin, settle: .happy, flaps: true)
     case .shelf: Face(peak: .delighted, settle: .happy, flaps: true)
     }
@@ -58,9 +72,23 @@ public enum KoaTalk {
     public init(topic: Topic, variant: Int, line: String = "") {
       self.topic = topic
       self.variant = variant
-      mouth = KoaTalk.face(topic).flaps ? KoaTalk.visemes(line) : []
+      // có bóng thoại là miệng cử động (Kiệt 04/11) — cả mặt mệt, mặt lo: chỉ miệng đổi, mắt giữ
+      mouth = line.isEmpty ? [] : KoaTalk.visemes(line)
       // đủ lâu để đọc: phần miệng nói xong rồi còn nán lại một nhịp
       seconds = max(topic == .poke ? 1.8 : 2.8, KoaTalk.mouthStart + Double(mouth.count) * KoaTalk.mouthStep + 1.2)
+    }
+
+    /// Nét mặt (mắt, lông mày) ở giây `t`: đỉnh suốt lúc nói, rồi lắng.
+    public func face(at t: Double) -> KoaFlags.Expression {
+      let f = KoaTalk.face(topic)
+      return t < KoaTalk.mouthStart + Double(mouth.count) * KoaTalk.mouthStep ? f.peak : f.settle
+    }
+
+    /// Khẩu hình ở giây `t` (chỉ miệng, `KoaRender.Options.mouth`); `nil` = không nói.
+    public func mouth(at t: Double) -> KoaFlags.Expression? {
+      guard t >= KoaTalk.mouthStart else { return nil }
+      let i = Int((t - KoaTalk.mouthStart) / KoaTalk.mouthStep)
+      return i < mouth.count ? mouth[i] : nil
     }
 
     /// Nét mặt ở giây `t` của câu: đỉnh, mấp máy theo nhịp không đều, rồi lắng.
@@ -73,8 +101,8 @@ public enum KoaTalk {
   }
 
   /// Miệng bắt đầu nói sau khi mặt lên đỉnh, mỗi khẩu hình giữ một nhịp.
-  static let mouthStart = 0.7
-  static let mouthStep = 0.12
+  public static let mouthStart = 0.7
+  public static let mouthStep = 0.12
 
   /// Khẩu hình theo chữ, như cách Duolingo cho nhân vật nói (viseme): "a" há to, "o", "u" tròn môi,
   /// "e", "i" kéo ngang, "m", "b", "p" khép lại, dấu câu ngừng hơi. Ký tự dấu tiếng Việt quy về chữ
@@ -137,6 +165,8 @@ public enum KoaTalk {
     default: break
     }
     if facts.restDay { order.append(.restDay) }
+    // phòng bụi: nhờ dọn sau chuyện tập / ăn ngủ của ngày, trước câu nói vu vơ
+    if facts.dust > 0 { order.append(.dusty) }
     // mốc mới đi trước mọi chuyện của ngày; lời chào vẫn mở đầu
     if facts.milestone { order.insert(.milestone, at: 0) }
     if greeting { order.insert(.greet, at: 0) }

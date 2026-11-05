@@ -105,7 +105,15 @@ public enum StudioTall {
       out.append(KoaBedroom.rect(x, 310, 50, 42, c.rail, r: 3, opacity: 0.16))
     }
     out += sign(o, skin, c)
-    return out
+    return out + dust(o, layer: "wall", skin: skin)
+  }
+
+  /// Bụi và tơ nhện trên tường cao theo mức bụi (cộng dồn), chỉ phần của một lớp.
+  static func dust(_ o: StudioScene.Options, layer: String, skin: StudioScene.Skin) -> [Element] {
+    guard o.dust > 0 else { return [] }
+    return (1...min(3, o.dust)).flatMap { StudioScene.decorData.tallDust["\($0)"] ?? [] }
+      .filter { $0["layer"]?.stringValue == layer }
+      .compactMap { StudioScene.element($0, o, skin) }
   }
 
   /// Bảng hiệu vẽ lại: tấm neon treo hai dây, viền sáng đôi, chữ của tranh gốc theo ngôn ngữ app.
@@ -177,6 +185,19 @@ public enum StudioTall {
     ]
   }
 
+  /// Điểm treo đèn trên trần (dây đèn x 195 từ y −360).
+  public static let lampPivot = (x: 195.0, y: -360.0)
+
+  /// Đèn trần đung đưa theo gió (Kiệt 04/11): thỉnh thoảng — mỗi 26 giây một cơn gió dài 9 giây — đèn
+  /// lắc như con lắc (nhịp 3,1 giây), tối đa 1,2°, vào ra êm từ 0 nên không giật; chao và chùm sáng
+  /// cùng lắc nên vệt sáng di chuyển theo. Nhẹ để không mỏi mắt, chỉ cho phòng sống động.
+  public static func lampSway(at t: Double) -> Double {
+    let gust = 9.0, period = 26.0
+    let p = t.truncatingRemainder(dividingBy: period)
+    guard p >= 0, p < gust else { return 0 }
+    return 1.2 * sin(Double.pi * p / gust) * sin(2 * Double.pi * p / 3.1)
+  }
+
   /// Chùm sáng tách lớp riêng để app làm nhoè mép (`coneBlur`), chao đèn phía trên vẫn nét.
   public static let coneBlur = 10.0
 
@@ -211,6 +232,8 @@ public enum StudioTall {
       KoaBedroom.path("M146 -56Q195 -136 244 -56Z", c.shade),
       KoaBedroom.ellipse(195, -55, 49, 9, o.lamp ? c.cone : c.panel),
     ]
-    return out
+    // tơ rối quấn dây đèn: cùng tầng với đèn nên trôi theo dây khi máy quay lia
+    let table = o.light ? StudioScene.lightSkins : StudioScene.skins
+    return out + dust(o, layer: "lamp", skin: table[o.skin] ?? table["default"]!)
   }
 }
