@@ -198,6 +198,7 @@ final class KoaDirectorDriver {
     var f = director.step(dt, ctx: context)
     KoaSignpost.poster.endInterval("director", sp)
     alive(&f, dt: dt, at: now)
+    sound(f)
     frame = f
     if plane != f.plane { plane = f.plane }
     camera.step(dt, koaX: f.x, framed: framed)
@@ -267,6 +268,23 @@ final class KoaDirectorDriver {
   }
 
   private static func talkKey(_ userId: String) -> String { "koa.talk.\(userId)" }
+
+  /// Bàn chân nào đang ở trên không (đã nhấc rõ, chưa chạm lại), và lá cây có đang rung không.
+  @ObservationIgnored private var airborne = (left: false, right: false)
+  @ObservationIgnored private var lastSway = false
+
+  /// Tiếng của khung (04/11, Kiệt): bàn chân chạm sàn là một bước nhẹ (bục là ván gỗ), nhảy
+  /// lên / xuống bục có tiếng gió nhẹ, lá cây bắt đầu rung thì sột soạt.
+  private func sound(_ f: KoaDirector.Frame) {
+    let left = f.walk?.left.lift ?? 0, right = f.walk?.right.lift ?? 0
+    let landed = (left < 0.05 && airborne.left) || (right < 0.05 && airborne.right)
+    airborne = (left > 1.5 || (airborne.left && left >= 0.05), right > 1.5 || (airborne.right && right >= 0.05))
+    if landed { KoaSound.step(wood: f.plane == .stage) }
+    if f.plane != plane { KoaSound.play(.hop) }
+    let swaying = f.plantSway != 0
+    if swaying, !lastSway { KoaSound.play(.rustle) }
+    lastSway = swaying
+  }
 
   /// `now` là đồng hồ của nhịp gọi tới (`step` / `quietTick`), cùng đồng hồ mà nhịp sau dùng để
   /// tắt bóng thoại. Lấy giờ thật ở đây thì hai đồng hồ lệch nhau: test truyền giờ giả bị đỏ trên

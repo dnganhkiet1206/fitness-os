@@ -111,6 +111,9 @@ extension KoaMath {
   /// dưới của elip mi `82,96 · 19×25`) và đi cùng phép co của mi: trên nét là lông, dưới
   /// là mắt, không bao giờ đè lên con ngươi còn lộ (23/10, Kiệt: nét đứng yên giữa mắt bị lỗi).
   public static let blinkAnims: Set<String> = ["koaBlink", "koaBlink2"]
+  /// Mí đang khép một phần — mắt lờ đờ thì không nháy (`KoaRender.node`).
+  static let lidFlags = ["lidsHalf", "lidsHeavy", "lidsSad", "lidsWink"]
+  static func lidded(_ f: KoaFlags.Flags) -> Bool { lidFlags.contains { f[$0]?.truthy ?? false } }
   public static let lashPaths = ["M67 111.35 Q82 130.65 97 111.35", "M143 111.35 Q158 130.65 173 111.35"]
   public static let lashWidth = 3.4
   /// Mi mở hẳn (co dưới mức này) thì không vẽ nét mi.

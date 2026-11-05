@@ -306,6 +306,8 @@ final class StudioMotes {
     room.resize(dust * 16)
     room.step(dt, t: t)
     guard lamp else { return room.motes }
+    // bẩn hơn thì nhiều hạt trong vệt đèn hơn — mọi hạt đều trôi (04/11: bỏ hạt vẽ chết của mock)
+    beam.resize(14 + dust * 8)
     beam.step(dt, t: t)
     return room.motes + beam.motes
   }
@@ -384,4 +386,13 @@ final class KoaLens {
   @ObservationIgnored var koa = (x: StudioScene.stageMark.x, y: StudioScene.stageMark.y, scale: 1.0)
   /// Tranh hạ xuống bao nhiêu điểm trong khung dọc.
   @ObservationIgnored var drop: CGFloat = 0
+}
+
+extension View {
+  /// Phòng bám bụi thì hơi xám (Kiệt 04/11): nhạt màu và kém tương phản một chút theo mức bụi
+  /// 0…3. Chỉ phòng và đồ vật, Koa giữ màu.
+  func koaDustFilm(_ level: Int) -> some View {
+    let n = Double(min(max(level, 0), 3))
+    return saturation(1 - 0.1 * n).contrast(1 - 0.03 * n)
+  }
 }

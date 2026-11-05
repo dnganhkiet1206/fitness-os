@@ -179,6 +179,9 @@ public enum StudioScene {
     /// Lớp bụi theo mức ("1"…"3", cộng dồn) và phần tử mà bụi nằm ngay sau.
     let dust: [String: [JSONValue]]
     let dustAfter: Int
+    /// Tơ nhện và bụi trên tường cao của phòng khung dọc (04/11), theo mức; mỗi phần tử mang
+    /// `layer` (`wall` hay `lamp`) — xem `StudioTall.dust`.
+    let tallDust: [String: [JSONValue]]
     /// Đồ mua không có mặt đỡ của đồ gốc (giá olympic không có ván): bụi nằm trên đồ gốc của chỗ ấy
     /// không vẽ. Phần tử của biến thể / bụi mang `at`: phần tử của phòng mà nó thay / nằm trên.
     let bare: [String]

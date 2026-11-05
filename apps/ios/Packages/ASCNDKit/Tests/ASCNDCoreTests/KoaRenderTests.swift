@@ -111,3 +111,29 @@ struct KoaRenderGoldenTests {
     #expect(!flat.contains("url(#koaGlow") && !flat.contains("url(#koaForm)"))
   }
 }
+
+/// Mắt lờ đờ không nháy (Kiệt 04/11): hai lớp nháy là elip phủ cả mắt, mọc lên dưới mí thành
+/// "một hình elip vẽ thêm". Mắt mở to vẫn nháy; bản RN giữ nguyên.
+struct KoaLazyEyesTests {
+  static func blinks(_ e: KoaRender.Element) -> Int {
+    // nhóm nháy = `G` có đúng hai elip màu mí (#BFC7CF) phủ hai mắt
+    let own = e.tag == "G" && e.kids.count == 2 && e.kids.allSatisfy { $0.tag == "Ellipse" && $0.props["ry"] == .number(25) } ? 1 : 0
+    return own + e.kids.reduce(0) { $0 + blinks($1) }
+  }
+
+  static func figure(_ e: KoaFlags.Expression, rn: Bool = false) -> KoaRender.Element {
+    var o = KoaRender.Options()
+    o.expression = e
+    o.t = 4800  // ngay giữa một cái nháy của `koaBlink`
+    return KoaScene.$rn.withValue(rn) { KoaRender.figure(o) }
+  }
+
+  @Test func lazyEyesDoNotBlinkOpenEyesDo() {
+    #expect(Self.blinks(Self.figure(.happy)) == 2)
+    for e: KoaFlags.Expression in [.confident, .tired, .sleepy] {
+      #expect(KoaMath.lidded(KoaRender.flags({ var o = KoaRender.Options(); o.expression = e; return o }())))
+      #expect(Self.blinks(Self.figure(e)) == 0, "\(e)")
+      #expect(Self.blinks(Self.figure(e, rn: true)) == 2, "RN \(e)")
+    }
+  }
+}

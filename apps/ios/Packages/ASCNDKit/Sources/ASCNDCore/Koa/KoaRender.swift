@@ -228,6 +228,9 @@ public enum KoaRender {
     let boundAnim = bound.isEmpty ? nil : KoaMath.parseAnim(bound)
 
     let anim = n.anim ?? boundAnim?.anim
+    // Mắt lờ đờ (mí khép nửa / nặng / buồn, Kiệt 04/11): không nháy. Lớp nháy là hai elip phủ
+    // cả mắt, mọc lên dưới mí thành "một hình elip vẽ thêm" — chỉ mắt mở to mới nháy.
+    if !KoaScene.rn, let anim, KoaMath.blinkAnims.contains(anim.k), KoaMath.lidded(c.flags) { return [] }
     let origin = n.o ?? boundAnim?.origin
     let track = anim.flatMap { KoaScene.keyframes[$0.k] }
     // hoạt ảnh CSS thắng thuộc tính trình bày: rãnh `transform` THAY transform

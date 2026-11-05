@@ -40,6 +40,7 @@ struct MascotRoomView: View {
   @State private var notice: String?
   @State private var celebrate = 0
   @AppStorage(KoaSound.offKey) private var soundOff = false
+  @Environment(\.scenePhase) private var roomPhase
   /// Giờ hiện tại, đổi mỗi phút: tới giờ ngủ khi đang mở phòng thì Koa đi ngủ ngay.
   @State private var clock = Date.now
   /// Lúc Koa bắt đầu chạy tới kéo bảng; `nil` = bảng đang đóng.
@@ -101,6 +102,16 @@ struct MascotRoomView: View {
         }
       #endif
       .onReceive(Timer.publish(every: 30, on: .main, in: .common).autoconnect()) { clock = $0 }
+      // nhạc nền và tiếng nền của phòng (04/11): chỉ khi phòng đang mở, app ở tiền cảnh, loa bật
+      .onAppear { KoaSound.startRoom(day: daytime) }
+      .onDisappear { KoaSound.stopRoom() }
+      .onChange(of: soundOff) { _, off in if off { KoaSound.stopRoom() } else { KoaSound.startRoom(day: daytime) } }
+      .onChange(of: daytime) { _, day in KoaSound.startRoom(day: day) }
+      .onChange(of: roomPhase) { _, phase in
+        if phase == .active { KoaSound.startRoom(day: daytime) } else if phase == .background { KoaSound.stopRoom() }
+      }
+      // xu về ví (nhận nhiệm vụ, thưởng tuần): tiếng xu nhỏ
+      .onChange(of: room.balance) { old, new in if new > old { KoaSound.play(.coin) } }
       .onChange(of: room.welcomeGranted) { _, amount in
         guard let amount else { return }
         say(amount == 1 ? String(localized: "mr.welcome.one") : String(localized: "mr.welcome.other \(amount)"))
@@ -135,6 +146,7 @@ struct MascotRoomView: View {
         let _ = (lens.drop = drop)
         ZStack(alignment: .top) {
           StudioTallRoom(drop: drop, lens: lens)
+            .koaDustFilm(devDust ?? dust?.level ?? 0)
           stage
             // hai mép tranh tan vào tường cao và sàn, không lộ đường nối
             .mask {
@@ -430,6 +442,7 @@ struct MascotRoomView: View {
     if let f = await services.cleanKoaRoom(userId: room.userId) {
       say(f == .insufficientCoins ? String(localized: "shop.notenough") : Self.message(f))
     } else {
+      KoaSound.play(.sweep)
       say(String(localized: "mr.dust.cleaned"))
       Telemetry.capture(.koaRoomCleaned)
       devDust = nil
@@ -1124,7 +1137,7 @@ struct MascotStage: View {
 
   /// Phòng nhiều lớp vẽ trong đồng hồ của sân khấu (`livingHero`), đây chỉ giữ khung.
   @ViewBuilder private var roomBase: some View {
-    if layered { Color.clear } else { StudioBackdrop(options: backdrop) }
+    if layered { Color.clear } else { StudioBackdrop(options: backdrop).koaDustFilm(dust) }
   }
 
   /// Đang ngủ và đã tới chỗ: sang phòng ngủ gác mái, sân khấu nghỉ hẳn.
@@ -1414,6 +1427,7 @@ struct MascotStage: View {
           StudioLayers(
             options: backdrop, plantSway: director.swaying ? f?.plantSway ?? 0 : 0, shot: shot,
             size: CGSize(width: width, height: height), light: scheme == .light, showsHaze: false)
+          .koaDustFilm(dust)
         } else if director.swaying {
           // lá cây đang rung (~3 giây): vẽ cả căn phòng đè lên phòng tĩnh, có cây đang lay. Trước đây
           // tách phần từ chậu cây trở lên sang lớp riêng: đèn và viền tối vẽ hai lớp nên độ sáng
@@ -1421,6 +1435,7 @@ struct MascotStage: View {
           var o = studio
           let _ = (o.plantSway = f?.plantSway ?? 0)
           StudioBackdrop(options: o)
+            .koaDustFilm(dust)
             .frame(width: width, height: width / StudioScene.width * StudioScene.sceneBottom)
             .allowsHitTesting(false)
         }
@@ -1480,6 +1495,7 @@ struct MascotStage: View {
         let _ = (o.plantSway = director.swaying ? plantSway : 0)
         StudioFront(options: o, indices: Set(objects.flatMap(\.elements)))
           .equatable()
+          .koaDustFilm(dust)
           .frame(width: width, height: width / StudioScene.width * StudioScene.sceneBottom)
           .allowsHitTesting(false)
       }
