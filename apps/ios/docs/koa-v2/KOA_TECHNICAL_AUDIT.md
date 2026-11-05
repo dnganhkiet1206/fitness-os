@@ -4,6 +4,8 @@
 
 Ảnh làm bằng chứng nằm ở `gallery/v0-baseline/` (xem `gallery/README.md`). Chỗ nào chưa kiểm được thì ghi **NOT VERIFIED**.
 
+**Đính chính 05/11:** bản đầu viết "đứng yên gần như bất động, chưa thấy thở". Sai: bản vẽ có nhịp thở, chỉ là mọi phần cùng pha (mục 3, dòng 7).
+
 ---
 
 ## 1. Tóm tắt
@@ -102,7 +104,7 @@ Mỗi giới hạn kèm bằng chứng. Tiêu đề cột "Đề bài" là số 
 | 4: nét mặt tĩnh | 20 biểu cảm, nhưng đổi bằng cách **bật / tắt lớp**: mặt nhảy bụp sang mặt mới, không chuyển dần | `KoaFigureView` / `KoaRender`: không có trộn giữa hai biểu cảm (chỉ đồ mặc có `blend`) | Code |
 | 5: mí, chớp | Có chớp đúng nhịp tự nhiên và mí lờ đờ. Thiếu mí dưới; chớp khép mí trên đều hai bên, không lệch | `KoaGaze`, `KoaRender` | Bản vẽ (mí dưới) + code (lệch) |
 | 6: ánh mắt | Có liếc nhỏ và nhìn theo đích, **nhưng chỉ ở phòng**. Hôm nay và các màn khác không có ánh nhìn sống | `KoaGaze` chỉ được `KoaDirector` dùng | Code |
-| 7: đầu, tai, thân, tay, chân phối hợp | Khi đi: đầu và tai trễ theo, thân nhún. Khi đứng: gần như bất động trong 8 giây | `sim-koa-room-frames-2fps.png` (14 khung liên tiếp, bóng dáng không đổi) | Code (đứng yên thiếu thở, dồn trọng tâm) + bản vẽ (ít khớp) |
+| 7: đầu, tai, thân, tay, chân phối hợp | Khi đi: đầu và tai trễ theo, thân nhún. Khi đứng: bản vẽ **có** nhịp nghỉ (`koaBreathe` ngực 1,5–2,5 %, `koaBob` đầu 2,5 điểm, `koaEarL/R` 3,5°, `koaArmL/R` 2,5°), nhưng cả bốn cùng chu kỳ 3,6 s và **cùng pha**: lắc như máy đếm nhịp, biên độ nhỏ nên 14 khung trông gần như đứng yên. Không có dồn trọng tâm | `sim-koa-room-frames-2fps.png`; keyframes trong `KoaSceneData` | Code (cùng pha, thiếu dồn trọng tâm) + bản vẽ (ít khớp) |
 | 8: chuyển cảnh thiếu chuẩn bị, theo đà | Đi có tăng / giảm tốc; dáng `cheer` có nhảy. Chuyển giữa biểu cảm là cắt bụp; chưa soi chuẩn bị trước cú nhảy | Code đọc được; **NOT VERIFIED** bằng video 60 khung/giây | Code |
 | 9: cảm xúc chưa ra cả người | Cảm xúc chủ yếu ở mặt; 5 dáng đã thêm thân và tay, nhưng chỉ xoay quanh vai / cổ | `KoaGesture` | Bản vẽ (ít khớp) |
 | 10: thiếu quy trình duyệt hình | Có ảnh chuẩn (snapshot test) cho 11 màn, có bảng spec Debug, có kiểm Maestro trong phòng. **Chưa có** thang điểm, thư viện ảnh có phiên bản, hay bảng so sánh tư thế | `ASCNDTests/__Snapshots__/KoaSnapshotTests` (33 ảnh) | Quy trình |
@@ -197,7 +199,7 @@ Theo yêu cầu thêm của Kiệt (05/11). Mỗi thay đổi về hình, tư th
 | 2. Giải phẫu, tỉ lệ | 4 | Tỉ lệ đầu / thân rõ, chân chạm sàn. Tay "ống" không khớp là chủ ý của phong cách, nhưng giới hạn tư thế |
 | 3. Đọc được tư thế | **2** | Sáu tư thế cùng bóng dáng. Thu nhỏ hoặc che đạo cụ thì không đọc ra "chạy", "giãn cơ" |
 | 4. Biểu cảm khuôn mặt | 4 | 20 mặt rõ ràng, dễ đọc ở cỡ ô nhỏ. Thiếu mí dưới, mày ít độ |
-| 5. Chuyển động tự nhiên | 3 | Đi tốt (chân ghim sàn). Đứng yên gần như bất động 8 giây; chưa thấy thở |
+| 5. Chuyển động tự nhiên | 3 | Đi tốt (chân ghim sàn). Đứng yên có thở nhưng mọi phần cùng một nhịp, đọc ra là máy |
 | 6. Chuyển cảnh | **2,5** | Đổi biểu cảm là cắt bụp. Chưa có chuẩn bị / theo đà ở chỗ đổi trạng thái |
 | 7. Độ hoàn thiện | 4 | Đèn, viền sáng, bóng tiếp xúc, theme sáng / tối |
 | 8. Hiển thị trong app | 4 | Sắc nét ở mọi cỡ; đã đo CPU. **NOT VERIFIED** trên iPhone thật |
@@ -225,7 +227,7 @@ Mỗi bước chạy hết vòng kiểm hình ở mục 6. Chỉ sang bước sa
 | Bước | Việc | Ra gì | Vì sao trước |
 |---|---|---|---|
 | 1 | **Character Bible** từ dữ liệu cảnh hiện có: đo tỉ lệ đầu / thân, khoảng cách mắt, kích thước tai, màu `#BFC7CF`… thẳng từ toạ độ trong `KoaSceneData` | `KOA_CHARACTER_BIBLE.md` + bảng tham chiếu (artifact) | Mọi góc và tư thế sau đều so với nó |
-| 2 | **Lát dọc, không cần vẽ mới:** (i) trộn dần giữa hai biểu cảm (mí, mày, miệng chuyển trong khoảng 0,15–0,25 s thay vì cắt bụp); (ii) thở và dồn trọng tâm khi đứng yên; (iii) ánh nhìn sống ở Hôm nay; (iv) chớp lệch nhẹ hai mắt | Video trước / sau, bảng chấm | Nâng tiêu chí 5, 6 mà không đụng bản vẽ; thử trọn vòng kiểm hình trên việc nhỏ |
+| 2 | **Lát dọc, không cần vẽ mới:** (i) trộn dần giữa hai biểu cảm (mí, mày, miệng chuyển trong khoảng 0,15–0,25 s thay vì cắt bụp); (ii) lệch pha nhịp nghỉ có sẵn (đầu trước, tay rồi tai theo sau) và dồn trọng tâm khi đứng yên; (iii) ánh nhìn sống ở Hôm nay; (iv) chớp lệch nhẹ hai mắt | Video trước / sau, bảng chấm | Nâng tiêu chí 5, 6 mà không đụng bản vẽ; thử trọn vòng kiểm hình trên việc nhỏ |
 | 3 | **Mẫu Blender + turnaround** (nếu Kiệt duyệt mục 8.1–8.2): 8 góc, cùng đường nền, cùng ánh sáng | `KOA_TURNAROUND_SHEET` (mock) | Phải duyệt góc trước khi vẽ tư thế |
 | 4 | **Bộ khung mới** (cẳng tay, bàn tay, chân hai đoạn, mí dưới) ở mặt trước; chỉnh đồ mặc | Bảng spec Debug cập nhật, ảnh chuẩn CI | Không có khớp thì không có tư thế khác bóng dáng |
 | 5 | **Vẽ 3/4 và nghiêng** theo turnaround đã duyệt; chuyển góc khi đi | Video đi trong phòng | Góc dùng nhiều nhất sau mặt trước |
