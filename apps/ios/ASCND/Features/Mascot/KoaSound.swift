@@ -39,17 +39,17 @@ enum KoaSound {
       switch self {
       case .step1, .step2, .step3, .stepWood1, .stepWood2: 0.22
       case .car, .creak, .buzz, .tick, .bird: 0.16
-      case .rustle, .hop: 0.25
+      case .rustle: 0.14
+      case .hop: 0.25
       default: 0.4
       }
     }
   }
 
   /// Chạm Koa: đổi tiếng, không lặp liền một tiếng.
-  private static var lastBoop = Cue.boop3
   static func boop() {
-    lastBoop = [Cue.boop1, .boop2, .boop3].filter { $0 != lastBoop }.randomElement() ?? .boop1
-    play(lastBoop)
+    // tiếng game thay tiếng ừm giọng người (Kiệt 04/11: giọng gần người nghe đáng sợ)
+    react(["hehe", "hm", "yay"].randomElement() ?? "hehe")
   }
 
   /// Bàn chân Koa chạm sàn (hay mặt bục gỗ): đổi bản, độ to lệch chút cho tự nhiên.
@@ -107,7 +107,7 @@ enum KoaSound {
   static func react(_ name: String, delay: Double = 0) {
     Task {
       if delay > 0 { try? await Task.sleep(for: .seconds(delay)) }
-      voice("koa-v-\(name)", volume: 0.42)
+      voice("koa-v-\(name)", volume: 0.3)
     }
   }
 
@@ -127,8 +127,7 @@ enum KoaSound {
           var n = Int.random(in: 1...10)
           if n == previous { n = n % 10 + 1 }
           previous = n
-          let last = i >= mouth.count - 3
-          voice("koa-talk-\(n)", volume: 0.26, rate: last ? 1.08 : Float.random(in: 0.94...1.06))
+          voice("koa-talk-\(n)", volume: 0.2)
         }
         try? await Task.sleep(for: .seconds(KoaTalk.mouthStep))
       }
@@ -198,10 +197,16 @@ enum KoaSound {
     if neon == nil {
       neon = Task {
         var was = false
+        // đèn sụt khá thường xuyên: chỉ rè ở một lần sụt mỗi 30–60 giây (Kiệt 04/11: lặp nhiều quá)
+        var next = Date.timeIntervalSinceReferenceDate + Double.random(in: 8...20)
         while !Task.isCancelled {
           try? await Task.sleep(for: .milliseconds(40))
-          let dip = StudioNeon.dips(at: Date.timeIntervalSinceReferenceDate)
-          if dip, !was, ambience?.day == false { play(.buzz, gain: Float.random(in: 0.7...1)) }
+          let now = Date.timeIntervalSinceReferenceDate
+          let dip = StudioNeon.dips(at: now)
+          if dip, !was, now >= next, ambience?.day == false {
+            play(.buzz, gain: Float.random(in: 0.6...0.85))
+            next = now + Double.random(in: 30...60)
+          }
           was = dip
         }
       }

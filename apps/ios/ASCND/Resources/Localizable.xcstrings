@@ -63514,6 +63514,52 @@
     }
    }
   },
+  "koa.talk.dusty.0": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "The room's a bit dusty… help me tidy up?"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "El cuarto está algo polvoriento… ¿me ayudas a limpiar?"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Phòng mình hơi bụi rồi… cậu giúp tớ dọn nha?"
+     }
+    }
+   }
+  },
+  "koa.talk.dusty.1": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Achoo! Let's clean up together?"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "¡Achís! ¿Limpiamos juntos?"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hắt xì! Mình dọn phòng cùng nhau nhé?"
+     }
+    }
+   }
+  },
   "koa.talk.poke.0": {
    "extractionState": "manual",
    "localizations": {

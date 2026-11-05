@@ -396,6 +396,13 @@ public enum KoaRender {
       if m[3] > KoaMath.lashMin { moved.append(lash(m)) }
     }
 
+    // Mắt lờ đờ nhắm (Kiệt 04/11): không có lớp elip nháy — chính MÍ hạ xuống, từ mép trên mắt (y 72,5)
+    // tới đáy mắt; nét mi ở mép mí đi theo thành đường mắt nhắm.
+    if !KoaScene.rn, c.live, let b = c.blink, b > 0, let cond = n.cond, let k = KoaMath.lidDrop[cond] {
+      let s = 1 + (k - 1) * min(1, b)
+      moved = [Element("G", matrix: [1, 0, 0, s, 0, KoaMath.eyeTop * (1 - s)], kids: moved)]
+    }
+
     if c.gaze == nil, let e = c.eyes, isEyeGroup(n) { return [Element("G", matrix: KoaMath.eyeMat(e), kids: moved)] }
     guard let g = c.gaze else { return moved }
     if n.id == "HEADRIG" { return [Element("G", matrix: KoaMath.headMat(g), kids: moved)] }

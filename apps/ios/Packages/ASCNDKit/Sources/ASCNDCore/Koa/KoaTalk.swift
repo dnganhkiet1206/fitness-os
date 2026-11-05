@@ -7,6 +7,8 @@ public enum KoaTalk {
     case emptyLate, fed, nudge, birthday, calm, poke
     /// Chạm vào một chỗ trên người Koa (Kiệt 04/11, `KoaTap`): mỗi chỗ một cảm xúc, một câu.
     case pokeHead, pokeEar, pokeNose, pokeBelly, pokeFeet, pokeFace
+    /// Phòng có bụi: Koa ngượng ngùng nhờ người dùng giúp dọn (Kiệt 04/11), không trách.
+    case dusty
     /// Mốc mới của hành trình (`KoaMomentFeed`): câu do app lấy từ mốc, không theo bảng dịch.
     case milestone
     /// Người xem chạm cúp / khung mốc trong phòng (#792): Koa kể lại kỷ lục hay mốc ấy. Câu do app
@@ -35,14 +37,16 @@ public enum KoaTalk {
     case .emptyLate: Face(peak: .plead, settle: .sheepish, flaps: false)
     case .calm: Face(peak: .happy, settle: .thinking, flaps: true)
     case .poke: Face(peak: .surprised, settle: .grin, flaps: false)
-    // chạm theo chỗ (04/11): xoa đầu thì lim dim, tai giật mình, mũi "no no no", bụng nhột, chân
-    // úi da, má thì tinh nghịch
+    // chạm theo chỗ (04/11): gần gũi, không thái quá (Kiệt: không tức giận ngay từ lần chạm đầu) —
+    // xoa đầu lim dim, tai và chân ngượng ngùng, bụng cười khúc khích, má vui; "no no no" phụng phịu
+    // chỉ khi bị bấm mũi nhiều lần (`KoaTap.topic`)
     case .pokeHead: Face(peak: .warm, settle: .content, flaps: true)
-    case .pokeEar: Face(peak: .surprised, settle: .sheepish, flaps: true)
+    case .pokeEar: Face(peak: .happy, settle: .warm, flaps: true)
     case .pokeNose: Face(peak: .nope, settle: .sheepish, flaps: true)
     case .pokeBelly: Face(peak: .grin, settle: .happy, flaps: true)
-    case .pokeFeet: Face(peak: .surprised, settle: .sheepish, flaps: true)
-    case .pokeFace: Face(peak: .tease, settle: .happy, flaps: true)
+    case .pokeFeet: Face(peak: .sheepish, settle: .content, flaps: true)
+    case .pokeFace: Face(peak: .happy, settle: .content, flaps: true)
+    case .dusty: Face(peak: .sheepish, settle: .warm, flaps: true)
     case .milestone: Face(peak: .grin, settle: .happy, flaps: true)
     case .shelf: Face(peak: .delighted, settle: .happy, flaps: true)
     }
@@ -161,6 +165,8 @@ public enum KoaTalk {
     default: break
     }
     if facts.restDay { order.append(.restDay) }
+    // phòng bụi: nhờ dọn sau chuyện tập / ăn ngủ của ngày, trước câu nói vu vơ
+    if facts.dust > 0 { order.append(.dusty) }
     // mốc mới đi trước mọi chuyện của ngày; lời chào vẫn mở đầu
     if facts.milestone { order.insert(.milestone, at: 0) }
     if greeting { order.insert(.greet, at: 0) }

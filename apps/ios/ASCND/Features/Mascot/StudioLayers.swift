@@ -214,15 +214,22 @@ struct StudioTallRoom: View {
       // truyền giờ vào: view con đọc đồng hồ tự nó thì SwiftUI thấy tham số không đổi, không vẽ lại
       let t = timeline.date.timeIntervalSinceReferenceDate
       ZStack(alignment: .topLeading) {
+        // đèn đung đưa theo gió quanh điểm treo; chùm sáng và bụi trong chùm lắc cùng
+        let swing = Angle.degrees(StudioTall.lampSway(at: t))
+        let pivot = UnitPoint(
+          x: StudioTall.lampPivot.x / StudioScene.width, y: (Double(drop) + StudioTall.lampPivot.y * k) / Double(size.height))
         ForEach(StudioTall.layers) { layer in
+          let swings = layer.id == "cone" || layer.id == "lamp"
           StudioTallImage(options: options, layer: layer.id, drop: Double(drop)).equatable()
             .frame(width: size.width, height: size.height)
+            .rotationEffect(swings ? swing : .zero, anchor: pivot)
             .offset(x: shot.shift(layer.plane.amp) * k)
           // đồ động chen đúng tầng: mây sau thành phố, đèn nhà trên thành phố, bụi trong chùm đèn
           if !reduceMotion, ["sky", "city", "lamp"].contains(layer.id) {
             StudioLive(
               t: t, layer: layer.id, night: !options.light, drop: Double(drop), k: k, lamp: options.lamp, dust: options.dust, box: motes)
               .frame(width: size.width, height: size.height)
+              .rotationEffect(layer.id == "lamp" ? swing : .zero, anchor: pivot)
               .offset(x: shot.shift(layer.plane.amp) * k)
           }
           if !reduceMotion, layer.id == "wall", !options.light {

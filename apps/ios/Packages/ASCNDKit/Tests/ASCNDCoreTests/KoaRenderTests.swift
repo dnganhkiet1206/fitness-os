@@ -155,8 +155,20 @@ struct KoaTapTests {
 
   @Test func noseIsANoNoNoNotAnger() {
     let f = KoaFlags.flags(.nope, .idle)
-    #expect(f["browAngry"]?.truthy == true && f["mouthFrown"]?.truthy == true)
-    #expect(f["showSteam"]?.truthy == false, "dỗi yêu, không bốc hơi giận")
+    #expect(f["browSad"]?.truthy == true && f["mouthFrown"]?.truthy == true && f["lidsHalf"]?.truthy == true)
+    #expect(f["browAngry"]?.truthy == false && f["showSteam"]?.truthy == false, "phụng phịu, không giận")
+  }
+
+  /// Gần gũi trước, phụng phịu sau (Kiệt 04/11): hai lần chạm mũi đầu chỉ "hê hê", lần ba mới "no no no";
+  /// không chỗ nào mở đầu bằng mặt giận hay mặt hốt hoảng.
+  @Test func firstTouchesAreFriendly() {
+    #expect(KoaTap.reaction(.nose, streak: 0).voice == "hehe")
+    #expect(KoaTap.reaction(.nose, streak: 1).topic == .pokeFace)
+    #expect(KoaTap.reaction(.nose, streak: 2).topic == .pokeNose)
+    for z in KoaTap.Zone.allCases where z != .body {
+      let face = KoaTalk.face(KoaTap.reaction(z, streak: 0).topic).peak
+      #expect(![.angry, .surprised, .nope, .sad].contains(face), "\(z)")
+    }
   }
 
   @Test func talkingMovesOnlyTheMouth() {
@@ -166,5 +178,25 @@ struct KoaTapTests {
     let f = KoaRender.flags(o)
     #expect(f["lidsHeavy"]?.truthy == true, "mắt giữ lim dim")
     #expect(f["mouthSay2"]?.truthy == true && f["mouthSoft"]?.truthy != true)
+  }
+}
+
+/// Mắt lờ đờ nhắm bằng mí hạ xuống (Kiệt 04/11), không bằng elip vẽ thêm.
+struct KoaLidBlinkTests {
+  static func lidScale(_ e: KoaRender.Element) -> Double? {
+    if e.tag == "G", let m = e.matrix, m[0] == 1, m[3] > 1, abs(m[5] - 72.5 * (1 - m[3])) < 1e-9 { return m[3] }
+    return e.kids.lazy.compactMap(lidScale).first
+  }
+
+  @Test func lazyLidsDropToClose() {
+    var o = KoaRender.Options()
+    o.expression = .sleepy
+    o.blink = 1
+    #expect(Self.lidScale(KoaRender.figure(o)) == 1.5, "mí nặng giãn 1,5 lần")
+    o.blink = 0
+    #expect(Self.lidScale(KoaRender.figure(o)) == nil)
+    o.expression = .happy
+    o.blink = 1
+    #expect(Self.lidScale(KoaRender.figure(o)) == nil, "mắt mở to vẫn nháy kiểu cũ")
   }
 }

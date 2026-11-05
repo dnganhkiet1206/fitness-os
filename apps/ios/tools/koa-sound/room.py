@@ -142,14 +142,13 @@ def bird(r, rate=LOOP_RATE):
 
 # ── Tiếng lẻ
 def rustle():
-    n = int(0.7 * RATE)
-    x = np.zeros(n)
-    r = np.random.default_rng(31)
-    for _ in range(14):
-        m = int(r.uniform(0.01, 0.04) * RATE)
-        burst = shaped_noise(m, RATE, 1800, 7000, seed=int(r.integers(1e6))) * np.hanning(m)
-        place(x, burst * r.uniform(0.3, 1), int(r.uniform(0, 0.6) * RATE))
-    return x * np.hanning(n) ** 0.3
+    """Lá lướt vào nhau (04/11, Kiệt: tiếng cũ lách tách nghe sợ): một tiếng "sượt" mềm, dải trung
+    ấm, vào ra chậm, không có tiếng tách."""
+    n = int(0.9 * RATE)
+    t = np.arange(n) / RATE
+    swish = shaped_noise(n, RATE, 700, 3800, tilt=1.4, seed=31) * np.sin(np.pi * t / t[-1]) ** 2
+    # hai nhịp lá chạm nhau, nhịp sau nhẹ hơn
+    return lowpass(swish * (0.75 + 0.25 * np.cos(2 * np.pi * 2.2 * t)), RATE, 3500)
 
 
 def coin():
@@ -225,7 +224,7 @@ if __name__ == "__main__":
     write("koa-amb-night", x, r, peak=0.4)
     x, r = day()
     write("koa-amb-day", x, r, peak=0.4)
-    write("koa-rustle", rustle(), peak=0.45)
+    write("koa-rustle", rustle(), peak=0.3)
     write("koa-coin", coin(), peak=0.5)
     write("koa-sweep", sweep(), peak=0.45)
     x, r = car()

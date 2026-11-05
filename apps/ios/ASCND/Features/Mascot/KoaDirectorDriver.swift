@@ -215,7 +215,7 @@ final class KoaDirectorDriver {
       if f.reacted != nil, forcedMoment != nil { return f }
     #endif
     if let m = f.reacted, let facts {
-      if m == .rankUp || m == .record { KoaSound.play(.cheer) }
+      if m == .rankUp || m == .record { KoaSound.react("yay") }
       camera.push()
       memory.react(m, facts, at: wall)
       feel(wall)
@@ -271,15 +271,26 @@ final class KoaDirectorDriver {
   /// Chạm vào một chỗ trên người Koa (Kiệt 04/11): chọc xong (giật mình tại chỗ) là nét mặt của
   /// chỗ ấy kèm tiếng koala kiểu mèo Tom, rồi câu nói. Chạm lại khi đang nói: thay câu.
   func tapped(_ zone: KoaTap.Zone) {
-    let topic = zone.topic
+    let now = Date.timeIntervalSinceReferenceDate
+    tapStreak = now - lastTap < 12 ? tapStreak + 1 : 0
+    lastTap = now
+    let (topic, voice) = KoaTap.reaction(zone, streak: tapStreak)
     let probe = KoaTalk.Beat(topic: topic, variant: Int.random(in: 0..<KoaTalk.variants(topic)))
     let beat = KoaTalk.Beat(topic: topic, variant: probe.variant, line: lineOf?(probe) ?? "")
-    let now = Date.timeIntervalSinceReferenceDate
-    talkStart = now
-    Task { @MainActor in self.speech = beat }
-    KoaSound.react(zone.voice, delay: 0.18)
-    KoaSound.talk(beat)
+    // chuyển mặt tự nhiên: giật mình nhẹ, chớp mắt, đổi nét mặt lúc mắt đang khép (kỹ thuật chớp của
+    // phim hoạt hình), rồi mới có tiếng và lời
+    director.blink()
+    KoaSound.react(voice, delay: 0.2)
+    Task { @MainActor in
+      try? await Task.sleep(for: .milliseconds(110))
+      self.talkStart = Date.timeIntervalSinceReferenceDate
+      self.speech = beat
+      KoaSound.talk(beat)
+    }
   }
+
+  @ObservationIgnored private var tapStreak = 0
+  @ObservationIgnored private var lastTap = 0.0
 
   /// Người xem chạm cúp / khung mốc trong phòng (#792): Koa kể ngay, thay câu đang nói (người xem
   /// vừa hỏi). Không tính vào lịch nói. Câu hiện trong bóng thoại là của phòng (`shelfLine`).
@@ -326,6 +337,8 @@ final class KoaDirectorDriver {
     if let beat = speech {
       let t = now - talkStart
       if t >= beat.seconds {
+        // về mặt thường cũng qua một cái chớp, không bật mặt
+        if KoaTap.Zone.allCases.contains(where: { $0.topic == beat.topic }) || beat.topic == .pokeNose { director.blink() }
         Task { @MainActor in self.speech = nil }
       } else {
         let raw = f.expression
@@ -333,7 +346,7 @@ final class KoaDirectorDriver {
         f.expression = beat.face(at: t)
         f.mouth = beat.mouth(at: t)
         // phản ứng khi bị chạm: nét mặt của chỗ chạm thắng dáng của ngày (dáng mệt đè mắt, miệng)
-        if KoaTap.Zone.allCases.contains(where: { $0.topic == beat.topic }) {
+        if KoaTap.Zone.allCases.contains(where: { $0.topic == beat.topic }) || beat.topic == .pokeNose {
           f.dayAmount = 0
           f.gestureAmount = 0
         }

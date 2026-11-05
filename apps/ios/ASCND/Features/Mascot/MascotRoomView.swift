@@ -200,6 +200,7 @@ struct MascotRoomView: View {
   private var companionFacts: KoaCompanion.Facts {
     var f = KoaCompanion.Facts(gains: room.gains, today: room.today, mood: moodRead.reason)
     f.milestone = roomMoment != nil
+    f.dust = devDust ?? dust?.level ?? 0
     return f
   }
 

@@ -21,10 +21,13 @@ struct YesterdayMealsCard: View {
         VStack(alignment: .leading, spacing: 3) {
           Text("meal.yesterday.title").font(.system(size: 15, weight: .bold))
             .foregroundStyle(DS.Color.foreground.swiftUI)
-          Text(verbatim: Self.detail(meals))
-            .font(.system(size: 13))
-            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-            .lineLimit(1)
+          // màn hẹp (SE 04/11): tên bữa nhường chỗ, tổng kcal luôn đủ ("1.750 k…" trước đây)
+          HStack(spacing: 0) {
+            Text(verbatim: Self.names(meals) + " · ").lineLimit(1)
+            Text(verbatim: Self.kcal(meals)).lineLimit(1).fixedSize()
+          }
+          .font(.system(size: 13))
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
         }
         Spacer(minLength: 0)
         if busy { ProgressView() }
@@ -47,13 +50,18 @@ struct YesterdayMealsCard: View {
   }
 
   /// "Bữa sáng · Bữa tối · 1.050 kcal" — tên bữa theo thứ tự, không lặp.
-  static func detail(_ meals: [MealLog.RecentMeal]) -> String {
+  static func detail(_ meals: [MealLog.RecentMeal]) -> String { names(meals) + " · " + kcal(meals) }
+
+  static func names(_ meals: [MealLog.RecentMeal]) -> String {
     var names: [String] = []
     for m in meals {
       let n = DiaryView.mealName(m.mealType)
       if !names.contains(n) { names.append(n) }
     }
-    let kcal = meals.reduce(0) { $0 + $1.kcal }
-    return (names + ["\(DiaryView.whole(kcal)) kcal"]).joined(separator: " · ")
+    return names.joined(separator: " · ")
+  }
+
+  static func kcal(_ meals: [MealLog.RecentMeal]) -> String {
+    "\(DiaryView.whole(meals.reduce(0) { $0 + $1.kcal })) kcal"
   }
 }

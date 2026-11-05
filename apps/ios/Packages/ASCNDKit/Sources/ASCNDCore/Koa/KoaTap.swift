@@ -37,6 +37,13 @@ public enum KoaTap {
     }
   }
 
+  /// Câu và tiếng theo số lần chạm liền nhau (`streak`: 0 = lần đầu sau một lúc): mấy lần đầu Koa chỉ
+  /// vui nhẹ, bấm mũi lần thứ ba trở đi mới phụng phịu "no no no" (Kiệt 04/11: gần gũi, không khó tính).
+  public static func reaction(_ zone: Zone, streak: Int) -> (topic: KoaTalk.Topic, voice: String) {
+    if zone == .nose { return streak >= 2 ? (.pokeNose, "nonono") : (.pokeFace, "hehe") }
+    return (zone.topic, zone.voice)
+  }
+
   /// Chỗ chạm, toạ độ của hình (240 × 300).
   /// Đo trên máy 04/11: mặt (`FACE`) dời xuống 11 điểm, mũi ở y ≈ 134 của hình.
   public static func zone(x: Double, y: Double) -> Zone {

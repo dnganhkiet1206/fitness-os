@@ -131,6 +131,10 @@ extension KoaMath {
   /// Mí đang khép một phần — mắt lờ đờ thì không nháy (`KoaRender.node`).
   static let lidFlags = ["lidsHalf", "lidsHeavy", "lidsSad", "lidsWink"]
   static func lidded(_ f: KoaFlags.Flags) -> Bool { lidFlags.contains { f[$0]?.truthy ?? false } }
+  /// Mép trên của mắt; mí lờ đờ nhắm bằng cách giãn xuống từ đây.
+  static let eyeTop = 72.5
+  /// Mí giãn bao nhiêu lần thì phủ hết mắt (đáy mắt y 119,5): mí nửa che tới y 96, mí nặng tới 104.
+  static let lidDrop: [String: Double] = ["lidsHalf": 2.0, "lidsHeavy": 1.5, "lidsSad": 2.0]
   public static let lashPaths = ["M67 111.35 Q82 130.65 97 111.35", "M143 111.35 Q158 130.65 173 111.35"]
   public static let lashWidth = 3.4
   /// Mi mở hẳn (co dưới mức này) thì không vẽ nét mi.

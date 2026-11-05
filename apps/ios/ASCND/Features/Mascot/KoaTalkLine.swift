@@ -28,6 +28,7 @@ enum KoaTalkLine {
       return String(localized: "koa.talk.overate \(KoaMood.kcalPercent(kcal: kcal, target: NutritionToday.calorieTarget(profile)))")
     // câu của mốc / của kệ cúp do phòng dựng từ số thật (`MascotRoomView.talkLine`)
     case .milestone, .shelf: return nil
+    case .dusty: return v == 0 ? String(localized: "koa.talk.dusty.0") : String(localized: "koa.talk.dusty.1")
     case .pokeHead: return v == 0 ? String(localized: "koa.talk.pokeHead.0") : String(localized: "koa.talk.pokeHead.1")
     case .pokeEar: return v == 0 ? String(localized: "koa.talk.pokeEar.0") : String(localized: "koa.talk.pokeEar.1")
     case .pokeNose: return v == 0 ? String(localized: "koa.talk.pokeNose.0") : String(localized: "koa.talk.pokeNose.1")
