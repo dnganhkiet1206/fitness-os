@@ -71,6 +71,29 @@ public enum KoaRender {
     public var blink: Double?
     /// Độ hiện của dáng biểu cảm 0…1 (dáng chuyển dần, không bật tắt).
     public var gestureAmount = 1.0
+    /// Mắt phải khép bao nhiêu khi khác mắt trái (Koa V2, 05/11): hai mắt không khép đúng cùng
+    /// một khung. `nil` = như `blink`.
+    public var blinkRight: Double?
+    /// Nét mặt vừa rời (Koa V2, 05/11): mắt / mày / miệng của nét cũ mờ dần, nét mới hiện dần
+    /// trong `faceMix` 0 → 1, thay cho đổi bụp. `nil` = không đang chuyển.
+    public var faceFrom: Face?
+    public var faceMix = 1.0
+    /// Mắt đã sang nét mới chưa. Mắt không mờ dần (hai lớp mắt chồng nhau thành "mắt ma", đo
+    /// 05/11): mắt đổi lúc mí đang khép trong một cú chớp, chỉ mày và miệng mờ dần.
+    public var faceEyesNew = true
+    /// Nhịp nghỉ có đà (Koa V2, 05/11): tai và tay theo sau đầu, thân dồn trọng tâm chậm.
+    /// Tắt ở lưới / ô chọn (khung đứng yên) và ở bản RN.
+    public var settle = true
+
+    /// Một nét mặt: biểu cảm + dáng (dáng có mặt riêng).
+    public struct Face: Sendable, Hashable {
+      public var expression: KoaFlags.Expression
+      public var gesture: KoaGesture?
+      public init(expression: KoaFlags.Expression, gesture: KoaGesture?) {
+        self.expression = expression
+        self.gesture = gesture
+      }
+    }
 
     public enum ArmsLayer: Sendable, Hashable { case all, without, only }
 
@@ -127,7 +150,7 @@ public enum KoaRender {
   }
 
   struct Context {
-    let flags: KoaFlags.Flags
+    var flags: KoaFlags.Flags
     let t: Double
     let live: Bool
     let gaze: KoaMath.Gaze?
@@ -147,6 +170,15 @@ public enum KoaRender {
     var gestureAmount = 1.0
     /// Dò chỗ chạm (`anchors`): thêm điểm mốc vô hình vào vài bộ phận.
     var probe = false
+    var blinkRight: Double?
+    /// Cờ của nét mặt vừa rời (`Options.faceFrom`) và độ hiện của nét mới.
+    var from: KoaFlags.Flags?
+    var mix = 1.0
+    var eyesNew = true
+    var inFace = false
+    /// Nhịp nghỉ có đà (`Options.settle`), và độ dồn trọng tâm (độ) lúc này.
+    var settle = false
+    var weightShift = 0.0
   }
 
   static func isEyeGroup(_ n: KoaScene.Node) -> Bool { n.kids?.contains { $0.id == "pupil_left" } ?? false }
@@ -165,10 +197,10 @@ public enum KoaRender {
   }
 
   /// Nét mi trong đúng phép co của mi (`m`).
-  static func lash(_ m: KoaMath.Mat) -> Element {
+  static func lash(_ m: KoaMath.Mat, only eye: Int? = nil) -> Element {
     Element(
       "G", matrix: m,
-      kids: KoaMath.lashPaths.map {
+      kids: KoaMath.lashPaths.enumerated().filter { eye == nil || $0.offset == eye }.map(\.element).map {
         Element(
           "Path",
           [
@@ -203,10 +235,25 @@ public enum KoaRender {
     -> [Element]
   {
     let n = l.node
+    // Đang chuyển nét mặt (Koa V2): lớp chỉ có ở nét cũ thì vẽ theo cờ cũ và mờ dần; lớp chỉ có ở
+    // nét mới thì hiện dần. Lớp có ở cả hai vẽ một lần, như thường.
+    if c.inFace, let from = c.from, let cond = n.cond {
+      let now = c.flags[cond]?.truthy ?? false, was = from[cond]?.truthy ?? false
+      if now != was {
+        var one = c
+        one.from = nil
+        if was { one.flags = from }
+        let k = KoaMath.isEyeCond(cond) ? (was != c.eyesNew ? 1 : 0) : was ? 1 - c.mix : c.mix
+        guard k > 0.001 else { return [] }
+        let drawn = node(l, one, armPart: armPart, armHidden: armHidden)
+        return k >= 0.999 ? drawn : [Element("G", ["opacity": .number(k)], kids: drawn)]
+      }
+    }
     if let cond = n.cond, !(c.flags[cond]?.truthy ?? false) { return [] }
     if armHidden { return [] }
     // lớp tay của dáng giơ tay: bỏ tay khỏi hình chính, hoặc chỉ vẽ tay
     var c = c
+    if n.id == "FACE" { c.inFace = true }
     if n.id == "ARMS" {
       if c.arms == .without { return [] }
       c.inArms = true
@@ -314,6 +361,7 @@ public enum KoaRender {
       body.append(Element("Probe", ["id": .string(id), "cx": .number(p.x), "cy": .number(p.y)]))
     }
     let ox = origin?[0] ?? 0, oy = origin?[1] ?? 0
+    var el0: [Element]?
     let el: [Element]
     if let anim, c.live {
       // `AnimGroup`: trước hết độ trễ, hoạt ảnh không góp gì (`fill-mode: none`)
@@ -324,6 +372,18 @@ public enum KoaRender {
         // chớp mắt do bên ngoài: thay hẳn nhịp gốc, kể cả trong độ trễ
         matrix = KoaMath.mul(baseM, KoaMath.opsMat([KoaScene.Op("s", [1, b])], ox, oy))
         if drivesOp { props["opacity"] = .number(KoaMath.sampleOp(track?.op ?? [], 0, anim.ease)) }
+        // hai mắt lệch nhau (Koa V2): mi phải là một nhóm riêng với độ khép của nó
+        if let r = c.blinkRight, r != b, body.count == 2 {
+          let right = KoaMath.mul(baseM, KoaMath.opsMat([KoaScene.Op("s", [1, r])], ox, oy))
+          el0 = [Element("G", props, matrix: matrix, kids: [body[0]]), Element("G", props, matrix: right, kids: [body[1]])]
+        }
+      } else if c.settle, let lag = KoaMath.settleLag[anim.k], c.t - lag >= anim.delay {
+        // nhịp nghỉ có đà (Koa V2): đầu nhún trước, tay rồi tai theo sau — không cùng một nhịp
+        let elapsed = c.t - lag - anim.delay
+        let t = elapsed.truncatingRemainder(dividingBy: anim.dur) / anim.dur
+        let m = drivesTf ? KoaMath.sampleMat(track?.tf ?? [], t, anim.ease, ox, oy) : KoaMath.identity
+        matrix = base.isEmpty ? m : KoaMath.mul(baseM, m)
+        if drivesOp { props["opacity"] = .number(KoaMath.sampleOp(track?.op ?? [], t, anim.ease)) }
       } else if c.t < anim.delay {
         matrix = KoaMath.mul(baseM, KoaMath.opsMat(over, ox, oy))
         if drivesOp { props["opacity"] = .number(ownOpacity) }
@@ -336,7 +396,7 @@ public enum KoaRender {
         matrix = base.isEmpty ? m : KoaMath.mul(baseM, m)
         if drivesOp { props["opacity"] = .number(KoaMath.sampleOp(track?.op ?? [], t, anim.ease)) }
       }
-      el = [Element("G", props, matrix: matrix, kids: body)]
+      el = el0 ?? [Element("G", props, matrix: matrix, kids: body)]
     } else if let anim {
       // đứng yên ở t=0: trong độ trễ là transform của chính lớp, ngoài thì khung 0%
       let early = anim.delay > 0
@@ -388,12 +448,21 @@ public enum KoaRender {
       moved = [Element("G", matrix: KoaGesture.idleArmLift, kids: moved)]
     }
     if let w = c.walk, let m = walkMat(n, w) { moved = [Element("G", matrix: m, kids: moved)] }
+    // dồn trọng tâm khi đứng (Koa V2): thân nghiêng rất chậm sang chân này rồi chân kia, quanh
+    // giữa hai bàn chân — bàn chân gần như không rời sàn
+    if c.weightShift != 0, n.id == "POSERIG" { moved = [Element("G", matrix: KoaGesture.rot(c.weightShift, 120, 293), kids: moved)] }
     // Chớp mắt do bên ngoài (phòng, 29/10): nét mi theo ĐÚNG độ khép mi đưa vào — không theo
     // nhịp gốc của bản vẽ (lỗi Kiệt thấy: mắt khép mất nét mi, nét mi hiện lúc mắt mở). Hai
     // nhóm chớp (`koaBlink`, `koaBlink2`) cùng khép một lúc → chỉ vẽ nét mi một lần.
     if let b = c.blink, c.live, let anim, KoaMath.blinkAnims.contains(anim.k) {
       let m = KoaMath.opsMat([KoaScene.Op("s", [1, b])], ox, oy)
-      if anim.k == "koaBlink", m[3] > KoaMath.lashMin { moved.append(lash(m)) }
+      if let r = c.blinkRight, r != b {
+        let mr = KoaMath.opsMat([KoaScene.Op("s", [1, r])], ox, oy)
+        if anim.k == "koaBlink", m[3] > KoaMath.lashMin { moved.append(lash(m, only: 0)) }
+        if anim.k == "koaBlink", mr[3] > KoaMath.lashMin { moved.append(lash(mr, only: 1)) }
+      } else if anim.k == "koaBlink", m[3] > KoaMath.lashMin {
+        moved.append(lash(m))
+      }
     } else if c.poke != nil, c.live, let anim, KoaMath.blinkAnims.contains(anim.k), c.t >= anim.delay,
       let track = track?.tf, !track.isEmpty
     {
@@ -560,23 +629,34 @@ public enum KoaRender {
   }
 
   static func context(_ o: Options, _ f: KoaFlags.Flags) -> Context {
+    // chỉ cái liếc trong phòng đổi miệng; nhìn theo ngón tay thì không
     let swapMouth = o.gaze != nil && KoaMath.swapMouths.contains { f[$0]?.truthy ?? false }
-    return Context(
+    var c = Context(
       flags: f, t: o.t, live: o.live, gaze: o.live ? o.gaze ?? o.look ?? walkLook(o) : nil, swapMouth: swapMouth,
       rest: KoaMath.restsAt(f) && !o.dress, dress: o.dress, blend: o.blend ?? (o.dress ? 1 : 0), paper: o.paper,
       flat: o.flat, poke: o.live ? o.poke : nil, gesture: o.gesture, arms: o.arms, walk: walking(o) ? o.walk : nil,
       eyes: o.live ? o.eyes : nil, blink: o.live ? o.blink : nil, gestureAmount: o.gestureAmount)
+    guard o.live, !KoaScene.rn else { return c }
+    c.blinkRight = o.blink == nil ? nil : o.blinkRight
+    if let from = o.faceFrom, o.faceMix < 1, !o.dress {
+      var old = o
+      old.expression = from.expression
+      old.gesture = from.gesture
+      let was = flags(old)
+      if was != f {
+        c.from = was
+        c.mix = max(0, o.faceMix)
+        c.eyesNew = o.faceEyesNew
+      }
+    }
+    c.settle = o.settle && !o.dress
+    if c.settle, o.pose == .idle, o.gesture == nil, !walking(o) { c.weightShift = KoaMath.weightShift(o.t) }
+    return c
   }
 
   public static func figure(_ o: Options) -> Element {
     let f = flags(o)
-    // chỉ cái liếc trong phòng đổi miệng; nhìn theo ngón tay thì không
-    let swapMouth = o.gaze != nil && KoaMath.swapMouths.contains { f[$0]?.truthy ?? false }
-    let c = Context(
-      flags: f, t: o.t, live: o.live, gaze: o.live ? o.gaze ?? o.look ?? walkLook(o) : nil, swapMouth: swapMouth,
-      rest: KoaMath.restsAt(f) && !o.dress, dress: o.dress, blend: o.blend ?? (o.dress ? 1 : 0), paper: o.paper,
-      flat: o.flat, poke: o.live ? o.poke : nil, gesture: o.gesture, arms: o.arms, walk: walking(o) ? o.walk : nil,
-      eyes: o.live ? o.eyes : nil, blink: o.live ? o.blink : nil, gestureAmount: o.gestureAmount)
+    let c = context(o, f)
     let tree = KoaLight.nodes.flatMap { node($0, c) }
     return Element(
       "Svg",

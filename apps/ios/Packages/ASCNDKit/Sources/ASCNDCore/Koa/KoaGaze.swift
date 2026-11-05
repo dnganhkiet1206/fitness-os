@@ -7,6 +7,15 @@ import Foundation
 /// Đích nhìn ở toạ độ MÀN của phòng (390), trừ `.user` (nhìn thẳng ra người xem). Đầu ra
 /// là hai `KoaMath.Gaze` (mắt, đầu) và độ khép mi 0…1 cho `KoaRender`.
 public enum KoaGaze {
+  /// Mắt phải khép sau mắt trái bao lâu (giây).
+  public static let rightLag = 0.018
+
+  /// Độ khép mi lúc `t` giây sau khi bắt đầu chớp: khép 0,07 s, mở 0,09 s.
+  static func lid(_ t: Double) -> Double {
+    guard t > 0, t < 0.16 else { return 0 }
+    return t < 0.07 ? t / 0.07 : max(0, 1 - (t - 0.07) / 0.09)
+  }
+
   public enum Target: Sendable, Hashable {
     case user
     case point(x: Double, y: Double)
@@ -18,6 +27,9 @@ public enum KoaGaze {
     public var eyes: KoaMath.Gaze
     public var head: KoaMath.Gaze
     public var blink: Double
+    /// Mắt phải khép bao nhiêu (Koa V2, 05/11): theo sau mắt trái ~18 ms, hai mắt không khép
+    /// đúng cùng một khung.
+    public var blinkRight: Double
     /// Mắt đang chuyển một cú lớn (app giữ 60 khung / giây cho mượt).
     public var settling: Bool
   }
@@ -49,6 +61,9 @@ public enum KoaGaze {
     /// Mắt: lò xo tắt dần tới hạn, nhanh hơn đầu nhiều (tới đích ~0,15 giây) — theo thời gian
     /// thật nên không phụ thuộc nhịp khung (Kiệt 30/10: mắt nhảy trong một khung ở 30 khung/giây).
     public var eyeRate = 26.0
+    /// Khoảng giữa hai lần chớp (giây). Phòng: 2–7 s. Thẻ nhỏ ngoài phòng chớp dày hơn
+    /// (`KoaIdleLife`), vì ở cỡ ấy chớp là chuyển động thấy rõ nhất.
+    public var blinkGap: ClosedRange<Double> = 2...7
 
     public init(seed: UInt64 = 1) { rng = Random(seed: seed) }
 
@@ -119,17 +134,18 @@ public enum KoaGaze {
       headX += headVX * dt
       headY += headVY * dt
       // chớp mắt: 2–7 giây, đôi khi chớp đôi
-      var lid = 0.0
+      var lid = 0.0, lidRight = 0.0
       if let b = blinkT {
         let t = b + dt
-        // khép 0,07 s, mở 0,09 s
-        lid = t < 0.07 ? t / 0.07 : max(0, 1 - (t - 0.07) / 0.09)
-        blinkT = t > 0.16 ? nil : t
+        // khép 0,07 s, mở 0,09 s; mắt phải chậm hơn một chút
+        lid = KoaGaze.lid(t)
+        lidRight = KoaGaze.lid(t - KoaGaze.rightLag)
+        blinkT = t > 0.16 + KoaGaze.rightLag ? nil : t
       } else {
         nextBlink -= dt
         if nextBlink <= 0 {
           blinkT = 0
-          nextBlink = rng.next() < 0.18 ? 0.28 : rng.range(2, 7)
+          nextBlink = rng.next() < 0.18 ? 0.28 : rng.range(blinkGap.lowerBound, blinkGap.upperBound)
         }
       }
       // mắt chạy trước, đầu theo sau. Không trừ phần quay đầu: trừ thì đổi đích nhìn làm mắt vọt
@@ -137,7 +153,7 @@ public enum KoaGaze {
       return Output(
         eyes: KoaMath.Gaze(x: max(-1, min(1, eyeX * 0.75)), y: max(-1, min(1, eyeY * 0.75)), k: 1),
         head: KoaMath.Gaze(x: max(-1, min(1, headX)), y: max(-1, min(1, headY)), k: 1),
-        blink: lid, settling: abs(ex - eyeX) + abs(ey - eyeY) > 0.25)
+        blink: lid, blinkRight: lidRight, settling: abs(ex - eyeX) + abs(ey - eyeY) > 0.25)
     }
   }
 }
