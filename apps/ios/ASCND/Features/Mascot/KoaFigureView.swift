@@ -50,6 +50,8 @@ struct KoaFigureView: View {
   var headLook: KoaMath.Gaze?
   var eyes: KoaMath.Gaze?
   var blink: Double?
+  /// Mắt phải của cú chớp do phòng đưa vào (`KoaGaze.Output.blinkRight`).
+  var blinkRight: Double?
   var gestureAmount = 1.0
   /// Đồng hồ ngoài (phòng, 30/10): khung do `TimelineView` của sân khấu đưa vào — hình
   /// KHÔNG chạy đồng hồ riêng (trước có hai đồng hồ cùng vẽ Koa: vẽ lại gấp đôi).
@@ -74,6 +76,8 @@ struct KoaFigureView: View {
   /// Koa đã cuộn khỏi màn; Reduce Motion bật thì 0 %. Không nằm trong khung cuộn thì
   /// không bao giờ đổi — luôn chạy như trước.
   @State private var onScreen = true
+  /// Koa V2 (05/11): ánh nhìn sống ngoài phòng và nét mặt chuyển dần — ô nhớ giữa các khung.
+  @State private var life = KoaLifeBox()
 
   var body: some View {
     let isPaper = paper ?? (scheme == .light)
@@ -110,7 +114,20 @@ struct KoaFigureView: View {
   private func frame(_ date: Date, paper: Bool, reacts: Bool, running: Bool) -> some View {
     let ms = date.timeIntervalSinceReferenceDate * 1000
     let t = animated ? idleClock ?? clock.tick(ms, running: running) : 0
-    return canvas(t: t, paper: paper, react: reacts ? touch.frame(ms) : nil, running: running)
+    // Koa V2: ngoài phòng (không ai đưa ánh nhìn vào) Koa tự nhìn người xem, liếc đi, chớp lúc
+    // không đều; ở tư thế đứng thường, không dáng, không thử đồ
+    let ownGaze =
+      running && headLook == nil && eyes == nil && blink == nil && walk == nil && idleClock == nil && !dress
+      && gesture == nil && pose == .idle
+    let idle = ownGaze ? life.idle.step(at: ms) : nil
+    if !ownGaze { life.idle.pause() }
+    let face = KoaRender.Options.Face(expression: gesture?.expression ?? expression, gesture: gesture)
+    if running { life.face.update(face, at: ms) } else { life.face = KoaFaceTween() }
+    let tw = running ? life.face : KoaFaceTween()
+    return canvas(
+      t: t, paper: paper, react: reacts ? touch.frame(ms) : nil, running: running, idle: idle,
+      faceFrom: tw.from(at: ms), faceMix: tw.mix(at: ms), faceEyesNew: tw.eyesNew(at: ms),
+      faceBlink: tw.blink(at: ms).map { ($0, tw.blinkRight(at: ms) ?? $0) })
       // vẽ rộng hơn khung hai bên (hình vẫn đúng chỗ, đúng cỡ — `viewport` theo chiều cao):
       // đầu quay / nghiêng khi đi không bị cắt tai ở mép khung
       .frame(width: size * (bleeds ? Self.bleed : 1), height: size * KoaMath.aspect)
@@ -141,7 +158,11 @@ struct KoaFigureView: View {
       }
   }
 
-  private func canvas(t: Double, paper: Bool, react: KoaTouch.Frame?, running: Bool) -> some View {
+  private func canvas(
+    t: Double, paper: Bool, react: KoaTouch.Frame?, running: Bool, idle: KoaGaze.Output? = nil,
+    faceFrom: KoaRender.Options.Face? = nil, faceMix: Double = 1, faceEyesNew: Bool = true,
+    faceBlink: (Double, Double)? = nil
+  ) -> some View {
     Canvas { ctx, canvas in
       var o = KoaRender.Options()
       o.expression = gesture?.expression ?? expression
@@ -156,9 +177,18 @@ struct KoaFigureView: View {
       // đèn như cũ (15/10, chủ dự án).
       o.flat = paper
       o.t = t
-      o.look = react?.look ?? (running ? headLook : nil)
-      o.eyes = react?.look == nil && running ? eyes : nil
-      o.blink = running ? blink : nil
+      o.look = react?.look ?? (running ? headLook ?? idle?.head : nil)
+      o.eyes = react?.look == nil && running ? eyes ?? idle?.eyes : nil
+      o.blink = running ? blink ?? idle?.blink : nil
+      o.blinkRight = running ? (blink != nil ? blinkRight : idle?.blinkRight) : nil
+      // đổi nét mặt: một cú chớp che chỗ mắt đổi (thêm vào cú chớp đang có, không thay)
+      if let fb = faceBlink {
+        o.blink = max(o.blink ?? 0, fb.0)
+        o.blinkRight = max(o.blinkRight ?? o.blink ?? 0, fb.1)
+      }
+      o.faceFrom = faceFrom
+      o.faceMix = faceMix
+      o.faceEyesNew = faceEyesNew
       o.gestureAmount = gestureAmount
       o.poke = react?.poke
       if onTapZone != nil { o.poke?.jumps = false }
@@ -257,7 +287,7 @@ struct MascotFigureView: View {
         greet: greet, onTap: onTap, onTapZone: onTapZone, mouth: dress ? nil : direct?.mouth,
         walk: dress ? nil : walk ?? direct?.walk, bleeds: walks,
         headLook: direct?.gaze.head, eyes: direct?.gaze.eyes, blink: direct?.gaze.blink,
-        gestureAmount: dress ? 1 : amount, date: date, onTouch: onTouch, idleClock: idleClock)
+        blinkRight: direct?.gaze.blinkRight, gestureAmount: dress ? 1 : amount, date: date, onTouch: onTouch, idleClock: idleClock)
     } else {
       VectorMascotView(id: mascotId, size: size, equipped: Set(equipped))
     }
@@ -293,6 +323,12 @@ struct VectorMascotView: View {
 /// dừng (Reduce Motion, ra nền, rời màn) rồi chạy lại thì tiếp từ khung đang
 /// giữ chứ không nhảy cóc. Không quan sát được — chỉ là ô nhớ giữa các khung.
 @MainActor
+/// Ô nhớ của Koa V2 giữa các khung (như `KoaClock`): không phải trạng thái SwiftUI quan sát.
+final class KoaLifeBox {
+  var idle = KoaIdleLife(seed: UInt64.random(in: 1...UInt64.max))
+  var face = KoaFaceTween()
+}
+
 final class KoaClock {
   private var clock = 0.0
   private var last = KoaMath.clockReset
