@@ -140,11 +140,15 @@ public enum KoaPerformance {
   /// Nhìn thẳng thì `lean` / `sway` của dáng đi là nghiêng NGANG trên màn: quá ±1,5° Koa lệch sang một bên như
   /// què một chân (Kiệt 06/11). Mệt / lấy đà diễn bằng nhún, gục đầu, tai cụp.
   public static let maxTilt = 1.5
+  /// Tay giơ quá chừng này (độ) là vòng ra SAU má: lớp đầu che tay, chỉ còn đồ cầm tay lòi ra ở mép má như cắm vào
+  /// mặt (Kiệt 06/11). Vai (80 / 160, 178), tay dài ~68, má rộng tới x ≈ 40 / 200. Giơ cao hơn thì dùng dáng `cheer`
+  /// (có lật hình tay để bàn tay hướng ra ngoài).
+  public static let maxArmRaise = 92.0
 
   /// Nướng cả cảnh: kênh chính + lớp phụ (lò xo theo đà, lệch nhịp, nén / giãn).
   public static func bake(_ s: Script) -> [Frame] {
     let dt = 1000 / hz
-    let n = Int(s.ms / dt) + 1
+    let n = Int((s.ms / dt).rounded()) + 1
     var out: [Frame] = []
     out.reserveCapacity(n)
     // lò xo: (giá trị, vận tốc)
@@ -177,8 +181,8 @@ public enum KoaPerformance {
       let shake = tremble * sin(t * 0.075) * sin(t * 0.031 + 1)
       f.walk.lean = max(-maxTilt, min(maxTilt, lean))
       f.walk.sway = max(-maxTilt, min(maxTilt, s.sway.at(t)))
-      f.walk.armLeft = s.armL.at(t) + armLagL.0
-      f.walk.armRight = s.armR.at(t) + armLagR.0 + shake
+      f.walk.armLeft = min(maxArmRaise, s.armL.at(t) + armLagL.0)
+      f.walk.armRight = max(-maxArmRaise, s.armR.at(t) + armLagR.0 + shake)
       f.walk.headLag = max(-9, min(9, head.0))
       f.walk.earLag = max(-14, min(14, ear.0))
       let ears = s.ears.at(t)
@@ -251,7 +255,7 @@ public enum KoaPerformance {
         lean: T(Key(0, 0), Key(500, -0.6), Key(800, 0.4), Key(1300, 1), Key(2000, 0.8)),
         sway: T(Key(0, 0), Key(1300, 0), Key(1600, 0.4), Key(1900, -0.3), Key(2200, 0.2)),
         armL: T(Key(0, 0), Key(500, 6), Key(900, -4), Key(1300, -6)),
-        armR: T(Key(0, -6), Key(480, -118, .out), Key(640, -122), Key(880, -14, .in), Key(1300, 4)),
+        armR: T(Key(0, -6), Key(480, -84, .out), Key(640, -88), Key(880, -14, .in), Key(1300, 4)),
         cheer: zero,
         ears: T(Key(0, 0), Key(800, -4), Key(1300, 12), Key(2000, 14)),
         lookX: T(Key(0, 0), Key(700, 0), Key(1000, 0.15), Key(1500, 0.05)),
@@ -277,9 +281,9 @@ public enum KoaPerformance {
         lean: T(Key(0, 0), Key(800, -1), Key(1100, -0.4), Key(1750, 1.2), Key(2000, -0.8), Key(2450, 1), Key(2800, 0)),
         sway: T(Key(0, 0), Key(2900, 0), Key(3300, 0.6), Key(3700, -0.4), Key(4100, 0.4)),
         armL: T(Key(0, 2), Key(800, 8), Key(1700, -20), Key(1850, -26), Key(2900, 0), Key(3200, 10), Key(4500, 6)),
-        armR: T(Key(0, -8), Key(820, -132, .out), Key(1050, -138), Key(1600, -60, .inOut), Key(1800, 22),
-                Key(2900, 0), Key(3000, 12), Key(3220, -124), Key(3340, -114), Key(3460, -92), Key(3560, -102),
-                Key(3740, -126), Key(3860, -116), Key(4100, -98), Key(4500, -100)),
+        armR: T(Key(0, -8), Key(820, -86, .out), Key(1050, -88), Key(1600, -50, .inOut), Key(1800, 22),
+                Key(2900, 0), Key(3000, 12), Key(3220, -90), Key(3340, -84), Key(3460, -66), Key(3560, -74),
+                Key(3740, -90), Key(3860, -85), Key(4100, -72), Key(4500, -74)),
         cheer: T(Key(0, 0), Key(1820, 0), Key(2030, 1.06), Key(2150, 1), Key(2700, 1), Key(2950, 0.0, .inOut)),
         ears: T(Key(0, 0), Key(900, -6), Key(1100, -2), Key(2000, -8), Key(2600, 0)),
         lookX: T(Key(0, 0), Key(2900, 0), Key(3200, 0.45), Key(4500, 0.3)),
@@ -302,18 +306,18 @@ public enum KoaPerformance {
       // Đứng thở dốc, tai cụp → hít một hơi thật sâu, đứng thẳng, tai dựng → liếc sang, quay lại nhếch mép (cận) →
       // khoe tay, số liệu đếm lên → ngồi lấy đà, nhảy chữ V ăn mừng.
       Script(
-        ms: 6300,
+        ms: 7500,
         bob: T(Key(0, -8), Key(500, -6), Key(900, -9), Key(1300, -10), Key(1800, 6, .out), Key(2200, 2), Key(2600, 3),
                Key(3200, 0), Key(4400, 0), Key(4650, -13), Key(4850, 34, .out), Key(5100, 38), Key(5320, -9, .in),
                Key(5550, 2, .out), Key(5800, 0)),
         lean: T(Key(0, 1.2), Key(1300, 1.4), Key(1800, -0.6), Key(2300, 0), Key(4600, 1.2), Key(4900, -0.8), Key(5350, 0.8), Key(5700, 0)),
         sway: T(Key(0, 0), Key(400, 0.4), Key(800, -0.4), Key(1200, 0.3), Key(1700, 0), Key(3200, 0), Key(3600, 0.4), Key(4100, -0.4),
                 Key(4400, 0)),
-        armL: T(Key(0, -4), Key(1300, -6), Key(1800, 8), Key(2300, 2), Key(3200, 4), Key(3300, -8), Key(3560, 100),
-                Key(3700, 92), Key(4400, 90),
+        armL: T(Key(0, -4), Key(1300, -6), Key(1800, 8), Key(2300, 2), Key(3200, 4), Key(3300, -8), Key(3560, 90),
+                Key(3700, 84), Key(4400, 86),
                 Key(4650, -24), Key(4800, 0)),
-        armR: T(Key(0, 4), Key(1300, 6), Key(1800, -8), Key(2300, -2), Key(3200, -4), Key(3300, 8), Key(3560, -100),
-                Key(3700, -92), Key(4400, -90),
+        armR: T(Key(0, 4), Key(1300, 6), Key(1800, -8), Key(2300, -2), Key(3200, -4), Key(3300, 8), Key(3560, -90),
+                Key(3700, -84), Key(4400, -86),
                 Key(4650, 24), Key(4800, 0)),
         cheer: T(Key(0, 0), Key(4720, 0), Key(4930, 1.06), Key(5050, 1), Key(6300, 1)),
         ears: T(Key(0, 14), Key(1300, 15), Key(1900, -6, .out), Key(2400, 0), Key(4600, -6), Key(5400, 0)),
@@ -323,16 +327,17 @@ public enum KoaPerformance {
                  Key(4650, 0.25), Key(4900, -0.4), Key(5400, 0)),
         turn: T(Key(0, 0), Key(2000, 0), Key(2400, -0.5), Key(2750, -0.45), Key(3050, 0.25), Key(3600, 0.1), Key(4400, 0)),
         zoom: T(Key(0, 0.95), Key(1300, 1.0), Key(2300, 1.2), Key(2800, 1.25), Key(3150, 1.9, .inOut), Key(3500, 1.95),
-                Key(3900, 1.0, .inOut), Key(4400, 0.9), Key(6300, 0.95)),
+                Key(3900, 1.0, .inOut), Key(4400, 0.9), Key(6300, 0.95), Key(7500, 0.95)),
         focus: T(Key(0, 1), Key(2800, 1), Key(3150, 0), Key(3500, 0), Key(3900, 1)),
         tremble: zero,
         faces: [(0, .pant), (1500, .content), (2950, .smug), (4600, .delighted)],
         hand: nil,
         cues: [Cue(0, 1700, title: "XONG BUỔI!", subtitle: "Full Body A", effects: [.sweat], haptic: .success),
-               Cue(3550, 4600, stats: [KoaReaction.Stat(value: 42, unit: "phút", label: "thời gian"),
+               // 3 thẻ số liệu giữ tới hết cảnh để người dùng đọc (Kiệt 06/11)
+               Cue(3550, 7500, stats: [KoaReaction.Stat(value: 42, unit: "phút", label: "thời gian"),
                                        KoaReaction.Stat(value: 4860, unit: "kg", label: "tổng khối lượng"),
                                        KoaReaction.Stat(value: 18, unit: "", label: "set")], haptic: .soft),
-               Cue(4850, 6300, title: "+12 Gains", subtitle: "còn 98 tới Lifter", effects: [.confetti], haptic: .success)],
+               Cue(4850, 7500, title: "+12 Gains", subtitle: "còn 98 tới Lifter", effects: [.confetti], haptic: .success)],
         flashAt: nil, ringFrom: nil)
     }
   }

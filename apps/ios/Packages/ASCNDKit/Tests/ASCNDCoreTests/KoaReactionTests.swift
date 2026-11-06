@@ -51,7 +51,7 @@ struct KoaPerformanceTests {
   @Test func everySceneIsOneTakeWithNoPoseSwaps() {
     for scene in KoaReaction.Scene.allCases {
       let fs = KoaPerformance.frames(scene)
-      #expect(fs.count == Int(KoaPerformance.duration(scene) / 1000 * KoaPerformance.hz) + 1)
+      #expect(fs.count == Int((KoaPerformance.duration(scene) / 1000 * KoaPerformance.hz).rounded()) + 1)
       // thân không nhảy cóc giữa hai khung liền nhau (không có cú đổi dáng)
       for (a, b) in zip(fs, fs.dropFirst()) {
         #expect(abs(a.walk.bob - b.walk.bob) < 8, "\(scene) — cú bật nhảy nhanh nhất khoảng 6 đơn vị một khung")
@@ -109,5 +109,24 @@ struct KoaPerformanceFixTests {
     let with = ellipses(KoaRender.figure(o))
     o.groundShadow = false
     #expect(ellipses(KoaRender.figure(o)) < with, "bỏ elip bóng (cả các lượt đèn của nó); bóng nằm yên trên sàn do màn vẽ")
+  }
+}
+
+extension KoaPerformanceFixTests {
+  @Test func workoutStatsStayOnScreenUntilTheEnd() {
+    let total = KoaPerformance.duration(.done)
+    let stats = KoaPerformance.cues(.done).first { !$0.stats.isEmpty }
+    #expect(stats?.to == total, "3 thẻ số liệu giữ tới hết cảnh")
+    #expect((total - (stats?.from ?? total)) >= 3500, "đủ lâu để đọc")
+  }
+}
+
+extension KoaPerformanceFixTests {
+  @Test func raisedArmsNeverSlipBehindTheCheek() {
+    for scene in KoaReaction.Scene.allCases {
+      #expect(KoaPerformance.frames(scene).allSatisfy {
+        $0.walk.armLeft <= KoaPerformance.maxArmRaise && $0.walk.armRight >= -KoaPerformance.maxArmRaise
+      }, "\(scene): tay giơ quá thì lọt sau má, đồ cầm tay lòi ra như cắm vào mặt")
+    }
   }
 }
