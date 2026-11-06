@@ -237,8 +237,10 @@ public enum KoaPerformance {
   /// liền) thì pháo giấy vẫn bắn nhưng không có dòng Gains.
   public static func cues(_ scene: Scene, content: KoaReaction.Content?) -> [Cue] {
     guard let content else { return cues(scene) }
-    return cues(scene).map { c in
-      if c.title != nil, c.stats.isEmpty, c.from == 0 {
+    let all = cues(scene)
+    let main = all.firstIndex { $0.title != nil && $0.stats.isEmpty }
+    return all.enumerated().map { i, c in
+      if i == main {
         return Cue(c.from, c.to, title: content.title, subtitle: content.subtitle, effects: c.effects, haptic: c.haptic)
       }
       if !c.stats.isEmpty { return Cue(c.from, c.to, stats: content.stats, effects: c.effects, haptic: c.haptic) }
@@ -256,8 +258,8 @@ public enum KoaPerformance {
 
   /// Tiếng của từng cảnh, khớp đúng nhịp diễn (Kiệt 05/11: tối giản, dễ chịu, sang, hợp storyboard).
   static let soundsOf: [Scene: [Sound]] = [
-    .set: [S(0, "lift", 0.8), S(690, "exhale", 0.9), S(700, "set"), S(1250, "exhale", 0.45), S(2050, "whoosh", 0.45),
-           S(2620, "ring", 0.9)],
+    .set: [S(0, "lift", 0.6), S(560, "exhale", 0.8), S(600, "set"), S(880, "pump", 0.5), S(1150, "tick", 0.45),
+           S(1300, "tick", 0.4), S(1450, "tick", 0.35)],
     .record: [S(40, "lift", 0.9), S(860, "record"), S(1950, "whoosh", 0.8), S(1980, "sparkle", 0.8), S(2010, "gains", 0.7),
               S(2420, "land"), S(2950, "tick", 0.6), S(3150, "pump", 0.7), S(3620, "pump", 0.55)],
     .done: [S(0, "exhale", 0.8), S(1300, "inhale", 0.9), S(2950, "tick", 0.5), S(3550, "tick", 0.5), S(3700, "tick", 0.45),
@@ -278,29 +280,35 @@ public enum KoaPerformance {
   static func rawScript(_ scene: Scene) -> Script {
     switch scene {
     case .set:
-      // Rep cuối: gồng nâng tạ → buông → thở ra → gục, tai cụp → thu vào vòng đồng hồ nghỉ.
+      // 07/11 làm lại hoàn toàn (Kiệt: "lỗi nặng, bỏ kiểu thiết kế cũ"): cùng ngôn ngữ cảnh xong buổi đã duyệt —
+      // máy toàn thân, không cận mặt cắt khung, không vệt tốc độ, không bay vào vòng nghỉ. Rep cuối đẩy tạ lên →
+      // hạ tạ thở ra "phù" + "XONG SET!" → tay kia nắm đấm nhỏ, tự tin → ba thẻ số của set ở dưới, đứng thở đều.
+      // Lặp lại mỗi set nên ngắn và nhẹ.
       Script(
-        ms: 2700,
-        bob: T(Key(0, 0), Key(220, -5), Key(520, -7), Key(760, 5, .out), Key(1000, 0), Key(1300, -9), Key(1700, -7),
-               Key(2000, -8)),
-        lean: T(Key(0, 0), Key(500, -0.6), Key(800, 0.4), Key(1300, 1), Key(2000, 0.8)),
-        sway: T(Key(0, 0), Key(1300, 0), Key(1600, 0.4), Key(1900, -0.3), Key(2200, 0.2)),
-        armL: T(Key(0, 0), Key(500, 6), Key(900, -4), Key(1300, -6)),
-        armR: T(Key(0, -6), Key(480, -48.5, .out), Key(640, -50.8), Key(880, -14, .in), Key(1300, 4)),
+        ms: 2800,
+        bob: T(Key(0, 0), Key(180, -4), Key(420, 2, .out), Key(560, -6, .in), Key(760, 2, .out), Key(950, 0),
+               Key(1500, -1), Key(2000, 0), Key(2400, -1), Key(2800, 0)),
+        lean: T(Key(0, 0), Key(400, -0.4), Key(700, 0.3), Key(1100, 0)),
+        sway: T(Key(0, 0), Key(1100, 0), Key(1500, 0.3), Key(1900, -0.2), Key(2400, 0.1), Key(2800, 0)),
+        armL: T(Key(0, 0), Key(560, 4), Key(700, -14), Key(880, 100, .out), Key(1000, 92), Key(1150, 98), Key(1450, 8, .inOut),
+                Key(2800, 4)),
+        armR: T(Key(0, -6), Key(120, -14), Key(400, -100, .out), Key(470, -96), Key(640, -10, .inOut), Key(800, 4),
+                Key(1000, -2), Key(2800, -2)),
         cheer: zero,
-        ears: T(Key(0, 0), Key(800, -4), Key(1300, 12), Key(2000, 14)),
-        lookX: T(Key(0, 0), Key(700, 0), Key(1000, 0.15), Key(1500, 0.05)),
-        lookY: T(Key(0, -0.35), Key(600, -0.4), Key(900, 0.1), Key(1300, 0.45), Key(2000, 0.35)),
-        turn: T(Key(0, 0.2), Key(900, 0.25), Key(1500, 0)),
-        zoom: T(Key(0, 1.9), Key(560, 1.95), Key(1100, 1.15, .inOut), Key(1800, 1.05)),
-        focus: T(Key(0, 0), Key(560, 0), Key(1100, 1), Key(1800, 1)),
-        tremble: T(Key(0, 0), Key(380, 0), Key(500, 5), Key(660, 5), Key(700, 0)),
-        faces: [(0, .grit), (690, .puff), (1250, .pant)],
+        ears: T(Key(0, 0), Key(400, -5), Key(640, 6), Key(900, -4), Key(1300, 0)),
+        lookX: T(Key(0, 0.1), Key(400, 0.25), Key(700, 0), Key(1000, -0.2), Key(1400, 0), Key(2800, 0)),
+        lookY: T(Key(0, -0.2), Key(400, -0.45), Key(640, 0.15), Key(900, -0.1), Key(1500, 0.2), Key(2800, 0.15)),
+        turn: T(Key(0, 0.15), Key(700, 0), Key(1000, -0.15), Key(1500, 0)),
+        zoom: T(Key(0, 1.0), Key(700, 1.04), Key(2800, 1.0)),
+        focus: T(Key(0, 1), Key(2800, 1)),
+        tremble: T(Key(0, 0), Key(300, 0), Key(380, 3), Key(470, 3), Key(520, 0)),
+        faces: [(0, .grit), (560, .puff), (900, .confident), (1500, .content)],
         hand: "dumbbell",
-        cues: [Cue(0, 700, effects: [.speedLines], haptic: .soft),
-               Cue(700, 2000, title: "XONG SET!", subtitle: "Squat · 80 kg × 5", haptic: .success),
-               Cue(1250, 2700, effects: [.sweat])],
-        flashAt: nil, ringFrom: 2050)
+        cues: [Cue(600, 2800, title: "XONG SET!", subtitle: "Squat · set 1/2", haptic: .success),
+               Cue(1150, 2800, stats: [KoaReaction.Stat(value: 80, unit: "kg", label: "mức tạ"),
+                                       KoaReaction.Stat(value: 5, unit: "", label: "reps"),
+                                       KoaReaction.Stat(value: 90, unit: "giây", label: "nghỉ")], haptic: .soft)],
+        flashAt: nil, ringFrom: nil)
     case .record:
       // Nâng tạ nặng run tay → chạm đỉnh (chớp, cận mặt hét) → ngồi xuống lấy đà → bật nhảy chữ V → tiếp đất
       // nén → đấm tay lên trời hai nhịp, quay sang người xem.
