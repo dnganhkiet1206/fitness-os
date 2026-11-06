@@ -152,6 +152,7 @@ struct WorkoutsTab: View {
         onAdjustRest: { rest.adjust(by: $0) },
         onSkipRest: { rest.handle(.cancel) },
         onSetRestPaused: { rest.setPaused($0) },
+        onSettleRest: { rest.settle() },
         restRecordNote: rest.recordNote,
         onRestRecord: { rest.noteRecord($0) },
         outboxStatus: outboxStatus,

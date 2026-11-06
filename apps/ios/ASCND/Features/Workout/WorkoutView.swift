@@ -25,6 +25,8 @@ public struct WorkoutView: View {
   var onAdjustRest: (Int) -> Void
   var onSkipRest: () -> Void
   var onSetRestPaused: (Bool) -> Void
+  /// Mỗi giây khi màn nghỉ đang mở: đóng quãng nghỉ đã hết (`RestTimerController.settle`).
+  var onSettleRest: () -> Void = {}
   /// Dòng kỷ lục của set vừa xong trên thẻ nghỉ.
   var restRecordNote: String?
   var onRestRecord: (String?) -> Void
@@ -47,6 +49,10 @@ public struct WorkoutView: View {
   @AppStorage("ascnd.workout.tableLayout") private var tableLayout = false
   /// Bài người dùng chạm ở "Các bài trong buổi" — set kế tiếp lấy từ bài ấy.
   @State private var pinned: String?
+  /// Màn nghỉ có Koa đã thu nhỏ (xem cả buổi); quãng nghỉ sau lại mở to.
+  @State private var restMinimized = false
+  /// Lúc mỗi quãng nghỉ (theo set vừa xong) mở màn Koa lần đầu.
+  @State private var restBegan: [String: Date] = [:]
 
   @State private var weightTexts: [String: String] = [:]
   @State private var repsTexts: [String: String] = [:]
@@ -102,6 +108,7 @@ public struct WorkoutView: View {
     onAdjustRest: @escaping (Int) -> Void = { _ in },
     onSkipRest: @escaping () -> Void = {},
     onSetRestPaused: @escaping (Bool) -> Void = { _ in },
+    onSettleRest: @escaping () -> Void = {},
     restRecordNote: String? = nil,
     onRestRecord: @escaping (String?) -> Void = { _ in },
     outboxStatus: OutboxStatus = .ok,
@@ -117,6 +124,7 @@ public struct WorkoutView: View {
     self.onAdjustRest = onAdjustRest
     self.onSkipRest = onSkipRest
     self.onSetRestPaused = onSetRestPaused
+    self.onSettleRest = onSettleRest
     self.restRecordNote = restRecordNote
     self.onRestRecord = onRestRecord
     self.outboxStatus = outboxStatus
@@ -128,6 +136,41 @@ public struct WorkoutView: View {
   }
 
   public var body: some View {
+    workoutStack
+      .overlay { restScreen }
+      .onChange(of: restTimer == nil) { _, none in if none { restMinimized = false } }
+  }
+
+  /// Màn nghỉ có Koa (07/11, Kiệt: thay đồng hồ nghỉ cũ). Chỉ ở màn từng set; dạng bảng giữ dải nghỉ gọn.
+  @ViewBuilder private var restScreen: some View {
+    if let timer = restTimer, !restMinimized, !isPreview, !showsTable, controller.phase == .active || controller.phase == .idle {
+      let next = WorkoutFocus.next(controller.rows, controller.progress, pinned: pinned)
+      let last = WorkoutFocus.lastDone(controller.rows, controller.progress, before: next)
+      KoaRestScreen(
+        timer: timer,
+        justDone: last.map { "\($0.exerciseName) · \(setText($0))" },
+        next: next.map { nextLine($0) },
+        record: restRecordNote,
+        onAdjust: onAdjustRest, onSkip: onSkipRest, onSetPaused: onSetRestPaused, onSettle: onSettleRest,
+        onMinimize: { withAnimation(DSMotion.animation(.snappy, reduceMotion: reduceMotion)) { restMinimized = true } },
+        onEditJustDone: last.flatMap { row in
+          controller.canEdit(row.key)
+            ? {
+              Task {
+                await flushWrites()
+                await controller.toggle(row.key)
+              }
+            } : nil
+        },
+        startedAt: restBegan[last?.key ?? "rest"],
+        onStarted: { restBegan[last?.key ?? "rest"] = $0 }
+      )
+      .id(last?.key ?? "rest")
+      .transition(.opacity)
+    }
+  }
+
+  private var workoutStack: some View {
     NavigationStack {
       Group {
         switch controller.phase {
@@ -367,10 +410,12 @@ public struct WorkoutView: View {
           .padding(.horizontal, 4)
 
         if let timer = restTimer {
-          FocusRestCard(
-            timer: timer, next: next.map { nextLine($0) }, record: restRecordNote,
-            onAdjust: onAdjustRest, onSkip: onSkipRest, onSetPaused: onSetRestPaused)
-          .transition(.blurReplace)
+          // Màn nghỉ có Koa phủ toàn màn (07/11, `KoaRestScreen`); thu nhỏ thì còn dải này, chạm để mở lại.
+          RestStrip(timer: timer, onAdjust: onAdjustRest, onSkip: onSkipRest, onSetPaused: onSetRestPaused)
+            .contentShape(Rectangle())
+            .onTapGesture { restMinimized = false }
+            .accessibilityAction(named: Text("koa.rest.expand")) { restMinimized = false }
+            .transition(.blurReplace)
           if let last = WorkoutFocus.lastDone(rows, controller.progress, before: next) {
             justDone(last)
           }
