@@ -138,8 +138,11 @@ extension KoaPerformanceFixTests {
     for scene in KoaReaction.Scene.allCases {
       #expect(KoaPerformance.frames(scene).allSatisfy { $0.cheer == 0 }, "\(scene)")
     }
-    // vẫn ăn mừng bằng tay dang rộng lúc nhảy
-    #expect(KoaPerformance.frame(.done, at: 5600).walk.armLeft > 40)
+    // 06/11 Kiệt: "giơ tay thấp quá nên không vui" → ăn mừng giơ tay chữ V (≥ 100°), tay đã lật
+    let peak = KoaPerformance.frames(.done).map(\.walk.armLeft).max() ?? 0
+    #expect(peak >= 100, "lý do: tay ăn mừng thấp, không vui")
+    #expect(KoaPerformance.frames(.record).map { -$0.walk.armRight }.max() ?? 0 >= 100)
+    #expect(KoaPerformance.frame(.done, at: 5600).walk.flipRaisedArms)
   }
 }
 
