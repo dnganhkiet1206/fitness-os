@@ -71172,6 +71172,144 @@
      }
     }
    }
+  },
+  "koa.reaction.skip": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tap to skip"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chạm để bỏ qua"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Toca para saltar"
+     }
+    }
+   }
+  },
+  "koa.reaction.done": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "WORKOUT DONE!"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "XONG BUỔI!"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "¡ENTRENO HECHO!"
+     }
+    }
+   }
+  },
+  "koa.reaction.volume": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "total volume"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "tổng khối lượng"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "volumen total"
+     }
+    }
+   }
+  },
+  "koa.reaction.sets": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "sets"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "set"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "series"
+     }
+    }
+   }
+  },
+  "koa.reaction.exercises": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "exercises"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "bài"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "ejercicios"
+     }
+    }
+   }
+  },
+  "koa.reaction.gains %lld": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "+%lld Gains"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "+%lld Gains"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "+%lld Gains"
+     }
+    }
+   }
   }
  }
 }

@@ -231,6 +231,24 @@ public enum KoaPerformance {
 
   public static func duration(_ scene: Scene) -> Double { script(scene).ms }
   public static func cues(_ scene: Scene) -> [Cue] { script(scene).cues }
+
+  /// Chữ thật của buổi vừa xong thay cho số mẫu (07/11: Kiệt duyệt storyboard xong buổi). Giữ nguyên mốc thời
+  /// gian, hiệu ứng, rung của bản đã duyệt; chỉ đổi chữ. `gains == nil` (buổi thứ hai trong ngày, tập quá ngày
+  /// liền) thì pháo giấy vẫn bắn nhưng không có dòng Gains.
+  public static func cues(_ scene: Scene, content: KoaReaction.Content?) -> [Cue] {
+    guard let content else { return cues(scene) }
+    return cues(scene).map { c in
+      if c.title != nil, c.stats.isEmpty, c.from == 0 {
+        return Cue(c.from, c.to, title: content.title, subtitle: content.subtitle, effects: c.effects, haptic: c.haptic)
+      }
+      if !c.stats.isEmpty { return Cue(c.from, c.to, stats: content.stats, effects: c.effects, haptic: c.haptic) }
+      if c.title != nil {
+        return Cue(c.from, c.to, title: content.gains?.title, subtitle: content.gains?.subtitle, effects: c.effects,
+                   haptic: c.haptic)
+      }
+      return c
+    }
+  }
   public static func hand(_ scene: Scene) -> String? { script(scene).hand }
   public static func sounds(_ scene: Scene) -> [Sound] { script(scene).sounds.sorted { $0.t < $1.t } }
 

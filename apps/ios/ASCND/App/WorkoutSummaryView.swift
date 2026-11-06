@@ -67,6 +67,30 @@ public struct WorkoutSummaryView: View {
 
   /// Buổi đã gửi `gains_earned` trong lần mở app này.
   @MainActor private static var reported: Set<Int64> = []
+  /// Chữ thật cho cảnh xong buổi: tên buổi, ba ô số của buổi (khối lượng theo đơn vị tài khoản), Gains vừa nhận.
+  /// Không có thời lượng buổi trong `WorkoutSummary`, nên ô "thời gian" của mock thành số bài.
+  static func reactionContent(_ summary: WorkoutSummary, gains: GainsGain?, unit: WeightUnit, locale: Locale)
+    -> KoaReaction.Content
+  {
+    let lang = AppPreferences.Lang(rawValue: String(locale.identifier.prefix(2))) ?? .vi
+    let g = gains.flatMap { g -> KoaReaction.Content.Gains? in
+      guard !g.repeatSession, !g.overtrained, g.delta > 0 else { return nil }
+      let sub = KoaGains.toNext(g.after.points).map { next in
+        let nextRank = MascotRules.ranks[min(g.after.rank + 1, MascotRules.ranks.count - 1)]
+        return String(localized: "koa.gains.toRank \(next.need - next.have) \(nextRank.name(lang))")
+      }
+      return .init(title: String(localized: "koa.reaction.gains \(g.delta)"), subtitle: sub)
+    }
+    return KoaReaction.Content(
+      title: String(localized: "koa.reaction.done"), subtitle: summary.templateName,
+      stats: [
+        .init(value: Double(unit.volume(Double(summary.volumeKg))), unit: unit.label,
+              label: String(localized: "koa.reaction.volume")),
+        .init(value: Double(summary.completedSets), unit: "", label: String(localized: "koa.reaction.sets")),
+        .init(value: Double(summary.exerciseCount), unit: "", label: String(localized: "koa.reaction.exercises")),
+      ],
+      gains: g)
+  }
 
   /// Phần Gains của buổi hôm nay: lịch sử KHÔNG có hôm nay → có hôm nay (không
   /// đếm trùng dù Hôm nay đã đọc lại lịch sử gồm buổi này).
@@ -89,7 +113,9 @@ public struct WorkoutSummaryView: View {
     }
   }
 
-  private var gains: GainsGain? {
+  private var gains: GainsGain? { Self.gains(summary, services: services, flow: flow) }
+
+  static func gains(_ summary: WorkoutSummary, services: AppServices?, flow: WorkoutFlow?) -> GainsGain? {
     guard let h = services?.koaGainsHistory else { return nil }
     let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
     if KoaGains.hasEarlierSession(h.days, on: today, before: summary.dateTime) {
@@ -232,6 +258,7 @@ public struct WorkoutSummaryView: View {
     .navigationTitle(Text(summary.templateName))
     .ascndPage()
     .task { await services?.ensureKoaGainsHistory() }
+
   }
 
   /// Mỗi bài của buổi so với các buổi trước (`ExerciseCompare.session`); `nil` khi phân tích
@@ -481,4 +508,26 @@ struct KoaGainsCard: View {
   }
 }
 
+#endif
+
+#if canImport(SwiftUI)
+/// Koa ăn mừng toàn màn hình ngay khi bấm xong buổi, TRƯỚC màn tổng kết (storyboard xong buổi, Kiệt duyệt 07/11).
+/// Phủ trên màn tập; hết cảnh hay chạm thì `onEnd` mở màn tổng kết. Số trên cảnh = số của màn tổng kết.
+struct WorkoutDoneReaction: View {
+  let summary: WorkoutSummary
+  let onEnd: () -> Void
+  @Environment(\.weightUnit) private var unit
+  @Environment(AppServices.self) private var services: AppServices?
+  @Environment(WorkoutFlow.self) private var flow: WorkoutFlow?
+  @Environment(\.locale) private var locale
+
+  var body: some View {
+    KoaReactionView(
+      scene: .done,
+      content: WorkoutSummaryView.reactionContent(
+        summary, gains: WorkoutSummaryView.gains(summary, services: services, flow: flow), unit: unit, locale: locale),
+      onEnd: onEnd)
+      .task { await services?.ensureKoaGainsHistory() }
+  }
+}
 #endif

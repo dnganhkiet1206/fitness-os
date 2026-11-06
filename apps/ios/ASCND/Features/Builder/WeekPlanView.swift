@@ -33,6 +33,8 @@ struct WeekPlanView: View {
   var onOpenToday: (() -> Void)? = nil
   /// Ngày khác vừa chốt từ sheet → màn tổng kết.
   @State private var finishedPast: WorkoutsTab.FinishedWorkout?
+  /// Buổi vừa chốt, Koa đang ăn mừng — xong cảnh mới mở `finishedPast`.
+  @State private var celebrating: WorkoutsTab.FinishedWorkout?
   @State private var offset = 0
   @State private var selected: Int?
   @State private var picking: DayTarget?
@@ -87,7 +89,7 @@ struct WeekPlanView: View {
         onFinish: {
           let sets = WorkoutsTab.summarySets(board.controller)
           let summary = try await board.controller.finish()
-          finishedPast = WorkoutsTab.FinishedWorkout(summary: summary, sets: sets)
+          celebrating = WorkoutsTab.FinishedWorkout(summary: summary, sets: sets)
         },
         onClose: { openDay = nil },
         onChangeWorkout: {
@@ -95,6 +97,15 @@ struct WeekPlanView: View {
           openDay = nil
         }
       )
+      .overlay {
+        // Koa ăn mừng trước màn tổng kết (07/11), như buổi hôm nay
+        if let c = celebrating {
+          WorkoutDoneReaction(summary: c.summary) {
+            celebrating = nil
+            finishedPast = c
+          }
+        }
+      }
       .environment(flow)
       .sheet(item: $finishedPast) { f in
         NavigationStack {

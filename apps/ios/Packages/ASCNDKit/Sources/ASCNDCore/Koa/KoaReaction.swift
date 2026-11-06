@@ -41,6 +41,23 @@ public enum KoaReaction {
     public let value: Double
     public let unit: String
     public let label: String
+    public init(value: Double, unit: String, label: String) { self.value = value; self.unit = unit; self.label = label }
+  }
+
+  /// Chữ thật của một cảnh (bản mock dùng số mẫu trong kịch bản).
+  public struct Content: Sendable, Hashable {
+    public struct Gains: Sendable, Hashable {
+      public let title: String
+      public let subtitle: String?
+      public init(title: String, subtitle: String?) { self.title = title; self.subtitle = subtitle }
+    }
+    public let title: String
+    public let subtitle: String?
+    public let stats: [Stat]
+    public let gains: Gains?
+    public init(title: String, subtitle: String?, stats: [Stat], gains: Gains?) {
+      self.title = title; self.subtitle = subtitle; self.stats = stats; self.gains = gains
+    }
   }
 
   public struct Shot: Sendable {

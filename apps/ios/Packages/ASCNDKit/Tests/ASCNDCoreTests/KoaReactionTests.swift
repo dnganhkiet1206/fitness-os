@@ -198,3 +198,25 @@ extension KoaPerformanceFixTests {
     #expect(KoaScene.$rn.withValue(true) { !KoaRender.neckShows(w) })
   }
 }
+
+@Suite struct KoaReactionContentTests {
+  /// 07/11: Kiệt duyệt storyboard xong buổi → chạy trong app bằng số thật, mốc / hiệu ứng giữ đúng bản duyệt.
+  @Test func doneUsesRealNumbersOnApprovedTimeline() {
+    let content = KoaReaction.Content(
+      title: "XONG BUỔI!", subtitle: "Push A",
+      stats: [.init(value: 3200, unit: "kg", label: "tổng khối lượng"), .init(value: 12, unit: "", label: "set"),
+              .init(value: 4, unit: "", label: "bài")],
+      gains: .init(title: "+10 Gains", subtitle: "còn 40 tới Lifter"))
+    let mock = KoaPerformance.cues(.done), real = KoaPerformance.cues(.done, content: content)
+    #expect(mock.map(\.from) == real.map(\.from))
+    #expect(mock.map(\.to) == real.map(\.to))
+    #expect(mock.map(\.effects) == real.map(\.effects))
+    #expect(real[0].subtitle == "Push A")
+    #expect(real.first { !$0.stats.isEmpty }?.stats.map(\.value) == [3200, 12, 4])
+    #expect(real.last?.title == "+10 Gains")
+    // không có Gains: vẫn pháo giấy, không chữ
+    let none = KoaPerformance.cues(.done, content: .init(title: "X", subtitle: nil, stats: [], gains: nil))
+    #expect(none.last?.title == nil && none.last?.effects.contains(.confetti) == true)
+    #expect(KoaPerformance.cues(.done, content: nil).map(\.title) == mock.map(\.title))
+  }
+}
