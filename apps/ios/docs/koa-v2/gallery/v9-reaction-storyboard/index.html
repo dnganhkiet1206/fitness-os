@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Koa · phản ứng toàn màn hình (storyboard mock)</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  :root { --bg:#0E0F12; --ink:#F4F1EA; --mute:#9AA3AE; --orange:#E8842A; --gold:#E8B23A; --rose:#E5546B; --card:#17191E; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:#F7F5F0; color:#20242A; font-family:-apple-system,"Helvetica Neue",sans-serif; }
+  header { padding:24px 32px 8px; } h1 { margin:0 0 4px; font-size:26px; } header p { margin:0; color:#5E6773; max-width:900px; }
+  .wrap { display:flex; gap:32px; padding:16px 32px 40px; align-items:flex-start; flex-wrap:wrap; }
+  .tabs { display:flex; gap:8px; margin-bottom:12px; }
+  .tabs button { border:0; border-radius:999px; padding:8px 14px; background:#E7E3DA; font-weight:600; cursor:pointer; }
+  .tabs button.on { background:#20242A; color:#fff; }
+  /* điện thoại */
+  .phone { width:390px; height:844px; border-radius:48px; background:var(--bg); position:relative; overflow:hidden;
+           box-shadow:0 0 0 10px #1B1D22, 0 20px 60px rgba(0,0,0,.25); }
+  .phone.bare { box-shadow:none; border-radius:0; }
+  .glow { position:absolute; inset:-20%; background:radial-gradient(circle at 50% 46%, rgba(232,132,42,.35), transparent 55%); }
+  .shot { position:absolute; left:50%; top:46%; width:520px; height:520px; margin:-260px 0 0 -260px; will-change:transform; }
+  .shot img { width:100%; height:100%; object-fit:contain; -webkit-mask-image:linear-gradient(#000 78%, transparent 99%); mask-image:linear-gradient(#000 78%, transparent 99%); }
+  .shot img.cut { filter:none; }
+  .flash { position:absolute; inset:0; background:#fff; opacity:0; pointer-events:none; }
+  .txt { position:absolute; left:0; right:0; text-align:center; color:var(--ink); }
+  .txt .big { font-size:40px; font-weight:800; letter-spacing:-0.5px; text-shadow:0 4px 18px rgba(0,0,0,.45); }
+  .txt .sub { font-size:17px; color:#D8D3C8; margin-top:6px; }
+  .chip { display:inline-block; background:var(--gold); color:#20242A; font-weight:800; border-radius:999px; padding:6px 14px; font-size:15px; }
+  .stats { position:absolute; left:24px; right:24px; bottom:120px; display:flex; gap:10px; }
+  .stat { flex:1; background:rgba(255,255,255,.08); border-radius:16px; padding:12px 8px; text-align:center; color:var(--ink); }
+  .stat b { display:block; font-size:22px; } .stat span { font-size:12px; color:var(--mute); }
+  .skip { position:absolute; bottom:44px; left:0; right:0; text-align:center; color:var(--mute); font-size:13px; }
+  .ring { position:absolute; left:50%; top:30%; width:236px; height:236px; margin-left:-118px; border-radius:50%;
+          border:8px solid var(--rose); opacity:0; }
+  .timer { position:absolute; left:0; right:0; top:calc(30% + 150px); text-align:center; color:var(--ink); font-size:42px; font-weight:600; opacity:0; }
+  canvas.fx { position:absolute; inset:0; pointer-events:none; }
+  .bar { position:absolute; left:0; bottom:0; height:4px; background:var(--orange); }
+  .shotlabel { position:absolute; top:58px; left:20px; font-size:11px; font-weight:700; color:var(--mute); letter-spacing:1px; }
+  /* bảng storyboard */
+  .board { flex:1; min-width:520px; }
+  .board h2 { font-size:18px; margin:4px 0 12px; }
+  .panels { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:14px; }
+  .panel { background:#fff; border-radius:12px; padding:10px; box-shadow:0 1px 3px rgba(0,0,0,.08); font-size:12.5px; }
+  .panel .thumb { background:var(--bg); border-radius:8px; height:150px; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+  .panel .thumb img { height:140px; }
+  .panel .n { font-weight:800; color:var(--orange); margin-top:8px; font-size:12px; }
+  .panel dl { margin:4px 0 0; } .panel dt { font-weight:600; color:#5E6773; float:left; width:52px; } .panel dd { margin:0 0 3px 54px; }
+  .notes { margin-top:18px; background:#fff; border-radius:12px; padding:14px 18px; font-size:13.5px; line-height:1.5; }
+  .notes h3 { margin:0 0 6px; font-size:15px; }
+</style>
+</head>
+<body>
+<header id="hdr">
+  <h1>Koa · phản ứng toàn màn hình: storyboard mock</h1>
+  <p>Kiệt: “phản ứng của Koa sẽ là full màn hình có storyboard đầy đủ”. Ba cảnh: <b>ghi set xong</b>, <b>phá kỷ lục</b>, <b>xong buổi</b>.
+  Khung điện thoại bên trái phát thử đúng nhịp; bảng bên phải là storyboard từng khung. Hình Koa lấy từ thư viện dáng <code>v8-pose-library</code>.
+  Đây là <b>mock để duyệt</b>, chưa có trong app.</p>
+</header>
+<div class="wrap" id="wrap">
+  <div>
+    <div class="tabs" id="tabs"></div>
+    <div class="phone" id="phone">
+      <div class="glow" id="glow"></div>
+      <div class="shot" id="shot"><img id="img" alt="" src="img/rest-front.png"></div>
+      <div class="ring" id="ring"></div><div class="timer" id="timer">1:30</div>
+      <canvas class="fx" id="fx" width="390" height="844"></canvas>
+      <div class="txt" id="txt"></div>
+      <div class="stats" id="stats"></div>
+      <div class="flash" id="flash"></div>
+      <div class="shotlabel" id="shotlabel"></div>
+      <div class="skip" id="skip">Chạm để bỏ qua</div>
+      <div class="bar" id="bar"></div>
+    </div>
+  </div>
+  <div class="board" id="board"></div>
+</div>
+<script>
+const P = "img/";
+// mỗi khung: ảnh, thời lượng (ms), chuyển động máy (scale/x/y từ → tới), chữ, hiệu ứng, ghi chú storyboard
+const SCENES = {
+  set: { name: "Ghi set xong", total: "≈ 2,2 s", when: "Mỗi lần bấm “Xong set” (trừ set kỷ lục). Đồng hồ nghỉ đã chạy ngầm.",
+    shots: [
+      { img: "face-grit.png", dur: 500, cam: [1.25, 1.45, 0, 0, 30, 20], label: "CẬN MẶT · 3/4",
+        fx: "speed", shot: "Cận mặt, đẩy máy vào", koa: "Nghiến răng gồng (rep cuối)", feel: "Rung nhẹ (soft)" },
+      { img: "curl-q34r.png", dur: 600, cam: [1.0, 0.92, 0, 0, 0, 0], label: "TRUNG CẢNH · 3/4 PHẢI", text: ["XONG SET!", "Squat · 80 kg × 5"],
+        flash: true, shot: "Cắt sang trung cảnh, lùi máy", koa: "Cuốn tạ, mặt gồng → buông", textNote: "“XONG SET!” bật nảy", feel: "Rung vừa (success)" },
+      { img: "rest-q34r.png", dur: 700, cam: [0.95, 0.95, 0, 0, 0, 0], label: "TOÀN CẢNH", text: ["Thở chút nào", "Nghỉ 1:30"],
+        fx: "sweat", shot: "Toàn cảnh, máy đứng", koa: "Ngồi phịch xuống, thở dốc lè lưỡi", textNote: "Thời gian nghỉ hiện", feel: "—" },
+      { img: "rest-front.png", dur: 450, cam: [0.95, 0.34, 0, 0, 0, -150], label: "CHUYỂN CẢNH", ring: true,
+        shot: "Koa thu nhỏ, bay vào vòng đồng hồ", koa: "Thở dốc (giữ)", textNote: "Vòng đỏ + số giây hiện dần", feel: "—", trans: "Khớp vào thẻ nghỉ thật" },
+    ] },
+  record: { name: "Phá kỷ lục", total: "≈ 4,0 s", when: "Set vừa xong là kỷ lục (cùng điều kiện với dòng “kỷ lục” hiện nay trên thẻ nghỉ).",
+    shots: [
+      { img: "press-low.png", dur: 700, cam: [1.25, 1.4, 0, 0, 0, 10], label: "GÓC THẤP · ANH HÙNG", fx: "speed",
+        shot: "Góc thấp, đẩy máy chậm", koa: "Đẩy tạ, gồng sức", textNote: "—", feel: "Rung nặng dần (3 nhịp)" },
+      { img: "face-roar.png", dur: 650, cam: [1.35, 1.2, 0, 0, 10, 0], label: "CẬN MẶT", flash: true, shake: true,
+        text: ["KỶ LỤC MỚI!", "82,5 kg × 5"], shot: "Cắt cận mặt + chớp trắng + rung khung", koa: "Hét chiến thắng", textNote: "Chữ đập vào (scale 1,6 → 1)", feel: "Rung mạnh (success)" },
+      { img: "cheer-front.png", dur: 1500, cam: [0.9, 1.0, 0, 0, 0, -10], label: "TOÀN CẢNH", fx: "confetti",
+        text: ["+2,5 kg", "so với lần trước"], shot: "Toàn cảnh, máy theo cú nhảy", koa: "Nhảy ăn mừng, tay chữ V", textNote: "Pháo giấy màu Koa", feel: "Rung nhẹ khi chạm đất" },
+      { img: "trophy-low.png", dur: 1150, cam: [1.0, 1.1, 0, 0, 0, 0], label: "GÓC THẤP", fx: "confetti", chip: "🏆 Squat · kỷ lục",
+        shot: "Góc thấp, Koa nâng cúp", koa: "Nâng cúp, mắt lấp lánh", textNote: "Huy hiệu kỷ lục", feel: "—", trans: "Mờ sang thẻ nghỉ" },
+    ] },
+  done: { name: "Xong buổi", total: "≈ 6,0 s", when: "Bấm “Kết thúc buổi” (sau khi lưu xong) → trước màn tổng kết.",
+    shots: [
+      { img: "rest-high.png", dur: 1000, cam: [0.9, 1.0, 0, 0, 0, 0], label: "GÓC CAO · TOÀN CẢNH", text: ["XONG BUỔI!", "Full Body A"],
+        shot: "Góc cao nhìn xuống, máy hạ dần", koa: "Ngồi phịch, thở dốc", textNote: "Tên buổi", feel: "Rung vừa" },
+      { img: "water-q34r.png", dur: 1000, cam: [1.0, 1.08, 0, 0, 0, 0], label: "TRUNG CẢNH · 3/4",
+        shot: "Trung cảnh", koa: "Uống nước, mỉm cười", textNote: "—", feel: "—" },
+      { img: "face-smug.png", dur: 700, cam: [1.3, 1.4, 0, 0, 10, 10], label: "CẬN MẶT",
+        shot: "Cận mặt, đẩy máy", koa: "Tự hào nhếch mép, nhướn mày", textNote: "—", feel: "—" },
+      { img: "flex-low.png", dur: 1700, cam: [0.95, 1.05, 0, -40, 0, -40], label: "GÓC THẤP · ANH HÙNG", stats: true,
+        shot: "Góc thấp, Koa gồng tay khoe", koa: "Gồng tay khoe, tự hào", textNote: "3 ô số: thời gian · tổng kg · số set (đếm lên)", feel: "Rung nhẹ mỗi ô" },
+      { img: "cheer-front.png", dur: 1600, cam: [0.9, 1.0, 0, -20, 0, -20], label: "TOÀN CẢNH", fx: "confetti",
+        text: ["+12 Gains", "còn 98 tới Lifter"], shot: "Toàn cảnh", koa: "Nhảy ăn mừng, hét chiến thắng", textNote: "Gains đếm lên", feel: "Rung success", trans: "Trượt lên thành màn tổng kết" },
+    ] },
+};
+
+const params = new URLSearchParams(location.search);
+let scene = params.get("scene") || "set";
+const fixedT = params.has("t") ? +params.get("t") : null;
+if (params.has("bare")) { document.getElementById("hdr").style.display = "none"; document.getElementById("board").style.display = "none";
+  document.getElementById("tabs").style.display = "none"; document.getElementById("phone").classList.add("bare");
+  document.body.style.background = "#0E0F12"; document.getElementById("wrap").style.padding = "0"; }
+
+const $ = id => document.getElementById(id);
+const ease = p => p < .5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+const lerp = (a, b, p) => a + (b - a) * p;
+function rnd(i) { const x = Math.sin(i * 12.9898) * 43758.5453; return x - Math.floor(x); }
+
+function render(t) {
+  const S = SCENES[scene], shots = S.shots;
+  const total = shots.reduce((a, s) => a + s.dur, 0);
+  t = ((t % total) + total) % total;
+  let k = 0, start = 0;
+  while (k < shots.length - 1 && t >= start + shots[k].dur) { start += shots[k].dur; k++; }
+  const s = shots[k], p = Math.min(1, (t - start) / s.dur), e = ease(p);
+  const [s0, s1, x0, x1, y0, y1] = s.cam;
+  let sc = lerp(s0, s1, e), x = lerp(x0, x1, e), y = lerp(y0, y1, e);
+  if (s.shake && p < .35) { const a = (1 - p / .35) * 9; x += Math.sin(t * .09) * a; y += Math.cos(t * .11) * a; }
+  const img = $("img"); const src = P + s.img; if (!img.src.endsWith(s.img)) img.src = src;
+  $("shot").style.transform = `translate(${x}px, ${y}px) scale(${sc})`;
+  $("flash").style.opacity = s.flash && p < .18 ? (1 - p / .18) * .85 : 0;
+  $("shotlabel").textContent = `${k + 1}/${shots.length} · ${s.label}`;
+  // chữ: bật nảy
+  const tx = $("txt");
+  if (s.text) {
+    const pop = p < .22 ? 1 + .6 * (1 - p / .22) * (s.shake ? 1 : .5) : 1;
+    const op = Math.min(1, p / .12);
+    tx.style.top = s.stats ? "110px" : "112px";
+    tx.innerHTML = `<div class="big" style="transform:scale(${pop.toFixed(3)});opacity:${op}">${s.text[0]}</div><div class="sub" style="opacity:${op}">${s.text[1] || ""}</div>`;
+  } else if (s.chip) {
+    tx.style.top = "640px";
+    tx.innerHTML = `<span class="chip" style="opacity:${Math.min(1, p / .15)};transform:scale(${p < .2 ? 1.3 - p * 1.5 : 1})">${s.chip}</span>`;
+  } else tx.innerHTML = "";
+  // ô số đếm lên
+  const st = $("stats");
+  if (s.stats) {
+    const c = q => Math.round(q * Math.min(1, p / .7));
+    st.innerHTML = [[`${c(42)}:00`, "thời gian"], [`${c(4860).toLocaleString("vi")} kg`, "tổng khối lượng"], [`${c(18)}`, "set"]]
+      .map(([b, sp], i) => `<div class="stat" style="opacity:${Math.min(1, Math.max(0, (p - i * .12) / .15))}"><b>${b}</b><span>${sp}</span></div>`).join("");
+  } else st.innerHTML = "";
+  // chuyển vào thẻ nghỉ
+  $("ring").style.opacity = s.ring ? e : 0; $("timer").style.opacity = s.ring ? e : 0;
+  // hiệu ứng
+  const cv = $("fx"), g = cv.getContext("2d"); g.clearRect(0, 0, 390, 844);
+  if (s.fx === "confetti") {
+    const cols = ["#E8842A", "#E8B23A", "#E5546B", "#7CC6EE", "#FFFFFF"];
+    for (let i = 0; i < 90; i++) {
+      const life = (t - start) / 1000 + rnd(i + 11) * .4, vx = (rnd(i) - .5) * 60;
+      const px = rnd(i + 5) * 390 + vx * life, py = -20 - rnd(i + 7) * 200 + (180 + rnd(i + 9) * 160) * life + 120 * life * life;
+      if (py > 860) continue;
+      g.save(); g.translate(px, py); g.rotate(life * (rnd(i + 3) * 10 - 5)); g.fillStyle = cols[i % 5];
+      g.fillRect(-4, -7, 8, 14 * Math.abs(Math.cos(life * 6 + i))); g.restore();
+    }
+  } else if (s.fx === "speed") {
+    g.strokeStyle = "rgba(255,255,255,.18)"; g.lineWidth = 3;
+    for (let i = 0; i < 26; i++) { const a = rnd(i) * Math.PI * 2, r0 = 230 + rnd(i + 1) * 60 - p * 40, r1 = r0 + 90;
+      g.beginPath(); g.moveTo(195 + Math.cos(a) * r0, 388 + Math.sin(a) * r0); g.lineTo(195 + Math.cos(a) * r1, 388 + Math.sin(a) * r1); g.stroke(); }
+  } else if (s.fx === "sweat") {
+    g.fillStyle = "#9FD8F2";
+    for (let i = 0; i < 3; i++) { const q = ((t - start) / 700 + i / 3) % 1; const px = 120 + i * 75, py = 260 + q * 90;
+      g.globalAlpha = 1 - q; g.beginPath(); g.ellipse(px, py, 6, 9, 0, 0, Math.PI * 2); g.fill(); }
+    g.globalAlpha = 1;
+  }
+  $("bar").style.width = `${(t / total) * 100}%`;
+  $("skip").style.opacity = fixedT === null ? 1 : .8;
+}
+
+function tabs() {
+  $("tabs").innerHTML = Object.entries(SCENES).map(([k, s]) => `<button class="${k === scene ? "on" : ""}" data-k="${k}">${s.name}</button>`).join("");
+  $("tabs").querySelectorAll("button").forEach(b => b.onclick = () => { scene = b.dataset.k; t0 = performance.now(); tabs(); board(); });
+}
+function board() {
+  const S = SCENES[scene]; let at = 0;
+  $("board").innerHTML = `<h2>${S.name} · ${S.total}</h2><p style="margin:0 0 12px;color:#5E6773">${S.when}</p><div class="panels">` +
+    S.shots.map((s, i) => { const a = at; at += s.dur;
+      return `<div class="panel"><div class="thumb"><img src="${P + s.img}"></div><div class="n">KHUNG ${i + 1} · ${(a / 1000).toFixed(1)}–${(at / 1000).toFixed(1)} s</div>
+      <dl><dt>Máy</dt><dd>${s.shot}</dd><dt>Koa</dt><dd>${s.koa}</dd><dt>Chữ</dt><dd>${s.textNote || (s.text ? "“" + s.text[0] + "”" : "—")}</dd>
+      <dt>Rung</dt><dd>${s.feel}</dd>${s.trans ? `<dt>Sang</dt><dd>${s.trans}</dd>` : ""}</dl></div>`; }).join("") +
+    `</div><div class="notes"><h3>Luật chung (đề xuất)</h3>
+    • Chạm bất kỳ đâu để bỏ qua; đồng hồ nghỉ vẫn chạy ngầm.<br>
+    • Giảm chuyển động (Reduce Motion): không đẩy máy, không rung khung, không pháo giấy; giữ một khung tĩnh 1 s.<br>
+    • Cảnh “ghi set” ngắn nhất (≈ 2 s) vì lặp lại mỗi set; có thể tắt trong Cài đặt nếu thấy phiền.<br>
+    • Hình trong mock là ảnh render 3D phẳng từ thư viện dáng; bản trong app vẽ bằng <code>KoaRender</code> (vector), dáng mới cần vẽ thêm.</div>`;
+}
+let t0 = performance.now();
+if (fixedT !== null) render(fixedT);
+else { tabs(); board(); (function loop(now) { render(now - t0); requestAnimationFrame(loop); })(t0); }
+</script>
+</body>
+</html>

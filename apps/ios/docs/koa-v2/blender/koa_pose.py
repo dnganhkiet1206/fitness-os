@@ -399,6 +399,10 @@ shd.background_type = "VIEWPORT"; shd.background_color = km.lin("#F7F5F0")
 sc.view_settings.view_transform = "Standard"
 sc.display.render_aa = "16"
 sc.render.resolution_x = sc.render.resolution_y = 720
+# KOA_TRANSPARENT=1: nền trong suốt (PNG có alpha), để đặt Koa lên màn tối của app / storyboard
+if os.environ.get("KOA_TRANSPARENT"):
+    sc.render.film_transparent = True
+    sc.render.image_settings.color_mode = "RGBA"
 bpy.ops.object.empty_add(location=(0, 0, 1)); aim = bpy.context.object
 bpy.ops.object.camera_add(); cam = bpy.context.object; sc.camera = cam
 tr = cam.constraints.new("TRACK_TO"); tr.target = aim; tr.track_axis = "TRACK_NEGATIVE_Z"; tr.up_axis = "UP_Y"
