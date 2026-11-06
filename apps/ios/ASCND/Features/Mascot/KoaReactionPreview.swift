@@ -19,6 +19,7 @@ import SwiftUI
     private static let rose = Color(red: 0.90, green: 0.33, blue: 0.42)
 
     var body: some View {
+      // reduce-motion: đồng hồ của storyboard; bật Giảm chuyển động thì máy không đẩy, không rung, không pháo giấy, chỉ còn chữ mờ dần
       TimelineView(.animation) { ctx in
         let total = KoaReaction.duration(scene)
         let t = max(0, ctx.date.timeIntervalSince(start) * 1000)
