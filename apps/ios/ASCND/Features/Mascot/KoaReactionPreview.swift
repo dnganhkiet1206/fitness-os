@@ -36,9 +36,14 @@ import SwiftUI
         GeometryReader { geo in
           ZStack {
             Self.bg.ignoresSafeArea()
-            RadialGradient(colors: [Self.orange.opacity(0.32), .clear], center: UnitPoint(x: 0.5, y: 0.5), startRadius: 0,
-                           endRadius: geo.size.width * 0.9)
+            // nền tĩnh: quầng sáng sân khấu + vũng sáng trên sàn, KHÔNG theo máy / theo Koa
+            RadialGradient(colors: [Self.orange.opacity(0.30), .clear], center: UnitPoint(x: 0.5, y: 0.46), startRadius: 0,
+                           endRadius: geo.size.width * 0.85)
               .ignoresSafeArea()
+            Ellipse().fill(RadialGradient(colors: [Self.orange.opacity(0.22), .clear], center: .center, startRadius: 0,
+                                          endRadius: geo.size.width * 0.38))
+              .frame(width: geo.size.width * 0.8, height: geo.size.width * 0.18)
+              .position(x: geo.size.width / 2, y: geo.size.height * 0.79)
             effects(cues, t: t, size: geo.size)
             koa(f, t: t, size: geo.size)
             ring(f.ring)
@@ -82,13 +87,25 @@ import SwiftUI
         dx = sin(t * 0.09) * a; dy = cos(t * 0.11) * a
       }
       let hand = KoaPerformance.hand(scene)
-      return KoaFigureView(
-        expression: f.expression, pose: .idle, gesture: f.cheer > 0.001 ? .cheer : nil,
-        worn: hand.map { [.hand: $0] } ?? [:], size: fig, animated: true, stage: true, walk: f.walk, bleeds: true,
-        headLook: KoaMath.Gaze(x: f.look.x, y: f.look.y, k: 1), eyes: KoaMath.Gaze(x: f.eyes.x, y: f.eyes.y, k: 1),
-        turn: f.turn, gestureAmount: min(1.1, f.cheer)
-      )
-      .scaleEffect(x: reduceMotion ? 1 : f.sx, y: reduceMotion ? 1 : f.sy, anchor: .bottom)
+      // bay lên: dời CẢ hình (không nhún trong khung vẽ — đầu / tai bị cắt ở mép khung); bóng nằm yên trên sàn,
+      // co lại và nhạt đi khi bay cao. Không dùng quầng sáng `stage` của hình: nó dính vào hình nên nền nhảy theo
+      // Koa (Kiệt 06/11) — nền là quầng sáng tĩnh của màn.
+      let unit = fig / 240
+      let air = (reduceMotion ? 0 : f.air) * unit
+      let lift = min(1, f.air / 40)
+      return ZStack {
+        Ellipse().fill(Color(red: 0.68, green: 0.71, blue: 0.75).opacity(0.32 * (1 - 0.55 * lift)))
+          .frame(width: 128 * unit * (1 - 0.35 * lift), height: 18 * unit * (1 - 0.35 * lift))
+          .offset(y: (294 - 150) * unit)
+        KoaFigureView(
+          expression: f.expression, pose: .idle, gesture: f.cheer > 0.001 ? .cheer : nil,
+          worn: hand.map { [.hand: $0] } ?? [:], size: fig, animated: true, stage: false, walk: f.walk, bleeds: true,
+          headLook: KoaMath.Gaze(x: f.look.x, y: f.look.y, k: 1), eyes: KoaMath.Gaze(x: f.eyes.x, y: f.eyes.y, k: 1),
+          turn: f.turn, groundShadow: false, gestureAmount: min(1.1, f.cheer)
+        )
+        .scaleEffect(x: reduceMotion ? 1 : f.sx, y: reduceMotion ? 1 : f.sy, anchor: .bottom)
+        .offset(y: -air)
+      }
       .scaleEffect(zoom, anchor: UnitPoint(x: 0.5, y: anchorY))
       .offset(x: dx, y: dy - f.ring * size.height * 0.2)
       .position(x: size.width / 2, y: size.height * 0.54)

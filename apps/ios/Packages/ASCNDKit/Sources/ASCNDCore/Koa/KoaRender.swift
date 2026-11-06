@@ -87,6 +87,9 @@ public enum KoaRender {
     /// Quay mặt 2.5D (Koa V2, 05/11, `KoaTurn`): −1 quay hẳn sang trái màn … 1 sang phải, tối đa
     /// `KoaTurn.maxDeg`. `nil` = theo hướng đi, hoặc nhẹ theo ánh nhìn. Chỉ ở bản native.
     public var turn: Double?
+    /// Bóng dưới chân của bản vẽ. Tắt khi bên ngoài tự vẽ bóng nằm yên trên sàn (Koa nhảy dời cả hình lên,
+    /// bóng của hình mà đi theo thì như dính vào chân — cảnh phản ứng, 06/11).
+    public var groundShadow = true
 
     /// Một nét mặt: biểu cảm + dáng (dáng có mặt riêng).
     public struct Face: Sendable, Hashable {
@@ -185,6 +188,7 @@ public enum KoaRender {
     /// Quay mặt 2.5D (`Options.turn`), và vùng của nút đang vẽ (mặt, tai, tay, chân, thân).
     var turn = 0.0
     var turnRegion: KoaTurn.Region?
+    var groundShadow = true
     /// Khi quay: tay phía xa vẽ sau thân, tay gần vẽ trước (0 cả hai, 1 chỉ tay xa, 2 chỉ tay gần).
     var armSide = 0
   }
@@ -263,6 +267,7 @@ public enum KoaRender {
     var c = c
     if n.id == "FACE" { c.inFace = true }
     if c.turn != 0, let r = KoaTurn.region(n.id) { c.turnRegion = r }
+    if !c.groundShadow, n.id == "shadow" { return [] }
     if n.id == "ARMS" {
       if c.arms == .without { return [] }
       c.inArms = true
@@ -688,6 +693,8 @@ public enum KoaRender {
       rest: KoaMath.restsAt(f) && !o.dress, dress: o.dress, blend: o.blend ?? (o.dress ? 1 : 0), paper: o.paper,
       flat: o.flat, poke: o.live ? o.poke : nil, gesture: o.gesture, arms: o.arms, walk: walking(o) ? o.walk : nil,
       eyes: o.live ? o.eyes : nil, blink: o.live ? o.blink : nil, gestureAmount: o.gestureAmount)
+    // bố cục, không phải hoạt ảnh: áp cả cho khung đứng yên
+    c.groundShadow = o.groundShadow
     guard o.live, !KoaScene.rn else { return c }
     c.blinkRight = o.blink == nil ? nil : o.blinkRight
     if let from = o.faceFrom, o.faceMix < 1, !o.dress {

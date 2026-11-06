@@ -83,3 +83,31 @@ struct KoaPerformanceTests {
     #expect(KoaPerformance.sounds(.record).contains { $0.t == 860 && $0.name == "koa-rx-record" }, "tiếng kỷ lục đúng lúc chớp")
   }
 }
+
+/// Ba lỗi Kiệt thấy ở v4 (06/11): khung cắt đầu lúc nhảy, dáng mệt như què một chân, nền nhảy theo Koa.
+struct KoaPerformanceFixTests {
+  @Test func jumpsMoveTheWholeFigureNotTheDrawingInsideItsFrame() {
+    for scene in KoaReaction.Scene.allCases {
+      let fs = KoaPerformance.frames(scene)
+      #expect(fs.allSatisfy { $0.walk.bob <= KoaPerformance.inCanvasBob && $0.air >= 0 }, "\(scene)")
+    }
+    #expect(KoaPerformance.frames(.record).map(\.air).max() ?? 0 > 25, "cú nhảy kỷ lục vẫn bay cao")
+  }
+
+  @Test func frontViewNeverTiltsSideways() {
+    for scene in KoaReaction.Scene.allCases {
+      #expect(KoaPerformance.frames(scene).allSatisfy {
+        abs($0.walk.lean) <= KoaPerformance.maxTilt && abs($0.walk.sway) <= KoaPerformance.maxTilt
+      }, "\(scene): nghiêng ngang quá thì Koa như què một chân")
+    }
+  }
+
+  @Test func groundShadowCanBeLeftToTheScene() {
+    func ellipses(_ e: KoaRender.Element) -> Int { (e.tag == "Ellipse" ? 1 : 0) + e.kids.reduce(0) { $0 + ellipses($1) } }
+    var o = KoaRender.Options()
+    o.live = false
+    let with = ellipses(KoaRender.figure(o))
+    o.groundShadow = false
+    #expect(ellipses(KoaRender.figure(o)) < with, "bỏ elip bóng (cả các lượt đèn của nó); bóng nằm yên trên sàn do màn vẽ")
+  }
+}

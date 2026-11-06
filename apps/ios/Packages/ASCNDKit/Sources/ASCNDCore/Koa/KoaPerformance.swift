@@ -125,6 +125,9 @@ public enum KoaPerformance {
     /// Nén / giãn cả hình (neo ở chân).
     public var sx = 1.0
     public var sy = 1.0
+    /// Phần bay lên khỏi sàn (đơn vị hình), dời CẢ hình ra ngoài khung vẽ. Nhún trong khung giữ ≤ `inCanvasBob`:
+    /// nhún lớn trong khung làm đầu / tai bị cắt bằng ở mép khung lúc nhảy (Kiệt 06/11: "khung khi koa nhảy lên").
+    public var air = 0.0
     public var zoom = 1.0
     public var focus = 1.0
     public var ring = 0.0
@@ -132,6 +135,11 @@ public enum KoaPerformance {
   }
 
   public static let hz = 120.0
+  /// Nhún tối đa trong khung vẽ (đơn vị hình); phần cao hơn là `Frame.air`.
+  public static let inCanvasBob = 6.0
+  /// Nhìn thẳng thì `lean` / `sway` của dáng đi là nghiêng NGANG trên màn: quá ±1,5° Koa lệch sang một bên như
+  /// què một chân (Kiệt 06/11). Mệt / lấy đà diễn bằng nhún, gục đầu, tai cụp.
+  public static let maxTilt = 1.5
 
   /// Nướng cả cảnh: kênh chính + lớp phụ (lò xo theo đà, lệch nhịp, nén / giãn).
   public static func bake(_ s: Script) -> [Frame] {
@@ -167,9 +175,8 @@ public enum KoaPerformance {
       spring(&armLagR, to: -drag, k: 120, damp: 11)
       let tremble = s.tremble.at(t)
       let shake = tremble * sin(t * 0.075) * sin(t * 0.031 + 1)
-      f.walk.bob = bob
-      f.walk.lean = lean
-      f.walk.sway = s.sway.at(t)
+      f.walk.lean = max(-maxTilt, min(maxTilt, lean))
+      f.walk.sway = max(-maxTilt, min(maxTilt, s.sway.at(t)))
       f.walk.armLeft = s.armL.at(t) + armLagL.0
       f.walk.armRight = s.armR.at(t) + armLagR.0 + shake
       f.walk.headLag = max(-9, min(9, head.0))
@@ -177,8 +184,8 @@ public enum KoaPerformance {
       let ears = s.ears.at(t)
       f.walk.earLeft = ears; f.walk.earRight = ears
       // bay: hai bàn chân rời sàn đúng bằng phần thân nhún lên trên 6 đơn vị
-      let air = max(0, bob - 6)
-      f.walk.left.lift = air; f.walk.right.lift = air
+      f.walk.bob = min(bob, inCanvasBob)
+      f.air = max(0, bob - inCanvasBob)
       // lệch nhịp: đầu nhìn trước thân 70 ms, mắt trước đầu 70 ms
       f.look = (s.lookX.at(t + 70), s.lookY.at(t + 70))
       f.eyes = (s.lookX.at(t + 140), s.lookY.at(t + 140))
@@ -241,8 +248,8 @@ public enum KoaPerformance {
         ms: 2700,
         bob: T(Key(0, 0), Key(220, -5), Key(520, -7), Key(760, 5, .out), Key(1000, 0), Key(1300, -9), Key(1700, -7),
                Key(2000, -8)),
-        lean: T(Key(0, 0), Key(500, -3), Key(800, 2), Key(1300, 5), Key(2000, 4)),
-        sway: T(Key(0, 0), Key(1300, 0), Key(1600, 2), Key(1900, -1.5), Key(2200, 1)),
+        lean: T(Key(0, 0), Key(500, -0.6), Key(800, 0.4), Key(1300, 1), Key(2000, 0.8)),
+        sway: T(Key(0, 0), Key(1300, 0), Key(1600, 0.4), Key(1900, -0.3), Key(2200, 0.2)),
         armL: T(Key(0, 0), Key(500, 6), Key(900, -4), Key(1300, -6)),
         armR: T(Key(0, -6), Key(480, -118, .out), Key(640, -122), Key(880, -14, .in), Key(1300, 4)),
         cheer: zero,
@@ -267,8 +274,8 @@ public enum KoaPerformance {
         bob: T(Key(0, 0), Key(300, -6), Key(850, -8), Key(1000, 2, .out), Key(1450, 0), Key(1750, -13), Key(1950, 36, .out),
                Key(2200, 40), Key(2420, -10, .in), Key(2650, 3, .out), Key(2900, 0), Key(3300, -3), Key(3500, 2), Key(3800, -3),
                Key(4000, 1)),
-        lean: T(Key(0, 0), Key(800, -5), Key(1100, -2), Key(1750, 6), Key(2000, -4), Key(2450, 5), Key(2800, 0)),
-        sway: T(Key(0, 0), Key(2900, 0), Key(3300, 3), Key(3700, -2), Key(4100, 2)),
+        lean: T(Key(0, 0), Key(800, -1), Key(1100, -0.4), Key(1750, 1.2), Key(2000, -0.8), Key(2450, 1), Key(2800, 0)),
+        sway: T(Key(0, 0), Key(2900, 0), Key(3300, 0.6), Key(3700, -0.4), Key(4100, 0.4)),
         armL: T(Key(0, 2), Key(800, 8), Key(1700, -20), Key(1850, -26), Key(2900, 0), Key(3200, 10), Key(4500, 6)),
         armR: T(Key(0, -8), Key(820, -132, .out), Key(1050, -138), Key(1600, -60, .inOut), Key(1800, 22),
                 Key(2900, 0), Key(3000, 12), Key(3220, -124), Key(3340, -114), Key(3460, -92), Key(3560, -102),
@@ -299,8 +306,8 @@ public enum KoaPerformance {
         bob: T(Key(0, -8), Key(500, -6), Key(900, -9), Key(1300, -10), Key(1800, 6, .out), Key(2200, 2), Key(2600, 3),
                Key(3200, 0), Key(4400, 0), Key(4650, -13), Key(4850, 34, .out), Key(5100, 38), Key(5320, -9, .in),
                Key(5550, 2, .out), Key(5800, 0)),
-        lean: T(Key(0, 6), Key(1300, 7), Key(1800, -3), Key(2300, 0), Key(4600, 6), Key(4900, -4), Key(5350, 4), Key(5700, 0)),
-        sway: T(Key(0, 0), Key(400, 2), Key(800, -2), Key(1200, 1.5), Key(1700, 0), Key(3200, 0), Key(3600, 2), Key(4100, -2),
+        lean: T(Key(0, 1.2), Key(1300, 1.4), Key(1800, -0.6), Key(2300, 0), Key(4600, 1.2), Key(4900, -0.8), Key(5350, 0.8), Key(5700, 0)),
+        sway: T(Key(0, 0), Key(400, 0.4), Key(800, -0.4), Key(1200, 0.3), Key(1700, 0), Key(3200, 0), Key(3600, 0.4), Key(4100, -0.4),
                 Key(4400, 0)),
         armL: T(Key(0, -4), Key(1300, -6), Key(1800, 8), Key(2300, 2), Key(3200, 4), Key(3300, -8), Key(3560, 100),
                 Key(3700, 92), Key(4400, 90),
