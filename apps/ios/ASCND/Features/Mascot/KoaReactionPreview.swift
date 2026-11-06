@@ -10,6 +10,8 @@ import SwiftUI
       ProcessInfo.processInfo.environment["ASCND_DEBUG_KOA_REACTION"].flatMap(KoaReaction.Scene.init(rawValue:))
     }
 
+    static var frozen: Double? { ProcessInfo.processInfo.environment["ASCND_DEBUG_KOA_REACTION_T"].flatMap(Double.init) }
+
     let scene: KoaReaction.Scene
     @State private var start = Date.now
     @State private var heard = Heard()
@@ -28,7 +30,8 @@ import SwiftUI
       TimelineView(.animation) { ctx in
         let total = KoaPerformance.duration(scene)
         let cycle = total + 900
-        let raw = max(0, ctx.date.timeIntervalSince(start) * 1000)
+        // `ASCND_DEBUG_KOA_REACTION_T=<ms>`: dừng ở một mốc để chụp so sánh
+        let raw = Self.frozen ?? max(0, ctx.date.timeIntervalSince(start) * 1000)
         let loop = Int(raw / cycle)
         let t = min(total, raw.truncatingRemainder(dividingBy: cycle))
         let f = KoaPerformance.frame(scene, at: t)

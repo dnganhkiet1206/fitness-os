@@ -138,13 +138,19 @@ public enum KoaPerformance {
   public static let hz = 120.0
   /// Nhún tối đa trong khung vẽ (đơn vị hình); phần cao hơn là `Frame.air`.
   public static let inCanvasBob = 6.0
+  /// Hạ thân trong khung tối đa (đơn vị hình); sâu hơn là nén cả hình.
+  public static let minCanvasBob = -3.0
+  /// Đầu nghiêng theo đà tối đa (độ).
+  public static let maxHeadLag = 4.0
   /// Nhìn thẳng thì `lean` / `sway` của dáng đi là nghiêng NGANG trên màn: quá ±1,5° Koa lệch sang một bên như
   /// què một chân (Kiệt 06/11). Mệt / lấy đà diễn bằng nhún, gục đầu, tai cụp.
   public static let maxTilt = 1.5
-  /// Tay giơ quá chừng này (độ) là vòng ra SAU má: lớp đầu che tay, chỉ còn đồ cầm tay lòi ra ở mép má như cắm vào
+  /// 06/11 (lần 2): quá ~52° thì mép dưới cánh tay rời khỏi cạnh thân, lộ góc nách mà bản vẽ chưa từng vẽ (tay một mảnh
+  /// vẽ để buông xuống). Giơ cao hơn cần vẽ thêm tay giơ — chờ Kiệt duyệt art.
+  /// Trước đó: tay giơ quá chừng này (độ) là vòng ra SAU má: lớp đầu che tay, chỉ còn đồ cầm tay lòi ra ở mép má như cắm vào
   /// mặt (Kiệt 06/11). Vai (80 / 160, 178), tay dài ~68, má rộng tới x ≈ 40 / 200. Giơ cao hơn thì dùng dáng `cheer`
   /// (có lật hình tay để bàn tay hướng ra ngoài).
-  public static let maxArmRaise = 92.0
+  public static let maxArmRaise = 52.0
 
   /// Nướng cả cảnh: kênh chính + lớp phụ (lò xo theo đà, lệch nhịp, nén / giãn).
   public static func bake(_ s: Script) -> [Frame] {
@@ -184,13 +190,17 @@ public enum KoaPerformance {
       f.walk.sway = max(-maxTilt, min(maxTilt, s.sway.at(t)))
       f.walk.armLeft = min(maxArmRaise, s.armL.at(t) + armLagL.0)
       f.walk.armRight = max(-maxArmRaise, s.armR.at(t) + armLagR.0 + shake)
-      f.walk.headLag = max(-9, min(9, head.0))
+      // ±4°: nghiêng hơn thì lộ khe giữa cằm và vai lúc nhảy (Kiệt 06/11)
+      f.walk.headLag = max(-maxHeadLag, min(maxHeadLag, head.0))
       f.walk.earLag = max(-14, min(14, ear.0))
       let ears = s.ears.at(t)
       f.walk.earLeft = ears; f.walk.earRight = ears
       // bay: hai bàn chân rời sàn đúng bằng phần thân nhún lên trên 6 đơn vị
-      f.walk.bob = min(bob, inCanvasBob)
+      f.walk.bob = max(minCanvasBob, min(bob, inCanvasBob))
       f.air = max(0, bob - inCanvasBob)
+      // ngồi xuống sâu hơn `minCanvasBob`: nén CẢ hình (kể cả bàn chân) thay vì hạ thân xuống giữa hai chân đứng yên —
+      // hạ sâu thì vệt bóng chân (theo thân) lệch khỏi bàn chân, lộ hai vạch giữa hai chân (Kiệt 06/11)
+      let crouch = min(0, bob - minCanvasBob)
       // lệch nhịp: đầu nhìn trước thân 70 ms, mắt trước đầu 70 ms
       f.look = (s.lookX.at(t + 70), s.lookY.at(t + 70))
       f.eyes = (s.lookX.at(t + 140), s.lookY.at(t + 140))
@@ -199,7 +209,7 @@ public enum KoaPerformance {
       f.expression = s.faces.last { $0.t <= t }?.e ?? s.faces.first?.e ?? .happy
       // nén / giãn theo vận tốc (giãn khi bay) và gia tốc (nén khi tiếp đất)
       let stretch = max(-0.12, min(0.12, vel * 0.0011 - max(0, acc) * 0.000012))
-      f.sy = 1 + stretch; f.sx = 1 - stretch * 0.6
+      f.sy = (1 + stretch) * (1 + crouch * 0.008); f.sx = (1 - stretch * 0.6) * (1 - crouch * 0.005)
       f.zoom = s.zoom.at(t); f.focus = s.focus.at(t)
       if let r = s.ringFrom, t > r { f.ring = KoaReaction.ease(min(1, (t - r) / (s.ms - r))) }
       if let fl = s.flashAt, t >= fl, t < fl + 160 { f.flash = 1 - (t - fl) / 160 }
@@ -256,7 +266,7 @@ public enum KoaPerformance {
         lean: T(Key(0, 0), Key(500, -0.6), Key(800, 0.4), Key(1300, 1), Key(2000, 0.8)),
         sway: T(Key(0, 0), Key(1300, 0), Key(1600, 0.4), Key(1900, -0.3), Key(2200, 0.2)),
         armL: T(Key(0, 0), Key(500, 6), Key(900, -4), Key(1300, -6)),
-        armR: T(Key(0, -6), Key(480, -84, .out), Key(640, -88), Key(880, -14, .in), Key(1300, 4)),
+        armR: T(Key(0, -6), Key(480, -48.5, .out), Key(640, -50.8), Key(880, -14, .in), Key(1300, 4)),
         cheer: zero,
         ears: T(Key(0, 0), Key(800, -4), Key(1300, 12), Key(2000, 14)),
         lookX: T(Key(0, 0), Key(700, 0), Key(1000, 0.15), Key(1500, 0.05)),
@@ -281,11 +291,11 @@ public enum KoaPerformance {
                Key(4000, 1)),
         lean: T(Key(0, 0), Key(800, -1), Key(1100, -0.4), Key(1750, 1.2), Key(2000, -0.8), Key(2450, 1), Key(2800, 0)),
         sway: T(Key(0, 0), Key(2900, 0), Key(3300, 0.6), Key(3700, -0.4), Key(4100, 0.4)),
-        armL: T(Key(0, 2), Key(800, 8), Key(1700, -20), Key(1850, -26), Key(2060, 90), Key(2220, 84), Key(2420, 70),
-                Key(2620, 90), Key(2900, 30), Key(3200, 10), Key(4500, 6)),
-        armR: T(Key(0, -8), Key(820, -86, .out), Key(1050, -88), Key(1600, -50, .inOut), Key(1800, 22),
-                Key(2060, -90), Key(2220, -84), Key(2420, -70), Key(2620, -90), Key(2900, 0), Key(3000, 12), Key(3220, -90), Key(3340, -84), Key(3460, -66), Key(3560, -74),
-                Key(3740, -90), Key(3860, -85), Key(4100, -72), Key(4500, -74)),
+        armL: T(Key(0, 2), Key(800, 8), Key(1700, -20), Key(1850, -26), Key(2060, 52), Key(2220, 48.5), Key(2420, 40.4),
+                Key(2620, 52), Key(2900, 30), Key(3200, 10), Key(4500, 6)),
+        armR: T(Key(0, -8), Key(820, -49.7, .out), Key(1050, -50.8), Key(1600, -28.9, .inOut), Key(1800, 22),
+                Key(2060, -52), Key(2220, -48.5), Key(2420, -40.4), Key(2620, -52), Key(2900, 0), Key(3000, 12), Key(3220, -52), Key(3340, -48.5), Key(3460, -38.1), Key(3560, -42.8),
+                Key(3740, -52), Key(3860, -49.1), Key(4100, -41.6), Key(4500, -42.8)),
         cheer: zero,
         ears: T(Key(0, 0), Key(900, -6), Key(1100, -2), Key(2000, -8), Key(2600, 0)),
         lookX: T(Key(0, 0), Key(2900, 0), Key(3200, 0.45), Key(4500, 0.3)),
@@ -315,14 +325,14 @@ public enum KoaPerformance {
         lean: T(Key(0, 1.2), Key(1300, 1.4), Key(1800, -0.6), Key(2300, 0), Key(4600, 1.2), Key(4900, -0.8), Key(5350, 0.8), Key(5700, 0)),
         sway: T(Key(0, 0), Key(400, 0.4), Key(800, -0.4), Key(1200, 0.3), Key(1700, 0), Key(3200, 0), Key(3600, 0.4), Key(4100, -0.4),
                 Key(4400, 0)),
-        armL: T(Key(0, -4), Key(1300, -6), Key(1800, 8), Key(2300, 2), Key(3200, 4), Key(3300, -8), Key(3560, 90),
-                Key(3700, 84), Key(4400, 86),
-                Key(4650, -24), Key(4880, 90), Key(5050, 85), Key(5320, 72), Key(5550, 90), Key(6200, 84), Key(6800, 90),
-                Key(7500, 88)),
-        armR: T(Key(0, 4), Key(1300, 6), Key(1800, -8), Key(2300, -2), Key(3200, -4), Key(3300, 8), Key(3560, -90),
-                Key(3700, -84), Key(4400, -86),
-                Key(4650, 24), Key(4880, -90), Key(5050, -85), Key(5320, -72), Key(5550, -90), Key(6200, -84), Key(6800, -90),
-                Key(7500, -88)),
+        armL: T(Key(0, -4), Key(1300, -6), Key(1800, 8), Key(2300, 2), Key(3200, 4), Key(3300, -8), Key(3560, 52),
+                Key(3700, 48.5), Key(4400, 49.7),
+                Key(4650, -24), Key(4880, 52), Key(5050, 49.1), Key(5320, 41.6), Key(5550, 52), Key(6200, 48.5), Key(6800, 52),
+                Key(7500, 50.8)),
+        armR: T(Key(0, 4), Key(1300, 6), Key(1800, -8), Key(2300, -2), Key(3200, -4), Key(3300, 8), Key(3560, -52),
+                Key(3700, -48.5), Key(4400, -49.7),
+                Key(4650, 24), Key(4880, -52), Key(5050, -49.1), Key(5320, -41.6), Key(5550, -52), Key(6200, -48.5), Key(6800, -52),
+                Key(7500, -50.8)),
         cheer: zero,
         ears: T(Key(0, 14), Key(1300, 15), Key(1900, -6, .out), Key(2400, 0), Key(4600, -6), Key(5400, 0)),
         lookX: T(Key(0, 0), Key(1900, 0), Key(2300, -0.65), Key(2750, -0.55), Key(3000, 0.25, .out), Key(3600, 0.1),

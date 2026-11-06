@@ -139,7 +139,7 @@ extension KoaPerformanceFixTests {
       #expect(KoaPerformance.frames(scene).allSatisfy { $0.cheer == 0 }, "\(scene)")
     }
     // vẫn ăn mừng bằng tay dang rộng lúc nhảy
-    #expect(KoaPerformance.frame(.done, at: 5600).walk.armLeft > 80)
+    #expect(KoaPerformance.frame(.done, at: 5600).walk.armLeft > 40)
   }
 }
 
@@ -147,7 +147,7 @@ extension KoaPerformanceFixTests {
   @Test func raisedRigArmsFlipLikeTheCheerGesture() {
     // tay giơ cao lật hình (định thức âm) để bàn tay đúng chiều; tay đánh khi đi thì không
     #expect(KoaRender.armFlips(90) && KoaRender.armFlips(KoaRender.armFlipDeg))
-    #expect(!KoaRender.armFlips(20) && !KoaRender.armFlips(-30))
+    #expect(!KoaRender.armFlips(20) && !KoaRender.armFlips(-30) && !KoaRender.armFlips(KoaPerformance.maxArmRaise), "tay cảnh phản ứng không lật đi lật lại")
     var w = KoaWalk.Pose()
     w.armLeft = 90
     func det(_ m: KoaMath.Mat) -> Double { m[0] * m[3] - m[1] * m[2] }
@@ -158,5 +158,22 @@ extension KoaPerformanceFixTests {
     w.armLeft = 20
     #expect(KoaRender.walkMat(node, w).map(det).map { $0 > 0 } == true)
     #expect(KoaScene.$rn.withValue(true) { !KoaRender.armFlips(90) }, "RN không lật")
+  }
+}
+
+extension KoaPerformanceFixTests {
+  @Test func jumpsShowNoNeckGapOrLegSeams() {
+    for scene in KoaReaction.Scene.allCases {
+      let fs = KoaPerformance.frames(scene)
+      #expect(fs.allSatisfy { abs($0.walk.headLag) <= KoaPerformance.maxHeadLag }, "\(scene): đầu nghiêng nhiều lộ khe cổ")
+      #expect(fs.allSatisfy { $0.walk.bob >= KoaPerformance.minCanvasBob }, "\(scene): hạ thân sâu lộ vạch giữa hai chân")
+    }
+    // lấy đà vẫn đọc ra: cả hình nén xuống
+    #expect(KoaPerformance.frame(.record, at: 1750).sy < 0.95)
+    // đầu nghiêng thì có mảng vai / gáy lấp khe
+    var w = KoaWalk.Pose()
+    w.headLag = 3
+    #expect(KoaRender.neckShows(w) && !KoaRender.neckShows(KoaWalk.Pose()))
+    #expect(KoaScene.$rn.withValue(true) { !KoaRender.neckShows(w) })
   }
 }

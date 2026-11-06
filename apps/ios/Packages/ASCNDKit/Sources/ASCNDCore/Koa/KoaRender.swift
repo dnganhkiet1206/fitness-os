@@ -335,6 +335,10 @@ public enum KoaRender {
       if let g = c.gesture, g.tiltsHead, n.id == "torso_front" {
         passes.insert(patch(KoaGesture.neckFill, raw, own, flat: c.flat || c.paper), at: 0)
         if g == .curious { passes.insert(patch(KoaGesture.curiousFill, raw, own, flat: c.flat || c.paper), at: 0) }
+      } else if n.id == "torso_front", KoaRender.neckShows(c.walk) {
+        // đầu nghiêng theo đà khi đi / nhảy (rig liên tục): cùng mảng vai / gáy, kẻo lộ khe giữa cằm và vai
+        // (Kiệt 06/11, cảnh phản ứng)
+        passes.insert(patch(KoaGesture.neckFill, raw, own, flat: c.flat || c.paper), at: 0)
       }
       // `flat` (ban ngày): không lượt nào tô theo từng mảnh — tô từng mảnh làm lộ
       // chỗ các mảnh chồng nhau (15/10, chủ dự án). Khối do một dải nắng phủ cả hình.
@@ -630,10 +634,14 @@ public enum KoaRender {
     return nil
   }
 
+  /// Đầu nghiêng theo đà quá 1° thì lấp khe cổ. Chỉ native; dáng đứng yên / đi thường (đầu thẳng) không đổi.
+  static func neckShows(_ w: KoaWalk.Pose?) -> Bool { !KoaScene.rn && abs(w?.headLag ?? 0) > 1 }
+
   /// Tay giơ lên quá ngưỡng này (độ) thì LẬT hình tay theo trục vai → bàn tay, như dáng `cheer` / `taDa`: tay của
   /// bản vẽ cong để buông xuống, xoay lên mà không lật thì bàn tay ngược chiều (Kiệt 24/10, lại thấy 06/11 ở cảnh
   /// phản ứng). Lật lúc tay đang vung nhanh nhất. Đi trong phòng tay chỉ đánh ~±20°, không chạm ngưỡng. Bản RN không lật.
-  public static let armFlipDeg = 50.0
+  /// 70°: tay rig của cảnh phản ứng giờ chỉ giơ ≤ 52° (lật quanh 50° sẽ lật đi lật lại khi đấm tay), nên không lật.
+  public static let armFlipDeg = 70.0
   static func armFlips(_ raise: Double) -> Bool { !KoaScene.rn && raise >= armFlipDeg
   }
 
