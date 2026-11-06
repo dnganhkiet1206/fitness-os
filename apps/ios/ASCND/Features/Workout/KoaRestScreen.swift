@@ -201,7 +201,7 @@ struct KoaRestScreen: View {
         .foregroundStyle(.white.opacity(m.beat == .breathe ? 0.75 : 0.95))
     }
     .frame(height: 34)
-    .animation(.easeInOut(duration: 0.4), value: m.caption)
+    .animation(reduceMotion ? nil : .easeInOut(duration: 0.4), value: m.caption)
     .accessibilityHidden(m.caption == nil)
   }
 
