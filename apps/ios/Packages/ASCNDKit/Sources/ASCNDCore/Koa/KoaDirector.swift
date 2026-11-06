@@ -102,6 +102,8 @@ public enum KoaDirector {
     public var scale: Double
     public var gaze: KoaGaze.Output
     public var expression: KoaFlags.Expression?
+    /// Khẩu hình lúc nói — chỉ miệng, mắt giữ theo `expression` (app gán khi có bóng thoại).
+    public var mouth: KoaFlags.Expression? = nil
     public var gesture: KoaGesture?
     public var gestureAmount: Double
     /// Độ hiện của dáng của ngày (`gesture` truyền từ phòng, vd. hờn dỗi), 0…1: nhường dần
@@ -184,6 +186,8 @@ public enum KoaDirector {
     var gestureWant = 0.0
     var dayAmount = 1.0
     var plantKick: Double?
+    /// Phía bị chạm của cây: 1 = từ bên trái (lá ngả sang phải trước), −1 = từ bên phải.
+    var plantSide = 1.0
     /// Khoảnh khắc đã phản ứng trong lần chạy này (app ghi ký ức sau một khung).
     var reacted: Set<KoaCompanion.Moment> = []
     var fresh: KoaCompanion.Moment?
@@ -222,6 +226,13 @@ public enum KoaDirector {
     /// Người xem đang chạm / kê tay lên Koa: chú ý tới họ, không tự đi chỗ khác.
     public mutating func interacted() { lastTouch = clock }
     public mutating func blink() { gaze.blinkNow() }
+
+    /// Người xem chạm vào cây (04/11): lá rung, ngả ra xa phía ngón tay trước.
+    /// `fromLeft`: chạm bên trái thân cây.
+    public mutating func touchPlant(fromLeft: Bool) {
+      plantKick = clock
+      plantSide = fromLeft ? 1 : -1
+    }
 
     /// Nhớ lại đồ vật đã ghé trước khi rời phòng.
     public mutating func recall(visited v: [String]) {
@@ -494,16 +505,18 @@ public enum KoaDirector {
 
       let head = (walker.x, walker.y - walker.elevation)
       let g = gaze.step(dt, koa: head, turn: walker.pose.turn)
-      // lá cây: rung khi Koa đi sát hay ngửi
+      // lá cây: rung khi Koa đi sát, ngửi, hay người xem chạm (04/11: từng lá theo `StudioScene.leafAngle`).
+      // `sway` là thời gian từ lúc chạm, mang dấu của phía bị chạm; bậc 1/30 giây để bộ nhớ đệm kế
+      // hoạch vẽ của phòng dùng lại được
       var sway = 0.0
       if let k = plantKick {
         let t = clock - k
-        // bậc 0,25°: ít giá trị khác nhau thì bộ nhớ đệm kế hoạch vẽ của phòng dùng lại được
-        sway = (18 * sin(2 * Double.pi * 2.1 * t) * exp(-t * 1.6)).rounded() / 4
-        if t > 3 { plantKick = nil }
+        sway = plantSide * max(1, (t * 30).rounded()) / 30
+        if t > StudioScene.leafSettle { plantKick = nil }
       }
       if plane == .floor, hypot(walker.x - 300, walker.y - 378) < 34, walker.speed > 4, plantKick == nil {
         plantKick = clock
+        plantSide = walker.x < 300 ? 1 : -1
       }
       var p = walker.pose
       // tai: dựng khi tự hào, hơi cụp khi ít năng lượng; thỉnh thoảng giật một bên, không đều
@@ -567,7 +580,10 @@ public enum KoaDirector {
             r.phase = .act(0)
             // tới nơi: quay về phía đích nhìn
             walker.faceTurn = turnToward(b)
-            if let a = b.anchor, a.name == "plant" { plantKick = clock }
+            if let a = b.anchor, a.name == "plant" {
+              plantKick = clock
+              plantSide = walker.x < 300 ? 1 : -1
+            }
           } else {
             startLeg(&r)
           }
@@ -650,7 +666,10 @@ public enum KoaDirector {
           if at(1.9) { gaze.look(.point(x: lx - 10, y: ly), from: koa, turn: turn) }
           if at(2.6) { gaze.glance(at: .user, koa: koa, turn: turn, for: 0.7) }
         case .sniff:
-          if at(0.2) { plantKick = clock }
+          if at(0.2) {
+            plantKick = clock
+            plantSide = walker.x < 300 ? 1 : -1
+          }
           if at(1.3) { expression = .happy }
           if at(1.6) { gaze.glance(at: .user, koa: koa, turn: turn, for: 0.6) }
         case .gaze:

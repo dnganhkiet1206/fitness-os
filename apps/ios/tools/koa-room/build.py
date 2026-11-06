@@ -574,31 +574,44 @@ def baseboard(x0, x1, seed=0, o=0.6):
     return out
 
 
-def motes(n, seed=0):
-    """Hạt bụi lơ lửng trong vệt đèn."""
-    import random
-    rnd = random.Random(seed)
-    return [C(150 + rnd.random() * 90, 110 + rnd.random() * 220, 0.6 + rnd.random() * 0.8, fill=WEBC, opacity=0.25 + rnd.random() * 0.3)
-            for _ in range(n)]
-
-
 DUST = {
     # `at` (đầu tệp): ván kệ 80, bậu cửa sổ 62, bảng số 66, bảng neon cũ 100 (khung dọc bỏ bậu và bảng
-    # neon cũ nên bụi trên chúng không vẽ). Bụi chân tường, sàn, hạt lơ lửng, tơ ở góc: không gắn.
+    # neon cũ nên bụi trên chúng chỉ vẽ khi cửa sổ là đồ mua). Bụi chân tường, sàn: không gắn.
+    # 04/11 (Kiệt): không còn hạt bụi vẽ chết trong vệt đèn — hạt lơ lửng do app vẽ và luôn trôi
+    # (`StudioMotes`, nhiều hơn khi bẩn hơn). Tơ nhện ở trần / cửa sổ / dây đèn nằm trên tường cao
+    # của phòng khung dọc, ở `TALL_DUST`.
     1: (on(80, dust_line(28, 250, 88) + dust_line(20, 300, 104)) + on(62, dust_line(267, 209, 105, 0.7))
-        + baseboard(0, 140, seed=1) + fluff(22, 430, 22, seed=1) + motes(10, 1)),
-    # mỗi chỗ một kiểu tơ (29/10, Kiệt: "đừng đối xứng"): quạt lệch lớn ở góc trái,
-    # tấm võng nhỏ góc phải, vài sợi rối ở chân kệ
-    2: (cobweb(26, 0, 4, 70, 86, rings=5, seed=21) + hammock(352, 0, 364, 40, n=4, seed=22)
-        + on(80, tangle(118, 262, 10, seed=23) + dust_line(12, 350, 120)) + on(66, dust_line(270, 245, 102, 0.65))
-        + baseboard(250, 390, seed=2) + fluff(366, 446, 26, seed=2) + motes(10, 2)),
-    3: (tangle(195, 34, 12, n=7, seed=24, o=0.5) + cobweb(361, 101, 100, 168, 26, rings=2, seed=25, o=0.5)
-        + on(100, dust_line(24, 130, 84, 0.75)) + on(80, dust_line(28, 250, 88, 0.95) + dust_line(20, 300, 104, 0.95))
-        + baseboard(140, 250, seed=3, o=0.5) + fluff(150, 372, 18, seed=3) + fluff(12, 466, 20, seed=4) + motes(14, 3)
-        # nhện nhỏ thả tơ từ mạng góc trái
-        + [P("M 60 30 Q 62 56 59 80", stroke=WEBC, strokeWidth=0.6, fill="none", opacity=0.7),
-           E(59, 84, 2.8, 3.4, fill="#3A4566"), C(59, 80.2, 1.8, fill="#3A4566"),
-           L("M 56.5 82.5 l -3.2 -2.4 M 56.4 85 l -3.4 1.2 M 61.5 82.5 l 3.2 -2.4 M 61.6 85 l 3.4 1.2", "#3A4566", 0.7)]),
+        + on(66, dust_line(270, 245, 102, 0.6))
+        + baseboard(0, 140, seed=1) + fluff(22, 430, 22, seed=1)),
+    2: (on(80, tangle(118, 262, 10, seed=23) + dust_line(12, 350, 120))
+        + dust_line(168, 298, 48, 0.55)  # gờ ván ốp chân tường
+        + baseboard(250, 390, seed=2) + fluff(366, 446, 26, seed=2)),
+    3: (on(100, dust_line(24, 130, 84, 0.75)) + on(80, dust_line(28, 250, 88, 0.95) + dust_line(20, 300, 104, 0.95))
+        + dust_line(226, 298, 62, 0.65)
+        + baseboard(140, 250, seed=3, o=0.5) + fluff(150, 372, 18, seed=3) + fluff(12, 466, 20, seed=4)),
+}
+
+
+def tall(layer, nodes):
+    """Phần tử của tường cao (`StudioTall`): lớp `wall` hay `lamp` (dây đèn trôi theo tầng của đèn)."""
+    for n in nodes: n["layer"] = layer
+    return nodes
+
+
+# Tơ nhện và bụi trên phần tường cao vẽ mới (04/11, Kiệt: "phòng đã được vẽ lại hoàn toàn"): góc
+# trần hai bên (8, -170) và (382, -170), dây đèn x 195, bậu cửa sổ vòm y 160 (x 194–380), góc
+# trong cửa sổ (368, 160), đỉnh bảng neon y -60 (x 20–160). Mỗi chỗ một kiểu tơ, không đối xứng.
+TALL_DUST = {
+    1: tall("wall", dust_line(204, 160, 92, 0.6)),
+    2: tall("wall", cobweb(9, -169, 2, 84, 96, rings=5, seed=21) + hammock(374, -170, 383, -138, n=4, seed=22)
+            + dust_line(26, -60, 70, 0.55)),
+    3: (tall("lamp", tangle(195, -150, 12, n=7, seed=24, o=0.5))
+        + tall("wall", cobweb(366, 157, 194, 262, 30, rings=2, seed=25, o=0.5)
+               + dust_line(96, -60, 60, 0.6) + dust_line(300, 160, 76, 0.7)
+               # nhện nhỏ thả tơ từ mạng góc trần bên trái
+               + [P("M 66 -142 Q 68 -116 65 -92", stroke=WEBC, strokeWidth=0.6, fill="none", opacity=0.7),
+                  E(65, -88, 2.8, 3.4, fill="#3A4566"), C(65, -91.8, 1.8, fill="#3A4566"),
+                  L("M 62.5 -89.5 l -3.2 -2.4 M 62.4 -87 l -3.4 1.2 M 67.5 -89.5 l 3.2 -2.4 M 67.6 -87 l 3.4 1.2", "#3A4566", 0.7)])),
 }
 
 
@@ -612,7 +625,7 @@ def write():
     check()
     # bụi: các lớp theo mức (cộng dồn ở app) + chỉ số phần tử mà bụi nằm ngay sau
     data = {"spots": SPOTS, "variants": VARIANTS, "dust": {str(k): v for k, v in DUST.items()}, "dustAfter": F(1),
-            "bare": BARE}
+            "tallDust": {str(k): v for k, v in TALL_DUST.items()}, "bare": BARE}
     out = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
     if '"##' in out: raise SystemExit("chuỗi thô của Swift sẽ gãy")
     DST.write_text(f"""// SINH TỰ ĐỘNG — đừng sửa tay.

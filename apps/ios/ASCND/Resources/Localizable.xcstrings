@@ -63491,6 +63491,328 @@
     }
    }
   },
+  "koa.talk.pokeHead.0": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mmm… that's nice."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mmm… qué gusto."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ưm… dễ chịu ghê."
+     }
+    }
+   }
+  },
+  "koa.talk.pokeHead.1": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "More head pats, please."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Más mimos, porfa."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Xoa nữa đi mà."
+     }
+    }
+   }
+  },
+  "koa.talk.pokeEar.0": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Oh! My ears are sensitive."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "¡Ay! Mis orejas son sensibles."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ối! Tai tớ nhạy lắm đó."
+     }
+    }
+   }
+  },
+  "koa.talk.pokeEar.1": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Eek, ticklish ears!"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "¡Uy, cosquillas en las orejas!"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Úi, nhột tai!"
+     }
+    }
+   }
+  },
+  "koa.talk.pokeNose.0": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "No no no, not the nose!"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "¡No no no, la nariz no!"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "No no no, đừng bấm mũi!"
+     }
+    }
+   }
+  },
+  "koa.talk.pokeNose.1": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "My nose isn't a button."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mi nariz no es un botón."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mũi tớ không phải nút bấm đâu."
+     }
+    }
+   }
+  },
+  "koa.talk.pokeBelly.0": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hehe, that tickles!"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "¡Jiji, me haces cosquillas!"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hihi, nhột quá!"
+     }
+    }
+   }
+  },
+  "koa.talk.pokeBelly.1": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "That's all muscle, you know."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Eso es puro músculo."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bụng tớ toàn cơ đó nha."
+     }
+    }
+   }
+  },
+  "koa.talk.pokeFeet.0": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ouch, my feet!"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "¡Ay, mis patitas!"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Úi da, chân tớ!"
+     }
+    }
+   }
+  },
+  "koa.talk.pokeFeet.1": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "These feet need a rest."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Estas patas necesitan descanso."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chân tớ mỏi rồi nè."
+     }
+    }
+   }
+  },
+  "koa.talk.pokeFace.0": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hehe, what's up?"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Jeje, ¿qué pasa?"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hê hê, gì thế?"
+     }
+    }
+   }
+  },
+  "koa.talk.pokeFace.1": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Looking good, right?"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "¿Verdad que estoy guapo?"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tớ đẹp trai ghê ha?"
+     }
+    }
+   }
+  },
+  "koa.talk.dusty.0": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "The room's a bit dusty… help me tidy up?"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "El cuarto está algo polvoriento… ¿me ayudas a limpiar?"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Phòng mình hơi bụi rồi… cậu giúp tớ dọn nha?"
+     }
+    }
+   }
+  },
+  "koa.talk.dusty.1": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Achoo! Let's clean up together?"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "¡Achís! ¿Limpiamos juntos?"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hắt xì! Mình dọn phòng cùng nhau nhé?"
+     }
+    }
+   }
+  },
   "koa.talk.poke.0": {
    "extractionState": "manual",
    "localizations": {

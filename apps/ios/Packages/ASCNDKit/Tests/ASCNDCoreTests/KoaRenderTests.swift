@@ -111,3 +111,133 @@ struct KoaRenderGoldenTests {
     #expect(!flat.contains("url(#koaGlow") && !flat.contains("url(#koaForm)"))
   }
 }
+
+/// Mắt lờ đờ không nháy (Kiệt 04/11): hai lớp nháy là elip phủ cả mắt, mọc lên dưới mí thành
+/// "một hình elip vẽ thêm". Mắt mở to vẫn nháy; bản RN giữ nguyên.
+struct KoaLazyEyesTests {
+  static func blinks(_ e: KoaRender.Element) -> Int {
+    // nhóm nháy = `G` có đúng hai elip màu mí (#BFC7CF) phủ hai mắt
+    let own = e.tag == "G" && e.kids.count == 2 && e.kids.allSatisfy { $0.tag == "Ellipse" && $0.props["ry"] == .number(25) } ? 1 : 0
+    return own + e.kids.reduce(0) { $0 + blinks($1) }
+  }
+
+  static func figure(_ e: KoaFlags.Expression, rn: Bool = false) -> KoaRender.Element {
+    var o = KoaRender.Options()
+    o.expression = e
+    o.t = 4800  // ngay giữa một cái nháy của `koaBlink`
+    return KoaScene.$rn.withValue(rn) { KoaRender.figure(o) }
+  }
+
+  @Test func lazyEyesDoNotBlinkOpenEyesDo() {
+    #expect(Self.blinks(Self.figure(.happy)) == 2)
+    for e: KoaFlags.Expression in [.confident, .tired, .sleepy] {
+      #expect(KoaMath.lidded(KoaRender.flags({ var o = KoaRender.Options(); o.expression = e; return o }())))
+      #expect(Self.blinks(Self.figure(e)) == 0, "\(e)")
+      #expect(Self.blinks(Self.figure(e, rn: true)) == 2, "RN \(e)")
+    }
+  }
+}
+
+/// Chạm theo chỗ (Kiệt 04/11) và miệng nói tách khỏi nét mặt.
+struct KoaTapTests {
+  @Test func zonesFollowTheFigure() {
+    #expect(KoaTap.zone(x: 120, y: 40) == .head)
+    #expect(KoaTap.zone(x: 50, y: 90) == .ear && KoaTap.zone(x: 190, y: 90) == .ear)
+    #expect(KoaTap.zone(x: 121, y: 134) == .nose, "đo trên máy")
+    #expect(KoaTap.zone(x: 85, y: 150) == .face)
+    #expect(KoaTap.zone(x: 120, y: 215) == .belly)
+    #expect(KoaTap.zone(x: 120, y: 285) == .feet)
+    #expect(KoaTap.zone(x: 30, y: 210) == .body)
+    // mỗi chỗ một câu và một tiếng riêng
+    #expect(Set(KoaTap.Zone.allCases.map(\.topic)).count == KoaTap.Zone.allCases.count)
+    #expect(Set(KoaTap.Zone.allCases.map(\.voice)).count == KoaTap.Zone.allCases.count)
+  }
+
+  @Test func noseIsANoNoNoNotAnger() {
+    let f = KoaFlags.flags(.nope, .idle)
+    #expect(f["browSad"]?.truthy == true && f["mouthFrown"]?.truthy == true && f["lidsHalf"]?.truthy == true)
+    #expect(f["browAngry"]?.truthy == false && f["showSteam"]?.truthy == false, "phụng phịu, không giận")
+  }
+
+  /// Gần gũi trước, phụng phịu sau (Kiệt 04/11): hai lần chạm mũi đầu chỉ "hê hê", lần ba mới "no no no";
+  /// không chỗ nào mở đầu bằng mặt giận hay mặt hốt hoảng.
+  @Test func firstTouchesAreFriendly() {
+    #expect(KoaTap.reaction(.nose, streak: 0).voice == "hehe")
+    #expect(KoaTap.reaction(.nose, streak: 1).topic == .pokeFace)
+    #expect(KoaTap.reaction(.nose, streak: 2).topic == .pokeNose)
+    for z in KoaTap.Zone.allCases where z != .body {
+      let face = KoaTalk.face(KoaTap.reaction(z, streak: 0).topic).peak
+      #expect(![.angry, .surprised, .nope, .sad].contains(face), "\(z)")
+    }
+  }
+
+  @Test func talkingMovesOnlyTheMouth() {
+    var o = KoaRender.Options()
+    o.expression = .sleepy
+    o.mouth = .say2
+    let f = KoaRender.flags(o)
+    #expect(f["lidsHeavy"]?.truthy == true, "mắt giữ lim dim")
+    #expect(f["mouthSay2"]?.truthy == true && f["mouthSoft"]?.truthy != true)
+  }
+}
+
+/// Mắt lờ đờ nhắm bằng mí hạ xuống (Kiệt 04/11), không bằng elip vẽ thêm.
+struct KoaLidBlinkTests {
+  static func lidScale(_ e: KoaRender.Element) -> Double? {
+    if e.tag == "G", let m = e.matrix, m[0] == 1, m[3] > 1, abs(m[5] - 72.5 * (1 - m[3])) < 1e-9 { return m[3] }
+    return e.kids.lazy.compactMap(lidScale).first
+  }
+
+  @Test func lazyLidsDropToClose() {
+    var o = KoaRender.Options()
+    o.expression = .sleepy
+    o.blink = 1
+    #expect(Self.lidScale(KoaRender.figure(o)) == 1.5, "mí nặng giãn 1,5 lần")
+    o.blink = 0
+    #expect(Self.lidScale(KoaRender.figure(o)) == nil)
+    o.expression = .happy
+    o.blink = 1
+    #expect(Self.lidScale(KoaRender.figure(o)) == nil, "mắt mở to vẫn nháy kiểu cũ")
+  }
+}
+
+/// Chạm đúng chỗ ở mọi tư thế (Kiệt 04/11): vùng theo mốc THẬT của dáng đang vẽ.
+struct KoaTapPoseTests {
+  static func check(_ o: KoaRender.Options, _ label: String) {
+    let a = KoaRender.anchors(o)
+    for (id, zone) in [("nose", KoaTap.Zone.nose), ("ear_right", .ear), ("head_top_fur", .head), ("belly", .belly)] {
+      guard let p = a[id] else {
+        Issue.record("thiếu mốc \(id) ở \(label)")
+        continue
+      }
+      #expect(KoaTap.zone(x: p.x, y: p.y, anchors: a) == zone, "\(label): chạm \(id)")
+    }
+  }
+
+  @Test func everyPoseMapsTouchesToTheRightPart() {
+    for pose in KoaFlags.Pose.allCases {
+      var o = KoaRender.Options()
+      o.pose = pose
+      Self.check(o, "\(pose)")
+    }
+    var tilted = KoaRender.Options()
+    tilted.gaze = KoaMath.Gaze(x: 0.8, y: -0.5, k: 1)
+    Self.check(tilted, "nghiêng đầu")
+    for g in [KoaGesture.flop, .pout, .taDa, .curious] {
+      var o = KoaRender.Options()
+      o.gesture = g
+      Self.check(o, "dáng \(g)")
+    }
+  }
+
+  /// Vươn vai (người nghiêng), quay người: mũi dời khỏi chỗ của dáng đứng — mốc đi theo dáng thật.
+  @Test func anchorsFollowThePose() {
+    let stand = KoaRender.anchors(KoaRender.Options())["nose"]!
+    for pose in [KoaFlags.Pose.stretching, .turn34] {
+      var o = KoaRender.Options()
+      o.pose = pose
+      let moved = KoaRender.anchors(o)["nose"]!
+      #expect(hypot(moved.x - stand.x, moved.y - stand.y) > 3, "\(pose)")
+    }
+  }
+}

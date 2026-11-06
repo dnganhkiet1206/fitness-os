@@ -35,6 +35,8 @@ public enum KoaCompanion {
     public var mood: KoaMood.Reason
     /// Có mốc hành trình chưa nhắc (`KoaMomentFeed`).
     public var milestone = false
+    /// Mức bụi của phòng (0 = sạch): Koa nhờ người dùng giúp dọn (Kiệt 04/11).
+    public var dust = 0
 
     public init(
       day: String, trainedToday: Bool = false, recordToday: Bool = false, restDay: Bool = false,

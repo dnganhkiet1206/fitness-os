@@ -214,15 +214,22 @@ struct StudioTallRoom: View {
       // truyền giờ vào: view con đọc đồng hồ tự nó thì SwiftUI thấy tham số không đổi, không vẽ lại
       let t = timeline.date.timeIntervalSinceReferenceDate
       ZStack(alignment: .topLeading) {
+        // đèn đung đưa theo gió quanh điểm treo; chùm sáng và bụi trong chùm lắc cùng
+        let swing = Angle.degrees(StudioTall.lampSway(at: t))
+        let pivot = UnitPoint(
+          x: StudioTall.lampPivot.x / StudioScene.width, y: (Double(drop) + StudioTall.lampPivot.y * k) / Double(size.height))
         ForEach(StudioTall.layers) { layer in
+          let swings = layer.id == "cone" || layer.id == "lamp"
           StudioTallImage(options: options, layer: layer.id, drop: Double(drop)).equatable()
             .frame(width: size.width, height: size.height)
+            .rotationEffect(swings ? swing : .zero, anchor: pivot)
             .offset(x: shot.shift(layer.plane.amp) * k)
           // đồ động chen đúng tầng: mây sau thành phố, đèn nhà trên thành phố, bụi trong chùm đèn
           if !reduceMotion, ["sky", "city", "lamp"].contains(layer.id) {
             StudioLive(
               t: t, layer: layer.id, night: !options.light, drop: Double(drop), k: k, lamp: options.lamp, dust: options.dust, box: motes)
               .frame(width: size.width, height: size.height)
+              .rotationEffect(layer.id == "lamp" ? swing : .zero, anchor: pivot)
               .offset(x: shot.shift(layer.plane.amp) * k)
           }
           if !reduceMotion, layer.id == "wall", !options.light {
@@ -306,20 +313,25 @@ final class StudioMotes {
     room.resize(dust * 16)
     room.step(dt, t: t)
     guard lamp else { return room.motes }
+    // bẩn hơn thì nhiều hạt trong vệt đèn hơn — mọi hạt đều trôi (04/11: bỏ hạt vẽ chết của mock)
+    beam.resize(14 + dust * 8)
     beam.step(dt, t: t)
     return room.motes + beam.motes
   }
 }
 
 /// Quầng sáng sau bảng neon, chập chờn như đèn thật: thở chậm, thỉnh thoảng sụt một nhịp.
-private struct StudioNeon: View {
+struct StudioNeon: View {
   let t: Double
   let drop: Double
   let k: Double
 
+  /// Đèn đang sụt một nhịp (cùng đồng hồ `timeIntervalSinceReferenceDate`) — tiếng rè theo đây.
+  static func dips(at t: Double) -> Bool { sin(t * 0.73) * sin(t * 2.9) > 0.86 }
+
   var body: some View {
     let s = StudioTall.sign
-    let dip = sin(t * 0.73) * sin(t * 2.9) > 0.86
+    let dip = Self.dips(at: t)
     let glow = (0.3 + 0.08 * sin(t * 1.4)) * (dip ? 0.35 : 1)
     Canvas { ctx, _ in
       var c = ctx
@@ -384,4 +396,13 @@ final class KoaLens {
   @ObservationIgnored var koa = (x: StudioScene.stageMark.x, y: StudioScene.stageMark.y, scale: 1.0)
   /// Tranh hạ xuống bao nhiêu điểm trong khung dọc.
   @ObservationIgnored var drop: CGFloat = 0
+}
+
+extension View {
+  /// Phòng bám bụi thì hơi xám (Kiệt 04/11): nhạt màu và kém tương phản một chút theo mức bụi
+  /// 0…3. Chỉ phòng và đồ vật, Koa giữ màu.
+  func koaDustFilm(_ level: Int) -> some View {
+    let n = Double(min(max(level, 0), 3))
+    return saturation(1 - 0.1 * n).contrast(1 - 0.03 * n)
+  }
 }
