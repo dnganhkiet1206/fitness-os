@@ -624,12 +624,12 @@ public enum KoaRender {
     if n.id == "ear_right", w.earLag != 0 || w.earRight != 0 { return KoaGesture.rot(w.earLag + w.earRight, 178, 92) }
     if n.bind == "armRankL" {
       let r = KoaGesture.rot(w.armLeft, KoaGesture.shoulderL.0, KoaGesture.shoulderL.1)
-      return armFlips(w.armLeft) ? KoaMath.mul(r, KoaGesture.flip(left: true)) : r
+      return w.flipRaisedArms && armFlips(w.armLeft) ? KoaMath.mul(r, KoaGesture.flip(left: true)) : r
     }
     // tay phải và đồ cầm trên tay phải đánh cùng nhau
     if n.bind == "armRankR" || n.animBind == "handAnim" {
       let r = KoaGesture.rot(w.armRight, KoaGesture.shoulderR.0, KoaGesture.shoulderR.1)
-      return armFlips(-w.armRight) ? KoaMath.mul(r, KoaGesture.flip(left: false)) : r
+      return w.flipRaisedArms && armFlips(-w.armRight) ? KoaMath.mul(r, KoaGesture.flip(left: false)) : r
     }
     return nil
   }
@@ -640,8 +640,9 @@ public enum KoaRender {
   /// Tay giơ lên quá ngưỡng này (độ) thì LẬT hình tay theo trục vai → bàn tay, như dáng `cheer` / `taDa`: tay của
   /// bản vẽ cong để buông xuống, xoay lên mà không lật thì bàn tay ngược chiều (Kiệt 24/10, lại thấy 06/11 ở cảnh
   /// phản ứng). Lật lúc tay đang vung nhanh nhất. Đi trong phòng tay chỉ đánh ~±20°, không chạm ngưỡng. Bản RN không lật.
-  /// 70°: tay rig của cảnh phản ứng giờ chỉ giơ ≤ 52° (lật quanh 50° sẽ lật đi lật lại khi đấm tay), nên không lật.
-  public static let armFlipDeg = 70.0
+  /// 25° (Kiệt 06/11, lần 3 "tay vẫn giơ ngược"): mọi tư thế giơ của cảnh phản ứng (đấm tay 38–52°, dang tay, nâng
+  /// tạ) ở TRÊN ngưỡng nên luôn lật đúng chiều; tay vung từ buông lên qua 25° rất nhanh. Đi trong phòng tay đánh ~±20°.
+  public static let armFlipDeg = 25.0
   static func armFlips(_ raise: Double) -> Bool { !KoaScene.rn && raise >= armFlipDeg
   }
 

@@ -186,6 +186,7 @@ public enum KoaPerformance {
       spring(&armLagR, to: -drag, k: 120, damp: 11)
       let tremble = s.tremble.at(t)
       let shake = tremble * sin(t * 0.075) * sin(t * 0.031 + 1)
+      f.walk.flipRaisedArms = true
       f.walk.lean = max(-maxTilt, min(maxTilt, lean))
       f.walk.sway = max(-maxTilt, min(maxTilt, s.sway.at(t)))
       f.walk.armLeft = min(maxArmRaise, s.armL.at(t) + armLagL.0)

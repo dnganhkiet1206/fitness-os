@@ -147,8 +147,16 @@ extension KoaPerformanceFixTests {
   @Test func raisedRigArmsFlipLikeTheCheerGesture() {
     // tay giơ cao lật hình (định thức âm) để bàn tay đúng chiều; tay đánh khi đi thì không
     #expect(KoaRender.armFlips(90) && KoaRender.armFlips(KoaRender.armFlipDeg))
-    #expect(!KoaRender.armFlips(20) && !KoaRender.armFlips(-30) && !KoaRender.armFlips(KoaPerformance.maxArmRaise), "tay cảnh phản ứng không lật đi lật lại")
+    #expect(!KoaRender.armFlips(20) && !KoaRender.armFlips(-30))
+    // mọi tư thế giơ đang giữ của cảnh phản ứng đều lật (bàn tay đúng chiều), không lật đi lật lại khi đấm tay
+    for t in stride(from: 3220.0, through: 4500, by: 20) {
+      #expect(KoaRender.armFlips(-KoaPerformance.frame(.record, at: t).walk.armRight), "kỷ lục \(t)")
+    }
+    for t in stride(from: 5000.0, through: 7500, by: 20) {
+      #expect(KoaRender.armFlips(KoaPerformance.frame(.done, at: t).walk.armLeft), "xong buổi \(t)")
+    }
     var w = KoaWalk.Pose()
+    w.flipRaisedArms = true
     w.armLeft = 90
     func det(_ m: KoaMath.Mat) -> Double { m[0] * m[3] - m[1] * m[2] }
     guard let node = try? JSONDecoder().decode(KoaScene.Node.self, from: Data(#"{"t":"g","bind":"armRankL"}"#.utf8)) else {
@@ -158,6 +166,10 @@ extension KoaPerformanceFixTests {
     w.armLeft = 20
     #expect(KoaRender.walkMat(node, w).map(det).map { $0 > 0 } == true)
     #expect(KoaScene.$rn.withValue(true) { !KoaRender.armFlips(90) }, "RN không lật")
+    // chạy kéo thẻ (tay đánh ±40°) và đi trong phòng không bật lật: giữ như đã duyệt
+    var run = KoaWalk.Pose()
+    run.armLeft = 40
+    #expect(KoaRender.walkMat(node, run).map(det).map { $0 > 0 } == true)
   }
 }
 

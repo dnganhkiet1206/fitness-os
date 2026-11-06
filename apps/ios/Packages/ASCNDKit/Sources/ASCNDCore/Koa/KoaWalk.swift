@@ -60,6 +60,9 @@ public enum KoaWalk {
     /// Tai trái / phải thêm (độ, dương = ra ngoài, tức cụp xuống): khí sắc và giật tai.
     public var earLeft = 0.0
     public var earRight = 0.0
+    /// Tay giơ quá `KoaRender.armFlipDeg` thì lật hình tay cho bàn tay đúng chiều (cảnh phản ứng, 06/11). Tắt mặc
+    /// định: đi trong phòng và chạy kéo thẻ (`KoaPull`, tay đánh tới ±40°) giữ nguyên như đã duyệt.
+    public var flipRaisedArms = false
     public init() {}
   }
 
