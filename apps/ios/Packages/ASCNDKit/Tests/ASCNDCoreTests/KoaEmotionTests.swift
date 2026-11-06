@@ -38,8 +38,8 @@ struct KoaEmotionGoldenTests {
       #expect(s.outfit == Self.worn(c["s"]?["outfit"]), "\(e)")
     }
     // mọi cảm xúc của RN trừ `wave`/`run` (đã bỏ, rơi về `idle` — xem fixture)
-    // + `warmup` của native (đợt 2)
-    #expect(KoaEmotion.Emotion.allCases.count == 14)
+    // + `warmup` của native (đợt 2) + 4 mặt tập gym (05/11: breather, victory, ready, pumped)
+    #expect(KoaEmotion.Emotion.allCases.count == 18)
     // Cầm tạ luôn mặt gồng sức như bản thiết kế (20/10, chủ dự án).
     for e in KoaEmotion.Emotion.allCases where KoaEmotion.state(e).pose == .lifting {
       #expect(KoaEmotion.state(e).expression == .strain, "\(e) cầm tạ mà không gồng sức")

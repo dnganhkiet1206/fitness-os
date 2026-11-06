@@ -252,7 +252,7 @@ public struct WorkoutSummaryView: View {
     let text = ExerciseCompareText(unit: unit, locale: locale)
     return VStack(alignment: .leading, spacing: DS.Spacing.sm) {
       HStack(alignment: .top, spacing: DS.Spacing.sm) {
-        MascotFigureView(emotion: ExerciseCompare.headline(items) == nil ? .idle : .proud, size: 44, animated: false,
+        MascotFigureView(emotion: ExerciseCompare.headline(items) == nil ? .pumped : .victory, size: 44, animated: false,
                          build: services?.koaBuild ?? 0)
           .accessibilityHidden(true)
         Text(verbatim: koaLine(items, text))
@@ -423,7 +423,8 @@ struct KoaGainsCard: View {
     let next = KoaGains.toNext(g.after.points)
     DSCard {
       VStack(spacing: DS.Spacing.sm) {
-        MascotFigureView(emotion: .proud, size: 132, animated: false, build: g.after.rank)
+        // xong buổi (05/11, Kiệt): lên hạng thì hét chiến thắng, còn lại tự hào
+        MascotFigureView(emotion: rankUp ? .victory : .pumped, size: 132, animated: false, build: g.after.rank)
           .frame(height: 150)
           .accessibilityHidden(true)
         Text(

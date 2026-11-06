@@ -410,9 +410,15 @@ struct RestTimerControllerTests {
 
 @Suite struct RestKoaTests {
   @Test func usesOnlyDrawnPoses() {
-    #expect(RestKoa.resting.emotion == .tired)
-    #expect(RestKoa.record.emotion == .celebrate)
-    #expect(RestKoa.waiting.emotion == .idle)
+    // mặt tập gym (05/11, Kiệt): thở dốc ngồi nghỉ, hét chiến thắng khi kỷ lục, tập trung khi tạm dừng
+    #expect(RestKoa.resting.emotion == .breather)
+    #expect(RestKoa.record.emotion == .victory)
+    #expect(RestKoa.waiting.emotion == .ready)
+    for k in RestKoa.allCases {
+      let st = KoaEmotion.state(k.emotion)
+      #expect(st.pose == .idle || st.pose == .relaxing, "Live Activity chỉ dùng dáng đứng / ngồi đã vẽ")
+      #expect(KoaFlags.gymFace[st.expression] != nil, "\(k): mặt tập gym")
+    }
   }
 
   @Test func oldActivityStateStillDecodes() throws {

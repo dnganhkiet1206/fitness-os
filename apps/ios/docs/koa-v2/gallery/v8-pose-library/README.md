@@ -105,4 +105,7 @@ python3 $B/koa_storyboard_page.py OUT/poses OUT/faces OUT/library
 - **Ảnh:** `sim-spec-sheet-gym-faces.jpg`, bảng spec Debug trên simulator.
 - **Còn:**
   - mắt của 4 mặt mắt mở (`grit`, `focus`, `pant`, `smug`) là lớp vẽ riêng: chưa chớp, chưa nhìn theo (`KoaGaze`);
-  - chưa gắn vào sự kiện nào trong app (Today, phòng, ăn mừng): mới có trong bảng spec.
+  - ~~chưa gắn vào sự kiện nào~~ **05/11 gắn** (Kiệt: "khi ghi set / xong bài"):
+    - thẻ nghỉ giữa set và Live Activity: nghỉ → thở dốc (ngồi), set kỷ lục → hét chiến thắng, tạm dừng → tập trung;
+    - tổng kết buổi: tiến bộ hoặc lên hạng → chiến thắng, còn lại → tự hào;
+    - ảnh `sim-rest-card-pant-focus.jpg`.
