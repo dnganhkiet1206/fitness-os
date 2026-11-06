@@ -185,6 +185,8 @@ public enum KoaRender {
     /// Quay mặt 2.5D (`Options.turn`), và vùng của nút đang vẽ (mặt, tai, tay, chân, thân).
     var turn = 0.0
     var turnRegion: KoaTurn.Region?
+    /// Khi quay: tay phía xa vẽ sau thân, tay gần vẽ trước (0 cả hai, 1 chỉ tay xa, 2 chỉ tay gần).
+    var armSide = 0
   }
 
   static func isEyeGroup(_ n: KoaScene.Node) -> Bool { n.kids?.contains { $0.id == "pupil_left" } ?? false }
@@ -271,9 +273,18 @@ public enum KoaRender {
     var kids: [Element] = []
     // đi: bàn chân gần người xem vẽ sau (đè lên chân kia)
     let order = n.id == "LEGS" && c.walk?.leftNear == true ? Array(l.kids.enumerated().reversed()) : Array(l.kids.enumerated())
+    // quay mặt: tay phía xa vẽ trước `TORSO` (nằm sau thân), tay gần vẽ ở chỗ cũ
+    let farArms = c.turn != 0 && n.id == "BODYRIG" ? l.kids.firstIndex { $0.node.cond == "armsIdle" } : nil
     for (i, k) in order {
+      if let a = farArms, k.node.id == "TORSO" {
+        var far = c
+        far.armSide = 1
+        kids += node(l.kids[a], far)
+      }
+      var kc = c
+      if farArms == i { kc.armSide = 2 }
       kids += node(
-        k, c, armPart: arms ? KoaMath.dressArmAt[i] : nil, armHidden: arms && KoaMath.dressArmHide.contains(i))
+        k, kc, armPart: arms ? KoaMath.dressArmAt[i] : nil, armHidden: arms && KoaMath.dressArmHide.contains(i))
     }
     // nụ cười đóng của cái liếc nằm TRONG `#FACE`, theo mọi thứ cái liếc làm
     if let g = c.gaze, c.swapMouth, n.id == "FACE", n.kids != nil { kids.append(smile(g.k)) }
@@ -501,12 +512,21 @@ public enum KoaRender {
     if c.turn != 0, let r = c.turnRegion, shape != nil, n.id != "torso_front",
       let p = r == .tuft ? KoaTurn.tuftBase : KoaTurn.anchor(n.t, n.a)
     {
+      if r == .arms, c.armSide != 0 {
+        let far = (p.x < 120) == (c.turn < 0)
+        if far != (c.armSide == 1) { return [] }
+      }
       switch KoaTurn.move(r, x: p.x, y: p.y, u: c.turn) {
       case .hidden: return []
       case .mat(let m): moved = [Element("G", matrix: m, kids: moved)]
       case .keep: break
       }
     }
+
+    if c.turn != 0, let id = n.id, case .string(let d)? = n.a?["d"], KoaTurn.crescentShift[id] != nil {
+      moved += KoaTurn.crescent(id: id, d: d, u: c.turn)
+    }
+    if c.turn != 0, n.id == "HEADRIG" { moved = [Element("G", matrix: KoaTurn.headMat(c.turn), kids: moved)] }
 
     if c.gaze == nil, let e = c.eyes, isEyeGroup(n) { return [Element("G", matrix: KoaMath.eyeMat(e), kids: moved)] }
     guard let g = c.gaze else { return moved }

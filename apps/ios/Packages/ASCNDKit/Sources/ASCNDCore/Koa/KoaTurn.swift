@@ -41,7 +41,7 @@ public enum KoaTurn {
   static let torso = (cx: 120.0, cy: 210.0, rx: 56.0, ry: 70.0)
   /// Mũi (và vệt sáng, lỗ mũi) nằm nhô trước mặt.
   static let noseBox = (x0: 105.0, x1: 135.0, y0: 84.0, y1: 124.0)
-  static let noseLift = 20.0
+  static let noseLift = 26.0
 
   /// Biến đổi cho một mảng có tâm (`x`, `y`) ở vùng `r`, độ quay `u` (−1…1).
   /// `nil` = không đổi; `hidden` = mảng đã quay ra sau, không vẽ.
@@ -76,6 +76,72 @@ public enum KoaTurn {
       let nx = 120 + (c - 120) * cos(phi) - dz * sin(phi)
       return .mat([1, 0, 0, 1, nx - c, 0])
     }
+  }
+
+  // MARK: - Đầu ngoảnh, bóng phía khuất
+
+  /// Đầu ngoảnh theo hướng quay: hàm / má đi theo nhiều, đỉnh đầu gần như đứng (nghiêng ngang quanh
+  /// đỉnh đầu). Dáng đầu đứng im thì mặt trông như mặt nạ trượt (soi 05/11).
+  static func headMat(_ u: Double) -> KoaMath.Mat {
+    let top = 45.0, chin = 179.0
+    let k = 5 * u / (chin - top)
+    return [1, 0, k, 1, 1.5 * u - k * top, 0]
+  }
+
+  /// Độ dời của bản sao làm bóng (đơn vị hình): bóng = hình − bản sao dời về hướng quay, thành vệt
+  /// trăng khuyết ở phía sau mặt (má / gáy lộ ra khi quay).
+  static let crescentShift: [String: Double] = ["head_front": 18, "torso_front": 12]
+  static let crescentColour = "#8E98A3"
+  static let crescentOpacity = 0.28
+
+  /// Vệt bóng phía khuất cho `head_front` / `torso_front`: một `ClipPath` (chính hình ấy) và một lớp
+  /// tô `evenodd` (hình + bản sao dời). Rỗng khi không quay.
+  static func crescent(id: String, d: String, u: Double) -> [KoaRender.Element] {
+    guard u != 0, let s = crescentShift[id], let moved = translate(d, dx: s * u) else { return [] }
+    let clip = "koaTurn_\(id)"
+    return [
+      KoaRender.Element("ClipPath", ["id": .string(clip)], kids: [KoaRender.Element("Path", ["d": .string(d)])]),
+      KoaRender.Element(
+        "G", ["clipPath": .string("url(#\(clip))"), "opacity": .number(crescentOpacity * min(1, abs(u)))],
+        kids: [
+          KoaRender.Element(
+            "Path", ["d": .string(d + " " + moved), "fill": .string(crescentColour), "fillRule": .string("evenodd")])
+        ]),
+    ]
+  }
+
+  /// Dời một path tuyệt đối theo chiều ngang. `nil` khi có lệnh không đọc được.
+  static func translate(_ d: String, dx: Double) -> String? {
+    var out = "", cmd: Character = "M", idx = 0, token = ""
+    func fmt(_ v: Double) -> String { String(format: "%.2f", v) }
+    func emit() {
+      guard let v = Double(token) else { token = ""; return }
+      token = ""
+      let isX: Bool
+      switch cmd {
+      case "M", "L", "C", "Q", "S", "T": isX = idx % 2 == 0
+      case "H": isX = true
+      case "A": isX = idx % 7 == 5
+      default: isX = false
+      }
+      out += (isX ? fmt(v + dx) : fmt(v)) + " "
+      idx += 1
+    }
+    for ch in d {
+      if ch.isLetter, ch != "e" {
+        emit()
+        guard "MLHVCQSTAZ".contains(ch) else { return nil }
+        cmd = ch; idx = 0; out += String(ch)
+      } else if ch == "-" && !token.isEmpty && token.last != "e" {
+        emit(); token = "-"
+      } else if ch == "," || ch == " " || ch == "\n" {
+        emit()
+      } else {
+        token.append(ch)
+      }
+    }
+    emit()
+    return out
   }
 
   // MARK: - Tâm của một mảng

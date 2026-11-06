@@ -52,7 +52,8 @@ struct KoaTurnTests {
     let nose0 = straight["nose"]?.x ?? 0
     #expect((turned["nose"]?.x ?? 0) > nose0 + 20)
     #expect((back["nose"]?.x ?? 0) < nose0 - 20)
-    #expect(abs((turned["head_front"]?.x ?? 0) - (straight["head_front"]?.x ?? 0)) < 0.01, "dáng đầu không dời")
+    let headMove = (turned["head_front"]?.x ?? 0) - (straight["head_front"]?.x ?? 0)
+    #expect(headMove > 0 && headMove < 6, "đầu chỉ ngoảnh nhẹ theo, mặt trượt nhiều hơn")
   }
 
   @Test func walkingTurnsTheFaceNativelyAndRNKeepsItsShift() {
@@ -77,5 +78,34 @@ struct KoaTurnTests {
     #expect(abs(KoaRender.context(o, KoaRender.flags(o)).turn - KoaTurn.gazeGain) < 1e-9)
     o.dress = true
     #expect(KoaRender.context(o, KoaRender.flags(o)).turn == 0, "thử đồ: không quay")
+  }
+}
+
+extension KoaTurnTests {
+  static func count(_ e: KoaRender.Element, _ pred: (KoaRender.Element) -> Bool) -> Int {
+    (pred(e) ? 1 : 0) + e.kids.reduce(0) { $0 + count($1, pred) }
+  }
+
+  @Test func translateMovesOnlyXCoordinates() {
+    #expect(KoaTurn.translate("M10 20 L30 40 Z", dx: 5) == "M15.00 20.00 L35.00 40.00 Z")
+    #expect(KoaTurn.translate("M0 0 A18 23.5 0 0 1 100 88", dx: 2)?.contains("102.00 88.00") == true, "cung: chỉ dời điểm cuối")
+    #expect(KoaTurn.translate("M0 0 X1", dx: 1) == nil)
+  }
+
+  @Test func turningAddsFarSideShadeAndLeansTheHead() {
+    let flat = KoaRender.figure(Self.options(turn: 0)), turned = KoaRender.figure(Self.options(turn: 0.8))
+    let clips = { (e: KoaRender.Element) in Self.count(e) { $0.tag == "ClipPath" && $0.props["id"]?.text.hasPrefix("koaTurn_") == true } }
+    #expect(clips(flat) == 0)
+    #expect(clips(turned) == 2, "bóng phía khuất cho đầu và thân")
+    let lean = KoaTurn.headMat(1)
+    #expect(lean[2] > 0 && lean[0] == 1, "nghiêng ngang: hàm đi theo nhiều hơn đỉnh đầu")
+  }
+
+  @Test func farArmDrawsBehindTheBody() {
+    // mỗi tay vẽ đúng một lần khi quay, dù tách ra hai chỗ
+    let turned = KoaRender.figure(Self.options(turn: 0.8))
+    let arms = Self.count(turned) { $0.tag == "Path" && $0.props["d"]?.text.hasPrefix("M68 171") == true }
+    let armsStraight = Self.count(KoaRender.figure(Self.options(turn: 0))) { $0.tag == "Path" && $0.props["d"]?.text.hasPrefix("M68 171") == true }
+    #expect(arms == armsStraight)
   }
 }
