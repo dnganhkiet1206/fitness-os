@@ -45,3 +45,41 @@ struct KoaReactionTests {
     #expect(abs(KoaReaction.backOut(1) - 1) < 1e-9 && KoaReaction.backOut(0.7) > 1, "hiện dần có vượt đà")
   }
 }
+
+/// Bản diễn liền (05/11 lần 4): không đổi dáng, lớp theo đà tự tính, tiếng theo nhịp.
+struct KoaPerformanceTests {
+  @Test func everySceneIsOneTakeWithNoPoseSwaps() {
+    for scene in KoaReaction.Scene.allCases {
+      let fs = KoaPerformance.frames(scene)
+      #expect(fs.count == Int(KoaPerformance.duration(scene) / 1000 * KoaPerformance.hz) + 1)
+      // thân không nhảy cóc giữa hai khung liền nhau (không có cú đổi dáng)
+      for (a, b) in zip(fs, fs.dropFirst()) {
+        #expect(abs(a.walk.bob - b.walk.bob) < 8, "\(scene) — cú bật nhảy nhanh nhất khoảng 6 đơn vị một khung")
+        #expect(abs(a.walk.armRight - b.walk.armRight) < 16, "\(scene) — buông tạ + run tay tối đa ~14°, đổi dáng sẽ là ~90°")
+      }
+    }
+  }
+
+  @Test func headAndEarsFollowThroughAfterTheBodyStops() {
+    // cảnh kỷ lục: tiếp đất ở 2,42 s → đầu / tai còn đung đưa sau đó rồi lắng
+    let after = KoaPerformance.frame(.record, at: 2520)
+    #expect(abs(after.walk.earLag) > 0.3, "tai còn theo đà")
+    let settled = KoaPerformance.frame(.record, at: 4400)
+    #expect(abs(settled.walk.headLag) < 1.5, "rồi lắng")
+  }
+
+  @Test func eyesLeadTheHead() {
+    // mắt nhìn trước đầu: lúc liếc sang trái ở cảnh xong buổi, mắt đã sang trước
+    let f = KoaPerformance.frame(.done, at: 2050)
+    #expect(f.eyes.x < f.look.x)
+  }
+
+  @Test func soundsAreFewQuietAndOnTheBeat() {
+    for scene in KoaReaction.Scene.allCases {
+      let ss = KoaPerformance.sounds(scene)
+      #expect(ss.count <= 10, "tối giản")
+      #expect(ss.allSatisfy { $0.gain <= 1 && $0.name.hasPrefix("koa-rx-") && $0.t <= KoaPerformance.duration(scene) })
+    }
+    #expect(KoaPerformance.sounds(.record).contains { $0.t == 860 && $0.name == "koa-rx-record" }, "tiếng kỷ lục đúng lúc chớp")
+  }
+}
