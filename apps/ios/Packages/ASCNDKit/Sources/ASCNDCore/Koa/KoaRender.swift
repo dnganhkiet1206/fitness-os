@@ -618,12 +618,23 @@ public enum KoaRender {
     if n.id == "HEADRIG", w.headLag != 0 { return KoaGesture.rot(w.headLag, 120, 166) }
     if n.id == "ear_left", w.earLag != 0 || w.earLeft != 0 { return KoaGesture.rot(w.earLag - w.earLeft, 62, 92) }
     if n.id == "ear_right", w.earLag != 0 || w.earRight != 0 { return KoaGesture.rot(w.earLag + w.earRight, 178, 92) }
-    if n.bind == "armRankL" { return KoaGesture.rot(w.armLeft, KoaGesture.shoulderL.0, KoaGesture.shoulderL.1) }
+    if n.bind == "armRankL" {
+      let r = KoaGesture.rot(w.armLeft, KoaGesture.shoulderL.0, KoaGesture.shoulderL.1)
+      return armFlips(w.armLeft) ? KoaMath.mul(r, KoaGesture.flip(left: true)) : r
+    }
     // tay phải và đồ cầm trên tay phải đánh cùng nhau
     if n.bind == "armRankR" || n.animBind == "handAnim" {
-      return KoaGesture.rot(w.armRight, KoaGesture.shoulderR.0, KoaGesture.shoulderR.1)
+      let r = KoaGesture.rot(w.armRight, KoaGesture.shoulderR.0, KoaGesture.shoulderR.1)
+      return armFlips(-w.armRight) ? KoaMath.mul(r, KoaGesture.flip(left: false)) : r
     }
     return nil
+  }
+
+  /// Tay giơ lên quá ngưỡng này (độ) thì LẬT hình tay theo trục vai → bàn tay, như dáng `cheer` / `taDa`: tay của
+  /// bản vẽ cong để buông xuống, xoay lên mà không lật thì bàn tay ngược chiều (Kiệt 24/10, lại thấy 06/11 ở cảnh
+  /// phản ứng). Lật lúc tay đang vung nhanh nhất. Đi trong phòng tay chỉ đánh ~±20°, không chạm ngưỡng. Bản RN không lật.
+  public static let armFlipDeg = 50.0
+  static func armFlips(_ raise: Double) -> Bool { !KoaScene.rn && raise >= armFlipDeg
   }
 
   /// Mức vóc dáng của từng hạng, 0 → 1 (20/10, Kiệt duyệt `koa-rank-evolution.html`).

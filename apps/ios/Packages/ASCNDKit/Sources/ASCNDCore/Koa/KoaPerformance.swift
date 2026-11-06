@@ -81,7 +81,8 @@ public enum KoaPerformance {
     /// Tay quanh vai (độ): trái dương = giơ ra ngoài, phải âm = giơ ra ngoài.
     var armL: Track
     var armR: Track
-    /// Hai tay chữ V (`cheer`) 0…1.
+    /// Hai tay chữ V (`cheer`) 0…1. KHÔNG dùng trong cảnh phản ứng: `cheer` vẽ lớp tay ĐÈ lên đầu (`armsFront`),
+    /// nhảy ăn mừng thì cả cánh tay phủ lên hai má (Kiệt 06/11). Ăn mừng = tay rig dang ≤ `maxArmRaise`.
     var cheer: Track
     /// Tai cụp (độ, dương = cụp xuống).
     var ears: Track
@@ -280,11 +281,12 @@ public enum KoaPerformance {
                Key(4000, 1)),
         lean: T(Key(0, 0), Key(800, -1), Key(1100, -0.4), Key(1750, 1.2), Key(2000, -0.8), Key(2450, 1), Key(2800, 0)),
         sway: T(Key(0, 0), Key(2900, 0), Key(3300, 0.6), Key(3700, -0.4), Key(4100, 0.4)),
-        armL: T(Key(0, 2), Key(800, 8), Key(1700, -20), Key(1850, -26), Key(2900, 0), Key(3200, 10), Key(4500, 6)),
+        armL: T(Key(0, 2), Key(800, 8), Key(1700, -20), Key(1850, -26), Key(2060, 90), Key(2220, 84), Key(2420, 70),
+                Key(2620, 90), Key(2900, 30), Key(3200, 10), Key(4500, 6)),
         armR: T(Key(0, -8), Key(820, -86, .out), Key(1050, -88), Key(1600, -50, .inOut), Key(1800, 22),
-                Key(2900, 0), Key(3000, 12), Key(3220, -90), Key(3340, -84), Key(3460, -66), Key(3560, -74),
+                Key(2060, -90), Key(2220, -84), Key(2420, -70), Key(2620, -90), Key(2900, 0), Key(3000, 12), Key(3220, -90), Key(3340, -84), Key(3460, -66), Key(3560, -74),
                 Key(3740, -90), Key(3860, -85), Key(4100, -72), Key(4500, -74)),
-        cheer: T(Key(0, 0), Key(1820, 0), Key(2030, 1.06), Key(2150, 1), Key(2700, 1), Key(2950, 0.0, .inOut)),
+        cheer: zero,
         ears: T(Key(0, 0), Key(900, -6), Key(1100, -2), Key(2000, -8), Key(2600, 0)),
         lookX: T(Key(0, 0), Key(2900, 0), Key(3200, 0.45), Key(4500, 0.3)),
         lookY: T(Key(0, -0.3), Key(850, -0.45), Key(950, -0.65, .out), Key(1500, -0.3), Key(1750, 0.25), Key(2000, -0.4),
@@ -315,11 +317,13 @@ public enum KoaPerformance {
                 Key(4400, 0)),
         armL: T(Key(0, -4), Key(1300, -6), Key(1800, 8), Key(2300, 2), Key(3200, 4), Key(3300, -8), Key(3560, 90),
                 Key(3700, 84), Key(4400, 86),
-                Key(4650, -24), Key(4800, 0)),
+                Key(4650, -24), Key(4880, 90), Key(5050, 85), Key(5320, 72), Key(5550, 90), Key(6200, 84), Key(6800, 90),
+                Key(7500, 88)),
         armR: T(Key(0, 4), Key(1300, 6), Key(1800, -8), Key(2300, -2), Key(3200, -4), Key(3300, 8), Key(3560, -90),
                 Key(3700, -84), Key(4400, -86),
-                Key(4650, 24), Key(4800, 0)),
-        cheer: T(Key(0, 0), Key(4720, 0), Key(4930, 1.06), Key(5050, 1), Key(6300, 1)),
+                Key(4650, 24), Key(4880, -90), Key(5050, -85), Key(5320, -72), Key(5550, -90), Key(6200, -84), Key(6800, -90),
+                Key(7500, -88)),
+        cheer: zero,
         ears: T(Key(0, 14), Key(1300, 15), Key(1900, -6, .out), Key(2400, 0), Key(4600, -6), Key(5400, 0)),
         lookX: T(Key(0, 0), Key(1900, 0), Key(2300, -0.65), Key(2750, -0.55), Key(3000, 0.25, .out), Key(3600, 0.1),
                  Key(4400, 0)),

@@ -130,3 +130,33 @@ extension KoaPerformanceFixTests {
     }
   }
 }
+
+extension KoaPerformanceFixTests {
+  @Test func noGestureDrawsArmsOverTheFace() {
+    // `cheer` / `taDa` vẽ lớp tay đè lên đầu (`armsFront`): trong cảnh phản ứng tay phải nằm sau đầu đúng lớp
+    #expect(KoaGesture.cheer.armsFront, "lý do: cheer vẽ tay trên mặt")
+    for scene in KoaReaction.Scene.allCases {
+      #expect(KoaPerformance.frames(scene).allSatisfy { $0.cheer == 0 }, "\(scene)")
+    }
+    // vẫn ăn mừng bằng tay dang rộng lúc nhảy
+    #expect(KoaPerformance.frame(.done, at: 5600).walk.armLeft > 80)
+  }
+}
+
+extension KoaPerformanceFixTests {
+  @Test func raisedRigArmsFlipLikeTheCheerGesture() {
+    // tay giơ cao lật hình (định thức âm) để bàn tay đúng chiều; tay đánh khi đi thì không
+    #expect(KoaRender.armFlips(90) && KoaRender.armFlips(KoaRender.armFlipDeg))
+    #expect(!KoaRender.armFlips(20) && !KoaRender.armFlips(-30))
+    var w = KoaWalk.Pose()
+    w.armLeft = 90
+    func det(_ m: KoaMath.Mat) -> Double { m[0] * m[3] - m[1] * m[2] }
+    guard let node = try? JSONDecoder().decode(KoaScene.Node.self, from: Data(#"{"t":"g","bind":"armRankL"}"#.utf8)) else {
+      Issue.record("không dựng được nút"); return
+    }
+    #expect(KoaRender.walkMat(node, w).map(det).map { $0 < 0 } == true)
+    w.armLeft = 20
+    #expect(KoaRender.walkMat(node, w).map(det).map { $0 > 0 } == true)
+    #expect(KoaScene.$rn.withValue(true) { !KoaRender.armFlips(90) }, "RN không lật")
+  }
+}
