@@ -57,3 +57,13 @@ Phần "kỹ thuật xoay" dưới đây là kỹ thuật phổ biến của rig
 - **Mặt nghiêng và sau lưng là hình vẽ tay riêng**, dùng mẫu 3D v4 chỉ làm khung tỉ lệ. Chuyển sang chúng bằng một cú quay nhanh có che (đầu quay trước, thân theo sau), giống cách các rig 2D làm.
 
 Ảnh: `gallery/v5-2.5d-turn/`.
+
+## Chuyển động (05/11, Kiệt: "koa chuyển động không có animation")
+
+- **Hoà trộn, không cắt:** state machine của Rive nối các trạng thái và **hoà trộn** khi chuyển.
+- **Đầu và thân tách rời.**
+- **Nhiều lớp chạy song song:** thở, chớp, liếc, cảm xúc, miệng.
+- **Nhịp nghỉ trộn ngẫu nhiên** (8 × 8).
+- **Tiết chế** (Chuck Jones).
+
+Nguồn: https://rive.app/blog/duolingo-s-ai-powered-video-call-brings-lily-to-life · https://blog.duolingo.com/world-character-visemes. Áp dụng ở `gallery/v9-reaction-storyboard/v3-motion/`.

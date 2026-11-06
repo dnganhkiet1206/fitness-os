@@ -34,7 +34,7 @@ import SwiftUI
                            endRadius: geo.size.width * 0.9)
               .ignoresSafeArea()
             effects(shot, p: p, t: local - shotStart, size: geo.size)
-            koa(shot, p: p, t: local, size: geo.size)
+            koa(shots, i, p: p, t: local, since: local - shotStart, size: geo.size)
             ring(shot, p: p)
             overlay(shot, p: p, size: geo.size)
             if shot.effects.contains(.flash), p < 0.16 { Color.white.opacity(0.85 * (1 - p / 0.16)).ignoresSafeArea() }
@@ -66,27 +66,60 @@ import SwiftUI
     }
 
     // MARK: Koa + máy quay
+    //
+    // Như state machine của Duolingo (Rive): không cắt cứng giữa các dáng. Máy lướt liền sang khung mới
+    // (`KoaReaction.blendMs`), dáng cũ mờ dần sang dáng mới, dáng biểu cảm hiện dần có vượt đà, thân nảy theo
+    // đà sau mỗi lần đổi, đầu diễn riêng (nhìn / gật), trên nền thở + chớp mắt sẵn có của `KoaFigureView`.
 
-    private func koa(_ s: KoaReaction.Shot, p: Double, t: Double, size: CGSize) -> some View {
+    /// Khung máy của một khung hình ở tiến độ `p`: (độ phóng, tâm phóng y).
+    private func framing(_ s: KoaReaction.Shot, _ p: Double) -> (zoom: Double, anchorY: Double) {
       let e = KoaReaction.ease(p)
+      var z = s.zoom.0 + (s.zoom.1 - s.zoom.0) * e
+      if s.motion == .intoRing { z = 1 - 0.58 * e }
+      return s.focus == .face ? (z * 2.15, 0.32) : (z, 0.6)
+    }
+
+    private func figure(_ s: KoaReaction.Shot, p: Double, gestureAmount: Double, fig: Double) -> some View {
+      let e = KoaReaction.ease(p)
+      let turn = s.turn.0 + (s.turn.1 - s.turn.0) * e
+      let lx = s.look.from.0 + (s.look.to.0 - s.look.from.0) * e
+      let ly = s.look.from.1 + (s.look.to.1 - s.look.from.1) * e
+      return KoaFigureView(
+        expression: s.expression, pose: s.pose, gesture: s.gesture, size: fig, animated: true, stage: true,
+        headLook: KoaMath.Gaze(x: lx, y: ly, k: 1), turn: turn, gestureAmount: gestureAmount
+      )
+    }
+
+    private func koa(_ shots: [KoaReaction.Shot], _ i: Int, p: Double, t: Double, since: Double, size: CGSize) -> some View {
+      let s = shots[i]
+      let prev = i > 0 ? shots[i - 1] : nil
       let fig = min(size.width * 0.82, 340.0)
-      var zoom = s.zoom.0 + (s.zoom.1 - s.zoom.0) * e
-      var anchor = UnitPoint(x: 0.5, y: 0.6)
-      if s.focus == .face { zoom *= 2.15; anchor = UnitPoint(x: 0.5, y: 0.32) }
+      // máy: lướt từ khung cuối của cảnh trước sang khung này
+      var f = framing(s, p)
+      if let prev, !s.cut, since < KoaReaction.blendMs, !reduceMotion {
+        let k = 1 - pow(1 - since / KoaReaction.blendMs, 3)
+        let a = framing(prev, 1)
+        f = (a.zoom + (f.zoom - a.zoom) * k, a.anchorY + (f.anchorY - a.anchorY) * k)
+      }
+      // thân: chuyển động của khung + nảy theo đà sau khi đổi khung
       let body = KoaReaction.body(s.motion, p)
+      let settle = s.motion == .jump || s.motion == .plop || reduceMotion ? (sx: 1.0, sy: 1.0) : KoaReaction.settle(since)
       var dx = 0.0, dy = body.dy * fig * 1.25
       if s.effects.contains(.shake), p < 0.4, !reduceMotion {
         let a = (1 - p / 0.4) * 7
         dx += sin(t * 0.09) * a; dy += cos(t * 0.11) * a
       }
-      var ringK = 0.0
-      if s.motion == .intoRing { ringK = e; zoom = 1 - 0.58 * e }
-      let turn = s.turn.0 + (s.turn.1 - s.turn.0) * e
-      return KoaFigureView(
-        expression: s.expression, pose: s.pose, gesture: s.gesture, size: fig, animated: true, stage: true, turn: turn
-      )
-      .scaleEffect(x: body.sx, y: body.sy, anchor: .bottom)
-      .scaleEffect(reduceMotion ? 1 : zoom, anchor: anchor)
+      let ringK = s.motion == .intoRing ? KoaReaction.ease(p) : 0
+      // dáng: đổi tư thế không mờ chồng hai hình (ra "bóng ma", soi 05/11) mà GIẤU cú đổi trong động tác:
+      // thân nén xuống (`poseSquashMs`), đổi dáng lúc nén sâu nhất, rồi nảy lên có vượt đà
+      let posed = prev.map { $0.pose != s.pose || $0.gesture != s.gesture } ?? false
+      let squash = posed && !reduceMotion ? KoaReaction.poseSwap(since) : (sx: 1.0, sy: 1.0, old: false)
+      let gIn = s.gesture != nil && prev?.gesture != s.gesture && !reduceMotion
+        ? KoaReaction.backOut((since - KoaReaction.poseSquashMs) / KoaReaction.gestureInMs) : 1
+      let shown = squash.old ? (prev ?? s) : s
+      return figure(shown, p: squash.old ? 1 : p, gestureAmount: squash.old ? 1 : max(0, gIn), fig: fig)
+      .scaleEffect(x: body.sx * settle.sx * squash.sx, y: body.sy * settle.sy * squash.sy, anchor: .bottom)
+      .scaleEffect(reduceMotion ? 1 : f.zoom, anchor: UnitPoint(x: 0.5, y: f.anchorY))
       .offset(x: dx, y: dy - ringK * size.height * 0.2)
       .position(x: size.width / 2, y: size.height * 0.54)
     }

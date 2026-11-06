@@ -35,4 +35,13 @@ struct KoaReactionTests {
     #expect(KoaReaction.body(.jump, 0.62).sy < 1, "tiếp đất nén")
     #expect(KoaReaction.body(.jump, 0.9) == (0, 1, 1))
   }
+
+  @Test func poseChangesHideUnderASquashInsteadOfACrossfade() {
+    #expect(KoaReaction.poseSwap(0).old && KoaReaction.poseSwap(60).sy < 0.95, "nén xuống, còn dáng cũ")
+    let pop = KoaReaction.poseSwap(KoaReaction.poseSquashMs + 1)
+    #expect(!pop.old && pop.sy < 1, "đổi dáng lúc nén sâu nhất rồi nảy lên")
+    #expect(KoaReaction.poseSwap(KoaReaction.poseSquashMs + 90).sy > 1, "vượt đà")
+    #expect(KoaReaction.poseSwap(2000) == (1, 1, false))
+    #expect(abs(KoaReaction.backOut(1) - 1) < 1e-9 && KoaReaction.backOut(0.7) > 1, "hiện dần có vượt đà")
+  }
 }
