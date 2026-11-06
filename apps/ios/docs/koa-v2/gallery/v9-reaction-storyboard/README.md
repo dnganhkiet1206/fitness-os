@@ -1,5 +1,35 @@
 # `v9-reaction-storyboard/`: Koa phản ứng toàn màn hình (storyboard mock, 05/11/2026)
 
+## v2 (`v2-app/`): Koa vector thật của app
+
+Kiệt xem v1: "sao nhìn kì vậy". Lý do:
+- v1 dùng ảnh render từ mẫu 3D (chỉ là khung tỉ lệ), nên lệch nét Koa: mặt trượt ra mép, tay như sợi mì, dáng ngồi thành cục tròn, không có đèn;
+- góc cao / thấp làm méo cái đầu to;
+- Koa không cử động, chỉ phóng ảnh tĩnh rồi cắt.
+
+**v2 phát cùng storyboard bằng màn Debug trong app:**
+- màn `KoaReactionPreview`, mở bằng `SIMCTL_CHILD_ASCND_DEBUG_KOA_REACTION=set|record|done`;
+- dữ liệu `ASCNDCore/Koa/KoaReaction.swift`;
+- Koa vẽ bằng `KoaFigureView`: đúng nét, có đèn, chớp mắt, mặt đổi mượt, quay mặt 2.5D;
+- "máy quay" chỉ đẩy / lùi trên hình 2D;
+- nhảy có nhún, bay và tiếp đất nén;
+- video quay thẳng từ simulator iPhone 17 Pro.
+
+| Tệp | Cảnh |
+|---|---|
+| `v2-app/koa-reaction-set.mp4` | Ghi set xong ≈ 2,5 s (một vòng, kèm 0,9 s nghỉ giữa vòng lặp) |
+| `v2-app/koa-reaction-record.mp4` | Phá kỷ lục ≈ 4,1 s |
+| `v2-app/koa-reaction-done.mp4` | Xong buổi ≈ 6 s |
+| `v2-app/*-sheet.jpg` | 4 khung / giây |
+
+**Còn (v2):**
+- **Dáng ngồi:** dáng "thư giãn" của app ở cỡ này trông vẫn như đứng, cú "ngồi phịch" chưa đọc ra. Cần vẽ dáng ngồi rõ hơn.
+- **Dáng `cheer` / `taDa` có mặt riêng:** mặt sao, mặt cười, không phải mặt gym.
+- **Chưa có âm thanh;** rung chỉ có trên máy thật.
+
+## v1 (đã bỏ): ảnh render 3D
+
+
 Kiệt: "phản ứng của Koa sẽ là full màn hình có storyboard đầy đủ" (sau khi gắn mặt gym vào lúc ghi set / xong bài).
 
 **Mock để duyệt, chưa có trong app.**
