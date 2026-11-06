@@ -624,18 +624,32 @@ public enum KoaRender {
     if n.id == "ear_right", w.earLag != 0 || w.earRight != 0 { return KoaGesture.rot(w.earLag + w.earRight, 178, 92) }
     if n.bind == "armRankL" {
       let r = KoaGesture.rot(w.armLeft, KoaGesture.shoulderL.0, KoaGesture.shoulderL.1)
-      return w.flipRaisedArms && armFlips(w.armLeft) ? KoaMath.mul(r, KoaGesture.flip(left: true)) : r
+      guard w.flipRaisedArms, armFlips(w.armLeft) else { return r }
+      return KoaMath.mul(KoaMath.mul(shoulderTuck(w.armLeft), r), KoaGesture.flip(left: true))
     }
     // tay phải và đồ cầm trên tay phải đánh cùng nhau
     if n.bind == "armRankR" || n.animBind == "handAnim" {
       let r = KoaGesture.rot(w.armRight, KoaGesture.shoulderR.0, KoaGesture.shoulderR.1)
-      return w.flipRaisedArms && armFlips(-w.armRight) ? KoaMath.mul(r, KoaGesture.flip(left: false)) : r
+      guard w.flipRaisedArms, armFlips(-w.armRight) else { return r }
+      return KoaMath.mul(KoaMath.mul(shoulderTuck(-w.armRight), r), KoaGesture.flip(left: false))
     }
     return nil
   }
 
   /// Đầu nghiêng theo đà quá 1° thì lấp khe cổ. Chỉ native; dáng đứng yên / đi thường (đầu thẳng) không đổi.
-  static func neckShows(_ w: KoaWalk.Pose?) -> Bool { !KoaScene.rn && abs(w?.headLag ?? 0) > 1 }
+  /// Tay giơ: nhấc cả cánh tay lên (tối đa 6 đơn vị, đủ cao ở 45°) để gốc vai giấu dưới cằm — mép trên cánh tay
+  /// nằm thấp hơn cằm để lộ một mũi tối giữa tay và cằm (Kiệt khoanh, 06/11).
+  static func shoulderTuck(_ raise: Double) -> KoaMath.Mat {
+    KoaMath.opMat(KoaScene.Op("t", [0, -6 * min(1, max(0, raise) / 45)]))
+  }
+
+  /// 06/11 (lần 2): cả khi tay rig đang giơ (đã lật) — mép trên cánh tay gặp cằm để lộ khe tối mảnh ở vai
+  /// (Kiệt khoanh); cùng mảng vai / gáy đó lấp được.
+  static func neckShows(_ w: KoaWalk.Pose?) -> Bool {
+    guard !KoaScene.rn, let w else { return false }
+    let raised = w.flipRaisedArms && (armFlips(w.armLeft) || armFlips(-w.armRight))
+    return abs(w.headLag) > 1 || raised
+  }
 
   /// Tay giơ lên quá ngưỡng này (độ) thì LẬT hình tay theo trục vai → bàn tay, như dáng `cheer` / `taDa`: tay của
   /// bản vẽ cong để buông xuống, xoay lên mà không lật thì bàn tay ngược chiều (Kiệt 24/10, lại thấy 06/11 ở cảnh

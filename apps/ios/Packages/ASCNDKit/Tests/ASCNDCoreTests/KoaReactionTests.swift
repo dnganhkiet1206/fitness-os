@@ -186,6 +186,12 @@ extension KoaPerformanceFixTests {
     var w = KoaWalk.Pose()
     w.headLag = 3
     #expect(KoaRender.neckShows(w) && !KoaRender.neckShows(KoaWalk.Pose()))
+    var up = KoaWalk.Pose()
+    up.flipRaisedArms = true
+    up.armLeft = 50
+    #expect(KoaRender.neckShows(up), "tay giơ: lấp khe vai")
+    up.flipRaisedArms = false
+    #expect(!KoaRender.neckShows(up), "chạy kéo thẻ: không đổi")
     #expect(KoaScene.$rn.withValue(true) { !KoaRender.neckShows(w) })
   }
 }
