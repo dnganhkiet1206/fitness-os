@@ -14,7 +14,17 @@ public enum KoaFlags {
     /// "No no no" khi bị bấm mũi nhiều lần (Kiệt 04/11): phụng phịu — mắt lim dim, mày cụp, mếu; ghép
     /// từ mảnh có sẵn. Dỗi yêu, không chau mày giận.
     case nope
+    /// Mặt tập gym vẽ thêm (05/11, Kiệt duyệt thư viện storyboard): nghiến răng gồng, phồng má thở ra, hét
+    /// chiến thắng, tập trung, thở dốc lè lưỡi, tự hào nhếch mép. Vẽ trọn mặt trong một cờ `faceGym…`
+    /// (`tools/koa-wardrobe/build.py` ← `docs/koa-v2/blender/koa_faces_gym.py`).
+    case grit, puff, roar, focus, pant, smug
   }
+
+  /// Biểu cảm tập gym vẽ thêm → cờ trọn mặt của nó.
+  public static let gymFace: [Expression: String] = [
+    .grit: "faceGymGrit", .puff: "faceGymPuff", .roar: "faceGymRoar", .focus: "faceGymFocus", .pant: "faceGymPant",
+    .smug: "faceGymSmug",
+  ]
 
   public enum Pose: String, Sendable, Hashable, CaseIterable {
     case idle, turn34, running, lifting, stretching, relaxing
@@ -42,6 +52,8 @@ public enum KoaFlags {
     .tired: "MỆT MỎI", .angry: "TỨC GIẬN", .delighted: "THÍCH THÚ", .happytired: "VUI MÀ MỆT", .strain: "GỒNG SỨC",
     .plead: "VAN NÀI", .meditate: "THIỀN", .content: "THƯ THÁI", .warm: "MỈM CƯỜI", .sheepish: "ÁI NGẠI",
     .sleepy: "BUỒN NGỦ", .thinking: "SUY NGHĨ", .say1: "NÓI 1", .say2: "NÓI 2", .say3: "NÓI 3", .tease: "THÁCH ĐỂU",
+    .nope: "PHỤNG PHỊU", .grit: "NGHIẾN RĂNG", .puff: "PHỒNG MÁ", .roar: "CHIẾN THẮNG", .focus: "TẬP TRUNG",
+    .pant: "THỞ DỐC", .smug: "TỰ HÀO",
   ]
   public static let poseLabel: [Pose: String] = [
     .idle: "ĐỨNG YÊN", .turn34: "TURNAROUND 3/4", .running: "CHẠY BỘ", .lifting: "TẬP TẠ", .stretching: "GIÃN CƠ",
@@ -95,7 +107,9 @@ public enum KoaFlags {
   ]
 
   /// Nét mặt nhắm mắt: không có gì để chớp, không được ép chớp.
-  public static func eyesClosed(_ e: Expression?) -> Bool { e == .grin || e == .warm || e == .meditate }
+  public static func eyesClosed(_ e: Expression?) -> Bool {
+    e == .grin || e == .warm || e == .meditate || e == .puff || e == .roar
+  }
 
   /// `koaFlags`.
   public static func flags(_ e: Expression, _ p: Pose, worn: Worn = [:]) -> Flags {
@@ -154,6 +168,8 @@ public enum KoaFlags {
     if e == .say1 { f["mouthSay1"] = b(true) }
     if e == .say2 { f["mouthSay2"] = b(true) }
     if e == .say3 { f["mouthSay3"] = b(true) }
+    // Mặt gym vẽ thêm (05/11): mắt / mày / miệng gốc đều tắt (không có trong `openEyes` và các cờ trên).
+    if let face = gymFace[e] { f[face] = b(true) }
     f["armsIdle"] = b(p == .idle || turn)
     f["poseRun"] = b(run)
     f["turnedView"] = b(run || turn)

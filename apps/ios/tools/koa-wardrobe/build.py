@@ -977,6 +977,21 @@ face_over("mouthSay3", [
     P("M106 132 Q120 137 134 132 Q131 140 120 141 Q109 140 106 132 Z", fill=INK),
     E(120, 138.5, 7, 1.8, fill=TONGUE)])
 
+# ---- Mặt tập gym vẽ thêm (05/11, Kiệt duyệt thư viện storyboard `docs/koa-v2/gallery/v8-pose-library/`:
+# "Đạt, đưa vào app"). Một nguồn duy nhất: `docs/koa-v2/blender/koa_faces_gym.py`. Mỗi mặt là TRỌN mắt / mày /
+# miệng / dấu phụ trong một cờ `faceGym<Tên>`; biểu cảm ấy tắt mắt, mày, miệng gốc (mũi và má gốc vẫn vẽ).
+sys.path.insert(0, str(ROOT / "docs/koa-v2/blender"))
+from koa_faces_gym import FACES as GYM_FACES
+def _short(dd):
+    return re.sub(r"-?\d+\.\d{3,}", lambda m: f"{float(m.group(0)):.2f}".rstrip("0").rstrip("."), dd)
+def gym_shape(sh):
+    a = {"fill": sh.get("fill", "none")}
+    if sh.get("stroke"):
+        a.update(stroke=sh["stroke"], stroke_width=sh["width"], stroke_linecap="round", stroke_linejoin="round")
+    return P(_short(sh["d"]), **a)
+for _name, _shapes in GYM_FACES.items():
+    face_over("faceGym" + _name.capitalize(), [gym_shape(sh) for sh in _shapes])
+
 # 1. Thân: torso_front đứng → 6 biến thể theo hạng (hạng 0 = nguyên bản).
 torso_stand = next(n for n in walk(nodes[3]) if n.get('if') == 'torsoStand' and any(k.get('id') == 'torso_front' for k in n.get('kids', [])))
 ti = next(i for i, k in enumerate(torso_stand['kids']) if k.get('id') == 'torso_front')

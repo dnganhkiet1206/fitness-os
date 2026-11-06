@@ -90,3 +90,19 @@ python3 $B/koa_storyboard_page.py OUT/poses OUT/faces OUT/library
 - Storyboarder (Wonder Unit, MIT có ngoại lệ) để ghép khung: https://github.com/wonderunit/storyboarder. Ảnh trong `poses/` kéo thẳng vào được.
 
 **Biểu cảm:** `../../DUOLINGO_RESEARCH.md`.
+
+## Đã vào app (05/11, Kiệt: "Đạt, đưa vào app")
+
+- **6 biểu cảm mới** là `KoaFlags.Expression`: `.grit`, `.puff`, `.roar`, `.focus`, `.pant`, `.smug`.
+  - Mỗi mặt là một lớp `faceGym…` sinh từ `koa_faces_gym.py` qua `tools/koa-wardrobe/build.py`, nên chỉ có một nguồn.
+  - Mắt, mày, miệng gốc tắt; mũi và má gốc giữ.
+  - Bản RN không đổi.
+- **Hành vi:**
+  - mặt nhắm (`puff`, `roar`) không bị ép chớp;
+  - khi đổi mặt, cả lớp mặt gym đổi dưới cú chớp như mắt;
+  - dáng (`gesture`) có mặt riêng thì tắt lớp mặt gym;
+  - quay mặt 2.5D trượt theo như mặt thường.
+- **Ảnh:** `sim-spec-sheet-gym-faces.jpg`, bảng spec Debug trên simulator.
+- **Còn:**
+  - mắt của 4 mặt mắt mở (`grit`, `focus`, `pant`, `smug`) là lớp vẽ riêng: chưa chớp, chưa nhìn theo (`KoaGaze`);
+  - chưa gắn vào sự kiện nào trong app (Today, phòng, ăn mừng): mới có trong bảng spec.
