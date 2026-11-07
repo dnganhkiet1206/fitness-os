@@ -104,3 +104,51 @@ struct KoaRepairStageTests {
     #expect(cues.allSatisfy { $0.t >= 0 && $0.t <= KoaRepairScene.Stage.duration })
   }
 }
+
+@Suite("KoaRepairScene.Floor")
+struct KoaRepairFloorTests {
+  let F = KoaRepairScene.Floor.self
+  var shots: [KoaRepairScene.Shot] { F.shots() }
+
+  @Test("vào và ra cảnh ở giữa bục, máy toàn cảnh; khung cuối như phòng")
+  func entersAndLeavesOnStage() {
+    let all = shots
+    for s in [all[0], all[all.count - 1]] {
+      #expect(abs(s.x - 195) < 1)
+      #expect(abs(s.feet - 412) < 1)
+      #expect(abs(s.camera.zoom - 1) < 0.01)
+    }
+    let last = all[all.count - 1]
+    #expect((last.bubble?.alpha ?? 0) < 0.01)
+    #expect(last.expression == .happy)
+    #expect(last.floor.angle < 0.3)
+    #expect(last.floor.nailSink == 1)
+  }
+
+  @Test("ba cú búa: đầu búa chạm đúng đầu đinh (lệch < 1,5 đơn vị)")
+  func hammerHitsTheNail() {
+    let all = shots
+    let nail = all.last!.floor.nailX!, top = KoaRepairScene.roomY(F.pivotPx.y - 6)
+    for h in [10.9, 11.3, 11.8] {
+      let i = Int(((h - F.start) * 30).rounded())
+      let head = F.hammerHead(all[i], t: Double(i) / 30 + F.start)!
+      #expect(abs(head.x - nail) < 1.5)
+      #expect(abs(head.y - top) < 1.5)
+    }
+  }
+
+  @Test("ván bật lúc đầu cảnh, nằm khi Koa giẫm, bật lại khi bước ra, phẳng sau khi đóng")
+  func plankSprings() {
+    #expect(F.plankAngle(F.start) > 10)
+    #expect(F.plankAngle(8.2) < 0.5)            // Koa đứng trên ván
+    #expect(F.plankAngle(8.8) > 10)             // bước ra: bật lại
+    #expect(F.plankAngle(13) < 0.5)
+  }
+
+  @Test("tiếng theo thứ tự, nằm trong cảnh")
+  func cuesOrdered() {
+    let cues = F.cues
+    #expect(cues.map(\.t) == cues.map(\.t).sorted())
+    #expect(cues.allSatisfy { $0.t >= 0 && $0.t <= F.duration })
+  }
+}

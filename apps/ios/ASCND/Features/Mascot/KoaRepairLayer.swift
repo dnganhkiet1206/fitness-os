@@ -37,7 +37,9 @@ struct KoaRepairLayer: View {
               c.scaleBy(x: k, y: k)
               if item == .board { drawBoard(&c, s, t: t, behindKoa: true) }
               if item == .stage { drawStage(&c, s.stage) }
+              if item == .floor { drawFloor(&c, s.floor, behindKoa: true) }
               drawKoa(&c, s, k: k, t: t)
+              if item == .floor { drawFloor(&c, s.floor, behindKoa: false) }
               if let p = s.stage.flyingTube {
                 var f = c
                 f.translateBy(x: p.x, y: p.y)
@@ -127,6 +129,14 @@ struct KoaRepairLayer: View {
         g.rotate(by: .degrees(angle))
         g.scaleBy(x: 0.5 * scale, y: 0.5 * scale)
         drawGlueTube(&g)
+        f.fill(Path(ellipseIn: CGRect(x: paw.x - 8.5, y: paw.y - 7, width: 17, height: 14)), with: .color(Color(red: 0.75, green: 0.78, blue: 0.81)))
+      case let .hammer(angle):
+        // búa trong hình 240 của Koa (storyboard: hình 480, búa cỡ 0,8 → 0,4)
+        var g = f
+        g.translateBy(x: paw.x, y: paw.y + 2)
+        g.rotate(by: .degrees(angle))
+        g.scaleBy(x: 0.4, y: 0.4)
+        Self.drawHammer(&g)
         f.fill(Path(ellipseIn: CGRect(x: paw.x - 8.5, y: paw.y - 7, width: 17, height: 14)), with: .color(Color(red: 0.75, green: 0.78, blue: 0.81)))
       default: break
       }
@@ -252,6 +262,47 @@ struct KoaRepairLayer: View {
         if u > 0, u < 1 { drawSpark(&c, at: CGPoint(x: rim.x + p.0, y: rim.y + p.1), r: len(p.2) * sin(.pi * u)) }
       }
     }
+  }
+
+  // MARK: - Ván sàn
+
+  private func drawFloor(_ c: inout GraphicsContext, _ f: KoaRepairScene.FloorState, behindKoa: Bool) {
+    let F = KoaRepairScene.Floor.self
+    if behindKoa {
+      if f.hammerOnFloor {
+        let h = r(F.hammerFloorPx.x, F.hammerFloorPx.y)
+        var g = c
+        g.translateBy(x: h.x, y: h.y)
+        g.rotate(by: .degrees(-75))
+        g.scaleBy(x: 0.7 / KoaRepairScene.pxPerUnit, y: 0.7 / KoaRepairScene.pxPerUnit)
+        Self.drawHammer(&g)
+      }
+      StudioBroken.plank(&c, angle: f.angle)
+      return
+    }
+    let nailY = r(0, F.pivotPx.y - 6).y
+    if let x = f.nailX {                                   // đinh trước chân Koa, đúng chỗ mặt búa chạm (đo)
+      let top = nailY - len(14 - 12 * f.nailSink)
+      c.fill(Path(CGRect(x: x - len(3), y: top, width: len(6), height: nailY - top)), with: .color(Color(red: 0.55, green: 0.59, blue: 0.63)))
+      c.fill(Path(ellipseIn: CGRect(x: x - len(9), y: top - len(3.5), width: len(18), height: len(7))), with: .color(Color(red: 0.66, green: 0.7, blue: 0.74)))
+      if f.spark > 0 { drawSpark(&c, at: CGPoint(x: x, y: nailY - len(10)), r: len(18) * f.spark) }
+    }
+    if let tw = f.twinkle {
+      let p = F.pivotPx
+      for (i, s) in [(p.x - 200, p.y - 30, 30.0), (p.x - 60, p.y - 40, 26), (p.x - 130, p.y - 70, 22)].enumerated() {
+        let u = KoaRepairScene.seg(tw, Double(i) * 0.07, Double(i) * 0.07 + 1.6)
+        if u > 0, u < 1 { drawSpark(&c, at: r(s.0, s.1), r: len(s.2) * sin(.pi * u)) }
+      }
+    }
+  }
+
+  /// Búa (đơn vị storyboard; đầu búa ở (0, −128)).
+  static func drawHammer(_ c: inout GraphicsContext) {
+    c.fill(Path(roundedRect: CGRect(x: -7, y: -118, width: 14, height: 128), cornerRadius: 7), with: .color(Color(red: 0.69, green: 0.48, blue: 0.26)))
+    c.fill(Path(roundedRect: CGRect(x: -7, y: -118, width: 5, height: 128), cornerRadius: 2), with: .color(Color(red: 0.79, green: 0.58, blue: 0.38)))
+    c.fill(Path(roundedRect: CGRect(x: -44, y: -150, width: 88, height: 44), cornerRadius: 10), with: .color(Color(red: 0.49, green: 0.54, blue: 0.59)))
+    c.fill(Path(roundedRect: CGRect(x: -44, y: -150, width: 88, height: 12), cornerRadius: 6), with: .color(Color(red: 0.64, green: 0.68, blue: 0.73)))
+    c.fill(Path(roundedRect: CGRect(x: 34, y: -150, width: 12, height: 44), cornerRadius: 4), with: .color(Color(red: 0.37, green: 0.42, blue: 0.46)))
   }
 
   /// Tuýp keo khổng lồ (đơn vị storyboard; miệng ở (0, 36)).

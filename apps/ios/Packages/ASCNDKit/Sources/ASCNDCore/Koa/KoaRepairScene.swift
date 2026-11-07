@@ -151,6 +151,7 @@ public enum KoaRepairScene {
     /// Trạng thái món đang sửa (mỗi món một kiểu).
     public var board = BoardState()
     public var stage = StageState()
+    public var floor = FloorState()
     public var puffs: [Puff] = []
     /// Chữ hiệu ứng ("cộc!", "tách!"), toạ độ phòng.
     public var pops: [Pop] = []
@@ -774,5 +775,282 @@ extension KoaRepairScene {
   static func local(_ s: Shot, _ x: Double, _ y: Double) -> Pt {
     let sc = KoaRoomMap.heroWidth * s.scale / 240
     return Pt(s.x + sc * s.stretchX * (x - 120), s.feet + 6 + sc * s.stretchY * (y - 240 * KoaMath.aspect))
+  }
+}
+
+// MARK: - Ván sàn bật (storyboard E, Kiệt duyệt 07/11)
+
+extension KoaRepairScene {
+  public struct FloorState: Sendable, Hashable {
+    /// Góc bật của ván (độ; đầu trái nhấc lên, xoay quanh đầu phải).
+    public var angle = 0.0
+    /// Búa còn nằm trên sàn.
+    public var hammerOnFloor = true
+    /// Đinh: x (toạ độ phòng) và độ lún 0…1.
+    public var nailX: Double?
+    public var nailSink = 0.0
+    /// Tia lửa ở đầu đinh 0…1.
+    public var spark = 0.0
+    /// Lấp lánh trên ván (giây kể từ lúc mừng).
+    public var twinkle: Double?
+  }
+
+  public enum Floor {
+    static let T: [String: Double] = [
+      "pop": 0.6, "look": 1.0, "ask": 2.2, "tap": 5.3, "yay": 5.7, "down": 6.5, "walk1": 7.3, "on1": 7.65, "stand1": 7.85,
+      "off": 8.4, "pop2": 8.6, "pick": 9.0, "got": 9.3, "back": 9.6, "on2": 9.85, "crouch": 10.3, "h1": 10.9, "h2": 11.3,
+      "h3": 11.8, "rise": 12.2, "tiptoe": 12.4, "safe": 13.25, "test": 13.7, "hop2": 14.2, "cheer": 14.65, "home": 15.3,
+      "thanks": 16.1, "end": 19.4,
+    ]
+    static func T(_ k: String) -> Double { T[k]! }
+    public static let start = 5.3 + 4.0 / 30
+    public static var duration: Double { T("end") - start }
+
+    /// Đầu ván còn dính sàn (phải), dài ván, góc bật — px ảnh phòng (đo: dải sàn sau bục y 1828–1898).
+    public static let pivotPx = (x: 980.0, y: 1876.0)
+    public static let plankPx = (length: 240.0, raise: 17.0)
+    /// Búa nằm trên sàn sau bục, bên trái tấm ván.
+    public static let hammerFloorPx = (x: 700.0, y: 1866.0)
+    static let onX = 860.0, offX = 640.0
+    static let hits = [T("h1"), T("h2"), T("h3")]
+
+    static let yay = Line("Để tớ đóng lại!", key: "koa.repair.floor.yay", at: T("yay") + 0.3)
+    static let thanks = Line("Phẳng lì rồi! Cảm ơn cậu nha!", key: "koa.repair.floor.thanks", at: T("thanks"), rate: 0.14)
+
+    /// Góc ván: bật lên, nằm xuống khi Koa giẫm, bật lại khi Koa bước ra, đóng đinh xong thì nằm im.
+    public static func plankAngle(_ t: Double) -> Double {
+      let raise = plankPx.raise
+      func spring(_ t0: Double) -> Double { raise + settle(t, t0, 7, 5, 6) }
+      if t < T("pop") { return 0 }
+      if t < T("on1") { return spring(T("pop")) }
+      if t < T("pop2") { return raise * (1 - ease(seg(t, T("on1"), T("on1") + 0.15))) }
+      if t < T("on2") { return spring(T("pop2")) }
+      return raise * (1 - ease(seg(t, T("on2"), T("on2") + 0.15)))
+        + hits.filter { t >= $0 }.reduce(0) { $0 + 1.2 * sin(.pi * seg(t, $1, $1 + 0.12)) }
+    }
+
+    public static var cues: [Cue] {
+      var c: [(Double, String, Double)] = []
+      for l in [yay, thanks] {
+        for (i, r) in l.syllables.enumerated() { c.append((r.lowerBound, "koa-talk-\((i * 7 + l.text.count) % 10 + 1)", 0.55)) }
+      }
+      for t0 in [T("pop"), T("pop2")] { c += [(t0, "koa-creak", 0.9), (t0 + 0.02, "koa-boop-3", 0.9), (t0 + 0.12, "koa-boop-2", 0.6)] }
+      c += [(T("tap") + 0.45, "koa-coin", 0.6), (T("yay"), "koa-v-yay", 0.7), (T("down") + 0.1, "koa-hop", 0.6), (T("down") + 0.62, "koa-land", 0.6)]
+      for k in 0..<2 { c.append((T("walk1") + Double(k) * 0.2, "koa-step-wood-1", 0.5)) }
+      c += [(T("on1"), "koa-creak", 0.6), (T("stand1") + 0.1, "koa-v-hm", 0.5), (T("off") + 0.05, "koa-step-wood-1", 0.5),
+            (T("pop2") + 0.05, "koa-v-ui", 0.9), (T("got"), "koa-rustle", 0.6)]
+      for k in 0..<2 { c.append((T("back") + Double(k) * 0.18, "koa-step-wood-1", 0.5)) }
+      c += [(T("on2"), "koa-creak", 0.6), (T("on2") + 0.2, "koa-v-hm", 0.6)]
+      for h in hits { c += [(h, "koa-tick", 1.0), (h + 0.02, "koa-click", 0.5)] }
+      for k in 0..<3 { c.append((T("tiptoe") + Double(k) * 0.28, "koa-step-wood-1", 0.3)) }
+      c += [(T("safe"), "koa-v-mmm", 0.6), (T("test") + 0.1, "koa-hop", 0.5), (T("test") + 0.45, "koa-land", 0.5),
+            (T("hop2") + 0.3, "koa-land", 0.6), (T("cheer"), "koa-v-yay", 0.8), (T("cheer") + 0.05, "koa-coin", 0.6),
+            (T("home") + 0.1, "koa-hop", 0.6), (T("home") + 0.62, "koa-land", 0.6)]
+      return c.filter { $0.0 >= start }.map { Cue(t: $0.0 - start, name: $0.1, volume: $0.2) }.sorted { $0.t < $1.t }
+    }
+
+    /// Cả đoạn: chuyển động phụ, rồi đặt đinh đúng chỗ đầu búa chạm ở cú gõ đầu (đo, không ước).
+    public static func shots(fps: Double = 30) -> [Shot] {
+      var out = (0..<Int(duration * fps)).map { shot(at: Double($0) / fps) }
+      secondary(&out, fps: fps)
+      let i = Int(((T("h1") - start) * fps).rounded())
+      guard out.indices.contains(i), let head = hammerHead(out[i], t: T("h1")) else { return out }
+      for j in out.indices where out[j].floor.nailX != nil { out[j].floor.nailX = head.x }
+      for j in out.indices {
+        out[j].pops = out[j].pops.map { p in
+          guard p.text.hasPrefix("koa.repair.pop.knock") else { return p }
+          var q = p; q.x = head.x + 40 / pxPerUnit; return q
+        }
+      }
+      return out
+    }
+
+    /// Đầu búa (toạ độ phòng): búa vẽ ở tay phải, đầu ở (0, −128) của búa, búa phóng 0,4 (hình 240).
+    public static func hammerHead(_ s: Shot, t: Double) -> Pt? {
+      guard case let .hammer(angle) = s.prop, let paw = paw(s, t: t) else { return nil }
+      let r = angle * .pi / 180
+      return local(s, paw.x + 51.2 * sin(r), paw.y + 2 - 51.2 * cos(r))
+    }
+
+    public static func shot(at time: Double) -> Shot {
+      let t = time + start
+      var s = Shot()
+      var px = stagePx.x, feet = stagePx.feet, w = stagePx.w, lift = 0.0
+      var exprs: [(Double, KoaFlags.Expression)] = [(0, .happy)]
+      var p = KoaWalk.Pose()
+      p.weight = 1
+      var ham: Double?
+      s.blink = blink(t, [T("stand1") + 0.3, T("got") + 0.2, T("safe") + 0.3, T("thanks") + 1.4])
+      if t < T("down") {                                  // trên bục: mừng, "Để tớ đóng lại!"
+        exprs = [(0, .delighted), (T("yay") + 0.3, .happy)]
+        s.gaze = .init(x: 0, y: 0.1, k: 1)
+        let h = hop(t, T("tap") + 0.45, 0.07, 0.28, 50)
+        lift = h.lift; s.stretchY = h.squash; s.stretchX = 2 - h.squash
+        s.mouth = yay.mouth(at: t)
+        let a = ease(seg(t, T("yay") + 0.25, T("yay") + 0.45)) * (1 - seg(t, T("down") - 0.1, T("down") + 0.1))
+        if a > 0 { s.bubble = yay.bubble(at: t, x: roomX(330), y: roomY(1100), width: 470 / pxPerUnit, alpha: a) }
+      } else if t < T("home") {
+        feet = floorPx.feet; w = floorPx.w
+        if t < T("walk1") {                               // nhảy xuống sàn
+          let h = hop(t, T("down"), 0.12, 0.5, 0)
+          let u = seg(t, T("down") + 0.12, T("down") + 0.62)
+          px = lerp(stagePx.x, offX + 40, ease(u)); w = lerp(stagePx.w, floorPx.w, ease(u))
+          feet = lerp(stagePx.feet, floorPx.feet, ease(u)) - (h.phase == .air ? 150 * 4 * u * (1 - u) : 0)
+          s.stretchY = h.squash; s.stretchX = 2 - h.squash
+          p.armRight = -60 * sin(.pi * u); p.armLeft = 60 * sin(.pi * u)
+        } else if t < T("stand1") {                       // bước lên đầu ván đang bật: ván nằm xuống
+          let u = seg(t, T("walk1"), T("stand1"))
+          px = lerp(offX + 40, onX, ease(u)); lift = 10 * abs(sin(u * .pi * 2))
+          exprs = [(0, .focus)]
+          s.gaze = .init(x: 0.3, y: 0.9, k: 1)
+        } else if t < T("off") {                          // đứng trên ván: búa đâu nhỉ?
+          px = onX
+          s.gaze = .init(x: -0.9, y: 0.5, k: 1)
+          s.gesture = .curious; s.gestureAmount = ease(seg(t, T("stand1"), T("stand1") + 0.2))
+        } else if t < T("pick") {                         // bước ra lấy búa → BOING, giật bắn
+          px = lerp(onX, offX + 60, ease(seg(t, T("off"), T("pick"))))
+          exprs = [(0, .happy), (T("pop2") + 0.02, .yikes)]
+          if t >= T("pop2") {
+            lift = hop(t, T("pop2"), 0, 0.3, 60).lift
+            p.armRight = -150; p.armLeft = 150; p.earLag = settle(t, T("pop2"), 14, 3, 5); p.turn = 0.4
+            s.gaze = .init(x: 0.9, y: 0.4, k: 1)
+          }
+        } else if t < T("back") {                         // nhặt búa
+          px = offX + 60
+          exprs = [(0, .oops)]
+          let u = ease(seg(t, T("pick"), T("got"))) * (1 - ease(seg(t, T("got"), T("back"))))
+          s.stretchY = 1 - 0.12 * u
+          p.lean = 14 * u; p.armRight = 30 * u
+          s.gaze = .init(x: -0.4, y: 0.9, k: 1)
+          if t >= T("got") { ham = lerp(150, 200, u) }
+        } else if t < T("crouch") {                       // quay lại giẫm lên, lườm tấm ván
+          let u = seg(t, T("back"), T("on2") + 0.1)
+          px = lerp(offX + 60, onX, ease(u)); lift = 10 * abs(sin(clamp(u) * .pi * 2))
+          exprs = [(0, .tease)]
+          s.gaze = .init(x: 0.6, y: 0.8, k: 1)
+          p.armRight = -40
+          ham = 120
+        } else if t < T("rise") {                         // đứng trên ván, cúi xuống đóng đinh
+          px = onX
+          exprs = [(0, .focus)]
+          let c = ease(seg(t, T("crouch"), T("crouch") + 0.3))
+          s.stretchY = 1 - 0.12 * c
+          var arm = -100.0                                // búa giơ cao chờ
+          for h in hits {                                 // giơ lên lấy đà → bổ xuống → nảy lên
+            if h - 0.3 <= t, t < h - 0.12 { arm = lerp(-60, -120, ease(seg(t, h - 0.3, h - 0.12))) }
+            if h - 0.12 <= t, t < h { arm = lerp(-120, 40, pow(seg(t, h - 0.12, h), 2)) }
+            if h <= t, t < h + 0.25 { arm = 40 - 85 * ease(seg(t, h, h + 0.25)) + settle(t, h, 5, 5, 12) }
+          }
+          p.lean = 16 * c; p.armRight = lerp(-40, arm, c); p.armLeft = 20 * c; p.turn = 0.25
+          s.gaze = .init(x: 0.6, y: 0.95, k: 1)
+          ham = 160 + arm
+        } else if t < T("test") {                         // nhón chân bước ra, ngoái lại: ván nằm yên
+          let u = seg(t, T("tiptoe"), T("safe"))
+          px = lerp(onX, offX + 30, ease(u)); lift = 6 + 8 * abs(sin(u * .pi * 3))
+          exprs = [(0, .yikes), (T("safe"), .happytired)]
+          s.gaze = .init(x: 0.9, y: 0.6, k: 1)
+          p.armRight = -60; p.armLeft = 60; p.turn = 0.3
+          if t < T("safe") { ham = 100 } else {           // lau mồ hôi trán
+            p.armRight = -150 * sin(.pi * seg(t, T("safe"), T("test"))); p.armLeft = 0; p.turn = 0
+          }
+        } else {                                          // nhảy thử lên ván hai cái → mừng
+          exprs = [(0, .grin), (T("cheer"), .delighted)]
+          if t < T("hop2") {
+            let h = hop(t, T("test"), 0.08, 0.36, 60)
+            px = lerp(offX + 30, onX, ease(seg(t, T("test") + 0.08, T("test") + 0.44)))
+            lift = h.lift; s.stretchY = h.squash; s.stretchX = 2 - h.squash
+          } else if t < T("cheer") {
+            px = onX
+            let h = hop(t, T("hop2"), 0.08, 0.32, 70)
+            lift = h.lift; s.stretchY = h.squash; s.stretchX = 2 - h.squash
+            s.gaze = .init(x: 0.3, y: 0.9, k: 1)
+          } else {
+            px = onX
+            p.armRight = -150; p.armLeft = 150
+            lift = hop(t, T("cheer"), 0.05, 0.3, 40).lift
+          }
+        }
+      } else {                                            // về bục, cảm ơn
+        exprs = [(0, .happy), (T("thanks"), .delighted), (T("end") - 0.5, .happy)]
+        if t < T("thanks") {
+          let h = hop(t, T("home"), 0.12, 0.5, 0)
+          let u = seg(t, T("home") + 0.12, T("home") + 0.62)
+          px = lerp(onX, stagePx.x, ease(u)); w = lerp(floorPx.w, stagePx.w, ease(u))
+          feet = lerp(floorPx.feet, stagePx.feet, ease(u)) - (h.phase == .air ? 130 * 4 * u * (1 - u) : 0)
+          s.stretchY = h.squash; s.stretchX = 2 - h.squash
+          p.armRight = -150 * sin(.pi * u); p.armLeft = 150 * sin(.pi * u)
+        } else {
+          let out = 1 - ease(seg(t, T("end") - 0.6, T("end") - 0.1))
+          s.gesture = .taDa; s.gestureAmount = backOut(seg(t, T("thanks") + 0.1, T("thanks") + 0.4)) * out
+          s.gaze = .init(x: 0, y: 0.1, k: 1)
+          s.mouth = thanks.mouth(at: t)
+          s.bubble = thanks.bubble(at: t, x: roomX(300), y: roomY(1030), width: 700 / pxPerUnit,
+                                   alpha: ease(seg(t, T("thanks") - 0.05, T("thanks") + 0.2)) * out)
+        }
+      }
+      face(&s, t, exprs)
+      s.pose = p
+      if let ham { s.prop = .hammer(angle: ham) }
+      let onStage = clamp((w - floorPx.w) / (stagePx.w - floorPx.w))
+      s.x = roomX(px) + koaShift.x * onStage
+      s.feet = roomY(feet - lift) - 6 + koaShift.y * onStage
+      s.lift = lift / pxPerUnit
+      s.scale = w / stagePx.w
+      s.camera = camera(t)
+      s.repaired = t >= T("h3")
+      var f = FloorState()
+      f.angle = plankAngle(t)
+      f.hammerOnFloor = t < T("got")
+      if t >= T("crouch") {
+        f.nailX = roomX(onX - 260)                        // chỗ tạm; `shots()` đặt đúng chỗ đầu búa chạm
+        f.nailSink = min(1, Double(hits.filter { t >= $0 }.count) / 3)
+      }
+      let nailY = roomY(pivotPx.y - 6)
+      for h in hits where h <= t && t < h + 0.3 {
+        let u = seg(t, h, h + 0.3)
+        f.spark = 1 - u
+        s.pops.append(Pop(text: h == hits.last ? "koa.repair.pop.knockHard" : "koa.repair.pop.knock",
+                          x: (f.nailX ?? 0) + 40 / pxPerUnit, y: nailY - 60 / pxPerUnit, u: u, size: 46 / pxPerUnit))
+      }
+      if t >= T("cheer"), t < T("cheer") + 1.4 { f.twinkle = t - T("cheer") }
+      s.floor = f
+      let end = room(pivotPx.x - plankPx.length + 20, pivotPx.y)
+      for t0 in [T("pop"), T("pop2")] where t0 <= t && t < t0 + 0.45 {
+        let u = seg(t, t0, t0 + 0.45)
+        s.puffs.append(Puff(x: end.x, y: end.y, u: u, count: 4))
+        s.pops.append(Pop(text: "koa.repair.pop.boing", x: end.x - 40 / pxPerUnit, y: end.y - 120 / pxPerUnit, u: u, size: 58 / pxPerUnit))
+      }
+      return s
+    }
+
+    static let cam: [(Double, Double, Double, Double)] = [
+      (5.3, 1.0, 630, 1368),    // kéo ra: thẻ việc
+      (6.5, 1.0, 630, 1368),
+      (7.2, 1.55, 820, 1640),   // sàn sau bục: Koa, tấm ván, cây búa trong một khung (thấy vì sao ván bật lại)
+      (9.7, 1.55, 820, 1640),
+      (10.3, 1.9, 880, 1720),   // cận: đóng đinh
+      (12.2, 1.9, 880, 1720),
+      (12.6, 1.55, 820, 1640),  // lùi ra: nhón chân bước ra, ván có bật nữa không?
+      (14.9, 1.55, 820, 1640),
+      (15.5, 1.0, 630, 1368),   // toàn cảnh khi Koa về bục
+      (16.3, 1.22, 616, 1600),  // đẩy nhẹ vào Koa cảm ơn
+      (18.8, 1.22, 616, 1600),
+      (19.4, 1.0, 630, 1368),   // lùi êm về toàn cảnh rồi trả phòng
+    ]
+
+    static func camera(_ t: Double) -> Camera {
+      var k = 0
+      while k + 1 < cam.count, cam[k + 1].0 <= t { k += 1 }
+      let a = cam[k], b = cam[min(k + 1, cam.count - 1)]
+      let u = b.0 == a.0 ? 0 : (t - a.0) / (b.0 - a.0)
+      let e = ease(u)
+      var c = Camera()
+      c.zoom = lerp(a.1, b.1, e)
+      c.x = roomX(lerp(a.2, b.2, e)); c.y = roomY(lerp(a.3, b.3, e))
+      let sh = settle(t, T("pop2"), 12, 9, 8) + hits.reduce(0.0) { $0 + settle(t, $1, 6, 10, 14) }
+        + settle(t, T("down") + 0.62, 5, 9, 12) + settle(t, T("hop2") + 0.32, 4, 9, 12)
+      c.shake = sh / pxPerUnit
+      return c
+    }
   }
 }

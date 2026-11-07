@@ -356,6 +356,7 @@ struct MascotRoomView: View {
           }
           devChip("diễn bảng", on: repair?.item == .board) { devBroken = .board; startRepair(.board) }
           devChip("diễn sân khấu", on: repair?.item == .stage) { devBroken = .stage; startRepair(.stage) }
+          devChip("diễn ván sàn", on: repair?.item == .floor) { devBroken = .floor; startRepair(.floor) }
           devChip("map", on: debugMap) { debugMap.toggle() }
           devChip("auto", on: devEmotion == nil) { devEmotion = nil }
           ForEach(KoaEmotion.devEmotions, id: \.self) { e in
@@ -483,7 +484,8 @@ struct MascotRoomView: View {
     switch item {
     case .board: repair = RepairRun(item: item, start: .now, shots: KoaRepairScene.Board.shots(), cues: KoaRepairScene.Board.cues)
     case .stage: repair = RepairRun(item: item, start: .now, shots: KoaRepairScene.Stage.shots(), cues: KoaRepairScene.Stage.cues)
-    case .neon, .floor: return false   // đoạn diễn chưa vào app (PR sau)
+    case .floor: repair = RepairRun(item: item, start: .now, shots: KoaRepairScene.Floor.shots(), cues: KoaRepairScene.Floor.cues)
+    case .neon: return false   // đoạn diễn chưa vào app (PR sau)
     }
     return true
   }
