@@ -2,6 +2,40 @@ import ASCNDCore
 import ASCNDDesignSystem
 import SwiftUI
 
+#if DEBUG
+  /// Màn nghỉ dựng sẵn để chụp storyboard: `SIMCTL_CHILD_ASCND_DEBUG_KOA_REST=90`, `…_KOA_REST_T=<ms>` dừng ở mốc ấy.
+  /// Đồng hồ thật của màn (nút ±15, tạm dừng chạy được trên một quãng nghỉ cục bộ).
+  struct KoaRestPreview: View {
+    static var total: Int? { ProcessInfo.processInfo.environment["ASCND_DEBUG_KOA_REST"].flatMap(Int.init) }
+    static var frozen: Double? { ProcessInfo.processInfo.environment["ASCND_DEBUG_KOA_REST_T"].flatMap(Double.init) }
+    let total: Int
+    @State private var began = Date.now
+    @State private var timer: RestTimer?
+
+    var body: some View {
+      ZStack {
+        Color.black.ignoresSafeArea()
+        if let timer {
+          KoaRestScreen(
+            timer: timer, justDone: "Squat · 80 kg × 5", next: "Squat · Set 2/2 · 80 kg × 5",
+            onAdjust: { self.timer = self.timer?.adjusted(by: $0, at: EpochMillis(Date.now)) },
+            onSkip: { restart() },
+            onSetPaused: { p in self.timer = p ? self.timer?.paused(at: EpochMillis(Date.now)) : self.timer?.resumed(at: EpochMillis(Date.now)) },
+            onSettle: { if self.timer?.phase(at: EpochMillis(Date.now)) == .over { restart() } },
+            onMinimize: {}, onEditJustDone: nil, frozen: Self.frozen, startedAt: began)
+          .id(began)
+        }
+      }
+      .onAppear { if timer == nil { restart() } }
+    }
+
+    private func restart() {
+      began = .now
+      timer = RestTimer.start(seconds: total, at: EpochMillis(began))
+    }
+  }
+#endif
+
 /// Màn nghỉ giữa hai set có Koa, toàn màn hình (07/11, Kiệt: "thay cho phần đồng hồ đếm giờ nghỉ cũ nên phải tích
 /// hợp luôn các tính năng nghỉ giữa hiệp"). Thay thẻ nghỉ cũ (`FocusRestCard`) ở màn từng set.
 ///
@@ -38,6 +72,13 @@ struct KoaRestScreen: View {
 
   final class Heard { var played = Set<Int>(); var second = -1; var went = false; var tick = -1 }
 
+  /// Tiếng theo đoạn (ms từ lúc mở): gồng, tạ chạm sàn, thở ra + chuông "xong set", ngụm nước.
+  private static let sounds: [KoaPerformance.Sound] = [
+    .init(t: 0, name: "koa-rx-lift", gain: 0.6), .init(t: 1500, name: "koa-rx-land", gain: 0.7),
+    .init(t: 1800, name: "koa-rx-exhale", gain: 0.8), .init(t: 1800, name: "koa-rx-set", gain: 1),
+    .init(t: 7400, name: "koa-rx-tick", gain: 0.35), .init(t: 9800, name: "koa-rx-exhale", gain: 0.5),
+  ]
+
   private static let bg = Color(red: 0.055, green: 0.059, blue: 0.071)
   private static let orange = Color(red: 0.91, green: 0.52, blue: 0.16)
   private static let rose = DS.Color.metricRose.swiftUI
@@ -66,7 +107,7 @@ struct KoaRestScreen: View {
           VStack(spacing: 0) {
             header(m, elapsed: elapsed)
             Spacer(minLength: 0)
-            koa(m.frame, size: geo.size)
+            koa(m, size: geo.size)
             captionView(m, left: left)
               .padding(.top, 18)
             Spacer(minLength: 0)
@@ -86,7 +127,7 @@ struct KoaRestScreen: View {
     }
     .onAppear {
       if timer.isPaused { pausedAt = .now }
-      if startedAt == nil { onStarted(start) } else { heard.played = Set(KoaPerformance.sounds(.set).indices) }
+      if startedAt == nil { onStarted(start) } else { heard.played = Set(Self.sounds.indices) }
     }
     .onChange(of: timer.isPaused) { _, p in pausedAt = p ? .now : nil }
     .preferredColorScheme(.dark)
@@ -101,8 +142,8 @@ struct KoaRestScreen: View {
 
   private func header(_ m: KoaRestStory.Moment, elapsed: Double) -> some View {
     // "XONG SET!" lớn lúc hạ tạ, rồi thu về dòng nhỏ trên đầu (không biến mất: người dùng vẫn biết vừa xong gì)
-    let big = elapsed >= 1700 && elapsed < 4200
-    let shown = min(1, max(0, (elapsed - 1700) / 160))
+    let big = elapsed >= 1800 && elapsed < 4000
+    let shown = min(1, max(0, (elapsed - 1800) / 160))
     return VStack(spacing: 6) {
       HStack {
         Button(action: onMinimize) {
@@ -118,7 +159,7 @@ struct KoaRestScreen: View {
         if let justDone {
           HStack(spacing: 6) {
             Image(systemName: "checkmark.circle.fill").foregroundStyle(Self.rose)
-            Text(verbatim: justDone).lineLimit(1).monospacedDigit()
+            Text(verbatim: justDone).lineLimit(1).minimumScaleFactor(0.7).monospacedDigit()
           }
           .font(.system(size: 14, weight: .semibold))
           .foregroundStyle(.white.opacity(0.85))
@@ -139,12 +180,12 @@ struct KoaRestScreen: View {
               .font(.system(size: 40, weight: .heavy, design: .rounded))
               .foregroundStyle(.white)
               .shadow(color: .black.opacity(0.45), radius: 10, y: 4)
-              .scaleEffect(reduceMotion ? 1 : 1 + 0.3 * max(0, 1 - (elapsed - 1700) / 220))
+              .scaleEffect(reduceMotion ? 1 : 1 + 0.3 * max(0, 1 - (elapsed - 1800) / 220))
             if let justDone {
               Text(verbatim: justDone).font(.system(size: 17, weight: .medium)).foregroundStyle(.white.opacity(0.8))
             }
           }
-          .opacity(shown * min(1, (4200 - elapsed) / 300))
+          .opacity(shown * min(1, (4000 - elapsed) / 300))
         }
         if let record, !big {
           Text(verbatim: record)
@@ -160,23 +201,42 @@ struct KoaRestScreen: View {
 
   // MARK: Koa
 
-  private func koa(_ f: KoaPerformance.Frame, size: CGSize) -> some View {
+  /// Koa trên sân khấu + máy quay của đoạn (`KoaRestStory.Camera`): đẩy / lùi, hạ thấp, nghiêng. Khung mờ dần ở
+  /// mép trên / dưới để cận mặt không cắt cứng.
+  private func koa(_ m: KoaRestStory.Moment, size: CGSize) -> some View {
+    let f = m.frame
     let fig = min(size.width * 0.62, 260.0)
     let unit = fig / 240
     let still = reduceMotion
+    let cam = still ? KoaRestStory.Camera() : m.camera
     return ZStack {
       Ellipse().fill(Color(red: 0.68, green: 0.71, blue: 0.75).opacity(0.3))
         .frame(width: 128 * unit, height: 18 * unit)
         .offset(y: (294 - 150) * unit)
+      if m.dumbbellOnFloor {
+        // tạ đã đặt xuống, nằm cạnh chân (sẽ được nhặt lên khi chuẩn bị)
+        Image(systemName: "dumbbell.fill")
+          .font(.system(size: 34 * unit, weight: .bold))
+          .foregroundStyle(Color(red: 0.27, green: 0.30, blue: 0.36))
+          .rotationEffect(.degrees(-8))
+          .offset(x: 92 * unit, y: (286 - 150) * unit)
+      }
       KoaFigureView(
-        expression: f.expression, pose: .idle, gesture: nil, worn: [.hand: "dumbbell"], size: fig, animated: true,
+        expression: f.expression, pose: .idle, gesture: nil, worn: m.hand.map { [.hand: $0] } ?? [:], size: fig,
+        animated: true,
         stage: false, walk: still ? KoaWalk.Pose() : f.walk, bleeds: true,
         headLook: KoaMath.Gaze(x: f.look.x, y: f.look.y, k: 1), eyes: KoaMath.Gaze(x: f.eyes.x, y: f.eyes.y, k: 1),
         turn: still ? 0 : f.turn, groundShadow: false, gestureAmount: 0
       )
       .scaleEffect(x: still ? 1 : f.sx, y: still ? 1 : f.sy, anchor: .bottom)
     }
-    .frame(height: fig * 1.12)
+    .scaleEffect(cam.zoom, anchor: UnitPoint(x: 0.5, y: cam.anchor))
+    .rotationEffect(.degrees(cam.tilt), anchor: .bottom)
+    .offset(y: cam.dy * fig)
+    .frame(width: size.width, height: fig * 1.5, alignment: .bottom)
+    // chừa khoảng trên đầu cho máy thấp / cận; chỉ mờ ở mép trên (chân luôn đứng trên sàn, không mờ)
+    .mask(LinearGradient(stops: [.init(color: .clear, location: 0), .init(color: .black, location: 0.12)],
+                         startPoint: .top, endPoint: .bottom))
     .accessibilityHidden(true)
   }
 
@@ -187,6 +247,8 @@ struct KoaRestScreen: View {
     case .getReady: String(localized: "koa.rest.getReady")
     case .go: String(localized: "koa.rest.go")
     case .paused: String(localized: "workout.rest.title.paused")
+    case .hydrate: String(localized: "koa.rest.hydrate")
+    case .wipe: String(localized: "koa.rest.wipe")
     case nil: nil
     }
     return HStack(spacing: 10) {
@@ -207,7 +269,8 @@ struct KoaRestScreen: View {
 
   private func sweat(_ m: KoaRestStory.Moment, elapsed: Double, size: CGSize) -> some View {
     Canvas { c, sz in
-      guard !reduceMotion, m.frame.expression == .gymPant else { return }
+      // mặt `pant` đã có giọt mồ hôi riêng; chỉ thêm vài giọt bay khi vừa đặt tạ
+      guard !reduceMotion, m.beat == .setDown, elapsed > 1500 else { return }
       let cx = sz.width / 2, cy = sz.height * 0.3
       for i in 0..<3 {
         let q = (elapsed / 1100 + Double(i) / 3).truncatingRemainder(dividingBy: 1)
@@ -305,7 +368,7 @@ struct KoaRestScreen: View {
 
   private func fire(_ m: KoaRestStory.Moment, elapsed: Double, left: Int) {
     guard frozen == nil else { return }
-    for (i, s) in KoaPerformance.sounds(.set).enumerated() where s.t <= elapsed && !heard.played.contains(i) {
+    for (i, s) in Self.sounds.enumerated() where s.t <= elapsed && !heard.played.contains(i) {
       heard.played.insert(i)
       if elapsed - s.t < 250 { KoaSound.reaction(s.name, gain: s.gain) }
     }

@@ -113,6 +113,7 @@ public enum KoaPerformance {
     public let t: Double
     public let name: String
     public let gain: Double
+    public init(t: Double, name: String, gain: Double) { self.t = t; self.name = name; self.gain = gain }
   }
 
   /// Một khung đã tính: đưa thẳng cho `KoaFigureView`.
