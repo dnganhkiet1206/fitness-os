@@ -169,6 +169,8 @@ struct StudioTallRoom: View {
   /// Tranh gốc hạ xuống bao nhiêu điểm.
   let drop: CGFloat
   let lens: KoaLens
+  /// Món đang hỏng (`KoaBreakage`, cảnh A — Kiệt duyệt 06/11).
+  var broken: KoaBreakage.Item?
   @Environment(\.colorScheme) private var scheme
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @AppStorage(KoaBedroomView.lampKey) private var lampOff = false
@@ -232,7 +234,12 @@ struct StudioTallRoom: View {
               .rotationEffect(layer.id == "lamp" ? swing : .zero, anchor: pivot)
               .offset(x: shot.shift(layer.plane.amp) * k)
           }
-          if !reduceMotion, layer.id == "wall", !options.light {
+          if layer.id == "wall", broken == .neon, let broken {
+            StudioBroken(item: broken, t: reduceMotion ? 0 : t, drop: Double(drop), k: k)
+              .frame(width: size.width, height: size.height)
+              .offset(x: shot.shift(layer.plane.amp) * k)
+          }
+          if !reduceMotion, layer.id == "wall", !options.light, broken != .neon {
             StudioNeon(t: t, drop: Double(drop), k: k)
               .frame(width: size.width, height: size.height)
               .offset(x: shot.shift(layer.plane.amp) * k)
@@ -317,6 +324,88 @@ final class StudioMotes {
     beam.resize(14 + dust * 8)
     beam.step(dt, t: t)
     return room.motes + beam.motes
+  }
+}
+
+/// Đồ hỏng trong phòng (`KoaBreakage`, cảnh A duyệt 06/11): neon tắt nửa bảng + vết nứt, thỉnh thoảng loé
+/// tia lửa; bảng streak tắt màn + nứt; sân khấu nứt một vệt; sàn bật một tấm ván. Vẽ thẳng bằng Canvas theo toạ độ
+/// phòng (390 điểm ngang), cùng `drop` với tranh khung dọc.
+struct StudioBroken: View {
+  let item: KoaBreakage.Item
+  let t: Double
+  let drop: Double
+  let k: Double
+
+  /// Khung các món trong toạ độ phòng.
+  static let board = CGRect(x: 272, y: 248, width: 98, height: 58)
+  static let stage = (x: 195.0, y: 411.5, rx: 137.0, ry: 30.5)
+  static let floorPlank = CGRect(x: 278, y: 480, width: 86, height: 11)
+
+  var body: some View {
+    Canvas { ctx, _ in
+      var c = ctx
+      c.translateBy(x: 0, y: drop)
+      c.scaleBy(x: k, y: k)
+      let ink = GraphicsContext.Shading.color(Color(red: 0.07, green: 0.07, blue: 0.09))
+      func crack(_ pts: [CGPoint], width: Double = 2.2) {
+        var p = Path()
+        p.addLines(pts)
+        c.stroke(p, with: ink, lineWidth: width)
+        c.stroke(p.offsetBy(dx: 0.6, dy: 0.6), with: .color(.white.opacity(0.35)), lineWidth: 0.7)
+      }
+      // tia lửa nhỏ thỉnh thoảng loé (vài phần mười giây mỗi ~4 giây)
+      let spark = sin(t * 1.6) * sin(t * 7.3) > 0.82
+      switch item {
+      case .neon:
+        let s = StudioTall.sign
+        let r = CGRect(x: s.x, y: s.y, width: s.w, height: s.h)
+        c.fill(Path(roundedRect: r, cornerRadius: 10), with: .color(.black.opacity(0.55)))
+        crack([CGPoint(x: s.x + 12, y: s.y + 8), CGPoint(x: s.x + 46, y: s.y + 36), CGPoint(x: s.x + 38, y: s.y + 52),
+               CGPoint(x: s.x + 76, y: s.y + 80), CGPoint(x: s.x + 68, y: s.y + 92), CGPoint(x: s.x + 100, y: s.y + 110)])
+        if spark { sparkle(&c, at: CGPoint(x: s.x + s.w - 14, y: s.y + 10)) }
+      case .board:
+        let r = Self.board
+        c.fill(Path(roundedRect: r, cornerRadius: 6), with: .color(.black.opacity(0.62)))
+        crack([CGPoint(x: r.minX + 10, y: r.minY + 6), CGPoint(x: r.midX - 4, y: r.midY), CGPoint(x: r.midX + 6, y: r.midY + 6),
+               CGPoint(x: r.maxX - 12, y: r.maxY - 6)])
+        // màn hình chập chờn sọc nhiễu
+        if spark {
+          for i in 0..<4 {
+            let y = r.minY + 8 + Double(i) * 12
+            c.fill(Path(CGRect(x: r.minX + 4, y: y, width: r.width - 8, height: 2)), with: .color(.white.opacity(0.35)))
+          }
+        }
+      case .stage:
+        let st = Self.stage
+        crack([CGPoint(x: st.x - 70, y: st.y - 6), CGPoint(x: st.x - 40, y: st.y + 4), CGPoint(x: st.x - 22, y: st.y - 2),
+               CGPoint(x: st.x + 4, y: st.y + 10), CGPoint(x: st.x + 30, y: st.y + 6)], width: 2.6)
+        // vành đèn của bục tắt một đoạn
+        var arc = Path()
+        arc.addArc(center: .zero, radius: 1, startAngle: .degrees(20), endAngle: .degrees(70), clockwise: false)
+        let m = CGAffineTransform(translationX: st.x, y: st.y).scaledBy(x: st.rx, y: st.ry)
+        c.stroke(arc.applying(m), with: .color(.black.opacity(0.55)), lineWidth: 4)
+      case .floor:
+        let p = Self.floorPlank
+        // tấm ván bật lên một đầu, bóng tối dưới khe
+        c.fill(Path(p.insetBy(dx: 0, dy: 2)), with: .color(.black.opacity(0.45)))
+        var plank = Path()
+        plank.addLines([CGPoint(x: p.minX, y: p.maxY), CGPoint(x: p.maxX, y: p.minY - 12), CGPoint(x: p.maxX, y: p.minY - 4),
+                        CGPoint(x: p.minX, y: p.maxY + 3)])
+        plank.closeSubpath()
+        c.fill(plank, with: .color(Color(red: 0.72, green: 0.52, blue: 0.33)))
+        c.stroke(plank, with: .color(Color(red: 0.45, green: 0.3, blue: 0.18)), lineWidth: 1.2)
+      }
+    }
+  }
+
+  private func sparkle(_ c: inout GraphicsContext, at p: CGPoint) {
+    var s = Path()
+    let r = 7.0
+    s.addLines([CGPoint(x: p.x, y: p.y - r), CGPoint(x: p.x + r * 0.25, y: p.y - r * 0.25), CGPoint(x: p.x + r, y: p.y),
+                CGPoint(x: p.x + r * 0.25, y: p.y + r * 0.25), CGPoint(x: p.x, y: p.y + r), CGPoint(x: p.x - r * 0.25, y: p.y + r * 0.25),
+                CGPoint(x: p.x - r, y: p.y), CGPoint(x: p.x - r * 0.25, y: p.y - r * 0.25)])
+    s.closeSubpath()
+    c.fill(s, with: .color(Color(red: 1, green: 0.84, blue: 0.29)))
   }
 }
 
