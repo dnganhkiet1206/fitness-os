@@ -257,3 +257,71 @@ extension KoaPerformanceFixTests {
     #expect(P.restBeat(elapsed: 9000, left: 60_000, total: 90, paused: true).scene == nil)
   }
 }
+
+/// 07/11, Kiệt: "thêm cảnh koa đi lấy bình nước để uống, chỉ áp dụng cho đồ vật đã được mua".
+@Suite struct KoaRestDrinkTests {
+  typealias P = KoaPerformance
+  func scenes(_ hasBottle: Bool) -> Set<KoaReaction.Scene> {
+    var out = Set<KoaReaction.Scene>()
+    var t = 0.0
+    while t < 90_000 {
+      if let s = P.restBeat(elapsed: t, left: 90_000 - t, total: 90, paused: false, hasBottle: hasBottle).scene { out.insert(s) }
+      t += 100
+    }
+    return out
+  }
+
+  @Test func drinkOnlyWhenTheBottleIsOwned() {
+    #expect(scenes(true).contains(.restDrink))
+    #expect(!scenes(false).contains(.restDrink))
+  }
+
+  @Test func bottleInHandOnlyWhilePickedUp() {
+    #expect(P.restHand(.restDrink, at: 500) == nil)
+    #expect(P.restHand(.restDrink, at: 3500) == "bottle")
+    #expect(P.restHand(.restDrink, at: 7000) == nil)
+    #expect(P.restHand(.restWave, at: 1000) == nil)
+    let f0 = P.frame(.restDrink, at: 0), f1 = P.frame(.restDrink, at: P.duration(.restDrink))
+    #expect(abs(f0.walk.armRight + 4) < 6 && abs(f1.walk.armRight + 4) < 6)
+  }
+}
+
+/// Kiệt 07/11: "thi thoảng koa chỉ có mỗi tròng đen khi chuyển đổi nét mặt" — lúc đổi mặt, mọi dải màu mà lớp mắt
+/// đang vẽ dùng tới phải có trong `defs` (thiếu thì tô đen).
+@Suite struct KoaFaceSwapDefsTests {
+  static func urls(_ e: KoaRender.Element, _ out: inout Set<String>) {
+    for v in e.props.values { if case .string(let s) = v, s.hasPrefix("url(#") { out.insert(String(s.dropFirst(5).dropLast())) } }
+    for k in e.kids { urls(k, &out) }
+  }
+  static func ids(_ e: KoaRender.Element, _ out: inout Set<String>) {
+    if case .string(let s)? = e.props["id"] { out.insert(s) }
+    for k in e.kids { ids(k, &out) }
+  }
+
+  @Test func everyFillUsedDuringASwapIsDefined() {
+    let pairs: [(KoaFlags.Expression, KoaFlags.Expression)] = [(.content, .meditate), (.delighted, .content), (.content, .delighted),
+                                                              (.gymPant, .content), (.happy, .puff)]
+    for (from, to) in pairs {
+      for (mix, new) in [(0.3, false), (0.7, true)] {
+        var o = KoaRender.Options()
+        o.expression = to; o.faceFrom = .init(expression: from, gesture: nil); o.faceMix = mix; o.faceEyesNew = new
+        o.blink = 0.6; o.t = 1000
+        let fig = KoaRender.figure(o)
+        var used = Set<String>(), defined = Set<String>()
+        Self.urls(fig.kids[1], &used); Self.ids(fig.kids[0], &defined)
+        let missing = used.subtracting(defined).filter { $0.hasPrefix("koaL") }
+        #expect(missing.isEmpty, "\(from)→\(to) mix \(mix): thiếu \(missing)")
+      }
+    }
+  }
+}
+
+/// Kiệt 07/11: "bỏ cảnh koa nhảy đi" — màn nghỉ không còn cảnh nào Koa rời sàn.
+@Suite struct KoaRestNoJumpTests {
+  @Test func koaNeverLeavesTheFloorDuringRest() {
+    #expect(!KoaPerformance.restActivities.contains(.restJog))
+    for s in [KoaReaction.Scene.restIntro, .restGo] + KoaPerformance.restActivities + [.restDrink] {
+      #expect(KoaPerformance.frames(s).allSatisfy { $0.air == 0 }, "\(s) có nhảy")
+    }
+  }
+}

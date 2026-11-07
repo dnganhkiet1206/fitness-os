@@ -53,6 +53,9 @@ final class AppServices {
   /// Đồ Koa đang mặc (khoá `mascot_inventory`), do Hôm nay ghi khi tủ đồ đọc xong
   /// / đổi — để Koa ló lên ở tab khác mặc đúng đồ (đợt 2A).
   var koaEquipped: [String] = []
+  /// Đồ Koa đã mua (khoá `mascot_inventory`, kể cả không mặc), Hôm nay ghi cùng `koaEquipped`. Màn nghỉ dùng để
+  /// biết Koa có bình nước để uống không (07/11: "chỉ áp dụng cho đồ vật đã được mua").
+  var koaOwned: Set<String> = []
   /// Hạng vóc dáng (Gains, 0…5) của người đang dùng — Koa của chính họ ở mọi màn
   /// mang vóc dáng ấy (#527 đợt 1: vóc dáng theo tập, không theo cấp). Hôm nay ghi.
   var koaBuild = 0
@@ -931,6 +934,7 @@ final class AppServices {
     koaGainsHistory = nil
     koaShelfRecords = nil
     koaEquipped = []
+    koaOwned = []
     koaBuild = 0
     koaLastSessionAt = nil
   }

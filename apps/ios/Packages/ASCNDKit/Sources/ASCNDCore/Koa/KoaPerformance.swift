@@ -259,16 +259,24 @@ public enum KoaPerformance {
   // MARK: lịch màn nghỉ
 
   /// Các hoạt động xen giữa quãng nghỉ, đổi thứ tự theo `seed` (mỗi lần nghỉ một khác).
-  public static let restActivities: [Scene] = [.restStretch, .restSide, .restShoulders, .restJog, .restBreath, .restWave,
-                                               .restFlex, .restGlance]
+  /// 07/11 (Kiệt: "động tác koa kì quặc 1 vài chỗ"): bỏ giãn hông (thân chỉ nghiêng được 1,5°, chỉ còn một tay giơ sau
+  /// đầu) và xoay vai (hai tay vẫy so le như vỗ cánh); chạy bước nhỏ vung tay nhỏ lại.
+  /// 07/11 lần 2 (Kiệt: "bỏ cảnh koa nhảy đi"): bỏ chạy bước nhỏ (nhún nhảy tại chỗ).
+  public static let restActivities: [Scene] = [.restStretch, .restBreath, .restWave, .restFlex, .restGlance]
   public static let restIntroMs = 5200.0
   public static let restGoMs = 3500.0
   /// Thở đều giữa hai hoạt động.
   public static let restGapMs = 4500.0
 
   /// Màn nghỉ lúc này diễn cảnh nào, ở mốc nào; `scene == nil` = đang thở đều (`t` tính từ lúc bắt đầu thở).
-  public static func restBeat(elapsed e: Double, left: Double, total: Double, paused: Bool, seed: Int = 0)
-    -> (scene: Scene?, t: Double)
+  /// Đồ trong tay Koa lúc `t` của cảnh: bình nước từ lúc nhặt lên tới lúc đặt xuống (`restDrink`), còn lại không.
+  public static func restHand(_ scene: Scene?, at t: Double) -> String? {
+    scene == .restDrink && t >= 1500 && t < 6500 ? "bottle" : nil
+  }
+
+  /// - Parameter hasBottle: đã mua bình nước (`hand_bottle`) — có thì thêm cảnh đi lấy nước uống, xen vào thứ hai.
+  public static func restBeat(elapsed e: Double, left: Double, total: Double, paused: Bool, seed: Int = 0,
+                              hasBottle: Bool = false) -> (scene: Scene?, t: Double)
   {
     if !paused, left <= restGoMs { return (.restGo, min(duration(.restGo), restGoMs - left)) }
     if e < restIntroMs { return (.restIntro, e) }
@@ -276,10 +284,15 @@ public enum KoaPerformance {
     var cursor = restIntroMs + 2500
     var idleFrom = restIntroMs
     var i = 0
-    let n = restActivities.count
-    let start = ((seed % n) + n) % n
+    var list = restActivities
+    let n0 = list.count
+    let start = ((seed % n0) + n0) % n0
+    list = Array(list[start...] + list[..<start])
+    // uống nước là việc đầu tiên sau khi hồi sức một chút (hoạt động thứ hai), nếu Koa có bình
+    if hasBottle { list.insert(.restDrink, at: 1) }
+    let n = list.count
     while i < 64 {
-      let scene = restActivities[(start + i) % n]
+      let scene = list[i % n]
       let ms = duration(scene)
       guard cursor + ms <= end else { break }
       if !paused, e >= cursor, e < cursor + ms { return (scene, e - cursor) }
@@ -309,8 +322,9 @@ public enum KoaPerformance {
     .restWave: [S(600, "tick", 0.4), S(1300, "tick", 0.3)],
     .restFlex: [S(800, "pump", 0.6), S(1500, "tick", 0.3)],
     .restGlance: [S(2850, "tick", 0.35)],
-    .restGo: [S(500, "tick", 0.55), S(1500, "tick", 0.55), S(2500, "tick", 0.55), S(3050, "whoosh", 0.6), S(3060, "pump", 0.8),
-              S(3550, "land", 0.5)],
+    .restDrink: [S(1500, "land", 0.3), S(3100, "tick", 0.25), S(3500, "tick", 0.25), S(3900, "tick", 0.25), S(4300, "tick", 0.25),
+                 S(4900, "exhale", 0.7), S(6500, "land", 0.3)],
+    .restGo: [S(500, "tick", 0.55), S(1500, "tick", 0.55), S(2500, "tick", 0.55), S(3060, "pump", 0.8)],
     .done: [S(0, "exhale", 0.8), S(1300, "inhale", 0.9), S(2950, "tick", 0.5), S(3550, "tick", 0.5), S(3700, "tick", 0.45),
             S(3850, "tick", 0.4), S(4850, "whoosh", 0.8), S(4860, "done"), S(4900, "sparkle", 0.7), S(5320, "land")],
   ]
@@ -434,7 +448,7 @@ public enum KoaPerformance {
         zoom: T(Key(0, 1.0), Key(1100, 0.96), Key(2300, 0.96), Key(4200, 1.0)),
         focus: T(Key(0, 1), Key(4200, 1)),
         tremble: T(Key(0, 0), Key(1500, 0), Key(1700, 2), Key(2200, 2), Key(2400, 0)),
-        faces: [(0, .content), (900, .sleepy), (2800, .happy)],
+        faces: [(0, .content), (900, .meditate), (2800, .happy)],
         hand: nil,
         cues: [],
         flashAt: nil, ringFrom: nil)
@@ -442,9 +456,9 @@ public enum KoaPerformance {
       // 3,5 s cuối (t = 0 khi còn 3,5 s): tập trung, nhún một nhịp mỗi giây; hết giờ (3 s) giơ tay chữ V "Lượt mình!".
       Script(
         ms: 4300,
-        bob: T(Key(0, 0), Key(300, -3), Key(500, 2, .out), Key(800, 0), Key(1300, -3), Key(1500, 2, .out), Key(1800, 0),
-               Key(2300, -3), Key(2500, 2, .out), Key(2800, -6), Key(3050, 22, .out), Key(3300, 26), Key(3550, -6, .in),
-               Key(3800, 2, .out), Key(4300, 0)),
+        // không nhảy (Kiệt 07/11: "bỏ cảnh koa nhảy đi"): nhún nhẹ mỗi giây, ở 0 nhón lên một chút, chân không rời sàn
+        bob: T(Key(0, 0), Key(300, -2), Key(500, 1, .out), Key(800, 0), Key(1300, -2), Key(1500, 1, .out), Key(1800, 0),
+               Key(2300, -2), Key(2500, 1, .out), Key(2800, -3), Key(3050, 4, .out), Key(3400, 3), Key(3800, 0), Key(4300, 0)),
         lean: T(Key(0, 0), Key(2800, 1.0), Key(3100, -0.6), Key(3600, 0.6), Key(4000, 0)),
         sway: zero,
         armL: T(Key(0, 4), Key(500, 8), Key(1000, 4), Key(1500, 8), Key(2000, 4), Key(2500, 8), Key(2800, -20), Key(3050, 110, .out),
@@ -512,8 +526,8 @@ public enum KoaPerformance {
         bob: T(Key(0, 0), Key(200, -2), Key(400, 3, .out), Key(600, -2), Key(800, 3, .out), Key(1000, -2), Key(1200, 3, .out), Key(1400, -2), Key(1600, 3, .out), Key(1800, -2), Key(2000, 3, .out), Key(2200, -2), Key(2400, 3, .out), Key(2600, -2), Key(2800, 3, .out), Key(3100, -1), Key(3800, 0)),
         lean: T(Key(0, 0), Key(400, -0.4), Key(3000, -0.4), Key(3800, 0)),
         sway: T(Key(0, 0), Key(3800, 0)),
-        armL: T(Key(0, 4), Key(400, 30), Key(800, -12), Key(1200, 30), Key(1600, -12), Key(2000, 30), Key(2400, -12), Key(2800, 26), Key(3300, 4), Key(3800, 4)),
-        armR: T(Key(0, -4), Key(400, 12), Key(800, -30), Key(1200, 12), Key(1600, -30), Key(2000, 12), Key(2400, -30), Key(2800, 10), Key(3300, -4), Key(3800, -4)),
+        armL: T(Key(0, 4), Key(400, 18), Key(800, 2), Key(1200, 18), Key(1600, 2), Key(2000, 18), Key(2400, 2), Key(2800, 16), Key(3300, 4), Key(3800, 4)),
+        armR: T(Key(0, -4), Key(400, -2), Key(800, -18), Key(1200, -2), Key(1600, -18), Key(2000, -2), Key(2400, -18), Key(2800, -2), Key(3300, -4), Key(3800, -4)),
         cheer: zero,
         ears: T(Key(0, 0), Key(400, -6), Key(800, 2), Key(1200, -6), Key(1600, 2), Key(2000, -6), Key(2400, 2), Key(2800, -6), Key(3800, 0)),
         lookX: T(Key(0, 0), Key(3800, 0)),
@@ -607,6 +621,35 @@ public enum KoaPerformance {
         focus: T(Key(0, 1), Key(3800, 1)),
         tremble: zero,
         faces: [(0, .content), (500, .thinking), (2500, .happy)],
+        hand: nil,
+        cues: [],
+        flashAt: nil, ringFrom: nil)
+    case .restDrink:
+      // Đi lấy bình nước: quay sang, bước một nhịp, cúi xuống nhặt bình (bình hiện trong tay lúc chạm sàn), quay lại,
+      // đưa bình lên miệng tu (nhắm mắt, nuốt từng ngụm), hạ bình "ahh", cúi đặt bình xuống. Đồ trong tay: `restHand`.
+      Script(
+        ms: 7600,
+        bob: T(Key(0, 0), Key(500, 1), Key(900, 0), Key(1300, -3), Key(1700, -3), Key(2100, 1, .out), Key(2500, 0),
+               Key(3300, 1), Key(3500, 0), Key(3700, 1), Key(3900, 0), Key(4100, 1), Key(4300, 0), Key(5000, 2, .out),
+               Key(5600, 0), Key(6300, -3), Key(6700, -3), Key(7100, 1, .out), Key(7600, 0)),
+        lean: T(Key(0, 0), Key(1300, 1.2), Key(1700, 1.2), Key(2300, 0), Key(3000, -0.6), Key(4600, -0.6), Key(5200, 0),
+                Key(6300, 1.2), Key(6700, 1.2), Key(7300, 0), Key(7600, 0)),
+        sway: T(Key(0, 0), Key(700, 0.8), Key(1300, 0.8), Key(2300, 0), Key(6000, 0.8), Key(6700, 0.8), Key(7400, 0)),
+        armL: T(Key(0, 4), Key(7600, 4)),
+        armR: T(Key(0, -4), Key(1300, -8), Key(1700, -8), Key(2300, -6), Key(2900, -88, .out), Key(4500, -88), Key(5100, -10, .inOut),
+                Key(6300, -8), Key(6700, -8), Key(7200, -4), Key(7600, -4)),
+        cheer: zero,
+        ears: T(Key(0, 0), Key(1300, 4), Key(2300, 0), Key(2900, -6), Key(4500, -6), Key(5200, 2), Key(7600, 0)),
+        lookX: T(Key(0, 0), Key(500, 0.5), Key(1300, 0.4), Key(2300, 0), Key(5600, 0), Key(6100, 0.5), Key(6700, 0.4), Key(7300, 0)),
+        lookY: T(Key(0, 0), Key(1000, 0.5), Key(1700, 0.5), Key(2300, 0), Key(2900, -0.45), Key(4500, -0.45), Key(5100, 0),
+                 Key(6100, 0.5), Key(6700, 0.5), Key(7300, 0)),
+        // quay về phía tay cầm bình cả lúc nhặt, lúc uống (mặt sát bình) và lúc đặt lại
+        turn: T(Key(0, 0), Key(600, 0.45), Key(1700, 0.45), Key(2400, 0.3), Key(2900, 0.5), Key(4500, 0.5), Key(5100, 0.15),
+                Key(5600, 0), Key(6100, 0.45), Key(6800, 0.45), Key(7500, 0)),
+        zoom: T(Key(0, 1.0), Key(2900, 1.06), Key(4500, 1.06), Key(5600, 1.0), Key(7600, 1.0)),
+        focus: T(Key(0, 1), Key(7600, 1)),
+        tremble: zero,
+        faces: [(0, .content), (2700, .meditate), (4700, .delighted), (6000, .content)],
         hand: nil,
         cues: [],
         flashAt: nil, ringFrom: nil)

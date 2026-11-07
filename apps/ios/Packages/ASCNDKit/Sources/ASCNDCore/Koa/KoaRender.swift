@@ -826,7 +826,17 @@ public enum KoaRender {
         "width": .number(o.size), "height": .number(o.size * KoaMath.aspect), "viewBox": .string("0 0 240 300"),
         "preserveAspectRatio": .string("xMidYMax meet"),
       ],
-      kids: [cachedDefs(f, paper: o.paper, gesture: o.gesture), Element("G", matrix: KoaMath.insetMat, kids: tree)])
+      kids: [cachedDefs(defsFlags(f, c), paper: o.paper, gesture: o.gesture), Element("G", matrix: KoaMath.insetMat, kids: tree)])
+  }
+
+  /// Cờ để dựng `defs`: đang đổi nét mặt thì gồm cả cờ của nét CŨ. Lớp của nét cũ (tròng trắng, sao, mí) còn vẽ tới
+  /// lúc đổi xong; thiếu dải màu của chúng trong `defs` thì chúng tô thành ĐEN (Kiệt 07/11: "thi thoảng koa chỉ có mỗi
+  /// tròng đen khi chuyển đổi nét mặt").
+  static func defsFlags(_ f: KoaFlags.Flags, _ c: Context) -> KoaFlags.Flags {
+    guard let from = c.from else { return f }
+    var out = f
+    for (k, v) in from where v.truthy && !(out[k]?.truthy ?? false) { out[k] = v }
+    return out
   }
 
   static func cachedDefs(_ flags: KoaFlags.Flags, paper: Bool, gesture: KoaGesture?) -> Element {

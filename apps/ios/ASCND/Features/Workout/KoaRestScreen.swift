@@ -72,7 +72,29 @@ import SwiftUI
       ("warm", .warm), ("content", .content), ("consider", .consider), ("determined", .determined),
       ("waiting", .waiting), ("doze", .doze), ("½ spent→rested", .mix(.spent, .rested, 0.5)),
     ]
+    static var eyesTest: Bool { ProcessInfo.processInfo.environment["ASCND_DEBUG_KOA_RIG"] == "eyes" }
     var body: some View {
+      if Self.eyesTest { eyes } else { grid }
+    }
+    /// Soát mắt lờ đờ khi Koa đảo mắt: mí phải đi cùng mắt.
+    private var eyes: some View {
+      let cases: [(KoaFlags.Expression, Double)] = [(.sleepy, 0), (.sleepy, -0.6), (.sleepy, 0.6), (.tired, 0), (.tired, -0.6),
+                                                   (.confident, -0.6)]
+      return LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: 3), spacing: 4) {
+        ForEach(cases.indices, id: \.self) { i in
+          VStack(spacing: 0) {
+            KoaFigureView(expression: cases[i].0, size: 128, animated: true,
+                          headLook: KoaMath.Gaze(x: 0, y: cases[i].1, k: 1), eyes: KoaMath.Gaze(x: 0, y: cases[i].1, k: 1))
+              .frame(width: 128, height: 150)
+            Text(verbatim: "\(cases[i].0) y \(cases[i].1)").font(.caption2).foregroundStyle(.white)
+          }
+        }
+      }
+      .padding(.top, 50)
+      .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+      .background(Color(red: 0.1, green: 0.1, blue: 0.12))
+    }
+    private var grid: some View {
       LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: 3), spacing: 4) {
         ForEach(faces.indices, id: \.self) { i in
           VStack(spacing: 0) {
@@ -142,8 +164,10 @@ import SwiftUI
 struct KoaRestScreen: View {
   #if DEBUG
     static var debugSeed: Int? { ProcessInfo.processInfo.environment["ASCND_DEBUG_KOA_REST_SEED"].flatMap(Int.init) }
+    static var debugBottle: Bool { ProcessInfo.processInfo.environment["ASCND_DEBUG_KOA_REST_BOTTLE"] != nil }
   #else
     static let debugSeed: Int? = nil
+    static let debugBottle = false
   #endif
   /// Một thẻ số dưới Koa.
   struct Card: Hashable { let value: String; let label: String; var accent = false }
@@ -158,6 +182,8 @@ struct KoaRestScreen: View {
   var subtitle: String?
   /// Thẻ số của set (mức tạ, reps, so với lần trước). Rỗng = không thẻ.
   var cards: [Card] = []
+  /// Đã mua bình nước ở cửa hàng: có cảnh Koa đi lấy bình nước uống.
+  var hasBottle = false
   var onAdjust: (Int) -> Void
   var onSkip: () -> Void
   var onSetPaused: (Bool) -> Void
@@ -188,8 +214,10 @@ struct KoaRestScreen: View {
 
   /// Lịch của lõi: mở đầu → thở đều xen các hoạt động (vươn vai, giãn hông, xoay vai, chạy bước nhỏ, hít sâu, vẫy tay,
   /// gồng khoe cơ, liếc đồng hồ; mỗi lần nghỉ bắt đầu ở một hoạt động khác) → 3,5 s cuối "LƯỢT MÌNH!".
-  static func beat(elapsed e: Double, left: Double, total: Double, paused: Bool, seed: Int = 0) -> Beat {
-    let r = KoaPerformance.restBeat(elapsed: e, left: left, total: total, paused: paused, seed: seed)
+  static func beat(elapsed e: Double, left: Double, total: Double, paused: Bool, seed: Int = 0, hasBottle: Bool = false)
+    -> Beat
+  {
+    let r = KoaPerformance.restBeat(elapsed: e, left: left, total: total, paused: paused, seed: seed, hasBottle: hasBottle)
     return Beat(scene: r.scene, t: r.t)
   }
 
@@ -216,32 +244,35 @@ struct KoaRestScreen: View {
       let leftMs = timer.pausedLeft.map { Double($0) * 1000 } ?? Double(timer.endsAt.millis - now.millis)
       let left = timer.remaining(at: now)
       let seed = Self.debugSeed ?? Int((startedAt ?? start).timeIntervalSince1970)
-      let b = Self.beat(elapsed: elapsed, left: leftMs, total: Double(timer.total), paused: timer.isPaused, seed: seed)
+      let b = Self.beat(elapsed: elapsed, left: leftMs, total: Double(timer.total), paused: timer.isPaused, seed: seed,
+                        hasBottle: hasBottle || Self.debugBottle)
       let f = Self.frame(b)
       let cues = b.scene.map { s in KoaPerformance.cues(s).filter { b.t >= $0.from && b.t < $0.to } } ?? []
       GeometryReader { geo in
+        // sân khấu và chỗ đứng của Koa ĐÚNG như cảnh xong buổi (`KoaReactionView`, Kiệt 07/11: "sân khấu và vị trí
+        // đứng của koa phải khớp với story xong buổi tập"): quầng cam ở 46 %, vũng sáng sàn ở 79 %, Koa 82 % bề ngang
+        // (tối đa 340) đứng giữa ở 54 %. Chữ + thẻ ở trên, đồng hồ + nút gọn ở dải dưới chân.
         ZStack {
           Self.bg.ignoresSafeArea()
-          RadialGradient(colors: [Self.orange.opacity(0.28), .clear], center: UnitPoint(x: 0.5, y: 0.36), startRadius: 0,
+          RadialGradient(colors: [Self.orange.opacity(0.30), .clear], center: UnitPoint(x: 0.5, y: 0.46), startRadius: 0,
                          endRadius: geo.size.width * 0.85)
             .ignoresSafeArea()
           Ellipse().fill(RadialGradient(colors: [Self.orange.opacity(0.22), .clear], center: .center, startRadius: 0,
-                                        endRadius: geo.size.width * 0.36))
-            .frame(width: geo.size.width * 0.76, height: geo.size.width * 0.16)
-            .position(x: geo.size.width / 2, y: geo.size.height * 0.535)
+                                        endRadius: geo.size.width * 0.38))
+            .frame(width: geo.size.width * 0.8, height: geo.size.width * 0.18)
+            .position(x: geo.size.width / 2, y: geo.size.height * 0.79)
           effects(cues, t: b.t)
-          VStack(spacing: 0) {
+          koa(f, hand: KoaPerformance.restHand(b.scene, at: b.t), size: geo.size)
+            .position(x: geo.size.width / 2, y: geo.size.height * 0.54)
+          VStack(spacing: 8) {
             topBar
             title(cues: cues, b: b)
-            Spacer(minLength: 0)
-            koa(f, size: geo.size)
             cardsRow(b: b, elapsed: elapsed)
-              .padding(.top, 14)
             Spacer(minLength: 0)
             panel(left: left, now: now, b: b)
           }
           .padding(.horizontal, DS.Spacing.lg)
-          .padding(.bottom, DS.Spacing.md)
+          .padding(.bottom, DS.Spacing.sm)
         }
         .onChange(of: Int(elapsed / 16)) { _, _ in fire(b, elapsed: elapsed) }
       }
@@ -304,13 +335,14 @@ struct KoaRestScreen: View {
           .background(Capsule().fill(Self.gold))
       }
     }
-    .frame(height: 96)
+    .frame(height: 84)
   }
 
   // MARK: Koa (như `KoaReactionView.koa`)
 
-  private func koa(_ f: KoaPerformance.Frame, size: CGSize) -> some View {
-    let fig = min(size.width * 0.66, 270.0)
+  private func koa(_ f: KoaPerformance.Frame, hand: String?, size: CGSize) -> some View {
+    // như `KoaReactionView.koa`: cùng cỡ, bóng đứng yên trên sàn, nhảy dời cả hình
+    let fig = min(size.width * 0.82, 340.0)
     let unit = fig / 240
     let still = reduceMotion
     let air = (still ? 0 : f.air) * unit
@@ -319,17 +351,23 @@ struct KoaRestScreen: View {
       Ellipse().fill(Color(red: 0.68, green: 0.71, blue: 0.75).opacity(0.32 * (1 - 0.55 * lift)))
         .frame(width: 128 * unit * (1 - 0.35 * lift), height: 18 * unit * (1 - 0.35 * lift))
         .offset(y: (294 - 150) * unit)
+      if hasBottle || Self.debugBottle, hand == nil {
+        // bình nước đã mua đứng sẵn trên sàn cạnh chân Koa: Koa cúi nhặt lên uống rồi đặt lại (`restDrink`)
+        Image(systemName: "waterbottle.fill")
+          .font(.system(size: 26 * unit, weight: .regular))
+          .foregroundStyle(Color(red: 0.49, green: 0.78, blue: 0.93))
+          .offset(x: 86 * unit, y: (282 - 150) * unit)
+      }
       KoaFigureView(
-        expression: f.expression, pose: .idle, gesture: nil, size: fig, animated: true, stage: false,
-        walk: still ? KoaWalk.Pose() : f.walk, bleeds: true,
+        expression: f.expression, pose: .idle, gesture: nil, worn: hand.map { [.hand: $0] } ?? [:], size: fig, animated: true,
+        stage: false, walk: still ? KoaWalk.Pose() : f.walk, bleeds: true,
         headLook: KoaMath.Gaze(x: f.look.x, y: f.look.y, k: 1), eyes: KoaMath.Gaze(x: f.eyes.x, y: f.eyes.y, k: 1),
         turn: still ? 0 : f.turn, groundShadow: false, gestureAmount: 0
       )
       .scaleEffect(x: still ? 1 : f.sx, y: still ? 1 : f.sy, anchor: .bottom)
       .offset(y: -air)
     }
-    .scaleEffect(still ? 1 : f.zoom, anchor: .bottom)
-    .frame(height: fig * 1.25)
+    .scaleEffect(still ? 1 : f.zoom, anchor: UnitPoint(x: 0.5, y: 0.32 + 0.28 * f.focus))
     .accessibilityHidden(true)
   }
 
@@ -360,51 +398,56 @@ struct KoaRestScreen: View {
 
   // MARK: dưới: đồng hồ + nút
 
+  /// Dải dưới chân Koa (chỗ cảnh xong buổi đặt thẻ số): −15s · đồng hồ · +15s, rồi tạm dừng + "Vào set tiếp".
   private func panel(left: Int, now: EpochMillis, b: Beat) -> some View {
     let paused = timer.isPaused
     let warning = RestTimer.warns(left: left, paused: paused)
     let ready = b.scene == .restGo
-    return VStack(spacing: 12) {
-      HStack(alignment: .firstTextBaseline, spacing: 10) {
-        Text(verbatim: RestTimer.label(seconds: left))
-          .font(.system(size: 52, weight: .semibold, design: .rounded)).monospacedDigit()
-          .contentTransition(.numericText(countsDown: true))
-          .foregroundStyle(warning ? Self.gold : .white)
-        Text(paused ? String(localized: "workout.rest.title.paused") : String(localized: "workout.rest.title"))
-          .font(.system(size: 15, weight: .medium)).foregroundStyle(.white.opacity(0.5))
-      }
-      .accessibilityElement(children: .combine)
-      .accessibilityLabel(Text(String(format: String(localized: "workout.rest.left"), left)))
-      .accessibilityIdentifier("workout.rest.clock")
-      GeometryReader { g in
-        ZStack(alignment: .leading) {
-          Capsule().fill(.white.opacity(0.1))
-          Capsule().fill(warning ? Self.gold : Self.orange).frame(width: g.size.width * timer.ringFraction(at: now))
-        }
-      }
-      .frame(height: 5)
+    return VStack(spacing: 10) {
       HStack(spacing: DS.Spacing.sm) {
         chip(Text(verbatim: "−15s"), String(format: String(localized: "workout.rest.adjust"), "-15")) { onAdjust(-15) }
-        chip(Image(systemName: paused ? "play.fill" : "pause.fill"),
-             String(localized: paused ? "workout.rest.resume" : "workout.rest.pause")) { onSetPaused(!paused) }
+        VStack(spacing: 4) {
+          Text(verbatim: RestTimer.label(seconds: left))
+            .font(.system(size: 40, weight: .semibold, design: .rounded)).monospacedDigit()
+            .contentTransition(.numericText(countsDown: true))
+            .foregroundStyle(warning ? Self.gold : .white)
+            .lineLimit(1).minimumScaleFactor(0.7)
+          GeometryReader { g in
+            ZStack(alignment: .leading) {
+              Capsule().fill(.white.opacity(0.1))
+              Capsule().fill(warning ? Self.gold : Self.orange).frame(width: g.size.width * timer.ringFraction(at: now))
+            }
+          }
+          .frame(height: 4)
+        }
+        .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(String(format: String(localized: "workout.rest.left"), left)))
+        .accessibilityIdentifier("workout.rest.clock")
         chip(Text(verbatim: "+15s"), String(format: String(localized: "workout.rest.adjust"), "+15")) { onAdjust(15) }
       }
-      if let next {
-        Text(verbatim: String(localized: "ws.rest.next") + " · " + next)
-          .font(.system(size: 14, weight: .medium).monospacedDigit())
-          .foregroundStyle(.white.opacity(0.65))
-          .lineLimit(1).minimumScaleFactor(0.8)
+      HStack(spacing: DS.Spacing.sm) {
+        chip(Image(systemName: paused ? "play.fill" : "pause.fill"),
+             String(localized: paused ? "workout.rest.resume" : "workout.rest.pause")) { onSetPaused(!paused) }
+        Button(action: onSkip) {
+          VStack(spacing: 1) {
+            Text(String(localized: next == nil ? "ws.rest.skip" : "koa.rest.startNext"))
+              .font(.system(size: 16, weight: .bold))
+            // set tiếp theo nằm trong nút (dòng riêng đè lên chân Koa ở sân khấu kiểu xong buổi)
+            if let next {
+              Text(verbatim: next).font(.system(size: 11, weight: .medium).monospacedDigit()).opacity(0.75)
+                .lineLimit(1).minimumScaleFactor(0.8)
+            }
+          }
+            .foregroundStyle(.white)
+            .padding(.horizontal, 12)
+            .frame(maxWidth: .infinity, minHeight: 50)
+            .background(Capsule().fill(ready ? Self.orange : .white.opacity(0.1)))
+            .contentShape(Capsule())
+        }
+        .buttonStyle(TodayPressStyle())
+        .accessibilityIdentifier("workout.rest.skip")
       }
-      Button(action: onSkip) {
-        Text(String(localized: next == nil ? "ws.rest.skip" : "koa.rest.startNext"))
-          .font(.system(size: 17, weight: .bold))
-          .foregroundStyle(.white)
-          .frame(maxWidth: .infinity, minHeight: 52)
-          .background(Capsule().fill(ready ? Self.orange : .white.opacity(0.1)))
-          .contentShape(Capsule())
-      }
-      .buttonStyle(TodayPressStyle())
-      .accessibilityIdentifier("workout.rest.skip")
     }
   }
 
