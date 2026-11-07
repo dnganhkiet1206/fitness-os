@@ -52,6 +52,10 @@ struct MascotRoomView: View {
   /// Thanh DEV: ép mức bụi (hình và thẻ dọn) để soát phần 5, chỉ bản Debug. Nút "Dọn
   /// ngay" vẫn gọi `clean_koa_room` thật.
   @State private var devDust: Int?
+  #if DEBUG
+    /// Thanh DEV: ép một món hỏng (cảnh A) để soát hình, chỉ bản Debug; mở app với `KOA_BROKEN=neon` cũng được.
+    @State private var devBroken = ProcessInfo.processInfo.environment["KOA_BROKEN"].flatMap(KoaBreakage.Item.init)
+  #endif
   /// Thanh DEV: ép một cảm xúc để soát hình (`setDevEmotion`), chỉ bản Debug.
   @State private var devEmotion: KoaEmotion.Emotion?
   #if DEBUG
@@ -88,6 +92,7 @@ struct MascotRoomView: View {
         // tủ đồ cho đồ Koa đang mặc trên sân khấu (`equippedOutfits` của RN)
         if let shop, case .loading = shop.phase { await shop.load() }
         await services.loadKoaDust(userId: room.userId)
+        await loadBreakage()
       }
       #if DEBUG
         // soát phòng ngủ: ép giờ ngủ mà không chờ tới đêm
@@ -145,7 +150,7 @@ struct MascotRoomView: View {
         let drop = max(0, height * 0.75 - 436 * k)
         let _ = (lens.drop = drop)
         ZStack(alignment: .top) {
-          StudioTallRoom(drop: drop, lens: lens)
+          StudioTallRoom(drop: drop, lens: lens, broken: brokenItem)
             .koaDustFilm(devDust ?? dust?.level ?? 0)
           stage
             // hai mép tranh tan vào tường cao và sàn, không lộ đường nối
@@ -177,6 +182,7 @@ struct MascotRoomView: View {
                 await room.load()
                 await shop?.load()
                 await services.loadKoaDust(userId: room.userId)
+                await loadBreakage()
               }
           }
           .transition(.asymmetric(insertion: panelInsertion, removal: .opacity))
@@ -275,6 +281,7 @@ struct MascotRoomView: View {
             devBar
           #endif
           // Kiểu Apple Health (Kiệt duyệt 24/10): thẻ tóm tắt, chi tiết ở màn con.
+          brokenCard
           dustCard
           // Năng lượng + nhiệm vụ gộp một thẻ, chuỗi bỏ khỏi phòng (29/10, Kiệt).
           sectionTitle(String(localized: "mr.sec.today"))
@@ -321,6 +328,9 @@ struct MascotRoomView: View {
         HStack(spacing: DS.Spacing.xs) {
           ForEach(0..<4, id: \.self) { n in
             devChip("dust \(n)", on: devDust == n) { devDust = devDust == n ? nil : n }
+          }
+          ForEach(KoaBreakage.Item.allCases, id: \.self) { i in
+            devChip("hỏng \(i.rawValue)", on: devBroken == i) { devBroken = devBroken == i ? nil : i }
           }
           devChip("map", on: debugMap) { debugMap.toggle() }
           devChip("auto", on: devEmotion == nil) { devEmotion = nil }
@@ -381,7 +391,7 @@ struct MascotRoomView: View {
           }
           return KoaTalkLine.text(beat, signals: room.signals, profile: profile?.profile)
         }, lens: lens,
-        offStage: pullStart != nil && !lens.bedroom, shelf: shelfItems)
+        offStage: pullStart != nil && !lens.bedroom, shelf: shelfItems, broken: brokenItem)
         .sensoryFeedback(.selection, trigger: boardStat)
         // kệ cúp (#792): tính lại kỷ lục khi lịch sử tập đổi (buổi mới, buổi bị xoá)
         .task(id: services.koaGainsHistory?.days.count) { await services.ensureKoaShelf() }
@@ -400,6 +410,24 @@ struct MascotRoomView: View {
 
   @State private var cleaning = false
 
+  /// Món đang hỏng kèm việc Koa nhờ (thanh DEV ép thì nhờ uống nước).
+  private var brokenNow: KoaBreakage.Broken? {
+    #if DEBUG
+      if let devBroken { return KoaBreakage.Broken(item: devBroken, day: LocalDate(SystemWallClock().nowMillis(), in: .current), habit: .water) }
+    #endif
+    guard let b = services.koaBreakage, b.userId == room.userId, case .broken(let x) = b.outcome else { return nil }
+    return x
+  }
+
+  /// Món đang hỏng trong phòng (ép từ thanh DEV, hoặc `KoaBreakage` của người dùng này).
+  private var brokenItem: KoaBreakage.Item? {
+    #if DEBUG
+      if let devBroken { return devBroken }
+    #endif
+    guard let b = services.koaBreakage, b.userId == room.userId, case .broken(let x) = b.outcome else { return nil }
+    return x.item
+  }
+
   private var dust: KoaDust.State? {
     #if DEBUG
       if let n = devDust { return KoaDust.State(level: n, idle: n == 0 ? 0 : KoaDust.thresholds[n - 1]) }
@@ -409,6 +437,34 @@ struct MascotRoomView: View {
   }
 
   /// Phòng bám bụi: vì sao, dọn miễn phí thế nào, hay dọn ngay bằng 30 xu.
+  /// Xét đồ hỏng; vừa được sửa (người dùng đã làm việc Koa nhờ) thì Koa cảm ơn một lần.
+  private func loadBreakage() async {
+    await services.loadKoaBreakage(userId: room.userId, sleep: KoaMood.SleepWindow(profile: profile?.profile))
+    if let b = services.koaBreakage, b.userId == room.userId, case .fixed = b.outcome {
+      say(String(localized: "mr.broken.fixed"))
+      services.koaBreakage = (room.userId, .fine)
+    }
+  }
+
+  /// Đồ hỏng (cảnh A, Kiệt duyệt 06/11): Koa không than, nhờ đúng việc người dùng đang thiếu.
+  @ViewBuilder private var brokenCard: some View {
+    if let x = brokenNow {
+      DSCard {
+        VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+          Label(Bundle.main.localizedString(forKey: "mr.broken.\(x.item.rawValue)", value: nil, table: nil), systemImage: "wrench.and.screwdriver")
+            .font(DS.TextStyle.headline)
+            .foregroundStyle(DS.Color.foreground.swiftUI)
+          Text(Bundle.main.localizedString(forKey: "mr.broken.ask.\(x.habit.rawValue)", value: nil, table: nil))
+            .font(DS.TextStyle.footnote)
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+      }
+      .accessibilityIdentifier("koa.room.broken")
+    }
+  }
+
   @ViewBuilder private var dustCard: some View {
     if let d = dust, d.level > 0 {
       DSCard {
@@ -1022,6 +1078,9 @@ struct MascotStage: View {
   var offStage = false
   /// Cúp trên kệ và khung mốc trên tường (#792): chạm thì Koa kể. Trống = phòng như cũ.
   var shelf: [ShelfItem] = []
+  /// Món đang hỏng (`KoaBreakage`): bảng kỷ lục / sân khấu / sàn vẽ ở đây, trên lớp của chúng;
+  /// bảng neon thuộc tranh khung dọc (`StudioTallRoom`).
+  var broken: KoaBreakage.Item?
 
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Environment(\.scenePhase) private var scenePhase
@@ -1448,6 +1507,12 @@ struct MascotStage: View {
             options: backdrop, plantSway: director.swaying ? f?.plantSway ?? 0 : 0, shot: shot,
             size: CGSize(width: width, height: height), light: scheme == .light, showsHaze: false)
           .koaDustFilm(dust)
+          if let broken, broken != .neon {
+            StudioBroken(item: broken, t: reduceMotion ? 0 : tl.date.timeIntervalSinceReferenceDate, drop: 0, k: width / StudioScene.width)
+              .frame(width: width, height: height)
+              .parallax(broken == .board ? .props : .stage, shot, k: width / StudioScene.width, anchor: anchor)
+              .allowsHitTesting(false)
+          }
         } else if director.swaying {
           // lá cây đang rung (~3 giây): vẽ cả căn phòng đè lên phòng tĩnh, có cây đang lay. Trước đây
           // tách phần từ chậu cây trở lên sang lớp riêng: đèn và viền tối vẽ hai lớp nên độ sáng
