@@ -186,6 +186,8 @@ struct StudioTallRoom: View {
   let lens: KoaLens
   /// Món đang hỏng (`KoaBreakage`, cảnh A — Kiệt duyệt 06/11).
   var broken: KoaBreakage.Item?
+  /// Đoạn diễn sửa bảng neon đang chạy: bảng tối / sáng lại, tia lửa, lấp lánh vẽ ở tầng tường.
+  var neonRepair: (start: Date, shots: [KoaRepairScene.Shot])?
   @Environment(\.colorScheme) private var scheme
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @AppStorage(KoaBedroomView.lampKey) private var lampOff = false
@@ -254,7 +256,16 @@ struct StudioTallRoom: View {
               .frame(width: size.width, height: size.height)
               .offset(x: shot.shift(layer.plane.amp) * k)
           }
-          if !reduceMotion, layer.id == "wall", !options.light, broken != .neon {
+          if layer.id == "wall", let run = neonRepair, let shot = KoaRepairLayer.shot(run.shots, at: timeline.date, start: run.start) {
+            Canvas { ctx, _ in
+              var c = ctx
+              c.translateBy(x: 0, y: Double(drop))
+              c.scaleBy(x: k, y: k)
+              KoaRepairLayer.drawNeon(&c, shot.neon)
+            }
+            .frame(width: size.width, height: size.height)
+          }
+          if !reduceMotion, layer.id == "wall", !options.light, broken != .neon, neonRepair == nil {
             StudioNeon(t: t, drop: Double(drop), k: k)
               .frame(width: size.width, height: size.height)
               .offset(x: shot.shift(layer.plane.amp) * k)
@@ -371,12 +382,8 @@ struct StudioBroken: View {
       let spark = sin(t * 1.6) * sin(t * 7.3) > 0.82
       switch item {
       case .neon:
-        let s = StudioTall.sign
-        let r = CGRect(x: s.x, y: s.y, width: s.w, height: s.h)
-        c.fill(Path(roundedRect: r, cornerRadius: 10), with: .color(.black.opacity(0.55)))
-        crack([CGPoint(x: s.x + 12, y: s.y + 8), CGPoint(x: s.x + 46, y: s.y + 36), CGPoint(x: s.x + 38, y: s.y + 52),
-               CGPoint(x: s.x + 76, y: s.y + 80), CGPoint(x: s.x + 68, y: s.y + 92), CGPoint(x: s.x + 100, y: s.y + 110)])
-        if spark { sparkle(&c, at: CGPoint(x: s.x + s.w - 14, y: s.y + 10)) }
+        Self.neonBroken(&c, opacity: 1)
+        if spark { sparkle(&c, at: CGPoint(x: StudioTall.sign.x + StudioTall.sign.w - 14, y: StudioTall.sign.y + 10)) }
       case .board:
         let r = Self.board
         c.fill(Path(roundedRect: r, cornerRadius: 6), with: .color(.black.opacity(0.62)))
@@ -441,6 +448,18 @@ struct StudioBroken: View {
     grain.addLine(to: CGPoint(x: pv.x - 30 / u, y: top + 7 / u))
     g.stroke(grain, with: .color(Color(red: 0.66, green: 0.54, blue: 0.42).opacity(0.7)), lineWidth: 1.5 / u)
     g.fill(Path(ellipseIn: CGRect(x: x0 + 4 / u, y: top + h + 6 / u, width: 20 / u, height: 6 / u)), with: .color(Color(red: 0.16, green: 0.11, blue: 0.07).opacity(0.4)))
+  }
+
+  /// Bảng neon tắt + vết nứt — đúng hình storyboard A (`KoaRepairScene.Neon`), để lúc hỏng và lúc Koa sửa là một.
+  static func neonBroken(_ c: inout GraphicsContext, opacity: Double) {
+    let N = KoaRepairScene.Neon.self, u = KoaRepairScene.pxPerUnit
+    let o = KoaRepairScene.room(N.signPx.x, N.signPx.y)
+    c.fill(Path(roundedRect: CGRect(x: o.x, y: o.y, width: N.signPx.w / u, height: N.signPx.h / u), cornerRadius: 40 / u),
+           with: .color(.black.opacity(0.58 * opacity)))
+    var p = Path()
+    p.addLines(N.crackPx.map { let q = KoaRepairScene.room($0.0, $0.1); return CGPoint(x: q.x, y: q.y) })
+    c.stroke(p, with: .color(Color(red: 0.07, green: 0.07, blue: 0.07).opacity(opacity)), lineWidth: 10 / u)
+    c.stroke(p, with: .color(.white.opacity(0.5 * opacity)), lineWidth: 3 / u)
   }
 
   /// Vành đèn của bục tắt một đoạn.

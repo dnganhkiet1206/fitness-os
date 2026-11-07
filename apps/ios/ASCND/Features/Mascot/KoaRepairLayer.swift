@@ -19,6 +19,8 @@ struct KoaRepairLayer: View {
   @State private var finished = false
 
   static let fps = 30.0
+  /// Phần vẽ thêm phía trên mốc phòng (đơn vị phòng).
+  static let above = 320.0
 
   static func shot(_ shots: [KoaRepairScene.Shot], at date: Date, start: Date) -> KoaRepairScene.Shot? {
     let i = Int(date.timeIntervalSince(start) * fps)
@@ -32,13 +34,24 @@ struct KoaRepairLayer: View {
         let t = tl.date.timeIntervalSince(start)
         if let s = Self.shot(shots, at: tl.date, start: start) {
           ZStack(alignment: .topLeading) {
+            // vẽ rộng lên trên mốc phòng: bảng neon nằm ở y < 0 (tranh khung dọc cao hơn phòng)
             Canvas { ctx, _ in
               var c = ctx
+              c.translateBy(x: 0, y: Self.above * k)
               c.scaleBy(x: k, y: k)
               if item == .board { drawBoard(&c, s, t: t, behindKoa: true) }
               if item == .stage { drawStage(&c, s.stage) }
               if item == .floor { drawFloor(&c, s.floor, behindKoa: true) }
-              drawKoa(&c, s, k: k, t: t)
+              var kc = c
+              if item == .neon {                            // bảng neon vẽ ở tầng tường (`StudioTallRoom`): nằm trên mốc phòng
+                if let l = s.neon.ladder {                  // vác: sau Koa (tay đỡ hai bên, không che mặt)
+                  var lc = c
+                  Self.wobble(&lc, s.neon.wobble)
+                  drawLadder(&lc, l)
+                  if s.neon.koaOnLadder { Self.wobble(&kc, s.neon.wobble) }
+                }
+              }
+              drawKoa(&kc, s, k: k, t: t)
               if item == .floor { drawFloor(&c, s.floor, behindKoa: false) }
               if let p = s.stage.flyingTube {
                 var f = c
@@ -50,6 +63,8 @@ struct KoaRepairLayer: View {
               for p in s.puffs { drawPuff(&c, p) }
               for p in s.pops { drawPop(&c, p) }
             }
+            .frame(width: g.size.width, height: g.size.height + Self.above * k)
+            .offset(y: -Self.above * k)
             if let b = s.bubble, b.progress > 0 {
               KoaBubble(line: Self.typed(b), width: g.size.width, x: s.x, headY: s.feet - KoaRoomMap.heroWidth * KoaMath.aspect * s.scale + 18)
                 .opacity(b.alpha)
@@ -105,21 +120,24 @@ struct KoaRepairLayer: View {
 
   /// Koa: chân ở (x, feet + 6) như Koa của phòng (`hero`), nén / giãn quanh chân.
   private func drawKoa(_ c: inout GraphicsContext, _ s: KoaRepairScene.Shot, k: Double, t: Double) {
+    guard !s.hidden else { return }
     let o = options(s, t: t)
-    let sc = KoaRoomMap.heroWidth * s.scale / 240
+    let sc = KoaRoomMap.heroWidth * s.scale / 240, flip = s.flip ? -1.0 : 1.0
     let foot = CGPoint(x: s.x, y: s.feet + 6)
     // bóng dưới chân: nằm lại trên sàn khi Koa nhảy, nhỏ và nhạt đi theo độ cao
     let air = max(0, 1 - s.lift * KoaRepairScene.pxPerUnit / 400)
     let sw = KoaRoomMap.heroWidth * s.scale * 0.42 * air, ground = foot.y + s.lift
-    c.fill(Path(ellipseIn: CGRect(x: foot.x - sw, y: ground - 4 * s.scale * air, width: sw * 2, height: 9 * s.scale * air)),
-           with: .color(.black.opacity(0.16 * air)))
+    if !s.neon.koaOnLadder {                               // trên thang: không có bóng trên sàn
+      c.fill(Path(ellipseIn: CGRect(x: foot.x - sw, y: ground - 4 * s.scale * air, width: sw * 2, height: 9 * s.scale * air)),
+             with: .color(.black.opacity(0.16 * air)))
+    }
     var f = c
     f.translateBy(x: foot.x, y: foot.y)
-    f.scaleBy(x: sc * s.stretchX, y: sc * s.stretchY)
+    f.scaleBy(x: sc * s.stretchX * flip, y: sc * s.stretchY)
     f.translateBy(x: -120, y: -240 * KoaMath.aspect)
     KoaCanvas.draw(KoaPaint.plan(KoaRender.figure(o)), in: &f)
     if let prop = s.prop, let paw = KoaRender.paws(o).right {
-      let p = CGPoint(x: foot.x + sc * s.stretchX * (paw.x - 120), y: foot.y + sc * s.stretchY * (paw.y - 240 * KoaMath.aspect))
+      let p = CGPoint(x: foot.x + sc * s.stretchX * flip * (paw.x - 120), y: foot.y + sc * s.stretchY * (paw.y - 240 * KoaMath.aspect))
       switch prop {
       case .plug: drawPlugCable(&c, end: p, inPaw: true)
       case let .glue(angle, scale) where scale > 0:
@@ -130,12 +148,12 @@ struct KoaRepairLayer: View {
         g.scaleBy(x: 0.5 * scale, y: 0.5 * scale)
         drawGlueTube(&g)
         f.fill(Path(ellipseIn: CGRect(x: paw.x - 8.5, y: paw.y - 7, width: 17, height: 14)), with: .color(Color(red: 0.75, green: 0.78, blue: 0.81)))
-      case let .hammer(angle):
-        // búa trong hình 240 của Koa (storyboard: hình 480, búa cỡ 0,8 → 0,4)
+      case let .hammer(angle, scale) where scale > 0:
+        // búa trong hình 240 của Koa (storyboard vẽ ở hình 480)
         var g = f
         g.translateBy(x: paw.x, y: paw.y + 2)
         g.rotate(by: .degrees(angle))
-        g.scaleBy(x: 0.4, y: 0.4)
+        g.scaleBy(x: scale, y: scale)
         Self.drawHammer(&g)
         f.fill(Path(ellipseIn: CGRect(x: paw.x - 8.5, y: paw.y - 7, width: 17, height: 14)), with: .color(Color(red: 0.75, green: 0.78, blue: 0.81)))
       default: break
@@ -145,11 +163,13 @@ struct KoaRepairLayer: View {
 
   // MARK: - Bảng kỷ lục
 
-  private func r(_ px: Double, _ py: Double) -> CGPoint {
+  static func r(_ px: Double, _ py: Double) -> CGPoint {
     let q = KoaRepairScene.room(px, py)
     return CGPoint(x: q.x, y: q.y)
   }
-  private func len(_ px: Double) -> Double { px / KoaRepairScene.pxPerUnit }
+  static func len(_ px: Double) -> Double { px / KoaRepairScene.pxPerUnit }
+  private func r(_ px: Double, _ py: Double) -> CGPoint { Self.r(px, py) }
+  private func len(_ px: Double) -> Double { Self.len(px) }
 
   private func drawBoard(_ c: inout GraphicsContext, _ s: KoaRepairScene.Shot, t: Double, behindKoa: Bool) {
     let B = KoaRepairScene.Board.self
@@ -264,6 +284,117 @@ struct KoaRepairLayer: View {
     }
   }
 
+  // MARK: - Bảng neon
+
+  /// Thang chao quanh chân thang (storyboard: `rotate(wob, LX, LBASE)`).
+  static func wobble(_ c: inout GraphicsContext, _ deg: Double) {
+    guard deg != 0 else { return }
+    let N = KoaRepairScene.Neon.ladderPx, b = KoaRepairScene.room(N.x, N.base)
+    c.translateBy(x: b.x, y: b.y)
+    c.rotate(by: .degrees(deg))
+    c.translateBy(x: -b.x, y: -b.y)
+  }
+
+  /// Góc phòng tối / ấm theo đèn, bảng tối + nứt (đúng hình lúc hỏng), viền bừng sáng, tia lửa chỗ búa chạm,
+  /// lấp lánh, vệt gió khi Koa chạy vụt đi.
+  static func drawNeon(_ c: inout GraphicsContext, _ n: KoaRepairScene.NeonState) {
+    let N = KoaRepairScene.Neon.self
+    let room = Path(CGRect(x: -40, y: -400, width: 470, height: 1400))
+    let center = r(260, 560), radius = len(900)
+    if n.dim > 0 {
+      c.fill(room, with: .radialGradient(Gradient(colors: [Color(red: 0.11, green: 0.09, blue: 0.13).opacity(0.16 * n.dim), .clear]),
+                                         center: center, startRadius: 0, endRadius: radius))
+    }
+    if n.warm > 0 {
+      c.fill(room, with: .radialGradient(Gradient(colors: [Color(red: 1, green: 0.85, blue: 0.54).opacity(n.warm), .clear]),
+                                         center: center, startRadius: 0, endRadius: radius))
+    }
+    var g = c
+    g.translateBy(x: n.shake, y: 0)
+    if n.broken > 0 { StudioBroken.neonBroken(&g, opacity: n.broken) }
+    if n.glow > 0 {
+      let o = r(N.signPx.x - 8, N.signPx.y - 8)
+      g.stroke(Path(roundedRect: CGRect(x: o.x, y: o.y, width: len(N.signPx.w + 16), height: len(N.signPx.h + 16)), cornerRadius: len(46)),
+               with: .color(Color(red: 1, green: 0.76, blue: 0.3).opacity(0.65 * n.glow)), lineWidth: len(12))
+    }
+    if let h = n.hit {
+      let a = sin(.pi * n.hitU)
+      drawSpark(&c, at: CGPoint(x: h.x, y: h.y), r: len(70) * a)
+      drawSpark(&c, at: CGPoint(x: h.x + len(60), y: h.y + len(24)), r: len(34) * a)
+    }
+    if let tw = n.twinkle {
+      for (i, p) in [(60.0, 360.0, 46.0), (510, 420, 38), (280, 330, 30), (470, 700, 30), (150, 720, 26)].enumerated() {
+        let u = KoaRepairScene.seg(tw, Double(i) * 0.07, Double(i) * 0.07 + 1.6)
+        if u > 0, u < 1 { drawSpark(&c, at: r(p.0, p.1), r: len(p.2) * sin(.pi * u)) }
+      }
+    }
+    if let tw = n.roomTwinkle {
+      for (i, p) in [(200.0, 520.0, 46.0), (1080, 620, 40), (250, 1500, 34), (1100, 1300, 34), (640, 1150, 30), (900, 900, 32)].enumerated() {
+        let u = KoaRepairScene.seg(tw, Double(i) * 0.07, Double(i) * 0.07 + 1.6)
+        if u > 0, u < 1 { drawSpark(&c, at: r(p.0, p.1), r: len(p.2) * sin(.pi * u)) }
+      }
+    }
+    if let u = n.whoosh, u < 1 {
+      let st = KoaRepairScene.stagePx
+      for k in 0..<3 {
+        let a = r(st.x + 120 + 200 * u, st.feet - 400 + 120 * Double(k))
+        var line = Path()
+        line.move(to: a)
+        line.addLine(to: CGPoint(x: a.x - len(260 * (1 - u)), y: a.y))
+        c.stroke(line, with: .color(.white.opacity(0.9 * (1 - u))), style: StrokeStyle(lineWidth: len(12), lineCap: .round))
+      }
+    }
+  }
+
+  /// Thang chữ A nhìn ngang (đơn vị px storyboard quanh khớp): chân sau, thanh giằng, chân trước có bậc, nóc.
+  private func drawLadder(_ c: inout GraphicsContext, _ l: KoaRepairScene.Ladder) {
+    let N = KoaRepairScene.Neon.self
+    var g = c
+    g.translateBy(x: l.hinge.x, y: l.hinge.y)
+    g.rotate(by: .degrees(l.angle))
+    g.scaleBy(x: 1 / KoaRepairScene.pxPerUnit, y: 1 / KoaRepairScene.pxPerUnit)
+    let a = N.ladderPx.half * l.spread * .pi / 180, L = N.ladderPx.length
+    let front = CGPoint(x: L * sin(a), y: L * cos(a)), back = CGPoint(x: -L * sin(a), y: L * cos(a))
+    let gap = l.gap * (1 - l.spread), upright = abs(l.angle) < 0.01
+    func rail(_ p: CGPoint, _ q: CGPoint, _ col: Color, _ w: Double) {
+      var line = Path(); line.move(to: p); line.addLine(to: q)
+      g.stroke(line, with: .color(Color(red: 0.48, green: 0.33, blue: 0.19)), style: StrokeStyle(lineWidth: w + 6, lineCap: .round))
+      g.stroke(line, with: .color(col), style: StrokeStyle(lineWidth: w, lineCap: .round))
+      g.stroke(line.offsetBy(dx: -4, dy: 0), with: .color(Color(red: 0.91, green: 0.76, blue: 0.56).opacity(0.7)), style: StrokeStyle(lineWidth: 4, lineCap: .round))
+    }
+    func foot(_ p: CGPoint, _ rx: Double) {
+      if upright {
+        g.fill(Path(ellipseIn: CGRect(x: p.x - rx - 16, y: p.y + 1, width: 2 * rx + 32, height: 14)), with: .color(Color(red: 0.35, green: 0.29, blue: 0.23).opacity(0.28)))
+      }
+      g.fill(Path(ellipseIn: CGRect(x: p.x - rx, y: p.y - 2, width: 2 * rx, height: 12)), with: .color(Color(red: 0.24, green: 0.24, blue: 0.27)))
+    }
+    let b0 = CGPoint(x: -gap, y: 0), b1 = CGPoint(x: back.x - gap, y: back.y)
+    rail(b0, b1, Color(red: 0.72, green: 0.51, blue: 0.31), 16)
+    foot(b1, 14)
+    if l.spread > 0.3 {
+      var brace = Path()
+      brace.move(to: CGPoint(x: back.x * 0.58 - gap, y: back.y * 0.58)); brace.addLine(to: CGPoint(x: front.x * 0.58, y: front.y * 0.58))
+      g.stroke(brace, with: .color(Color(red: 0.55, green: 0.55, blue: 0.59)), lineWidth: 5)
+    }
+    rail(.zero, front, Color(red: 0.81, green: 0.61, blue: 0.38), 18)
+    foot(front, 15)
+    for f in N.steps {
+      let x = front.x * f, y = front.y * f
+      if l.spread < 0.5 {                                   // gập: bậc nối hai chân như thang thường
+        var rung = Path(); rung.move(to: CGPoint(x: x - gap - 2, y: y)); rung.addLine(to: CGPoint(x: x + 2, y: y))
+        g.stroke(rung, with: .color(Color(red: 0.66, green: 0.45, blue: 0.24)), lineWidth: 10)
+      } else {                                              // mở: mặt bậc nhô về phía người leo
+        let tread = Path(roundedRect: CGRect(x: x - 6, y: y - 9, width: 66, height: 16), cornerRadius: 5)
+        g.fill(tread, with: .color(Color(red: 0.79, green: 0.58, blue: 0.38)))
+        g.stroke(tread, with: .color(Color(red: 0.48, green: 0.33, blue: 0.19)), lineWidth: 3)
+      }
+    }
+    let cap = Path(roundedRect: CGRect(x: -52, y: -16, width: 104, height: 24), cornerRadius: 8)
+    g.fill(cap, with: .color(Color(red: 0.85, green: 0.66, blue: 0.44)))
+    g.stroke(cap, with: .color(Color(red: 0.48, green: 0.33, blue: 0.19)), lineWidth: 3)
+    g.fill(Path(ellipseIn: CGRect(x: -6, y: -6, width: 12, height: 12)), with: .color(Color(red: 0.36, green: 0.25, blue: 0.15)))
+  }
+
   // MARK: - Ván sàn
 
   private func drawFloor(_ c: inout GraphicsContext, _ f: KoaRepairScene.FloorState, behindKoa: Bool) {
@@ -336,7 +467,8 @@ struct KoaRepairLayer: View {
 
   // MARK: - Hiệu ứng
 
-  private func drawSpark(_ c: inout GraphicsContext, at p: CGPoint, r: Double) {
+  private func drawSpark(_ c: inout GraphicsContext, at p: CGPoint, r: Double) { Self.drawSpark(&c, at: p, r: r) }
+  static func drawSpark(_ c: inout GraphicsContext, at p: CGPoint, r: Double) {
     guard r > 0.2 else { return }
     var s = Path()
     let pts = (0..<8).map { i -> CGPoint in

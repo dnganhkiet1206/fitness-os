@@ -152,3 +152,54 @@ struct KoaRepairFloorTests {
     #expect(cues.allSatisfy { $0.t >= 0 && $0.t <= F.duration })
   }
 }
+
+@Suite("KoaRepairScene.Neon")
+struct KoaRepairNeonTests {
+  let N = KoaRepairScene.Neon.self
+
+  @Test("vào và ra cảnh ở giữa bục, máy toàn cảnh; khung cuối như phòng, đèn sáng")
+  func entersAndLeavesOnStage() {
+    let all = N.shots()
+    for s in [all[0], all[all.count - 1]] {
+      #expect(abs(s.x - 195) < 1)
+      #expect(abs(s.feet - 412) < 1)
+      #expect(abs(s.camera.zoom - 1) < 0.01)
+      #expect(!s.flip && !s.hidden)
+    }
+    let last = all[all.count - 1]
+    #expect((last.bubble?.alpha ?? 0) < 0.01)
+    #expect(last.expression == .happy)
+    #expect(last.neon.broken == 0)
+    #expect(all[0].neon.broken == 1)
+  }
+
+  @Test("ba cú búa chạm mép dưới bảng neon; tia lửa đúng chỗ đầu búa")
+  func hammerHitsTheSign() {
+    let all = N.shots()
+    let bottom = KoaRepairScene.roomY(N.signPx.y + N.signPx.h)
+    let left = KoaRepairScene.roomX(N.signPx.x), right = KoaRepairScene.roomX(N.signPx.x + N.signPx.w)
+    for h in N.hits {
+      let i = Int(((h - N.start) * 30).rounded())
+      let head = KoaRepairScene.hammerHead(all[i], t: Double(i) / 30 + N.start)!
+      #expect(abs(head.y - bottom) < 8)
+      #expect(left < head.x && head.x < right)
+      #expect(all[i].neon.hit == head)
+    }
+  }
+
+  @Test("thang: vác trên đầu → dựng → đứng; Koa leo lên nóc, xuống lại sàn")
+  func ladderStory() {
+    let all = N.shots()
+    #expect(all.contains { $0.neon.ladder?.carried == true })
+    #expect(all.contains { $0.neon.ladder?.spread == 1 })
+    #expect(all.contains { $0.neon.koaOnLadder && $0.flip })
+    #expect(all.contains { $0.hidden })     // chạy vụt khỏi phòng đi lấy thang
+  }
+
+  @Test("tiếng theo thứ tự, nằm trong cảnh")
+  func cuesOrdered() {
+    let cues = N.cues
+    #expect(cues.map(\.t) == cues.map(\.t).sorted())
+    #expect(cues.allSatisfy { $0.t >= 0 && $0.t <= N.duration })
+  }
+}
