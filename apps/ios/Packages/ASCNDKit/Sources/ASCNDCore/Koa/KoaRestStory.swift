@@ -95,7 +95,7 @@ public enum KoaRestStory {
     f.sy = 1 + 0.012 * b
     f.zoom = 1
     // mặt: thở dốc tới khi hồi sức một phần ba (và ít nhất 2 vòng thở đầu), rồi dễ chịu
-    f.expression = t < 2 * breathMs * 0.5 || rested < 0.34 ? .pant : .content
+    f.expression = t < 2 * breathMs * 0.5 || rested < 0.34 ? .gymPant : .content
     return Moment(frame: f, beat: .breathe, caption: inhale ? .inhale : .exhale, breath: b)
   }
 
@@ -124,7 +124,7 @@ public enum KoaRestStory {
     f.sx = 1 - 0.008 * bounce; f.sy = 1 + 0.01 * bounce
     f.look = (0, -0.05)
     f.eyes = f.look
-    f.expression = .focus
+    f.expression = .gymFocus
     guard left <= cd else { return Moment(frame: f, beat: .ready, caption: .getReady, breath: 0) }
     // đếm ngược: mỗi giây một cú nhún (nén đầu giây, bật giữa giây), hoà từ dáng chuẩn bị trong 300 ms
     var c = f
@@ -152,7 +152,7 @@ public enum KoaRestStory {
     f.sx = 1 + 0.01 * b; f.sy = 1 + 0.008 * b
     f.look = (0, 0)
     f.eyes = f.look
-    f.expression = .focus
+    f.expression = .gymFocus
     return f
   }
 

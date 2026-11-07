@@ -991,6 +991,52 @@ def gym_shape(sh):
     return P(_short(sh["d"]), **a)
 for _name, _shapes in GYM_FACES.items():
     face_over("faceGym" + _name.capitalize(), [gym_shape(sh) for sh in _shapes])
+# ---- Nét mặt cho cảnh sửa đồ (06/11, Kiệt: "cho phép vẽ thêm nhiều biểu cảm mới… đáng yêu hài hước").
+# Cùng nét mực, cùng màu lưỡi với miệng gốc; chỉ hiện khi cờ bật.
+TONGUE_LINE, SWEAT, SWEAT_LINE = "#C85060", "#9ED8FF", "#5BB2E6"
+def ink(dd, w=5): return P(dd, stroke=INK, stroke_width=w, stroke_linecap="round", stroke_linejoin="round", fill="none")
+# hốt hoảng: miệng méo nhe hàm răng trên
+face_over("mouthYikes", [
+    P("M100 131 Q110 126 120 130 Q130 126 140 131 Q141 146 120 149 Q99 146 100 131 Z", fill=INK),
+    P("M103 133 Q111 129 120 132 Q129 129 137 133 L136 139 Q120 136 104 139 Z", fill="#FFFFFF")])
+# tập trung (vẽ lại 06/11, Kiệt chọn A trong 3 mẫu): lưỡi thè lệch xuống mép phải, có rãnh giữa + đốm sáng;
+# môi trên đè lên gốc lưỡi. Mắt nheo (mí dưới đẩy lên theo viền mắt), mày hạ thấp lượn sóng.
+def lower_lid(cx):
+    return [P(f"M{cx - 17} 104 Q{cx} 95 {cx + 17} 104 A18 23.5 0 0 1 {cx - 17} 104 Z", fill=FUR),   # theo đúng viền mắt, không che má
+            ink(f"M{cx - 17} 104 Q{cx} 98 {cx + 17} 104", 3.5)]
+face_over("mouthTongue", [   # Kiệt chọn kiểu A (06/11): thè lệch mép phải, môi trên đè lên gốc lưỡi
+    P("M122 134 Q121 146 129 149 Q138 151 140 142 Q141 134 135 130 Z", fill="#F08A9A", stroke=TONGUE_LINE, stroke_width=2),
+    P("M130 135 Q131 141 132 145", stroke=TONGUE_LINE, stroke_width=1.8, stroke_linecap="round", fill="none"),
+    E(136, 139, 2, 3, fill="#FFFFFF", opacity=0.7),
+    ink("M104 131 Q118 141 138 129", 5)])
+face_over("browFocus", lower_lid(82) + lower_lid(158) + [
+    ink("M67 69 Q75 62 83 66 Q90 70 97 65", 5.5), ink("M173 69 Q165 62 157 66 Q150 70 143 65", 5.5)])
+# thở hổn hển: há miệng, lưỡi thè dài nhún theo nhịp thở
+face_over("mouthPant", [
+    P("M106 129 Q120 133 134 129 Q133 146 120 149 Q107 146 106 129 Z", fill=INK),
+    G([P("M111 139 Q120 136 129 139 Q131 159 120 163 Q109 159 111 139 Z", fill=TONGUE, stroke=TONGUE_LINE, stroke_width=1.6),
+       P("M120 143 L120 157", stroke=TONGUE_LINE, stroke_width=1.6, stroke_linecap="round")],
+      anim={"k": "koaPantTongue", "dur": 420, "delay": 0, "ease": "io"}, o=[120, 139])])
+# nhắm tịt "> <" và mím méo
+face_over("eyesSqueeze", [ink("M70 84 L95 96 L70 108", 6.5), ink("M170 84 L145 96 L170 108", 6.5)])
+face_over("mouthWince", [ink("M106 137 Q113 131 120 137 Q127 143 134 137", 5)])
+# chao đảo: miệng lượn sóng
+face_over("mouthWavy", [ink("M98 137 q5.5 -6 11 0 t11 0 t11 0 t11 0", 4.5)])
+# chóng mặt (06/11): mắt xoắn ốc trên nền trắng của mắt
+face_over("eyesSpiral", [E(82, 96, 18, 23.5, fill="#FFFFFF"), E(158, 96, 18, 23.5, fill="#FFFFFF"),
+    ink("M82.0 96.0 L82.3 96.1 L82.5 96.4 L82.6 96.8 L82.5 97.3 L82.3 97.7 L81.9 98.1 L81.3 98.3 L80.7 98.3 L80.0 98.0 L79.4 97.4 L78.9 96.6 L78.6 95.5 L78.6 94.2 L78.9 92.9 L79.5 91.7 L80.4 90.7 L81.6 90.0 L83.0 89.7 L84.4 90.0 L85.8 90.7 L87.0 92.0 L88.0 93.7 L88.5 95.8 L88.6 98.1 L88.1 100.4 L87.2 102.6 L85.7 104.4 L83.8 105.7 L81.7 106.3 L79.4 106.1 L77.1 105.1 L75.1 103.4 L73.5 101.0 L72.5 98.0 L72.1 94.7 L72.5 91.3 L73.6 88.1 L75.5 85.3 L77.9 83.2 L80.8 81.9 L83.9 81.7 L87.1 82.5 L90.0 84.5 L92.4 87.4 L94.1 91.1 L95.0 95.3 L95.0 99.8 L93.9 104.2 L91.9 108.1 L89.1 111.3 L85.6 113.5 L81.7 114.4 L77.7 114.0 L73.8 112.1 L70.4 109.0 L67.8 104.8 L66.1 99.8 L65.6 94.3 L66.3 88.7 L68.2 83.5", 3.6), ink("M158.0 96.0 L158.3 95.9 L158.5 95.6 L158.6 95.2 L158.5 94.7 L158.3 94.3 L157.9 93.9 L157.3 93.7 L156.7 93.7 L156.0 94.0 L155.4 94.6 L154.9 95.4 L154.6 96.5 L154.6 97.8 L154.9 99.1 L155.5 100.3 L156.4 101.3 L157.6 102.0 L159.0 102.3 L160.4 102.0 L161.8 101.3 L163.0 100.0 L164.0 98.3 L164.5 96.2 L164.6 93.9 L164.1 91.6 L163.2 89.4 L161.7 87.6 L159.8 86.3 L157.7 85.7 L155.4 85.9 L153.1 86.9 L151.1 88.6 L149.5 91.0 L148.5 94.0 L148.1 97.3 L148.5 100.7 L149.6 103.9 L151.5 106.7 L153.9 108.8 L156.8 110.1 L159.9 110.3 L163.1 109.5 L166.0 107.5 L168.4 104.6 L170.1 100.9 L171.0 96.7 L171.0 92.2 L169.9 87.8 L167.9 83.9 L165.1 80.7 L161.6 78.5 L157.7 77.6 L153.7 78.0 L149.8 79.9 L146.4 83.0 L143.8 87.2 L142.1 92.2 L141.6 97.7 L142.3 103.3 L144.2 108.5", 3.6)])
+# giọt mồ hôi ở thái dương: trượt xuống rồi mờ, lặp
+face_over("showSweat", [G([
+    P("M190 72 C 197 84 201 91 201 97 a11 11 0 0 1 -22 0 C 179 91 183 84 190 72 Z", fill=SWEAT, stroke=SWEAT_LINE, stroke_width=2.5),
+    E(186, 94, 2.6, 4.2, fill="#FFFFFF", opacity=0.85)],
+    anim={"k": "koaSweat", "dur": 1500, "delay": 0, "ease": "in"}, o=[190, 92])])
+# Khung hoạt ảnh riêng của app (bản RN đã bỏ, Kiệt 06/11): giọt mồ hôi trượt xuống rồi mờ; lưỡi nhún theo nhịp thở.
+d['keyframes']['koaSweat'] = {"tf": [{"o": 0, "ops": [["t", 0, -4], ["s", 0.7, 0.7]], "to": [["t", 0, 0], ["s", 1, 1]]},
+                                     {"o": 0.25, "ops": [["t", 0, 0], ["s", 1, 1]], "to": [["t", 0, 16], ["s", 1, 1]]},
+                                     {"o": 1, "ops": [["t", 0, 16], ["s", 1, 1]]}],
+                              "op": [{"o": 0, "v": 0}, {"o": 0.15, "v": 1}, {"o": 0.75, "v": 1}, {"o": 1, "v": 0}]}
+d['keyframes']['koaPantTongue'] = {"tf": [{"o": 0, "ops": [["s", 1, 0.9]], "to": [["s", 1, 1.1]]},
+                                          {"o": 0.5, "ops": [["s", 1, 1.1]], "to": [["s", 1, 0.9]]}, {"o": 1, "ops": [["s", 1, 0.9]]}]}
 
 # 1. Thân: torso_front đứng → 6 biến thể theo hạng (hạng 0 = nguyên bản).
 torso_stand = next(n for n in walk(nodes[3]) if n.get('if') == 'torsoStand' and any(k.get('id') == 'torso_front' for k in n.get('kids', [])))

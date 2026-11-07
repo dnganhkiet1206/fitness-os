@@ -207,7 +207,7 @@ struct KoaRestScreen: View {
 
   private func sweat(_ m: KoaRestStory.Moment, elapsed: Double, size: CGSize) -> some View {
     Canvas { c, sz in
-      guard !reduceMotion, m.frame.expression == .pant else { return }
+      guard !reduceMotion, m.frame.expression == .gymPant else { return }
       let cx = sz.width / 2, cy = sz.height * 0.3
       for i in 0..<3 {
         let q = (elapsed / 1100 + Double(i) / 3).truncatingRemainder(dividingBy: 1)

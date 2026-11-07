@@ -39,6 +39,8 @@ public enum DataExport {
     .init(name: "supplement_intake_logs", file: "bo-sung-da-uong", group: .meals),
     .init(name: "food_items", file: "thuc-pham-cua-toi", group: .meals),
     .init(name: "progress_photos", file: "anh-tien-trinh", group: .body),
+    // đo cơ thể bằng AI (04/11): kết quả ước tính của từng ảnh
+    .init(name: "body_checks", file: "do-co-the-ai", group: .body),
     .init(name: "weekly_challenges", file: "thu-thach-tuan", group: .koa),
     .init(name: "mascot_inventory", file: "koa-tu-do", group: .koa),
     .init(name: "mascot_transactions", file: "koa-so-xu", group: .koa),

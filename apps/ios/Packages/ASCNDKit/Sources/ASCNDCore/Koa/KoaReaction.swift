@@ -105,9 +105,9 @@ public enum KoaReaction {
              look: ((0, -0.35), (0, -0.1))),
         Shot(800, "TRUNG CẢNH", .puff, pose: .lifting, turn: (0.35, 0.35), zoom: (1.25, 1.15), title: "XONG SET!",
              subtitle: "Squat · 80 kg × 5", haptic: .success, look: ((0, -0.1), (0.2, 0.35))),
-        Shot(700, "TOÀN CẢNH", .pant, pose: .relaxing, zoom: (1.0, 1.0), subtitle: "Thở chút nào · nghỉ 1:30",
+        Shot(700, "TOÀN CẢNH", .gymPant, pose: .relaxing, zoom: (1.0, 1.0), subtitle: "Thở chút nào · nghỉ 1:30",
              effects: [.sweat], motion: .plop, look: ((0, 0.45), (0, 0.25))),
-        Shot(450, "VÀO THẺ NGHỈ", .pant, pose: .relaxing, motion: .intoRing, look: ((0, 0.25), (0, 0))),
+        Shot(450, "VÀO THẺ NGHỈ", .gymPant, pose: .relaxing, motion: .intoRing, look: ((0, 0.25), (0, 0))),
       ]
     case .record:
       [
@@ -122,7 +122,7 @@ public enum KoaReaction {
       ]
     case .done:
       [
-        Shot(1100, "TOÀN CẢNH", .pant, pose: .relaxing, zoom: (0.9, 1.0), title: "XONG BUỔI!", subtitle: "Full Body A",
+        Shot(1100, "TOÀN CẢNH", .gymPant, pose: .relaxing, zoom: (0.9, 1.0), title: "XONG BUỔI!", subtitle: "Full Body A",
              effects: [.sweat], motion: .plop, haptic: .success, look: ((0, 0.5), (0, 0.3))),
         Shot(800, "TRUNG CẢNH", .content, turn: (-0.5, -0.3), zoom: (1.2, 1.25), look: ((-0.7, 0), (-0.35, 0.15))),
         Shot(700, "CẬN MẶT", .smug, turn: (0.2, 0.3), focus: .face, zoom: (1.0, 1.08), look: ((0.35, -0.05), (0.2, -0.25))),

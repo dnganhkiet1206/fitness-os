@@ -2,6 +2,259 @@
  "sourceLanguage": "en",
  "version": "1.0",
  "strings": {
+  "photos.ai.measure": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "AI check"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Medir con IA"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đo AI"
+     }
+    }
+   }
+  },
+  "photos.ai.result %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Estimated body fat: %@"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Grasa corporal estimada: %@"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mỡ cơ thể ước tính: %@"
+     }
+    }
+   }
+  },
+  "photos.ai.result.a11y %@": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Estimated body fat %@. Show details"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Grasa corporal estimada %@. Ver detalles"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mỡ cơ thể ước tính %@. Xem chi tiết"
+     }
+    }
+   }
+  },
+  "photos.ai.trend": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Estimated body fat"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Grasa corporal estimada"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mỡ cơ thể ước tính"
+     }
+    }
+   }
+  },
+  "photos.ai.points": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "pts"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "pts"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "điểm"
+     }
+    }
+   }
+  },
+  "photos.ai.disclaimer": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "An estimate from a photo, not a measurement. Same spot, same light makes photos comparable."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Una estimación a partir de una foto, no una medición. Mismo lugar y misma luz para comparar."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ước tính từ ảnh, không phải số đo. Chụp cùng chỗ, cùng ánh sáng để so sánh."
+     }
+    }
+   }
+  },
+  "photos.ai.conf.high": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Confidence: high"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Confianza: alta"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Độ tin: cao"
+     }
+    }
+   }
+  },
+  "photos.ai.conf.medium": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Confidence: medium"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Confianza: media"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Độ tin: vừa"
+     }
+    }
+   }
+  },
+  "photos.ai.conf.low": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Confidence: low"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Confianza: baja"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Độ tin: thấp"
+     }
+    }
+   }
+  },
+  "photos.ai.notBody": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Couldn't see your body clearly. Try a front-facing photo in good light."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "No se ve bien el cuerpo. Prueba una foto de frente con buena luz."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ảnh chưa thấy rõ thân người. Thử chụp chính diện, đủ sáng nhé."
+     }
+    }
+   }
+  },
+  "photos.ai.failed": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Couldn't check this photo. Try again later."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "No se pudo medir esta foto. Inténtalo más tarde."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chưa đo được ảnh này, thử lại sau nhé."
+     }
+    }
+   }
+  },
   "reminders.meal.add": {
    "extractionState": "manual",
    "localizations": {

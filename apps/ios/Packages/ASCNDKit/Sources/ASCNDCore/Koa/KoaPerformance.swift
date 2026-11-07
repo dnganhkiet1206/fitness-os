@@ -299,7 +299,7 @@ public enum KoaPerformance {
         zoom: T(Key(0, 1.0), Key(1300, 1.04), Key(4200, 1.0)),
         focus: T(Key(0, 1), Key(4200, 1)),
         tremble: T(Key(0, 0), Key(800, 0), Key(950, 3), Key(1300, 3), Key(1400, 0)),
-        faces: [(0, .grit), (1600, .puff), (2600, .pant)],
+        faces: [(0, .grit), (1600, .puff), (2600, .gymPant)],
         hand: "dumbbell",
         cues: [Cue(1700, 4200, title: "XONG SET!", subtitle: "Squat · set 1/2", haptic: .success),
                Cue(2600, 4200, effects: [.sweat])],
@@ -367,7 +367,7 @@ public enum KoaPerformance {
                 Key(3900, 1.0, .inOut), Key(4400, 0.9), Key(6300, 0.95), Key(7500, 0.95)),
         focus: T(Key(0, 1), Key(2800, 1), Key(3150, 0), Key(3500, 0), Key(3900, 1)),
         tremble: zero,
-        faces: [(0, .pant), (1500, .content), (2950, .smug), (4600, .delighted)],
+        faces: [(0, .gymPant), (1500, .content), (2950, .smug), (4600, .delighted)],
         hand: nil,
         cues: [Cue(0, 1700, title: "XONG BUỔI!", subtitle: "Full Body A", effects: [.sweat], haptic: .success),
                // 3 thẻ số liệu giữ tới hết cảnh để người dùng đọc (Kiệt 06/11)

@@ -233,6 +233,6 @@ struct KoaGymFaceTests {
 
   @Test func closedEyeGymFacesAreNotForcedToBlink() {
     #expect(KoaFlags.eyesClosed(.puff) && KoaFlags.eyesClosed(.roar))
-    #expect(!KoaFlags.eyesClosed(.focus))
+    #expect(!KoaFlags.eyesClosed(.gymFocus))
   }
 }

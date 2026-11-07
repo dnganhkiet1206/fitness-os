@@ -30,6 +30,8 @@ struct ProgressPhotosView: View {
   @State private var confirm: ProgressPhotos.Photo?
   @State private var notice: String?
   @State private var pair: Pair?
+  /// Đo cơ thể bằng AI (04/11): nhãn "~18 %" trên ảnh và thẻ xu hướng.
+  @State private var checks: BodyChecksBook?
 
   struct Pair: Identifiable {
     let before: ProgressPhotos.Photo
@@ -62,6 +64,7 @@ struct ProgressPhotosView: View {
               .font(DS.TextStyle.footnote)
               .foregroundStyle(DS.Color.mutedForeground.swiftUI)
           }
+          if let trend = checks?.trend { trendCard(trend) }
           LazyVGrid(columns: columns, spacing: DS.Spacing.sm) {
             ForEach(book.photos) { cell($0) }
           }
@@ -100,6 +103,10 @@ struct ProgressPhotosView: View {
       }
     }
     .task { if case .loading = book.phase { await book.load() } }
+    .task {
+      if checks == nil { checks = services?.makeBodyChecks(userId: book.userId) }
+      await checks?.load()
+    }
     .refreshable { await book.load() }
     .sheet(isPresented: $adding) {
       AddProgressPhotoSheet { jpeg, pose in
@@ -125,16 +132,21 @@ struct ProgressPhotosView: View {
     let when = p.date.map { $0.calendarDate.formatted(.dateTime.day().month(.abbreviated).locale(.app)) } ?? ""
     return VStack(alignment: .leading, spacing: 0) {
       ZStack(alignment: .topTrailing) {
-        AsyncImage(url: book.url(p)) { phase in
-          if let image = phase.image {
-            image.resizable().scaledToFill()
-          } else {
-            DS.Color.secondary.swiftUI
-              .overlay { Image(systemName: "photo").foregroundStyle(DS.Color.mutedForeground.swiftUI) }
+        // khung 4:5 cố định, ảnh lấp đầy và cắt theo khung (05/11: ảnh ngang tràn ra ngoài ô)
+        Color.clear
+          .aspectRatio(0.8, contentMode: .fit)
+          .overlay {
+            AsyncImage(url: book.url(p)) { phase in
+              if let image = phase.image {
+                image.resizable().scaledToFill()
+              } else {
+                DS.Color.secondary.swiftUI
+                  .overlay { Image(systemName: "photo").foregroundStyle(DS.Color.mutedForeground.swiftUI) }
+              }
+            }
           }
-        }
-        .aspectRatio(0.8, contentMode: .fit)
-        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.md))
+          .clipShape(RoundedRectangle(cornerRadius: DS.Radius.md))
+        if !comparing { bodyBadge(p) }
         if comparing {
           Image(systemName: isOn ? "checkmark.circle.fill" : "circle")
             .font(.title3)
@@ -170,6 +182,104 @@ struct ProgressPhotosView: View {
         }
       }
       .frame(minHeight: 44)
+    }
+  }
+
+  // MARK: - Đo cơ thể bằng AI (04/11)
+
+  /// Góc trên ảnh: "~18 %" khi đã đo (chạm xem khoảng + ghi chú), không thì nút "Đo AI".
+  @ViewBuilder private func bodyBadge(_ p: ProgressPhotos.Photo) -> some View {
+    let r = checks?.result(for: p.id)
+    let busy = checks?.measuring.contains(p.id.lowercased()) == true
+    if checks != nil {
+      Button {
+        if let r { ConfirmAlert.ok(Self.detail(r)) } else { Task { await measure(p) } }
+      } label: {
+        HStack(spacing: 4) {
+          if busy {
+            ProgressView().controlSize(.mini).tint(.white)
+          } else {
+            Image(systemName: r == nil ? "sparkles" : "drop.halffull").font(.caption2.weight(.bold))
+          }
+          Text(verbatim: r.map(BodyCheck.label) ?? String(localized: "photos.ai.measure"))
+            .font(DS.TextStyle.caption.weight(.semibold))
+            .monospacedDigit()
+        }
+        .foregroundStyle(.white)
+        .padding(.horizontal, 8)
+        .frame(minHeight: 28)
+        .background(.black.opacity(0.55), in: Capsule())
+        .padding(DS.Spacing.xs)
+        .frame(minWidth: 44, minHeight: 44)
+        .contentShape(Rectangle())
+      }
+      .buttonStyle(.plain)
+      .disabled(busy)
+      .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+      .accessibilityLabel(Text(r.map { String(localized: "photos.ai.result.a11y \(BodyCheck.range($0))") } ?? String(localized: "photos.ai.measure")))
+    }
+  }
+
+  /// Thẻ xu hướng: mỡ cơ thể ước tính theo các lần đo, đường nhỏ + thay đổi từ lần đầu.
+  private func trendCard(_ t: BodyCheck.Trend) -> some View {
+    VStack(alignment: .leading, spacing: DS.Spacing.xs) {
+      HStack(alignment: .firstTextBaseline) {
+        Text("photos.ai.trend").font(DS.TextStyle.footnote.weight(.semibold))
+        Spacer()
+        Text(verbatim: String(format: "%@%.1f", t.change > 0 ? "+" : t.change < 0 ? "−" : "±", abs(t.change)) + " " + String(localized: "photos.ai.points"))
+          .font(DS.TextStyle.footnote.weight(.semibold).monospacedDigit())
+          .foregroundStyle(t.change <= 0 ? DS.Color.readinessGreen.swiftUI : DS.Color.mutedForeground.swiftUI)
+      }
+      GeometryReader { g in
+        let lo = (t.points.map(\.pct).min() ?? 0) - 1, hi = (t.points.map(\.pct).max() ?? 1) + 1
+        Path { path in
+          for (i, pt) in t.points.enumerated() {
+            let x = g.size.width * Double(i) / Double(max(t.points.count - 1, 1))
+            let y = g.size.height * (1 - (pt.pct - lo) / max(hi - lo, 1))
+            if i == 0 { path.move(to: CGPoint(x: x, y: y)) } else { path.addLine(to: CGPoint(x: x, y: y)) }
+          }
+        }
+        .stroke(DS.Color.primary.swiftUI, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+      }
+      .frame(height: 44)
+      .accessibilityHidden(true)
+      Text("photos.ai.disclaimer").font(DS.TextStyle.caption).foregroundStyle(DS.Color.mutedForeground.swiftUI)
+    }
+    .padding(DS.Spacing.md)
+    .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.md))
+    .accessibilityElement(children: .combine)
+  }
+
+  static func detail(_ r: BodyCheck.Result) -> String {
+    let conf: String =
+      switch r.confidence {
+      case .high: String(localized: "photos.ai.conf.high")
+      case .medium: String(localized: "photos.ai.conf.medium")
+      case .low: String(localized: "photos.ai.conf.low")
+      }
+    return [String(localized: "photos.ai.result \(BodyCheck.range(r))"), conf, r.note, String(localized: "photos.ai.disclaimer")]
+      .filter { !$0.isEmpty }.joined(separator: "\n\n")
+  }
+
+  /// Tải đúng ảnh ấy (URL ký sẵn của ảnh) rồi gửi đi đo, kèm giới tính / cao / cân của hồ sơ làm gợi ý.
+  private func measure(_ p: ProgressPhotos.Photo) async {
+    guard let checks, let url = book.url(p), let (data, _) = try? await URLSession.shared.data(from: url) else {
+      ConfirmAlert.ok(String(localized: "photos.ai.failed"))
+      return
+    }
+    var profile: Profile?
+    if let services {
+      let pb = services.makeProfileBook(userId: book.userId)
+      await pb.loadCached()
+      profile = pb.profile
+    }
+    let lang = String(Locale.current.identifier.prefix(2))
+    switch await checks.measure(
+      photoId: p.id, jpeg: data, lang: lang, sex: profile?.sex, heightCm: profile?.heightCm, weightKg: profile?.weightKg)
+    {
+    case .measured(let r): ConfirmAlert.ok(Self.detail(r))
+    case .notBody: ConfirmAlert.ok(String(localized: "photos.ai.notBody"))
+    case .failed(let f): ConfirmAlert.ok(WeeklyReviewView.failureText(f))
     }
   }
 

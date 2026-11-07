@@ -223,7 +223,8 @@
       "Mọi con số, biểu đồ và gợi ý chỉ mang tính tham khảo chung.",
       "Gợi ý AI do mô hình máy tính tạo ra, có thể sai hoặc không phù hợp với bạn; không do bác sĩ soạn hay kiểm duyệt.",
       "Điểm sẵn sàng, tỉ lệ tải tập (ACWR) và các chỉ số sinh trắc là ước tính từ dữ liệu bạn ghi hoặc từ thiết bị, không có độ chính xác y khoa.",
-      "Lượng calo và dinh dưỡng của món ăn, kể cả khi nhận diện bằng ảnh, là ước tính."
+      "Lượng calo và dinh dưỡng của món ăn, kể cả khi nhận diện bằng ảnh, là ước tính.",
+      "Tỉ lệ mỡ đo bằng AI từ ảnh tiến trình là ước tính thô, có thể lệch nhiều theo ánh sáng, góc chụp và quần áo; không thay cho phép đo chuyên môn."
      ]
     },
     {
@@ -275,7 +276,8 @@
      "bullets": [
       "Lịch sử trò chuyện với Koa Coach được lưu trong tài khoản để bạn xem lại; bạn có thể xoá từng cuộc trò chuyện.",
       "Trí nhớ của Koa: các điều ngắn (giới hạn, mục tiêu, thói quen, hoàn cảnh) rút ra từ trò chuyện để trả lời sát hơn. Xem và xoá trong Trợ lý → Coach nhớ gì.",
-      "Chúng tôi không lưu ảnh món ăn gửi để nhận diện; nhà cung cấp AI có thể lưu tạm theo điều khoản của họ."
+      "Chúng tôi không lưu ảnh món ăn gửi để nhận diện; nhà cung cấp AI có thể lưu tạm theo điều khoản của họ.",
+      "Đo cơ thể bằng AI: chỉ khi bạn bấm \"Đo AI\" trên một ảnh tiến trình, ảnh ấy (kèm giới tính, chiều cao, cân nặng trong hồ sơ nếu có) mới được gửi tới nhà cung cấp AI để ước tính tỉ lệ mỡ. Kết quả (số ước tính, khoảng, độ tin, một ghi chú ngắn) được lưu trong tài khoản; xoá ảnh là xoá kết quả của ảnh ấy."
      ]
     },
     {
@@ -535,7 +537,8 @@
       "All numbers, charts and suggestions are general information.",
       "AI suggestions are produced by computer models and can be wrong or unsuitable for you; they are not written or reviewed by doctors.",
       "The readiness score, acute:chronic workload ratio (ACWR) and biometric values are estimates from data you log or from devices, without medical-grade accuracy.",
-      "Calories and nutrients, including food recognized from photos, are estimates."
+      "Calories and nutrients, including food recognized from photos, are estimates.",
+      "AI body-fat estimates from progress photos are rough and can be off by a lot depending on light, angle and clothing; they do not replace a professional measurement."
      ]
     },
     {
@@ -587,7 +590,8 @@
      "bullets": [
       "Your Koa Coach chat history is stored in your account so you can return to it; you can delete any conversation.",
       "Koa’s memory: short facts (limits, goals, habits, circumstances) taken from your chats to give better answers. View and delete them in Assistant → What Koa remembers.",
-      "We do not store food photos sent for recognition; the AI provider may retain them temporarily under its terms."
+      "We do not store food photos sent for recognition; the AI provider may retain them temporarily under its terms.",
+      "AI body check: only when you tap \"AI check\" on a progress photo is that photo (with the sex, height and weight in your profile, if any) sent to the AI provider to estimate body fat. The result (estimate, range, confidence and a short note) is stored in your account; deleting the photo deletes its result."
      ]
     },
     {
@@ -847,6 +851,7 @@
       "Todas las cifras, gráficos y sugerencias son información general.",
       "Las sugerencias de IA las generan modelos informáticos y pueden ser erróneas o no adecuadas para ti; no las redactan ni revisan médicos.",
       "La puntuación de preparación, la relación de carga aguda:crónica (ACWR) y los valores biométricos son estimaciones a partir de tus registros o dispositivos, sin precisión médica.",
+      "La grasa corporal estimada con IA a partir de fotos de progreso es aproximada y puede variar mucho según la luz, el ángulo y la ropa; no sustituye una medición profesional.",
       "Las calorías y nutrientes, incluidos los de alimentos reconocidos por foto, son estimaciones."
      ]
     },
@@ -899,7 +904,8 @@
      "bullets": [
       "El historial de chat con Koa Coach se guarda en tu cuenta para que puedas volver a él; puedes eliminar cualquier conversación.",
       "Memoria de Koa: datos breves (límites, objetivos, hábitos, circunstancias) extraídos de tus chats para responder mejor. Consúltalos y elimínalos en Asistente → Lo que Koa recuerda.",
-      "No guardamos las fotos de comida enviadas para reconocimiento; el proveedor de IA puede conservarlas temporalmente según sus condiciones."
+      "No guardamos las fotos de comida enviadas para reconocimiento; el proveedor de IA puede conservarlas temporalmente según sus condiciones.",
+      "Medición corporal con IA: solo cuando tocas \"Medir con IA\" en una foto de progreso se envía esa foto (con el sexo, la altura y el peso de tu perfil, si los hay) al proveedor de IA para estimar la grasa corporal. El resultado (estimación, rango, confianza y una nota breve) se guarda en tu cuenta; al borrar la foto se borra su resultado."
      ]
     },
     {

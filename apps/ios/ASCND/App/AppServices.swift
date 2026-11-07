@@ -1363,6 +1363,12 @@ final class AppServices {
 
   /// Ảnh tiến trình (#527): bảng `progress_photos` + bucket riêng tư; cân / vòng
   /// eo cho tấm so sánh đọc qua `RowStore`.
+  /// Đo cơ thể bằng AI trong Ảnh tiến trình (04/11): đọc `body_checks`, gọi `body-check`.
+  func makeBodyChecks(userId: String) -> BodyChecksBook? {
+    guard let rows, let edge else { return nil }
+    return BodyChecksBook(userId: userId, store: rows, edge: edge)
+  }
+
   func makeProgressPhotos(userId: String) -> ProgressPhotosBook? {
     guard let backend else { return nil }
     return ProgressPhotosBook(userId: userId, remote: SupabaseProgressPhotos(backend: backend), store: rows)

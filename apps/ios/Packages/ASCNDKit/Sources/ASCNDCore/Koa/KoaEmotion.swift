@@ -54,9 +54,9 @@ public enum KoaEmotion {
     .warmup: State(.strain, .lifting),
     .coat: State(.happy, .idle),
     // vừa ghi set: ngồi xuống thở dốc (thay mặt thiền khép mắt — đọc ra "ngủ" giữa buổi tập)
-    .breather: State(.pant, .relaxing),
+    .breather: State(.gymPant, .relaxing),
     .victory: State(.roar, .idle),
-    .ready: State(.focus, .idle),
+    .ready: State(.gymFocus, .idle),
     .pumped: State(.smug, .idle),
   ]
 
