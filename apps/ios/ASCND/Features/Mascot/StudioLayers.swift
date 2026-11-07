@@ -354,7 +354,6 @@ struct StudioBroken: View {
   /// Khung các món trong toạ độ phòng.
   static let board = CGRect(x: 272, y: 248, width: 98, height: 58)
   static let stage = (x: 195.0, y: 411.5, rx: 137.0, ry: 30.5)
-  static let floorPlank = CGRect(x: 278, y: 480, width: 86, height: 11)
 
   var body: some View {
     Canvas { ctx, _ in
@@ -391,26 +390,66 @@ struct StudioBroken: View {
           }
         }
       case .stage:
-        let st = Self.stage
-        crack([CGPoint(x: st.x - 70, y: st.y - 6), CGPoint(x: st.x - 40, y: st.y + 4), CGPoint(x: st.x - 22, y: st.y - 2),
-               CGPoint(x: st.x + 4, y: st.y + 10), CGPoint(x: st.x + 30, y: st.y + 6)], width: 2.6)
-        // vành đèn của bục tắt một đoạn
-        var arc = Path()
-        arc.addArc(center: .zero, radius: 1, startAngle: .degrees(20), endAngle: .degrees(70), clockwise: false)
-        let m = CGAffineTransform(translationX: st.x, y: st.y).scaledBy(x: st.rx, y: st.ry)
-        c.stroke(arc.applying(m), with: .color(.black.opacity(0.55)), lineWidth: 4)
+        Self.stageCrack(&c, opacity: 1)
+        Self.darkRim(&c, opacity: 1)
       case .floor:
-        let p = Self.floorPlank
-        // tấm ván bật lên một đầu, bóng tối dưới khe
-        c.fill(Path(p.insetBy(dx: 0, dy: 2)), with: .color(.black.opacity(0.45)))
-        var plank = Path()
-        plank.addLines([CGPoint(x: p.minX, y: p.maxY), CGPoint(x: p.maxX, y: p.minY - 12), CGPoint(x: p.maxX, y: p.minY - 4),
-                        CGPoint(x: p.minX, y: p.maxY + 3)])
-        plank.closeSubpath()
-        c.fill(plank, with: .color(Color(red: 0.72, green: 0.52, blue: 0.33)))
-        c.stroke(plank, with: .color(Color(red: 0.45, green: 0.3, blue: 0.18)), lineWidth: 1.2)
+        Self.plank(&c, angle: KoaRepairScene.Floor.plankPx.raise)
       }
     }
+  }
+
+  /// Vết nứt trên mặt bục — đúng vết của storyboard D (`KoaRepairScene.Stage.crack`), để lúc hỏng và lúc
+  /// Koa sửa là một vết.
+  static func stageCrack(_ c: inout GraphicsContext, opacity: Double) {
+    let u = KoaRepairScene.pxPerUnit
+    var g = c
+    g.opacity = opacity
+    var p = Path()
+    p.addLines(KoaRepairScene.Stage.crack.map { CGPoint(x: $0.x, y: $0.y) })
+    let ink = GraphicsContext.Shading.color(Color(red: 0.16, green: 0.11, blue: 0.07))
+    g.stroke(p, with: ink, style: StrokeStyle(lineWidth: 7 / u, lineCap: .round, lineJoin: .round))
+    g.stroke(p.offsetBy(dx: 2 / u, dy: 3 / u), with: .color(Color(red: 0.85, green: 0.71, blue: 0.54).opacity(0.7)), lineWidth: 2 / u)
+    for b in KoaRepairScene.Stage.branches {
+      var q = Path()
+      q.addLines(b.map { CGPoint(x: $0.x, y: $0.y) })
+      g.stroke(q, with: ink, style: StrokeStyle(lineWidth: 4 / u, lineCap: .round))
+    }
+  }
+
+  /// Tấm ván sau bục (storyboard E): cùng màu sàn (lấy mẫu ảnh phòng). Bật: lộ cạnh ván + khe tối; nằm phẳng:
+  /// chỉ còn đường ráp mảnh liền với sàn. Đầu phải dính sàn, đầu trái nhấc lên `angle` độ.
+  static func plank(_ c: inout GraphicsContext, angle: Double) {
+    let F = KoaRepairScene.Floor.self, u = KoaRepairScene.pxPerUnit
+    let pv = KoaRepairScene.room(F.pivotPx.x, F.pivotPx.y)
+    let len = F.plankPx.length / u, h = 14 / u, top = pv.y - 10 / u, x0 = pv.x - len
+    let face = CGRect(x: x0, y: top, width: len, height: h)
+    let dark = Color(red: 0.54, green: 0.42, blue: 0.3)
+    guard angle >= 0.3 else {
+      c.stroke(Path(face), with: .color(Color(red: 0.56, green: 0.45, blue: 0.34).opacity(0.55)), lineWidth: 1.6 / u)
+      return
+    }
+    c.fill(Path(face), with: .color(Color(red: 0.23, green: 0.16, blue: 0.11).opacity(0.85 * min(1, angle / 6))))   // khe tối
+    var g = c
+    g.translateBy(x: pv.x, y: top + h)
+    g.rotate(by: .degrees(angle))
+    g.translateBy(x: -pv.x, y: -(top + h))
+    g.fill(Path(CGRect(x: x0, y: top + h, width: len, height: 9 / u)), with: .color(dark))                          // cạnh ván
+    g.fill(Path(face), with: .color(Color(red: 0.76, green: 0.65, blue: 0.52)))
+    g.stroke(Path(face), with: .color(dark), lineWidth: 2 / u)
+    var grain = Path()
+    grain.move(to: CGPoint(x: x0 + 20 / u, y: top + 7 / u))
+    grain.addLine(to: CGPoint(x: pv.x - 30 / u, y: top + 7 / u))
+    g.stroke(grain, with: .color(Color(red: 0.66, green: 0.54, blue: 0.42).opacity(0.7)), lineWidth: 1.5 / u)
+    g.fill(Path(ellipseIn: CGRect(x: x0 + 4 / u, y: top + h + 6 / u, width: 20 / u, height: 6 / u)), with: .color(Color(red: 0.16, green: 0.11, blue: 0.07).opacity(0.4)))
+  }
+
+  /// Vành đèn của bục tắt một đoạn.
+  static func darkRim(_ c: inout GraphicsContext, opacity: Double) {
+    let st = stage
+    var arc = Path()
+    arc.addArc(center: .zero, radius: 1, startAngle: .degrees(20), endAngle: .degrees(70), clockwise: false)
+    let m = CGAffineTransform(translationX: st.x, y: st.y).scaledBy(x: st.rx, y: st.ry)
+    c.stroke(arc.applying(m), with: .color(.black.opacity(0.55 * opacity)), lineWidth: 4)
   }
 
   private func sparkle(_ c: inout GraphicsContext, at p: CGPoint) {
