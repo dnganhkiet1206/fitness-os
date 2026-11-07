@@ -141,6 +141,30 @@ public struct WorkoutView: View {
       .onChange(of: restTimer == nil) { _, none in if none { restMinimized = false } }
   }
 
+  /// Ba thẻ số dưới Koa ở màn nghỉ: mức tạ (hay giây giữ), reps, so với lần trước (mức tạ tốt nhất buổi trước).
+  private func restCards(_ row: PlannedSet) -> [KoaRestScreen.Card] {
+    let p = controller.performed(row)
+    var out: [KoaRestScreen.Card] = []
+    if let secs = p.durationSec {
+      out.append(.init(value: "\(secs)s", label: String(localized: "koa.rest.card.hold")))
+    } else {
+      if p.weightKg > 0 {
+        out.append(.init(value: unit.localizedLoad(p.weightKg, locale: locale) ?? unit.load(p.weightKg),
+                         label: String(localized: "koa.rest.card.load")))
+      }
+      out.append(.init(value: "\(p.reps)", label: String(localized: "koa.rest.card.reps")))
+    }
+    if p.weightKg > 0, let prev = flow?.insights?.history(for: row.exerciseName).last?.bestWeightKg, prev > 0 {
+      let d = p.weightKg - prev
+      let v = abs(d) < 0.01 ? "=" : (d > 0 ? "+" : "−") + (unit.localizedLoad(abs(d), locale: locale) ?? unit.load(abs(d)))
+      out.append(.init(value: v, label: String(localized: "koa.rest.card.vsLast"), accent: d > 0.01))
+    } else {
+      let n = number(row)
+      out.append(.init(value: "\(n.n)/\(n.of)", label: String(localized: "koa.rest.card.set")))
+    }
+    return out
+  }
+
   /// Màn nghỉ có Koa (07/11, Kiệt: thay đồng hồ nghỉ cũ). Chỉ ở màn từng set; dạng bảng giữ dải nghỉ gọn.
   @ViewBuilder private var restScreen: some View {
     if let timer = restTimer, !restMinimized, !isPreview, !showsTable, controller.phase == .active || controller.phase == .idle {
@@ -151,6 +175,11 @@ public struct WorkoutView: View {
         justDone: last.map { "\($0.exerciseName) · \(setText($0))" },
         next: next.map { nextLine($0) },
         record: restRecordNote,
+        subtitle: last.map { row in
+          let n = number(row)
+          return "\(row.exerciseName) · set \(n.n)/\(n.of)"
+        },
+        cards: last.map(restCards) ?? [],
         onAdjust: onAdjustRest, onSkip: onSkipRest, onSetPaused: onSetRestPaused, onSettle: onSettleRest,
         onMinimize: { withAnimation(DSMotion.animation(.snappy, reduceMotion: reduceMotion)) { restMinimized = true } },
         onEditJustDone: last.flatMap { row in

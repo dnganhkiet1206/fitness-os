@@ -14,6 +14,13 @@ public enum KoaReaction {
     case record
     /// Kết thúc buổi, trước màn tổng kết.
     case done
+    /// Màn nghỉ giữa hiệp (07/11, Kiệt: "tại sao không làm theo kiểu như khi buổi tập xong"): cùng bộ máy, cùng
+    /// ngôn ngữ hình của cảnh xong buổi. Mở đầu ngay khi xong set…
+    case restIntro
+    /// …một cú vươn vai giữa quãng nghỉ (nghỉ đủ dài)…
+    case restStretch
+    /// …và 3,5 s cuối: nhún đếm ngược, hết giờ giơ tay chữ V "Lượt mình!".
+    case restGo
   }
 
   public enum Focus: Sendable, Hashable {
@@ -99,6 +106,8 @@ public enum KoaReaction {
   /// Chữ trong mock (số liệu mẫu). Bản thật lấy từ set / buổi vừa ghi.
   public static func shots(_ scene: Scene) -> [Shot] {
     switch scene {
+    case .restIntro, .restStretch, .restGo:
+      []
     case .set:
       [
         Shot(500, "CẬN MẶT", .grit, pose: .lifting, focus: .face, zoom: (1.0, 1.12), effects: [.speedLines, .shake], haptic: .soft,

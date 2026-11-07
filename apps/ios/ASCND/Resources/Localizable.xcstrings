@@ -71662,19 +71662,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "Let's go!"
+      "value": "MY TURN!"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Lên set!"
+      "value": "LƯỢT MÌNH!"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "¡Vamos!"
+      "value": "¡ME TOCA!"
      }
     }
    }
@@ -71790,6 +71790,121 @@
      "stringUnit": {
       "state": "translated",
       "value": "Sécate el sudor"
+     }
+    }
+   }
+  },
+  "koa.rest.card.load": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "load"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "mức tạ"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "carga"
+     }
+    }
+   }
+  },
+  "koa.rest.card.reps": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "reps"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "reps"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "reps"
+     }
+    }
+   }
+  },
+  "koa.rest.card.hold": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "hold"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "giữ"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "aguante"
+     }
+    }
+   }
+  },
+  "koa.rest.card.vsLast": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "vs last time"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "so với lần trước"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "vs la última vez"
+     }
+    }
+   }
+  },
+  "koa.rest.card.set": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "set"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "set"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "serie"
      }
     }
    }
