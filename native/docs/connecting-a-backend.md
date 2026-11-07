@@ -126,7 +126,7 @@ dòng vừa ghi, kèm cột `sets` dạng JSON.
 
 ## 0f. Chín edge function — chưa cần cho việc test
 
-Function chạy local được bằng `supabase functions serve`, nhưng **bảy function
+Function chạy local được bằng `supabase functions serve`, nhưng **tám function
 AI đều gọi `https://ai.gateway.lovable.dev`** và cần `LOVABLE_API_KEY`. Không có
 key thì chúng deploy được và trả 5xx.
 
@@ -327,7 +327,7 @@ tồn tại ở project mới. Với một tài khoản test thì cách gọn nh
 
 ## 2. Tạo schema
 
-`supabase/migrations/` đã có **87 file SQL** dựng sẵn toàn bộ schema (16 file
+`supabase/migrations/` đã có **88 file SQL** dựng sẵn toàn bộ schema (16 file
 `<timestamp>_<uuid>.sql` do Lovable sinh ra, phần còn lại viết tay). Sau khi
 link đúng project ở bước 1b:
 
@@ -448,14 +448,14 @@ nên `ON DELETE CASCADE` không đụng tới chúng.** Xem §3.
 
 ---
 
-## 3. Edge function — cả 11 cái đã có sẵn
+## 3. Edge function — cả 12 cái đã có sẵn
 
-Mã nguồn của **cả mười một** function đã nằm trong repo ở `supabase/functions/`,
+Mã nguồn của **cả mười hai** function đã nằm trong repo ở `supabase/functions/`,
 nên đây chỉ là việc deploy chứ không phải việc viết:
 
 ```bash
 supabase functions deploy ai-coach ai-coach-memory ai-log-parse ai-meal-suggest \
-  ai-smart-nudges ai-weekly-review scan-food \
+  ai-smart-nudges ai-weekly-review scan-food body-check \
   verify-purchase store-webhook delete-account admin-art
 ```
 
@@ -476,6 +476,7 @@ checklist, không phải tiện ích:
 |---|---|---|
 | `ai-meal-suggest` | gợi ý món ăn | nút gợi ý báo "chưa cài trên máy chủ" |
 | `scan-food` | chụp ảnh món ăn | màn hình quét báo lý do cụ thể |
+| `body-check` | "Đo AI" trên ảnh tiến trình (app native) | nút đo báo lý do; ảnh vẫn dùng bình thường |
 | `ai-weekly-review` | tổng kết tuần | nút phân tích báo lý do |
 | `ai-smart-nudges` | thẻ gợi ý ở Today | im lặng — đây là phần thưởng thêm |
 | `ai-coach` | chat coach (**streaming**) | chat báo lỗi |

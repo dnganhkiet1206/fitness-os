@@ -19,6 +19,8 @@ public enum EdgeFunction {
     case coachMemory = "ai-coach-memory"
     /// "Ghi hôm nay": câu kể → các mục (19/10).
     case logParse = "ai-log-parse"
+    /// Đo cơ thể bằng AI trong Ảnh tiến trình (04/11): ước tính tỉ lệ mỡ của một ảnh.
+    case bodyCheck = "body-check"
     case verifyPurchase = "verify-purchase"
     case storeWebhook = "store-webhook"
     case deleteAccount = "delete-account"

@@ -6,6 +6,9 @@ verify_jwt = false
 [functions.scan-food]
 verify_jwt = false
 
+[functions.body-check]
+verify_jwt = false
+
 [functions.ai-smart-nudges]
 verify_jwt = false
 

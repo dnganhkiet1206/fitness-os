@@ -57,7 +57,8 @@ INSERT INTO owned VALUES
   ('streak_freezes', 'S', 32, 'mua bằng RPC có khoá — 20260814120000'),
   ('plan_day_overrides', 'SIUD', 33, 'đổi lịch riêng một ngày (GĐ1) — 20261020140000'),
   ('koa_pauses', 'SIUD', 34, 'tạm nghỉ của Koa, một dòng mỗi người — 20261103120000'),
-  ('koa_pause_log', 'SIU', 35, 'sổ các đợt tạm nghỉ: không xoá, huỷ là ghi ngày cuối trước ngày đầu — 20261104120000');
+  ('koa_pause_log', 'SIU', 35, 'sổ các đợt tạm nghỉ: không xoá, huỷ là ghi ngày cuối trước ngày đầu — 20261104120000'),
+  ('body_checks', 'SIUD', 36, 'đo cơ thể bằng AI, con của progress_photos — 20261105090000');
 -- Bảng không có user_id: quyền đi qua dòng cha.
 CREATE TEMP TABLE kids (tbl text PRIMARY KEY, fk text NOT NULL, parent text NOT NULL);
 INSERT INTO kids VALUES
@@ -101,6 +102,10 @@ BEGIN
         WHEN 'exercise_guide_content.locale' THEN quote_literal('vi')
         WHEN 'exercise_media.kind' THEN quote_literal('image')
         WHEN 'exercise_media_content.locale' THEN quote_literal('vi')
+        WHEN 'body_checks.body_fat_pct' THEN '20'
+        WHEN 'body_checks.body_fat_low' THEN '18'
+        WHEN 'body_checks.body_fat_high' THEN '22'
+        WHEN 'body_checks.confidence' THEN quote_literal('medium')
         ELSE NULL END;
       IF v IS NULL AND c.udt_name = 'uuid' THEN
         -- Khoá ngoại NOT NULL: dòng cha CÙNG chủ (id tất định của nó).
@@ -343,12 +348,18 @@ END $$;
 -- ── pha 4: anon ──
 DO $$
 DECLARE
-  t text; n bigint; e text;
+  t text; n bigint; e text; ins text;
 BEGIN
   FOR t IN SELECT tbl FROM owned ORDER BY ord LOOP
+    -- sinh câu chèn TRƯỚC khi thành anon: anon không thấy cột của bảng đã REVOKE khỏi nó
+    ins := pg_temp.row_sql(t, '0a0a0a0a-0000-4000-8000-00000000000a', gen_random_uuid());
     PERFORM pg_temp.become_anon();
-    EXECUTE format('SELECT count(*) FROM public.%I WHERE user_id IS NOT NULL', t) INTO n;
-    e := pg_temp.errcode(pg_temp.row_sql(t, '0a0a0a0a-0000-4000-8000-00000000000a', gen_random_uuid()));
+    -- bảng đã REVOKE hẳn khỏi anon (body_checks) thì đọc báo 42501: còn chặt hơn RLS trả 0 dòng
+    BEGIN
+      EXECUTE format('SELECT count(*) FROM public.%I WHERE user_id IS NOT NULL', t) INTO n;
+    EXCEPTION WHEN insufficient_privilege THEN n := 0;
+    END;
+    e := pg_temp.errcode(ins);
     EXECUTE 'RESET ROLE';
     ASSERT n = 0, format('N1 %s: anon đọc được dòng của người dùng', t);
     ASSERT e = '42501', format('N2 %s: anon chèn dòng mang user_id của A — cần 42501, được %s', t, e);

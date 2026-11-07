@@ -22,7 +22,8 @@ struct EdgeClassifyTests {
 
   @Test func functionNamesAreTheDeploymentList() {
     #expect(EdgeFunction.Name.weeklyReview.rawValue == "ai-weekly-review")
-    #expect(EdgeFunction.Name.allCases.count == 11)
+    #expect(EdgeFunction.Name.allCases.count == 12, "thêm body-check 04/11")
+    #expect(EdgeFunction.Name.bodyCheck.rawValue == "body-check")
   }
 }
 
