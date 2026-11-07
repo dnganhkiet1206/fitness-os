@@ -3,6 +3,65 @@ import ASCNDDesignSystem
 import SwiftUI
 
 #if DEBUG
+  /// Beat board màn nghỉ bằng chính Koa vector của app (07/11, Kiệt: "sao nhìn koa cứ kì kì vậy" về nháp 3D).
+  /// `SIMCTL_CHILD_ASCND_DEBUG_KOA_BEAT=1…5`: một khung toàn màn, nền studio tối giản.
+  struct KoaRestBeatPanel: View {
+    static var beat: Int? { ProcessInfo.processInfo.environment["ASCND_DEBUG_KOA_BEAT"].flatMap(Int.init) }
+    let beat: Int
+
+    private struct Spec {
+      var pose: KoaFlags.Pose = .idle
+      var face: KoaFlags.Expression
+      var hand: String?
+      var armR = -6.0, armL = 4.0
+      var look = (0.0, 0.0)
+      var turn = 0.0
+      var zoom = 1.0
+      var chip = false
+    }
+
+    private var spec: Spec {
+      switch beat {
+      case 1: Spec(face: .puff, hand: "dumbbell", armR: -38, armL: 6, look: (0.1, 0.2), turn: -0.15)
+      case 2: Spec(pose: .relaxing, face: .warm, hand: "bottle", look: (0, -0.2), turn: 0.15, zoom: 1.08)
+      case 3: Spec(pose: .relaxing, face: .sleepy, look: (0.2, 0.35), turn: -0.2, zoom: 1.08)
+      case 4: Spec(pose: .relaxing, face: .surprised, look: (0.25, -0.5), zoom: 1.08, chip: true)
+      default: Spec(face: .grin, hand: "dumbbell", armR: -100, armL: 24, look: (0, -0.1), turn: 0.15, zoom: 1.12)
+      }
+    }
+
+    var body: some View {
+      let s = spec
+      var walk = KoaWalk.Pose()
+      walk.armRight = s.armR; walk.armLeft = s.armL; walk.flipRaisedArms = true
+      return GeometryReader { geo in
+        ZStack {
+          Color(red: 0.07, green: 0.075, blue: 0.086).ignoresSafeArea()
+          RadialGradient(colors: [Color(red: 0.18, green: 0.165, blue: 0.145), .clear], center: UnitPoint(x: 0.5, y: 0.5),
+                         startRadius: 0, endRadius: geo.size.width * 0.75)
+            .ignoresSafeArea()
+          KoaFigureView(
+            expression: s.face, pose: s.pose, worn: s.hand.map { [.hand: $0] } ?? [:], size: geo.size.width * 0.7,
+            animated: true, walk: s.pose == .idle ? walk : nil, headLook: KoaMath.Gaze(x: s.look.0, y: s.look.1, k: 1),
+            eyes: KoaMath.Gaze(x: s.look.0, y: s.look.1, k: 1), turn: s.turn)
+            .scaleEffect(s.zoom, anchor: .bottom)
+            .position(x: geo.size.width / 2, y: geo.size.height * 0.5)
+          if s.chip {
+            VStack(spacing: 6) {
+              Text(verbatim: "+2,5 kg").font(.system(size: 30, weight: .heavy, design: .rounded))
+                .foregroundStyle(Color(red: 0.09, green: 0.09, blue: 0.1))
+                .padding(.horizontal, 22).padding(.vertical, 10)
+                .background(Capsule().fill(Color(red: 0.91, green: 0.52, blue: 0.16)))
+              Text(verbatim: "so với lần trước").font(.system(size: 15, weight: .medium)).foregroundStyle(.white.opacity(0.6))
+            }
+            .position(x: geo.size.width * 0.5, y: geo.size.height * 0.2)
+          }
+        }
+      }
+      .statusBarHidden()
+    }
+  }
+
   /// Lưới soát mặt có tham số: `SIMCTL_CHILD_ASCND_DEBUG_KOA_RIG=1`.
   struct KoaFaceRigGrid: View {
     static var enabled: Bool { ProcessInfo.processInfo.environment["ASCND_DEBUG_KOA_RIG"] != nil }

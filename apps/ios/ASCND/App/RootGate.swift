@@ -20,6 +20,8 @@ struct RootGate: View {
         DebugFlowView()
       } else if KoaWardrobeDump.enabled {
         KoaWardrobeDump()
+      } else if let beat = KoaRestBeatPanel.beat {
+        KoaRestBeatPanel(beat: beat)
       } else if KoaFaceRigGrid.enabled {
         KoaFaceRigGrid()
       } else if let total = KoaRestPreview.total {
