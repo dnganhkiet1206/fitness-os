@@ -391,14 +391,8 @@ struct StudioBroken: View {
           }
         }
       case .stage:
-        let st = Self.stage
-        crack([CGPoint(x: st.x - 70, y: st.y - 6), CGPoint(x: st.x - 40, y: st.y + 4), CGPoint(x: st.x - 22, y: st.y - 2),
-               CGPoint(x: st.x + 4, y: st.y + 10), CGPoint(x: st.x + 30, y: st.y + 6)], width: 2.6)
-        // vành đèn của bục tắt một đoạn
-        var arc = Path()
-        arc.addArc(center: .zero, radius: 1, startAngle: .degrees(20), endAngle: .degrees(70), clockwise: false)
-        let m = CGAffineTransform(translationX: st.x, y: st.y).scaledBy(x: st.rx, y: st.ry)
-        c.stroke(arc.applying(m), with: .color(.black.opacity(0.55)), lineWidth: 4)
+        Self.stageCrack(&c, opacity: 1)
+        Self.darkRim(&c, opacity: 1)
       case .floor:
         let p = Self.floorPlank
         // tấm ván bật lên một đầu, bóng tối dưới khe
@@ -411,6 +405,33 @@ struct StudioBroken: View {
         c.stroke(plank, with: .color(Color(red: 0.45, green: 0.3, blue: 0.18)), lineWidth: 1.2)
       }
     }
+  }
+
+  /// Vết nứt trên mặt bục — đúng vết của storyboard D (`KoaRepairScene.Stage.crack`), để lúc hỏng và lúc
+  /// Koa sửa là một vết.
+  static func stageCrack(_ c: inout GraphicsContext, opacity: Double) {
+    let u = KoaRepairScene.pxPerUnit
+    var g = c
+    g.opacity = opacity
+    var p = Path()
+    p.addLines(KoaRepairScene.Stage.crack.map { CGPoint(x: $0.x, y: $0.y) })
+    let ink = GraphicsContext.Shading.color(Color(red: 0.16, green: 0.11, blue: 0.07))
+    g.stroke(p, with: ink, style: StrokeStyle(lineWidth: 7 / u, lineCap: .round, lineJoin: .round))
+    g.stroke(p.offsetBy(dx: 2 / u, dy: 3 / u), with: .color(Color(red: 0.85, green: 0.71, blue: 0.54).opacity(0.7)), lineWidth: 2 / u)
+    for b in KoaRepairScene.Stage.branches {
+      var q = Path()
+      q.addLines(b.map { CGPoint(x: $0.x, y: $0.y) })
+      g.stroke(q, with: ink, style: StrokeStyle(lineWidth: 4 / u, lineCap: .round))
+    }
+  }
+
+  /// Vành đèn của bục tắt một đoạn.
+  static func darkRim(_ c: inout GraphicsContext, opacity: Double) {
+    let st = stage
+    var arc = Path()
+    arc.addArc(center: .zero, radius: 1, startAngle: .degrees(20), endAngle: .degrees(70), clockwise: false)
+    let m = CGAffineTransform(translationX: st.x, y: st.y).scaledBy(x: st.rx, y: st.ry)
+    c.stroke(arc.applying(m), with: .color(.black.opacity(0.55 * opacity)), lineWidth: 4)
   }
 
   private func sparkle(_ c: inout GraphicsContext, at p: CGPoint) {

@@ -354,7 +354,8 @@ struct MascotRoomView: View {
           ForEach(KoaBreakage.Item.allCases, id: \.self) { i in
             devChip("hỏng \(i.rawValue)", on: devBroken == i) { devBroken = devBroken == i ? nil : i }
           }
-          devChip("diễn bảng", on: repair != nil) { devBroken = .board; startRepair(.board) }
+          devChip("diễn bảng", on: repair?.item == .board) { devBroken = .board; startRepair(.board) }
+          devChip("diễn sân khấu", on: repair?.item == .stage) { devBroken = .stage; startRepair(.stage) }
           devChip("map", on: debugMap) { debugMap.toggle() }
           devChip("auto", on: devEmotion == nil) { devEmotion = nil }
           ForEach(KoaEmotion.devEmotions, id: \.self) { e in
@@ -478,8 +479,12 @@ struct MascotRoomView: View {
   /// Bắt đầu đoạn diễn sửa món này (nếu đã có cảnh). Giảm chuyển động hay Koa đang ngủ: không diễn.
   @discardableResult
   private func startRepair(_ item: KoaBreakage.Item) -> Bool {
-    guard item == .board, !reduceMotion, !lens.bedroom, repair == nil else { return false }
-    repair = RepairRun(item: item, start: .now, shots: KoaRepairScene.Board.shots(), cues: KoaRepairScene.Board.cues)
+    guard !reduceMotion, !lens.bedroom, repair == nil else { return false }
+    switch item {
+    case .board: repair = RepairRun(item: item, start: .now, shots: KoaRepairScene.Board.shots(), cues: KoaRepairScene.Board.cues)
+    case .stage: repair = RepairRun(item: item, start: .now, shots: KoaRepairScene.Stage.shots(), cues: KoaRepairScene.Stage.cues)
+    case .neon, .floor: return false   // đoạn diễn chưa vào app (PR sau)
+    }
     return true
   }
 

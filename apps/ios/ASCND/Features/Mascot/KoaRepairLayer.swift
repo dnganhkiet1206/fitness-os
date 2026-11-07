@@ -36,12 +36,20 @@ struct KoaRepairLayer: View {
               var c = ctx
               c.scaleBy(x: k, y: k)
               if item == .board { drawBoard(&c, s, t: t, behindKoa: true) }
+              if item == .stage { drawStage(&c, s.stage) }
               drawKoa(&c, s, k: k, t: t)
-              if item == .board { drawBoard(&c, s, t: t, behindKoa: false) }
+              if let p = s.stage.flyingTube {
+                var f = c
+                f.translateBy(x: p.x, y: p.y)
+                f.rotate(by: .degrees(s.stage.flyingAngle))
+                f.scaleBy(x: 0.6 / KoaRepairScene.pxPerUnit, y: 0.6 / KoaRepairScene.pxPerUnit)
+                drawGlueTube(&f)
+              }
+              for p in s.puffs { drawPuff(&c, p) }
               for p in s.pops { drawPop(&c, p) }
             }
-            if let b = s.bubble, !b.text.isEmpty {
-              KoaBubble(line: b.text, width: g.size.width, x: s.x, headY: s.feet - KoaRoomMap.heroWidth * KoaMath.aspect * s.scale + 18)
+            if let b = s.bubble, b.progress > 0 {
+              KoaBubble(line: Self.typed(b), width: g.size.width, x: s.x, headY: s.feet - KoaRoomMap.heroWidth * KoaMath.aspect * s.scale + 18)
                 .opacity(b.alpha)
             }
           }
@@ -52,6 +60,12 @@ struct KoaRepairLayer: View {
     .allowsHitTesting(false)
     .accessibilityHidden(true)
     .onChange(of: reduceMotion) { if reduceMotion { done() } }   // bật Giảm chuyển động giữa cảnh: trả phòng ngay
+  }
+
+  /// Lời trong bóng thoại theo ngôn ngữ app, hiện dần theo nhịp của lời tiếng Việt.
+  static func typed(_ b: KoaRepairScene.Bubble) -> String {
+    let line = Bundle.main.localizedString(forKey: b.key, value: b.text, table: nil)
+    return String(line.prefix(Int((Double(line.count) * b.progress).rounded(.up))))
   }
 
   private func play(upTo t: Double) {
@@ -92,10 +106,11 @@ struct KoaRepairLayer: View {
     let o = options(s, t: t)
     let sc = KoaRoomMap.heroWidth * s.scale / 240
     let foot = CGPoint(x: s.x, y: s.feet + 6)
-    // bóng dưới chân
-    let sw = KoaRoomMap.heroWidth * s.scale * 0.42
-    c.fill(Path(ellipseIn: CGRect(x: foot.x - sw, y: foot.y - 4 * s.scale, width: sw * 2, height: 9 * s.scale)),
-           with: .color(.black.opacity(0.16)))
+    // bóng dưới chân: nằm lại trên sàn khi Koa nhảy, nhỏ và nhạt đi theo độ cao
+    let air = max(0, 1 - s.lift * KoaRepairScene.pxPerUnit / 400)
+    let sw = KoaRoomMap.heroWidth * s.scale * 0.42 * air, ground = foot.y + s.lift
+    c.fill(Path(ellipseIn: CGRect(x: foot.x - sw, y: ground - 4 * s.scale * air, width: sw * 2, height: 9 * s.scale * air)),
+           with: .color(.black.opacity(0.16 * air)))
     var f = c
     f.translateBy(x: foot.x, y: foot.y)
     f.scaleBy(x: sc * s.stretchX, y: sc * s.stretchY)
@@ -105,6 +120,14 @@ struct KoaRepairLayer: View {
       let p = CGPoint(x: foot.x + sc * s.stretchX * (paw.x - 120), y: foot.y + sc * s.stretchY * (paw.y - 240 * KoaMath.aspect))
       switch prop {
       case .plug: drawPlugCable(&c, end: p, inPaw: true)
+      case let .glue(angle, scale) where scale > 0:
+        // tuýp trong hình 240 của Koa (storyboard vẽ ở hình 480: phóng 0,5), tay ôm ngoài tuýp
+        var g = f
+        g.translateBy(x: paw.x, y: paw.y + 10)
+        g.rotate(by: .degrees(angle))
+        g.scaleBy(x: 0.5 * scale, y: 0.5 * scale)
+        drawGlueTube(&g)
+        f.fill(Path(ellipseIn: CGRect(x: paw.x - 8.5, y: paw.y - 7, width: 17, height: 14)), with: .color(Color(red: 0.75, green: 0.78, blue: 0.81)))
       default: break
       }
     }
@@ -185,6 +208,81 @@ struct KoaRepairLayer: View {
     }
   }
 
+  // MARK: - Sân khấu
+
+  /// Vết nứt dùng chung với lúc hỏng (`StudioBroken`), keo, vành đèn tắt một đoạn, đèn chạy, lấp lánh.
+  private func drawStage(_ c: inout GraphicsContext, _ st: KoaRepairScene.StageState) {
+    let S = KoaRepairScene.Stage.self, rim = StudioBroken.stage
+    if st.darkRim > 0 { StudioBroken.darkRim(&c, opacity: st.darkRim) }
+    if st.crackAlpha > 0, st.crack > 0 { StudioBroken.stageCrack(&c, opacity: st.crackAlpha) }
+    let pts = S.crack
+    if st.glue > 0, st.glueAlpha > 0 {
+      let n = Double(pts.count - 1), x = st.glue * n, i = min(pts.count - 2, Int(x)), f = x - Double(i)
+      var line = pts.prefix(i + 1).map { CGPoint(x: $0.x, y: $0.y - len(2)) }
+      line.append(CGPoint(x: pts[i].x + (pts[i + 1].x - pts[i].x) * f, y: pts[i].y + (pts[i + 1].y - pts[i].y) * f - len(2)))
+      var p = Path()
+      p.addLines(line)
+      var g = c
+      g.opacity = st.glueAlpha
+      g.stroke(p, with: .color(Color(red: 0.95, green: 0.96, blue: 0.98).opacity(0.9)), style: StrokeStyle(lineWidth: len(13), lineCap: .round, lineJoin: .round))
+      g.stroke(p.offsetBy(dx: -len(2), dy: -len(3)), with: .color(.white), lineWidth: len(4))
+    }
+    if let s = st.stream {
+      var p = Path()
+      p.move(to: CGPoint(x: s.from.x, y: s.from.y))
+      p.addQuadCurve(to: CGPoint(x: s.to.x, y: s.to.y - len(2)), control: CGPoint(x: s.from.x + len(3), y: (s.from.y + s.to.y) / 2))
+      c.stroke(p, with: .color(Color(red: 0.95, green: 0.96, blue: 0.98).opacity(0.95)), style: StrokeStyle(lineWidth: len(7), lineCap: .round))
+    }
+    if let u = st.lights {
+      let head = u * 2 * .pi * 1.5 + .pi / 2                // một vòng rưỡi, bắt đầu ở phía trước
+      for k in 0..<28 {                                      // vệt sáng có đuôi (dày gấp đôi storyboard cho liền vệt)
+        let a = head - Double(k) * 0.045, r = len(16 - Double(k) / 2)
+        let x = rim.x + rim.rx * cos(a), y = rim.y + rim.ry * sin(a)
+        c.fill(Path(ellipseIn: CGRect(x: x - r, y: y - r, width: 2 * r, height: 2 * r)),
+               with: .color(Color(red: 1, green: 0.91, blue: 0.66).opacity((1 - Double(k) / 28) * st.lightsFade)))
+      }
+      c.stroke(Path(ellipseIn: CGRect(x: rim.x - rim.rx, y: rim.y - rim.ry, width: 2 * rim.rx, height: 2 * rim.ry)),
+               with: .color(Color(red: 1, green: 0.83, blue: 0.43).opacity(0.35 * sin(.pi * u) * st.lightsFade)), lineWidth: len(10))
+    }
+    if let tw = st.twinkle {
+      let spots: [(Double, Double, Double)] = [(-rim.rx + len(30), 0, 40), (rim.rx - len(30), 0, 40), (0, rim.ry, 36),
+                                               (-len(250), -len(90), 30), (len(250), -len(90), 30)]
+      for (i, p) in spots.enumerated() {
+        let u = KoaRepairScene.seg(tw, Double(i) * 0.07, Double(i) * 0.07 + 1.6)
+        if u > 0, u < 1 { drawSpark(&c, at: CGPoint(x: rim.x + p.0, y: rim.y + p.1), r: len(p.2) * sin(.pi * u)) }
+      }
+    }
+  }
+
+  /// Tuýp keo khổng lồ (đơn vị storyboard; miệng ở (0, 36)).
+  private func drawGlueTube(_ c: inout GraphicsContext) {
+    var body = Path()
+    body.addLines([CGPoint(x: -30, y: -150), CGPoint(x: 30, y: -150), CGPoint(x: 36, y: -10), CGPoint(x: -36, y: -10)])
+    body.closeSubpath()
+    c.fill(body, with: .color(Color(red: 0.95, green: 0.94, blue: 0.91)))
+    c.stroke(body, with: .color(Color(red: 0.74, green: 0.71, blue: 0.66)), lineWidth: 4)
+    let cap = Color(red: 0.89, green: 0.86, blue: 0.81)
+    c.fill(Path(roundedRect: CGRect(x: -36, y: -158, width: 72, height: 14), cornerRadius: 4), with: .color(cap))
+    c.fill(Path(roundedRect: CGRect(x: -26, y: -118, width: 52, height: 60), cornerRadius: 8), with: .color(Color(red: 0.96, green: 0.65, blue: 0.14)))
+    c.draw(Text("koa.repair.glue").font(.system(size: 22, weight: .black)).foregroundStyle(.white), at: CGPoint(x: 0, y: -88))
+    var tip = Path()
+    tip.addLines([CGPoint(x: -14, y: -10), CGPoint(x: 14, y: -10), CGPoint(x: 6, y: 30), CGPoint(x: -6, y: 30)])
+    tip.closeSubpath()
+    c.fill(tip, with: .color(cap))
+    c.fill(Path(ellipseIn: CGRect(x: -6, y: 30, width: 12, height: 12)), with: .color(.white))
+  }
+
+  private func drawPuff(_ c: inout GraphicsContext, _ p: KoaRepairScene.Puff) {
+    guard p.u > 0, p.u < 1 else { return }
+    for k in 0..<p.count {
+      let a = Double(k) * 1.3 + 0.4, d = len(70 * KoaRepairScene.eout(p.u))
+      let r = len(Double(16 + 8 * (k % 3)) * (0.6 + 0.8 * p.u))
+      let x = p.x + cos(a) * d, y = p.y + sin(a) * d * 0.6 - len(60 * p.u)
+      c.fill(Path(ellipseIn: CGRect(x: x - r, y: y - r, width: 2 * r, height: 2 * r)),
+             with: .color(Color(red: 0.9, green: 0.84, blue: 0.75).opacity(0.75 * (1 - p.u))))
+    }
+  }
+
   // MARK: - Hiệu ứng
 
   private func drawSpark(_ c: inout GraphicsContext, at p: CGPoint, r: Double) {
@@ -207,7 +305,7 @@ struct KoaRepairLayer: View {
     cc.translateBy(x: p.x, y: p.y)
     cc.rotate(by: .degrees(-8))
     cc.scaleBy(x: scale, y: scale)
-    let text = Text(verbatim: p.text).font(.system(size: p.size, weight: .heavy))
+    let text = Text(LocalizedStringKey(p.text)).font(.system(size: p.size, weight: .heavy))
     cc.draw(text.foregroundStyle(Color(red: 0.42, green: 0.29, blue: 0.06)), at: CGPoint(x: 0.6, y: 0.6), anchor: .bottomLeading)
     cc.draw(text.foregroundStyle(.white), at: .zero, anchor: .bottomLeading)
   }

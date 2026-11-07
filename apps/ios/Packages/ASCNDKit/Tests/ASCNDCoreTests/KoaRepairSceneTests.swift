@@ -53,3 +53,54 @@ extension KoaRepairSceneTests {
     #expect(last.expression == .happy)
   }
 }
+
+@Suite("KoaRepairScene.Stage")
+struct KoaRepairStageTests {
+  let shots = KoaRepairScene.Stage.shots()
+
+  @Test("vào và ra cảnh ở giữa bục, máy toàn cảnh; khung cuối như phòng")
+  func entersAndLeavesOnStage() {
+    for s in [shots[0], shots[shots.count - 1]] {
+      #expect(abs(s.x - 195) < 1)
+      #expect(abs(s.feet - 412) < 1)
+      #expect(abs(s.camera.zoom - 1) < 0.01)
+    }
+    let last = shots[shots.count - 1]
+    #expect((last.bubble?.alpha ?? 0) < 0.01)
+    #expect(last.expression == .happy)
+    #expect(last.repaired)
+    #expect(last.stage.crackAlpha == 0)
+  }
+
+  @Test("lúc bôi keo, miệng tuýp nằm ngay trên điểm keo đang chạy tới")
+  func nozzleRidesTheCrack() {
+    let fps = 30.0
+    var checked = 0
+    for (i, s) in shots.enumerated() {
+      guard let stream = s.stage.stream else { continue }
+      let t = Double(i) / fps + KoaRepairScene.Stage.start
+      let n = KoaRepairScene.Stage.nozzle(s, t: t)!
+      #expect(abs(n.x - stream.to.x) < 0.01)
+      #expect(stream.from.y < stream.to.y)        // keo chảy xuống
+      checked += 1
+    }
+    #expect(checked > 30)
+  }
+
+  @Test("vết nứt mờ dần qua ba cú nén, mất khi đáp; đèn chạy một vòng rưỡi")
+  func crackFadesThenLightsRun() {
+    let alphas = shots.map(\.stage.crackAlpha)
+    #expect(alphas.first == 1)
+    #expect(Set(alphas.filter { $0 > 0 }).count >= 3)
+    #expect(alphas.last == 0)
+    #expect(shots.contains { ($0.stage.lights ?? 0) > 0.95 })
+    #expect(shots.contains { $0.stage.flyingTube != nil })
+  }
+
+  @Test("tiếng theo thứ tự, nằm trong cảnh")
+  func cuesOrdered() {
+    let cues = KoaRepairScene.Stage.cues
+    #expect(cues.map(\.t) == cues.map(\.t).sorted())
+    #expect(cues.allSatisfy { $0.t >= 0 && $0.t <= KoaRepairScene.Stage.duration })
+  }
+}
