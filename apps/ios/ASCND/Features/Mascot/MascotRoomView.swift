@@ -167,7 +167,8 @@ struct MascotRoomView: View {
         let _ = (lens.drop = drop)
         TimelineView(.animation(paused: repair == nil || reduceMotion)) { tl in
         ZStack(alignment: .top) {
-          StudioTallRoom(drop: drop, lens: lens, broken: repair == nil ? brokenItem : nil)
+          StudioTallRoom(drop: drop, lens: lens, broken: repair == nil ? brokenItem : nil,
+                         neonRepair: repair.flatMap { $0.item == .neon ? ($0.start, $0.shots) : nil })
             .koaDustFilm(devDust ?? dust?.level ?? 0)
           stage
             // hai mép tranh tan vào tường cao và sàn, không lộ đường nối
@@ -357,6 +358,7 @@ struct MascotRoomView: View {
           devChip("diễn bảng", on: repair?.item == .board) { devBroken = .board; startRepair(.board) }
           devChip("diễn sân khấu", on: repair?.item == .stage) { devBroken = .stage; startRepair(.stage) }
           devChip("diễn ván sàn", on: repair?.item == .floor) { devBroken = .floor; startRepair(.floor) }
+          devChip("diễn neon", on: repair?.item == .neon) { devBroken = .neon; startRepair(.neon) }
           devChip("map", on: debugMap) { debugMap.toggle() }
           devChip("auto", on: devEmotion == nil) { devEmotion = nil }
           ForEach(KoaEmotion.devEmotions, id: \.self) { e in
@@ -485,7 +487,7 @@ struct MascotRoomView: View {
     case .board: repair = RepairRun(item: item, start: .now, shots: KoaRepairScene.Board.shots(), cues: KoaRepairScene.Board.cues)
     case .stage: repair = RepairRun(item: item, start: .now, shots: KoaRepairScene.Stage.shots(), cues: KoaRepairScene.Stage.cues)
     case .floor: repair = RepairRun(item: item, start: .now, shots: KoaRepairScene.Floor.shots(), cues: KoaRepairScene.Floor.cues)
-    case .neon: return false   // đoạn diễn chưa vào app (PR sau)
+    case .neon: repair = RepairRun(item: item, start: .now, shots: KoaRepairScene.Neon.shots(), cues: KoaRepairScene.Neon.cues)
     }
     return true
   }
