@@ -56,6 +56,8 @@ struct KoaFigureView: View {
   var turn: Double?
   /// Bóng dưới chân của bản vẽ (`KoaRender.Options.groundShadow`).
   var groundShadow = true
+  /// Mặt có tham số (`KoaRender.Options.rig`, màn nghỉ 07/11): nét mặt đổi dần, không thay cả mặt.
+  var rig: KoaFaceRig?
   var gestureAmount = 1.0
   /// Đồng hồ ngoài (phòng, 30/10): khung do `TimelineView` của sân khấu đưa vào — hình
   /// KHÔNG chạy đồng hồ riêng (trước có hai đồng hồ cùng vẽ Koa: vẽ lại gấp đôi).
@@ -202,6 +204,7 @@ struct KoaFigureView: View {
       o.walk = running ? walk : nil
       o.turn = turn
       o.groundShadow = groundShadow
+      o.rig = rig
       if onTapZone != nil { drawn.options = o }
       let sp = KoaSignpost.poster.beginInterval("figure")
       defer { KoaSignpost.poster.endInterval("figure", sp) }
