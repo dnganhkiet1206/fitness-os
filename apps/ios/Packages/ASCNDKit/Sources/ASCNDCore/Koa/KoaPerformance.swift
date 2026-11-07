@@ -256,6 +256,41 @@ public enum KoaPerformance {
   public static func hand(_ scene: Scene) -> String? { script(scene).hand }
   public static func sounds(_ scene: Scene) -> [Sound] { script(scene).sounds.sorted { $0.t < $1.t } }
 
+  // MARK: lịch màn nghỉ
+
+  /// Các hoạt động xen giữa quãng nghỉ, đổi thứ tự theo `seed` (mỗi lần nghỉ một khác).
+  public static let restActivities: [Scene] = [.restStretch, .restSide, .restShoulders, .restJog, .restBreath, .restWave,
+                                               .restFlex, .restGlance]
+  public static let restIntroMs = 5200.0
+  public static let restGoMs = 3500.0
+  /// Thở đều giữa hai hoạt động.
+  public static let restGapMs = 4500.0
+
+  /// Màn nghỉ lúc này diễn cảnh nào, ở mốc nào; `scene == nil` = đang thở đều (`t` tính từ lúc bắt đầu thở).
+  public static func restBeat(elapsed e: Double, left: Double, total: Double, paused: Bool, seed: Int = 0)
+    -> (scene: Scene?, t: Double)
+  {
+    if !paused, left <= restGoMs { return (.restGo, min(duration(.restGo), restGoMs - left)) }
+    if e < restIntroMs { return (.restIntro, e) }
+    let end = total * 1000 - restGoMs - 1200
+    var cursor = restIntroMs + 2500
+    var idleFrom = restIntroMs
+    var i = 0
+    let n = restActivities.count
+    let start = ((seed % n) + n) % n
+    while i < 64 {
+      let scene = restActivities[(start + i) % n]
+      let ms = duration(scene)
+      guard cursor + ms <= end else { break }
+      if !paused, e >= cursor, e < cursor + ms { return (scene, e - cursor) }
+      if e < cursor { break }
+      idleFrom = cursor + ms
+      cursor += ms + restGapMs
+      i += 1
+    }
+    return (nil, e - idleFrom)
+  }
+
   static func S(_ t: Double, _ name: String, _ gain: Double = 1) -> Sound { Sound(t: t, name: "koa-rx-\(name)", gain: gain) }
 
   /// Tiếng của từng cảnh, khớp đúng nhịp diễn (Kiệt 05/11: tối giản, dễ chịu, sang, hợp storyboard).
@@ -266,6 +301,14 @@ public enum KoaPerformance {
     .restIntro: [S(0, "exhale", 0.8), S(0, "set", 0.9), S(2000, "exhale", 0.6), S(2600, "tick", 0.45), S(2750, "tick", 0.4),
                  S(2900, "tick", 0.35)],
     .restStretch: [S(500, "inhale", 0.6), S(2700, "exhale", 0.6)],
+    .restSide: [S(500, "inhale", 0.45), S(2300, "exhale", 0.4)],
+    .restShoulders: [S(400, "tick", 0.25), S(1300, "tick", 0.25), S(2200, "tick", 0.25)],
+    .restJog: [S(400, "land", 0.25), S(800, "land", 0.2), S(1200, "land", 0.25), S(1600, "land", 0.2), S(2000, "land", 0.25),
+               S(2400, "land", 0.2), S(2800, "land", 0.25)],
+    .restBreath: [S(200, "inhale", 0.7), S(1900, "exhale", 0.8)],
+    .restWave: [S(600, "tick", 0.4), S(1300, "tick", 0.3)],
+    .restFlex: [S(800, "pump", 0.6), S(1500, "tick", 0.3)],
+    .restGlance: [S(2850, "tick", 0.35)],
     .restGo: [S(500, "tick", 0.55), S(1500, "tick", 0.55), S(2500, "tick", 0.55), S(3050, "whoosh", 0.6), S(3060, "pump", 0.8),
               S(3550, "land", 0.5)],
     .done: [S(0, "exhale", 0.8), S(1300, "inhale", 0.9), S(2950, "tick", 0.5), S(3550, "tick", 0.5), S(3700, "tick", 0.45),
@@ -419,6 +462,153 @@ public enum KoaPerformance {
         faces: [(0, .gymFocus), (2950, .delighted)],
         hand: nil,
         cues: [Cue(3000, 4300, title: "LƯỢT MÌNH!", effects: [.confetti], haptic: .success)],
+        flashAt: nil, ringFrom: nil)
+    case .restSide:
+      // Giãn hông: tay trái vươn qua đầu, người nghiêng sang phải, giữ, đổi bên.
+      Script(
+        ms: 4200,
+        bob: T(Key(0, 0), Key(400, -2), Key(800, 1), Key(2100, 0), Key(2500, 1), Key(3800, 0), Key(4200, 0)),
+        lean: T(Key(0, 0), Key(4200, 0)),
+        sway: T(Key(0, 0), Key(800, 1.6, .out), Key(1700, 1.6), Key(2100, 0, .inOut), Key(2600, -1.6, .out), Key(3500, -1.6), Key(4000, 0, .inOut), Key(4200, 0)),
+        armL: T(Key(0, 4), Key(800, 110, .out), Key(1700, 106), Key(2100, 6, .inOut), Key(4200, 4)),
+        armR: T(Key(0, -4), Key(2100, -6), Key(2600, -110, .out), Key(3500, -106), Key(4000, -6, .inOut), Key(4200, -4)),
+        cheer: zero,
+        ears: T(Key(0, 0), Key(800, -6), Key(2100, 0), Key(2600, -6), Key(4000, 0), Key(4200, 0)),
+        lookX: T(Key(0, 0), Key(800, -0.3), Key(2100, 0), Key(2600, 0.3), Key(4000, 0), Key(4200, 0)),
+        lookY: T(Key(0, 0), Key(800, -0.2), Key(2100, 0), Key(2600, -0.2), Key(4000, 0), Key(4200, 0)),
+        turn: T(Key(0, 0), Key(4200, 0)),
+        zoom: T(Key(0, 1.0), Key(4200, 1.0)),
+        focus: T(Key(0, 1), Key(4200, 1)),
+        tremble: zero,
+        faces: [(0, .content), (700, .gymFocus), (3900, .content)],
+        hand: nil,
+        cues: [],
+        flashAt: nil, ringFrom: nil)
+    case .restShoulders:
+      // Xoay vai: hai tay lắc lên xuống so le như đang xoay khớp vai, người nhún theo; mặt thả lỏng.
+      Script(
+        ms: 3600,
+        bob: T(Key(0, 0), Key(450, 1.5), Key(900, -1), Key(1350, 1.5), Key(1800, -1), Key(2250, 1.5), Key(2700, -1), Key(3150, 1), Key(3600, 0)),
+        lean: T(Key(0, 0), Key(3600, 0)),
+        sway: T(Key(0, 0), Key(450, 0.4), Key(900, -0.4), Key(1350, 0.4), Key(1800, -0.4), Key(2250, 0.4), Key(2700, -0.4), Key(3600, 0)),
+        armL: T(Key(0, 4), Key(450, 30), Key(900, 6), Key(1350, 30), Key(1800, 6), Key(2250, 30), Key(2700, 6), Key(3600, 4)),
+        armR: T(Key(0, -4), Key(450, -6), Key(900, -30), Key(1350, -6), Key(1800, -30), Key(2250, -6), Key(2700, -30), Key(3150, -6), Key(3600, -4)),
+        cheer: zero,
+        ears: T(Key(0, 0), Key(450, 4), Key(900, -4), Key(1350, 4), Key(1800, -4), Key(2250, 4), Key(2700, -4), Key(3600, 0)),
+        lookX: T(Key(0, 0), Key(3600, 0)),
+        lookY: T(Key(0, 0), Key(500, 0.15), Key(3100, 0.15), Key(3600, 0)),
+        turn: T(Key(0, 0), Key(3600, 0)),
+        zoom: T(Key(0, 1.0), Key(3600, 1.0)),
+        focus: T(Key(0, 1), Key(3600, 1)),
+        tremble: zero,
+        faces: [(0, .content), (500, .meditate), (3000, .content)],
+        hand: nil,
+        cues: [],
+        flashAt: nil, ringFrom: nil)
+    case .restJog:
+      // Chạy bước nhỏ tại chỗ cho nóng người: nhún nhanh, tay đánh so le, mặt hăng hái.
+      Script(
+        ms: 3800,
+        bob: T(Key(0, 0), Key(200, -2), Key(400, 3, .out), Key(600, -2), Key(800, 3, .out), Key(1000, -2), Key(1200, 3, .out), Key(1400, -2), Key(1600, 3, .out), Key(1800, -2), Key(2000, 3, .out), Key(2200, -2), Key(2400, 3, .out), Key(2600, -2), Key(2800, 3, .out), Key(3100, -1), Key(3800, 0)),
+        lean: T(Key(0, 0), Key(400, -0.4), Key(3000, -0.4), Key(3800, 0)),
+        sway: T(Key(0, 0), Key(3800, 0)),
+        armL: T(Key(0, 4), Key(400, 30), Key(800, -12), Key(1200, 30), Key(1600, -12), Key(2000, 30), Key(2400, -12), Key(2800, 26), Key(3300, 4), Key(3800, 4)),
+        armR: T(Key(0, -4), Key(400, 12), Key(800, -30), Key(1200, 12), Key(1600, -30), Key(2000, 12), Key(2400, -30), Key(2800, 10), Key(3300, -4), Key(3800, -4)),
+        cheer: zero,
+        ears: T(Key(0, 0), Key(400, -6), Key(800, 2), Key(1200, -6), Key(1600, 2), Key(2000, -6), Key(2400, 2), Key(2800, -6), Key(3800, 0)),
+        lookX: T(Key(0, 0), Key(3800, 0)),
+        lookY: T(Key(0, 0), Key(400, -0.1), Key(3200, -0.1), Key(3800, 0)),
+        turn: T(Key(0, 0), Key(3800, 0)),
+        zoom: T(Key(0, 1.0), Key(1900, 1.04), Key(3800, 1.0)),
+        focus: T(Key(0, 1), Key(3800, 1)),
+        tremble: zero,
+        faces: [(0, .content), (300, .happy), (3400, .content)],
+        hand: nil,
+        cues: [],
+        flashAt: nil, ringFrom: nil)
+    case .restBreath:
+      // Hít thật sâu (phồng người, ngẩng lên, tai dựng) rồi thở phù ra (xẹp xuống, phồng má).
+      Script(
+        ms: 4000,
+        bob: T(Key(0, 0), Key(1500, 4, .inOut), Key(1900, 4), Key(2600, -3, .inOut), Key(3300, 1), Key(4000, 0)),
+        lean: T(Key(0, 0), Key(1500, -0.6), Key(2600, 0.5), Key(3400, 0), Key(4000, 0)),
+        sway: T(Key(0, 0), Key(4000, 0)),
+        armL: T(Key(0, 4), Key(1500, 18), Key(2600, 2), Key(4000, 4)),
+        armR: T(Key(0, -4), Key(1500, -18), Key(2600, -2), Key(4000, -4)),
+        cheer: zero,
+        ears: T(Key(0, 0), Key(1500, -8), Key(2600, 8), Key(3400, 0), Key(4000, 0)),
+        lookX: T(Key(0, 0), Key(4000, 0)),
+        lookY: T(Key(0, 0), Key(1500, -0.35), Key(2600, 0.2), Key(3400, 0), Key(4000, 0)),
+        turn: T(Key(0, 0), Key(4000, 0)),
+        zoom: T(Key(0, 1.0), Key(1500, 1.05), Key(4000, 1.0)),
+        focus: T(Key(0, 1), Key(4000, 1)),
+        tremble: zero,
+        faces: [(0, .content), (300, .meditate), (1900, .puff), (3200, .content)],
+        hand: nil,
+        cues: [],
+        flashAt: nil, ringFrom: nil)
+    case .restWave:
+      // Quay sang người xem, vẫy tay chào (lắc cổ tay qua lại ở tầm tay cao), cười tít.
+      Script(
+        ms: 3600,
+        bob: T(Key(0, 0), Key(500, 1), Key(3100, 1), Key(3600, 0)),
+        lean: T(Key(0, 0), Key(3600, 0)),
+        sway: T(Key(0, 0), Key(800, -0.4), Key(1200, 0.2), Key(1600, -0.4), Key(2000, 0.2), Key(2400, -0.4), Key(3000, 0), Key(3600, 0)),
+        armL: T(Key(0, 4), Key(3600, 4)),
+        armR: T(Key(0, -4), Key(600, -100, .out), Key(950, -86), Key(1300, -104), Key(1650, -86), Key(2000, -104), Key(2350, -86), Key(2700, -100), Key(3200, -6, .inOut), Key(3600, -4)),
+        cheer: zero,
+        ears: T(Key(0, 0), Key(600, -4), Key(2800, -4), Key(3600, 0)),
+        lookX: T(Key(0, 0), Key(3600, 0)),
+        lookY: T(Key(0, 0), Key(500, -0.05), Key(3200, -0.05), Key(3600, 0)),
+        turn: T(Key(0, 0), Key(500, 0.15), Key(3100, 0.15), Key(3600, 0)),
+        zoom: T(Key(0, 1.0), Key(1800, 1.06), Key(3600, 1.0)),
+        focus: T(Key(0, 1), Key(3600, 1)),
+        tremble: zero,
+        faces: [(0, .content), (400, .grin), (3200, .content)],
+        hand: nil,
+        cues: [],
+        flashAt: nil, ringFrom: nil)
+    case .restFlex:
+      // Gồng hai tay khoe cơ (tầm tay chữ V của cảnh xong buổi), nhún một nhịp, mặt tự hào.
+      Script(
+        ms: 3600,
+        bob: T(Key(0, 0), Key(400, -3), Key(800, 3, .out), Key(1300, 1), Key(2400, 2), Key(2900, -1), Key(3600, 0)),
+        lean: T(Key(0, 0), Key(800, -0.5), Key(2500, -0.5), Key(3200, 0), Key(3600, 0)),
+        sway: T(Key(0, 0), Key(1200, 0.4), Key(1700, -0.4), Key(2200, 0), Key(3600, 0)),
+        armL: T(Key(0, 4), Key(400, -8), Key(800, 104, .out), Key(1000, 96), Key(1500, 104), Key(2000, 96), Key(2500, 104), Key(3000, 6, .inOut), Key(3600, 4)),
+        armR: T(Key(0, -4), Key(400, 8), Key(800, -104, .out), Key(1000, -96), Key(1500, -104), Key(2000, -96), Key(2500, -104), Key(3000, -6, .inOut), Key(3600, -4)),
+        cheer: zero,
+        ears: T(Key(0, 0), Key(800, -6), Key(2600, -6), Key(3400, 0), Key(3600, 0)),
+        lookX: T(Key(0, 0), Key(1200, -0.2), Key(2200, 0.2), Key(3000, 0), Key(3600, 0)),
+        lookY: T(Key(0, 0), Key(800, -0.15), Key(2600, -0.15), Key(3600, 0)),
+        turn: T(Key(0, 0), Key(1200, -0.2), Key(2200, 0.2), Key(3000, 0), Key(3600, 0)),
+        zoom: T(Key(0, 1.0), Key(800, 1.06), Key(2800, 1.06), Key(3600, 1.0)),
+        focus: T(Key(0, 1), Key(3600, 1)),
+        tremble: T(Key(0, 0), Key(1000, 0), Key(1150, 2), Key(2400, 2), Key(2550, 0)),
+        faces: [(0, .content), (600, .smug), (3100, .content)],
+        hand: nil,
+        cues: [],
+        flashAt: nil, ringFrom: nil)
+    case .restGlance:
+      // Liếc xuống đồng hồ (mắt trước, đầu sau), nghĩ, rồi ngẩng lên nhìn bạn gật gù "ổn rồi".
+      Script(
+        ms: 3800,
+        bob: T(Key(0, 0), Key(2600, 0), Key(2850, -1.5), Key(3100, 1), Key(3350, -1), Key(3800, 0)),
+        lean: T(Key(0, 0), Key(800, 0.6), Key(2000, 0.6), Key(2600, 0), Key(3800, 0)),
+        sway: T(Key(0, 0), Key(3800, 0)),
+        armL: T(Key(0, 4), Key(3800, 4)),
+        armR: T(Key(0, -4), Key(3800, -4)),
+        cheer: zero,
+        ears: T(Key(0, 0), Key(2600, 0), Key(2850, -4), Key(3300, 0), Key(3800, 0)),
+        lookX: T(Key(0, 0), Key(500, 0.3), Key(2000, 0.3), Key(2500, 0), Key(3800, 0)),
+        lookY: T(Key(0, 0), Key(500, 0.55), Key(2000, 0.55), Key(2500, -0.05), Key(2850, 0.2), Key(3100, -0.05), Key(3350, 0.15), Key(3800, 0)),
+        turn: T(Key(0, 0), Key(500, 0.2), Key(2000, 0.2), Key(2500, 0), Key(3800, 0)),
+        zoom: T(Key(0, 1.0), Key(3800, 1.0)),
+        focus: T(Key(0, 1), Key(3800, 1)),
+        tremble: zero,
+        faces: [(0, .content), (500, .thinking), (2500, .happy)],
+        hand: nil,
+        cues: [],
         flashAt: nil, ringFrom: nil)
     case .done:
       // Đứng thở dốc, tai cụp → hít một hơi thật sâu, đứng thẳng, tai dựng → liếc sang, quay lại nhếch mép (cận) →

@@ -140,6 +140,11 @@ import SwiftUI
 /// 2. Thở đều (vòng nhẹ), giữa quãng nghỉ một cú vươn vai (`restStretch`, nghỉ ≥ 40 s).
 /// 3. `restGo` (3,5 s cuối): nhún đếm ngược, hết giờ giơ tay chữ V "LƯỢT MÌNH!".
 struct KoaRestScreen: View {
+  #if DEBUG
+    static var debugSeed: Int? { ProcessInfo.processInfo.environment["ASCND_DEBUG_KOA_REST_SEED"].flatMap(Int.init) }
+  #else
+    static let debugSeed: Int? = nil
+  #endif
   /// Một thẻ số dưới Koa.
   struct Card: Hashable { let value: String; let label: String; var accent = false }
 
@@ -177,22 +182,15 @@ struct KoaRestScreen: View {
   private static let orange = Color(red: 0.91, green: 0.52, blue: 0.16)
   private static let gold = Color(red: 0.91, green: 0.70, blue: 0.23)
   private static let rose = Color(red: 0.90, green: 0.33, blue: 0.42)
-  static let introMs = KoaPerformance.duration(.restIntro)
-  static let goMs = 3500.0
-  static let stretchMinSeconds = 40.0
 
   /// Cảnh đang diễn và mốc trong cảnh; `nil` = đang thở đều.
   struct Beat { let scene: KoaReaction.Scene?; let t: Double }
 
-  static func beat(elapsed e: Double, left: Double, total: Double, paused: Bool) -> Beat {
-    if !paused, left <= goMs { return Beat(scene: .restGo, t: min(KoaPerformance.duration(.restGo), goMs - left)) }
-    if e < introMs { return Beat(scene: .restIntro, t: e) }
-    if !paused, total >= stretchMinSeconds {
-      let at = introMs + 0.45 * max(0, total * 1000 - introMs - goMs)
-      let ms = KoaPerformance.duration(.restStretch)
-      if e >= at, e < at + ms { return Beat(scene: .restStretch, t: e - at) }
-    }
-    return Beat(scene: nil, t: e - introMs)
+  /// Lịch của lõi: mở đầu → thở đều xen các hoạt động (vươn vai, giãn hông, xoay vai, chạy bước nhỏ, hít sâu, vẫy tay,
+  /// gồng khoe cơ, liếc đồng hồ; mỗi lần nghỉ bắt đầu ở một hoạt động khác) → 3,5 s cuối "LƯỢT MÌNH!".
+  static func beat(elapsed e: Double, left: Double, total: Double, paused: Bool, seed: Int = 0) -> Beat {
+    let r = KoaPerformance.restBeat(elapsed: e, left: left, total: total, paused: paused, seed: seed)
+    return Beat(scene: r.scene, t: r.t)
   }
 
   /// Khung của Koa: cảnh đang diễn, hoặc thở đều (nhún rất nhẹ, tay mở theo nhịp, mặt dịu).
@@ -217,7 +215,8 @@ struct KoaRestScreen: View {
       let now = frozen.map { EpochMillis((startedAt ?? start).addingTimeInterval($0 / 1000)) } ?? EpochMillis(ctx.date)
       let leftMs = timer.pausedLeft.map { Double($0) * 1000 } ?? Double(timer.endsAt.millis - now.millis)
       let left = timer.remaining(at: now)
-      let b = Self.beat(elapsed: elapsed, left: leftMs, total: Double(timer.total), paused: timer.isPaused)
+      let seed = Self.debugSeed ?? Int((startedAt ?? start).timeIntervalSince1970)
+      let b = Self.beat(elapsed: elapsed, left: leftMs, total: Double(timer.total), paused: timer.isPaused, seed: seed)
       let f = Self.frame(b)
       let cues = b.scene.map { s in KoaPerformance.cues(s).filter { b.t >= $0.from && b.t < $0.to } } ?? []
       GeometryReader { geo in

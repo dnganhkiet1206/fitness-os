@@ -220,3 +220,40 @@ extension KoaPerformanceFixTests {
     #expect(KoaPerformance.cues(.done, content: nil).map(\.title) == mock.map(\.title))
   }
 }
+
+/// Màn nghỉ kiểu cảnh xong buổi + hoạt động xen giữa (07/11, Kiệt: "thêm nhiều hoạt động hơn để đỡ nhàm chán").
+@Suite struct KoaRestActivityTests {
+  typealias P = KoaPerformance
+
+  @Test func ninetySecondRestHasManyActivitiesAndNoOverlapWithGo() {
+    var seen = Set<KoaReaction.Scene>()
+    var t = 0.0
+    while t < 90_000 {
+      let b = P.restBeat(elapsed: t, left: 90_000 - t, total: 90, paused: false)
+      if let s = b.scene, P.restActivities.contains(s) {
+        seen.insert(s)
+        #expect(90_000 - t > P.restGoMs, "\(s) chồng lên đếm ngược ở \(t)")
+      }
+      t += 100
+    }
+    #expect(seen.count >= 5, "\(seen)")
+  }
+
+  @Test func activitiesStartAndEndStanding() {
+    for s in P.restActivities {
+      for f in [P.frame(s, at: 0), P.frame(s, at: P.duration(s))] {
+        #expect(abs(f.walk.bob) < 1.6 && abs(f.walk.armLeft - 4) < 6 && abs(f.walk.armRight + 4) < 6, "\(s)")
+      }
+    }
+  }
+
+  @Test func seedChangesTheOrder() {
+    let a = P.restBeat(elapsed: 8000, left: 82_000, total: 90, paused: false, seed: 0).scene
+    let b = P.restBeat(elapsed: 8000, left: 82_000, total: 90, paused: false, seed: 3).scene
+    #expect(a != nil && b != nil && a != b)
+  }
+
+  @Test func pausedRestOnlyBreathes() {
+    #expect(P.restBeat(elapsed: 9000, left: 60_000, total: 90, paused: true).scene == nil)
+  }
+}

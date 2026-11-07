@@ -21,6 +21,9 @@ public enum KoaReaction {
     case restStretch
     /// …và 3,5 s cuối: nhún đếm ngược, hết giờ giơ tay chữ V "Lượt mình!".
     case restGo
+    /// Hoạt động xen giữa quãng nghỉ (07/11, Kiệt: "thêm nhiều hoạt động hơn để đỡ nhàm chán"): giãn hông, xoay vai,
+    /// chạy bước nhỏ, hít sâu, vẫy tay, gồng khoe cơ, liếc đồng hồ gật gù.
+    case restSide, restShoulders, restJog, restBreath, restWave, restFlex, restGlance
   }
 
   public enum Focus: Sendable, Hashable {
@@ -106,7 +109,7 @@ public enum KoaReaction {
   /// Chữ trong mock (số liệu mẫu). Bản thật lấy từ set / buổi vừa ghi.
   public static func shots(_ scene: Scene) -> [Shot] {
     switch scene {
-    case .restIntro, .restStretch, .restGo:
+    case .restIntro, .restStretch, .restGo, .restSide, .restShoulders, .restJog, .restBreath, .restWave, .restFlex, .restGlance:
       []
     case .set:
       [
