@@ -64,6 +64,100 @@ import SwiftUI
     }
   }
 
+  /// Mock dáng uống nước (07/11, Kiệt: "Vẽ mock dáng uống"): tay phải gập khuỷu đưa bình thể thao lên miệng, vẽ đè lên
+  /// Koa thật đã ẩn tay phải một mảnh. Cùng màu lông / vệt / đốm sáng với tay gốc (`arm_right_upper`). Chờ Kiệt duyệt
+  /// art. `SIMCTL_CHILD_ASCND_DEBUG_KOA_DRINK=1`.
+  struct KoaDrinkMock: View {
+    static var enabled: Bool { ProcessInfo.processInfo.environment["ASCND_DEBUG_KOA_DRINK"] != nil }
+
+    struct Pose {
+      let label: String
+      let face: KoaFlags.Expression
+      let look: (Double, Double)
+      let turn: Double
+      let elbow: (Double, Double)
+      let paw: (Double, Double)
+      /// Hướng vòi bình (độ, 0 = thẳng lên, âm = nghiêng sang trái).
+      let bottleDeg: Double
+      /// Vòi bình nằm ở đâu theo trục bình tính từ tâm bàn tay (đơn vị hình, dương = về phía vòi).
+      let reach: Double
+    }
+
+    static let poses: [Pose] = [
+      Pose(label: "A · nhấp nước", face: .meditate, look: (0.05, -0.15), turn: 0.15, elbow: (204, 206), paw: (160, 130),
+           bottleDeg: -128, reach: 36),
+      Pose(label: "B · ngửa đầu tu", face: .meditate, look: (0.1, -0.5), turn: 0.3, elbow: (206, 196), paw: (162, 112),
+           bottleDeg: -150, reach: 40),
+      Pose(label: "C · hạ bình \"ahh\"", face: .delighted, look: (0, 0), turn: 0, elbow: (204, 214), paw: (172, 186),
+           bottleDeg: -12, reach: 26),
+    ]
+
+    var body: some View {
+      VStack(spacing: 6) {
+        ForEach(Self.poses.indices, id: \.self) { i in
+          HStack(spacing: 0) {
+            Self.figure(Self.poses[i], size: 210)
+            Text(verbatim: Self.poses[i].label).font(.system(size: 15, weight: .semibold)).foregroundStyle(.white)
+              .frame(maxWidth: .infinity, alignment: .leading)
+          }
+        }
+      }
+      .padding(.top, 40)
+      .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+      .background(Color(red: 0.055, green: 0.059, blue: 0.071))
+      .statusBarHidden()
+    }
+
+    static func figure(_ p: Pose, size: Double) -> some View {
+      let u = size / 240
+      return ZStack(alignment: .topLeading) {
+        KoaFigureView(expression: p.face, size: size, animated: true, headLook: KoaMath.Gaze(x: p.look.0, y: p.look.1, k: 1),
+                      eyes: KoaMath.Gaze(x: p.look.0, y: p.look.1, k: 1), turn: p.turn, hideRightArm: true)
+        Canvas { c, _ in
+          func pt(_ q: (Double, Double)) -> CGPoint { CGPoint(x: q.0 * u, y: q.1 * u) }
+          let fur = Color(red: 0.75, green: 0.78, blue: 0.81)
+          let shade = Color(red: 0.64, green: 0.67, blue: 0.71)
+          let shoulder = (166.0, 182.0)
+          // cánh tay trên (sau bình)
+          var upper = Path(); upper.move(to: pt(shoulder)); upper.addLine(to: pt(p.elbow))
+          c.stroke(upper, with: .color(fur), style: StrokeStyle(lineWidth: 26 * u, lineCap: .round))
+          // bình: thân xanh, đai trắng, nắp cam có vòi — nằm sau bàn tay
+          let a = p.bottleDeg * .pi / 180
+          let dir = (sin(a), -cos(a))
+          let center = (p.paw.0 + dir.0 * (p.reach - 22), p.paw.1 + dir.1 * (p.reach - 22))
+          var g = c
+          g.translateBy(x: center.0 * u, y: center.1 * u)
+          g.rotate(by: .radians(a))
+          g.fill(Path(roundedRect: CGRect(x: -10 * u, y: -22 * u, width: 20 * u, height: 46 * u), cornerRadius: 7 * u),
+                 with: .color(Color(red: 0.49, green: 0.78, blue: 0.93)))
+          g.fill(Path(CGRect(x: -10 * u, y: 2 * u, width: 20 * u, height: 7 * u)), with: .color(.white.opacity(0.9)))
+          g.fill(Path(roundedRect: CGRect(x: -7 * u, y: -30 * u, width: 14 * u, height: 9 * u), cornerRadius: 3 * u),
+                 with: .color(Color(red: 0.91, green: 0.52, blue: 0.16)))
+          g.fill(Path(roundedRect: CGRect(x: -2.5 * u, y: -36 * u, width: 5 * u, height: 7 * u), cornerRadius: 2 * u),
+                 with: .color(Color(red: 0.91, green: 0.52, blue: 0.16)))
+          // cẳng tay + bàn tay ôm bình (trên bình)
+          var fore = Path(); fore.move(to: pt(p.elbow)); fore.addLine(to: pt(p.paw))
+          c.stroke(fore, with: .color(fur), style: StrokeStyle(lineWidth: 24 * u, lineCap: .round))
+          c.fill(Path(ellipseIn: CGRect(x: (p.paw.0 - 14) * u, y: (p.paw.1 - 13) * u, width: 28 * u, height: 26 * u)),
+                 with: .color(fur))
+          // nếp khuỷu và vệt lông như tay gốc
+          var crease = Path()
+          crease.move(to: pt((p.elbow.0 - 8, p.elbow.1 - 6)))
+          crease.addQuadCurve(to: pt((p.elbow.0 + 2, p.elbow.1 + 10)), control: pt((p.elbow.0 + 4, p.elbow.1 - 4)))
+          c.stroke(crease, with: .color(shade), style: StrokeStyle(lineWidth: 2.4 * u, lineCap: .round))
+          // đốm sáng trên bàn tay (như rk4 của tay gốc)
+          c.fill(Path(ellipseIn: CGRect(x: (p.paw.0 - 3) * u, y: (p.paw.1 - 9) * u, width: 9 * u, height: 9 * u)),
+                 with: .color(.white.opacity(0.5)))
+          c.fill(Path(ellipseIn: CGRect(x: (p.paw.0 + 5) * u, y: (p.paw.1 - 3) * u, width: 6 * u, height: 6 * u)),
+                 with: .color(.white.opacity(0.4)))
+        }
+        .frame(width: 240 * u, height: 300 * u)
+        .allowsHitTesting(false)
+      }
+      .frame(width: 240 * u, height: 300 * u)
+    }
+  }
+
   /// Lưới soát mặt có tham số: `SIMCTL_CHILD_ASCND_DEBUG_KOA_RIG=1`.
   struct KoaFaceRigGrid: View {
     static var enabled: Bool { ProcessInfo.processInfo.environment["ASCND_DEBUG_KOA_RIG"] != nil }

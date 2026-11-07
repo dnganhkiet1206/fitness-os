@@ -93,6 +93,8 @@ public enum KoaRender {
     /// Mặt có tham số (07/11, `KoaFaceRig`): mày và miệng dựng từ số, mí theo `lidL/lidR`. Bật thì mọi mày /
     /// miệng / mắt đặc biệt của `expression` tắt, mắt mở thường. Chỉ ở bản native.
     public var rig: KoaFaceRig?
+    /// Ẩn tay phải (bên phải màn) để vẽ tay khác đè lên — mock dáng uống nước (07/11, chờ Kiệt duyệt art).
+    public var hideRightArm = false
 
     /// Một nét mặt: biểu cảm + dáng (dáng có mặt riêng).
     public struct Face: Sendable, Hashable {
@@ -195,6 +197,7 @@ public enum KoaRender {
     /// Khi quay: tay phía xa vẽ sau thân, tay gần vẽ trước (0 cả hai, 1 chỉ tay xa, 2 chỉ tay gần).
     var armSide = 0
     var rig: KoaFaceRig?
+    var hideRightArm = false
   }
 
   /// Mày / miệng của mặt có tham số, thay vào chỗ lớp mày `browArc` và miệng `mouthSoft` của bản vẽ (cùng nhóm
@@ -302,6 +305,7 @@ public enum KoaRender {
     if let cond = n.cond, !(c.flags[cond]?.truthy ?? false) { return [] }
     if armHidden { return [] }
     if let rig = c.rig, c.inFace, let cond = n.cond, let drawn = rigged(cond, rig, c) { return drawn }
+    if c.hideRightArm, n.bind == "armRankR" { return [] }
     // lớp tay của dáng giơ tay: bỏ tay khỏi hình chính, hoặc chỉ vẽ tay
     var c = c
     if n.id == "FACE" { c.inFace = true }
@@ -782,6 +786,7 @@ public enum KoaRender {
       eyes: o.live ? o.eyes : nil, blink: o.live ? o.blink : nil, gestureAmount: o.gestureAmount)
     // bố cục, không phải hoạt ảnh: áp cả cho khung đứng yên
     c.groundShadow = o.groundShadow
+    c.hideRightArm = o.hideRightArm
     guard o.live, !KoaScene.rn else { return c }
     c.blinkRight = o.blink == nil ? nil : o.blinkRight
     if let rig = o.rig, !o.dress {
