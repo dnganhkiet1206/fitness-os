@@ -208,6 +208,8 @@ struct KoaRestScreen: View {
   private static let orange = Color(red: 0.91, green: 0.52, blue: 0.16)
   private static let gold = Color(red: 0.91, green: 0.70, blue: 0.23)
   private static let rose = Color(red: 0.90, green: 0.33, blue: 0.42)
+  /// Màu Tập luyện (Kiệt 07/11: "nút vào set và thanh thời gian nên là màu đỏ cho khớp với tập luyện").
+  private static let train = DS.Color.metricRose.swiftUI
 
   /// Cảnh đang diễn và mốc trong cảnh; `nil` = đang thở đều.
   struct Beat { let scene: KoaReaction.Scene?; let t: Double }
@@ -262,7 +264,8 @@ struct KoaRestScreen: View {
             .frame(width: geo.size.width * 0.8, height: geo.size.width * 0.18)
             .position(x: geo.size.width / 2, y: geo.size.height * 0.79)
           effects(cues, t: b.t)
-          koa(f, hand: KoaPerformance.restHand(b.scene, at: b.t), size: geo.size)
+          koa(f, hand: KoaPerformance.restHand(b.scene, at: b.t), squirt: KoaPerformance.restSquirt(b.scene, at: b.t),
+              t: b.t, size: geo.size)
             .position(x: geo.size.width / 2, y: geo.size.height * 0.54)
           VStack(spacing: 8) {
             topBar
@@ -340,7 +343,7 @@ struct KoaRestScreen: View {
 
   // MARK: Koa (như `KoaReactionView.koa`)
 
-  private func koa(_ f: KoaPerformance.Frame, hand: String?, size: CGSize) -> some View {
+  private func koa(_ f: KoaPerformance.Frame, hand: String?, squirt: Double = 0, t: Double = 0, size: CGSize) -> some View {
     // như `KoaReactionView.koa`: cùng cỡ, bóng đứng yên trên sàn, nhảy dời cả hình
     let fig = min(size.width * 0.82, 340.0)
     let unit = fig / 240
@@ -359,16 +362,59 @@ struct KoaRestScreen: View {
           .offset(x: 86 * unit, y: (282 - 150) * unit)
       }
       KoaFigureView(
-        expression: f.expression, pose: .idle, gesture: nil, worn: hand.map { [.hand: $0] } ?? [:], size: fig, animated: true,
+        expression: f.expression, pose: .idle, gesture: nil, size: fig, animated: true,
         stage: false, walk: still ? KoaWalk.Pose() : f.walk, bleeds: true,
         headLook: KoaMath.Gaze(x: f.look.x, y: f.look.y, k: 1), eyes: KoaMath.Gaze(x: f.eyes.x, y: f.eyes.y, k: 1),
         turn: still ? 0 : f.turn, groundShadow: false, gestureAmount: 0
       )
       .scaleEffect(x: still ? 1 : f.sx, y: still ? 1 : f.sy, anchor: .bottom)
       .offset(y: -air)
+      if hand != nil { bottleInHand(f, squirt: squirt, t: t, unit: unit) }
     }
     .scaleEffect(still ? 1 : f.zoom, anchor: UnitPoint(x: 0.5, y: 0.32 + 0.28 * f.focus))
     .accessibilityHidden(true)
+  }
+
+  /// Bình nước trong tay Koa, vẽ theo đúng bàn tay phải (vai `KoaGesture.shoulderR`, tay quay theo `armRight`, nhấc vai
+  /// khi giơ cao như `KoaRender.shoulderTuck`). Giơ cao thì vòi bình nghiêng về phía miệng; lúc uống có vòi nước vòng
+  /// cung bóp từ bình vào miệng. Cùng hình với bình đứng trên sàn.
+  private func bottleInHand(_ f: KoaPerformance.Frame, squirt: Double, t: Double, unit: Double) -> some View {
+    let raise = max(0, -f.walk.armRight)
+    let th = raise * .pi / 180
+    let tuck = raise >= KoaRender.armFlipDeg ? 6 * min(1, raise / 45) : 0
+    // bàn tay khi buông ở (+12, +56) so với vai; quay ngược chiều kim đồng hồ khi giơ ra ngoài
+    let hx = 12.0, hy = 56.0
+    let paw = (160 + hx * cos(th) + hy * sin(th), 178 - tuck - hx * sin(th) + hy * cos(th) - f.walk.bob)
+    let mouth = (120 + 10 * f.turn, 153 - f.walk.bob)
+    // hướng của vòi bình: thẳng đứng khi cầm thấp, chĩa về miệng khi giơ lên
+    let toMouth = atan2(mouth.0 - paw.0, -(mouth.1 - paw.1)) * 180 / .pi
+    let k = min(1, max(0, (raise - 40) / 50))
+    let angle = k * toMouth
+    let len = 30.0
+    let a = angle * .pi / 180
+    let nozzle = (paw.0 + sin(a) * len, paw.1 - cos(a) * len)
+    let body = (paw.0 + sin(a) * len * 0.45, paw.1 - cos(a) * len * 0.45)
+    func v(_ p: (Double, Double)) -> CGPoint { CGPoint(x: (p.0 - 120) * unit, y: (p.1 - 150) * unit) }
+    return ZStack {
+      if squirt > 0.01 {
+        // vòi nước: cung bay từ vòi bình tới miệng (toạ độ hình × `unit`, khung đúng cỡ hình 240 × 300)
+        Canvas { c, _ in
+          let p0 = CGPoint(x: nozzle.0 * unit, y: nozzle.1 * unit), p2 = CGPoint(x: mouth.0 * unit, y: mouth.1 * unit)
+          let ctl = CGPoint(x: (p0.x + p2.x) / 2, y: min(p0.y, p2.y) - 10 * unit)
+          var pa = Path(); pa.move(to: p0); pa.addQuadCurve(to: p2, control: ctl)
+          c.stroke(pa.trimmedPath(from: 0, to: squirt), with: .color(Color(red: 0.62, green: 0.85, blue: 0.97).opacity(0.95)),
+                   style: StrokeStyle(lineWidth: 3.4 * unit, lineCap: .round, dash: [6 * unit, 4 * unit],
+                                      dashPhase: -t / 30 * unit))
+        }
+        .frame(width: 240 * unit, height: 300 * unit)
+      }
+      Image(systemName: "waterbottle.fill")
+        .font(.system(size: 30 * unit, weight: .regular))
+        .foregroundStyle(Color(red: 0.49, green: 0.78, blue: 0.93))
+        .rotationEffect(.degrees(angle))
+        .offset(x: v(body).x, y: v(body).y)
+    }
+    .allowsHitTesting(false)
   }
 
   /// Thẻ số của set: hiện từ giữa mở đầu (đếm lên như cảnh xong buổi), rồi ở lại suốt quãng nghỉ để đọc.
@@ -402,7 +448,6 @@ struct KoaRestScreen: View {
   private func panel(left: Int, now: EpochMillis, b: Beat) -> some View {
     let paused = timer.isPaused
     let warning = RestTimer.warns(left: left, paused: paused)
-    let ready = b.scene == .restGo
     return VStack(spacing: 10) {
       HStack(spacing: DS.Spacing.sm) {
         chip(Text(verbatim: "−15s"), String(format: String(localized: "workout.rest.adjust"), "-15")) { onAdjust(-15) }
@@ -415,7 +460,7 @@ struct KoaRestScreen: View {
           GeometryReader { g in
             ZStack(alignment: .leading) {
               Capsule().fill(.white.opacity(0.1))
-              Capsule().fill(warning ? Self.gold : Self.orange).frame(width: g.size.width * timer.ringFraction(at: now))
+              Capsule().fill(warning ? Self.gold : Self.train).frame(width: g.size.width * timer.ringFraction(at: now))
             }
           }
           .frame(height: 4)
@@ -442,7 +487,8 @@ struct KoaRestScreen: View {
             .foregroundStyle(.white)
             .padding(.horizontal, 12)
             .frame(maxWidth: .infinity, minHeight: 50)
-            .background(Capsule().fill(ready ? Self.orange : .white.opacity(0.1)))
+            // đỏ Tập luyện chỉ khi đã hết giờ nghỉ (Kiệt 07/11); còn nghỉ thì nút xám
+            .background(Capsule().fill(left <= 0 ? Self.train : Color.white.opacity(0.1)))
             .contentShape(Capsule())
         }
         .buttonStyle(TodayPressStyle())

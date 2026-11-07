@@ -274,6 +274,12 @@ public enum KoaPerformance {
     scene == .restDrink && t >= 1500 && t < 6500 ? "bottle" : nil
   }
 
+  /// Vòi nước bóp từ bình vào miệng: 0 → 1 → 0 trong lúc uống (`restDrink`).
+  public static func restSquirt(_ scene: Scene?, at t: Double) -> Double {
+    guard scene == .restDrink else { return 0 }
+    return max(0, min(1, (t - 3000) / 200, (4400 - t) / 200))
+  }
+
   /// - Parameter hasBottle: đã mua bình nước (`hand_bottle`) — có thì thêm cảnh đi lấy nước uống, xen vào thứ hai.
   public static func restBeat(elapsed e: Double, left: Double, total: Double, paused: Bool, seed: Int = 0,
                               hasBottle: Bool = false) -> (scene: Scene?, t: Double)
@@ -625,8 +631,9 @@ public enum KoaPerformance {
         cues: [],
         flashAt: nil, ringFrom: nil)
     case .restDrink:
-      // Đi lấy bình nước: quay sang, bước một nhịp, cúi xuống nhặt bình (bình hiện trong tay lúc chạm sàn), quay lại,
-      // đưa bình lên miệng tu (nhắm mắt, nuốt từng ngụm), hạ bình "ahh", cúi đặt bình xuống. Đồ trong tay: `restHand`.
+      // Đi lấy bình nước: quay sang, cúi nhặt bình trên sàn, giơ bình ngang má, BÓP XỊT nước vào miệng (há miệng; tay một
+      // mảnh không đưa được bình tới miệng — Kiệt 07/11 "koa uống nước vẫn chưa đc"), hạ bình "ahh", cúi đặt lại.
+      // Bình và vòi nước do `KoaRestScreen` vẽ theo bàn tay (`restHand`, `restSquirt`).
       Script(
         ms: 7600,
         bob: T(Key(0, 0), Key(500, 1), Key(900, 0), Key(1300, -3), Key(1700, -3), Key(2100, 1, .out), Key(2500, 0),
@@ -636,20 +643,20 @@ public enum KoaPerformance {
                 Key(6300, 1.2), Key(6700, 1.2), Key(7300, 0), Key(7600, 0)),
         sway: T(Key(0, 0), Key(700, 0.8), Key(1300, 0.8), Key(2300, 0), Key(6000, 0.8), Key(6700, 0.8), Key(7400, 0)),
         armL: T(Key(0, 4), Key(7600, 4)),
-        armR: T(Key(0, -4), Key(1300, -8), Key(1700, -8), Key(2300, -6), Key(2900, -88, .out), Key(4500, -88), Key(5100, -10, .inOut),
+        armR: T(Key(0, -4), Key(1300, -8), Key(1700, -8), Key(2300, -6), Key(2900, -100, .out), Key(4500, -100), Key(5100, -10, .inOut),
                 Key(6300, -8), Key(6700, -8), Key(7200, -4), Key(7600, -4)),
         cheer: zero,
         ears: T(Key(0, 0), Key(1300, 4), Key(2300, 0), Key(2900, -6), Key(4500, -6), Key(5200, 2), Key(7600, 0)),
         lookX: T(Key(0, 0), Key(500, 0.5), Key(1300, 0.4), Key(2300, 0), Key(5600, 0), Key(6100, 0.5), Key(6700, 0.4), Key(7300, 0)),
-        lookY: T(Key(0, 0), Key(1000, 0.5), Key(1700, 0.5), Key(2300, 0), Key(2900, -0.45), Key(4500, -0.45), Key(5100, 0),
+        lookY: T(Key(0, 0), Key(1000, 0.5), Key(1700, 0.5), Key(2300, 0), Key(2900, -0.25), Key(4500, -0.25), Key(5100, 0),
                  Key(6100, 0.5), Key(6700, 0.5), Key(7300, 0)),
         // quay về phía tay cầm bình cả lúc nhặt, lúc uống (mặt sát bình) và lúc đặt lại
-        turn: T(Key(0, 0), Key(600, 0.45), Key(1700, 0.45), Key(2400, 0.3), Key(2900, 0.5), Key(4500, 0.5), Key(5100, 0.15),
+        turn: T(Key(0, 0), Key(600, 0.45), Key(1700, 0.45), Key(2400, 0.3), Key(2900, 0.35), Key(4500, 0.35), Key(5100, 0.15),
                 Key(5600, 0), Key(6100, 0.45), Key(6800, 0.45), Key(7500, 0)),
         zoom: T(Key(0, 1.0), Key(2900, 1.06), Key(4500, 1.06), Key(5600, 1.0), Key(7600, 1.0)),
         focus: T(Key(0, 1), Key(7600, 1)),
         tremble: zero,
-        faces: [(0, .content), (2700, .meditate), (4700, .delighted), (6000, .content)],
+        faces: [(0, .content), (2700, .happy), (4700, .delighted), (6000, .content)],
         hand: nil,
         cues: [],
         flashAt: nil, ringFrom: nil)
