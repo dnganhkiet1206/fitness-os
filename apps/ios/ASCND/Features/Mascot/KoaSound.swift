@@ -109,6 +109,17 @@ enum KoaSound {
 
   /// Tiếng phản ứng khi bị chạm (`koa-v-<name>`: "no no no", "hì hì", "ưm~"…), sau `delay` giây
   /// (để cú giật mình đi trước).
+  /// Tiếng của đoạn diễn (`KoaRepairScene.Cue`): tiếng phòng theo `Cue`, giọng Koa (`koa-v-*`, `koa-talk-*`) theo giọng.
+  static func cue(_ name: String, volume: Double) {
+    if let c = Cue(rawValue: name) {
+      play(c, gain: Float(volume))
+    } else if name.hasPrefix("koa-talk-") {
+      voice(name, volume: 0.16)
+    } else if name.hasPrefix("koa-v-") {
+      voice(name, volume: Float(0.3 * min(1.4, volume / 0.7)))
+    }
+  }
+
   static func react(_ name: String, delay: Double = 0) {
     Task {
       if delay > 0 { try? await Task.sleep(for: .seconds(delay)) }
