@@ -607,6 +607,20 @@ public enum KoaRender {
   /// Vị trí THẬT của các mốc trong khung 240 × 300 (như `viewBox`) ở đúng dáng / khung `o` — để biết
   /// người dùng chạm vào đâu ở mọi tư thế (Kiệt 04/11). Tai trái là `ear_left` (cùng id với lớp tai
   /// trong nên đặt mốc theo tai phải và đối xứng qua mũi).
+  /// Đầu ngón tay phải / trái (toạ độ của hình ở `o.size`) — để vẽ đồ Koa cầm đúng vào tay.
+  public static func paws(_ o: Options) -> (right: (x: Double, y: Double)?, left: (x: Double, y: Double)?) {
+    let fig = figure(o)
+    func find(_ e: Element, _ prefix: String, _ tip: (Double, Double), _ m: KoaMath.Mat) -> (x: Double, y: Double)? {
+      let here = e.matrix.map { KoaMath.mul(m, $0) } ?? m
+      if case .string(let d)? = e.props["d"], d.hasPrefix(prefix) {
+        return (here[0] * tip.0 + here[2] * tip.1 + here[4], here[1] * tip.0 + here[3] * tip.1 + here[5])
+      }
+      for k in e.kids { if let r = find(k, prefix, tip, here) { return r } }
+      return nil
+    }
+    return (find(fig, "M172 171", (190, 238), KoaMath.identity), find(fig, "M68 171", (50, 238), KoaMath.identity))
+  }
+
   public static func anchors(_ o: Options) -> [String: (x: Double, y: Double)] {
     var probing = o
     probing.size = 240

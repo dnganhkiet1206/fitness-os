@@ -120,11 +120,26 @@ extension View {
     if plane.lag == 0 {
       self
     } else {
-      visualEffect { content, proxy in
-        content.offset(y: max(0, -proxy.frame(in: .scrollView(axis: .vertical)).minY) * plane.lag)
-      }
+      modifier(ParallaxLag(lag: plane.lag))
     }
   }
+}
+
+/// Máy quay của đoạn diễn sửa đồ dời cả phòng — khung trong vùng cuộn đổi theo, nên tắt độ trễ lúc diễn
+/// (nếu không, tầng tường tưởng đang cuộn mà trôi lệch khỏi lớp diễn).
+private struct ParallaxLag: ViewModifier {
+  let lag: Double
+  @Environment(\.koaCameraRolling) private var rolling
+
+  func body(content: Content) -> some View {
+    content.visualEffect { content, proxy in
+      content.offset(y: rolling ? 0 : max(0, -proxy.frame(in: .scrollView(axis: .vertical)).minY) * lag)
+    }
+  }
+}
+
+extension EnvironmentValues {
+  @Entry var koaCameraRolling = false
 }
 
 /// Độ nghiêng điện thoại, đọc từng khung theo đồng hồ của sân khấu.
