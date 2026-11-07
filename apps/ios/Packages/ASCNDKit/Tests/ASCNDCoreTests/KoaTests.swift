@@ -33,7 +33,9 @@ struct KoaGoldenTests {
     func count(_ ns: [KoaScene.Node]) -> Int { ns.reduce(0) { $0 + 1 + count($1.kids ?? []) } }
     // Cảnh RN nguyên văn; cảnh app có thêm tủ đồ vẽ lại (`KoaWardrobeTests`).
     #expect(Double(count(KoaScene.rnPayload.nodes)) == g["nodeCount"]?.doubleValue)
-    #expect(Double(KoaScene.keyframes.count) == g["keyframeCount"]?.doubleValue)
+    // Bản RN đã bỏ (Kiệt 06/11): chỉ còn so phần dữ liệu RN gốc; cảnh app được thêm khung hoạt ảnh riêng.
+    #expect(Double(KoaScene.rnPayload.keyframes.count) == g["keyframeCount"]?.doubleValue)
+    #expect(KoaScene.keyframes.count >= KoaScene.rnPayload.keyframes.count)
     #expect(Self.close(KoaMath.insetMat, Self.numbers(g["inset"])))
   }
 
@@ -114,7 +116,7 @@ struct KoaGoldenTests {
     #expect(tracks.count == 936)
     for c in tracks {
       let k = c["k"]?.stringValue ?? ""
-      let track = try #require(KoaScene.keyframes[k], "\(k)")
+      let track = try #require(KoaScene.rnPayload.keyframes[k], "\(k)")
       let t = c["t"]?.doubleValue ?? 0, kind = c["kind"]?.stringValue ?? ""
       if let m = c["m"], m != .null {
         let frames = try #require(track.tf, "\(k)")
