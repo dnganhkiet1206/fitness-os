@@ -53,6 +53,9 @@ final class AppServices {
   /// Đồ Koa đang mặc (khoá `mascot_inventory`), do Hôm nay ghi khi tủ đồ đọc xong
   /// / đổi — để Koa ló lên ở tab khác mặc đúng đồ (đợt 2A).
   var koaEquipped: [String] = []
+  /// Đồ Koa đã mua (khoá `mascot_inventory`, kể cả không mặc), Hôm nay ghi cùng `koaEquipped`. Màn nghỉ dùng để
+  /// biết Koa có bình nước để uống không (07/11: "chỉ áp dụng cho đồ vật đã được mua").
+  var koaOwned: Set<String> = []
   /// Hạng vóc dáng (Gains, 0…5) của người đang dùng — Koa của chính họ ở mọi màn
   /// mang vóc dáng ấy (#527 đợt 1: vóc dáng theo tập, không theo cấp). Hôm nay ghi.
   var koaBuild = 0
@@ -464,7 +467,11 @@ final class AppServices {
         sync.kick()
         // Lịch có buổi tập đầu tiên (onboarding hay tự đặt): lúc xin quyền thông báo (#800).
         if entry.kind == PlanEdit.routineDayKind, entry.payload["template_id"]?.stringValue != nil {
-          Task { await self?.reminders.askAfterSchedule() }
+          // Ghi buổi cũng đi qua đây: chờ cảnh Koa ăn mừng xong, hộp hệ thống không đè lên Koa.
+          Task { @MainActor in
+            await KoaReactionGate.waitIdle()
+            await self?.reminders.askAfterSchedule()
+          }
         }
       })
     // Không ghi buổi ghi tay vào Apple Health nữa (17/10, "Không ghi ngược vào
@@ -927,6 +934,7 @@ final class AppServices {
     koaGainsHistory = nil
     koaShelfRecords = nil
     koaEquipped = []
+    koaOwned = []
     koaBuild = 0
     koaLastSessionAt = nil
   }

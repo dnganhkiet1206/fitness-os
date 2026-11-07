@@ -6,6 +6,9 @@ public enum KoaEmotion {
     case idle, happy, sad, tired, sleep, celebrate, curl, worry, proud, rested, oops, hat, coat
     /// Đợt 2 (sống theo lịch, 20/10): đợi ở phòng tập — cầm tạ khởi động, mặt gồng sức.
     case warmup
+    /// Mặt tập gym (05/11, Kiệt: "khi ghi set / xong bài"): nghỉ thở dốc sau một set, hét chiến thắng khi
+    /// phá kỷ lục / tiến bộ, tập trung chờ set sau, tự hào khi xong buổi.
+    case breather, victory, ready, pumped
   }
 
   /// `DEV_EMOTIONS`: các cảm xúc thanh DEV của phòng linh vật cho ép, đúng thứ tự.
@@ -50,6 +53,11 @@ public enum KoaEmotion {
     // mặt vui vẻ thường trên tư thế tạ đọc ra "không có biểu cảm" (20/10, chủ dự án).
     .warmup: State(.strain, .lifting),
     .coat: State(.happy, .idle),
+    // vừa ghi set: ngồi xuống thở dốc (thay mặt thiền khép mắt — đọc ra "ngủ" giữa buổi tập)
+    .breather: State(.gymPant, .relaxing),
+    .victory: State(.roar, .idle),
+    .ready: State(.gymFocus, .idle),
+    .pumped: State(.smug, .idle),
   ]
 
   /// `koaStateFor`: cảm xúc lạ → như `idle`.

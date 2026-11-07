@@ -102,6 +102,14 @@ enum KoaSound {
     return p
   }
 
+  // MARK: - Cảnh phản ứng toàn màn hình (05/11)
+
+  /// Tiếng của cảnh phản ứng (`koa-rx-*`, `tools/koa-sound/reaction.py`): tối giản, nhỏ, cùng một hợp âm.
+  static let reactionVolume: Float = 0.32
+  static func reaction(_ name: String, gain: Double) {
+    voice(name, volume: reactionVolume * Float(gain))
+  }
+
   // MARK: - Giọng Koa (Kiệt 04/11: tiếng koala nhân hoá thành lời, như mèo Tom)
 
   private static var voices: [String: AVAudioPlayer] = [:]

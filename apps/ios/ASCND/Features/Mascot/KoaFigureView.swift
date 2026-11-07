@@ -52,6 +52,14 @@ struct KoaFigureView: View {
   var blink: Double?
   /// Mắt phải của cú chớp do phòng đưa vào (`KoaGaze.Output.blinkRight`).
   var blinkRight: Double?
+  /// Quay mặt 2.5D (Koa V2, `KoaTurn`): −1 … 1. `nil` = theo hướng đi / ánh nhìn.
+  var turn: Double?
+  /// Bóng dưới chân của bản vẽ (`KoaRender.Options.groundShadow`).
+  var groundShadow = true
+  /// Mặt có tham số (`KoaRender.Options.rig`, màn nghỉ 07/11): nét mặt đổi dần, không thay cả mặt.
+  var rig: KoaFaceRig?
+  /// Ẩn tay phải (mock dáng uống nước).
+  var hideRightArm = false
   var gestureAmount = 1.0
   /// Đồng hồ ngoài (phòng, 30/10): khung do `TimelineView` của sân khấu đưa vào — hình
   /// KHÔNG chạy đồng hồ riêng (trước có hai đồng hồ cùng vẽ Koa: vẽ lại gấp đôi).
@@ -196,6 +204,10 @@ struct KoaFigureView: View {
       // phòng: đạo diễn giật tai vào lúc không đều, thay cho chu kỳ cố định
       if idleClock != nil { o.poke?.twitches = false }
       o.walk = running ? walk : nil
+      o.turn = turn
+      o.groundShadow = groundShadow
+      o.rig = rig
+      o.hideRightArm = hideRightArm
       if onTapZone != nil { drawn.options = o }
       let sp = KoaSignpost.poster.beginInterval("figure")
       defer { KoaSignpost.poster.endInterval("figure", sp) }

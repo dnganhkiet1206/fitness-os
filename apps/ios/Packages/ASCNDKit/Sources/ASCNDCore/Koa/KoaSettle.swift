@@ -14,7 +14,8 @@ extension KoaMath {
   /// (7,3 s và 11,9 s) nên không lặp thành nhịp; tối đa ~0,9°. Bằng 0 ở `t = 0` (khung đứng
   /// yên, ảnh chuẩn không đổi).
   /// Lớp của mắt (mở / cười tít / sao / mở to / mí lờ đờ): đổi dứt khoát lúc mí khép.
-  static func isEyeCond(_ cond: String) -> Bool { cond.hasPrefix("eyes") || cond.hasPrefix("lids") }
+  /// Mặt gym vẽ thêm (`faceGym…`) có mắt riêng: đổi dưới cú chớp như mắt, không mờ dần.
+  static func isEyeCond(_ cond: String) -> Bool { cond.hasPrefix("eyes") || cond.hasPrefix("lids") || cond.hasPrefix("faceGym") }
 
   static func weightShift(_ t: Double) -> Double {
     0.55 * sin(2 * .pi * t / 7300) + 0.35 * sin(2 * .pi * t / 11900)

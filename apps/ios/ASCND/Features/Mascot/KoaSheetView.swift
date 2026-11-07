@@ -32,6 +32,8 @@ struct KoaSheetView: View {
   @State private var taps = 0
   /// Dáng mới đang soi ở hình lớn (`nil` = biểu cảm / tư thế như cũ).
   @State private var gesture: KoaGesture?
+  /// Quay mặt 2.5D (Koa V2, 05/11): kéo để soi từng góc.
+  @State private var turn = 0.0
 
   private let columns = Array(repeating: GridItem(.flexible(), spacing: DS.Spacing.sm), count: 3)
 
@@ -114,12 +116,22 @@ struct KoaSheetView: View {
       } else {
       KoaFigureView(
         expression: expression, pose: pose, worn: worn, size: 200, build: build, interactive: true, stage: true,
-        onTap: cycle
+        onTap: cycle, turn: turn
       )
       .accessibilityElement()
       .accessibilityLabel(Text(String(localized: "koa.sheet.cycle")))
       .accessibilityAddTraits(.isButton)
       .accessibilityAction(.default, cycle)
+      HStack(spacing: DS.Spacing.sm) {
+        Text(verbatim: "XOAY \(Int((turn * KoaTurn.maxDeg).rounded()))°")
+          .font(DS.TextStyle.rounded(.caption2, weight: .medium))
+          .tracking(1.6)
+          .monospacedDigit()
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        Slider(value: $turn, in: -1...1)
+          .accessibilityIdentifier("koa.sheet.turn")
+      }
+      .padding(.horizontal, DS.Spacing.lg)
       }
       Text(verbatim: "\(KoaFlags.expressionLabel[expression] ?? expression.rawValue.uppercased()) · \(pose.rawValue.uppercased())")
         .font(DS.TextStyle.rounded(.caption2, weight: .medium))

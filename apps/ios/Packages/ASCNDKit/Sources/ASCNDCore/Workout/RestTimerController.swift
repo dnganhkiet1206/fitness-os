@@ -54,9 +54,10 @@ public enum RestKoa: String, Sendable, Hashable, CaseIterable {
 
   public var emotion: KoaEmotion.Emotion {
     switch self {
-    case .resting: .tired
-    case .record: .celebrate
-    case .waiting: .idle
+    // mặt tập gym (05/11, Kiệt): nghỉ thở dốc, kỷ lục hét chiến thắng, tạm dừng thì tập trung chờ set sau
+    case .resting: .breather
+    case .record: .victory
+    case .waiting: .ready
     }
   }
 }
