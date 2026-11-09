@@ -21,6 +21,7 @@ import SwiftUI
 struct SmartGoalsView: View {
   let book: SmartGoalsBook
   @Environment(ProfileBook.self) private var profile: ProfileBook?
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var confirming: Confirm?
   @State private var applying = false
   @State private var applyFailure: ProfileSaveFailure?
@@ -132,7 +133,7 @@ struct SmartGoalsView: View {
     .transition(.move(edge: .bottom).combined(with: .opacity))
     .task(id: kcal) {
       try? await Task.sleep(for: .seconds(8))
-      withAnimation { applied = nil }
+      withAnimation(DSMotion.animation(.easeOut(duration: 0.25), reduceMotion: reduceMotion)) { applied = nil }
     }
   }
 

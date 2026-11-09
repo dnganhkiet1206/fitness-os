@@ -16,12 +16,12 @@ struct CalorieHintRow: View {
       } label: {
         HStack(spacing: DS.Spacing.sm) {
           Circle().fill(DS.Color.readinessYellow.swiftUI).frame(width: 8, height: 8)
-          Text("nutrition.calorieHint")
+          Text("nutrition.caloriehint")
             .font(DS.TextStyle.footnote)
             .foregroundStyle(DS.Color.foreground.swiftUI)
             .multilineTextAlignment(.leading)
           Spacer(minLength: 0)
-          Text("nutrition.calorieHint.open")
+          Text("nutrition.caloriehint.open")
             .font(DS.TextStyle.footnote.weight(.bold))
             .foregroundStyle(DS.Color.primary.swiftUI)
         }

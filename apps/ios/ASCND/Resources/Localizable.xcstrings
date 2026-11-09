@@ -73082,7 +73082,7 @@
         }
       }
     },
-    "nutrition.calorieHint": {
+    "nutrition.caloriehint": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -73105,7 +73105,7 @@
         }
       }
     },
-    "nutrition.calorieHint.open": {
+    "nutrition.caloriehint.open": {
       "extractionState": "manual",
       "localizations": {
         "en": {
