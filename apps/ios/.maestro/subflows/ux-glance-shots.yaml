@@ -31,8 +31,20 @@ appId: com.ascnd.fitnessos.dev
     visibilityPercentage: 40
     speed: 40
 - assertVisible: "Keeps you training steadily.*"
-# Thanh tab thu khi cuộn và mất chữ "Progress". Mở tab bằng link, không phụ thuộc chữ.
-- openLink: ascnd://assistant
+# Cuộn làm thanh tab thu, chỉ còn icon. Vuốt xuống cho nó bung rồi mới chạm chữ.
+# Không dùng openLink: iOS hỏi "Open in ASCND Dev?" và chặn mọi flow sau.
+- swipe:
+    start: "50%,40%"
+    end: "50%,78%"
+    duration: 500
+- swipe:
+    start: "50%,40%"
+    end: "50%,78%"
+    duration: 500
+- extendedWaitUntil:
+    visible: "Progress"
+    timeout: 10000
+- tapOn: "Progress"
 - extendedWaitUntil:
     visible:
       id: progress.segment.training
@@ -98,7 +110,11 @@ appId: com.ascnd.fitnessos.dev
     notVisible:
       id: quicklog.sheet
     timeout: 8000
-- openLink: ascnd://nutrition
+- swipe:
+    start: "50%,40%"
+    end: "50%,78%"
+    duration: 500
+- tapOn: "Nutrition"
 - extendedWaitUntil:
     visible:
       id: nutrition.search
