@@ -80,9 +80,11 @@ appId: com.ascnd.fitnessos.dev
     id: progress.tool.steps
 - takeScreenshot: ux-${MODE}-all-tools
 - runFlow: back.yaml
+# Về Tiến bộ đang cuộn ở mục More: chữ A ở đầu trang không nằm trong khung.
+# Dải Ghi nhanh vẫn hiện, đủ để mở bảng.
 - extendedWaitUntil:
     visible:
-      id: progress.segment.training
+      id: quicklog.bar
     timeout: 15000
 - tapOn:
     id: quicklog.bar

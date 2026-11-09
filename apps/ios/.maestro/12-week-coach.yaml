@@ -14,8 +14,8 @@ name: The Monday week card can be kept as is
       visible:
         id: today.coach.peek
     commands:
-      - tapOn:
-          id: today.coach.peek
+      # Tâm của dải trùng nút "+" của Ghi nhanh. Chạm chữ bên phải.
+      - tapOn: "Koa's take.*"
       - takeScreenshot: 12-week-coach
       - tapOn:
           id: today.coach.keep
