@@ -23,7 +23,7 @@ struct StudioMaskTests {
   /// Kệ mua che Koa như kệ gốc (trước đây mặt nạ chỉ còn cúp: biến thể chèn ở phần tử 77, ngoài mặt nạ);
   /// bóng tiếp xúc trên sàn không vào mặt nạ.
   @Test func boughtShelvesHideKoaLikeTheShelf() {
-    for (id, paint) in [("chrome", "url(#decorChrome)"), ("olympic", "url(#decorBar)")] {
+    for (id, paint) in [("chrome", "url(#ncBoard)"), ("olympic", "url(#noIron)")] {
       var o = StudioScene.Options()
       o.decor = ["shelf": id]
       let mask = StudioScene.objects(o, occluder("shelf"))

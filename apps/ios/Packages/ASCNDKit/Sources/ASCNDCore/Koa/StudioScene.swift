@@ -68,6 +68,9 @@ public enum StudioScene {
     "#5A3F7A": "#C9744F", "#8A6AB0": "#E39A6B", "#36254D": "#9C5536",  // chậu
     "#6D5BD0": "#E39A6B", "#B7AAFF": "#F7C6A6", "#3A2E8F": "#B8653F", "#C9C0FF": "#FFFFFF",  // bóng
     "#1C2140": "#3A3F5C", "#343B6A": "#5A608A",  // bình nước
+    // kệ Chrome vẽ lại (08/11, #799, Kiệt duyệt mock 04/11): thép mạ lạnh → thép ấm hơn cho phòng giấy
+    "#3A4466": "#7D8598", "#7F8BAE": "#B9C0CF", "#E6EBF7": "#FFFFFF", "#C9D2E8": "#EEF1F6", "#8D99BA": "#C9CFDC",
+    "#4C5778": "#959DB0", "#F2F5FC": "#FFFFFF", "#EEF2FB": "#FFFFFF", "#9AA6C4": "#C6CCD9", "#4D5878": "#868EA3",
   ]
 
   /// Trời ngoài cửa sổ ban ngày (thay `studioSky` đêm).
