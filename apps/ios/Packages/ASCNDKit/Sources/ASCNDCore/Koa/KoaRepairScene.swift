@@ -129,6 +129,11 @@ public enum KoaRepairScene {
     /// Búa: góc và cỡ trong hình 240 của Koa (đầu búa cách tay 128 × cỡ).
     case hammer(angle: Double, scale: Double)
     case glue(angle: Double, scale: Double)
+    /// Dọn bụi (cảnh B): khăn lau, chổi lông (cán `length` px hình 480; 0 = cán dài vươn tới mạng nhện), bình nước lau
+    /// nhà — góc và cỡ trong hình của Koa (storyboard vẽ ở hình 480).
+    case cloth(angle: Double, scale: Double)
+    case duster(angle: Double, scale: Double, length: Double)
+    case bottle(angle: Double, scale: Double)
   }
 
   public struct Shot: Sendable {
@@ -154,6 +159,7 @@ public enum KoaRepairScene {
     public var stage = StageState()
     public var floor = FloorState()
     public var neon = NeonState()
+    public var dust = DustState()
     /// Koa quay mặt sang trái (lật ngang quanh tâm), hay đang khuất khỏi phòng.
     public var flip = false, hidden = false
     public var puffs: [Puff] = []
