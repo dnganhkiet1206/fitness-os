@@ -15,16 +15,21 @@ appId: com.ascnd.fitnessos.dev
 - assertNotVisible: "Keeps you training steadily.*"
 - scrollUntilVisible:
     element:
-      id: today.koaWeek
+      id: today.koaWeek.about
     direction: DOWN
     timeout: 25000
-    visibilityPercentage: 60
+    visibilityPercentage: 100
+    centerElement: true
 - takeScreenshot: ux-${MODE}-today-week
 - tapOn:
     id: today.koaWeek.about
-- extendedWaitUntil:
-    visible: "Keeps you training steadily.*"
-    timeout: 8000
+- scrollUntilVisible:
+    element:
+      id: today.koaWeek.details
+    direction: DOWN
+    timeout: 10000
+    visibilityPercentage: 100
+- assertVisible: "Keeps you training steadily.*"
 - tapOn: "Progress"
 - extendedWaitUntil:
     visible:

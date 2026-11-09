@@ -103,42 +103,43 @@ struct TodayKoaWeekModule: View {
     VStack(alignment: .leading, spacing: DS.Spacing.sm) {
       TodayWeekStrip(days: days, today: today, target: target)
       if state != nil {
-        Text(String(localized: "kw.reward \(KoaGains.fullWeek) \(KoaWeek.rewardCoins)"))
-          .font(DS.TextStyle.footnote.weight(.semibold))
-          .foregroundStyle(DS.Color.foreground.swiftUI)
-          .fixedSize(horizontal: false, vertical: true)
-        claimLine
+        // Dòng thưởng chính là nút mở lời giải thích — nằm cùng chỗ với dải,
+        // không thêm một thẻ và không chui xuống dưới thanh tab.
         Button {
           if reduceMotion { explains.toggle() } else {
             withAnimation(.easeInOut(duration: DSMotion.transitionDuration)) { explains.toggle() }
           }
         } label: {
-          HStack(spacing: DS.Spacing.sm) {
-            Text("kw.more")
+          HStack(alignment: .center, spacing: DS.Spacing.sm) {
+            Text(String(localized: "kw.reward \(KoaGains.fullWeek) \(KoaWeek.rewardCoins)"))
               .font(DS.TextStyle.footnote.weight(.semibold))
-            Spacer(minLength: 0)
+              .foregroundStyle(DS.Color.foreground.swiftUI)
+              .fixedSize(horizontal: false, vertical: true)
+              .frame(maxWidth: .infinity, alignment: .leading)
             Image(systemName: explains ? "chevron.up" : "chevron.down")
               .font(.caption.weight(.semibold))
+              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
               .accessibilityHidden(true)
           }
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
           .frame(minHeight: 44)
           .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier("today.koaWeek.about")
+        .accessibilityLabel(Text("kw.more"))
         .accessibilityHint(Text("kw.open.hint"))
+        claimLine
         if explains {
           Text("kw.why")
             .font(DS.TextStyle.footnote)
             .foregroundStyle(DS.Color.foreground.swiftUI.opacity(0.85))
             .fixedSize(horizontal: false, vertical: true)
+            .accessibilityIdentifier("today.koaWeek.details")
           KoaWeekLegend()
           Text("kw.rules")
             .font(DS.TextStyle.footnote)
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
             .fixedSize(horizontal: false, vertical: true)
-            .accessibilityIdentifier("today.koaWeek.details")
         }
       }
     }
