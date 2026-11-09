@@ -18,8 +18,8 @@ appId: com.ascnd.fitnessos.dev
       id: today.koaWeek.about
     direction: DOWN
     timeout: 25000
-    visibilityPercentage: 100
-    centerElement: true
+    visibilityPercentage: 50
+    speed: 40
 - takeScreenshot: ux-${MODE}-today-week
 - tapOn:
     id: today.koaWeek.about
@@ -27,8 +27,9 @@ appId: com.ascnd.fitnessos.dev
     element:
       id: today.koaWeek.details
     direction: DOWN
-    timeout: 10000
-    visibilityPercentage: 100
+    timeout: 15000
+    visibilityPercentage: 40
+    speed: 40
 - assertVisible: "Keeps you training steadily.*"
 # Vuốt xuống thì thanh tab thu lại và mất chữ "Progress". Kéo lên đầu trang cho thanh bung ra.
 - scrollUntilVisible:
