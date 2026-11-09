@@ -27,7 +27,9 @@ let swiftSettings: [SwiftSetting] = [
 let package = Package(
   name: "ASCNDKit",
   defaultLocalization: "en",
-  platforms: [.iOS(.v18), .macOS(.v15)],
+  // watchOS: app trên cổ tay dùng cùng ASCNDCore (không UIKit). Tối thiểu 11
+  // khớp iOS 18; app Watch trong project.yml đặt deployment 11.
+  platforms: [.iOS(.v18), .macOS(.v15), .watchOS(.v11)],
   products: [
     .library(name: "ASCNDCore", targets: ["ASCNDCore"]),
     .library(name: "ASCNDDesignSystem", targets: ["ASCNDDesignSystem"]),

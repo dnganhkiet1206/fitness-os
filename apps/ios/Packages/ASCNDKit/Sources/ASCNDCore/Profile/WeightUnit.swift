@@ -14,7 +14,7 @@ public import Foundation
 ///   `Math.round(displayWeight(v))`.
 /// - Đơn vị là của TÀI KHOẢN, không của từng set: đổi đơn vị giữa ngày thì chữ
 ///   trong ô đọc lại theo đơn vị mới (như RN) — không có metadata đơn vị theo set.
-public enum WeightUnit: String, Sendable, Hashable, CaseIterable {
+public enum WeightUnit: String, Sendable, Hashable, Codable, CaseIterable {
   case kg
   case lbs
 

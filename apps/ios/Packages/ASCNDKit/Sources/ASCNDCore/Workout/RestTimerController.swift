@@ -163,6 +163,24 @@ public final class RestTimerController {
     handle(.adjust(delta: delta))
   }
 
+  /// Nhận đúng một `RestTimer` đã tính ở nơi khác (Apple Watch). Đồng hồ nghỉ
+  /// là thời điểm tuyệt đối: lệnh tới muộn không được bắt đầu lại từ bây giờ.
+  /// `nil` huỷ, như `.cancel`. Target (set kế) giữ nguyên khi thay đồng hồ —
+  /// Live Activity vẫn là phép chiếu của giá trị này.
+  public func adopt(_ next: RestTimer?) {
+    guard let next else {
+      set(nil)
+      return
+    }
+    if next.phase(at: clock.nowMillis()) == .over {
+      set(nil)
+      return
+    }
+    timer = next
+    persist(timer, target)
+    scheduleSync()
+  }
+
   /// Tạm dừng / tiếp tục — từ nút trong app HAY từ Island; cùng một đường.
   /// Đặt trạng thái đích (không đảo): hai lần chạm dồn nhau không lật ngược.
   public func setPaused(_ paused: Bool) {

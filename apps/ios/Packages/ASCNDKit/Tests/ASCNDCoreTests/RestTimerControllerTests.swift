@@ -406,6 +406,26 @@ struct RestTimerControllerTests {
     c.handle(.cancel)
     #expect(c.recordNote == nil)
   }
+
+  /// Đồng hồ đeo tay gửi quãng nghỉ đã bắt đầu lúc tick — không tính lại từ
+  /// lúc iPhone nhận lệnh. Target (set kế) giữ nguyên để Island không mất tên bài.
+  @Test func adoptReplacesTheClockWithoutClearingTheTarget() async throws {
+    let driver = FakeDriver()
+    let c = RestTimerController(driver: driver, clock: TestClock(0))
+    c.handle(.start(seconds: 90), target: squat)
+    await c.flush()
+    let wrist = try #require(RestTimer.start(seconds: 90, at: EpochMillis(0))?.adjusted(by: 15, at: EpochMillis(0)))
+    c.adopt(wrist)
+    await c.flush()
+    #expect(c.target == squat)
+    #expect(c.timer == wrist)
+    #expect(driver.showing?.endsAt == wrist.endsAt)
+    c.adopt(nil)
+    await c.flush()
+    #expect(c.timer == nil)
+    #expect(c.target == nil)
+    #expect(driver.calls.contains(.end))
+  }
 }
 
 @Suite struct RestKoaTests {
