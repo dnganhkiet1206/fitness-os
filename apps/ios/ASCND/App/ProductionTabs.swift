@@ -168,7 +168,9 @@ struct WorkoutsTab: View {
             Telemetry.capture(.firstSessionCompleted)
           }
           services.didLog()
-          celebrating = FinishedWorkout(summary: summary, sets: sets)
+          // Koa ăn mừng chỉ khi "Koa ló lên" bật (Kiệt 09/11); tắt thì mở thẳng màn tổng kết
+          let done = FinishedWorkout(summary: summary, sets: sets)
+          if services.preferences.mascotCompanion { celebrating = done } else { finished = done }
         },
         onAppend: { _ = try await flow.append() },
         onOpenHistory: openHistory,

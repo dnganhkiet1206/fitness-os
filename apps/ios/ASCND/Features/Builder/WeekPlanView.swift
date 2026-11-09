@@ -35,6 +35,7 @@ struct WeekPlanView: View {
   @State private var finishedPast: WorkoutsTab.FinishedWorkout?
   /// Buổi vừa chốt, Koa đang ăn mừng — xong cảnh mới mở `finishedPast`.
   @State private var celebrating: WorkoutsTab.FinishedWorkout?
+  @Environment(AppServices.self) private var services: AppServices?
   @State private var offset = 0
   @State private var selected: Int?
   @State private var picking: DayTarget?
@@ -89,7 +90,9 @@ struct WeekPlanView: View {
         onFinish: {
           let sets = WorkoutsTab.summarySets(board.controller)
           let summary = try await board.controller.finish()
-          celebrating = WorkoutsTab.FinishedWorkout(summary: summary, sets: sets)
+          // Koa ăn mừng chỉ khi "Koa ló lên" bật (Kiệt 09/11); tắt thì mở thẳng màn tổng kết
+          let done = WorkoutsTab.FinishedWorkout(summary: summary, sets: sets)
+          if services?.preferences.mascotCompanion ?? true { celebrating = done } else { finishedPast = done }
         },
         onClose: { openDay = nil },
         onChangeWorkout: {

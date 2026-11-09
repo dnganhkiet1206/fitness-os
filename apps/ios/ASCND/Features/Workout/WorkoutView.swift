@@ -165,9 +165,13 @@ public struct WorkoutView: View {
     return out
   }
 
+  /// "Koa ló lên" trong Cài đặt (mặc định bật). Tắt: không có màn nghỉ Koa, nghỉ giữa set dùng thẻ vòng tính giờ cũ
+  /// (Kiệt 09/11).
+  private var koaOn: Bool { services?.preferences.mascotCompanion ?? true }
+
   /// Màn nghỉ có Koa (07/11, Kiệt: thay đồng hồ nghỉ cũ). Chỉ ở màn từng set; dạng bảng giữ dải nghỉ gọn.
   @ViewBuilder private var restScreen: some View {
-    if let timer = restTimer, !restMinimized, !isPreview, !showsTable, controller.phase == .active || controller.phase == .idle {
+    if koaOn, let timer = restTimer, !restMinimized, !isPreview, !showsTable, controller.phase == .active || controller.phase == .idle {
       let next = WorkoutFocus.next(controller.rows, controller.progress, pinned: pinned)
       let last = WorkoutFocus.lastDone(controller.rows, controller.progress, before: next)
       KoaRestScreen(
@@ -439,12 +443,26 @@ public struct WorkoutView: View {
           .padding(.horizontal, 4)
 
         if let timer = restTimer {
-          // Màn nghỉ có Koa phủ toàn màn (07/11, `KoaRestScreen`); thu nhỏ thì còn dải này, chạm để mở lại.
-          RestStrip(timer: timer, onAdjust: onAdjustRest, onSkip: onSkipRest, onSetPaused: onSetRestPaused)
-            .contentShape(Rectangle())
-            .onTapGesture { restMinimized = false }
-            .accessibilityAction(named: Text("koa.rest.expand")) { restMinimized = false }
+          if koaOn {
+            // Màn nghỉ có Koa phủ toàn màn (07/11, `KoaRestScreen`); thu nhỏ thì còn dải này, chạm để mở lại.
+            RestStrip(timer: timer, onAdjust: onAdjustRest, onSkip: onSkipRest, onSetPaused: onSetRestPaused)
+              .contentShape(Rectangle())
+              .onTapGesture { restMinimized = false }
+              .accessibilityAction(named: Text("koa.rest.expand")) { restMinimized = false }
+              .transition(.blurReplace)
+          } else {
+            // "Koa ló lên" tắt: thẻ vòng tính giờ như trước 07/11; đóng quãng nghỉ đã hết mỗi giây như màn Koa
+            FocusRestCard(
+              timer: timer, next: next.map { nextLine($0) }, record: restRecordNote,
+              onAdjust: onAdjustRest, onSkip: onSkipRest, onSetPaused: onSetRestPaused)
+            .task(id: timer) {
+              while !Task.isCancelled {
+                onSettleRest()
+                try? await Task.sleep(for: .seconds(1))
+              }
+            }
             .transition(.blurReplace)
+          }
           if let last = WorkoutFocus.lastDone(rows, controller.progress, before: next) {
             justDone(last)
           }
