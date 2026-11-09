@@ -334,7 +334,7 @@ public enum KoaPerformance {
     switch scene {
     case .set:
       // 07/11 lần 2 (Kiệt: "biểu cảm xảy ra nhanh quá, story chưa có ý nghĩa; thay cho đồng hồ nghỉ cũ"): đây chỉ là
-      // MỞ ĐẦU của màn nghỉ (`KoaRestStory`), mỗi nét mặt giữ ≥ 0,9 s. Rep cuối gồng đẩy tạ lên, run tay → giữ
+      // MỞ ĐẦU của màn nghỉ, mỗi nét mặt giữ ≥ 0,9 s. Rep cuối gồng đẩy tạ lên, run tay → giữ
       // đỉnh → hạ tạ thở "phù" → mệt, thở dốc, tai cụp. Sau đó màn nghỉ nối tiếp bằng nhịp thở cùng người dùng.
       Script(
         ms: 4200,

@@ -20,10 +20,6 @@ struct RootGate: View {
         DebugFlowView()
       } else if KoaWardrobeDump.enabled {
         KoaWardrobeDump()
-      } else if let beat = KoaRestBeatPanel.beat {
-        KoaRestBeatPanel(beat: beat)
-      } else if KoaFaceRigGrid.enabled {
-        KoaFaceRigGrid()
       } else if let total = KoaRestPreview.total {
         // màn nghỉ có Koa không cần đăng nhập (`SIMCTL_CHILD_ASCND_DEBUG_KOA_REST=<giây>`, `…_T=<ms>` để dừng)
         KoaRestPreview(total: total)
