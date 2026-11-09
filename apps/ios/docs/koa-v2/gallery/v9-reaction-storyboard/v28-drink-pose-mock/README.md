@@ -8,3 +8,6 @@ Kiệt chọn "Vẽ mock dáng uống" (07/11): tay một mảnh của bản v�
   bàn tay ôm phần dưới bình. Ba dáng: A nhấp nước, B tu (bình gần ngang), C hạ bình trước ngực "ahh".
 
 Chỉ là mock debug (`SIMCTL_CHILD_ASCND_DEBUG_KOA_DRINK=1`), chưa nối vào `restDrink`. Duyệt xong mới nối.
+
+**08/11 — KHÔNG DUYỆT.** Kiệt: tay gập "phá vỡ dáng tay ban đầu của koa". Không nối vào màn nghỉ; không vẽ tay
+khác hình tay gốc. Hướng tiếp theo chờ Kiệt chọn.
