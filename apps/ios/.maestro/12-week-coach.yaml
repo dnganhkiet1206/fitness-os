@@ -14,14 +14,6 @@ name: The Monday week card can be kept as is
       visible:
         id: today.coach.peek
     commands:
-      # Dải nằm sát thanh Ghi nhanh: kéo ra giữa màn rồi mới chạm, kẻo trúng "+ Quick log".
-      - scrollUntilVisible:
-          element:
-            id: today.coach.peek
-          direction: DOWN
-          timeout: 15000
-          visibilityPercentage: 100
-          centerElement: true
       - tapOn:
           id: today.coach.peek
       - takeScreenshot: 12-week-coach

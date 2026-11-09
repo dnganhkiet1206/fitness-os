@@ -23,13 +23,12 @@ appId: com.ascnd.fitnessos.dev
 - takeScreenshot: ux-${MODE}-today-week
 - tapOn:
     id: today.koaWeek.about
-- scrollUntilVisible:
-    element:
-      id: today.koaWeek.details
-    direction: DOWN
-    timeout: 15000
-    visibilityPercentage: 40
-    speed: 40
+# Một vuốt ngắn để lộ câu vừa mở dưới dòng thưởng. scrollUntilVisible chạy quá
+# đà và bỏ qua câu ấy.
+- swipe:
+    start: "50%,72%"
+    end: "50%,42%"
+    duration: 400
 - assertVisible: "Keeps you training steadily.*"
 # Cuộn làm thanh tab thu, chỉ còn icon. Vuốt xuống cho nó bung rồi mới chạm chữ.
 # Không dùng openLink: iOS hỏi "Open in ASCND Dev?" và chặn mọi flow sau.
