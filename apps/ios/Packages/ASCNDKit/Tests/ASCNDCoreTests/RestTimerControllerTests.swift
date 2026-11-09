@@ -406,6 +406,22 @@ struct RestTimerControllerTests {
     c.handle(.cancel)
     #expect(c.recordNote == nil)
   }
+
+  /// "Koa ló lên" tắt (Kiệt 09/11): màn khoá đổi sang vòng ngay, cả giữa quãng nghỉ.
+  @Test func koaSettingReachesTheLockScreen() async {
+    let driver = FakeDriver()
+    let c = RestTimerController(driver: driver, clock: TestClock(0))
+    c.handle(.start(seconds: 90), target: squat)
+    await c.flush()
+    #expect(driver.showing?.showsKoa == true)
+    #expect(driver.showing?.hidesKoa == nil, "mặc định không ghi trường mới")
+    c.showsKoa = false
+    await c.flush()
+    #expect(driver.showing?.showsKoa == false)
+    c.showsKoa = true
+    await c.flush()
+    #expect(driver.showing?.showsKoa == true)
+  }
 }
 
 @Suite struct RestKoaTests {
@@ -428,5 +444,6 @@ struct RestTimerControllerTests {
     let c = try JSONDecoder().decode(RestActivityContent.self, from: JSONSerialization.data(withJSONObject: json))
     #expect(c.recordNote == nil)
     #expect(c.koa == .resting)
+    #expect(c.showsKoa, "activity cũ không có hidesKoa: vẫn có Koa")
   }
 }

@@ -161,13 +161,7 @@ struct WorkoutsTab: View {
           // chốt, tiến độ của ngày được neo lại (`anchoring`).
           let sets = Self.summarySets(session)
           let summary = try await flow.finish()
-          Telemetry.capture(.workoutCompleted)
-          // Buổi đầu xong (đợt 3): mẹo tắt, đo kích hoạt.
-          if let uid = services.session.session?.userId, StarterPlan.guideOn(uid) {
-            StarterPlan.setGuide(false, userId: uid)
-            Telemetry.capture(.firstSessionCompleted)
-          }
-          services.didLog()
+          Self.didFinish(services)
           // Koa ăn mừng chỉ khi "Koa ló lên" bật (Kiệt 09/11); tắt thì mở thẳng màn tổng kết
           let done = FinishedWorkout(summary: summary, sets: sets)
           if services.preferences.mascotCompanion { celebrating = done } else { finished = done }
@@ -180,6 +174,18 @@ struct WorkoutsTab: View {
       // Phiên biến mất khi đang mở (qua nửa đêm, đổi tài khoản): đóng lớp.
       Color.clear.onAppear { showsSession = false }
     }
+  }
+
+  /// Việc sau khi chốt MỘT buổi, dù buổi hôm nay hay buổi ngày cũ mở từ Lịch tuần:
+  /// đo hoàn thành, tắt mẹo buổi đầu, nhắc lần ghi đầu.
+  static func didFinish(_ services: AppServices) {
+    Telemetry.capture(.workoutCompleted)
+    // Buổi đầu xong (đợt 3): mẹo tắt, đo kích hoạt.
+    if let uid = services.session.session?.userId, StarterPlan.guideOn(uid) {
+      StarterPlan.setGuide(false, userId: uid)
+      Telemetry.capture(.firstSessionCompleted)
+    }
+    services.didLog()
   }
 
   struct FinishedWorkout: Identifiable {

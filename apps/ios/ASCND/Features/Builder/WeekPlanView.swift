@@ -35,6 +35,8 @@ struct WeekPlanView: View {
   @State private var finishedPast: WorkoutsTab.FinishedWorkout?
   /// Buổi vừa chốt, Koa đang ăn mừng — xong cảnh mới mở `finishedPast`.
   @State private var celebrating: WorkoutsTab.FinishedWorkout?
+  /// Chia sẻ buổi ngày cũ lên cộng đồng, như buổi hôm nay.
+  @State private var sharingPast = false
   @Environment(AppServices.self) private var services: AppServices?
   @State private var offset = 0
   @State private var selected: Int?
@@ -90,6 +92,7 @@ struct WeekPlanView: View {
         onFinish: {
           let sets = WorkoutsTab.summarySets(board.controller)
           let summary = try await board.controller.finish()
+          if let services { WorkoutsTab.didFinish(services) }
           // Koa ăn mừng chỉ khi "Koa ló lên" bật (Kiệt 09/11); tắt thì mở thẳng màn tổng kết
           let done = WorkoutsTab.FinishedWorkout(summary: summary, sets: sets)
           if services?.preferences.mascotCompanion ?? true { celebrating = done } else { finishedPast = done }
@@ -110,12 +113,21 @@ struct WeekPlanView: View {
         }
       }
       .environment(flow)
-      .sheet(item: $finishedPast) { f in
+      .sheet(item: $finishedPast, onDismiss: { sharingPast = false }) { f in
         NavigationStack {
-          WorkoutSummaryView(summary: f.summary, sets: f.sets, onDone: {
-            finishedPast = nil
-            openDay = nil
-          })
+          WorkoutSummaryView(
+            summary: f.summary, sets: f.sets,
+            onDone: {
+              finishedPast = nil
+              openDay = nil
+            },
+            onShare: { sharingPast = true })
+          .navigationDestination(isPresented: $sharingPast) {
+            CommunityShareWorkoutScreen(sessionId: f.summary.sessionId) {
+              finishedPast = nil
+              openDay = nil
+            }
+          }
         }
       }
     }
