@@ -321,6 +321,7 @@ struct MealLogBar: View {
       }
       .buttonStyle(.plain)
       .accessibilityLabel(Text(String(localized: "nc.way.search.a11y")))
+      .accessibilityIdentifier("nutrition.search")
       Divider().frame(height: 24).opacity(0.6)
       // Chụp ảnh món cần edge function AI — ẩn khi chưa deploy (`AppServices.probeAI`).
       if services?.aiDeployed == true {

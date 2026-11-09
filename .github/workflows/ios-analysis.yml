@@ -40,7 +40,13 @@ jobs:
       - name: Cài SwiftLint 0.65.1
         run: |
           apt-get update -qq && apt-get install -y -qq unzip curl >/dev/null
-          curl -sSfL -o /tmp/swiftlint.zip https://github.com/realm/SwiftLint/releases/download/0.65.1/swiftlint_linux_amd64.zip
+          ok=0
+          for _ in 1 2 3; do
+            curl -fsSL -o /tmp/swiftlint.zip https://github.com/realm/SwiftLint/releases/download/0.65.1/swiftlint_linux_amd64.zip && ok=1 && break
+            echo "tải SwiftLint lỗi, thử lại"
+            sleep 5
+          done
+          test "$ok" = 1
           unzip -q /tmp/swiftlint.zip -d /usr/local/bin
           chmod +x /usr/local/bin/swiftlint
           swiftlint version

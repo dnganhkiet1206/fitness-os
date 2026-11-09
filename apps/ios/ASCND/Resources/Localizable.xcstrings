@@ -4257,6 +4257,29 @@
         }
       }
     },
+    "kw.more": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Why this week"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vì sao tuần này"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Por qué esta semana"
+          }
+        }
+      }
+    },
     "mr.gains.points %lld": {
       "extractionState": "manual",
       "localizations": {

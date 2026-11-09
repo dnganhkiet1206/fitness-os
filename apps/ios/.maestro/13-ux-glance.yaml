@@ -1,0 +1,32 @@
+# Ảnh các màn vừa chỉnh, cả sáng lẫn tối (`-uiTestLight` / `-uiTestDark`).
+# Kết quả không còn câu giải thích, Ghi nhanh không còn dòng phụ, Tất cả công cụ
+# không lặp Tổng kết tuần / Vận động / Giấc ngủ, Tuần của Koa là một khối.
+appId: com.ascnd.fitnessos.dev
+name: UX glance screenshots (light and dark)
+---
+- launchApp:
+    stopApp: true
+    arguments:
+      uiTestFakeBackend: true
+      uiTestLight: true
+      AppleLanguages: "(en)"
+      AppleLocale: en_US
+    permissions:
+      all: deny
+- runFlow:
+    file: subflows/ux-glance-shots.yaml
+    env:
+      MODE: light
+- launchApp:
+    stopApp: true
+    arguments:
+      uiTestFakeBackend: true
+      uiTestDark: true
+      AppleLanguages: "(en)"
+      AppleLocale: en_US
+    permissions:
+      all: deny
+- runFlow:
+    file: subflows/ux-glance-shots.yaml
+    env:
+      MODE: dark

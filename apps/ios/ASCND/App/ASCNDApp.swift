@@ -26,6 +26,9 @@ struct ASCNDApp: App {
     // Đo lường (15/10): chỉ khởi động khi có khoá — xem Telemetry.swift.
     // Chế độ UI test (Debug): không gửi gì lên Sentry / PostHog.
     if !AppServices.uiTest { Telemetry.start() }
+    #if DEBUG
+      UITestMode.applyScreenshotTheme()
+    #endif
     let services = AppServices()
     // Ngôn ngữ theo iPhone (Kiệt 23/10), nhưng MỘT nguồn cho mọi chữ (25/10: thẻ Tuần
     // của Koa lẫn Việt / Anh trên máy Kiệt): `Text("khoá")` tra theo `\.locale` của app,

@@ -38,6 +38,25 @@
       return FileManager.default.fileExists(atPath: dir.appendingPathComponent("uitest-offline").path)
     }
 
+    /// Ảnh UX: `-uiTestDark` / `-uiTestLight` ép sáng tối cho lần mở này. Không có
+    /// cờ thì trả về "theo máy", để flow khác không kế thừa theme của lần chụp.
+    static func applyScreenshotTheme() {
+      guard isOn else { return }
+      let args = ProcessInfo.processInfo.arguments.map {
+        $0.trimmingCharacters(in: CharacterSet(charactersIn: "-"))
+      }
+      let theme = if args.contains("uiTestDark") {
+        "dark"
+      } else if args.contains("uiTestLight") {
+        "light"
+      } else {
+        "system"
+      }
+      // Cùng khoá với `AppPreferences.themeKey`. Không đọc property đó: class là
+      // MainActor, hàm này chạy lúc khởi động trước khi có actor.
+      UserDefaults.standard.set(theme, forKey: "ascnd_theme")
+    }
+
     /// Client Supabase trỏ vào máy chủ giả. Gọi một lần, khi `isOn`.
     static func makeBackend() -> Backend {
       URLProtocol.registerClass(FakeSupabaseProtocol.self)
@@ -50,10 +69,13 @@
       }
       let config = URLSessionConfiguration.ephemeral
       config.protocolClasses = [FakeSupabaseProtocol.self]
-      // swiftlint:disable:next force_try
-      let backend = Backend(
-        config: try! BackendConfig(urlString: "https://\(host)", anonKey: "ui-test-anon-key"),
-        session: URLSession(configuration: config))
+      let backendConfig: BackendConfig
+      do {
+        backendConfig = try BackendConfig(urlString: "https://\(host)", anonKey: "ui-test-anon-key")
+      } catch {
+        fatalError("Cấu hình UI test không hợp lệ: \(error)")
+      }
+      let backend = Backend(config: backendConfig, session: URLSession(configuration: config))
       // Phiên của client (token cho edge function) — trong bộ nhớ, từ máy chủ giả.
       Task { _ = try? await backend.client.auth.signIn(email: email, password: "ui-test") }
       return backend

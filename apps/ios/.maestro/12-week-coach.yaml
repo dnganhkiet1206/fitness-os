@@ -14,6 +14,11 @@ name: The Monday week card can be kept as is
       visible:
         id: today.coach.peek
     commands:
+      # Dải nằm sát nút Ghi nhanh. Đưa nó lên rồi mới chạm, kẻo mở nhầm bảng.
+      - swipe:
+          start: "50%,62%"
+          end: "50%,32%"
+          duration: 400
       - tapOn:
           id: today.coach.peek
       - takeScreenshot: 12-week-coach
