@@ -90,9 +90,10 @@ jobs:
               -destination "id=$SIM" \
               -derivedDataPath "$RUNNER_TEMP/dd" \
               CODE_SIGNING_ALLOWED=NO \
-              | tee build.log | grep -E "warning:|error:|BUILD (SUCCEEDED|FAILED)" || true
+              2>&1 | tee build.log | grep -E "warning:|error:|BUILD (SUCCEEDED|FAILED)" || true
           }
           build
+          # xcodebuild ghi lỗi gói ra stderr; không gộp thì lần thử lại không bao giờ chạy.
           if ! grep -q "BUILD SUCCEEDED" build.log && grep -q "Could not resolve package dependencies" build.log; then
             echo "SPM artifact lỗi, xoá cache và build lại"
             rm -rf "$HOME/Library/Caches/org.swift.swiftpm/artifacts" "$RUNNER_TEMP/dd"
@@ -240,7 +241,7 @@ jobs:
               -destination 'generic/platform=iOS Simulator' \
               -derivedDataPath "$RUNNER_TEMP/dd" \
               CODE_SIGNING_ALLOWED=NO \
-              | tee build.log | grep -E "error:|BUILD (SUCCEEDED|FAILED)" || true
+              2>&1 | tee build.log | grep -E "error:|BUILD (SUCCEEDED|FAILED)" || true
           }
           build
           if ! grep -q "BUILD SUCCEEDED" build.log && grep -q "Could not resolve package dependencies" build.log; then

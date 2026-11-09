@@ -85,7 +85,7 @@ jobs:
               -derivedDataPath "$RUNNER_TEMP/dd" \
               -resultBundlePath "$RUNNER_TEMP/a11y.xcresult" \
               CODE_SIGNING_ALLOWED=NO \
-              | tee a11y.log | grep -E " error:|Test Case|A11YD?\||TEST (SUCCEEDED|FAILED)" || true
+              2>&1 | tee a11y.log | grep -E " error:|Test Case|A11YD?\||TEST (SUCCEEDED|FAILED)" || true
           }
           run_a11y
           if ! grep -q "TEST SUCCEEDED" a11y.log && grep -q "Could not resolve package dependencies" a11y.log; then
