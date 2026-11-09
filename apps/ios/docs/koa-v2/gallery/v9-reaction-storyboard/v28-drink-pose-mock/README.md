@@ -11,3 +11,10 @@ Chỉ là mock debug (`SIMCTL_CHILD_ASCND_DEBUG_KOA_DRINK=1`), chưa nối vào 
 
 **08/11 — KHÔNG DUYỆT.** Kiệt: tay gập "phá vỡ dáng tay ban đầu của koa". Không nối vào màn nghỉ; không vẽ tay
 khác hình tay gốc. Hướng tiếp theo chờ Kiệt chọn.
+
+## straw-1.jpg (08/11) — bình ống hút, chờ duyệt
+
+Kiệt chọn "Mock bình ống hút". Tay phải giữ NGUYÊN hình gốc, chỉ xoay quanh vai như mọi cảnh khác (`walk.armRight`,
+không lật, không gập). Bình vẽ SAU hình nên bàn tay gốc che nửa dưới bình như đang nắm; ống hút gập (trắng sọc cam
+như nắp bình) đi từ nắp tới đúng miệng (mốc mũi thật theo tư thế đầu). A hút một ngụm (tay −38°), B hút say sưa
+(tay −56°, bình nghiêng vào), C nhả ống "ahh" (tay −22°, ống dựng thẳng). Chưa nối vào màn nghỉ.

@@ -64,9 +64,9 @@ import SwiftUI
     }
   }
 
-  /// Mock dáng uống nước (07/11, Kiệt: "Vẽ mock dáng uống"): tay phải gập khuỷu đưa bình thể thao lên miệng, vẽ đè lên
-  /// Koa thật đã ẩn tay phải một mảnh. Cùng màu lông / vệt / đốm sáng với tay gốc (`arm_right_upper`). Chờ Kiệt duyệt
-  /// art. `SIMCTL_CHILD_ASCND_DEBUG_KOA_DRINK=1`.
+  /// Mock uống bằng bình ống hút (08/11). Tay gập v28 bị loại vì "phá vỡ dáng tay ban đầu của koa", nên tay phải giữ
+  /// NGUYÊN hình gốc, chỉ xoay quanh vai như mọi cảnh khác (`walk.armRight`). Bình nằm SAU hình, bàn tay gốc che phần dưới
+  /// bình như đang nắm. Ống hút gập (vẽ trước mặt) đi từ nắp bình tới miệng. `SIMCTL_CHILD_ASCND_DEBUG_KOA_DRINK=1`.
   struct KoaDrinkMock: View {
     static var enabled: Bool { ProcessInfo.processInfo.environment["ASCND_DEBUG_KOA_DRINK"] != nil }
 
@@ -75,17 +75,18 @@ import SwiftUI
       let face: KoaFlags.Expression
       let look: (Double, Double)
       let turn: Double
-      /// Hướng trục bình từ tay tới vòi (độ, 0 = sang phải, 90 = xuống, 180 = sang trái, 270 = lên).
-      let bottleDeg: Double
-      /// Vòi chạm miệng (`true`) hay bình hạ trước ngực, tay ở `rest`.
-      let atMouth: Bool
-      var rest: (Double, Double) = (170, 190)
+      /// Tay phải xoay quanh vai (độ, âm = giơ lên), hình tay giữ nguyên.
+      let arm: Double
+      /// Bình nghiêng (độ, âm = đầu bình nghiêng vào trong về phía miệng).
+      let tilt: Double
+      /// Ống hút chạm miệng hay buông.
+      let sipping: Bool
     }
 
     static let poses: [Pose] = [
-      Pose(label: "A · nhấp nước", face: .meditate, look: (0.05, -0.2), turn: 0.15, bottleDeg: 200, atMouth: true),
-      Pose(label: "B · ngửa đầu tu", face: .meditate, look: (0.1, -0.6), turn: 0.25, bottleDeg: 168, atMouth: true),
-      Pose(label: "C · hạ bình \"ahh\"", face: .content, look: (0.1, 0), turn: 0.1, bottleDeg: 262, atMouth: false),
+      Pose(label: "A · hút một ngụm", face: .meditate, look: (0.1, 0.1), turn: 0.25, arm: -38, tilt: -10, sipping: true),
+      Pose(label: "B · hút say sưa", face: .meditate, look: (0.15, -0.15), turn: 0.35, arm: -56, tilt: -20, sipping: true),
+      Pose(label: "C · nhả ống \"ahh\"", face: .happy, look: (0, 0), turn: 0.1, arm: -22, tilt: -4, sipping: false),
     ]
 
     var body: some View {
@@ -104,89 +105,67 @@ import SwiftUI
       .statusBarHidden()
     }
 
-    typealias P2 = (Double, Double)
-
-    /// Miệng (toạ độ hình 240 × 300, trước `insetMat`) ở đúng tư thế: mốc mũi thật + 28 xuống theo đầu.
-    static func mouth(_ p: Pose) -> P2 {
+    /// Bàn tay phải, miệng (khung viewBox 240 × 300, đã qua `insetMat`).
+    static func place(_ p: Pose) -> (paw: CGPoint, mouth: CGPoint) {
       var o = KoaRender.Options()
       o.size = 240
       o.expression = p.face
       o.look = KoaMath.Gaze(x: p.look.0, y: p.look.1, k: 1)
-      o.eyes = KoaMath.Gaze(x: p.look.0, y: p.look.1, k: 1)
+      o.eyes = o.look
       o.turn = p.turn
-      let k = KoaMath.inset
-      guard let nose = KoaRender.anchors(o)["nose"] else { return (120, 133) }
-      let n = ((nose.x - 120 * (1 - k)) / k, (nose.y - 300 * (1 - k)) / k)
-      return (n.0 + 4 * p.turn, n.1 + 27)
-    }
-
-    /// Khuỷu tay (IK hai đoạn) từ vai `s` tới tay `t`, gập ra ngoài (sang phải, xuống).
-    static func elbow(_ s: P2, _ t: P2, _ a: Double, _ b: Double) -> P2 {
-      let dx = t.0 - s.0, dy = t.1 - s.1
-      let d = max(0.01, min(a + b - 0.01, (dx * dx + dy * dy).squareRoot()))
-      let along = (a * a - b * b + d * d) / (2 * d)
-      let h = max(0, a * a - along * along).squareRoot()
-      let ux = dx / d, uy = dy / d
-      let base = (s.0 + ux * along, s.1 + uy * along)
-      let c1 = (base.0 - uy * h, base.1 + ux * h), c2 = (base.0 + uy * h, base.1 - ux * h)
-      return c1.0 > c2.0 ? c1 : c2
+      var w = KoaWalk.Pose()
+      w.armRight = p.arm
+      o.walk = w
+      let paw = KoaRender.paws(o).right ?? (186, 238)
+      let nose = KoaRender.anchors(o)["nose"] ?? (120, 119)
+      return (CGPoint(x: paw.x, y: paw.y), CGPoint(x: nose.x + 4 * p.turn, y: nose.y + 25))
     }
 
     static func figure(_ p: Pose, size: Double) -> some View {
       let u = size / 240
-      let k = KoaMath.inset
-      // toạ độ hình → khung (qua `insetMat`: thu 0,93, neo ở chân)
-      func v(_ q: P2) -> CGPoint { CGPoint(x: (k * q.0 + 120 * (1 - k)) * u, y: (k * q.1 + 300 * (1 - k)) * u) }
-      let w = k * u
-      let m = mouth(p)
-      let a = p.bottleDeg * .pi / 180
-      let dir = (cos(a), sin(a))
-      let bs = 1.05, grip = 12.0, reach = (36 + grip) * bs
-      let paw: P2 = p.atMouth ? (m.0 - dir.0 * reach, m.1 - dir.1 * reach) : p.rest
-      // vai theo quay người (`KoaTurn` dời tay theo chiều sâu)
-      let phi = p.turn * KoaTurn.maxDeg * .pi / 180
-      let shoulder: P2 = (162 + 42 * (cos(phi) - 1) + 2 * sin(phi), 186)
-      let el = elbow(shoulder, paw, 30, 30)
-      return ZStack(alignment: .topLeading) {
-        KoaFigureView(expression: p.face, size: size, animated: true, headLook: KoaMath.Gaze(x: p.look.0, y: p.look.1, k: 1),
-                      eyes: KoaMath.Gaze(x: p.look.0, y: p.look.1, k: 1), turn: p.turn, hideRightArm: true)
+      let at = place(p)
+      var w = KoaWalk.Pose()
+      w.armRight = p.arm
+      // bình: tâm thân bình cao hơn bàn tay một chút (bàn tay ôm nửa dưới)
+      let a = p.tilt * .pi / 180
+      let lift = 14.0
+      let center = CGPoint(x: at.paw.x + sin(a) * lift, y: at.paw.y - cos(a) * lift)
+      let capTop = CGPoint(x: center.x + sin(a) * 30, y: center.y - cos(a) * 30)
+      return ZStack {
+        // bình SAU hình: bàn tay gốc nằm đè lên như đang nắm
         Canvas { c, _ in
-          let fur = Color(red: 0.749, green: 0.780, blue: 0.812)  // #BFC7CF như tay gốc
-          let streak = Color(red: 0.663, green: 0.698, blue: 0.737)  // #A9B2BC
-          let round = StrokeStyle(lineWidth: 24 * w, lineCap: .round, lineJoin: .round)
-          // cánh tay trên + cẳng tay: cùng màu, khớp tròn liền một khối như tay gốc
-          var arm = Path(); arm.move(to: v(shoulder)); arm.addLine(to: v(el)); arm.addLine(to: v(paw))
-          c.stroke(arm, with: .color(fur), style: round)
-          // vệt lông dọc cánh tay trên (như `M168.5 192 C …` của tay gốc)
-          var st = Path()
-          st.move(to: v((shoulder.0 + 4, shoulder.1 + 4)))
-          st.addQuadCurve(to: v((el.0 - 2, el.1 - 1)), control: v(((shoulder.0 + el.0) / 2 + 5, (shoulder.1 + el.1) / 2 - 2)))
-          c.stroke(st, with: .color(streak.opacity(0.55)), style: StrokeStyle(lineWidth: 2.2 * w, lineCap: .round))
-          // bình thể thao: trục từ tay tới vòi
           var g = c
-          g.translateBy(x: v(paw).x, y: v(paw).y)
-          g.rotate(by: .radians(atan2(dir.0, -dir.1)))
-          g.scaleBy(x: bs * w, y: bs * w)
-          g.translateBy(x: 0, y: -grip)
-          g.fill(Path(roundedRect: CGRect(x: -10, y: -22, width: 20, height: 46), cornerRadius: 7),
-                 with: .color(Color(red: 0.49, green: 0.78, blue: 0.93)))
-          g.fill(Path(roundedRect: CGRect(x: -6, y: -18, width: 4, height: 36), cornerRadius: 2), with: .color(.white.opacity(0.35)))
-          g.fill(Path(CGRect(x: -10, y: 8, width: 20, height: 6)), with: .color(.white.opacity(0.9)))
-          g.fill(Path(roundedRect: CGRect(x: -8, y: -30, width: 16, height: 10), cornerRadius: 3),
-                 with: .color(Color(red: 0.91, green: 0.52, blue: 0.16)))
-          g.fill(Path(roundedRect: CGRect(x: -2.5, y: -37, width: 5, height: 8), cornerRadius: 2),
-                 with: .color(Color(red: 0.91, green: 0.52, blue: 0.16)))
-          // bàn tay ôm thân bình: khối tròn trên bình, hai nếp ngón
-          let pv = v(paw)
-          c.fill(Path(ellipseIn: CGRect(x: pv.x - 13 * w, y: pv.y - 12 * w, width: 26 * w, height: 24 * w)), with: .color(fur))
-          var f = c
-          f.translateBy(x: pv.x, y: pv.y)
-          f.rotate(by: .radians(atan2(dir.0, -dir.1)))
-          for y in [-4.0, 3.0] {
-            var fl = Path(); fl.move(to: CGPoint(x: -9 * w, y: y * w)); fl.addLine(to: CGPoint(x: -2 * w, y: (y + 0.6) * w))
-            f.stroke(fl, with: .color(streak), style: StrokeStyle(lineWidth: 1.8 * w, lineCap: .round))
+          g.translateBy(x: center.x * u, y: center.y * u)
+          g.rotate(by: .radians(a))
+          g.scaleBy(x: u, y: u)
+          let blue = Color(red: 0.49, green: 0.78, blue: 0.93)
+          let orange = Color(red: 0.91, green: 0.52, blue: 0.16)
+          g.fill(Path(roundedRect: CGRect(x: -11, y: -22, width: 22, height: 46), cornerRadius: 8), with: .color(blue))
+          g.fill(Path(roundedRect: CGRect(x: -7, y: -18, width: 4, height: 36), cornerRadius: 2), with: .color(.white.opacity(0.35)))
+          g.fill(Path(CGRect(x: -11, y: 6, width: 22, height: 6)), with: .color(.white.opacity(0.9)))
+          g.fill(Path(roundedRect: CGRect(x: -9, y: -31, width: 18, height: 10), cornerRadius: 3), with: .color(orange))
+        }
+        .frame(width: 240 * u, height: 300 * u)
+        KoaFigureView(expression: p.face, size: size, animated: true,
+                      walk: w, headLook: KoaMath.Gaze(x: p.look.0, y: p.look.1, k: 1),
+                      eyes: KoaMath.Gaze(x: p.look.0, y: p.look.1, k: 1), turn: p.turn)
+        // ống hút gập, trước mặt: lên khỏi nắp rồi uốn vào miệng (buông thì dựng thẳng)
+        Canvas { c, _ in
+          func q(_ x: Double, _ y: Double) -> CGPoint { CGPoint(x: x * u, y: y * u) }
+          var straw = Path()
+          straw.move(to: q(capTop.x, capTop.y + 2))
+          if p.sipping {
+            let bend = CGPoint(x: capTop.x - 2, y: min(capTop.y - 16, at.mouth.y - 4))
+            straw.addLine(to: q(bend.x, bend.y + 6))
+            straw.addQuadCurve(to: q(bend.x - 10, bend.y - 2), control: q(bend.x, bend.y - 2))
+            straw.addLine(to: q(at.mouth.x + 3, at.mouth.y))
+          } else {
+            straw.addLine(to: q(capTop.x + 1, capTop.y - 18))
+            straw.addQuadCurve(to: q(capTop.x - 9, capTop.y - 26), control: q(capTop.x + 1, capTop.y - 26))
           }
-          c.fill(Path(ellipseIn: CGRect(x: pv.x - 1 * w, y: pv.y - 9 * w, width: 7 * w, height: 6 * w)), with: .color(.white.opacity(0.45)))
+          c.stroke(straw, with: .color(.white), style: StrokeStyle(lineWidth: 5 * u, lineCap: .round, lineJoin: .round))
+          c.stroke(straw, with: .color(Color(red: 0.91, green: 0.52, blue: 0.16).opacity(0.9)),
+                   style: StrokeStyle(lineWidth: 5 * u, lineCap: .butt, dash: [3 * u, 4 * u]))
         }
         .frame(width: 240 * u, height: 300 * u)
         .allowsHitTesting(false)
