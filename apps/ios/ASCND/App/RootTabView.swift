@@ -430,7 +430,7 @@ private struct QuickLogSheet: View {
   @State private var logged: String?
 
   /// Việc ghi chính, một kiểu hàng. Tập trước — đây là app tập.
-  private var items: [(LocalizedStringKey, String, Color, DeepLink.Screen, String)] {
+  private var items: [(String, String, Color, DeepLink.Screen, String)] {
     [
       ("quicklog.workout", "dumbbell.fill", DS.Color.metricRose.swiftUI, .logWorkout, "workout"),
       ("quicklog.meal", "fork.knife", DS.Color.metricOrangeGraphic.swiftUI, .logMeal(date: nil, meal: nil), "meal"),
@@ -500,7 +500,9 @@ private struct QuickLogSheet: View {
           if i > 0 { Divider().padding(.leading, 60).opacity(0.6) }
           let item = items[i]
           logRow(
-            symbol: item.1, tint: item.2, title: String(localized: item.0), subtitle: nil, trailing: nil,
+            symbol: item.1, tint: item.2,
+            title: String(localized: String.LocalizationValue(stringLiteral: item.0)),
+            subtitle: nil, trailing: nil,
             id: "quicklog.\(item.4)"
           ) { pick(item.3) }
         }

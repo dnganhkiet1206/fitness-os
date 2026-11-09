@@ -69,10 +69,13 @@
       }
       let config = URLSessionConfiguration.ephemeral
       config.protocolClasses = [FakeSupabaseProtocol.self]
-      // swiftlint:disable:next force_try
-      let backend = Backend(
-        config: try! BackendConfig(urlString: "https://\(host)", anonKey: "ui-test-anon-key"),
-        session: URLSession(configuration: config))
+      let backendConfig: BackendConfig
+      do {
+        backendConfig = try BackendConfig(urlString: "https://\(host)", anonKey: "ui-test-anon-key")
+      } catch {
+        fatalError("Cấu hình UI test không hợp lệ: \(error)")
+      }
+      let backend = Backend(config: backendConfig, session: URLSession(configuration: config))
       // Phiên của client (token cho edge function) — trong bộ nhớ, từ máy chủ giả.
       Task { _ = try? await backend.client.auth.signIn(email: email, password: "ui-test") }
       return backend
