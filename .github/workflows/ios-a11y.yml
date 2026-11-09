@@ -76,13 +76,24 @@ jobs:
         working-directory: apps/ios
         run: |
           set -o pipefail
-          xcodebuild test \
-            -project ASCND.xcodeproj -scheme ASCNDA11y -configuration Debug \
-            -destination "id=$SIM" \
-            -derivedDataPath "$RUNNER_TEMP/dd" \
-            -resultBundlePath "$RUNNER_TEMP/a11y.xcresult" \
-            CODE_SIGNING_ALLOWED=NO \
-            | tee a11y.log | grep -E " error:|Test Case|A11YD?\||TEST (SUCCEEDED|FAILED)"
+          # Cùng lỗi cache binary Sentry như E2E ("already exists in file system").
+          # Không phải lỗi màn. Xoá cache rồi chạy lại một lần.
+          run_a11y() {
+            xcodebuild test \
+              -project ASCND.xcodeproj -scheme ASCNDA11y -configuration Debug \
+              -destination "id=$SIM" \
+              -derivedDataPath "$RUNNER_TEMP/dd" \
+              -resultBundlePath "$RUNNER_TEMP/a11y.xcresult" \
+              CODE_SIGNING_ALLOWED=NO \
+              | tee a11y.log | grep -E " error:|Test Case|A11YD?\||TEST (SUCCEEDED|FAILED)" || true
+          }
+          run_a11y
+          if ! grep -q "TEST SUCCEEDED" a11y.log && grep -q "Could not resolve package dependencies" a11y.log; then
+            echo "SPM artifact lỗi, xoá cache và chạy lại"
+            rm -rf "$HOME/Library/Caches/org.swift.swiftpm/artifacts" "$RUNNER_TEMP/dd" "$RUNNER_TEMP/a11y.xcresult"
+            run_a11y
+          fi
+          grep -q "TEST SUCCEEDED" a11y.log
 
       - name: Tóm tắt
         if: always()
