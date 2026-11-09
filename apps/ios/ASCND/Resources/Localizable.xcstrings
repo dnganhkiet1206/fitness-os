@@ -71748,52 +71748,6 @@
         }
       }
     },
-    "koa.rest.hydrate": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sip some water"
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Uống ngụm nước"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Un sorbo de agua"
-          }
-        }
-      }
-    },
-    "koa.rest.wipe": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Wipe the sweat"
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Lau mồ hôi"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sécate el sudor"
-          }
-        }
-      }
-    },
     "koa.rest.card.load": {
       "extractionState": "manual",
       "localizations": {

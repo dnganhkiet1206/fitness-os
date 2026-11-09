@@ -479,7 +479,6 @@ struct TodayExtras<Plan: View>: View {
     .onChange(of: shop?.inventory, initial: true) { _, rows in
       guard let rows else { return }
       services.koaEquipped = rows.filter(\.equipped).map(\.itemKey)
-      services.koaOwned = Set(rows.map(\.itemKey))
       // Tủ đồ về sau câu của Koa: widget vẽ lại Koa với đúng đồ đang mặc.
       if let lastKoa, let mascot { publishKoa(lastKoa, mascot) }
     }

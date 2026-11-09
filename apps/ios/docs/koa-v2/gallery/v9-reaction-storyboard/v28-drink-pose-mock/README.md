@@ -29,3 +29,5 @@ Góp ý: biểu cảm chưa đạt, tay cầm bình giả, ống hút dài vắt
 - **Ống hút:** thử đưa bình vào trước bụng để ống đi thẳng lên miệng (`straw-2-front-rejected.jpg`). Không được: tay
   cùng màu thân nên tay biến mất. Đưa bình ra bên phải thì ống phải đi ngang qua má, vì miệng nằm ngang hàng má hồng
   và tay gốc một mảnh chỉ xoay quanh vai, không đưa bình lên trước cằm được. Đây là giới hạn của tay gốc.
+
+**08/11 — BỎ CẢNH UỐNG** (Kiệt: "Bỏ cảnh uống"). Đã gỡ `restDrink`, bình trên sàn và trong tay, mock debug.

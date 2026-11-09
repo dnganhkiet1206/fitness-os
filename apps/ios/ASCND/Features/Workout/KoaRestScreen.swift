@@ -64,124 +64,6 @@ import SwiftUI
     }
   }
 
-  /// Mock uống bằng bình ống hút (08/11). Tay gập v28 bị loại vì "phá vỡ dáng tay ban đầu của koa", nên tay phải giữ
-  /// NGUYÊN hình gốc, chỉ xoay quanh vai vào trước bụng (`walk.armRight`). Lớp: hình đủ → bình → lớp nửa bàn tay gốc
-  /// (`pawsOnly`, như dáng cheer) đè lên nên bàn tay nắm quanh bình. Ống hút đi gần thẳng lên miệng, không vắt qua má
-  /// (Kiệt 08/11). `SIMCTL_CHILD_ASCND_DEBUG_KOA_DRINK=1`.
-  struct KoaDrinkMock: View {
-    static var enabled: Bool { ProcessInfo.processInfo.environment["ASCND_DEBUG_KOA_DRINK"] != nil }
-
-    struct Pose {
-      let label: String
-      let face: KoaFlags.Expression
-      var rig: KoaFaceRig?
-      let look: (Double, Double)
-      var eyes: (Double, Double)?
-      let turn: Double
-      /// Tay phải xoay quanh vai (độ; dương = vào trong trước bụng), hình tay giữ nguyên.
-      let arm: Double
-      let sipping: Bool
-    }
-
-    /// Mặt đang hút: chỉ đổi miệng thành môi chúm ngậm ống (mày, mắt giữ nét gốc; không dùng mí nặng).
-    static let sip = KoaFaceRig(lid: 0, browLift: 0.15, browTilt: 0, smile: 0.05, open: 0.1, width: 0.6)
-    static let bliss = KoaFaceRig(lid: 0, browLift: 0.1, browTilt: 0.15, smile: 0.15, open: 0.08, width: 0.6)
-
-    static let poses: [Pose] = [
-      Pose(label: "A · nhìn bạn, môi chúm hút", face: .happy, rig: sip, look: (0.05, 0.05), eyes: (0.1, 0.1), turn: -0.05,
-           arm: -24, sipping: true),
-      Pose(label: "B · nhắm mắt say sưa", face: .meditate, look: (0.05, 0), turn: -0.05, arm: -24, sipping: true),
-      Pose(label: "C · nhả ống \"ahh\"", face: .happy, look: (0, 0), turn: -0.05, arm: -14, sipping: false),
-    ]
-
-    var body: some View {
-      LazyVGrid(columns: [GridItem(.flexible(), spacing: 0), GridItem(.flexible(), spacing: 0)], spacing: 10) {
-        ForEach(Self.poses.indices, id: \.self) { i in
-          VStack(spacing: 2) {
-            Self.figure(Self.poses[i], size: 190)
-            Text(verbatim: Self.poses[i].label).font(.system(size: 13, weight: .semibold)).foregroundStyle(.white)
-          }
-        }
-      }
-      .padding(.top, 60)
-      .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-      .background(Color(red: 0.055, green: 0.059, blue: 0.071))
-      .statusBarHidden()
-    }
-
-    static func walk(_ p: Pose) -> KoaWalk.Pose {
-      var w = KoaWalk.Pose()
-      w.armRight = p.arm
-      return w
-    }
-
-    /// Bàn tay phải, miệng (khung viewBox 240 × 300, đã qua `insetMat`).
-    static func place(_ p: Pose) -> (paw: CGPoint, mouth: CGPoint) {
-      var o = KoaRender.Options()
-      o.size = 240
-      o.expression = p.face
-      o.look = KoaMath.Gaze(x: p.look.0, y: p.look.1, k: 1)
-      o.eyes = KoaMath.Gaze(x: (p.eyes ?? p.look).0, y: (p.eyes ?? p.look).1, k: 1)
-      o.turn = p.turn
-      o.walk = walk(p)
-      let paw = KoaRender.paws(o).right ?? (186, 238)
-      let nose = KoaRender.anchors(o)["nose"] ?? (120, 119)
-      return (CGPoint(x: paw.x, y: paw.y), CGPoint(x: nose.x + 3 * p.turn, y: nose.y + 25))
-    }
-
-    static func figure(_ p: Pose, size: Double) -> some View {
-      let u = size / 240
-      let at = place(p)
-      let bs = 1.3
-      // bình đứng thẳng, bàn tay ôm ngang giữa thân bình (lộ cả trên lẫn dưới)
-      let center = CGPoint(x: at.paw.x - 3, y: at.paw.y - 12)
-      let capTop = CGPoint(x: center.x, y: center.y - 31 * bs)
-      let blue = Color(red: 0.49, green: 0.78, blue: 0.93)
-      let orange = Color(red: 0.91, green: 0.52, blue: 0.16)
-      return ZStack {
-        KoaFigureView(expression: p.face, size: size, animated: true, walk: walk(p),
-                      headLook: KoaMath.Gaze(x: p.look.0, y: p.look.1, k: 1),
-                      eyes: KoaMath.Gaze(x: (p.eyes ?? p.look).0, y: (p.eyes ?? p.look).1, k: 1), turn: p.turn, rig: p.rig)
-        // bình trước bụng, trên thân; lớp nửa bàn tay gốc vẽ đè lên ngay sau
-        Canvas { c, _ in
-          var g = c
-          g.translateBy(x: center.x * u, y: center.y * u)
-          g.scaleBy(x: bs * u, y: bs * u)
-          g.fill(Path(roundedRect: CGRect(x: -11, y: -22, width: 22, height: 48), cornerRadius: 8), with: .color(blue))
-          g.fill(Path(roundedRect: CGRect(x: -7, y: -18, width: 4, height: 38), cornerRadius: 2), with: .color(.white.opacity(0.35)))
-          g.fill(Path(CGRect(x: -11, y: 12, width: 22, height: 6)), with: .color(.white.opacity(0.9)))
-          g.fill(Path(roundedRect: CGRect(x: -9, y: -31, width: 18, height: 10), cornerRadius: 3), with: .color(orange))
-        }
-        .frame(width: 240 * u, height: 300 * u)
-        KoaFigureView(expression: p.face, size: size, animated: true, walk: walk(p),
-                      headLook: KoaMath.Gaze(x: p.look.0, y: p.look.1, k: 1),
-                      eyes: KoaMath.Gaze(x: (p.eyes ?? p.look).0, y: (p.eyes ?? p.look).1, k: 1), turn: p.turn, rig: p.rig, pawsOnly: true)
-        Canvas { c, _ in
-          func q(_ x: Double, _ y: Double) -> CGPoint { CGPoint(x: x * u, y: y * u) }
-          // ống hút: từ nắp đi thẳng lên, gập nhẹ vào môi (không vắt qua má)
-          var straw = Path()
-          straw.move(to: q(capTop.x, capTop.y + 2))
-          if p.sipping {
-            // lên khỏi nắp, gập một lần rồi chéo thấp dưới má hồng vào khoé môi
-            let bend = CGPoint(x: capTop.x - 1, y: capTop.y - 8)
-            straw.addLine(to: q(bend.x, bend.y + 4))
-            straw.addQuadCurve(to: q(bend.x - 7, bend.y - 3), control: q(bend.x, bend.y - 3))
-            straw.addLine(to: q(at.mouth.x + 4, at.mouth.y + 1))
-          } else {
-            straw.addLine(to: q(capTop.x, capTop.y - 22))
-            straw.addQuadCurve(to: q(capTop.x - 8, capTop.y - 30), control: q(capTop.x, capTop.y - 30))
-          }
-          c.stroke(straw, with: .color(.white), style: StrokeStyle(lineWidth: 4.6 * u, lineCap: .round, lineJoin: .round))
-          c.stroke(straw, with: .color(Color(red: 0.49, green: 0.78, blue: 0.93)),
-                   style: StrokeStyle(lineWidth: 4.6 * u, lineCap: .butt, dash: [3 * u, 5 * u]))
-        }
-        .frame(width: 240 * u, height: 300 * u)
-        .allowsHitTesting(false)
-      }
-      .frame(width: 240 * u, height: 300 * u)
-    }
-  }
-
   /// Lưới soát mặt có tham số: `SIMCTL_CHILD_ASCND_DEBUG_KOA_RIG=1`.
   struct KoaFaceRigGrid: View {
     static var enabled: Bool { ProcessInfo.processInfo.environment["ASCND_DEBUG_KOA_RIG"] != nil }
@@ -282,10 +164,8 @@ import SwiftUI
 struct KoaRestScreen: View {
   #if DEBUG
     static var debugSeed: Int? { ProcessInfo.processInfo.environment["ASCND_DEBUG_KOA_REST_SEED"].flatMap(Int.init) }
-    static var debugBottle: Bool { ProcessInfo.processInfo.environment["ASCND_DEBUG_KOA_REST_BOTTLE"] != nil }
   #else
     static let debugSeed: Int? = nil
-    static let debugBottle = false
   #endif
   /// Một thẻ số dưới Koa.
   struct Card: Hashable { let value: String; let label: String; var accent = false }
@@ -300,8 +180,6 @@ struct KoaRestScreen: View {
   var subtitle: String?
   /// Thẻ số của set (mức tạ, reps, so với lần trước). Rỗng = không thẻ.
   var cards: [Card] = []
-  /// Đã mua bình nước ở cửa hàng: có cảnh Koa đi lấy bình nước uống.
-  var hasBottle = false
   var onAdjust: (Int) -> Void
   var onSkip: () -> Void
   var onSetPaused: (Bool) -> Void
@@ -334,10 +212,8 @@ struct KoaRestScreen: View {
 
   /// Lịch của lõi: mở đầu → thở đều xen các hoạt động (vươn vai, giãn hông, xoay vai, chạy bước nhỏ, hít sâu, vẫy tay,
   /// gồng khoe cơ, liếc đồng hồ; mỗi lần nghỉ bắt đầu ở một hoạt động khác) → 3,5 s cuối "LƯỢT MÌNH!".
-  static func beat(elapsed e: Double, left: Double, total: Double, paused: Bool, seed: Int = 0, hasBottle: Bool = false)
-    -> Beat
-  {
-    let r = KoaPerformance.restBeat(elapsed: e, left: left, total: total, paused: paused, seed: seed, hasBottle: hasBottle)
+  static func beat(elapsed e: Double, left: Double, total: Double, paused: Bool, seed: Int = 0) -> Beat {
+    let r = KoaPerformance.restBeat(elapsed: e, left: left, total: total, paused: paused, seed: seed)
     return Beat(scene: r.scene, t: r.t)
   }
 
@@ -364,8 +240,7 @@ struct KoaRestScreen: View {
       let leftMs = timer.pausedLeft.map { Double($0) * 1000 } ?? Double(timer.endsAt.millis - now.millis)
       let left = timer.remaining(at: now)
       let seed = Self.debugSeed ?? Int((startedAt ?? start).timeIntervalSince1970)
-      let b = Self.beat(elapsed: elapsed, left: leftMs, total: Double(timer.total), paused: timer.isPaused, seed: seed,
-                        hasBottle: hasBottle || Self.debugBottle)
+      let b = Self.beat(elapsed: elapsed, left: leftMs, total: Double(timer.total), paused: timer.isPaused, seed: seed)
       let f = Self.frame(b)
       let cues = b.scene.map { s in KoaPerformance.cues(s).filter { b.t >= $0.from && b.t < $0.to } } ?? []
       GeometryReader { geo in
@@ -382,8 +257,7 @@ struct KoaRestScreen: View {
             .frame(width: geo.size.width * 0.8, height: geo.size.width * 0.18)
             .position(x: geo.size.width / 2, y: geo.size.height * 0.79)
           effects(cues, t: b.t)
-          koa(f, hand: KoaPerformance.restHand(b.scene, at: b.t), squirt: KoaPerformance.restSquirt(b.scene, at: b.t),
-              t: b.t, size: geo.size)
+          koa(f, size: geo.size)
             .position(x: geo.size.width / 2, y: geo.size.height * 0.54)
           VStack(spacing: 8) {
             topBar
@@ -461,7 +335,7 @@ struct KoaRestScreen: View {
 
   // MARK: Koa (như `KoaReactionView.koa`)
 
-  private func koa(_ f: KoaPerformance.Frame, hand: String?, squirt: Double = 0, t: Double = 0, size: CGSize) -> some View {
+  private func koa(_ f: KoaPerformance.Frame, size: CGSize) -> some View {
     // như `KoaReactionView.koa`: cùng cỡ, bóng đứng yên trên sàn, nhảy dời cả hình
     let fig = min(size.width * 0.82, 340.0)
     let unit = fig / 240
@@ -472,13 +346,6 @@ struct KoaRestScreen: View {
       Ellipse().fill(Color(red: 0.68, green: 0.71, blue: 0.75).opacity(0.32 * (1 - 0.55 * lift)))
         .frame(width: 128 * unit * (1 - 0.35 * lift), height: 18 * unit * (1 - 0.35 * lift))
         .offset(y: (294 - 150) * unit)
-      if hasBottle || Self.debugBottle, hand == nil {
-        // bình nước đã mua đứng sẵn trên sàn cạnh chân Koa: Koa cúi nhặt lên uống rồi đặt lại (`restDrink`)
-        Image(systemName: "waterbottle.fill")
-          .font(.system(size: 26 * unit, weight: .regular))
-          .foregroundStyle(Color(red: 0.49, green: 0.78, blue: 0.93))
-          .offset(x: 86 * unit, y: (282 - 150) * unit)
-      }
       KoaFigureView(
         expression: f.expression, pose: .idle, gesture: nil, size: fig, animated: true,
         stage: false, walk: still ? KoaWalk.Pose() : f.walk, bleeds: true,
@@ -487,56 +354,9 @@ struct KoaRestScreen: View {
       )
       .scaleEffect(x: still ? 1 : f.sx, y: still ? 1 : f.sy, anchor: .bottom)
       .offset(y: -air)
-      if hand != nil { bottleInHand(f, squirt: squirt, t: t, unit: unit) }
     }
     .scaleEffect(still ? 1 : f.zoom, anchor: UnitPoint(x: 0.5, y: 0.32 + 0.28 * f.focus))
     .accessibilityHidden(true)
-  }
-
-  /// Bình nước trong tay Koa, vẽ theo đúng bàn tay phải (vai `KoaGesture.shoulderR`, tay quay theo `armRight`, nhấc vai
-  /// khi giơ cao như `KoaRender.shoulderTuck`). Giơ cao thì vòi bình nghiêng về phía miệng; lúc uống có vòi nước vòng
-  /// cung bóp từ bình vào miệng. Cùng hình với bình đứng trên sàn.
-  private func bottleInHand(_ f: KoaPerformance.Frame, squirt: Double, t: Double, unit: Double) -> some View {
-    let raise = max(0, -f.walk.armRight)
-    let th = raise * .pi / 180
-    let tuck = raise >= KoaRender.armFlipDeg ? 6 * min(1, raise / 45) : 0
-    // bàn tay khi buông ở (+12, +56) so với vai; quay ngược chiều kim đồng hồ khi giơ ra ngoài
-    let hx = 12.0, hy = 56.0
-    let paw = (160 + hx * cos(th) + hy * sin(th), 178 - tuck - hx * sin(th) + hy * cos(th) - f.walk.bob)
-    let mouth = (120 + 10 * f.turn, 153 - f.walk.bob)
-    // hướng của vòi bình: thẳng đứng khi cầm thấp, chĩa về miệng khi giơ lên
-    let toMouth = atan2(mouth.0 - paw.0, -(mouth.1 - paw.1)) * 180 / .pi
-    let k = min(1, max(0, (raise - 40) / 50))
-    let angle = k * toMouth
-    let len = 30.0
-    let a = angle * .pi / 180
-    let nozzle = (paw.0 + sin(a) * len, paw.1 - cos(a) * len)
-    let body = (paw.0 + sin(a) * len * 0.45, paw.1 - cos(a) * len * 0.45)
-    func v(_ p: (Double, Double)) -> CGPoint { CGPoint(x: (p.0 - 120) * unit, y: (p.1 - 150) * unit) }
-    return ZStack {
-      if squirt > 0.01 {
-        // vòi nước: cung bay từ vòi bình tới miệng (toạ độ hình × `unit`, khung đúng cỡ hình 240 × 300)
-        Canvas { c, _ in
-          let u = CGFloat(unit)
-          let p0 = CGPoint(x: CGFloat(nozzle.0) * u, y: CGFloat(nozzle.1) * u)
-          let p2 = CGPoint(x: CGFloat(mouth.0) * u, y: CGFloat(mouth.1) * u)
-          let mid: CGFloat = (p0.x + p2.x) * 0.5
-          let top: CGFloat = min(p0.y, p2.y) - 10 * u
-          let ctl = CGPoint(x: mid, y: top)
-          var pa = Path(); pa.move(to: p0); pa.addQuadCurve(to: p2, control: ctl)
-          c.stroke(pa.trimmedPath(from: 0, to: squirt), with: .color(Color(red: 0.62, green: 0.85, blue: 0.97).opacity(0.95)),
-                   style: StrokeStyle(lineWidth: 3.4 * u, lineCap: .round, dash: [6 * u, 4 * u],
-                                      dashPhase: CGFloat(-t / 30) * u))
-        }
-        .frame(width: 240 * unit, height: 300 * unit)
-      }
-      Image(systemName: "waterbottle.fill")
-        .font(.system(size: 30 * unit, weight: .regular))
-        .foregroundStyle(Color(red: 0.49, green: 0.78, blue: 0.93))
-        .rotationEffect(.degrees(angle))
-        .offset(x: v(body).x, y: v(body).y)
-    }
-    .allowsHitTesting(false)
   }
 
   /// Thẻ số của set: hiện từ giữa mở đầu (đếm lên như cảnh xong buổi), rồi ở lại suốt quãng nghỉ để đọc.

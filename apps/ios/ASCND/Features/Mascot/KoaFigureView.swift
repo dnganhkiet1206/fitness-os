@@ -58,10 +58,6 @@ struct KoaFigureView: View {
   var groundShadow = true
   /// Mặt có tham số (`KoaRender.Options.rig`, màn nghỉ 07/11): nét mặt đổi dần, không thay cả mặt.
   var rig: KoaFaceRig?
-  /// Ẩn tay phải (mock dáng uống nước).
-  var hideRightArm = false
-  /// Chỉ vẽ nửa bàn tay (`KoaRender.Options.arms = .only`): lớp đè lên đồ cầm trên tay (bình nước, 08/11).
-  var pawsOnly = false
   var gestureAmount = 1.0
   /// Đồng hồ ngoài (phòng, 30/10): khung do `TimelineView` của sân khấu đưa vào — hình
   /// KHÔNG chạy đồng hồ riêng (trước có hai đồng hồ cùng vẽ Koa: vẽ lại gấp đôi).
@@ -209,16 +205,12 @@ struct KoaFigureView: View {
       o.turn = turn
       o.groundShadow = groundShadow
       o.rig = rig
-      o.hideRightArm = hideRightArm
       if onTapZone != nil { drawn.options = o }
       let sp = KoaSignpost.poster.beginInterval("figure")
       defer { KoaSignpost.poster.endInterval("figure", sp) }
       // Dáng giơ tay đè má: hình đủ (vai sau đầu), rồi một lớp chỉ nửa bàn tay ở trên.
       var plans: [[KoaPaint.Op]] = []
-      if pawsOnly {
-        o.arms = .only
-        plans.append(KoaPaint.plan(KoaRender.figure(o)))
-      } else if gesture?.armsFront == true {
+      if gesture?.armsFront == true {
         o.arms = .all
         plans.append(KoaPaint.plan(KoaRender.figure(o)))
         o.arms = .only

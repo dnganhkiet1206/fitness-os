@@ -180,7 +180,6 @@ public struct WorkoutView: View {
           return "\(row.exerciseName) · set \(n.n)/\(n.of)"
         },
         cards: last.map(restCards) ?? [],
-        hasBottle: services?.koaOwned.contains("hand_bottle") ?? false,
         onAdjust: onAdjustRest, onSkip: onSkipRest, onSetPaused: onSetRestPaused, onSettle: onSettleRest,
         onMinimize: { withAnimation(DSMotion.animation(.snappy, reduceMotion: reduceMotion)) { restMinimized = true } },
         onEditJustDone: last.flatMap { row in

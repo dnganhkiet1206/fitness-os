@@ -258,34 +258,6 @@ extension KoaPerformanceFixTests {
   }
 }
 
-/// 07/11, Kiệt: "thêm cảnh koa đi lấy bình nước để uống, chỉ áp dụng cho đồ vật đã được mua".
-@Suite struct KoaRestDrinkTests {
-  typealias P = KoaPerformance
-  func scenes(_ hasBottle: Bool) -> Set<KoaReaction.Scene> {
-    var out = Set<KoaReaction.Scene>()
-    var t = 0.0
-    while t < 90_000 {
-      if let s = P.restBeat(elapsed: t, left: 90_000 - t, total: 90, paused: false, hasBottle: hasBottle).scene { out.insert(s) }
-      t += 100
-    }
-    return out
-  }
-
-  @Test func drinkOnlyWhenTheBottleIsOwned() {
-    #expect(scenes(true).contains(.restDrink))
-    #expect(!scenes(false).contains(.restDrink))
-  }
-
-  @Test func bottleInHandOnlyWhilePickedUp() {
-    #expect(P.restHand(.restDrink, at: 500) == nil)
-    #expect(P.restHand(.restDrink, at: 3500) == "bottle")
-    #expect(P.restHand(.restDrink, at: 7000) == nil)
-    #expect(P.restHand(.restWave, at: 1000) == nil)
-    let f0 = P.frame(.restDrink, at: 0), f1 = P.frame(.restDrink, at: P.duration(.restDrink))
-    #expect(abs(f0.walk.armRight + 4) < 6 && abs(f1.walk.armRight + 4) < 6)
-  }
-}
-
 /// Kiệt 07/11: "thi thoảng koa chỉ có mỗi tròng đen khi chuyển đổi nét mặt" — lúc đổi mặt, mọi dải màu mà lớp mắt
 /// đang vẽ dùng tới phải có trong `defs` (thiếu thì tô đen).
 @Suite struct KoaFaceSwapDefsTests {
@@ -320,7 +292,7 @@ extension KoaPerformanceFixTests {
 @Suite struct KoaRestNoJumpTests {
   @Test func koaNeverLeavesTheFloorDuringRest() {
     #expect(!KoaPerformance.restActivities.contains(.restJog))
-    for s in [KoaReaction.Scene.restIntro, .restGo] + KoaPerformance.restActivities + [.restDrink] {
+    for s in [KoaReaction.Scene.restIntro, .restGo] + KoaPerformance.restActivities {
       #expect(KoaPerformance.frames(s).allSatisfy { $0.air == 0 }, "\(s) có nhảy")
     }
   }
