@@ -466,6 +466,26 @@ public final class ProfileBook {
     }
   }
 
+  /// Chỉ đổi mục tiêu calo (09/11, "Áp dụng" gợi ý calo — Kiệt duyệt mock): một cột
+  /// `tdee_target_kcal`, đạm / tinh bột / béo giữ nguyên. Cần mạng như mọi lần lưu hồ sơ.
+  public func saveCalorieTarget(_ kcal: Int) async throws(ProfileSaveFailure) {
+    guard kcal > 0 else { throw .invalidStats }
+    saving = true
+    defer { saving = false }
+    do {
+      try await writer.update(userId: userId, row: .object(["tdee_target_kcal": .number(Double(kcal))]))
+    } catch let f as ProfileSaveFailure {
+      throw f
+    } catch {
+      throw NetworkFailure.isOffline(error) ? .offline : .server(code: nil)
+    }
+    if var next = profile {
+      next.tdeeTargetKcal = Double(kcal)
+      profile = next
+      try? await cache.save(userId: userId, next)
+    }
+  }
+
   /// Hồ sơ → hàng (để trộn với hàng vừa ghi).
   static func row(_ p: Profile) -> JSONValue {
     func n(_ v: Double?) -> JSONValue { v.map(JSONValue.number) ?? .null }

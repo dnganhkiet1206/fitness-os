@@ -305,6 +305,8 @@ public final class SmartGoalsBook {
     /// Nhãn trên viên thuốc mục tiêu (`profile?.goal || 'maintain'`).
     public let goal: String
     public let unit: WeightUnit
+    /// Có nên đổi mục tiêu calo không, sau cổng "ăn sát mục tiêu" (`CalorieAdvice`).
+    public let advice: CalorieAdvice
   }
 
   public enum Phase: Sendable, Hashable {
@@ -319,11 +321,14 @@ public final class SmartGoalsBook {
 
   @ObservationIgnored private let store: any RowStore
   @ObservationIgnored private var closed = false
+  /// Áp dụng / để sau trên máy; `nil` = không nhớ (test cũ, preview).
+  public let memory: CalorieAdviceMemory?
 
-  public init(userId: String, today: LocalDate, store: any RowStore) {
+  public init(userId: String, today: LocalDate, store: any RowStore, memory: CalorieAdviceMemory? = nil) {
     self.userId = userId
     self.today = today
     self.store = store
+    self.memory = memory
   }
 
   public func close() { closed = true }
@@ -361,10 +366,12 @@ public final class SmartGoalsBook {
     }
     guard !closed, day == today else { return }
     let row = p.first
+    let analysis = SmartGoals.analyse(weights: w, daily: d, profile: row, today: day)
     phase = .ready(
       Snapshot(
-        analysis: SmartGoals.analyse(weights: w, daily: d, profile: row, today: day),
+        analysis: analysis,
         protein: SmartGoals.protein(daily: d, profile: row), goal: SmartGoals.goal(row),
-        unit: WeightUnit(stored: row?["units_weight"]?.stringValue)))
+        unit: WeightUnit(stored: row?["units_weight"]?.stringValue),
+        advice: analysis.map { CalorieAdvice.advise($0, daily: d, today: day, applied: memory?.applied) } ?? .none))
   }
 }

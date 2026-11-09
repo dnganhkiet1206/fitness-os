@@ -72483,6 +72483,650 @@
           }
         }
       }
+    },
+    "smartgoals.apply %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apply %@ kcal"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aplicar %@ kcal"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Áp dụng %@ kcal"
+          }
+        }
+      }
+    },
+    "smartgoals.later": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Later"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Más tarde"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Để sau"
+          }
+        }
+      }
+    },
+    "smartgoals.later.done": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hidden from Nutrition for 7 days"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oculto en Nutrición durante 7 días"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã ẩn ở Dinh dưỡng 7 ngày"
+          }
+        }
+      }
+    },
+    "smartgoals.confirm.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change your calorie target?"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Cambiar tu objetivo de calorías?"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đổi mục tiêu calo?"
+          }
+        }
+      }
+    },
+    "smartgoals.confirm.more %@ %@ %@ %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Over the last %1$@ logged days you ate %2$@ kcal on average and your weight changed %3$@ a week, outside your goal's range. Koa suggests eating %4$@ kcal more a day."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En los últimos %1$@ días registrados comiste %2$@ kcal de media y tu peso cambió %3$@ por semana, fuera del rango de tu objetivo. Koa sugiere comer %4$@ kcal más al día."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ ngày có ghi bữa gần đây bạn ăn trung bình %2$@ kcal và cân đổi %3$@ mỗi tuần, ngoài dải của mục tiêu. Koa đề xuất ăn thêm %4$@ kcal mỗi ngày."
+          }
+        }
+      }
+    },
+    "smartgoals.confirm.less %@ %@ %@ %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Over the last %1$@ logged days you ate %2$@ kcal on average and your weight changed %3$@ a week, outside your goal's range. Koa suggests eating %4$@ kcal less a day."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En los últimos %1$@ días registrados comiste %2$@ kcal de media y tu peso cambió %3$@ por semana, fuera del rango de tu objetivo. Koa sugiere comer %4$@ kcal menos al día."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ ngày có ghi bữa gần đây bạn ăn trung bình %2$@ kcal và cân đổi %3$@ mỗi tuần, ngoài dải của mục tiêu. Koa đề xuất ăn bớt %4$@ kcal mỗi ngày."
+          }
+        }
+      }
+    },
+    "smartgoals.confirm.kcal": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calories per day"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calorías al día"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calo mỗi ngày"
+          }
+        }
+      }
+    },
+    "smartgoals.confirm.protein": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Protein"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Proteína"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đạm"
+          }
+        }
+      }
+    },
+    "smartgoals.confirm.proteinKeep %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ g (unchanged)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ g (sin cambios)"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ g (giữ nguyên)"
+          }
+        }
+      }
+    },
+    "smartgoals.confirm.from": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Starts"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Empieza"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Áp dụng từ"
+          }
+        }
+      }
+    },
+    "smartgoals.confirm.today": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hoy"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hôm nay"
+          }
+        }
+      }
+    },
+    "smartgoals.confirm.note": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can change it back any time in Edit profile."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Puedes cambiarlo cuando quieras en Editar perfil."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đổi lại bất cứ lúc nào ở Sửa hồ sơ."
+          }
+        }
+      }
+    },
+    "smartgoals.confirm.apply": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apply"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aplicar"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Áp dụng"
+          }
+        }
+      }
+    },
+    "smartgoals.confirm.cancel": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancelar"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Huỷ"
+          }
+        }
+      }
+    },
+    "smartgoals.applied %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New target: %@ kcal/day"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nuevo objetivo: %@ kcal/día"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mục tiêu mới: %@ kcal/ngày"
+          }
+        }
+      }
+    },
+    "smartgoals.undo": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Undo"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deshacer"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hoàn tác"
+          }
+        }
+      }
+    },
+    "smartgoals.applyFailed.offline": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You need a connection to change your target. Try again when you're online."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Necesitas conexión para cambiar el objetivo. Inténtalo de nuevo con conexión."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cần mạng để đổi mục tiêu. Thử lại khi có mạng."
+          }
+        }
+      }
+    },
+    "smartgoals.applyFailed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't change your target. Try again."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se pudo cambiar el objetivo. Inténtalo de nuevo."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chưa đổi được mục tiêu. Thử lại."
+          }
+        }
+      }
+    },
+    "smartgoals.eat.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eat to your current target first"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Primero come según tu objetivo actual"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ăn đủ mục tiêu hiện tại trước"
+          }
+        }
+      }
+    },
+    "smartgoals.eat.of %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "/ %@ kcal"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "/ %@ kcal"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "/ %@ kcal"
+          }
+        }
+      }
+    },
+    "smartgoals.eat.below %@ %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Average of %1$@ logged days in the last 14. You're eating about %2$@ kcal a day below your target, so your target isn't the problem yet. Changing the number won't help right now."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Media de %1$@ días registrados en los últimos 14. Comes unas %2$@ kcal al día por debajo de tu objetivo, así que el objetivo aún no es el problema. Cambiar el número ahora no ayuda."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trung bình %1$@ ngày có ghi bữa trong 14 ngày qua. Bạn đang ăn thiếu khoảng %2$@ kcal mỗi ngày so với mục tiêu. Mục tiêu chưa sai, đổi số lúc này không giúp gì."
+          }
+        }
+      }
+    },
+    "smartgoals.eat.above %@ %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Average of %1$@ logged days in the last 14. You're eating about %2$@ kcal a day above your target, so your target isn't the problem yet. Changing the number won't help right now."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Media de %1$@ días registrados en los últimos 14. Comes unas %2$@ kcal al día por encima de tu objetivo, así que el objetivo aún no es el problema. Cambiar el número ahora no ayuda."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trung bình %1$@ ngày có ghi bữa trong 14 ngày qua. Bạn đang ăn dư khoảng %2$@ kcal mỗi ngày so với mục tiêu. Mục tiêu chưa sai, đổi số lúc này không giúp gì."
+          }
+        }
+      }
+    },
+    "smartgoals.eat.next": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koa will look again once you eat close to your target (within 10%) for 10 days."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koa volverá a mirarlo cuando comas cerca de tu objetivo (menos de un 10 % de diferencia) durante 10 días."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koa sẽ xem lại khi bạn ăn sát mục tiêu (lệch dưới 10 %) trong 10 ngày."
+          }
+        }
+      }
+    },
+    "smartgoals.eat.meals": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "See which meals fall short"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ver qué comidas se quedan cortas"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xem bữa nào hay thiếu"
+          }
+        }
+      }
+    },
+    "smartgoals.needIntake %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Log your meals for at least 10 days (you have %@) so Koa can tell whether your calorie target needs changing."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Registra tus comidas al menos 10 días (llevas %@) para que Koa sepa si conviene cambiar tus calorías."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ghi bữa ít nhất 10 ngày (đang có %@) để Koa biết có nên chỉnh calo không."
+          }
+        }
+      }
+    },
+    "smartgoals.trial %@ %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trying your new target since %1$@. Koa will look again from %2$@."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Probando tu nuevo objetivo desde el %1$@. Koa volverá a mirarlo a partir del %2$@."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đang thử mục tiêu mới từ %1$@. Koa xem lại từ %2$@."
+          }
+        }
+      }
+    },
+    "nutrition.calorieHint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koa has a suggestion for your calorie target"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koa tiene una sugerencia para tu objetivo de calorías"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koa có gợi ý chỉnh mục tiêu calo"
+          }
+        }
+      }
+    },
+    "nutrition.calorieHint.open": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "View"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ver"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xem"
+          }
+        }
+      }
     }
   }
 }
