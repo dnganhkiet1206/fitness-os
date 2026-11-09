@@ -90,9 +90,6 @@ public enum KoaRender {
     /// Bóng dưới chân của bản vẽ. Tắt khi bên ngoài tự vẽ bóng nằm yên trên sàn (Koa nhảy dời cả hình lên,
     /// bóng của hình mà đi theo thì như dính vào chân — cảnh phản ứng, 06/11).
     public var groundShadow = true
-    /// Mặt có tham số (07/11, `KoaFaceRig`): mày và miệng dựng từ số, mí theo `lidL/lidR`. Bật thì mọi mày /
-    /// miệng / mắt đặc biệt của `expression` tắt, mắt mở thường. Chỉ ở bản native.
-    public var rig: KoaFaceRig?
 
     /// Một nét mặt: biểu cảm + dáng (dáng có mặt riêng).
     public struct Face: Sendable, Hashable {
@@ -194,41 +191,6 @@ public enum KoaRender {
     var groundShadow = true
     /// Khi quay: tay phía xa vẽ sau thân, tay gần vẽ trước (0 cả hai, 1 chỉ tay xa, 2 chỉ tay gần).
     var armSide = 0
-    var rig: KoaFaceRig?
-  }
-
-  /// Mày / miệng của mặt có tham số, thay vào chỗ lớp mày `browArc` và miệng `mouthSoft` của bản vẽ (cùng nhóm
-  /// cha, nên theo đầu nghiêng / nhìn / quay như mày, miệng gốc).
-  static func rigged(_ cond: String, _ rig: KoaFaceRig, _ c: Context) -> [Element]? {
-    func stroke(_ d: String, _ w: Double) -> Element {
-      Element("Path", ["d": .string(d), "stroke": .string(KoaFaceRig.ink), "strokeWidth": .number(w),
-                       "strokeLinecap": .string("round"), "strokeLinejoin": .string("round"), "fill": .string("none")])
-    }
-    func turned(_ e: [Element], x: Double, y: Double) -> [Element] {
-      guard c.turn != 0, let r = c.turnRegion else { return e }
-      switch KoaTurn.move(r, x: x, y: y, u: c.turn) {
-      case .hidden: return []
-      case .mat(let m): return [Element("G", matrix: m, kids: e)]
-      default: return e
-      }
-    }
-    switch cond {
-    case "browArc":
-      let p = rig.browPaths()
-      return turned([stroke(p[0], 5)], x: 81.5, y: 61) + turned([stroke(p[1], 5)], x: 158.5, y: 61)
-    case "mouthSoft":
-      let m = rig.mouth()
-      var out: [Element] = []
-      if let cav = m.cavity { out.append(Element("Path", ["d": .string(cav), "fill": .string(KoaFaceRig.ink)])) }
-      if let t = m.teeth { out.append(Element("Path", ["d": .string(t), "fill": .string("#FFFFFF")])) }
-      if let t = m.tongue {
-        out.append(Element("Ellipse", ["cx": .number(t.cx), "cy": .number(t.cy), "rx": .number(t.rx), "ry": .number(t.ry),
-                                       "fill": .string("#E8657B")]))
-      }
-      out.append(stroke(m.lip, 4.5 + 0.5 * min(1, rig.open * 3)))
-      return turned(out, x: 120, y: 136)
-    default: return nil
-    }
   }
 
   static func isEyeGroup(_ n: KoaScene.Node) -> Bool { n.kids?.contains { $0.id == "pupil_left" } ?? false }
@@ -301,7 +263,6 @@ public enum KoaRender {
     }
     if let cond = n.cond, !(c.flags[cond]?.truthy ?? false) { return [] }
     if armHidden { return [] }
-    if let rig = c.rig, c.inFace, let cond = n.cond, let drawn = rigged(cond, rig, c) { return drawn }
     // lớp tay của dáng giơ tay: bỏ tay khỏi hình chính, hoặc chỉ vẽ tay
     var c = c
     if n.id == "FACE" { c.inFace = true }
@@ -608,20 +569,6 @@ public enum KoaRender {
     if walking(o), let w = o.walk {
       for (k, v) in walkFlags(w) { f[k] = v }
     }
-    if let rig = o.rig, !o.dress, !KoaScene.rn {
-      // mặt có tham số: chỉ còn mắt mở thường; mày / miệng do `rigged` vẽ ở chỗ `browArc` / `mouthSoft`
-      for k in f.keys where k.hasPrefix("brow") || k.hasPrefix("mouth") || k.hasPrefix("eyes") || k.hasPrefix("lids")
-        || k.hasPrefix("faceGym") || k.hasPrefix("show")
-      {
-        f[k] = .bool(false)
-      }
-      f["grinCycle"] = .text("")
-      f["blinkGate"] = .text("")
-      f["eyesOpen"] = .bool(true)
-      f["browArc"] = .bool(true)
-      f["mouthSoft"] = .bool(true)
-      f["showSweat"] = .bool(rig.sweat > 0.5)
-    }
     if o.dress {
       f["mouthSmile"] = .bool(false)
       f["mouthGrin"] = .bool(false)
@@ -798,13 +745,6 @@ public enum KoaRender {
     c.groundShadow = o.groundShadow
     guard o.live, !KoaScene.rn else { return c }
     c.blinkRight = o.blink == nil ? nil : o.blinkRight
-    if let rig = o.rig, !o.dress {
-      // mí của mặt có tham số chồng lên cú chớp (chớp vẫn khép hết khi tới)
-      c.rig = rig
-      let b = o.blink ?? 0
-      c.blink = max(b, rig.lidL)
-      c.blinkRight = max(o.blinkRight ?? b, rig.lidR)
-    }
     if let from = o.faceFrom, o.faceMix < 1, !o.dress {
       var old = o
       old.expression = from.expression
