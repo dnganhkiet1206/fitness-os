@@ -38,6 +38,23 @@
       return FileManager.default.fileExists(atPath: dir.appendingPathComponent("uitest-offline").path)
     }
 
+    /// Ảnh UX: `-uiTestDark` / `-uiTestLight` ép sáng tối cho lần mở này. Không có
+    /// cờ thì trả về "theo máy", để flow khác không kế thừa theme của lần chụp.
+    static func applyScreenshotTheme() {
+      guard isOn else { return }
+      let args = ProcessInfo.processInfo.arguments.map {
+        $0.trimmingCharacters(in: CharacterSet(charactersIn: "-"))
+      }
+      let theme = if args.contains("uiTestDark") {
+        "dark"
+      } else if args.contains("uiTestLight") {
+        "light"
+      } else {
+        "system"
+      }
+      UserDefaults.standard.set(theme, forKey: AppPreferences.themeKey)
+    }
+
     /// Client Supabase trỏ vào máy chủ giả. Gọi một lần, khi `isOn`.
     static func makeBackend() -> Backend {
       URLProtocol.registerClass(FakeSupabaseProtocol.self)

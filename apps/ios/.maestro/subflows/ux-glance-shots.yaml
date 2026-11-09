@@ -1,0 +1,102 @@
+# Một lượt chụp các màn UX. App đã mở ở đúng sáng/tối. ${MODE} = light | dark.
+appId: com.ascnd.fitnessos.dev
+---
+- extendedWaitUntil:
+    visible:
+      id: today.plan.primary
+    timeout: 45000
+- extendedWaitUntil:
+    visible:
+      id: quicklog.bar
+    timeout: 15000
+- assertNotVisible: "Meal · Water · Sleep · Weight"
+- takeScreenshot: ux-${MODE}-today
+- takeScreenshot: ux-${MODE}-quicklog-bar
+- assertNotVisible: "Keeps you training steadily.*"
+- scrollUntilVisible:
+    element:
+      id: today.koaWeek
+    direction: DOWN
+    timeout: 25000
+    visibilityPercentage: 60
+- takeScreenshot: ux-${MODE}-today-week
+- tapOn:
+    id: today.koaWeek.about
+- extendedWaitUntil:
+    visible: "Keeps you training steadily.*"
+    timeout: 8000
+- tapOn: "Progress"
+- extendedWaitUntil:
+    visible:
+      id: progress.segment.training
+    timeout: 15000
+- takeScreenshot: ux-${MODE}-progress-top
+- scrollUntilVisible:
+    element:
+      id: progress.results
+    direction: DOWN
+    timeout: 25000
+    visibilityPercentage: 40
+- assertNotVisible: "On track — keep this rhythm."
+- assertNotVisible: "Add a protein-rich food to each meal."
+- assertNotVisible: "Go to bed 30 minutes earlier.*"
+- takeScreenshot: ux-${MODE}-progress-results
+- scrollUntilVisible:
+    element:
+      id: progress.alltools
+    direction: DOWN
+    timeout: 25000
+- tapOn:
+    id: progress.alltools
+- extendedWaitUntil:
+    visible:
+      id: progress.tool.training
+    timeout: 10000
+- assertVisible:
+    id: progress.tool.biometrics
+- assertNotVisible:
+    id: progress.tool.weekly
+- assertNotVisible:
+    id: progress.tool.sleep
+- assertNotVisible:
+    id: progress.tool.steps
+- takeScreenshot: ux-${MODE}-all-tools
+- runFlow: back.yaml
+- extendedWaitUntil:
+    visible:
+      id: progress.segment.training
+    timeout: 15000
+- tapOn:
+    id: quicklog.bar
+- extendedWaitUntil:
+    visible:
+      id: quicklog.sheet
+    timeout: 10000
+- assertVisible:
+    id: quicklog.workout
+- assertVisible:
+    id: quicklog.meal
+- assertVisible:
+    id: quicklog.water
+- assertVisible:
+    id: quicklog.sleep
+- assertVisible:
+    id: quicklog.weight
+- takeScreenshot: ux-${MODE}-quicklog-menu
+- swipe:
+    from:
+      id: quicklog.sheet
+    direction: DOWN
+- extendedWaitUntil:
+    notVisible:
+      id: quicklog.sheet
+    timeout: 8000
+- tapOn: "Nutrition"
+- extendedWaitUntil:
+    visible:
+      id: nutrition.search
+    timeout: 15000
+- assertVisible:
+    id: quicklog.bar
+- assertNotVisible: "Meal · Water · Sleep · Weight"
+- takeScreenshot: ux-${MODE}-nutrition

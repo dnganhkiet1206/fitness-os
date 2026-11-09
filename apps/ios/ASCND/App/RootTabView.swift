@@ -392,12 +392,11 @@ private struct QuickLogAccessory: View {
           .frame(width: 26, height: 26)
           .background(DS.Color.foreground.swiftUI, in: Circle())
         if placement != .inline {
+          // Chỉ "+ Quick log". Dòng "Bữa · Nước · Ngủ · Cân" trông như từng nút,
+          // và trên tab Dinh dưỡng đụng ô "Bạn vừa ăn gì?". Thanh vẫn ở mọi tab.
           Text("quicklog.title").font(.system(size: 15, weight: .bold))
             .foregroundStyle(DS.Color.foreground.swiftUI)
           Spacer(minLength: 0)
-          Text("quicklog.hint").font(.system(size: 13))
-            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-            .lineLimit(1)
         }
       }
       .padding(.leading, placement == .inline ? 8 : 16)
@@ -408,10 +407,12 @@ private struct QuickLogAccessory: View {
     }
     .buttonStyle(.plain)
     .accessibilityLabel(Text("quicklog.title"))
+    .accessibilityIdentifier("quicklog.bar")
   }
 }
 
-/// Bảng chọn của "Ghi nhanh": năm ô lớn, chạm là mở đúng màn ghi.
+/// Bảng "Ghi nhanh": một danh sách hàng (Buổi tập, Bữa, Nước, Ngủ, Cân). "Ăn lại"
+/// cùng kiểu hàng khi có bữa gần đây.
 private struct QuickLogSheet: View {
   let pick: (DeepLink.Screen) -> Void
   /// "Hỏi Koa Coach" — `nil` khi AI chưa có trên máy chủ (hàng ẩn).
@@ -428,13 +429,14 @@ private struct QuickLogSheet: View {
   @State private var copiedMeals: [MealLog.RecentMeal]?
   @State private var logged: String?
 
-  private var items: [(LocalizedStringKey, String, Color, DeepLink.Screen)] {
+  /// Việc ghi chính, một kiểu hàng. Tập trước — đây là app tập.
+  private var items: [(LocalizedStringKey, String, Color, DeepLink.Screen, String)] {
     [
-      ("quicklog.meal", "fork.knife", DS.Color.metricOrangeGraphic.swiftUI, .logMeal(date: nil, meal: nil)),
-      ("quicklog.water", "drop.fill", DS.Color.metricCyan.swiftUI, .water),
-      ("quicklog.sleep", "moon.fill", DS.Color.metricPurple.swiftUI, .logSleep),
-      ("quicklog.weight", "scalemass.fill", DS.Color.foreground.swiftUI, .logWeight),
-      ("quicklog.workout", "dumbbell.fill", DS.Color.metricRose.swiftUI, .logWorkout),
+      ("quicklog.workout", "dumbbell.fill", DS.Color.metricRose.swiftUI, .logWorkout, "workout"),
+      ("quicklog.meal", "fork.knife", DS.Color.metricOrangeGraphic.swiftUI, .logMeal(date: nil, meal: nil), "meal"),
+      ("quicklog.water", "drop.fill", DS.Color.metricCyan.swiftUI, .water, "water"),
+      ("quicklog.sleep", "moon.fill", DS.Color.metricPurple.swiftUI, .logSleep, "sleep"),
+      ("quicklog.weight", "scalemass.fill", DS.Color.foreground.swiftUI, .logWeight, "weight"),
     ]
   }
 
@@ -457,46 +459,27 @@ private struct QuickLogSheet: View {
   }
 
   var body: some View {
-    VStack(alignment: .leading, spacing: DS.Spacing.md) {
+    VStack(alignment: .leading, spacing: 0) {
+      // Tiêu đề nằm ngoài vùng cuộn để kéo từ đây đóng bảng (không chỉ cuộn danh sách).
       Text("quicklog.title").font(.system(size: 20, weight: .bold))
         .accessibilityAddTraits(.isHeader)
-      // "Ghi hôm nay" đứng đầu bảng (19/10): một chạm ghi cả ngày, nói hoặc gõ.
-      tellRow
-      if !yesterday.isEmpty || copiedYesterday {
-        YesterdayMealsCard(meals: yesterday, done: copiedYesterday, busy: logger?.saving ?? false) {
-          Task { await copyYesterday() }
+        .accessibilityIdentifier("quicklog.sheet")
+        .padding(.horizontal, DS.Spacing.lg)
+        .padding(.top, DS.Spacing.lg)
+        .padding(.bottom, DS.Spacing.sm)
+      ScrollView {
+        VStack(alignment: .leading, spacing: DS.Spacing.md) {
+          actionGroup
+          if showsRepeats { repeats }
+          // "Ghi hôm nay" và coach: cùng hàng icon + chữ, dưới các việc ghi.
+          tellRow
+          if let askCoach { coachRow(askCoach) }
         }
+        .padding(.horizontal, DS.Spacing.lg)
+        .padding(.bottom, DS.Spacing.lg)
       }
-      if !recentMeals.isEmpty {
-        again
-      }
-      HStack(spacing: 8) {
-        ForEach(items.indices, id: \.self) { i in
-          let item = items[i]
-          Button { pick(item.3) } label: {
-            VStack(spacing: 8) {
-              Image(systemName: item.1)
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundStyle(item.2)
-                .frame(width: 48, height: 48)
-                .background(item.2.opacity(0.14), in: Circle())
-              Text(item.0).font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(DS.Color.foreground.swiftUI)
-                .lineLimit(1).minimumScaleFactor(0.8)
-            }
-            .frame(maxWidth: .infinity, minHeight: 88)
-            .contentShape(Rectangle())
-          }
-          .buttonStyle(.plain)
-        }
-      }
-      if let askCoach { coachRow(askCoach) }
     }
-    .padding(.horizontal, DS.Spacing.lg)
-    .padding(.top, DS.Spacing.lg)
-    .frame(maxHeight: .infinity, alignment: .top)
-    .presentationDetents([.height(
-      (recentMeals.isEmpty ? 250 : 400) + 76 + (askCoach == nil ? 0 : 76) + (yesterday.isEmpty && !copiedYesterday ? 0 : 84))])
+    .presentationDetents([.medium, .large])
     // Nền đặc màu trang (16/10, chủ dự án: "thẻ khó nhìn"): bảng kính trong để lộ
     // trang Hôm nay phía sau, thẻ kính đặt lên đó chìm mất mép.
     .presentationBackground(DS.Color.background.swiftUI)
@@ -507,6 +490,110 @@ private struct QuickLogSheet: View {
       logger = l
       await l?.loadRecents()
     }
+  }
+
+  /// Năm việc ghi, một danh sách. Không trộn thẻ dọc với nút tròn.
+  private var actionGroup: some View {
+    VStack(spacing: 0) {
+      ForEach(items.indices, id: \.self) { i in
+        VStack(spacing: 0) {
+          if i > 0 { Divider().padding(.leading, 60).opacity(0.6) }
+          let item = items[i]
+          logRow(
+            symbol: item.1, tint: item.2, title: String(localized: item.0), subtitle: nil, trailing: nil,
+            id: "quicklog.\(item.4)"
+          ) { pick(item.3) }
+        }
+      }
+    }
+    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+    .quickLogCard()
+  }
+
+  private var showsRepeats: Bool { !yesterday.isEmpty || copiedYesterday || !recentMeals.isEmpty }
+
+  /// "Ăn lại" cùng kiểu hàng với việc ghi: tên bữa, món một dòng, kcal bên phải.
+  private var repeats: some View {
+    VStack(alignment: .leading, spacing: DS.Spacing.xs) {
+      Text("quicklog.again")
+        .font(DS.TextStyle.caption.weight(.semibold))
+        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        .accessibilityAddTraits(.isHeader)
+      VStack(spacing: 0) {
+        if !yesterday.isEmpty || copiedYesterday {
+          logRow(
+            symbol: copiedYesterday ? "checkmark" : "arrow.uturn.backward",
+            tint: copiedYesterday ? DS.Color.readinessGreen.swiftUI : DS.Color.metricOrangeGraphic.swiftUI,
+            title: String(localized: "meal.yesterday.title"),
+            subtitle: YesterdayMealsCard.names(yesterday),
+            trailing: YesterdayMealsCard.kcal(yesterday),
+            id: "quicklog.yesterday"
+          ) { Task { await copyYesterday() } }
+          .disabled(copiedYesterday || (logger?.saving ?? false))
+        }
+        ForEach(Array(recentMeals.enumerated()), id: \.element.id) { i, m in
+          VStack(spacing: 0) {
+            if i > 0 || !yesterday.isEmpty || copiedYesterday {
+              Divider().padding(.leading, 60).opacity(0.6)
+            }
+            logRow(
+              symbol: logged == m.id ? "checkmark" : "arrow.counterclockwise",
+              tint: logged == m.id ? DS.Color.readinessGreen.swiftUI : DS.Color.metricOrangeGraphic.swiftUI,
+              title: DiaryView.mealName(m.mealType),
+              subtitle: m.foods.map { $0.food.name }.joined(separator: ", "),
+              trailing: "\(DiaryView.whole(m.kcal)) kcal",
+              id: "quicklog.again.\(m.id)",
+              label: Text("quicklog.again.a11y \(DiaryView.mealName(m.mealType)) \(DiaryView.whole(m.kcal))")
+            ) { Task { await relog(m) } }
+            .disabled(logged != nil || (logger?.saving ?? false))
+          }
+        }
+      }
+      .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+      .quickLogCard()
+    }
+  }
+
+  private func logRow(
+    symbol: String, tint: Color, title: String, subtitle: String?, trailing: String?, id: String,
+    label: Text? = nil, action: @escaping () -> Void
+  ) -> some View {
+    Button(action: action) {
+      HStack(spacing: 12) {
+        Image(systemName: symbol)
+          .font(.system(size: 16, weight: .semibold))
+          .foregroundStyle(tint)
+          .frame(width: 36, height: 36)
+          .background(tint.opacity(0.14), in: Circle())
+          .accessibilityHidden(true)
+        VStack(alignment: .leading, spacing: 2) {
+          Text(verbatim: title)
+            .font(DS.TextStyle.headline)
+            .foregroundStyle(DS.Color.foreground.swiftUI)
+            .lineLimit(1)
+            .minimumScaleFactor(0.8)
+          if let subtitle, !subtitle.isEmpty {
+            Text(verbatim: subtitle)
+              .font(DS.TextStyle.caption)
+              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+              .lineLimit(1)
+          }
+        }
+        Spacer(minLength: DS.Spacing.sm)
+        if let trailing {
+          Text(verbatim: trailing)
+            .font(DS.TextStyle.footnote.monospacedDigit())
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .lineLimit(1)
+        }
+      }
+      .padding(.horizontal, DS.Spacing.md)
+      .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
+      .contentShape(Rectangle())
+    }
+    .buttonStyle(TodayPressStyle())
+    .accessibilityIdentifier(id)
+    .accessibilityLabel(label ?? Text(verbatim: title))
   }
 
   /// Hàng "Kể cho Koa": gõ hay nói cả ngày một lần.
@@ -559,60 +646,6 @@ private struct QuickLogSheet: View {
     }
     .buttonStyle(TodayPressStyle())
     .accessibilityElement(children: .combine)
-  }
-
-  /// "Ăn lại": bữa gần đây — một chạm ghi đúng các món và khẩu phần ấy cho hôm nay.
-  private var again: some View {
-    VStack(alignment: .leading, spacing: DS.Spacing.xs) {
-      Text("quicklog.again")
-        .font(.system(size: 13, weight: .semibold))
-        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-        .accessibilityAddTraits(.isHeader)
-      ScrollView(.horizontal, showsIndicators: false) {
-        HStack(spacing: DS.Spacing.sm) {
-          ForEach(recentMeals) { m in
-            Button { Task { await relog(m) } } label: {
-              VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 6) {
-                  Text(verbatim: DiaryView.mealName(m.mealType)).font(.system(size: 14, weight: .bold))
-                  Spacer(minLength: 0)
-                  if logged == m.id {
-                    Image(systemName: "checkmark.circle.fill").foregroundStyle(DS.Color.readinessGreen.swiftUI)
-                  } else {
-                    Image(systemName: "arrow.counterclockwise").font(.system(size: 12, weight: .bold))
-                      .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-                  }
-                }
-                Text(verbatim: m.foods.map { $0.food.name }.joined(separator: ", "))
-                  .font(.system(size: 13))
-                  .foregroundStyle(DS.Color.foreground.swiftUI)
-                  .lineLimit(2, reservesSpace: true)
-                  .multilineTextAlignment(.leading)
-                Text(verbatim: "\(DiaryView.whole(m.kcal)) kcal")
-                  .font(.system(size: 12, weight: .semibold).monospacedDigit())
-                  .foregroundStyle(DS.Color.metricOrangeGraphic.swiftUI)
-              }
-              .padding(12)
-              .frame(width: 210, alignment: .leading)
-              .quickLogCard()
-              .contentShape(Rectangle())
-            }
-            .buttonStyle(TodayPressStyle())
-            .disabled(logged != nil || (logger?.saving ?? false))
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(
-              Text("quicklog.again.a11y \(DiaryView.mealName(m.mealType)) \(DiaryView.whole(m.kcal))"))
-            .accessibilityAddTraits(.isButton)
-          }
-        }
-        .padding(.vertical, 6)
-        .padding(.horizontal, DS.Spacing.lg)
-      }
-      // Dải cuộn chạy tràn tới mép bảng và không cắt bóng thẻ (16/10: thẻ thứ hai bị
-      // cắt cứng ở lề, lộ một khối xám sau thẻ).
-      .scrollClipDisabled()
-      .padding(.horizontal, -DS.Spacing.lg)
-    }
   }
 
   /// Bữa hôm qua để chép (giữ danh sách khi đã chép để thẻ còn hiện dấu tích).

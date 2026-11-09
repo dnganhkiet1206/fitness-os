@@ -96,11 +96,9 @@ struct AssistantTab: View {
             let shown = ProgressStatus.ordered(results).filter { $0.level != .insufficient }
             if !shown.isEmpty {
               sectionHeader("ps.results", trailing: attentionLine(results))
-              ForEach(shown) { r in
-                ProgressResultCard(result: r) {
-                  zoomGroup = nil
-                  path.append(.group(r.group))
-                }
+              ProgressResultsList(results: shown) { r in
+                zoomGroup = nil
+                path.append(.group(r.group))
               }
             }
             let missing = results.filter { $0.level == .insufficient }
@@ -148,6 +146,7 @@ struct AssistantTab: View {
                 "square.grid.2x2", String(localized: "assistant.alltools"), sub: nil, tint: DS.Color.metricBlue.swiftUI)
             }
             .buttonStyle(.plain)
+            .accessibilityIdentifier("progress.alltools")
             Divider().padding(.leading, 58).opacity(0.6)
             NavigationLink(value: AssistantRoute.community) {
               WorkoutsHomeView.toolRow(
@@ -242,7 +241,10 @@ struct AssistantTab: View {
           if let r = progressResults?.first(where: { $0.group == g }) {
             let detail = ProgressGroupView(
               result: r, snapshot: progressSnapshot, week: koaWeek,
-              openTrends: metrics == nil ? nil : { path.append(.trends) }, refresh: refreshAll)
+              openTrends: metrics == nil ? nil : { path.append(.trends) },
+              openSteps: steps == nil ? nil : { path.append(.steps) },
+              openSleep: sleep == nil ? nil : { path.append(.sleep) },
+              refresh: refreshAll)
             if zoomGroup == g {
               detail.todayZoom("ps.\(g.rawValue)", in: heroZoom)
             } else {
@@ -493,12 +495,18 @@ struct AssistantTab: View {
 
   private struct Tool: Identifiable {
     let route: AssistantRoute
+    /// `progress.tool.<idName>` — ảnh và kiểm "Tất cả công cụ".
+    let idName: String
     let symbol: String
     let tint: Color
     let label: String
     let hint: String
     var id: AssistantRoute { route }
   }
+
+  /// Đã có trên trang Tiến bộ: Tổng kết tuần ở mục Thêm; Vận động và Giấc ngủ là
+  /// hàng Kết quả (màn đầy đủ mở từ chi tiết nhóm). Lưới phụ chỉ còn chỗ chưa hiện.
+  private static let shownOnFeed: Set<AssistantRoute> = [.weekly, .steps, .sleep]
 
   /// Công cụ của Trợ lý. Số đo / Ảnh tiến trình / Hiệu chỉnh mục tiêu đã có ở
   /// Tập luyện → Cơ thể — bỏ khỏi đây (15/10, audit toàn app: phần cơ thể bị chia
@@ -509,40 +517,40 @@ struct AssistantTab: View {
     if weekly != nil, ai {
       out.append(
         Tool(
-          route: .weekly, symbol: "calendar", tint: DS.Color.metricBlue.swiftUI,
+          route: .weekly, idName: "weekly", symbol: "calendar", tint: DS.Color.metricBlue.swiftUI,
           label: String(localized: "assistant.tool.week"), hint: String(localized: "assistant.tool.week.hint")))
     }
     if steps != nil {
       out.append(
         Tool(
-          route: .steps, symbol: "figure.walk", tint: DS.Color.metricBlue.swiftUI,
+          route: .steps, idName: "steps", symbol: "figure.walk", tint: DS.Color.metricBlue.swiftUI,
           label: String(localized: "assistant.tool.steps"), hint: String(localized: "assistant.tool.steps.hint")))
     }
     if training != nil {
       out.append(
         Tool(
-          route: .training, symbol: "dumbbell.fill", tint: DS.Color.metricRose.swiftUI,
+          route: .training, idName: "training", symbol: "dumbbell.fill", tint: DS.Color.metricRose.swiftUI,
           label: String(localized: "assistant.tool.training"), hint: String(localized: "assistant.tool.training.hint")))
     }
     if biometrics != nil {
       out.append(
         Tool(
-          route: .biometrics, symbol: "heart.fill", tint: DS.Color.readinessRed.swiftUI,
+          route: .biometrics, idName: "biometrics", symbol: "heart.fill", tint: DS.Color.readinessRed.swiftUI,
           label: String(localized: "assistant.tool.bio"), hint: String(localized: "assistant.tool.bio.hint")))
     }
     if sleep != nil {
       out.append(
         Tool(
-          route: .sleep, symbol: "moon.fill", tint: DS.Color.metricPurple.swiftUI,
+          route: .sleep, idName: "sleep", symbol: "moon.fill", tint: DS.Color.metricPurple.swiftUI,
           label: String(localized: "assistant.tool.sleep"), hint: String(localized: "assistant.tool.sleep.hint")))
     }
     if memory != nil, ai {
       out.append(
         Tool(
-          route: .memory, symbol: "brain.head.profile", tint: DS.Color.metricPurple.swiftUI,
+          route: .memory, idName: "memory", symbol: "brain.head.profile", tint: DS.Color.metricPurple.swiftUI,
           label: String(localized: "assistant.tool.memory"), hint: String(localized: "assistant.tool.memory.hint")))
     }
-    return out
+    return out.filter { !Self.shownOnFeed.contains($0.route) }
   }
 
   /// Edge function AI đã deploy (`AppServices.probeAI`) — chưa thì ẩn mọi lối vào AI.
@@ -581,6 +589,7 @@ struct AssistantTab: View {
             }
             .buttonStyle(.plain)
             .accessibilityElement(children: .combine)
+            .accessibilityIdentifier("progress.tool.\(t.idName)")
           }
         }
       }
