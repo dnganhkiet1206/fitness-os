@@ -75,21 +75,17 @@ import SwiftUI
       let face: KoaFlags.Expression
       let look: (Double, Double)
       let turn: Double
-      let elbow: (Double, Double)
-      let paw: (Double, Double)
-      /// Hướng vòi bình (độ, 0 = thẳng lên, âm = nghiêng sang trái).
+      /// Hướng trục bình từ tay tới vòi (độ, 0 = sang phải, 90 = xuống, 180 = sang trái, 270 = lên).
       let bottleDeg: Double
-      /// Vòi bình nằm ở đâu theo trục bình tính từ tâm bàn tay (đơn vị hình, dương = về phía vòi).
-      let reach: Double
+      /// Vòi chạm miệng (`true`) hay bình hạ trước ngực, tay ở `rest`.
+      let atMouth: Bool
+      var rest: (Double, Double) = (170, 190)
     }
 
     static let poses: [Pose] = [
-      Pose(label: "A · nhấp nước", face: .meditate, look: (0.05, -0.15), turn: 0.15, elbow: (204, 206), paw: (160, 130),
-           bottleDeg: -128, reach: 36),
-      Pose(label: "B · ngửa đầu tu", face: .meditate, look: (0.1, -0.5), turn: 0.3, elbow: (206, 196), paw: (162, 112),
-           bottleDeg: -150, reach: 40),
-      Pose(label: "C · hạ bình \"ahh\"", face: .delighted, look: (0, 0), turn: 0, elbow: (204, 214), paw: (172, 186),
-           bottleDeg: -12, reach: 26),
+      Pose(label: "A · nhấp nước", face: .meditate, look: (0.05, -0.2), turn: 0.15, bottleDeg: 200, atMouth: true),
+      Pose(label: "B · ngửa đầu tu", face: .meditate, look: (0.1, -0.6), turn: 0.25, bottleDeg: 168, atMouth: true),
+      Pose(label: "C · hạ bình \"ahh\"", face: .content, look: (0.1, 0), turn: 0.1, bottleDeg: 262, atMouth: false),
     ]
 
     var body: some View {
@@ -108,48 +104,89 @@ import SwiftUI
       .statusBarHidden()
     }
 
+    typealias P2 = (Double, Double)
+
+    /// Miệng (toạ độ hình 240 × 300, trước `insetMat`) ở đúng tư thế: mốc mũi thật + 28 xuống theo đầu.
+    static func mouth(_ p: Pose) -> P2 {
+      var o = KoaRender.Options()
+      o.size = 240
+      o.expression = p.face
+      o.look = KoaMath.Gaze(x: p.look.0, y: p.look.1, k: 1)
+      o.eyes = KoaMath.Gaze(x: p.look.0, y: p.look.1, k: 1)
+      o.turn = p.turn
+      let k = KoaMath.inset
+      guard let nose = KoaRender.anchors(o)["nose"] else { return (120, 133) }
+      let n = ((nose.x - 120 * (1 - k)) / k, (nose.y - 300 * (1 - k)) / k)
+      return (n.0 + 4 * p.turn, n.1 + 27)
+    }
+
+    /// Khuỷu tay (IK hai đoạn) từ vai `s` tới tay `t`, gập ra ngoài (sang phải, xuống).
+    static func elbow(_ s: P2, _ t: P2, _ a: Double, _ b: Double) -> P2 {
+      let dx = t.0 - s.0, dy = t.1 - s.1
+      let d = max(0.01, min(a + b - 0.01, (dx * dx + dy * dy).squareRoot()))
+      let along = (a * a - b * b + d * d) / (2 * d)
+      let h = max(0, a * a - along * along).squareRoot()
+      let ux = dx / d, uy = dy / d
+      let base = (s.0 + ux * along, s.1 + uy * along)
+      let c1 = (base.0 - uy * h, base.1 + ux * h), c2 = (base.0 + uy * h, base.1 - ux * h)
+      return c1.0 > c2.0 ? c1 : c2
+    }
+
     static func figure(_ p: Pose, size: Double) -> some View {
       let u = size / 240
+      let k = KoaMath.inset
+      // toạ độ hình → khung (qua `insetMat`: thu 0,93, neo ở chân)
+      func v(_ q: P2) -> CGPoint { CGPoint(x: (k * q.0 + 120 * (1 - k)) * u, y: (k * q.1 + 300 * (1 - k)) * u) }
+      let w = k * u
+      let m = mouth(p)
+      let a = p.bottleDeg * .pi / 180
+      let dir = (cos(a), sin(a))
+      let bs = 1.05, grip = 12.0, reach = (36 + grip) * bs
+      let paw: P2 = p.atMouth ? (m.0 - dir.0 * reach, m.1 - dir.1 * reach) : p.rest
+      // vai theo quay người (`KoaTurn` dời tay theo chiều sâu)
+      let phi = p.turn * KoaTurn.maxDeg * .pi / 180
+      let shoulder: P2 = (162 + 42 * (cos(phi) - 1) + 2 * sin(phi), 186)
+      let el = elbow(shoulder, paw, 30, 30)
       return ZStack(alignment: .topLeading) {
         KoaFigureView(expression: p.face, size: size, animated: true, headLook: KoaMath.Gaze(x: p.look.0, y: p.look.1, k: 1),
                       eyes: KoaMath.Gaze(x: p.look.0, y: p.look.1, k: 1), turn: p.turn, hideRightArm: true)
         Canvas { c, _ in
-          func pt(_ q: (Double, Double)) -> CGPoint { CGPoint(x: q.0 * u, y: q.1 * u) }
-          let fur = Color(red: 0.75, green: 0.78, blue: 0.81)
-          let shade = Color(red: 0.64, green: 0.67, blue: 0.71)
-          let shoulder = (166.0, 182.0)
-          // cánh tay trên (sau bình)
-          var upper = Path(); upper.move(to: pt(shoulder)); upper.addLine(to: pt(p.elbow))
-          c.stroke(upper, with: .color(fur), style: StrokeStyle(lineWidth: 26 * u, lineCap: .round))
-          // bình: thân xanh, đai trắng, nắp cam có vòi — nằm sau bàn tay
-          let a = p.bottleDeg * .pi / 180
-          let dir = (sin(a), -cos(a))
-          let center = (p.paw.0 + dir.0 * (p.reach - 22), p.paw.1 + dir.1 * (p.reach - 22))
+          let fur = Color(red: 0.749, green: 0.780, blue: 0.812)  // #BFC7CF như tay gốc
+          let streak = Color(red: 0.663, green: 0.698, blue: 0.737)  // #A9B2BC
+          let round = StrokeStyle(lineWidth: 24 * w, lineCap: .round, lineJoin: .round)
+          // cánh tay trên + cẳng tay: cùng màu, khớp tròn liền một khối như tay gốc
+          var arm = Path(); arm.move(to: v(shoulder)); arm.addLine(to: v(el)); arm.addLine(to: v(paw))
+          c.stroke(arm, with: .color(fur), style: round)
+          // vệt lông dọc cánh tay trên (như `M168.5 192 C …` của tay gốc)
+          var st = Path()
+          st.move(to: v((shoulder.0 + 4, shoulder.1 + 4)))
+          st.addQuadCurve(to: v((el.0 - 2, el.1 - 1)), control: v(((shoulder.0 + el.0) / 2 + 5, (shoulder.1 + el.1) / 2 - 2)))
+          c.stroke(st, with: .color(streak.opacity(0.55)), style: StrokeStyle(lineWidth: 2.2 * w, lineCap: .round))
+          // bình thể thao: trục từ tay tới vòi
           var g = c
-          g.translateBy(x: center.0 * u, y: center.1 * u)
-          g.rotate(by: .radians(a))
-          g.fill(Path(roundedRect: CGRect(x: -10 * u, y: -22 * u, width: 20 * u, height: 46 * u), cornerRadius: 7 * u),
+          g.translateBy(x: v(paw).x, y: v(paw).y)
+          g.rotate(by: .radians(atan2(dir.0, -dir.1)))
+          g.scaleBy(x: bs * w, y: bs * w)
+          g.translateBy(x: 0, y: -grip)
+          g.fill(Path(roundedRect: CGRect(x: -10, y: -22, width: 20, height: 46), cornerRadius: 7),
                  with: .color(Color(red: 0.49, green: 0.78, blue: 0.93)))
-          g.fill(Path(CGRect(x: -10 * u, y: 2 * u, width: 20 * u, height: 7 * u)), with: .color(.white.opacity(0.9)))
-          g.fill(Path(roundedRect: CGRect(x: -7 * u, y: -30 * u, width: 14 * u, height: 9 * u), cornerRadius: 3 * u),
+          g.fill(Path(roundedRect: CGRect(x: -6, y: -18, width: 4, height: 36), cornerRadius: 2), with: .color(.white.opacity(0.35)))
+          g.fill(Path(CGRect(x: -10, y: 8, width: 20, height: 6)), with: .color(.white.opacity(0.9)))
+          g.fill(Path(roundedRect: CGRect(x: -8, y: -30, width: 16, height: 10), cornerRadius: 3),
                  with: .color(Color(red: 0.91, green: 0.52, blue: 0.16)))
-          g.fill(Path(roundedRect: CGRect(x: -2.5 * u, y: -36 * u, width: 5 * u, height: 7 * u), cornerRadius: 2 * u),
+          g.fill(Path(roundedRect: CGRect(x: -2.5, y: -37, width: 5, height: 8), cornerRadius: 2),
                  with: .color(Color(red: 0.91, green: 0.52, blue: 0.16)))
-          // cẳng tay + bàn tay ôm bình (trên bình)
-          var fore = Path(); fore.move(to: pt(p.elbow)); fore.addLine(to: pt(p.paw))
-          c.stroke(fore, with: .color(fur), style: StrokeStyle(lineWidth: 24 * u, lineCap: .round))
-          c.fill(Path(ellipseIn: CGRect(x: (p.paw.0 - 14) * u, y: (p.paw.1 - 13) * u, width: 28 * u, height: 26 * u)),
-                 with: .color(fur))
-          // nếp khuỷu và vệt lông như tay gốc
-          var crease = Path()
-          crease.move(to: pt((p.elbow.0 - 8, p.elbow.1 - 6)))
-          crease.addQuadCurve(to: pt((p.elbow.0 + 2, p.elbow.1 + 10)), control: pt((p.elbow.0 + 4, p.elbow.1 - 4)))
-          c.stroke(crease, with: .color(shade), style: StrokeStyle(lineWidth: 2.4 * u, lineCap: .round))
-          // đốm sáng trên bàn tay (như rk4 của tay gốc)
-          c.fill(Path(ellipseIn: CGRect(x: (p.paw.0 - 3) * u, y: (p.paw.1 - 9) * u, width: 9 * u, height: 9 * u)),
-                 with: .color(.white.opacity(0.5)))
-          c.fill(Path(ellipseIn: CGRect(x: (p.paw.0 + 5) * u, y: (p.paw.1 - 3) * u, width: 6 * u, height: 6 * u)),
-                 with: .color(.white.opacity(0.4)))
+          // bàn tay ôm thân bình: khối tròn trên bình, hai nếp ngón
+          let pv = v(paw)
+          c.fill(Path(ellipseIn: CGRect(x: pv.x - 13 * w, y: pv.y - 12 * w, width: 26 * w, height: 24 * w)), with: .color(fur))
+          var f = c
+          f.translateBy(x: pv.x, y: pv.y)
+          f.rotate(by: .radians(atan2(dir.0, -dir.1)))
+          for y in [-4.0, 3.0] {
+            var fl = Path(); fl.move(to: CGPoint(x: -9 * w, y: y * w)); fl.addLine(to: CGPoint(x: -2 * w, y: (y + 0.6) * w))
+            f.stroke(fl, with: .color(streak), style: StrokeStyle(lineWidth: 1.8 * w, lineCap: .round))
+          }
+          c.fill(Path(ellipseIn: CGRect(x: pv.x - 1 * w, y: pv.y - 9 * w, width: 7 * w, height: 6 * w)), with: .color(.white.opacity(0.45)))
         }
         .frame(width: 240 * u, height: 300 * u)
         .allowsHitTesting(false)
