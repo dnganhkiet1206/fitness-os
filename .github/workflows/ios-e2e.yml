@@ -185,7 +185,9 @@ jobs:
         if: always()
         run: |
           mkdir -p "$RUNNER_TEMP/ux"
-          find "$RUNNER_TEMP/e2e" -name 'ux-*.png' -exec cp {} "$RUNNER_TEMP/ux/" \;
+          if [ -d "$RUNNER_TEMP/e2e" ]; then
+            find "$RUNNER_TEMP/e2e" -name 'ux-*.png' -exec cp {} "$RUNNER_TEMP/ux/" \;
+          fi
           ls -la "$RUNNER_TEMP/ux" || true
 
       - name: Artifact ảnh UX

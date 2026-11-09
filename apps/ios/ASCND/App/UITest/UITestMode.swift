@@ -52,7 +52,9 @@
       } else {
         "system"
       }
-      UserDefaults.standard.set(theme, forKey: AppPreferences.themeKey)
+      // Cùng khoá với `AppPreferences.themeKey`. Không đọc property đó: class là
+      // MainActor, hàm này chạy lúc khởi động trước khi có actor.
+      UserDefaults.standard.set(theme, forKey: "ascnd_theme")
     }
 
     /// Client Supabase trỏ vào máy chủ giả. Gọi một lần, khi `isOn`.
