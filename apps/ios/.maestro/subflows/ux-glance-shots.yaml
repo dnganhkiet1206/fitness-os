@@ -31,13 +31,8 @@ appId: com.ascnd.fitnessos.dev
     visibilityPercentage: 40
     speed: 40
 - assertVisible: "Keeps you training steadily.*"
-# Vuốt xuống thì thanh tab thu lại và mất chữ "Progress". Kéo lên đầu trang cho thanh bung ra.
-- scrollUntilVisible:
-    element:
-      id: today.plan.primary
-    direction: UP
-    timeout: 20000
-- tapOn: "Progress"
+# Thanh tab thu khi cuộn và mất chữ "Progress". Mở tab bằng link, không phụ thuộc chữ.
+- openLink: ascnd://assistant
 - extendedWaitUntil:
     visible:
       id: progress.segment.training
@@ -103,12 +98,7 @@ appId: com.ascnd.fitnessos.dev
     notVisible:
       id: quicklog.sheet
     timeout: 8000
-- scrollUntilVisible:
-    element:
-      id: progress.segment.training
-    direction: UP
-    timeout: 20000
-- tapOn: "Nutrition"
+- openLink: ascnd://nutrition
 - extendedWaitUntil:
     visible:
       id: nutrition.search
