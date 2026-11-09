@@ -466,7 +466,11 @@ final class AppServices {
         sync.kick()
         // Lịch có buổi tập đầu tiên (onboarding hay tự đặt): lúc xin quyền thông báo (#800).
         if entry.kind == PlanEdit.routineDayKind, entry.payload["template_id"]?.stringValue != nil {
-          Task { await self?.reminders.askAfterSchedule() }
+          // Ghi buổi cũng đi qua đây: chờ cảnh Koa ăn mừng xong, hộp hệ thống không đè lên Koa.
+          Task { @MainActor in
+            await KoaReactionGate.waitIdle()
+            await self?.reminders.askAfterSchedule()
+          }
         }
       })
     // Không ghi buổi ghi tay vào Apple Health nữa (17/10, "Không ghi ngược vào

@@ -14,6 +14,11 @@ public enum KoaFlags {
     /// "No no no" khi bị bấm mũi nhiều lần (Kiệt 04/11): phụng phịu — mắt lim dim, mày cụp, mếu; ghép
     /// từ mảnh có sẵn. Dỗi yêu, không chau mày giận.
     case nope
+    /// Mặt tập gym vẽ thêm (05/11; `gymFocus` / `gymPant` đổi tên 07/11 khi gộp: nhánh chính đã có `focus` / `pant` của
+    /// cảnh sửa đồ, vẽ khác, Kiệt duyệt thư viện storyboard): nghiến răng gồng, phồng má thở ra, hét
+    /// chiến thắng, tập trung, thở dốc lè lưỡi, tự hào nhếch mép. Vẽ trọn mặt trong một cờ `faceGym…`
+    /// (`tools/koa-wardrobe/build.py` ← `docs/koa-v2/blender/koa_faces_gym.py`).
+    case grit, puff, roar, gymFocus, gymPant, smug
     /// Vẽ thêm (06/11, Kiệt cho vẽ biểu cảm mới cho cảnh sửa đồ): `yikes` hốt hoảng (mắt tròn, miệng méo
     /// nhe răng, giọt mồ hôi), `focus` tập trung thè lưỡi một bên mép, `pant` thở hổn hển (mắt híp, lưỡi
     /// thè, mồ hôi), `oof` nhắm tịt "> <", `oops` chao đảo (mắt tròn, mày cụp, miệng lượn sóng, mồ hôi).
@@ -21,6 +26,12 @@ public enum KoaFlags {
     /// Chóng mặt sau khi xoay tít (06/11): mắt xoắn ốc, miệng lượn sóng.
     case dizzy
   }
+
+  /// Biểu cảm tập gym vẽ thêm → cờ trọn mặt của nó.
+  public static let gymFace: [Expression: String] = [
+    .grit: "faceGymGrit", .puff: "faceGymPuff", .roar: "faceGymRoar", .gymFocus: "faceGymFocus", .gymPant: "faceGymPant",
+    .smug: "faceGymSmug",
+  ]
 
   public enum Pose: String, Sendable, Hashable, CaseIterable {
     case idle, turn34, running, lifting, stretching, relaxing
@@ -48,7 +59,9 @@ public enum KoaFlags {
     .tired: "MỆT MỎI", .angry: "TỨC GIẬN", .delighted: "THÍCH THÚ", .happytired: "VUI MÀ MỆT", .strain: "GỒNG SỨC",
     .plead: "VAN NÀI", .meditate: "THIỀN", .content: "THƯ THÁI", .warm: "MỈM CƯỜI", .sheepish: "ÁI NGẠI",
     .sleepy: "BUỒN NGỦ", .thinking: "SUY NGHĨ", .say1: "NÓI 1", .say2: "NÓI 2", .say3: "NÓI 3", .tease: "THÁCH ĐỂU",
-    .nope: "PHỤNG PHỊU", .yikes: "HỐT HOẢNG", .focus: "TẬP TRUNG", .pant: "THỞ HỔN HỂN", .oof: "NHẮM TỊT", .oops: "CHAO ĐẢO", .dizzy: "CHÓNG MẶT",
+    .nope: "PHỤNG PHỊU", .grit: "NGHIẾN RĂNG", .puff: "PHỒNG MÁ", .roar: "CHIẾN THẮNG", .gymFocus: "TẬP TRUNG (GYM)",
+    .gymPant: "THỞ DỐC", .smug: "TỰ HÀO", .yikes: "HỐT HOẢNG", .focus: "TẬP TRUNG", .pant: "THỞ HỔN HỂN",
+    .oof: "NHẮM TỊT", .oops: "CHAO ĐẢO", .dizzy: "CHÓNG MẶT",
   ]
   public static let poseLabel: [Pose: String] = [
     .idle: "ĐỨNG YÊN", .turn34: "TURNAROUND 3/4", .running: "CHẠY BỘ", .lifting: "TẬP TẠ", .stretching: "GIÃN CƠ",
@@ -102,7 +115,9 @@ public enum KoaFlags {
   ]
 
   /// Nét mặt nhắm mắt: không có gì để chớp, không được ép chớp.
-  public static func eyesClosed(_ e: Expression?) -> Bool { e == .grin || e == .warm || e == .meditate || e == .pant || e == .oof || e == .dizzy }
+  public static func eyesClosed(_ e: Expression?) -> Bool {
+    e == .grin || e == .warm || e == .meditate || e == .puff || e == .roar || e == .pant || e == .oof || e == .dizzy
+  }
 
   /// `koaFlags`.
   public static func flags(_ e: Expression, _ p: Pose, worn: Worn = [:]) -> Flags {
@@ -161,6 +176,8 @@ public enum KoaFlags {
     if e == .say1 { f["mouthSay1"] = b(true) }
     if e == .say2 { f["mouthSay2"] = b(true) }
     if e == .say3 { f["mouthSay3"] = b(true) }
+    // Mặt gym vẽ thêm (05/11): mắt / mày / miệng gốc đều tắt (không có trong `openEyes` và các cờ trên).
+    if let face = gymFace[e] { f[face] = b(true) }
     // Vẽ thêm 06/11: cờ chỉ có mặt khi bật.
     if e == .yikes { f["mouthYikes"] = b(true) }
     if e == .focus { f["mouthTongue"] = b(true); f["browFocus"] = b(true) }

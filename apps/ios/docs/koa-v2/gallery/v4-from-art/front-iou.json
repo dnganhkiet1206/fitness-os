@@ -1,0 +1,133 @@
+{
+ "order": {
+  "0-front": [
+   "shadow",
+   "foot_L",
+   "foot_R",
+   "torso",
+   "arm_L",
+   "arm_R",
+   "ear_L",
+   "ear_R",
+   "head"
+  ],
+  "45-34-right": [
+   "shadow",
+   "arm_L",
+   "ear_L",
+   "foot_L",
+   "torso",
+   "foot_R",
+   "head",
+   "arm_R",
+   "ear_R"
+  ],
+  "90-side-right": [
+   "shadow",
+   "arm_L",
+   "ear_L",
+   "foot_L",
+   "torso",
+   "foot_R",
+   "head",
+   "arm_R",
+   "ear_R"
+  ],
+  "135-34-back-right": [
+   "shadow",
+   "foot_L",
+   "arm_L",
+   "ear_L",
+   "foot_R",
+   "torso",
+   "head",
+   "arm_R",
+   "ear_R"
+  ],
+  "180-back": [
+   "shadow",
+   "foot_R",
+   "foot_L",
+   "arm_R",
+   "arm_L",
+   "torso",
+   "head",
+   "ear_R",
+   "ear_L"
+  ],
+  "225-34-back-left": [
+   "shadow",
+   "foot_R",
+   "arm_R",
+   "ear_R",
+   "foot_L",
+   "torso",
+   "head",
+   "arm_L",
+   "ear_L"
+  ],
+  "270-side-left": [
+   "shadow",
+   "arm_R",
+   "ear_R",
+   "foot_R",
+   "torso",
+   "foot_L",
+   "head",
+   "arm_L",
+   "ear_L"
+  ],
+  "315-34-left": [
+   "shadow",
+   "arm_R",
+   "ear_R",
+   "foot_R",
+   "torso",
+   "foot_L",
+   "head",
+   "arm_L",
+   "ear_L"
+  ]
+ },
+ "front_iou": {
+  "foot_L": 0.997,
+  "foot_R": 0.997,
+  "leg_shade_L": 0.995,
+  "leg_shade_R": 0.995,
+  "torso": 0.995,
+  "belly": 1.0,
+  "chin_shade": 1.0,
+  "arm_L": 0.995,
+  "arm_R": 0.995,
+  "arm_shade_L": 0.986,
+  "arm_shade_R": 0.98,
+  "ear_L": 0.995,
+  "ear_R": 0.996,
+  "ear_in_L": 0.999,
+  "ear_in_R": 0.999,
+  "head": 0.962,
+  "tuft": 0.463,
+  "eye_L": 1.0,
+  "eye_R": 1.0,
+  "pupil_L": 0.969,
+  "pupil_R": 0.969,
+  "hi_L": 1.0,
+  "hi2_L": 1.0,
+  "hi_R": 1.0,
+  "hi2_R": 1.0,
+  "brow_L": 1.0,
+  "brow_R": 1.0,
+  "nose": 0.852,
+  "nose_hi": 0.972,
+  "nostril": 1.0,
+  "mouth": 0.983,
+  "tongue": 0.999,
+  "blush_L": 1.0,
+  "blush_R": 1.0
+ },
+ "front_silhouette_iou": 0.999,
+ "front_iou_min": [
+  "tuft",
+  0.463
+ ]
+}
