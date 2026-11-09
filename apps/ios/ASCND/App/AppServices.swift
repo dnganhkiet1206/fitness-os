@@ -70,6 +70,8 @@ final class AppServices {
   var koaShelfRecords: (userId: String, basis: Int, records: [LocalDate: PersonalRecord])?
   /// Bụi phòng Koa (#527 phần 5) — gắn userId để phiên khác không dùng nhầm.
   var koaDust: (userId: String, state: KoaDust.State)?
+  /// Đồ hỏng trong phòng Koa (`KoaBreakage`, cảnh A duyệt 06/11).
+  var koaBreakage: (userId: String, outcome: KoaBreakage.Outcome)?
   /// Gains hiện tại (đợt 2): trạng thái của Koa và lời nhắc ngày lỡ. Gắn userId để
   /// phiên khác không dùng nhầm.
   var koaGainsNow: (userId: String, state: KoaGains.State, week: KoaGains.Week)?
@@ -502,6 +504,33 @@ final class AppServices {
       session.session?.userId == userId
     else { return }
     koaDust = (userId, s)
+  }
+
+  // MARK: - Đồ hỏng trong phòng Koa (cảnh A, 06/11)
+
+  static func breakageKey(_ userId: String) -> String { "koa.breakage.\(userId)" }
+
+  /// Xét đồ hỏng theo thói quen 7 ngày: đọc việc ghi (`daily_logs`) + buổi tập (lịch sử Gains), trạng thái lưu
+  /// trên máy; không hỏng lúc Koa đang ngủ. Đọc hỏng thì giữ nguyên (không bao giờ làm hỏng đồ vì mất mạng).
+  func loadKoaBreakage(userId: String, sleep: KoaMood.SleepWindow = .standard) async {
+    guard let rows, let h = koaGainsHistory else { return }
+    let now = Date()
+    let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
+    guard let daily = try? await rows.select(KoaDustSync.dailyQuery(userId: userId, from: today.adding(days: -(KoaBreakage.window + 1))))
+    else { return }
+    let key = Self.breakageKey(userId)
+    let memo = UserDefaults.standard.data(forKey: key).flatMap { try? JSONDecoder().decode(KoaBreakage.Memo.self, from: $0) }
+      ?? KoaBreakage.Memo()
+    let cal = Calendar.current
+    let week = h.week
+    let outcome = KoaBreakage.decide(
+      userId: userId, today: today, history: KoaBreakage.history(daily: daily, sessions: Set(h.days.map(\.date))),
+      trainingDay: { week.isPlanned($0) }, current: memo.current, lastEvent: memo.lastEvent, lastItem: memo.lastItem,
+      asleep: sleep.contains(hour: cal.component(.hour, from: now), minute: cal.component(.minute, from: now)))
+    let next = KoaBreakage.step(memo, outcome)
+    if next != memo, let data = try? JSONEncoder().encode(next) { UserDefaults.standard.set(data, forKey: key) }
+    guard session.session?.userId == userId else { return }
+    koaBreakage = (userId, outcome)
   }
 
   /// Dọn phòng bằng xu (30, mỗi ngày một lần — server trừ). `nil` = đã dọn.

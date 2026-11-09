@@ -493,12 +493,16 @@ struct KoaRestScreen: View {
       if squirt > 0.01 {
         // vòi nước: cung bay từ vòi bình tới miệng (toạ độ hình × `unit`, khung đúng cỡ hình 240 × 300)
         Canvas { c, _ in
-          let p0 = CGPoint(x: nozzle.0 * unit, y: nozzle.1 * unit), p2 = CGPoint(x: mouth.0 * unit, y: mouth.1 * unit)
-          let ctl = CGPoint(x: (p0.x + p2.x) / 2, y: min(p0.y, p2.y) - 10 * unit)
+          let u = CGFloat(unit)
+          let p0 = CGPoint(x: CGFloat(nozzle.0) * u, y: CGFloat(nozzle.1) * u)
+          let p2 = CGPoint(x: CGFloat(mouth.0) * u, y: CGFloat(mouth.1) * u)
+          let mid: CGFloat = (p0.x + p2.x) * 0.5
+          let top: CGFloat = min(p0.y, p2.y) - 10 * u
+          let ctl = CGPoint(x: mid, y: top)
           var pa = Path(); pa.move(to: p0); pa.addQuadCurve(to: p2, control: ctl)
           c.stroke(pa.trimmedPath(from: 0, to: squirt), with: .color(Color(red: 0.62, green: 0.85, blue: 0.97).opacity(0.95)),
-                   style: StrokeStyle(lineWidth: 3.4 * unit, lineCap: .round, dash: [6 * unit, 4 * unit],
-                                      dashPhase: -t / 30 * unit))
+                   style: StrokeStyle(lineWidth: 3.4 * u, lineCap: .round, dash: [6 * u, 4 * u],
+                                      dashPhase: CGFloat(-t / 30) * u))
         }
         .frame(width: 240 * unit, height: 300 * unit)
       }
