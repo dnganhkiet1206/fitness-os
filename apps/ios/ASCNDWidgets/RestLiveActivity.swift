@@ -33,7 +33,7 @@ struct RestLiveActivity: Widget {
       DynamicIsland {
         DynamicIslandExpandedRegion(.leading) {
           HStack(spacing: 6) {
-            RestKoaImage(koa: context.state.koa).frame(width: 46, height: 52)
+            RestKoaSlot(state: context.state, width: 46, height: 52)
             RestLabel(state: context.state, compact: true)
               .environment(\.locale, WidgetDataStore().locale)
           }
@@ -260,6 +260,20 @@ struct AdjustButtons: View {
   }
 }
 
+/// Chỗ của Koa: hình Koa, hay vòng đếm giờ khi "Koa ló lên" tắt (Kiệt 09/11).
+struct RestKoaSlot: View {
+  let state: RestActivityContent
+  let width: CGFloat
+  let height: CGFloat
+  var body: some View {
+    if state.showsKoa {
+      RestKoaImage(koa: state.koa).frame(width: width, height: height)
+    } else {
+      RestRing(state: state, size: width - 8, lineWidth: 5).frame(width: width, height: height)
+    }
+  }
+}
+
 /// Koa của quãng nghỉ: ảnh app vẽ sẵn vào App Group (`KoaWidgetPublisher`). Chưa có ảnh thì dùng
 /// hình chân Koa như widget.
 struct RestKoaImage: View {
@@ -303,7 +317,7 @@ struct RestLockScreen: View {
       .foregroundStyle(RestInk.muted)
       .frame(height: 11)
       HStack(alignment: .center, spacing: 12) {
-        RestKoaImage(koa: state.koa).frame(width: 56, height: 60)
+        RestKoaSlot(state: state, width: 56, height: 60)
         if let note = state.recordNote {
           Text(verbatim: note).font(.system(size: 15, weight: .semibold)).foregroundStyle(RestInk.ink)
             .lineLimit(3).minimumScaleFactor(0.8)
