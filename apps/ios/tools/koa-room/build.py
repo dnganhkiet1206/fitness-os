@@ -140,72 +140,197 @@ def dumbbell(x, y, plate, bar, glint=None, k=1.0):
     return G(kids, S(k, x, y))
 
 
+# 08/11 (#799, Kiệt duyệt mock https://claude.ai/artifact/WykvvaeuDyWWgPL79NbvbE ngày 04/11): kệ Chrome và giá
+# Olympic vẽ lại cùng kiểu kệ gỗ mới (`tools/studio/redraw799.cjs`) — gradient, vệt sáng, bóng tiếp xúc
+# `nwContact`; cùng chỗ, cùng cỡ, cùng món, chỗ cúp không đổi. Gradient `nw*` của kệ gốc ở `Defs` cấp đầu
+# của phòng; gradient riêng (`nc*` thép mạ, `no*` gang / vàng / đĩa) ở `Defs` của biến thể. Màu vẽ theo bản
+# đêm; bản ngày qua `StudioScene.dayColors` (cặp `CPAL_NIGHT` → `CPAL_DAY`); vàng và màu đĩa giữ cả ngày.
+CPAL_NIGHT = dict(postDark="#3A4466", post="#7F8BAE", postEdge="#E6EBF7", top="#C9D2E8", board="#8D99BA", boardDark="#4C5778",
+                  edge="#F2F5FC", hi="#EEF2FB", mid="#9AA6C4", low="#4D5878", glint="#FFFFFF", hub="#2A2D45")
+CPAL_DAY = dict(postDark="#7D8598", post="#B9C0CF", postEdge="#FFFFFF", top="#EEF1F6", board="#C9CFDC", boardDark="#959DB0",
+                edge="#FFFFFF", hi="#FFFFFF", mid="#C6CCD9", low="#868EA3", glint="#FFFFFF", hub="#5E6274")
+GPAL = dict(goldHi="#FFE7A3", gold="#FFC24D", goldDark="#B9852A", red="#D64545", redHi="#F07A6E", redDark="#9E2E36",
+            blue="#2E8FCB", blueHi="#6BC0F0", blueDark="#1D5E8F")
+IRON = dict(iron="#2A2D45", ironHi="#55597E", ironDark="#15172A")  # gang của kệ gốc (đã có bản ngày)
+
+
+def shelf_defs():
+    c, g, p_ = CPAL_NIGHT, GPAL, IRON
+    return Defs(
+        Lin("ncPost", [(0, c["postDark"], 1), (0.5, c["post"], 1), (1, c["postDark"], 1)], x2=1, y2=0),
+        Lin("ncBoard", [(0, c["board"], 1), (1, c["boardDark"], 1)]),
+        Lin("ncChrome", [(0, c["hi"], 1), (0.45, c["mid"], 1), (1, c["low"], 1)], x2=1, y2=0),
+        Lin("ncChromeV", [(0, c["hi"], 1), (0.5, c["mid"], 1), (1, c["low"], 1)]),
+        Rad("ncBell", [(0, c["hi"], 1), (0.5, c["mid"], 1), (1, c["low"], 1)], cx=0.66, cy=0.35, r=0.8),
+        Lin("noIron", [(0, p_["ironHi"], 1), (0.4, p_["iron"], 1), (1, p_["ironDark"], 1)], x2=1, y2=0),
+        Lin("noIronV", [(0, p_["ironHi"], 1), (0.45, p_["iron"], 1), (1, p_["ironDark"], 1)]),
+        Lin("noGold", [(0, g["goldHi"], 1), (1, g["gold"], 1)]),
+        Rad("noGoldBell", [(0, g["goldHi"], 1), (0.55, g["gold"], 1), (1, g["goldDark"], 1)], cx=0.66, cy=0.35, r=0.8),
+        Lin("noRed", [(0, g["redHi"], 1), (0.5, g["red"], 1), (1, g["redDark"], 1)], x2=1, y2=0),
+        Lin("noBlue", [(0, g["blueHi"], 1), (0.5, g["blue"], 1), (1, g["blueDark"], 1)], x2=1, y2=0),
+        Lin("noPlateGold", [(0, g["goldHi"], 1), (0.5, g["gold"], 1), (1, g["goldDark"], 1)], x2=1, y2=0),
+    )
+
+
+def rr(x, y, w, h, fill, r=0, op=None):
+    a = dict(fill=fill)
+    if op is not None: a["opacity"] = op
+    return R(x, y, w, h, r, **a)
+
+
+def ee(cx, cy, rx, ry, fill, op=None):
+    a = dict(fill=fill)
+    if op is not None: a["opacity"] = op
+    return E(cx, cy, rx, ry, **a)
+
+
+def stroke(d, c, w, op=None):
+    a = dict(fill="none", stroke=c, strokeWidth=w, strokeLinecap="round")
+    if op is not None: a["opacity"] = op
+    return P(d, **a)
+
+
+def nw_contact(cx, cy, rx, ry, op): return ee(cx, cy, rx, ry, "url(#nwContact)", op)
+
+
+def base_plant():
+    """Chậu cây nhỏ của kệ gốc mới (phần tử 91)."""
+    return json.loads(json.dumps(TEMPLATE[91]))
+
+
+def base_bottle():
+    """Bình nước của kệ gốc mới (nhóm con của thân kệ 80)."""
+    b = [k for k in TEMPLATE[80]["k"] if k.get("m") == [0.72, 0, 0, 0.72, 84, 250]]
+    assert len(b) == 1, "bình nước của kệ gốc đã đổi"
+    return json.loads(json.dumps(b[0]))
+
+
+def c_post(x1, y1, x2, y2, c):
+    return [stroke(f"M {x1} {y1} L {x2} {y2}", c["postDark"], 6.5),
+            stroke(f"M {x1 + 0.8} {y1} L {x2 + 0.8} {y2}", c["post"], 3.6),
+            stroke(f"M {x1 + 1.6} {y1 - 3} L {x2 + 1.4} {y2 + 3}", c["postEdge"], 1, 0.75)]
+
+
+def c_board(x1, x2, y, c):
+    w = x2 - x1
+    return [rr(x1 + 2, y + 6, w - 4, 5, "url(#nwShadow)"),
+            rr(x1, y - 2, w, 3, c["top"], 1.5),
+            rr(x1, y, w, 5, "url(#ncBoard)", 1.5),
+            rr(x1 + 1, y - 1.6, w - 2, 0.8, c["edge"], 0.4, 0.8),
+            rr(x1 + w * 0.5, y + 1, w * 0.46, 0.9, c["edge"], 0.45, 0.6)]
+
+
+def c_dumbbell(cx, cy, c):
+    k = [nw_contact(cx, cy + 9, 22, 2.6, 0.8), rr(cx - 13, cy - 1.6, 26, 3.2, "url(#ncChromeV)", 1.6)]
+    for side in (-1, 1):
+        x = cx + side * 13
+        k += [rr(x - 4, cy - 8, 8, 16, "url(#ncChrome)", 2.6), rr(x - 3, cy - 7, 1.4, 14, c["glint"], 0.7, 0.7)]
+        xo = cx + side * 19
+        k += [rr(xo - 2.6, cy - 6, 5.2, 12, "url(#ncChrome)", 2.2), rr(xo - 1.8, cy - 5, 1, 10, c["glint"], 0.5, 0.6)]
+    return k
+
+
+def c_kettlebell(cx, base, c, s=1.1):
+    k = [nw_contact(0, 0.8, 14, 2.6, 0.9),
+         stroke("M -7.5 -19 C -8 -31 8 -31 7.5 -19", c["low"], 4.6),
+         stroke("M -6.6 -19.5 C -7 -29.4 7 -29.4 6.6 -19.5", c["hi"], 1.2, 0.8),
+         ee(0, -10.5, 11.5, 10.5, "url(#ncBell)"),
+         rr(-6, -1.6, 12, 2.2, c["low"], 1.1),
+         ee(4, -15, 3.6, 2.6, c["glint"], 0.75),
+         ee(-6, -6, 1.6, 3.4, c["glint"], 0.25)]
+    return [G(k, S(s, cx, base))]
+
+
+def c_plates(cx, base, c, s=1.1):
+    """Ba đĩa tạ chồng (thay con lăn, như kệ Chrome đang bán)."""
+    k = [nw_contact(0, 0.8, 18, 2.8, 0.9)]
+    for i, (rx, h) in enumerate(((15.5, 4), (14.5, 4), (12, 3.6))):
+        y = -i * 4.4
+        k += [rr(-rx, y - h, rx * 2, h, c["low"]),
+              ee(0, y, rx, 3.6, c["low"]),
+              ee(0, y - h, rx, 3.6, "url(#ncChrome)"),
+              ee(0, y - h, rx * 0.62, 2.2, c["mid"], 0.9),
+              ee(0, y - h, 2.6, 0.9, c["hub"]),
+              stroke(f"M {-rx * 0.7:.2f} {y - h - 2.4:.2f} Q 0 {y - h - 4.2:.2f} {rx * 0.7:.2f} {y - h - 2.4:.2f}", c["glint"], 0.8, 0.7)]
+    return [G(k, S(s, cx, base))]
+
+
 @variant("shelf.chrome")
 def _():
-    """Kệ Chrome (mua): khung thép sáng, tạ / ấm tạ mạ crôm có vệt sáng, đĩa tạ treo."""
-    steel = "url(#decorSteel)"
-    out = [Defs(Lin("decorSteel", [(0, "#AEB9D6", 1), (0.5, "#5C6A8A", 1), (1, "#3A4566", 1)], x2=1, y2=0),
-                Lin("decorChrome", [(0, "#E4E9F5", 1), (0.45, "#8E9BBB", 1), (1, "#4D5878", 1)])),
-           contact(14, 393, 12, 2.6, 0.55), contact(130, 393, 12, 2.6, 0.55), contact(72, 394, 56, 3.4, 0.3),
-           L("M 12 392 L 26 250", steel, 6), L("M 132 392 L 118 250", steel, 6),
-           L("M 13.2 380 L 25.2 258", "#E4E9F5", 1.2, 0.45), L("M 130.8 380 L 118.8 258", "#E4E9F5", 1.2, 0.3)]
-    for x, y, w in ((28, 250, 88), (20, 300, 104), (12, 350, 120)):
-        out += [R(x, y, w, 6, 3, fill="#3A4566"), R(x + 2, y, w - 4, 1.6, 0.8, fill="#E4E9F5", opacity=0.5)]
-    # bình nước trên kệ (giữ như gốc) + chậu cây nhỏ (giữ như gốc)
-    out += [kept(85), kept(91)]
-    out += [dumbbell(46, 291, "url(#decorChrome)", "#8E9BBB", WHITE), dumbbell(98, 291, "url(#decorChrome)", "#8E9BBB", WHITE)]
-    # ấm tạ crôm
-    out.append(G([L("M-7 -20 C -7 -30 7 -30 7 -20", "url(#decorChrome)", 4),
-                  C(0, -11, 11, fill="url(#decorChrome)"), C(-4, -15, 3.2, fill=WHITE, opacity=0.7),
-                  P("M 6 -4 A 9 9 0 0 1 -6 -3", stroke=WHITE, strokeWidth=1, fill="none", opacity=0.3)], S(1.1, 40, 350)))
-    # chồng đĩa tạ
-    out.append(G([E(0, -4, 16, 4.5, fill="#3A4566"), R(-16, -10, 32, 6, 0, fill="#5C6A8A"), E(0, -10, 16, 4.5, fill="#8E9BBB"),
-                  R(-13, -15, 26, 5, 0, fill="#5C6A8A"), E(0, -15, 13, 3.6, fill="#AEB9D6"), E(0, -15, 3, 1, fill="#3A4566"),
-                  P("M -12 -16.5 A 13 3.6 0 0 1 4 -18.4", stroke=WHITE, strokeWidth=1, fill="none", opacity=0.6)], S(1.1, 100, 350)))
+    """Kệ Chrome (mua): dáng thang của kệ gỗ mới, vật liệu thép mạ."""
+    c = CPAL_NIGHT
+    k = [shelf_defs(), nw_contact(72, 393, 62, 5, 0.9)]
+    k += c_post(12, 392, 26, 250, c) + c_post(132, 392, 118, 250, c)
+    k += c_board(28, 116, 250, c) + c_board(20, 124, 300, c) + c_board(12, 132, 350, c)
+    k += [base_plant(), base_bottle()]
+    k += c_dumbbell(46, 291, c) + c_dumbbell(98, 291, c)
+    k += c_kettlebell(40, 350, c) + c_plates(100, 350, c)
+    return k
+
+
+def o_plate(x, col, h):
+    y = 268 - h / 2
+    # rãnh đĩa giữ đen cả ngày: `black` (dayColors đổi chuỗi "#000000" sang nâu)
+    return [rr(x, y, 8, h, f"url(#no{col})", 2.5),
+            rr(x + 0.9, y + 2.5, 1.2, h - 5, WHITE, 0.6, 0.35),
+            rr(x + 2.6, 265, 2.8, 6, "black", 1, 0.25)]
+
+
+def o_stack(cx, base, cols):
+    out = [nw_contact(cx, base + 2, 22, 3, 0.9)]
+    for i, (col, rx) in enumerate(cols):
+        y = base - i * 6
+        out += [ee(cx, y + 1.6, rx, 4.4, f"url(#no{col})"), ee(cx, y + 1.6, rx, 4.4, "black", 0.35),
+                ee(cx, y, rx, 4.4, f"url(#no{col})"),
+                ee(cx, y, rx * 0.55, 2.3, "black", 0.18),
+                stroke(f"M {cx - rx * 0.75:.2f} {y - 2.6:.2f} Q {cx} {y - 4.6:.2f} {cx + rx * 0.75:.2f} {y - 2.6:.2f}", WHITE, 0.8, 0.45)]
     return out
 
 
 @variant("shelf.olympic")
 def _():
-    """Rack Olympic (hạng Beast): khung đỡ tạ thép đen, thanh đòn có đĩa màu, đĩa treo cọc."""
-    def plate(x, c, h):
-        return G([R(x, 268 - h / 2, 8, h, 2.5, fill=c), R(x + 1.2, 268 - h / 2 + 3, 1.6, h - 6, 0.8, fill=WHITE, opacity=0.35),
-                  R(x + 5.5, 268 - h / 2 + 2, 1.5, h - 4, 0.75, fill=BLACK, opacity=0.25)])
-    out = [Defs(Lin("decorBar", [(0, "#E4E9F5", 1), (1, "#8E9BBB", 1)])),
-           contact(16, 394, 14, 2.8, 0.6), contact(128, 394, 14, 2.8, 0.6), contact(72, 395, 62, 3.6, 0.3),
-           # hai cột đứng + đế
-           R(10, 236, 10, 158, 2, fill=NAVY2), R(124, 236, 10, 158, 2, fill=NAVY2),
-           R(12, 238, 2, 154, 1, fill=LAV, opacity=0.35), R(126, 238, 2, 154, 1, fill=LAV, opacity=0.25),
-           R(4, 388, 22, 6, 2, fill=NAVY2), R(118, 388, 22, 6, 2, fill=NAVY2),
-           R(10, 232, 124, 7, 2, fill=NAVY2), R(12, 232, 120, 1.5, 0.75, fill=LAV, opacity=0.35)]
-    for y in range(250, 384, 14):  # lỗ chốt
-        out += [C(15, y, 1.2, fill=INK), C(129, y, 1.2, fill=INK)]
-    # móc chữ J + thanh đòn
-    out += [P("M 20 262 L 28 262 L 28 270 L 24 270 L 24 266 L 20 266 Z", fill=GOLD),
-            P("M 124 262 L 116 262 L 116 270 L 120 270 L 120 266 L 124 266 Z", fill=GOLD),
-            R(-6, 266, 156, 4, 2, fill="url(#decorBar)"), R(-8, 265, 22, 6, 2, fill="#AEB9D6"), R(130, 265, 22, 6, 2, fill="#AEB9D6")]
-    for x, c, h in ((-4, "#D64545", 44), (4, "#2E8FCB", 38), (12, GOLD, 28)):
-        out.append(plate(x, c, h))
-    for x, c, h in ((140, "#D64545", 44), (132, "#2E8FCB", 38), (124, GOLD, 28)):
-        out.append(plate(x, c, h))
-    # thanh an toàn
-    out += [R(20, 330, 104, 4, 2, fill="#3A4566"), R(20, 330, 104, 1.2, 0.6, fill="#AEB9D6", opacity=0.5)]
-    # cọc đĩa trên đế + 3 đĩa
-    out += [R(66, 360, 4, 30, 1.5, fill="#3A4566")]
-    for i, (c, r_) in enumerate((("#2E8FCB", 17), ("#D64545", 15), (GOLD, 12))):
-        out += [E(68, 386 - i * 6, r_, 4.4, fill=c), E(68, 386 - i * 6 - 1.2, r_ - 3, 3, fill=WHITE, opacity=0.12)]
-    out += [E(68, 374, 2.4, 0.9, fill=INK)]
-    # ấm tạ vàng dưới chân rack
-    out.append(G([L("M-7 -20 C -7 -30 7 -30 7 -20", GOLD, 4), C(0, -11, 11, fill=GOLD),
-                  C(-4, -15, 3, fill=WHITE, opacity=0.55)], S(1.0, 108, 392)))
-    return out
+    """Giá Olympic (hạng Beast): cùng khung, thanh đòn, đĩa, cọc đĩa, ấm tạ vàng — gang của kệ gốc, thép mạ."""
+    c, p_, g = CPAL_NIGHT, IRON, GPAL
+    k = [shelf_defs(), nw_contact(16, 394, 15, 3, 0.9), nw_contact(128, 394, 15, 3, 0.9),
+         rr(12, 239, 120, 5, "url(#nwShadow)")]                                     # bóng xà trên tường
+    for x in (10, 124):                                                              # hai cột
+        k += [rr(x, 236, 10, 158, "url(#noIron)", 2), rr(x + 1.2, 238, 1.2, 152, p_["ironHi"], 0.6, 0.7)]
+        for y in range(250, 384, 14):
+            k += [ee(x + 5, y, 1.4, 1.4, p_["ironDark"]), ee(x + 5, y + 0.9, 1.1, 0.5, p_["ironHi"], 0.5)]
+    for x in (4, 118):                                                               # đế
+        k += [rr(x, 388, 22, 6, "url(#noIronV)", 2), rr(x + 1, 388.6, 20, 0.9, p_["ironHi"], 0.45, 0.8)]
+    k += [rr(10, 232, 124, 7, "url(#noIronV)", 2), rr(12, 232.6, 120, 1, p_["ironHi"], 0.5, 0.9)]   # xà trên
+    k += [P("M 20 262 L 28 262 L 28 270 L 24 270 L 24 266 L 20 266 Z", fill="url(#noGold)"),     # móc chữ J vàng
+          P("M 124 262 L 116 262 L 116 270 L 120 270 L 120 266 L 124 266 Z", fill="url(#noGold)"),
+          rr(20.6, 262.4, 6.8, 0.8, WHITE, 0, 0.6), rr(116.6, 262.4, 6.8, 0.8, WHITE, 0, 0.6)]
+    k += [rr(-6, 266, 156, 4, "url(#ncChromeV)", 2)]                                 # thanh đòn mạ + vạch nhám
+    for x in range(32, 114, 3):
+        k.append(rr(x, 266.6, 0.6, 2.8, c["low"], 0, 0.45))
+    k += [rr(-8, 265, 22, 6, "url(#ncChromeV)", 2), rr(130, 265, 22, 6, "url(#ncChromeV)", 2),
+          rr(13, 264.4, 2.4, 7.2, c["low"], 0.8), rr(128.6, 264.4, 2.4, 7.2, c["low"], 0.8),
+          rr(-6, 266.4, 156, 0.8, c["glint"], 0.4, 0.6)]
+    for x, col, h in ((-4, "Red", 44), (4, "Blue", 38), (12, "PlateGold", 28)):
+        k += o_plate(x, col, h)
+    for x, col, h in ((140, "Red", 44), (132, "Blue", 38), (124, "PlateGold", 28)):
+        k += o_plate(x, col, h)
+    k += [rr(20, 330, 104, 4, "url(#noIronV)", 2), rr(21, 330.4, 102, 0.8, p_["ironHi"], 0.4, 0.8)]   # thanh an toàn
+    k += [rr(66, 360, 4, 30, "url(#noIron)", 1.5)]                                   # cọc đĩa + ba đĩa
+    k += o_stack(68, 386, [("Blue", 17), ("Red", 15), ("PlateGold", 12)])
+    k += [rr(66, 356, 4, 8, "url(#noIron)", 1.5), ee(68, 356, 2.4, 0.9, p_["ironDark"])]
+    bell = [nw_contact(0, 0.8, 14, 2.6, 0.9),                                        # ấm tạ vàng
+            stroke("M -7.5 -19 C -8 -31 8 -31 7.5 -19", g["goldDark"], 4.6),
+            stroke("M -6.6 -19.5 C -7 -29.4 7 -29.4 6.6 -19.5", g["goldHi"], 1.2, 0.8),
+            ee(0, -10.5, 11.5, 10.5, "url(#noGoldBell)"), rr(-6, -1.6, 12, 2.2, g["goldDark"], 1.1),
+            ee(4, -15, 3.4, 2.4, WHITE, 0.6)]
+    k += [G(bell, S(1.0, 108, 392))]
+    return k
 
 
 # Kệ mua thay thân kệ (80, trong mặt nạ che Koa của kệ); bóng tiếp xúc trên sàn thay bóng kệ (77, ngoài
 # mặt nạ: bóng không che Koa).
 for _key in ("shelf.chrome", "shelf.olympic"):
     for _n in VARIANTS[_key]:
-        if _n["t"] != "Defs": _n["at"] = 77 if _n["p"].get("fill") == "url(#nsContact)" else 80
+        if _n["t"] != "Defs": _n["at"] = 77 if _n["p"].get("fill") in ("url(#nsContact)", "url(#nwContact)") else 80
 # Đồ mua không có mặt đỡ của đồ gốc: bụi nằm trên đồ gốc của chỗ ấy không vẽ (giá olympic không có ván).
 BARE = ["shelf.olympic"]
 

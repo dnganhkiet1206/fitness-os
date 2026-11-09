@@ -174,6 +174,11 @@ import UIKit
     check(ShelfRoomPreview(shelf: "olympic"), height: CGFloat(StudioScene.sceneBottom), padded: false)
   }
 
+  /// Kệ Chrome (đồ phòng mua bằng xu) vẽ lại theo mock Kiệt duyệt 04/11 (#799): ba cúp ở ba chỗ của kệ gốc.
+  @Test func shelfRoomChrome() {
+    check(ShelfRoomPreview(shelf: "chrome"), height: CGFloat(StudioScene.sceneBottom), padded: false)
+  }
+
   /// Koa chạy tới kéo thẻ mà đang mặc đồ (#799: "Koa mặc đồ khi chạy kéo thẻ chưa soi"). Hai bộ đồ đủ bảy chỗ,
   /// bốn dáng của `KoaPull`: lấy đà, bay khỏi bục, chạm đất, bay giữa hai bước. Vẽ đúng như `KoaPullScene.figure`.
   @Test func pullRunOutfits() {
