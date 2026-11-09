@@ -1376,7 +1376,11 @@ final class AppServices {
 
   /// Hiệu chỉnh mục tiêu (#527): 35 ngày cân + 14 ngày calo / đạm + hồ sơ.
   func makeSmartGoals(userId: String, today: LocalDate) -> SmartGoalsBook? {
-    rows.map { SmartGoalsBook(userId: userId, today: today, store: $0) }
+    rows.map {
+      SmartGoalsBook(
+        userId: userId, today: today, store: $0,
+        memory: CalorieAdviceMemory(userId: userId, store: UserDefaultsStore()))
+    }
   }
 
   /// Số đo cơ thể (#527): 24 lần đo `body_measurements` mới nhất.
