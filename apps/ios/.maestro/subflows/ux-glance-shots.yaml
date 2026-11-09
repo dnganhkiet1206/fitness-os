@@ -111,11 +111,11 @@ appId: com.ascnd.fitnessos.dev
     notVisible:
       id: quicklog.sheet
     timeout: 8000
-- swipe:
-    start: "50%,40%"
-    end: "50%,78%"
-    duration: 500
-- tapOn: "Nutrition"
+# Hàng "Nutrition" trong Kết quả nằm trên dải Ghi nhanh. Tab nằm dưới dải.
+- tapOn:
+    text: "Nutrition"
+    below:
+      id: quicklog.bar
 - extendedWaitUntil:
     visible:
       id: nutrition.search
