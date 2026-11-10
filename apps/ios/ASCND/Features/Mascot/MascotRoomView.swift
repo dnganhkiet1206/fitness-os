@@ -451,7 +451,7 @@ struct MascotRoomView: View {
     guard let h = services.koaGainsHistory else { return [] }
     let records = services.koaShelfRecords.flatMap { $0.userId == room.userId ? $0.records : nil } ?? [:]
     return ShelfItem.items(
-      moments: KoaJourney.moments(h.days, week: h.week, today: room.today), records: records, unit: unit, lang: lang,
+      moments: KoaJourney.moments(h.days, week: h.week, logged: h.logged, today: room.today), records: records, unit: unit, lang: lang,
       locale: locale)
   }
 

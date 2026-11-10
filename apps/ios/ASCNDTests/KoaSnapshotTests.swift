@@ -123,6 +123,13 @@ import UIKit
     check(KoaJourneyContent(history: Self.history, today: Self.today), height: 844, padded: false)
   }
 
+  /// Người mới chỉ ghi bữa / nước / ngủ, chưa tập buổi nào (10/11): Hành trình đã có mốc ghi đều.
+  @Test func journeyLogDays() {
+    let logged = Set((1...8).map { Self.today.adding(days: -$0) })
+    let h = AppServices.GainsHistory(days: [], week: Self.history.week, logged: logged)
+    check(KoaJourneyContent(history: h, today: Self.today), height: 600, padded: false)
+  }
+
   @Test func journeyEmpty() {
     let empty = AppServices.GainsHistory(days: [], week: Self.history.week)
     check(KoaJourneyContent(history: empty, today: Self.today), height: 600, padded: false)

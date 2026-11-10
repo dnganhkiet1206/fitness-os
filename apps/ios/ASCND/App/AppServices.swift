@@ -62,6 +62,9 @@ final class AppServices {
   struct GainsHistory {
     let days: [KoaGains.Day]
     let week: KoaGains.Week
+    /// Ngày có ghi bữa / nước / giấc ngủ, cho mốc ghi đều của Hành trình (10/11). Đọc hỏng thì trống:
+    /// mốc ghi tạm vắng tới lần đọc sau, mốc tập không đổi.
+    var logged: Set<LocalDate> = []
   }
   var koaGainsHistory: GainsHistory?
   /// Kỷ lục từng ngày cho kệ cúp phòng Koa (#792), tính lại từ set đã lưu. Gắn userId; `basis` là
@@ -606,7 +609,7 @@ final class AppServices {
     for p in list {
       guard let amount = await claimOnce(userId: userId, ref: p.ref, reason: p.reason) else { continue }
       if let day = OverloadQuest.day(of: p.ref), let h = koaGainsHistory {
-        koaGainsHistory = .init(days: KoaGainsSync.mark(h.days, overload: [day]), week: h.week)
+        koaGainsHistory = .init(days: KoaGainsSync.mark(h.days, overload: [day]), week: h.week, logged: h.logged)
       }
       noteKoaReward(userId: userId, amount: amount, seen: true, source: OverloadQuest.day(of: p.ref) != nil ? "overload" : "explore")
     }
@@ -620,7 +623,7 @@ final class AppServices {
     let cutoff = EpochMillis(Date()) - 30_000
     if let h = koaGainsHistory, KoaGains.hasEarlierSession(h.days, on: date, before: cutoff) { return }
     guard let amount = await claimOnce(userId: userId, ref: OverloadQuest.refKey(date), reason: "overload") else { return }
-    if let h = koaGainsHistory { koaGainsHistory = .init(days: KoaGainsSync.mark(h.days, overload: [date]), week: h.week) }
+    if let h = koaGainsHistory { koaGainsHistory = .init(days: KoaGainsSync.mark(h.days, overload: [date]), week: h.week, logged: h.logged) }
     noteKoaReward(userId: userId, amount: amount, seen: true, source: "overload")
   }
 
@@ -792,6 +795,14 @@ final class AppServices {
     guard let rows else { return nil }
     let plans = await templates.cached(userId: userId)
     return await KoaGainsSync.load(userId: userId, store: rows, plans: plans, now: SystemWallClock().nowMillis(), in: .current)
+  }
+
+  /// Các ngày có ghi, cho mốc ghi đều. Đọc hỏng thì giữ các ngày đang biết của đúng người này.
+  func loadKoaLogDays(userId: String) async -> Set<LocalDate> {
+    guard let rows, let days = await KoaLogDaysSync.load(userId: userId, store: rows) else {
+      return koaGainsHistory?.logged ?? []
+    }
+    return days
   }
 
   /// Đổi mỗi lần câu "nếu… thì…" đổi.
@@ -970,9 +981,11 @@ final class AppServices {
   /// buổi không biến mất đúng lúc đáng thấy nhất.
   func ensureKoaGainsHistory() async {
     guard koaGainsHistory == nil, let userId = session.session?.userId,
-      let r = await loadKoaGains(userId: userId), session.session?.userId == userId
+      let r = await loadKoaGains(userId: userId)
     else { return }
-    koaGainsHistory = .init(days: r.days, week: r.week)
+    let logged = await loadKoaLogDays(userId: userId)
+    guard session.session?.userId == userId, koaGainsHistory == nil else { return }
+    koaGainsHistory = .init(days: r.days, week: r.week, logged: logged)
   }
 
   /// Phòng Koa mở (#792): tính lại kỷ lục cho kệ cúp khi chưa có hay lịch sử tập đã đổi. Đọc hỏng

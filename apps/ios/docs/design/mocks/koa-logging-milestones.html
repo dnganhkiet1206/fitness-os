@@ -1,0 +1,122 @@
+<title>Mốc ghi đều của Koa</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap">
+<style>
+/* Bố cục: một cột đọc, phần "người dùng thấy gì" là hai khung điện thoại đặt cạnh nhau; màu lấy theo app (giấy ấm, thẻ kính, màu ghi chép cam / xanh nước / tím ngủ). */
+:root{
+  --bg:#f6f1e9; --card:#fbf8f3; --fg:#1b1917; --muted:#6c655c; --border:#ded6c9;
+  --log:#b4610f; --water:#1f6fb5; --sleep:#6b4fb0; --train:#067a52; --on:#ffffff;
+  --font:"Be Vietnam Pro",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#12100e; --card:#1c1a18; --fg:#f2eee8; --muted:#a39c92; --border:#34302b;
+  --log:#f0a04b; --water:#6cb4f2; --sleep:#b39af0; --train:#2bf5a8; --on:#12100e; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12100e; --card:#1c1a18; --fg:#f2eee8; --muted:#a39c92; --border:#34302b;
+  --log:#f0a04b; --water:#6cb4f2; --sleep:#b39af0; --train:#2bf5a8; --on:#12100e; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--font);font-size:15px;line-height:1.55;
+  padding-block:28px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:30px}
+h1{font-size:28px;line-height:1.2;margin:0;text-wrap:balance;font-weight:700}
+h2{font-size:18px;margin:0 0 10px;font-weight:600}
+p{margin:0;max-width:68ch}
+.lede{color:var(--muted)}
+section{display:flex;flex-direction:column;gap:12px}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:520px;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.big{font-weight:600}
+.tag{display:inline-block;font-size:12px;font-weight:600;padding:1px 8px;border-radius:99px;border:1px solid var(--border);color:var(--muted)}
+.tag.major{color:var(--log);border-color:var(--log)}
+.phones{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.phone{background:var(--card);border:1px solid var(--border);border-radius:22px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.phone h3{margin:0;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.koarow{display:flex;gap:12px;align-items:flex-start}
+.koa{flex:none;width:56px;height:56px;border-radius:16px;border:1px dashed var(--border);display:grid;place-items:center;font-size:11px;color:var(--muted)}
+.bubble{background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:10px 12px;min-width:0}
+.row{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--border)}
+.row:last-child{border-bottom:0}
+.dot{flex:none;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;color:var(--on)}
+.row small{display:block;color:var(--muted)}
+.new{outline:2px solid var(--log);outline-offset:3px;border-radius:8px}
+.cap{font-size:13px;color:var(--muted)}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.opt{border:1px solid var(--border);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.rec{font-size:12px;font-weight:600;color:var(--train)}
+footer{font-size:13px;color:var(--muted);border-top:1px solid var(--border);padding-top:14px}
+code{font-size:.92em}
+</style>
+
+<div class="wrap">
+<header>
+  <h1>Mốc ghi đều của Koa</h1>
+  <p class="lede">Mock cho Kiệt duyệt (10/11). Mục tiêu: người ghi bữa, nước, giấc ngủ đều đặn cũng được Koa ghi nhận trong Hành trình. Gains vẫn chỉ đến từ tập. Chưa đổi gì trong app.</p>
+</header>
+
+<section>
+  <h2>1 · Vì sao cần</h2>
+  <p>Hành trình hiện có 8 loại mốc và cả 8 đều về tập: buổi đầu, số buổi, tuần đủ buổi, kỷ lục, lên hạng, lên bậc, quay lại. Ghi một bữa, một lần uống nước hay một đêm ngủ chỉ cho 8–10 xu, và không để lại dấu gì trong câu chuyện của Koa.</p>
+  <p>Người mới thường ghi ăn trước khi tập đều. Với họ, tuần đầu Koa gần như không có gì để nói.</p>
+</section>
+
+<section>
+  <h2>2 · Luật đề xuất</h2>
+  <p>Đếm <b>tổng số ngày có ghi</b>, cộng dồn từ ngày đầu. Đây không phải chuỗi: bỏ một ngày thì con số đứng yên, không mất gì. Một ngày được tính khi có ít nhất một trong ba việc: ghi bữa, ghi nước, ghi giấc ngủ. Bước chân tự về từ Apple Health không tính.</p>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Mốc</th><th>Ghi 5 ngày mỗi tuần thì tới sau</th><th>Loại</th><th>Koa nói</th></tr></thead>
+    <tbody>
+      <tr><td class="big">3 ngày ghi</td><td>tuần đầu</td><td><span class="tag">nhỏ</span></td><td>Ba ngày ghi rồi. Koa bắt đầu hiểu bạn ăn ngủ thế nào.</td></tr>
+      <tr><td class="big">7 ngày ghi</td><td>~1,5 tuần</td><td><span class="tag major">lớn</span></td><td>Bảy ngày ghi. Từ giờ gợi ý của Koa dựa trên số thật của bạn.</td></tr>
+      <tr><td class="big">30 ngày ghi</td><td>6 tuần</td><td><span class="tag major">lớn</span></td><td>Ba mươi ngày ghi. Bạn đã có một tháng dữ liệu của chính mình.</td></tr>
+      <tr><td class="big">60 ngày ghi</td><td>12 tuần</td><td><span class="tag">nhỏ</span></td><td>Sáu mươi ngày ghi. Vẫn đều tay.</td></tr>
+      <tr><td class="big">100 ngày ghi</td><td>20 tuần</td><td><span class="tag major">lớn</span></td><td>Một trăm ngày ghi. Ít người đi được tới đây.</td></tr>
+      <tr><td class="big">200, 365 ngày ghi</td><td>40 và 73 tuần</td><td><span class="tag major">lớn</span></td><td>Cùng kiểu, có con số thật.</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>Mốc lớn được Koa nhắc trong 3 ngày, mốc nhỏ trong 1 ngày, đúng luật đang chạy của Hành trình. Mọi mốc tính lại từ nhật ký đã lưu, nên không có bảng mới, không migration, đổi máy vẫn ra cùng kết quả.</p>
+  <p>Không cộng Gains. Không thêm xu ngoài 8–10 xu mỗi lần ghi đang có. Không thêm loại điểm nào.</p>
+</section>
+
+<section>
+  <h2>3 · Người dùng thấy gì</h2>
+  <p class="lede">Ô "Koa" là chỗ đặt hình Koa của Kiệt. Mock không vẽ Koa.</p>
+  <div class="phones">
+    <div class="phone">
+      <h3>Hôm nay · ngày đạt mốc</h3>
+      <div class="koarow">
+        <div class="koa">Koa</div>
+        <div class="bubble">Bảy ngày ghi. Từ giờ gợi ý của Koa dựa trên số thật của bạn.</div>
+      </div>
+      <span class="cap">Dùng đúng chỗ Koa đang nói mốc tập ở Hôm nay. Mỗi lần mở app Koa chỉ nói một mốc; trùng ngày thì mốc tập đi trước.</span>
+    </div>
+    <div class="phone">
+      <h3>Tiến bộ › Hành trình</h3>
+      <div>
+        <div class="row"><span class="dot" style="background:var(--train)">↑</span><div>Lên bậc Gym Rat II.<small>12 thg 11</small></div></div>
+        <div class="row new"><span class="dot" style="background:var(--log)">✎</span><div>7 ngày ghi. Koa hiểu bạn hơn rồi.<small>10 thg 11</small></div></div>
+        <div class="row"><span class="dot" style="background:var(--train)">✓</span><div>Tuần đủ buổi đầu tiên.<small>7 thg 11</small></div></div>
+        <div class="row new"><span class="dot" style="background:var(--log)">✎</span><div>3 ngày ghi.<small>5 thg 11</small></div></div>
+        <div class="row"><span class="dot" style="background:var(--train)">⚑</span><div>Buổi tập đầu tiên.<small>3 thg 11</small></div></div>
+      </div>
+      <span class="cap">Mốc ghi có màu và biểu tượng riêng, nằm xen với mốc tập theo ngày. Hai dòng viền cam là phần mới.</span>
+    </div>
+  </div>
+  <p>Thẻ Gains, hạng, bậc và phòng Koa không đổi.</p>
+</section>
+
+<section>
+  <h2>4 · Ba điều cần Kiệt chọn</h2>
+  <div class="opts">
+    <div class="opt"><span class="rec">Đề xuất</span><b>Cách đếm: tổng số ngày ghi</b><span>Cộng dồn, không có gì để gãy. Lựa chọn khác: đếm "tuần ghi đủ" (5 trên 7 ngày), gần với Tuần của Koa hơn nhưng tuần hụt một ngày thì không được gì.</span></div>
+    <div class="opt"><span class="rec">Đề xuất</span><b>Một ngày ghi: có ít nhất một việc</b><span>Một bữa, một lần nước hoặc một đêm ngủ là đủ. Lựa chọn khác: phải có cả bữa và nước, chặt hơn nhưng người chỉ theo dõi giấc ngủ sẽ không bao giờ có mốc.</span></div>
+    <div class="opt"><span class="rec">Đề xuất</span><b>Thưởng xu ở mốc: không</b><span>Giữ nguyên tắc tiến bộ không quy ra tiền, như lên bậc. Lựa chọn khác: 30 xu ở mỗi mốc lớn.</span></div>
+  </div>
+</section>
+
+<footer>
+  Số liệu: mỗi lần ghi đang cho 8–10 xu (<code>MascotRules</code>); Hành trình tính từ <code>KoaJourney</code>, luật nhắc 3 ngày và 1 ngày từ <code>KoaMomentFeed</code>. Cột "tới sau" giả định ghi 5 ngày mỗi tuần; chưa có người dùng thật để đo.
+</footer>
+</div>

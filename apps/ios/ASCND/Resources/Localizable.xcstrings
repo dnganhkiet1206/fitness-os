@@ -73449,6 +73449,29 @@
           }
         }
       }
+    },
+    "journey.line.log %lld": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld days logged. Koa knows you better now."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld días registrados. Koa ya te conoce mejor."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld ngày ghi. Koa hiểu bạn hơn rồi."
+          }
+        }
+      }
     }
   }
 }
