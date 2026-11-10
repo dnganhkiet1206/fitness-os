@@ -94,7 +94,8 @@ extension KoaTurnTests {
 
   @Test func turningAddsFarSideShadeAndLeansTheHead() {
     let flat = KoaRender.figure(Self.options(turn: 0)), turned = KoaRender.figure(Self.options(turn: 0.8))
-    let clips = { (e: KoaRender.Element) in Self.count(e) { $0.tag == "ClipPath" && $0.props["id"]?.text.hasPrefix("koaTurn_") == true } }
+    let clips = { (e: KoaRender.Element) in Self.count(e) { $0.tag == "ClipPath" && $0.props["id"]?.text.hasPrefix("koaTurn_") == true
+        && $0.props["id"]?.text != KoaTurn.faceClipId } }
     #expect(clips(flat) == 0)
     #expect(clips(turned) == 2, "bóng phía khuất cho đầu và thân")
     let lean = KoaTurn.headMat(1)
@@ -107,5 +108,16 @@ extension KoaTurnTests {
     let arms = Self.count(turned) { $0.tag == "Path" && $0.props["d"]?.text.hasPrefix("M68 171") == true }
     let armsStraight = Self.count(KoaRender.figure(Self.options(turn: 0))) { $0.tag == "Path" && $0.props["d"]?.text.hasPrefix("M68 171") == true }
     #expect(arms == armsStraight)
+  }
+
+  /// Kiệt 10/11 (ảnh phòng Koa): quay lớn thì mắt / má phía xa tràn khỏi viền đầu, đè lên tai.
+  /// Quay thì mặt bị cắt theo viền đầu; đứng thẳng thì không có lớp cắt (hình y như trước).
+  @Test func turnedFaceStaysInsideTheHead() {
+    let clip = { (e: KoaRender.Element) in e.tag == "ClipPath" && e.props["id"]?.text == KoaTurn.faceClipId }
+    #expect(Self.count(KoaRender.figure(Self.options(turn: 1)), clip) == 1)
+    #expect(Self.count(KoaRender.figure(Self.options(turn: -0.6)), clip) == 1)
+    #expect(Self.count(KoaRender.figure(Self.options(turn: 0)), clip) == 0)
+    // viền cắt là viền đầu của cảnh, dời xuống 11 như HEAD / FACE
+    #expect(KoaTurn.headOutline.hasPrefix("M40 129 C 38 97"))
   }
 }

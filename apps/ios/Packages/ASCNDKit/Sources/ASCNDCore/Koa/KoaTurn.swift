@@ -78,6 +78,24 @@ public enum KoaTurn {
     }
   }
 
+  // MARK: - Mặt nằm trong viền đầu
+
+  /// Viền đầu (`head_front`) trong khung của `HEADRIG`: đường của cảnh dời xuống 11 (cả `HEAD` và
+  /// `FACE` dời 0,11), vì lớp cắt bọc ngoài `FACE` đã dời.
+  static let headOutline =
+    "M40 129 C 38 97 52 63 78 53 C 92 47 106 45 120 45 C 136 45 152 49 164 57 C 188 69 200 99 200 129 C 200 155 168 179 120 179 C 72 179 40 155 40 129 Z"
+  static let faceClipId = "koaTurn_face"
+
+  /// Cắt mặt theo viền đầu khi quay. Kiệt 10/11 ("sao koa bị lỗi vậy", ảnh phòng Koa): ở góc lớn,
+  /// cộng ánh nhìn liếc theo, mắt và má phía xa trượt ra ngoài viền đầu, đè lên tai. Cắt theo viền
+  /// thì chúng khuất dần sau đường cong như khối tròn thật; góc quay không phải giảm.
+  static func clipToHead(_ kids: [KoaRender.Element]) -> [KoaRender.Element] {
+    [
+      KoaRender.Element("ClipPath", ["id": .string(faceClipId)], kids: [KoaRender.Element("Path", ["d": .string(headOutline)])]),
+      KoaRender.Element("G", ["clipPath": .string("url(#\(faceClipId))")], kids: kids),
+    ]
+  }
+
   // MARK: - Đầu ngoảnh, bóng phía khuất
 
   /// Đầu ngoảnh theo hướng quay: hàm / má đi theo nhiều, đỉnh đầu gần như đứng (nghiêng ngang quanh

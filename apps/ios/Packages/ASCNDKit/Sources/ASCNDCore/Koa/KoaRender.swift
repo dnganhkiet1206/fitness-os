@@ -536,6 +536,8 @@ public enum KoaRender {
       moved += KoaTurn.crescent(id: id, d: d, u: c.turn)
     }
     if c.turn != 0, n.id == "HEADRIG" { moved = [Element("G", matrix: KoaTurn.headMat(c.turn), kids: moved)] }
+    // mặt quay thì nằm TRONG viền đầu: mắt / má phía xa khuất sau đường cong, không tràn ra tai (Kiệt 10/11)
+    if c.turn != 0, n.id == "FACE" { moved = KoaTurn.clipToHead(moved) }
 
     if c.gaze == nil, let e = c.eyes, isEyeGroup(n) { return [Element("G", matrix: KoaMath.eyeMat(e), kids: moved)] }
     guard let g = c.gaze else { return moved }
