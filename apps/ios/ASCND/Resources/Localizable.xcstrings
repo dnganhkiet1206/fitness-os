@@ -73127,6 +73127,52 @@
           }
         }
       }
+    },
+    "photos.ai.log": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save to measurements"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guardar en medidas"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ghi vào Số đo"
+          }
+        }
+      }
+    },
+    "photos.ai.log.note %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Body fat is prefilled from the photo's AI estimate (%@). If you have a real measurement, change it before saving."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La grasa corporal viene de la estimación de IA de la foto (%@). Si tienes una medida real, cámbiala antes de guardar."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mỡ cơ thể điền sẵn từ ước tính AI của ảnh (%@). Có số đo thật thì sửa lại trước khi lưu."
+          }
+        }
+      }
     }
   }
 }

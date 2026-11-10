@@ -14,9 +14,19 @@ import SwiftUI
 ///
 /// Mở từ "+" / nút trống của `MeasurementsView` (RN `body-panel.tsx:952,1016`)
 /// và từ deep link `ascnd://log-measurement`.
+///
+/// Từ "Đo AI" của Ảnh tiến trình (09/11): `prefill` điền sẵn ngày của ảnh và % mỡ ước tính,
+/// kèm `note` nói rõ đó là ước tính; người dùng vẫn sửa được và tự bấm Lưu.
 struct LogMeasurementView: View {
   let makeLogger: () -> MeasurementLogger?
+  var prefill: Prefill?
   var onDone: () -> Void = {}
+
+  struct Prefill {
+    var date: Date
+    var fields: [MeasurementLog.Field: String]
+    var note: String
+  }
 
   @Environment(AppServices.self) private var services
   @Environment(ProfileBook.self) private var profile: ProfileBook?
@@ -41,6 +51,11 @@ struct LogMeasurementView: View {
             String(localized: "measureLog.date"), selection: $date, in: ...Date(), displayedComponents: .date
           )
           .frame(minHeight: 44)
+          if let note = prefill?.note {
+            Label { Text(verbatim: note) } icon: { Image(systemName: "sparkles") }
+              .font(DS.TextStyle.footnote)
+              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          }
           let all = MeasurementLog.Field.allCases
           ForEach(Array(stride(from: 0, to: all.count, by: 2)), id: \.self) { i in
             HStack(alignment: .top, spacing: DS.Spacing.sm) {
@@ -69,7 +84,14 @@ struct LogMeasurementView: View {
         }
       }
     }
-    .task { if logger == nil { logger = makeLogger() } }
+    .task {
+      guard logger == nil else { return }
+      logger = makeLogger()
+      if let prefill {
+        date = min(prefill.date, Date())
+        fields = prefill.fields
+      }
+    }
     .onDisappear { logger?.close() }
   }
 

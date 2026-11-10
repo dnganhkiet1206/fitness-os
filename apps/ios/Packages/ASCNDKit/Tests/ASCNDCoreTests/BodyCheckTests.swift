@@ -19,6 +19,14 @@ struct BodyCheckTests {
     #expect(BodyCheck.result(.object(["photo_id": .string("x")])) == nil)
   }
 
+  /// "Ghi vào Số đo" điền số khớp nhãn "~18 %", và số ấy qua được ô mỡ cơ thể của Số đo.
+  @Test func measurementTextMatchesTheLabelAndFitsTheField() throws {
+    let r = try #require(BodyCheck.result(Self.row("ABC", "2026-11-01", 18.6)))
+    #expect(BodyCheck.measurementText(r) == "19")
+    #expect(MeasurementLog.problem(.bodyFat, BodyCheck.measurementText(r), unit: .cm) == nil)
+    #expect(MeasurementLog.canSave([.bodyFat: BodyCheck.measurementText(r)], unit: .cm))
+  }
+
   @Test func trendNeedsTwoDaysAndAveragesADay() throws {
     let a = try #require(BodyCheck.result(Self.row("a", "2026-10-01", 22)))
     #expect(BodyCheck.trend([a]) == nil)
