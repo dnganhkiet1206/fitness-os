@@ -20,6 +20,8 @@ import WidgetKit
 @Observable
 final class AppServices {
   let session: SessionStore
+  /// Cầu sang Apple Watch. Không thuộc đồ thị quan sát của màn — chỉ đẩy ảnh buổi tập.
+  @ObservationIgnored let watch = WatchPhoneBridge()
   /// Cài đặt của app (#426): ngôn ngữ, theme, đơn vị nước theo MÁY; linh vật
   /// theo tài khoản. Sống suốt đời app — đăng xuất chỉ xoá phần theo tài khoản.
   let preferences: AppPreferences

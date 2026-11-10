@@ -8,6 +8,7 @@ options:
   developmentLanguage: en
   deploymentTarget:
     iOS: "18.0"
+    watchOS: "11.0"
   createIntermediateGroups: true
   groupSortPosition: top
 
@@ -66,6 +67,9 @@ targets:
       - package: PostHog
         product: PostHog
       - target: ASCNDWidgets
+      - target: ASCNDWatch
+        embed: true
+      - sdk: WatchConnectivity.framework
     # App Group dùng chung với widget màn hình chính — CÙNG nhóm bản RN dùng
     # (`group.com.ascnd.fitnessos`, `WidgetData.swift`), để dữ liệu widget còn
     # nguyên khi bản native cập nhật đè app RN (#66).
@@ -245,6 +249,50 @@ targets:
         GENERATE_INFOPLIST_FILE: YES
         TEST_TARGET_NAME: ASCND
 
+  # App Apple Watch: ghi set và quãng nghỉ khi iPhone đang có buổi tập.
+  # Nhúng vào ASCND để cài cùng app. Scheme ASCND của CI vẫn là app iOS;
+  # target này được build vì là dependency nhúng.
+  ASCNDWatch:
+    type: application
+    platform: watchOS
+    sources:
+      - path: ASCNDWatch
+    dependencies:
+      - package: ASCNDKit
+        product: ASCNDCore
+      - sdk: WatchKit.framework
+      - sdk: WatchConnectivity.framework
+    info:
+      path: ASCNDWatch/Info.plist
+      properties:
+        CFBundleDisplayName: ASCND
+        WKApplication: true
+        WKCompanionAppBundleIdentifier: $(WK_COMPANION_BUNDLE_ID)
+        WKRunsIndependentlyOfCompanionApp: true
+    settings:
+      base:
+        TARGETED_DEVICE_FAMILY: "4"
+        SWIFT_EMIT_LOC_STRINGS: NO
+        WK_COMPANION_BUNDLE_ID: com.ascnd.fitnessos.dev
+        PRODUCT_BUNDLE_IDENTIFIER: com.ascnd.fitnessos.dev.watchkitapp
+        SKIP_INSTALL: YES
+      configs:
+        Debug:
+          PRODUCT_BUNDLE_IDENTIFIER: com.ascnd.fitnessos.dev.watchkitapp
+          WK_COMPANION_BUNDLE_ID: com.ascnd.fitnessos.dev
+        Release:
+          PRODUCT_BUNDLE_IDENTIFIER: com.ascnd.fitnessos.watchkitapp
+          WK_COMPANION_BUNDLE_ID: com.ascnd.fitnessos
+          ENABLE_USER_SCRIPT_SANDBOXING: "NO"
+    postBuildScripts:
+      - name: Set build number
+        script: |
+          [ "$CONFIGURATION" = "Release" ] || exit 0
+          "${SRCROOT}/tools/set-build-number.sh"
+        basedOnDependencyAnalysis: false
+        inputFiles:
+          - "${SRCROOT}/tools/set-build-number.sh"
+
 schemes:
   ASCND:
     build:
@@ -269,3 +317,9 @@ schemes:
       config: Debug
       targets:
         - ASCNDUITests
+  ASCNDWatch:
+    build:
+      targets:
+        ASCNDWatch: all
+    run:
+      config: Debug

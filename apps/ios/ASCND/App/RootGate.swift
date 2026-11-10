@@ -121,6 +121,7 @@ private struct SignedInScope<Content: View>: View {
       let f = services.makeWorkoutFlow(userId: userId, rest: rest)
       f.setWeightUnit(weightUnit)
       flow = f
+      services.watch.attach(flow: f, rest: rest)
       let books = NutritionBooks(
         water: services.makeWaterBook(userId: userId), supplements: services.makeSupplementBook(userId: userId))
       nutrition = books
@@ -174,6 +175,7 @@ private struct SignedInScope<Content: View>: View {
     // đang bay, để nó không ghi cache của người vừa rời đi.
     .onDisappear {
       flow?.close()
+      services.watch.detach()
       reminderToday?.close()
       services.closeQuestObserver(userId: userId)
     }

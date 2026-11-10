@@ -88,6 +88,8 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 
 ## 4. Hạn chế đã biết (lỗi, chỗ lệch, chỗ chưa kiểm)
 
+**Apple Watch (09/11/2026):** app watchOS (`ASCNDWatch`) hiện set kế và quãng nghỉ khi iPhone đang có buổi tập; lệnh đi qua `WatchMirror` (ASCNDCore) và được phát lại nếu WatchConnectivity chưa tới. **Chưa kiểm trên iPhone + Apple Watch thật** — không build được watchOS ở máy agent. Chủ phải: cài cả hai (bundle Debug `com.ascnd.fitnessos.dev` + `.watchkitapp`), mở buổi trên iPhone, tick một set trên Watch, khoá iPhone, chỉnh ±15 / tạm dừng, tắt Bluetooth rồi tick thêm một set, bật lại và đối chiếu đúng một lần ghi. Watch không ghi HealthKit. Buổi dài hơn 80 set chỉ gửi cửa sổ quanh set đang mở. Đăng xuất giữa lúc đồng hồ còn lệnh chưa xác nhận: lệnh đó có thể bị bỏ khi tài khoản khác đang đăng nhập.
+
 **Code đã merge nhưng trái với V1** (chi tiết, kèm file và dòng, ở #527 ngày 21/10):
 - ~~Tụt hạng do nghỉ: `KoaGains`, `KoaSchedule.dropped`, lời nhắc ngày 6, màn quay lại.~~ Đã bỏ ở GĐ1 — **merge vào `native/ios-rewrite` 21/10 (#641, `59cb9d92`)**.
 - ~~Cấp XP vẫn hiện, và cửa hàng khoá đồ theo Cấp XP.~~ Đã sửa ở GĐ2 — **merge vào `native/ios-rewrite` 21/10 (#642, `cad8f015`)**.
@@ -755,3 +757,4 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - 04/11/2026: #799: kệ, cây lớn, bóng tập vẽ lại theo mock Kiệt duyệt (cùng chỗ, cùng cỡ, giữ chỉ số phần tử; đồ đã mua giữ tranh cũ); ghi lỗi có từ trước: mặt nạ che Koa bỏ mất đồ phòng đã mua; xem mục 4.
 - 04/11/2026: lớp che Koa lấy đúng đồ phòng đã mua; bụi không còn vẽ đè lên Koa, không mất khi mua chậu cây, không lơ lửng trên tường khung dọc / giá olympic; xem mục 4.
 - 04/11/2026: #797: Kiệt quyết giữ nguyên widget đọc chuỗi và băng chuỗi; ghi hạn chế của widget (hỏng lượt đọc chuỗi thì cả widget không cập nhật); xem mục 4.
+- 09/11/2026: app Apple Watch tối thiểu (ghi set + quãng nghỉ khi iPhone đang tập); chưa kiểm trên máy thật — xem mục 4.

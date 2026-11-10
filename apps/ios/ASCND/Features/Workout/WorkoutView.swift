@@ -238,6 +238,8 @@ public struct WorkoutView: View {
         if old == 0, new > 0, firstSessionTip != nil { Telemetry.capture(.firstSessionStarted) }
       }
       .navigationTitle(isPreview ? "" : controller.plan.templateName)
+      .onAppear { services?.watch.setWorkoutVisible(true) }
+      .onDisappear { services?.watch.setWorkoutVisible(false) }
       .ascndPage()
       .sheet(isPresented: $reordering) {
         ExerciseOrderSheet(

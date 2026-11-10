@@ -281,6 +281,7 @@ Hiện **không dòng nào DONE**: chưa có lần chạy trên iPhone thật.
 | App Intents (±15, tạm dừng) | `RestTimerIntents.swift` | `AdjustRestIntent`, `SetRestPausedIntent` (`RestActivity.swift`) | ✅ (±15); ✅ tạm dừng / tiếp tục (#235) — intent mang trạng thái ĐÍCH, chạm dồn không lật ngược |
 | Widget Hôm nay / Streak | `TodayWorkoutWidget.swift`, `StreakReadinessWidget.swift` | `HomeScreenWidgets.swift` (extension) + `HomeWidgets` / `WidgetSync` / `Streak` (Core) | ✅ (#66) |
 | HealthKit | `use-health-sync.ts`, `health.ts`, `health-sync-write.ts` | `HealthKitSource` + `HealthSyncCoordinator` (app), `HealthData` / `HealthSync` (Core) | 🟡 PARTIAL (#66) |
+| Apple Watch | — (RN không có app đồng hồ) | `ASCNDWatch` + `WatchMirror` (Core) + `WatchPhoneBridge` | 🟡 DEVICE_PENDING. Chỉ khi iPhone đang có buổi: set kế, ± kg/reps/RPE, tick, quãng nghỉ (cùng `RestTimer`), rung, hàng lệnh khi mất liên lạc. Chưa chạy trên máy thật |
 
 ## 4. Đa thiết bị (iPhone ↔ Android, cùng backend)
 
