@@ -19,6 +19,82 @@ struct KoaGainsTests {
     #expect(KoaGains.toNext(2300) == nil)
   }
 
+  // MARK: Bậc trong hạng (10/11)
+
+  @Test func tiersSplitEachRankEvenly() {
+    // Newbie không chia bậc: mốc kế là Gym Rat I.
+    let newbie = KoaGains.tier(39)
+    #expect(newbie.rank == 0 && newbie.tier == 1 && newbie.count == 1 && !newbie.tiered)
+    #expect(newbie.next == (1, 1) && newbie.remaining == 1 && newbie.step == 0)
+    // Gym Rat 40–180: 2 bậc × 70.
+    #expect(KoaGains.tier(40).tier == 1 && KoaGains.tier(40).rank == 1 && KoaGains.tier(40).step == 1)
+    #expect(KoaGains.tier(109).tier == 1 && KoaGains.tier(110).tier == 2)
+    #expect(KoaGains.tier(179).tier == 2 && KoaGains.tier(179).next == (2, 1))
+    // Lifter 180–540: 3 bậc × 120.
+    #expect(KoaGains.tier(180).rank == 2 && KoaGains.tier(180).tier == 1)
+    #expect(KoaGains.tier(299).tier == 1 && KoaGains.tier(300).tier == 2)
+    #expect(KoaGains.tier(419).tier == 2 && KoaGains.tier(420).tier == 3 && KoaGains.tier(539).tier == 3)
+    // Swole 540–1150: 5 bậc × 122.
+    #expect(KoaGains.tier(540).tier == 1 && KoaGains.tier(661).tier == 1 && KoaGains.tier(662).tier == 2)
+    #expect(KoaGains.tier(1027).tier == 4 && KoaGains.tier(1028).tier == 5 && KoaGains.tier(1149).tier == 5)
+    // Beast 1150–2300: 8 bậc × 143,75, mốc làm tròn xuống.
+    #expect((1...8).map { KoaGains.tierFloor(rank: 4, tier: $0) } == [1150, 1293, 1437, 1581, 1725, 1868, 2012, 2156])
+    #expect(KoaGains.tier(1292).tier == 1 && KoaGains.tier(1293).tier == 2)
+    #expect(KoaGains.tier(2155).tier == 7 && KoaGains.tier(2156).tier == 8 && KoaGains.tier(2299).tier == 8)
+    #expect(KoaGains.tier(2299).ceiling == 2300 && KoaGains.tier(2299).next == (5, 1))
+  }
+
+  @Test func theLastRankHasTiersWithoutEnd() {
+    let first = KoaGains.tier(2300)
+    #expect(first.rank == 5 && first.tier == 1 && first.count == nil && first.ceiling == 2450)
+    #expect(KoaGains.tier(2449).tier == 1 && KoaGains.tier(2450).tier == 2)
+    let far = KoaGains.tier(2300 + 150 * 40 + 7)
+    #expect(far.tier == 41 && far.remaining == 143 && far.next == (5, 42))
+  }
+
+  @Test func tierNeverSplitsARankAndOnlyGoesUp() {
+    var last = -1
+    for p in 0...4000 {
+      let t = KoaGains.tier(p)
+      #expect(t.rank == KoaGains.rank(p), "bậc không đổi mốc hạng")
+      #expect(t.floor <= p && p < t.ceiling)
+      #expect(t.step >= last && t.step - last <= 1, "Gains tăng thì bậc chỉ đi lên, từng bậc một")
+      let back = KoaGains.tier(step: t.step)
+      #expect(back == (t.rank, t.tier))
+      last = t.step
+    }
+    #expect(KoaGains.tier(2299).step == 18 && KoaGains.tier(2300).step == 19)
+  }
+
+  @Test func theNextMarkIsSaidInSessions() {
+    // mock: Lifter, 262 Gains → còn 38 tới Lifter II, khoảng 4 buổi
+    let t = KoaGains.tier(262)
+    #expect(t.rank == 2 && t.tier == 1 && t.remaining == 38 && t.sessions == 4)
+    #expect(abs(t.progress - 82.0 / 120.0) < 1e-9)
+    #expect(KoaGains.tier(290).sessions == 1 && KoaGains.tier(299).sessions == 1)
+  }
+
+  /// Tập đủ lịch 3 buổi / tuần: không chặng nào giữa hai mốc dài quá 3 tuần.
+  @Test func aFullScheduleAlwaysHasAMarkWithinThreeWeeks() {
+    var days: [KoaGains.Day] = []
+    let monday = LocalDate("2026-01-05")!
+    var lastStep = 0
+    var lastWeek = 0
+    var longest = 0
+    for week in 0..<60 {
+      for dow in [0, 2, 4] { days.append(.init(date: monday.adding(days: week * 7 + dow), personalRecord: false)) }
+      let p = KoaGains.compute(days, week: Self.plan, today: monday.adding(days: week * 7 + 6)).points
+      let step = KoaGains.tier(p).step
+      if step > lastStep {
+        longest = max(longest, week + 1 - lastWeek)
+        lastStep = step
+        lastWeek = week + 1
+      }
+    }
+    #expect(longest <= 3)
+    #expect(lastStep >= 19, "sau Mass Monster vẫn còn bậc để lên")
+  }
+
   /// Nhanh lúc đầu, chậm dần (Kiệt 24/10): tập đủ lịch 3 buổi / tuần, không kỷ lục,
   /// tuần thứ mấy thì lên từng hạng.
   @Test func ranksFollowRealTrainingTime() {

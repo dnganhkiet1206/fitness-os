@@ -46,6 +46,55 @@ import Testing
     #expect(oct.sessions == 2 && oct.records == 1)
   }
 
+  /// 20 tuần tập đủ lịch, mỗi tuần một kỷ lục vào thứ Tư.
+  private func longRun() -> [KoaGains.Day] {
+    let monday = d("2026-01-05")
+    return (0..<20).flatMap { w in
+      [0, 2, 4].map { KoaGains.Day(date: monday.adding(days: w * 7 + $0), personalRecord: $0 == 2) }
+    }
+  }
+
+  @Test func tierUpsAreSmallMilestonesBetweenRanks() {
+    let days = longRun()
+    let today = d("2026-05-24")
+    let m = KoaJourney.moments(days, week: week, today: today)
+    let total = KoaGains.compute(days, week: week, today: today).points
+    let now = KoaGains.tier(total)
+    let tiers = m.filter { $0.kind == .tierUp }
+    #expect(!tiers.isEmpty && tiers.allSatisfy { !$0.major }, "lên bậc là mốc nhỏ")
+    #expect(tiers.allSatisfy { KoaGains.tier(step: $0.value).tier > 1 }, "bậc I là lúc lên hạng, không thêm mốc")
+    #expect(m.filter { $0.kind == .rankUp }.map(\.value).sorted() == Array(1...now.rank), "mốc lên hạng giữ nguyên")
+    #expect(tiers.count + now.rank == now.step, "mỗi bậc đã đạt đúng một mốc")
+    #expect(Set(m.map(\.id)).count == m.count)
+    #expect(m.contains { $0.id == "tier:2" }, "Gym Rat II")
+  }
+
+  @Test func stepsCarryTheStretchBehindThem() {
+    let days = longRun()
+    let today = d("2026-05-24")
+    let steps = KoaJourney.steps(days, week: week, today: today)
+    #expect(steps.map(\.step) == Array(1...steps.count), "cũ → mới, không sót bậc")
+    #expect(steps.reduce(0) { $0 + $1.sessions } <= 60 && steps.reduce(0) { $0 + $1.records } <= 20)
+    // Gym Rat II (110 Gains): tới sau Gym Rat I, chặng có buổi thật.
+    let two = steps[1]
+    #expect(two.rank == 1 && two.tier == 2 && two.total >= 110 && two.sessions > 0)
+    #expect(two.date > steps[0].date)
+    // Thêm buổi về sau không đổi các bậc đã đạt.
+    let later = KoaJourney.steps(days + [KoaGains.Day(date: d("2026-05-25"), personalRecord: false)], week: week, today: d("2026-05-25"))
+    #expect(Array(later.prefix(steps.count)) == steps)
+  }
+
+  @Test func aTierUpIsMentionedForOneDayOnly() {
+    let days = longRun()
+    let m = KoaJourney.moments(days, week: week, today: d("2026-05-24"))
+    let tier = m.first { $0.kind == .tierUp }!
+    let only = [tier]
+    #expect(KoaMomentFeed.next(only, seen: [], today: tier.date) == tier)
+    #expect(KoaMomentFeed.next(only, seen: [], today: tier.date.adding(days: 1)) == tier)
+    #expect(KoaMomentFeed.next(only, seen: [], today: tier.date.adding(days: 2)) == nil)
+    #expect(KoaMomentFeed.next(only, seen: [tier.id], today: tier.date) == nil)
+  }
+
   @Test func feedPrefersFreshMajorAndNeverRepeats() {
     let days = sessions(["2026-10-05", "2026-10-07", "2026-10-09"], pr: ["2026-10-09"])
     let m = KoaJourney.moments(days, week: week, today: d("2026-10-09"))

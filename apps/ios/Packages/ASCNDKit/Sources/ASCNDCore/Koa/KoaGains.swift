@@ -201,6 +201,80 @@ public enum KoaGains {
     return (points - thresholds[r], thresholds[r + 1] - thresholds[r])
   }
 
+  // MARK: - Bậc trong hạng (10/11, Kiệt duyệt `docs/design/mocks/koa-rank-tiers.html`)
+
+  /// Số bậc của từng hạng trừ hạng cuối. Mốc hạng (`thresholds`) không đổi; mỗi hạng chia đều
+  /// để người tập đủ lịch 3 buổi luôn có một mốc cách không quá ~3 tuần (trước: tới 22,5 tuần).
+  /// Lịch 2 buổi đi chậm hơn ~1,4 lần (bậc của Beast ~4 tuần), Kiệt chấp nhận.
+  public static let tierCounts = [1, 2, 3, 5, 8]
+  /// Hạng cuối không có trần: cứ ngần này Gains lên một bậc.
+  public static let openTierSize = 150
+
+  /// Bậc đang đứng, tính lại từ Gains như hạng: không có bảng riêng, chỉ đi lên vì Gains không
+  /// bao giờ bị trừ (21/10).
+  public struct Tier: Sendable, Hashable {
+    /// 0 … 5, chỉ số trong `MascotRules.ranks`.
+    public let rank: Int
+    /// 1 … `count`; hạng không chia bậc thì luôn là 1.
+    public let tier: Int
+    /// Số bậc của hạng; `nil` = không giới hạn (hạng cuối).
+    public let count: Int?
+    /// Gains ở đầu bậc này và ở mốc kế (bậc kế hoặc hạng kế).
+    public let floor: Int
+    public let ceiling: Int
+    public let points: Int
+
+    /// Thứ tự của bậc trên cả hành trình: Newbie = 0, Gym Rat I = 1, Gym Rat II = 2, Lifter I = 3…
+    public var step: Int { KoaGains.step(rank: rank, tier: tier) }
+    /// Gains còn thiếu tới mốc kế.
+    public var remaining: Int { max(0, ceiling - points) }
+    /// 0 … 1 trong bậc đang đứng.
+    public var progress: Double { Double(points - floor) / Double(max(1, ceiling - floor)) }
+    /// Số buổi trong lịch (không kỷ lục, không thưởng tuần) để tới mốc kế: ước lượng dè dặt.
+    public var sessions: Int { (remaining + KoaGains.plannedSession - 1) / KoaGains.plannedSession }
+    /// Mốc kế là hạng mới (bậc I của hạng sau) hay bậc kế trong cùng hạng.
+    public var next: (rank: Int, tier: Int) { count.map { tier >= $0 } ?? false ? (rank + 1, 1) : (rank, tier + 1) }
+    /// Hạng có chia bậc (Newbie thì không).
+    public var tiered: Bool { count != 1 }
+  }
+
+  /// Gains ở đầu bậc `tier` (từ 1) của hạng `rank`. Chia đều, phần lẻ làm tròn xuống.
+  public static func tierFloor(rank: Int, tier: Int) -> Int {
+    let lo = thresholds[rank]
+    guard rank + 1 < thresholds.count else { return lo + (tier - 1) * openTierSize }
+    return lo + (thresholds[rank + 1] - lo) * (tier - 1) / tierCounts[rank]
+  }
+
+  public static func tier(_ points: Int) -> Tier {
+    let r = rank(points)
+    guard r + 1 < thresholds.count else {
+      let t = (points - thresholds[r]) / openTierSize + 1
+      return Tier(
+        rank: r, tier: t, count: nil, floor: tierFloor(rank: r, tier: t), ceiling: tierFloor(rank: r, tier: t + 1),
+        points: points)
+    }
+    let n = tierCounts[r]
+    let t = (1...n).last { points >= tierFloor(rank: r, tier: $0) } ?? 1
+    return Tier(
+      rank: r, tier: t, count: n, floor: tierFloor(rank: r, tier: t), ceiling: tierFloor(rank: r, tier: t + 1),
+      points: points)
+  }
+
+  public static func step(rank: Int, tier: Int) -> Int {
+    rank == 0 ? 0 : tierCounts[1..<rank].reduce(0, +) + tier
+  }
+
+  /// Ngược của `step`: bậc thứ mấy của hạng nào.
+  public static func tier(step: Int) -> (rank: Int, tier: Int) {
+    var left = max(0, step)
+    guard left > 0 else { return (0, 1) }
+    for r in 1..<tierCounts.count {
+      if left <= tierCounts[r] { return (r, left) }
+      left -= tierCounts[r]
+    }
+    return (thresholds.count - 1, left)
+  }
+
   /// Phần Gains của một ngày, đúng như `compute` đã cộng: màn tổng kết đọc ở đây thay vì tự đoán,
   /// nên dòng "+10 buổi trong lịch · tuần đủ buổi" luôn khớp số Gains thật.
   public struct Breakdown: Sendable, Hashable {

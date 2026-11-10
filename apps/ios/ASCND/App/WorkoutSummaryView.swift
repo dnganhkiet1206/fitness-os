@@ -75,10 +75,9 @@ public struct WorkoutSummaryView: View {
     let lang = AppPreferences.Lang(rawValue: String(locale.identifier.prefix(2))) ?? .vi
     let g = gains.flatMap { g -> KoaReaction.Content.Gains? in
       guard !g.repeatSession, !g.overtrained, g.delta > 0 else { return nil }
-      let sub = KoaGains.toNext(g.after.points).map { next in
-        let nextRank = MascotRules.ranks[min(g.after.rank + 1, MascotRules.ranks.count - 1)]
-        return String(localized: "koa.gains.toRank \(next.need - next.have) \(nextRank.name(lang))")
-      }
+      // mốc kế là bậc kế trong hạng (10/11), không còn là hạng kế cách nhiều tuần
+      let tier = KoaGains.tier(g.after.points)
+      let sub = String(localized: "koa.gains.toRank \(tier.remaining) \(KoaTierText.nextName(tier, lang: lang))")
       return .init(title: String(localized: "koa.reaction.gains \(g.delta)"), subtitle: sub)
     }
     return KoaReaction.Content(
@@ -105,6 +104,8 @@ public struct WorkoutSummaryView: View {
     let streak: Int
     /// Hôm nay đã có buổi trước: buổi này không có thưởng.
     var repeatSession = false
+    /// Buổi này làm Koa lên một bậc trong cùng hạng: bậc mới và chặng dẫn tới nó (10/11).
+    var tierUp: KoaJourney.Step?
     var overtrained: Bool { streak > KoaGains.maxActiveStreak }
     var delta: Int { after.points - before.points }
     var raw: Int {
@@ -133,9 +134,20 @@ public struct WorkoutSummaryView: View {
     let after = KoaGains.compute(past + [todayDay], week: h.week, today: today)
     // từng phần đọc từ chính phép tính Gains: tính cả ngày đổi lịch và loại buổi
     let b = KoaGains.breakdown(past + [todayDay], week: h.week, on: today) ?? .init()
-    return GainsGain(
+    var gain = GainsGain(
       before: before, after: after, planned: b.planned, pr: b.personalRecord, overload: b.overload,
       fullWeek: b.fullWeek, streak: b.streak)
+    gain.tierUp = tierUp(past + [todayDay], week: h.week, today: today, before: before, after: after)
+    return gain
+  }
+
+  /// Bậc mới của hôm nay khi buổi này vượt mốc bậc mà không lên hạng (lên hạng đã có khoảnh khắc lớn).
+  static func tierUp(
+    _ days: [KoaGains.Day], week: KoaGains.Week, today: LocalDate, before: KoaGains.State, after: KoaGains.State
+  ) -> KoaJourney.Step? {
+    let now = KoaGains.tier(after.points)
+    guard now.rank == before.rank, now.step > KoaGains.tier(before.points).step else { return nil }
+    return KoaJourney.steps(days, week: week, today: today).last { $0.step == now.step && $0.date == today }
   }
 
   private func gainsCard(_ g: GainsGain) -> some View {
@@ -147,7 +159,7 @@ public struct WorkoutSummaryView: View {
           .gainsEarned,
           [
             "delta": String(g.delta), "planned": String(g.planned), "pr": String(g.pr),
-            "rank_up": String(g.after.rank > g.before.rank),
+            "rank_up": String(g.after.rank > g.before.rank), "tier_up": String(g.tierUp != nil),
           ])
       }
   }
@@ -447,7 +459,9 @@ struct KoaGainsCard: View {
     let lang = AppPreferences.Lang(rawValue: String(locale.identifier.prefix(2))) ?? .vi
     let rankUp = g.after.rank > g.before.rank
     let rank = MascotRules.ranks[min(g.after.rank, MascotRules.ranks.count - 1)]
-    let next = KoaGains.toNext(g.after.points)
+    let tier = KoaGains.tier(g.after.points)
+    // lên bậc trong hạng: khoảnh khắc nhỏ, không che lý do buổi không có Gains
+    let tierUp = g.repeatSession || g.overtrained || rankUp ? nil : g.tierUp
     DSCard {
       VStack(spacing: DS.Spacing.sm) {
         // xong buổi (05/11, Kiệt): lên hạng thì hét chiến thắng, còn lại tự hào
@@ -461,11 +475,14 @@ struct KoaGainsCard: View {
             ? String(localized: "koa.gains.restNeeded \(g.streak)")
             : rankUp
               ? String(localized: "koa.gains.newRank \(rank.name(lang))")
-              : String(localized: "koa.gains.pump \(g.delta)")
+              : tierUp != nil
+                ? String(localized: "koa.tier.reached \(KoaTierText.name(tier, lang: lang))")
+                : String(localized: "koa.gains.pump \(g.delta)")
         )
         .font(.system(size: titleSize, weight: .heavy))
         .foregroundStyle(DS.Color.foreground.swiftUI)
         .multilineTextAlignment(.center)
+        if tierUp != nil { KoaTierPips(tier: tier, highlightNewest: true) }
         // Quá ngày tập liền (29/10, Kiệt): nói vì sao không có Gains thay cho bảng cộng.
         Text(
           verbatim: g.repeatSession
@@ -474,23 +491,28 @@ struct KoaGainsCard: View {
           .font(DS.TextStyle.footnote)
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
           .multilineTextAlignment(.center)
-        if let next {
-          ProgressView(value: Double(next.have), total: Double(next.need))
-            .tint(Color.rank(rank))
-            .accessibilityHidden(true)
-          let nextRank = MascotRules.ranks[min(g.after.rank + 1, MascotRules.ranks.count - 1)]
-          Text(String(localized: "koa.gains.toRank \(next.need - next.have) \(nextRank.name(lang))"))
-            .font(DS.TextStyle.caption)
-            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-        } else {
-          Text(String(localized: "koa.gains.max"))
-            .font(DS.TextStyle.caption)
-            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        if let tierUp {
+          Text(verbatim: Self.stretch(tierUp))
+            .font(DS.TextStyle.footnote)
+            .foregroundStyle(DS.Color.foreground.swiftUI)
+            .multilineTextAlignment(.center)
         }
+        KoaTierBar(tier: tier)
+        Text(String(localized: "koa.gains.toRank \(tier.remaining) \(KoaTierText.nextName(tier, lang: lang))"))
+          .font(DS.TextStyle.caption)
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
       }
       .frame(maxWidth: .infinity)
     }
     .accessibilityElement(children: .combine)
+  }
+
+  /// "300 Gains. Từ bậc trước, bạn tập 7 buổi và phá 2 kỷ lục.": số thật của chặng vừa qua.
+  static func stretch(_ s: KoaJourney.Step) -> String {
+    let sessions = s.sessions == 1 ? String(localized: "koa.count.sessions.one") : String(localized: "koa.count.sessions.other \(s.sessions)")
+    guard s.records > 0 else { return String(localized: "koa.tier.stretch \(s.total) \(sessions)") }
+    let records = s.records == 1 ? String(localized: "koa.count.records.one") : String(localized: "koa.count.records.other \(s.records)")
+    return String(localized: "koa.tier.stretch.records \(s.total) \(sessions) \(records)")
   }
 
   /// Bảng cộng của buổi: "+10 buổi trong lịch · kỷ lục +4 · …".

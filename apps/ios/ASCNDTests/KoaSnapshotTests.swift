@@ -196,6 +196,20 @@ import UIKit
       planned: b.planned, pr: b.personalRecord, overload: b.overload, fullWeek: b.fullWeek, streak: b.streak)
     check(KoaGainsCard(g: g))
   }
+
+  /// Buổi vừa xong làm Koa lên Gym Rat II (10/11): khoảnh khắc nhỏ, có số thật của chặng vừa qua.
+  @Test func gainsCardTierUp() {
+    var before = KoaGains.State.zero
+    before.points = 100
+    before.peak = 100
+    var after = before
+    after.points = 114
+    after.peak = 114
+    var g = WorkoutSummaryView.GainsGain(
+      before: before, after: after, planned: true, pr: true, overload: false, fullWeek: false, streak: 1)
+    g.tierUp = KoaJourney.Step(step: 2, rank: 1, tier: 2, date: Self.today, total: 114, sessions: 6, records: 2)
+    check(KoaGainsCard(g: g))
+  }
 }
 
 /// Căn phòng tĩnh có kệ đầy (#792): ba cúp, ba khung; ngày / đêm theo giao diện như phòng thật.

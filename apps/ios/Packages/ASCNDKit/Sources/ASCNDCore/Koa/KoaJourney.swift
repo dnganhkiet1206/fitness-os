@@ -8,6 +8,8 @@ import Foundation
 public enum KoaJourney {
   public enum Kind: String, Sendable, Hashable, Codable, CaseIterable {
     case firstSession, sessions, fullWeek, firstFullWeek, record, rankUp, comeback
+    /// Lên bậc trong cùng hạng (10/11): mốc nhỏ. Lên hạng (bậc I của hạng mới) vẫn là `rankUp`.
+    case tierUp
   }
 
   public struct Moment: Sendable, Hashable, Identifiable {
@@ -15,14 +17,15 @@ public enum KoaJourney {
     public let id: String
     public let kind: Kind
     public let date: LocalDate
-    /// Số đi kèm: hạng mới, số buổi, số ngày nghỉ trước khi quay lại.
+    /// Số đi kèm: hạng mới, số buổi, số ngày nghỉ trước khi quay lại; `tierUp`: thứ tự bậc
+    /// (`KoaGains.Tier.step`, đổi lại hạng và bậc bằng `KoaGains.tier(step:)`).
     public let value: Int
 
     /// Mốc lớn: Koa phản ứng ở mọi nơi, có thể thành thông báo. Mốc nhỏ chỉ nằm trong hành trình.
     public var major: Bool {
       switch kind {
       case .firstSession, .firstFullWeek, .rankUp, .sessions: true
-      case .record, .comeback, .fullWeek: false
+      case .record, .comeback, .fullWeek, .tierUp: false
       }
     }
   }
@@ -68,7 +71,64 @@ public enum KoaJourney {
         rank = r
       }
     }
+    for s in steps(ledger, days: days) where s.tier > 1 {
+      out.append(Moment(id: "tier:\(s.step)", kind: .tierUp, date: s.date, value: s.step))
+    }
     return out.sorted { $0.date != $1.date ? $0.date > $1.date : $0.major && !$1.major }
+  }
+
+  /// Một bậc đã đạt, kèm chặng dẫn tới nó: từ sau ngày đạt bậc trước tới hết ngày đạt bậc này.
+  public struct Step: Sendable, Hashable, Identifiable {
+    /// Thứ tự bậc trên cả hành trình (`KoaGains.Tier.step`), từ 1.
+    public let step: Int
+    public let rank: Int
+    public let tier: Int
+    public let date: LocalDate
+    /// Tổng Gains cuối ngày đạt bậc.
+    public let total: Int
+    /// Số ngày có buổi (không tính đi bộ) và số ngày có kỷ lục của chặng.
+    public let sessions: Int
+    public let records: Int
+    public var id: Int { step }
+
+    public init(step: Int, rank: Int, tier: Int, date: LocalDate, total: Int, sessions: Int, records: Int) {
+      self.step = step
+      self.rank = rank
+      self.tier = tier
+      self.date = date
+      self.total = total
+      self.sessions = sessions
+      self.records = records
+    }
+  }
+
+  /// Mọi bậc đã đạt, cũ → mới, gồm cả bậc I của mỗi hạng (lúc lên hạng). Tính lại từ sổ Gains nên
+  /// chỉ thêm, không bao giờ bớt.
+  public static func steps(_ days: [KoaGains.Day], week: KoaGains.Week, today: LocalDate) -> [Step] {
+    steps(KoaGains.ledger(days, week: week, today: today), days: days)
+  }
+
+  static func steps(_ ledger: [(LocalDate, KoaGains.Breakdown)], days: [KoaGains.Day]) -> [Step] {
+    let active = Set(days.filter { $0.kind != .walk }.map(\.date))
+    var out: [Step] = []
+    var reached = 0
+    var sessions = 0
+    var records = 0
+    for (day, b) in ledger {
+      if active.contains(day) { sessions += 1 }
+      if b.personalRecord { records += 1 }
+      let now = KoaGains.tier(b.total).step
+      guard now > reached else { continue }
+      // Một ngày vượt nhiều bậc (hiếm): chặng thuộc về bậc đầu, các bậc sau cùng ngày có chặng 0.
+      for s in (reached + 1)...now {
+        let t = KoaGains.tier(step: s)
+        out.append(Step(step: s, rank: t.rank, tier: t.tier, date: day, total: b.total, sessions: sessions, records: records))
+        sessions = 0
+        records = 0
+      }
+      reached = now
+    }
+    return out
   }
 
   /// Tổng kết một tháng, chỉ từ buổi thật.

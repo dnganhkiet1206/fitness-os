@@ -83,6 +83,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 | Khoá Face ID, xuất dữ liệu | Chưa ưu tiên | Trước khi phát hành | 20/10 |
 | ~~Kế hoạch ăn chi tiết, đi chợ, thực phẩm bổ sung~~ | **Đã đưa xuống** Dinh dưỡng › "Thêm" (GĐ3, 21/10); bỏ bộ chọn Hôm nay / Kế hoạch ăn; bỏ dòng bổ sung ở Hôm nay. Không xoá màn / dữ liệu | — | V1 21/10 |
 | Kiểm iOS 18–25 | Không có máy / simulator | Có máy | 16/10 |
+| Bánh tạ theo bậc trong phòng Koa (mục 5 của việc "bậc trong hạng", mock `koa-rank-tiers.html`) | Đã dựng thử một thanh đòn bánh tạ treo tường trên simulator (10/11); Kiệt bỏ: "không phù hợp với tổng thể căn phòng, sau này vẽ phòng mới rồi tính sau". Giá olympic của mock là đồ phải mua, phòng gốc không có chỗ sẵn cho bánh tạ | Khi vẽ phòng mới + mock Kiệt duyệt | 10/11 |
 
 ---
 
@@ -632,6 +633,17 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - ~~Chưa có: `performAccessibilityAudit()` trong UI test (đợt 2 của #795, cần target UI test, sẽ chạy ở E2E).~~ 03/11 (nhánh `claude/koa-a11y-audit`): target `ASCNDUITests` + scheme `ASCNDA11y`, chạy ở workflow riêng `ios-a11y.yml` (không ở E2E: E2E đã chạm trần 45 phút, PR #785 của agent khác đang nâng trần). Đợt 2a chỉ THU THẬP (bảng vấn đề ở trang lượt chạy, test không đỏ vì vấn đề); đợt 2b sửa và chặn tái phát. Xem `docs/AGENT_SESSION.md` §6d.
 - **NOT RUN:** xem ảnh trên máy thật; VoiceOver.
 
+**Bậc trong hạng của Koa (10/11, nhánh `claude/koa-rank-tiers`, Kiệt duyệt mock `design/mocks/koa-rank-tiers.html`: số La Mã kèm vạch, không thưởng xu, chấp nhận lịch 2 buổi chậm hơn):**
+- Luật: mốc hạng không đổi (0 / 40 / 180 / 540 / 1150 / 2300); Gym Rat 2 bậc, Lifter 3, Swole 5, Beast 8, chia đều (mốc lẻ làm tròn xuống: Beast 1150, 1293, 1437…); Mass Monster cứ 150 Gains một bậc, không có trần. `KoaGains.tier` tính lại từ Gains; không bảng, không migration.
+- Hành trình: mốc `tierUp` (khoá `tier:<thứ tự bậc>`), mốc nhỏ, `KoaMomentFeed` nhắc trong 1 ngày. Bậc I của hạng mới là lúc lên hạng nên không thêm mốc.
+- Hôm nay: hàng Koa ghi "Gym Rat I · 70 Gains", vạch bậc, thanh tiến độ trong bậc, "còn N Gains tới <mốc kế> · khoảng M buổi". M = N / 10 làm tròn lên (buổi trong lịch, không tính kỷ lục hay thưởng tuần), nên là ước lượng dè dặt: người tập đủ tuần sẽ tới sớm hơn.
+- Tổng kết buổi: thẻ Gains đổi tiêu đề thành "Koa lên <bậc>!", vạch mới sáng lên, kèm số buổi và số kỷ lục của chặng. Thanh và dòng "còn N Gains" của thẻ, của cảnh xong buổi và của phòng Koa giờ tính tới mốc kế (bậc hoặc hạng), không còn tới hạng kế. Hệ quả: ở Mass Monster không còn dòng "Koa đã ở hạng cao nhất" (khoá `koa.gains.max`, `mr.maxRank` còn trong catalog, không còn chỗ dùng ở các màn này).
+- Mốc kế là hạng mới thì gọi tên hạng ("tới Lifter"), không ghi "Lifter I"; tiêu đề thì ghi đủ "Lifter I".
+- **Không làm:** bánh tạ trong phòng Koa (xem mục 3). Thẻ lên bậc vì vậy không có dòng "giá tạ có thêm một bánh" và nút "Xem phòng Koa" của mock.
+- Hồ sơ, cửa hàng, khung lên hạng trong phòng vẫn ghi tên hạng, không ghi bậc.
+- Snapshot: `gainsCard` đổi (thanh và dòng mốc kế), thêm `gainsCardTierUp`; ảnh chuẩn lấy từ CI theo `AGENT_SESSION.md` §6c.
+- **NOT RUN:** lúc lên bậc trong app thật (tài khoản giả 70 Gains, một buổi không đủ 40 Gains để vượt mốc; thẻ lên bậc chỉ được kiểm bằng snapshot); VoiceOver thật; iPhone thật; bản es / en trên simulator.
+
 ## 5. Lịch sử thay đổi sổ
 
 - 02/11/2026: E2E hết giờ không phải do flow treo: 45 phút bị build, bật simulator và biên dịch lại ASCNDTests ăn 27 phút, Maestro cần ~20. Nay một lần `build-for-testing`, job 60 phút, step Maestro 35 phút, bị dừng giữa chừng vẫn có bảng flow trong tóm tắt; flow 05 đặt `waitToSettleTimeoutMs`, flow 08 chờ hết hiệu ứng quay lại.
@@ -758,3 +770,4 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - 04/11/2026: lớp che Koa lấy đúng đồ phòng đã mua; bụi không còn vẽ đè lên Koa, không mất khi mua chậu cây, không lơ lửng trên tường khung dọc / giá olympic; xem mục 4.
 - 04/11/2026: #797: Kiệt quyết giữ nguyên widget đọc chuỗi và băng chuỗi; ghi hạn chế của widget (hỏng lượt đọc chuỗi thì cả widget không cập nhật); xem mục 4.
 - 09/11/2026: app Apple Watch tối thiểu (ghi set + quãng nghỉ khi iPhone đang tập); chưa kiểm trên máy thật — xem mục 4.
+- 10/11/2026: bậc trong hạng của Koa (Hôm nay, tổng kết buổi, Hành trình); bánh tạ trong phòng Koa hoãn tới khi vẽ phòng mới (Kiệt 10/11); xem mục 3 và 4.
