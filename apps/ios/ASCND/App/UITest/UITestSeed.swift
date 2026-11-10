@@ -28,7 +28,7 @@
     static let templateA = "e2e0a000-0000-4000-8000-00000000000a"
     static let templateB = "e2e0b000-0000-4000-8000-00000000000b"
 
-    static func tables(now: Date, calendar: Calendar) -> [String: [[String: JSONValue]]] {
+    static func tables(now: Date, calendar: Calendar, tierUp: Bool = UITestMode.tierUp) -> [String: [[String: JSONValue]]] {
       let user = JSONValue.string(UITestMode.userId)
       let today = calendar.startOfDay(for: now)
       func day(_ offset: Int) -> Date { calendar.date(byAdding: .day, value: offset, to: today)! }
@@ -119,7 +119,11 @@
       var weight: [Row] = []
       var meals: [Row] = []
       var items: [Row] = []
-      for back in 1...13 {
+      // `-uiTestTierUp`: thêm ba buổi cũ hơn (15, 17, 19 ngày trước). Lịch giả có buổi cả bảy ngày nên
+      // mỗi buổi đúng +10 Gains: 7 buổi = 70, thêm 3 = 100, buổi hôm nay chạm mốc 110 (Gym Rat II) —
+      // để xem thẻ lên bậc ở màn tổng kết mà không phải tập bốn buổi.
+      let extra: [Int] = tierUp ? [15, 17, 19] : []
+      for back in Array(1...13) + extra {
         let o = -back
         let trained = back % 2 == 1
         if trained {
@@ -142,6 +146,7 @@
             "updated_at": iso(at(o, 19)),
           ])
         }
+        if back > 13 { continue }
         let ml = 1800 + (back % 3) * 300
         for (i, part) in [ml / 3, ml / 3, ml - 2 * (ml / 3)].enumerated() {
           water.append([
