@@ -426,13 +426,35 @@ struct RestTimerControllerTests {
     #expect(c.target == nil)
     #expect(driver.calls.contains(.end))
   }
+
+  /// "Koa ló lên" tắt (Kiệt 09/11): màn khoá đổi sang vòng ngay, cả giữa quãng nghỉ.
+  @Test func koaSettingReachesTheLockScreen() async {
+    let driver = FakeDriver()
+    let c = RestTimerController(driver: driver, clock: TestClock(0))
+    c.handle(.start(seconds: 90), target: squat)
+    await c.flush()
+    #expect(driver.showing?.showsKoa == true)
+    #expect(driver.showing?.hidesKoa == nil, "mặc định không ghi trường mới")
+    c.showsKoa = false
+    await c.flush()
+    #expect(driver.showing?.showsKoa == false)
+    c.showsKoa = true
+    await c.flush()
+    #expect(driver.showing?.showsKoa == true)
+  }
 }
 
 @Suite struct RestKoaTests {
   @Test func usesOnlyDrawnPoses() {
-    #expect(RestKoa.resting.emotion == .tired)
-    #expect(RestKoa.record.emotion == .celebrate)
-    #expect(RestKoa.waiting.emotion == .idle)
+    // mặt tập gym (05/11, Kiệt): thở dốc ngồi nghỉ, hét chiến thắng khi kỷ lục, tập trung khi tạm dừng
+    #expect(RestKoa.resting.emotion == .breather)
+    #expect(RestKoa.record.emotion == .victory)
+    #expect(RestKoa.waiting.emotion == .ready)
+    for k in RestKoa.allCases {
+      let st = KoaEmotion.state(k.emotion)
+      #expect(st.pose == .idle || st.pose == .relaxing, "Live Activity chỉ dùng dáng đứng / ngồi đã vẽ")
+      #expect(KoaFlags.gymFace[st.expression] != nil, "\(k): mặt tập gym")
+    }
   }
 
   @Test func oldActivityStateStillDecodes() throws {
@@ -442,5 +464,6 @@ struct RestTimerControllerTests {
     let c = try JSONDecoder().decode(RestActivityContent.self, from: JSONSerialization.data(withJSONObject: json))
     #expect(c.recordNote == nil)
     #expect(c.koa == .resting)
+    #expect(c.showsKoa, "activity cũ không có hidesKoa: vẫn có Koa")
   }
 }

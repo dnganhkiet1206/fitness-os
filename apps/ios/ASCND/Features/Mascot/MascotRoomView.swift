@@ -55,7 +55,8 @@ struct MascotRoomView: View {
   /// Đoạn diễn Koa sửa đồ đang chạy (`KoaRepairScene`).
   @State private var repair: RepairRun?
   struct RepairRun {
-    let item: KoaBreakage.Item
+    /// Món đang sửa (cảnh A); `nil` = đoạn dọn bụi (cảnh B).
+    let item: KoaBreakage.Item?
     let start: Date
     let shots: [KoaRepairScene.Shot]
     let cues: [KoaRepairScene.Cue]
@@ -99,7 +100,7 @@ struct MascotRoomView: View {
         await services.koaWeek(userId: room.userId)?.claimIfComplete(koaWeekState)
         // tủ đồ cho đồ Koa đang mặc trên sân khấu (`equippedOutfits` của RN)
         if let shop, case .loading = shop.phase { await shop.load() }
-        await services.loadKoaDust(userId: room.userId)
+        await loadDust()
         await loadBreakage()
       }
       #if DEBUG
@@ -109,6 +110,13 @@ struct MascotRoomView: View {
         }
         // soát đoạn diễn sửa đồ: `KOA_REPAIR=board` — ép Koa thức, tự diễn sau 2 giây
         .task {
+          if ProcessInfo.processInfo.environment["KOA_REPAIR"] == "dust" {   // `KOA_REPAIR=dust`: đoạn dọn bụi
+            devEmotion = .happy
+            devDust = 3
+            try? await Task.sleep(for: .seconds(2.5))
+            startDustScene()
+            return
+          }
           guard let name = ProcessInfo.processInfo.environment["KOA_REPAIR"], let item = KoaBreakage.Item(rawValue: name) else { return }
           devEmotion = .happy
           devBroken = item
@@ -169,7 +177,7 @@ struct MascotRoomView: View {
         ZStack(alignment: .top) {
           StudioTallRoom(drop: drop, lens: lens, broken: repair == nil ? brokenItem : nil,
                          neonRepair: repair.flatMap { $0.item == .neon ? ($0.start, $0.shots) : nil })
-            .koaDustFilm(devDust ?? dust?.level ?? 0)
+            .koaDustFilm(roomDust)
           stage
             // hai mép tranh tan vào tường cao và sàn, không lộ đường nối
             .mask {
@@ -185,6 +193,13 @@ struct MascotRoomView: View {
           camera: repair.flatMap { KoaRepairLayer.shot($0.shots, at: tl.date, start: $0.start)?.camera },
           size: CGSize(width: g.size.width, height: height), drop: drop))
         .environment(\.koaCameraRolling, repair != nil)
+        .overlay {
+          // dọn bụi: góc 3/4 từ trên cao phủ cả màn lúc Koa trượt khăn trên bục
+          if let run = repair, run.item == nil, let s = KoaRepairLayer.shot(run.shots, at: tl.date, start: run.start), s.dust.high != nil {
+            KoaDustHighAngle(shots: run.shots, index: max(0, min(run.shots.count - 1, Int(tl.date.timeIntervalSince(run.start) * KoaRepairLayer.fps))),
+                             equipped: shop?.inventory.filter(\.equipped).map(\.itemKey) ?? [], build: room.gains.rank)
+          }
+        }
         }
         // phòng sáng tối theo giờ trên máy, thanh và bảng vẫn theo giao diện của app
         .environment(\.colorScheme, daytime ? .light : .dark)
@@ -204,7 +219,7 @@ struct MascotRoomView: View {
               .refreshable {
                 await room.load()
                 await shop?.load()
-                await services.loadKoaDust(userId: room.userId)
+                await loadDust()
                 await loadBreakage()
               }
           }
@@ -359,6 +374,7 @@ struct MascotRoomView: View {
           devChip("diễn sân khấu", on: repair?.item == .stage) { devBroken = .stage; startRepair(.stage) }
           devChip("diễn ván sàn", on: repair?.item == .floor) { devBroken = .floor; startRepair(.floor) }
           devChip("diễn neon", on: repair?.item == .neon) { devBroken = .neon; startRepair(.neon) }
+          devChip("diễn dọn bụi", on: repair != nil && repair?.item == nil) { devDust = 3; startDustScene() }
           devChip("map", on: debugMap) { debugMap.toggle() }
           devChip("auto", on: devEmotion == nil) { devEmotion = nil }
           ForEach(KoaEmotion.devEmotions, id: \.self) { e in
@@ -403,7 +419,7 @@ struct MascotRoomView: View {
         onBoard: {
           boardStat = (RoomBoard.Stat(rawValue: boardStat) ?? .rank).next.rawValue
         },
-        dust: devDust ?? dust?.level ?? 0, walks: true,
+        dust: roomDust, walks: true,
         // sự kiện thật cho ký ức của Koa; Gains chưa tải xong thì chưa có gì để nói
         companion: room.gains == .zero ? nil : companionFacts,
         userId: room.userId, sleep: KoaMood.SleepWindow(profile: profile?.profile),
@@ -461,6 +477,12 @@ struct MascotRoomView: View {
     return x.item
   }
 
+  /// Mức bụi phòng đang vẽ: lúc diễn dọn bụi thì tắt bụi thật, chỉ còn bụi của cảnh (khăn lau qua đâu sạch đấy).
+  private var roomDust: Int {
+    if let run = repair, run.item == nil { return 0 }
+    return devDust ?? dust?.level ?? 0
+  }
+
   private var dust: KoaDust.State? {
     #if DEBUG
       if let n = devDust { return KoaDust.State(level: n, idle: n == 0 ? 0 : KoaDust.thresholds[n - 1]) }
@@ -492,7 +514,30 @@ struct MascotRoomView: View {
     return true
   }
 
+  /// Tải bụi; bụi vừa giảm so với lần trước Koa thấy (người dùng ghi chép, tập, hay trả xu dọn) thì Koa diễn dọn bụi.
+  private func loadDust() async {
+    let key = "koa.dust.seen.\(room.userId)"
+    let before = UserDefaults.standard.object(forKey: key) as? Int
+    await services.loadKoaDust(userId: room.userId)
+    guard let now = services.koaDust.flatMap({ $0.userId == room.userId ? $0.state.level : nil }) else { return }
+    UserDefaults.standard.set(now, forKey: key)
+    if let before, now < before { startDustScene() }
+  }
+
+  /// Đoạn diễn dọn bụi (cảnh B). Giảm chuyển động hay Koa đang ngủ: không diễn.
+  @discardableResult
+  private func startDustScene() -> Bool {
+    guard !reduceMotion, !lens.bedroom, repair == nil else { return false }
+    repair = RepairRun(item: nil, start: .now, shots: KoaRepairScene.Dust.shots(), cues: KoaRepairScene.Dust.cues)
+    return true
+  }
+
   private func finishRepair() {
+    if let run = repair, run.item == nil {
+      #if DEBUG
+        devDust = nil
+      #endif
+    }
     repair = nil
     #if DEBUG
       devBroken = nil
@@ -552,10 +597,13 @@ struct MascotRoomView: View {
     if let f = await services.cleanKoaRoom(userId: room.userId) {
       say(f == .insufficientCoins ? String(localized: "shop.notenough") : Self.message(f))
     } else {
-      KoaSound.play(.sweep)
-      say(String(localized: "mr.dust.cleaned"))
       Telemetry.capture(.koaRoomCleaned)
       devDust = nil
+      UserDefaults.standard.set(0, forKey: "koa.dust.seen.\(room.userId)")
+      if !startDustScene() {
+        KoaSound.play(.sweep)
+        say(String(localized: "mr.dust.cleaned"))
+      }
       await room.load()
     }
   }

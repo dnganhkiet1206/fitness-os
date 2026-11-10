@@ -5,7 +5,8 @@ import SwiftUI
 /// khấu (toạ độ phòng, chưa cộng `drop`): đồ vật của món đang sửa, Koa của cảnh (Koa của phòng nhường
 /// chỗ trong lúc diễn), đồ cầm tay, chữ hiệu ứng, bóng thoại; phát tiếng đúng nhịp.
 struct KoaRepairLayer: View {
-  let item: KoaBreakage.Item
+  /// Món đang sửa (cảnh A); `nil` = đoạn dọn bụi (cảnh B, `KoaRepairScene.Dust`).
+  let item: KoaBreakage.Item?
   let start: Date
   let shots: [KoaRepairScene.Shot]
   let cues: [KoaRepairScene.Cue]
@@ -39,6 +40,8 @@ struct KoaRepairLayer: View {
               var c = ctx
               c.translateBy(x: 0, y: Self.above * k)
               c.scaleBy(x: k, y: k)
+              let index = max(0, min(shots.count - 1, Int(t * Self.fps)))
+              if item == nil { drawDustBehind(&c, shots, index: index) }
               if item == .board { drawBoard(&c, s, t: t, behindKoa: true) }
               if item == .stage { drawStage(&c, s.stage) }
               if item == .floor { drawFloor(&c, s.floor, behindKoa: true) }
@@ -51,7 +54,8 @@ struct KoaRepairLayer: View {
                   if s.neon.koaOnLadder { Self.wobble(&kc, s.neon.wobble) }
                 }
               }
-              drawKoa(&kc, s, k: k, t: t)
+              let mouth = drawKoa(&kc, s, k: k, t: t)
+              if item == nil { drawDustFront(&c, s, mouth: mouth) }
               if item == .floor { drawFloor(&c, s.floor, behindKoa: false) }
               if let p = s.stage.flyingTube {
                 var f = c
@@ -62,6 +66,7 @@ struct KoaRepairLayer: View {
               }
               for p in s.puffs { drawPuff(&c, p) }
               for p in s.pops { drawPop(&c, p) }
+              if item == nil { drawIris(&c, s) }
             }
             .frame(width: g.size.width, height: g.size.height + Self.above * k)
             .offset(y: -Self.above * k)
@@ -119,8 +124,10 @@ struct KoaRepairLayer: View {
   }
 
   /// Koa: chân ở (x, feet + 6) như Koa của phòng (`hero`), nén / giãn quanh chân.
-  private func drawKoa(_ c: inout GraphicsContext, _ s: KoaRepairScene.Shot, k: Double, t: Double) {
-    guard !s.hidden else { return }
+  /// Trả về miệng bình nước lau nhà (toạ độ phòng) khi Koa đang cầm bình — dòng nước đổ vào xô bắt đầu từ đó.
+  @discardableResult
+  private func drawKoa(_ c: inout GraphicsContext, _ s: KoaRepairScene.Shot, k: Double, t: Double) -> CGPoint? {
+    guard !s.hidden else { return nil }
     let o = options(s, t: t)
     let sc = KoaRoomMap.heroWidth * s.scale / 240, flip = s.flip ? -1.0 : 1.0
     let foot = CGPoint(x: s.x, y: s.feet + 6)
@@ -131,11 +138,50 @@ struct KoaRepairLayer: View {
       c.fill(Path(ellipseIn: CGRect(x: foot.x - sw, y: ground - 4 * s.scale * air, width: sw * 2, height: 9 * s.scale * air)),
              with: .color(.black.opacity(0.16 * air)))
     }
+    if s.dust.pads {                                       // hai miếng khăn dưới chân khi trượt trên bục
+      let pk = KoaRoomMap.heroWidth * s.scale / 480
+      for dx in [-62.0, 62] {
+        c.fill(Path(ellipseIn: CGRect(x: foot.x + dx * pk - 70 * pk, y: ground - 4 - 15 * pk, width: 140 * pk, height: 30 * pk)),
+               with: .color(Self.col(0xFFCF4A)))
+      }
+    }
+    if s.dust.tornado, let a = s.dust.spin {               // lốc xoáy: bốn tư thế lệch pha chồng lên nhau + vòng gió
+      let plan = KoaPaint.plan(KoaRender.figure(o))
+      for j in 0..<4 {
+        let cj = cos((a + Double(j) * 45) * .pi / 180)
+        var g = c
+        g.opacity = 0.5 - 0.1 * Double(j)
+        g.translateBy(x: foot.x, y: foot.y)
+        g.scaleBy(x: sc * max(0.14, abs(cj)) * (cj < 0 ? -1 : 1), y: sc * s.stretchY)
+        g.translateBy(x: -120, y: -240 * KoaMath.aspect)
+        KoaCanvas.draw(plan, in: &g)
+      }
+      let hk = KoaRoomMap.heroWidth * s.scale / 480
+      for j in 0..<5 {
+        let y = foot.y - (60 + Double(j) * 95) * hk, rx = (190 - 14 * Double(j)) * hk
+        c.stroke(Path(ellipseIn: CGRect(x: foot.x - rx, y: y - 26 * hk, width: 2 * rx, height: 52 * hk)), with: .color(.white.opacity(0.85)),
+                 style: StrokeStyle(lineWidth: Double(9 - j) * hk, dash: [rx * 1.4, rx * 1.9], dashPhase: CGFloat(-a * 3 - Double(j) * 60) * CGFloat(hk)))
+      }
+      return nil
+    }
     var f = c
     f.translateBy(x: foot.x, y: foot.y)
     f.scaleBy(x: sc * s.stretchX * flip, y: sc * s.stretchY)
     f.translateBy(x: -120, y: -240 * KoaMath.aspect)
     KoaCanvas.draw(KoaPaint.plan(KoaRender.figure(o)), in: &f)
+    var mouth: CGPoint?
+    func toRoom(_ q: (x: Double, y: Double)) -> CGPoint {
+      CGPoint(x: foot.x + sc * s.stretchX * flip * (q.x - 120), y: foot.y + sc * s.stretchY * (q.y - 240 * KoaMath.aspect))
+    }
+    if let stars = s.dust.stars, let top = KoaRender.anchors(o)["head_top_fur"] {   // sao bay vòng quanh đầu khi chóng mặt
+      let h = toRoom(top), hk = KoaRoomMap.heroWidth * s.scale / 480
+      for j in 0..<3 {
+        let ang = stars * 4.5 * .pi + Double(j) * 2 * .pi / 3
+        Self.drawSpark(&c, at: CGPoint(x: h.x + 120 * hk * cos(ang), y: h.y - 20 * hk + 32 * hk * sin(ang)),
+                       r: 26 * hk * (1 - KoaRepairScene.seg(stars, 0.75, 1)))
+      }
+    }
+    Self.drawFoamOnKoa(&f, o, k: s.dust.foamOnKoa)
     if let prop = s.prop, let paw = KoaRender.paws(o).right {
       let p = CGPoint(x: foot.x + sc * s.stretchX * flip * (paw.x - 120), y: foot.y + sc * s.stretchY * (paw.y - 240 * KoaMath.aspect))
       switch prop {
@@ -156,9 +202,48 @@ struct KoaRepairLayer: View {
         g.scaleBy(x: scale, y: scale)
         Self.drawHammer(&g)
         f.fill(Path(ellipseIn: CGRect(x: paw.x - 8.5, y: paw.y - 7, width: 17, height: 14)), with: .color(Color(red: 0.75, green: 0.78, blue: 0.81)))
+      case let .cloth(angle, scale) where scale > 0:
+        var g = f
+        g.translateBy(x: paw.x + 2, y: paw.y - 3)
+        g.rotate(by: .degrees(angle))
+        g.scaleBy(x: 0.5 * scale, y: 0.5 * scale)
+        Self.drawCloth(&g)
+        Self.pawCap(&f, paw)
+      case let .duster(angle, scale, length) where scale > 0:
+        var g = f
+        if length > 0 {                                    // chổi lông cán ngắn (phủi lá)
+          g.translateBy(x: paw.x, y: paw.y + 3)
+          g.rotate(by: .degrees(angle))
+          g.scaleBy(x: 0.5 * scale, y: 0.5 * scale)
+          Self.drawDuster(&g, length: length)
+        } else {                                           // cán dài: đầu chổi quét qua lại ±35 px quanh tâm mạng nhện
+          let D = KoaRepairScene.Dust.self
+          let target = KoaRepairScene.room(D.webPx.x - 70 + 35 * sin(t * 2 * .pi * 1.6), D.webPx.y + 55)
+          let tx = 120 + (target.x - foot.x) / (sc * s.stretchX * flip), ty = 240 * KoaMath.aspect + (target.y - foot.y) / (sc * s.stretchY)
+          let dx = tx - paw.x, dy = ty - (paw.y + 15)
+          g.translateBy(x: paw.x, y: paw.y + 15)
+          g.rotate(by: .radians(atan2(dx, -dy)))
+          g.scaleBy(x: 0.5 * scale, y: 0.5 * scale)
+          Self.drawDuster(&g, length: max(200, 2 * (dx * dx + dy * dy).squareRoot() - 40))
+        }
+        Self.pawCap(&f, paw)
+      case let .bottle(angle, scale) where scale > 0:
+        var g = f
+        g.translateBy(x: paw.x, y: paw.y + 5)
+        g.rotate(by: .degrees(angle))
+        g.scaleBy(x: 0.5 * scale, y: 0.5 * scale)
+        Self.drawBottle(&g)
+        Self.pawCap(&f, paw)
+        let r = angle * .pi / 180
+        mouth = toRoom((paw.x + 75 * sin(r), paw.y + 5 - 75 * cos(r)))
       default: break
       }
     }
+    return mouth
+  }
+
+  static func pawCap(_ c: inout GraphicsContext, _ paw: (x: Double, y: Double)) {
+    c.fill(Path(ellipseIn: CGRect(x: paw.x - 8.5, y: paw.y - 7, width: 17, height: 14)), with: .color(Color(red: 0.75, green: 0.78, blue: 0.81)))
   }
 
   // MARK: - Bảng kỷ lục
@@ -519,7 +604,7 @@ struct KoaRepairCamera: ViewModifier {
 }
 
 /// Số ngẫu nhiên tất định cho nhiễu màn.
-private struct SplitMix {
+struct SplitMix {
   var state: UInt64
   init(seed: UInt64) { state = seed &+ 0x9E37_79B9_7F4A_7C15 }
   mutating func unit() -> Double {

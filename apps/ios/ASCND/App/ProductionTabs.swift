@@ -59,6 +59,8 @@ struct WorkoutsTab: View {
   /// Buổi vừa chốt → màn tóm tắt (audit #527 6138699103: trước đây kết quả
   /// của `finish()` bị bỏ đi và `WorkoutSummaryView` không được mở ở đâu).
   @State private var finished: FinishedWorkout?
+  /// Buổi vừa chốt, Koa đang ăn mừng (07/11) — xong cảnh mới mở `finished`.
+  @State private var celebrating: FinishedWorkout?
   @State private var sharing = false
   /// Tab đang trên màn (giữa `onAppear` và `onDisappear`).
   @State private var visible = false
@@ -95,6 +97,14 @@ struct WorkoutsTab: View {
     .onChange(of: flow.session != nil) { _, _ in tryLaunch() }
     .fullScreenCover(isPresented: $showsSession) {
       sessionScreen
+        .overlay {
+          if let c = celebrating {
+            WorkoutDoneReaction(summary: c.summary) {
+              celebrating = nil
+              finished = c
+            }
+          }
+        }
         .sheet(isPresented: $showsHistory) {
           if let history = flow.history {
             NavigationStack { WorkoutHistoryView(book: history) }
@@ -142,6 +152,7 @@ struct WorkoutsTab: View {
         onAdjustRest: { rest.adjust(by: $0) },
         onSkipRest: { rest.handle(.cancel) },
         onSetRestPaused: { rest.setPaused($0) },
+        onSettleRest: { rest.settle() },
         restRecordNote: rest.recordNote,
         onRestRecord: { rest.noteRecord($0) },
         outboxStatus: outboxStatus,
@@ -150,14 +161,10 @@ struct WorkoutsTab: View {
           // chốt, tiến độ của ngày được neo lại (`anchoring`).
           let sets = Self.summarySets(session)
           let summary = try await flow.finish()
-          Telemetry.capture(.workoutCompleted)
-          // Buổi đầu xong (đợt 3): mẹo tắt, đo kích hoạt.
-          if let uid = services.session.session?.userId, StarterPlan.guideOn(uid) {
-            StarterPlan.setGuide(false, userId: uid)
-            Telemetry.capture(.firstSessionCompleted)
-          }
-          services.didLog()
-          finished = FinishedWorkout(summary: summary, sets: sets)
+          Self.didFinish(services)
+          // Koa ăn mừng chỉ khi "Koa ló lên" bật (Kiệt 09/11); tắt thì mở thẳng màn tổng kết
+          let done = FinishedWorkout(summary: summary, sets: sets)
+          if services.preferences.mascotCompanion { celebrating = done } else { finished = done }
         },
         onAppend: { _ = try await flow.append() },
         onOpenHistory: openHistory,
@@ -167,6 +174,18 @@ struct WorkoutsTab: View {
       // Phiên biến mất khi đang mở (qua nửa đêm, đổi tài khoản): đóng lớp.
       Color.clear.onAppear { showsSession = false }
     }
+  }
+
+  /// Việc sau khi chốt MỘT buổi, dù buổi hôm nay hay buổi ngày cũ mở từ Lịch tuần:
+  /// đo hoàn thành, tắt mẹo buổi đầu, nhắc lần ghi đầu.
+  static func didFinish(_ services: AppServices) {
+    Telemetry.capture(.workoutCompleted)
+    // Buổi đầu xong (đợt 3): mẹo tắt, đo kích hoạt.
+    if let uid = services.session.session?.userId, StarterPlan.guideOn(uid) {
+      StarterPlan.setGuide(false, userId: uid)
+      Telemetry.capture(.firstSessionCompleted)
+    }
+    services.didLog()
   }
 
   struct FinishedWorkout: Identifiable {

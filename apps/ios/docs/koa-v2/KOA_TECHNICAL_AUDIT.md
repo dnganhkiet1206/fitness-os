@@ -251,3 +251,6 @@ Mỗi bước chạy hết vòng kiểm hình ở mục 6. Chỉ sang bước sa
 | 19/10 | Bỏ tư thế `wave`, `run` của RN | `turn34` không vẫy tay, `running` đứng yên trên sân khấu: không đọc ra được |
 | 23/10 | Giữ Koa vector động trong app; ảnh 3D chỉ cho trang web | Kiệt: Koa PNG trông như sticker |
 | 05/11 (đề xuất này) | A + góc nhìn rời + Blender làm mẫu; không B, C, D | Mục 4 |
+| 05/11 | Lát dọc (mục 9 bước 2) đã gộp: PR 845 | Kiệt duyệt video trước / sau |
+| 05/11 | **Kiệt chọn xoay 360°** thay vì A (mục 8.1) | Mẫu 3D thô `gallery/v2-360-blockout/` |
+| 05/11 | **Cách làm 360°: 3D chỉ để dựng góc, app vẫn vẽ vector** (mục 8.2 (a): agent vẽ từ mẫu Blender, Kiệt duyệt từng góc). Đổi góc theo bước, không quay mượt từng độ | Giữ nét 2D, `Canvas`, đồ mặc và test golden. Không đưa 3D vào app |

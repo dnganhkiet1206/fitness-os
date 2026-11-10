@@ -33,6 +33,11 @@ struct WeekPlanView: View {
   var onOpenToday: (() -> Void)? = nil
   /// Ngày khác vừa chốt từ sheet → màn tổng kết.
   @State private var finishedPast: WorkoutsTab.FinishedWorkout?
+  /// Buổi vừa chốt, Koa đang ăn mừng — xong cảnh mới mở `finishedPast`.
+  @State private var celebrating: WorkoutsTab.FinishedWorkout?
+  /// Chia sẻ buổi ngày cũ lên cộng đồng, như buổi hôm nay.
+  @State private var sharingPast = false
+  @Environment(AppServices.self) private var services: AppServices?
   @State private var offset = 0
   @State private var selected: Int?
   @State private var picking: DayTarget?
@@ -87,7 +92,10 @@ struct WeekPlanView: View {
         onFinish: {
           let sets = WorkoutsTab.summarySets(board.controller)
           let summary = try await board.controller.finish()
-          finishedPast = WorkoutsTab.FinishedWorkout(summary: summary, sets: sets)
+          if let services { WorkoutsTab.didFinish(services) }
+          // Koa ăn mừng chỉ khi "Koa ló lên" bật (Kiệt 09/11); tắt thì mở thẳng màn tổng kết
+          let done = WorkoutsTab.FinishedWorkout(summary: summary, sets: sets)
+          if services?.preferences.mascotCompanion ?? true { celebrating = done } else { finishedPast = done }
         },
         onClose: { openDay = nil },
         onChangeWorkout: {
@@ -95,13 +103,31 @@ struct WeekPlanView: View {
           openDay = nil
         }
       )
+      .overlay {
+        // Koa ăn mừng trước màn tổng kết (07/11), như buổi hôm nay
+        if let c = celebrating {
+          WorkoutDoneReaction(summary: c.summary) {
+            celebrating = nil
+            finishedPast = c
+          }
+        }
+      }
       .environment(flow)
-      .sheet(item: $finishedPast) { f in
+      .sheet(item: $finishedPast, onDismiss: { sharingPast = false }) { f in
         NavigationStack {
-          WorkoutSummaryView(summary: f.summary, sets: f.sets, onDone: {
-            finishedPast = nil
-            openDay = nil
-          })
+          WorkoutSummaryView(
+            summary: f.summary, sets: f.sets,
+            onDone: {
+              finishedPast = nil
+              openDay = nil
+            },
+            onShare: { sharingPast = true })
+          .navigationDestination(isPresented: $sharingPast) {
+            CommunityShareWorkoutScreen(sessionId: f.summary.sessionId) {
+              finishedPast = nil
+              openDay = nil
+            }
+          }
         }
       }
     }

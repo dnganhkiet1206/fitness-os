@@ -117,7 +117,7 @@ import Testing
   @Test func cupsSitInTheShelfsEmptySpots() {
     let things: [String?: [Double: [ClosedRange<Double>]]] = [
       nil: [250: [28.2...52.9, 76...92], 350: [27.3...52.7, 78...117.6]],
-      "chrome": [250: [26.6...55.4, 76.1...91.9], 350: [27.9...52.1, 78...117.6]],
+      "chrome": [250: [28.2...52.9, 76...92], 350: [27.3...52.7, 82.9...117.1]],  // 08/11: vẽ lại như kệ gốc mới, chồng đĩa ×1,1
     ]
     let boards: [Double: ClosedRange<Double>] = [250: 28...116, 350: 12...132]
     for variant in [nil, "chrome"] as [String?] {

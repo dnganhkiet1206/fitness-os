@@ -204,3 +204,35 @@ struct KoaV2SliceTests {
     #expect(afterPause == fresh, "dừng 10 phút rồi chạy lại: không bù cả quãng")
   }
 }
+
+/// Mặt tập gym vẽ thêm (05/11, Kiệt: "Đạt, đưa vào app").
+struct KoaGymFaceTests {
+  @Test func eachGymFaceTurnsOnOnlyItsOwnLayerAndHidesTheDrawnFace() {
+    for (e, flag) in KoaFlags.gymFace {
+      let f = KoaFlags.flags(e, .idle)
+      #expect(f[flag]?.truthy == true, "\(e)")
+      for (other, of) in KoaFlags.gymFace where other != e { #expect(f[of] == nil) }
+      #expect(f["eyesOpen"]?.truthy == false, "mắt gốc tắt: mặt gym có mắt riêng")
+      for k in f.keys where k.hasPrefix("brow") || k.hasPrefix("mouth") { #expect(f[k]?.truthy != true, "\(e) \(k)") }
+    }
+    #expect(KoaFlags.flags(.happy, .idle).keys.contains { $0.hasPrefix("faceGym") } == false, "mặt cũ không đổi")
+  }
+
+  @Test func gymFacesAreInTheAppSceneAndDraw() {
+    let scene = KoaScene.wardrobeJSON
+    for flag in KoaFlags.gymFace.values { #expect(scene.contains("\"if\":\"\(flag)\""), "\(flag)") }
+    var o = KoaRender.Options()
+    o.live = false
+    o.expression = .happy
+    let happy = KoaRender.figure(o)
+    for e in KoaFlags.gymFace.keys {
+      o.expression = e
+      #expect(KoaRender.figure(o) != happy, "\(e) vẽ khác mặt vui")
+    }
+  }
+
+  @Test func closedEyeGymFacesAreNotForcedToBlink() {
+    #expect(KoaFlags.eyesClosed(.puff) && KoaFlags.eyesClosed(.roar))
+    #expect(!KoaFlags.eyesClosed(.gymFocus))
+  }
+}

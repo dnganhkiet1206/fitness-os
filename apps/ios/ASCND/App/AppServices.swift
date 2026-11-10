@@ -468,7 +468,11 @@ final class AppServices {
         sync.kick()
         // Lịch có buổi tập đầu tiên (onboarding hay tự đặt): lúc xin quyền thông báo (#800).
         if entry.kind == PlanEdit.routineDayKind, entry.payload["template_id"]?.stringValue != nil {
-          Task { await self?.reminders.askAfterSchedule() }
+          // Ghi buổi cũng đi qua đây: chờ cảnh Koa ăn mừng xong, hộp hệ thống không đè lên Koa.
+          Task { @MainActor in
+            await KoaReactionGate.waitIdle()
+            await self?.reminders.askAfterSchedule()
+          }
         }
       })
     // Không ghi buổi ghi tay vào Apple Health nữa (17/10, "Không ghi ngược vào
@@ -1374,7 +1378,11 @@ final class AppServices {
 
   /// Hiệu chỉnh mục tiêu (#527): 35 ngày cân + 14 ngày calo / đạm + hồ sơ.
   func makeSmartGoals(userId: String, today: LocalDate) -> SmartGoalsBook? {
-    rows.map { SmartGoalsBook(userId: userId, today: today, store: $0) }
+    rows.map {
+      SmartGoalsBook(
+        userId: userId, today: today, store: $0,
+        memory: CalorieAdviceMemory(userId: userId, store: UserDefaultsStore()))
+    }
   }
 
   /// Số đo cơ thể (#527): 24 lần đo `body_measurements` mới nhất.

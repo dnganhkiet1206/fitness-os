@@ -1,0 +1,108 @@
+@testable import ASCNDCore
+import Foundation
+import Testing
+
+/// TẠM (không commit): xuất mặt Koa của từng biểu cảm ra JSON cho công cụ Blender.
+struct ZZKoaFaceDumpTests {
+  static func find(_ l: KoaLight.Lit, _ id: String) -> KoaLight.Lit? {
+    if l.node.id == id { return l }
+    for k in l.kids { if let f = find(k, id) { return f } }
+    return nil
+  }
+
+  static func hex(_ p: KoaPaint.Paint) -> String? {
+    guard case .colour(let c) = p else { return nil }
+    return String(format: "#%02X%02X%02X", Int(c.r * 255 + 0.5), Int(c.g * 255 + 0.5), Int(c.b * 255 + 0.5))
+  }
+
+  static func alpha(_ p: KoaPaint.Paint) -> Double {
+    if case .colour(let c) = p { return c.a }
+    return 1
+  }
+
+  static func apply(_ m: KoaMath.Mat, _ p: KoaPaint.Point) -> [Double] {
+    let x: Double = m[0] * p.x + m[2] * p.y + m[4]
+    let y: Double = m[1] * p.x + m[3] * p.y + m[5]
+    return [x, y]
+  }
+
+  static func polylines(_ s: KoaPaint.Shape, _ m: KoaMath.Mat) -> [[[Double]]] {
+    var out: [[[Double]]] = [], cur: [[Double]] = [], last = KoaPaint.Point(0, 0), start = last
+    for seg in s.segments {
+      switch seg {
+      case .move(let p):
+        if cur.count > 1 { out.append(cur) }
+        cur = [apply(m, p)]; last = p; start = p
+      case .line(let p):
+        cur.append(apply(m, p)); last = p
+      case .quad(let c, let p):
+        for i in 1...10 {
+          let t = Double(i) / 10, u = 1 - t
+          let a0: Double = u * u, a1: Double = 2 * u * t, a2: Double = t * t
+          let x: Double = a0 * last.x + a1 * c.x + a2 * p.x
+          let y: Double = a0 * last.y + a1 * c.y + a2 * p.y
+          cur.append(apply(m, KoaPaint.Point(x, y)))
+        }
+        last = p
+      case .cubic(let a, let b, let p):
+        for i in 1...14 {
+          let t = Double(i) / 14, u = 1 - t
+          let b0: Double = u * u * u, b1: Double = 3 * u * u * t, b2: Double = 3 * u * t * t, b3: Double = t * t * t
+          let x: Double = b0 * last.x + b1 * a.x + b2 * b.x + b3 * p.x
+          let y: Double = b0 * last.y + b1 * a.y + b2 * b.y + b3 * p.y
+          cur.append(apply(m, KoaPaint.Point(x, y)))
+        }
+        last = p
+      case .close:
+        cur.append(apply(m, start)); last = start
+      }
+    }
+    if cur.count > 1 { out.append(cur) }
+    return out
+  }
+
+  static func flatten(_ ops: [KoaPaint.Op], _ op: Double, into out: inout [[String: Any]]) {
+    for o in ops {
+      switch o {
+      case .shape(let s):
+        let m = s.matrix
+        let scale = (abs(m[0] * m[3] - m[1] * m[2])).squareRoot()
+        let lines = polylines(s, m)
+        let ys = lines.flatMap { $0.map { $0[1] } }
+        guard let lo = ys.min(), let hi = ys.max(), hi - lo > 0.3 else { continue }
+        var d: [String: Any] = ["lines": lines, "opacity": s.opacity * op, "evenOdd": s.style.evenOdd]
+        if let f = hex(s.style.fill) { d["fill"] = f; d["fillAlpha"] = alpha(s.style.fill) * s.style.fillOpacity }
+        if let k = hex(s.style.stroke) {
+          d["stroke"] = k; d["strokeWidth"] = s.style.strokeWidth * scale
+          d["strokeAlpha"] = alpha(s.style.stroke) * s.style.strokeOpacity
+        }
+        out.append(d)
+      case .group(let gop, _, let inner):
+        flatten(inner, op * gop, into: &out)
+      default: break
+      }
+    }
+  }
+
+  @Test func dumpFaces() throws {
+    guard let path = ProcessInfo.processInfo.environment["KOA_FACE_DUMP"] else { return }
+    var all: [String: Any] = [:]
+    for e in KoaFlags.Expression.allCases {
+      var o = KoaRender.Options()
+      o.expression = e
+      o.live = false
+      o.flat = true
+      o.size = 240
+      let f = KoaRender.flags(o)
+      let c = KoaRender.context(o, f)
+      guard let face = KoaLight.nodes.lazy.compactMap({ Self.find($0, "FACE") }).first else { continue }
+      let els = KoaRender.node(face, c)
+      let root = KoaRender.Element("Svg", kids: [KoaRender.Element("G", matrix: [1, 0, 0, 1, 0, 0], kids: els)])
+      var out: [[String: Any]] = []
+      Self.flatten(KoaPaint.plan(root), 1, into: &out)
+      all[e.rawValue] = out
+    }
+    let data = try JSONSerialization.data(withJSONObject: all)
+    try data.write(to: URL(fileURLWithPath: path))
+  }
+}

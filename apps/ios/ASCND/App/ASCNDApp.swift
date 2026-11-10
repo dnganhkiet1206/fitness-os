@@ -26,6 +26,9 @@ struct ASCNDApp: App {
     // Đo lường (15/10): chỉ khởi động khi có khoá — xem Telemetry.swift.
     // Chế độ UI test (Debug): không gửi gì lên Sentry / PostHog.
     if !AppServices.uiTest { Telemetry.start() }
+    #if DEBUG
+      UITestMode.applyScreenshotTheme()
+    #endif
     let services = AppServices()
     // Ngôn ngữ theo iPhone (Kiệt 23/10), nhưng MỘT nguồn cho mọi chữ (25/10: thẻ Tuần
     // của Koa lẫn Việt / Anh trên máy Kiệt): `Text("khoá")` tra theo `\.locale` của app,
@@ -33,6 +36,9 @@ struct ASCNDApp: App {
     // ngôn ngữ iOS đang hiện cho app (`preferences.lang`, cũng là ngôn ngữ của AI).
     AppLanguage.shared.set(services.preferences.lang.rawValue)
     _services = State(initialValue: services)
+    // Live Activity theo "Koa ló lên" (Kiệt 09/11) — đặt ngay, kể cả lúc hệ thống
+    // mở app ở nền chỉ để chạy nút ±15.
+    controller.showsKoa = services.preferences.mascotCompanion
     // Làm mới nền cho thông báo cộng đồng (16/10) — cần dịch vụ khi không có view.
     CommunityAlerts.services = services
     // Quãng nghỉ (và Live Activity trên màn khoá, có tên bài) của người vừa
@@ -86,6 +92,7 @@ struct ASCNDApp: App {
         // đặt `overrideUserInterfaceStyle` của cửa sổ thì mọi màn, sheet, alert đổi
         // cùng lúc. "Theo máy" = `.unspecified`.
         .onChange(of: services.preferences.theme, initial: true) { _, theme in Self.applyTheme(theme) }
+        .onChange(of: services.preferences.mascotCompanion) { _, on in rest.showsKoa = on }
         .onAppear { Self.applyTheme(services.preferences.theme) }
         .environment(rest)
         .environment(services)

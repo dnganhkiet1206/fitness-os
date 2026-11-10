@@ -29,6 +29,8 @@ struct NutritionTab: View {
   @State private var plans: MealPlansBook?
   /// Danh sách đi chợ của mục "Thêm" (#527, N1).
   @State private var grocery: GroceryBook?
+  /// Gợi ý chỉnh calo (09/11) — cùng sổ với màn Hiệu chỉnh mục tiêu.
+  @State private var calorieGoals: SmartGoalsBook?
   @Environment(\.dynamicTypeSize) private var typeSize
   @Environment(\.scenePhase) private var scenePhase
 
@@ -92,6 +94,12 @@ struct NutritionTab: View {
         plans = nil
         grocery?.close()
         grocery = nil
+        calorieGoals?.close()
+        calorieGoals = nil
+      }
+      if calorieGoals == nil {
+        calorieGoals = services?.makeSmartGoals(userId: userId, today: LocalDate(SystemWallClock().nowMillis(), in: .current))
+        await calorieGoals?.load()
       }
       if plans == nil { plans = services?.makeMealPlans(userId: userId) }
       if grocery == nil { grocery = services?.makeGrocery(userId: userId) }
@@ -118,6 +126,9 @@ struct NutritionTab: View {
     // sang Kế hoạch ăn làm thanh nhảy lên / xuống — như dải tuần của Tập luyện.
     if let userId { dayStrip(userId) }
     if let today { NutritionTodayCard(book: today) }
+    // Gợi ý chỉnh calo ở ngay chỗ mục tiêu hiện (09/11, mock ①): chỉ khi ăn sát
+    // mục tiêu mà cân vẫn lệch, và chưa "Để sau".
+    if let calorieGoals { CalorieHintRow(book: calorieGoals) }
     if let userId {
       MealLogBar(userId: userId) { Task { await reload() } }
     }
@@ -230,8 +241,10 @@ struct NutritionTab: View {
   /// Thẻ calo và các bữa của hôm nay cùng đọc lại (song song).
   private func reload() async {
     async let card: Void = loadToday()
+    async let goals: Void? = calorieGoals?.load()
     await meals?.load()
     await card
+    _ = await goals
   }
 
   private func loadToday() async { await today?.load() }
@@ -321,6 +334,7 @@ struct MealLogBar: View {
       }
       .buttonStyle(.plain)
       .accessibilityLabel(Text(String(localized: "nc.way.search.a11y")))
+      .accessibilityIdentifier("nutrition.search")
       Divider().frame(height: 24).opacity(0.6)
       // Chụp ảnh món cần edge function AI — ẩn khi chưa deploy (`AppServices.probeAI`).
       if services?.aiDeployed == true {

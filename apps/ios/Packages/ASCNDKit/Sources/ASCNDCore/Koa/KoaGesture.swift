@@ -39,7 +39,7 @@ public enum KoaGesture: String, Sendable, Hashable, CaseIterable {
   }
 
   /// Cờ nét mặt của bản vẽ — tắt hết rồi bật đúng `face`.
-  static let facePrefixes = ["eyes", "lids", "brow", "mouth", "show"]
+  static let facePrefixes = ["eyes", "lids", "brow", "mouth", "show", "faceGym"]
 
   /// Tay giơ lên đè lên má: vẽ tay SAU đầu trong cây sẽ bị che — vẽ một lớp tay riêng ở trên.
   public var armsFront: Bool { self == .taDa || self == .cheer }

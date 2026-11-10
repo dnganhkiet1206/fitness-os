@@ -36,3 +36,4 @@ supabase/.branches/
 .claude/worktrees/
 
 .claude/worktrees/
+__pycache__/

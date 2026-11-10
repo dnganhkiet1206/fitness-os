@@ -115,7 +115,6 @@ struct TodayExtras<Plan: View>: View {
   @Environment(NutritionBooks.self) private var nutrition: NutritionBooks?
   @State private var ownWater: WaterBook?
   private var water: WaterBook? { nutrition?.water ?? ownWater }
-  @State private var showsKoaWeek = false
   /// Thẻ tăng tải → Tiến bộ từng bài (Kiệt 01/11).
   @State private var showsOverload = false
   @State private var waterNote: String?
@@ -226,18 +225,13 @@ struct TodayExtras<Plan: View>: View {
         TodayCoachSection(
           userId: userId, today: flow.today.today, refresh: dayVersion,
           waterMl: water?.loaded == true ? water.map { Double($0.totalMl) } : nil)
-        // Chạm dải → thẻ Tuần của Koa đầy đủ: chú thích, thưởng, luật đếm (Kiệt 21/10).
-        Button { showsKoaWeek = true } label: {
-          TodayWeekStrip(
-            days: TodayWeekStrip.days(today: flow.today.today, library: flow.today.library, trained: flow.today.trained),
-            today: flow.today.today,
-            target: flow.today.library.flatMap { lib in KoaGains.Week(lib).planned.isEmpty ? nil : KoaGains.Week(lib).target })
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityHint(Text("kw.open.hint"))
-        .disabled(koaWeekState == nil)
-        .padding(.horizontal, 2)
+        // Một khối: dải ngày và lời giải thích cùng chỗ (không thẻ thứ hai cùng tên).
+        TodayKoaWeekModule(
+          days: TodayWeekStrip.days(today: flow.today.today, library: flow.today.library, trained: flow.today.trained),
+          today: flow.today.today,
+          target: flow.today.library.flatMap { lib in KoaGains.Week(lib).planned.isEmpty ? nil : KoaGains.Week(lib).target },
+          state: koaWeekState,
+          claim: services.koaWeek(userId: userId)?.claim ?? .notYet)
       } else {
         // Thẻ buổi tập ngay dưới khối ngày, mang dòng sẵn sàng.
         VStack(alignment: .leading, spacing: DS.Spacing.md) { plan(readinessRow) }
@@ -299,16 +293,6 @@ struct TodayExtras<Plan: View>: View {
           services.setKoaPause(KoaPause(from: flow.today.today, days: days), userId: userId)
           dailyPlan?.recompute(services: services, flow: flow)
         }
-      }
-    }
-    .sheet(isPresented: $showsKoaWeek) {
-      if let state = koaWeekState {
-        ScrollView {
-          KoaWeekCard(state: state, claim: services.koaWeek(userId: userId)?.claim ?? .notYet)
-            .padding(DS.Spacing.md)
-        }
-        .presentationDetents([.medium])
-        .presentationDragIndicator(.visible)
       }
     }
     .fullScreenCover(isPresented: $scanningFood, onDismiss: openScanned) {

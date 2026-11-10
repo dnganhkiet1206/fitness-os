@@ -125,15 +125,17 @@ struct KoaRepairFloorTests {
     #expect(last.floor.nailSink == 1)
   }
 
-  @Test("ba cú búa: đầu búa chạm đúng đầu đinh (lệch < 1,5 đơn vị)")
+  /// Ngưỡng 1,6 (từ 1,5, 08/11 khi gộp với quay 2.5D `KoaTurn`): Koa quay `turn = 0,25` lúc đóng đinh, tay dời theo
+  /// chiều sâu ~0,08 đơn vị hình — đầu búa lệch tối đa 1,52, dưới một điểm ảnh.
+  @Test("ba cú búa: đầu búa chạm đúng đầu đinh (lệch < 1,6 đơn vị)")
   func hammerHitsTheNail() {
     let all = shots
     let nail = all.last!.floor.nailX!, top = KoaRepairScene.roomY(F.pivotPx.y - 6)
     for h in [10.9, 11.3, 11.8] {
       let i = Int(((h - F.start) * 30).rounded())
       let head = F.hammerHead(all[i], t: Double(i) / 30 + F.start)!
-      #expect(abs(head.x - nail) < 1.5)
-      #expect(abs(head.y - top) < 1.5)
+      #expect(abs(head.x - nail) < 1.6)
+      #expect(abs(head.y - top) < 1.6)
     }
   }
 

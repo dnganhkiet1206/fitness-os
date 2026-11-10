@@ -32,6 +32,13 @@ struct ProgressPhotosView: View {
   @State private var pair: Pair?
   /// Đo cơ thể bằng AI (04/11): nhãn "~18 %" trên ảnh và thẻ xu hướng.
   @State private var checks: BodyChecksBook?
+  /// "Ghi vào Số đo" từ một kết quả đo (09/11): mở màn ghi số đo, điền sẵn % mỡ.
+  @State private var logging: LogBodyFat?
+
+  struct LogBodyFat: Identifiable {
+    let result: BodyCheck.Result
+    var id: String { result.photoId }
+  }
 
   struct Pair: Identifiable {
     let before: ProgressPhotos.Photo
@@ -115,6 +122,15 @@ struct ProgressPhotosView: View {
       }
     }
     .sheet(item: $pair) { CompareSheet(book: book, pair: $0, unit: unit) }
+    .sheet(item: $logging) { item in
+      let userId = book.userId
+      LogMeasurementView(
+        makeLogger: { services?.makeMeasurementLogger(userId: userId) },
+        prefill: .init(
+          date: item.result.date?.calendarDate ?? Date(),
+          fields: [.bodyFat: BodyCheck.measurementText(item.result)],
+          note: String(localized: "photos.ai.log.note \(BodyCheck.range(item.result))")))
+    }
     .alert(
       Text("photos.delete.title"), isPresented: Binding(get: { confirm != nil }, set: { if !$0 { confirm = nil } }),
       presenting: confirm
@@ -193,7 +209,7 @@ struct ProgressPhotosView: View {
     let busy = checks?.measuring.contains(p.id.lowercased()) == true
     if checks != nil {
       Button {
-        if let r { ConfirmAlert.ok(Self.detail(r)) } else { Task { await measure(p) } }
+        if let r { showResult(r) } else { Task { await measure(p) } }
       } label: {
         HStack(spacing: 4) {
           if busy {
@@ -248,6 +264,17 @@ struct ProgressPhotosView: View {
     .padding(DS.Spacing.md)
     .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.md))
     .accessibilityElement(children: .combine)
+  }
+
+  /// Chạm nhãn "~18 %": xem khoảng / độ tin / ghi chú, và chọn ghi số ấy vào Số đo
+  /// (không tự ghi — ước tính từ ảnh, người dùng quyết).
+  private func showResult(_ r: BodyCheck.Result) {
+    ConfirmAlert.choose(
+      title: Self.detail(r),
+      choices: [
+        AlertChoice(title: String(localized: "photos.ai.log")) { logging = LogBodyFat(result: r) },
+        AlertChoice(title: String(localized: "common.ok"), role: .cancel),
+      ])
   }
 
   static func detail(_ r: BodyCheck.Result) -> String {

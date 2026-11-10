@@ -86,54 +86,159 @@ extension ProgressStyle {
   static func missing(_ r: ProgressStatus.Result) -> String {
     r.group == .training ? String(localized: "ps.c.noPlan") : String(localized: "ps.m.need \(count(r)) \(r.need)")
   }
+
+  /// Số một dòng trên hàng kết quả (không phải câu). Đủ để liếc; câu đầy đủ ở chi tiết.
+  static func glance(_ r: ProgressStatus.Result, unit: WeightUnit) -> String {
+    switch r.group {
+    case .training:
+      return r.of > 0 ? "\(r.have)/\(r.of)" : "—"
+    case .steps:
+      if let today = r.today { return n(today) }
+      if let avg = r.average { return n(avg) }
+      return "\(r.have)/\(r.of)"
+    case .nutrition:
+      if let avg = r.average { return "\(n(avg)) g" }
+      return "\(r.have)/\(r.of)"
+    case .sleep:
+      if let avg = r.average { return hours(avg) }
+      return "\(r.have)/\(r.of)"
+    case .recovery:
+      if let avg = r.average { return n(avg) }
+      return "\(r.have)/\(r.of)"
+    case .body:
+      guard let last = r.today else { return "\(r.have)" }
+      return "\(n(unit.display(last), 1)) \(unit.label)"
+    }
+  }
+
+  /// 0…1 cho vòng nhỏ: buổi / trung bình so với mục tiêu. Cơ thể không có tỉ lệ —
+  /// vòng đầy khi tốt, nửa khi cần chú ý.
+  static func ringFraction(_ r: ProgressStatus.Result) -> Double {
+    switch r.group {
+    case .training:
+      guard r.of > 0 else { return 0 }
+      return min(1, Double(r.have) / Double(r.of))
+    case .steps, .nutrition, .sleep:
+      if let value = r.average ?? r.today, let target = r.target, target > 0 {
+        return min(1, value / target)
+      }
+      guard r.of > 0 else { return 0 }
+      return min(1, Double(r.have) / Double(r.of))
+    case .recovery:
+      guard let avg = r.average else { return 0 }
+      return min(1, avg / 100)
+    case .body:
+      switch r.level {
+      case .good: return 1
+      case .attention: return 0.45
+      case .insufficient: return 0
+      }
+    }
+  }
 }
 
-/// Thẻ kết quả: nhãn màu (icon + tên) · chữ trạng thái trắng · dòng đếm · câu nên làm · dòng số.
+/// Kết quả liếc được: một thẻ, mỗi nhóm một hàng (vòng nhỏ màu nhóm + tên + chữ
+/// trạng thái ngắn + số chính). Câu giải thích và dòng số đầy đủ ở trang chi tiết.
+struct ProgressResultsList: View {
+  let results: [ProgressStatus.Result]
+  let open: (ProgressStatus.Result) -> Void
+
+  var body: some View {
+    VStack(spacing: 0) {
+      ForEach(Array(results.enumerated()), id: \.element.group) { i, r in
+        if i > 0 { Divider().padding(.leading, 56).opacity(0.6) }
+        ProgressResultCard(result: r) { open(r) }
+      }
+    }
+    .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous))
+    .todayCard()
+    .accessibilityElement(children: .contain)
+    .accessibilityIdentifier("progress.results")
+  }
+}
+
+/// Một hàng kết quả. Câu "nên làm gì" không nằm ở đây — chạm mở chi tiết.
 struct ProgressResultCard: View {
   let result: ProgressStatus.Result
   let open: () -> Void
   @Environment(\.weightUnit) private var unit
 
   var body: some View {
+    let name = ProgressStyle.name(result.group)
+    let word = ProgressStyle.word(result.level)
+    let glance = ProgressStyle.glance(result, unit: unit)
     Button(action: open) {
-      VStack(alignment: .leading, spacing: 0) {
-        HStack(spacing: 6) {
-          Image(systemName: ProgressStyle.symbol(result.group)).font(.caption.weight(.semibold))
-          Text(verbatim: ProgressStyle.name(result.group)).font(DS.TextStyle.footnote.weight(.semibold))
-          Spacer(minLength: 0)
-          Image(systemName: "chevron.right").font(.caption.weight(.semibold))
-            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+      HStack(spacing: 12) {
+        ProgressStatusRing(fraction: ProgressStyle.ringFraction(result), tint: ProgressStyle.color(result.group))
+          .accessibilityHidden(true)
+        ViewThatFits(in: .horizontal) {
+          HStack(spacing: DS.Spacing.sm) {
+            titles(name: name, word: word)
+            Spacer(minLength: DS.Spacing.sm)
+            number(glance)
+          }
+          VStack(alignment: .leading, spacing: 2) {
+            titles(name: name, word: word)
+            number(glance)
+          }
         }
-        .foregroundStyle(ProgressStyle.color(result.group))
-        ProgressStatusWord(level: result.level, font: .system(size: 24, weight: .bold))
-          .tracking(-0.4)
-          .padding(.top, 8)
-        Text(verbatim: ProgressStyle.count(result))
-          .font(DS.TextStyle.caption)
+        Image(systemName: "chevron.right")
+          .font(.caption.weight(.semibold))
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-          .padding(.top, 1)
-        if let advice = ProgressStyle.advice(result, unit: unit) {
-          Text(verbatim: advice)
-            .font(DS.TextStyle.footnote)
-            .foregroundStyle(DS.Color.foreground.swiftUI.opacity(0.85))
-            .fixedSize(horizontal: false, vertical: true)
-            .padding(.top, 8)
-        }
-        if let line = ProgressStyle.numbers(result, unit: unit) {
-          Text(verbatim: line)
-            .font(DS.TextStyle.caption.monospacedDigit())
-            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-            .padding(.top, 8)
-        }
+          .accessibilityHidden(true)
       }
-      .padding(DS.Spacing.md)
-      .frame(maxWidth: .infinity, alignment: .leading)
+      .padding(.horizontal, DS.Spacing.md)
+      .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
       .contentShape(Rectangle())
     }
     .buttonStyle(TodayPressStyle())
-    .todayCard()
-    .accessibilityElement(children: .combine)
+    .accessibilityElement(children: .ignore)
+    .accessibilityLabel(Text(verbatim: "\(name), \(word), \(glance)"))
     .accessibilityHint(Text("ps.open.hint"))
+    .accessibilityAddTraits(.isButton)
+    .accessibilityIdentifier("progress.result.\(result.group.rawValue)")
+  }
+
+  private func titles(name: String, word: String) -> some View {
+    VStack(alignment: .leading, spacing: 1) {
+      Text(verbatim: name)
+        .font(DS.TextStyle.headline)
+        .foregroundStyle(DS.Color.foreground.swiftUI)
+        .lineLimit(1)
+        .minimumScaleFactor(0.8)
+      Text(verbatim: word)
+        .font(DS.TextStyle.caption)
+        .foregroundStyle(ProgressStyle.tint(result.level))
+        .lineLimit(1)
+        .minimumScaleFactor(0.8)
+    }
+  }
+
+  private func number(_ glance: String) -> some View {
+    Text(verbatim: glance)
+      .font(DS.TextStyle.footnote.weight(.semibold).monospacedDigit())
+      .foregroundStyle(DS.Color.foreground.swiftUI)
+      .lineLimit(1)
+      .minimumScaleFactor(0.7)
+  }
+}
+
+/// Vòng nhỏ: phần đã đạt so với mục tiêu của nhóm. Không chuyển động — Giảm
+/// chuyển động không có gì để tắt, màu không phải cách duy nhất đọc trạng thái.
+private struct ProgressStatusRing: View {
+  let fraction: Double
+  let tint: Color
+
+  var body: some View {
+    ZStack {
+      Circle().stroke(DS.Color.ringTrack.swiftUI, lineWidth: 3)
+      Circle()
+        .trim(from: 0, to: max(0, min(1, fraction)))
+        .stroke(tint, style: StrokeStyle(lineWidth: 3, lineCap: .round))
+        .rotationEffect(.degrees(-90))
+      Circle().fill(fraction > 0 ? tint : DS.Color.ringTrack.swiftUI).frame(width: 6, height: 6)
+    }
+    .frame(width: 28, height: 28)
   }
 }
 
@@ -189,6 +294,9 @@ struct ProgressGroupView: View {
   let snapshot: ProgressStatusBook.Snapshot?
   let week: KoaWeek.State?
   var openTrends: (() -> Void)?
+  /// Màn Vận động / Giấc ngủ đầy đủ — lưới "Tất cả công cụ" không lặp hai tên này.
+  var openSteps: (() -> Void)?
+  var openSleep: (() -> Void)?
   /// Kéo để làm mới (Kiệt 26/10) — cùng lượt đọc lại như tab Tiến bộ.
   var refresh: () async -> Void = {}
   @Environment(\.weightUnit) private var unit
@@ -198,12 +306,23 @@ struct ProgressGroupView: View {
   var body: some View {
     ScrollView {
       VStack(alignment: .leading, spacing: DS.Spacing.md) {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 6) {
           ProgressStatusWord(level: result.level, font: .system(size: 26, weight: .bold))
             .tracking(-0.4)
+          Text(verbatim: ProgressStyle.count(result))
+            .font(DS.TextStyle.footnote)
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .fixedSize(horizontal: false, vertical: true)
+          if let line = ProgressStyle.numbers(result, unit: unit) {
+            Text(verbatim: line)
+              .font(DS.TextStyle.footnote.monospacedDigit())
+              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+              .fixedSize(horizontal: false, vertical: true)
+          }
           Text(verbatim: ProgressStyle.advice(result, unit: unit) ?? ProgressStyle.missing(result))
             .font(DS.TextStyle.body)
-            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .foregroundStyle(DS.Color.foreground.swiftUI.opacity(0.85))
+            .fixedSize(horizontal: false, vertical: true)
         }
         content
         Text("ps.about.short")
@@ -256,9 +375,13 @@ struct ProgressGroupView: View {
       BodySection(userId: flow.today.userId, today: flow.today.today, status: result.level)
     case .steps:
       chart(values: snapshot?.steps, target: result.target, label: String(localized: "ps.chart.steps"))
+      if let openSteps { deeper("figure.walk", String(localized: "assistant.tool.steps"),
+                                String(localized: "assistant.tool.steps.hint"), openSteps) }
     case .sleep:
       chart(values: snapshot?.sleepMinutes.map { $0.map { $0 / 60 } }, target: result.target.map { $0 / 60 },
             label: String(localized: "ps.chart.sleep"), unit: "h")
+      if let openSleep { deeper("moon.fill", String(localized: "assistant.tool.sleep"),
+                                String(localized: "assistant.tool.sleep.hint"), openSleep) }
     case .recovery:
       chart(values: snapshot?.readiness, target: result.target, label: String(localized: "ps.chart.recovery"))
       if let openTrends {
@@ -274,6 +397,16 @@ struct ProgressGroupView: View {
       chart(values: snapshot?.protein, target: result.target, label: String(localized: "ps.chart.protein"), unit: "g")
       if let s = snapshot { nutritionRows(s) }
     }
+  }
+
+  /// Lối sang màn đầy đủ (mục tiêu bước, tầng ngủ) — cùng hàng công cụ với các trang khác.
+  private func deeper(_ symbol: String, _ title: String, _ sub: String, _ open: @escaping () -> Void) -> some View {
+    Button(action: open) {
+      WorkoutsHomeView.toolRow(symbol, title, sub: sub, tint: ProgressStyle.color(result.group))
+    }
+    .buttonStyle(.plain)
+    .accessibilityLabel(Text(verbatim: title))
+    .todayCard()
   }
 
   /// Tiêu đề nói đo gì và đơn vị nào; đường mục tiêu có nhãn; ngày chưa ghi là một vạch

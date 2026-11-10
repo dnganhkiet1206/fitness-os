@@ -142,9 +142,9 @@ struct FocusRestCard: View {
   /// Màu Tập, cùng màu với thanh tiến độ và nút "Xong set" của màn này.
   private var tint: Color { DS.Color.metricRose.swiftUI }
 
-  /// Koa nghỉ cùng người dùng, cùng dáng với Live Activity.
+  /// Koa nghỉ cùng người dùng, cùng dáng với Live Activity. "Koa ló lên" tắt thì vòng chỉ còn số giây.
   @ViewBuilder private var koa: some View {
-    if let services {
+    if let services, services.preferences.mascotCompanion {
       let state: RestKoa = timer.isPaused ? .waiting : record == nil ? .resting : .record
       MascotFigureView(
         mascotId: services.preferences.mascotSelected, emotion: state.emotion, equipped: services.koaEquipped,
