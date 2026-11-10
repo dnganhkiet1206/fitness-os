@@ -168,7 +168,7 @@ struct TodayExtras<Plan: View>: View {
             .font(DS.TextStyle.body)
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
           Button(String(localized: "common.retry")) { Task { await mascot.load() } }
-            .buttonStyle(.bordered)
+            .buttonStyle(.dsPillSecondary)
             .frame(minHeight: 44)
         }
         .frame(maxWidth: .infinity)

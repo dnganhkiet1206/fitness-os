@@ -55,7 +55,7 @@ struct ReadinessCardView: View {
         VStack(spacing: DS.Spacing.sm) {
           Text(String(localized: "async.error.generic")).font(DS.TextStyle.footnote)
           Button(String(localized: "common.retry")) { Task { await book.load() } }
-            .buttonStyle(.bordered)
+            .buttonStyle(.dsPillSecondary)
             .frame(minHeight: 44)
         }
         .frame(maxWidth: .infinity)

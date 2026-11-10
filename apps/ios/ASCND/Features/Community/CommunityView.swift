@@ -216,9 +216,9 @@ struct CommunityFeedView: View {
           } label: {
             Text("community.setup.cta")
               .font(DS.TextStyle.headline)
-              .frame(maxWidth: .infinity, minHeight: 44)
+              .frame(maxWidth: .infinity, minHeight: 50)
           }
-          .buttonStyle(.borderedProminent)
+          .buttonStyle(.dsPill)
           .buttonBorderShape(.capsule)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -1157,16 +1157,16 @@ private struct NewPostsPill: View {
         HStack(spacing: -6) {
           ForEach(CommunityFeedHold.faces(held), id: \.userId) { a in
             MascotAvatar(mascotId: a.mascotId, size: 22)
-              .overlay(Circle().strokeBorder(DS.Color.primary.swiftUI, lineWidth: 1.5))
+              .overlay(Circle().strokeBorder(DS.Color.foreground.swiftUI, lineWidth: 1.5))
           }
         }
         Text(n == 1 ? String(localized: "community.newposts.one \(n)") : String(localized: "community.newposts.other \(n)"))
           .font(DS.TextStyle.footnote.weight(.semibold))
       }
-      .foregroundStyle(DS.Color.primaryForeground.swiftUI)
+      .foregroundStyle(DS.Color.background.swiftUI)
       .padding(.horizontal, DS.Spacing.md)
       .frame(minHeight: 44)
-      .background(DS.Color.primary.swiftUI, in: Capsule())
+      .background(DS.Color.foreground.swiftUI, in: Capsule())
       .contentShape(Capsule())
     }
     .buttonStyle(.plain)
@@ -1263,9 +1263,9 @@ private struct FollowSuggestionsCard: View {
         Button(action: showFeed) {
           Label(String(localized: "community.suggest.showfeed"), systemImage: "arrow.down")
             .font(DS.TextStyle.headline)
-            .foregroundStyle(DS.Color.primaryForeground.swiftUI)
+            .foregroundStyle(DS.Color.background.swiftUI)
             .frame(maxWidth: .infinity, minHeight: 50)
-            .background(DS.Color.primary.swiftUI, in: Capsule())
+            .background(DS.Color.foreground.swiftUI, in: Capsule())
         }
         .buttonStyle(TodayPressStyle())
       }

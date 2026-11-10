@@ -384,12 +384,12 @@ struct CommunityChallengeView: View {
   private func solid(_ label: String, busy: Bool, _ run: @escaping () -> Void) -> some View {
     Button(action: run) {
       Group {
-        if busy { ProgressView().tint(DS.Color.primaryForeground.swiftUI) } else { Text(verbatim: label) }
+        if busy { ProgressView().tint(DS.Color.background.swiftUI) } else { Text(verbatim: label) }
       }
       .font(DS.TextStyle.headline)
-      .foregroundStyle(DS.Color.primaryForeground.swiftUI)
+      .foregroundStyle(DS.Color.background.swiftUI)
       .frame(maxWidth: .infinity, minHeight: 50)
-      .background(DS.Color.primary.swiftUI, in: Capsule())
+      .background(DS.Color.foreground.swiftUI, in: Capsule())
     }
     .buttonStyle(.plain)
     .disabled(busy)

@@ -207,5 +207,9 @@ tính năng đồng bộ trong toàn app" → "làm đi".
   (`ChipPicker`).
 - Tiêu đề lớn trong nội dung, nút tròn bên phải; thanh điều hướng ẩn + `statusBarScrim`.
 - Hành động chính: viên đen đặc; phụ: viên viền mảnh.
+  - 10/11 (Kiệt duyệt mock https://claude.ai/artifact/Kmt7Y9vxeMnmsBGA79FdV3): MỘT họ nút viên. `DSButton` (trải
+    ngang, cao 50) và `.dsPill` / `.dsPillSecondary` (trong hàng, cao 40) cùng màu mực (`foreground` / chữ
+    `background`); nguy hiểm = viên viền đỏ chữ đỏ. Không dùng `.bordered` / `.borderedProminent` của hệ thống (chỉ
+    còn ở màn Debug). Hành động thứ ba: chữ gạch chân.
 
 ## Chưa làm (cần chủ dự án chọn / việc lớn)

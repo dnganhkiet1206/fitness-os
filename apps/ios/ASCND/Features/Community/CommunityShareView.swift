@@ -308,14 +308,14 @@ struct SharePostButton: View {
     Button(action: action) {
       Group {
         if posting {
-          ProgressView().tint(DS.Color.primaryForeground.swiftUI)
+          ProgressView().tint(DS.Color.background.swiftUI)
         } else {
           Text("community.share.post").font(DS.TextStyle.headline)
         }
       }
-      .foregroundStyle(DS.Color.primaryForeground.swiftUI)
+      .foregroundStyle(DS.Color.background.swiftUI)
       .frame(maxWidth: .infinity, minHeight: 50)
-      .background(DS.Color.primary.swiftUI, in: Capsule())
+      .background(DS.Color.foreground.swiftUI, in: Capsule())
       .opacity(posting || !enabled ? 0.6 : 1)
     }
     .buttonStyle(.plain)
