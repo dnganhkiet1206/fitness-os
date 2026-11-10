@@ -67,9 +67,9 @@ struct GroceryView: View {
       Button(action: submit) {
         Image(systemName: "plus")
           .font(.system(size: 18, weight: .bold))
-          .foregroundStyle(DS.Color.primaryForeground.swiftUI)
+          .foregroundStyle(DS.Color.background.swiftUI)
           .frame(width: 48, height: 48)
-          .background(DS.Color.primary.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.md))
+          .background(DS.Color.foreground.swiftUI, in: Circle())
       }
       .buttonStyle(TodayPressStyle())
       .disabled(Grocery.cleanName(draft) == nil || book.busy)

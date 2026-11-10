@@ -2,6 +2,12 @@
 //
 // Ba kiểu: primary (hành động chính), secondary (hành động phụ),
 // destructive (hành động huỷ bỏ). Vùng chạm ≥ 44pt theo HIG.
+//
+// 10/11 (Kiệt duyệt mock "Thống nhất nút và biểu đồ",
+// https://claude.ai/artifact/Kmt7Y9vxeMnmsBGA79FdV3): MỘT họ nút viên cho cả app,
+// cùng màu với `.dsPill` — chính: viên đặc màu mực; phụ: viên viền mảnh; nguy hiểm:
+// viên viền đỏ, chữ đỏ. Cao 50 khi trải ngang (DSButton); 40 trong hàng (`.dsPill`).
+// Trước đây chính là chữ nhật màu kem bo 16, lệch với viên ở Tập luyện / Cơ thể.
 #if canImport(SwiftUI)
 public import SwiftUI
 
@@ -30,31 +36,29 @@ public struct DSButton: View {
       Text(title)
         .font(DS.TextStyle.headline)
         .frame(maxWidth: .infinity)
-        .frame(minHeight: 48)
-        .background(backgroundColor.swiftUI)
+        .frame(minHeight: 50)
         .foregroundStyle(foregroundColor.swiftUI)
-        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.md))
+        .background {
+          switch style {
+          case .primary: Capsule().fill(DS.Color.foreground.swiftUI)
+          case .secondary: Capsule().strokeBorder(DS.Color.foreground.swiftUI.opacity(0.2), lineWidth: 1)
+          case .destructive: Capsule().strokeBorder(DS.Color.destructive.swiftUI.opacity(0.45), lineWidth: 1)
+          }
+        }
+        .contentShape(Capsule())
         // Disabled: mờ đi (#304).
-        .opacity(isEnabled ? 1.0 : 0.5)
+        .opacity(isEnabled ? 1.0 : 0.4)
     }
     .buttonStyle(DSButtonPressStyle())
     .accessibilityLabel(Text(title))
     .accessibilityAddTraits(.isButton)
   }
 
-  private var backgroundColor: DSColor {
-    switch style {
-    case .primary: DS.Color.primary
-    case .secondary: DS.Color.secondary
-    case .destructive: DS.Color.destructive
-    }
-  }
-
   private var foregroundColor: DSColor {
     switch style {
-    case .primary: DS.Color.primaryForeground
+    case .primary: DS.Color.background
     case .secondary: DS.Color.foreground
-    case .destructive: DS.Color.destructiveForeground
+    case .destructive: DS.Color.destructive
     }
   }
 }

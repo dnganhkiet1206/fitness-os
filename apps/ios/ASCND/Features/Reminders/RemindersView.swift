@@ -239,7 +239,7 @@ struct RemindersView: View {
         Task { await center.setTime(key, hour: offer.hour, minute: offer.minute) }
       }
       .font(DS.TextStyle.caption.weight(.bold))
-      .buttonStyle(.bordered)
+      .buttonStyle(.dsPillSecondary)
       .frame(minHeight: 44)
     }
   }
