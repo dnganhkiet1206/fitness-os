@@ -113,7 +113,7 @@ final class WatchWorkoutModel {
     let session = WCSession.default
     if session.isReachable {
       session.sendMessage(payload, replyHandler: nil) { _ in
-        Task { @MainActor in WCSession.default.transferUserInfo(payload) }
+        Task { @MainActor in _ = WCSession.default.transferUserInfo(payload) }
       }
     } else {
       session.transferUserInfo(payload)

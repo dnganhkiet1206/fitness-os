@@ -64,7 +64,7 @@ struct WatchWorkoutView: View {
   private func resting(_ card: WatchRestCard, now: EpochMillis, pending: Int) -> some View {
     let left = card.timer.remaining(at: now)
     let warn = RestTimer.warns(left: left, paused: card.timer.isPaused)
-    ScrollView {
+    return ScrollView {
       VStack(spacing: 8) {
         ZStack {
           Circle()
