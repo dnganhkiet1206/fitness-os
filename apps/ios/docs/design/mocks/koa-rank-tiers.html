@@ -1,0 +1,256 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bậc trong hạng của Koa</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+:root{
+  --bg:#f7f4ef;--card:#ffffff;--fg:#1a1917;--muted:#6b6559;--border:#dcd5c8;--track:#e9e3d8;--phone:#f7f4ef;
+  --good:#0a7b6c;--old:#b83044;--wash:rgba(26,25,23,.05);
+  --r0:#6f7787;--r1:#078055;--r2:#0673be;--r3:#8c35d0;--r4:#ac5b06;--r5:#8a6a00;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0b0a09;--card:#16151a;--fg:#ededed;--muted:#8b8b8b;--border:#2b2b31;--track:#2b2b31;--phone:#100e0c;
+  --good:#63e6be;--old:#e6485c;--wash:rgba(255,255,255,.05);
+  --r0:#8b93a4;--r1:#2bf5a8;--r2:#3ba6ff;--r3:#b07de0;--r4:#e08a3a;--r5:#ffd93d;color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0b0a09;--card:#16151a;--fg:#ededed;--muted:#8b8b8b;--border:#2b2b31;--track:#2b2b31;--phone:#100e0c;
+  --good:#63e6be;--old:#e6485c;--wash:rgba(255,255,255,.05);
+  --r0:#8b93a4;--r1:#2bf5a8;--r2:#3ba6ff;--r3:#b07de0;--r4:#e08a3a;--r5:#ffd93d;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:15px/1.5 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",system-ui,sans-serif;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 64px}
+.wrap{max-width:1040px;margin:0 auto;display:flex;flex-direction:column;gap:44px}
+header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+h1{font-size:30px;line-height:1.15;margin:0 0 6px;letter-spacing:-.01em;text-wrap:balance}
+h2{font-size:22px;margin:0 0 4px;text-wrap:balance}
+h3{font-size:12.5px;margin:0;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700}
+p{margin:0;max-width:68ch}
+.lede{color:var(--muted)}
+section{display:flex;flex-direction:column;gap:16px}
+.toggle{display:flex;border:1px solid var(--border);border-radius:999px;padding:3px;gap:2px}
+.toggle button{border:0;background:none;color:var(--muted);font:inherit;font-size:13px;padding:6px 12px;border-radius:999px;cursor:pointer}
+.toggle button[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
+.panel{background:var(--card);border:1px solid var(--border);border-radius:24px;padding:20px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.tag{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.tag.old{color:var(--old)}.tag.new{color:var(--good)}
+.tag::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media (max-width:760px){.cols{grid-template-columns:1fr}}
+/* timeline */
+.tl{overflow-x:auto}
+.tl svg{min-width:640px;width:100%;height:auto;display:block}
+.tl text{font-size:11px;fill:var(--muted);font-variant-numeric:tabular-nums}
+.tl .lab{font-size:11.5px;font-weight:700;fill:var(--fg)}
+.note{font-size:13.5px;color:var(--muted)}
+.big{font-size:28px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.stat{display:flex;flex-direction:column;gap:2px}
+.stats{display:flex;gap:28px;flex-wrap:wrap}
+/* table */
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:520px;font-size:14px}
+th,td{text-align:left;padding:10px 10px;border-bottom:1px solid var(--border);vertical-align:middle}
+th{font-size:12px;color:var(--muted);font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+td.n{font-variant-numeric:tabular-nums}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px;vertical-align:baseline}
+.pips{display:inline-flex;gap:3px;vertical-align:middle}
+.pips i{width:14px;height:5px;border-radius:3px;background:var(--track)}
+.pips i.on{background:currentColor}
+/* phones */
+.phones{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+@media (max-width:820px){.phones{grid-template-columns:1fr}}
+.phone{background:var(--phone);border:1px solid var(--border);border-radius:28px;padding:16px 14px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.cap{font-size:12.5px;color:var(--muted)}
+.koarow{display:flex;gap:12px;align-items:center}
+.koa{flex:none;width:58px;height:58px;border-radius:16px;background:var(--wash);border:1px dashed var(--border);display:grid;place-items:center;font-size:11px;color:var(--muted);text-align:center;line-height:1.15}
+.koa.lg{width:96px;height:96px;border-radius:24px;font-size:12px}
+.k1{font-size:12px;color:var(--muted)}
+.k2{font-weight:700;font-size:17px;letter-spacing:-.01em}
+.k3{font-size:13px;color:var(--muted)}
+.bar{height:6px;border-radius:3px;background:var(--track);overflow:hidden}
+.bar b{display:block;height:100%;border-radius:3px;background:currentColor}
+.mini{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.center{align-items:center;text-align:center}
+.pill{display:inline-flex;align-items:center;justify-content:center;height:40px;padding:0 18px;border-radius:999px;background:var(--fg);color:var(--bg);font-weight:600;font-size:15px}
+.rack svg{width:100%;height:auto;display:block}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.opt{border:1px solid var(--border);border-radius:18px;padding:14px;background:var(--card);display:flex;flex-direction:column;gap:6px}
+.opt b{font-size:15px}
+.opt span{font-size:13.5px;color:var(--muted)}
+.rec{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--good)}
+footer{color:var(--muted);font-size:13px;border-top:1px solid var(--border);padding-top:16px}
+code{font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--wash);padding:1px 5px;border-radius:6px}
+</style>
+
+<div class="wrap">
+<header>
+  <div>
+    <h1>Bậc trong hạng của Koa</h1>
+    <p class="lede">Mock cho Kiệt duyệt (10/11). Mục tiêu: người tập đều luôn có một mốc Koa cách không quá ba tuần. Vẫn chỉ dùng Gains, không thêm loại điểm nào, và không vẽ lại Koa.</p>
+  </div>
+  <div class="toggle" role="group" aria-label="Giao diện">
+    <button data-t="light" aria-pressed="false">Sáng</button>
+    <button data-t="dark" aria-pressed="false">Tối</button>
+  </div>
+</header>
+
+<section>
+  <h2>1 · Vì sao cần</h2>
+  <p class="lede">Mỗi vạch là một lần Koa có gì mới, tính cho người tập đủ lịch 3 buổi mỗi tuần (51 Gains/tuần, đúng luật đang chạy). Hiện tại sau tuần 11 phải chờ 12 tuần, rồi 22 tuần.</p>
+  <div class="panel">
+    <span class="tag old">Hiện tại · 5 lần lên hạng trong 45 tuần</span>
+    <div class="tl" id="tl-old"></div>
+    <span class="tag new">Đề xuất · thêm 14 lần lên bậc ở giữa</span>
+    <div class="tl" id="tl-new"></div>
+    <div class="stats">
+      <div class="stat"><span class="big" id="gap-old">–</span><span class="note">khoảng chờ dài nhất hiện tại</span></div>
+      <div class="stat"><span class="big" id="gap-new">–</span><span class="note">khoảng chờ dài nhất theo đề xuất</span></div>
+      <div class="stat"><span class="big">0</span><span class="note">loại điểm mới</span></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>2 · Luật</h2>
+  <p class="lede">Mốc Gains của sáu hạng giữ nguyên. Mỗi hạng chia đều thành vài bậc, mỗi bậc khoảng 2–3 tuần tập đủ. Bậc cũng như hạng: chỉ đi lên, nghỉ không mất.</p>
+  <div class="panel tbl">
+    <table>
+      <thead><tr><th>Hạng</th><th>Gains</th><th>Số bậc</th><th>Mỗi bậc</th><th>Khoảng</th><th>Hiển thị</th></tr></thead>
+      <tbody id="rules"></tbody>
+    </table>
+    <p class="note">Mass Monster hiện là điểm cuối, tới nơi là hết mục tiêu. Đề xuất cho hạng này bậc không giới hạn: cứ 150 Gains (khoảng 3 tuần) lên một bậc, ghi bằng số ("Mass Monster · bậc 7").</p>
+  </div>
+</section>
+
+<section>
+  <h2>3 · Người dùng thấy gì</h2>
+  <p class="lede">Ô "Koa" là chỗ đặt hình Koa của Kiệt. Mock không vẽ Koa.</p>
+  <div class="phones">
+    <div class="phone">
+      <h3>Hôm nay · hiện tại</h3>
+      <div class="koarow">
+        <div class="koa">Koa</div>
+        <div><div class="k1">Koa</div><div class="k2">Lifter · 262 Gains</div><div class="k3">còn 278 tới Swole</div></div>
+      </div>
+      <span class="cap">Mốc kế cách khoảng 5 tuần rưỡi. Con số 278 không gợi ra việc gì làm được trong tuần này.</span>
+      <h3 style="margin-top:8px">Hôm nay · đề xuất</h3>
+      <div class="koarow" style="color:var(--r2)">
+        <div class="koa">Koa</div>
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px">
+          <div class="k1">Koa</div>
+          <div class="k2" style="color:var(--fg)">Lifter <span class="pips"><i class="on"></i><i></i><i></i></span></div>
+          <div class="bar"><b style="width:68%"></b></div>
+          <div class="k3">còn 38 Gains tới Lifter II · khoảng 4 buổi</div>
+        </div>
+      </div>
+      <span class="cap">Mốc kế luôn gần, và được đổi ra số buổi tập.</span>
+    </div>
+
+    <div class="phone">
+      <h3>Xong buổi · lên bậc</h3>
+      <div class="mini center" style="color:var(--r2)">
+        <div class="koa lg">Koa<br>ăn mừng nhỏ</div>
+        <div class="k2" style="color:var(--fg)">Lifter II</div>
+        <span class="pips"><i class="on"></i><i class="on"></i><i></i></span>
+        <div class="k3">300 Gains. Từ bậc trước, bạn tập 7 buổi và phá 2 kỷ lục.</div>
+        <div class="k3">Giá tạ trong phòng Koa có thêm một bánh.</div>
+        <span class="pill">Xem phòng Koa</span>
+      </div>
+      <span class="cap">Nằm trong màn tổng kết buổi, không chặn đường. Lên hạng vẫn là khoảnh khắc lớn như hiện nay; lên bậc là bản nhỏ hơn, có số thật của chặng vừa qua.</span>
+    </div>
+
+    <div class="phone">
+      <h3>Phòng Koa · giá tạ lớn dần</h3>
+      <div class="mini rack">
+        <svg viewBox="0 0 280 150" role="img" aria-label="Giá tạ có ba bánh mỗi bên, bánh mới nhất sáng màu">
+          <rect x="0" y="126" width="280" height="2" fill="var(--border)"/>
+          <rect x="52" y="52" width="6" height="76" rx="3" fill="var(--muted)"/><rect x="222" y="52" width="6" height="76" rx="3" fill="var(--muted)"/>
+          <rect x="20" y="62" width="240" height="6" rx="3" fill="var(--fg)" opacity=".75"/>
+          <g fill="var(--r1)" opacity=".8"><rect x="66" y="35" width="10" height="60" rx="4"/><rect x="204" y="35" width="10" height="60" rx="4"/></g>
+          <g fill="var(--r1)" opacity=".8"><rect x="80" y="39" width="9" height="52" rx="4"/><rect x="191" y="39" width="9" height="52" rx="4"/></g>
+          <g fill="var(--r2)"><rect x="93" y="35" width="10" height="60" rx="4"/><rect x="177" y="35" width="10" height="60" rx="4"/></g>
+          <g fill="none" stroke="var(--border)" stroke-dasharray="3 3"><rect x="107" y="39" width="9" height="52" rx="4"/><rect x="164" y="39" width="9" height="52" rx="4"/></g>
+          <text x="140" y="146" text-anchor="middle" style="font-size:11px;fill:var(--muted)">xanh lá: Gym Rat I, II · xanh dương: Lifter I · nét đứt: bậc kế</text>
+        </svg>
+        <div class="k3">Mỗi bậc thêm một cặp bánh tạ, màu theo hạng. Chạm vào bánh thì Koa kể ngày lên bậc và số buổi của chặng đó.</div>
+      </div>
+      <span class="cap">Phòng đã có giá tạ olympic và kệ cúp kỷ lục. Bánh tạ tính từ Gains nên không mua được và không bao giờ mất.</span>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>4 · Ba điều cần Kiệt chọn</h2>
+  <div class="opts">
+    <div class="opt"><span class="rec">Đề xuất</span><b>Cách ghi bậc: số La Mã</b><span>"Lifter II", kèm vạch nhỏ. Dân tập quen cách này từ hạng game. Lựa chọn khác: chỉ hiện vạch, không ghi chữ.</span></div>
+    <div class="opt"><span class="rec">Đề xuất</span><b>Mỗi bậc đổi gì: bánh tạ trong phòng</b><span>Không đụng hình Koa. Lựa chọn khác, cần Kiệt vẽ: Koa to dần từng chút giữa hai hạng, hoặc một phụ kiện nhỏ theo bậc (băng cổ tay, đai lưng).</span></div>
+    <div class="opt"><span class="rec">Đề xuất</span><b>Có thưởng xu khi lên bậc không: không</b><span>Giữ đúng nguyên tắc đã chốt: xu chỉ đến từ nhiệm vụ ngày, tiến bộ không quy ra tiền. Lựa chọn khác: 30 xu mỗi bậc.</span></div>
+  </div>
+</section>
+
+<footer>
+  Chưa đổi gì trong app. Số liệu lấy từ <code>KoaGains.thresholds</code> = 0 / 40 / 180 / 540 / 1.150 / 2.300 và 51 Gains mỗi tuần tập đủ lịch 3 buổi. Người tập 2 buổi mỗi tuần sẽ đi chậm hơn khoảng 1,4 lần; mock chưa vẽ trường hợp đó.
+</footer>
+</div>
+
+<script>
+(function(){
+  const root=document.documentElement, btns=[...document.querySelectorAll('.toggle button')];
+  const sys=()=>matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
+  const paint=()=>{const c=root.getAttribute('data-theme')||sys();btns.forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.t===c)))};
+  btns.forEach(b=>b.addEventListener('click',()=>{root.setAttribute('data-theme',b.dataset.t);paint()}));
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change',paint);paint();
+
+  const PER_WEEK=51;
+  const ranks=[
+    {name:'Newbie',from:0,to:40,tiers:1},
+    {name:'Gym Rat',from:40,to:180,tiers:2},
+    {name:'Lifter',from:180,to:540,tiers:3},
+    {name:'Swole',from:540,to:1150,tiers:5},
+    {name:'Beast',from:1150,to:2300,tiers:8},
+    {name:'Mass Monster',from:2300,to:null,tiers:null},
+  ];
+  const roman=['I','II','III','IV','V','VI','VII','VIII'];
+  const wk=g=>g/PER_WEEK;
+  const f1=n=>n.toLocaleString('vi-VN',{maximumFractionDigits:1});
+  const f0=n=>Math.round(n).toLocaleString('vi-VN');
+
+  // rules table
+  const tb=document.getElementById('rules');
+  ranks.forEach((r,i)=>{
+    const tr=document.createElement('tr');
+    if(r.to===null){
+      tr.innerHTML=`<td><span class="dot" style="background:var(--r${i})"></span>${r.name}</td><td class="n">từ ${f0(r.from)}</td><td class="n">không giới hạn</td><td class="n">150 Gains</td><td class="n">~${f1(150/PER_WEEK)} tuần</td><td>bậc 1, 2, 3…</td>`;
+    }else{
+      const size=(r.to-r.from)/r.tiers;
+      const show=r.tiers===1?'không chia bậc':`<span style="color:var(--r${i})"><span class="pips">${Array.from({length:r.tiers},(_,k)=>`<i class="${k<1?'on':''}"></i>`).join('')}</span></span> &nbsp;${roman[0]} → ${roman[r.tiers-1]}`;
+      tr.innerHTML=`<td><span class="dot" style="background:var(--r${i})"></span>${r.name}</td><td class="n">${f0(r.from)} – ${f0(r.to)}</td><td class="n">${r.tiers}</td><td class="n">${f0(size)} Gains</td><td class="n">~${f1(size/PER_WEEK)} tuần</td><td>${show}</td>`;
+    }
+    tb.append(tr);
+  });
+
+  // events
+  const rankUps=ranks.slice(1).map((r,i)=>({w:wk(r.from),rank:i+1,label:r.name,big:true}));
+  const tierUps=[];
+  ranks.forEach((r,i)=>{ if(r.to===null||r.tiers<2) return; const size=(r.to-r.from)/r.tiers;
+    for(let k=1;k<r.tiers;k++) tierUps.push({w:wk(r.from+size*k),rank:i,label:roman[k],big:false}); });
+  const MAXW=48, W=920, L=14, R=14, H=92;
+  const x=w=>L+(w/MAXW)*(W-L-R);
+  function maxGap(ev){const ws=[0,...ev.map(e=>e.w).sort((a,b)=>a-b)];let g=0;for(let i=1;i<ws.length;i++)g=Math.max(g,ws[i]-ws[i-1]);return g}
+  function draw(id,ev){
+    const bands=ranks.map((r,i)=>{const a=wk(r.from),b=r.to===null?MAXW:Math.min(wk(r.to),MAXW);
+      return `<rect x="${x(a)}" y="40" width="${Math.max(0,x(b)-x(a))}" height="10" fill="var(--r${i})" opacity=".28"/>`}).join('');
+    const marks=ev.map(e=>e.big
+      ?`<line x1="${x(e.w)}" x2="${x(e.w)}" y1="22" y2="58" stroke="var(--r${e.rank})" stroke-width="3" stroke-linecap="round"/><text class="lab" x="${x(e.w)}" y="16" text-anchor="${e.w>40?'end':'middle'}">${e.label}</text>`
+      :`<line x1="${x(e.w)}" x2="${x(e.w)}" y1="32" y2="58" stroke="var(--r${e.rank})" stroke-width="2" stroke-linecap="round" opacity=".9"/><text x="${x(e.w)}" y="28" text-anchor="middle">${e.label}</text>`).join('');
+    const ticks=[0,4,8,12,16,20,24,28,32,36,40,44,48].map(t=>`<text x="${x(t)}" y="78" text-anchor="middle">${t}</text>`).join('');
+    document.getElementById(id).innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img">${bands}${marks}${ticks}<text x="${W-R}" y="${H-1}" text-anchor="end">tuần tập đủ lịch</text></svg>`;
+  }
+  draw('tl-old',rankUps);
+  const all=[...rankUps,...tierUps];
+  draw('tl-new',all);
+  document.getElementById('gap-old').textContent=f1(maxGap(rankUps))+' tuần';
+  document.getElementById('gap-new').textContent=f1(maxGap(all))+' tuần';
+})();
+</script>
