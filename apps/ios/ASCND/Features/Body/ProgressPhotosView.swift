@@ -242,27 +242,19 @@ struct ProgressPhotosView: View {
       HStack(alignment: .firstTextBaseline) {
         Text("photos.ai.trend").font(DS.TextStyle.footnote.weight(.semibold))
         Spacer()
-        Text(verbatim: String(format: "%@%.1f", t.change > 0 ? "+" : t.change < 0 ? "−" : "±", abs(t.change)) + " " + String(localized: "photos.ai.points"))
+        Text(verbatim: (t.change > 0 ? "+" : t.change < 0 ? "−" : "±")
+          + abs(t.change).formatted(.number.precision(.fractionLength(1)).locale(.app)) + " " + String(localized: "photos.ai.points"))
           .font(DS.TextStyle.footnote.weight(.semibold).monospacedDigit())
           .foregroundStyle(t.change <= 0 ? DS.Color.readinessGreen.swiftUI : DS.Color.mutedForeground.swiftUI)
       }
-      GeometryReader { g in
-        let lo = (t.points.map(\.pct).min() ?? 0) - 1, hi = (t.points.map(\.pct).max() ?? 1) + 1
-        Path { path in
-          for (i, pt) in t.points.enumerated() {
-            let x = g.size.width * Double(i) / Double(max(t.points.count - 1, 1))
-            let y = g.size.height * (1 - (pt.pct - lo) / max(hi - lo, 1))
-            if i == 0 { path.move(to: CGPoint(x: x, y: y)) } else { path.addLine(to: CGPoint(x: x, y: y)) }
-          }
-        }
-        .stroke(DS.Color.primary.swiftUI, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
-      }
-      .frame(height: 44)
+      BodyTrendChart(
+        points: t.points.enumerated().map { i, p in BodyTrendChart.Point(id: i, date: p.date.calendarDate, value: p.pct) },
+        estimate: true, showsEveryPoint: true, height: 96)
       .accessibilityHidden(true)
       Text("photos.ai.disclaimer").font(DS.TextStyle.caption).foregroundStyle(DS.Color.mutedForeground.swiftUI)
     }
-    .padding(DS.Spacing.md)
-    .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.md))
+    .padding(DS.Spacing.card)
+    .dsCard()
     .accessibilityElement(children: .combine)
   }
 

@@ -199,11 +199,25 @@
         ["id": JSONValue.string(photo), "user_id": user, "date": JSONValue.string(dateString(day(-2))),
          "photo_url": JSONValue.string("\(UITestMode.userId)/front.jpg"), "pose": JSONValue.string("front"), "created_at": iso(at(-2, 8))]
       ]
+      // Ảnh thứ hai 30 ngày trước (10/11): thẻ xu hướng mỡ cần ≥ 2 ngày đo.
+      let photo2 = "00000000-0000-4000-8000-0000000000f2"
+      t["progress_photos"]?.append(
+        ["id": JSONValue.string(photo2), "user_id": user, "date": JSONValue.string(dateString(day(-30))),
+         "photo_url": JSONValue.string("\(UITestMode.userId)/front-old.jpg"), "pose": JSONValue.string("front"),
+         "created_at": iso(at(-30, 8))])
       t["body_checks"] = [
+        ["photo_id": JSONValue.string(photo2), "user_id": user, "date": JSONValue.string(dateString(day(-30))), "body_fat_pct": 20.8,
+         "body_fat_low": 18.0, "body_fat_high": 23.0, "confidence": JSONValue.string("medium"),
+         "note": JSONValue.string("")],
         ["photo_id": JSONValue.string(photo), "user_id": user, "date": JSONValue.string(dateString(day(-2))), "body_fat_pct": 18.6,
          "body_fat_low": 16.0, "body_fat_high": 21.0, "confidence": JSONValue.string("medium"),
-         "note": JSONValue.string("Đường bụng thấy rõ, ánh sáng đều.")]
+         "note": JSONValue.string("Đường bụng thấy rõ, ánh sáng đều.")],
       ]
+      // Số đo cơ thể (10/11): bốn lần đo eo + mỡ, để thẻ Số đo có đường.
+      t["body_measurements"] = [(-42, 86.0, 21.0), (-28, 85.2, 20.4), (-14, 84.1, 20.0), (-1, 83.5, 19.5)].enumerated().map { i, m -> Row in
+        ["id": id(20, i + 1), "user_id": user, "date": JSONValue.string(dateString(day(m.0))),
+         "waist_cm": JSONValue.number(m.1), "body_fat_pct": JSONValue.number(m.2), "created_at": iso(at(m.0, 7))]
+      }
 
       t["food_items"] = [
         ("Oatmeal", 380.0, 14.0, 60.0, 8.0, 80.0), ("Chicken & Rice", 650.0, 48.0, 70.0, 14.0, 350.0),
