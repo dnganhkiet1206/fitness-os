@@ -482,6 +482,7 @@ struct KoaGainsCard: View {
         .font(.system(size: titleSize, weight: .heavy))
         .foregroundStyle(DS.Color.foreground.swiftUI)
         .multilineTextAlignment(.center)
+        if tierUp != nil { KoaTierPips(tier: tier, highlightNewest: true) }
         // Quá ngày tập liền (29/10, Kiệt): nói vì sao không có Gains thay cho bảng cộng.
         Text(
           verbatim: g.repeatSession
@@ -491,7 +492,6 @@ struct KoaGainsCard: View {
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
           .multilineTextAlignment(.center)
         if let tierUp {
-          KoaTierPips(tier: tier, highlightNewest: true)
           Text(verbatim: Self.stretch(tierUp))
             .font(DS.TextStyle.footnote)
             .foregroundStyle(DS.Color.foreground.swiftUI)

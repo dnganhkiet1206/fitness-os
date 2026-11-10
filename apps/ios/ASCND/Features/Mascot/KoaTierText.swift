@@ -52,10 +52,11 @@ enum KoaTierText {
 /// hạng cuối (không giới hạn) không có vạch. Chỉ để nhìn: chữ bên cạnh đã nói tên bậc.
 struct KoaTierPips: View {
   let tier: KoaGains.Tier
-  /// Vạch vừa đạt nháy sáng một lần (màn tổng kết buổi lúc lên bậc).
+  /// Vạch vừa đạt toả một vòng sáng rồi tắt, một lần (màn tổng kết buổi lúc lên bậc). Vạch luôn
+  /// đầy màu từ đầu: hiệu ứng không chạy (Giảm chuyển động, ảnh tĩnh) thì vẫn đọc đúng bậc.
   var highlightNewest = false
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
-  @State private var lit = false
+  @State private var pulsed = false
 
   var body: some View {
     if let count = tier.count, count > 1 {
@@ -65,14 +66,19 @@ struct KoaTierPips: View {
           Capsule()
             .fill(i <= tier.tier ? tint : DS.Color.mutedForeground.swiftUI.opacity(0.28))
             .frame(width: 12, height: 5)
-            .scaleEffect(highlightNewest && i == tier.tier && !lit ? 0.4 : 1, anchor: .leading)
-            .opacity(highlightNewest && i == tier.tier && !lit ? 0.3 : 1)
+            .overlay {
+              if highlightNewest, i == tier.tier, !reduceMotion {
+                Capsule()
+                  .stroke(tint, lineWidth: 1.5)
+                  .scaleEffect(pulsed ? 2.2 : 1)
+                  .opacity(pulsed ? 0 : 0.9)
+              }
+            }
         }
       }
       .onAppear {
-        guard highlightNewest else { return }
-        withAnimation(DSMotion.animation(.smooth(duration: 0.6).delay(0.35), reduceMotion: reduceMotion)) { lit = true }
-        if reduceMotion { lit = true }
+        guard highlightNewest, !reduceMotion else { return }
+        withAnimation(DSMotion.animation(.easeOut(duration: 0.9).delay(0.4), reduceMotion: reduceMotion)) { pulsed = true }
       }
       .accessibilityHidden(true)
     }
