@@ -37,6 +37,7 @@ Vì sao không dùng event sourcing: dữ liệu gốc (buổi tập) đã là n
 | Lớp | Đo gì | Nguồn | Người dùng thấy ở đâu |
 |---|---|---|---|
 | **Gains, hạng** | Tích luỹ việc tập thật | `KoaGains` | Hồ sơ, phòng Koa, tổng kết buổi |
+| **Bậc trong hạng** (10/11) | Mốc gần giữa hai hạng: cùng số Gains, chia nhỏ hơn. Không phải thang hay loại điểm mới | `KoaGains.tier`, `KoaJourney.steps` | Hàng Koa ở Hôm nay, tổng kết buổi lúc lên bậc, Hành trình (mốc nhỏ), dòng "còn N Gains" trong phòng Koa |
 | **Mốc hành trình** | Khoảnh khắc đáng nhớ | `KoaJourney` | Tiến bộ › Hành trình; Koa nói ở Hôm nay và phòng |
 | **Nhịp 30 ngày** | Sự đều đặn, không có gì để gãy | `KoaRhythm` | Tiến bộ, thẻ Koa ở Hôm nay |
 | **Tuần của Koa** | Mục tiêu tuần theo lịch riêng | `KoaWeek` | Dải tuần, phòng Koa |
@@ -52,13 +53,14 @@ Huy chương và mốc hành trình trùng nhau một phần (buổi đầu, s�
 
 `KoaMomentFeed` là nguồn duy nhất quyết định Koa nhắc mốc nào. Quy tắc:
 - Mốc lớn (buổi đầu, tuần đủ buổi đầu tiên, lên hạng, số buổi) được nhắc trong 3 ngày.
-- Mốc nhỏ (kỷ lục, quay lại, tuần đủ buổi) được nhắc trong 1 ngày.
+- Mốc nhỏ (kỷ lục, quay lại, tuần đủ buổi, lên bậc trong hạng) được nhắc trong 1 ngày.
 - Đã nhắc ở đâu thì không nhắc lại ở chỗ khác.
 - Trong một lần mở app, Hôm nay và phòng Koa nói cùng một mốc. Màn khác không tự quyết.
 
 ### Tiến trình của Koa (không phải thú ảo)
 
 - **Vóc dáng theo hạng**: đã có, `KoaGains.rank` → `build`.
+- **Bậc trong hạng** (10/11, Kiệt duyệt mock `design/mocks/koa-rank-tiers.html`): mốc 6 hạng giữ nguyên, mỗi hạng chia đều thành bậc (Gym Rat 2, Lifter 3, Swole 5, Beast 8; Mass Monster cứ 150 Gains một bậc, không có trần). Ghi bằng số La Mã kèm vạch ("Lifter II"); Mass Monster ghi "bậc N". Tính lại từ Gains nên không có bảng mới, chỉ đi lên. Lên bậc không thưởng xu. Lịch 3 buổi: mốc kế cách không quá 3 tuần; lịch 2 buổi chậm hơn khoảng 1,4 lần (Kiệt chấp nhận). **Trong phòng Koa chưa có gì đổi theo bậc**: một thanh đòn bánh tạ treo tường đã được dựng thử trên simulator ngày 10/11, Kiệt bỏ ("không phù hợp với tổng thể căn phòng, sau này vẽ phòng mới rồi tính sau").
 - **Phòng lớn theo hành trình** (#792, 04/11, `KoaShelf`): kệ có tối đa 3 cúp cho các ngày kỷ lục mới nhất (hai chỗ trống ở tầng trên, một ở tầng dưới; giá olympic thì đứng trên xà ngang). Tường có ba khung mốc nhỏ: buổi đầu, tuần đủ buổi đầu tiên, lần lên hạng cao nhất. Chạm cúp hay khung thì Koa kể, có ngày và số thật (`ShelfItem`); VoiceOver dùng hành động có tên. Dữ liệu tính từ hành trình và từ set đã lưu, không mua được. Người dùng nghỉ thì không mất gì: phòng chỉ có thể thêm đồ. Kỷ lục rời kệ vẫn ở màn Hành trình.
 - **Không có nhu cầu sống còn**: Koa không đói, không ốm, không buồn vì người dùng vắng. Bụi phòng chỉ là lớp phủ, tự sạch khi tập lại, và không bám khi đang tạm nghỉ.
 

@@ -39,6 +39,9 @@ enum KoaMomentsStore {
     case .fullWeek: return String(localized: "journey.line.week")
     case .record: return String(localized: "journey.line.record")
     case .comeback: return String(localized: "journey.line.comeback \(m.value)")
+    case .tierUp:
+      let t = KoaGains.tier(step: m.value)
+      return String(localized: "journey.line.tier \(KoaTierText.name(rank: t.rank, tier: t.tier, lang: lang))")
     case .rankUp:
       let rank = MascotRules.ranks[min(m.value, MascotRules.ranks.count - 1)]
       return String(localized: "journey.line.rank \(rank.name(lang))")
@@ -52,6 +55,7 @@ enum KoaMomentsStore {
     case .firstFullWeek, .fullWeek: "calendar.badge.checkmark"
     case .record: "trophy.fill"
     case .rankUp: "arrow.up.circle.fill"
+    case .tierUp: "chevron.up.circle"
     case .comeback: "arrow.uturn.backward.circle.fill"
     }
   }

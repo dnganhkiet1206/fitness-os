@@ -676,7 +676,7 @@ struct MascotRoomView: View {
   private var rankSummary: some View {
     let rank = gainsRank
     let tint = Color.rank(rank)
-    let pct = KoaGains.toNext(room.gains.points).map { Double($0.have) / Double(max(1, $0.need)) } ?? 1
+    let pct = KoaGains.tier(room.gains.points).progress
     return NavigationLink {
       RoomDetailPage(title: String(localized: "mr.sec.rank")) { rankCard }
     } label: {
@@ -814,7 +814,7 @@ struct MascotRoomView: View {
   private var levelRow: some View {
     let rank = gainsRank
     let rankColor = Color.rank(rank)
-    let pct = KoaGains.toNext(room.gains.points).map { Double($0.have) / Double(max(1, $0.need)) } ?? 1
+    let pct = KoaGains.tier(room.gains.points).progress
     return HStack(spacing: DS.Spacing.md) {
       Image(systemName: "dumbbell.fill")
         .font(.system(size: 18, weight: .semibold))
@@ -858,14 +858,12 @@ struct MascotRoomView: View {
   }
 
   private var journeySubtitle: AttributedString {
-    // GĐ2: hạng kế tiếp theo Gains (trước lấy theo cấp XP — lệch với số Gains bên dưới).
+    // Mốc kế là bậc kế trong hạng (10/11); hạng cuối có bậc không giới hạn nên luôn có mốc kế.
     let ranks = MascotRules.ranks
-    guard room.gains.rank + 1 < ranks.count else { return AttributedString(String(localized: "mr.maxRank")) }
-    let next = ranks[room.gains.rank + 1]
-    // Hạng theo Gains (#527 đợt 1): còn bao nhiêu Gains — chỉ tập mới cộng.
-    let n = KoaGains.toNext(room.gains.points).map { $0.need - $0.have } ?? 0
-    let name = next.name(lang)
-    var a = AttributedString(String(localized: "koa.gains.toRank \(n) \(name)"))
+    let tier = KoaGains.tier(room.gains.points)
+    let next = ranks[min(tier.next.rank, ranks.count - 1)]
+    let name = KoaTierText.nextName(tier, lang: lang)
+    var a = AttributedString(String(localized: "koa.gains.toRank \(tier.remaining) \(name)"))
     if let r = a.range(of: name, options: .backwards) {
       a[r].foregroundColor = Color.rank(next)
       a[r].font = DS.TextStyle.footnote.weight(.bold)

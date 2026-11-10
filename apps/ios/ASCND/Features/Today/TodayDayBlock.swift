@@ -205,24 +205,32 @@ struct TodayDayBlock: View {
   private func compactRow(emotion: KoaEmotion.Emotion) -> some View {
     let g = room.gains
     let lang = services?.preferences.lang ?? .vi
-    let ranks = MascotRules.ranks
-    let rank = ranks[min(g.rank, ranks.count - 1)].name(lang)
+    // Bậc trong hạng (10/11): mốc kế luôn gần và đổi ra số buổi tập.
+    let tier = KoaGains.tier(g.points)
+    let title = String(localized: "dp.gains \(KoaTierText.name(tier, lang: lang)) \(g.points)")
     return HStack(spacing: 12) {
       koa(emotion)
         .frame(width: 64, height: 64)
         .background(DS.Color.secondary.swiftUI.opacity(0.6), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-      VStack(alignment: .leading, spacing: 2) {
+      VStack(alignment: .leading, spacing: 4) {
         Text("koa.card.name")
           .font(.system(size: nameSize, weight: .semibold))
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-        Text(String(localized: "dp.gains \(rank) \(g.points)"))
-          .font(DS.TextStyle.headline)
-          .foregroundStyle(DS.Color.foreground.swiftUI)
-        if let to = KoaGains.toNext(g.points), g.rank + 1 < ranks.count {
-          Text(String(localized: "dp.gains.next \(to.need - to.have) \(ranks[g.rank + 1].name(lang))"))
-            .font(DS.TextStyle.footnote)
-            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        ViewThatFits(in: .horizontal) {
+          HStack(spacing: 8) {
+            tierTitle(title)
+            KoaTierPips(tier: tier)
+          }
+          VStack(alignment: .leading, spacing: 4) {
+            tierTitle(title, oneLine: false)
+            KoaTierPips(tier: tier)
+          }
         }
+        KoaTierBar(tier: tier)
+        Text(KoaTierText.toNext(tier, lang: lang))
+          .font(DS.TextStyle.footnote)
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          .fixedSize(horizontal: false, vertical: true)
         // phòng bám bụi (phần 5): nhắc nhẹ, không phạt
         if let dust = services?.koaDust, dust.userId == room.userId, dust.state.level > 0 {
           Label(String(localized: "koa.dust.nudge"), systemImage: "sparkles")
@@ -233,6 +241,14 @@ struct TodayDayBlock: View {
       Spacer(minLength: 0)
     }
     .accessibilityElement(children: .combine)
+  }
+
+  /// Một dòng thì giữ nguyên bề ngang (để `ViewThatFits` biết có vừa cạnh vạch bậc không); chật thì xuống dòng.
+  private func tierTitle(_ title: String, oneLine: Bool = true) -> some View {
+    Text(title)
+      .font(DS.TextStyle.headline)
+      .foregroundStyle(DS.Color.foreground.swiftUI)
+      .fixedSize(horizontal: oneLine, vertical: !oneLine)
   }
 
   // MARK: - Koa theo lịch (đợt 2)

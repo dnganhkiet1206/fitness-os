@@ -36,6 +36,17 @@ import Testing
     #expect(display.cups == 2 && display.frames.contains(.first))
   }
 
+  @Test func tierNamesUseRomanNumeralsAndCountTheOpenRank() {
+    #expect(KoaTierText.name(rank: 0, tier: 1, lang: .en) == "Newbie")
+    #expect(KoaTierText.name(rank: 2, tier: 2, lang: .en) == "Lifter II")
+    #expect(KoaTierText.name(rank: 4, tier: 8, lang: .en) == "Beast VIII")
+    #expect(KoaTierText.name(rank: 5, tier: 7, lang: .en).contains("7"))
+    #expect((1...10).map(KoaTierText.roman) == ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"])
+    // mốc kế là hạng mới thì gọi tên hạng
+    #expect(KoaTierText.nextName(KoaGains.tier(179), lang: .en) == "Lifter")
+    #expect(KoaTierText.nextName(KoaGains.tier(262), lang: .en) == "Lifter II")
+  }
+
   @Test func emptyJourneyMeansNothingOnTheShelf() {
     let items = ShelfItem.items(moments: [], records: [:], unit: .kg, lang: .vi, locale: Locale(identifier: "vi_VN"))
     #expect(items.isEmpty)
