@@ -117,7 +117,9 @@ extension KoaTurnTests {
     #expect(Self.count(KoaRender.figure(Self.options(turn: 1)), clip) == 1)
     #expect(Self.count(KoaRender.figure(Self.options(turn: -0.6)), clip) == 1)
     #expect(Self.count(KoaRender.figure(Self.options(turn: 0)), clip) == 0)
-    // viền cắt là viền đầu của cảnh, dời xuống 11 như HEAD / FACE
-    #expect(KoaTurn.headOutline.hasPrefix("M40 129 C 38 97"))
+    // viền cắt là viền đầu của cảnh
+    #expect(KoaTurn.headOutline.hasPrefix("M40 118 C 38 86"))
+    // hơi nước / vạch cố sức vẽ ngoài đầu: không nằm trong lớp cắt
+    #expect(KoaTurn.unclipped == ["showSteam", "showStrain"])
   }
 }

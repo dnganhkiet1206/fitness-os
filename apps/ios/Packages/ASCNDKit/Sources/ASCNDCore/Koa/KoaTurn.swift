@@ -80,20 +80,23 @@ public enum KoaTurn {
 
   // MARK: - Mặt nằm trong viền đầu
 
-  /// Viền đầu (`head_front`) trong khung của `HEADRIG`: đường của cảnh dời xuống 11 (cả `HEAD` và
-  /// `FACE` dời 0,11), vì lớp cắt bọc ngoài `FACE` đã dời.
+  /// Viền đầu (`head_front`), trong khung của các con `faceShift` (cùng khung với `HEAD`).
   static let headOutline =
-    "M40 129 C 38 97 52 63 78 53 C 92 47 106 45 120 45 C 136 45 152 49 164 57 C 188 69 200 99 200 129 C 200 155 168 179 120 179 C 72 179 40 155 40 129 Z"
+    "M40 118 C 38 86 52 52 78 42 C 92 36 106 34 120 34 C 136 34 152 38 164 46 C 188 58 200 88 200 118 C 200 144 168 168 120 168 C 72 168 40 144 40 118 Z"
   static let faceClipId = "koaTurn_face"
+  /// Lớp trong mặt vốn vẽ RA NGOÀI đầu (hơi nước khi giận, vạch cố sức): không cắt.
+  static let unclipped: Set<String> = ["showSteam", "showStrain"]
 
   /// Cắt mặt theo viền đầu khi quay. Kiệt 10/11 ("sao koa bị lỗi vậy", ảnh phòng Koa): ở góc lớn,
-  /// cộng ánh nhìn liếc theo, mắt và má phía xa trượt ra ngoài viền đầu, đè lên tai. Cắt theo viền
-  /// thì chúng khuất dần sau đường cong như khối tròn thật; góc quay không phải giảm.
-  static func clipToHead(_ kids: [KoaRender.Element]) -> [KoaRender.Element] {
-    [
-      KoaRender.Element("ClipPath", ["id": .string(faceClipId)], kids: [KoaRender.Element("Path", ["d": .string(headOutline)])]),
-      KoaRender.Element("G", ["clipPath": .string("url(#\(faceClipId))")], kids: kids),
-    ]
+  /// cộng ánh nhìn liếc theo và đầu nghiêng, mắt và má phía xa trượt ra ngoài viền đầu, đè lên tai.
+  /// Cắt theo viền thì chúng khuất dần sau đường cong như khối tròn thật; góc quay không phải giảm.
+  /// `runs`: các đoạn con liên tiếp, `free` = không cắt; thứ tự vẽ giữ nguyên.
+  static func clipToHead(_ runs: [(free: Bool, els: [KoaRender.Element])]) -> [KoaRender.Element] {
+    var out = [KoaRender.Element("ClipPath", ["id": .string(faceClipId)], kids: [KoaRender.Element("Path", ["d": .string(headOutline)])])]
+    for r in runs where !r.els.isEmpty {
+      out += r.free ? r.els : [KoaRender.Element("G", ["clipPath": .string("url(#\(faceClipId))")], kids: r.els)]
+    }
+    return out
   }
 
   // MARK: - Đầu ngoảnh, bóng phía khuất

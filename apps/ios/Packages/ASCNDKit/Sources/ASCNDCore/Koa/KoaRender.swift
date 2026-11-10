@@ -280,6 +280,10 @@ public enum KoaRender {
     let order = n.id == "LEGS" && c.walk?.leftNear == true ? Array(l.kids.enumerated().reversed()) : Array(l.kids.enumerated())
     // quay mặt: tay phía xa vẽ trước `TORSO` (nằm sau thân), tay gần vẽ ở chỗ cũ
     let farArms = c.turn != 0 && n.id == "BODYRIG" ? l.kids.firstIndex { $0.node.cond == "armsIdle" } : nil
+    // mặt quay thì nằm TRONG viền đầu: mắt / má phía xa khuất sau đường cong, không tràn ra tai (Kiệt
+    // 10/11). Hơi nước / vạch cố sức vốn vẽ ngoài đầu nên không cắt; thứ tự vẽ giữ nguyên.
+    let clipFace = c.turn != 0 && n.bind == "faceShift"
+    var runs: [(free: Bool, els: [Element])] = []
     for (i, k) in order {
       if let a = farArms, k.node.id == "TORSO" {
         var far = c
@@ -288,9 +292,16 @@ public enum KoaRender {
       }
       var kc = c
       if farArms == i { kc.armSide = 2 }
-      kids += node(
+      let drawn = node(
         k, kc, armPart: arms ? KoaMath.dressArmAt[i] : nil, armHidden: arms && KoaMath.dressArmHide.contains(i))
+      if clipFace {
+        let free = KoaTurn.unclipped.contains(k.node.cond ?? "")
+        if let last = runs.last, last.free == free { runs[runs.count - 1].els += drawn } else { runs.append((free, drawn)) }
+      } else {
+        kids += drawn
+      }
     }
+    if clipFace { kids = KoaTurn.clipToHead(runs) }
     // nụ cười đóng của cái liếc nằm TRONG `#FACE`, theo mọi thứ cái liếc làm
     if let g = c.gaze, c.swapMouth, n.id == "FACE", n.kids != nil { kids.append(smile(g.k)) }
 
@@ -536,8 +547,6 @@ public enum KoaRender {
       moved += KoaTurn.crescent(id: id, d: d, u: c.turn)
     }
     if c.turn != 0, n.id == "HEADRIG" { moved = [Element("G", matrix: KoaTurn.headMat(c.turn), kids: moved)] }
-    // mặt quay thì nằm TRONG viền đầu: mắt / má phía xa khuất sau đường cong, không tràn ra tai (Kiệt 10/11)
-    if c.turn != 0, n.id == "FACE" { moved = KoaTurn.clipToHead(moved) }
 
     if c.gaze == nil, let e = c.eyes, isEyeGroup(n) { return [Element("G", matrix: KoaMath.eyeMat(e), kids: moved)] }
     guard let g = c.gaze else { return moved }
