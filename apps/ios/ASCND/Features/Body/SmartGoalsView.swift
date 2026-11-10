@@ -260,9 +260,13 @@ struct SmartGoalsView: View {
 
   /// "W3" → Thứ Hai của tuần ấy ("20 thg 10"): `W4` là tuần này, `W1` ba tuần trước.
   private func weekLabel(_ label: String) -> String {
-    guard let n = Int(label.dropFirst()) else { return label }
-    let monday = SmartGoals.weekStart(book.today).adding(days: -7 * (4 - n))
-    return monday.calendarDate.formatted(.dateTime.day().month(.abbreviated).locale(.app))
+    guard Int(label.dropFirst()) != nil else { return label }
+    return weekMonday(label).calendarDate.formatted(.dateTime.day().month(.abbreviated).locale(.app))
+  }
+
+  private func weekMonday(_ label: String) -> LocalDate {
+    let n = Int(label.dropFirst()) ?? 4
+    return SmartGoals.weekStart(book.today).adding(days: -7 * (4 - n))
   }
 
   /// Số theo ngôn ngữ của app, hai số lẻ tối đa, dấu "−" thật ("−12,31", không phải "-12.31").
@@ -271,43 +275,18 @@ struct SmartGoalsView: View {
     return (v > 0 ? "+" : v < 0 ? "−" : "") + abs(v).formatted(.number.precision(.fractionLength(0...2)).locale(.app))
   }
 
+  /// Nét chung của nhóm Cơ thể (`BodyTrendChart`, 10/11): mỗi tuần một chấm ở Thứ Hai của tuần.
   private func chart(_ a: SmartGoals.Analysis, unit: WeightUnit) -> some View {
-    // Màu của Cân nặng, không phải xanh lá: xanh lá đọc thành "tốt" trong khi ô dưới có thể
-    // đang báo lệch mục tiêu (29/10).
-    let tint = DS.Color.metricSteel.swiftUI
     let values = a.weeks.map { unit.display($0.kg) }
-    let lo = values.min() ?? 0
-    let hi = values.max() ?? 0
-    let pad = max((hi - lo) * 0.2, 0.5)
-    return Chart(a.weeks, id: \.label) { w in
-      LineMark(x: .value("week", weekLabel(w.label)), y: .value(unit.label, unit.display(w.kg)))
-        .foregroundStyle(tint)
-        .interpolationMethod(.monotone)
-      PointMark(x: .value("week", weekLabel(w.label)), y: .value(unit.label, unit.display(w.kg)))
-        .foregroundStyle(tint)
-        .annotation(position: .top, spacing: 4) {
-          Text(verbatim: unit.display(w.kg).formatted(.number.precision(.fractionLength(0...1)).locale(.app)))
-            .font(DS.TextStyle.caption.monospacedDigit())
-            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-        }
+    let pts = zip(a.weeks, values).enumerated().map { i, wv in
+      BodyTrendChart.Point(id: i, date: weekMonday(wv.0.label).calendarDate, value: wv.1)
     }
-    .chartYScale(domain: (lo - pad)...(hi + pad))
-    .chartYAxis {
-      AxisMarks(position: .leading, values: .automatic(desiredCount: 3)) { v in
-        AxisGridLine()
-        AxisValueLabel {
-          if let d = v.as(Double.self) {
-            Text(verbatim: d.formatted(.number.precision(.fractionLength(1)).locale(.app))).font(DS.TextStyle.caption)
-          }
-        }
-      }
-    }
-    .frame(height: 140)
-    .accessibilityElement(children: .ignore)
-    .accessibilityLabel(Text("smartgoals.weighttrend"))
-    .accessibilityValue(
-      Text(verbatim: zip(a.weeks, values).map { "\(weekLabel($0.label)) \($1.formatted(.number.locale(.app))) \(unit.label)" }.joined(separator: ", "))
-    )
+    return BodyTrendChart(points: pts, showsEveryPoint: true, height: 130)
+      .accessibilityElement(children: .ignore)
+      .accessibilityLabel(Text("smartgoals.weighttrend"))
+      .accessibilityValue(
+        Text(verbatim: zip(a.weeks, values).map { "\(weekLabel($0.label)) \($1.formatted(.number.locale(.app))) \(unit.label)" }.joined(separator: ", "))
+      )
   }
 
   private func callout(_ a: SmartGoals.Analysis, unit: WeightUnit) -> some View {

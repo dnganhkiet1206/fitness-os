@@ -243,64 +243,25 @@ struct WeightTrendCard: View {
 
   // MARK: - Biểu đồ
 
+  /// Nét chung của nhóm Cơ thể (`BodyTrendChart`, 10/11) + kéo ngón xem từng lần cân.
   private func chart(_ points: [WeightTrend.Point]) -> some View {
-    let values = points.map { unit.convert($0.kg) }
-    let goal = book.goalKg.map { unit.convert($0) }
-    let lo = (values + (goal.map { [$0] } ?? [])).min() ?? 0
-    let hi = (values + (goal.map { [$0] } ?? [])).max() ?? 1
-    let pad = max(0.5, (hi - lo) * 0.15)
-    return Group {
+    Group {
       if points.count < 2 {
         Text(String(localized: "wt.notEnough"))
           .font(DS.TextStyle.footnote)
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
           .frame(maxWidth: .infinity, minHeight: 120)
       } else {
-        Chart {
-          ForEach(points) { p in
-            AreaMark(x: .value("date", p.date.calendarDate), yStart: .value("lo", lo - pad), yEnd: .value("kg", unit.convert(p.kg)))
-              .foregroundStyle(LinearGradient(colors: [Self.tint.opacity(0.22), Self.tint.opacity(0.02)], startPoint: .top, endPoint: .bottom))
-              .interpolationMethod(.monotone)
-            LineMark(x: .value("date", p.date.calendarDate), y: .value("kg", unit.convert(p.kg)))
-              .foregroundStyle(Self.tint)
-              .lineStyle(StrokeStyle(lineWidth: 2.5, lineCap: .round))
-              .interpolationMethod(.monotone)
-          }
-          if let picked = scrubbed(points) {
-            RuleMark(x: .value("date", picked.date.calendarDate))
-              .foregroundStyle(Self.tint.opacity(0.35))
-              .lineStyle(StrokeStyle(lineWidth: 1))
-            PointMark(x: .value("date", picked.date.calendarDate), y: .value("kg", unit.convert(picked.kg)))
-              .foregroundStyle(Self.tint)
-              .symbolSize(80)
-          } else if let last = points.last {
-            PointMark(x: .value("date", last.date.calendarDate), y: .value("kg", unit.convert(last.kg)))
-              .foregroundStyle(Self.tint)
-              .symbolSize(50)
-          }
-          if let goal {
-            RuleMark(y: .value("goal", goal))
-              .foregroundStyle(Self.tint.opacity(0.6))
-              .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [5, 4]))
-          }
+        let pts = points.enumerated().map { i, p in
+          BodyTrendChart.Point(id: i, date: p.date.calendarDate, value: unit.convert(p.kg))
         }
-        .chartYScale(domain: (lo - pad)...(hi + pad))
-        .chartYAxis {
-          AxisMarks(position: .trailing, values: .automatic(desiredCount: 3)) { _ in
-            AxisGridLine().foregroundStyle(DS.Color.foreground.swiftUI.opacity(0.08))
-            AxisValueLabel()
-          }
-        }
-        .chartXAxis {
-          // `.aligned`: nhãn ngày cuối nằm trong khung (trước 29/10 bị cắt còn "2" ở mép phải).
-          AxisMarks(preset: .aligned, values: .automatic(desiredCount: 4)) { _ in
-            AxisValueLabel(format: .dateTime.day().month(.abbreviated))
-          }
-        }
-        .chartXSelection(value: $scrubDate)
-        .sensoryFeedback(.selection, trigger: scrubbed(points)?.date)
-        .frame(height: 170)
-        .accessibilityLabel(Text(String(localized: "wh.body.weight")))
+        let picked = scrubbed(points).flatMap { p in pts.first { Calendar.current.isDate($0.date, inSameDayAs: p.date.calendarDate) } }
+        BodyTrendChart(
+          points: pts, goal: book.goalKg.map { unit.convert($0) }, height: 150,
+          selection: $scrubDate, selected: picked)
+          .sensoryFeedback(.selection, trigger: scrubbed(points)?.date)
+          .accessibilityElement(children: .ignore)
+          .accessibilityLabel(Text(String(localized: "wh.body.weight")))
       }
     }
   }

@@ -118,52 +118,11 @@ struct MeasurementsView: View {
     (x > 0 ? "+" : x < 0 ? "−" : "±") + n(abs(x))
   }
 
-  private struct Spot: Identifiable {
-    let id: Int
-    let x: Double
-    let value: Double
-  }
-
-  /// Trục ngang theo ngày đo (khoảng cách thật giữa các lần đo); một hàng hỏng
-  /// ngày thì cả đường lùi về thứ tự đo.
+  /// Nét chung của nhóm Cơ thể (`BodyTrendChart`, 10/11): mỗi lần đo một chấm, hai đầu có ngày;
+  /// một hàng hỏng ngày thì cả đường lùi về thứ tự đo (không có nhãn ngày).
   private func sparkline(_ s: Measurements.Series) -> some View {
-    let dated = s.points.allSatisfy { $0.date != nil }
-    let spots = s.points.enumerated().map { i, p in
-      Spot(id: i, x: dated ? Double(p.date?.daysSinceEpoch ?? 0) : Double(i), value: p.value)
-    }
-    let values = spots.map(\.value)
-    let lo = values.min() ?? 0
-    let hi = values.max() ?? 0
-    let pad = max((hi - lo) * 0.15, 0.1)
-    let x0 = spots.first?.x ?? 0
-    let x1 = max(spots.last?.x ?? 1, x0 + 1)
-    // Mỗi lần đo là một chấm (một đường trơn không cho biết đã đo mấy lần); hai đầu có ngày.
-    let firstDate = s.points.first?.date
-    let lastDate = s.points.last?.date
-    return VStack(spacing: 4) {
-      Chart(spots) { p in
-        LineMark(x: .value("x", p.x), y: .value("v", p.value))
-          .foregroundStyle(DS.Color.primary.swiftUI)
-          .interpolationMethod(.monotone)
-        PointMark(x: .value("x", p.x), y: .value("v", p.value))
-          .foregroundStyle(DS.Color.primary.swiftUI)
-          .symbolSize(30)
-      }
-      .chartXScale(domain: x0...x1)
-      .chartYScale(domain: (lo - pad)...(hi + pad))
-      .chartXAxis(.hidden)
-      .chartYAxis(.hidden)
-      .frame(height: 64)
-      if dated, let firstDate, let lastDate, firstDate != lastDate {
-        HStack {
-          Text(firstDate.calendarDate, format: .dateTime.day().month(.abbreviated).locale(.app))
-          Spacer()
-          Text(lastDate.calendarDate, format: .dateTime.day().month(.abbreviated).locale(.app))
-        }
-        .font(DS.TextStyle.caption)
-        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-      }
-    }
-    .accessibilityHidden(true)
+    let (pts, dated) = BodyTrendChart.points(s.points.map { (date: $0.date, value: $0.value) })
+    return BodyTrendChart(points: pts, showsEveryPoint: true, height: 96, showsDates: dated)
+      .accessibilityHidden(true)
   }
 }
