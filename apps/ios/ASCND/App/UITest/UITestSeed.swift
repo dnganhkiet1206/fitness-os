@@ -192,6 +192,18 @@
       t["weight_logs"] = weight
       t["meal_entries"] = meals
       t["meal_entry_items"] = items
+      // Một ảnh tiến trình đã "Đo AI" (09/11): xem "Ghi vào Số đo". Ảnh không tải được
+      // (bộ giả không có kho ảnh) — ô xám, nhãn "~19%" vẫn hiện.
+      let photo = "00000000-0000-4000-8000-0000000000f1"
+      t["progress_photos"] = [
+        ["id": JSONValue.string(photo), "user_id": user, "date": JSONValue.string(dateString(day(-2))),
+         "photo_url": JSONValue.string("\(UITestMode.userId)/front.jpg"), "pose": JSONValue.string("front"), "created_at": iso(at(-2, 8))]
+      ]
+      t["body_checks"] = [
+        ["photo_id": JSONValue.string(photo), "user_id": user, "date": JSONValue.string(dateString(day(-2))), "body_fat_pct": 18.6,
+         "body_fat_low": 16.0, "body_fat_high": 21.0, "confidence": JSONValue.string("medium"),
+         "note": JSONValue.string("Đường bụng thấy rõ, ánh sáng đều.")]
+      ]
 
       t["food_items"] = [
         ("Oatmeal", 380.0, 14.0, 60.0, 8.0, 80.0), ("Chicken & Rice", 650.0, 48.0, 70.0, 14.0, 350.0),

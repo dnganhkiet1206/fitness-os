@@ -49,6 +49,10 @@ public enum BodyCheck {
   /// "~18 %" — làm tròn số nguyên, có dấu ước tính.
   public static func label(_ r: Result) -> String { "~\(Int(r.pct.rounded()))%" }
 
+  /// Số điền sẵn vào ô "Mỡ cơ thể (%)" của Số đo khi người dùng chọn "Ghi vào Số đo" (09/11):
+  /// số giữa làm tròn như nhãn "~18 %" — ước tính từ ảnh không có độ chính xác đến phần mười.
+  public static func measurementText(_ r: Result) -> String { "\(Int(r.pct.rounded()))" }
+
   /// "16–21 %".
   public static func range(_ r: Result) -> String { "\(Int(r.low.rounded()))–\(Int(r.high.rounded()))%" }
 
