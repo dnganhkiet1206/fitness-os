@@ -26,7 +26,7 @@ enum KoaMomentsStore {
   /// Mốc Koa nên nhắc lúc này, `nil` khi chưa đọc Gains hay không có gì mới.
   static func next(_ services: AppServices?, userId: String, today: LocalDate) -> KoaJourney.Moment? {
     guard let h = services?.koaGainsHistory else { return nil }
-    let moments = KoaJourney.moments(h.days, week: h.week, today: today)
+    let moments = KoaJourney.moments(h.days, week: h.week, logged: h.logged, today: today)
     return KoaMomentFeed.next(moments, seen: seen(userId), today: today)
   }
 
@@ -39,6 +39,7 @@ enum KoaMomentsStore {
     case .fullWeek: return String(localized: "journey.line.week")
     case .record: return String(localized: "journey.line.record")
     case .comeback: return String(localized: "journey.line.comeback \(m.value)")
+    case .logDays: return String(localized: "journey.line.log \(m.value)")
     case .tierUp:
       let t = KoaGains.tier(step: m.value)
       return String(localized: "journey.line.tier \(KoaTierText.name(rank: t.rank, tier: t.tier, lang: lang))")
@@ -56,6 +57,7 @@ enum KoaMomentsStore {
     case .record: "trophy.fill"
     case .rankUp: "arrow.up.circle.fill"
     case .tierUp: "chevron.up.circle"
+    case .logDays: "square.and.pencil.circle.fill"
     case .comeback: "arrow.uturn.backward.circle.fill"
     }
   }
@@ -160,7 +162,7 @@ struct KoaJourneyContent: View {
     ScrollView {
       VStack(alignment: .leading, spacing: DS.Spacing.md) {
         if let h = history {
-          let moments = KoaJourney.moments(h.days, week: h.week, today: today)
+          let moments = KoaJourney.moments(h.days, week: h.week, logged: h.logged, today: today)
           header(rank: KoaGains.compute(h.days, week: h.week, today: today).rank)
           month(moments, days: h.days, today: today)
           if moments.isEmpty {

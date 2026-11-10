@@ -644,6 +644,16 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Snapshot: `gainsCard` đổi (thanh và dòng mốc kế), thêm `gainsCardTierUp`; ảnh chuẩn lấy từ CI theo `AGENT_SESSION.md` §6c.
 - **NOT RUN:** lúc lên bậc trong app thật (tài khoản giả 70 Gains, một buổi không đủ 40 Gains để vượt mốc; thẻ lên bậc chỉ được kiểm bằng snapshot); VoiceOver thật; iPhone thật; bản es / en trên simulator.
 
+**Mốc ghi đều của Koa (10/11, nhánh `claude/koa-tier-seed`, Kiệt duyệt mock `design/mocks/koa-logging-milestones.html`: tổng số ngày ghi, một ngày tính khi có ít nhất một việc, không thưởng xu):**
+- Luật: mốc Hành trình `logDays` (khoá `log:<số ngày>`) ở 3 / 7 / 30 / 60 / 100 / 200 / 365 ngày có ghi; 3 và 60 là mốc nhỏ, còn lại là mốc lớn. Ngày có ghi = hàng `daily_logs` có kcal, nước hoặc giấc ngủ lớn hơn 0; bước chân và cân nặng không tính. Không cộng Gains, không đụng sổ xu, không migration.
+- Dữ liệu: một lượt đọc `daily_logs` (`date, kcal, water_ml, sleep_duration_min`, tối đa 2000 hàng) mỗi lần đọc lịch sử Gains (Hôm nay tải lại, mở tổng kết / Hành trình khi chưa có). Đọc hỏng thì giữ các ngày đang biết; chưa từng đọc được thì mốc ghi tạm vắng, mốc tập không đổi.
+- Hạn chế: mốc tính theo dữ liệu đã lên server. Việc ghi còn nằm trong hàng chờ offline, hoặc vừa ghi xong mà Hôm nay chưa tải lại, chưa được đếm; mốc hiện ở lần tải lại sau. Người ghi hơn 2000 ngày (hơn 5 năm) không bị ảnh hưởng vì mốc cao nhất là 365.
+- Koa nói mốc ghi ở Hôm nay qua đúng `KoaMomentFeed`: mỗi lần mở app một mốc, mốc lớn trước. "Đã thấy" vẫn lưu trên máy như các mốc khác.
+- Snapshot mới `journeyLogDays` (người chỉ ghi, chưa tập). Ảnh chuẩn lấy từ CI.
+- Tài khoản giả sát mốc bậc: cờ `-uiTestTierUp` thêm ba buổi cũ (100 Gains), một buổi nữa là lên Gym Rat II; test `UITestSeedTierTests` giữ số này đúng ở cả bảy ngày trong tuần.
+- **NOT RUN:** Hành trình có mốc ghi trong app thật trên simulator (chỉ có snapshot và test lõi); Koa nói mốc ghi ở Hôm nay; đi hết một buổi tập với `-uiTestTierUp` để xem thẻ lên bậc (công cụ bấm simulator bỏ sót thao tác, dừng ở set 2/8); VoiceOver; iPhone thật.
+- Thấy khi thử, **chưa kiểm lại, chưa sửa:** ở giao diện sáng, màn tập đang sáng thì sau màn nghỉ giữa set chuyển sang nền tối (ảnh simulator 10/11). Chưa rõ có chủ ý hay không.
+
 ## 5. Lịch sử thay đổi sổ
 
 - 02/11/2026: E2E hết giờ không phải do flow treo: 45 phút bị build, bật simulator và biên dịch lại ASCNDTests ăn 27 phút, Maestro cần ~20. Nay một lần `build-for-testing`, job 60 phút, step Maestro 35 phút, bị dừng giữa chừng vẫn có bảng flow trong tóm tắt; flow 05 đặt `waitToSettleTimeoutMs`, flow 08 chờ hết hiệu ứng quay lại.
@@ -771,3 +781,4 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - 04/11/2026: #797: Kiệt quyết giữ nguyên widget đọc chuỗi và băng chuỗi; ghi hạn chế của widget (hỏng lượt đọc chuỗi thì cả widget không cập nhật); xem mục 4.
 - 09/11/2026: app Apple Watch tối thiểu (ghi set + quãng nghỉ khi iPhone đang tập); chưa kiểm trên máy thật — xem mục 4.
 - 10/11/2026: bậc trong hạng của Koa (Hôm nay, tổng kết buổi, Hành trình); bánh tạ trong phòng Koa hoãn tới khi vẽ phòng mới (Kiệt 10/11); xem mục 3 và 4.
+- 10/11/2026: mốc ghi đều của Koa trong Hành trình (Kiệt duyệt mock 10/11); cờ `-uiTestTierUp` cho tài khoản giả sát mốc bậc; xem mục 4.

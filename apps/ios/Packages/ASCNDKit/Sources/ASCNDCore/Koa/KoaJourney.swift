@@ -10,6 +10,9 @@ public enum KoaJourney {
     case firstSession, sessions, fullWeek, firstFullWeek, record, rankUp, comeback
     /// Lên bậc trong cùng hạng (10/11): mốc nhỏ. Lên hạng (bậc I của hạng mới) vẫn là `rankUp`.
     case tierUp
+    /// Tổng số ngày có ghi bữa / nước / giấc ngủ chạm một mốc (10/11, Kiệt duyệt
+    /// `docs/design/mocks/koa-logging-milestones.html`). Cộng dồn, không phải chuỗi; không Gains, không xu.
+    case logDays
   }
 
   public struct Moment: Sendable, Hashable, Identifiable {
@@ -17,7 +20,7 @@ public enum KoaJourney {
     public let id: String
     public let kind: Kind
     public let date: LocalDate
-    /// Số đi kèm: hạng mới, số buổi, số ngày nghỉ trước khi quay lại; `tierUp`: thứ tự bậc
+    /// Số đi kèm: hạng mới, số buổi, số ngày ghi, số ngày nghỉ trước khi quay lại; `tierUp`: thứ tự bậc
     /// (`KoaGains.Tier.step`, đổi lại hạng và bậc bằng `KoaGains.tier(step:)`).
     public let value: Int
 
@@ -26,6 +29,7 @@ public enum KoaJourney {
       switch kind {
       case .firstSession, .firstFullWeek, .rankUp, .sessions: true
       case .record, .comeback, .fullWeek, .tierUp: false
+      case .logDays: KoaJourney.majorLogMarks.contains(value)
       }
     }
   }
@@ -35,7 +39,22 @@ public enum KoaJourney {
   /// Nghỉ từ ngần này ngày trở lên rồi tập lại thì là một lần quay lại đáng ghi.
   public static let comebackGap = 7
 
-  public static func moments(_ days: [KoaGains.Day], week: KoaGains.Week, today: LocalDate) -> [Moment] {
+  /// Tổng số ngày ghi đáng ghi nhận, và những mốc Koa nhắc như mốc lớn (3 ngày thay vì 1).
+  public static let logMarks = [3, 7, 30, 60, 100, 200, 365]
+  public static let majorLogMarks: Set<Int> = [7, 30, 100, 200, 365]
+
+  /// Mốc ghi đều: ngày mà tổng số ngày có ghi chạm từng mốc. Bỏ một ngày thì con số đứng yên.
+  public static func logMoments(_ logged: Set<LocalDate>, today: LocalDate) -> [Moment] {
+    let days = logged.filter { $0 <= today }.sorted()
+    return logMarks.filter { $0 <= days.count }.map {
+      Moment(id: "log:\($0)", kind: .logDays, date: days[$0 - 1], value: $0)
+    }
+  }
+
+  /// `logged`: các ngày có ghi bữa / nước / giấc ngủ (`KoaLogDaysSync`); trống thì chỉ có mốc tập.
+  public static func moments(
+    _ days: [KoaGains.Day], week: KoaGains.Week, logged: Set<LocalDate> = [], today: LocalDate
+  ) -> [Moment] {
     let ledger = KoaGains.ledger(days, week: week, today: today)
     var out: [Moment] = []
     var count = 0
@@ -74,6 +93,7 @@ public enum KoaJourney {
     for s in steps(ledger, days: days) where s.tier > 1 {
       out.append(Moment(id: "tier:\(s.step)", kind: .tierUp, date: s.date, value: s.step))
     }
+    out += logMoments(logged, today: today)
     return out.sorted { $0.date != $1.date ? $0.date > $1.date : $0.major && !$1.major }
   }
 
@@ -149,6 +169,34 @@ public enum KoaJourney {
       year: year, month: month, sessions: sessions, records: mine.filter { $0.kind == .record }.count,
       fullWeeks: mine.filter { $0.kind == .fullWeek || $0.kind == .firstFullWeek }.count,
       rankUps: mine.filter { $0.kind == .rankUp }.map(\.value).sorted())
+  }
+}
+
+/// Đọc các ngày có ghi cho mốc ghi đều: cả lịch sử `daily_logs`, chỉ ngày và ba số ghi.
+public enum KoaLogDaysSync {
+  /// ~5 năm ghi mỗi ngày, cùng trần với lịch sử Gains.
+  public static let limit = 2000
+
+  public static func query(userId: String) -> RowQuery {
+    RowQuery(
+      table: "daily_logs", columns: "date, kcal, water_ml, sleep_duration_min",
+      filters: [.eq("user_id", .string(userId))], order: .init(column: "date", ascending: false), limit: limit)
+  }
+
+  /// Ngày có ít nhất một việc ghi: bữa (kcal > 0), nước, hoặc giấc ngủ. Bước chân không tính.
+  public static func days(_ rows: [JSONValue]) -> Set<LocalDate> {
+    Set(
+      rows.compactMap { r in
+        guard let d = r["date"]?.stringValue.flatMap(LocalDate.init),
+          [r["kcal"], r["water_ml"], r["sleep_duration_min"]].contains(where: { ($0?.doubleValue ?? 0) > 0 })
+        else { return nil }
+        return d
+      })
+  }
+
+  /// `nil` khi đọc hỏng: giữ các ngày đã biết.
+  public static func load(userId: String, store: any RowStore) async -> Set<LocalDate>? {
+    (try? await store.select(query(userId: userId))).map(days)
   }
 }
 

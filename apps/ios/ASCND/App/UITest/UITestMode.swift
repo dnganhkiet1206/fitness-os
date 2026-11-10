@@ -38,6 +38,13 @@
       return FileManager.default.fileExists(atPath: dir.appendingPathComponent("uitest-offline").path)
     }
 
+    /// `-uiTestTierUp`: tài khoản giả sát mốc bậc (100 Gains), một buổi nữa là lên Gym Rat II (`UITestSeed`).
+    static var tierUp: Bool {
+      ProcessInfo.processInfo.arguments.contains {
+        $0.trimmingCharacters(in: CharacterSet(charactersIn: "-")) == "uiTestTierUp"
+      }
+    }
+
     /// Ảnh UX: `-uiTestDark` / `-uiTestLight` ép sáng tối cho lần mở này. Không có
     /// cờ thì trả về "theo máy", để flow khác không kế thừa theme của lần chụp.
     static func applyScreenshotTheme() {

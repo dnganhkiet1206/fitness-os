@@ -1158,7 +1158,9 @@ struct TodayExtras<Plan: View>: View {
     services.koaGainsNow = (userId, r.state, r.week)
     services.koaLastSessionAt = r.lastSessionAt
     noteSchedule(r.state)
-    services.koaGainsHistory = .init(days: r.days, week: r.week)
+    let logged = await services.loadKoaLogDays(userId: userId)
+    guard services.session.session?.userId == userId else { return }
+    services.koaGainsHistory = .init(days: r.days, week: r.week, logged: logged)
     announceRank(r.state.rank)
     if await services.syncKoaPause(userId: userId), let dailyPlan, let flow {
       dailyPlan.recompute(services: services, flow: flow)

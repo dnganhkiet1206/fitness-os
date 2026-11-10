@@ -95,6 +95,51 @@ import Testing
     #expect(KoaMomentFeed.next(only, seen: [tier.id], today: tier.date) == nil)
   }
 
+  // MARK: Mốc ghi đều (10/11)
+
+  @Test func loggingMilestonesCountDaysNotStreaks() {
+    // ghi cách ngày: 10 ngày ghi trong 19 ngày
+    let logged = Set((0..<10).map { d("2026-10-01").adding(days: $0 * 2) })
+    let m = KoaJourney.logMoments(logged, today: d("2026-10-31"))
+    #expect(m.map(\.id) == ["log:3", "log:7"])
+    #expect(m[0].date == d("2026-10-05") && m[1].date == d("2026-10-13"), "ngày chạm mốc là ngày ghi thứ 3 và thứ 7")
+    #expect(!m[0].major && m[1].major, "3 ngày là mốc nhỏ, 7 ngày là mốc lớn")
+    // hôm nay chưa tới ngày ghi thứ 7 thì chưa có mốc; ngày ghi ở tương lai không tính
+    #expect(KoaJourney.logMoments(logged, today: d("2026-10-12")).map(\.id) == ["log:3"])
+    #expect(KoaJourney.logMoments([], today: d("2026-10-12")).isEmpty)
+    // ghi thêm về sau không dời mốc đã đạt
+    let more = logged.union([d("2026-10-30")])
+    #expect(Array(KoaJourney.logMoments(more, today: d("2026-10-31")).prefix(2)) == m)
+  }
+
+  @Test func loggingMilestonesSitInTheJourneyWithoutTouchingTraining() {
+    let days = sessions(["2026-10-05", "2026-10-07", "2026-10-09"])
+    let logged = Set((0..<7).map { d("2026-10-03").adding(days: $0) })
+    let plain = KoaJourney.moments(days, week: week, today: d("2026-10-10"))
+    let all = KoaJourney.moments(days, week: week, logged: logged, today: d("2026-10-10"))
+    #expect(all.filter { $0.kind != .logDays } == plain, "mốc tập không đổi")
+    #expect(all.filter { $0.kind == .logDays }.map(\.value) == [7, 3])
+    #expect(Set(all.map(\.id)).count == all.count)
+    // người chỉ ghi, chưa tập buổi nào, vẫn có hành trình
+    #expect(KoaJourney.moments([], week: week, logged: logged, today: d("2026-10-10")).map(\.id) == ["log:7", "log:3"])
+  }
+
+  @Test func logDaysNeedARealEntryThatDay() {
+    func row(_ date: String, kcal: Double? = nil, water: Double? = nil, sleep: Double? = nil) -> JSONValue {
+      .object([
+        "date": .string(date), "kcal": kcal.map(JSONValue.number) ?? .null, "water_ml": water.map(JSONValue.number) ?? .null,
+        "sleep_duration_min": sleep.map(JSONValue.number) ?? .null, "steps": .number(9000),
+      ])
+    }
+    let rows = [
+      row("2026-10-01", kcal: 1800, water: 0, sleep: 0), row("2026-10-02", kcal: 0, water: 500),
+      row("2026-10-03", sleep: 420), row("2026-10-04", kcal: 0, water: 0, sleep: 0), row("bad", kcal: 500),
+    ]
+    #expect(KoaLogDaysSync.days(rows) == [d("2026-10-01"), d("2026-10-02"), d("2026-10-03")], "chỉ bước chân thì không tính")
+    let q = KoaLogDaysSync.query(userId: "u1")
+    #expect(q.table == "daily_logs" && q.limit == KoaLogDaysSync.limit)
+  }
+
   @Test func feedPrefersFreshMajorAndNeverRepeats() {
     let days = sessions(["2026-10-05", "2026-10-07", "2026-10-09"], pr: ["2026-10-09"])
     let m = KoaJourney.moments(days, week: week, today: d("2026-10-09"))

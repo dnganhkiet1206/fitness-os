@@ -39,6 +39,7 @@ Vì sao không dùng event sourcing: dữ liệu gốc (buổi tập) đã là n
 | **Gains, hạng** | Tích luỹ việc tập thật | `KoaGains` | Hồ sơ, phòng Koa, tổng kết buổi |
 | **Bậc trong hạng** (10/11) | Mốc gần giữa hai hạng: cùng số Gains, chia nhỏ hơn. Không phải thang hay loại điểm mới | `KoaGains.tier`, `KoaJourney.steps` | Hàng Koa ở Hôm nay, tổng kết buổi lúc lên bậc, Hành trình (mốc nhỏ), dòng "còn N Gains" trong phòng Koa |
 | **Mốc hành trình** | Khoảnh khắc đáng nhớ | `KoaJourney` | Tiến bộ › Hành trình; Koa nói ở Hôm nay và phòng |
+| **Mốc ghi đều** (10/11) | Tổng số ngày có ghi bữa / nước / giấc ngủ (3 / 7 / 30 / 60 / 100 / 200 / 365), cộng dồn, không phải chuỗi. Không Gains, không xu | `KoaJourney.logMoments`, `KoaLogDaysSync` | Tiến bộ › Hành trình; Koa nói ở Hôm nay |
 | **Nhịp 30 ngày** | Sự đều đặn, không có gì để gãy | `KoaRhythm` | Tiến bộ, thẻ Koa ở Hôm nay |
 | **Tuần của Koa** | Mục tiêu tuần theo lịch riêng | `KoaWeek` | Dải tuần, phòng Koa |
 | **Nhiệm vụ ngày** | Việc nhỏ hôm nay | `MascotRules` | Thẻ Koa ở Hôm nay |
@@ -52,8 +53,8 @@ Huy chương và mốc hành trình trùng nhau một phần (buổi đầu, s�
 ### Bộ điều phối
 
 `KoaMomentFeed` là nguồn duy nhất quyết định Koa nhắc mốc nào. Quy tắc:
-- Mốc lớn (buổi đầu, tuần đủ buổi đầu tiên, lên hạng, số buổi) được nhắc trong 3 ngày.
-- Mốc nhỏ (kỷ lục, quay lại, tuần đủ buổi, lên bậc trong hạng) được nhắc trong 1 ngày.
+- Mốc lớn (buổi đầu, tuần đủ buổi đầu tiên, lên hạng, số buổi, 7 / 30 / 100 / 200 / 365 ngày ghi) được nhắc trong 3 ngày.
+- Mốc nhỏ (kỷ lục, quay lại, tuần đủ buổi, lên bậc trong hạng, 3 / 60 ngày ghi) được nhắc trong 1 ngày.
 - Đã nhắc ở đâu thì không nhắc lại ở chỗ khác.
 - Trong một lần mở app, Hôm nay và phòng Koa nói cùng một mốc. Màn khác không tự quyết.
 
