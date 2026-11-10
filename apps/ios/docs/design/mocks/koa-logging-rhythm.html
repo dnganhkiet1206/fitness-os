@@ -1,0 +1,208 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ghi chép cũng nuôi Koa</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+:root{
+  --bg:#f7f4ef;--card:#ffffff;--fg:#1a1917;--muted:#6b6559;--border:#dcd5c8;--track:#e9e3d8;--phone:#f7f4ef;
+  --good:#0a7b6c;--old:#b83044;--wash:rgba(26,25,23,.05);
+  --train:#b83044;--log:#ac5b06;--logsoft:rgba(172,91,6,.16);--rank:#078055;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0b0a09;--card:#16151a;--fg:#ededed;--muted:#8b8b8b;--border:#2b2b31;--track:#2b2b31;--phone:#100e0c;
+  --good:#63e6be;--old:#e6485c;--wash:rgba(255,255,255,.05);
+  --train:#e6485c;--log:#ff9130;--logsoft:rgba(255,145,48,.18);--rank:#2bf5a8;color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0b0a09;--card:#16151a;--fg:#ededed;--muted:#8b8b8b;--border:#2b2b31;--track:#2b2b31;--phone:#100e0c;
+  --good:#63e6be;--old:#e6485c;--wash:rgba(255,255,255,.05);
+  --train:#e6485c;--log:#ff9130;--logsoft:rgba(255,145,48,.18);--rank:#2bf5a8;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:15px/1.5 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",system-ui,sans-serif;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 64px}
+.wrap{max-width:1040px;margin:0 auto;display:flex;flex-direction:column;gap:44px}
+header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+h1{font-size:30px;line-height:1.15;margin:0 0 6px;letter-spacing:-.01em;text-wrap:balance}
+h2{font-size:22px;margin:0 0 4px;text-wrap:balance}
+h3{font-size:12.5px;margin:0;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700}
+p{margin:0;max-width:68ch}
+.lede{color:var(--muted)}
+section{display:flex;flex-direction:column;gap:16px}
+.toggle{display:flex;border:1px solid var(--border);border-radius:999px;padding:3px;gap:2px}
+.toggle button{border:0;background:none;color:var(--muted);font:inherit;font-size:13px;padding:6px 12px;border-radius:999px;cursor:pointer}
+.toggle button[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
+.panel{background:var(--card);border:1px solid var(--border);border-radius:24px;padding:20px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.tag{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.tag.old{color:var(--old)}.tag.new{color:var(--good)}
+.tag::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media (max-width:760px){.cols{grid-template-columns:1fr}}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:480px;font-size:14px}
+th,td{text-align:left;padding:10px;border-bottom:1px solid var(--border);vertical-align:top}
+th{font-size:12px;color:var(--muted);font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+td.no{color:var(--muted)}
+.phones{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+@media (max-width:820px){.phones{grid-template-columns:1fr}}
+.phone{background:var(--phone);border:1px solid var(--border);border-radius:28px;padding:16px 14px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.cap{font-size:12.5px;color:var(--muted)}
+.mini{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.koa{flex:none;width:52px;height:52px;border-radius:14px;background:var(--wash);border:1px dashed var(--border);display:grid;place-items:center;font-size:11px;color:var(--muted)}
+.row{display:flex;gap:12px;align-items:center}
+.k1{font-size:12px;color:var(--muted)}
+.k2{font-weight:700;font-size:16px;letter-spacing:-.01em}
+.k3{font-size:13px;color:var(--muted)}
+.bubble{background:var(--wash);border-radius:16px 16px 16px 4px;padding:10px 12px;font-size:14px}
+.dots{display:grid;grid-template-columns:repeat(10,1fr);gap:5px}
+.dots i{aspect-ratio:1;border-radius:50%;background:var(--track)}
+.dots.train i.on{background:var(--train)}
+.dots.log i.on{background:var(--log)}
+.dots i.today{outline:2px solid var(--fg);outline-offset:1px}
+.num{font-size:26px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.split{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.split b{color:var(--fg);font-weight:600}
+.jl{display:flex;flex-direction:column;gap:0}
+.jl div{display:grid;grid-template-columns:18px 1fr auto;gap:10px;align-items:baseline;padding:9px 0;border-bottom:1px solid var(--border);font-size:14px}
+.jl div:last-child{border-bottom:0}
+.jl i{width:10px;height:10px;border-radius:50%;display:block;transform:translateY(1px)}
+.jl span{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.stamps{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stamp{border:1px solid var(--border);border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:2px;background:var(--card)}
+.stamp.now{border-color:var(--fg)}
+.stamp .m{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.stamp .a{font-size:13px;font-variant-numeric:tabular-nums}
+.stamp .a b{font-size:17px}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.opt{border:1px solid var(--border);border-radius:18px;padding:14px;background:var(--card);display:flex;flex-direction:column;gap:6px}
+.opt b{font-size:15px}
+.opt span{font-size:13.5px;color:var(--muted)}
+.rec{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--good)}
+footer{color:var(--muted);font-size:13px;border-top:1px solid var(--border);padding-top:16px}
+code{font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--wash);padding:1px 5px;border-radius:6px}
+</style>
+
+<div class="wrap">
+<header>
+  <div>
+    <h1>Ghi chép cũng nuôi Koa</h1>
+    <p class="lede">Mock cho Kiệt duyệt (10/11). Koa hiện chỉ nhớ việc tập. Đề xuất để Koa nhớ cả việc ghi bữa, nước và giấc ngủ, theo đúng các nguyên tắc đã chốt: không chuỗi ngày, không thêm loại điểm, Gains vẫn chỉ đến từ tập.</p>
+  </div>
+  <div class="toggle" role="group" aria-label="Giao diện">
+    <button data-t="light" aria-pressed="false">Sáng</button>
+    <button data-t="dark" aria-pressed="false">Tối</button>
+  </div>
+</header>
+
+<section>
+  <h2>1 · Hiện tại Koa nhớ gì</h2>
+  <div class="panel tbl">
+    <table>
+      <thead><tr><th>Lớp</th><th>Tập luyện</th><th>Ghi bữa / nước / ngủ</th></tr></thead>
+      <tbody>
+        <tr><td>Ngay lúc làm</td><td>Koa ăn mừng cuối buổi, cộng Gains</td><td>Koa ló lên với "+8 xu" hoặc "+10 xu" khi nhiệm vụ ngày được nhận</td></tr>
+        <tr><td>Trong ngày</td><td>Nét mặt Koa đổi (tự đắc sau khi tập)</td><td>Nét mặt Koa đổi (vui sau khi ăn, tươi tỉnh khi ngủ đủ)</td></tr>
+        <tr><td>30 ngày</td><td>Nhịp 30 ngày: số buổi, so với 30 ngày trước</td><td class="no">Không có</td></tr>
+        <tr><td>Lâu dài</td><td>Gains, hạng, bậc; 8 loại mốc Hành trình</td><td class="no">Không có mốc nào</td></tr>
+        <tr><td>Nhìn lại</td><td>Tổng kết tuần</td><td class="no">Không có trang theo tháng cho cả hai</td></tr>
+      </tbody>
+    </table>
+    <p class="cap">Sang ngày hôm sau, việc ghi chép của hôm qua không để lại dấu gì ở Koa. Người ghi đều ba tháng và người mới ghi hôm nay nhìn thấy Koa y như nhau.</p>
+  </div>
+</section>
+
+<section>
+  <h2>2 · Đề xuất: ba lớp, từ gần tới xa</h2>
+  <p class="lede">Ô "Koa" là chỗ đặt hình Koa của Kiệt. Mock không vẽ Koa và không thêm đồ vật vào phòng.</p>
+  <div class="phones">
+    <div class="phone">
+      <h3>A · Nhịp ghi 30 ngày</h3>
+      <div class="mini">
+        <div class="k1">Nhịp tập · 30 ngày</div>
+        <div class="row" style="align-items:baseline"><span class="num">11</span><span class="k3">buổi · hơn 30 ngày trước 2 buổi</span></div>
+        <div class="dots train" id="d-train"></div>
+      </div>
+      <div class="mini">
+        <div class="k1">Nhịp ghi · 30 ngày</div>
+        <div class="row" style="align-items:baseline"><span class="num">22</span><span class="k3">ngày có ghi · hơn 30 ngày trước 6 ngày</span></div>
+        <div class="dots log" id="d-log"></div>
+        <div class="split"><span>Bữa <b>20</b> ngày</span><span>Nước <b>14</b> ngày</span><span>Ngủ <b>17</b> ngày</span></div>
+      </div>
+      <span class="cap">Nằm ngay dưới Nhịp tập ở Tiến bộ › Hành trình. Tính kiểu cửa sổ cuốn chiếu: bỏ một ngày thì con số chỉ giảm 1, không có gì "gãy".</span>
+    </div>
+
+    <div class="phone">
+      <h3>B · Mốc ghi chép trong Hành trình</h3>
+      <div class="mini jl">
+        <div><i style="background:var(--log)"></i>100 ngày có ghi<span>hôm nay</span></div>
+        <div><i style="background:var(--rank)"></i>Lên bậc: Lifter II<span>6 thg 11</span></div>
+        <div><i style="background:var(--train)"></i>Kỷ lục: Squat 80 kg<span>2 thg 11</span></div>
+        <div><i style="background:var(--log)"></i>Tuần đầu ghi đủ 7 ngày<span>19 thg 10</span></div>
+        <div><i style="background:var(--train)"></i>Buổi tập thứ 25<span>14 thg 10</span></div>
+        <div><i style="background:var(--log)"></i>30 ngày có ghi<span>2 thg 9</span></div>
+      </div>
+      <div class="row">
+        <div class="koa">Koa</div>
+        <div class="bubble">Bạn đã ghi 100 ngày rồi. Tháng này 22 ngày, nhiều nhất từ trước tới nay.</div>
+      </div>
+      <span class="cap">Mốc đếm tổng số ngày có ghi, không cần liền nhau: ngày đầu, 7, 30, 100, 200, 365. Thêm một mốc "tuần đầu ghi đủ 7 ngày". Koa nhắc một lần, trong một ngày, bằng số thật.</span>
+    </div>
+
+    <div class="phone">
+      <h3>C · Tháng của bạn với Koa</h3>
+      <div class="stamps">
+        <div class="stamp"><span class="m">Thg 8</span><span class="a"><b>6</b> buổi</span><span class="a"><b>9</b> ngày ghi</span></div>
+        <div class="stamp"><span class="m">Thg 9</span><span class="a"><b>10</b> buổi</span><span class="a"><b>18</b> ngày ghi</span></div>
+        <div class="stamp"><span class="m">Thg 10</span><span class="a"><b>9</b> buổi</span><span class="a"><b>16</b> ngày ghi</span></div>
+        <div class="stamp now"><span class="m">Thg 11</span><span class="a"><b>4</b> buổi</span><span class="a"><b>8</b> ngày ghi</span></div>
+      </div>
+      <div class="mini">
+        <div class="k2">Tháng 10 của bạn</div>
+        <div class="k3">9 buổi tập · 2 kỷ lục · lên 1 bậc<br>16 ngày có ghi · ghi nhiều nhất vào thứ Ba<br>Koa đi cùng bạn 31 ngày</div>
+      </div>
+      <span class="cap">Mỗi tháng để lại một ô trong Hành trình, mở ra là trang nhìn lại. Ô không có hạng vàng / bạc và không bao giờ bị xoá. Tháng ít cũng có ô, chỉ là con số nhỏ hơn.</span>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>3 · Những gì cố ý không làm</h2>
+  <div class="panel">
+    <table>
+      <tbody>
+        <tr><td><b>Ghi chép không cho Gains</b></td><td>Gains đo việc tập thật, đã chốt. Nếu ghi một ly nước cũng lên hạng thì hạng mất nghĩa.</td></tr>
+        <tr><td><b>Không khen chê theo calo hay cân nặng</b></td><td>Koa chỉ nói về việc đã ghi ("ghi 22 ngày"), không nói "ăn ít", "ăn đúng". Giữ đúng nguyên tắc 12 trong nghiên cứu.</td></tr>
+        <tr><td><b>Không chuỗi ngày ghi</b></td><td>Chỉ đếm trong 30 ngày và đếm tổng. Không có gì để mất khi nghỉ.</td></tr>
+        <tr><td><b>Không thêm xu</b></td><td>Nhiệm vụ ngày đã cho xu khi ghi (8–10 xu). Mốc không cho thêm.</td></tr>
+        <tr><td><b>Không thêm đồ vào phòng Koa</b></td><td>Kiệt vừa hoãn mọi đồ vật mới tới khi vẽ phòng mới.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <h2>4 · Ba điều cần Kiệt chọn</h2>
+  <div class="opts">
+    <div class="opt"><span class="rec">Đề xuất</span><b>"Ngày có ghi" là ngày có ít nhất một bản ghi bất kỳ</b><span>Một bữa, một lần nước hoặc một đêm ngủ đều tính. Dễ đạt, hợp nguyên tắc "thưởng việc xuất hiện". Lựa chọn khác: chỉ tính ngày có ghi bữa ăn.</span></div>
+    <div class="opt"><span class="rec">Đề xuất</span><b>Làm A và B trước, C sau</b><span>A và B dùng lại khung Nhịp và Hành trình sẵn có nên nhỏ. C là một màn mới, nên có mock riêng kỹ hơn trước khi làm.</span></div>
+    <div class="opt"><span class="rec">Đề xuất</span><b>Giấc ngủ lấy từ Apple Health cũng tính là "có ghi"</b><span>Người đeo đồng hồ không phải nhập tay vẫn được Koa ghi nhận. Lựa chọn khác: chỉ tính bản ghi nhập tay.</span></div>
+  </div>
+</section>
+
+<footer>
+  Chưa đổi gì trong app. Số trong mock là số ví dụ. Hiện trạng ở mục 1 đọc từ code: <code>KoaRhythm</code> chỉ đếm buổi tập, <code>KoaJourney</code> có 8 loại mốc đều về tập, <code>KoaPeek</code> ló lên khi nhận xu nhiệm vụ, <code>KoaMood</code> đổi nét mặt theo ngày.
+</footer>
+</div>
+
+<script>
+(function(){
+  const root=document.documentElement, btns=[...document.querySelectorAll('.toggle button')];
+  const sys=()=>matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
+  const paint=()=>{const c=root.getAttribute('data-theme')||sys();btns.forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.t===c)))};
+  btns.forEach(b=>b.addEventListener('click',()=>{root.setAttribute('data-theme',b.dataset.t);paint()}));
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change',paint);paint();
+  function dots(id,on){const el=document.getElementById(id);for(let i=0;i<30;i++){const d=document.createElement('i');if(on.has(i))d.className='on';if(i===29)d.classList.add('today');el.append(d)}}
+  dots('d-train',new Set([1,3,5,8,10,12,15,17,22,24,29]));
+  dots('d-log',new Set([0,1,3,4,5,7,8,9,10,12,14,15,16,17,19,21,22,24,25,26,28,29]));
+})();
+</script>
