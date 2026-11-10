@@ -147,7 +147,7 @@ struct KoaReactionView: View {
         expression: f.expression, pose: .idle, gesture: f.cheer > 0.001 ? .cheer : nil,
         worn: hand.map { [.hand: $0] } ?? [:], size: fig, animated: true, stage: false, walk: f.walk, bleeds: true,
         headLook: KoaMath.Gaze(x: f.look.x, y: f.look.y, k: 1), eyes: KoaMath.Gaze(x: f.eyes.x, y: f.eyes.y, k: 1),
-        turn: f.turn, groundShadow: false, gestureAmount: min(1.1, f.cheer)
+        groundShadow: false, gestureAmount: min(1.1, f.cheer)
       )
       .scaleEffect(x: reduceMotion ? 1 : f.sx, y: reduceMotion ? 1 : f.sy, anchor: .bottom)
       .offset(y: -air)

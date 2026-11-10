@@ -241,7 +241,7 @@ struct KoaRestScreen: View {
         expression: f.expression, pose: .idle, gesture: nil, size: fig, animated: true,
         stage: false, walk: still ? KoaWalk.Pose() : f.walk, bleeds: true,
         headLook: KoaMath.Gaze(x: f.look.x, y: f.look.y, k: 1), eyes: KoaMath.Gaze(x: f.eyes.x, y: f.eyes.y, k: 1),
-        turn: still ? 0 : f.turn, groundShadow: false, gestureAmount: 0
+        groundShadow: false, gestureAmount: 0
       )
       .scaleEffect(x: still ? 1 : f.sx, y: still ? 1 : f.sy, anchor: .bottom)
       .offset(y: -air)

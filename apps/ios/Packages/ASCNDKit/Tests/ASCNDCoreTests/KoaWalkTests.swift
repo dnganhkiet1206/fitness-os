@@ -187,8 +187,8 @@ struct KoaWalkTests {
     o.walk = p
     let f = KoaRender.flags(o)
     #expect(f["footL"]?.text.contains("translate") == true)
-    // native quay mặt bằng `KoaTurn`; RN vẫn dời cả mặt (KoaTurnTests)
-    #expect((f["faceShift"]?.text ?? "") == "")
+    // đi nghiêng thì dời cả mặt một khoảng (Kiệt 10/11 bỏ quay mặt 2.5D của Koa V2)
+    #expect(f["faceShift"]?.text == "translate(7.000,0)")
     // tư thế khác (ngồi, cầm tạ) không đi
     o.pose = .relaxing
     #expect(KoaRender.flags(o)["footL"] == nil)
