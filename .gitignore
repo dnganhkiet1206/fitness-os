@@ -37,3 +37,8 @@ supabase/.branches/
 
 .claude/worktrees/
 __pycache__/
+
+# Hệ thống minh hoạ bài tập 3D: tệp trung gian / gỡ lỗi (tên bắt đầu bằng "_") và bản sao lưu của Blender
+artifacts/exercise-visual-system/**/_*
+artifacts/exercise-visual-system/**/*.blend1
+!artifacts/exercise-visual-system/**/__init__.py

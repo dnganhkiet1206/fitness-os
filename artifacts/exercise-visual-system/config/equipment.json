@@ -1,0 +1,49 @@
+{
+  "comment": "Parametric gym equipment in metres. Every exercise reuses these definitions; nothing here is specific to the bench press. 'source' says where a dimension comes from; see docs/exercise-visual-system/OPEN_SOURCE_AUDIT.md and the bench-press reference notes for how each source was checked.",
+  "barbell_olympic_20kg": {
+    "type": "barbell",
+    "total_length": 2.2,
+    "shaft_diameter": 0.029,
+    "inside_collar_distance": 1.31,
+    "collar_width": 0.03,
+    "collar_diameter": 0.075,
+    "sleeve_diameter": 0.05,
+    "center_knurl_half_length": 0.06,
+    "knurl_start": 0.09,
+    "grip_mark_distance": 0.81,
+    "grip_mark_width": 0.008,
+    "mass_kg": 20.0,
+    "source": "IPF Technical Rules Book (bar and discs): total length not exceeding 2.2 m, distance between collar faces 1.31 to 1.32 m, bar diameter 28 to 29 mm, sleeve diameter 50 to 52 mm, grip marks 81 cm apart."
+  },
+  "plate_20kg": {
+    "type": "plate",
+    "diameter": 0.45,
+    "thickness": 0.036,
+    "hub_diameter": 0.2,
+    "hole_diameter": 0.052,
+    "mass_kg": 20.0,
+    "source": "IPF Technical Rules Book: largest discs not more than 45 cm in diameter, hole 52 to 53 mm. Thickness is a modelling choice inside the range of commercial 20 kg plates; it is not specified by the rule for this mass."
+  },
+  "collar": {
+    "type": "collar",
+    "diameter": 0.085,
+    "width": 0.045,
+    "source": "Modelling choice (generic spring/clamp collar)."
+  },
+  "flat_bench_with_rack": {
+    "type": "bench_rack",
+    "pad_length": 1.22,
+    "pad_width": 0.3,
+    "pad_thickness": 0.07,
+    "pad_top_height": 0.44,
+    "frame_tube": 0.06,
+    "foot_width": 0.42,
+    "upright_spacing": 1.14,
+    "upright_height": 1.28,
+    "upright_from_head_end": 0.2,
+    "hook_reach": 0.06,
+    "hook_lip": 0.018,
+    "rack_base_length": 0.9,
+    "source": "IPF Technical Rules Book (bench): flat surface length not less than 1.22 m, width 29 to 32 cm, height 42 to 45 cm from the floor to the top of the pad; rack height adjustable from 75 cm to 110 cm (floor to bar rest). Frame shape is an original design."
+  }
+}

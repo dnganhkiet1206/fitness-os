@@ -1,0 +1,38 @@
+{
+  "comment": "Render quality presets and lighting presets. The brand profile picks one of each by name. Lights are placed relative to the active camera's direction on the ground plane, so every camera angle gets the same key/fill/rim relationship.",
+  "render_presets": {
+    "preview_720p": {
+      "engine": "BLENDER_EEVEE",
+      "resolution": [1280, 720],
+      "frame_rate": 24,
+      "taa_render_samples": 32,
+      "use_raytracing": false,
+      "view_transform": "Standard",
+      "look": "None",
+      "video": { "codec": "libx264", "crf": 20, "preset": "slow", "pixel_format": "yuv420p", "profile": "high", "level": "4.0" }
+    },
+    "production_1080p": {
+      "engine": "BLENDER_EEVEE",
+      "resolution": [1920, 1080],
+      "frame_rate": 30,
+      "taa_render_samples": 64,
+      "use_raytracing": true,
+      "view_transform": "Standard",
+      "look": "None",
+      "video": { "codec": "libx264", "crf": 18, "preset": "slow", "pixel_format": "yuv420p", "profile": "high", "level": "4.1" }
+    }
+  },
+  "lighting_presets": {
+    "soft_studio": {
+      "ambient_strength": 0.22,
+      "ambient_color": "#FFFFFF",
+      "lights": [
+        { "name": "key", "azimuth_deg": -42, "elevation_deg": 52, "distance": 4.2, "size": 3.0, "power": 190, "color": "#FFF6EC" },
+        { "name": "fill", "azimuth_deg": 58, "elevation_deg": 22, "distance": 4.5, "size": 4.5, "power": 55, "color": "#EEF3FF" },
+        { "name": "rim", "azimuth_deg": 150, "elevation_deg": 48, "distance": 4.2, "size": 2.2, "power": 150, "color": "#FFFFFF" },
+        { "name": "top", "azimuth_deg": 0, "elevation_deg": 86, "distance": 3.6, "size": 3.5, "power": 60, "color": "#FFFFFF" }
+      ],
+      "floor": { "radius": 9.0, "shadow_strength": 0.85, "shadow_reference": 0.5, "lit_reference": 0.95, "fade_start": 2.6, "fade_end": 4.2 }
+    }
+  }
+}
