@@ -135,12 +135,11 @@ extension InMemoryWorkoutStore: OutboxPersistence {
     if snapshot.dead.count > deadEntries.count { deadEntries += snapshot.dead.dropFirst(deadEntries.count) }
   }
 
-  public func dropAllOnSignOut() async throws -> Int {
-    defer {
-      outbox = []
-      deadEntries = []
-    }
-    return outbox.count
+  public func purge(userId: String) async throws -> Int {
+    let n = outbox.filter { $0.userId == userId }.count
+    outbox.removeAll { $0.userId == userId }
+    deadEntries.removeAll { $0.entry.userId == userId }
+    return n
   }
 }
 

@@ -273,8 +273,14 @@ struct SettingsSheet: View {
         // `@Sendable` như closure viết thẳng vào tham số `@MainActor`. Chỉ bắt `deleter` và `services`,
         // cả hai đều `Sendable`.
         { @Sendable @MainActor [services] in
+          let gone = services.session.session?.userId
           let result = await deleter.deleteAccount()
-          if result == .deleted { await Self.signOut(services) }
+          if result == .deleted {
+            // Tài khoản không còn: bản ghi chờ gửi của nó không bao giờ gửi được nữa
+            // (đăng xuất thường thì ĐỖ chúng lại — AUD-06), nên bỏ hẳn khỏi máy.
+            if let gone { await services.sync.purge(userId: gone) }
+            await Self.signOut(services)
+          }
           return result
         }
       },

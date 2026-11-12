@@ -46,22 +46,31 @@ struct OutboxStoreTests {
     #expect(try store.load().dead.count == 1)
   }
 
-  @Test func signOutDropPersists() throws {
+  /// AUD-06: kết thúc phiên không xoá gì trên đĩa — bản ghi của người khác không
+  /// thành `dead` và còn nguyên sau khi mở lại app; chỉ `purge` (tài khoản đã bị
+  /// xoá) mới bỏ, và chỉ của đúng tài khoản ấy (cả `outbox_dead`).
+  @Test func parkedEntriesSurviveAndPurgeIsScoped() throws {
     let store = try OutboxStore()
     var box = Outbox()
-    // Bản ghi của tài khoản khác ở ĐẦU hàng → `dead`, xuống đĩa.
     for e in [entry("x", user: "u9"), entry("a"), entry("b")] {
       box.enqueue(e)
       try store.append(e)
     }
     _ = box.next(now: EpochMillis(0), online: true, signedInUser: "u1")
     try store.persist(box, settled: [])
-    #expect(try store.load().dead.count == 1)
+    #expect(try store.load().dead.isEmpty, "bản ghi của u9 không bị vứt vì u1 đang đăng nhập")
+    #expect(box.park() == 3)
+    #expect(try store.load().pending.map(\.id) == ["x", "a", "b"])
 
-    box.dropAllOnSignOut()
-    #expect(try store.dropAllOnSignOut() == 2)
-    #expect(try store.load().pending.isEmpty)
-    #expect(try store.load().dead.isEmpty, "buổi tập của người vừa rời đi không ở lại (#335)")
+    // u9 có một bản ghi bị từ chối; xoá tài khoản u9 thì bỏ cả nó.
+    var other = try store.load()
+    _ = other.next(now: EpochMillis(0), online: true, signedInUser: "u9")
+    other.failed(id: "x", .server(code: "23514"), now: EpochMillis(0))
+    try store.persist(other, settled: [])
+    #expect(try store.load().dead.count == 1)
+    #expect(try store.purge(userId: "u9") == 0)
+    #expect(try store.load().dead.isEmpty)
+    #expect(try store.load().pending.map(\.id) == ["a", "b"])
   }
 
   /// Màn tập chốt buổi (append) SAU khi worker đã nạp hàng đợi; worker gửi

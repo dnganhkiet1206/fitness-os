@@ -145,13 +145,18 @@ struct OutboxTests {
     #expect(box.next(now: at(7), online: true, signedInUser: "u1") == .send(entry("b")))
   }
 
-  @Test func otherAccountsRecordsNeverSendAndDoNotBlock() {
+  /// Bản ghi của tài khoản khác: không gửi dưới phiên này, không chặn làn của
+  /// người đang đăng nhập, và KHÔNG bị vứt — gửi khi chính chủ đăng nhập lại (AUD-06).
+  @Test func otherAccountsRecordsNeverSendDoNotBlockAndAreKept() {
     var box = Outbox()
     box.enqueue(entry("x", user: "u2"))
     box.enqueue(entry("a", user: "u1"))
     #expect(box.next(now: at(0), online: true, signedInUser: "u1") == .send(entry("a", user: "u1")))
-    #expect(box.dead.map(\.entry.id) == ["x"])
-    #expect(box.dead.first?.reason == .wrongAccount)
+    box.succeeded(id: "a")
+    #expect(box.dead.isEmpty)
+    #expect(box.next(now: at(0), online: true, signedInUser: "u1") == .idle)
+    #expect(box.pending(for: "u1").isEmpty)
+    #expect(box.next(now: at(0), online: true, signedInUser: "u2") == .send(entry("x", user: "u2")))
   }
 
   @Test func signedOutSendsNothing() {
@@ -161,24 +166,41 @@ struct OutboxTests {
     #expect(box.pending.count == 1)
   }
 
-  @Test func signOutDropsQueueLikeBaseline() {
+  /// AUD-06: đăng xuất (hay phiên hết hạn) ĐỖ hàng đợi, kể cả bản ghi đang gửi dở —
+  /// không xoá. Gửi lại khi chính chủ đăng nhập lại.
+  @Test func signOutParksQueueInsteadOfDroppingIt() {
     var box = Outbox()
     box.enqueue(entry("a"))
     box.enqueue(entry("b"))
     _ = box.next(now: at(0), online: true, signedInUser: "u1")
-    #expect(box.dropAllOnSignOut() == 2)
-    #expect(box.pending.isEmpty)
+    #expect(box.park() == 2)
+    #expect(box.pending.map(\.id) == ["a", "b"])
     #expect(box.inFlight == nil)
+    #expect(box.next(now: at(1), online: true, signedInUser: "u1") == .send(entry("a")))
   }
 
-  /// #335: `dead` cũng là buổi tập của người vừa rời đi — bỏ cùng hàng đợi.
-  @Test func signOutDropsDeadToo() {
+  /// #335: người đăng nhập sau không thấy bản ghi (kể cả `dead`) của người trước.
+  @Test func countsAndListsAreScopedToTheSignedInUser() {
     var box = Outbox()
     box.enqueue(entry("x", user: "u9"))
-    _ = box.next(now: at(0), online: true, signedInUser: "u1")
-    #expect(box.dead.count == 1)
-    box.dropAllOnSignOut()
-    #expect(box.dead.isEmpty)
+    box.enqueue(entry("a"))
+    _ = box.next(now: at(0), online: true, signedInUser: "u9")
+    box.failed(id: "x", .server(code: "23514"), now: at(0))
+    #expect(box.dead(for: "u9").count == 1)
+    #expect(box.dead(for: "u1").isEmpty)
+    #expect(box.pending(for: "u1").map(\.id) == ["a"])
+    #expect(box.pending(for: nil).isEmpty)
+  }
+
+  /// Tài khoản bị xoá: bỏ hẳn mọi bản ghi của nó, giữ của người khác.
+  @Test func purgeRemovesOnlyThatAccount() {
+    var box = Outbox()
+    box.enqueue(entry("x", user: "u9"))
+    box.enqueue(entry("a"))
+    _ = box.next(now: at(0), online: true, signedInUser: "u9")
+    #expect(box.purge(userId: "u9") == 1)
+    #expect(box.inFlight == nil)
+    #expect(box.pending.map(\.id) == ["a"])
   }
 
   /// Lưu xuống đĩa rồi nạp lại: hàng đợi, lịch sử lỗi, hạn chờ còn nguyên;

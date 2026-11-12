@@ -315,8 +315,9 @@ final class AppServices {
       // Người của phiên mới khi đổi thẳng tài khoản; `nil` khi đăng xuất.
       let next = session?.session?.userId
       // Đóng chốt TRƯỚC khi dọn: lượt làm mới / lượt ghi muộn của người vừa
-      // rời đi về sau đó không ghi lại được gì lên đĩa (#431, #454). Rồi bỏ
-      // hàng đợi chưa gửi, như baseline (#241 chờ Kiệt). Rồi dọn điểm quay lại
+      // rời đi về sau đó không ghi lại được gì lên đĩa (#431, #454). Rồi ĐỖ
+      // hàng đợi chưa gửi — không xoá (round 3, AUD-06; #241 (b)): bản ghi chỉ
+      // gửi khi chính chủ đăng nhập lại, không ai khác thấy. Rồi dọn điểm quay lại
       // `routine-day:*` (`clearUserScopedStorage`) và read model — trừ của
       // người mới, có thể đã ghi trong lúc lượt dọn này nhường (#455).
       await lifecycle.sessionEnded(next: next) { @MainActor in
