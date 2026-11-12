@@ -2797,7 +2797,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ăn uống"
+            "value": "Dinh dưỡng"
           }
         },
         "es": {
@@ -14094,7 +14094,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Thông Tin Cá Nhân"
+            "value": "Thông tin cá nhân"
           }
         },
         "es": {
@@ -15129,7 +15129,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mục Tiêu Nước Uống (%@)"
+            "value": "Mục tiêu nước uống (%@)"
           }
         },
         "es": {
@@ -15152,7 +15152,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mục Tiêu Giấc Ngủ"
+            "value": "Mục tiêu giấc ngủ"
           }
         },
         "es": {
@@ -16325,7 +16325,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Điểm Sẵn Sàng"
+            "value": "Điểm sẵn sàng"
           }
         },
         "es": {
@@ -17308,19 +17308,19 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Enter Biometrics"
+            "value": "Log biometrics"
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nhập Chỉ Số Sinh Trắc"
+            "value": "Ghi chỉ số sinh trắc"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ingresar biometría"
+            "value": "Registrar biometría"
           }
         }
       }
@@ -19131,7 +19131,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Huy Chương Mới!"
+            "value": "Huy chương mới!"
           }
         },
         "es": {
@@ -19522,7 +19522,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dinh Dưỡng Hàng Ngày"
+            "value": "Dinh dưỡng hàng ngày"
           }
         },
         "es": {
@@ -19568,7 +19568,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tổng Khối Lượng"
+            "value": "Tổng khối lượng"
           }
         },
         "es": {
@@ -23518,19 +23518,19 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Add measurement"
+            "value": "Log measurements"
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nhập số đo"
+            "value": "Ghi số đo"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Añadir medida"
+            "value": "Registrar medidas"
           }
         }
       }
@@ -23748,19 +23748,19 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Add measurement"
+            "value": "Log measurements"
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nhập số đo"
+            "value": "Ghi số đo"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Añadir medida"
+            "value": "Registrar medidas"
           }
         }
       }
@@ -34081,7 +34081,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Thêm Bài Tập"
+            "value": "Thêm bài tập"
           }
         },
         "es": {
@@ -42757,7 +42757,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Thêm Thực Phẩm"
+            "value": "Thêm thực phẩm"
           }
         },
         "es": {
@@ -42780,7 +42780,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Chỉnh Sửa Thực Phẩm"
+            "value": "Chỉnh sửa thực phẩm"
           }
         },
         "es": {

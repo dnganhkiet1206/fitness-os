@@ -56,11 +56,9 @@ struct CommunityUserScreen: View {
       if let book {
         CommunityUserView(book: book)
       } else if built {
-        ContentUnavailableView {
-          Label("community.user.title", systemImage: "person.crop.circle")
-        } description: {
-          Text("placeholder.building")
-        }
+        DSEmptyState(
+          systemImage: "person.crop.circle", title: String(localized: "community.user.title"),
+          message: String(localized: "placeholder.building"))
       } else {
         DSLoadingView()
       }
