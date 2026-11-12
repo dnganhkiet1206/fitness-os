@@ -55993,6 +55993,52 @@
         }
       }
     },
+    "eg.demo3d.unverified": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3D demo · not yet reviewed"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Demo 3D · sin revisar"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bản 3D · chưa duyệt"
+          }
+        }
+      }
+    },
+    "eg.demo3d.alt": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3D demonstration video, not yet reviewed by a coach"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vídeo de demostración 3D, aún sin revisar por un entrenador"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Video minh hoạ 3D, chưa được huấn luyện viên duyệt"
+          }
+        }
+      }
+    },
     "eg.secondary %@": {
       "extractionState": "manual",
       "localizations": {

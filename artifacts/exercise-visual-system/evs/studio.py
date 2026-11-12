@@ -5,8 +5,11 @@ preset, light placement from a lighting preset."""
 from __future__ import annotations
 
 import math
+import os
+import tempfile
 
 import bpy
+import numpy as np
 from mathutils import Vector
 
 from . import bl_util
@@ -15,6 +18,8 @@ from .config import hex_to_linear_rgb
 LIGHT_RIG = "EVS_LightRig"
 FLOOR = "EVS_Floor"
 STUDIO_COLLECTION = "STUDIO"
+FLOOR_SHADOW_NODE = "EVS Shadow Level"
+FLOOR_LIT_NODE = "EVS Lit Level"
 
 
 def apply_render_preset(scene: bpy.types.Scene, preset: dict) -> None:
@@ -31,8 +36,8 @@ def apply_render_preset(scene: bpy.types.Scene, preset: dict) -> None:
     scene.eevee.taa_render_samples = int(preset["taa_render_samples"])
     scene.eevee.use_raytracing = bool(preset.get("use_raytracing", False))
     scene.eevee.use_shadows = True
-    scene.eevee.shadow_ray_count = 2
-    scene.eevee.shadow_step_count = 6
+    scene.eevee.shadow_ray_count = int(preset.get("shadow_ray_count", 2))
+    scene.eevee.shadow_step_count = int(preset.get("shadow_step_count", 6))
     scene.eevee.use_fast_gi = True
     scene.display_settings.display_device = "sRGB"
     scene.view_settings.view_transform = preset["view_transform"]
@@ -63,20 +68,10 @@ def build_world(scene: bpy.types.Scene, brand: dict, lighting: dict) -> None:
     tree.links.new(mix.outputs["Shader"], out.inputs["Surface"])
 
 
-def build_floor(brand: dict, lighting: dict) -> bpy.types.Object:
-    """A floor that is exactly the background colour wherever it is lit and
-    only darkens in contact shadows, so there is no horizon line."""
-    floor_cfg = lighting["floor"]
-    coll = bl_util.get_collection(STUDIO_COLLECTION)
-    old = bpy.data.objects.get(FLOOR)
-    if old is not None:
-        bpy.data.objects.remove(old, do_unlink=True)
-    mesh = bpy.data.meshes.new(FLOOR)
-    r = floor_cfg["radius"]
-    mesh.from_pydata([(-r, -r, 0), (r, -r, 0), (r, r, 0), (-r, r, 0)], [], [(0, 1, 2, 3)])
-    floor = bpy.data.objects.new(FLOOR, mesh)
-    coll.objects.link(floor)
-
+def _floor_material(brand: dict, floor_cfg: dict) -> bpy.types.Material:
+    """Emits exactly the background colour wherever the floor is fully lit and
+    blends towards the shadow colour where light is blocked. The lit and
+    shadow levels are measured for the light rig by calibrate_floor()."""
     mat = bpy.data.materials.get("EVS_Floor")
     if mat is not None:
         bpy.data.materials.remove(mat)
@@ -89,16 +84,15 @@ def build_floor(brand: dict, lighting: dict) -> bpy.types.Object:
     diffuse.inputs["Color"].default_value = (1, 1, 1, 1)
     to_rgb = nodes.new("ShaderNodeShaderToRGB")
     bw = nodes.new("ShaderNodeRGBToBW")
+    shadow_level = nodes.new("ShaderNodeValue")
+    shadow_level.name = shadow_level.label = FLOOR_SHADOW_NODE
+    lit_level = nodes.new("ShaderNodeValue")
+    lit_level.name = lit_level.label = FLOOR_LIT_NODE
+    shadow_level.outputs[0].default_value = 0.4
+    lit_level.outputs[0].default_value = 0.9
     ramp = nodes.new("ShaderNodeMapRange")
-    ramp.clamp = True
-    ramp.interpolation_type = "SMOOTHSTEP"
-    # Floor brightness (white diffuse) measured with this lighting preset:
-    # about shadow_reference in full contact shadow, lit_reference when clear.
-    ramp.inputs["From Min"].default_value = floor_cfg["shadow_reference"]
-    ramp.inputs["From Max"].default_value = floor_cfg["lit_reference"]
+    ramp.clamp = True  # linear: the result is the fraction of key light that arrives
     strength = nodes.new("ShaderNodeMapRange")
-    strength.inputs["From Min"].default_value = 0.0
-    strength.inputs["From Max"].default_value = 1.0
     strength.inputs["To Min"].default_value = 1.0 - floor_cfg["shadow_strength"]
     strength.inputs["To Max"].default_value = 1.0
     mix = nodes.new("ShaderNodeMix")
@@ -107,39 +101,41 @@ def build_floor(brand: dict, lighting: dict) -> bpy.types.Object:
     links.new(diffuse.outputs["BSDF"], to_rgb.inputs["Shader"])
     links.new(to_rgb.outputs["Color"], bw.inputs["Color"])
     links.new(bw.outputs["Val"], ramp.inputs["Value"])
+    links.new(shadow_level.outputs[0], ramp.inputs["From Min"])
+    links.new(lit_level.outputs[0], ramp.inputs["From Max"])
     links.new(ramp.outputs["Result"], strength.inputs["Value"])
     a = [s for s in mix.inputs if s.name == "A" and s.enabled][0]
     b = [s for s in mix.inputs if s.name == "B" and s.enabled][0]
     fac = [s for s in mix.inputs if s.name == "Factor" and s.enabled][0]
     a.default_value = (*hex_to_linear_rgb(brand["colors"]["floor_shadow"]), 1.0)
     b.default_value = (*hex_to_linear_rgb(brand["colors"]["background"]), 1.0)
-    # Far from the subject the floor is forced to the background colour, so
-    # light falloff never shows up as a horizon band.
-    geo = nodes.new("ShaderNodeNewGeometry")
-    dist = nodes.new("ShaderNodeVectorMath")
-    dist.operation = "LENGTH"
-    fade = nodes.new("ShaderNodeMapRange")
-    fade.clamp = True
-    fade.interpolation_type = "SMOOTHSTEP"
-    fade.inputs["From Min"].default_value = floor_cfg["fade_start"]
-    fade.inputs["From Max"].default_value = floor_cfg["fade_end"]
-    far = nodes.new("ShaderNodeMath")
-    far.operation = "MAXIMUM"
-    links.new(geo.outputs["Position"], dist.inputs[0])
-    links.new(dist.outputs["Value"], fade.inputs["Value"])
-    links.new(strength.outputs["Result"], far.inputs[0])
-    links.new(fade.outputs["Result"], far.inputs[1])
-    links.new(far.outputs[0], fac)
+    links.new(strength.outputs["Result"], fac)
     links.new([s for s in mix.outputs if s.name == "Result" and s.enabled][0], emission.inputs["Color"])
-    emission.inputs["Strength"].default_value = 1.0
     links.new(emission.outputs["Emission"], out.inputs["Surface"])
-    mesh.materials.append(mat)
+    return mat
+
+
+def build_floor(brand: dict, lighting: dict) -> bpy.types.Object:
+    floor_cfg = lighting["floor"]
+    coll = bl_util.get_collection(STUDIO_COLLECTION)
+    old = bpy.data.objects.get(FLOOR)
+    if old is not None:
+        bpy.data.objects.remove(old, do_unlink=True)
+    mesh = bpy.data.meshes.new(FLOOR)
+    r = floor_cfg["radius"]
+    mesh.from_pydata([(-r, -r, 0), (r, -r, 0), (r, r, 0), (-r, r, 0)], [], [(0, 1, 2, 3)])
+    floor = bpy.data.objects.new(FLOOR, mesh)
+    coll.objects.link(floor)
+    mesh.materials.append(_floor_material(brand, floor_cfg))
     floor.visible_shadow = False
     floor.hide_select = True
+    floor["evs_lit_tolerance"] = floor_cfg["lit_tolerance"]
     return floor
 
 
 def build_light_rig(lighting: dict, focus: Vector) -> bpy.types.Object:
+    """Sun lamps: parallel light without falloff, so the exposure of the
+    subject and the brightness of the floor are the same everywhere."""
     coll = bl_util.get_collection(STUDIO_COLLECTION)
     old = bpy.data.objects.get(LIGHT_RIG)
     if old is not None:
@@ -151,20 +147,90 @@ def build_light_rig(lighting: dict, focus: Vector) -> bpy.types.Object:
     rig.location = focus
     coll.objects.link(rig)
     for spec in lighting["lights"]:
-        data = bpy.data.lights.new(f"EVS_{spec['name']}", "AREA")
-        data.shape = "DISK"
-        data.size = spec["size"]
-        data.energy = spec["power"]
+        data = bpy.data.lights.new(f"EVS_{spec['name']}", "SUN")
+        data.energy = spec["strength"]
+        data.angle = math.radians(spec["angle_deg"])
         data.color = hex_to_linear_rgb(spec["color"])
-        data.use_shadow = True
+        data.use_shadow = bool(spec.get("cast_shadow", True))
         data.use_shadow_jitter = True
+        data.shadow_jitter_overblur = 10.0
+        data.shadow_filter_radius = 3.0
         light = bpy.data.objects.new(f"EVS_Light_{spec['name']}", data)
         coll.objects.link(light)
         light.parent = rig
-        az, el, d = math.radians(spec["azimuth_deg"]), math.radians(spec["elevation_deg"]), spec["distance"]
-        light.location = (d * math.cos(el) * math.sin(az), -d * math.cos(el) * math.cos(az), d * math.sin(el))
+        az, el = math.radians(spec["azimuth_deg"]), math.radians(spec["elevation_deg"])
+        light.location = (4.0 * math.cos(el) * math.sin(az), -4.0 * math.cos(el) * math.cos(az), 4.0 * math.sin(el))
         light.rotation_euler = (Vector((0, 0, 0)) - light.location).to_track_quat("-Z", "Y").to_euler()
     return rig
+
+
+def calibrate_floor(scene: bpy.types.Scene) -> dict:
+    """Measures how bright a white floor is under the current lights, once
+    with every light and once with the shadow-casting lights switched off
+    (tiny top-down renders of an empty corner of the floor), and stores both
+    levels in the floor material. Between them the material reads the
+    fraction of shadow-casting light that arrives. Measuring instead of
+    computing keeps the floor seamless whatever the light units or settings."""
+    floor = bpy.data.objects[FLOOR]
+    mat = floor.data.materials[0]
+    probe_mat = bpy.data.materials.new("EVS_FloorProbe")
+    tree = probe_mat.node_tree
+    tree.nodes.clear()
+    out = tree.nodes.new("ShaderNodeOutputMaterial")
+    diffuse = tree.nodes.new("ShaderNodeBsdfDiffuse")
+    diffuse.inputs["Color"].default_value = (1, 1, 1, 1)
+    tree.links.new(diffuse.outputs["BSDF"], out.inputs["Surface"])
+    floor.data.materials[0] = probe_mat
+
+    half = abs(floor.data.vertices[0].co.x)
+    cam_data = bpy.data.cameras.new("EVS_FloorProbe")
+    cam_data.type = "ORTHO"
+    cam_data.ortho_scale = 1.0
+    cam = bpy.data.objects.new("EVS_FloorProbe", cam_data)
+    scene.collection.objects.link(cam)
+    cam.location = Vector((half - 1.5, half - 1.5, 3.0))
+    saved = (scene.camera, scene.render.resolution_x, scene.render.resolution_y, scene.render.filepath,
+             scene.render.image_settings.file_format, scene.render.image_settings.color_mode, scene.eevee.taa_render_samples)
+    path = os.path.join(tempfile.gettempdir(), "evs_floor_probe.exr")
+    casters = [o for o in bpy.data.objects[LIGHT_RIG].children if o.data.use_shadow]
+
+    def measure() -> float:
+        bpy.ops.render.render(write_still=True)
+        image = bpy.data.images.load(path)
+        px = np.array(image.pixels[:]).reshape(-1, 4)[:, :3]
+        bpy.data.images.remove(image)
+        return float(np.median(px @ np.array([0.2126, 0.7152, 0.0722])))
+
+    try:
+        scene.camera = cam
+        scene.render.resolution_x = scene.render.resolution_y = 32
+        scene.render.image_settings.file_format = "OPEN_EXR"
+        scene.render.image_settings.color_mode = "RGB"
+        scene.eevee.taa_render_samples = 16
+        scene.render.filepath = path
+        lit = measure()
+        for o in casters:
+            o.hide_render = True
+        shadowed = measure()
+    finally:
+        for o in casters:
+            o.hide_render = False
+        (scene.camera, scene.render.resolution_x, scene.render.resolution_y, scene.render.filepath,
+         scene.render.image_settings.file_format, scene.render.image_settings.color_mode, scene.eevee.taa_render_samples) = saved
+        floor.data.materials[0] = mat
+        bpy.data.objects.remove(cam, do_unlink=True)
+        bpy.data.cameras.remove(cam_data)
+        bpy.data.materials.remove(probe_mat)
+        if os.path.exists(path):
+            os.remove(path)
+    # A little below the measured level still counts as fully lit, so render
+    # noise never tints the open floor.
+    upper = lit - (lit - shadowed) * floor["evs_lit_tolerance"]
+    mat.node_tree.nodes[FLOOR_SHADOW_NODE].outputs[0].default_value = shadowed
+    mat.node_tree.nodes[FLOOR_LIT_NODE].outputs[0].default_value = upper
+    floor["evs_measured_lit_level"] = lit
+    floor["evs_measured_shadow_level"] = shadowed
+    return {"lit_level": round(lit, 4), "shadow_level": round(shadowed, 4)}
 
 
 def aim_light_rig(camera: bpy.types.Object, focus: Vector | None = None) -> None:
@@ -176,10 +242,15 @@ def aim_light_rig(camera: bpy.types.Object, focus: Vector | None = None) -> None
     rig.rotation_euler = (0.0, 0.0, math.atan2(to_cam.x, -to_cam.y))
 
 
+def camera_direction(azimuth_deg: float, elevation_deg: float) -> Vector:
+    """Unit vector from the subject to the camera. Azimuth 0 looks at the
+    subject's front (from -Y); positive azimuth moves towards +X."""
+    az, el = math.radians(azimuth_deg), math.radians(elevation_deg)
+    return Vector((math.cos(el) * math.sin(az), -math.cos(el) * math.cos(az), math.sin(el)))
+
+
 def add_camera(name: str, focus: Vector, azimuth_deg: float, elevation_deg: float, distance: float,
                focal_length: float = 85.0, ortho_scale: float | None = None) -> bpy.types.Object:
-    """Azimuth 0 looks at the focus from -Y (the character's front when it
-    stands in its rest pose); positive azimuth moves the camera towards +X."""
     coll = bl_util.get_collection(STUDIO_COLLECTION)
     old = bpy.data.objects.get(name)
     if old is not None:
@@ -195,10 +266,36 @@ def add_camera(name: str, focus: Vector, azimuth_deg: float, elevation_deg: floa
     data.clip_end = 100.0
     cam = bpy.data.objects.new(name, data)
     coll.objects.link(cam)
-    az, el = math.radians(azimuth_deg), math.radians(elevation_deg)
-    cam.location = Vector(focus) + Vector((distance * math.cos(el) * math.sin(az), -distance * math.cos(el) * math.cos(az), distance * math.sin(el)))
+    cam.location = Vector(focus) + camera_direction(azimuth_deg, elevation_deg) * distance
     bl_util.look_at(cam, focus, up="Y")
     return cam
+
+
+def fit_view(points: np.ndarray, azimuth_deg: float, elevation_deg: float, focal_length: float, sensor: float,
+             aspect: float, margin: float) -> tuple[Vector, float]:
+    """Target point and distance at which a camera looking from the given
+    direction shows all ``points`` centred, filling the frame up to
+    ``margin`` (1.0 = touching the frame edge)."""
+    direction = np.array(camera_direction(azimuth_deg, elevation_deg))
+    forward = -direction
+    right = np.cross(forward, np.array([0.0, 0.0, 1.0]))
+    right /= np.linalg.norm(right)
+    up = np.cross(right, forward)
+    tan_h = (sensor * 0.5) / focal_length
+    tan_v = tan_h / aspect
+    target = 0.5 * (points.max(axis=0) + points.min(axis=0))
+    distance = float(np.linalg.norm(points.max(axis=0) - points.min(axis=0))) / tan_v
+    for _ in range(24):
+        cam = target + direction * distance
+        rel = points - cam
+        depth = rel @ forward
+        x = (rel @ right) / depth
+        y = (rel @ up) / depth
+        cx, cy = 0.5 * (x.max() + x.min()), 0.5 * (y.max() + y.min())
+        target = target + (right * cx + up * cy) * distance
+        scale = max((x.max() - x.min()) * 0.5 / tan_h, (y.max() - y.min()) * 0.5 / tan_v) * margin
+        distance *= scale
+    return Vector(target), distance
 
 
 def render_still(scene: bpy.types.Scene, camera: bpy.types.Object, path: str, focus: Vector | None = None) -> None:

@@ -4,7 +4,7 @@
   "uv_coverage": 0.5832,
   "groups": {
     "pectoralis_major": {
-      "texels": 141788,
+      "texels": 145334,
       "label": "Pectoralis major"
     },
     "deltoid_anterior": {

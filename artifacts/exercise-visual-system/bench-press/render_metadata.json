@@ -1,0 +1,191 @@
+{
+  "pipeline_version": "0.1.0",
+  "exercise_id": "barbell_bench_press",
+  "master_character_id": "master_character_001",
+  "brand_profile_id": "placeholder",
+  "source_blend": "bench_press_master.blend",
+  "source_blend_sha256": "c2c7b65533ba673bbcd2a41de9b21c7514cbd5fa4619fa7c37c3b8e03ffdde82",
+  "blender_version": "5.2.0 LTS",
+  "render_preset": "preview_720p",
+  "engine": "BLENDER_EEVEE",
+  "resolution": [
+    1280,
+    720
+  ],
+  "frame_rate": 24,
+  "frame_range": [
+    0,
+    234
+  ],
+  "taa_render_samples": 48,
+  "view_transform": "Standard",
+  "lighting_preset": "soft_studio",
+  "watermark_enabled": false,
+  "camera_sync": "All cameras render the same scene and frame numbers; only the active camera differs.",
+  "comparison_frames": [
+    0,
+    72,
+    96,
+    120,
+    156
+  ],
+  "outputs": {
+    "side": {
+      "camera": "CAM_side",
+      "preset": "side",
+      "render": {
+        "frames": 235,
+        "seconds": 354.21
+      },
+      "file": "bench_press_side.mp4",
+      "probe": {
+        "codec": "h264",
+        "profile": "High",
+        "width": 1280,
+        "height": 720,
+        "pixel_format": "yuv420p",
+        "frame_rate": 24.0,
+        "frames_decoded": 235,
+        "duration_s": 9.7917,
+        "size_bytes": 259286
+      },
+      "sha256": "3fb92a687f1e13f954e3d8b072d5dd9a41bd8b842bd9be5aef2da666af3b95ed",
+      "loop": {
+        "file": "bench_press_side_loop.mp4",
+        "first_frame": 60,
+        "frame_count": 132,
+        "probe": {
+          "codec": "h264",
+          "profile": "High",
+          "width": 1280,
+          "height": 720,
+          "pixel_format": "yuv420p",
+          "frame_rate": 24.0,
+          "frames_decoded": 132,
+          "duration_s": 5.5,
+          "size_bytes": 169805
+        },
+        "sha256": "5c053414c6c7bbd64558e5579daf01a9739c2c4a481a0ee2594642e6e9961a3d"
+      }
+    },
+    "front": {
+      "camera": "CAM_front",
+      "preset": "front",
+      "render": {
+        "frames": 235,
+        "seconds": 502.91
+      },
+      "file": "bench_press_front.mp4",
+      "probe": {
+        "codec": "h264",
+        "profile": "High",
+        "width": 1280,
+        "height": 720,
+        "pixel_format": "yuv420p",
+        "frame_rate": 24.0,
+        "frames_decoded": 235,
+        "duration_s": 9.7917,
+        "size_bytes": 296423
+      },
+      "sha256": "7a7dfd47da560fd2da332df8fc56eb4e3ba3d1f55eef94dfd38b663885c5af26",
+      "loop": {
+        "file": "bench_press_front_loop.mp4",
+        "first_frame": 60,
+        "frame_count": 132,
+        "probe": {
+          "codec": "h264",
+          "profile": "High",
+          "width": 1280,
+          "height": 720,
+          "pixel_format": "yuv420p",
+          "frame_rate": 24.0,
+          "frames_decoded": 132,
+          "duration_s": 5.5,
+          "size_bytes": 197102
+        },
+        "sha256": "5ac189e4c5559a5d797d25d8077cb904b84209db53e7b0cac68e529b58629a59"
+      }
+    },
+    "three_quarter": {
+      "camera": "CAM_three_quarter",
+      "preset": "three_quarter",
+      "render": {
+        "frames": 235,
+        "seconds": 485.1
+      },
+      "file": "bench_press_45.mp4",
+      "probe": {
+        "codec": "h264",
+        "profile": "High",
+        "width": 1280,
+        "height": 720,
+        "pixel_format": "yuv420p",
+        "frame_rate": 24.0,
+        "frames_decoded": 235,
+        "duration_s": 9.7917,
+        "size_bytes": 339746
+      },
+      "sha256": "eac020fa77197cef1f8d99eb9f666c84835066c8d85db7f44a59b2daaaf0a0c9",
+      "loop": {
+        "file": "bench_press_45_loop.mp4",
+        "first_frame": 60,
+        "frame_count": 132,
+        "probe": {
+          "codec": "h264",
+          "profile": "High",
+          "width": 1280,
+          "height": 720,
+          "pixel_format": "yuv420p",
+          "frame_rate": 24.0,
+          "frames_decoded": 132,
+          "duration_s": 5.5,
+          "size_bytes": 222300
+        },
+        "sha256": "dee5e862a0c305e8abdc89e5e930cffb551876e0a66aab16a04c796ec0658c6f"
+      }
+    },
+    "closeup_grip": {
+      "camera": "CAM_closeup_grip",
+      "preset": "closeup_grip",
+      "render": {
+        "frames": 235,
+        "seconds": 387.68
+      },
+      "file": "bench_press_closeup.mp4",
+      "probe": {
+        "codec": "h264",
+        "profile": "High",
+        "width": 1280,
+        "height": 720,
+        "pixel_format": "yuv420p",
+        "frame_rate": 24.0,
+        "frames_decoded": 235,
+        "duration_s": 9.7917,
+        "size_bytes": 1037304
+      },
+      "sha256": "282374929e4696af5795c7a38399780ba6460b9afc9bfb8e2bc2b50298e35cfc",
+      "loop": {
+        "file": "bench_press_closeup_loop.mp4",
+        "first_frame": 60,
+        "frame_count": 132,
+        "probe": {
+          "codec": "h264",
+          "profile": "High",
+          "width": 1280,
+          "height": 720,
+          "pixel_format": "yuv420p",
+          "frame_rate": 24.0,
+          "frames_decoded": 132,
+          "duration_s": 5.5,
+          "size_bytes": 609539
+        },
+        "sha256": "b0ad698e4e4f013d2331049c3678475f19c7170af0ba2c3cf0783a30eb03db06"
+      }
+    }
+  },
+  "stills": {
+    "comparison": "camera_comparison.png",
+    "preview": "bench_press_preview.png"
+  },
+  "total_seconds": 1779.3
+}

@@ -72,6 +72,7 @@ def main() -> None:
     studio.build_floor(brand, lighting)
     focus = Vector((0.0, 0.0, 0.93))
     studio.build_light_rig(lighting, focus)
+    studio.calibrate_floor(scene)
     tiles = []
     for name, az in (("front", 0), ("left", 90), ("back", 180), ("right_front", -50)):
         cam = studio.add_camera(f"EVS_Muscle_{name}", focus, az, 4.0, 7.2, focal_length=85.0)

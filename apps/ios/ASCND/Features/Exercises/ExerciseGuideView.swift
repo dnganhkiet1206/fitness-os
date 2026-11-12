@@ -52,7 +52,25 @@ struct ExerciseGuideView: View {
   private var displayName: String { g?.name ?? title }
   /// RN `showMedia = !isPending && !isError`: đã có một bản để vẽ.
   private var shown: Bool { g != nil }
-  private var media: MediaState { g?.media ?? .none }
+  private var media: MediaState {
+    let server = g?.media ?? .none
+    #if DEBUG
+      // Clip 3D thử nghiệm (artifacts/exercise-visual-system): chỉ bản Debug,
+      // chỉ khi server chưa có media cho bài này. Chưa được duyệt chuyên môn.
+      if !server.hasMedia, let demo = ExerciseDemo3D.media(for: displayName, alt: String(localized: "eg.demo3d.alt")) {
+        return demo
+      }
+    #endif
+    return server
+  }
+
+  private var isDemo3D: Bool {
+    #if DEBUG
+      return !(g?.media ?? .none).hasMedia && ExerciseDemo3D.media(for: displayName, alt: nil) != nil
+    #else
+      return false
+    #endif
+  }
   private static var accent: Color { WorkoutsHomeView.accent }
 
   var body: some View {
@@ -129,6 +147,16 @@ struct ExerciseGuideView: View {
     .tabViewStyle(.page(indexDisplayMode: media.showsDots ? .always : .never))
     .frame(height: 260)
     .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous))
+    .overlay(alignment: .topLeading) {
+      if isDemo3D {
+        Text("eg.demo3d.unverified")
+          .font(DS.TextStyle.caption.weight(.semibold))
+          .padding(.horizontal, DS.Spacing.sm)
+          .padding(.vertical, DS.Spacing.xs)
+          .background(.ultraThinMaterial, in: Capsule())
+          .padding(DS.Spacing.sm)
+      }
+    }
     .overlay(alignment: .bottomTrailing) {
       if let d = media.displayDuration {
         Text(verbatim: MediaState.clockLabel(d))

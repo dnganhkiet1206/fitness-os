@@ -132,6 +132,13 @@ public struct MediaState: Sendable, Hashable, Codable {
 
   public static let none = MediaState(shape: .none, items: [])
 
+  /// Một video đóng gói sẵn (ví dụ clip 3D dựng trong repo), không qua server.
+  public static func bundledVideo(uri: String, posterUri: String?, durationS: Double?, alt: String?) -> MediaState {
+    MediaState(shape: .video, items: [
+      MediaItem(kind: .video, uri: uri, durationS: durationS, posterUri: posterUri, alt: alt, title: nil, description: "")
+    ])
+  }
+
   public var hasMedia: Bool { shape != .none }
   /// Chấm phân trang chỉ cho bộ ảnh.
   public var showsDots: Bool { shape == .imageGallery }

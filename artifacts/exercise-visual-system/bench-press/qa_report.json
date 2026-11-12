@@ -1,0 +1,1003 @@
+{
+  "pipeline_version": "0.1.0",
+  "generated": "2026-11-12T16:48:21-06:00",
+  "exercise": "Barbell Bench Press",
+  "exercise_id": "barbell_bench_press",
+  "character": "master_character_001",
+  "motion_source": "keyframed_reference_v1",
+  "motion_source_verification": "UNVERIFIED — NOT APPROVED FOR PRODUCTION",
+  "exercise_status": "DRAFT",
+  "reviewer": null,
+  "approval_date": null,
+  "validation_profile": "bench_press_v1",
+  "allowed_statuses": [
+    "PASS",
+    "FAIL",
+    "NOT_TESTED",
+    "REQUIRES_MANUAL_REVIEW",
+    "UNVERIFIED"
+  ],
+  "what_this_report_is": "Automated quality control of animation data, files and renders. It is not a biomechanical review. Expert approval is recorded separately and is PENDING until a qualified person signs off.",
+  "summary": {
+    "counts": {
+      "PASS": 52,
+      "FAIL": 1,
+      "NOT_TESTED": 1,
+      "REQUIRES_MANUAL_REVIEW": 5,
+      "UNVERIFIED": 2
+    },
+    "failed_checks": [
+      "skin_deformation"
+    ],
+    "not_tested_checks": [
+      "glb_mobile_playback"
+    ],
+    "needs_human": [
+      "mesh_self_intersection",
+      "deformation_visual",
+      "rig_compatibility",
+      "motion_source",
+      "biomechanical_correctness",
+      "muscle_mapping_review",
+      "expert_approval"
+    ],
+    "technical_qa": "FAIL",
+    "recommended_exercise_status": "NEEDS_CORRECTION",
+    "expert_approval": "PENDING",
+    "publication_status": "BLOCKED",
+    "publication_blocked_because": [
+      "exercise status is DRAFT, not APPROVED",
+      "no reviewer recorded",
+      "no approval date recorded",
+      "automated checks failed: ['skin_deformation']"
+    ]
+  },
+  "checks": [
+    {
+      "id": "exercise_config",
+      "category": "configuration",
+      "title": "exercise.json has every required field and consistent phases",
+      "status": "PASS",
+      "measured": null,
+      "limit": null,
+      "unit": "",
+      "detail": "",
+      "phases": []
+    },
+    {
+      "id": "skeleton_integrity",
+      "category": "character",
+      "title": "Skeleton matches the master character (bone names and hierarchy)",
+      "status": "PASS",
+      "measured": 53,
+      "limit": 53,
+      "unit": "deform bones",
+      "detail": "",
+      "phases": []
+    },
+    {
+      "id": "character_identity",
+      "category": "character",
+      "title": "Same mesh and bone lengths as the saved master character",
+      "status": "PASS",
+      "measured": {
+        "body_vertices": 11171,
+        "max_rest_length_difference_m": 5e-06
+      },
+      "limit": {
+        "body_vertices": 11171,
+        "max_rest_length_difference_m": 0.0001
+      },
+      "unit": "",
+      "detail": "",
+      "phases": []
+    },
+    {
+      "id": "bone_lengths",
+      "category": "character",
+      "title": "Bone lengths stay constant during the clip (no stretching)",
+      "status": "PASS",
+      "measured": 1e-06,
+      "limit": 0.0001,
+      "unit": "m",
+      "detail": "",
+      "phases": []
+    },
+    {
+      "id": "skin_deformation",
+      "category": "character",
+      "title": "Skin stretch and body volume stay within limits in the exercise poses",
+      "status": "FAIL",
+      "measured": {
+        "p99.9_edge_stretch": 2.816,
+        "volume_change": 0.0211
+      },
+      "limit": {
+        "p99.9_edge_stretch": 2.6,
+        "volume_change": 0.08
+      },
+      "unit": "",
+      "detail": "measured at frames [0, 72, 96, 120, 156]",
+      "phases": []
+    },
+    {
+      "id": "mesh_self_intersection",
+      "category": "character",
+      "title": "Skin passing through skin (beyond the rest pose)",
+      "status": "REQUIRES_MANUAL_REVIEW",
+      "measured": 451,
+      "limit": 60,
+      "unit": "face pairs",
+      "detail": "Skin folding onto skin at a bent elbow or inside a closed fist is contact, not a defect; a count above the limit needs eyes.",
+      "phases": []
+    },
+    {
+      "id": "deformation_visual",
+      "category": "character",
+      "title": "Shoulder, elbow, hip, knee and wrist deformation looks anatomically right",
+      "status": "REQUIRES_MANUAL_REVIEW",
+      "measured": null,
+      "limit": null,
+      "unit": "",
+      "detail": "Look at the rendered frames and at characters/<id>/rig_deformation_test.png.",
+      "phases": []
+    },
+    {
+      "id": "rig_compatibility",
+      "category": "character",
+      "title": "Rig test poses (joint ranges other exercises will need)",
+      "status": "REQUIRES_MANUAL_REVIEW",
+      "measured": {
+        "rest": "PASS",
+        "arms_forward_90": "PASS",
+        "arms_out_90": "PASS",
+        "arms_overhead_160": "PASS",
+        "elbows_flexed_130": "REQUIRES_MANUAL_REVIEW",
+        "wrists_bent_60": "PASS",
+        "hips_90_knees_90": "REQUIRES_MANUAL_REVIEW",
+        "deep_squat_like": "REQUIRES_MANUAL_REVIEW",
+        "grip_closed": "REQUIRES_MANUAL_REVIEW"
+      },
+      "limit": null,
+      "unit": "",
+      "detail": "From characters/<id>/rig_test.json. A pose that fails here limits which exercises this rig can show without corrective work.",
+      "phases": []
+    },
+    {
+      "id": "elbow_range",
+      "category": "movement",
+      "title": "Elbow flexion stays inside the allowed range",
+      "status": "PASS",
+      "measured": [
+        8.7,
+        138.9
+      ],
+      "limit": [
+        0.0,
+        150.0
+      ],
+      "unit": "deg of flexion",
+      "detail": "",
+      "phases": []
+    },
+    {
+      "id": "knee_range",
+      "category": "movement",
+      "title": "Knee flexion stays inside the allowed range",
+      "status": "PASS",
+      "measured": [
+        96.7,
+        96.7
+      ],
+      "limit": [
+        0.0,
+        150.0
+      ],
+      "unit": "deg of flexion",
+      "detail": "",
+      "phases": []
+    },
+    {
+      "id": "elbow_extension_start_position",
+      "category": "movement",
+      "title": "Elbows extended in 'start_position'",
+      "status": "PASS",
+      "measured": 171.3,
+      "limit": 165.0,
+      "unit": "deg (180 = straight)",
+      "detail": "",
+      "phases": [
+        "start_position"
+      ]
+    },
+    {
+      "id": "elbow_extension_lockout",
+      "category": "movement",
+      "title": "Elbows extended in 'lockout'",
+      "status": "PASS",
+      "measured": 171.3,
+      "limit": 165.0,
+      "unit": "deg (180 = straight)",
+      "detail": "",
+      "phases": [
+        "lockout"
+      ]
+    },
+    {
+      "id": "shoulder_abduction_bottom",
+      "category": "movement",
+      "title": "Upper arm angle to the trunk at the bottom is inside the configured range",
+      "status": "PASS",
+      "measured": [
+        57.9,
+        57.9
+      ],
+      "limit": [
+        30.0,
+        80.0
+      ],
+      "unit": "deg",
+      "detail": "The range is a configuration choice. No primary source prescribes an angle (see reference_notes.json).",
+      "phases": [
+        "bottom"
+      ]
+    },
+    {
+      "id": "forearm_vertical_bottom",
+      "category": "movement",
+      "title": "Forearms upright under the bar at the bottom",
+      "status": "PASS",
+      "measured": 4.36,
+      "limit": 12.0,
+      "unit": "deg from vertical",
+      "detail": "",
+      "phases": [
+        "bottom"
+      ]
+    },
+    {
+      "id": "elbow_tracking",
+      "category": "movement",
+      "title": "Elbows stay under the wrists through the repetition (front view)",
+      "status": "PASS",
+      "measured": 1.86,
+      "limit": 10.0,
+      "unit": "deg forearm lean in the front view",
+      "detail": "",
+      "phases": [
+        "eccentric",
+        "bottom",
+        "concentric"
+      ]
+    },
+    {
+      "id": "wrist_extension",
+      "category": "movement",
+      "title": "Wrist bend (extension) stays inside the allowed range",
+      "status": "PASS",
+      "measured": [
+        17.7,
+        18.2
+      ],
+      "limit": [
+        -5.0,
+        40.0
+      ],
+      "unit": "deg",
+      "detail": "",
+      "phases": []
+    },
+    {
+      "id": "wrist_deviation",
+      "category": "movement",
+      "title": "Wrist side bend (radial / ulnar deviation) stays inside the allowed range",
+      "status": "PASS",
+      "measured": 6.5,
+      "limit": 25.0,
+      "unit": "deg",
+      "detail": "",
+      "phases": []
+    },
+    {
+      "id": "bar_speed",
+      "category": "movement",
+      "title": "Bar speed has no spikes",
+      "status": "PASS",
+      "measured": 0.472,
+      "limit": 1.2,
+      "unit": "m/s",
+      "detail": "",
+      "phases": []
+    },
+    {
+      "id": "bar_acceleration",
+      "category": "movement",
+      "title": "Bar acceleration has no spikes",
+      "status": "PASS",
+      "measured": 1.458,
+      "limit": 6.0,
+      "unit": "m/s^2",
+      "detail": "",
+      "phases": []
+    },
+    {
+      "id": "joint_position_continuity",
+      "category": "movement",
+      "title": "No joint jumps between frames",
+      "status": "PASS",
+      "measured": 0.529,
+      "limit": 2.5,
+      "unit": "m/s (fastest joint)",
+      "detail": "",
+      "phases": []
+    },
+    {
+      "id": "joint_rotation_continuity",
+      "category": "movement",
+      "title": "No sudden joint rotation between frames",
+      "status": "PASS",
+      "measured": {
+        "largest_step_deg": 8.166,
+        "bone": "upperarm_l",
+        "angular_speed_deg_s": 196.0
+      },
+      "limit": {
+        "largest_step_deg": 12.0,
+        "angular_speed_deg_s": 400.0
+      },
+      "unit": "",
+      "detail": "",
+      "phases": []
+    },
+    {
+      "id": "symmetry",
+      "category": "movement",
+      "title": "Left and right sides mirror each other",
+      "status": "PASS",
+      "measured": {
+        "position_m": 0.0,
+        "elbow_angle_deg": 0.0
+      },
+      "limit": {
+        "position_m": 0.003,
+        "elbow_angle_deg": 1.5
+      },
+      "unit": "",
+      "detail": "",
+      "phases": []
+    },
+    {
+      "id": "foot_contact",
+      "category": "movement",
+      "title": "Feet stay planted: no sliding, lifting or sinking",
+      "status": "PASS",
+      "measured": {
+        "slide_m": 0.0,
+        "sole_height_m": [
+          -0.0001,
+          -0.0001
+        ]
+      },
+      "limit": {
+        "slide_m": 0.005,
+        "sole_height_m": [
+          -0.005,
+          0.005
+        ]
+      },
+      "unit": "",
+      "detail": "",
+      "phases": []
+    },
+    {
+      "id": "bench_contact",
+      "category": "movement",
+      "title": "Head, upper back and glutes stay on the bench",
+      "status": "PASS",
+      "measured": {
+        "head_gap_m": [
+          -0.0061,
+          -0.0061
+        ],
+        "upper_back_gap_m": [
+          -0.0103,
+          -0.0065
+        ],
+        "glute_gap_m": [
+          -0.0071,
+          -0.0071
+        ]
+      },
+      "limit": 0.006,
+      "unit": "m above the pad (negative = pressed in)",
+      "detail": "",
+      "phases": []
+    },
+    {
+      "id": "unexplained_body_movement",
+      "category": "movement",
+      "title": "Trunk and head do not drift",
+      "status": "PASS",
+      "measured": {
+        "pelvis": 0.0,
+        "chest": 0.0,
+        "head": 0.0
+      },
+      "limit": 0.005,
+      "unit": "m",
+      "detail": "",
+      "phases": []
+    },
+    {
+      "id": "grip_symmetry",
+      "category": "equipment",
+      "title": "Hands are the same distance from the middle of the bar",
+      "status": "PASS",
+      "measured": 0.00013,
+      "limit": 0.004,
+      "unit": "m",
+      "detail": "grip centres at 0.325 m and -0.325 m from the middle",
+      "phases": []
+    },
+    {
+      "id": "hand_bar_contact",
+      "category": "equipment",
+      "title": "Hands stay on the bar in every frame",
+      "status": "PASS",
+      "measured": {
+        "hand_to_grip_socket_m": 1.6e-05,
+        "hand_to_grip_socket_deg": 0.0,
+        "skin_to_bar_surface_m": -0.00457
+      },
+      "limit": {
+        "hand_to_grip_socket_m": 0.004,
+        "hand_to_grip_socket_deg": 0.5,
+        "skin_to_bar_surface_m": 0.004
+      },
+      "unit": "",
+      "detail": "",
+      "phases": []
+    },
+    {
+      "id": "hand_bar_penetration",
+      "category": "equipment",
+      "title": "Hand skin does not pass through the bar",
+      "status": "PASS",
+      "measured": 0.00473,
+      "limit": 0.008,
+      "unit": "m",
+      "detail": "",
+      "phases": []
+    },
+    {
+      "id": "bar_level",
+      "category": "equipment",
+      "title": "Bar stays level and square (no tilt, no twist)",
+      "status": "PASS",
+      "measured": {
+        "tilt_deg": 0.0,
+        "yaw_deg": 0.0
+      },
+      "limit": {
+        "tilt_deg": 0.5,
+        "yaw_deg": 0.5
+      },
+      "unit": "",
+      "detail": "",
+      "phases": []
+    },
+    {
+      "id": "bar_path",
+      "category": "equipment",
+      "title": "Bar path is plausible: steady down, steady up, no sideways drift",
+      "status": "PASS",
+      "measured": {
+        "vertical_range_m": 0.4393,
+        "horizontal_travel_m": 0.115,
+        "reversal_m": 0.0,
+        "sideways_drift_m": 0.0
+      },
+      "limit": {
+        "vertical_range_m": [
+          0.25,
+          0.6
+        ],
+        "horizontal_travel_m": 0.2,
+        "reversal_m": 0.0001,
+        "sideways_drift_m": 0.001
+      },
+      "unit": "",
+      "detail": "'Plausible' means inside the range of published measurements (reference_notes.json). It does not mean the path is the right one for a given lifter.",
+      "phases": [
+        "eccentric",
+        "concentric"
+      ]
+    },
+    {
+      "id": "bar_over_shoulders_start_position",
+      "category": "equipment",
+      "title": "Bar is over the shoulder joints in 'start_position'",
+      "status": "PASS",
+      "measured": 0.0,
+      "limit": 0.04,
+      "unit": "m",
+      "detail": "",
+      "phases": [
+        "start_position"
+      ]
+    },
+    {
+      "id": "bar_over_shoulders_lockout",
+      "category": "equipment",
+      "title": "Bar is over the shoulder joints in 'lockout'",
+      "status": "PASS",
+      "measured": 0.0,
+      "limit": 0.04,
+      "unit": "m",
+      "detail": "",
+      "phases": [
+        "lockout"
+      ]
+    },
+    {
+      "id": "bar_touch_point",
+      "category": "equipment",
+      "title": "Bar meets the chest at the configured touch point",
+      "status": "PASS",
+      "measured": 0.0,
+      "limit": 0.03,
+      "unit": "m from the configured point",
+      "detail": "",
+      "phases": [
+        "bottom"
+      ]
+    },
+    {
+      "id": "bar_torso_penetration",
+      "category": "equipment",
+      "title": "Bar does not sink into the torso",
+      "status": "PASS",
+      "measured": 0.0,
+      "limit": 0.004,
+      "unit": "m",
+      "detail": "",
+      "phases": []
+    },
+    {
+      "id": "body_bench_penetration",
+      "category": "equipment",
+      "title": "Body does not sink into the bench beyond pad compression",
+      "status": "PASS",
+      "measured": 0.0103,
+      "limit": 0.03,
+      "unit": "m",
+      "detail": "",
+      "phases": []
+    },
+    {
+      "id": "bar_rack_clearance",
+      "category": "equipment",
+      "title": "Bar clears the lip of the rests on the way out and back in",
+      "status": "PASS",
+      "measured": 0.0261,
+      "limit": 0.01,
+      "unit": "m",
+      "detail": "",
+      "phases": [
+        "unrack",
+        "finish"
+      ]
+    },
+    {
+      "id": "equipment_stability",
+      "category": "equipment",
+      "title": "Plates stay fixed on the bar; bench and rack do not move",
+      "status": "PASS",
+      "measured": 0.0,
+      "limit": 1e-05,
+      "unit": "m",
+      "detail": "",
+      "phases": []
+    },
+    {
+      "id": "equipment_scale",
+      "category": "equipment",
+      "title": "Equipment has its specified real-world size",
+      "status": "PASS",
+      "measured": {
+        "pad_m": [
+          0.3,
+          1.22,
+          0.07
+        ],
+        "pad_top_m": 0.44,
+        "bar_length_m": 2.2,
+        "plate_diameter_m": 0.45
+      },
+      "limit": null,
+      "unit": "",
+      "detail": "",
+      "phases": []
+    },
+    {
+      "id": "cameras_present",
+      "category": "rendering",
+      "title": "Side, front and 45-degree cameras exist in the scene",
+      "status": "PASS",
+      "measured": [
+        "closeup_grip",
+        "front",
+        "side",
+        "three_quarter"
+      ],
+      "limit": null,
+      "unit": "",
+      "detail": "",
+      "phases": []
+    },
+    {
+      "id": "materials_present",
+      "category": "rendering",
+      "title": "Every mesh has a material",
+      "status": "PASS",
+      "measured": [],
+      "limit": null,
+      "unit": "",
+      "detail": "",
+      "phases": []
+    },
+    {
+      "id": "geometry_present",
+      "category": "rendering",
+      "title": "No empty meshes",
+      "status": "PASS",
+      "measured": [],
+      "limit": null,
+      "unit": "",
+      "detail": "",
+      "phases": []
+    },
+    {
+      "id": "animation_present",
+      "category": "rendering",
+      "title": "The scene has keyframed animation",
+      "status": "PASS",
+      "measured": {
+        "MasterRig": 63,
+        "Barbell": 63,
+        "SOCKET_hand_l": 63,
+        "SOCKET_hand_r": 63
+      },
+      "limit": null,
+      "unit": "keyframes per animated object",
+      "detail": "",
+      "phases": []
+    },
+    {
+      "id": "output_files",
+      "category": "rendering",
+      "title": "Video files exist and are not empty",
+      "status": "PASS",
+      "measured": {
+        "side": 259286,
+        "front": 296423,
+        "three_quarter": 339746,
+        "closeup_grip": 1037304
+      },
+      "limit": null,
+      "unit": "bytes",
+      "detail": "",
+      "phases": []
+    },
+    {
+      "id": "video_codec",
+      "category": "rendering",
+      "title": "H.264 with 4:2:0 chroma (plays in AVPlayer and browsers)",
+      "status": "PASS",
+      "measured": {
+        "side": "h264/yuv420p",
+        "front": "h264/yuv420p",
+        "three_quarter": "h264/yuv420p",
+        "closeup_grip": "h264/yuv420p"
+      },
+      "limit": null,
+      "unit": "",
+      "detail": "",
+      "phases": []
+    },
+    {
+      "id": "resolution",
+      "category": "rendering",
+      "title": "Resolution matches the render preset",
+      "status": "PASS",
+      "measured": {
+        "side": [
+          1280,
+          720
+        ],
+        "front": [
+          1280,
+          720
+        ],
+        "three_quarter": [
+          1280,
+          720
+        ],
+        "closeup_grip": [
+          1280,
+          720
+        ]
+      },
+      "limit": [
+        1280,
+        720
+      ],
+      "unit": "pixels",
+      "detail": "",
+      "phases": []
+    },
+    {
+      "id": "frame_rate",
+      "category": "rendering",
+      "title": "Frame rate matches the timeline",
+      "status": "PASS",
+      "measured": {
+        "side": 24.0,
+        "front": 24.0,
+        "three_quarter": 24.0,
+        "closeup_grip": 24.0
+      },
+      "limit": 24,
+      "unit": "fps",
+      "detail": "",
+      "phases": []
+    },
+    {
+      "id": "frame_count",
+      "category": "rendering",
+      "title": "Every camera has the same number of frames as the timeline",
+      "status": "PASS",
+      "measured": {
+        "side": 235,
+        "front": 235,
+        "three_quarter": 235,
+        "closeup_grip": 235
+      },
+      "limit": 235,
+      "unit": "frames",
+      "detail": "",
+      "phases": []
+    },
+    {
+      "id": "single_animation_source",
+      "category": "rendering",
+      "title": "All cameras were rendered from one scene file",
+      "status": "PASS",
+      "measured": "c2c7b65533ba673bbcd2a41de9b21c7514cbd5fa4619fa7c37c3b8e03ffdde82",
+      "limit": null,
+      "unit": "",
+      "detail": "sha256 of the .blend every camera rendered",
+      "phases": []
+    },
+    {
+      "id": "blank_frames",
+      "category": "rendering",
+      "title": "No blank frames",
+      "status": "PASS",
+      "measured": {
+        "side": 0,
+        "front": 0,
+        "three_quarter": 0,
+        "closeup_grip": 0
+      },
+      "limit": null,
+      "unit": "frames",
+      "detail": "",
+      "phases": []
+    },
+    {
+      "id": "flicker",
+      "category": "rendering",
+      "title": "No brightness flicker in the parts of the picture that do not move",
+      "status": "PASS",
+      "measured": {
+        "side": 0.0054,
+        "front": 0.0097,
+        "three_quarter": 0.0085,
+        "closeup_grip": 0.2113
+      },
+      "limit": 1.0,
+      "unit": "grey levels (0-255) between consecutive frames",
+      "detail": "",
+      "phases": []
+    },
+    {
+      "id": "camera_sync",
+      "category": "rendering",
+      "title": "Cameras show the same motion at the same time",
+      "status": "PASS",
+      "measured": {
+        "side vs front": {
+          "best_lag_frames": 0,
+          "correlation_at_lag_0": 0.7744,
+          "correlation_at_best_lag": 0.7744,
+          "still_frames_agreement": 0.9744
+        },
+        "side vs three_quarter": {
+          "best_lag_frames": 0,
+          "correlation_at_lag_0": 0.9652,
+          "correlation_at_best_lag": 0.9652,
+          "still_frames_agreement": 1.0
+        },
+        "front vs three_quarter": {
+          "best_lag_frames": 0,
+          "correlation_at_lag_0": 0.8951,
+          "correlation_at_best_lag": 0.8951,
+          "still_frames_agreement": 0.9744
+        }
+      },
+      "limit": {
+        "lag_0_within_of_best_correlation": 0.01,
+        "still_frames_agreement": 0.97
+      },
+      "unit": "",
+      "detail": "Measured on the encoded videos: when the picture changes and when it holds still, camera against camera.",
+      "phases": []
+    },
+    {
+      "id": "glb_structure",
+      "category": "export",
+      "title": "GLB files parse and every accessor fits its buffer",
+      "status": "PASS",
+      "measured": {
+        "master_character.glb": 883716,
+        "bench_press_animation.glb": 1460220
+      },
+      "limit": null,
+      "unit": "bytes",
+      "detail": "",
+      "phases": []
+    },
+    {
+      "id": "glb_skeleton",
+      "category": "export",
+      "title": "Exported skeleton has exactly the deform bones",
+      "status": "PASS",
+      "measured": {
+        "master_character.glb": [
+          53
+        ],
+        "bench_press_animation.glb": [
+          53
+        ]
+      },
+      "limit": 53,
+      "unit": "joints",
+      "detail": "",
+      "phases": []
+    },
+    {
+      "id": "glb_animation",
+      "category": "export",
+      "title": "Exported animation covers the whole timeline",
+      "status": "PASS",
+      "measured": {
+        "duration_s": 9.75,
+        "keys": 235
+      },
+      "limit": {
+        "duration_s": 9.75,
+        "keys": 235
+      },
+      "unit": "",
+      "detail": "",
+      "phases": []
+    },
+    {
+      "id": "glb_reimport",
+      "category": "export",
+      "title": "GLB files load again in Blender with skeleton and skinned meshes",
+      "status": "PASS",
+      "measured": {
+        "master_character.glb": {
+          "armatures": 1,
+          "bones": 53,
+          "mesh_objects": 3,
+          "skinned_mesh_objects": 2,
+          "mesh_vertices": 13769,
+          "actions": 0,
+          "last_animation_frame": 0.0,
+          "materials": 2
+        },
+        "bench_press_animation.glb": {
+          "armatures": 1,
+          "bones": 53,
+          "mesh_objects": 8,
+          "skinned_mesh_objects": 2,
+          "mesh_vertices": 26393,
+          "actions": 1,
+          "last_animation_frame": 234.0,
+          "materials": 10
+        }
+      },
+      "limit": null,
+      "unit": "",
+      "detail": "",
+      "phases": []
+    },
+    {
+      "id": "glb_highlight_variants",
+      "category": "export",
+      "title": "Animation GLB carries a muscle-highlight and a neutral material variant",
+      "status": "PASS",
+      "measured": {
+        "bench_press_animation.glb": [
+          "muscle_highlight",
+          "neutral"
+        ]
+      },
+      "limit": null,
+      "unit": "",
+      "detail": "",
+      "phases": []
+    },
+    {
+      "id": "glb_mobile_playback",
+      "category": "export",
+      "title": "GLB plays on an iPhone",
+      "status": "NOT_TESTED",
+      "measured": null,
+      "limit": null,
+      "unit": "",
+      "detail": "No GLB viewer is integrated in the app; iOS has no built-in glTF loader. The app integration uses MP4.",
+      "phases": []
+    },
+    {
+      "id": "motion_source",
+      "category": "approval",
+      "title": "Motion comes from a verified reference",
+      "status": "UNVERIFIED",
+      "measured": "keyframed_reference_v1",
+      "limit": null,
+      "unit": "",
+      "detail": "MANUAL_KEYFRAME: Original keyframes generated by bench-press/animate_bench_press.py in this repository. No third-party motion data, no motion capture, no generated video. Label: UNVERIFIED — NOT APPROVED FOR PRODUCTION",
+      "phases": []
+    },
+    {
+      "id": "biomechanical_correctness",
+      "category": "approval",
+      "title": "Technique shown is biomechanically correct",
+      "status": "UNVERIFIED",
+      "measured": null,
+      "limit": null,
+      "unit": "",
+      "detail": "Cannot be established by automated checks. Needs review of the motion by a qualified professional.",
+      "phases": []
+    },
+    {
+      "id": "muscle_mapping_review",
+      "category": "approval",
+      "title": "Highlighted muscles and their regions are anatomically right",
+      "status": "REQUIRES_MANUAL_REVIEW",
+      "measured": null,
+      "limit": null,
+      "unit": "",
+      "detail": "Roles follow the cited EMG review (reference_notes.json); the regions on the body were placed by the pipeline author.",
+      "phases": []
+    },
+    {
+      "id": "expert_approval",
+      "category": "approval",
+      "title": "Approved by a qualified reviewer",
+      "status": "REQUIRES_MANUAL_REVIEW",
+      "measured": {
+        "reviewer": null,
+        "approval_date": null
+      },
+      "limit": null,
+      "unit": "",
+      "detail": "PENDING",
+      "phases": []
+    }
+  ]
+}

@@ -19,6 +19,59 @@
   },
   "faceless_max_displacement_m": 0.1133,
   "nipple_vertices_faired": 128,
+  "grip_joint_angles_deg": {
+    "index": {
+      "angles_deg": [
+        85.0,
+        32.25,
+        6.25
+      ],
+      "skin_into_bar_m": 0.0,
+      "skin_into_palm_m": 0.0,
+      "gap_score_m": 0.0315
+    },
+    "middle": {
+      "angles_deg": [
+        85.0,
+        37.0,
+        8.5
+      ],
+      "skin_into_bar_m": 0.0,
+      "skin_into_palm_m": 0.0,
+      "gap_score_m": 0.0144
+    },
+    "ring": {
+      "angles_deg": [
+        85.0,
+        23.0,
+        23.75
+      ],
+      "skin_into_bar_m": 0.0,
+      "skin_into_palm_m": 0.0,
+      "gap_score_m": 0.0086
+    },
+    "pinky": {
+      "angles_deg": [
+        71.08,
+        0.0,
+        46.0
+      ],
+      "skin_into_bar_m": 0.0,
+      "skin_into_palm_m": 0.0,
+      "gap_score_m": 0.0011
+    },
+    "thumb": {
+      "angles_deg": [
+        55.58,
+        55.5,
+        0.0
+      ],
+      "skin_into_bar_m": 0.0,
+      "skin_into_palm_m": 0.0,
+      "gap_score_m": 0.016,
+      "skin_into_bar_measured_m": 0.0044
+    }
+  },
   "height_m": 1.7861,
   "vertices": 11171,
   "faces": 11191,

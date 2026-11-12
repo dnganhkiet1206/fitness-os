@@ -18,20 +18,50 @@ def frame_of(seconds: float, fps: int) -> int:
     return int(round(seconds * fps))
 
 
-def two_bone_elbow(shoulder: Vector, wrist: Vector, upper: float, lower: float, prefer: Vector) -> tuple[Vector, float]:
-    """Elbow position of a two-segment limb and its interior joint angle in
-    degrees. Of all positions the two segment lengths allow (a circle around
-    the shoulder-wrist line), returns the one furthest along ``prefer``."""
+def elbow_under_wrist(shoulder: Vector, wrist: Vector, upper: float, lower: float) -> tuple[Vector, float, Vector]:
+    """Elbow position of a two-segment arm and its interior angle in degrees.
+
+    The two segment lengths leave the elbow free on a circle around the
+    shoulder-wrist line. This picks the point where the elbow is straight
+    under (or over) the wrist when seen from the front (same x), and of the
+    two such points the one towards the feet. Where the arm is too straight for that,
+    it takes the point of the circle closest to it. The result moves
+    continuously as the wrist moves. The third value is the unit direction
+    from the shoulder-wrist line towards the elbow, which stays defined even
+    when the arm is straight; use it to place an IK pole target."""
     line = wrist - shoulder
     d = min(line.length, upper + lower - 1e-6)
     n = line.normalized()
     a = (d * d + upper * upper - lower * lower) / (2.0 * d)
     rho = math.sqrt(max(upper * upper - a * a, 0.0))
     centre = shoulder + n * a
-    v = prefer - n * prefer.dot(n)
-    v = v.normalized() if v.length > 1e-9 else n.orthogonal().normalized()
+    x = Vector((1.0, 0.0, 0.0))
+    e1 = x - n * x.dot(n)
     cos_angle = (upper * upper + lower * lower - d * d) / (2.0 * upper * lower)
-    return centre + v * rho, math.degrees(math.acos(max(-1.0, min(1.0, cos_angle))))
+    interior = math.degrees(math.acos(max(-1.0, min(1.0, cos_angle))))
+    if e1.length < 1e-9:
+        down = Vector((0.0, 0.0, -1.0))
+        v = (down - n * down.dot(n)).normalized()
+        return centre + v * rho, interior, v
+    e1.normalize()
+    e2 = n.cross(e1)
+    c = max(-1.0, min(1.0, (wrist.x - centre.x) / (rho * e1.x))) if abs(e1.x) > 1e-9 and rho > 1e-9 else 1.0
+    s = math.sqrt(max(1.0 - c * c, 0.0))
+    v1 = e1 * c + e2 * s
+    v2 = e1 * c - e2 * s
+    # Of the two, the one towards the feet (-y): the elbow tucks down and
+    # back, never flips towards the head, and the choice never switches.
+    v = v1 if v1.y <= v2.y else v2
+    # Near full extension the elbow's direction is free (the circle is tiny)
+    # and following the rule would spin the upper arm. Blend towards a fixed
+    # 'down and towards the feet' direction there instead.
+    rest_dir = Vector((0.0, -0.5, -1.0))
+    rest_dir = rest_dir - n * rest_dir.dot(n)
+    if rest_dir.length > 1e-9:
+        t = min(1.0, max(0.0, (rho / upper - 0.12) / (0.4 - 0.12)))
+        t = t * t * (3.0 - 2.0 * t)
+        v = (rest_dir.normalized() * (1.0 - t) + v * t).normalized()
+    return centre + v * rho, interior, v
 
 
 def rotate_bone_about_armature_axis(rig: bpy.types.Object, bone: str, axis: Vector, degrees: float) -> None:

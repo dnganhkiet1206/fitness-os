@@ -51,7 +51,7 @@ def main() -> None:
         character.drop_landmark_groups(body)
         shorts = character.build_shorts(body, rig, cfg)
         character.finish_body(body, rig, cfg)
-        evs_rig.add_controls(rig)
+        facts["grip_joint_angles_deg"] = evs_rig.add_controls(rig, cfg["grip"], body)["l"]
 
         mats = materials.character_materials(brand)
         body.data.materials.clear()
@@ -87,6 +87,7 @@ def render_preview(cfg: dict, brand: dict, out_dir) -> None:
     studio.build_floor(brand, lighting)
     focus = Vector((0.0, 0.0, 0.93))
     studio.build_light_rig(lighting, focus)
+    studio.calibrate_floor(scene)
     tiles = []
     for name, az in (("front", 0), ("three_quarter", 40), ("side", 90), ("back", 180)):
         cam = studio.add_camera(f"EVS_Preview_{name}", focus, az, 4.0, 7.2, focal_length=85.0)

@@ -4,7 +4,6 @@ studio and cameras. Nothing here knows about a particular exercise."""
 
 from __future__ import annotations
 
-import math
 from pathlib import Path
 
 import bpy
@@ -55,8 +54,11 @@ def apply_highlight(character_mats: dict, exercise: dict, exercise_path: Path, s
     atlas and plugs it into the body and apparel materials."""
     atlas = config.character_dir(exercise["master_character_id"]) / "muscle_atlas"
     out = exercise_path / "muscle_highlight_map.png"
-    muscles.write_highlight_map(atlas, out, exercise["primary_muscles"], exercise["secondary_muscles"],
-                                exercise.get("stabilizing_muscles", []), size=size)
+    roles = exercise.get("highlight_roles", ["primary", "secondary", "stabilizing"])
+    muscles.write_highlight_map(atlas, out,
+                                exercise["primary_muscles"] if "primary" in roles else [],
+                                exercise["secondary_muscles"] if "secondary" in roles else [],
+                                exercise.get("stabilizing_muscles", []) if "stabilizing" in roles else [], size=size)
     old = bpy.data.images.get("EVS_HighlightMap")
     if old is not None:
         bpy.data.images.remove(old)
@@ -93,38 +95,19 @@ def build_equipment(exercise: dict, brand: dict) -> dict:
     return built
 
 
-def framing_box(exercise: dict) -> tuple[Vector, Vector]:
-    f = exercise["framing"]
-    return Vector(f["center"]), Vector(f["size"])
+def build_cameras(scene: bpy.types.Scene, exercise: dict, points, follow_targets: dict | None = None) -> dict:
+    """One camera per preset in exercise['camera_presets'].
 
-
-def _fit_distance(center: Vector, size: Vector, direction: Vector, lens: float, sensor: float, aspect: float, margin: float) -> float:
-    """Smallest camera distance along ``direction`` at which the whole box is
-    inside the frame."""
-    forward = -direction.normalized()
-    right = forward.cross(Vector((0, 0, 1))).normalized()
-    up = right.cross(forward)
-    tan_h = (sensor * 0.5) / lens
-    tan_v = tan_h / aspect
-    corners = [center + Vector((sx * size.x, sy * size.y, sz * size.z)) * 0.5 for sx in (-1, 1) for sy in (-1, 1) for sz in (-1, 1)]
-    need = 0.0
-    for c in corners:
-        rel = c - center
-        depth = rel.dot(forward)  # how far beyond the centre plane the corner is
-        need = max(need, abs(rel.dot(right)) / tan_h - depth, abs(rel.dot(up)) / tan_v - depth)
-    return need * margin
-
-
-def build_cameras(scene: bpy.types.Scene, exercise: dict, follow_targets: dict | None = None) -> dict:
+    ``points`` is an (N, 3) array of world positions covering everything that
+    must stay in frame during the clip; framing cameras are placed so those
+    points fill the frame. ``follow_targets`` maps a preset's 'follow' name to
+    (object to ride along with, world point to look at)."""
     presets = config.camera_presets()
-    center, size = framing_box(exercise)
     aspect = scene.render.resolution_x / scene.render.resolution_y
     sensor = presets["sensor_width_mm"]
     cameras = {}
     for key in exercise["camera_presets"]:
         p = presets["presets"][key]
-        az, el = math.radians(p["azimuth_deg"]), math.radians(p["elevation_deg"])
-        direction = Vector((math.cos(el) * math.sin(az), -math.cos(el) * math.cos(az), math.sin(el)))
         name = CAMERA_PREFIX + key
         if "follow" in p:
             target = (follow_targets or {}).get(p["follow"])
@@ -140,8 +123,8 @@ def build_cameras(scene: bpy.types.Scene, exercise: dict, follow_targets: dict |
             cam.matrix_parent_inverse = parent.matrix_world.inverted()
             cam["evs_follow"] = p["follow"]
         else:
-            distance = _fit_distance(center, size, direction, p["focal_length_mm"], sensor, aspect, p["margin"])
-            cam = studio.add_camera(name, center, p["azimuth_deg"], p["elevation_deg"], distance, p["focal_length_mm"])
+            focus, distance = studio.fit_view(points, p["azimuth_deg"], p["elevation_deg"], p["focal_length_mm"], sensor, aspect, p["margin"])
+            cam = studio.add_camera(name, focus, p["azimuth_deg"], p["elevation_deg"], distance, p["focal_length_mm"])
         cam.data.sensor_width = sensor
         cam["evs_preset"] = key
         cam["evs_file_suffix"] = p["file_suffix"]
@@ -149,15 +132,16 @@ def build_cameras(scene: bpy.types.Scene, exercise: dict, follow_targets: dict |
     return cameras
 
 
-def build_studio(scene: bpy.types.Scene, exercise: dict, brand: dict) -> None:
+def build_studio(scene: bpy.types.Scene, exercise: dict, brand: dict) -> dict:
     presets = config.render_presets()
     studio.apply_render_preset(scene, presets["render_presets"][brand["render_preset"]])
     lighting = presets["lighting_presets"][brand["lighting_preset"]]
     studio.build_world(scene, brand, lighting)
     studio.build_floor(brand, lighting)
-    center, _size = framing_box(exercise)
-    studio.build_light_rig(lighting, center)
-    scene["evs_light_focus"] = list(center)
+    focus = Vector((0.0, 0.0, 0.8))
+    studio.build_light_rig(lighting, focus)
+    scene["evs_light_focus"] = list(focus)
+    return studio.calibrate_floor(scene)
 
 
 def set_timeline(scene: bpy.types.Scene, exercise: dict) -> int:

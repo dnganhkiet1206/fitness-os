@@ -7,7 +7,7 @@
     {
       "id": "bench",
       "spec": "flat_bench_with_rack",
-      "rack_height": 1.02,
+      "rack_height": 1.0,
       "location": [
         0.0,
         0.0,
@@ -23,7 +23,7 @@
       "location": [
         0.0,
         0.0,
-        1.02
+        1.0
       ]
     }
   ],
@@ -34,7 +34,12 @@
     "deltoid_anterior",
     "triceps_brachii"
   ],
-  "stabilizing_muscles": [],
+  "stabilizing_muscles": [
+    "biceps_brachii",
+    "latissimus_dorsi",
+    "deltoid_posterior",
+    "rotator_cuff_posterior"
+  ],
   "master_character_id": "master_character_001",
   "motion_source_id": "keyframed_reference_v1",
   "motion_source_type": "MANUAL_KEYFRAME",
@@ -42,7 +47,7 @@
   "motion_source_verification": "UNVERIFIED — NOT APPROVED FOR PRODUCTION",
   "motion_reference_notes": "reference_notes.json",
   "animation_file": "bench_press_master.blend",
-  "animation_duration": 8.75,
+  "animation_duration": 9.75,
   "frame_rate": 24,
   "exercise_phases": [
     {
@@ -116,7 +121,7 @@
       "id": "bottom",
       "name": "Bottom position",
       "start_s": 5.0,
-      "end_s": 5.375,
+      "end_s": 5.5,
       "cues": [
         "Bar touches the chest lightly, no bounce",
         "Glutes and shoulders stay on the bench"
@@ -131,8 +136,8 @@
     {
       "id": "concentric",
       "name": "Concentric (pressing)",
-      "start_s": 5.375,
-      "end_s": 6.75,
+      "start_s": 5.5,
+      "end_s": 7.5,
       "cues": [
         "Press the bar up and back towards the shoulders",
         "Keep the wrists straight and the feet planted"
@@ -148,8 +153,8 @@
     {
       "id": "lockout",
       "name": "Lockout",
-      "start_s": 6.75,
-      "end_s": 7.25,
+      "start_s": 7.5,
+      "end_s": 8.0,
       "cues": [
         "Elbows fully extended, bar over the shoulders",
         "Shoulder blades still retracted"
@@ -163,8 +168,8 @@
     {
       "id": "finish",
       "name": "Finish (re-rack)",
-      "start_s": 7.25,
-      "end_s": 8.75,
+      "start_s": 8.0,
+      "end_s": 9.75,
       "cues": [
         "Move the bar back to the uprights with straight arms",
         "Lower it into the rests under control"
@@ -188,37 +193,24 @@
     "three_quarter",
     "closeup_grip"
   ],
-  "framing": {
-    "center": [
-      0.0,
-      -0.1,
-      0.63
-    ],
-    "size": [
-      2.26,
-      2.1,
-      1.3
-    ]
-  },
   "technique": {
     "comment": "Parameters of this provisional demonstration. Each one cites reference_notes.json; none is a universal 'correct' value and reasonable lifters differ in all of them.",
     "grip_width_between_hand_centres_m": 0.66,
     "wrist_extension_deg": 18.0,
-    "bar_low_in_palm_from_wrist_m": 0.05,
-    "palm_depth_m": 0.011,
     "touch_point": "lower_sternum",
     "touch_point_below_shoulder_joint_m": 0.115,
     "chest_clearance_m": 0.004,
     "lockout_over_shoulder_offset_m": 0.0,
-    "elbow_extension_at_lockout_deg": 172.0,
+    "elbow_extension_at_lockout_deg": 174.0,
     "descent_path_exponent": 1.0,
     "ascent_path_exponent": 1.7,
     "rack_clearance_m": 0.012,
     "scapular_retraction_deg": 7.0,
     "thoracic_extension_deg": 6.0,
     "toe_out_deg": 20.0,
-    "foot_half_spacing_m": 0.3,
-    "ankle_towards_feet_from_hip_m": 0.37
+    "foot_half_spacing_m": 0.27,
+    "ankle_towards_feet_from_hip_m": 0.37,
+    "rack_reach_clavicle_elevation_deg": 12.0
   },
   "placement": {
     "comment": "Where the lifter lies on the bench: distance from the head end of the pad to the top of the head.",
@@ -261,8 +253,30 @@
     "min_bar_to_rack_clearance_m": 0.01,
     "lockout_bar_over_shoulder_tolerance_m": 0.04,
     "touch_point_tolerance_m": 0.03,
-    "max_edge_stretch_ratio": 3.0,
-    "max_self_intersections": 0
+    "max_p999_edge_stretch": 2.6,
+    "max_volume_change": 0.08,
+    "max_new_self_intersections": 60,
+    "knee_flexion_range_deg": [
+      0.0,
+      150.0
+    ],
+    "max_joint_speed_m_s": 2.5,
+    "max_left_right_position_difference_m": 0.003,
+    "max_foot_into_floor_m": 0.005,
+    "max_bench_contact_gap_m": 0.006,
+    "max_hand_to_socket_deg": 0.5,
+    "max_hand_bar_gap_m": 0.004,
+    "max_hand_into_bar_m": 0.008,
+    "bar_vertical_range_m": [
+      0.25,
+      0.6
+    ],
+    "max_bar_horizontal_travel_m": 0.2,
+    "max_static_brightness_step": 1.0,
+    "min_still_frame_agreement": 0.97,
+    "max_forearm_frontal_tilt_during_rep_deg": 10.0,
+    "max_hand_into_bar_comment": "The skin of the palm is rigid in this rig. Up to 8 mm of palm pad inside the bar stands for soft tissue pressed flat by the load; more than that, or any finger passing through the bar, is a defect.",
+    "elbow_tracking_below_deg": 150.0
   },
   "validation_results": "qa_report.json",
   "technical_cues": [
@@ -283,5 +297,10 @@
   "status": "DRAFT",
   "reviewer": null,
   "approval_date": null,
-  "brand_profile_id": "placeholder"
+  "brand_profile_id": "placeholder",
+  "highlight_roles": [
+    "primary",
+    "secondary"
+  ],
+  "muscle_roles_note": "Pectoralis major, anterior deltoid and triceps brachii are the agonists in the systematic review by Stastny et al. 2017 (reference_notes.json). Stabilisers are listed from the same review's discussion, where the evidence is thinner; they are recorded here but not highlighted in the render (highlight_roles)."
 }

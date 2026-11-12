@@ -15,6 +15,7 @@ NOT been reviewed by a qualified professional:
 What is animated (and therefore editable in Blender's graph editor):
     Barbell            location Y and Z: the bar path
     ctl_elbow_l/r      location: where the elbows point
+    clavicle_l/r       rotation: shoulders reach up at the rack, set for the rep
 Everything else follows: the hands are bound to grip sockets on the bar, the
 arms are solved by IK, the feet are pinned to the floor by IK."""
 
@@ -29,7 +30,7 @@ sys.path.insert(0, os.path.dirname(HERE))
 
 import bpy  # noqa: E402
 import numpy as np  # noqa: E402
-from mathutils import Matrix, Vector  # noqa: E402
+from mathutils import Matrix, Quaternion, Vector  # noqa: E402
 
 from evs import PIPELINE_VERSION, UNVERIFIED_LABEL, config, motion  # noqa: E402
 from evs import rig as evs_rig  # noqa: E402
@@ -137,24 +138,30 @@ def plant_feet(rig, exercise: dict) -> dict:
     return out
 
 
-def make_grip(rig, bar, exercise: dict) -> dict:
-    """Sockets on the bar that hold the hand bones in a closed, pronated grip
-    with the bar low in the palm and the wrist slightly extended."""
+def make_grip(rig, bar, exercise: dict, grip: dict) -> dict:
+    """Sockets on the bar that hold the hand bones in the character's standard
+    closed, pronated grip, with the wrist slightly extended."""
     tech = exercise["technique"]
-    radius = float(bar["evs_shaft_radius"])
     half = tech["grip_width_between_hand_centres_m"] * 0.5
     ext = math.radians(tech["wrist_extension_deg"])
     palm_normal = Vector((0.0, -math.cos(ext), math.sin(ext)))  # towards the feet, tipped up
     wrist_offset = {}
     for side, sign in (("l", 1.0), ("r", -1.0)):
-        matrix = evs_rig.hand_matrix_for_grip(
-            rig, side, bar_point=Vector((sign * half, 0.0, 0.0)), across=Vector((sign, 0.0, 0.0)), palm_normal=palm_normal,
-            bar_radius=radius, palm_depth=tech["palm_depth_m"], along_palm=tech["bar_low_in_palm_from_wrist_m"])
+        matrix = evs_rig.hand_matrix_for_grip(rig, side, grip, bar_point=Vector((sign * half, 0.0, 0.0)),
+                                              bar_axis=Vector((sign, 0.0, 0.0)), palm_normal=palm_normal)
         socket = evs_rig.add_socket(bar, f"hand_{side}", matrix)
+        socket.rotation_mode = "QUATERNION"
+        socket["evs_base_matrix"] = [list(r) for r in matrix]
         evs_rig.attach_control(rig, f"ctl_hand_{side}", socket)
         rig[f"grip_{side}"] = 1.0
         wrist_offset[side] = matrix.translation.copy()  # wrist relative to the bar centre
     return wrist_offset
+
+
+def roll(matrix: Matrix, angle: float) -> Matrix:
+    """A socket matrix (bar space) turned about the bar's axis: the hand
+    rolls around the bar, as a real hand does when the forearm changes angle."""
+    return Matrix.Rotation(angle, 4, "X") @ matrix
 
 
 def chest_height_under_bar(body, bar_y: float) -> float:
@@ -169,7 +176,8 @@ def main() -> None:
     fps = int(exercise["frame_rate"])
     bpy.ops.wm.open_mainfile(filepath=os.path.join(HERE, "_scene.blend"))
     scene = bpy.context.scene
-    names = config.character_config()["names"]
+    character = config.character_config()
+    names = character["names"]
     rig = bpy.data.objects[names["armature_object"]]
     body = bpy.data.objects[names["body_object"]]
     bar = bpy.data.objects["Barbell"]
@@ -182,21 +190,71 @@ def main() -> None:
     placement = lie_on_bench(rig, body, exercise, pad_top, scene["evs_bench_pad_half_width"], scene["evs_bench_head_end_y"])
     feet = plant_feet(rig, exercise)
     bar.location = racked
-    wrist_offset = make_grip(rig, bar, exercise)
+    wrist_offset = make_grip(rig, bar, exercise, character["grip"])
     bpy.context.view_layer.update()
 
     upper = rig.data.bones["upperarm_l"].length
     lower = rig.data.bones["lowerarm_l"].length
-    shoulder = {s: evs_rig.bone_head_world(rig, f"upperarm_{s}") for s in ("l", "r")}
+
+    # Shoulder girdle: set (blades pulled back, as lie_on_bench left them) for
+    # the repetition; raised towards the bar while the hands are at the rack,
+    # the way a lifter reaches up to unrack and then sets the shoulders.
+    clavicle_set = {s_: rig.pose.bones[f"clavicle_{s_}"].rotation_quaternion.copy() for s_ in ("l", "r")}
+    clavicle_reach = {}
+    for s_, sign in (("l", 1.0), ("r", -1.0)):
+        bone = rig.data.bones[f"clavicle_{s_}"]
+        axis = bone.matrix_local.to_3x3().inverted() @ Vector((0.0, -sign, 0.0))  # lifts the outer end towards the head
+        clavicle_reach[s_] = Quaternion(axis.normalized(), math.radians(tech["rack_reach_clavicle_elevation_deg"]))
+
+    def shoulders_at(reach_amount: float) -> dict:
+        """Poses the shoulder girdle (0 = set, 1 = reaching) and returns the
+        shoulder joint positions."""
+        for s_ in ("l", "r"):
+            rig.pose.bones[f"clavicle_{s_}"].rotation_quaternion = clavicle_set[s_].slerp(clavicle_reach[s_], reach_amount)
+        bpy.context.view_layer.update()
+        return {s_: evs_rig.bone_head_world(rig, f"upperarm_{s_}") for s_ in ("l", "r")}
+
+    shoulder_reach = shoulders_at(1.0)
+    shoulder = shoulders_at(0.0)
     sy = 0.5 * (shoulder["l"].y + shoulder["r"].y)
     sz = 0.5 * (shoulder["l"].z + shoulder["r"].z)
 
     # ---- key positions of the bar centre (x is always 0) -----------------
-    def wrist_at(bar_pos: Vector, side: str) -> Vector:
-        return bar_pos + wrist_offset[side]
+    sockets = {s_: bpy.data.objects[f"{evs_rig.SOCKET_PREFIX}hand_{s_}"] for s_ in ("l", "r")}
+    base = {s_: Matrix([list(r) for r in sockets[s_]["evs_base_matrix"]]) for s_ in ("l", "r")}
+    palm = {s_: evs_rig.palm_frame(rig, s_) for s_ in ("l", "r")}
+    rest_hand = {s_: rig.data.bones[f"hand_{s_}"].matrix_local.to_3x3() for s_ in ("l", "r")}
+    roll_now = {"l": 0.0, "r": 0.0}
 
-    def reach(bar_pos: Vector) -> float:
-        return (wrist_at(bar_pos, "l") - shoulder["l"]).length
+    def wrist_at(bar_pos: Vector, side: str, angle: float | None = None) -> Vector:
+        a_ = roll_now[side] if angle is None else angle
+        return bar_pos + (roll(base[side], a_).translation if a_ else wrist_offset[side])
+
+    def wrist_extension(bar_pos: Vector, side: str, angle: float, joint: Vector) -> float:
+        """Wrist bend (+ = bent back) with the hand rolled by ``angle``."""
+        m_ = roll(base[side], angle).to_3x3()
+        to_hand = m_ @ rest_hand[side].inverted()
+        long_ = to_hand @ palm[side]["long"]
+        normal = to_hand @ palm[side]["normal"]
+        wrist = bar_pos + roll(base[side], angle).translation
+        e_, _a, _v = motion.elbow_under_wrist(joint, wrist, upper, lower)
+        fa = (wrist - e_).normalized()
+        return math.degrees(math.atan2(fa.dot(normal), fa.dot(long_)))
+
+    def solve_roll(bar_pos: Vector, side: str, joint: Vector) -> float:
+        """Roll of the hand around the bar that gives the configured wrist
+        extension (bisection; the bend changes monotonically with the roll)."""
+        target = tech["wrist_extension_deg"]
+        lo, hi = -1.2, 1.2
+        f_lo = wrist_extension(bar_pos, side, lo, joint) - target
+        for _ in range(40):
+            mid_ = 0.5 * (lo + hi)
+            f_mid = wrist_extension(bar_pos, side, mid_, joint) - target
+            if (f_mid > 0) == (f_lo > 0):
+                lo, f_lo = mid_, f_mid
+            else:
+                hi = mid_
+        return 0.5 * (lo + hi)
 
     elbow = math.radians(tech["elbow_extension_at_lockout_deg"])
     lock_reach = math.sqrt(upper * upper + lower * lower - 2 * upper * lower * math.cos(elbow))
@@ -214,10 +272,23 @@ def main() -> None:
         bottom.z = chest_height_under_bar(body, bottom_y) + radius + tech["chest_clearance_m"]
 
     clear = Vector((0.0, racked.y, lip_top + radius + tech["rack_clearance_m"]))
-    for label, pos in (("racked", racked), ("clear of the rests", clear), ("lockout", top)):
-        if reach(pos) > upper + lower - 0.003:
-            raise RuntimeError(f"the arms cannot reach the bar at '{label}' ({reach(pos):.3f} m > {upper + lower:.3f} m): "
-                               "lower rack_height or move the lifter towards the rack")
+
+    def reach_amount(bar_pos: Vector) -> float:
+        """How far the shoulders reach: 1 at the rack, 0 from lockout down."""
+        return motion.smootherstep((bar_pos.y - top.y) / (racked.y - top.y))
+
+    # Highest the bar can be held above the rests with the elbows still a
+    # little bent; the rack must sit below this for the unrack to be possible.
+    usable = math.sqrt(upper * upper + lower * lower - 2 * upper * lower * math.cos(math.radians(165.0)))
+    sr = shoulder_reach["l"]
+    highest = sr.z + math.sqrt(max(usable ** 2 - (w.x - sr.x) ** 2 - (racked.y + w.y - sr.y) ** 2, 0.0)) - w.z
+    print(f"[evs] shoulder joint set y {sy:.3f} z {sz:.3f}, reaching y {sr.y:.3f} z {sr.z:.3f}; bar over the rests can be held up to z {highest:.3f}; "
+          f"it must rise to {clear.z:.3f} to clear them (rack_height {racked.z:.3f})")
+    for label, pos, joint in (("racked", racked, sr), ("clear of the rests", clear, sr), ("lockout", top, shoulder["l"])):
+        distance = (wrist_at(pos, "l") - joint).length
+        if distance > upper + lower - 0.0005:
+            raise RuntimeError(f"the arms cannot reach the bar at '{label}' ({distance:.3f} m > {upper + lower:.3f} m): "
+                               f"set rack_height near {highest - (clear.z - racked.z):.2f} or move the lifter towards the rack")
 
     # ---- the bar path as a function of time ------------------------------
     phase = {p["id"]: p for p in exercise["exercise_phases"]}
@@ -268,17 +339,29 @@ def main() -> None:
     key_frames = sorted(f for f in key_frames if 0 <= f <= last)
 
     elbow_check = []
+    roll_keys = []
     for f in key_frames:
         pos = bar_at(f / fps)
-        if reach(pos) > upper + lower - 0.002:
-            raise RuntimeError(f"frame {f}: bar out of reach ({reach(pos):.3f} m)")
+        joints = shoulders_at(reach_amount(pos))
         motion.key_object_location(bar, f, pos)
         for side in ("l", "r"):
-            # Elbow as low as the arm allows: this is what keeps the forearm
-            # upright under the bar through the whole repetition.
-            e, angle = motion.two_bone_elbow(shoulder[side], wrist_at(pos, side), upper, lower, Vector((0, 0, -1)))
-            mid = (shoulder[side] + wrist_at(pos, side)) * 0.5
-            evs_rig.set_pole_world(rig, f"ctl_elbow_{side}", e + (e - mid).normalized() * 0.4)
+            rig.pose.bones[f"clavicle_{side}"].keyframe_insert("rotation_quaternion", frame=f)
+            roll_now[side] = solve_roll(pos, side, joints[side])
+            rolled = roll(base[side], roll_now[side])
+            sockets[side].matrix_basis = rolled
+            sockets[side].keyframe_insert("location", frame=f)
+            sockets[side].keyframe_insert("rotation_quaternion", frame=f)
+            if side == "l":
+                roll_keys.append(round(math.degrees(roll_now[side]), 2))
+            wrist = wrist_at(pos, side)
+            if (wrist - joints[side]).length > upper + lower - 0.0005:
+                raise RuntimeError(f"frame {f}: bar out of reach ({(wrist - joints[side]).length:.3f} m)")
+            # Elbow straight under the wrist in the front view: the forearm
+            # stays upright under the bar through the whole repetition.
+            e, angle, bend = motion.elbow_under_wrist(joints[side], wrist, upper, lower)
+            # Pole target off the arm, in the elbow's direction: well defined
+            # even when the arm is straight (a pole on the arm line flips the IK).
+            evs_rig.set_pole_world(rig, f"ctl_elbow_{side}", e + bend * 0.4)
             motion.key_bone_location(rig, f"ctl_elbow_{side}", f)
             if side == "l":
                 elbow_check.append((f, e.copy(), angle))
@@ -292,8 +375,18 @@ def main() -> None:
 
     scene.frame_set(0)
     motion.add_phase_markers(scene, exercise["exercise_phases"], fps)
+    frames_at = {name: motion.frame_of(p["start_s"], fps) for name, p in phase.items()}
+    # Everything that has to stay in frame: the lifter and the equipment at
+    # the rack, at lockout and on the chest.
+    seen = []
+    for f in (0, frames_at["start_position"], frames_at["bottom"]):
+        scene.frame_set(f)
+        for obj in scene.objects:
+            if obj.type == "MESH" and obj.name != "EVS_Floor":
+                seen.append(world_vertices(obj))
+    scene.frame_set(0)
     grip_point = bar.matrix_world @ Vector((tech["grip_width_between_hand_centres_m"] * 0.5, 0.0, 0.0))
-    cameras = evs_scene.build_cameras(scene, exercise, follow_targets={"hand_l": (bar, grip_point)})
+    cameras = evs_scene.build_cameras(scene, exercise, np.concatenate(seen), follow_targets={"hand_l": (bar, grip_point)})
     scene.camera = cameras[exercise["camera_presets"][0]]
 
     scene["evs_motion_source_verification"] = exercise["motion_source_verification"]
@@ -302,7 +395,7 @@ def main() -> None:
     bpy.ops.file.pack_all()
     bpy.ops.wm.save_as_mainfile(filepath=out)
 
-    frames = {name: motion.frame_of(p["start_s"], fps) for name, p in phase.items()}
+    frames = frames_at
     shoulder_distance = (shoulder["l"] - shoulder["r"]).length
     metadata = {
         "pipeline_version": PIPELINE_VERSION,
@@ -325,6 +418,8 @@ def main() -> None:
         "animated_channels": {
             "Barbell": "location (bar path; x fixed at 0, no rotation keys)",
             "ctl_elbow_l, ctl_elbow_r": "location (elbow direction)",
+            "clavicle_l, clavicle_r": "rotation (shoulders reach towards the bar at the rack, set for the repetition)",
+            "SOCKET_hand_l, SOCKET_hand_r": "location and rotation (the hands roll around the bar so the wrist keeps the configured extension)",
             "everything else": "static pose; arms and legs solved by IK, hands bound to grip sockets on the bar",
         },
         "keyframes": len(key_frames),
@@ -345,6 +440,7 @@ def main() -> None:
             "elbow_angle_lockout_deg": round(next(a for f, _e, a in elbow_check if f == frames["start_position"]), 1),
             "elbow_angle_bottom_deg": round(next(a for f, _e, a in elbow_check if f == frames["bottom"]), 1),
             "solved_vs_intended_elbow_max_mm": round(worst * 1000, 3),
+            "hand_roll_around_bar_deg": [min(roll_keys), max(roll_keys)],
             "placement": placement,
             "ankles_m": feet,
         },

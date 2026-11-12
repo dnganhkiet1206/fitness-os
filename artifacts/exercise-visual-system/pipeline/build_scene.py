@@ -38,7 +38,8 @@ def main(exercise_name: str | None = None) -> None:
     mats = evs_scene.apply_brand_materials(character, brand)
     highlight = evs_scene.apply_highlight(mats, exercise, exercise_path)
     built = evs_scene.build_equipment(exercise, brand)
-    evs_scene.build_studio(scene, exercise, brand)
+    floor = evs_scene.build_studio(scene, exercise, brand)
+    print(f"[evs] floor levels measured: lit {floor['lit_level']}, in key-light shadow {floor['shadow_level']}")
     frames = evs_scene.set_timeline(scene, exercise)
 
     scene["evs_exercise_id"] = exercise["exercise_id"]

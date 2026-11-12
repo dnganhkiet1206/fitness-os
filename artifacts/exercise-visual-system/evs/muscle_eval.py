@@ -168,3 +168,31 @@ def compose_highlight(masks: dict[str, np.ndarray], primary: list[str], secondar
     green = union(secondary) * (1.0 - red)
     blue = union(stabilizing) * (1.0 - red) * (1.0 - green)
     return (np.stack([red, green, blue], axis=-1) * 255.0 + 0.5).astype(np.uint8)
+
+
+def srgb_to_linear(c: np.ndarray) -> np.ndarray:
+    c = np.asarray(c, dtype=np.float64)
+    return np.where(c <= 0.04045, c / 12.92, ((c + 0.055) / 1.055) ** 2.4)
+
+
+def linear_to_srgb(c: np.ndarray) -> np.ndarray:
+    c = np.clip(np.asarray(c, dtype=np.float64), 0.0, 1.0)
+    return np.where(c <= 0.0031308, c * 12.92, 1.055 * c ** (1.0 / 2.4) - 0.055)
+
+
+def hex_rgb(value: str) -> np.ndarray:
+    value = value.lstrip("#")
+    return np.array([int(value[i : i + 2], 16) for i in (0, 2, 4)], dtype=np.float64) / 255.0
+
+
+def albedo_from_highlight(highlight_rgb: np.ndarray, base_hex: str, primary_hex: str, secondary_hex: str,
+                          stabilizer_hex: str, gain: float = 1.0) -> np.ndarray:
+    """Flat colour texture (sRGB, uint8) with the muscle highlight painted in,
+    for viewers that cannot run the Blender shader (glTF). Mixes in linear
+    light in the same order as the shader: stabiliser, secondary, primary."""
+    mask = highlight_rgb.astype(np.float64) / 255.0 * gain
+    color = np.broadcast_to(srgb_to_linear(hex_rgb(base_hex)), mask.shape).copy()
+    for channel, hex_value in ((2, stabilizer_hex), (1, secondary_hex), (0, primary_hex)):
+        a = np.clip(mask[..., channel : channel + 1], 0.0, 1.0)
+        color = color * (1.0 - a) + srgb_to_linear(hex_rgb(hex_value)) * a
+    return (linear_to_srgb(color) * 255.0 + 0.5).astype(np.uint8)

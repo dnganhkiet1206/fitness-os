@@ -1,0 +1,687 @@
+{
+  "purpose": "Documented technical reference for the provisional Barbell Bench Press animation. Every entry says how far it was checked. This file does not make the animation approved: it is still UNVERIFIED — NOT APPROVED FOR PRODUCTION until a qualified professional reviews the motion itself.",
+  "collected": "2026-11-11, by four research agents reading primary sources, then re-checked by a fifth agent whose job was to refute them (67 claims confirmed, 4 partly wrong, 2 unverifiable).",
+  "how_verified_values": {
+    "FULL_TEXT_SEEN": "the source's full text was opened and the statement found in it",
+    "ABSTRACT_SEEN": "only the abstract was available",
+    "SECONDARY_SOURCE": "the statement is reported by another source; the original was not opened",
+    "FROM_MEMORY_NOT_VERIFIED": "not checked against any source; must not be cited as a fact"
+  },
+  "caveats": [
+    "IPF rules define what is legal in competition (they allow a large arch and a touch on the abdomen). They are not technique recommendations.",
+    "Every kinematic number comes from small samples of trained lifters at 1RM or 6-8RM. None describes a submaximal instructional repetition for general users.",
+    "Web-page quotes were relayed by a fetch tool's summariser; only the IPF, IWF and Eleiko PDFs were read as extracted text.",
+    "Noteboom 2024 (grip width, abduction, scapula) used an unloaded 16 kg bar with 10 athletes and a musculoskeletal model: not evidence about loaded pressing."
+  ],
+  "technique_claims": [
+    {
+      "topic": "body contact points (competition rule)",
+      "statement": "Lifter lies supine with head, shoulders and buttocks in contact with the bench; feet flat on the floor; position maintained throughout the lift. Raising head, shoulders or buttocks, or lifting the feet, is a cause for disqualification.",
+      "value_or_range": "3 bench contacts (head, shoulders, buttocks) + 2 feet flat",
+      "source": "International Powerlifting Federation, Technical Rulebook 2026 v3 (effective 01.03.2026), clause 4.2(2) p.22 and 4.2.1(2),(9) p.24",
+      "url_or_doi": "https://www.powerlifting.sport/fileadmin/ipf/data/rules/technical-rules/english/2026_IPF_Technical_Rulebook__effective_01_March_2026__v3.pdf",
+      "short_quote": "The feet must be flat on the floor (as flat as the shape of the shoe will allow).",
+      "how_verified": "FULL_TEXT_SEEN",
+      "applies_to": "IPF competition lifters (rule, not biomechanics)"
+    },
+    {
+      "topic": "body contact points (NSCA five-point body contact position)",
+      "statement": "NSCA textbook wording (head, shoulders/upper back, buttocks on bench; right and left foot flat on floor) could NOT be opened in a primary source. Only third-party study guides and a university course page repeat it. The same five contacts are independently required in two peer-reviewed protocols (Lockie 2017; Saeterbakken 2021) and by the IPF rule.",
+      "value_or_range": "5 points: head, upper back/shoulders, buttocks, right foot, left foot",
+      "source": "Haff GG, Triplett NT (eds). NSCA Essentials of Strength Training and Conditioning, 4th ed., Human Kinetics, 2016, ch.15 (book not opened)",
+      "url_or_doi": "ISBN 978-1-4925-0162-6 (from memory, not re-verified)",
+      "short_quote": "",
+      "how_verified": "SECONDARY_SOURCE",
+      "applies_to": "general resistance-training instruction"
+    },
+    {
+      "topic": "body contact points (research protocol)",
+      "statement": "Peer-reviewed 1RM protocol placed subjects supine with feet flat on floor and head, shoulders and buttocks flat on the bench.",
+      "value_or_range": "",
+      "source": "Lockie RG, Callaghan SJ, Moreno MR, et al. An investigation of the mechanics and sticking region of a 1RM close-grip bench press versus the traditional bench press. Sports (MDPI) 2017;5(3):46",
+      "url_or_doi": "https://pmc.ncbi.nlm.nih.gov/articles/PMC5968970",
+      "short_quote": "their feet flat on the floor, and their head, shoulders, and buttocks flat to the bench.",
+      "how_verified": "FULL_TEXT_SEEN",
+      "applies_to": "27 resistance-trained adults (21 M, 6 F), 1RM"
+    },
+    {
+      "topic": "grip type and thumb position",
+      "statement": "Thumb-around (closed) grip is mandatory; reverse (supinated) grip is forbidden, i.e. grip is pronated.",
+      "value_or_range": "closed, pronated",
+      "source": "IPF Technical Rulebook 2026 v3, clause 4.2(2) and 4.2(5), p.22",
+      "url_or_doi": "https://www.powerlifting.sport/fileadmin/ipf/data/rules/technical-rules/english/2026_IPF_Technical_Rulebook__effective_01_March_2026__v3.pdf",
+      "short_quote": "Hands, thumbs and fingers must completely grip the bar positioned in the rack stands with a thumb around grip.",
+      "how_verified": "FULL_TEXT_SEEN",
+      "applies_to": "IPF competition lifters"
+    },
+    {
+      "topic": "grip width (maximum, absolute)",
+      "statement": "Maximum legal hand spacing is 81 cm measured between the forefingers.",
+      "value_or_range": "<= 81 cm between forefingers",
+      "source": "IPF Technical Rulebook 2026 v3, clause 4.2(5), p.22",
+      "url_or_doi": "https://www.powerlifting.sport/fileadmin/ipf/data/rules/technical-rules/english/2026_IPF_Technical_Rulebook__effective_01_March_2026__v3.pdf",
+      "short_quote": "The spacing of the hands shall not exceed 81 cm measured between the forefingers",
+      "how_verified": "FULL_TEXT_SEEN",
+      "applies_to": "IPF competition lifters"
+    },
+    {
+      "topic": "grip width (multiples of biacromial breadth, study conditions)",
+      "statement": "Study defined narrow = 1.0x, medium = 1.4x, wide = 1.7x biacromial distance; absolute widths 0.40, 0.56 and 0.71 m. 1RM was about 104 kg (narrow) vs 109-110 kg (medium/wide).",
+      "value_or_range": "1.0 / 1.4 / 1.7 x biacromial = 0.40 +/- 0.04 / 0.56 +/- 0.04 / 0.71 +/- 0.06 m",
+      "source": "Larsen S, Gomo O, van den Tillaar R. A biomechanical analysis of wide, medium, and narrow grip width effects ... during 1-RM bench pressing. Front Sports Act Living 2021;2:637066",
+      "url_or_doi": "https://doi.org/10.3389/fspor.2020.637066",
+      "short_quote": "medium as 1.4 times bi-acromial distance (0.56 ± 0.04 m)",
+      "how_verified": "FULL_TEXT_SEEN",
+      "applies_to": "14 recreationally bench-trained males, 1RM"
+    },
+    {
+      "topic": "grip width (self-selected)",
+      "statement": "Self-selected 'strongest' grip of resistance-trained lifters averaged 175% of biacromial distance (index finger to index finger).",
+      "value_or_range": "mean 175% biacromial distance",
+      "source": "Lockie et al., Sports 2017;5(3):46",
+      "url_or_doi": "https://pmc.ncbi.nlm.nih.gov/articles/PMC5968970",
+      "short_quote": "",
+      "how_verified": "FULL_TEXT_SEEN",
+      "applies_to": "27 resistance-trained adults, 1RM"
+    },
+    {
+      "topic": "grip width (shoulder loading)",
+      "statement": "Musculoskeletal modelling: narrower grips (<1.5 biacromial widths) lowered acromioclavicular compression and glenohumeral posterior shear; 2.0 BAW raised AC compression. Authors note it is not an injury-incidence study.",
+      "value_or_range": "tested 1.0, 1.5, 2.0 x biacromial width",
+      "source": "Noteboom L, Belli I, Hoozemans MJM, Seth A, Veeger HEJ, van der Helm FCT. Effects of bench press technique variations on musculoskeletal shoulder loads and potential injury risk. Front Physiol 2024;15:1393235",
+      "url_or_doi": "https://doi.org/10.3389/fphys.2024.1393235",
+      "short_quote": "a relatively light barbell weight of 16 kg",
+      "how_verified": "FULL_TEXT_SEEN",
+      "applies_to": "10 experienced strength athletes (9 M, 1 F), 16 kg barbell only"
+    },
+    {
+      "topic": "grip width (review recommendation)",
+      "statement": "Review article states grip >1.5 biacromial width may raise shoulder injury risk and that <=1.5 BAW costs <=5% of 1RM. Noteboom 2024 characterises this literature as mainly clinical expert opinion. I saw only catalogue/abstract summaries, not the article.",
+      "value_or_range": "<= 1.5 x biacromial width",
+      "source": "Green CM, Comfort P. The affect of grip width on bench press performance and risk of injury. Strength Cond J 2007;29(5):10-14",
+      "url_or_doi": "https://doi.org/10.1519/00126548-200710000-00001",
+      "short_quote": "",
+      "how_verified": "SECONDARY_SOURCE",
+      "applies_to": "narrative review / expert opinion"
+    },
+    {
+      "topic": "grip width (performance, 200% biacromial)",
+      "statement": "Commonly cited as showing best 1RM near 200% biacromial width across grips of 90-270% BAD. I could not open the abstract or paper; values come from secondary descriptions only.",
+      "value_or_range": "~200% biacromial (unverified)",
+      "source": "Wagner LL, Evans SA, Weir JP, Housh TJ, Johnson GO. The effect of grip width on bench press performance. Int J Sport Biomech 1992;8:1-10",
+      "url_or_doi": "https://doi.org/10.1123/ijsb.8.1.1",
+      "short_quote": "",
+      "how_verified": "SECONDARY_SOURCE",
+      "applies_to": "strength-trained men (per secondary description)"
+    },
+    {
+      "topic": "start and lockout position",
+      "statement": "Lift starts and ends with the bar held motionless at straight arms' length with elbows locked. The rulebook does NOT state the bar's horizontal position relative to the shoulder joint.",
+      "value_or_range": "elbows fully extended; horizontal offset from shoulder: not specified",
+      "source": "IPF Technical Rulebook 2026 v3, clause 4.2(6),(8), p.22",
+      "url_or_doi": "https://www.powerlifting.sport/fileadmin/ipf/data/rules/technical-rules/english/2026_IPF_Technical_Rulebook__effective_01_March_2026__v3.pdf",
+      "short_quote": "the lifter shall wait with straight arms elbows locked for the Chief Referee’s signal.",
+      "how_verified": "FULL_TEXT_SEEN",
+      "applies_to": "IPF competition lifters"
+    },
+    {
+      "topic": "bar touch point on torso",
+      "statement": "Rule permits touch anywhere on chest or abdominal area, but not the belt; no anatomical landmark (nipple line, xiphoid) is specified.",
+      "value_or_range": "chest or abdominal area, above the belt",
+      "source": "IPF Technical Rulebook 2026 v3, clause 4.2(8) p.22; 4.2.1(6) p.24",
+      "url_or_doi": "https://www.powerlifting.sport/fileadmin/ipf/data/rules/technical-rules/english/2026_IPF_Technical_Rulebook__effective_01_March_2026__v3.pdf",
+      "short_quote": "the lifter must lower the bar to the chest or abdominal area",
+      "how_verified": "FULL_TEXT_SEEN",
+      "applies_to": "IPF competition lifters"
+    },
+    {
+      "topic": "bar touch point on torso (landmark)",
+      "statement": "Introduction of a peer-reviewed paper describes the traditional bench press as lowering the bar to contact just above the xiphoid process (attributed there to Algra 1982, NSCA Journal). NSCA textbook wording 'approximately nipple level' was found only in third-party flashcards.",
+      "value_or_range": "just above xiphoid process / approx. nipple level (two descriptions of roughly the same lower-sternal region)",
+      "source": "Lockie et al., Sports 2017;5(3):46 (Introduction, citing Algra B, Natl Strength Coach Assoc J 1982)",
+      "url_or_doi": "https://pmc.ncbi.nlm.nih.gov/articles/PMC5968970",
+      "short_quote": "contacts just above the xiphoid process",
+      "how_verified": "FULL_TEXT_SEEN",
+      "applies_to": "descriptive text, not measured"
+    },
+    {
+      "topic": "bar path (novice vs expert)",
+      "statement": "2D cine analysis: experts lowered the bar more slowly, kept the bar path closer to the shoulders, and used a different sequence of bar movements than novices. So the path is not a single vertical line and differs with skill. Numeric horizontal offsets are not in the abstract.",
+      "value_or_range": "qualitative; experts lifted 79% more load",
+      "source": "Madsen N, McLaughlin T. Kinematic factors influencing performance and injury risk in the bench press exercise. Med Sci Sports Exerc 1984;16(4):376-381",
+      "url_or_doi": "https://doi.org/10.1249/00005768-198408000-00010 (PMID 6493018)",
+      "short_quote": "",
+      "how_verified": "ABSTRACT_SEEN",
+      "applies_to": "19 expert and 17 novice lifters, heavy lifts"
+    },
+    {
+      "topic": "bar path (horizontal displacement)",
+      "statement": "Bar is not pressed vertically: Table 1 reports bar horizontal displacement of about 0.125-0.131 m at the chest (v0), about 0.056-0.062 m at the sticking point (vmin), and about -0.01 to -0.02 m at second peak velocity near lockout. No significant grip-width effect on horizontal displacement. Reference origin/sign convention of the horizontal axis was not confirmed by me.",
+      "value_or_range": "~12-13 cm horizontal travel between chest touch and near-lockout; vertical travel 0.34 (wide) / 0.37 (medium) / 0.40 m (narrow)",
+      "source": "Larsen, Gomo, van den Tillaar. Front Sports Act Living 2021;2:637066, Table 1",
+      "url_or_doi": "https://doi.org/10.3389/fspor.2020.637066",
+      "short_quote": "",
+      "how_verified": "FULL_TEXT_SEEN",
+      "applies_to": "14 recreationally trained males, 1RM, touch-and-go"
+    },
+    {
+      "topic": "bar path (fatigue, recreational lifters)",
+      "statement": "Over a set to failure at 75% 1RM, lifters progressively kept the bar more directly over the shoulder; concentric time more than doubled first to last rep.",
+      "value_or_range": "concentric time >2x from first to last rep",
+      "source": "Duffey MJ, Challis JH. Fatigue effects on bar kinematics during the bench press. J Strength Cond Res 2007;21(2):556-560",
+      "url_or_doi": "https://doi.org/10.1519/R-19885.1",
+      "short_quote": "The time to lift the bar more than doubled from the first to the last repetition",
+      "how_verified": "ABSTRACT_SEEN",
+      "applies_to": "18 recreational lifters (10 M, 8 F), 75% 1RM to failure"
+    },
+    {
+      "topic": "bar path (powerlifters vs recreational)",
+      "statement": "Powerlifters used a different bar path, shorter joint ranges of motion and lower normalised peak elbow moments than recreational lifters; shoulder moments and EMG did not differ. Abstract gives no path coordinates.",
+      "value_or_range": "qualitative",
+      "source": "Mausehund L, Krosshaug T. Understanding bench press biomechanics: training expertise and sex affect lifting technique and net joint moments. J Strength Cond Res 2023;37(1):9-17",
+      "url_or_doi": "https://doi.org/10.1519/JSC.0000000000004191",
+      "short_quote": "",
+      "how_verified": "ABSTRACT_SEEN",
+      "applies_to": "12 powerlifters vs 22 recreational lifters, 6-8RM"
+    },
+    {
+      "topic": "lateral force on bar (hands push outward)",
+      "statement": "Lateral force on the bar was always directed outward, about 26% of peak vertical force at 1RM and 24% at 80%. Peak vertical force about 113-115% of load.",
+      "value_or_range": "lateral ~23.7-26.3% of peak vertical force",
+      "source": "Duffey MJ, Challis JH. Vertical and lateral forces applied to the bar during the bench press in novice lifters. J Strength Cond Res 2011;25(9):2442-2447",
+      "url_or_doi": "https://doi.org/10.1519/JSC.0b013e3182281939",
+      "short_quote": "lateral forces were always outward along the bar",
+      "how_verified": "ABSTRACT_SEEN",
+      "applies_to": "18 recreational/novice lifters (10 M, 8 F), 1RM and 80%"
+    },
+    {
+      "topic": "elbow depth at bottom (rule)",
+      "statement": "At the bottom the underside of both elbow joints must be level with or below the top surface of the respective shoulder joint.",
+      "value_or_range": "elbow underside <= top of shoulder joint height",
+      "source": "IPF Technical Rulebook 2026 v3, clause 4.2(8) p.22; 4.2.1(11) p.24",
+      "url_or_doi": "https://www.powerlifting.sport/fileadmin/ipf/data/rules/technical-rules/english/2026_IPF_Technical_Rulebook__effective_01_March_2026__v3.pdf",
+      "short_quote": "the underside of both elbow joints is lowered level with or below the top surface of each respective shoulder joint",
+      "how_verified": "FULL_TEXT_SEEN",
+      "applies_to": "IPF competition lifters"
+    },
+    {
+      "topic": "shoulder abduction angle at bottom",
+      "statement": "Study imposed 45, 70 and 90 degrees shoulder abduction (goniometer, cones under elbows). 90 degrees with a 1.0 BAW grip was excluded as unsafe/unfeasible. Authors suggest lifters with subacromial pain might avoid 45 degrees with 1 BAW grip. No single 'correct' angle is established.",
+      "value_or_range": "tested 45 / 70 / 90 degrees",
+      "source": "Noteboom et al., Front Physiol 2024;15:1393235",
+      "url_or_doi": "https://doi.org/10.3389/fphys.2024.1393235",
+      "short_quote": "A goniometer was used to determine the desired shoulder abduction angle",
+      "how_verified": "FULL_TEXT_SEEN",
+      "applies_to": "10 experienced strength athletes, 16 kg barbell"
+    },
+    {
+      "topic": "shoulder abduction vs grip width",
+      "statement": "Shoulder abduction was significantly lower with narrow grip than medium and wide at all events; elbow extension angle at the chest was largest for wide, then medium, then narrow. Numeric angles are only in Figure 3, not in text/tables I saw.",
+      "value_or_range": "direction only; no numeric values extracted",
+      "source": "Larsen, Gomo, van den Tillaar. Front Sports Act Living 2021;2:637066",
+      "url_or_doi": "https://doi.org/10.3389/fspor.2020.637066",
+      "short_quote": "",
+      "how_verified": "FULL_TEXT_SEEN",
+      "applies_to": "14 recreationally trained males, 1RM"
+    },
+    {
+      "topic": "forearm vertical under bar / wrist stacked over elbow",
+      "statement": "No citable primary source found. Indirect evidence: grip width changes lateral/medial bar force (wide 1.7 BAW: 13-16% of vertical force directed laterally; medium 0.4-1.8% and narrow 8.5-10.1% medially), implying the forearm is rarely exactly vertical in the frontal plane.",
+      "value_or_range": "no cited angle",
+      "source": "Larsen, Gomo, van den Tillaar. Front Sports Act Living 2021;2:637066",
+      "url_or_doi": "https://doi.org/10.3389/fspor.2020.637066",
+      "short_quote": "",
+      "how_verified": "ABSTRACT_SEEN",
+      "applies_to": "14 recreationally trained males, 1RM"
+    },
+    {
+      "topic": "scapular retraction and thoracic arch",
+      "statement": "Retracted scapulae (cue: squeeze shoulder blades together and slightly arch the back) reduced glenohumeral posterior shear and acromioclavicular compression, and peak rotator cuff activity was always lower than neutral/released poses. The paper also reports that NSCA guidance (Graham 2003) recommends continuous scapular retraction as a stable base.",
+      "value_or_range": "qualitative; depression of scapulae not separately tested",
+      "source": "Noteboom et al., Front Physiol 2024;15:1393235 (citing Graham JF. Bench press barbell. Strength Cond J 2003)",
+      "url_or_doi": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11224528/",
+      "short_quote": "squeeze their shoulder blades together and slightly arch their back",
+      "how_verified": "FULL_TEXT_SEEN",
+      "applies_to": "10 experienced strength athletes, 16 kg barbell, model-estimated loads"
+    },
+    {
+      "topic": "hips on bench, feet flat",
+      "statement": "Buttocks must remain in contact with the bench; feet may move but must stay flat on the platform and may not touch the bench or its supports.",
+      "value_or_range": "",
+      "source": "IPF Technical Rulebook 2026 v3, clause 4.2(2) p.22; 4.2.1(2),(9) p.24",
+      "url_or_doi": "https://www.powerlifting.sport/fileadmin/ipf/data/rules/technical-rules/english/2026_IPF_Technical_Rulebook__effective_01_March_2026__v3.pdf",
+      "short_quote": "Foot movement is permissible but must remain flat on the platform.",
+      "how_verified": "FULL_TEXT_SEEN",
+      "applies_to": "IPF competition lifters"
+    },
+    {
+      "topic": "pause at bottom",
+      "statement": "Competition rep: bar held motionless on chest until the 'Press' command; no heaving/sinking or bouncing. Research protocols commonly use touch-and-go with no bounce instead.",
+      "value_or_range": "motionless pause, duration not specified",
+      "source": "IPF Technical Rulebook 2026 v3, clause 4.2(8) p.22; 4.2.1(3) p.24",
+      "url_or_doi": "https://www.powerlifting.sport/fileadmin/ipf/data/rules/technical-rules/english/2026_IPF_Technical_Rulebook__effective_01_March_2026__v3.pdf",
+      "short_quote": "hold it motionless, after which the Chief Referee will signal the audible command “Press”",
+      "how_verified": "FULL_TEXT_SEEN",
+      "applies_to": "IPF competition lifters"
+    },
+    {
+      "topic": "tempo / phase durations",
+      "statement": "No source prescribing a tempo for a controlled instructional repetition was found. Measured values: 1RM concentric duration 3.47 +/- 1.43 s over 0.41 +/- 0.04 m (traditional grip). A systematic review lists a study using whole-repetition durations of 5.6, 2.8 and 1.9 s and requires metronome/isokinetic pacing for inclusion.",
+      "value_or_range": "1RM concentric 3.47 s; controlled-speed studies 1.9-5.6 s per full repetition",
+      "source": "Lockie et al., Sports 2017;5(3):46 (Table); Stastny P, et al. A systematic review of surface electromyography analyses of the bench press movement task. PLoS One 2017;12(2):e0171632 (Table 1)",
+      "url_or_doi": "https://pmc.ncbi.nlm.nih.gov/articles/PMC5968970 ; https://doi.org/10.1371/journal.pone.0171632",
+      "short_quote": "",
+      "how_verified": "FULL_TEXT_SEEN",
+      "applies_to": "27 resistance-trained adults at 1RM (Lockie); Sakamoto and Sinclair as tabulated by Stastny 2017"
+    },
+    {
+      "topic": "bar velocity at maximal load",
+      "statement": "At 1RM: mean concentric bar velocity 0.20 +/- 0.06 m/s, peak 0.35 +/- 0.06 m/s (Lockie, traditional grip). Larsen reports first peak 0.23-0.30 m/s, minimum 0.06-0.10 m/s at the sticking point, second peak 0.24-0.36 m/s.",
+      "value_or_range": "mean ~0.2 m/s, peak ~0.25-0.35 m/s at 1RM",
+      "source": "Lockie et al. 2017; Larsen et al. 2021 (Table 1)",
+      "url_or_doi": "https://pmc.ncbi.nlm.nih.gov/articles/PMC5968970 ; https://doi.org/10.3389/fspor.2020.637066",
+      "short_quote": "",
+      "how_verified": "FULL_TEXT_SEEN",
+      "applies_to": "resistance-trained / recreational lifters at 1RM"
+    },
+    {
+      "topic": "bar velocity at submaximal loads",
+      "statement": "Mean propulsive velocity is very tightly related to %1RM in the bench press (R2 = 0.98); mean velocity at 1RM was 0.16 +/- 0.04 m/s. The per-%1RM velocity table is NOT in the abstract. From memory, not re-verified: roughly 0.95-1.0 m/s at 50%, 0.6-0.65 m/s at 70%, 0.45-0.5 m/s at 80%, 0.3-0.35 m/s at 90% when lifted with maximal intent (Smith machine).",
+      "value_or_range": "R2 0.98; V at 1RM 0.16 +/- 0.04 m/s; per-load values from memory only",
+      "source": "Gonzalez-Badillo JJ, Sanchez-Medina L. Movement velocity as a measure of loading intensity in resistance training. Int J Sports Med 2010;31(5):347-352",
+      "url_or_doi": "https://doi.org/10.1055/s-0030-1248333",
+      "short_quote": "",
+      "how_verified": "ABSTRACT_SEEN",
+      "applies_to": "120 strength-trained men, Smith-machine bench press, maximal intended velocity (not a controlled instructional tempo)"
+    },
+    {
+      "topic": "descent velocity",
+      "statement": "Paper text gives self-selected descent velocity 'around 1 +/- 0.5 m/s' at 1RM; this looks implausibly high next to concentric velocities of 0.2-0.3 m/s and should be re-checked in the PDF before use. Madsen and McLaughlin (abstract) say experts lower the bar more slowly than novices.",
+      "value_or_range": "unreliable; needs re-check",
+      "source": "Larsen et al. 2021; Madsen and McLaughlin 1984",
+      "url_or_doi": "https://doi.org/10.3389/fspor.2020.637066",
+      "short_quote": "Descent movement velocity was volitional or self-selected",
+      "how_verified": "FULL_TEXT_SEEN",
+      "applies_to": "14 recreationally trained males, 1RM"
+    },
+    {
+      "topic": "range of elbow flexion at the bottom",
+      "statement": "No citable numeric elbow flexion angle at chest touch was obtained. Larsen 2021 plots elbow angle (Figure 3) without tabulated values; Mausehund 2023 abstract reports shorter joint ROM in powerlifters without numbers. Elbow angle at the bottom depends on grip width (wider grip = more extended elbow at the chest).",
+      "value_or_range": "not found",
+      "source": "Larsen et al. 2021; Mausehund and Krosshaug 2023",
+      "url_or_doi": "https://doi.org/10.3389/fspor.2020.637066",
+      "short_quote": "",
+      "how_verified": "FULL_TEXT_SEEN",
+      "applies_to": ""
+    },
+    {
+      "topic": "vertical range of bar travel",
+      "statement": "Bar vertical displacement chest-to-lockout: 0.338 +/- 0.066 m (1.7 BAW), 0.373 +/- 0.060 m (1.4 BAW), 0.399 +/- 0.064 m (1.0 BAW); Lockie: 0.41 +/- 0.04 m at self-selected grip (175% BAD), 0.43 +/- 0.05 m at 95% BAD.",
+      "value_or_range": "0.34-0.43 m",
+      "source": "Larsen et al. 2021 Table 1; Lockie et al. 2017",
+      "url_or_doi": "https://doi.org/10.3389/fspor.2020.637066 ; https://pmc.ncbi.nlm.nih.gov/articles/PMC5968970",
+      "short_quote": "",
+      "how_verified": "FULL_TEXT_SEEN",
+      "applies_to": "recreational / resistance-trained adults, 1RM"
+    }
+  ],
+  "equipment_specs": [
+    {
+      "item": "Powerlifting bar (IPF)",
+      "dimension": "total overall length",
+      "value": "not to exceed 2.2 m",
+      "source": "IPF Technical Rulebook 2026 v3 (effective 01.03.2026), clause 2.3(a)1, p.8",
+      "url": "https://www.powerlifting.sport/fileadmin/ipf/data/rules/technical-rules/english/2026_IPF_Technical_Rulebook__effective_01_March_2026__v3.pdf",
+      "how_verified": "FULL_TEXT_SEEN (PDF text extracted locally)"
+    },
+    {
+      "item": "Powerlifting bar (IPF)",
+      "dimension": "distance between collar faces (inside collars)",
+      "value": "1.31 m to 1.32 m",
+      "source": "IPF Technical Rulebook 2026 v3, clause 2.3(a)2, p.8",
+      "url": "https://www.powerlifting.sport/fileadmin/ipf/data/rules/technical-rules/english/2026_IPF_Technical_Rulebook__effective_01_March_2026__v3.pdf",
+      "how_verified": "FULL_TEXT_SEEN"
+    },
+    {
+      "item": "Powerlifting bar (IPF)",
+      "dimension": "shaft diameter",
+      "value": "28 mm to 29 mm",
+      "source": "IPF Technical Rulebook 2026 v3, clause 2.3(a)3, p.8",
+      "url": "https://www.powerlifting.sport/fileadmin/ipf/data/rules/technical-rules/english/2026_IPF_Technical_Rulebook__effective_01_March_2026__v3.pdf",
+      "how_verified": "FULL_TEXT_SEEN"
+    },
+    {
+      "item": "Powerlifting bar (IPF)",
+      "dimension": "mass",
+      "value": "bar plus collars = 25 kg; collars 2.5 kg each (clause 2.4b), so bar = 20 kg by subtraction",
+      "source": "IPF Technical Rulebook 2026 v3, clause 2.3(a)4 p.8 and 2.4(b) p.9",
+      "url": "https://www.powerlifting.sport/fileadmin/ipf/data/rules/technical-rules/english/2026_IPF_Technical_Rulebook__effective_01_March_2026__v3.pdf",
+      "how_verified": "FULL_TEXT_SEEN (20 kg is my arithmetic, not stated verbatim)"
+    },
+    {
+      "item": "Powerlifting bar (IPF)",
+      "dimension": "sleeve diameter",
+      "value": "50 mm to 52 mm",
+      "source": "IPF Technical Rulebook 2026 v3, clause 2.3(a)5, p.8",
+      "url": "https://www.powerlifting.sport/fileadmin/ipf/data/rules/technical-rules/english/2026_IPF_Technical_Rulebook__effective_01_March_2026__v3.pdf",
+      "how_verified": "FULL_TEXT_SEEN"
+    },
+    {
+      "item": "Powerlifting bar (IPF)",
+      "dimension": "sleeve length",
+      "value": "NOT specified in the IPF rulebook. Upper bound by arithmetic: (2.2 m - 1.31 m)/2 = 0.445 m per side including the inner collar flange",
+      "source": "IPF Technical Rulebook 2026 v3, clause 2.3(a)",
+      "url": "https://www.powerlifting.sport/fileadmin/ipf/data/rules/technical-rules/english/2026_IPF_Technical_Rulebook__effective_01_March_2026__v3.pdf",
+      "how_verified": "FULL_TEXT_SEEN (absence confirmed; bound is derived)"
+    },
+    {
+      "item": "Powerlifting bar (IPF)",
+      "dimension": "grip markings and knurling guideline",
+      "value": "machined ring markings 81 cm apart; knurling-diagram numbers in mm: 1320 (between collars), 810 (between marks), 440, 245, 240, 160, 120 (diagram labels were extracted as text without their positions; which segment each number labels was not confirmed)",
+      "source": "IPF Technical Rulebook 2026 v3, clause 2.3(a)6 and knurling guideline figure, p.8",
+      "url": "https://www.powerlifting.sport/fileadmin/ipf/data/rules/technical-rules/english/2026_IPF_Technical_Rulebook__effective_01_March_2026__v3.pdf",
+      "how_verified": "FULL_TEXT_SEEN for 81 cm; diagram segment assignment NOT verified"
+    },
+    {
+      "item": "Discs (IPF)",
+      "dimension": "centre hole",
+      "value": "52 mm to 53 mm",
+      "source": "IPF Technical Rulebook 2026 v3, clause 2.3(b)2, p.9",
+      "url": "https://www.powerlifting.sport/fileadmin/ipf/data/rules/technical-rules/english/2026_IPF_Technical_Rulebook__effective_01_March_2026__v3.pdf",
+      "how_verified": "FULL_TEXT_SEEN"
+    },
+    {
+      "item": "Discs (IPF)",
+      "dimension": "maximum diameter",
+      "value": "largest discs not more than 45 cm",
+      "source": "IPF Technical Rulebook 2026 v3, clause 2.3(b)9, p.9",
+      "url": "https://www.powerlifting.sport/fileadmin/ipf/data/rules/technical-rules/english/2026_IPF_Technical_Rulebook__effective_01_March_2026__v3.pdf",
+      "how_verified": "FULL_TEXT_SEEN"
+    },
+    {
+      "item": "Discs (IPF)",
+      "dimension": "thickness",
+      "value": "20 kg and over: max 6 cm; 15 kg and under: max 3 cm (no separate value for 20 vs 25 kg; these are maxima, real calibrated plates are thinner)",
+      "source": "IPF Technical Rulebook 2026 v3, clause 2.3(b)5, p.9",
+      "url": "https://www.powerlifting.sport/fileadmin/ipf/data/rules/technical-rules/english/2026_IPF_Technical_Rulebook__effective_01_March_2026__v3.pdf",
+      "how_verified": "FULL_TEXT_SEEN"
+    },
+    {
+      "item": "Discs (IPF)",
+      "dimension": "colour code and loading order",
+      "value": "25 kg red, 20 kg blue, 15 kg yellow, 10 kg and under any colour; heaviest innermost; first disc face-in, rest face-out; permitted sizes 1.25, 2.5, 5, 10, 15, 20, 25 kg",
+      "source": "IPF Technical Rulebook 2026 v3, clause 2.3(b)3,6,7,8, p.9",
+      "url": "https://www.powerlifting.sport/fileadmin/ipf/data/rules/technical-rules/english/2026_IPF_Technical_Rulebook__effective_01_March_2026__v3.pdf",
+      "how_verified": "FULL_TEXT_SEEN"
+    },
+    {
+      "item": "Collars (IPF)",
+      "dimension": "mass",
+      "value": "2.5 kg each; always used",
+      "source": "IPF Technical Rulebook 2026 v3, clause 2.4, p.9",
+      "url": "https://www.powerlifting.sport/fileadmin/ipf/data/rules/technical-rules/english/2026_IPF_Technical_Rulebook__effective_01_March_2026__v3.pdf",
+      "how_verified": "FULL_TEXT_SEEN"
+    },
+    {
+      "item": "Bench (IPF)",
+      "dimension": "length",
+      "value": "not less than 1.22 m, flat and level",
+      "source": "IPF Technical Rulebook 2026 v3, clause 2.6, p.9",
+      "url": "https://www.powerlifting.sport/fileadmin/ipf/data/rules/technical-rules/english/2026_IPF_Technical_Rulebook__effective_01_March_2026__v3.pdf",
+      "how_verified": "FULL_TEXT_SEEN"
+    },
+    {
+      "item": "Bench (IPF)",
+      "dimension": "width",
+      "value": "29 cm to 32 cm",
+      "source": "IPF Technical Rulebook 2026 v3, clause 2.6, p.9",
+      "url": "https://www.powerlifting.sport/fileadmin/ipf/data/rules/technical-rules/english/2026_IPF_Technical_Rulebook__effective_01_March_2026__v3.pdf",
+      "how_verified": "FULL_TEXT_SEEN"
+    },
+    {
+      "item": "Bench (IPF)",
+      "dimension": "height",
+      "value": "42 cm to 45 cm, floor to top of uncompressed pad",
+      "source": "IPF Technical Rulebook 2026 v3, clause 2.6, p.9",
+      "url": "https://www.powerlifting.sport/fileadmin/ipf/data/rules/technical-rules/english/2026_IPF_Technical_Rulebook__effective_01_March_2026__v3.pdf",
+      "how_verified": "FULL_TEXT_SEEN"
+    },
+    {
+      "item": "Bench uprights (IPF)",
+      "dimension": "bar-rest height range",
+      "value": "adjustable, minimum 75 cm to maximum 110 cm, floor to bar rest position",
+      "source": "IPF Technical Rulebook 2026 v3, clause 2.6, p.9",
+      "url": "https://www.powerlifting.sport/fileadmin/ipf/data/rules/technical-rules/english/2026_IPF_Technical_Rulebook__effective_01_March_2026__v3.pdf",
+      "how_verified": "FULL_TEXT_SEEN"
+    },
+    {
+      "item": "Bench uprights (IPF)",
+      "dimension": "width between bar rests; head overhang",
+      "value": "minimum 1.10 m between insides of bar rests; head of bench extends 22 cm (+/- 5 cm) beyond centre of uprights",
+      "source": "IPF Technical Rulebook 2026 v3, clause 2.6, p.9",
+      "url": "https://www.powerlifting.sport/fileadmin/ipf/data/rules/technical-rules/english/2026_IPF_Technical_Rulebook__effective_01_March_2026__v3.pdf",
+      "how_verified": "FULL_TEXT_SEEN"
+    },
+    {
+      "item": "Bench safety racks (IPF)",
+      "dimension": "height and length",
+      "value": "attached safety stands mandatory; minimum height 50 cm, 10 holes at 2.5 cm increments, 50 cm long",
+      "source": "IPF Technical Rulebook 2026 v3, clause 2.6, p.9",
+      "url": "https://www.powerlifting.sport/fileadmin/ipf/data/rules/technical-rules/english/2026_IPF_Technical_Rulebook__effective_01_March_2026__v3.pdf",
+      "how_verified": "FULL_TEXT_SEEN"
+    },
+    {
+      "item": "Foot blocks (IPF)",
+      "dimension": "size",
+      "value": "plates/blocks up to 30 cm total height, minimum 60 cm x 40 cm; 5, 10, 20, 30 cm blocks to be available",
+      "source": "IPF Technical Rulebook 2026 v3, clause 4.2(3), p.22",
+      "url": "https://www.powerlifting.sport/fileadmin/ipf/data/rules/technical-rules/english/2026_IPF_Technical_Rulebook__effective_01_March_2026__v3.pdf",
+      "how_verified": "FULL_TEXT_SEEN"
+    },
+    {
+      "item": "Hand spacing (IPF)",
+      "dimension": "maximum grip width",
+      "value": "81 cm between forefingers; whole forefinger must cover the 81 cm mark at maximum grip",
+      "source": "IPF Technical Rulebook 2026 v3, clause 4.2(5), p.22",
+      "url": "https://www.powerlifting.sport/fileadmin/ipf/data/rules/technical-rules/english/2026_IPF_Technical_Rulebook__effective_01_March_2026__v3.pdf",
+      "how_verified": "FULL_TEXT_SEEN"
+    },
+    {
+      "item": "Olympic men's bar (IWF)",
+      "dimension": "mass, length, sleeve, shaft",
+      "value": "20 kg; length 220 cm; sleeves 5 cm diameter x 41.5 cm long; grip section 2.8 cm diameter x 131 cm long; centre knurl 12 cm; sleeve rim (inner collar) diameter 7.3-8.0 cm; tolerance +0.1% / -0.05%",
+      "source": "IWF Technical and Competition Rules and Regulations 2020, rule 3.3.3.3 and 'Regulation to 3.3.3' item 4 (printed p.48). 2020 edition read from a national-federation mirror; the current IWF edition on iwf.sport returned HTTP 403 and was NOT checked",
+      "url": "https://iwlf.in/wp-content/uploads/2021/03/IWF_TCRR_2020.pdf",
+      "how_verified": "FULL_TEXT_SEEN (older edition, third-party host)"
+    },
+    {
+      "item": "Olympic competition discs (IWF)",
+      "dimension": "diameter and maximum width (thickness)",
+      "value": "discs >= 10 kg: 45 cm +/- 0.1 cm diameter. Maximum widths listed in order 25/20/15/10/5 kg: 6.7 / 5.4 / 4.3 / 3.5 / 2.65 cm (table extracted as two unaligned columns; row pairing inferred from order). Colours: 25 red, 20 blue, 15 yellow, 10 green",
+      "source": "IWF TCRR 2020, rule 3.3.3.6 and 'Regulation to 3.3.3' item 6 (printed p.50)",
+      "url": "https://iwlf.in/wp-content/uploads/2021/03/IWF_TCRR_2020.pdf",
+      "how_verified": "FULL_TEXT_SEEN for diameter and colours; width-to-weight pairing inferred, re-check against the PDF table"
+    },
+    {
+      "item": "Collars (IWF)",
+      "dimension": "mass, hole, width",
+      "value": "2.5 kg each; hole 5 cm diameter; width max 7.0 cm",
+      "source": "IWF TCRR 2020, rule 3.3.3.8 and 'Regulation to 3.3.3' item 8",
+      "url": "https://iwlf.in/wp-content/uploads/2021/03/IWF_TCRR_2020.pdf",
+      "how_verified": "FULL_TEXT_SEEN (older edition, third-party host)"
+    },
+    {
+      "item": "Eleiko IWF Weightlifting Competition Bar 20 kg men (manufacturer)",
+      "dimension": "length, sleeve diameter, loadable sleeve length, flange width, mass",
+      "value": "2200 mm; sleeve 50 mm; loadable sleeve length 415 mm; flange width 30 mm; 20 kg. Shaft diameter not printed on this sheet",
+      "source": "Eleiko Group AB product sheet, article 3060446 (PDF produced by Eleiko; hosted on a reseller CDN)",
+      "url": "https://cdn.shopify.com/s/files/1/0262/8157/4456/files/3060446_product-sheet-eleiko-iwf-weightlifting-competition-bar-20-kg-men.pdf",
+      "how_verified": "FULL_TEXT_SEEN (manufacturer sheet via reseller host)"
+    }
+  ],
+  "muscle_mapping": [
+    {
+      "muscle": "Pectoralis major, sternocostal head",
+      "role": "PRIMARY",
+      "basis": "Horizontal adduction (and flexion from the extended bottom position) of the humerus; systematic review of 14 EMG studies lists PM among primary movers with amplitude similar to triceps and higher than anterior deltoid, and recommends the sternal portion as the representative PM site.",
+      "source": "Stastny P, Golas A, Blazek D, et al. A systematic review of surface electromyography analyses of the bench press movement task. PLoS One 2017;12(2):e0171632",
+      "url_or_doi": "https://doi.org/10.1371/journal.pone.0171632",
+      "how_verified": "FULL_TEXT_SEEN"
+    },
+    {
+      "muscle": "Pectoralis major, clavicular head",
+      "role": "PRIMARY",
+      "basis": "Shoulder flexion plus horizontal adduction; active in the flat bench press, with higher EMG at narrower grips (Mausehund 2022) and evidence on incline dependence is mixed; a competitive-athlete study found no clavicular vs sternocostal difference across flat/incline/decline.",
+      "source": "Mausehund L, Werkhausen A, Bartsch J, Krosshaug T. J Strength Cond Res 2022;36(10):2685-2695 (abstract); Saeterbakken AH, et al. J Hum Kinet 2017;57:61-71 (abstract)",
+      "url_or_doi": "https://doi.org/10.1519/JSC.0000000000003948 ; https://doi.org/10.1515/hukin-2017-0047",
+      "how_verified": "ABSTRACT_SEEN"
+    },
+    {
+      "muscle": "Anterior deltoid",
+      "role": "PRIMARY",
+      "basis": "Shoulder flexion and horizontal adduction; named a primary mover in the systematic review but with lower normalised EMG than pectoralis major and triceps. Treat as primary mover of lower relative contribution (some texts call it a synergist).",
+      "source": "Stastny et al., PLoS One 2017;12(2):e0171632",
+      "url_or_doi": "https://doi.org/10.1371/journal.pone.0171632",
+      "how_verified": "FULL_TEXT_SEEN"
+    },
+    {
+      "muscle": "Triceps brachii (lateral, medial, long heads)",
+      "role": "PRIMARY",
+      "basis": "Elbow extension; review finds triceps EMG similar to pectoralis major and above anterior deltoid, and the most variable between studies; triceps activity rises with narrower grips and falls with wide grip (-10.6% wide vs medium in trained men).",
+      "source": "Stastny et al. 2017; Saeterbakken AH, et al. Int J Environ Res Public Health 2021;18(12):6444",
+      "url_or_doi": "https://doi.org/10.1371/journal.pone.0171632 ; https://pmc.ncbi.nlm.nih.gov/articles/PMC8296276",
+      "how_verified": "FULL_TEXT_SEEN"
+    },
+    {
+      "muscle": "Biceps brachii",
+      "role": "STABILIZER",
+      "basis": "Antagonist co-contraction at the elbow and shoulder stabilisation; EMG increases with grip width (wide 115.6% higher than narrow in trained men). Review explicitly labels it stabiliser and antagonist.",
+      "source": "Stastny et al. 2017 (Discussion, Muscle models); Saeterbakken et al. 2021",
+      "url_or_doi": "https://doi.org/10.1371/journal.pone.0171632 ; https://pmc.ncbi.nlm.nih.gov/articles/PMC8296276",
+      "how_verified": "FULL_TEXT_SEEN"
+    },
+    {
+      "muscle": "Latissimus dorsi",
+      "role": "STABILIZER",
+      "basis": "Anatomically a shoulder extensor/adductor (antagonist to flexion); review notes one author (Barnett) suggested it may act as a primary mover off the chest and that its activity rises under unstable conditions, and calls for more measurement. Evidence does not support labelling it a prime mover; role is unsettled.",
+      "source": "Stastny et al. 2017 (Discussion; Table 3)",
+      "url_or_doi": "https://doi.org/10.1371/journal.pone.0171632",
+      "how_verified": "FULL_TEXT_SEEN"
+    },
+    {
+      "muscle": "Posterior deltoid",
+      "role": "STABILIZER",
+      "basis": "Antagonist to anterior deltoid; measured in bench press EMG studies for that antagonist function, no evidence of a mover role.",
+      "source": "Stastny et al. 2017 (Discussion, Muscle models)",
+      "url_or_doi": "https://doi.org/10.1371/journal.pone.0171632",
+      "how_verified": "FULL_TEXT_SEEN"
+    },
+    {
+      "muscle": "Medial (middle) deltoid",
+      "role": "STABILIZER",
+      "basis": "No EMG evidence: the systematic review states the medial deltoid had not been measured in any included bench press study. Stabiliser label rests on anatomy only (glenohumeral compression/abduction control).",
+      "source": "Stastny et al. 2017 (Discussion, Muscle models)",
+      "url_or_doi": "https://doi.org/10.1371/journal.pone.0171632",
+      "how_verified": "FULL_TEXT_SEEN"
+    },
+    {
+      "muscle": "Rotator cuff (infraspinatus, supraspinatus, subscapularis; teres minor not reported)",
+      "role": "STABILIZER",
+      "basis": "Fine-wire/surface EMG at 20/50/70% load: infraspinatus activity significantly higher than subscapularis during bench press, interpreted as direction-specific dynamic stabilisation against anteroposterior humeral head translation; modelling shows lower cuff activity with retracted scapulae and narrower grip.",
+      "source": "Wattanaprakornkul D, Halaki M, Cathers I, Ginn KA. Direction-specific recruitment of rotator cuff muscles during bench press and row. J Electromyogr Kinesiol 2011;21(6):1041-1049 (abstract); Noteboom et al. 2024 (full text)",
+      "url_or_doi": "https://doi.org/10.1016/j.jelekin.2011.09.002 ; https://doi.org/10.3389/fphys.2024.1393235",
+      "how_verified": "ABSTRACT_SEEN"
+    },
+    {
+      "muscle": "Serratus anterior",
+      "role": "STABILIZER",
+      "basis": "Scapular protractor/upward rotator; with scapulae held retracted on the bench its expected role is limited scapular stabilisation. No bench-press-specific EMG value was verified: not covered in the Stastny review; one study (Calatayud et al., Phys Sportsmed 2014) recorded it across push exercises but I saw only a search-result summary.",
+      "source": "Calatayud J, et al. Muscle activity levels in upper-body push exercises with different loads and stability conditions. Phys Sportsmed 2014;42(4):106-119",
+      "url_or_doi": "https://pubmed.ncbi.nlm.nih.gov/25419894/",
+      "how_verified": "SECONDARY_SOURCE"
+    },
+    {
+      "muscle": "Scapular retractors/depressors (middle and lower trapezius, rhomboids)",
+      "role": "STABILIZER",
+      "basis": "Hold scapular retraction against the bench; trapezius activity pattern differed between bench press and flexion-type exercise in Wattanaprakornkul 2011. No quantified bench press EMG verified here.",
+      "source": "Wattanaprakornkul et al. 2011 (abstract); Noteboom et al. 2024",
+      "url_or_doi": "https://doi.org/10.1016/j.jelekin.2011.09.002",
+      "how_verified": "ABSTRACT_SEEN"
+    },
+    {
+      "muscle": "Coracobrachialis",
+      "role": "SECONDARY",
+      "basis": "Anatomical action only (shoulder flexion and adduction); no EMG source located.",
+      "source": "none located",
+      "url_or_doi": "",
+      "how_verified": "FROM_MEMORY_NOT_VERIFIED"
+    }
+  ],
+  "open_questions": [
+    "NSCA primary text not opened: neither 'Essentials of Strength Training and Conditioning' 4th ed. ch.15 nor the 'Exercise Technique Manual for Resistance Training' is available online. The 'five-point body contact position', 'closed, pronated grip slightly wider than shoulder-width' and 'lower to approximately nipple level' wordings were seen only in third-party study guides/flashcards. A human must check the book before citing NSCA.",
+    "Web-page quotes were relayed by the fetch tool's summariser, not read by me character-for-character (only the IPF, IWF and Eleiko PDFs were text-extracted and read directly). Re-check every short_quote against the page before publication.",
+    "Bar touch point: sources disagree or are vague. IPF allows 'chest or abdominal area'; Lockie 2017 says 'just above the xiphoid process' (citing a 1982 NSCA Journal article); NSCA secondary sources say 'approximately nipple level'. No measured distribution of touch height was found.",
+    "Start/lockout bar position relative to the shoulder joint: no source seen gives a number. Madsen and McLaughlin 1984 and Duffey and Challis 2007 only say experts/fatigued lifters keep the bar closer to or more directly over the shoulder (abstracts). Full texts with bar-path coordinates were not accessible.",
+    "Bar path horizontal displacement: the only numbers obtained (Larsen 2021 Table 1, ~12.5-13 cm at chest, ~-1 to -2 cm near lockout) are for 1RM lifts by recreational males; the axis origin and sign convention were not confirmed, and no value for submaximal instructional reps or elite lifters was found.",
+    "Shoulder abduction angle at the bottom: no consensus value. Noteboom 2024 tested 45/70/90 degrees and cautions about both extremes in different contexts; the commonly coached '45-75 degrees' range has no primary citation in what I saw. Green and Comfort 2007 (not opened) is described by Noteboom as expert opinion.",
+    "Elbow flexion angle at chest touch: no citable numeric value found. Larsen 2021 shows it only in a figure; Mausehund and Krosshaug 2023 full text was not accessible. It varies with grip width and arm/torso proportions.",
+    "Forearm vertical under the bar and wrist stacked over elbow: no primary source found. Measured lateral bar forces (Duffey and Challis 2011: ~24-26% outward; Larsen 2021: outward at wide grip, inward at narrow) indicate the forearm is generally not exactly vertical in the frontal plane.",
+    "Scapular depression (as distinct from retraction) and the size of the thoracic arch: no measured values found; Noteboom 2024 only tested 'retracted + slight arch' vs neutral vs released at 16 kg.",
+    "Tempo for a controlled instructional repetition (eccentric / pause / concentric seconds): no authoritative prescription found. Only measured 1RM concentric durations (~3.5 s) and study pacing values (1.9-5.6 s per rep via Stastny 2017 Table 1). Any tempo used in the animation is a design choice, not a cited fact.",
+    "Submaximal bar velocities per %1RM (Gonzalez-Badillo and Sanchez-Medina 2010): only the abstract was seen (R2 0.98, 0.16 m/s at 1RM). The per-load figures I listed are from memory, are for maximal-intent Smith-machine lifts, and are not suitable as a controlled-tempo reference without checking the paper.",
+    "Larsen 2021 text reports descent velocity 'around 1 +/- 0.5 m/s', which looks inconsistent with the other velocities in the same paper; verify in the PDF or treat as unusable.",
+    "Mausehund and Krosshaug 2023, Madsen and McLaughlin 1984, Duffey and Challis 2007/2011, Wattanaprakornkul 2011, Gonzalez-Badillo 2010: abstracts only (via Europe PMC records, closely paraphrased by the fetch tool). Wagner 1992 and Green and Comfort 2007: neither abstract nor full text seen.",
+    "IWF bar/disc figures come from the 2020 TCRR hosted on a national-federation site; iwf.sport returned HTTP 403, so the current IWF edition was not checked. IWF disc width-to-weight pairing was inferred from column order in extracted text.",
+    "IPF rulebook gives no sleeve length and no individual thickness for 20 kg vs 25 kg discs (only maximum 6 cm for 20 kg and over). Real calibrated powerlifting plates are much thinner; a manufacturer sheet for an IPF-approved bar and plates was not checked.",
+    "IPF knurling diagram numbers (240, 120, 160, 810, 245, 440, 1320 mm) were extracted without their positions; segment assignment needs a visual check of p.8.",
+    "Muscle roles where evidence is thin or disputed: latissimus dorsi (prime mover off the chest per Barnett as reported by Stastny, vs stabiliser/antagonist), medial deltoid (never measured in the reviewed studies), serratus anterior (no verified bench press EMG value), teres minor (no data seen). Clavicular vs sternocostal emphasis on a flat bench is not consistently different across studies.",
+    "Stastny 2017 covers literature only up to June 2016 (14 studies); no later systematic review of bench press EMG was searched for or verified."
+  ],
+  "corrections_from_verification": [
+    {
+      "subject": "bench press: body contact points (NSCA five-point body contact position)",
+      "claim": "NSCA five-point contact wording, book not opened",
+      "verdict": "UNVERIFIABLE",
+      "correction": "",
+      "evidence_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC5968970"
+    },
+    {
+      "subject": "bench press: grip width (review recommendation)",
+      "claim": "Green and Comfort 2007: >1.5 BAW may raise injury risk; <=1.5 BAW costs <=5% 1RM; article not read",
+      "verdict": "UNVERIFIABLE",
+      "correction": "The 1.5 BAW threshold and the 5% figure have no primary-source confirmation.",
+      "evidence_url": "https://doi.org/10.1519/00126548-200710000-00001"
+    },
+    {
+      "subject": "bench press: grip width (performance, 200% biacromial)",
+      "claim": "Wagner 1992: best 1RM near 200% biacromial across 90-270%",
+      "verdict": "PARTLY_WRONG",
+      "correction": "The abstract reports two moderate widths as strongest, not a single ~200% optimum. The percentages of each width are not in the abstract (from memory, not re-verified: 95-270% in 35% steps, G3 = 165%, G4 = 200%).",
+      "evidence_url": "https://api.crossref.org/works/10.1123/ijsb.8.1.1"
+    },
+    {
+      "subject": "bench press: bar path (horizontal displacement)",
+      "claim": "Larsen 2021 Table 1: horizontal 0.125-0.131 m at chest, 0.056-0.062 at sticking point, -0.01 to -0.02 near lockout; ~12-13 cm travel; vertical 0.34/0.37/0.40 m",
+      "verdict": "PARTLY_WRONG",
+      "correction": "Table values are right, but the derived travel is not: on a common axis v0 to vmax2 is about 0.137-0.143 m, and vmax2 is the second velocity peak, not lockout. With the axis undefined, no chest-to-lockout offset can be stated. Data are 1RM lifts by 14 trained men.",
+      "evidence_url": "https://www.frontiersin.org/journals/sports-and-active-living/articles/10.3389/fspor.2020.637066/full"
+    },
+    {
+      "subject": "bench press: tempo / phase durations",
+      "claim": "no prescribed tempo found; Lockie 1RM concentric 3.47 +/- 1.43 s over 0.41 m; Stastny review lists 5.6/2.8/1.9 s per repetition; controlled-speed studies 1.9-5.6 s",
+      "verdict": "PARTLY_WRONG",
+      "correction": "The 1.9-5.6 s range is one study on a Smith machine, not the span of controlled-speed studies. The same Table 1 lists the commonest imposed tempo as 2 s eccentric / 2 s concentric (Snyder and Fry 2012, Rocha 2007, Campos 2014, Calatayud 2015 and 2016), plus 1.5/1.5, 1/1, 2/1/2 and 5 s/5 s super slow. These are study settings, not recommendations.",
+      "evidence_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC5295722/"
+    }
+  ],
+  "how_the_animation_uses_this": {
+    "grip": "Closed pronated grip, thumbs around the bar (IPF 4.2). 0.66 m between hand centres, about 0.58 m between forefingers: inside the 81 cm limit and close to the 'medium' condition of Larsen 2021 (1.4 x biacromial, 0.56 +/- 0.04 m).",
+    "touch_point": "Lower sternum at about nipple level (Lockie 2017, citing Algra 1982: 'just above the xiphoid process'). 0.115 m towards the feet from the shoulder joints on this character.",
+    "bar_path": "Curved in the side view: about 0.115 m of horizontal travel over 0.42 m of vertical travel. Larsen 2021 reports 0.34 to 0.43 m vertical travel and about 0.13 m horizontal offset at the chest (1RM, recreational men, axis not defined), so only the order of magnitude is supported. The exact curve shape is the author's choice.",
+    "lockout": "Elbows extended (IPF 4.2), bar over the shoulder joints. No source gives a number for the horizontal offset at lockout.",
+    "elbows": "Forearms upright under the bar and the elbow as low as arm length allows: about 48 degrees of shoulder abduction at the bottom, inside the 45 to 90 degrees that Noteboom 2024 tested. No primary source prescribes an angle. The underside of the elbow ends below the top of the shoulder joint, as IPF 4.2.1 requires.",
+    "tempo": "2 s down, 0.5 s motionless on the chest, 2 s up. 2 s / 2 s is the most common imposed tempo in the EMG studies reviewed by Stastny 2017; IPF requires a motionless pause without giving a duration. No source prescribes an instructional tempo.",
+    "body_contact": "Head, shoulders and buttocks on the bench, both feet flat on the floor (IPF 4.2; the NSCA 'five-point body contact position' was only seen through secondary sources).",
+    "muscles": "Pectoralis major, anterior deltoid and triceps brachii are the agonists in the Stastny 2017 systematic review. The exercise lists pectoralis major as primary and the other two as secondary, following Kiệt's specification; the review itself does not rank them that way."
+  }
+}

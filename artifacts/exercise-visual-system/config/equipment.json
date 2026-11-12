@@ -1,5 +1,5 @@
 {
-  "comment": "Parametric gym equipment in metres. Every exercise reuses these definitions; nothing here is specific to the bench press. 'source' says where a dimension comes from; see docs/exercise-visual-system/OPEN_SOURCE_AUDIT.md and the bench-press reference notes for how each source was checked.",
+  "comment": "Parametric gym equipment in metres. Every exercise reuses these definitions; nothing here is specific to the bench press. 'source' says where a dimension comes from. IPF = International Powerlifting Federation Technical Rulebook 2026 (PDF text read on 2026-11-11). Details of each check: bench-press/reference_notes.json.",
   "barbell_olympic_20kg": {
     "type": "barbell",
     "total_length": 2.2,
@@ -13,7 +13,7 @@
     "grip_mark_distance": 0.81,
     "grip_mark_width": 0.008,
     "mass_kg": 20.0,
-    "source": "IPF Technical Rules Book (bar and discs): total length not exceeding 2.2 m, distance between collar faces 1.31 to 1.32 m, bar diameter 28 to 29 mm, sleeve diameter 50 to 52 mm, grip marks 81 cm apart."
+    "source": "IPF rulebook: total length not exceeding 2.2 m; 1.31 to 1.32 m between collar faces; shaft 28 to 29 mm; sleeves 50 to 52 mm; ring marks 81 cm apart; bar and collars 25 kg with collars of 2.5 kg each. Sleeve length (0.415 m) and collar width (0.03 m) are not in the IPF rulebook: they match a manufacturer sheet for a 20 kg competition bar (Eleiko, weightlifting model)."
   },
   "plate_20kg": {
     "type": "plate",
@@ -22,7 +22,7 @@
     "hub_diameter": 0.2,
     "hole_diameter": 0.052,
     "mass_kg": 20.0,
-    "source": "IPF Technical Rules Book: largest discs not more than 45 cm in diameter, hole 52 to 53 mm. Thickness is a modelling choice inside the range of commercial 20 kg plates; it is not specified by the rule for this mass."
+    "source": "IPF rulebook: largest discs not more than 45 cm in diameter, hole 52 to 53 mm, discs of 20 kg and over at most 6 cm thick. The thickness used here is a modelling choice inside that limit. Competition discs are colour coded (20 kg blue); these are generic dark plates with a ring in the brand colour, not competition discs."
   },
   "collar": {
     "type": "collar",
@@ -38,12 +38,12 @@
     "pad_top_height": 0.44,
     "frame_tube": 0.06,
     "foot_width": 0.42,
-    "upright_spacing": 1.14,
+    "upright_spacing": 1.17,
     "upright_height": 1.28,
-    "upright_from_head_end": 0.2,
+    "upright_from_head_end": 0.22,
     "hook_reach": 0.06,
     "hook_lip": 0.018,
     "rack_base_length": 0.9,
-    "source": "IPF Technical Rules Book (bench): flat surface length not less than 1.22 m, width 29 to 32 cm, height 42 to 45 cm from the floor to the top of the pad; rack height adjustable from 75 cm to 110 cm (floor to bar rest). Frame shape is an original design."
+    "source": "IPF rulebook: flat surface at least 1.22 m long, 29 to 32 cm wide, 42 to 45 cm from the floor to the top of the pad; bar rests adjustable from 75 to 110 cm; at least 1.10 m between the insides of the bar rests; the head of the bench extends 22 cm (+/- 5 cm) beyond the centre of the uprights. The rulebook also requires attached safety stands, which this model does not have. Frame shape is an original design."
   }
 }

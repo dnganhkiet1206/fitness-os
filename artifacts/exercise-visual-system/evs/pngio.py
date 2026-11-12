@@ -13,7 +13,7 @@ def _chunk(tag: bytes, data: bytes) -> bytes:
     return struct.pack(">I", len(data)) + tag + data + struct.pack(">I", zlib.crc32(tag + data) & 0xFFFFFFFF)
 
 
-def write_png(path, pixels: np.ndarray) -> None:
+def png_bytes(pixels: np.ndarray) -> bytes:
     """``pixels`` is (H, W) or (H, W, 3) uint8, first row at the top."""
     pixels = np.ascontiguousarray(pixels, dtype=np.uint8)
     if pixels.ndim == 2:
@@ -29,8 +29,12 @@ def write_png(path, pixels: np.ndarray) -> None:
     data += _chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, color_type, 0, 0, 0))
     data += _chunk(b"IDAT", zlib.compress(raw.tobytes(), 6))
     data += _chunk(b"IEND", b"")
+    return data
+
+
+def write_png(path, pixels: np.ndarray) -> None:
     with open(path, "wb") as fh:
-        fh.write(data)
+        fh.write(png_bytes(pixels))
 
 
 def read_png(path) -> np.ndarray:
