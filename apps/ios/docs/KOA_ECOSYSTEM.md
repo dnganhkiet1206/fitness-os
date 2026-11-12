@@ -41,6 +41,7 @@ Vì sao không dùng event sourcing: dữ liệu gốc (buổi tập) đã là n
 | **Mốc hành trình** | Khoảnh khắc đáng nhớ | `KoaJourney` | Tiến bộ › Hành trình; Koa nói ở Hôm nay và phòng |
 | **Mốc ghi đều** (10/11) | Tổng số ngày có ghi bữa / nước / giấc ngủ (3 / 7 / 30 / 60 / 100 / 200 / 365), cộng dồn, không phải chuỗi. Không Gains, không xu | `KoaJourney.logMoments`, `KoaLogDaysSync` | Tiến bộ › Hành trình; Koa nói ở Hôm nay |
 | **Nhịp 30 ngày** | Sự đều đặn, không có gì để gãy | `KoaRhythm` | Tiến bộ, thẻ Koa ở Hôm nay |
+| **Nhịp ghi 30 ngày** (12/11) | Số ngày có ghi bữa / nước / giấc ngủ trong 30 ngày, so với 30 ngày trước. Không Gains, không xu | `KoaLogRhythm` (cùng nguồn `KoaLogDaysSync` với mốc ghi đều) | Tiến bộ › Hành trình |
 | **Tuần của Koa** | Mục tiêu tuần theo lịch riêng | `KoaWeek` | Dải tuần, phòng Koa |
 | **Nhiệm vụ ngày** | Việc nhỏ hôm nay | `MascotRules` | Thẻ Koa ở Hôm nay |
 | **Xu** | Chỉ để trang trí | sổ xu server | Cửa hàng |

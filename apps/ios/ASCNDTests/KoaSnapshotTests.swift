@@ -124,10 +124,28 @@ import UIKit
   }
 
   /// Người mới chỉ ghi bữa / nước / ngủ, chưa tập buổi nào (10/11): Hành trình đã có mốc ghi đều.
+  /// Từ 12/11 có thêm Nhịp ghi 30 ngày dưới thẻ tháng.
   @Test func journeyLogDays() {
     let logged = Set((1...8).map { Self.today.adding(days: -$0) })
-    let h = AppServices.GainsHistory(days: [], week: Self.history.week, logged: logged)
+    let kinds = Dictionary(uniqueKeysWithValues: logged.map { ($0, Set<KoaLogDaysSync.Kind>([.meal])) })
+    let h = AppServices.GainsHistory(days: [], week: Self.history.week, logged: logged, logKinds: kinds)
     check(KoaJourneyContent(history: h, today: Self.today), height: 600, padded: false)
+  }
+
+  /// Nhịp ghi 30 ngày (12/11): 22 ngày có ghi, tách bữa / nước / ngủ, hơn 30 ngày trước 6 ngày.
+  @Test func logRhythmCard() {
+    var kinds: [LocalDate: Set<KoaLogDaysSync.Kind>] = [:]
+    let skip: Set<Int> = [2, 6, 11, 13, 18, 20, 23, 27]
+    for i in 0..<30 where !skip.contains(i) {
+      var k: Set<KoaLogDaysSync.Kind> = []
+      if i % 3 != 2 { k.insert(.meal) }
+      if i % 2 == 0 { k.insert(.water) }
+      if i % 4 != 3 { k.insert(.sleep) }
+      if k.isEmpty { k.insert(.meal) }
+      kinds[Self.today.adding(days: -i)] = k
+    }
+    for i in 30..<46 { kinds[Self.today.adding(days: -i)] = [.meal] }
+    check(KoaLogRhythmCard(state: KoaLogRhythm.state(kinds, today: Self.today)))
   }
 
   @Test func journeyEmpty() {

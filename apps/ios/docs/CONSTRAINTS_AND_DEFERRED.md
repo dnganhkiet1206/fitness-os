@@ -654,6 +654,15 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - **NOT RUN:** Hành trình có mốc ghi trong app thật trên simulator (chỉ có snapshot và test lõi); Koa nói mốc ghi ở Hôm nay; đi hết một buổi tập với `-uiTestTierUp` để xem thẻ lên bậc (công cụ bấm simulator bỏ sót thao tác, dừng ở set 2/8); VoiceOver; iPhone thật.
 - Thấy khi thử, **chưa kiểm lại, chưa sửa:** ở giao diện sáng, màn tập đang sáng thì sau màn nghỉ giữa set chuyển sang nền tối (ảnh simulator 10/11). Chưa rõ có chủ ý hay không.
 
+**Nhịp ghi 30 ngày của Koa (12/11, nhánh `claude/koa-log-rhythm`, Kiệt duyệt lớp A của mock `design/mocks/koa-logging-rhythm.html` ngày 10/11: "Duyệt, làm A + B"; lớp B là mốc ghi đều ở trên):**
+- Luật: thẻ "Nhịp ghi 30 ngày" ở Tiến bộ › Hành trình, ngay dưới thẻ tháng. Đếm số ngày có ghi bữa / nước / giấc ngủ trong cửa sổ cuốn chiếu 30 ngày, một chấm mỗi ngày, tách "Bữa / Nước / Ngủ N ngày", so với 30 ngày trước đó (`KoaLogRhythm`). Cùng định nghĩa "ngày có ghi" với mốc ghi đều. Không số liên tiếp, không Gains, không xu, không nói về calo hay cân nặng.
+- Dữ liệu: cùng lượt đọc `daily_logs` của mốc ghi đều, không thêm truy vấn; `KoaLogDaysSync.kinds` giữ thêm ngày ấy ghi những gì.
+- Ẩn khi 60 ngày qua không có ngày nào ghi (người chưa từng ghi không thấy một thẻ toàn chấm trống).
+- **Lệch mock:** mock đặt thẻ "ngay dưới Nhịp tập ở Tiến bộ › Hành trình"; thực tế Nhịp tập nằm ở Tiến bộ › Tập luyện. Nhịp ghi đặt trong Hành trình vì việc ghi không thuộc về tập và màn này đã đọc sẵn các ngày ghi.
+- Hạn chế: như mốc ghi đều, việc ghi còn trong hàng chờ offline hoặc vừa ghi mà Hôm nay chưa tải lại thì chưa được đếm. Giấc ngủ lấy từ Apple Health chỉ được đếm khi app đã ghi nó vào `daily_logs`.
+- Snapshot: mới `logRhythmCard`; `journeyLogDays` ghi lại vì có thêm thẻ. Ảnh chuẩn lấy từ CI.
+- **NOT RUN:** thẻ trong app thật trên simulator; VoiceOver; iPhone thật.
+
 ## 5. Lịch sử thay đổi sổ
 
 - 02/11/2026: E2E hết giờ không phải do flow treo: 45 phút bị build, bật simulator và biên dịch lại ASCNDTests ăn 27 phút, Maestro cần ~20. Nay một lần `build-for-testing`, job 60 phút, step Maestro 35 phút, bị dừng giữa chừng vẫn có bảng flow trong tóm tắt; flow 05 đặt `waitToSettleTimeoutMs`, flow 08 chờ hết hiệu ứng quay lại.
@@ -782,3 +791,4 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - 09/11/2026: app Apple Watch tối thiểu (ghi set + quãng nghỉ khi iPhone đang tập); chưa kiểm trên máy thật — xem mục 4.
 - 10/11/2026: bậc trong hạng của Koa (Hôm nay, tổng kết buổi, Hành trình); bánh tạ trong phòng Koa hoãn tới khi vẽ phòng mới (Kiệt 10/11); xem mục 3 và 4.
 - 10/11/2026: mốc ghi đều của Koa trong Hành trình (Kiệt duyệt mock 10/11); cờ `-uiTestTierUp` cho tài khoản giả sát mốc bậc; xem mục 4.
+- 12/11/2026: Nhịp ghi 30 ngày của Koa trong Hành trình (lớp A của mock "Ghi chép cũng nuôi Koa", Kiệt duyệt 10/11); xem mục 4.
