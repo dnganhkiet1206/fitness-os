@@ -11,14 +11,21 @@ public import Observation
 // Số dư / XP / cấp là PHÉP CỘNG trên sổ `mascot_transactions` mà RLS cho đọc —
 // đúng như RN `useMascotWallet`; app không ghi sổ, không gửi số xu.
 
-/// Một dòng sổ xu (`mascot_transactions.amount, ref_key`).
+/// Một dòng sổ xu (`mascot_transactions.amount, ref_key`) — hoặc một dòng GỘP
+/// của ví ở server (`mascot_wallet()`, round 3 AUD-28).
 public struct LedgerRow: Sendable, Hashable {
   public let amount: Int
   public let refKey: String?
+  /// Số dòng sổ mà dòng này đại diện khi tính XP (dòng gộp theo loại khoá: n).
+  public let xpCount: Int
+  /// Khoá này là một khoá ĐÃ NHẬN thật (dòng gộp XP mang khoá mẫu thì không).
+  public let claimsKey: Bool
 
-  public init(amount: Int, refKey: String?) {
+  public init(amount: Int, refKey: String?, xpCount: Int = 1, claimsKey: Bool = true) {
     self.amount = amount
     self.refKey = refKey
+    self.xpCount = xpCount
+    self.claimsKey = claimsKey
   }
 }
 
@@ -31,8 +38,8 @@ public struct MascotWallet: Sendable, Hashable {
 
   public init(rows: [LedgerRow]) {
     balance = rows.reduce(0) { $0 + $1.amount }
-    xp = rows.reduce(0) { $0 + ($1.refKey.map(MascotRules.xpForRefKey) ?? 0) }
-    claimed = Set(rows.compactMap(\.refKey))
+    xp = rows.reduce(0) { $0 + $1.xpCount * ($1.refKey.map(MascotRules.xpForRefKey) ?? 0) }
+    claimed = Set(rows.filter(\.claimsKey).compactMap(\.refKey))
   }
 }
 

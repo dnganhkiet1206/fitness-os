@@ -37,6 +37,7 @@ Hệ quả cho người làm:
 | **Khoá AI trả phí** (Gemini; `ASCND_AI_KEY`, `ASCND_AI_MODEL`) | AI ổn định khi có nhiều người dùng. Gói miễn phí giới hạn lượt và hay 503 (`TESTFLIGHT-CHECKLIST.md`) | Đang dùng gói miễn phí. Ngày 21/10 cả 4 hàm thử đều chạy | Kiệt |
 | **iPhone thật để kiểm** | Camera (mã vạch, ảnh món), Apple Health thật, push, Live Activity khi khoá màn hình | Chưa kiểm. Danh sách ở `GD0-DEVICE-CHECKLIST.md` | Kiệt (máy), agent (kịch bản) |
 | **Token Sentry** (dSYM) | Đọc được stack của các lỗi treo APPLE-IOS-4/5/6/7 | Chỉ bản Release mới tải dSYM | Kiệt |
+| **Sao lưu / PITR của Supabase** (round 3, AUD-01) | Khôi phục khi xoá nhầm, migration hỏng, sự cố hạ tầng | `supabase backups list` 12/11: `pitr_enabled: false`, `backups: []`, không có bản sao lưu nào khôi phục được. Câu "sao lưu tới 30 ngày" trong `legal-content.json` chưa có bằng chứng | Kiệt (nâng gói / bật PITR, hay sửa câu chữ) |
 | **Doanh thu / gói trả phí** | Mua trong app | Server có `verify-purchase` / `store-webhook`; app không có màn nào; chưa có quyết định sản phẩm | Kiệt (quyết định) |
 
 **Quy tắc:**
@@ -671,7 +672,15 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Đồng hồ buổi tập: chạy từ set đầu tiên được tích, hiện ở đầu màn tập và thẻ "Đang tập", sống qua lần tắt app (lưu trong tiến độ ngày, chỉ trên máy); bỏ tích hết trước khi chốt thì về chưa bắt đầu. Thời lượng hiện ở màn tổng kết. **Không gửi server**: `workout_sessions` không có cột thời lượng, thêm cột là đổi schema, cần Kiệt duyệt. Hệ quả: thời lượng chỉ có ở màn tổng kết ngay sau khi chốt, không có trong Lịch sử, không có ở máy khác.
 - **NOT RUN:** vòng calo khi ngoại tuyến trên simulator (công cụ gõ không nhập được ô, chỉ có test lõi); khi CÓ mạng, máy giả của chế độ test không dựng lại `daily_logs` sau khi ghi bữa nên vòng calo đứng yên ở simulator, chưa kiểm được trên server thật; VoiceOver của đồng hồ; iPhone thật.
 
+**Backend round 3 (12/11/2026, nhánh `claude/backend-round3`, báo cáo `docs/audits/round-3/`):**
+- **#241 — chọn (b) / phương án A của tờ beta gate:** kết thúc phiên (đăng xuất, token hết hạn, đổi tài khoản) KHÔNG còn xoá bản ghi chưa gửi; chúng đỗ lại theo `userId`, chỉ gửi khi chính chủ đăng nhập lại, người khác không thấy, không đếm. Xoá tài khoản thì bỏ hẳn bản ghi của tài khoản ấy (`SyncWorker.purge`). Đóng luôn R2-SYNC-01 (lệnh xoá không theo người).
+- **Băng chuỗi đóng bán** (AUD-14, phương án B): `buy_streak_freeze` rút quyền của người dùng. Băng đã mua giữ nguyên. Mở lại = một GRANT đi cùng guard chuỗi của app.
+- **4 migration CHƯA deploy, chờ Kiệt duyệt từng cái:** `20261112120000_reward_key_shapes`, `20261112130000_fk_indexes` + `20261112130100_community_fk_indexes`, `20261112140000_streak_freeze_sale_closed`, `20261112150000_mascot_wallet`. App chạy được trước và sau khi deploy (ví đọc lùi về cách cũ khi server chưa có `mascot_wallet`).
+- **Hạn chế còn lại:** buổi tập đang dở (`workout_day`) vẫn bị xoá khi phiên kết thúc; bản ghi đỗ của một tài khoản không bao giờ quay lại vẫn nằm trên máy (chưa có hạn giữ); test C17 của bộ thử ngược Cộng đồng đỏ khi chạy 17:00–24:00 UTC (có từ trước, phụ thuộc giờ).
+
 ## 5. Lịch sử thay đổi sổ
+
+- 12/11/2026: backend round 3 — #241 chọn giữ bản ghi offline; đóng bán băng chuỗi; ghi sao lưu / PITR vào vấn đề đầu tư; 4 migration chờ duyệt deploy.
 
 - 02/11/2026: E2E hết giờ không phải do flow treo: 45 phút bị build, bật simulator và biên dịch lại ASCNDTests ăn 27 phút, Maestro cần ~20. Nay một lần `build-for-testing`, job 60 phút, step Maestro 35 phút, bị dừng giữa chừng vẫn có bảng flow trong tóm tắt; flow 05 đặt `waitToSettleTimeoutMs`, flow 08 chờ hết hiệu ứng quay lại.
 - 01/11/2026: Koa chạy tới kéo thẻ nhiệm vụ; bảng tự vẽ; vẽ lại phòng tập khung dọc theo mock, bỏ tiền cảnh mờ.

@@ -121,17 +121,18 @@ public struct Outbox: Sendable, Hashable, Codable {
     pending.append(entry)
   }
 
-  /// Việc kế tiếp. Chỉ nhìn ĐẦU hàng — làn tuần tự. Bản ghi của tài khoản
-  /// khác ở đầu hàng bị chuyển sang `dead` ngay (như `WrongAccountError`,
-  /// lỗi vĩnh viễn) để không chặn những bản ghi sau nó.
+  /// Việc kế tiếp. Chỉ nhìn ĐẦU làn của người đang đăng nhập — mỗi tài khoản
+  /// một làn tuần tự, đúng thứ tự tạo.
+  ///
+  /// Bản ghi của tài khoản khác KHÔNG bao giờ được gửi dưới phiên này, và cũng
+  /// không bị vứt: chúng nằm yên (đỗ lại) tới khi chính chủ đăng nhập lại
+  /// (round 3, AUD-06; #241 phương án (b)). Trước đây chúng bị chuyển sang
+  /// `dead` rồi bị xoá ở lần đăng xuất sau — bản ghi offline của người dùng mất
+  /// vĩnh viễn chỉ vì phiên hết hạn hay đổi tài khoản trên cùng máy.
   public mutating func next(now: EpochMillis, online: Bool, signedInUser: String?) -> Next {
     if inFlight != nil { return .busy }
     guard let user = signedInUser else { return .idle }
-    while let head = pending.first, head.userId != user {
-      pending.removeFirst()
-      dead.append(DeadEntry(entry: head, reason: .wrongAccount, failure: .wrongAccount, at: now))
-    }
-    guard let head = pending.first else { return .idle }
+    guard let head = pending.first(where: { $0.userId == user }) else { return .idle }
     if head.needsNetwork && !online { return .waitForNetwork }
     if let t = head.notBefore, now < t { return .wait(until: t) }
     if !online { return .waitForNetwork }
@@ -170,17 +171,43 @@ public struct Outbox: Sendable, Hashable, Codable {
     }
   }
 
-  /// Đăng xuất: xoá hàng đợi như baseline (`clearPersistedCache`, #241 chờ
-  /// Kiệt). Trả về số bản ghi CHỜ GỬI bị bỏ — để có thể báo, nếu #241 chọn (c).
+  /// Bản ghi chờ gửi của MỘT tài khoản (màn hình chỉ được thấy của người đang
+  /// đăng nhập — #335).
+  public func pending(for user: String?) -> [OutboxEntry] {
+    guard let user else { return [] }
+    return pending.filter { $0.userId == user }
+  }
+
+  /// Bản ghi đã bỏ cuộc của MỘT tài khoản.
+  public func dead(for user: String?) -> [DeadEntry] {
+    guard let user else { return [] }
+    return dead.filter { $0.entry.userId == user }
+  }
+
+  /// Phiên kết thúc (đăng xuất, token hết hạn / bị thu hồi, đổi tài khoản):
+  /// ĐỖ hàng đợi lại thay vì xoá (round 3, AUD-06; #241 (b)). Bản ghi vẫn mang
+  /// `userId` của chủ, `next` chỉ gửi chúng dưới phiên của đúng chủ ấy, màn hình
+  /// chỉ đếm / liệt kê của người đang đăng nhập. Trả về số bản ghi chờ gửi đang
+  /// đỗ.
   ///
-  /// Bỏ cả `dead`: đó vẫn là buổi tập của người vừa rời đi (payload đầy đủ).
-  /// Trước đây chúng ở lại, và người đăng nhập sau thấy chúng (#335).
+  /// Trước đây hàm này xoá sạch `pending` và `dead` (baseline
+  /// `clearPersistedCache`): buổi tập ghi lúc mất mạng mất vĩnh viễn nếu người
+  /// dùng đăng xuất — hay nếu Supabase báo SIGNED_OUT vì refresh token hết hạn —
+  /// trước khi có mạng.
   @discardableResult
-  public mutating func dropAllOnSignOut() -> Int {
-    let n = pending.count
-    pending.removeAll()
-    dead.removeAll()
+  public mutating func park() -> Int {
     inFlight = nil
+    return pending.count
+  }
+
+  /// Xoá hẳn mọi bản ghi của MỘT tài khoản — chỉ khi tài khoản ấy đã bị xoá
+  /// trên server (gửi tiếp chỉ còn bị từ chối). Trả về số bản ghi chờ gửi bị bỏ.
+  @discardableResult
+  public mutating func purge(userId: String) -> Int {
+    let n = pending.filter { $0.userId == userId }.count
+    if let f = inFlight, pending.contains(where: { $0.id == f && $0.userId == userId }) { inFlight = nil }
+    pending.removeAll { $0.userId == userId }
+    dead.removeAll { $0.entry.userId == userId }
     return n
   }
 }

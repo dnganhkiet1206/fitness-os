@@ -130,15 +130,26 @@ public final class OutboxStore: Sendable {
     }
   }
 
-  /// Đăng xuất: bỏ cả hàng đợi như baseline (`clearPersistedCache`, #241 chờ
-  /// Kiệt) — kể cả hàng worker chưa nạp, và cả `outbox_dead` (buổi tập của
-  /// người vừa rời đi, #335). Trả về số hàng CHỜ GỬI bỏ.
+  /// Tài khoản đã bị xoá trên server: bỏ hẳn mọi hàng của nó — kể cả hàng
+  /// worker chưa nạp, và `outbox_dead`. Trả về số hàng CHỜ GỬI bỏ.
+  ///
+  /// Kết thúc phiên thường (đăng xuất, token hết hạn, đổi tài khoản) KHÔNG xoá
+  /// gì nữa (round 3, AUD-06; #241 (b)): hàng mang `userId` của chủ và chỉ được
+  /// gửi khi chính chủ đăng nhập lại (`Outbox.next`).
   @discardableResult
-  public func dropAllOnSignOut() throws -> Int {
+  public func purge(userId: String) throws -> Int {
     try db.write { db in
-      try db.execute(sql: "DELETE FROM outbox")
+      try db.execute(sql: "DELETE FROM outbox WHERE userId = ?", arguments: [userId])
       let n = db.changesCount
-      try db.execute(sql: "DELETE FROM outbox_dead")
+      // `outbox_dead` không có cột chủ: đọc JSON để biết hàng nào của ai.
+      let rows = try Row.fetchAll(db, sql: "SELECT id, dead FROM outbox_dead")
+      let decoder = JSONDecoder()
+      for row in rows {
+        let json: String = row[1]
+        if let d = try? decoder.decode(DeadEntry.self, from: Data(json.utf8)), d.entry.userId == userId {
+          try db.execute(sql: "DELETE FROM outbox_dead WHERE id = ?", arguments: [row[0] as String])
+        }
+      }
       return n
     }
   }

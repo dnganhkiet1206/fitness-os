@@ -210,6 +210,22 @@ CASES += [
     ('E8b mua món không có giá', LOCK, "  IF v_price IS NULL THEN\n    RAISE EXCEPTION 'unknown item %', p_item_key;", "  IF v_price IS NULL THEN\n    v_price := 0;", 1, 'E8b'),
 ]
 
+# ── hình dạng khoá thưởng (round 3, AUD-02): rpc_reward_keys.test.sql ──
+RK = '20261112120000_reward_key_shapes'
+CASES += [
+    ('K1 trả lại khoá w: đuôi tự do', RK, "  -- `w:` (thưởng tuần kiểu RN) đã bỏ: đuôi tự do = nhận lại vô hạn. Rơi xuống NULL.",
+     "  IF p_ref_key LIKE 'w:%' THEN RETURN (SELECT coins FROM public.reward_prices WHERE reward_key = 'weekly'); END IF;", None, 'K1'),
+    ('K3 client tự chọn hạng', RK, "    IF v_parts[2] <> v_tier THEN RETURN NULL; END IF;\n    RETURN (SELECT coins FROM public.reward_prices WHERE reward_key = 'challenge:' || v_tier);",
+     "    RETURN (SELECT coins FROM public.reward_prices WHERE reward_key = 'challenge:' || v_parts[2]);", None, 'K3'),
+    ('K3b nhận thử thách không thuộc tuần', RK, "      IF v_tier IS NULL THEN RETURN NULL; END IF;", "      IF v_tier IS NULL THEN v_tier := v_parts[2]; END IF;", None, 'K3'),
+    ('K3c bỏ kiểm thứ Hai', RK, "    IF extract(isodow FROM v_date) <> 1 THEN RETURN NULL; END IF;", "", None, 'K3'),
+    ('E1c mở lại bán băng chuỗi', '20261112140000_streak_freeze_sale_closed', "GRANT EXECUTE ON FUNCTION public.buy_streak_freeze(UUID) TO service_role;",
+     "GRANT EXECUTE ON FUNCTION public.buy_streak_freeze(UUID) TO service_role, authenticated;", None, 'E1c'),
+    ('FK1 bỏ index user_id của workout_templates', '20261112130000_fk_indexes', 'CREATE INDEX IF NOT EXISTS idx_workout_templates_user_id ON public.workout_templates (user_id);\n', '', None, 'FK1'),
+    ('W2 ví đếm sai số dòng XP', '20261112150000_mascot_wallet', "(SELECT k, count(*) AS n FROM cls", "(SELECT k, 1 AS n FROM cls", None, 'W2'),
+    ('W5 ví đọc sổ mọi người', '20261112150000_mascot_wallet', "FROM public.mascot_transactions WHERE user_id = auth.uid()", "FROM public.mascot_transactions WHERE true", None, 'W1'),
+]
+
 def mutate(src, old, new, nth):
     n = src.count(old)
     if nth is None:

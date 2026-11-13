@@ -325,9 +325,37 @@
         case "buy_mascot_item": .number(0)
         case "dm_open": .string(UUID().uuidString.lowercased())
         case "community_user_stats": .object([:])
+        // Ví gộp (round 3, AUD-28): như `mascot_wallet()` — số dư, XP theo loại khoá, khoá đã nhận.
+        case "mascot_wallet": Self.wallet(rows("mascot_transactions"))
         default: .array([])
         }
       return Reply(status: 200, body: Self.encode(value))
+    }
+
+    /// `mascot_wallet()` trên sổ giả: cùng cách gộp loại khoá với migration
+    /// `20261112150000_mascot_wallet.sql`; khoá đã nhận trả cả (sổ giả ngắn).
+    static func wallet(_ ledger: [[String: JSONValue]]) -> JSONValue {
+      var balance = 0.0
+      var classes: [String: Int] = [:]
+      var claimed: [String] = []
+      for r in ledger {
+        balance += r["amount"]?.doubleValue ?? 0
+        guard let k = r["ref_key"]?.stringValue else { continue }
+        claimed.append(k)
+        let parts = k.split(separator: ":", omittingEmptySubsequences: false).map(String.init)
+        let cls: String? =
+          if k.hasPrefix("d:"), parts.count == 3, parts[1].count == 10 { "d:2000-01-03:\(parts[2])" }
+          else if k.hasPrefix("ch:"), parts.count > 1 { "ch:\(parts[1]):2000-01-03:xp" }
+          else if k.hasPrefix("set:") { k }
+          else if k.hasPrefix("w:") { "w:xp" }
+          else { nil }
+        if let cls { classes[cls, default: 0] += 1 }
+      }
+      return .object([
+        "balance": .number(balance),
+        "xp": .array(classes.sorted { $0.key < $1.key }.map { .object(["key": .string($0.key), "n": .number(Double($0.value))]) }),
+        "claimed": .array(claimed.map(JSONValue.string)),
+      ])
     }
 
     private func function(_ name: String, _ body: JSONValue?) -> Reply {

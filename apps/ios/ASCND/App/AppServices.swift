@@ -291,12 +291,19 @@ final class AppServices {
         // làm hỏng lượt gửi — ghi đã thành rồi.
         let rows = SupabaseRowStore(backend: b)
         return SupabaseRemoteWriter(backend: b, afterWrite: { entry in
-          _ = await DailyLog.rebuildAfterWrite(entry, store: rows)
+          // Lỗi dựng lại không làm hỏng lượt gửi, nhưng phải tới được đội (R2-OPS-03): trước đây bị bỏ qua.
+          let failed = await DailyLog.rebuildAfterWrite(entry, store: rows)
+          if !failed.isEmpty {
+            let kind = entry.kind
+            await MainActor.run { Telemetry.reportRebuild(kind: kind, failedDays: failed.count) }
+          }
           await widgets.refresh()
         })
       } ?? UnconfiguredRemote(),
       online: false)
     startupError = problems.isEmpty ? nil : problems.joined(separator: "\n")
+    // Bản ghi bị bỏ cuộc / ghi đĩa hỏng → Sentry (round 3, R2-OPS-03).
+    sync.onIncident = { Telemetry.report($0) }
     stateWriter.environment.online = { [sync = self.sync] in sync.online }
 
     // Phiên kết thúc (nút Đăng xuất, token hết hạn, tài khoản bị xoá, hay đổi
@@ -317,8 +324,9 @@ final class AppServices {
       // Người của phiên mới khi đổi thẳng tài khoản; `nil` khi đăng xuất.
       let next = session?.session?.userId
       // Đóng chốt TRƯỚC khi dọn: lượt làm mới / lượt ghi muộn của người vừa
-      // rời đi về sau đó không ghi lại được gì lên đĩa (#431, #454). Rồi bỏ
-      // hàng đợi chưa gửi, như baseline (#241 chờ Kiệt). Rồi dọn điểm quay lại
+      // rời đi về sau đó không ghi lại được gì lên đĩa (#431, #454). Rồi ĐỖ
+      // hàng đợi chưa gửi — không xoá (round 3, AUD-06; #241 (b)): bản ghi chỉ
+      // gửi khi chính chủ đăng nhập lại, không ai khác thấy. Rồi dọn điểm quay lại
       // `routine-day:*` (`clearUserScopedStorage`) và read model — trừ của
       // người mới, có thể đã ghi trong lúc lượt dọn này nhường (#455).
       await lifecycle.sessionEnded(next: next) { @MainActor in

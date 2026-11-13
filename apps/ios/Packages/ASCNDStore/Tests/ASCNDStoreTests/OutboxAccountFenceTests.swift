@@ -77,12 +77,9 @@ struct OutboxAccountFenceTests {
     #expect(try store.load().pending.isEmpty)
   }
 
-  /// TOCTOU (#485 follow-up): với fence nằm TRONG cùng transaction ghi, thứ tự
-  /// giữa lượt enqueue muộn và lượt dọn của `sessionEnded` (signOut →
-  /// `dropAllOnSignOut`) không thể để lại hàng mồ côi — GRDB xếp mọi `db.write`
-  /// nối tiếp: hoặc (check+insert) chạy trước DELETE rồi bị dọn, hoặc DELETE
-  /// chạy trước rồi check thấy signedOut → ném. Mô phỏng lượt ghi muộn tới sau
-  /// lượt dọn: bị từ chối, không có hàng nào.
+  /// TOCTOU (#485 follow-up): fence nằm TRONG cùng transaction ghi, nên lượt
+  /// ghi muộn tới SAU khi phiên đã đóng bị từ chối — không có hàng nào được ghi
+  /// dưới một phiên đã kết thúc. Hàng đã ghi TRƯỚC đó vẫn ở lại (đỗ, AUD-06).
   @Test func lateEnqueueAfterSignOutCleanupWritesNothing() throws {
     let db = try ASCNDDatabase()
     let store = OutboxStore(db)
@@ -90,10 +87,9 @@ struct OutboxAccountFenceTests {
     try store.enqueue([planEntry("a-1", user: "a")])
     // Thứ tự của AccountLifecycle.sessionEnded: đóng chốt trước, dọn sau.
     db.accounts.signOut()
-    try store.dropAllOnSignOut()
     #expect(throws: AccountScopeClosed.self) {
       try store.enqueue([planEntry("a-2", user: "a")])
     }
-    #expect(try store.load().pending.isEmpty)
+    #expect(try store.load().pending.map(\.id) == ["a-1"])
   }
 }

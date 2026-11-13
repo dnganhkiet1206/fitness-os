@@ -310,7 +310,7 @@ private struct LabWorkout: View {
         Button(role: .destructive) {
           Task { await services.session.signOut() }
         } label: {
-          Text(verbatim: "Sign out (drops outbox, #241)")
+          Text(verbatim: "Sign out (parks outbox, AUD-06)")
         }
       }
     }

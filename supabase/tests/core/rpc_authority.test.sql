@@ -19,12 +19,19 @@ GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA pg_temp TO authenticated;
 -- ── E1: anon không gọi được hàm nào ──
 DO $$ DECLARE f text; BEGIN
   FOREACH f IN ARRAY ARRAY[
-    'public.ai_gate(text)', 'public.buy_mascot_item(text)', 'public.buy_streak_freeze(uuid)', 'public.buy_streak_freeze()',
+    'public.ai_gate(text)', 'public.buy_mascot_item(text)',
     'public.claim_ai_call(text)', 'public.claim_quest_reward(text,text)', 'public.current_tier()',
     'public.earn_mascot_coins(text,integer,text)', 'public.reward_amount_for(text)',
     'public.spend_ai_tokens(text,bigint,boolean)', 'public.use_streak_freeze(date)'] LOOP
     ASSERT NOT has_function_privilege('anon', f, 'EXECUTE'), format('E1 anon gọi được %s', f);
     ASSERT has_function_privilege('authenticated', f, 'EXECUTE'), format('E1b người đã đăng nhập không gọi được %s', f);
+  END LOOP;
+END $$;
+-- ── E1c: băng chuỗi đóng bán (AUD-14): không ai ngoài server mua được món chưa tiêu được ──
+DO $$ DECLARE f text; BEGIN
+  FOREACH f IN ARRAY ARRAY['public.buy_streak_freeze(uuid)', 'public.buy_streak_freeze()'] LOOP
+    ASSERT NOT has_function_privilege('anon', f, 'EXECUTE'), format('E1c anon gọi được %s', f);
+    ASSERT NOT has_function_privilege('authenticated', f, 'EXECUTE'), format('E1c người dùng vẫn mua được băng chuỗi qua %s', f);
   END LOOP;
 END $$;
 
