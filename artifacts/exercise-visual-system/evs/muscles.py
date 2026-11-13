@@ -9,7 +9,7 @@ from pathlib import Path
 import bpy
 import numpy as np
 
-from . import bl_util, muscle_eval, pngio
+from . import bl_util, fibers as fibers_mod, muscle_eval, pngio
 
 ARM_BONES = ("upperarm", "lowerarm", "hand", "index_01", "index_02", "index_03", "middle_01", "middle_02", "middle_03",
              "ring_01", "ring_02", "ring_03", "pinky_01", "pinky_02", "pinky_03", "thumb_01", "thumb_02", "thumb_03")
@@ -149,11 +149,23 @@ def load_masks(atlas_dir: Path) -> dict[str, np.ndarray]:
         return {k: data[k] for k in data.files}
 
 
-def write_highlight_map(atlas_dir: Path, path: Path, primary: list[str], secondary: list[str], stabilizing: list[str], size: int | None = None) -> np.ndarray:
-    """Composes and saves the RGB highlight map of one exercise."""
+def write_highlight_map(atlas_dir: Path, path: Path, primary: list[str], secondary: list[str], stabilizing: list[str], size: int | None = None,
+                        fibers: bool = False, fiber_seed: int = 7) -> np.ndarray:
+    """Composes and saves the RGB highlight map of one exercise. With
+    ``fibers``, the role channels are modulated by per-group fibre
+    striations (see evs/fibers.py) so the highlight reads as lit muscle
+    fibres instead of a flat tint; the atlas regions themselves are
+    untouched."""
     masks = load_masks(atlas_dir)
+    side = masks.get("_side_left")
     masks.pop("_side_left", None)
     rgb = muscle_eval.compose_highlight(masks, primary, secondary, stabilizing)
+    if fibers:
+        with_side = dict(masks)
+        if side is not None:
+            with_side["_side_left"] = side
+        rgb = fibers_mod.apply_fibers(rgb, with_side, {"primary": primary, "secondary": secondary, "stabilizing": stabilizing},
+                                      seed=fiber_seed)
     if size and size < rgb.shape[0]:
         f = rgb.shape[0] // size
         rgb = rgb.reshape(size, f, size, f, 3).mean(axis=(1, 3)).astype(np.uint8)

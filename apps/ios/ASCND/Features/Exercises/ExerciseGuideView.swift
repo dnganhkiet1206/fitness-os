@@ -55,8 +55,9 @@ struct ExerciseGuideView: View {
   private var media: MediaState {
     let server = g?.media ?? .none
     #if DEBUG
-      // Clip 3D thử nghiệm (artifacts/exercise-visual-system): chỉ bản Debug,
-      // chỉ khi server chưa có media cho bài này. Chưa được duyệt chuyên môn.
+      // Minh hoạ 3D thử nghiệm (artifacts/exercise-visual-system, USDZ xoay
+      // 360°): chỉ bản Debug, chỉ khi server chưa có media cho bài này. Chưa
+      // được duyệt chuyên môn.
       if !server.hasMedia, let demo = ExerciseDemo3D.media(for: displayName, alt: String(localized: "eg.demo3d.alt")) {
         return demo
       }
@@ -79,7 +80,6 @@ struct ExerciseGuideView: View {
         VStack(alignment: .leading, spacing: DS.Spacing.lg) {
           if shown, media.hasMedia {
             hero
-            if isDemo3D { angleSwitch }
           }
           header
           content
@@ -117,7 +117,7 @@ struct ExerciseGuideView: View {
         }
       }
       .fullScreenCover(item: $viewer) { target in
-        GuideMediaViewer(media: media, name: displayName, start: target.index)
+        viewerView(for: target)
       }
     }
     .task(id: "\(exerciseId ?? "")|\(title)|\(lang.rawValue)") {
@@ -170,18 +170,17 @@ struct ExerciseGuideView: View {
     }
   }
 
-  /// Chọn góc quay của clip 3D (cùng một lần đẩy, cùng timeline).
-  @ViewBuilder private var angleSwitch: some View {
+  /// Một lần chạm vào nút ▶ ở đầu trang mở thẳng trình xem: bản 3D tự chạy
+  /// và lặp, không thêm thao tác; media của server vẫn dùng trình xem cũ.
+  @ViewBuilder private func viewerView(for target: ViewerTarget) -> some View {
     #if DEBUG
-      let labels = ExerciseDemo3D.labels(for: displayName)
-      if labels.count > 1 {
-        Picker(String(localized: "eg.demo3d.angle"), selection: $page) {
-          ForEach(Array(labels.enumerated()), id: \.offset) { i, label in
-            Text(verbatim: label).tag(i)
-          }
-        }
-        .pickerStyle(.segmented)
+      if isDemo3D {
+        ExerciseDemo3DView(name: displayName)
+      } else {
+        GuideMediaViewer(media: media, name: displayName, start: target.index)
       }
+    #else
+      GuideMediaViewer(media: media, name: displayName, start: target.index)
     #endif
   }
 

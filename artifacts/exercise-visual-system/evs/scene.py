@@ -51,14 +51,17 @@ def apply_brand_materials(character: dict, brand: dict) -> dict:
 
 def apply_highlight(character_mats: dict, exercise: dict, exercise_path: Path, size: int = 2048) -> Path:
     """Composes the exercise's highlight map from the character's muscle
-    atlas and plugs it into the body and apparel materials."""
+    atlas and plugs it into the body and apparel materials. Exercises with
+    ``fiber_highlight`` get fibre striations drawn into the map (Lyfta-style
+    lit fibres instead of a flat tint); the atlas regions are untouched."""
     atlas = config.character_dir(exercise["master_character_id"]) / "muscle_atlas"
     out = exercise_path / "muscle_highlight_map.png"
     roles = exercise.get("highlight_roles", ["primary", "secondary", "stabilizing"])
     muscles.write_highlight_map(atlas, out,
                                 exercise["primary_muscles"] if "primary" in roles else [],
                                 exercise["secondary_muscles"] if "secondary" in roles else [],
-                                exercise.get("stabilizing_muscles", []) if "stabilizing" in roles else [], size=size)
+                                exercise.get("stabilizing_muscles", []) if "stabilizing" in roles else [], size=size,
+                                fibers=bool(exercise.get("fiber_highlight", False)))
     old = bpy.data.images.get("EVS_HighlightMap")
     if old is not None:
         bpy.data.images.remove(old)

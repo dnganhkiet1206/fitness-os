@@ -4,9 +4,9 @@ Lát dọc đầu tiên: **Barbell Bench Press**. Yêu cầu nguyên văn của 
 
 Trang này là **sổ bàn giao**: ai nhận việc thì đọc hết trang này trước, rồi sửa trang này khi trạng thái đổi.
 
-## 1. Trạng thái (cập nhật 12/11/2026)
+## 1. Trạng thái (cập nhật 13/11/2026)
 
-Kiểm định tự động lần cuối: 52 PASS, 1 FAIL, 1 NOT_TESTED, 5 REQUIRES_MANUAL_REVIEW, 2 UNVERIFIED (`bench-press/qa_report.json`). Xuất bản: **BLOCKED** (chưa có người có chuyên môn duyệt).
+Kiểm định tự động lần cuối: 52 PASS, 1 FAIL, 1 NOT_TESTED, 5 REQUIRES_MANUAL_REVIEW, 2 UNVERIFIED (`bench-press/qa_report.json`, chạy lại 13/11 sau khi đổi bản đồ tô sáng — số lượng như cũ, FAIL vẫn là `skin_deformation`). Xuất bản: **BLOCKED** (chưa có người có chuyên môn duyệt).
 
 | Bước | Trạng thái | Bằng chứng |
 |---|---|---|
@@ -16,9 +16,11 @@ Kiểm định tự động lần cuối: 52 PASS, 1 FAIL, 1 NOT_TESTED, 5 REQUI
 | Dụng cụ (IPF đã đối chiếu) | Đã làm, kiểm kích thước tự động | `config/equipment.json`, `evs/equipment.py` |
 | Chuyển động Bench Press | Đã làm; **UNVERIFIED — NOT APPROVED FOR PRODUCTION** | `bench-press/bench_press_master.blend`, `motion_metadata.json`, `reference_notes.json` |
 | 4 máy quay đồng bộ, 4 MP4 + 4 MP4 lặp | Đã làm, kiểm tự động (số khung, fps, H.264, nhấp nháy, đồng bộ) và xem bằng mắt | `bench-press/*.mp4`, `camera_comparison.png`, `render_metadata.json` |
+| Sợi cơ phát sáng (kiểu Lyfta) | Đã làm: vân sợi vẽ vào bản đồ tô sáng theo hướng sợi của từng nhóm cơ, phát sáng qua emission; **vùng cơ không đổi**, vẫn chưa người có chuyên môn xem | `evs/fibers.py`, `fiber_highlight` trong `bench-press/exercise.json`, `bench-press/muscle_highlight_map.png` |
 | GLB (nhân vật; bài tập + 2 biến thể vật liệu) | Đã làm, đọc lại được trong Blender | `bench-press/*.glb`, `glb_report.json` |
-| Kiểm định + unit test | Đã làm (27 test xanh) | `pipeline/validate_animation.py`, `evs/validation/`, `tests/` |
-| Gắn vào app iOS | Đã làm, **chỉ bản Debug**: 3 góc (45° · Bên · Trước) có thanh chọn góc; đã thử trên simulator iPhone 17 (iOS 26): mở hướng dẫn Bench Press trong buổi tập, đổi góc, phát đúng góc đã chọn | `apps/ios/ASCND/Features/Exercises/ExerciseDemo3D.swift` |
+| USDZ cho trình xem 3D trong app | Đã làm: 53 xương biến dạng, hoạt hình khung 24–228, vật liệu albedo + emission; đọc lại được trong Blender, thanh đòn chuyển động đúng | `bench-press/usdz/bench_press_animation.usdz`, `bench-press/usdz/usdz_report.json`, `pipeline/export_usdz.py` |
+| Kiểm định + unit test | Đã làm (33 test xanh: 27 cũ + 6 mới cho sợi cơ / emission) | `pipeline/validate_animation.py`, `evs/validation/`, `tests/` |
+| Gắn vào app iOS | Đã làm, **chỉ bản Debug**: trình xem 3D xoay 360° (RealityKit + USDZ), tự chạy + lặp, khung dọc 9:16, góc mặc định three-quarter 45°, chú thích mờ "Kéo để xoay góc nhìn"; một lần chạm nút ▶ ở đầu trang là mở thẳng. ~~3 góc (45° · Bên · Trước) có thanh chọn góc; đã thử trên simulator iPhone 17 (iOS 26)~~ — thanh chọn góc đã bỏ 13/11 theo lệnh Kiệt (12/11); trình xem mới **chưa kiểm trên simulator** (NOT RUN) | `apps/ios/ASCND/Features/Exercises/ExerciseDemo3D.swift`, `ExerciseDemo3DView.swift`, `apps/ios/ASCND/Resources/ExerciseDemos/` |
 | Tài liệu | Đã viết | `docs/exercise-visual-system/` |
 
 **Còn FAIL thật:** `skin_deformation` — da vùng háng giãn quá ngưỡng khi đùi gập 90° (cách da bám xương kiểu tuyến tính của lưới MakeHuman). Bị quần che nên không lộ trong video, nhưng là hạn chế thật của nhân vật. Không nới ngưỡng.
@@ -50,6 +52,7 @@ $B -b --factory-startup --python bench-press/animate_bench_press.py
 $B -b --factory-startup --python pipeline/test_rig.py               # dáng thử khung xương
 $B -b --factory-startup --python pipeline/render_cameras.py -- --exercise bench-press   # ~30 phút
 $B -b --factory-startup --python pipeline/export_glb.py -- --exercise bench-press
+$B -b --factory-startup --python pipeline/export_usdz.py -- --exercise bench-press --out-dir bench-press/usdz
 $B -b --factory-startup --python pipeline/validate_animation.py -- --exercise bench-press
 python3 -m unittest discover -s tests
 ```
@@ -68,11 +71,11 @@ config/                     cấu hình dùng chung, không gắn với bài nà
   render_presets.json       chất lượng render + ánh sáng
   brand.config.json         thương hiệu GIẢ ĐỊNH (màu, logo, watermark, intro/outro)
 evs/                        gói Python
-  config.py pngio.py muscle_eval.py        Python thuần (không bpy) — sẽ có unit test
+  config.py pngio.py muscle_eval.py fibers.py  Python thuần (không bpy) — sẽ có unit test
   bl_util.py character.py rig.py muscles.py materials.py equipment.py
   studio.py scene.py motion.py             cần Blender
 pipeline/                   các bước dùng chung cho mọi bài
-  build_character.py bake_muscle_atlas.py build_scene.py
+  build_character.py bake_muscle_atlas.py build_scene.py export_usdz.py
 characters/master_character_001/           nhân vật đã dựng (commit để mọi bài dùng CHUNG một tệp)
 bench-press/
   exercise.json             cấu hình bài: pha, cơ, máy quay, thông số kỹ thuật, ngưỡng kiểm
@@ -92,6 +95,7 @@ Thêm bài mới = thêm một thư mục như `bench-press/` (một `exercise.j
 7. **Thương hiệu tách rời**: màu lấy từ `brand.config.json` lúc dựng cảnh; watermark / intro / outro sẽ áp lúc mã hoá video. Đổi tên app không phải làm lại chuyển động.
 8. **Chuyển động**: chỉ key quỹ đạo thanh đòn (`Barbell` location Y, Z) và điểm cực khuỷu. Tay giải bằng IK, chân ghim sàn bằng IK. Khuỷu đặt ở điểm thấp nhất mà độ dài tay cho phép → cẳng tay đứng thẳng dưới thanh. Nguồn chuyển động: key tay theo tài liệu kỹ thuật, **không phải mocap, chưa ai có chuyên môn duyệt** → nhãn `UNVERIFIED — NOT APPROVED FOR PRODUCTION`.
 9. **Render**: EEVEE, 1280×720, 24 fps, view transform Standard (màu nền đúng mã màu thương hiệu). Sàn chỉ tối ở bóng tiếp xúc, còn lại đúng màu nền (không có đường chân trời). Giàn đèn quay theo máy quay.
+10. **Sợi cơ + USDZ (13/11, theo lệnh Kiệt 12/11)**: vân sợi vẽ vào bản đồ tô sáng (hướng sợi = trục chính của mặt nạ từng nhóm cơ, tách hai bên thân; xem `evs/fibers.py`), không sửa vùng cơ. USDZ xuất từ cùng `.blend` với vật liệu albedo + emission đã bake (emission giữ nguyên độ sáng 0,35 của shader), chỉ 53 xương biến dạng, lưới gốc, hệ Y-up mét cho RealityKit. Góc mặc định của trình xem = preset three-quarter refit cho khung 9:16, ghi trong `usdz_report.json`.
 
 ## 6. Việc còn lại
 
@@ -99,7 +103,7 @@ Thêm bài mới = thêm một thư mục như `bench-press/` (một `exercise.j
 2. Sửa da vùng háng: thêm xương phụ / shape key sửa dáng khi gập hông, hoặc chỉnh trọng số vùng háng; chạy lại `pipeline/test_rig.py` và kiểm định.
 3. Đưa lên bản phát hành (cần Kiệt duyệt, thay đổi dữ liệu): tải MP4 + poster lên Supabase Storage và thêm hàng `exercise_media`.
 4. Thử dùng lại nhân vật cho Incline Dumbbell Press, Squat, Lat Pulldown (cần thêm dụng cụ tạ đơn, máy kéo cáp).
-5. Xem 3D tương tác trong app (RealityKit + USDZ, hoặc WKWebView + three.js): cần mock Kiệt duyệt trước.
+5. ~~Xem 3D tương tác trong app (RealityKit + USDZ, hoặc WKWebView + three.js): cần mock Kiệt duyệt trước.~~ **Đã làm 13/11** (Kiệt duyệt 12/11, lệnh làm xoay 360°): RealityKit + USDZ, chỉ bản Debug. Còn lại: kiểm trên simulator/thiết bị thật (NOT RUN).
 
 **Ước tính GPU khi mở rộng:** máy này (M3, 8 GB) mất khoảng 1,5–2 giây / khung 720p EEVEE / máy quay, tức ~30 phút cho 4 máy quay × 235 khung. 100 bài ≈ 50 giờ. Một máy có GPU rời tầm RTX 4070–4080 (12–16 GB VRAM) render EEVEE nhanh hơn khoảng 5–10 lần: 100 bài trong 5–10 giờ, 1080p khoảng gấp đôi. Thuê GPU đám mây (RTX 4090 / L4) khoảng 0,4–0,8 USD/giờ (giá nhớ, chưa kiểm lại) → dưới 10 USD cho 100 bài. Mocap bằng mô hình học sâu (nếu tìm được giấy phép thương mại) cần GPU NVIDIA ≥ 12 GB VRAM, không chạy được trên máy này.
 
@@ -107,6 +111,6 @@ Thêm bài mới = thêm một thư mục như `bench-press/` (một `exercise.j
 
 - Kiểm chứng giấy phép và tài liệu kỹ thuật đã chạy (11/11): `docs/exercise-visual-system/OPEN_SOURCE_AUDIT.md`, `bench-press/reference_notes.json`. Kích thước dụng cụ theo luật IPF đã đối chiếu bản PDF. Các thông số động tác (điểm chạm, độ rộng nắm, nhịp) có nguồn nhưng nguồn đo trên người tập ở 1RM, không phải một lần đẩy hướng dẫn: vẫn cần người có chuyên môn.
 - Biến dạng da: đã đo trên 10 dáng (`rig_test.json`); khuỷu gập 130° và nắm tay có da chạm da (đánh dấu cần người xem); háng giãn khi gập hông (FAIL ở trên).
-- GLB chưa thử trên iPhone (app chưa có trình xem 3D). MP4 mới thử trên simulator; thiết bị thật: NOT RUN.
+- GLB chưa thử trên iPhone (app chưa có trình xem 3D). USDZ + trình xem RealityKit đã làm 13/11 nhưng **chưa kiểm trên simulator / thiết bị thật** (NOT RUN). MP4 mới thử trên simulator; thiết bị thật: NOT RUN.
 - Bản đồ cơ do người viết pipeline đặt theo giải phẫu bề mặt; chưa có người có chuyên môn giải phẫu xem.
 - Tệp nhị phân: repo không dùng Git LFS. Kiệt (11/11) bảo commit cả tệp nhân vật để người sau tiếp nhận được. MP4 / GLB / `.blend` của bài: xem dung lượng rồi quyết định khi có.

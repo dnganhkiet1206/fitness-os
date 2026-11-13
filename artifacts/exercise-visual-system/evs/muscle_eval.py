@@ -196,3 +196,18 @@ def albedo_from_highlight(highlight_rgb: np.ndarray, base_hex: str, primary_hex:
         a = np.clip(mask[..., channel : channel + 1], 0.0, 1.0)
         color = color * (1.0 - a) + srgb_to_linear(hex_rgb(hex_value)) * a
     return (linear_to_srgb(color) * 255.0 + 0.5).astype(np.uint8)
+
+
+def emission_from_highlight(highlight_rgb: np.ndarray, primary_hex: str, secondary_hex: str,
+                            stabilizer_hex: str, gain: float = 1.0) -> np.ndarray:
+    """Emission texture (sRGB, uint8) for export materials that cannot run the
+    Blender shader: black where no muscle is highlighted, the role colour
+    where it is, mixed in the same order as the shader (stabiliser,
+    secondary, primary) so it matches the albedo highlight exactly. Fibre
+    striations baked into the highlight map show up as glowing fibres."""
+    mask = highlight_rgb.astype(np.float64) / 255.0 * gain
+    color = np.zeros(mask.shape, dtype=np.float64)
+    for channel, hex_value in ((2, stabilizer_hex), (1, secondary_hex), (0, primary_hex)):
+        a = np.clip(mask[..., channel : channel + 1], 0.0, 1.0)
+        color = color * (1.0 - a) + srgb_to_linear(hex_rgb(hex_value)) * a
+    return (linear_to_srgb(color) * 255.0 + 0.5).astype(np.uint8)

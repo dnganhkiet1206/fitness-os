@@ -56039,6 +56039,29 @@
         }
       }
     },
+    "eg.demo3d.rotateHint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Drag to rotate the view"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arrastra para girar la vista"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kéo để xoay góc nhìn"
+          }
+        }
+      }
+    },
     "eg.demo3d.angle": {
       "extractionState": "manual",
       "localizations": {

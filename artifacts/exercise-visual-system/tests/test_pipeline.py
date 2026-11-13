@@ -17,7 +17,7 @@ import numpy as np
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from evs import CHECK_STATUSES, config, glb, muscle_eval, pngio  # noqa: E402
+from evs import CHECK_STATUSES, config, fibers, glb, muscle_eval, pngio  # noqa: E402
 from evs.validation import checks, report, video  # noqa: E402
 
 
@@ -151,6 +151,63 @@ class GeometryTests(unittest.TestCase):
         out = muscle_eval.albedo_from_highlight(h, "#808080", "#FF0000", "#00FF00", "#0000FF")
         self.assertEqual(out[0, 0].tolist(), [128, 128, 128])
         self.assertEqual(out[0, 1].tolist(), [255, 0, 0])
+
+    def test_emission_from_highlight(self):
+        h = np.zeros((1, 3, 3), dtype=np.uint8)
+        h[0, 1, 0] = 255
+        h[0, 2, 1] = 255
+        out = muscle_eval.emission_from_highlight(h, "#FF0000", "#00FF00", "#0000FF")
+        self.assertEqual(out[0, 0].tolist(), [0, 0, 0])
+        self.assertEqual(out[0, 1].tolist(), [255, 0, 0])
+        self.assertEqual(out[0, 2].tolist(), [0, 255, 0])
+
+
+class FiberTests(unittest.TestCase):
+    def _bar_mask(self):
+        mask = np.zeros((64, 64), dtype=np.uint8)
+        mask[24:40, 8:56] = 255  # horizontal bar: fibres run along x
+        side = np.full((64, 64), 255, dtype=np.uint8)
+        return mask, side
+
+    def test_striations_run_along_the_long_axis(self):
+        mask, side = self._bar_mask()
+        field = fibers.group_fiber_field(mask, side, np.random.default_rng(7))
+        inner = field[27:37, 12:52]
+        across = np.abs(np.diff(inner, axis=0)).mean()  # along y: crosses stripes
+        along = np.abs(np.diff(inner, axis=1)).mean()   # along x: follows fibres
+        self.assertGreater(across, 2.0 * along)
+
+    def test_apply_fibers_keeps_zero_and_peak(self):
+        mask, side = self._bar_mask()
+        rgb = muscle_eval.compose_highlight({"g": mask.astype(float) / 255.0}, ["g"], [], [])
+        out = fibers.apply_fibers(rgb, {"g": mask, "_side_left": side}, {"primary": ["g"]}, seed=7)
+        self.assertEqual(out[0, 0].tolist(), [0, 0, 0])  # outside the mask: untouched
+        inside = out[24:40, 8:56, 0].astype(float)
+        self.assertGreaterEqual(inside.min(), 0.45 * 255 - 1)
+        self.assertGreater(inside.max(), 0.9 * 255)  # ridges reach ~full strength
+        self.assertGreater(inside.std(), 5.0)  # visible variation, not flat
+
+    def test_apply_fibers_is_deterministic(self):
+        mask, side = self._bar_mask()
+        rgb = muscle_eval.compose_highlight({"g": mask.astype(float) / 255.0}, ["g"], [], [])
+        args = (rgb, {"g": mask, "_side_left": side}, {"primary": ["g"]})
+        a = fibers.apply_fibers(*args, seed=7)
+        b = fibers.apply_fibers(*args, seed=7)
+        c = fibers.apply_fibers(*args, seed=8)
+        self.assertTrue(np.array_equal(a, b))
+        self.assertFalse(np.array_equal(a, c))
+
+    def test_apply_fibers_unknown_group_raises(self):
+        rgb = np.zeros((4, 4, 3), dtype=np.uint8)
+        with self.assertRaises(KeyError):
+            fibers.apply_fibers(rgb, {}, {"primary": ["missing"]}, seed=7)
+
+    def test_fiber_detail_image(self):
+        mask, side = self._bar_mask()
+        detail = fibers.fiber_detail_image({"g": mask, "_side_left": side}, ["g"], seed=7)
+        self.assertEqual(detail.shape, (64, 64))
+        self.assertEqual(int(detail[0, 0]), 255)  # no group: white
+        self.assertLess(int(detail[30, 30]), 255)
 
 
 class FileFormatTests(unittest.TestCase):
