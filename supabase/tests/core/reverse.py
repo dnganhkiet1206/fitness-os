@@ -219,6 +219,8 @@ CASES += [
      "    RETURN (SELECT coins FROM public.reward_prices WHERE reward_key = 'challenge:' || v_parts[2]);", None, 'K3'),
     ('K3b nhận thử thách không thuộc tuần', RK, "      IF v_tier IS NULL THEN RETURN NULL; END IF;", "      IF v_tier IS NULL THEN v_tier := v_parts[2]; END IF;", None, 'K3'),
     ('K3c bỏ kiểm thứ Hai', RK, "    IF extract(isodow FROM v_date) <> 1 THEN RETURN NULL; END IF;", "", None, 'K3'),
+    ('E1c mở lại bán băng chuỗi', '20261112140000_streak_freeze_sale_closed', "GRANT EXECUTE ON FUNCTION public.buy_streak_freeze(UUID) TO service_role;",
+     "GRANT EXECUTE ON FUNCTION public.buy_streak_freeze(UUID) TO service_role, authenticated;", None, 'E1c'),
 ]
 
 def mutate(src, old, new, nth):

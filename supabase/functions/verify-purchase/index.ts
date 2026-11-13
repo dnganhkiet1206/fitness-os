@@ -103,7 +103,10 @@ serve(async (req) => {
     if (!ent) {
       /* Expired or refunded. Written down rather than ignored, so the row
          reflects Apple's answer instead of keeping yesterday's. */
-      await admin.from("entitlements").upsert(
+      /* AUD-47 (round 3): the write is checked like the paid branch below. If it
+         fails, the old row (maybe `plus`) is still there and `current_tier()`
+         keeps granting it — so the caller must hear a failure, not "free". */
+      const { error: downgradeError } = await admin.from("entitlements").upsert(
         {
           user_id: userId,
           tier: "free",
@@ -114,6 +117,10 @@ serve(async (req) => {
         },
         { onConflict: "user_id" },
       );
+      if (downgradeError) {
+        console.error("entitlement downgrade failed", downgradeError.message);
+        return json({ error: "Could not save entitlement" }, 500);
+      }
       return json({ tier: "free" });
     }
 
