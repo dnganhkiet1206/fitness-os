@@ -206,6 +206,10 @@ tính năng đồng bộ trong toàn app" → "làm đi".
   (Giao diện, Ai thấy được): segmented hệ thống. Bộ lọc nội dung (loại bài, Đã lưu, Tìm kiếm): viên chữ
   (`ChipPicker`).
 - Tiêu đề lớn trong nội dung, nút tròn bên phải; thanh điều hướng ẩn + `statusBarScrim`.
+  - 12/11 (Kiệt duyệt mock đợt 2): MỌI màn đẩy vào dùng tiêu đề lớn; chỉ bảng bật lên để nhập (sheet có Huỷ / Lưu)
+    và màn có tiêu đề chỉ biết sau khi tải (tên kế hoạch ăn) giữ tiêu đề nhỏ. Màn có lớp bọc "đang tải"
+    (`…Screen { if let book { …View } else { DSLoadingView() } }`): đặt `navigationTitle` +
+    `.navigationBarTitleDisplayMode(.large)` ở LỚP BỌC — đặt ở màn con thì tiêu đề lớn bị thu lại, không hiện.
 - Hành động chính: viên đen đặc; phụ: viên viền mảnh.
   - 10/11 (Kiệt duyệt mock https://claude.ai/artifact/Kmt7Y9vxeMnmsBGA79FdV3): MỘT họ nút viên. `DSButton` (trải
     ngang, cao 50) và `.dsPill` / `.dsPillSecondary` (trong hàng, cao 40) cùng màu mực (`foreground` / chữ

@@ -81,8 +81,6 @@ struct FoodListView: View {
       .padding(DS.Spacing.md)
     }
     .ascndPage()
-    .navigationTitle(String(localized: "foods.title"))
-    .navigationBarTitleDisplayMode(.inline)
     .refreshable { await book.load() }
     .task { await book.load() }
     .sheet(item: $editing) { req in
