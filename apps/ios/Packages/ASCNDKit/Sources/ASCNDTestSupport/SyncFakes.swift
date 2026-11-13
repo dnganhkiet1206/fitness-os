@@ -195,11 +195,10 @@ public actor InMemoryOutboxStore: OutboxPersistence {
     if outbox.dead.count > dead.count { dead += outbox.dead.dropFirst(dead.count) }
   }
 
-  public func dropAllOnSignOut() async throws -> Int {
-    defer {
-      pending = []
-      dead = []
-    }
-    return pending.count
+  public func purge(userId: String) async throws -> Int {
+    let n = pending.filter { $0.userId == userId }.count
+    pending.removeAll { $0.userId == userId }
+    dead.removeAll { $0.entry.userId == userId }
+    return n
   }
 }

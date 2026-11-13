@@ -38,10 +38,15 @@
  * `claim_quest_reward` derives the amount from the ref_key and never checks
  * that the event was earned. Measured on a clean cluster with nothing done:
  *
- *     ch:platinum:2026-08-17:never_did_this  → 120 xu
- *     w:99999                                → 40 xu
+ *     ch:platinum:2026-08-17:never_did_this  → 120 xu   (round 3: nay → 'unknown reward')
+ *     w:99999                                → 40 xu    (round 3: nay → 'unknown reward')
  *     set:runner                             → 180 xu
  *     20 thử thách bịa ra                    → 720 xu, trần ngày chặn ở 800
+ *
+ * Round 3 (AUD-02, `20261112120000_reward_key_shapes.sql`) closed the two key
+ * classes whose SHAPE was free: `w:` is retired, and a `ch:` key must be a recent
+ * ISO Monday, one of that week's three challenges or `koa_week`, at the pool's
+ * tier. Completion itself is still not verified (the paragraph below stands).
  *
  * This file deliberately does **not** assert that a reward key must have a
  * completion row behind it. Daily quests have no completion table at all —
@@ -74,8 +79,8 @@ const want = (ok, m) => { if (!ok) problems.push(m); };
 const sh = (c) => { try { return { status: 0, stdout: execSync(c, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }) }; } catch (e) { return { status: e.status ?? 1, stdout: (e.stdout || '') + (e.stderr || '') }; } };
 const read = (rel) => readFileSync(path.join(NATIVE, rel), 'utf8');
 
-const PGBIN = ['/usr/lib/postgresql/16/bin', '/usr/lib/postgresql/15/bin', '/usr/local/pgsql/bin']
-  .find((d) => existsSync(path.join(d, 'initdb'))) ?? null;
+const PGBIN = [process.env.PG_BIN, '/usr/lib/postgresql/16/bin', '/usr/lib/postgresql/15/bin', '/usr/local/pgsql/bin']
+  .filter(Boolean).find((d) => existsSync(path.join(d, 'initdb'))) ?? null;
 /* Derived from the temp directory so two runs cannot collide; the
    `data_directory` assertion below is the belt to that bracer. */
 /* Below the ephemeral range (32768-60999 on Linux): a port inside it can be
@@ -538,12 +543,20 @@ const TODAY = new Date().toISOString().slice(0, 10);
     freezeOld: await retryOf("SELECT public.buy_streak_freeze()", 500),
   };
 
-  /* N. the ceiling */
+  /* N. the ceiling — with keys whose SHAPE is valid (round 3 rejects invented
+     shapes outright), so what is measured is still the daily bound: four quest
+     days x every quest + streak, then every collection set, is far above 800. */
   await wipe();
   let minted = 0, negative = 0;
-  for (let i = 0; i < 30; i++) {
-    const r = await as(A, "SELECT public.claim_quest_reward($1,'x')", ['ch:platinum:2026-08-17:k' + i]);
-    if (r.ok) minted += 120;
+  const dayN = (n) => new Date(Date.parse(TODAY + 'T00:00:00Z') + n * 86400000).toISOString().slice(0, 10);
+  const valid = [];
+  for (const n of [-2, -1, 0, 1]) {
+    for (const qk of ['meal', 'workout', 'water', 'sleep', 'steps', 'overload', 'recovery', 'streak']) valid.push('d:' + dayN(n) + ':' + qk);
+  }
+  for (const sk of ['gym', 'runner', 'tet', 'xmas', 'halloween']) valid.push('set:' + sk);
+  for (const ref of valid) {
+    const r = await as(A, "SELECT public.claim_quest_reward($1,'x')", [ref]);
+    if (r.ok) minted += 1;
   }
   if (await bal(A) < 0) negative++;
   o.ceiling = { minted: await bal(A), cap: 800, negative };
@@ -560,8 +573,20 @@ const TODAY = new Date().toISOString().slice(0, 10);
       if (off > 1 || off < -2) return null;
       return p[2] === 'streak' ? PRICES['streak:max'] : (PRICES['quest:' + p[2]] ?? null);
     }
-    if (p[0] === 'ch' && p.length === 4) return PRICES['challenge:' + p[1]] ?? null;
-    if (p[0] === 'w' && ref.length > 2) return PRICES.weekly;
+    if (p[0] === 'ch' && p.length === 4 && /^\d{4}-\d{2}-\d{2}$/.test(p[2])) {
+      // round 3: a recent ISO Monday, one of that week's 3 challenges or koa_week, at the pool tier
+      const t = Date.parse(p[2] + 'T00:00:00Z');
+      if (Number.isNaN(t) || new Date(t).getUTCDay() !== 1) return null;
+      const off = Math.round((t - Date.parse(TODAY + 'T00:00:00Z')) / 86400000);
+      if (off > 1 || off < -15) return null;
+      const POOL = [['workouts_5','silver'],['workouts_3','bronze'],['protein_7','gold'],['steps_50k','silver'],
+        ['sleep_7','silver'],['log_7','gold'],['calories_5','silver'],['water_7','silver']];
+      const s0 = Number(p[2].replaceAll('-', '')) % 8;
+      const week = [0, 1, 2].map((i) => POOL[(s0 + i) % 8]).concat([['koa_week', 'silver']]);
+      const hit = week.find(([k]) => k === p[3]);
+      return hit && hit[1] === p[1] ? PRICES['challenge:' + p[1]] ?? null : null;
+    }
+    // round 3: w: retired
     if (p[0] === 'set') return PRICES[ref] ?? null;
     return null;
   };

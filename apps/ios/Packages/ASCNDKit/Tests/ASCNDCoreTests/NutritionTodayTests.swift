@@ -132,6 +132,25 @@ struct NutritionTodayBookTests {
     #expect(q?.filters == [.eq("user_id", .string("u1")), .eq("date", .string("2026-10-11"))])
   }
 
+  /// 12/11: bữa ghi lúc ngoại tuyến (còn trong hàng đợi) vào vòng calo ngay, như danh sách bữa;
+  /// bữa hôm qua và của người khác thì không.
+  @Test func queuedMealsCountTowardToday() async {
+    let rows = TodayRows([.object(["kcal": .number(500), "protein_g": .number(30)])])
+    let q = PendingMealsBookTests.Queue([
+      PendingMealsRuleTests.entry("m1", at: "2026-10-11T03:00:00.000Z"),
+      PendingMealsRuleTests.entry("m0", at: "2026-10-10T03:00:00.000Z"),
+      PendingMealsRuleTests.entry("m2", user: "u2", at: "2026-10-11T03:00:00.000Z"),
+    ])
+    let b = NutritionTodayBook(
+      userId: "u1", store: rows, pending: q, clock: TodayClock(), timeZone: TimeZone(identifier: "Asia/Ho_Chi_Minh")!)
+    await b.load()
+    #expect(b.phase == .ready(NutritionToday.Totals(kcal: 1401, protein: 70, carbs: 120, fat: 24, fiber: 0)))
+    // hàng đợi đọc hỏng: vẫn là số của server
+    await q.setFail()
+    await b.load()
+    #expect(b.phase == .ready(NutritionToday.Totals(kcal: 500, protein: 30, carbs: 0, fat: 0, fiber: 0)))
+  }
+
   /// Chưa có hàng hôm nay: một ngày chưa ăn, không phải lỗi.
   @Test func noRowIsAnEmptyDay() async {
     let b = Self.book(TodayRows([]))

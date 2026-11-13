@@ -115,20 +115,11 @@ struct WorkoutsHomeView: View {
 
   @ViewBuilder private var weekStrip: some View {
     let days = WorkoutHome.week(today: flow.today.today, library: flow.today.library, trained: flow.today.trained)
-    let strip = HStack(spacing: 0) {
-      ForEach(days) { d in
-        VStack(spacing: 4) {
-          Text(verbatim: Self.weekday(d.date))
-            .font(DS.TextStyle.caption.weight(d.isToday ? .bold : .regular))
-            .foregroundStyle(d.isToday ? DS.Color.foreground.swiftUI : DS.Color.mutedForeground.swiftUI)
-          dayMark(d)
-        }
-        .frame(maxWidth: .infinity)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(verbatim: Self.longDay(d.date)))
-        .accessibilityValue(Text(Self.statusText(d.status)))
-      }
-    }
+    // dải ngày chung của app (Kiệt 13/11): T2→CN có số ngày, hôm nay tô màu tab, chấm = trạng thái
+    let strip = WeekDayStrip(
+      days: days.map { WeekDay(date: $0.date, mark: Self.mark($0.status)) }, today: flow.today.today,
+      selected: flow.today.today, accent: Self.accent
+    )
     .padding(.top, DS.Spacing.sm)
     if flow.plan != nil {
       NavigationLink {
@@ -146,24 +137,11 @@ struct WorkoutsHomeView: View {
 
   /// Chú giải bộ dấu của dải tuần (chủ dự án, 14/10: vòng nét đứt chưa có chú thích).
   private var weekLegend: some View {
-    HStack(spacing: 10) {
-      HStack(spacing: 4) {
-        Image(systemName: "checkmark").font(.system(size: 7, weight: .bold)).foregroundStyle(.white)
-          .frame(width: 11, height: 11).background(Circle().fill(Self.accent))
-        Text(String(localized: "wp.status.done"))
-      }
-      HStack(spacing: 4) {
-        Circle().strokeBorder(Self.accent, lineWidth: 1.5).frame(width: 11, height: 11)
-        Text(String(localized: "wp.legend.planned"))
-      }
-      HStack(spacing: 4) {
-        Circle().strokeBorder(Self.accent.opacity(0.35), style: StrokeStyle(lineWidth: 1.5, dash: [3, 3])).frame(width: 11, height: 11)
-        Text(String(localized: "wp.status.missed"))
-      }
-      HStack(spacing: 4) {
-        Image(systemName: "leaf").font(.system(size: 9)).foregroundStyle(DS.Color.mutedForeground.swiftUI)
-        Text(String(localized: "wp.status.rest"))
-      }
+    HStack(spacing: 12) {
+      legend(.done, "wp.status.done")
+      legend(.planned, "wp.legend.planned")
+      legend(.missed, "wp.status.missed")
+      legend(.rest, "wp.status.rest")
     }
     .font(DS.TextStyle.caption)
     .foregroundStyle(DS.Color.mutedForeground.swiftUI)
@@ -174,32 +152,28 @@ struct WorkoutsHomeView: View {
     .accessibilityHidden(true)
   }
 
-  @ViewBuilder private func dayMark(_ d: WorkoutHome.WeekDay) -> some View {
-    let size: CGFloat = 26
-    switch d.status {
-    case .done:
-      Image(systemName: "checkmark")
-        .font(.caption.weight(.bold))
-        .foregroundStyle(.white)
-        .frame(width: size, height: size)
-        .background(Circle().fill(Self.accent))
-    case .todo:
-      Circle()
-        .strokeBorder(Self.accent, lineWidth: d.isToday ? 2.5 : 1.5)
-        .frame(width: size, height: size)
-    case .missed:
-      Circle()
-        .strokeBorder(Self.accent.opacity(0.35), style: StrokeStyle(lineWidth: 1.5, dash: [3, 3]))
-        .frame(width: size, height: size)
-    case .rest:
-      Image(systemName: "leaf")
-        .font(.caption)
-        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-        .frame(width: size, height: size)
-    case .unplanned:
-      Circle()
-        .strokeBorder(DS.Color.foreground.swiftUI.opacity(0.15), lineWidth: 1)
-        .frame(width: size, height: size)
+  /// Trạng thái ngày của kế hoạch → chấm của dải ngày chung.
+  static func mark(_ s: DayStatus) -> WeekDay.Mark {
+    switch s {
+    case .done: .done
+    case .todo: .planned
+    case .missed: .missed
+    case .rest: .rest
+    case .unplanned: .none
+    }
+  }
+
+  private func legend(_ m: WeekDay.Mark, _ key: String.LocalizationValue) -> some View {
+    HStack(spacing: 4) {
+      switch m {
+      case .done: Circle().fill(Self.accent).frame(width: 6, height: 6)
+      case .planned: Circle().strokeBorder(Self.accent, lineWidth: 1.2).frame(width: 6, height: 6)
+      case .missed:
+        Circle().strokeBorder(Self.accent.opacity(0.45), style: StrokeStyle(lineWidth: 1, dash: [1.5, 1.5]))
+          .frame(width: 6, height: 6)
+      default: Capsule().fill(DS.Color.mutedForeground.swiftUI.opacity(0.5)).frame(width: 7, height: 2)
+      }
+      Text(String(localized: key))
     }
   }
 
@@ -232,9 +206,15 @@ struct WorkoutsHomeView: View {
         VStack(alignment: .leading, spacing: 6) {
           ProgressView(value: Double(done), total: Double(max(total, 1)))
             .tint(Self.accent)
-          Text(String(localized: "wh.progress \(done) \(total)"))
-            .font(DS.TextStyle.caption.monospacedDigit())
-            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          HStack {
+            Text(String(localized: "wh.progress \(done) \(total)"))
+              .font(DS.TextStyle.caption.monospacedDigit())
+              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            Spacer(minLength: 0)
+            if let s = flow.session, s.plan.date == flow.today.today, let start = s.startedAt {
+              WorkoutClock(startedAt: start)
+            }
+          }
         }
         primaryButton(String(localized: "wh.continue"), systemImage: "arrow.right", fill: Self.accent) { onOpenSession() }
       }
@@ -688,7 +668,7 @@ struct LibraryHistoryView: View {
       .padding(DS.Spacing.md)
     }
     .navigationTitle(String(localized: "wh.libraryHistory"))
-    .navigationBarTitleDisplayMode(.inline)
+    .navigationBarTitleDisplayMode(.large)
     .ascndPage()
   }
 

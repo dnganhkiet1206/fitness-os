@@ -95,6 +95,9 @@ public actor InMemoryWorkoutStore: WorkoutStore {
     for (k, s) in days where s.loggedSessionId == sessionId {
       var state = s
       state.loggedKeys = []
+      // buổi đã xoá thì ngày về "chờ tập", không còn "đang tập dở" (12/11); số tạ / reps đã điền giữ lại
+      state.progress.done = [:]
+      state.progress.startedAt = nil
       days[k] = state
     }
     outbox.append(entry)
@@ -135,12 +138,11 @@ extension InMemoryWorkoutStore: OutboxPersistence {
     if snapshot.dead.count > deadEntries.count { deadEntries += snapshot.dead.dropFirst(deadEntries.count) }
   }
 
-  public func dropAllOnSignOut() async throws -> Int {
-    defer {
-      outbox = []
-      deadEntries = []
-    }
-    return outbox.count
+  public func purge(userId: String) async throws -> Int {
+    let n = outbox.filter { $0.userId == userId }.count
+    outbox.removeAll { $0.userId == userId }
+    deadEntries.removeAll { $0.entry.userId == userId }
+    return n
   }
 }
 

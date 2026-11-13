@@ -117,8 +117,21 @@ public final class WorkoutFlow {
     for e in entries where e.kind == PlanEdit.templateDeleteKind {
       if let id = e.payload["id"]?.stringValue { session?.templateDeleted(id) }
     }
+    let before = plannedToday
     await today.adopt(entries)
-    await install()
+    // Người dùng tự đổi buổi của HÔM NAY trên máy này (12/11, Kiệt: đổi buổi rồi mà thẻ Tập luyện
+    // vẫn là buổi cũ): buổi đang tập dở cũng được thay. Không mất gì: tiến độ khoá theo ngày + mẫu,
+    // chọn lại buổi cũ thì các set đã tích quay lại. Sửa ở máy khác / làm mới server vẫn không thay.
+    // Chỉ khi chính lịch của ngày đổi (gán buổi / đổi ngày); xoá mẫu giữa buổi thì buổi vẫn mở, tách khỏi mẫu.
+    let scheduled = entries.contains { $0.kind == PlanEdit.routineDayKind || $0.kind == PlanEdit.dayOverrideKind }
+    let deleted = entries.contains { $0.kind == PlanEdit.templateDeleteKind }
+    await install(replacingActive: scheduled && !deleted && plannedToday != before)
+  }
+
+  /// Buổi kế hoạch của hôm nay: mẫu nào, hay nghỉ / chưa lên lịch (`nil`).
+  private var plannedToday: String? {
+    guard let p = today.plan, p.date == today.today else { return nil }
+    return p.template?.id
   }
 
   /// Một buổi bị xoá từ lịch sử (#400): ngày ấy thôi "đã tập", "lần trước"
@@ -329,11 +342,11 @@ public final class WorkoutFlow {
   /// chỉ xét buổi khi lượt trước đã đọc xong nó. Chạy chồng thì lượt sau thấy
   /// buổi còn `.loading` — chưa biết đã có tiến độ hay chưa — và coi là "chưa
   /// chạm", thay mất một buổi có thể đang tập dở.
-  private func install() async {
+  private func install(replacingActive: Bool = false) async {
     let previous = installing
     let task = Task {
       await previous?.value
-      await self.installNow()
+      await self.installNow(replacingActive: replacingActive)
     }
     installing = task
     await task.value
@@ -342,7 +355,8 @@ public final class WorkoutFlow {
   /// Dựng màn tập cho kế hoạch hiện tại. Không bao giờ bỏ một buổi đang tập
   /// dở: kế hoạch mới (server sau cache, sửa template ở máy khác, qua nửa đêm)
   /// chỉ thay buổi chưa được chạm, hoặc buổi đã chốt của một ngày đã qua.
-  private func installNow() async {
+  /// Ngoại lệ duy nhất: `replacingActive` — chính người dùng vừa đổi buổi của hôm nay.
+  private func installNow(replacingActive: Bool = false) async {
     let next = makeSession()
     if let current = session {
       if let next, current.plan == next.plan, current.loggedElsewhere == next.loggedElsewhere {
@@ -350,7 +364,8 @@ public final class WorkoutFlow {
         if current.loadFailed { await current.load() }
         return
       }
-      guard Self.replaceable(current, today: today.today) else { return }
+      let chosen = replacingActive && current.phase == .active && current.plan.date == today.today
+      guard chosen || Self.replaceable(current, today: today.today) else { return }
     }
     next?.setWeightUnit(weightUnit)
     session = next

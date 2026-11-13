@@ -31,6 +31,8 @@ struct CoachMemoryView: View {
       .padding(DS.Spacing.md)
     }
     .navigationTitle(Text("cm.title"))
+    // màn đẩy vào = tiêu đề lớn (Kiệt 12/11); đặt rõ để không thừa hưởng kiểu nhỏ của màn trước
+    .navigationBarTitleDisplayMode(.large)
     .ascndPage()
     .task { await book.load() }
     .refreshable { await book.load() }

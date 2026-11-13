@@ -13,6 +13,9 @@ public enum KoaJourney {
     /// Tổng số ngày có ghi bữa / nước / giấc ngủ chạm một mốc (10/11, Kiệt duyệt
     /// `docs/design/mocks/koa-logging-milestones.html`). Cộng dồn, không phải chuỗi; không Gains, không xu.
     case logDays
+    /// Một tháng đã qua (13/11, "Tháng của bạn với Koa"): Koa nhắc ở Hôm nay mấy ngày đầu tháng mới,
+    /// một lần. Không nằm trong danh sách mốc của Hành trình (tháng đã có dải riêng).
+    case monthDone
   }
 
   public struct Moment: Sendable, Hashable, Identifiable {
@@ -30,6 +33,7 @@ public enum KoaJourney {
       case .firstSession, .firstFullWeek, .rankUp, .sessions: true
       case .record, .comeback, .fullWeek, .tierUp: false
       case .logDays: KoaJourney.majorLogMarks.contains(value)
+      case .monthDone: true
       }
     }
   }
@@ -94,6 +98,7 @@ public enum KoaJourney {
       out.append(Moment(id: "tier:\(s.step)", kind: .tierUp, date: s.date, value: s.step))
     }
     out += logMoments(logged, today: today)
+    out += KoaMonthRecap.doneMoments(days: days, logged: logged, today: today)
     return out.sorted { $0.date != $1.date ? $0.date > $1.date : $0.major && !$1.major }
   }
 
@@ -183,20 +188,72 @@ public enum KoaLogDaysSync {
       filters: [.eq("user_id", .string(userId))], order: .init(column: "date", ascending: false), limit: limit)
   }
 
+  /// Việc được ghi trong một ngày (Nhịp ghi tách theo loại, 12/11).
+  public enum Kind: String, Sendable, Hashable, CaseIterable { case meal, water, sleep }
+
   /// Ngày có ít nhất một việc ghi: bữa (kcal > 0), nước, hoặc giấc ngủ. Bước chân không tính.
   public static func days(_ rows: [JSONValue]) -> Set<LocalDate> {
-    Set(
-      rows.compactMap { r in
-        guard let d = r["date"]?.stringValue.flatMap(LocalDate.init),
-          [r["kcal"], r["water_ml"], r["sleep_duration_min"]].contains(where: { ($0?.doubleValue ?? 0) > 0 })
-        else { return nil }
-        return d
-      })
+    Set(kinds(rows).keys)
+  }
+
+  /// Từng ngày có ghi và ghi những gì. Ngày chỉ có bước chân không có mặt.
+  public static func kinds(_ rows: [JSONValue]) -> [LocalDate: Set<Kind>] {
+    var out: [LocalDate: Set<Kind>] = [:]
+    for r in rows {
+      guard let d = r["date"]?.stringValue.flatMap(LocalDate.init) else { continue }
+      var k: Set<Kind> = []
+      if (r["kcal"]?.doubleValue ?? 0) > 0 { k.insert(.meal) }
+      if (r["water_ml"]?.doubleValue ?? 0) > 0 { k.insert(.water) }
+      if (r["sleep_duration_min"]?.doubleValue ?? 0) > 0 { k.insert(.sleep) }
+      guard !k.isEmpty else { continue }
+      out[d, default: []].formUnion(k)
+    }
+    return out
   }
 
   /// `nil` khi đọc hỏng: giữ các ngày đã biết.
-  public static func load(userId: String, store: any RowStore) async -> Set<LocalDate>? {
-    (try? await store.select(query(userId: userId))).map(days)
+  public static func load(userId: String, store: any RowStore) async -> [LocalDate: Set<Kind>]? {
+    (try? await store.select(query(userId: userId))).map(kinds)
+  }
+}
+
+/// Nhịp ghi 30 ngày (12/11, Kiệt duyệt mock "Ghi chép cũng nuôi Koa", lớp A,
+/// `docs/design/mocks/koa-logging-rhythm.html`): số ngày có ghi bữa / nước / giấc ngủ trong cửa sổ
+/// cuốn chiếu 30 ngày, so với 30 ngày trước đó. Cùng tinh thần với `KoaRhythm`: không có số liên tiếp
+/// để gãy, bỏ một ngày thì con số chỉ bớt 1. Không Gains, không xu, không nói gì về calo hay cân nặng.
+public enum KoaLogRhythm {
+  public static let window = KoaRhythm.window
+
+  public struct State: Sendable, Hashable {
+    /// Cũ → mới, đúng `window` ngày, ngày cuối là hôm nay; `true` = có ghi.
+    public let days: [Bool]
+    public let logged: Int
+    /// Số ngày có ghi trong 30 ngày trước đó, để so.
+    public let previous: Int
+    /// Trong cửa sổ: số ngày có ghi từng loại.
+    public let meals: Int
+    public let water: Int
+    public let sleep: Int
+    public var change: Int { logged - previous }
+  }
+
+  public static func state(_ kinds: [LocalDate: Set<KoaLogDaysSync.Kind>], today: LocalDate) -> State {
+    let start = today.adding(days: -(window - 1))
+    var days: [Bool] = []
+    var meals = 0, water = 0, sleep = 0
+    var d = start
+    while d <= today {
+      let k = kinds[d] ?? []
+      days.append(!k.isEmpty)
+      if k.contains(.meal) { meals += 1 }
+      if k.contains(.water) { water += 1 }
+      if k.contains(.sleep) { sleep += 1 }
+      d = d.adding(days: 1)
+    }
+    let prevStart = start.adding(days: -window)
+    let previous = kinds.filter { !$0.value.isEmpty && $0.key >= prevStart && $0.key < start }.count
+    return State(
+      days: days, logged: days.filter { $0 }.count, previous: previous, meals: meals, water: water, sleep: sleep)
   }
 }
 

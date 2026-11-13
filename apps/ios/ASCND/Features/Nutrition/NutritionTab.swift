@@ -31,6 +31,8 @@ struct NutritionTab: View {
   @State private var grocery: GroceryBook?
   /// Gợi ý chỉnh calo (09/11) — cùng sổ với màn Hiệu chỉnh mục tiêu.
   @State private var calorieGoals: SmartGoalsBook?
+  /// Calo theo ngày cho chấm "đã ghi" của dải ngày (13/11, dải ngày chung).
+  @State private var week: NutritionInsightsBook?
   @Environment(\.dynamicTypeSize) private var typeSize
   @Environment(\.scenePhase) private var scenePhase
 
@@ -96,6 +98,9 @@ struct NutritionTab: View {
         grocery = nil
         calorieGoals?.close()
         calorieGoals = nil
+        week?.close()
+        week = services?.makeNutritionInsights(userId: userId)
+        await week?.load()
       }
       if calorieGoals == nil {
         calorieGoals = services?.makeSmartGoals(userId: userId, today: LocalDate(SystemWallClock().nowMillis(), in: .current))
@@ -105,6 +110,15 @@ struct NutritionTab: View {
       if grocery == nil { grocery = services?.makeGrocery(userId: userId) }
     }
     .onChange(of: today?.userId) { Task { await reload() } }
+    // Bữa sửa / xoá ở Nhật ký (màn riêng, sổ riêng) hay ghi ở chỗ khác (Ghi nhanh, widget) đã lên
+    // server: thẻ calo và các khung bữa của tab đọc lại — trước đây giữ số cũ tới lần đổi tài khoản
+    // hay ra tiền cảnh (12/11, rà cùng lỗi "đổi rồi mà ngoài không đổi" của Tập luyện).
+    .onChange(of: services?.mealDiaryRebuilt) { _, pulse in
+      if pulse != nil { Task { await reload() } }
+    }
+    .onChange(of: services?.sync.pendingCount) { old, new in
+      if let old, let new, new < old { Task { await reload() } }
+    }
     // Ra tiền cảnh, hay để app mở qua nửa đêm: thẻ calo và các bữa sang ngày
     // mới (trước 24/10 thì giữ số của hôm qua tới khi đổi tài khoản).
     .onChange(of: scenePhase) { _, phase in
@@ -191,37 +205,23 @@ struct NutritionTab: View {
       .contentShape(Rectangle())
   }
 
-  /// Bảy ngày tới hôm nay; hôm nay tô màu Bữa ăn (đang xem ở trang này).
+  /// Dải ngày chung (13/11): tuần T2→CN, hôm nay tô màu Bữa ăn (đang xem ở trang này), chấm = ngày đã
+  /// ghi bữa; chạm một ngày đã qua mở Nhật ký ngày ấy.
   private func dayStrip(_ userId: String) -> some View {
     let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
-    let accent = MascotRoomView.signalColor(.meal)
-    return HStack(spacing: 4) {
-      ForEach(-6...0, id: \.self) { offset in
-        let d = today.adding(days: offset)
-        let isToday = offset == 0
-        let label = VStack(spacing: 2) {
-          Text(verbatim: d.calendarDate.formatted(Date.FormatStyle().weekday(.narrow).locale(.app)))
-            .font(DS.TextStyle.caption)
-            .foregroundStyle(isToday ? Color.white.opacity(0.85) : DS.Color.mutedForeground.swiftUI)
-          Text(verbatim: "\(d.day)")
-            .font(DS.TextStyle.number(15, .body).weight(.semibold))
-            .foregroundStyle(isToday ? Color.white : DS.Color.foreground.swiftUI)
-        }
-        .frame(maxWidth: .infinity, minHeight: 50)
-        .background {
-          if isToday { RoundedRectangle(cornerRadius: 14, style: .continuous).fill(accent) }
-        }
-        .contentShape(Rectangle())
-        if isToday {
-          label
-            .accessibilityElement(children: .combine)
-            .accessibilityAddTraits(.isSelected)
-        } else {
-          NavigationLink(value: DiaryRoute(userId: userId, date: d)) { label }
-            .buttonStyle(TodayPressStyle())
-            .accessibilityLabel(Text(verbatim: d.calendarDate.formatted(
-              Date.FormatStyle().weekday(.wide).day().month(.wide).locale(.app))))
-        }
+    var logged: Set<LocalDate> = []
+    if case .ready(let rows)? = week?.phase { for r in rows where r.kcal > 0 { logged.insert(r.date) } }
+    // hôm nay: theo bữa đã có ở danh sách của tab (kể cả bữa đang chờ gửi), không đợi `daily_logs`
+    if case .ready(let list)? = meals?.phase, !list.isEmpty { logged.insert(today) }
+    return WeekDayStrip(
+      days: WeekDay.week(of: today).map { WeekDay(date: $0, mark: logged.contains($0) ? .done : .none) },
+      today: today, selected: today, accent: MascotRoomView.signalColor(.meal)
+    ) { d, cell in
+      if d.date == today {
+        cell
+      } else {
+        NavigationLink(value: DiaryRoute(userId: userId, date: d.date)) { cell }
+          .buttonStyle(TodayPressStyle())
       }
     }
   }
@@ -242,9 +242,10 @@ struct NutritionTab: View {
   private func reload() async {
     async let card: Void = loadToday()
     async let goals: Void? = calorieGoals?.load()
+    async let days: Void? = week?.load()
     await meals?.load()
     await card
-    _ = await goals
+    _ = await (goals, days)
   }
 
   private func loadToday() async { await today?.load() }
@@ -295,6 +296,10 @@ struct FoodsScreen: View {
         DSLoadingView()
       }
     }
+    // tiêu đề lớn đặt ở lớp bọc (Kiệt 12/11): lúc đang tải chưa có ScrollView, đặt ở màn con
+    // thì tiêu đề lớn bị thu lại và không hiện
+    .navigationTitle(String(localized: "foods.title"))
+    .navigationBarTitleDisplayMode(.large)
     .task {
       if book == nil { book = services.makeFoodLibrary(userId: userId) }
     }
@@ -399,6 +404,10 @@ struct DiaryScreen: View {
         DSLoadingView()
       }
     }
+    // tiêu đề lớn đặt ở lớp bọc (Kiệt 12/11): lúc đang tải chưa có ScrollView, đặt ở màn con
+    // thì tiêu đề lớn bị thu lại và không hiện
+    .navigationTitle(String(localized: "diary.title"))
+    .navigationBarTitleDisplayMode(.large)
     .task {
       if book == nil { book = services.makeMealDiary(userId: userId, date: date) }
       if week == nil { week = services.makeNutritionInsights(userId: userId) }

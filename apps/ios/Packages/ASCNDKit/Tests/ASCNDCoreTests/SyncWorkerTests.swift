@@ -134,14 +134,17 @@ struct SyncWorkerTests {
     #expect(await server.rows.keys.sorted() == ["late"])
   }
 
-  /// Bản ghi của tài khoản khác ở đầu hàng: không gửi, sang `dead`.
-  @Test func otherAccountIsNeverSent() async {
+  /// Bản ghi của tài khoản khác ở đầu hàng: không gửi, không chặn, và vẫn nằm
+  /// trên đĩa cho chủ của nó (AUD-06).
+  @Test func otherAccountIsNeverSentButKept() async {
     let store = InMemoryOutboxStore([entry("x", user: "someone-else"), entry("a")])
     let server = FakeServer()
     let w = worker(store, server)
     await run(w)
     #expect(await server.attempts == ["a"])
-    #expect(await store.dead.map(\.reason) == [.wrongAccount])
+    #expect(await store.dead.isEmpty)
+    #expect(await store.pending.map(\.id) == ["x"])
+    #expect(w.pendingCount == 0)
   }
 
   @Test func notSignedInSendsNothing() async {
@@ -199,27 +202,55 @@ struct SyncWorkerTests {
     #expect(await store.pending.isEmpty)
   }
 
-  /// Đăng xuất bỏ hàng đợi như baseline (#241 chờ Kiệt), cả trên đĩa.
-  @Test func signOutDropsQueue() async {
+  /// AUD-06: đăng xuất ĐỖ hàng đợi — trên đĩa còn nguyên; màn hình không đếm khi
+  /// không ai đăng nhập; chính chủ đăng nhập lại thì gửi.
+  @Test func signOutParksQueueAndOwnerSendsItLater() async {
     let store = InMemoryOutboxStore([entry("a"), entry("b")])
     let server = FakeServer()
     let w = worker(store, server, online: false)
     await run(w)
     #expect(await w.signOut() == 2)
-    #expect(await store.pending.isEmpty)
+    #expect(await store.pending.map(\.id) == ["a", "b"])
     #expect(w.pendingCount == 0)
+    w.setOnline(true)
+    w.setSignedInUser("u1")
+    await w.settle()
+    #expect(await server.attempts == ["a", "b"])
+    #expect(await store.pending.isEmpty)
   }
 
-  /// #335: bản ghi đã chết của người vừa rời đi không ở lại cho người sau
-  /// thấy — cả trong bộ nhớ lẫn trên đĩa.
-  @Test func signOutDropsDeadEntries() async {
+  /// #335: người khác đăng nhập sau không thấy / không gửi bản ghi đỗ của người trước.
+  @Test func anotherUserNeverSeesParkedEntries() async {
     let store = InMemoryOutboxStore([entry("x", user: "u9")])
-    let w = worker(store, FakeServer())
+    let server = FakeServer()
+    let w = worker(store, server)
     await run(w)
-    #expect(await store.dead.count == 1)
-    await w.signOut()
-    #expect(await store.dead.isEmpty)
-    #expect(w.outbox.dead.isEmpty)
+    #expect(await server.attempts.isEmpty)
+    #expect(w.pendingCount == 0)
+    #expect(w.deadCount == 0)
+    #expect(await store.pending.map(\.id) == ["x"])
+  }
+
+  /// R2-OPS-03: bản ghi bị server từ chối phát một sự cố (loại, lý do, mã) cho app báo lên Sentry.
+  @Test func refusedEntryRaisesAnIncident() async {
+    let store = InMemoryOutboxStore([entry("a")])
+    let server = FakeServer()
+    await server.script("a", .fail(.server(code: "23514")))
+    let w = worker(store, server)
+    var seen: [SyncWorker.Incident] = []
+    w.onIncident = { seen.append($0) }
+    await run(w)
+    #expect(seen == [.dead(kind: entry("a").kind, reason: .refused, code: "23514")])
+  }
+
+  /// Tài khoản bị xoá: bỏ hẳn bản ghi của nó trên máy, giữ của người khác.
+  @Test func purgeDropsOnlyTheDeletedAccount() async {
+    let store = InMemoryOutboxStore([entry("x", user: "u9"), entry("a")])
+    let w = worker(store, FakeServer(), online: false)
+    await run(w)
+    #expect(await w.purge(userId: "u9") == 1)
+    #expect(await store.pending.map(\.id) == ["a"])
+    #expect(w.outbox.pending.map(\.id) == ["a"])
   }
 }
 

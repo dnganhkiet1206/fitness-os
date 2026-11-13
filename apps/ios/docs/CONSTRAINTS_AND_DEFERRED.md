@@ -37,6 +37,7 @@ Hệ quả cho người làm:
 | **Khoá AI trả phí** (Gemini; `ASCND_AI_KEY`, `ASCND_AI_MODEL`) | AI ổn định khi có nhiều người dùng. Gói miễn phí giới hạn lượt và hay 503 (`TESTFLIGHT-CHECKLIST.md`) | Đang dùng gói miễn phí. Ngày 21/10 cả 4 hàm thử đều chạy | Kiệt |
 | **iPhone thật để kiểm** | Camera (mã vạch, ảnh món), Apple Health thật, push, Live Activity khi khoá màn hình | Chưa kiểm. Danh sách ở `GD0-DEVICE-CHECKLIST.md` | Kiệt (máy), agent (kịch bản) |
 | **Token Sentry** (dSYM) | Đọc được stack của các lỗi treo APPLE-IOS-4/5/6/7 | Chỉ bản Release mới tải dSYM | Kiệt |
+| **Sao lưu / PITR của Supabase** (round 3, AUD-01) | Khôi phục khi xoá nhầm, migration hỏng, sự cố hạ tầng | `supabase backups list` 12/11: `pitr_enabled: false`, `backups: []`, không có bản sao lưu nào khôi phục được. Câu "sao lưu tới 30 ngày" trong `legal-content.json` chưa có bằng chứng | Kiệt (nâng gói / bật PITR, hay sửa câu chữ) |
 | **Doanh thu / gói trả phí** | Mua trong app | Server có `verify-purchase` / `store-webhook`; app không có màn nào; chưa có quyết định sản phẩm | Kiệt (quyết định) |
 
 **Quy tắc:**
@@ -656,7 +657,42 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - **NOT RUN:** Hành trình có mốc ghi trong app thật trên simulator (chỉ có snapshot và test lõi); Koa nói mốc ghi ở Hôm nay; đi hết một buổi tập với `-uiTestTierUp` để xem thẻ lên bậc (công cụ bấm simulator bỏ sót thao tác, dừng ở set 2/8); VoiceOver; iPhone thật.
 - Thấy khi thử, **chưa kiểm lại, chưa sửa:** ở giao diện sáng, màn tập đang sáng thì sau màn nghỉ giữa set chuyển sang nền tối (ảnh simulator 10/11). Chưa rõ có chủ ý hay không.
 
+**Nhịp ghi 30 ngày của Koa (12/11, nhánh `claude/koa-log-rhythm`, Kiệt duyệt lớp A của mock `design/mocks/koa-logging-rhythm.html` ngày 10/11: "Duyệt, làm A + B"; lớp B là mốc ghi đều ở trên):**
+- Luật: thẻ "Nhịp ghi 30 ngày" ở Tiến bộ › Hành trình, ngay dưới thẻ tháng. Đếm số ngày có ghi bữa / nước / giấc ngủ trong cửa sổ cuốn chiếu 30 ngày, một chấm mỗi ngày, tách "Bữa / Nước / Ngủ N ngày", so với 30 ngày trước đó (`KoaLogRhythm`). Cùng định nghĩa "ngày có ghi" với mốc ghi đều. Không số liên tiếp, không Gains, không xu, không nói về calo hay cân nặng.
+- Dữ liệu: cùng lượt đọc `daily_logs` của mốc ghi đều, không thêm truy vấn; `KoaLogDaysSync.kinds` giữ thêm ngày ấy ghi những gì.
+- Ẩn khi 60 ngày qua không có ngày nào ghi (người chưa từng ghi không thấy một thẻ toàn chấm trống).
+- **Lệch mock:** mock đặt thẻ "ngay dưới Nhịp tập ở Tiến bộ › Hành trình"; thực tế Nhịp tập nằm ở Tiến bộ › Tập luyện. Nhịp ghi đặt trong Hành trình vì việc ghi không thuộc về tập và màn này đã đọc sẵn các ngày ghi.
+- Hạn chế: như mốc ghi đều, việc ghi còn trong hàng chờ offline hoặc vừa ghi mà Hôm nay chưa tải lại thì chưa được đếm. Giấc ngủ lấy từ Apple Health chỉ được đếm khi app đã ghi nó vào `daily_logs`.
+- Snapshot: mới `logRhythmCard`; `journeyLogDays` ghi lại vì có thêm thẻ. Ảnh chuẩn lấy từ CI.
+- **NOT RUN:** thẻ trong app thật trên simulator; VoiceOver; iPhone thật.
+
+**Tháng của bạn với Koa (13/11, nhánh `claude/koa-month-recap`, Kiệt duyệt mock `design/mocks/koa-month-recap.html` ngày 13/11 theo cả ba đề xuất: có Chia sẻ, Koa nhắc đầu tháng, dải 12 tháng tải dần):**
+- Hành trình: thẻ tháng (tháng này; đầu tháng chưa làm gì thì tháng trước) thêm số ngày có ghi và chạm được. Dưới thẻ là dải các tháng trước, từ tháng đầu tiên có buổi tập hay có ghi; tháng trống ở giữa vẫn có ô. Mỗi ô: số buổi, số ngày ghi, 5 cột nhỏ theo chặng 7 ngày. 12 ô một lần, "Xem thêm" mở tiếp.
+- Trang "Tháng N của bạn": số buổi và so với tháng trước; ô kỷ lục / tuần đủ buổi / ngày có ghi / lên hạng hoặc lên bậc (chỉ ô khác 0); bữa / nước / ngủ; "ngày bạn hay tập" (từ 4 buổi); tối đa 3 mốc nổi bật của tháng (kỷ lục có tên bài khi kệ cúp đã đọc); một câu Koa theo luật (`KoaMonthRecap.line`, không trách); nút Chia sẻ một ảnh dọc chỉ có tháng, số buổi, số ngày ghi, Koa và logo.
+- Mốc `monthDone` (khoá `month:<yyyy-mm>`, mốc lớn): tháng đã qua có buổi hay có ghi; Koa nhắc ở Hôm nay / phòng Koa trong `KoaMomentFeed.majorFreshDays` ngày đầu tháng mới, một lần. Không nằm trong danh sách mốc của Hành trình. Không có thông báo đẩy.
+- Tính lại từ dữ liệu có sẵn (`KoaJourney`, `KoaGains`, `KoaLogDaysSync.kinds`), không bảng, không migration, không Gains, không xu, không calo / cân nặng.
+- **Lệch mock:** Koa nhắc tháng cũ ở Hôm nay bằng câu của Koa như các mốc khác; câu ấy không có mũi tên mở thẳng trang tháng (mock vẽ "›"). Người dùng mở qua Tiến bộ › Tập luyện › Hành trình. Mốc lớn được nhắc 4 ngày (ngày 1–4), không phải 3.
+- Hạn chế: như mốc ghi đều, việc ghi còn trong hàng chờ offline chưa được đếm. Tháng tính theo ngày lịch của máy.
+- Snapshot: mới `monthRecap`; ghi lại `journey`, `journeyLogDays` (thẻ tháng mới, dải tháng). Ảnh chuẩn lấy từ CI.
+- **NOT RUN:** Koa nhắc tháng cũ ở Hôm nay trong app thật (cần ngày 1–4 của tháng; chỉ có test lõi); VoiceOver; bản en / es trên simulator; gửi ảnh chia sẻ ra app khác (đã mở bảng chia sẻ, thấy ảnh xem trước); iPhone thật.
+**Đồng bộ buổi tập / dinh dưỡng và đồng hồ buổi (12/11, Kiệt báo kèm ảnh; nhánh `claude/workout-state-sync`):**
+- Đổi buổi của HÔM NAY (Kế hoạch tuần › Đổi buổi, hay tạo mẫu gán vào hôm nay) khi đang tập dở: thẻ Tập luyện, Hôm nay và "Mở bảng tập" giờ theo buổi mới. Trước đây luật TW-6a (không bao giờ thay buổi đang tập dở) giữ buổi cũ ở mọi nơi trừ thẻ ngày. Luật vẫn giữ cho thay đổi KHÔNG do người dùng chọn lại buổi hôm nay: làm mới từ server, sửa mẫu ở máy khác, xoá mẫu giữa buổi (buổi vẫn mở, tách khỏi mẫu). Không mất gì: tiến độ khoá theo ngày + mẫu, chọn lại buổi cũ thì set đã tích quay lại. Bảng chọn buổi nói trước điều này khi hôm nay đang tập dở.
+- Xoá buổi từ Lịch sử: ngày bỏ hết dấu tích (giữ số tạ / reps đã điền), nên Tập luyện về "Bắt đầu buổi tập" thay vì "Đang tập 1/4 set". Trước đây dấu tích giữ lại có chủ ý (tích lại để dựng lại buổi); giờ dựng lại bằng cách tập lại.
+- App tự sang nền tối sau màn nghỉ giữa set: `KoaRestScreen` dùng `preferredColorScheme(.dark)`, đổi cả cửa sổ và giữ lại sau khi cảnh đóng. Giờ chỉ cảnh nghỉ tối (`environment(\.colorScheme)`). Rà cả app: không còn chỗ nào đổi giao diện cả cửa sổ ngoài lựa chọn của người dùng; các `preferredColorScheme` còn lại đều trong `#Preview`; `toolbarColorScheme` ở hai màn quét chỉ đổi thanh điều hướng của màn ấy.
+- Kế hoạch tuần ghi hôm nay "Đang tập" khi buổi đang tập dở (trước: "Chờ tập").
+- Dinh dưỡng: vòng calo cộng cả bữa còn trong hàng đợi (ghi lúc ngoại tuyến), cùng số với danh sách bữa vốn đã hiện bữa chờ gửi. Tab Dinh dưỡng đọc lại khi Nhật ký sửa / xoá món đã lên server, và khi hàng đợi gửi xong (trước: giữ số cũ tới lần ra tiền cảnh / đổi tài khoản).
+- Đồng hồ buổi tập: chạy từ set đầu tiên được tích, hiện ở đầu màn tập và thẻ "Đang tập", sống qua lần tắt app (lưu trong tiến độ ngày, chỉ trên máy); bỏ tích hết trước khi chốt thì về chưa bắt đầu. Thời lượng hiện ở màn tổng kết. **Không gửi server**: `workout_sessions` không có cột thời lượng, thêm cột là đổi schema, cần Kiệt duyệt. Hệ quả: thời lượng chỉ có ở màn tổng kết ngay sau khi chốt, không có trong Lịch sử, không có ở máy khác.
+- **NOT RUN:** vòng calo khi ngoại tuyến trên simulator (công cụ gõ không nhập được ô, chỉ có test lõi); khi CÓ mạng, máy giả của chế độ test không dựng lại `daily_logs` sau khi ghi bữa nên vòng calo đứng yên ở simulator, chưa kiểm được trên server thật; VoiceOver của đồng hồ; iPhone thật.
+
+**Backend round 3 (12/11/2026, nhánh `claude/backend-round3`, báo cáo `docs/audits/round-3/`):**
+- **#241 — chọn (b) / phương án A của tờ beta gate:** kết thúc phiên (đăng xuất, token hết hạn, đổi tài khoản) KHÔNG còn xoá bản ghi chưa gửi; chúng đỗ lại theo `userId`, chỉ gửi khi chính chủ đăng nhập lại, người khác không thấy, không đếm. Xoá tài khoản thì bỏ hẳn bản ghi của tài khoản ấy (`SyncWorker.purge`). Đóng luôn R2-SYNC-01 (lệnh xoá không theo người).
+- **Băng chuỗi đóng bán** (AUD-14, phương án B): `buy_streak_freeze` rút quyền của người dùng. Băng đã mua giữ nguyên. Mở lại = một GRANT đi cùng guard chuỗi của app.
+- **4 migration CHƯA deploy, chờ Kiệt duyệt từng cái:** `20261112120000_reward_key_shapes`, `20261112130000_fk_indexes` + `20261112130100_community_fk_indexes`, `20261112140000_streak_freeze_sale_closed`, `20261112150000_mascot_wallet`. App chạy được trước và sau khi deploy (ví đọc lùi về cách cũ khi server chưa có `mascot_wallet`).
+- **Hạn chế còn lại:** buổi tập đang dở (`workout_day`) vẫn bị xoá khi phiên kết thúc; bản ghi đỗ của một tài khoản không bao giờ quay lại vẫn nằm trên máy (chưa có hạn giữ); test C17 của bộ thử ngược Cộng đồng đỏ khi chạy 17:00–24:00 UTC (có từ trước, phụ thuộc giờ).
+
 ## 5. Lịch sử thay đổi sổ
+
+- 12/11/2026: backend round 3 — #241 chọn giữ bản ghi offline; đóng bán băng chuỗi; ghi sao lưu / PITR vào vấn đề đầu tư; 4 migration chờ duyệt deploy.
 
 - 02/11/2026: E2E hết giờ không phải do flow treo: 45 phút bị build, bật simulator và biên dịch lại ASCNDTests ăn 27 phút, Maestro cần ~20. Nay một lần `build-for-testing`, job 60 phút, step Maestro 35 phút, bị dừng giữa chừng vẫn có bảng flow trong tóm tắt; flow 05 đặt `waitToSettleTimeoutMs`, flow 08 chờ hết hiệu ứng quay lại.
 - 01/11/2026: Koa chạy tới kéo thẻ nhiệm vụ; bảng tự vẽ; vẽ lại phòng tập khung dọc theo mock, bỏ tiền cảnh mờ.
@@ -784,3 +820,6 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - 09/11/2026: app Apple Watch tối thiểu (ghi set + quãng nghỉ khi iPhone đang tập); chưa kiểm trên máy thật — xem mục 4.
 - 10/11/2026: bậc trong hạng của Koa (Hôm nay, tổng kết buổi, Hành trình); bánh tạ trong phòng Koa hoãn tới khi vẽ phòng mới (Kiệt 10/11); xem mục 3 và 4.
 - 10/11/2026: mốc ghi đều của Koa trong Hành trình (Kiệt duyệt mock 10/11); cờ `-uiTestTierUp` cho tài khoản giả sát mốc bậc; xem mục 4.
+- 12/11/2026: Nhịp ghi 30 ngày của Koa trong Hành trình (lớp A của mock "Ghi chép cũng nuôi Koa", Kiệt duyệt 10/11); xem mục 4.
+- 13/11/2026: Tháng của bạn với Koa: dải tháng và trang nhìn lại trong Hành trình, Koa nhắc đầu tháng (lớp C, Kiệt duyệt 13/11); xem mục 4.
+- 12/11/2026: đổi buổi hôm nay khi đang tập dở, xoá buổi từ lịch sử, app tự sang tối sau màn nghỉ, Kế hoạch tuần "Chờ tập" khi đang tập, vòng calo và bữa chờ gửi; đồng hồ buổi tập chỉ trên máy; xem mục 4.

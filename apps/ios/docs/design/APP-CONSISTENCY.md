@@ -206,10 +206,23 @@ tính năng đồng bộ trong toàn app" → "làm đi".
   (Giao diện, Ai thấy được): segmented hệ thống. Bộ lọc nội dung (loại bài, Đã lưu, Tìm kiếm): viên chữ
   (`ChipPicker`).
 - Tiêu đề lớn trong nội dung, nút tròn bên phải; thanh điều hướng ẩn + `statusBarScrim`.
+  - 12/11 (Kiệt duyệt mock đợt 2): MỌI màn đẩy vào dùng tiêu đề lớn; chỉ bảng bật lên để nhập (sheet có Huỷ / Lưu)
+    và màn có tiêu đề chỉ biết sau khi tải (tên kế hoạch ăn) giữ tiêu đề nhỏ. Màn có lớp bọc "đang tải"
+    (`…Screen { if let book { …View } else { DSLoadingView() } }`): đặt `navigationTitle` +
+    `.navigationBarTitleDisplayMode(.large)` ở LỚP BỌC — đặt ở màn con thì tiêu đề lớn bị thu lại, không hiện.
+- Dải ngày: MỘT `WeekDayStrip` (Tập luyện, Dinh dưỡng, Nhật ký bữa ăn; Kiệt duyệt mock đợt 2, 13/11): tuần
+  T2→CN có số ngày, ngày đang xem tô đặc màu tab, hôm nay có vòng màu tab, chấm = đã tập / đã ghi (vòng = có buổi,
+  vòng nét đứt = đã lỡ, gạch = nghỉ), ngày sau hôm nay mờ, không chạm. Thẻ "Tuần của Koa" là thẻ trạng thái, giữ
+  `TodayWeekStrip`.
 - Hành động chính: viên đen đặc; phụ: viên viền mảnh.
   - 10/11 (Kiệt duyệt mock https://claude.ai/artifact/Kmt7Y9vxeMnmsBGA79FdV3): MỘT họ nút viên. `DSButton` (trải
     ngang, cao 50) và `.dsPill` / `.dsPillSecondary` (trong hàng, cao 40) cùng màu mực (`foreground` / chữ
     `background`); nguy hiểm = viên viền đỏ chữ đỏ. Không dùng `.bordered` / `.borderedProminent` của hệ thống (chỉ
     còn ở màn Debug). Hành động thứ ba: chữ gạch chân.
 
+- Màu nhấn của cả app = màu mực (Kiệt duyệt mock đợt 2, 12/11, https://claude.ai/artifact/6Lvitx1r1uzrKk75YNnDnc):
+  tab đang chọn, chữ liên kết, biểu tượng trong danh sách, nút trong hộp xác nhận. Không dùng xanh dương mặc định
+  của iOS. Màu chỉ dành cho số liệu và trạng thái (màu nhóm, Tốt / Cần chú ý). Công tắc bật / tắt giữ xanh lá.
+- Đầu mục: ngoài thẻ, mở một nhóm thẻ = chữ lớn đậm (`DSSectionHeader` / tiêu đề mục); trong một thẻ, gọi tên
+  thẻ = chữ nhỏ viết hoa, giãn chữ ("VIỆC CHÍNH HÔM NAY", "HUY CHƯƠNG GẦN ĐÂY").
 ## Chưa làm (cần chủ dự án chọn / việc lớn)

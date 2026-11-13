@@ -116,6 +116,27 @@ struct MascotGoldenTests {
     }
   }
 
+  /// AUD-28: ví gộp từ server (`mascot_wallet()`) cộng ra ĐÚNG số dư, XP và tập
+  /// khoá như cả sổ — dòng gộp XP mang khoá mẫu, không tính là khoá đã nhận.
+  @Test func compactServerWalletMatchesTheFullLedger() {
+    var full: [LedgerRow] = (0..<1500).map { i in
+      LedgerRow(amount: 10, refKey: "d:\(LocalDate("2022-01-01")!.adding(days: i)):meal")
+    }
+    full += [LedgerRow(amount: 300, refKey: "welcome"), LedgerRow(amount: 50, refKey: "ch:silver:2026-11-09:koa_week")]
+    let compact = [
+      LedgerRow(amount: 1500 * 10 + 300 + 50, refKey: nil),
+      LedgerRow(amount: 0, refKey: "d:2000-01-03:meal", xpCount: 1500, claimsKey: false),
+      LedgerRow(amount: 0, refKey: "ch:silver:2000-01-03:xp", xpCount: 1, claimsKey: false),
+      LedgerRow(amount: 0, refKey: "welcome", xpCount: 0),
+      LedgerRow(amount: 0, refKey: "ch:silver:2026-11-09:koa_week", xpCount: 0),
+    ]
+    let a = MascotWallet(rows: full), b = MascotWallet(rows: compact)
+    #expect(a.balance == b.balance)
+    #expect(a.xp == b.xp)
+    #expect(b.claimed == ["welcome", "ch:silver:2026-11-09:koa_week"])
+    #expect(!b.claimed.contains("d:2000-01-03:meal"))
+  }
+
   @Test func energyHeadlineMatchesRN() throws {
     for c in try Self.array(Self.golden()["energy"]) {
       let n = try #require(Self.int(c["count"]))

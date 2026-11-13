@@ -21,8 +21,9 @@ public protocol OutboxPersistence: Sendable {
   /// Ghi bước của worker; chỉ xoá hàng trong `settled` hoặc đã sang `dead` —
   /// hàng worker chưa nạp (màn tập vừa chốt) để nguyên.
   func persist(_ outbox: Outbox, settled: Set<String>) async throws
+  /// Xoá hẳn mọi hàng (chờ gửi và `dead`) của một tài khoản đã bị xoá trên server.
   @discardableResult
-  func dropAllOnSignOut() async throws -> Int
+  func purge(userId: String) async throws -> Int
 }
 
 /// Vòng gửi của lớp Ghi nhận (ADR-0003): MỘT làn tuần tự, đọc `Outbox` (luật)
@@ -49,8 +50,21 @@ public final class SyncWorker {
   /// Ghi đĩa gần nhất hỏng — hàng đợi trên đĩa đang đi sau bộ nhớ.
   public private(set) var unsaved: LocalWriteError?
 
-  public var pendingCount: Int { outbox.pending.count }
-  public var deadCount: Int { outbox.dead.count }
+  /// Chỉ của người đang đăng nhập: bản ghi đỗ lại của tài khoản khác không
+  /// hiện, không đếm (#335).
+  public var pendingCount: Int { outbox.pending(for: signedInUser).count }
+
+  /// Sự cố đáng báo (round 3, R2-OPS-03): trước đây bản ghi bị bỏ cuộc và ghi đĩa
+  /// hỏng chỉ nằm trong bộ nhớ / màn hình của chính người dùng — đội không bao giờ
+  /// biết. Chỉ mang loại bản ghi, lý do, mã lỗi: không payload, không id người dùng.
+  public enum Incident: Sendable, Hashable {
+    case dead(kind: String, reason: DeadEntry.Reason, code: String?)
+    case localWrite(stage: String)
+  }
+
+  /// App nối vào Sentry. Gọi trên main actor, sau khi bước ấy đã xong.
+  public var onIncident: (@MainActor (Incident) -> Void)?
+  public var deadCount: Int { outbox.dead(for: signedInUser).count }
   public var isRunning: Bool { drain != nil }
 
   private let store: any OutboxPersistence
@@ -105,20 +119,34 @@ public final class SyncWorker {
     while let d = drain { await d.value }
   }
 
-  /// Đăng xuất: dừng vòng, bỏ hàng đợi như baseline (`clearPersistedCache`;
-  /// #241 chờ Kiệt). Trả về số bản ghi bị bỏ.
+  /// Phiên kết thúc: dừng vòng và ĐỖ hàng đợi (round 3, AUD-06; #241 (b)) —
+  /// không xoá gì trên đĩa. Bản ghi được gửi khi chính chủ đăng nhập lại.
+  /// Bước đã xong mà chưa kịp ghi xuống đĩa thì ghi nốt, để lần sau không gửi
+  /// lại cái server đã nhận. Trả về số bản ghi đang đỗ.
   @discardableResult
   public func signOut() async -> Int {
     signedInUser = nil
     drain?.cancel()
     await settle()
-    let dropped = outbox.dropAllOnSignOut()
-    settled = []
+    let parked = outbox.park()
+    if dirty || !settled.isEmpty { await persist() }
+    return parked
+  }
+
+  /// Tài khoản đã bị xoá trên server: bỏ hẳn mọi bản ghi của nó trên máy (gửi
+  /// tiếp chỉ còn bị từ chối, và dữ liệu không còn chủ). Trả về số bản ghi chờ
+  /// gửi bị bỏ.
+  @discardableResult
+  public func purge(userId: String) async -> Int {
+    drain?.cancel()
+    await settle()
+    let dropped = outbox.purge(userId: userId)
     do {
-      try await store.dropAllOnSignOut()
+      try await store.purge(userId: userId)
     } catch {
-      unsaved = LocalWriteError("signOut: \(error)")
+      unsaved = LocalWriteError("purge: \(error)")
     }
+    kick()
     return dropped
   }
 
@@ -142,7 +170,10 @@ public final class SyncWorker {
           outbox.succeeded(id: entry.id)
           settled.insert(entry.id)
         } catch {
-          outbox.failed(id: entry.id, error, now: clock.nowMillis())
+          if case .dead(let reason)? = outbox.failed(id: entry.id, error, now: clock.nowMillis()) {
+            let code: String? = if case .server(let c) = error { c } else { nil }
+            onIncident?(.dead(kind: entry.kind, reason: reason, code: code))
+          }
         }
         dirty = true
         await persist()
@@ -177,6 +208,7 @@ public final class SyncWorker {
       }
     } catch {
       unsaved = LocalWriteError("load: \(error)")
+      onIncident?(.localWrite(stage: "load"))
     }
   }
 
@@ -190,6 +222,7 @@ public final class SyncWorker {
       unsaved = nil
     } catch {
       unsaved = LocalWriteError("persist: \(error)")
+      onIncident?(.localWrite(stage: "persist"))
     }
   }
 }

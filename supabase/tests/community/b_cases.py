@@ -1403,4 +1403,7 @@ CASES += [
   dict(suite=DM, id='M22', mig=DMM, how='chặn sau khi đã nhắn không ẩn hội thoại',
        old='  USING (auth.uid() IN (user_a, user_b) AND NOT public.community_blocked_between(user_a, user_b));',
        new='  USING (auth.uid() IN (user_a, user_b));', expect='M22 '),
+  # round 3 (AUD-10): một khoá ngoại Cộng đồng mất index thì FK1 phải đỏ
+  dict(suite='fk_indexes', id='FK1', mig='20261112130100_community_fk_indexes', how='bỏ index của community_likes.user_id',
+       old='CREATE INDEX IF NOT EXISTS idx_community_likes_user_id ON public.community_likes (user_id);\n', new='', expect='FK1 '),
 ]

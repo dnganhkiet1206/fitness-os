@@ -82,6 +82,9 @@ public final class GRDBWorkoutStore: WorkoutStore {
       for key in try String.fetchAll(db, sql: "SELECT key FROM workout_day WHERE userId = ?", arguments: [owner]) {
         guard var state = try Self.day(db, owner, key), state.loggedSessionId == sessionId else { continue }
         state.loggedKeys = []
+        // buổi đã xoá thì ngày về "chờ tập", không còn "đang tập dở" (12/11); số tạ / reps đã điền giữ lại
+        state.progress.done = [:]
+        state.progress.startedAt = nil
         try Self.upsert(db, owner, key, try OutboxStore.json(state))
       }
       try db.execute(

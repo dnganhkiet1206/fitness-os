@@ -120,14 +120,47 @@ import UIKit
   }
 
   @Test func journey() {
-    check(KoaJourneyContent(history: Self.history, today: Self.today), height: 844, padded: false)
+    // Trong NavigationStack như ở app: thẻ tháng là NavigationLink, đứng ngoài thì bị vẽ như tắt.
+    check(NavigationStack { KoaJourneyContent(history: Self.history, today: Self.today) }, height: 844, padded: false)
   }
 
   /// Người mới chỉ ghi bữa / nước / ngủ, chưa tập buổi nào (10/11): Hành trình đã có mốc ghi đều.
+  /// Từ 12/11 có thêm Nhịp ghi 30 ngày dưới thẻ tháng.
   @Test func journeyLogDays() {
     let logged = Set((1...8).map { Self.today.adding(days: -$0) })
-    let h = AppServices.GainsHistory(days: [], week: Self.history.week, logged: logged)
-    check(KoaJourneyContent(history: h, today: Self.today), height: 600, padded: false)
+    let kinds = Dictionary(uniqueKeysWithValues: logged.map { ($0, Set<KoaLogDaysSync.Kind>([.meal])) })
+    let h = AppServices.GainsHistory(days: [], week: Self.history.week, logged: logged, logKinds: kinds)
+    check(NavigationStack { KoaJourneyContent(history: h, today: Self.today) }, height: 600, padded: false)
+  }
+
+  /// Nhịp ghi 30 ngày (12/11): 22 ngày có ghi, tách bữa / nước / ngủ, hơn 30 ngày trước 6 ngày.
+  @Test func logRhythmCard() {
+    var kinds: [LocalDate: Set<KoaLogDaysSync.Kind>] = [:]
+    let skip: Set<Int> = [2, 6, 11, 13, 18, 20, 23, 27]
+    for i in 0..<30 where !skip.contains(i) {
+      var k: Set<KoaLogDaysSync.Kind> = []
+      if i % 3 != 2 { k.insert(.meal) }
+      if i % 2 == 0 { k.insert(.water) }
+      if i % 4 != 3 { k.insert(.sleep) }
+      if k.isEmpty { k.insert(.meal) }
+      kinds[Self.today.adding(days: -i)] = k
+    }
+    for i in 30..<46 { kinds[Self.today.adding(days: -i)] = [.meal] }
+    check(KoaLogRhythmCard(state: KoaLogRhythm.state(kinds, today: Self.today)))
+  }
+
+  /// Trang "Tháng 10 của bạn" (13/11): buổi theo lịch T2 / T4 / T6 có đợt nghỉ, một kỷ lục, ghi
+  /// cách ngày; dữ liệu cố định nên ảnh không đổi theo ngày chạy.
+  @Test func monthRecap() {
+    var kinds: [LocalDate: Set<KoaLogDaysSync.Kind>] = [:]
+    for day in stride(from: 1, through: 31, by: 2) {
+      kinds[LocalDate(String(format: "2026-10-%02d", day))!] = day % 3 == 0 ? [.meal, .water] : [.meal, .sleep]
+    }
+    let h = AppServices.GainsHistory(
+      days: Self.history.days, week: Self.history.week, logged: Set(kinds.keys), logKinds: kinds)
+    check(
+      NavigationStack { KoaMonthView(history: h, key: .init(year: 2026, month: 10), today: Self.today) },
+      height: 1300, padded: false)
   }
 
   @Test func journeyEmpty() {

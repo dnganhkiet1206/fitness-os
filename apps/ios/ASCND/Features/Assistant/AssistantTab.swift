@@ -7,9 +7,9 @@ enum AssistantRoute: Hashable {
   case chat, weekly, steps, training, biometrics, sleep, goals, measure, photos, memory, trends, tools
   /// GĐ3: huy chương, Cộng đồng (bỏ khỏi thanh tab).
   case awards, community
-  /// Tiến bộ theo trạng thái (mock bản 10): chi tiết một nhóm; Cân nặng & số đo.
+  /// Tiến bộ theo trạng thái (mock bản 10): chi tiết một nhóm. Cân nặng & số đo mở từ hàng
+  /// "Cơ thể" của Kết quả (Kiệt 12/11 bỏ hàng trùng ở mục Thêm).
   case group(ProgressStatus.Group)
-  case body
 }
 
 /// Tab Tiến bộ — GĐ3 (Kiệt duyệt 21/10, mock `gd3-four-areas.html`): tab Trợ lý
@@ -119,12 +119,6 @@ struct AssistantTab: View {
           }
           sectionTitle("progress.more")
           VStack(spacing: 0) {
-            NavigationLink(value: AssistantRoute.body) {
-              WorkoutsHomeView.toolRow(
-                "scalemass", String(localized: "ps.more.body"), sub: nil, tint: DS.Color.metricSteel.swiftUI)
-            }
-            .buttonStyle(.plain)
-            Divider().padding(.leading, 58).opacity(0.6)
             if awards != nil {
               NavigationLink(value: AssistantRoute.awards) {
                 WorkoutsHomeView.toolRow(
@@ -251,12 +245,6 @@ struct AssistantTab: View {
               detail
             }
           }
-        case .body:
-          ScrollView {
-            BodySection(userId: flow.today.userId, today: flow.today.today).padding(DS.Spacing.md)
-          }
-          .navigationTitle(Text("ps.more.body"))
-          .ascndPage()
         case .community:
           CommunityScreen(pushed: true)
         case .tools:

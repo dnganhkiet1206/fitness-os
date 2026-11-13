@@ -1,4 +1,5 @@
 import ASCNDCore
+import ASCNDDesignSystem
 import ASCNDLiveActivity
 import SwiftUI
 import UIKit
@@ -69,9 +70,17 @@ struct ASCNDApp: App {
       case .dark: .dark
       }
     for case let scene as UIWindowScene in UIApplication.shared.connectedScenes {
-      for window in scene.windows { window.overrideUserInterfaceStyle = style }
+      for window in scene.windows {
+        window.overrideUserInterfaceStyle = style
+        // màu nhấn của cả app = màu mực (Kiệt duyệt mock đợt 2, 12/11): tab đang chọn, chữ liên
+        // kết, nút trong hộp UIKit (`ConfirmAlert`) — thay cho xanh dương mặc định của iOS
+        window.tintColor = Self.ink
+      }
     }
   }
+
+  /// Màu mực (`DS.Color.foreground`), đổi theo sáng / tối.
+  static let ink = UIColor(DS.Color.foreground.swiftUI)
 
   var body: some Scene {
     WindowGroup {
@@ -91,6 +100,9 @@ struct ASCNDApp: App {
         // ở gốc không đẩy xuống sheet đang mở, nhất là khi về "Theo máy" (`nil`);
         // đặt `overrideUserInterfaceStyle` của cửa sổ thì mọi màn, sheet, alert đổi
         // cùng lúc. "Theo máy" = `.unspecified`.
+        // Màu nhấn mực cho SwiftUI (Kiệt 12/11); công tắc giữ xanh lá như iOS (`InkAccentSwitch`).
+        .tint(DS.Color.foreground.swiftUI)
+        .toggleStyle(InkAccentSwitch())
         .onChange(of: services.preferences.theme, initial: true) { _, theme in Self.applyTheme(theme) }
         .onChange(of: services.preferences.mascotCompanion) { _, on in rest.showsKoa = on }
         .onAppear { Self.applyTheme(services.preferences.theme) }
@@ -153,5 +165,13 @@ struct ASCNDApp: App {
     .backgroundTask(.appRefresh(CommunityAlerts.taskId)) {
       await CommunityAlerts.runInBackground()
     }
+  }
+}
+
+/// Công tắc bật / tắt giữ màu xanh lá của iOS khi màu nhấn cả app là màu mực: công tắc màu mực
+/// (trắng ngà ở bản tối) khó phân biệt bật với tắt.
+struct InkAccentSwitch: ToggleStyle {
+  func makeBody(configuration: Configuration) -> some View {
+    Toggle(configuration).toggleStyle(.switch).tint(.green)
   }
 }

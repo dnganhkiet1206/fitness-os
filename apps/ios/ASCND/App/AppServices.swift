@@ -65,6 +65,8 @@ final class AppServices {
     /// Ngày có ghi bữa / nước / giấc ngủ, cho mốc ghi đều của Hành trình (10/11). Đọc hỏng thì trống:
     /// mốc ghi tạm vắng tới lần đọc sau, mốc tập không đổi.
     var logged: Set<LocalDate> = []
+    /// Cùng các ngày ấy, kèm ghi những gì: cho Nhịp ghi 30 ngày của Hành trình (12/11).
+    var logKinds: [LocalDate: Set<KoaLogDaysSync.Kind>] = [:]
   }
   var koaGainsHistory: GainsHistory?
   /// Kỷ lục từng ngày cho kệ cúp phòng Koa (#792), tính lại từ set đã lưu. Gắn userId; `basis` là
@@ -289,12 +291,19 @@ final class AppServices {
         // làm hỏng lượt gửi — ghi đã thành rồi.
         let rows = SupabaseRowStore(backend: b)
         return SupabaseRemoteWriter(backend: b, afterWrite: { entry in
-          _ = await DailyLog.rebuildAfterWrite(entry, store: rows)
+          // Lỗi dựng lại không làm hỏng lượt gửi, nhưng phải tới được đội (R2-OPS-03): trước đây bị bỏ qua.
+          let failed = await DailyLog.rebuildAfterWrite(entry, store: rows)
+          if !failed.isEmpty {
+            let kind = entry.kind
+            await MainActor.run { Telemetry.reportRebuild(kind: kind, failedDays: failed.count) }
+          }
           await widgets.refresh()
         })
       } ?? UnconfiguredRemote(),
       online: false)
     startupError = problems.isEmpty ? nil : problems.joined(separator: "\n")
+    // Bản ghi bị bỏ cuộc / ghi đĩa hỏng → Sentry (round 3, R2-OPS-03).
+    sync.onIncident = { Telemetry.report($0) }
     stateWriter.environment.online = { [sync = self.sync] in sync.online }
 
     // Phiên kết thúc (nút Đăng xuất, token hết hạn, tài khoản bị xoá, hay đổi
@@ -315,8 +324,9 @@ final class AppServices {
       // Người của phiên mới khi đổi thẳng tài khoản; `nil` khi đăng xuất.
       let next = session?.session?.userId
       // Đóng chốt TRƯỚC khi dọn: lượt làm mới / lượt ghi muộn của người vừa
-      // rời đi về sau đó không ghi lại được gì lên đĩa (#431, #454). Rồi bỏ
-      // hàng đợi chưa gửi, như baseline (#241 chờ Kiệt). Rồi dọn điểm quay lại
+      // rời đi về sau đó không ghi lại được gì lên đĩa (#431, #454). Rồi ĐỖ
+      // hàng đợi chưa gửi — không xoá (round 3, AUD-06; #241 (b)): bản ghi chỉ
+      // gửi khi chính chủ đăng nhập lại, không ai khác thấy. Rồi dọn điểm quay lại
       // `routine-day:*` (`clearUserScopedStorage`) và read model — trừ của
       // người mới, có thể đã ghi trong lúc lượt dọn này nhường (#455).
       await lifecycle.sessionEnded(next: next) { @MainActor in
@@ -609,7 +619,8 @@ final class AppServices {
     for p in list {
       guard let amount = await claimOnce(userId: userId, ref: p.ref, reason: p.reason) else { continue }
       if let day = OverloadQuest.day(of: p.ref), let h = koaGainsHistory {
-        koaGainsHistory = .init(days: KoaGainsSync.mark(h.days, overload: [day]), week: h.week, logged: h.logged)
+        koaGainsHistory = .init(
+          days: KoaGainsSync.mark(h.days, overload: [day]), week: h.week, logged: h.logged, logKinds: h.logKinds)
       }
       noteKoaReward(userId: userId, amount: amount, seen: true, source: OverloadQuest.day(of: p.ref) != nil ? "overload" : "explore")
     }
@@ -623,7 +634,10 @@ final class AppServices {
     let cutoff = EpochMillis(Date()) - 30_000
     if let h = koaGainsHistory, KoaGains.hasEarlierSession(h.days, on: date, before: cutoff) { return }
     guard let amount = await claimOnce(userId: userId, ref: OverloadQuest.refKey(date), reason: "overload") else { return }
-    if let h = koaGainsHistory { koaGainsHistory = .init(days: KoaGainsSync.mark(h.days, overload: [date]), week: h.week, logged: h.logged) }
+    if let h = koaGainsHistory {
+      koaGainsHistory = .init(
+        days: KoaGainsSync.mark(h.days, overload: [date]), week: h.week, logged: h.logged, logKinds: h.logKinds)
+    }
     noteKoaReward(userId: userId, amount: amount, seen: true, source: "overload")
   }
 
@@ -798,11 +812,11 @@ final class AppServices {
   }
 
   /// Các ngày có ghi, cho mốc ghi đều. Đọc hỏng thì giữ các ngày đang biết của đúng người này.
-  func loadKoaLogDays(userId: String) async -> Set<LocalDate> {
-    guard let rows, let days = await KoaLogDaysSync.load(userId: userId, store: rows) else {
-      return koaGainsHistory?.logged ?? []
+  func loadKoaLogDays(userId: String) async -> [LocalDate: Set<KoaLogDaysSync.Kind>] {
+    guard let rows, let kinds = await KoaLogDaysSync.load(userId: userId, store: rows) else {
+      return koaGainsHistory?.logKinds ?? [:]
     }
-    return days
+    return kinds
   }
 
   /// Đổi mỗi lần câu "nếu… thì…" đổi.
@@ -983,9 +997,9 @@ final class AppServices {
     guard koaGainsHistory == nil, let userId = session.session?.userId,
       let r = await loadKoaGains(userId: userId)
     else { return }
-    let logged = await loadKoaLogDays(userId: userId)
+    let kinds = await loadKoaLogDays(userId: userId)
     guard session.session?.userId == userId, koaGainsHistory == nil else { return }
-    koaGainsHistory = .init(days: r.days, week: r.week, logged: logged)
+    koaGainsHistory = .init(days: r.days, week: r.week, logged: Set(kinds.keys), logKinds: kinds)
   }
 
   /// Phòng Koa mở (#792): tính lại kỷ lục cho kệ cúp khi chưa có hay lịch sử tập đã đổi. Đọc hỏng
@@ -1183,7 +1197,7 @@ final class AppServices {
   /// Số dinh dưỡng hôm nay cho thẻ trên tab Dinh dưỡng (#527, `NutritionCard`).
   func makeNutritionToday(userId: String) -> NutritionTodayBook? {
     guard let rows else { return nil }
-    return NutritionTodayBook(userId: userId, store: rows)
+    return NutritionTodayBook(userId: userId, store: rows, pending: outbox)
   }
 
   func makeNutritionInsights(userId: String) -> NutritionInsightsBook? {
