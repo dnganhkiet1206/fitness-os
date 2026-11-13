@@ -39,6 +39,13 @@ struct WorkoutPickerSheet: View {
             .font(DS.TextStyle.footnote)
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
             .padding(.horizontal, 4)
+          // Buổi hôm nay đang tập dở (12/11): nói trước rằng đổi buổi không làm mất set đã tích.
+          if date == flow.today.today, let s = flow.session, s.phase == .active {
+            Label(String(localized: "wpk.inProgress \(s.plan.templateName)"), systemImage: "info.circle")
+              .font(DS.TextStyle.footnote)
+              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+              .padding(.horizontal, 4)
+          }
           card {
             row(
               symbol: "moon.zzz", tint: DS.Color.mutedForeground.swiftUI, title: String(localized: "today.status.rest"),

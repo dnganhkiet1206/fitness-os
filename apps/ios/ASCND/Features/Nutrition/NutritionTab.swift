@@ -105,6 +105,15 @@ struct NutritionTab: View {
       if grocery == nil { grocery = services?.makeGrocery(userId: userId) }
     }
     .onChange(of: today?.userId) { Task { await reload() } }
+    // Bữa sửa / xoá ở Nhật ký (màn riêng, sổ riêng) hay ghi ở chỗ khác (Ghi nhanh, widget) đã lên
+    // server: thẻ calo và các khung bữa của tab đọc lại — trước đây giữ số cũ tới lần đổi tài khoản
+    // hay ra tiền cảnh (12/11, rà cùng lỗi "đổi rồi mà ngoài không đổi" của Tập luyện).
+    .onChange(of: services?.mealDiaryRebuilt) { _, pulse in
+      if pulse != nil { Task { await reload() } }
+    }
+    .onChange(of: services?.sync.pendingCount) { old, new in
+      if let old, let new, new < old { Task { await reload() } }
+    }
     // Ra tiền cảnh, hay để app mở qua nửa đêm: thẻ calo và các bữa sang ngày
     // mới (trước 24/10 thì giữ số của hôm qua tới khi đổi tài khoản).
     .onChange(of: scenePhase) { _, phase in

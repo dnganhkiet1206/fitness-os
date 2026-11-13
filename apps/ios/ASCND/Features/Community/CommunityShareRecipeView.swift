@@ -22,11 +22,9 @@ struct CommunityShareRecipeScreen: View {
       if let book {
         CommunityShareRecipeView(book: book, onPosted: onPosted)
       } else if built {
-        ContentUnavailableView {
-          Label("community.sharerecipe.title", systemImage: "fork.knife")
-        } description: {
-          Text("placeholder.building")
-        }
+        DSEmptyState(
+          systemImage: "fork.knife", title: String(localized: "community.sharerecipe.title"),
+          message: String(localized: "placeholder.building"))
       } else {
         DSLoadingView()
       }

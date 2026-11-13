@@ -24,11 +24,9 @@ struct CommunityShareWorkoutScreen: View {
       if let book {
         CommunityShareWorkoutView(book: book, onPosted: onPosted)
       } else if built {
-        ContentUnavailableView {
-          Label("community.share.title", systemImage: "square.and.arrow.up")
-        } description: {
-          Text("placeholder.building")
-        }
+        DSEmptyState(
+          systemImage: "square.and.arrow.up", title: String(localized: "community.share.title"),
+          message: String(localized: "placeholder.building"))
       } else {
         DSLoadingView()
       }

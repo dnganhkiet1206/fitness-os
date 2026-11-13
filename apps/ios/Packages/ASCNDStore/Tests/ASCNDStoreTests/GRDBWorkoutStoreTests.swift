@@ -326,7 +326,8 @@ struct CommitDeleteTests {
     try await store.commitDelete(sessionId: "s1", del)
     try await store.commitDelete(sessionId: "s1", del)
     #expect(try await store.loadDay("2026-10-05:tpl")?.loggedKeys == [])
-    #expect(try await store.loadDay("2026-10-05:tpl")?.progress.done == ["a": true], "dấu tích giữ — tick lại / nối thêm dựng lại buổi")
+    // 12/11 (Kiệt): buổi đã xoá thì ngày về "chờ tập", không còn "đang tập dở"; tick lại thì dựng lại buổi.
+    #expect(try await store.loadDay("2026-10-05:tpl")?.progress.done.isEmpty == true)
     #expect(try await store.loadDay("2026-10-04:tpl")?.loggedKeys == ["a"], "buổi khác không đụng")
     let outbox = try OutboxStore(db).load()
     #expect(outbox.pending.map(\.id) == ["s1@del-1"])

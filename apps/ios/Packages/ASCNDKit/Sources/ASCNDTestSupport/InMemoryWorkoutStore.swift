@@ -95,6 +95,9 @@ public actor InMemoryWorkoutStore: WorkoutStore {
     for (k, s) in days where s.loggedSessionId == sessionId {
       var state = s
       state.loggedKeys = []
+      // buổi đã xoá thì ngày về "chờ tập", không còn "đang tập dở" (12/11); số tạ / reps đã điền giữ lại
+      state.progress.done = [:]
+      state.progress.startedAt = nil
       days[k] = state
     }
     outbox.append(entry)

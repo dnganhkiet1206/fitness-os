@@ -275,16 +275,36 @@ struct PlanEditTests {
     #expect(h.flow.today.plan?.status == .todo)
   }
 
-  /// TW-6a: đổi kế hoạch của hôm nay không đụng buổi đang tập dở.
-  @Test func activeSessionIsNotReplaced() async throws {
+  /// 12/11 (Kiệt): người dùng đổi buổi của HÔM NAY ngay trên máy này thì buổi đang tập dở cũng
+  /// đổi theo — thẻ Tập luyện / Hôm nay không còn giữ buổi cũ. Tiến độ không mất: chọn lại buổi cũ
+  /// thì set đã tích quay lại.
+  @Test func changingTodayReplacesTheActiveSessionAndKeepsItsProgress() async throws {
     let h = Harness()
     try await h.seed()
     let session = try #require(h.flow.session)
     _ = await session.toggle("0-0")
     try await h.editor.create(id: "tpl-b", name: "Push", exercises: [bench], scheduleOn: 0)
+    await h.flow.settled()
+    let next = try #require(h.flow.session)
     #expect(h.flow.today.plan?.template?.id == "tpl-b")
+    #expect(next.plan.templateId == "tpl-b" && next.phase == .idle)
+    try await h.editor.assign(day: 0, templateId: "tpl-old")
+    await h.flow.settled()
+    let back = try #require(h.flow.session)
+    #expect(back.plan.templateId == "tpl-old")
+    #expect(back.progress.done["0-0"] == true && back.phase == .active, "set đã tích của buổi cũ quay lại")
+  }
+
+  /// Sửa kế hoạch mà buổi của hôm nay không đổi (TW-6a): buổi đang tập dở giữ nguyên.
+  @Test func otherPlanEditsKeepTheActiveSession() async throws {
+    let h = Harness()
+    try await h.seed()
+    let session = try #require(h.flow.session)
+    _ = await session.toggle("0-0")
+    try await h.editor.create(id: "tpl-b", name: "Push", exercises: [bench], scheduleOn: 1)
+    await h.flow.settled()
     #expect(h.flow.session === session)
-    #expect(session.plan.templateId == "tpl-old")
+    #expect(session.progress.done["0-0"] == true)
   }
 
   /// RN BUG (xem `templateDetached`): xoá template giữa buổi rồi chốt — buổi
@@ -497,7 +517,7 @@ struct TemplateCopyTests {
   }
 
   /// Bản sao độc lập với nguồn: xoá nguồn không chạm bản sao; gán lại ngày
-  /// sang bản sao không đổi buổi đang tập dở (TW-6a).
+  /// sang bản sao thì màn tập theo bản sao, set đã tích của bản gốc không mất.
   @Test func copyIsIndependentAndActiveSessionIsIsolated() async throws {
     let h = Harness()
     try await h.seed("tpl-old", exercises: [squat, bench])
@@ -508,7 +528,8 @@ struct TemplateCopyTests {
     let copy = try await h.editor.create(id: "tpl-copy", name: "Legs (2)", exercises: source.exercises)
     try await h.editor.assign(day: 0, templateId: "tpl-copy")
     await h.flow.settled()
-    #expect(h.flow.session === session, "buổi đang tập dở giữ nguyên")
+    // Đổi buổi của hôm nay (12/11): màn tập theo bản sao; set đã tích của bản gốc vẫn nằm ở bản gốc.
+    #expect(h.flow.session?.plan.templateId == "tpl-copy")
     #expect(session.plan.templateId == "tpl-old" && session.progress.done["0-0"] == true)
     try await h.editor.delete(templateId: "tpl-old")
     await h.flow.settled()
