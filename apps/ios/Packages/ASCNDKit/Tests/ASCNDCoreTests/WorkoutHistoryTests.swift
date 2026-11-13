@@ -23,9 +23,11 @@ private actor Cache: HistoryCache {
 }
 
 private func row(_ id: String, _ iso: String, sets: String = #"[{"exerciseName":"Bench","weight":60,"reps":8}]"#) -> JSONValue {
-  try! JSONDecoder().decode(JSONValue.self, from: Data("""
+  let text = """
     {"id":"\(id)","date_time":"\(iso)","template_name":"Push","session_rpe":8,"volume_load":480,"pr_detected":false,"sets":\(sets)}
-    """.utf8))
+    """
+  // JSON viết tay trong test: hỏng thì hàng rỗng và test đỏ ở chỗ so sánh, không làm sập tiến trình test.
+  return (try? JSONDecoder().decode(JSONValue.self, from: Data(text.utf8))) ?? .null
 }
 
 private let clock = ManualClock(EpochMillis(1_791_183_600_000))  // 2026-10-05 07:00Z
