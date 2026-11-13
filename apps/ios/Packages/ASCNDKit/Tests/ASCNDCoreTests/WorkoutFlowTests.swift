@@ -182,6 +182,28 @@ struct WorkoutFlowTests {
   }
 
   /// Qua nửa đêm: buổi đã chốt hôm qua nhường chỗ cho buổi hôm nay.
+  /// Đồng hồ buổi (12/11): chạy từ set đầu tiên, sống qua lần mở lại, bỏ tích hết thì về chưa bắt đầu,
+  /// và thời lượng vào màn tổng kết.
+  @Test func workoutClockRunsFromTheFirstSet() async throws {
+    let h = Harness()
+    await h.flow.start()
+    let s = try #require(h.flow.session)
+    #expect(s.startedAt == nil && s.elapsedSeconds(at: h.clock.nowMillis()) == nil)
+    await s.toggle("0-0")
+    let start = try #require(s.startedAt)
+    h.clock.advance(90_000)
+    #expect(s.elapsedSeconds(at: h.clock.nowMillis()) == 90)
+    await s.toggle("0-0")
+    #expect(s.startedAt == nil, "bỏ tích hết trước khi chốt: chưa bắt đầu")
+    await s.toggle("0-0")
+    #expect(try #require(s.startedAt) > start)
+    await s.load()
+    #expect(s.startedAt != nil, "mở lại app: đồng hồ vẫn chạy từ mốc cũ")
+    h.clock.advance(25 * 60_000)
+    let summary = try await h.flow.finish()
+    #expect(summary.durationSec == 25 * 60)
+  }
+
   @Test func finishedSessionYieldsToTomorrow() async throws {
     let h = Harness()
     await h.flow.start()
@@ -609,6 +631,8 @@ struct WorkoutPipelineTests {
     #expect(p.flow.today.plan?.status == .todo)
     #expect(s.loggedKeys.isEmpty && s.summary == nil)
     #expect(p.flow.performance.last(for: "Bench") == nil)
+    // 12/11 (Kiệt): xoá hết trong lịch sử mà Tập luyện vẫn "Đang tập 1/4 set" — ngày về "chờ tập".
+    #expect(s.phase == .idle && !s.progress.done.values.contains(true))
 
     p.worker.setOnline(true)
     await p.worker.settle()

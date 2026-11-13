@@ -417,9 +417,27 @@ public final class WorkoutSessionController {
     if on && !WorkoutDay.isReady(row, progress) { return false }
     let event = WorkoutDay.toggle(row, &progress)
     if on { WorkoutDay.carryForward(from: row, in: rows, &progress) }
+    updateClock()
     onRest(event, WorkoutDay.next(after: row, in: rows))
     liveRecord = on ? record(of: row) : nil
     return await persist()
+  }
+
+  /// Đồng hồ buổi: chạy từ set đầu tiên được tích; bỏ tích hết trước khi chốt thì về chưa bắt đầu.
+  /// Buổi đã chốt giữ nguyên mốc (set nối thêm không làm đồng hồ chạy lại).
+  private func updateClock() {
+    guard loggedSessionId == nil || emptied else { return }
+    let ticked = progress.done.values.contains(true)
+    if ticked, progress.startedAt == nil { progress.startedAt = clock.nowMillis() }
+    if !ticked { progress.startedAt = nil }
+  }
+
+  /// Lúc bắt đầu buổi (set đầu tiên được tích), `nil` khi chưa bắt đầu.
+  public var startedAt: EpochMillis? { progress.startedAt }
+
+  /// Số giây từ lúc bắt đầu tới `now`; `nil` khi chưa bắt đầu.
+  public func elapsedSeconds(at now: EpochMillis) -> Int? {
+    progress.startedAt.map { max(0, Int((now.millis - $0.millis) / 1000)) }
   }
 
   /// Kỷ lục của set vừa tick, so với lịch sử và các set đã xong trước nó trong buổi.
@@ -540,7 +558,8 @@ public final class WorkoutSessionController {
     loggedPR = record.prDetected
     loggedRevision = 0
     loggedRpe = record.sessionRpe
-    let result = WorkoutSummary(record, records: records)
+    var result = WorkoutSummary(record, records: records)
+    result.durationSec = elapsedSeconds(at: now)
     summary = result
     onEnqueued(entry)
     return result
@@ -570,7 +589,8 @@ public final class WorkoutSessionController {
       }
     }
     guard let record = outcome.record else { throw .nothingDone }
-    let result = WorkoutSummary(record, records: records)
+    var result = WorkoutSummary(record, records: records)
+    result.durationSec = elapsedSeconds(at: clock.nowMillis())
     summary = result
     return result
   }
@@ -612,7 +632,8 @@ public final class WorkoutSessionController {
       }
     }
     guard let record = outcome.record else { throw .nothingToAppend }
-    let result = WorkoutSummary(record, records: records)
+    var result = WorkoutSummary(record, records: records)
+    result.durationSec = summary?.durationSec
     summary = result
     return result
   }

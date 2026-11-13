@@ -73472,6 +73472,75 @@
           }
         }
       }
+    },
+    "wpk.inProgress %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ is in progress. Switching keeps the sets you ticked; pick it again to carry on."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ está en curso. Si cambias, las series marcadas se guardan; elígela de nuevo para seguir."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ đang tập dở. Đổi buổi thì các set đã tích vẫn được giữ, chọn lại buổi này để tập tiếp."
+          }
+        }
+      }
+    },
+    "ws.clock.a11y %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Workout time %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tiempo de entrenamiento %@"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã tập %@"
+          }
+        }
+      }
+    },
+    "summary.duration %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Time %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tiempo %@"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thời gian %@"
+          }
+        }
+      }
     }
   }
 }

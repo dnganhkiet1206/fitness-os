@@ -95,6 +95,9 @@ public struct DayProgress: Sendable, Hashable, Codable {
   /// Thứ tự bài người dùng kéo thả trong buổi (19/10, "như Apple Music"): khoá
   /// bài (`WorkoutFocus.exerciseKey`). Rỗng = theo kế hoạch.
   public var order: [String] = []
+  /// Đồng hồ buổi tập (12/11, Kiệt: "đếm giờ như nhiều app"): lúc tích set đầu tiên. Chỉ trên máy,
+  /// không gửi server (bảng `workout_sessions` không có cột thời lượng). `nil` = chưa bắt đầu.
+  public var startedAt: EpochMillis?
 
   public init() {}
 
@@ -113,6 +116,7 @@ public struct DayProgress: Sendable, Hashable, Codable {
     remoteWeight = (try? c.decodeIfPresent([String: RemoteWeight].self, forKey: .remoteWeight)) ?? [:]
     warmup = (try? c.decodeIfPresent([String: Bool].self, forKey: .warmup)) ?? [:]
     order = (try? c.decodeIfPresent([String].self, forKey: .order)) ?? []
+    startedAt = try? c.decodeIfPresent(EpochMillis.self, forKey: .startedAt)
   }
 }
 

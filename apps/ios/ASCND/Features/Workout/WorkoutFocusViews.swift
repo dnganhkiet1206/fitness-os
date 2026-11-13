@@ -17,6 +17,8 @@ struct SessionProgressHeader: View {
   let exercises: [WorkoutFocus.Exercise]
   /// Bài của set kế tiếp — đoạn ấy được tô đậm viền.
   let current: String?
+  /// Đồng hồ buổi (12/11): lúc tích set đầu tiên; `nil` = chưa bắt đầu hay đã chốt, không hiện.
+  var startedAt: EpochMillis? = nil
 
   private var done: Int { exercises.reduce(0) { $0 + $1.done } }
   private var total: Int { exercises.reduce(0) { $0 + $1.total } }
@@ -30,6 +32,7 @@ struct SessionProgressHeader: View {
           .tracking(0.6)
           .foregroundStyle(accent)
         Spacer(minLength: DS.Spacing.sm)
+        if let startedAt { WorkoutClock(startedAt: startedAt) }
         Text(String(localized: "ws.sets.progress \(done) \(total)"))
           .font(DS.TextStyle.mono(.caption))
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
@@ -58,6 +61,36 @@ struct SessionProgressHeader: View {
       .accessibilityHidden(true)
     }
     .accessibilityElement(children: .combine)
+  }
+}
+
+/// Thời gian đã tập ("12:05", quá một giờ "1:02:05"), chạy mỗi giây từ set đầu tiên.
+struct WorkoutClock: View {
+  let startedAt: EpochMillis
+
+  var body: some View {
+    TimelineView(.periodic(from: .now, by: 1)) { context in
+      let seconds = max(0, Int(context.date.timeIntervalSince1970 - Double(startedAt.millis) / 1000))
+      Label {
+        Text(verbatim: Self.format(seconds))
+      } icon: {
+        Image(systemName: "stopwatch")
+      }
+      .font(DS.TextStyle.mono(.caption).weight(.semibold))
+      .foregroundStyle(DS.Color.foreground.swiftUI)
+      .accessibilityElement(children: .ignore)
+      .accessibilityLabel(Text(String(localized: "ws.clock.a11y \(Self.spoken(seconds))")))
+    }
+  }
+
+  static func format(_ seconds: Int) -> String {
+    let h = seconds / 3600, m = seconds / 60 % 60, s = seconds % 60
+    return h > 0 ? String(format: "%d:%02d:%02d", h, m, s) : String(format: "%d:%02d", m, s)
+  }
+
+  /// "12 phút 5 giây" cho VoiceOver.
+  static func spoken(_ seconds: Int) -> String {
+    Duration.seconds(seconds).formatted(.units(allowed: [.hours, .minutes, .seconds], width: .wide).locale(.app))
   }
 }
 
