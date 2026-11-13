@@ -515,12 +515,17 @@ struct ExerciseThumb: View {
   /// Có hướng dẫn để mở (bài thêm tay thì không).
   let linked: Bool
   var size: CGFloat = 52
+  /// Poster của bản minh hoạ 3D trong app (chỉ Debug): thay ảnh / chữ cái và
+  /// mang nhãn "3D" + ▶ để người dùng nhận ra bài có hướng dẫn 3D (Kiệt 13/11).
+  var demoPoster: URL?
 
   var body: some View {
     ZStack {
       RoundedRectangle(cornerRadius: 14, style: .continuous)
         .fill(accent.opacity(0.12))
-      if let url = thumbnail?.url {
+      if let demoPoster, let image = UIImage(contentsOfFile: demoPoster.path) {
+        Image(uiImage: image).resizable().scaledToFill()
+      } else if let url = thumbnail?.url {
         AsyncImage(url: url) { phase in
           if case .success(let image) = phase {
             image.resizable().scaledToFill()
@@ -533,10 +538,21 @@ struct ExerciseThumb: View {
       }
     }
     .frame(width: size, height: size)
+    .overlay(alignment: .topLeading) {
+      if demoPoster != nil {
+        Text(verbatim: "3D")
+          .font(.system(size: 9, weight: .heavy, design: .rounded))
+          .foregroundStyle(.white)
+          .padding(.horizontal, 4)
+          .padding(.vertical, 1.5)
+          .background(.black.opacity(0.55), in: Capsule())
+          .padding(4)
+      }
+    }
     .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
     .overlay(alignment: .bottomTrailing) {
       if linked {
-        Image(systemName: thumbnail?.isVideo == true ? "play.fill" : "book.fill")
+        Image(systemName: thumbnail?.isVideo == true || demoPoster != nil ? "play.fill" : "book.fill")
           .font(.system(size: 9, weight: .bold))
           .foregroundStyle(.white)
           .padding(5)

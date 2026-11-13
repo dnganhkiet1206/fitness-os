@@ -719,6 +719,15 @@ public struct WorkoutView: View {
   /// Bài đang mở thẳng trình xem 3D (một chạm, chỉ bản Debug).
   @State private var demoTarget: GuideTarget?
 
+  /// Poster 3D cho ảnh của bài (chỉ bản Debug, khi bài có minh hoạ 3D).
+  private func demoPoster(_ name: String) -> URL? {
+    #if DEBUG
+      return ExerciseDemo3D.posterURL(for: name)
+    #else
+      return nil
+    #endif
+  }
+
   // MARK: - Dạng bảng (phương án A, chủ dự án chọn 14/10)
   //
   // Mỗi bài một thẻ. Set đã xong / chưa tới là MỘT DÒNG chữ ("✓ 15 kg × 10 ·
@@ -976,7 +985,7 @@ public struct WorkoutView: View {
         #if DEBUG
           // Kiệt 13/11: một chạm là bài hướng dẫn chạy luôn — bài có bản 3D
           // mở thẳng trình xem 3D (tự chạy, lặp), không qua trang hướng dẫn.
-          if ExerciseDemo3D.demo(for: group.name) != nil {
+          if demoPoster(group.name) != nil {
             demoTarget = target
             return
           }
@@ -984,7 +993,7 @@ public struct WorkoutView: View {
         guideTarget = target
       } label: {
         HStack(spacing: DS.Spacing.sm) {
-          ExerciseThumb(name: group.name, thumbnail: thumb, linked: true)
+          ExerciseThumb(name: group.name, thumbnail: thumb, linked: true, demoPoster: demoPoster(group.name))
           VStack(alignment: .leading, spacing: 2) {
             Text(group.name)
               .font(DS.TextStyle.title2)
