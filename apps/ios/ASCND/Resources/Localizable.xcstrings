@@ -73748,6 +73748,29 @@
           }
         }
       }
+    },
+    "eg.demo3d.legend.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Muscles worked"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Músculos trabajados"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cơ hoạt động"
+          }
+        }
+      }
     }
   }
 }

@@ -245,7 +245,7 @@ class FiberFieldTests(unittest.TestCase):
         base = np.array([0.1, 0.0])
         along = base + np.array([0.0, 0.05, 0.10])[:, None] * axis[None, :]
         across = base + np.array([0.0, 0.05, 0.10])[:, None] * normal[None, :]
-        self.assertLess(float(fiber_fields.parallel_phase(spec, along).ptp()), 1e-9)
+        self.assertLess(float(np.ptp(fiber_fields.parallel_phase(spec, along))), 1e-9)
         steps = np.diff(fiber_fields.parallel_phase(spec, across))
         self.assertTrue(np.all(steps > 0))
         self.assertAlmostEqual(float(steps.mean()), 0.05 / spec["spacing_m"], places=9)
