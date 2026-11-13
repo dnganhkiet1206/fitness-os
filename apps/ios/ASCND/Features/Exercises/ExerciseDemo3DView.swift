@@ -14,6 +14,9 @@
   /// ("UNVERIFIED — NOT APPROVED FOR PRODUCTION").
   struct ExerciseDemo3DView: View {
     let name: String
+    /// Mở trang hướng dẫn đầy đủ (bước làm, bài tương tự) khi trình xem được
+    /// mở thẳng từ buổi tập; nil khi đã mở từ trang hướng dẫn.
+    var onFullGuide: (() -> Void)?
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var scheme
@@ -168,6 +171,16 @@
         // Màu tường / sàn của phòng, thấy trong lúc phòng 3D đang tải.
         .background { GymStage() }
         .toolbar {
+          if let onFullGuide {
+            ToolbarItem(placement: .primaryAction) {
+              Button(action: onFullGuide) {
+                Image(systemName: "book")
+                  .foregroundStyle(DS.Color.foreground.swiftUI)
+                  .frame(minWidth: 44, minHeight: 44)
+              }
+              .accessibilityLabel(Text("eg.demo3d.fullGuide"))
+            }
+          }
           ToolbarItem(placement: .primaryAction) {
             if !ExerciseTips.tips(for: PersonalRecords.exerciseKey(name)).isEmpty {
               Button {

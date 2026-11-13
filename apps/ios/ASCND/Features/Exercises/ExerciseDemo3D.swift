@@ -65,6 +65,15 @@
       demos[PersonalRecords.exerciseKey(name)]
     }
 
+    /// Poster của bài (ảnh đại diện trên thẻ buổi tập); nil khi bài không có
+    /// bản 3D hay thiếu USDZ trong bundle.
+    static func posterURL(for name: String) -> URL? {
+      guard let demo = demo(for: name),
+        Bundle.main.url(forResource: demo.usdzFile, withExtension: "usdz") != nil
+      else { return nil }
+      return Bundle.main.url(forResource: demo.posterFile, withExtension: "jpg")
+    }
+
     /// Một tấm duy nhất cho ảnh đại diện ở đầu trang (poster + nút ▶): chạm
     /// mở trình xem 3D, không phát clip này. Trả nil khi thiếu USDZ.
     static func media(for name: String, alt: String?) -> MediaState? {

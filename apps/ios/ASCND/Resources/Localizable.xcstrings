@@ -75289,6 +75289,29 @@
           }
         }
       }
+    },
+    "eg.demo3d.fullGuide": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Full guide"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guía completa"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hướng dẫn đầy đủ"
+          }
+        }
+      }
     }
   }
 }
