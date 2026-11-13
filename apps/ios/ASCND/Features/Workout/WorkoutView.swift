@@ -716,6 +716,8 @@ public struct WorkoutView: View {
 
   /// Bài đang mở hướng dẫn (`day-plan.tsx:1784`).
   @State private var guideTarget: GuideTarget?
+  /// Bài đang mở thẳng trình xem 3D (một chạm, chỉ bản Debug).
+  @State private var demoTarget: GuideTarget?
 
   // MARK: - Dạng bảng (phương án A, chủ dự án chọn 14/10)
   //
@@ -970,7 +972,16 @@ public struct WorkoutView: View {
     } else if let guides = flow?.guides, let first, first.adHoc == nil {
       let thumb = guides.thumbnail(exerciseId: first.exerciseId, name: group.name, lang: lang)
       Button {
-        guideTarget = GuideTarget(key: group.key, exerciseId: first.exerciseId, name: group.name)
+        let target = GuideTarget(key: group.key, exerciseId: first.exerciseId, name: group.name)
+        #if DEBUG
+          // Kiệt 13/11: một chạm là bài hướng dẫn chạy luôn — bài có bản 3D
+          // mở thẳng trình xem 3D (tự chạy, lặp), không qua trang hướng dẫn.
+          if ExerciseDemo3D.demo(for: group.name) != nil {
+            demoTarget = target
+            return
+          }
+        #endif
+        guideTarget = target
       } label: {
         HStack(spacing: DS.Spacing.sm) {
           ExerciseThumb(name: group.name, thumbnail: thumb, linked: true)
@@ -1000,6 +1011,18 @@ public struct WorkoutView: View {
       )) { t in
         ExerciseGuideView(guides: guides, library: flow?.library, exerciseId: t.exerciseId, name: t.name)
       }
+      #if DEBUG
+        .fullScreenCover(item: Binding(
+          get: { demoTarget?.key == group.key ? demoTarget : nil },
+          set: { demoTarget = $0 }
+        )) { t in
+          ExerciseDemo3DView(name: t.name) {
+            // Nút sách trong trình xem: đóng 3D rồi mở trang hướng dẫn đầy đủ.
+            demoTarget = nil
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { guideTarget = t }
+          }
+        }
+      #endif
     } else {
       HStack(spacing: DS.Spacing.sm) {
         ExerciseThumb(name: group.name, thumbnail: nil, linked: false)
