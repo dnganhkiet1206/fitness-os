@@ -140,6 +140,45 @@ import Testing
     #expect(q.table == "daily_logs" && q.limit == KoaLogDaysSync.limit)
   }
 
+  // MARK: Nhịp ghi 30 ngày (12/11)
+
+  @Test func logKindsSplitPerDayAndSkipStepsOnly() {
+    let rows: [JSONValue] = [
+      .object(["date": .string("2026-10-01"), "kcal": .number(1800), "water_ml": .number(500), "sleep_duration_min": .null]),
+      .object(["date": .string("2026-10-02"), "kcal": .number(0), "water_ml": .null, "sleep_duration_min": .number(420)]),
+      .object(["date": .string("2026-10-03"), "kcal": .number(0), "water_ml": .number(0), "steps": .number(9000)]),
+    ]
+    let k = KoaLogDaysSync.kinds(rows)
+    #expect(k == [d("2026-10-01"): [.meal, .water], d("2026-10-02"): [.sleep]])
+    #expect(KoaLogDaysSync.days(rows) == Set(k.keys))
+  }
+
+  @Test func logRhythmCountsTheLast30DaysAndComparesWithTheOnesBefore() {
+    let today = d("2026-10-31")
+    var kinds: [LocalDate: Set<KoaLogDaysSync.Kind>] = [:]
+    // 30 ngày này: ghi cách ngày, 15 ngày; bữa mỗi lần, nước 5 lần, ngủ 3 lần
+    for i in 0..<15 {
+      var k: Set<KoaLogDaysSync.Kind> = [.meal]
+      if i < 5 { k.insert(.water) }
+      if i < 3 { k.insert(.sleep) }
+      kinds[today.adding(days: -i * 2)] = k
+    }
+    // 30 ngày trước đó: 9 ngày; cũ hơn nữa và ngày tương lai không tính
+    for i in 0..<9 { kinds[today.adding(days: -30 - i)] = [.water] }
+    kinds[today.adding(days: -70)] = [.meal]
+    kinds[today.adding(days: 1)] = [.meal]
+    let s = KoaLogRhythm.state(kinds, today: today)
+    #expect(s.days.count == KoaLogRhythm.window)
+    #expect(s.days.last == true, "ô cuối là hôm nay")
+    #expect(s.logged == 15 && s.previous == 9 && s.change == 6)
+    #expect(s.meals == 15 && s.water == 5 && s.sleep == 3)
+    // bỏ một ngày chỉ bớt 1, không có gì "gãy"
+    var gap = kinds
+    gap[today] = nil
+    #expect(KoaLogRhythm.state(gap, today: today).logged == 14)
+    #expect(KoaLogRhythm.state([:], today: today).logged == 0)
+  }
+
   @Test func feedPrefersFreshMajorAndNeverRepeats() {
     let days = sessions(["2026-10-05", "2026-10-07", "2026-10-09"], pr: ["2026-10-09"])
     let m = KoaJourney.moments(days, week: week, today: d("2026-10-09"))

@@ -135,6 +135,64 @@ struct KoaRhythmCard: View {
   }
 }
 
+/// Nhịp ghi 30 ngày (12/11, Kiệt duyệt mock "Ghi chép cũng nuôi Koa", lớp A): số ngày có ghi
+/// bữa / nước / giấc ngủ trong 30 ngày, một chấm mỗi ngày, tách theo loại. Cùng dáng với
+/// `KoaRhythmCard`; không có số liên tiếp, không nói gì về calo hay cân nặng.
+struct KoaLogRhythmCard: View {
+  let state: KoaLogRhythm.State
+  @ScaledMetric(relativeTo: .title) private var countSize: CGFloat = 26
+
+  static let tint = DS.Color.metricOrangeGraphic.swiftUI
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+      Text("logrhythm.title")
+        .font(DS.TextStyle.caption.weight(.semibold))
+        .textCase(.uppercase)
+        .tracking(0.8)
+        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+      Text(String(localized: "logrhythm.days \(state.logged)"))
+        .font(.system(size: countSize, weight: .bold).monospacedDigit())
+        .foregroundStyle(DS.Color.foreground.swiftUI)
+      LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 5), count: 15), spacing: 5) {
+        ForEach(Array(state.days.enumerated()), id: \.offset) { _, on in
+          Circle()
+            .fill(on ? Self.tint : DS.Color.mutedForeground.swiftUI.opacity(0.18))
+            .aspectRatio(1, contentMode: .fit)
+        }
+      }
+      .accessibilityHidden(true)
+      // Chữ lớn: ba số không vừa một hàng thì xếp dọc, không cắt chữ.
+      ViewThatFits(in: .horizontal) {
+        HStack(spacing: DS.Spacing.md) { split }
+        VStack(alignment: .leading, spacing: 4) { split }
+      }
+      .font(DS.TextStyle.caption.monospacedDigit())
+      .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+      Text(verbatim: compare)
+        .font(DS.TextStyle.footnote)
+        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+    }
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .padding(DS.Spacing.md)
+    .todayCard()
+    .accessibilityElement(children: .combine)
+  }
+
+  @ViewBuilder private var split: some View {
+    Text(String(localized: "logrhythm.meals \(state.meals)"))
+    Text(String(localized: "logrhythm.water \(state.water)"))
+    Text(String(localized: "logrhythm.sleep \(state.sleep)"))
+  }
+
+  private var compare: String {
+    if state.previous == 0 { return String(localized: "logrhythm.start") }
+    if state.change > 0 { return String(localized: "logrhythm.more \(state.change)") }
+    if state.change < 0 { return String(localized: "logrhythm.less \(state.previous)") }
+    return String(localized: "logrhythm.same")
+  }
+}
+
 /// Hành trình cùng Koa: tổng kết tháng và các mốc thật, mới nhất ở trên.
 struct KoaJourneyView: View {
   @Environment(AppServices.self) private var services
@@ -165,6 +223,10 @@ struct KoaJourneyContent: View {
           let moments = KoaJourney.moments(h.days, week: h.week, logged: h.logged, today: today)
           header(rank: KoaGains.compute(h.days, week: h.week, today: today).rank)
           month(moments, days: h.days, today: today)
+          // Nhịp ghi (12/11): chỉ khi có ít nhất một ngày ghi trong 60 ngày (30 này + 30 trước), để
+          // người chưa từng ghi không thấy một thẻ toàn chấm trống.
+          let logRhythm = KoaLogRhythm.state(h.logKinds, today: today)
+          if logRhythm.logged + logRhythm.previous > 0 { KoaLogRhythmCard(state: logRhythm) }
           if moments.isEmpty {
             Text("journey.empty")
               .font(DS.TextStyle.body)
