@@ -267,15 +267,9 @@ struct ProgressMissingCard: View {
           }
           Spacer(minLength: 0)
           if Self.canLog(r.group) {
-            Button { log(r.group) } label: {
-              Text("ps.log").font(DS.TextStyle.footnote.weight(.semibold))
-                .padding(.horizontal, 12).frame(minHeight: 30)
-                .background(DS.Color.metricBlue.swiftUI.opacity(0.16), in: Capsule())
-                .foregroundStyle(DS.Color.metricBlue.swiftUI)
-                .frame(minHeight: 44)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
+            Button { log(r.group) } label: { Text("ps.log") }
+              // họ nút chung (Kiệt 12/11 bỏ xanh dương ngoài số liệu): viên viền mảnh
+              .buttonStyle(.dsPillSecondary)
             .accessibilityLabel(Text("ps.log.a11y \(ProgressStyle.name(r.group))"))
           }
         }
