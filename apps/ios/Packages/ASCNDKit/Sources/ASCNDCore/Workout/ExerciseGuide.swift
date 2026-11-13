@@ -151,6 +151,8 @@ public struct MediaState: Sendable, Hashable, Codable {
     return t.isEmpty ? nil : t
   }
 
+  // Mẫu hằng, đã kiểm trong unit test: không thể lỗi lúc chạy.
+  // swiftlint:disable:next force_try
   static let legacyImage = try! NSRegularExpression(
     pattern: #"\.(gif|webp|png|jpe?g|avif|heic|bmp)(\?|#|$)"#, options: [.caseInsensitive])
 

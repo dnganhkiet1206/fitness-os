@@ -1,4 +1,5 @@
 #if DEBUG
+  import ASCNDCore
   import ASCNDDesignSystem
   import RealityKit
   import UIKit
@@ -16,11 +17,14 @@
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var scheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// Máy quay bay vòng quanh bài; ghế và nhân vật đứng yên (Kiệt 13/11).
     @State private var yaw: Double = Self.home.yaw
     @State private var pitch: Double = Self.home.pitch
     @State private var distance: Double = Self.home.distance
     @State private var loadFailed = false
+    @State private var showTips = false
+    @State private var selectedTip: String?
     @GestureState private var dragOffset: CGSize = .zero
     @GestureState private var pinch: CGFloat = 1
 
@@ -56,6 +60,15 @@
         Float(d * cos(p) * sin(yaw)), Float(d * sin(p)), Float(d * cos(p) * cos(yaw)))
     }
 
+    /// Vị trí máy quay lúc này (cả khi đang kéo / chụm) — RealityView và
+    /// lớp mẹo dùng chung một công thức nên đường chỉ luôn khớp mô hình.
+    private var cameraPosition: SIMD3<Float> {
+      Self.orbit(
+        yaw: yaw - Double(dragOffset.width) * Self.dragScale,
+        pitch: pitch + Double(dragOffset.height) * Self.dragScale,
+        distance: distance / Double(pinch))
+    }
+
     var body: some View {
       NavigationStack {
         ZStack {
@@ -83,11 +96,7 @@
                 }
               } update: { content in
                 guard let camera = content.entities.first(where: { $0.name == Self.cameraName }) else { return }
-                let position = Self.orbit(
-                  yaw: yaw - Double(dragOffset.width) * Self.dragScale,
-                  pitch: pitch + Double(dragOffset.height) * Self.dragScale,
-                  distance: distance / Double(pinch))
-                camera.look(at: Self.cameraTarget, from: position, relativeTo: nil)
+                camera.look(at: Self.cameraTarget, from: cameraPosition, relativeTo: nil)
               }
               .ignoresSafeArea()
               .gesture(
@@ -107,7 +116,7 @@
                       })
               )
               .onTapGesture(count: 2) {
-                withAnimation(.smooth) { (yaw, pitch, distance) = Self.home }
+                withAnimation(reduceMotion ? nil : .smooth) { (yaw, pitch, distance) = Self.home }
               }
               .accessibilityLabel(
                 Text(verbatim: "\(name) — \(String(localized: "eg.demo3d.alt"))"))
@@ -115,6 +124,22 @@
               if loadFailed {
                 fallback
               }
+          }
+          if showTips {
+            GeometryReader { geo in
+              ExerciseTipsOverlay(
+                tips: ExerciseTips.tips(for: PersonalRecords.exerciseKey(name)),
+                camera: PinholeCamera(
+                  position: cameraPosition, target: Self.cameraTarget, verticalFOVDegrees: Self.verticalFOV,
+                  size: geo.size),
+                // Lớp này tràn qua vùng an toàn (lề = 0): đặt hàng nhãn dưới
+                // thanh nút (đảo Dynamic Island + nút đóng / mẹo).
+                topLimit: (UIApplication.shared.connectedScenes.compactMap { ($0 as? UIWindowScene)?.keyWindow }
+                  .first?.safeAreaInsets.top ?? 59) + 58,
+                selected: $selectedTip)
+            }
+            .ignoresSafeArea()
+            .transition(.opacity)
           }
           VStack(spacing: DS.Spacing.sm) {
             Spacer()
@@ -124,7 +149,15 @@
               .padding(.horizontal, DS.Spacing.sm)
               .padding(.vertical, 6)
               .background(.ultraThinMaterial, in: Capsule())
-            if let legend = ExerciseDemo3D.demo(for: name)?.legend, !legend.isEmpty {
+            let tips = ExerciseTips.tips(for: PersonalRecords.exerciseKey(name))
+            if showTips, let id = selectedTip, let n = tips.firstIndex(where: { $0.id == id }) {
+              ExerciseTipDetail(tip: tips[n], number: n + 1) {
+                withAnimation(reduceMotion ? nil : .smooth(duration: 0.25)) { selectedTip = nil }
+              }
+              .padding(.horizontal, DS.Spacing.md)
+              .padding(.bottom, DS.Spacing.sm)
+              .transition(.move(edge: .bottom).combined(with: .opacity))
+            } else if let legend = ExerciseDemo3D.demo(for: name)?.legend, !legend.isEmpty {
               legendView(legend)
                 .padding(.horizontal, DS.Spacing.md)
                 .padding(.bottom, DS.Spacing.sm)
@@ -135,6 +168,21 @@
         // Màu tường / sàn của phòng, thấy trong lúc phòng 3D đang tải.
         .background { GymStage() }
         .toolbar {
+          ToolbarItem(placement: .primaryAction) {
+            if !ExerciseTips.tips(for: PersonalRecords.exerciseKey(name)).isEmpty {
+              Button {
+                withAnimation(reduceMotion ? nil : .smooth) {
+                  showTips.toggle()
+                  selectedTip = nil
+                }
+              } label: {
+                Image(systemName: showTips ? "lightbulb.fill" : "lightbulb")
+                  .foregroundStyle(showTips ? Color(red: 0.91, green: 0.33, blue: 0.17) : DS.Color.foreground.swiftUI)
+                  .frame(minWidth: 44, minHeight: 44)
+              }
+              .accessibilityLabel(Text("eg.demo3d.tips"))
+            }
+          }
           ToolbarItem(placement: .cancellationAction) {
             Button {
               dismiss()
