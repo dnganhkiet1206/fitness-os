@@ -3682,29 +3682,6 @@
         }
       }
     },
-    "ps.more.body": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Weight & measurements"
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Cân nặng & số đo"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Peso y medidas"
-          }
-        }
-      }
-    },
     "ps.attentionCount %lld": {
       "extractionState": "manual",
       "localizations": {

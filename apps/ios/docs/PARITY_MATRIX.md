@@ -97,7 +97,7 @@ Hiện **không dòng nào DONE**: chưa có lần chạy trên iPhone thật.
 | Readiness / ACWR | `readiness*` | `ReadinessEngine`, `ReadinessExplainerSheet` | Hôm nay, Tiến bộ › Hồi phục | DEVICE_PENDING | |
 | Ghi cân | `log-weight.tsx` | `LogWeightView` | Hôm nay, Ghi nhanh, Tập luyện | DEVICE_PENDING | #576 |
 | Ghi giấc + insight | `log-sleep.tsx`, `sleep-insights.tsx` | `LogSleepView`, `SleepInsightsView` | Hôm nay, Ghi nhanh, Tiến bộ | DEVICE_PENDING | |
-| Số đo: xem xu hướng | `measurements-trend.tsx` | `MeasurementsView` (trong `BodySection`) | Tiến bộ › "Cân nặng & số đo", Tiến bộ › nhóm Cơ thể, Tập luyện | DEVICE_PENDING | |
+| Số đo: xem xu hướng | `measurements-trend.tsx` | `MeasurementsView` (trong `BodySection`) | Tiến bộ › nhóm Cơ thể (hàng "Cân nặng & số đo" ở Thêm bỏ 12/11), Tập luyện | DEVICE_PENDING | |
 | Số đo: ghi | `log-measurement.tsx` (RN mở từ `body-panel.tsx:952`, `:1016`) | `LogMeasurementView` | Số đo cơ thể: "+" và nút ở trạng thái trống; link `ascnd://log-measurement` | DEVICE_PENDING | #579 (`5d11bdef`). Simulator 17/10: cả hai nút mở sheet; nhập 7878 bị chặn (10–300 cm); lưu 78 cm → thẻ Eo hiện ngay |
 | Sinh trắc: xem / xoá | `biometrics.tsx` | `BiometricsView` | Hôm nay, Tiến bộ | DEVICE_PENDING | #562 |
 | Sinh trắc: ghi tay | `log-biometrics.tsx` (RN mở từ `biometrics.tsx:135`, `:152`) | `LogBiometricsView` | Sinh trắc: "+" và "Nhập thủ công" ở trạng thái trống; thẻ việc trên Hôm nay | DEVICE_PENDING | #579 + nút trạng thái trống đặt ngay dưới chữ. Simulator 17/10: nút mở sheet; lưu nhịp tim nghỉ 58 → màn đọc lại ngay |
