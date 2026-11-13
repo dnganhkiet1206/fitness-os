@@ -103,7 +103,7 @@ struct CommunityChallengesView: View {
     }
     .background(DS.Color.background.swiftUI)
     .navigationTitle(Text("community.challenges.title"))
-    .navigationBarTitleDisplayMode(.inline)
+    .navigationBarTitleDisplayMode(.large)
     .task { await reload() }
     .refreshable { await reload() }
     .navigationDestination(item: $route) { CommunityChallengeView(book: book, id: $0.id, fromAll: true) }
@@ -275,7 +275,7 @@ struct CommunityChallengeView: View {
     }
     .background(DS.Color.background.swiftUI)
     .navigationTitle(Text("community.challenge.title"))
-    .navigationBarTitleDisplayMode(.inline)
+    .navigationBarTitleDisplayMode(.large)
     .task {
       if book.phase != .ready { await book.load(lang: AppServices.appLang) }
       // Hết hạn quá 7 ngày: dựng lại từ lịch sử.

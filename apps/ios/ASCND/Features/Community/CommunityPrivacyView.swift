@@ -28,6 +28,9 @@ struct CommunityPrivacyScreen: View {
         DSLoadingView()
       }
     }
+    // tiêu đề lớn ở lớp bọc (Kiệt 12/11): đặt ở màn con thì lúc đang tải tiêu đề lớn bị thu lại
+    .navigationTitle(Text("community.privacy.title"))
+    .navigationBarTitleDisplayMode(.large)
     .task {
       guard !built else { return }
       book = services.makeCommunityPrivacy(userId: userId)
@@ -105,8 +108,6 @@ struct CommunityPrivacyView: View {
       .padding(DS.Spacing.md)
     }
     .background(DS.Color.background.swiftUI)
-    .navigationTitle(Text("community.privacy.title"))
-    .navigationBarTitleDisplayMode(.inline)
     .task { await book.load() }
     .refreshable { await book.load() }
     .sensoryFeedback(.selection, trigger: taps)

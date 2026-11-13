@@ -43,9 +43,7 @@ struct DiaryView: View {
       }
       .padding(DS.Spacing.md)
     }
-    .navigationTitle(String(localized: "diary.title"))
     .ascndPage()
-    .navigationBarTitleDisplayMode(.inline)
     .refreshable { await book.load() }
     .task(id: book.date) { await book.load() }
     // Đang xem hôm nay mà để app mở qua nửa đêm: sang hôm nay mới.

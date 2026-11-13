@@ -34,9 +34,7 @@ struct NutritionInsightsView: View {
       }
       .padding(DS.Spacing.md)
     }
-    .navigationTitle(String(localized: "insights.title"))
     .ascndPage()
-    .navigationBarTitleDisplayMode(.inline)
     .refreshable { await book.load() }
     .task { await book.load() }
   }
@@ -228,6 +226,10 @@ struct InsightsScreen: View {
         DSLoadingView()
       }
     }
+    // tiêu đề lớn đặt ở lớp bọc (Kiệt 12/11): đặt trên màn con thì lúc đang tải chưa có
+    // ScrollView, tiêu đề lớn bị thu lại và không hiện
+    .navigationTitle(String(localized: "insights.title"))
+    .navigationBarTitleDisplayMode(.large)
     .task {
       if book == nil { book = services.makeNutritionInsights(userId: userId) }
     }

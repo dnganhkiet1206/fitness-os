@@ -32,7 +32,7 @@ struct SessionDetailView: View {
     content
       .navigationTitle(Text(title))
       .ascndPage()
-      .navigationBarTitleDisplayMode(.inline)
+      .navigationBarTitleDisplayMode(.large)
       .toolbar {
         if case .ready = book.detail(id) {
           ToolbarItem(placement: .primaryAction) {

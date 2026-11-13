@@ -694,7 +694,7 @@ struct LibraryHistoryView: View {
       .padding(DS.Spacing.md)
     }
     .navigationTitle(String(localized: "wh.libraryHistory"))
-    .navigationBarTitleDisplayMode(.inline)
+    .navigationBarTitleDisplayMode(.large)
     .ascndPage()
   }
 

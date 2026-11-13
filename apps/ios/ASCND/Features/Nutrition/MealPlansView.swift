@@ -29,8 +29,6 @@ struct MealPlansView: View {
       .padding(DS.Spacing.md)
     }
     .ascndPage()
-    .navigationTitle(String(localized: "plans.title"))
-    .navigationBarTitleDisplayMode(.inline)
     .toolbar {
       ToolbarItem(placement: .primaryAction) {
         Button { creating = true } label: {
@@ -196,6 +194,7 @@ struct MealPlanView: View {
     }
     .ascndPage()
     .navigationTitle(plan?.name ?? String(localized: "plans.title"))
+    // tên kế hoạch chỉ có sau khi tải nên không đặt được ở lớp bọc: giữ tiêu đề nhỏ
     .navigationBarTitleDisplayMode(.inline)
     .toolbar {
       ToolbarItem(placement: .primaryAction) {
@@ -640,6 +639,10 @@ struct MealPlansScreen: View {
         DSLoadingView()
       }
     }
+    // tiêu đề lớn đặt ở lớp bọc (Kiệt 12/11): lúc đang tải chưa có ScrollView, đặt ở màn con
+    // thì tiêu đề lớn bị thu lại và không hiện
+    .navigationTitle(String(localized: "plans.title"))
+    .navigationBarTitleDisplayMode(.large)
     .task {
       if book == nil { book = services.makeMealPlans(userId: userId) }
     }

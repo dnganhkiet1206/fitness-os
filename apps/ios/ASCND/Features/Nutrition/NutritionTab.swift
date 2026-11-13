@@ -304,6 +304,10 @@ struct FoodsScreen: View {
         DSLoadingView()
       }
     }
+    // tiêu đề lớn đặt ở lớp bọc (Kiệt 12/11): lúc đang tải chưa có ScrollView, đặt ở màn con
+    // thì tiêu đề lớn bị thu lại và không hiện
+    .navigationTitle(String(localized: "foods.title"))
+    .navigationBarTitleDisplayMode(.large)
     .task {
       if book == nil { book = services.makeFoodLibrary(userId: userId) }
     }
@@ -408,6 +412,10 @@ struct DiaryScreen: View {
         DSLoadingView()
       }
     }
+    // tiêu đề lớn đặt ở lớp bọc (Kiệt 12/11): lúc đang tải chưa có ScrollView, đặt ở màn con
+    // thì tiêu đề lớn bị thu lại và không hiện
+    .navigationTitle(String(localized: "diary.title"))
+    .navigationBarTitleDisplayMode(.large)
     .task {
       if book == nil { book = services.makeMealDiary(userId: userId, date: date) }
       if week == nil { week = services.makeNutritionInsights(userId: userId) }
