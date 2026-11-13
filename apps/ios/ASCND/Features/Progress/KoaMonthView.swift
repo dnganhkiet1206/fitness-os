@@ -22,13 +22,19 @@ enum KoaMonthText {
     return symbols[(i + 1) % 7]
   }
 
+  /// Tên thứ giữa câu: tiếng Việt viết thường ("thứ hai"); tiếng Anh giữ hoa ("Monday"); tiếng Tây Ban
+  /// Nha vốn đã thường ("lunes").
+  static func midSentence(_ name: String) -> String {
+    Locale.app.language.languageCode?.identifier == "vi" ? name.lowercased() : name
+  }
+
   static func koaLine(_ r: KoaMonthRecap.Recap) -> String {
     switch KoaMonthRecap.line(r) {
     case .quiet: String(localized: "month.line.quiet")
     case .loggedOnly(let n): String(localized: "month.line.logged \(n)")
     case .lighter: String(localized: "month.line.lighter")
     case .usual(let days):
-      String(localized: "month.line.usual \(weekday(days[0]).lowercased()) \(weekday(days[1]).lowercased())")
+      String(localized: "month.line.usual \(midSentence(weekday(days[0]))) \(midSentence(weekday(days[1])))")
     case .sessions(let n): String(localized: "month.line.sessions \(n)")
     }
   }
