@@ -148,6 +148,20 @@ import UIKit
     check(KoaLogRhythmCard(state: KoaLogRhythm.state(kinds, today: Self.today)))
   }
 
+  /// Trang "Tháng 10 của bạn" (13/11): buổi theo lịch T2 / T4 / T6 có đợt nghỉ, một kỷ lục, ghi
+  /// cách ngày; dữ liệu cố định nên ảnh không đổi theo ngày chạy.
+  @Test func monthRecap() {
+    var kinds: [LocalDate: Set<KoaLogDaysSync.Kind>] = [:]
+    for day in stride(from: 1, through: 31, by: 2) {
+      kinds[LocalDate(String(format: "2026-10-%02d", day))!] = day % 3 == 0 ? [.meal, .water] : [.meal, .sleep]
+    }
+    let h = AppServices.GainsHistory(
+      days: Self.history.days, week: Self.history.week, logged: Set(kinds.keys), logKinds: kinds)
+    check(
+      NavigationStack { KoaMonthView(history: h, key: .init(year: 2026, month: 10), today: Self.today) },
+      height: 1300, padded: false)
+  }
+
   @Test func journeyEmpty() {
     let empty = AppServices.GainsHistory(days: [], week: Self.history.week)
     check(KoaJourneyContent(history: empty, today: Self.today), height: 600, padded: false)
