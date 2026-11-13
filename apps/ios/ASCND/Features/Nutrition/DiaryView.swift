@@ -84,39 +84,19 @@ struct DiaryView: View {
     }
   }
 
-  /// Bảy ngày gần nhất: ô càng đậm càng gần mục tiêu calo; chạm để xem ngày ấy.
+  /// Dải ngày chung (13/11): tuần T2→CN của ngày đang xem, ngày đang xem tô màu Bữa ăn, chấm = đã ghi
+  /// bữa; chạm để xem ngày ấy. Trước đây ô tô đậm nhạt theo calo của bảy ngày lùi.
   private var weekStrip: some View {
     let today = book.today
-    let days = (0..<7).map { today.adding(days: $0 - 6) }
-    var kcal: [LocalDate: Double] = [:]
-    if case .ready(let rows)? = week?.phase { for r in rows { kcal[r.date] = r.kcal } }
-    let target = NutritionToday.calorieTarget(profile?.profile)
-    let meal = MascotRoomView.signalColor(.meal)
-    return HStack(spacing: 4) {
-      ForEach(days, id: \.self) { d in
-        let k = kcal[d] ?? 0
-        let level = target > 0 ? min(1, k / target) : 0
-        let on = d == book.date
-        Button { _ = book.go(Self.distance(from: book.date, to: d)) } label: {
-          VStack(spacing: 3) {
-            Text(verbatim: d.calendarDate.formatted(Date.FormatStyle().weekday(.narrow).locale(.app)))
-              .font(DS.TextStyle.caption)
-              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-              .fill(k > 0 ? meal.opacity(0.25 + 0.75 * level) : DS.Color.foreground.swiftUI.opacity(0.06))
-              .frame(height: 30)
-              .overlay(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                  .strokeBorder(on ? DS.Color.foreground.swiftUI : .clear, lineWidth: 2))
-          }
-          .frame(maxWidth: .infinity)
-          .contentShape(Rectangle())
-        }
+    var logged: Set<LocalDate> = []
+    if case .ready(let rows)? = week?.phase { for r in rows where r.kcal > 0 { logged.insert(r.date) } }
+    if case .ready(let meals) = book.phase, !meals.isEmpty { logged.insert(book.date) }
+    return WeekDayStrip(
+      days: WeekDay.week(of: book.date).map { WeekDay(date: $0, mark: logged.contains($0) ? .done : .none) },
+      today: today, selected: book.date, accent: MascotRoomView.signalColor(.meal)
+    ) { d, cell in
+      Button { _ = book.go(Self.distance(from: book.date, to: d.date)) } label: { cell }
         .buttonStyle(TodayPressStyle(scale: 0.94))
-        .accessibilityLabel(Text(verbatim: Self.dayLabel(d, today: today)))
-        .accessibilityValue(Text(verbatim: k > 0 ? "\(DiaryView.whole(k)) kcal" : String(localized: "nc.slot.empty")))
-        .accessibilityAddTraits(on ? .isSelected : [])
-      }
     }
   }
 
