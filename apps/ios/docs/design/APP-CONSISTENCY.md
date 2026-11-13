@@ -212,4 +212,9 @@ tính năng đồng bộ trong toàn app" → "làm đi".
     `background`); nguy hiểm = viên viền đỏ chữ đỏ. Không dùng `.bordered` / `.borderedProminent` của hệ thống (chỉ
     còn ở màn Debug). Hành động thứ ba: chữ gạch chân.
 
+- Màu nhấn của cả app = màu mực (Kiệt duyệt mock đợt 2, 12/11, https://claude.ai/artifact/6Lvitx1r1uzrKk75YNnDnc):
+  tab đang chọn, chữ liên kết, biểu tượng trong danh sách, nút trong hộp xác nhận. Không dùng xanh dương mặc định
+  của iOS. Màu chỉ dành cho số liệu và trạng thái (màu nhóm, Tốt / Cần chú ý). Công tắc bật / tắt giữ xanh lá.
+- Đầu mục: ngoài thẻ, mở một nhóm thẻ = chữ lớn đậm (`DSSectionHeader` / tiêu đề mục); trong một thẻ, gọi tên
+  thẻ = chữ nhỏ viết hoa, giãn chữ ("VIỆC CHÍNH HÔM NAY", "HUY CHƯƠNG GẦN ĐÂY").
 ## Chưa làm (cần chủ dự án chọn / việc lớn)
