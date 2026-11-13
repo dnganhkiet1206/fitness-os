@@ -53,6 +53,17 @@ public final class SyncWorker {
   /// Chỉ của người đang đăng nhập: bản ghi đỗ lại của tài khoản khác không
   /// hiện, không đếm (#335).
   public var pendingCount: Int { outbox.pending(for: signedInUser).count }
+
+  /// Sự cố đáng báo (round 3, R2-OPS-03): trước đây bản ghi bị bỏ cuộc và ghi đĩa
+  /// hỏng chỉ nằm trong bộ nhớ / màn hình của chính người dùng — đội không bao giờ
+  /// biết. Chỉ mang loại bản ghi, lý do, mã lỗi: không payload, không id người dùng.
+  public enum Incident: Sendable, Hashable {
+    case dead(kind: String, reason: DeadEntry.Reason, code: String?)
+    case localWrite(stage: String)
+  }
+
+  /// App nối vào Sentry. Gọi trên main actor, sau khi bước ấy đã xong.
+  public var onIncident: (@MainActor (Incident) -> Void)?
   public var deadCount: Int { outbox.dead(for: signedInUser).count }
   public var isRunning: Bool { drain != nil }
 
@@ -159,7 +170,10 @@ public final class SyncWorker {
           outbox.succeeded(id: entry.id)
           settled.insert(entry.id)
         } catch {
-          outbox.failed(id: entry.id, error, now: clock.nowMillis())
+          if case .dead(let reason)? = outbox.failed(id: entry.id, error, now: clock.nowMillis()) {
+            let code: String? = if case .server(let c) = error { c } else { nil }
+            onIncident?(.dead(kind: entry.kind, reason: reason, code: code))
+          }
         }
         dirty = true
         await persist()
@@ -194,6 +208,7 @@ public final class SyncWorker {
       }
     } catch {
       unsaved = LocalWriteError("load: \(error)")
+      onIncident?(.localWrite(stage: "load"))
     }
   }
 
@@ -207,6 +222,7 @@ public final class SyncWorker {
       unsaved = nil
     } catch {
       unsaved = LocalWriteError("persist: \(error)")
+      onIncident?(.localWrite(stage: "persist"))
     }
   }
 }

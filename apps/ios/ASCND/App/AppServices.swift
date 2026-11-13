@@ -289,12 +289,19 @@ final class AppServices {
         // làm hỏng lượt gửi — ghi đã thành rồi.
         let rows = SupabaseRowStore(backend: b)
         return SupabaseRemoteWriter(backend: b, afterWrite: { entry in
-          _ = await DailyLog.rebuildAfterWrite(entry, store: rows)
+          // Lỗi dựng lại không làm hỏng lượt gửi, nhưng phải tới được đội (R2-OPS-03): trước đây bị bỏ qua.
+          let failed = await DailyLog.rebuildAfterWrite(entry, store: rows)
+          if !failed.isEmpty {
+            let kind = entry.kind
+            await MainActor.run { Telemetry.reportRebuild(kind: kind, failedDays: failed.count) }
+          }
           await widgets.refresh()
         })
       } ?? UnconfiguredRemote(),
       online: false)
     startupError = problems.isEmpty ? nil : problems.joined(separator: "\n")
+    // Bản ghi bị bỏ cuộc / ghi đĩa hỏng → Sentry (round 3, R2-OPS-03).
+    sync.onIncident = { Telemetry.report($0) }
     stateWriter.environment.online = { [sync = self.sync] in sync.online }
 
     // Phiên kết thúc (nút Đăng xuất, token hết hạn, tài khoản bị xoá, hay đổi

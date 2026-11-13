@@ -114,6 +114,36 @@ enum Telemetry {
     }
   }
 
+  /// Sự cố của hàng đợi đồng bộ → Sentry (round 3, R2-OPS-03). Thông điệp CỐ ĐỊNH
+  /// theo loại sự cố (để Sentry gom nhóm), chi tiết ở tag; không payload, không PII.
+  static func report(_ incident: SyncWorker.Incident) {
+    guard SentrySDK.isEnabled else { return }
+    switch incident {
+    case .dead(let kind, let reason, let code):
+      SentrySDK.capture(message: "sync.dead") { scope in
+        scope.setLevel(.error)
+        scope.setTag(value: kind, key: "sync.kind")
+        scope.setTag(value: reason.rawValue, key: "sync.reason")
+        scope.setTag(value: code ?? "none", key: "sync.code")
+      }
+    case .localWrite(let stage):
+      SentrySDK.capture(message: "sync.local_write") { scope in
+        scope.setLevel(.error)
+        scope.setTag(value: stage, key: "sync.stage")
+      }
+    }
+  }
+
+  /// Dựng lại `daily_logs` sau một lần gửi hỏng (số ngày hỏng, loại bản ghi).
+  static func reportRebuild(kind: String, failedDays: Int) {
+    guard SentrySDK.isEnabled else { return }
+    SentrySDK.capture(message: "sync.rebuild_failed") { scope in
+      scope.setLevel(.warning)
+      scope.setTag(value: kind, key: "sync.kind")
+      scope.setExtra(value: failedDays, key: "failed_days")
+    }
+  }
+
   static func capture(_ event: Event, _ props: [String: String] = [:]) {
     guard analytics else { return }
     PostHogSDK.shared.capture(event.rawValue, properties: props)

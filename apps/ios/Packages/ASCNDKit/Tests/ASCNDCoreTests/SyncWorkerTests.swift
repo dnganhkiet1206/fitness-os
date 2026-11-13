@@ -231,6 +231,18 @@ struct SyncWorkerTests {
     #expect(await store.pending.map(\.id) == ["x"])
   }
 
+  /// R2-OPS-03: bản ghi bị server từ chối phát một sự cố (loại, lý do, mã) cho app báo lên Sentry.
+  @Test func refusedEntryRaisesAnIncident() async {
+    let store = InMemoryOutboxStore([entry("a")])
+    let server = FakeServer()
+    await server.script("a", .fail(.server(code: "23514")))
+    let w = worker(store, server)
+    var seen: [SyncWorker.Incident] = []
+    w.onIncident = { seen.append($0) }
+    await run(w)
+    #expect(seen == [.dead(kind: entry("a").kind, reason: .refused, code: "23514")])
+  }
+
   /// Tài khoản bị xoá: bỏ hẳn bản ghi của nó trên máy, giữ của người khác.
   @Test func purgeDropsOnlyTheDeletedAccount() async {
     let store = InMemoryOutboxStore([entry("x", user: "u9"), entry("a")])
