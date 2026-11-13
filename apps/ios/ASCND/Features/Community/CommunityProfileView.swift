@@ -25,11 +25,9 @@ struct CommunityProfileScreen: View {
       if let book {
         CommunityProfileView(book: book, selectedMascot: services.preferences.mascotSelected, onSaved: onSaved)
       } else if built {
-        ContentUnavailableView {
-          Label("community.profile.title", systemImage: "person.crop.circle")
-        } description: {
-          Text("placeholder.building")
-        }
+        DSEmptyState(
+          systemImage: "person.crop.circle", title: String(localized: "community.profile.title"),
+          message: String(localized: "placeholder.building"))
       } else {
         DSLoadingView()
       }

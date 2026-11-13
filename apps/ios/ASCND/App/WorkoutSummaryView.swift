@@ -198,6 +198,14 @@ public struct WorkoutSummaryView: View {
         // Kiệt 03/11: điều người tập muốn thấy là mức tạ của TỪNG bài so với lần trước;
         // tổng khối lượng cộng lại thành số rất lớn, dễ nhầm, nên chỉ là dòng phụ.
         if let compare { compareCard(compare) }
+        // Đồng hồ buổi (12/11): thời lượng từ set đầu tới lúc chốt, chỉ khi đo được trên máy này.
+        if let d = summary.durationSec, d > 0 {
+          Label(String(localized: "summary.duration \(WorkoutClock.format(d))"), systemImage: "stopwatch")
+            .font(DS.TextStyle.headline.monospacedDigit())
+            .foregroundStyle(DS.Color.foreground.swiftUI)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .accessibilityLabel(Text(String(localized: "summary.duration \(WorkoutClock.spoken(d))")))
+        }
         Text(
           String(
             format: String(localized: "summary.stats.line"),

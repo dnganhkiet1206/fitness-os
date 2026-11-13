@@ -662,6 +662,14 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Hạn chế: như mốc ghi đều, việc ghi còn trong hàng chờ offline hoặc vừa ghi mà Hôm nay chưa tải lại thì chưa được đếm. Giấc ngủ lấy từ Apple Health chỉ được đếm khi app đã ghi nó vào `daily_logs`.
 - Snapshot: mới `logRhythmCard`; `journeyLogDays` ghi lại vì có thêm thẻ. Ảnh chuẩn lấy từ CI.
 - **NOT RUN:** thẻ trong app thật trên simulator; VoiceOver; iPhone thật.
+**Đồng bộ buổi tập / dinh dưỡng và đồng hồ buổi (12/11, Kiệt báo kèm ảnh; nhánh `claude/workout-state-sync`):**
+- Đổi buổi của HÔM NAY (Kế hoạch tuần › Đổi buổi, hay tạo mẫu gán vào hôm nay) khi đang tập dở: thẻ Tập luyện, Hôm nay và "Mở bảng tập" giờ theo buổi mới. Trước đây luật TW-6a (không bao giờ thay buổi đang tập dở) giữ buổi cũ ở mọi nơi trừ thẻ ngày. Luật vẫn giữ cho thay đổi KHÔNG do người dùng chọn lại buổi hôm nay: làm mới từ server, sửa mẫu ở máy khác, xoá mẫu giữa buổi (buổi vẫn mở, tách khỏi mẫu). Không mất gì: tiến độ khoá theo ngày + mẫu, chọn lại buổi cũ thì set đã tích quay lại. Bảng chọn buổi nói trước điều này khi hôm nay đang tập dở.
+- Xoá buổi từ Lịch sử: ngày bỏ hết dấu tích (giữ số tạ / reps đã điền), nên Tập luyện về "Bắt đầu buổi tập" thay vì "Đang tập 1/4 set". Trước đây dấu tích giữ lại có chủ ý (tích lại để dựng lại buổi); giờ dựng lại bằng cách tập lại.
+- App tự sang nền tối sau màn nghỉ giữa set: `KoaRestScreen` dùng `preferredColorScheme(.dark)`, đổi cả cửa sổ và giữ lại sau khi cảnh đóng. Giờ chỉ cảnh nghỉ tối (`environment(\.colorScheme)`). Rà cả app: không còn chỗ nào đổi giao diện cả cửa sổ ngoài lựa chọn của người dùng; các `preferredColorScheme` còn lại đều trong `#Preview`; `toolbarColorScheme` ở hai màn quét chỉ đổi thanh điều hướng của màn ấy.
+- Kế hoạch tuần ghi hôm nay "Đang tập" khi buổi đang tập dở (trước: "Chờ tập").
+- Dinh dưỡng: vòng calo cộng cả bữa còn trong hàng đợi (ghi lúc ngoại tuyến), cùng số với danh sách bữa vốn đã hiện bữa chờ gửi. Tab Dinh dưỡng đọc lại khi Nhật ký sửa / xoá món đã lên server, và khi hàng đợi gửi xong (trước: giữ số cũ tới lần ra tiền cảnh / đổi tài khoản).
+- Đồng hồ buổi tập: chạy từ set đầu tiên được tích, hiện ở đầu màn tập và thẻ "Đang tập", sống qua lần tắt app (lưu trong tiến độ ngày, chỉ trên máy); bỏ tích hết trước khi chốt thì về chưa bắt đầu. Thời lượng hiện ở màn tổng kết. **Không gửi server**: `workout_sessions` không có cột thời lượng, thêm cột là đổi schema, cần Kiệt duyệt. Hệ quả: thời lượng chỉ có ở màn tổng kết ngay sau khi chốt, không có trong Lịch sử, không có ở máy khác.
+- **NOT RUN:** vòng calo khi ngoại tuyến trên simulator (công cụ gõ không nhập được ô, chỉ có test lõi); khi CÓ mạng, máy giả của chế độ test không dựng lại `daily_logs` sau khi ghi bữa nên vòng calo đứng yên ở simulator, chưa kiểm được trên server thật; VoiceOver của đồng hồ; iPhone thật.
 
 ## 5. Lịch sử thay đổi sổ
 
@@ -792,3 +800,4 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - 10/11/2026: bậc trong hạng của Koa (Hôm nay, tổng kết buổi, Hành trình); bánh tạ trong phòng Koa hoãn tới khi vẽ phòng mới (Kiệt 10/11); xem mục 3 và 4.
 - 10/11/2026: mốc ghi đều của Koa trong Hành trình (Kiệt duyệt mock 10/11); cờ `-uiTestTierUp` cho tài khoản giả sát mốc bậc; xem mục 4.
 - 12/11/2026: Nhịp ghi 30 ngày của Koa trong Hành trình (lớp A của mock "Ghi chép cũng nuôi Koa", Kiệt duyệt 10/11); xem mục 4.
+- 12/11/2026: đổi buổi hôm nay khi đang tập dở, xoá buổi từ lịch sử, app tự sang tối sau màn nghỉ, Kế hoạch tuần "Chờ tập" khi đang tập, vòng calo và bữa chờ gửi; đồng hồ buổi tập chỉ trên máy; xem mục 4.

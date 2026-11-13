@@ -45,6 +45,18 @@ public enum NutritionToday {
       fat: num(row?["fat_g"]), fiber: num(row?["fiber_g"]))
   }
 
+  /// Cộng các bữa còn trong hàng đợi (chưa lên server, chưa vào `daily_logs`) — cùng số với danh
+  /// sách bữa, vốn đã hiện bữa chờ gửi (12/11: ghi bữa lúc ngoại tuyến thì danh sách có mà vòng calo
+  /// vẫn như chưa ăn). Bữa gửi xong thì rời hàng đợi SAU khi `daily_logs` dựng lại, nên không đếm hai lần.
+  public static func adding(_ base: Totals, pending meals: [MealDiary.Meal]) -> Totals {
+    guard !meals.isEmpty else { return base }
+    return Totals(
+      kcal: JS.round(base.kcal + meals.reduce(0) { $0 + $1.kcal }),
+      protein: base.protein + meals.reduce(0) { $0 + $1.protein },
+      carbs: base.carbs + meals.reduce(0) { $0 + $1.carbs }, fat: base.fat + meals.reduce(0) { $0 + $1.fat },
+      fiber: base.fiber)
+  }
+
   /// `calorieTargetFor(profile)`.
   public static func calorieTarget(_ profile: Profile?) -> Double {
     let k = MacroTargets.stored(profile?.tdeeTargetKcal)
@@ -159,13 +171,18 @@ public final class NutritionTodayBook {
   public private(set) var reloading = false
 
   @ObservationIgnored private let store: any RowStore
+  @ObservationIgnored private let pendingWrites: (any PendingWrites)?
   @ObservationIgnored private let clock: any WallClock
   @ObservationIgnored private let timeZone: TimeZone
   @ObservationIgnored private var closed = false
 
-  public init(userId: String, store: any RowStore, clock: any WallClock = SystemWallClock(), timeZone: TimeZone = .current) {
+  public init(
+    userId: String, store: any RowStore, pending: (any PendingWrites)? = nil, clock: any WallClock = SystemWallClock(),
+    timeZone: TimeZone = .current
+  ) {
     self.userId = userId
     self.store = store
+    self.pendingWrites = pending
     self.clock = clock
     self.timeZone = timeZone
   }
@@ -176,12 +193,16 @@ public final class NutritionTodayBook {
     guard !closed, !reloading else { return }
     reloading = true
     defer { reloading = false }
-    let q = NutritionToday.query(userId: userId, today: LocalDate(clock.nowMillis(), in: timeZone))
-    let store = self.store
+    let today = LocalDate(clock.nowMillis(), in: timeZone)
+    let q = NutritionToday.query(userId: userId, today: today)
+    let store = self.store, userId = self.userId, pendingWrites = self.pendingWrites
     do {
       let rows = try await store.select(q)
+      // Đọc hàng đợi SAU server, như nhật ký bữa: hàng gửi xong giữa hai lượt đã nằm trong `daily_logs`.
+      let queued = (try? await pendingWrites?.pending(userId: userId)) ?? []
       guard !closed else { return }
-      phase = .ready(NutritionToday.totals(rows.first))
+      let pending = MealLog.pendingMeals(queued, userId: userId, window: DailyLog.dayRange(today, in: timeZone))
+      phase = .ready(NutritionToday.adding(NutritionToday.totals(rows.first), pending: pending))
     } catch {
       guard !closed else { return }
       if case .ready = phase { return }

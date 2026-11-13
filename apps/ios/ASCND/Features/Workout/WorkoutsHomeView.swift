@@ -232,9 +232,15 @@ struct WorkoutsHomeView: View {
         VStack(alignment: .leading, spacing: 6) {
           ProgressView(value: Double(done), total: Double(max(total, 1)))
             .tint(Self.accent)
-          Text(String(localized: "wh.progress \(done) \(total)"))
-            .font(DS.TextStyle.caption.monospacedDigit())
-            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          HStack {
+            Text(String(localized: "wh.progress \(done) \(total)"))
+              .font(DS.TextStyle.caption.monospacedDigit())
+              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            Spacer(minLength: 0)
+            if let s = flow.session, s.plan.date == flow.today.today, let start = s.startedAt {
+              WorkoutClock(startedAt: start)
+            }
+          }
         }
         primaryButton(String(localized: "wh.continue"), systemImage: "arrow.right", fill: Self.accent) { onOpenSession() }
       }

@@ -19,11 +19,9 @@ struct CommunityScreen: View {
       if let book {
         CommunityFeedView(book: book, challenges: challenges, showsBack: pushed)
       } else if built {
-        ContentUnavailableView {
-          Label("tab.community", systemImage: "person.2")
-        } description: {
-          Text("placeholder.building")
-        }
+        DSEmptyState(
+          systemImage: "person.2", title: String(localized: "tab.community"),
+          message: String(localized: "placeholder.building"))
       } else {
         DSLoadingView()
       }

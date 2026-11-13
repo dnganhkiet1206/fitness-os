@@ -81,7 +81,8 @@ public protocol WorkoutStore: Sendable {
   /// Xoá cả buổi từ lịch sử (#400): MỘT giao dịch — hàng outbox xoá, và mọi
   /// ngày trên máy đã chốt bằng `sessionId` thôi giữ set nào trong buổi
   /// (`loggedKeys` rỗng: Today hết "đã tập", tick lại thì nối thêm dựng lại
-  /// buổi). Id hàng outbox đã có → không ghi lại gì.
+  /// buổi) và bỏ mọi tick (12/11: ngày về "chờ tập", không còn "đang tập dở"; số đã
+  /// điền giữ lại). Id hàng outbox đã có → không ghi lại gì.
   func commitDelete(sessionId: String, _ entry: OutboxEntry) async throws
 }
 

@@ -23,11 +23,9 @@ struct CommunityShareProgressScreen: View {
       if let book {
         CommunityShareProgressView(book: book, onPosted: onPosted)
       } else if built {
-        ContentUnavailableView {
-          Label("community.shareprogress.title", systemImage: "chart.line.uptrend.xyaxis")
-        } description: {
-          Text("placeholder.building")
-        }
+        DSEmptyState(
+          systemImage: "chart.line.uptrend.xyaxis", title: String(localized: "community.shareprogress.title"),
+          message: String(localized: "placeholder.building"))
       } else {
         DSLoadingView()
       }

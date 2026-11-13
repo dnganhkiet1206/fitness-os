@@ -1189,7 +1189,7 @@ final class AppServices {
   /// Số dinh dưỡng hôm nay cho thẻ trên tab Dinh dưỡng (#527, `NutritionCard`).
   func makeNutritionToday(userId: String) -> NutritionTodayBook? {
     guard let rows else { return nil }
-    return NutritionTodayBook(userId: userId, store: rows)
+    return NutritionTodayBook(userId: userId, store: rows, pending: outbox)
   }
 
   func makeNutritionInsights(userId: String) -> NutritionInsightsBook? {

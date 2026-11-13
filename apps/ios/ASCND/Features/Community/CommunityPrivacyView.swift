@@ -21,11 +21,9 @@ struct CommunityPrivacyScreen: View {
       if let book {
         CommunityPrivacyView(book: book)
       } else if built {
-        ContentUnavailableView {
-          Label("community.privacy.title", systemImage: "lock")
-        } description: {
-          Text("placeholder.building")
-        }
+        DSEmptyState(
+          systemImage: "lock", title: String(localized: "community.privacy.title"),
+          message: String(localized: "placeholder.building"))
       } else {
         DSLoadingView()
       }

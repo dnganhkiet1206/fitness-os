@@ -23,11 +23,9 @@ struct CommunitySavedScreen: View {
       if let book {
         CommunitySavedView(book: book)
       } else if built {
-        ContentUnavailableView {
-          Label("community.saved.title", systemImage: "bookmark")
-        } description: {
-          Text("placeholder.building")
-        }
+        DSEmptyState(
+          systemImage: "bookmark", title: String(localized: "community.saved.title"),
+          message: String(localized: "placeholder.building"))
       } else {
         DSLoadingView()
       }

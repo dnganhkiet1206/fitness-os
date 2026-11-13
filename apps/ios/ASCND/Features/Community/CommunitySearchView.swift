@@ -23,11 +23,9 @@ struct CommunitySearchScreen: View {
       if let book {
         CommunitySearchView(book: book)
       } else if built {
-        ContentUnavailableView {
-          Label("community.search.people", systemImage: "magnifyingglass")
-        } description: {
-          Text("placeholder.building")
-        }
+        DSEmptyState(
+          systemImage: "magnifyingglass", title: String(localized: "community.search.people"),
+          message: String(localized: "placeholder.building"))
       } else {
         DSLoadingView()
       }

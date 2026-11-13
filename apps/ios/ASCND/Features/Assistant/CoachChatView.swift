@@ -1446,9 +1446,7 @@ private struct CoachHistorySheet: View {
         Task { await chat.loadHistory() }
       }
     case .ready(let list) where list.isEmpty:
-      ContentUnavailableView {
-        Label("coach.history.empty", systemImage: "bubble.left.and.bubble.right")
-      }
+      DSEmptyState(systemImage: "bubble.left.and.bubble.right", title: String(localized: "coach.history.empty"))
     case .ready(let list):
       List {
         if chat.deleteFailed {

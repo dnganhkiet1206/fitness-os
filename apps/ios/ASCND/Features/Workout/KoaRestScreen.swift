@@ -166,7 +166,9 @@ struct KoaRestScreen: View {
     .onAppear {
       if startedAt == nil { onStarted(start) } else { heard.played = [-1] }
     }
-    .preferredColorScheme(.dark)
+    // Cảnh nghỉ luôn tối, nhưng CHỈ trong cảnh này: `preferredColorScheme` đổi cả cửa sổ và
+    // giữ lại sau khi cảnh đóng, nên màn tập và cả app thành tối (12/11, Kiệt báo).
+    .environment(\.colorScheme, .dark)
     .statusBarHidden()
   }
 

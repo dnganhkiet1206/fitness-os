@@ -359,7 +359,7 @@ public struct WorkoutView: View {
         } else {
           let exercises = WorkoutFocus.exercises(controller.rows, controller.progress)
           let next = WorkoutFocus.next(controller.rows, controller.progress, pinned: pinned)
-          SessionProgressHeader(eyebrow: eyebrow, exercises: exercises, current: next.map(WorkoutFocus.exerciseKey))
+          SessionProgressHeader(eyebrow: eyebrow, exercises: exercises, current: next.map(WorkoutFocus.exerciseKey), startedAt: clockStart)
             .padding(.horizontal, 4)
           if let timer = restTimer {
             RestStrip(timer: timer, onAdjust: onAdjustRest, onSkip: onSkipRest, onSetPaused: onSetRestPaused)
@@ -406,6 +406,12 @@ public struct WorkoutView: View {
     }
   }
 
+  /// Đồng hồ buổi chỉ hiện cho buổi HÔM NAY đang tập (buổi ngày cũ mở lại sau không có nghĩa "đang chạy").
+  private var clockStart: EpochMillis? {
+    guard controller.plan.date == today, case .active = controller.phase else { return nil }
+    return controller.startedAt
+  }
+
   private var eyebrow: String {
     let d = controller.plan.date
     return d == today
@@ -441,7 +447,7 @@ public struct WorkoutView: View {
         if controller.unsaved != nil { unsavedBanner }
         if let removal { undoBar(removal) }
         SyncStrip(status: outboxStatus)
-        SessionProgressHeader(eyebrow: eyebrow, exercises: exercises, current: current)
+        SessionProgressHeader(eyebrow: eyebrow, exercises: exercises, current: current, startedAt: clockStart)
           .padding(.horizontal, 4)
 
         if let timer = restTimer {
@@ -1556,6 +1562,9 @@ private actor PreviewStore: WorkoutStore {
     for (k, s) in days where s.loggedSessionId == sessionId {
       var state = s
       state.loggedKeys = []
+      // buổi đã xoá thì ngày về "chờ tập", không còn "đang tập dở" (12/11); số tạ / reps đã điền giữ lại
+      state.progress.done = [:]
+      state.progress.startedAt = nil
       days[k] = state
     }
   }
