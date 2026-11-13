@@ -120,7 +120,8 @@ import UIKit
   }
 
   @Test func journey() {
-    check(KoaJourneyContent(history: Self.history, today: Self.today), height: 844, padded: false)
+    // Trong NavigationStack như ở app: thẻ tháng là NavigationLink, đứng ngoài thì bị vẽ như tắt.
+    check(NavigationStack { KoaJourneyContent(history: Self.history, today: Self.today) }, height: 844, padded: false)
   }
 
   /// Người mới chỉ ghi bữa / nước / ngủ, chưa tập buổi nào (10/11): Hành trình đã có mốc ghi đều.
@@ -129,7 +130,7 @@ import UIKit
     let logged = Set((1...8).map { Self.today.adding(days: -$0) })
     let kinds = Dictionary(uniqueKeysWithValues: logged.map { ($0, Set<KoaLogDaysSync.Kind>([.meal])) })
     let h = AppServices.GainsHistory(days: [], week: Self.history.week, logged: logged, logKinds: kinds)
-    check(KoaJourneyContent(history: h, today: Self.today), height: 600, padded: false)
+    check(NavigationStack { KoaJourneyContent(history: h, today: Self.today) }, height: 600, padded: false)
   }
 
   /// Nhịp ghi 30 ngày (12/11): 22 ngày có ghi, tách bữa / nước / ngủ, hơn 30 ngày trước 6 ngày.
