@@ -298,7 +298,8 @@ struct WeekPlanView: View {
         Text(verbatim: Self.date(d).formatted(.dateTime.weekday(.wide).day().month(.wide).locale(.app)))
           .font(DS.TextStyle.headline)
         Spacer()
-        Text(Self.statusLabel(p.status))
+        // Hôm nay đang tập dở thì nói đúng thế, như thẻ Tập luyện — không "Chờ tập" (12/11).
+        Text(inProgress(d, p) ? String(localized: "wh.inProgress") : Self.statusLabel(p.status))
           .font(DS.TextStyle.caption.weight(.semibold))
           .foregroundStyle(p.status == .done || p.status == .todo ? Self.accent : DS.Color.mutedForeground.swiftUI)
           .padding(.horizontal, 8)
@@ -379,6 +380,11 @@ struct WeekPlanView: View {
     .padding(DS.Spacing.card)
     .frame(maxWidth: .infinity, alignment: .leading)
     .todayCard()
+  }
+
+  private func inProgress(_ d: LocalDate, _ p: TodayPlan) -> Bool {
+    guard d == today, p.status == .todo, let s = flow.session, s.plan.templateId == p.template?.id else { return false }
+    return s.phase == .active
   }
 
   private func setDeload(_ editor: PlanEditor, _ on: Bool) async {

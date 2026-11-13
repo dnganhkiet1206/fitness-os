@@ -23,6 +23,9 @@ public struct WorkoutSummary: Sendable, Hashable {
   /// Kỷ lục của buổi, mức tăng lớn nhất trước (`findRecords`); phần tử đầu là
   /// câu "headline" của baseline (`headlineRecord`).
   public let records: [PersonalRecord]
+  /// Thời lượng buổi theo đồng hồ trên máy (từ set đầu tới lúc chốt, 12/11); `nil` khi không đo được
+  /// (buổi dựng lại, ghi tay, ghi ở máy khác).
+  public var durationSec: Int?
 
   public init(_ record: WorkoutSessionRecord, records: [PersonalRecord] = []) {
     let counted = record.sets.filter { !$0.warmup && ($0.reps > 0 || ($0.durationSec ?? 0) > 0) }

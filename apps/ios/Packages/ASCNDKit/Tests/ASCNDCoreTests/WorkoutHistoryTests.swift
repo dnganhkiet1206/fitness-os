@@ -23,9 +23,11 @@ private actor Cache: HistoryCache {
 }
 
 private func row(_ id: String, _ iso: String, sets: String = #"[{"exerciseName":"Bench","weight":60,"reps":8}]"#) -> JSONValue {
-  try! JSONDecoder().decode(JSONValue.self, from: Data("""
+  let text = """
     {"id":"\(id)","date_time":"\(iso)","template_name":"Push","session_rpe":8,"volume_load":480,"pr_detected":false,"sets":\(sets)}
-    """.utf8))
+    """
+  // JSON viết tay trong test: hỏng thì hàng rỗng và test đỏ ở chỗ so sánh, không làm sập tiến trình test.
+  return (try? JSONDecoder().decode(JSONValue.self, from: Data(text.utf8))) ?? .null
 }
 
 private let clock = ManualClock(EpochMillis(1_791_183_600_000))  // 2026-10-05 07:00Z
@@ -112,7 +114,12 @@ struct HistoryBookTests {
   /// sinh nó.
   @Test func deleteIsImmediateDurableAndUnlocksTheDay() async throws {
     let src = Source([row("s1", "2026-10-05T07:00:00Z"), row("s2", "2026-10-04T07:00:00Z")])
-    let store = InMemoryWorkoutStore(days: ["2026-10-05:tpl": DayState(loggedSessionId: "s1", loggedKeys: ["0-0"])])
+    var ticked = DayProgress()
+    ticked.done["0-0"] = true
+    ticked.weightText["0-0"] = "60"
+    let store = InMemoryWorkoutStore(days: [
+      "2026-10-05:tpl": DayState(progress: ticked, loggedSessionId: "s1", loggedKeys: ["0-0"])
+    ])
     let b = book(src, store: store)
     await b.load()
     try await b.delete("s1")
@@ -122,6 +129,8 @@ struct HistoryBookTests {
     #expect(entry.payload == .object(["id": .string("s1"), "date_time": .string("2026-10-05T07:00:00.000Z")]), "thời điểm đi kèm (#429)")
     #expect(entry.id.hasPrefix("s1@"))
     #expect(await store.days["2026-10-05:tpl"]?.loggedKeys == [], "ngày thôi giữ set nào trong buổi")
+    #expect(await store.days["2026-10-05:tpl"]?.progress.done.isEmpty == true, "không còn tick: ngày không \"đang tập dở\"")
+    #expect(await store.days["2026-10-05:tpl"]?.progress.weightText["0-0"] == "60", "số đã điền giữ lại")
     await b.refresh()
     #expect(b.entries.map(\.id) == ["s2"], "server chưa nhận lệnh xoá: không hồi sinh")
   }
