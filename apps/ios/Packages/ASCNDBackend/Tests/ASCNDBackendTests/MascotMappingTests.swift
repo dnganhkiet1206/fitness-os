@@ -29,4 +29,14 @@ struct MascotMappingTests {
     #expect(SupabaseMascotSource.number(.null) == nil)
     #expect(SupabaseMascotSource.number(nil) == nil)
   }
+
+  /// AUD-28: JSON của `mascot_wallet()` → dòng gộp cho `MascotWallet`.
+  @Test func serverWalletDecodesIntoCompactRows() throws {
+    let json = #"{"balance": 365, "xp": [{"key": "d:2000-01-03:meal", "n": 30}], "claimed": ["welcome", "x:photo"]}"#
+    let dto = try JSONDecoder().decode(SupabaseMascotSource.WalletDTO.self, from: Data(json.utf8))
+    let w = MascotWallet(rows: dto.rows)
+    #expect(w.balance == 365)
+    #expect(w.xp == 30 * MascotRules.xpForRefKey("d:2000-01-03:meal"))
+    #expect(w.claimed == ["welcome", "x:photo"])
+  }
 }

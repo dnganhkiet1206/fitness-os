@@ -221,6 +221,8 @@ CASES += [
     ('K3c bỏ kiểm thứ Hai', RK, "    IF extract(isodow FROM v_date) <> 1 THEN RETURN NULL; END IF;", "", None, 'K3'),
     ('E1c mở lại bán băng chuỗi', '20261112140000_streak_freeze_sale_closed', "GRANT EXECUTE ON FUNCTION public.buy_streak_freeze(UUID) TO service_role;",
      "GRANT EXECUTE ON FUNCTION public.buy_streak_freeze(UUID) TO service_role, authenticated;", None, 'E1c'),
+    ('W2 ví đếm sai số dòng XP', '20261112150000_mascot_wallet', "(SELECT k, count(*) AS n FROM cls", "(SELECT k, 1 AS n FROM cls", None, 'W2'),
+    ('W5 ví đọc sổ mọi người', '20261112150000_mascot_wallet', "FROM public.mascot_transactions WHERE user_id = auth.uid()", "FROM public.mascot_transactions WHERE true", None, 'W1'),
 ]
 
 def mutate(src, old, new, nth):

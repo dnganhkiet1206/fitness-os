@@ -18,12 +18,40 @@ public struct SupabaseMascotSource: MascotSource {
   }
 
   /// `useMascotWallet`: `mascot_transactions.select('amount, ref_key')`.
+  ///
+  /// Round 3 (AUD-28): đọc ví GỘP ở server (`mascot_wallet()`): số dư, XP theo
+  /// loại khoá, khoá đã nhận gần đây — một lượt nhỏ, không bị `max_rows` của
+  /// PostgREST cắt lặng lẽ khi sổ dài. Server chưa có hàm ấy (migration chưa áp,
+  /// `PGRST202`) thì đọc cả sổ như trước.
   public func ledger(userId: String) async throws -> [LedgerRow] {
-    let rows: [LedgerDTO] = try await client.from("mascot_transactions")
-      .select("amount, ref_key")
-      .eq("user_id", value: userId)
-      .execute().value
-    return rows.map { LedgerRow(amount: $0.amount, refKey: $0.ref_key) }
+    do {
+      let wallet: WalletDTO = try await client.rpc("mascot_wallet").execute().value
+      return wallet.rows
+    } catch let e as PostgrestError where e.code == "PGRST202" {
+      let rows: [LedgerDTO] = try await client.from("mascot_transactions")
+        .select("amount, ref_key")
+        .eq("user_id", value: userId)
+        .execute().value
+      return rows.map { LedgerRow(amount: $0.amount, refKey: $0.ref_key) }
+    }
+  }
+
+  /// `mascot_wallet()` → các dòng `LedgerRow` mà `MascotWallet` cộng ra đúng số
+  /// dư, XP và tập khoá đã nhận.
+  struct WalletDTO: Decodable, Sendable {
+    struct XpClass: Decodable, Sendable {
+      let key: String
+      let n: Int
+    }
+    let balance: Int
+    let xp: [XpClass]
+    let claimed: [String]
+
+    var rows: [LedgerRow] {
+      [LedgerRow(amount: balance, refKey: nil)]
+        + xp.map { LedgerRow(amount: 0, refKey: $0.key, xpCount: $0.n, claimsKey: false) }
+        + claimed.map { LedgerRow(amount: 0, refKey: $0, xpCount: 0) }
+    }
   }
 
   struct DateDTO: Decodable, Sendable {
