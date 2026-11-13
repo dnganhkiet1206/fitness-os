@@ -54,6 +54,8 @@ struct KoaMonthSection: View {
   let history: AppServices.GainsHistory
   let today: LocalDate
   @State private var limit = KoaMonthRecap.pageSize
+  /// 76 pt ở cỡ chữ mặc định, rộng theo Dynamic Type: chữ lớn không xén số trong ô (ảnh 13/11).
+  @ScaledMetric(relativeTo: .footnote) private var tileWidth: CGFloat = 76
   @ScaledMetric(relativeTo: .title) private var sessionsSize: CGFloat = 26
 
   var body: some View {
@@ -127,7 +129,7 @@ struct KoaMonthSection: View {
             Text("month.more")
               .font(DS.TextStyle.caption.weight(.semibold))
               .foregroundStyle(DS.Color.foreground.swiftUI)
-              .frame(width: 76, height: 96)
+              .frame(width: tileWidth, height: 96)
               .todayCard(radius: DS.Radius.md)
           }
           .buttonStyle(.plain)
@@ -160,7 +162,7 @@ struct KoaMonthSection: View {
       }
       .frame(height: 18, alignment: .bottom)
     }
-    .frame(width: 76, alignment: .leading)
+    .frame(width: tileWidth, alignment: .leading)
     .padding(DS.Spacing.sm)
     .todayCard(radius: DS.Radius.md)
     .accessibilityElement(children: .ignore)
