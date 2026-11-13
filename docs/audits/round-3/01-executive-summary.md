@@ -29,6 +29,8 @@ counts as "verified in production" until the migrations are deployed and checked
 | **AUD-10** | 25 FKs without a leading index (RLS `user_id` scans, cascade scans on account delete) | 2 migrations (11 core + 14 community indexes) + guard test in both suites | `fk_indexes` FK1 ✓ (core + community) |
 | **AUD-14** (B-2) | Freeze sold (150 coins) but never spendable | Option B: revoke `buy_streak_freeze` from `authenticated`; existing freezes untouched | `rpc_authority` E1c ✓ + reverse ✓ |
 | **AUD-47** (B-6) | `verify-purchase` expired/refunded branch ignored upsert errors (fail-open) | Error checked → 500, like the paid branch | Code review; `deno check` error in `apple.ts` is pre-existing (identical without the change) |
+| **AUD-05** | Exercise library (~873 rows) read in one unbounded request near PostgREST `max_rows`; truncation would be cached silently | Paged to the end (500/page, ordered by muscle_group, name, id); >20 pages throws instead of caching half a library | `LibraryPagingTests` (0–2500 rows, cap) ✓ |
+| **R2-OPS-03** (partial) | Sync failures invisible to the team: dead entries / disk-write failures only on the user's screen; rebuild failures discarded | `SyncWorker.onIncident` → Sentry (`sync.dead`, `sync.local_write`, `sync.rebuild_failed`) with kind/reason/code tags, no payload/PII | `refusedEntryRaisesAnIncident` ✓; app builds. Live Sentry delivery NOT RUN (no DSN locally) |
 | **AUD-28** | Wallet summed from an unbounded ledger read; silently wrong after PostgREST `max_rows` truncation (~3 months of use) | `mascot_wallet()` RPC: balance + XP per key class + recent/one-time claimed keys; app falls back to the old read on `PGRST202` so it works before/after deploy | `rpc_mascot_wallet` W1–W5 on a 1500-day ledger ✓; Swift compact-vs-full equality ✓; simulator Koa room shows seeded balance via RPC |
 
 ## 3. Reconfirmed by execution (no code change needed)
@@ -47,6 +49,8 @@ counts as "verified in production" until the migrations are deployed and checked
 | R3-DATA-02 | P2 | Wallet truncation (AUD-28 framed as correctness, not just scale) | Fixed |
 | R3-OPS-01 | P3 | Local builds of scheme `ASCND` need the watchOS 26.5 runtime since #853 (embedded Watch app) | Open (doc/tooling) |
 | R3-SEC-02 | P3 | Daily quest completion (`d:`) still client-asserted; bounded by window + ceiling | Accepted residual (see 03) |
+
+Legacy gate checks (`native/tools/quest-lifecycle.mjs`, `economic-integrity.mjs`) were updated to the round-3 key rules (real keys of the week pay their tier; invented keys pay 0; ceiling measured with shape-valid keys), and accept `PG_BIN` so they run on macOS.
 
 ## 5. Environment & safety
 
