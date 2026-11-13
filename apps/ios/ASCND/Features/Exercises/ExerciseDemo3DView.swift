@@ -84,6 +84,9 @@
             Text("eg.demo3d.rotateHint")
               .font(DS.TextStyle.caption)
               .foregroundStyle(.white.opacity(0.5))
+            if let legend = ExerciseDemo3D.demo(for: name)?.legend, !legend.isEmpty {
+              legendView(legend)
+            }
           }
         }
         .toolbar {
@@ -97,6 +100,30 @@
           }
         }
       }
+    }
+
+    /// Chú thích cơ đang tô sáng (Kiệt 13/11: bắt buộc phải có, đặt dưới
+    /// khung viewer gần dòng chú thích xoay): mỗi hàng là chấm màu đúng màu
+    /// render + tên cơ + vai trò. Tĩnh, không tương tác.
+    private func legendView(_ legend: [ExerciseDemo3D.LegendEntry]) -> some View {
+      VStack(alignment: .leading, spacing: DS.Spacing.xs) {
+        ForEach(Array(legend.enumerated()), id: \.offset) { _, entry in
+          HStack(spacing: DS.Spacing.xs) {
+            Circle()
+              .fill(Color(hex: entry.hex))
+              .frame(width: 8, height: 8)
+              .accessibilityHidden(true)
+            Text(LocalizedStringKey(entry.nameKey))
+            Text(verbatim: "·").foregroundStyle(.white.opacity(0.5))
+            Text(LocalizedStringKey(entry.roleKey))
+              .foregroundStyle(.white.opacity(0.5))
+          }
+          .font(DS.TextStyle.caption)
+          .foregroundStyle(.white.opacity(0.85))
+          .accessibilityElement(children: .combine)
+        }
+      }
+      .padding(.top, DS.Spacing.xs)
     }
 
     /// USDZ không nạp được thì nói thẳng, kèm poster của bài.

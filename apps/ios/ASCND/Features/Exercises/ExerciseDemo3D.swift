@@ -21,11 +21,38 @@
       /// Thời lượng hoạt hình trong USDZ: khung 24–228 ở 24 fps (phần giữ
       /// yên ở đầu/cuối clip bị USD export lược, không ảnh hưởng chuyển động).
       let durationS: Double
+      /// Legend chú thích cơ của trình xem (Kiệt 13/11: bắt buộc phải có):
+      /// mỗi mục là một nhóm cơ ĐANG ĐƯỢC TÔ SÁNG trong bản render. Danh
+      /// sách lấy từ `bench-press/exercise.json` — chỉ các vai trò trong
+      /// `highlight_roles` (cơ chính + cơ phụ); nhóm ổn định không tô sáng
+      /// nên không có trong legend. Bài sau thêm demo thì kèm legend của
+      /// bài đó, cùng nguồn dữ liệu.
+      let legend: [LegendEntry]
+    }
+
+    /// Một mục trong legend: chấm màu đúng màu tô sáng của vai trò trong
+    /// bản render + tên cơ + vai trò, qua key i18n.
+    struct LegendEntry {
+      /// Mã màu hex, đúng `muscle_primary` / `muscle_secondary` trong
+      /// `config/brand.config.json` của pipeline render.
+      let hex: String
+      /// Key tên cơ (`eg.demo3d.legend.*` trong Localizable.xcstrings).
+      let nameKey: String
+      /// Key vai trò (`eg.demo3d.legend.primary` / `.secondary`).
+      let roleKey: String
     }
 
     static let benchPress = Demo(
       usdzFile: "bench_press_animation", loopFile: "bench_press_45_loop", posterFile: "bench_press_45_poster",
-      durationS: 8.5)
+      durationS: 8.5,
+      legend: [
+        LegendEntry(
+          hex: "#E8552B", nameKey: "eg.demo3d.legend.pectoralisMajor", roleKey: "eg.demo3d.legend.primary"),
+        LegendEntry(
+          hex: "#F2A33A", nameKey: "eg.demo3d.legend.deltoidAnterior", roleKey: "eg.demo3d.legend.secondary"),
+        LegendEntry(
+          hex: "#F2A33A", nameKey: "eg.demo3d.legend.tricepsBrachii", roleKey: "eg.demo3d.legend.secondary"),
+      ])
 
     /// Tên bài (đã gập như `PersonalRecords.exerciseKey`) → bản minh hoạ.
     static let demos: [String: Demo] = [
