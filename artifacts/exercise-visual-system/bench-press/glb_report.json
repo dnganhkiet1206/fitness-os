@@ -1,0 +1,112 @@
+{
+  "pipeline_version": "0.1.0",
+  "exercise_id": "barbell_bench_press",
+  "master_character_id": "master_character_001",
+  "files": {
+    "master_character.glb": {
+      "file": "master_character.glb",
+      "size_bytes": 884688,
+      "generator": "Khronos glTF Blender I/O v5.2.39",
+      "nodes": 56,
+      "meshes": 2,
+      "primitives": 2,
+      "vertices": 13743,
+      "triangles": 25150,
+      "materials": [
+        "EVS_Body_Export",
+        "EVS_Apparel_Export"
+      ],
+      "textures": 0,
+      "images": 0,
+      "image_bytes": 0,
+      "skins": [
+        {
+          "name": "MasterRig",
+          "joints": 53
+        }
+      ],
+      "animations": [],
+      "material_variants": [],
+      "extensions_used": [],
+      "errors": []
+    },
+    "bench_press_animation.glb": {
+      "file": "bench_press_animation.glb",
+      "size_bytes": 1554076,
+      "generator": "Khronos glTF Blender I/O v5.2.39",
+      "nodes": 61,
+      "meshes": 7,
+      "primitives": 13,
+      "vertices": 26367,
+      "triangles": 45638,
+      "materials": [
+        "EVS_Plate",
+        "EVS_PlateAccent",
+        "EVS_Metal",
+        "EVS_Knurl",
+        "EVS_Frame",
+        "EVS_Pad",
+        "EVS_Body_Export",
+        "EVS_Apparel_Export",
+        "EVS_Body_Export_neutral",
+        "EVS_Apparel_Export_neutral"
+      ],
+      "textures": 2,
+      "images": 2,
+      "image_bytes": 170913,
+      "skins": [
+        {
+          "name": "MasterRig",
+          "joints": 53
+        }
+      ],
+      "animations": [
+        {
+          "name": "barbell_bench_press",
+          "channels": 160,
+          "animated_nodes": 54,
+          "duration_s": 9.75,
+          "max_keys": 235
+        }
+      ],
+      "material_variants": [
+        "muscle_highlight",
+        "neutral"
+      ],
+      "extensions_used": [
+        "KHR_materials_clearcoat",
+        "KHR_materials_variants"
+      ],
+      "errors": []
+    }
+  },
+  "reimport": {
+    "master_character.glb": {
+      "armatures": 1,
+      "bones": 53,
+      "mesh_objects": 3,
+      "skinned_mesh_objects": 2,
+      "mesh_vertices": 13785,
+      "actions": 0,
+      "last_animation_frame": 0.0,
+      "materials": 2
+    },
+    "bench_press_animation.glb": {
+      "armatures": 1,
+      "bones": 53,
+      "mesh_objects": 8,
+      "skinned_mesh_objects": 2,
+      "mesh_vertices": 26409,
+      "actions": 1,
+      "last_animation_frame": 234.0,
+      "materials": 10
+    }
+  },
+  "expectations": {
+    "deform_bones": 53,
+    "animation_duration_s": 9.75,
+    "animation_frames": 235,
+    "clip_duration_s": 9.75,
+    "clip_max_keys": 235
+  }
+}

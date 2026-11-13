@@ -1,0 +1,88 @@
+{
+  "master_character_id": "master_character_001",
+  "version": "1.1.0",
+  "description": "One faceless athletic male figure reused by every exercise and every camera. Built from the MakeHuman base mesh through MPFB (generated characters are CC0), then made faceless and given shorts by this pipeline.",
+  "generator": {
+    "tool": "MPFB (MakeHuman Plugin For Blender)",
+    "tool_version_tested": "2.0.18",
+    "blender_version_tested": "5.2.0 LTS",
+    "module": "bl_ext.blender_org.mpfb"
+  },
+  "body_shape": {
+    "comment": "MakeHuman macro sliders (0..1). Muscle definition is the MakeHuman (max muscle - average muscle) shape delta scaled by muscle_definition; leanness adds a fraction of the (minimum weight - chosen weight) delta. Changing any value here creates a NEW character version: bump master_character_id.",
+    "gender": 1.0,
+    "age": 0.5,
+    "proportions": 0.65,
+    "height": 0.55,
+    "weight": 0.62,
+    "muscle_definition": 2.15,
+    "leanness": 0.0,
+    "race": {
+      "asian": 0.33,
+      "caucasian": 0.34,
+      "african": 0.33
+    },
+    "chosen": "Kiệt chose the 'middle' option on 12/11/2026 (docs/exercise-visual-system/body_options.png): the first version looked too thin."
+  },
+  "faceless": {
+    "comment": "The frontal face (eyes, nose, mouth and their inner pockets) is cut out between the forehead and the chin and replaced by an evenly meshed surface. That surface is the front of the original head seen as a height field, with hollows narrower than fill_radius filled, bumps narrower than remove_radius removed, and a blur; it fades back into the original surface over rim_blend. Metres.",
+    "above_eye": 0.058,
+    "above_chin": 0.008,
+    "beyond_eye_lateral": 0.031,
+    "cheek_margin": 0.012,
+    "behind_ear_front": 0.0,
+    "patch_spacing": 0.006,
+    "field_step": 0.002,
+    "fill_radius": 0.016,
+    "remove_radius": 0.022,
+    "blur_sigma": 0.008,
+    "rim_blend": 0.01
+  },
+  "shorts": {
+    "waist_above_hip_joint": 0.105,
+    "waist_front_drop_deg": 6.0,
+    "leg_fraction_of_thigh": 0.42,
+    "offset": 0.0035,
+    "thickness": 0.004
+  },
+  "rig": {
+    "mpfb_rig": "game_engine",
+    "comment": "53 deform bones with Unreal-style names. Control bones (prefix ctl_) and helper bones (prefix mch_) are added by evs/rig.py and are never exported.",
+    "subdivision_render_levels": 2,
+    "subdivision_viewport_levels": 1
+  },
+  "names": {
+    "body_object": "MasterBody",
+    "shorts_object": "MasterShorts",
+    "armature_object": "MasterRig",
+    "collection": "MASTER_CHARACTER"
+  },
+  "grip": {
+    "comment": "The standard bar grip of this character: where a bar of this diameter sits in the palm when grip_l / grip_r is 1 (along_palm = metres from the wrist joint towards the knuckles; palm_depth = metres from the plane of the hand bones to the bar's surface; palm_surface = how far the skin of the hollow of the palm lies from that plane). The finger angles are solved once from these numbers when the rig is built: every finger closes onto the bar without its skin entering the bar or the palm. Exercises place their grip sockets with the same numbers, so hand and bar always agree. The pads of the palm are rigid in this rig, so the bar is set a few millimetres into them to stand for soft tissue pressed flat.",
+    "bar_diameter": 0.029,
+    "along_palm": 0.068,
+    "palm_depth": 0.02,
+    "diagonal_deg": 6.0,
+    "finger_half_thickness": [
+      0.0095,
+      0.0085,
+      0.0075
+    ],
+    "finger_limits_deg": [
+      85.0,
+      105.0,
+      70.0
+    ],
+    "thumb_half_thickness": [
+      0.014,
+      0.0095,
+      0.0085
+    ],
+    "thumb_limits_deg": [
+      95.0,
+      60.0,
+      75.0
+    ],
+    "palm_surface": 0.014
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "comment": "Reusable camera presets. Azimuth 0 looks at the subject's front (from -Y); positive azimuth moves the camera towards the subject's left (+X). Each camera is aimed and placed automatically so that everything visible in the exercise (character and equipment, over the whole clip) fills the frame with the given margin, so one preset works for every exercise. A preset with 'follow' rides along with a named object and keeps a fixed frame width around it. Cameras never carry animation of their own: all of them look at the same scene on the same timeline.",
+  "sensor_width_mm": 36.0,
+  "presets": {
+    "side": {
+      "label": "Side view",
+      "file_suffix": "side",
+      "azimuth_deg": 90,
+      "elevation_deg": 4,
+      "focal_length_mm": 85,
+      "margin": 1.06,
+      "purpose": [
+        "bar path",
+        "elbow position",
+        "wrist alignment",
+        "torso position",
+        "eccentric and concentric phases"
+      ]
+    },
+    "front": {
+      "label": "Front view",
+      "file_suffix": "front",
+      "azimuth_deg": 0,
+      "elevation_deg": 26,
+      "focal_length_mm": 85,
+      "margin": 1.05,
+      "purpose": [
+        "grip symmetry",
+        "bar symmetry",
+        "arm symmetry",
+        "elbow tracking",
+        "shoulder position"
+      ]
+    },
+    "three_quarter": {
+      "label": "45-degree view",
+      "file_suffix": "45",
+      "azimuth_deg": 45,
+      "elevation_deg": 20,
+      "focal_length_mm": 85,
+      "margin": 1.05,
+      "purpose": [
+        "overall movement",
+        "character and equipment interaction",
+        "full exercise presentation"
+      ]
+    },
+    "closeup_grip": {
+      "label": "Grip close-up",
+      "file_suffix": "closeup",
+      "azimuth_deg": 104,
+      "elevation_deg": 46,
+      "focal_length_mm": 110,
+      "follow": "hand_l",
+      "frame_width_m": 0.5,
+      "purpose": [
+        "hand placement",
+        "wrist position",
+        "bar grip"
+      ]
+    }
+  }
+}

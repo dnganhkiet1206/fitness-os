@@ -1,0 +1,168 @@
+{
+  "master_character_id": "master_character_001",
+  "limits": {
+    "max_p999_edge_stretch": 2.6,
+    "max_volume_change": 0.08,
+    "skin_contact_review_above": 40
+  },
+  "rest": {
+    "max_edge_stretch": 1.0,
+    "p999_edge_stretch": 1.0,
+    "min_edge_ratio": 1.0,
+    "volume_m3": 0.0759,
+    "self_intersecting_face_pairs": 13
+  },
+  "poses": {
+    "rest": {
+      "max_edge_stretch": 1.0,
+      "p999_edge_stretch": 1.0,
+      "min_edge_ratio": 1.0,
+      "volume_m3": 0.0759,
+      "self_intersecting_face_pairs": 13,
+      "volume_change": 0.0,
+      "new_self_intersections": 0,
+      "checks": {
+        "edge_stretch": "PASS",
+        "volume": "PASS",
+        "skin_contact": "PASS"
+      },
+      "status": "PASS"
+    },
+    "arms_forward_90": {
+      "max_edge_stretch": 3.415,
+      "p999_edge_stretch": 1.98,
+      "min_edge_ratio": 0.21,
+      "volume_m3": 0.07474,
+      "self_intersecting_face_pairs": 19,
+      "volume_change": -0.0153,
+      "new_self_intersections": 6,
+      "checks": {
+        "edge_stretch": "PASS",
+        "volume": "PASS",
+        "skin_contact": "PASS"
+      },
+      "status": "PASS"
+    },
+    "arms_out_90": {
+      "max_edge_stretch": 2.464,
+      "p999_edge_stretch": 1.656,
+      "min_edge_ratio": 0.64,
+      "volume_m3": 0.07629,
+      "self_intersecting_face_pairs": 13,
+      "volume_change": 0.0051,
+      "new_self_intersections": 0,
+      "checks": {
+        "edge_stretch": "PASS",
+        "volume": "PASS",
+        "skin_contact": "PASS"
+      },
+      "status": "PASS"
+    },
+    "arms_overhead_160": {
+      "max_edge_stretch": 4.132,
+      "p999_edge_stretch": 2.468,
+      "min_edge_ratio": 0.078,
+      "volume_m3": 0.07546,
+      "self_intersecting_face_pairs": 33,
+      "volume_change": -0.0058,
+      "new_self_intersections": 20,
+      "checks": {
+        "edge_stretch": "PASS",
+        "volume": "PASS",
+        "skin_contact": "PASS"
+      },
+      "status": "PASS"
+    },
+    "elbows_flexed_130": {
+      "max_edge_stretch": 3.03,
+      "p999_edge_stretch": 1.884,
+      "min_edge_ratio": 0.253,
+      "volume_m3": 0.07483,
+      "self_intersecting_face_pairs": 350,
+      "volume_change": -0.0141,
+      "new_self_intersections": 337,
+      "checks": {
+        "edge_stretch": "PASS",
+        "volume": "PASS",
+        "skin_contact": "REQUIRES_MANUAL_REVIEW"
+      },
+      "status": "REQUIRES_MANUAL_REVIEW"
+    },
+    "wrists_bent_60": {
+      "max_edge_stretch": 3.089,
+      "p999_edge_stretch": 1.816,
+      "min_edge_ratio": 0.25,
+      "volume_m3": 0.07512,
+      "self_intersecting_face_pairs": 19,
+      "volume_change": -0.0103,
+      "new_self_intersections": 6,
+      "checks": {
+        "edge_stretch": "PASS",
+        "volume": "PASS",
+        "skin_contact": "PASS"
+      },
+      "status": "PASS"
+    },
+    "hips_90_knees_90": {
+      "max_edge_stretch": 6.82,
+      "p999_edge_stretch": 2.013,
+      "min_edge_ratio": 0.178,
+      "volume_m3": 0.0726,
+      "self_intersecting_face_pairs": 158,
+      "volume_change": -0.0435,
+      "new_self_intersections": 145,
+      "checks": {
+        "edge_stretch": "PASS",
+        "volume": "PASS",
+        "skin_contact": "REQUIRES_MANUAL_REVIEW"
+      },
+      "status": "REQUIRES_MANUAL_REVIEW"
+    },
+    "deep_squat_like": {
+      "max_edge_stretch": 7.753,
+      "p999_edge_stretch": 2.318,
+      "min_edge_ratio": 0.249,
+      "volume_m3": 0.07196,
+      "self_intersecting_face_pairs": 184,
+      "volume_change": -0.0519,
+      "new_self_intersections": 171,
+      "checks": {
+        "edge_stretch": "PASS",
+        "volume": "PASS",
+        "skin_contact": "REQUIRES_MANUAL_REVIEW"
+      },
+      "status": "REQUIRES_MANUAL_REVIEW"
+    },
+    "grip_closed": {
+      "max_edge_stretch": 5.369,
+      "p999_edge_stretch": 2.02,
+      "min_edge_ratio": 0.177,
+      "volume_m3": 0.07585,
+      "self_intersecting_face_pairs": 387,
+      "volume_change": -0.0007,
+      "new_self_intersections": 374,
+      "checks": {
+        "edge_stretch": "PASS",
+        "volume": "PASS",
+        "skin_contact": "REQUIRES_MANUAL_REVIEW"
+      },
+      "status": "REQUIRES_MANUAL_REVIEW"
+    }
+  },
+  "visual_review": {
+    "status": "REQUIRES_MANUAL_REVIEW",
+    "image": "rig_deformation_test.png",
+    "note": "Numbers catch collapse and self-penetration. Whether shoulders, elbows, hips, knees and wrists look anatomically right must be judged by a person."
+  },
+  "tile_order": [
+    "rest",
+    "arms_forward_90",
+    "arms_out_90",
+    "arms_overhead_160",
+    "elbows_flexed_130",
+    "wrists_bent_60",
+    "hips_90_knees_90",
+    "deep_squat_like",
+    "grip_closed"
+  ]
+}

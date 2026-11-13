@@ -1,0 +1,117 @@
+{
+  "muscle_map_id": "master_character_001.muscles.v1",
+  "master_character_id": "master_character_001",
+  "status": "DRAFT",
+  "review": "Regions were placed by the pipeline author on the rest pose of master_character_001 from surface anatomy (bony landmarks and visible muscle borders). They are illustrative surface regions for highlighting, not dissections. An anatomist or qualified coach has NOT reviewed them.",
+  "atlas_resolution": 2048,
+  "default_feather_m": 0.008,
+  "charts": {
+    "torso_front": "u = |x| in metres from the midline, v = height z in metres. Only surfaces that face forward, on the trunk.",
+    "torso_back": "u = |x|, v = z. Only surfaces that face backward, on the trunk.",
+    "torso_back_top": "u = |x|, v = z. Surfaces that face backward or upward, on the trunk and neck (trapezius).",
+    "torso_around": "u = angle around the vertical trunk axis in degrees (0 = front, 90 = side, 180 = back), v = z in metres. Any facing, on the trunk.",
+    "shoulder": "Upper-arm frame without a skin-weight gate: s = position along the humerus (0 = shoulder joint, 1 = elbow, negative = above the joint), angle around the humerus in degrees (0 = front, 90 = outer side, 180 = back, -90 = armpit).",
+    "upperarm": "Same frame, limited to the arm.",
+    "lowerarm": "Forearm frame: s from elbow (0) to wrist (1).",
+    "thigh": "s from hip joint (0) to knee (1); angle 0 = front, 90 = outer side, 180 = back, -90 = inner side.",
+    "calf": "s from knee (0) to ankle (1); same angles as the thigh."
+  },
+  "groups": {
+    "pectoralis_major": {
+      "label": "Pectoralis major",
+      "patches": [
+        { "chart": "torso_front", "polygon": [[0.007, 1.447], [0.07, 1.454], [0.135, 1.449], [0.172, 1.427], [0.194, 1.385], [0.188, 1.345], [0.166, 1.316], [0.13, 1.291], [0.09, 1.278], [0.045, 1.276], [0.007, 1.286]], "feather": 0.009 }
+      ],
+      "minus": ["deltoid_anterior"]
+    },
+    "deltoid_anterior": {
+      "label": "Deltoid, anterior head",
+      "patches": [ { "chart": "shoulder", "s": [-0.2, 0.44], "angle": 5, "half_width": 44, "taper_far": 0.75, "radius": 0.065, "max_radius": 0.115 } ]
+    },
+    "deltoid_lateral": {
+      "label": "Deltoid, lateral head",
+      "patches": [ { "chart": "shoulder", "s": [-0.2, 0.5], "angle": 92, "half_width": 43, "taper_far": 0.75, "radius": 0.065, "max_radius": 0.115 } ]
+    },
+    "deltoid_posterior": {
+      "label": "Deltoid, posterior head",
+      "patches": [ { "chart": "shoulder", "s": [-0.2, 0.44], "angle": 178, "half_width": 43, "taper_far": 0.75, "radius": 0.065, "max_radius": 0.115 } ]
+    },
+    "triceps_brachii": {
+      "label": "Triceps brachii",
+      "patches": [ { "chart": "upperarm", "s": [0.1, 0.98], "angle": 186, "half_width": 74, "taper_near": 0.45, "taper_far": 0.35, "radius": 0.048 } ],
+      "minus": ["deltoid_posterior", "deltoid_lateral"]
+    },
+    "biceps_brachii": {
+      "label": "Biceps brachii",
+      "patches": [ { "chart": "upperarm", "s": [0.2, 0.96], "angle": -6, "half_width": 56, "taper_near": 0.5, "taper_far": 0.45, "radius": 0.048 } ],
+      "minus": ["deltoid_anterior"]
+    },
+    "forearm_muscles": {
+      "label": "Forearm flexors and extensors",
+      "patches": [ { "chart": "lowerarm", "s": [0.03, 0.8], "angle": 0, "half_width": 180, "taper_far": 0.0, "radius": 0.04 } ]
+    },
+    "rectus_abdominis": {
+      "label": "Rectus abdominis",
+      "patches": [ { "chart": "torso_front", "polygon": [[0.007, 1.262], [0.058, 1.268], [0.068, 1.2], [0.064, 1.1], [0.05, 1.0], [0.03, 0.94], [0.007, 0.93]] } ]
+    },
+    "obliques": {
+      "label": "External obliques",
+      "patches": [ { "chart": "torso_around", "polygon": [[30, 1.215], [56, 1.255], [88, 1.24], [93, 1.1], [82, 1.04], [42, 1.0], [29, 1.06]] } ],
+      "minus": ["rectus_abdominis"]
+    },
+    "serratus_anterior": {
+      "label": "Serratus anterior",
+      "patches": [ { "chart": "torso_around", "polygon": [[50, 1.325], [80, 1.345], [96, 1.33], [99, 1.255], [72, 1.24], [52, 1.268]] } ],
+      "minus": ["pectoralis_major", "latissimus_dorsi"]
+    },
+    "latissimus_dorsi": {
+      "label": "Latissimus dorsi",
+      "patches": [ { "chart": "torso_around", "polygon": [[97, 1.35], [124, 1.372], [150, 1.34], [171, 1.25], [174, 1.085], [150, 1.06], [118, 1.12], [101, 1.2]] } ],
+      "minus": ["trapezius", "rotator_cuff_posterior", "erector_spinae"]
+    },
+    "trapezius": {
+      "label": "Trapezius",
+      "patches": [ { "chart": "torso_back_top", "polygon": [[0.0, 1.6], [0.034, 1.585], [0.05, 1.53], [0.12, 1.492], [0.186, 1.476], [0.176, 1.446], [0.1, 1.42], [0.05, 1.33], [0.02, 1.2], [0.0, 1.19]] } ],
+      "minus": ["deltoid_posterior", "deltoid_lateral"]
+    },
+    "rotator_cuff_posterior": {
+      "label": "Infraspinatus and teres minor",
+      "patches": [ { "chart": "torso_back", "polygon": [[0.076, 1.405], [0.165, 1.426], [0.186, 1.386], [0.17, 1.336], [0.11, 1.3], [0.076, 1.34]] } ],
+      "minus": ["trapezius", "deltoid_posterior"]
+    },
+    "erector_spinae": {
+      "label": "Erector spinae",
+      "patches": [ { "chart": "torso_back", "polygon": [[0.008, 1.19], [0.05, 1.19], [0.06, 1.1], [0.055, 1.0], [0.008, 0.99]] } ]
+    },
+    "gluteus_maximus": {
+      "label": "Gluteus maximus",
+      "patches": [ { "chart": "torso_around", "polygon": [[100, 1.0], [135, 1.03], [172, 1.0], [178, 0.9], [170, 0.856], [130, 0.86], [100, 0.9]], "include_legs": true } ]
+    },
+    "gluteus_medius": {
+      "label": "Gluteus medius",
+      "patches": [ { "chart": "torso_around", "polygon": [[62, 1.05], [100, 1.065], [128, 1.04], [98, 0.985], [70, 0.975]] } ],
+      "minus": ["gluteus_maximus"]
+    },
+    "quadriceps": {
+      "label": "Quadriceps femoris",
+      "patches": [ { "chart": "thigh", "s": [0.1, 0.93], "angle": 18, "half_width": 80, "taper_near": 0.3, "taper_far": 0.3, "radius": 0.075 } ]
+    },
+    "adductors": {
+      "label": "Hip adductors",
+      "patches": [ { "chart": "thigh", "s": [0.03, 0.64], "angle": -98, "half_width": 36, "taper_far": 0.6, "radius": 0.075 } ],
+      "minus": ["quadriceps", "hamstrings"]
+    },
+    "hamstrings": {
+      "label": "Hamstrings",
+      "patches": [ { "chart": "thigh", "s": [0.13, 0.94], "angle": 186, "half_width": 62, "taper_near": 0.3, "taper_far": 0.3, "radius": 0.075 } ]
+    },
+    "calves": {
+      "label": "Gastrocnemius and soleus",
+      "patches": [ { "chart": "calf", "s": [0.03, 0.74], "angle": 182, "half_width": 72, "taper_near": 0.2, "taper_far": 0.6, "radius": 0.052 } ]
+    },
+    "tibialis_anterior": {
+      "label": "Tibialis anterior",
+      "patches": [ { "chart": "calf", "s": [0.06, 0.7], "angle": 28, "half_width": 27, "taper_far": 0.5, "radius": 0.045 } ]
+    }
+  }
+}

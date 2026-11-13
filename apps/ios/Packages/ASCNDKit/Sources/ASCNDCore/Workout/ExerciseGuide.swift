@@ -132,6 +132,14 @@ public struct MediaState: Sendable, Hashable, Codable {
 
   public static let none = MediaState(shape: .none, items: [])
 
+  /// Video đóng gói sẵn (ví dụ clip 3D dựng trong repo), không qua server.
+  /// Nhiều tấm = cùng một động tác quay từ nhiều góc; tấm đầu là mặc định.
+  public static func bundledVideos(_ clips: [(uri: String, posterUri: String?, durationS: Double?, alt: String?)]) -> MediaState {
+    MediaState(shape: clips.isEmpty ? .none : .video, items: clips.map {
+      MediaItem(kind: .video, uri: $0.uri, durationS: $0.durationS, posterUri: $0.posterUri, alt: $0.alt, title: nil, description: "")
+    })
+  }
+
   public var hasMedia: Bool { shape != .none }
   /// Chấm phân trang chỉ cho bộ ảnh.
   public var showsDots: Bool { shape == .imageGallery }
@@ -143,6 +151,8 @@ public struct MediaState: Sendable, Hashable, Codable {
     return t.isEmpty ? nil : t
   }
 
+  // Mẫu hằng, đã kiểm trong unit test: không thể lỗi lúc chạy.
+  // swiftlint:disable:next force_try
   static let legacyImage = try! NSRegularExpression(
     pattern: #"\.(gif|webp|png|jpe?g|avif|heic|bmp)(\?|#|$)"#, options: [.caseInsensitive])
 

@@ -74323,6 +74323,972 @@
           }
         }
       }
+    },
+    "ps.more.body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weight & measurements"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cân nặng & số đo"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Peso y medidas"
+          }
+        }
+      }
+    },
+    "eg.demo3d.unverified": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3D demo · not yet reviewed"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Demo 3D · sin revisar"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bản 3D · chưa duyệt"
+          }
+        }
+      }
+    },
+    "eg.demo3d.alt": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3D demonstration video, not yet reviewed by a coach"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vídeo de demostración 3D, aún sin revisar por un entrenador"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Video minh hoạ 3D, chưa được huấn luyện viên duyệt"
+          }
+        }
+      }
+    },
+    "eg.demo3d.rotateHint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Drag to rotate the view"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arrastra para girar la vista"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kéo để xoay góc nhìn"
+          }
+        }
+      }
+    },
+    "eg.demo3d.legend.pectoralisMajor": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pectoralis major"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pectoral mayor"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cơ ngực lớn"
+          }
+        }
+      }
+    },
+    "eg.demo3d.legend.deltoidAnterior": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anterior deltoid"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deltoides anterior"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cơ delta trước"
+          }
+        }
+      }
+    },
+    "eg.demo3d.legend.tricepsBrachii": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Triceps brachii"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tríceps braquial"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cơ tam đầu"
+          }
+        }
+      }
+    },
+    "eg.demo3d.legend.primary": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Primary"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Principal"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chính"
+          }
+        }
+      }
+    },
+    "eg.demo3d.legend.secondary": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Secondary"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Secundario"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Phụ"
+          }
+        }
+      }
+    },
+    "eg.demo3d.angle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Camera angle"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ángulo de cámara"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Góc quay"
+          }
+        }
+      }
+    },
+    "eg.demo3d.angle45": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "45°"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "45°"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "45°"
+          }
+        }
+      }
+    },
+    "eg.demo3d.side": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Side"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lateral"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bên"
+          }
+        }
+      }
+    },
+    "eg.demo3d.front": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Front"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Frente"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trước"
+          }
+        }
+      }
+    },
+    "eg.demo3d.legend.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Muscles worked"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Músculos trabajados"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cơ hoạt động"
+          }
+        }
+      }
+    },
+    "eg.demo3d.tips": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Technique tips"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Consejos de técnica"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mẹo kỹ thuật"
+          }
+        }
+      }
+    },
+    "eg.demo3d.tip.shoulders": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shoulders down and back"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hombros abajo y atrás"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hạ vai, ép bả vai"
+          }
+        }
+      }
+    },
+    "eg.demo3d.tip.shoulders.body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pull the shoulder blades back and down, keep them set."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lleva las escápulas atrás y abajo y mantenlas."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kéo bả vai ra sau và xuống, giữ suốt lần đẩy."
+          }
+        }
+      }
+    },
+    "eg.demo3d.tip.core": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brace your core"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activa el core"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gồng core"
+          }
+        }
+      }
+    },
+    "eg.demo3d.tip.core.body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tight midsection; upper back and glutes stay on the bench."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abdomen firme; espalda alta y glúteos en el banco."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Siết bụng, lưng trên và mông luôn áp ghế."
+          }
+        }
+      }
+    },
+    "eg.demo3d.tip.chest": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bar to the lower chest"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Barra al pecho bajo"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hạ thanh xuống ngực dưới"
+          }
+        }
+      }
+    },
+    "eg.demo3d.tip.chest.body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lower under control and touch lightly, no bounce."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Baja con control y toca suave, sin rebotar."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hạ có kiểm soát, chạm nhẹ, không nảy."
+          }
+        }
+      }
+    },
+    "eg.demo3d.tip.feet": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Feet planted"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pies firmes"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bàn chân bám sàn"
+          }
+        }
+      }
+    },
+    "eg.demo3d.tip.feet.body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Both feet flat on the floor; don't lift or slide them."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ambos pies planos en el suelo, sin levantarlos."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hai bàn chân đặt phẳng, không nhấc hay trượt."
+          }
+        }
+      }
+    },
+    "eg.demo3d.tip.how": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How to"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cómo hacerlo"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cách làm"
+          }
+        }
+      }
+    },
+    "eg.demo3d.tip.why": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Why"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Por qué"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vì sao"
+          }
+        }
+      }
+    },
+    "eg.demo3d.tip.unverified": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Draft tip, not yet reviewed by a coach."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Consejo de prueba, aún sin revisar por un entrenador."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gợi ý thử nghiệm, chưa được huấn luyện viên duyệt."
+          }
+        }
+      }
+    },
+    "eg.demo3d.tip.shoulders.how1": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Before unracking, squeeze the shoulder blades together and down."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Antes de sacar la barra, junta las escápulas y bájalas."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trước khi nhấc thanh, kéo hai bả vai vào nhau và xuống dưới."
+          }
+        }
+      }
+    },
+    "eg.demo3d.tip.shoulders.how2": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep the chest up; shoulders stay down while you press."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pecho arriba; los hombros siguen abajo al empujar."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Giữ ngực mở, vai không nhô lên khi đẩy."
+          }
+        }
+      }
+    },
+    "eg.demo3d.tip.shoulders.why": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set shoulders give you a stable base to press from."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Los hombros fijos te dan una base estable para empujar."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vai giữ vững tạo nền chắc để đẩy thanh."
+          }
+        }
+      }
+    },
+    "eg.demo3d.tip.shoulders.avoid": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Letting the shoulders roll forward off the bench at lockout."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dejar que los hombros se despeguen del banco al bloquear."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Để vai nhô lên khỏi ghế ở cuối lần đẩy."
+          }
+        }
+      }
+    },
+    "eg.demo3d.tip.core.how1": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Breathe in and tighten your midsection before lowering the bar."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inspira y aprieta el abdomen antes de bajar la barra."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hít vào, siết bụng trước khi hạ thanh."
+          }
+        }
+      }
+    },
+    "eg.demo3d.tip.core.how2": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Head, upper back and glutes stay on the bench the whole rep."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cabeza, espalda alta y glúteos en el banco toda la repetición."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đầu, lưng trên và mông luôn chạm ghế suốt lần đẩy."
+          }
+        }
+      }
+    },
+    "eg.demo3d.tip.core.why": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A firm trunk keeps your body still so the bar moves steadily."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un tronco firme mantiene el cuerpo quieto y la barra estable."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thân giữ chắc thì người không xê dịch, thanh đi ổn định."
+          }
+        }
+      }
+    },
+    "eg.demo3d.tip.core.avoid": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lifting the glutes off the bench to push the bar up."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Levantar los glúteos del banco para subir la barra."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nhấc mông khỏi ghế để đẩy thanh lên."
+          }
+        }
+      }
+    },
+    "eg.demo3d.tip.chest.how1": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lower the bar over about two seconds to the lower chest."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Baja la barra en unos dos segundos hasta el pecho bajo."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hạ thanh khoảng 2 giây xuống ngực dưới (ngang núm vú)."
+          }
+        }
+      }
+    },
+    "eg.demo3d.tip.chest.how2": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Touch lightly, pause briefly, then press back up."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toca suave, pausa breve y vuelve a empujar."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chạm nhẹ, dừng ngắn rồi đẩy lên."
+          }
+        }
+      }
+    },
+    "eg.demo3d.tip.chest.why": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A controlled descent keeps the bar on the same path every rep."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bajar con control mantiene la barra en el mismo recorrido."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hạ có kiểm soát giúp thanh đi đúng một quỹ đạo mỗi lần."
+          }
+        }
+      }
+    },
+    "eg.demo3d.tip.chest.avoid": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bouncing the bar off the chest."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rebotar la barra en el pecho."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nảy thanh khỏi ngực."
+          }
+        }
+      }
+    },
+    "eg.demo3d.tip.feet.how1": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plant both feet flat, a little wider than your hips."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apoya ambos pies planos, algo más abiertos que la cadera."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đặt hai bàn chân phẳng, rộng hơn hông một chút."
+          }
+        }
+      }
+    },
+    "eg.demo3d.tip.feet.how2": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Press your heels into the floor as you push."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Empuja los talones contra el suelo al subir."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ấn gót xuống sàn khi đẩy thanh."
+          }
+        }
+      }
+    },
+    "eg.demo3d.tip.feet.why": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Feet fixed to the floor keep you stable on the bench."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pies fijos en el suelo te mantienen estable en el banco."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chân bám sàn giữ cơ thể ổn định trên ghế."
+          }
+        }
+      }
+    },
+    "eg.demo3d.tip.feet.avoid": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lifting or shuffling the feet during the rep."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Levantar o mover los pies durante la repetición."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nhấc hoặc xê dịch bàn chân giữa lần đẩy."
+          }
+        }
+      }
     }
   }
 }

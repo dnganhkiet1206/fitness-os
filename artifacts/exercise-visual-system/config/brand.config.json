@@ -1,0 +1,39 @@
+{
+  "brand_profile_id": "placeholder",
+  "comment": "PLACEHOLDER brand profile. Nothing here is baked into the character mesh, the rig or any animation: colours are applied when a scene is built and rendered, and the watermark, intro and outro are applied when frames are encoded. A rename or recolour means editing this file (or pointing EVS_BRAND_CONFIG at another one) and re-running render/encode. No animation is regenerated.",
+  "brand_name": "BRAND NAME",
+  "logo_path": null,
+  "colors": {
+    "primary": "#E8552B",
+    "secondary": "#F2A33A",
+    "background": "#ECEAE6",
+    "highlight": "#E8552B",
+    "muscle_primary": "#E8552B",
+    "muscle_secondary": "#F2A33A",
+    "muscle_stabilizer": "#6FA7C9",
+    "character_body": "#8D9197",
+    "character_apparel": "#26282C",
+    "equipment_metal": "#B9BDC2",
+    "equipment_dark": "#1F2124",
+    "equipment_pad": "#2A2C30",
+    "floor_shadow": "#BDB9B2"
+  },
+  "typography": {
+    "family": "system-ui",
+    "weight_title": 700,
+    "weight_body": 400
+  },
+  "watermark": {
+    "enabled": false,
+    "image_path": null,
+    "position": "bottom_right",
+    "margin_px": 28,
+    "width_fraction": 0.12,
+    "opacity": 0.7
+  },
+  "intro": { "enabled": false, "video_path": null },
+  "outro": { "enabled": false, "video_path": null },
+  "lighting_preset": "soft_studio",
+  "camera_style": "standard",
+  "render_preset": "preview_720p"
+}

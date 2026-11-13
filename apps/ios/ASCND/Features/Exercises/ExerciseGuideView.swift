@@ -52,7 +52,26 @@ struct ExerciseGuideView: View {
   private var displayName: String { g?.name ?? title }
   /// RN `showMedia = !isPending && !isError`: đã có một bản để vẽ.
   private var shown: Bool { g != nil }
-  private var media: MediaState { g?.media ?? .none }
+  private var media: MediaState {
+    let server = g?.media ?? .none
+    #if DEBUG
+      // Minh hoạ 3D thử nghiệm (artifacts/exercise-visual-system, USDZ xoay
+      // 360°): chỉ bản Debug, chỉ khi server chưa có media cho bài này. Chưa
+      // được duyệt chuyên môn.
+      if !server.hasMedia, let demo = ExerciseDemo3D.media(for: displayName, alt: String(localized: "eg.demo3d.alt")) {
+        return demo
+      }
+    #endif
+    return server
+  }
+
+  private var isDemo3D: Bool {
+    #if DEBUG
+      return !(g?.media ?? .none).hasMedia && ExerciseDemo3D.media(for: displayName, alt: nil) != nil
+    #else
+      return false
+    #endif
+  }
   private static var accent: Color { WorkoutsHomeView.accent }
 
   var body: some View {
@@ -98,7 +117,7 @@ struct ExerciseGuideView: View {
         }
       }
       .fullScreenCover(item: $viewer) { target in
-        GuideMediaViewer(media: media, name: displayName, start: target.index)
+        viewerView(for: target)
       }
     }
     .task(id: "\(exerciseId ?? "")|\(title)|\(lang.rawValue)") {
@@ -129,6 +148,16 @@ struct ExerciseGuideView: View {
     .tabViewStyle(.page(indexDisplayMode: media.showsDots ? .always : .never))
     .frame(height: 260)
     .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous))
+    .overlay(alignment: .topLeading) {
+      if isDemo3D {
+        Text("eg.demo3d.unverified")
+          .font(DS.TextStyle.caption.weight(.semibold))
+          .padding(.horizontal, DS.Spacing.sm)
+          .padding(.vertical, DS.Spacing.xs)
+          .background(.ultraThinMaterial, in: Capsule())
+          .padding(DS.Spacing.sm)
+      }
+    }
     .overlay(alignment: .bottomTrailing) {
       if let d = media.displayDuration {
         Text(verbatim: MediaState.clockLabel(d))
@@ -139,6 +168,20 @@ struct ExerciseGuideView: View {
           .padding(DS.Spacing.sm)
       }
     }
+  }
+
+  /// Một lần chạm vào nút ▶ ở đầu trang mở thẳng trình xem: bản 3D tự chạy
+  /// và lặp, không thêm thao tác; media của server vẫn dùng trình xem cũ.
+  @ViewBuilder private func viewerView(for target: ViewerTarget) -> some View {
+    #if DEBUG
+      if isDemo3D {
+        ExerciseDemo3DView(name: displayName)
+      } else {
+        GuideMediaViewer(media: media, name: displayName, start: target.index)
+      }
+    #else
+      GuideMediaViewer(media: media, name: displayName, start: target.index)
+    #endif
   }
 
   /// `mediaLabel` thắng `alt`, thắng câu dựng sẵn.
@@ -466,7 +509,7 @@ struct GuideMediaViewer: View {
       Group {
         if media.items.isEmpty {
           Text("eg.noMedia").foregroundStyle(.white)
-        } else if media.shape == .video, let v = media.items.first {
+        } else if media.shape == .video, let v = media.items.indices.contains(start) ? media.items[start] : media.items.first {
           if let url = URL(string: v.uri) {
             VideoPlayer(player: AVPlayer(url: url))
               .accessibilityLabel(Text(verbatim: label(v)))

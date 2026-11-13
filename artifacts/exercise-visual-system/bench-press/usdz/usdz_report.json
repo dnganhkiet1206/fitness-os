@@ -1,0 +1,45 @@
+{
+  "pipeline_version": "0.1.0",
+  "exercise_id": "barbell_bench_press",
+  "master_character_id": "master_character_001",
+  "usdz": "bench_press_animation.usdz",
+  "size_bytes": 2331350,
+  "zip_members": [
+    "bench_press_animation.usdc",
+    "textures/_usdz_apparel_emission.png",
+    "textures/_usdz_apparel_albedo.png",
+    "textures/_usdz_body_emission.png",
+    "textures/_usdz_body_albedo.png"
+  ],
+  "default_camera": {
+    "preset_id": "three_quarter",
+    "position_m": [
+      3.5378,
+      2.3302,
+      3.3852
+    ],
+    "target_m": [
+      0.1817,
+      0.6027,
+      0.0291
+    ],
+    "distance_m": 5.0508,
+    "vertical_fov_deg": 41.26,
+    "aspect": 0.5625
+  },
+  "expectations": {
+    "deform_bones": 53,
+    "animation_duration_s": 9.75,
+    "animation_frames": 235
+  },
+  "reimport": {
+    "armatures": 1,
+    "bones": 53,
+    "mesh_objects": 7,
+    "skinned_mesh_objects": 2,
+    "mesh_vertices": 24497,
+    "actions": 1,
+    "last_animation_frame": 228.0,
+    "materials": 8
+  }
+}
