@@ -221,3 +221,81 @@ import Testing
     #expect(s.days.last == .open)
   }
 }
+
+/// "Tháng của bạn với Koa" (13/11).
+@Suite struct KoaMonthRecapTests {
+  private func d(_ t: String) -> LocalDate { LocalDate(t)! }
+  // T2, T4, T6 tập
+  private let week = KoaGains.Week(planned: [0, 2, 4], rest: [1, 3, 5, 6])
+
+  private func sessions(_ dates: [String], pr: Set<String> = []) -> [KoaGains.Day] {
+    dates.map { KoaGains.Day(date: d($0), personalRecord: pr.contains($0)) }
+  }
+
+  @Test func keysWalkAcrossYears() {
+    let k = KoaMonthRecap.Key(year: 2026, month: 1)
+    #expect(k.previous == .init(year: 2025, month: 12) && k.previous.next == k)
+    #expect(k.id == "2026-01" && k.first == d("2026-01-01"))
+    #expect(k.contains(d("2026-01-31")) && !k.contains(d("2026-02-01")))
+  }
+
+  @Test func monthsRunFromNowBackToTheFirstActivityWithGapsKept() {
+    let days = sessions(["2026-08-10"])
+    let logged: Set<LocalDate> = [d("2026-07-20")]
+    let m = KoaMonthRecap.months(days: days, logged: logged, today: d("2026-11-13"))
+    #expect(m.map(\.id) == ["2026-11", "2026-10", "2026-09", "2026-08", "2026-07"], "tháng 9, 10 trống vẫn có ô")
+    #expect(KoaMonthRecap.months(days: [], logged: [], today: d("2026-11-13")).isEmpty)
+    // ngày ghi ở tương lai không kéo dải
+    #expect(KoaMonthRecap.months(days: [], logged: [d("2026-12-01")], today: d("2026-11-13")).isEmpty)
+  }
+
+  @Test func recapCountsTrainingAndLoggingOfThatMonthOnly() {
+    // tháng 10: T2 / T4 / T6 hai tuần + một buổi thứ Ba ngoài lịch; một kỷ lục; tháng 9 có 2 buổi
+    let oct = ["2026-10-05", "2026-10-07", "2026-10-09", "2026-10-12", "2026-10-13", "2026-10-14", "2026-10-16"]
+    let days = sessions(["2026-09-21", "2026-09-23"] + oct, pr: ["2026-10-14"])
+      + [KoaGains.Day(date: d("2026-10-20"), personalRecord: false, kind: .walk)]
+    var kinds: [LocalDate: Set<KoaLogDaysSync.Kind>] = [
+      d("2026-10-01"): [.meal, .water], d("2026-10-02"): [.sleep], d("2026-10-03"): [.meal],
+      d("2026-09-30"): [.meal],
+    ]
+    kinds[d("2026-10-04")] = []
+    let r = KoaMonthRecap.recap(.init(year: 2026, month: 10), days: days, week: week, logKinds: kinds, today: d("2026-11-13"))
+    #expect(r.sessions == 7 && r.previousSessions == 2 && r.change == 5, "đi bộ không tính")
+    #expect(r.records == 1)
+    #expect(r.logged == 3 && r.meals == 2 && r.water == 1 && r.sleep == 1, "ngày trống và ngày tháng 9 không tính")
+    #expect(r.weekdays == [2, 1, 2, 0, 2, 0, 0], "thứ Hai trước")
+    #expect(r.weeks == [2, 4, 1, 0, 0], "ngày 1–7, 8–14, 15–21…")
+    #expect(r.highlights.count <= 3 && !r.highlights.contains { $0.kind == .monthDone })
+    #expect(r.highlights.allSatisfy { r.key.contains($0.date) })
+    #expect(r.highlights.first?.kind == .rankUp, "lên hạng là mốc nổi bật nhất")
+  }
+
+  @Test func koaLineNeverBlames() {
+    func recap(_ s: Int, prev: Int, logged: Int, weekdays: [Int] = Array(repeating: 0, count: 7)) -> KoaMonthRecap.Recap {
+      .init(
+        key: .init(year: 2026, month: 10), sessions: s, previousSessions: prev, records: 0, fullWeeks: 0, rankUps: [],
+        tierUps: [], logged: logged, meals: 0, water: 0, sleep: 0, weekdays: weekdays, weeks: [0, 0, 0, 0, 0],
+        highlights: [])
+    }
+    #expect(KoaMonthRecap.line(recap(0, prev: 5, logged: 0)) == .quiet)
+    #expect(KoaMonthRecap.line(recap(0, prev: 5, logged: 9)) == .loggedOnly(logged: 9))
+    #expect(KoaMonthRecap.line(recap(1, prev: 8, logged: 2)) == .lighter)
+    #expect(KoaMonthRecap.line(recap(9, prev: 7, logged: 0, weekdays: [1, 4, 0, 4, 0, 0, 0])) == .usual(days: [1, 3]))
+    // không có hai thứ nổi rõ thì chỉ đếm buổi
+    #expect(KoaMonthRecap.line(recap(5, prev: 4, logged: 0, weekdays: [1, 1, 1, 1, 1, 0, 0])) == .sessions(5))
+  }
+
+  @Test func aFinishedMonthIsMentionedInTheFirstDaysOfTheNext() {
+    let days = sessions(["2026-10-05", "2026-10-07"])
+    let early = KoaJourney.moments(days, week: week, today: d("2026-11-02"))
+    let done = early.first { $0.kind == .monthDone }
+    #expect(done?.id == "month:2026-10" && done?.date == d("2026-11-01") && done?.value == 2 && done?.major == true)
+    #expect(KoaMomentFeed.next(early.filter { $0.kind == .monthDone }, seen: [], today: d("2026-11-02"))?.id == "month:2026-10")
+    // giữa tháng thì đã cũ, không nhắc nữa
+    #expect(KoaMomentFeed.next(early.filter { $0.kind == .monthDone }, seen: [], today: d("2026-11-13")) == nil)
+    // tháng đang chạy không có mốc; tháng chỉ có ghi vẫn có mốc, số buổi 0
+    #expect(!KoaJourney.moments(days, week: week, today: d("2026-10-20")).contains { $0.kind == .monthDone })
+    let logOnly = KoaJourney.moments([], week: week, logged: [d("2026-10-03")], today: d("2026-11-01"))
+    #expect(logOnly.contains { $0.id == "month:2026-10" && $0.value == 0 })
+  }
+}

@@ -40,6 +40,12 @@ enum KoaMomentsStore {
     case .record: return String(localized: "journey.line.record")
     case .comeback: return String(localized: "journey.line.comeback \(m.value)")
     case .logDays: return String(localized: "journey.line.log \(m.value)")
+    case .monthDone:
+      // ngày của mốc là ngày 1 tháng sau: tháng vừa xong là tháng trước ngày ấy
+      let done = KoaMonthRecap.Key(m.date).previous
+      let name = KoaMonthText.monthName(done)
+      return m.value > 0
+        ? String(localized: "journey.line.month \(name) \(m.value)") : String(localized: "journey.line.month.log \(name)")
     case .tierUp:
       let t = KoaGains.tier(step: m.value)
       return String(localized: "journey.line.tier \(KoaTierText.name(rank: t.rank, tier: t.tier, lang: lang))")
@@ -58,6 +64,7 @@ enum KoaMomentsStore {
     case .rankUp: "arrow.up.circle.fill"
     case .tierUp: "chevron.up.circle"
     case .logDays: "square.and.pencil.circle.fill"
+    case .monthDone: "calendar.circle.fill"
     case .comeback: "arrow.uturn.backward.circle.fill"
     }
   }
@@ -213,16 +220,17 @@ struct KoaJourneyContent: View {
   let history: AppServices.GainsHistory?
   let today: LocalDate
   @Environment(\.locale) private var locale
-  @ScaledMetric(relativeTo: .title) private var sessionsSize: CGFloat = 26
 
   var body: some View {
     let lang = AppPreferences.Lang(rawValue: String(locale.identifier.prefix(2))) ?? .vi
     ScrollView {
       VStack(alignment: .leading, spacing: DS.Spacing.md) {
         if let h = history {
+          // Mốc "tháng đã xong" chỉ để Koa nhắc ở Hôm nay; tháng có dải riêng ngay dưới (13/11).
           let moments = KoaJourney.moments(h.days, week: h.week, logged: h.logged, today: today)
+            .filter { $0.kind != .monthDone }
           header(rank: KoaGains.compute(h.days, week: h.week, today: today).rank)
-          month(moments, days: h.days, today: today)
+          KoaMonthSection(history: h, today: today)
           // Nhịp ghi (12/11): chỉ khi có ít nhất một ngày ghi trong 60 ngày (30 này + 30 trước), để
           // người chưa từng ghi không thấy một thẻ toàn chấm trống.
           let logRhythm = KoaLogRhythm.state(h.logKinds, today: today)
@@ -254,39 +262,6 @@ struct KoaJourneyContent: View {
         .font(DS.TextStyle.body)
         .foregroundStyle(DS.Color.mutedForeground.swiftUI)
     }
-  }
-
-  /// Tháng này; đầu tháng chưa có buổi thì tháng trước.
-  @ViewBuilder private func month(_ moments: [KoaJourney.Moment], days: [KoaGains.Day], today: LocalDate) -> some View {
-    let now = KoaJourney.month(moments, days: days, year: today.year, month: today.month)
-    let prev = today.adding(days: -today.day)
-    let shown = now.sessions > 0 ? now : KoaJourney.month(moments, days: days, year: prev.year, month: prev.month)
-    if shown.sessions > 0 {
-      VStack(alignment: .leading, spacing: 4) {
-        Text(String(localized: "journey.month \(monthName(shown))"))
-          .font(DS.TextStyle.caption.weight(.semibold))
-          .textCase(.uppercase)
-          .tracking(0.8)
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-        Text(String(localized: "journey.month.sessions \(shown.sessions)"))
-          .font(.system(size: sessionsSize, weight: .bold).monospacedDigit())
-        Text(
-          shown.records + shown.fullWeeks == 0
-            ? String(localized: "journey.month.quiet")
-            : String(localized: "journey.month.body \(shown.records) \(shown.fullWeeks)"))
-          .font(DS.TextStyle.footnote)
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-      }
-      .frame(maxWidth: .infinity, alignment: .leading)
-      .padding(DS.Spacing.md)
-      .todayCard()
-      .accessibilityElement(children: .combine)
-    }
-  }
-
-  private func monthName(_ m: KoaJourney.Month) -> String {
-    let date = Calendar.current.date(from: DateComponents(year: m.year, month: m.month, day: 1)) ?? .now
-    return date.formatted(.dateTime.month(.wide).locale(locale))
   }
 
   private func row(_ m: KoaJourney.Moment, lang: AppPreferences.Lang) -> some View {

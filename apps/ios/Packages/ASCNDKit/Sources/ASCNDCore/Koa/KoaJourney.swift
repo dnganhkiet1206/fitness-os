@@ -13,6 +13,9 @@ public enum KoaJourney {
     /// Tổng số ngày có ghi bữa / nước / giấc ngủ chạm một mốc (10/11, Kiệt duyệt
     /// `docs/design/mocks/koa-logging-milestones.html`). Cộng dồn, không phải chuỗi; không Gains, không xu.
     case logDays
+    /// Một tháng đã qua (13/11, "Tháng của bạn với Koa"): Koa nhắc ở Hôm nay mấy ngày đầu tháng mới,
+    /// một lần. Không nằm trong danh sách mốc của Hành trình (tháng đã có dải riêng).
+    case monthDone
   }
 
   public struct Moment: Sendable, Hashable, Identifiable {
@@ -30,6 +33,7 @@ public enum KoaJourney {
       case .firstSession, .firstFullWeek, .rankUp, .sessions: true
       case .record, .comeback, .fullWeek, .tierUp: false
       case .logDays: KoaJourney.majorLogMarks.contains(value)
+      case .monthDone: true
       }
     }
   }
@@ -94,6 +98,7 @@ public enum KoaJourney {
       out.append(Moment(id: "tier:\(s.step)", kind: .tierUp, date: s.date, value: s.step))
     }
     out += logMoments(logged, today: today)
+    out += KoaMonthRecap.doneMoments(days: days, logged: logged, today: today)
     return out.sorted { $0.date != $1.date ? $0.date > $1.date : $0.major && !$1.major }
   }
 

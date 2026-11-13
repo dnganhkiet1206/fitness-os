@@ -663,6 +663,16 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - Hạn chế: như mốc ghi đều, việc ghi còn trong hàng chờ offline hoặc vừa ghi mà Hôm nay chưa tải lại thì chưa được đếm. Giấc ngủ lấy từ Apple Health chỉ được đếm khi app đã ghi nó vào `daily_logs`.
 - Snapshot: mới `logRhythmCard`; `journeyLogDays` ghi lại vì có thêm thẻ. Ảnh chuẩn lấy từ CI.
 - **NOT RUN:** thẻ trong app thật trên simulator; VoiceOver; iPhone thật.
+
+**Tháng của bạn với Koa (13/11, nhánh `claude/koa-month-recap`, Kiệt duyệt mock `design/mocks/koa-month-recap.html` ngày 13/11 theo cả ba đề xuất: có Chia sẻ, Koa nhắc đầu tháng, dải 12 tháng tải dần):**
+- Hành trình: thẻ tháng (tháng này; đầu tháng chưa làm gì thì tháng trước) thêm số ngày có ghi và chạm được. Dưới thẻ là dải các tháng trước, từ tháng đầu tiên có buổi tập hay có ghi; tháng trống ở giữa vẫn có ô. Mỗi ô: số buổi, số ngày ghi, 5 cột nhỏ theo chặng 7 ngày. 12 ô một lần, "Xem thêm" mở tiếp.
+- Trang "Tháng N của bạn": số buổi và so với tháng trước; ô kỷ lục / tuần đủ buổi / ngày có ghi / lên hạng hoặc lên bậc (chỉ ô khác 0); bữa / nước / ngủ; "ngày bạn hay tập" (từ 4 buổi); tối đa 3 mốc nổi bật của tháng (kỷ lục có tên bài khi kệ cúp đã đọc); một câu Koa theo luật (`KoaMonthRecap.line`, không trách); nút Chia sẻ một ảnh dọc chỉ có tháng, số buổi, số ngày ghi, Koa và logo.
+- Mốc `monthDone` (khoá `month:<yyyy-mm>`, mốc lớn): tháng đã qua có buổi hay có ghi; Koa nhắc ở Hôm nay / phòng Koa trong `KoaMomentFeed.majorFreshDays` ngày đầu tháng mới, một lần. Không nằm trong danh sách mốc của Hành trình. Không có thông báo đẩy.
+- Tính lại từ dữ liệu có sẵn (`KoaJourney`, `KoaGains`, `KoaLogDaysSync.kinds`), không bảng, không migration, không Gains, không xu, không calo / cân nặng.
+- **Lệch mock:** Koa nhắc tháng cũ ở Hôm nay bằng câu của Koa như các mốc khác; câu ấy không có mũi tên mở thẳng trang tháng (mock vẽ "›"). Người dùng mở qua Tiến bộ › Tập luyện › Hành trình. Mốc lớn được nhắc 4 ngày (ngày 1–4), không phải 3.
+- Hạn chế: như mốc ghi đều, việc ghi còn trong hàng chờ offline chưa được đếm. Tháng tính theo ngày lịch của máy.
+- Snapshot: mới `monthRecap`; ghi lại `journey`, `journeyLogDays` (thẻ tháng mới, dải tháng). Ảnh chuẩn lấy từ CI.
+- **NOT RUN:** Koa nhắc tháng cũ ở Hôm nay trong app thật (cần ngày 1–4 của tháng; chỉ có test lõi); VoiceOver; bản en / es trên simulator; gửi ảnh chia sẻ ra app khác (đã mở bảng chia sẻ, thấy ảnh xem trước); iPhone thật.
 **Đồng bộ buổi tập / dinh dưỡng và đồng hồ buổi (12/11, Kiệt báo kèm ảnh; nhánh `claude/workout-state-sync`):**
 - Đổi buổi của HÔM NAY (Kế hoạch tuần › Đổi buổi, hay tạo mẫu gán vào hôm nay) khi đang tập dở: thẻ Tập luyện, Hôm nay và "Mở bảng tập" giờ theo buổi mới. Trước đây luật TW-6a (không bao giờ thay buổi đang tập dở) giữ buổi cũ ở mọi nơi trừ thẻ ngày. Luật vẫn giữ cho thay đổi KHÔNG do người dùng chọn lại buổi hôm nay: làm mới từ server, sửa mẫu ở máy khác, xoá mẫu giữa buổi (buổi vẫn mở, tách khỏi mẫu). Không mất gì: tiến độ khoá theo ngày + mẫu, chọn lại buổi cũ thì set đã tích quay lại. Bảng chọn buổi nói trước điều này khi hôm nay đang tập dở.
 - Xoá buổi từ Lịch sử: ngày bỏ hết dấu tích (giữ số tạ / reps đã điền), nên Tập luyện về "Bắt đầu buổi tập" thay vì "Đang tập 1/4 set". Trước đây dấu tích giữ lại có chủ ý (tích lại để dựng lại buổi); giờ dựng lại bằng cách tập lại.
@@ -809,4 +819,5 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - 10/11/2026: bậc trong hạng của Koa (Hôm nay, tổng kết buổi, Hành trình); bánh tạ trong phòng Koa hoãn tới khi vẽ phòng mới (Kiệt 10/11); xem mục 3 và 4.
 - 10/11/2026: mốc ghi đều của Koa trong Hành trình (Kiệt duyệt mock 10/11); cờ `-uiTestTierUp` cho tài khoản giả sát mốc bậc; xem mục 4.
 - 12/11/2026: Nhịp ghi 30 ngày của Koa trong Hành trình (lớp A của mock "Ghi chép cũng nuôi Koa", Kiệt duyệt 10/11); xem mục 4.
+- 13/11/2026: Tháng của bạn với Koa: dải tháng và trang nhìn lại trong Hành trình, Koa nhắc đầu tháng (lớp C, Kiệt duyệt 13/11); xem mục 4.
 - 12/11/2026: đổi buổi hôm nay khi đang tập dở, xoá buổi từ lịch sử, app tự sang tối sau màn nghỉ, Kế hoạch tuần "Chờ tập" khi đang tập, vòng calo và bữa chờ gửi; đồng hồ buổi tập chỉ trên máy; xem mục 4.
