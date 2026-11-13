@@ -78,8 +78,8 @@ const sh = (c) => { try { return { status: 0, stdout: execSync(c, { encoding: 'u
 /* ══════════════════════════════════════════════════════════════════════════
    PART 1 — the economy boundary, on a real cluster
    ══════════════════════════════════════════════════════════════════════════ */
-const PGBIN = ['/usr/lib/postgresql/16/bin', '/usr/lib/postgresql/15/bin', '/usr/local/pgsql/bin']
-  .find((d) => existsSync(path.join(d, 'initdb'))) ?? null;
+const PGBIN = [process.env.PG_BIN, '/usr/lib/postgresql/16/bin', '/usr/lib/postgresql/15/bin', '/usr/local/pgsql/bin']
+  .filter(Boolean).find((d) => existsSync(path.join(d, 'initdb'))) ?? null;
 /* Below the ephemeral range (32768-60999 on Linux): a port inside it can be
    taken by any outbound socket, and under a full `check.mjs` run there are
    many. Standalone this file was green and inside the suite it failed with
@@ -253,20 +253,37 @@ if (!PGBIN) {
     want(!cr.err, `phép thử đồng thời không chạy: ${cr.err}`);
     want(cr.bad === 0, `${cr.bad}/100 lần hai người gọi ĐỒNG THỜI cùng một ref_key không ra đúng một dòng 10 xu`);
 
-    /* ── F. the weekly challenge is priced by its tier, from the key ── */
+    /* ── F. the weekly challenge is priced by its tier, and the SERVER decides the tier ──
+       Round 3 (AUD-02, `20261112120000_reward_key_shapes.sql`): a `ch:` key must be a recent
+       ISO Monday, one of that week's three challenges (`WeeklyChallenges.pick`:
+       YYYYMMDD % 8, three in a row of the pool) or `koa_week`, with the pool's own tier.
+       `w:` is retired. So: the real keys of THIS week pay their tier's price, and keys a
+       client could invent (raised tier, `w:<anything>`) pay nothing. */
+    const POOL = [['workouts_5', 'silver'], ['workouts_3', 'bronze'], ['protein_7', 'gold'], ['steps_50k', 'silver'],
+      ['sleep_7', 'silver'], ['log_7', 'gold'], ['calories_5', 'silver'], ['water_7', 'silver']];
+    const PRICE = { bronze: 25, silver: 50, gold: 80, platinum: 120 };
+    const now = new Date();
+    const dow = (now.getUTCDay() + 6) % 7;
+    const monday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - dow));
+    const mon = monday.toISOString().slice(0, 10);
+    const seed = Number(mon.replaceAll('-', '')) % 8;
+    const thisWeek = [0, 1, 2].map((i) => POOL[(seed + i) % 8]).concat([['koa_week', 'silver']]);
     const chWrong = [];
-    for (const [tier, price] of [['bronze', 25], ['silver', 50], ['gold', 80], ['platinum', 120]]) {
+    for (const [key, tier] of thisWeek) {
       wipe();
-      asUser(A, `SELECT public.earn_mascot_coins('ch:${tier}:2026-08-17:steps_50k', 300, 'x');`);
-      if (paid(A) !== String(price)) chWrong.push(`${tier} → ${paid(A)} (đúng ra ${price})`);
+      asUser(A, `SELECT public.earn_mascot_coins('ch:${tier}:${mon}:${key}', 300, 'x');`);
+      if (paid(A) !== String(PRICE[tier])) chWrong.push(`ch:${tier}:${mon}:${key} → ${paid(A)} (đúng ra ${PRICE[tier]})`);
     }
-    wipe();
-    asUser(A, `SELECT public.earn_mascot_coins('w:42', 300, 'x');`);
-    if (paid(A) !== '40') chWrong.push(`w:42 → ${paid(A)} (đúng ra 40)`);
+    const [k0] = thisWeek[0];
+    for (const forged of [`ch:platinum:${mon}:${k0}`, 'w:42', `ch:silver:${mon}:${k0}-2`]) {
+      wipe();
+      try { asUser(A, `SELECT public.earn_mascot_coins('${forged}', 300, 'x');`); } catch { /* bị từ chối là đúng */ }
+      if (paid(A) !== '0') chWrong.push(`${forged} (khoá tự bịa) → ${paid(A)} (đúng ra 0)`);
+    }
     want(
       chWrong.length === 0,
-      `thưởng thử thách tuần vẫn do người gọi định giá: ${JSON.stringify(chWrong)} — ` +
-        'hạng đã nằm sẵn trong ref_key, nên máy chủ đọc nó từ đó chứ không nhận p_amount',
+      `thưởng thử thách tuần sai giá hay nhận được khoá tự bịa: ${JSON.stringify(chWrong)} — ` +
+        'máy chủ tự quyết hạng từ thử thách của tuần, không nhận hạng hay số xu của người gọi',
     );
 
   } catch (e) {
