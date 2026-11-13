@@ -152,20 +152,26 @@ def load_masks(atlas_dir: Path) -> dict[str, np.ndarray]:
 def write_highlight_map(atlas_dir: Path, path: Path, primary: list[str], secondary: list[str], stabilizing: list[str], size: int | None = None,
                         fibers: bool = False, fiber_seed: int = 7) -> np.ndarray:
     """Composes and saves the RGB highlight map of one exercise. With
-    ``fibers``, the role channels are modulated by per-group fibre
-    striations (see evs/fibers.py) so the highlight reads as lit muscle
-    fibres instead of a flat tint; the atlas regions themselves are
-    untouched."""
+    ``fibers``, the role channels are modulated by fibre striations: from
+    the baked phase atlas (origin/insertion fields, see evs/fiber_fields.py)
+    when the atlas has one, otherwise from the per-group PCA fallback in
+    evs/fibers.py. The atlas regions themselves are untouched either way."""
     masks = load_masks(atlas_dir)
     side = masks.get("_side_left")
     masks.pop("_side_left", None)
     rgb = muscle_eval.compose_highlight(masks, primary, secondary, stabilizing)
     if fibers:
-        with_side = dict(masks)
-        if side is not None:
-            with_side["_side_left"] = side
-        rgb = fibers_mod.apply_fibers(rgb, with_side, {"primary": primary, "secondary": secondary, "stabilizing": stabilizing},
-                                      seed=fiber_seed)
+        phase = fibers_mod.load_phase_fields(atlas_dir)
+        roles = {"primary": primary, "secondary": secondary, "stabilizing": stabilizing}
+        if phase is not None:
+            print("[evs] highlight: fibre striations from the baked phase atlas (origin/insertion fields)")
+            rgb = fibers_mod.apply_fiber_phase(rgb, phase, roles, seed=fiber_seed)
+        else:
+            print("[evs] highlight: fibre striations from the PCA fallback (no fiber_phase.npz in the atlas)")
+            with_side = dict(masks)
+            if side is not None:
+                with_side["_side_left"] = side
+            rgb = fibers_mod.apply_fibers(rgb, with_side, roles, seed=fiber_seed)
     if size and size < rgb.shape[0]:
         f = rgb.shape[0] // size
         rgb = rgb.reshape(size, f, size, f, 3).mean(axis=(1, 3)).astype(np.uint8)

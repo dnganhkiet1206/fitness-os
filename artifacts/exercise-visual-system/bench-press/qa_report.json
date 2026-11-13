@@ -1,6 +1,6 @@
 {
   "pipeline_version": "0.1.0",
-  "generated": "2026-11-13T06:14:33+00:00",
+  "generated": "2026-11-13T07:09:59+00:00",
   "exercise": "Barbell Bench Press",
   "exercise_id": "barbell_bench_press",
   "character": "master_character_001",
@@ -851,7 +851,7 @@
       "status": "PASS",
       "measured": {
         "master_character.glb": 884688,
-        "bench_press_animation.glb": 1467068
+        "bench_press_animation.glb": 1538684
       },
       "limit": null,
       "unit": "bytes",

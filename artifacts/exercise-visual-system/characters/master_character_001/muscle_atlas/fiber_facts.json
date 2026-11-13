@@ -1,0 +1,129 @@
+{
+  "fiber_map_id": "master_character_001.fibers.v1",
+  "atlas_resolution": 2048,
+  "samples": 13975939,
+  "uv_coverage": 0.5832,
+  "groups": {
+    "adductors": {
+      "texels": 2446233,
+      "coherence": 0.9797,
+      "label": "Hip adductors"
+    },
+    "biceps_brachii": {
+      "texels": 2446233,
+      "coherence": 0.9941,
+      "label": "Biceps brachii"
+    },
+    "calves": {
+      "texels": 2446233,
+      "coherence": 0.9875,
+      "label": "Gastrocnemius and soleus"
+    },
+    "deltoid_anterior": {
+      "texels": 2446233,
+      "coherence": 0.9926,
+      "label": "Deltoid, anterior head",
+      "fan_span_deg": 70.6,
+      "fan_centre_distance_m": 0.0411
+    },
+    "deltoid_lateral": {
+      "texels": 2446233,
+      "coherence": 0.9906,
+      "label": "Deltoid, lateral head"
+    },
+    "deltoid_posterior": {
+      "texels": 2446233,
+      "coherence": 0.995,
+      "label": "Deltoid, posterior head",
+      "fan_span_deg": 66.9,
+      "fan_centre_distance_m": 0.0553
+    },
+    "erector_spinae": {
+      "texels": 2446233,
+      "coherence": 0.9879,
+      "label": "Erector spinae"
+    },
+    "forearm_muscles": {
+      "texels": 2446233,
+      "coherence": 0.9958,
+      "label": "Forearm flexors and extensors"
+    },
+    "gluteus_maximus": {
+      "texels": 2446233,
+      "coherence": 0.9913,
+      "label": "Gluteus maximus",
+      "fan_span_deg": 62.0,
+      "fan_centre_distance_m": 0.1129
+    },
+    "gluteus_medius": {
+      "texels": 2446233,
+      "coherence": 0.9939,
+      "label": "Gluteus medius",
+      "fan_span_deg": 93.6,
+      "fan_centre_distance_m": 0.0556
+    },
+    "hamstrings": {
+      "texels": 2446233,
+      "coherence": 0.9797,
+      "label": "Hamstrings"
+    },
+    "latissimus_dorsi": {
+      "texels": 2446233,
+      "coherence": 0.9907,
+      "label": "Latissimus dorsi",
+      "fan_span_deg": 82.0,
+      "fan_centre_distance_m": 0.033
+    },
+    "obliques": {
+      "texels": 2446233,
+      "coherence": 0.9751,
+      "label": "External obliques"
+    },
+    "pectoralis_major": {
+      "texels": 2446233,
+      "coherence": 0.9956,
+      "label": "Pectoralis major",
+      "fan_span_deg": 113.5,
+      "fan_centre_distance_m": 0.0228
+    },
+    "quadriceps": {
+      "texels": 2446233,
+      "coherence": 0.9798,
+      "label": "Quadriceps femoris"
+    },
+    "rectus_abdominis": {
+      "texels": 2446233,
+      "coherence": 0.9879,
+      "label": "Rectus abdominis"
+    },
+    "rotator_cuff_posterior": {
+      "texels": 2446233,
+      "coherence": 0.9935,
+      "label": "Infraspinatus and teres minor",
+      "fan_span_deg": 87.0,
+      "fan_centre_distance_m": 0.0296
+    },
+    "serratus_anterior": {
+      "texels": 2446233,
+      "coherence": 0.9798,
+      "label": "Serratus anterior"
+    },
+    "tibialis_anterior": {
+      "texels": 2446233,
+      "coherence": 0.9904,
+      "label": "Tibialis anterior"
+    },
+    "trapezius": {
+      "texels": 2446233,
+      "coherence": 0.9955,
+      "label": "Trapezius",
+      "fan_span_deg": 88.0,
+      "fan_centre_distance_m": 0.0247
+    },
+    "triceps_brachii": {
+      "texels": 2446233,
+      "coherence": 0.994,
+      "label": "Triceps brachii"
+    }
+  }
+}

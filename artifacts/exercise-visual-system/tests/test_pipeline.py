@@ -17,7 +17,7 @@ import numpy as np
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from evs import CHECK_STATUSES, config, fibers, glb, muscle_eval, pngio  # noqa: E402
+from evs import CHECK_STATUSES, config, fiber_fields, fibers, glb, muscle_eval, pngio  # noqa: E402
 from evs.validation import checks, report, video  # noqa: E402
 
 
@@ -208,6 +208,101 @@ class FiberTests(unittest.TestCase):
         self.assertEqual(detail.shape, (64, 64))
         self.assertEqual(int(detail[0, 0]), 255)  # no group: white
         self.assertLess(int(detail[30, 30]), 255)
+
+
+class FiberFieldTests(unittest.TestCase):
+    """Origin/insertion fibre fields (evs/fiber_fields.py): fans converge on
+    the insertion, parallel fields run along the axis, and the shipped specs
+    cover every muscle group with sane geometry."""
+
+    def _frames(self):
+        joints = {"shoulder": [0.19, 0.0, 1.45], "elbow": [0.25, 0.0, 1.15], "wrist": [0.28, 0.0, 0.88],
+                  "hip": [0.11, 0.0, 0.95], "knee": [0.14, 0.0, 0.53], "ankle": [0.15, 0.0, 0.11]}
+        return muscle_eval.limb_frames(joints)
+
+    def test_fan_phase_is_radial(self):
+        spec = config.fiber_map()["groups"]["pectoralis_major"]
+        centre = np.array(spec["center"], dtype=float)
+        angles = np.radians(np.arange(120.0, 241.0, 10.0))
+        # Same spoke, different radii: the phase must not change (one fibre).
+        for theta in angles:
+            direction = np.array([np.cos(theta), np.sin(theta)])
+            pts = centre + np.array([0.05, 0.10, 0.15])[:, None] * direction[None, :]
+            phase = fiber_fields.fan_phase(spec, pts, centre)
+            self.assertLess(float(phase.max() - phase.min()), 1e-9)
+        # Same radius, different angles: the phase grows linearly with angle.
+        direction = np.stack([np.cos(angles), np.sin(angles)], axis=1)
+        pts = centre + 0.10 * direction
+        phase = fiber_fields.fan_phase(spec, pts, centre)
+        steps = np.diff(phase)
+        self.assertTrue(np.all(steps > 0))
+        self.assertAlmostEqual(float(steps.mean()), 10.0 / spec["angular_spacing_deg"], places=9)
+
+    def test_parallel_phase_varies_only_across_the_axis(self):
+        spec = config.fiber_map()["groups"]["triceps_brachii"]
+        axis = np.array(spec["axis"], dtype=float)
+        normal = np.array([-axis[1], axis[0]])
+        base = np.array([0.1, 0.0])
+        along = base + np.array([0.0, 0.05, 0.10])[:, None] * axis[None, :]
+        across = base + np.array([0.0, 0.05, 0.10])[:, None] * normal[None, :]
+        self.assertLess(float(fiber_fields.parallel_phase(spec, along).ptp()), 1e-9)
+        steps = np.diff(fiber_fields.parallel_phase(spec, across))
+        self.assertTrue(np.all(steps > 0))
+        self.assertAlmostEqual(float(steps.mean()), 0.05 / spec["spacing_m"], places=9)
+
+    def test_wrap_is_seamless_around_the_limb(self):
+        spec = config.fiber_map()["groups"]["forearm_muscles"]
+        r = spec["radius_m"]
+        pts = np.array([[0.0, -np.pi * r], [0.0, np.pi * r]])
+        phase = fiber_fields.parallel_phase(spec, pts)
+        jump = float((phase[1] - phase[0]) % 1.0)
+        self.assertLess(min(jump, 1.0 - jump), 1e-9)
+
+    def test_limb_chart_metric_coords(self):
+        frames = self._frames()
+        spec = config.fiber_map()["groups"]["triceps_brachii"]
+        shoulder = np.array([0.19, 0.0, 1.45])
+        elbow = np.array([0.25, 0.0, 1.15])
+        mid = 0.5 * (shoulder + elbow)
+        coords = fiber_fields.chart_metric_coords("upperarm", mid[None, :], frames, spec)
+        self.assertAlmostEqual(float(coords[0, 0]), 0.5 * frames["upperarm"].length, places=9)
+
+    def test_shipped_specs_cover_every_group_and_clear_span_checks(self):
+        fiber_map = config.fiber_map()
+        muscle_map = config.muscle_map()
+        problems = fiber_fields.validate_fiber_map(fiber_map, muscle_map, self._frames())
+        self.assertEqual(problems, [])
+        # The pectoral fan opens toward the sternum: a wide, genuinely
+        # fan-shaped span, not a sliver and not a wrap-around.
+        spec = fiber_map["groups"]["pectoralis_major"]
+        span, nearest = fiber_fields.fan_span_check(spec, muscle_map["groups"]["pectoralis_major"], self._frames())
+        self.assertGreater(span, 80.0)
+        self.assertLess(span, 150.0)
+        self.assertGreater(nearest, 0.01)
+
+    def test_apply_fiber_phase_keeps_zero_and_peak(self):
+        frac = np.zeros((64, 64), dtype=np.uint8)
+        frac[24:40, 8:56] = (np.arange(48, dtype=np.uint8)[None, :] * 5)  # phase ramp: stripes
+        rgb = np.zeros((64, 64, 3), dtype=np.uint8)
+        rgb[24:40, 8:56, 0] = 255
+        out = fibers.apply_fiber_phase(rgb, {"g": frac}, {"primary": ["g"]}, seed=7)
+        self.assertEqual(out[0, 0].tolist(), [0, 0, 0])  # outside the mask: untouched
+        inside = out[24:40, 8:56, 0].astype(float)
+        self.assertGreaterEqual(inside.min(), 0.45 * 255 - 1)
+        self.assertGreater(inside.max(), 0.9 * 255)
+        self.assertGreater(inside.std(), 5.0)
+
+    def test_apply_fiber_phase_is_deterministic_and_rejects_unknown_groups(self):
+        frac = np.full((8, 8), 100, dtype=np.uint8)
+        rgb = np.full((8, 8, 3), 128, dtype=np.uint8)
+        args = (rgb, {"g": frac}, {"primary": ["g"]})
+        self.assertTrue(np.array_equal(fibers.apply_fiber_phase(*args, seed=7), fibers.apply_fiber_phase(*args, seed=7)))
+        with self.assertRaises(KeyError):
+            fibers.apply_fiber_phase(rgb, {}, {"primary": ["missing"]}, seed=7)
+
+    def test_load_phase_fields_missing_file_is_none(self):
+        with tempfile.TemporaryDirectory() as d:
+            self.assertIsNone(fibers.load_phase_fields(Path(d)))
 
 
 class FileFormatTests(unittest.TestCase):

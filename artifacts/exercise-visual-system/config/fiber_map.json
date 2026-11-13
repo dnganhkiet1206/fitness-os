@@ -1,0 +1,403 @@
+{
+  "conventions": {
+    "charts": "Same charts as config/muscle_map.json. torso_front/torso_back/torso_back_top: [u, v] = [|x| in metres from the midline, height z in metres]. torso_around: [angle_deg around the trunk (0 = front, 90 = side, 180 = back), z in metres]. Limb charts (shoulder/upperarm/lowerarm/thigh/calf): [s along the segment (0 = proximal joint, 1 = distal joint), angle_deg around the segment]. All charts describe the REST pose mirrored onto the left side, exactly like the muscle map.",
+    "fan": "Fibres converge on one insertion point: 'center' is the insertion in chart coordinates, 'cut_deg' is a ray direction (degrees in the metric chart plane, 0 = +u) that must NOT cross the muscle — the striation phase wraps there. 'angular_spacing_deg' is the angle between neighbouring striations as seen from the center. Striations are radial lines out of the center, so fibres visibly converge on the insertion.",
+    "limb_charts": "'angle_center' is the reference angle the chart is unwrapped around (the patch angle of the group); 'radius_m' turns degrees around the limb into arc metres. Both are per-group because the same chart serves several groups.",
+    "limits": "One field per group: multi-headed muscles (triceps, biceps, quadriceps, hamstrings) are drawn as one converging/parallel field, not per-head fields. The pectoralis and latissimus tendon twist near the insertion is NOT modelled — the twist happens in the tendon, outside the muscle belly shown. Pennation angle is NOT modelled: striations follow the belly's mean fibre direction.",
+    "parallel": "Fibres run parallel to 'axis' (a unit vector in METRIC chart coordinates: metres along u, arc metres along v). 'spacing_m' is the distance between neighbouring striations across the fibres. 'origin_point' is an arbitrary phase reference in metric coordinates. 'wrap': true quantises the spacing so a whole number of striations fits around the limb (no seam where the angle wraps)."
+  },
+  "fiber_map_id": "master_character_001.fibers.v1",
+  "groups": {
+    "adductors": {
+      "angle_center": -98.0,
+      "axis": [
+        1.0,
+        0.0
+      ],
+      "chart": "thigh",
+      "insertion": "Linea aspera and medial femur.",
+      "label": "Hip adductors",
+      "note": "Parallel along the thigh; the slight inferolateral slant of the adductor mass is not drawn separately.",
+      "origin": "Pubis and ischium.",
+      "origin_point": [
+        0.0,
+        0.0
+      ],
+      "radius_m": 0.075,
+      "spacing_m": 0.008,
+      "type": "parallel"
+    },
+    "biceps_brachii": {
+      "angle_center": -6.0,
+      "axis": [
+        1.0,
+        0.0
+      ],
+      "chart": "upperarm",
+      "insertion": "Radial tuberosity (and bicipital aponeurosis).",
+      "label": "Biceps brachii",
+      "note": "Parallel along the arm toward the elbow; the two heads share one field.",
+      "origin": "Long head: supraglenoid tubercle of the scapula. Short head: coracoid process.",
+      "origin_point": [
+        0.0,
+        0.0
+      ],
+      "radius_m": 0.048,
+      "spacing_m": 0.008,
+      "type": "parallel"
+    },
+    "calves": {
+      "angle_center": 182.0,
+      "axis": [
+        1.0,
+        0.0
+      ],
+      "chart": "calf",
+      "insertion": "Calcaneus via the Achilles tendon.",
+      "label": "Gastrocnemius and soleus",
+      "note": "Parallel along the calf toward the heel; the two muscles share one field.",
+      "origin": "Gastrocnemius: medial/lateral femoral condyles. Soleus: soleal line of the tibia and fibula.",
+      "origin_point": [
+        0.0,
+        0.0
+      ],
+      "radius_m": 0.052,
+      "spacing_m": 0.008,
+      "type": "parallel"
+    },
+    "deltoid_anterior": {
+      "angle_center": 5.0,
+      "angular_spacing_deg": 3.5,
+      "center": [
+        0.52,
+        80.0
+      ],
+      "chart": "shoulder",
+      "cut_deg": 0.0,
+      "insertion": "Deltoid tuberosity of the humerus.",
+      "label": "Deltoid, anterior head",
+      "note": "Fan centre at the tuberosity, just past the far/lateral corner of the region, so fibres converge down/outward from the clavicle.",
+      "origin": "Lateral third of the clavicle.",
+      "radius_m": 0.065,
+      "type": "fan"
+    },
+    "deltoid_lateral": {
+      "angle_center": 92.0,
+      "axis": [
+        1.0,
+        0.0
+      ],
+      "chart": "shoulder",
+      "insertion": "Deltoid tuberosity of the humerus.",
+      "label": "Deltoid, lateral head",
+      "note": "Parallel along the arm: as seen from the tuberosity this long, narrow head subtends too small an angle for a fan (striations would alias near the insertion). The slight convergence is sacrificed for a readable field.",
+      "origin": "Acromion.",
+      "origin_point": [
+        0.0,
+        0.0
+      ],
+      "radius_m": 0.065,
+      "spacing_m": 0.008,
+      "type": "parallel"
+    },
+    "deltoid_posterior": {
+      "angle_center": 178.0,
+      "angular_spacing_deg": 4.5,
+      "center": [
+        0.52,
+        90.0
+      ],
+      "chart": "shoulder",
+      "cut_deg": 0.0,
+      "insertion": "Deltoid tuberosity of the humerus.",
+      "label": "Deltoid, posterior head",
+      "note": "Fan centre at the tuberosity (lateral humerus), seen from the posterior region.",
+      "origin": "Spine of the scapula.",
+      "radius_m": 0.065,
+      "type": "fan"
+    },
+    "erector_spinae": {
+      "axis": [
+        0.0,
+        1.0
+      ],
+      "chart": "torso_back",
+      "insertion": "Ribs and vertebral processes up to the skull.",
+      "label": "Erector spinae",
+      "note": "Vertical fibres alongside the spine.",
+      "origin": "Sacrum, iliac crest, spinous processes (common tendon).",
+      "origin_point": [
+        0.0,
+        0.0
+      ],
+      "spacing_m": 0.008,
+      "type": "parallel"
+    },
+    "forearm_muscles": {
+      "angle_center": 0.0,
+      "axis": [
+        1.0,
+        0.0
+      ],
+      "chart": "lowerarm",
+      "insertion": "Wrist and hand (flexor/extensor tendons).",
+      "label": "Forearm flexors and extensors",
+      "note": "One merged region wrapping the whole forearm, drawn as fibres along the arm. Flexor/extensor directions differ in reality; this is a deliberate simplification, and 'wrap' keeps the field seamless around the limb.",
+      "origin": "Flexors: medial epicondyle and forearm bones. Extensors: lateral epicondyle and forearm bones.",
+      "origin_point": [
+        0.0,
+        0.0
+      ],
+      "radius_m": 0.04,
+      "spacing_m": 0.008,
+      "type": "parallel",
+      "wrap": true
+    },
+    "gluteus_maximus": {
+      "angular_spacing_deg": 4.0,
+      "center": [
+        80.0,
+        0.8
+      ],
+      "chart": "torso_around",
+      "cut_deg": 180.0,
+      "insertion": "Iliotibial band (~75% of fibres) and gluteal tuberosity of the femur. Fibres run inferolateral at 32-45 degrees.",
+      "label": "Gluteus maximus",
+      "note": "Fan centre lateral/inferior, at the IT-band/gluteal-tuberosity insertion zone.",
+      "origin": "Posterior ilium, sacrum, coccyx, sacrotuberous ligament, thoracolumbar fascia.",
+      "type": "fan"
+    },
+    "gluteus_medius": {
+      "angular_spacing_deg": 5.0,
+      "center": [
+        95.0,
+        0.93
+      ],
+      "chart": "torso_around",
+      "cut_deg": -90.0,
+      "insertion": "Lateral surface of the greater trochanter of the femur.",
+      "label": "Gluteus medius",
+      "note": "Fan converging down onto the greater trochanter.",
+      "origin": "Outer surface of the ilium between the anterior and posterior gluteal lines.",
+      "type": "fan"
+    },
+    "hamstrings": {
+      "angle_center": 186.0,
+      "axis": [
+        1.0,
+        0.0
+      ],
+      "chart": "thigh",
+      "insertion": "Head of the fibula and lateral tibial condyle (biceps femoris); medial tibia (semitendinosus, semimembranosus).",
+      "label": "Hamstrings",
+      "note": "Parallel along the back of the thigh toward the knee; medial/lateral heads share one field.",
+      "origin": "Ischial tuberosity (biceps femoris long head, semitendinosus, semimembranosus); linea aspera (biceps femoris short head).",
+      "origin_point": [
+        0.0,
+        0.0
+      ],
+      "radius_m": 0.075,
+      "spacing_m": 0.008,
+      "type": "parallel"
+    },
+    "latissimus_dorsi": {
+      "angular_spacing_deg": 5.0,
+      "center": [
+        85.0,
+        1.36
+      ],
+      "chart": "torso_around",
+      "cut_deg": 90.0,
+      "insertion": "Floor of the intertubercular groove of the humerus. Upper fibres horizontal, middle oblique upward, lower vertical upward, all converging on the humerus.",
+      "label": "Latissimus dorsi",
+      "note": "Fan centre at the humerus, just anterior to the region, so the whole back fans toward the armpit. The tendon twist is not modelled.",
+      "origin": "Spinous processes T7-L5, thoracolumbar fascia, iliac crest, lower 3-4 ribs, inferior angle of the scapula.",
+      "type": "fan"
+    },
+    "obliques": {
+      "axis": [
+        -0.6,
+        -0.8
+      ],
+      "chart": "torso_around",
+      "insertion": "Linea alba, pubic tubercle, anterior half of the iliac crest.",
+      "label": "External obliques",
+      "note": "Fibres run superolateral to inferomedial ('hands in pockets'): in (arc, z) coordinates the axis points toward the front and down.",
+      "origin": "External surfaces of ribs 5-12.",
+      "origin_point": [
+        0.0,
+        0.0
+      ],
+      "spacing_m": 0.008,
+      "type": "parallel"
+    },
+    "pectoralis_major": {
+      "angular_spacing_deg": 6.5,
+      "center": [
+        0.205,
+        1.365
+      ],
+      "chart": "torso_front",
+      "cut_deg": 0.0,
+      "insertion": "Lateral lip of the intertubercular (bicipital) groove of the humerus. Clavicular fibres run down/lateral, middle fibres horizontal, lower fibres up/lateral.",
+      "label": "Pectoralis major",
+      "note": "Fan centre sits just lateral to the region, at the humerus, so striations converge on the insertion and fan out toward the sternum/clavicle. The tendon twist is not modelled.",
+      "origin": "Medial half of the clavicle (clavicular head); sternum and superior six costal cartilages (sternocostal head); aponeurosis of the external oblique (abdominal fibres).",
+      "type": "fan"
+    },
+    "quadriceps": {
+      "angle_center": 18.0,
+      "axis": [
+        1.0,
+        0.0
+      ],
+      "chart": "thigh",
+      "insertion": "Patella and tibial tuberosity (quadriceps/patellar tendon).",
+      "label": "Quadriceps femoris",
+      "note": "Parallel along the thigh toward the knee; the four heads share one field (the vastus medialis oblique pull is not drawn separately).",
+      "origin": "Rectus femoris: anterior inferior iliac spine. Vasti: femoral shaft.",
+      "origin_point": [
+        0.0,
+        0.0
+      ],
+      "radius_m": 0.075,
+      "spacing_m": 0.008,
+      "type": "parallel"
+    },
+    "rectus_abdominis": {
+      "axis": [
+        0.0,
+        1.0
+      ],
+      "chart": "torso_front",
+      "insertion": "Costal cartilages 5-7 and xiphoid process.",
+      "label": "Rectus abdominis",
+      "note": "Vertical fibres. The horizontal tendinous intersections ('six-pack' lines) are not fibres and are not drawn.",
+      "origin": "Pubic crest.",
+      "origin_point": [
+        0.0,
+        0.0
+      ],
+      "spacing_m": 0.008,
+      "type": "parallel"
+    },
+    "rotator_cuff_posterior": {
+      "angular_spacing_deg": 5.0,
+      "center": [
+        0.215,
+        1.38
+      ],
+      "chart": "torso_back",
+      "cut_deg": 0.0,
+      "insertion": "Greater tubercle of the humerus (middle/lower facets).",
+      "label": "Infraspinatus and teres minor",
+      "note": "Small fan converging laterally on the greater tubercle.",
+      "origin": "Infraspinous fossa of the scapula (infraspinatus); upper lateral border of the scapula (teres minor).",
+      "type": "fan"
+    },
+    "serratus_anterior": {
+      "axis": [
+        0.92,
+        0.38
+      ],
+      "chart": "torso_around",
+      "insertion": "Medial border of the scapula (costal surface).",
+      "label": "Serratus anterior",
+      "note": "Fibres run from the ribs back/up toward the scapula; the scapular attachment is far from this region, so the field is near-parallel here rather than a fan.",
+      "origin": "Outer surfaces of the upper 8-9 ribs.",
+      "origin_point": [
+        0.0,
+        0.0
+      ],
+      "spacing_m": 0.008,
+      "type": "parallel"
+    },
+    "tibialis_anterior": {
+      "angle_center": 28.0,
+      "axis": [
+        1.0,
+        0.0
+      ],
+      "chart": "calf",
+      "insertion": "Medial cuneiform and base of the first metatarsal.",
+      "label": "Tibialis anterior",
+      "note": "Parallel along the front of the shin toward the ankle.",
+      "origin": "Lateral condyle and upper lateral surface of the tibia, interosseous membrane.",
+      "origin_point": [
+        0.0,
+        0.0
+      ],
+      "radius_m": 0.045,
+      "spacing_m": 0.008,
+      "type": "parallel"
+    },
+    "trapezius": {
+      "angular_spacing_deg": 5.5,
+      "center": [
+        0.21,
+        1.47
+      ],
+      "chart": "torso_back_top",
+      "cut_deg": 0.0,
+      "insertion": "Lateral third of the clavicle (superior fibres), acromion and scapular spine (middle/inferior fibres).",
+      "label": "Trapezius",
+      "note": "One fan centred at the acromion: upper fibres run down/lateral, middle horizontal, lower up/lateral — the classic trapezius fan. The centre sits just lateral to the region.",
+      "origin": "External occipital protuberance, superior nuchal line, ligamentum nuchae, spinous processes C7-T12.",
+      "type": "fan"
+    },
+    "triceps_brachii": {
+      "angle_center": 186.0,
+      "axis": [
+        1.0,
+        0.0
+      ],
+      "chart": "upperarm",
+      "insertion": "Olecranon of the ulna (common tendon).",
+      "label": "Triceps brachii",
+      "note": "Parallel along the arm: all three heads run toward the olecranon and the belly is long and narrow, so a fan would alias near the elbow. Per-head fields are not drawn.",
+      "origin": "Long head: infraglenoid tubercle of the scapula. Lateral head: posterior humerus above the radial groove. Medial head: posterior humerus below the radial groove.",
+      "origin_point": [
+        0.0,
+        0.0
+      ],
+      "radius_m": 0.048,
+      "spacing_m": 0.008,
+      "type": "parallel"
+    }
+  },
+  "master_character_id": "master_character_001",
+  "references": [
+    {
+      "cite": "Gray, H. (1918). Anatomy of the Human Body. Public domain. Muscle descriptions: pectoralis major (clavicular fibres downward/lateral, middle horizontal, lower upward/lateral, converging on the lateral lip of the bicipital groove); trapezius (superior fibres downward/lateral, middle horizontal, inferior upward/lateral, converging on clavicle/acromion/scapular spine); latissimus dorsi (upper horizontal, middle oblique upward, lower vertical upward, converging on the floor of the intertubercular groove); deltoid (converging on the deltoid tuberosity).",
+      "id": "gray1918",
+      "used_for": "Fan geometry of pectoralis major, trapezius, latissimus dorsi, deltoid."
+    },
+    {
+      "cite": "Geeky Medics. Superficial Back Muscles. https://geekymedics.com/superficial-back-muscles/ (accessed 13/11/2026). Trapezius fibres converge on clavicle/acromion/scapular spine; latissimus dorsi fibres converge onto a single common tendon.",
+      "id": "geekymedics-back",
+      "used_for": "Cross-check of trapezius/latissimus fan geometry."
+    },
+    {
+      "cite": "Standard origin/insertion tables, cross-checked 13/11/2026 (e.g. https://www.teamlabbody.com/en/anatomy/muscles/ and https://humanome.co/charts/arm-muscles-chart-d216d0a4c4.pdf). Triceps brachii: long head infraglenoid tubercle, lateral/medial heads posterior humerus, all to the olecranon. Biceps brachii: long head supraglenoid tubercle, short head coracoid process, to the radial tuberosity.",
+      "id": "arm-oi",
+      "used_for": "Triceps/biceps parallel fields (fibres run along the arm toward the elbow). Facts only; no content copied."
+    },
+    {
+      "cite": "Precision Clinical Education. External Oblique (fibres superolateral to inferomedial, 'hands in pockets') and Gluteus Maximus (fibres inferolateral at 32-45 deg to the iliotibial band and gluteal tuberosity). https://www.precisionclinicaleducation.com/anatomy/muscles/external-oblique-4251 and .../gluteus-maximus-8332 (accessed 13/11/2026).",
+      "id": "oblique-glute",
+      "used_for": "Obliques diagonal field; gluteus maximus fan centre (lateral/inferior insertion)."
+    },
+    {
+      "cite": "BodyParts3D/Anatomography (DBCLS, University of Tokyo). CHECKED, NOT USED: polygon data of muscle volumes carries no fibre-direction data, and the licence is version-dependent (v3.0 CC BY-SA 2.1 Japan; current archive states CC BY 4.0). No geometry was downloaded, traced or derived. See docs/exercise-visual-system/OPEN_SOURCE_AUDIT.md.",
+      "id": "bodyparts3d-checked",
+      "used_for": "Nothing. Recorded so the check is not repeated."
+    },
+    {
+      "cite": "OpenSim / SimTK musculoskeletal models (e.g. MoBL-ARMS upper-extremity model). CHECKED, NOT USED: OpenSim software is Apache-2.0, but individual SimTK model licences vary and were not all verified; muscle paths are via-point polylines in model coordinates, which would need a full registration to this character and still would not give surface fibre direction. See OPEN_SOURCE_AUDIT.md.",
+      "id": "opensim-checked",
+      "used_for": "Nothing. Recorded so the check is not repeated."
+    }
+  ],
+  "review": "Fibre directions were placed by the pipeline author from textbook origin/insertion anatomy (see references). They describe the direction of the surface striations only; they are NOT measured fibre data, NOT a dissection, and an anatomist or qualified coach has NOT reviewed them. The muscle regions themselves (config/muscle_map.json) are untouched by this file.",
+  "status": "DRAFT"
+}

@@ -27,6 +27,28 @@ Corrections the verification found: Three.js does not release monthly in 2026 (f
 - **No motion-capture tool is in the pipeline.** Every mocap option found is either non-commercial (RGB MoCap models, OpenCap/OpenPose), Windows + NVIDIA only, or unproven on a lying, occluded lifter (v2bm). The bench press is therefore keyframed from documented references and labelled `UNVERIFIED — NOT APPROVED FOR PRODUCTION`.
 - **Not adopted, by reason**: OpenGym3D (stale, Blender 4.5, mixed-licence motion), Mesh2Motion (no strength motions; useful later for warm-up / cardio clips under CC0), Rigify (too many bones for mobile; GPL `rig_ui.py`), Three.js (only needed if a web viewer is chosen).
 
+## Fibre-direction research (13/11/2026, for the fibre redraw)
+
+The first fibre striations (13/11) used one average PCA axis per muscle
+group — an approximation, recorded as such. The redraw replaces it with
+origin→insertion direction fields. What was checked before writing them:
+
+| Source | What it really offers | Licence (verified) | Used? |
+|---|---|---|---|
+| **Gray's Anatomy (1918)** | Textbook origin/insertion/fibre-direction descriptions for the pectoralis major, trapezius, latissimus dorsi and deltoid (fan geometry quoted in `config/fiber_map.json`) | Public domain (published 1918) | **Yes — facts only.** No text or image copied; the field code is original. |
+| **Modern anatomy summaries** (Geeky Medics, Precision Clinical Education, standard origin/insertion tables) | Cross-checks for the same fan geometry, plus triceps/biceps, external oblique ("hands in pockets") and gluteus maximus (32–45° inferolateral) | Web text, read as reference | **Yes — facts only**, cross-checked 13/11/2026. URLs in `config/fiber_map.json`. |
+| **BodyParts3D / Anatomography** (DBCLS) | 3D polygon volumes of muscles from MRI. Carries **no fibre-direction data** — volumes, not fascicle directions. | Version-dependent and therefore risky: v3.0 is CC BY-SA 2.1 Japan; the current v4.0 archive page states CC BY 4.0 (per a 2026 downstream README; the version actually downloaded decides). ShareAlike would attach to derivatives. | **No.** Nothing downloaded, traced or derived. Checked so the check is not repeated. |
+| **Z-Anatomy** (BodyParts3D derivative) | More detailed muscle meshes, still no fibre directions. | CC BY-SA 4.0 | **No**, same reason. |
+| **OpenSim / SimTK models** (e.g. MoBL-ARMS) | Muscle paths as via-point polylines in model coordinates. Registering them to this character would need a full registration pipeline and still would not give surface fibre direction. | OpenSim software is Apache-2.0 (commercial OK); **individual SimTK model licences vary** and were not all verified. | **No.** |
+
+**Verdict:** the fibre fields are procedural and original: one fan or parallel
+field per muscle group, defined in the muscle map's own chart space from the
+documented origin and insertion (`config/fiber_map.json`, `evs/fiber_fields.py`,
+`pipeline/bake_fiber_fields.py`). No third-party asset, mesh, texture or code
+is in the fibre path, so no new licence obligation arises. The fields are
+first-order surface directions, not measured fibre data — the file says so,
+and an anatomist has still not reviewed them.
+
 ## Open licence risks
 
 - MPFB's "no claim over output" is the MakeHuman team's statement, not a warranty. Keep the record that only bundled CC0 core assets were used (`config/master_character.json` → `generator`).

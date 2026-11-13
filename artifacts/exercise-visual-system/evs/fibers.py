@@ -17,12 +17,22 @@ computed separately for the left and right halves of the body (the atlas
 here, not anatomy. Groups too small for a stable axis fall back to vertical
 stripes plus noise.
 
+The PCA path below is kept as a FALLBACK for atlases baked before the fibre
+fields existed. The primary path is the baked phase atlas
+(``fiber_phase.npz``, see ``evs/fiber_fields.py`` and
+``pipeline/bake_fiber_fields.py``): per-group striation phase from
+origin/insertion anatomy, evaluated in the muscle map's own chart space.
+``apply_fiber_phase`` reads that atlas; ``write_highlight_map`` prefers it
+and falls back to PCA only when the atlas has no phase file.
+
 The striation field varies across the fibre direction, so the visible lines
 run along the fibres. A seeded value-noise wobble keeps the lines organic
 instead of mechanically parallel. Output is deterministic for a given seed.
 """
 
 from __future__ import annotations
+
+from pathlib import Path
 
 import numpy as np
 
@@ -146,3 +156,53 @@ def fiber_detail_image(masks: dict[str, np.ndarray], names: list[str], seed: int
         present = masks[name].astype(np.float64) / 255.0
         detail = detail * (1.0 - present) + (field * 255.0) * present
     return detail.astype(np.uint8)
+
+
+PHASE_FILE = "fiber_phase.npz"
+# Phase wobble: at most this many striation cycles of organic wander, shared
+# by every group so no noise seam appears where two groups meet.
+PHASE_WOBBLE_CYCLES = 0.3
+
+
+def load_phase_fields(atlas_dir: Path) -> dict[str, np.ndarray] | None:
+    """Per-group striation phase fractions (uint8, 0..255 = one cycle) from
+    the baked phase atlas, or None when the atlas predates it."""
+    path = Path(atlas_dir) / PHASE_FILE
+    if not path.exists():
+        return None
+    with np.load(path) as data:
+        return {k: data[k] for k in data.files}
+
+
+def phase_striation_field(frac: np.ndarray, wobble: np.ndarray, grain: np.ndarray) -> np.ndarray:
+    """Striation field in [0, 1] from a phase fraction image: bright ridges
+    where the phase crosses whole cycles, perturbed by the shared wobble so
+    the lines read organic instead of mechanically even."""
+    phase = frac.astype(np.float64) / 255.0 + wobble
+    return (0.5 + 0.5 * np.sin(2.0 * np.pi * phase)) * grain
+
+
+def apply_fiber_phase(rgb: np.ndarray, phase_fields: dict[str, np.ndarray], roles: dict[str, list[str]],
+                      seed: int = 7, floor: float = DEFAULT_FLOOR) -> np.ndarray:
+    """Modulates a composed highlight RGB image with striations from the
+    baked phase atlas (origin/insertion fields). Same contract as
+    ``apply_fibers``: channel values outside every group mask stay exactly
+    as composed; inside a group they range between ``floor`` and the full
+    mask value, following the striations. The wobble and grain are shared by
+    all groups, so neighbouring muscles meet without a noise seam."""
+    rng = np.random.default_rng(seed)
+    shape = rgb.shape[:2]
+    wobble = (_value_noise(shape, 6, rng) - 0.5) * PHASE_WOBBLE_CYCLES
+    grain = 0.92 + 0.08 * _value_noise(shape, 24, rng)
+    out = rgb.astype(np.float64).copy()
+    for channel, role in enumerate(("primary", "secondary", "stabilizing")):
+        names = roles.get(role, [])
+        if not names:
+            continue
+        field = np.zeros(shape, dtype=np.float64)
+        for name in names:
+            if name not in phase_fields:
+                raise KeyError(f"muscle group {name!r} is not in the fibre phase atlas")
+            field = np.maximum(field, phase_striation_field(phase_fields[name], wobble, grain))
+        out[..., channel] *= floor + (1.0 - floor) * field
+    return np.clip(out + 0.5, 0, 255).astype(np.uint8)

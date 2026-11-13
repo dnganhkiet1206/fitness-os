@@ -51,6 +51,10 @@ def muscle_map() -> dict:
     return load_json(CONFIG_DIR / "muscle_map.json")
 
 
+def fiber_map() -> dict:
+    return load_json(CONFIG_DIR / "fiber_map.json")
+
+
 def equipment_config() -> dict:
     return load_json(CONFIG_DIR / "equipment.json")
 

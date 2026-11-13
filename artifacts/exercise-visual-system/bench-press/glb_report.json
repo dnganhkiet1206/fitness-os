@@ -32,7 +32,7 @@
     },
     "bench_press_animation.glb": {
       "file": "bench_press_animation.glb",
-      "size_bytes": 1538684,
+      "size_bytes": 1554076,
       "generator": "Khronos glTF Blender I/O v5.2.39",
       "nodes": 61,
       "meshes": 7,
@@ -53,7 +53,7 @@
       ],
       "textures": 2,
       "images": 2,
-      "image_bytes": 155521,
+      "image_bytes": 170913,
       "skins": [
         {
           "name": "MasterRig",
