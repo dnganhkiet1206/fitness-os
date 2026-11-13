@@ -132,11 +132,12 @@ public struct MediaState: Sendable, Hashable, Codable {
 
   public static let none = MediaState(shape: .none, items: [])
 
-  /// Một video đóng gói sẵn (ví dụ clip 3D dựng trong repo), không qua server.
-  public static func bundledVideo(uri: String, posterUri: String?, durationS: Double?, alt: String?) -> MediaState {
-    MediaState(shape: .video, items: [
-      MediaItem(kind: .video, uri: uri, durationS: durationS, posterUri: posterUri, alt: alt, title: nil, description: "")
-    ])
+  /// Video đóng gói sẵn (ví dụ clip 3D dựng trong repo), không qua server.
+  /// Nhiều tấm = cùng một động tác quay từ nhiều góc; tấm đầu là mặc định.
+  public static func bundledVideos(_ clips: [(uri: String, posterUri: String?, durationS: Double?, alt: String?)]) -> MediaState {
+    MediaState(shape: clips.isEmpty ? .none : .video, items: clips.map {
+      MediaItem(kind: .video, uri: $0.uri, durationS: $0.durationS, posterUri: $0.posterUri, alt: $0.alt, title: nil, description: "")
+    })
   }
 
   public var hasMedia: Bool { shape != .none }

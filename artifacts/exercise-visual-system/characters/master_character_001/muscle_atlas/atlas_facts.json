@@ -4,87 +4,87 @@
   "uv_coverage": 0.5832,
   "groups": {
     "pectoralis_major": {
-      "texels": 145334,
+      "texels": 142126,
       "label": "Pectoralis major"
     },
     "deltoid_anterior": {
-      "texels": 34816,
+      "texels": 37769,
       "label": "Deltoid, anterior head"
     },
     "deltoid_lateral": {
-      "texels": 16806,
+      "texels": 18415,
       "label": "Deltoid, lateral head"
     },
     "deltoid_posterior": {
-      "texels": 12106,
+      "texels": 9695,
       "label": "Deltoid, posterior head"
     },
     "triceps_brachii": {
-      "texels": 23707,
+      "texels": 23099,
       "label": "Triceps brachii"
     },
     "biceps_brachii": {
-      "texels": 34658,
+      "texels": 33216,
       "label": "Biceps brachii"
     },
     "forearm_muscles": {
-      "texels": 63824,
+      "texels": 68542,
       "label": "Forearm flexors and extensors"
     },
     "rectus_abdominis": {
-      "texels": 66720,
+      "texels": 64178,
       "label": "Rectus abdominis"
     },
     "obliques": {
-      "texels": 102698,
+      "texels": 99151,
       "label": "External obliques"
     },
     "serratus_anterior": {
-      "texels": 38852,
+      "texels": 35787,
       "label": "Serratus anterior"
     },
     "latissimus_dorsi": {
-      "texels": 58983,
+      "texels": 58846,
       "label": "Latissimus dorsi"
     },
     "trapezius": {
-      "texels": 71938,
+      "texels": 55497,
       "label": "Trapezius"
     },
     "rotator_cuff_posterior": {
-      "texels": 11614,
+      "texels": 11126,
       "label": "Infraspinatus and teres minor"
     },
     "erector_spinae": {
-      "texels": 14318,
+      "texels": 15233,
       "label": "Erector spinae"
     },
     "gluteus_maximus": {
-      "texels": 54620,
+      "texels": 53925,
       "label": "Gluteus maximus"
     },
     "gluteus_medius": {
-      "texels": 29128,
+      "texels": 29395,
       "label": "Gluteus medius"
     },
     "quadriceps": {
-      "texels": 139417,
+      "texels": 137411,
       "label": "Quadriceps femoris"
     },
     "adductors": {
-      "texels": 40130,
+      "texels": 39444,
       "label": "Hip adductors"
     },
     "hamstrings": {
-      "texels": 68293,
+      "texels": 70713,
       "label": "Hamstrings"
     },
     "calves": {
-      "texels": 56270,
+      "texels": 58060,
       "label": "Gastrocnemius and soleus"
     },
     "tibialis_anterior": {
-      "texels": 7356,
+      "texels": 6205,
       "label": "Tibialis anterior"
     }
   },

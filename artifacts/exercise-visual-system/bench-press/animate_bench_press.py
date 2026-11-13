@@ -99,7 +99,7 @@ def lie_on_bench(rig, body, exercise: dict, pad_top: float, pad_half_width: floa
     # Head: extend the neck until the back of the head reaches the pad.
     head_y = evs_rig.bone_head_world(rig, "head").y
     back_of_head = lambda co: on_pad(co) & (co[:, 1] > head_y)  # noqa: E731
-    lo, hi = 0.0, 30.0
+    lo, hi = 0.0, 50.0
     base_neck = rig.pose.bones["neck_01"].rotation_quaternion.copy()
     base_head = rig.pose.bones["head"].rotation_quaternion.copy()
     neck_angle = 0.0
@@ -111,7 +111,7 @@ def lie_on_bench(rig, body, exercise: dict, pad_top: float, pad_half_width: floa
         motion.rotate_bone_about_armature_axis(rig, "head", Vector((1, 0, 0)), -neck_angle * 0.4)
         bpy.context.view_layer.update()
         z, _ = lowest(back_of_head)
-        if z > target + 0.004:
+        if z > target + 0.001:
             lo = neck_angle
         else:
             hi = neck_angle

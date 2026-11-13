@@ -1,6 +1,6 @@
 {
   "pipeline_version": "0.1.0",
-  "generated": "2026-11-12T16:48:21-06:00",
+  "generated": "2026-11-12T23:18:10-06:00",
   "exercise": "Barbell Bench Press",
   "exercise_id": "barbell_bench_press",
   "character": "master_character_001",
@@ -97,7 +97,7 @@
       "category": "character",
       "title": "Bone lengths stay constant during the clip (no stretching)",
       "status": "PASS",
-      "measured": 1e-06,
+      "measured": 0.0,
       "limit": 0.0001,
       "unit": "m",
       "detail": "",
@@ -109,8 +109,8 @@
       "title": "Skin stretch and body volume stay within limits in the exercise poses",
       "status": "FAIL",
       "measured": {
-        "p99.9_edge_stretch": 2.816,
-        "volume_change": 0.0211
+        "p99.9_edge_stretch": 2.718,
+        "volume_change": 0.0195
       },
       "limit": {
         "p99.9_edge_stretch": 2.6,
@@ -125,7 +125,7 @@
       "category": "character",
       "title": "Skin passing through skin (beyond the rest pose)",
       "status": "REQUIRES_MANUAL_REVIEW",
-      "measured": 451,
+      "measured": 490,
       "limit": 60,
       "unit": "face pairs",
       "detail": "Skin folding onto skin at a bent elbow or inside a closed fist is contact, not a defect; a count above the limit needs eyes.",
@@ -170,7 +170,7 @@
       "status": "PASS",
       "measured": [
         8.7,
-        138.9
+        136.1
       ],
       "limit": [
         0.0,
@@ -186,8 +186,8 @@
       "title": "Knee flexion stays inside the allowed range",
       "status": "PASS",
       "measured": [
-        96.7,
-        96.7
+        96.3,
+        96.3
       ],
       "limit": [
         0.0,
@@ -229,8 +229,8 @@
       "title": "Upper arm angle to the trunk at the bottom is inside the configured range",
       "status": "PASS",
       "measured": [
-        57.9,
-        57.9
+        50.1,
+        50.1
       ],
       "limit": [
         30.0,
@@ -247,7 +247,7 @@
       "category": "movement",
       "title": "Forearms upright under the bar at the bottom",
       "status": "PASS",
-      "measured": 4.36,
+      "measured": 8.6,
       "limit": 12.0,
       "unit": "deg from vertical",
       "detail": "",
@@ -260,7 +260,7 @@
       "category": "movement",
       "title": "Elbows stay under the wrists through the repetition (front view)",
       "status": "PASS",
-      "measured": 1.86,
+      "measured": 2.02,
       "limit": 10.0,
       "unit": "deg forearm lean in the front view",
       "detail": "",
@@ -276,8 +276,8 @@
       "title": "Wrist bend (extension) stays inside the allowed range",
       "status": "PASS",
       "measured": [
-        17.7,
-        18.2
+        17.6,
+        18.3
       ],
       "limit": [
         -5.0,
@@ -292,7 +292,7 @@
       "category": "movement",
       "title": "Wrist side bend (radial / ulnar deviation) stays inside the allowed range",
       "status": "PASS",
-      "measured": 6.5,
+      "measured": 6.6,
       "limit": 25.0,
       "unit": "deg",
       "detail": "",
@@ -303,7 +303,7 @@
       "category": "movement",
       "title": "Bar speed has no spikes",
       "status": "PASS",
-      "measured": 0.472,
+      "measured": 0.497,
       "limit": 1.2,
       "unit": "m/s",
       "detail": "",
@@ -314,7 +314,7 @@
       "category": "movement",
       "title": "Bar acceleration has no spikes",
       "status": "PASS",
-      "measured": 1.458,
+      "measured": 1.538,
       "limit": 6.0,
       "unit": "m/s^2",
       "detail": "",
@@ -325,7 +325,7 @@
       "category": "movement",
       "title": "No joint jumps between frames",
       "status": "PASS",
-      "measured": 0.529,
+      "measured": 0.558,
       "limit": 2.5,
       "unit": "m/s (fastest joint)",
       "detail": "",
@@ -337,9 +337,9 @@
       "title": "No sudden joint rotation between frames",
       "status": "PASS",
       "measured": {
-        "largest_step_deg": 8.166,
-        "bone": "upperarm_l",
-        "angular_speed_deg_s": 196.0
+        "largest_step_deg": 10.284,
+        "bone": "hand_l",
+        "angular_speed_deg_s": 246.8
       },
       "limit": {
         "largest_step_deg": 12.0,
@@ -355,8 +355,8 @@
       "title": "Left and right sides mirror each other",
       "status": "PASS",
       "measured": {
-        "position_m": 0.0,
-        "elbow_angle_deg": 0.0
+        "position_m": 1e-05,
+        "elbow_angle_deg": 0.001
       },
       "limit": {
         "position_m": 0.003,
@@ -374,8 +374,8 @@
       "measured": {
         "slide_m": 0.0,
         "sole_height_m": [
-          -0.0001,
-          -0.0001
+          -0.0,
+          -0.0
         ]
       },
       "limit": {
@@ -396,16 +396,16 @@
       "status": "PASS",
       "measured": {
         "head_gap_m": [
-          -0.0061,
-          -0.0061
+          -0.008,
+          -0.008
         ],
         "upper_back_gap_m": [
-          -0.0103,
-          -0.0065
+          -0.0091,
+          -0.0056
         ],
         "glute_gap_m": [
-          -0.0071,
-          -0.0071
+          -0.0086,
+          -0.0086
         ]
       },
       "limit": 0.006,
@@ -433,7 +433,7 @@
       "category": "equipment",
       "title": "Hands are the same distance from the middle of the bar",
       "status": "PASS",
-      "measured": 0.00013,
+      "measured": 0.00014,
       "limit": 0.004,
       "unit": "m",
       "detail": "grip centres at 0.325 m and -0.325 m from the middle",
@@ -445,9 +445,9 @@
       "title": "Hands stay on the bar in every frame",
       "status": "PASS",
       "measured": {
-        "hand_to_grip_socket_m": 1.6e-05,
+        "hand_to_grip_socket_m": 1.2e-05,
         "hand_to_grip_socket_deg": 0.0,
-        "skin_to_bar_surface_m": -0.00457
+        "skin_to_bar_surface_m": -0.0046
       },
       "limit": {
         "hand_to_grip_socket_m": 0.004,
@@ -492,7 +492,7 @@
       "title": "Bar path is plausible: steady down, steady up, no sideways drift",
       "status": "PASS",
       "measured": {
-        "vertical_range_m": 0.4393,
+        "vertical_range_m": 0.422,
         "horizontal_travel_m": 0.115,
         "reversal_m": 0.0,
         "sideways_drift_m": 0.0
@@ -568,7 +568,7 @@
       "category": "equipment",
       "title": "Body does not sink into the bench beyond pad compression",
       "status": "PASS",
-      "measured": 0.0103,
+      "measured": 0.0091,
       "limit": 0.03,
       "unit": "m",
       "detail": "",
@@ -579,7 +579,7 @@
       "category": "equipment",
       "title": "Bar clears the lip of the rests on the way out and back in",
       "status": "PASS",
-      "measured": 0.0261,
+      "measured": 0.0291,
       "limit": 0.01,
       "unit": "m",
       "detail": "",
@@ -679,10 +679,10 @@
       "title": "Video files exist and are not empty",
       "status": "PASS",
       "measured": {
-        "side": 259286,
-        "front": 296423,
-        "three_quarter": 339746,
-        "closeup_grip": 1037304
+        "side": 258518,
+        "front": 304615,
+        "three_quarter": 344496,
+        "closeup_grip": 1038994
       },
       "limit": null,
       "unit": "bytes",
@@ -773,7 +773,7 @@
       "category": "rendering",
       "title": "All cameras were rendered from one scene file",
       "status": "PASS",
-      "measured": "c2c7b65533ba673bbcd2a41de9b21c7514cbd5fa4619fa7c37c3b8e03ffdde82",
+      "measured": "25cab48030220117e5654f62cc892071efb2a09aa4c88bd324f07b58aafe368a",
       "limit": null,
       "unit": "",
       "detail": "sha256 of the .blend every camera rendered",
@@ -801,10 +801,10 @@
       "title": "No brightness flicker in the parts of the picture that do not move",
       "status": "PASS",
       "measured": {
-        "side": 0.0054,
-        "front": 0.0097,
-        "three_quarter": 0.0085,
-        "closeup_grip": 0.2113
+        "side": 0.0058,
+        "front": 0.0077,
+        "three_quarter": 0.0071,
+        "closeup_grip": 0.2838
       },
       "limit": 1.0,
       "unit": "grey levels (0-255) between consecutive frames",
@@ -819,20 +819,20 @@
       "measured": {
         "side vs front": {
           "best_lag_frames": 0,
-          "correlation_at_lag_0": 0.7744,
-          "correlation_at_best_lag": 0.7744,
-          "still_frames_agreement": 0.9744
+          "correlation_at_lag_0": 0.7767,
+          "correlation_at_best_lag": 0.7767,
+          "still_frames_agreement": 0.9829
         },
         "side vs three_quarter": {
           "best_lag_frames": 0,
-          "correlation_at_lag_0": 0.9652,
-          "correlation_at_best_lag": 0.9652,
-          "still_frames_agreement": 1.0
+          "correlation_at_lag_0": 0.9661,
+          "correlation_at_best_lag": 0.9661,
+          "still_frames_agreement": 0.9915
         },
         "front vs three_quarter": {
           "best_lag_frames": 0,
-          "correlation_at_lag_0": 0.8951,
-          "correlation_at_best_lag": 0.8951,
+          "correlation_at_lag_0": 0.8963,
+          "correlation_at_best_lag": 0.8963,
           "still_frames_agreement": 0.9744
         }
       },
@@ -850,8 +850,8 @@
       "title": "GLB files parse and every accessor fits its buffer",
       "status": "PASS",
       "measured": {
-        "master_character.glb": 883716,
-        "bench_press_animation.glb": 1460220
+        "master_character.glb": 884688,
+        "bench_press_animation.glb": 1467068
       },
       "limit": null,
       "unit": "bytes",
@@ -904,7 +904,7 @@
           "bones": 53,
           "mesh_objects": 3,
           "skinned_mesh_objects": 2,
-          "mesh_vertices": 13769,
+          "mesh_vertices": 13785,
           "actions": 0,
           "last_animation_frame": 0.0,
           "materials": 2
@@ -914,7 +914,7 @@
           "bones": 53,
           "mesh_objects": 8,
           "skinned_mesh_objects": 2,
-          "mesh_vertices": 26393,
+          "mesh_vertices": 26409,
           "actions": 1,
           "last_animation_frame": 234.0,
           "materials": 10

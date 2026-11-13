@@ -79,6 +79,7 @@ struct ExerciseGuideView: View {
         VStack(alignment: .leading, spacing: DS.Spacing.lg) {
           if shown, media.hasMedia {
             hero
+            if isDemo3D { angleSwitch }
           }
           header
           content
@@ -167,6 +168,21 @@ struct ExerciseGuideView: View {
           .padding(DS.Spacing.sm)
       }
     }
+  }
+
+  /// Chọn góc quay của clip 3D (cùng một lần đẩy, cùng timeline).
+  @ViewBuilder private var angleSwitch: some View {
+    #if DEBUG
+      let labels = ExerciseDemo3D.labels(for: displayName)
+      if labels.count > 1 {
+        Picker(String(localized: "eg.demo3d.angle"), selection: $page) {
+          ForEach(Array(labels.enumerated()), id: \.offset) { i, label in
+            Text(verbatim: label).tag(i)
+          }
+        }
+        .pickerStyle(.segmented)
+      }
+    #endif
   }
 
   /// `mediaLabel` thắng `alt`, thắng câu dựng sẵn.
@@ -494,7 +510,7 @@ struct GuideMediaViewer: View {
       Group {
         if media.items.isEmpty {
           Text("eg.noMedia").foregroundStyle(.white)
-        } else if media.shape == .video, let v = media.items.first {
+        } else if media.shape == .video, let v = media.items.indices.contains(start) ? media.items[start] : media.items.first {
           if let url = URL(string: v.uri) {
             VideoPlayer(player: AVPlayer(url: url))
               .accessibilityLabel(Text(verbatim: label(v)))

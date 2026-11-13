@@ -10,7 +10,7 @@ Kiểm định tự động lần cuối: 52 PASS, 1 FAIL, 1 NOT_TESTED, 5 REQUI
 
 | Bước | Trạng thái | Bằng chứng |
 |---|---|---|
-| Nhân vật chính | Đã làm, đã kiểm (ảnh + số đo) | `characters/master_character_001/` (`.blend`, `character_preview.png`, `character_facts.json`) |
+| Nhân vật chính (bản 1.1, thân hình "vừa" Kiệt chọn 12/11, `docs/exercise-visual-system/body_options.png`) | Đã làm, đã kiểm (ảnh + số đo) | `characters/master_character_001/` (`.blend`, `character_preview.png`, `character_facts.json`) |
 | Khung xương + điều khiển + nắm thanh | Đã làm, đã kiểm (`rig_test.json`, ảnh `rig_deformation_test.png`) | `evs/rig.py`, `pipeline/test_rig.py` |
 | Bản đồ cơ (21 nhóm) | Đã làm; **vùng cơ chưa người có chuyên môn xem** | `muscle_atlas/`, `muscle_map_preview.png` |
 | Dụng cụ (IPF đã đối chiếu) | Đã làm, kiểm kích thước tự động | `config/equipment.json`, `evs/equipment.py` |
@@ -18,7 +18,7 @@ Kiểm định tự động lần cuối: 52 PASS, 1 FAIL, 1 NOT_TESTED, 5 REQUI
 | 4 máy quay đồng bộ, 4 MP4 + 4 MP4 lặp | Đã làm, kiểm tự động (số khung, fps, H.264, nhấp nháy, đồng bộ) và xem bằng mắt | `bench-press/*.mp4`, `camera_comparison.png`, `render_metadata.json` |
 | GLB (nhân vật; bài tập + 2 biến thể vật liệu) | Đã làm, đọc lại được trong Blender | `bench-press/*.glb`, `glb_report.json` |
 | Kiểm định + unit test | Đã làm (27 test xanh) | `pipeline/validate_animation.py`, `evs/validation/`, `tests/` |
-| Gắn vào app iOS | Đã làm, **chỉ bản Debug**, đã thử trên simulator iPhone 17 (iOS 26): mở hướng dẫn Bench Press trong buổi tập, video phát được | `apps/ios/ASCND/Features/Exercises/ExerciseDemo3D.swift` |
+| Gắn vào app iOS | Đã làm, **chỉ bản Debug**: 3 góc (45° · Bên · Trước) có thanh chọn góc; đã thử trên simulator iPhone 17 (iOS 26): mở hướng dẫn Bench Press trong buổi tập, đổi góc, phát đúng góc đã chọn | `apps/ios/ASCND/Features/Exercises/ExerciseDemo3D.swift` |
 | Tài liệu | Đã viết | `docs/exercise-visual-system/` |
 
 **Còn FAIL thật:** `skin_deformation` — da vùng háng giãn quá ngưỡng khi đùi gập 90° (cách da bám xương kiểu tuyến tính của lưới MakeHuman). Bị quần che nên không lộ trong video, nhưng là hạn chế thật của nhân vật. Không nới ngưỡng.

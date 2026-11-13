@@ -5,13 +5,13 @@
   "files": {
     "master_character.glb": {
       "file": "master_character.glb",
-      "size_bytes": 883716,
+      "size_bytes": 884688,
       "generator": "Khronos glTF Blender I/O v5.2.39",
       "nodes": 56,
       "meshes": 2,
       "primitives": 2,
-      "vertices": 13727,
-      "triangles": 25118,
+      "vertices": 13743,
+      "triangles": 25150,
       "materials": [
         "EVS_Body_Export",
         "EVS_Apparel_Export"
@@ -32,13 +32,13 @@
     },
     "bench_press_animation.glb": {
       "file": "bench_press_animation.glb",
-      "size_bytes": 1460220,
+      "size_bytes": 1467068,
       "generator": "Khronos glTF Blender I/O v5.2.39",
       "nodes": 61,
       "meshes": 7,
       "primitives": 13,
-      "vertices": 26351,
-      "triangles": 45606,
+      "vertices": 26367,
+      "triangles": 45638,
       "materials": [
         "EVS_Plate",
         "EVS_PlateAccent",
@@ -53,7 +53,7 @@
       ],
       "textures": 2,
       "images": 2,
-      "image_bytes": 78733,
+      "image_bytes": 84179,
       "skins": [
         {
           "name": "MasterRig",
@@ -86,7 +86,7 @@
       "bones": 53,
       "mesh_objects": 3,
       "skinned_mesh_objects": 2,
-      "mesh_vertices": 13769,
+      "mesh_vertices": 13785,
       "actions": 0,
       "last_animation_frame": 0.0,
       "materials": 2
@@ -96,7 +96,7 @@
       "bones": 53,
       "mesh_objects": 8,
       "skinned_mesh_objects": 2,
-      "mesh_vertices": 26393,
+      "mesh_vertices": 26409,
       "actions": 1,
       "last_animation_frame": 234.0,
       "materials": 10

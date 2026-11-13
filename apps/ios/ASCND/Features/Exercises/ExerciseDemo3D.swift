@@ -3,24 +3,45 @@
   import Foundation
 
   /// Clip 3D minh hoạ bài tập dựng trong repo (`artifacts/exercise-visual-system`,
-  /// #527, 11/11). Chuyển động là bản thử, CHƯA được người có chuyên môn duyệt
+  /// #527). Chuyển động là bản thử, CHƯA được người có chuyên môn duyệt
   /// ("UNVERIFIED — NOT APPROVED FOR PRODUCTION"), nên chỉ có ở bản Debug và
-  /// luôn mang nhãn "chưa duyệt". Gỡ: xoá tệp này, thư mục
-  /// `Resources/ExerciseDemos` và khối `#if DEBUG` trong `ExerciseGuideView`.
+  /// luôn mang nhãn "chưa duyệt". Mỗi bài có nhiều góc quay của CÙNG một lần
+  /// đẩy (cùng timeline). Gỡ: xoá tệp này, thư mục `Resources/ExerciseDemos`
+  /// và các khối `#if DEBUG` trong `ExerciseGuideView`.
   enum ExerciseDemo3D {
-    /// Tên bài (đã gập như `PersonalRecords.exerciseKey`) → tên tệp trong bundle.
-    static let clips: [String: (video: String, poster: String, seconds: Double)] = [
-      "bench press": ("bench_press_45_loop", "bench_press_poster", 5.5),
-      "barbell bench press": ("bench_press_45_loop", "bench_press_poster", 5.5),
-      "barbell bench press - medium grip": ("bench_press_45_loop", "bench_press_poster", 5.5),
+    struct Angle {
+      let file: String
+      let labelKey: String.LocalizationValue
+    }
+
+    static let benchPress: [Angle] = [
+      Angle(file: "bench_press_45", labelKey: "eg.demo3d.angle45"),
+      Angle(file: "bench_press_side", labelKey: "eg.demo3d.side"),
+      Angle(file: "bench_press_front", labelKey: "eg.demo3d.front"),
     ]
 
+    /// Tên bài (đã gập như `PersonalRecords.exerciseKey`) → các góc.
+    static let clips: [String: [Angle]] = [
+      "bench press": benchPress,
+      "barbell bench press": benchPress,
+      "barbell bench press - medium grip": benchPress,
+    ]
+
+    static func angles(for name: String) -> [Angle] {
+      clips[PersonalRecords.exerciseKey(name)] ?? []
+    }
+
     static func media(for name: String, alt: String?) -> MediaState? {
-      guard let clip = clips[PersonalRecords.exerciseKey(name)],
-        let video = Bundle.main.url(forResource: clip.video, withExtension: "mp4")
-      else { return nil }
-      let poster = Bundle.main.url(forResource: clip.poster, withExtension: "jpg")
-      return .bundledVideo(uri: video.absoluteString, posterUri: poster?.absoluteString, durationS: clip.seconds, alt: alt)
+      let found = angles(for: name).compactMap { angle -> (uri: String, posterUri: String?, durationS: Double?, alt: String?)? in
+        guard let video = Bundle.main.url(forResource: "\(angle.file)_loop", withExtension: "mp4") else { return nil }
+        let poster = Bundle.main.url(forResource: "\(angle.file)_poster", withExtension: "jpg")
+        return (video.absoluteString, poster?.absoluteString, 5.5, alt)
+      }
+      return found.isEmpty ? nil : .bundledVideos(found)
+    }
+
+    static func labels(for name: String) -> [String] {
+      angles(for: name).map { String(localized: $0.labelKey) }
     }
   }
 #endif

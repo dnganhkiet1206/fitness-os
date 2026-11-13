@@ -1,6 +1,6 @@
 {
   "master_character_id": "master_character_001",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "One faceless athletic male figure reused by every exercise and every camera. Built from the MakeHuman base mesh through MPFB (generated characters are CC0), then made faceless and given shorts by this pipeline.",
   "generator": {
     "tool": "MPFB (MakeHuman Plugin For Blender)",
@@ -14,14 +14,15 @@
     "age": 0.5,
     "proportions": 0.65,
     "height": 0.55,
-    "weight": 0.4,
-    "muscle_definition": 1.8,
-    "leanness": 0.1,
+    "weight": 0.62,
+    "muscle_definition": 2.15,
+    "leanness": 0.0,
     "race": {
       "asian": 0.33,
       "caucasian": 0.34,
       "african": 0.33
-    }
+    },
+    "chosen": "Kiệt chose the 'middle' option on 12/11/2026 (docs/exercise-visual-system/body_options.png): the first version looked too thin."
   },
   "faceless": {
     "comment": "The frontal face (eyes, nose, mouth and their inner pockets) is cut out between the forehead and the chin and replaced by an evenly meshed surface. That surface is the front of the original head seen as a height field, with hollows narrower than fill_radius filled, bumps narrower than remove_radius removed, and a blur; it fades back into the original surface over rim_blend. Metres.",

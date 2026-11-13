@@ -4,7 +4,7 @@
   "master_character_id": "master_character_001",
   "brand_profile_id": "placeholder",
   "source_blend": "bench_press_master.blend",
-  "source_blend_sha256": "c2c7b65533ba673bbcd2a41de9b21c7514cbd5fa4619fa7c37c3b8e03ffdde82",
+  "source_blend_sha256": "25cab48030220117e5654f62cc892071efb2a09aa4c88bd324f07b58aafe368a",
   "blender_version": "5.2.0 LTS",
   "render_preset": "preview_720p",
   "engine": "BLENDER_EEVEE",
@@ -35,7 +35,7 @@
       "preset": "side",
       "render": {
         "frames": 235,
-        "seconds": 354.21
+        "seconds": 311.96
       },
       "file": "bench_press_side.mp4",
       "probe": {
@@ -47,9 +47,9 @@
         "frame_rate": 24.0,
         "frames_decoded": 235,
         "duration_s": 9.7917,
-        "size_bytes": 259286
+        "size_bytes": 258518
       },
-      "sha256": "3fb92a687f1e13f954e3d8b072d5dd9a41bd8b842bd9be5aef2da666af3b95ed",
+      "sha256": "c8fccdd07bbd216d0ab73ac8388b3bca638d9b815ad2db108478b20e6730a766",
       "loop": {
         "file": "bench_press_side_loop.mp4",
         "first_frame": 60,
@@ -63,9 +63,9 @@
           "frame_rate": 24.0,
           "frames_decoded": 132,
           "duration_s": 5.5,
-          "size_bytes": 169805
+          "size_bytes": 161655
         },
-        "sha256": "5c053414c6c7bbd64558e5579daf01a9739c2c4a481a0ee2594642e6e9961a3d"
+        "sha256": "5dccd6ac5aba31bb797531742d36bcc8787ea15d7cbe2af8dfdd708c373d54af"
       }
     },
     "front": {
@@ -73,7 +73,7 @@
       "preset": "front",
       "render": {
         "frames": 235,
-        "seconds": 502.91
+        "seconds": 486.92
       },
       "file": "bench_press_front.mp4",
       "probe": {
@@ -85,9 +85,9 @@
         "frame_rate": 24.0,
         "frames_decoded": 235,
         "duration_s": 9.7917,
-        "size_bytes": 296423
+        "size_bytes": 304615
       },
-      "sha256": "7a7dfd47da560fd2da332df8fc56eb4e3ba3d1f55eef94dfd38b663885c5af26",
+      "sha256": "b8c1550f7ac5182b021e5c74e19c89734cab947cdcc9e35ab6d6ae21d453e04a",
       "loop": {
         "file": "bench_press_front_loop.mp4",
         "first_frame": 60,
@@ -101,9 +101,9 @@
           "frame_rate": 24.0,
           "frames_decoded": 132,
           "duration_s": 5.5,
-          "size_bytes": 197102
+          "size_bytes": 198580
         },
-        "sha256": "5ac189e4c5559a5d797d25d8077cb904b84209db53e7b0cac68e529b58629a59"
+        "sha256": "2b04ba1ea908bc01871a1bf91222ab2c23cc32c0e83f0c1c41d083d886caff0f"
       }
     },
     "three_quarter": {
@@ -111,7 +111,7 @@
       "preset": "three_quarter",
       "render": {
         "frames": 235,
-        "seconds": 485.1
+        "seconds": 494.69
       },
       "file": "bench_press_45.mp4",
       "probe": {
@@ -123,9 +123,9 @@
         "frame_rate": 24.0,
         "frames_decoded": 235,
         "duration_s": 9.7917,
-        "size_bytes": 339746
+        "size_bytes": 344496
       },
-      "sha256": "eac020fa77197cef1f8d99eb9f666c84835066c8d85db7f44a59b2daaaf0a0c9",
+      "sha256": "317c9be0da717a8a9c0f1ddd7694a396c74adb3e96eb10447da935497ac0eca2",
       "loop": {
         "file": "bench_press_45_loop.mp4",
         "first_frame": 60,
@@ -139,9 +139,9 @@
           "frame_rate": 24.0,
           "frames_decoded": 132,
           "duration_s": 5.5,
-          "size_bytes": 222300
+          "size_bytes": 222802
         },
-        "sha256": "dee5e862a0c305e8abdc89e5e930cffb551876e0a66aab16a04c796ec0658c6f"
+        "sha256": "f33cf50402c0da87392656f95ce9033a32567a73d408524fcdae895e649db1f9"
       }
     },
     "closeup_grip": {
@@ -149,7 +149,7 @@
       "preset": "closeup_grip",
       "render": {
         "frames": 235,
-        "seconds": 387.68
+        "seconds": 401.36
       },
       "file": "bench_press_closeup.mp4",
       "probe": {
@@ -161,9 +161,9 @@
         "frame_rate": 24.0,
         "frames_decoded": 235,
         "duration_s": 9.7917,
-        "size_bytes": 1037304
+        "size_bytes": 1038994
       },
-      "sha256": "282374929e4696af5795c7a38399780ba6460b9afc9bfb8e2bc2b50298e35cfc",
+      "sha256": "d0714fe7168724b971aca2740d576e47f125d204d42eec69650f2943c98ec24d",
       "loop": {
         "file": "bench_press_closeup_loop.mp4",
         "first_frame": 60,
@@ -177,9 +177,9 @@
           "frame_rate": 24.0,
           "frames_decoded": 132,
           "duration_s": 5.5,
-          "size_bytes": 609539
+          "size_bytes": 595902
         },
-        "sha256": "b0ad698e4e4f013d2331049c3678475f19c7170af0ba2c3cf0783a30eb03db06"
+        "sha256": "d1f5d5a7ea2ba4c536dcf1c01fa4b4326ed1065fc6fd328af1248a9de0854315"
       }
     }
   },
@@ -187,5 +187,5 @@
     "comparison": "camera_comparison.png",
     "preview": "bench_press_preview.png"
   },
-  "total_seconds": 1779.3
+  "total_seconds": 1742.9
 }

@@ -34,7 +34,9 @@ def sha256_file(path: os.PathLike | str) -> str:
 
 
 def character_config() -> dict:
-    return load_json(CONFIG_DIR / "master_character.json")
+    """EVS_CHARACTER_CONFIG points at another file, for trying body variants
+    without touching the master character."""
+    return load_json(os.environ.get("EVS_CHARACTER_CONFIG") or (CONFIG_DIR / "master_character.json"))
 
 
 def character_dir(character_id: str) -> Path:
