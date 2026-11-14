@@ -53,6 +53,11 @@ def build_body(cfg: dict) -> tuple[bpy.types.Object, bpy.types.Object, dict]:
     base = _mpfb_human(shape, 1.0, shape["weight"])
     average = _mpfb_human(shape, 0.5, shape["weight"])
     lean = _mpfb_human(shape, 1.0, 0.0)
+    # Local muscle targets (pectorals, lats, deltoids, arms, legs; Kiệt
+    # 14/11: clearer, fuller muscle groups). Loaded on all three so the macro
+    # deltas below stay macro-only and the targets are not amplified.
+    for human in (base, average, lean):
+        _apply_muscle_targets(human, shape.get("muscle_targets", {}))
     p_max = bl_util.shape_key_mix(base.data)
     muscle_delta = p_max - bl_util.shape_key_mix(average.data)
     lean_delta = bl_util.shape_key_mix(lean.data) - p_max
@@ -84,6 +89,9 @@ def build_body(cfg: dict) -> tuple[bpy.types.Object, bpy.types.Object, dict]:
     rig = HumanService.add_builtin_rig(base, cfg["rig"]["mpfb_rig"], import_weights=True)
     if rig is None:
         raise RuntimeError("MPFB could not create the rig")
+    extra = cfg["rig"].get("extra_bones")
+    if extra:
+        facts["extra_bones"] = augment_rig(base, rig, extra, cfg["rig"].get("weight_source_rig", "default"))
 
     _delete_helper_geometry(base)
     for mod in list(base.modifiers):
@@ -96,6 +104,169 @@ def build_body(cfg: dict) -> tuple[bpy.types.Object, bpy.types.Object, dict]:
     rig.data.name = names["armature_object"]
     bl_util.set_smooth(base.data)
     return base, rig, facts
+
+
+def _apply_muscle_targets(human: bpy.types.Object, targets: dict) -> None:
+    from bl_ext.blender_org.mpfb.services.targetservice import TargetService
+
+    for name, weight in targets.items():
+        path = TargetService.target_full_path(name)
+        if path is None:
+            raise FileNotFoundError(f"MPFB target {name!r} not found")
+        TargetService.load_target(human, path, weight=float(weight), name=name)
+
+
+def _segment_distance(p: np.ndarray, a: np.ndarray, b: np.ndarray) -> float:
+    ab = b - a
+    t = float(np.clip(np.dot(p - a, ab) / max(np.dot(ab, ab), 1e-12), 0.0, 1.0))
+    return float(np.linalg.norm(p - (a + t * ab)))
+
+
+SMOOTH_ITERATIONS = 8
+SMOOTH_LAMBDA = 0.5
+
+
+def augment_rig(base: bpy.types.Object, rig: bpy.types.Object, extra: dict, source_rig: str) -> dict:
+    """Adds anatomical helper bones to the 53-bone game skeleton without
+    renaming anything the pipeline and the exercises rely on (Kiệt 14/11:
+    the shoulder must move like a real one, and more bones for later
+    exercises).
+
+    ``extra`` maps each new bone to [source bone in MPFB's ``default`` rig,
+    parent in our rig, replace_weights]. The bones are placed exactly where
+    the MPFB default rig fits them on this body (scapula = shoulder01, the
+    pectoral = breast, twist bones = upperarm02 / lowerarm02 / upperleg02).
+
+    Skin weights: in the region the source rig weights to the replaced
+    source bones (shoulder girdle, chest, limb twist segments), the vertex
+    takes the source rig's weights, every source bone mapped to its new bone
+    or to the nearest of our deform bones; outside it the game weights stay.
+    The two are blended by how much the vertex belongs to that region, so
+    there is no seam. MakeHuman's default rig weights were painted for these
+    regions; the game rig lumps the shoulder blade into the clavicle and the
+    upper spine, which is why a retracted shoulder caved the chest in."""
+    from bl_ext.blender_org.mpfb.services.humanservice import HumanService
+
+    dup = base.copy()
+    dup.data = base.data.copy()
+    for col in base.users_collection:
+        col.objects.link(dup)
+    src = HumanService.add_builtin_rig(dup, source_rig, import_weights=True)
+    if src is None:
+        raise RuntimeError(f"MPFB could not create the {source_rig!r} rig")
+    bpy.context.view_layer.update()
+
+    def segs(arm: bpy.types.Object, deform_only: bool) -> dict:
+        m = np.array(arm.matrix_world)
+        out = {}
+        for b in arm.data.bones:
+            if deform_only and not b.use_deform:
+                continue
+            h = m[:3, :3] @ np.array(b.head_local) + m[:3, 3]
+            t = m[:3, :3] @ np.array(b.tail_local) + m[:3, 3]
+            out[b.name] = (h, t, b.roll if hasattr(b, "roll") else 0.0)
+        return out
+
+    src_bones = segs(src, deform_only=True)
+    ours = segs(rig, deform_only=True)
+
+    # New bones, in edit mode, at the source rig's positions.
+    bpy.context.view_layer.objects.active = rig
+    for o in bpy.context.selected_objects:
+        o.select_set(False)
+    rig.select_set(True)
+    bpy.ops.object.mode_set(mode="EDIT")
+    inv = rig.matrix_world.inverted()
+    for name, (source, parent, _replace) in extra.items():
+        if source not in src_bones:
+            raise KeyError(f"{source!r} is not a deform bone of the {source_rig!r} rig")
+        h, t, _r = src_bones[source]
+        eb = rig.data.edit_bones.new(name)
+        eb.head = inv @ Vector(h)
+        eb.tail = inv @ Vector(t)
+        eb.parent = rig.data.edit_bones[parent]
+        eb.use_connect = False
+        eb.use_deform = True
+        # Roll from the source bone's z axis.
+        sb = src.data.bones[source]
+        z = (src.matrix_world.to_3x3() @ (sb.matrix_local.to_3x3() @ Vector((0, 0, 1)))).normalized()
+        eb.align_roll(inv.to_3x3() @ z)
+    bpy.ops.object.mode_set(mode="OBJECT")
+    # Forearm twist: the twist bone takes half the hand's roll about the
+    # forearm, so a pronated / supinated grip twists the forearm skin evenly.
+    for name, (source, parent, _replace) in extra.items():
+        if name.startswith("lowerarm_twist_"):
+            side = name.rsplit("_", 1)[1]
+            c = rig.pose.bones[name].constraints.new("COPY_ROTATION")
+            c.target, c.subtarget = rig, f"hand_{side}"
+            c.use_x, c.use_y, c.use_z = False, True, False
+            c.owner_space = c.target_space = "LOCAL"
+            c.mix_mode = "BEFORE"
+            c.influence = 0.5
+
+    # Weight transfer.
+    new_names = list(extra.keys())
+    to_new = {source: name for name, (source, _p, _r) in extra.items()}
+    replace_sources = [source for name, (source, _p, replace) in extra.items() if replace]
+    src_names = list(src_bones.keys())
+    our_names = list(ours.keys())
+    mapping = {}
+    for sname in src_names:
+        if sname in to_new:
+            mapping[sname] = to_new[sname]
+            continue
+        h, t, _r = src_bones[sname]
+        mid = 0.5 * (h + t)
+        mapping[sname] = min(our_names, key=lambda o: _segment_distance(mid, ours[o][0], ours[o][1]))
+    w_src = bl_util.group_weights(dup, src_names)
+    targets = our_names + new_names
+    col = {n: i for i, n in enumerate(targets)}
+    mapped = np.zeros((w_src.shape[0], len(targets)), dtype=np.float32)
+    for j, sname in enumerate(src_names):
+        mapped[:, col[mapping[sname]]] += w_src[:, j]
+    w_ours = np.zeros_like(mapped)
+    w_ours[:, : len(our_names)] = bl_util.group_weights(base, our_names)
+    region_cols = [src_names.index(s) for s in replace_sources if s in src_names]
+    # Also the bones next to them, so the blend reaches into the neighbours.
+    alpha = np.clip(w_src[:, region_cols].sum(axis=1) * 1.6, 0.0, 1.0)[:, None] if region_cols else np.zeros((w_src.shape[0], 1))
+    mixed = alpha * mapped + (1.0 - alpha) * w_ours
+    total = mixed.sum(axis=1, keepdims=True)
+    mixed = np.where(total > 1e-6, mixed / np.maximum(total, 1e-6), w_ours)
+    # Laplacian smoothing of the weights inside the replaced region: two rigs'
+    # weights meet there, and sharp weight changes crease the skin where the
+    # pectoral meets the front of the shoulder and the armpit.
+    edges = np.array([e.vertices[:] for e in base.data.edges], dtype=np.int64)
+    region = alpha[:, 0] > 0.02
+    for _ in range(SMOOTH_ITERATIONS):
+        acc = np.zeros_like(mixed)
+        cnt = np.zeros(mixed.shape[0], dtype=np.float32)
+        np.add.at(acc, edges[:, 0], mixed[edges[:, 1]])
+        np.add.at(acc, edges[:, 1], mixed[edges[:, 0]])
+        np.add.at(cnt, edges[:, 0], 1.0)
+        np.add.at(cnt, edges[:, 1], 1.0)
+        avg = acc / np.maximum(cnt, 1.0)[:, None]
+        mixed[region] = (1.0 - SMOOTH_LAMBDA) * mixed[region] + SMOOTH_LAMBDA * avg[region]
+        mixed /= np.maximum(mixed.sum(axis=1, keepdims=True), 1e-6)
+
+    for name in targets:
+        g = base.vertex_groups.get(name) or base.vertex_groups.new(name=name)
+        idx = np.arange(len(base.data.vertices))
+        g.remove(idx.tolist())
+        w = mixed[:, col[name]]
+        nz = np.nonzero(w > 1e-4)[0]
+        for i in nz:
+            g.add([int(i)], float(w[i]), "REPLACE")
+
+    facts = {"source_rig": source_rig, "new_bones": new_names,
+             "replaced_region_vertices": int((alpha[:, 0] > 0.5).sum()),
+             "deform_bones_total": len(targets)}
+    # Clean up the source rig and its mesh copy.
+    src_data, dup_data = src.data, dup.data
+    bpy.data.objects.remove(src, do_unlink=True)
+    bpy.data.armatures.remove(src_data)
+    bpy.data.objects.remove(dup, do_unlink=True)
+    bpy.data.meshes.remove(dup_data)
+    return facts
 
 
 def _delete_helper_geometry(obj: bpy.types.Object) -> None:
