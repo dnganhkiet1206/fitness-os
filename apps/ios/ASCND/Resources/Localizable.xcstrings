@@ -75312,6 +75312,29 @@
           }
         }
       }
+    },
+    "eg.demo3d.entry": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "See 3D technique"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ver técnica en 3D"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xem kỹ thuật 3D"
+          }
+        }
+      }
     }
   }
 }
