@@ -27,9 +27,12 @@ class CurlTemplate:
     defaults = {
         "elbow_flexion_bottom_deg": 12.0,
         "elbow_flexion_top_deg": 138.0,
-        "shoulder_flexion_bottom_deg": 0.0,
+        # 14/11: at 0 deg / 6 deg the inner dumbbell head sat 7 cm inside the
+        # hip of character 003; the weights hang just outside and a little
+        # in front of the thighs (MOTION_KIT_LESSONS.md).
+        "shoulder_flexion_bottom_deg": 6.0,
         "shoulder_flexion_top_deg": 10.0,
-        "upper_arm_abduction_deg": 6.0,
+        "upper_arm_abduction_deg": 12.0,
         "grip": "supinated",
         "palm_centre_beyond_wrist_m": 0.075,
         "stance_half_width_m": 0.13,

@@ -52,6 +52,20 @@ def rest_skeleton(rig) -> dict:
     sk["forearm_m"] = float(np.linalg.norm(sk["wrist_l"] - sk["elbow_l"]))
     sk["thigh_m"] = float(np.linalg.norm(sk["knee_l"] - sk["hip_l"]))
     sk["shin_m"] = float(np.linalg.norm(sk["ankle_l"] - sk["knee_l"]))
+    # Skin profile of the upper back (rearmost skin point near the midline,
+    # every centimetre from 10 cm below to 20 cm above the shoulder joints),
+    # so a bar resting on the back sits ON the skin, never inside it
+    # (14/11 squat: bar 4.8 cm inside the trapezius; MOTION_KIT_LESSONS.md).
+    body = next((o for o in rig.children if o.type == "MESH" and o.name.endswith("Body")), None)
+    if body is not None:
+        co = np.array([body.matrix_world @ v.co for v in body.data.vertices])
+        z0 = float(sk["shoulder_l"][2])
+        prof = []
+        for z in np.arange(z0 - 0.10, z0 + 0.201, 0.01):
+            band = co[(np.abs(co[:, 2] - z) < 0.006) & (np.abs(co[:, 0]) < 0.10)]
+            if len(band):
+                prof.append([float(z), float(band[:, 1].max())])
+        sk["back_profile"] = prof
     return sk
 
 
@@ -76,6 +90,16 @@ def pose_body(rig, body: dict, frame: int) -> None:
     motion.rotate_bone_about_armature_axis(rig, "pelvis", Vector((1, 0, 0)), lean * share)
     for b in SPINE:
         motion.rotate_bone_about_armature_axis(rig, b, Vector((1, 0, 0)), lean * (1.0 - share) / len(SPINE))
+    # Gaze: the neck and head extend against the lean (60/40), so the face
+    # does not follow the trunk down to the floor.
+    ext = float(body.get("head_extension_deg", 0.0))
+    for b, part in (("neck_01", 0.6), ("head", 0.4)):
+        pb = rig.pose.bones[b]
+        pb.rotation_mode = "QUATERNION"
+        pb.rotation_quaternion = Quaternion()
+        if ext:
+            bpy.context.view_layer.update()
+            motion.rotate_bone_about_armature_axis(rig, b, Vector((1, 0, 0)), -ext * part)
     bpy.context.view_layer.update()
     hip = 0.5 * (evs_rig.bone_head_world(rig, "thigh_l") + evs_rig.bone_head_world(rig, "thigh_r"))
     delta = rig.matrix_world.inverted().to_3x3() @ (Vector(body["hip_centre"]) - hip)
@@ -84,7 +108,7 @@ def pose_body(rig, body: dict, frame: int) -> None:
     pelvis.matrix = m
     bpy.context.view_layer.update()
     pelvis.keyframe_insert("location", frame=frame)
-    for b in ("pelvis",) + SPINE:
+    for b in ("pelvis",) + SPINE + ("neck_01", "head"):
         rig.pose.bones[b].keyframe_insert("rotation_quaternion", frame=frame)
 
 

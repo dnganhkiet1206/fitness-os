@@ -1,0 +1,48 @@
+[
+  {
+    "version": 1,
+    "when": "2026-11-14T02:06:42",
+    "template": null,
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 8.8
+      },
+      "generate": {
+        "ok": false,
+        "seconds": 5.0
+      }
+    },
+    "total_seconds": 13.8,
+    "qa": "{\"PASS\": 56, \"FAIL\": 2, \"NOT_TESTED\": 2, \"REQUIRES_MANUAL_REVIEW\": 4, \"UNVERIFIED\": 2}"
+  },
+  {
+    "version": 2,
+    "when": "2026-11-14T02:09:45",
+    "template": null,
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 5.1
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 3.7
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 4.4
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 62.1
+      },
+      "export": {
+        "ok": true,
+        "seconds": 27.3
+      }
+    },
+    "total_seconds": 103.9,
+    "qa": "{\"PASS\": 55, \"FAIL\": 3, \"NOT_TESTED\": 2, \"REQUIRES_MANUAL_REVIEW\": 4, \"UNVERIFIED\": 2}"
+  }
+]

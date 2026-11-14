@@ -55,7 +55,13 @@ def fit_camera(scene, exercise, preset_key, aspect):
     """A temp camera on the preset's azimuth/elevation/lens, refitted so the
     whole repetition stays in a frame of the given aspect."""
     presets = config.camera_presets()
-    preset = presets["presets"][preset_key]
+    if preset_key.startswith("az"):
+        # Orbit view for the whole-body review: "az135" or "az135e40"
+        # (azimuth and elevation in degrees, 50 mm lens).
+        az, _, el = preset_key[2:].partition("e")
+        preset = {"azimuth_deg": float(az), "elevation_deg": float(el or 10), "focal_length_mm": 50.0, "margin": 1.08}
+    else:
+        preset = presets["presets"][preset_key]
     sensor_mm = presets["sensor_width_mm"]
     fps = int(exercise["frame_rate"])
     phases = {p["id"]: p for p in exercise["exercise_phases"]}

@@ -6,7 +6,7 @@
     "limits": "One field per group: multi-headed muscles (triceps, biceps, quadriceps, hamstrings) are drawn as one converging/parallel field, not per-head fields. The pectoralis and latissimus tendon twist near the insertion is NOT modelled — the twist happens in the tendon, outside the muscle belly shown. Pennation angle is NOT modelled: striations follow the belly's mean fibre direction.",
     "parallel": "Fibres run parallel to 'axis' (a unit vector in METRIC chart coordinates: metres along u, arc metres along v). 'spacing_m' is the distance between neighbouring striations across the fibres. 'origin_point' is an arbitrary phase reference in metric coordinates. 'wrap': true quantises the spacing so a whole number of striations fits around the limb (no seam where the angle wraps)."
   },
-  "fiber_map_id": "master_character_002.fibers.v1",
+  "fiber_map_id": "master_character_003.fibers.v1",
   "groups": {
     "adductors": {
       "angle_center": -98.0,
@@ -365,7 +365,7 @@
       "type": "parallel"
     }
   },
-  "master_character_id": "master_character_002",
+  "master_character_id": "master_character_003",
   "references": [
     {
       "cite": "Gray, H. (1918). Anatomy of the Human Body. Public domain. Muscle descriptions: pectoralis major (clavicular fibres downward/lateral, middle horizontal, lower upward/lateral, converging on the lateral lip of the bicipital groove); trapezius (superior fibres downward/lateral, middle horizontal, inferior upward/lateral, converging on clavicle/acromion/scapular spine); latissimus dorsi (upper horizontal, middle oblique upward, lower vertical upward, converging on the floor of the intertubercular groove); deltoid (converging on the deltoid tuberosity).",

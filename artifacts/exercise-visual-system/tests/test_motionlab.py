@@ -11,7 +11,7 @@ import numpy as np
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from evs import motion_qa  # noqa: E402
+from evs import motion_qa, muscle_sculpt  # noqa: E402
 from motionlab import FAMILIES, families, timing  # noqa: E402,F401
 from motionlab.primitives import arm_directions, rotation, two_bone_knee  # noqa: E402
 
@@ -103,6 +103,76 @@ class MotionQaTests(unittest.TestCase):
         r = motion_qa.rotation_steps({"b": q}, 12.0)
         self.assertAlmostEqual(r["measured"], 20.0, places=2)
         self.assertEqual(r["status"], "FAIL")
+
+
+class PostureTests(unittest.TestCase):
+    PROF = {"max_wrist_bend_deg": 25, "max_elbow_flexion_deg": 145, "max_elbow_medial_m": 0.02, "max_neck_flexion_deg": 30}
+
+    def test_squat_arm_from_14_11_fails(self):
+        # The arm Kiệt flagged: elbow folded in behind the shoulder, 150+ deg, wrist bent.
+        j = {"shoulder_l": np.array([[0.2, 0, 1.4]]), "elbow_l": np.array([[0.13, 0.1, 1.17]]),
+             "wrist_l": np.array([[0.3, 0.07, 1.38]]), "knuckle_l": np.array([[0.3, 0.0, 1.46]])}
+        r = {x["id"]: x for x in motion_qa.posture(j, self.PROF)}
+        self.assertEqual(r["wrist_bend"]["status"], "FAIL")
+        self.assertEqual(r["elbow_flexion_anatomical"]["status"], "FAIL")
+        self.assertEqual(r["elbow_inside_shoulder"]["status"], "FAIL")
+
+    def test_head_drop_sign(self):
+        j = {"pelvis": np.array([[0, 0, 1.0]] * 2), "neck": np.array([[0, 0, 1.5]] * 2),
+             "head_top": np.array([[0, -0.15, 1.65], [0, 0.0, 1.72]])}
+        r = motion_qa.posture(j, self.PROF)[-1]
+        self.assertEqual(r["status"], "FAIL")   # chin to chest
+        self.assertEqual(r["where"]["frame"], 0)
+
+    def test_penetration_reports_implement_and_frame(self):
+        r = motion_qa.penetration({"Barbell": [0.0, 0.03, 0.001]}, 0.004)
+        self.assertEqual((r["status"], r["where"]["implement"], r["where"]["frame"]), ("FAIL", "Barbell", 1))
+
+
+class SquatArmTests(unittest.TestCase):
+    SK = {"shoulder_l": np.array([0.2, 0.0, 1.42]), "shoulder_r": np.array([-0.2, 0, 1.42]),
+          "hip_l": np.array([0.1, 0.0, 0.95]), "hip_r": np.array([-0.1, 0, 0.95]),
+          "ankle_l": np.array([0.1, 0.02, 0.08]), "ankle_r": np.array([-0.1, 0.02, 0.08]),
+          "upper_arm_m": 0.266, "forearm_m": 0.275, "thigh_m": 0.44, "shin_m": 0.42,
+          "back_profile": [[1.44, 0.06], [1.47, 0.065], [1.50, 0.05]]}
+
+    def test_elbow_down_outside_wrist_straight(self):
+        tpl = FAMILIES["squat"]({}, self.SK)
+        arm = tpl.arms["l"]
+        self.assertLess(arm["elbow"][2], self.SK["shoulder_l"][2] - 0.15)   # elbow below the shoulder
+        self.assertGreater(arm["elbow"][0], self.SK["shoulder_l"][0])        # not folded in
+        self.assertLess(arm["elbow_flexion_deg"], 145)
+        fore = arm["grip"] - arm["elbow"]
+        self.assertAlmostEqual(float(np.dot(arm["palm"], fore / np.linalg.norm(fore))), 0.0, places=6)
+
+    def test_bar_rests_on_skin(self):
+        tpl = FAMILIES["squat"]({}, self.SK)
+        r = tpl.t["bar_shaft_radius_m"] - tpl.t["bar_into_soft_tissue_m"]
+        self.assertAlmostEqual(tpl.bar_rest[1], 0.065 + r, places=6)
+
+
+class MuscleSculptTests(unittest.TestCase):
+    def test_rectus_abdominis_rows_and_midline(self):
+        groups = ["rectus_abdominis"]
+        pts = np.array([[x, -0.1, z] for x in (-0.03, 0.03) for z in np.linspace(0.95, 1.25, 31)])
+        cfg = {"rectus_abdominis": [{"type": "level", "fractions": [0.38, 0.6, 0.8]}]}
+        lab = muscle_sculpt.part_labels(np.zeros(len(pts), int), groups, pts, {}, cfg)
+        self.assertEqual(len(np.unique(lab)), 8)  # 4 rows x 2 sides
+
+    def test_relief_grooves_and_skin_fade(self):
+        prof = {"skin": {"width_m": 0.03}, "groups": {"width_m": 0.01, "depth": 0.9},
+                "midline": {"width_m": 0.01, "depth": 0.7}, "heads": {"width_m": 0.01, "depth": 0.3}}
+        far = np.array([1.0])
+        d = {"skin": far, "groups": np.array([0.0]), "midline": far, "heads": far}
+        self.assertAlmostEqual(float(muscle_sculpt.relief(d, np.array([True]), prof)[0]), 0.1, places=6)
+        d = {"skin": far, "groups": far, "midline": far, "heads": np.array([0.0])}
+        self.assertAlmostEqual(float(muscle_sculpt.relief(d, np.array([True]), prof)[0]), 0.7, places=6)
+        self.assertEqual(float(muscle_sculpt.relief(d, np.array([False]), prof)[0]), 0.0)
+
+    def test_boundary_kinds(self):
+        a = np.array([1_000_000, 1_000_000, 1_000_000, 0])
+        b = np.array([2_000_000, 1_000_001, 1_000_002, 1_000_000])
+        self.assertEqual(muscle_sculpt.boundary_kind(a, b).tolist(), [0, 1, 2, 3])
 
 
 if __name__ == "__main__":

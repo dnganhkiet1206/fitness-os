@@ -1,9 +1,9 @@
 {
   "pipeline_version": "0.1.0",
   "exercise_id": "barbell_back_squat",
-  "master_character_id": "master_character_002",
+  "master_character_id": "master_character_003",
   "usdz": "back_squat_animation.usdz",
-  "size_bytes": 4328136,
+  "size_bytes": 5302323,
   "zip_members": [
     "back_squat_animation.usdc",
     "textures/_usdz_body_emission.png",
@@ -15,16 +15,16 @@
   "default_camera": {
     "preset_id": "three_quarter",
     "position_m": [
-      2.8529,
-      2.2835,
-      2.7084
+      2.8557,
+      2.2937,
+      2.7091
     ],
     "target_m": [
-      0.1056,
-      0.8694,
-      -0.039
+      0.1117,
+      0.8812,
+      -0.0349
     ],
-    "distance_m": 4.1347,
+    "distance_m": 4.1296,
     "vertical_fov_deg": 41.26,
     "aspect": 0.5625
   },
@@ -38,9 +38,9 @@
     "bones": 63,
     "mesh_objects": 5,
     "skinned_mesh_objects": 2,
-    "mesh_vertices": 22367,
+    "mesh_vertices": 22356,
     "actions": 1,
-    "last_animation_frame": 224.0,
+    "last_animation_frame": 218.0,
     "materials": 6
   }
 }

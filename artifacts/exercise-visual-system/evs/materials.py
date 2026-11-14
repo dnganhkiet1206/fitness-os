@@ -149,6 +149,23 @@ def character_materials(brand: dict) -> dict[str, bpy.types.Material]:
     }
 
 
+SCULPT_NORMAL_NODE = "EVS Muscle Sculpt Normal"
+
+
+def add_body_normal(mat: bpy.types.Material, image_path) -> None:
+    """Plugs the layered-muscle normal map (pipeline/sculpt_muscles.py) into
+    the body material, so every render shows the separate muscle blocks."""
+    nt = mat.node_tree
+    bsdf = next(n for n in nt.nodes if n.type == "BSDF_PRINCIPLED")
+    tex = nt.nodes.new("ShaderNodeTexImage")
+    tex.name = tex.label = SCULPT_NORMAL_NODE
+    tex.image = bpy.data.images.load(str(image_path), check_existing=True)
+    tex.image.colorspace_settings.name = "Non-Color"
+    nm = nt.nodes.new("ShaderNodeNormalMap")
+    nt.links.new(tex.outputs["Color"], nm.inputs["Color"])
+    nt.links.new(nm.outputs["Normal"], bsdf.inputs["Normal"])
+
+
 def equipment_materials(brand: dict) -> dict[str, bpy.types.Material]:
     colors = brand["colors"]
     return {

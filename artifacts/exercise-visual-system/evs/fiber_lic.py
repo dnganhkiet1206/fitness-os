@@ -174,6 +174,19 @@ def normal_map(height: np.ndarray, strength: float = 2.5) -> np.ndarray:
     return np.stack([nx / n, ny / n, nz / n], axis=-1) * 0.5 + 0.5
 
 
+def flatten_points(normal: np.ndarray, uv_points, radius: int = 6) -> np.ndarray:
+    """Flat normal (0.5, 0.5, 1) around UV points (atlas order, row = v).
+    The faceless head patch has no UV footprint: all its faces sample one
+    texel, so any relief there tilts the whole face (14/11: a flat patch
+    with a jagged edge on the face in the app)."""
+    out = normal.copy()
+    res = normal.shape[0]
+    for u, v in uv_points or []:
+        c, r = int(u * res), int(v * res)
+        out[max(r - radius, 0):r + radius + 1, max(c - radius, 0):c + radius + 1] = (0.5, 0.5, 1.0)
+    return out
+
+
 def crisp_mask(mask: np.ndarray, blur: int = 3) -> np.ndarray:
     """Smooth but sharp muscle outline in [0, 1]: the baked masks have ragged,
     feathered edges; blurring then a narrow smoothstep around 50 % gives a
@@ -184,7 +197,8 @@ def crisp_mask(mask: np.ndarray, blur: int = 3) -> np.ndarray:
 
 
 def painted_maps(masks: dict[str, np.ndarray], phase: dict[str, np.ndarray], groups: list[str], seed: int = 11,
-                 relief: float = 10.0, angles: dict[str, np.ndarray] | None = None
+                 relief: float = 10.0, angles: dict[str, np.ndarray] | None = None,
+                 base_height: np.ndarray | None = None, base_relief: float = 0.0
                  ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Shade (0..1, multiplies the muscle colour), tangent normal map (RGB
     0..1) and rim (0..1, a thin band just inside each muscle outline, drawn
@@ -213,4 +227,9 @@ def painted_maps(masks: dict[str, np.ndarray], phase: dict[str, np.ndarray], gro
         shade = np.where(m, shade * (1.0 - c) + local * c, shade)
         band = c * (1.0 - edge_falloff(c > 0.5, 6))
         rim = np.maximum(rim, band)
-    return shade, normal_map(height * relief), rim
+    # The layered-muscle sculpt (pipeline/sculpt_muscles.py) shapes every
+    # muscle block, highlighted or not; the fibres ride on top of it.
+    total = height * relief
+    if base_height is not None:
+        total = total + base_height.astype(np.float64) * base_relief
+    return shade, normal_map(total), rim

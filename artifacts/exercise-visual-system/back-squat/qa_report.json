@@ -6,7 +6,7 @@
   "fps": 24,
   "summary": {
     "counts": {
-      "PASS": 10,
+      "PASS": 15,
       "FAIL": 1
     },
     "technically_validated": false,
@@ -33,7 +33,7 @@
       "stage": "B",
       "title": "No joint moves faster than a human joint plausibly does",
       "status": "PASS",
-      "measured": 0.844,
+      "measured": 0.822,
       "limit": 2.5,
       "where": {
         "joint": "head_top",
@@ -46,11 +46,11 @@
       "stage": "B",
       "title": "No sudden bone rotation between frames",
       "status": "PASS",
-      "measured": 5.375,
+      "measured": 5.371,
       "limit": 12.0,
       "where": {
         "bone": "calf_l",
-        "frame": 195
+        "frame": 89
       },
       "detail": "deg per frame"
     },
@@ -62,8 +62,8 @@
       "measured": 1e-05,
       "limit": 0.004,
       "where": {
-        "implement": "SOCKET_hand_l",
-        "frame": 224
+        "implement": "SOCKET_hand_r",
+        "frame": 106
       },
       "detail": "m wrist to grip socket"
     },
@@ -74,7 +74,7 @@
       "status": "PASS",
       "measured": {
         "slide_m": 1e-05,
-        "lift_m": 0.0001
+        "lift_m": 0.00011
       },
       "limit": {
         "slide_m": 0.005,
@@ -82,7 +82,7 @@
       },
       "where": {
         "foot": "foot_l",
-        "frame": 157
+        "frame": 63
       },
       "detail": ""
     },
@@ -94,17 +94,81 @@
       "measured": 0.0,
       "limit": 0.003,
       "where": {
-        "joint": "knee",
-        "frame": 103
+        "joint": "ankle",
+        "frame": 87
       },
       "detail": "m"
+    },
+    {
+      "id": "implement_penetration",
+      "stage": "C",
+      "title": "Implements do not pass through the body",
+      "status": "PASS",
+      "measured": 0.0,
+      "limit": 0.004,
+      "where": {
+        "implement": null,
+        "frame": null
+      },
+      "detail": "m inside"
+    },
+    {
+      "id": "wrist_bend",
+      "stage": "C",
+      "title": "Wrists stay near straight (forearm to hand)",
+      "status": "PASS",
+      "measured": 21.166,
+      "limit": 25.0,
+      "where": {
+        "side": "r",
+        "frame": 19
+      },
+      "detail": "deg"
+    },
+    {
+      "id": "elbow_flexion_anatomical",
+      "stage": "C",
+      "title": "Elbow flexion inside the soft-tissue limit",
+      "status": "PASS",
+      "measured": 133.226,
+      "limit": 145.0,
+      "where": {
+        "side": "r",
+        "frame": 89
+      },
+      "detail": "deg"
+    },
+    {
+      "id": "elbow_inside_shoulder",
+      "stage": "C",
+      "title": "Elbows do not fold in behind the shoulder line",
+      "status": "PASS",
+      "measured": 0.0,
+      "limit": 0.02,
+      "where": {
+        "side": null,
+        "frame": null
+      },
+      "detail": "m"
+    },
+    {
+      "id": "head_neutral",
+      "stage": "C",
+      "title": "Head stays near neutral (not dropped to the chest)",
+      "status": "PASS",
+      "measured": 2.38,
+      "limit": 30.0,
+      "where": {
+        "frame": 110
+      },
+      "detail": "deg, + = chin towards chest"
     },
     {
       "id": "skin_stretch",
       "stage": "C",
       "title": "Skin stretch stays within limits",
       "status": "FAIL",
-      "measured": 3.11,
+      "measured": 3.284,
       "limit": 2.6,
       "where": {
         "frame": 56
@@ -116,7 +180,7 @@
       "stage": "D",
       "title": "squat: knee_min_deg inside the family bounds",
       "status": "PASS",
-      "measured": 66.123,
+      "measured": 66.099,
       "limit": [
         null,
         100
@@ -129,7 +193,7 @@
       "stage": "D",
       "title": "squat: hip_drop_m inside the family bounds",
       "status": "PASS",
-      "measured": 0.455,
+      "measured": 0.459,
       "limit": [
         0.25,
         null
@@ -142,7 +206,7 @@
       "stage": "D",
       "title": "squat: torso_lean_max_deg inside the family bounds",
       "status": "PASS",
-      "measured": 32.879,
+      "measured": 36.549,
       "limit": [
         null,
         55

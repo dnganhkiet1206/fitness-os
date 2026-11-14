@@ -97,6 +97,59 @@ def symmetry(j: dict, limit_m: float, pairs=("shoulder", "elbow", "wrist", "hip"
                round(worst[0], 5), limit_m, {"joint": worst[1], "frame": worst[2]}, "m")
 
 
+def _angle(a: np.ndarray, b: np.ndarray) -> np.ndarray:
+    a = a / np.linalg.norm(a, axis=-1, keepdims=True)
+    b = b / np.linalg.norm(b, axis=-1, keepdims=True)
+    return np.degrees(np.arccos(np.clip((a * b).sum(-1), -1.0, 1.0)))
+
+
+def posture(j: dict, prof: dict) -> list[dict]:
+    """Whole-body posture checks added after the 14/11 squat (QA passed while
+    the arms and head looked wrong; docs/exercise-visual-system/
+    MOTION_KIT_LESSONS.md). Each one names the worst frame and side."""
+    out = []
+    worst = {"wrist": (0.0, None, None), "elbow": (0.0, None, None), "medial": (0.0, None, None)}
+    for s, sign in (("l", 1.0), ("r", -1.0)):
+        if f"knuckle_{s}" not in j:
+            continue
+        sh, el, wr, kn = j[f"shoulder_{s}"], j[f"elbow_{s}"], j[f"wrist_{s}"], j[f"knuckle_{s}"]
+        bend = _angle(wr - el, kn - wr)
+        flex = _angle(el - sh, wr - el)
+        medial = -(el[:, 0] - sh[:, 0]) * sign  # + = elbow towards the midline
+        for key, arr in (("wrist", bend), ("elbow", flex), ("medial", medial)):
+            i = int(np.argmax(arr))
+            if arr[i] > worst[key][0]:
+                worst[key] = (float(arr[i]), s, i)
+    for key, cid, title, limit, unit in (
+            ("wrist", "wrist_bend", "Wrists stay near straight (forearm to hand)", prof["max_wrist_bend_deg"], "deg"),
+            ("elbow", "elbow_flexion_anatomical", "Elbow flexion inside the soft-tissue limit", prof["max_elbow_flexion_deg"], "deg"),
+            ("medial", "elbow_inside_shoulder", "Elbows do not fold in behind the shoulder line", prof["max_elbow_medial_m"], "m")):
+        v, side, f = worst[key]
+        out.append(rec(cid, "C", title, PASS if v <= limit else FAIL, round(v, 3), limit, {"side": side, "frame": f}, unit))
+    if "head_top" in j:
+        trunk = j["neck"] - j["pelvis"]
+        head = j["head_top"] - j["neck"]
+        # Neck flexion relative to the trunk, forward only (-Y is forward).
+        ang = _angle(head, trunk) * np.where(np.cross(trunk, head)[:, 0] > 0, 1.0, -1.0)
+        i = int(np.argmax(ang))
+        out.append(rec("head_neutral", "C", "Head stays near neutral (not dropped to the chest)",
+                       PASS if ang[i] <= prof["max_neck_flexion_deg"] else FAIL, round(float(ang[i]), 2),
+                       prof["max_neck_flexion_deg"], {"frame": i}, "deg, + = chin towards chest"))
+    return out
+
+
+def penetration(depths: dict, limit_m: float) -> dict:
+    """depths: implement -> per-frame deepest skin point inside the implement (m)."""
+    worst = (0.0, None, None)
+    for name, arr in depths.items():
+        arr = np.asarray(arr, float)
+        i = int(np.argmax(arr))
+        if arr[i] > worst[0]:
+            worst = (float(arr[i]), name, i)
+    return rec("implement_penetration", "C", "Implements do not pass through the body", PASS if worst[0] <= limit_m else FAIL,
+               round(worst[0], 4), limit_m, {"implement": worst[1], "frame": worst[2]}, "m inside")
+
+
 def summary(records: list[dict]) -> dict:
     counts = {}
     for r in records:

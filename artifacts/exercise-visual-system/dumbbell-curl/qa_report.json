@@ -6,7 +6,7 @@
   "fps": 24,
   "summary": {
     "counts": {
-      "PASS": 12
+      "PASS": 17
     },
     "technically_validated": true,
     "states": {
@@ -32,11 +32,11 @@
       "stage": "B",
       "title": "No joint moves faster than a human joint plausibly does",
       "status": "PASS",
-      "measured": 1.096,
+      "measured": 1.031,
       "limit": 2.5,
       "where": {
         "joint": "knuckle_r",
-        "frame": 144
+        "frame": 34
       },
       "detail": "m/s"
     },
@@ -61,8 +61,8 @@
       "measured": 1e-05,
       "limit": 0.004,
       "where": {
-        "implement": "SOCKET_hand_l",
-        "frame": 163
+        "implement": "SOCKET_hand_r",
+        "frame": 63
       },
       "detail": "m wrist to grip socket"
     },
@@ -94,19 +94,83 @@
       "limit": 0.003,
       "where": {
         "joint": "elbow",
-        "frame": 224
+        "frame": 15
       },
       "detail": "m"
+    },
+    {
+      "id": "implement_penetration",
+      "stage": "C",
+      "title": "Implements do not pass through the body",
+      "status": "PASS",
+      "measured": 0.0,
+      "limit": 0.004,
+      "where": {
+        "implement": null,
+        "frame": null
+      },
+      "detail": "m inside"
+    },
+    {
+      "id": "wrist_bend",
+      "stage": "C",
+      "title": "Wrists stay near straight (forearm to hand)",
+      "status": "PASS",
+      "measured": 17.669,
+      "limit": 25.0,
+      "where": {
+        "side": "r",
+        "frame": 115
+      },
+      "detail": "deg"
+    },
+    {
+      "id": "elbow_flexion_anatomical",
+      "stage": "C",
+      "title": "Elbow flexion inside the soft-tissue limit",
+      "status": "PASS",
+      "measured": 137.998,
+      "limit": 145.0,
+      "where": {
+        "side": "r",
+        "frame": 53
+      },
+      "detail": "deg"
+    },
+    {
+      "id": "elbow_inside_shoulder",
+      "stage": "C",
+      "title": "Elbows do not fold in behind the shoulder line",
+      "status": "PASS",
+      "measured": 0.0,
+      "limit": 0.02,
+      "where": {
+        "side": null,
+        "frame": null
+      },
+      "detail": "m"
+    },
+    {
+      "id": "head_neutral",
+      "stage": "C",
+      "title": "Head stays near neutral (not dropped to the chest)",
+      "status": "PASS",
+      "measured": 5.62,
+      "limit": 30.0,
+      "where": {
+        "frame": 0
+      },
+      "detail": "deg, + = chin towards chest"
     },
     {
       "id": "skin_stretch",
       "stage": "C",
       "title": "Skin stretch stays within limits",
       "status": "PASS",
-      "measured": 2.237,
+      "measured": 2.312,
       "limit": 2.6,
       "where": {
-        "frame": 118
+        "frame": 59
       },
       "detail": "p99.9 edge stretch"
     },
@@ -128,7 +192,7 @@
       "stage": "D",
       "title": "curl: elbow_max_deg inside the family bounds",
       "status": "PASS",
-      "measured": 167.999,
+      "measured": 167.998,
       "limit": [
         150,
         null
@@ -141,7 +205,7 @@
       "stage": "D",
       "title": "curl: arm_elev_max_deg inside the family bounds",
       "status": "PASS",
-      "measured": 12.38,
+      "measured": 16.142,
       "limit": [
         null,
         40
@@ -154,7 +218,7 @@
       "stage": "D",
       "title": "curl: torso_lean_max_deg inside the family bounds",
       "status": "PASS",
-      "measured": 0.84,
+      "measured": 0.855,
       "limit": [
         null,
         15

@@ -42,6 +42,9 @@ def main() -> None:
     if args.preview_only:
         bpy.ops.wm.open_mainfile(filepath=str(blend_path))
         body = bpy.data.objects[cfg["names"]["body_object"]]
+        sculpt = out_dir / "muscle_atlas" / "sculpt_normal.png"
+        if sculpt.exists() and not any(n.name == materials.SCULPT_NORMAL_NODE for n in body.active_material.node_tree.nodes):
+            materials.add_body_normal(body.active_material, sculpt)
     else:
         scene = bl_util.reset_scene()
         bl_util.enable_mpfb()

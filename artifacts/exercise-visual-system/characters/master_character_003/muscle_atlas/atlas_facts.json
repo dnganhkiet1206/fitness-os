@@ -1,0 +1,92 @@
+{
+  "atlas_resolution": 2048,
+  "samples": 13975939,
+  "uv_coverage": 0.5832,
+  "groups": {
+    "pectoralis_major": {
+      "texels": 124567,
+      "label": "Pectoralis major"
+    },
+    "deltoid_anterior": {
+      "texels": 39763,
+      "label": "Deltoid, anterior head"
+    },
+    "deltoid_lateral": {
+      "texels": 17056,
+      "label": "Deltoid, lateral head"
+    },
+    "deltoid_posterior": {
+      "texels": 12186,
+      "label": "Deltoid, posterior head"
+    },
+    "triceps_brachii": {
+      "texels": 26373,
+      "label": "Triceps brachii"
+    },
+    "biceps_brachii": {
+      "texels": 30296,
+      "label": "Biceps brachii"
+    },
+    "forearm_muscles": {
+      "texels": 63057,
+      "label": "Forearm flexors and extensors"
+    },
+    "rectus_abdominis": {
+      "texels": 60610,
+      "label": "Rectus abdominis"
+    },
+    "obliques": {
+      "texels": 111670,
+      "label": "External obliques"
+    },
+    "serratus_anterior": {
+      "texels": 47320,
+      "label": "Serratus anterior"
+    },
+    "latissimus_dorsi": {
+      "texels": 62425,
+      "label": "Latissimus dorsi"
+    },
+    "trapezius": {
+      "texels": 67790,
+      "label": "Trapezius"
+    },
+    "rotator_cuff_posterior": {
+      "texels": 11245,
+      "label": "Infraspinatus and teres minor"
+    },
+    "erector_spinae": {
+      "texels": 14677,
+      "label": "Erector spinae"
+    },
+    "gluteus_maximus": {
+      "texels": 55161,
+      "label": "Gluteus maximus"
+    },
+    "gluteus_medius": {
+      "texels": 27713,
+      "label": "Gluteus medius"
+    },
+    "quadriceps": {
+      "texels": 140250,
+      "label": "Quadriceps femoris"
+    },
+    "adductors": {
+      "texels": 37656,
+      "label": "Hip adductors"
+    },
+    "hamstrings": {
+      "texels": 66971,
+      "label": "Hamstrings"
+    },
+    "calves": {
+      "texels": 51819,
+      "label": "Gastrocnemius and soleus"
+    },
+    "tibialis_anterior": {
+      "texels": 7673,
+      "label": "Tibialis anterior"
+    }
+  },
+  "muscle_map_id": "master_character_003.muscles.v1"
+}
