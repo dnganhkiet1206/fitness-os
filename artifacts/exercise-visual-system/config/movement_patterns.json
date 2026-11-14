@@ -1,0 +1,279 @@
+{
+  "comment": "ASCND Motion Kit: movement families and the metric bounds that define them (evs/movement_gate.py). [lo, hi], null = no bound. A family marked provisional has bounds from coaching consensus that are not yet checked against a measured clip or a cited study; tighten them from the first reviewed exercise of that family and record the source here. Exercises can override a bound in exercise.json -> movement.qa.",
+  "schema_version": 1,
+  "patterns": {
+    "press_horizontal": {
+      "label": "Supine horizontal press (bench press, incline/decline press, dumbbell press, floor press)",
+      "status": "cited",
+      "bounds": {
+        "elbow_flexion_max_deg": [
+          85,
+          120
+        ],
+        "humerus_depth_min_deg": [
+          -22,
+          null
+        ],
+        "elbow_max_deg": [
+          160,
+          null
+        ],
+        "hip_drop_m": [
+          null,
+          0.03
+        ],
+        "wrist_travel_m": [
+          0.25,
+          0.6
+        ]
+      },
+      "sources": {
+        "elbow_flexion_max_deg": "Mausehund et al. 2022 JSCR 36(10): peak elbow flexion 101.4 +/- 8.3 deg medium grip, 87.4 wide, 110-114 narrow",
+        "humerus_depth_min_deg": "Mausehund et al. 2022: humerus -6.2 to -10.8 deg to the thorax frontal plane at the bottom (trained lifters, ~30 deg arch); ASCND allows -22 for a moderate arch",
+        "elbow_max_deg": "lockout: elbows nearly straight (Starting Strength, Barbell Medicine)",
+        "hip_drop_m": "glutes stay on the bench (NSCA five points of contact)",
+        "wrist_travel_m": "bar range of motion chest to lockout"
+      }
+    },
+    "push_up": {
+      "label": "Prone press from the floor",
+      "status": "provisional",
+      "bounds": {
+        "torso_lean_min_deg": [
+          60,
+          null
+        ],
+        "elbow_flexion_max_deg": [
+          70,
+          null
+        ],
+        "elbow_max_deg": [
+          155,
+          null
+        ]
+      }
+    },
+    "press_vertical": {
+      "label": "Overhead press (barbell, dumbbell, machine)",
+      "status": "provisional",
+      "bounds": {
+        "wrist_over_head_m": [
+          0.05,
+          null
+        ],
+        "elbow_min_deg": [
+          null,
+          100
+        ],
+        "elbow_max_deg": [
+          160,
+          null
+        ],
+        "torso_lean_max_deg": [
+          null,
+          20
+        ],
+        "hip_drop_m": [
+          null,
+          0.05
+        ]
+      }
+    },
+    "squat": {
+      "label": "Squat (back, front, goblet, air)",
+      "status": "provisional",
+      "bounds": {
+        "knee_min_deg": [
+          null,
+          100
+        ],
+        "hip_drop_m": [
+          0.25,
+          null
+        ],
+        "torso_lean_max_deg": [
+          null,
+          55
+        ],
+        "foot_split_m": [
+          null,
+          0.15
+        ]
+      }
+    },
+    "hinge": {
+      "label": "Hip hinge (deadlift, Romanian deadlift, good morning)",
+      "status": "provisional",
+      "bounds": {
+        "torso_lean_max_deg": [
+          40,
+          null
+        ],
+        "hip_flex_max_deg": [
+          60,
+          null
+        ],
+        "knee_min_deg": [
+          90,
+          null
+        ],
+        "foot_split_m": [
+          null,
+          0.15
+        ]
+      }
+    },
+    "lunge": {
+      "label": "Lunge, split squat, step-up",
+      "status": "provisional",
+      "bounds": {
+        "foot_split_m": [
+          0.5,
+          null
+        ],
+        "knee_min_deg": [
+          null,
+          110
+        ],
+        "torso_lean_max_deg": [
+          null,
+          30
+        ],
+        "hip_drop_m": [
+          0.15,
+          null
+        ]
+      }
+    },
+    "row": {
+      "label": "Bent-over / supported row",
+      "status": "provisional",
+      "bounds": {
+        "torso_lean_min_deg": [
+          30,
+          null
+        ],
+        "elbow_min_deg": [
+          null,
+          100
+        ],
+        "elbow_max_deg": [
+          150,
+          null
+        ]
+      }
+    },
+    "pull_vertical": {
+      "label": "Pull-up, lat pulldown",
+      "status": "provisional",
+      "bounds": {
+        "arm_elev_max_deg": [
+          150,
+          null
+        ],
+        "elbow_min_deg": [
+          null,
+          90
+        ]
+      }
+    },
+    "curl": {
+      "label": "Elbow flexion (biceps curl, hammer curl)",
+      "status": "provisional",
+      "bounds": {
+        "elbow_min_deg": [
+          null,
+          60
+        ],
+        "elbow_max_deg": [
+          150,
+          null
+        ],
+        "arm_elev_max_deg": [
+          null,
+          40
+        ],
+        "torso_lean_max_deg": [
+          null,
+          15
+        ],
+        "hip_drop_m": [
+          null,
+          0.05
+        ]
+      }
+    },
+    "tricep_extension": {
+      "label": "Elbow extension (overhead / lying / pushdown)",
+      "status": "provisional",
+      "bounds": {
+        "elbow_min_deg": [
+          null,
+          90
+        ],
+        "elbow_max_deg": [
+          150,
+          null
+        ]
+      }
+    },
+    "raise_lateral": {
+      "label": "Lateral raise",
+      "status": "provisional",
+      "bounds": {
+        "arm_elev_max_deg": [
+          75,
+          110
+        ],
+        "arm_lateral_frac": [
+          0.65,
+          null
+        ],
+        "elbow_min_deg": [
+          140,
+          null
+        ],
+        "torso_lean_max_deg": [
+          null,
+          15
+        ]
+      }
+    },
+    "raise_front": {
+      "label": "Front raise",
+      "status": "provisional",
+      "bounds": {
+        "arm_elev_max_deg": [
+          75,
+          110
+        ],
+        "arm_lateral_frac": [
+          null,
+          0.35
+        ],
+        "elbow_min_deg": [
+          140,
+          null
+        ],
+        "torso_lean_max_deg": [
+          null,
+          15
+        ]
+      }
+    },
+    "calf_raise": {
+      "label": "Calf raise",
+      "status": "provisional",
+      "bounds": {
+        "root_rise_m": [
+          0.03,
+          0.15
+        ],
+        "knee_min_deg": [
+          160,
+          null
+        ]
+      }
+    }
+  }
+}

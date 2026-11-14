@@ -26,7 +26,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from evs import PIPELINE_VERSION, UNVERIFIED_LABEL, config  # noqa: E402
+from evs import FAIL, NOT_TESTED, PASS, PIPELINE_VERSION, REQUIRES_MANUAL_REVIEW, UNVERIFIED_LABEL, config, movement_gate  # noqa: E402
 from evs.validation import checks, report, video  # noqa: E402
 
 
@@ -53,6 +53,32 @@ def sample_with_blender(exercise_path, exercise) -> tuple[dict, dict]:
     inventory = sampling.scene_inventory(scene, exercise)
     samples = sampling.sample_scene(scene, rig, body, bar, exercise, deformation_frames)
     return samples, inventory
+
+
+def movement_gate_checks(clip, exercise: dict) -> list[dict]:
+    """ASCND Motion Kit anatomy gate (evs/movement_gate.py): the movement
+    family's bounds from config/movement_patterns.json, measured on the
+    repetition phases only. A provisional bound that fails asks for a human
+    look instead of blocking."""
+    movement = exercise.get("movement")
+    if not movement:
+        return [checks.record("movement_pattern", "anatomy", "Exercise declares a movement family", NOT_TESTED,
+                              detail="exercise.json has no 'movement'.")]
+    patterns = movement_gate.load_patterns(config.CONFIG_DIR / "movement_patterns.json")
+    phases = [p for p in movement.get("rep_phases", []) if clip.has(p)]
+    if phases:
+        sl = slice(clip.span(phases[0]).start, clip.span(phases[-1]).stop)
+        joints = {k: v[sl] for k, v in clip.j.items()}
+    else:
+        joints = clip.j
+    out = []
+    for r in movement_gate.evaluate(joints, patterns, movement):
+        status = PASS if r["pass"] else (REQUIRES_MANUAL_REVIEW if r["provisional"] else FAIL)
+        out.append(checks.record(f"movement_{r['metric']}", "anatomy",
+                                 f"{movement['pattern']}: {r['metric']} inside the family bounds", status,
+                                 measured=r["measured"], limit=r["limit"], unit="",
+                                 detail=(r["source"] or "provisional bound") + ("" if not r["provisional"] else " (provisional)")))
+    return out
 
 
 def main(exercise_name: str | None = None) -> None:
@@ -89,6 +115,7 @@ def main(exercise_name: str | None = None) -> None:
     results += checks.character_checks(samples, facts, profile, rig_test)
     results += checks.movement_checks(clip, profile)
     results += checks.equipment_checks(clip, profile, exercise, inventory, config.equipment_config())
+    results += movement_gate_checks(clip, exercise)
 
     render_meta_path = exercise_path / "render_metadata.json"
     render_meta = config.load_json(render_meta_path) if render_meta_path.exists() else None

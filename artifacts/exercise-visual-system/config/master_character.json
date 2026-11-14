@@ -1,6 +1,6 @@
 {
-  "master_character_id": "master_character_001",
-  "version": "1.1.0",
+  "master_character_id": "master_character_002",
+  "version": "2.0.0",
   "description": "One faceless athletic male figure reused by every exercise and every camera. Built from the MakeHuman base mesh through MPFB (generated characters are CC0), then made faceless and given shorts by this pipeline.",
   "generator": {
     "tool": "MPFB (MakeHuman Plugin For Blender)",
@@ -22,7 +22,23 @@
       "caucasian": 0.34,
       "african": 0.33
     },
-    "chosen": "Kiệt chose the 'middle' option on 12/11/2026 (docs/exercise-visual-system/body_options.png): the first version looked too thin."
+    "chosen": "Kiệt chose the 'middle' option on 12/11/2026 (docs/exercise-visual-system/body_options.png): the first version looked too thin.",
+    "muscle_targets": {
+      "torso-muscle-pectoral-incr": 0.9,
+      "torso-muscle-dorsi-incr": 0.6,
+      "torso-vshape-incr": 0.25,
+      "l-upperarm-shoulder-muscle-incr": 0.7,
+      "r-upperarm-shoulder-muscle-incr": 0.7,
+      "l-upperarm-muscle-incr": 0.5,
+      "r-upperarm-muscle-incr": 0.5,
+      "l-lowerarm-muscle-incr": 0.3,
+      "r-lowerarm-muscle-incr": 0.3,
+      "l-upperleg-muscle-incr": 0.4,
+      "r-upperleg-muscle-incr": 0.4,
+      "l-lowerleg-muscle-incr": 0.3,
+      "r-lowerleg-muscle-incr": 0.3
+    },
+    "muscle_targets_comment": "14/11 (Kiệt): fuller, deeper muscle groups (pectorals first) so users read them easily. MakeHuman local muscle targets at these weights, on top of the macro sliders."
   },
   "faceless": {
     "comment": "The frontal face (eyes, nose, mouth and their inner pockets) is cut out between the forehead and the chin and replaced by an evenly meshed surface. That surface is the front of the original head seen as a height field, with hollows narrower than fill_radius filled, bumps narrower than remove_radius removed, and a blur; it fades back into the original surface over rim_blend. Metres.",
@@ -47,9 +63,62 @@
   },
   "rig": {
     "mpfb_rig": "game_engine",
-    "comment": "53 deform bones with Unreal-style names. Control bones (prefix ctl_) and helper bones (prefix mch_) are added by evs/rig.py and are never exported.",
+    "comment": "53 game deform bones (Unreal-style names) plus anatomical helper bones from MPFB's default rig (14/11): shoulder blades, pectorals and twist bones, so the shoulder girdle and chest move like a real body and later exercises (rows, pull-ups, presses, curls) have the bones they need. Control bones (ctl_) and helper bones (mch_) are added by evs/rig.py and are never exported.",
     "subdivision_render_levels": 2,
-    "subdivision_viewport_levels": 1
+    "subdivision_viewport_levels": 1,
+    "weight_source_rig": "default",
+    "extra_bones": {
+      "scapula_l": [
+        "shoulder01.L",
+        "clavicle_l",
+        true
+      ],
+      "scapula_r": [
+        "shoulder01.R",
+        "clavicle_r",
+        true
+      ],
+      "pec_l": [
+        "breast.L",
+        "spine_03",
+        true
+      ],
+      "pec_r": [
+        "breast.R",
+        "spine_03",
+        true
+      ],
+      "upperarm_twist_l": [
+        "upperarm02.L",
+        "upperarm_l",
+        true
+      ],
+      "upperarm_twist_r": [
+        "upperarm02.R",
+        "upperarm_r",
+        true
+      ],
+      "lowerarm_twist_l": [
+        "lowerarm02.L",
+        "lowerarm_l",
+        true
+      ],
+      "lowerarm_twist_r": [
+        "lowerarm02.R",
+        "lowerarm_r",
+        true
+      ],
+      "thigh_twist_l": [
+        "upperleg02.L",
+        "thigh_l",
+        true
+      ],
+      "thigh_twist_r": [
+        "upperleg02.R",
+        "thigh_r",
+        true
+      ]
+    }
   },
   "names": {
     "body_object": "MasterBody",

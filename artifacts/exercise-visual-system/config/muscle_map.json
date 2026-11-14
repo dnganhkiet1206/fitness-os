@@ -1,6 +1,6 @@
 {
-  "muscle_map_id": "master_character_001.muscles.v1",
-  "master_character_id": "master_character_001",
+  "muscle_map_id": "master_character_002.muscles.v1",
+  "master_character_id": "master_character_002",
   "status": "DRAFT",
   "review": "Regions were placed by the pipeline author on the rest pose of master_character_001 from surface anatomy (bony landmarks and visible muscle borders). They are illustrative surface regions for highlighting, not dissections. An anatomist or qualified coach has NOT reviewed them.",
   "atlas_resolution": 2048,

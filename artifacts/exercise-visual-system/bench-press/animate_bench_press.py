@@ -61,10 +61,21 @@ def lie_on_bench(rig, body, exercise: dict, pad_top: float, pad_half_width: floa
     standing_top = float(rest[:, 2].max())
 
     # Arch and shoulder position are set before the body is put down.
-    for bone in ("spine_02", "spine_03"):
-        motion.rotate_bone_about_armature_axis(rig, bone, Vector((1, 0, 0)), -tech["thoracic_extension_deg"] * 0.5)
+    # The arch: extension of the lumbar and lower thoracic spine (spine_01,
+    # spine_02), little in the upper thoracic (spine_03), so the chest rises
+    # while the shoulder blades and the glutes stay on the pad — the way a
+    # lifter arches (13/11 final review: a flat back forced the elbows ~36
+    # degrees behind the chest at the bottom).
+    for bone, share in (("spine_01", 0.4), ("spine_02", 0.45), ("spine_03", 0.15)):
+        motion.rotate_bone_about_armature_axis(rig, bone, Vector((1, 0, 0)), -tech["thoracic_extension_deg"] * share)
     motion.rotate_bone_about_armature_axis(rig, "clavicle_l", Vector((0, 0, 1)), tech["scapular_retraction_deg"])
     motion.rotate_bone_about_armature_axis(rig, "clavicle_r", Vector((0, 0, 1)), -tech["scapular_retraction_deg"])
+    # Shoulder blades pulled down towards the hips as well as back: the
+    # opposite of the rack reach (which lifts the outer clavicle end towards
+    # the head about armature -/+Y).
+    depression = tech.get("scapular_depression_deg", 0.0)
+    motion.rotate_bone_about_armature_axis(rig, "clavicle_l", Vector((0, -1, 0)), -depression)
+    motion.rotate_bone_about_armature_axis(rig, "clavicle_r", Vector((0, 1, 0)), -depression)
 
     rig.rotation_mode = "XYZ"
     rig.rotation_euler = (-math.pi / 2, 0.0, 0.0)
@@ -82,7 +93,9 @@ def lie_on_bench(rig, body, exercise: dict, pad_top: float, pad_half_width: floa
     shoulder_y = evs_rig.bone_head_world(rig, "upperarm_l").y
     hip_y = evs_rig.bone_head_world(rig, "thigh_l").y
     on_pad = lambda co: np.abs(co[:, 0]) < pad_half_width  # noqa: E731
-    upper_back = lambda co: on_pad(co) & (co[:, 1] > shoulder_y - 0.22) & (co[:, 1] < shoulder_y + 0.05)  # noqa: E731
+    # Upper-back contact = the shoulder blades only, so the arch below them
+    # is not flattened back onto the pad.
+    upper_back = lambda co: on_pad(co) & (co[:, 1] > shoulder_y - 0.12) & (co[:, 1] < shoulder_y + 0.05)  # noqa: E731
     glutes = lambda co: on_pad(co) & (co[:, 1] > hip_y - 0.12) & (co[:, 1] < hip_y + 0.1)  # noqa: E731
     for _ in range(4):
         zb, yb = lowest(upper_back)
@@ -204,7 +217,13 @@ def main() -> None:
     for s_, sign in (("l", 1.0), ("r", -1.0)):
         bone = rig.data.bones[f"clavicle_{s_}"]
         axis = bone.matrix_local.to_3x3().inverted() @ Vector((0.0, -sign, 0.0))  # lifts the outer end towards the head
-        clavicle_reach[s_] = Quaternion(axis.normalized(), math.radians(tech["rack_reach_clavicle_elevation_deg"]))
+        # Reach = the set girdle lifted towards the bar, not a jump back to
+        # the rest pose: with a strong retraction (30 deg, 13/11) an absolute
+        # reach swung the upper arm ~15 deg in one frame during the unrack.
+        # The lifter lets the blades come forward part of the way to reach the
+        # rack (keeps 40 % of the set), then sets them again from lockout down.
+        partial = Quaternion().slerp(clavicle_set[s_], 0.4)
+        clavicle_reach[s_] = Quaternion(axis.normalized(), math.radians(tech["rack_reach_clavicle_elevation_deg"])) @ partial
 
     def shoulders_at(reach_amount: float) -> dict:
         """Poses the shoulder girdle (0 = set, 1 = reaching) and returns the

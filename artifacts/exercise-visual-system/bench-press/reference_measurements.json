@@ -1,0 +1,292 @@
+{
+  "tool": "pipeline/measure_video.py",
+  "pose_model": "MediaPipe Pose Landmarker heavy (Apache 2.0)",
+  "measured": "2026-11-14",
+  "source": "Pexels video 20672105 (https://www.pexels.com/video/a-man-laying-on-a-bench-with-a-barbell-20672105/)",
+  "license": "Pexels License: free for commercial use and modification; only measurements kept",
+  "note": "Numbers measured from the video; no footage or per-frame skeleton is stored.",
+  "frames": 987,
+  "detected": 943,
+  "fps": 23.976,
+  "segments": [
+    {
+      "start_s": 0.0,
+      "end_s": 6.63,
+      "side": "left",
+      "visibility": 0.75,
+      "reps": [
+        {
+          "top_s": 1.67,
+          "bottom_s": 3.09,
+          "end_s": 3.75,
+          "down_s": 1.42,
+          "up_s": 0.67,
+          "angles_2d_top": {
+            "elbow": 168.7,
+            "knee": 80.5,
+            "hip": 142.8
+          },
+          "angles_2d_bottom": {
+            "elbow": 97.6,
+            "knee": 69.5,
+            "hip": 145.2
+          },
+          "angles_3d_top": {
+            "elbow": 131.7,
+            "knee": 62.4,
+            "hip": 141.8
+          },
+          "angles_3d_bottom": {
+            "elbow": 153.1,
+            "knee": 72.8,
+            "hip": 141.2
+          },
+          "path_trunk_lengths": {
+            "along_top": 0.15,
+            "along_bottom": 0.032,
+            "across_top": 0.927,
+            "across_bottom": -0.225
+          }
+        },
+        {
+          "top_s": 3.75,
+          "bottom_s": 4.3,
+          "end_s": 4.88,
+          "down_s": 0.54,
+          "up_s": 0.58,
+          "angles_2d_top": {
+            "elbow": 164.9,
+            "knee": 74.4,
+            "hip": 144.3
+          },
+          "angles_2d_bottom": {
+            "elbow": 174.5,
+            "knee": 75.6,
+            "hip": 143.2
+          },
+          "angles_3d_top": {
+            "elbow": 118.5,
+            "knee": 75.1,
+            "hip": 135.4
+          },
+          "angles_3d_bottom": {
+            "elbow": 167.1,
+            "knee": 73.6,
+            "hip": 138.6
+          },
+          "path_trunk_lengths": {
+            "along_top": 0.068,
+            "along_bottom": 0.074,
+            "across_top": 0.7,
+            "across_bottom": -0.229
+          }
+        },
+        {
+          "top_s": 4.88,
+          "bottom_s": 5.42,
+          "end_s": 6.01,
+          "down_s": 0.54,
+          "up_s": 0.58,
+          "angles_2d_top": {
+            "elbow": 160.6,
+            "knee": 72.4,
+            "hip": 147.7
+          },
+          "angles_2d_bottom": {
+            "elbow": 107.9,
+            "knee": 67.3,
+            "hip": 146.0
+          },
+          "angles_3d_top": {
+            "elbow": 122.5,
+            "knee": 71.5,
+            "hip": 137.4
+          },
+          "angles_3d_bottom": {
+            "elbow": 166.0,
+            "knee": 63.9,
+            "hip": 144.4
+          },
+          "path_trunk_lengths": {
+            "along_top": 0.06,
+            "along_bottom": 0.027,
+            "across_top": 0.743,
+            "across_bottom": -0.185
+          }
+        }
+      ]
+    },
+    {
+      "start_s": 16.31,
+      "end_s": 23.82,
+      "side": "left",
+      "visibility": 0.91,
+      "reps": [
+        {
+          "top_s": 17.39,
+          "bottom_s": 17.98,
+          "end_s": 19.02,
+          "down_s": 0.58,
+          "up_s": 1.04,
+          "angles_2d_top": {
+            "elbow": 155.1,
+            "knee": 174.9,
+            "hip": 102.6
+          },
+          "angles_2d_bottom": {
+            "elbow": 55.2,
+            "knee": 149.1,
+            "hip": 100.3
+          },
+          "angles_3d_top": {
+            "elbow": 135.7,
+            "knee": 138.7,
+            "hip": 108.7
+          },
+          "angles_3d_bottom": {
+            "elbow": 81.0,
+            "knee": 128.7,
+            "hip": 103.4
+          },
+          "path_trunk_lengths": {
+            "along_top": 0.393,
+            "along_bottom": 0.223,
+            "across_top": 0.968,
+            "across_bottom": 0.39
+          }
+        },
+        {
+          "top_s": 19.02,
+          "bottom_s": 19.56,
+          "end_s": 21.1,
+          "down_s": 0.54,
+          "up_s": 1.54,
+          "angles_2d_top": {
+            "elbow": 151.5,
+            "knee": 126.2,
+            "hip": 122.3
+          },
+          "angles_2d_bottom": {
+            "elbow": 76.9,
+            "knee": 112.4,
+            "hip": 78.8
+          },
+          "angles_3d_top": {
+            "elbow": 130.7,
+            "knee": 143.8,
+            "hip": 131.7
+          },
+          "angles_3d_bottom": {
+            "elbow": 91.7,
+            "knee": 96.5,
+            "hip": 95.2
+          },
+          "path_trunk_lengths": {
+            "along_top": 0.394,
+            "along_bottom": 0.132,
+            "across_top": 0.939,
+            "across_bottom": 0.345
+          }
+        }
+      ]
+    },
+    {
+      "start_s": 25.57,
+      "end_s": 35.83,
+      "side": "left",
+      "visibility": 0.77,
+      "reps": [
+        {
+          "top_s": 28.74,
+          "bottom_s": 29.74,
+          "end_s": 30.57,
+          "down_s": 1.0,
+          "up_s": 0.83,
+          "angles_2d_top": {
+            "elbow": 171.7,
+            "knee": 68.6,
+            "hip": 126.4
+          },
+          "angles_2d_bottom": {
+            "elbow": 58.4,
+            "knee": 103.2,
+            "hip": 74.3
+          },
+          "angles_3d_top": {
+            "elbow": 134.4,
+            "knee": 89.9,
+            "hip": 122.5
+          },
+          "angles_3d_bottom": {
+            "elbow": 96.7,
+            "knee": 109.0,
+            "hip": 70.7
+          },
+          "path_trunk_lengths": {
+            "along_top": 0.339,
+            "along_bottom": 0.213,
+            "across_top": 0.887,
+            "across_bottom": 0.064
+          }
+        },
+        {
+          "top_s": 32.57,
+          "bottom_s": 33.99,
+          "end_s": 35.24,
+          "down_s": 1.42,
+          "up_s": 1.25,
+          "angles_2d_top": {
+            "elbow": 173.1,
+            "knee": 91.9,
+            "hip": 124.6
+          },
+          "angles_2d_bottom": {
+            "elbow": 138.6,
+            "knee": 100.2,
+            "hip": 84.4
+          },
+          "angles_3d_top": {
+            "elbow": 132.9,
+            "knee": 89.1,
+            "hip": 125.2
+          },
+          "angles_3d_bottom": {
+            "elbow": 96.2,
+            "knee": 114.3,
+            "hip": 84.1
+          },
+          "path_trunk_lengths": {
+            "along_top": 0.399,
+            "along_bottom": 0.324,
+            "across_top": 0.901,
+            "across_bottom": 0.021
+          }
+        }
+      ]
+    },
+    {
+      "start_s": 37.45,
+      "end_s": 41.17,
+      "side": "left",
+      "visibility": 0.87,
+      "reps": []
+    }
+  ],
+  "summary": {
+    "reps": 7,
+    "down_s_median": 0.58,
+    "up_s_median": 0.83,
+    "elbow_top_2d_median": 164.9,
+    "elbow_top_3d_median": 131.7,
+    "elbow_bottom_2d_median": 97.6,
+    "elbow_bottom_3d_median": 96.7,
+    "knee_top_2d_median": 80.5,
+    "knee_top_3d_median": 89.1,
+    "knee_bottom_2d_median": 100.2,
+    "knee_bottom_3d_median": 96.5,
+    "hip_top_2d_median": 126.4,
+    "hip_top_3d_median": 131.7,
+    "hip_bottom_2d_median": 100.3,
+    "hip_bottom_3d_median": 103.4
+  }
+}
