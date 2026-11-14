@@ -58,7 +58,9 @@ def elbow_under_wrist(shoulder: Vector, wrist: Vector, upper: float, lower: floa
     rest_dir = Vector((0.0, -0.5, -1.0))
     rest_dir = rest_dir - n * rest_dir.dot(n)
     if rest_dir.length > 1e-9:
-        t = min(1.0, max(0.0, (rho / upper - 0.12) / (0.4 - 0.12)))
+        # 0.55 (was 0.4, 13/11): with the wider set grip the clamp on c below
+        # saturates later, and the old blend ended before it (14 deg/frame).
+        t = min(1.0, max(0.0, (rho / upper - 0.12) / (0.55 - 0.12)))
         t = t * t * (3.0 - 2.0 * t)
         v = (rest_dir.normalized() * (1.0 - t) + v * t).normalized()
     return centre + v * rho, interior, v

@@ -187,6 +187,16 @@
     "to_phase": "lockout",
     "comment": "One repetition that starts and ends in the same pose; used for looping clips."
   },
+  "movement": {
+    "pattern": "press_horizontal",
+    "rep_phases": ["start_position", "eccentric", "bottom", "concentric", "lockout"],
+    "qa": {}
+  },
+  "motion_provenance": [
+    {"what": "keyframes and constraint solver", "source": "bench-press/animate_bench_press.py (this repository)", "license": "original work of this repository"},
+    {"what": "bottom-position targets (elbow flexion, humerus depth, arch)", "source": "Mausehund et al. 2022, JSCR 36(10):2685-2695", "license": "facts from a published study"},
+    {"what": "rep timing and bar path check", "source": "Pexels video 20672105, measured with MediaPipe Pose Landmarker heavy (Apache 2.0)", "license": "Pexels License (measurements only; no footage used)"}
+  ],
   "camera_presets": [
     "side",
     "front",
@@ -195,18 +205,19 @@
   ],
   "technique": {
     "comment": "Parameters of this provisional demonstration. Each one cites reference_notes.json; none is a universal 'correct' value and reasonable lifters differ in all of them.",
-    "grip_width_between_hand_centres_m": 0.66,
+    "grip_width_between_hand_centres_m": 0.70,
     "wrist_extension_deg": 18.0,
     "touch_point": "lower_sternum",
-    "touch_point_below_shoulder_joint_m": 0.115,
+    "touch_point_below_shoulder_joint_m": 0.16,
     "chest_clearance_m": 0.004,
     "lockout_over_shoulder_offset_m": 0.0,
     "elbow_extension_at_lockout_deg": 174.0,
     "descent_path_exponent": 1.0,
     "ascent_path_exponent": 1.7,
     "rack_clearance_m": 0.012,
-    "scapular_retraction_deg": 7.0,
-    "thoracic_extension_deg": 6.0,
+    "scapular_retraction_deg": 28.0,
+    "scapular_depression_deg": 6.0,
+    "thoracic_extension_deg": 20.0,
     "toe_out_deg": 20.0,
     "foot_half_spacing_m": 0.27,
     "ankle_towards_feet_from_hip_m": 0.37,
