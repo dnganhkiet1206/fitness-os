@@ -32,7 +32,7 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 sys.path.insert(0, str(ROOT))
 
-from evs import PIPELINE_VERSION, config, muscle_eval, pngio  # noqa: E402
+from evs import PIPELINE_VERSION, config, fiber_lic, muscle_eval, pngio  # noqa: E402
 from evs.studio import fit_view  # noqa: E402
 
 TEXTURE_SIZE = 1024
@@ -45,7 +45,55 @@ def blender_to_realitykit(v: Vector) -> list[float]:
     return [round(float(v.x), 4), round(float(v.z), 4), round(float(-v.y), 4)]
 
 
-def export_material(name: str, roughness: float, albedo: bpy.types.Image, emission: bpy.types.Image) -> bpy.types.Material:
+def painted_textures(exercise: dict) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """``fiber_style: "painted"`` (Kiệt 13/11): solid role colours plus a
+    fibre shade and a normal map from line integral convolution
+    (evs/fiber_lic.py), instead of the striped highlight map. All three are
+    returned PNG-ordered (flipped, top row = v 1), at atlas resolution."""
+    atlas = config.character_dir(exercise["master_character_id"]) / "muscle_atlas"
+    masks = dict(np.load(atlas / "masks.npz"))
+    masks.pop("_side_left", None)
+    phase = dict(np.load(atlas / "fiber_phase.npz"))
+    roles = exercise.get("highlight_roles", ["primary", "secondary", "stabilizing"])
+    primary = exercise["primary_muscles"] if "primary" in roles else []
+    secondary = exercise["secondary_muscles"] if "secondary" in roles else []
+    stabilizing = exercise.get("stabilizing_muscles", []) if "stabilizing" in roles else []
+    # Crisp muscle edges: the painted plates outline each muscle instead of
+    # feathering it into the skin.
+    crisp = {k: (fiber_lic.crisp_mask(v) * 255.0 + 0.5).astype(np.uint8) for k, v in masks.items()}
+    solid = muscle_eval.compose_highlight(crisp, primary, secondary, stabilizing)
+    groups = list(dict.fromkeys(primary + secondary + stabilizing))
+    shade, normal, rim = fiber_lic.painted_maps(masks, phase, groups)
+    return (np.flipud(solid), np.flipud(shade), (np.flipud(normal) * 255.0 + 0.5).astype(np.uint8), np.flipud(rim))
+
+
+# Painted style emission (strength 1): the muscle body glows faintly so the
+# light still shapes the fibres, the rim glows in a lighter tint of the role
+# colour so each group stands out (Kiệt 13/11).
+PAINTED_BODY_GLOW = 0.24
+PAINTED_RIM_GLOW = 0.95
+PAINTED_RIM_WHITEN = 0.45
+
+
+def painted_emission(emission_srgb: np.ndarray, shade: np.ndarray, rim: np.ndarray) -> np.ndarray:
+    lin = muscle_eval.srgb_to_linear(emission_srgb.astype(np.float64) / 255.0)
+    tint = lin * (1.0 - PAINTED_RIM_WHITEN) + PAINTED_RIM_WHITEN * (lin.max(axis=-1, keepdims=True) > 0.0)
+    out = lin * shade[..., None] * PAINTED_BODY_GLOW + tint * rim[..., None] * PAINTED_RIM_GLOW
+    return (muscle_eval.linear_to_srgb(np.clip(out, 0.0, 1.0)) * 255.0 + 0.5).astype(np.uint8)
+
+
+def apply_shade(srgb: np.ndarray, shade: np.ndarray) -> np.ndarray:
+    """Multiplies an sRGB uint8 texture by a shade in linear light."""
+    lin = np.clip(muscle_eval.srgb_to_linear(srgb.astype(np.float64) / 255.0) * shade[..., None], 0.0, 1.0)
+    return (muscle_eval.linear_to_srgb(lin) * 255.0 + 0.5).astype(np.uint8)
+
+
+# The painted emission texture carries its own scale (see painted_emission).
+PAINTED_EMISSION_STRENGTH = 1.0
+
+
+def export_material(name: str, roughness: float, albedo: bpy.types.Image, emission: bpy.types.Image,
+                    normal: bpy.types.Image | None = None) -> bpy.types.Material:
     """Plain USD-friendly material: albedo + emission textures, the same
     bake the GLB export uses plus the glow the shader adds on top."""
     old = bpy.data.materials.get(name)
@@ -63,6 +111,14 @@ def export_material(name: str, roughness: float, albedo: bpy.types.Image, emissi
     emission_tex = mat.node_tree.nodes.new("ShaderNodeTexImage")
     emission_tex.image = emission
     mat.node_tree.links.new(emission_tex.outputs["Color"], bsdf.inputs["Emission Color"])
+    if normal is not None:
+        bsdf.inputs["Emission Strength"].default_value = PAINTED_EMISSION_STRENGTH
+        normal.colorspace_settings.name = "Non-Color"
+        normal_tex = mat.node_tree.nodes.new("ShaderNodeTexImage")
+        normal_tex.image = normal
+        normal_node = mat.node_tree.nodes.new("ShaderNodeNormalMap")
+        mat.node_tree.links.new(normal_tex.outputs["Color"], normal_node.inputs["Color"])
+        mat.node_tree.links.new(normal_node.outputs["Normal"], bsdf.inputs["Normal"])
     return mat
 
 
@@ -176,23 +232,42 @@ def main(exercise_name: str | None = None) -> None:
     body, shorts, rig = (bpy.data.objects[names[k]] for k in ("body_object", "shorts_object", "armature_object"))
     base_mesh_only((body, shorts))
 
-    highlight = pngio.read_png(exercise_path / "muscle_highlight_map.png")
-    f = highlight.shape[0] // args.size
-    small = highlight.reshape(args.size, f, args.size, f, 3).mean(axis=(1, 3)).astype(np.uint8) if f > 1 else highlight
+    painted = exercise.get("fiber_style") == "painted"
+    shade = normal_png = rim = None
+    if painted:
+        # Fibres are a few texels wide: keep the atlas resolution.
+        small, shade, normal_png, rim = painted_textures(exercise)
+        print("[evs] usdz: painted fibres (LIC shade + normal map)")
+    else:
+        highlight = pngio.read_png(exercise_path / "muscle_highlight_map.png")
+        f = highlight.shape[0] // args.size
+        small = highlight.reshape(args.size, f, args.size, f, 3).mean(axis=(1, 3)).astype(np.uint8) if f > 1 else highlight
     tmp = []
+    normal_image = None
+    if normal_png is not None:
+        np_path = out_dir / "_usdz_body_normal.png"
+        pngio.write_png(np_path, normal_png)
+        tmp.append(np_path)
+        normal_image = bpy.data.images.load(str(np_path))
     for obj, key, base_key, gain, rough in ((body, "Body", "character_body", 1.0, 0.5),
                                             (shorts, "Apparel", "character_apparel", 0.8, 0.72)):
+        if painted and base_key == "character_body":
+            # Lighter body in the viewer so the muscle groups read clearly.
+            base_key = "character_body_viewer"
         albedo = muscle_eval.albedo_from_highlight(small, colors[base_key], colors["muscle_primary"],
                                                    colors["muscle_secondary"], colors["muscle_stabilizer"], gain)
         emission = muscle_eval.emission_from_highlight(small, colors["muscle_primary"],
                                                        colors["muscle_secondary"], colors["muscle_stabilizer"], gain)
+        if shade is not None:
+            albedo, emission = apply_shade(albedo, shade), painted_emission(emission, shade, rim)
         ap, ep = out_dir / f"_usdz_{key.lower()}_albedo.png", out_dir / f"_usdz_{key.lower()}_emission.png"
         pngio.write_png(ap, albedo)
         pngio.write_png(ep, emission)
         tmp.extend([ap, ep])
         obj.data.materials.clear()
         obj.data.materials.append(export_material(f"EVS_{key}_USDZ", rough,
-                                                  bpy.data.images.load(str(ap)), bpy.data.images.load(str(ep))))
+                                                  bpy.data.images.load(str(ap)), bpy.data.images.load(str(ep)),
+                                                  normal_image))
 
     equipment_objects = [o for o in scene.objects if o.type == "MESH" and o.get("evs_equipment")]
     select([rig, body, shorts, *equipment_objects])

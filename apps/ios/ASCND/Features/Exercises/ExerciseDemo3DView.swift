@@ -48,7 +48,8 @@
     /// Giới hạn bay: không chui xuống sàn, không chạm trần hay tường của
     /// phòng (12 m vuông, trần 5 m — `pipeline/build_gym_room.py`).
     private static let pitchRange = 0.06...0.95
-    private static let distanceRange = 2.4...5.4
+    /// Gần nhất 1,6 m để soi được sợi cơ (thanh zoom, Kiệt 13/11).
+    private static let distanceRange = 1.6...5.4
 
     private static var home: (yaw: Double, pitch: Double, distance: Double) {
       let o = cameraPosition - cameraTarget
@@ -168,6 +169,11 @@
           }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .overlay(alignment: .trailing) {
+          zoomSlider
+            .padding(.trailing, DS.Spacing.sm)
+            .offset(y: -60)
+        }
         // Màu tường / sàn của phòng, thấy trong lúc phòng 3D đang tải.
         .background { GymStage() }
         .toolbar {
@@ -208,6 +214,34 @@
           }
         }
       }
+    }
+
+    /// 0 = xa nhất, 1 = gần nhất; cùng trạng thái với chụm hai ngón.
+    private var zoom: Binding<Double> {
+      let lo = Self.distanceRange.lowerBound, hi = Self.distanceRange.upperBound
+      return Binding(
+        get: { (hi - min(max(distance, lo), hi)) / (hi - lo) },
+        set: { distance = hi - $0 * (hi - lo) })
+    }
+
+    /// Thanh zoom dọc ở mép phải (Kiệt 13/11): kéo lên để lại gần soi sợi cơ.
+    private var zoomSlider: some View {
+      VStack(spacing: DS.Spacing.sm) {
+        Image(systemName: "plus.magnifyingglass")
+        Slider(value: zoom, in: 0...1)
+          .tint(Color(red: 0.91, green: 0.33, blue: 0.17))
+          .frame(width: 180)
+          .rotationEffect(.degrees(-90))
+          .frame(width: 30, height: 180)
+          .accessibilityLabel(Text("eg.demo3d.zoom"))
+        Image(systemName: "minus.magnifyingglass")
+      }
+      .font(.system(size: 14, weight: .semibold))
+      .foregroundStyle(DS.Color.foreground.swiftUI)
+      .padding(.vertical, DS.Spacing.sm + 2)
+      .padding(.horizontal, 6)
+      .background(.ultraThinMaterial, in: Capsule())
+      .overlay(Capsule().strokeBorder(.white.opacity(0.12), lineWidth: 0.5))
     }
 
     /// Chú thích cơ đang tô sáng (Kiệt 13/11: bắt buộc phải có, đặt dưới

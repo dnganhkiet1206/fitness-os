@@ -1013,7 +1013,14 @@ public struct WorkoutView: View {
       let thumb = guides.thumbnail(exerciseId: first.exerciseId, name: group.name, lang: lang)
       VStack(alignment: .leading, spacing: DS.Spacing.sm) {
         Button {
-          guideTarget = GuideTarget(key: group.key, exerciseId: first.exerciseId, name: group.name)
+          let target = GuideTarget(key: group.key, exerciseId: first.exerciseId, name: group.name)
+          // Bài có 3D mà thư viện chưa có bước nào: trang hướng dẫn chỉ còn
+          // "chưa có hướng dẫn" — mở thẳng 3D (Kiệt 13/11).
+          if has3DDemo(group.name), thumb?.hasContent != true {
+            demoTarget = target
+          } else {
+            guideTarget = target
+          }
         } label: {
           HStack(spacing: DS.Spacing.sm) {
             ExerciseThumb(name: group.name, thumbnail: thumb, linked: true)
@@ -1052,11 +1059,14 @@ public struct WorkoutView: View {
           get: { demoTarget?.key == group.key ? demoTarget : nil },
           set: { demoTarget = $0 }
         )) { t in
-          ExerciseDemo3DView(name: t.name) {
-            // Nút sách trong trình xem: đóng 3D rồi mở trang hướng dẫn đầy đủ.
+          // Nút sách chỉ khi trang hướng dẫn có nội dung thật.
+          let lang = MuscleGroup.Language(locale: locale)
+          let hasGuide = guides.thumbnail(exerciseId: t.exerciseId, name: t.name, lang: lang)?.hasContent == true
+          ExerciseDemo3DView(name: t.name, onFullGuide: hasGuide ? {
+            // Đóng 3D rồi mở trang hướng dẫn đầy đủ.
             demoTarget = nil
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { guideTarget = t }
-          }
+          } : nil)
         }
       #endif
     } else {

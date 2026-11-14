@@ -49,6 +49,10 @@ is in the fibre path, so no new licence obligation arises. The fields are
 first-order surface directions, not measured fibre data — the file says so,
 and an anatomist has still not reviewed them.
 
+## Painted fibres (13/11/2026)
+
+Searched for a tool that draws muscle fibres along a direction field. Nothing open-source does it for muscles; Blender marketplace packs (flowmap, anatomy, bio materials) are paid and not fibre-specific. The method used is line integral convolution (Cabral and Leedom 1993, a published algorithm). MIT-licensed Python packages exist (`line-integral-convolutions` on PyPI; `lic`, `rLIC` licences not checked), but the kernel is short, so `evs/fiber_lic.py` implements it in plain numpy: no dependency, no third-party code or asset, no new licence obligation.
+
 ## Open licence risks
 
 - MPFB's "no claim over output" is the MakeHuman team's statement, not a warranty. Keep the record that only bundled CC0 core assets were used (`config/master_character.json` → `generator`).
