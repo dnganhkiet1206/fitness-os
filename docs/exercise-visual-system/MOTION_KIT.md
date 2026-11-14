@@ -37,6 +37,11 @@ Dữ liệu tạo ra là **tài sản của ASCND**. Chính sách nguồn ở `O
                 - tờ soi xoay vòng: 6 góc quanh người + 2 góc cao × đứng / giữa / đáy
                   (factory.py sheet). BẮT BUỘC soi tay, lưng, đầu, chân, dụng cụ ở mọi góc,
                   đối chiếu nguồn kỹ thuật, trước khi báo xong (MOTION_KIT_LESSONS.md luật 1)
+                - CI tự động (.github/workflows/motion-kit.yml) chạy trên mọi PR chạm kit:
+                  unit test + kiểm provenance/blocklist nguồn cấm + kiểm UV suy biến trên
+                  USDZ đã xuất + validate_motion cho bài template + cổng chặn hồi quy
+                  (check_qa_gate.py). Bench không qua cổng validate của CI (validator
+                  riêng + 3 FAIL đã biết); USDZ của bench vẫn qua kiểm UV.
 6. Xuất         pipeline/export_usdz.py (sợi cơ vẽ, bản chỉ cơ chính) → app
 ```
 
@@ -55,6 +60,7 @@ Dữ liệu tạo ra là **tài sản của ASCND**. Chính sách nguồn ở `O
 | **Bộ tạo chung theo template** | `motionlab/` (timing min-jerk, primitives, families: `curl`, `squat`), `pipeline/generate_exercise.py` | xong cho 2 họ; dumbbell-curl QA 12/12, back-squat 10/11 |
 | **Bộ kiểm chung 4 tầng (A–D), lỗi chỉ đúng khung/khớp** | `evs/motion_qa.py`, `pipeline/validate_motion.py` | xong |
 | **Giải theo mục tiêu** | `pipeline/solve_targets.py`, `pipeline/measure_animation.py` | xong; bench press: khuỷu 104° / dang vai 60° sau 24 lần thử |
+| **CI tự động cho kit** | `.github/workflows/motion-kit.yml`, `pipeline/check_provenance.py`, `pipeline/check_qa_gate.py`, `pipeline/check_usdz_uv.py` | xong 14/11; chạy trên mọi PR chạm kit/docs/bản USDZ trong app; bench không qua cổng validate (xem quy trình bước 5) |
 
 ## Đã học từ dữ liệu (bench press)
 

@@ -1,0 +1,153 @@
+# Motion Kit — cổng kiểm tự động cho hệ thống minh hoạ bài tập 3D.
+#
+# ── vì sao cần workflow này ──
+#
+# QA của kit (validate_motion, unit test, kiểm nguồn) trước đây chỉ chạy
+# khi có người nhớ chạy bằng tay. Sổ lỗi MOTION_KIT_LESSONS.md cho thấy bộ
+# kiểm mới bắt đủ 4 lỗi squat mà Kiệt thấy bằng mắt — và luật 6 (đổi nhân
+# vật thì phải dựng lại MỌI bài) không có máy chạy thì không ai nhớ.
+# Workflow này chạy đúng các lệnh đó trên mọi PR chạm kit, và chặn khi có
+# lỗi MỚI. Lỗi đã biết thì ghi rõ trong script cổng kèm số đo, không nới
+# ngưỡng, không nuốt lỗi: một cổng chạy được mà không chặn được thì chỉ là
+# một cái đèn (xem đầu .github/workflows/quality-gate.yml).
+#
+# Hai job, hai lời hứa khác nhau:
+#   checks    Không cần Blender: unit test Python thuần + kiểm provenance và
+#             blocklist nguồn cấm. Chạy nhanh, hỏng thì biết ngay.
+#   validate  Cần Blender 5.2.0 LTS headless: kiểm UV suy biến trên USDZ đã
+#             xuất (bài học mặt phẳng 14/11) + chạy validate_motion cho bài
+#             template + cổng chặn hồi quy trên báo cáo vừa chạy xong.
+#
+# Bench press KHÔNG qua job validate: nó có validator sâu riêng
+# (validate_animation.py, cần cả video đã render) và 3 FAIL đã biết
+# (skin_deformation, elbow_tracking, bench_contact) — chặn nó ở đây sẽ đỏ
+# mọi PR cho tới khi 3 lỗi đó được sửa. Bench vẫn kiểm bằng tay theo quy
+# trình cũ; file USDZ của bench VẪN qua kiểm UV (danh sách lỗi đã biết
+# trong pipeline/check_usdz_uv.py).
+#
+# Lọc theo path: PR không chạm kit thì không tốn lượt tải Blender. Vì thế
+# job này KHÔNG đặt làm required check (ADR-0002) — PR không chạm path
+# sẽ treo.
+name: Motion Kit
+
+on:
+  push:
+    # agent/**: nhánh của C (agent/c/*) cũng cần tín hiệu khi đẩy trực tiếp,
+    # không chỉ khi mở PR.
+    branches: ['claude/**', 'agent/**', 'native/**', main]
+    paths:
+      - 'artifacts/exercise-visual-system/**'
+      - 'docs/exercise-visual-system/**'
+      - 'apps/ios/ASCND/Resources/ExerciseDemos/**'
+      - '.github/workflows/motion-kit.yml'
+  pull_request:
+    paths:
+      - 'artifacts/exercise-visual-system/**'
+      - 'docs/exercise-visual-system/**'
+      - 'apps/ios/ASCND/Resources/ExerciseDemos/**'
+      - '.github/workflows/motion-kit.yml'
+  workflow_dispatch:
+
+# Mỗi commit một lượt (#527, chỉ thị 6093313700): như quality-gate.yml và
+# ios.yml — nhóm theo SHA khi đẩy lên nhánh (không huỷ), nhóm theo ref khi
+# là PR (commit mới huỷ lượt của commit nó thay).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  checks:
+    # Không cần Blender: chỉ Python thuần + numpy.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # Ghim 1.26.4: bản đã chạy xanh 91 test trên máy kiểm 14/11. Đổi bản
+      # thì đổi cả dòng này một cách có chủ ý, không để pip tự trôi.
+      - name: Cài numpy
+        run: pip install numpy==1.26.4
+
+      - name: Unit test (Python thuần, không Blender)
+        working-directory: artifacts/exercise-visual-system
+        run: python3 -m unittest discover -s tests
+
+      # Provenance đầy đủ + không dấu vết CMU/Mixamo (chính sách nguồn:
+      # docs/exercise-visual-system/OPENGYM3D_LESSONS.md, Kiệt 14/11).
+      - name: Kiểm provenance + blocklist nguồn cấm
+        working-directory: artifacts/exercise-visual-system
+        run: python3 pipeline/check_provenance.py
+
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      # Thư viện hệ thống mà Blender 5.2.0 liên kết (đo bằng `ldd blender`
+      # 14/11) + libegl1 cho EGL (bài học EEVEE headless 13/11). Thiếu một
+      # cái thì Blender hỏng ngay lúc khởi động với lỗi về thư viện, không
+      # phải về mã vừa sửa — nên cài tường minh ở đây.
+      - name: Thư viện hệ thống cho Blender
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libegl1 libgl1 libice6 libsm6 libx11-6 libxext6 libxfixes3 libxi6 libxrender1
+
+      # Giữ thư mục Blender đã giải nén giữa các lượt: bản tải 384 MB, chỉ
+      # tải lại khi khóa đổi. Khóa ghim đúng bản + hash bên dưới.
+      - uses: actions/cache@v4
+        id: blender-cache
+        with:
+          path: ~/blender-5.2.0-linux-x64
+          key: blender-5.2.0-linux-x64-96f6c181
+
+      # Ghim đúng bản team đang chạy (Blender 5.2.0 LTS, build 2026-07-14)
+      # và kiểm SHA-256 của file tải về: hash đo từ chính file tarball team
+      # đã tải 13/11. Upstream đổi file thì bước này đỏ to, không lặng lẽ
+      # chạy một bản Blender khác. `curl --fail`: 404 cũng đỏ, không tải
+      # trang lỗi về rồi giải nén hỏng ở bước sau.
+      - name: Tải Blender 5.2.0 LTS
+        if: steps.blender-cache.outputs.cache-hit != 'true'
+        run: |
+          cd "$HOME"
+          curl --fail --retry 3 -L -o blender-5.2.0.tar.xz "https://download.blender.org/release/Blender5.2/blender-5.2.0-linux-x64.tar.xz"
+          echo "96f6c181a30f4950607839dc84d42a354b250d8a0231b098b59b7bc69c351c48  blender-5.2.0.tar.xz" | sha256sum --check --strict
+          tar -xf blender-5.2.0.tar.xz
+          rm blender-5.2.0.tar.xz
+
+      - name: Kiểm Blender chạy được
+        run: $HOME/blender-5.2.0-linux-x64/blender --version
+
+      # Đọc lại USDZ đã xuất, đếm mặt có UV suy biến (phải bằng 0, trừ danh
+      # sách lỗi đã biết trong script). Quét cả bản trong kit lẫn bản copy
+      # trong app — hai bản có thể lệch nhau (bench press đã lệch). Phòng
+      # gym (gym_room_*.usdz) không quét: hình học môi trường, không thuộc
+      # bài học mặt phẳng về da nhân vật.
+      - name: Kiểm UV suy biến trên USDZ đã xuất
+        run: |
+          "$HOME/blender-5.2.0-linux-x64/blender" -b --factory-startup --python-exit-code 1 \
+            --python artifacts/exercise-visual-system/pipeline/check_usdz_uv.py -- \
+            $(find artifacts/exercise-visual-system -name '*.usdz' | sort) \
+            $(find apps/ios/ASCND/Resources/ExerciseDemos -name '*_animation.usdz' | sort)
+
+      # Chạy trên file .blend đã commit, không dựng lại: đo đúng dữ liệu
+      # trong PR. validate_motion ghi lại qa_report.json trong cây làm việc
+      # (không commit) để bước cổng đọc ngay sau đó.
+      - name: Validate bài template
+        working-directory: artifacts/exercise-visual-system
+        run: |
+          "$HOME/blender-5.2.0-linux-x64/blender" -b --factory-startup --python-exit-code 1 \
+            --python pipeline/validate_motion.py -- --exercise back-squat
+          "$HOME/blender-5.2.0-linux-x64/blender" -b --factory-startup --python-exit-code 1 \
+            --python pipeline/validate_motion.py -- --exercise dumbbell-curl
+
+      # validate_motion chỉ đo, không tự chặn khi FAIL — đây mới là chỗ
+      # chặn. Lỗi đã biết (squat skin_stretch) nằm trong script kèm số đo;
+      # FAIL mới nào cũng đỏ.
+      - name: Cổng chặn hồi quy
+        working-directory: artifacts/exercise-visual-system
+        run: python3 pipeline/check_qa_gate.py
