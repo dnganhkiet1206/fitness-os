@@ -1,6 +1,6 @@
 {
   "pipeline_version": "0.1.0",
-  "generated": "2026-11-14T00:44:43-06:00",
+  "generated": "2026-11-14T00:52:18-06:00",
   "exercise": "Barbell Bench Press",
   "exercise_id": "barbell_bench_press",
   "character": "master_character_002",
@@ -20,14 +20,15 @@
   "what_this_report_is": "Automated quality control of animation data, files and renders. It is not a biomechanical review. Expert approval is recorded separately and is PENDING until a qualified person signs off.",
   "summary": {
     "counts": {
-      "PASS": 57,
-      "FAIL": 1,
+      "PASS": 56,
+      "FAIL": 2,
       "NOT_TESTED": 2,
       "REQUIRES_MANUAL_REVIEW": 4,
       "UNVERIFIED": 2
     },
     "failed_checks": [
-      "skin_deformation"
+      "skin_deformation",
+      "elbow_tracking"
     ],
     "not_tested_checks": [
       "rig_compatibility",
@@ -49,7 +50,7 @@
       "exercise status is DRAFT, not APPROVED",
       "no reviewer recorded",
       "no approval date recorded",
-      "automated checks failed: ['skin_deformation']"
+      "automated checks failed: ['skin_deformation', 'elbow_tracking']"
     ]
   },
   "checks": [
@@ -97,7 +98,7 @@
       "category": "character",
       "title": "Bone lengths stay constant during the clip (no stretching)",
       "status": "PASS",
-      "measured": 0.0,
+      "measured": 3e-06,
       "limit": 0.0001,
       "unit": "m",
       "detail": "",
@@ -109,8 +110,8 @@
       "title": "Skin stretch and body volume stay within limits in the exercise poses",
       "status": "FAIL",
       "measured": {
-        "p99.9_edge_stretch": 2.62,
-        "volume_change": 0.0467
+        "p99.9_edge_stretch": 2.659,
+        "volume_change": 0.0461
       },
       "limit": {
         "p99.9_edge_stretch": 2.6,
@@ -125,7 +126,7 @@
       "category": "character",
       "title": "Skin passing through skin (beyond the rest pose)",
       "status": "REQUIRES_MANUAL_REVIEW",
-      "measured": 445,
+      "measured": 403,
       "limit": 60,
       "unit": "face pairs",
       "detail": "Skin folding onto skin at a bent elbow or inside a closed fist is contact, not a defect; a count above the limit needs eyes.",
@@ -160,7 +161,7 @@
       "status": "PASS",
       "measured": [
         8.6,
-        116.8
+        104.0
       ],
       "limit": [
         0.0,
@@ -176,8 +177,8 @@
       "title": "Knee flexion stays inside the allowed range",
       "status": "PASS",
       "measured": [
-        96.4,
-        96.4
+        95.8,
+        95.8
       ],
       "limit": [
         0.0,
@@ -219,8 +220,8 @@
       "title": "Upper arm angle to the trunk at the bottom is inside the configured range",
       "status": "PASS",
       "measured": [
-        50.7,
-        50.7
+        62.5,
+        62.5
       ],
       "limit": [
         30.0,
@@ -237,7 +238,7 @@
       "category": "movement",
       "title": "Forearms upright under the bar at the bottom",
       "status": "PASS",
-      "measured": 4.04,
+      "measured": 8.18,
       "limit": 12.0,
       "unit": "deg from vertical",
       "detail": "",
@@ -249,8 +250,8 @@
       "id": "elbow_tracking",
       "category": "movement",
       "title": "Elbows stay under the wrists through the repetition (front view)",
-      "status": "PASS",
-      "measured": 6.45,
+      "status": "FAIL",
+      "measured": 12.55,
       "limit": 10.0,
       "unit": "deg forearm lean in the front view",
       "detail": "",
@@ -266,7 +267,7 @@
       "title": "Wrist bend (extension) stays inside the allowed range",
       "status": "PASS",
       "measured": [
-        17.6,
+        17.7,
         18.3
       ],
       "limit": [
@@ -282,7 +283,7 @@
       "category": "movement",
       "title": "Wrist side bend (radial / ulnar deviation) stays inside the allowed range",
       "status": "PASS",
-      "measured": 10.5,
+      "measured": 15.4,
       "limit": 25.0,
       "unit": "deg",
       "detail": "",
@@ -293,7 +294,7 @@
       "category": "movement",
       "title": "Bar speed has no spikes",
       "status": "PASS",
-      "measured": 0.541,
+      "measured": 0.594,
       "limit": 1.2,
       "unit": "m/s",
       "detail": "",
@@ -304,7 +305,7 @@
       "category": "movement",
       "title": "Bar acceleration has no spikes",
       "status": "PASS",
-      "measured": 1.673,
+      "measured": 1.835,
       "limit": 6.0,
       "unit": "m/s^2",
       "detail": "",
@@ -315,7 +316,7 @@
       "category": "movement",
       "title": "No joint jumps between frames",
       "status": "PASS",
-      "measured": 0.575,
+      "measured": 0.605,
       "limit": 2.5,
       "unit": "m/s (fastest joint)",
       "detail": "",
@@ -327,9 +328,9 @@
       "title": "No sudden joint rotation between frames",
       "status": "PASS",
       "measured": {
-        "largest_step_deg": 6.561,
+        "largest_step_deg": 8.064,
         "bone": "upperarm_l",
-        "angular_speed_deg_s": 157.5
+        "angular_speed_deg_s": 193.5
       },
       "limit": {
         "largest_step_deg": 12.0,
@@ -346,7 +347,7 @@
       "status": "PASS",
       "measured": {
         "position_m": 1e-05,
-        "elbow_angle_deg": 0.001
+        "elbow_angle_deg": 0.0
       },
       "limit": {
         "position_m": 0.003,
@@ -386,16 +387,16 @@
       "status": "PASS",
       "measured": {
         "head_gap_m": [
-          -0.0089,
-          -0.0089
+          -0.009,
+          -0.009
         ],
         "upper_back_gap_m": [
-          -0.0263,
-          -0.0034
+          -0.0295,
+          0.0009
         ],
         "glute_gap_m": [
-          -0.0032,
-          -0.0032
+          0.0036,
+          0.0036
         ]
       },
       "limit": 0.006,
@@ -423,10 +424,10 @@
       "category": "equipment",
       "title": "Hands are the same distance from the middle of the bar",
       "status": "PASS",
-      "measured": 0.00014,
+      "measured": 0.00013,
       "limit": 0.004,
       "unit": "m",
-      "detail": "grip centres at 0.345 m and -0.345 m from the middle",
+      "detail": "grip centres at 0.385 m and -0.385 m from the middle",
       "phases": []
     },
     {
@@ -437,7 +438,7 @@
       "measured": {
         "hand_to_grip_socket_m": 3e-06,
         "hand_to_grip_socket_deg": 0.0,
-        "skin_to_bar_surface_m": -0.00462
+        "skin_to_bar_surface_m": -0.00463
       },
       "limit": {
         "hand_to_grip_socket_m": 0.004,
@@ -453,7 +454,7 @@
       "category": "equipment",
       "title": "Hand skin does not pass through the bar",
       "status": "PASS",
-      "measured": 0.00471,
+      "measured": 0.0047,
       "limit": 0.008,
       "unit": "m",
       "detail": "",
@@ -482,8 +483,8 @@
       "title": "Bar path is plausible: steady down, steady up, no sideways drift",
       "status": "PASS",
       "measured": {
-        "vertical_range_m": 0.3462,
-        "horizontal_travel_m": 0.16,
+        "vertical_range_m": 0.3084,
+        "horizontal_travel_m": 0.19,
         "reversal_m": 0.0,
         "sideways_drift_m": 0.0
       },
@@ -558,7 +559,7 @@
       "category": "equipment",
       "title": "Body does not sink into the bench beyond pad compression",
       "status": "PASS",
-      "measured": 0.0263,
+      "measured": 0.0295,
       "limit": 0.03,
       "unit": "m",
       "detail": "",
@@ -569,7 +570,7 @@
       "category": "equipment",
       "title": "Bar clears the lip of the rests on the way out and back in",
       "status": "PASS",
-      "measured": 0.0165,
+      "measured": 0.0141,
       "limit": 0.01,
       "unit": "m",
       "detail": "",
@@ -614,7 +615,7 @@
       "category": "anatomy",
       "title": "press_horizontal: elbow_flexion_max_deg inside the family bounds",
       "status": "PASS",
-      "measured": 116.842,
+      "measured": 103.961,
       "limit": [
         85,
         120
@@ -628,7 +629,7 @@
       "category": "anatomy",
       "title": "press_horizontal: humerus_depth_min_deg inside the family bounds",
       "status": "PASS",
-      "measured": -20.763,
+      "measured": -16.315,
       "limit": [
         -22,
         null
@@ -642,7 +643,7 @@
       "category": "anatomy",
       "title": "press_horizontal: elbow_max_deg inside the family bounds",
       "status": "PASS",
-      "measured": 171.353,
+      "measured": 171.426,
       "limit": [
         160,
         null
@@ -670,7 +671,7 @@
       "category": "anatomy",
       "title": "press_horizontal: wrist_travel_m inside the family bounds",
       "status": "PASS",
-      "measured": 0.381,
+      "measured": 0.351,
       "limit": [
         0.25,
         0.6

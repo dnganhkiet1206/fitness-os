@@ -1,0 +1,179 @@
+{
+  "tool": "pipeline/validate_motion.py",
+  "date": "2026-11-14",
+  "exercise_id": "dumbbell_biceps_curl",
+  "frames": 237,
+  "fps": 24,
+  "summary": {
+    "counts": {
+      "PASS": 12
+    },
+    "technically_validated": true,
+    "states": {
+      "technically_validated": true,
+      "biomechanically_reviewed": false,
+      "human_approved": false,
+      "production_approved": false
+    }
+  },
+  "checks": [
+    {
+      "id": "frames",
+      "stage": "A",
+      "title": "Animation has frames and finite joint data",
+      "status": "PASS",
+      "measured": 237,
+      "limit": null,
+      "where": null,
+      "detail": ""
+    },
+    {
+      "id": "joint_speed",
+      "stage": "B",
+      "title": "No joint moves faster than a human joint plausibly does",
+      "status": "PASS",
+      "measured": 1.096,
+      "limit": 2.5,
+      "where": {
+        "joint": "knuckle_r",
+        "frame": 144
+      },
+      "detail": "m/s"
+    },
+    {
+      "id": "rotation_step",
+      "stage": "B",
+      "title": "No sudden bone rotation between frames",
+      "status": "PASS",
+      "measured": 6.149,
+      "limit": 12.0,
+      "where": {
+        "bone": "lowerarm_l",
+        "frame": 34
+      },
+      "detail": "deg per frame"
+    },
+    {
+      "id": "hand_implement_contact",
+      "stage": "B",
+      "title": "Hands stay on the implements in every frame",
+      "status": "PASS",
+      "measured": 1e-05,
+      "limit": 0.004,
+      "where": {
+        "implement": "SOCKET_hand_l",
+        "frame": 163
+      },
+      "detail": "m wrist to grip socket"
+    },
+    {
+      "id": "feet_planted",
+      "stage": "B",
+      "title": "Planted feet neither slide nor lift",
+      "status": "PASS",
+      "measured": {
+        "slide_m": 0.0,
+        "lift_m": 0.0
+      },
+      "limit": {
+        "slide_m": 0.005,
+        "lift_m": 0.005
+      },
+      "where": {
+        "foot": null,
+        "frame": null
+      },
+      "detail": ""
+    },
+    {
+      "id": "left_right_symmetry",
+      "stage": "B",
+      "title": "Left and right sides move as mirror images",
+      "status": "PASS",
+      "measured": 0.0,
+      "limit": 0.003,
+      "where": {
+        "joint": "elbow",
+        "frame": 224
+      },
+      "detail": "m"
+    },
+    {
+      "id": "skin_stretch",
+      "stage": "C",
+      "title": "Skin stretch stays within limits",
+      "status": "PASS",
+      "measured": 2.237,
+      "limit": 2.6,
+      "where": {
+        "frame": 118
+      },
+      "detail": "p99.9 edge stretch"
+    },
+    {
+      "id": "movement_elbow_min_deg",
+      "stage": "D",
+      "title": "curl: elbow_min_deg inside the family bounds",
+      "status": "PASS",
+      "measured": 42.002,
+      "limit": [
+        null,
+        60
+      ],
+      "where": null,
+      "detail": "provisional bound"
+    },
+    {
+      "id": "movement_elbow_max_deg",
+      "stage": "D",
+      "title": "curl: elbow_max_deg inside the family bounds",
+      "status": "PASS",
+      "measured": 167.999,
+      "limit": [
+        150,
+        null
+      ],
+      "where": null,
+      "detail": "provisional bound"
+    },
+    {
+      "id": "movement_arm_elev_max_deg",
+      "stage": "D",
+      "title": "curl: arm_elev_max_deg inside the family bounds",
+      "status": "PASS",
+      "measured": 12.38,
+      "limit": [
+        null,
+        40
+      ],
+      "where": null,
+      "detail": "provisional bound"
+    },
+    {
+      "id": "movement_torso_lean_max_deg",
+      "stage": "D",
+      "title": "curl: torso_lean_max_deg inside the family bounds",
+      "status": "PASS",
+      "measured": 0.84,
+      "limit": [
+        null,
+        15
+      ],
+      "where": null,
+      "detail": "provisional bound"
+    },
+    {
+      "id": "movement_hip_drop_m",
+      "stage": "D",
+      "title": "curl: hip_drop_m inside the family bounds",
+      "status": "PASS",
+      "measured": 0.0,
+      "limit": [
+        null,
+        0.05
+      ],
+      "where": null,
+      "detail": "provisional bound"
+    }
+  ]
+}

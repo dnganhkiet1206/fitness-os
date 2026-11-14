@@ -205,6 +205,31 @@ def build_bench_rack(name: str, spec: dict, mats: dict, rack_height: float) -> d
             "lip_top": seat_z + lip + 0.004, "upright_y": upright_y, "upright_half_spacing": half_spacing}
 
 
+def build_dumbbell(name: str, spec: dict, mats: dict) -> bpy.types.Object:
+    """Hex dumbbell along X: knurled handle between two hexagonal heads.
+    The object origin is the centre of the handle, so a hand socket at the
+    origin holds it the way a barbell socket holds a bar."""
+    obj = _object(name, bmesh.new())
+    metal = _material_index(obj, mats["metal"])
+    knurl = _material_index(obj, mats["knurl"])
+    pad = _material_index(obj, mats.get("pad", mats["metal"]))
+    bm = bmesh.new()
+    half = spec["handle_length"] * 0.5
+    r = spec["handle_diameter"] * 0.5
+    _cylinder_x(bm, -half, half, r, material=knurl)
+    head_r = spec["head_across_corners"] * 0.5
+    for sign in (1, -1):
+        _cylinder_x(bm, sign * half, sign * (half + spec["head_length"]), head_r, segments=6, material=pad, bevel=0.004)
+        _cylinder_x(bm, sign * (half - 0.004), sign * half, r * 1.6, material=metal)
+    bm.to_mesh(obj.data)
+    bm.free()
+    bl_util.set_smooth(obj.data)
+    obj["evs_equipment"] = "dumbbell"
+    obj["evs_shaft_radius"] = r
+    obj["evs_total_mass_kg"] = spec["mass_kg"]
+    return obj
+
+
 def load_barbell(name: str, bar_spec: dict, plate_spec: dict, collar_spec: dict, plates_per_side: int, mats: dict) -> dict:
     """A barbell with plates and collars parented to it, so the whole thing
     moves, tilts and exports as one rigid unit."""

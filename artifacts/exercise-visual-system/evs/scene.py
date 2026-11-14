@@ -89,6 +89,9 @@ def build_equipment(exercise: dict, brand: dict) -> dict:
             root = None
             for key in ("pad", "frame"):
                 result[key].location = Vector(item.get("location", (0, 0, 0)))
+        elif spec["type"] == "dumbbell":
+            root = equipment.build_dumbbell(item["id"].capitalize(), spec, mats)
+            result = {"bar": root}
         else:
             raise ValueError(f"no builder for equipment type {spec['type']}")
         if root is not None:
@@ -151,7 +154,9 @@ def set_timeline(scene: bpy.types.Scene, exercise: dict) -> int:
     fps = int(exercise["frame_rate"])
     scene.render.fps = fps
     scene.render.fps_base = 1.0
-    end = max(p["end_s"] for p in exercise["exercise_phases"])
+    # Motion Lab specs get their phases from the generator (tempo); until then
+    # the scene only needs some length.
+    end = max((p["end_s"] for p in exercise["exercise_phases"]), default=float(exercise.get("animation_duration") or 10.0))
     scene.frame_start = 0
     scene.frame_end = int(round(end * fps))
     scene.frame_set(0)

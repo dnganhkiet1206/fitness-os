@@ -92,6 +92,15 @@ def metrics(j: dict) -> dict[str, float]:
     # behind it (a supine press with elbows dropping towards the floor).
     depth = np.concatenate([np.degrees(np.arcsin(np.clip((hum[s] * ant).sum(-1), -1.0, 1.0))) for s in "lr"])
     out["humerus_depth_min_deg"] = float(depth.min())
+    # At the deepest elbow bend (the bottom of a press, the top of a curl):
+    # arm elevation (shoulder abduction for a press) and forearm tilt.
+    n = len(j["pelvis"])
+    k = int(np.argmin(elbows)) % n
+    elev_k = [float(_angle(hum[s][k], -long[k])) for s in "lr"]
+    up_k = np.array([0.0, 0.0, 1.0])
+    fore_k = [float(_angle(j[f"wrist_{s}"][k] - j[f"elbow_{s}"][k], up_k)) for s in "lr"]
+    out["arm_elev_at_max_flexion_deg"] = float(np.mean(elev_k))
+    out["forearm_from_vertical_at_max_flexion_deg"] = float(min(np.mean(fore_k), 180.0 - np.mean(fore_k)))
     out["foot_split_m"] = float(np.abs(j["ankle_l"][:, 1] - j["ankle_r"][:, 1]).max())
     out["foot_spread_m"] = float(np.abs(j["ankle_l"][:, 0] - j["ankle_r"][:, 0]).max())
     wrist_mid = 0.5 * (j["wrist_l"] + j["wrist_r"])
