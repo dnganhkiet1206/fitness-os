@@ -28,6 +28,9 @@
       /// nên không có trong legend. Bài sau thêm demo thì kèm legend của
       /// bài đó, cùng nguồn dữ liệu.
       let legend: [LegendEntry]
+      /// Tiền tố texture thân "chỉ cơ chính" (`<prefix>_albedo/_emission/_normal.png`,
+      /// `pipeline/export_usdz.py`); nil = bài không có nút ẩn cơ phụ.
+      var focusTexturePrefix: String?
     }
 
     /// Một mục trong legend: chấm màu đúng màu tô sáng của vai trò trong
@@ -52,7 +55,8 @@
           hex: "#F2A33A", nameKey: "eg.demo3d.legend.deltoidAnterior", roleKey: "eg.demo3d.legend.secondary"),
         LegendEntry(
           hex: "#F2A33A", nameKey: "eg.demo3d.legend.tricepsBrachii", roleKey: "eg.demo3d.legend.secondary"),
-      ])
+      ],
+      focusTexturePrefix: "bench_press_focus")
 
     /// Tên bài (đã gập như `PersonalRecords.exerciseKey`) → bản minh hoạ.
     static let demos: [String: Demo] = [

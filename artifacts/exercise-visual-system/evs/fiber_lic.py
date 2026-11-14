@@ -69,6 +69,17 @@ def direction_from_phase(frac: np.ndarray, smooth: int = 3) -> tuple[np.ndarray,
     return np.cos(ang), np.sin(ang)
 
 
+def direction_from_angle(angle_u8: np.ndarray, smooth: int = 4) -> tuple[np.ndarray, np.ndarray]:
+    """Unit fibre direction from the surface-baked angle atlas
+    (``fiber_dir.npz``: UV angle in [0, pi) as uint8), smoothed in
+    doubled-angle form."""
+    ang2 = angle_u8.astype(np.float64) / 255.0 * 2.0 * np.pi
+    c = box_blur(np.cos(ang2), smooth)
+    s = box_blur(np.sin(ang2), smooth)
+    ang = 0.5 * np.arctan2(s, c)
+    return np.cos(ang), np.sin(ang)
+
+
 def lic(noise: np.ndarray, dx: np.ndarray, dy: np.ndarray, mask: np.ndarray, length: int, step: float = 1.0) -> np.ndarray:
     """Line integral convolution of ``noise`` along the direction field,
     only for texels where ``mask`` is set. Streamlines are traced both ways
@@ -115,12 +126,13 @@ def _normalize(v: np.ndarray, mask: np.ndarray) -> np.ndarray:
     return np.clip((v - lo) / max(hi - lo, 1e-9), 0.0, 1.0)
 
 
-def fiber_height(frac: np.ndarray, mask: np.ndarray, seed: int = 11, fine_len: int = 18, coarse_len: int = 34) -> np.ndarray:
+def fiber_height(frac: np.ndarray, mask: np.ndarray, seed: int = 11, fine_len: int = 18, coarse_len: int = 34,
+                 direction: tuple[np.ndarray, np.ndarray] | None = None) -> np.ndarray:
     """Height in [0, 1] inside ``mask``: fine fibres plus coarser fascicle
     bundles, both following the fibre field, high-passed so the muscle's
     overall shape stays with the mesh and only the fibre relief is added."""
     rng = np.random.default_rng(seed)
-    dx, dy = direction_from_phase(frac)
+    dx, dy = direction if direction is not None else direction_from_phase(frac)
     sel = mask > 0
     # Pad the work area by the streak length so streaks reach the edge.
     ys, xs = np.nonzero(sel)
@@ -172,7 +184,8 @@ def crisp_mask(mask: np.ndarray, blur: int = 3) -> np.ndarray:
 
 
 def painted_maps(masks: dict[str, np.ndarray], phase: dict[str, np.ndarray], groups: list[str], seed: int = 11,
-                 relief: float = 10.0) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+                 relief: float = 10.0, angles: dict[str, np.ndarray] | None = None
+                 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Shade (0..1, multiplies the muscle colour), tangent normal map (RGB
     0..1) and rim (0..1, a thin band just inside each muscle outline, drawn
     as a glow so the groups read at a glance) for the highlighted ``groups``.
@@ -187,7 +200,11 @@ def painted_maps(masks: dict[str, np.ndarray], phase: dict[str, np.ndarray], gro
             raise KeyError(f"muscle group {g!r} is not in the fibre phase atlas")
         c = crisp_mask(masks[g])
         m = c > 0.0
-        h = fiber_height(phase[g], m, seed=seed + i)
+        # Prefer the surface-baked directions (pipeline/bake_fiber_directions.py):
+        # the phase atlas is built in flattened charts and bends over the
+        # shoulder cap and the upper chest.
+        direction = direction_from_angle(angles[g]) if angles is not None and g in angles else None
+        h = fiber_height(phase[g], m, seed=seed + i, direction=direction)
         e = edge_falloff(c > 0.5, 12)
         height = np.where(m, h * c, height)
         # Fibre grooves darken by up to ~45 %, towards the edge by up to ~20 %;

@@ -28,6 +28,9 @@
     @State private var loadFailed = false
     @State private var showTips = false
     @State private var selectedTip: String?
+    /// Ẩn vùng tô sáng của cơ phụ để tập trung vào cơ chính (Kiệt 13/11).
+    @State private var hideSecondary = false
+    @State private var bodySkins = BodySkins()
     @GestureState private var dragOffset: CGSize = .zero
     @GestureState private var pinch: CGFloat = 1
 
@@ -90,6 +93,9 @@
                   }
                   let scene = try await Entity(named: "bench_press_animation", in: .main)
                   content.add(scene)
+                  if let prefix = ExerciseDemo3D.demo(for: name)?.focusTexturePrefix {
+                    await bodySkins.prepare(scene: scene, prefix: prefix)
+                  }
                   Self.addLights(to: content)
                   // Tự chạy và lặp vô hạn, không dừng ở cuối.
                   if let animation = scene.availableAnimations.first {
@@ -101,6 +107,7 @@
               } update: { content in
                 guard let camera = content.entities.first(where: { $0.name == Self.cameraName }) else { return }
                 camera.look(at: Self.cameraTarget, from: cameraPosition, relativeTo: nil)
+                bodySkins.apply(focus: hideSecondary)
               }
               .ignoresSafeArea()
               .gesture(
@@ -249,15 +256,36 @@
     /// render + tên cơ + vai trò. Tĩnh, không tương tác.
     private func legendView(_ legend: [ExerciseDemo3D.LegendEntry]) -> some View {
       VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-        Text("eg.demo3d.legend.title")
-          .font(DS.TextStyle.caption.weight(.semibold))
-          .textCase(.uppercase)
-          .tracking(0.8)
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-          .accessibilityAddTraits(.isHeader)
+        HStack {
+          Text("eg.demo3d.legend.title")
+            .font(DS.TextStyle.caption.weight(.semibold))
+            .textCase(.uppercase)
+            .tracking(0.8)
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .accessibilityAddTraits(.isHeader)
+          Spacer(minLength: DS.Spacing.sm)
+          if bodySkins.ready, legend.contains(where: { !$0.roleKey.hasSuffix(".primary") }) {
+            Button {
+              withAnimation(reduceMotion ? nil : .smooth(duration: 0.2)) { hideSecondary.toggle() }
+            } label: {
+              Label(hideSecondary ? "eg.demo3d.showSecondary" : "eg.demo3d.hideSecondary",
+                    systemImage: hideSecondary ? "eye" : "eye.slash")
+                .font(DS.TextStyle.caption.weight(.semibold))
+                .foregroundStyle(DS.Color.foreground.swiftUI)
+                .padding(.horizontal, 10)
+                .frame(minHeight: 30)
+                .background(DS.Color.foreground.swiftUI.opacity(0.08), in: Capsule())
+                .frame(minHeight: 44)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityAddTraits(hideSecondary ? [.isButton, .isSelected] : .isButton)
+          }
+        }
         ForEach(Array(legend.enumerated()), id: \.offset) { _, entry in
           let tint = Color(hex: entry.hex)
           let primary = entry.roleKey.hasSuffix(".primary")
+          let hidden = hideSecondary && !primary
           HStack(spacing: DS.Spacing.sm) {
             Circle()
               .fill(tint)
@@ -277,6 +305,7 @@
                 Capsule().fill(primary ? tint : tint.opacity(0.14))
               }
           }
+          .opacity(hidden ? 0.35 : 1)
           .accessibilityElement(children: .combine)
         }
       }
@@ -358,6 +387,66 @@
       fill.components.set(DirectionalLightComponent(color: .white, intensity: 400))
       fill.look(at: cameraTarget, from: cameraTarget + [-3, 1, -2], relativeTo: nil)
       content.add(fill)
+    }
+  }
+
+  /// Hai bộ vật liệu thân nhân vật: đủ (USDZ) và "chỉ cơ chính" (texture
+  /// `<prefix>_albedo/_emission/_normal.png` cùng UV). Đổi tại chỗ khi người
+  /// dùng bấm ẩn / hiện cơ phụ, không nạp lại mô hình.
+  @Observable @MainActor final class BodySkins {
+    private typealias Skin = (
+      base: PhysicallyBasedMaterial.Texture?, emissive: PhysicallyBasedMaterial.Texture?,
+      normal: PhysicallyBasedMaterial.Texture?
+    )
+    @ObservationIgnored private weak var body: ModelEntity?
+    @ObservationIgnored private var full: Skin = (nil, nil, nil)
+    @ObservationIgnored private var focus: Skin = (nil, nil, nil)
+    @ObservationIgnored private var shownFocus = false
+    private(set) var ready = false
+
+    /// RealityKit gộp các lưới có xương (thân + quần) vào thực thể của khung
+    /// xương (`config/master_character.json` → `armature_object`).
+    private static let bodyName = "MasterRig"
+
+    func prepare(scene: Entity, prefix: String) async {
+      guard let body = Self.find(in: scene), let model = body.model,
+        let bodyMaterial = model.materials.lazy.compactMap({ $0 as? PhysicallyBasedMaterial })
+          .first(where: { $0.normal.texture != nil }),
+        let albedoURL = Bundle.main.url(forResource: "\(prefix)_albedo", withExtension: "png"),
+        let emissionURL = Bundle.main.url(forResource: "\(prefix)_emission", withExtension: "png"),
+        let normalURL = Bundle.main.url(forResource: "\(prefix)_normal", withExtension: "png"),
+        let albedo = try? await TextureResource(contentsOf: albedoURL, options: .init(semantic: .color)),
+        let emission = try? await TextureResource(contentsOf: emissionURL, options: .init(semantic: .color)),
+        let normal = try? await TextureResource(contentsOf: normalURL, options: .init(semantic: .normal))
+      else { return }
+      full = (bodyMaterial.baseColor.texture, bodyMaterial.emissiveColor.texture, bodyMaterial.normal.texture)
+      focus = (.init(albedo), .init(emission), .init(normal))
+      self.body = body
+      ready = true
+    }
+
+    /// Gán bộ texture vào vật liệu thân hiện tại (vật liệu duy nhất có normal
+    /// map — quần giữ nguyên). Gán lại mảng vật liệu cũ thì RealityKit không
+    /// vẽ lại, nên luôn dựng vật liệu mới.
+    func apply(focus on: Bool) {
+      guard ready, on != shownFocus, let body, let model = body.model else { return }
+      let skin = on ? focus : full
+      body.model?.materials = model.materials.map { material in
+        guard var pbr = material as? PhysicallyBasedMaterial, pbr.normal.texture != nil else { return material }
+        pbr.baseColor.texture = skin.base
+        pbr.emissiveColor.texture = skin.emissive
+        pbr.normal.texture = skin.normal
+        return pbr
+      }
+      shownFocus = on
+    }
+
+    private static func find(in entity: Entity) -> ModelEntity? {
+      if entity.name.contains(bodyName), let model = entity as? ModelEntity, model.model != nil { return model }
+      for child in entity.children {
+        if let hit = find(in: child) { return hit }
+      }
+      return nil
     }
   }
 #endif
