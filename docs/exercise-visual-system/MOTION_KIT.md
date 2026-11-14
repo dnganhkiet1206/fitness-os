@@ -44,7 +44,10 @@ Dữ liệu tạo ra là **tài sản của ASCND**. Chính sách nguồn ở `O
 | Cổng giải phẫu theo họ động tác (13 họ) | `evs/movement_gate.py`, `config/movement_patterns.json` | xong; `press_horizontal` có trích nguồn, các họ khác để "tạm" |
 | Công cụ đo video (MediaPipe, Apache 2.0) | `pipeline/measure_video.py` | xong; bench press: 7 lần đẩy từ clip Pexels |
 | Bộ giải họ đẩy ngang (bench press) | `bench-press/animate_bench_press.py` | chạy; cần tách thành bộ giải chung |
-| Trình xem 3D (zoom, mẹo, ẩn cơ phụ) | `apps/ios/.../ExerciseDemo3DView.swift` | xong |
+| Trình xem 3D (zoom, mẹo, ẩn cơ phụ) | `apps/ios/.../ExerciseDemo3DView.swift` | xong; đọc USDZ, góc máy, chú thích theo từng bài |
+| **Bộ tạo chung theo template** | `motionlab/` (timing min-jerk, primitives, families: `curl`, `squat`), `pipeline/generate_exercise.py` | xong cho 2 họ; dumbbell-curl QA 12/12, back-squat 10/11 |
+| **Bộ kiểm chung 4 tầng (A–D), lỗi chỉ đúng khung/khớp** | `evs/motion_qa.py`, `pipeline/validate_motion.py` | xong |
+| **Giải theo mục tiêu** | `pipeline/solve_targets.py`, `pipeline/measure_animation.py` | xong; bench press: khuỷu 104° / dang vai 60° sau 24 lần thử |
 
 ## Đã học từ dữ liệu (bench press)
 
