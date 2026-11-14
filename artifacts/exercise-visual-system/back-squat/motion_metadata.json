@@ -1,0 +1,484 @@
+{
+  "pipeline_version": "0.1.0",
+  "generator": "pipeline/generate_exercise.py",
+  "template": "squat",
+  "generated": "2026-11-14",
+  "exercise_id": "barbell_back_squat",
+  "frame_rate": 24,
+  "frame_end": 224,
+  "phases": [
+    {
+      "id": "start_position",
+      "name": "Start position",
+      "start_s": 0.0,
+      "end_s": 0.6,
+      "cues": [
+        "Bar on the upper back, feet about shoulder width, toes slightly out"
+      ],
+      "checks": []
+    },
+    {
+      "id": "eccentric",
+      "name": "Eccentric",
+      "start_s": 0.6,
+      "end_s": 2.6,
+      "cues": [
+        "Sit down and back, knees track over the toes",
+        "Keep the chest up and the bar over the middle of the foot"
+      ],
+      "checks": []
+    },
+    {
+      "id": "bottom_hold",
+      "name": "Bottom hold",
+      "start_s": 2.6,
+      "end_s": 2.9,
+      "cues": [
+        "Thighs about parallel to the floor"
+      ],
+      "checks": []
+    },
+    {
+      "id": "concentric",
+      "name": "Concentric",
+      "start_s": 2.9,
+      "end_s": 4.5,
+      "cues": [
+        "Drive up through the whole foot, hips and chest rise together"
+      ],
+      "checks": []
+    },
+    {
+      "id": "top_hold",
+      "name": "Top hold",
+      "start_s": 4.5,
+      "end_s": 5.0,
+      "cues": [],
+      "checks": []
+    },
+    {
+      "id": "eccentric_2",
+      "name": "Eccentric 2",
+      "start_s": 5.0,
+      "end_s": 7.0,
+      "cues": [
+        "Sit down and back, knees track over the toes",
+        "Keep the chest up and the bar over the middle of the foot"
+      ],
+      "checks": []
+    },
+    {
+      "id": "bottom_hold_2",
+      "name": "Bottom hold 2",
+      "start_s": 7.0,
+      "end_s": 7.3,
+      "cues": [
+        "Thighs about parallel to the floor"
+      ],
+      "checks": []
+    },
+    {
+      "id": "concentric_2",
+      "name": "Concentric 2",
+      "start_s": 7.3,
+      "end_s": 8.9,
+      "cues": [
+        "Drive up through the whole foot, hips and chest rise together"
+      ],
+      "checks": []
+    },
+    {
+      "id": "finish",
+      "name": "Finish",
+      "start_s": 8.9,
+      "end_s": 9.3,
+      "cues": [],
+      "checks": []
+    }
+  ],
+  "technique": {
+    "knee_flexion_bottom_deg": 115.0,
+    "ankle_dorsiflexion_bottom_deg": 32.0,
+    "knee_flexion_top_deg": 4.0,
+    "ankle_dorsiflexion_top_deg": 2.0,
+    "stance_half_width_m": 0.21,
+    "toe_out_deg": 22.0,
+    "midfoot_forward_of_ankle_m": 0.05,
+    "bar_behind_shoulders_m": 0.055,
+    "bar_above_shoulders_m": 0.035,
+    "grip_width_between_hand_centres_m": 0.62,
+    "pelvis_share_of_lean": 0.8
+  },
+  "skeleton": {
+    "shoulder_l": [
+      0.1984209418296814,
+      -0.01792922243475914,
+      1.427953839302063
+    ],
+    "elbow_l": [
+      0.3768349885940552,
+      -0.01709269918501377,
+      1.2298847436904907
+    ],
+    "wrist_l": [
+      0.5148056745529175,
+      -0.21417035162448883,
+      1.0977822542190552
+    ],
+    "hip_l": [
+      0.11090510338544846,
+      0.007330718450248241,
+      0.9567191004753113
+    ],
+    "knee_l": [
+      0.15277478098869324,
+      -0.02764178067445755,
+      0.5198134183883667
+    ],
+    "ankle_l": [
+      0.2023106962442398,
+      -0.013879254460334778,
+      0.07386663556098938
+    ],
+    "shoulder_r": [
+      -0.1984209418296814,
+      -0.01792922243475914,
+      1.427953839302063
+    ],
+    "elbow_r": [
+      -0.3768349885940552,
+      -0.01709269918501377,
+      1.2298847436904907
+    ],
+    "wrist_r": [
+      -0.5148056149482727,
+      -0.21417035162448883,
+      1.0977822542190552
+    ],
+    "hip_r": [
+      -0.11090510338544846,
+      0.007330718450248241,
+      0.9567191004753113
+    ],
+    "knee_r": [
+      -0.15277476608753204,
+      -0.02764178067445755,
+      0.5198134183883667
+    ],
+    "ankle_r": [
+      -0.2023106813430786,
+      -0.013879257254302502,
+      0.07386663556098938
+    ],
+    "upper_arm_m": 0.2665776312351227,
+    "forearm_m": 0.2744568884372711,
+    "thigh_m": 0.4402984380722046,
+    "shin_m": 0.44890058040618896
+  },
+  "trace_every_6_frames": [
+    {
+      "frame": 0,
+      "progress": 1.0,
+      "knee_flexion_deg": 4.0,
+      "ankle_dorsiflexion_deg": 2.0,
+      "trunk_lean_deg": 8.987,
+      "hip_flexion_deg": 10.987
+    },
+    {
+      "frame": 6,
+      "progress": 1.0,
+      "knee_flexion_deg": 4.0,
+      "ankle_dorsiflexion_deg": 2.0,
+      "trunk_lean_deg": 8.987,
+      "hip_flexion_deg": 10.987
+    },
+    {
+      "frame": 12,
+      "progress": 1.0,
+      "knee_flexion_deg": 4.0,
+      "ankle_dorsiflexion_deg": 2.0,
+      "trunk_lean_deg": 8.987,
+      "hip_flexion_deg": 10.987
+    },
+    {
+      "frame": 18,
+      "progress": 0.9962,
+      "knee_flexion_deg": 4.417,
+      "ankle_dorsiflexion_deg": 2.113,
+      "trunk_lean_deg": 9.151,
+      "hip_flexion_deg": 11.455
+    },
+    {
+      "frame": 24,
+      "progress": 0.9421,
+      "knee_flexion_deg": 10.429,
+      "ankle_dorsiflexion_deg": 3.738,
+      "trunk_lean_deg": 11.514,
+      "hip_flexion_deg": 18.205
+    },
+    {
+      "frame": 30,
+      "progress": 0.8023,
+      "knee_flexion_deg": 25.943,
+      "ankle_dorsiflexion_deg": 7.931,
+      "trunk_lean_deg": 17.487,
+      "hip_flexion_deg": 35.5
+    },
+    {
+      "frame": 36,
+      "progress": 0.5931,
+      "knee_flexion_deg": 49.163,
+      "ankle_dorsiflexion_deg": 14.206,
+      "trunk_lean_deg": 25.515,
+      "hip_flexion_deg": 60.472
+    },
+    {
+      "frame": 42,
+      "progress": 0.3615,
+      "knee_flexion_deg": 74.877,
+      "ankle_dorsiflexion_deg": 21.156,
+      "trunk_lean_deg": 31.831,
+      "hip_flexion_deg": 85.552
+    },
+    {
+      "frame": 48,
+      "progress": 0.1631,
+      "knee_flexion_deg": 96.898,
+      "ankle_dorsiflexion_deg": 27.108,
+      "trunk_lean_deg": 33.858,
+      "hip_flexion_deg": 103.648
+    },
+    {
+      "frame": 54,
+      "progress": 0.0405,
+      "knee_flexion_deg": 110.503,
+      "ankle_dorsiflexion_deg": 30.785,
+      "trunk_lean_deg": 33.187,
+      "hip_flexion_deg": 112.905
+    },
+    {
+      "frame": 60,
+      "progress": 0.0012,
+      "knee_flexion_deg": 114.871,
+      "ankle_dorsiflexion_deg": 31.965,
+      "trunk_lean_deg": 32.645,
+      "hip_flexion_deg": 115.551
+    },
+    {
+      "frame": 66,
+      "progress": 0.0,
+      "knee_flexion_deg": 115.0,
+      "ankle_dorsiflexion_deg": 32.0,
+      "trunk_lean_deg": 32.627,
+      "hip_flexion_deg": 115.627
+    },
+    {
+      "frame": 72,
+      "progress": 0.0022,
+      "knee_flexion_deg": 114.754,
+      "ankle_dorsiflexion_deg": 31.933,
+      "trunk_lean_deg": 32.662,
+      "hip_flexion_deg": 115.482
+    },
+    {
+      "frame": 78,
+      "progress": 0.0733,
+      "knee_flexion_deg": 106.86,
+      "ankle_dorsiflexion_deg": 29.8,
+      "trunk_lean_deg": 33.517,
+      "hip_flexion_deg": 110.577
+    },
+    {
+      "frame": 84,
+      "progress": 0.2752,
+      "knee_flexion_deg": 84.452,
+      "ankle_dorsiflexion_deg": 23.744,
+      "trunk_lean_deg": 33.158,
+      "hip_flexion_deg": 93.866
+    },
+    {
+      "frame": 90,
+      "progress": 0.5584,
+      "knee_flexion_deg": 53.013,
+      "ankle_dorsiflexion_deg": 15.247,
+      "trunk_lean_deg": 26.672,
+      "hip_flexion_deg": 64.438
+    },
+    {
+      "frame": 96,
+      "progress": 0.82,
+      "knee_flexion_deg": 23.981,
+      "ankle_dorsiflexion_deg": 7.4,
+      "trunk_lean_deg": 16.749,
+      "hip_flexion_deg": 33.329
+    },
+    {
+      "frame": 102,
+      "progress": 0.9702,
+      "knee_flexion_deg": 7.304,
+      "ankle_dorsiflexion_deg": 2.893,
+      "trunk_lean_deg": 10.287,
+      "hip_flexion_deg": 14.698
+    },
+    {
+      "frame": 108,
+      "progress": 1.0,
+      "knee_flexion_deg": 4.0,
+      "ankle_dorsiflexion_deg": 2.0,
+      "trunk_lean_deg": 8.987,
+      "hip_flexion_deg": 10.987
+    },
+    {
+      "frame": 114,
+      "progress": 1.0,
+      "knee_flexion_deg": 4.0,
+      "ankle_dorsiflexion_deg": 2.0,
+      "trunk_lean_deg": 8.987,
+      "hip_flexion_deg": 10.987
+    },
+    {
+      "frame": 120,
+      "progress": 1.0,
+      "knee_flexion_deg": 4.0,
+      "ankle_dorsiflexion_deg": 2.0,
+      "trunk_lean_deg": 8.987,
+      "hip_flexion_deg": 10.987
+    },
+    {
+      "frame": 126,
+      "progress": 0.9839,
+      "knee_flexion_deg": 5.782,
+      "ankle_dorsiflexion_deg": 2.482,
+      "trunk_lean_deg": 9.688,
+      "hip_flexion_deg": 12.988
+    },
+    {
+      "frame": 132,
+      "progress": 0.8965,
+      "knee_flexion_deg": 15.49,
+      "ankle_dorsiflexion_deg": 5.105,
+      "trunk_lean_deg": 13.49,
+      "hip_flexion_deg": 23.875
+    },
+    {
+      "frame": 138,
+      "progress": 0.7248,
+      "knee_flexion_deg": 34.548,
+      "ankle_dorsiflexion_deg": 10.256,
+      "trunk_lean_deg": 20.635,
+      "hip_flexion_deg": 44.927
+    },
+    {
+      "frame": 144,
+      "progress": 0.5,
+      "knee_flexion_deg": 59.5,
+      "ankle_dorsiflexion_deg": 17.0,
+      "trunk_lean_deg": 28.47,
+      "hip_flexion_deg": 70.97
+    },
+    {
+      "frame": 150,
+      "progress": 0.2752,
+      "knee_flexion_deg": 84.452,
+      "ankle_dorsiflexion_deg": 23.744,
+      "trunk_lean_deg": 33.158,
+      "hip_flexion_deg": 93.866
+    },
+    {
+      "frame": 156,
+      "progress": 0.1035,
+      "knee_flexion_deg": 103.51,
+      "ankle_dorsiflexion_deg": 28.895,
+      "trunk_lean_deg": 33.724,
+      "hip_flexion_deg": 108.339
+    },
+    {
+      "frame": 162,
+      "progress": 0.0161,
+      "knee_flexion_deg": 113.218,
+      "ankle_dorsiflexion_deg": 31.518,
+      "trunk_lean_deg": 32.869,
+      "hip_flexion_deg": 114.568
+    },
+    {
+      "frame": 168,
+      "progress": 0.0,
+      "knee_flexion_deg": 115.0,
+      "ankle_dorsiflexion_deg": 32.0,
+      "trunk_lean_deg": 32.627,
+      "hip_flexion_deg": 115.627
+    },
+    {
+      "frame": 174,
+      "progress": 0.0,
+      "knee_flexion_deg": 115.0,
+      "ankle_dorsiflexion_deg": 32.0,
+      "trunk_lean_deg": 32.627,
+      "hip_flexion_deg": 115.627
+    },
+    {
+      "frame": 180,
+      "progress": 0.0161,
+      "knee_flexion_deg": 113.218,
+      "ankle_dorsiflexion_deg": 31.518,
+      "trunk_lean_deg": 32.869,
+      "hip_flexion_deg": 114.568
+    },
+    {
+      "frame": 186,
+      "progress": 0.1392,
+      "knee_flexion_deg": 99.551,
+      "ankle_dorsiflexion_deg": 27.825,
+      "trunk_lean_deg": 33.847,
+      "hip_flexion_deg": 105.574
+    },
+    {
+      "frame": 192,
+      "progress": 0.384,
+      "knee_flexion_deg": 72.373,
+      "ankle_dorsiflexion_deg": 20.479,
+      "trunk_lean_deg": 31.381,
+      "hip_flexion_deg": 83.275
+    },
+    {
+      "frame": 198,
+      "progress": 0.6717,
+      "knee_flexion_deg": 40.441,
+      "ankle_dorsiflexion_deg": 11.849,
+      "trunk_lean_deg": 22.685,
+      "hip_flexion_deg": 51.277
+    },
+    {
+      "frame": 204,
+      "progress": 0.8965,
+      "knee_flexion_deg": 15.49,
+      "ankle_dorsiflexion_deg": 5.105,
+      "trunk_lean_deg": 13.49,
+      "hip_flexion_deg": 23.875
+    },
+    {
+      "frame": 210,
+      "progress": 0.9929,
+      "knee_flexion_deg": 4.791,
+      "ankle_dorsiflexion_deg": 2.214,
+      "trunk_lean_deg": 9.298,
+      "hip_flexion_deg": 11.875
+    },
+    {
+      "frame": 216,
+      "progress": 1.0,
+      "knee_flexion_deg": 4.0,
+      "ankle_dorsiflexion_deg": 2.0,
+      "trunk_lean_deg": 8.987,
+      "hip_flexion_deg": 10.987
+    },
+    {
+      "frame": 222,
+      "progress": 1.0,
+      "knee_flexion_deg": 4.0,
+      "ankle_dorsiflexion_deg": 2.0,
+      "trunk_lean_deg": 8.987,
+      "hip_flexion_deg": 10.987
+    }
+  ]
+}

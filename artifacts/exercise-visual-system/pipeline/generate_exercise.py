@@ -55,6 +55,39 @@ def rest_skeleton(rig) -> dict:
     return sk
 
 
+SPINE = ("spine_01", "spine_02", "spine_03")
+
+
+def pose_body(rig, body: dict, frame: int) -> None:
+    """Trunk lean (degrees forward) split between the pelvis and the spine,
+    then the pelvis moved so the hip centre lands on the template's hip
+    centre. Keys pelvis location/rotation and spine rotations."""
+    from mathutils import Quaternion
+    from evs import motion
+    pelvis = rig.pose.bones["pelvis"]
+    for b in ("pelvis",) + SPINE:
+        pb = rig.pose.bones[b]
+        pb.rotation_mode = "QUATERNION"
+        pb.rotation_quaternion = Quaternion()
+    pelvis.location = (0.0, 0.0, 0.0)
+    bpy.context.view_layer.update()
+    lean = float(body["trunk_lean_deg"])
+    share = float(body.get("pelvis_share", 0.8))
+    motion.rotate_bone_about_armature_axis(rig, "pelvis", Vector((1, 0, 0)), lean * share)
+    for b in SPINE:
+        motion.rotate_bone_about_armature_axis(rig, b, Vector((1, 0, 0)), lean * (1.0 - share) / len(SPINE))
+    bpy.context.view_layer.update()
+    hip = 0.5 * (evs_rig.bone_head_world(rig, "thigh_l") + evs_rig.bone_head_world(rig, "thigh_r"))
+    delta = rig.matrix_world.inverted().to_3x3() @ (Vector(body["hip_centre"]) - hip)
+    m = pelvis.matrix.copy()
+    m.translation += delta
+    pelvis.matrix = m
+    bpy.context.view_layer.update()
+    pelvis.keyframe_insert("location", frame=frame)
+    for b in ("pelvis",) + SPINE:
+        rig.pose.bones[b].keyframe_insert("rotation_quaternion", frame=frame)
+
+
 def to_matrix(m: np.ndarray) -> Matrix:
     return Matrix([list(r) for r in m])
 
@@ -85,8 +118,20 @@ def main() -> None:
     exercise["animation_duration"] = round(timing.duration(phases), 3)
     config.save_json(path / "exercise.json", exercise)
 
+    static = template.static()
+    # Implements that ride on a bone (a bar on the upper back).
+    for key, v in static.get("attached", {}).items():
+        obj = bpy.data.objects[key.capitalize()]
+        obj.rotation_mode = "QUATERNION"
+        obj.parent = rig
+        obj.parent_type = "BONE"
+        obj.parent_bone = v["bone"]
+        bpy.context.view_layer.update()
+        obj.matrix_world = to_matrix(v["matrix"])
     # Feet planted, knees forward.
-    for key, v in template.static().items():
+    for key, v in static.items():
+        if not isinstance(v, dict) or key in ("attached", "grips"):
+            continue
         if "position" in v:
             side = key[-1]
             rest = rig.data.bones[f"foot_{side}"].matrix_local
@@ -103,6 +148,15 @@ def main() -> None:
     # (X = handle axis, +Y = where the palm faces), the character's
     # standard closed grip.
     sockets, socket_local = {}, {}
+    # Grips declared by the template (two hands on one implement).
+    for key, hands in static.get("grips", {}).items():
+        obj = bpy.data.objects[key.capitalize()]
+        for hand, g in hands.items():
+            local = evs_rig.hand_matrix_for_grip(rig, hand, grip_cfg, bar_point=Vector(g["point"]),
+                                                 bar_axis=Vector(g["axis"]), palm_normal=Vector(g["palm"]))
+            socket = evs_rig.add_socket(obj, f"hand_{hand}", local)
+            evs_rig.attach_control(rig, f"ctl_hand_{hand}", socket)
+            rig[f"grip_{hand}"] = 1.0
     for item in exercise["equipment"]:
         hand = item.get("held_by")
         if not hand:
@@ -136,6 +190,16 @@ def main() -> None:
             obj.matrix_world = mw
             obj.keyframe_insert("location", frame=f)
             obj.keyframe_insert("rotation_quaternion", frame=f)
+        body = fr.get("body")
+        if body:
+            pose_body(rig, body, f)
+        if fr.get("poles_trunk"):
+            # Offsets given in the trunk's rest frame: rotate with spine_03.
+            pb3 = rig.pose.bones["spine_03"]
+            rot = (rig.matrix_world.to_3x3() @ pb3.matrix.to_3x3()) @ (rig.matrix_world.to_3x3() @ pb3.bone.matrix_local.to_3x3()).inverted()
+            for key, (bone, offset) in fr["poles_trunk"].items():
+                evs_rig.set_pole_world(rig, key, evs_rig.bone_head_world(rig, bone) + rot @ Vector(offset))
+                rig.pose.bones[key].keyframe_insert("location", frame=f)
         for key, point in fr["poles"].items():
             evs_rig.set_pole_world(rig, key, Vector(point))
             rig.pose.bones[key].keyframe_insert("location", frame=f)
@@ -144,13 +208,13 @@ def main() -> None:
     # Cameras: every preset frames the whole repetition, all on one timeline.
     pts = []
     depsgraph = bpy.context.evaluated_depsgraph_get()
-    for f in (0, int(end_frame * 0.25), int(end_frame * 0.5)):
+    for f in range(0, end_frame + 1, max(1, end_frame // 12)):
         scene.frame_set(f)
         depsgraph.update()
         for obj in scene.objects:
             if obj.type == "MESH" and not obj.name.startswith("EVS_Floor"):
                 me = obj.evaluated_get(depsgraph).to_mesh()
-                pts.extend(list(obj.matrix_world @ me.vertices[i].co) for i in range(0, len(me.vertices), 9))
+                pts.extend(list(obj.matrix_world @ me.vertices[i].co) for i in range(0, len(me.vertices), 25))
                 obj.evaluated_get(depsgraph).to_mesh_clear()
     cameras = evs_scene.build_cameras(scene, exercise, np.array(pts))
     scene.camera = cameras[exercise["camera_presets"][0]]

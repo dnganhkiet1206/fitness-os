@@ -11,9 +11,10 @@ import numpy as np
 
 from . import bl_util, fibers as fibers_mod, muscle_eval, pngio
 
-ARM_BONES = ("upperarm", "lowerarm", "hand", "index_01", "index_02", "index_03", "middle_01", "middle_02", "middle_03",
+# Twist bones (character 002 rig) carry part of the limb skin: they belong to the limb gate.
+ARM_BONES = ("upperarm", "upperarm_twist", "lowerarm", "lowerarm_twist", "hand", "index_01", "index_02", "index_03", "middle_01", "middle_02", "middle_03",
              "ring_01", "ring_02", "ring_03", "pinky_01", "pinky_02", "pinky_03", "thumb_01", "thumb_02", "thumb_03")
-LEG_BONES = ("thigh", "calf", "foot", "ball")
+LEG_BONES = ("thigh", "thigh_twist", "calf", "foot", "ball")
 HEAD_BONES = ("head",)
 
 
