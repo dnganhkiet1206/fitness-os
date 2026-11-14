@@ -23,7 +23,7 @@ import bmesh  # noqa: E402
 import bpy  # noqa: E402
 import numpy as np  # noqa: E402
 
-from evs import bl_util, config, motion_qa as Q, movement_gate  # noqa: E402
+from evs import bl_util, config, motion_qa as Q, movement_gate, reference_check  # noqa: E402
 from evs.sampling import JOINTS  # noqa: E402
 
 DEFAULTS = {"max_joint_speed_m_s": 2.5, "max_frame_to_frame_joint_jump_deg": 12.0, "max_hand_to_socket_m": 0.004,
@@ -145,19 +145,24 @@ def main() -> None:
               round(worst_stretch[0], 3), prof["max_p999_edge_stretch"], {"frame": worst_stretch[1]}, "p99.9 edge stretch"),
     ]
     movement = ex.get("movement", {})
-    if movement.get("pattern"):
-        patterns = movement_gate.load_patterns(config.CONFIG_DIR / "movement_patterns.json")
+    jr = j
+    if movement.get("rep_phases"):
         phases = {p["id"]: p for p in ex["exercise_phases"]}
         rep = [p for p in movement.get("rep_phases", []) if p in phases]
         if rep:
             f0, f1 = int(round(phases[rep[0]]["start_s"] * fps)), int(round(phases[rep[-1]]["end_s"] * fps))
             jr = {k: v[f0:f1 + 1] for k, v in j.items()}
-        else:
-            jr = j
+    if movement.get("pattern"):
+        patterns = movement_gate.load_patterns(config.CONFIG_DIR / "movement_patterns.json")
         for r in movement_gate.evaluate(jr, patterns, movement):
             status = Q.PASS if r["pass"] else (Q.REVIEW if r["provisional"] else Q.FAIL)
             records.append(Q.rec(f"movement_{r['metric']}", "D", f"{movement['pattern']}: {r['metric']} inside the family bounds", status,
                                  r["measured"], r["limit"], None, (r["source"] or "provisional bound")))
+    for r in reference_check.check(path, movement, movement_gate.metrics(jr)):
+        status = {reference_check.PASS: Q.PASS, reference_check.FAIL: Q.FAIL, reference_check.NOT_TESTED: Q.NOT_TESTED}[r["outcome"]]
+        limit = [round(r["reference"] - r["tolerance"], 3), round(r["reference"] + r["tolerance"], 3)] \
+            if r["reference"] is not None and r["tolerance"] is not None else None
+        records.append(Q.rec(r["id"], "D", r["title"], status, r["measured"], limit, None, r["detail"]))
     report = {"tool": "pipeline/validate_motion.py", "date": datetime.date.today().isoformat(), "exercise_id": ex["exercise_id"],
               "frames": len(frames), "fps": fps, "summary": Q.summary(records), "checks": records}
     config.save_json(path / "qa_report.json", report)

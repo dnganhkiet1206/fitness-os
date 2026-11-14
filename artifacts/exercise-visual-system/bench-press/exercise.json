@@ -197,6 +197,8 @@
       "lockout"
     ],
     "qa": {},
+    "reference_checks": [],
+    "reference_note": "Reference clip Pexels 20672105 is wide-grip; the animation is medium grip (0.78 m between hand centres, Mausehund et al. 2022 medium-grip targets), so clip angles are not comparable to the animation. Tempo also differs deliberately (slow instructional tempo vs clip tempo). The press_horizontal family gate (Mausehund bounds) is the regression check for bench angles; declare reference_checks only from a medium-grip clip.",
     "targets": [
       {
         "metric": "elbow_flexion_max_deg",

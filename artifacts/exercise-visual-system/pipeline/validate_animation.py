@@ -26,7 +26,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from evs import FAIL, NOT_TESTED, PASS, PIPELINE_VERSION, REQUIRES_MANUAL_REVIEW, UNVERIFIED_LABEL, config, movement_gate  # noqa: E402
+from evs import FAIL, NOT_TESTED, PASS, PIPELINE_VERSION, REQUIRES_MANUAL_REVIEW, UNVERIFIED_LABEL, config, movement_gate, reference_check  # noqa: E402
 from evs.validation import checks, report, video  # noqa: E402
 
 
@@ -81,6 +81,32 @@ def movement_gate_checks(clip, exercise: dict) -> list[dict]:
     return out
 
 
+def reference_measurement_checks(clip, exercise: dict, exercise_path) -> list[dict]:
+    """Golden measurements (evs/reference_check.py): the animation's
+    top/bottom joint angles against <exercise>/reference_measurements.json
+    for the checks declared in movement.reference_checks. Same comparison
+    logic as pipeline/validate_motion.py; an exercise with no reference
+    file reports NOT_TESTED, never a silent pass."""
+    movement = exercise.get("movement")
+    if not movement:
+        return [checks.record("reference_measurements", "anatomy", "Golden measurements: reference comparison", NOT_TESTED,
+                              detail="exercise.json has no 'movement'.")]
+    phases = [p for p in movement.get("rep_phases", []) if clip.has(p)]
+    if phases:
+        sl = slice(clip.span(phases[0]).start, clip.span(phases[-1]).stop)
+        joints = {k: v[sl] for k, v in clip.j.items()}
+    else:
+        joints = clip.j
+    out = []
+    for r in reference_check.check(exercise_path, movement, movement_gate.metrics(joints)):
+        status = {reference_check.PASS: PASS, reference_check.FAIL: FAIL, reference_check.NOT_TESTED: NOT_TESTED}[r["outcome"]]
+        limit = [round(r["reference"] - r["tolerance"], 3), round(r["reference"] + r["tolerance"], 3)] \
+            if r["reference"] is not None and r["tolerance"] is not None else None
+        out.append(checks.record(r["id"], "anatomy", r["title"], status, measured=r["measured"], limit=limit, unit="",
+                                 detail=r["detail"]))
+    return out
+
+
 def main(exercise_name: str | None = None) -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--exercise", default=exercise_name, required=exercise_name is None)
@@ -116,6 +142,7 @@ def main(exercise_name: str | None = None) -> None:
     results += checks.movement_checks(clip, profile)
     results += checks.equipment_checks(clip, profile, exercise, inventory, config.equipment_config())
     results += movement_gate_checks(clip, exercise)
+    results += reference_measurement_checks(clip, exercise, exercise_path)
 
     render_meta_path = exercise_path / "render_metadata.json"
     render_meta = config.load_json(render_meta_path) if render_meta_path.exists() else None

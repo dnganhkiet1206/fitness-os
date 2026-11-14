@@ -6,7 +6,8 @@
   "fps": 24,
   "summary": {
     "counts": {
-      "PASS": 17
+      "PASS": 17,
+      "NOT_TESTED": 1
     },
     "technically_validated": true,
     "states": {
@@ -238,6 +239,16 @@
       ],
       "where": null,
       "detail": "provisional bound"
+    },
+    {
+      "id": "reference_measurements",
+      "stage": "D",
+      "title": "Golden measurements: reference comparison",
+      "status": "NOT_TESTED",
+      "measured": null,
+      "limit": null,
+      "where": null,
+      "detail": "No reference measurements: this exercise has no reference_measurements.json and declares no reference_checks. Golden measurements are not established yet; this is neither a pass nor a fail."
     }
   ]
 }

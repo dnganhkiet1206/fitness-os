@@ -1,6 +1,6 @@
 {
   "pipeline_version": "0.1.0",
-  "generated": "2026-11-14T02:08:14-06:00",
+  "generated": "2026-11-14T16:06:27+00:00",
   "exercise": "Barbell Bench Press",
   "exercise_id": "barbell_bench_press",
   "character": "master_character_003",
@@ -22,7 +22,7 @@
     "counts": {
       "PASS": 55,
       "FAIL": 3,
-      "NOT_TESTED": 2,
+      "NOT_TESTED": 3,
       "REQUIRES_MANUAL_REVIEW": 4,
       "UNVERIFIED": 2
     },
@@ -33,6 +33,7 @@
     ],
     "not_tested_checks": [
       "rig_compatibility",
+      "reference_measurements",
       "glb_mobile_playback"
     ],
     "needs_human": [
@@ -348,7 +349,7 @@
       "status": "PASS",
       "measured": {
         "position_m": 1e-05,
-        "elbow_angle_deg": 0.001
+        "elbow_angle_deg": 0.0
       },
       "limit": {
         "position_m": 0.003,
@@ -455,7 +456,7 @@
       "category": "equipment",
       "title": "Hand skin does not pass through the bar",
       "status": "PASS",
-      "measured": 0.0047,
+      "measured": 0.00469,
       "limit": 0.008,
       "unit": "m",
       "detail": "",
@@ -682,6 +683,17 @@
       "phases": []
     },
     {
+      "id": "reference_measurements",
+      "category": "anatomy",
+      "title": "Golden measurements: reference comparison",
+      "status": "NOT_TESTED",
+      "measured": null,
+      "limit": null,
+      "unit": "",
+      "detail": "Reference measurements exist but no comparable checks are declared, so nothing is compared. Reference clip Pexels 20672105 is wide-grip; the animation is medium grip (0.78 m between hand centres, Mausehund et al. 2022 medium-grip targets), so clip angles are not comparable to the animation. Tempo also differs deliberately (slow instructional tempo vs clip tempo). The press_horizontal family gate (Mausehund bounds) is the regression check for bench angles; declare reference_checks only from a medium-grip clip.",
+      "phases": []
+    },
+    {
       "id": "cameras_present",
       "category": "rendering",
       "title": "Side, front and 45-degree cameras exist in the scene",
@@ -863,10 +875,10 @@
       "title": "No brightness flicker in the parts of the picture that do not move",
       "status": "PASS",
       "measured": {
-        "side": 0.0058,
-        "front": 0.0077,
-        "three_quarter": 0.0071,
-        "closeup_grip": 0.2838
+        "side": 0.0076,
+        "front": 0.0079,
+        "three_quarter": 0.0072,
+        "closeup_grip": 0.3108
       },
       "limit": 1.0,
       "unit": "grey levels (0-255) between consecutive frames",
@@ -881,21 +893,21 @@
       "measured": {
         "side vs front": {
           "best_lag_frames": 0,
-          "correlation_at_lag_0": 0.7767,
-          "correlation_at_best_lag": 0.7767,
-          "still_frames_agreement": 0.9829
+          "correlation_at_lag_0": 0.777,
+          "correlation_at_best_lag": 0.777,
+          "still_frames_agreement": 0.9786
         },
         "side vs three_quarter": {
           "best_lag_frames": 0,
-          "correlation_at_lag_0": 0.9661,
-          "correlation_at_best_lag": 0.9661,
+          "correlation_at_lag_0": 0.966,
+          "correlation_at_best_lag": 0.966,
           "still_frames_agreement": 0.9915
         },
         "front vs three_quarter": {
           "best_lag_frames": 0,
-          "correlation_at_lag_0": 0.8963,
-          "correlation_at_best_lag": 0.8963,
-          "still_frames_agreement": 0.9744
+          "correlation_at_lag_0": 0.8964,
+          "correlation_at_best_lag": 0.8964,
+          "still_frames_agreement": 0.9786
         }
       },
       "limit": {

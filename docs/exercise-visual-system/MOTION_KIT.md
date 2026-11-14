@@ -34,6 +34,9 @@ Dữ liệu tạo ra là **tài sản của ASCND**. Chính sách nguồn ở `O
                 - cổng dáng toàn thân (14/11): cổ tay thẳng, khuỷu ≤ 145°, khuỷu không kẹp
                   sau vai, đầu không gục, dụng cụ không xuyên da
                 - cổng giải phẫu (evs/movement_gate.py): ngưỡng của họ động tác
+                - số đo vàng (evs/reference_check.py): góc đỉnh/đáy so với reference_measurements.json
+                  ± dung sai theo khai báo ở movement.reference_checks; bài chưa có tham chiếu báo
+                  NOT_TESTED, không tính pass cũng không tính fail
                 - tờ soi xoay vòng: 6 góc quanh người + 2 góc cao × đứng / giữa / đáy
                   (factory.py sheet). BẮT BUỘC soi tay, lưng, đầu, chân, dụng cụ ở mọi góc,
                   đối chiếu nguồn kỹ thuật, trước khi báo xong (MOTION_KIT_LESSONS.md luật 1)
@@ -48,7 +51,8 @@ Dữ liệu tạo ra là **tài sản của ASCND**. Chính sách nguồn ở `O
 | **Cơ tạc khối tách lớp theo phần giải phẫu** (14/11): 70 phần (2 đầu ngực, 8 múi bụng, 4 răng cưa, 3 đầu đùi trước, 2 nhóm đùi sau, 2 đầu bắp chân, 2 đầu tam đầu…); rãnh sâu giữa các cơ, nông giữa các đầu, mờ dần ở chỗ cơ thành gân | `config/muscle_parts.json`, `evs/muscle_sculpt.py`, `pipeline/sculpt_muscles.py` | bản đầu, chờ Kiệt duyệt |
 | Rig 63 xương: thêm bả vai, cơ ngực, xương xoắn cánh tay/cẳng tay/đùi; trọng số da lấy từ rig default của MPFB, làm mượt | `evs/character.py` → `augment_rig` | xong; ép vai 25° không còn bóp nát ngực |
 | Bản đồ 21 nhóm cơ, hướng sợi tính trên mặt 3D, sợi vẽ LIC | `evs/fiber_lic.py`, `pipeline/bake_fiber_directions.py` | xong |
-| Cổng giải phẫu theo họ động tác (13 họ) | `evs/movement_gate.py`, `config/movement_patterns.json` | xong; `press_horizontal` có trích nguồn, các họ khác để "tạm" |
+| Cổng giải phẫu theo họ động tác (13 họ) | `evs/movement_gate.py`, `config/movement_patterns.json` | xong; 4 họ cited (`press_horizontal`, `squat`, `lunge`, `push_up` — chỉ metric có nguồn đã đọc; metric còn lại vẫn "tạm" theo danh sách từng metric), 9 họ còn lại "tạm" + `research_notes` ghi đã tra gì, thiếu gì (14/11) |
+| Số đo vàng (golden measurements) | `evs/reference_check.py`, `movement.reference_checks` | xong; bench có file tham chiếu nhưng chưa khai báo check nào (clip tay cầm rộng ≠ animation tay cầm vừa, ghi lý do ở `reference_note`); squat/curl chưa có tham chiếu (NOT_TESTED) |
 | Công cụ đo video (MediaPipe, Apache 2.0) | `pipeline/measure_video.py` | xong; bench press: 7 lần đẩy từ clip Pexels |
 | Bộ giải họ đẩy ngang (bench press) | `bench-press/animate_bench_press.py` | chạy; cần tách thành bộ giải chung |
 | Trình xem 3D (zoom, mẹo, ẩn cơ phụ) | `apps/ios/.../ExerciseDemo3DView.swift` | xong; đọc USDZ, góc máy, chú thích theo từng bài |
