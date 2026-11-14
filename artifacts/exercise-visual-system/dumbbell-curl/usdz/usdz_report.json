@@ -3,7 +3,7 @@
   "exercise_id": "dumbbell_biceps_curl",
   "master_character_id": "master_character_002",
   "usdz": "dumbbell_curl_animation.usdz",
-  "size_bytes": 2527501,
+  "size_bytes": 2543611,
   "zip_members": [
     "dumbbell_curl_animation.usdc",
     "textures/_usdz_body_emission.png",

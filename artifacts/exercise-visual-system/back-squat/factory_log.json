@@ -1,0 +1,31 @@
+[
+  {
+    "version": 1,
+    "when": "2026-11-14T01:19:34",
+    "template": "squat",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 10.2
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 8.0
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 1.8
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 8.3
+      },
+      "export": {
+        "ok": true,
+        "seconds": 24.0
+      }
+    },
+    "total_seconds": 52.7,
+    "qa": "{\"PASS\": 10, \"FAIL\": 1}"
+  }
+]

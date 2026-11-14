@@ -1,0 +1,31 @@
+[
+  {
+    "version": 1,
+    "when": "2026-11-14T01:20:13",
+    "template": "curl",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 3.9
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 4.0
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 1.9
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 9.0
+      },
+      "export": {
+        "ok": true,
+        "seconds": 19.8
+      }
+    },
+    "total_seconds": 38.9,
+    "qa": "{\"PASS\": 12}"
+  }
+]
