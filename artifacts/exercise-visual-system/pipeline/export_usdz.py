@@ -67,7 +67,15 @@ def painted_textures(exercise: dict, roles: list[str] | None = None) -> tuple[np
     angles = dict(np.load(dir_path)) if dir_path.exists() else None
     if angles is None:
         print("[evs] usdz: no fiber_dir.npz, fibre directions from the phase atlas")
-    shade, normal, rim = fiber_lic.painted_maps(masks, phase, groups, angles=angles)
+    sculpt_path = atlas / "sculpt_height.npz"
+    base = base_relief = None
+    if sculpt_path.exists():
+        with np.load(sculpt_path) as d:
+            base, base_relief = d["height"], float(d["relief"])
+    shade, normal, rim = fiber_lic.painted_maps(masks, phase, groups, angles=angles, base_height=base, base_relief=base_relief or 0.0)
+    facts_path = atlas.parent / "character_facts.json"
+    if facts_path.exists():
+        normal = fiber_lic.flatten_points(normal, config.load_json(facts_path).get("uv_flat_points"))
     return (np.flipud(solid), np.flipud(shade), (np.flipud(normal) * 255.0 + 0.5).astype(np.uint8), np.flipud(rim))
 
 
@@ -248,6 +256,9 @@ def main(exercise_name: str | None = None) -> None:
         small = highlight.reshape(args.size, f, args.size, f, 3).mean(axis=(1, 3)).astype(np.uint8) if f > 1 else highlight
     tmp = []
     normal_image = None
+    sculpt_png = config.character_dir(exercise["master_character_id"]) / "muscle_atlas" / "sculpt_normal.png"
+    if normal_png is None and sculpt_png.exists():
+        normal_png = pngio.read_png(sculpt_png)  # layered muscle blocks without fibres
     if normal_png is not None:
         np_path = out_dir / "_usdz_body_normal.png"
         pngio.write_png(np_path, normal_png)

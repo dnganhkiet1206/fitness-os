@@ -1,6 +1,6 @@
 {
-  "master_character_id": "master_character_002",
-  "version": "2.0.0",
+  "master_character_id": "master_character_003",
+  "version": "3.0.0",
   "description": "One faceless athletic male figure reused by every exercise and every camera. Built from the MakeHuman base mesh through MPFB (generated characters are CC0), then made faceless and given shorts by this pipeline.",
   "generator": {
     "tool": "MPFB (MakeHuman Plugin For Blender)",
@@ -12,33 +12,33 @@
     "comment": "MakeHuman macro sliders (0..1). Muscle definition is the MakeHuman (max muscle - average muscle) shape delta scaled by muscle_definition; leanness adds a fraction of the (minimum weight - chosen weight) delta. Changing any value here creates a NEW character version: bump master_character_id.",
     "gender": 1.0,
     "age": 0.5,
-    "proportions": 0.65,
+    "proportions": 1.0,
     "height": 0.55,
-    "weight": 0.62,
-    "muscle_definition": 2.15,
+    "weight": 0.5,
+    "muscle_definition": 1.0,
     "leanness": 0.0,
     "race": {
       "asian": 0.33,
       "caucasian": 0.34,
       "african": 0.33
     },
-    "chosen": "Kiệt chose the 'middle' option on 12/11/2026 (docs/exercise-visual-system/body_options.png): the first version looked too thin.",
+    "chosen": "Kiệt chose option A on 14/11/2026 (docs/exercise-visual-system/character_options_v3.png): 002 (muscle_definition 2.15) went past the strongest MakeHuman body and looked unnatural (traps up to the ears, shoulders 1.15x an average man). A stays inside the MakeHuman data range: maximum muscle, ideal proportions, local targets about half of 002. Option B was rejected: chest abnormally large.",
     "muscle_targets": {
-      "torso-muscle-pectoral-incr": 0.9,
-      "torso-muscle-dorsi-incr": 0.6,
-      "torso-vshape-incr": 0.25,
-      "l-upperarm-shoulder-muscle-incr": 0.7,
-      "r-upperarm-shoulder-muscle-incr": 0.7,
-      "l-upperarm-muscle-incr": 0.5,
-      "r-upperarm-muscle-incr": 0.5,
-      "l-lowerarm-muscle-incr": 0.3,
-      "r-lowerarm-muscle-incr": 0.3,
-      "l-upperleg-muscle-incr": 0.4,
-      "r-upperleg-muscle-incr": 0.4,
-      "l-lowerleg-muscle-incr": 0.3,
-      "r-lowerleg-muscle-incr": 0.3
+      "torso-muscle-pectoral-incr": 0.6,
+      "torso-muscle-dorsi-incr": 0.3,
+      "torso-vshape-incr": 0.15,
+      "l-upperarm-shoulder-muscle-incr": 0.35,
+      "l-upperarm-muscle-incr": 0.3,
+      "l-lowerarm-muscle-incr": 0.2,
+      "l-upperleg-muscle-incr": 0.3,
+      "l-lowerleg-muscle-incr": 0.25,
+      "r-upperarm-shoulder-muscle-incr": 0.35,
+      "r-upperarm-muscle-incr": 0.3,
+      "r-lowerarm-muscle-incr": 0.2,
+      "r-upperleg-muscle-incr": 0.3,
+      "r-lowerleg-muscle-incr": 0.25
     },
-    "muscle_targets_comment": "14/11 (Kiệt): fuller, deeper muscle groups (pectorals first) so users read them easily. MakeHuman local muscle targets at these weights, on top of the macro sliders."
+    "muscle_targets_comment": "14/11 option A: local MakeHuman muscle targets at moderate weights; muscle separation comes from the layered muscle sculpt, not from more volume."
   },
   "faceless": {
     "comment": "The frontal face (eyes, nose, mouth and their inner pockets) is cut out between the forehead and the chin and replaced by an evenly meshed surface. That surface is the front of the original head seen as a height field, with hollows narrower than fill_radius filled, bumps narrower than remove_radius removed, and a blur; it fades back into the original surface over rim_blend. Metres.",

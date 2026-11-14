@@ -27,5 +27,117 @@
     },
     "total_seconds": 38.9,
     "qa": "{\"PASS\": 12}"
+  },
+  {
+    "version": 2,
+    "when": "2026-11-14T02:06:29",
+    "template": "curl",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 5.1
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 7.1
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 3.2
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 62.4
+      },
+      "export": {
+        "ok": false,
+        "seconds": 4.6
+      }
+    },
+    "total_seconds": 86.0,
+    "qa": "{\"PASS\": 16, \"FAIL\": 1}"
+  },
+  {
+    "version": 3,
+    "when": "2026-11-14T02:12:31",
+    "template": "curl",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 3.6
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 5.4
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 1.9
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 41.3
+      },
+      "export": {
+        "ok": true,
+        "seconds": 25.3
+      }
+    },
+    "total_seconds": 78.5,
+    "qa": "{\"PASS\": 16, \"FAIL\": 1}"
+  },
+  {
+    "version": 4,
+    "when": "2026-11-14T02:14:55",
+    "template": "curl",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 4.1
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 3.9
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 1.7
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 31.0
+      }
+    },
+    "total_seconds": 42.0,
+    "qa": "{\"PASS\": 17}"
+  },
+  {
+    "version": 5,
+    "when": "2026-11-14T02:30:26",
+    "template": "curl",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 9.4
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 13.2
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 5.4
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 67.6
+      },
+      "export": {
+        "ok": true,
+        "seconds": 59.1
+      }
+    },
+    "total_seconds": 157.4,
+    "qa": "{\"PASS\": 17}"
   }
 ]

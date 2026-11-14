@@ -4,6 +4,14 @@
     python3 pipeline/factory.py build dumbbell-curl back-squat [--no-export] [--force]
     python3 pipeline/factory.py batch [--no-export]
     python3 pipeline/factory.py sheet back-squat
+    python3 pipeline/factory.py character
+
+character = the whole character chain in order (build, muscle atlas, fibre
+phase, fibre directions, layered muscle sculpt, preview). Every step is
+required by export_usdz; running them by hand once missed the phase atlas
+(14/11, MOTION_KIT_LESSONS.md). After a new character, rebuild every
+exercise: equipment that depends on the body (rack height, bar on the back)
+is re-checked by the generators.
 
 build = build_scene -> generate_exercise -> validate_motion -> review sheet
 -> export_usdz, with the time of each step. Exercises without a Motion Lab
@@ -25,7 +33,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 BLENDER = "/Applications/Blender.app/Contents/MacOS/Blender"
-SHEET_SHOTS = "three_quarter:{a}:a,{b}:b,{c}:c front:{c}:c side:{c}:c"
+# Whole-body review (Kiệt 14/11): orbit the character every 60 degrees at
+# the start, middle and end of the first repetition, plus two high views, so
+# arms, back, head, legs and the implement are checked from every side.
+ORBIT = (0, 60, 120, 180, 240, 300)
+HIGH = ("az30e55", "az210e55")
 
 
 def blender(script: str, *args: str) -> tuple[bool, str, float]:
@@ -34,6 +46,22 @@ def blender(script: str, *args: str) -> tuple[bool, str, float]:
                        cwd=ROOT, capture_output=True, text=True)
     out = p.stdout + p.stderr
     return p.returncode == 0 and "Traceback" not in out, out, round(time.time() - t, 1)
+
+
+CHARACTER_CHAIN = ("pipeline/build_character.py --no-preview", "pipeline/bake_muscle_atlas.py", "pipeline/bake_fiber_fields.py",
+                   "pipeline/bake_fiber_directions.py", "pipeline/sculpt_muscles.py", "pipeline/build_character.py --preview-only")
+
+
+def character(_args) -> None:
+    t = time.time()
+    for step in CHARACTER_CHAIN:
+        script, *extra = step.split()
+        ok, out, sec = blender(script, *extra)
+        print(f"[factory] character: {step:45s} {'ok' if ok else 'FAILED'} in {sec}s")
+        if not ok:
+            print("\n".join(out.splitlines()[-12:]))
+            raise SystemExit(1)
+    print(f"[factory] character chain done in {round(time.time() - t, 1)}s")
 
 
 def exercises() -> list[Path]:
@@ -64,7 +92,8 @@ def status(_args) -> None:
 
 
 def sheet(ex: Path, spec: dict) -> tuple[bool, float]:
-    """4 cameras x 3 key frames of the first repetition, tiled into one image."""
+    """Whole-body review sheet: rows = start / middle / end of the first
+    repetition, columns = 6 orbit angles + 2 high views."""
     phases = {p["id"]: p for p in spec.get("exercise_phases", [])}
     fps = int(spec["frame_rate"])
     mid = next((p for k, p in phases.items() if k in ("concentric", "eccentric")), None)
@@ -72,16 +101,27 @@ def sheet(ex: Path, spec: dict) -> tuple[bool, float]:
     b = int(round(mid["start_s"] * fps + 0.5 * (mid["end_s"] - mid["start_s"]) * fps)) if mid else 30
     c = int(round(mid["end_s"] * fps)) if mid else 60
     out_dir = ex / "_sheet"
+    keys = [f"az{d}" for d in ORBIT] + list(HIGH)
+    shots = " ".join(f"{k}:{a}:a,{b}:b,{c}:c" for k in keys)
     ok, _o, t = blender("pipeline/render_stills.py", "--exercise", ex.name, "--out-dir", str(out_dir),
-                        "--shots", SHEET_SHOTS.format(a=a, b=b, c=c), "--width", "360", "--height", "640")
+                        "--shots", shots, "--width", "300", "--height", "460")
     if ok:
-        files = [out_dir / n for n in ("still_3q_a.png", "still_3q_b.png", "still_3q_c.png", "still_front_c.png", "still_side_c.png")]
-        files = [f for f in files if f.exists()]
+        rows = []
+        for label in ("a", "b", "c"):
+            files = [out_dir / f"still_{k}_{label}.png" for k in keys]
+            files = [f for f in files if f.exists()]
+            row = out_dir / f"_row_{label}.png"
+            cmd = ["ffmpeg", "-loglevel", "error", "-y"]
+            for f in files:
+                cmd += ["-i", str(f)]
+            cmd += ["-filter_complex", f"hstack=inputs={len(files)}", str(row)]
+            ok = ok and subprocess.run(cmd).returncode == 0
+            rows.append(row)
         cmd = ["ffmpeg", "-loglevel", "error", "-y"]
-        for f in files:
-            cmd += ["-i", str(f)]
-        cmd += ["-filter_complex", f"hstack=inputs={len(files)}", str(ex / "review_sheet.png")]
-        ok = subprocess.run(cmd).returncode == 0
+        for r in rows:
+            cmd += ["-i", str(r)]
+        cmd += ["-filter_complex", "vstack=inputs=3", str(ex / "review_sheet.png")]
+        ok = ok and subprocess.run(cmd).returncode == 0
     return ok, t
 
 
@@ -139,6 +179,7 @@ def main() -> None:
     b = sub.add_parser("build"); b.add_argument("names", nargs="+"); b.add_argument("--no-export", action="store_true"); b.add_argument("--force", action="store_true")
     bt = sub.add_parser("batch"); bt.add_argument("--no-export", action="store_true"); bt.add_argument("--force", action="store_true")
     s = sub.add_parser("sheet"); s.add_argument("name")
+    sub.add_parser("character")
     args = ap.parse_args()
     if args.cmd == "status":
         status(args)
@@ -149,6 +190,8 @@ def main() -> None:
         t = time.time()
         res = build(names, not args.no_export, args.force)
         print(f"[factory] batch: {len(res)} exercises in {round(time.time() - t, 1)}s")
+    elif args.cmd == "character":
+        character(args)
     elif args.cmd == "sheet":
         ex = ROOT / args.name
         ok, t = sheet(ex, load(ex))

@@ -1,0 +1,159 @@
+{
+  "comment": "Anatomical parts inside each muscle group, used by evs/muscle_sculpt.py to sculpt each part as its own block with a groove between parts (Kiệt 14/11: muscles drawn as separate layered blocks that follow the real parts of the body, not one generic mass). Left and right are always separate parts (midline groove: linea alba, sternum, spine). Split types: 'level' = fraction of the group's own height (0 bottom, 1 top); 'sector' = angle around the limb axis, 0 = front, + = lateral, +-180 = back; 'mask' limits a split to a range of limb position t (0 at the proximal joint, 1 at the distal one). Groups not listed are one block per side; neighbouring groups are always separated (deltoid heads, serratus vs obliques, glutes...). 'tilt' slopes a level cut (+ = descends laterally); 'twist' turns sector cuts along the limb (+ = more lateral at the proximal end).",
+  "sources": [
+    "Gray's Anatomy (public domain 1918 edition): rectus abdominis has three tendinous intersections, at the umbilicus, at the xiphoid process and midway between; pectoralis major clavicular and sternocostal heads; quadriceps rectus femoris between vastus lateralis and vastus medialis; gastrocnemius medial and lateral heads above the soleus; triceps long and lateral heads; serratus anterior digitations.",
+    "OpenStax Anatomy and Physiology 2e (CC BY 4.0), chapter 11: axial and appendicular muscles."
+  ],
+  "geometry": {
+    "amplitude_m": 0.004,
+    "skip_near_apparel_m": 0.012,
+    "profile": {
+      "skin": {
+        "width_m": 0.03
+      },
+      "groups": {
+        "width_m": 0.014,
+        "depth": 0.9
+      },
+      "midline": {
+        "width_m": 0.01,
+        "depth": 0.7
+      },
+      "heads": {
+        "width_m": 0.01,
+        "depth": 0.35
+      }
+    }
+  },
+  "texture": {
+    "relief": 2.2,
+    "profile": {
+      "skin": {
+        "width_m": 0.03
+      },
+      "groups": {
+        "width_m": 0.008,
+        "depth": 0.8
+      },
+      "midline": {
+        "width_m": 0.005,
+        "depth": 0.7
+      },
+      "heads": {
+        "width_m": 0.006,
+        "depth": 0.3
+      }
+    }
+  },
+  "groups": {
+    "pectoralis_major": [
+      {
+        "type": "level",
+        "fractions": [
+          0.62
+        ],
+        "names": [
+          "sternocostal",
+          "clavicular"
+        ],
+        "tilt": 0.55
+      }
+    ],
+    "rectus_abdominis": [
+      {
+        "type": "level",
+        "fractions": [
+          0.38,
+          0.6,
+          0.8
+        ],
+        "names": [
+          "below_umbilicus",
+          "row_3",
+          "row_2",
+          "row_1"
+        ]
+      }
+    ],
+    "serratus_anterior": [
+      {
+        "type": "level",
+        "fractions": [
+          0.25,
+          0.5,
+          0.75
+        ],
+        "names": [
+          "digit_4",
+          "digit_3",
+          "digit_2",
+          "digit_1"
+        ]
+      }
+    ],
+    "quadriceps": [
+      {
+        "type": "sector",
+        "limb": "thigh",
+        "bounds": [
+          -25,
+          30
+        ],
+        "names": [
+          "vastus_medialis",
+          "rectus_femoris",
+          "vastus_lateralis"
+        ],
+        "twist": 40
+      }
+    ],
+    "hamstrings": [
+      {
+        "type": "sector",
+        "limb": "thigh",
+        "bounds": [
+          0
+        ],
+        "names": [
+          "semitendinosus_semimembranosus",
+          "biceps_femoris"
+        ]
+      }
+    ],
+    "calves": [
+      {
+        "type": "sector",
+        "limb": "calf",
+        "bounds": [
+          0
+        ],
+        "mask": [
+          0.0,
+          0.6
+        ],
+        "names": [
+          "gastrocnemius_medial",
+          "gastrocnemius_lateral"
+        ]
+      }
+    ],
+    "triceps_brachii": [
+      {
+        "type": "sector",
+        "limb": "upperarm",
+        "bounds": [
+          0
+        ],
+        "mask": [
+          0.0,
+          0.75
+        ],
+        "names": [
+          "long_head",
+          "lateral_head"
+        ]
+      }
+    ]
+  },
+  "profile_comment": "Anatomy: separations between different muscles (deltoid/pectoral, deltoid/biceps, serratus/obliques) are the deepest; the linea alba and the spinal groove next; heads of one muscle (pectoral heads, quadriceps, triceps, gastrocnemius) and the abdominal tendinous intersections are shallow. Where a muscle ends in tendon (elbow, knee, wrist, ankle, sternum) it fades into the skin over 3 cm, never as a cut line."
+}

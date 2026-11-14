@@ -46,6 +46,9 @@ def apply_brand_materials(character: dict, brand: dict) -> dict:
     for obj, key in ((character["body"], "body"), (character["shorts"], "apparel")):
         obj.data.materials.clear()
         obj.data.materials.append(mats[key])
+    sculpt = config.character_dir(character["config"]["master_character_id"]) / "muscle_atlas" / "sculpt_normal.png"
+    if sculpt.exists():
+        materials.add_body_normal(mats["body"], sculpt)
     return mats
 
 

@@ -27,5 +27,142 @@
     },
     "total_seconds": 52.7,
     "qa": "{\"PASS\": 10, \"FAIL\": 1}"
+  },
+  {
+    "version": 2,
+    "when": "2026-11-14T01:58:41",
+    "template": "squat",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 5.1
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 8.1
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 2.0
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 8.3
+      }
+    },
+    "total_seconds": 23.8,
+    "qa": "{\"PASS\": 13, \"FAIL\": 3}"
+  },
+  {
+    "version": 3,
+    "when": "2026-11-14T02:02:59",
+    "template": "squat",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 4.0
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 7.6
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 1.9
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 29.8
+      }
+    },
+    "total_seconds": 44.2,
+    "qa": "{\"PASS\": 15, \"FAIL\": 1}"
+  },
+  {
+    "version": 4,
+    "when": "2026-11-14T02:05:03",
+    "template": "squat",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 4.1
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 8.0
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 1.8
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 32.8
+      },
+      "export": {
+        "ok": false,
+        "seconds": 2.2
+      }
+    },
+    "total_seconds": 50.0,
+    "qa": "{\"PASS\": 15, \"FAIL\": 1}"
+  },
+  {
+    "version": 5,
+    "when": "2026-11-14T02:11:13",
+    "template": "squat",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 4.2
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 11.5
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 2.1
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 43.3
+      },
+      "export": {
+        "ok": true,
+        "seconds": 25.1
+      }
+    },
+    "total_seconds": 87.2,
+    "qa": "{\"PASS\": 15, \"FAIL\": 1}"
+  },
+  {
+    "version": 6,
+    "when": "2026-11-14T02:27:49",
+    "template": "squat",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 5.0
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 70.4
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 8.1
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 76.0
+      },
+      "export": {
+        "ok": true,
+        "seconds": 75.7
+      }
+    },
+    "total_seconds": 239.3,
+    "qa": "{\"PASS\": 15, \"FAIL\": 1}"
   }
 ]

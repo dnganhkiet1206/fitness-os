@@ -28,7 +28,13 @@ from evs.sampling import JOINTS  # noqa: E402
 
 DEFAULTS = {"max_joint_speed_m_s": 2.5, "max_frame_to_frame_joint_jump_deg": 12.0, "max_hand_to_socket_m": 0.004,
             "max_foot_slide_m": 0.005, "max_foot_lift_m": 0.005, "max_left_right_position_difference_m": 0.003,
-            "max_p999_edge_stretch": 2.6}
+            "max_p999_edge_stretch": 2.6,
+            # Whole-body posture (14/11, MOTION_KIT_LESSONS.md): soft-tissue
+            # elbow limit ~145 deg (AAOS active range 0-150), straight wrists
+            # under load, no elbow folding behind the shoulder line, head not
+            # dropped to the chest; no implement inside the skin.
+            "max_wrist_bend_deg": 25.0, "max_elbow_flexion_deg": 145.0, "max_elbow_medial_m": 0.02,
+            "max_neck_flexion_deg": 30.0, "max_implement_penetration_m": 0.004}
 
 
 def main() -> None:
@@ -88,6 +94,43 @@ def main() -> None:
         stretch.append((float(np.percentile(r, 99.9)), f))
     worst_stretch = max(stretch)
 
+    # Implement inside the skin (bar through the neck/traps, dumbbell through
+    # the thigh): body vertices behind the nearest implement face, at the
+    # same sample frames plus the deepest point of the repetition.
+    from mathutils import Vector
+    from mathutils.bvhtree import BVHTree
+    ids = [e["id"].capitalize() for e in ex.get("equipment", []) if not any(k in e["id"] for k in ("bench", "rack", "machine"))]
+    implements = [o for o in scene.objects if o.type == "MESH" and any(o.name.startswith(i) for i in ids)]
+    low = int(np.argmin(j["pelvis"][:, 2]))
+    depths = {o.name: [] for o in implements}
+    for f in sorted({stretch_f for _s, stretch_f in stretch} | {frames[low]}):
+        scene.frame_set(f)
+        dg = bpy.context.evaluated_depsgraph_get()
+        # Implement vertices inside the skin. Tested from the implement's
+        # side against the body, whose normals are consistent: implements
+        # are built from separate pieces with inner caps, so their own
+        # normals cannot say inside/outside (14/11: false 4.9 cm at the
+        # throat). Hands are excluded: they close around the handle by design
+        # (the grip is checked by hand_implement_contact).
+        bm = bmesh.new()
+        bm.from_object(body, dg)
+        bm.transform(body.matrix_world)
+        skin = BVHTree.FromBMesh(bm)
+        bm.free()
+        wrists = [mw @ rig.pose.bones[h].head for h in ("hand_l", "hand_r")]
+        for o in implements:
+            me = o.evaluated_get(dg).to_mesh()
+            deep = 0.0
+            for v in me.vertices:
+                p = o.matrix_world @ v.co
+                if min((p - w).length for w in wrists) < 0.13:
+                    continue
+                hit = skin.find_nearest(p, 0.08)
+                if hit[0] is not None and (p - hit[0]).dot(hit[1]) < 0:
+                    deep = max(deep, hit[3])
+            o.evaluated_get(dg).to_mesh_clear()
+            depths[o.name].append(deep)
+
     records = [
         Q.rec("frames", "A", "Animation has frames and finite joint data",
               Q.PASS if len(frames) > 1 and all(np.isfinite(v).all() for v in j.values()) else Q.FAIL, len(frames)),
@@ -96,6 +139,8 @@ def main() -> None:
         Q.contact(dist, prof["max_hand_to_socket_m"]) if dist else Q.rec("hand_implement_contact", "B", "Hands on implements", Q.NOT_TESTED),
         Q.planted(feet, prof["max_foot_slide_m"], prof["max_foot_lift_m"]),
         Q.symmetry(j, prof["max_left_right_position_difference_m"]),
+        Q.penetration(depths, prof["max_implement_penetration_m"]) if depths else Q.rec("implement_penetration", "C", "Implements do not pass through the body", Q.NOT_TESTED),
+        *Q.posture(j, prof),
         Q.rec("skin_stretch", "C", "Skin stretch stays within limits", Q.PASS if worst_stretch[0] <= prof["max_p999_edge_stretch"] else Q.FAIL,
               round(worst_stretch[0], 3), prof["max_p999_edge_stretch"], {"frame": worst_stretch[1]}, "p99.9 edge stretch"),
     ]

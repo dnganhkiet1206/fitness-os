@@ -4,6 +4,8 @@ Mục tiêu (Kiệt, 14/11/2026): một công cụ riêng của ASCND để tạ
 
 Dữ liệu tạo ra là **tài sản của ASCND**. Chính sách nguồn ở `OPENGYM3D_LESSONS.md`: học cách làm từ các dự án khác, không chép dữ liệu; CMU và Mixamo không vào dữ liệu xuất xưởng.
 
+**Trước khi làm bài mới: đọc `MOTION_KIT_LESSONS.md` (sổ lỗi). Gặp lỗi mới thì ghi vào đó trong cùng PR sửa.**
+
 ## Một bài tập = một file mô tả
 
 `artifacts/exercise-visual-system/<bài>/exercise.json`. Các trường của kit:
@@ -27,10 +29,14 @@ Dữ liệu tạo ra là **tài sản của ASCND**. Chính sách nguồn ở `O
                 (nhịp, góc khớp ở đỉnh/đáy, đường đi; chỉ lưu số đo)
 3. Mô tả        viết exercise.json: pattern, technique (mục tiêu từ bước 1–2), cơ, mẹo, provenance
 4. Dựng         bộ giải của họ động tác + rig 63 xương (bả vai, cơ ngực, xương xoắn)
-5. Kiểm         pipeline/validate_animation.py:
-                - cổng khớp: xương, tiếp xúc, trượt, xuyên, liên tục
+5. Kiểm         pipeline/validate_motion.py (bài template) / validate_animation.py (bench):
+                - cổng khớp: xương, tiếp xúc, trượt, liên tục
+                - cổng dáng toàn thân (14/11): cổ tay thẳng, khuỷu ≤ 145°, khuỷu không kẹp
+                  sau vai, đầu không gục, dụng cụ không xuyên da
                 - cổng giải phẫu (evs/movement_gate.py): ngưỡng của họ động tác
-                - tờ ảnh: 4 góc × các pha, người xem ~2 phút
+                - tờ soi xoay vòng: 6 góc quanh người + 2 góc cao × đứng / giữa / đáy
+                  (factory.py sheet). BẮT BUỘC soi tay, lưng, đầu, chân, dụng cụ ở mọi góc,
+                  đối chiếu nguồn kỹ thuật, trước khi báo xong (MOTION_KIT_LESSONS.md luật 1)
 6. Xuất         pipeline/export_usdz.py (sợi cơ vẽ, bản chỉ cơ chính) → app
 ```
 
@@ -38,7 +44,8 @@ Dữ liệu tạo ra là **tài sản của ASCND**. Chính sách nguồn ở `O
 
 | Thành phần | Tệp | Trạng thái |
 |---|---|---|
-| Nhân vật 002: cơ ngực, lưng xô, vai, tay, chân rõ hơn | `config/master_character.json`, `evs/character.py` | xong |
+| Nhân vật 003 (14/11, Kiệt chọn A): trong dải dữ liệu MakeHuman (002 ngoại suy cơ 2,15 lần trông như Hulk) | `config/master_character.json`, `evs/character.py` | xong; chuỗi dựng: `factory.py character` |
+| **Cơ tạc khối tách lớp theo phần giải phẫu** (14/11): 70 phần (2 đầu ngực, 8 múi bụng, 4 răng cưa, 3 đầu đùi trước, 2 nhóm đùi sau, 2 đầu bắp chân, 2 đầu tam đầu…); rãnh sâu giữa các cơ, nông giữa các đầu, mờ dần ở chỗ cơ thành gân | `config/muscle_parts.json`, `evs/muscle_sculpt.py`, `pipeline/sculpt_muscles.py` | bản đầu, chờ Kiệt duyệt |
 | Rig 63 xương: thêm bả vai, cơ ngực, xương xoắn cánh tay/cẳng tay/đùi; trọng số da lấy từ rig default của MPFB, làm mượt | `evs/character.py` → `augment_rig` | xong; ép vai 25° không còn bóp nát ngực |
 | Bản đồ 21 nhóm cơ, hướng sợi tính trên mặt 3D, sợi vẽ LIC | `evs/fiber_lic.py`, `pipeline/bake_fiber_directions.py` | xong |
 | Cổng giải phẫu theo họ động tác (13 họ) | `evs/movement_gate.py`, `config/movement_patterns.json` | xong; `press_horizontal` có trích nguồn, các họ khác để "tạm" |
