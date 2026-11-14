@@ -189,13 +189,83 @@
   },
   "movement": {
     "pattern": "press_horizontal",
-    "rep_phases": ["start_position", "eccentric", "bottom", "concentric", "lockout"],
-    "qa": {}
+    "rep_phases": [
+      "start_position",
+      "eccentric",
+      "bottom",
+      "concentric",
+      "lockout"
+    ],
+    "qa": {},
+    "targets": [
+      {
+        "metric": "elbow_flexion_max_deg",
+        "value": 101.4,
+        "tolerance": 8.3,
+        "weight": 2.0,
+        "source": "Mausehund et al. 2022, medium grip 101.4 +/- 8.3 deg"
+      },
+      {
+        "metric": "arm_elev_at_max_flexion_deg",
+        "value": 59.3,
+        "tolerance": 8.2,
+        "weight": 1.0,
+        "source": "Mausehund et al. 2022, shoulder abduction at the bottom, medium grip 59.3 +/- 8.2 deg"
+      },
+      {
+        "metric": "humerus_depth_min_deg",
+        "min": -15.0,
+        "tolerance": 5.0,
+        "weight": 1.0,
+        "source": "Mausehund et al. 2022: -6.2 to -10.8 deg; -15 allows a moderate arch"
+      },
+      {
+        "metric": "forearm_from_vertical_at_max_flexion_deg",
+        "max": 21.0,
+        "tolerance": 5.0,
+        "weight": 0.5,
+        "source": "Mausehund et al. 2022, forearm angle medium grip 20.8 +/- 4.7 deg"
+      }
+    ],
+    "tune": {
+      "grip_width_between_hand_centres_m": [
+        0.66,
+        0.86,
+        0.04
+      ],
+      "scapular_retraction_deg": [
+        10.0,
+        32.0,
+        6.0
+      ],
+      "thoracic_extension_deg": [
+        6.0,
+        30.0,
+        6.0
+      ],
+      "touch_point_below_shoulder_joint_m": [
+        0.12,
+        0.19,
+        0.02
+      ]
+    }
   },
   "motion_provenance": [
-    {"what": "keyframes and constraint solver", "source": "bench-press/animate_bench_press.py (this repository)", "license": "original work of this repository"},
-    {"what": "bottom-position targets (elbow flexion, humerus depth, arch)", "source": "Mausehund et al. 2022, JSCR 36(10):2685-2695", "license": "facts from a published study"},
-    {"what": "rep timing and bar path check", "source": "Pexels video 20672105, measured with MediaPipe Pose Landmarker heavy (Apache 2.0)", "license": "Pexels License (measurements only; no footage used)"}
+    {
+      "what": "keyframes and constraint solver",
+      "source": "bench-press/animate_bench_press.py (this repository)",
+      "license": "original work of this repository"
+    },
+    {
+      "what": "bottom-position targets (elbow flexion, humerus depth, arch)",
+      "source": "Mausehund et al. 2022, JSCR 36(10):2685-2695",
+      "license": "facts from a published study"
+    },
+    {
+      "what": "rep timing and bar path check",
+      "source": "Pexels video 20672105, measured with MediaPipe Pose Landmarker heavy (Apache 2.0)",
+      "license": "Pexels License (measurements only; no footage used)"
+    }
   ],
   "camera_presets": [
     "side",
@@ -205,19 +275,19 @@
   ],
   "technique": {
     "comment": "Parameters of this provisional demonstration. Each one cites reference_notes.json; none is a universal 'correct' value and reasonable lifters differ in all of them.",
-    "grip_width_between_hand_centres_m": 0.70,
+    "grip_width_between_hand_centres_m": 0.78,
     "wrist_extension_deg": 18.0,
     "touch_point": "lower_sternum",
-    "touch_point_below_shoulder_joint_m": 0.16,
+    "touch_point_below_shoulder_joint_m": 0.19,
     "chest_clearance_m": 0.004,
     "lockout_over_shoulder_offset_m": 0.0,
     "elbow_extension_at_lockout_deg": 174.0,
     "descent_path_exponent": 1.0,
     "ascent_path_exponent": 1.7,
     "rack_clearance_m": 0.012,
-    "scapular_retraction_deg": 28.0,
+    "scapular_retraction_deg": 32.0,
     "scapular_depression_deg": 6.0,
-    "thoracic_extension_deg": 20.0,
+    "thoracic_extension_deg": 29.0,
     "toe_out_deg": 20.0,
     "foot_half_spacing_m": 0.27,
     "ankle_towards_feet_from_hip_m": 0.37,

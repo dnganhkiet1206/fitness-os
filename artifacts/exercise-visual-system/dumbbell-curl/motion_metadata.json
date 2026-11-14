@@ -1,0 +1,419 @@
+{
+  "pipeline_version": "0.1.0",
+  "generator": "pipeline/generate_exercise.py",
+  "template": "curl",
+  "generated": "2026-11-14",
+  "exercise_id": "dumbbell_biceps_curl",
+  "frame_rate": 24,
+  "frame_end": 236,
+  "phases": [
+    {
+      "id": "start_position",
+      "name": "Start position",
+      "start_s": 0.0,
+      "end_s": 0.6,
+      "cues": [
+        "Stand tall, feet about hip width",
+        "Arms by the sides, palms forward"
+      ],
+      "checks": []
+    },
+    {
+      "id": "concentric",
+      "name": "Concentric",
+      "start_s": 0.6,
+      "end_s": 2.2,
+      "cues": [
+        "Bend the elbows to bring the dumbbells up",
+        "Keep the upper arms by the sides"
+      ],
+      "checks": []
+    },
+    {
+      "id": "top_hold",
+      "name": "Top hold",
+      "start_s": 2.2,
+      "end_s": 2.6,
+      "cues": [
+        "Squeeze the biceps briefly"
+      ],
+      "checks": []
+    },
+    {
+      "id": "eccentric",
+      "name": "Eccentric",
+      "start_s": 2.6,
+      "end_s": 4.8,
+      "cues": [
+        "Lower under control until the arms are almost straight"
+      ],
+      "checks": []
+    },
+    {
+      "id": "bottom_hold",
+      "name": "Bottom hold",
+      "start_s": 4.8,
+      "end_s": 5.2,
+      "cues": [],
+      "checks": []
+    },
+    {
+      "id": "concentric_2",
+      "name": "Concentric 2",
+      "start_s": 5.2,
+      "end_s": 6.8,
+      "cues": [
+        "Bend the elbows to bring the dumbbells up",
+        "Keep the upper arms by the sides"
+      ],
+      "checks": []
+    },
+    {
+      "id": "top_hold_2",
+      "name": "Top hold 2",
+      "start_s": 6.8,
+      "end_s": 7.2,
+      "cues": [
+        "Squeeze the biceps briefly"
+      ],
+      "checks": []
+    },
+    {
+      "id": "eccentric_2",
+      "name": "Eccentric 2",
+      "start_s": 7.2,
+      "end_s": 9.4,
+      "cues": [
+        "Lower under control until the arms are almost straight"
+      ],
+      "checks": []
+    },
+    {
+      "id": "finish",
+      "name": "Finish",
+      "start_s": 9.4,
+      "end_s": 9.8,
+      "cues": [],
+      "checks": []
+    }
+  ],
+  "technique": {
+    "elbow_flexion_bottom_deg": 12.0,
+    "elbow_flexion_top_deg": 138.0,
+    "shoulder_flexion_bottom_deg": 0.0,
+    "shoulder_flexion_top_deg": 10.0,
+    "upper_arm_abduction_deg": 6.0,
+    "grip": "supinated",
+    "palm_centre_beyond_wrist_m": 0.075,
+    "stance_half_width_m": 0.13,
+    "toe_out_deg": 8.0
+  },
+  "skeleton": {
+    "shoulder_l": [
+      0.1984209418296814,
+      -0.01792922243475914,
+      1.427953839302063
+    ],
+    "elbow_l": [
+      0.3768349885940552,
+      -0.01709269918501377,
+      1.2298847436904907
+    ],
+    "wrist_l": [
+      0.5148056745529175,
+      -0.21417035162448883,
+      1.0977822542190552
+    ],
+    "hip_l": [
+      0.11090510338544846,
+      0.007330718450248241,
+      0.9567191004753113
+    ],
+    "knee_l": [
+      0.15277478098869324,
+      -0.02764178067445755,
+      0.5198134183883667
+    ],
+    "ankle_l": [
+      0.2023106962442398,
+      -0.013879254460334778,
+      0.07386663556098938
+    ],
+    "shoulder_r": [
+      -0.1984209418296814,
+      -0.01792922243475914,
+      1.427953839302063
+    ],
+    "elbow_r": [
+      -0.3768349885940552,
+      -0.01709269918501377,
+      1.2298847436904907
+    ],
+    "wrist_r": [
+      -0.5148056149482727,
+      -0.21417035162448883,
+      1.0977822542190552
+    ],
+    "hip_r": [
+      -0.11090510338544846,
+      0.007330718450248241,
+      0.9567191004753113
+    ],
+    "knee_r": [
+      -0.15277476608753204,
+      -0.02764178067445755,
+      0.5198134183883667
+    ],
+    "ankle_r": [
+      -0.2023106813430786,
+      -0.013879257254302502,
+      0.07386663556098938
+    ],
+    "upper_arm_m": 0.2665776312351227,
+    "forearm_m": 0.2744568884372711,
+    "thigh_m": 0.4402984380722046,
+    "shin_m": 0.44890058040618896
+  },
+  "trace_every_6_frames": [
+    {
+      "frame": 0,
+      "progress": 0.0,
+      "elbow_flexion_deg": 12.0,
+      "shoulder_flexion_deg": 0.0
+    },
+    {
+      "frame": 6,
+      "progress": 0.0,
+      "elbow_flexion_deg": 12.0,
+      "shoulder_flexion_deg": 0.0
+    },
+    {
+      "frame": 12,
+      "progress": 0.0,
+      "elbow_flexion_deg": 12.0,
+      "shoulder_flexion_deg": 0.0
+    },
+    {
+      "frame": 18,
+      "progress": 0.0071,
+      "elbow_flexion_deg": 12.898,
+      "shoulder_flexion_deg": 0.071
+    },
+    {
+      "frame": 24,
+      "progress": 0.1035,
+      "elbow_flexion_deg": 25.043,
+      "shoulder_flexion_deg": 1.035
+    },
+    {
+      "frame": 30,
+      "progress": 0.3283,
+      "elbow_flexion_deg": 53.365,
+      "shoulder_flexion_deg": 3.283
+    },
+    {
+      "frame": 36,
+      "progress": 0.616,
+      "elbow_flexion_deg": 89.613,
+      "shoulder_flexion_deg": 6.16
+    },
+    {
+      "frame": 42,
+      "progress": 0.8608,
+      "elbow_flexion_deg": 120.464,
+      "shoulder_flexion_deg": 8.608
+    },
+    {
+      "frame": 48,
+      "progress": 0.9839,
+      "elbow_flexion_deg": 135.977,
+      "shoulder_flexion_deg": 9.839
+    },
+    {
+      "frame": 54,
+      "progress": 1.0,
+      "elbow_flexion_deg": 138.0,
+      "shoulder_flexion_deg": 10.0
+    },
+    {
+      "frame": 60,
+      "progress": 1.0,
+      "elbow_flexion_deg": 138.0,
+      "shoulder_flexion_deg": 10.0
+    },
+    {
+      "frame": 66,
+      "progress": 0.9971,
+      "elbow_flexion_deg": 137.64,
+      "shoulder_flexion_deg": 9.971
+    },
+    {
+      "frame": 72,
+      "progress": 0.9551,
+      "elbow_flexion_deg": 132.342,
+      "shoulder_flexion_deg": 9.551
+    },
+    {
+      "frame": 78,
+      "progress": 0.8429,
+      "elbow_flexion_deg": 118.203,
+      "shoulder_flexion_deg": 8.429
+    },
+    {
+      "frame": 84,
+      "progress": 0.6667,
+      "elbow_flexion_deg": 96.009,
+      "shoulder_flexion_deg": 6.667
+    },
+    {
+      "frame": 90,
+      "progress": 0.4574,
+      "elbow_flexion_deg": 69.638,
+      "shoulder_flexion_deg": 4.574
+    },
+    {
+      "frame": 96,
+      "progress": 0.2567,
+      "elbow_flexion_deg": 44.346,
+      "shoulder_flexion_deg": 2.567
+    },
+    {
+      "frame": 102,
+      "progress": 0.1035,
+      "elbow_flexion_deg": 25.043,
+      "shoulder_flexion_deg": 1.035
+    },
+    {
+      "frame": 108,
+      "progress": 0.0205,
+      "elbow_flexion_deg": 14.577,
+      "shoulder_flexion_deg": 0.205
+    },
+    {
+      "frame": 114,
+      "progress": 0.0001,
+      "elbow_flexion_deg": 12.014,
+      "shoulder_flexion_deg": 0.001
+    },
+    {
+      "frame": 120,
+      "progress": 0.0,
+      "elbow_flexion_deg": 12.0,
+      "shoulder_flexion_deg": 0.0
+    },
+    {
+      "frame": 126,
+      "progress": 0.0003,
+      "elbow_flexion_deg": 12.037,
+      "shoulder_flexion_deg": 0.003
+    },
+    {
+      "frame": 132,
+      "progress": 0.0488,
+      "elbow_flexion_deg": 18.145,
+      "shoulder_flexion_deg": 0.488
+    },
+    {
+      "frame": 138,
+      "progress": 0.2255,
+      "elbow_flexion_deg": 40.419,
+      "shoulder_flexion_deg": 2.255
+    },
+    {
+      "frame": 144,
+      "progress": 0.5,
+      "elbow_flexion_deg": 75.0,
+      "shoulder_flexion_deg": 5.0
+    },
+    {
+      "frame": 150,
+      "progress": 0.7745,
+      "elbow_flexion_deg": 109.581,
+      "shoulder_flexion_deg": 7.745
+    },
+    {
+      "frame": 156,
+      "progress": 0.9512,
+      "elbow_flexion_deg": 131.855,
+      "shoulder_flexion_deg": 9.512
+    },
+    {
+      "frame": 162,
+      "progress": 0.9997,
+      "elbow_flexion_deg": 137.963,
+      "shoulder_flexion_deg": 9.997
+    },
+    {
+      "frame": 168,
+      "progress": 1.0,
+      "elbow_flexion_deg": 138.0,
+      "shoulder_flexion_deg": 10.0
+    },
+    {
+      "frame": 174,
+      "progress": 0.9999,
+      "elbow_flexion_deg": 137.986,
+      "shoulder_flexion_deg": 9.999
+    },
+    {
+      "frame": 180,
+      "progress": 0.9795,
+      "elbow_flexion_deg": 135.423,
+      "shoulder_flexion_deg": 9.795
+    },
+    {
+      "frame": 186,
+      "progress": 0.8965,
+      "elbow_flexion_deg": 124.957,
+      "shoulder_flexion_deg": 8.965
+    },
+    {
+      "frame": 192,
+      "progress": 0.7433,
+      "elbow_flexion_deg": 105.654,
+      "shoulder_flexion_deg": 7.433
+    },
+    {
+      "frame": 198,
+      "progress": 0.5426,
+      "elbow_flexion_deg": 80.362,
+      "shoulder_flexion_deg": 5.426
+    },
+    {
+      "frame": 204,
+      "progress": 0.3333,
+      "elbow_flexion_deg": 53.991,
+      "shoulder_flexion_deg": 3.333
+    },
+    {
+      "frame": 210,
+      "progress": 0.1571,
+      "elbow_flexion_deg": 31.797,
+      "shoulder_flexion_deg": 1.571
+    },
+    {
+      "frame": 216,
+      "progress": 0.0449,
+      "elbow_flexion_deg": 17.658,
+      "shoulder_flexion_deg": 0.449
+    },
+    {
+      "frame": 222,
+      "progress": 0.0029,
+      "elbow_flexion_deg": 12.36,
+      "shoulder_flexion_deg": 0.029
+    },
+    {
+      "frame": 228,
+      "progress": 0.0,
+      "elbow_flexion_deg": 12.0,
+      "shoulder_flexion_deg": 0.0
+    },
+    {
+      "frame": 234,
+      "progress": 0.0,
+      "elbow_flexion_deg": 12.0,
+      "shoulder_flexion_deg": 0.0
+    }
+  ]
+}

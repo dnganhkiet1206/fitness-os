@@ -15,7 +15,7 @@
       let usdzFile: String
       /// Clip vòng lặp của góc 45°: chỉ làm nền cho tấm ảnh đại diện ở đầu
       /// trang, trình xem không phát clip này mà mở USDZ.
-      let loopFile: String
+      let loopFile: String?
       /// Poster của góc 45° cho ảnh đại diện ở đầu trang, không đuôi file.
       let posterFile: String
       /// Thời lượng hoạt hình trong USDZ: khung 24–228 ở 24 fps (phần giữ
@@ -28,6 +28,10 @@
       /// nên không có trong legend. Bài sau thêm demo thì kèm legend của
       /// bài đó, cùng nguồn dữ liệu.
       let legend: [LegendEntry]
+      /// Góc mặc định của trình xem (Y-up, mét): `default_camera` trong
+      /// `<bài>/usdz/usdz_report.json` của pipeline.
+      var cameraPosition: SIMD3<Float> = [3.5378, 2.3302, 3.3852]
+      var cameraTarget: SIMD3<Float> = [0.1817, 0.6027, 0.0291]
       /// Tiền tố texture thân "chỉ cơ chính" (`<prefix>_albedo/_emission/_normal.png`,
       /// `pipeline/export_usdz.py`); nil = bài không có nút ẩn cơ phụ.
       var focusTexturePrefix: String?
@@ -58,11 +62,44 @@
       ],
       focusTexturePrefix: "bench_press_focus")
 
+    /// Motion Lab (14/11): tạo từ template họ "curl" (`motionlab/families/curl.py`).
+    static let dumbbellCurl = Demo(
+      usdzFile: "dumbbell_curl_animation", loopFile: nil, posterFile: "dumbbell_curl_poster",
+      durationS: 9.8,
+      legend: [
+        LegendEntry(hex: "#E8552B", nameKey: "eg.demo3d.legend.bicepsBrachii", roleKey: "eg.demo3d.legend.primary"),
+        LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.forearms", roleKey: "eg.demo3d.legend.secondary"),
+      ],
+      cameraPosition: [1.6631, 1.7949, 1.7473], cameraTarget: [-0.0249, 0.926, 0.0593],
+      focusTexturePrefix: "dumbbell_curl_focus")
+
+    /// Motion Lab (14/11): tạo từ template họ "squat" (`motionlab/families/squat.py`).
+    static let backSquat = Demo(
+      usdzFile: "back_squat_animation", loopFile: nil, posterFile: "back_squat_poster",
+      durationS: 9.3,
+      legend: [
+        LegendEntry(hex: "#E8552B", nameKey: "eg.demo3d.legend.quadriceps", roleKey: "eg.demo3d.legend.primary"),
+        LegendEntry(hex: "#E8552B", nameKey: "eg.demo3d.legend.gluteusMaximus", roleKey: "eg.demo3d.legend.primary"),
+        LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.adductors", roleKey: "eg.demo3d.legend.secondary"),
+        LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.erectorSpinae", roleKey: "eg.demo3d.legend.secondary"),
+      ],
+      cameraPosition: [2.8529, 2.2835, 2.7084], cameraTarget: [0.1056, 0.8694, -0.039],
+      focusTexturePrefix: "back_squat_focus")
+
     /// Tên bài (đã gập như `PersonalRecords.exerciseKey`) → bản minh hoạ.
     static let demos: [String: Demo] = [
       "bench press": benchPress,
       "barbell bench press": benchPress,
       "barbell bench press - medium grip": benchPress,
+      "squat": backSquat,
+      "back squat": backSquat,
+      "barbell back squat": backSquat,
+      "barbell squat": backSquat,
+      "bicep curl": dumbbellCurl,
+      "biceps curl": dumbbellCurl,
+      "dumbbell curl": dumbbellCurl,
+      "dumbbell bicep curl": dumbbellCurl,
+      "dumbbell biceps curl": dumbbellCurl,
     ]
 
     static func demo(for name: String) -> Demo? {
@@ -83,7 +120,8 @@
     static func media(for name: String, alt: String?) -> MediaState? {
       guard let demo = demo(for: name),
         Bundle.main.url(forResource: demo.usdzFile, withExtension: "usdz") != nil,
-        let video = Bundle.main.url(forResource: demo.loopFile, withExtension: "mp4"),
+        let loop = demo.loopFile,
+        let video = Bundle.main.url(forResource: loop, withExtension: "mp4"),
         let poster = Bundle.main.url(forResource: demo.posterFile, withExtension: "jpg")
       else { return nil }
       return .bundledVideos([(video.absoluteString, poster.absoluteString, demo.durationS, alt)])

@@ -1,0 +1,816 @@
+{
+  "tool": "pipeline/solve_targets.py",
+  "date": "2026-11-14",
+  "targets": [
+    {
+      "metric": "elbow_flexion_max_deg",
+      "value": 101.4,
+      "tolerance": 8.3,
+      "weight": 2.0,
+      "source": "Mausehund et al. 2022, medium grip 101.4 +/- 8.3 deg"
+    },
+    {
+      "metric": "arm_elev_at_max_flexion_deg",
+      "value": 59.3,
+      "tolerance": 8.2,
+      "weight": 1.0,
+      "source": "Mausehund et al. 2022, shoulder abduction at the bottom, medium grip 59.3 +/- 8.2 deg"
+    },
+    {
+      "metric": "humerus_depth_min_deg",
+      "min": -15.0,
+      "tolerance": 5.0,
+      "weight": 1.0,
+      "source": "Mausehund et al. 2022: -6.2 to -10.8 deg; -15 allows a moderate arch"
+    },
+    {
+      "metric": "forearm_from_vertical_at_max_flexion_deg",
+      "max": 21.0,
+      "tolerance": 5.0,
+      "weight": 0.5,
+      "source": "Mausehund et al. 2022, forearm angle medium grip 20.8 +/- 4.7 deg"
+    }
+  ],
+  "tune": {
+    "grip_width_between_hand_centres_m": [
+      0.66,
+      0.86,
+      0.04
+    ],
+    "scapular_retraction_deg": [
+      10.0,
+      32.0,
+      6.0
+    ],
+    "thoracic_extension_deg": [
+      6.0,
+      30.0,
+      6.0
+    ],
+    "touch_point_below_shoulder_joint_m": [
+      0.12,
+      0.19,
+      0.02
+    ]
+  },
+  "best": {
+    "params": {
+      "grip_width_between_hand_centres_m": 0.78,
+      "scapular_retraction_deg": 32.0,
+      "thoracic_extension_deg": 29.0,
+      "touch_point_below_shoulder_joint_m": 0.19
+    },
+    "cost": 0.2654,
+    "metrics": {
+      "elbow_min_deg": 76.039,
+      "elbow_max_deg": 171.428,
+      "elbow_flexion_max_deg": 103.961,
+      "knee_min_deg": 84.218,
+      "knee_max_deg": 84.218,
+      "hip_flex_max_deg": 28.235,
+      "torso_lean_max_deg": 86.268,
+      "torso_lean_min_deg": 86.268,
+      "hip_drop_m": 0.0,
+      "wrist_over_head_m": 0.417,
+      "wrist_over_shoulder_m": 0.188,
+      "arm_elev_max_deg": 90.584,
+      "arm_elev_min_deg": 54.955,
+      "arm_lateral_frac": 0.334,
+      "humerus_depth_min_deg": -16.314,
+      "arm_elev_at_max_flexion_deg": 59.931,
+      "forearm_from_vertical_at_max_flexion_deg": 8.174,
+      "foot_split_m": 0.0,
+      "foot_spread_m": 0.54,
+      "wrist_travel_m": 0.351,
+      "root_rise_m": 0.0
+    }
+  },
+  "trials": 24,
+  "history": [
+    {
+      "params": {
+        "grip_width_between_hand_centres_m": 0.7,
+        "scapular_retraction_deg": 28.0,
+        "thoracic_extension_deg": 20.0,
+        "touch_point_below_shoulder_joint_m": 0.16
+      },
+      "cost": 10.3772,
+      "metrics": {
+        "elbow_min_deg": 63.159,
+        "elbow_max_deg": 171.352,
+        "elbow_flexion_max_deg": 116.841,
+        "knee_min_deg": 83.625,
+        "knee_max_deg": 83.625,
+        "hip_flex_max_deg": 28.501,
+        "torso_lean_max_deg": 85.471,
+        "torso_lean_min_deg": 85.471,
+        "hip_drop_m": 0.0,
+        "wrist_over_head_m": 0.44,
+        "wrist_over_shoulder_m": 0.165,
+        "arm_elev_max_deg": 91.148,
+        "arm_elev_min_deg": 40.115,
+        "arm_lateral_frac": 0.277,
+        "humerus_depth_min_deg": -20.762,
+        "arm_elev_at_max_flexion_deg": 47.34,
+        "forearm_from_vertical_at_max_flexion_deg": 4.041,
+        "foot_split_m": 0.0,
+        "foot_spread_m": 0.54,
+        "wrist_travel_m": 0.381,
+        "root_rise_m": 0.0
+      }
+    },
+    {
+      "params": {
+        "grip_width_between_hand_centres_m": 0.74,
+        "scapular_retraction_deg": 28.0,
+        "thoracic_extension_deg": 20.0,
+        "touch_point_below_shoulder_joint_m": 0.16
+      },
+      "cost": 6.7995,
+      "metrics": {
+        "elbow_min_deg": 65.762,
+        "elbow_max_deg": 171.384,
+        "elbow_flexion_max_deg": 114.238,
+        "knee_min_deg": 83.625,
+        "knee_max_deg": 83.625,
+        "hip_flex_max_deg": 28.501,
+        "torso_lean_max_deg": 85.471,
+        "torso_lean_min_deg": 85.471,
+        "hip_drop_m": 0.0,
+        "wrist_over_head_m": 0.433,
+        "wrist_over_shoulder_m": 0.166,
+        "arm_elev_max_deg": 91.219,
+        "arm_elev_min_deg": 45.987,
+        "arm_lateral_frac": 0.302,
+        "humerus_depth_min_deg": -21.193,
+        "arm_elev_at_max_flexion_deg": 53.616,
+        "forearm_from_vertical_at_max_flexion_deg": 0.338,
+        "foot_split_m": 0.0,
+        "foot_spread_m": 0.54,
+        "wrist_travel_m": 0.372,
+        "root_rise_m": 0.0
+      }
+    },
+    {
+      "params": {
+        "grip_width_between_hand_centres_m": 0.78,
+        "scapular_retraction_deg": 28.0,
+        "thoracic_extension_deg": 20.0,
+        "touch_point_below_shoulder_joint_m": 0.16
+      },
+      "cost": 4.497,
+      "metrics": {
+        "elbow_min_deg": 68.614,
+        "elbow_max_deg": 171.418,
+        "elbow_flexion_max_deg": 111.386,
+        "knee_min_deg": 83.625,
+        "knee_max_deg": 83.625,
+        "hip_flex_max_deg": 28.501,
+        "torso_lean_max_deg": 85.471,
+        "torso_lean_min_deg": 85.471,
+        "hip_drop_m": 0.0,
+        "wrist_over_head_m": 0.425,
+        "wrist_over_shoulder_m": 0.167,
+        "arm_elev_max_deg": 91.28,
+        "arm_elev_min_deg": 52.597,
+        "arm_lateral_frac": 0.326,
+        "humerus_depth_min_deg": -21.259,
+        "arm_elev_at_max_flexion_deg": 60.832,
+        "forearm_from_vertical_at_max_flexion_deg": 4.286,
+        "foot_split_m": 0.0,
+        "foot_spread_m": 0.54,
+        "wrist_travel_m": 0.361,
+        "root_rise_m": 0.0
+      }
+    },
+    {
+      "params": {
+        "grip_width_between_hand_centres_m": 0.82,
+        "scapular_retraction_deg": 28.0,
+        "thoracic_extension_deg": 20.0,
+        "touch_point_below_shoulder_joint_m": 0.16
+      },
+      "cost": 4.1885,
+      "metrics": {
+        "elbow_min_deg": 71.732,
+        "elbow_max_deg": 171.452,
+        "elbow_flexion_max_deg": 108.268,
+        "knee_min_deg": 83.625,
+        "knee_max_deg": 83.625,
+        "hip_flex_max_deg": 28.501,
+        "torso_lean_max_deg": 85.471,
+        "torso_lean_min_deg": 85.471,
+        "hip_drop_m": 0.0,
+        "wrist_over_head_m": 0.416,
+        "wrist_over_shoulder_m": 0.169,
+        "arm_elev_max_deg": 91.327,
+        "arm_elev_min_deg": 60.442,
+        "arm_lateral_frac": 0.35,
+        "humerus_depth_min_deg": -20.543,
+        "arm_elev_at_max_flexion_deg": 69.64,
+        "forearm_from_vertical_at_max_flexion_deg": 10.403,
+        "foot_split_m": 0.0,
+        "foot_spread_m": 0.54,
+        "wrist_travel_m": 0.347,
+        "root_rise_m": 0.0
+      }
+    },
+    {
+      "params": {
+        "grip_width_between_hand_centres_m": 0.86,
+        "scapular_retraction_deg": 28.0,
+        "thoracic_extension_deg": 20.0,
+        "touch_point_below_shoulder_joint_m": 0.16
+      },
+      "cost": 8.608,
+      "metrics": {
+        "elbow_min_deg": 75.196,
+        "elbow_max_deg": 171.485,
+        "elbow_flexion_max_deg": 104.804,
+        "knee_min_deg": 83.625,
+        "knee_max_deg": 83.625,
+        "hip_flex_max_deg": 28.501,
+        "torso_lean_max_deg": 85.471,
+        "torso_lean_min_deg": 85.471,
+        "hip_drop_m": 0.0,
+        "wrist_over_head_m": 0.406,
+        "wrist_over_shoulder_m": 0.175,
+        "arm_elev_max_deg": 91.36,
+        "arm_elev_min_deg": 70.914,
+        "arm_lateral_frac": 0.373,
+        "humerus_depth_min_deg": -17.566,
+        "arm_elev_at_max_flexion_deg": 82.505,
+        "forearm_from_vertical_at_max_flexion_deg": 20.154,
+        "foot_split_m": 0.0,
+        "foot_spread_m": 0.54,
+        "wrist_travel_m": 0.329,
+        "root_rise_m": 0.0
+      }
+    },
+    {
+      "params": {
+        "grip_width_between_hand_centres_m": 0.78,
+        "scapular_retraction_deg": 28.0,
+        "thoracic_extension_deg": 20.0,
+        "touch_point_below_shoulder_joint_m": 0.16
+      },
+      "cost": 4.497,
+      "metrics": {
+        "elbow_min_deg": 68.614,
+        "elbow_max_deg": 171.418,
+        "elbow_flexion_max_deg": 111.386,
+        "knee_min_deg": 83.625,
+        "knee_max_deg": 83.625,
+        "hip_flex_max_deg": 28.501,
+        "torso_lean_max_deg": 85.471,
+        "torso_lean_min_deg": 85.471,
+        "hip_drop_m": 0.0,
+        "wrist_over_head_m": 0.425,
+        "wrist_over_shoulder_m": 0.167,
+        "arm_elev_max_deg": 91.28,
+        "arm_elev_min_deg": 52.597,
+        "arm_lateral_frac": 0.326,
+        "humerus_depth_min_deg": -21.259,
+        "arm_elev_at_max_flexion_deg": 60.832,
+        "forearm_from_vertical_at_max_flexion_deg": 4.286,
+        "foot_split_m": 0.0,
+        "foot_spread_m": 0.54,
+        "wrist_travel_m": 0.361,
+        "root_rise_m": 0.0
+      }
+    },
+    {
+      "params": {
+        "grip_width_between_hand_centres_m": 0.82,
+        "scapular_retraction_deg": 32.0,
+        "thoracic_extension_deg": 20.0,
+        "touch_point_below_shoulder_joint_m": 0.16
+      },
+      "cost": 3.0079,
+      "metrics": {
+        "elbow_min_deg": 74.226,
+        "elbow_max_deg": 171.461,
+        "elbow_flexion_max_deg": 105.774,
+        "knee_min_deg": 83.675,
+        "knee_max_deg": 83.675,
+        "hip_flex_max_deg": 28.565,
+        "torso_lean_max_deg": 85.096,
+        "torso_lean_min_deg": 85.096,
+        "hip_drop_m": 0.0,
+        "wrist_over_head_m": 0.404,
+        "wrist_over_shoulder_m": 0.179,
+        "arm_elev_max_deg": 91.667,
+        "arm_elev_min_deg": 63.336,
+        "arm_lateral_frac": 0.357,
+        "humerus_depth_min_deg": -18.099,
+        "arm_elev_at_max_flexion_deg": 71.093,
+        "forearm_from_vertical_at_max_flexion_deg": 11.426,
+        "foot_split_m": 0.0,
+        "foot_spread_m": 0.54,
+        "wrist_travel_m": 0.335,
+        "root_rise_m": 0.0
+      }
+    },
+    {
+      "params": {
+        "grip_width_between_hand_centres_m": 0.82,
+        "scapular_retraction_deg": 26.0,
+        "thoracic_extension_deg": 20.0,
+        "touch_point_below_shoulder_joint_m": 0.16
+      },
+      "cost": 5.2545,
+      "metrics": {
+        "elbow_min_deg": 70.457,
+        "elbow_max_deg": 171.446,
+        "elbow_flexion_max_deg": 109.543,
+        "knee_min_deg": 83.622,
+        "knee_max_deg": 83.622,
+        "hip_flex_max_deg": 28.497,
+        "torso_lean_max_deg": 85.494,
+        "torso_lean_min_deg": 85.494,
+        "hip_drop_m": 0.0,
+        "wrist_over_head_m": 0.422,
+        "wrist_over_shoulder_m": 0.164,
+        "arm_elev_max_deg": 91.301,
+        "arm_elev_min_deg": 59.182,
+        "arm_lateral_frac": 0.346,
+        "humerus_depth_min_deg": -21.805,
+        "arm_elev_at_max_flexion_deg": 69.266,
+        "forearm_from_vertical_at_max_flexion_deg": 10.195,
+        "foot_split_m": 0.0,
+        "foot_spread_m": 0.54,
+        "wrist_travel_m": 0.354,
+        "root_rise_m": 0.0
+      }
+    },
+    {
+      "params": {
+        "grip_width_between_hand_centres_m": 0.82,
+        "scapular_retraction_deg": 32.0,
+        "thoracic_extension_deg": 26.0,
+        "touch_point_below_shoulder_joint_m": 0.16
+      },
+      "cost": null,
+      "metrics": null
+    },
+    {
+      "params": {
+        "grip_width_between_hand_centres_m": 0.82,
+        "scapular_retraction_deg": 32.0,
+        "thoracic_extension_deg": 14.0,
+        "touch_point_below_shoulder_joint_m": 0.16
+      },
+      "cost": 3.7889,
+      "metrics": {
+        "elbow_min_deg": 73.353,
+        "elbow_max_deg": 171.462,
+        "elbow_flexion_max_deg": 106.647,
+        "knee_min_deg": 83.35,
+        "knee_max_deg": 83.35,
+        "hip_flex_max_deg": 28.83,
+        "torso_lean_max_deg": 84.314,
+        "torso_lean_min_deg": 84.314,
+        "hip_drop_m": 0.0,
+        "wrist_over_head_m": 0.401,
+        "wrist_over_shoulder_m": 0.174,
+        "arm_elev_max_deg": 92.351,
+        "arm_elev_min_deg": 63.358,
+        "arm_lateral_frac": 0.358,
+        "humerus_depth_min_deg": -18.932,
+        "arm_elev_at_max_flexion_deg": 71.927,
+        "forearm_from_vertical_at_max_flexion_deg": 12.314,
+        "foot_split_m": 0.0,
+        "foot_spread_m": 0.54,
+        "wrist_travel_m": 0.339,
+        "root_rise_m": 0.0
+      }
+    },
+    {
+      "params": {
+        "grip_width_between_hand_centres_m": 0.82,
+        "scapular_retraction_deg": 32.0,
+        "thoracic_extension_deg": 20.0,
+        "touch_point_below_shoulder_joint_m": 0.18
+      },
+      "cost": 2.0807,
+      "metrics": {
+        "elbow_min_deg": 76.338,
+        "elbow_max_deg": 171.461,
+        "elbow_flexion_max_deg": 103.662,
+        "knee_min_deg": 83.675,
+        "knee_max_deg": 83.675,
+        "hip_flex_max_deg": 28.565,
+        "torso_lean_max_deg": 85.096,
+        "torso_lean_min_deg": 85.096,
+        "hip_drop_m": 0.0,
+        "wrist_over_head_m": 0.404,
+        "wrist_over_shoulder_m": 0.18,
+        "arm_elev_max_deg": 91.667,
+        "arm_elev_min_deg": 63.341,
+        "arm_lateral_frac": 0.357,
+        "humerus_depth_min_deg": -17.095,
+        "arm_elev_at_max_flexion_deg": 70.168,
+        "forearm_from_vertical_at_max_flexion_deg": 14.065,
+        "foot_split_m": 0.0,
+        "foot_spread_m": 0.54,
+        "wrist_travel_m": 0.341,
+        "root_rise_m": 0.0
+      }
+    },
+    {
+      "params": {
+        "grip_width_between_hand_centres_m": 0.82,
+        "scapular_retraction_deg": 32.0,
+        "thoracic_extension_deg": 20.0,
+        "touch_point_below_shoulder_joint_m": 0.19
+      },
+      "cost": 1.8164,
+      "metrics": {
+        "elbow_min_deg": 77.333,
+        "elbow_max_deg": 171.461,
+        "elbow_flexion_max_deg": 102.667,
+        "knee_min_deg": 83.675,
+        "knee_max_deg": 83.675,
+        "hip_flex_max_deg": 28.565,
+        "torso_lean_max_deg": 85.096,
+        "torso_lean_min_deg": 85.096,
+        "hip_drop_m": 0.0,
+        "wrist_over_head_m": 0.404,
+        "wrist_over_shoulder_m": 0.18,
+        "arm_elev_max_deg": 91.667,
+        "arm_elev_min_deg": 63.345,
+        "arm_lateral_frac": 0.357,
+        "humerus_depth_min_deg": -16.715,
+        "arm_elev_at_max_flexion_deg": 69.84,
+        "forearm_from_vertical_at_max_flexion_deg": 15.507,
+        "foot_split_m": 0.0,
+        "foot_spread_m": 0.54,
+        "wrist_travel_m": 0.345,
+        "root_rise_m": 0.0
+      }
+    },
+    {
+      "params": {
+        "grip_width_between_hand_centres_m": 0.82,
+        "scapular_retraction_deg": 32.0,
+        "thoracic_extension_deg": 20.0,
+        "touch_point_below_shoulder_joint_m": 0.17
+      },
+      "cost": 2.511,
+      "metrics": {
+        "elbow_min_deg": 75.252,
+        "elbow_max_deg": 171.461,
+        "elbow_flexion_max_deg": 104.748,
+        "knee_min_deg": 83.675,
+        "knee_max_deg": 83.675,
+        "hip_flex_max_deg": 28.565,
+        "torso_lean_max_deg": 85.096,
+        "torso_lean_min_deg": 85.096,
+        "hip_drop_m": 0.0,
+        "wrist_over_head_m": 0.404,
+        "wrist_over_shoulder_m": 0.18,
+        "arm_elev_max_deg": 91.667,
+        "arm_elev_min_deg": 63.339,
+        "arm_lateral_frac": 0.357,
+        "humerus_depth_min_deg": -17.616,
+        "arm_elev_at_max_flexion_deg": 70.638,
+        "forearm_from_vertical_at_max_flexion_deg": 12.748,
+        "foot_split_m": 0.0,
+        "foot_spread_m": 0.54,
+        "wrist_travel_m": 0.338,
+        "root_rise_m": 0.0
+      }
+    },
+    {
+      "params": {
+        "grip_width_between_hand_centres_m": 0.84,
+        "scapular_retraction_deg": 32.0,
+        "thoracic_extension_deg": 20.0,
+        "touch_point_below_shoulder_joint_m": 0.19
+      },
+      "cost": 3.857,
+      "metrics": {
+        "elbow_min_deg": 79.024,
+        "elbow_max_deg": 171.479,
+        "elbow_flexion_max_deg": 100.976,
+        "knee_min_deg": 83.675,
+        "knee_max_deg": 83.675,
+        "hip_flex_max_deg": 28.565,
+        "torso_lean_max_deg": 85.096,
+        "torso_lean_min_deg": 85.096,
+        "hip_drop_m": 0.0,
+        "wrist_over_head_m": 0.399,
+        "wrist_over_shoulder_m": 0.183,
+        "arm_elev_max_deg": 91.679,
+        "arm_elev_min_deg": 68.643,
+        "arm_lateral_frac": 0.369,
+        "humerus_depth_min_deg": -15.275,
+        "arm_elev_at_max_flexion_deg": 75.387,
+        "forearm_from_vertical_at_max_flexion_deg": 19.679,
+        "foot_split_m": 0.0,
+        "foot_spread_m": 0.54,
+        "wrist_travel_m": 0.336,
+        "root_rise_m": 0.0
+      }
+    },
+    {
+      "params": {
+        "grip_width_between_hand_centres_m": 0.8,
+        "scapular_retraction_deg": 32.0,
+        "thoracic_extension_deg": 20.0,
+        "touch_point_below_shoulder_joint_m": 0.19
+      },
+      "cost": 1.0233,
+      "metrics": {
+        "elbow_min_deg": 75.731,
+        "elbow_max_deg": 171.445,
+        "elbow_flexion_max_deg": 104.269,
+        "knee_min_deg": 83.675,
+        "knee_max_deg": 83.675,
+        "hip_flex_max_deg": 28.565,
+        "torso_lean_max_deg": 85.096,
+        "torso_lean_min_deg": 85.096,
+        "hip_drop_m": 0.0,
+        "wrist_over_head_m": 0.408,
+        "wrist_over_shoulder_m": 0.179,
+        "arm_elev_max_deg": 91.651,
+        "arm_elev_min_deg": 58.879,
+        "arm_lateral_frac": 0.346,
+        "humerus_depth_min_deg": -17.58,
+        "arm_elev_at_max_flexion_deg": 65.202,
+        "forearm_from_vertical_at_max_flexion_deg": 12.18,
+        "foot_split_m": 0.0,
+        "foot_spread_m": 0.54,
+        "wrist_travel_m": 0.353,
+        "root_rise_m": 0.0
+      }
+    },
+    {
+      "params": {
+        "grip_width_between_hand_centres_m": 0.78,
+        "scapular_retraction_deg": 32.0,
+        "thoracic_extension_deg": 20.0,
+        "touch_point_below_shoulder_joint_m": 0.19
+      },
+      "cost": 0.9961,
+      "metrics": {
+        "elbow_min_deg": 74.204,
+        "elbow_max_deg": 171.428,
+        "elbow_flexion_max_deg": 105.796,
+        "knee_min_deg": 83.675,
+        "knee_max_deg": 83.675,
+        "hip_flex_max_deg": 28.565,
+        "torso_lean_max_deg": 85.096,
+        "torso_lean_min_deg": 85.096,
+        "hip_drop_m": 0.0,
+        "wrist_over_head_m": 0.413,
+        "wrist_over_shoulder_m": 0.177,
+        "arm_elev_max_deg": 91.631,
+        "arm_elev_min_deg": 54.913,
+        "arm_lateral_frac": 0.334,
+        "humerus_depth_min_deg": -18.107,
+        "arm_elev_at_max_flexion_deg": 61.113,
+        "forearm_from_vertical_at_max_flexion_deg": 9.372,
+        "foot_split_m": 0.0,
+        "foot_spread_m": 0.54,
+        "wrist_travel_m": 0.36,
+        "root_rise_m": 0.0
+      }
+    },
+    {
+      "params": {
+        "grip_width_between_hand_centres_m": 0.76,
+        "scapular_retraction_deg": 32.0,
+        "thoracic_extension_deg": 20.0,
+        "touch_point_below_shoulder_joint_m": 0.19
+      },
+      "cost": 1.5145,
+      "metrics": {
+        "elbow_min_deg": 72.746,
+        "elbow_max_deg": 171.411,
+        "elbow_flexion_max_deg": 107.254,
+        "knee_min_deg": 83.675,
+        "knee_max_deg": 83.675,
+        "hip_flex_max_deg": 28.565,
+        "torso_lean_max_deg": 85.096,
+        "torso_lean_min_deg": 85.096,
+        "hip_drop_m": 0.0,
+        "wrist_over_head_m": 0.417,
+        "wrist_over_shoulder_m": 0.176,
+        "arm_elev_max_deg": 91.608,
+        "arm_elev_min_deg": 51.314,
+        "arm_lateral_frac": 0.322,
+        "humerus_depth_min_deg": -18.414,
+        "arm_elev_at_max_flexion_deg": 57.406,
+        "forearm_from_vertical_at_max_flexion_deg": 6.933,
+        "foot_split_m": 0.0,
+        "foot_spread_m": 0.54,
+        "wrist_travel_m": 0.366,
+        "root_rise_m": 0.0
+      }
+    },
+    {
+      "params": {
+        "grip_width_between_hand_centres_m": 0.78,
+        "scapular_retraction_deg": 29.0,
+        "thoracic_extension_deg": 20.0,
+        "touch_point_below_shoulder_joint_m": 0.19
+      },
+      "cost": 2.0599,
+      "metrics": {
+        "elbow_min_deg": 72.454,
+        "elbow_max_deg": 171.419,
+        "elbow_flexion_max_deg": 107.546,
+        "knee_min_deg": 83.628,
+        "knee_max_deg": 83.628,
+        "hip_flex_max_deg": 28.505,
+        "torso_lean_max_deg": 85.449,
+        "torso_lean_min_deg": 85.449,
+        "hip_drop_m": 0.0,
+        "wrist_over_head_m": 0.421,
+        "wrist_over_shoulder_m": 0.17,
+        "arm_elev_max_deg": 91.303,
+        "arm_elev_min_deg": 53.145,
+        "arm_lateral_frac": 0.328,
+        "humerus_depth_min_deg": -19.863,
+        "arm_elev_at_max_flexion_deg": 60.378,
+        "forearm_from_vertical_at_max_flexion_deg": 8.882,
+        "foot_split_m": 0.0,
+        "foot_spread_m": 0.54,
+        "wrist_travel_m": 0.368,
+        "root_rise_m": 0.0
+      }
+    },
+    {
+      "params": {
+        "grip_width_between_hand_centres_m": 0.78,
+        "scapular_retraction_deg": 32.0,
+        "thoracic_extension_deg": 23.0,
+        "touch_point_below_shoulder_joint_m": 0.19
+      },
+      "cost": 0.6812,
+      "metrics": {
+        "elbow_min_deg": 74.852,
+        "elbow_max_deg": 171.428,
+        "elbow_flexion_max_deg": 105.148,
+        "knee_min_deg": 83.91,
+        "knee_max_deg": 83.91,
+        "hip_flex_max_deg": 28.422,
+        "torso_lean_max_deg": 85.535,
+        "torso_lean_min_deg": 85.535,
+        "hip_drop_m": 0.0,
+        "wrist_over_head_m": 0.414,
+        "wrist_over_shoulder_m": 0.181,
+        "arm_elev_max_deg": 91.239,
+        "arm_elev_min_deg": 54.923,
+        "arm_lateral_frac": 0.334,
+        "humerus_depth_min_deg": -17.475,
+        "arm_elev_at_max_flexion_deg": 60.68,
+        "forearm_from_vertical_at_max_flexion_deg": 8.924,
+        "foot_split_m": 0.0,
+        "foot_spread_m": 0.54,
+        "wrist_travel_m": 0.357,
+        "root_rise_m": 0.0
+      }
+    },
+    {
+      "params": {
+        "grip_width_between_hand_centres_m": 0.78,
+        "scapular_retraction_deg": 32.0,
+        "thoracic_extension_deg": 26.0,
+        "touch_point_below_shoulder_joint_m": 0.19
+      },
+      "cost": 0.4324,
+      "metrics": {
+        "elbow_min_deg": 75.495,
+        "elbow_max_deg": 171.428,
+        "elbow_flexion_max_deg": 104.505,
+        "knee_min_deg": 84.135,
+        "knee_max_deg": 84.135,
+        "hip_flex_max_deg": 28.298,
+        "torso_lean_max_deg": 85.97,
+        "torso_lean_min_deg": 85.97,
+        "hip_drop_m": 0.0,
+        "wrist_over_head_m": 0.416,
+        "wrist_over_shoulder_m": 0.185,
+        "arm_elev_max_deg": 90.85,
+        "arm_elev_min_deg": 54.937,
+        "arm_lateral_frac": 0.334,
+        "humerus_depth_min_deg": -16.86,
+        "arm_elev_at_max_flexion_deg": 60.276,
+        "forearm_from_vertical_at_max_flexion_deg": 8.506,
+        "foot_split_m": 0.0,
+        "foot_spread_m": 0.54,
+        "wrist_travel_m": 0.353,
+        "root_rise_m": 0.0
+      }
+    },
+    {
+      "params": {
+        "grip_width_between_hand_centres_m": 0.78,
+        "scapular_retraction_deg": 32.0,
+        "thoracic_extension_deg": 29.0,
+        "touch_point_below_shoulder_joint_m": 0.19
+      },
+      "cost": 0.2654,
+      "metrics": {
+        "elbow_min_deg": 76.039,
+        "elbow_max_deg": 171.428,
+        "elbow_flexion_max_deg": 103.961,
+        "knee_min_deg": 84.218,
+        "knee_max_deg": 84.218,
+        "hip_flex_max_deg": 28.235,
+        "torso_lean_max_deg": 86.268,
+        "torso_lean_min_deg": 86.268,
+        "hip_drop_m": 0.0,
+        "wrist_over_head_m": 0.417,
+        "wrist_over_shoulder_m": 0.188,
+        "arm_elev_max_deg": 90.584,
+        "arm_elev_min_deg": 54.955,
+        "arm_lateral_frac": 0.334,
+        "humerus_depth_min_deg": -16.314,
+        "arm_elev_at_max_flexion_deg": 59.931,
+        "forearm_from_vertical_at_max_flexion_deg": 8.174,
+        "foot_split_m": 0.0,
+        "foot_spread_m": 0.54,
+        "wrist_travel_m": 0.351,
+        "root_rise_m": 0.0
+      }
+    },
+    {
+      "params": {
+        "grip_width_between_hand_centres_m": 0.78,
+        "scapular_retraction_deg": 32.0,
+        "thoracic_extension_deg": 30.0,
+        "touch_point_below_shoulder_joint_m": 0.19
+      },
+      "cost": null,
+      "metrics": null
+    },
+    {
+      "params": {
+        "grip_width_between_hand_centres_m": 0.78,
+        "scapular_retraction_deg": 32.0,
+        "thoracic_extension_deg": 26.0,
+        "touch_point_below_shoulder_joint_m": 0.19
+      },
+      "cost": 0.4324,
+      "metrics": {
+        "elbow_min_deg": 75.495,
+        "elbow_max_deg": 171.428,
+        "elbow_flexion_max_deg": 104.505,
+        "knee_min_deg": 84.135,
+        "knee_max_deg": 84.135,
+        "hip_flex_max_deg": 28.298,
+        "torso_lean_max_deg": 85.97,
+        "torso_lean_min_deg": 85.97,
+        "hip_drop_m": 0.0,
+        "wrist_over_head_m": 0.416,
+        "wrist_over_shoulder_m": 0.185,
+        "arm_elev_max_deg": 90.85,
+        "arm_elev_min_deg": 54.937,
+        "arm_lateral_frac": 0.334,
+        "humerus_depth_min_deg": -16.86,
+        "arm_elev_at_max_flexion_deg": 60.276,
+        "forearm_from_vertical_at_max_flexion_deg": 8.506,
+        "foot_split_m": 0.0,
+        "foot_spread_m": 0.54,
+        "wrist_travel_m": 0.353,
+        "root_rise_m": 0.0
+      }
+    },
+    {
+      "params": {
+        "grip_width_between_hand_centres_m": 0.78,
+        "scapular_retraction_deg": 32.0,
+        "thoracic_extension_deg": 29.0,
+        "touch_point_below_shoulder_joint_m": 0.18
+      },
+      "cost": 0.5117,
+      "metrics": {
+        "elbow_min_deg": 74.909,
+        "elbow_max_deg": 171.428,
+        "elbow_flexion_max_deg": 105.091,
+        "knee_min_deg": 84.218,
+        "knee_max_deg": 84.218,
+        "hip_flex_max_deg": 28.235,
+        "torso_lean_max_deg": 86.268,
+        "torso_lean_min_deg": 86.268,
+        "hip_drop_m": 0.0,
+        "wrist_over_head_m": 0.417,
+        "wrist_over_shoulder_m": 0.188,
+        "arm_elev_max_deg": 90.584,
+        "arm_elev_min_deg": 54.963,
+        "arm_lateral_frac": 0.334,
+        "humerus_depth_min_deg": -16.628,
+        "arm_elev_at_max_flexion_deg": 60.127,
+        "forearm_from_vertical_at_max_flexion_deg": 6.659,
+        "foot_split_m": 0.0,
+        "foot_spread_m": 0.54,
+        "wrist_travel_m": 0.347,
+        "root_rise_m": 0.0
+      }
+    }
+  ],
+  "applied": true
+}

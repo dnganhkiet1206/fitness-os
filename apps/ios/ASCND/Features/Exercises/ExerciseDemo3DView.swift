@@ -22,9 +22,9 @@
     @Environment(\.colorScheme) private var scheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// Máy quay bay vòng quanh bài; ghế và nhân vật đứng yên (Kiệt 13/11).
-    @State private var yaw: Double = Self.home.yaw
-    @State private var pitch: Double = Self.home.pitch
-    @State private var distance: Double = Self.home.distance
+    @State private var yaw: Double
+    @State private var pitch: Double
+    @State private var distance: Double
     @State private var loadFailed = false
     @State private var showTips = false
     @State private var selectedTip: String?
@@ -34,10 +34,22 @@
     @GestureState private var dragOffset: CGSize = .zero
     @GestureState private var pinch: CGFloat = 1
 
-    /// Góc mặc định: preset three_quarter (`bench-press/usdz/usdz_report.json`:
-    /// `default_camera`, hệ Y-up). Phòng tập dựng quanh đúng điểm nhìn này.
-    private static let cameraPosition: SIMD3<Float> = [3.5378, 2.3302, 3.3852]
-    private static let cameraTarget: SIMD3<Float> = [0.1817, 0.6027, 0.0291]
+    init(name: String, onFullGuide: (() -> Void)? = nil) {
+      self.name = name
+      self.onFullGuide = onFullGuide
+      let h = Self.home(of: ExerciseDemo3D.demo(for: name))
+      _yaw = State(initialValue: h.yaw)
+      _pitch = State(initialValue: h.pitch)
+      _distance = State(initialValue: h.distance)
+    }
+
+    /// Góc mặc định của bài: preset three_quarter (`<bài>/usdz/usdz_report.json`
+    /// → `default_camera`, hệ Y-up), mang trong `ExerciseDemo3D.Demo`.
+    private var demoInfo: ExerciseDemo3D.Demo? { ExerciseDemo3D.demo(for: name) }
+    private var cameraTarget: SIMD3<Float> { Self.target(of: demoInfo) }
+    private static func target(of demo: ExerciseDemo3D.Demo?) -> SIMD3<Float> {
+      demo?.cameraTarget ?? [0.1817, 0.6027, 0.0291]
+    }
     /// Cùng góc nhìn ngang với khung 9:16 gốc (41,26° dọc), kéo dài theo
     /// chiều cao màn để khung 3D tràn màn hình.
     private static var verticalFOV: Float {
@@ -54,16 +66,16 @@
     /// Gần nhất 1,6 m để soi được sợi cơ (thanh zoom, Kiệt 13/11).
     private static let distanceRange = 1.6...5.4
 
-    private static var home: (yaw: Double, pitch: Double, distance: Double) {
-      let o = cameraPosition - cameraTarget
+    private static func home(of demo: ExerciseDemo3D.Demo?) -> (yaw: Double, pitch: Double, distance: Double) {
+      let o = (demo?.cameraPosition ?? [3.5378, 2.3302, 3.3852]) - target(of: demo)
       let d = Double(simd_length(o))
       return (Double(atan2(o.x, o.z)), Double(asin(o.y / Float(d))), d)
     }
 
-    private static func orbit(yaw: Double, pitch: Double, distance: Double) -> SIMD3<Float> {
+    private static func orbit(target: SIMD3<Float>, yaw: Double, pitch: Double, distance: Double) -> SIMD3<Float> {
       let p = min(max(pitch, pitchRange.lowerBound), pitchRange.upperBound)
       let d = min(max(distance, distanceRange.lowerBound), distanceRange.upperBound)
-      return cameraTarget + SIMD3<Float>(
+      return target + SIMD3<Float>(
         Float(d * cos(p) * sin(yaw)), Float(d * sin(p)), Float(d * cos(p) * cos(yaw)))
     }
 
@@ -71,6 +83,7 @@
     /// lớp mẹo dùng chung một công thức nên đường chỉ luôn khớp mô hình.
     private var cameraPosition: SIMD3<Float> {
       Self.orbit(
+        target: cameraTarget,
         yaw: yaw - Double(dragOffset.width) * Self.dragScale,
         pitch: pitch + Double(dragOffset.height) * Self.dragScale,
         distance: distance / Double(pinch))
@@ -81,7 +94,7 @@
         ZStack {
           ZStack {
               RealityView { content in
-                let camera = Self.makeCamera()
+                let camera = Self.makeCamera(position: cameraPosition, target: cameraTarget)
                 content.add(camera)
                 content.camera = .virtual  // dùng thực thể có PerspectiveCameraComponent ở trên
                 do {
@@ -91,12 +104,12 @@
                     Self.makeUnlit(room, dark: scheme == .dark)
                     content.add(room)
                   }
-                  let scene = try await Entity(named: "bench_press_animation", in: .main)
+                  let scene = try await Entity(named: demoInfo?.usdzFile ?? "bench_press_animation", in: .main)
                   content.add(scene)
                   if let prefix = ExerciseDemo3D.demo(for: name)?.focusTexturePrefix {
                     await bodySkins.prepare(scene: scene, prefix: prefix)
                   }
-                  Self.addLights(to: content)
+                  Self.addLights(to: content, target: cameraTarget)
                   // Tự chạy và lặp vô hạn, không dừng ở cuối.
                   if let animation = scene.availableAnimations.first {
                     scene.playAnimation(animation.repeat())
@@ -106,7 +119,7 @@
                 }
               } update: { content in
                 guard let camera = content.entities.first(where: { $0.name == Self.cameraName }) else { return }
-                camera.look(at: Self.cameraTarget, from: cameraPosition, relativeTo: nil)
+                camera.look(at: cameraTarget, from: cameraPosition, relativeTo: nil)
                 bodySkins.apply(focus: hideSecondary)
               }
               .ignoresSafeArea()
@@ -127,7 +140,7 @@
                       })
               )
               .onTapGesture(count: 2) {
-                withAnimation(reduceMotion ? nil : .smooth) { (yaw, pitch, distance) = Self.home }
+                withAnimation(reduceMotion ? nil : .smooth) { (yaw, pitch, distance) = Self.home(of: demoInfo) }
               }
               .accessibilityLabel(
                 Text(verbatim: "\(name) — \(String(localized: "eg.demo3d.alt"))"))
@@ -141,7 +154,7 @@
               ExerciseTipsOverlay(
                 tips: ExerciseTips.tips(for: PersonalRecords.exerciseKey(name)),
                 camera: PinholeCamera(
-                  position: cameraPosition, target: Self.cameraTarget, verticalFOVDegrees: Self.verticalFOV,
+                  position: cameraPosition, target: cameraTarget, verticalFOVDegrees: Self.verticalFOV,
                   size: geo.size),
                 // Lớp này tràn qua vùng an toàn (lề = 0): đặt hàng nhãn dưới
                 // thanh nút (đảo Dynamic Island + nút đóng / mẹo).
@@ -319,7 +332,7 @@
       ZStack {
         WarmPaper()
         VStack(spacing: DS.Spacing.sm) {
-          if let url = Bundle.main.url(forResource: "bench_press_45_poster", withExtension: "jpg") {
+          if let url = Bundle.main.url(forResource: demoInfo?.posterFile ?? "bench_press_45_poster", withExtension: "jpg") {
             AsyncImage(url: url) { phase in
               switch phase {
               case .success(let image): image.resizable().scaledToFit()
@@ -367,7 +380,7 @@
       visit(root, insideLogo: false)
     }
 
-    private static func makeCamera() -> Entity {
+    private static func makeCamera(position cameraPosition: SIMD3<Float>, target cameraTarget: SIMD3<Float>) -> Entity {
       var camera = Entity()
       camera.name = cameraName
       camera.components.set(
@@ -378,7 +391,7 @@
 
     /// USDZ không kèm đèn: một đèn chính + một đèn phụ, đủ thấy khối cơ và
     /// sợi cơ phát sáng mà không cần ảnh môi trường.
-    private static func addLights(to content: RealityViewCameraContent) {
+    private static func addLights(to content: RealityViewCameraContent, target cameraTarget: SIMD3<Float>) {
       var key = Entity()
       key.components.set(DirectionalLightComponent(color: .white, intensity: 1200))
       key.look(at: cameraTarget, from: cameraTarget + [2, 4, 2], relativeTo: nil)

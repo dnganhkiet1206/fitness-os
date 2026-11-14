@@ -1,0 +1,167 @@
+{
+  "tool": "pipeline/validate_motion.py",
+  "date": "2026-11-14",
+  "exercise_id": "barbell_back_squat",
+  "frames": 225,
+  "fps": 24,
+  "summary": {
+    "counts": {
+      "PASS": 10,
+      "FAIL": 1
+    },
+    "technically_validated": false,
+    "states": {
+      "technically_validated": false,
+      "biomechanically_reviewed": false,
+      "human_approved": false,
+      "production_approved": false
+    }
+  },
+  "checks": [
+    {
+      "id": "frames",
+      "stage": "A",
+      "title": "Animation has frames and finite joint data",
+      "status": "PASS",
+      "measured": 225,
+      "limit": null,
+      "where": null,
+      "detail": ""
+    },
+    {
+      "id": "joint_speed",
+      "stage": "B",
+      "title": "No joint moves faster than a human joint plausibly does",
+      "status": "PASS",
+      "measured": 0.844,
+      "limit": 2.5,
+      "where": {
+        "joint": "head_top",
+        "frame": 88
+      },
+      "detail": "m/s"
+    },
+    {
+      "id": "rotation_step",
+      "stage": "B",
+      "title": "No sudden bone rotation between frames",
+      "status": "PASS",
+      "measured": 5.375,
+      "limit": 12.0,
+      "where": {
+        "bone": "calf_l",
+        "frame": 195
+      },
+      "detail": "deg per frame"
+    },
+    {
+      "id": "hand_implement_contact",
+      "stage": "B",
+      "title": "Hands stay on the implements in every frame",
+      "status": "PASS",
+      "measured": 1e-05,
+      "limit": 0.004,
+      "where": {
+        "implement": "SOCKET_hand_l",
+        "frame": 224
+      },
+      "detail": "m wrist to grip socket"
+    },
+    {
+      "id": "feet_planted",
+      "stage": "B",
+      "title": "Planted feet neither slide nor lift",
+      "status": "PASS",
+      "measured": {
+        "slide_m": 1e-05,
+        "lift_m": 0.0001
+      },
+      "limit": {
+        "slide_m": 0.005,
+        "lift_m": 0.005
+      },
+      "where": {
+        "foot": "foot_l",
+        "frame": 157
+      },
+      "detail": ""
+    },
+    {
+      "id": "left_right_symmetry",
+      "stage": "B",
+      "title": "Left and right sides move as mirror images",
+      "status": "PASS",
+      "measured": 0.0,
+      "limit": 0.003,
+      "where": {
+        "joint": "knee",
+        "frame": 103
+      },
+      "detail": "m"
+    },
+    {
+      "id": "skin_stretch",
+      "stage": "C",
+      "title": "Skin stretch stays within limits",
+      "status": "FAIL",
+      "measured": 3.11,
+      "limit": 2.6,
+      "where": {
+        "frame": 56
+      },
+      "detail": "p99.9 edge stretch"
+    },
+    {
+      "id": "movement_knee_min_deg",
+      "stage": "D",
+      "title": "squat: knee_min_deg inside the family bounds",
+      "status": "PASS",
+      "measured": 66.123,
+      "limit": [
+        null,
+        100
+      ],
+      "where": null,
+      "detail": "provisional bound"
+    },
+    {
+      "id": "movement_hip_drop_m",
+      "stage": "D",
+      "title": "squat: hip_drop_m inside the family bounds",
+      "status": "PASS",
+      "measured": 0.455,
+      "limit": [
+        0.25,
+        null
+      ],
+      "where": null,
+      "detail": "provisional bound"
+    },
+    {
+      "id": "movement_torso_lean_max_deg",
+      "stage": "D",
+      "title": "squat: torso_lean_max_deg inside the family bounds",
+      "status": "PASS",
+      "measured": 32.879,
+      "limit": [
+        null,
+        55
+      ],
+      "where": null,
+      "detail": "provisional bound"
+    },
+    {
+      "id": "movement_foot_split_m",
+      "stage": "D",
+      "title": "squat: foot_split_m inside the family bounds",
+      "status": "PASS",
+      "measured": 0.0,
+      "limit": [
+        null,
+        0.15
+      ],
+      "where": null,
+      "detail": "provisional bound"
+    }
+  ]
+}

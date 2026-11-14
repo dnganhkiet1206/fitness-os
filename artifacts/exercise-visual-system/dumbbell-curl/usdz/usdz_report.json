@@ -1,0 +1,46 @@
+{
+  "pipeline_version": "0.1.0",
+  "exercise_id": "dumbbell_biceps_curl",
+  "master_character_id": "master_character_002",
+  "usdz": "dumbbell_curl_animation.usdz",
+  "size_bytes": 2527501,
+  "zip_members": [
+    "dumbbell_curl_animation.usdc",
+    "textures/_usdz_body_emission.png",
+    "textures/_usdz_body_normal.png",
+    "textures/_usdz_body_albedo.png",
+    "textures/_usdz_apparel_emission.png",
+    "textures/_usdz_apparel_albedo.png"
+  ],
+  "default_camera": {
+    "preset_id": "three_quarter",
+    "position_m": [
+      1.6631,
+      1.7949,
+      1.7473
+    ],
+    "target_m": [
+      -0.0249,
+      0.926,
+      0.0593
+    ],
+    "distance_m": 2.5405,
+    "vertical_fov_deg": 41.26,
+    "aspect": 0.5625
+  },
+  "expectations": {
+    "deform_bones": 63,
+    "animation_duration_s": 9.8333,
+    "animation_frames": 237
+  },
+  "reimport": {
+    "armatures": 1,
+    "bones": 63,
+    "mesh_objects": 4,
+    "skinned_mesh_objects": 2,
+    "mesh_vertices": 13311,
+    "actions": 1,
+    "last_animation_frame": 226.0,
+    "materials": 5
+  }
+}

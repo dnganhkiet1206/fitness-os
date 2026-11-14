@@ -93,7 +93,7 @@ def sample_scene(scene, rig, body, bar, exercise: dict, deformation_frames: list
     racked = Vector(scene["evs_bench_racked_bar_center"])
     lip_top = float(scene["evs_bench_lip_top"])
 
-    arm_w = _weights(body, ("upperarm", "lowerarm") + HAND_BONES)
+    arm_w = _weights(body, ("upperarm", "upperarm_twist", "lowerarm", "lowerarm_twist") + HAND_BONES)
     hand_w = {s: bl_util.group_weights(body, [f"{b}_{s}" for b in HAND_BONES]).sum(axis=1) for s in ("l", "r")}
     foot_w = {s: bl_util.group_weights(body, [f"foot_{s}", f"ball_{s}"]).sum(axis=1) for s in ("l", "r")}
     head_w = _weights(body, ("head",), sided=False)

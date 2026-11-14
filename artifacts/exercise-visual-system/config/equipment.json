@@ -45,5 +45,14 @@
     "hook_lip": 0.018,
     "rack_base_length": 0.9,
     "source": "IPF rulebook: flat surface at least 1.22 m long, 29 to 32 cm wide, 42 to 45 cm from the floor to the top of the pad; bar rests adjustable from 75 to 110 cm; at least 1.10 m between the insides of the bar rests; the head of the bench extends 22 cm (+/- 5 cm) beyond the centre of the uprights. The rulebook also requires attached safety stands, which this model does not have. Frame shape is an original design."
+  },
+  "dumbbell_hex_12kg": {
+    "type": "dumbbell",
+    "handle_length": 0.13,
+    "handle_diameter": 0.032,
+    "head_length": 0.085,
+    "head_across_corners": 0.135,
+    "mass_kg": 12.0,
+    "source": "Approximate dimensions of a common commercial 12-12.5 kg rubber hex dumbbell (handle 13 cm between heads, 32 mm grip). No standard defines dumbbell sizes; values are typical, not from one manufacturer's drawing."
   }
 }

@@ -4,7 +4,7 @@
   "uv_coverage": 0.5832,
   "groups": {
     "pectoralis_major": {
-      "texels": 134242,
+      "texels": 133872,
       "label": "Pectoralis major"
     },
     "deltoid_anterior": {
@@ -20,15 +20,15 @@
       "label": "Deltoid, posterior head"
     },
     "triceps_brachii": {
-      "texels": 1556,
+      "texels": 24137,
       "label": "Triceps brachii"
     },
     "biceps_brachii": {
-      "texels": 1810,
+      "texels": 33291,
       "label": "Biceps brachii"
     },
     "forearm_muscles": {
-      "texels": 66208,
+      "texels": 69013,
       "label": "Forearm flexors and extensors"
     },
     "rectus_abdominis": {
@@ -36,15 +36,15 @@
       "label": "Rectus abdominis"
     },
     "obliques": {
-      "texels": 105670,
+      "texels": 98761,
       "label": "External obliques"
     },
     "serratus_anterior": {
-      "texels": 83205,
+      "texels": 37882,
       "label": "Serratus anterior"
     },
     "latissimus_dorsi": {
-      "texels": 73592,
+      "texels": 59921,
       "label": "Latissimus dorsi"
     },
     "trapezius": {
@@ -64,19 +64,19 @@
       "label": "Gluteus maximus"
     },
     "gluteus_medius": {
-      "texels": 29414,
+      "texels": 29394,
       "label": "Gluteus medius"
     },
     "quadriceps": {
-      "texels": 59121,
+      "texels": 136874,
       "label": "Quadriceps femoris"
     },
     "adductors": {
-      "texels": 26513,
+      "texels": 38958,
       "label": "Hip adductors"
     },
     "hamstrings": {
-      "texels": 22379,
+      "texels": 71143,
       "label": "Hamstrings"
     },
     "calves": {
