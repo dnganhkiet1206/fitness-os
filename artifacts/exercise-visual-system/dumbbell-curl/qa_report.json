@@ -168,12 +168,12 @@
       "stage": "C",
       "title": "Skin stretch stays within limits",
       "status": "PASS",
-      "measured": 2.313,
+      "measured": 2.175,
       "limit": 2.6,
       "where": {
-        "frame": 59
+        "frame": 118
       },
-      "detail": "p99.9 edge stretch"
+      "detail": "p99.9 edge stretch per frame: f0 2.175, f59 2.175, f118 2.175"
     },
     {
       "id": "movement_elbow_min_deg",

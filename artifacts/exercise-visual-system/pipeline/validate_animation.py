@@ -48,8 +48,11 @@ def sample_with_blender(exercise_path, exercise) -> tuple[dict, dict]:
         return int(round(seconds * fps))
 
     ecc, con = phase["eccentric"], phase["concentric"]
+    # Extreme poses: setup, eccentric start/mid/end (bottom), concentric mid
+    # and concentric end (lockout). The lockout frame was added 14/11: the
+    # old set never measured the arms-extended pose.
     deformation_frames = sorted({0, frame(ecc["start_s"]), frame(0.5 * (ecc["start_s"] + ecc["end_s"])), frame(ecc["end_s"]),
-                                 frame(0.5 * (con["start_s"] + con["end_s"]))})
+                                 frame(0.5 * (con["start_s"] + con["end_s"])), frame(con["end_s"])})
     inventory = sampling.scene_inventory(scene, exercise)
     samples = sampling.sample_scene(scene, rig, body, bar, exercise, deformation_frames)
     return samples, inventory

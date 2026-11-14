@@ -78,13 +78,25 @@ def main() -> None:
             feet[k].append(list(mw @ rig.pose.bones[k].head))
     j = {k: np.array(v) for k, v in joints.items()}
 
-    # Skin stretch at start, quarter, half (mesh evaluation is slow).
+    # Skin stretch at start, quarter, half, and the deepest pelvis frame
+    # (the extreme pose: the squat bottom). Mesh evaluation is slow, so only
+    # these frames are measured; per-frame values go into the record detail.
+    # Measure the skinned BASE mesh, like evs/sampling.py: with Subdivision
+    # on, the evaluated mesh has more vertices than the rest mesh (44722 vs
+    # 11171 on character 003), so rest edge indices do not address the same
+    # vertices (14/11 probe: planted feet showed up among the worst edges).
+    # The flags are restored right after sampling so the penetration check
+    # below still sees the subdivided surface.
+    low = int(np.argmin(j["pelvis"][:, 2]))
+    subsurf = [(m, m.show_viewport) for m in body.modifiers if m.type == "SUBSURF"]
+    for m, _ in subsurf:
+        m.show_viewport = False
     rest = body.data
     edges = np.array([e.vertices[:] for e in rest.edges])
     co0 = np.array([v.co[:] for v in rest.vertices])
     rl = np.linalg.norm(co0[edges[:, 0]] - co0[edges[:, 1]], axis=1)
     stretch = []
-    for f in (frames[0], frames[len(frames) // 4], frames[len(frames) // 2]):
+    for f in sorted({frames[0], frames[len(frames) // 4], frames[len(frames) // 2], frames[low]}):
         scene.frame_set(f)
         ev = body.evaluated_get(bpy.context.evaluated_depsgraph_get())
         me = ev.to_mesh()
@@ -93,6 +105,9 @@ def main() -> None:
         r = np.linalg.norm(co[edges[:, 0]] - co[edges[:, 1]], axis=1) / rl
         stretch.append((float(np.percentile(r, 99.9)), f))
     worst_stretch = max(stretch)
+    stretch_detail = "p99.9 edge stretch per frame: " + ", ".join(f"f{f} {v:.3f}" for v, f in sorted(stretch, key=lambda t: t[1]))
+    for m, visible in subsurf:
+        m.show_viewport = visible
 
     # Implement inside the skin (bar through the neck/traps, dumbbell through
     # the thigh): body vertices behind the nearest implement face, at the
@@ -101,7 +116,6 @@ def main() -> None:
     from mathutils.bvhtree import BVHTree
     ids = [e["id"].capitalize() for e in ex.get("equipment", []) if not any(k in e["id"] for k in ("bench", "rack", "machine"))]
     implements = [o for o in scene.objects if o.type == "MESH" and any(o.name.startswith(i) for i in ids)]
-    low = int(np.argmin(j["pelvis"][:, 2]))
     depths = {o.name: [] for o in implements}
     for f in sorted({stretch_f for _s, stretch_f in stretch} | {frames[low]}):
         scene.frame_set(f)
@@ -142,7 +156,7 @@ def main() -> None:
         Q.penetration(depths, prof["max_implement_penetration_m"]) if depths else Q.rec("implement_penetration", "C", "Implements do not pass through the body", Q.NOT_TESTED),
         *Q.posture(j, prof),
         Q.rec("skin_stretch", "C", "Skin stretch stays within limits", Q.PASS if worst_stretch[0] <= prof["max_p999_edge_stretch"] else Q.FAIL,
-              round(worst_stretch[0], 3), prof["max_p999_edge_stretch"], {"frame": worst_stretch[1]}, "p99.9 edge stretch"),
+              round(worst_stretch[0], 3), prof["max_p999_edge_stretch"], {"frame": worst_stretch[1]}, stretch_detail),
     ]
     movement = ex.get("movement", {})
     jr = j

@@ -169,12 +169,12 @@
       "stage": "C",
       "title": "Skin stretch stays within limits",
       "status": "FAIL",
-      "measured": 3.284,
+      "measured": 3.82,
       "limit": 2.6,
       "where": {
-        "frame": 56
+        "frame": 168
       },
-      "detail": "p99.9 edge stretch"
+      "detail": "p99.9 edge stretch per frame: f0 3.039, f56 3.818, f112 3.039, f168 3.820"
     },
     {
       "id": "movement_knee_min_deg",

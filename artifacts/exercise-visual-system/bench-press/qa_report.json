@@ -1,6 +1,6 @@
 {
   "pipeline_version": "0.1.0",
-  "generated": "2026-11-14T16:06:27+00:00",
+  "generated": "2026-11-14T18:48:56+00:00",
   "exercise": "Barbell Bench Press",
   "exercise_id": "barbell_bench_press",
   "character": "master_character_003",
@@ -120,7 +120,7 @@
         "volume_change": 0.08
       },
       "unit": "",
-      "detail": "measured at frames [0, 72, 96, 120, 156]",
+      "detail": "per frame: f0 p999 2.829 max 6.210 vol -0.0002; f72 p999 2.829 max 6.210 vol -0.0501; f96 p999 2.829 max 6.210 vol -0.0352; f120 p999 2.829 max 6.210 vol -0.0362; f156 p999 2.829 max 6.210 vol -0.0343; f180 p999 2.829 max 6.210 vol -0.0501",
       "phases": []
     },
     {
@@ -131,7 +131,7 @@
       "measured": 403,
       "limit": 60,
       "unit": "face pairs",
-      "detail": "Skin folding onto skin at a bent elbow or inside a closed fist is contact, not a defect; a count above the limit needs eyes.",
+      "detail": "Skin folding onto skin at a bent elbow or inside a closed fist is contact, not a defect; a count above the limit needs eyes. New intersections per frame: f0 369; f72 369; f96 369; f120 403; f156 369; f180 369",
       "phases": []
     },
     {
