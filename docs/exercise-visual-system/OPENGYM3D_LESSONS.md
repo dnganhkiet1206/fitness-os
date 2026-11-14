@@ -57,12 +57,31 @@ Bộ bài thể dục của Mixamo theo ghi chép của họ:
 - Ảnh đại diện nên lấy khung xa khung đầu nhất, không lấy khung giữa.
 - Nền trắng studio hắt ngược làm phai màu cơ. Đo độ bão hoà trên ảnh render, đừng chỉnh đèn theo cảm giác.
 
+## Chính sách nguồn của ASCND: học rồi tự tạo, dữ liệu phải thuộc về ASCND (Kiệt 14/11)
+
+Kiệt: "học rồi biến tấu thành riêng của ASCND chứ không phải ăn cắp… có khi còn bán được dữ liệu bản quyền". Vì vậy dữ liệu chuyển động xuất xưởng chỉ được đến từ những nguồn cho phép ASCND sở hữu và bán lại sản phẩm phái sinh:
+
+| Nguồn | Vào dữ liệu ASCND? | Lý do |
+|---|---|---|
+| Bộ giải ràng buộc + bản mô tả kỹ thuật do ASCND viết | **Có** (của ASCND) | Code và tham số tự viết. Dữ kiện giải phẫu và nghiên cứu (góc khớp, nhịp, điểm bám) không có bản quyền; ta tự viết lại và trích nguồn |
+| Số đo do ASCND tự trích từ video Pexels bằng MediaPipe (Apache 2.0) | **Có**, chỉ là số đo | Giấy phép Pexels cho dùng thương mại và chỉnh sửa. Ta chỉ lấy số đo (nhịp, đường đi, góc khớp), không lấy hình và không giao lại video |
+| UI-PRMD | **Có** | PDDL v1.0, tương đương public domain |
+| Mesh2Motion | **Có** | CC0 |
+| CMU mocap | **Không** | Cấm bán lại dữ liệu, kể cả đã chuyển đổi |
+| Mixamo | **Không** | Cấm phát lại file. Không dùng kể cả làm mẫu để tránh phái sinh |
+| Clip, code và dữ liệu của OpenGym3D | **Không chép dữ liệu** | Chỉ học ý tưởng kiến trúc. Code của họ là MIT, nhưng ta tự viết |
+| Video YouTube hoặc của app khác | **Không** | Không có giấy phép |
+
+Mỗi bài ghi rõ nguồn gốc dữ liệu trong `exercise.json` (`motion_provenance`): nguồn, giấy phép, ai trích. Nhờ vậy có thể chứng minh quyền sở hữu khi bán.
+
 ## ASCND sẽ làm gì
 
 1. **Giữ** những gì ta đã vượt họ: rig có bả vai và cơ ngực, bản đồ cơ 21 nhóm, sợi cơ LIC, kiểm hướng sợi, phép đo QA theo nghiên cứu (Mausehund 2022).
 2. **Học** nhà máy bài tập: thêm `movement.pattern` và nguồn chuyển động (lane) vào `exercise.json`; cổng giải phẫu theo họ động tác; tờ khung xương hai góc.
 3. **Thêm lane chuyển động:**
-   - MediaPipe từ video có giấy phép; đã chạy thử trên clip Pexels 20672105;
-   - CMU;
-   - Mixamo, nếu Kiệt tạo tài khoản Adobe miễn phí và tự đăng nhập.
+   - số đo MediaPipe từ video Pexels; đã chạy thử trên clip 20672105;
+   - UI-PRMD (squat, lunge);
+   - Mesh2Motion CC0 (đi bộ, chạy, chống đẩy).
+
+   CMU và Mixamo bị loại theo chính sách ở trên.
 4. **Bench press không có mocap ở bất kỳ nguồn miễn phí nào,** nên giữ bộ giải ràng buộc của ta cho họ đẩy ngang, dùng số đo từ video Pexels và nghiên cứu làm mục tiêu.
