@@ -75335,6 +75335,29 @@
           }
         }
       }
+    },
+    "eg.demo3d.zoom": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zoom"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zoom"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thu phóng"
+          }
+        }
+      }
     }
   }
 }

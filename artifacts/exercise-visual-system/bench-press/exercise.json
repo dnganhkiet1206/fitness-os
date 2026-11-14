@@ -303,5 +303,6 @@
     "secondary"
   ],
   "fiber_highlight": true,
+  "fiber_style": "painted",
   "muscle_roles_note": "Pectoralis major, anterior deltoid and triceps brachii are the agonists in the systematic review by Stastny et al. 2017 (reference_notes.json). Stabilisers are listed from the same review's discussion, where the evidence is thinner; they are recorded here but not highlighted in the render (highlight_roles)."
 }

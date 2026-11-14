@@ -3,13 +3,14 @@
   "exercise_id": "barbell_bench_press",
   "master_character_id": "master_character_001",
   "usdz": "bench_press_animation.usdz",
-  "size_bytes": 2331350,
+  "size_bytes": 3543391,
   "zip_members": [
     "bench_press_animation.usdc",
-    "textures/_usdz_apparel_emission.png",
-    "textures/_usdz_apparel_albedo.png",
     "textures/_usdz_body_emission.png",
-    "textures/_usdz_body_albedo.png"
+    "textures/_usdz_body_normal.png",
+    "textures/_usdz_body_albedo.png",
+    "textures/_usdz_apparel_emission.png",
+    "textures/_usdz_apparel_albedo.png"
   ],
   "default_camera": {
     "preset_id": "three_quarter",

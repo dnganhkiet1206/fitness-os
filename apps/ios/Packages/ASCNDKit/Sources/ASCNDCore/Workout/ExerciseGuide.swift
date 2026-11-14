@@ -490,6 +490,9 @@ public final class ExerciseGuideBook {
     public let isVideo: Bool
     /// "Tay trước · Tạ đơn".
     public let meta: String?
+    /// Hướng dẫn có bước / mẹo hay media thật — không thì trang hướng dẫn chỉ
+    /// còn dòng "chưa có hướng dẫn" (Kiệt 13/11: bài có 3D thì bỏ lối vào ấy).
+    public let hasContent: Bool
   }
 
   /// Ảnh + dòng phụ của một hướng dẫn: tấm đầu (ảnh), hay poster của video.
@@ -501,7 +504,7 @@ public final class ExerciseGuideBook {
     let meta = [guide.muscleGroup, guide.equipment].compactMap { $0 }.joined(separator: " · ")
     return Thumbnail(
       url: raw.isEmpty ? nil : URL(string: raw), isVideo: guide.media.shape == .video,
-      meta: meta.isEmpty ? nil : meta)
+      meta: meta.isEmpty ? nil : meta, hasContent: guide.hasContent || guide.media.hasMedia)
   }
 
   public func thumbnail(exerciseId: String?, name: String, lang: MuscleGroup.Language) -> Thumbnail? {
